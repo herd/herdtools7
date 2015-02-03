@@ -1,0 +1,9 @@
+X86 SB+rfi-pos
+Orig=Rfi PodRR Fre Rfi PodRR Fre
+{
+}
+ P0          | P1          ;
+ MOV [x],$1  | MOV [y],$1  ;
+ MOV EAX,[x] | MOV EAX,[y] ;
+ MOV EBX,[y] | MOV EBX,[x] ;
+exists (0:EAX=1 /\ 0:EBX=0 /\ 1:EAX=1 /\ 1:EBX=0)

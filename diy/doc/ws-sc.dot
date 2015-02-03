@@ -1,0 +1,38 @@
+digraph G {
+
+splines=true;
+ 
+overlap=scale;
+ 
+compound=true;
+ 
+
+/* the unlocked events */
+eiid0 [shape=plaintext  ] [color=blue] [rank=sink] [label="(a) Wy2" ];
+eiid1 [shape=plaintext  ] [color=blue] [rank=sink] [label="(b) Wx1" ];
+eiid2 [shape=plaintext  ] [color=blue] [rank=sink] [label="(c) Wx2" ];
+eiid3 [shape=plaintext  ] [color=blue] [rank=sink] [label="(d) Wy1" ];
+
+/* the intra_causality_data edges */
+
+
+/* the intra_causality_control edges */
+
+/* the poi edges */
+/* the rfmap edges */
+finaleiid2 [shape=none, label=""];
+eiid2 -> finaleiid2 [label="rf", color="red", fontcolor="red"];
+finaleiid0 [shape=none, label=""];
+eiid0 -> finaleiid0 [label="rf", color="red", fontcolor="red"];
+
+/* the view order edges */
+
+/* The viewed-before edges */
+eiid0 -> eiid1 [label="PodWW", color="brown", fontcolor="brown", style="setlinewidth(3)"];
+eiid2 -> eiid3 [label="PodWW", color="brown", fontcolor="brown", style="setlinewidth(3)"];
+eiid1 -> eiid2 [label="Wse", color="brown", fontcolor="brown", style="setlinewidth(3)"];
+eiid3 -> eiid0 [label="Wse", color="brown", fontcolor="brown", style="setlinewidth(3)"];
+/* The calculated basic viewed-before edges */
+
+/* the groupA and groupB of barriers */
+}

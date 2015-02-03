@@ -1,0 +1,20 @@
+C MP_relcon_addr_real
+"PodWWNaRel RfeRelCon PodRRConNa Fre + real addr dependency"
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+{}
+
+P0 (_Atomic (int*) *y,int* x) {
+  *x = 1;
+  atomic_store_explicit(y,x,memory_order_release);
+}
+
+P1 (_Atomic (int*) *y,int* x) {
+  int *r0 = atomic_load_explicit(y,memory_order_consume);
+  int r1 = -1 ;
+  if (r0 != 0) {
+    r1 = *r0 ;
+  }
+}
+locations [y*;]
+~exists (1:r0=x /\ 1:r1=0)

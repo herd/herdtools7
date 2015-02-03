@@ -1,0 +1,94 @@
+Model withoutco
+
+(**********************)
+(* Computes co and fr *)
+(**********************)
+let invrf=(rf)-1
+
+(* co observations in test *)
+let obsco =
+  noid
+  (WW(po-loc)
+  |(rf;RW(po-loc))
+  |(WR(po-loc);invrf)
+  |(rf;RR(po-loc);invrf))
+
+
+let co = (obsco|co0)+
+let fr = noid(invrf;co)|fr0
+show fr
+show co
+let coi = int(co)
+and coe = ext(co)
+and fri = int(fr)
+and fre = ext(fr)
+
+(* Uniproc *)
+acyclic po-loc | rf | fr | co as uniproc
+
+(* Utilities *)
+let dd = addr | data
+let rdw = po-loc & (fre;rfe)
+let detour = po-loc & (coe ; rfe)
+let addrpo = addr;po
+#show rdw, detour, dd, addrpo
+(*******)
+(* ppo *)
+(*******)
+
+
+(* Initial value *)
+let ci0 = ctrlisync | detour
+let ii0 = dd | rfi | rdw
+let cc0 = dd | po-loc | ctrl | addrpo
+let ic0 = 0
+
+(* Fixpoint from i -> c in instructions and transitivity *)
+let rec ci = ci0 | (ci;ii) | (cc;ci)
+and ii = ii0 | ci | (ic;ci) | (ii;ii)
+and cc = cc0 | ci | (ci;ic) | (cc;cc)
+and ic = ic0 | ii | cc | (ic;cc) | (ii ; ic) (* | ci inclus dans ii et cc *)
+
+let ppo = RW(ic) | RR(ii)
+
+
+(**********)
+(* fences *)
+(**********)
+
+(* Power *)
+let lwsync = RM(lwsync)|WW(lwsync)
+let eieio = WW(eieio)
+show sync, lwsync, eieio
+
+(* ARM *)
+let dmb.st=WW(dmb.st)
+let dsb.st=WW(dsb.st)
+show dmb, dsb, dmb.st, dsb.st
+
+(* Common, all arm barriers are strong *)
+let strong = sync|dmb|dsb|dmb.st|dsb.st
+let light = lwsync|eieio
+
+let fence = strong|light
+
+
+(* happens before *)
+let hb = ppo | fence | rfe
+let GHB = hb
+show GHB
+acyclic hb as thinair
+
+(* prop *)
+let hbstar = hb*
+let propbase = (fence|(rfe;fence));hbstar
+show propbase
+
+let chapo = rfe|fre|coe|(fre;rfe)|(coe;rfe)
+
+let prop = WW(propbase)| (chapo? ; propbase*; strong; hbstar)
+
+#show prop
+acyclic co|prop as propagation
+irreflexive fre;prop;hbstar as causality
+

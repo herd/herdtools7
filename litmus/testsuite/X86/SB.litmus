@@ -1,0 +1,12 @@
+X86 SB
+"PodWR Fre PodWR Fre"
+Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+Com=Fr Fr
+Orig=PodWR Fre PodWR Fre
+{
+}
+ P0          | P1          ;
+ MOV [x],$1  | MOV [y],$1  ;
+ MOV EAX,[y] | MOV EAX,[x] ;
+exists
+(0:EAX=0 /\ 1:EAX=0)

@@ -1,0 +1,28 @@
+C Z6.2+poap+popa+poaa
+"PodWWAP Rfe PodRWPA RfeAA PodRWAA WseAA"
+Cycle=Rfe PodRWPA RfeAA PodRWAA WseAA PodWWAP
+Relax=
+Safe=Rfe PodWW PodRW RfeAA WseAA
+Prefetch=0:x=F,0:y=W,1:y=F,1:z=W,2:z=F,2:x=W
+Com=Rf Rf Ws
+Orig=PodWWAP Rfe PodRWPA RfeAA PodRWAA WseAA
+
+{}
+
+P0 (volatile int* y,atomic_int* x) {
+  atomic_store(x,2);
+  *y = 1;
+}
+
+P1 (atomic_int* z,volatile int* y) {
+  int r0 = *y;
+  atomic_store(z,1);
+}
+
+P2 (atomic_int* z,atomic_int* x) {
+  int r0 = atomic_load(z);
+  atomic_store(x,1);
+}
+
+exists
+(x=2 /\ 1:r0=1 /\ 2:r0=1)

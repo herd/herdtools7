@@ -1,0 +1,28 @@
+OpenCL IRIW_sc_sc_sc-sc_sc-sc_xaG_yaG_P0_P1_P2_P3
+                        
+{ 
+  [x]=0;
+  [y]=0;
+}
+
+P0 (global atomic_int* x, global atomic_int* y) {
+  atomic_store(x,1);
+}
+
+P1 (global atomic_int* x, global atomic_int* y) {
+  atomic_store(y,1);
+}
+
+P2 (global atomic_int* x, global atomic_int* y) {
+  int r0 = atomic_load(x);
+  int r1 = atomic_load(y);
+}
+
+P3 (global atomic_int* x, global atomic_int* y) {
+  int r2 = atomic_load(y);
+  int r3 = atomic_load(x);
+}
+
+scopeTree
+(device (work_group P0 P1 P2 P3))
+exists (2:r0=1 /\ 2:r1=0 /\ 3:r2=1 /\ 3:r3=0)

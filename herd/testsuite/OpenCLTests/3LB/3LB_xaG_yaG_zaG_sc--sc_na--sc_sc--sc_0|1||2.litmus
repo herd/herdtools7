@@ -1,0 +1,26 @@
+OpenCL 3LB_xaG_yaG_zaG_sc--sc_na--sc_sc--sc_0|1||2
+                        
+{ 
+  [x]=0;
+  [y]=0;
+  [z]=0;
+}
+
+P0 (global atomic_int* x, global atomic_int* y, global atomic_int* z) {
+  int r0 = atomic_load(x);
+  atomic_store(y,1);
+}
+
+P1 (global atomic_int* x, global atomic_int* y, global atomic_int* z) {
+  int r1 = *y;
+  atomic_store(z,1);
+}
+
+P2 (global atomic_int* x, global atomic_int* y, global atomic_int* z) {
+  int r2 = atomic_load(z);
+  atomic_store(x,1);
+}
+
+scopeTree
+((device (work_group P0 P1) (work_group P2)))
+exists (0:r0=1 /\ 1:r1=1 /\ 2:r2=1)

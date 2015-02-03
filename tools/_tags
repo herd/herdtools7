@@ -1,0 +1,16 @@
+true: dtypes
+true: -traverse
+true: safe_string
+<*.cmo>: debug
+<*.byte>:debug
+<lib>:include
+<mapply.{d.byte,byte,native}>:use_unix
+<msum.{d.byte,byte,native}>:use_unix,use_str
+<mdiff.{d.byte,byte,native}>:use_str
+<mfilter.{d.byte,byte,native}>:use_str
+<moutcomes.{d.byte,byte,native}>:use_str
+<mlog2cond.{d.byte,byte,native}>:use_str
+<mcompare.{d.byte,byte,native}>:use_unix,use_str
+<mprog.{d.byte,byte,native}>:use_str
+<knames.{d.byte,byte,native}>:use_str
+<mtopos.{d.byte,byte,native}>:use_str

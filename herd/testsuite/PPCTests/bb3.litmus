@@ -1,0 +1,14 @@
+PPC bb3 (BBThree)
+"4 proc, st/st ld/ld, lwsync/sync barriers"
+{
+P0:r5=x ; P0:r2=2 ;
+P1:r6=y ; P1:r1=1 ;
+P2:r5=x ; P2:r6=y ; P2:r1=1 ;P2:r2=2;
+P3:r5=x ; P3:r6=y ;
+}
+P0           |P1           |P2           |P3           ;
+stw r2,0(r5) |stw r1,0(r6) |stw r1,0(r5) |lwz r1,0(r6) ;
+             |             |lwsync       |sync         ;
+             |             |stw r2,0(r6) |lwz r2,0(r5) ;
+locations [x;y;]
+~exists (P3:r1=2 /\ P3:r2=0)

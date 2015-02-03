@@ -1,0 +1,23 @@
+C LB+poprel+poconp
+"PodRWNaRel RfeRelCon PodRWConNa Rfe"
+Cycle=Rfe PodRWNaRel RfeRelCon PodRWConNa
+Relax=
+Safe=Rfe PodRW RfeRelCon
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Rf
+Orig=PodRWNaRel RfeRelCon PodRWConNa Rfe
+
+{}
+
+P0 (atomic_int* y,volatile int* x) {
+  int r0 = *x;
+  atomic_store_explicit(y,1,memory_order_release);
+}
+
+P1 (atomic_int* y,volatile int* x) {
+  int r0 = atomic_load_explicit(y,memory_order_consume);
+  *x = 1;
+}
+
+exists
+(0:r0=1 /\ 1:r0=1)

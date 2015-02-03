@@ -1,0 +1,11 @@
+CPP11 silly
+"Fre PodWR Fre PodWR"
+{ x=0; y=0; }
+ P0           | P1         ;
+ lock(x)      | lock(x)    ;
+ unlock(x)    | unlock(x)  ; 
+
+LK
+x:mutex, y:mutex
+
+exists (1:r1 = 1 /\ 1:r2 = 0)

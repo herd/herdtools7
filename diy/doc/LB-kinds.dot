@@ -1,0 +1,67 @@
+digraph G {
+ splines=true;
+ overlap=false;
+ ranksep = 1.0;
+subgraph cluster1 {
+style=rounded;
+color=blue;
+"LB+isb+data";
+"LB+isb+ctrl";
+}
+subgraph cluster2 {
+style=rounded;
+color=blue;
+"LB+dmb+data";
+"LB+dmb+ctrl";
+}
+subgraph cluster3 {
+style=rounded;
+color=blue;
+"LB+datas";
+"LB+ctrls";
+"LB+ctrl+data";
+}
+subgraph cluster4 {
+style=rounded;
+color=blue;
+"LB+data+po";
+"LB+ctrl+po";
+}
+"LB+isbs" [color=red][fontsize="10"];
+"LB+isb+po" [color=red][fontsize="10"];
+"LB+isb+data" [color=red][fontsize="10"];
+"LB+isb+ctrl" [color=red][fontsize="10"];
+"LB+dmbs" [color=green][fontsize="10"];
+"LB+dmb+po" [color=red][fontsize="10"];
+"LB+dmb+isb" [color=red][fontsize="10"];
+"LB+dmb+data" [color=green][fontsize="10"];
+"LB+dmb+ctrl" [color=green][fontsize="10"];
+"LB+datas" [style="setlinewidth(3)"][color=green][fontsize="10"];
+"LB+data+po" [color=red][fontsize="10"];
+"LB+ctrls" [style="setlinewidth(3)"][color=green][fontsize="10"];
+"LB+ctrl+po" [color=red][fontsize="10"];
+"LB+ctrl+data" [style="setlinewidth(3)"][color=green][fontsize="10"];
+"LB" [color=red][fontsize="10"];
+"LB+isbs" -> "LB+dmb+isb";
+"LB+isb+po" -> "LB+isb+data";
+"LB+isb+po" -> "LB+isb+ctrl";
+"LB+isb+po" -> "LB+dmb+po";
+"LB+isb+data" -> "LB+dmb+data";
+"LB+isb+ctrl" -> "LB+dmb+ctrl";
+"LB+dmb+po" -> "LB+dmb+data";
+"LB+dmb+po" -> "LB+dmb+ctrl";
+"LB+dmb+isb" -> "LB+dmbs";
+"LB+dmb+data" -> "LB+dmbs";
+"LB+dmb+ctrl" -> "LB+dmbs";
+"LB+datas" -> "LB+dmb+data";
+"LB+data+po" -> "LB+dmb+po";
+"LB+data+po" -> "LB+datas";
+"LB+ctrls" -> "LB+dmb+ctrl";
+"LB+ctrl+po" -> "LB+dmb+po";
+"LB+ctrl+po" -> "LB+ctrls";
+"LB+ctrl+po" -> "LB+ctrl+data";
+"LB+ctrl+data" -> "LB+dmb+data";
+"LB" -> "LB+data+po";
+"LB" -> "LB+ctrl+po";
+}
+

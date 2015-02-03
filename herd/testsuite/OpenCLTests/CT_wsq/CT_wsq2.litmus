@@ -1,0 +1,40 @@
+OpenCL CT_wsq2
+                        
+{ 
+  [tail_p]=0;
+  [head_p]=0;
+  [oldhead_p]=0;
+  [d]=0;
+}
+
+P0 (global atomic_int* head_p, global atomic_int* tail_p, int* oldhead_p, global int* d) {
+  
+  // POP:
+  int newHead = 1;
+
+  int tmp = atomic_compare_exchange_strong_explicit(head_p, oldHead_p, newHead, memory_order_release, memory_order_release, memory_scope_device);
+  if (tmp) {
+    // return
+  } else {
+    atomic_store_explicit(head_p, newHead, memory_order_release, memory_scope_device);
+  }  
+  
+  // PUSH:
+  int tmp_tail = atomic_load_explicit(tail_p, memory_order_acquire, memory_scope_device);
+}
+
+P1 (global atomic_int* head_p, global atomic_int* tail_p, int* oldhead_p, global int* d) {
+
+  // STEAL:
+  int localTail;
+  localTail = atomic_load_explicit(tail_p, memory_order_acquire, memory_scope_device);
+  if (localTail != *oldHead_p) {
+    int val = *d;
+    atomic_compare_exchange_strong_explicit(head_p, oldHead_p, 1, memory_order_release, memory_order_release, memory_scope_device);
+  }
+}
+
+scopeTree
+(device (work_group P0 P1))
+exists (0:tmp=1 /\ 1:localTail=1)
+

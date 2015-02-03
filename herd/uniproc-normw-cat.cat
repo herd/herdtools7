@@ -1,0 +1,32 @@
+"Uniproc model" withoutco
+
+(**********************)
+(* Computes co and fr *)
+(**********************)
+
+let invrf=rf -1
+
+(* co observations in test *)
+let obsco =
+    (WW(po-loc)
+    |(rf;RW(po-loc))
+    |noid(WR(po-loc);invrf)
+    |noid(rf;RR(po-loc);invrf))
+
+let cobase = obsco|co0
+
+let co = cobase+
+let fr = noid(invrf;co) (* notice: avoid self fr (RMW) *)
+
+show fr
+show co
+
+(* a few additional shows *)
+show mfence, lfence, sfence
+show sync, lwsync, eieio
+show dmb, dsb, dsb.st, dmb.st
+show isb, isync
+
+(* uni check proper *)
+irreflexive co as uniproc
+

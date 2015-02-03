@@ -1,0 +1,23 @@
+PPC R0070
+"PosWW PosWR DpDatadW Wse SyncdWR Fre"
+Cycle=Fre PosWW PosWR DpDatadW Wse SyncdWR
+Relax=[Wse,SyncdWR,Fre]
+Safe=PosWW PosWR DpDatadW
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Ws Fr
+Orig=PosWW PosWR DpDatadW Wse SyncdWR Fre
+{
+0:r2=x; 0:r6=y;
+1:r2=y; 1:r4=x;
+}
+ P0           | P1           ;
+ li r1,1      | li r1,2      ;
+ stw r1,0(r2) | stw r1,0(r2) ;
+ li r3,2      | sync         ;
+ stw r3,0(r2) | lwz r3,0(r4) ;
+ lwz r4,0(r2) |              ;
+ xor r5,r4,r4 |              ;
+ addi r5,r5,1 |              ;
+ stw r5,0(r6) |              ;
+exists
+(x=2 /\ y=2 /\ 1:r3=0)

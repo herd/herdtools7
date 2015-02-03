@@ -1,0 +1,26 @@
+"X86 TSO"
+
+(* Uniproc check *)
+let com = rf | fr | co
+acyclic po-loc | com
+
+(* Atomic *)
+empty atom & (fre;coe)
+
+(* GHB *)
+#ppo
+let po_ghb = WW(po) | RM(po)
+
+#mfence
+let mfence = (po & (_ * MFENCE)) ; po
+
+#implied barriers
+let poWR = WR(po)
+let i1 = PA(poWR)
+let i2 = AP(poWR)
+let implied = i1 | i2
+
+let GHB = mfence | implied | po_ghb | rfe | fr | co
+show mfence
+show implied
+acyclic GHB

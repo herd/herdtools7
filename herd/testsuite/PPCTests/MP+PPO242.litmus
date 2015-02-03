@@ -1,0 +1,32 @@
+PPC MP+PPO242
+"Fre LwSyncdWW Rfe DpAddrdR PosRR DpCtrldW PosWR DpAddrdR DpCtrlIsyncdR"
+Cycle=Rfe DpAddrdR PosRR DpCtrldW PosWR DpAddrdR DpCtrlIsyncdR Fre LwSyncdWW
+Relax=
+Safe=Rfe Fre PosWR PosRR LwSyncdWW DpAddrdR DpCtrldW DpCtrlIsyncdR
+Prefetch=1:x=T
+Com=Rf Fr
+Orig=Fre LwSyncdWW Rfe DpAddrdR PosRR DpCtrldW PosWR DpAddrdR DpCtrlIsyncdR
+{
+0:r2=x; 0:r4=y;
+1:r2=y; 1:r5=z; 1:r8=a; 1:r12=b; 1:r14=x;
+}
+ P0           | P1               ;
+ li r1,1      | lwz r1,0(r2)     ;
+ stw r1,0(r2) | xor r3,r1,r1     ;
+ lwsync       | lwzx r4,r3,r5    ;
+ li r3,1      | lwz r6,0(r5)     ;
+ stw r3,0(r4) | cmpw r6,r6       ;
+              | beq  LC00        ;
+              | LC00:            ;
+              | li r7,1          ;
+              | stw r7,0(r8)     ;
+              | lwz r9,0(r8)     ;
+              | xor r10,r9,r9    ;
+              | lwzx r11,r10,r12 ;
+              | cmpw r11,r11     ;
+              | beq  LC01        ;
+              | LC01:            ;
+              | isync            ;
+              | lwz r13,0(r14)   ;
+exists
+(1:r1=1 /\ 1:r13=0)

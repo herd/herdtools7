@@ -1,0 +1,12 @@
+X86 podrw001
+"Fre PodWR Fre PodWR Fre PodWR"
+Cycle=Fre PodWR Fre PodWR Fre PodWR
+Relax=PodWR
+Safe=Fre
+{
+}
+ P0          | P1          | P2          ;
+ MOV [z],$1  | MOV [x],$1  | MOV [y],$1  ;
+ MOV EAX,[x] | MOV EAX,[y] | MOV EAX,[z] ;
+exists
+(0:EAX=0 /\ 1:EAX=0 /\ 2:EAX=0)

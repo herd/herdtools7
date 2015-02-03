@@ -1,0 +1,27 @@
+C WRC+poacqp+popacq+Rel
+"RfeRelAcq PodRWAcqP Rfe PodRRPAcq FreAcqRel"
+Cycle=Rfe PodRRPAcq FreAcqRel RfeRelAcq PodRWAcqP
+Relax=
+Safe=Rfe PodRW PodRR FreAcqRel RfeRelAcq
+Prefetch=1:x=F,1:y=W,2:y=F,2:x=T
+Com=Rf Rf Fr
+Orig=RfeRelAcq PodRWAcqP Rfe PodRRPAcq FreAcqRel
+
+{}
+
+P0 (atomic_int* x) {
+  atomic_store_explicit(x,1,memory_order_release);
+}
+
+P1 (volatile int* y,atomic_int* x) {
+  int r0 = atomic_load_explicit(x,memory_order_acquire);
+  *y = 1;
+}
+
+P2 (volatile int* y,atomic_int* x) {
+  int r0 = *y;
+  int r1 = atomic_load_explicit(x,memory_order_acquire);
+}
+
+exists
+(1:r0=1 /\ 2:r0=1 /\ 2:r1=0)

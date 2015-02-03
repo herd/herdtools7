@@ -1,0 +1,28 @@
+C Z6.2+popa+poarel+poconp
+"PodWWPA RfeAA PodRWARel RfeRelCon PodRWConP Wse"
+Cycle=RfeRelCon PodRWConP Wse PodWWPA RfeAA PodRWARel
+Relax=
+Safe=Wse PodWW PodRW RfeRelCon RfeAA
+Prefetch=0:x=F,0:y=W,1:y=F,1:z=W,2:z=F,2:x=W
+Com=Rf Rf Ws
+Orig=PodWWPA RfeAA PodRWARel RfeRelCon PodRWConP Wse
+
+{}
+
+P0 (atomic_int* y,volatile int* x) {
+  *x = 2;
+  atomic_store(y,1);
+}
+
+P1 (atomic_int* z,atomic_int* y) {
+  int r0 = atomic_load(y);
+  atomic_store_explicit(z,1,memory_order_release);
+}
+
+P2 (atomic_int* z,volatile int* x) {
+  int r0 = atomic_load_explicit(z,memory_order_consume);
+  *x = 1;
+}
+
+exists
+(x=2 /\ 1:r0=1 /\ 2:r0=1)

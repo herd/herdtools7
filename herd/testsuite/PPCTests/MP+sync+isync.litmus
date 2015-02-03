@@ -1,0 +1,15 @@
+PPC MP+sync+isync
+"SyncdWW Rfe ISyncdRR Fre"
+Cycle=Rfe ISyncdRR Fre SyncdWW
+{
+0:r2=x; 0:r4=y;
+1:r2=y; 1:r4=x;
+}
+ P0           | P1           ;
+ li r1,1      | lwz r1,0(r2) ;
+ stw r1,0(r2) | isync        ;
+ sync         | lwz r3,0(r4) ;
+ li r3,1      |              ;
+ stw r3,0(r4) |              ;
+exists
+(1:r1=1 /\ 1:r3=0)

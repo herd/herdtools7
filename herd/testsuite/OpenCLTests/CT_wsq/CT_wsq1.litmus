@@ -1,0 +1,30 @@
+OpenCL CT_wsq1
+                        
+{ 
+  [tail_p]=0;
+  [head_p]=0;
+  [d]=0;
+  [val]=0;
+}
+
+P0 (global atomic_int* tail_p, global atomic_int* head_p, global int* d, int* val) {
+  int tmp_tail = atomic_load_explicit(tail_p, memory_order_acquire, memory_scope_device);
+  *d = 1;
+  tmp_tail = 1; //tmp_tail++;
+  atomic_store_explicit(tail_p, tmp_tail, memory_order_release, memory_scope_device); 
+}
+
+P1 (global atomic_int* tail_p, global atomic_int* head_p, global int* d, int* val) {
+  int localTail;
+  int oldHead;
+  oldHead = atomic_load_explicit(head_p, memory_order_acquire, memory_scope_device);                                      
+  localTail = atomic_load_explicit(tail_p, memory_order_acquire, memory_scope_device);                                    
+  if (localTail == 1) {
+    *val = *d;
+  }  
+}
+
+scopeTree
+(device (work_group P0 P1))
+exists (1:localTail=1 /\ val=0)
+

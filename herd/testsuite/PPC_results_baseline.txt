@@ -1,0 +1,428 @@
+Test 2+2W Allowed
+States 4
+x=1; y=1;
+x=1; y=2;
+x=2; y=1;
+x=2; y=2;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (x=1 /\ y=1)
+Observation 2+2W Sometimes 1 3
+Hash=5969b3dc703e52bc944f3ef6f54099f4
+
+Test 3.SB+sync+rfi-addr+rfi-addr Allowed
+States 8
+0:r3=0; 1:r3=1; 1:r5=0; 2:r3=1; 2:r5=0;
+0:r3=0; 1:r3=1; 1:r5=0; 2:r3=1; 2:r5=1;
+0:r3=0; 1:r3=1; 1:r5=1; 2:r3=1; 2:r5=0;
+0:r3=0; 1:r3=1; 1:r5=1; 2:r3=1; 2:r5=1;
+0:r3=1; 1:r3=1; 1:r5=0; 2:r3=1; 2:r5=0;
+0:r3=1; 1:r3=1; 1:r5=0; 2:r3=1; 2:r5=1;
+0:r3=1; 1:r3=1; 1:r5=1; 2:r3=1; 2:r5=0;
+0:r3=1; 1:r3=1; 1:r5=1; 2:r3=1; 2:r5=1;
+Ok
+Witnesses
+Positive: 1 Negative: 7
+Condition exists (0:r3=0 /\ 1:r3=1 /\ 1:r5=0 /\ 2:r3=1 /\ 2:r5=0)
+Observation 3.SB+sync+rfi-addr+rfi-addr Sometimes 1 7
+Hash=5dfc17feb3ec23be09c3dee6c9846ec9
+
+Test IRIW+addr+po Allowed
+States 16
+1:r1=0; 1:r4=0; 3:r1=0; 3:r3=0;
+1:r1=0; 1:r4=0; 3:r1=0; 3:r3=1;
+1:r1=0; 1:r4=0; 3:r1=1; 3:r3=0;
+1:r1=0; 1:r4=0; 3:r1=1; 3:r3=1;
+1:r1=0; 1:r4=1; 3:r1=0; 3:r3=0;
+1:r1=0; 1:r4=1; 3:r1=0; 3:r3=1;
+1:r1=0; 1:r4=1; 3:r1=1; 3:r3=0;
+1:r1=0; 1:r4=1; 3:r1=1; 3:r3=1;
+1:r1=1; 1:r4=0; 3:r1=0; 3:r3=0;
+1:r1=1; 1:r4=0; 3:r1=0; 3:r3=1;
+1:r1=1; 1:r4=0; 3:r1=1; 3:r3=0;
+1:r1=1; 1:r4=0; 3:r1=1; 3:r3=1;
+1:r1=1; 1:r4=1; 3:r1=0; 3:r3=0;
+1:r1=1; 1:r4=1; 3:r1=0; 3:r3=1;
+1:r1=1; 1:r4=1; 3:r1=1; 3:r3=0;
+1:r1=1; 1:r4=1; 3:r1=1; 3:r3=1;
+Ok
+Witnesses
+Positive: 1 Negative: 15
+Condition exists (1:r1=1 /\ 1:r4=0 /\ 3:r1=1 /\ 3:r3=0)
+Observation IRIW+addr+po Sometimes 1 15
+Hash=3447aec1bd9a2fb03f7b5293d1dfeca1
+
+Test IRIW Allowed
+States 16
+1:r1=0; 1:r3=0; 3:r1=0; 3:r3=0;
+1:r1=0; 1:r3=0; 3:r1=0; 3:r3=1;
+1:r1=0; 1:r3=0; 3:r1=1; 3:r3=0;
+1:r1=0; 1:r3=0; 3:r1=1; 3:r3=1;
+1:r1=0; 1:r3=1; 3:r1=0; 3:r3=0;
+1:r1=0; 1:r3=1; 3:r1=0; 3:r3=1;
+1:r1=0; 1:r3=1; 3:r1=1; 3:r3=0;
+1:r1=0; 1:r3=1; 3:r1=1; 3:r3=1;
+1:r1=1; 1:r3=0; 3:r1=0; 3:r3=0;
+1:r1=1; 1:r3=0; 3:r1=0; 3:r3=1;
+1:r1=1; 1:r3=0; 3:r1=1; 3:r3=0;
+1:r1=1; 1:r3=0; 3:r1=1; 3:r3=1;
+1:r1=1; 1:r3=1; 3:r1=0; 3:r3=0;
+1:r1=1; 1:r3=1; 3:r1=0; 3:r3=1;
+1:r1=1; 1:r3=1; 3:r1=1; 3:r3=0;
+1:r1=1; 1:r3=1; 3:r1=1; 3:r3=1;
+Ok
+Witnesses
+Positive: 1 Negative: 15
+Condition exists (1:r1=1 /\ 1:r3=0 /\ 3:r1=1 /\ 3:r3=0)
+Observation IRIW Sometimes 1 15
+Hash=3e75396faf710063817c1a62bb10b9ff
+
+Test ISA2+lwsync+isync+addr Allowed
+States 8
+1:r1=0; 2:r1=0; 2:r4=0;
+1:r1=0; 2:r1=0; 2:r4=1;
+1:r1=0; 2:r1=1; 2:r4=0;
+1:r1=0; 2:r1=1; 2:r4=1;
+1:r1=1; 2:r1=0; 2:r4=0;
+1:r1=1; 2:r1=0; 2:r4=1;
+1:r1=1; 2:r1=1; 2:r4=0;
+1:r1=1; 2:r1=1; 2:r4=1;
+Ok
+Witnesses
+Positive: 1 Negative: 7
+Condition exists (1:r1=1 /\ 2:r1=1 /\ 2:r4=0)
+Observation ISA2+lwsync+isync+addr Sometimes 1 7
+Hash=0500e3f581bbd573992c281cb53b2b48
+
+Test LB+PPO0133 Allowed
+States 3
+0:r1=0; 1:r1=0;
+0:r1=0; 1:r1=1;
+0:r1=1; 1:r1=0;
+No
+Witnesses
+Positive: 0 Negative: 4
+Condition exists (0:r1=1 /\ 1:r1=1)
+Observation LB+PPO0133 Never 0 4
+Hash=bd32957e1a3fce5875ce590168f02b4e
+
+Test MOREDETOUR0055 Allowed
+States 18
+0:r5=0; 2:r1=0; 2:r4=0; y=1;
+0:r5=0; 2:r1=0; 2:r4=0; y=2;
+0:r5=0; 2:r1=0; 2:r4=1; y=1;
+0:r5=0; 2:r1=0; 2:r4=1; y=2;
+0:r5=0; 2:r1=1; 2:r4=0; y=1;
+0:r5=0; 2:r1=1; 2:r4=0; y=2;
+0:r5=0; 2:r1=1; 2:r4=1; y=1;
+0:r5=0; 2:r1=1; 2:r4=1; y=2;
+0:r5=0; 2:r1=2; 2:r4=0; y=1;
+0:r5=0; 2:r1=2; 2:r4=0; y=2;
+0:r5=0; 2:r1=2; 2:r4=1; y=1;
+0:r5=0; 2:r1=2; 2:r4=1; y=2;
+0:r5=1; 2:r1=0; 2:r4=0; y=2;
+0:r5=1; 2:r1=0; 2:r4=1; y=2;
+0:r5=1; 2:r1=1; 2:r4=0; y=2;
+0:r5=1; 2:r1=1; 2:r4=1; y=2;
+0:r5=1; 2:r1=2; 2:r4=0; y=2;
+0:r5=1; 2:r1=2; 2:r4=1; y=2;
+Ok
+Witnesses
+Positive: 1 Negative: 17
+Condition exists (0:r5=0 /\ y=2 /\ 2:r1=2 /\ 2:r4=0)
+Observation MOREDETOUR0055 Sometimes 1 17
+Hash=dd521840aacebc3b3a9ddfc58932d697
+
+Test MP+PPO242 Allowed
+States 3
+1:r1=0; 1:r13=0;
+1:r1=0; 1:r13=1;
+1:r1=1; 1:r13=1;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (1:r1=1 /\ 1:r13=0)
+Observation MP+PPO242 Never 0 3
+Hash=ff7244625ee73ba93c801499de78886a
+
+Test MP+sync+isync Allowed
+States 4
+1:r1=0; 1:r3=0;
+1:r1=0; 1:r3=1;
+1:r1=1; 1:r3=0;
+1:r1=1; 1:r3=1;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (1:r1=1 /\ 1:r3=0)
+Observation MP+sync+isync Sometimes 1 3
+Hash=a7da1baf31167fbd7b5a17708bfd0908
+
+Test R0070 Allowed
+States 6
+1:r3=0; x=2; y=1;
+1:r3=0; x=2; y=2;
+1:r3=1; x=2; y=1;
+1:r3=1; x=2; y=2;
+1:r3=2; x=2; y=1;
+1:r3=2; x=2; y=2;
+Ok
+Witnesses
+Positive: 1 Negative: 5
+Condition exists (x=2 /\ y=2 /\ 1:r3=0)
+Observation R0070 Sometimes 1 5
+Hash=f4f54784376141a0143ba4191b61ebc1
+
+Test S+PPO013 Allowed
+States 3
+1:r1=0; x=1;
+1:r1=0; x=2;
+1:r1=1; x=1;
+No
+Witnesses
+Positive: 0 Negative: 4
+Condition exists (x=2 /\ 1:r1=1)
+Observation S+PPO013 Never 0 4
+Hash=2f45113f1b82cd976f896bfbcc0f108d
+
+Test SB0042 Allowed
+States 4
+0:r3=0; 1:r7=0;
+0:r3=0; 1:r7=1;
+0:r3=1; 1:r7=0;
+0:r3=1; 1:r7=1;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (0:r3=0 /\ 1:r7=0)
+Observation SB0042 Sometimes 1 3
+Hash=d210b8d593867331de91eb180a7a8641
+
+Test WRC+ctrl+ctrlisync Allowed
+States 8
+1:r1=0; 2:r1=0; 2:r3=0;
+1:r1=0; 2:r1=0; 2:r3=1;
+1:r1=0; 2:r1=1; 2:r3=0;
+1:r1=0; 2:r1=1; 2:r3=1;
+1:r1=1; 2:r1=0; 2:r3=0;
+1:r1=1; 2:r1=0; 2:r3=1;
+1:r1=1; 2:r1=1; 2:r3=0;
+1:r1=1; 2:r1=1; 2:r3=1;
+Ok
+Witnesses
+Positive: 1 Negative: 7
+Condition exists (1:r1=1 /\ 2:r1=1 /\ 2:r3=0)
+Observation WRC+ctrl+ctrlisync Sometimes 1 7
+Hash=d3f8044df1a0c440aae3fcb705e00b7a
+
+Test WRW+WR+po+lwsync Allowed
+States 8
+1:r1=0; 2:r3=0; y=1;
+1:r1=0; 2:r3=0; y=2;
+1:r1=0; 2:r3=1; y=1;
+1:r1=0; 2:r3=1; y=2;
+1:r1=1; 2:r3=0; y=1;
+1:r1=1; 2:r3=0; y=2;
+1:r1=1; 2:r3=1; y=1;
+1:r1=1; 2:r3=1; y=2;
+Ok
+Witnesses
+Positive: 1 Negative: 7
+Condition exists (y=2 /\ 1:r1=1 /\ 2:r3=0)
+Observation WRW+WR+po+lwsync Sometimes 1 7
+Hash=fa42b89943074282e0dbdfc9975eb42c
+
+Test Z6.0+po+sync+lwsync Allowed
+States 8
+1:r1=0; 2:r3=0; z=1;
+1:r1=0; 2:r3=0; z=2;
+1:r1=0; 2:r3=1; z=1;
+1:r1=0; 2:r3=1; z=2;
+1:r1=1; 2:r3=0; z=1;
+1:r1=1; 2:r3=0; z=2;
+1:r1=1; 2:r3=1; z=1;
+1:r1=1; 2:r3=1; z=2;
+Ok
+Witnesses
+Positive: 1 Negative: 7
+Condition exists (z=2 /\ 1:r1=1 /\ 2:r3=0)
+Observation Z6.0+po+sync+lwsync Sometimes 1 7
+Hash=f71e235e0658cf5d97a7065943ed090e
+
+Test bb3 Forbidden
+States 30
+3:r1=0; 3:r2=0; x=1; y=1;
+3:r1=0; 3:r2=0; x=1; y=2;
+3:r1=0; 3:r2=0; x=2; y=1;
+3:r1=0; 3:r2=0; x=2; y=2;
+3:r1=0; 3:r2=1; x=1; y=1;
+3:r1=0; 3:r2=1; x=1; y=2;
+3:r1=0; 3:r2=1; x=2; y=1;
+3:r1=0; 3:r2=1; x=2; y=2;
+3:r1=0; 3:r2=2; x=1; y=1;
+3:r1=0; 3:r2=2; x=1; y=2;
+3:r1=0; 3:r2=2; x=2; y=1;
+3:r1=0; 3:r2=2; x=2; y=2;
+3:r1=1; 3:r2=0; x=1; y=1;
+3:r1=1; 3:r2=0; x=1; y=2;
+3:r1=1; 3:r2=0; x=2; y=1;
+3:r1=1; 3:r2=0; x=2; y=2;
+3:r1=1; 3:r2=1; x=1; y=1;
+3:r1=1; 3:r2=1; x=1; y=2;
+3:r1=1; 3:r2=1; x=2; y=1;
+3:r1=1; 3:r2=1; x=2; y=2;
+3:r1=1; 3:r2=2; x=1; y=1;
+3:r1=1; 3:r2=2; x=1; y=2;
+3:r1=1; 3:r2=2; x=2; y=1;
+3:r1=1; 3:r2=2; x=2; y=2;
+3:r1=2; 3:r2=1; x=1; y=1;
+3:r1=2; 3:r2=1; x=1; y=2;
+3:r1=2; 3:r2=1; x=2; y=1;
+3:r1=2; 3:r2=1; x=2; y=2;
+3:r1=2; 3:r2=2; x=2; y=1;
+3:r1=2; 3:r2=2; x=2; y=2;
+Ok
+Witnesses
+Positive: 30 Negative: 0
+Condition ~exists (3:r1=2 /\ 3:r2=0)
+Observation bb3 Never 0 30
+Hash=52da56dcce87217f59d69a22db21d8c3
+
+Test dd4 Allowed
+States 32
+2:r2=0; 3:r2=0; x=1; y=1;
+2:r2=0; 3:r2=0; x=1; y=2;
+2:r2=0; 3:r2=0; x=2; y=1;
+2:r2=0; 3:r2=0; x=2; y=2;
+2:r2=0; 3:r2=1; x=1; y=1;
+2:r2=0; 3:r2=1; x=1; y=2;
+2:r2=0; 3:r2=1; x=2; y=1;
+2:r2=0; 3:r2=1; x=2; y=2;
+2:r2=0; 3:r2=2; x=1; y=1;
+2:r2=0; 3:r2=2; x=1; y=2;
+2:r2=0; 3:r2=2; x=2; y=1;
+2:r2=0; 3:r2=2; x=2; y=2;
+2:r2=1; 3:r2=0; x=1; y=1;
+2:r2=1; 3:r2=0; x=1; y=2;
+2:r2=1; 3:r2=0; x=2; y=1;
+2:r2=1; 3:r2=0; x=2; y=2;
+2:r2=1; 3:r2=2; x=1; y=1;
+2:r2=1; 3:r2=2; x=1; y=2;
+2:r2=1; 3:r2=2; x=2; y=1;
+2:r2=1; 3:r2=2; x=2; y=2;
+2:r2=2; 3:r2=0; x=1; y=1;
+2:r2=2; 3:r2=0; x=1; y=2;
+2:r2=2; 3:r2=0; x=2; y=1;
+2:r2=2; 3:r2=0; x=2; y=2;
+2:r2=2; 3:r2=1; x=1; y=1;
+2:r2=2; 3:r2=1; x=1; y=2;
+2:r2=2; 3:r2=1; x=2; y=1;
+2:r2=2; 3:r2=1; x=2; y=2;
+2:r2=2; 3:r2=2; x=1; y=1;
+2:r2=2; 3:r2=2; x=1; y=2;
+2:r2=2; 3:r2=2; x=2; y=1;
+2:r2=2; 3:r2=2; x=2; y=2;
+No
+Witnesses
+Positive: 0 Negative: 32
+Condition exists (2:r2=1 /\ 3:r2=1)
+Observation dd4 Never 0 32
+Hash=81ac6a728eb81615abbc88f4127ad990
+
+Test m8 Allowed
+States 36
+0:r1=0; 1:r1=0; x=1; y=1;
+0:r1=0; 1:r1=0; x=1; y=2;
+0:r1=0; 1:r1=0; x=2; y=1;
+0:r1=0; 1:r1=0; x=2; y=2;
+0:r1=0; 1:r1=1; x=1; y=1;
+0:r1=0; 1:r1=1; x=1; y=2;
+0:r1=0; 1:r1=1; x=2; y=1;
+0:r1=0; 1:r1=1; x=2; y=2;
+0:r1=0; 1:r1=2; x=1; y=1;
+0:r1=0; 1:r1=2; x=1; y=2;
+0:r1=0; 1:r1=2; x=2; y=1;
+0:r1=0; 1:r1=2; x=2; y=2;
+0:r1=1; 1:r1=0; x=1; y=1;
+0:r1=1; 1:r1=0; x=1; y=2;
+0:r1=1; 1:r1=0; x=2; y=1;
+0:r1=1; 1:r1=0; x=2; y=2;
+0:r1=1; 1:r1=1; x=1; y=1;
+0:r1=1; 1:r1=1; x=1; y=2;
+0:r1=1; 1:r1=1; x=2; y=1;
+0:r1=1; 1:r1=1; x=2; y=2;
+0:r1=1; 1:r1=2; x=1; y=1;
+0:r1=1; 1:r1=2; x=1; y=2;
+0:r1=1; 1:r1=2; x=2; y=1;
+0:r1=1; 1:r1=2; x=2; y=2;
+0:r1=2; 1:r1=0; x=1; y=1;
+0:r1=2; 1:r1=0; x=1; y=2;
+0:r1=2; 1:r1=0; x=2; y=1;
+0:r1=2; 1:r1=0; x=2; y=2;
+0:r1=2; 1:r1=1; x=1; y=1;
+0:r1=2; 1:r1=1; x=1; y=2;
+0:r1=2; 1:r1=1; x=2; y=1;
+0:r1=2; 1:r1=1; x=2; y=2;
+0:r1=2; 1:r1=2; x=1; y=1;
+0:r1=2; 1:r1=2; x=1; y=2;
+0:r1=2; 1:r1=2; x=2; y=1;
+0:r1=2; 1:r1=2; x=2; y=2;
+Ok
+Witnesses
+Positive: 1 Negative: 35
+Condition exists (0:r1=2 /\ 1:r1=2 /\ x=2 /\ y=2)
+Observation m8 Sometimes 1 35
+Hash=1bdfc5422c2e8a3e1ad27a28863cd3a3
+
+Test safe085 Allowed
+States 42
+0:r1=0; 1:r1=0; 1:r3=0; y=1; z=1;
+0:r1=0; 1:r1=0; 1:r3=0; y=1; z=2;
+0:r1=0; 1:r1=0; 1:r3=0; y=2; z=1;
+0:r1=0; 1:r1=0; 1:r3=0; y=2; z=2;
+0:r1=0; 1:r1=0; 1:r3=1; y=1; z=1;
+0:r1=0; 1:r1=0; 1:r3=1; y=1; z=2;
+0:r1=0; 1:r1=0; 1:r3=1; y=2; z=1;
+0:r1=0; 1:r1=0; 1:r3=1; y=2; z=2;
+0:r1=0; 1:r1=0; 1:r3=2; y=1; z=1;
+0:r1=0; 1:r1=0; 1:r3=2; y=1; z=2;
+0:r1=0; 1:r1=0; 1:r3=2; y=2; z=1;
+0:r1=0; 1:r1=0; 1:r3=2; y=2; z=2;
+0:r1=0; 1:r1=1; 1:r3=1; y=1; z=1;
+0:r1=0; 1:r1=1; 1:r3=1; y=1; z=2;
+0:r1=0; 1:r1=1; 1:r3=1; y=2; z=1;
+0:r1=0; 1:r1=1; 1:r3=1; y=2; z=2;
+0:r1=0; 1:r1=1; 1:r3=2; y=2; z=1;
+0:r1=0; 1:r1=1; 1:r3=2; y=2; z=2;
+0:r1=0; 1:r1=2; 1:r3=1; y=1; z=1;
+0:r1=0; 1:r1=2; 1:r3=1; y=1; z=2;
+0:r1=0; 1:r1=2; 1:r3=2; y=1; z=1;
+0:r1=0; 1:r1=2; 1:r3=2; y=1; z=2;
+0:r1=0; 1:r1=2; 1:r3=2; y=2; z=1;
+0:r1=0; 1:r1=2; 1:r3=2; y=2; z=2;
+0:r1=1; 1:r1=0; 1:r3=0; y=1; z=1;
+0:r1=1; 1:r1=0; 1:r3=0; y=1; z=2;
+0:r1=1; 1:r1=0; 1:r3=0; y=2; z=1;
+0:r1=1; 1:r1=0; 1:r3=1; y=1; z=1;
+0:r1=1; 1:r1=0; 1:r3=1; y=1; z=2;
+0:r1=1; 1:r1=0; 1:r3=1; y=2; z=1;
+0:r1=1; 1:r1=0; 1:r3=2; y=1; z=1;
+0:r1=1; 1:r1=0; 1:r3=2; y=1; z=2;
+0:r1=1; 1:r1=0; 1:r3=2; y=2; z=1;
+0:r1=1; 1:r1=1; 1:r3=1; y=1; z=1;
+0:r1=1; 1:r1=1; 1:r3=1; y=1; z=2;
+0:r1=1; 1:r1=1; 1:r3=1; y=2; z=1;
+0:r1=1; 1:r1=1; 1:r3=2; y=2; z=1;
+0:r1=1; 1:r1=2; 1:r3=1; y=1; z=1;
+0:r1=1; 1:r1=2; 1:r3=1; y=1; z=2;
+0:r1=1; 1:r1=2; 1:r3=2; y=1; z=1;
+0:r1=1; 1:r1=2; 1:r3=2; y=1; z=2;
+0:r1=1; 1:r1=2; 1:r3=2; y=2; z=1;
+No
+Witnesses
+Positive: 0 Negative: 42
+Condition exists (y=2 /\ z=2 /\ 0:r1=1 /\ 1:r1=1 /\ 1:r3=1)
+Observation safe085 Never 0 42
+Hash=2f651589ba8f721af2223a52803b47bb
+

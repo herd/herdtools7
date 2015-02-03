@@ -1,0 +1,161 @@
+Test S+PPO310 Allowed
+States 3
+1:R0=0; x=1;
+1:R0=0; x=2;
+1:R0=1; x=1;
+No
+Witnesses
+Positive: 0 Negative: 4
+Condition exists (x=2 /\ 1:R0=1)
+Observation S+PPO310 Never 0 4
+Hash=249af98bb602b523ad78d485d07adbd5
+
+Test S+dmb+fri-rfi-addr-ctrl-rfi-ctrl Allowed
+States 7
+1:R0=0; 1:R2=1; 1:R6=1; x=1; y=1;
+1:R0=0; 1:R2=2; 1:R6=1; x=1; y=1;
+1:R0=0; 1:R2=2; 1:R6=1; x=1; y=2;
+1:R0=0; 1:R2=2; 1:R6=1; x=2; y=1;
+1:R0=0; 1:R2=2; 1:R6=1; x=2; y=2;
+1:R0=1; 1:R2=2; 1:R6=1; x=1; y=2;
+1:R0=1; 1:R2=2; 1:R6=1; x=2; y=2;
+Ok
+Witnesses
+Positive: 1 Negative: 6
+Condition exists (x=2 /\ y=2 /\ 1:R0=1 /\ 1:R2=2 /\ 1:R6=1)
+Observation S+dmb+fri-rfi-addr-ctrl-rfi-ctrl Sometimes 1 6
+Hash=8ce2391cee9f1e4a172dd2ff9e3fce1c
+
+Test S+dmb+pos-fri-rfi-addr-addr Allowed
+States 9
+1:R0=0; 1:R1=0; 1:R3=1; x=1; y=1;
+1:R0=0; 1:R1=0; 1:R3=2; x=1; y=1;
+1:R0=0; 1:R1=0; 1:R3=2; x=1; y=2;
+1:R0=0; 1:R1=0; 1:R3=2; x=2; y=1;
+1:R0=0; 1:R1=0; 1:R3=2; x=2; y=2;
+1:R0=0; 1:R1=1; 1:R3=2; x=1; y=2;
+1:R0=0; 1:R1=1; 1:R3=2; x=2; y=2;
+1:R0=1; 1:R1=1; 1:R3=2; x=1; y=2;
+1:R0=1; 1:R1=1; 1:R3=2; x=2; y=2;
+Ok
+Witnesses
+Positive: 1 Negative: 8
+Condition exists (x=2 /\ y=2 /\ 1:R0=1 /\ 1:R1=1 /\ 1:R3=2)
+Observation S+dmb+pos-fri-rfi-addr-addr Sometimes 1 8
+Hash=34d5d75010d3124092453f395a0556b2
+
+Test SB+dmb+po Allowed
+States 4
+0:R1=0; 1:R1=0;
+0:R1=0; 1:R1=1;
+0:R1=1; 1:R1=0;
+0:R1=1; 1:R1=1;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (0:R1=0 /\ 1:R1=0)
+Observation SB+dmb+po Sometimes 1 3
+Hash=a2255ee2734fc9743ed62237e2f05f58
+
+Test W+RWC+dsb+dmb.st+po Allowed
+States 8
+1:R0=0; 1:R1=0; 2:R1=0;
+1:R0=0; 1:R1=0; 2:R1=1;
+1:R0=0; 1:R1=1; 2:R1=0;
+1:R0=0; 1:R1=1; 2:R1=1;
+1:R0=1; 1:R1=0; 2:R1=0;
+1:R0=1; 1:R1=0; 2:R1=1;
+1:R0=1; 1:R1=1; 2:R1=0;
+1:R0=1; 1:R1=1; 2:R1=1;
+Ok
+Witnesses
+Positive: 1 Negative: 7
+Condition exists (1:R0=1 /\ 1:R1=0 /\ 2:R1=0)
+Observation W+RWC+dsb+dmb.st+po Sometimes 1 7
+Hash=757b7a74fd46eb47778e4e5c57acbd9a
+
+Test WRC+ctrlisb+ctrl Allowed
+States 8
+1:R0=0; 2:R0=0; 2:R1=0;
+1:R0=0; 2:R0=0; 2:R1=1;
+1:R0=0; 2:R0=1; 2:R1=0;
+1:R0=0; 2:R0=1; 2:R1=1;
+1:R0=1; 2:R0=0; 2:R1=0;
+1:R0=1; 2:R0=0; 2:R1=1;
+1:R0=1; 2:R0=1; 2:R1=0;
+1:R0=1; 2:R0=1; 2:R1=1;
+Ok
+Witnesses
+Positive: 1 Negative: 7
+Condition exists (1:R0=1 /\ 2:R0=1 /\ 2:R1=0)
+Observation WRC+ctrlisb+ctrl Sometimes 1 7
+Hash=703ecb0aedc1a047ada574758a273328
+
+Test WRW+WR+addr+dmb.st Allowed
+States 8
+1:R0=0; 2:R1=0; y=1;
+1:R0=0; 2:R1=0; y=2;
+1:R0=0; 2:R1=1; y=1;
+1:R0=0; 2:R1=1; y=2;
+1:R0=1; 2:R1=0; y=1;
+1:R0=1; 2:R1=0; y=2;
+1:R0=1; 2:R1=1; y=1;
+1:R0=1; 2:R1=1; y=2;
+Ok
+Witnesses
+Positive: 1 Negative: 7
+Condition exists (y=2 /\ 1:R0=1 /\ 2:R1=0)
+Observation WRW+WR+addr+dmb.st Sometimes 1 7
+Hash=57219f98029b853e309c88e1869c5b55
+
+Test Z6.0+dmb+isb+isb Allowed
+States 8
+1:R0=0; 2:R1=0; z=1;
+1:R0=0; 2:R1=0; z=2;
+1:R0=0; 2:R1=1; z=1;
+1:R0=0; 2:R1=1; z=2;
+1:R0=1; 2:R1=0; z=1;
+1:R0=1; 2:R1=0; z=2;
+1:R0=1; 2:R1=1; z=1;
+1:R0=1; 2:R1=1; z=2;
+Ok
+Witnesses
+Positive: 1 Negative: 7
+Condition exists (z=2 /\ 1:R0=1 /\ 2:R1=0)
+Observation Z6.0+dmb+isb+isb Sometimes 1 7
+Hash=b3c9173528e2f566664b9a2d82d37290
+
+Test Z6.1+dmb+dsb.st+dsb.st Allowed
+States 8
+2:R0=0; x=1; y=1;
+2:R0=0; x=1; y=2;
+2:R0=0; x=2; y=1;
+2:R0=0; x=2; y=2;
+2:R0=1; x=1; y=1;
+2:R0=1; x=1; y=2;
+2:R0=1; x=2; y=1;
+2:R0=1; x=2; y=2;
+Ok
+Witnesses
+Positive: 1 Negative: 7
+Condition exists (x=2 /\ y=2 /\ 2:R0=1)
+Observation Z6.1+dmb+dsb.st+dsb.st Sometimes 1 7
+Hash=2d7d133675e846f20c9d23a0427b557d
+
+Test Z6.4+dmb+dmb.st+dmb Allowed
+States 8
+1:R1=0; 2:R1=0; y=1;
+1:R1=0; 2:R1=0; y=2;
+1:R1=0; 2:R1=1; y=1;
+1:R1=0; 2:R1=1; y=2;
+1:R1=1; 2:R1=0; y=1;
+1:R1=1; 2:R1=0; y=2;
+1:R1=1; 2:R1=1; y=1;
+1:R1=1; 2:R1=1; y=2;
+Ok
+Witnesses
+Positive: 1 Negative: 7
+Condition exists (y=2 /\ 1:R1=0 /\ 2:R1=0)
+Observation Z6.4+dmb+dmb.st+dmb Sometimes 1 7
+Hash=abf6aeaf437e44c0921289f09a6d8d27
+

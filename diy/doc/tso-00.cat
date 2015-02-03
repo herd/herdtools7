@@ -1,0 +1,11 @@
+"A first attempt for TSO"
+
+(* Communication relations that order events*)
+let com-tso = rf | co | fr
+(* Program order that orders events *)
+let po-tso = WW(po) | RM(po)
+
+(* TSP global-happens-before *)
+let ghb = po-tso | com-tso
+acyclic ghb
+show ghb

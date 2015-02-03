@@ -1,0 +1,19 @@
+MIPS
+
+(* Uniproc check *)
+let com = rf | fr | co
+acyclic po-loc | com as uniproc
+
+(* Atomic *)
+empty atom & (fre;coe) as atomic
+
+(* ppo, choosing pso at the moment *)
+let sync = (po & (_ * SYNC)) ; po
+show sync
+let ppo = RR(po) | RW(po) | sync
+
+
+let ghb = ppo | rfe | fr | co
+
+acyclic ghb as pso
+

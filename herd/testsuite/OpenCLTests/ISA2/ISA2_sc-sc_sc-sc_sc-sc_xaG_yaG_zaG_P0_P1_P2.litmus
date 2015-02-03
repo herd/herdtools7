@@ -1,0 +1,26 @@
+OpenCL ISA2_sc-sc_sc-sc_sc-sc_xaG_yaG_zaG_P0_P1_P2
+                        
+{ 
+  [x]=0;
+  [y]=0;
+  [z]=0;
+}
+
+P0 (global atomic_int* x, global atomic_int* y, global atomic_int* z) {
+  atomic_store(x,1);
+  atomic_store(y,1);
+}
+
+P1 (global atomic_int* x, global atomic_int* y, global atomic_int* z) {
+  int r0 = atomic_load(y);
+  atomic_store(z,1);
+}
+
+P2 (global atomic_int* x, global atomic_int* y, global atomic_int* z) {
+  int r1 = atomic_load(z);
+  int r2 = atomic_load(x);
+}
+
+scopeTree
+(device (work_group P0 P1 P2))
+exists (1:r0=1 /\ 2:r1=1 /\ 2:r2=0)

@@ -1,0 +1,18 @@
+ARM WRW+WR+addr+dmb.st
+"Rfe DpAddrdW Wse DMB.STdWR Fre"
+Cycle=Rfe DpAddrdW Wse DMB.STdWR Fre
+Prefetch=0:x=T,1:x=F,1:y=W,2:y=F,2:x=T
+Com=Rf Ws Fr
+Orig=Rfe DpAddrdW Wse DMB.STdWR Fre
+{
+%x0=x;
+%x1=x; %y1=y;
+%y2=y; %x2=x;
+}
+ P0           | P1              | P2           ;
+ MOV R0,#1    | LDR R0,[%x1]    | MOV R0,#2    ;
+ STR R0,[%x0] | EOR R1,R0,R0    | STR R0,[%y2] ;
+              | MOV R2,#1       | DMB ST       ;
+              | STR R2,[R1,%y1] | LDR R1,[%x2] ;
+exists
+(y=2 /\ 1:R0=1 /\ 2:R1=0)

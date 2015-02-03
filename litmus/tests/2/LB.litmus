@@ -1,0 +1,23 @@
+C LB
+"PodRW Rfe PodRW Rfe"
+Cycle=Rfe PodRW Rfe PodRW
+Relax=
+Safe=Rfe PodRW
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Rf
+Orig=PodRW Rfe PodRW Rfe
+
+{}
+
+P0 (volatile int* y,volatile int* x) {
+  int r0 = *x;
+  *y = 1;
+}
+
+P1 (volatile int* y,volatile int* x) {
+  int r0 = *y;
+  *x = 1;
+}
+
+exists
+(0:r0=1 /\ 1:r0=1)

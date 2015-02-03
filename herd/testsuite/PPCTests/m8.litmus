@@ -1,0 +1,14 @@
+PPC m8  (PPCMEight)
+"LD;ST || LD;ST, hexa version (d tests in @xx)"
+{
+P0:r4=x ; P0:r5=y ; P0:r2=1 ;
+P1:r4=x ; P1:r5=y ; P1:r2=1 ;
+P2:r4=x ; P3:r5=y ;
+P2:r2=2 ; P3:r2=2 ;
+}
+
+P0           |P1           |P2           |P3           ;
+lwz r1,0(r4) |lwz r1,0(r5) |stw r2,0(r4) |stw r2,0(r5) ;
+stw r2,0(r5) |stw r2,0(r4) |             |             ;
+locations [0:r1 ; 1:r1 ; x ; y ; ]
+exists (0:r1=2 /\ 1:r1=2 /\ x=2 /\ y=2)

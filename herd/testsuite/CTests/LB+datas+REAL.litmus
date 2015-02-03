@@ -1,0 +1,17 @@
+C LB+datas+REAL
+"PodRWRlxRlx RfeRlxRlx PodRWRlxRlx RfeRlxRlx + REAL datas"
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Rf
+
+{}
+
+P0 (atomic_int* y,atomic_int* x) {
+  int r0 = atomic_load_explicit(x,memory_order_relaxed);
+  atomic_store_explicit(y,r0,memory_order_relaxed);
+}
+
+P1 (atomic_int* y,atomic_int* x) {
+  int r0 = atomic_load_explicit(y,memory_order_relaxed);
+  atomic_store_explicit(x,r0,memory_order_relaxed);
+}
+forall (0:r0=0 /\ 1:r0=0)

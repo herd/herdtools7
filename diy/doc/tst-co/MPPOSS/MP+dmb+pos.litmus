@@ -1,0 +1,31 @@
+ARM MP+dmb+pos
+"DMBsWW Rfe PosRR Fre"
+Cycle=Rfe PosRR Fre DMBsWW
+Relax=
+Safe=Rfe Fre PosRR DMBsWW
+Prefetch=
+Com=Rf Fr
+Orig=DMBsWW Rfe PosRR Fre
+{
+%x0=x;
+%x1=x;
+}
+ P0           | P1           ;
+ MOV R0,#1    | LDR R0,[%x1] ;
+ STR R0,[%x0] | LDR R1,[%x1] ;
+ DMB          |              ;
+ MOV R1,#2    |              ;
+ STR R1,[%x0] |              ;
+Observed
+    1:R0=0; 1:R1=0; x=1;
+and 1:R0=1; 1:R1=0; x=1;
+and 1:R0=2; 1:R1=0; x=1;
+and 1:R0=0; 1:R1=1; x=1;
+and 1:R0=1; 1:R1=1; x=1;
+and 1:R0=2; 1:R1=1; x=1;
+and 1:R0=0; 1:R1=2; x=1;
+and 1:R0=1; 1:R1=2; x=1;
+and 1:R0=2; 1:R1=2; x=1;
+and 1:R0=1; 1:R1=0; x=2;
+and 1:R0=2; 1:R1=0; x=2;
+and 1:R0=2; 1:R1=1; x=2;

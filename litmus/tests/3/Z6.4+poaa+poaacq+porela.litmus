@@ -1,0 +1,28 @@
+C Z6.4+poaa+poaacq+porela
+"PodWWAA WseAA PodWRAAcq FreAcqRel PodWRRelA FreAA"
+Cycle=FreAcqRel PodWRRelA FreAA PodWWAA WseAA PodWRAAcq
+Relax=
+Safe=PodWW PodWR FreAcqRel FreAA WseAA
+Prefetch=0:x=F,0:y=W,1:y=F,1:z=T,2:z=F,2:x=T
+Com=Ws Fr Fr
+Orig=PodWWAA WseAA PodWRAAcq FreAcqRel PodWRRelA FreAA
+
+{}
+
+P0 (atomic_int* y,atomic_int* x) {
+  atomic_store(x,1);
+  atomic_store(y,1);
+}
+
+P1 (atomic_int* z,atomic_int* y) {
+  atomic_store(y,2);
+  int r0 = atomic_load_explicit(z,memory_order_acquire);
+}
+
+P2 (atomic_int* z,atomic_int* x) {
+  atomic_store_explicit(z,1,memory_order_release);
+  int r0 = atomic_load(x);
+}
+
+exists
+(y=2 /\ 1:r0=0 /\ 2:r0=0)

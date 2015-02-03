@@ -1,0 +1,23 @@
+C 2+2W+porlxrlxs
+"PodWWRlxRlx WseRlxRlx PodWWRlxRlx WseRlxRlx"
+Cycle=WseRlxRlx PodWWRlxRlx WseRlxRlx PodWWRlxRlx
+Relax=
+Safe=PodWW WseRlxRlx
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Ws Ws
+Orig=PodWWRlxRlx WseRlxRlx PodWWRlxRlx WseRlxRlx
+
+{}
+
+P0 (atomic_int* y,atomic_int* x) {
+  atomic_store_explicit(x,2,memory_order_relaxed);
+  atomic_store_explicit(y,1,memory_order_relaxed);
+}
+
+P1 (atomic_int* y,atomic_int* x) {
+  atomic_store_explicit(y,2,memory_order_relaxed);
+  atomic_store_explicit(x,1,memory_order_relaxed);
+}
+
+exists
+(x=2 /\ y=2)

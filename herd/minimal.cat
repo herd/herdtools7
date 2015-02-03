@@ -1,0 +1,5 @@
+"Minimal model"
+show mfence, lfence, sfence
+show sync, lwsync, eieio
+show dmb, dsb, dsb.st, dmb.st
+show isb, isync

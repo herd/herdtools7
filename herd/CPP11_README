@@ -1,0 +1,50 @@
+This file describes the preliminary C++11 model in Herd.
+
+The model can be found in cpp11.cat. The syntax is quite close
+to OCaml. If you use emacs, see the README file for some instructions
+you can put into your .emacs file to improve the syntax
+highlighting.
+
+For a description of Herd, see the paper at:
+http://diy.inria.fr/herd/
+
+-----------------------------------------------------------------
+Examples
+
+Some examples (mostly based around the MP litmus test) can be found
+in testsuite/CPP11Tests.
+
+to run the examples do:
+
+./herd -model cpp11.cat example.litmus
+
+to produce a .dot output, add the flags:
+
+-o <directory to place .dot file> -show prop -web
+
+In examples with data races, you may change the line in cpp11.cat from
+"empty dr"
+to
+"show dr"
+
+then examples with data races are allowed, and the racing events
+are shown in the .dot output.
+
+Here are the examples described:
+
+MP_relaxed.litmus - Performs MP with relaxed atomics, all outcomes
+                    are observable
+
+MP_dr.litmus - Same as MP_relaxed.litmus with first store and last load
+               changed to non-atomics so that they race. No executions
+	       are allowed because they all contain a data race.
+
+MP_relacq.litmus - Same as MP_dr.litmus with atomics turned to release acquire. 
+		 The only execution that doesn't contain a data-race is 
+		 when both loads return 1.
+
+MP_relseq.litmus - Same as MP_relacq.litmus but with a release sequence. 
+                   In this example, the dot output shows the appropriate 
+		   sw edge even when the load reads from a store in the release
+		   sequence.
+

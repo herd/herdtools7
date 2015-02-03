@@ -1,0 +1,27 @@
+C WRW+2W+popa+poap
+"Rfe PodRWPA WseAA PodWWAP Wse"
+Cycle=Rfe PodRWPA WseAA PodWWAP Wse
+Relax=
+Safe=Rfe Wse PodWW PodRW WseAA
+Prefetch=1:x=F,1:y=W,2:y=F,2:x=W
+Com=Rf Ws Ws
+Orig=Rfe PodRWPA WseAA PodWWAP Wse
+
+{}
+
+P0 (volatile int* x) {
+  *x = 2;
+}
+
+P1 (atomic_int* y,volatile int* x) {
+  int r0 = *x;
+  atomic_store(y,1);
+}
+
+P2 (atomic_int* y,volatile int* x) {
+  atomic_store(y,2);
+  *x = 1;
+}
+
+exists
+(x=2 /\ y=2 /\ 1:r0=2)

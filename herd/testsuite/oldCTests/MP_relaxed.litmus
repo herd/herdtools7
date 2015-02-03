@@ -1,0 +1,11 @@
+CPP11 MP_relaxed
+"Fre PodWR Fre PodWR"
+{ x=0; y=0; }
+ P0                          | P1                      ;
+ x.store(1,mo_relaxed)       | r1 = y.load(mo_relaxed) ;
+ y.store(1,mo_relaxed)       | r2 = x.load(mo_relaxed) ; 
+
+LK
+x:atomic, y:atomic
+
+exists (1:r1 = 1 /\ 1:r2 = 0)

@@ -1,0 +1,28 @@
+C ISA2+poap+poprlx+porlxa
+"PodWWAP Rfe PodRWPRlx RfeRlxRlx PodRRRlxA FreAA"
+Cycle=Rfe PodRWPRlx RfeRlxRlx PodRRRlxA FreAA PodWWAP
+Relax=
+Safe=Rfe PodWW PodRW PodRR FreAA RfeRlxRlx
+Prefetch=0:x=F,0:y=W,1:y=F,1:z=W,2:z=F,2:x=T
+Com=Rf Rf Fr
+Orig=PodWWAP Rfe PodRWPRlx RfeRlxRlx PodRRRlxA FreAA
+
+{}
+
+P0 (volatile int* y,atomic_int* x) {
+  atomic_store(x,1);
+  *y = 1;
+}
+
+P1 (atomic_int* z,volatile int* y) {
+  int r0 = *y;
+  atomic_store_explicit(z,1,memory_order_relaxed);
+}
+
+P2 (atomic_int* z,atomic_int* x) {
+  int r0 = atomic_load_explicit(z,memory_order_relaxed);
+  int r1 = atomic_load(x);
+}
+
+exists
+(1:r0=1 /\ 2:r0=1 /\ 2:r1=0)

@@ -1,0 +1,42 @@
+This is a simple example of diy/litmus usage for an x86 machine.
+The example  is described in diy manual 
+<http://diy.inria.fr/doc/gen.html#test2>
+
+** Compile and install diy and litmus (cf. ../INSTALL.txt),
+   on x86 machine with at least 2 cores.
+
+** Build the tests with diy:
+
+ ( cd podwr && diy -conf x86-podwr.conf )
+ ( cd rfi && diy -conf x86-rfi.conf )
+ ( cd safe &&  diy -conf x86-safe.conf )
+
+
+** Run the tests with litmus
+If the machine has 4 cores or more, the following
+commands should execute smoothly.
+
+ litmus rfi/@all > rfi/rfi.00
+ litmus podwr/@all > podwr/podwr.00
+ litmus safe/@all > safe/safe.00
+
+If the machine has 2 cores, try:
+
+ litmus -a 2 -limit true rfi/@all > rfi/rfi.00
+ litmus -a 2 -limit true podwr/@all > podwr/podwr.00
+ litmus -a 2 -limit true safe/@all > safe/safe.00
+
+** Check relaxations with readRelax
+
+  readRelax  */*.00
+
+  ....
+
+ ** Relaxation summary **
+ {Rfi} With {Fre, Wse, PodWW, PodRR} {Fre, PodRR}
+ {PodWR} With {Fre}
+
+If you are lucky, you should see that Rfi and PodWR are
+relaxed the x86.
+
+

@@ -1,0 +1,77 @@
+\documentclass{article}
+\usepackage{a4}
+\usepackage{fullpage}
+\usepackage{url}
+\urldef{\urlfamilies}{\url}{http://www.cl.cam.ac.uk/~pes20/ppc-supplemental/test6.pdf}
+\urldef{\urlgraphviz}{\url}{http://graphviz.org/}
+\urldef{\urlgv}{\url}{http://www.gnu.org/software/gv/}
+\usepackage{hevea}
+\usepackage{moreverb}
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage{macros}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{array}
+\usepackage{syntaxdef}
+\title{A \prog{don't (diy)} tutorial}
+\author{Version \version}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\diy{} is a tool suite for testing shared memory models.  We
+provide several tools, \prog{litmus} (Part~\ref{part:litmus}) for running tests,
+\diy{} generators (Part~\ref{part:diy}) for producing tests from concise
+specifications, and
+\herd{} (Part~\ref{part:herd}) for simulating memory models.
+In Part~\ref{part:examples} we describe
+a few concrete experiments, illustrating frequent usage patterns of
+\diy{} generators and of \litmus.
+Finally (Part~\ref{part:auto}), we briefly
+describe our experimental \dont{} tool
+for either checking the
+conformance of a machine to an architecture or exploring the memory model of a
+given machine automatically.
+
+The software is written in
+\footahref{http://caml.inria.fr/ocaml/}{Objective Caml}, and released as
+sources.  The web site of~\diy{} is
+\ahrefurl{\url{http://diy.inria.fr/}}, authors can be contacted at
+\texttt{diy-devel@inria.fr}.
+This software is released under the terms of the Lesser GNU Public License.
+
+\begin{htmlonly}
+\begin{quote}
+This document in \ahref{diy.ps}{\sc Postscript} and \ahref{diy.pdf}{{\sc Pdf}}.
+\end{quote}
+\end{htmlonly}
+
+\cutdef{section}
+\tableofcontents
+\cutend
+
+\clearpage
+\part{Running\label{part:litmus} tests with \prog{litmus}}
+\input{litmus.tex}
+
+\clearpage
+\part{Generating\label{part:diy} tests}
+\input{gen.tex}
+
+\clearpage
+\part{Simulating\label{part:herd} memory models with \herd}
+\input{herd.tex}
+
+\clearpage
+\part{Some \label{part:examples} examples}
+\input{examples.tex}
+
+\clearpage
+\part{Automating\label{part:auto} the testing process}
+\input{auto.tex}
+
+\bibliographystyle{plain}
+\bibliography{jade}
+\end{document}

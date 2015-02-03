@@ -1,0 +1,26 @@
+digraph G {
+
+fontname="Arial";
+
+
+/* the unlocked events */
+eiid0 [label="a: Rx=1", shape="none", fontsize=12, pos="1.000000,0.750000!", fixedsize="true", height="0.166667", width="0.666667"];
+eiid1 [label="b: Wy=1", shape="none", fontsize=12, pos="1.000000,0.000000!", fixedsize="true", height="0.166667", width="0.666667"];
+eiid2 [label="c: Ry=1", shape="none", fontsize=12, pos="2.000000,0.750000!", fixedsize="true", height="0.166667", width="0.666667"];
+eiid3 [label="d: Wx=1", shape="none", fontsize=12, pos="2.000000,0.000000!", fixedsize="true", height="0.166667", width="0.666667"];
+
+/* the intra_causality_data edges */
+
+
+/* the intra_causality_control edges */
+
+/* the poi edges */
+eiid0 -> eiid1 [label="po", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+eiid2 -> eiid3 [label="po", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+/* the rfmap edges */
+eiid3 -> eiid0 [label="rf", color="red", fontcolor="red", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+eiid1 -> eiid2 [label="rf", color="red", fontcolor="red", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+
+
+/* The viewed-before edges */
+}

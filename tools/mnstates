@@ -1,0 +1,4 @@
+#! /bin/sh -
+NAME=$(mnames -src false $1)
+NSTATES=$(herd -model minimal $1 | awk '/States/ {print $2}')
+echo $NAME $NSTATES

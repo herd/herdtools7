@@ -1,0 +1,484 @@
+Wed Mar 14 14:33:43 CET 2012
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for 2+2W.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC 2+2W
+"PodWW Wse PodWW Wse"
+
+{0:r2=x; 0:r4=y; 1:r2=y; 1:r4=x;}
+
+ P0           | P1           ;
+ li r1,2      | li r1,2      ;
+ stw r1,0(r2) | stw r1,0(r2) ;
+ li r3,1      | li r3,1      ;
+ stw r3,0(r4) | stw r3,0(r4) ;
+
+exists (x=2 /\ y=2)
+Generated assembler
+	_litmus_P0_0_: li 4,2
+	_litmus_P0_1_: stw 4,0(11)
+	_litmus_P0_2_: li 3,1
+	_litmus_P0_3_: stw 3,0(9)
+	_litmus_P1_0_: li 4,2
+	_litmus_P1_1_: stw 4,0(11)
+	_litmus_P1_2_: li 3,1
+	_litmus_P1_3_: stw 3,0(9)
+Test 2+2W Allowed
+Histogram (4 states)
+3033020:>x=1; y=1;
+77433448:>x=2; y=1;
+77361576:>x=1; y=2;
+2171956:>x=2; y=2;
+Ok
+
+Witnesses
+Positive: 2171956, Negative: 157828044
+Condition exists (x=2 /\ y=2) is validated
+Hash=27b1cdc06b923a5b633190f69bce4f3b
+Observation 2+2W Sometimes 2171956 157828044
+Time 2+2W 5.86
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for 2+2WObs.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC 2+2WObs
+"PodWW Wse PodWW Wse"
+
+{0:r2=x; 1:r2=y; 2:r2=x; 2:r4=y; 3:r2=y; 3:r4=x;}
+
+ P0           | P1           | P2           | P3           ;
+ lwz r1,0(r2) | lwz r1,0(r2) | li r1,2      | li r1,2      ;
+ lwz r3,0(r2) | lwz r3,0(r2) | stw r1,0(r2) | stw r1,0(r2) ;
+              |              | li r3,1      | li r3,1      ;
+              |              | stw r3,0(r4) | stw r3,0(r4) ;
+
+exists (0:r1=1 /\ 0:r3=2 /\ 1:r1=1 /\ 1:r3=2)
+Generated assembler
+	_litmus_P0_0_: lwz 3,0(9)
+	_litmus_P0_1_: lwz 11,0(9)
+	_litmus_P2_0_: li 5,2
+	_litmus_P2_1_: stw 5,0(11)
+	_litmus_P2_2_: li 4,1
+	_litmus_P2_3_: stw 4,0(9)
+	_litmus_P1_0_: lwz 4,0(9)
+	_litmus_P1_1_: lwz 11,0(9)
+	_litmus_P3_0_: li 5,2
+	_litmus_P3_1_: stw 5,0(11)
+	_litmus_P3_2_: li 4,1
+	_litmus_P3_3_: stw 4,0(9)
+Test 2+2WObs Allowed
+Histogram (48 states)
+15703234:>0:r1=0; 0:r3=0; 1:r1=0; 1:r3=0;
+34830 :>0:r1=0; 0:r3=1; 1:r1=0; 1:r3=0;
+6285152:>0:r1=1; 0:r3=1; 1:r1=0; 1:r3=0;
+10924 :>0:r1=2; 0:r3=1; 1:r1=0; 1:r3=0;
+33502 :>0:r1=0; 0:r3=2; 1:r1=0; 1:r3=0;
+9977  :>0:r1=1; 0:r3=2; 1:r1=0; 1:r3=0;
+5771531:>0:r1=2; 0:r3=2; 1:r1=0; 1:r3=0;
+37392 :>0:r1=0; 0:r3=0; 1:r1=0; 1:r3=1;
+22    :>0:r1=0; 0:r3=1; 1:r1=0; 1:r3=1;
+15104 :>0:r1=1; 0:r3=1; 1:r1=0; 1:r3=1;
+60    :>0:r1=2; 0:r3=1; 1:r1=0; 1:r3=1;
+127   :>0:r1=0; 0:r3=2; 1:r1=0; 1:r3=1;
+14    :>0:r1=1; 0:r3=2; 1:r1=0; 1:r3=1;
+13055 :>0:r1=2; 0:r3=2; 1:r1=0; 1:r3=1;
+6065424:>0:r1=0; 0:r3=0; 1:r1=1; 1:r3=1;
+16188 :>0:r1=0; 0:r3=1; 1:r1=1; 1:r3=1;
+6790934:>0:r1=1; 0:r3=1; 1:r1=1; 1:r3=1;
+15988 :>0:r1=2; 0:r3=1; 1:r1=1; 1:r3=1;
+12169 :>0:r1=0; 0:r3=2; 1:r1=1; 1:r3=1;
+21443 :>0:r1=1; 0:r3=2; 1:r1=1; 1:r3=1;
+13270338:>0:r1=2; 0:r3=2; 1:r1=1; 1:r3=1;
+13139 :>0:r1=0; 0:r3=0; 1:r1=2; 1:r3=1;
+54    :>0:r1=0; 0:r3=1; 1:r1=2; 1:r3=1;
+17610 :>0:r1=1; 0:r3=1; 1:r1=2; 1:r3=1;
+1     :>0:r1=2; 0:r3=1; 1:r1=2; 1:r3=1;
+5     :>0:r1=0; 0:r3=2; 1:r1=2; 1:r3=1;
+539   :>0:r1=1; 0:r3=2; 1:r1=2; 1:r3=1;
+24252 :>0:r1=2; 0:r3=2; 1:r1=2; 1:r3=1;
+36649 :>0:r1=0; 0:r3=0; 1:r1=0; 1:r3=2;
+330   :>0:r1=0; 0:r3=1; 1:r1=0; 1:r3=2;
+16497 :>0:r1=1; 0:r3=1; 1:r1=0; 1:r3=2;
+7     :>0:r1=2; 0:r3=1; 1:r1=0; 1:r3=2;
+30    :>0:r1=0; 0:r3=2; 1:r1=0; 1:r3=2;
+131   :>0:r1=1; 0:r3=2; 1:r1=0; 1:r3=2;
+21835 :>0:r1=2; 0:r3=2; 1:r1=0; 1:r3=2;
+13662 :>0:r1=0; 0:r3=0; 1:r1=1; 1:r3=2;
+4     :>0:r1=0; 0:r3=1; 1:r1=1; 1:r3=2;
+25732 :>0:r1=1; 0:r3=1; 1:r1=1; 1:r3=2;
+619   :>0:r1=2; 0:r3=1; 1:r1=1; 1:r3=2;
+65    :>0:r1=0; 0:r3=2; 1:r1=1; 1:r3=2;
+18877 :>0:r1=2; 0:r3=2; 1:r1=1; 1:r3=2;
+5595743:>0:r1=0; 0:r3=0; 1:r1=2; 1:r3=2;
+12858 :>0:r1=0; 0:r3=1; 1:r1=2; 1:r3=2;
+13079324:>0:r1=1; 0:r3=1; 1:r1=2; 1:r3=2;
+20914 :>0:r1=2; 0:r3=1; 1:r1=2; 1:r3=2;
+14433 :>0:r1=0; 0:r3=2; 1:r1=2; 1:r3=2;
+16680 :>0:r1=1; 0:r3=2; 1:r1=2; 1:r3=2;
+6962602:>0:r1=2; 0:r3=2; 1:r1=2; 1:r3=2;
+No
+
+Witnesses
+Positive: 0, Negative: 80000000
+Condition exists (0:r1=1 /\ 0:r3=2 /\ 1:r1=1 /\ 1:r3=2) is NOT validated
+Hash=85248538812069f1cc923465d3af33ef
+Com=Ws Ws
+Orig=PodWW Wse PodWW Wse
+Observation 2+2WObs Never 0 80000000
+Time 2+2WObs 10.35
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for 2+2WObsFenced.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC 2+2WObsFenced
+"PodWW Wse PodWW Wse"
+
+{0:r2=x; 1:r2=y; 2:r2=x; 2:r4=y; 3:r2=y; 3:r4=x;}
+
+ P0           | P1           | P2           | P3           ;
+ lwz r1,0(r2) | lwz r1,0(r2) | li r1,2      | li r1,2      ;
+ sync         | sync         | stw r1,0(r2) | stw r1,0(r2) ;
+ lwz r3,0(r2) | lwz r3,0(r2) | li r3,1      | li r3,1      ;
+              |              | stw r3,0(r4) | stw r3,0(r4) ;
+
+exists (0:r1=1 /\ 0:r3=2 /\ 1:r1=1 /\ 1:r3=2)
+Generated assembler
+	_litmus_P0_0_: lwz 3,0(9)
+	_litmus_P0_1_: sync
+	_litmus_P0_2_: lwz 11,0(9)
+	_litmus_P2_0_: li 5,2
+	_litmus_P2_1_: stw 5,0(11)
+	_litmus_P2_2_: li 4,1
+	_litmus_P2_3_: stw 4,0(9)
+	_litmus_P1_0_: lwz 4,0(9)
+	_litmus_P1_1_: sync
+	_litmus_P1_2_: lwz 11,0(9)
+	_litmus_P3_0_: li 5,2
+	_litmus_P3_1_: stw 5,0(11)
+	_litmus_P3_2_: li 4,1
+	_litmus_P3_3_: stw 4,0(9)
+Test 2+2WObsFenced Allowed
+Histogram (49 states)
+8032485:>0:r1=0; 0:r3=0; 1:r1=0; 1:r3=0;
+1903363:>0:r1=0; 0:r3=1; 1:r1=0; 1:r3=0;
+3391383:>0:r1=1; 0:r3=1; 1:r1=0; 1:r3=0;
+376555:>0:r1=2; 0:r3=1; 1:r1=0; 1:r3=0;
+1468244:>0:r1=0; 0:r3=2; 1:r1=0; 1:r3=0;
+347579:>0:r1=1; 0:r3=2; 1:r1=0; 1:r3=0;
+2815901:>0:r1=2; 0:r3=2; 1:r1=0; 1:r3=0;
+1859867:>0:r1=0; 0:r3=0; 1:r1=0; 1:r3=1;
+437198:>0:r1=0; 0:r3=1; 1:r1=0; 1:r3=1;
+1136793:>0:r1=1; 0:r3=1; 1:r1=0; 1:r3=1;
+187341:>0:r1=2; 0:r3=1; 1:r1=0; 1:r3=1;
+693176:>0:r1=0; 0:r3=2; 1:r1=0; 1:r3=1;
+48923 :>0:r1=1; 0:r3=2; 1:r1=0; 1:r3=1;
+1046408:>0:r1=2; 0:r3=2; 1:r1=0; 1:r3=1;
+3158442:>0:r1=0; 0:r3=0; 1:r1=1; 1:r3=1;
+1139190:>0:r1=0; 0:r3=1; 1:r1=1; 1:r3=1;
+4246798:>0:r1=1; 0:r3=1; 1:r1=1; 1:r3=1;
+714032:>0:r1=2; 0:r3=1; 1:r1=1; 1:r3=1;
+944391:>0:r1=0; 0:r3=2; 1:r1=1; 1:r3=1;
+1073698:>0:r1=1; 0:r3=2; 1:r1=1; 1:r3=1;
+12023774:>0:r1=2; 0:r3=2; 1:r1=1; 1:r3=1;
+355936:>0:r1=0; 0:r3=0; 1:r1=2; 1:r3=1;
+173756:>0:r1=0; 0:r3=1; 1:r1=2; 1:r3=1;
+689647:>0:r1=1; 0:r3=1; 1:r1=2; 1:r3=1;
+1076  :>0:r1=2; 0:r3=1; 1:r1=2; 1:r3=1;
+44215 :>0:r1=0; 0:r3=2; 1:r1=2; 1:r3=1;
+349726:>0:r1=1; 0:r3=2; 1:r1=2; 1:r3=1;
+1122707:>0:r1=2; 0:r3=2; 1:r1=2; 1:r3=1;
+1607438:>0:r1=0; 0:r3=0; 1:r1=0; 1:r3=2;
+644372:>0:r1=0; 0:r3=1; 1:r1=0; 1:r3=2;
+1023551:>0:r1=1; 0:r3=1; 1:r1=0; 1:r3=2;
+57687 :>0:r1=2; 0:r3=1; 1:r1=0; 1:r3=2;
+237488:>0:r1=0; 0:r3=2; 1:r1=0; 1:r3=2;
+179407:>0:r1=1; 0:r3=2; 1:r1=0; 1:r3=2;
+960690:>0:r1=2; 0:r3=2; 1:r1=0; 1:r3=2;
+337928:>0:r1=0; 0:r3=0; 1:r1=1; 1:r3=2;
+42263 :>0:r1=0; 0:r3=1; 1:r1=1; 1:r3=2;
+1079149:>0:r1=1; 0:r3=1; 1:r1=1; 1:r3=2;
+363466:>0:r1=2; 0:r3=1; 1:r1=1; 1:r3=2;
+175789:>0:r1=0; 0:r3=2; 1:r1=1; 1:r3=2;
+326   :>0:r1=1; 0:r3=2; 1:r1=1; 1:r3=2;
+702775:>0:r1=2; 0:r3=2; 1:r1=1; 1:r3=2;
+2975196:>0:r1=0; 0:r3=0; 1:r1=2; 1:r3=2;
+922400:>0:r1=0; 0:r3=1; 1:r1=2; 1:r3=2;
+11948197:>0:r1=1; 0:r3=1; 1:r1=2; 1:r3=2;
+1163729:>0:r1=2; 0:r3=1; 1:r1=2; 1:r3=2;
+896282:>0:r1=0; 0:r3=2; 1:r1=2; 1:r3=2;
+722158:>0:r1=1; 0:r3=2; 1:r1=2; 1:r3=2;
+4177105:>0:r1=2; 0:r3=2; 1:r1=2; 1:r3=2;
+Ok
+
+Witnesses
+Positive: 326, Negative: 79999674
+Condition exists (0:r1=1 /\ 0:r3=2 /\ 1:r1=1 /\ 1:r3=2) is validated
+Hash=8aae46f04663c0111b6a120f76bbc42b
+Observation 2+2WObsFenced Sometimes 326 79999674
+Time 2+2WObsFenced 10.86
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for 2+2WObsLoop.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC 2+2WObsLoop
+"PodWW Wse PodWW Wse"
+
+{0:r2=x; 1:r2=y; 2:r2=x; 2:r4=y; 3:r2=y; 3:r4=x;}
+
+ P0            | P1            | P2           | P3           ;
+ L00:          | L03:          | li r1,2      | li r1,2      ;
+ lwz r1,0(r2)  | lwz r1,0(r2)  | stw r1,0(r2) | stw r1,0(r2) ;
+ cmpwi r1,0    | cmpwi r1,0    | li r3,1      | li r3,1      ;
+ beq  L00      | beq  L03      | stw r3,0(r4) | stw r3,0(r4) ;
+ li r4,200     | li r4,200     |              |              ;
+ L01:          | L04:          |              |              ;
+ lwz r3,0(r2)  | lwz r3,0(r2)  |              |              ;
+ cmpw r3,r1    | cmpw r3,r1    |              |              ;
+ bne  L02      | bne  L05      |              |              ;
+ addi r4,r4,-1 | addi r4,r4,-1 |              |              ;
+ cmpwi r4,0    | cmpwi r4,0    |              |              ;
+ bne  L01      | bne  L04      |              |              ;
+ L02:          | L05:          |              |              ;
+
+exists (0:r1=1 /\ 0:r3=2 /\ 1:r1=1 /\ 1:r3=2)
+Generated assembler
+	_litmus_P0_0_: LitL00:
+	_litmus_P0_1_: lwz 31,0(9)
+	_litmus_P0_2_: cmpwi 31,0
+	_litmus_P0_3_: beq LitL00
+	_litmus_P0_4_: li 10,200
+	_litmus_P0_5_: LitL01:
+	_litmus_P0_6_: lwz 11,0(9)
+	_litmus_P0_7_: cmpw 11,31
+	_litmus_P0_8_: bne LitL02
+	_litmus_P0_9_: addi 10,10,-1
+	_litmus_P0_10_: cmpwi 10,0
+	_litmus_P0_11_: bne LitL01
+	_litmus_P0_12_: LitL02:
+	_litmus_P2_0_: li 5,2
+	_litmus_P2_1_: stw 5,0(11)
+	_litmus_P2_2_: li 4,1
+	_litmus_P2_3_: stw 4,0(9)
+	_litmus_P1_0_: LitL03:
+	_litmus_P1_1_: lwz 3,0(9)
+	_litmus_P1_2_: cmpwi 3,0
+	_litmus_P1_3_: beq LitL03
+	_litmus_P1_4_: li 10,200
+	_litmus_P1_5_: LitL04:
+	_litmus_P1_6_: lwz 11,0(9)
+	_litmus_P1_7_: cmpw 11,3
+	_litmus_P1_8_: bne LitL05
+	_litmus_P1_9_: addi 10,10,-1
+	_litmus_P1_10_: cmpwi 10,0
+	_litmus_P1_11_: bne LitL04
+	_litmus_P1_12_: LitL05:
+	_litmus_P3_0_: li 5,2
+	_litmus_P3_1_: stw 5,0(11)
+	_litmus_P3_2_: li 4,1
+	_litmus_P3_3_: stw 4,0(9)
+Test 2+2WObsLoop Allowed
+Histogram (16 states)
+3466876:>0:r1=1; 0:r3=1; 1:r1=1; 1:r3=1;
+437455:>0:r1=2; 0:r3=1; 1:r1=1; 1:r3=1;
+5303289:>0:r1=1; 0:r3=2; 1:r1=1; 1:r3=1;
+17956535:>0:r1=2; 0:r3=2; 1:r1=1; 1:r3=1;
+747631:>0:r1=1; 0:r3=1; 1:r1=2; 1:r3=1;
+63559 :>0:r1=2; 0:r3=1; 1:r1=2; 1:r3=1;
+7463571:>0:r1=1; 0:r3=2; 1:r1=2; 1:r3=1;
+5283124:>0:r1=2; 0:r3=2; 1:r1=2; 1:r3=1;
+5146716:>0:r1=1; 0:r3=1; 1:r1=1; 1:r3=2;
+7612496:>0:r1=2; 0:r3=1; 1:r1=1; 1:r3=2;
+24649 :>0:r1=1; 0:r3=2; 1:r1=1; 1:r3=2;
+530086:>0:r1=2; 0:r3=2; 1:r1=1; 1:r3=2;
+19352841:>0:r1=1; 0:r3=1; 1:r1=2; 1:r3=2;
+6034234:>0:r1=2; 0:r3=1; 1:r1=2; 1:r3=2;
+209571:>0:r1=1; 0:r3=2; 1:r1=2; 1:r3=2;
+367367:>0:r1=2; 0:r3=2; 1:r1=2; 1:r3=2;
+Ok
+
+Witnesses
+Positive: 24649, Negative: 79975351
+Condition exists (0:r1=1 /\ 0:r3=2 /\ 1:r1=1 /\ 1:r3=2) is validated
+Hash=cf4223c7f28c24164ca126622708f31b
+Observation 2+2WObsLoop Sometimes 24649 79975351
+Time 2+2WObsLoop 15.11
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for 2+2WLocal.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC 2+2WLocal
+"PodWW Wse PodWW Wse"
+
+{0:r2=x; 0:r4=y; 1:r2=y; 1:r4=x;}
+
+ P0           | P1           ;
+ li r1,2      | li r1,2      ;
+ stw r1,0(r2) | stw r1,0(r2) ;
+ li r3,1      | li r3,1      ;
+ stw r3,0(r4) | stw r3,0(r4) ;
+ lwz r5,0(r4) | lwz r5,0(r4) ;
+
+exists (0:r5=2 /\ 1:r5=2)
+Generated assembler
+	_litmus_P0_0_: li 31,2
+	_litmus_P0_1_: stw 31,0(11)
+	_litmus_P0_2_: li 10,1
+	_litmus_P0_3_: stw 10,0(9)
+	_litmus_P0_4_: lwz 3,0(9)
+	_litmus_P1_0_: li 31,2
+	_litmus_P1_1_: stw 31,0(11)
+	_litmus_P1_2_: li 10,1
+	_litmus_P1_3_: stw 10,0(9)
+	_litmus_P1_4_: lwz 3,0(9)
+Test 2+2WLocal Allowed
+Histogram (4 states)
+159833081:>0:r5=1; 1:r5=1;
+85737 :>0:r5=2; 1:r5=1;
+81180 :>0:r5=1; 1:r5=2;
+2     :>0:r5=2; 1:r5=2;
+Ok
+
+Witnesses
+Positive: 2, Negative: 159999998
+Condition exists (0:r5=2 /\ 1:r5=2) is validated
+Hash=e97524d1adda1ed024e94a1151c58bc3
+Com=Ws Ws
+Orig=PodWW Wse PodWW Wse
+Observation 2+2WLocal Sometimes 2 159999998
+Time 2+2WLocal 5.58
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for 2+2WLocalFenced.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC 2+2WLocalFenced
+"PodWW Wse PodWW Wse"
+
+{0:r2=x; 0:r4=y; 1:r2=y; 1:r4=x;}
+
+ P0           | P1           ;
+ li r1,2      | li r1,2      ;
+ stw r1,0(r2) | stw r1,0(r2) ;
+ li r3,1      | li r3,1      ;
+ stw r3,0(r4) | stw r3,0(r4) ;
+ sync         | sync         ;
+ lwz r5,0(r4) | lwz r5,0(r4) ;
+
+exists (0:r5=2 /\ 1:r5=2)
+Generated assembler
+	_litmus_P0_0_: li 31,2
+	_litmus_P0_1_: stw 31,0(11)
+	_litmus_P0_2_: li 10,1
+	_litmus_P0_3_: stw 10,0(9)
+	_litmus_P0_4_: sync
+	_litmus_P0_5_: lwz 3,0(9)
+	_litmus_P1_0_: li 31,2
+	_litmus_P1_1_: stw 31,0(11)
+	_litmus_P1_2_: li 10,1
+	_litmus_P1_3_: stw 10,0(9)
+	_litmus_P1_4_: sync
+	_litmus_P1_5_: lwz 3,0(9)
+Test 2+2WLocalFenced Allowed
+Histogram (4 states)
+134090866:>0:r5=1; 1:r5=1;
+12655028:>0:r5=2; 1:r5=1;
+13219898:>0:r5=1; 1:r5=2;
+34208 :>0:r5=2; 1:r5=2;
+Ok
+
+Witnesses
+Positive: 34208, Negative: 159965792
+Condition exists (0:r5=2 /\ 1:r5=2) is validated
+Hash=518c61fb068e267722ab019a4763e560
+Com=Ws Ws
+Orig=PodWW Wse PodWW Wse
+Observation 2+2WLocalFenced Sometimes 34208 159965792
+Time 2+2WLocalFenced 7.30
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for 2+2WLocalLoop.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC 2+2WLocalLoop
+"PodWW Wse PodWW Wse"
+
+{0:r2=x; 0:r4=y; 1:r2=y; 1:r4=x;}
+
+ P0            | P1            ;
+ li r1,2       | li r1,2       ;
+ stw r1,0(r2)  | stw r1,0(r2)  ;
+ li r3,1       | li r3,1       ;
+ stw r3,0(r4)  | stw r3,0(r4)  ;
+ li r6,200     | li r6,200     ;
+ L00:          | L02:          ;
+ lwz r5,0(r4)  | lwz r5,0(r4)  ;
+ cmpwi r5,1    | cmpwi r5,1    ;
+ bne  L01      | bne  L03      ;
+ addi r6,r6,-1 | addi r6,r6,-1 ;
+ cmpwi r6,0    | cmpwi r6,0    ;
+ bne  L00      | bne  L02      ;
+ L01:          | L03:          ;
+
+exists (0:r5=2 /\ 1:r5=2)
+Generated assembler
+	_litmus_P0_0_: li 31,2
+	_litmus_P0_1_: stw 31,0(11)
+	_litmus_P0_2_: li 10,1
+	_litmus_P0_3_: stw 10,0(9)
+	_litmus_P0_4_: li 8,200
+	_litmus_P0_5_: LitL00:
+	_litmus_P0_6_: lwz 30,0(9)
+	_litmus_P0_7_: cmpwi 30,1
+	_litmus_P0_8_: bne LitL01
+	_litmus_P0_9_: addi 8,8,-1
+	_litmus_P0_10_: cmpwi 8,0
+	_litmus_P0_11_: bne LitL00
+	_litmus_P0_12_: LitL01:
+	_litmus_P1_0_: li 31,2
+	_litmus_P1_1_: stw 31,0(11)
+	_litmus_P1_2_: li 10,1
+	_litmus_P1_3_: stw 10,0(9)
+	_litmus_P1_4_: li 8,200
+	_litmus_P1_5_: LitL02:
+	_litmus_P1_6_: lwz 30,0(9)
+	_litmus_P1_7_: cmpwi 30,1
+	_litmus_P1_8_: bne LitL03
+	_litmus_P1_9_: addi 8,8,-1
+	_litmus_P1_10_: cmpwi 8,0
+	_litmus_P1_11_: bne LitL02
+	_litmus_P1_12_: LitL03:
+Test 2+2WLocalLoop Allowed
+Histogram (4 states)
+5916412:>0:r5=1; 1:r5=1;
+78671626:>0:r5=2; 1:r5=1;
+75300789:>0:r5=1; 1:r5=2;
+111173:>0:r5=2; 1:r5=2;
+Ok
+
+Witnesses
+Positive: 111173, Negative: 159888827
+Condition exists (0:r5=2 /\ 1:r5=2) is validated
+Hash=c7c9d85c73d193ac5cc271d3a0b57b40
+Com=Ws Ws
+Orig=PodWW Wse PodWW Wse
+Observation 2+2WLocalLoop Sometimes 111173 159888827
+Time 2+2WLocalLoop 12.46
+Revision 8829:8832M, version 4.00+1
+Command line: litmus @2+2W -o /home/yquem/moscova/maranget/tmp/a.tar
+Parameters
+#ifndef SIZE_OF_TEST
+#define SIZE_OF_TEST 100000
+#endif
+#ifndef NUMBER_OF_RUN
+#define NUMBER_OF_RUN 10
+#endif
+#ifndef AVAIL
+#define AVAIL 1
+#endif
+/* gcc options: -Wall -std=gnu99 -O -pthread */
+/* barrier: user */
+/* launch: changing */
+/* cache: false */
+/* call: false */
+/* affinity: none */
+/* prealloc: false */
+/* memory: indirect */
+/* safer: all */
+/* preload: random */
+/* para: self */
+/* speedcheck: false */
+GCC=gcc
+LITMUSOPTS=-s 2k -r 5k -a 32
+Wed Mar 14 14:34:50 CET 2012

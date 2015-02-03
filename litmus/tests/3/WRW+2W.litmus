@@ -1,0 +1,27 @@
+C WRW+2W
+"Rfe PodRW Wse PodWW Wse"
+Cycle=Rfe PodRW Wse PodWW Wse
+Relax=
+Safe=Rfe Wse PodWW PodRW
+Prefetch=1:x=F,1:y=W,2:y=F,2:x=W
+Com=Rf Ws Ws
+Orig=Rfe PodRW Wse PodWW Wse
+
+{}
+
+P0 (volatile int* x) {
+  *x = 2;
+}
+
+P1 (volatile int* y,volatile int* x) {
+  int r0 = *x;
+  *y = 1;
+}
+
+P2 (volatile int* y,volatile int* x) {
+  *y = 2;
+  *x = 1;
+}
+
+exists
+(x=2 /\ y=2 /\ 1:r0=2)

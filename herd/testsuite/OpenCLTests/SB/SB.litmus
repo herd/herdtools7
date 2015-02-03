@@ -1,0 +1,25 @@
+OpenCL SB
+"PodWW Rfe PodRR Fre"
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=PodWW Rfe PodRR Fre
+
+{
+[x] = 0;
+[y] = 0; 
+}
+
+P0 (volatile int* x, volatile int* y) {
+ *x = 1;
+ int r0 = *y;
+}
+
+P1 (volatile int* x, volatile int* y) {
+ *y = 1;
+ int r1 = *x;
+}
+
+scopeTree
+(device (work_group P0) (work_group P1))
+
+exists (0:r0=0 /\ 1:r1=0)

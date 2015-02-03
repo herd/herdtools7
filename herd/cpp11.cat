@@ -1,0 +1,482 @@
+"C++11" withinit
+
+(* JW: The set A can now be used to refer to all atomic events. It
+   currently contains:
+   - all reads/writes that have memory_order other than non_atomic
+   - all RMW actions
+   - nothing else
+ *)
+
+(* MB: This file includes a version of the C/C++11 memory model. It
+   follows the Lem model, but differs in some details. The main one is
+   initialisation: in C/C++11, one can introduce undefined behaviour
+   by reading from an uninitialised variable. In Herd, all-location
+   intialisation is built in. That simplifies some of the model
+   somewhat. The treatment of thin air values is another
+   difference. In C/C++11, the rules that forbid thin-air values in
+   executions are broken, so my model leaves such restrictions
+   out. Here, there is a question of whether we should follow that
+   approach, or forbid thin air in the ususal Herd way. Finally,
+   program order is total in Herd, whereas sb can be partial in the
+   Lem model.
+
+   This file is still work in progress. Where possible, restrictions
+   are expressed in a way that is natural for Herd. This can look
+   quite different to the Lem definitions that make up the C/C++11
+   model. Throughout the file, definitions carry comments that name
+   the definitons of the Lem model that most closely relate.
+*)
+
+(* 
+   TS: I made a .cfg (conf file) for running C++11 tests. To run, just
+   use: 
+   ./herd -conf cpp11.cfg litmus_file
+
+   Other useful command line args:
+   -show all (shows all allowed executions)
+   -show prop (shows all executions violating the constraint)
+
+   -evince (forks evince to display executions specified by -show arg, works well on ubuntu)
+   -gv (forks gv to display executions specified by -show arg)
+
+   There are C++11 tests in the CPP11Tests directory
+
+   if you use -o DIRECTORY to save .dot files of the executions,
+   they should be compiled using 'neato', not 'dot'   
+*)
+
+(* SC atomics have acquire and release semantics. *)
+let cacq = acq | (sc & (R | F)) | acq_rel | (F & con)
+let crel = rel | (sc & (W | F)) | acq_rel
+let ccon = R & con
+
+(* MB: What exactly are these reations? *)
+(* jade: data and addr dependencies; it might not make sense in C++ syntax. for
+example in pseudo power asm:
+
+load r1,0,x
+xor r9,r1,r1
+loadx r3,r9,r2 
+
+creates a data dependency from the first load to the second one, via the use of
+registers (it would work if you had an add instead of a xor)
+
+but do we use this at all below?
+
+store(&x,y,release)
+
+Tyler: Are you working on the instruction semantics? Have you implemented any sort of dependencies?
+
+The existing dependency calculation for other Herd models is probably ONLY from reads to other actions. That might be ok. We can't tell right now.
+*)
+let dd = (data | addr)+
+
+
+(* Thin air check: It is not clear whether to check this. *)
+(*
+let deps = dd | rf
+acyclic deps as thin
+*)
+
+
+
+(* These are useful auxilliary definitions. The constraints that arise
+   from memory orders can usually be applied to a single action, or to
+   a fence-action pair. These definitions allow us to combine those
+   cases.
+*)
+let idf = (po; [F])?
+let fid = ([F]; po)?
+
+(* MB: This is present to expose a possible bug in Herd where program
+   order does not relate fences to other actions in the same thread. *)
+(*let bugr = po*)
+(*show bugr*)
+
+(*C: release_acquire_fenced_synchronizes_with, hypothetical_release_sequence_set, release_sequence_set *)
+
+(* jade: in the second bit, maybe we also want to say: co ; [!rmw] ;
+   coe? to not impose that the first one only is a coe. in any case i
+   think we need an external def for non intervening writes
+
+   MB: I'm not sure follow you. Is this what you are suggesting:
+
+let rsco = ((co ; [rmw]) | coi) & ~(coe ; [!rmw] ; co & ~(co ; [!rmw] ; coe)
+
+jade: almost. morally i want to write:
+
+let niw s = ~(coe; s ;co | co; s ;coe) (*no intervening write belonging to the
+set s*)
+let rsco = (co ; [rmw] | coi) & (niw [!rmw]) 
+
+   MB: The "co; s ;coe" case is intentionally absent. This definition
+   looks strange because it's the extension of "co successors" to rmws on
+   other threads. There's a reference I can provide to the justificeation
+   for this. Perhaps we can strengthen this to make it more symmetrical?
+*)
+
+
+let rs = [crel]; fid; [A & W]; (((co ; [rmw]) | coi) & ~(coe ; [!rmw] ; co))?
+let swra = ext (rs; rf; [A]; idf; [cacq])
+let swul = ext ([ul]; lo; [lk])
+let sw = asw | swul | swra
+let pp_asw = asw \ (asw;po)
+let pp_sw = pp_asw | swul | swra
+show pp_sw as sw
+
+(* C: no_consume_hb *)
+(* simple_hb applies to the programs that don't have consumes *)
+(*let simple_hb = (po | sw)+*)
+
+
+(* C: with_consume_cad_set, dependency_ordered_before
+
+   Note that the consume memory order does not support fence-style
+   synchronisation.
+*)
+let cad = ((rf & po) | dd)+
+let dob = (ext ([W]; rs; rf; [con])); cad?
+
+
+(* C: happens_before, inter_thread_happens_before, consistent_hb *)
+let ithbr = sw | dob | sw;po
+let ithb = (ithbr | po;ithbr)+
+let hb = po | ithb
+show dob
+acyclic hb as hbAcyclic
+
+
+
+
+(* C: coherent_memory_use *)
+(* Uniproc/Coherence check *)
+let hbl = hb & loc
+let pol = po & loc
+(*acyclic (rfe | hb) as thinair (* Too strong! This kills thin-air *)*)
+
+
+let corr = fr;rf;hbl
+let corw = co;rf;hbl
+let cowr = fr;hbl
+let coww = co;hbl
+
+
+irreflexive (corr | cowr | corw | coww) as coherence
+
+let rmwv = rf;[rmw] | (co;fr) | (co;rf)
+
+irreflexive rmwv as rmwAtomicity
+
+
+
+(*
+let com = rf | (~[_] & fr) | co
+*)
+
+
+(* START *)
+(*
+irreflexive rfe;hb as thinAirLike
+
+let prop = rf*;hb
+acyclic co|prop as propagation
+
+irreflexive fre;prop as causality
+
+acyclic (pol | com) as uniproc
+*)
+(* Question: Is the model with the restrictions from START above the
+   same as the model with the following hbuniproc? *)
+(*acyclic (hbl | com) as hbuniproc*)
+
+
+
+(* MB: Above is an adjustment of the standard uniproc:
+
+   let com = rf | fr | co
+   acyclic (po-loc | com) as uniproc
+
+   jade: this is equivalent to the 5 CoXX tests - there are four of them on p. 3
+   of the PLDI 11 paper, the one missing is CoRW. This basically says "SC holds
+   per location". I'm not sure which coherence requirements you're thinking about?
+
+   MB: Note that the C11 coherence shapes swap location restricted program
+   order for location restricted hb.
+
+   Is this equivalent to the C11 coherence requirements, which relate
+   hb to co?  I don't think so. This doesn't forbid any C11 coherence
+   shape where I do synchronisation on another location as part of the
+   hb edge.
+
+   jade: let me give identifiers to these events, so that i can refer to them
+   below 
+
+   (CoRR)
+
+   (a) Wx --rf-> (b) Rx
+   ^                 ||
+   |                 po
+   |                 v  ------
+   co            (c) Wy --sw-> (d) Ry
+   |                               ||
+   |                               po
+   |                               v|
+   (f) Wx ---------rf--------> (e) Rx
+
+   jade: this shape above looks to me like it says "irrefl(fr;hb)" 
+   imagine a fr arrow from (e) to (a) 
+   then i'm guessing there's an hb arrow from (a) to (e) -- is that right?
+   if yes then we get (a) -fr;hb-> (e)
+   if this is the case i would suggest separating the acyclic(hb-loc | com)
+   into two checks:
+   - acyclic (po-loc | com) on the one hand
+   - irrefl(fr;hb) on the other hand -- or maybe we want acyclic(fr;hb)?
+   because this would become _very_ close to the Power model
+
+   MB: Let's define:
+
+   irrefl fr;hb
+
+   let hb' = (rf | hb)+
+
+   Then provide one of:
+
+   irrefl (fr;hb'), or
+   acyclic (fr;hb'), or
+   acyclic (fr | hb')
+
+   Jade thinks this might be a more natural way to separate
+   "causality" from "coherence". To her eye, they are conflated in
+   this model. Causality is equivalent(?) to the restrictions on which
+   writes a particular read may read from.
+
+   These restrictions seem to cover the CoRR coherence and CoRW cases
+   of C11 coherence. I question whether uniproc covers the
+   others. Certainly we need to make sure that mo and hb agree (CoWW):
+
+   Test below forbidden in Power by propagation.
+
+   ,--co--,
+   v        |
+   W --hb-> W
+
+   ...and that CoRW is absent:
+
+   W --rf-> R
+   ^        |
+   |        hb
+   |        v
+   '---co-- R
+
+
+
+
+
+   .--co--> W
+   |       /|
+   |    fr^ hb
+   |       \v
+   W --rf-> R
+
+*)
+
+
+
+
+
+
+(* C: visible_side_effect_set *)
+(*jade: i wonder if we need this at all? couldn't we obtain the same
+  kind of property via uniproc(MB: AND causality), or the rf being
+  well-formed? (which is included in herd by default)
+
+  MB: quite possibly true. I find it hard to think about
+  simplifications that involve hb, it is such a complicated relation.
+*)
+let vse = [W];hbl;[R] & ~(hbl; [W]; hbl)
+(*show vse*)
+
+(* C: consistent_non_atomic_rf -- must read from vse: *)
+let narf = rf; [nonatomicloc]
+
+(* LUC simplified, see next check
+let narfvse = narf;~(vse^-1)
+irreflexive narfvse as nonAtomicRfConsistent *)
+
+(* narf included in vse *)
+empty narf \ vse as nonAtomicRfConsistent
+
+(* The following might be the same as consistent reads from mapping:
+
+acyclic (hb) 
+irrefl (fr;hb) 
+
+This is taken from the Power model:
+let GHB = hb | fr
+acyclic GHB
+*)
+
+
+(* C: det_read
+
+   We assume there are initialisation writes at every location. That
+   means we don't need a det-read style restriction.
+*)
+
+
+(* C: consistent_atomic_rf -- acyclicity of hb union rf for atomic reads: *)
+let arf = rf; [atomicloc]
+
+let hbarf = hb;arf
+irreflexive hbarf as atomicRfConsistent
+
+(*jade: arf and hbarf are funky names =)*)
+
+(* C: rmw_atomicity
+
+   This condition ensures that RMW actions read the immediately
+   preceding action in modification order. If they read an earlier one
+   it would violate "irreflexive (fr;co)", if they read a later one,
+   it would violate "irreflexive (rf;co)". In either case, these
+   restrictions only apply to RMW's because no other action both reads
+   and wries.
+
+   This restriction is simplified by the knowledge that all locations
+   are already initialised. A more faithful version might be:
+
+let rmwrf = rf; [rmw]
+let comax = co; [rmw] & ~(co;co)
+(*I want to say: equal rmwrf comax*)
+let rmwv = rmwrf\comax | comax\rmwrf
+empty rmwv
+
+   The restrictions I do need to impose are below. They are already
+   covered by uniproc.
+
+let rmwv = rf;co | fr;co
+irreflexive rmwv
+*)
+
+
+
+(* C: sc_fenced_sc_fences_heeded, sc_accesses_sc_reads_restricted,
+      sc_accesses_consistent_sc
+
+   The definitions below mirror the Lem ones. They are what the
+   restriction might look like if we had a sequentially consistent
+   order to work with.
+
+   let sc = R
+   let scff = sc & ([_*fence] | [fence*_])
+   let scfc = (co;     scff; po; rf') |
+   (co; po; scff;     rf') |
+   (co; po; scff; po; rf') |           
+   ( po; scff; po; co) |
+   (     scff; po; co) |
+   ( po; scff;     co)
+   acyclic scfc
+
+   We don't have such an order, and instead have to express the SC
+   restrictions as constraints on a possible SC order. Note that SC
+   order is total, so the absence of the cycles above implies an SC
+   edge in the other direction for nearly complete cycles. The
+   following defintion expresses the constraints on SC order for each
+   unfolded cycle:
+
+   let scf =
+   ([SC & fence]; po; fr;     [SC]) |
+   (        [SC];     fr; po; [SC & fence]) |
+   ([SC & fence]; po; fr; po; [SC & fence]) |
+   ([SC & fence]; po; co; po; [SC & fence]) |
+   ([SC & fence]; po; co;     [SC]) |
+   (        [SC];     co; po; [SC & fence])
+
+   Now simplifying using fid and idf, considering just the co
+   restrictions, and noting that the non-fenced SC projection of co is
+   similarly restricted gives:
+*)
+
+let scco = [sc]; fid; co; idf; [sc]
+
+(* For SC fr, the picture is more complicated. We'd like to have:
+
+let overstrong_scfr = [SC]; fid; fr; idf; [SC]
+
+   But that's not what C/C++11 specify. Section 29.3p3 of the released
+   C++11 standard makes the relevant restriction. It's weaker than it
+   might be: it's phrased in terms of hb when co would be what we'd
+   like. I argued for a coherence based restriciton at the time, but
+   the C++11 committee did not listen to me. Their reasoning was that
+   hb was easier to think about than mo -- not a great reason. I might
+   revisit this with them for C14.
+
+   Here is the aproximation of from-reads that the SC atomics do respect:
+*)
+let scfr = ~[_] &
+           ( ([sc]    ; rf^-1; hbl  ; [W & sc]) |
+             ([sc]    ; rf^-1; [sc] ; co; [sc]) |
+             ([sc & F]; po; fr;     [sc]    ) |
+             (    [sc];     fr; po; [sc & F]) |
+             ([sc & F]; po; fr; po; [sc & F])
+           )
+
+(* SC atomics have to respect happens-before: *)
+
+let schb = [sc]; hb; [sc]
+
+(* Then the constraints on the SC order are as given below.
+
+   The three components probably overlap, which is unfortunate. We
+   should think about simplifications of this...
+*)
+let scp = schb | scco | scfr
+acyclic scp as scConsistent
+show scp
+
+
+
+(* C: locks_only_consistent_lo *)
+irreflexive lo;hb as hbAgreesLo
+
+(* C: locks_only_consistent_locks *)
+let mv = [ls]; lo^-1; [ls]; ~(lo; [ul]; lo)
+irreflexive mv as consistentLo
+
+
+(* C: data_races *)
+let dr = ext((W * _) | (_ * W)) &
+         loc & 
+         (~(A * A)) &
+         ~hb & ~(hb^-1)
+
+(* C: unsequenced_races
+
+   MB: Lem talks about location-kinds here. I believe we would like to
+   avoid that in Herd, so in the proofs of equivalence, we will need
+   to assume the existance of a good location-kind map.
+*)
+let ur = int((W * M) | (M * W)) &
+         loc &
+         ~[_] &
+         ~(po+) & ~((po+)^-1)
+
+
+
+(* C: locks_only_good_mutex_use, locks_only_bad_mutexes *)
+let bl = ([ls]; (po & lo); [lk]) & ~(lo; [ul]; lo)
+
+(* This seems to say the right thing, but it is a bit complicated! *)
+let lopowoul = (po & lo & ~(lo; [ul]; lo))
+let lu = [ul] & ~([ul];lopowoul^-1;[ls];lopowoul;[ul])
+
+
+
+
+show dr
+show ur
+show bl
+
+undefined_unless empty dr as dataRace 
+undefined_unless empty ur as unsequencedRace 
+undefined_unless empty bl as badLock
+undefined_unless empty lu as badUnlock

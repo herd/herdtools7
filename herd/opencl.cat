@@ -1,0 +1,32 @@
+"OpenCL"
+withoutsc
+
+include "opencl_base.cat"
+
+(* BEGIN PARTIAL SC STUFF *)
+let scp' = scp & sc6
+acyclic scp' & ifexists(mo_sc & !s_all) as S_exists
+show scp' as scp
+(* END PARTIAL SC STUFF *)
+
+(*********)
+(* Races *)
+(*********)
+
+let conflict = ((W * _) | (_ * W)) & loc
+
+(* Data races *)
+let dr = conflict & ~symm(ghb | lhb) & ~incl
+undefined_unless empty dr as data_race
+show dr
+
+(* Unsequenced races *)
+let ur = (wi & conflict & ~symm(po)) \ id 
+undefined_unless empty ur as unsequenced_race
+show ur
+
+(* Barrier divergence *)
+let bsw = bar_sw(G) | bar_sw(L)
+let bd = [entry_fence] & ((~wi & wg); unv) \ (bsw ; unv)
+undefined_unless empty bd as barrier_divergence
+show bd

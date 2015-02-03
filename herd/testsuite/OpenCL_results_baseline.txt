@@ -1,0 +1,14 @@
+Test MP1 Allowed
+States 4
+1:r0=0; 1:r1=0;
+1:r0=0; 1:r1=1;
+1:r0=1; 1:r1=0;
+1:r0=1; 1:r1=1;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Bad executions (0 in total):  
+Condition exists (1:r0=1 /\ 1:r1=0)
+Observation MP1 Sometimes 1 3
+Hash=6d8db9b772318067806a32c9dfc546b4
+

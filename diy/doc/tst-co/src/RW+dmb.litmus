@@ -1,0 +1,17 @@
+ARM RW+dmb
+"DMBsRW Rfe"
+Cycle=Rfe DMBsRW
+Relax=
+Safe=Rfe DMBsRW
+Prefetch=
+Com=Rf
+Orig=DMBsRW Rfe
+{
+%x0=x;
+}
+ P0           ;
+ LDR R0,[%x0] ;
+ DMB          ;
+ MOV R1,#1    ;
+ STR R1,[%x0] ;
+locations [x;0:R0;]

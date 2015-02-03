@@ -1,0 +1,23 @@
+C S+poaas
+"PodWWAA RfeAA PodRWAA WseAA"
+Cycle=RfeAA PodRWAA WseAA PodWWAA
+Relax=
+Safe=PodWW PodRW RfeAA WseAA
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Ws
+Orig=PodWWAA RfeAA PodRWAA WseAA
+
+{}
+
+P0 (atomic_int* y,atomic_int* x) {
+  atomic_store(x,2);
+  atomic_store(y,1);
+}
+
+P1 (atomic_int* y,atomic_int* x) {
+  int r0 = atomic_load(y);
+  atomic_store(x,1);
+}
+
+exists
+(x=2 /\ 1:r0=1)

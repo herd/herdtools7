@@ -1,0 +1,5 @@
+WW "exists x=1"
+RW "exists 0:R0=1"
+WR "exists 0:R1=0"
+W+RW "exists x=1 /\ 1:R0=1"
+W+RR "exists 1:R0=1 /\ 1:R1=0"

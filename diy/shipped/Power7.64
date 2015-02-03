@@ -1,0 +1,1626 @@
+lun déc 13 13:07:20 CET 2010
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/alpha1.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC alpha1
+"Alpha litmus tests, 1"
+
+{0:r5=x; 0:r2=2; x=1; 1:r5=x;}
+
+ P0           | P1           ;
+ stw r2,0(r5) | lwz r1,0(r5) ;
+              | lwz r2,0(r5) ;
+
+~exists (1:r1=2 /\ 1:r2=1)
+Generated assembler
+	_litmus_P1_0_: lwz 31,0(9)
+	_litmus_P1_1_: lwz 11,0(9)
+	_litmus_P0_0_: stw 7,0(9)
+Test alpha1 Forbidden
+Histogram (3 states)
+828795856:>1:r1=1; 1:r2=1;
+1232955:>1:r1=1; 1:r2=2;
+769971189:>1:r1=2; 1:r2=2;
+Ok
+
+Witnesses
+Positive: 1600000000, Negative: 0
+Condition ~exists (1:r1=2 /\ 1:r2=1) is validated
+Hash=b61f554e5cc5945bed9fe8751acdc986
+Time alpha1 44.86
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/co5.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC co5
+"PPC uniproc, basic reject (ws + rf)"
+
+{0:r5=x; 1:r5=x;}
+
+ P0           | P1           ;
+ lwz r2,0(r5) |              ;
+ li r1,1      | li r1,2      ;
+ stw r1,0(r5) | stw r1,0(r5) ;
+
+~exists (x=2 /\ 0:r2=2)
+Generated assembler
+	_litmus_P1_0_: li 11,2
+	_litmus_P1_1_: stw 11,0(9)
+	_litmus_P0_0_: lwz 30,0(9)
+	_litmus_P0_1_: li 11,1
+	_litmus_P0_2_: stw 11,0(9)
+Test co5 Forbidden
+Histogram (3 states)
+13003492:>0:r2=0; x=1;
+778750443:>0:r2=2; x=1;
+808246065:>0:r2=0; x=2;
+Ok
+
+Witnesses
+Positive: 1600000000, Negative: 0
+Condition ~exists (x=2 /\ 0:r2=2) is validated
+Hash=ba890c0db82d933f9407d78b7bbcccf1
+Time co5 51.97
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/co4.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC co4
+"PPC uniproc, basic reject (fr)"
+
+{0:r5=x; 1:r5=x;}
+
+ P0           | P1           ;
+ li r1,1      | li r1,2      ;
+ stw r1,0(r5) | stw r1,0(r5) ;
+ lwz r2,0(r5) |              ;
+
+~exists (x=1 /\ 0:r2=2)
+Generated assembler
+	_litmus_P1_0_: li 11,2
+	_litmus_P1_1_: stw 11,0(9)
+	_litmus_P0_0_: li 11,1
+	_litmus_P0_1_: stw 11,0(9)
+	_litmus_P0_2_: lwz 30,0(9)
+Test co4 Forbidden
+Histogram (3 states)
+858039967:>0:r2=1; x=1;
+740883102:>0:r2=1; x=2;
+1076931:>0:r2=2; x=2;
+Ok
+
+Witnesses
+Positive: 1600000000, Negative: 0
+Condition ~exists (x=1 /\ 0:r2=2) is validated
+Hash=9f0635c55e747c580be76c1051c00416
+Time co4 47.72
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/co10.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC co10
+"PPC basic reject (ws + po)"
+
+{0:r5=x; 0:r1=1; 0:r2=2;}
+
+ P0           ;
+ stw r1,0(r5) ;
+ stw r2,0(r5) ;
+
+~exists (x=1)
+Generated assembler
+	_litmus_P0_0_: stw 7,0(9)
+	_litmus_P0_1_: stw 6,0(9)
+Test co10 Forbidden
+Histogram (1 states)
+3200000000:>x=2;
+Ok
+
+Witnesses
+Positive: 3200000000, Negative: 0
+Condition ~exists (x=1) is validated
+Hash=b180875e89dc98c87a35db76dda8ca0d
+Time co10 28.74
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/VAR2/SB/SB.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC SB
+"PodWR Fre PodWR Fre"
+
+{0:r2=y; 0:r4=x; 1:r2=x; 1:r4=y;}
+
+ P0           | P1           ;
+ li r1,1      | li r1,1      ;
+ stw r1,0(r2) | stw r1,0(r2) ;
+ lwz r3,0(r4) | lwz r3,0(r4) ;
+
+exists (0:r3=0 /\ 1:r3=0)
+Generated assembler
+	_litmus_P1_0_: li 31,1
+	_litmus_P1_1_: stw 31,0(11)
+	_litmus_P1_2_: lwz 30,0(9)
+	_litmus_P0_0_: li 31,1
+	_litmus_P0_1_: stw 31,0(11)
+	_litmus_P0_2_: lwz 30,0(9)
+Test SB Allowed
+Histogram (4 states)
+68187272:>0:r3=0; 1:r3=0;
+771270834:>0:r3=1; 1:r3=0;
+740516542:>0:r3=0; 1:r3=1;
+20025352:>0:r3=1; 1:r3=1;
+Ok
+
+Witnesses
+Positive: 68187272, Negative: 1531812728
+Condition exists (0:r3=0 /\ 1:r3=0) is validated
+Hash=e3d8acee19f171034e75984cc2f0ce68
+Cycle=Fre PodWR Fre PodWR
+Time SB 56.37
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/VAR2/SB/SB+syncs.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC SB+syncs
+"SyncdWR Fre SyncdWR Fre"
+
+{0:r2=y; 0:r4=x; 1:r2=x; 1:r4=y;}
+
+ P0           | P1           ;
+ li r1,1      | li r1,1      ;
+ stw r1,0(r2) | stw r1,0(r2) ;
+ sync         | sync         ;
+ lwz r3,0(r4) | lwz r3,0(r4) ;
+
+exists (0:r3=0 /\ 1:r3=0)
+Generated assembler
+	_litmus_P1_0_: li 31,1
+	_litmus_P1_1_: stw 31,0(11)
+	_litmus_P1_2_: sync
+	_litmus_P1_3_: lwz 30,0(9)
+	_litmus_P0_0_: li 31,1
+	_litmus_P0_1_: stw 31,0(11)
+	_litmus_P0_2_: sync
+	_litmus_P0_3_: lwz 30,0(9)
+Test SB+syncs Allowed
+Histogram (3 states)
+627679953:>0:r3=1; 1:r3=0;
+628594225:>0:r3=0; 1:r3=1;
+343725822:>0:r3=1; 1:r3=1;
+No
+
+Witnesses
+Positive: 0, Negative: 1600000000
+Condition exists (0:r3=0 /\ 1:r3=0) is NOT validated
+Hash=a465588c5793d03a277e8d10260275cc
+Cycle=Fre SyncdWR Fre SyncdWR
+Time SB+syncs 72.89
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/VAR2/SB/SB+lwsyncs.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC SB+lwsyncs
+"LwSyncdWR Fre LwSyncdWR Fre"
+
+{0:r2=y; 0:r4=x; 1:r2=x; 1:r4=y;}
+
+ P0           | P1           ;
+ li r1,1      | li r1,1      ;
+ stw r1,0(r2) | stw r1,0(r2) ;
+ lwsync       | lwsync       ;
+ lwz r3,0(r4) | lwz r3,0(r4) ;
+
+exists (0:r3=0 /\ 1:r3=0)
+Generated assembler
+	_litmus_P1_0_: li 31,1
+	_litmus_P1_1_: stw 31,0(11)
+	_litmus_P1_2_: lwsync
+	_litmus_P1_3_: lwz 30,0(9)
+	_litmus_P0_0_: li 31,1
+	_litmus_P0_1_: stw 31,0(11)
+	_litmus_P0_2_: lwsync
+	_litmus_P0_3_: lwz 30,0(9)
+Test SB+lwsyncs Allowed
+Histogram (4 states)
+23052707:>0:r3=0; 1:r3=0;
+765464118:>0:r3=1; 1:r3=0;
+767775487:>0:r3=0; 1:r3=1;
+43707688:>0:r3=1; 1:r3=1;
+Ok
+
+Witnesses
+Positive: 23052707, Negative: 1576947293
+Condition exists (0:r3=0 /\ 1:r3=0) is validated
+Hash=86ac3ae456ddd94ba97a98bdc65ce7a1
+Cycle=Fre LwSyncdWR Fre LwSyncdWR
+Time SB+lwsyncs 73.55
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/VAR2/MP/MP.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC MP
+"PodWW Rfe PodRR Fre"
+
+{0:r2=y; 0:r4=x; 1:r2=x; 1:r4=y;}
+
+ P0           | P1           ;
+ li r1,1      | lwz r1,0(r2) ;
+ stw r1,0(r2) | lwz r3,0(r4) ;
+ li r3,1      |              ;
+ stw r3,0(r4) |              ;
+
+exists (1:r1=1 /\ 1:r3=0)
+Generated assembler
+	_litmus_P1_0_: lwz 30,0(11)
+	_litmus_P1_1_: lwz 31,0(9)
+	_litmus_P0_0_: li 31,1
+	_litmus_P0_1_: stw 31,0(11)
+	_litmus_P0_2_: li 3,1
+	_litmus_P0_3_: stw 3,0(9)
+Test MP Allowed
+Histogram (4 states)
+823368708:>1:r1=0; 1:r3=0;
+27504834:>1:r1=1; 1:r3=0;
+102055778:>1:r1=0; 1:r3=1;
+647070680:>1:r1=1; 1:r3=1;
+Ok
+
+Witnesses
+Positive: 27504834, Negative: 1572495166
+Condition exists (1:r1=1 /\ 1:r3=0) is validated
+Hash=3cdfd66fb66497ec8a63ca6bb9109e61
+Cycle=Rfe PodRR Fre PodWW
+Time MP 53.97
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/VAR2/MP/MP+syncs.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC MP+syncs
+"SyncdWW Rfe SyncdRR Fre"
+
+{0:r2=y; 0:r4=x; 1:r2=x; 1:r4=y;}
+
+ P0           | P1           ;
+ li r1,1      | lwz r1,0(r2) ;
+ stw r1,0(r2) | sync         ;
+ sync         | lwz r3,0(r4) ;
+ li r3,1      |              ;
+ stw r3,0(r4) |              ;
+
+exists (1:r1=1 /\ 1:r3=0)
+Generated assembler
+	_litmus_P1_0_: lwz 30,0(11)
+	_litmus_P1_1_: sync
+	_litmus_P1_2_: lwz 31,0(9)
+	_litmus_P0_0_: li 31,1
+	_litmus_P0_1_: stw 31,0(11)
+	_litmus_P0_2_: sync
+	_litmus_P0_3_: li 3,1
+	_litmus_P0_4_: stw 3,0(9)
+Test MP+syncs Allowed
+Histogram (3 states)
+598618694:>1:r1=0; 1:r3=0;
+644580295:>1:r1=0; 1:r3=1;
+356801011:>1:r1=1; 1:r3=1;
+No
+
+Witnesses
+Positive: 0, Negative: 1600000000
+Condition exists (1:r1=1 /\ 1:r3=0) is NOT validated
+Hash=e29ebb6e64fa9079ba348c5180003cc2
+Cycle=Rfe SyncdRR Fre SyncdWW
+Time MP+syncs 71.06
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/MP+sync+rs.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC MP+sync+rs
+"register shadowing that works?"
+
+{0:r2=x; 0:r4=y; 1:r2=y; 1:r4=x;}
+
+ P0           | P1           ;
+ li r1,1      | lwz r3,0(r2) ;
+ stw r1,0(r2) | mr r1,r3     ;
+ sync         | lwz r3,0(r4) ;
+ li r3,1      |              ;
+ stw r3,0(r4) |              ;
+
+exists (1:r1=1 /\ 1:r3=0)
+Generated assembler
+	_litmus_P1_0_: lwz 31,0(11)
+	_litmus_P1_1_: mr 30,31
+	_litmus_P1_2_: lwz 31,0(9)
+	_litmus_P0_0_: li 31,1
+	_litmus_P0_1_: stw 31,0(11)
+	_litmus_P0_2_: sync
+	_litmus_P0_3_: li 3,1
+	_litmus_P0_4_: stw 3,0(9)
+Test MP+sync+rs Allowed
+Histogram (4 states)
+790928049:>1:r1=0; 1:r3=0;
+89030 :>1:r1=1; 1:r3=0;
+429846384:>1:r1=0; 1:r3=1;
+379136537:>1:r1=1; 1:r3=1;
+Ok
+
+Witnesses
+Positive: 89030, Negative: 1599910970
+Condition exists (1:r1=1 /\ 1:r3=0) is validated
+Hash=9b6ab8f5a51c120855b0e0def515b656
+Time MP+sync+rs 69.11
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/VAR2/MP/MP+po+addr.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC MP+po+addr
+"PodWW Rfe DpAddrdR Fre"
+
+{0:r2=y; 0:r4=x; 1:r2=x; 1:r5=y;}
+
+ P0           | P1            ;
+ li r1,1      | lwz r1,0(r2)  ;
+ stw r1,0(r2) | xor r3,r1,r1  ;
+ li r3,1      | lwzx r4,r3,r5 ;
+ stw r3,0(r4) |               ;
+
+exists (1:r1=1 /\ 1:r4=0)
+Generated assembler
+	_litmus_P1_0_: lwz 30,0(11)
+	_litmus_P1_1_: xor 10,30,30
+	_litmus_P1_2_: lwzx 31,10,9
+	_litmus_P0_0_: li 31,1
+	_litmus_P0_1_: stw 31,0(11)
+	_litmus_P0_2_: li 3,1
+	_litmus_P0_3_: stw 3,0(9)
+Test MP+po+addr Allowed
+Histogram (4 states)
+811530586:>1:r1=0; 1:r4=0;
+2784479:>1:r1=1; 1:r4=0;
+122944829:>1:r1=0; 1:r4=1;
+662740106:>1:r1=1; 1:r4=1;
+Ok
+
+Witnesses
+Positive: 2784479, Negative: 1597215521
+Condition exists (1:r1=1 /\ 1:r4=0) is validated
+Hash=53b4585a1fbf1963d16a1d8d516ba645
+Cycle=Rfe DpAddrdR Fre PodWW
+Time MP+po+addr 57.72
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/VAR2/MP/MP+sync+addr.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC MP+sync+addr
+"SyncdWW Rfe DpAddrdR Fre"
+
+{0:r2=y; 0:r4=x; 1:r2=x; 1:r5=y;}
+
+ P0           | P1            ;
+ li r1,1      | lwz r1,0(r2)  ;
+ stw r1,0(r2) | xor r3,r1,r1  ;
+ sync         | lwzx r4,r3,r5 ;
+ li r3,1      |               ;
+ stw r3,0(r4) |               ;
+
+exists (1:r1=1 /\ 1:r4=0)
+Generated assembler
+	_litmus_P1_0_: lwz 30,0(11)
+	_litmus_P1_1_: xor 10,30,30
+	_litmus_P1_2_: lwzx 31,10,9
+	_litmus_P0_0_: li 31,1
+	_litmus_P0_1_: stw 31,0(11)
+	_litmus_P0_2_: sync
+	_litmus_P0_3_: li 3,1
+	_litmus_P0_4_: stw 3,0(9)
+Test MP+sync+addr Allowed
+Histogram (3 states)
+776063932:>1:r1=0; 1:r4=0;
+454010301:>1:r1=0; 1:r4=1;
+369925767:>1:r1=1; 1:r4=1;
+No
+
+Witnesses
+Positive: 0, Negative: 1600000000
+Condition exists (1:r1=1 /\ 1:r4=0) is NOT validated
+Hash=989cbb049f0d324f053d370528fc03f3
+Cycle=Rfe DpAddrdR Fre SyncdWW
+Time MP+sync+addr 67.40
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/VAR2/MP/MP+sync+ctrl.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC MP+sync+ctrl
+"SyncdWW Rfe DpCtrldR Fre"
+
+{0:r2=y; 0:r4=x; 1:r2=x; 1:r4=y;}
+
+ P0           | P1           ;
+ li r1,1      | lwz r1,0(r2) ;
+ stw r1,0(r2) | cmpw r1,r1   ;
+ sync         | beq  LC00    ;
+ li r3,1      | LC00:        ;
+ stw r3,0(r4) | lwz r3,0(r4) ;
+
+exists (1:r1=1 /\ 1:r3=0)
+Generated assembler
+	_litmus_P1_0_: lwz 30,0(11)
+	_litmus_P1_1_: cmpw 30,30
+	_litmus_P1_2_: beq LitLC00
+	_litmus_P1_3_: LitLC00:
+	_litmus_P1_4_: lwz 31,0(9)
+	_litmus_P0_0_: li 31,1
+	_litmus_P0_1_: stw 31,0(11)
+	_litmus_P0_2_: sync
+	_litmus_P0_3_: li 3,1
+	_litmus_P0_4_: stw 3,0(9)
+Test MP+sync+ctrl Allowed
+Histogram (4 states)
+777005682:>1:r1=0; 1:r3=0;
+63831 :>1:r1=1; 1:r3=0;
+450536751:>1:r1=0; 1:r3=1;
+372393736:>1:r1=1; 1:r3=1;
+Ok
+
+Witnesses
+Positive: 63831, Negative: 1599936169
+Condition exists (1:r1=1 /\ 1:r3=0) is validated
+Hash=3f058442be2d6dce351b0efba86295e2
+Cycle=Rfe DpCtrldR Fre SyncdWW
+Time MP+sync+ctrl 68.14
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/VAR2/MP/MP+lwsyncs.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC MP+lwsyncs
+"LwSyncdWW Rfe LwSyncdRR Fre"
+
+{0:r2=y; 0:r4=x; 1:r2=x; 1:r4=y;}
+
+ P0           | P1           ;
+ li r1,1      | lwz r1,0(r2) ;
+ stw r1,0(r2) | lwsync       ;
+ lwsync       | lwz r3,0(r4) ;
+ li r3,1      |              ;
+ stw r3,0(r4) |              ;
+
+exists (1:r1=1 /\ 1:r3=0)
+Generated assembler
+	_litmus_P1_0_: lwz 30,0(11)
+	_litmus_P1_1_: lwsync
+	_litmus_P1_2_: lwz 31,0(9)
+	_litmus_P0_0_: li 31,1
+	_litmus_P0_1_: stw 31,0(11)
+	_litmus_P0_2_: lwsync
+	_litmus_P0_3_: li 3,1
+	_litmus_P0_4_: stw 3,0(9)
+Test MP+lwsyncs Allowed
+Histogram (3 states)
+724911780:>1:r1=0; 1:r3=0;
+260852582:>1:r1=0; 1:r3=1;
+614235638:>1:r1=1; 1:r3=1;
+No
+
+Witnesses
+Positive: 0, Negative: 1600000000
+Condition exists (1:r1=1 /\ 1:r3=0) is NOT validated
+Hash=25520ac6610aa6339bae2caee0005d5b
+Cycle=Rfe LwSyncdRR Fre LwSyncdWW
+Time MP+lwsyncs 70.42
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/../litmus.new/ppc/ppc-adir1v3.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC ppc-adir1v3
+
+{0:r1=y; 0:r2=1; 0:r5=x; 1:r5=x; 0:r6=0; 1:r6=y; x=z; y=0; z=0;}
+
+ P0           | P1           ;
+              |              ;
+ std r1,0(r5) | lwz r3,0(r6) ;
+ ld r6,0(r5)  | sync         ;
+ stw r2,0(r6) | ld r4,0(r5)  ;
+
+(1:r3=1 /\ 1:r4=z)
+Generated assembler
+	_litmus_P1_0_: lwz 30,0(9)
+	_litmus_P1_1_: sync
+	_litmus_P1_2_: ld 31,0(11)
+	_litmus_P0_0_: std 11,0(9)
+	_litmus_P0_1_: ld 31,0(9)
+	_litmus_P0_2_: stw 5,0(31)
+Test ppc-adir1v3 Allowed
+Histogram (4 states)
+671598462:>1:r3=0; 1:r4=z;
+3033025:>1:r3=1; 1:r4=z;
+368158342:>1:r3=0; 1:r4=y;
+557210171:>1:r3=1; 1:r4=y;
+Ok
+
+Witnesses
+Positive: 3033025, Negative: 1596966975
+Condition exists (1:r3=1 /\ 1:r4=z) is validated
+Hash=d85c8dcb7805000d60fc47261a6678fa
+Time ppc-adir1v3 84.97
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/VAR2/WRC/WRC.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC WRC
+"Rfe PodRW Rfe PodRR Fre"
+
+{0:r2=y; 1:r2=y; 1:r4=x; 2:r2=x; 2:r4=y;}
+
+ P0           | P1           | P2           ;
+ li r1,1      | lwz r1,0(r2) | lwz r1,0(r2) ;
+ stw r1,0(r2) | li r3,1      | lwz r3,0(r4) ;
+              | stw r3,0(r4) |              ;
+
+exists (1:r1=1 /\ 2:r1=1 /\ 2:r3=0)
+Generated assembler
+	_litmus_P1_0_: lwz 10,0(11)
+	_litmus_P1_1_: li 31,1
+	_litmus_P1_2_: stw 31,0(9)
+	_litmus_P0_0_: li 11,1
+	_litmus_P0_1_: stw 11,0(9)
+	_litmus_P2_0_: lwz 10,0(11)
+	_litmus_P2_1_: lwz 30,0(9)
+Test WRC Allowed
+Histogram (8 states)
+192134724:>1:r1=0; 2:r1=0; 2:r3=0;
+157118110:>1:r1=1; 2:r1=0; 2:r3=0;
+135916482:>1:r1=0; 2:r1=1; 2:r3=0;
+80449 :>1:r1=1; 2:r1=1; 2:r3=0;
+10786087:>1:r1=0; 2:r1=0; 2:r3=1;
+240023981:>1:r1=1; 2:r1=0; 2:r3=1;
+163847840:>1:r1=0; 2:r1=1; 2:r3=1;
+100092327:>1:r1=1; 2:r1=1; 2:r3=1;
+Ok
+
+Witnesses
+Positive: 80449, Negative: 999919551
+Condition exists (1:r1=1 /\ 2:r1=1 /\ 2:r3=0) is validated
+Hash=255ffb5074491e078a1a5ebb3c46ae34
+Cycle=Rfe PodRW Rfe PodRR Fre
+Time WRC 81.11
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/VAR2/WRC/WRC+syncs.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC WRC+syncs
+"Rfe SyncdRW Rfe SyncdRR Fre"
+
+{0:r2=y; 1:r2=y; 1:r4=x; 2:r2=x; 2:r4=y;}
+
+ P0           | P1           | P2           ;
+ li r1,1      | lwz r1,0(r2) | lwz r1,0(r2) ;
+ stw r1,0(r2) | sync         | sync         ;
+              | li r3,1      | lwz r3,0(r4) ;
+              | stw r3,0(r4) |              ;
+
+exists (1:r1=1 /\ 2:r1=1 /\ 2:r3=0)
+Generated assembler
+	_litmus_P1_0_: lwz 10,0(11)
+	_litmus_P1_1_: sync
+	_litmus_P1_2_: li 31,1
+	_litmus_P1_3_: stw 31,0(9)
+	_litmus_P0_0_: li 11,1
+	_litmus_P0_1_: stw 11,0(9)
+	_litmus_P2_0_: lwz 10,0(11)
+	_litmus_P2_1_: sync
+	_litmus_P2_2_: lwz 30,0(9)
+Test WRC+syncs Allowed
+Histogram (7 states)
+214867249:>1:r1=0; 2:r1=0; 2:r3=0;
+109065881:>1:r1=1; 2:r1=0; 2:r3=0;
+36638519:>1:r1=0; 2:r1=1; 2:r3=0;
+95561847:>1:r1=0; 2:r1=0; 2:r3=1;
+324277325:>1:r1=1; 2:r1=0; 2:r3=1;
+153594222:>1:r1=0; 2:r1=1; 2:r3=1;
+65994957:>1:r1=1; 2:r1=1; 2:r3=1;
+No
+
+Witnesses
+Positive: 0, Negative: 1000000000
+Condition exists (1:r1=1 /\ 2:r1=1 /\ 2:r3=0) is NOT validated
+Hash=f7ddf3f4d545cc126e62b74ea077a5c3
+Cycle=Rfe SyncdRW Rfe SyncdRR Fre
+Time WRC+syncs 92.42
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/VAR2/WRC/WRC+data+addr.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC WRC+data+addr
+"Rfe DpDatadW Rfe DpAddrdR Fre"
+
+{0:r2=y; 1:r2=y; 1:r4=x; 2:r2=x; 2:r5=y;}
+
+ P0           | P1           | P2            ;
+ li r1,1      | lwz r1,0(r2) | lwz r1,0(r2)  ;
+ stw r1,0(r2) | xor r3,r1,r1 | xor r3,r1,r1  ;
+              | addi r3,r3,1 | lwzx r4,r3,r5 ;
+              | stw r3,0(r4) |               ;
+
+exists (1:r1=1 /\ 2:r1=1 /\ 2:r4=0)
+Generated assembler
+	_litmus_P1_0_: lwz 10,0(11)
+	_litmus_P1_1_: xor 31,10,10
+	_litmus_P1_2_: addi 31,31,1
+	_litmus_P1_3_: stw 31,0(9)
+	_litmus_P0_0_: li 11,1
+	_litmus_P0_1_: stw 11,0(9)
+	_litmus_P2_0_: lwz 27,0(11)
+	_litmus_P2_1_: xor 10,27,27
+	_litmus_P2_2_: lwzx 30,10,9
+Test WRC+data+addr Allowed
+Histogram (8 states)
+192023419:>1:r1=0; 2:r1=0; 2:r4=0;
+152637045:>1:r1=1; 2:r1=0; 2:r4=0;
+101149861:>1:r1=0; 2:r1=1; 2:r4=0;
+86    :>1:r1=1; 2:r1=1; 2:r4=0;
+14169428:>1:r1=0; 2:r1=0; 2:r4=1;
+250312328:>1:r1=1; 2:r1=0; 2:r4=1;
+192290348:>1:r1=0; 2:r1=1; 2:r4=1;
+97417485:>1:r1=1; 2:r1=1; 2:r4=1;
+Ok
+
+Witnesses
+Positive: 86, Negative: 999999914
+Condition exists (1:r1=1 /\ 2:r1=1 /\ 2:r4=0) is validated
+Hash=235f0c521db8e338221cc6d891846e44
+Cycle=Rfe DpAddrdR Fre Rfe DpDatadW
+Time WRC+data+addr 82.75
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/VAR2/WRC/WRC+sync+addr.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC WRC+sync+addr
+"Rfe SyncdRW Rfe DpAddrdR Fre"
+
+{0:r2=y; 1:r2=y; 1:r4=x; 2:r2=x; 2:r5=y;}
+
+ P0           | P1           | P2            ;
+ li r1,1      | lwz r1,0(r2) | lwz r1,0(r2)  ;
+ stw r1,0(r2) | sync         | xor r3,r1,r1  ;
+              | li r3,1      | lwzx r4,r3,r5 ;
+              | stw r3,0(r4) |               ;
+
+exists (1:r1=1 /\ 2:r1=1 /\ 2:r4=0)
+Generated assembler
+	_litmus_P1_0_: lwz 10,0(11)
+	_litmus_P1_1_: sync
+	_litmus_P1_2_: li 31,1
+	_litmus_P1_3_: stw 31,0(9)
+	_litmus_P0_0_: li 11,1
+	_litmus_P0_1_: stw 11,0(9)
+	_litmus_P2_0_: lwz 27,0(11)
+	_litmus_P2_1_: xor 10,27,27
+	_litmus_P2_2_: lwzx 30,10,9
+Test WRC+sync+addr Allowed
+Histogram (7 states)
+246599602:>1:r1=0; 2:r1=0; 2:r4=0;
+156135586:>1:r1=1; 2:r1=0; 2:r4=0;
+47612207:>1:r1=0; 2:r1=1; 2:r4=0;
+54966821:>1:r1=0; 2:r1=0; 2:r4=1;
+294848602:>1:r1=1; 2:r1=0; 2:r4=1;
+143259877:>1:r1=0; 2:r1=1; 2:r4=1;
+56577305:>1:r1=1; 2:r1=1; 2:r4=1;
+No
+
+Witnesses
+Positive: 0, Negative: 1000000000
+Condition exists (1:r1=1 /\ 2:r1=1 /\ 2:r4=0) is NOT validated
+Hash=be410256c0d1f35ef062973a4aabdc46
+Cycle=Rfe SyncdRW Rfe DpAddrdR Fre
+Time WRC+sync+addr 88.40
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/VAR2/WRC/WRC+data+sync.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC WRC+data+sync
+"Rfe DpDatadW Rfe SyncdRR Fre"
+
+{0:r2=y; 1:r2=y; 1:r4=x; 2:r2=x; 2:r4=y;}
+
+ P0           | P1           | P2           ;
+ li r1,1      | lwz r1,0(r2) | lwz r1,0(r2) ;
+ stw r1,0(r2) | xor r3,r1,r1 | sync         ;
+              | addi r3,r3,1 | lwz r3,0(r4) ;
+              | stw r3,0(r4) |              ;
+
+exists (1:r1=1 /\ 2:r1=1 /\ 2:r3=0)
+Generated assembler
+	_litmus_P1_0_: lwz 10,0(11)
+	_litmus_P1_1_: xor 31,10,10
+	_litmus_P1_2_: addi 31,31,1
+	_litmus_P1_3_: stw 31,0(9)
+	_litmus_P0_0_: li 11,1
+	_litmus_P0_1_: stw 11,0(9)
+	_litmus_P2_0_: lwz 10,0(11)
+	_litmus_P2_1_: sync
+	_litmus_P2_2_: lwz 30,0(9)
+Test WRC+data+sync Allowed
+Histogram (8 states)
+163805287:>1:r1=0; 2:r1=0; 2:r3=0;
+110596779:>1:r1=1; 2:r1=0; 2:r3=0;
+77760327:>1:r1=0; 2:r1=1; 2:r3=0;
+18    :>1:r1=1; 2:r1=1; 2:r3=0;
+40323872:>1:r1=0; 2:r1=0; 2:r3=1;
+278225363:>1:r1=1; 2:r1=0; 2:r3=1;
+220300748:>1:r1=0; 2:r1=1; 2:r3=1;
+108987606:>1:r1=1; 2:r1=1; 2:r3=1;
+Ok
+
+Witnesses
+Positive: 18, Negative: 999999982
+Condition exists (1:r1=1 /\ 2:r1=1 /\ 2:r3=0) is validated
+Hash=279a9527a3b4027bdad179e3e387d3e0
+Cycle=Rfe SyncdRR Fre Rfe DpDatadW
+Time WRC+data+sync 87.04
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/VAR2/WRC/WRC+lwsync+addr.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC WRC+lwsync+addr
+"Rfe LwSyncdRW Rfe DpAddrdR Fre"
+
+{0:r2=y; 1:r2=y; 1:r4=x; 2:r2=x; 2:r5=y;}
+
+ P0           | P1           | P2            ;
+ li r1,1      | lwz r1,0(r2) | lwz r1,0(r2)  ;
+ stw r1,0(r2) | lwsync       | xor r3,r1,r1  ;
+              | li r3,1      | lwzx r4,r3,r5 ;
+              | stw r3,0(r4) |               ;
+
+exists (1:r1=1 /\ 2:r1=1 /\ 2:r4=0)
+Generated assembler
+	_litmus_P1_0_: lwz 10,0(11)
+	_litmus_P1_1_: lwsync
+	_litmus_P1_2_: li 31,1
+	_litmus_P1_3_: stw 31,0(9)
+	_litmus_P0_0_: li 11,1
+	_litmus_P0_1_: stw 11,0(9)
+	_litmus_P2_0_: lwz 27,0(11)
+	_litmus_P2_1_: xor 10,27,27
+	_litmus_P2_2_: lwzx 30,10,9
+Test WRC+lwsync+addr Allowed
+Histogram (7 states)
+234195778:>1:r1=0; 2:r1=0; 2:r4=0;
+147567652:>1:r1=1; 2:r1=0; 2:r4=0;
+64987924:>1:r1=0; 2:r1=1; 2:r4=0;
+36287672:>1:r1=0; 2:r1=0; 2:r4=1;
+293644323:>1:r1=1; 2:r1=0; 2:r4=1;
+158646025:>1:r1=0; 2:r1=1; 2:r4=1;
+64670626:>1:r1=1; 2:r1=1; 2:r4=1;
+No
+
+Witnesses
+Positive: 0, Negative: 1000000000
+Condition exists (1:r1=1 /\ 2:r1=1 /\ 2:r4=0) is NOT validated
+Hash=33e2ab568851e84a24d7b02943beb485
+Cycle=Rfe LwSyncdRW Rfe DpAddrdR Fre
+Time WRC+lwsync+addr 88.21
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/VAR2/IRIW/IRIW.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC IRIW
+"Rfe PodRR Fre Rfe PodRR Fre"
+
+{0:r2=y; 1:r2=y; 1:r4=x; 2:r2=x; 3:r2=x; 3:r4=y;}
+
+ P0           | P1           | P2           | P3           ;
+ li r1,1      | lwz r1,0(r2) | li r1,1      | lwz r1,0(r2) ;
+ stw r1,0(r2) | lwz r3,0(r4) | stw r1,0(r2) | lwz r3,0(r4) ;
+
+exists (1:r1=1 /\ 1:r3=0 /\ 3:r1=1 /\ 3:r3=0)
+Generated assembler
+	_litmus_P1_0_: lwz 30,0(11)
+	_litmus_P1_1_: lwz 31,0(9)
+	_litmus_P0_0_: li 11,1
+	_litmus_P0_1_: stw 11,0(9)
+	_litmus_P3_0_: lwz 30,0(11)
+	_litmus_P3_1_: lwz 31,0(9)
+	_litmus_P2_0_: li 11,1
+	_litmus_P2_1_: stw 11,0(9)
+Test IRIW Allowed
+Histogram (16 states)
+134902877:>1:r1=0; 1:r3=0; 3:r1=0; 3:r3=0;
+25839830:>1:r1=1; 1:r3=0; 3:r1=0; 3:r3=0;
+29469089:>1:r1=0; 1:r3=1; 3:r1=0; 3:r3=0;
+63310973:>1:r1=1; 1:r3=1; 3:r1=0; 3:r3=0;
+24546906:>1:r1=0; 1:r3=0; 3:r1=1; 3:r3=0;
+117125:>1:r1=1; 1:r3=0; 3:r1=1; 3:r3=0;
+63210884:>1:r1=0; 1:r3=1; 3:r1=1; 3:r3=0;
+32767936:>1:r1=1; 1:r3=1; 3:r1=1; 3:r3=0;
+30793566:>1:r1=0; 1:r3=0; 3:r1=0; 3:r3=1;
+63411530:>1:r1=1; 1:r3=0; 3:r1=0; 3:r3=1;
+393563:>1:r1=0; 1:r3=1; 3:r1=0; 3:r3=1;
+39567403:>1:r1=1; 1:r3=1; 3:r1=0; 3:r3=1;
+63494708:>1:r1=0; 1:r3=0; 3:r1=1; 3:r3=1;
+32685341:>1:r1=1; 1:r3=0; 3:r1=1; 3:r3=1;
+39891887:>1:r1=0; 1:r3=1; 3:r1=1; 3:r3=1;
+155596382:>1:r1=1; 1:r3=1; 3:r1=1; 3:r3=1;
+Ok
+
+Witnesses
+Positive: 117125, Negative: 799882875
+Condition exists (1:r1=1 /\ 1:r3=0 /\ 3:r1=1 /\ 3:r3=0) is validated
+Hash=74e6d610f502a8b9a567baf31570034b
+Cycle=Rfe PodRR Fre Rfe PodRR Fre
+Time IRIW 104.37
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/VAR2/IRIW/IRIW+syncs.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC IRIW+syncs
+"Rfe SyncdRR Fre Rfe SyncdRR Fre"
+
+{0:r2=y; 1:r2=y; 1:r4=x; 2:r2=x; 3:r2=x; 3:r4=y;}
+
+ P0           | P1           | P2           | P3           ;
+ li r1,1      | lwz r1,0(r2) | li r1,1      | lwz r1,0(r2) ;
+ stw r1,0(r2) | sync         | stw r1,0(r2) | sync         ;
+              | lwz r3,0(r4) |              | lwz r3,0(r4) ;
+
+exists (1:r1=1 /\ 1:r3=0 /\ 3:r1=1 /\ 3:r3=0)
+Generated assembler
+	_litmus_P1_0_: lwz 30,0(11)
+	_litmus_P1_1_: sync
+	_litmus_P1_2_: lwz 31,0(9)
+	_litmus_P0_0_: li 11,1
+	_litmus_P0_1_: stw 11,0(9)
+	_litmus_P3_0_: lwz 30,0(11)
+	_litmus_P3_1_: sync
+	_litmus_P3_2_: lwz 31,0(9)
+	_litmus_P2_0_: li 11,1
+	_litmus_P2_1_: stw 11,0(9)
+Test IRIW+syncs Allowed
+Histogram (15 states)
+86332603:>1:r1=0; 1:r3=0; 3:r1=0; 3:r3=0;
+7037296:>1:r1=1; 1:r3=0; 3:r1=0; 3:r3=0;
+55641064:>1:r1=0; 1:r3=1; 3:r1=0; 3:r3=0;
+49383273:>1:r1=1; 1:r3=1; 3:r1=0; 3:r3=0;
+8106131:>1:r1=0; 1:r3=0; 3:r1=1; 3:r3=0;
+45591123:>1:r1=0; 1:r3=1; 3:r1=1; 3:r3=0;
+14381507:>1:r1=1; 1:r3=1; 3:r1=1; 3:r3=0;
+54133197:>1:r1=0; 1:r3=0; 3:r1=0; 3:r3=1;
+41645989:>1:r1=1; 1:r3=0; 3:r1=0; 3:r3=1;
+16833125:>1:r1=0; 1:r3=1; 3:r1=0; 3:r3=1;
+78500489:>1:r1=1; 1:r3=1; 3:r1=0; 3:r3=1;
+54818378:>1:r1=0; 1:r3=0; 3:r1=1; 3:r3=1;
+14045632:>1:r1=1; 1:r3=0; 3:r1=1; 3:r3=1;
+85878454:>1:r1=0; 1:r3=1; 3:r1=1; 3:r3=1;
+187671739:>1:r1=1; 1:r3=1; 3:r1=1; 3:r3=1;
+No
+
+Witnesses
+Positive: 0, Negative: 800000000
+Condition exists (1:r1=1 /\ 1:r3=0 /\ 3:r1=1 /\ 3:r3=0) is NOT validated
+Hash=43af7906bc47200ea3ebeb5c95aa8588
+Cycle=Rfe SyncdRR Fre Rfe SyncdRR Fre
+Time IRIW+syncs 119.56
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/VAR2/IRIW/IRIW+addrs.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC IRIW+addrs
+"Rfe DpAddrdR Fre Rfe DpAddrdR Fre"
+
+{0:r2=y; 1:r2=y; 1:r5=x; 2:r2=x; 3:r2=x; 3:r5=y;}
+
+ P0           | P1            | P2           | P3            ;
+ li r1,1      | lwz r1,0(r2)  | li r1,1      | lwz r1,0(r2)  ;
+ stw r1,0(r2) | xor r3,r1,r1  | stw r1,0(r2) | xor r3,r1,r1  ;
+              | lwzx r4,r3,r5 |              | lwzx r4,r3,r5 ;
+
+exists (1:r1=1 /\ 1:r4=0 /\ 3:r1=1 /\ 3:r4=0)
+Generated assembler
+	_litmus_P1_0_: lwz 30,0(11)
+	_litmus_P1_1_: xor 10,30,30
+	_litmus_P1_2_: lwzx 31,10,9
+	_litmus_P0_0_: li 11,1
+	_litmus_P0_1_: stw 11,0(9)
+	_litmus_P3_0_: lwz 30,0(11)
+	_litmus_P3_1_: xor 10,30,30
+	_litmus_P3_2_: lwzx 31,10,9
+	_litmus_P2_0_: li 11,1
+	_litmus_P2_1_: stw 11,0(9)
+Test IRIW+addrs Allowed
+Histogram (16 states)
+118026791:>1:r1=0; 1:r4=0; 3:r1=0; 3:r4=0;
+16548642:>1:r1=1; 1:r4=0; 3:r1=0; 3:r4=0;
+39876280:>1:r1=0; 1:r4=1; 3:r1=0; 3:r4=0;
+68868317:>1:r1=1; 1:r4=1; 3:r1=0; 3:r4=0;
+16948183:>1:r1=0; 1:r4=0; 3:r1=1; 3:r4=0;
+263   :>1:r1=1; 1:r4=0; 3:r1=1; 3:r4=0;
+52472483:>1:r1=0; 1:r4=1; 3:r1=1; 3:r4=0;
+21288488:>1:r1=1; 1:r4=1; 3:r1=1; 3:r4=0;
+39463658:>1:r1=0; 1:r4=0; 3:r1=0; 3:r4=1;
+51639204:>1:r1=1; 1:r4=0; 3:r1=0; 3:r4=1;
+962545:>1:r1=0; 1:r4=1; 3:r1=0; 3:r4=1;
+52969290:>1:r1=1; 1:r4=1; 3:r1=0; 3:r4=1;
+69937494:>1:r1=0; 1:r4=0; 3:r1=1; 3:r4=1;
+21247352:>1:r1=1; 1:r4=0; 3:r1=1; 3:r4=1;
+53313693:>1:r1=0; 1:r4=1; 3:r1=1; 3:r4=1;
+176437317:>1:r1=1; 1:r4=1; 3:r1=1; 3:r4=1;
+Ok
+
+Witnesses
+Positive: 263, Negative: 799999737
+Condition exists (1:r1=1 /\ 1:r4=0 /\ 3:r1=1 /\ 3:r4=0) is validated
+Hash=de52eee8d1fe21f06b51c300f7477d83
+Cycle=Rfe DpAddrdR Fre Rfe DpAddrdR Fre
+Time IRIW+addrs 105.63
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/VAR2/IRIW/IRIW+lwsyncs.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC IRIW+lwsyncs
+"Rfe LwSyncdRR Fre Rfe LwSyncdRR Fre"
+
+{0:r2=y; 1:r2=y; 1:r4=x; 2:r2=x; 3:r2=x; 3:r4=y;}
+
+ P0           | P1           | P2           | P3           ;
+ li r1,1      | lwz r1,0(r2) | li r1,1      | lwz r1,0(r2) ;
+ stw r1,0(r2) | lwsync       | stw r1,0(r2) | lwsync       ;
+              | lwz r3,0(r4) |              | lwz r3,0(r4) ;
+
+exists (1:r1=1 /\ 1:r3=0 /\ 3:r1=1 /\ 3:r3=0)
+Generated assembler
+	_litmus_P1_0_: lwz 30,0(11)
+	_litmus_P1_1_: lwsync
+	_litmus_P1_2_: lwz 31,0(9)
+	_litmus_P0_0_: li 11,1
+	_litmus_P0_1_: stw 11,0(9)
+	_litmus_P3_0_: lwz 30,0(11)
+	_litmus_P3_1_: lwsync
+	_litmus_P3_2_: lwz 31,0(9)
+	_litmus_P2_0_: li 11,1
+	_litmus_P2_1_: stw 11,0(9)
+Test IRIW+lwsyncs Allowed
+Histogram (16 states)
+114221690:>1:r1=0; 1:r3=0; 3:r1=0; 3:r3=0;
+12525517:>1:r1=1; 1:r3=0; 3:r1=0; 3:r3=0;
+48361825:>1:r1=0; 1:r3=1; 3:r1=0; 3:r3=0;
+59919492:>1:r1=1; 1:r3=1; 3:r1=0; 3:r3=0;
+13958619:>1:r1=0; 1:r3=0; 3:r1=1; 3:r3=0;
+681   :>1:r1=1; 1:r3=0; 3:r1=1; 3:r3=0;
+53388851:>1:r1=0; 1:r3=1; 3:r1=1; 3:r3=0;
+17390286:>1:r1=1; 1:r3=1; 3:r1=1; 3:r3=0;
+47830840:>1:r1=0; 1:r3=0; 3:r1=0; 3:r3=1;
+48692860:>1:r1=1; 1:r3=0; 3:r1=0; 3:r3=1;
+3059926:>1:r1=0; 1:r3=1; 3:r1=0; 3:r3=1;
+59036249:>1:r1=1; 1:r3=1; 3:r1=0; 3:r3=1;
+66804747:>1:r1=0; 1:r3=0; 3:r1=1; 3:r3=1;
+17095656:>1:r1=1; 1:r3=0; 3:r1=1; 3:r3=1;
+64981919:>1:r1=0; 1:r3=1; 3:r1=1; 3:r3=1;
+172730842:>1:r1=1; 1:r3=1; 3:r1=1; 3:r3=1;
+Ok
+
+Witnesses
+Positive: 681, Negative: 799999319
+Condition exists (1:r1=1 /\ 1:r3=0 /\ 3:r1=1 /\ 3:r3=0) is validated
+Hash=3a03b5e79b6e1f72d2c462ab07cb1f5a
+Cycle=Rfe LwSyncdRR Fre Rfe LwSyncdRR Fre
+Time IRIW+lwsyncs 116.35
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/VAR2/ISA2/ISA2+sync+data+addr.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC ISA2+sync+data+addr
+"SyncdWW Rfe DpDatadW Rfe DpAddrdR Fre"
+
+{0:r2=z; 0:r4=x; 1:r2=x; 1:r4=y; 2:r2=y; 2:r5=z;}
+
+ P0           | P1           | P2            ;
+ li r1,1      | lwz r1,0(r2) | lwz r1,0(r2)  ;
+ stw r1,0(r2) | xor r3,r1,r1 | xor r3,r1,r1  ;
+ sync         | addi r3,r3,1 | lwzx r4,r3,r5 ;
+ li r3,1      | stw r3,0(r4) |               ;
+ stw r3,0(r4) |              |               ;
+
+exists (1:r1=1 /\ 2:r1=1 /\ 2:r4=0)
+Generated assembler
+	_litmus_P1_0_: lwz 10,0(11)
+	_litmus_P1_1_: xor 31,10,10
+	_litmus_P1_2_: addi 31,31,1
+	_litmus_P1_3_: stw 31,0(9)
+	_litmus_P0_0_: li 31,1
+	_litmus_P0_1_: stw 31,0(11)
+	_litmus_P0_2_: sync
+	_litmus_P0_3_: li 10,1
+	_litmus_P0_4_: stw 10,0(9)
+	_litmus_P2_0_: lwz 27,0(11)
+	_litmus_P2_1_: xor 10,27,27
+	_litmus_P2_2_: lwzx 30,10,9
+Test ISA2+sync+data+addr Allowed
+Histogram (7 states)
+285762380:>1:r1=0; 2:r1=0; 2:r4=0;
+54979983:>1:r1=1; 2:r1=0; 2:r4=0;
+119721447:>1:r1=0; 2:r1=1; 2:r4=0;
+80240263:>1:r1=0; 2:r1=0; 2:r4=1;
+162407236:>1:r1=1; 2:r1=0; 2:r4=1;
+260465479:>1:r1=0; 2:r1=1; 2:r4=1;
+36423212:>1:r1=1; 2:r1=1; 2:r4=1;
+No
+
+Witnesses
+Positive: 0, Negative: 1000000000
+Condition exists (1:r1=1 /\ 2:r1=1 /\ 2:r4=0) is NOT validated
+Hash=523d670dd41a11fd5fd9ce18b8127a2a
+Cycle=Rfe DpAddrdR Fre SyncdWW Rfe DpDatadW
+Time ISA2+sync+data+addr 104.69
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/VAR2/ISA2/ISA2+lwsync+data+addr.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC ISA2+lwsync+data+addr
+"LwSyncdWW Rfe DpDatadW Rfe DpAddrdR Fre"
+
+{0:r2=z; 0:r4=x; 1:r2=x; 1:r4=y; 2:r2=y; 2:r5=z;}
+
+ P0           | P1           | P2            ;
+ li r1,1      | lwz r1,0(r2) | lwz r1,0(r2)  ;
+ stw r1,0(r2) | xor r3,r1,r1 | xor r3,r1,r1  ;
+ lwsync       | addi r3,r3,1 | lwzx r4,r3,r5 ;
+ li r3,1      | stw r3,0(r4) |               ;
+ stw r3,0(r4) |              |               ;
+
+exists (1:r1=1 /\ 2:r1=1 /\ 2:r4=0)
+Generated assembler
+	_litmus_P1_0_: lwz 10,0(11)
+	_litmus_P1_1_: xor 31,10,10
+	_litmus_P1_2_: addi 31,31,1
+	_litmus_P1_3_: stw 31,0(9)
+	_litmus_P0_0_: li 31,1
+	_litmus_P0_1_: stw 31,0(11)
+	_litmus_P0_2_: lwsync
+	_litmus_P0_3_: li 10,1
+	_litmus_P0_4_: stw 10,0(9)
+	_litmus_P2_0_: lwz 27,0(11)
+	_litmus_P2_1_: xor 10,27,27
+	_litmus_P2_2_: lwzx 30,10,9
+Test ISA2+lwsync+data+addr Allowed
+Histogram (7 states)
+272296697:>1:r1=0; 2:r1=0; 2:r4=0;
+65905996:>1:r1=1; 2:r1=0; 2:r4=0;
+119067620:>1:r1=0; 2:r1=1; 2:r4=0;
+44943007:>1:r1=0; 2:r1=0; 2:r4=1;
+209655341:>1:r1=1; 2:r1=0; 2:r4=1;
+231190527:>1:r1=0; 2:r1=1; 2:r4=1;
+56940812:>1:r1=1; 2:r1=1; 2:r4=1;
+No
+
+Witnesses
+Positive: 0, Negative: 1000000000
+Condition exists (1:r1=1 /\ 2:r1=1 /\ 2:r4=0) is NOT validated
+Hash=a1ac3c04674d4ad8d9d4960d393ef462
+Cycle=Rfe DpAddrdR Fre LwSyncdWW Rfe DpDatadW
+Time ISA2+lwsync+data+addr 105.05
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/ppoa-r.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC ppoa-r
+"local W can be speculated!!"
+
+{1:r7=y; 1:r8=z; 1:r9=x; 0:r7=y; 0:r8=z;}
+
+ P0           | P1             ;
+ li r1,1      | lwz r1,0(r7)   ;
+ stw r1,0(r8) | cmpwi r1,0     ;
+ sync         | beq  L00       ;
+ li r2,1      | L00:           ;
+ stw r2,0(r7) | li r3,1        ;
+              | stw r3,0(r9)   ;
+              | lwz r2,0(r9)   ;
+              | xor r10,r2,r2  ;
+              | lwzx r4,r10,r8 ;
+
+locations [1:r1; 1:r4; ]
+exists (1:r1=1 /\ 1:r4=0)
+Generated assembler
+	_litmus_P1_0_: lwz 24,0(10)
+	_litmus_P1_1_: cmpwi 24,0
+	_litmus_P1_2_: beq LitL00
+	_litmus_P1_3_: LitL00:
+	_litmus_P1_4_: li 8,1
+	_litmus_P1_5_: stw 8,0(9)
+	_litmus_P1_6_: lwz 26,0(9)
+	_litmus_P1_7_: xor 7,26,26
+	_litmus_P1_8_: lwzx 25,7,11
+	_litmus_P0_0_: li 31,1
+	_litmus_P0_1_: stw 31,0(9)
+	_litmus_P0_2_: sync
+	_litmus_P0_3_: li 3,1
+	_litmus_P0_4_: stw 3,0(11)
+Test ppoa-r Allowed
+Histogram (4 states)
+649415527:>1:r1=0; 1:r4=0;
+132   :>1:r1=1; 1:r4=0;
+572534732:>1:r1=0; 1:r4=1;
+378049609:>1:r1=1; 1:r4=1;
+Ok
+
+Witnesses
+Positive: 132, Negative: 1599999868
+Condition exists (1:r1=1 /\ 1:r4=0) is validated
+Hash=f90d7c2cac71068dc5a3e0ae5ae7c648
+Time ppoa-r 79.26
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/ppoc-r.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC ppoc-r
+"Dependence chain, through memory"
+
+{1:r7=y; 1:r8=z; 1:r9=x; 0:r7=y; 0:r8=z;}
+
+ P0           | P1             ;
+ li r1,1      | lwz r1,0(r7)   ;
+ stw r1,0(r8) | xor r11,r1,r1  ;
+ sync         | li r3,1        ;
+ li r2,1      | stwx r3,r11,r9 ;
+ stw r2,0(r7) | lwz r2,0(r9)   ;
+              | xor r10,r2,r2  ;
+              | lwzx r4,r10,r8 ;
+
+locations [1:r1; 1:r4; ]
+~exists (1:r1=1 /\ 1:r4=0)
+Generated assembler
+	_litmus_P1_0_: lwz 23,0(10)
+	_litmus_P1_1_: xor 6,23,23
+	_litmus_P1_2_: li 8,1
+	_litmus_P1_3_: stwx 8,6,9
+	_litmus_P1_4_: lwz 25,0(9)
+	_litmus_P1_5_: xor 7,25,25
+	_litmus_P1_6_: lwzx 24,7,11
+	_litmus_P0_0_: li 31,1
+	_litmus_P0_1_: stw 31,0(9)
+	_litmus_P0_2_: sync
+	_litmus_P0_3_: li 3,1
+	_litmus_P0_4_: stw 3,0(11)
+Test ppoc-r Forbidden
+Histogram (3 states)
+655869144:>1:r1=0; 1:r4=0;
+539466343:>1:r1=0; 1:r4=1;
+404664513:>1:r1=1; 1:r4=1;
+Ok
+
+Witnesses
+Positive: 1600000000, Negative: 0
+Condition ~exists (1:r1=1 /\ 1:r4=0) is validated
+Hash=54d82d5e25039a8a614389219e75dd46
+Time ppoc-r 83.27
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/ppo1-r.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC ppo1-r
+"is RR to same location in ppo?"
+
+{1:r6=x; 1:r7=y; 1:r8=z; 0:r7=y; 0:r8=z;}
+
+ P0           | P1             ;
+ li r1,1      | lwz r1,0(r7)   ;
+ stw r1,0(r8) | xor r9,r1,r1   ;
+ sync         | lwzx r3,r9,r6  ;
+ li r2,2      | lwz r4,0(r6)   ;
+ stw r2,0(r7) | xor r10,r4,r4  ;
+              | lwzx r2,r10,r8 ;
+
+locations [1:r1; 1:r2; ]
+exists (1:r1=2 /\ 1:r2=0)
+Generated assembler
+	_litmus_P1_0_: lwz 23,0(11)
+	_litmus_P1_1_: xor 7,23,23
+	_litmus_P1_2_: lwzx 25,7,10
+	_litmus_P1_3_: lwz 8,0(10)
+	_litmus_P1_4_: xor 6,8,8
+	_litmus_P1_5_: lwzx 24,6,9
+	_litmus_P0_0_: li 31,1
+	_litmus_P0_1_: stw 31,0(9)
+	_litmus_P0_2_: sync
+	_litmus_P0_3_: li 3,2
+	_litmus_P0_4_: stw 3,0(11)
+Test ppo1-r Allowed
+Histogram (4 states)
+731203721:>1:r1=0; 1:r2=0;
+55431 :>1:r1=2; 1:r2=0;
+462900562:>1:r1=0; 1:r2=1;
+405840286:>1:r1=2; 1:r2=1;
+Ok
+
+Witnesses
+Positive: 55431, Negative: 1599944569
+Condition exists (1:r1=2 /\ 1:r2=0) is validated
+Hash=1f540e80a355db82b4e7c3945db69686
+Time ppo1-r 84.15
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/ppo3-r.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC ppo3-r
+"is RR to same location in ppo?, intervening write variation"
+
+{1:r6=x; 1:r7=y; 1:r8=z; 0:r7=y; 0:r8=z; 2:r6=x;}
+
+ P0           | P1             | P2           ;
+ li r1,1      | lwz r1,0(r7)   | li r1,1      ;
+ stw r1,0(r8) | xor r9,r1,r1   | stw r1,0(r6) ;
+ sync         | lwzx r3,r9,r6  |              ;
+ li r2,2      | lwz r4,0(r6)   |              ;
+ stw r2,0(r7) | xor r10,r4,r4  |              ;
+              | lwzx r2,r10,r8 |              ;
+
+locations [1:r1; 1:r2; 1:r3; 1:r4; ]
+~exists (1:r1=2 /\ 1:r2=0 /\ 1:r3=0 /\ 1:r4=1)
+Generated assembler
+	_litmus_P1_0_: lwz 20,0(11)
+	_litmus_P1_1_: xor 7,20,20
+	_litmus_P1_2_: lwzx 22,7,10
+	_litmus_P1_3_: lwz 8,0(10)
+	_litmus_P1_4_: xor 6,8,8
+	_litmus_P1_5_: lwzx 21,6,9
+	_litmus_P0_0_: li 31,1
+	_litmus_P0_1_: stw 31,0(9)
+	_litmus_P0_2_: sync
+	_litmus_P0_3_: li 10,2
+	_litmus_P0_4_: stw 10,0(11)
+	_litmus_P2_0_: li 11,1
+	_litmus_P2_1_: stw 11,0(9)
+Test ppo3-r Forbidden
+Histogram (11 states)
+291344648:>1:r1=0; 1:r2=0; 1:r3=0; 1:r4=0;
+1905  :>1:r1=2; 1:r2=0; 1:r3=0; 1:r4=0;
+96434592:>1:r1=0; 1:r2=1; 1:r3=0; 1:r4=0;
+52804666:>1:r1=2; 1:r2=1; 1:r3=0; 1:r4=0;
+261939:>1:r1=0; 1:r2=0; 1:r3=0; 1:r4=1;
+1005959:>1:r1=0; 1:r2=1; 1:r3=0; 1:r4=1;
+562086:>1:r1=2; 1:r2=1; 1:r3=0; 1:r4=1;
+130784267:>1:r1=0; 1:r2=0; 1:r3=1; 1:r4=1;
+10574 :>1:r1=2; 1:r2=0; 1:r3=1; 1:r4=1;
+190818691:>1:r1=0; 1:r2=1; 1:r3=1; 1:r4=1;
+235970673:>1:r1=2; 1:r2=1; 1:r3=1; 1:r4=1;
+Ok
+
+Witnesses
+Positive: 1000000000, Negative: 0
+Condition ~exists (1:r1=2 /\ 1:r2=0 /\ 1:r3=0 /\ 1:r4=1) is validated
+Hash=f16d5bc33e578afbe2c1e22ed901151b
+Time ppo3-r 110.10
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/../litmus.new/exp/blw-w/blw-w-006.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC blw-w-006
+"DpdR Fre LwSyncdWW Wse LwSyncdWW Rfe"
+
+{0:r2=x; 0:r4=y; 1:r2=y; 1:r4=z; 2:r2=z; 2:r5=x;}
+
+ P0           | P1           | P2            ;
+ li r1,1      | li r1,2      | lwz r1,0(r2)  ;
+ stw r1,0(r2) | stw r1,0(r2) | xor r3,r1,r1  ;
+ lwsync       | lwsync       | lwzx r4,r3,r5 ;
+ li r3,1      | li r3,1      |               ;
+ stw r3,0(r4) | stw r3,0(r4) |               ;
+
+exists (y=2 /\ 2:r1=1 /\ 2:r4=0)
+Generated assembler
+	_litmus_P1_0_: li 30,2
+	_litmus_P1_1_: stw 30,0(11)
+	_litmus_P1_2_: lwsync
+	_litmus_P1_3_: li 10,1
+	_litmus_P1_4_: stw 10,0(9)
+	_litmus_P0_0_: li 30,1
+	_litmus_P0_1_: stw 30,0(11)
+	_litmus_P0_2_: lwsync
+	_litmus_P0_3_: li 10,1
+	_litmus_P0_4_: stw 10,0(9)
+	_litmus_P2_0_: lwz 26,0(11)
+	_litmus_P2_1_: xor 10,26,26
+	_litmus_P2_2_: lwzx 27,10,9
+Test blw-w-006 Allowed
+Histogram (8 states)
+280822115:>2:r1=0; 2:r4=0; y=1;
+88189782:>2:r1=1; 2:r4=0; y=1;
+48893613:>2:r1=0; 2:r4=1; y=1;
+187534188:>2:r1=1; 2:r4=1; y=1;
+92430080:>2:r1=0; 2:r4=0; y=2;
+1815  :>2:r1=1; 2:r4=0; y=2;
+244955796:>2:r1=0; 2:r4=1; y=2;
+57172611:>2:r1=1; 2:r4=1; y=2;
+Ok
+
+Witnesses
+Positive: 1815, Negative: 999998185
+Condition exists (y=2 /\ 2:r1=1 /\ 2:r4=0) is validated
+Hash=2e3c762333e6fd2b122415c163d1229a
+Cycle=DpdR Fre LwSyncdWW Wse LwSyncdWW Rfe
+Relax blw-w-006 Ok BCLwSyncdWW
+Time blw-w-006 115.58
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/bsync-w-006.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC bsync-w-006
+"DpdR Fre SyncdWW Wse SyncdWW Rfe"
+
+{0:r2=x; 0:r4=y; 1:r2=y; 1:r4=z; 2:r2=z; 2:r5=x;}
+
+ P0           | P1           | P2            ;
+ li r1,1      | li r1,2      | lwz r1,0(r2)  ;
+ stw r1,0(r2) | stw r1,0(r2) | xor r3,r1,r1  ;
+ sync         | sync         | lwzx r4,r3,r5 ;
+ li r3,1      | li r3,1      |               ;
+ stw r3,0(r4) | stw r3,0(r4) |               ;
+
+~exists (y=2 /\ 2:r1=1 /\ 2:r4=0)
+Generated assembler
+	_litmus_P1_0_: li 30,2
+	_litmus_P1_1_: stw 30,0(11)
+	_litmus_P1_2_: sync
+	_litmus_P1_3_: li 10,1
+	_litmus_P1_4_: stw 10,0(9)
+	_litmus_P0_0_: li 30,1
+	_litmus_P0_1_: stw 30,0(11)
+	_litmus_P0_2_: sync
+	_litmus_P0_3_: li 10,1
+	_litmus_P0_4_: stw 10,0(9)
+	_litmus_P2_0_: lwz 26,0(11)
+	_litmus_P2_1_: xor 10,26,26
+	_litmus_P2_2_: lwzx 27,10,9
+Test bsync-w-006 Forbidden
+Histogram (7 states)
+335842979:>2:r1=0; 2:r4=0; y=1;
+51611076:>2:r1=1; 2:r4=0; y=1;
+124698530:>2:r1=0; 2:r4=1; y=1;
+160676363:>2:r1=1; 2:r4=1; y=1;
+82654140:>2:r1=0; 2:r4=0; y=2;
+212417462:>2:r1=0; 2:r4=1; y=2;
+32099450:>2:r1=1; 2:r4=1; y=2;
+Ok
+
+Witnesses
+Positive: 1000000000, Negative: 0
+Condition ~exists (y=2 /\ 2:r1=1 /\ 2:r4=0) is validated
+Hash=9d7f07ce6da224ac7eca2af4a5915a72
+Relax bsync-w-006 Ok BSyncdWW
+Time bsync-w-006 117.03
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/e1.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC e1
+
+{0:r5=x; 0:r6=y; 0:r1=1; 0:r2=2; 1:r5=x; 1:r6=y; 1:r1=1; 1:r2=2;}
+
+ P0           | P1           ;
+ stw r1,0(r5) | stw r1,0(r6) ;
+ stw r2,0(r6) | stw r2,0(r5) ;
+
+locations [x; y; ]
+exists (x=1 /\ y=1)
+Generated assembler
+	_litmus_P1_0_: stw 5,0(9)
+	_litmus_P1_1_: stw 4,0(11)
+	_litmus_P0_0_: stw 5,0(11)
+	_litmus_P0_1_: stw 4,0(9)
+Test e1 Allowed
+Histogram (4 states)
+31634907:>x=1; y=1;
+752821546:>x=2; y=1;
+758670512:>x=1; y=2;
+56873035:>x=2; y=2;
+Ok
+
+Witnesses
+Positive: 31634907, Negative: 1568365093
+Condition exists (x=1 /\ y=1) is validated
+Hash=5969b3dc703e52bc944f3ef6f54099f4
+Time e1 65.68
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/e2.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC e2
+
+{0:r5=x; 0:r6=y; 0:r1=1; 0:r2=2; 1:r5=x; 1:r6=y; 1:r1=1; 1:r2=2;}
+
+ P0           | P1           ;
+ stw r1,0(r5) | stw r1,0(r6) ;
+ sync         | sync         ;
+ stw r2,0(r6) | stw r2,0(r5) ;
+
+locations [x; y; ]
+~exists (x=1 /\ y=1)
+Generated assembler
+	_litmus_P1_0_: stw 5,0(9)
+	_litmus_P1_1_: sync
+	_litmus_P1_2_: stw 4,0(11)
+	_litmus_P0_0_: stw 5,0(11)
+	_litmus_P0_1_: sync
+	_litmus_P0_2_: stw 4,0(9)
+Test e2 Forbidden
+Histogram (3 states)
+450586806:>x=2; y=1;
+458483717:>x=1; y=2;
+690929477:>x=2; y=2;
+Ok
+
+Witnesses
+Positive: 1600000000, Negative: 0
+Condition ~exists (x=1 /\ y=1) is validated
+Hash=f6740bd88138509f3c7a8f7fa80f5484
+Time e2 84.70
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/e3.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC e3
+
+{0:r5=x; 0:r6=y; 0:r1=1; 0:r2=2; 1:r5=x; 1:r6=y; 1:r1=1; 1:r2=2;}
+
+ P0           | P1           ;
+ stw r1,0(r5) | stw r1,0(r6) ;
+ lwsync       | lwsync       ;
+ stw r2,0(r6) | stw r2,0(r5) ;
+
+locations [x; y; ]
+~exists (x=1 /\ y=1)
+Generated assembler
+	_litmus_P1_0_: stw 5,0(9)
+	_litmus_P1_1_: lwsync
+	_litmus_P1_2_: stw 4,0(11)
+	_litmus_P0_0_: stw 5,0(11)
+	_litmus_P0_1_: lwsync
+	_litmus_P0_2_: stw 4,0(9)
+Test e3 Forbidden
+Histogram (3 states)
+700031070:>x=2; y=1;
+694185634:>x=1; y=2;
+205783296:>x=2; y=2;
+Ok
+
+Witnesses
+Positive: 1600000000, Negative: 0
+Condition ~exists (x=1 /\ y=1) is validated
+Hash=819dd6cea834bccda9b69a2d797ab9ea
+Time e3 88.52
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/VAR2/LB/LB.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC LB
+"PodRW Rfe PodRW Rfe"
+
+{0:r2=y; 0:r4=x; 1:r2=x; 1:r4=y;}
+
+ P0           | P1           ;
+ lwz r1,0(r2) | lwz r1,0(r2) ;
+ li r3,1      | li r3,1      ;
+ stw r3,0(r4) | stw r3,0(r4) ;
+
+exists (0:r1=1 /\ 1:r1=1)
+Generated assembler
+	_litmus_P1_0_: lwz 30,0(11)
+	_litmus_P1_1_: li 31,1
+	_litmus_P1_2_: stw 31,0(9)
+	_litmus_P0_0_: lwz 30,0(11)
+	_litmus_P0_1_: li 31,1
+	_litmus_P0_2_: stw 31,0(9)
+Test LB Allowed
+Histogram (3 states)
+135128544:>0:r1=0; 1:r1=0;
+732010922:>0:r1=1; 1:r1=0;
+732860534:>0:r1=0; 1:r1=1;
+No
+
+Witnesses
+Positive: 0, Negative: 1600000000
+Condition exists (0:r1=1 /\ 1:r1=1) is NOT validated
+Hash=353218b7a0931ddb34a3e16232fcae22
+Cycle=Rfe PodRW Rfe PodRW
+Time LB 56.29
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/VAR2/LB/LB+datas.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC LB+datas
+"DpDatadW Rfe DpDatadW Rfe"
+
+{0:r2=y; 0:r4=x; 1:r2=x; 1:r4=y;}
+
+ P0           | P1           ;
+ lwz r1,0(r2) | lwz r1,0(r2) ;
+ xor r3,r1,r1 | xor r3,r1,r1 ;
+ addi r3,r3,1 | addi r3,r3,1 ;
+ stw r3,0(r4) | stw r3,0(r4) ;
+
+exists (0:r1=1 /\ 1:r1=1)
+Generated assembler
+	_litmus_P1_0_: lwz 30,0(11)
+	_litmus_P1_1_: xor 31,30,30
+	_litmus_P1_2_: addi 31,31,1
+	_litmus_P1_3_: stw 31,0(9)
+	_litmus_P0_0_: lwz 30,0(11)
+	_litmus_P0_1_: xor 31,30,30
+	_litmus_P0_2_: addi 31,31,1
+	_litmus_P0_3_: stw 31,0(9)
+Test LB+datas Allowed
+Histogram (3 states)
+139419641:>0:r1=0; 1:r1=0;
+726224518:>0:r1=1; 1:r1=0;
+734355841:>0:r1=0; 1:r1=1;
+No
+
+Witnesses
+Positive: 0, Negative: 1600000000
+Condition exists (0:r1=1 /\ 1:r1=1) is NOT validated
+Hash=bda76365f0f1295a86d5566e3a2f25ad
+Cycle=Rfe DpDatadW Rfe DpDatadW
+Time LB+datas 57.97
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/tests/VAR2/LB/LB+addrs.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC LB+addrs
+"DpAddrdW Rfe DpAddrdW Rfe"
+
+{0:r2=y; 0:r5=x; 1:r2=x; 1:r5=y;}
+
+ P0            | P1            ;
+ lwz r1,0(r2)  | lwz r1,0(r2)  ;
+ xor r3,r1,r1  | xor r3,r1,r1  ;
+ li r4,1       | li r4,1       ;
+ stwx r4,r3,r5 | stwx r4,r3,r5 ;
+
+exists (0:r1=1 /\ 1:r1=1)
+Generated assembler
+	_litmus_P1_0_: lwz 30,0(11)
+	_litmus_P1_1_: xor 31,30,30
+	_litmus_P1_2_: li 10,1
+	_litmus_P1_3_: stwx 10,31,9
+	_litmus_P0_0_: lwz 30,0(11)
+	_litmus_P0_1_: xor 31,30,30
+	_litmus_P0_2_: li 10,1
+	_litmus_P0_3_: stwx 10,31,9
+Test LB+addrs Allowed
+Histogram (3 states)
+144688566:>0:r1=0; 1:r1=0;
+721954733:>0:r1=1; 1:r1=0;
+733356701:>0:r1=0; 1:r1=1;
+No
+
+Witnesses
+Positive: 0, Negative: 1600000000
+Condition exists (0:r1=1 /\ 1:r1=1) is NOT validated
+Hash=76f9a74db41e2e15d275677b0e3ab817
+Cycle=Rfe DpAddrdW Rfe DpAddrdW
+Time LB+addrs 57.26
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for ../../mem.new/../litmus.new/ppc/ppc-adir6.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC ppc-adir6
+"Register shadowing illustration"
+
+{0:r4=x; 1:r4=x; 0:r5=y; 1:r5=y; x=0; y=0;}
+
+ P0           | P1           ;
+ lwz r1,0(r4) | lwz r3,0(r5) ;
+ mr r2,r1     | addi r3,r3,1 ;
+ li r1,1      | stw r3,0(r4) ;
+ stw r1,0(r5) |              ;
+
+exists (0:r1=1 /\ 0:r2=2 /\ 1:r3=2 /\ y=1 /\ x=2)
+Generated assembler
+	_litmus_P1_0_: lwz 30,0(9)
+	_litmus_P1_1_: addi 30,30,1
+	_litmus_P1_2_: stw 30,0(11)
+	_litmus_P0_0_: lwz 28,0(11)
+	_litmus_P0_1_: mr 30,28
+	_litmus_P0_2_: li 28,1
+	_litmus_P0_3_: stw 28,0(9)
+Test ppc-adir6 Allowed
+Histogram (3 states)
+146705306:>0:r1=1; 0:r2=0; 1:r3=1; x=1; y=1;
+719985765:>0:r1=1; 0:r2=1; 1:r3=1; x=1; y=1;
+733308929:>0:r1=1; 0:r2=0; 1:r3=2; x=2; y=1;
+No
+
+Witnesses
+Positive: 0, Negative: 1600000000
+Condition exists (0:r1=1 /\ 0:r2=2 /\ 1:r3=2 /\ y=1 /\ x=2) is NOT validated
+Hash=d50b871793c03cc3e13bb23d1bda6a2f
+Time ppc-adir6 86.84
+Revision 6548, version 3.00+1
+Parameters
+#ifndef SIZE_OF_TEST
+#define SIZE_OF_TEST 100000
+#endif
+#ifndef NUMBER_OF_RUN
+#define NUMBER_OF_RUN 1000
+#endif
+#ifndef AVAIL
+#define AVAIL 0
+#endif
+/* gcc options: -D_GNU_SOURCE -Wall -std=gnu99 -O -m64 -pthread */
+/* barrier: user */
+/* launch: changing */
+/* cache: false */
+/* call: false */
+/* affinity: incr0 */
+/* randomise_affinity: false */
+/* prealloc: false */
+/* memory: indirect */
+/* safer: true */
+/* preload: true */
+/* para: self */
+/* speedcheck: false */
+/* proc used: 0 */
+GCCOPTS="-D_GNU_SOURCE -Wall -std=gnu99 -O -m64 -pthread"
+LITMUSOPTS=-a 0 -r 1000
+lun déc 13 14:00:21 CET 2010

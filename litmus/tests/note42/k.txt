@@ -1,0 +1,5 @@
+LB Allow
+LB+datas Forbid
+LB+ctrl+data+po Allow
+LB+ctrl+data+ctrl-double Allow
+LB+ctrl+data+ctrl-single Forbid

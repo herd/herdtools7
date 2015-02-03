@@ -1,0 +1,25 @@
+C T16
+"Missaligned accesses, uint16_t"
+{
+uint8_t p[256] ; 
+uint8_t 1:r1 ; 
+uint8_t 1:r2 ; 
+uint16_t 1:r3 ; 
+}
+
+P0(volatile uint8_t *p) {
+  uint16_t *q = (uint16_t *)(p+127);
+  *q = 0x102 ;
+}
+
+P1(volatile uint8_t *p) {
+  uint8_t r1 = p[128];
+  mbar() ;
+  uint8_t r2 = p[127];
+  mbar() ;
+  uint16_t *q = (uint16_t *)(p+127);
+  uint16_t r3 = *q;
+}
+
+locations[1:r3;]
+exists (1:r1=2 /\ 1:r2=0)

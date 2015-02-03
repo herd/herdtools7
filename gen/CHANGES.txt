@@ -1,0 +1,54 @@
+5.01 Release
+5.00 Release
+   * Added classify tool
+   * Uniform naming scheme, clarify usage and document
+   * Refactor diyone second mode, in the same style as diy/diycross
+   * Support for atomic accesses (undocumented)
+4.00 Release
+   * ARM support.
+   * Generalize -o option, as for litmus.
+   * option -var for diycross for nice variables.,
+   * new tool diycross, similar to diyvar, but let user
+     specify  the list of alternatives eg:
+     diycross -name SB PodWR,SyncdWR Fre PodWR,SyncdWR Fre
+     For 3 MP-like tests (MP, MP+sync+po, MP+syncs)
+     diyvar behavior is still here with the pseudo-relaxation all(R|W)(R|W)
+     eg: diycross -name SB allWR Fre allWR Fre
+   * Add a new functionality for diyone: generate tests from a list
+     of cycles given in stdin.
+   * Mode precise edge dependencies, DpdR, DpdW, CltrdR, CtrldW
+     are still recognised by parser and are default values
+     (backward compatibility).
+     However, Dpd* and Ctrld* are not available anymore.
+   * dont: uncompress archive with gunzip (AIX: tar z.. not accepted)
+   * diy: -cumul false also acts on RfStar
+   * dont: Corrected bug in default safe_conform list for PPC.
+   * dont: Use compressed archive
+
+3.00 Release
+
+2.99 Release (beta)
+
+   * Introduce dont, for automating testing.
+   * Additional mode for diy: critical, for generating critical cycles
+     (no Po/Po consing)
+   * Additional option for diy: -cumul, for avoiding ambiguous tests.
+
+2.00 Release
+
+   * -mix option (default false, for backward compatibility)
+
+   * Clarification of observers and documentation
+     [three modes accept/avoid/force, three sorts straight/fenced/loop]
+     Defaults avoid/fenced.
+
+   * Added PPO pseudo-relaxation, very ad-hoc.
+
+   * Added RfStar edge (ie Rf to a read by lwarx)
+   * various -fno mode
+   * -sta mode
+
+   * PPO macro
+   * Arch independant readRelax
+
+1.0   Initial release.

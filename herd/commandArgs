@@ -1,0 +1,7 @@
+-web -fontsize 10 -brackets false -dotmode fig -texmacros true -showfr true -showinitrf false -shortlegend true -speedcheck true -show prop -showone true -movelabel true
+
+shorter:
+-web -dotmode fig -show prop -showone true -o Scratch -showevents noregs
+
+for more space:
+-web -dotmode fig -show prop -showone true -showevents noregs -movelabel true -evince -xscale 2

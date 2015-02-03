@@ -1,0 +1,20 @@
+OpenCL R_xaG_yaG_sc--sc_sc--sc_0||1
+                        
+{ 
+  [x]=0;
+  [y]=0;
+}
+
+P0 (global atomic_int* x, global atomic_int* y) {
+  atomic_store(x,1);
+  atomic_store(y,1);
+}
+
+P1 (global atomic_int* x, global atomic_int* y) {
+  atomic_store(y,2);
+  int r0 = atomic_load(x);
+}
+
+scopeTree
+(device (work_group P0) (work_group P1))
+exists (1:r0=0)

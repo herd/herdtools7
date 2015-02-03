@@ -1,0 +1,23 @@
+C SB+porelacqs
+"PodWRRelAcq FreAcqRel PodWRRelAcq FreAcqRel"
+Cycle=FreAcqRel PodWRRelAcq FreAcqRel PodWRRelAcq
+Relax=
+Safe=PodWR FreAcqRel
+Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+Com=Fr Fr
+Orig=PodWRRelAcq FreAcqRel PodWRRelAcq FreAcqRel
+
+{}
+
+P0 (atomic_int* y,atomic_int* x) {
+  atomic_store_explicit(x,1,memory_order_release);
+  int r0 = atomic_load_explicit(y,memory_order_acquire);
+}
+
+P1 (atomic_int* y,atomic_int* x) {
+  atomic_store_explicit(y,1,memory_order_release);
+  int r0 = atomic_load_explicit(x,memory_order_acquire);
+}
+
+exists
+(0:r0=0 /\ 1:r0=0)

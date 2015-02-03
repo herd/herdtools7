@@ -1,0 +1,5 @@
+/* Dot graph parameters for documentation */
+splines=true; 
+overlap=scale;
+margin="0.0";
+pad="0.2";

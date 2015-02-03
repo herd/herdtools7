@@ -1,0 +1,28 @@
+C 3.SB+popacq+porela+poap
+"PodWRPAcq FreAcqRel PodWRRelA FreAA PodWRAP Fre"
+Cycle=Fre PodWRPAcq FreAcqRel PodWRRelA FreAA PodWRAP
+Relax=
+Safe=Fre PodWR FreAcqRel FreAA
+Prefetch=0:x=F,0:y=T,1:y=F,1:z=T,2:z=F,2:x=T
+Com=Fr Fr Fr
+Orig=PodWRPAcq FreAcqRel PodWRRelA FreAA PodWRAP Fre
+
+{}
+
+P0 (atomic_int* y,volatile int* x) {
+  *x = 1;
+  int r0 = atomic_load_explicit(y,memory_order_acquire);
+}
+
+P1 (atomic_int* z,atomic_int* y) {
+  atomic_store_explicit(y,1,memory_order_release);
+  int r0 = atomic_load(z);
+}
+
+P2 (atomic_int* z,volatile int* x) {
+  atomic_store(z,1);
+  int r0 = *x;
+}
+
+exists
+(0:r0=0 /\ 1:r0=0 /\ 2:r0=0)

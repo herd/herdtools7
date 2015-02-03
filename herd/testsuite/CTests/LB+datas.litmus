@@ -1,0 +1,18 @@
+C LB+datas
+"PodRWRlxRlx RfeRlxRlx PodRWRlxRlx RfeRlxRlx + fake datas"
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Rf
+
+{}
+
+P0 (atomic_int* y,atomic_int* x) {
+  int r0 = atomic_load_explicit(x,memory_order_relaxed);
+  atomic_store_explicit(y,1+r0,memory_order_relaxed);
+}
+
+P1 (atomic_int* y,atomic_int* x) {
+  int r0 = atomic_load_explicit(y,memory_order_relaxed);
+  int tmp = 1 + (r0 ^ r0) ;
+  atomic_store_explicit(x,tmp,memory_order_relaxed);
+}
+exists (0:r0=1 /\ 1:r0=2)

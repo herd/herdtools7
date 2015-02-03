@@ -1,0 +1,25 @@
+\input{common.tex}
+\newcommand{\cycle}[2][.25\linewidth]{\resizebox{#1}{!}{\input{#2.pstex_t}}}
+\newcommand{\image}[2][]{\rotatebox{-90}{\includegraphics[#1]{#2.eps}}}
+\newcommand{\img}[1]{\input{#1.pstex_t}}
+\newcommand{\handletest}[1]{\ltest{#1}}
+\newcommand{\xhandletest}[1]{\ltest{#1}}
+\newenvironment{showcenter}
+{\begin{center}}
+{\end{center}}
+%taken from the tutorial
+% fix up fig2dev fonts to make actions in \sf
+\makeatletter
+% for the fig2dev version on P laptop
+\gdef\SetFigFontNFSS#1#2#3#4#5{%
+  \reset@font\fontsize{#1}{#2pt}%
+%  \fontfamily{#3}\fontseries{#4}\fontshape{#5}%
+  \fontfamily{\sfdefault}\fontseries{#4}\fontshape{#5}%
+  \selectfont}%
+% for the fig2dev version on P desktop
+\gdef\SetFigFont#1#2#3#4#5{%
+  \reset@font\fontsize{#1}{#2pt}%
+%  \fontfamily{#3}\fontseries{#4}\fontshape{#5}%
+  \fontfamily{\sfdefault}\fontseries{#4}\fontshape{#5}%
+  \selectfont}
+\makeatother

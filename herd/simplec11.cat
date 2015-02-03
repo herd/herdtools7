@@ -1,0 +1,6 @@
+"C++11" withinit withsc
+(* Model from POPL'15 article
+   "Common Compiler Optimisations etc." by V. Vafeidis et al.
+*)
+
+let sameThread = po-loc | po-loc^-1

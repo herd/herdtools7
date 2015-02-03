@@ -1,0 +1,9 @@
+PREFIX=/usr/local
+DIRS=herd litmus gen tools
+
+default: all
+
+all install clean:
+	for d in $(DIRS) ; \
+	do ( cd $$d && $(MAKE) $(MFLAGS) PREFIX=$(PREFIX) $@ ) ; done
+

@@ -1,0 +1,14 @@
+OpenCL MP_relaxed
+"Fre PodWR Fre PodWR"
+{ x=0; y=0; }
+ P0                | P1                  ;
+ x.store(1,memory_order_relaxed,memory_scope_work_group) | r1 = y.load(memory_order_relaxed,memory_scope_work_group) ;
+ y.store(1,memory_order_relaxed,memory_scope_work_group) | r2 = x.load(memory_order_relaxed,memory_scope_work_group) ; 
+
+scopeTree
+(device (work_group P0) (work_group P1))
+
+x:global, y:local
+
+exists 
+(1:r1 = 1 /\ 1:r2 = 0)

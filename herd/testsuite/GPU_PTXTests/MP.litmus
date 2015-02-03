@@ -1,0 +1,27 @@
+GPU_PTX MP
+"PodWW Rfe PodRR Fre"
+{
+0:.reg .s32 r1;
+0:.reg .s32 r3;
+0:.reg .b64 r2 = x;
+0:.reg .b64 r4 = y;
+1:.reg .s32 r1;
+1:.reg .s32 r3;
+1:.reg .b64 r2 = y;
+1:.reg .b64 r4 = x;
+}
+
+ P0                     | P1                      ;
+ mov.s32 r1,1           | ld.shared.s32 r1,[r2]   ;
+ st.wt.s32 [r2],r1      |                         ;
+                        | ld.volatile.s32 r3,[r4] ;
+ mov.s32 r3,1           |                         ;
+ st.shared.s32 [r4],r3  |                         ; 
+
+scopeTree
+(device (kernel(cta(warp P0)) (cta(warp P1))))
+
+x:shared, y:global
+
+exists
+(1:r1=1 /\ 1:r3=0)

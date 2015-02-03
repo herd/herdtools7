@@ -1,0 +1,22 @@
+OpenCL S_xaG_yaG_rel[wg]-LFsc-rel_rel-GFrel[dev]-acq[wg]_0||1
+                        
+{ 
+  [x]=0;
+  [y]=0;
+}
+
+P0 (global atomic_int* x, global atomic_int* y) {
+  atomic_store_explicit(x,2,memory_order_release,memory_scope_work_group);
+  atomic_work_item_fence(CLK_LOCAL_MEM_FENCE,memory_order_seq_cst,memory_scope_work_group);
+  atomic_store_explicit(y,1,memory_order_release);
+}
+
+P1 (global atomic_int* x, global atomic_int* y) {
+  int r0 = atomic_load_explicit(y,memory_order_release);
+  atomic_work_item_fence(CLK_GLOBAL_MEM_FENCE,memory_order_release,memory_scope_device);
+  atomic_store_explicit(x,1,memory_order_acquire,memory_scope_work_group);
+}
+
+scopeTree
+(device (work_group P0) (work_group P1))
+exists (1:r0=1)

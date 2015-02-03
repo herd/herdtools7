@@ -1,0 +1,512 @@
+\input{version.tex}
+\newcommand{\file}[1]{\texttt{#1}}
+\newcommand{\afile}[1]{\ahref{#1}{\file{#1}}}
+\renewcommand{\P}[1]{\ensuremath{P_{\ensuremath{#1}}}}
+\newcommand{\opt}[1]{\texttt{#1}}
+
+\usepackage{xspace}
+
+%same notation policy for each instance of figure, thm, etc
+\newcommand{\myfig}{Fig.~}
+\newcommand{\mythm}{Thm.~}
+\newcommand{\mycor}{Cor.~}
+\newcommand{\mysec}{Sec.~}
+\newcommand{\myapp}{App.~}
+\newcommand{\wrt}{\mathit{w.r.t.}}
+\newcommand{\eg}{\mathit{e.g.}}
+\newcommand{\ie}{\mathit{i.e.}}
+\newcommand{\cf}{\mathit{c.f.}}
+
+%awful tricks
+\let\mo\mathord
+
+%les maths comme au lycee
+%\let\implies\Rightarrow
+\let\cimplies\Leftarrow
+\let\iff\Leftrightarrow
+\let\eset\emptyset
+\newcommand{\transc}[1]{\mathop{{#1}^{+}}}
+%\newcommand{\opt}[1]{\mathop{\mo{#1}?}}
+\newcommand{\fst}{\engordnumber{1}}
+\newcommand{\snd}{\engordnumber{2}}
+\newcommand{\thrd}{\engordnumber{3}}
+%iff
+  \newcommand{\ns}{necessary and sufficient}
+
+%def
+  \newcommand{\dfn}[2]{{#1}~\triangleq~{#2}}
+%BEGIN LATEX
+  \let\eqdef\triangleq
+%END LATEX
+%type
+  \newcommand{\type}[2]{{#1} : {#2}}
+
+%rln
+  \newcommand{\rlnt}[1]{rln~ #1}
+
+%sets
+\newcommand{\setcal}[1]{\mathcal{#1} }
+\newcommand{\setbf}[1]{\mathbb{#1} }
+\newcommand{\setfrak}[1]{\mathfrak{#1} }
+
+  %events
+  \newcommand{\e}{e}
+  \newcommand{\me}{m}
+  \newcommand{\re}{r}
+  \newcommand{\we}{w}
+  \let\w\we
+  \newcommand{\ba}{b}
+  \let\be\ba
+  \newcommand{\ce}{c}
+
+  %writes, reads, barriers
+  \newcommand{\ud}{\_}
+  \let\setset\setbf
+  \newcommand{\evts}{\setset{E}}
+  \newcommand{\mevts}{\setset{M}}
+  \newcommand{\writes}{\setset{W}}
+  \newcommand{\wtl}[1]{\setset{W}_{#1}}
+  \newcommand{\wtlv}[2]{\setset{W}_{#1,#2}}
+  \newcommand{\pw}{\operatorname{pw}}
+  \newcommand{\reads}{\setset{R}}
+  \newcommand{\rfl}[1]{\setset{R}_#1}
+  \newcommand{\rflv}[2]{\setset{R}_{#1,#2}}
+  \newcommand{\barriers}{\setset{B}}
+  \newcommand{\commits}{\setset{C}}  
+  \newcommand{\registerevents}{\setset{RG}}  
+  \newcommand{\RSt}{\reads^{*}}
+  \newcommand{\WSt}{\writes^{*}}
+
+  %Marre de me tromper
+  \let\stores\writes\let\loads\reads
+  \let\fences\barriers
+  %write to, read from
+  \newcommand{\wt}[2]{write~to~ #1~ #2}
+  \newcommand{\rfr}[2]{read~from~ #1~ #2}
+
+  %procs
+  \newcommand{\pr}{\operatorname{proc}}
+
+  %locs
+  \newcommand{\lo}{\ell}
+  \newcommand{\loc}{\operatorname{loc}}
+
+  %vals 
+  \newcommand{\val}{\operatorname{val}}
+
+  %event structures
+  \newcommand{\ES}{\setcal{E}}
+  \newcommand{\E}{E }
+
+  %execution witnesses
+  \newcommand{\XS}{\setcal{X}}
+  \newcommand{\X}{X }
+  %\newcommand{\VX}[3]{#1.valid~ #2~#3 }
+  \newcommand{\VX}{\operatorname{valid}}
+
+  %init,final
+  \newcommand{\init}{\mathit{init} }
+  \newcommand{\final}{\mathit{final} }
+
+  %int
+  \newcommand{\intra}{\mathit{int}}
+
+  %ext
+  \newcommand{\ext}{\mathit{ext}}
+
+  %abcalc
+  \newcommand{\abc}{\mathit{ab}}
+
+  %check
+  \newcommand{\AAcheck}{\operatorname{check_{\A}}}
+
+  \newcommand{\Acheck}[1]{\operatorname{check_{#1}}}
+
+  %ghb
+  \newcommand{\Aghb}{\operatorname{ghb(\A)}}
+
+  %architectures
+  \newcommand{\A}{A}
+  \newcommand{\Ae}{A^{\epsilon}}
+  \newcommand{\AS}{\setcal{A}}
+
+  %wmms
+  \newcommand{\WS}{\setcal{W}}
+
+%relations
+\newcommand{\stacklabel}[1]
+%{\stackrel{\smash{\scriptscriptstyle\#1}}}
+{\stackrel{\smash{\scriptstyle\text{#1}}}}
+  %any
+  \newcommand{\rln}[1]{\ensuremath{\stacklabel{#1}{\rightarrow}}}
+  \newcommand{\tc}[1]{\ensuremath{\stacklabel{{#1} +}{\rightarrow}}}
+  \newcommand{\mrln}[1]{\ensuremath{\stacklabel{?#1}{\rightarrow}}}
+
+  %iico
+  \newcommand{\iico}{\rln{iico}}
+  \newcommand{\iicodata}{\rln{iico-data}}
+  %po
+  \newcommand{\po}{\rln{po}}
+  \newcommand{\poloc}{\rln{po-loc}}
+  \newcommand{\addr}{\rln{addr}}
+  \newcommand{\data}{\rln{data}}
+  
+  \newcommand{\podrw}{\rln{podrw}}
+\newcommand{\pposc}{\rln{ppo-sc}}
+  \newcommand{\ppopso}{\rln{ppo-pso}}
+  %potso
+  \newcommand{\potso}{\rln{po-tso}}
+  %ppotso
+  \newcommand{\ppotsoc}{\mathit{ppo-tso}}
+  \newcommand{\ppotso}{\rln{ppo-tso}}
+  %ppo power
+  \newcommand{\ppopow}{\rln{ppo-ppc}}
+
+  %po_iico
+%  \newcommand{\poiico}{\rln{po-iico}}
+
+  %dp
+  \newcommand{\dep}{\rln{dp}}
+  \newcommand{\dpdr}{\rln{dpdr}}
+
+  %rf
+  \newcommand{\rf}{\rln{rf}}
+  \newcommand{\grf}{\rln{grf}}
+  \newcommand{\grfi}[1]{\rln{grf\ensuremath{_{\scriptscriptstyle#1}}}}
+  \newcommand{\mrf}[1]{\rln{?rf\ensuremath{_{\scriptscriptstyle#1}}}}
+  \newcommand{\rfsc}{\rln{grf\ensuremath{_{\scriptscriptstyle{2 \setminus 1}}}}}
+  \newcommand{\mrfsc}{?(\rln{rf\ensuremath{_{\scriptscriptstyle{2 \setminus 1}}}})}
+  \newcommand{\rfs}{rf\ensuremath{_{\scriptscriptstyle{2 \setminus 1}}}}
+  \newcommand{\rfcands}{\rln{prf}}
+  \newcommand{\caus}{causality~ }
+  \newcommand{\wfrf}{wf~rf}
+
+  %rfe
+  \newcommand{\rfe}{\rln{rfe}}
+  \newcommand{\mrfe}{\rln{?rfe}}
+  \newcommand{\mrfei}[1]{\rln{?rfe\ensuremath{_{\scriptscriptstyle#1}}}}
+
+  %rfi
+  \newcommand{\rfi}{\rln{rfi}}
+  \newcommand{\mrfi}{\rln{?rfi}}
+  \newcommand{\mrfii}[1]{\rln{?rfi\ensuremath{_{\scriptscriptstyle#1}}}}
+
+  %ws
+  \newcommand{\ws}{\rln{ws}}
+  \newcommand{\co}{\rln{co}}
+  \newcommand{\coi}{\rln{coi}}
+  \newcommand{\coe}{\rln{coe}}
+  \newcommand{\iws}{\rln{wsi}}
+  \newcommand{\ews}{\rln{wse}}
+  \newcommand{\wsi}[1]{\rln{ws\ensuremath{_{\scriptscriptstyle#1}}}}
+  \newcommand{\wsl}[1]{\rln{ws\ensuremath{_{\scriptscriptstyle#1}}}}
+  \newcommand{\wscands}{\rln{pws}}
+  \newcommand{\wfws}{wf~ ws}
+
+  %fr
+  \newcommand{\fr}{\rln{fr}}
+  \newcommand{\ifr}{\rln{fri}}
+  \newcommand{\efr}{\rln{fre}}
+  \newcommand{\fri}{\rln{fri}}
+  \newcommand{\fre}{\rln{fre}}
+  %ab
+  \newcommand{\abpow}{\rln{ab-ppc}}
+  \newcommand{\ab}{\rln{ab}}
+  \newcommand{\abi}[1]{\rln{ab\ensuremath{_{\scriptscriptstyle#1}}}}
+%  \newcommand{\ab}[1]{\rln{ab\ensuremath{_{\scriptscriptstyle#1}}}}
+  %absc
+  \newcommand{\fenced}{\rln{fenced}}
+  \newcommand{\fencedbase}{\rln{fenced-base}}
+  \newcommand{\fencedcumul}{\rln{fenced-cumul}}
+  \newcommand{\fsc}{\rln{fsc}}
+  \newcommand{\absc}{\rln{absc}}
+
+  %abtso
+  \newcommand{\ftso}{\rln{ftso}}
+  \newcommand{\abtso}{\rln{abtso}}
+
+  %css
+  \newcommand{\css}{\rln{css}}
+  \newcommand{\cssi}[1]{\rln{css\ensuremath{_{\scriptscriptstyle#1}}}}
+
+  %relax, safe
+  \newcommand{\rrelax}{\rln{relax}}
+  \newcommand{\safe}{\rln{safe}}
+
+  %hb
+  \newcommand{\hb}{\rln{hb-seq}}
+  \newcommand{\hbi}[1]{\rln{hb\ensuremath{_{\scriptscriptstyle#1}}}}
+  \newcommand{\hbpi}[1]{\rln{hb'\ensuremath{_{\scriptscriptstyle#1}}}}
+  \newcommand{\hbd}{\rln{hb'\ensuremath{_{\scriptscriptstyle{d}}}}}
+  \newcommand{\poi}[1]{\rln{hb''\ensuremath{_{\scriptscriptstyle#1}}}}
+%  \newcommand{\hbpppi}[1]{\rln{hb'''\ensuremath{_{\scriptscriptstyle#1}}}}
+    \newcommand{\hbpppi}[1]{\mathrel{R_{#1}}}
+  %hbtso
+  \newcommand{\hbtso}{\rln{hb-tso}}
+
+  %ppo
+  \newcommand{\ppoc}{\mathit{ppo}}
+  \newcommand{\ppoi}[1]{\rln{ppo\ensuremath{_{\scriptscriptstyle#1}}}}
+  \newcommand{\ppo}{\rln{ppo}}
+  \newcommand{\ppoe}{\rln{ppo-ext}}
+  \newcommand{\ppop}{\rln{ppo-proc}}
+  \newcommand{\ppos}{\rln{ppo\ensuremath{_{\scriptscriptstyle{2 \setminus 1}}}}}
+
+  %%
+
+  %pio
+  \newcommand{\pio}{\rln{po-loc}}
+
+  %ghb
+  \newcommand{\ghb}{\rln{ghb}}
+  \newcommand{\ghbi}[1]{\rln{ghb\ensuremath{_{\scriptscriptstyle#1}}}}
+
+  %lock
+  \newcommand{\lock}{\rln{lock}}
+  \newcommand{\locki}[1]{\rln{lock\ensuremath{_{\scriptscriptstyle#1}}}}
+
+  %extras
+  \newcommand{\rfreg}{\rln{rf-reg}}
+  \newcommand{\dd}{\rln{dd}}
+  \newcommand{\ddmem}{\rln{dd-mem}}
+  \newcommand{\ctrl}{\rln{ctrl}}
+  \newcommand{\ctrlisync}{\rln{ctrlisync}}
+  \newcommand{\ctrlisb}{\rln{ctrlisb}}
+  \newcommand{\isync}{\rln{isync}}
+  \newcommand{\isb}{\rln{isb}}
+  \newcommand{\ictrl}{\rln{ictrl}}
+  %wf
+  \newcommand{\wf}[1]{\operatorname{wf-#1}}
+%criterions
+  \newcommand{\wfe}{\operatorname{wf}}
+  \newcommand{\acyclic}{\operatorname{acyclic}}
+  \newcommand{\uniproc}{\operatorname{uniproc}}
+  \newcommand{\thin}{\operatorname{thin}}
+  \newcommand{\valid}{\operatorname{valid}}
+%Barrier definitions.
+  \newcommand{\noncumul}{\operatorname{non-cumul}}
+  \newcommand{\acumul}{\operatorname{A-cumul}}
+  \newcommand{\abcumul}{\operatorname{AB-cumul}}
+  \newcommand{\abwrcumul}{\operatorname{AB-WR-cumul}}
+  \newcommand{\acumulBis}{\operatorname{ext-A-cumul}}
+%orders
+  %so
+  \newcommand{\so}{so}
+  %tso
+  \newcommand{\tso}{\rln{tso}}
+  %ex
+  \newcommand{\ex}{\rln{ex}}
+  %hexa
+  \newcommand{\hx}{hx}
+  %linear strict order
+  \newcommand{\lso}{\operatorname{total-order}}
+  %partial order
+  \newcommand{\parto}[2]{\operatorname{partial-order #1 #2}}
+  %no intervening write
+  \newcommand{\noi}[3]{\operatorname{no-intervening-write #1 #2 #3}}
+
+%models
+  %WMM
+  \newcommand{\W}{W}
+  \newcommand{\Wmm}{Wmm}
+  %any
+  \newcommand{\AWmm}{AWmm}
+  \newcommand{\HW}[1]{HW(#1)}
+  
+  \newcommand{\must}{\rln{must}} 
+  \newcommand{\may}{\rln{may}} 
+  
+  %machines
+  \newcommand{\M}{M }
+ 
+    %fully barriered
+    \newcommand{\fb}{\operatorname{fb}}
+    \newcommand{\wfb}{\operatorname{wfb}}
+
+  %Power
+  \newcommand{\Power}{\mathit{Power}}
+
+  %SC
+%  \newcommand{\dotop}{\hspace*{-0.3ex}\mathord{\texttt{.}}\hspace*{-0.5ex}}
+  \newcommand{\dotop}{\mathord{\texttt{.}}}
+  \newcommand{\wit}{\operatorname{wit}}
+  \newcommand{\Sc}{\mathit{Sc}}
+  \newcommand{\SC}{\mathit{SC}}%\xspace}
+  \newcommand{\SCX}{\operatorname{\SC\dotop{}wit}}
+%  \newcommand{\VSCX}[2]{\operatorname{\SC.valid #1 #2}}
+%  \newcommand{\SCcheck}[2]{\operatorname{sc-check #1 #2}}
+  \newcommand{\ScArch}{\Sc\dotop{}Arch}
+  \newcommand{\ScWmm}{\Sc\dotop{}\Wmm}
+%  \newcommand{\ScVX}[2]{\VX{\Sc} #1 #2}
+  \newcommand{\seq}{\operatorname{seq}}
+    %calculations
+    %rfm,ws
+    \newcommand{\scrfc}{\operatorname{\SC\dotop{}rf}}
+    \newcommand{\scwsc}{\operatorname{\SC\dotop{}ws}}
+  %po restricted to some events
+  \newcommand{\WW}{\mathord{\mathit{WW}}}
+  \newcommand{\RM}{\mathord{\mathit{RM}}}
+  \newcommand{\MW}{\mathord{\mathit{MW}}}
+  \newcommand{\WM}{\mathord{\mathit{WM}}}
+  \newcommand{\WR}{\mathord{\mathit{WR}}}
+  \newcommand{\MM}{\mathord{\mathit{MM}}}
+  %TSO
+  \newcommand{\Tso}{\mathit{Tso}}
+  \newcommand{\Tsoe}{\mathit{Tso}^{\epsilon}}
+ \newcommand{\TSO}{\mathit{TSO}}
+  \newcommand{\Pso}{\mathit{Pso}}
+  \newcommand{\Psoe}{\mathit{Pso}^{\epsilon}}
+ \newcommand{\PSO}{\mathit{PSO}}
+  \newcommand{\Rmo}{Rmo}
+ \newcommand{\RMO}{RMO}
+  \newcommand{\TSOX}{\operatorname{\TSO\dotop{}wit}}
+  \newcommand{\VTSOX}[2]{\operatorname{\TSO.valid~exec #1 #2}}
+  \newcommand{\PVTSOX}{\operatorname{ptso}}
+  \newcommand{\TSOcheck}[2]{\operatorname{tso~check #1 #2}}
+  \newcommand{\TsoArch}{\Tso.Arch}
+  \newcommand{\RmoArch}{\Rmo.Arch}
+  \newcommand{\PsoArch}{\Pso.Arch}
+  \newcommand{\TsoWmm}{Tso.\Wmm}
+  \newcommand{\TsoVX}[2]{\VX{\Tso} #1 #2}
+   %calculations
+    %rfm,ws
+    \newcommand{\tsorfc}{\operatorname{\TSO\dotop{}rf}}
+    \newcommand{\tsowsc}{\operatorname{\TSO\dotop{}ws}}
+    %lo,ss
+    \newcommand{\tsolo}[1]{R*~ #1~ }
+    \newcommand{\tsoss}[1]{WW~ #1~}
+    \newcommand{\tsosl}{WR }
+
+  %DRF
+  \newcommand{\Drf}{\operatorname{Drf}}
+  \newcommand{\drf}{\operatorname{drf}}
+  \newcommand{\drfreq}{\operatorname{wf-lock}}
+  \newcommand{\compete}{\operatorname{compete}}
+  \newcommand{\Cs}{\operatorname{Cs}}
+  \newcommand{\cs}{\operatorname{cs}}
+
+%instructions
+\newcommand{\fno}{\operatorname{fno}}
+\newcommand{\atom}{\operatorname{atom}}
+\newcommand{\rmw}{\operatorname{rmw}}
+\newcommand{\rrmw}{\operatorname{rrmw}}
+\newcommand{\res}{\operatorname{res}}
+\newcommand{\taken}{\operatorname{taken}}
+\newcommand{\free}{\operatorname{free}}
+\newcommand{\locked}{\operatorname{locked}}
+\newcommand{\Lock}{\operatorname{Lock}}
+\newcommand{\Unlock}{\operatorname{Unlock}}
+\newcommand{\import}{\operatorname{import}}
+\newcommand{\export}{\operatorname{export}}
+\newcommand{\lwarx}{{\tt lwarx}}
+\newcommand{\stwcx}{{\tt stwcx.}}
+\newcommand{\RES}{{\tt RES}}
+\newcommand{\RESA}{{\tt RES\_ADDR}}
+\newcommand{\CRO}{{\tt CR0}}
+
+%%%Litmus (Luc)
+%%basic format
+%\let\prog\textsf
+\let\as\texttt
+\newcommand{\ltest}[1]{\textsf{\textbf{#1}}}
+\newcommand{\atest}[1]{\ahref{#1.litmus}{\ltest{#1}}}
+%%Some sets
+\renewcommand{\L}{\mathcal{L}}
+\newcommand{\VA}{\mathcal{V}}%for valid
+\newcommand{\OB}{\mathcal{O}}%for observed
+
+%% Conventional processor
+\newcommand{\proc}[1]{\ensuremath{P_{#1}}}
+%% Format graphs in columns
+\newlength{\fmtlength}
+\newcommand{\fmtgraphcol}[3]
+{\setlength{\fmtlength}{\linewidth}%
+\addtolength{\fmtlength}{-#2}%
+\framebox{\resizebox{\fmtlength}{#3}{\input{#1.pstex_t}}}}
+%%Format graph explicit width
+\newcommand{\fmtgraph}[3]
+{\resizebox{#2}{#3}{\input{#1.pstex_t}}}
+%%Extra relations
+\newcommand{\mfence}{\rln{mfence}}
+\newcommand{\sfence}{\rln{sfence}}
+\newcommand{\lfence}{\rln{lfence}}
+\newcommand{\sync}{\rln{sync}}
+\newcommand{\lwsync}{\rln{lwsync}}
+\newcommand{\eieio}{\rln{lwsync}}
+\newcommand{\dmb}{\rln{dmb}}
+\newcommand{\dsb}{\rln{dsb}}
+\newcommand{\dmbst}{\rln{dmb.st}}
+\newcommand{\dsbst}{\rln{dsb.st}}
+\newcommand{\isfence}[1]{\textrm{is-#1}}
+\newcommand{\fcd}[1]{\rln{fenced(#1)}}
+\newcommand{\abk}[1]{\rln{ab-#1}}
+%%Machine
+\newcommand{\doko}{\texttt{doko}\xspace}
+\newcommand{\hpcx}{\texttt{hpcx}\xspace}
+%%%labels in figs
+\newcommand{\lb}[4]{\((#1)\)\,#2#3#4}
+\newcommand{\lbl}[3]{\lb{#1}{#2}{$\lo$}{#3}}
+\newcommand{\lbi}[1]{\((#1)\) Import}
+\newcommand{\lbe}[1]{\((#1)\) Export}
+\newcommand{\lba}[1]{\lb{#1}{R/W}{x}{$v$}}
+
+%%%For ``input cycles''
+\newcommand{\longrln}[1]{\stacklabel{#1}{\longrightarrow}}
+\newcommand{\Rfe}{\longrln{Rfe}}
+\newcommand{\Fre}{\longrln{Fre}}
+\newcommand{\Wse}{\longrln{Wse}}
+\newcommand{\DpdR}{\longrln{DpdR}}
+\newcommand{\DpdW}{\longrln{DpdW}}
+\newcommand{\PodRW}{\longrln{PodRW}}
+\newcommand{\PodWR}{\longrln{PodWR}}
+%\newcommand{\cevt}[4]{(#1)#2\hspace*{0em}[#3]\hspace*{0em}\mbox{=}\hspace*{0em}#4}
+\newcommand{\cevt}[4]{(#1)#2\hspace*{0em}#3\hspace*{0em}#4}
+%%%
+\let\textrel\textsf
+\let\tid\texttt
+\newenvironment{idtable}
+{\begin{showcenter}\renewcommand{\rln}[1]{\tid{##1}}
+\begin{tabular}{l@{\quad\quad}p{.2\linewidth}@{\quad\quad}p{.5\linewidth}}
+\multicolumn{1}{c}{identifier} &
+\multicolumn{1}{c}{name}  &
+\multicolumn{1}{c}{description}
+\\\hline}
+{\end{tabular}\end{showcenter}}
+
+%%%manual macros
+\newcommand{\prog}[1]{\textsf{#1}}
+\newcommand{\diy}{\prog{diy}}
+\newcommand{\diyone}{\prog{diyone}}
+\newcommand{\diycross}{\prog{diycross}}
+\newcommand{\litmus}{\prog{litmus}}
+\newcommand{\herd}{\prog{herd}}
+\newcommand{\dont}{\prog{dont}}
+\newcommand{\vbar}{\texttt{|}}
+
+\newcommand{\safes}{\operatorname{Safe}}
+\newcommand{\relaxs}{\operatorname{Relax}}
+%%BNF
+\endinput
+\newcommand{\T}[1]{\texttt{\color{Blue}#1}}
+\newenvironment{syntax}
+{\begin{center}%
+\let\@T\T\let\@NT\NT
+\renewcommand{\T}[1]{\addspace\@T{##1}\spacetrue}
+\renewcommand{\NT}[1]{\addspace\@NT{##1}\spacetrue}
+\begin{tabular}{r@{\quad}c@{\quad}l}}
+{\end{tabular}\end{center}}
+\newif\ifspace
+\def\addspace{\ifspace \; \spacefalse \fi}
+\def\brepet{\addspace\{}
+\def\erepet{\}}
+\def\boption{\addspace[}
+\def\eoption{]}
+\def\brepets{\addspace\{}
+\def\erepets{\}^+}
+\def\bparen{\addspace(}
+\def\eparen{)}
+\def\orelse{\mid \spacefalse}
+\def\is{ & ::= & \spacefalse }
+\def\alt{ \\ & \mid & \spacefalse }
+\def\cutline{ \\ & & \spacefalse }
+\def\sep{ \\[2mm] \spacefalse }

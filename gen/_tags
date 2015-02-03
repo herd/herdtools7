@@ -1,0 +1,9 @@
+true: dtypes
+true: -traverse
+true: safe_string
+<lib>:include
+<*.cmo>: debug
+<*.byte>:debug
+<diy.{d.byte,byte,native}>:use_unix
+<dont.{d.byte,byte,native}>:use_unix
+

@@ -1,0 +1,53 @@
+  * -driver optiopn to generate standalone C programs or Objective C
+  * More configuration files (nexus10..)
+  * Refactoring: avoid mutable internal flags.
+5.01 Release
+  * litmus option -crossrun adb -> run.sh connects to device using adb
+    (Android Debugging Bridge)
+5.00 Release
+  * added the mcycles tool
+  * iPad and asus TF300T configuration files.
+  * New user synchronisation mode userfence (suggested by Javi Merino)
+  * More POSIX compliant code in two occasions (malloc/errno and
+    use thread level affinity functions, suggested by Javi Merino)
+  * Runtime option +fix, to cancel out changing launch mode
+  * Make timebase delay settable (option -delay)
+  * Timebase synchronisation mode (-barrier timebase).
+  * option -crossrun <host> -> run.sh run executables on distant machine <host>.
+  * add -stride mode (memory scanned by increments > 1), useful ? Very useful.
+  * -linkopt option
+  * -kind false option, to suppress kind and validation information from output
+  * -gcc option
+  * ARM and cortex9 (cross-compilation) configuration files
+
+4.00 Release
+  * new -o support -> dir/tar/tgz
+  * ARM support, tested on uniproc only
+  * -loop option, for time measurement
+  * power7.32 config file, [used for shipped testcases]
+  * power7 config file
+  * If affinity is enabled, avail=0 instructs binaries to
+    detects available logical processors.
+  * add optional shuffle in indirect mode (similar to direct mode)
+  * add random affinity mode (-ra true/+ra)
+  * added chianti config file
+  * added vargas16 config file
+  * -o name.tgz produce compressed archives
+
+3.00 Release
+
+  * There is now a Makefile in archives produced with -o <name>.tar.
+    Best way to provide parallel compilation (make -j N).
+  * added -index <@name>, for dumping an index of compiled tests.
+  * added the -no <cyclelist> option (used by dont).
+
+2.00 Release
+
+  * Added affinity control
+  * Added prealloc mode.
+  * -o a.tar and -cross a.tar behave slightly differently.
+    (-cross is for released tests, with Makefile & README
+  * Added call mode.
+  * Added cache mode.
+
+1.0 Initial release.

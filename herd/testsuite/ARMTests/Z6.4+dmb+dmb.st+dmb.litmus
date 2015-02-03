@@ -1,0 +1,19 @@
+ARM Z6.4+dmb+dmb.st+dmb
+"DMBdWW Wse DMB.STdWR Fre DMBdWR Fre"
+Cycle=Fre DMBdWW Wse DMB.STdWR Fre DMBdWR
+Prefetch=0:x=F,0:y=W,1:y=F,1:z=T,2:z=F,2:x=T
+Com=Ws Fr Fr
+Orig=DMBdWW Wse DMB.STdWR Fre DMBdWR Fre
+{
+%x0=x; %y0=y;
+%y1=y; %z1=z;
+%z2=z; %x2=x;
+}
+ P0           | P1           | P2           ;
+ MOV R0,#1    | MOV R0,#2    | MOV R0,#1    ;
+ STR R0,[%x0] | STR R0,[%y1] | STR R0,[%z2] ;
+ DMB          | DMB ST       | DMB          ;
+ MOV R1,#1    | LDR R1,[%z1] | LDR R1,[%x2] ;
+ STR R1,[%y0] |              |              ;
+exists
+(y=2 /\ 1:R1=0 /\ 2:R1=0)

@@ -1,0 +1,28 @@
+C Z6.5
+"PodWW Wse PodWW Wse PodWR Fre"
+Cycle=Fre PodWW Wse PodWW Wse PodWR
+Relax=
+Safe=Fre Wse PodWW PodWR
+Prefetch=0:x=F,0:y=W,1:y=F,1:z=W,2:z=F,2:x=T
+Com=Ws Ws Fr
+Orig=PodWW Wse PodWW Wse PodWR Fre
+
+{}
+
+P0 (volatile int* y,volatile int* x) {
+  *x = 1;
+  *y = 1;
+}
+
+P1 (volatile int* z,volatile int* y) {
+  *y = 2;
+  *z = 1;
+}
+
+P2 (volatile int* z,volatile int* x) {
+  *z = 2;
+  int r0 = *x;
+}
+
+exists
+(y=2 /\ z=2 /\ 2:r0=0)

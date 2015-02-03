@@ -1,0 +1,16 @@
+ARM WR
+"PosWR Fre"
+Cycle=Fre PosWR
+Relax=
+Safe=Fre PosWR
+Prefetch=
+Com=Fr
+Orig=PosWR Fre
+{
+%x0=x;
+}
+ P0           ;
+ MOV R0,#1    ;
+ STR R0,[%x0] ;
+ LDR R1,[%x0] ;
+locations [x;0:R1;]

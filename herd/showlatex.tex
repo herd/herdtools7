@@ -1,0 +1,73 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 0. Ensure that dot2tex is installed (sudo easy_install dot2tex).
+% 1. Get herd to generate a .dot file containing execution graphs, and pass 
+% the -tikz flag. For instance:
+%      mkdir Scratch
+%      ./herd -conf ptx.cfg testsuite/GPU_PTXTests/MP.litmus -show all \
+%        -o Scratch/ -texmacros true -tikz true
+% 2. Latex this file. For instance:
+%      pdflatex --shell-escape -output-dir=Scratch showlatex
+% 3. Admire the pretty PDF output. Using this technique, one can embed
+%    herd execution graphs directly into a paper, and have the fonts
+%    match up automatically. Moreover, the generated TiKZ code is 
+%    easy modified, e.g. to add boxes around nodes, or extra arrows, 
+%    or whatever.
+
+\documentclass{article}
+
+\usepackage{tikz}
+\usepackage{catchfile}
+\usetikzlibrary{shapes,arrows,patterns}
+\usetikzlibrary{snakes}
+\usepackage{listings}
+\usepackage[T1]{fontenc}
+\usepackage{framed}
+
+\newcommand\mylegend{\begingroup\catcode`_=12 \domylegend}
+\newcommand\domylegend[2]{#1: #2\endgroup}
+
+\newcommand\myth[1]{Thread #1}
+
+\begin{document}
+
+\newcommand\drawGraph[1]{
+% Convert the given .dot file into a snippet of TikZ
+\immediate\write18{dot2tex 
+--prog=neato
+--format=tikz
+--codeonly
+--texmode=raw
+--output=generated.tex
+--autosize
+--usepdflatex
+--tikzedgelabels
+#1}
+\begin{framed}
+\begin{tikzpicture}
+\input{generated.tex}
+\end{tikzpicture}
+\end{framed}
+\immediate\write18{rm generated.tex}
+}
+
+\newcommand\drawGraphs[2]{
+% #1 = path
+% #2 = myfile.dot
+% Suppose argument is "path/myfile.dot". That file may contain several
+% graphs. dot2tex can't handle multiple graphs in a single
+% file, so we split myfile.dot into separate files, named 1.dot, 2.dot, etc,
+% and put them in a directory named path/myfile.dot.executions.
+\immediate\write18{mkdir #1/#2.executions}
+\immediate\write18{cd #1/#2.executions && awk '/digraph/{count++;filename=count".dot"}; {print >filename}' ../#2}
+\immediate\write18{grep -o 'digraph' #1/#2 | wc -l > count}
+\CatchFileDef\upperlimit{count}{}
+\immediate\write18{rm count}
+\foreach\x in {1,...,\upperlimit} {
+  \drawGraph{#1/#2.executions/\x.dot}
+} 
+}
+
+\drawGraphs{Scratch}{MP.dot}
+%\drawGraph{Scratch/MP.dot.executions/2.dot}
+
+\end{document}

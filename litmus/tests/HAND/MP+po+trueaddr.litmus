@@ -1,0 +1,12 @@
+C MP
+""
+{ p = z }
+P0(volatile int **p, int *x) {
+    *x = 1;
+    *p = x;
+}
+P1(int **p) {
+    int *r0 = *p;
+    int r1 = *r0;
+}
+exists (1:r0=x /\ 1:r1=0)

@@ -1,0 +1,28 @@
+* Requirements
+
+   You need Objective Caml, with a version as recent as 3.12
+   Ocaml is available from http://caml.inria.fr/ocaml/
+
+* Configuration
+  A single variable (PREFIX) in the Makefile commands where
+  the software get installed:
+
+  - The binaires will get installed in $(PREFIX)/bin
+  - Some files are installed in  $(PREFIX)/lib/litmus
+
+  If the default (PREFIX=/usr/local) does not fit, edit the Makefile.
+
+* Compilation/installation :
+
+Just type
+
+  % make all
+  % make install (you may have to gain root privilege for this step)
+
+This will install binary file 'litmus' in $(PREFIX)/bin
+and some files in  $(PREFIX)/lib/litmus.
+  
+You can now get rid of the sources.
+
+  
+

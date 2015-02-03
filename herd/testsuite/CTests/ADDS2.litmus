@@ -1,0 +1,13 @@
+C ADDS2
+
+{}
+
+P0 (atomic_int* x) {
+  int r0 = atomic_fetch_add_explicit(x,1,memory_order_relaxed);
+}
+
+P1 (atomic_int* x) {
+  int r0 = atomic_fetch_add_explicit(x,2,memory_order_relaxed);
+}
+
+locations [0:r0; 1:r0; x;]

@@ -1,0 +1,12 @@
+C C
+"Fre PodWR Fre PodWR"
+{ x=0; y=0; }
+P0(int* x, int* y) {
+  *x = 1;
+  int Y = *y;
+}
+P1(int* x, int* y) {
+  *y = 1;
+  int X = *x;
+}
+exists (1:X=0 /\ 0:Y=0)

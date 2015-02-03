@@ -1,0 +1,131 @@
+OpenCL
+
+let symm(r) = r | r^-1
+
+(* Access modes *)
+let mo_acq = memory_order_acquire 
+let mo_rel = memory_order_release
+let mo_acq_rel = memory_order_acq_rel 
+let mo_rlx = memory_order_relaxed 
+let mo_sc = memory_order_seq_cst
+
+(* Scope annotations *)
+let s_wi = memory_scope_work_item 
+let s_wg = memory_scope_work_group
+let s_dev = memory_scope_device 
+let s_all = memory_scope_all_svm_devices
+
+(* Inclusive scopes *)
+let incl_wi(s) = wi & (s^2) 
+let incl_wg(s) = wg & (s^2) 
+let incl_dev(s) = dev & (s^2) 
+let incl_all(s) = s^2
+let incl = 
+  incl_wi(s_wi) | 
+  incl_wg(s_wg) | 
+  incl_dev(s_dev) | 
+  incl_all(s_all) 
+
+(* Inclusive scopes, alternative (unused) version *)
+let s_dev' = s_all | s_dev 
+let s_wg' = s_all | s_dev | s_wg 
+let s_wi' = s_all | s_dev | s_wg | s_wi
+let incl' = 
+  incl_wi(s_wi') | 
+  incl_wg(s_wg') | 
+  incl_dev(s_dev') |
+  incl_all(s_all)
+
+(*******************)
+(* Synchronisation *)
+(*******************)
+
+let acq = (mo_acq | mo_sc | mo_acq_rel) & (R | F | rmw)
+let rel = (mo_rel | mo_sc | mo_acq_rel) & (W | F | rmw)
+
+(* Release sequence *)
+let rs = (_ * rmw) | wi
+let max_co = co? & rs & ~((co & ~rs) ; co)
+
+(* Including release-acquire fences *)
+let relf = [rel]; ([F]; po)?; [A & W]
+let acqf = [A & R]; (po; [F])?; [acq]
+
+(* Release-acquire synchronisation *)
+let ra_sw(r) = incl & ~wi & ([r]; relf; max_co; [r]; rf; acqf; [r])
+
+(* Barrier synchronisation *)
+let bar_sw(r) = (entry_fence * exit_fence) & same_B & ~wi & wg & r^2
+
+(* Synchronisation on a region *)
+let region_sw(r) = ra_sw(r) | bar_sw(r)
+
+(* Allowed to synchronise on the other region *)
+let scf = mo_sc^2 | (G & L & F)^2
+
+(* Global and local synchronises-with *)
+let gsw = region_sw(G) | (scf & region_sw(L))  
+let lsw = region_sw(L) | (scf & region_sw(G)) 
+
+(******************)
+(* Happens-before *)
+(******************)
+
+(* Global and local happens-before *)
+let ghb = (((G^2) & (po | (I * !I))) | gsw)+ 
+let lhb = (((L^2) & (po | (I * !I))) | lsw)+ 
+show ghb
+show lhb
+acyclic ghb as global_hb_acyclic
+acyclic lhb as local_hb_acyclic
+
+(* Per-location happens-before *)
+let ghbl = ghb & loc 
+let lhbl = lhb & loc 
+
+(*************)
+(* Coherence *)
+(*************)
+
+let coh(hb) = (rf^-1)?; co; rf?; hb
+irreflexive coh(ghb) as global_coherence
+irreflexive coh(lhb) as local_coherence
+
+(************************)
+(* Consistency of reads *)
+(************************)
+
+(* Visible side effects *)
+let vse(hbl) = (W * R) & hbl & ~(hbl; [W]; hbl)
+let gvse = [G]; vse(ghbl) 
+let lvse = [L]; vse(lhbl)
+
+(* A non-atomic load can only read from a store that is visible. *)
+irreflexive rf; [nonatomicloc & G]; ~(gvse^-1) as global_nonatomic_rf_consistent
+irreflexive rf; [nonatomicloc & L]; ~(lvse^-1) as local_nonatomic_rf_consistent
+
+(* An atomic load can only read from a store that already happened. *)
+irreflexive (ghb | lhb); rf; [A] as atomic_rf_consistent
+
+(* Consistency of RMWs *)
+irreflexive rf | (fr;co) | (co;rf) as rmw_consistent
+
+(**************************)
+(* Sequential consistency *)
+(**************************)
+
+(* ifexists(s) = { 0    if s is empty
+               { unv  otherwise      *)
+let ifexists(s) = unv; [s]; unv
+
+let sc1 = rf^-1; [mo_sc]; co 
+let sc2 = [F]; po; co; po; [F]
+let sc3 = [F]; po; fr; po; [F] 
+let sc4 =          fr; po; [F] 
+let sc5 = [F]; po; fr
+
+let scp = (mo_sc^2) & (ghb | lhb | co | sc1 | sc2 | sc3 | sc4 | sc5)
+
+let sc6 = rf^-1; (ghb | lhb); [W] 
+
+show S

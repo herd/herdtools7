@@ -1,0 +1,4 @@
+/* Dot graph parameters for test7 */
+splines=true; 
+margin="0.0";
+pad="0.0";

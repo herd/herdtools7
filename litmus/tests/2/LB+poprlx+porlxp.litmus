@@ -1,0 +1,23 @@
+C LB+poprlx+porlxp
+"PodRWNaRlx RfeRlxRlx PodRWRlxNa Rfe"
+Cycle=Rfe PodRWNaRlx RfeRlxRlx PodRWRlxNa
+Relax=
+Safe=Rfe PodRW RfeRlxRlx
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Rf
+Orig=PodRWNaRlx RfeRlxRlx PodRWRlxNa Rfe
+
+{}
+
+P0 (atomic_int* y,volatile int* x) {
+  int r0 = *x;
+  atomic_store_explicit(y,1,memory_order_relaxed);
+}
+
+P1 (atomic_int* y,volatile int* x) {
+  int r0 = atomic_load_explicit(y,memory_order_relaxed);
+  *x = 1;
+}
+
+exists
+(0:r0=1 /\ 1:r0=1)

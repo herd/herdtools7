@@ -1,0 +1,124 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Hevea code for syntax definitions of the ocaml manual %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Important commands
+% \T, for typesetting grammar terminals
+% \NT, for typesetting grammar non-terminals
+%
+% Beware: \NT introduces either a local anchor or a local reference
+%   -Anchors are introduced when \NT occurs in the first column of
+%    syntax definitions (environment 'syntax')
+%   - References are introduced everywhere else
+%
+% For pure typesetting effect without links (eg. to typeset 'e' as 'expr') 
+% use the \nt command (eg. \nt{e}).
+% In syntax definitions, the tool 'transf' translates @word@ into \nt{word}.
+%
+% Warnings are produced
+%  - For references to non-defined non terminals
+%  - For multiple definitions of the same non-terminal
+% Warnings can be avoided for a given non-terminal 'expr' by issuing
+% the command \stx@silent{'expr'}
+%
+%It is also possible to alias a nonterminal:
+%\stx@alias{name}{othername}
+%will make reference to 'name' point to the definition of non-terminal
+%'othername'
+\newif\ifspace
+\def\addspace{\ifspace\;\spacefalse\fi}
+\ifhtml
+\newcommand{\@T}[1]{\texttt{\blue#1}}
+\else
+\newcommand{\@T}[1]{\texttt{#1}}
+\fi
+\let\T\@T
+%%% warnings
+\def\stx@warning#1#2{\@ifundefined{stx@#1@silent}{\hva@warn{#2}}{}}
+\def\stx@silent#1{\def\csname stx@#1@silent\endcsname{}}
+%%% Do not warn about those
+%initial example
+\stx@silent{like}\stx@silent{that}%
+%%%%%%%%%%%%%
+%% Aliases %%
+%%%%%%%%%%%%%
+\newcommand{\stx@alias}[2]{\def\csname stx@#1@alias\endcsname{#2}}
+\stx@alias{typ}{typexpr}%
+\stx@alias{met}{method-name}%
+\stx@alias{tag}{tag-name}%
+\stx@alias{lab}{label-name}%
+\stx@alias{C}{constr-name}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%special anchor
+\newstyle{a.syntax:link}{color:maroon;text-decoration:underline}
+\newstyle{a.syntax:visited}{color:maroon;text-decoration:underline}
+\newstyle{a.syntax:hover}{color:black;text-decoration:none;background-color:\#FF6060}
+%compatibility for hevea-1.1?/heeva-2.??
+\ifu\@tr@url
+\providecommand{\@tr@url}[1]{#1}\def\stx@idname{NAME}\else
+\def\stx@idname{id}\fi
+\newcommand{\@syntaxlocref}[2]
+{\@aelement{href="\@print{#}\@tr@url{#1}" class="syntax"}{#2}}
+\newcommand{\@syntaxaname}[2]
+{\@aelement{\stx@idname="#1" class="syntax"}{#2}}
+%%Refer to anchor, internal :
+%#1 -> anchor #2 -> visible tag
+\def\@ref@anchor#1#2{%
+\@ifundefined{stx@#1@exists}
+{\stx@warning{#1}{Undefined non-terminal: '#1'}#2}
+{\@syntaxlocref{#1}{#2}}}
+%%Refer to anchor
+\def\ref@anchor#1{%
+\ifu\csname stx@#1@alias\endcsname
+\@ref@anchor{#1}{#1}\else
+\@ref@anchor{\csname stx@#1@alias\endcsname}{#1}\fi}
+\def\stx@exists#1{\def\csname stx@#1@exists\endcsname{}}
+%%Define anachor
+\def\def@anchor#1{%
+\@ifundefined{stx@#1}
+{{\@nostyle\@auxdowrite{\string\stx@exists\{#1\}}}%
+\gdef\csname stx@#1\endcsname{}\@syntaxaname{#1}{#1}}
+{\@ifundefined{stx@#1@silent}
+{\hva@warn{Redefinition of non-terminal '#1'}#1}
+{\ref@anchor{#1}}}}
+%%%Change \@anchor and initial definition, for html only, of course!
+\ifhtml
+\def\set@name{\let\@anchor\def@anchor}
+\let\@anchor\ref@anchor
+\else
+\def\set@name{}
+\def\@anchor{}
+\fi
+%%%Format non-terminal
+\def\nt#1{\textit{\maroon#1}}
+%%%Link for non-terminal and format
+\def\@NT#1{\nt{\@anchor{#1}}}
+\let\NT\@NT
+\newcommand{\add@space}[1]
+{\renewcommand{\csname #1\endcsname}[1]
+{\addspace\csname @#1\endcsname{##1}\spacetrue}}
+\def\NT#1{\addspace\nt{\@anchor{#1}}\spacetrue}
+\def\brepet{\addspace\{}
+\def\erepet{\}}
+\def\boption{\addspace[}
+\def\eoption{]}
+\def\brepets{\addspace\{}
+\def\erepets{\}^+}
+\def\bparen{\addspace(}
+\def\eparen{)}
+\def\orelse{\mid \spacefalse}
+\def\is{ & ::= & \spacefalse }
+\def\alt{ \\ & \mid & \spacefalse }
+\def\sep{ \\ \\ \spacefalse }
+\def\cutline{}
+\def\emptystring{\epsilon}
+\def\syntax{\[\add@space{T}\add@space{NT}\begin{array}{>{\set@name}rcl}\spacefalse}
+\def\endsyntax{\end{array}\]}
+\def\syntaxleft{$\begin{array}{>{\set@name}rcl}\spacefalse}
+\def\endsyntaxleft{\end{array}$}
+\def\synt#1{$\spacefalse#1$}
+%%%
+%%
+%\stx@silent{model}\stx@silent{model-comment}
+%\stx@silent{selector}
+%\stx@silent{expr}\stx@silent{instruction}
+%%%

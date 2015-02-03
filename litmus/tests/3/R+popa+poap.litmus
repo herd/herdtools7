@@ -1,0 +1,23 @@
+C R+popa+poap
+"PodWWPA WseAA PodWRAP Fre"
+Cycle=Fre PodWWPA WseAA PodWRAP
+Relax=
+Safe=Fre PodWW PodWR WseAA
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Ws Fr
+Orig=PodWWPA WseAA PodWRAP Fre
+
+{}
+
+P0 (atomic_int* y,volatile int* x) {
+  *x = 1;
+  atomic_store(y,1);
+}
+
+P1 (atomic_int* y,volatile int* x) {
+  atomic_store(y,2);
+  int r0 = *x;
+}
+
+exists
+(y=2 /\ 1:r0=0)
