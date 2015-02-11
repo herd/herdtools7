@@ -3,52 +3,7 @@
 include "filters.cat"
 (* co with load-load hazards *)
 
-(* co observations in test *)
-let invrf = rf^-1
-
-let obsco =
-  let ww = po-loc & (W * W)
-  and rw = rf ; (po-loc & (R * W))
-  and wr = (po-loc & (W * R)) ; invrf
-  and rr = 0 in
-  (ww|rw|wr|rr) \ id
-
-let RMW = R & W
-let rmwco = rf & (W * RMW) (* co observation by atomicity *)
-
-let cobase = obsco|rmwco|co0
-
-(* Catch uniproc violations early *)
-acyclic cobase as ConsCo
-
-(* Compute linarisations per locations *)
-let rec co_locs wss = match wss with
-|| {} -> {}
-|| ws ++ wss ->
-    linearisations(ws,cobase) ++ co_locs wss   
-end
-
-(* Cross product linearisations *)
-let cross = 
-  let rec do_cross (k,ys,oss) = match oss with
-  || {} -> ys ++ k
-  || os ++ oss ->
-       let rec call_rec (k,os) = match os with
-       || {} -> k
-       || o ++ os ->
-           call_rec (do_cross (k,o | ys,oss),os)
-       end in
-       call_rec (k,os)
-  end in
-  fun oss -> do_cross ({},0,oss)
-
-with co from cross (co_locs (partition W))
-let coe = co & ext
-let coi = co & int
-let fr = (invrf ; co) \ id
-let fre = fr & ext
-let fri = fr & int
-
+include "cosllh.cat"
 show co,fr
 
 (* Uniproc *)
