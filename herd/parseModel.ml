@@ -11,6 +11,7 @@
 (*********************************************************************)
 
 (* memoize *)
+
 let t = Hashtbl.create 17
 
 
@@ -40,8 +41,9 @@ module Make(O:LexUtils.Config) = struct
   let parse fname =
     try Hashtbl.find t fname
     with Not_found ->
+      let key = fname in
       let fname = MyLib.find fname in
       let r = Misc.input_protect (do_parse fname) fname in
-      Hashtbl.add t fname r ;
+      Hashtbl.add t key r ;
       r
 end
