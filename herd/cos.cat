@@ -2,7 +2,7 @@
 
 (* generates possible co's *)
 
-z(* co observations in test *)
+(* co observations in test *)
 let invrf = rf^-1
 
 let obsco =
@@ -20,28 +20,9 @@ let cobase = obsco|rmwco|co0
 (* Catch uniproc violations early *)
 acyclic cobase as ConsCo
 
-(* Compute linarisations per locations *)
-let rec co_locs wss = match wss with
-|| {} -> {}
-|| ws ++ wss ->
-    linearisations(ws,cobase) ++ co_locs wss   
-end
+include "cross.cat"
 
-(* Cross product linearisations *)
-let cross = 
-  let rec do_cross (k,ys,oss) = match oss with
-  || {} -> ys ++ k
-  || os ++ oss ->
-       let rec call_rec (k,os) = match os with
-       || {} -> k
-       || o ++ os ->
-           call_rec (do_cross (k,o | ys,oss),os)
-       end in
-       call_rec (k,os)
-  end in
-  fun oss -> do_cross ({},0,oss)
-
-with co from cross (co_locs (partition W))
+with co from cross (co_locs (cobase,partition W))
 let coe = co & ext
 let coi = co & int
 let fr = (invrf ; co) \ id

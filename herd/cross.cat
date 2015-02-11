@@ -1,0 +1,24 @@
+Cross
+(* Utilities for combining co's *)
+
+(* Compute linarisations per locations *)
+let rec co_locs (cobase,wss) = match wss with
+|| {} -> {}
+|| ws ++ wss ->
+    linearisations(ws,cobase) ++ co_locs (cobase,wss)
+end
+
+(* Cross product linearisations *)
+let cross = 
+  let rec do_cross (k,ys,oss) = match oss with
+  || {} -> ys ++ k
+  || os ++ oss ->
+       let rec call_rec (k,os) = match os with
+       || {} -> k
+       || o ++ os ->
+           call_rec (do_cross (k,o | ys,oss),os)
+       end in
+       call_rec (k,os)
+  end in
+  fun oss -> do_cross ({},0,oss)
+

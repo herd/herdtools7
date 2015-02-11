@@ -10,7 +10,7 @@ MDL=x86tso.cat herd.cat herdcat.cat ppc.cat sc.cat LL.cat arm.cat \
  uniproc.cat uniproccat.cat minimal.cat minimalcat.cat qualcomm.cat \
  cpp11.cat simplec11.cat opencl.cat sccat.cat ptx.cat simple-arm.cat \
  uniproc-normw-cat.cat mips.cat mips-tso.cat \
- cos.cat stdlib.cat ppo.cat filters.cat
+ cross.cat cos.cat stdlib.cat ppo.cat filters.cat
 
 
 CFG=apoil.cfg enslip.cfg web.cfg doc.cfg cpp11.cfg
