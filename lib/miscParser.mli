@@ -46,6 +46,7 @@ type run_type =
   | Ty of string | Pointer of string
   | TyArray of string * int
 
+val pp_run_type : run_type -> string
 
 type state = (location * (run_type * maybev)) list
 

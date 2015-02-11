@@ -57,6 +57,7 @@ let as_local_proc i = function
   | Location_global _ -> None
   | Location_sreg _ -> assert false
 
+
 module LocSet =
   MySet.Make
     (struct type t = location let compare = location_compare end)
@@ -82,7 +83,15 @@ type run_type =
   | Ty of string | Pointer of string
   | TyArray of string * int
 
+let pp_run_type = function
+  | TyDef -> "TyDef"
+  | TyDefPointer -> "TyDefPointer"
+  | Ty s -> sprintf "Ty<%s>" s
+  | Pointer s -> sprintf "Pointer<%s>" s
+  | TyArray (s,sz) -> sprintf "TyArray<%s,%i>" s sz
+
 type state = (location * (run_type * maybev)) list
+
 
 let dump_state_atom dump_loc dump_val (loc,(t,v)) = match t with
 | TyDef ->

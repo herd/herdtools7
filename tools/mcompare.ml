@@ -66,7 +66,7 @@ let default_runopts =
    show_model = true ;
    show_fst = true ;
    show_empty_rows = true ;
-   show_kinds = false ;
+   show_kinds = true ;
    filter = None ;
    kmg = false ;
    quiet = false ;
@@ -715,20 +715,25 @@ module Make (Opt:Config) = struct
             include Matrix.NoAdd
           end) in
       let m = B.build keys ts in
-      dump ts "Revalidation" true
-        (List.map (fun t -> 1,pp_name t.name) ts) []
-        keys
-        ~col2:
-        (Misc.array_map2
-           (fun t k ->
-             let i =  k.Key.info in
-             let k = i.K.Cond.kind
-             and unsure = i.K.Cond.unsure in
-             [LS.pp_kind k ^
-              (if unsure then "?" else "") ^
-              (if unsure && t.loop then " (Loop)" else "")])
-           t1.tests keys)
-        m ;
+      if show_kinds then
+        dump ts "Revalidation" true
+          (List.map (fun t -> 1,pp_name t.name) ts) []
+          keys
+          ~col2:
+          (Misc.array_map2
+             (fun t k ->
+               let i =  k.Key.info in
+               let k = i.K.Cond.kind
+               and unsure = i.K.Cond.unsure in
+               [LS.pp_kind k ^
+                (if unsure then "?" else "") ^
+                (if unsure && t.loop then " (Loop)" else "")])
+             t1.tests keys)
+          m
+      else
+         dump ts "Revalidation" true
+          (List.map (fun t -> 1,pp_name t.name) ts) []
+          keys m ;
       output_char chan '\n' 
 
 
