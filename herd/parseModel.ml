@@ -10,6 +10,9 @@
 (*  General Public License.                                          *)
 (*********************************************************************)
 
+(* memoize *)
+let t = Hashtbl.create 17
+
 
 module Make(O:LexUtils.Config) = struct
   open Lexing
@@ -35,6 +38,10 @@ module Make(O:LexUtils.Config) = struct
     pp,model
 
   let parse fname =
-    let fname = MyLib.find fname in
-    Misc.input_protect (do_parse fname) fname
+    try Hashtbl.find t fname
+    with Not_found ->
+      let fname = MyLib.find fname in
+      let r = Misc.input_protect (do_parse fname) fname in
+      Hashtbl.add t fname r ;
+      r
 end
