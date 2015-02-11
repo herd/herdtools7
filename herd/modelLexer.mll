@@ -22,19 +22,6 @@ module LU = LexUtils.Make(O)
 (* Efficient from ocaml 4.02 *)
 
   let check_keyword = function
-    | "MM" -> MM
-    | "MR" -> MR
-    | "MW" -> MW
-    | "WM" -> WM
-    | "WW" -> WW
-    | "WR" -> WR
-    | "RM" -> RM
-    | "RW" -> RW
-    | "RR" -> RR
-    | "AA" -> AA
-    | "AP" -> AP
-    | "PA" -> PA
-    | "PP" -> PP
     | "let" -> LET
     | "rec" -> REC
 (*
@@ -51,10 +38,6 @@ module LU = LexUtils.Make(O)
     | "fun" ->  FUN
     | "in" -> IN
     | "undefined_unless" -> REQUIRES
-    | "ext" -> EXT
-    | "int" -> INT
-    | "sameloc" -> SAMELOC
-    | "noid" -> NOID
     | "withco" -> WITHCO
     | "withoutco" ->  WITHOUTCO
     | "withinit" -> WITHINIT
@@ -71,8 +54,7 @@ module LU = LexUtils.Make(O)
     | "debug" -> DEBUG
     | "match" -> MATCH
     | "with" -> WITH
-    | "foreach" -> FOREACH
-    | "fororder" -> FORORDER
+    | "forall" -> FORALL
     | "from" -> FROM
     | "do" -> DO
     | x -> VAR x
@@ -91,8 +73,6 @@ rule token = parse
 | '#' [^'\n']* '\n' { incr_lineno lexbuf ; token lexbuf }
 | '('   { LPAR }
 | ')'   { RPAR }
-| '['   { LBRAC }
-| ']'   { RBRAC }
 | '{'   { LACC }
 | '}'   { RACC }
 | '_'   { UNDERSCORE }
@@ -102,11 +82,9 @@ rule token = parse
 | '&'   { INTER }
 | '*'   { STAR }
 | '~'   { COMP }
-| '!'   { NOT }
 | '+'   { PLUS }
 | "++"  { PLUSPLUS }
 | '^'   { HAT }
-| '2'   { TWO }
 | "-1"  { INV }
 | '\\'  { DIFF }
 | '?'   { OPT }

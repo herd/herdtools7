@@ -1,4 +1,5 @@
 SC
+include "cos.cat"
 (* Atomic *)
 empty atom & (fre;coe) as atom
 

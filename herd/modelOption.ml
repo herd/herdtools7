@@ -10,17 +10,31 @@
 (*  General Public License.                                          *)
 (*********************************************************************)
 
+open Printf
+
 type t = { co : bool ; init : bool ; sc : bool } 
 
-let default = {co=true; init=false; sc=false}
+let default = {co=false; init=true; sc=false}
+let compat = {co=true; init=false; sc=false}
 
-let pp { co; init; sc; } = match co,init,sc with
-| true,true,true -> "[withco withinit withsc]"
-| true,true,false -> "[withco withinit]"
-| true,false,true -> "[withsc]"
-| true,false,false -> ""
-| false,_,true -> "[withsc]"
-| false,_,false -> "[withoutco]"
+let pp_opt tag default b =
+  if b = default then ""
+  else
+    sprintf "%s%s" (if b then "with" else "without") tag
+
+let pp { co; init; sc; } =
+  let pp =
+    [pp_opt "co" default.co co;
+     pp_opt "init" default.init init;
+     pp_opt "sc" default.sc sc;] in
+  let pp =
+    List.filter
+      (fun pp -> pp <> "")
+      pp in
+  match pp with
+  | [] -> ""
+  | _::_ ->
+      sprintf "[%s]" (String.concat "," pp)
 
 
 let set_enumco b t =

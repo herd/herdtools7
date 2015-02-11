@@ -45,20 +45,15 @@ let pp () =
 %token <string> STRING
 %token <string> LATEX
 %token INCLUDE
-%token LPAR RPAR LBRAC RBRAC BEGIN END LACC RACC
+%token LPAR RPAR BEGIN END LACC RACC
 %token EMPTY UNDERSCORE
 %token WITHCO WITHOUTCO WITHINIT WITHOUTINIT
 %token WITHSC WITHOUTSC
-/* Access direction */
-%token MM  MR  MW WM WW WR RM RW RR INT EXT NOID SAMELOC
-/* Plain/Atomic */
-%token AA AP PA PP
 %token ALT SEMI UNION INTER COMMA DIFF PLUSPLUS
-%token STAR PLUS OPT INV COMP NOT HAT TWO
-%token LET REC AND ACYCLIC IRREFLEXIVE TESTEMPTY EQUAL SHOW UNSHOW AS FUN IN PROCEDURE CALL FOREACH DO CHECKCALL FORORDER FROM
+%token STAR PLUS OPT INV COMP HAT
+%token LET REC AND ACYCLIC IRREFLEXIVE TESTEMPTY EQUAL SHOW UNSHOW AS FUN IN PROCEDURE CALL FORALL DO CHECKCALL FROM
 %token REQUIRES
 %token ARROW
-%token SEQTEST
 %token ENUM DEBUG MATCH WITH
 %type <AST.t> main
 %start main
@@ -108,10 +103,10 @@ ins:
 | CALL VAR exp { Call (mk_loc (),$2,[$3]) }
 | ENUM VAR EQUAL altopt alttags { Enum (mk_loc (),$2,$5) }
 | DEBUG exp { Debug (mk_loc (),$2) }
-| FOREACH VAR IN exp DO ins_list END
-    { Foreach (mk_loc (),$2,$4,$6) }
-| FORORDER VAR IN exp FROM exp optional_name
-    { ForOrder (mk_loc (),$2,$4,$6,$7) }
+| FORALL VAR IN exp DO ins_list END
+    { Forall (mk_loc (),$2,$4,$6) }
+| WITH VAR FROM exp
+    { WithFrom (mk_loc (),$2,$4) }
 altopt:
 | ALT  { () }
 |      { () }
@@ -187,22 +182,18 @@ simple:
 
 base:
 | simple { $1 }
-| select LPAR exp RPAR { Op1 (mk_loc(),$1,$3) }
 | exp0 { $1 }
 | base STAR base {Op (mk_loc(),Cartesian, [$1; $3])}
-| LBRAC exp RBRAC {Op1(mk_loc(),Set_to_rln,$2)}
 | base STAR { Op1(mk_loc(),Star,$1) }
 | base PLUS { Op1(mk_loc(),Plus,$1) }
 | base OPT { Op1(mk_loc(),Opt,$1) }
 | base HAT INV { Op1(mk_loc(),Inv,$1) }
-| base HAT TWO { Op1(mk_loc(),Square,$1) }
 | base SEMI base { do_op Seq $1 $3 }
 | base UNION base { do_op Union $1 $3 }
 | base PLUSPLUS base { Op (mk_loc (), Add, [$1; $3]) }
 | base DIFF base { Op (mk_loc (),Diff, [$1; $3;]) }
 | base INTER base {  Op (mk_loc (),Inter, [$1; $3;]) }
-| COMP base { Op1 (mk_loc(),Comp RLN, $2) }
-| NOT base { Op1 (mk_loc(),Comp SET, $2) }
+| COMP base { Op1 (mk_loc(),Comp, $2) }
 | MATCH exp WITH altopt clause_list END
     {
      let cls,d = $5 in
@@ -258,23 +249,4 @@ argsN:
 | exp            { [ $1 ] }
 | exp COMMA argsN { $1 :: $3 }
 
-select:
-| MM { Select (WriteRead,WriteRead) }
-| MW { Select (WriteRead,Write) }
-| MR { Select (WriteRead,Read) }
-| WM { Select (Write,WriteRead) }
-| WW { Select (Write,Write) }
-| WR { Select (Write,Read) }
-| RM { Select (Read,WriteRead) }
-| RW { Select (Read,Write) }
-| RR { Select (Read,Read) }
-/* Atomic/Plain */
-| AA { Select (Atomic,Atomic) }
-| AP { Select (Atomic,Plain) }
-| PA { Select (Plain,Atomic) }
-| PP { Select (Plain,Plain) }
-/* additional filters */
-| EXT { Ext }
-| INT { Int }
-| NOID { NoId }
-| SAMELOC { SameLoc }
+

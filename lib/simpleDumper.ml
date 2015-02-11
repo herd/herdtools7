@@ -68,16 +68,6 @@ end = struct
   open MiscParser
 
 
-  let dump_loc_type (loc,t) = match t with
-  | TyDef -> I.dump_location loc ^";"
-  | TyDefPointer -> I.dump_location loc ^"*;"
-  | Ty t -> sprintf "%s %s;" (I.dump_location loc) t
-  | Pointer t -> sprintf "%s %s*;" (I.dump_location loc) t
-
-  let dump_locations env =
-    let pp = List.map dump_loc_type env in
-    String.concat " " pp
-
   let do_dump withinfo chan doc t =
     fprintf chan "%s %s\n" (Archs.pp A.arch) doc.Name.name ;
     begin match doc.Name.doc with
@@ -92,11 +82,8 @@ end = struct
     fprintf chan "\n{%s}\n\n" (dump_state  t.init) ;
     prog chan t.prog ;
     fprintf chan "\n" ;
-    begin match t.locations with
-    | [] -> ()
-    | locs ->
-        fprintf chan "locations [%s]" (dump_locations locs)
-    end ;
+    let locs = DumpUtils.dump_locations I.dump_location t.locations in
+    if locs <> "" then fprintf chan "%s\n" locs ;
     fprintf chan "%s\n" (I.dump_constr t.condition) ;
     ()
 
@@ -125,7 +112,7 @@ end = struct
       match t.locations with
       | [] -> k
       | locs ->
-        sprintf "locations [%s]" (dump_locations locs)::k
+          DumpUtils.dump_locations I.dump_location locs::k
     end @@
     [I.dump_constr t.condition]
 end

@@ -68,10 +68,15 @@ module Make
             "loc", lazy begin
               E.EventRel.restrict_rel E.same_location (Lazy.force unv)
             end;
+            "int",lazy begin
+              E.EventRel.restrict_rel E.same_proc (Lazy.force unv)
+            end ;
+            "ext",lazy begin
+              E.EventRel.restrict_rel
+                (fun e1 e2 -> not (E.same_proc e1 e2)) (Lazy.force unv)
+            end ;
            "atom",lazy conc.S.atomic_load_store;
            "po", lazy conc.S.po;
-           "pos", lazy conc.S.pos;
-           "po-loc", lazy conc.S.pos;
            "addr", lazy (Lazy.force pr).S.addr;
            "data", lazy (Lazy.force pr).S.data;
            "ctrl", lazy (Lazy.force pr).S.ctrl;
@@ -115,11 +120,10 @@ module Make
              (fun (k,a) ->
                k,lazy (E.EventSet.filter (fun e -> a e.E.action) evts))
 	  E.Act.arch_sets) in
-     let m =
-       I.add_rels m         
 (* Define empty fence relation
    (for the few models that apply to several archs) *)
 (* Power fences *)
+      let m = I.add_rels m
          [
            "lwsync", lazy E.EventRel.empty;
            "eieio", lazy E.EventRel.empty;
@@ -139,7 +143,7 @@ module Make
 	   "membar.cta",lazy E.EventRel.empty;
 	   "membar.gl", lazy E.EventRel.empty;
 	   "membar.sys",lazy E.EventRel.empty;
-       ] in
+        ] in
 (* Override arch specific fences *)
       let m =
         I.add_rels m

@@ -1,0 +1,12 @@
+stdlib
+(*************************)
+(* Herd standard library *)
+(*************************)
+
+(* Basic relation *)
+let po-loc = po & loc
+let rfe = rf & ext
+let rfi = rf & int
+
+(* Turn a fence set into a fence relation *)
+let fencerel(b) = (po & (_ * b)) ; po

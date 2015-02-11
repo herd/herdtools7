@@ -24,6 +24,7 @@ module type Out = sig
   val put_char : t -> char -> unit
   val fprintf : t -> ('a, out_channel, unit) format -> 'a
   val tar : unit -> unit
+  val chan : t -> out_channel
 end
 
 module OutStd = struct
@@ -42,6 +43,10 @@ module OutStd = struct
   | Out -> fprintf stdout fmt
 
   let tar () = ()
+
+  let chan = function
+    | No -> assert false
+    | Out -> stdout
 end
 
 module OutTar(O:Tar.Option) = struct
@@ -55,6 +60,7 @@ module OutTar(O:Tar.Option) = struct
   let put_char = output_char
   let fprintf chan fmt = Printf.fprintf chan fmt
   let tar = T.tar
+  let chan t = t
 end
 
 module type Config = sig
@@ -63,6 +69,7 @@ module type Config = sig
   val check_name : string -> bool
   val outcomes : bool
   val asobserved : bool
+  val toexists : bool
 end
 
 module Make(Config:Config)(Out:Out) =
@@ -100,12 +107,25 @@ module Make(Config:Config)(Out:Out) =
           "    " in
       ()
 
+    let dump_locs out locs = match locs with
+    | [] -> ()
+    | _::_ ->
+        Out.fprintf out "%s\n"
+          (DumpUtils.dump_locations MiscParser.dump_location locs)
+
     let reparse =
-      if Config.outcomes || Config.asobserved then
+      if Config.outcomes || Config.asobserved || Config.toexists then
         fun mk x -> LogConstr.parse_locs_cond (mk x)
       else
         fun _ _ -> None
 
+    let toexists cond =
+      let open ConstrGen in
+      match cond with
+      | ExistsState _ -> cond
+      | NotExistsState p -> ExistsState p
+      | ForallStates (And []) -> ExistsState (And [])
+      | ForallStates p -> ExistsState (Not p)
 
     let from_chan idx_out fname in_chan =    
       try
@@ -121,19 +141,38 @@ module Make(Config:Config)(Out:Out) =
                 let lexbuf = LU.from_section sec in_chan in
                 Echo.echo_fun lexbuf (Out.put_char out)  in
               echo (start,constr_start) ;
+
+              let echocond =  not (Config.asobserved || Config.toexists) in
+              let cond_checked =  Config.check_cond name.Name.name in
+              let echo_cond c = match c with
+              | Some f -> Out.fprintf out "%s\n" f 
+              | None -> echo (constr_start,constr_end) in
+
               let cond =
-                begin match Config.check_cond name.Name.name with
+                begin match cond_checked with
                 | Some f ->
-                    if not Config.asobserved then Out.fprintf out "%s\n" f ;
+                    if echocond then echo_cond cond_checked ;
                     reparse Lexing.from_string f
                 | None ->
+                    if echocond then echo_cond None ;
                     let sec = constr_start,constr_end in
-                    if not Config.asobserved then echo sec ;
                     reparse (LU.from_section sec) in_chan
                 end in
               if Config.asobserved then begin match cond with
-              | Some (_,cond) ->
+              | Some (locs,cond) ->
+                  dump_locs out locs ;
                   dump_observed out cond
+              | None -> assert false
+              end else if Config.toexists then begin match cond with
+              | Some (locs,cond) ->
+                  begin match cond with
+                  | ConstrGen.ExistsState _ ->
+                      echo_cond cond_checked
+                  | _ ->
+                      dump_locs out locs ;
+                      LogConstr.dump (Out.chan out) (toexists cond) ;
+                      Out.fprintf out "\n"
+                  end
               | None -> assert false
               end ;
               echo (last_start,loc_eof) ;
@@ -181,6 +220,7 @@ and conds = ref []
 and verbose = ref 0
 and outcomes = ref false
 and asobserved = ref false
+and toexists = ref false
 let names = ref []
 
 let set_conds c = conds := !conds @ [c]
@@ -207,6 +247,10 @@ let opts =
     sprintf
       "<bool> include a list of matching outcomes as a comment, default %b"
       !outcomes;
+    "-toexists", Arg.Bool (fun b -> toexists := b),
+    sprintf
+      "<bool> change quantifier to exists, default %b"
+      !toexists;
   ]
 
 let prog =
@@ -235,6 +279,7 @@ let from_args =
         let verbose = !verbose
         let outcomes = !outcomes
         let asobserved = !asobserved
+        let toexists = !toexists
         let check_name = match names with
         | None -> fun _ -> true
         | Some names -> (fun name -> StringSet.mem name names)

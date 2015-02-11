@@ -124,6 +124,7 @@ module Make
     | Some _ -> true
 
     exception CompError of string
+    exception PrimError of string
 
 
     let rec pp_typ = function
@@ -147,6 +148,7 @@ module Make
         | Rel of S.event_rel
         | Set of S.event_set
         | Clo of closure
+        | Prim of string * (v list -> v)
         | Proc of procedure
         | Tag of string * string     (* type  X name *)
         | ValSet of typ * ValSet.t   (* elt type X set *)
@@ -172,6 +174,7 @@ module Make
         | Rel of S.event_rel
         | Set of S.event_set
         | Clo of closure
+        | Prim of string * (v list -> v)
         | Proc of procedure
         | Tag of string * string     (* type  X name *)
         | ValSet of typ * ValSet.t   (* elt type X set *)
@@ -197,7 +200,7 @@ module Make
         | Unv -> assert false (* Discarded before *)
         | Rel _ -> TRel
         | Set _ -> TEvents
-        | Clo _ -> TClo
+        | Clo _|Prim _ -> TClo
         | Proc _ -> TProc
         | Tag (t,_) -> TTag t
         | ValSet (t,_) -> TSet t
@@ -248,6 +251,12 @@ module Make
           raise Misc.Exit) (* Silent failure *)
         fmt
 
+    let warn loc fmt =      
+      ksprintf
+        (fun msg ->
+          Warn.warn_always "%a: %s" TxtLoc.pp loc msg)
+        fmt
+
     let set_op loc t op s1 s2 =
       try V.ValSet (t,op s1 s2)
       with CompError msg -> error loc "%s" msg
@@ -290,6 +299,11 @@ module Make
 
     and add_sets env bds =
       add_vals (fun v -> lazy (Set (Lazy.force v))) env bds
+
+    and add_prims env bds =
+      let bds =
+        List.map (fun (k,f) -> k,Prim (k,f)) bds in
+      add_vals (fun v -> lazy v) env bds
 
     type st = {
         env : V.env ;
@@ -412,22 +426,12 @@ module Make
       StringMap.fold (fun tag v k -> (tag,v)::k)   (Lazy.force st.show) []
 
     let empty_rel = Rel E.EventRel.empty
-    let noid r =
-      Rel
-        (E.EventRel.filter
-           (fun (e1 ,e2) -> not (E.event_equal e1 e2))
-           r)
-    let sameloc r =
-      Rel
-        (E.EventRel.filter
-           (fun (e1 ,e2) -> E.same_location e1 e2)
-           r)
         
     let error_typ loc t0 t1  =
       error loc"type %s expected, %s found" (pp_typ t0) (pp_typ t1)
 
     let error_rel loc v = error_typ loc TRel (type_val v)
-    and error_set loc v = error_typ loc TEvents (type_val v)
+(*    and error_set loc v = error_typ loc TEvents (type_val v) *)
 
     let type_list = function
       | [] -> assert false
@@ -477,16 +481,6 @@ module Make
         | (loc,v)::_ -> error_rel loc v in
       seq_rec
 
-    let is_dir = function
-        (* Todo: are these still needed? *)
-      | Unv_Set -> (fun _ -> true)
-      | Bar_Set -> E.is_barrier
-      | WriteRead -> E.is_mem
-      | Write -> E.is_mem_store
-      | Read -> E.is_mem_load
-      | Atomic -> E.is_atomic
-      | Plain -> fun e -> not (E.is_atomic e)
-
 (* interpreter *)
 (* For all success call kont, accumulating results *)
     let interpret
@@ -529,17 +523,7 @@ module Make
             | Rel r -> Rel (S.union r (Lazy.force ks.id))
             | v -> error_rel (get_loc e) v
             end
-        | Op1 (_,Select (s1,s2),e) ->
-            let f1 = is_dir s1 and f2 = is_dir s2 in
-            begin match eval env e with
-            | V.Empty -> V.Empty
-            | Unv ->
-                Rel (S.restrict f1 f2 (Lazy.force ks.unv))
-            | Rel r ->
-                Rel (S.restrict f1 f2 r)
-            | v -> error_rel (get_loc e) v
-            end
-        | Op1 (_,Comp _,e) -> (* Back to polymorphism *)
+        | Op1 (_,Comp,e) -> (* Back to polymorphism *)
             begin match eval env e with
             | V.Empty -> Unv
             | Unv -> V.Empty
@@ -559,48 +543,6 @@ module Make
             | V.Empty -> V.Empty
             | Unv -> Unv
             | Rel r -> Rel (E.EventRel.inverse r)
-            | v -> error_rel (get_loc e) v
-            end
-        | Op1 (_,Square,e) ->
-            begin match eval env e with
-            | V.Empty -> V.Empty
-            | Unv -> Unv
-            | Set s -> Rel (E.EventRel.cartesian s s)
-            | v -> error_set (get_loc e) v
-            end
-        | Op1 (_,Ext,e) ->
-            begin match eval env e with
-            | V.Empty -> V.Empty
-            | Unv -> Rel (U.ext (Lazy.force ks.unv))
-            | Rel r -> Rel (U.ext r)
-            | v -> error_rel (get_loc e) v
-            end
-        | Op1 (_,Int,e) ->
-            begin match eval env e with
-            | V.Empty -> V.Empty
-            | Unv -> Rel (U.internal (Lazy.force ks.unv))
-            | Rel r -> Rel (U.internal r)
-            | v -> error_rel (get_loc e) v
-            end
-        | Op1 (_,NoId,e) ->
-            begin match eval env e with
-            | V.Empty -> V.Empty
-            | Unv -> noid (Lazy.force ks.unv)
-            | Rel r -> noid r
-            | v -> error_rel (get_loc e) v
-            end
-        | Op1 (_,Set_to_rln,e) ->
-            begin match eval env e with
-            | V.Empty -> V.Empty
-            | Unv -> Rel (Lazy.force ks.id)
-            | Set s ->  Rel (E.EventRel.set_to_rln s)
-            | v -> error_set (get_loc e) v
-            end
-        | Op1 (_,SameLoc,e) ->
-            begin match eval env e with
-            | V.Empty -> V.Empty
-            | Unv -> sameloc (Lazy.force ks.unv)
-            | Rel r -> sameloc r
             | v -> error_rel (get_loc e) v
             end
 (* One xplicit N-ary operator *)
@@ -655,10 +597,10 @@ module Make
                 set_op loc t ValSet.inter s1 s2
             | (Unv,r)|(r,Unv) -> r
             | (V.Empty,_)|(_,V.Empty) -> V.Empty
-            | (Clo _|Proc _),_ ->
+            | (Clo _|Prim _|Proc _),_ ->
                 error loc1
                   "intersection on %s" (pp_typ (type_val v1))
-            | _,(Clo _|Proc _) ->
+            | _,(Clo _|Prim _|Proc _) ->
                 error loc2
                   "intersection on %s" (pp_typ (type_val v2))
             | (Rel _,Set _)
@@ -690,10 +632,10 @@ module Make
             | (Rel _|Set _|V.Empty|Unv|ValSet _),Unv
             | V.Empty,(Rel _|Set _|V.Empty|ValSet _) -> V.Empty
             | (Rel _|Set _|ValSet _),V.Empty -> v1
-            | (Clo _|Proc _),_ ->
+            | (Clo _|Proc _|Prim _),_ ->
                 error loc1
                   "difference on %s" (pp_typ (type_val v1))
-            | _,(Clo _|Proc _) ->
+            | _,(Clo _|Proc _|Prim _) ->
                 error loc2
                   "difference on %s" (pp_typ (type_val v2))
             | ((Set _|ValSet _),Rel _)|(Rel _,(Set _|ValSet _)) ->
@@ -717,7 +659,7 @@ module Make
                 set_op loc t2 ValSet.add v1 s2
             | _,V.ValSet (_,s2) ->
                 set_op loc (type_val v1) ValSet.add v1 s2
-            | _,(Rel _|Set _|Clo _|Proc _|V.Tag (_, _)) ->
+            | _,(Rel _|Set _|Clo _|Prim _|Proc _|V.Tag (_, _)) ->
                 error (get_loc e2)
                   "this expression of type '%s' should be a set"
                   (pp_typ (type_val v2))
@@ -725,11 +667,21 @@ module Make
         | Op (_,(Diff|Inter|Cartesian|Add),_) -> assert false (* By parsing *)
 (* Application/bindings *)
         | App (loc,f,es) ->
-            let f = eval_clo env f in
-            let env = add_args loc f.clo_args es env f.clo_env in
-            begin try eval env f.clo_body
-            with Misc.Exit ->
-              error loc "Calling"
+            begin match eval env f with
+            | Clo f ->
+                let env = add_args loc f.clo_args es env f.clo_env in
+                begin try eval env f.clo_body
+                with Misc.Exit ->
+                  error loc "Calling"
+                end
+            | Prim (name,f) ->
+                let vs = List.map (eval env) es in
+                begin try f vs
+                with
+                | PrimError msg -> error loc "primitive %s: %s" name msg
+                | Misc.Exit -> error loc "Calling primitive %s" name
+                end
+            | _ -> error loc "closure or primitive expected"
             end
         | Bind (_,bds,e) ->
             let env = eval_bds env bds in
@@ -827,10 +779,6 @@ module Make
       | V.Empty -> E.EventSet.empty
       | Unv -> ks.evts
       | _ -> error (get_loc e) "set expected"
-
-      and eval_clo env e = match eval env e with
-      | Clo v -> v
-      | _ -> error (get_loc e) "closure expected"
 
       and eval_proc loc env x = match find_env_loc loc env x with
       | Proc p -> p
@@ -1084,13 +1032,7 @@ module Make
           let st = doshow bds st in
           kont st res
       | Include (loc,fname) ->
-          (* Run sub-model file *)
-          let module P = ParseModel.Make(LexUtils.Default) in
-          let itxt,(_,_,iprog) =
-            try P.parse fname
-            with Misc.Fatal msg | Misc.UserError msg ->
-              error loc "%s" msg  in
-          run itxt st iprog kont res
+          do_include loc fname st kont res
       | Procedure (_,name,args,body) ->
           let p =
             Proc { proc_args=args; proc_env=st.env; proc_body=body; } in
@@ -1113,7 +1055,7 @@ module Make
           let enums = StringMap.add name xs env.enums in
           let env = { env with tags; enums; } in
           kont { st with env;} res
-      | Foreach (_loc,x,e,body) ->
+      | Forall (_loc,x,e,body) ->
           let env0 = st.env in
           let v = eval env0 e in
           begin match tag2set v with
@@ -1133,44 +1075,32 @@ module Make
                     res in
               run_set st set res
           | _ ->
-              error (get_loc e) "foreach instruction applied to non-set value"
+              error (get_loc e) "forall instruction applied to non-set value"
           end
-      | ForOrder (loc,x,e1,e2,name) ->
+      | WithFrom (_,x,e) ->
           let env0 = st.env in
-          let es = eval_set env0 e1
-          and r = eval_rel env0 e2 in
-          U.apply_orders es r
-            (fun r ->
-              let skip_this_check =
-                match name with
-                | Some name -> StringSet.mem name O.skipchecks
-                | None -> false in
-              if skip_this_check then
-                let mk_o r =
-                  E.EventRel.filter
-                    (fun (e1,e2) ->
-                      E.EventSet.mem e1 es &&  E.EventSet.mem e2 es)
-                    (S.tr r) in
-                let env = add_val x (lazy (Rel (mk_o r))) env0 in
-                kont (doshowone x {st with env;}) res
-              else begin
-                if (O.debug && O.verbose > 0) then begin
-                  eprintf "%a: cyclic order\n" TxtLoc.pp loc ; 
-                  let cy = E.EventRel.get_cycle r in
-                  MU.pp_failure test conc
-                    (sprintf "%s: cyclic order" test.Test.name.Name.name)
-                    (let k = show_to_vbpp st in
-                    match cy with
-                    | None -> k
-                    | Some r -> ("CY",U.cycle_to_rel r)::k)
-                end ;
-                res
-              end)
-            (fun o res ->
-              let env = add_val x (lazy (Rel o)) env0 in
-              kont (doshowone x {st with env;}) res)
-            res
+          let v = eval env0 e in
+          begin match v with
+          | V.Empty -> res
+          | ValSet (_,vs) ->
+              ValSet.fold
+                (fun v res ->
+                  let env = add_val x (lazy v) env0 in
+                   kont (doshowone x {st with env;}) res)
+                vs res
+          | _ -> error (get_loc e) "set expected"
+          end
       | Latex _ -> kont st res
+
+      and do_include loc fname st kont res =
+          (* Run sub-model file *)
+        if O.debug then warn loc "include \"%s\"" fname ;
+        let module P = ParseModel.Make(LexUtils.Default) in
+        let itxt,(_,_,iprog) =
+          try P.parse fname
+          with Misc.Fatal msg | Misc.UserError msg ->
+            error loc "%s" msg  in
+        run itxt st iprog kont res
 
       and run txt st c kont res = match c with
       | [] ->  kont st res
@@ -1178,7 +1108,32 @@ module Make
           exec txt st i
             (fun st res -> run txt st c kont res)
             res in
+(* Primitives *)
+      let m =
+        let arg_mismatch () = raise (PrimError "argument mismatch") in
+        let partition args = match args with
+        | [Set evts] ->
+            let r = U.partition_events evts in
+            let vs = List.map (fun es -> Set es) r in
+            ValSet (TEvents,ValSet.of_list vs)
+        | _ -> arg_mismatch ()
 
+        and linearisations args = match args with
+        | [Set es;Rel r;] ->
+            let rs =
+              U.apply_orders es r
+                (fun o -> ValSet.singleton (Rel o))
+                (fun o os -> ValSet.add (Rel o) os)
+                ValSet.empty in
+            ValSet (TRel,rs)
+        | _ -> arg_mismatch () in
+
+        add_prims m
+          [
+           "partition",partition;
+           "linearisations",linearisations;
+          ] in
+(* Initial show's *)
       let show =
         lazy begin
           let show =
@@ -1189,10 +1144,10 @@ module Make
             (fun tag show -> StringMap.add tag (find_show_rel m tag) show)
             S.O.PC.doshow show
         end in
-      run txt {env=m; show=show;
-               seen_requires_clause=false;
-               skipped=StringSet.empty;} prog kont res
 
-
-
-              end
+      do_include TxtLoc.none "stdlib.cat"
+      {env=m; show=show;
+       seen_requires_clause=false;
+       skipped=StringSet.empty;}
+        (fun st res -> run txt st prog kont res) res
+  end

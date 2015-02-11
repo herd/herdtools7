@@ -24,13 +24,16 @@ let in_file name =
     pos_bol = 0;
     pos_cnum = -1;
   } in
-  { loc_start = loc; loc_end = loc; loc_ghost = true }
+  { loc_start = loc; loc_end = loc; loc_ghost = false }
 ;;
 
-let none = in_file "_none_";;
+let none = let loc = in_file "_none_" in { loc with loc_ghost = true;}
 
 let make p1 p2 = { loc_start=p1; loc_end=p2; loc_ghost=false; }
 
-let pp chan p = Pos.pp_pos2 chan (p.loc_start,p.loc_end)
+let pp chan p = 
+  if p.loc_ghost then Printf.fprintf chan "File _none_"
+  else
+    Pos.pp_pos2 chan (p.loc_start,p.loc_end)
 
 

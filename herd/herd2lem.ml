@@ -43,16 +43,9 @@ and lem_of_op1 args chan e = function
   | Plus -> fprintf chan "(tch %a)" (lem_of_exp args) e
   | Star -> fprintf chan "(rtc %a)" (lem_of_exp args) e
   | Opt -> fprintf chan "(rc X %a)" (lem_of_exp args) e
-  | Select _ -> fprintf chan "Select not done yet"
   | Inv -> fprintf chan "(inv %a)" (lem_of_exp args) e
-  | Square -> fprintf chan "(cross %a %a)" (lem_of_exp args) e (lem_of_exp args) e
-  | Ext -> fprintf chan "(ext %a)" (lem_of_exp args) e
-  | Int -> fprintf chan "(int %a)" (lem_of_exp args) e
-  | NoId -> fprintf chan "(noid %a)" (lem_of_exp args) e
-  | Set_to_rln -> fprintf chan "(stor %a)" (lem_of_exp args) e
-  | Comp SET -> fprintf chan "(comps X %a)" (lem_of_exp args) e
-  | Comp RLN -> fprintf chan "(compr X %a)" (lem_of_exp args) e
-  | _ -> Warn.fatal "Unknown operator in herd2lem"
+  | Comp -> fprintf chan "(comp X %a)" (lem_of_exp args) e
+
 and lem_of_var args chan x = 
   match x with
   | "rf" | "asw" | "lo" ->
@@ -140,10 +133,10 @@ let lem_of_ins chan = function
     provides := (sprintf "%s.provides_clauses" file) :: (!provides);
     requires := (sprintf "%s.requires_clauses" file) :: (!requires);
     fprintf chan "open import %s" file
-  | ProcedureTest _|Procedure _|Call _|Enum _|Debug _|Foreach _
-  | ForOrder _
+  | ProcedureTest _|Procedure _|Call _|Enum _|Debug _|Forall _
+  |WithFrom _
     ->
-      Warn.fatal "procedure/call/enum/debug/foreach in herd2lem"
+      Warn.fatal "procedure/call/enum/debug/forall... in herd2lem"
 
 let lem_of_prog chan prog = 
   fprintf chan "open import Pervasives\n";

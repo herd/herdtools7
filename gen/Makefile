@@ -11,7 +11,7 @@ all: native
 install:
 	@mkdir -p $(BINDIR)
 	@for prog in $(PROGS:.byte=) ; \
-	do cp $$prog $(BINDIR); done
+	do cp $$prog $(BINDIR)/$${prog}7; done
 
 
 luc: native install

@@ -29,15 +29,10 @@ type op2 =
   | Cartesian (** build a relation from two sets *)
   | Add   (** add element to a set *)
 type op1 =
-  | Plus | Star | Opt  | Select of direction * direction
-  | Comp of set_or_rln (** Set or relation complement *)
+  | Plus | Star | Opt 
+  | Comp (** Set or relation complement *)
   | Inv  (** Relation inverse *)
-  | Square (** x^2 is shorthand for x * x *)
-  | Ext  (** External subrelation (events from <> threads) *)
-  | Int  (** Internal subrelation (events from = threads) *)
-  | NoId (** Irreflexive subrelation (<> events, aka r\id) *)
-  | Set_to_rln (** Convert a set to a relation (viz. identity restricted to that set) *)
-  | SameLoc (* Identical locations *)
+
 type konst = Empty of set_or_rln
 type var = string
 type varset = StringSet.t
@@ -80,11 +75,10 @@ type ins =
   | ProcedureTest of TxtLoc.t * var * exp list * string option
   | Call of  TxtLoc.t * var * exp list
   | Enum of TxtLoc.t * var * var list
-  | Foreach of  TxtLoc.t * var * exp * ins list
+  | Forall of  TxtLoc.t * var * exp * ins list
   | Debug of TxtLoc.t * exp
-  | ForOrder of
-      TxtLoc.t * var * exp (* nodes *) * exp (* edges *) * string option
-
+  | WithFrom of TxtLoc.t * var * exp (* set of relations *)
+ 
 (** Name X model definition *)
 type t = ModelOption.t * string * ins list
 type pp_t = string * t

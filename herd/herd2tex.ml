@@ -53,23 +53,12 @@ and string_of_dir = function
   | Bar_Set -> "B"
 
 and tex_of_op1 n c e op1 = 
-  paren (n >= 3 && op1 != Set_to_rln) c (fun () -> match op1 with
+  paren (n >= 3) c (fun () -> match op1 with
   | Plus -> fprintf c "%a^+" (tex_of_exp 3) e
   | Star -> fprintf c "%a^*" (tex_of_exp 3) e
   | Opt -> fprintf c "%a^?" (tex_of_exp 3) e
-  | Select (d1,d2) -> 
-    fprintf c "\\mathrm{%s%s}(%a)"
-      (string_of_dir d1)
-      (string_of_dir d2)
-      (tex_of_exp 0) e
   | Inv -> fprintf c "%a^{-1}" (tex_of_exp 3) e
-  | Square -> fprintf c "%a^{2}" (tex_of_exp 3) e
-  | Ext -> fprintf c "\\mathrm{ext}(%a)" (tex_of_exp 0) e
-  | Int -> fprintf c "\\mathrm{int}(%a)" (tex_of_exp 0) e
-  | NoId -> fprintf c "\\mathrm{noid}(%a)" (tex_of_exp 0) e
-  | Set_to_rln -> fprintf c "[%a]" (tex_of_exp 0) e
-  | Comp _ -> fprintf c "\\neg %a" (tex_of_exp 3) e
-  | SameLoc ->  fprintf c "\\mathrm{sameloc}(%a)" (tex_of_exp 0) e)
+  | Comp -> fprintf c "\\neg %a" (tex_of_exp 3) e)
 
 and comma c () = fprintf c ","
 
@@ -159,9 +148,9 @@ let rec tex_of_ins c = function
     fprintf c "\\entercomment\n";
     fprintf c "\\noindent %s\n" s;
     fprintf c "\\exitcomment\n"
-  | Include _|Call _|Enum _| Foreach _ | Debug _
-  | ProcedureTest _|ForOrder _
-    -> Warn.fatal "include/call/enum/foreach/debug in herd2tex"
+  | Include _|Call _|Enum _| Forall _ | Debug _
+  | ProcedureTest _|WithFrom _
+    -> Warn.fatal "include/call/enum/forall/debug in herd2tex"
 
 and tex_of_inss c =
   List.iter (fprintf c "\\noindent %a\n\n" tex_of_ins)

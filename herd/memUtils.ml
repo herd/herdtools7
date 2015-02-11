@@ -364,6 +364,19 @@ module Make(S : SemExtra.S) = struct
   and collect_stores es = collect_by_loc es E.is_store
   and collect_atomics es = collect_by_loc es E.is_atomic
   and collect_mutex_actions es = collect_by_loc es E.is_mutex_action
+
+  let partition_events es =
+    let env =
+      E.EventSet.fold
+        (fun e k -> match E.location_of e with
+        | Some loc ->
+            let evts = map_loc_find loc k in
+            LocEnv.add loc (e::evts) k
+        | None -> k) es LocEnv.empty in
+
+    LocEnv.fold (fun _ evts k -> E.EventSet.of_list evts::k) env []
+
+
 (*
   and collect_sc_actions es = 
     (* horrible hack ahead -- we're collecting sc actions per location, 

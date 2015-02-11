@@ -13,8 +13,8 @@ all: native
 install:
 	@mkdir -p $(BINDIR)
 	@for prog in $(PROGS:.byte=) $(SCRIPTS) ; \
-	do cp $$prog $(BINDIR); done
-	ln -f $(BINDIR)/mdiff $(BINDIR)/minter
+	do cp $$prog $(BINDIR)/$${prog}7; done
+	ln -f $(BINDIR)/mdiff7 $(BINDIR)/minter7
 
 luc: native install
 

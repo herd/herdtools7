@@ -57,7 +57,6 @@ let as_local_proc i = function
   | Location_global _ -> None
   | Location_sreg _ -> assert false
 
-
 module LocSet =
   MySet.Make
     (struct type t = location let compare = location_compare end)

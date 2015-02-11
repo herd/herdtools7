@@ -1,6 +1,6 @@
 PREFIX=$$HOME
 BINDIR=$(PREFIX)/bin
-LIBDIR=$(PREFIX)/lib/litmus
+LIBDIR=$(PREFIX)/lib/litmus7
 CFG=conti.cfg saumur.cfg saumur.close.cfg doko.cfg squale.cfg hpcx.cfg \
  vargas.cfg vargas.cache.cfg vargas.close.cfg vargas16.cfg \
  abducens.cfg  abducens.big.cfg abducens.cache.cfg abducens.close.cfg \
@@ -30,7 +30,7 @@ all: native
 
 install:
 	mkdir -p $(BINDIR)
-	cp litmus $(BINDIR)
+	cp litmus $(BINDIR)/litmus7
 	mkdir -p $(LIBDIR)
 	cp _utils.c _utils.h $(LIBDIR)
 	cp _litmus_rand.c _litmus_rand.h $(LIBDIR)

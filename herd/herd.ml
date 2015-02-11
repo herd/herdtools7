@@ -388,7 +388,7 @@ let model,model_opts = match !model with
     with Misc.Exit ->
       eprintf "Failure of generic model parsing\n" ;
       exit 2 end
-| m -> m,ModelOption.default
+| m -> m,ModelOption.compat
     
 
 (* Read kinds/conds files *)

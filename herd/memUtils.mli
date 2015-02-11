@@ -95,6 +95,9 @@ module Make : functor (S: SemExtra.S) -> sig
   val collect_atomics : S.event_structure -> S.event list LocEnv.t
   val collect_mutex_actions : S.event_structure -> S.event list LocEnv.t
 
+(* Partition by location *)
+  val partition_events : S.event_set -> S.event_set list
+
 (* Utlities for relations *)
   val restrict_to_mem_stores : S.event_rel -> S.event_rel
 
