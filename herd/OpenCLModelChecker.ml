@@ -49,16 +49,18 @@ module Make
     let withco = opts.ModelOption.co
     let withsc = opts.ModelOption.sc
 
-    let failed_requires_clauses = ref 0
-
-    let run_interpret failed_requires_clause test conc m id vb_pp kont res =
-      I.interpret failed_requires_clause test conc m id vb_pp
-        (fun st res ->
-          if not O.strictskip || StringSet.equal st.I.skipped O.skipchecks then
-            let vb_pp = lazy (I.show_to_vbpp st) in
-            kont conc conc.S.fs vb_pp (Some (!failed_requires_clauses)) res
-          else res)
-        res
+    let run_interpret test =
+      let run = I.interpret test in
+      fun ks m vb_pp kont res ->
+        run ks m vb_pp
+          (fun st res ->
+            if not O.strictskip || StringSet.equal st.I.skipped O.skipchecks
+            then
+              let vb_pp = lazy (I.show_to_vbpp st) in
+              let conc = st.I.ks.I.conc in
+              kont conc conc.S.fs vb_pp st.I.undef res
+            else res)
+          res
 
     module MU = ModelUtils.Make(O)(S)
 
@@ -74,7 +76,7 @@ module Make
                (E.EventSet.elements evts))
         end in
       let unv = lazy begin E.EventRel.cartesian evts evts end in
-      let ks = { I.id; unv; evts; } in
+      let ks = { I.id; unv; evts; conc; } in
       (* printf "po = {\n%a\n}\n" debug_rel conc.S.po; *)
 (* Initial env *)
       let m =
@@ -101,9 +103,11 @@ module Make
             "rf", lazy (Lazy.force pr).S.rf;
             "rfe", lazy (U.ext (Lazy.force pr).S.rf);
             "rfi", lazy (U.internal (Lazy.force pr).S.rf);
+(* Looks useless ???
             "same_B", lazy begin
               E.EventRel.restrict_rel E.same_barrier_id (Lazy.force unv)
             end;
+*)
           ] @
            (match test.Test.scope_tree with
            | None -> []
@@ -178,9 +182,7 @@ module Make
                  E.EventSet.filter (fun e -> a e.E.action) evts
                end)
 	     E.Act.arch_sets) in
-      let failed_requires_clause () =
-	let () = incr failed_requires_clauses in ()
-      in
+
       if withco then
         let process_co co0 res =
           if withsc then
@@ -207,7 +209,7 @@ module Make
                    "coe", lazy (U.ext co); "coi", lazy (U.internal co);
                    "S", lazy sc;
 	         ] in
-              run_interpret failed_requires_clause test conc m ks vb_pp kont res
+              run_interpret test ks m vb_pp kont res
             in
             U.apply_process_sc test conc process_sc res
           else
@@ -229,10 +231,10 @@ module Make
                    "co", lazy co;
                    "coe", lazy (U.ext co); "coi", lazy (U.internal co);
 	         ] in
-            run_interpret failed_requires_clause test conc m ks vb_pp kont res
+            run_interpret test ks m vb_pp kont res
         in
         U.apply_process_co test conc process_co res
       else
         let m = I.add_rels m ["co0",lazy conc.S.pco;] in
-        run_interpret failed_requires_clause test conc m ks vb_pp kont res
+        run_interpret test ks m vb_pp kont res
   end

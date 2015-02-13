@@ -73,8 +73,23 @@ module Top (C:Config) = struct
       end in
       let module ModelConfig = struct
         let model =
-          match C.model with None -> Model.get_default_model arch
-          | Some m -> m
+          let m =
+            match C.model with
+            | None -> Model.get_default_model arch
+            | Some m -> m in
+          match m with
+          | Model.File fname ->
+              let module P = ParseModel.Make(LexUtils.Default) in
+              let _,(b,_,_) as r = P.parse fname in
+              if b <> ModelOption.default then
+                Warn.fatal
+                  "default model in \"%s\" does not have default options"
+                  fname ;
+              Model.Generic r
+          | _ -> m
+        let showsome =
+          begin match C.outputdir with Some _ -> true | None -> false end
+        || C.PC.gv || C.PC.evince
         let through = C.through
         let debug = C.debug.Debug.barrier
         let verbose = C.verbose

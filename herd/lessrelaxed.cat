@@ -1,4 +1,8 @@
 "Less Relaxed ARM llh model"
+
+include "filter.cat"
+include "cosllh.cat"
+
 (* Uniproc *)
 let poi = WW(po-loc) | RW(po-loc) | WR(po-loc)
 let complus = fr|rf|co|(co;rf)|(fr;rf)
@@ -9,65 +13,33 @@ let dd = addr | data
 let rdw = po-loc & (fre;rfe)
 let detour = po-loc & (coe ; rfe)
 let addrpo = addr;po
+
 (*******)
 (* ppo *)
 (*******)
 
+include "armfences.cat"
 
 (* Initial value *)
-let ci0 = ctrlisync | detour
+let ci0 = ctrlisb | detour
 let ii0 = dd | rfi | rdw
 let cc0 = dd | ctrl | addrpo
   | WW(po-loc) | RW(po-loc) | rdw | detour (* po-loc replaced *)
 let ic0 = 0
 
-(* Fixpoint from i -> c in instructions and transitivity *)
-let rec ci = ci0 | (ci;ii) | (cc;ci)
-and ii = ii0 | ci | (ic;ci) | (ii;ii)
-and cc = cc0 | ci | (ci;ic) | (cc;cc)
-and ic = ic0 | ii | cc | (ic;cc) | (ii ; ic) (* | ci inclus dans ii et cc *)
-
-let ppo = RW(ic) | RR(ii)
+include "ppo.cat"
 
 
 (**********)
 (* fences *)
 (**********)
 
-(* Power *)
-let lwsync = RM(lwsync)|WW(lwsync)
-let eieio = WW(eieio)
-show sync, lwsync, eieio
-
 (* ARM *)
 let dmb.st=WW(dmb.st)
 let dsb.st=WW(dsb.st)
-show dmb, dsb, dmb.st, dsb.st
 
 (* Common, all arm barriers are strong *)
-let strong = sync|dmb|dsb|dmb.st|dsb.st
-let light = lwsync|eieio
+let strong = dmb|dsb|dmb.st|dsb.st
+let light = 0
 
-let fence = strong|light
-
-
-(* extensions *)
-let ppoext = (rfe;ppo)|(ppo;rfe)|(rfe;ppo;rfe)
-let fenceext = (rfe;fence)|(fence;rfe)|(rfe;fence;rfe)
-
-(* happens before *)
-let hb = ppo | ppoext | fence | fenceext
-let GHB = hb
-acyclic hb as thinair
-
-(* prop *)
-let hbstar = hb*
-let propbase = (fence|fenceext);hbstar
-
-let chapo = rfe|fre|coe|(fre;rfe)|(coe;rfe)
-
-let prop = WW(propbase)| (chapo? ; propbase*; strong; hbstar)
-
-acyclic co|prop as propagation
-irreflexive fre;prop;hbstar as causality
-
+include "ppc-checks.cat"

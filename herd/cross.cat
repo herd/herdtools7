@@ -3,11 +3,11 @@ Cross
 
 (* Compute linarisations per locations *)
 let co_locs (cobase,wss) =
-  let rec co_locs wss = match wss with
+  let rec do_locs wss = match wss with
   || {} -> {}
   || ws ++ wss ->
-      linearisations(ws,cobase) ++ co_locs(wss)   
-  end in co_locs(wss)
+      linearisations(ws,cobase) ++ do_locs(wss)   
+  end in do_locs(wss)
 
 (* Cross product linearisations *)
 let cross = 
@@ -23,3 +23,6 @@ let cross =
   end in
   fun oss -> do_cross ({},0,oss)
 
+(* Generate co's that extend partial order pco *)
+
+let generate_cos(pco) = cross (co_locs (pco,partition W))

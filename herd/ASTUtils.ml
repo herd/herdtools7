@@ -48,6 +48,8 @@ open AST
           StringSet.union
             (StringSet.union e1 e2)
             (StringSet.remove x (StringSet.remove xs e3))
+      | Try (_,e1,e2) ->
+          StringSet.union (free e1) (free e2)
 
 and frees es = StringSet.unions (List.map free es)
 

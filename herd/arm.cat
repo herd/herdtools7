@@ -11,14 +11,16 @@ let dd = addr | data
 let rdw = po-loc & (fre;rfe)
 let detour = po-loc & (coe ; rfe)
 let addrpo = addr;po
-#show rdw,detour,dd,addrpo
+
+
 (*******)
 (* ppo *)
 (*******)
 
+include "armfences.cat"
 
 (* Initial value *)
-let ci0 = ctrlisync | detour
+let ci0 = ctrlisb | detour
 let ii0 = dd | rfi | rdw
 let cc0 = dd | ctrl | addrpo (* po-loc deleted *)
 let ic0 = 0
@@ -30,38 +32,14 @@ include "ppo.cat"
 (* fences *)
 (**********)
 
-let dmb.st = fencerel(DMB.ST)
-let dsb.st = fencerel(DSB.ST)
-let dmb = fencerel(DMB)
-let dsb = fencerel(DSB)
-
 (* ARM *)
 let WW = W * W
 let dmb.st=dmb.st & WW
 let dsb.st=dsb.st & WW
-show dmb,dsb,dmb.st,dsb.st
+
 
 (* Common, all arm barriers are strong *)
 let strong = dmb|dsb|dmb.st|dsb.st
 let light = 0
 
-let fence = strong|light
-
-
-(* happens before *)
-let hb = ppo | fence | rfe
-let GHB = hb
-
-acyclic hb as thinair
-
-(* prop *)
-let hbstar = hb*
-let propbase = (fence|(rfe;fence));hbstar
-
-let chapo = rfe|fre|coe|(fre;rfe)|(coe;rfe)
-
-let prop = (propbase & WW) | (chapo? ; propbase*; strong; hbstar)
-
-acyclic co|prop as propagation
-irreflexive fre;prop;hbstar as causality
-
+include "ppc-checks.cat"

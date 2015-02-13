@@ -57,6 +57,7 @@ module LU = LexUtils.Make(O)
     | "forall" -> FORALL
     | "from" -> FROM
     | "do" -> DO
+    | "try" -> TRY
     | x -> VAR x
 
 

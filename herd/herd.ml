@@ -388,8 +388,8 @@ let model,model_opts = match !model with
     with Misc.Exit ->
       eprintf "Failure of generic model parsing\n" ;
       exit 2 end
-| m -> m,ModelOption.compat
-    
+| Some _ as m -> m,ModelOption.compat
+| None -> None,ModelOption.default
 
 (* Read kinds/conds files *)
 module LR = LexRename.Make(struct let verbose = !verbose end)

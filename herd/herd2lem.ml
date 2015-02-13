@@ -30,6 +30,7 @@ let rec fprintf_list_infix s f chan = function
 let lem_of_konst chan = function
   | Empty SET -> fprintf chan "emps"
   | Empty RLN -> fprintf chan "empr"
+  | _ -> Warn.fatal "lem_of_konst"
 
 let rec lem_of_op2 args chan es = function
   | Union -> fprintf_list_infix "union" (lem_of_exp args) chan es

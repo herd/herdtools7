@@ -55,20 +55,6 @@ module S = S
             (S)
             (AllBarrier.FromARM(B)) in
         X.check_event_structure test        
-    | Jade opt ->
-        let module X = 
-          Jade.Make
-            (struct
-              let opt = opt
-              include ModelConfig
-            end)
-            (S)
-            (AllBarrier.FromARM(B)) in
-        X.check_event_structure test                
-    | X86TSO ->
-        let module X =
-          X86TSO.Make(ModelConfig)(S)(AllBarrier.FromARM(B)) in
-        X.check_event_structure test
     | Generic m ->
         let module X =
           MachModelChecker.Make

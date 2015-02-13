@@ -80,7 +80,9 @@ module type S = sig
 (* Barriers *)
   val is_barrier : event -> bool
   val barrier_of : event -> A.barrier option
+(*
   val same_barrier_id : event -> event -> bool
+*)
   val is_isync : event -> bool
 
 (* Commit *)
@@ -399,8 +401,10 @@ struct
 (* Barriers *)
     let is_barrier e = Act.is_barrier e.action 
     let barrier_of e = Act.barrier_of e.action
+(*
     let same_barrier_id e1 e2 = 
       Act.same_barrier_id e1.action e2.action
+*)
   let is_isync e = Act.is_isync e.action
 
 (* Commits *)

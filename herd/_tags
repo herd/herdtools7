@@ -4,4 +4,4 @@ true: safe_string
 <lib>: include
 <*.cmo>: debug
 <*.byte>:debug
-<herd.{d.byte,byte,native}>:use_str
+<herd.{d.byte,byte,native,p.native}>:use_str

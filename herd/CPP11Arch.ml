@@ -14,7 +14,7 @@
 (** Define CPP11 architecture *)
 
 module Make (C:Arch.Config) (V:Value.S) = struct
-    include CPP11Base
+  include CPP11Base
 
 (* Now global locations, that include reservations *)
     module V = V

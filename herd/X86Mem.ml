@@ -45,11 +45,6 @@ module S = S
             end)
             (S) in
         X.check_event_structure test
-    | X86TSO ->
-        let module X =
-          X86TSO.Make
-            (ModelConfig)(S)(AllBarrier.FromX86(B)) in
-         X.check_event_structure test
     | Generic m ->
         let module X =
           MachModelChecker.Make

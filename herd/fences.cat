@@ -1,0 +1,5 @@
+AllFences
+
+include "armfences.cat"
+include "ppcfences.cat"
+include "x86fences.cat"

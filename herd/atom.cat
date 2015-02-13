@@ -18,6 +18,14 @@ let aa = po & (A * A)
 (*******)
 (* ppo *)
 (*******)
+
+include "ppcfences.cat"
+show isync,ctrlisync
+show lwsync as lwsync
+show eieio as eieio
+show sync
+
+
 let WW = W * W
 let RM = R * M
 let RR = R * R
@@ -39,33 +47,13 @@ include "ppo.cat"
 (**********)
 
 (* Power *)
-let lwsync_eff = lwsync & RM | lwsync & WW
-let eieio_eff = eieio & WW
+let lwsync = lwsync & RM | lwsync & WW
+let eieio = eieio & WW
 
-
-(* ARM *)
-let dmb.st_eff=dmb.st & WW
-let dsb.st_eff=dsb.st & WW
 
 (* Common, all arm barriers are strong *)
-let strong = sync|dmb|dsb|dmb.st_eff|dsb.st_eff
-let light = lwsync_eff|eieio_eff
 
-let fence = strong|light
+let strong = sync
+let light = lwsync|eieio
 
-
-(* happens before *)
-let hb = ppo | fence | rfe
-acyclic hb as thinair
-
-(* prop *)
-let hbstar = hb*
-let propbase = (fence|(rfe;fence));hbstar
-
-let chapo = rfe|fre|coe|(fre;rfe)|(coe;rfe)
-
-let prop = (propbase & WW)| (chapo? ; propbase*; strong; hbstar)
-
-acyclic co|prop as propagation
-irreflexive fre;prop;hbstar as causality
-
+include "ppc-checks.cat"

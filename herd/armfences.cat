@@ -1,0 +1,12 @@
+ARMFences
+
+let dmb.st = try fencerel(DMB.ST) with 0
+let dsb.st = try fencerel(DSB.ST) with 0
+let dmb = try fencerel(DMB) with 0
+let dsb = try fencerel(DSB) with 0
+let isb = try fencerel(ISB) with 0
+show dmb.st,dsb.st,dmb,dsb
+
+let ctrlisb = try ctrlcfence(ISB) with 0
+show isb \ ctrlisb as isb
+

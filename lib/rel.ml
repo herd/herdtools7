@@ -104,12 +104,15 @@ with
         xs empty
 
     let cartesian xs ys =
-      Elts1.fold
-	(fun x acc ->
-	  Elts2.fold
-	    (fun y acc -> add (x,y) acc)
-	    ys acc)
-	xs empty
+      if Elts1.is_empty xs || Elts2.is_empty ys then
+        empty
+      else
+        Elts1.fold
+	  (fun x acc ->
+	    Elts2.fold
+	      (fun y acc -> add (x,y) acc)
+	      ys acc)
+	  xs empty
 
     let of_pred set1 set2 pred =
       Elts1.fold

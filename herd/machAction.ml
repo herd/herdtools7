@@ -133,7 +133,7 @@ end = struct
     | Barrier b -> Some b
     | _ -> None
 
-    let same_barrier_id _ _ = false
+  let same_barrier_id _ _ = assert false
 
 (* Commits *)
    let is_commit a = match a with
@@ -160,7 +160,7 @@ end = struct
 
   let arch_sets = map_act (fun tag -> tag) A.arch_sets
 
-  let arch_fences = map_act String.lowercase A.arch_sets
+  let arch_fences = []
 
   let is_isync act = match act with
   | Barrier b -> A.is_isync b

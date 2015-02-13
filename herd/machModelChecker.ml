@@ -23,6 +23,7 @@ module Make
     (S:Sem.Semantics)
     =
   struct
+
     module I = Interpreter.Make(O)(S)
     module E = S.E
     module U = MemUtils.Make(S)
@@ -30,22 +31,29 @@ module Make
     let (pp,(opts,_,prog)) = O.m
     let withco = opts.ModelOption.co
 
-    let run_interpret failed_requires_clause test conc m id vb_pp kont res =
-      I.interpret failed_requires_clause test conc m id vb_pp
-        (fun st res ->
-          if
-            not O.strictskip || StringSet.equal st.I.skipped O.skipchecks
-          then
-            let vb_pp = lazy (I.show_to_vbpp st) in
-            kont conc conc.S.fs vb_pp None res
-          else res)
-        res
+    let run_interpret test  =
+      let run =  I.interpret test in
+      fun ks m vb_pp kont res ->
+        run ks m vb_pp
+          (fun st res ->
+            if
+              not O.strictskip || StringSet.equal st.I.skipped O.skipchecks
+            then
+              let vb_pp = lazy (I.show_to_vbpp st) in
+              let conc = st.I.ks.I.conc in
+              kont conc conc.S.fs vb_pp st.I.undef res
+            else res)
+          res
 
     module MU = ModelUtils.Make(O)(S)
 
     let check_event_structure test conc kont res =
       let pr = lazy (MU.make_procrels E.is_isync conc) in
-      let vb_pp = lazy (MU.pp_procrels E.Act.pp_isync (Lazy.force pr)) in
+      let vb_pp =
+        if O.showsome then
+          lazy (MU.pp_procrels E.Act.pp_isync (Lazy.force pr))
+        else
+          lazy [] in
       let evts =
         E.EventSet.filter
           (fun e -> E.is_mem e || E.is_barrier e)
@@ -58,13 +66,12 @@ module Make
                (E.EventSet.elements evts))
         end in
       let unv = lazy begin E.EventRel.cartesian evts evts  end in
-      let ks = { I.id; unv; evts;} in
+      let ks = { I.id; unv; evts; conc;} in
 (* Initial env *)
       let m =
         I.add_rels
           I.env_empty
           (["id",id;
-	   "unv", unv;
             "loc", lazy begin
               E.EventRel.restrict_rel E.same_location (Lazy.force unv)
             end;
@@ -80,11 +87,7 @@ module Make
            "addr", lazy (Lazy.force pr).S.addr;
            "data", lazy (Lazy.force pr).S.data;
            "ctrl", lazy (Lazy.force pr).S.ctrl;
-           "ctrlisync", lazy (Lazy.force pr).S.ctrlisync;
-           "ctrlisb", lazy (Lazy.force pr).S.ctrlisync;
            "rf", lazy (Lazy.force pr).S.rf;
-           "rfe", lazy (U.ext (Lazy.force pr).S.rf);
-           "rfi", lazy (U.internal (Lazy.force pr).S.rf);
           ] @
           (match test.Test.scope_tree with
            | None -> []
@@ -105,11 +108,10 @@ module Make
           (List.map
              (fun (k,p) -> k,lazy (E.EventSet.filter p evts))
           [
-           "_", (fun _ -> true);
            "R", E.is_mem_load;
            "W", E.is_mem_store;
            "M", E.is_mem;
-	   "B", E.is_barrier;
+	   "F", E.is_barrier;
            "P", (fun e -> not (E.is_atomic e));
            "A", E.is_atomic;
 	   "I", E.is_mem_store_init;
@@ -122,23 +124,8 @@ module Make
 	  E.Act.arch_sets) in
 (* Define empty fence relation
    (for the few models that apply to several archs) *)
-(* Power fences *)
       let m = I.add_rels m
          [
-           "lwsync", lazy E.EventRel.empty;
-           "eieio", lazy E.EventRel.empty;
-           "sync", lazy E.EventRel.empty;
-           "isync", lazy E.EventRel.empty;
-(* ARM fences *)
-           "dmb", lazy E.EventRel.empty;
-           "dsb", lazy E.EventRel.empty;
-           "dmb.st", lazy E.EventRel.empty;
-           "dsb.st", lazy E.EventRel.empty;
-           "isb", lazy E.EventRel.empty;
-(* X86 fences *)
-           "mfence", lazy E.EventRel.empty;
-           "sfence", lazy E.EventRel.empty;
-           "lfence", lazy E.EventRel.empty;
 (* PTX fences *)
 	   "membar.cta",lazy E.EventRel.empty;
 	   "membar.gl", lazy E.EventRel.empty;
@@ -157,12 +144,14 @@ module Make
           let co = S.tr co0 in
           let fr = U.make_fr conc co in
           let vb_pp =
-            lazy begin
-              if S.O.PC.showfr then
-              ("fr",fr)::("co",co0)::Lazy.force vb_pp
-              else
-                ("co",co0)::Lazy.force vb_pp
-            end in
+            if O.showsome then
+              lazy begin
+                if S.O.PC.showfr then
+                  ("fr",fr)::("co",co0)::Lazy.force vb_pp
+                else
+                  ("co",co0)::Lazy.force vb_pp
+              end
+            else lazy [] in
 
           let m =
             I.add_rels m
@@ -172,9 +161,9 @@ module Make
                "co", lazy co;
                "coe", lazy (U.ext co); "coi", lazy (U.internal co);
 	     ] in
-          run_interpret (fun () -> ()) test conc m ks vb_pp kont res in
+          run_interpret test ks m vb_pp kont res in
         U.apply_process_co test  conc process_co res
       else
         let m = I.add_rels m ["co0",lazy  conc.S.pco] in
-        run_interpret (fun () -> ()) test conc m ks vb_pp kont res
+        run_interpret test ks m vb_pp kont res
   end

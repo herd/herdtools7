@@ -10,10 +10,12 @@ let rdw = po-loc & (fre;rfe)
 let detour = po-loc & (coe ; rfe)
 let addrpo = addr;po
 
-
 (*******)
 (* ppo *)
 (*******)
+
+include "ppcfences.cat"
+show isync,ctrlisync
 
 (* Initial value *)
 let ci0 = ctrlisync | detour
@@ -22,44 +24,15 @@ let cc0 = dd | po-loc | ctrl | addrpo
 let ic0 = 0
 
 include "ppo.cat"
-show ppo
 
 (* fences *)
-let lwsync=
-  let r = fencerel(LWSYNC) in
-  r \ (W * R)
 
-let eieio= fencerel(EIEIO) & (W * W)
-let sync = fencerel(SYNC)
+let lwsync = lwsync \ (W * R)
+let eieio = eieio & (W * W)
 
-show sync, lwsync, eieio
 
 (* All arm barriers are strong *)
 let strong = sync
 let light = lwsync|eieio
-let fence = strong|light
 
-(* extensions *)
-let ppoext = (rfe;ppo)|(ppo;rfe)|(rfe;ppo;rfe)
-let fenceext = (rfe;fence)|(fence;rfe)|(rfe;fence;rfe)
-
-(* happens before *)
-let hb = ppo | ppoext | fence | fenceext
-let GHB = hb
-show GHB
-acyclic hb as no-thin-air
-
-(* prop *)
-let hbstar = hb*
-let propbase = (fence|fenceext);hbstar
-show propbase
-
-let chapo = rfe|fre|coe|(fre;rfe)|(coe;rfe)
-
-let prop = (propbase & (W * W)) | (chapo? ; propbase*; strong; hbstar)
-
-#show prop
-acyclic co|prop as propagation
-
-irreflexive fre;prop;hbstar as observation
-
+include "ppc-checks.cat"

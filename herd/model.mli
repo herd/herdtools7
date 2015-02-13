@@ -20,8 +20,6 @@ type t =
   | File of string (* To convey model filename *)
   | Minimal of bool    (* true <=> check uniproc *)
   | CAV12 of cav12_opt 
-  | Jade of jade_opt
-  | X86TSO
   | Generic of AST.pp_t
 
 val tags : string list
@@ -41,6 +39,7 @@ val pp_through : through -> string
 
 (* Common configuration *)
 module type Config = sig
+  val showsome : bool
   val through : through
   val debug : bool
   val verbose : int

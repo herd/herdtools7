@@ -5,20 +5,23 @@ include "cos.cat"
 (* Uniproc *)
 let poi = po-loc
 let complus = fr|rf|co|(co;rf)|(fr;rf)
-irreflexive poi;complus as uniproc
+irreflexive poi;complus as scperlocation
 
 (* Utilities *)
 let dd = addr | data
 let rdw = po-loc & (fre;rfe)
 let detour = po-loc & (coe ; rfe)
 let addrpo = addr;po
+
 (*******)
 (* ppo *)
 (*******)
 
+include "armfences.cat"
+show isb,ctrlisb
 
 (* Initial value *)
-let ci0 = ctrlisync | detour
+let ci0 = ctrlisb | detour
 let ii0 = dd | rfi | rdw
 let cc0 = dd | ctrl | addrpo |
   ( po-loc \ ( rfi | (po-loc;rfi)))   (* po-loc replaced *)
@@ -31,12 +34,6 @@ include "ppo.cat"
 (**********)
 
 let WW = W * W
-and RM = R * M
-
-(* Power *)
-let lwsync = lwsync & RM | lwsync & WW
-let eieio = eieio & WW
-show sync, lwsync, eieio
 
 (* ARM *)
 let dmb.st=dmb.st & WW
@@ -44,29 +41,9 @@ let dsb.st=dsb.st & WW
 show dmb, dsb, dmb.st, dsb.st
 
 (* Common, all arm barriers are strong *)
-let strong = sync|dmb|dsb|dmb.st|dsb.st
-let light = lwsync|eieio
+let strong = dmb|dsb|dmb.st|dsb.st
+let light = 0
 
-let fence = strong|light
+include "ppc-checks.cat"
 
-
-(* extensions *)
-let ppoext = (rfe;ppo)|(ppo;rfe)|(rfe;ppo;rfe)
-let fenceext = (rfe;fence)|(fence;rfe)|(rfe;fence;rfe)
-
-(* happens before *)
-let hb = ppo | ppoext | fence | fenceext
-let GHB = hb
-acyclic hb as thinair
-
-(* prop *)
-let hbstar = hb*
-let propbase = (fence|fenceext);hbstar
-
-let chapo = rfe|fre|coe|(fre;rfe)|(coe;rfe)
-
-let prop = (propbase & WW)| (chapo? ; propbase*; strong; hbstar)
-
-acyclic co|prop as propagation
-irreflexive fre;prop;hbstar as causality
 

@@ -51,7 +51,7 @@ let pp () =
 %token WITHSC WITHOUTSC
 %token ALT SEMI UNION INTER COMMA DIFF PLUSPLUS
 %token STAR PLUS OPT INV COMP HAT
-%token LET REC AND ACYCLIC IRREFLEXIVE TESTEMPTY EQUAL SHOW UNSHOW AS FUN IN PROCEDURE CALL FORALL DO CHECKCALL FROM
+%token LET REC AND ACYCLIC IRREFLEXIVE TESTEMPTY EQUAL SHOW UNSHOW AS FUN IN PROCEDURE CALL FORALL DO CHECKCALL FROM TRY
 %token REQUIRES
 %token ARROW
 %token ENUM DEBUG MATCH WITH
@@ -170,13 +170,15 @@ exp:
     { Fun (mk_loc(),[$2],$4,"*fun*",ASTUtils.free_body [$2] $4) }
 | FUN LPAR formals RPAR ARROW exp
     { Fun (mk_loc(),$3,$6,"*fun*",ASTUtils.free_body $3 $6) }
+| TRY exp WITH exp
+    { Try (mk_loc(),$2,$4) }
 | base { $1 }
 
 simple:
 | EMPTY { Konst (mk_loc(),Empty RLN) }
 | TAG  { Tag (mk_loc (),$1) }
 | LACC args RACC { ExplicitSet (mk_loc (),$2) }
-| UNDERSCORE { Var (mk_loc (),"_") }
+| UNDERSCORE  { Konst (mk_loc(),Universe SET) }
 | LPAR exp RPAR { $2 }
 | BEGIN exp END { $2 }
 

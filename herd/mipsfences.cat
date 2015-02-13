@@ -1,0 +1,4 @@
+MIPSFences
+
+let sync = try fencerel(SYNC) with 0
+show sync

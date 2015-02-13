@@ -8,10 +8,11 @@ let invrf = rf^-1
 let obsco =
   let ww = po-loc & (W * W)
   and rw = rf ; (po-loc & (R * W))
-  and wr = (po-loc & (W * R)) ; invrf
-  and rr = rf ; (po-loc & (R * R)) ; invrf in
-  (ww|rw|wr|rr) \ id
+  and wr = ((po-loc & (W * R)) ; invrf) \ id
+  and rr = (rf ; (po-loc & (R * R)) ; invrf) \ id in
+  (ww|rw|wr|rr)
 
+(* The following applies to C only, where RMW is both R and W *)
 let RMW = R & W
 let rmwco = rf & (W * RMW) (* co observation by atomicity *)
 
@@ -22,11 +23,14 @@ acyclic cobase as ConsCo
 
 include "cross.cat"
 
-with co from cross (co_locs (cobase,partition W))
-let coe = co & ext
+with co from generate_cos(cobase)
+(* From now, co is a coherence order *)
 let coi = co & int
+let coe = co \ coi
+
+(* Compute fr *)
 let fr = (invrf ; co) \ id
-let fre = fr & ext
 let fri = fr & int
+let fre = fr \ fri
 
 show co,fr

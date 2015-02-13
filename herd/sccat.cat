@@ -1,6 +1,7 @@
 SC withoutco
 (* Sequential consistency, no co version *)
 
+include "filters.cat"
 let invrf=(rf)^-1
 
 (* co observations in test *)
@@ -10,14 +11,14 @@ let obsco =
     |(WR(po-loc);invrf)
     |(rf;RR(po-loc);invrf))
 
-let rmw = R & W
-let rmwco = (rf ; [rmw]) (* co observation by atomicity *)
+let rmw = toid(R & W)
+let rmwco = (rf ; rmw) (* co observation by atomicity *)
 
 let cobase = obsco|rmwco|co0
 
 let rec co =
   cobase       (* initial observations *)
-| ([rmw];fr)   (* by atomicity *)
+| (rmw;fr)   (* by atomicity *)
 | (co ; co)    (* transitivity *)
 
 and fr = noid(invrf;co) (* notice: avoid self fr (RMW) *)

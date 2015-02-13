@@ -1,10 +1,8 @@
 "Minimal model" withoutco
-show mfence, lfence, sfence
-show sync, lwsync, eieio
-show dmb, dsb, dsb.st, dmb.st
-show isb, isync
+
+include "fences.cat"
 
 let co=co0+
-let fr=noid((rf)^-1;co)
+let fr=(rf^-1;co) \ id
 show co,fr
 

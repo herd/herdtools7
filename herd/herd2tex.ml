@@ -33,6 +33,7 @@ let paren b c f =
 
 let tex_of_konst c = function
   | Empty _ -> fprintf c "\\emptyset"
+  | Universe _ -> fprintf c "\\_"
 
 let rec tex_of_op2 n c es op2 = 
   paren (n >= 2) c (fun () -> match op2 with

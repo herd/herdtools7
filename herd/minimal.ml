@@ -144,7 +144,7 @@ module Make (O:Cfg) (S:Sem.Semantics)
           not uniproc ||          
           check_uniproc test conc pr fr ws
         then
-	  kont conc conc.S.fs pp_relns None res
+	  kont conc conc.S.fs pp_relns false res
         else res in
       U.apply_process_co test conc proc_ws res
   end

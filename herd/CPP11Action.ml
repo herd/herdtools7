@@ -115,7 +115,7 @@ end = struct
 
     let is_mem a = match a with
     | Access (_,A.Location_global _,_,_) -> true
-    | RMW _ | Fence _ | Blocked_RMW _ -> true
+    | RMW _ | Blocked_RMW _ -> true
     | _ -> false
 
     (* The following definition of is_atomic
@@ -168,9 +168,13 @@ end = struct
     | _ -> false
 
 (* Barriers *)
-    let is_barrier _ = false
-    let barrier_of _ = None
-    let same_barrier_id _ _ = false
+  let is_barrier = function
+    | Fence _ -> true
+    | _ -> false
+
+  let barrier_of _ = assert false
+
+  let same_barrier_id _ _ = assert false
 
 (* Commits *)
    let is_commit _ = false
@@ -178,11 +182,6 @@ end = struct
 (* Local/Global Fences *)
    let is_local_fence _ = false
    let is_global_fence _ = false
-
-(* Fences *)
-   let is_fence a = match a with
-     | Fence _ -> true
-     | _ -> false
 
 (* RMWs *)
    let is_rmw a = match a with
@@ -221,21 +220,21 @@ end = struct
 
 (* Architecture-specific sets *)
    let arch_sets = [
-     "rmw", is_rmw; "brmw", is_blocked_rmw;
-     "lk", is_lock; "ls", is_successful_lock;
-     "ul", is_unlock; "F", is_fence;
-     "acq", mo_matches CPP11Base.Acq;
-     "sc", mo_matches CPP11Base.SC;
-     "rel", mo_matches CPP11Base.Rel; 
-     "acq_rel", mo_matches CPP11Base.Acq_Rel;
-     "rlx", mo_matches CPP11Base.Rlx;
-     "con", mo_matches CPP11Base.Con;
-     "na", mo_matches CPP11Base.NA;
+     "RMW", is_rmw; "BRMW", is_blocked_rmw;
+     "LK", is_lock; "LS", is_successful_lock;
+     "UL", is_unlock;
+     "ACQ", mo_matches CPP11Base.Acq;
+     "SC", mo_matches CPP11Base.SC;
+     "REL", mo_matches CPP11Base.Rel; 
+     "ACQ_REL", mo_matches CPP11Base.Acq_Rel;
+     "RLX", mo_matches CPP11Base.Rlx;
+     "CON", mo_matches CPP11Base.Con;
+     "NA", mo_matches CPP11Base.NA;
    ]
 
   let arch_fences = []
 
-  let is_isync _ = assert false
+  let is_isync _ = raise Misc.NoIsync
   let pp_isync = "???"
 
 (* Equations *)

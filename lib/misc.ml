@@ -12,9 +12,10 @@
 
 open Printf
 
+exception Exit
 exception UserError of string
 exception Fatal of string
-exception Exit
+exception NoIsync
 
 (************)
 (* Switches *)

@@ -1,0 +1,19 @@
+PPCChecks
+
+let fence = strong|light
+
+
+(* happens before *)
+let hb = ppo | fence | rfe
+acyclic hb as thinair
+
+(* prop *)
+let hbstar = hb*
+let propbase = (fence|(rfe;fence));hbstar
+
+let chapo = rfe|fre|coe|(fre;rfe)|(coe;rfe)
+
+let prop = propbase & (W * W) | (chapo? ; propbase*; strong; hbstar)
+
+acyclic co|prop as propagation
+irreflexive fre;prop;hbstar as observation

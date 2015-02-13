@@ -1,5 +1,6 @@
 "Model pretty print"
 (* Same as model, shows only basic relations *)
+include "filters.cat"
 include "cos.cat"
 (* Uniproc *)
 acyclic po-loc | rf | fr | co as uniproc
@@ -14,8 +15,12 @@ let addrpo = addr;po
 (* ppo *)
 (*******)
 
+include "armfences.cat"
+include "ppcfences.cat"
+show isync, isb, ctrlisync,ctrlisb
+
 (* Initial value *)
-let ci0 = ctrlisync | detour
+let ci0 = ctrlisync| ctrlisb | detour
 let ii0 = dd | rfi | rdw
 let cc0 = dd | po-loc | ctrl | addrpo
 let ic0 = 0
@@ -42,21 +47,4 @@ show dmb, dsb, dmb.st, dsb.st
 let strong = sync|dmb|dsb|dmb.st_eff|dsb.st_eff
 let light = lwsync_eff|eieio_eff
 
-let fence = strong|light
-
-
-(* happens before *)
-let hb = ppo | fence | rfe
-acyclic hb as thinair
-
-(* prop *)
-let hbstar = hb*
-let propbase = (fence|(rfe;fence));hbstar
-
-let chapo = rfe|fre|coe|(fre;rfe)|(coe;rfe)
-
-let prop = WW(propbase)| (chapo? ; propbase*; strong; hbstar)
-
-acyclic co|prop as propagation
-irreflexive fre;prop;hbstar as causality
-
+include "ppc-checks.cat"

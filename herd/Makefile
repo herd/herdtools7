@@ -7,10 +7,12 @@ EXTRAPROGS=
 PROGS=herd.byte
 MDL=x86tso.cat herd.cat herdcat.cat ppc.cat sc.cat LL.cat arm.cat \
  atom.cat atom-arm.cat pretty.cat prettycat.cat fulleieio.cat armllh.cat lessrelaxed.cat \
- uniproc.cat uniproccat.cat minimal.cat minimalcat.cat qualcomm.cat \
+ uni.cat uniproc.cat uniproccat.cat minimal.cat minimalcat.cat mini.cat qualcomm.cat \
  cpp11.cat simplec11.cat opencl.cat sccat.cat ptx.cat simple-arm.cat \
  uniproc-normw-cat.cat mips.cat mips-tso.cat \
- cross.cat cos.cat cosllh.cat stdlib.cat ppo.cat filters.cat
+ fences.cat ppcfences.cat armfences.cat x86fences.cat mipsfences.cat \
+ cross.cat cos.cat cosllh.cat stdlib.cat ppo.cat filters.cat compat.cat \
+ ppc-checks.cat
 
 
 CFG=apoil.cfg enslip.cfg web.cfg doc.cfg cpp11.cfg

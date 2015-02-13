@@ -68,13 +68,14 @@ let pp_mem_order_short = function
 (* Barriers     *)
 (****************)
 
+(* Let us consider there is only one type of fence *)
 type barrier = unit
     
-let all_kinds_of_barriers =  [ ]
+let all_kinds_of_barriers =  [ () ]
   
 let pp_barrier _ = assert false
 
-let barrier_compare = Pervasives.compare
+let barrier_compare () () = 0
 
 (****************)
 (* Instructions *)

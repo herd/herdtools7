@@ -8,5 +8,12 @@ let po-loc = po & loc
 let rfe = rf & ext
 let rfi = rf & int
 
+(* Id relation on set *)
+let toid(s) = id & (s * s)
+
 (* Turn a fence set into a fence relation *)
-let fencerel(b) = (po & (_ * b)) ; po
+let fencerel(B) = (po & (_ * B)) ;  po
+
+(* Control+cfence *)
+let ctrlcfence(CFENCE) = (ctrl & (_ * CFENCE)) ; po
+

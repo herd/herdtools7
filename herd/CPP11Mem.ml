@@ -38,7 +38,7 @@ module Make
     let check_event_structure test = match O.model with
     | Generic m ->
         let module X =
-          CPP11ModelChecker.Make
+          MachModelChecker.Make
             (struct
               let m = m
               include ModelConfig

@@ -18,6 +18,10 @@ let aa = po & (A * A)
 (*******)
 (* ppo *)
 (*******)
+
+include "armfences.cat"
+show isb,ctrlisb
+
 let WW = W * W
 let RM = R * M
 let RR = R * R
@@ -25,7 +29,7 @@ let WR = W * R
 
 
 (* Initial value *)
-let ci0 = ctrlisync | detour | aa & RR | aa & WR
+let ci0 = ctrlisb | detour | aa & RR | aa & WR
 let ii0 = dd | rfi | rdw
 let cc0 = dd |ctrl | addrpo | aa (* po-loc deleted *)
 let ic0 = 0
@@ -38,34 +42,13 @@ include "ppo.cat"
 (* fences *)
 (**********)
 
-(* Power *)
-let lwsync_eff = lwsync & RM | lwsync & WW
-let eieio_eff = eieio & WW
-
 
 (* ARM *)
-let dmb.st_eff=dmb.st & WW
-let dsb.st_eff=dsb.st & WW
+let dmb.st=dmb.st & WW
+let dsb.st=dsb.st & WW
 
 (* Common, all arm barriers are strong *)
-let strong = sync|dmb|dsb|dmb.st_eff|dsb.st_eff
-let light = lwsync_eff|eieio_eff
+let strong = dmb|dsb|dmb.st|dsb.st
+let light = 0
 
-let fence = strong|light
-
-
-(* happens before *)
-let hb = ppo | fence | rfe
-acyclic hb as thinair
-
-(* prop *)
-let hbstar = hb*
-let propbase = (fence|(rfe;fence));hbstar
-
-let chapo = rfe|fre|coe|(fre;rfe)|(coe;rfe)
-
-let prop = (propbase & WW)| (chapo? ; propbase*; strong; hbstar)
-
-acyclic co|prop as propagation
-irreflexive fre;prop;hbstar as causality
-
+include "ppc-checks.cat"

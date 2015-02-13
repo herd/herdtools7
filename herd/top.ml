@@ -63,12 +63,6 @@ module Make(O:Config)(M:XXXMem.S) =
         sts
         0
 
-    let report_bad_executions = ref false
-    (* Identifies the current execution. The use of mutable state
-       is not very nice. I need to find another way to find out
-       which execution is currently being tested. *)
-    let execution_idx = ref 0
-
 (* Test result *)
     type count =
         { states : A.StateSet.t;
@@ -172,7 +166,7 @@ module Make(O:Config)(M:XXXMem.S) =
 (* Called by model simulator in case of success *)
     let model_kont ochan test cstr =
       let check = check_prop test in
-      fun conc fsc vbpp failed_requires_clauses c ->
+      fun conc fsc vbpp undef c ->
         if do_observed && not (all_observed test conc) then c
         else
           let ok = check fsc in
@@ -233,16 +227,12 @@ module Make(O:Config)(M:XXXMem.S) =
               PP.dump_legend chan test legend conc (Lazy.force vbpp)
           | _ -> ()
           end ;
-	  report_bad_executions := (failed_requires_clauses != None);
-          execution_idx := (!execution_idx) + 1;
           let r =
             { cands = c.cands+1;
               states = A.StateSet.add fsc c.states;
               pos = if ok then c.pos+1 else c.pos;
               neg = if ok then c.neg else c.neg+1;
-              bad = (match failed_requires_clauses with 
-		    | Some n when n > 0 -> ((!execution_idx) :: c.bad) 
-		    | _ -> c.bad);
+              bad = if undef then c.cands::c.bad else c.bad;
               shown = if show_exec then c.shown+1 else c.shown;
               reads = 
                 if O.outcomereads then
@@ -290,9 +280,12 @@ module Make(O:Config)(M:XXXMem.S) =
         erase_dot ochan ;
         Handler.pop ()
       end else
-      let call_model conc =
-        M.check_event_structure
-          test conc (model_kont ochan test cstr) in
+        (* Thanks to the existence of check_test, XXMem modules
+           apply their internal functors once *)
+        let check_test = M.check_event_structure test  in
+        let call_model conc =
+          check_test
+            conc (model_kont ochan test cstr) in
       let c =
         try iter_rfms test rfms call_model (fun c -> c) start
         with
@@ -345,11 +338,14 @@ module Make(O:Config)(M:XXXMem.S) =
           finals ;
 (* Condition result *)
         let ok = check_cond test c in
-        printf "%s%s\n" (if loop then "Loop " else "") (if ok then "Ok" else "No") ;
+        let is_bad = Misc.consp c.bad in
+        printf "%s%s\n"
+          (if loop then "Loop " else "")
+          (if is_bad then "Undef" else if ok then "Ok" else "No") ;
         let pos,neg = check_wit test c in
         printf "Witnesses\n" ;
         printf "Positive: %i Negative: %i\n" pos neg ;
-	if (!report_bad_executions) then begin
+	if is_bad then begin
           printf "Bad executions (%i in total): %s \n" 
             (List.length c.bad) 
             (List.fold_right 

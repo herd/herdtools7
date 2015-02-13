@@ -1,5 +1,8 @@
 "Simple ARM arch model"
 
+include "armfences.cat"
+show isb,ctrlisb
+
 include "cos.cat"
 
 (* Memory is coherent *)

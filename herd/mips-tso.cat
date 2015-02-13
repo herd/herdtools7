@@ -1,5 +1,8 @@
 MIPS-TSO
 
+include "filters.cat"
+include "cos.cat"
+
 (* Uniproc check *)
 let com = rf | fr | co
 acyclic po-loc | com as uniproc
@@ -8,8 +11,9 @@ acyclic po-loc | com as uniproc
 empty atom & (fre;coe) as atomic
 
 (* ppo, choosing pso at the moment *)
-let ppo = RR(po) | RW(po) | WW(po) | sync
-show sync
+include "mipsfences.cat"
+
+let ppo = (po \ (W*R)) | sync
 
 let ghb = ppo | rfe | fr | co
 

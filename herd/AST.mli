@@ -33,7 +33,7 @@ type op1 =
   | Comp (** Set or relation complement *)
   | Inv  (** Relation inverse *)
 
-type konst = Empty of set_or_rln
+type konst = Empty of set_or_rln | Universe of set_or_rln
 type var = string
 type varset = StringSet.t
 
@@ -53,6 +53,7 @@ type exp =
   | ExplicitSet of TxtLoc.t * exp list
   | Match of TxtLoc.t * exp * clause list * exp option
   | MatchSet of TxtLoc.t * exp * exp * (string * string * exp)
+  | Try of TxtLoc.t * exp * exp
 
 and clause = string * exp
 

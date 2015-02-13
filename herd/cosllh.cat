@@ -22,10 +22,11 @@ acyclic cobase as ConsCo
 
 include "cross.cat"
 
-with co from cross (co_locs (cobase,partition W))
+with co from generate_cos(cobase)
 let coe = co & ext
 let coi = co & int
 let fr = (invrf ; co) \ id
 let fre = fr & ext
 let fri = fr & int
 
+show co,fr

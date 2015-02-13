@@ -58,9 +58,11 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
       let data_commit =
         S.restrict E.is_mem_load E.is_commit data_dep in
       let ctrlisync =
-        let r1 = S.restrict E.is_mem_load is_isync ctrl_dep
-        and r2 = S.restrict is_isync E.is_mem po in
-        S.seq r1 r2 in
+        try
+          let r1 = S.restrict E.is_mem_load is_isync ctrl_dep
+          and r2 = S.restrict is_isync E.is_mem po in
+          S.seq r1 r2
+        with Misc.NoIsync -> S.E.EventRel.empty in
       let rf = U.make_rf conc in
       { S.addr=addr_dep; data=data_dep; ctrl=ctrl_dep;
         ctrlisync;

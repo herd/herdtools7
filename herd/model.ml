@@ -19,26 +19,15 @@ type jade_opt = { jstrongst : bool;}
 
 type t =
   | File of string (* To convey model filename *)
-  | Minimal of bool    (* true <=> check uniproc *)
+  | Minimal of bool
   | CAV12 of cav12_opt
-  | Jade of jade_opt
-  | X86TSO
   | Generic of AST.pp_t
 
 let tags =
   [
-   "herd";
    "cav12";
    "minimal";
    "uniproc";
-   "x86tso" ;
-(*
-   "cav12_nocord";
-   "cav12_lightst";
-   "cav12_no_cord_lightst";
-   "jade";"jade_lightst";"model";
-   "tso";
-*)
    "<filename>.cat";
   ]
 
@@ -53,9 +42,6 @@ let parse tag =
     | "cav12_nocord" -> Some (CAV12 {cord=false; strongst=true;})
     | "cav12_lightst" -> Some (CAV12 {cord=true; strongst=false;})
     | "cav12_nocord_lightst" -> Some (CAV12 {cord=false; strongst=false;})
-    | "herd"|"jade"|"njade"|"model" -> Some (Jade {jstrongst=true;})
-    | "jade_lightst" -> Some (Jade {jstrongst=false;})
-    | "x86tso"|"tso" -> Some X86TSO
     | _ -> None
 
 let pp = function
@@ -65,9 +51,6 @@ let pp = function
   | CAV12 {cord=false; strongst=true;} -> "cav12_nocord"
   | CAV12 {cord=true; strongst=false;} ->"cav12_lightst"
   | CAV12 {cord=false; strongst=false;} ->"cav12_nocord_lightst"
-  | Jade {jstrongst=true}-> "herd"
-  | Jade {jstrongst=false}-> "jade_lightst"
-  | X86TSO -> "x86tso"
   | File fname -> fname
   | Generic (_,(opts,name,_)) ->
       sprintf "Generic%s(%s)"
@@ -97,6 +80,7 @@ let pp_through = function
 
 (* Common configuration *)
 module type Config = sig
+  val showsome : bool
   val through : through
   val debug : bool
   val verbose : int
@@ -107,7 +91,11 @@ end
 
 let get_default_model a = 
 match a with
-| `X86 -> X86TSO
-| `PPC | `ARM -> Misc.as_some (parse "herd")
-| _ -> Warn.user_error 
-    "There is no default model for this architecture. Specify a model explicitly using the -model flag."
+| `X86 -> File "x86tso.cat"
+| `MIPS -> File "mips.cat"
+| `PPC ->  File "ppc.cat"
+| `ARM -> File "arm.cat"
+| `C -> File "simple-c11.cat"
+| _ ->
+    Warn.user_error 
+    "There is no default model for architecture %s.\nSpecify a model explicitly using the -model flag." (Archs.pp a)

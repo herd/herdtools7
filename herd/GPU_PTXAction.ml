@@ -135,7 +135,7 @@ end = struct
     | Barrier b -> Some b
     | _ -> None
 
-    let same_barrier_id _ _ = false
+  let same_barrier_id _ _ = assert false
 
 (* Commits *)
    let is_commit a = match a with
@@ -157,14 +157,15 @@ end = struct
      | _ -> false
 
 (* Architecture-specific sets *)
-   let arch_sets = List.map (fun (k,v) -> (k, cache_op_matches v)) [
+   let arch_sets =
+     List.map (fun (k,v) -> (k, cache_op_matches v)) [
      "ca", GPU_PTXBase.CA;
      "cg", GPU_PTXBase.CG;
      "cv", GPU_PTXBase.CV;
      "wb", GPU_PTXBase.WB;
      "wt", GPU_PTXBase.WT;
      "ncop", GPU_PTXBase.NCOP;
-     ]
+   ]
 
   let arch_fences =
     List.map
