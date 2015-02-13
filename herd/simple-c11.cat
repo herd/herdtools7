@@ -51,6 +51,8 @@ let sw =
 
 show sw
 
+let Y = po
+
 let hb = (po | asw | sw)+
 let hb-loc = hb & loc
 
@@ -60,7 +62,11 @@ let hb-loc = hb & loc
 
 (* ConsSC *)
 (* empty ((hb | co) & (sc * sc)) \ S as ConsSC *)
-with S from linearisations(SC,hb|co)
+
+let scp = hb|co
+acyclic scp as ConsSC
+
+with S from linearisations(SC,scp)
 show S
 
 
@@ -116,7 +122,8 @@ let chapo = rf|fr|co|(co;rf)|(fr;rf)
 acyclic hb-loc | chapo as Coh
 
 (* Atomicity *)
-empty (rf;rmw_id) \ (co;co) as AtRMW
+let cosucc = co \ (co;co)
+empty (rf;rmw_id) \ (cosucc) as AtRMW
 
 (* Races *)
 

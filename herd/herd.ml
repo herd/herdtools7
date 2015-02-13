@@ -440,7 +440,7 @@ let () =
     | None -> match model with
       | Some (Model.Minimal b) -> b
       | Some (Model.Generic _|Model.File _) -> false
-      | _ -> true
+      | _ -> false
     let outputdir = !outputdir
     let suffix = !suffix
     let dumpes = !dumpes

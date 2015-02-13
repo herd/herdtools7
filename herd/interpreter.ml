@@ -80,25 +80,23 @@ module Make
     module U = MemUtils.Make(S)
     module MU = ModelUtils.Make(O)(S)
     module W = Warn.Make(O)
+
+
 (*  Model interpret *)
     let (txt,(_,_,prog)) = O.m
 
-(*
-  let debug_proc chan p = fprintf chan "%i" p
+  let _debug_proc chan p = fprintf chan "%i" p
   let debug_event chan e = fprintf chan "%s" (E.pp_eiid e)
   let debug_set chan s =
-  output_char chan '{' ;
-  E.EventSet.pp chan "," debug_event s ;
-  output_char chan '}'
-
-  let debug_events = debug_set
+    output_char chan '{' ;
+    E.EventSet.pp chan "," debug_event s ;
+    output_char chan '}'
 
   let debug_rel chan r =
-  E.EventRel.pp chan ","
-  (fun chan (e1,e2) -> fprintf chan "%a -> %a"
-  debug_event e1 debug_event e2)
-  r
- *)
+    E.EventRel.pp chan ","
+      (fun chan (e1,e2) -> fprintf chan "%a -> %a"
+          debug_event e1 debug_event e2)
+      r
 
     type ks =
         { id : S.event_rel Lazy.t; unv : S.event_rel Lazy.t;
@@ -513,10 +511,29 @@ module Make
           
     and linearisations args = match args with
     | [Set es;Rel r;] ->
+        if O.debug then begin
+          eprintf "Linearisations:\n" ;
+          eprintf "  %a\n" debug_set es ;
+          eprintf "  {%a}\n"
+            debug_rel
+            (E.EventRel.filter
+               (fun (e1,e2) ->
+                 E.EventSet.mem e1 es && E.EventSet.mem e2 es)
+               r)
+        end ;
         let rs =
           U.apply_orders es r
-            (fun o -> ValSet.singleton (Rel o))
-            (fun o os -> ValSet.add (Rel o) os)
+            (fun o ->
+              let o =
+                E.EventRel.filter
+                  (fun (e1,e2) ->
+                    E.EventSet.mem e1 es && E.EventSet.mem e2 es)
+                  o in
+              if O.debug then eprintf "  -> FAIL {%a}\n%!" debug_rel o ;
+              ValSet.singleton (Rel o))
+            (fun o os ->
+              if O.debug then eprintf "  -> {%a}\n%!" debug_rel o ;
+              ValSet.add (Rel o) os)
             ValSet.empty in
         ValSet (TRel,rs)
     | _ -> arg_mismatch ()
@@ -1007,7 +1024,7 @@ module Make
       let rec exec txt st i kont res =  match i with
       | Debug (_,e) ->
           let v = eval_st st e in
-          eprintf "%a: value is %s\n"
+          eprintf "%a: value is %s\n%!"
             TxtLoc.pp (get_loc e) (pp_val v) ;
           kont st res
       | Show (_,xs) ->
