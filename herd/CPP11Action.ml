@@ -294,5 +294,7 @@ end = struct
 
     let make_action_atomic _ = assert false
 
+    let annot_in_list _str _ac = false
+
 end
 

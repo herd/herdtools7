@@ -34,7 +34,7 @@ open GPU_PTX
 /* Instruction tokens */
 %token ST LD MEMBAR MOV ADD AND CVT VOL SETP BRA ATOM ATOM_EXCH ATOM_ADD ATOM_CAS
 
-%type <int list * (GPU_PTXBase.pseudo) list list * MiscParser.gpu_data option> main 
+%type <int list * (GPU_PTXBase.pseudo) list list * MiscParser.gpu_data option * Bell_info.bell_test_info option> main 
 %start  main
 
 %nonassoc SEMI
@@ -46,7 +46,7 @@ open GPU_PTX
 %%
 
 main:
-| semi_opt proc_list iol_list scopes_and_memory_map EOF { $2,$3,Some $4 }
+| semi_opt proc_list iol_list scopes_and_memory_map EOF { $2,$3,Some $4, None }
 
 semi_opt:
 | { () }

@@ -448,3 +448,5 @@ let get_reg_list _i = Warn.fatal "Litmus GPU_PTX does not implement get_reg_list
 
 include ScopeTree
 include MemSpaceMap
+
+let get_id_and_list _i = Warn.fatal "get_id_and_list is only for Bell"

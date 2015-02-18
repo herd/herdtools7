@@ -79,6 +79,17 @@ type ins =
   | Forall of  TxtLoc.t * var * exp * ins list
   | Debug of TxtLoc.t * exp
   | WithFrom of TxtLoc.t * var * exp (* set of relations *)
+
+(*For bell cat files*)
+  | EnumSet of TxtLoc.t * var * var list
+  | EnumRel of TxtLoc.t * var * var list
+
+(*For bell files*)
+  | Event_dec of TxtLoc.t * var * exp list
+  | Relation_dec of TxtLoc.t * var * exp
+  | Order_dec of TxtLoc.t * var * (exp * exp) list
+
+
  
 (** Name X model definition *)
 type t = ModelOption.t * string * ins list

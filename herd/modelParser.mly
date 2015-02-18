@@ -45,13 +45,13 @@ let pp () =
 %token <string> STRING
 %token <string> LATEX
 %token INCLUDE
-%token LPAR RPAR BEGIN END LACC RACC
+%token LPAR RPAR BEGIN END LACC RACC LBRAC RBRAC
 %token EMPTY UNDERSCORE
 %token WITHCO WITHOUTCO WITHINIT WITHOUTINIT
 %token WITHSC WITHOUTSC
 %token ALT SEMI UNION INTER COMMA DIFF PLUSPLUS
 %token STAR PLUS OPT INV COMP HAT
-%token LET REC AND ACYCLIC IRREFLEXIVE TESTEMPTY EQUAL SHOW UNSHOW AS FUN IN PROCEDURE CALL FORALL DO CHECKCALL FROM TRY
+%token LET REC AND ACYCLIC IRREFLEXIVE TESTEMPTY EQUAL SHOW UNSHOW AS FUN IN PROCEDURE CALL FORALL DO CHECKCALL FROM TRY SET RLN EVENTS_DEC RELATIONS_DEC ORDER_DEC
 %token REQUIRES
 %token ARROW
 %token ENUM DEBUG MATCH WITH
@@ -107,6 +107,17 @@ ins:
     { Forall (mk_loc (),$2,$4,$6) }
 | WITH VAR FROM exp
     { WithFrom (mk_loc (),$2,$4) }
+
+//Bell enum sets and rlns
+| ENUM SET VAR EQUAL alttags { EnumSet (mk_loc (),$3,$5) }
+| ENUM RLN VAR EQUAL alttags { EnumRel (mk_loc (),$3,$5) }
+
+//Bell file declarations
+| EVENTS_DEC VAR LBRAC exp_list RBRAC  {Event_dec(mk_loc(),$2,$4)}
+| RELATIONS_DEC VAR  exp  {Relation_dec(mk_loc(),$2,$3)}
+| ORDER_DEC VAR LBRAC exp_tup_list RBRAC {Order_dec(mk_loc(),$2,$4)}
+
+
 altopt:
 | ALT  { () }
 |      { () }
@@ -162,6 +173,17 @@ formals:
 formalsN:
 | VAR                { [$1] }
 | VAR COMMA formalsN { $1 :: $3 }
+
+exp_list:
+| exp {[$1]}
+| exp COMMA exp_list {[$1] @ $3}
+
+exp_tup_list:
+| exp_tup {[$1]}
+| exp_tup COMMA exp_tup_list {[$1]@$3}
+
+exp_tup:
+| LPAR exp COMMA exp RPAR {($2,$4)}
 
 exp:
 | LET pat_bind_list IN exp { Bind (mk_loc(),$2,$4) }

@@ -387,3 +387,5 @@ include Pseudo.Make
     end)
 
 let get_macro name = raise Not_found
+
+let get_id_and_list _i = Warn.fatal "get_id_and_list is only for Bell"

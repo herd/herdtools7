@@ -28,6 +28,7 @@ type ('prog,'nice_prog,'start,'state,'constr, 'loc, 'locset) t =
      scope_tree : ScopeTree.scope_tree option ;
      mem_space_map : MemSpaceMap.mem_space_map ;
      param_map : CAst.param list list ;
+     bell_info : Bell_info.bell_test_info option ;
    }
 
 val simple_name :
@@ -55,5 +56,8 @@ module Make(A:Arch.S) : sig
   val build : Name.t -> A.pseudo MiscParser.t -> result
 
   val find_our_constraint : result -> A.constr
+
+  (* needed to interpret bell *)
+  val empty_test : result
 
 end

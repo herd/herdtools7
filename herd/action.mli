@@ -68,6 +68,9 @@ module type S = sig
   val is_store : action -> bool
   val is_load : action -> bool
 
+(* for bell annotations *)
+  val annot_in_list : string -> action -> bool
+
 (* Barriers *)
   val is_barrier : action -> bool
   val barrier_of : action -> A.barrier option

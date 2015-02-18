@@ -32,12 +32,12 @@ open X86
 %token  I_READ I_SETNB I_JE I_JNE
 %token  I_CMPXCHG
 
-%type <int list * (X86Base.pseudo) list list * MiscParser.gpu_data option> main 
+%type <int list * (X86Base.pseudo) list list * MiscParser.gpu_data option * Bell_info.bell_test_info option> main 
 %start  main
 
 %nonassoc SEMI
 %%
-main: semi_opt proc_list iol_list EOF { $2,$3, None }
+main: semi_opt proc_list iol_list EOF { $2,$3, None, None }
 
 
 semi_opt:

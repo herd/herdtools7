@@ -233,3 +233,5 @@ let pp_instruction _m ins = dump_instruction ins
 let get_next _ins = Warn.fatal "C++11 get_next not implemented"
 
 let allowed_for_symb = []
+
+let get_id_and_list _i = Warn.fatal "get_id_and_list is only for Bell"

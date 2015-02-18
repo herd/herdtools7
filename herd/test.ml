@@ -26,6 +26,7 @@ type ('prog,'nice_prog,'start,'state,'constr,'loc,'locset) t =
      scope_tree : ScopeTree.scope_tree option ;
      mem_space_map : MemSpaceMap.mem_space_map ;
      param_map : CAst.param list list ;
+     bell_info : Bell_info.bell_test_info option ;
    }
 
 (* Name and nothing else *)
@@ -72,6 +73,7 @@ module Make(A:Arch.S) =
            condition = final ; 
            locations = locs ;
            gpu_data = gpu_data ;
+	   bell_info = bell_info ;
 	 } = t in
 
       let prog,starts = Load.load nice_prog in
@@ -103,8 +105,37 @@ module Make(A:Arch.S) =
        scope_tree = scope_tree ;
        mem_space_map = mem_space_map ;
        param_map = param_map ;
+       bell_info = bell_info;
      }
 
+    let empty_test =
+      let empty_name = 
+	{
+	  Name.name = "";
+	  Name.file = "";
+	  Name.texname = "";
+	  Name.doc = "";
+	}
+      in
+    let fake_constr = 
+      ConstrGen.ExistsState (ConstrGen.And [])
+      in      
+      {
+       arch = A.arch ;
+       name = empty_name ;
+       info = [] ;
+       program = A.LabelMap.empty ;
+       nice_prog = [] ;
+       start_points = [] ;
+       init_state = A.state_empty;
+       cond = fake_constr ;
+       flocs = [] ;
+       observed = A.LocSet.empty;
+       scope_tree = None ;
+       mem_space_map = [];
+       param_map = [] ;
+       bell_info = None;
+      }     
 
     let find_our_constraint test = test.cond 
 

@@ -52,6 +52,18 @@ module type S = sig
     V.env ->
     (StringMap.key * S.event_rel) list Lazy.t ->
     (st -> 'a -> 'a) -> 'a -> 'a
+
+(*
+  mutable association lists for gathering bell information
+  (event, relation, and order declarations)
+  This seems like the least intrusive method for now, but 
+  maybe others have a better idea on how to incorporate?
+*)
+
+    val event_declarations : (string * (string list list list)) list ref
+    val relation_declarations : (string * (string list)) list ref
+    val order_declarations : (string * ((string * string)list)) list ref
+
 end
 
 
@@ -84,6 +96,18 @@ module Make
 
 (*  Model interpret *)
     let (txt,(_,_,prog)) = O.m
+
+(*
+  mutable association lists for gathering bell information.
+  This could also be passed around, this seems like the least
+  intrusive method for now. When integrated, it can be discussed
+  what we really do with it.
+*)
+
+    let event_declarations : (string * (string list list list)) list ref = ref []
+    let relation_declarations : (string * (string list)) list ref = ref []
+    let order_declarations : (string * ((string * string)list)) list ref = ref []
+
 
   let _debug_proc chan p = fprintf chan "%i" p
   let debug_event chan e = fprintf chan "%s" (E.pp_eiid e)
@@ -213,6 +237,7 @@ module Make
       open V
 
       let error fmt = ksprintf (fun msg -> raise (CompError msg)) fmt
+
 
       let compare v1 v2 = match v1,v2 with
       | V.Empty,V.Empty -> 0
@@ -402,6 +427,24 @@ module Make
       stabilised
 
     open AST
+
+(* check if memory location is in certain memory region *)
+    let mem_region_match target mem_map e =
+      let is_mem_map = match mem_map with 
+	| Some _ -> true
+	| None -> false in
+      if not is_mem_map then 
+	false
+      else
+	let mem_map = match mem_map with
+	  | Some m -> m
+	  | None -> Warn.fatal "error getting memory map"
+	in
+	match (E.Act.location_of e.E.action) with
+	| Some x -> List.mem (target,E.Act.A.pp_location x) mem_map
+	| None -> false
+	  
+
 
 
 (* Syntactic function *)
@@ -1189,6 +1232,103 @@ module Make
           | _ -> error st.silent (get_loc e) "set expected"
           end
       | Latex _ -> kont st res
+
+      | EnumSet(_loc,_name,xs) -> 
+	let test_bi = match test.Test.bell_info with
+	  | Some t_bi -> t_bi
+	  | None -> Warn.user_error "Using enum set requires bell info and should only be used when analyzing a bell litmus test"
+	in
+	let new_env_sets = 
+	  List.map (fun k -> 
+	    k, lazy (E.EventSet.filter (fun e -> 
+	      (mem_region_match k test_bi.Bell_info.regions e) ||(E.Act.annot_in_list k e.E.action)) st.ks.evts))
+	    xs in
+	let env = add_sets st.env new_env_sets in		
+	kont {st with env} res
+
+      | EnumRel(_loc,_name,xs) -> 
+	let test_bi = match test.Test.bell_info with
+	  | Some t_bi -> t_bi
+	  | None -> Warn.user_error "Using enum rln requires bell info"
+	in
+	let scopes = match test_bi.Bell_info.scopes with
+	  | Some s -> s
+	  | None -> Warn.user_error "Using enum rln requires scopes in the litmus test" 
+	in
+	let new_env_sets = 
+	  List.map (fun k -> 
+	    k, lazy (U.int_scope_bell k scopes (Lazy.force st.ks.unv)))
+	    xs in
+	let env = add_rels st.env new_env_sets in		
+	kont {st with env} res
+
+      | Event_dec(loc,v,e_list) -> 
+	let eval_expr = List.map (fun e -> eval (from_st st) e) e_list in
+	let event_sets = List.map (fun s -> 	  
+	  match s with 
+	  | ValSet(_t,vs) -> 
+	      List.map (fun vs_e -> 
+		(		
+		  match vs_e with 
+		  | V.Tag(_s1,s2) -> s2
+		  | _ -> error false loc "event declaration expected a set of tags. %s is not a tag" (pp_val s)
+		))  (ValSet.elements vs)		
+	  | _ -> error false loc "event declaration expected a set of tags. %s is not a tag" (pp_val s)
+	) eval_expr in
+	let new_dec = not (List.mem_assoc v (!event_declarations)) in
+	if new_dec then
+	  event_declarations := (!event_declarations)@[(v,[event_sets])]
+	else
+	  begin
+	    let b = List.assoc v (!event_declarations) in
+	    let new_decs = List.remove_assoc v (!event_declarations) in
+	    event_declarations := (new_decs)@[(v,[event_sets]@b)];
+	  end;	
+	kont st res
+
+      | Relation_dec(loc, v, e) ->
+	let evaled = eval (from_st st) e in
+	let strs = 
+	  match evaled with
+	  | ValSet(_t,vs) -> List.map (fun vs_e -> 
+	    (		
+	      match vs_e with 
+	      | V.Tag(_s1,s2) -> s2
+	      | _ -> error false loc "relations declaration expected a set of tags. %s is not a tag" (pp_val vs_e)
+	    ))  (ValSet.elements vs)		
+	  | _ -> error false loc "event declaration expected a set of tags. %s is not a tag" (pp_val evaled)
+	in
+	let new_dec = not (List.mem_assoc v (!relation_declarations)) in
+	if new_dec then
+	  relation_declarations := (!relation_declarations)@[(v,strs)]
+	else
+	  begin
+	    let b = List.assoc v (!relation_declarations) in
+	    let new_decs = List.remove_assoc v (!relation_declarations) in
+	    relation_declarations := (new_decs)@[(v,strs@b)];
+	  end;		
+	kont st res
+
+      | Order_dec(loc,v,ep_l) ->
+	let evaled = List.map (fun (f,s) -> (eval (from_st st) f, eval (from_st st) s)) ep_l
+	in
+	let str_pairs = List.map (fun (f,s) -> 
+	  match f,s with
+	  | V.Tag(_,fs2), V.Tag(_,ss2) -> (fs2,ss2)
+	  | V.Tag _ ,_ -> error false loc "order declarations expected a set of tags. %s is not a tag" (pp_val s)
+	  | _, V.Tag _ -> error false loc "order declarations expected a set of tags. %s is not a tag" (pp_val f)
+	  | _,_ -> error false loc "order declarations expected a set of tags. %s and %s are not a tag" (pp_val f) (pp_val s)
+	) evaled in
+	let new_dec = not (List.mem_assoc v (!order_declarations)) in
+	if new_dec then
+	  order_declarations := (!order_declarations)@[(v,str_pairs)]
+	else
+	  begin
+	    let b = List.assoc v (!order_declarations) in
+	    let new_decs = List.remove_assoc v (!order_declarations) in
+	    order_declarations := (new_decs)@[(v,str_pairs@b)];
+	  end;
+	kont st res
 
       and do_include loc fname st kont res =
           (* Run sub-model file *)

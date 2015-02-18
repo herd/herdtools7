@@ -28,14 +28,14 @@ open ARMBase
 %token I_ADD I_ADDS I_AND I_ANDS I_B I_BEQ I_BNE I_CMP I_MOV I_MOVNE I_MOVEQ I_XOR I_XORS I_DMB I_DSB I_ISB I_CBZ I_CBNZ
 %token I_LDR I_LDREX I_LDRNE I_LDREQ I_STR I_STRNE I_STREQ I_STREX
 %token I_SY I_ST I_ISH I_ISHST I_NSH I_NSHST I_OSH I_OSHST
-%type <int list * (ARMBase.pseudo) list list * MiscParser.gpu_data option> main 
+%type <int list * (ARMBase.pseudo) list list * MiscParser.gpu_data option * Bell_info.bell_test_info option> main 
 %start  main
 
 %nonassoc SEMI
 %%
 
 main:
-| semi_opt proc_list iol_list EOF { $2,$3,None }
+| semi_opt proc_list iol_list EOF { $2,$3,None,None }
 
 semi_opt:
 | { () }

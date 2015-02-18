@@ -254,3 +254,4 @@ let allowed_for_symb = []
 
 include ScopeTree
 
+let get_id_and_list _i = Warn.fatal "get_id_and_list is only for Bell"

@@ -3,6 +3,8 @@
 (*                                                                   *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                   *)
 (* Jade Alglave, University College London, UK.                      *)
+(* John Wickerson, Imperial College London, UK.                      *)
+(* Tyler Sorensen, University College London                         *)
 (*                                                                   *)
 (*  Copyright 2013 Institut National de Recherche en Informatique et *)
 (*  en Automatique and the authors. All rights reserved.             *)
@@ -10,22 +12,10 @@
 (*  General Public License.                                          *)
 (*********************************************************************)
 
-(** Run a test from source file *)
+(** Define barrier type for BELL architecture *)
 
-module type Config = sig
-  val model : Model.t option
-  val through : Model.through
-  val skipchecks : StringSet.t
-  val strictskip : bool
-  val check_name : string -> bool
-  val check_rename : string -> string option
-  include GenParser.Config
-  include Top.Config
-  include Sem.Config
+module type S = sig
+  type a
+  type b = string list
+  val a_to_b : a -> b
 end
-
-module Top :
-  functor (C : Config) ->
-  sig
-    val from_file : Bell_info.bell_model_info option -> string -> TestHash.env -> TestHash.env
-  end

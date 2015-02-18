@@ -196,6 +196,7 @@ end = struct
       | Access (d,l,v,_) -> Access (d,l,v,true)
       | _ -> a
 
+    let annot_in_list _str _ac = false
 
 end
 

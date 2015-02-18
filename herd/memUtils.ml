@@ -120,6 +120,43 @@ module Make(S : SemExtra.S) = struct
     E.EventRel.filter 
       (fun (e1,e2) -> inside_scope e1 e2 scope scope_tree) r
 
+(* could be optimized to check for init writes at the begining *)
+  let concrete_proc_of e = 
+    match (E.proc_of e) with
+    | Some x -> x
+    | _ -> -1
+
+  let rec bell_scope_tree_contains scope_tree e =
+    match scope_tree with 
+    | Bell_info.Leaf(_,l) -> List.mem (concrete_proc_of e) l
+    | Bell_info.Children (_,c) -> 	  
+      let all_tree_search = List.map (fun x -> bell_scope_tree_contains x e) c in
+      List.fold_left (fun a x -> a || x) false all_tree_search 
+
+  let rec int_scope_bell_events e1 e2 scope scope_tree = 
+
+(* Check if we're at the scope to look at, if so check if
+   both events belong to the scope *)
+    let current_scope = 
+      match scope_tree with 
+      | Bell_info.Leaf(s,_) 
+      | Bell_info.Children (s,_) -> s in
+      if current_scope = scope then 
+	(bell_scope_tree_contains scope_tree e1) &&
+	(bell_scope_tree_contains scope_tree e2)        
+    
+    (* else keep searching *)
+    else 
+      match scope_tree with 
+      | Bell_info.Leaf(_,_) -> false
+      | Bell_info.Children (_,c) -> 
+	let all_tree_search = List.map (fun x -> int_scope_bell_events e1 e2 scope x) c in
+	List.fold_left (fun a x -> a || x) false all_tree_search 
+	  
+  let int_scope_bell scope bell_scope_tree r =     
+    E.EventRel.filter 
+      (fun (e1,e2) -> int_scope_bell_events e1 e2 scope bell_scope_tree) r
+
 
 (******************)
 (* View of a proc *)

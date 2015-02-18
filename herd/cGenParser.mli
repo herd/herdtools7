@@ -34,7 +34,7 @@ module type LexParse = sig
   val deep_lexer : Lexing.lexbuf -> token
   val deep_parser :
         (Lexing.lexbuf -> token) -> Lexing.lexbuf ->
-	  (int * pseudo list) list * MiscParser.gpu_data option
+	  (int * pseudo list) list * MiscParser.gpu_data option * Bell_info.bell_test_info option
 
   val shallow_lexer : Lexing.lexbuf -> token
   val shallow_parser :

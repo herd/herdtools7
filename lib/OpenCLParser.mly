@@ -51,7 +51,7 @@ open CType
 %token SCAS WCAS SCAS_EXPLICIT WCAS_EXPLICIT
 %token <Op.op> ATOMIC_FETCH
 %token <Op.op> ATOMIC_FETCH_EXPLICIT
-%type <(int * OpenCLBase.pseudo list) list * MiscParser.gpu_data option> deep_main 
+%type <(int * OpenCLBase.pseudo list) list * MiscParser.gpu_data option * Bell_info.bell_test_info option> deep_main 
 %start deep_main
 %%
 
@@ -318,7 +318,7 @@ deep_main:
         MiscParser.scope_tree=Some $3; 
         MiscParser.param_map = param_map; } 
     in
-    (proc_list, Some additional) }
+    (proc_list, Some additional, None) }
 
 
 /* 

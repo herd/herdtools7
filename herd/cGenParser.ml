@@ -60,7 +60,7 @@ module type LexParse = sig
   val deep_lexer : Lexing.lexbuf -> token
   val deep_parser :
         (Lexing.lexbuf -> token) -> Lexing.lexbuf ->
-	  (int * pseudo list) list * MiscParser.gpu_data option
+	  (int * pseudo list) list * MiscParser.gpu_data option * Bell_info.bell_test_info option
 
   val shallow_lexer : Lexing.lexbuf -> token
   val shallow_parser :
@@ -177,7 +177,7 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
       let init =
 	call_parser_loc "init"
 	  chan init_loc SL.token StateParser.init in
-      let prog,gpu_data =
+      let prog,gpu_data,bell_info =
 	call_parser_loc "prog" chan prog_loc L.deep_lexer L.deep_parser in
       let prog_litmus =
         call_parser_loc "prog_litmus" chan prog_loc L.shallow_lexer L.shallow_parser in
@@ -213,6 +213,7 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
          condition = final; 
          locations = locs;
          gpu_data;
+	 bell_info = None;
        } in
       let name  = name.Name.name in
       let parsed =

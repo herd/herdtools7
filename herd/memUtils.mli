@@ -60,6 +60,11 @@ module Make : functor (S: SemExtra.S) -> sig
     AST.scope -> S.event_rel -> GPU_PTXBase.scope_tree -> S.event_rel
   val int_scope : 
     AST.scope -> S.event_rel -> GPU_PTXBase.scope_tree -> S.event_rel
+
+(* bell scope operations *)
+  val int_scope_bell : 
+    string -> Bell_info.scopes -> S.event_rel -> S.event_rel
+
   
 
 (* RF/FR relations for memory *)

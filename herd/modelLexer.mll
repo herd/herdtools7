@@ -24,10 +24,8 @@ module LU = LexUtils.Make(O)
   let check_keyword = function
     | "let" -> LET
     | "rec" -> REC
-(*
     | "set" -> SET
     | "rln" -> RLN
-*)
     | "and" -> AND
     | "acyclic" -> ACYCLIC
     | "irreflexive" -> IRREFLEXIVE
@@ -58,8 +56,12 @@ module LU = LexUtils.Make(O)
     | "from" -> FROM
     | "do" -> DO
     | "try" -> TRY
-    | x -> VAR x
 
+    (* for bell files *)
+    | "events" -> EVENTS_DEC
+    | "relations" -> RELATIONS_DEC
+    | "order" -> ORDER_DEC
+    | x -> VAR x
 
 }
 
@@ -76,6 +78,8 @@ rule token = parse
 | ')'   { RPAR }
 | '{'   { LACC }
 | '}'   { RACC }
+| '['   { LBRAC }
+| ']'   { RBRAC }
 | '_'   { UNDERSCORE }
 | '0'   { EMPTY }
 | '|'   { UNION }

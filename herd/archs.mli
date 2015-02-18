@@ -19,6 +19,7 @@ module System : sig
     | `ARM
     | `MIPS
     | `GPU_PTX
+    | `BELL
     ]
 
   val tags : string list
@@ -41,3 +42,4 @@ val mips : t
 val gpu_ptx : t
 val c : t
 val opencl : t
+val bell : t

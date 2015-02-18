@@ -1,29 +1,27 @@
 (*********************************************************************)
-(*                        Memevents                                  *)
+(*                        Herd                                       *)
 (*                                                                   *)
-(* Jade Alglave, Luc Maranget, INRIA Paris-Rocquencourt, France.     *)
-(* Susmit Sarkar, Peter Sewell, University of Cambridge, UK.         *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                   *)
+(* Jade Alglave, University College London, UK.                      *)
 (* John Wickerson, Imperial College London, UK.                      *)
+(* Tyler Sorensen, University College London                         *)
 (*                                                                   *)
-(*  Copyright 2010 Institut National de Recherche en Informatique et *)
+(*  Copyright 2013 Institut National de Recherche en Informatique et *)
 (*  en Automatique and the authors. All rights reserved.             *)
 (*  This file is distributed  under the terms of the Lesser GNU      *)
 (*  General Public License.                                          *)
 (*********************************************************************)
 
-(** Implementation of the action interface for GPU_PTX *)
+(** Implementation of the action interface for BELL *)
+open Printf
 
-module type A = sig
-  include Arch.S 
-  val arch_fences : (string * (barrier -> bool)) list
-end
-module Make (A : A) : sig
+module Make (A : Arch.S) : sig
 
   type action =    
     | Access of
         Dir.dirn * A.location * A.V.v *
-          bool (* atomicity flag *) * GPU_PTXBase.cache_op
-    | Barrier of A.barrier
+          bool * string list 
+    | Barrier of string list
     | Commit
 
   include Action.S with module A = A and type action := action
@@ -37,27 +35,29 @@ end = struct
   type action = 
     | Access of
         dirn * A.location * V.v *
-          bool (* atomicity flag *) * GPU_PTXBase.cache_op
+          bool (* atomicity flag *) * string list
           
-    | Barrier of A.barrier
+    | Barrier of string list
     | Commit
  
-  let mk_init_write l v = Access(W,l,v,false,GPU_PTXBase.NCOP)
+(* I think this is right... *)
+  let mk_init_write l v = Access(W,l,v,false,[])
 
-  let pp_action a = match a with
-    | Access (d,l,v,ato,cop) ->
-	Printf.sprintf "%s%s %s%s=%s"
+  let pp_action a = match a with    
+    | Access (d,l,v,ato,s) ->
+	Printf.sprintf "%s(%s) %s%s=%s"
           (pp_dirn d)
-          (GPU_PTXBase.pp_cache_op cop)
+          (BELLBase.string_of_annot_list s)
           (A.pp_location  l)
 	  (if ato then "*" else "")
 	  (V.pp_v v)
-    | Barrier b -> A.pp_barrier b
+    | Barrier (s) ->
+      Printf.sprintf "F(%s)" (BELLBase.string_of_annot_list s)
     | Commit -> "Commit"
 
 (* Utility functions to pick out components *)
     let value_of a = match a with
-    | Access (_,_ , v,_,_) -> Some v
+    | Access (_,_ ,v,_,_) -> Some v
     | _ -> None
 
     let read_of = value_of
@@ -66,8 +66,6 @@ end = struct
     let location_of a = match a with
     | Access (_, l, _,_,_) -> Some l
     | _ -> None
-
-  
 
 (* relative to memory *)
     let is_mem_store a = match a with
@@ -131,11 +129,9 @@ end = struct
     | Barrier _ -> true
     | _ -> false
 
-    let barrier_of a = match a with
-    | Barrier b -> Some b
-    | _ -> None
+    let barrier_of a = None
 
-  let same_barrier_id _ _ = assert false
+    let same_barrier_id _ _ = false
 
 (* Commits *)
    let is_commit a = match a with
@@ -151,35 +147,6 @@ end = struct
 
    let is_sc_action _ = false
 
-(* Cache-operators *)
-   let cache_op_matches target = function
-     | Access (_,_,_,_,cop) -> cop=target
-     | _ -> false
-
-(* Architecture-specific sets *)
-   let arch_sets =
-     List.map (fun (k,v) -> (k, cache_op_matches v)) [
-     "ca", GPU_PTXBase.CA;
-     "cg", GPU_PTXBase.CG;
-     "cv", GPU_PTXBase.CV;
-     "wb", GPU_PTXBase.WB;
-     "wt", GPU_PTXBase.WT;
-     "ncop", GPU_PTXBase.NCOP;
-   ]
-
-  let arch_fences =
-    List.map
-      (fun (tag,p) ->
-        tag,
-        begin fun a -> match a with
-        | Barrier b -> p b
-        | _ -> false
-        end)
-      A.arch_fences
-
-  let is_isync _ = false
-  let pp_isync = "???"
-
 (* Equations *)
 
     let undetermined_vars_in_action a =
@@ -194,10 +161,10 @@ end = struct
 
     let simplify_vars_in_action soln a =
       match a with
-      | Access (d,l,v,ato,cop) -> 
+      | Access (d,l,v,ato,s) -> 
 	 let l' = A.simplify_vars_in_loc soln l in
 	 let v' = V.simplify_var soln v in
-	 Access (d,l',v',ato,cop)
+	 Access (d,l',v',ato,s)
       | Barrier _ | Commit -> a
 
 (*************************************************************)	      
@@ -205,11 +172,35 @@ end = struct
 (*************************************************************)	 
 
     let make_action_atomic a = match a with
-      | Access (d,l,v,_,cop) -> Access (d,l,v,true,cop)
+      | Access (d,l,v,_,s) -> Access (d,l,v,true,s)
       | _ -> a
 
-    let annot_in_list _str _ac = false
+    (* Update the arch_sets based on the bell file *)
 
+    let list_contains s st =
+      List.mem st s
 
+    let annot_in_list st ac = match ac with 
+      | Access(_,_,_,_,s)
+      | Barrier(s) -> (list_contains s st)	
+      | _ -> false
+
+    let bell_fence_rel st ac = match ac with
+      | Barrier(s) -> List.mem st s
+      | _ -> false
+
+    let replace al s = 
+      List.map (fun annot ->
+	if List.mem_assoc annot al then
+	  List.assoc annot al
+	else 
+	  annot) s
+
+    let pp_isync = ""
+    let is_isync _a = false
+    let arch_sets = []
+    let arch_fences = []
+      
+      
 end
 

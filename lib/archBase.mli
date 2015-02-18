@@ -44,6 +44,10 @@ module type S = sig
   (* Shorthand for parsable dump *)
   val dump_instruction : instruction -> string
 
+  (* get annotation list and event id to check bell test against
+     bell file checking *)
+  val get_id_and_list : instruction -> string * (string list)
+
   (*************************************)
   (* All this needed for symbolic regs *)
   (*************************************)

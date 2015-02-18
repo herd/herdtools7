@@ -32,14 +32,22 @@ module Top (C:Config) = struct
       (P:sig 
          type pseudo
          val parse : in_channel -> Splitter.result ->  pseudo MiscParser.t
+	 val check_bell_test : pseudo MiscParser.t -> Bell_info.bell_model_info -> unit
        end with type pseudo = S.A.pseudo)
       (M:XXXMem.S with module S = S) =
     struct
       module T = Test.Make(S.A) 
 
-      let run filename chan env splitted =
+      let run filename chan env splitted bell_info =
         try
           let parsed = P.parse chan splitted in
+
+	  (* check bell file *)
+	  begin match bell_info with 
+	  | Some bi -> 	  P.check_bell_test parsed bi
+	  | None -> ()
+	  end;
+
           let name = splitted.Splitter.name in
           let hash = MiscParser.get_hash parsed in
           let env = match hash with
@@ -60,7 +68,7 @@ module Top (C:Config) = struct
         let check_rename = C.check_rename
       end)
 
-  let do_from_file env name chan =
+  let do_from_file bell_info env name chan =
 (* First split the input file in sections *)
     let (splitted:Splitter.result) =  SP.split name chan in
     let tname = splitted.Splitter.name.Name.name in
@@ -120,7 +128,7 @@ module Top (C:Config) = struct
           let module PPCM = PPCMem.Make(ModelConfig)(PPCS) (PPCBarrier) in
           let module P = GenParser.Make (C) (PPC) (PPCLexParse) in
           let module X = Make (PPCS) (P) (PPCM) in 
-          X.run name chan env splitted
+          X.run name chan env splitted bell_info
 
       | `ARM ->
 	  let module ARM = ARMArch.Make(C.PC)(SymbValue) in
@@ -146,7 +154,7 @@ module Top (C:Config) = struct
           let module ARMM = ARMMem.Make(ModelConfig)(ARMS) (ARMBarrier) in
           let module P = GenParser.Make (C) (ARM) (ARMLexParse) in
           let module X = Make (ARMS) (P) (ARMM) in 
-          X.run name chan env splitted
+          X.run name chan env splitted bell_info
 
       | `X86 ->
           let module X86 = X86Arch.Make(C.PC)(SymbValue) in
@@ -169,7 +177,7 @@ module Top (C:Config) = struct
           let module X86M = X86Mem.Make(ModelConfig)(X86S) (X86Barrier) in
           let module P = GenParser.Make (C) (X86) (X86LexParse) in
           let module X = Make (X86S) (P) (X86M) in 
-          X.run name chan env splitted
+          X.run name chan env splitted bell_info
 
       | `MIPS ->
           let module MIPS = MIPSArch.Make(C.PC)(SymbValue) in
@@ -190,7 +198,7 @@ module Top (C:Config) = struct
           let module MIPSM = MIPSMem.Make(ModelConfig)(MIPSS)(MIPSBarrier) in
           let module P = GenParser.Make (C) (MIPS) (MIPSLexParse) in
           let module X = Make (MIPSS) (P) (MIPSM) in
-          X.run name chan env splitted
+          X.run name chan env splitted bell_info
 
       | `C ->
         let module CPP11 = CPP11Arch.Make(C.PC)(SymbValue) in
@@ -211,8 +219,12 @@ module Top (C:Config) = struct
         end in
         let module CPP11M = CPP11Mem.Make(ModelConfig)(CPP11S) (CPP11Barrier) in
         let module P = CGenParser.Make (C) (CPP11) (CPP11LexParse) in
-        let module X = Make (CPP11S) (P) (CPP11M) in
-        X.run name chan env splitted
+        let module X = Make (CPP11S) (
+	struct
+	  include P
+	  let check_bell_test _f _s = ()
+	end) (CPP11M) in
+        X.run name chan env splitted bell_info
 
       | `OpenCL ->
         let module OpenCL = OpenCLArch.Make(C.PC)(SymbValue) in
@@ -233,8 +245,12 @@ module Top (C:Config) = struct
         end in
         let module OpenCLM = OpenCLMem.Make(ModelConfig)(OpenCLS) (OpenCLBarrier) in
         let module P = CGenParser.Make (C) (OpenCL) (OpenCLLexParse) in
-        let module X = Make (OpenCLS) (P) (OpenCLM) in 
-        X.run name chan env splitted
+        let module X = Make (OpenCLS) (	
+	  struct
+	    include P
+	    let check_bell_test _f _s = ()
+	  end) (OpenCLM) in 
+        X.run name chan env splitted bell_info
 
       | `GPU_PTX ->
         let module GPU_PTX = GPU_PTXArch.Make(C.PC)(SymbValue) in
@@ -256,10 +272,32 @@ module Top (C:Config) = struct
         let module GPU_PTXM = GPU_PTXMem.Make(ModelConfig)(GPU_PTXS) (GPU_PTXBarrier) in
         let module P = GenParser.Make (C) (GPU_PTX) (GPU_PTXLexParse) in
         let module X = Make (GPU_PTXS) (P) (GPU_PTXM) in 
-        X.run name chan env splitted
+        X.run name chan env splitted bell_info
+
+      | `BELL ->
+        let module BELL = BELLArch.Make(C.PC)(SymbValue) in
+        let module BELLLexParse = struct
+  	  type instruction = BELL.pseudo
+	  type token = BELLParser.token
+          module Lexer = BELLLexer.Make(LexConfig)
+	  let lexer = Lexer.token
+	  let parser = BELLParser.main
+        end in
+        let module BELLS = BELLSem.Make(C)(SymbValue) in
+        let module BELLBarrier = struct
+          type a = BELL.barrier
+          type b = string list
+          let a_to_b a = match a with
+            | BELL.Fence(s) -> s	    
+        end in
+        let module BELLM = BELLMem.Make(ModelConfig)(BELLS) (BELLBarrier) in
+        let module P = GenParser.Make (C) (BELL) (BELLLexParse) in
+        let module X = Make (BELLS) (P) (BELLM) in 
+        X.run name chan env splitted bell_info
+	
 
     end else env
 (* Forgive fatal errors *)
-  let from_file  name env =
-    Misc.input_protect (do_from_file env name) name
+  let from_file bell_info name env =
+    Misc.input_protect (do_from_file bell_info env name) name
 end
