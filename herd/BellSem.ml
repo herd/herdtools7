@@ -12,15 +12,15 @@
 (*  General Public License.                                          *)
 (*********************************************************************)
 
-(** Semantics of BELL *)
+(** Semantics of Bell *)
 
 module Make (C:Sem.Config)(V:Value.S)  
     = 
   struct
 
-    module BELL = BELLArch.Make(C.PC)(V)
-    module Act = BELLAction.Make(BELL)
-    include SemExtra.Make(C)(BELL)(Act)
+    module Bell = BellArch.Make(C.PC)(V)
+    module Act = BellAction.Make(Bell)
+    include SemExtra.Make(C)(Bell)(Act)
 
 (* Not doing barrier pretty print *)
     let barriers = []
@@ -62,54 +62,54 @@ module Make (C:Sem.Config)(V:Value.S)
 	
     let read_roa roa ii = 
       match roa with 
-      | BELLBase.Rega r -> read_reg r ii
-      | BELLBase.Abs a -> (M.unitT (V.maybevToV a))
+      | BellBase.Rega r -> read_reg r ii
+      | BellBase.Abs a -> (M.unitT (V.maybevToV a))
 
     let read_roi roi ii = 
       match roi with
-      | BELLBase.Regi r -> read_reg r ii
-      | BELLBase.Imm i -> (M.unitT (V.intToV i))	
+      | BellBase.Regi r -> read_reg r ii
+      | BellBase.Imm i -> (M.unitT (V.intToV i))	
 
     let build_semantics ii = 
       let build_semantics_inner ii =
 	match ii.A.inst with
-	| BELLBase.Pld(r,roa,s) ->
+	| BellBase.Pld(r,roa,s) ->
 	  read_roa roa ii >>=
 	    (fun addr -> read_mem addr s ii) >>=
 	    (fun v -> write_reg r v ii) >>!
 	    B.Next
 	    
-	| BELLBase.Pst(roa, roi, s) ->
+	| BellBase.Pst(roa, roi, s) ->
 	  (read_roa roa ii >>|
 	      read_roi roi ii) >>=
 	    (fun (addr,v) -> write_mem addr v s ii) >>!
 	    B.Next
 
-	| BELLBase.Pmov(r, roi) ->
+	| BellBase.Pmov(r, roi) ->
 	   (read_roi roi ii) >>=
 	     (fun v -> write_reg r v ii) >>! B.Next
 					       
-	| BELLBase.Padd(r, roi1, roi2) ->
+	| BellBase.Padd(r, roi1, roi2) ->
 	   (read_roi roi1 ii) >>|
 	     (read_roi roi2 ii) >>=
 	     (fun (v1,v2) -> M.op Op.Add v1 v2) >>=
 	     (fun v -> write_reg r v ii) >>!
 	     B.Next
 
-	| BELLBase.Pand(r, roi1, roi2) ->
+	| BellBase.Pand(r, roi1, roi2) ->
 	   (read_roi roi1 ii) >>|
 	     (read_roi roi2 ii) >>=
 	     (fun (v1,v2) -> M.op Op.And v1 v2) >>=
 	     (fun v -> write_reg r v ii) >>!
 	     B.Next
 
-	| BELLBase.Pbeq(roi1,roi2,lbl) ->
+	| BellBase.Pbeq(roi1,roi2,lbl) ->
 	  (read_roi roi1 ii) >>|
 	      (read_roi roi2 ii) >>=
 		(fun (v1,v2) -> M.op Op.Eq v1 v2 >>=
 		  (fun v -> B.bccT v lbl))		  
 	    
-	| BELLBase.Pfence(BELLBase.Fence s) ->
+	| BellBase.Pfence(BellBase.Fence s) ->
       	  create_barrier s ii >>! B.Next	  
       in 
       M.addT (A.next_po_index ii.A.program_order_index) (build_semantics_inner ii)

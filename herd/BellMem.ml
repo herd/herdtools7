@@ -12,10 +12,47 @@
 (*  General Public License.                                          *)
 (*********************************************************************)
 
-(** Define barrier type for BELL architecture *)
+(** Entry to models for Bell  *)
 
-module type S = sig
-  type a
-  type b = string list
-  val a_to_b : a -> b
+module type Config = sig
+  val model : Model.t
+  include Model.Config
+end
+
+module Make
+    (O:Config)
+    (S:Sem.Semantics)
+    (B:BellBarrier.S with type a = S.barrier)
+ :
+    XXXMem.S with
+module S = S
+    =
+  struct
+
+    open Model
+
+    let model = O.model
+
+(*
+    let bell_model = match O.bell_model with
+      | Some m -> m
+      | None -> Warn.fatal "Running a bell test requires a .bell file"	
+*)    
+
+    module S = S
+
+    module ModelConfig = (O : Model.Config)
+
+    let check_event_structure test = match O.model with
+    | Generic m ->
+        let module X =
+          BellModelChecker.Make
+            (struct
+              let m = m
+              include ModelConfig
+             end)(S)(AllBarrier.FromBell(B)) in
+        X.check_event_structure test
+    | File _ -> assert false
+    | m ->
+        Warn.fatal "Model %s not implemented for Bell" (Model.pp m)
 end

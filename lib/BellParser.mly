@@ -15,14 +15,14 @@
 (*********************************************************************)
 
 
-module BELL = BELLBase
-open BELL
+module Bell = BellBase
+open Bell
 open Printf
     
 %}
 
 %token EOF SEMI COMMA PIPE COLON LPAR RPAR RBRAC LBRAC LBRACE RBRACE SCOPES REGIONS MOV AND ADD BEQ READ WRITE FENCE
-%token <BELLBase.reg> REG
+%token <BellBase.reg> REG
 %token <int> NUM
 %token <string> NAME 
 %token <string> MEM_ANNOT
@@ -30,7 +30,7 @@ open Printf
 %token <string> REGION
 %token <int> PROC
 
-%type <int list * (BELLBase.pseudo) list list * MiscParser.gpu_data option * Bell_info.bell_test_info option > main 
+%type <int list * (BellBase.pseudo) list list * MiscParser.gpu_data option * Bell_info.bell_test_info option > main 
 %start  main
 
 %nonassoc SEMI

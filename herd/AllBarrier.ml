@@ -153,7 +153,7 @@ module FromGPU_PTX(GB:GPU_PTXBarrier.S) = struct
   let pp_isync = "???"
 end
 
-module FromBELL(BB:BELLBarrier.S) = struct
+module FromBell(BB:BellBarrier.S) = struct
 
   type a = BB.a
     
@@ -165,7 +165,7 @@ module FromBELL(BB:BELLBarrier.S) = struct
       | MEMBAR_CTA | MEMBAR_GL | MEMBAR_SYS (*PTX barriers*)
 
 
-  let a_to_b _ = assert false (* no concrete barriers in BELL *)
+  let a_to_b _ = assert false (* no concrete barriers in Bell *)
 
   let pp_isync = "???"
 end

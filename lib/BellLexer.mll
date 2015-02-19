@@ -16,8 +16,8 @@
 module Make(O:LexUtils.Config) = struct
 open Lexing
 open LexMisc
-open BELLParser
-module BELL = BELLBase
+open BellParser
+module Bell = BellBase
 module LU = LexUtils.Make(O)
 open Printf
 
@@ -58,12 +58,12 @@ rule token = parse
 | "regions" {REGIONS }
 | name as x
     { 
-      match BELL.parse_reg x with
+      match Bell.parse_reg x with
       | Some r -> REG r
       | None ->  NAME x
     }
 | eof { EOF }
-| ""  { error "BELL lexer" lexbuf }
+| ""  { error "Bell lexer" lexbuf }
 
 {
 let token lexbuf =

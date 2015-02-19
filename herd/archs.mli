@@ -19,7 +19,7 @@ module System : sig
     | `ARM
     | `MIPS
     | `GPU_PTX
-    | `BELL
+    | `Bell
     ]
 
   val tags : string list

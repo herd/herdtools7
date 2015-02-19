@@ -38,26 +38,26 @@ module Make (C: Config) = struct
     in
 
     (* instantiate the interpreter module *)
-    let module BELLS = BELLSem.Make(C)(SymbValue) in
+    let module BellS = BellSem.Make(C)(SymbValue) in
     let module I = Interpreter.Make
 	  (struct 
 	    let m = generic_m
 	    include ModelConfig
 	   end)
-	  (BELLS) in
+	  (BellS) in
 
     (* construct an empty test *)
-    let module BELL = BELLArch.Make(C.PC)(SymbValue) in
-    let module T = Test.Make(BELL) in
+    let module Bell = BellArch.Make(C.PC)(SymbValue) in
+    let module T = Test.Make(Bell) in
     let empty_test = T.empty_test in
 
     (* construct an empty ks *)
-    let module E = BELLS.E in
-    let conc = BELLS.conc_zero in
+    let module E = BellS.E in
+    let conc = BellS.conc_zero in
       let evts =
         E.EventSet.filter
           (fun e -> E.is_mem e || E.is_barrier e)
-          conc.BELLS.str.E.events in
+          conc.BellS.str.E.events in
       let id =
         lazy begin
           E.EventRel.of_list

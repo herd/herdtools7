@@ -274,25 +274,25 @@ module Top (C:Config) = struct
         let module X = Make (GPU_PTXS) (P) (GPU_PTXM) in 
         X.run name chan env splitted bell_info
 
-      | `BELL ->
-        let module BELL = BELLArch.Make(C.PC)(SymbValue) in
-        let module BELLLexParse = struct
-  	  type instruction = BELL.pseudo
-	  type token = BELLParser.token
-          module Lexer = BELLLexer.Make(LexConfig)
+      | `Bell ->
+        let module Bell = BellArch.Make(C.PC)(SymbValue) in
+        let module BellLexParse = struct
+  	  type instruction = Bell.pseudo
+	  type token = BellParser.token
+          module Lexer = BellLexer.Make(LexConfig)
 	  let lexer = Lexer.token
-	  let parser = BELLParser.main
+	  let parser = BellParser.main
         end in
-        let module BELLS = BELLSem.Make(C)(SymbValue) in
-        let module BELLBarrier = struct
-          type a = BELL.barrier
+        let module BellS = BellSem.Make(C)(SymbValue) in
+        let module BellBarrier = struct
+          type a = Bell.barrier
           type b = string list
           let a_to_b a = match a with
-            | BELL.Fence(s) -> s	    
+            | Bell.Fence(s) -> s	    
         end in
-        let module BELLM = BELLMem.Make(ModelConfig)(BELLS) (BELLBarrier) in
-        let module P = GenParser.Make (C) (BELL) (BELLLexParse) in
-        let module X = Make (BELLS) (P) (BELLM) in 
+        let module BellM = BellMem.Make(ModelConfig)(BellS) (BellBarrier) in
+        let module P = GenParser.Make (C) (Bell) (BellLexParse) in
+        let module X = Make (BellS) (P) (BellM) in 
         X.run name chan env splitted bell_info
 	
 

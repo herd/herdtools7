@@ -12,7 +12,7 @@
 (*  General Public License.                                          *)
 (*********************************************************************)
 
-(** Implementation of the action interface for BELL *)
+(** Implementation of the action interface for Bell *)
 open Printf
 
 module Make (A : Arch.S) : sig
@@ -47,12 +47,12 @@ end = struct
     | Access (d,l,v,ato,s) ->
 	Printf.sprintf "%s(%s) %s%s=%s"
           (pp_dirn d)
-          (BELLBase.string_of_annot_list s)
+          (BellBase.string_of_annot_list s)
           (A.pp_location  l)
 	  (if ato then "*" else "")
 	  (V.pp_v v)
     | Barrier (s) ->
-      Printf.sprintf "F(%s)" (BELLBase.string_of_annot_list s)
+      Printf.sprintf "f(%s)" (BellBase.string_of_annot_list s)
     | Commit -> "Commit"
 
 (* Utility functions to pick out components *)

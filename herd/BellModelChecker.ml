@@ -12,7 +12,7 @@
 (*  General Public License.                                          *)
 (*********************************************************************)
 
-(** Check an event structure against a BELL model *)
+(** Check an event structure against a Bell model *)
 
 module type Config = sig
   val m : AST.pp_t

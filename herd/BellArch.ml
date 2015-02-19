@@ -15,7 +15,7 @@
 (** Define Bell architecture *)
 
 module Make (C:Arch.Config) (V:Value.S) = struct
-    include BELLBase
+    include BellBase
 
     module V = V
 
