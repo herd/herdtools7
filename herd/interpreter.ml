@@ -441,7 +441,7 @@ module Make
 	  | None -> Warn.fatal "error getting memory map"
 	in
 	match (E.Act.location_of e.E.action) with
-	| Some x -> List.mem (target,E.Act.A.pp_location x) mem_map
+	| Some x -> List.mem (E.Act.A.pp_location x, target) mem_map
 	| None -> false
 	  
 
