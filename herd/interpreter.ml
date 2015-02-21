@@ -998,23 +998,29 @@ module Make
           let ok =
             try stabilised env_bd.EV.ks env vs ws
             with Stabilised t ->
-              error env_bd.EV.silent loc "illegal recursion on type '%s'" (pp_typ t) in
+              error env_bd.EV.silent loc "illegal recursion on type '%s'"
+                (pp_typ t) in
           if ok then env
           else
             (* Update recursive functions *)
-            let env = env_rec_funs env_bd loc funs in
+            let env = env_rec_funs {env_bd with EV.env=env;} loc funs in
             fix (k+1) env ws in
 
         let env0 =
           List.fold_left
             (fun env (k,_) -> add_val k (lazy V.Empty) env)
             env_bd.EV.env bds in
-        fix 0 env0 (List.map (fun _ -> V.Empty) bds)
+        let env0 = env_rec_funs { env_bd with EV.env=env0;} loc funs in
+        let env = fix 0 env0 (List.map (fun _ -> V.Empty) bds) in
+        if O.debug then warn loc "Fix point over" ;
+        env
 
       and fix_step env_bd env bds = match bds with
       | [] -> env,[]
       | (k,e)::bds ->
-          let v = eval {env_bd with EV.env;} e in
+          eprintf "Will eval '%s'\n%!" k ;
+          let v = eval {env_bd with EV.env=env;} e in
+          eprintf "Done '%s'\n%!" k ;
           let env = add_val k (lazy v) env in
           let env,vs = fix_step env_bd env bds in
           env,(v::vs) in
