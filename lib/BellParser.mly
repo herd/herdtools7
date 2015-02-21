@@ -21,7 +21,7 @@ open Printf
     
 %}
 
-%token EOF SEMI COMMA PIPE COLON LPAR RPAR RBRAC LBRAC LBRACE RBRACE SCOPES REGIONS MOV AND ADD BEQ READ WRITE FENCE
+%token EOF SEMI COMMA PIPE COLON LPAR RPAR RBRAC LBRAC LBRACE RBRACE SCOPES REGIONS MOV AND ADD BEQ READ WRITE FENCE RMW CAS EXCH DOT
 %token <BellBase.reg> REG
 %token <int> NUM
 %token <string> NAME 
@@ -70,21 +70,24 @@ instr_option :
 | instr      { Instruction $1}
 
 instr:
-| READ LPAR read_annot_list RPAR reg COMMA LBRAC roa RBRAC
-  { 
-  Pld($5, $8, $3) 
-  }
-| WRITE LPAR write_annot_list RPAR LBRAC roa RBRAC COMMA roi 
-   { 
-  Pst($6, $9, $3) }
+| READ LPAR annot_list RPAR reg COMMA LBRAC roa RBRAC
+  { Pld($5, $8, $3) }
 
-| FENCE LPAR fence_annot_list RPAR
-  {
-  Pfence(Fence($3))}
+| WRITE LPAR annot_list RPAR LBRAC roa RBRAC COMMA roi 
+ { Pst($6, $9, $3) }
 
-/* Easier stuff */
+| RMW DOT rmw2_op LPAR annot_list RPAR reg COMMA LBRAC roa RBRAC COMMA roi
+  { Prmw2_op($7,$10,$13,$3,$5)}
+
+| RMW DOT rmw3_op LPAR annot_list RPAR reg COMMA LBRAC roa RBRAC COMMA roi COMMA roi
+  { Prmw3_op($7,$10,$13,$15,$3,$5)}
+
+
+| FENCE LPAR annot_list RPAR
+ { Pfence(Fence($3)) }
+
 | MOV reg COMMA roi
-   { Pmov($2,$4) }
+ { Pmov($2,$4) }
 
 | ADD reg COMMA roi COMMA roi
  { Padd($2,$4,$6) }
@@ -93,44 +96,23 @@ instr:
  { Pand($2,$4,$6) }
 
 | BEQ roi COMMA roi COMMA NAME
-  {Pbeq($2,$4,$6)}
+ { Pbeq($2,$4,$6) }
 
-
-read_annot_list:
-|  NAME COMMA read_annot_list
-  {
-  $1::$3
-   }
-
+annot_list:
+|  NAME COMMA annot_list
+  {$1::$3}
 | NAME
-  {
-  [$1]
-  }
+  {[$1]}
 | {[]}
 
-write_annot_list:
-|  NAME COMMA write_annot_list
-  {
-  $1::$3
-   }
+rmw2_op:
+| ADD  { RMWAdd  }
+| EXCH { RMWExch }
 
-| NAME 
-  {
-  [$1]
-  }
-| {[]}
+rmw3_op:
+| CAS  { RMWCAS }
 
-fence_annot_list:
-|  NAME COMMA fence_annot_list
-  {
-  $1::$3
-   }
 
-| NAME 
-  {
-  [$1]
-  }
-| {[]}
 
 roa:
 | REG {Rega $1}

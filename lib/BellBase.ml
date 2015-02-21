@@ -92,7 +92,6 @@ let string_of_reg_or_imm r = match r with
   | Regi r -> pp_reg r
   | Imm r -> sprintf "%d" r
 
-
 open Constant
 
 type reg_or_addr = 
@@ -115,6 +114,20 @@ let pp_iar iar = match iar with
   | IAR_roa roa -> sprintf "[%s]" (string_of_reg_or_addr roa)
   | IAR_imm i -> sprintf "%d" i
 
+type rmw2_op =
+| RMWExch
+| RMWAdd
+
+let pp_rmw2_op op = match op with
+  | RMWExch -> "exch"
+  | RMWAdd -> "add"
+
+type rmw3_op = 
+| RMWCAS
+
+let pp_rmw3_op op = match op with
+  | RMWCAS -> "cas"
+
 
 type instruction = 
 | Pld  of reg * reg_or_addr * string list
@@ -123,12 +136,9 @@ type instruction =
 | Pand of reg * reg_or_imm * reg_or_imm
 | Padd of reg * reg_or_imm * reg_or_imm
 | Pbeq of reg_or_imm * reg_or_imm * lbl
+| Prmw2_op of reg * reg_or_addr * reg_or_imm * rmw2_op * string list
+| Prmw3_op of reg * reg_or_addr * reg_or_imm * reg_or_imm * rmw3_op * string list
 | Pfence of barrier
-(* TODO:
-         Branch
-         RMWs
-         arithmetic
-*)
 
 (* from GPU_PTXBase *)
 
@@ -155,7 +165,7 @@ let dump_instruction i = match i with
   | Pld(r, roa, s) -> sprintf "r(%s) %s, [%s]" 
                      (string_of_annot_list s)
                      (pp_reg r)
-                     (string_of_reg_or_addr roa)                 
+                     (string_of_reg_or_addr roa)
 
   | Pst(roa,roi,s) -> sprintf "w(%s) [%s] %s" 
                      (string_of_annot_list s)
@@ -180,6 +190,24 @@ let dump_instruction i = match i with
     		     (string_of_reg_or_imm roi1)
 		     (string_of_reg_or_imm roi2)
                      (lbl)
+
+  | Prmw2_op(r,roa,roi,op,s) ->
+                         sprintf "rmw.%s(%s) %s, [%s], %s"
+			   (pp_rmw2_op op)
+			   (string_of_annot_list s)
+			   (pp_reg r)
+			   (string_of_reg_or_addr roa)
+			   (string_of_reg_or_imm roi)
+
+  | Prmw3_op(r,roa,roi1,roi2,op,s) ->
+                         sprintf "rmw.%s(%s) %s, [%s], %s, %s"
+			   (pp_rmw3_op op)
+			   (string_of_annot_list s)
+			   (pp_reg r)
+			   (string_of_reg_or_addr roa)
+			   (string_of_reg_or_imm roi1)
+			   (string_of_reg_or_imm roi2)
+
 
   | Pfence f -> pp_barrier f
 
@@ -208,6 +236,8 @@ let fold_regs (f_reg,_f_sreg) =
     | Padd(r,roi1,roi2) -> fold_reg r (fold_roi roi1 (fold_roi roi2 c))
     | Pand(r,roi1,roi2) -> fold_reg r (fold_roi roi1 (fold_roi roi2 c))
     | Pbeq(roi1, roi2, _) -> fold_roi roi1 (fold_roi roi2 c)
+    | Prmw2_op(r,roa,roi,op,s) -> fold_reg r (fold_roa roa (fold_roi roi c))
+    | Prmw3_op(r,roa,roi1,roi2,op,s) -> fold_reg r (fold_roa roa (fold_roi roi1 (fold_roi roi2 c)))
     | Pfence _ -> c
     end 
   in fold_ins
@@ -232,6 +262,8 @@ let map_regs f_reg _f_symb =
     | Padd(r,roi1,roi2) -> Padd(f_reg r, map_roi roi1, map_roi roi2)
     | Pand(r,roi1,roi2) -> Pand(f_reg r, map_roi roi1, map_roi roi2)
     | Pbeq(roi1,roi2,lbl) -> Pbeq(map_roi roi1, map_roi roi2, lbl)
+    | Prmw2_op(r,roa,roi,op,s) -> Prmw2_op(f_reg r, map_roa roa, map_roi roi, op, s)
+    | Prmw3_op(r,roa,roi1,roi2,op,s) -> Prmw3_op(f_reg r, map_roa roa, map_roi roi1, map_roi roi2, op, s)
     | Pfence _ -> ins
   end in
   map_ins
@@ -251,8 +283,11 @@ let get_id_and_list i = match i with
   | Pld(_,_,s) -> ("R",s)
   | Pst(_,_,s) -> ("W",s)
   | Pfence s -> (match s with 
-    | Fence (s) -> ("F",s)
+    | Fence (s) -> ("F",s)      
   )
+  | Prmw2_op(_,_,_,_,s) | Prmw3_op(_,_,_,_,_,s) ->
+    ("RMW",s)
+    (* flag value and empty list *)
   | _ -> ("X",[])
 
 

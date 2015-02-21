@@ -27,7 +27,7 @@ let counter : int ref = ref 0
 
 let digit =  [ '0'-'9' ]
 let alpha = [ 'a'-'z' 'A'-'Z']
-let name  = alpha (alpha|digit|'_' | '/' | '-' | '.')*
+let name  = alpha (alpha|digit|'_' | '/' | '-')*
 let num = "0x"?digit+
 
 rule token = parse
@@ -37,25 +37,29 @@ rule token = parse
 | '-' ? num as x { NUM (int_of_string x) }
 | 'P' (num as x)
     { PROC (int_of_string x) }
-| ';' { SEMI }
+| ';' { SEMI  }
+| '.' { DOT   }
 | ',' { COMMA }
-| '|' { PIPE }
+| '|' { PIPE  }
 | ':' { COLON }
-| '(' { LPAR }
-| ')' { RPAR }
+| '(' { LPAR  }
+| ')' { RPAR  }
 | ']' { RBRAC }
 | '[' { LBRAC }
 | '{' { LBRACE }
 | '}' { RBRACE }
 | 'r'   { READ }
 | 'w'   { WRITE }
-| "f"  { FENCE }
+| "f"   { FENCE }
+| "rmw"  { RMW  }
+| "exch" { EXCH }
+| "cas"  { CAS }
 | "mov"  { MOV }
-| "add" { ADD }
-| "and" { AND }
-| "beq" { BEQ }
-| "scopes" { SCOPES }
-| "regions" {REGIONS }
+| "add"  { ADD }
+| "and"  { AND }
+| "beq"  { BEQ }
+| "scopes"  { SCOPES  }
+| "regions" { REGIONS }
 | name as x
     { 
       match Bell.parse_reg x with

@@ -44,6 +44,10 @@ module Make (C:Sem.Config)(V:Value.S)
     let read_mem a s ii = 
       M.read_loc (mk_read false s) (A.Location_global a) ii
 
+    let read_mem_atom a s ii = 
+      M.read_loc (mk_read true s) (A.Location_global a) ii
+
+
 (*    let read_mem_atom cop a ii = 
       M.read_loc (mk_read true cop) (A.Location_global a) ii *)
 
@@ -52,6 +56,10 @@ module Make (C:Sem.Config)(V:Value.S)
 
     let write_mem a v s ii = 
       M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v, false, s)) ii
+
+    let write_mem_atom a v s ii = 
+      M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v, true, s)) ii
+
 
 (*    let write_mem_atom cop a v ii = 
       M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v, true, cop)) ii *)
@@ -70,6 +78,23 @@ module Make (C:Sem.Config)(V:Value.S)
       | BellBase.Regi r -> read_reg r ii
       | BellBase.Imm i -> (M.unitT (V.intToV i))	
 
+    let do_2op v1 v2 op addr = match op with
+      | BellBase.RMWExch -> ((M.unitT v1) >>| 
+	                     (M.unitT v2) >>|
+			     (M.unitT addr))
+
+      | BellBase.RMWAdd  -> ((M.unitT v1) >>| 
+	                     (M.op Op.Add v1 v2) >>|
+                             (M.unitT addr))
+
+    let do_3op v1 v2 v3 op addr = match op with
+      | BellBase.RMWCAS -> (M.op Op.Eq v1 v2) >>=
+	                   (fun eq -> 
+			     (M.unitT v1) >>|
+	                     (M.op3 Op.If eq v3 v1) >>|
+	                     (M.unitT addr))
+
+
     let build_semantics ii = 
       let build_semantics_inner ii =
 	match ii.A.inst with
@@ -84,6 +109,34 @@ module Make (C:Sem.Config)(V:Value.S)
 	      read_roi roi ii) >>=
 	    (fun (addr,v) -> write_mem addr v s ii) >>!
 	    B.Next
+
+	| BellBase.Prmw2_op(r,roa,roi,op,s) ->
+	  (read_roa roa ii ) >>=
+	    (fun addr -> 
+	      (read_mem_atom addr s ii) >>|
+	      (read_roi roi ii) >>|
+	      (M.unitT addr)
+	    ) >>=
+	    (fun ((v1,v2),addr) -> do_2op v1 v2 op addr) >>=
+	    (fun ((prev,res),addr) -> 
+	      (write_reg r prev ii) >>|
+	      (write_mem_atom addr res s ii)) >>!
+	    B.Next
+
+	| BellBase.Prmw3_op(r,roa,roi1,roi2,op,s) ->
+	  (read_roa roa ii ) >>=
+	    (fun addr -> 
+	      (read_mem_atom addr s ii) >>|
+	      (read_roi roi1 ii) >>|
+	      (read_roi roi2 ii) >>|
+		  (M.unitT addr)
+	     ) >>=
+	    (fun (((v1,v2),v3),addr) -> do_3op v1 v2 v3 op addr) >>=
+	    (fun ((prev,res),addr) -> 
+	      (write_reg r prev ii) >>|
+	      (write_mem_atom addr res s ii)) >>!
+	    B.Next
+
 
 	| BellBase.Pmov(r, roi) ->
 	   (read_roi roi ii) >>=
