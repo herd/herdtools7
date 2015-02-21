@@ -135,7 +135,7 @@ type bell_test_info = {
   scopes : scopes option;
 }
 
-let known_sets = ["R"; "W"; "F"; "regions"]
+let known_sets = ["R"; "W"; "F"; "regions"; "RMW";]
 let known_relations = ["scopes";]
 let known_orders = ["scope_order";]
 

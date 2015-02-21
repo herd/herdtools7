@@ -270,11 +270,13 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
 	check_annots "W" annot_list bell_info i
       else if id = "F" then
 	check_annots "F" annot_list bell_info i
+      else if id = "RMW" then
+	check_annots "RMW" annot_list bell_info i
       else 
 	()
 
     let check_bell_test parsed bi = 
-	  (* checking instructions *)
+      (* checking instructions *)
       List.iter (fun (_,instr) ->
 	List.iter (fun i ->
 	  match i with
