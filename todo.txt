@@ -10,5 +10,7 @@ extra tools for handling catalogue:
 - jingle: simple translation tool from bell litmus tests to concrete syntax
   (e.g. java, opencl etc) 
 
+- nuit: compilation mappings as functions over cat files
+
 - regression script (see Nathan's C++ setup) to run tests/ against cats/ and
   check results w.r.t.  allowed/observed files
