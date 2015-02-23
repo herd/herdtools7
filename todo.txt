@@ -1,0 +1,14 @@
+extra tools for handling catalogue:
+
+- diy parameterised by bell
+
+- herd+diy to be married to a constraint solver, e.g. alloy:
+    . to generate counter-examples to cat file
+    . to compare models (e.g. take intersection of two cat files then generate
+      counter-examples to intersection by step just above)
+
+- jingle: simple translation tool from bell litmus tests to concrete syntax
+  (e.g. java, opencl etc) 
+
+- regression script (see Nathan's C++ setup) to run tests/ against cats/ and
+  check results w.r.t.  allowed/observed files
