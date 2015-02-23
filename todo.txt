@@ -3,7 +3,7 @@ extra tools for handling catalogue:
 - diy parameterised by bell
 
 - herd+diy to be married to a constraint solver, e.g. alloy:
-    . to generate counter-examples to cat file
+    . to generate counter-examples to cat file (e.g. examples in Viktor's POPL 15 C++ paper)
     . to compare models (e.g. take intersection of two cat files then generate
       counter-examples to intersection by step just above)
     . to check DRF => SC for example (e.g. drf.cat containing 'undefined_unless
