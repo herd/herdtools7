@@ -33,6 +33,20 @@ module type S = sig
   val add_sets : V.env -> (string * S.event_set Lazy.t) list -> V.env
   val add_vs : V.env -> (string * V.v Lazy.t) list -> V.env
 
+(* Declarations (Bell files) *)
+
+  type event_desc  =  string list list list   
+  type rel_desc = string list      
+  type order_desc = (string * string) list
+
+  type 'a bds = (string * 'a) list
+
+  type bell_dec
+
+  val extract_bell_dec :
+      bell_dec ->
+        event_desc bds * rel_desc bds  * order_desc bds
+
 (* State of interpreter *)
 
   type st = {
@@ -41,6 +55,7 @@ module type S = sig
       skipped : StringSet.t ;
       silent : bool ; undef : bool;
       ks : ks ;
+      bell_dec : bell_dec ;
   }
 
   val show_to_vbpp :
@@ -335,12 +350,44 @@ module Make
         List.map (fun (k,f) -> k,Prim (k,f)) bds in
       add_vals (fun v -> lazy v) env bds
 
+(* Bell declarations *)
+    type event_desc  =  string list list list   
+    type event_dec = event_desc StringMap.t
+    type rel_desc = string list      
+    type rel_dec = rel_desc StringMap.t
+    type order_desc = (string * string) list
+    type order_dec = order_desc StringMap.t
+
+    type 'a bds = (string * 'a) list
+        
+    type bell_dec =
+        { event_dec : event_dec;
+          rel_dec : rel_dec;
+          order_dec : order_dec; }
+
+    let empty_bell_dec =
+      { event_dec = StringMap.empty;
+        rel_dec = StringMap.empty;
+        order_dec = StringMap.empty; }
+
+    let add_dec mk x v m =
+      let old =
+        try StringMap.find x m
+        with Not_found -> [] in
+      StringMap.add x (mk v old) m
+
+    let extract_bell_dec {event_dec; rel_dec; order_dec; } =
+      StringMap.bindings event_dec,
+      StringMap.bindings rel_dec,
+      StringMap.bindings order_dec
+      
     type st = {
         env : V.env ;
         show : S.event_rel StringMap.t Lazy.t ;
         skipped : StringSet.t ;
         silent : bool ; undef : bool ;
         ks : ks ;
+        bell_dec : bell_dec;
       }
 
 (* Type of eval env *)
@@ -1245,7 +1292,9 @@ module Make
       | EnumSet(_loc,_name,xs) -> 
 	let test_bi = match test.Test.bell_info with
 	  | Some t_bi -> t_bi
-	  | None -> Warn.user_error "Using enum set requires bell info and should only be used when analyzing a bell litmus test"
+	  | None ->
+              Warn.user_error
+                "Using enum set requires bell info and should only be used when analyzing a bell litmus test"
 	in
 	let new_env_sets = 
 	  List.map (fun k -> 
@@ -1264,12 +1313,14 @@ module Make
 	  | Some s -> s
 	  | None -> Warn.user_error "Using enum rln requires scopes in the litmus test" 
 	in
-	let new_env_sets = 
-	  List.map (fun k -> 
+	let bds = 
+	  List.map (fun k ->
 	    k, lazy (U.int_scope_bell k scopes (Lazy.force st.ks.unv)))
 	    xs in
-	let env = add_rels st.env new_env_sets in		
-	kont {st with env} res
+	let env = add_rels st.env bds in
+	let st = { st with env;} in
+        let st = doshow bds st in
+	kont st res
 
       | Event_dec(loc,v,e_list) -> 
 	let eval_expr = List.map (fun e -> eval (from_st st) e) e_list in
@@ -1284,15 +1335,10 @@ module Make
 		))  (ValSet.elements vs)		
 	  | _ -> error false loc "event declaration expected a set of tags. %s is not a tag" (pp_val s)
 	) eval_expr in
-	let new_dec = not (List.mem_assoc v (!event_declarations)) in
-	if new_dec then
-	  event_declarations := (!event_declarations)@[(v,[event_sets])]
-	else
-	  begin
-	    let b = List.assoc v (!event_declarations) in
-	    let new_decs = List.remove_assoc v (!event_declarations) in
-	    event_declarations := (new_decs)@[(v,[event_sets]@b)];
-	  end;	
+        let bell_dec =
+          { st.bell_dec with
+            event_dec = add_dec Misc.cons v event_sets st.bell_dec.event_dec; } in
+        let st = { st with bell_dec;} in
 	kont st res
 
       | Relation_dec(loc, v, e) ->
@@ -1307,15 +1353,10 @@ module Make
 	    ))  (ValSet.elements vs)		
 	  | _ -> error false loc "event declaration expected a set of tags. %s is not a tag" (pp_val evaled)
 	in
-	let new_dec = not (List.mem_assoc v (!relation_declarations)) in
-	if new_dec then
-	  relation_declarations := (!relation_declarations)@[(v,strs)]
-	else
-	  begin
-	    let b = List.assoc v (!relation_declarations) in
-	    let new_decs = List.remove_assoc v (!relation_declarations) in
-	    relation_declarations := (new_decs)@[(v,strs@b)];
-	  end;		
+        let bell_dec =
+          { st.bell_dec with
+            rel_dec = add_dec (@) v strs st.bell_dec.rel_dec;} in
+        let st = { st with bell_dec;} in
 	kont st res
 
       | Order_dec(loc,v,ep_l) ->
@@ -1328,15 +1369,10 @@ module Make
 	  | _, V.Tag _ -> error false loc "order declarations expected a set of tags. %s is not a tag" (pp_val f)
 	  | _,_ -> error false loc "order declarations expected a set of tags. %s and %s are not a tag" (pp_val f) (pp_val s)
 	) evaled in
-	let new_dec = not (List.mem_assoc v (!order_declarations)) in
-	if new_dec then
-	  order_declarations := (!order_declarations)@[(v,str_pairs)]
-	else
-	  begin
-	    let b = List.assoc v (!order_declarations) in
-	    let new_decs = List.remove_assoc v (!order_declarations) in
-	    order_declarations := (new_decs)@[(v,str_pairs@b)];
-	  end;
+        let bell_dec =
+          { st.bell_dec with
+            order_dec = add_dec (@) v str_pairs st.bell_dec.order_dec;} in
+        let st = { st with bell_dec;} in
 	kont st res
 
       and do_include loc fname st kont res =
@@ -1379,6 +1415,6 @@ module Make
 
       do_include TxtLoc.none "stdlib.cat"
       {env=m; show=show; skipped=StringSet.empty;
-       silent=false; undef=false; ks;}
+       silent=false; undef=false; ks; bell_dec=empty_bell_dec; }
         (fun st res -> run txt st prog kont res) res
   end

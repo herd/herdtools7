@@ -35,13 +35,14 @@ type op1 =
 
 type konst = Empty of set_or_rln | Universe of set_or_rln
 type var = string
+type tag = string
 type varset = StringSet.t
 
 type scope = Device | Kernel | Work_Group | Sub_Group | Work_Item
 
 type exp =
   | Konst of  TxtLoc.t * konst
-  | Tag of TxtLoc.t * string
+  | Tag of TxtLoc.t * tag
   | Var of TxtLoc.t * var
   | Op1 of  TxtLoc.t * op1 * exp
   | Op of  TxtLoc.t * op2 * exp list
@@ -75,14 +76,14 @@ type ins =
   | Procedure of  TxtLoc.t * var * var list * ins list
   | ProcedureTest of TxtLoc.t * var * exp list * string option
   | Call of  TxtLoc.t * var * exp list
-  | Enum of TxtLoc.t * var * var list
+  | Enum of TxtLoc.t * var * tag list
   | Forall of  TxtLoc.t * var * exp * ins list
   | Debug of TxtLoc.t * exp
   | WithFrom of TxtLoc.t * var * exp (* set of relations *)
 
 (*For bell cat files*)
-  | EnumSet of TxtLoc.t * var * var list
-  | EnumRel of TxtLoc.t * var * var list
+  | EnumSet of TxtLoc.t * var * tag list
+  | EnumRel of TxtLoc.t * var * tag list
 
 (*For bell files*)
   | Event_dec of TxtLoc.t * var * exp list

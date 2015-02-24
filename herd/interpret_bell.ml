@@ -72,23 +72,16 @@ module Make (C: Config) = struct
        this will suffice) *)
     let vb_pp = lazy [] in
 
-    (* hmmm, this is new (not sure what it does either, but hoping
-       something simple will suffice) *)
-    let function_arg = (fun _st res -> res) in
+    (* Continuation: notice that it should be called once at most *)
+    let function_arg =
+      (fun st res -> match res with
+      | None -> Some (I.extract_bell_dec st.I.bell_dec)
+      | Some _ -> assert false) in
 
-
-    (* another new thing, I'm not sure what this but this seems to
-    work*)
-    let res = "" in    
-
-    (* call the interpreter *)
-    I.interpret empty_test ks I.env_empty vb_pp function_arg res;
-
-    (* collect the bell info *)
-    let events = !I.event_declarations in
-    let relations = !I.relation_declarations in
-    let orders = !I.order_declarations in
-
-    (* build the bell info *)
-    Bell_info.build_bell_info events relations orders    
+    (* call the interpreter  and collect bell info *)
+    match I.interpret empty_test ks I.env_empty vb_pp function_arg None with
+    | None -> assert false (* Continuation must be called at least once *)
+    | Some (events,relations,orders) ->
+        (* build the bell info *)
+        Bell_info.build_bell_info events relations orders    
 end
