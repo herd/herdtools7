@@ -69,20 +69,6 @@ module type S = sig
     (StringMap.key * S.event_rel) list Lazy.t ->
     (st -> 'a -> 'a) -> 'a -> 'a
 
-(*
-  mutable association lists for gathering bell information
-  (event, relation, and order declarations)
-  This seems like the least intrusive method for now, but 
-  maybe others have a better idea on how to incorporate?
-  LUC> Mutable state is dangerous, given the way the interpreter work,
-  LUC> Some constructs (such as with .... from ...) have to  restore
-  LUC> the old state!
-*)
-
-    val event_declarations : (string * (string list list list)) list ref
-    val relation_declarations : (string * (string list)) list ref
-    val order_declarations : (string * ((string * string)list)) list ref
-
 end
 
 
@@ -122,11 +108,6 @@ module Make
   intrusive method for now. When integrated, it can be discussed
   what we really do with it.
 *)
-
-    let event_declarations : (string * (string list list list)) list ref = ref []
-    let relation_declarations : (string * (string list)) list ref = ref []
-    let order_declarations : (string * ((string * string)list)) list ref = ref []
-
 
   let _debug_proc chan p = fprintf chan "%i" p
   let debug_event chan e = fprintf chan "%s" (E.pp_eiid e)
