@@ -534,12 +534,12 @@ let () =
     end
 
   end in
-  let from_file =
-    let module IB = Interpret_bell.Make(Config) in
-    let bell_info = match bell_model with
-      | Some m -> Some (IB.interpret_bell m)
-      | None -> None in    
+  let module IB = Interpret_bell.Make(Config) in
+  let bell_info = match bell_model with
+  | Some m -> Some (IB.interpret_bell m)
+  | None -> None in    
 
+  let from_file =
     let module T = ParseTest.Top (Config) in
     T.from_file bell_info in
 

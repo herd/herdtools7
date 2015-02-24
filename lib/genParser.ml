@@ -264,16 +264,10 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
 
     let check_instruction i bell_info = 
       let id,annot_list = A.get_id_and_list i in
-      if id = "R" then
-	check_annots "R" annot_list bell_info i
-      else if id = "W" then
-	check_annots "W" annot_list bell_info i
-      else if id = "F" then
-	check_annots "F" annot_list bell_info i
-      else if id = "RMW" then
-	check_annots "RMW" annot_list bell_info i
-      else 
-	()
+      match id with
+      | "R"|"W"|"F"|"RMW" ->
+	  check_annots id annot_list bell_info i          
+      | _ -> ()
 
     let check_bell_test parsed bi = 
       (* checking instructions *)
@@ -288,14 +282,14 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
 	| Some b -> b
 	| None -> Warn.fatal "Error getting bell information from test"
       in
-      (match test_bi.Bell_info.regions with 
+      begin match test_bi.Bell_info.regions with 
       | Some r -> check_regions r bi
       | _ -> ()
-      );
-      (match test_bi.Bell_info.scopes with 
+      end ;
+      begin match test_bi.Bell_info.scopes with 
       | Some s -> check_scopes s bi	  
       | _ -> ()
-      );
+      end ;
 
 
   end

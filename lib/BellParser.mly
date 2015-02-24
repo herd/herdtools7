@@ -17,7 +17,6 @@
 
 module Bell = BellBase
 open Bell
-open Printf
     
 %}
 
@@ -73,7 +72,7 @@ instr:
 | READ LPAR annot_list RPAR reg COMMA LBRAC roa RBRAC
   { Pld($5, $8, $3) }
 
-| WRITE LPAR annot_list RPAR LBRAC roa RBRAC COMMA roi 
+ | WRITE LPAR annot_list RPAR LBRAC roa RBRAC COMMA roi 
  { Pst($6, $9, $3) }
 
 | RMW DOT rmw2_op LPAR annot_list RPAR reg COMMA LBRAC roa RBRAC COMMA roi
@@ -148,7 +147,6 @@ memory_map:
 
 proc_list_sc:
 | PROC proc_list_sc {$1::$2}
-| PROC {[$1]}
 | {[]}
 
 scope_tree_list:

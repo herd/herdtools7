@@ -282,9 +282,7 @@ let _get_reg_list _ins = ([], [])
 let get_id_and_list i = match i with
   | Pld(_,_,s) -> ("R",s)
   | Pst(_,_,s) -> ("W",s)
-  | Pfence s -> (match s with 
-    | Fence (s) -> ("F",s)      
-  )
+  | Pfence (Fence s) -> ("F",s)      
   | Prmw2_op(_,_,_,_,s) | Prmw3_op(_,_,_,_,_,s) ->
     ("RMW",s)
     (* flag value and empty list *)

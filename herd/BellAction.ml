@@ -13,7 +13,6 @@
 (*********************************************************************)
 
 (** Implementation of the action interface for Bell *)
-open Printf
 
 module Make (A : Arch.S) : sig
 
@@ -129,7 +128,7 @@ end = struct
     | Barrier _ -> true
     | _ -> false
 
-    let barrier_of a = None
+    let barrier_of _a = None
 
     let same_barrier_id _ _ = false
 
@@ -184,17 +183,6 @@ end = struct
       | Access(_,_,_,_,s)
       | Barrier(s) -> (list_contains s st)	
       | _ -> false
-
-    let bell_fence_rel st ac = match ac with
-      | Barrier(s) -> List.mem st s
-      | _ -> false
-
-    let replace al s = 
-      List.map (fun annot ->
-	if List.mem_assoc annot al then
-	  List.assoc annot al
-	else 
-	  annot) s
 
     let pp_isync = ""
     let is_isync _a = false

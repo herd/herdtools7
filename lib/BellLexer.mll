@@ -19,9 +19,7 @@ open LexMisc
 open BellParser
 module Bell = BellBase
 module LU = LexUtils.Make(O)
-open Printf
 
-let counter : int ref = ref 0
 }
 
 

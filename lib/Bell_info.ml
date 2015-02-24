@@ -19,13 +19,25 @@ open Printf
 (* first start off with the event annotations, keep them
    as strings to be generic  *)
 type event_type = string
-let pp_event_type et = sprintf "%s" et
 
 type annotation = string
-let pp_annotation an = sprintf "%s" an
 
 type annot_set = annotation list
 let pp_annot_set ans = "{"^(String.concat "," ans)^"}"
+
+(*********************************************************************)
+(*                        Herd                                       *)
+(*                                                                   *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                   *)
+(* Jade Alglave, University College London, UK.                      *)
+(* John Wickerson, Imperial College London, UK.                      *)
+(* Tyler Sorensen, University College London                         *)
+(*                                                                   *)
+(*  Copyright 2013 Institut National de Recherche en Informatique et *)
+(*  en Automatique and the authors. All rights reserved.             *)
+(*  This file is distributed  under the terms of the Lesser GNU      *)
+(*  General Public License.                                          *)
+(*********************************************************************)
 
 type annot_group = annot_set list
 let pp_annot_group ag = 
@@ -36,13 +48,14 @@ let flatten_annot_group ag =
   List.flatten ag
 
 type event_dec = event_type * (annot_group list)
+
 let pp_event_dec ed = 
   let t,l = ed in
   let mapped = List.map (fun x -> pp_annot_group x) l in
   t^": "^(String.concat ("\n"^t^": ") mapped)
 
 let flatten_event_dec ed =
-  let id,l = ed in
+  let _,l = ed in
   let tmp = List.map (fun x -> flatten_annot_group x) l in
   List.flatten tmp
 
@@ -58,10 +71,8 @@ let flatten_all_event_decs aed =
 (* keep relation declarations simple for now until we
    understand them better and what we want to do with them *)
 type relation_type = string
-let pp_relation_type et = sprintf "%s" et
 
 type relation_annot = string
-let pp_rel_annot an = sprintf "%s" an
 
 type relation_annot_set = relation_annot list
 let pp_rel_annot_set ans = "{"^(String.concat "," ans)^"}"
@@ -72,7 +83,7 @@ let pp_rel_dec rd =
   sprintf "%s %s" t (pp_rel_annot_set l)
 
 let flatten_rel_dec rd = 
-  let id,l = rd in
+  let _,l = rd in
   l
 
 type all_relation_decs = relation_dec list
@@ -144,22 +155,19 @@ let check_decs check known msg =
     if not (List.mem k known) then 
       Warn.user_error msg k) check 
 
-
-module SS = Set.Make(String)
-
-let list_to_set s = 
-  List.fold_left (fun set elem -> SS.add elem set) SS.empty (s)
+let list_to_set s = StringSet.of_list s
 
 
 (* builds bell info and does some sanity checks *)
 (* could do some more error checking here, but I'll save it
    for later. For example, we probably want to make sets and 
    relations are disjoint *)
+
 let build_bell_info sets rels orders = 
   check_decs sets known_sets "I do not know what to do with set %s";
   check_decs rels known_relations "I do not know what to do with relation %s";
   check_decs orders known_orders "I do not know what to do with order %s";
-  let all_events = SS.elements 
+  let all_events = StringSet.elements 
     (list_to_set 
        (flatten_all_event_decs sets)) in  
   {
@@ -204,7 +212,7 @@ let check_regions r bi =
   else
     let regions = List.assoc "regions" bi.events in
     let flattened = flatten_event_dec ("",regions) in    
-    let checked = List.map (fun (id,reg) -> 
+    let checked = List.map (fun (_,reg) -> 
       List.mem reg flattened) r in
     List.fold_left (fun acc x -> acc && x) true checked 
 
@@ -260,16 +268,16 @@ let get_mem_annots bi =
   let reads = flatten_event_dec (get_assoc_event "R" bi.events) in
   let writes = flatten_event_dec (get_assoc_event "W" bi.events) in
   let fences = flatten_event_dec (get_assoc_event "F" bi.events) in
-  let unique = SS.elements (list_to_set (reads@writes@fences))
+  let unique = StringSet.elements (list_to_set (reads@writes@fences))
   in unique
     
 let get_region_sets bi = 
-  SS.elements 
+  StringSet.elements 
     (list_to_set 
        (flatten_event_dec (get_assoc_event "regions" bi.events)))
   
-let get_scope_rels bi = 
-  SS.elements
+let get_scope_rels  bi = 
+  StringSet.elements
     (list_to_set
        (flatten_rel_dec (get_assoc_rel "scopes" bi.relations))) 
 

@@ -66,7 +66,7 @@ module type S = sig
     S.test ->
     ks ->
     V.env ->
-    (StringMap.key * S.event_rel) list Lazy.t ->
+    (string * S.event_rel) list Lazy.t ->
     (st -> 'a -> 'a) -> 'a -> 'a
 
 end
