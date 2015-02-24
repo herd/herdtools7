@@ -284,13 +284,7 @@ module Top (C:Config) = struct
 	  let parser = BellParser.main
         end in
         let module BellS = BellSem.Make(C)(SymbValue) in
-        let module BellBarrier = struct
-          type a = Bell.barrier
-          type b = string list
-          let a_to_b a = match a with
-            | Bell.Fence(s) -> s	    
-        end in
-        let module BellM = BellMem.Make(ModelConfig)(BellS) (BellBarrier) in
+        let module BellM = BellMem.Make(ModelConfig)(BellS) in
         let module P = GenParser.Make (C) (Bell) (BellLexParse) in
         let module X = Make (BellS) (P) (BellM) in 
         X.run name chan env splitted bell_info

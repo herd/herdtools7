@@ -62,7 +62,7 @@ let parse s = match s with
 | "GPU_PTX" -> Some `GPU_PTX
 | "C" -> Some `C
 | "OpenCL" -> Some `OpenCL
-| "Bell" -> Some `Bell
+| "Bell"|"BELL" -> Some `Bell
 | _ -> None
 
 let lex s = match parse s with

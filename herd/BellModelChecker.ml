@@ -22,7 +22,6 @@ end
 module Make
     (O:Config)
     (S:Sem.Semantics)
-    (B:AllBarrier.S with type a = S.barrier)
     =
   struct
     module I = Interpreter.Make(O)(S)

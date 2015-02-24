@@ -58,6 +58,9 @@ module type S = sig
   (event, relation, and order declarations)
   This seems like the least intrusive method for now, but 
   maybe others have a better idea on how to incorporate?
+  LUC> Mutable state is dangerous, given the way the interpreter work,
+  LUC> Some constructs (such as with .... from ...) have to  restore
+  LUC> the old state!
 *)
 
     val event_declarations : (string * (string list list list)) list ref
