@@ -43,10 +43,6 @@ module type S = sig
 
   type bell_dec
 
-  val extract_bell_dec :
-      bell_dec ->
-        event_desc bds * rel_desc bds  * order_desc bds
-
 (* State of interpreter *)
 
   type st = {
@@ -57,6 +53,11 @@ module type S = sig
       ks : ks ;
       bell_dec : bell_dec ;
   }
+
+  val extract_bell_dec :
+      st ->
+        event_desc bds * rel_desc bds  * order_desc bds
+
 
   val show_to_vbpp :
     st -> (StringMap.key * S.event_rel) list
@@ -376,11 +377,6 @@ module Make
         with Not_found -> [] in
       StringMap.add x (mk v old) m
 
-    let extract_bell_dec {event_dec; rel_dec; order_dec; } =
-      StringMap.bindings event_dec,
-      StringMap.bindings rel_dec,
-      StringMap.bindings order_dec
-      
     type st = {
         env : V.env ;
         show : S.event_rel StringMap.t Lazy.t ;
@@ -389,6 +385,13 @@ module Make
         ks : ks ;
         bell_dec : bell_dec;
       }
+
+    let extract_bell_dec st =
+      let {event_dec; rel_dec; order_dec; } = st.bell_dec in
+      StringMap.bindings event_dec,
+      StringMap.bindings rel_dec,
+      StringMap.bindings order_dec
+      
 
 (* Type of eval env *)
     module EV = struct

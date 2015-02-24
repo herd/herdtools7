@@ -75,7 +75,7 @@ module Make (C: Config) = struct
     (* Continuation: notice that it should be called once at most *)
     let function_arg =
       (fun st res -> match res with
-      | None -> Some (I.extract_bell_dec st.I.bell_dec)
+      | None -> Some (I.extract_bell_dec st)
       | Some _ -> assert false) in
 
     (* call the interpreter  and collect bell info *)
