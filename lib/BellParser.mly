@@ -29,14 +29,14 @@ open Bell
 %token <string> REGION
 %token <int> PROC
 
-%type <int list * (BellBase.pseudo) list list * MiscParser.gpu_data option * Bell_info.bell_test_info option > main 
+%type <int list * (BellBase.pseudo) list list * MiscParser.gpu_data option * Bell_info.test option > main 
 %start  main
 
 %nonassoc SEMI
 
 %token SCOPETREE GLOBAL SHARED DEVICE KERNEL CTA WARP THREAD COMMA PTX_REG_DEC 
 
-%type <Bell_info.bell_test_info> scopes_and_memory_map
+%type <Bell_info.test> scopes_and_memory_map
 %%
 
 main:

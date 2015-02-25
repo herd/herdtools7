@@ -126,7 +126,7 @@ type ('i, 'p, 'c, 'loc) result =
       condition : 'c ;
       locations : ('loc * run_type) list ;
       gpu_data : gpu_data option ;
-      bell_info : Bell_info.bell_test_info option
+      bell_info : Bell_info.test option
 }
 
 (* Easier to handle *)
@@ -146,6 +146,13 @@ type ('loc,'v,'code) r4 =
 type 'pseudo t =
     (state, (int * 'pseudo list) list, constr, location) result
 
+(* Add empty GPU/Bell info to machine parsers *)
+
+let mach2generic parser lexer buff =
+    let procs,code = parser lexer buff in
+    procs,code,None,None
+
+(* get hash from info fields *)
 let get_hash p =
   try Some (List.assoc "Hash" p.info)
   with Not_found -> None

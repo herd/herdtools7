@@ -50,7 +50,7 @@ end = struct
 
           module L = PPCLexer.Make(LexConf)
 	  let lexer = L.token
-	  let parser = PPCParser.main
+	  let parser = MiscParser.mach2generic PPCParser.main
         end in
         let module X = Make (PPC) (PPCLexParse) in
         X.zyva chan splitted
@@ -62,7 +62,7 @@ end = struct
 
           module L = X86Lexer.Make(LexConf)
 	  let lexer = L.token
-	  let parser = X86Parser.main
+	  let parser = MiscParser.mach2generic X86Parser.main
         end in
         let module X = Make (X86) (X86LexParse) in
         X.zyva chan splitted
@@ -74,7 +74,7 @@ end = struct
 
           module L = ARMLexer.Make(LexConf)
 	  let lexer = L.token
-	  let parser = ARMParser.main
+	  let parser = MiscParser.mach2generic ARMParser.main
         end in
         let module X = Make (ARM) (ARMLexParse) in
         X.zyva chan splitted
@@ -86,7 +86,7 @@ end = struct
 
           module L = MIPSLexer.Make(LexConf)
 	  let lexer = L.token
-	  let parser = MIPSParser.main
+	  let parser = MiscParser.mach2generic MIPSParser.main
         end in
         let module X = Make (MIPS) (MIPSLexParse) in
         X.zyva chan splitted
@@ -158,7 +158,7 @@ module Tops
 
               module L = PPCLexer.Make(LexConf)
 	      let lexer = L.token
-	      let parser = PPCParser.main
+	      let parser = MiscParser.mach2generic PPCParser.main
             end in
             let module X = Make (PPC) (PPCLexParse) in
             X.zyva 
@@ -170,7 +170,7 @@ module Tops
 
               module L = X86Lexer.Make(LexConf)
 	      let lexer = L.token
-	      let parser = X86Parser.main
+	      let parser = MiscParser.mach2generic X86Parser.main
             end in
             let module X = Make (X86) (X86LexParse) in
             X.zyva
@@ -182,7 +182,7 @@ module Tops
 
               module L = ARMLexer.Make(LexConf)
 	      let lexer = L.token
-	      let parser = ARMParser.main
+	      let parser = MiscParser.mach2generic ARMParser.main
             end in
             let module X = Make (ARM) (ARMLexParse) in
             X.zyva
@@ -194,7 +194,7 @@ module Tops
 
               module L = MIPSLexer.Make(LexConf)
 	      let lexer = L.token
-	      let parser = MIPSParser.main
+	      let parser = MiscParser.mach2generic MIPSParser.main
             end in
             let module X = Make (MIPS) (MIPSLexParse) in
             X.zyva

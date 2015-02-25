@@ -33,7 +33,8 @@ module type LexParse = sig
   val lexer : Lexing.lexbuf -> token
   val parser :
        (Lexing.lexbuf -> token) -> Lexing.lexbuf ->
-	 int list * instruction list list * MiscParser.gpu_data option * Bell_info.bell_test_info option
+	 int list * instruction list list *
+           MiscParser.gpu_data option * Bell_info.test option
 end
 
 module type S = sig
@@ -48,8 +49,6 @@ module type S = sig
   val parse_cond : Lexing.lexbuf -> MiscParser.constr
 (* Main parser for memevents and litmus *)
   val parse : in_channel -> Splitter.result ->  pseudo MiscParser.t
-
-  val check_bell_test : pseudo MiscParser.t -> Bell_info.bell_model_info -> unit
 end
 
 (* Build a generic parser *)

@@ -109,7 +109,7 @@ let pp_all_order_decs aod =
   let tmp = List.map (fun x -> pp_order_dec x) aod in
   String.concat "\n" tmp  
 
-type bell_model_info = {
+type model = {
   all_events: annot_set;
   events: all_event_decs;
   relations: all_relation_decs;
@@ -141,7 +141,7 @@ let rec pp_scopes s =
     let concat = String.concat " " tmp in
     sprintf "(%s %s)" s concat
 
-type bell_test_info = {
+type test = {
   regions : mem_space_map option;
   scopes : scopes option;
 }

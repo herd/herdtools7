@@ -70,7 +70,7 @@ type ('i, 'p, 'c, 'loc) result =
       condition : 'c ;
       locations : ('loc * run_type) list ;
       gpu_data : gpu_data option ;
-      bell_info : Bell_info.bell_test_info option ;
+      bell_info : Bell_info.test option ;
 }
 
 (* Easier to handle *)
@@ -90,6 +90,9 @@ type ('loc,'v,'code) r4 =
 type 'pseudo t =
     (state, (int * 'pseudo list) list, constr, location) result
 
-
+(* Add empty GPU/Bell info to machine parsers *)
+val mach2generic :
+  ('a -> 'b -> 'c * 'd) ->
+    'a -> 'b -> 'c * 'd * 'e option * 'f option
 (* Extract hash *)
 val get_hash :  ('i, 'p, 'c, 'loc) result -> string option

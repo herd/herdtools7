@@ -13,14 +13,8 @@
 (*********************************************************************)
 
 type event_type = string
-(* val pp_event_type : string -> string *)
-
 type annotation = string
-(* val pp_annotation : string -> string *)
-
 type annot_set = annotation list
-(* val pp_annot_set : string list -> string *)
-
 type annot_group = annot_set list
 type event_dec = event_type * annot_group list
 
@@ -41,7 +35,7 @@ type all_order_decs = order_dec list
 
 val pp_all_order_decs : all_order_decs -> string
 
-type bell_model_info = {
+type model = {
   all_events : annot_set;
   events : all_event_decs;
   relations : all_relation_decs;
@@ -54,7 +48,7 @@ val pp_mem_map : (string * string) list -> string
 type scopes = Leaf of string * int list | Children of string * scopes list
 val pp_scopes : scopes -> string
 
-type bell_test_info = {
+type test = {
   regions : mem_space_map option;
   scopes : scopes option;
 }
@@ -66,12 +60,12 @@ val known_orders : string list
 *)
 
 val build_bell_info :
-  all_event_decs -> all_relation_decs -> all_order_decs -> bell_model_info
+  all_event_decs -> all_relation_decs -> all_order_decs -> model
 
-val check_annots : event_type -> annotation list -> bell_model_info -> bool
-val check_regions : ('a * annotation) list -> bell_model_info -> bool
-val check_scopes : scopes -> bell_model_info -> bool
+val check_annots : event_type -> annotation list -> model -> bool
+val check_regions : ('a * annotation) list -> model -> bool
+val check_scopes : scopes -> model -> bool
 
-val get_mem_annots : bell_model_info -> string list
-val get_region_sets : bell_model_info -> string list
-val get_scope_rels : bell_model_info -> string list
+val get_mem_annots : model -> string list
+val get_region_sets : model -> string list
+val get_scope_rels : model -> string list

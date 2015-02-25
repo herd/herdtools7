@@ -15,6 +15,7 @@
 
 module type Config = sig
   val m : AST.pp_t
+  val bell_model_info : Bell_info.model option
   include Model.Config
 end
 
@@ -47,6 +48,7 @@ module Make
 
     module MU = ModelUtils.Make(O)(S)
 
+(* Enter here *)
     let check_event_structure test conc kont res =
       let pr = lazy (MU.make_procrels E.is_isync conc) in
       let vb_pp =
@@ -139,6 +141,23 @@ module Make
                let pred e = p e.E.action in
                k,lazy (U.po_fence_po conc.S.po pred))
              E.Act.arch_fences) in
+(* Event sets from bell_info *)
+      let m =
+        match O.bell_model_info with
+        | None -> m
+        | Some bi ->
+            I.add_sets m
+              (List.map
+                 (fun annot ->
+                   let tag = String.uppercase annot in
+                   tag,
+                   lazy begin
+                     let p e =
+                       E.Act.annot_in_list annot e.E.action in
+                     E.EventSet.filter p evts
+                   end)
+                 bi.Bell_info.all_events) in
+(* Now call interpreter, with or without generated co *)
       if withco then
         let process_co co0 res =
           let co = S.tr co0 in

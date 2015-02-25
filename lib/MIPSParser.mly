@@ -32,14 +32,14 @@ open MIPSBase
 %token B BEQ BNE BLEZ BGTZ BLTZ BGEZ
 
 
-%type <int list * (MIPSBase.pseudo) list list * MiscParser.gpu_data option * Bell_info.bell_test_info option> main 
+%type <int list * (MIPSBase.pseudo) list list> main 
 %start  main
 
 %nonassoc SEMI
 %%
 
 main:
-| semi_opt proc_list iol_list EOF { $2,$3,None,None }
+| semi_opt proc_list iol_list EOF { $2,$3 }
 
 semi_opt:
 | { () }

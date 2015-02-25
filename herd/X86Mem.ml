@@ -50,6 +50,7 @@ module S = S
           MachModelChecker.Make
             (struct
               let m = m
+              let bell_model_info = None
               include ModelConfig
              end)(S) in
         X.check_event_structure test

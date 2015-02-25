@@ -26,6 +26,7 @@ module type S = sig
 
 (* List bindings *)
   val bindings : 'a t -> (key * 'a) list
+  val add_bindings : (key * 'a) list -> 'a t -> 'a t
   val from_bindings :  (key * 'a) list -> 'a t
 end
 
@@ -55,6 +56,8 @@ module Make(O:Set.OrderedType) : S with type key = O.t =
         m1 m2
 
     let bindings m = fold (fun k v xs -> (k,v)::xs) m []
-    let from_bindings bds =
-      List.fold_left (fun m (k,v) -> add k v m) empty bds
+    let add_bindings bds m =
+      List.fold_left (fun m (k,v) -> add k v m) m bds
+    let from_bindings bds = add_bindings bds empty
+        
   end

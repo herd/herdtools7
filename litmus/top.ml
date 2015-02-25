@@ -455,7 +455,7 @@ end = struct
           type token = PPCParser.token
           module Lexer = PPCLexer.Make(LexConfig)
           let lexer = Lexer.token
-          let parser = PPCParser.main
+          let parser = MiscParser.mach2generic PPCParser.main
         end in
         let module Compile = PPCCompile.Make(V)(OC) in
         let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
@@ -468,7 +468,7 @@ end = struct
           type token = PPCGenParser.token
           module Lexer = PPCGenLexer.Make(LexConfig)
           let lexer = Lexer.token
-          let parser = PPCGenParser.main
+          let parser = MiscParser.mach2generic PPCGenParser.main
         end in
             let module Compile = PPCGenCompile.Make(V)(OC) in
             let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
@@ -489,7 +489,7 @@ end = struct
               type token = X86Parser.token
               module Lexer = X86Lexer.Make(LexConfig)
               let lexer = Lexer.token
-              let parser = X86Parser.main
+              let parser = MiscParser.mach2generic X86Parser.main
             end in
             let module Compile = X86Compile.Make(V)(OC) in
             let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
@@ -502,7 +502,7 @@ end = struct
               type token = ARMParser.token
               module Lexer = ARMLexer.Make(LexConfig)
               let lexer = Lexer.token
-              let parser = ARMParser.main
+              let parser = MiscParser.mach2generic ARMParser.main
             end in
             let module Compile = ARMCompile.Make(V)(OC) in
             let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
@@ -515,7 +515,7 @@ end = struct
               type token = MIPSParser.token
               module Lexer = MIPSLexer.Make(LexConfig)
               let lexer = Lexer.token
-              let parser = MIPSParser.main
+              let parser = MiscParser.mach2generic MIPSParser.main
             end in
             let module Compile = MIPSCompile.Make(V)(OC) in
             let module X = Make(Cfg)(Arch')(LexParse)(Compile) in

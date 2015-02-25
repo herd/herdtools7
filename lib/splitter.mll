@@ -183,6 +183,7 @@ let split name chan =
 	Printf.eprintf "%a: splitter error in sublexer %s\n"
 	  Pos.pp_pos loc msg ;
 	raise Misc.Exit (* silent, message printed above *)
+    | Assert_failure _ as e ->  raise e
     | e ->
 	Printf.eprintf
 	  "%a: Uncaught exception in splitter %s\n"
