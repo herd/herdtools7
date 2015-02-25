@@ -29,6 +29,19 @@ module Make
     module E = S.E
     module U = MemUtils.Make(S)
 
+(* Local utility: bell event selection *)
+    let add_bell_events m pred evts annots =
+      I.add_sets m
+        (List.map
+           (fun annot ->
+             let tag = String.uppercase annot in
+             tag,
+             lazy begin
+               E.EventSet.filter (pred annot) evts
+             end)
+           annots)
+
+(* Intepreter call *)
     let (pp,(opts,_,prog)) = O.m
     let withco = opts.ModelOption.co
 
@@ -145,18 +158,49 @@ module Make
       let m =
         match O.bell_model_info with
         | None -> m
+        | Some bi ->            
+            let m =
+              add_bell_events m
+                (fun annot e -> E.Act.annot_in_list annot e.E.action)
+                evts
+                (Bell_info.get_mem_annots bi) in
+            let m =
+              match test.Test.bell_info with
+              (* No region in test, no event sets *)
+              | None|Some {Bell_info.regions=None;_} -> m
+              | Some {Bell_info.regions=Some regions;_} ->
+                  add_bell_events m
+                    (fun region e -> match E.Act.location_of e.E.action with
+                    | None -> false
+                    | Some x ->
+                       List.mem (E.Act.A.pp_location x, region) regions)
+                    evts
+                    (Bell_info.get_region_sets bi) in
+            m in
+(* Scope relations from bell info *)
+      let m =
+        match O.bell_model_info with
+        | None -> m
         | Some bi ->
-            I.add_sets m
-              (List.map
-                 (fun annot ->
-                   let tag = String.uppercase annot in
-                   tag,
-                   lazy begin
-                     let p e =
-                       E.Act.annot_in_list annot e.E.action in
-                     E.EventSet.filter p evts
-                   end)
-                 bi.Bell_info.all_events) in
+            let scopes =
+              match test.Test.bell_info with
+              | None -> assert false (* must be here as, O.bell_mode_info is *)
+              | Some tbi -> tbi.Bell_info.scopes in
+            begin match scopes with
+ (* If no scope definition in test, do not build relations, will fail
+    later if the model attempts to use scope relations *)
+            | None -> m
+ (* Otherwise, build scope relations *)
+            | Some scopes ->
+                I.add_rels m
+                  (List.map
+                     (fun scope ->
+                       scope,
+                       lazy begin
+                         U.int_scope_bell scope scopes (Lazy.force unv)
+                       end)
+                     (Bell_info.get_scope_rels bi))
+            end in
 (* Now call interpreter, with or without generated co *)
       if withco then
         let process_co co0 res =
