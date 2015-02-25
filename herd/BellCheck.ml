@@ -25,9 +25,10 @@ module Make(C:sig val bell_model_info : Bell_info.model option end)(A:Arch.S) =
 
   let check_annots t annot_list bell_info i = 
     let valid_annots = Bell_info.check_annots t annot_list bell_info
-    in      
+    in
     if not valid_annots then
-      Warn.user_error "unable to match instruction in test with bell declaration: %s" 
+      Warn.user_error
+        "unable to match instruction in test with bell declaration: %s" 
 	(A.dump_instruction i)
 
   let check_instruction i bell_info = 

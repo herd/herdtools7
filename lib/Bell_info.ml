@@ -14,6 +14,11 @@
 
 open Printf
 
+let dbg = false
+(* Disable checks that I do not understand yet *)
+
+let docheck = false
+
 (* For the bell model and test info *)
 
 (* first start off with the event annotations, keep them
@@ -163,8 +168,6 @@ let list_to_set s = StringSet.of_list s
    for later. For example, we probably want to make sets and 
    relations are disjoint *)
 
-let dbg = false
-
 let build_bell_info sets rels orders = 
   if dbg then begin
     eprintf "EVENTS:\n%s\n" (pp_all_event_decs sets) ;
@@ -190,7 +193,10 @@ let rec zip lst1 lst2 = match lst1,lst2 with
   | _, []-> []
   | (x::xs),(y::ys) -> (x,y) :: (zip xs ys);;
 
-let check_annots t al bi = 
+(* LUC> Not working ??? *)
+let check_annots t al bi =
+  if not docheck then true
+  else
   let check_annot_group ag al =
     let zipped = zip ag al in
     let matched = List.map (fun (l,a) ->
@@ -224,7 +230,8 @@ let check_regions r bi =
     List.fold_left (fun acc x -> acc && x) true checked 
 
 let check_scopes s bi = 
-
+  if not docheck then true
+  else
   let above_pred n scopes above scope_order = 
     let f = List.mem n scopes in
     let s = match above with 
@@ -270,18 +277,20 @@ let get_assoc_rel a l =
   else 
     ("",[])  
 
+
+
+let evts2set tag bi =
+  StringSet.of_list (flatten_event_dec (get_assoc_event tag bi.events))
       
 let get_mem_annots bi = 
-  let reads = flatten_event_dec (get_assoc_event "R" bi.events) in
-  let writes = flatten_event_dec (get_assoc_event "W" bi.events) in
-  let fences = flatten_event_dec (get_assoc_event "F" bi.events) in
-  let unique = StringSet.elements (list_to_set (reads@writes@fences))
-  in unique
+  let reads = evts2set "R" bi
+  and writes = evts2set "W" bi
+  and fences = evts2set "F" bi
+  and rmw = evts2set "RMW" bi in
+  let all = StringSet.unions [reads;writes;fences;rmw;] in
+  StringSet.elements all
     
-let get_region_sets bi = 
-  StringSet.elements 
-    (list_to_set 
-       (flatten_event_dec (get_assoc_event "regions" bi.events)))
+let get_region_sets bi =  StringSet.elements (evts2set "regions" bi)
   
 let get_scope_rels  bi = 
   StringSet.elements

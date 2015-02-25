@@ -107,20 +107,20 @@ module Make
   This could also be passed around, this seems like the least
   intrusive method for now. When integrated, it can be discussed
   what we really do with it.
-*)
+ *)
 
-  let _debug_proc chan p = fprintf chan "%i" p
-  let debug_event chan e = fprintf chan "%s" (E.pp_eiid e)
-  let debug_set chan s =
-    output_char chan '{' ;
-    E.EventSet.pp chan "," debug_event s ;
-    output_char chan '}'
+    let _debug_proc chan p = fprintf chan "%i" p
+    let debug_event chan e = fprintf chan "%s" (E.pp_eiid e)
+    let debug_set chan s =
+      output_char chan '{' ;
+      E.EventSet.pp chan "," debug_event s ;
+      output_char chan '}'
 
-  let debug_rel chan r =
-    E.EventRel.pp chan ","
-      (fun chan (e1,e2) -> fprintf chan "%a -> %a"
-          debug_event e1 debug_event e2)
-      r
+    let debug_rel chan r =
+      E.EventRel.pp chan ","
+        (fun chan (e1,e2) -> fprintf chan "%a -> %a"
+            debug_event e1 debug_event e2)
+        r
 
     type ks =
         { id : S.event_rel Lazy.t; unv : S.event_rel Lazy.t;
@@ -129,10 +129,14 @@ module Make
 (* Internal typing *)
     type typ =
       | TEmpty | TEvents | TRel | TTag of string |TClo | TProc | TSet of typ
+      | TAnyTag
 
     let rec eq_type t1 t2 = match t1,t2 with
     | TEmpty,TSet _ -> Some t2
     | TSet _,TEmpty -> Some t1
+    | TAnyTag,TTag _
+    | TTag _,TAnyTag -> Some TAnyTag
+    | TTag s1,TTag s2 when s1 <> s2 -> Some TAnyTag
     | TSet t1,TSet t2 ->
         begin match eq_type t1 t2 with
         | None -> None
@@ -154,6 +158,7 @@ module Make
       | TEvents -> "event set"
       | TRel -> "rel"
       | TTag ty -> ty
+      | TAnyTag -> "anytag"
       | TClo -> "closure"
       | TProc -> "procedure"
       | TSet elt -> sprintf "%s set" (pp_typ elt)
@@ -249,7 +254,7 @@ module Make
       | V.Empty,Set s -> E.EventSet.compare E.EventSet.empty s
       | Set s,V.Empty -> E.EventSet.compare s E.EventSet.empty
 (* Legitimate cmp *)
-      | Tag (t1,s1), Tag (t2,s2) when t1=t2 ->
+      | Tag (_,s1), Tag (_,s2) ->
           String.compare s1 s2
       | ValSet (_,s1),ValSet (_,s2) -> ValSet.compare s1 s2
       | Rel r1,Rel r2 -> E.EventRel.compare r1 r2
@@ -341,7 +346,7 @@ module Make
     type order_dec = order_desc StringMap.t
 
     type 'a bds = (string * 'a) list
-        
+          
     type bell_dec =
         { event_dec : event_dec;
           rel_dec : rel_dec;
@@ -372,7 +377,7 @@ module Make
       StringMap.bindings event_dec,
       StringMap.bindings rel_dec,
       StringMap.bindings order_dec
-      
+        
 
 (* Type of eval env *)
     module EV = struct
@@ -465,19 +470,19 @@ module Make
 (* check if memory location is in certain memory region *)
     let mem_region_match target mem_map e =
       let is_mem_map = match mem_map with 
-	| Some _ -> true
-	| None -> false in
+      | Some _ -> true
+      | None -> false in
       if not is_mem_map then 
 	false
       else
 	let mem_map = match mem_map with
-	  | Some m -> m
-	  | None -> Warn.fatal "error getting memory map"
+	| Some m -> m
+	| None -> Warn.fatal "error getting memory map"
 	in
 	match (E.Act.location_of e.E.action) with
 	| Some x -> List.mem (E.Act.A.pp_location x, target) mem_map
 	| None -> false
-	  
+	      
 
 
 
@@ -626,10 +631,10 @@ module Make
       let rec eval_loc env e = get_loc e,eval env e
 
       and eval env = function
-      | Konst (_,Empty SET) -> V.Empty (* Polymorphic empty *)
-      | Konst (_,Empty RLN) -> empty_rel
-      | Konst (_,Universe _) -> Unv
-      | AST.Tag (loc,s) ->
+        | Konst (_,Empty SET) -> V.Empty (* Polymorphic empty *)
+        | Konst (_,Empty RLN) -> empty_rel
+        | Konst (_,Universe _) -> Unv
+        | AST.Tag (loc,s) ->
             begin try
               V.Tag (StringMap.find s env.EV.env.tags,s)
             with Not_found ->
@@ -966,13 +971,13 @@ module Make
         let rec do_rec bds = match bds with
         | [] -> env_bd.EV.env
         | (k,e)::bds ->
-          (*
-            begin match v with
-            | Rel r -> printf "Defining relation %s = {%a}.\n" k debug_rel r
-            | Set s -> printf "Defining set %s = %a.\n" k debug_set s
-            | Clo _ -> printf "Defining function %s.\n" k
-            end;
-           *)
+            (*
+              begin match v with
+              | Rel r -> printf "Defining relation %s = {%a}.\n" k debug_rel r
+              | Set s -> printf "Defining set %s = %a.\n" k debug_set s
+              | Clo _ -> printf "Defining function %s.\n" k
+              end;
+             *)
             add_val k (lazy (eval env_bd e)) (do_rec bds) in
         do_rec
 
@@ -1231,6 +1236,16 @@ module Make
               (fun env x -> StringMap.add x name env)
               env.tags xs in
           let enums = StringMap.add name xs env.enums in
+(* add a set of all tags... *)
+          let alltags =
+            lazy begin
+              let vs =
+                List.fold_left
+                  (fun k x -> ValSet.add (V.Tag (name,x)) k)
+                  ValSet.empty xs in
+              V.ValSet (TTag name,vs)
+            end in
+          let env = add_val name alltags env in
           let env = { env with tags; enums; } in
           kont { st with env;} res
       | Forall (_loc,x,e,body) ->
@@ -1267,100 +1282,100 @@ module Make
               ValSet.fold
                 (fun v res ->
                   let env = add_val x (lazy v) env0 in
-                   kont (doshowone x {st with env;}) res)
+                  kont (doshowone x {st with env;}) res)
                 vs res
           | _ -> error st.silent (get_loc e) "set expected"
           end
       | Latex _ -> kont st res
 
       | EnumSet(_loc,_name,xs) -> 
-	let test_bi = match test.Test.bell_info with
+	  let test_bi = match test.Test.bell_info with
 	  | Some t_bi -> t_bi
 	  | None ->
               Warn.user_error
                 "Using enum set requires bell info and should only be used when analyzing a bell litmus test"
-	in
-	let new_env_sets = 
-	  List.map (fun k -> 
-	    k, lazy (E.EventSet.filter (fun e -> 
-	      (mem_region_match k test_bi.Bell_info.regions e) ||(E.Act.annot_in_list k e.E.action)) st.ks.evts))
-	    xs in
-	let env = add_sets st.env new_env_sets in		
-	kont {st with env} res
+	  in
+	  let new_env_sets = 
+	    List.map (fun k -> 
+	      k, lazy (E.EventSet.filter (fun e -> 
+	        (mem_region_match k test_bi.Bell_info.regions e) ||(E.Act.annot_in_list k e.E.action)) st.ks.evts))
+	      xs in
+	  let env = add_sets st.env new_env_sets in		
+	  kont {st with env} res
 
       | EnumRel(_loc,_name,xs) -> 
-	let test_bi = match test.Test.bell_info with
+	  let test_bi = match test.Test.bell_info with
 	  | Some t_bi -> t_bi
 	  | None -> Warn.user_error "Using enum rln requires bell info"
-	in
-	let scopes = match test_bi.Bell_info.scopes with
+	  in
+	  let scopes = match test_bi.Bell_info.scopes with
 	  | Some s -> s
 	  | None -> Warn.user_error "Using enum rln requires scopes in the litmus test" 
-	in
-	let bds = 
-	  List.map (fun k ->
-	    k, lazy (U.int_scope_bell k scopes (Lazy.force st.ks.unv)))
-	    xs in
-	let env = add_rels st.env bds in
-	let st = { st with env;} in
-        let st = doshow bds st in
-	kont st res
+	  in
+	  let bds = 
+	    List.map (fun k ->
+	      k, lazy (U.int_scope_bell k scopes (Lazy.force st.ks.unv)))
+	      xs in
+	  let env = add_rels st.env bds in
+	  let st = { st with env;} in
+          let st = doshow bds st in
+	  kont st res
 
       | Event_dec(loc,v,e_list) -> 
-	let eval_expr = List.map (fun e -> eval (from_st st) e) e_list in
-	let event_sets = List.map (fun s -> 	  
-	  match s with 
-	  | ValSet(_t,vs) -> 
-	      List.map (fun vs_e -> 
-		(		
-		  match vs_e with 
-		  | V.Tag(_s1,s2) -> s2
-		  | _ -> error false loc "event declaration expected a set of tags. %s is not a tag" (pp_val s)
-		))  (ValSet.elements vs)		
-	  | _ -> error false loc "event declaration expected a set of tags. %s is not a tag" (pp_val s)
-	) eval_expr in
-        let bell_dec =
-          { st.bell_dec with
-            event_dec = add_dec Misc.cons v event_sets st.bell_dec.event_dec; } in
-        let st = { st with bell_dec;} in
-	kont st res
+	  let eval_expr = List.map (fun e -> eval (from_st st) e) e_list in
+	  let event_sets = List.map (fun s -> 	  
+	    match s with 
+	    | ValSet(_t,vs) -> 
+	        List.map (fun vs_e -> 
+		  (		
+		     match vs_e with 
+		     | V.Tag(_s1,s2) -> s2
+		     | _ -> error false loc "event declaration expected a set of tags. %s is not a tag" (pp_val s)
+		    ))  (ValSet.elements vs)		
+	    | _ -> error false loc "event declaration expected a set of tags. %s is not a tag" (pp_val s)
+	                            ) eval_expr in
+          let bell_dec =
+            { st.bell_dec with
+              event_dec = add_dec Misc.cons v event_sets st.bell_dec.event_dec; } in
+          let st = { st with bell_dec;} in
+	  kont st res
 
       | Relation_dec(loc, v, e) ->
-	let evaled = eval (from_st st) e in
-	let strs = 
-	  match evaled with
-	  | ValSet(_t,vs) -> List.map (fun vs_e -> 
-	    (		
-	      match vs_e with 
-	      | V.Tag(_s1,s2) -> s2
-	      | _ -> error false loc "relations declaration expected a set of tags. %s is not a tag" (pp_val vs_e)
-	    ))  (ValSet.elements vs)		
-	  | _ -> error false loc "event declaration expected a set of tags. %s is not a tag" (pp_val evaled)
-	in
-        let bell_dec =
-          { st.bell_dec with
-            rel_dec = add_dec (@) v strs st.bell_dec.rel_dec;} in
-        let st = { st with bell_dec;} in
-	kont st res
+	  let evaled = eval (from_st st) e in
+	  let strs = 
+	    match evaled with
+	    | ValSet(_t,vs) -> List.map (fun vs_e -> 
+	        (		
+	           match vs_e with 
+	           | V.Tag(_s1,s2) -> s2
+	           | _ -> error false loc "relations declaration expected a set of tags. %s is not a tag" (pp_val vs_e)
+	          ))  (ValSet.elements vs)		
+	    | _ -> error false loc "event declaration expected a set of tags. %s is not a tag" (pp_val evaled)
+	  in
+          let bell_dec =
+            { st.bell_dec with
+              rel_dec = add_dec (@) v strs st.bell_dec.rel_dec;} in
+          let st = { st with bell_dec;} in
+	  kont st res
 
       | Order_dec(loc,v,ep_l) ->
-	let evaled = List.map (fun (f,s) -> (eval (from_st st) f, eval (from_st st) s)) ep_l
-	in
-	let str_pairs = List.map (fun (f,s) -> 
-	  match f,s with
-	  | V.Tag(_,fs2), V.Tag(_,ss2) -> (fs2,ss2)
-	  | V.Tag _ ,_ -> error false loc "order declarations expected a set of tags. %s is not a tag" (pp_val s)
-	  | _, V.Tag _ -> error false loc "order declarations expected a set of tags. %s is not a tag" (pp_val f)
-	  | _,_ -> error false loc "order declarations expected a set of tags. %s and %s are not a tag" (pp_val f) (pp_val s)
-	) evaled in
-        let bell_dec =
-          { st.bell_dec with
-            order_dec = add_dec (@) v str_pairs st.bell_dec.order_dec;} in
-        let st = { st with bell_dec;} in
-	kont st res
+	  let evaled = List.map (fun (f,s) -> (eval (from_st st) f, eval (from_st st) s)) ep_l
+	  in
+	  let str_pairs = List.map (fun (f,s) -> 
+	    match f,s with
+	    | V.Tag(_,fs2), V.Tag(_,ss2) -> (fs2,ss2)
+	    | V.Tag _ ,_ -> error false loc "order declarations expected a set of tags. %s is not a tag" (pp_val s)
+	    | _, V.Tag _ -> error false loc "order declarations expected a set of tags. %s is not a tag" (pp_val f)
+	    | _,_ -> error false loc "order declarations expected a set of tags. %s and %s are not a tag" (pp_val f) (pp_val s)
+	                           ) evaled in
+          let bell_dec =
+            { st.bell_dec with
+              order_dec = add_dec (@) v str_pairs st.bell_dec.order_dec;} in
+          let st = { st with bell_dec;} in
+	  kont st res
 
       and do_include loc fname st kont res =
-          (* Run sub-model file *)
+        (* Run sub-model file *)
         if O.debug then warn loc "include \"%s\"" fname ;
         let module P = ParseModel.Make(LexUtils.Default) in
         let itxt,(_,_,iprog) =
@@ -1378,27 +1393,27 @@ module Make
 
       fun ks m vb_pp kont res ->
 (* Primitives *)
-      let m =
-        add_prims m
-          [
-           "partition",partition;
-           "linearisations",linearisations;
-          ] in
+        let m =
+          add_prims m
+            [
+             "partition",partition;
+             "linearisations",linearisations;
+           ] in
 (* Initial show's *)
-      let show =
-        if O.showsome then
-          lazy begin
-            let show =
-              List.fold_left
-                (fun show (tag,v) -> StringMap.add tag v show)
-                StringMap.empty (Lazy.force vb_pp) in
-            StringSet.fold
-              (fun tag show -> StringMap.add tag (find_show_rel ks m tag) show)
-              S.O.PC.doshow show
-          end else lazy StringMap.empty in
+        let show =
+          if O.showsome then
+            lazy begin
+              let show =
+                List.fold_left
+                  (fun show (tag,v) -> StringMap.add tag v show)
+                  StringMap.empty (Lazy.force vb_pp) in
+              StringSet.fold
+                (fun tag show -> StringMap.add tag (find_show_rel ks m tag) show)
+                S.O.PC.doshow show
+            end else lazy StringMap.empty in
 
-      do_include TxtLoc.none "stdlib.cat"
-      {env=m; show=show; skipped=StringSet.empty;
-       silent=false; undef=false; ks; bell_dec=empty_bell_dec; }
-        (fun st res -> run txt st prog kont res) res
+        do_include TxtLoc.none "stdlib.cat"
+          {env=m; show=show; skipped=StringSet.empty;
+           silent=false; undef=false; ks; bell_dec=empty_bell_dec; }
+          (fun st res -> run txt st prog kont res) res
   end
