@@ -59,13 +59,11 @@ type bell_test_info = {
   scopes : scopes option;
 }
 
+(*
 val known_sets : string list
 val known_relations : string list
 val known_orders : string list
-
-
-val check_decs :
-  ('a * 'b) list -> 'a list -> ('a -> unit, unit, string, 'c) format4 -> unit
+*)
 
 val build_bell_info :
   all_event_decs -> all_relation_decs -> all_order_decs -> bell_model_info

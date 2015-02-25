@@ -163,7 +163,14 @@ let list_to_set s = StringSet.of_list s
    for later. For example, we probably want to make sets and 
    relations are disjoint *)
 
+let dbg = false
+
 let build_bell_info sets rels orders = 
+  if dbg then begin
+    eprintf "EVENTS:\n%s\n" (pp_all_event_decs sets) ;
+    eprintf "REL: %s\n" (pp_all_rel_decs rels) ;
+    eprintf "ORDER: %s\n" (pp_all_order_decs orders) ;
+  end ;
   check_decs sets known_sets "I do not know what to do with set %s";
   check_decs rels known_relations "I do not know what to do with relation %s";
   check_decs orders known_orders "I do not know what to do with order %s";
