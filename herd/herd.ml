@@ -388,27 +388,31 @@ let model,model_opts = match !model with
     begin try
       let _,(b,_,_) as r = P.parse fname in
       Some (Model.Generic r),b
-    with Misc.Exit ->
-      eprintf "Failure of generic model parsing\n" ;
-      exit 2 end
+    with
+    | Misc.Fatal msg -> eprintf "%s: %s\n" prog msg ; exit 2
+    | Misc.Exit ->
+        eprintf "Failure of generic model parsing\n" ;
+        exit 2 end
 | Some _ as m -> m,ModelOption.compat
 | None -> None,ModelOption.default
 
 (* Read bell model, if any *)
-let bell_model,_ = match !Opts.bell with
-| Some (fname) ->
+let bell_model = match !Opts.bell with
+| Some fname ->
     let module P =
       ParseModel.Make
         (struct
           let debug = !debug.Debug.lexer
         end) in
     begin try
-      let _,(b,_,_) as r = P.parse fname in
-      Some (Model.Generic r),b
-    with Misc.Exit ->
-      eprintf "Failure of generic model parsing for bell\n" ;
-      exit 2 end
-| None -> None,ModelOption.default
+      let r = P.parse fname in
+      Some (Model.Generic r)
+    with
+    | Misc.Fatal msg -> eprintf "%s: %s\n" prog msg ; exit 2
+    | Misc.Exit ->
+        eprintf "Failure of generic model parsing for bell\n" ;
+        exit 2 end
+| None -> None
 
 (* Read kinds/conds files *)
 module LR = LexRename.Make(struct let verbose = !verbose end)
@@ -534,14 +538,16 @@ let () =
     end
 
   end in
+
   let module IB = Interpret_bell.Make(Config) in
-  let bell_info = match bell_model with
+  let bi = match bell_model with
   | Some m -> Some (IB.interpret_bell m)
   | None -> None in    
 
   let from_file =
-    let module T = ParseTest.Top (Config) in
-    T.from_file bell_info in
+    let module T =
+      ParseTest.Top (struct let bell_model_info = bi include Config end) in
+    T.from_file in
 
 
 (* Just go *)

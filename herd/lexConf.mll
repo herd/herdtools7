@@ -120,6 +120,8 @@ and opt = parse
    { lex_tag_fun
        "model" Model.parse Model.tags
        (fun x -> model := Some x) arg }
+| "bell" arg
+   { bell := Some arg }
 | "through" arg
    { lex_tag
        "through" Model.parse_through Model.tags_through
