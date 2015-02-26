@@ -175,8 +175,12 @@ formalsN:
 | VAR COMMA formalsN { $1 :: $3 }
 
 exp_list:
+| { [] }
+| exp_listN { $1 }
+
+exp_listN:
 | exp {[$1]}
-| exp COMMA exp_list {[$1] @ $3}
+| exp COMMA exp_listN { $1 :: $3}
 
 exp_tup_list:
 | exp_tup {[$1]}
