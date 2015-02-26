@@ -15,7 +15,7 @@
 
 module type Config = sig
   val m : AST.pp_t
-  val bell_model_info : Bell_info.model option
+  val bell_model_info : (string * Bell_info.model) option
   include Model.Config
 end
 
@@ -25,7 +25,12 @@ module Make
     =
   struct
 
-    module I = Interpreter.Make(O)(S)
+    module IConfig = struct
+      let bell = false
+      let bell_fname = Misc.app_opt (fun (x,_) -> x) O.bell_model_info
+      include O
+    end
+    module I = Interpreter.Make(IConfig)(S)
     module E = S.E
     module U = MemUtils.Make(S)
 
@@ -158,7 +163,7 @@ module Make
       let m =
         match O.bell_model_info with
         | None -> m
-        | Some bi ->            
+        | Some (_,bi) ->
             let m =
               add_bell_events m
                 (fun annot e -> E.Act.annot_in_list annot e.E.action)
@@ -181,7 +186,7 @@ module Make
       let m =
         match O.bell_model_info with
         | None -> m
-        | Some bi ->
+        | Some (_,bi) ->
             let scopes =
               match test.Test.bell_info with
               | None -> assert false (* must be here as, O.bell_mode_info is *)

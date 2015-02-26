@@ -25,7 +25,12 @@ module Make
     (S:Sem.Semantics)
     =
   struct
-    module I = Interpreter.Make(O)(S)
+    module I = Interpreter.Make
+        (struct
+          let bell = false
+          let bell_fname = None
+          include O
+        end)(S)
     module E = S.E
     module U = MemUtils.Make(S)
 

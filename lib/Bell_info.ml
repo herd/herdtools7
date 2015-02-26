@@ -231,36 +231,38 @@ let check_regions r bi =
 let check_scopes s bi = 
   if not docheck then true
   else
-  let above_pred n scopes above scope_order = 
-    let f = Simple.mem n scopes in
-    let s = match above with 
+
+    let above_pred n scopes above scope_order = 
+      let f = Simple.mem n scopes in
+      let s = match above with 
       | Some a -> List.mem (n,a) scope_order 
       | None -> true
+      in
+      f && s
     in
-    f && s
-  in
-  let rec check_scopes_rec s scopes above scope_order = 
-    match s with
-    | Leaf (n,_) -> above_pred n scopes above scope_order
-    | Children (n,sl) -> 
-      let q = above_pred n scopes above scope_order in
-      let checked = List.map (fun x -> 
-	check_scopes_rec x scopes (Some n) scope_order) sl in
-      List.fold_left (fun acc n -> acc && n) q checked
-  in 
-  let known_scopes = Simple.mem_assoc "scopes" bi.relations in
-  let known_scope_order = Simple.mem_assoc "scope_order" bi.orders in
-  if (not known_scopes) || (not known_scope_order) then
-    begin
-      Printf.printf "HERE2\n";
-      false
-    end 
-  else 
-    begin
-      let scopes = Simple.assoc "scopes" bi.relations in
-      let scope_order = Simple.assoc "scope_order" bi.orders in
+    let rec check_scopes_rec s scopes above scope_order = 
+      match s with
+      | Leaf (n,_) -> above_pred n scopes above scope_order
+      | Children (n,sl) -> 
+          above_pred n scopes above scope_order &&
+          List.for_all
+            (fun s -> 
+              check_scopes_rec s scopes (Some n) scope_order)
+            sl
+    in 
+    try
+      let scope_order =
+        try Simple.assoc "scope_order" bi.orders
+        with Not_found ->
+          Warn.warn_always "No definition of scope_order in bell file" ;
+          raise Exit in
+      let scopes =
+        try Simple.assoc "scopes" bi.relations
+        with Not_found ->
+          Warn.warn_always "No definition of scopes in bell file" ;
+          raise Exit in
       check_scopes_rec s scopes None scope_order
-    end
+    with Exit -> true (* bypass check *)
 
 let get_assoc_event a l = 
   let contains = Simple.mem_assoc a l in

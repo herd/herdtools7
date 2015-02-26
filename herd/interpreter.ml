@@ -74,6 +74,8 @@ end
 
 module type Config = sig
   val m : AST.pp_t
+  val bell : bool (* executing bell file *)
+  val bell_fname : string option (* name of bell file if present *)
   include Model.Config
 end
 
@@ -1057,9 +1059,7 @@ module Make
       and fix_step env_bd env bds = match bds with
       | [] -> env,[]
       | (k,e)::bds ->
-          eprintf "Will eval '%s'\n%!" k ;
           let v = eval {env_bd with EV.env=env;} e in
-          eprintf "Done '%s'\n%!" k ;
           let env = add_val k (lazy v) env in
           let env,vs = fix_step env_bd env bds in
           env,(v::vs) in
@@ -1321,7 +1321,7 @@ module Make
           let st = doshow bds st in
 	  kont st res
 
-      | Event_dec(loc,v,e_list) -> 
+      | Event_dec(loc,v,e_list) when O.bell ->
 	  let eval_expr = List.map (fun e -> eval (from_st st) e) e_list in
 	  let event_sets = List.map (fun s -> 	  
 	    match s with 
@@ -1340,7 +1340,7 @@ module Make
           let st = { st with bell_dec;} in
 	  kont st res
 
-      | Relation_dec(loc, v, e) ->
+      | Relation_dec(loc, v, e) when O.bell ->
 	  let evaled = eval (from_st st) e in
 	  let strs = 
 	    match evaled with
@@ -1358,22 +1358,36 @@ module Make
           let st = { st with bell_dec;} in
 	  kont st res
 
-      | Order_dec(loc,v,ep_l) ->
-	  let evaled = List.map (fun (f,s) -> (eval (from_st st) f, eval (from_st st) s)) ep_l
+      | Order_dec(loc,v,ep_l) when O.bell ->
+	  let evaled =
+            let env = from_st st in
+            List.map
+              (fun (f,s) -> eval env f, eval env s)
+              ep_l
 	  in
-	  let str_pairs = List.map (fun (f,s) -> 
-	    match f,s with
-	    | V.Tag(_,fs2), V.Tag(_,ss2) -> (fs2,ss2)
-	    | V.Tag _ ,_ -> error false loc "order declarations expected a set of tags. %s is not a tag" (pp_val s)
-	    | _, V.Tag _ -> error false loc "order declarations expected a set of tags. %s is not a tag" (pp_val f)
-	    | _,_ -> error false loc "order declarations expected a set of tags. %s and %s are not a tag" (pp_val f) (pp_val s)
-	                           ) evaled in
+	  let str_pairs = 
+            List.map
+              (fun (f,s) -> match f,s with
+	      | V.Tag(_,tag1), V.Tag(_,tag2) ->
+                  tag1,tag2
+	      | (V.Tag _ ,bad)
+              | (bad,V.Tag _) ->
+                  error st.silent loc
+                  "order declarations expected tag pairs, %s is not a tag"
+                  (pp_val bad)
+	      | _,_ ->
+                  error st.silent loc
+                    "order declarations expect tag pairs, %s and %s are not tags"
+                    (pp_val f) (pp_val s))
+              evaled in
           let bell_dec =
             { st.bell_dec with
               order_dec = add_dec (@) v str_pairs st.bell_dec.order_dec;} in
           let st = { st with bell_dec;} in
 	  kont st res
-
+      | Event_dec (_, _, _)|Relation_dec (_, _, _)|Order_dec (_, _, _) ->
+          assert (not O.bell) ;
+          kont st res (* Ignore bell constructs when executing model *)
       and do_include loc fname st kont res =
         (* Run sub-model file *)
         if O.debug then warn loc "include \"%s\"" fname ;
@@ -1412,8 +1426,18 @@ module Make
                 S.O.PC.doshow show
             end else lazy StringMap.empty in
 
-        do_include TxtLoc.none "stdlib.cat"
+        let st = 
           {env=m; show=show; skipped=StringSet.empty;
-           silent=false; undef=false; ks; bell_dec=empty_bell_dec; }
-          (fun st res -> run txt st prog kont res) res
+           silent=false; undef=false; ks; bell_dec=empty_bell_dec; } in        
+        let just_run st res = run txt st prog kont res in
+        do_include TxtLoc.none "stdlib.cat" st
+          (fun st res ->
+            match O.bell_fname with
+(* No bell file, just run *)
+            | None -> just_run st res
+(* Run bell file first, to get all its definitions... *)
+            | Some fname ->
+                do_include TxtLoc.none fname st just_run res)
+          res
+
   end

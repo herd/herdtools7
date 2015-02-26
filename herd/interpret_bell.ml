@@ -42,6 +42,8 @@ module Make (C: Config) = struct
     let module I = Interpreter.Make
 	  (struct 
 	    let m = generic_m
+            let bell = true
+            let bell_fname = None
 	    include ModelConfig
 	   end)
 	  (BellS) in
