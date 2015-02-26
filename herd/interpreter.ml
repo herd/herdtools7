@@ -52,6 +52,7 @@ module type S = sig
       silent : bool ; undef : bool;
       ks : ks ;
       bell_dec : bell_dec ;
+      stack : TxtLoc.t list;
   }
 
   val extract_bell_dec :
@@ -310,7 +311,8 @@ module Make
 
 
 (* Add values to env *)
-    let add_val k v env = { env with vals = StringMap.add k v env.vals; }
+    let add_val k v env =
+      { env with vals = StringMap.add k v env.vals; }
 
     let env_empty =
       {vals=StringMap.empty;
@@ -372,6 +374,7 @@ module Make
         silent : bool ; undef : bool ;
         ks : ks ;
         bell_dec : bell_dec;
+        stack : TxtLoc.t list;
       }
 
     let extract_bell_dec st =
@@ -379,7 +382,21 @@ module Make
       StringMap.bindings event_dec,
       StringMap.bindings rel_dec,
       StringMap.bindings order_dec
-        
+
+    let push_loc st loc = { st with stack = loc :: st.stack; }
+    let pop_loc st = match st.stack with
+    | [] -> assert false
+    | _::stack -> { st with stack; }
+
+    let protect_call st f x =
+      try f x
+      with Misc.Exit ->
+        List.iter
+          (fun loc ->
+            if O.debug || not st.silent then
+              eprintf "%a: Calling procedure\n" TxtLoc.pp loc)
+          st.stack ;
+        raise Misc.Exit
 
 (* Type of eval env *)
     module EV = struct
@@ -622,6 +639,14 @@ module Make
         ValSet (TRel,rs)
     | _ -> arg_mismatch ()
 
+    and tag2scope env args = match args with
+    | [V.Tag (_,tag)] ->
+        begin try Lazy.force (StringMap.find tag env.vals)
+        with Not_found ->
+          raise
+            (PrimError (sprintf "cannot find scope instance %s" tag))
+        end
+    | _ -> arg_mismatch ()
 
 (***************)
 (* Interpreter *)
@@ -1223,10 +1248,13 @@ module Make
       | Call (loc,name,es) ->
           let env0 = from_st st
           and show0 = st.show in
-          let p = eval_proc loc env0 name in
-          let env1 = add_args loc p.proc_args es env0 p.proc_env in
+          let p = protect_call st (eval_proc loc env0) name in
+          let env1 =
+            protect_call st (add_args loc p.proc_args es env0) p.proc_env in
+          let st = push_loc st loc in
           run txt { st with env = env1; } p.proc_body
             (fun st_call res ->
+              let st_call = pop_loc st_call in
               kont { st_call with env = st.env ; show=show0;} res)
             res
       | Enum (_loc,name,xs) ->
@@ -1246,6 +1274,8 @@ module Make
               V.ValSet (TTag name,vs)
             end in
           let env = add_val name alltags env in
+          if O.debug then
+            warn _loc "adding set of all tags for %s" name ;
           let env = { env with tags; enums; } in
           kont { st with env;} res
       | Forall (_loc,x,e,body) ->
@@ -1412,6 +1442,7 @@ module Make
             [
              "partition",partition;
              "linearisations",linearisations;
+             "tag2scope",tag2scope m;
            ] in
 (* Initial show's *)
         let show =
@@ -1428,7 +1459,8 @@ module Make
 
         let st = 
           {env=m; show=show; skipped=StringSet.empty;
-           silent=false; undef=false; ks; bell_dec=empty_bell_dec; } in        
+           silent=false; undef=false; ks; bell_dec=empty_bell_dec;
+           stack =[];} in        
         let just_run st res = run txt st prog kont res in
         do_include TxtLoc.none "stdlib.cat" st
           (fun st res ->

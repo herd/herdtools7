@@ -25,9 +25,12 @@ module Make
     =
   struct
 
+    let bell_fname =  Misc.app_opt (fun (x,_) -> x) O.bell_model_info
+    let bell_info = Misc.app_opt (fun (_,x) -> x) O.bell_model_info
+
     module IConfig = struct
       let bell = false
-      let bell_fname = Misc.app_opt (fun (x,_) -> x) O.bell_model_info
+      let bell_fname = bell_fname
       include O
     end
     module I = Interpreter.Make(IConfig)(S)
@@ -161,9 +164,9 @@ module Make
              E.Act.arch_fences) in
 (* Event sets from bell_info *)
       let m =
-        match O.bell_model_info with
+        match bell_info with
         | None -> m
-        | Some (_,bi) ->
+        | Some bi ->
             let m =
               add_bell_events m
                 (fun annot e -> E.Act.annot_in_list annot e.E.action)
@@ -184,9 +187,9 @@ module Make
             m in
 (* Scope relations from bell info *)
       let m =
-        match O.bell_model_info with
+        match bell_info with
         | None -> m
-        | Some (_,bi) ->
+        | Some bi ->
             let scopes =
               match test.Test.bell_info with
               | None -> assert false (* must be here as, O.bell_mode_info is *)

@@ -127,7 +127,6 @@ empty (rf;rmw_id) \ (cosucc) as AtRMW
 
 (* Races *)
 
-
 let locSomeW = loc \ RR(loc) (* same location, at least a W *)
 
 let dr =
