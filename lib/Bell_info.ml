@@ -15,9 +15,28 @@
 open Printf
 
 let dbg = false
-(* Disable checks that I do not understand yet *)
 
-let docheck = false
+(* To disable checks that I do not understand yet -> false *)
+let docheck = true
+
+
+(* Simple operations on string elements (avoid Pervasives.compare) *)
+module Simple = struct
+
+  let assoc (k:string) env =
+    let rec find_rec = function
+      | [] -> raise Not_found
+      | (k0,v)::env ->
+          if k0 = k then v else find_rec env in
+    find_rec env
+
+  let mem (y:string) xs = List.exists (fun x -> x=y) xs
+
+  let mem_assoc (k:string) env =
+    try ignore (assoc k env) ; true
+    with Not_found -> false
+
+end
 
 (* For the bell model and test info *)
 
@@ -28,36 +47,28 @@ type event_type = string
 type annotation = string
 
 type annot_set = annotation list
+
 let pp_annot_set ans = "{"^(String.concat "," ans)^"}"
 
-(*********************************************************************)
-(*                        Herd                                       *)
-(*                                                                   *)
-(* Luc Maranget, INRIA Paris-Rocquencourt, France.                   *)
-(* Jade Alglave, University College London, UK.                      *)
-(* John Wickerson, Imperial College London, UK.                      *)
-(* Tyler Sorensen, University College London                         *)
-(*                                                                   *)
-(*  Copyright 2013 Institut National de Recherche en Informatique et *)
-(*  en Automatique and the authors. All rights reserved.             *)
-(*  This file is distributed  under the terms of the Lesser GNU      *)
-(*  General Public License.                                          *)
-(*********************************************************************)
-
 type annot_group = annot_set list
+
 let pp_annot_group ag = 
   let mapped = List.map (fun x -> pp_annot_set x) ag in
   "["^(String.concat ", " mapped)^"]"
 
-let flatten_annot_group ag = 
-  List.flatten ag
+let pp_annot_groups ags =
+  let pp = List.map pp_annot_group ags in
+  String.concat ";" pp
+
+let flatten_annot_group ag =  List.flatten ag
 
 type event_dec = event_type * (annot_group list)
+
 
 let pp_event_dec ed = 
   let t,l = ed in
   let mapped = List.map (fun x -> pp_annot_group x) l in
-  t^": "^(String.concat ("\n"^t^": ") mapped)
+  t^": "^ String.concat "," mapped
 
 let flatten_event_dec ed =
   let _,l = ed in
@@ -157,7 +168,7 @@ let known_orders = ["scope_order";]
 
 let check_decs check known msg = 
   List.iter (fun (k,_) ->
-    if not (List.mem k known) then 
+    if not (Simple.mem k known) then 
       Warn.user_error msg k) check 
 
 let list_to_set s = StringSet.of_list s
@@ -187,53 +198,41 @@ let build_bell_info sets rels orders =
     orders = orders;    
   }
 
-(* Zip two lists (possibly unequal lengths) into a tuple *)
-let rec zip lst1 lst2 = match lst1,lst2 with
-  | [],_ -> []
-  | _, []-> []
-  | (x::xs),(y::ys) -> (x,y) :: (zip xs ys);;
+let rec same_length xs ys = match xs,ys with
+| [],[] -> true
+| _::xs,_::ys -> same_length xs ys
+| ([],_::_) | (_::_,[]) -> false
 
-(* LUC> Not working ??? *)
 let check_annots t al bi =
-  if not docheck then true
-  else
-  let check_annot_group ag al =
-    let zipped = zip ag al in
-    let matched = List.map (fun (l,a) ->
-      List.mem a l) zipped in
-    List.fold_left (fun acc x -> acc && x) true matched
-  in
-      
-  let known_event = List.mem_assoc t bi.events in
-  if (not known_event) && ((List.length al) = 0) then
-    true
-  else if (not known_event) && ((List.length al) != 0) then
-    false
-  else
-    let event_groups = List.assoc t bi.events in
-    let candidates = List.filter (fun v -> 
-      if (List.length v) = (List.length al) then true
-      else false) event_groups in
-    let match_groups = List.map (fun ag -> check_annot_group ag al)
-      candidates in
-    List.fold_left (fun acc x -> acc || x) false match_groups
+  if dbg then eprintf "Check: %s{%s}\n" t (String.concat "," al) ;
+  try 
+    let event_groups = Simple.assoc t bi.events in
+    if dbg then
+      Printf.eprintf "EG: {%s}, LAL=%i\n"
+        (pp_annot_groups event_groups) (List.length al) ;
+    List.exists
+      (fun ag ->
+        same_length ag al &&
+        List.for_all2 Simple.mem al ag)
+      event_groups
+  with Not_found -> not (Misc.consp al)
 
 let check_regions r bi =                
-  let known_regions = List.mem_assoc "regions" bi.events in
+  let known_regions = Simple.mem_assoc "regions" bi.events in
   if not known_regions then
     false
   else
-    let regions = List.assoc "regions" bi.events in
+    let regions = Simple.assoc "regions" bi.events in
     let flattened = flatten_event_dec ("",regions) in    
     let checked = List.map (fun (_,reg) -> 
-      List.mem reg flattened) r in
+      Simple.mem reg flattened) r in
     List.fold_left (fun acc x -> acc && x) true checked 
 
 let check_scopes s bi = 
   if not docheck then true
   else
   let above_pred n scopes above scope_order = 
-    let f = List.mem n scopes in
+    let f = Simple.mem n scopes in
     let s = match above with 
       | Some a -> List.mem (n,a) scope_order 
       | None -> true
@@ -249,8 +248,8 @@ let check_scopes s bi =
 	check_scopes_rec x scopes (Some n) scope_order) sl in
       List.fold_left (fun acc n -> acc && n) q checked
   in 
-  let known_scopes = List.mem_assoc "scopes" bi.relations in
-  let known_scope_order = List.mem_assoc "scope_order" bi.orders in
+  let known_scopes = Simple.mem_assoc "scopes" bi.relations in
+  let known_scope_order = Simple.mem_assoc "scope_order" bi.orders in
   if (not known_scopes) || (not known_scope_order) then
     begin
       Printf.printf "HERE2\n";
@@ -258,22 +257,22 @@ let check_scopes s bi =
     end 
   else 
     begin
-      let scopes = List.assoc "scopes" bi.relations in
-      let scope_order = List.assoc "scope_order" bi.orders in
+      let scopes = Simple.assoc "scopes" bi.relations in
+      let scope_order = Simple.assoc "scope_order" bi.orders in
       check_scopes_rec s scopes None scope_order
     end
 
 let get_assoc_event a l = 
-  let contains = List.mem_assoc a l in
+  let contains = Simple.mem_assoc a l in
   if contains then
-    ("",List.assoc a l)
+    ("",Simple.assoc a l)
   else 
     ("",[[[]]])
 
 let get_assoc_rel a l = 
-  let contains = List.mem_assoc a l in
+  let contains = Simple.mem_assoc a l in
   if contains then
-    ("",List.assoc a l)
+    ("",Simple.assoc a l)
   else 
     ("",[])  
 
