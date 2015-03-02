@@ -12,6 +12,15 @@
 
 (** Simple utilities used in many models *)
 
+
+(* Some name mungling *)
+
+val scopes_var : string
+val regions_var : string
+val narrower_var : string
+
+val tag2events_var : string -> string
+
 module  Make : functor (O:Model.Config) -> functor (S:SemExtra.S) -> sig
 (*******************************************)
 (* Complete re-computation of dependencies *)

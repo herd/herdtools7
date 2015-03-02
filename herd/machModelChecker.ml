@@ -42,7 +42,7 @@ module Make
       I.add_sets m
         (List.map
            (fun annot ->
-             let tag = String.uppercase annot in
+             let tag = ModelUtils.tag2events_var annot in
              tag,
              lazy begin
                E.EventSet.filter (pred annot) evts

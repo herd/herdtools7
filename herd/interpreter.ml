@@ -15,6 +15,7 @@
 
 open Printf
 
+
 module type S = sig
 
   module S : Sem.Semantics
@@ -37,9 +38,7 @@ module type S = sig
 
   type event_desc  =  string list list list   
   type rel_desc = string list      
-  type order_desc = (string * string) list
-
-  type 'a bds = (string * 'a) list
+  type order_desc = Bell_info.order
 
   type bell_dec
 
@@ -55,10 +54,6 @@ module type S = sig
       stack : TxtLoc.t list;
   }
 
-  val extract_bell_dec :
-      st ->
-        event_desc bds * rel_desc bds  * order_desc bds
-
 
   val show_to_vbpp :
     st -> (StringMap.key * S.event_rel) list
@@ -69,6 +64,10 @@ module type S = sig
     V.env ->
     (string * S.event_rel) list Lazy.t ->
     (st -> 'a -> 'a) -> 'a -> 'a
+
+(* Extract bell info from interpreter final state *)
+  val extract_bell_dec :
+      st -> event_desc Misc.bds * rel_desc Misc.bds  * order_desc Misc.bds
 
 end
 
@@ -296,13 +295,15 @@ module Make
     open V
 
 (* pretty *)
+    let pp_type_val v = pp_typ (type_val v)
+
     let rec pp_val = function
       | Unv -> "<universe>"
       | V.Empty -> "{}"
       | Tag (_,s) -> sprintf "'%s" s
       | ValSet (_,s) ->
           sprintf "{%s}" (ValSet.pp_str "," pp_val s)
-      | v -> sprintf "<%s>" (pp_typ (type_val v))
+      | v -> sprintf "<%s>" (pp_type_val v)
 
 (* lift a tag to a singleton set *)
     let tag2set v = match v with
@@ -346,11 +347,9 @@ module Make
     type event_dec = event_desc StringMap.t
     type rel_desc = string list      
     type rel_dec = rel_desc StringMap.t
-    type order_desc = (string * string) list
+    type order_desc = Bell_info.order
     type order_dec = order_desc StringMap.t
 
-    type 'a bds = (string * 'a) list
-          
     type bell_dec =
         { event_dec : event_dec;
           rel_dec : rel_dec;
@@ -361,10 +360,10 @@ module Make
         rel_dec = StringMap.empty;
         order_dec = StringMap.empty; }
 
-    let add_dec mk x v m =
+    let add_dec default mk x v m =
       let old =
         try StringMap.find x m
-        with Not_found -> [] in
+        with Not_found -> default in
       StringMap.add x (mk v old) m
 
     type st = {
@@ -376,12 +375,6 @@ module Make
         bell_dec : bell_dec;
         stack : TxtLoc.t list;
       }
-
-    let extract_bell_dec st =
-      let {event_dec; rel_dec; order_dec; } = st.bell_dec in
-      StringMap.bindings event_dec,
-      StringMap.bindings rel_dec,
-      StringMap.bindings order_dec
 
     let push_loc st loc = { st with stack = loc :: st.stack; }
     let pop_loc st = match st.stack with
@@ -450,6 +443,10 @@ module Make
 
     let as_valset = function
       | ValSet (_,v) -> v
+      | _ -> assert false
+
+    let as_tag = function
+      | V.Tag (_,tag) -> tag
       | _ -> assert false
 
     exception Stabilised of typ
@@ -641,10 +638,40 @@ module Make
 
     and tag2scope env args = match args with
     | [V.Tag (_,tag)] ->
-        begin try Lazy.force (StringMap.find tag env.vals)
+        begin try
+          let v = Lazy.force (StringMap.find tag env.vals) in
+          match v with
+          | V.Empty|V.Unv|V.Rel _ ->  v
+          | _ ->
+          raise
+            (PrimError
+               (sprintf
+                  "value %s is not a relation, found %s"
+                  tag  (pp_type_val v)))
+              
         with Not_found ->
           raise
             (PrimError (sprintf "cannot find scope instance %s" tag))
+        end
+    | _ -> arg_mismatch ()
+
+    and tag2events env args = match args with
+    | [V.Tag (_,tag)] ->
+        let x = ModelUtils.tag2events_var tag in
+        begin try
+          let v = Lazy.force (StringMap.find x env.vals) in
+          match v with
+          | V.Empty|V.Unv|V.Set _ ->  v
+          | _ ->
+          raise
+            (PrimError
+               (sprintf
+                  "value %s is not a set of events, found %s"
+                  x  (pp_type_val v)))
+              
+        with Not_found ->
+          raise
+            (PrimError (sprintf "cannot find event set %s" x))
         end
     | _ -> arg_mismatch ()
 
@@ -666,6 +693,7 @@ module Make
          "partition",partition;
          "linearisations",linearisations;
          "tag2scope",tag2scope m;
+         "tag2events",tag2events m;
          "domain",domain;
          "range",range;
         ]
@@ -875,26 +903,7 @@ module Make
         | Op (_,(Diff|Inter|Cartesian|Add),_) -> assert false (* By parsing *)
 (* Application/bindings *)
         | App (loc,f,es) ->
-            begin match eval env f with
-            | Clo f ->
-                let env =
-                  { env with
-                    EV.env=add_args loc f.clo_args es env f.clo_env;} in
-                begin try eval env f.clo_body
-                with Misc.Exit ->
-                  error env.EV.silent loc "Calling"
-                end
-            | Prim (name,f) ->
-                let vs = List.map (eval env) es in
-                begin try f vs
-                with
-                | PrimError msg ->
-                    error env.EV.silent loc "primitive %s: %s" name msg
-                | Misc.Exit ->
-                    error env.EV.silent loc "Calling primitive %s" name
-                end
-            | _ -> error env.EV.silent loc "closure or primitive expected"
-            end
+            eval_app loc env (eval env f) (List.map (eval env) es)
         | Bind (_,bds,e) ->
             let m = eval_bds env bds in
             eval { env with EV.env = m;} e
@@ -963,7 +972,25 @@ module Make
                 if O.debug then warn loc "caught failure" ;
                 eval env e2
             end
-
+  
+    and eval_app loc env vf vs = match vf with
+      | Clo f ->
+          let env =
+            { env with
+              EV.env=add_args loc f.clo_args vs env f.clo_env;} in
+          begin try eval env f.clo_body with
+            Misc.Exit ->
+            error env.EV.silent loc "Calling"
+          end
+      | Prim (name,f) ->
+          begin try f vs with
+          | PrimError msg ->
+              error env.EV.silent loc "primitive %s: %s" name msg
+          | Misc.Exit ->
+              error env.EV.silent loc "Calling primitive %s" name
+          end
+      | _ -> error env.EV.silent loc "closure or primitive expected"
+  
       and eval_fun is_rec env loc xs body name fvs =
         if O.debug then begin
           let sz =
@@ -983,8 +1010,7 @@ module Make
         let env = { env.EV.env with vals; } in
         {clo_args=xs; clo_env=env; clo_body=body; clo_name=name; }
 
-      and add_args loc xs es env_es env_clo =
-        let vs = List.map (eval env_es) es in
+      and add_args loc xs vs env_es env_clo =
         let bds =
           try
             List.combine xs vs
@@ -1153,6 +1179,82 @@ module Make
           end in
           { st with show;} in
 
+      let check_bell_enum =
+        if O.bell then
+          fun st name tags ->
+            if name = ModelUtils.scopes_var then
+              let bell_dec =
+                { st.bell_dec with
+                  rel_dec =
+                    add_dec [] (@) name tags st.bell_dec.rel_dec;} in
+              { st with bell_dec;}                  
+            else st
+        else
+          fun st _v _tags -> st in
+
+(* Check if order is being defined by a "narrower" function *)
+      let check_bell_order = 
+        if O.bell then
+          fun bds st ->
+            List.fold_left
+              (fun st (v,e) ->
+                if v = ModelUtils.narrower_var then
+                  let loc = get_loc e in
+                  warn loc "checking %s" v ;
+(* Now evaluate all calls to narrower for all scope tags *)
+                  let env = from_st st in                  
+                  let narrower =
+                    try find_env_loc TxtLoc.none env v
+                    with _ -> assert false in
+                  let scopes =
+                    let scopes =
+                      try StringMap.find ModelUtils.scopes_var env.EV.env.vals
+                      with Not_found ->
+                        error false
+                          loc "tag set %s must be defined while defining %s"
+                          ModelUtils.scopes_var ModelUtils.narrower_var in
+                    match Lazy.force scopes with
+                    | V.ValSet ((TTag _|TAnyTag),scs) -> scs
+                    | v ->
+                        error false loc "%s must be a tag set, found %s"
+                          ModelUtils.scopes_var (pp_typ (type_val v)) in
+                  let order =
+                    ValSet.fold
+                      (fun tag order ->                        
+                        let tgt =
+                          try
+                            eval_app loc
+                              { env with EV.silent=true;}
+                              narrower [tag]
+                          with Misc.Exit -> V.Empty in
+                        let tag = as_tag tag in
+                        let add tgt order =
+                          let tgt = as_tag tgt in
+                          StringRel.add (tag,tgt) order in
+                        match tgt with
+                        | V.Empty -> order
+                        | V.Tag (_,_) -> add tgt order
+                        | V.ValSet (_,tgts) -> ValSet.fold add tgts order
+                        | _ ->
+                            error false loc
+                              "implicit call %s('%s) must return a tag or a set of tags, found %s"
+                              ModelUtils.narrower_var tag (pp_typ (type_val tgt)))
+                      scopes StringRel.empty in
+                  if not (StringRel.is_acyclic order) then
+                    error false loc
+                      "%s defines a cyclic relation"
+                      ModelUtils.narrower_var ;
+                  let bell_dec =
+                    { st.bell_dec with
+                      order_dec =
+                      add_dec StringRel.empty StringRel.union
+                        ModelUtils.scopes_var order st.bell_dec.order_dec; } in
+                  { st with bell_dec}
+              else st)
+              st bds
+        else fun _bds st -> st in
+
+
 (* Execute one instruction *)
 
       let eval_st st e = eval (from_st st) e in
@@ -1200,7 +1302,8 @@ module Make
           then
             let env0 = from_st st in
             let p = eval_proc loc env0 pname in
-            let env1 = add_args loc p.proc_args es env0 p.proc_env in
+            let vs = List.map (eval env0) es in
+            let env1 = add_args loc p.proc_args vs env0 p.proc_env in
             run txt  { st with env = env1; } p.proc_body
               (fun st_call res ->  kont { st_call with env=st.env;} res)
               res
@@ -1255,12 +1358,14 @@ module Make
           let env = eval_bds (from_st st) bds in
           let st = { st with env; } in
           let st = doshow bds st in
+          let st = check_bell_order bds st in
           kont st res
       | Rec (loc,bds) ->
           let env =
             env_rec (from_st st) loc (fun pp -> pp@show_to_vbpp st) bds in
           let st = { st with env; } in
-          let st = doshow bds st in
+          let st = doshow bds st in          
+          let st = check_bell_order bds st in
           kont st res
       | Include (loc,fname) ->
           do_include loc fname st kont res
@@ -1273,14 +1378,17 @@ module Make
           and show0 = st.show in
           let p = protect_call st (eval_proc loc env0) name in
           let env1 =
-            protect_call st (add_args loc p.proc_args es env0) p.proc_env in
+            protect_call st
+              (fun e ->
+                add_args loc p.proc_args (List.map (eval env0) es) env0 e)
+              p.proc_env in
           let st = push_loc st loc in
           run txt { st with env = env1; } p.proc_body
             (fun st_call res ->
               let st_call = pop_loc st_call in
               kont { st_call with env = st.env ; show=show0;} res)
             res
-      | Enum (_loc,name,xs) ->
+      | Enum (loc,name,xs) ->
           let env = st.env in
           let tags =
             List.fold_left
@@ -1298,9 +1406,11 @@ module Make
             end in
           let env = add_val name alltags env in
           if O.debug then
-            warn _loc "adding set of all tags for %s" name ;
+            warn loc "adding set of all tags for %s" name ;
           let env = { env with tags; enums; } in
-          kont { st with env;} res
+          let st = { st with env;} in
+          let st = check_bell_enum st name xs in
+          kont st res
       | Forall (_loc,x,e,body) when not O.bell  ->
           let st0 = st in
           let env0 = st0.env in
@@ -1391,10 +1501,11 @@ module Make
 	                            ) eval_expr in
           let bell_dec =
             { st.bell_dec with
-              event_dec = add_dec Misc.cons v event_sets st.bell_dec.event_dec; } in
+              event_dec = add_dec [] Misc.cons v event_sets st.bell_dec.event_dec; } in
           let st = { st with bell_dec;} in
 	  kont st res
 
+(*
       | Relation_dec(loc, v, e) when O.bell ->
 	  let evaled = eval (from_st st) e in
 	  let strs = 
@@ -1412,7 +1523,6 @@ module Make
               rel_dec = add_dec (@) v strs st.bell_dec.rel_dec;} in
           let st = { st with bell_dec;} in
 	  kont st res
-
       | Order_dec(loc,v,ep_l) when O.bell ->
 	  let evaled =
             let env = from_st st in
@@ -1440,6 +1550,10 @@ module Make
               order_dec = add_dec (@) v str_pairs st.bell_dec.order_dec;} in
           let st = { st with bell_dec;} in
 	  kont st res
+*)
+      | Order_dec (loc,_,_) | Relation_dec (loc,_,_) when O.bell ->
+          warn loc "deprecated" ;
+          kont st res          
       | Event_dec (_, _, _)|Relation_dec (_, _, _)|Order_dec (_, _, _) ->
           assert (not O.bell) ;
           kont st res (* Ignore bell constructs when executing model *)
@@ -1483,7 +1597,7 @@ module Make
                 S.O.PC.doshow show
             end else lazy StringMap.empty in
 
-        let st = 
+        let st =
           {env=m; show=show; skipped=StringSet.empty;
            silent=false; undef=false; ks; bell_dec=empty_bell_dec;
            stack =[];} in        
@@ -1497,5 +1611,12 @@ module Make
             | Some fname ->
                 do_include TxtLoc.none fname st just_run res)
           res
+
+    let extract_bell_dec st =
+      let {event_dec; rel_dec; order_dec; } = st.bell_dec in
+      StringMap.bindings event_dec,
+      StringMap.bindings rel_dec,
+      StringMap.bindings order_dec
+
 
   end

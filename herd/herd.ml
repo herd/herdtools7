@@ -573,10 +573,10 @@ let () =
         with
         | Misc.Exit -> seen
         | Misc.Fatal msg ->
-            Warn.warn_always "%a %s" Pos.pp_pos0 name msg ;
+            Warn.warn_always "%a: %s" Pos.pp_pos0 name msg ;
             seen
         | Misc.UserError msg ->
-            Warn.warn_always "\nUser error: %a %s" Pos.pp_pos0 name msg ;
+            Warn.warn_always "%a: %s (User error)" Pos.pp_pos0 name msg ;
             seen
         | e ->
 	    Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
