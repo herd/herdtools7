@@ -35,6 +35,10 @@ module type S = sig
       Elts1.t -> Elts2.t ->
 	(elt1 -> elt2 -> bool) -> t
 
+(* Extract domain and codomain *)
+  val domain : t -> Elts1.t
+  val codomain : t -> Elts2.t
+
 (* Restriction of domain/codomain *)
   val restrict_domain : (elt1 -> bool) -> t -> t
   val restrict_codomain : (elt2 -> bool) -> t -> t
@@ -124,6 +128,14 @@ with
 	      else k)
 	    set2 k)
 	set1 empty
+
+(* Domains and Codomains *)
+    let extract f xs2set r =
+      let xs = fold (fun c k -> f c::k) r [] in
+      xs2set xs
+
+    let domain r = extract fst Elts1.of_list r
+    let codomain r = extract snd Elts2.of_list r
 
     let restrict_domain p r = filter (fun (e,_) -> p e) r
     and restrict_codomain p r = filter (fun (_,e) -> p e) r

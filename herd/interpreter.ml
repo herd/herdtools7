@@ -648,6 +648,29 @@ module Make
         end
     | _ -> arg_mismatch ()
 
+    and domain args = match args with
+    | [V.Empty] ->  V.Empty
+    | [V.Unv] -> V.Unv
+    | [V.Rel r] ->  V.Set (E.EventRel.domain r)
+    | _ -> arg_mismatch ()
+
+    and range args = match args with
+    | [V.Empty] ->  V.Empty
+    | [V.Unv] -> V.Unv
+    | [V.Rel r] ->  V.Set (E.EventRel.codomain r)
+    | _ -> arg_mismatch ()
+
+    let add_primitives m =
+      add_prims m
+        [
+         "partition",partition;
+         "linearisations",linearisations;
+         "tag2scope",tag2scope m;
+         "domain",domain;
+         "range",range;
+        ]
+
+       
 (***************)
 (* Interpreter *)
 (***************)
@@ -1437,13 +1460,7 @@ module Make
 
       fun ks m vb_pp kont res ->
 (* Primitives *)
-        let m =
-          add_prims m
-            [
-             "partition",partition;
-             "linearisations",linearisations;
-             "tag2scope",tag2scope m;
-           ] in
+        let m = add_primitives m in
 (* Initial show's *)
         let show =
           if O.showsome then

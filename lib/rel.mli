@@ -36,6 +36,10 @@ module type S = sig
       Elts1.t -> Elts2.t ->
 	(elt1 -> elt2 -> bool) -> t
 
+(* Extract domain and codomain *)
+  val domain : t -> Elts1.t
+  val codomain : t -> Elts2.t
+
 (* Restriction of domain/codomain *)
   val restrict_domain : (elt1 -> bool) -> t -> t
   val restrict_codomain : (elt2 -> bool) -> t -> t
