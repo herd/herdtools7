@@ -133,12 +133,16 @@ with
     let extract f xs2set r =
       let xs = fold (fun c k -> f c::k) r [] in
       xs2set xs
-
     let domain r = extract fst Elts1.of_list r
     let codomain r = extract snd Elts2.of_list r
 
-    let restrict_domain p r = filter (fun (e,_) -> p e) r
-    and restrict_codomain p r = filter (fun (_,e) -> p e) r
-    and restrict_domains p1 p2 r = filter (fun (e1,e2) -> p1 e1 && p2 e2) r
-    and restrict_rel p r = filter (fun (e1,e2) -> p e1 e2) r
+    let filter_list p r =
+      let cs = fold (fun c k -> if p c then c::k else k) r [] in
+      of_list cs
+
+
+    let restrict_domain p r = filter_list (fun (e,_) -> p e) r
+    and restrict_codomain p r = filter_list (fun (_,e) -> p e) r
+    and restrict_domains p1 p2 r = filter_list (fun (e1,e2) -> p1 e1 && p2 e2) r
+    and restrict_rel p r = filter_list (fun (e1,e2) -> p e1 e2) r
   end

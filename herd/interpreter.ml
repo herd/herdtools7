@@ -1163,7 +1163,7 @@ module Make
           eprintf "%a: value is %s\n%!"
             TxtLoc.pp (get_loc e) (pp_val v) ;
           kont st res
-      | Show (_,xs) ->
+      | Show (_,xs) when not O.bell ->
           if O.showsome then
             let show = lazy begin
               List.fold_left
@@ -1173,7 +1173,7 @@ module Make
             end in
             kont { st with show;} res
           else kont st res
-      | UnShow (_,xs) ->
+      | UnShow (_,xs) when not O.bell ->
           if O.showsome then
             let show = lazy begin
               List.fold_left
@@ -1182,7 +1182,7 @@ module Make
             end in
             kont { st with show;} res
           else kont st res
-      | ShowAs (_,e,id) ->
+      | ShowAs (_,e,id) when not O.bell  ->
           if O.showsome then
             let show = lazy begin
               StringMap.add id
@@ -1190,7 +1190,7 @@ module Make
             end in
             kont { st with show; } res
           else kont st res
-      | ProcedureTest (loc,pname,es,name) ->
+      | ProcedureTest (loc,pname,es,name) when not O.bell ->
           let skip_this_check =
             match name with
             | Some name -> StringSet.mem name O.skipchecks
@@ -1207,7 +1207,7 @@ module Make
           else
             let () = W.warn "Skipping check %s" (Misc.as_some name) in
             kont st res
-      | Test (loc,pos,t,e,name,test_type) ->
+      | Test (loc,pos,t,e,name,test_type) when not O.bell  ->
           let skip_this_check =
             match name with
             | Some name -> StringSet.mem name O.skipchecks
@@ -1268,7 +1268,7 @@ module Make
           let p =
             Proc { proc_args=args; proc_env=st.env; proc_body=body; } in
           kont { st with env = add_val name (lazy p) st.env } res
-      | Call (loc,name,es) ->
+      | Call (loc,name,es) when not O.bell ->
           let env0 = from_st st
           and show0 = st.show in
           let p = protect_call st (eval_proc loc env0) name in
@@ -1301,7 +1301,7 @@ module Make
             warn _loc "adding set of all tags for %s" name ;
           let env = { env with tags; enums; } in
           kont { st with env;} res
-      | Forall (_loc,x,e,body) ->
+      | Forall (_loc,x,e,body) when not O.bell  ->
           let st0 = st in
           let env0 = st0.env in
           let v = eval (from_st st0) e in
@@ -1325,7 +1325,7 @@ module Make
               error st.silent
                 (get_loc e) "forall instruction applied to non-set value"
           end
-      | WithFrom (_,x,e) ->
+      | WithFrom (_,x,e) when not O.bell  ->
           let st0 = st in
           let env0 = st0.env in
           let v = eval (from_st st0) e in
@@ -1342,6 +1342,7 @@ module Make
       | Latex _ -> kont st res
 
       | EnumSet(_loc,_name,xs) -> 
+          warn _loc "Deprecated" ;
 	  let test_bi = match test.Test.bell_info with
 	  | Some t_bi -> t_bi
 	  | None ->
@@ -1357,6 +1358,7 @@ module Make
 	  kont {st with env} res
 
       | EnumRel(_loc,_name,xs) -> 
+          warn _loc "Deprecated" ;
 	  let test_bi = match test.Test.bell_info with
 	  | Some t_bi -> t_bi
 	  | None -> Warn.user_error "Using enum rln requires bell info"
@@ -1441,6 +1443,13 @@ module Make
       | Event_dec (_, _, _)|Relation_dec (_, _, _)|Order_dec (_, _, _) ->
           assert (not O.bell) ;
           kont st res (* Ignore bell constructs when executing model *)
+
+      | Test _|UnShow _|Show _|ShowAs _
+      | ProcedureTest _|Call _|Forall _
+      | WithFrom _ ->
+          assert (not O.bell) ;
+          kont st res (* Ignore cat constructs when executing bell *)
+
       and do_include loc fname st kont res =
         (* Run sub-model file *)
         if O.debug then warn loc "include \"%s\"" fname ;
