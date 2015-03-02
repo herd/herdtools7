@@ -473,3 +473,9 @@ let fold_cross_gen add start xss kont r =
 
 
 let fold_cross xss = fold_cross_gen cons [] xss
+
+(*******************)
+(* Simple bindings *)
+(*******************)
+
+type 'a bds = (string * 'a) list

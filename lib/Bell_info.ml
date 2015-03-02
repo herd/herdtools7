@@ -103,24 +103,25 @@ let flatten_rel_dec rd =
   l
 
 type all_relation_decs = relation_dec list
+
 let pp_all_rel_decs ard = 
   let tmp = List.map (fun x -> pp_rel_dec x) ard in
   String.concat "\n" tmp  
 
 (* orders, again, keeping it simple. Our only use case is
    scopes for now. *)
-type order = (string * string)
-let pp_order o = 
-  let f,s = o in
-  sprintf "(%s, %s)" f s
 
-type order_dec = (string * order list)
+type order = StringRel.t
+
 let pp_order_dec od = 
   let t,ol = od in
-  let tmp = List.map (fun x -> pp_order x) ol in
-  sprintf "%s %s" t (String.concat " " tmp)
+  sprintf "%s %s" t
+    (StringRel.pp_str " "
+       (fun (f,s) -> sprintf "(%s,%s)" f s)
+       ol)
 
-type all_order_decs = order_dec list
+type all_order_decs = StringRel.t Misc.bds
+
 let pp_all_order_decs aod = 
   let tmp = List.map (fun x -> pp_order_dec x) aod in
   String.concat "\n" tmp  
@@ -164,7 +165,7 @@ type test = {
 
 let known_sets = ["R"; "W"; "F"; "regions"; "RMW";]
 let known_relations = ["scopes";]
-let known_orders = ["scope_order";]
+let known_orders = ["scopes";]
 
 let check_decs check known msg = 
   List.iter (fun (k,_) ->
@@ -231,13 +232,16 @@ let check_regions r bi =
 let check_scopes s bi = 
   if not docheck then true
   else
-
+    
     let above_pred n scopes above scope_order = 
       let f = Simple.mem n scopes in
       let s = match above with 
-      | Some a -> List.mem (n,a) scope_order 
+      | Some a -> StringRel.mem (a,n) scope_order 
       | None -> true
       in
+      if dbg then
+        eprintf "Check scope n=%s, a=%s\n" n
+          (match above with Some a -> a| None -> "-") ;
       f && s
     in
     let rec check_scopes_rec s scopes above scope_order = 
@@ -252,7 +256,7 @@ let check_scopes s bi =
     in 
     try
       let scope_order =
-        try Simple.assoc "scope_order" bi.orders
+        try Simple.assoc "scopes" bi.orders
         with Not_found ->
           Warn.warn_always "No definition of scope_order in bell file" ;
           raise Exit in

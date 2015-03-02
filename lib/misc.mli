@@ -178,3 +178,9 @@ val fold_cross :  'a list list ->  ('a list -> 'b -> 'b) -> 'b -> 'b
    fold_cross_gen (fun y ys -> y::ys) [] *)
 val fold_cross_gen :
     ('a -> 'b -> 'b) -> 'b -> 'a list list -> ('b -> 'c -> 'c) -> 'c -> 'c
+
+(*******************)
+(* Simple bindings *)
+(*******************)
+
+type 'a bds = (string * 'a) list

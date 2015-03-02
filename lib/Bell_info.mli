@@ -29,9 +29,8 @@ type relation_dec = string * relation_annot_set
 type all_relation_decs = relation_dec list
 val pp_all_rel_decs : all_relation_decs -> string
 
-type order = string * string
-type order_dec = string * order list
-type all_order_decs = order_dec list
+type order = StringRel.t
+type all_order_decs = order Misc.bds
 
 val pp_all_order_decs : all_order_decs -> string
 

@@ -1200,7 +1200,6 @@ module Make
               (fun st (v,e) ->
                 if v = ModelUtils.narrower_var then
                   let loc = get_loc e in
-                  warn loc "checking %s" v ;
 (* Now evaluate all calls to narrower for all scope tags *)
                   let env = from_st st in                  
                   let narrower =

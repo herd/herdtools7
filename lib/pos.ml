@@ -24,10 +24,10 @@ let debug_pos chan pos =
 
 
 let pp_pos0 chan filename =
-  Printf.fprintf chan  "File \"%s\", " filename
+  Printf.fprintf chan  "File \"%s\"" filename
 
 let str_pos0  filename =
-  Printf.sprintf "File \"%s\", " filename
+  Printf.sprintf "File \"%s\"" filename
 
 let pp_pos chan pos =
   Printf.fprintf chan
