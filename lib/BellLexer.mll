@@ -55,6 +55,7 @@ rule token = parse
 | "mov"  { MOV }
 | "add"  { ADD }
 | "and"  { AND }
+| "xor"  { XOR }
 | "beq"  { BEQ }
 | "scopes"  { SCOPES  }
 | "regions" { REGIONS }

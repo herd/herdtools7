@@ -20,7 +20,7 @@ open Bell
     
 %}
 
-%token EOF SEMI COMMA PIPE COLON LPAR RPAR RBRAC LBRAC LBRACE RBRACE SCOPES REGIONS MOV AND ADD BEQ READ WRITE FENCE RMW CAS EXCH DOT
+%token EOF SEMI COMMA PIPE COLON LPAR RPAR RBRAC LBRAC LBRACE RBRACE SCOPES REGIONS MOV AND ADD BEQ READ WRITE FENCE RMW CAS EXCH DOT XOR
 %token <BellBase.reg> REG
 %token <int> NUM
 %token <string> NAME 
@@ -85,14 +85,17 @@ instr:
 | FENCE LPAR annot_list RPAR
  { Pfence(Fence($3)) }
 
-| MOV reg COMMA roi
+| MOV reg COMMA iar
  { Pmov($2,$4) }
 
-| ADD reg COMMA roi COMMA roi
+| ADD reg COMMA iar COMMA iar
  { Padd($2,$4,$6) }
 
-| AND reg COMMA roi COMMA roi
+| AND reg COMMA iar COMMA iar
  { Pand($2,$4,$6) }
+
+| XOR reg COMMA iar COMMA iar
+ { Pxor($2,$4,$6) }
 
 | BEQ roi COMMA roi COMMA NAME
  { Pbeq($2,$4,$6) }
@@ -120,6 +123,11 @@ roa:
 roi:
 | REG {Regi $1}
 | NUM { Imm $1}
+
+iar:
+| roa { IAR_roa $1}
+| NUM { IAR_imm $1}
+
 
 reg:
 | REG { $1 }

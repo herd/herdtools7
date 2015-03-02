@@ -135,9 +135,10 @@ let pp_rmw3_op op = match op with
 type instruction = 
 | Pld  of reg * reg_or_addr * string list
 | Pst  of reg_or_addr * reg_or_imm * string list
-| Pmov of reg * reg_or_imm
-| Pand of reg * reg_or_imm * reg_or_imm
-| Padd of reg * reg_or_imm * reg_or_imm
+| Pmov of reg * imm_or_addr_or_reg
+| Pand of reg * imm_or_addr_or_reg * imm_or_addr_or_reg
+| Padd of reg * imm_or_addr_or_reg * imm_or_addr_or_reg
+| Pxor of reg * imm_or_addr_or_reg * imm_or_addr_or_reg
 | Pbeq of reg_or_imm * reg_or_imm * lbl
 | Prmw2_op of reg * reg_or_addr * reg_or_imm * rmw2_op * string list
 | Prmw3_op of reg * reg_or_addr * reg_or_imm * reg_or_imm * rmw3_op * string list
@@ -175,19 +176,25 @@ let dump_instruction i = match i with
                      (string_of_reg_or_addr roa)
                      (string_of_reg_or_imm roi)
 
-  | Pmov(r,roi) -> sprintf "mov %s, %s"
+  | Pmov(r,roia) -> sprintf "mov %s, %s"
 		     (pp_reg r)
-		     (string_of_reg_or_imm roi)
+		     (pp_iar roia)
 
-  | Pand(r,roi1,roi2) -> sprintf "and %s, %s, %s"
+  | Pand(r,roia1,roia2) -> sprintf "and %s, %s, %s"
 		     (pp_reg r)
-		     (string_of_reg_or_imm roi1)
-		     (string_of_reg_or_imm roi2)
+		     (pp_iar roia1)
+		     (pp_iar roia2)
 
-  | Padd(r,roi1,roi2) -> sprintf "add %s, %s, %s"
+  | Padd(r,roia1,roia2) -> sprintf "add %s, %s, %s"
 		     (pp_reg r)
-		     (string_of_reg_or_imm roi1)
-		     (string_of_reg_or_imm roi2)
+		     (pp_iar roia1)
+		     (pp_iar roia2)
+
+  | Pxor(r,roia1,roia2) -> sprintf "add %s, %s, %s"
+		     (pp_reg r)
+		     (pp_iar roia1)
+		     (pp_iar roia2)
+
 
   | Pbeq(roi1,roi2,lbl) -> sprintf "beq %s, %s, %s"
     		     (string_of_reg_or_imm roi1)
@@ -235,9 +242,10 @@ let fold_regs (f_reg,_f_sreg) =
     begin match ins with      
     | Pld(r, roa, _) -> fold_reg r (fold_roa roa c)
     | Pst(roa,roi,_) -> fold_roa roa (fold_roi roi c)
-    | Pmov(r,roi) -> fold_reg r (fold_roi roi c)
-    | Padd(r,roi1,roi2) -> fold_reg r (fold_roi roi1 (fold_roi roi2 c))
-    | Pand(r,roi1,roi2) -> fold_reg r (fold_roi roi1 (fold_roi roi2 c))
+    | Pmov(r,roi) -> fold_reg r (fold_iar roi c)
+    | Padd(r,roi1,roi2) -> fold_reg r (fold_iar roi1 (fold_iar roi2 c))
+    | Pand(r,roi1,roi2) -> fold_reg r (fold_iar roi1 (fold_iar roi2 c))
+    | Pxor(r,roi1,roi2) -> fold_reg r (fold_iar roi1 (fold_iar roi2 c))
     | Pbeq(roi1, roi2, _) -> fold_roi roi1 (fold_roi roi2 c)
     | Prmw2_op(r,roa,roi,op,s) -> fold_reg r (fold_roa roa (fold_roi roi c))
     | Prmw3_op(r,roa,roi1,roi2,op,s) -> fold_reg r (fold_roa roa (fold_roi roi1 (fold_roi roi2 c)))
@@ -261,9 +269,10 @@ let map_regs f_reg _f_symb =
   let map_ins ins = begin match ins with
     | Pld(r, roa, s) -> Pld(f_reg r, map_roa roa, s)
     | Pst(roa,roi,s) -> Pst(map_roa roa, map_roi roi, s)
-    | Pmov(r,roi) -> Pmov(f_reg r, map_roi roi)
-    | Padd(r,roi1,roi2) -> Padd(f_reg r, map_roi roi1, map_roi roi2)
-    | Pand(r,roi1,roi2) -> Pand(f_reg r, map_roi roi1, map_roi roi2)
+    | Pmov(r,roi) -> Pmov(f_reg r, map_iar roi)
+    | Padd(r,roi1,roi2) -> Padd(f_reg r, map_iar roi1, map_iar roi2)
+    | Pand(r,roi1,roi2) -> Pand(f_reg r, map_iar roi1, map_iar roi2)
+    | Pxor(r,roi1,roi2) -> Pxor(f_reg r, map_iar roi1, map_iar roi2)
     | Pbeq(roi1,roi2,lbl) -> Pbeq(map_roi roi1, map_roi roi2, lbl)
     | Prmw2_op(r,roa,roi,op,s) -> Prmw2_op(f_reg r, map_roa roa, map_roi roi, op, s)
     | Prmw3_op(r,roa,roi1,roi2,op,s) -> Prmw3_op(f_reg r, map_roa roa, map_roi roi1, map_roi roi2, op, s)

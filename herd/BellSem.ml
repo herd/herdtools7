@@ -78,6 +78,12 @@ module Make (C:Sem.Config)(V:Value.S)
       | BellBase.Regi r -> read_reg r ii
       | BellBase.Imm i -> (M.unitT (V.intToV i))	
 
+    let read_iar roi ii = 
+      match roi with
+      | BellBase.IAR_roa roa -> read_roa roa ii
+      | BellBase.IAR_imm i -> (M.unitT (V.intToV i))	
+
+
     let do_2op v1 v2 op addr = match op with
       | BellBase.RMWExch -> ((M.unitT v1) >>| 
 	                     (M.unitT v2) >>|
@@ -139,20 +145,27 @@ module Make (C:Sem.Config)(V:Value.S)
 
 
 	| BellBase.Pmov(r, roi) ->
-	   (read_roi roi ii) >>=
+	   (read_iar roi ii) >>=
 	     (fun v -> write_reg r v ii) >>! B.Next
 					       
 	| BellBase.Padd(r, roi1, roi2) ->
-	   (read_roi roi1 ii) >>|
-	     (read_roi roi2 ii) >>=
+	   (read_iar roi1 ii) >>|
+	     (read_iar roi2 ii) >>=
 	     (fun (v1,v2) -> M.op Op.Add v1 v2) >>=
 	     (fun v -> write_reg r v ii) >>!
 	     B.Next
 
 	| BellBase.Pand(r, roi1, roi2) ->
-	   (read_roi roi1 ii) >>|
-	     (read_roi roi2 ii) >>=
+	   (read_iar roi1 ii) >>|
+	     (read_iar roi2 ii) >>=
 	     (fun (v1,v2) -> M.op Op.And v1 v2) >>=
+	     (fun v -> write_reg r v ii) >>!
+	     B.Next
+
+	| BellBase.Pxor(r, roi1, roi2) ->
+	   (read_iar roi1 ii) >>|
+	     (read_iar roi2 ii) >>=
+	     (fun (v1,v2) -> M.op Op.Xor v1 v2) >>=
 	     (fun v -> write_reg r v ii) >>!
 	     B.Next
 
