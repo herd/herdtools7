@@ -1560,7 +1560,7 @@ module Make
       | Test _|UnShow _|Show _|ShowAs _
       | ProcedureTest _|Call _|Forall _
       | WithFrom _ ->
-          assert (not O.bell) ;
+          assert O.bell ;
           kont st res (* Ignore cat constructs when executing bell *)
 
       and do_include loc fname st kont res =
