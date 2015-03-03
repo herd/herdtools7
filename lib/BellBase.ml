@@ -131,10 +131,19 @@ type rmw3_op =
 let pp_rmw3_op op = match op with
   | RMWCAS -> "cas"
 
+type addr_op = 
+| Addr_op_atom of reg_or_addr
+| Addr_op_add of reg_or_addr * reg_or_imm
+
+let pp_addr_op a = match a with
+  | Addr_op_atom roa -> string_of_reg_or_addr roa
+  | Addr_op_add(roa,roi) -> sprintf "%s + %s" (string_of_reg_or_addr roa) 
+    (string_of_reg_or_imm roi)
+
 
 type instruction = 
-| Pld  of reg * reg_or_addr * string list
-| Pst  of reg_or_addr * reg_or_imm * string list
+| Pld  of reg * addr_op * string list
+| Pst  of addr_op * reg_or_imm * string list
 | Pmov of reg * imm_or_addr_or_reg
 | Pand of reg * imm_or_addr_or_reg * imm_or_addr_or_reg
 | Padd of reg * imm_or_addr_or_reg * imm_or_addr_or_reg
@@ -166,14 +175,14 @@ include Pseudo.Make
      end)
 
 let dump_instruction i = match i with
-  | Pld(r, roa, s) -> sprintf "r(%s) %s, [%s]" 
+  | Pld(r, addr_op, s) -> sprintf "r(%s) %s, [%s]" 
                      (string_of_annot_list s)
                      (pp_reg r)
-                     (string_of_reg_or_addr roa)
+                     (pp_addr_op addr_op)
 
-  | Pst(roa,roi,s) -> sprintf "w(%s) [%s] %s" 
+  | Pst(addr_op,roi,s) -> sprintf "w(%s) [%s] %s" 
                      (string_of_annot_list s)
-                     (string_of_reg_or_addr roa)
+                     (pp_addr_op addr_op)
                      (string_of_reg_or_imm roi)
 
   | Pmov(r,roia) -> sprintf "mov %s, %s"
@@ -238,10 +247,14 @@ let fold_regs (f_reg,_f_sreg) =
     | IAR_roa roa -> fold_roa roa c
     | IAR_imm i -> c
   in
+  let fold_addr_op ao c = match ao with
+    | Addr_op_atom roa -> fold_roa roa c
+    | Addr_op_add(roa,roi) -> fold_roa roa (fold_roi roi c)
+  in
   let fold_ins (_y_reg,_y_sreg as c) ins = 
     begin match ins with      
-    | Pld(r, roa, _) -> fold_reg r (fold_roa roa c)
-    | Pst(roa,roi,_) -> fold_roa roa (fold_roi roi c)
+    | Pld(r, addr_op, _) -> fold_reg r (fold_addr_op addr_op c)
+    | Pst(addr_op,roi,_) -> fold_addr_op addr_op (fold_roi roi c)
     | Pmov(r,roi) -> fold_reg r (fold_iar roi c)
     | Padd(r,roi1,roi2) -> fold_reg r (fold_iar roi1 (fold_iar roi2 c))
     | Pand(r,roi1,roi2) -> fold_reg r (fold_iar roi1 (fold_iar roi2 c))
@@ -266,9 +279,13 @@ let map_regs f_reg _f_symb =
     | IAR_imm i -> iar
     | IAR_roa roa -> IAR_roa(map_roa roa)
   in
+  let map_addr_op ao = match ao with
+    | Addr_op_atom roa -> Addr_op_atom(map_roa roa)      
+    | Addr_op_add(roa,roi) -> Addr_op_add(map_roa roa,map_roi roi)
+  in
   let map_ins ins = begin match ins with
-    | Pld(r, roa, s) -> Pld(f_reg r, map_roa roa, s)
-    | Pst(roa,roi,s) -> Pst(map_roa roa, map_roi roi, s)
+    | Pld(r, addr_op, s) -> Pld(f_reg r, map_addr_op addr_op, s)
+    | Pst(addr_op,roi,s) -> Pst(map_addr_op addr_op, map_roi roi, s)
     | Pmov(r,roi) -> Pmov(f_reg r, map_iar roi)
     | Padd(r,roi1,roi2) -> Padd(f_reg r, map_iar roi1, map_iar roi2)
     | Pand(r,roi1,roi2) -> Pand(f_reg r, map_iar roi1, map_iar roi2)

@@ -46,6 +46,7 @@ rule token = parse
 | '[' { LBRAC }
 | '{' { LBRACE }
 | '}' { RBRACE }
+| '+' { PLUS }
 | 'r'   { READ }
 | 'w'   { WRITE }
 | "f"   { FENCE }

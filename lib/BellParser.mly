@@ -20,7 +20,7 @@ open Bell
     
 %}
 
-%token EOF SEMI COMMA PIPE COLON LPAR RPAR RBRAC LBRAC LBRACE RBRACE SCOPES REGIONS MOV AND ADD BEQ READ WRITE FENCE RMW CAS EXCH DOT XOR
+%token EOF SEMI COMMA PIPE COLON LPAR RPAR RBRAC LBRAC LBRACE RBRACE SCOPES REGIONS MOV AND ADD BEQ READ WRITE FENCE RMW CAS EXCH DOT XOR PLUS
 %token <BellBase.reg> REG
 %token <int> NUM
 %token <string> NAME 
@@ -69,10 +69,10 @@ instr_option :
 | instr      { Instruction $1}
 
 instr:
-| READ LPAR annot_list RPAR reg COMMA LBRAC roa RBRAC
+| READ LPAR annot_list RPAR reg COMMA LBRAC addr_op RBRAC
   { Pld($5, $8, $3) }
 
- | WRITE LPAR annot_list RPAR LBRAC roa RBRAC COMMA roi 
+ | WRITE LPAR annot_list RPAR LBRAC addr_op RBRAC COMMA roi 
  { Pst($6, $9, $3) }
 
 | RMW DOT rmw2_op LPAR annot_list RPAR reg COMMA LBRAC roa RBRAC COMMA roi
@@ -106,6 +106,10 @@ annot_list:
 | NAME
   {[$1]}
 | {[]}
+
+addr_op:
+| roa {BellBase.Addr_op_atom($1)}
+| roa PLUS roi {BellBase.Addr_op_add($1,$3)}
 
 rmw2_op:
 | ADD  { RMWAdd  }

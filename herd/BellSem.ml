@@ -100,18 +100,24 @@ module Make (C:Sem.Config)(V:Value.S)
 	                     (M.op3 Op.If eq v3 v1) >>|
 	                     (M.unitT addr))
 
+    let solve_addr_op ao ii = match ao with
+      | BellBase.Addr_op_atom roa -> read_roa roa ii
+      | BellBase.Addr_op_add(roa,roi) -> (read_roa roa ii >>|
+	  read_roi roi ii) >>= 
+	(fun (v1,v2) -> M.op Op.Add v1 v2)
+
 
     let build_semantics ii = 
       let build_semantics_inner ii =
 	match ii.A.inst with
-	| BellBase.Pld(r,roa,s) ->
-	  read_roa roa ii >>=
+	| BellBase.Pld(r,addr_op,s) ->
+	  solve_addr_op addr_op ii >>=
 	    (fun addr -> read_mem addr s ii) >>=
 	    (fun v -> write_reg r v ii) >>!
 	    B.Next
 	    
-	| BellBase.Pst(roa, roi, s) ->
-	  (read_roa roa ii >>|
+	| BellBase.Pst(addr_op, roi, s) ->
+	  (solve_addr_op addr_op ii >>|
 	      read_roi roi ii) >>=
 	    (fun (addr,v) -> write_mem addr v s ii) >>!
 	    B.Next
