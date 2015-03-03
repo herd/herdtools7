@@ -10,18 +10,6 @@
 (*  General Public License.                                          *)
 (*********************************************************************)
 
-(* Some name mungling *)
-
-let scopes_var = "scopes"
-and regions_var = "regions"
-and narrower_var = "narrower"
-
-let tag2events_var s =
-  let len = String.length s in
-  assert (len > 0) ;
-  let c = s.[0] in
-  String.make 1 (Char.uppercase c) ^ String.sub s 1 (len-1)
-
 module Make(O:Model.Config) (S:SemExtra.S) = struct
   module E = S.E
   module U = MemUtils.Make(S)

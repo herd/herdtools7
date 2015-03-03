@@ -15,7 +15,7 @@
 
 module type Config = sig
   val m : AST.pp_t
-  val bell_model_info : (string * Bell_info.model) option
+  val bell_model_info : (string * BellCheck.info) option
   include Model.Config
 end
 
@@ -42,7 +42,7 @@ module Make
       I.add_sets m
         (List.map
            (fun annot ->
-             let tag = ModelUtils.tag2events_var annot in
+             let tag = BellName.tag2events_var annot in
              tag,
              lazy begin
                E.EventSet.filter (pred annot) evts
@@ -171,19 +171,19 @@ module Make
               add_bell_events m
                 (fun annot e -> E.Act.annot_in_list annot e.E.action)
                 evts
-                (Bell_info.get_mem_annots bi) in
+                (BellCheck.get_mem_annots bi) in
             let m =
               match test.Test.bell_info with
               (* No region in test, no event sets *)
-              | None|Some {Bell_info.regions=None;_} -> m
-              | Some {Bell_info.regions=Some regions;_} ->
+              | None|Some {BellInfo.regions=None;_} -> m
+              | Some {BellInfo.regions=Some regions;_} ->
                   add_bell_events m
                     (fun region e -> match E.Act.location_of e.E.action with
                     | None -> false
                     | Some x ->
                        List.mem (E.Act.A.pp_location x, region) regions)
                     evts
-                    (Bell_info.get_region_sets bi) in
+                    (BellCheck.get_region_sets bi) in
             m in
 (* Scope relations from bell info *)
       let m =
@@ -193,7 +193,7 @@ module Make
             let scopes =
               match test.Test.bell_info with
               | None -> assert false (* must be here as, O.bell_mode_info is *)
-              | Some tbi -> tbi.Bell_info.scopes in
+              | Some tbi -> tbi.BellInfo.scopes in
             begin match scopes with
  (* If no scope definition in test, do not build relations, will fail
     later if the model attempts to use scope relations *)
@@ -203,11 +203,11 @@ module Make
                 I.add_rels m
                   (List.map
                      (fun scope ->
-                       scope,
+                       BellName.tag2rel_var scope,
                        lazy begin
                          U.int_scope_bell scope scopes (Lazy.force unv)
                        end)
-                     (Bell_info.get_scope_rels bi))
+                     (BellCheck.get_scope_rels bi))
             end in
 (* Now call interpreter, with or without generated co *)
       if withco then

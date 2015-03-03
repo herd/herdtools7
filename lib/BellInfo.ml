@@ -20,32 +20,43 @@ let dbg = false
 let docheck = true
 
 
-(* Simple operations on string elements (avoid Pervasives.compare) *)
-module Simple = struct
+(*************)
+(* For tests *)
+(*************)
 
-  let assoc (k:string) env =
-    let rec find_rec = function
-      | [] -> raise Not_found
-      | (k0,v)::env ->
-          if k0 = k then v else find_rec env in
-    find_rec env
+type mem_space_map = (string * string) list
 
-  let mem (y:string) xs = List.exists (fun x -> x=y) xs
+let pp_mem_map m = 
+  String.concat ","
+    (List.map (fun (n,r) -> sprintf "%s: %s" n r) m)
 
-  let mem_assoc (k:string) env =
-    try ignore (assoc k env) ; true
-    with Not_found -> false
+type scopes = 
+ | Leaf of string* int list
+ | Children of string * scopes list
 
-end
+let pp_int_list il =
+  String.concat " " (List.map (sprintf "%i") il)
+  
 
-(* For the bell model and test info *)
+let rec pp_scopes s =
+  match s with 
+  | Leaf(s,i) -> sprintf "(%s %s)" s (pp_int_list i)
+  | Children(s,sc) -> 
+    let pp = List.map (fun x -> pp_scopes x) sc in
+    sprintf "(%s %s)" s (String.concat " " pp)
 
-(* first start off with the event annotations, keep them
-   as strings to be generic  *)
+type test = {
+  regions : mem_space_map option;
+  scopes : scopes option;
+}
+
+(*
+(**************)
+(* Model info *)
+(**************)
+
 type event_type = string
-
 type annotation = string
-
 type annot_set = annotation list
 
 let pp_annot_set ans = "{"^(String.concat "," ans)^"}"
@@ -120,7 +131,7 @@ let pp_order_dec od =
        (fun (f,s) -> sprintf "(%s,%s)" f s)
        ol)
 
-type all_order_decs = StringRel.t Misc.bds
+type all_order_decs = StringRel.t StringMap.t
 
 let pp_all_order_decs aod = 
   let tmp = List.map (fun x -> pp_order_dec x) aod in
@@ -135,40 +146,13 @@ type model = {
 
 (* For the bell test info *)
 
-type mem_space_map = (string * string) list
-
-let pp_mem_map mm = 
-  let tmp = List.map (fun (n,r) -> sprintf "%s: %s" n r) mm in
-  String.concat ", " tmp
-
-type scopes = 
- | Leaf of string* int list
- | Children of string * scopes list
-
-let pp_int_list il = 
-  let tmp = List.map (fun x -> sprintf "%d" x) il in
-  String.concat " " tmp
-  
-
-let rec pp_scopes s =
-  match s with 
-  | Leaf(s,i) -> sprintf "(%s %s)" s (pp_int_list i)
-  | Children(s,sc) -> 
-    let tmp = List.map (fun x -> pp_scopes x) sc in
-    let concat = String.concat " " tmp in
-    sprintf "(%s %s)" s concat
-
-type test = {
-  regions : mem_space_map option;
-  scopes : scopes option;
-}
-
-let known_sets = ["R"; "W"; "F"; "regions"; "RMW";]
-let known_relations = ["scopes";]
-let known_orders = ["scopes";]
+let known_sets = StringSet.of_list ["R"; "W"; "F"; "regions"; "RMW";]
+let known_relations = StringSet.of_list ["scopes";]
+let known_orders = StringSet.of_list ["scopes";]
 
 let check_decs check known msg = 
-  List.iter (fun (k,_) ->
+  StringMap.iter
+    (fun k _ ->
     if not (Simple.mem k known) then 
       Warn.user_error msg k) check 
 
@@ -282,8 +266,6 @@ let get_assoc_rel a l =
   else 
     ("",[])  
 
-
-
 let evts2set tag bi =
   StringSet.of_list (flatten_event_dec (get_assoc_event tag bi.events))
       
@@ -302,3 +284,4 @@ let get_scope_rels  bi =
     (list_to_set
        (flatten_rel_dec (get_assoc_rel "scopes" bi.relations))) 
 
+*)

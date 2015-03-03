@@ -245,7 +245,7 @@ let fold_regs (f_reg,_f_sreg) =
   in
   let fold_iar iar c = match iar with
     | IAR_roa roa -> fold_roa roa c
-    | IAR_imm i -> c
+    | IAR_imm _ -> c
   in
   let fold_addr_op ao c = match ao with
     | Addr_op_atom roa -> fold_roa roa c
@@ -260,8 +260,8 @@ let fold_regs (f_reg,_f_sreg) =
     | Pand(r,roi1,roi2) -> fold_reg r (fold_iar roi1 (fold_iar roi2 c))
     | Pxor(r,roi1,roi2) -> fold_reg r (fold_iar roi1 (fold_iar roi2 c))
     | Pbeq(roi1, roi2, _) -> fold_roi roi1 (fold_roi roi2 c)
-    | Prmw2_op(r,roa,roi,op,s) -> fold_reg r (fold_roa roa (fold_roi roi c))
-    | Prmw3_op(r,roa,roi1,roi2,op,s) -> fold_reg r (fold_roa roa (fold_roi roi1 (fold_roi roi2 c)))
+    | Prmw2_op(r,roa,roi,_,_) -> fold_reg r (fold_roa roa (fold_roi roi c))
+    | Prmw3_op(r,roa,roi1,roi2,_,_) -> fold_reg r (fold_roa roa (fold_roi roi1 (fold_roi roi2 c)))
     | Pfence _ -> c
     end 
   in fold_ins
@@ -276,7 +276,7 @@ let map_regs f_reg _f_symb =
     | Regi r -> Regi(f_reg r)
   in
   let map_iar iar = match iar with
-    | IAR_imm i -> iar
+    | IAR_imm _ -> iar
     | IAR_roa roa -> IAR_roa(map_roa roa)
   in
   let map_addr_op ao = match ao with
@@ -307,15 +307,6 @@ let pp_instruction _m ins = dump_instruction ins
 let allowed_for_symb = []
 
 let _get_reg_list _ins = ([], [])
-
-let get_id_and_list i = match i with
-  | Pld(_,_,s) -> ("R",s)
-  | Pst(_,_,s) -> ("W",s)
-  | Pfence (Fence s) -> ("F",s)      
-  | Prmw2_op(_,_,_,_,s) | Prmw3_op(_,_,_,_,_,s) ->
-    ("RMW",s)
-    (* flag value and empty list *)
-  | _ -> ("X",[])
 
 
 (* unimplemented so far, will implement if needed*)

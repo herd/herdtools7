@@ -77,13 +77,11 @@ module Make (C: Config) = struct
     (* Continuation: notice that it should be called once at most *)
     let function_arg =
       (fun st res -> match res with
-      | None -> Some (I.extract_bell_dec st)
+      | None -> Some st.I.bell_info
       | Some _ -> assert false) in
 
     (* call the interpreter  and collect bell info *)
     match I.interpret empty_test ks I.env_empty vb_pp function_arg None with
     | None -> assert false (* Continuation must be called at least once *)
-    | Some (events,relations,orders) ->
-        (* build the bell info *)
-        Bell_info.build_bell_info events relations orders    
+    | Some i -> i
 end

@@ -28,7 +28,7 @@ type ('prog,'nice_prog,'start,'state,'constr, 'loc, 'locset) t =
      scope_tree : ScopeTree.scope_tree option ;
      mem_space_map : MemSpaceMap.mem_space_map ;
      param_map : CAst.param list list ;
-     bell_info : Bell_info.test option ;
+     bell_info : BellInfo.test option ;
    }
 
 val simple_name :

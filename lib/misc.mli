@@ -183,4 +183,10 @@ val fold_cross_gen :
 (* Simple bindings *)
 (*******************)
 
-type 'a bds = (string * 'a) list
+module Simple : sig
+  type 'a bds = (string * 'a) list
+
+  val assoc : string -> 'a bds -> 'a
+  val mem : string -> string list -> bool
+  val mem_assoc : string -> 'a bds -> bool
+end

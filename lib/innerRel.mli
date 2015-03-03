@@ -66,6 +66,9 @@ module type S =  sig
 (* All toplogical orders, as a list of lists *)
   val all_topos : bool (* verbose *) -> Elts.t -> t -> elt0 list list
 
+(* Is the parent relation of a hierarchy *)
+  val is_hierarchy : Elts.t -> t -> bool
+
 (* Remove any transitivity edges
    [LUC: set argument. removed, it is useless, since set = nodes rel is ok]
    remove_transitive_edges [set] rel

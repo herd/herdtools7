@@ -9,8 +9,6 @@
 (*  General Public License.                                          *)
 (*********************************************************************)
 
-include InnerRel.Make
-    (struct
-      type t = string
-      let compare = String.compare
-    end)
+include
+  (InnerRel.Make(String) :
+    InnerRel.S with type elt0 = string and module Elts = MySet.Make(String))

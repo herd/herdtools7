@@ -17,7 +17,8 @@ module type S =  sig
 	
   include Rel.S with
   type elt1 = elt0 and type elt2 = elt0
-  and module Elts1 = Elts and module Elts2 = Elts
+  and module Elts1 = Elts
+  and module Elts2 = Elts
 
 (* All elements related *)
   val nodes : t -> Elts.t
@@ -68,6 +69,9 @@ module type S =  sig
 
   val all_topos : bool (* verbose *)-> Elts.t -> t -> elt0 list list
 
+(* Is the parent relation of a hierarchy *)
+  val is_hierarchy : Elts.t -> t -> bool
+
 (* Remove any transitivity edges
    [LUC: set argument. removed, it is useless, since set = nodes rel is ok]
    remove_transitive_edges [set] rel
@@ -84,7 +88,8 @@ module type S =  sig
 end
 
 module Make(O:MySet.OrderedType) : S
-with type elt0 = O.t and module Elts = MySet.Make(O) =
+with type elt0 = O.t
+and module Elts = MySet.Make(O) =
 struct
 
   type elt0 = O.t
@@ -92,7 +97,7 @@ struct
 
   module Elts = MySet.Make(O)
 
-  include Rel.Make(O) (O)
+  include Rel.Make(O)(O)
 
 
   let nodes t =
@@ -376,11 +381,29 @@ let transitive_closure r = M.of_map (M.tr (M.to_map r))
     if verbose then begin
       let nres = List.length nss in
       if nres > 1023 then begin
-        Printf.eprintf "Warning: all topos produced %i orderings\n" nres ;
-        flush stderr
+        Printf.eprintf "Warning: all topos produced %i orderings\n%!" nres
       end
     end ;
     nss
+
+(* Is the parent relation of a hierarchy *)
+  let is_hierarchy nodes edges =
+    let m = M.to_map edges in
+    try
+      let zero =
+        Elts.fold
+          (fun e k ->            
+            match Elts.cardinal (M.succs e m) with
+            | 0 -> e::k
+            | 1 -> k
+            | _ -> raise Exit)
+          nodes [] in
+      match zero with
+      | [] -> Elts.cardinal nodes = 1 && is_empty edges
+      | [_] -> true
+      | _ -> false
+    with Exit -> false
+
 
 
 (***************************)

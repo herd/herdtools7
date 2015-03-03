@@ -128,10 +128,11 @@ module Make(S : SemExtra.S) = struct
 
   let rec bell_scope_tree_contains scope_tree e =
     match scope_tree with 
-    | Bell_info.Leaf(_,l) -> List.mem (concrete_proc_of e) l
-    | Bell_info.Children (_,c) -> 	  
-      let all_tree_search = List.map (fun x -> bell_scope_tree_contains x e) c in
-      List.fold_left (fun a x -> a || x) false all_tree_search 
+    | BellInfo.Leaf(_,l) -> List.mem (concrete_proc_of e) l
+    | BellInfo.Children (_,c) ->
+ 	List.exists
+          (fun x -> bell_scope_tree_contains x e)
+          c
 
   let rec int_scope_bell_events e1 e2 scope scope_tree = 
 
@@ -139,8 +140,8 @@ module Make(S : SemExtra.S) = struct
    both events belong to the scope *)
     let current_scope = 
       match scope_tree with 
-      | Bell_info.Leaf(s,_) 
-      | Bell_info.Children (s,_) -> s in
+      | BellInfo.Leaf(s,_) 
+      | BellInfo.Children (s,_) -> s in
       if current_scope = scope then 
 	(bell_scope_tree_contains scope_tree e1) &&
 	(bell_scope_tree_contains scope_tree e2)        
@@ -148,8 +149,8 @@ module Make(S : SemExtra.S) = struct
     (* else keep searching *)
     else 
       match scope_tree with 
-      | Bell_info.Leaf(_,_) -> false
-      | Bell_info.Children (_,c) -> 
+      | BellInfo.Leaf(_,_) -> false
+      | BellInfo.Children (_,c) -> 
 	let all_tree_search = List.map (fun x -> int_scope_bell_events e1 e2 scope x) c in
 	List.fold_left (fun a x -> a || x) false all_tree_search 
 	  
@@ -157,7 +158,70 @@ module Make(S : SemExtra.S) = struct
     E.EventRel.filter 
       (fun (e1,e2) -> int_scope_bell_events e1 e2 scope bell_scope_tree) r
 
+(***************************)
+(* Got all scope relations *)
+(***************************)
 
+(* Classify acording to proc *)
+module IntMap =
+  MyMap.Make
+    (struct
+      type t = int
+      let compare = Misc.int_compare
+    end)
+
+let by_proc evts =
+  let m = IntMap.empty in
+  let m =
+    E.EventSet.fold
+      (fun e m -> match E.proc_of e with
+      | Some p ->
+          let old = IntMap.safe_find [] p m in
+          IntMap.add p (e::old) m
+      | None -> m)
+      evts m in
+  IntMap.map E.EventSet.of_list m
+
+(*******************)
+
+let get_scope_classes evts =
+  let open BellInfo in
+  let m = by_proc evts in
+  let rec do_rec = function
+    | Leaf (s,ps) ->
+        let es =
+          E.EventSet.unions
+            (List.map
+               (fun p -> IntMap.safe_find E.EventSet.empty p m)
+               ps) in
+        es,StringMap.add s [es] StringMap.empty
+    | Children (s,ts) ->
+        let ess,clss =
+          List.fold_left
+            (fun (es,clss) t ->
+              let es_t,cls_t = do_rec t in
+              es_t::es,cls_t::clss)
+            ([],[]) ts in
+        let es = E.EventSet.unions ess in
+        let cls = StringMap.unions (@) clss in
+        es,StringMap.add s [es] cls in
+  fun sc ->
+    let _,cls = do_rec sc in
+    cls
+
+let _get_scope_rels evts sc =
+  let cls = get_scope_classes evts sc in
+  StringMap.fold
+    (fun s cls k -> 
+      let r =
+        E.EventRel.unions
+          (List.map
+             (fun evts -> E.EventRel.cartesian evts evts)
+             cls) in
+      StringMap.add s r k)
+    cls StringMap.empty
+
+ 
 (******************)
 (* View of a proc *)
 (******************)

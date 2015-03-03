@@ -62,8 +62,7 @@ module Make : functor (S: SemExtra.S) -> sig
     AST.scope -> S.event_rel -> GPU_PTXBase.scope_tree -> S.event_rel
 
 (* bell scope operations *)
-  val int_scope_bell : 
-    string -> Bell_info.scopes -> S.event_rel -> S.event_rel
+  val int_scope_bell :  string -> BellInfo.scopes -> S.event_rel -> S.event_rel
 
   
 
@@ -103,7 +102,7 @@ module Make : functor (S: SemExtra.S) -> sig
 (* Partition by location *)
   val partition_events : S.event_set -> S.event_set list
 
-(* Utlities for relations *)
+(* Utilities for relations *)
   val restrict_to_mem_stores : S.event_rel -> S.event_rel
 
 (* Place loads given write serialization *)

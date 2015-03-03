@@ -19,7 +19,7 @@ module type Config = sig
   val through : Model.through
   val skipchecks : StringSet.t
   val strictskip : bool
-  val bell_model_info : (string * Bell_info.model) option
+  val bell_model_info : (string * BellCheck.info) option
   val check_name : string -> bool
   val check_rename : string -> string option
   include GenParser.Config
@@ -293,10 +293,11 @@ module Top (C:Config) = struct
              end)(BellS) in
         let module BellC =
           BellCheck.Make
+            (Bell)
             (struct
-              let bell_model_info =
-                Misc.app_opt (fun (_,y) -> y) C.bell_model_info
-             end)(Bell) in
+              let info = Misc.app_opt (fun (_,y) -> y) C.bell_model_info
+              let get_id_and_list = Bell.get_id_and_list
+             end) in
         let module P = GenParser.Make (C) (Bell) (BellLexParse) in
         let module X = Make (BellS) (P) (BellC) (BellM) in 
         X.run name chan env splitted

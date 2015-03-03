@@ -34,7 +34,7 @@ open GPU_PTX
 /* Instruction tokens */
 %token ST LD MEMBAR MOV ADD AND CVT VOL SETP BRA ATOM ATOM_EXCH ATOM_ADD ATOM_CAS
 
-%type <int list * (GPU_PTXBase.pseudo) list list * MiscParser.gpu_data option * Bell_info.test option> main 
+%type <int list * (GPU_PTXBase.pseudo) list list * MiscParser.gpu_data option * BellInfo.test option> main 
 %start main
 
 %nonassoc SEMI

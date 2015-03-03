@@ -25,6 +25,7 @@ module type S = sig
 (* Lifting of fold/map *)
   val pseudo_map : (ins -> ins) -> pseudo -> pseudo
   val pseudo_fold : ('a -> ins -> 'a) -> 'a -> pseudo -> 'a
+  val pseudo_iter : (ins -> unit) -> pseudo -> unit
 
 (* Fold/Map over labels *)
   val fold_labels : ('a -> string -> 'a) -> 'a -> pseudo -> 'a
@@ -78,6 +79,8 @@ struct
     | Instruction ins -> f k ins
     | Label (_,ins) -> pseudo_fold f k ins
     | Macro (_,_) -> assert false
+
+  let pseudo_iter f ins = pseudo_fold (fun () ins -> f ins) () ins
 
 (* Fold/Map over labels *)
 

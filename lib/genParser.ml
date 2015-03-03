@@ -60,7 +60,7 @@ module type LexParse = sig
   val parser :
         (Lexing.lexbuf -> token) -> Lexing.lexbuf ->
 	  int list * instruction list list *
-            MiscParser.gpu_data option * Bell_info.test option
+            MiscParser.gpu_data option * BellInfo.test option
 end
 
 (* Output signature *)

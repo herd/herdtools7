@@ -34,14 +34,6 @@ module type S = sig
   val add_sets : V.env -> (string * S.event_set Lazy.t) list -> V.env
   val add_vs : V.env -> (string * V.v Lazy.t) list -> V.env
 
-(* Declarations (Bell files) *)
-
-  type event_desc  =  string list list list   
-  type rel_desc = string list      
-  type order_desc = Bell_info.order
-
-  type bell_dec
-
 (* State of interpreter *)
 
   type st = {
@@ -50,7 +42,7 @@ module type S = sig
       skipped : StringSet.t ;
       silent : bool ; undef : bool;
       ks : ks ;
-      bell_dec : bell_dec ;
+      bell_info : BellCheck.info ;
       stack : TxtLoc.t list;
   }
 
@@ -64,10 +56,6 @@ module type S = sig
     V.env ->
     (string * S.event_rel) list Lazy.t ->
     (st -> 'a -> 'a) -> 'a -> 'a
-
-(* Extract bell info from interpreter final state *)
-  val extract_bell_dec :
-      st -> event_desc Misc.bds * rel_desc Misc.bds  * order_desc Misc.bds
 
 end
 
@@ -342,37 +330,13 @@ module Make
         List.map (fun (k,f) -> k,Prim (k,f)) bds in
       add_vals (fun v -> lazy v) env bds
 
-(* Bell declarations *)
-    type event_desc  =  string list list list   
-    type event_dec = event_desc StringMap.t
-    type rel_desc = string list      
-    type rel_dec = rel_desc StringMap.t
-    type order_desc = Bell_info.order
-    type order_dec = order_desc StringMap.t
-
-    type bell_dec =
-        { event_dec : event_dec;
-          rel_dec : rel_dec;
-          order_dec : order_dec; }
-
-    let empty_bell_dec =
-      { event_dec = StringMap.empty;
-        rel_dec = StringMap.empty;
-        order_dec = StringMap.empty; }
-
-    let add_dec default mk x v m =
-      let old =
-        try StringMap.find x m
-        with Not_found -> default in
-      StringMap.add x (mk v old) m
-
     type st = {
         env : V.env ;
         show : S.event_rel StringMap.t Lazy.t ;
         skipped : StringSet.t ;
         silent : bool ; undef : bool ;
         ks : ks ;
-        bell_dec : bell_dec;
+        bell_info : BellCheck.info ;
         stack : TxtLoc.t list;
       }
 
@@ -449,6 +413,10 @@ module Make
       | V.Tag (_,tag) -> tag
       | _ -> assert false
 
+    let as_tags tags =
+      let ss = ValSet.fold (fun v k -> as_tag v::k) tags [] in
+      StringSet.of_list ss
+
     exception Stabilised of typ
 
     let stabilised ks env =
@@ -484,7 +452,7 @@ module Make
     open AST
 
 (* check if memory location is in certain memory region *)
-    let mem_region_match target mem_map e =
+    let _mem_region_match target mem_map e =
       let is_mem_map = match mem_map with 
       | Some _ -> true
       | None -> false in
@@ -657,7 +625,7 @@ module Make
 
     and tag2events env args = match args with
     | [V.Tag (_,tag)] ->
-        let x = ModelUtils.tag2events_var tag in
+        let x = BellName.tag2events_var tag in
         begin try
           let v = Lazy.force (StringMap.find x env.vals) in
           match v with
@@ -1181,16 +1149,19 @@ module Make
 
       let check_bell_enum =
         if O.bell then
-          fun st name tags ->
-            if name = ModelUtils.scopes_var then
-              let bell_dec =
-                { st.bell_dec with
-                  rel_dec =
-                    add_dec [] (@) name tags st.bell_dec.rel_dec;} in
-              { st with bell_dec;}                  
-            else st
+          fun loc st name tags ->
+            try
+              if name = BellName.scopes then
+                let bell_info = BellCheck.add_rel name tags st.bell_info in
+                { st with bell_info;}                  
+              else if name = BellName.regions then
+                let bell_info = BellCheck.add_regions tags st.bell_info in
+                { st with bell_info;}              
+              else st
+            with BellCheck.Defined ->
+              error st.silent loc "second definition of bell enum %s" name
         else
-          fun st _v _tags -> st in
+          fun _loc st _v _tags -> st in
 
 (* Check if order is being defined by a "narrower" function *)
       let check_bell_order = 
@@ -1198,7 +1169,7 @@ module Make
           fun bds st ->
             List.fold_left
               (fun st (v,e) ->
-                if v = ModelUtils.narrower_var then
+                if v = BellName.narrower then
                   let loc = get_loc e in
 (* Now evaluate all calls to narrower for all scope tags *)
                   let env = from_st st in                  
@@ -1207,16 +1178,16 @@ module Make
                     with _ -> assert false in
                   let scopes =
                     let scopes =
-                      try StringMap.find ModelUtils.scopes_var env.EV.env.vals
+                      try StringMap.find BellName.scopes env.EV.env.vals
                       with Not_found ->
                         error false
                           loc "tag set %s must be defined while defining %s"
-                          ModelUtils.scopes_var ModelUtils.narrower_var in
+                          BellName.scopes BellName.narrower in
                     match Lazy.force scopes with
                     | V.ValSet ((TTag _|TAnyTag),scs) -> scs
                     | v ->
                         error false loc "%s must be a tag set, found %s"
-                          ModelUtils.scopes_var (pp_typ (type_val v)) in
+                          BellName.scopes (pp_typ (type_val v)) in
                   let order =
                     ValSet.fold
                       (fun tag order ->                        
@@ -1229,7 +1200,7 @@ module Make
                         let tag = as_tag tag in
                         let add tgt order =
                           let tgt = as_tag tgt in
-                          StringRel.add (tag,tgt) order in
+                          StringRel.add (tgt,tag) order in
                         match tgt with
                         | V.Empty -> order
                         | V.Tag (_,_) -> add tgt order
@@ -1237,18 +1208,20 @@ module Make
                         | _ ->
                             error false loc
                               "implicit call %s('%s) must return a tag or a set of tags, found %s"
-                              ModelUtils.narrower_var tag (pp_typ (type_val tgt)))
+                              BellName.narrower tag (pp_typ (type_val tgt)))
                       scopes StringRel.empty in
-                  if not (StringRel.is_acyclic order) then
+                  if not (StringRel.is_hierarchy (as_tags scopes) order) then
                     error false loc
-                      "%s defines a cyclic relation"
-                      ModelUtils.narrower_var ;
-                  let bell_dec =
-                    { st.bell_dec with
-                      order_dec =
-                      add_dec StringRel.empty StringRel.union
-                        ModelUtils.scopes_var order st.bell_dec.order_dec; } in
-                  { st with bell_dec}
+                      "%s defines the non-hierarchical relation %s"
+                      BellName.narrower
+                      (BellCheck.pp_order_dec order) ;
+                  try
+                    let bell_info =
+                      BellCheck.add_order BellName.scopes order st.bell_info in
+                    { st with bell_info;}
+                  with BellCheck.Defined ->
+                    error st.silent
+                      loc "second definition of %s" BellName.narrower
               else st)
               st bds
         else fun _bds st -> st in
@@ -1353,7 +1326,7 @@ module Make
             W.warn "Skipping check %s" (Misc.as_some name) ;
             kont st res
           end
-      | Let (_,bds) ->
+      | Let (_loc,bds) ->
           let env = eval_bds (from_st st) bds in
           let st = { st with env; } in
           let st = doshow bds st in
@@ -1408,7 +1381,7 @@ module Make
             warn loc "adding set of all tags for %s" name ;
           let env = { env with tags; enums; } in
           let st = { st with env;} in
-          let st = check_bell_enum st name xs in
+          let st = check_bell_enum loc st name xs in
           kont st res
       | Forall (_loc,x,e,body) when not O.bell  ->
           let st0 = st in
@@ -1449,7 +1422,7 @@ module Make
           | _ -> error st.silent (get_loc e) "set expected"
           end
       | Latex _ -> kont st res
-
+(*
       | EnumSet(_loc,_name,xs) -> 
           warn _loc "Deprecated" ;
 	  let test_bi = match test.Test.bell_info with
@@ -1484,24 +1457,26 @@ module Make
 	  let st = { st with env;} in
           let st = doshow bds st in
 	  kont st res
-
-      | Event_dec(loc,v,e_list) when O.bell ->
-	  let eval_expr = List.map (fun e -> eval (from_st st) e) e_list in
-	  let event_sets = List.map (fun s -> 	  
-	    match s with 
-	    | ValSet(_t,vs) -> 
-	        List.map (fun vs_e -> 
-		  (		
-		     match vs_e with 
-		     | V.Tag(_s1,s2) -> s2
-		     | _ -> error false loc "event declaration expected a set of tags. %s is not a tag" (pp_val s)
-		    ))  (ValSet.elements vs)		
-	    | _ -> error false loc "event declaration expected a set of tags. %s is not a tag" (pp_val s)
-	                            ) eval_expr in
-          let bell_dec =
-            { st.bell_dec with
-              event_dec = add_dec [] Misc.cons v event_sets st.bell_dec.event_dec; } in
-          let st = { st with bell_dec;} in
+*)
+      | Event_dec(_loc,x,es) when O.bell ->
+	  let vs = List.map (eval_loc (from_st st)) es in
+	  let event_sets =
+            List.map
+              (fun (loc,v) -> match v with 
+	      | ValSet((TTag _|TAnyTag),elts) -> 
+                  let tags = 
+	            ValSet.fold
+                      (fun elt k -> as_tag elt::k)
+                      elts [] in
+                  StringSet.of_list tags
+              | _ ->
+                  error false loc
+                    "event declaration expected a set of tags, found %s"
+                    (pp_val v))
+              vs in
+          let bell_info =
+            BellCheck.add_events x event_sets st.bell_info in
+          let st = { st with bell_info;} in
 	  kont st res
 
 (*
@@ -1556,7 +1531,9 @@ module Make
       | Event_dec (_, _, _)|Relation_dec (_, _, _)|Order_dec (_, _, _) ->
           assert (not O.bell) ;
           kont st res (* Ignore bell constructs when executing model *)
-
+      | EnumSet (loc,_,_) | EnumRel (loc,_,_) ->
+          warn loc "deprecated" ;
+          kont st res
       | Test _|UnShow _|Show _|ShowAs _
       | ProcedureTest _|Call _|Forall _
       | WithFrom _ ->
@@ -1598,7 +1575,7 @@ module Make
 
         let st =
           {env=m; show=show; skipped=StringSet.empty;
-           silent=false; undef=false; ks; bell_dec=empty_bell_dec;
+           silent=false; undef=false; ks; bell_info=BellCheck.empty_info;
            stack =[];} in        
         let just_run st res = run txt st prog kont res in
         do_include TxtLoc.none "stdlib.cat" st
@@ -1610,12 +1587,5 @@ module Make
             | Some fname ->
                 do_include TxtLoc.none fname st just_run res)
           res
-
-    let extract_bell_dec st =
-      let {event_dec; rel_dec; order_dec; } = st.bell_dec in
-      StringMap.bindings event_dec,
-      StringMap.bindings rel_dec,
-      StringMap.bindings order_dec
-
 
   end

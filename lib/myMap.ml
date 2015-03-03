@@ -15,7 +15,9 @@ open Printf
 
 module type S = sig
   include Map.S
+
   val pp : out_channel -> (out_channel -> key -> 'a -> unit) -> 'a t -> unit
+  val pp_str_delim :  string -> (key -> 'a -> string) -> 'a t -> string
   val pp_str : (key -> 'a -> string) -> 'a t -> string
 
 (* find with a default value *)
@@ -23,6 +25,7 @@ module type S = sig
 
 (* map union *)
   val union : ('a -> 'a -> 'a) -> 'a t -> 'a t -> 'a t
+  val unions : ('a -> 'a -> 'a) -> 'a t list -> 'a t
 
 (* List bindings *)
   val bindings : 'a t -> (key * 'a) list
@@ -34,10 +37,13 @@ module Make(O:Set.OrderedType) : S with type key = O.t =
   struct
     include Map.Make(O)
 
-    let pp_str pp_bind m =
+    let pp_str_delim delim pp_bind m =
       let bds = fold (fun k v r -> (k,v)::r) m [] in
       let bds = List.map (fun (k,v) -> pp_bind k v) bds in
-      String.concat "; " bds
+      String.concat delim bds
+
+    let pp_str pp_bind m = pp_str_delim ";" pp_bind m
+
 
     let pp chan pp_bind m =
       iter
@@ -54,6 +60,10 @@ module Make(O:Set.OrderedType) : S with type key = O.t =
             add k (u v1 v2) m
           with Not_found -> add k v1 m)
         m1 m2
+
+    let unions u ms = match ms with
+    | [] -> empty
+    | m::ms -> List.fold_left (union u) m ms
 
     let bindings m = fold (fun k v xs -> (k,v)::xs) m []
     let add_bindings bds m =

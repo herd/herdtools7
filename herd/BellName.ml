@@ -10,23 +10,27 @@
 (*  General Public License.                                          *)
 (*********************************************************************)
 
-(** Run a test from source file *)
+(** Bell name handling *)
 
-module type Config = sig
-  val model : Model.t option
-  val through : Model.through
-  val skipchecks : StringSet.t
-  val strictskip : bool
-  val bell_model_info : (string * BellCheck.info) option
-  val check_name : string -> bool
-  val check_rename : string -> string option
-  include GenParser.Config
-  include Top.Config
-  include Sem.Config
-end
+let scopes = "scopes"
+and regions = "regions"
+and narrower = "narrower"
 
-module Top :
-  functor (C : Config) ->
-  sig
-    val from_file : string -> TestHash.env -> TestHash.env
-  end
+let tag2events_var s =
+  let len = String.length s in
+  assert (len > 0) ;
+  let c = s.[0] in
+  String.make 1 (Char.uppercase c) ^ String.sub s 1 (len-1)
+
+let tag2rel_var s = s
+
+let r = "R"
+and w = "W"
+and f = "F"
+and rmw = "RMW"
+
+let all_mem_sets = StringSet.of_list [r; w; f; rmw;]
+let all_sets = StringSet.of_list [r; w; f; rmw;]
+let all_rels = StringSet.of_list [scopes;]
+let all_orders = StringSet.of_list [scopes;]
+

@@ -10,23 +10,25 @@
 (*  General Public License.                                          *)
 (*********************************************************************)
 
-(** Run a test from source file *)
+(** Bell name handling *)
 
-module type Config = sig
-  val model : Model.t option
-  val through : Model.through
-  val skipchecks : StringSet.t
-  val strictskip : bool
-  val bell_model_info : (string * BellCheck.info) option
-  val check_name : string -> bool
-  val check_rename : string -> string option
-  include GenParser.Config
-  include Top.Config
-  include Sem.Config
-end
 
-module Top :
-  functor (C : Config) ->
-  sig
-    val from_file : string -> TestHash.env -> TestHash.env
-  end
+(* Those names are special *) 
+val scopes : string
+val regions : string
+val narrower : string
+
+(* Change tag names into event set and relation name *)
+val tag2events_var : string -> string
+val tag2rel_var : string -> string
+
+(* Valid names of various categories *)
+val r : string
+val w : string
+val f : string
+val rmw : string
+
+val all_mem_sets : StringSet.t
+val all_sets : StringSet.t
+val all_rels : StringSet.t
+val all_orders : StringSet.t

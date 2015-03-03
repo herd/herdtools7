@@ -126,7 +126,7 @@ type ('i, 'p, 'c, 'loc) result =
       condition : 'c ;
       locations : ('loc * run_type) list ;
       gpu_data : gpu_data option ;
-      bell_info : Bell_info.test option
+      bell_info : BellInfo.test option
 }
 
 (* Easier to handle *)

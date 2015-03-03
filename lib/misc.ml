@@ -478,4 +478,24 @@ let fold_cross xss = fold_cross_gen cons [] xss
 (* Simple bindings *)
 (*******************)
 
-type 'a bds = (string * 'a) list
+(* Simple operations on string elements (avoid Pervasives.compare) *)
+
+module Simple = struct
+
+  type 'a bds = (string * 'a) list
+
+  let assoc (k:string) env =
+    let rec find_rec = function
+      | [] -> raise Not_found
+      | (k0,v)::env ->
+          if k0 = k then v else find_rec env in
+    find_rec env
+
+  let mem (y:string) xs = List.exists (fun x -> x=y) xs
+
+  let mem_assoc (k:string) env =
+    try ignore (assoc k env) ; true
+    with Not_found -> false
+
+end
+

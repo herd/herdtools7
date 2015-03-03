@@ -541,7 +541,10 @@ let () =
 
   let module IB = Interpret_bell.Make(Config) in
   let bi = match bell_model with
-  | Some (fname,m) -> Some (fname,IB.interpret_bell m)
+  | Some (fname,m) ->
+      begin try Some (fname,IB.interpret_bell m) with
+      | Misc.Exit -> exit 2
+      end
   | None -> None in    
 
   let from_file =

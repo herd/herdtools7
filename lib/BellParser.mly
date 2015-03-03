@@ -29,14 +29,14 @@ open Bell
 %token <string> REGION
 %token <int> PROC
 
-%type <int list * (BellBase.pseudo) list list * MiscParser.gpu_data option * Bell_info.test option > main 
+%type <int list * (BellBase.pseudo) list list * MiscParser.gpu_data option * BellInfo.test option > main 
 %start  main
 
 %nonassoc SEMI
 
 %token SCOPETREE GLOBAL SHARED DEVICE KERNEL CTA WARP THREAD COMMA PTX_REG_DEC 
 
-%type <Bell_info.test> scopes_and_memory_map
+%type <BellInfo.test> scopes_and_memory_map
 %%
 
 main:
@@ -138,7 +138,7 @@ reg:
 
 scopes_and_memory_map:
  | scope_option memory_map_option
-{ { Bell_info.scopes=$1; Bell_info.regions=$2; }}
+{ { BellInfo.scopes=$1; BellInfo.regions=$2; }}
 
 scope_option:
 | SCOPES COLON scope_tree {Some $3}
@@ -168,9 +168,9 @@ scope_tree_list:
 scope_tree:
  | LPAR NAME scope_tree_list RPAR  
    {
-   Bell_info.Children($2,$3)
+   BellInfo.Children($2,$3)
    }
  | LPAR NAME proc_list_sc RPAR 
    {
-   Bell_info.Leaf($2,$3)
+   BellInfo.Leaf($2,$3)
    }
