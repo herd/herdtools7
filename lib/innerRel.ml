@@ -221,7 +221,7 @@ struct
   end
 
      
-let transitive_closure r = M.of_map (M.tr (M.to_map r))
+  let transitive_closure r = M.of_map (M.tr (M.to_map r))
 
 
 
@@ -258,9 +258,9 @@ let transitive_closure r = M.of_map (M.tr (M.to_map r))
         (dfs Elts.empty) ns ([],Elts.empty) in
     o
       
-        
-        
-	
+      
+      
+      
 (* calculate all topological orderings of
    an acyclic directed graph, method 2
    following http://sunburn.stanford.edu/~knuth/fasc2b.ps.gz 
@@ -388,22 +388,24 @@ let transitive_closure r = M.of_map (M.tr (M.to_map r))
 
 (* Is the parent relation of a hierarchy *)
   let is_hierarchy nodes edges =
-    let m = M.to_map edges in
-    try
-      let zero =
-        Elts.fold
-          (fun e k ->            
-            match Elts.cardinal (M.succs e m) with
-            | 0 -> e::k
-            | 1 -> k
-            | _ -> raise Exit)
-          nodes [] in
-      match zero with
-      | [] -> Elts.cardinal nodes = 1 && is_empty edges
-      | [_] -> true
-      | _ -> false
-    with Exit -> false
-
+    is_acyclic edges &&
+    begin
+      let m = M.to_map edges in    
+      try
+        let zero =
+          Elts.fold
+            (fun e k ->            
+              match Elts.cardinal (M.succs e m) with
+              | 0 -> e::k
+              | 1 -> k
+              | _ -> raise Exit)
+            nodes [] in
+        match zero with
+        | [] -> Elts.cardinal nodes = 1 && is_empty edges
+        | [_] -> true
+        | _ -> false
+      with Exit -> false
+    end
 
 
 (***************************)
@@ -412,21 +414,21 @@ let transitive_closure r = M.of_map (M.tr (M.to_map r))
 
 (*
 
-The problem is not as simple as removing all edges e1 --> e2
-s.t. there exists e3 with e1 -->+ e3 --->+ e2.
+  The problem is not as simple as removing all edges e1 --> e2
+  s.t. there exists e3 with e1 -->+ e3 --->+ e2.
 
-See for instance
-    Vincent Dubois & C\'ecile Bothorel
-    "Transitive reduction for social networks and visuallization"
-    International conference on web intelligence (WI'05)
+  See for instance
+  Vincent Dubois & C\'ecile Bothorel
+  "Transitive reduction for social networks and visuallization"
+  International conference on web intelligence (WI'05)
 
-However a very simple algorithm exists.
-*)
+  However a very simple algorithm exists.
+ *)
 
   let remove_transitive_edge  r rel =
-      let new_rel = remove r rel in
-      if mem_transitive r new_rel then new_rel
-      else rel
+    let new_rel = remove r rel in
+    if mem_transitive r new_rel then new_rel
+    else rel
 
   let remove_transitive_edges rel = fold remove_transitive_edge rel rel
 

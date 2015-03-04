@@ -53,10 +53,12 @@ let pp_reg r =
 let reg_compare = Pervasives.compare
 
 let parse_list =
-  List.map (fun (r,s) -> s, GPRreg r) gpr_regs @
+  List.map (fun (r,s) -> s, GPRreg r) gpr_regs
+(* Awful hack to handle register names, s0, s1 etc.
+@ 
   List.map
     (fun (r,s) -> "s" ^ String.sub s 1 (String.length s-1), GPRreg r) gpr_regs
-
+*)
 
 let parse_reg s =
   let s = String.lowercase s in
