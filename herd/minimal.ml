@@ -116,7 +116,7 @@ module Make (O:Cfg) (S:Sem.Semantics)
       | None -> "??"
       | Some b -> b.S.pp
 
-    let check_event_structure  test conc kont res =
+    let check_event_structure test conc kont res =
       let pr = make_procrels conc in
       let pp_relns =
         lazy begin
@@ -144,7 +144,7 @@ module Make (O:Cfg) (S:Sem.Semantics)
           not uniproc ||          
           check_uniproc test conc pr fr ws
         then
-	  kont conc conc.S.fs pp_relns false res
+	  kont conc conc.S.fs pp_relns Flag.Set.empty res
         else res in
       U.apply_process_co test conc proc_ws res
   end

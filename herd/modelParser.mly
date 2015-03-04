@@ -52,7 +52,7 @@ let pp () =
 %token ALT SEMI UNION INTER COMMA DIFF PLUSPLUS
 %token STAR PLUS OPT INV COMP HAT
 %token LET REC AND ACYCLIC IRREFLEXIVE TESTEMPTY EQUAL SHOW UNSHOW AS FUN IN PROCEDURE CALL FORALL DO CHECKCALL FROM TRY EVENTS
-%token REQUIRES
+%token REQUIRES FLAG
 %token ARROW
 %token ENUM DEBUG MATCH WITH
 %type <AST.t> main
@@ -65,12 +65,12 @@ let pp () =
 %right SEMI
 %left DIFF
 %right INTER
-%nonassoc STAR PLUS OPT INV COMP NOT
+%nonassoc STAR PLUS OPT INV COMP
 %nonassoc HAT
 %%
 
 main:
-| VAR options ins_list EOF { $2,$1,$3 }
+| VAR options ins_list EOF { $2, $1,$3 }
 | STRING options ins_list EOF { $2,$1,$3 }
 
 options:
@@ -126,17 +126,22 @@ deftest:
 | CHECKCALL VAR LPAR fargs RPAR optional_name { ProcedureTest(mk_loc(), $2,$4,$6)  }
 
 test_type:
-|          { Provides }
-| REQUIRES { Requires }
+|          { Check }
+| REQUIRES { UndefinedUnless }
+| FLAG     { Flagged }
 
 optional_name:
 |        { None }
 | AS VAR { Some $2 }
 
-test:
+do_test:
 | ACYCLIC { Acyclic }
 | IRREFLEXIVE { Irreflexive }
 | TESTEMPTY { TestEmpty }
+
+test:
+| do_test { Yes $1 }
+| COMP do_test { No $2}
 
 var_list:
 | VAR { [$1] }

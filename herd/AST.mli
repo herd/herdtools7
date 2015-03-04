@@ -57,9 +57,9 @@ and clause = string * exp
 
 and binding = var * exp
 
-type test = Acyclic | Irreflexive | TestEmpty
-
-type test_type = Requires | Provides
+type do_test = Acyclic | Irreflexive | TestEmpty
+type test = Yes of do_test | No of do_test 
+type test_type = Flagged | UndefinedUnless | Check
 
 type ins =
   | Let of TxtLoc.t * binding list

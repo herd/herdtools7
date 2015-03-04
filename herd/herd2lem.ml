@@ -94,9 +94,12 @@ let fprintf_so x chan so =
     | Some s -> s)
 
 let lem_of_test = function
-  | Acyclic -> "acyclic"
-  | Irreflexive -> "irreflexive"
-  | TestEmpty -> "is_empty"
+  | Yes Acyclic -> "acyclic"
+  | Yes Irreflexive -> "irreflexive"
+  | Yes TestEmpty -> "is_empty"
+  | No Acyclic -> "cyclic"
+  | No Irreflexive -> "reflexive"
+  | No TestEmpty -> "is_not_empty"
 
 let provides : string list ref = ref []
 let requires : string list ref = ref []
@@ -116,13 +119,14 @@ let lem_of_ins chan = function
       (lem_of_test test)
       (lem_of_exp []) exp;
     begin match test_type with
-      | Provides -> 
+      | Check -> 
         if (!seen_requires_clause) then
           Warn.user_error "Provides-clause follows requires-clause!";
         provides := name :: (!provides)
-      | Requires -> 
-        seen_requires_clause := true;
-        requires := name :: (!requires)
+      | UndefinedUnless -> 
+          seen_requires_clause := true;
+          requires := name :: (!requires)
+      | Flagged -> Warn.fatal "flag in herd2lem"
     end
   | UnShow _ -> ()
   | Show _ -> ()

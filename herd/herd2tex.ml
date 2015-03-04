@@ -93,14 +93,19 @@ and tex_of_binding c (x, e) = match e with
       tex_of_var x 
       (tex_of_exp 0) e
 
+let tex_of_do_test tag = function
+  | Acyclic -> sprintf "\\kwd{%sacyclic}" tag
+  | Irreflexive -> sprintf "\\kwd{%sirreflexive}" tag
+  | TestEmpty -> sprintf "\\kwd{%sempty}" tag
+
 let tex_of_test = function
-  | Acyclic -> "\\kwd{acyclic}"
-  | Irreflexive -> "\\kwd{irreflexive}"
-  | TestEmpty -> "\\kwd{empty}"
+  | Yes t -> tex_of_do_test "" t
+  | No t -> tex_of_do_test "\\neg" t
 
 let tex_of_test_type = function
-  | Provides -> ""
-  | Requires -> "\\KWD{undefined\\_unless}~"
+  | Check -> ""
+  | UndefinedUnless -> "\\KWD{undefined\\_unless}~"
+  | Flagged -> "\\KWD{flagged}~"
 
 let rec tex_of_ins c = function
   | Let (_,bs) -> 

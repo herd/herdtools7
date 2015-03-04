@@ -1,0 +1,20 @@
+Modification of teh cat language
+
+* Allow ~testname as a test, the effect is to negate test outcome,
+  e.g. ~acyclic is true for cyclic relations.
+        
+  Hence test syntax now is
+   test_name: acyclic|~acyclic|empty|~empty|irreflexive|~irreflexive
+   test: expr (as name)?
+
+* New 'flag' construct, test syntax is
+   new_test:
+   | test --> as before
+   | undefined_unless test -> as before
+   | flag test ->
+      the test must have a name, and this name is execution is
+      recorded as having flagged the name, when the test evaluates to true.
+      *Notice* as in the  undefined_unless case, flagged tests
+      never abort model execution.
+        
+

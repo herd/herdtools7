@@ -40,7 +40,7 @@ module type S = sig
       env : V.env ;
       show : S.event_rel StringMap.t Lazy.t ;
       skipped : StringSet.t ;
-      silent : bool ; undef : bool;
+      silent : bool ;  flags : Flag.Set.t ;
       ks : ks ;
       bell_info : BellCheck.info ;
       stack : TxtLoc.t list;
@@ -334,7 +334,7 @@ module Make
         env : V.env ;
         show : S.event_rel StringMap.t Lazy.t ;
         skipped : StringSet.t ;
-        silent : bool ; undef : bool ;
+        silent : bool ; flags : Flag.Set.t ;
         ks : ks ;
         bell_info : BellCheck.info ;
         stack : TxtLoc.t list;
@@ -1318,13 +1318,34 @@ module Make
             O.strictskip || not skip_this_check
           then
             let v = eval_rel (from_st st) e in
-            let pred = match t with
-            | Acyclic -> E.EventRel.is_acyclic
-            | Irreflexive -> E.EventRel.is_irreflexive
-            | TestEmpty -> E.EventRel.is_empty in
+            let pred =
+              let do_pred t = match t with
+              | Acyclic -> E.EventRel.is_acyclic
+              | Irreflexive -> E.EventRel.is_irreflexive
+              | TestEmpty -> E.EventRel.is_empty in
+              match t with
+              | Yes t -> do_pred t
+              | No t -> fun v -> not (do_pred t v) in
             let ok = pred v in
-            let ok = MU.check_through ok in
-            if ok then kont st res
+            let ok = match test_type with
+            | Check -> MU.check_through ok
+            | UndefinedUnless|Flagged -> ok in
+            if ok then
+              match test_type with 
+              | Check|UndefinedUnless -> kont st res
+              | Flagged -> 
+                  begin match name with
+                  | None ->
+                      warn loc "this flagged test does not have a name" ;
+                      kont st res
+                  | Some name ->
+                      if O.debug then
+                        warn loc "flag %s recorded" name ;
+                      kont
+                        {st with flags=
+                         Flag.Set.add (Flag.Flag name) st.flags;}
+                        res
+                  end
             else if skip_this_check then begin
               assert O.strictskip ;
               kont
@@ -1343,9 +1364,10 @@ module Make
                   | Some r -> ("CY",U.cycle_to_rel r)::k)
               end ;
               match test_type with
-              | Provides -> res
-              | Requires ->
-                  kont {st with undef=true;} res
+              | Check -> res
+              | UndefinedUnless ->
+                  kont {st with flags=Flag.Set.add Flag.Undef st.flags;} res
+              | Flagged -> kont st res
             end
           else begin
             W.warn "Skipping check %s" (Misc.as_some name) ;
@@ -1511,7 +1533,8 @@ module Make
 
         let st =
           {env=m; show=show; skipped=StringSet.empty;
-           silent=false; undef=false; ks; bell_info=BellCheck.empty_info;
+           silent=false; flags=Flag.Set.empty;
+           ks; bell_info=BellCheck.empty_info;
            stack =[];} in        
         let just_run st res = run txt st prog kont res in
         do_include TxtLoc.none "stdlib.cat" st

@@ -70,8 +70,8 @@ module Make(O:Config)(M:XXXMem.S) =
 (* NB: pos and neg are w.r.t. proposition *)
           pos : int ;
           neg : int ;
-(* list of executions that fail at least one requires-clause *)
-	  bad : int list ;
+(* flagged executions *)
+	  flagged : int list Flag.Map.t ;
 (* shown executions *)
           shown : int;
 (* registers that read memory *)
@@ -79,7 +79,8 @@ module Make(O:Config)(M:XXXMem.S) =
         }
 
     let start =
-      { states = A.StateSet.empty; cands=0; pos=0; neg=0; bad=[]; shown=0;
+      { states = A.StateSet.empty; cands=0; pos=0; neg=0;
+        flagged=Flag.Map.empty; shown=0;
         reads = A.LocSet.empty; }
 
 (* Check condition *)
@@ -166,7 +167,7 @@ module Make(O:Config)(M:XXXMem.S) =
 (* Called by model simulator in case of success *)
     let model_kont ochan test cstr =
       let check = check_prop test in
-      fun conc fsc vbpp undef c ->
+      fun conc fsc vbpp flags c ->
         if do_observed && not (all_observed test conc) then c
         else
           let ok = check fsc in
@@ -232,7 +233,12 @@ module Make(O:Config)(M:XXXMem.S) =
               states = A.StateSet.add fsc c.states;
               pos = if ok then c.pos+1 else c.pos;
               neg = if ok then c.neg else c.neg+1;
-              bad = if undef then c.cands::c.bad else c.bad;
+              flagged = begin
+                let add flag k =
+                  let old = Flag.Map.safe_find [] flag k in
+                  Flag.Map.add flag (c.cands::old) k in
+                Flag.Set.fold add flags c.flagged;
+              end;              
               shown = if show_exec then c.shown+1 else c.shown;
               reads = 
                 if O.outcomereads then
@@ -327,7 +333,8 @@ module Make(O:Config)(M:XXXMem.S) =
         try begin
 (* Header *)
         let tname = test.Test.name.Name.name in
-        if not O.badexecs &&  c.bad <> [] then raise Exit ;
+        let has_bad_execs = Flag.Map.mem Flag.Undef c.flagged in
+        if not O.badexecs &&  has_bad_execs then raise Exit ;
         printf "Test %s %s\n" tname (C.dump_as_kind cstr) ;        
 (**********)
 (* States *)
@@ -338,20 +345,21 @@ module Make(O:Config)(M:XXXMem.S) =
           finals ;
 (* Condition result *)
         let ok = check_cond test c in
-        let is_bad = Misc.consp c.bad in
+        let is_bad = Flag.Map.mem Flag.Undef c.flagged in
         printf "%s%s\n"
           (if loop then "Loop " else "")
           (if is_bad then "Undef" else if ok then "Ok" else "No") ;
         let pos,neg = check_wit test c in
         printf "Witnesses\n" ;
         printf "Positive: %i Negative: %i\n" pos neg ;
-	if is_bad then begin
-          printf "Bad executions (%i in total): %s \n" 
-            (List.length c.bad) 
-            (List.fold_right 
-               (fun i s -> s ^ (if s="" then "" else ",") ^ sprintf "%i" i) 
-               c.bad "")
-        end;
+        Flag.Map.iter
+          (fun flag execs ->
+            printf "Flag %s: %s \n" 
+              (Flag.pp flag) 
+              (List.fold_right 
+                 (fun i s -> s ^ (if s="" then "" else ",") ^ sprintf "%i" i) 
+                 execs ""))
+          c.flagged ;
         printf "Condition %a\n" C.dump_constraints cstr ;
         printf "Observation %s %s %i %i\n%!" tname
           (if c.pos = 0 then "Never"

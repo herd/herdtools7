@@ -63,7 +63,7 @@ module Make
             then
               let vb_pp = lazy (I.show_to_vbpp st) in
               let conc = st.I.ks.I.conc in
-              kont conc conc.S.fs vb_pp st.I.undef res
+              kont conc conc.S.fs vb_pp st.I.flags res
             else res)
           res
 

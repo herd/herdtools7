@@ -34,6 +34,7 @@ module LU = LexUtils.Make(O)
     | "fun" ->  FUN
     | "in" -> IN
     | "undefined_unless" -> REQUIRES
+    | "flag" -> FLAG
     | "withco" -> WITHCO
     | "withoutco" ->  WITHOUTCO
     | "withinit" -> WITHINIT
