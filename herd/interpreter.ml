@@ -577,7 +577,7 @@ module Make
           
     and linearisations args = match args with
     | [Set es;Rel r;] ->
-        if O.debug then begin
+        if O.debug && O.verbose > 1 then begin
           eprintf "Linearisations:\n" ;
           eprintf "  %a\n" debug_set es ;
           eprintf "  {%a}\n"
@@ -595,10 +595,13 @@ module Make
                   (fun (e1,e2) ->
                     E.EventSet.mem e1 es && E.EventSet.mem e2 es)
                   o in
-              if O.debug then eprintf "  -> FAIL {%a}\n%!" debug_rel o ;
+              if O.debug then
+                eprintf
+                  "Linearisation failed {%a}\n%!" debug_rel o ;
               ValSet.singleton (Rel o))
             (fun o os ->
-              if O.debug then eprintf "  -> {%a}\n%!" debug_rel o ;
+              if O.debug && O.verbose > 1 then
+                eprintf "  -> {%a}\n%!" debug_rel o ;
               ValSet.add (Rel o) os)
             ValSet.empty in
         ValSet (TRel,rs)
@@ -960,12 +963,12 @@ module Make
       | _ -> error env.EV.silent loc "closure or primitive expected"
   
       and eval_fun is_rec env loc xs body name fvs =
-        if O.debug then begin
+        if O.debug && O.verbose > 1 then begin
           let sz =
             StringMap.fold
               (fun _ _ k -> k+1) env.EV.env.vals 0 in
           let fs = StringSet.pp_str "," (fun x -> x) fvs in
-          eprintf "Closure %s, env=%i, free={%s}\n" name sz fs
+          warn loc "Closure %s, env=%i, free={%s}\n" name sz fs
         end ;
         let vals =
           StringSet.fold
@@ -1164,65 +1167,87 @@ module Make
           fun _loc st _v _tags -> st in
 
 (* Check if order is being defined by a "narrower" function *)
-      let check_bell_order = 
+      let check_bell_order =
         if O.bell then
+          let fun_as_rel f_order loc st id_tags id_fun =
+(* This function evaluate all calls to id_fun on all tags in id_tags *)
+            let env = from_st st in                  
+            let cat_fun =
+              try find_env_loc TxtLoc.none env id_fun
+              with _ -> assert false in
+            let cat_tags =
+              let cat_tags =
+                try StringMap.find id_tags env.EV.env.vals
+                with Not_found ->
+                  error false
+                    loc "tag set %s must be defined while defining %s"
+                    id_tags id_fun in
+              match Lazy.force cat_tags with
+              | V.ValSet ((TTag _|TAnyTag),scs) -> scs
+              | v ->
+                  error false loc "%s must be a tag set, found %s"
+                    id_tags (pp_typ (type_val v)) in
+            let order =
+              ValSet.fold
+                (fun tag order ->                        
+                  let tgt =
+                    try
+                      eval_app loc { env with EV.silent=true;} cat_fun [tag]
+                    with Misc.Exit -> V.Empty in
+                  let tag = as_tag tag in
+                  let add tgt order = StringRel.add (tag,as_tag tgt) order in
+                  match tgt with
+                  | V.Empty -> order
+                  | V.Tag (_,_) -> add tgt order
+                  | V.ValSet ((TTag _|TAnyTag),vs) ->
+                      ValSet.fold add vs order
+                  | _ ->
+                      error false loc
+                        "implicit call %s('%s) must return a tag, found %s"
+                        id_fun tag (pp_typ (type_val tgt)))
+                cat_tags StringRel.empty in
+            let tags_set = as_tags cat_tags in
+            let order = f_order order in
+            if O.debug then begin
+              warn loc "Defining hierarchy on %s from function %s"
+                id_tags id_fun ;
+              eprintf "%s: {%a}\n" id_tags
+                (fun chan ->
+                  StringSet.pp chan "," output_string) tags_set ;
+              eprintf "hierarchy: %a\n"
+                (fun chan ->
+                  StringRel.pp chan " "
+                    (fun chan (a,b) -> fprintf chan "(%s,%s)" a b))
+                order
+            end ;
+            if not (StringRel.is_hierarchy tags_set order) then
+              error false loc
+                "%s defines the non-hierarchical relation %s"
+                id_fun
+                (BellCheck.pp_order_dec order) ;
+            try
+              let bell_info =
+                BellCheck.add_order id_tags order st.bell_info in
+              { st with bell_info;}
+            with BellCheck.Defined ->
+              let old =
+                try BellCheck.get_order id_tags st.bell_info
+                with Not_found -> assert false in
+              if not (StringRel.equal old order) then
+                error st.silent
+                  loc "incompatible definition of order on %s by %s" id_tags id_fun ;
+              st in
+
           fun bds st ->
             List.fold_left
               (fun st (v,e) ->
-                if v = BellName.narrower then
+                if v = BellName.wider then
                   let loc = get_loc e in
-(* Now evaluate all calls to narrower for all scope tags *)
-                  let env = from_st st in                  
-                  let narrower =
-                    try find_env_loc TxtLoc.none env v
-                    with _ -> assert false in
-                  let scopes =
-                    let scopes =
-                      try StringMap.find BellName.scopes env.EV.env.vals
-                      with Not_found ->
-                        error false
-                          loc "tag set %s must be defined while defining %s"
-                          BellName.scopes BellName.narrower in
-                    match Lazy.force scopes with
-                    | V.ValSet ((TTag _|TAnyTag),scs) -> scs
-                    | v ->
-                        error false loc "%s must be a tag set, found %s"
-                          BellName.scopes (pp_typ (type_val v)) in
-                  let order =
-                    ValSet.fold
-                      (fun tag order ->                        
-                        let tgt =
-                          try
-                            eval_app loc
-                              { env with EV.silent=true;}
-                              narrower [tag]
-                          with Misc.Exit -> V.Empty in
-                        let tag = as_tag tag in
-                        let add tgt order =
-                          let tgt = as_tag tgt in
-                          StringRel.add (tgt,tag) order in
-                        match tgt with
-                        | V.Empty -> order
-                        | V.Tag (_,_) -> add tgt order
-                        | V.ValSet (_,tgts) -> ValSet.fold add tgts order
-                        | _ ->
-                            error false loc
-                              "implicit call %s('%s) must return a tag or a set of tags, found %s"
-                              BellName.narrower tag (pp_typ (type_val tgt)))
-                      scopes StringRel.empty in
-                  if not (StringRel.is_hierarchy (as_tags scopes) order) then
-                    error false loc
-                      "%s defines the non-hierarchical relation %s"
-                      BellName.narrower
-                      (BellCheck.pp_order_dec order) ;
-                  try
-                    let bell_info =
-                      BellCheck.add_order BellName.scopes order st.bell_info in
-                    { st with bell_info;}
-                  with BellCheck.Defined ->
-                    error st.silent
-                      loc "second definition of %s" BellName.narrower
-              else st)
+                  fun_as_rel Misc.identity loc st BellName.scopes v
+                else if v = BellName.narrower then
+                  let loc = get_loc e in
+                  fun_as_rel StringRel.inverse loc st BellName.scopes v
+                else st)
               st bds
         else fun _bds st -> st in
 
@@ -1377,7 +1402,7 @@ module Make
               V.ValSet (TTag name,vs)
             end in
           let env = add_val name alltags env in
-          if O.debug then
+          if O.debug && O.verbose > 1 then
             warn loc "adding set of all tags for %s" name ;
           let env = { env with tags; enums; } in
           let st = { st with env;} in
@@ -1422,43 +1447,7 @@ module Make
           | _ -> error st.silent (get_loc e) "set expected"
           end
       | Latex _ -> kont st res
-(*
-      | EnumSet(_loc,_name,xs) -> 
-          warn _loc "Deprecated" ;
-	  let test_bi = match test.Test.bell_info with
-	  | Some t_bi -> t_bi
-	  | None ->
-              Warn.user_error
-                "Using enum set requires bell info and should only be used when analyzing a bell litmus test"
-	  in
-	  let new_env_sets = 
-	    List.map (fun k -> 
-	      k, lazy (E.EventSet.filter (fun e -> 
-	        (mem_region_match k test_bi.Bell_info.regions e) ||(E.Act.annot_in_list k e.E.action)) st.ks.evts))
-	      xs in
-	  let env = add_sets st.env new_env_sets in		
-	  kont {st with env} res
-
-      | EnumRel(_loc,_name,xs) -> 
-          warn _loc "Deprecated" ;
-	  let test_bi = match test.Test.bell_info with
-	  | Some t_bi -> t_bi
-	  | None -> Warn.user_error "Using enum rln requires bell info"
-	  in
-	  let scopes = match test_bi.Bell_info.scopes with
-	  | Some s -> s
-	  | None -> Warn.user_error "Using enum rln requires scopes in the litmus test" 
-	  in
-	  let bds = 
-	    List.map (fun k ->
-	      k, lazy (U.int_scope_bell k scopes (Lazy.force st.ks.unv)))
-	      xs in
-	  let env = add_rels st.env bds in
-	  let st = { st with env;} in
-          let st = doshow bds st in
-	  kont st res
-*)
-      | Event_dec(_loc,x,es) when O.bell ->
+      | Events (_loc,x,es) when O.bell ->
 	  let vs = List.map (eval_loc (from_st st)) es in
 	  let event_sets =
             List.map
@@ -1478,62 +1467,9 @@ module Make
             BellCheck.add_events x event_sets st.bell_info in
           let st = { st with bell_info;} in
 	  kont st res
-
-(*
-      | Relation_dec(loc, v, e) when O.bell ->
-	  let evaled = eval (from_st st) e in
-	  let strs = 
-	    match evaled with
-	    | ValSet(_t,vs) -> List.map (fun vs_e -> 
-	        (		
-	           match vs_e with 
-	           | V.Tag(_s1,s2) -> s2
-	           | _ -> error false loc "relations declaration expected a set of tags. %s is not a tag" (pp_val vs_e)
-	          ))  (ValSet.elements vs)		
-	    | _ -> error false loc "event declaration expected a set of tags. %s is not a tag" (pp_val evaled)
-	  in
-          let bell_dec =
-            { st.bell_dec with
-              rel_dec = add_dec (@) v strs st.bell_dec.rel_dec;} in
-          let st = { st with bell_dec;} in
-	  kont st res
-      | Order_dec(loc,v,ep_l) when O.bell ->
-	  let evaled =
-            let env = from_st st in
-            List.map
-              (fun (f,s) -> eval env f, eval env s)
-              ep_l
-	  in
-	  let str_pairs = 
-            List.map
-              (fun (f,s) -> match f,s with
-	      | V.Tag(_,tag1), V.Tag(_,tag2) ->
-                  tag1,tag2
-	      | (V.Tag _ ,bad)
-              | (bad,V.Tag _) ->
-                  error st.silent loc
-                  "order declarations expected tag pairs, %s is not a tag"
-                  (pp_val bad)
-	      | _,_ ->
-                  error st.silent loc
-                    "order declarations expect tag pairs, %s and %s are not tags"
-                    (pp_val f) (pp_val s))
-              evaled in
-          let bell_dec =
-            { st.bell_dec with
-              order_dec = add_dec (@) v str_pairs st.bell_dec.order_dec;} in
-          let st = { st with bell_dec;} in
-	  kont st res
-*)
-      | Order_dec (loc,_,_) | Relation_dec (loc,_,_) when O.bell ->
-          warn loc "deprecated" ;
-          kont st res          
-      | Event_dec (_, _, _)|Relation_dec (_, _, _)|Order_dec (_, _, _) ->
+      | Events _ ->
           assert (not O.bell) ;
           kont st res (* Ignore bell constructs when executing model *)
-      | EnumSet (loc,_,_) | EnumRel (loc,_,_) ->
-          warn loc "deprecated" ;
-          kont st res
       | Test _|UnShow _|Show _|ShowAs _
       | ProcedureTest _|Call _|Forall _
       | WithFrom _ ->

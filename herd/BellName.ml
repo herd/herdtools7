@@ -14,6 +14,7 @@
 
 let scopes = "scopes"
 and regions = "regions"
+and wider = "wider"
 and narrower = "narrower"
 
 let tag2events_var s =

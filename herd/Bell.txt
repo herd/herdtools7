@@ -1,0 +1,42 @@
+A summary of bell constructs:
+
+* events TYPE[TAGS1,..,TAGSN]
+
+  Define legal instruction (events) annotations where:
+   - TYPE is R,W,F or RMW.
+   - TAGSi is a set of tags.
+  Legal anotations are 'tag1,...,'tagN, where 'tagi in TAGi  
+  Definition for the same type cummulate.
+
+  Model execution will take place in an environment where, for each tag
+  'name, the variable Name (name with initial letter uppercase)
+  is bound to the set of events that have annotation name.
+
+* enum regions = 'tag1 || ... || 'tagN
+  Define region names. It is checked that the litmus test uses tag1 ... tagN
+  as region names.
+  Model execution will take place in an enviroment where, for each tag 'name,
+  the variable Name (name with initial letter uppercase) is bound to
+  the set of events that act upon a location in region name.
+
+* enum scopes = 'tag1 || ... || 'tagN
+  Define scope names, this definition must precede the definitions
+  of the narrower or wider functions that define scope hierarchy.
+
+  Model execution will take place in an enviroment where, for each tag 'name,
+  the variable name is bound to the equivalence relation that relates
+  the events in the same scope of level name.
+
+* let wider(s) = ...
+  The wider function defines the scope hierarchy by its parent function that
+  associate the tag (of enum scopes) of the parent to the tag of a scope.
+
+* let narrower = ..
+  The narrower function defines the scope hierarchy by its children function.
+  Notice that narrower may return a set of tags.
+
+  It is possible to define both functions. If so, it is checked
+  that they define the same hierachy.
+
+
+

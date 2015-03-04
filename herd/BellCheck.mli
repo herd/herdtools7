@@ -39,12 +39,16 @@ type info = {
 
 val empty_info : info
 
-(* Get *)
+(* Get, do not fail *)
 val get_mem_annots : info -> string list
 val get_region_sets : info -> string list
 val get_scope_rels : info -> string list
+(* Get, may fail (raises Not_found) *)
+val get_order : string -> info -> order_dec
 
+(*******)
 (* Add *)
+(*******)
 
 exception Defined
 

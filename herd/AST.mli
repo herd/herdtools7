@@ -17,10 +17,6 @@ type pos = { pos:int; len:int;}
 
 type set_or_rln = SET | RLN
 
-type direction = 
-  | Write | Read | WriteRead | Atomic | Plain
-  | Unv_Set (** universal set *)
-  | Bar_Set (** set of barriers *)
 type op2 = 
   | Union (** applies to sets or relations *)
   | Inter (** applies to sets or relations *) 
@@ -28,6 +24,7 @@ type op2 =
   | Seq   (** sequential composition of relations *) 
   | Cartesian (** build a relation from two sets *)
   | Add   (** add element to a set *)
+
 type op1 =
   | Plus | Star | Opt 
   | Comp (** Set or relation complement *)
@@ -81,14 +78,8 @@ type ins =
   | Debug of TxtLoc.t * exp
   | WithFrom of TxtLoc.t * var * exp (* set of relations *)
 
-(*For bell cat files*)
-  | EnumSet of TxtLoc.t * var * tag list
-  | EnumRel of TxtLoc.t * var * tag list
-
 (*For bell files*)
-  | Event_dec of TxtLoc.t * var * exp list
-  | Relation_dec of TxtLoc.t * var * exp
-  | Order_dec of TxtLoc.t * var * (exp * exp) list
+  | Events of TxtLoc.t * var * exp list
 
 
  

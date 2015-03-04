@@ -44,15 +44,6 @@ let rec tex_of_op2 n c es op2 =
   | Cartesian -> fprintf_list_infix "\\times" (tex_of_exp 2) c es
   | Add -> fprintf_list_infix "\\mathop{++}" (tex_of_exp 2) c es)
 
-and string_of_dir = function
-  | Write -> "W" 
-  | Read -> "R"
-  | WriteRead -> "M"
-  | Atomic -> "A"
-  | Plain -> "P"
-  | Unv_Set -> "\\_"
-  | Bar_Set -> "B"
-
 and tex_of_op1 n c e op1 = 
   paren (n >= 3) c (fun () -> match op1 with
   | Plus -> fprintf c "%a^+" (tex_of_exp 3) e
@@ -151,6 +142,7 @@ let rec tex_of_ins c = function
     fprintf c "\\exitcomment\n"
   | Include _|Call _|Enum _| Forall _ | Debug _
   | ProcedureTest _|WithFrom _
+  | Events _
     -> Warn.fatal "include/call/enum/forall/debug in herd2tex"
 
 and tex_of_inss c =

@@ -95,6 +95,8 @@ let get_region_sets i = match i.regions with
 
 let get_scope_rels i = StringMap.safe_find [] BellName.scopes i.relations
 
+let get_order k i = StringMap.find k i.orders
+  
 (* Add *)
 
 exception Defined

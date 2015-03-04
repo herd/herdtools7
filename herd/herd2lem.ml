@@ -135,7 +135,8 @@ let lem_of_ins chan = function
     requires := (sprintf "%s.requires_clauses" file) :: (!requires);
     fprintf chan "open import %s" file
   | ProcedureTest _|Procedure _|Call _|Enum _|Debug _|Forall _
-  |WithFrom _
+  | WithFrom _
+  | Events _
     ->
       Warn.fatal "procedure/call/enum/debug/forall... in herd2lem"
 

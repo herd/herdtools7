@@ -16,6 +16,7 @@
 (* Those names are special *) 
 val scopes : string
 val regions : string
+val wider : string
 val narrower : string
 
 (* Change tag names into event set and relation name *)
