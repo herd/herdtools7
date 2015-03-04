@@ -345,6 +345,12 @@ module Make
     | [] -> assert false
     | _::stack -> { st with stack; }
 
+    let show_call_stack st =
+      List.iter
+        (fun loc ->
+          eprintf "%a: Calling procedure\n" TxtLoc.pp loc)
+        st.stack
+
     let protect_call st f x =
       try f x
       with Misc.Exit ->
@@ -1290,6 +1296,7 @@ module Make
             kont { st with show; } res
           else kont st res
       | ProcedureTest (loc,pname,es,name) when not O.bell ->
+(* TODO: Understand and handle this *)
           let skip_this_check =
             match name with
             | Some name -> StringSet.mem name O.skipchecks
@@ -1301,8 +1308,11 @@ module Make
             let p = eval_proc loc env0 pname in
             let vs = List.map (eval env0) es in
             let env1 = add_args loc p.proc_args vs env0 p.proc_env in
+            let st = push_loc st loc in
             run txt  { st with env = env1; } p.proc_body
-              (fun st_call res ->  kont { st_call with env=st.env;} res)
+              (fun st_call res ->
+                let st_call = pop_loc st_call in
+                kont { st_call with env=st.env;} res)
               res
           else
             let () = W.warn "Skipping check %s" (Misc.as_some name) in
@@ -1353,9 +1363,11 @@ module Make
                   skipped = StringSet.add (Misc.as_some name) st.skipped;}
                 res
             end else begin
-              if (O.debug && O.verbose > 0) then begin
+              if O.debug then begin
                 let pp = String.sub txt pos.pos pos.len in
                 let cy = E.EventRel.get_cycle v in
+                warn loc "'%s' failed" pp ;
+                show_call_stack st ;
                 pp_failure test st.ks.conc
                   (sprintf "%s: Failure of '%s'" test.Test.name.Name.name pp)
                   (let k = show_to_vbpp st in

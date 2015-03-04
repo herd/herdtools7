@@ -77,10 +77,8 @@ module Make
           lazy (MU.pp_procrels E.Act.pp_isync (Lazy.force pr))
         else
           lazy [] in
-      let evts =
-        E.EventSet.filter
-          (fun e -> E.is_mem e || E.is_barrier e)
-          conc.S.str.E.events in
+      let relevant e = E.is_mem e || E.is_barrier e in
+      let evts = E.EventSet.filter relevant conc.S.str.E.events in
       let id =
         lazy begin
           E.EventRel.of_list
@@ -106,7 +104,11 @@ module Make
                 (fun e1 e2 -> not (E.same_proc e1 e2)) (Lazy.force unv)
             end ;
            "atom",lazy conc.S.atomic_load_store;
-           "po", lazy conc.S.po;
+           "po", lazy  begin
+             E.EventRel.filter
+               (fun (e1,e2) -> relevant e1 && relevant e2)
+               conc.S.po
+           end ;
            "addr", lazy (Lazy.force pr).S.addr;
            "data", lazy (Lazy.force pr).S.data;
            "ctrl", lazy (Lazy.force pr).S.ctrl;
