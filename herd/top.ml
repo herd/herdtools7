@@ -189,7 +189,9 @@ module Make(O:Config)(M:XXXMem.S) =
                   | ForallStates _  -> not ok
                 end
             | ShowAll -> true
-            | ShowNone -> false in
+            | ShowNone -> false
+            | ShowFlag f -> Flag.Set.mem (Flag.Flag f) flags in
+                
           begin match ochan with
           | Some (chan,_) when show_exec ->            
               let legend = 

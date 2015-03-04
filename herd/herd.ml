@@ -79,7 +79,7 @@ let parse_float_opt opt v msg =
 let parse_string_opt opt v msg =
   opt,
   Arg.String (fun s -> match s with "none" -> v := None | _ -> v := Some s),
-  sprintf "<float|none> %s" msg
+  sprintf "<string|none> %s" msg
 
 let parse_string opt v msg =
   opt,
@@ -194,8 +194,11 @@ let options = [
     | None -> false
     | Some t -> show := t ; true)
     PrettyConf.tags_show
-    (sprintf "executions shown in  figure, default %s"
+    (sprintf "executions shown in figure, default %s"
        (PrettyConf.pp_show !show)) ;  
+  "-showflag",
+  Arg.String  (fun flag -> show := PrettyConf.ShowFlag flag),
+  "<string>  show executions flagged by string in figure" ;
 (* Discard some observations *)
   parse_tag "-speedcheck"
     (fun tag -> match Speed.parse tag with

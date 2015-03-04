@@ -146,6 +146,8 @@ and opt = parse
 | "show" arg
    { lex_tag "show"
        PrettyConf.parse_show PrettyConf.tags_show show arg }
+| "showflag" arg
+   {   show := PrettyConf.ShowFlag arg }
 | "nshow" arg
    { lex_int_fun (fun x -> nshow := Some x) arg }
 | "restrict" arg

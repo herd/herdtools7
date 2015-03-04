@@ -21,7 +21,7 @@ type show =
   | ShowAll   (* Everything *)
   | ShowNeg   (* prop negation *)
   | ShowWit   (* Be clever *)
-
+  | ShowFlag of string (* Show execution flagged with string *)
 
 let tags_show =["prop";"all";"neg";"cond";"none";"wit";]
 
@@ -32,6 +32,7 @@ let pp_show = function
   | ShowAll -> "all"
   | ShowNeg -> "neg"
   | ShowWit -> "wit"
+  | ShowFlag f -> Printf.sprintf "flag<%s>" f
 
 let parse_show tag = match String.lowercase tag with
 | "prop" -> Some ShowProp

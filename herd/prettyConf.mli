@@ -20,6 +20,7 @@ type show =
   | ShowAll   (* Everything *)
   | ShowNeg   (* prop negation *)
   | ShowWit   (* Be clever *)
+  | ShowFlag of string (* Show execution flagged with string *)
 
 val tags_show : string list
 val pp_show : show -> string
