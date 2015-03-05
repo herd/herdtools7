@@ -1481,7 +1481,11 @@ module Make
           | _ -> error st.silent (get_loc e) "set expected"
           end
       | Latex _ -> kont st res
-      | Events (_loc,x,es) when O.bell ->
+      | Events (loc,x,es) when O.bell ->
+          if not (StringSet.mem x BellName.all_sets) then
+            error st.silent loc
+              "event type %s is not part of legal {%s}\n"
+              x (StringSet.pp_str "," Misc.identity BellName.all_sets) ;
 	  let vs = List.map (eval_loc (from_st st)) es in
 	  let event_sets =
             List.map

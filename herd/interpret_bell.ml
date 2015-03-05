@@ -1,3 +1,4 @@
+open Printf
 
 module type Config = sig
   val model : Model.t option
@@ -19,12 +20,13 @@ module Make (C: Config) = struct
     (* phew, a lot of work to set up the interpreter *)
 
     (* first get the modelconfig *)
+    let debug = C.debug.Debug.barrier in
     let module ModelConfig = struct
       let showsome =
 	begin match C.outputdir with Some _ -> true | None -> false end
 	|| C.PC.gv || C.PC.evince
       let through = C.through
-      let debug = C.debug.Debug.barrier
+      let debug = debug
       let verbose = C.verbose
       let skipchecks = C.skipchecks
       let strictskip = C.strictskip
@@ -83,5 +85,10 @@ module Make (C: Config) = struct
     (* call the interpreter  and collect bell info *)
     match I.interpret empty_test ks I.env_empty vb_pp function_arg None with
     | None -> assert false (* Continuation must be called at least once *)
-    | Some i -> i
+    | Some i ->
+        if debug then begin
+          eprintf "Bell file execute, result:\n" ;
+          eprintf "%s" (BellCheck.pp_info i)
+        end ;
+        i
 end

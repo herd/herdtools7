@@ -20,8 +20,9 @@ type annot_group = annot_set list
 type event_dec = annot_group list
 type event_decs = event_dec StringMap.t
 
-let pp_annot_set set =
-  sprintf "{%s}" (StringSet.pp_str "," Misc.identity set)
+let pp_string_set set = StringSet.pp_str "," Misc.identity set
+
+let pp_annot_set set = sprintf "{%s}" (pp_string_set set)
 
 let pp_annot_group ag = 
   let mapped = List.map pp_annot_set ag in
@@ -40,7 +41,7 @@ type relation_decs = relation_dec StringMap.t
 let pp_rel_annot_set set =
   sprintf "{%s}" (String.concat "," set)
 
-let pp_rel_dec t dec = sprintf "%s %s" t (pp_rel_annot_set dec)
+let pp_rel_dec t dec = sprintf "%s: %s" t (pp_rel_annot_set dec)
 
 let pp_rel_decs decs = StringMap.pp_str_delim "\n" pp_rel_dec decs
 
@@ -53,10 +54,9 @@ let pp_order_dec ol =
     (fun (f,s) -> sprintf "(%s,%s)" f s)
     ol
   
-let pp_order_bd t ol =  sprintf "%s %s" t (pp_order_dec ol)
+let pp_order_bd t ol =  sprintf "%s: %s" t (pp_order_dec ol)
 
-let pp_order_decs decs = 
-  StringMap.pp_str_delim "\n" pp_order_bd decs
+let pp_order_decs decs = StringMap.pp_str_delim "\n" pp_order_bd decs
 
 type info = {
   all_events : annot_set; (* This field records all annotations *)
@@ -66,6 +66,15 @@ type info = {
   regions : StringSet.t option ;
 }
 
+let pp_info  i = 
+  sprintf "All events: %s\n" (pp_string_set i.all_events) ^
+  "Events:\n" ^ pp_event_decs i.events ^ "\n" ^
+  "Relations:\n" ^ pp_rel_decs i.relations ^ "\n" ^
+  "Orders:\n" ^ pp_order_decs i.orders ^ "\n" ^
+  (match i.regions with
+  | None -> ""
+  | Some r -> sprintf "Regions: %s\n" (pp_string_set r))
+ 
 let empty_info = {
   all_events = StringSet.empty  ;
   events = StringMap.empty ;

@@ -28,7 +28,7 @@ val pp_order_dec : order_dec -> string
 type order_decs = order_dec StringMap.t
 val pp_order_decs : order_decs -> string
 
-
+(*
 type info = {
   all_events : annot_set;
   events : event_decs;
@@ -36,7 +36,11 @@ type info = {
   orders : order_decs;
   regions : StringSet.t option;
 }
+*)
 
+type info
+
+val pp_info : info -> string
 val empty_info : info
 
 (* Get, do not fail *)
