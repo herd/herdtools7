@@ -59,7 +59,7 @@ let pp_order_decs decs =
   StringMap.pp_str_delim "\n" pp_order_bd decs
 
 type info = {
-  all_events : annot_set;
+  all_events : annot_set; (* This field records all annotations *)
   events : event_decs;
   relations : relation_decs;
   orders : order_decs ;
@@ -79,19 +79,11 @@ let empty_info = {
 let get_events tag {events;_} =
   StringMap.safe_find [[StringSet.empty]] tag events 
 
-let evts2set tag i =
-  let xss = get_events tag i in
-  StringSet.unions (List.map StringSet.unions xss)
-
-let get_mem_annots i =
-  let sets =
-    StringSet.fold
-      (fun tag k -> evts2set tag i::k) BellName.all_mem_sets [] in
-  StringSet.elements (StringSet.unions sets)
+let get_mem_annots i = i.all_events
 
 let get_region_sets i = match i.regions with
-| None -> []
-| Some r -> StringSet.elements r
+| None -> StringSet.empty
+| Some r -> r
 
 let get_scope_rels i = StringMap.safe_find [] BellName.scopes i.relations
 
@@ -117,9 +109,12 @@ let add_events k dec i =
   let old =
     try StringMap.find k i.events
     with Not_found -> [] in
-  let events =
-    StringMap.add k (dec::old) i.events in
-  { i with events; }
+  let events = StringMap.add k (dec::old) i.events
+  and all_events =
+    if StringSet.mem k BellName.all_mem_sets then
+      StringSet.union (StringSet.unions dec) i.all_events
+    else i.all_events in
+  { i with events; all_events; }
 
 let add_order k dec i =
   begin try

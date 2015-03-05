@@ -40,14 +40,16 @@ module Make
 (* Local utility: bell event selection *)
     let add_bell_events m pred evts annots =
       I.add_sets m
-        (List.map
-           (fun annot ->
+        (StringSet.fold
+           (fun annot k ->
              let tag = BellName.tag2events_var annot in
-             tag,
-             lazy begin
-               E.EventSet.filter (pred annot) evts
-             end)
-           annots)
+             let bd =
+               tag,
+               lazy begin
+                 E.EventSet.filter (pred annot) evts
+               end in
+             bd::k)
+           annots [])
 
 (* Intepreter call *)
     let (pp,(opts,_,prog)) = O.m
