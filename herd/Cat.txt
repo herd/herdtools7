@@ -17,4 +17,15 @@ Modification of teh cat language
       *Notice* as in the  undefined_unless case, flagged tests
       never abort model execution.
         
+* New -showflag <string> for herd7
+
+Thus get pictures of say racy execution:
+CAT:
+let races = ...
+flag ~empty races as racy
+
+UNIX:
+herd7 ... -showflag racy -gv
+
+
 
