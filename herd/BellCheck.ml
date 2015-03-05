@@ -13,6 +13,8 @@
 
 (** Bell model utilities *)
 
+let dbg = false
+
 open Printf
 
 type annot_set = StringSet.t
@@ -28,11 +30,12 @@ let pp_annot_group ag =
   let mapped = List.map pp_annot_set ag in
   "["^(String.concat ", " mapped)^"]"
 
-let pp_event_dec t l  = 
-  let mapped = List.map (fun x -> pp_annot_group x) l in
-  t^": "^ String.concat "," mapped
+let pp_event_dec  l  =
+  String.concat "," (List.map (fun x -> pp_annot_group x) l)
 
-let pp_event_decs decs = StringMap.pp_str_delim "\n" pp_event_dec decs
+let pp_event_dec_bd t l  = sprintf "%s: %s" t (pp_event_dec l)
+
+let pp_event_decs decs = StringMap.pp_str_delim "\n" pp_event_dec_bd decs
 
 
 type relation_dec = string list
@@ -85,8 +88,8 @@ let empty_info = {
 
 
 (* Get *)
-let get_events tag {events;_} =
-  StringMap.safe_find [[StringSet.empty]] tag events 
+(* By default, no annotation allowed *)
+let get_events tag {events;_} =  StringMap.safe_find [[]] tag events 
 
 let get_mem_annots i = i.all_events
 
@@ -222,6 +225,7 @@ module Make
           with Not_found -> raise Exit in (* If no annotation, no trouble *)
         assert (StringSet.mem id BellName.all_mem_sets) ;
         let events_group = get_events id bi in
+        if dbg then eprintf "G: %s\n" (pp_event_dec events_group) ;
         let ok =
           List.exists
             (fun ag -> same_length ag al && List.for_all2 StringSet.mem al ag)
