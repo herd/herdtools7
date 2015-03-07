@@ -225,6 +225,9 @@ let () =
     | ARM ->
         let module M = Make(C)(T(ARMCompile.Make(V)(C))) in
         M.zyva
+    | AArch64 ->
+        let module M = Make(C)(T(AArch64Compile.Make(V)(C))) in
+        M.zyva
     | MIPS ->
         let module M = Make(C)(T(MIPSCompile.Make(V)(C))) in
         M.zyva

@@ -50,6 +50,7 @@ let loc = name | ('$' (alpha+|digit+))
 let blank = [' ' '\t']
 let testname  = (alpha|digit|'_' | '/' | '.' | '-' | '+' | '[' | ']')+
 let nl = '\n'|"\r\n"
+let validation = "Undef"|"Succeeded"|"Failed"|"Ok"|"No"|"??"
 
 rule main  mk islitmus rem = parse
  | "Test" blank+ (testname as t)
@@ -107,12 +108,13 @@ and plines k = parse
           p_st = LS.as_st_concrete line } in
       plines (st::k) lexbuf }
 |  ("Loop" blank+ as loop)?
-   ((("Succeeded"|"Failed"|"Ok"|"No"|"??" as ok) ([^'\r''\n']*))
+   (((validation as ok) ([^'\r''\n']*))
 |("" as ok))  nl  (* missing validation result, from some litmus logs *)
     { incr_lineno lexbuf ;
       let ok = match ok with
       | "Succeeded"|"Ok" -> Ok
       | "Failed"|"No" -> No
+      | "Undefined" -> Undef
       | _ -> DontKnow
       and loop = match loop with Some _ -> true | None -> false in
       let wits = pwitnesses lexbuf in
@@ -235,7 +237,7 @@ and slines k = parse
       let st = LS.as_st_concrete line in
       slines (st::k) lexbuf }
 |  ("Loop" blank+ )?
-   ((("Succeeded"|"Failed"|"Ok"|"No"|"??") ([^'\r''\n']*))
+   ((validation ([^'\r''\n']*))
    |("")  nl ) (* missing validation result, from some litmus logs *)
     { incr_lineno lexbuf ;
       let hash = shash lexbuf in

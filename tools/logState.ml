@@ -65,7 +65,7 @@ let is_reliable k = match k with
 | Allow|Require|Forbid -> true
 | _ -> false
 
-type validation = Ok | No | DontKnow | Run
+type validation = Undef | Ok | No | DontKnow | Run
 
 
 type test =
@@ -250,6 +250,7 @@ let pp_validation = function
   | No -> "No"
   | DontKnow -> "??"
   | Run -> "Run"
+  | Undef -> "Undef"
 
 
 let extract_loc h = 

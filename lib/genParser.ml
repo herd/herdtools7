@@ -51,6 +51,13 @@ module DefaultConfig = struct
   let check_kind _ = None
   let check_cond _ = None
 end
+
+(* ***** *)
+let add_nones parser = 
+    fun lexer lexbuf ->
+      let x,y = parser lexer lexbuf in
+      x,y,None,None
+
 (* input signature, a lexer and a parser for a given architecture *)
 module type LexParse = sig
   type token

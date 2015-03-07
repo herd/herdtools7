@@ -197,10 +197,8 @@ module Make(V:Constant.S)(C:Config) =
       | _ -> ()
 
     let emit_barrier memo o =
-      let memo = match o with
-      | SY -> memo
-      | _ -> sprintf "%s %s" memo (emit_opt o) in
-       { empty_ins with memo =memo; }
+      let memo = sprintf "%s %s" memo (emit_opt o) in
+      { empty_ins with memo =memo; }
 
     let compile_ins tr_lab ins k = match ins with
 (* Arithmetic *)

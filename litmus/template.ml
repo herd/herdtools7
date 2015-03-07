@@ -112,7 +112,6 @@ struct
   exception Internal of string
   let internal msg = raise (Internal msg)
 
-  exception Error of string
   let error msg = raise (Error msg)
 
 
@@ -139,7 +138,8 @@ struct
 
   let tag_reg reg = clean_reg (A.reg_to_string reg)
 
-  let tag_reg_ref reg = sprintf "%%[%s]" (tag_reg reg)
+  let tag_reg_ref w reg =
+    sprintf "%%%s[%s]" (if w then "w" else "") (tag_reg reg)
 
   let dump_out_reg proc reg =
     OutUtils.fmt_out_reg
@@ -183,7 +183,7 @@ struct
       let c = Char.code t.memo.[i] in
       let n = c - Char.code '0' in
       if 0 <= n && n <= 2 then n
-      else internal (sprintf "bad digit '%i'" n)
+      else internal (sprintf "bad digit '%i' (%c)" n t.memo.[i])
 
     and substring i j =
       try String.sub t.memo i (j-i)
@@ -205,13 +205,16 @@ struct
         try
           let j = look_escape i in
           add (substring i j) ;
-          let n = digit (j+2) in
-          begin match t.memo.[j+1] with
-          | 'i' -> add (tag_reg_ref (get_reg n t.inputs))
-          | 'o' -> add (tag_reg_ref (get_reg n t.outputs))
+          let w,ty,n,nxt =
+            match t.memo.[j+1] with
+            | 'w' -> true,t.memo.[j+2],digit (j+3),4
+            | _ -> false,t.memo.[j+1],digit (j+2),3 in
+          begin match ty with
+          | 'i' -> add (tag_reg_ref w (get_reg n t.inputs))
+          | 'o' -> add (tag_reg_ref w (get_reg n t.outputs))
           | c -> internal (sprintf "bad escape '%c'" c)
           end ;
-          do_rec (j+3)
+          do_rec (j+nxt)
         with Not_found -> add (substring i len) in
     try
       if t.comment then sprintf "%c%s" A.comment (escape_percent t.memo)

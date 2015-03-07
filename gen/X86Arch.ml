@@ -25,8 +25,6 @@ module Make(V:Constant.S) =
       | Some _ -> false
 
     let compare_atom = Pervasives.compare
-    let sig_of_atom = function
-      | Atomic -> 'A'
 
     let pp_as_a = None
     let pp_atom = function
@@ -52,9 +50,6 @@ module Make(V:Constant.S) =
     let pp_fence = function
       | MFence -> "MFence"
 
-    let sig_of_fence = function
-      | MFence -> 'M'
-
     let fold_all_fences f r = f MFence r
     let fold_cumul_fences f r = f MFence r
     let fold_some_fences f r =  f MFence r
@@ -69,8 +64,6 @@ module Make(V:Constant.S) =
     type dp
 
     let pp_dp _ = assert false
-
-    let sig_of_dp _ = assert false
 
     let fold_dpr _f r =  r
     let fold_dpw _f r =  r

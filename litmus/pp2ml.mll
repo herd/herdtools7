@@ -20,7 +20,7 @@ open Printf
 let sz = 2048
 let dump_line name no = printf "# %i \"%s\"\n" no name
 
-let echo name =
+let _echo name =
   let fname =
     if Sys.file_exists name then name
     else Filename.concat ".." name in
@@ -37,18 +37,30 @@ let echo name =
       do_rec ())
     fname
 
+let echo tr name =
+  let fname =
+    if Sys.file_exists name then name
+    else Filename.concat ".." name in
+  dump_line name 1 ;
+  Misc.input_protect
+    (fun chan -> tr (Lexing.from_channel chan))
+    fname
 }
 
   rule main name no = parse 
 | [^'\n']* "#include" ' '* '"' ([^'"']* as fname) '"' [^'\n']* '\n'
 (* '"' *) 
-    { echo fname ;
+    { echo tr fname ;
       dump_line name (no+1) ;
       main name (no+1) lexbuf }
 |  [^'\n']* '\n' as lxm
     { output_string stdout lxm ; main name (no+1) lexbuf }
 |  ([^'\n']* as lxm) eof {  output_string stdout lxm }
 
+and tr = parse
+| "AArch64Base" { output_string stdout "AArch64GenBase" ; tr lexbuf }
+| _ as lxm { output_char stdout lxm ; tr lexbuf }
+| eof { () }
     
 {
  let name = Sys.argv.(1) 

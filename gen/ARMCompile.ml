@@ -374,15 +374,15 @@ module Make(V:Constant.S)(Cfg:CompileCommon.Config) : XXXCompile.S =
         cs
 
     let postlude st p init cs =
-    if does_fail p cs then
-      let init,okcs,st = emit_store st p init Code.ok 0 in
-      init,
-      cs@
-      Instruction (I_B (Label.exit p))::
-      Label (Label.fail p,Nop)::
-      okcs@
-      [Label (Label.exit p,Nop)],
-      st
-    else init,cs,st
+      if does_fail p cs then
+        let init,okcs,st = emit_store st p init Code.ok 0 in
+        init,
+        cs@
+        Instruction (I_B (Label.exit p))::
+        Label (Label.fail p,Nop)::
+        okcs@
+        [Label (Label.exit p,Nop)],
+        st
+      else init,cs,st
 
   end

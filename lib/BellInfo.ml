@@ -14,10 +14,10 @@
 
 open Printf
 
-let dbg = false
+let _dbg = false
 
 (* To disable checks that I do not understand yet -> false *)
-let docheck = true
+let _docheck = true
 
 
 (*************)

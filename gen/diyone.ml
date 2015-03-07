@@ -204,6 +204,10 @@ let () =
       let module T = Top.Make(Co) in
       let module M = Build(T(ARMCompile.Make(V)(C))) in
       M.zyva
+  | AArch64 ->
+      let module T = Top.Make(Co) in
+      let module M = Build(T(AArch64Compile.Make(V)(C))) in
+      M.zyva
   | MIPS ->
       let module T = Top.Make(Co) in
       let module M = Build(T(MIPSCompile.Make(V)(C))) in

@@ -28,9 +28,6 @@ module Make(V:Constant.S) =
 
     let pp_fence = pp_barrier
 
-    let sig_of_fence = function
-      | Sync -> 'D'
-
     let fold_all_fences f r = f Sync r
     let fold_cumul_fences f r = f Sync r
     let fold_some_fences f r = f Sync r
@@ -48,11 +45,6 @@ module Make(V:Constant.S) =
       | ADDR -> "Addr"
       | DATA -> "Data"
       | CTRL -> "Ctrl"
-
-    let sig_of_dp = function
-      | ADDR -> 'A'
-      | DATA -> 'D'
-      | CTRL -> 'C'
 
     let fold_dpr f r =  f ADDR (f CTRL r)
     let fold_dpw f r =  f ADDR (f DATA (f CTRL r))

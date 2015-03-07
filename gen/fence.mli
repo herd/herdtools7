@@ -22,8 +22,6 @@ module type S = sig
 
   val pp_fence : fence -> string
 
-  val sig_of_fence : fence -> char
-
   val fold_cumul_fences : (fence -> 'a -> 'a) -> 'a -> 'a
   val fold_all_fences : (fence -> 'a -> 'a) -> 'a -> 'a
   val fold_some_fences : (fence -> 'a -> 'a) -> 'a -> 'a
@@ -35,7 +33,6 @@ module type S = sig
 (* Dependencies *)
   type dp
   val pp_dp : dp -> string
-  val sig_of_dp : dp -> char
   val fold_dpr : (dp -> 'a -> 'a) -> 'a -> 'a
   val fold_dpw : (dp -> 'a -> 'a) -> 'a -> 'a
 

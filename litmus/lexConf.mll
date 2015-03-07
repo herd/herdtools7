@@ -176,6 +176,8 @@ rule main = parse
 | "crossrun" arg
    { let module P = LexTag(Crossrun) in
    P.lexfun "crossrun" crossrun arg ; main lexbuf }
+| "adbdir" arg
+   { set_string adbdir arg ; main lexbuf }
 | "pldw" arg
    { set_bool pldw arg ; main lexbuf }
 (* Change input *)

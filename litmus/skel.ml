@@ -113,8 +113,8 @@ end = struct
   | _ -> false
 
   let have_timebase = function
+  | `AArch64 -> false (* FIXME: ??? *)
   | `ARM|`MIPS -> false
-  | `PPCGen
   | `PPC|`X86 -> true
   | _ -> false
 
@@ -476,6 +476,7 @@ let user2_barrier_def () =
         | `PPCGen
         | `PPC
         | `X86
+        | `AArch64
         | `MIPS -> sprintf "barrier%s.c" lab_ext
         | `ARM ->
             begin match Cfg.morearch with
@@ -484,7 +485,8 @@ let user2_barrier_def () =
                   "timebase barrier not supported for ARMv6K" ;
             | _ -> ()
             end ;
-            sprintf "barrier%s.c" lab_ext in
+            sprintf "barrier%s.c" lab_ext
+        in
     Insert.insert O.o (fname Cfg.sysarch)
 
   let dump_user_barrier_vars () = O.oi "int volatile *barrier;"
@@ -1665,6 +1667,7 @@ let user2_barrier_def () =
                   O.fx iloop "asm __volatile__ (\"isync\" : : : \"memory\");"
               | `ARM ->
                   O.fx iloop "asm __volatile__ (\"isb\" : : : \"memory\");"
+              | `AArch64 -> assert false (* FIXME: ??? *)
               | `X86|`MIPS -> ()
               | `GPU_PTX -> assert false
             in

@@ -34,7 +34,7 @@ module type S = sig
 *)
 
   type barrier
-  val all_kinds_of_barriers : barrier list
+(*  val all_kinds_of_barriers : barrier list *)
   val pp_barrier            : barrier -> string
   val barrier_compare : barrier -> barrier -> int
 

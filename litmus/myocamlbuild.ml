@@ -18,6 +18,12 @@ dispatch begin function
       begin fun env _build ->
         Cmd(S[sh; pp; P(env "%.mll.tpl")])
       end ;
+      rule "pp: .ml.tpl -> ml"
+        ~prods:["%.ml";]
+        ~deps:["pp2ml.sh";"%.ml.tpl";]
+      begin fun env _build ->
+        Cmd(S[sh; pp; P(env "%.ml.tpl")])
+      end ;
       ()
   | _ -> ()
 end

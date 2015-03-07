@@ -43,6 +43,7 @@ module type S = sig
   val st0 : st
 
   val alloc_reg : st -> arch_reg * st
+  val alloc_trashed_reg : string -> st -> arch_reg * st
 
 end
 
@@ -75,11 +76,17 @@ module Make(I:I) : S with type arch_reg = I.arch_reg
 
   type init = (location * string) list
 
-  type st = arch_reg list
+  type st = arch_reg list * arch_reg StringMap.t
 
-  let st0 = I.free_registers
+  let st0 = I.free_registers,StringMap.empty
 
   let alloc_reg = function
-    | [] -> Warn.fatal "No more registers"
-    | r::rs -> r,rs
+    | [],_ -> Warn.fatal "No more registers"
+    | r::rs,m -> r,(rs,m)
+
+  let alloc_trashed_reg k (_,m as st) =
+    try StringMap.find k m,st
+    with Not_found ->
+      let r,(rs,m) = alloc_reg st in
+      r,(rs,StringMap.add k r m)
 end

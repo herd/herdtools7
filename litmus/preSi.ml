@@ -183,7 +183,6 @@ module Make
       let dump_barrier_def () =
         let fname =
           function
-            | `PPCGen
             | `PPC
             | `X86
             | `ARM

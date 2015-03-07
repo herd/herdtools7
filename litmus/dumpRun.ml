@@ -24,6 +24,7 @@ module type Config = sig
   val stdio : bool
   val index : string option
   val crossrun : Crossrun.t
+  val adbdir : string
   val sleep : int
   val tarname : string
   val driver : Driver.t
@@ -161,10 +162,12 @@ let run_tests names out_chan =
             | Misc.Exit -> "None"
             | Misc.Fatal msg
             | Misc.UserError msg ->
-                Pos.pp_pos0 stderr name ;
-                Printf.eprintf "%s\n%!" msg ;
+                eprintf "%a %s\n%!" Pos.pp_pos0 name msg ;
                 msg
-            | e -> raise e  in
+            | e -> 
+                let msg = sprintf "exception %s"  (Printexc.to_string e) in
+                eprintf "%a %s\n%!" Pos.pp_pos0 name msg ;
+                msg in
             report_failure name msg out_chan ;
             a,docs,srcs,cycles,hash_env)
       names (`X86,[],[],StringSet.empty,StringMap.empty) in
@@ -203,7 +206,7 @@ let dump_shell names =
       begin match Cfg.crossrun with
       | Crossrun.No -> ()
       | Crossrun.Adb  ->
-          fprintf out_chan "RDIR=%s\n" "/data/tmp" ;
+          fprintf out_chan "RDIR=%s\n" Cfg.adbdir ;
           fprintf out_chan "adb shell mkdir $RDIR >/dev/null 2>&1\n" ;
           fprintf out_chan "dorun () {\n" ;
           fprintf out_chan "  EXE=$1\n" ;

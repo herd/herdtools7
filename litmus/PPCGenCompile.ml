@@ -212,7 +212,7 @@ module Make(V:Constant.S)(C:Config) =
           memo = "blr" ;
           inputs = [A.LR];
           branch = []; (* Hum *) }::k
-
+(*
     | `Psync (0) ->
         begin match C.syncmacro with
         | None  ->justOp "sync"::k
@@ -227,6 +227,7 @@ module Make(V:Constant.S)(C:Config) =
               inputs=[rB] ; }
         | _ -> dcbf rA rB
         end::k
+*)
 (*     | `Plwarx (rT,rA,rB,0) -> *)
 (*         begin match rA with *)
 (*         | A.Ireg A.GPR0 -> *)
@@ -256,7 +257,7 @@ module Make(V:Constant.S)(C:Config) =
 
     | `Pcomment c ->
         { empty_ins with memo = c; comment = true; }::k
-
+    | _ -> assert false
     let extract_addrs _ins = StringSet.empty
     let stable_regs _ins = assert false
     let compile_ins is_before ins = do_compile_ins is_before ins

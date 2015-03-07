@@ -85,6 +85,7 @@ let set_logicalprocs s =
 
 (* Direct references *)
 let crossrun = ref Crossrun.No
+let adbdir = ref "/data/local/tmp"
 let index = ref None
 let hexa = ref false
 let limit = ref true
@@ -178,6 +179,7 @@ let get_default arch = match arch with
 | `X86 -> x86opt
 | `PPCGen
 | `PPC -> ppcopt
+| `AArch64
 | `ARM -> armopt
 | `MIPS -> mipsopt
 | `C -> copt

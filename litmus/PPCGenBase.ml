@@ -11,7 +11,7 @@
 (*********************************************************************)
 
 (* Who am i ? *)
-let arch = `PPCGen
+let arch = `PPC
 
 (*************)
 (* Registers *)
@@ -267,6 +267,7 @@ type instruction =
     | `Pblr_lbl -> "blr"
 
     | `Pcomment s -> "com \"" ^ s ^ "\""
+    | _ -> assert false
 
     let pp_instruction _m ins = do_pp_instruction ins
 
@@ -302,6 +303,7 @@ let fold_regs (f_reg,f_sreg) =
   | `Pblr_lbl
   | `Pcomment _
     -> c
+  | _ -> assert false
 
 
         (* Map over symbolic regs *)
@@ -312,9 +314,10 @@ let map_regs f_reg f_symb =
   | Ireg _ -> f_reg reg
   | _ -> reg in
 
+(*
   let map3 ins r1 r2 r3 =ins (map_reg r1,map_reg r2,map_reg r3)
   and map2 ins r1 r2 = ins (map_reg r1,map_reg r2) in
-
+*)
   fun ins -> match ins with
   (* #include "src_power_gen/map.gen" *)
 
@@ -324,6 +327,7 @@ let map_regs f_reg f_symb =
   | `Pblr_lbl
   | `Pcomment _
     -> ins
+  | _ -> assert false
 
 (* No addresses burried in PPC code *)
 let fold_addrs _f c _ins = c

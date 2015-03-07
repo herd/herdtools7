@@ -42,12 +42,6 @@ module Make(V:Constant.S)(C:Config)  =
       | ISync -> "ISync"
       | Eieio -> "Eieio"
 
-    let sig_of_fence = function
-      | Sync -> 'S'
-      | LwSync -> 'L'
-      | ISync -> 'I'
-      | Eieio -> 'E'
-
     let fold_cumul_fences =
       if C.eieio then fun f r -> f Sync (f LwSync (f Eieio r))
       else fun f r -> f Sync (f LwSync r)

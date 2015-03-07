@@ -23,6 +23,7 @@ module type Config = sig
   val stdio : bool
   val index : string option
   val crossrun : Crossrun.t
+  val adbdir : string
   val sleep : int
   val tarname : string
   val driver : Driver.t

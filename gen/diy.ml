@@ -220,6 +220,9 @@ let () =
   | ARM ->
       let module M = Make(T(ARMCompile.Make(V)(C)))(Co) in
       M.go
+  | AArch64 ->
+      let module M = Make(T(AArch64Compile.Make(V)(C)))(Co) in
+      M.go
   | MIPS ->
       let module M = Make(T(MIPSCompile.Make(V)(C)))(Co) in
       M.go

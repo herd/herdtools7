@@ -43,7 +43,7 @@ type kind =
 
 val is_reliable : kind -> bool
 
-type validation = Ok | No | DontKnow | Run
+type validation = Undef | Ok | No | DontKnow | Run
 
 type test =
  { tname : string ;      (* name of the test, aka key *)

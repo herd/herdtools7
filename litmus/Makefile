@@ -11,7 +11,8 @@ CFG=conti.cfg saumur.cfg saumur.close.cfg doko.cfg squale.cfg hpcx.cfg \
  trimslice.cfg\
  tst.cfg auto.cfg power7.smt.cfg power6.smt.cfg \
  mp.cfg ipad.cfg asus.cfg asus-debian.cfg asus-debian-thumb.cfg cortexA15.cfg \
- mike.cfg youpla.cfg hopla.cfg corei7.cfg x86.cfg nexus10.cfg nexus7.cfg \
+ mike.cfg youpla.cfg hopla.cfg corei7.cfg x86.cfg \
+ nexus10.cfg nexus7.cfg nexus9.cfg \
  odroid-xu.cfg odroid-xu-ubuntu.cfg \
  cubietruck.cfg R4000.cfg
 
@@ -20,12 +21,13 @@ INSERT_X86=$(INSERT_XXX) timebase.c cache.c
 INSERT_PPC=$(INSERT_XXX) timebase32.c timebase64.c barrier_lab.c cache.c
 INSERT_ARM=$(INSERT_XXX) cache.c
 INSERT_MIPS=$(INSERT_XXX)
+INSERT_AARCH64=$(INSERT_XXX) cache.c
 
 PLATFORM_XXX=platform_io.h platform_io.c
 PLATFORM_LINUX=$(PLATFORM_XXX)
 
 OCBOPT=
-OCB=ocamlbuild $(OCBOPT) -cflags -w,A-4-9-27-29-45 -classic-display
+OCB=ocamlbuild $(OCBOPT) -cflags -w,A-4-9-27-29-40-42-45 -classic-display
 all: native
 
 install:
@@ -45,6 +47,7 @@ install:
 	mkdir -p  $(LIBDIR)/_x86 && ( cd _x86 && cp $(INSERT_X86) $(LIBDIR)/_x86 )
 	mkdir -p  $(LIBDIR)/_arm  && ( cd _arm && cp $(INSERT_ARM) $(LIBDIR)/_arm )
 	/bin/rm -rf  $(LIBDIR)/_mips && mkdir -p  $(LIBDIR)/_mips  && ( cd _mips && cp $(INSERT_MIPS) $(LIBDIR)/_mips )
+	/bin/rm -rf  $(LIBDIR)/_aarch64 && mkdir -p  $(LIBDIR)/_aarch64  && ( cd _aarch64 && cp $(INSERT_AARCH64) $(LIBDIR)/_aarch64 )
 	/bin/rm -rf $(LIBDIR)/_linux && mkdir -p $(LIBDIR)/_linux && ( cd _linux && cp $(PLATFORM_LINUX) $(LIBDIR)/_linux )
 
 luc: all install

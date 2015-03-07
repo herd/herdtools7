@@ -117,6 +117,9 @@ let () =
   | ARM ->
       let module M = Make(ARMArch.Make(V)) in
       M.zyva
+  | AArch64 ->
+      let module M = Make(AArch64Arch.Make(V)) in
+      M.zyva
   | MIPS ->
       let module M = Make(MIPSArch.Make(V)) in
       M.zyva

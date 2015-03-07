@@ -92,7 +92,7 @@ module Generic (A : Arch.Base) (C:Constr.S with module A = A) = struct
       )
 
     let add_addr_type a ty env =
-(*      Printf.eprintf "Type %s : %s\n"  a (CType.dump ty) ;  *)
+(*      Printf.eprintf "Type %s : %s\n"  a (CType.dump ty) ; *)
       try
         let tz = StringMap.find a env in
         match ty,tz with
@@ -128,17 +128,49 @@ module Generic (A : Arch.Base) (C:Constr.S with module A = A) = struct
       env flocs
 
 (* init, default and explicit types *)
+  open Printf
+
   let type_init init env =
     List.fold_left
-      (fun env (loc,(t,v)) -> match t with
-      | MiscParser.TyDef -> A.LocMap.add loc (typeof v) env
-      | _ -> A.LocMap.add loc (misc_to_c t) env)
+      (fun env (loc,(t,v)) ->
+(*
+        Printf.eprintf "add %s -> %s\n"
+          (A.pp_location loc)
+          (MiscParser.pp_run_type t) ;
+*)
+        match t with
+        | MiscParser.TyDef ->
+          begin try
+            ignore (A.LocMap.find loc env) ;
+            env
+          with Not_found ->
+            A.LocMap.add loc (typeof v) env
+          end
+        | _ -> A.LocMap.add loc (misc_to_c t) env)
       env init
+
+  let dump_type_env tag env =
+    let bds =
+      A.LocMap.fold
+        (fun loc ty k -> (loc,ty)::k)
+        env [] in
+    let pp =
+      List.map
+        (fun (loc,ty) ->
+          sprintf "<%s,%s>"
+            (A.pp_location loc)
+            (CType.dump ty))
+        bds in
+    eprintf "%s: %s\n" tag (String.concat " " pp)
+
 
   let build_type_env init final flocs =
     let env = type_final final A.LocMap.empty in
+    if false then dump_type_env "FINAL" env ;
     let env = type_locations flocs env in
+    if false then dump_type_env "LOCS" env ;
     let env = type_init init env in
+    if false then dump_type_env "INIT" env ;
     env
 
   let find_type loc env =

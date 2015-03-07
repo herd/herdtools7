@@ -92,7 +92,8 @@ type 'pseudo t =
 
 (* Add empty GPU/Bell info to machine parsers *)
 val mach2generic :
-  ('a -> 'b -> 'c * 'd) ->
-    'a -> 'b -> 'c * 'd * 'e option * 'f option
+  (('lexbuf -> 'token) -> 'lexbuf -> 'a * 'b) ->
+    ('lexbuf -> 'token) -> 'lexbuf -> 'a * 'b * 'gpu option  * 'bell option
+
 (* Extract hash *)
 val get_hash :  ('i, 'p, 'c, 'loc) result -> string option

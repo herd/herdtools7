@@ -19,18 +19,18 @@ module System = struct
     [ `X86
     | `PPC
     | `ARM
-    | `PPCGen
     | `MIPS
+    | `AArch64
     ]
 
-  let tags = ["X86";"PPC";"ARM";"PPCGen";"MIPS"]
+  let tags = ["X86";"PPC";"ARM";"PPCGen";"MIPS";"AArch64"]
 
   let parse s = match s with
   | "X86" -> Some `X86
   | "PPC" -> Some `PPC
-  | "PPCGen" -> Some `PPCGen
   | "ARM" -> Some `ARM
   | "MIPS" -> Some `MIPS
+  | "AArch64" -> Some `AArch64
   | _ -> None
 
   let lex s = match parse s with
@@ -41,9 +41,9 @@ module System = struct
   let pp a = match a with
   | `X86 -> "X86"
   | `PPC -> "PPC"
-  | `PPCGen -> "PPCGen"
   | `ARM -> "ARM"
   | `MIPS -> "MIPS"
+  | `AArch64 -> "AArch64"
 end
 
 type t = [ System.t | `C ]
@@ -70,7 +70,7 @@ let pp = function
 let arm = `ARM
 let ppc = `PPC
 let x86 = `X86
-let ppcgen = `PPCGen
 let mips = `MIPS
 let c = `C
+let aarch64 = `AArch64
 

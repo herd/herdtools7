@@ -11,7 +11,6 @@
 (* Power / ARM dependencies *)
 type dp = ADDR | DATA | CTRL | CTRLISYNC
 
-val sig_of_dp : dp -> char
 val fold_dpr : (dp -> 'a -> 'a) -> 'a -> 'a
 val fold_dpw : (dp -> 'a -> 'a) -> 'a -> 'a
 

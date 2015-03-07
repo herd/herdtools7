@@ -41,6 +41,7 @@ val set_logicalprocs : string -> unit
 
 (* Direct acccess to references *)
 val crossrun : Crossrun.t ref
+val adbdir : string ref
 val index : string option ref
 val hexa : bool ref
 val limit : bool ref

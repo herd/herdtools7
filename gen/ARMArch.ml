@@ -36,15 +36,6 @@ module Make(V:Constant.S) =
       | DSB o -> sprintf "DSB.%s" (pp_option o)
       | ISB -> "ISB"
 
-    let sig_of_fence = function
-      | DMB SY -> 'D'
-      | DSB SY -> 'E'
-      | DMB ST -> 'F'
-      | DSB ST -> 'G'
-      | ISB -> 'I'
-      | (DSB _|DMB _) -> assert false
-
-
     let fo f r =  f SY (f ST r)
     let fold_cumul_fences f r =
       fo (fun o -> f (DMB o)) (fo (fun o -> f (DSB o)) r)

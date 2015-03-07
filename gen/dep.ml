@@ -12,12 +12,6 @@
 
 type dp = ADDR | DATA | CTRL | CTRLISYNC
 
-let sig_of_dp = function
-      | ADDR -> 'A'
-      | DATA -> 'D'
-      | CTRL -> 'C'
-      | CTRLISYNC -> 'I'
-
 let fold_dpr f r =  f ADDR (f CTRL (f CTRLISYNC r))
 let fold_dpw f r =  f ADDR (f DATA (f CTRL (f CTRLISYNC r)))
     

@@ -68,7 +68,7 @@ module Make(O:Arch.Config)(V:Constant.S) = struct
         module V = V
 
         type arch_reg = reg
-        let arch = `PPCGen
+        let arch = `PPC
         let forbidden_regs = [Ireg GPR0]
         let pp_reg = pp_reg
         let reg_compare = reg_compare

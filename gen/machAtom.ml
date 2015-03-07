@@ -9,6 +9,7 @@
 (*********************************************************************)
 
 (* Atomicity of events *)
+
 type atom = Atomic | Reserve
 
 let default_atom = Atomic
@@ -22,10 +23,6 @@ let applies_atom a d = match a,d with
 let applies_atom_rmw = function
   | None -> true
   | Some _ -> false
-
-let sig_of_atom = function
-  | Atomic -> 'A'
-  | Reserve -> 'B'
 
 let pp_as_a = None
 
