@@ -1,4 +1,4 @@
-Model
+ARM
 
 (* Model for ARM, ie with po-loc ommited from ppo *)
 include "cos.cat"
