@@ -1,6 +1,6 @@
 "Uniproc model"
 
 include "fences.cat"
-
 include "cos.cat"
-acyclic po-loc | fr | rf | co as uniproc
+
+acyclic po-loc | fr | rf | co as sc-per-location

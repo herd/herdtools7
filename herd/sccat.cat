@@ -1,29 +1,26 @@
-SC withoutco
-(* Sequential consistency, no co version *)
+"SC, no co generated"
 
-include "filters.cat"
-let invrf=(rf)^-1
+(* Utilities *)
+let invrf = rf^-1
+let WW(r) = r & (W * W)
+let RW(r) = r & (R * W)
 
-(* co observations in test *)
-let obsco =
-    noid(WW(po-loc)
-    |(rf;RW(po-loc))
-    |(WR(po-loc);invrf)
-    |(rf;RR(po-loc);invrf))
+(* Collect constraints on SC order *)
 
-let rmw = toid(R & W)
-let rmwco = (rf ; rmw) (* co observation by atomicity *)
+let rec S =
+  po
+| rf
+| co0                (* co from init writes and to final writes *)
+| WW(Sloc;invrf)\id  (* WR observation of co *)
+| RW(invrf;Sloc)\id  (* RW observation of co *)
+| S;S
 
-let cobase = obsco|rmwco|co0
+and Sloc = S & loc
 
-let rec co =
-  cobase       (* initial observations *)
-| (rmw;fr)   (* by atomicity *)
-| (co ; co)    (* transitivity *)
+let co = WW(Sloc)
+and fr = RW(Sloc)
+show fr,co
 
-and fr = noid(invrf;co) (* notice: avoid self fr (RMW) *)
-
-show co,fr
-
-acyclic po | fr | rf | co as sc
+(* S is transitive *)
+irreflexive S as sc
 
