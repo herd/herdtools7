@@ -426,7 +426,7 @@ let get_loc_as_value e = match  E.global_loc_of e with
    - either both determined and equal,
    - or at least one location is undetermined. *)
 let compatible_locs_mem e1 e2 =
-  E.event_compare e1 e2 <> 0 && (* RMW cannot feed themselves *)
+  E.event_compare e1 e2 <> 0 && (* C RMWs cannot feed themselves *)
   begin
     let loc1 = get_loc e1
     and loc2 = get_loc e2 in
@@ -670,6 +670,10 @@ let make_atomic_load_store es =
   let atms = U.collect_atomics es in
   U.LocEnv.fold
     (fun _loc atms k ->
+      let atms =
+        List.filter
+          (fun e -> not (E.is_load e && E.is_store e))
+          atms in (* get rid of C RMW *)
       let rs,ws = List.partition E.is_load atms in
       List.fold_left
         (fun k r ->
