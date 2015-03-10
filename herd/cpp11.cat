@@ -37,6 +37,7 @@ let asw = I * (M \ I)
 let dd = (data | addr)+
 
 (* Id relations *)
+let P = M\A
 let fence_id = toid(F)
 let rmw_id = toid(RMW)
 let w_id = toid(W)

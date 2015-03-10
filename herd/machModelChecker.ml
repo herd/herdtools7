@@ -139,8 +139,6 @@ module Make
            "W", E.is_mem_store;
            "M", E.is_mem;
 	   "F", E.is_barrier;
-           "P", (fun e -> not (E.is_atomic e));
-           "A", E.is_atomic;
 	   "I", E.is_mem_store_init;
          ]) in
       let m =

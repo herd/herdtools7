@@ -120,10 +120,14 @@ end = struct
 
     (* The following definition of is_atomic
        is quite arbitrary. *)
-    let is_atomic a = match a with
+
+    let old_is_atomic a = match a with
     | Access (_,A.Location_global _,_,mo) -> mo != CPP11Base.NA
     | RMW _ -> true
     | _ -> false
+
+(* LM: Indeed: *)
+    let is_atomic _ = false
 
     let get_mem_dir a = match a with
     | Access (d,A.Location_global _,_,_) -> d
@@ -230,6 +234,7 @@ end = struct
      "RLX", mo_matches CPP11Base.Rlx;
      "CON", mo_matches CPP11Base.Con;
      "NA", mo_matches CPP11Base.NA;
+     "A",old_is_atomic;
    ]
 
   let arch_fences = []

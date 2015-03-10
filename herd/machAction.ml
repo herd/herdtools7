@@ -158,7 +158,9 @@ end = struct
          | _ -> false in
          tr_tag tag,p)
 
-  let arch_sets = map_act (fun tag -> tag) A.arch_sets
+  let arch_sets =
+    ("A",is_atomic)::
+    map_act (fun tag -> tag) A.arch_sets
 
   let arch_fences = []
 
