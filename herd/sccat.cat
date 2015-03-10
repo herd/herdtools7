@@ -24,3 +24,10 @@ show fr,co
 (* S is transitive *)
 irreflexive S as sc
 
+(* Also check atomic pairs *)
+let coe = co & ext
+and fre = fr & ext
+
+empty atom & (fre; coe) as atom
+
+
