@@ -111,7 +111,7 @@ let rec tex_of_ins c = function
   | Let (_,bs) -> 
     fprintf c "\\KWD{let}~"; 
     list_iter_alt (tex_of_binding c) (fun () -> fprintf c "~\\KWD{and}~") bs
-  | Rec (_,bs) -> 
+  | Rec (_,bs,_) -> 
     fprintf c "\\KWD{let}~\\KWD{rec}~"; 
     list_iter_alt (tex_of_binding c) (fun () -> fprintf c "~\\KWD{and}~") bs 
   | Procedure (_,x,args,body) ->
@@ -121,7 +121,7 @@ let rec tex_of_ins c = function
         (tex_of_formals true) args
         tex_of_inss body ;
         fprintf c "\\noindent\\KWD{end}\n\n"
-  | Test (_,_, test, exp, name, test_type) ->
+  | Test ((_,_, test, exp, name), test_type) ->
     fprintf c "%s%s~$%a$"
       (tex_of_test_type test_type)
       (tex_of_test test)

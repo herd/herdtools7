@@ -60,11 +60,12 @@ and binding = var * exp
 type do_test = Acyclic | Irreflexive | TestEmpty
 type test = Yes of do_test | No of do_test 
 type test_type = Flagged | UndefinedUnless | Check
+type app_test = TxtLoc.t * pos * test * exp * string option
 
 type ins =
   | Let of TxtLoc.t * binding list
-  | Rec of  TxtLoc.t * binding list
-  | Test of  TxtLoc.t * pos * test * exp * string option * test_type
+  | Rec of  TxtLoc.t * binding list * app_test option
+  | Test of  app_test * test_type
   | UnShow of  TxtLoc.t * string list
   | Show of  TxtLoc.t * string list
   | ShowAs of  TxtLoc.t * exp * string

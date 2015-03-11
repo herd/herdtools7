@@ -107,9 +107,9 @@ let seen_requires_clause : bool ref = ref false
 
 let lem_of_ins chan = function
   | Let (_,bs) -> List.iter (lem_of_binding chan) bs
-  | Rec (_,bs) -> List.iter (lem_of_binding chan) bs
+  | Rec (_,bs,_) -> List.iter (lem_of_binding chan) bs
   (* doesn't handle recursion properly *)
-  | Test (_,_, test, exp, name, test_type) ->
+  | Test ((_,_, test, exp, name), test_type) ->
     let name = begin match name with 
         | None -> Warn.user_error "You need to give each constraint a name!\n"
         | Some name -> name 

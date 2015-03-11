@@ -25,6 +25,7 @@ module LU = LexUtils.Make(O)
     | "let" -> LET
     | "rec" -> REC
     | "and" -> AND
+    | "when" -> WHEN
     | "acyclic" -> ACYCLIC
     | "irreflexive" -> IRREFLEXIVE
     | "show" -> SHOW

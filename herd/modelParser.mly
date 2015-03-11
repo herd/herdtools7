@@ -51,7 +51,7 @@ let pp () =
 %token WITHSC WITHOUTSC
 %token ALT SEMI UNION INTER COMMA DIFF PLUSPLUS
 %token STAR PLUS OPT INV COMP HAT
-%token LET REC AND ACYCLIC IRREFLEXIVE TESTEMPTY EQUAL SHOW UNSHOW AS FUN IN PROCEDURE CALL FORALL DO CHECKCALL FROM TRY EVENTS
+%token LET REC AND WHEN ACYCLIC IRREFLEXIVE TESTEMPTY EQUAL SHOW UNSHOW AS FUN IN PROCEDURE CALL FORALL DO CHECKCALL FROM TRY EVENTS
 %token REQUIRES FLAG
 %token ARROW
 %token ENUM DEBUG MATCH WITH
@@ -88,7 +88,7 @@ ins_list:
 
 ins:
 | LET pat_bind_list { Let (mk_loc (),$2) }
-| LET REC pat_bind_list { Rec (mk_loc (),$3) }
+| LET REC pat_bind_list WHEN app_test { Rec (mk_loc (),$3,Some $5) }
 | deftest { $1 }
 | SHOW exp AS VAR { ShowAs (mk_loc(),$2, $4) }
 | SHOW var_list { Show (mk_loc(),$2) }
@@ -122,8 +122,11 @@ alttags:
 | TAG ALT alttags { $1 :: $3 }
 
 deftest:
-| test_type test exp optional_name { Test(mk_loc(),pp (),$2,$3,$4,$1) }
+| test_type app_test { Test ($2,$1) }
 | CHECKCALL VAR LPAR fargs RPAR optional_name { ProcedureTest(mk_loc(), $2,$4,$6)  }
+
+app_test:
+| test exp optional_name { (mk_loc(),pp (),$1,$2,$3) }
 
 test_type:
 |          { Check }
