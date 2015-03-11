@@ -7,22 +7,19 @@ let RW(r) = r & (R * W)
 
 (* Collect constraints on U order *)
 
+let U0 = po-loc | rf | co0
 let rec U =
-  po-loc
-| rf
-| co0                (* co from init writes and to final writes *)
-| WW(Uloc;invrf)\id  (* WR observation of co *)
-| RW(invrf;Uloc)\id  (* RW observation of co *)
+  U0
+| WW(U;invrf)\id  (* WR observation of co *)
+| RW(invrf;U)\id  (* RW observation of co *)
 | U;U
+when acyclic U as sc-per-location
 
-and Uloc = U & loc
-
-let co = WW(Uloc)
-and fr = RW(Uloc)
+let co = WW(U)
+and fr = RW(U)
 show fr,co
 
 (* a few additional shows *)
 include "fences.cat"
 
-irreflexive U as sc-per-location
 

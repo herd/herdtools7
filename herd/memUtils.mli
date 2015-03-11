@@ -46,6 +46,7 @@ module Make : functor (S: SemExtra.S) -> sig
   val order_to_succ_rel :  S.event list -> S.event_rel
 (* Convert a cyclic list into a relation *)
   val cycle_to_rel : S.event list -> S.event_rel
+  val cycle_option_to_rel : S.event list option -> S.event_rel
 
 
 (* Misc, but everywhere... *)

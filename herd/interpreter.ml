@@ -175,10 +175,6 @@ module Make
 
 
 
-(*
-  module V = Ivalue.Make(S)
- *)
-
     module rec V : sig
       type v =
         | Empty | Unv
@@ -283,6 +279,7 @@ module Make
 
     end and ValSet : (MySet.S with type elt = V.v) = MySet.Make(ValOrder)
 
+    exception CheckFailed of V.env
 
     let error silent loc fmt =
       ksprintf
@@ -903,8 +900,9 @@ module Make
             let m = eval_bds env bds in
             eval { env with EV.env = m;} e
         | BindRec (loc,bds,e) ->
-            let m = env_rec
-                (fun _ -> true) env loc (fun pp -> pp) bds in
+            let m =
+              env_rec (fun _ -> true)
+                env loc (fun pp -> pp) bds in
             eval { env with EV.env=m;} e
         | Match (loc,e,cls,d) ->
             let v = eval env e in
@@ -993,7 +991,7 @@ module Make
             StringMap.fold
               (fun _ _ k -> k+1) env.EV.env.vals 0 in
           let fs = StringSet.pp_str "," (fun x -> x) fvs in
-          warn loc "Closure %s, env=%i, free={%s}\n" name sz fs
+          warn loc "Closure %s, env=%i, free={%s}" name sz fs
         end ;
         let vals =
           StringSet.fold
@@ -1088,27 +1086,35 @@ module Make
 
 (* Compute fixpoint of relations *)
       and env_rec_vals check env_bd loc pp funs bds =
+
+        (* Pretty print (relation) current values *)
+        let vb_pp vs =
+          List.fold_left2
+            (fun k (x,_) v ->
+              try
+                let v = match v with
+                | V.Empty -> E.EventRel.empty
+                | Unv -> Lazy.force env_bd.EV.ks.unv
+                | Rel r -> r
+                | _ -> raise Exit in
+                (x, rt_loc x v)::k
+              with Exit -> k)
+            [] bds vs in
+
+(* Fixpoint iteration *)
         let rec fix k env vs =
           if O.debug && O.verbose > 1 then begin
-            let vb_pp =
-              List.fold_left2
-                (fun k (x,_) v ->
-                  try
-                    let v = match v with
-                    | V.Empty -> E.EventRel.empty
-                    | Unv -> Lazy.force env_bd.EV.ks.unv
-                    | Rel r -> r
-                    | _ -> raise Exit in
-                    (x, rt_loc x v)::k
-                  with Exit -> k)
-                [] bds vs in
-            let vb_pp = pp vb_pp in
+            let vb_pp = pp (vb_pp vs) in
             pp_failure test env_bd.EV.ks.conc (sprintf "Fix %i" k) vb_pp
           end ;
           let env,ws = fix_step env_bd env bds in
-          let test_ok = check { env_bd with EV.env=env; } in
+          let check_ok = check { env_bd with EV.env=env; } in
+          if not check_ok then begin
+            if O.debug then warn loc "Fix point interrupted" ;
+            raise (CheckFailed env)
+          end ;
           let over =
-            not test_ok ||
+            not check_ok ||
             begin try stabilised env_bd.EV.ks env vs ws
             with Stabilised t ->
               error env_bd.EV.silent loc "illegal recursion on type '%s'"
@@ -1125,7 +1131,9 @@ module Make
             (fun env (k,_) -> add_val k (lazy V.Empty) env)
             env_bd.EV.env bds in
         let env0 = env_rec_funs { env_bd with EV.env=env0;} loc funs in
-        let env = fix 0 env0 (List.map (fun _ -> V.Empty) bds) in
+        let env =
+          if O.bell then env0 (* Do not compute fixpoint in bell *)
+          else fix 0 env0 (List.map (fun _ -> V.Empty) bds) in
         if O.debug then warn loc "Fix point over" ;
         env
 
@@ -1165,7 +1173,8 @@ module Make
 
       let doshow bds st =
         let to_show =
-          StringSet.inter S.O.PC.doshow (StringSet.of_list (List.map fst bds)) in
+          StringSet.inter S.O.PC.doshow
+            (StringSet.of_list (List.map fst bds)) in
         if StringSet.is_empty to_show then st
         else
           let show = lazy begin
@@ -1292,6 +1301,17 @@ module Make
               fun env ->
                 eval_test (check_through Check) env t e in
 
+      let pp_check_failure st (loc,pos,_,e,_) =
+        let pp = String.sub txt pos.pos pos.len in
+        let v = eval_rel (from_st st) e in
+        let cy = E.EventRel.get_cycle v in
+        warn loc "'%s' failed" pp ;
+        show_call_stack st ;
+        pp_failure test st.ks.conc
+          (sprintf "%s: Failure of '%s'" test.Test.name.Name.name pp)
+          (let k = show_to_vbpp st in
+          ("CY",U.cycle_option_to_rel cy)::k) in
+
 (* Execute one instruction *)
 
       let eval_st st e = eval (from_st st) e in
@@ -1352,33 +1372,46 @@ module Make
           let () = W.warn "Skipping check %s" (Misc.as_some name) in
           kont st res
     | Test (tst,ty) when not O.bell  ->
-        exec_test txt st tst ty kont res
+        exec_test st tst ty kont res
     | Let (_loc,bds) ->
         let env = eval_bds (from_st st) bds in
         let st = { st with env; } in
         let st = doshow bds st in
         let st = check_bell_order bds st in
         kont st res
-    | Rec (loc,bds,testo) ->
+    | Rec (loc,bds,testo) ->        
         let env =
-          env_rec
-            (make_eval_test testo) (from_st st)
-            loc (fun pp -> pp@show_to_vbpp st) bds in
-        let st = { st with env; } in
-        let st = doshow bds st in          
+          try
+            Some
+              (env_rec
+                 (make_eval_test testo) (from_st st)
+                 loc (fun pp -> pp@show_to_vbpp st) bds)
+          with CheckFailed env ->
+            if O.debug then begin
+              let st = { st with env; } in
+              let st = doshow bds st in
+              pp_check_failure st (Misc.as_some testo)
+            end ;
+            None in
+        begin match env with
+        | None -> res
+        | Some env ->
+            let st = { st with env; } in
+            let st = doshow bds st in
 (* Check again for strictskip *)
-        let st = match testo with
-        | None -> st
-        | Some (_,_,t,e,name) ->
-            if
-              O.strictskip &&
-              skip_this_check name &&
-              not (eval_test (fun _ -> true) (from_st st) t e)
-            then st
-            else st       in
+            let st = match testo with
+            | None -> st
+            | Some (_,_,t,e,name) ->
+                if
+                  O.strictskip &&
+                  skip_this_check name &&
+                  not (eval_test (fun _ -> true) (from_st st) t e)
+                then st
+                else st in
 (* Check bell definitions *)
-        let st = check_bell_order bds st in
-        kont st res
+            let st = check_bell_order bds st in
+            kont st res
+        end
     | Include (loc,fname) ->
         do_include loc fname st kont res
     | Procedure (_,name,args,body) ->
@@ -1495,7 +1528,7 @@ module Make
         assert O.bell ;
         kont st res (* Ignore cat constructs when executing bell *)
 
-    and exec_test txt st (loc,pos,t,e,name) test_type kont res =
+    and exec_test st (loc,_,t,e,name as tst) test_type kont res =
       let skip = skip_this_check name in
       if O.debug &&  skip then
         warn loc "skipping check: %s" (Misc.as_some name) ;
@@ -1526,20 +1559,10 @@ module Make
               skipped = StringSet.add (Misc.as_some name) st.skipped;}
             res
         end else begin
-          if O.debug then begin
-            let pp = String.sub txt pos.pos pos.len in
-            let cy = (* E.EventRel.get_cycle v *) None in
-            warn loc "'%s' failed" pp ;
-            show_call_stack st ;
-            pp_failure test st.ks.conc
-              (sprintf "%s: Failure of '%s'" test.Test.name.Name.name pp)
-              (let k = show_to_vbpp st in
-              match cy with
-              | None -> k
-              | Some r -> ("CY",U.cycle_to_rel r)::k)
-          end ;
           match test_type with
-          | Check -> res
+          | Check ->
+              if O.debug then pp_check_failure st tst ;
+              res
           | UndefinedUnless ->
               kont {st with flags=Flag.Set.add Flag.Undef st.flags;} res
           | Flagged -> kont st res

@@ -1,33 +1,25 @@
 "SC, no co generated"
 
-(* Utilities *)
-let invrf = rf^-1
-let WW(r) = r & (W * W)
-let RW(r) = r & (R * W)
+(* Include uniproc, for its U pre-order *)
+include "uniproccat.cat"
 
-(* Collect constraints on SC order *)
+let S0 = po | U
 
 let rec S =
-  po
-| rf
-| co0                (* co from init writes and to final writes *)
+  S0
 | WW(Sloc;invrf)\id  (* WR observation of co *)
 | RW(invrf;Sloc)\id  (* RW observation of co *)
 | S;S
-
 and Sloc = S & loc
+when acyclic S as sc
 
 let co = WW(Sloc)
 and fr = RW(Sloc)
 show fr,co
 
-(* S is transitive *)
-irreflexive S as sc
-
 (* Also check atomic pairs *)
 let coe = co & ext
 and fre = fr & ext
-
 empty atom & (fre; coe) as atom
 
 

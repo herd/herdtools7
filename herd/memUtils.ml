@@ -274,6 +274,10 @@ let _get_scope_rels evts sc =
             E.EventRel.add (e1,e2) (do_rec (E.EventSet.add e1 seen) rem) in
     do_rec E.EventSet.empty cy
 
+  let cycle_option_to_rel = function
+    | None -> E.EventRel.empty
+    | Some cy -> cycle_to_rel cy
+
 (* The same, for successor relation,
    which is enough for feeding topological orders generators *)
 

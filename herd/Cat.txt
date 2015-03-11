@@ -28,4 +28,26 @@ UNIX:
 herd7 ... -showflag racy -gv
 
 
+* when clause for toplevel let rec.
+  A toplevel let rec declaration cam be complemented by a
+  when [~](acyclic|empty|irreflexive) clause.
 
+  The semantics is as follows: the check is performed at every fixpoint
+  iteration step. If the test fails, the execution is interupted, as
+  with ordinary checks. The idea is optimisation, consider:
+
+  let rec S =
+    ...
+  | S;S
+  when acyclic S
+
+ is equivalent to
+
+  let rec S =
+    ...
+  | S;S
+
+  irreflexive S
+
+  but it should be faster (up to test cost), as fixpoint iteration is
+  interupted.
