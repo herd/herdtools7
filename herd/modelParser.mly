@@ -88,6 +88,7 @@ ins_list:
 
 ins:
 | LET pat_bind_list { Let (mk_loc (),$2) }
+| LET REC pat_bind_list  { Rec (mk_loc (),$3,None) }
 | LET REC pat_bind_list WHEN app_test { Rec (mk_loc (),$3,Some $5) }
 | deftest { $1 }
 | SHOW exp AS VAR { ShowAs (mk_loc(),$2, $4) }
