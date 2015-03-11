@@ -45,6 +45,8 @@ module Make
 
 (* State of interpreter *)
 
+      type loc
+
       type st = {
           env : V.env ;
           show : S.event_rel StringMap.t Lazy.t ;
@@ -52,7 +54,7 @@ module Make
           silent : bool ;  flags : Flag.Set.t ;
           ks : ks ;
           bell_info : BellCheck.info ;
-          stack : TxtLoc.t list;
+          loc : loc ;
         }
 
 
@@ -340,6 +342,7 @@ module Make
         List.map (fun (k,f) -> k,Prim (k,f)) bds in
       add_vals (fun v -> lazy v) env bds
 
+    type loc = { stack : TxtLoc.t list ; txt : string ; }
     type st = {
         env : V.env ;
         show : S.event_rel StringMap.t Lazy.t ;
@@ -347,13 +350,17 @@ module Make
         silent : bool ; flags : Flag.Set.t ;
         ks : ks ;
         bell_info : BellCheck.info ;
-        stack : TxtLoc.t list;
+        loc : loc ;
       }
 
-    let push_loc st loc = { st with stack = loc :: st.stack; }
-    let pop_loc st = match st.stack with
+    let push_loc st loc =
+      let loc = { st.loc with stack = loc :: st.loc.stack; } in
+      { st with loc; }
+    let pop_loc st = match st.loc.stack with
     | [] -> assert false
-    | _::stack -> { st with stack; }
+    | _::stack ->
+        let loc = { st.loc with stack; } in
+        { st with loc; }
 
     let show_call_stack st =
       List.iter
@@ -368,7 +375,7 @@ module Make
           (fun loc ->
             if O.debug || not st.silent then
               eprintf "%a: Calling procedure\n" TxtLoc.pp loc)
-          st.stack ;
+          st.loc.stack ;
         raise Misc.Exit
 
 (* Type of eval env *)
@@ -1277,11 +1284,11 @@ module Make
                 eval_test (check_through Check) env t e in
 
       let pp_check_failure st (loc,pos,_,e,_) =
-        let pp = String.sub txt pos.pos pos.len in
+        let pp = String.sub st.loc.txt pos.pos pos.len in
         let v = eval_rel (from_st st) e in
         let cy = E.EventRel.get_cycle v in
-        warn loc "'%s' failed" pp ;
-        show_call_stack st ;
+        warn loc "check failed" ;
+        show_call_stack st.loc ;
         pp_failure test st.ks.conc
           (sprintf "%s: Failure of '%s'" test.Test.name.Name.name pp)
           (let k = show_to_vbpp st in
@@ -1291,7 +1298,7 @@ module Make
 
       let eval_st st e = eval (from_st st) e in
 
-      let rec exec txt st i kont res =  match i with
+      let rec exec st i kont res =  match i with
       | Debug (_,e) ->
           let v = eval_st st e in
           eprintf "%a: value is %s\n%!"
@@ -1338,7 +1345,7 @@ module Make
             let vs = List.map (eval env0) es in
             let env1 = add_args loc p.proc_args vs env0 p.proc_env in
             let st = push_loc st loc in
-            run txt  { st with env = env1; } p.proc_body
+            run { st with env = env1; } p.proc_body
               (fun st_call res ->
                 let st_call = pop_loc st_call in
                 kont { st_call with env=st.env;} res)
@@ -1403,7 +1410,7 @@ module Make
                 add_args loc p.proc_args (List.map (eval env0) es) env0 e)
               p.proc_env in
           let st = push_loc st loc in
-          run txt { st with env = env1; } p.proc_body
+          run { st with env = env1; } p.proc_body
             (fun st_call res ->
               let st_call = pop_loc st_call in
               kont { st_call with env = st.env ; show=show0;} res)
@@ -1446,7 +1453,7 @@ module Make
                     try ValSet.choose vs
                     with Not_found -> assert false in
                   let env = add_val x (lazy v) env0 in
-                  run txt { st with env;} body
+                  run { st with env;} body
                     (fun st res ->
                       run_set { st with env=env0;} (ValSet.remove v vs) res)
                     res in
@@ -1551,17 +1558,22 @@ module Make
         (* Run sub-model file *)
         if O.debug then warn loc "include \"%s\"" fname ;
         let module P = ParseModel.Make(LexUtils.Default) in
-        let itxt,(_,_,iprog) =
+        let txt0 = st.loc.txt in
+        let txt,(_,_,iprog) =
           try P.parse fname
           with Misc.Fatal msg | Misc.UserError msg ->
             error st.silent loc "%s" msg  in
-        run itxt st iprog kont res
+        run {st with loc = { st.loc with txt;}; } iprog
+          (fun st res ->
+            let loc = { st.loc with txt=txt0; } in
+            kont { st with loc; } res)
+          res
 
-      and run txt st c kont res = match c with
+      and run st c kont res = match c with
       | [] ->  kont st res
       | i::c ->
-          exec txt st i
-            (fun st res -> run txt st c kont res)
+          exec st i
+            (fun st res -> run st c kont res)
             res in
 
       fun ks m vb_pp kont res ->
@@ -1584,8 +1596,8 @@ module Make
           {env=m; show=show; skipped=StringSet.empty;
            silent=false; flags=Flag.Set.empty;
            ks; bell_info=BellCheck.empty_info;
-           stack =[];} in        
-        let just_run st res = run txt st prog kont res in
+           loc={stack =[]; txt=txt;}} in        
+        let just_run st res = run st prog kont res in
         do_include TxtLoc.none "stdlib.cat" st
           (fun st res ->
             match O.bell_fname with
