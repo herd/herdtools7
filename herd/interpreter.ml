@@ -7,7 +7,7 @@
 (*                                                                   *)
 (*  Copyright 2013 Institut National de Recherche en Informatique et *)
 (*  en Automatique and the authors. All rights reserved.             *)
-(*  This file is distributed  under the terms of the Lesser GNU      *)
+(*  This file is distributed  under the terms yof the Lesser GNU      *)
 (*  General Public License.                                          *)
 (*********************************************************************)
 
@@ -21,11 +21,42 @@ module type Config = sig
   val bell : bool (* executing bell file *)
   val bell_fname : string option (* name of bell file if present *)
   include Model.Config
+(* Show control *)
+  val doshow : StringSet.t
+  val showraw : StringSet.t
+  val symetric : StringSet.t
+end
+
+module type SimplifiedSem = sig
+  module E : sig
+    type event
+
+    val pp_eiid : event -> string
+
+    module EventSet : MySet.S
+    with type elt = event
+
+    module EventRel : InnerRel.S
+    with type elt0 = event
+    and module Elts = EventSet
+  end
+
+  type test
+  type concrete
+
+  type event_set = E.EventSet.t
+  type event_rel = E.EventRel.t
+  type rel_pp = (string * event_rel) list
 end
 
 module Make
     (O:Config)
-    (S:Sem.Semantics)
+(*    (S:Sem.Semantics)    *)
+    (S:SimplifiedSem)    
+    (U: sig
+      val partition_events : S.event_set -> S.event_set list
+      val pp_failure : S.test -> S.concrete -> string -> S.rel_pp -> unit
+    end)
     :
     sig
 
@@ -76,13 +107,10 @@ module Make
 (* Convenient abbreviations *)
 (****************************)
 
-    module S = S
     module E = S.E
-    module U = MemUtils.Make(S)
-    module MU = ModelUtils.Make(O)(S)
     module W = Warn.Make(O)
 
-
+(* Check utilities *)
     open AST
 
 
@@ -90,8 +118,12 @@ module Make
     | Some name -> StringSet.mem name O.skipchecks
     | None -> false
 
+    let check_through = match O.through with
+      | Model.ThroughAll|Model.ThroughInvalid -> fun _ -> true
+      | Model.ThroughNone -> fun ok -> ok
+
     let check_through test_type ok = match test_type with
-    | Check -> MU.check_through ok
+    | Check ->  check_through ok
     | UndefinedUnless|Flagged -> ok
 
 
@@ -103,6 +135,15 @@ module Make
     let test2pred = function
       | Yes t -> test2pred t
       | No t -> fun r -> not (test2pred t r)
+
+
+(* Generic toplogical order generator *)
+    let apply_orders es vb kfail kont res =
+      try
+        E.EventRel.all_topos_kont es vb
+          (fun k res ->
+            kont (E.EventRel.order_to_rel k) res) res
+      with E.EventRel.Cyclic -> kfail vb
 
 (*  Model interpret *)
     let (txt,(_,_,prog)) = O.m
@@ -288,9 +329,6 @@ module Make
         (fun msg ->
           Warn.warn_always "%a: %s" TxtLoc.pp loc msg)
         fmt
-
-    let pp_failure test conc msg vb_pp =
-      MU.pp_failure test conc msg vb_pp
 
     open V
 
@@ -500,9 +538,9 @@ module Make
     let rt_loc lbl =
       if
         O.verbose <= 1 &&
-        not (StringSet.mem lbl S.O.PC.symetric) &&
-        not (StringSet.mem lbl S.O.PC.showraw)
-      then S.rt else (fun x -> x)
+        not (StringSet.mem lbl O.symetric) &&
+        not (StringSet.mem lbl O.showraw)
+      then E.EventRel.remove_transitive_edges else (fun x -> x)
 
     let show_to_vbpp st =
       StringMap.fold (fun tag v k -> (tag,v)::k)   (Lazy.force st.show) []
@@ -591,7 +629,7 @@ module Make
                r)
         end ;
         let rs =
-          U.apply_orders es r
+          apply_orders es r
             (fun o ->
               let o =
                 E.EventRel.filter
@@ -701,21 +739,26 @@ module Make
             begin match eval env e with
             | V.Empty -> V.Empty
             | Unv -> Unv
-            | Rel r -> Rel (S.tr r)
+            | Rel r -> Rel (E.EventRel.transitive_closure r)
             | v -> error_rel env.EV.silent (get_loc e) v
             end
         | Op1 (_,Star,e) ->
             begin match eval env e with
             | V.Empty -> Rel (Lazy.force env.EV.ks.id)
             | Unv -> Unv
-            | Rel r -> Rel (S.union (S.tr r) (Lazy.force env.EV.ks.id))
+            | Rel r ->
+                Rel
+                  (E.EventRel.union
+                     (E.EventRel.transitive_closure r) 
+                     (Lazy.force env.EV.ks.id))
             | v -> error_rel env.EV.silent (get_loc e) v
             end
         | Op1 (_,Opt,e) ->
             begin match eval env e with
             | V.Empty -> Rel (Lazy.force env.EV.ks.id)
             | Unv -> Unv
-            | Rel r -> Rel (S.union r (Lazy.force env.EV.ks.id))
+            | Rel r ->
+                Rel (E.EventRel.union r (Lazy.force env.EV.ks.id))
             | v -> error_rel env.EV.silent (get_loc e) v
             end
         | Op1 (_,Comp,e) -> (* Back to polymorphism *)
@@ -762,7 +805,8 @@ module Make
               | _ ->
                   let t,vs = type_list env.EV.silent vs in
                   match t with
-                  | TRel -> Rel (S.unions (List.map (as_rel env.EV.ks) vs))
+                  | TRel ->
+                      Rel (E.EventRel.unions (List.map (as_rel env.EV.ks) vs))
                   | TEvents ->
                       Set (E.EventSet.unions  (List.map (as_set env.EV.ks) vs))
                   | TSet telt ->
@@ -775,9 +819,11 @@ module Make
             let vs = List.map (eval_loc env) es in
             begin try
               let vs = seq_args env.EV.silent env.EV.ks vs in
-              match vs with
-              | [] -> Rel (Lazy.force env.EV.ks.id)
-              | _ -> Rel (S.seqs vs)
+              let r =
+                List.fold_right
+                  E.EventRel.sequence
+                  vs (Lazy.force env.EV.ks.id) in
+              Rel r
             with Exit -> empty_rel
             end
 (* Binary operators *)
@@ -1087,7 +1133,7 @@ module Make
         let rec fix k env vs =
           if O.debug && O.verbose > 1 then begin
             let vb_pp = pp (vb_pp vs) in
-            pp_failure test env_bd.EV.ks.conc (sprintf "Fix %i" k) vb_pp
+            U.pp_failure test env_bd.EV.ks.conc (sprintf "Fix %i" k) vb_pp
           end ;
           let env,ws = fix_step env_bd env bds in
           let check_ok = check { env_bd with EV.env=env; } in
@@ -1144,7 +1190,7 @@ module Make
         with Not_found -> E.EventRel.empty in
 
       let doshowone x st =
-        if O.showsome && StringSet.mem x  S.O.PC.doshow then
+        if O.showsome && StringSet.mem x  O.doshow then
           let show =
             lazy begin
               StringMap.add x
@@ -1155,7 +1201,7 @@ module Make
 
       let doshow bds st =
         let to_show =
-          StringSet.inter S.O.PC.doshow
+          StringSet.inter O.doshow
             (StringSet.of_list (List.map fst bds)) in
         if StringSet.is_empty to_show then st
         else
@@ -1289,10 +1335,10 @@ module Make
         let cy = E.EventRel.get_cycle v in
         warn loc "check failed" ;
         show_call_stack st.loc ;
-        pp_failure test st.ks.conc
-          (sprintf "%s: Failure of '%s'" test.Test.name.Name.name pp)
+        U.pp_failure test st.ks.conc
+          (sprintf "Failure of '%s'" pp)
           (let k = show_to_vbpp st in
-          ("CY",U.cycle_option_to_rel cy)::k) in
+          ("CY",E.EventRel.cycle_option_to_rel cy)::k) in
 
 (* Execute one instruction *)
 
@@ -1589,7 +1635,7 @@ module Make
                   StringMap.empty (Lazy.force vb_pp) in
               StringSet.fold
                 (fun tag show -> StringMap.add tag (find_show_rel ks m tag) show)
-                S.O.PC.doshow show
+                O.doshow show
             end else lazy StringMap.empty in
 
         let st =

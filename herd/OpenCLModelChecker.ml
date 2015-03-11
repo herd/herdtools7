@@ -25,14 +25,22 @@ module Make
     (S:Sem.Semantics)
     =
   struct
+    module U = MemUtils.Make(S)
+    module MU = ModelUtils.Make(O)(S)
+    module IU = struct
+      let partition_events = U.partition_events
+      let pp_failure = MU.pp_failure
+    end
     module I = Interpreter.Make
         (struct
           let bell = false
           let bell_fname = None
           include O
-        end)(S)
+          include S.O.PC
+        end)(S)(IU)
+
     module E = S.E
-    module U = MemUtils.Make(S)
+
 
     let (pp,(opts,_,prog)) = O.m
 
@@ -66,8 +74,6 @@ module Make
               kont conc conc.S.fs vb_pp st.I.flags res
             else res)
           res
-
-    module MU = ModelUtils.Make(O)(S)
 
     let check_event_structure test conc kont res =
       let pr = lazy (MU.make_procrels (fun _ -> false) conc) in

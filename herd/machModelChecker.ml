@@ -32,10 +32,23 @@ module Make
       let bell = false
       let bell_fname = bell_fname
       include O
+      let doshow = S.O.PC.doshow
+      let showraw = S.O.PC.showraw
+      let symetric = S.O.PC.symetric
     end
-    module I = Interpreter.Make(IConfig)(S)
-    module E = S.E
     module U = MemUtils.Make(S)
+    module MU = ModelUtils.Make(O)(S)
+
+    module IUtils = struct
+      let partition_events = U.partition_events
+      let pp_failure test conc msg vb_pp =
+        MU.pp_failure
+          test conc
+          (Printf.sprintf "%s: %s" test.Test.name.Name.name msg)
+          vb_pp
+    end
+    module I = Interpreter.Make(IConfig)(S)(IUtils)
+    module E = S.E
 
 (* Local utility: bell event selection *)
     let add_bell_events m pred evts annots =
@@ -68,8 +81,6 @@ module Make
               kont conc conc.S.fs vb_pp st.I.flags res
             else res)
           res
-
-    module MU = ModelUtils.Make(O)(S)
 
 (* Enter here *)
     let check_event_structure test conc kont res =

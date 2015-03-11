@@ -24,7 +24,7 @@ module Make (C: Config) = struct
     let module ModelConfig = struct
       let showsome =
 	begin match C.outputdir with Some _ -> true | None -> false end
-	|| C.PC.gv || C.PC.evince
+      || C.PC.gv || C.PC.evince
       let through = C.through
       let debug = debug
       let verbose = C.verbose
@@ -35,52 +35,66 @@ module Make (C: Config) = struct
 
     (* get the model as the correct type *)
     let generic_m = match model with
-      | Generic m -> m
-      | _ -> Warn.fatal "Expected generic bell model"
+    | Generic m -> m
+    | _ -> Warn.fatal "Expected generic bell model"
     in
 
-    (* instantiate the interpreter module *)
-    let module BellS = BellSem.Make(C)(SymbValue) in
-    let module I = Interpreter.Make
-	  (struct 
-	    let m = generic_m
-            let bell = true
-            let bell_fname = None
-	    include ModelConfig
-	   end)
-	  (BellS) in
+    (* A dummy semantics! *)
 
-    (* construct an empty test *)
-    let module Bell = BellArch.Make(C.PC)(SymbValue) in
-    let module T = Test.Make(Bell) in
-    let empty_test = T.empty_test in
+    let module UnitS = struct
+      module E = struct
+        type event = unit
+        let pp_eiid () = "a"
+
+        module Ordered = struct
+          type t = unit
+          let compare () () = 0
+        end
+
+        module EventSet = MySet.Make(Ordered)
+        module EventRel = InnerRel.Make(Ordered)
+      end
+
+      type test = unit
+      type concrete = unit
+
+      type event_set = E.EventSet.t
+      type event_rel = E.EventRel.t
+      type rel_pp = (string * event_rel) list
+
+    end in
+
+    let module I = Interpreter.Make
+        (struct 
+	  let m = generic_m
+          let bell = true
+          let bell_fname = None
+	  include ModelConfig
+          let doshow = StringSet.empty
+          let showraw = StringSet.empty
+          let symetric = StringSet.empty
+        end)
+        (UnitS)
+        (struct
+          let partition_events _ = []
+          let pp_failure _ _ msg _ =
+            if ModelConfig.debug then eprintf "%s\n" msg
+        end) in
+
+    let empty_test = () in
 
     (* construct an empty ks *)
-    let module E = BellS.E in
-    let conc = BellS.conc_zero in
-      let evts =
-        E.EventSet.filter
-          (fun e -> E.is_mem e || E.is_barrier e)
-          conc.BellS.str.E.events in
-      let id =
-        lazy begin
-          E.EventRel.of_list
-            (List.rev_map
-               (fun e -> e,e)
-               (E.EventSet.elements evts))
-        end in
-    let unv = lazy begin E.EventRel.cartesian evts evts  end in
+    let conc = () in
+    let evts = UnitS.E.EventSet.empty
+    and id = lazy UnitS.E.EventRel.empty
+    and unv = lazy UnitS.E.EventRel.empty in
     let ks = {I.id; unv; evts; conc;} in
-
-    (* create vb_pp (not entirely sure what this does, but maybe
-       this will suffice) *)
     let vb_pp = lazy [] in
 
     (* Continuation: notice that it should be called once at most *)
-    let function_arg =
-      (fun st res -> match res with
-      | None -> Some st.I.bell_info
-      | Some _ -> assert false) in
+    let function_arg st res = match res with
+    | None -> Some st.I.bell_info
+    | Some _ -> assert false) in
 
     (* call the interpreter  and collect bell info *)
     match I.interpret empty_test ks I.env_empty vb_pp function_arg None with

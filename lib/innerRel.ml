@@ -54,6 +54,16 @@ module type S =  sig
   val is_acyclic : t -> bool
   val is_cyclic : t -> bool
 
+(* Transformation 'order' like lists into relations *)
+  (* without transitive closure *)
+  val order_to_succ : elt0 list -> t
+  (* with transitive closure *)
+  val order_to_rel : elt0 list -> t
+
+(* Also for cycles *)
+  val cycle_to_rel : elt0 list -> t
+  val cycle_option_to_rel : elt0 list option -> t
+
   exception Cyclic
 (* Topological sort *)
   val topo :  Elts.t -> t -> elt0 list
@@ -234,6 +244,40 @@ struct
   | Some _ -> false
 
   let is_cyclic r = not (is_acyclic r)
+
+(* From lists to relations *)
+
+  let rec order_to_succ = function
+    | []|[_] -> empty
+    | e1::(e2::_ as es) ->
+        add (e1,e2) (order_to_succ es)
+
+  let rec order_to_pairs k evts = match evts with
+  | [] -> k
+  | e1 :: tl ->      
+      let k = List.fold_left (fun k e2 -> (e1,e2)::k) k tl in
+      order_to_pairs k tl
+	
+  let order_to_rel es = of_list (order_to_pairs []  es)
+
+  let cycle_to_rel cy =
+    let rec do_rec seen = function
+      | [] -> assert false
+      | [e] ->
+          if Elts.is_empty seen then singleton (e,e)
+          else  begin
+            assert (Elts.mem e seen) ;
+            empty
+          end
+      | e1::(e2::_ as rem) ->
+          if Elts.mem e1 seen then empty
+          else
+            add (e1,e2) (do_rec (Elts.add e1 seen) rem) in
+    do_rec Elts.empty cy
+
+  let cycle_option_to_rel = function
+    | None -> empty
+    | Some cy -> cycle_to_rel cy
 
 
 (* Topological sort *)

@@ -259,33 +259,6 @@ let _get_scope_rels evts sc =
 	
   let order_to_rel evts = E.EventRel.of_list (order_to_pairs []  evts)
 
-  let cycle_to_rel cy =
-    let rec do_rec seen = function
-      | [] -> assert false
-      | [e] ->
-          if E.EventSet.is_empty seen then E.EventRel.singleton (e,e)
-          else  begin
-            assert (E.EventSet.mem e seen) ;
-            E.EventRel.empty
-          end
-      | e1::(e2::_ as rem) ->
-          if E.EventSet.mem e1 seen then E.EventRel.empty
-          else
-            E.EventRel.add (e1,e2) (do_rec (E.EventSet.add e1 seen) rem) in
-    do_rec E.EventSet.empty cy
-
-  let cycle_option_to_rel = function
-    | None -> E.EventRel.empty
-    | Some cy -> cycle_to_rel cy
-
-(* The same, for successor relation,
-   which is enough for feeding topological orders generators *)
-
-  let rec order_to_succ_rel evts = match evts with
-  | []|[_] -> E.EventRel.empty
-  | e1::(e2::_ as evts) ->
-      E.EventRel.add (e1,e2) (order_to_succ_rel evts)
-
 
 (********)
 (* Misc *)
@@ -481,7 +454,7 @@ let _get_scope_rels evts sc =
 
     LocEnv.fold (fun _ evts k -> E.EventSet.of_list evts::k) env []
 
-
+      
 (*
   and collect_sc_actions es = 
     (* horrible hack ahead -- we're collecting sc actions per location, 
@@ -595,7 +568,7 @@ let _get_scope_rels evts sc =
           let orders =
 	    E.EventRel.all_topos (PC.verbose > 0)
               (E.EventSet.of_list stores) vb in
-          List.map order_to_succ_rel orders::k)
+          List.map E.EventRel.order_to_succ orders::k)
         stores_by_loc [] in
     Misc.fold_cross_gen E.EventRel.union E.EventRel.empty
       orders kont res
@@ -630,7 +603,7 @@ let _get_scope_rels evts sc =
           let orders =
 	    E.EventRel.all_topos (PC.verbose > 0)
               (E.EventSet.of_list mutex_actions) E.EventRel.empty in
-          List.map order_to_succ_rel orders::k)
+          List.map E.EventRel.order_to_succ orders::k)
         mutex_actions_by_loc [] in
     Misc.fold_cross_gen E.EventRel.union E.EventRel.empty lo_orders kont res
 
@@ -682,14 +655,9 @@ let _get_scope_rels evts sc =
   let apply_process_sc _test conc kont res =
     let sc_actions =
       E.EventSet.filter E.is_sc_action conc.S.str.E.events in
-    all_elements sc_actions (fun xs -> kont (order_to_succ_rel xs)) res
+    all_elements sc_actions
+      (fun xs -> kont (E.EventRel.order_to_succ xs)) res
 
-(* Generic toplogical order generator *)
- let apply_orders es vb kfail kont res =
-   try
-     E.EventRel.all_topos_kont es vb
-       (fun k res -> kont (order_to_rel k) res) res
-   with E.EventRel.Cyclic -> kfail vb
 
 (*******************************************************)
 (* Saturate all memory accesses wrt atomicity classes  *)

@@ -55,6 +55,16 @@ module type S =  sig
   val is_acyclic : t -> bool
   val is_cyclic : t -> bool
 
+(* Transformation 'order' like lists into relations *)
+  (* without transitive closure *)
+  val order_to_succ : elt0 list -> t
+  (* with transitive closure *)
+  val order_to_rel : elt0 list -> t
+(* Also for cycles *)
+  val cycle_to_rel : elt0 list -> t
+  val cycle_option_to_rel : elt0 list option -> t
+
+
 (* All toplogical orders, raises Cyclic in case of cycle
    Enhancement: all_topos nodes edges still works
     when edges relates elts not in nodes *)

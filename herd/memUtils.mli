@@ -41,14 +41,6 @@ module Make : functor (S: SemExtra.S) -> sig
  val transitive_closure_p :   S.event_rel list -> S.event_rel list
 
 
-(* Convert the ordered list representation of a total order to a relation *)
-  val order_to_rel : S.event list -> S.event_rel
-  val order_to_succ_rel :  S.event list -> S.event_rel
-(* Convert a cyclic list into a relation *)
-  val cycle_to_rel : S.event list -> S.event_rel
-  val cycle_option_to_rel : S.event list option -> S.event_rel
-
-
 (* Misc, but everywhere... *)
   val find_source :'a S.RFMap.t -> S.event -> 'a
   val rext : S.concrete -> S.event -> bool
@@ -187,11 +179,6 @@ val apply_process_sc :
     S.test -> S.concrete -> (S.event_rel -> 'a -> 'a) -> 'a -> 'a
 
 
-val apply_orders :
-    S.event_set ->  S.event_rel ->
-      (S.event_rel -> 'o) (* kont for failure *) ->
-        (S.event_rel -> 'o -> 'o) (* kont for one order *) ->
-          'o -> 'o
 (* fold over possibilities when saturating memory order wrt atomicity classes.
      'fold_saturated_mem_order es mem_order kont res'
      - es is the event structure for calculation
