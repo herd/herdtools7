@@ -906,9 +906,9 @@ let one_init = match PC.graph with
             fprintf chan "eiidinit [label=\"%s\""
               (escape_label dm acts)
         end ;
-        pp_attr chan "shape" (if PC.verbose > 0 then "box" else "none") ;
+        pp_attr chan "shape" (if PC.verbose > 2 then "box" else "none") ;
         pp_fontsize chan ;
-        if PC.verbose > 0 then pp_attr chan "color" color ;
+        if PC.verbose > 2 then pp_attr chan "color" color ;
         pp_event_position chan e ;
         pp_attr chan "fixedsize" "true" ;
         pp_attr chan "height"
@@ -982,7 +982,7 @@ let one_init = match PC.graph with
                     (yfinal (maxy +. 0.6))in
 	        fprintf chan
                   "proc%i_label_node [shape=%s%a, label=\"%a\", pos=\"%s!\", fixedsize=true, width=%f, height=%f]\n"
-                  n (if PC.verbose > 0 then "box" else "none")
+                  n (if PC.verbose > 2 then "box" else "none")
                   (fun chan () -> pp_fontsize chan) ()
                   pp_thread n pos boxwidth boxheight
               end
