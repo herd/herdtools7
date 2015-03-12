@@ -20,7 +20,12 @@ module type Config = sig
   val m : AST.pp_t
   val bell : bool (* executing bell file *)
   val bell_fname : string option (* name of bell file if present *)
-  include Model.Config
+(* Restricted Model.Config *)
+  val showsome : bool
+  val debug : bool
+  val verbose : int
+  val skipchecks : StringSet.t
+  val strictskip : bool
 (* Show control *)
   val doshow : StringSet.t
   val showraw : StringSet.t
@@ -55,6 +60,7 @@ module Make
     (S:SimplifiedSem)    
     (U: sig
       val partition_events : S.event_set -> S.event_set list
+      val check_through : bool -> bool
       val pp_failure : S.test -> S.concrete -> string -> S.rel_pp -> unit
     end)
     :
@@ -118,12 +124,8 @@ module Make
     | Some name -> StringSet.mem name O.skipchecks
     | None -> false
 
-    let check_through = match O.through with
-      | Model.ThroughAll|Model.ThroughInvalid -> fun _ -> true
-      | Model.ThroughNone -> fun ok -> ok
-
     let check_through test_type ok = match test_type with
-    | Check ->  check_through ok
+    | Check ->  U.check_through ok
     | UndefinedUnless|Flagged -> ok
 
 

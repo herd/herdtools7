@@ -29,6 +29,7 @@ module Make
     module MU = ModelUtils.Make(O)(S)
     module IU = struct
       let partition_events = U.partition_events
+      let check_through = MU.check_through
       let pp_failure = MU.pp_failure
     end
     module I = Interpreter.Make

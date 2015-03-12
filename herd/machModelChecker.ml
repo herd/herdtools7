@@ -41,6 +41,7 @@ module Make
 
     module IUtils = struct
       let partition_events = U.partition_events
+      let check_through = MU.check_through
       let pp_failure test conc msg vb_pp =
         MU.pp_failure
           test conc

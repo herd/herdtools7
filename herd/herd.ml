@@ -409,7 +409,7 @@ let bell_model = match !Opts.bell with
         end) in
     begin try
       let r = P.parse fname in
-      Some (fname,Model.Generic r)
+      Some (fname,r)
     with
     | Misc.Fatal msg -> eprintf "%s: %s\n" prog msg ; exit 2
     | Misc.Exit ->
@@ -542,9 +542,14 @@ let () =
 
   end in
 
-  let module IB = Interpret_bell.Make(Config) in
   let bi = match bell_model with
   | Some (fname,m) ->
+      let module IB =
+        Interpret_bell.Make
+          (struct
+            let debug = Config.debug.Debug.barrier
+            let verbose = Config.verbose
+          end) in
       begin try Some (fname,IB.interpret_bell m) with
       | Misc.Exit -> exit 2
       end
