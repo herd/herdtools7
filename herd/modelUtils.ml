@@ -81,7 +81,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
   open Model
 
   let pp_failure test conc legend vb_pp =
-    if  O.debug then begin
+    if O.debug then begin
       let module PP = Pretty.Make(S) in
       Printf.eprintf "%s\n%!" legend ;
       PP.show_legend test  legend conc vb_pp

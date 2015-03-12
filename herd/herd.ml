@@ -418,7 +418,8 @@ let bell_model = match !Opts.bell with
 | None -> None
 
 (* Read kinds/conds files *)
-module LR = LexRename.Make(struct let verbose = !verbose end)
+module LR = LexRename.Make
+  (struct let verbose = if !debug.Debug.lexer  then !verbose else 0 end)
 
 let rename = match !rename with
 | None -> TblRename.empty

@@ -1047,6 +1047,8 @@ module Make
 
       and eval_rel env e =  match eval env e with
       | Rel v -> v
+      | V.Empty -> E.EventRel.empty
+      | Unv -> Lazy.force env.EV.ks.unv
       | _ -> error env.EV.silent (get_loc e) "relation expected"
 
       and eval_set env e = match eval env e with
@@ -1332,7 +1334,7 @@ module Make
                 eval_test (check_through Check) env t e in
 
       let pp_check_failure st (loc,pos,_,e,_) =
-        let pp = String.sub st.loc.txt pos.pos pos.len in
+        let pp = try String.sub txt pos.pos pos.len with _ -> assert false in
         let v = eval_rel (from_st st) e in
         let cy = E.EventRel.get_cycle v in
         warn loc "check failed" ;

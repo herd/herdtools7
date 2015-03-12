@@ -70,6 +70,7 @@ let name  = alpha (alpha|digit|'_' | '.' | '-')* '\''?
 rule token = parse
 | [' ''\t'] { token lexbuf }
 | '\n'      { incr_lineno lexbuf; token lexbuf }
+| "//" [^'\n']* { token lexbuf }
 | "(*"      { LU.skip_comment lexbuf ; token lexbuf }
 | '#' [^'\n']* '\n' { incr_lineno lexbuf ; token lexbuf }
 | '('   { LPAR }

@@ -191,10 +191,13 @@ module Make(O:Config)(M:XXXMem.S) =
             | ShowAll -> true
             | ShowNone -> false
             | ShowFlag f -> Flag.Set.mem (Flag.Flag f) flags in
-                
+
           begin match ochan with
           | Some (chan,_) when show_exec ->            
               let legend = 
+                let pp_flag = match O.show with
+                | PrettyConf.ShowFlag f -> sprintf ", flag %s" f
+                | _ -> "" in
                 let name = Test.readable_name test in
                 let pp_model = match M.model with
                 | Model.Minimal false -> ""
@@ -208,12 +211,13 @@ module Make(O:Config)(M:XXXMem.S) =
                       (C.dump_as_kind cstr)
                       pp_model
                   else
-                    sprintf "Test %s%s%s"
+                    sprintf "Test %s%s%s%s"
                       name
                       (sprintf ": %s" (C.dump_as_kind cstr))
                       (match pp_model with
                       | "" -> ""
                       | _ -> sprintf " (%s)" pp_model)
+                      pp_flag
                 else begin
                   if PC.texmacros then
                     sprintf
@@ -221,10 +225,11 @@ module Make(O:Config)(M:XXXMem.S) =
                       name
                       pp_model
                   else
-                    sprintf "Test %s%s" name
+                    sprintf "Test %s%s%s" name
                       (match pp_model with
                       | "" -> ""
                       | _ -> sprintf ", %s" pp_model)
+                      pp_flag
                 end in
               let module PP = Pretty.Make(S) in
               PP.dump_legend chan test legend conc (Lazy.force vbpp)
