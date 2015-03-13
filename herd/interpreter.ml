@@ -56,7 +56,6 @@ end
 
 module Make
     (O:Config)
-(*    (S:Sem.Semantics)    *)
     (S:SimplifiedSem)    
     (U: sig
       val partition_events : S.event_set -> S.event_set list
@@ -148,14 +147,9 @@ module Make
       with E.EventRel.Cyclic -> kfail vb
 
 (*  Model interpret *)
-    let (txt,(_,_,prog)) = O.m
+    let (prog_txt,(_,_,prog)) = O.m
 
-(*
-  mutable association lists for gathering bell information.
-  This could also be passed around, this seems like the least
-  intrusive method for now. When integrated, it can be discussed
-  what we really do with it.
- *)
+(* Debug printing *)
 
     let _debug_proc chan p = fprintf chan "%i" p
     let debug_event chan e = fprintf chan "%s" (E.pp_eiid e)
@@ -1334,7 +1328,8 @@ module Make
                 eval_test (check_through Check) env t e in
 
       let pp_check_failure st (loc,pos,_,e,_) =
-        let pp = try String.sub txt pos.pos pos.len with _ -> assert false in
+        let pp =
+          try String.sub st.loc.txt pos.pos pos.len with _ -> assert false in
         let v = eval_rel (from_st st) e in
         let cy = E.EventRel.get_cycle v in
         warn loc "check failed" ;
@@ -1646,7 +1641,7 @@ module Make
           {env=m; show=show; skipped=StringSet.empty;
            silent=false; flags=Flag.Set.empty;
            ks; bell_info=BellCheck.empty_info;
-           loc={stack =[]; txt=txt;}} in        
+           loc={stack =[]; txt=prog_txt;}} in        
         let just_run st res = run st prog kont res in
         do_include TxtLoc.none "stdlib.cat" st
           (fun st res ->
