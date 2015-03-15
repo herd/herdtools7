@@ -1,5 +1,6 @@
 filters
 (* Define filter functions (backward compatibilit) *)
+let P = M \ A
 
 let WW(r) = r & (W * W)
 and WR(r) = r & (W * R)

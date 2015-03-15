@@ -118,7 +118,6 @@ module Make
 (* Check utilities *)
     open AST
 
-
     let skip_this_check name = match name with
     | Some name -> StringSet.mem name O.skipchecks
     | None -> false
@@ -1134,6 +1133,7 @@ module Make
             U.pp_failure test env_bd.EV.ks.conc (sprintf "Fix %i" k) vb_pp
           end ;
           let env,ws = fix_step env_bd env bds in
+          let env = env_rec_funs { env_bd with EV.env=env;} loc funs in
           let check_ok = check { env_bd with EV.env=env; } in
           if not check_ok then begin
             if O.debug then warn loc "Fix point interrupted" ;
@@ -1149,7 +1149,6 @@ module Make
           if over then env
           else
             (* Update recursive functions *)
-            let env = env_rec_funs {env_bd with EV.env=env;} loc funs in
             fix (k+1) env ws in
 
         let env0 =
@@ -1432,9 +1431,12 @@ module Make
                   if
                     O.strictskip &&
                     skip_this_check name &&
-                    not (eval_test (fun _ -> true) (from_st st) t e)
-                  then st
-                  else st in
+                    not (eval_test Misc.identity (from_st st) t e)
+                  then begin
+                    { st with
+                      skipped =
+                      StringSet.add (Misc.as_some name) st.skipped;}
+                  end else st in
 (* Check bell definitions *)
               let st = check_bell_order bds st in
               kont st res
