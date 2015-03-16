@@ -12,5 +12,8 @@
 
 (** Open my files *)
 
-val find : string -> string
-
+module Make :
+  functor (C:sig val includes : string list end) ->
+    sig
+      val find : string -> string
+    end

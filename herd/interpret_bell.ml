@@ -3,6 +3,7 @@ open Printf
 module type Config = sig
   val debug : bool
   val verbose : int
+  val libfind : string -> string
 end
 
 module Make (C: Config) = struct
@@ -26,6 +27,7 @@ module Make (C: Config) = struct
       let doshow = StringSet.empty
       let showraw = StringSet.empty
       let symetric = StringSet.empty
+      let libfind = C.libfind
     end in
 
  (* A dummy semantics! *)

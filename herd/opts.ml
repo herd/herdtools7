@@ -21,6 +21,7 @@ let prog =
 
 (* Local options *)
 let verbose = ref 0
+let includes = ref []
 let debug = ref Debug.none
 let names = ref []
 let rename = ref None

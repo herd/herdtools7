@@ -87,6 +87,7 @@ module type Config = sig
   val skipchecks : StringSet.t
   val strictskip : bool
   val optace : bool
+  val libfind : string -> string
 end
 
 let get_default_model a = 

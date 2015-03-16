@@ -20,6 +20,7 @@ module type Config = sig
   val bell_model_info : (string * BellCheck.info) option
   val check_name : string -> bool
   val check_rename : string -> string option
+  val libfind : string -> string
   include GenParser.Config
   include Top.Config
   include Sem.Config

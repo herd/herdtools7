@@ -61,7 +61,7 @@ module S = S
             (struct
               let m = m
               let bell_model_info = None
-              include ModelConfig
+              include ModelConfig                  
              end)(S) in
         X.check_event_structure test
     | File _ -> assert false

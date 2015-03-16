@@ -20,6 +20,7 @@ val prog : string
 
 (* Local options *)
 val verbose : int ref
+val includes : string list ref
 val debug : Debug.t ref
 val names : string list ref
 val rename : string option ref

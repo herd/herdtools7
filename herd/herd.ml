@@ -95,8 +95,9 @@ let parse_stringset opt v msg =
   sprintf "<name,..,name> %s" msg
 
 (* Option list *)
-
-let load_config s =  LexConf.lex (MyLib.find s)
+let load_config s =
+  let module ML = MyLib.Make (struct let includes = !includes end) in
+  LexConf.lex (ML.find s)
 
 let options = [
 (* Basic *)
@@ -109,6 +110,8 @@ let options = [
    "<non-default> show various diagnostics, repeat to increase verbosity");
   ("-q", Arg.Unit (fun _ -> verbose := -1; debug := Debug.none),
    "<default> do not show diagnostics");
+  ("-I", Arg.String (fun s -> includes := !includes @ [s]),
+   "<dir> add <dir> to search path");
   ("-conf",
    Arg.String load_config,
    "<name> read configuration file <name>") ;
@@ -381,13 +384,18 @@ let names = match !names with
 | names -> Some (ReadNames.from_files names StringSet.add StringSet.empty)
 
 (* Read generic model, if any *)
+let libfind =
+  let module ML = MyLib.Make(struct let includes = !includes end) in
+  ML.find
+
+module ParserConfig = struct
+  let debug = !debug.Debug.lexer
+  let libfind =  libfind
+end
+
 let model,model_opts = match !model with
 | Some (Model.File fname) ->
-    let module P =
-      ParseModel.Make
-        (struct
-          let debug = !debug.Debug.lexer
-        end) in
+    let module P = ParseModel.Make(ParserConfig) in
     begin try
       let _,(b,_,_) as r = P.parse fname in
       Some (Model.Generic r),b
@@ -402,11 +410,7 @@ let model,model_opts = match !model with
 (* Read bell model, if any *)
 let bell_model = match !Opts.bell with
 | Some fname ->
-    let module P =
-      ParseModel.Make
-        (struct
-          let debug = !debug.Debug.lexer
-        end) in
+    let module P = ParseModel.Make(ParserConfig) in
     begin try
       let r = P.parse fname in
       Some (fname,r)
@@ -451,6 +455,7 @@ let () =
     let check_rename = TblRename.find_value_opt rename
     let check_kind = TblRename.find_value_opt kinds
     let check_cond =  TblRename.find_value_opt conds
+    let libfind = libfind
 
     let model_enumco = model_opts.ModelOption.co
     let observed_finals_only = not model_enumco
@@ -526,7 +531,7 @@ let () =
       let dotheader = match !PP.dotheader with
       | None -> None
       | Some f ->
-          let fname = MyLib.find f in
+          let fname = libfind f in
           try
             Misc.input_protect
               (fun chan ->
@@ -550,6 +555,7 @@ let () =
           (struct
             let debug = Config.debug.Debug.barrier
             let verbose = Config.verbose
+            let libfind = libfind
           end) in
       begin try Some (fname,IB.interpret_bell m) with
       | Misc.Exit -> exit 2

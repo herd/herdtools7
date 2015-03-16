@@ -14,8 +14,12 @@
 
 let t = Hashtbl.create 17
 
+module type Config = sig
+  include LexUtils.Config
+  val libfind : string -> string
+end
 
-module Make(O:LexUtils.Config) = struct
+module Make(O:Config) = struct
   open Lexing
 
 (* A lexbuf that keeps scanned input *)
@@ -42,7 +46,7 @@ module Make(O:LexUtils.Config) = struct
     try Hashtbl.find t fname
     with Not_found ->
       let key = fname in
-      let fname = MyLib.find fname in
+      let fname = O.libfind fname in
       let r = Misc.input_protect (do_parse fname) fname in
       Hashtbl.add t key r ;
       r

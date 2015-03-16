@@ -12,26 +12,37 @@
 
 (* Open my files *)
 
-let try_open dir name =
-  let rname = Filename.concat dir name in
-  try rname,open_in rname
-  with _ -> raise Exit
+module Make =
+  functor (C:sig val includes : string list end) -> struct
+    
+    let try_open dir name =
+      let rname = Filename.concat dir name in
+      try rname,open_in rname
+      with _ -> raise Exit
 
-let envlib = try Some (Sys.getenv "HERDLIB") with Not_found -> None
+    let rec try_opens dirs name = match dirs with
+    | [] -> raise Exit
+    | dir::dirs ->
+        try try_open dir name
+        with Exit -> try_opens dirs name
 
-let open_lib name =
-  try try_open "." name
-  with Exit -> try match envlib with
-  | Some lib -> try_open lib name
-  | None -> raise Exit
-  with Exit -> try try_open Version.libdir name
-  with Exit -> Warn.fatal "Cannot find file %s" name
+    let envlib = try Some (Sys.getenv "HERDLIB") with Not_found -> None
+
+
+    let open_lib name =
+      try try_opens ("."::C.includes) name
+      with Exit -> try match envlib with
+      | Some lib -> try_open lib name
+      | None -> raise Exit
+      with Exit -> try try_open Version.libdir name
+      with Exit -> Warn.fatal "Cannot find file %s" name
   
-let do_find name =
-  let r,chan = open_lib name in
-  begin try close_in chan with _ -> () end ;
-  r
+    let do_find name =
+      let r,chan = open_lib name in
+      begin try close_in chan with _ -> () end ;
+      r
 
-let find path =
-  if Filename.is_implicit path then do_find path
-  else path
+    let find path =
+      if Filename.is_implicit path then do_find path
+      else path
+  end

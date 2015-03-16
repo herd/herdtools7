@@ -102,10 +102,14 @@ rule main = parse
 
 and opt = parse
 (* Recurse... *)
-| "conf" arg { dolex main (MyLib.find arg) }
+| "conf" arg
+    { let module ML = MyLib.Make(struct let includes = !includes end) in
+      dolex main (ML.find arg) }
 | "verbose" arg { lex_int verbose arg }
 | "suffix" arg { suffix := arg }
 | "dumpes" arg { lex_bool dumpes arg }
+| "include" arg
+  { includes := !includes @ [arg] }
 (* Change input *)
 | "names" arg
    { names := !names @ [arg] }

@@ -30,6 +30,8 @@ module type Config = sig
   val doshow : StringSet.t
   val showraw : StringSet.t
   val symetric : StringSet.t
+(* find files *)
+  val libfind : string -> string
 end
 
 module type SimplifiedSem = sig
@@ -1604,7 +1606,12 @@ module Make
       and do_include loc fname st kont res =
         (* Run sub-model file *)
         if O.debug then warn loc "include \"%s\"" fname ;
-        let module P = ParseModel.Make(LexUtils.Default) in
+        let module P =
+          ParseModel.Make
+            (struct
+              include LexUtils.Default 
+              let libfind = O.libfind
+            end) in
         let txt0 = st.loc.txt in
         let txt,(_,_,iprog) =
           try P.parse fname

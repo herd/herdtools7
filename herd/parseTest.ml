@@ -22,6 +22,7 @@ module type Config = sig
   val bell_model_info : (string * BellCheck.info) option
   val check_name : string -> bool
   val check_rename : string -> string option
+  val libfind : string -> string
   include GenParser.Config
   include Top.Config
   include Sem.Config
@@ -95,7 +96,12 @@ module Top (C:Config) = struct
             | Some m -> m in
           match m with
           | Model.File fname ->
-              let module P = ParseModel.Make(LexUtils.Default) in
+              let module P =
+                ParseModel.Make
+                  (struct
+                    include LexUtils.Default
+                    let libfind = C.libfind
+                   end) in
               let _,(b,_,_) as r = P.parse fname in
               if b <> ModelOption.default then
                 Warn.fatal
@@ -112,6 +118,7 @@ module Top (C:Config) = struct
         let skipchecks = C.skipchecks
         let strictskip = C.strictskip
         let optace = C.optace
+        let libfind = C.libfind
       end in
       match arch with
       | `PPC ->
