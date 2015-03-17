@@ -3,7 +3,7 @@ stdlib
 (* Herd standard library *)
 (*************************)
 
-(* Basic relation *)
+(* Basic relations *)
 let po-loc = po & loc
 let rfe = rf & ext
 let rfi = rf & int

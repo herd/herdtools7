@@ -25,4 +25,5 @@ let cross =
 
 (* Generate co's that extend partial order pco *)
 let generate_orders(s,pco) = cross (co_locs (pco,partition s))
+let cross_loc = generate_orders
 let generate_cos(pco) = generate_orders(W,pco)
