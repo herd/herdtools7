@@ -51,3 +51,6 @@ herd7 ... -showflag racy -gv
 
   but it should be faster (up to test cost), as fixpoint iteration is
   interupted.
+
+* Name procedure calls (call ... [as name]). behave as checks as regard
+  skipping.

@@ -1344,7 +1344,8 @@ module Make
 
       let eval_st st e = eval (from_st st) e in
 
-      let rec exec st i kont res =  match i with
+      let rec exec : 'a. st -> ins -> (st -> 'a -> 'a) -> 'a -> 'a  =
+      fun st i kont res ->  match i with
       | Debug (_,e) ->
           let v = eval_st st e in
           eprintf "%a: value is %s\n%!"
@@ -1377,6 +1378,7 @@ module Make
             end in
             kont { st with show; } res
           else kont st res
+(*
       | ProcedureTest (loc,pname,es,name) when not O.bell ->
 (* TODO: Understand and handle this *)
           let skip_this_check =
@@ -1399,6 +1401,7 @@ module Make
           else
             let () = W.warn "Skipping check %s" (Misc.as_some name) in
             kont st res
+*)
       | Test (tst,ty) when not O.bell  ->
           exec_test st tst ty kont res
       | Let (_loc,bds) ->
@@ -1449,21 +1452,38 @@ module Make
           let p =
             Proc { proc_args=args; proc_env=st.env; proc_body=body; } in
           kont { st with env = add_val name (lazy p) st.env } res
-      | Call (loc,name,es) when not O.bell ->
-          let env0 = from_st st
-          and show0 = st.show in
-          let p = protect_call st (eval_proc loc env0) name in
-          let env1 =
-            protect_call st
-              (fun e ->
-                add_args loc p.proc_args (List.map (eval env0) es) env0 e)
-              p.proc_env in
-          let st = push_loc st loc in
-          run { st with env = env1; } p.proc_body
-            (fun st_call res ->
-              let st_call = pop_loc st_call in
-              kont { st_call with env = st.env ; show=show0;} res)
-            res
+      | Call (loc,name,es,tname) when not O.bell ->
+          let skip = skip_this_check tname in
+          if O.debug && skip then
+            warn loc "skipping call: %s" (Misc.as_some tname) ;
+          if skip && not O.strictskip then (* won't call *)
+            kont st res
+          else (* will call *)
+            let env0 = from_st st
+            and show0 = st.show in
+            let p = protect_call st (eval_proc loc env0) name in
+            let env1 =
+              protect_call st
+                (fun e ->
+                  add_args loc p.proc_args (List.map (eval env0) es) env0 e)
+                p.proc_env in
+            if skip then (* call for boolean... *)
+                let tval = 
+                  run { (push_loc st loc) with env=env1; } p.proc_body
+                    (fun _ _ -> true) false in
+                if tval then kont st res
+                else
+                  kont
+                    { st with skipped =
+                      StringSet.add (Misc.as_some tname) st.skipped;}
+                    res
+            else
+              let st = push_loc st loc in            
+              run { st with env = env1; } p.proc_body
+                (fun st_call res ->
+                  let st_call = pop_loc st_call in
+                  kont { st_call with env = st.env ; show=show0;} res)
+              res
       | Enum (loc,name,xs) ->
           let env = st.env in
           let tags =
@@ -1554,12 +1574,15 @@ module Make
           assert (not O.bell) ;
           kont st res (* Ignore bell constructs when executing model *)
       | Test _|UnShow _|Show _|ShowAs _
-      | ProcedureTest _|Call _|Forall _
+      | Call _|Forall _
       | WithFrom _ ->
           assert O.bell ;
           kont st res (* Ignore cat constructs when executing bell *)
 
-      and exec_test st (loc,_,t,e,name as tst) test_type kont res =
+      and exec_test :
+        'a. st -> app_test -> test_type ->
+          (st -> 'a -> 'a) -> 'a -> 'a =
+        fun st (loc,_,t,e,name as tst) test_type kont res ->
         let skip = skip_this_check name in
         if O.debug &&  skip then
           warn loc "skipping check: %s" (Misc.as_some name) ;
@@ -1603,7 +1626,9 @@ module Make
           kont st res
         end
 
-      and do_include loc fname st kont res =
+      and do_include : 'a . TxtLoc.t -> string -> st ->
+        (st -> 'a -> 'a) -> 'a -> 'a =
+      fun loc fname st kont res ->
         (* Run sub-model file *)
         if O.debug then warn loc "include \"%s\"" fname ;
         let module P =
@@ -1623,7 +1648,8 @@ module Make
             kont { st with loc; } res)
           res
 
-      and run st c kont res = match c with
+      and run : 'a. st -> ins list -> (st -> 'a -> 'a) -> 'a -> 'a =
+      fun st c kont res -> match c with
       | [] ->  kont st res
       | i::c ->
           exec st i

@@ -146,7 +146,7 @@ let rec tex_of_ins c = function
     fprintf c "\\noindent %s\n" s;
     fprintf c "\\exitcomment\n"
   | Include _|Call _|Enum _| Forall _ | Debug _
-  | ProcedureTest _|WithFrom _
+  | WithFrom _
   | Events _
     -> Warn.fatal "include/call/enum/forall/debug in herd2tex"
 

@@ -138,7 +138,7 @@ let lem_of_ins chan = function
     provides := (sprintf "%s.provides_clauses" file) :: (!provides);
     requires := (sprintf "%s.requires_clauses" file) :: (!requires);
     fprintf chan "open import %s" file
-  | ProcedureTest _|Procedure _|Call _|Enum _|Debug _|Forall _
+  |Procedure _|Call _|Enum _|Debug _|Forall _
   | WithFrom _
   | Events _
     ->
