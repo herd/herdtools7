@@ -92,6 +92,9 @@ module type S =  sig
 (* Sequence composition of relation *)
   val sequence : t-> t -> t
 
+(* Equivalence classes, applies to equivalence relations only (unchecked) *)
+  val classes : t -> Elts.t list
+
 end
 
 module Make:

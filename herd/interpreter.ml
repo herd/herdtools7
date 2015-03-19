@@ -110,6 +110,10 @@ module Make
 
     let _dbg = false
 
+    let next_id =
+      let id = ref 0 in
+      fun () -> let r = !id in id := r+1 ; r
+
 (****************************)
 (* Convenient abbreviations *)
 (****************************)
@@ -226,7 +230,7 @@ module Make
           { clo_args : AST.var list ;
             mutable clo_env : env ;
             clo_body : AST.exp;
-            clo_name : string; }
+            clo_name : string * int; } (* unique id (hack) *)
       and procedure = {
           proc_args : AST.var list;
           proc_env : env;
@@ -254,7 +258,7 @@ module Make
           { clo_args : AST.var list ;
             mutable clo_env : env ;
             clo_body : AST.exp;
-            clo_name : string; }
+            clo_name : string * int ; }
 
       and procedure = {
           proc_args : AST.var list;
@@ -298,6 +302,8 @@ module Make
       | ValSet (_,s1),ValSet (_,s2) -> ValSet.compare s1 s2
       | Rel r1,Rel r2 -> E.EventRel.compare r1 r2
       | Set s1,Set s2 -> E.EventSet.compare s1 s2
+      | Clo {clo_name = (_,i1);_},Clo {clo_name=(_,i2);_} ->
+          Pervasives.compare i1 i2
 (* Errors *)
       | (Unv,_)|(_,Unv) -> error "Universe in compare"
       | _,_ ->
@@ -338,6 +344,8 @@ module Make
       | Tag (_,s) -> sprintf "'%s" s
       | ValSet (_,s) ->
           sprintf "{%s}" (ValSet.pp_str "," pp_val s)
+      | Clo {clo_name=(n,x);_} ->
+          sprintf "%s_%i" n x          
       | v -> sprintf "<%s>" (pp_type_val v)
 
 (* lift a tag to a singleton set *)
@@ -377,7 +385,7 @@ module Make
         List.map (fun (k,f) -> k,Prim (k,f)) bds in
       add_vals (fun v -> lazy v) env bds
 
-    type loc = { stack : TxtLoc.t list ; txt : string ; }
+    type loc = { stack : (TxtLoc.t * string option) list ; txt : string ; }
     type st = {
         env : V.env ;
         show : S.event_rel StringMap.t Lazy.t ;
@@ -397,19 +405,19 @@ module Make
         let loc = { st.loc with stack; } in
         { st with loc; }
 
-    let show_call_stack st =
-      List.iter
-        (fun loc ->
-          eprintf "%a: Calling procedure\n" TxtLoc.pp loc)
-        st.stack
+    let show_loc (loc,name) =
+      eprintf "%a: calling procedure%s\n" TxtLoc.pp loc
+        (match name with
+        | None -> ""
+        | Some n -> " as " ^ n)
+
+    let show_call_stack st = List.iter show_loc st.stack
 
     let protect_call st f x =
       try f x
       with Misc.Exit ->
         List.iter
-          (fun loc ->
-            if O.debug || not st.silent then
-              eprintf "%a: Calling procedure\n" TxtLoc.pp loc)
+          (fun loc -> if O.debug || not st.silent then show_loc loc)
           st.loc.stack ;
         raise Misc.Exit
 
@@ -612,7 +620,14 @@ module Make
         let vs = List.map (fun es -> Set es) r in
         ValSet (TEvents,ValSet.of_list vs)
     | _ -> arg_mismatch ()
-          
+
+    and classes args =  match args with
+    | [Rel r] ->
+        let r = E.EventRel.classes r in
+        let vs = List.map (fun es -> Set es) r in
+        ValSet (TEvents,ValSet.of_list vs)
+    | _ -> arg_mismatch ()
+
     and linearisations args = match args with
     | [Set es;Rel r;] ->
         if O.debug && O.verbose > 1 then begin
@@ -700,6 +715,7 @@ module Make
       add_prims m
         [
          "partition",partition;
+         "classes",classes;
          "linearisations",linearisations;
          "tag2scope",tag2scope m;
          "tag2events",tag2events m;
@@ -1027,7 +1043,7 @@ module Make
               with Not_found -> k)
             fvs StringMap.empty in
         let env = { env.EV.env with vals; } in
-        {clo_args=xs; clo_env=env; clo_body=body; clo_name=name; }
+        {clo_args=xs; clo_env=env; clo_body=body; clo_name=(name,next_id ()); }
 
       and add_args loc xs vs env_es env_clo =
         let bds =
@@ -1469,7 +1485,7 @@ module Make
                 p.proc_env in
             if skip then (* call for boolean... *)
                 let tval = 
-                  run { (push_loc st loc) with env=env1; } p.proc_body
+                  run { (push_loc st (loc,tname)) with env=env1; } p.proc_body
                     (fun _ _ -> true) false in
                 if tval then kont st res
                 else
@@ -1478,7 +1494,7 @@ module Make
                       StringSet.add (Misc.as_some tname) st.skipped;}
                     res
             else
-              let st = push_loc st loc in            
+              let st = push_loc st (loc,tname) in            
               run { st with env = env1; } p.proc_body
                 (fun st_call res ->
                   let st_call = pop_loc st_call in

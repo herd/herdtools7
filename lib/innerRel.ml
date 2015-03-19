@@ -95,6 +95,8 @@ module type S =  sig
 (* Sequence composition of relation *)
   val sequence : t-> t -> t
 
+(* Equivalence classes, applies to equivalence relations only (unchecked) *)
+  val classes : t -> Elts.t list
 end
 
 module Make(O:MySet.OrderedType) : S
@@ -489,4 +491,12 @@ struct
           (M.succs e2 m2))
       r1 empty
 
+(* Equivalence classes *)
+  let classes r =
+    let m = M.to_map r in
+    M.fold
+      (fun e succs k ->
+        if List.exists (fun es -> Elts.mem e es) k then k
+        else succs::k)
+      m []
 end
