@@ -35,6 +35,7 @@ let optace = ref None
 let initwrites = ref None
 let badexecs = ref true
 let through = ref Model.ThroughNone
+let throughflag = ref None
 let skipchecks = ref StringSet.empty
 let strictskip = ref false
 let show = ref PrettyConf.ShowNone

@@ -27,6 +27,9 @@ flag ~empty races as racy
 UNIX:
 herd7 ... -showflag racy -gv
 
+* Similar -throughflag <string> select excutions with flag <string>
+ will enable approximate comparison of flagged execution by comparing
+ flagged outcomes.
 
 * when clause for toplevel let rec.
   A toplevel let rec declaration cam be complemented by a

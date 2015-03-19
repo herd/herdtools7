@@ -34,6 +34,7 @@ val optace : bool option ref
 val initwrites : bool option ref
 val badexecs : bool ref
 val through : Model.through ref
+val throughflag : string option ref
 val skipchecks : StringSet.t ref
 val strictskip : bool ref
 val show : PrettyConf.show ref

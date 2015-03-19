@@ -20,6 +20,7 @@ type t = {
   barrier : bool ;
   res : bool ;
   rfm : bool  ;
+  pretty : bool ;
   }
 
 val none : t

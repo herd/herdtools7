@@ -27,6 +27,7 @@ module type Config = sig
   val dumplem : bool
   val dumptex : bool
   val badexecs : bool
+  val throughflag : string option
   include Mem.Config
 end
 
@@ -142,17 +143,19 @@ module Make(O:Config)(M:XXXMem.S) =
 
     let close_dot = function
       | None -> ()
-      | Some (chan,_) -> close_out chan
+      | Some (chan,fname) ->
+          if S.O.PC.debug then eprintf "close %s\n" fname ;
+          close_out chan
 
     let my_remove name =
       try Sys.remove name
       with e ->
         W.warn "remove failed: %s" (Printexc.to_string e)
           
-    let erase_dot = match O.outputdir with
-    | None -> (* Erase temp file *)
+    let erase_dot = match S.O.PC.debug,O.outputdir with
+    | false,None -> (* Erase temp file *)
         (function Some (_,f) -> my_remove f | None -> ())
-    | Some _ -> (function _ -> ())
+    | (_,Some _)|(true,None) -> (function _ -> ())
 
     exception Over of count (* internal use, to stop everything *)
 
@@ -169,6 +172,11 @@ module Make(O:Config)(M:XXXMem.S) =
       let check = check_prop test in
       fun conc fsc vbpp flags c ->
         if do_observed && not (all_observed test conc) then c
+        else if
+          match O.throughflag with
+          | None -> false
+          | Some flag -> not (Flag.Set.mem (Flag.Flag flag) flags)
+        then c
         else
           let ok = check fsc in
           let show_exec =
@@ -290,8 +298,8 @@ module Make(O:Config)(M:XXXMem.S) =
               let module SH = Show.Make(S.O.PC) in
               SH.show_file fname
             end ;
-        erase_dot ochan ;
-        Handler.pop ()
+            erase_dot ochan ;
+            Handler.pop ()
       end else
         (* Thanks to the existence of check_test, XXMem modules
            apply their internal functors once *)
@@ -313,6 +321,7 @@ module Make(O:Config)(M:XXXMem.S) =
         begin match ochan with
         | Some (_,fname) when c.shown > 0 ->
             let module SH = Show.Make(S.O.PC) in
+            if S.O.PC.debug then eprintf "show %s file\n" fname ;
             SH.show_file fname 
         | Some _|None -> ()
         end ;

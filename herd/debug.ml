@@ -20,6 +20,7 @@ type t = {
     barrier : bool ;
     res : bool ;
     rfm : bool ;
+    pretty : bool ;
   }
 
 let tags =
@@ -31,6 +32,7 @@ let tags =
   "barrier"; "model"; (* handier synonymous *)
   "res";
   "rfm";
+  "pretty";
 ]
 
 let none =
@@ -41,7 +43,8 @@ let none =
    mem = false ;
    barrier = false ;
    res = false ;
-   rfm = false
+   rfm = false ;
+   pretty = false ;
  }
 
 let parse t tag = match tag with
@@ -52,6 +55,7 @@ let parse t tag = match tag with
   | "barrier"|"model" -> Some { t with barrier = true; }
   | "res" -> Some { t with res = true; }
   | "rfm" -> Some { t with rfm = true; }
+  | "pretty" -> Some { t with pretty = true ;}
   | _ -> None
 
 

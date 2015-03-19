@@ -172,8 +172,12 @@ let options = [
     | Some t -> through :=  t ; true)
     Model.tags_through
     (sprintf
-       "what to let through in addtition to valid executions, default %s"
+       "what to let through in addition to valid executions, default %s"
        (Model.pp_through !through)) ;
+  parse_string_opt
+    "-throughflag"
+    throughflag
+    "let through executions flagged with string, and only those" ;
   ("-skipcheck",
    Arg.String (fun tag -> skipchecks := StringSet.add tag !skipchecks),
    "<name> do not apply check, cumulates") ;
@@ -188,10 +192,11 @@ let options = [
    "<name1,...,nameN> do not apply checks, cumulates") ;
   parse_bool "-strictskip" strictskip
    "retain outcomes allowed by ALL skipped checks" ;
+(* Model control *)
   "-optace", Arg.Bool (fun b -> optace := Some b),
     "<bool> optimize axiomatic candidate generation, default is true except for the minimal model and all generic models";
   "-initwrites", Arg.Bool (fun b -> initwrites := Some b),
-    "<bool> represent init writes as write events, default is false except for specifically tagged generic models";
+    "<bool> represent init writes as write events, this option should not be used except for debugging model options";
   parse_tag "-show"
     (fun tag -> match PrettyConf.parse_show tag with
     | None -> false
@@ -448,6 +453,7 @@ let () =
     let outcomereads = !outcomereads
     let show = !show
     let badexecs = !badexecs 
+    let throughflag = !throughflag
 
     let check_name = match names with
     | None -> fun _ -> true
@@ -480,6 +486,7 @@ let () =
     let dumptex = !dumptex
 
     module PC = struct
+      let debug = debug.Debug.pretty
       let verbose = verbose
       let dotmode = !PP.dotmode
       let dotcom = !PP.dotcom
