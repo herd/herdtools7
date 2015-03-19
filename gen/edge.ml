@@ -10,6 +10,8 @@
 
 (* Edges, ie specifications of an event pair in a model relation  *)
 
+let dbg = false
+
 module type S = sig
   open Code
 
@@ -49,6 +51,7 @@ module type S = sig
   val fold_pp_edges : (string -> 'a -> 'a) -> 'a -> 'a
 
   val pp_tedge : tedge -> string
+  val pp_atom_option : atom option -> string
   val pp_edge : edge -> string
   val compare_atomo : atom option -> atom option -> int
   val compare : edge -> edge -> int
@@ -141,9 +144,19 @@ and type atom = F.atom = struct
 
   let plain_edge e = { a1=None; a2=None; edge=e; }
 
+  let pp_arch = function
+    | None -> F.pp_plain
+    | Some a -> F.pp_atom a
+
+  let pp_archs a1 a2 = match a1, a2 with
+  | None,None -> ""
+  | _,_ -> sprintf "%s%s" (pp_arch a1) (pp_arch a2)
+
   let pp_a = function
     | None -> Code.plain
     | Some a -> F.pp_atom a
+
+  let pp_atom_option = pp_a
 
   let pp_aa a1 a2 = match a1, a2 with
   | None,None -> ""
@@ -158,7 +171,7 @@ and type atom = F.atom = struct
   | _,_ -> sprintf "%s%s" (pp_a_bis a1) (pp_a_bis a2)
 
   let pp_a_ter = function
-    | None -> Code.plain
+    | None -> F.pp_plain
     | Some a as ao ->
         if ao = F.pp_as_a then "A"
         else F.pp_atom a
@@ -197,7 +210,9 @@ and type atom = F.atom = struct
 
   let do_pp_edge pp_aa e = pp_tedge e.edge ^ pp_aa e.a1 e.a2
 
-  let pp_edge e = do_pp_edge pp_aa e 
+  let pp_edge e = do_pp_edge pp_archs e
+
+  let pp_edge_with_xx e = do_pp_edge pp_aa e
       
   let pp_edge_with_p e = do_pp_edge pp_aa_bis e
 
@@ -297,8 +312,8 @@ let fold_tedges f r =
                      if a1 = None && a2=None then
                        f {a1; a2; edge=te;} k
                      else k
-                 | Rmw -> (* identical sources and target atomicity for RMW *)
-                     if a1 = a2 then
+                 | Rmw -> (* Allowed source and target atomicity for wrm *)
+                     if F.applies_atom_rmw a1 a2 then
                        f {a1; a2; edge=te;} k
                      else k
                  | _ ->
@@ -352,31 +367,37 @@ let fold_tedges f r =
 
   let t = Hashtbl.create 101
 
-  let add_lxm lxm e =  Hashtbl.add t lxm e
+  let add_lxm lxm e =
+    if dbg then eprintf "LXM: %s\n" lxm ;
+    try
+      let old = Hashtbl.find t lxm in
+      assert (compare old e = 0) ;
+    with Not_found ->
+      Hashtbl.add t lxm e
 
-(* Fill up lexeme table *)
+(* Fill lexeme table *)
+
   let () =
-    let es = fold_edges (fun e k -> e::k) [] in
-    List.iter  (fun e -> add_lxm (pp_edge e) e) es ;
-    List.iter
+    iter_edges  (fun e -> add_lxm (pp_edge_with_xx e) e) ;
+    iter_edges
       (fun e -> match e.a1,e.a2 with
       | (None,Some _)
       | (Some _,None) ->
           add_lxm (pp_edge_with_p e) e
-      | _,_ -> ()) es ;
-    List.iter
+      | _,_ -> ()) ;
+    iter_edges
       (fun e -> match e.a1,e.a2 with
       | (_,(Some _ as a)) when a = F.pp_as_a ->
           add_lxm (pp_edge_with_a e) e
       | ((Some _ as a),_) when a = F.pp_as_a ->
           add_lxm (pp_edge_with_a e) e
-      | _,_ -> ()) es ;
-    List.iter
+      | _,_ -> ()) ;
+    iter_edges
       (fun e -> match e.a1,e.a2 with
       | (None,(Some _ as a))
       | ((Some _ as a),None) when a = F.pp_as_a ->
           add_lxm (pp_edge_with_pa e) e
-      | _,_ -> ()) es ;
+      | _,_ -> ()) ;
     fold_sd_extr_extr
       (fun sd e1 e2 () ->
         add_lxm

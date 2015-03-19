@@ -9,40 +9,52 @@
 (*********************************************************************)
 
 open Code
+open Printf
 
 module Make(V:Constant.S) =
   struct
     include AArch64Base
 
 (* AArch64 has more atoms that others *)
-    type atom = Acq | Rel | Atomic
+    type atom_rw =  PP | PL | AP | AL
+    type atom = Acq | Rel | Atomic of atom_rw
 
-    let default_atom = Atomic
+    let default_atom = Atomic PP
 
     let applies_atom a d = match a,d with
     | Acq,R
     | Rel,W
-    | Atomic,(R|W)
+    | Atomic _,(R|W)
         -> true
     | _ -> false
 
-    let applies_atom_rmw = function
-      | None -> true
-      | Some _ -> false
+    let applies_atom_rmw ar aw = match ar,aw with
+    | (Some Acq|None),(Some Rel|None) -> true
+    | _ -> false
 
+    let pp_plain = "P"
+(* Annotation A is taken by load aquire *)
     let pp_as_a = None
 
+    let pp_atom_rw = function
+      | PP -> ""
+      | PL -> "L"
+      | AP -> "A"
+      | AL -> "AL"
+
     let pp_atom = function
-      | Atomic -> "A"
-      | Rel -> "Rel"
-      | Acq -> "Acq"
+      | Atomic rw -> sprintf "X%s" (pp_atom_rw rw)
+      | Rel -> "L"
+      | Acq -> "A"
 
     let compare_atom = Pervasives.compare
 
-    let fold_atom f r =  f Acq (f Rel (f Atomic r))
+    let fold_atom_rw f r = f PP (f PL (f AP (f AL r)))
+    let fold_atom f r = 
+      f Acq (f Rel (fold_atom_rw (fun rw -> f (Atomic rw)) r))
 
     let worth_final = function
-      | Atomic -> true
+      | Atomic _ -> true
       | Acq|Rel -> false
 
 (* End of atoms *)

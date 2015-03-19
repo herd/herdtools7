@@ -313,16 +313,13 @@ module Make(V:Constant.S)(O:CompileCommon.Config)(C:PPCArch.Config) : XXXCompile
 
     let emit_lwarx st p init x =  emit_lwarx_idx st p init x PPC.r0
 
-    let emit_one_stwcx_idx  st p init x idx v =
+    let emit_one_stwcx_idx st p init x idx v =
       let rA,st = next_reg st in
       let rB,init,st = next_init st p init x in
       init,
       pseudo
-        (if O.unrollatomic = None then
-          [PPC.Pli (rA,v); PPC.Pstwcx (rA,idx,rB);
-           PPC.Pbcc (PPC.Ne,Label.fail p)]
-        else
-          [PPC.Pli (rA,v); PPC.Pstwcx (rA,idx,rB);]),
+        [PPC.Pli (rA,v); PPC.Pstwcx (rA,idx,rB);
+         PPC.Pbcc (PPC.Ne,Label.fail p)],
       st
 
     let emit_one_stwcx st p init x v = emit_one_stwcx_idx st p init x PPC.r0 v
@@ -342,8 +339,7 @@ module Make(V:Constant.S)(O:CompileCommon.Config)(C:PPCArch.Config) : XXXCompile
         let r,init,cs,st = emit st p init e.loc  in
         Some r,init,cs,st
     | W,None ->
-        let emit = if e.rmw then emit_one_stwcx else emit_store in
-        let init,cs,st = emit st p init e.loc e.v in
+        let init,cs,st = emit_store st p init e.loc e.v in
         None,init,cs,st
     | R,Some PPC.Atomic ->
         let r,init,cs,st = emit_fno st p init e.loc in
@@ -384,6 +380,14 @@ module Make(V:Constant.S)(O:CompileCommon.Config)(C:PPCArch.Config) : XXXCompile
       | W,Some PPC.Reserve ->
           Warn.fatal "No store with reservation"        
 
+    let emit_exch_dep_addr st  p init er ew rd =
+      let idx,st = next_reg st in
+      let c = PPC.Pxor(PPC.DontSetCR0,idx,rd,rd) in
+      let r,init,csr,st = emit_lwarx_idx st p init er.loc idx  in
+      let init,csw,st = emit_one_stwcx_idx st p init ew.loc idx ew.v in
+      r,init,PPC.Instruction c::csr@csw,st
+
+
     let emit_access_dep_data st p init e  r1 =
       match e.dir with
       | R ->Warn.fatal "data dependency to load"
@@ -423,12 +427,32 @@ module Make(V:Constant.S)(O:CompileCommon.Config)(C:PPCArch.Config) : XXXCompile
           let init,cs,st = emit st p init e.loc e.v in
           None,init,(if isync then insert_isync c cs else c@cs),st
 
+    let emit_exch_ctrl isync st p init er ew rd =
+      let lab = Label.next_label "LC" in
+      let c =
+        [PPC.Instruction (PPC.Pcmpw (0,rd,rd));
+         PPC.Instruction (PPC.Pbcc (PPC.Eq,lab));
+         PPC.Label (lab,PPC.Nop);] in
+      let r,init,csr,st = emit_lwarx st p init er.loc  in
+      let init,csw,st = emit_one_stwcx st p init ew.loc ew.v in
+      let cs = csr@csw in
+      let cs = if isync then insert_isync c cs else c@cs in
+      r,init,cs,st
+
     let emit_access_dep st p init e dp r1 = match dp with
     | PPC.ADDR -> emit_access_dep_addr st p init e r1
     | PPC.DATA -> emit_access_dep_data st p init e r1
     | PPC.CTRL -> emit_access_ctrl false st p init e r1
     | PPC.CTRLISYNC -> emit_access_ctrl true st p init e r1
 
+    let emit_exch_dep st p init er ew dp rd = match dp with
+    | PPC.ADDR -> emit_exch_dep_addr st p init er ew rd
+    | PPC.DATA -> Warn.fatal "not data dependency to RMW"
+    | PPC.CTRL -> emit_exch_ctrl false st p init er ew rd
+    | PPC.CTRLISYNC -> emit_exch_ctrl true st p init er ew rd
+
+
+(* Fences *)
 
     let emit_fence f =
       PPC.Instruction

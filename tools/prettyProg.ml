@@ -234,7 +234,8 @@ module Make(O:Config)(A:Arch.S) =
               pp_equal ^ " " ^ pp_v v ^ "\\\\ "
           | Pointer t ->
 	    "{} "^ pp_mbox (t ^ " *" ^ pp_location l) ^ " " ^
-              pp_equal ^ " " ^ pp_v v ^ "\\\\ ")
+              pp_equal ^ " " ^ pp_v v ^ "\\\\ "
+          | TyArray _ -> Warn.fatal "Array type not implemented...")
       ^ "\\hline \\end{tabular}\n"
 
     let zero = Constant.Concrete 0

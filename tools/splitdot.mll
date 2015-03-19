@@ -10,18 +10,23 @@ let eof = ref false
    else
      let b = Buffer.create 32 in
      Buffer.add_string b lxm ;
-     image b lexbuf ;
+     image 0 b lexbuf ;
      Buffer.contents b :: main (c-1) lexbuf
  }
 | [^'\n']* '\n'  { main c lexbuf }
 | eof { eof := true ; [] }
 
 
-and image b = parse
+and image depth b = parse
 | ' '* '}' ' '* '\n' as lxm
-  { Buffer.add_string b lxm }
+  {
+   Buffer.add_string b lxm ;
+   if depth > 0 then image (depth-1) b lexbuf
+  }
+| "subgraph" [^'{']* '{' [^'\n']* '\n' as lxm
+    { Buffer.add_string b lxm ; image (depth+1) b lexbuf }
 |  [^'\n']* '\n'  as lxm
-    { Buffer.add_string b lxm  ; image b lexbuf }
+    { Buffer.add_string b lxm ; image depth b lexbuf }
 
 {
  

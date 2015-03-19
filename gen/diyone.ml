@@ -86,7 +86,7 @@ module Make(O:Config) (M:Builder.S) =
 
 (********)
     let do_zyva name pp_rs =
-      try
+      try begin
         let pp_rs = List.map LexUtil.split pp_rs in
         let pp_rs = List.concat pp_rs in
         let rs = List.map M.R.parse_relax pp_rs in
@@ -113,7 +113,8 @@ module Make(O:Config) (M:Builder.S) =
                       Some (kont es D.no_info mk_name k0)
                     with
                     | Fatal msg | UserError msg ->
-                        Warn.fatal "%s on line '%s'" msg line
+                        Warn.warn_always "%s on line '%s'" msg line ;
+                        Some k0
                   with
                   | End_of_file -> None in
                 match k with
@@ -122,9 +123,9 @@ module Make(O:Config) (M:Builder.S) =
               do_rec in
             D.all gen
         | _ -> ignore (dump name es)
-            with Fatal msg ->
-              eprintf "%s: Fatal error: %s\n" Config.prog msg ;
-              exit 2
+      end with Fatal msg ->
+        eprintf "%s: Fatal error: %s\n" Config.prog msg ;
+        exit 2
 
     let zyva = do_zyva O.family
 

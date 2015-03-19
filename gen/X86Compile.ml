@@ -148,6 +148,9 @@ struct
   let emit_access_dep _st _p _init _e _r1 =
     Warn.fatal "Dependent access is irrelevant for X86"
 
+  let emit_exch_dep _st =
+    Warn.fatal "Dependent access is irrelevant for X86"
+
   let emit_fence = function
     | MFence -> X86.Instruction I_MFENCE
 

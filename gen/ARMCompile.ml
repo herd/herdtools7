@@ -165,9 +165,8 @@ module Make(V:Constant.S)(Cfg:CompileCommon.Config) : XXXCompile.S =
       let init,cs,st = emit_store_idx_reg st p init x idx rA in
       init,Instruction (I_MOVI (rA,v,AL))::cs,st
 
-    let emit_one_strex st p init x v =
+    let emit_one_strex_reg st p init rA v =
       let rV,st = next_reg st in
-      let rA,init,st = next_init st p init x in
       init,
       pseudo
         [I_MOVI (rV,v,AL);
@@ -175,6 +174,10 @@ module Make(V:Constant.S)(Cfg:CompileCommon.Config) : XXXCompile.S =
          I_CMPI (tempo2,0);
          I_BNE (Label.fail p);],
       st
+
+    let emit_one_strex st p init x v =
+      let rA,init,st = next_init st p init x in
+      emit_one_strex_reg st p init rA v
 
 (* No FNO yet *)
     and emit_fno2 _st _p _init _x = assert false
@@ -185,10 +188,13 @@ module Make(V:Constant.S)(Cfg:CompileCommon.Config) : XXXCompile.S =
 
 (* FNO *)
 
-    let emit_ldrex st p init x =
+    let emit_ldrex_reg st _p init rB =
       let rA,st = next_reg st in
-      let rB,init,st = next_init st p init x in
       rA,init,pseudo [I_LDREX (rA,rB)],st
+
+    let emit_ldrex st p init x =
+      let rB,init,st = next_init st p init x in
+      emit_ldrex_reg st p init rB
 
     let emit_ldrex_idx st p init x idx =      
       let rA,st = next_reg st in
@@ -308,6 +314,16 @@ module Make(V:Constant.S)(Cfg:CompileCommon.Config) : XXXCompile.S =
           let ro,init,cs,st = emit_sta_idx st p init e.loc r2 e.v in
           ro,init,Instruction c::cs,st
 
+    let emit_exch_dep_addr st p init er ew rd =
+      let rA,init,st = next_init st p init er.loc in
+      let c =
+        [Instruction (I_XOR (DontSetFlags,tempo1,rd,rd));
+         Instruction (I_ADD3 (DontSetFlags,tempo1,rA,tempo1));] in
+      let r,init,csr,st = emit_ldrex_reg st p init tempo1 in
+      let init,csw,st = emit_one_strex_reg st p init tempo1 ew.v in
+      r,init,c@csr@csw,st
+
+
     let emit_access_dep_data st p init e  r1 =
       match e.dir with
       | R -> Warn.fatal "data dependency to load"
@@ -339,21 +355,31 @@ module Make(V:Constant.S)(Cfg:CompileCommon.Config) : XXXCompile.S =
          Label (lab,Nop);] in
       let ropt,init,cs,st = emit_access st p init e in
       ropt,init,insert_isb isb c cs,st
-(*
-      match e.dir with
-      | R ->
-          let r,init,cs,st = emit_load st p init e.loc in
-          Some r,init,insert_isb isb c cs,st
-      | W ->
-          let init,cs,st = emit_store st p init e.loc e.v in
-          None,init,insert_isb isb c cs,st
-*)
+
+    let emit_exch_ctrl isb st p init er ew r1 =
+      let lab = Label.next_label "LC" in
+      let c =
+        [Instruction (I_CMP (r1,r1));
+         Instruction (I_BNE lab);
+         Label (lab,Nop);] in
+      let ropt,init,cs,st = emit_exch st p init er ew in
+      ropt,init,insert_isb isb c cs,st
+
 
     let emit_access_dep st p init e dp r1 = match dp with
     | ADDR -> emit_access_dep_addr st p init e r1
     | DATA -> emit_access_dep_data st p init e r1
     | CTRL -> emit_access_ctrl false st p init e r1
     | CTRLISYNC -> emit_access_ctrl true st p init e r1
+
+    let emit_exch_dep  st p init er ew dp rd = match dp with
+    | ADDR -> emit_exch_dep_addr   st p init er ew rd
+    | DATA -> Warn.fatal "not data dependency to RMW"
+    | CTRL -> emit_exch_ctrl false st p init er ew rd
+    | CTRLISYNC -> emit_exch_ctrl true st p init er ew rd
+
+
+(* Fences *)
 
     let emit_fence f =
       Instruction

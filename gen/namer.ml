@@ -48,7 +48,7 @@ module Make
          | Back c -> Some (pp_com c^"]")
          | _ -> None
 
-       let plain  = String.lowercase (Code.plain)
+       let plain  = String.lowercase (A.pp_plain)
 
        let atom_name = function
          | None ->  plain

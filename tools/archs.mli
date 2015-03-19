@@ -16,6 +16,7 @@ type t =
   | PPC
   | ARM
   | MIPS
+  | AArch64
   | C
 
 val tags : string list
@@ -28,5 +29,6 @@ val arm : t
 val ppc : t
 val x86 : t
 val mips : t
+val aarch64 : t
 
 

@@ -20,10 +20,11 @@ let applies_atom a d = match a,d with
 | Reserve,W -> false
 | _,_ -> true
 
-let applies_atom_rmw = function
-  | None -> true
-  | Some _ -> false
+let applies_atom_rmw ar aw = match ar,aw with
+| None,None -> true
+| _,_ -> false
 
+let pp_plain = Code.plain
 let pp_as_a = None
 
 let pp_atom = function

@@ -91,7 +91,7 @@ module U = TopUtils.Make(O)(Comp)
     let e = n.C.evt in
     if e.C.rmw then match e.C.dir with
     | R ->
-        let r,init,cs,st = Comp.emit_exch  st p init e n.C.next.C.evt in
+        let r,init,cs,st = Comp.emit_exch st p init e n.C.next.C.evt in
         Some r,init,cs,st
     | W -> None,init,[],st
 
@@ -102,7 +102,20 @@ module U = TopUtils.Make(O)(Comp)
     then      
       Comp.emit_access st p init e
     else
-      Warn.fatal "atomicity mismatch"
+      Warn.user_error "atomicity mismatch on edge %s, annotation %s on %s"
+        (E.pp_edge n.C.edge)
+        (E.pp_atom_option e.C.atom) (pp_dir e.C.dir)
+
+  let call_emit_access_dep st p init n dp r1 =
+    let e = n.C.evt in
+     if e.C.rmw then match e.C.dir with
+     | R ->
+         let r,init,cs,st =
+           Comp.emit_exch_dep st p init e n.C.next.C.evt dp r1 in
+         Some r,init,cs,st
+     | W -> None,init,[],st
+     else
+       Comp.emit_access_dep st p init e dp r1
 
 (* Encodes load of first non-initial value in chain,
    can poll on value in place of checking it *)
@@ -134,7 +147,7 @@ module U = TopUtils.Make(O)(Comp)
             else
               call_emit_access st p init n
         end
-    | Yes (dp,r1) -> Comp.emit_access_dep st p init n.C.evt dp r1 in    
+    | Yes (dp,r1) -> call_emit_access_dep st p init n dp r1 in
     o,init,ip@i,st
 
 let edge_to_prev_load o e = match o with
@@ -671,7 +684,7 @@ let make_test name ?com ?info ?check es =
     let es,c = C.make es in
     test_of_cycle name ?com ?info ?check es c
   with
-  | Misc.Fatal msg ->
+  | Misc.Fatal msg|Misc.UserError msg ->
       Warn.fatal "Test %s [%s] failed:\n%s" name (pp_edges es) msg
   
 

@@ -21,11 +21,17 @@ let applies_atom a d = match a,d with
 | (Rel|Acq_Rel),R -> false
 | _,_ -> true
 
-let applies_atom_rmw = function
-  | Some Con|None -> false
-  | Some _ -> true
-
 let compare_atom = Pervasives.compare
+
+let applies_atom_rmw ar aw = match ar,aw with
+  | (Some Con,_)
+  | (None,_)
+  | (_,Some Con)
+  | (_,None)
+    -> false
+  | Some a1,Some a2 -> compare_atom a1 a2 = 0
+
+let pp_plain = Code.plain
 let pp_as_a = Some SC
 let pp_atom = pp_mem_order_short
 

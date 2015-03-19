@@ -105,7 +105,8 @@ end = struct
           | MiscParser.Ty t ->
               fprintf chan "%s %s; " (I.dump_location loc) t
           | MiscParser.Pointer t ->
-              fprintf chan "%s %s*; " (I.dump_location loc) t)
+              fprintf chan "%s %s*; " (I.dump_location loc) t
+          |  MiscParser.TyArray _ -> assert false)
           locs ;
         fprintf chan "]\n"
     end ;

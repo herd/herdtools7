@@ -128,7 +128,7 @@ module Make(O:Config) : Builder.S
       let excl_from omo loc v = match omo with
       | None -> Warn.fatal "Non atomic RMW"
       | Some mo ->
-          if A.applies_atom_rmw omo then
+          if A.applies_atom_rmw omo omo then
             A.AtomicExcl (mo,loc,v)
           else
             Warn.fatal "wrong memory order for atomic exchange"

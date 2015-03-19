@@ -78,6 +78,18 @@ end = struct
         end in
         let module X = Make (ARM) (ARMLexParse) in
         X.zyva chan splitted
+    | AArch64 ->
+        let module AArch64 = AArch64Base in
+        let module AArch64LexParse = struct
+	  type instruction = AArch64.pseudo
+	  type token = AArch64Parser.token
+
+          module L = AArch64Lexer.Make(LexConf)
+	  let lexer = L.token
+	  let parser = MiscParser.mach2generic AArch64Parser.main
+        end in
+        let module X = Make (AArch64) (AArch64LexParse) in
+        X.zyva chan splitted
     | MIPS ->
         let module MIPS = MIPSBase in
         let module MIPSLexParse = struct
@@ -185,6 +197,18 @@ module Tops
 	      let parser = MiscParser.mach2generic ARMParser.main
             end in
             let module X = Make (ARM) (ARMLexParse) in
+            X.zyva
+        | AArch64 ->
+            let module AArch64 = AArch64Base in
+            let module AArch64LexParse = struct
+	      type instruction = AArch64.pseudo
+	      type token = AArch64Parser.token
+
+              module L = AArch64Lexer.Make(LexConf)
+	      let lexer = L.token
+	      let parser =  MiscParser.mach2generic AArch64Parser.main
+            end in
+            let module X = Make (AArch64) (AArch64LexParse) in
             X.zyva
         | MIPS ->
             let module MIPS = MIPSBase in

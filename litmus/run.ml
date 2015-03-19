@@ -117,7 +117,7 @@ module Make(O:Config)(Tar:Tar.S)(D:Test) =
               let scp = sprintf "doscp %s" exe in
               let run = sprintf "%s %s" exe opts in
               let rm = sprintf "rm %s" exe in
-              sprintf "%s && ssh -q -n -p $RPORT $RHOST \"%s && %s\""
+              sprintf "%s && ssh -q -n -p $RPORT $RHOST \"%s 2>/dev/null && %s\""
                 scp  run rm in
         let out_com chan com =
           if do_dont then

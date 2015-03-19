@@ -162,15 +162,18 @@ module Make(V:Constant.S)(Cfg:CompileCommon.Config) : XXXCompile.S =
       let init,cs,st = emit_store_idx_reg st p init x idx rA in
       init,Instruction (LI (rA,v))::cs,st
 
-    let emit_one_sc st p init x v =
+    let emit_one_sc_reg_addr st p init rA v =
       let rV,st = next_reg st in
-      let rA,init,st = next_init st p init x in
       init,
       pseudo
         (LI (rV,v)::
          SC (rV,0,rA)::
          branch_neq rV 0 (Label.fail p) []),
       st
+
+    let emit_one_sc st p init x v =
+      let rA,init,st = next_init st p init x in
+      emit_one_sc_reg_addr st p init rA v
 
 (* No FNO yet *)
     and emit_fno2 _st _p _init _x = assert false
@@ -181,10 +184,13 @@ module Make(V:Constant.S)(Cfg:CompileCommon.Config) : XXXCompile.S =
 
 (* FNO *)
 
-    let emit_ll st p init x =
+    let emit_ll_reg st _p init rB =
       let rA,st = next_reg st in
-      let rB,init,st = next_init st p init x in
       rA,init,pseudo [LL (rA,0,rB)],st
+
+    let emit_ll st p init x =
+      let rB,init,st = next_init st p init x in
+      emit_ll_reg st p init rB
 
     let emit_ll_idx st p init x idx =      
       let rA,st = next_reg st in
@@ -304,6 +310,15 @@ module Make(V:Constant.S)(Cfg:CompileCommon.Config) : XXXCompile.S =
           let ro,init,cs,st = emit_sta_idx st p init e.loc r2 e.v in
           ro,init,Instruction c::cs,st
 
+    let emit_exch_dep_addr st p init er ew rd =
+      let rA,init,st = next_init st p init er.loc in
+      let c =
+        [Instruction (OP (XOR,tmp1,rd,rd));
+         Instruction (OP (ADDU,tmp1,rA,tmp1));] in
+      let r,init,csr,st = emit_ll_reg st p init tmp1  in
+      let init,csw,st = emit_one_sc_reg_addr st p init tmp1 ew.v in
+      r,init,c@csr@csw,st
+
     let emit_access_dep_data st p init e  r1 =
       match e.dir with
       | R -> Warn.fatal "data dependency to load"
@@ -323,12 +338,20 @@ module Make(V:Constant.S)(Cfg:CompileCommon.Config) : XXXCompile.S =
                Warn.fatal "No store with reservation"
           end
 
-    let emit_access_ctrl st p init e r1 =      
+    let emit_access_ctrl st p init e r1 =
       let lab = Label.next_label "LC" in
       let c =
         [Instruction (BC (NE,r1,r1,lab));
          Label (lab,Nop);] in
       let ropt,init,cs,st = emit_access st p init e in
+      ropt,init, c@cs,st
+
+    let emit_exch_ctrl st p init er ew rd =
+      let lab = Label.next_label "LC" in
+      let c =
+        [Instruction (BC (NE,rd,rd,lab));
+         Label (lab,Nop);] in
+      let ropt,init,cs,st = emit_exch st p init er ew in
       ropt,init, c@cs,st
 (*
       match e.dir with
@@ -345,6 +368,13 @@ module Make(V:Constant.S)(Cfg:CompileCommon.Config) : XXXCompile.S =
     | DATA -> emit_access_dep_data st p init e r1
     | CTRL -> emit_access_ctrl st p init e r1
 
+    let emit_exch_dep st p init er ew dp r1 = match dp with
+    | ADDR -> emit_exch_dep_addr st p init er ew  r1
+    | DATA -> Warn.fatal "no data depency to RMW"
+    | CTRL -> emit_exch_ctrl st p init er ew r1
+
+
+(* Fences *)
 
     let emit_fence f =
       Instruction
