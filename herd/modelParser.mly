@@ -59,6 +59,7 @@ let pp () =
 %start main
 
 /* Precedences */
+%right COMMA
 %left prec_app
 %right UNION
 %right PLUSPLUS
@@ -97,11 +98,10 @@ ins:
 | LATEX { Latex (mk_loc(),$1) }
 | INCLUDE STRING { Include (mk_loc(),$2) }
 | PROCEDURE VAR LPAR formals RPAR EQUAL ins_list END
-   { Procedure (mk_loc (),$2,$4,$7) }
+   { Procedure (mk_loc (),$2,Ptuple $4,$7) }
 | PROCEDURE VAR VAR EQUAL ins_list END
-   { Procedure (mk_loc (),$2,[$3],$5) }
-| CALL VAR LPAR fargs RPAR optional_name { Call (mk_loc (),$2,$4,$6) }
-| CALL VAR exp optional_name { Call (mk_loc (),$2,[$3],$4) }
+   { Procedure (mk_loc (),$2,Pvar $3,$5) }
+| CALL VAR simple optional_name { Call (mk_loc (),$2,$3,$4) }
 | ENUM VAR EQUAL altopt alttags { Enum (mk_loc (),$2,$5) }
 | DEBUG exp { Debug (mk_loc (),$2) }
 | FORALL VAR IN exp DO ins_list END
@@ -156,14 +156,14 @@ comma_opt:
 | COMMA { () }
 
 bind:
-| VAR EQUAL exp { ($1,$3) }
-
+| VAR EQUAL exp { (mk_loc (),Pvar $1,$3) }
+| LPAR formals RPAR EQUAL exp { (mk_loc (),Ptuple $2,$5) }
 pat_bind:
 | bind { $1 }
 | VAR VAR EQUAL exp
-   { ($1,Fun (mk_loc(),[$2],$4,$1,ASTUtils.free_body [$2] $4)) }
+   { (mk_loc (),Pvar $1,Fun (mk_loc(),Pvar $2,$4,$1,ASTUtils.free_body [$2] $4)) }
 | VAR LPAR formals RPAR EQUAL exp
-   { ($1,Fun (mk_loc(),$3,$6,$1,ASTUtils.free_body $3 $6)) }
+   { (mk_loc(),Pvar $1,Fun (mk_loc(),Ptuple $3,$6,$1,ASTUtils.free_body $3 $6)) }
 
 pat_bind_list:
 | pat_bind { [$1] }
@@ -190,9 +190,9 @@ exp:
 | LET pat_bind_list IN exp { Bind (mk_loc(),$2,$4) }
 | LET REC pat_bind_list IN exp { BindRec (mk_loc(),$3,$5) }
 | FUN VAR ARROW exp
-    { Fun (mk_loc(),[$2],$4,"*fun*",ASTUtils.free_body [$2] $4) }
+    { Fun (mk_loc(),Pvar $2,$4,"*fun*",ASTUtils.free_body [$2] $4) }
 | FUN LPAR formals RPAR ARROW exp
-    { Fun (mk_loc(),$3,$6,"*fun*",ASTUtils.free_body $3 $6) }
+    { Fun (mk_loc(),Ptuple $3,$6,"*fun*",ASTUtils.free_body $3 $6) }
 | TRY exp WITH exp
     { Try (mk_loc(),$2,$4) }
 | IF cond THEN exp ELSE exp
@@ -207,8 +207,17 @@ simple:
 | TAG  { Tag (mk_loc (),$1) }
 | LACC args RACC { ExplicitSet (mk_loc (),$2) }
 | UNDERSCORE  { Konst (mk_loc(),Universe SET) }
+| LPAR RPAR { Op (mk_loc (),Tuple,[]) }
+| LPAR tupleargs RPAR { Op (mk_loc (),Tuple,$2) }
 | LPAR exp RPAR { $2 }
 | BEGIN exp END { $2 }
+
+tupleargs:
+| exp COMMA tupleend { $1 :: $3 }
+
+tupleend:
+| exp { [$1] }
+| exp COMMA tupleend { $1 :: $3 }
 
 base:
 | simple { $1 }
@@ -259,17 +268,12 @@ clause_list:
 
 exp0:
 | VAR                 { Var (mk_loc (),$1) }
-| exp0  arg %prec prec_app   { App (mk_loc (),$1,[$2]) }
-| exp0 LPAR fargs RPAR { App (mk_loc(),$1,$3) }
+| exp0  arg %prec prec_app   { App (mk_loc (),$1,$2) }
 
 arg:
 | VAR { Var (mk_loc (),$1) }
 | simple { $1 }
 
-
-fargs:
-| { [] }
-| exp COMMA argsN { $1::$3 }
 
 args:
 | { [] }

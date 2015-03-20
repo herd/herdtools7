@@ -24,6 +24,7 @@ type op2 =
   | Seq   (** sequential composition of relations *) 
   | Cartesian (** build a relation from two sets *)
   | Add   (** add element to a set *)
+  | Tuple (** Build a tuple *)
 
 type op1 =
   | Plus | Star | Opt 
@@ -43,10 +44,10 @@ type exp =
   | Var of TxtLoc.t * var
   | Op1 of  TxtLoc.t * op1 * exp
   | Op of  TxtLoc.t * op2 * exp list
-  | App of  TxtLoc.t * exp * exp list
+  | App of  TxtLoc.t * exp * exp
   | Bind  of  TxtLoc.t * binding list * exp
   | BindRec  of  TxtLoc.t * binding list * exp
-  | Fun of  TxtLoc.t * var list * exp *
+  | Fun of  TxtLoc.t * pat * exp *
         var (* name *) * varset (* free vars *)
   | ExplicitSet of TxtLoc.t * exp list
   | Match of TxtLoc.t * exp * clause list * exp option
@@ -54,11 +55,13 @@ type exp =
   | Try of TxtLoc.t * exp * exp
   | If of TxtLoc.t * cond * exp * exp
 
+and pat = Pvar of var | Ptuple of var list
+
 and cond = Eq of exp * exp
 
 and clause = string * exp
 
-and binding = var * exp
+and binding = TxtLoc.t * pat * exp
 
 type do_test = Acyclic | Irreflexive | TestEmpty
 type test = Yes of do_test | No of do_test 
@@ -74,8 +77,8 @@ type ins =
   | ShowAs of  TxtLoc.t * exp * string
   | Latex of  TxtLoc.t * string
   | Include of  TxtLoc.t * string (* file name, interpreter will read/parse file... *)
-  | Procedure of  TxtLoc.t * var * var list * ins list
-  | Call of  TxtLoc.t * var * exp list * string option (* optional name, for skip *)
+  | Procedure of  TxtLoc.t * var * pat * ins list
+  | Call of  TxtLoc.t * var * exp * string option (* optional name, for skip *)
   | Enum of TxtLoc.t * var * tag list
   | Forall of  TxtLoc.t * var * exp * ins list
   | Debug of TxtLoc.t * exp

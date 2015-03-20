@@ -69,24 +69,28 @@ and lem_of_exp args chan = function
   | Op (_,op2, es) -> lem_of_op2 args chan es op2
   | App (_,e,es) -> fprintf chan "(%a(%a))"
                     (lem_of_exp args) e 
-                    (fprintf_list_infix "," (lem_of_exp args)) es 
+                    (fprintf_list_infix "," (lem_of_exp args)) [es] 
   | Bind _ -> fprintf chan "Bindings not done yet"
   | BindRec _ -> fprintf chan "Recursive bindings not done yet"
   | Fun _ -> fprintf chan "Local functions not done yet"
   | _ -> Warn.fatal "explicitset/match/tag etc. in herd2lem"
 
 
-and lem_of_binding chan (x, e) = 
+and lem_of_binding chan (_,x, e) = 
+  let pat2xs pat =  match pat with
+        | Pvar x -> [x]
+        | Ptuple xs -> xs in
   match e with
     | Fun (_,xs,e,_,_) ->
-      fprintf chan "let %s X (%a) = %a" 
-        x 
-        (fprintf_list_infix "," (fun _ x -> fprintf chan "%s" x)) xs
-        (lem_of_exp xs) e
+        fprintf chan "let %s X (%a) = %a" 
+          (String.concat "," (pat2xs x))
+          (fprintf_list_infix "," (fun _ x -> fprintf chan "%s" x))
+          (pat2xs xs)
+          (lem_of_exp (pat2xs xs)) e
     | _ ->
-      fprintf chan "let %s X = %a" 
-        x 
-        (lem_of_exp []) e
+        fprintf chan "let %s X = %a" 
+          (String.concat "," (pat2xs x))
+          (lem_of_exp []) e
 
 let fprintf_so x chan so = 
   fprintf chan "%s" (match so with

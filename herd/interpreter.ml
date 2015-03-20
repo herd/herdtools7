@@ -114,6 +114,7 @@ module Make
       let id = ref 0 in
       fun () -> let r = !id in id := r+1 ; r
 
+
 (****************************)
 (* Convenient abbreviations *)
 (****************************)
@@ -176,7 +177,7 @@ module Make
 (* Internal typing *)
     type typ =
       | TEmpty | TEvents | TRel | TTag of string |TClo | TProc | TSet of typ
-      | TAnyTag
+      | TAnyTag | TTuple of typ list
 
     let rec eq_type t1 t2 = match t1,t2 with
     | TEmpty,TSet _ -> Some t2
@@ -189,8 +190,21 @@ module Make
         | None -> None
         | Some t -> Some (TSet t)
         end
+    | TTuple ts1,TTuple ts2 ->
+        Misc.app_opt (fun ts -> TTuple ts) (eq_types ts1 ts2)
     | _,_ -> if t1 = t2 then Some t1 else None
 
+    and eq_types ts1 ts2 = match ts1,ts2 with
+    | [],[] -> Some []
+    | ([],_::_)|(_::_,[]) -> None
+    | t1::ts1,t2::ts2 ->
+        begin
+          let ts = eq_types ts1 ts2
+          and t = eq_type t1 t2 in
+          match t,ts with
+          | Some t,Some ts -> Some (t::ts)
+          | _,_ -> None
+        end
 
     let type_equal t1 t2 = match eq_type t1 t2 with
     | None -> false
@@ -209,7 +223,8 @@ module Make
       | TClo -> "closure"
       | TProc -> "procedure"
       | TSet elt -> sprintf "%s set" (pp_typ elt)
-
+      | TTuple ts ->
+          sprintf "(%s)" (String.concat " * " (List.map pp_typ ts))
 
 
     module rec V : sig
@@ -218,21 +233,22 @@ module Make
         | Rel of S.event_rel
         | Set of S.event_set
         | Clo of closure
-        | Prim of string * int * (v list -> v)
+        | Prim of string * int * (v -> v)
         | Proc of procedure
         | Tag of string * string     (* type  X name *)
         | ValSet of typ * ValSet.t   (* elt type X set *)
+        | Tuple of v list
       and env =
           { vals  : v Lazy.t StringMap.t;
             enums : string list StringMap.t;
             tags  : string StringMap.t; }
       and closure =
-          { clo_args : AST.var list ;
+          { clo_args : AST.pat ;
             mutable clo_env : env ;
             clo_body : AST.exp;
             clo_name : string * int; } (* unique id (hack) *)
       and procedure = {
-          proc_args : AST.var list;
+          proc_args : AST.pat ;
           proc_env : env;
           proc_body : AST.ins list; }
       val universe : v
@@ -244,30 +260,30 @@ module Make
         | Rel of S.event_rel
         | Set of S.event_set
         | Clo of closure
-        | Prim of string * int * (v list -> v)
+        | Prim of string * int * (v -> v)
         | Proc of procedure
         | Tag of string * string     (* type  X name *)
         | ValSet of typ * ValSet.t   (* elt type X set *)
-
+        | Tuple of v list
       and env =
           { vals  : v Lazy.t StringMap.t;
             enums : string list StringMap.t;
             tags  : string StringMap.t; }
 
       and closure =
-          { clo_args : AST.var list ;
+          { clo_args : AST.pat ;
             mutable clo_env : env ;
             clo_body : AST.exp;
             clo_name : string * int ; }
 
       and procedure = {
-          proc_args : AST.var list;
+          proc_args : AST.pat;
           proc_env : env;
           proc_body : AST.ins list; }
 
       let universe = Unv
 
-      let type_val = function
+      let rec type_val = function
         | V.Empty -> TEmpty
         | Unv -> assert false (* Discarded before *)
         | Rel _ -> TRel
@@ -276,7 +292,7 @@ module Make
         | Proc _ -> TProc
         | Tag (t,_) -> TTag t
         | ValSet (t,_) -> TSet t
-
+        | Tuple vs -> TTuple (List.map type_val vs)
 
     end
     and ValOrder : Set.OrderedType with type t = V.v = struct
@@ -287,7 +303,7 @@ module Make
       let error fmt = ksprintf (fun msg -> raise (CompError msg)) fmt
 
 
-      let compare v1 v2 = match v1,v2 with
+      let rec compare v1 v2 = match v1,v2 with
       | V.Empty,V.Empty -> 0
 (* Expand all legitimate empty's *)
       | V.Empty,ValSet (_,s) -> ValSet.compare ValSet.empty s
@@ -305,6 +321,7 @@ module Make
       | (Prim (_,i1,_),Prim (_,i2,_)) -> Pervasives.compare i1 i2
       | Clo _,Prim _ -> 1
       | Prim _,Clo _ -> -1
+      | Tuple vs,Tuple ws ->  compares vs ws
 (* Errors *)
       | (Unv,_)|(_,Unv) -> error "Universe in compare"
       | _,_ ->
@@ -316,6 +333,16 @@ module Make
             error
               "Heterogeneous set elements: types %s and %s "
               (pp_typ t1) (pp_typ t2)
+
+      and compares vs ws = match vs,ws with
+      | [],[] -> 0
+      | [],_::_ -> -1
+      | _::_,[] -> 1
+      | v::vs,w::ws ->
+          begin match compare v w with
+          | 0 -> compares vs ws
+          | r -> r
+          end
 
     end and ValSet : (MySet.S with type elt = V.v) = MySet.Make(ValOrder)
 
@@ -346,7 +373,9 @@ module Make
       | ValSet (_,s) ->
           sprintf "{%s}" (ValSet.pp_str "," pp_val s)
       | Clo {clo_name=(n,x);_} ->
-          sprintf "%s_%i" n x          
+          sprintf "%s_%i" n x
+      | V.Tuple vs ->
+          sprintf "(%s)" (String.concat "," (List.map pp_val vs))
       | v -> sprintf "<%s>" (pp_type_val v)
 
     let rec debug_val chan = function
@@ -362,15 +391,53 @@ module Make
     | V.Tag (t,_) -> ValSet (TTag t,ValSet.singleton v)
     | _ -> v
 
+(* extract lists from tuples *)
+    let pat_as_vars = function
+      | Pvar x -> [x]
+      | Ptuple xs -> xs
+
+    let v_as_vs = function
+      | V.Tuple vs -> vs
+      | v -> [v]
+
+    let pat2empty = function
+      | Pvar _ -> V.Empty
+      | Ptuple xs -> V.Tuple (List.map (fun _ -> V.Empty) xs)
+
+      let bdvars (_,pat,_) = match pat with
+      | Pvar x -> StringSet.singleton x
+      | Ptuple xs -> StringSet.of_list xs
+
 
 (* Add values to env *)
     let add_val k v env =
       { env with vals = StringMap.add k v env.vals; }
 
+
+    let add_pat_val silent loc pat v env = match pat with
+    | Pvar k -> add_val k v env
+    | Ptuple ks ->
+        let rec add_rec extract env = function
+          | [] -> env
+          | k::ks ->
+              let vk =
+                lazy
+                  begin match extract (Lazy.force v) with
+                  | v::_ -> v
+                  | [] -> error silent loc "%s" "binding mismatch"
+                  end in
+              let env = add_val k vk env
+              and extract v = match extract v with
+              | _::vs -> vs
+              | [] -> error silent loc "%s" "binding mismatch" in
+              add_rec extract env ks in
+        add_rec v_as_vs env ks
+
     let env_empty =
       {vals=StringMap.empty;
        enums=StringMap.empty;
        tags=StringMap.empty; }
+
 
     let add_vals mk env bds =
       let vals =
@@ -378,7 +445,6 @@ module Make
           (fun vals (k,v) -> StringMap.add k (mk v) vals)
           env.vals bds in
       { env with vals; }
-
 
     let add_rels env bds =
       add_vals (fun v -> lazy (Rel (Lazy.force v))) env bds
@@ -624,22 +690,22 @@ module Make
 (* Definition of primitives *)
     let arg_mismatch () = raise (PrimError "argument mismatch")
 
-    let partition args = match args with
-    | [Set evts] ->
+    let partition arg = match arg with
+    | Set evts ->
         let r = U.partition_events evts in
         let vs = List.map (fun es -> Set es) r in
         ValSet (TEvents,ValSet.of_list vs)
     | _ -> arg_mismatch ()
 
-    and classes args =  match args with
-    | [Rel r] ->
+    and classes arg =  match arg with
+    | Rel r ->
         let r = E.EventRel.classes r in
         let vs = List.map (fun es -> Set es) r in
         ValSet (TEvents,ValSet.of_list vs)
     | _ -> arg_mismatch ()
 
-    and linearisations args = match args with
-    | [Set es;Rel r;] ->
+    and linearisations arg = match arg with
+    | V.Tuple [Set es;Rel r;] ->
         if O.debug && O.verbose > 1 then begin
           eprintf "Linearisations:\n" ;
           eprintf "  %a\n" debug_set es ;
@@ -670,8 +736,8 @@ module Make
         ValSet (TRel,rs)
     | _ -> arg_mismatch ()
 
-    and tag2scope env args = match args with
-    | [V.Tag (_,tag)] ->
+    and tag2scope env arg = match arg with
+    | V.Tag (_,tag) ->
         begin try
           let v = Lazy.force (StringMap.find tag env.vals) in
           match v with
@@ -689,8 +755,8 @@ module Make
         end
     | _ -> arg_mismatch ()
 
-    and tag2events env args = match args with
-    | [V.Tag (_,tag)] ->
+    and tag2events env arg = match arg with
+    | V.Tag (_,tag) ->
         let x = BellName.tag2events_var tag in
         begin try
           let v = Lazy.force (StringMap.find x env.vals) in
@@ -709,21 +775,21 @@ module Make
         end
     | _ -> arg_mismatch ()
 
-    and domain args = match args with
-    | [V.Empty] ->  V.Empty
-    | [V.Unv] -> V.Unv
-    | [V.Rel r] ->  V.Set (E.EventRel.domain r)
+    and domain arg = match arg with
+    | V.Empty ->  V.Empty
+    | V.Unv -> V.Unv
+    | V.Rel r ->  V.Set (E.EventRel.domain r)
     | _ -> arg_mismatch ()
 
-    and range args = match args with
-    | [V.Empty] ->  V.Empty
-    | [V.Unv] -> V.Unv
-    | [V.Rel r] ->  V.Set (E.EventRel.codomain r)
+    and range arg = match arg with
+    | V.Empty ->  V.Empty
+    | V.Unv -> V.Unv
+    | V.Rel r ->  V.Set (E.EventRel.codomain r)
     | _ -> arg_mismatch ()
 
-    and fail args =
-      let pp = String.concat "," (List.map  pp_val args) in
-      let msg = sprintf "fail(%s)" pp in
+    and fail arg =
+      let pp = pp_val arg in
+      let msg = sprintf "fail on %s" pp in
       raise (PrimError msg)
 
     let add_primitives m =
@@ -824,6 +890,9 @@ module Make
                 with CompError msg ->
                   error env.EV.silent loc "%s" msg
             end
+(* Tuple is an actual N-ary operator *)
+        | Op (_loc,AST.Tuple,es) ->
+            V.Tuple (List.map (eval env) es)
 (* N-ary operators, those associative binary operators are optimized *)
         | Op (loc,Union,es) ->
             let vs = List.map (eval_loc env) es in
@@ -877,10 +946,10 @@ module Make
                 set_op env loc t ValSet.inter s1 s2
             | (Unv,r)|(r,Unv) -> r
             | (V.Empty,_)|(_,V.Empty) -> V.Empty
-            | (Clo _|Prim _|Proc _),_ ->
+            | (Clo _|Prim _|Proc _|V.Tuple _),_ ->
                 error env.EV.silent loc1
                   "intersection on %s" (pp_typ (type_val v1))
-            | _,(Clo _|Prim _|Proc _) ->
+            | _,(Clo _|Prim _|Proc _|V.Tuple _) ->
                 error env.EV.silent loc2
                   "intersection on %s" (pp_typ (type_val v2))
             | (Rel _,Set _)
@@ -915,10 +984,10 @@ module Make
             | (Rel _|Set _|V.Empty|Unv|ValSet _),Unv
             | V.Empty,(Rel _|Set _|V.Empty|ValSet _) -> V.Empty
             | (Rel _|Set _|ValSet _),V.Empty -> v1
-            | (Clo _|Proc _|Prim _),_ ->
+            | (Clo _|Proc _|Prim _|V.Tuple _),_ ->
                 error env.EV.silent loc1
                   "difference on %s" (pp_typ (type_val v1))
-            | _,(Clo _|Proc _|Prim _) ->
+            | _,(Clo _|Proc _|Prim _|V.Tuple _) ->
                 error env.EV.silent loc2
                   "difference on %s" (pp_typ (type_val v2))
             | ((Set _|ValSet _),Rel _)|(Rel _,(Set _|ValSet _)) ->
@@ -944,15 +1013,15 @@ module Make
                 set_op env loc t2 ValSet.add v1 s2
             | _,V.ValSet (_,s2) ->
                 set_op env loc (type_val v1) ValSet.add v1 s2
-            | _,(Rel _|Set _|Clo _|Prim _|Proc _|V.Tag (_, _)) ->
+            | _,(Rel _|Set _|Clo _|Prim _|Proc _|V.Tag (_, _)|V.Tuple _) ->
                 error env.EV.silent (get_loc e2)
                   "this expression of type '%s' should be a set"
                   (pp_typ (type_val v2))
             end
         | Op (_,(Diff|Inter|Cartesian|Add),_) -> assert false (* By parsing *)
 (* Application/bindings *)
-        | App (loc,f,es) ->
-            eval_app loc env (eval env f) (List.map (eval env) es)
+        | App (loc,f,e) ->
+            eval_app loc env (eval env f) (eval env e)
         | Bind (_,bds,e) ->
             let m = eval_bds env bds in
             eval { env with EV.env = m;} e
@@ -1034,17 +1103,17 @@ module Make
           and v2 = eval env e2 in
           ValOrder.compare v1 v2 = 0
               
-      and eval_app loc env vf vs = match vf with
+      and eval_app loc env vf va = match vf with
       | Clo f ->
           let env =
             { env with
-              EV.env=add_args loc f.clo_args vs env f.clo_env;} in
+              EV.env=add_args loc f.clo_args va env f.clo_env;} in
           begin try eval env f.clo_body with
             Misc.Exit ->
               error env.EV.silent loc "Calling"
           end
       | Prim (name,_,f) ->
-          begin try f vs with
+          begin try f va with
           | PrimError msg ->
               error env.EV.silent loc "primitive %s: %s" name msg
           | Misc.Exit ->
@@ -1052,7 +1121,7 @@ module Make
           end
       | _ -> error env.EV.silent loc "closure or primitive expected"
             
-      and eval_fun is_rec env loc xs body name fvs =
+      and eval_fun is_rec env loc pat body name fvs =
         if O.debug && O.verbose > 1 then begin
           let sz =
             StringMap.fold
@@ -1069,9 +1138,11 @@ module Make
               with Not_found -> k)
             fvs StringMap.empty in
         let env = { env.EV.env with vals; } in
-        {clo_args=xs; clo_env=env; clo_body=body; clo_name=(name,next_id ()); }
+        {clo_args=pat; clo_env=env; clo_body=body; clo_name=(name,next_id ()); }
 
-      and add_args loc xs vs env_es env_clo =
+      and add_args loc pat v env_es env_clo =
+        let xs = pat_as_vars pat
+        and vs = v_as_vs v in
         let bds =
           try
             List.combine xs vs
@@ -1109,7 +1180,7 @@ module Make
       and eval_bds env_bd  =
         let rec do_rec bds = match bds with
         | [] -> env_bd.EV.env
-        | (k,e)::bds ->
+        | (loc,p,e)::bds ->
             (*
               begin match v with
               | Rel r -> printf "Defining relation %s = {%a}.\n" k debug_rel r
@@ -1117,13 +1188,21 @@ module Make
               | Clo _ -> printf "Defining function %s.\n" k
               end;
              *)
-            add_val k (lazy (eval env_bd e)) (do_rec bds) in
+            add_pat_val env_bd.EV.silent loc
+              p (lazy (eval env_bd e)) (do_rec bds) in
         do_rec
 
 (* For let rec *)
 
       and env_rec check env loc pp bds =
-        let fs,nfs =  List.partition  (fun (_,e) -> is_fun e) bds in
+        let fs,nfs =  List.partition  (fun (_,_,e) -> is_fun e) bds in
+        let fs =
+          List.map
+            (fun (loc,p,e) -> match p with
+            | Pvar x -> x,e
+            | Ptuple _ ->
+                error env.EV.silent loc "%s" "binding mismatch")
+            fs in
         match nfs with
         | [] -> env_rec_funs env loc fs
         | _  -> env_rec_vals check env loc pp fs nfs
@@ -1159,15 +1238,23 @@ module Make
         (* Pretty print (relation) current values *)
         let vb_pp vs =
           List.fold_left2
-            (fun k (x,_) v ->
-              try
-                let v = match v with
-                | V.Empty -> E.EventRel.empty
-                | Unv -> Lazy.force env_bd.EV.ks.unv
-                | Rel r -> r
-                | _ -> raise Exit in
-                (x, rt_loc x v)::k
-              with Exit -> k)
+            (fun k (_loc,pat,_) v ->
+              let pp_id x v k =
+                try
+                  let v = match v with
+                  | V.Empty -> E.EventRel.empty
+                  | Unv -> Lazy.force env_bd.EV.ks.unv
+                  | Rel r -> r
+                  | _ -> raise Exit in
+                  (x, rt_loc x v)::k
+                with Exit -> k in
+              let rec pp_ids xs vs k = match xs,vs with
+              | ([],_)|(_,[]) -> k (* do not fail for pretty print *)
+              | x::xs,v::vs ->
+                  pp_id x v (pp_ids xs vs k) in
+              match pat with
+              | Pvar x -> pp_id x v k
+              | Ptuple xs -> pp_ids xs (v_as_vs v) k)
             [] bds vs in
 
 (* Fixpoint iteration *)
@@ -1197,20 +1284,25 @@ module Make
 
         let env0 =
           List.fold_left
-            (fun env (k,_) -> add_val k (lazy V.Empty) env)
+            (fun env (_,pat,_) -> match pat with
+            | Pvar k -> add_val k (lazy V.Empty) env
+            | Ptuple ks ->
+                List.fold_left
+                  (fun env k -> add_val k (lazy V.Empty) env)
+                  env ks)
             env_bd.EV.env bds in
         let env0 = env_rec_funs { env_bd with EV.env=env0;} loc funs in
         let env =
           if O.bell then env0 (* Do not compute fixpoint in bell *)
-          else fix 0 env0 (List.map (fun _ -> V.Empty) bds) in
+          else fix 0 env0 (List.map (fun (_,pat,_) -> pat2empty pat) bds) in
         if O.debug then warn loc "Fix point over" ;
         env
 
       and fix_step env_bd env bds = match bds with
       | [] -> env,[]
-      | (k,e)::bds ->
+      | (loc,k,e)::bds ->
           let v = eval {env_bd with EV.env=env;} e in
-          let env = add_val k (lazy v) env in
+          let env = add_pat_val env_bd.EV.silent loc k (lazy v) env in
           let env,vs = fix_step env_bd env bds in
           env,(v::vs) in
 
@@ -1243,7 +1335,7 @@ module Make
       let doshow bds st =
         let to_show =
           StringSet.inter O.doshow
-            (StringSet.of_list (List.map fst bds)) in
+            (StringSet.unions (List.map bdvars bds)) in
         if StringSet.is_empty to_show then st
         else
           let show = lazy begin
@@ -1298,7 +1390,7 @@ module Make
                 (fun tag order ->                        
                   let tgt =
                     try
-                      eval_app loc { env with EV.silent=true;} cat_fun [tag]
+                      eval_app loc { env with EV.silent=true;} cat_fun tag
                     with Misc.Exit -> V.Empty in
                   let tag = as_tag tag in
                   let add tgt order = StringRel.add (tag,as_tag tgt) order in
@@ -1346,14 +1438,16 @@ module Make
 
           fun bds st ->
             List.fold_left
-              (fun st (v,e) ->
-                if v = BellName.wider then
-                  let loc = get_loc e in
-                  fun_as_rel Misc.identity loc st BellName.scopes v
-                else if v = BellName.narrower then
-                  let loc = get_loc e in
-                  fun_as_rel StringRel.inverse loc st BellName.scopes v
-                else st)
+              (fun st (_,pat,e) -> match pat with
+              | Pvar v ->
+                  if v = BellName.wider then
+                    let loc = get_loc e in
+                    fun_as_rel Misc.identity loc st BellName.scopes v
+                  else if v = BellName.narrower then
+                    let loc = get_loc e in
+                    fun_as_rel StringRel.inverse loc st BellName.scopes v
+                  else st
+              | Ptuple _ -> st)
               st bds
         else fun _bds st -> st in
 
@@ -1509,8 +1603,8 @@ module Make
             let p = protect_call st (eval_proc loc env0) name in
             let env1 =
               protect_call st
-                (fun e ->
-                  add_args loc p.proc_args (List.map (eval env0) es) env0 e)
+                (fun penv ->
+                  add_args loc p.proc_args (eval env0 es) env0 penv)
                 p.proc_env in
             if skip then (* call for boolean... *)
                 let tval = 

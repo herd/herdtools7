@@ -13,30 +13,36 @@
 open AST
 
 (* Free variables *)
+let bound_pat = function
+  | Pvar x -> StringSet.singleton x
+  | Ptuple xs -> StringSet.of_list xs
+
+let bound_bds bds =
+  StringSet.unions
+    (List.map (fun (_,pat,_) -> bound_pat pat) bds)
+
 let rec free = function
   | Konst _ | Tag _ -> StringSet.empty
   | Var (_,x) -> StringSet.singleton x
   | Op1 (_,_,e)
     -> free e
   | Op (_,_,es)|ExplicitSet (_,es) -> frees es
-  | App (_,e,es) ->
-      StringSet.union (free e) (frees es)
+  | App (_,e1,e2) ->
+      StringSet.union (free e1) (free e2)
   | Bind (_,bds,e) ->
-      let xs =
-        StringSet.of_list (List.map fst bds) in
+      let xs = bound_bds bds in
       StringSet.union
         (bindings bds)
         (StringSet.diff (free e) xs)
   | BindRec (_,bds,e) ->
-      let xs =
-        StringSet.of_list (List.map fst bds) in
+      let xs = bound_bds bds in
       StringSet.diff
         (StringSet.union (free e) (bindings bds))
         xs
   | Fun (_,_,_,_,fs) -> fs
   | Match (_,e,cls,eo) ->
       let e = free e
-      and cls = bindings cls
+      and cls = clauses cls
       and eo = match eo with
       | None -> StringSet.empty
       | Some e -> free e in
@@ -59,7 +65,9 @@ and free_cond c = match c with
 
 and frees es = StringSet.unions (List.map free es)
 
-and bindings bds = StringSet.unions (List.map (fun (_,e) -> free e) bds)
+and bindings bds = StringSet.unions (List.map (fun (_,_,e) -> free e) bds)
+
+and clauses bds = StringSet.unions (List.map (fun (_,e) -> free e) bds)
 
 let free_body xs e =
   StringSet.diff (free e) (StringSet.of_list xs)

@@ -42,8 +42,8 @@ let rec tex_of_op2 n c es op2 =
   | Diff -> fprintf_list_infix "\\setminus" (tex_of_exp 2) c es
   | Seq -> fprintf_list_infix "\\semicolon" (tex_of_exp 2) c es
   | Cartesian -> fprintf_list_infix "\\times" (tex_of_exp 2) c es
-  | Add -> fprintf_list_infix "\\mathop{++}" (tex_of_exp 2) c es)
-
+  | Add -> fprintf_list_infix "\\mathop{++}" (tex_of_exp 2) c es
+  | Tuple -> fprintf_list_infix "," (tex_of_exp 2) c es)
 and tex_of_op1 n c e op1 = 
   paren (n >= 3) c (fun () -> match op1 with
   | Plus -> fprintf c "%a^+" (tex_of_exp 3) e
@@ -63,7 +63,7 @@ and tex_of_exp n c = function
     paren (n > 2) c (fun () ->
         tex_of_exp 0 c e;
         paren true c (fun () -> 
-            list_iter_alt (tex_of_exp 0 c) (comma c) es))
+            list_iter_alt (tex_of_exp 0 c) (comma c) [es]))
   | Bind _ -> fprintf c "\\mbox{\\color{red}[Local bindings not done yet]}"
   | BindRec _ -> fprintf c "\\mbox{\\color{red}[Local bindings not done yet]}"
   | Fun (_,xs,e,_,_) ->
@@ -74,23 +74,23 @@ and tex_of_exp n c = function
   |  _ -> Warn.fatal "unkown expression in herd2tex"
 
 and tex_of_formals b c = function
-  | [] -> paren true c (fun () -> ())
-  | [x] -> paren b c (fun () -> tex_of_var c x)
-  | xs -> paren true c (fun () -> list_iter_alt (tex_of_var c) (comma c) xs)
+  | Ptuple [] -> paren true c (fun () -> ())
+  | Pvar x -> paren b c (fun () -> tex_of_var c x)
+  | Ptuple xs -> paren true c (fun () -> list_iter_alt (tex_of_var c) (comma c) xs)
     
 and tex_of_var c x = fprintf c "\\var{%s}" x
 
 and tex_of_name c x = fprintf c "\\name{%s}" x
 
-and tex_of_binding c (x, e) = match e with
-  | Fun (_,xs,e,_,_) ->
+and tex_of_binding c (_,pat, e) = match e with
+  | Fun (_,fpat,e,_,_) ->
     fprintf c "$%a%a = %a$" 
-      tex_of_var x 
-      (tex_of_formals true) xs
+      (tex_of_formals false) pat 
+      (tex_of_formals true) fpat
       (tex_of_exp 0) e
   | _ ->
     fprintf c "$%a = %a$" 
-      tex_of_var x 
+      (tex_of_formals false) pat 
       (tex_of_exp 0) e
 
 let tex_of_do_test tag = function
