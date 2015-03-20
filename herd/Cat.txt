@@ -61,3 +61,8 @@ herd7 ... -showflag racy -gv
 * New if e1 = e2 then e3 else e4 expression construct. Semantics is as
   expected. Can be used to build maps as functions.
 
+* Added tuples tuple expressions are () and (e1,...,eN) N >= 2
+  Also added bindings for destructuring tuples:
+  (x1,..,xN) = e and tuple formal arguments
+ 
+
