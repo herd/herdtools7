@@ -57,3 +57,7 @@ herd7 ... -showflag racy -gv
 
 * Name procedure calls (call ... [as name]). behave as checks as regard
   skipping.
+
+* New if e1 = e2 then e3 else e4 expression construct. Semantics is as
+  expected. Can be used to build maps as functions.
+

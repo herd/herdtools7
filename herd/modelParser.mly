@@ -51,7 +51,7 @@ let pp () =
 %token WITHSC WITHOUTSC
 %token ALT SEMI UNION INTER COMMA DIFF PLUSPLUS
 %token STAR PLUS OPT INV COMP HAT
-%token LET REC AND WHEN ACYCLIC IRREFLEXIVE TESTEMPTY EQUAL SHOW UNSHOW AS FUN IN PROCEDURE CALL FORALL DO FROM TRY EVENTS
+%token LET REC AND WHEN ACYCLIC IRREFLEXIVE TESTEMPTY EQUAL SHOW UNSHOW AS FUN IN PROCEDURE CALL FORALL DO FROM TRY EVENTS IF THEN ELSE
 %token REQUIRES FLAG
 %token ARROW
 %token ENUM DEBUG MATCH WITH
@@ -195,7 +195,12 @@ exp:
     { Fun (mk_loc(),$3,$6,"*fun*",ASTUtils.free_body $3 $6) }
 | TRY exp WITH exp
     { Try (mk_loc(),$2,$4) }
+| IF cond THEN exp ELSE exp
+    { If (mk_loc(),$2,$4,$6) }
 | base { $1 }
+
+cond:
+| exp EQUAL exp { Eq ($1,$3) }
 
 simple:
 | EMPTY { Konst (mk_loc(),Empty RLN) }

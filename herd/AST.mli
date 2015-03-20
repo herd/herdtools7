@@ -52,6 +52,9 @@ type exp =
   | Match of TxtLoc.t * exp * clause list * exp option
   | MatchSet of TxtLoc.t * exp * exp * (string * string * exp)
   | Try of TxtLoc.t * exp * exp
+  | If of TxtLoc.t * cond * exp * exp
+
+and cond = Eq of exp * exp
 
 and clause = string * exp
 

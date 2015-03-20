@@ -55,7 +55,9 @@ module LU = LexUtils.Make(O)
     | "from" -> FROM
     | "do" -> DO
     | "try" -> TRY
-
+    | "if" -> IF
+    | "then" -> THEN
+    | "else" -> ELSE
     (* for bell files *)
     | "events" -> EVENTS
     | x -> VAR x

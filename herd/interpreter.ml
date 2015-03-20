@@ -218,7 +218,7 @@ module Make
         | Rel of S.event_rel
         | Set of S.event_set
         | Clo of closure
-        | Prim of string * (v list -> v)
+        | Prim of string * int * (v list -> v)
         | Proc of procedure
         | Tag of string * string     (* type  X name *)
         | ValSet of typ * ValSet.t   (* elt type X set *)
@@ -244,7 +244,7 @@ module Make
         | Rel of S.event_rel
         | Set of S.event_set
         | Clo of closure
-        | Prim of string * (v list -> v)
+        | Prim of string * int * (v list -> v)
         | Proc of procedure
         | Tag of string * string     (* type  X name *)
         | ValSet of typ * ValSet.t   (* elt type X set *)
@@ -279,7 +279,7 @@ module Make
 
 
     end
-    and ValOrder : Set.OrderedType = struct
+    and ValOrder : Set.OrderedType with type t = V.v = struct
       (* Note: cannot use Full in sets.. *)
       type t = V.v
       open V
@@ -297,13 +297,14 @@ module Make
       | V.Empty,Set s -> E.EventSet.compare E.EventSet.empty s
       | Set s,V.Empty -> E.EventSet.compare s E.EventSet.empty
 (* Legitimate cmp *)
-      | Tag (_,s1), Tag (_,s2) ->
-          String.compare s1 s2
+      | Tag (_,s1), Tag (_,s2) -> String.compare s1 s2
       | ValSet (_,s1),ValSet (_,s2) -> ValSet.compare s1 s2
       | Rel r1,Rel r2 -> E.EventRel.compare r1 r2
       | Set s1,Set s2 -> E.EventSet.compare s1 s2
-      | Clo {clo_name = (_,i1);_},Clo {clo_name=(_,i2);_} ->
-          Pervasives.compare i1 i2
+      | (Clo {clo_name = (_,i1);_},Clo {clo_name=(_,i2);_})
+      | (Prim (_,i1,_),Prim (_,i2,_)) -> Pervasives.compare i1 i2
+      | Clo _,Prim _ -> 1
+      | Prim _,Clo _ -> -1
 (* Errors *)
       | (Unv,_)|(_,Unv) -> error "Universe in compare"
       | _,_ ->
@@ -348,6 +349,14 @@ module Make
           sprintf "%s_%i" n x          
       | v -> sprintf "<%s>" (pp_type_val v)
 
+    let rec debug_val chan = function
+      | ValSet (_,s) ->
+          output_char chan '{' ;
+          ValSet.pp chan "," debug_val s
+      | Set es ->  debug_set chan es
+      | Rel r  -> debug_rel chan r
+      | v -> fprintf chan "%s" (pp_val v)
+
 (* lift a tag to a singleton set *)
     let tag2set v = match v with
     | V.Tag (t,_) -> ValSet (TTag t,ValSet.singleton v)
@@ -382,7 +391,7 @@ module Make
 
     and add_prims env bds =
       let bds =
-        List.map (fun (k,f) -> k,Prim (k,f)) bds in
+        List.map (fun (k,f) -> k,Prim (k,next_id (),f)) bds in
       add_vals (fun v -> lazy v) env bds
 
     type loc = { stack : (TxtLoc.t * string option) list ; txt : string ; }
@@ -537,6 +546,7 @@ module Make
       | Match (loc,_,_,_)
       | MatchSet (loc,_,_,_)
       | Try (loc,_,_)
+      | If (loc,_,_,_)
         -> loc
 
 (* Remove transitive edges, except if instructed not to *)
@@ -711,6 +721,11 @@ module Make
     | [V.Rel r] ->  V.Set (E.EventRel.codomain r)
     | _ -> arg_mismatch ()
 
+    and fail args =
+      let pp = String.concat "," (List.map  pp_val args) in
+      let msg = sprintf "fail(%s)" pp in
+      raise (PrimError msg)
+
     let add_primitives m =
       add_prims m
         [
@@ -721,6 +736,7 @@ module Make
          "tag2events",tag2events m;
          "domain",domain;
          "range",range;
+         "fail",fail;
        ]
 
         
@@ -989,7 +1005,8 @@ module Make
                   let s =
                     lazy begin
                       try ValSet (t,ValSet.remove (Lazy.force elt) s)
-                      with  CompError _ -> assert false
+                      with  CompError msg ->
+                        error env.EV.silent (get_loc e) "%s" msg
                     end in
                   let m = env.EV.env in
                   let m = add_val x elt m in
@@ -1007,6 +1024,15 @@ module Make
                 if O.debug then warn loc "caught failure" ;
                 eval env e2
             end
+        | If (_loc,cond,ifso,ifnot) ->
+            if eval_cond env cond then eval env ifso
+            else eval env ifnot
+
+      and eval_cond env c = match c with
+      | Eq (e1,e2) ->
+          let v1 = eval env e1
+          and v2 = eval env e2 in
+          ValOrder.compare v1 v2 = 0
               
       and eval_app loc env vf vs = match vf with
       | Clo f ->
@@ -1017,7 +1043,7 @@ module Make
             Misc.Exit ->
               error env.EV.silent loc "Calling"
           end
-      | Prim (name,f) ->
+      | Prim (name,_,f) ->
           begin try f vs with
           | PrimError msg ->
               error env.EV.silent loc "primitive %s: %s" name msg
@@ -1345,17 +1371,18 @@ module Make
                 eval_test (check_through Check) env t e in
 
       let pp_check_failure st (loc,pos,_,e,_) =
-        let pp =
-          try String.sub st.loc.txt pos.pos pos.len with _ -> assert false in
-        let v = eval_rel (from_st st) e in
-        let cy = E.EventRel.get_cycle v in
         warn loc "check failed" ;
         show_call_stack st.loc ;
-        U.pp_failure test st.ks.conc
-          (sprintf "Failure of '%s'" pp)
-          (let k = show_to_vbpp st in
-          ("CY",E.EventRel.cycle_option_to_rel cy)::k) in
-
+        if O.debug && O.verbose > 0 then begin
+          let pp =
+            try String.sub st.loc.txt pos.pos pos.len with _ -> assert false in
+          let v = eval_rel (from_st st) e in
+          let cy = E.EventRel.get_cycle v in
+          U.pp_failure test st.ks.conc
+            (sprintf "Failure of '%s'" pp)
+            (let k = show_to_vbpp st in
+            ("CY",E.EventRel.cycle_option_to_rel cy)::k)
+        end in
 (* Execute one instruction *)
 
       let eval_st st e = eval (from_st st) e in
@@ -1363,9 +1390,11 @@ module Make
       let rec exec : 'a. st -> ins -> (st -> 'a -> 'a) -> 'a -> 'a  =
       fun st i kont res ->  match i with
       | Debug (_,e) ->
-          let v = eval_st st e in
-          eprintf "%a: value is %s\n%!"
-            TxtLoc.pp (get_loc e) (pp_val v) ;
+          if O.debug then begin
+            let v = eval_st st e in
+            eprintf "%a: value is %a\n%!"
+              TxtLoc.pp (get_loc e) debug_val v
+          end ;
           kont st res
       | Show (_,xs) when not O.bell ->
           if O.showsome then
