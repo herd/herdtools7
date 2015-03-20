@@ -1818,13 +1818,11 @@ module Make
            loc={stack =[]; txt=prog_txt;}} in        
         let just_run st res = run st prog kont res in
         do_include TxtLoc.none "stdlib.cat" st
-          (fun st res ->
-            match O.bell_fname with
-(* No bell file, just run *)
-            | None -> just_run st res
-(* Run bell file first, to get all its definitions... *)
-            | Some fname ->
-                do_include TxtLoc.none fname st just_run res)
+          (match O.bell_fname with
+          | None -> just_run (* No bell file, just run *)
+          | Some fname ->
+            fun st res ->
+              do_include TxtLoc.none fname st just_run res)
           res
 
   end
