@@ -72,14 +72,13 @@ module Make
           { id : S.event_rel Lazy.t; unv : S.event_rel Lazy.t;
             evts : S.event_set;  conc : S.concrete; }
 
-      module V : sig type env type v val universe : v end
+      module V : sig type env end
 
 
 (* Helpers, initialisation *)
       val env_empty : V.env
       val add_rels : V.env -> (string * S.event_rel Lazy.t) list -> V.env
       val add_sets : V.env -> (string * S.event_set Lazy.t) list -> V.env
-      val add_vs : V.env -> (string * V.v Lazy.t) list -> V.env
 
 (* State of interpreter *)
 
@@ -251,7 +250,6 @@ module Make
           proc_args : AST.pat ;
           proc_env : env;
           proc_body : AST.ins list; }
-      val universe : v
       val type_val : v -> typ
     end = struct
 
@@ -280,8 +278,6 @@ module Make
           proc_args : AST.pat;
           proc_env : env;
           proc_body : AST.ins list; }
-
-      let universe = Unv
 
       let rec type_val = function
         | V.Empty -> TEmpty
@@ -451,9 +447,6 @@ module Make
 
     and add_sets env bds =
       add_vals (fun v -> lazy (Set (Lazy.force v))) env bds
-
-    and add_vs env bds =
-      add_vals (fun v -> v) env bds
 
     and add_prims env bds =
       let bds =
