@@ -54,6 +54,7 @@ type exp =
   | MatchSet of TxtLoc.t * exp * exp * (string * string * exp)
   | Try of TxtLoc.t * exp * exp
   | If of TxtLoc.t * cond * exp * exp
+  | Yield of TxtLoc.t * exp * exp
 
 and pat = Pvar of var | Ptuple of var list
 
