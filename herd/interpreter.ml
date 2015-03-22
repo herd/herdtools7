@@ -231,8 +231,8 @@ module Make
       module type DoKont = sig
         type t
         type kv
-        val res : t
         val kont : kv -> t -> t 
+        val res : t
       end
 
       type v =
@@ -275,8 +275,8 @@ module Make
       module type DoKont = sig
         type t
         type kv
-        val res : t
         val kont : kv -> t -> t 
+        val res : t
       end
 
 
