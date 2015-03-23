@@ -68,11 +68,10 @@ module Make
       fun ks m vb_pp kont res ->
         run ks m vb_pp
           (fun st res ->
-            if not O.strictskip || StringSet.equal st.I.skipped O.skipchecks
+            if not O.strictskip || StringSet.equal st.I.out_skipped O.skipchecks
             then
-              let vb_pp = lazy (I.show_to_vbpp st) in
-              let conc = st.I.ks.I.conc in
-              kont conc conc.S.fs vb_pp st.I.flags res
+              let conc = ks.I.conc in
+              kont conc conc.S.fs st.I.out_show st.I.out_flags res
             else res)
           res
 
@@ -92,7 +91,7 @@ module Make
       (* printf "po = {\n%a\n}\n" debug_rel conc.S.po; *)
 (* Initial env *)
       let m =
-        I.add_rels I.env_empty
+        I.add_rels I.init_env_empty
           (["id",id;
 	    "unv", unv;
             "atom",lazy (conc.S.atomic_load_store);

@@ -75,11 +75,10 @@ module Make
         run ks m vb_pp
           (fun st res ->
             if
-              not O.strictskip || StringSet.equal st.I.skipped O.skipchecks
+              not O.strictskip || StringSet.equal st.I.out_skipped O.skipchecks
             then
-              let vb_pp = lazy (I.show_to_vbpp st) in
-              let conc = st.I.ks.I.conc in
-              kont conc conc.S.fs vb_pp st.I.flags res
+              let conc = ks.I.conc in
+              kont conc conc.S.fs st.I.out_show st.I.out_flags res
             else res)
           res
 
@@ -105,7 +104,7 @@ module Make
 (* Initial env *)
       let m =
         I.add_rels
-          I.env_empty
+          I.init_env_empty
           (["id",id;
             "loc", lazy begin
               E.EventRel.restrict_rel E.same_location (Lazy.force unv)

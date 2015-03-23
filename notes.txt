@@ -1,0 +1,15 @@
+** Interpreter recursive call for boolean result.
+
+rev 433 introduces polymorphic sets to solve issue. Environemnts are purged
+from polymorphic Kont values before using them in call. However,
+the purge is not complete, as it dos not apply to closure environements,
+not to ocaml level environments in frozen lazy expressions.
+
+rev 432 used an existential type.
+
+No solution is 100% type safe, but I guess that both solutions
+would probably catch all (ocaml, typing) violations (try to make one!)
+as runtime errors of some kind or other.
+
+
+

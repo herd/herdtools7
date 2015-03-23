@@ -34,6 +34,10 @@ module type Config = sig
   val libfind : string -> string
 end
 
+(* Simplified Sem module.
+   In effect, the interpreter needs a restricted subset of Sem functionalities:
+   set of events, relation on events and that is about all.
+   A few utlities are passed as the next "U" argument to functor. *)
 module type SimplifiedSem = sig
   module E : sig
     type event
@@ -67,42 +71,37 @@ module Make
     :
     sig
 
-(* Values *)
+(* Some constants passed to the interpreter, made open for the
+   convenience of uilding them from outside *)
       type ks =
           { id : S.event_rel Lazy.t; unv : S.event_rel Lazy.t;
             evts : S.event_set;  conc : S.concrete; }
 
-      module V : sig type env end
+
+(* Initial environment, they differ from internal env, so
+   as not to expose the polymorphic argument of teh later *)
+      type init_env
+      val init_env_empty : init_env
+      val add_rels : init_env -> S.event_rel Lazy.t Misc.Simple.bds -> init_env
+      val add_sets : init_env -> S.event_set Lazy.t Misc.Simple.bds -> init_env
+
+(* Subset of interpreter state used by the caller *)
+      type st_out = {
+       out_show : S.rel_pp Lazy.t ;
+       out_skipped : StringSet.t ;
+       out_flags : Flag.Set.t ;
+       out_bell_info :  BellCheck.info ;       
+      }
 
 
-(* Helpers, initialisation *)
-      val env_empty : V.env
-      val add_rels : V.env -> (string * S.event_rel Lazy.t) list -> V.env
-      val add_sets : V.env -> (string * S.event_set Lazy.t) list -> V.env
-
-(* State of interpreter *)
-
-      type loc
-
-      type st = {
-          env : V.env ;
-          show : S.event_rel StringMap.t Lazy.t ;
-          skipped : StringSet.t ;
-          silent : bool ;  flags : Flag.Set.t ;
-          ks : ks ;
-          bell_info : BellCheck.info ;
-          loc : loc ;
-        }
-
-
-      val show_to_vbpp : st -> (string * S.event_rel) list
+(* Interpreter *)
 
       val interpret :
           S.test ->
             ks ->
-              V.env ->
-                (string * S.event_rel) list Lazy.t ->
-                  (st -> 'a -> 'a) -> 'a -> 'a
+              init_env ->
+                S.rel_pp Lazy.t ->
+                  (st_out -> 'a -> 'a) -> 'a -> 'a
     end
     =
   struct
@@ -228,84 +227,63 @@ module Make
 
     module rec V : sig
 
-      module type DoKont = sig
-        type t
-        type kv
-        val kont : kv -> t -> t 
-        val res : t
-      end
-
-      type v =
+      type 'k v =
         | Empty | Unv
         | Rel of S.event_rel
         | Set of S.event_set
-        | Clo of closure
-        | Prim of string * int * (v -> v)
-        | Proc of procedure
+        | Clo of 'k closure
+        | Prim of string * int * ('k v -> 'k v)
+        | Proc of 'k procedure
         | Tag of string * string     (* type  X name *)
-        | ValSet of typ * ValSet.t   (* elt type X set *)
-        | Tuple of v list
-        | Kont of (module DoKont with type kv = v)
+        | ValSet of typ * 'k ValSet.t   (* elt type X set *)
+        | Tuple of 'k v list
+        | Kont of ('k v -> 'k -> 'k) * 'k
 
-      and env =
-          { vals  : v Lazy.t StringMap.t;
+      and 'k env =
+          { vals  : 'k v Lazy.t StringMap.t;
             enums : string list StringMap.t;
             tags  : string StringMap.t; }
-      and closure =
+      and 'k closure =
           { clo_args : AST.pat ;
-            mutable clo_env : env ;
+            mutable clo_env : 'k env ;
             clo_body : AST.exp;
             clo_name : string * int; } (* unique id (hack) *)
 
-      and procedure = {
+      and 'k procedure = {
           proc_args : AST.pat ;
-          proc_env : env;
+          proc_env : 'k env;
           proc_body : AST.ins list; }
 
-      val type_val : v -> typ
-
-      module type Kont = DoKont with type kv = v
-
-      val pack : (v -> 'a -> 'a) -> 'a -> (module Kont)
-      val unpack : (module Kont) -> 'a
-      val yield : (module Kont) -> v -> (module Kont)
+      val type_val : 'k v -> typ
 
     end = struct
 
-      module type DoKont = sig
-        type t
-        type kv
-        val kont : kv -> t -> t 
-        val res : t
-      end
 
-
-      type v =
+      type 'k v =
         | Empty | Unv
         | Rel of S.event_rel
         | Set of S.event_set
-        | Clo of closure
-        | Prim of string * int * (v -> v)
-        | Proc of procedure
+        | Clo of 'k closure
+        | Prim of string * int * ('k v -> 'k v)
+        | Proc of 'k procedure
         | Tag of string * string     (* type  X name *)
-        | ValSet of typ * ValSet.t   (* elt type X set *)
-        | Tuple of v list
-        | Kont  of (module DoKont with type kv = v)
+        | ValSet of typ * 'k ValSet.t   (* elt type X set *)
+        | Tuple of 'k v list
+        | Kont of ('k v -> 'k -> 'k) * 'k
 
-      and env =
-          { vals  : v Lazy.t StringMap.t;
+      and 'k env =
+          { vals  : 'k v Lazy.t StringMap.t;
             enums : string list StringMap.t;
             tags  : string StringMap.t; }
-
-      and closure =
+      and 'k closure =
           { clo_args : AST.pat ;
-            mutable clo_env : env ;
+            mutable clo_env : 'k env ;
             clo_body : AST.exp;
-            clo_name : string * int ; }
+            clo_name : string * int; } (* unique id (hack) *)
 
-      and procedure = {
-          proc_args : AST.pat;
-          proc_env : env;
+      and 'k procedure = {
+          proc_args : AST.pat ;
+          proc_env : 'k env;
           proc_body : AST.ins list; }
 
       let rec type_val = function
@@ -320,34 +298,10 @@ module Make
         | Tuple vs -> TTuple (List.map type_val vs)
         | Kont _ -> TKont
 
-      module type Kont = DoKont with type kv = v
-
-      let pack = fun (type s) kont res ->
-        let module K =
-          struct
-            type t = s
-            type kv = v
-            let kont = kont
-            let res = res
-          end in
-        (module K : Kont)
-
-      let unpack  k =
-        let (module K : Kont) = k in
-        Obj.magic K.res
-
-      let yield k v =
-        let (module K : Kont) = k in
-        let module NK = struct
-          include K
-          let res = kont v res
-        end in
-        (module NK : Kont)
-
    end
-    and ValOrder : Set.OrderedType with type t = V.v = struct
+    and ValOrder : PolySet.OrderedType with type 'k t = 'k V.v = struct
       (* Note: cannot use Full in sets.. *)
-      type t = V.v
+      type 'k t = 'k V.v
       open V
 
       let error fmt = ksprintf (fun msg -> raise (CompError msg)) fmt
@@ -394,9 +348,10 @@ module Make
           | r -> r
           end
 
-    end and ValSet : (MySet.S with type elt = V.v) = MySet.Make(ValOrder)
+    end and ValSet : (PolySet.S with type 'k elt = 'k V.v) =
+        PolySet.Make(ValOrder)
 
-    exception CheckFailed of V.env
+    type 'k fix = CheckFailed of 'k V.env | CheckOk of 'k V.env
 
     let error silent loc fmt =
       ksprintf
@@ -431,7 +386,8 @@ module Make
     let rec debug_val chan = function
       | ValSet (_,s) ->
           output_char chan '{' ;
-          ValSet.pp chan "," debug_val s
+          ValSet.pp chan "," debug_val s ;
+          output_char chan '}'
       | Set es ->  debug_set chan es
       | Rel r  -> debug_rel chan r
       | v -> fprintf chan "%s" (pp_val v)
@@ -488,28 +444,62 @@ module Make
        enums=StringMap.empty;
        tags=StringMap.empty; }
 
+(* Hackish: check absence of continuation on env + change type param *)
+    let tr_v = fun (type a) (type b) silent loc (v:a V.v) -> match v with
+      | Kont _ ->
+          error silent loc "kont value used during internal evaluation"
+      | v -> (Obj.magic v:b V.v)
 
-    let add_vals mk env bds =
+    let purge_env silent loc t =
+      let venv =
+        StringMap.fold
+          (fun x v k ->
+            if true then
+              let nv = lazy begin tr_v silent loc (Lazy.force v) end in
+              StringMap.add x nv k
+            else k)
+          t.vals StringMap.empty in
+      { t with vals = venv;}
+
+
+(* Initial env, a restriction of env *)
+
+    type init_env =
+        E.EventSet.t Lazy.t Misc.Simple.bds *
+          E.EventRel.t Lazy.t Misc.Simple.bds 
+
+    let init_env_empty = [],[]
+
+    let add_rels (sets,rels) bds = (sets,bds@rels)
+
+    and add_sets (sets,rels) bds = (bds@sets,rels)
+
+(* Go on *)
+    let add_vals mk =
+      List.fold_right (fun (k,v) -> StringMap.add k (mk v))
+
+    let env_from_ienv (sets,rels) =
+      let vals =
+        add_vals (fun v -> lazy (Set (Lazy.force v))) sets StringMap.empty in
+      let vals =
+        add_vals (fun v -> lazy (Rel (Lazy.force v))) rels vals in
+      { env_empty with vals; }
+
+(* Primmitive added internally to actual env *)
+    let add_prims env bds =
+      let vals = env.vals in
       let vals =
         List.fold_left
-          (fun vals (k,v) -> StringMap.add k (mk v) vals)
-          env.vals bds in
+          (fun vals (k,f) ->
+            StringMap.add k (lazy (Prim (k,next_id (),f)))
+              vals)
+          vals bds in
       { env with vals; }
 
-    let add_rels env bds =
-      add_vals (fun v -> lazy (Rel (Lazy.force v))) env bds
-
-    and add_sets env bds =
-      add_vals (fun v -> lazy (Set (Lazy.force v))) env bds
-
-    and add_prims env bds =
-      let bds =
-        List.map (fun (k,f) -> k,Prim (k,next_id (),f)) bds in
-      add_vals (fun v -> lazy v) env bds
-
     type loc = { stack : (TxtLoc.t * string option) list ; txt : string ; }
-    type st = {
-        env : V.env ;
+
+    type 'k st = {
+        env : 'k V.env ;
         show : S.event_rel StringMap.t Lazy.t ;
         skipped : StringSet.t ;
         silent : bool ; flags : Flag.Set.t ;
@@ -517,6 +507,33 @@ module Make
         bell_info : BellCheck.info ;
         loc : loc ;
       }
+
+(* Interpretation result *)
+
+      type st_out = {
+       out_show : S.event_rel Misc.Simple.bds Lazy.t ;
+       out_skipped : StringSet.t ;
+       out_flags : Flag.Set.t ;
+       out_bell_info :  BellCheck.info ;       
+      }
+
+(* Remove transitive edges, except if instructed not to *)
+    let rt_loc lbl =
+      if
+        O.verbose <= 1 &&
+        not (StringSet.mem lbl O.symetric) &&
+        not (StringSet.mem lbl O.showraw)
+      then E.EventRel.remove_transitive_edges else (fun x -> x)
+
+    let show_to_vbpp st =
+      StringMap.fold (fun tag v k -> (tag,v)::k)   (Lazy.force st.show) []
+
+    let st2out st =
+      {out_show = lazy (show_to_vbpp st) ;
+       out_skipped = st.skipped ;
+       out_flags = st.flags ;
+       out_bell_info = st.bell_info ; }
+
 
     let push_loc st loc =
       let loc = { st.loc with stack = loc :: st.loc.stack; } in
@@ -545,8 +562,8 @@ module Make
 
 (* Type of eval env *)
     module EV = struct
-      type env =
-          { env : V.env ; silent : bool; ks : ks; }
+      type 'k env =
+          { env : 'k V.env ; silent : bool; ks : ks; }
     end
     let from_st st = { EV.env=st.env; silent=st.silent; ks=st.ks; }
 
@@ -663,16 +680,6 @@ module Make
       | Yield (loc,_,_)
         -> loc
 
-(* Remove transitive edges, except if instructed not to *)
-    let rt_loc lbl =
-      if
-        O.verbose <= 1 &&
-        not (StringSet.mem lbl O.symetric) &&
-        not (StringSet.mem lbl O.showraw)
-      then E.EventRel.remove_transitive_edges else (fun x -> x)
-
-    let show_to_vbpp st =
-      StringMap.fold (fun tag v k -> (tag,v)::k)   (Lazy.force st.show) []
 
     let empty_rel = Rel E.EventRel.empty
         
@@ -680,8 +687,6 @@ module Make
       error silent loc"type %s expected, %s found" (pp_typ t0) (pp_typ t1)
 
     let error_rel silent loc v = error_typ silent loc TRel (type_val v)
-(*    and error_set loc v = error_typ loc TEvents (type_val v) *)
-
 
 
 (********************************)
@@ -1075,8 +1080,11 @@ module Make
             eval { env with EV.env = m;} e
         | BindRec (loc,bds,e) ->
             let m =
-              env_rec (fun _ -> true)
-                env loc (fun pp -> pp) bds in
+              match env_rec (fun _ -> true)
+                  env loc (fun pp -> pp) bds
+              with
+              | CheckOk env -> env
+              | CheckFailed _ -> assert false (* No check in expr binding *) in
             eval { env with EV.env=m;} e
         | Match (loc,e,cls,d) ->
             let v = eval env e in
@@ -1144,13 +1152,13 @@ module Make
         | If (_loc,cond,ifso,ifnot) ->
             if eval_cond env cond then eval env ifso
             else eval env ifnot
-        | Yield (loc,res,a) ->
+        | Yield (_loc,res,a) ->
             let v = eval env a
             and vres = eval env res in
             begin match vres with
-            | Kont k -> Kont (V.yield k v)
+            | Kont (kont,res) -> Kont (kont,kont v res)
             | _ ->
-                error env.EV.silent loc
+                error env.EV.silent (get_loc res)
                   "continuation expected, %s found" (pp_val vres)
             end
 
@@ -1261,7 +1269,7 @@ module Make
                 error env.EV.silent loc "%s" "binding mismatch")
             fs in
         match nfs with
-        | [] -> env_rec_funs env loc fs
+        | [] -> CheckOk (env_rec_funs env loc fs)
         | _  -> env_rec_vals check env loc pp fs nfs
 
 
@@ -1325,19 +1333,16 @@ module Make
           let check_ok = check { env_bd with EV.env=env; } in
           if not check_ok then begin
             if O.debug then warn loc "Fix point interrupted" ;
-            raise (CheckFailed env)
-          end ;
-          let over =
-            not check_ok ||
-            begin try stabilised env_bd.EV.ks env vs ws
-            with Stabilised t ->
-              error env_bd.EV.silent loc "illegal recursion on type '%s'"
-                (pp_typ t)
-            end in
-          if over then env
-          else
-            (* Update recursive functions *)
-            fix (k+1) env ws in
+            CheckFailed env
+          end else
+            let over =
+              begin try stabilised env_bd.EV.ks env vs ws
+              with Stabilised t ->
+                error env_bd.EV.silent loc "illegal recursion on type '%s'"
+                  (pp_typ t)
+              end in
+            if over then CheckOk env
+            else fix (k+1) env ws in
 
         let env0 =
           List.fold_left
@@ -1350,7 +1355,7 @@ module Make
             env_bd.EV.env bds in
         let env0 = env_rec_funs { env_bd with EV.env=env0;} loc funs in
         let env =
-          if O.bell then env0 (* Do not compute fixpoint in bell *)
+          if O.bell then CheckOk env0 (* Do not compute fixpoint in bell *)
           else fix 0 env0 (List.map (fun (_,pat,_) -> pat2empty pat) bds) in
         if O.debug then warn loc "Fix point over" ;
         env
@@ -1538,8 +1543,8 @@ module Make
 
       let eval_st st e = eval (from_st st) e in
 
-      let rec exec : 'a. st -> ins -> (st -> 'a -> 'a) -> 'a -> 'a  =
-      fun  st i kont res ->  match i with
+      let rec exec : 'a. 'a st -> ins -> ('a st -> 'a -> 'a) -> 'a -> 'a  =
+      fun  (type res) st i kont (res:res) ->  match i with
       | Debug (_,e) ->
           if O.debug then begin
             let v = eval_st st e in
@@ -1574,30 +1579,6 @@ module Make
             end in
             kont { st with show; } res
           else kont st res
-(*
-      | ProcedureTest (loc,pname,es,name) when not O.bell ->
-(* TODO: Understand and handle this *)
-          let skip_this_check =
-            match name with
-            | Some name -> StringSet.mem name O.skipchecks
-            | None -> false in
-          if
-            O.strictskip || not skip_this_check
-          then
-            let env0 = from_st st in
-            let p = eval_proc loc env0 pname in
-            let vs = List.map (eval env0) es in
-            let env1 = add_args loc p.proc_args vs env0 p.proc_env in
-            let st = push_loc st loc in
-            run { st with env = env1; } p.proc_body
-              (fun st_call res ->
-                let st_call = pop_loc st_call in
-                kont { st_call with env=st.env;} res)
-              res
-          else
-            let () = W.warn "Skipping check %s" (Misc.as_some name) in
-            kont st res
-*)
       | Test (tst,ty) when not O.bell  ->
           exec_test st tst ty kont res
       | Let (_loc,bds) ->
@@ -1608,18 +1589,19 @@ module Make
           kont st res
       | Rec (loc,bds,testo) ->        
           let env =
-            try
-              Some
-                (env_rec
-                   (make_eval_test testo) (from_st st)
-                   loc (fun pp -> pp@show_to_vbpp st) bds)
-            with CheckFailed env ->
+            match
+              env_rec
+                (make_eval_test testo) (from_st st)
+                loc (fun pp -> pp@show_to_vbpp st) bds
+            with
+            | CheckOk env -> Some env
+            | CheckFailed env ->
               if O.debug then begin
                 let st = { st with env; } in
                 let st = doshow bds st in
                 pp_check_failure st (Misc.as_some testo)
               end ;
-              None in
+                None in
           begin match env with
           | None -> res
           | Some env ->
@@ -1665,7 +1647,8 @@ module Make
                 p.proc_env in
             if skip then (* call for boolean... *)
                 let tval = 
-                  run { (push_loc st (loc,tname)) with env=env1; } p.proc_body
+                  let benv = purge_env st.silent loc env1 in
+                  run { (push_loc st (loc,tname)) with env=benv; } p.proc_body
                     (fun _ _ -> true) false in
                 if tval then kont st res
                 else
@@ -1741,13 +1724,13 @@ module Make
                 vs res
           | Clo _ ->
               let kv =
-                V.pack 
-                  (fun v res ->
+                Kont
+                  ((fun v (res:res) ->
                     let env = add_val x (lazy v) env0 in
-                    kont (doshowone x {st with env;}) res)
-                  res in
-              begin match eval_app loc (from_st st) v (Kont kv) with
-              | Kont kv -> V.unpack kv
+                    kont (doshowone x {st with env;}) res),
+                  res) in
+              begin match eval_app loc (from_st st) v kv with
+              | Kont (_,res) -> res
               | v -> 
                   error
                     st.silent (get_loc e)
@@ -1791,8 +1774,8 @@ module Make
           kont st res (* Ignore cat constructs when executing bell *)
 
       and exec_test :
-        'a. st -> app_test -> test_type ->
-          (st -> 'a -> 'a) -> 'a -> 'a =
+        'a. 'a st -> app_test -> test_type ->
+          ('a st -> 'a -> 'a) -> 'a -> 'a =
         fun st (loc,_,t,e,name as tst) test_type kont res ->
         let skip = skip_this_check name in
         if O.debug &&  skip then
@@ -1837,8 +1820,8 @@ module Make
           kont st res
         end
 
-      and do_include : 'a . TxtLoc.t -> string -> st ->
-        (st -> 'a -> 'a) -> 'a -> 'a =
+      and do_include : 'a . TxtLoc.t -> string -> 'a st ->
+        ('a st -> 'a -> 'a) -> 'a -> 'a =
       fun loc fname st kont res ->
         (* Run sub-model file *)
         if O.debug then warn loc "include \"%s\"" fname ;
@@ -1859,7 +1842,7 @@ module Make
             kont { st with loc; } res)
           res
 
-      and run : 'a. st -> ins list -> (st -> 'a -> 'a) -> 'a -> 'a =
+      and run : 'a. 'a st -> ins list -> ('a st -> 'a -> 'a) -> 'a -> 'a =
       fun st c kont res -> match c with
       | [] ->  kont st res
       | i::c ->
@@ -1869,7 +1852,7 @@ module Make
 
       fun ks m vb_pp kont res ->
 (* Primitives *)
-        let m = add_primitives m in
+        let m = add_primitives (env_from_ienv m) in
 (* Initial show's *)
         let show =
           if O.showsome then
@@ -1888,6 +1871,9 @@ module Make
            silent=false; flags=Flag.Set.empty;
            ks; bell_info=BellCheck.empty_info;
            loc={stack =[]; txt=prog_txt;}} in        
+
+        let kont st res =  kont (st2out st) res in          
+
         let just_run st res = run st prog kont res in
         do_include TxtLoc.none "stdlib.cat" st
           (match O.bell_fname with
