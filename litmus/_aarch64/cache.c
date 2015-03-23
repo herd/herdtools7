@@ -1,0 +1,10 @@
+/* Cache flush for aarch64 ?? */
+inline static void cache_flush(void *p) { }
+
+inline static void cache_touch(void *p) {
+  asm __volatile__ ("prfm pldl2keep,[%[p]]" :: [p] "r" (p) : "memory");
+}
+
+inline static void cache_touch_store(void *p) {
+  asm __volatile__ ("prfm pstl2keep,[%[p]]" :: [p] "r" (p) : "memory");
+}
