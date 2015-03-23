@@ -69,20 +69,20 @@ instr_option :
 | instr      { Instruction $1}
 
 instr:
-| READ LPAR annot_list RPAR reg COMMA LBRAC addr_op RBRAC
-  { Pld($5, $8, $3) }
+| READ LBRAC annot_list RBRAC reg addr_op 
+  { Pld($5, $6, $3) }
 
- | WRITE LPAR annot_list RPAR LBRAC addr_op RBRAC COMMA roi 
- { Pst($6, $9, $3) }
+ | WRITE LBRAC annot_list RBRAC addr_op roi 
+ { Pst($5, $6, $3) }
 
-| RMW DOT rmw2_op LPAR annot_list RPAR reg COMMA LBRAC roa RBRAC COMMA roi
-  { Prmw2_op($7,$10,$13,$3,$5)}
+| RMW DOT rmw2_op LBRAC annot_list RBRAC reg roa roi
+  { Prmw2_op($7,$8,$9,$3,$5)}
 
-| RMW DOT rmw3_op LPAR annot_list RPAR reg COMMA LBRAC roa RBRAC COMMA roi COMMA roi
-  { Prmw3_op($7,$10,$13,$15,$3,$5)}
+| RMW DOT rmw3_op LBRAC annot_list RBRAC reg roa roi roi
+  { Prmw3_op($7,$8,$9,$10,$3,$5)}
 
 
-| FENCE LPAR annot_list RPAR
+| FENCE LBRAC annot_list RBRAC
  { Pfence(Fence($3)) }
 
 | MOV reg COMMA iar

@@ -177,12 +177,12 @@ include Pseudo.Make
      end)
 
 let dump_instruction i = match i with
-  | Pld(r, addr_op, s) -> sprintf "r(%s) %s, [%s]" 
+  | Pld(r, addr_op, s) -> sprintf "r[%s] %s %s"
                      (string_of_annot_list s)
                      (pp_reg r)
                      (pp_addr_op addr_op)
 
-  | Pst(addr_op,roi,s) -> sprintf "w(%s) [%s] %s" 
+  | Pst(addr_op,roi,s) -> sprintf "w[%s] %s %s" 
                      (string_of_annot_list s)
                      (pp_addr_op addr_op)
                      (string_of_reg_or_imm roi)
@@ -213,7 +213,7 @@ let dump_instruction i = match i with
                      (lbl)
 
   | Prmw2_op(r,roa,roi,op,s) ->
-                         sprintf "rmw.%s(%s) %s, [%s], %s"
+                         sprintf "rmw.%s[%s] %s %s %s"
 			   (pp_rmw2_op op)
 			   (string_of_annot_list s)
 			   (pp_reg r)
@@ -221,7 +221,7 @@ let dump_instruction i = match i with
 			   (string_of_reg_or_imm roi)
 
   | Prmw3_op(r,roa,roi1,roi2,op,s) ->
-                         sprintf "rmw.%s(%s) %s, [%s], %s, %s"
+                         sprintf "rmw.%s[%s] %s %s %s %s"
 			   (pp_rmw3_op op)
 			   (string_of_annot_list s)
 			   (pp_reg r)
