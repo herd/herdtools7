@@ -852,7 +852,7 @@ let one_init = match PC.graph with
           and y = yevent e in        
           sprintf "pos=\"%f,%f!\""
             (x -. xscale *. 0.4)
-            (y +. yscale *. 0.3333) in
+            (y +. yscale *. 0.15) in
 
     let pp_final_rf_position = match  PC.graph with
     | Graph.Cluster|Graph.Free -> fun _e -> ""
@@ -1209,6 +1209,7 @@ let one_init = match PC.graph with
       fun _ -> true
     else 
       fun e -> not (E.is_mem_store_init e)
+
   let select_event = match PC.showevents with
   | AllEvents -> (fun _ -> true)
   | MemEvents -> E.is_mem
@@ -1242,9 +1243,22 @@ let one_init = match PC.graph with
   let select_rfmap rfm =
     S.RFMap.fold
       (fun wt rf k ->  match wt,rf with
-      | (_,S.Store e)
-      | (S.Load e,_) when select_event e -> S.RFMap.add wt rf k
-      | _,_ -> k)
+      | (S.Load e1,S.Store e2) ->
+          begin match select_event e1, select_event e2 with
+          | true,true -> S.RFMap.add wt rf k
+          | true,false ->
+              if E.is_mem_store_init e2 then
+                S.RFMap.add wt S.Init k
+              else k
+          | _,_ -> k
+          end
+      | (S.Final _,S.Store e)
+      | (S.Load e,S.Init)
+          ->
+            if select_event e then
+              S.RFMap.add wt rf k
+            else k
+      | S.Final _,S.Init -> k)
       rfm S.RFMap.empty
 
   let pp_dot_event_structure chan
