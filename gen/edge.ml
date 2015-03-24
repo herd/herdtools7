@@ -44,7 +44,6 @@ module type S = sig
   
   val fold_atomo : (atom option -> 'a -> 'a) -> 'a -> 'a
   val fold_edges : (edge -> 'a -> 'a) -> 'a -> 'a
-  val sig_of : (char -> unit) -> edge -> unit
   val iter_edges : (edge -> unit) -> unit
 
 
@@ -99,9 +98,9 @@ module type S = sig
   val is_store : edge -> bool
   val is_ext : edge -> bool
 
-(* Set *)
+(* Set/Map *)
   module Set : MySet.S with type elt = edge
-
+  module Map : MyMap.S with type key = edge
 
 end
 
@@ -329,39 +328,9 @@ let fold_tedges f r =
   let dir_tgt e = do_dir_tgt e.edge
   and dir_src e = do_dir_src e.edge
 
-(******************)
-(* New signatures *)
-(******************)
-
-  module Map =
-    MyMap.Make
-      (struct
-        type t = edge
-        let compare = compare
-      end)
-
-  let dir_is_set e = match dir_src e,dir_tgt e with
-  | (Irr,_)|(_,Irr) -> false
-  | _ -> true
-
-  let nedges,sig_map =
-    fold_edges
-      (fun e (c,m as st) ->
-        if dir_is_set e then c+1,Map.add e c m else st)
-      (0,Map.empty)
-
-  let () =
-    if nedges > 0xffff then
-      Warn.warn_always
-        "Signatures for are more than 2 bytes, expect duplicates"
-
-  let sig_of out e =
-    let s =
-      try Map.find e sig_map with Not_found -> assert false in
-    let c1 = s land 0xff in
-    let c2 = (s lsr 8) land 0xff in
-    out (Char.chr c1) ;
-    out (Char.chr c2)
+(**********)
+(* Lexing *)
+(**********)
 
   let iter_edges f = fold_edges (fun e () -> f e) ()
 
@@ -674,5 +643,11 @@ and set_src d e = { e with edge = do_set_src d e.edge ; }
         let compare = compare
       end)
 
+  module Map =
+    MyMap.Make
+      (struct
+        type t = edge
+        let compare = compare
+      end)
 
 end

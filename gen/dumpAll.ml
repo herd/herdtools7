@@ -110,23 +110,47 @@ module Make(Config:Config) (T:Builder.S)
  *)
 
 (* Signatures as strings, for the sake of compacity *)
+      module W = Warn.Make(Config)
+
+      type sigs =
+          { sig_next : int ; sig_map : int T.E.Map.t ; sig_set : StringSet.t}
+
+      let get_sig sigs e =
+        try T.E.Map.find e sigs.sig_map,sigs
+        with Not_found ->
+          let i = sigs.sig_next in
+          W.warn "New sig: %s -> %i" (T.E.pp_edge e) i ;
+          if i >  0xffff then
+            Warn.warn_always
+              "Signatures for are more than 2 bytes, expect duplicates" ;
+          i,
+          { sigs with
+            sig_next=i+1; sig_map = T.E.Map.add e i sigs.sig_map; } 
+
+      let sig_of sigs out e =
+        let i,sigs = get_sig sigs e in
+        let c1 = i land 0xff in
+        let c2 = (i lsr 8) land 0xff in
+        out (Char.chr c1) ;
+        out (Char.chr c2) ;
+        sigs
 
       let sig_of_shift =
         let buff = Buffer.create 16 in
         let add c = Buffer.add_char buff c in
 
-        fun  t k ->
+        fun sigs t k ->
           let sz = Array.length t in
           assert(sz > 0) ;
           let incr i = if i+1 >= sz then 0 else i+1 in
-          let rec do_rec i =
-            T.E.sig_of add t.(i) ;
+          let rec do_rec sigs i =
+            let sigs = sig_of sigs add t.(i) in
             let j = incr i in
-            if j=k then () else do_rec j in
-          do_rec k ;
+            if j=k then sigs else do_rec sigs j in
+          let sigs = do_rec sigs k in
           let r = Buffer.contents buff in
           Buffer.clear buff ;
-          r
+          r,sigs
 
       let cycle_of_shift t k =
         let sz = Array.length t in
@@ -148,7 +172,7 @@ module Make(Config:Config) (T:Builder.S)
         let rec c_rec k i1 i2 =
           if k <= 0 then 0
           else
-            let c = Pervasives.compare t.(i1) t.(i2) in
+            let c = T.E.compare t.(i1) t.(i2) in
             if c=0 then c_rec (k-1) (incr i1) (incr i2)
             else c in
 
@@ -159,32 +183,29 @@ module Make(Config:Config) (T:Builder.S)
 
         find_rec 0 1
 
-      let comp_sig es = match es with
-      | [] -> "",es
+      let comp_sig sigs es = match es with
+      | [] -> "",es,sigs
       | _::_ ->
           let t = Array.of_list es in
           let k = find_min_shift t in
-          sig_of_shift t k, cycle_of_shift t k
+          let s,sigs = sig_of_shift sigs t k in
+          s, cycle_of_shift t k,sigs
 
-      module SigSet = MySet.Make(String)
-
-      let have_seen es sigs =
-        let xxx,es= comp_sig es in
-        if SigSet.mem xxx sigs then
+      let have_seen sigs es =
+        let xxx,es,sigs = comp_sig sigs es in
+        if StringSet.mem xxx sigs.sig_set then
           true,es,sigs
         else
-          false,es,SigSet.add xxx sigs
+          false,es,{ sigs with sig_set = StringSet.add xxx sigs.sig_set; }
 
 (******************)
 (* Internal state *)
 (******************)
 
-      module StringSet = MySet.Make(String)
-
       type t =
           {
            ntests : int ;        (* number of tests outputed so far *)
-           sigs : SigSet.t ;     (* Signatures of compiled tests *)
+           sigs : sigs ;     (* Signatures of compiled tests *)
            env : int Env.t ;     (* State for getting numeric names *)
            dup : int Env.t ;     (* State for getting fresh names *)
            relaxed : T.R.SetSet.t ;
@@ -201,13 +222,16 @@ module Make(Config:Config) (T:Builder.S)
       type generator =
           ((edge list -> mk_info -> mk_name -> t -> t) -> t -> t)
 
+      let empty_sig =
+        { sig_next = 0 ; sig_map = T.E.Map.empty ; sig_set = StringSet.empty }
+
       let sigs_init cys =
         let cys = List.map T.E.parse_edges cys in
         List.fold_left
           (fun k es ->
-            let xxx,_ = comp_sig es in
-            SigSet.add xxx k)
-          SigSet.empty cys
+            let xxx,_,k = comp_sig k es in
+            { k with sig_set = StringSet.add xxx k.sig_set;} )
+          empty_sig cys
 
       let empty_t =
         { ntests = 0 ;
@@ -267,7 +291,7 @@ module Make(Config:Config) (T:Builder.S)
         if Config.canonical_only then    
           fun all_chan check es mk_info mk_name r  ->
             let es,c = T.C.resolve_edges es in
-            let seen,nes,sigs = have_seen es r.sigs in
+            let seen,nes,sigs = have_seen r.sigs es in
             if seen then Warn.fatal "Duplicate" ;
             T.C.finish c ;
             dump_test all_chan check { orig = es ; norm = nes }
