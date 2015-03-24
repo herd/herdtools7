@@ -10,12 +10,12 @@
 
 open Code
 
-module Make(V:Constant.S)(C:CompileCommon.Config) : XXXCompile.S =
+module Make(C:CompileCommon.Config) : XXXCompile.S =
 
 struct
   let do_sta = !Config.sta
 
-  module X86 = X86Arch.Make(V)
+  module X86 = X86Arch
   include CompileCommon.Make(C)(X86)
 
 (******)

@@ -144,7 +144,6 @@ let cpp = match !Config.arch with
 | _ -> false
 
 let () =
-  let module V = SymbConstant in
   let module Co = struct
 (* Dump all *)
     let verbose = !Config.verbose
@@ -195,23 +194,23 @@ let () =
   (match !Config.arch with
   | X86 ->
       let module T = Top.Make(Co) in
-      let module M = Build(T(X86Compile.Make(V)(C))) in
+      let module M = Build(T(X86Compile.Make(C))) in
       M.zyva
   | PPC ->
       let module T = Top.Make(Co) in
-      let module M = Build(T(PPCCompile.Make(V)(C)(PPCArch.Config))) in
+      let module M = Build(T(PPCCompile.Make(C)(PPCArch.Config))) in
       M.zyva
   | ARM ->
       let module T = Top.Make(Co) in
-      let module M = Build(T(ARMCompile.Make(V)(C))) in
+      let module M = Build(T(ARMCompile.Make(C))) in
       M.zyva
   | AArch64 ->
       let module T = Top.Make(Co) in
-      let module M = Build(T(AArch64Compile.Make(V)(C))) in
+      let module M = Build(T(AArch64Compile.Make(C))) in
       M.zyva
   | MIPS ->
       let module T = Top.Make(Co) in
-      let module M = Build(T(MIPSCompile.Make(V)(C))) in
+      let module M = Build(T(MIPSCompile.Make(C))) in
       M.zyva
   | C|CPP as a ->
       let module CoC = struct

@@ -11,10 +11,10 @@
 open Printf
 open Code
 
-module Make(V:Constant.S)(O:CompileCommon.Config)(C:PPCArch.Config) : XXXCompile.S =
+module Make(O:CompileCommon.Config)(C:PPCArch.Config) : XXXCompile.S =
   struct
 
-    module PPC = PPCArch.Make(V)(C) 
+    module PPC = PPCArch.Make(C) 
     include CompileCommon.Make(O)(PPC)
 
     let do_sta = O.sta

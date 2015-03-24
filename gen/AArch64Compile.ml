@@ -10,11 +10,11 @@
 
 open Code
 
-module Make(V:Constant.S)(Cfg:CompileCommon.Config) : XXXCompile.S =
+module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
   struct
 
 (* Common *)
-    module A64 = AArch64Arch.Make(V)
+    module A64 = AArch64Arch
     include CompileCommon.Make(Cfg)(A64)
 
     let ppo _f k = k

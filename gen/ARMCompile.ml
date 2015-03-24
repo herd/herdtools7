@@ -11,10 +11,10 @@
 open Printf
 open Code
 
-module Make(V:Constant.S)(Cfg:CompileCommon.Config) : XXXCompile.S =
+module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
   struct
 
-    module ARM = ARMArch.Make(V)
+    module ARM = ARMArch
 
     include CompileCommon.Make(Cfg)(ARM)
 

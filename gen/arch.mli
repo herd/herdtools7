@@ -12,6 +12,5 @@ module type S =
   sig
     include ArchBase.S
     include Fence.S
-    module V : Constant.S
     include ArchExtra.S with type arch_reg = reg
   end

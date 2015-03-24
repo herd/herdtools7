@@ -10,7 +10,7 @@
 
 
 module PPC = struct
-  module P = PPCArch.Make(SymbConstant)(PPCArch.Config)
+  module P = PPCArch.Make(PPCArch.Config)
   module A = AutoArch.Make(P)
   let testing =
     "Pod**, DpAddrdR,DpAddrdW, DpDatadW,\
@@ -30,7 +30,7 @@ module PPC = struct
 end
 
 module X86 = struct
-  module X = X86Arch.Make(SymbConstant)
+  module X = X86Arch
   module A = AutoArch.Make(X)
   let testing = "Rfe,Pod**,MFenced**,[Rfi,MFencedR*],[Rfi,PodR*]"
   let safe = "Fre,Wse"
@@ -38,7 +38,7 @@ module X86 = struct
 end
 
 module MIPS = struct
-  module X = MIPSArch.Make(SymbConstant)
+  module X = MIPSArch
   module A = AutoArch.Make(X)
   let testing = "Rfe,Pod**,Syncd**,[Rfi,SyncdR*],[Rfi,PodR*]"
   let safe = "Fre,Wse"
@@ -46,7 +46,7 @@ module MIPS = struct
 end
 
 module ARM = struct
-  module P = ARMArch.Make(SymbConstant)
+  module P = ARMArch
   module A = AutoArch.Make(P)
   let testing =
     "Pod**, DpAddrdR,DpAddrdW, DpDatadW,\

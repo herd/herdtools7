@@ -89,7 +89,6 @@ let cpp = match !Config.arch with
 | _ -> false
 
 let () =
-  let module V = SymbConstant in
   let module Co = struct
 (* Dump all *)
     let verbose = !Config.verbose

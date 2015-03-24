@@ -106,22 +106,21 @@ let () =
 let pp_es = List.rev !pp_es
 
 let () =
-  let module V = SymbConstant in
   (match !arch with
   | X86 ->
-      let module M = Make(X86Arch.Make(V)) in
+      let module M = Make(X86Arch) in
       M.zyva
   | PPC ->
-      let module M = Make(PPCArch.Make(V)(PPCArch.Config)) in
+      let module M = Make(PPCArch.Make(PPCArch.Config)) in
       M.zyva
   | ARM ->
-      let module M = Make(ARMArch.Make(V)) in
+      let module M = Make(ARMArch) in
       M.zyva
   | AArch64 ->
-      let module M = Make(AArch64Arch.Make(V)) in
+      let module M = Make(AArch64Arch) in
       M.zyva
   | MIPS ->
-      let module M = Make(MIPSArch.Make(V)) in
+      let module M = Make(MIPSArch) in
       M.zyva
   | C ->
       let module M = Make(CArch) in

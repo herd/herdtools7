@@ -130,7 +130,6 @@ let () =
     (fun _ -> raise (Arg.Bad  "No argument"))
 
 let () =
-  let module V = SymbConstant in
   let module Co = struct
     let diyone = !diyone
     let uniq = !uniq
@@ -140,19 +139,19 @@ let () =
   let module Build = Make(Co) in
   (match !arch with
   | X86 ->
-      let module M = Build(X86Arch.Make(V)) in
+      let module M = Build(X86Arch) in
       M.zyva
   | PPC ->
-      let module M = Build(PPCArch.Make(V)(PPCArch.Config)) in
+      let module M = Build(PPCArch.Make(PPCArch.Config)) in
       M.zyva
   | ARM ->
-      let module M = Build(ARMArch.Make(V)) in
+      let module M = Build(ARMArch) in
       M.zyva
   | AArch64 ->
-      let module M = Build(AArch64Arch.Make(V)) in
+      let module M = Build(AArch64Arch) in
       M.zyva
   | MIPS ->
-      let module M = Build(MIPSArch.Make(V)) in
+      let module M = Build(MIPSArch) in
       M.zyva
   | C|CPP ->
       let module M = Build(CArch) in
