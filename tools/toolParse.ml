@@ -102,6 +102,18 @@ end = struct
         end in
         let module X = Make (MIPS) (MIPSLexParse) in
         X.zyva chan splitted
+    | Bell ->
+        let module Bell = BellBase in
+        let module BellLexParse = struct
+	  type instruction = Bell.pseudo
+	  type token = BellParser.token
+
+          module L = BellLexer.Make(LexConf)
+	  let lexer = L.token
+	  let parser = BellParser.main
+        end in
+        let module X = Make (Bell) (BellLexParse) in
+        X.zyva chan splitted
     | C -> Warn.fatal "No C arch in toolParse.ml"
 
   module SP = Splitter.Make(LexConf)
@@ -221,6 +233,18 @@ module Tops
 	      let parser = MiscParser.mach2generic MIPSParser.main
             end in
             let module X = Make (MIPS) (MIPSLexParse) in
+            X.zyva
+        | Bell ->
+            let module Bell = BellBase in
+            let module BellLexParse = struct
+	      type instruction = Bell.pseudo
+	      type token = BellParser.token
+
+              module L = BellLexer.Make(LexConf)
+	      let lexer = L.token
+	      let parser = BellParser.main
+            end in
+            let module X = Make (Bell) (BellLexParse) in
             X.zyva
         | C -> Warn.fatal "No C arch in toolParse.ml"
 

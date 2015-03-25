@@ -17,6 +17,7 @@ type t =
   | ARM
   | MIPS
   | AArch64
+  | Bell
   | C
 
 val tags : string list
@@ -30,5 +31,4 @@ val ppc : t
 val x86 : t
 val mips : t
 val aarch64 : t
-
-
+val bell : t

@@ -68,12 +68,27 @@ instr_option :
 | NAME COLON instr_option { Label ($1,$3) }
 | instr      { Instruction $1}
 
-instr:
-| READ LBRAC annot_list RBRAC reg addr_op 
-  { Pld($5, $6, $3) }
+/* backward compatibility: some files have '(' ... ')' for annotations */
+old_annot_list:
+| LBRAC annot_list RBRAC { $2 }
+| LPAR annot_list RPAR { $2 }
 
- | WRITE LBRAC annot_list RBRAC addr_op roi 
- { Pst($5, $6, $3) }
+/* similarily for R and W arguments there can be some [ ] */
+old_addr_op:
+| addr_op  { $1 }
+| LBRAC addr_op RBRAC { $2 }
+
+/* some optional commas... */
+old_comma_opt:
+| { () }
+| COMMA { () }
+
+instr:
+| READ old_annot_list reg old_comma_opt old_addr_op 
+  { Pld($3, $5, $2) }
+
+ | WRITE old_annot_list old_addr_op old_comma_opt roi 
+ { Pst($3, $5, $2) }
 
 | RMW DOT rmw2_op LBRAC annot_list RBRAC reg roa roi
   { Prmw2_op($7,$8,$9,$3,$5)}
@@ -82,8 +97,8 @@ instr:
   { Prmw3_op($7,$8,$9,$10,$3,$5)}
 
 
-| FENCE LBRAC annot_list RBRAC
- { Pfence(Fence($3)) }
+| FENCE old_annot_list
+ { Pfence(Fence($2)) }
 
 | MOV reg COMMA iar
  { Pmov($2,$4) }
