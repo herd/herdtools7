@@ -29,6 +29,8 @@ type test = {
   scopes : scopes option;
 }
 
+val pp : out_channel -> test -> unit
+
 (**************)
 (* For models *)
 (**************)

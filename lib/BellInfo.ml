@@ -50,7 +50,19 @@ type test = {
   scopes : scopes option;
 }
 
-(*
+let pp chan t =
+  begin match t.scopes with
+  | None -> ()
+  | Some sc ->
+      fprintf chan "scopes: %s\n" (pp_scopes sc)
+  end ;
+  begin match t.regions with
+  | None -> ()
+  | Some m -> 
+      fprintf chan "regions: %s\n" (pp_mem_map m) ;
+  end
+
+(* 
 (**************)
 (* Model info *)
 (**************)

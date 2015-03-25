@@ -175,8 +175,12 @@ memory_map:
  | memory_map_atom {[$1]}
  | {[]}
 
+proc:
+ | PROC { $1 }
+ | NUM { $1 }
+
 proc_list_sc:
-| PROC proc_list_sc {$1::$2}
+| proc proc_list_sc {$1::$2}
 | {[]}
 
 scope_tree_list:

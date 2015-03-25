@@ -84,6 +84,13 @@ end = struct
     fprintf chan "\n" ;
     let locs = DumpUtils.dump_locations I.dump_location t.locations in
     if locs <> "" then fprintf chan "%s\n" locs ;
+    begin match t.bell_info with
+    | None -> ()
+    | Some bi ->
+        fprintf chan "\n" ;
+        BellInfo.pp chan bi ;
+        fprintf chan "\n"
+    end ;
     fprintf chan "%s\n" (I.dump_constr t.condition) ;
     ()
 
