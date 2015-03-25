@@ -72,6 +72,7 @@ val rev_filter : ('a -> bool) -> 'a list -> 'a list
 val map3 :
     ('a -> 'b -> 'c -> 'd) ->
       'a list -> 'b list -> 'c list -> 'd list
+val list_compare : ('a -> 'a -> int) -> 'a list -> 'a list -> int
 
 (* strict version of List.for_all *)
 val for_all_strict : ('a -> bool) -> 'a list -> bool

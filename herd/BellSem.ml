@@ -61,9 +61,7 @@ module Make (C:Sem.Config)(V:Value.S)
       M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v, true, s)) ii
 
 
-(*    let write_mem_atom cop a v ii = 
-      M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v, true, cop)) ii *)
-
+    let commit ii =  M.mk_singleton_es (Act.Commit) ii
 
     let create_barrier b ii = 
       M.mk_singleton_es (Act.Barrier b) ii
@@ -106,6 +104,14 @@ module Make (C:Sem.Config)(V:Value.S)
 	  read_roi roi ii) >>= 
 	(fun (v1,v2) -> M.op Op.Add v1 v2)
 
+    let tr_cond = function
+      | BellBase.Ne -> Op.Ne
+      | BellBase.Eq -> Op.Eq
+
+    let tr_op = function
+      | BellBase.Add -> Op.Add
+      | BellBase.And -> Op.And
+      | BellBase.Xor -> Op.Xor
 
     let build_semantics ii = 
       let build_semantics_inner ii =
@@ -154,32 +160,18 @@ module Make (C:Sem.Config)(V:Value.S)
 	   (read_iar roi ii) >>=
 	     (fun v -> write_reg r v ii) >>! B.Next
 					       
-	| BellBase.Padd(r, roi1, roi2) ->
+	| BellBase.Pop(op,r, roi1, roi2) ->
 	   (read_iar roi1 ii) >>|
 	     (read_iar roi2 ii) >>=
-	     (fun (v1,v2) -> M.op Op.Add v1 v2) >>=
+	     (fun (v1,v2) -> M.op (tr_op op) v1 v2) >>=
 	     (fun v -> write_reg r v ii) >>!
 	     B.Next
 
-	| BellBase.Pand(r, roi1, roi2) ->
-	   (read_iar roi1 ii) >>|
-	     (read_iar roi2 ii) >>=
-	     (fun (v1,v2) -> M.op Op.And v1 v2) >>=
-	     (fun v -> write_reg r v ii) >>!
-	     B.Next
-
-	| BellBase.Pxor(r, roi1, roi2) ->
-	   (read_iar roi1 ii) >>|
-	     (read_iar roi2 ii) >>=
-	     (fun (v1,v2) -> M.op Op.Xor v1 v2) >>=
-	     (fun v -> write_reg r v ii) >>!
-	     B.Next
-
-	| BellBase.Pbeq(roi1,roi2,lbl) ->
-	  (read_roi roi1 ii) >>|
+	| BellBase.Pbcc(cond,r1,roi2,lbl) ->
+	  (read_reg r1 ii) >>|
 	      (read_roi roi2 ii) >>=
-		(fun (v1,v2) -> M.op Op.Eq v1 v2 >>=
-		  (fun v -> B.bccT v lbl))		  
+		(fun (v1,v2) -> M.op (tr_cond cond) v1 v2 >>=
+		  (fun v -> commit ii >>= fun () -> B.bccT v lbl))
 	    
 	| BellBase.Pfence(BellBase.Fence s) ->
       	  create_barrier s ii >>! B.Next	  

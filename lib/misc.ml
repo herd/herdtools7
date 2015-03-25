@@ -162,6 +162,16 @@ let rec map3 f xs ys zs = match xs,ys,zs with
     f x y z::map3 f xs ys zs
 | _,_,_ -> assert false
 
+let rec list_compare cmp xs ys = match xs,ys with
+| [],[] -> 0
+| [],_::_ -> -1
+| _::_,[] -> 1
+| x::xs,y::ys ->
+    begin match cmp x y with
+    | 0 -> list_compare cmp xs ys
+    | r -> r
+    end
+
 let rem_dups is_same =
   let rec rem_rec prev = function
     | [] -> []

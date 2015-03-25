@@ -230,6 +230,9 @@ let () =
     | MIPS ->
         let module M = Make(C)(T(MIPSCompile.Make(C))) in
         M.zyva
+    | Bell ->
+        let module M = Make(C)(T(BellCompile.Make(C))) in
+        M.zyva
     | C|CPP ->
         let module CoC = struct
           include C

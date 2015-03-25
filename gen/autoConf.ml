@@ -82,7 +82,8 @@ let get_arch a =
   | PPC -> (module PPC : ArchConf)
   | ARM -> (module ARM : ArchConf)
   | MIPS -> (module MIPS : ArchConf)
-  | AArch64|C|CPP -> Warn.fatal "architecture %s not implemented" (Archs.pp a)
+  | Bell|AArch64|C|CPP ->
+      Warn.fatal "architecture %s not implemented" (Archs.pp a)
 
 open AutoOpt 
 

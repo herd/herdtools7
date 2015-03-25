@@ -225,6 +225,9 @@ let () =
   | MIPS ->
       let module M = Make(T(MIPSCompile.Make(C)))(Co) in
       M.go
+  | Bell ->
+      let module M = Make(T(BellCompile.Make(C)))(Co) in
+      M.go
   | C|CPP ->
       let module CoC = struct
         include Co

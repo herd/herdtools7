@@ -122,6 +122,9 @@ let () =
   | MIPS ->
       let module M = Make(MIPSArch) in
       M.zyva
+  | Bell ->
+      let module M = Make(BellArch) in
+      M.zyva
   | C ->
       let module M = Make(CArch) in
       M.zyva

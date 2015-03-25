@@ -78,5 +78,8 @@ let () =
   | MIPS ->
       let module M = Build(MIPSArch) in
       M.zyva
+  | Bell ->
+      let module M = Build(BellArch) in
+      M.zyva
   | C|CPP -> assert false)
     stdin

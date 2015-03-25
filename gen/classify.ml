@@ -153,6 +153,9 @@ let () =
   | MIPS ->
       let module M = Build(MIPSArch) in
       M.zyva
+  | Bell ->
+      let module M = Build(BellArch) in
+      M.zyva
   | C|CPP ->
       let module M = Build(CArch) in
       M.zyva)
