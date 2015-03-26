@@ -72,5 +72,5 @@ module Make :
           val get_id_and_list : A.instruction -> string * string list
         end) ->
   sig
-    val check : A.pseudo MiscParser.t -> unit
+    val check : A.pseudo MiscParser.t -> A.pseudo MiscParser.t
   end

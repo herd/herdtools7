@@ -159,7 +159,7 @@ scopes_and_memory_map:
 { { BellInfo.scopes=$1; BellInfo.regions=$2; }}
 
 scope_option:
-| SCOPES COLON scope_tree {Some $3}
+| SCOPES COLON top_scope_tree {Some $3}
 | {None}
 
 memory_map_option:
@@ -196,3 +196,10 @@ scope_tree:
    {
    BellInfo.Leaf($2,$3)
    }
+
+top_scope_tree:
+ | scope_tree_list
+    { let ts = $1 in
+      match ts with
+      | [t] -> t
+      | _ -> BellInfo.Children ("",ts) }

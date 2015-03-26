@@ -37,6 +37,13 @@ module type S =  sig
   val reachable : elt0 -> t -> Elts.t
   val reachable_from_set : Elts.t -> t -> Elts.t
 
+(* One path from one node to another, returns [] if none *)
+  val path : elt0 -> elt0 -> t -> elt0 list
+(* All leaves reachable from node *)
+  val leaves : elt0 -> t -> Elts.t
+(* All roots, ie all nodes with no predecessor *)
+  val roots : t -> Elts.t
+
 (* Idem backwards *)
   val up :  elt0 -> t -> Elts.t
   val up_from_set : Elts.t -> t -> Elts.t
@@ -155,6 +162,42 @@ struct
     Elts.fold dfs start Elts.empty
 
   let reachable e r = reachable_from_set (Elts.singleton e) r
+
+  exception Path of elt0 list
+
+  let path e1 e2 t =
+    let rec dfs e seen =
+      if Elts.mem e seen then seen
+      else
+        Elts.fold
+          (fun e seen ->
+            if O.compare e e2 = 0 then raise (Path [e]) ;
+            try dfs e seen
+            with Path p -> raise (Path (e::p)))
+          (succs t e)
+          (Elts.add e seen) in
+    try
+      ignore (dfs e1 Elts.empty) ;
+      []
+    with Path es -> e1::es
+
+  let leaves e t =
+    let rec dfs e (leaves,seen as r) =
+      if Elts.mem e seen then r
+      else
+        let es = succs t e in
+        if Elts.is_empty es then
+          Elts.add e leaves, Elts.add e seen
+        else Elts.fold dfs es (leaves,Elts.add e seen) in
+    let leaves,_ = dfs e (Elts.empty,Elts.empty) in
+    leaves
+
+  let roots t =
+    let all_nodes = nodes t in
+    let non_roots =
+      Elts.of_list (fold (fun (_,e) k -> e::k) t []) in
+    Elts.diff all_nodes non_roots
+
 
 (* Back (and up) *)
  let up_from_set start r =

@@ -38,6 +38,13 @@ module type S =  sig
   val reachable : elt0 -> t -> Elts.t
   val reachable_from_set : Elts.t -> t -> Elts.t
 
+(* One path from one node to another, returns [] if none *)
+  val path : elt0 -> elt0 -> t -> elt0 list
+(* All leaves reachable from node *)
+  val leaves : elt0 -> t -> Elts.t
+(* All roots, ie all nodes with no predecessor *)
+  val roots : t -> Elts.t
+
 (* Idem backwards *)
   val up :  elt0 -> t -> Elts.t
   val up_from_set : Elts.t -> t -> Elts.t

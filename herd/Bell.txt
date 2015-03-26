@@ -39,4 +39,32 @@ A summary of bell constructs:
   that they define the same hierachy.
 
 
+* Scope tree, abrreviated.
 
+  Scope trees can be given in simplified form. In such a form, nodes with one
+  child can be left implicit. For instance:
+
+(wg 0 1 2 3)
+==>
+(system (agent (wg (wave (wi 0)) (wave (wi 1)) (wave (wi 2)) (wave (wi 3)))))
+
+where all nodes but wg are left implicit
+
+Or
+
+(system (wg 0 2) (wg 1 3))
+==>
+(system
+  (agent (wg (wave (wi 0)) (wave (wi 2))))
+  (agent (wg (wave (wi 1)) (wave (wi 3)))))
+
+the root scope can also be left implicit, even when it has
+several children. That is the above can be further abreviated as:
+(wg 0 2) (wg 1 3)
+
+Another try
+(wg 0 2) (agent 1 3)
+==>
+(system
+  (agent (wg (wave (wi 0)) (wave (wi 2))))
+  (agent (wg (wave (wi 2))) (wg (wave (wi 3)))))

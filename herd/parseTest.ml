@@ -34,7 +34,7 @@ end
 
 (* do not check *)
 module NoCheck = struct
-  let check _parser = ()
+  let check parsed= parsed
 end
 
 module Top (C:Config) = struct
@@ -44,7 +44,10 @@ module Top (C:Config) = struct
          type pseudo
          val parse : in_channel -> Splitter.result ->  pseudo MiscParser.t
        end with type pseudo = S.A.pseudo)
-      (Check:sig val check : S.A.pseudo MiscParser.t -> unit end) 
+      (Check:
+         sig
+           val check : S.A.pseudo MiscParser.t -> S.A.pseudo MiscParser.t
+         end) 
       (M:XXXMem.S with module S = S) =
     struct
       module T = Test.Make(S.A) 
@@ -54,7 +57,7 @@ module Top (C:Config) = struct
           let parsed = P.parse chan splitted in
 
 	  (* Additional checks *)
-          Check.check parsed ;
+          let parsed = Check.check parsed in
 
 
           let name = splitted.Splitter.name in
