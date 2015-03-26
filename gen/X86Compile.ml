@@ -55,6 +55,10 @@ struct
     I_CMP
       (Effaddr_rm32 (Rm32_reg r), Operand_immediate 1)
 
+  and emit_cmp_int_ins r i =
+    I_CMP
+      (Effaddr_rm32 (Rm32_reg r), Operand_immediate i)
+
   and emit_je_ins lab = I_JCC (C_EQ,lab)
 
   and emit_jne_ins lab = I_JCC (C_NE,lab)
@@ -156,6 +160,29 @@ struct
 
   let stronger_fence = MFence
 
-  let postlude st _p init cs = init,cs,st
+(* Check load *)
+  let check_load p r e =
+    let lab = Label.exit p in
+    fun k ->
+      Instruction (emit_cmp_int_ins r e.C.v)::
+      Instruction (emit_jne_ins lab)::
+      k
+(* Postlude *)
+
+  let does_jump lab cs =
+      List.exists
+        (fun i -> match i with
+        | Instruction (I_JMP lab0|I_JCC (_,lab0)) ->
+            (lab0:string) = lab
+        | _ -> false)
+        cs
+
+  let does_exit p cs =  does_jump (Label.exit p) cs
+
+  let postlude st p init cs =
+    if does_exit p cs then
+      init,cs@[Label (Label.exit p,Nop)],st
+    else init,cs,st
+
         
 end

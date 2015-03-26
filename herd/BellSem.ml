@@ -166,7 +166,8 @@ module Make (C:Sem.Config)(V:Value.S)
 	     (fun (v1,v2) -> M.op (tr_op op) v1 v2) >>=
 	     (fun v -> write_reg r v ii) >>!
 	     B.Next
-
+        | BellBase.Pbal lbl ->
+             M.unitT (B.Jump lbl)
 	| BellBase.Pbcc(cond,r1,roi2,lbl) ->
 	  (read_reg r1 ii) >>|
 	      (read_roi roi2 ii) >>=

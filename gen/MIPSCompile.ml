@@ -67,7 +67,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
               atom r1 r2 addr
                 (BC (NE,tmp2,r0,out)::do_rec (u-1)) in
         pseudo (do_rec u)@[Label (out,Nop)]
-        
+
 
 
 
@@ -335,7 +335,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
               let ro,init,cs,st = emit_sta_reg st p init e.loc r2 in
               ro,init,cs2@cs,st        
           | Some Reserve ->
-               Warn.fatal "No store with reservation"
+              Warn.fatal "No store with reservation"
           end
 
     let emit_access_ctrl st p init e r1 =
@@ -354,14 +354,14 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
       let ropt,init,cs,st = emit_exch st p init er ew in
       ropt,init, c@cs,st
 (*
-      match e.dir with
-      | R ->
-          let r,init,cs,st = emit_load st p init e.loc in
-          Some r,init,insert_isb isb c cs,st
-      | W ->
-          let init,cs,st = emit_store st p init e.loc e.v in
-          None,init,insert_isb isb c cs,st
-*)
+  match e.dir with
+  | R ->
+  let r,init,cs,st = emit_load st p init e.loc in
+  Some r,init,insert_isb isb c cs,st
+  | W ->
+  let init,cs,st = emit_store st p init e.loc e.v in
+  None,init,insert_isb isb c cs,st
+ *)
 
     let emit_access_dep st p init e dp r1 = match dp with
     | ADDR -> emit_access_dep_addr st p init e r1
@@ -383,8 +383,14 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
 
     let stronger_fence = Sync
 
-    let does_fail p cs =
-      let lab = Label.fail p in
+(* Check load *)
+    let check_load p r e =
+      let lab = Label.exit p in
+      fun k -> pseudo (branch_neq r e.v lab [])@k
+
+(* Postlude *)
+
+    let does_jump lab cs =
       List.exists
         (fun i -> match i with
         | Instruction (B lab0|BC (_,_,_,lab0)|BCZ (_,_,lab0)) ->
@@ -392,16 +398,21 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
         | _ -> false)
         cs
 
+    let does_fail p cs = does_jump (Label.fail p) cs
+    let does_exit p cs = does_jump (Label.exit p) cs
+
     let postlude st p init cs =
-    if does_fail p cs then
-      let init,okcs,st = emit_store st p init Code.ok 0 in
-      init,
-      cs@
-      Instruction (B (Label.exit p))::
-      Label (Label.fail p,Nop)::
-      okcs@
-      [Label (Label.exit p,Nop)],
-      st
-    else init,cs,st
+      if does_fail p cs then
+        let init,okcs,st = emit_store st p init Code.ok 0 in
+        init,
+        cs@
+        Instruction (B (Label.exit p))::
+        Label (Label.fail p,Nop)::
+        okcs@
+        [Label (Label.exit p,Nop)],
+        st
+      else if does_exit p cs then
+        init,cs@[Label (Label.exit p,Nop)],st
+      else init,cs,st
 
   end

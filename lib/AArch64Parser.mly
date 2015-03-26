@@ -27,7 +27,7 @@ open AArch64Base
 
 /* Instructions */
 %token B BEQ BNE CBZ CBNZ
-%token LDR STR LDAR LDXR LDAXR STLR STXR STLXR
+%token LDR STR LDAR LDXR LDAXR STLR STXR STLXR CMP
 %token MOV ADD EOR SUBS
 %token DMB DSB ISB
 %token SY ST LD
@@ -141,6 +141,10 @@ instr:
   { I_OP3 (V64,SUBS,$2,$4,$6) }
 | SUBS wreg COMMA wreg COMMA kwr
   { I_OP3 (V32,SUBS,$2,$4,$6) }
+| CMP wreg COMMA k
+  { I_OP3 (V32,SUBS,ZR,$2,K $4) }
+| CMP xreg COMMA k
+  { I_OP3 (V64,SUBS,ZR,$2,K $4) }
 /* Fences */
 | DMB fenceopt
   { let d,t = $2 in I_FENCE (DMB (d,t)) }

@@ -390,14 +390,24 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
 
     let stronger_fence = DMB SY
 
-    let does_fail p cs =
-      let lab = Label.fail p in
+    let check_load p r e =
+      let lab = Label.exit p in
+      (fun k ->
+        Instruction (I_CMPI (r,e.v))::
+        Instruction (I_BNE lab)::
+        k)
+(* Postlude *)
+
+    let does_jump lab cs =
       List.exists
         (fun i -> match i with
         | Instruction (I_B lab0|I_BNE lab0|I_BEQ lab0) ->
             (lab0:string) = lab
         | _ -> false)
         cs
+
+    let does_fail p cs = does_jump (Label.fail p) cs
+    let does_exit p cs = does_jump (Label.exit p) cs
 
     let postlude st p init cs =
       if does_fail p cs then
@@ -409,6 +419,8 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
         okcs@
         [Label (Label.exit p,Nop)],
         st
+      else if does_exit p cs then
+         init,cs@[Label (Label.exit p,Nop)],st
       else init,cs,st
 
   end

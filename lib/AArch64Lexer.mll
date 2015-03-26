@@ -39,6 +39,7 @@ let check_name name = match name with
 | "add"|"ADD" -> ADD
 | "eor"|"EOR" -> EOR
 | "subs"|"SUBS" -> ADD
+| "cmp"|"CMP" -> CMP
 (* Fences *)
 | "dmb"|"DMB" -> DMB
 | "dsb"|"DSB" -> DSB

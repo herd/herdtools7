@@ -152,6 +152,7 @@ type instruction =
 | Pst  of addr_op * reg_or_imm * string list
 | Pmov of reg * imm_or_addr_or_reg
 | Pop of op * reg * imm_or_addr_or_reg * imm_or_addr_or_reg
+| Pbal of lbl
 | Pbcc of cond * reg * reg_or_imm * lbl
 | Prmw2_op of reg * reg_or_addr * reg_or_imm * rmw2_op * string list
 | Prmw3_op of reg * reg_or_addr * reg_or_imm * reg_or_imm * rmw3_op * string list
@@ -199,6 +200,8 @@ let dump_instruction i = match i with
 	(pp_reg r)
 	(pp_iar roia1)
 	(pp_iar roia2)
+
+  | Pbal lbl -> sprintf "bal %s" lbl
 
   | Pbcc(cond,r1,roi2,lbl) ->
       sprintf "b%s %s, %s, %s"
@@ -257,6 +260,7 @@ let fold_regs (f_reg,_f_sreg) =
     | Pbcc(_,r1, roi2, _) -> fold_reg r1 (fold_roi roi2 c)
     | Prmw2_op(r,roa,roi,_,_) -> fold_reg r (fold_roa roa (fold_roi roi c))
     | Prmw3_op(r,roa,roi1,roi2,_,_) -> fold_reg r (fold_roa roa (fold_roi roi1 (fold_roi roi2 c)))
+    | Pbal _
     | Pfence _ -> c
     end 
   in fold_ins
@@ -286,7 +290,7 @@ let map_regs f_reg _f_symb =
     | Pbcc(cond,r1,roi2,lbl) -> Pbcc(cond,f_reg r1, map_roi roi2, lbl)
     | Prmw2_op(r,roa,roi,op,s) -> Prmw2_op(f_reg r, map_roa roa, map_roi roi, op, s)
     | Prmw3_op(r,roa,roi1,roi2,op,s) -> Prmw3_op(f_reg r, map_roa roa, map_roi roi1, map_roi roi2, op, s)
-    | Pfence _ -> ins
+    | Pbal _ | Pfence _ -> ins
   end in
   map_ins
 
@@ -310,6 +314,7 @@ let fold_addrs f =
        fold_roa c roa in
 
   fun c ins -> match ins with
+  | Pbal _
   | Pbcc _
   | Pfence _
       -> c

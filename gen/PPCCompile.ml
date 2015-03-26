@@ -464,8 +464,18 @@ module Make(O:CompileCommon.Config)(C:PPCArch.Config) : XXXCompile.S =
 
     let stronger_fence = PPC.Sync
 
-    let does_fail p cs =
-      let lab = Label.fail p in
+(* Check load *)
+
+    let check_load p r e =
+      let lab = Label.exit p in
+      fun k ->
+        PPC.Instruction (PPC.Pcmpwi (0,r,e.v))::
+        PPC.Instruction (PPC.Pbcc (PPC.Ne,lab))::
+        k
+
+(* Postlude *)
+
+    let does_jump lab cs =
       List.exists
         (fun i -> match i with
         | PPC.Instruction (PPC.Pb lab0|PPC.Pbcc (_,lab0)) ->
@@ -473,7 +483,10 @@ module Make(O:CompileCommon.Config)(C:PPCArch.Config) : XXXCompile.S =
         | _ -> false)
         cs
 
-    let some_postlude st p init cs =
+    let does_fail p cs = does_jump (Label.fail p) cs
+    let does_exit p cs = does_jump (Label.exit p) cs
+
+    let postlude st p init cs =
       if does_fail p cs then
         let init,okcs,st = emit_store st p init Code.ok 0 in
         init,
@@ -483,9 +496,10 @@ module Make(O:CompileCommon.Config)(C:PPCArch.Config) : XXXCompile.S =
         okcs@
         [PPC.Label (Label.exit p,PPC.Nop)],
         st
+      else if does_exit p cs then
+        init,cs@[PPC.Label (Label.exit p,PPC.Nop)],st
       else init,cs,st
 
 
-    let postlude = some_postlude
         
   end

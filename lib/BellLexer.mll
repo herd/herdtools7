@@ -59,6 +59,7 @@ rule token = parse
 | "xor"  { XOR }
 | "beq"  { BEQ }
 | "bne"  { BNE }
+| "bal"  { BAL }
 | "scopes"  { SCOPES  }
 | "regions" { REGIONS }
 | name as x

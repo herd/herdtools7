@@ -26,6 +26,7 @@ module type Config = sig
   val fno : Config.fno
   val poll : bool
   val optcoherence : bool
+  val docheck : bool
 end
 
 module Make (O:Config) (Comp:XXXCompile.S) : Builder.S 
@@ -47,6 +48,11 @@ module Make (O:Config) (Comp:XXXCompile.S) : Builder.S
   type node = C.node
 
   module F = Final.Make(O)(Comp)
+
+  let add_init_check chk p o init =
+    match chk,o with
+    | true,Some r -> (A.Reg (p,r),"-1")::init
+    | _,_ -> init
 
   type test =
       {
@@ -180,7 +186,7 @@ let rec compile_stores st p i ns k = match ns with
       let i,k,st = compile_stores st p i ns k in
       i,(c@k),st
 
-let rec compile_proc loc_writes st p ro_prev init ns = match ns with
+let rec compile_proc chk loc_writes st p ro_prev init ns = match ns with
 | [] -> init,[],(C.EventMap.empty,[]),st
 | n::ns ->
     let open Config in
@@ -195,7 +201,7 @@ let rec compile_proc loc_writes st p ro_prev init ns = match ns with
         end ;
         let o,init,i,st = Comp.emit_fno st p init n.C.evt.C.loc in
         let init,is,finals,st =
-          compile_proc loc_writes
+          compile_proc chk loc_writes
             st p (edge_to_prev_load (Some o) n.C.edge)
             init ns in
         init,
@@ -211,7 +217,7 @@ let rec compile_proc loc_writes st p ro_prev init ns = match ns with
           emit_access (edge_to_prev_load (Some o1) n.C.edge) st p init m in
         let init,i3,st = Comp.emit_close_fno st p init lab o1 n.C.evt.C.loc in
         let init,is,finals,st =
-          compile_proc loc_writes
+          compile_proc chk loc_writes
             st p (edge_to_prev_load o2 m.C.edge)
             init ns in
         init,
@@ -222,12 +228,19 @@ let rec compile_proc loc_writes st p ro_prev init ns = match ns with
         st
     | _ ->
         let o,init,i,st = emit_access ro_prev st p init n in
+        let nchk,add_check =
+          match O.docheck,n.C.evt.C.dir,o,ns with
+          | true,R,Some r,_::_ ->
+              true,Comp.check_load p r n.C.evt
+          | _ -> chk,Misc.identity  in
         let init,is,finals,st =
-          compile_proc loc_writes
+          compile_proc nchk loc_writes
             st p (edge_to_prev_load o n.C.edge)
             init ns in
-        init,
-        i@(match get_fence n with Some fe -> Comp.emit_fence fe::is  | _ -> is),
+        add_init_check chk p o init,
+        i@
+        add_check
+          (match get_fence n with Some fe -> Comp.emit_fence fe::is  | _ -> is),
         (if
           StringSet.mem n.C.evt.C.loc loc_writes && not (U.do_poll n)
         then
@@ -541,7 +554,7 @@ let min_max xs =
     let rec do_rec p i = function
       | [] -> List.rev i,[],(C.EventMap.empty,[]),[]
       | n::ns ->
-          let i,c,(m,f),st = compile_proc loc_writes A.st0 p No i n in
+          let i,c,(m,f),st = compile_proc false loc_writes A.st0 p No i n in
           let i,c,st = compile_stores st p i n c in
           let i,c,f,st =
             match O.cond with

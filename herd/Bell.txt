@@ -59,7 +59,7 @@ Or
   (agent (wg (wave (wi 1)) (wave (wi 3)))))
 
 the root scope can also be left implicit, even when it has
-several children. That is the above can be further abreviated as:
+several children. That is, the above can be further abreviated as:
 (wg 0 2) (wg 1 3)
 
 Another try

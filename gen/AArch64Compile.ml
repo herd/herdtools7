@@ -506,9 +506,16 @@ let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
     | CTRL -> emit_exch_ctrl false st p init er ew rd
     | CTRLISYNC -> emit_exch_ctrl true st p init er ew rd
 
+
+    let check_load p r e =
+      let lab = Label.exit p in
+      (fun k ->
+        Instruction (cmpi r e.v)::
+        Instruction (I_BC (NE,lab))::
+        k)
+
 (* Postlude *)
-    let does_fail p cs =
-      let lab = Label.fail p in
+    let does_jump lab cs =
       List.exists
         (fun i -> match i with
         | Instruction (I_B lab0|I_BC (_,lab0)
@@ -516,6 +523,9 @@ let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
             (lab0:string) = lab
         | _ -> false)
         cs
+
+    let does_fail p cs = does_jump (Label.fail p) cs
+    let does_exit p cs = does_jump (Label.exit p) cs
 
     let postlude st p init cs =
       if does_fail p cs then
@@ -527,6 +537,8 @@ let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
         okcs@
         [Label (Label.exit p,Nop)],
         st
-      else init,cs,st
-
+      else if does_exit p cs then
+        init,cs@[Label (Label.exit p,Nop)],st
+      else
+        init,cs,st
   end

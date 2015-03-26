@@ -68,6 +68,8 @@ module type S = sig
       A.st -> Code.proc -> A.init -> string -> A.reg -> Code.loc ->
         A.init * A.pseudo list * A.st
 
+  val check_load :
+      Code.proc -> A.reg -> C.event -> A.pseudo list -> A.pseudo list
   val postlude : A.st -> Code.proc -> A.init -> A.pseudo list ->
     A.init * A.pseudo list * A.st
 end
