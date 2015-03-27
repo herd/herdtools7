@@ -11,9 +11,13 @@
 (*********************************************************************)
 
 (** Open my files *)
+module type Config = sig
+  val includes : string list
+  val libdir : string
+end
 
 module Make :
-  functor (C:sig val includes : string list end) ->
+  functor (C:Config) ->
     sig
       val find : string -> string
     end

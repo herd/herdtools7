@@ -38,6 +38,7 @@ let no = ref None
 let addnum = ref true
 let lowercase = ref false
 let optcoherence = ref false
+let bell = ref None
 
 type do_observers =
   | Avoid   (* was false *)
@@ -120,6 +121,9 @@ let common_specs =
     | None -> false
     | Some a -> arch := a ; true)
     Archs.tags "specify architecture"::
+  ("-bell",
+   Arg.String (fun f -> bell := Some f),
+   "<name> read bell file <name>")::
   Util.parse_tag
     "-type"
     (fun tag -> match TypBase.parse tag with
@@ -233,3 +237,15 @@ let read_no fname =
       (fun chan -> MySys.read_list chan (fun s -> Some s))
       fname
   with _ -> []
+
+let read_bell libfind fname =
+  let module R =
+    ReadBell.Make
+      (struct
+        let debug_lexer = false
+        let debug_model = false
+        let verbose = !verbose
+        let libfind = libfind
+        let prog = prog
+      end) in
+  R.read fname

@@ -103,7 +103,12 @@ rule main = parse
 and opt = parse
 (* Recurse... *)
 | "conf" arg
-    { let module ML = MyLib.Make(struct let includes = !includes end) in
+    { let module ML =
+      MyLib.Make
+        (struct
+          let includes = !includes
+          let libdir = Version.libdir
+        end) in
       dolex main (ML.find arg) }
 | "verbose" arg { lex_int verbose arg }
 | "suffix" arg { suffix := arg }

@@ -16,7 +16,7 @@
 
 module type Config = sig
   val model : Model.t
-  val bell_model_info : (string * BellCheck.info) option
+  val bell_model_info : (string * BellModel.info) option
   include Model.Config
 end
 

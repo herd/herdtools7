@@ -17,129 +17,10 @@ let dbg = true
 
 open Printf
 
-type annot_set = StringSet.t
-type annot_group = annot_set list
-type event_dec = annot_group list
-type event_decs = event_dec StringMap.t
-
-let pp_string_set set = StringSet.pp_str "," Misc.identity set
-
-let pp_annot_set set = sprintf "{%s}" (pp_string_set set)
-
-let pp_annot_group ag = 
-  let mapped = List.map pp_annot_set ag in
-  "["^(String.concat ", " mapped)^"]"
-
-let pp_event_dec  l  =
-  String.concat "," (List.map (fun x -> pp_annot_group x) l)
-
-let pp_event_dec_bd t l  = sprintf "%s: %s" t (pp_event_dec l)
-
-let pp_event_decs decs = StringMap.pp_str_delim "\n" pp_event_dec_bd decs
-
-
-type relation_dec = string list
-type relation_decs = relation_dec StringMap.t
-
-let pp_rel_annot_set set =
-  sprintf "{%s}" (String.concat "," set)
-
-let pp_rel_dec t dec = sprintf "%s: %s" t (pp_rel_annot_set dec)
-
-let pp_rel_decs decs = StringMap.pp_str_delim "\n" pp_rel_dec decs
-
-
-type order_dec = StringRel.t
-type order_decs = order_dec StringMap.t
-
-let pp_order_dec ol =
-  StringRel.pp_str " "
-    (fun (f,s) -> sprintf "(%s,%s)" f s)
-    ol
-  
-let pp_order_bd t ol =  sprintf "%s: %s" t (pp_order_dec ol)
-
-let pp_order_decs decs = StringMap.pp_str_delim "\n" pp_order_bd decs
-
-type info = {
-  all_events : annot_set; (* This field records all annotations *)
-  events : event_decs;
-  relations : relation_decs;
-  orders : order_decs ;
-  regions : StringSet.t option ;
-}
-
-let pp_info  i = 
-  sprintf "All events: %s\n" (pp_string_set i.all_events) ^
-  "Events:\n" ^ pp_event_decs i.events ^ "\n" ^
-  "Relations:\n" ^ pp_rel_decs i.relations ^ "\n" ^
-  "Orders:\n" ^ pp_order_decs i.orders ^ "\n" ^
-  (match i.regions with
-  | None -> ""
-  | Some r -> sprintf "Regions: %s\n" (pp_string_set r))
- 
-let empty_info = {
-  all_events = StringSet.empty  ;
-  events = StringMap.empty ;
-  relations = StringMap.empty ;
-  orders = StringMap.empty ;
-  regions = None ;
-}
-
-
-(* Get *)
-(* By default, no annotation allowed *)
-let get_events tag {events;_} =  StringMap.safe_find [[]] tag events 
-
-let get_mem_annots i = i.all_events
-
-let get_region_sets i = match i.regions with
-| None -> StringSet.empty
-| Some r -> r
-
-let get_scope_rels i = StringMap.safe_find [] BellName.scopes i.relations
-
-let get_order k i = StringMap.find k i.orders
-  
-(* Add *)
-
-exception Defined
-
-let add_rel k dec i =
-  begin try
-    ignore (StringMap.find k i.relations) ; raise Defined
-  with Not_found -> () end ;
-  let relations = StringMap.add k dec i.relations in
-  { i with relations;}
-
-let add_regions dec i =
-  match i.regions with
-  | None -> { i with regions = Some (StringSet.of_list dec); }
-  | Some _ -> raise Defined
-
-let add_events k dec i =
-  let old =
-    try StringMap.find k i.events
-    with Not_found -> [] in
-  let events = StringMap.add k (dec::old) i.events
-  and all_events =
-    if StringSet.mem k BellName.all_mem_sets then
-      StringSet.union (StringSet.unions dec) i.all_events
-    else i.all_events in
-  { i with events; all_events; }
-
-let add_order k dec i =
-  begin try
-    ignore (StringMap.find k i.orders) ; raise Defined
-  with Not_found -> () end ;
-  let orders = StringMap.add k dec i.orders in
-  { i with orders;}
-
-
 module Make
     (A:Arch.S)
     (C:sig
-      val info : info option
+      val info : BellModel.info option
       val get_id_and_list : A.instruction -> string * string list
     end) =
   struct
@@ -154,9 +35,9 @@ module Make
 
 (* Check regions *)
 
-    let check_regions defs (i:info) =
+    let check_regions defs i =
       try
-        let regions = match i.regions with
+        let regions = match BellModel.get_regions i with
         | None ->
             error "no definition of %s in bell file"  BellName.regions
         | Some r -> r in  
@@ -204,7 +85,7 @@ module Make
           sc BellName.scopes
 
     let expand_scope scopes order =
-      if dbg then eprintf "ORDER: %s\n" (pp_order_dec order) ;
+      if dbg then eprintf "ORDER: %s\n" (BellModel.pp_order_dec order) ;
       let rec expand_rec top st =
         let sc = scope_of st in
         if dbg then eprintf "EXPAND_REC top=%s, sc=%s\n" top sc;
@@ -260,11 +141,11 @@ module Make
     let check_scopes st i =
       try
         let scopes =
-          try StringMap.find BellName.scopes i.relations
+          try BellModel.get_relation BellName.scopes i
           with Not_found ->
             error "no definition of %s in bell file" BellName.scopes in
         let order = 
-          try StringMap.find BellName.scopes i.orders
+          try BellModel.get_order BellName.scopes i
           with Not_found ->
             error "no definition of scope order in bell file" in
         let nst =
@@ -288,13 +169,13 @@ module Make
           try C.get_id_and_list i
           with Not_found -> raise Exit in (* If no annotation, no trouble *)
         assert (StringSet.mem id BellName.all_mem_sets) ;
-        let events_group = get_events id bi in
+        let events_group = BellModel.get_events id bi in
         let ok =
           List.exists
             (fun ag -> same_length ag al && List.for_all2 StringSet.mem al ag)
             events_group in
         if not ok then begin
-          if dbg then eprintf "%s: %s\n" id (pp_event_dec events_group) ;
+          if dbg then eprintf "%s: %s\n" id (BellModel.pp_event_dec events_group) ;
           error "instruction '%s' does not match bell declarations"
             (A.dump_instruction i)
         end

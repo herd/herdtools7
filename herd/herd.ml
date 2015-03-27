@@ -96,7 +96,12 @@ let parse_stringset opt v msg =
 
 (* Option list *)
 let load_config s =
-  let module ML = MyLib.Make (struct let includes = !includes end) in
+  let module ML =
+    MyLib.Make
+      (struct
+        let includes = !includes
+        let libdir = Version.libdir
+      end) in
   LexConf.lex (ML.find s)
 
 let options = [
@@ -390,7 +395,12 @@ let names = match !names with
 
 (* Read generic model, if any *)
 let libfind =
-  let module ML = MyLib.Make(struct let includes = !includes end) in
+  let module ML =
+    MyLib.Make
+      (struct
+        let includes = !includes
+        let libdir = Version.libdir
+      end) in
   ML.find
 
 module ParserConfig = struct
@@ -411,20 +421,6 @@ let model,model_opts = match !model with
         exit 2 end
 | Some _ as m -> m,ModelOption.compat
 | None -> None,ModelOption.default
-
-(* Read bell model, if any *)
-let bell_model = match !Opts.bell with
-| Some fname ->
-    let module P = ParseModel.Make(ParserConfig) in
-    begin try
-      let r = P.parse fname in
-      Some (fname,r)
-    with
-    | Misc.Fatal msg -> eprintf "%s: %s\n" prog msg ; exit 2
-    | Misc.Exit ->
-        eprintf "Failure of generic model parsing for bell\n" ;
-        exit 2 end
-| None -> None
 
 (* Read kinds/conds files *)
 module LR = LexRename.Make
@@ -555,19 +551,20 @@ let () =
 
   end in
 
-  let bi = match bell_model with
-  | Some (fname,m) ->
-      let module IB =
-        Interpret_bell.Make
+  let bi = match !Opts.bell with
+  | None -> None
+  | Some fname ->
+      let module R =
+        ReadBell.Make
           (struct
-            let debug = Config.debug.Debug.barrier
+            let debug_lexer = Config.debug.Debug.lexer
+            let debug_model = Config.debug.Debug.barrier
             let verbose = Config.verbose
             let libfind = libfind
+            let prog = prog
           end) in
-      begin try Some (fname,IB.interpret_bell m) with
-      | Misc.Exit -> exit 2
-      end
-  | None -> None in    
+      let bi = R.read fname in
+      Some (fname,bi) in
 
   let from_file =
     let module T =

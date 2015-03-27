@@ -88,7 +88,7 @@ module Make (C: Config) = struct
     | Some i ->
         if C.debug then begin
           eprintf "Bell file execute, result:\n" ;
-          eprintf "%s" (BellCheck.pp_info i)
+          eprintf "%s" (BellModel.pp_info i)
         end ;
         i
 end

@@ -15,7 +15,7 @@
 
 module type Config = sig
   val m : AST.pp_t
-  val bell_model_info : (string * BellCheck.info) option
+  val bell_model_info : (string * BellModel.info) option
   include Model.Config
 end
 
@@ -184,7 +184,7 @@ module Make
               add_bell_events m
                 (fun annot e -> E.Act.annot_in_list annot e.E.action)
                 evts
-                (BellCheck.get_mem_annots bi) in
+                (BellModel.get_mem_annots bi) in
             let m =
               match test.Test.bell_info with
               (* No region in test, no event sets *)
@@ -196,7 +196,7 @@ module Make
                     | Some x ->
                        List.mem (E.Act.A.pp_location x, region) regions)
                     evts
-                    (BellCheck.get_region_sets bi) in
+                    (BellModel.get_region_sets bi) in
             m in
 (* Scope relations from bell info *)
       let m =
@@ -220,7 +220,7 @@ module Make
                        lazy begin
                          U.int_scope_bell scope scopes (Lazy.force unv)
                        end)
-                     (BellCheck.get_scope_rels bi))
+                     (BellModel.get_scope_rels bi))
             end in
 (* Now call interpreter, with or without generated co *)
       if withco then

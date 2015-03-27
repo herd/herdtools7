@@ -90,7 +90,7 @@ module Make
        out_show : S.rel_pp Lazy.t ;
        out_skipped : StringSet.t ;
        out_flags : Flag.Set.t ;
-       out_bell_info :  BellCheck.info ;       
+       out_bell_info :  BellModel.info ;       
       }
 
 
@@ -504,7 +504,7 @@ module Make
         skipped : StringSet.t ;
         silent : bool ; flags : Flag.Set.t ;
         ks : ks ;
-        bell_info : BellCheck.info ;
+        bell_info : BellModel.info ;
         loc : loc ;
       }
 
@@ -514,7 +514,7 @@ module Make
        out_show : S.event_rel Misc.Simple.bds Lazy.t ;
        out_skipped : StringSet.t ;
        out_flags : Flag.Set.t ;
-       out_bell_info :  BellCheck.info ;       
+       out_bell_info :  BellModel.info ;       
       }
 
 (* Remove transitive edges, except if instructed not to *)
@@ -1415,13 +1415,13 @@ module Make
           fun loc st name tags ->
             try
               if name = BellName.scopes then
-                let bell_info = BellCheck.add_rel name tags st.bell_info in
+                let bell_info = BellModel.add_rel name tags st.bell_info in
                 { st with bell_info;}                  
               else if name = BellName.regions then
-                let bell_info = BellCheck.add_regions tags st.bell_info in
+                let bell_info = BellModel.add_regions tags st.bell_info in
                 { st with bell_info;}              
               else st
-            with BellCheck.Defined ->
+            with BellModel.Defined ->
               error st.silent loc "second definition of bell enum %s" name
         else
           fun _loc st _v _tags -> st in
@@ -1484,14 +1484,14 @@ module Make
               error false loc
                 "%s defines the non-hierarchical relation %s"
                 id_fun
-                (BellCheck.pp_order_dec order) ;
+                (BellModel.pp_order_dec order) ;
             try
               let bell_info =
-                BellCheck.add_order id_tags order st.bell_info in
+                BellModel.add_order id_tags order st.bell_info in
               { st with bell_info;}
-            with BellCheck.Defined ->
+            with BellModel.Defined ->
               let old =
-                try BellCheck.get_order id_tags st.bell_info
+                try BellModel.get_order id_tags st.bell_info
                 with Not_found -> assert false in
               if not (StringRel.equal old order) then
                 error st.silent
@@ -1761,7 +1761,7 @@ module Make
                     (pp_val v))
               vs in
           let bell_info =
-            BellCheck.add_events x event_sets st.bell_info in
+            BellModel.add_events x event_sets st.bell_info in
           let st = { st with bell_info;} in
 	  kont st res
       | Events _ ->
@@ -1869,7 +1869,7 @@ module Make
         let st =
           {env=m; show=show; skipped=StringSet.empty;
            silent=false; flags=Flag.Set.empty;
-           ks; bell_info=BellCheck.empty_info;
+           ks; bell_info=BellModel.empty_info;
            loc={stack =[]; txt=prog_txt;}} in        
 
         let kont st res =  kont (st2out st) res in          

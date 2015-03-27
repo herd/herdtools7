@@ -12,8 +12,13 @@
 
 (* Open my files *)
 
+module type Config = sig
+  val includes : string list
+  val libdir : string
+end
+
 module Make =
-  functor (C:sig val includes : string list end) -> struct
+  functor (C:Config) -> struct
     
     let try_open dir name =
       let rname = Filename.concat dir name in
@@ -34,7 +39,7 @@ module Make =
       with Exit -> try match envlib with
       | Some lib -> try_open lib name
       | None -> raise Exit
-      with Exit -> try try_open Version.libdir name
+      with Exit -> try try_open C.libdir name
       with Exit -> Warn.fatal "Cannot find file %s" name
   
     let do_find name =

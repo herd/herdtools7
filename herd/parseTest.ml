@@ -19,7 +19,7 @@ module type Config = sig
   val through : Model.through
   val skipchecks : StringSet.t
   val strictskip : bool
-  val bell_model_info : (string * BellCheck.info) option
+  val bell_model_info : (string * BellModel.info) option
   val check_name : string -> bool
   val check_rename : string -> string option
   val libfind : string -> string

@@ -1,0 +1,52 @@
+(*********************************************************************)
+(*                        DIY                                        *)
+(*                                                                   *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                   *)
+(*                                                                   *)
+(*  Copyright 2015 Institut National de Recherche en Informatique et *)
+(*  en Automatique and the authors. All rights reserved.             *)
+(*  This file is distributed  under the terms of the Lesser GNU      *)
+(*  General Public License.                                          *)
+(*********************************************************************)
+
+(** Read a Bell file *)
+
+module type Config = sig
+  val debug_lexer : bool
+  val debug_model : bool
+  val verbose : int
+  val libfind : string -> string
+  val prog : string
+end
+
+module Make(O:Config) =
+  struct
+    open Printf
+
+    module ParserConfig = struct
+      let debug = O.debug_lexer
+      let libfind =  O.libfind
+    end
+
+    module IB =
+      BellInterpreter.Make
+        (struct
+          let debug = O.debug_model
+          let verbose = O.verbose
+          let libfind = O.libfind
+        end)
+
+    let parse fname =
+      let module P = ParseModel.Make(ParserConfig) in
+      try
+        P.parse fname
+      with
+      | Misc.Fatal msg -> eprintf "%s: %s\n" O.prog msg ; exit 2
+      | Misc.Exit ->
+          eprintf "Failure of generic model parsing for bell\n" ;
+          exit 2
+
+    let read fname =
+      let m = parse fname in
+      IB.interpret_bell m
+  end
