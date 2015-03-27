@@ -38,12 +38,17 @@ let pp_int_list il =
   String.concat " " (List.map (sprintf "%i") il)
   
 
-let rec pp_scopes s =
-  match s with 
+let rec pp_scopes_rec s = match s with 
   | Leaf(s,i) -> sprintf "(%s %s)" s (pp_int_list i)
-  | Children(s,sc) -> 
-    let pp = List.map (fun x -> pp_scopes x) sc in
-    sprintf "(%s %s)" s (String.concat " " pp)
+  | Children(s,ts) -> 
+    sprintf "(%s %s)" s (pp_scopes_recs ts)
+
+and pp_scopes_recs ts =
+  String.concat " " (List.map pp_scopes_rec ts)
+
+let pp_scopes = function
+  | Children ("",ts) -> pp_scopes_recs ts
+  | t -> pp_scopes_rec t
 
 type test = {
   regions : mem_space_map option;
