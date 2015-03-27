@@ -88,7 +88,7 @@ let one_init = match PC.graph with
 
   let show_all_events = match PC.showevents with
   | AllEvents -> true
-  | MemEvents|NonRegEvents -> false
+  | MemEvents|NonRegEvents|MemFenceEvents -> false
 
 
 (* Printing the program with the nice_prog field *)
@@ -1214,7 +1214,7 @@ let one_init = match PC.graph with
   | AllEvents -> (fun _ -> true)
   | MemEvents -> E.is_mem
   | NonRegEvents -> (fun e -> not (E.is_reg_any e))
-
+  | MemFenceEvents -> let open Misc in E.is_mem ||| E.is_barrier
   let select_event = let open Misc in select_event &&& select_non_init
 
   let select_events = E.EventSet.filter select_event

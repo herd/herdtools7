@@ -73,19 +73,21 @@ let parse_dotcom = function
   | _ -> None
 
 (* Events shown in figures *)
-type showevents = AllEvents | MemEvents | NonRegEvents
+type showevents = AllEvents | MemEvents | NonRegEvents | MemFenceEvents
 
-let tags_showevents = ["all"; "mem"; "noregs";]
+let tags_showevents = ["all"; "mem"; "noregs";"memf";]
 
 let pp_showevents = function
   | AllEvents -> "all"
   | MemEvents -> "mem"
   | NonRegEvents -> "noregs"
+  | MemFenceEvents -> "memfence"
 
 let parse_showevents = function
   | "all"  -> Some AllEvents
   | "mem"|"memory" -> Some MemEvents
   | "noregs" -> Some NonRegEvents
+  | "memf"|"memfence" -> Some MemFenceEvents
   | _ -> None
 
 
