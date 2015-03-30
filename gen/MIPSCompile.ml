@@ -48,13 +48,13 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
       move tmp2 r2::
       SC (tmp2,0,addr)::k
 
-    let loop_rmw r1 r2 addr =
+    let emit_loop_pair _p r1 r2 addr =
       let lab = Label.next_label "Loop" in
       Label (lab,Nop)::
       pseudo (atom r1 r2 addr [BC (EQ,tmp2,r0,lab)])
 
 
-    let unroll_rmw p r1 r2 addr u =
+    let emit_unroll_pair u p r1 r2 addr =
       if u <= 0 then
         pseudo (atom r1 r2 addr [])
       else if u = 1 then
@@ -68,8 +68,9 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
                 (BC (NE,tmp2,r0,out)::do_rec (u-1)) in
         pseudo (do_rec u)@[Label (out,Nop)]
 
-
-
+    let emit_pair = match Cfg.unrollatomic with
+    | None -> emit_loop_pair
+    | Some u -> emit_unroll_pair u
 
 (*********)
 (* loads *)
@@ -162,24 +163,6 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
       let init,cs,st = emit_store_idx_reg st p init x idx rA in
       init,Instruction (LI (rA,v))::cs,st
 
-    let emit_one_sc_reg_addr st p init rA v =
-      let rV,st = next_reg st in
-      init,
-      pseudo
-        (LI (rV,v)::
-         SC (rV,0,rA)::
-         branch_neq rV 0 (Label.fail p) []),
-      st
-
-    let emit_one_sc st p init x v =
-      let rA,init,st = next_init st p init x in
-      emit_one_sc_reg_addr st p init rA v
-
-(* No FNO yet *)
-    and emit_fno2 _st _p _init _x = assert false
-    and emit_open_fno _st _p _init _x = assert false
-    and emit_close_fno _st _p _init _lab _r _x = assert false
-
 (* Load exclusive *)
 
 (* FNO *)
@@ -198,20 +181,10 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
       rA,init,
       pseudo [OP (ADDU,tmp1,idx,rB); LL (rA,0,tmp1)],st
 
-    let unroll_fno u st p init rB =
-      let rA,st = next_reg st in
-      let cs = unroll_rmw p rA rA rB u in
-      rA,init,cs,st
-
-    let loop_fno st init rB =
-      let rA,st = next_reg st in
-      let cs = loop_rmw rA rA rB in
-      rA,init,cs,st
-
-    let do_emit_fno st p init rB =
-      match Cfg.unrollatomic with
-      | None -> loop_fno st init rB
-      | Some u -> unroll_fno u  st p init rB
+    let do_emit_fno st p init rA =
+      let rR,st = next_reg st in
+      let cs = emit_pair p rR rR rA in
+      rR,init,cs,st
 
     let emit_fno st p init x =
       let rB,init,st = next_init st p init x in
@@ -226,41 +199,31 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
         
 (* STA *)
 
-    let unroll_sta u st p rA rB =
-      let rX,st = next_reg st in
-      Some (rX,st),unroll_rmw p rX rA rB u
+    let do_emit_sta st p init rA rW =
+      let rR,st = next_reg st in
+      let cs = emit_pair p rR rW rA in
+      Some rR,init,cs,st
 
-    let loop_sta rA rB = loop_rmw tmp2 rA rB
+    let emit_sta_reg st p init x rW =
+      let rA,init,st = next_init st p init x in
+      do_emit_sta st p init rA rW
 
-    let do_emit_sta_reg st p rA rB = match Cfg.unrollatomic with
-    | None -> None,loop_sta rA rB
-    | Some u -> unroll_sta u st p rA rB
-
-    let do_emit_sta st p init rB v =
-      let rost,cs = do_emit_sta_reg st p tmp3 rB in
-      let cs = Instruction (LI (tmp3,v))::cs in
-      match rost with
-      | Some (r,st) -> Some r,init,cs,st
-      | None -> None,init,cs,st
-
-    let emit_sta  st p init x v =
-      let rB,init,st = next_init st p init x in
-      do_emit_sta st p init rB v
-
-    let emit_sta_idx st p init x idx v =
-      let rB,init,st = next_init st p init x in
-      let ro,init,cs,st =  do_emit_sta st p init tmp1 v in
-      ro,
-      init,
-      Instruction (OP (ADDU,tmp1,idx,rB))::cs,
+    let emit_sta st p init x v =
+      let rW,st = next_reg st in
+      let ro,init,cs,st = emit_sta_reg st p init x rW in
+      ro,init,
+      Instruction (LI (rW,v))::cs,
       st
 
-    let emit_sta_reg st p init x rA =
-      let rB,init,st = next_init st p init x in
-      let orst,cs = do_emit_sta_reg st p rA rB in
-      match orst with
-      | None -> None,init,cs,st
-      | Some (r,st) -> Some r,init,cs,st
+    let emit_sta_idx st p init x idx v =
+      let rA,init,st = next_init st p init x in
+      let rW,st = next_reg st in
+      let ro,init,cs,st =  do_emit_sta st p init tmp1 rW in
+      ro,
+      init,
+      Instruction (LI (rW,v))::
+      Instruction (OP (ADDU,tmp1,idx,rA))::cs,
+      st
 
 (*************)
 (* Acccesses *)
@@ -285,9 +248,13 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
         ro,init,cs,st
 
     let emit_exch st p init er ew =
-      let r,init,csr,st = emit_ll st p init er.loc  in
-      let init,csw,st = emit_one_sc st p init ew.loc ew.v in
-      r,init,csr@csw,st
+      let rA,init,st = next_init st p init er.loc in
+      let rR,st = next_reg st in
+      let rW,st = next_reg st in
+      let cs = emit_pair p rR rW rA in
+      rR,init,
+      Instruction (LI (rW,ew.v))::cs,
+      st
 
     let emit_access_dep_addr st p init e  r1 =
       let r2,st = next_reg st in
@@ -310,14 +277,18 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
           let ro,init,cs,st = emit_sta_idx st p init e.loc r2 e.v in
           ro,init,Instruction c::cs,st
 
+
     let emit_exch_dep_addr st p init er ew rd =
       let rA,init,st = next_init st p init er.loc in
-      let c =
-        [Instruction (OP (XOR,tmp1,rd,rd));
-         Instruction (OP (ADDU,tmp1,rA,tmp1));] in
-      let r,init,csr,st = emit_ll_reg st p init tmp1  in
-      let init,csw,st = emit_one_sc_reg_addr st p init tmp1 ew.v in
-      r,init,c@csr@csw,st
+      let rR,st = next_reg st in
+      let rW,st = next_reg st in
+      let cs = emit_pair p rR rW tmp1 in
+      rR,init,
+      Instruction (LI (rW,ew.v))::
+      Instruction (OP (XOR,tmp1,rd,rd))::
+      Instruction (OP (ADDU,tmp1,rA,tmp1))::
+      cs,
+      st
 
     let emit_access_dep_data st p init e  r1 =
       match e.dir with
@@ -353,15 +324,6 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
          Label (lab,Nop);] in
       let ropt,init,cs,st = emit_exch st p init er ew in
       ropt,init, c@cs,st
-(*
-  match e.dir with
-  | R ->
-  let r,init,cs,st = emit_load st p init e.loc in
-  Some r,init,insert_isb isb c cs,st
-  | W ->
-  let init,cs,st = emit_store st p init e.loc e.v in
-  None,init,insert_isb isb c cs,st
- *)
 
     let emit_access_dep st p init e dp r1 = match dp with
     | ADDR -> emit_access_dep_addr st p init e r1

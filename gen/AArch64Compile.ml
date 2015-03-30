@@ -42,7 +42,6 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
     let pseudo = List.map (fun i -> Instruction i)
 
 let tempo1 st = A.alloc_trashed_reg "T1" st (* May be used for address *)
-let tempo2 st = A.alloc_trashed_reg "T2" st (* May be used for data *)
 let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
 
 (******************)
@@ -56,6 +55,7 @@ let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
     let mov r i = I_MOV (vloc,r,i)
     let cmpi r i = I_OP3 (vloc,SUBS,ZR,r,K i)
     let cmp r1 r2 = I_OP3 (vloc,SUBS,ZR,r1,RV (vloc,r2))
+    let bne lbl = I_BC (NE,lbl)
     let eor r1 r2 r3 = I_OP3 (vloc,EOR,r1,r2,RV (vloc,r3))
     let addi r1 r2 k = I_OP3 (vloc,ADD,r1,r2,K k)
 (*    let add r1 r2 r3 = I_OP3 (vloc,ADD,r1,r2,r3) *)
@@ -90,7 +90,6 @@ let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
     module type L = sig
       val load : reg -> reg -> instruction
       val load_idx : A.st -> reg -> reg -> reg -> instruction list * A.st
-      val load_x : reg -> reg -> instruction
     end
 
     module LOAD(L:L) =
@@ -118,7 +117,7 @@ let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
           let lab = Label.next_label "L" in
           rA,init,
           Label (lab,Nop)::
-          pseudo [L.load rA rB; cmpi rA 1; I_BC (NE,lab)],
+          pseudo [L.load rA rB; cmpi rA 1; bne lab],
           st
 
         let emit_load_not st p init x cmp =
@@ -134,7 +133,7 @@ let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
           pseudo
             [
              L.load rA rB; cmp rA ;
-             I_BC (NE,out); I_OP3 (vloc,SUBS,rC,rC,K 1) ;
+             bne out; I_OP3 (vloc,SUBS,rC,rC,K 1) ;
              cbnz rC lab ;
            ]@
           [Label (out,Nop)],
@@ -152,15 +151,6 @@ let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
           let ins,st = L.load_idx st rA rB idx in
           rA,init,pseudo ins ,st
 
-(* Exclusive *)
-        let emit_ldrex_reg st _p init rB =
-          let rA,st = next_reg st in
-          rA,init,pseudo [L.load_x rA rB],st
-
-        let emit_ldrex st p init x =
-          let rB,init,st = next_init st p init x in
-          emit_ldrex_reg st p init rB
-
       end
 
     module LDR =
@@ -168,7 +158,6 @@ let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
         (struct
           let load = ldr
           let load_idx st rA rB idx = [ldr_idx rA rB idx],st
-          let load_x = ldxr
         end)
 
 (* For export *)
@@ -184,7 +173,6 @@ let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
           let load_idx st rA rB idx =
             let r,ins,st = sum_addr st rB idx in
             ins@[ldar rA r],st
-          let load_x = ldaxr
         end)
 
 (**********)
@@ -194,7 +182,6 @@ let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
     module type S = sig
       val store : reg -> reg -> instruction
       val store_idx : A.st -> reg -> reg -> reg -> instruction list * A.st
-      val strex : reg -> reg -> reg -> instruction
     end
 
     module STORE(S:S) =
@@ -218,20 +205,7 @@ let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
           let rA,st = next_reg st in
           let init,cs,st = emit_store_idx_reg st p init x idx rA in
           init,Instruction (mov rA v)::cs,st
-(* Exclusive *)
-        let emit_one_strex_reg  st p init rA v =
-          let rV,st = next_reg st in
-          let t2,st = tempo2 st in
-          init,
-          pseudo
-            [mov rV v ;
-             S.strex t2 rV rA;
-             cbnz t2 (Label.fail p);],
-          st
 
-        let emit_one_strex st p init x v =
-          let rA,init,st = next_init st p init x in
-          emit_one_strex_reg  st p init rA v
       end
 
     module STR =
@@ -239,7 +213,6 @@ let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
         (struct
           let store = str
           let store_idx st rA rB idx = [str_idx rA rB idx],st
-          let strex = stxr
         end)
 
     module STLR =
@@ -249,7 +222,6 @@ let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
           let store_idx  st rA rB idx =
             let r,ins,st = sum_addr st rB idx in
             ins@[stlr rA r],st
-          let strex = stlxr
         end)
 
 
@@ -350,13 +322,6 @@ let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
       rR,init,Instruction (mov rW v)::pseudo cs1@cs2,st
 
 
-(* No FNO yet *)
-    let emit_fno _st _p _init _x = assert false
-    let emit_fno2 _st _p _init _x = assert false
-    and emit_open_fno _st _p _init _x = assert false
-    and emit_close_fno _st _p _init _lab _r _x = assert false
-
-
 (**********)
 (* Access *)
 (**********)
@@ -384,18 +349,24 @@ let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
         let r,init,cs,st = emit_sta rw st p init e.loc e.v in
         Some r,init,cs,st
 
+    let tr_a ar aw = match ar,aw with
+    | None,None -> PP
+    | Some Acq,None -> AP
+    | None,Some Rel -> PL
+    | Some Acq,Some Rel -> AL
+    | _,_ ->
+        Warn.fatal
+          "bad atomicity in rmw, %s%s"
+          (E.pp_atom_option ar)
+          (E.pp_atom_option aw)
+
     let emit_exch st p init er ew =
-      let emit_load = match er.C.atom with
-      | Some Acq -> LDAR.emit_ldrex
-      | None -> LDR.emit_ldrex
-      | a -> Warn.fatal "bad R atomicity in rmw, %s" (E.pp_atom_option a)
-      and emit_store = match ew.C.atom with
-      | Some Rel -> STLR.emit_one_strex
-      | None -> STR.emit_one_strex
-      | a -> Warn.fatal "bad W atomicity in rmw, %s" (E.pp_atom_option a) in
-      let r,init,csr,st = emit_load st p init er.loc  in
-      let init,csw,st = emit_store st p init ew.loc ew.v in
-      r,init,csr@csw,st
+      let rA,init,st = next_init st p init er.loc in
+      let rR,st = next_reg st in
+      let rW,st = next_reg st in
+      let arw = tr_a er.C.atom ew.C.atom in
+      let cs,st = emit_pair arw p st rR rW rA in
+      rR,init,Instruction (mov rW ew.v)::cs,st
 
 (* Fences *)
 
@@ -437,19 +408,13 @@ let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
       let c = eor r2 rd rd in
       let rA,init,st = next_init st p init er.loc in
       let rA,csum,st = sum_addr st rA r2 in
-      let emit_load = match er.C.atom with
-      | Some Acq -> LDAR. emit_ldrex_reg
-      | None -> LDR.emit_ldrex_reg
-      | a -> Warn.fatal "bad R atomicity in rmw, %s" (E.pp_atom_option a)
-      and emit_store = match ew.C.atom with
-      | Some Rel -> STLR.emit_one_strex_reg
-      | None -> STR.emit_one_strex_reg
-      | a -> Warn.fatal "bad W atomicity in rmw, %s" (E.pp_atom_option a) in
-      let r,init,csr,st = emit_load st p init rA  in
-      let init,csw,st = emit_store st p init rA ew.v in
-      r,init,pseudo (c::csum)@csr@csw,st
-
-
+      let rR,st = next_reg st in
+      let rW,st = next_reg st in
+      let arw = tr_a er.C.atom ew.C.atom in
+      let cs,st = emit_pair arw p st rR rW rA in
+      rR,init,
+      Instruction (mov rW ew.v)::pseudo (c::csum)@cs,
+      st
 
     let emit_access_dep_data st p init e  r1 =
       match e.dir with
@@ -511,7 +476,7 @@ let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
       let lab = Label.exit p in
       (fun k ->
         Instruction (cmpi r e.v)::
-        Instruction (I_BC (NE,lab))::
+        Instruction (bne lab)::
         k)
 
 (* Postlude *)

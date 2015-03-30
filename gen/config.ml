@@ -52,9 +52,6 @@ let obs_type = ref Straight
 let upto = ref true
 let optcond = ref true
 let overload = ref None
-type fno = FnoNo | FnoPrev | FnoBoth | FnoOnly | FnoRf | FnoAll
-let fno = ref FnoNo
-let sta = ref false
 let neg = ref false
 let unrollatomic : int option ref = ref None
 let coherence_decreasing = ref false
@@ -70,15 +67,6 @@ let parse_cond tag = match tag with
 | "unicond" -> Unicond
 | "observe" -> Observe
 | _ -> failwith "Wrong cond, choose cycle, unicond or observe"
-
-let parse_fno s = match s with
-| "no" -> FnoNo
-| "prev" -> FnoPrev
-| "both" -> FnoBoth
-| "only" -> FnoOnly
-| "rf"   -> FnoRf
-| "all"  -> FnoAll
-| _ -> failwith "Wrong fno, choose no, prev, both, only, rf, or all"
 
 let parse_mode s =
   match s with 
@@ -155,10 +143,6 @@ let common_specs =
   ("-nooptcoherence", Arg.Clear optcoherence, "do not optimize coherence (default)")::
   ("-overload", Arg.Int (fun n -> overload := Some n),
    "<n> stress load unit by <n> useless loads")::
-  ("-fno", Arg.String (fun s -> fno := parse_fno s), 
-    "<no|prev|both|only|rf|all> fno mode, experimental (default no)")::
-  ("-sta", Arg.Bool (fun b -> sta := b),
-   "<bool> use atomic store (default false)")::
   ("-unrollatomic",Arg.Int (fun i -> unrollatomic := Some i),
    "<n> unroll atomic idioms (default, use loops)")::
   ("-ua",Arg.Int (fun i -> unrollatomic := Some i),

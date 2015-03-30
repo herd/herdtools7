@@ -490,7 +490,7 @@ let set_same_loc st n0 =
         let m = 
           find_node
             (fun m -> match m.prev.edge.E.edge with
-            | E.Fr _|E.Rf _|E.RfStar _|E.Ws _|E.Leave _|E.Back _
+            | E.Fr _|E.Rf _|E.Ws _|E.Leave _|E.Back _
             | E.Hat|E.Rmw|E.Detour _|E.DetourWs _ -> true
             | E.Po _|E.Dp _|E.Fenced _ -> false
             | E.Store -> assert false) n in

@@ -13,6 +13,7 @@ module type S = sig
 
   val ppo : (R.relax -> 'a -> 'a) -> 'a -> 'a
 
+(* Accesses *)
   val emit_load :
       A.st -> Code.proc -> A.init -> Code.loc ->
         A.reg * A.init * A.pseudo list * A.st
@@ -48,28 +49,15 @@ module type S = sig
         A.dp -> A.reg ->
           A.reg * A.init * A.pseudo list * A.st
 
+(* Fences *)
   val emit_fence : A.fence -> A.pseudo
 
   val stronger_fence : A.fence
 
-  val emit_fno :
-      A.st -> Code.proc -> A.init -> Code.loc ->
-        A.reg * A.init * A.pseudo list * A.st
-
-  val emit_fno2 :
-      A.st -> Code.proc -> A.init -> Code.loc ->
-        A.reg * A.init * A.pseudo list * A.st
-
-  val emit_open_fno :
-      A.st -> Code.proc -> A.init -> Code.loc ->
-        A.reg * A.init * A.pseudo list * string * A.st
-      
-  val emit_close_fno :
-      A.st -> Code.proc -> A.init -> string -> A.reg -> Code.loc ->
-        A.init * A.pseudo list * A.st
-
+(* Code additions *)
   val check_load :
       Code.proc -> A.reg -> C.event -> A.pseudo list -> A.pseudo list
+
   val postlude : A.st -> Code.proc -> A.init -> A.pseudo list ->
     A.init * A.pseudo list * A.st
 end

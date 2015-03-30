@@ -186,7 +186,6 @@ let () =
     let poll = !Config.poll
     let optcoherence = !Config.optcoherence
     let optcond = !Config.optcond
-    let fno = !Config.fno
     let obs_type = !Config.obs_type
     let do_observers = !Config.do_observers
     let eprocs = !Config.eprocs
@@ -202,7 +201,6 @@ let () =
     let same_loc =
       !Config.same_loc ||
       (match Co.choice  with Uni -> true | _ -> false)
-    let sta = !Config.sta
     let unrollatomic = !Config.unrollatomic
     let allow_back = match !Config.mode with
     | Sc|Critical|Thin -> false

@@ -14,7 +14,6 @@ module type Config = sig
   val list_edges : bool
   val coherence_decreasing : bool
   val same_loc : bool
-  val sta : bool
   val unrollatomic : int option
   val allow_back : bool
 end

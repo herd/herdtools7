@@ -182,7 +182,7 @@ let io_of_node n = {ploc=n.C.C.evt.C.C.loc; pdir=n.C.C.evt.C.C.dir;}
           let open C.E in
           match last_edge ns with
           | Fr _|Leave CFr|Back CFr -> "Fr"
-          | Rf _|RfStar _|Leave CRf|Back CRf -> "Rf"
+          | Rf _|Leave CRf|Back CRf -> "Rf"
           | Ws _|Leave CWs|Back CWs -> "Ws"
           | _ -> assert false)
         nss

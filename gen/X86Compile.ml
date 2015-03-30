@@ -13,7 +13,6 @@ open Code
 module Make(C:CompileCommon.Config) : XXXCompile.S =
 
 struct
-  let do_sta = !Config.sta
 
   module X86 = X86Arch
   include CompileCommon.Make(C)(X86)
@@ -97,14 +96,6 @@ struct
   let emit_load_not_eq  st =  emit_load_not st
   let emit_load_not_value  st = emit_load_not st
 
-  let emit_fno  _st _p _init _x =  Warn.fatal "FNO is irrelevant for X86"
-
-  let emit_fno2 = emit_fno
-
-  let emit_open_fno = emit_fno
-  and emit_close_fno _st _p _init _lab _r _x =
-    Warn.fatal "FNO is irrelevant for X86"
-
 
   let emit_access st _p init e = match e.C.dir with
   |R ->
@@ -117,7 +108,6 @@ struct
       end
   |W ->
       if
-        do_sta ||
         (match e.C.atom with Some Atomic -> true | None -> false)
       then
         let rX,st = next_reg st in

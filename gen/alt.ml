@@ -186,14 +186,14 @@ module Make(C:Builder.S)
 (* Ext Ext Only? *)
     | Ws _,Ws _ (* -> Ws *)
     | Fr _,Ws _ (* -> Fr*)
-    | (Rf _|RfStar _),Fr _ (* -> Ws *)
+    | Rf _,Fr _ (* -> Ws *)
 (*    Rf _,Fr _ (* -> Ws *) May be interesting, because
       values are observed by outcome itself,
       also useful to add Fre after B-cumulativity *)
       ->  C.E.get_ie e1 <> C.E.get_ie e2 (* Allow alternance *)
 (* Fence cumulativity *)
-    | (RfStar _|Rf _),Fenced (f,_,_,_)
-    | Fenced (f,_,_,_),(Rf _|RfStar _) ->
+    | Rf _,Fenced (f,_,_,_)
+    | Fenced (f,_,_,_),Rf _ ->
         is_cumul f && choose O.choice safes po_safe xs ys e1 e2
     | _,_ -> choose O.choice safes po_safe xs ys e1 e2
 

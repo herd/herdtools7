@@ -165,7 +165,6 @@ let () =
     let optcoherence = !Config.optcoherence
     let optcond = !Config.optcond
     let poll = !Config.poll
-    let fno = !Config.fno
     let overload = !Config.overload
     let obs_type = !Config.obs_type
     let do_observers = !Config.do_observers
@@ -187,7 +186,6 @@ let () =
       (match Co.cond with
       | Config.Unicond -> true
       | _ -> false)
-    let sta = !Config.sta
     let unrollatomic = !Config.unrollatomic
     let allow_back = true
   end in

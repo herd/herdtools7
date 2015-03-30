@@ -45,7 +45,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       let valid_edge e =
         let open C.E in
         match e.C.E.edge with
-        | Rf _ | RfStar _| Fr _ | Ws _ | Hat|Detour _|DetourWs _
+        | Rf _ | Fr _ | Ws _ | Hat|Detour _|DetourWs _
         | Back _|Leave _ -> true
         | Po _ | Fenced _ | Dp _|Rmw -> false
         | Store -> assert false in

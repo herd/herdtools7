@@ -17,7 +17,6 @@ module Make(O:CompileCommon.Config)(C:PPCArch.Config) : XXXCompile.S =
     module PPC = PPCArch.Make(C) 
     include CompileCommon.Make(O)(PPC)
 
-    let do_sta = O.sta
     let r0 = PPC.Ireg PPC.GPR0
 
 (* PPO *)
@@ -100,9 +99,7 @@ module Make(O:CompileCommon.Config)(C:PPCArch.Config) : XXXCompile.S =
 
     let pseudo = List.map (fun i -> PPC.Instruction i)
 
-    let sym = PPC.Symbolic_reg "sta"
-
-    let loop_rmw r1 r2 idx addr =
+    let emit_loop_pair _p r1 r2 idx addr =
       let lab = Label.next_label "Loop" in
       PPC.Label (lab,PPC.Nop)::
       pseudo
@@ -110,7 +107,7 @@ module Make(O:CompileCommon.Config)(C:PPCArch.Config) : XXXCompile.S =
          PPC.Pstwcx (r2,idx,addr);
          PPC.Pbcc (PPC.Ne,lab)]
       
-    let unroll_rmw p r1 r2 idx addr u  =
+    let emit_unroll_pair u p r1 r2 idx addr =
       if u <= 0 then
         pseudo
           [PPC.Plwarx (r1,idx,addr);
@@ -134,52 +131,45 @@ module Make(O:CompileCommon.Config)(C:PPCArch.Config) : XXXCompile.S =
               do_rec (u-1) in
         pseudo (do_rec u)@[PPC.Label (out,PPC.Nop)]
 
+    let emit_pair = match O.unrollatomic with
+    | None -> emit_loop_pair
+    | Some u -> emit_unroll_pair u
 
-    let unroll_sta u st p init x idx rA =
+
+(* STA *)
+
+    let emit_sta_idx_reg st p init x idx rW =
+      let rA,init,st = next_init st p init x in
+      let rR,st = next_reg st in
+      let cs = emit_pair p rR rW idx rA in
+      rR,init,cs,st
+
+    let emit_sta_idx  st p init x idx  v =
+      let rW,st = next_reg st in
+      let r,init,cs,st = emit_sta_idx_reg st p init x idx rW in
+      r,init,PPC.Instruction (PPC.Pli (rW,v))::cs,st
+      
+    let emit_sta_reg st p init x rW = emit_sta_idx_reg st p init x r0 rW
+
+    let emit_sta  st p init x v =
+      let rA,st = next_reg st in
+      let r,init,cs,st = emit_sta_reg st p init x rA in
+      r,init,PPC.Instruction (PPC.Pli (rA,v))::cs,st
+
+
+(* STORE *)
+
+    let emit_store_reg st p init x rA =
       let rB,init,st = next_init st p init x in
-      let unroll = unroll_rmw p sym rA idx rB in
-      init,unroll u,st
+      init,[PPC.Instruction (PPC.Pstw (rA,0,rB))],st
 
-    let loop_sta_reg st p init x rA =
+    let emit_store_idx_reg  st p init x idx rA =
       let rB,init,st = next_init st p init x in
-      init,loop_rmw sym rA r0 rB,st
-
-    let emit_sta_reg = match O.unrollatomic with
-    | None -> loop_sta_reg
-    | Some u ->
-        fun st p init x rA -> unroll_sta u st p init x PPC.r0 rA
-
-    let emit_store_reg =
-      if do_sta then emit_sta_reg
-      else
-        fun st p init x rA ->
-          let rB,init,st = next_init st p init x in
-          init,[PPC.Instruction (PPC.Pstw (rA,0,rB))],st
-
-    let loop_sta_idx_reg st p init x idx rA =
-      let rB,init,st = next_init st p init x in
-      init,loop_rmw sym rA idx rB,st
-
-    let emit_sta_idx_reg = match O.unrollatomic with
-    | None -> loop_sta_idx_reg
-    | Some u -> unroll_sta u
-
-    let emit_store_idx_reg =
-      if do_sta then emit_sta_idx_reg
-      else
-        fun st p init x idx rA ->
-          let rB,init,st = next_init st p init x in
-          init,[PPC.Instruction (PPC.Pstwx (rA,idx,rB))],st
-
+      init,[PPC.Instruction (PPC.Pstwx (rA,idx,rB))],st
 
     let emit_store st p init x v =
       let rA,st = next_reg st in
       let init,cs,st = emit_store_reg st p init x rA in
-      init,PPC.Instruction (PPC.Pli (rA,v))::cs,st
-
-    let emit_sta  st p init x v =
-      let rA,st = next_reg st in
-      let init,cs,st = emit_sta_reg st p init x rA in
       init,PPC.Instruction (PPC.Pli (rA,v))::cs,st
 
     let emit_store_idx st p init x idx v =
@@ -187,10 +177,17 @@ module Make(O:CompileCommon.Config)(C:PPCArch.Config) : XXXCompile.S =
       let init,cs,st = emit_store_idx_reg st p init x idx rA in
       init,PPC.Instruction (PPC.Pli (rA,v))::cs,st
 
-    let emit_sta_idx st p init x idx v =
-      let rA,st = next_reg st in
-      let init,cs,st = emit_sta_idx_reg st p init x idx rA in
-      init,PPC.Instruction (PPC.Pli (rA,v))::cs,st
+(* LDA *)
+
+    let emit_lda_idx st p init x idx =
+      let rA,init,st = next_init st p init x in
+      let rR,st = next_reg st in
+      let cs = emit_pair p rR rR idx rA in
+      rR,init,cs,st
+
+    let emit_lda st p init x = emit_lda_idx st p init x r0
+
+(* Load *)
 
     let emit_load st p init x =
       let rA,st = next_reg st in
@@ -242,65 +239,6 @@ module Make(O:CompileCommon.Config)(C:PPCArch.Config) : XXXCompile.S =
     let emit_load_not_value st p init x v =
       emit_load_not st p init x (fun r -> PPC.Pcmpwi (0,r,v))
 
-    let unroll_fno u st p init x idx =
-      let rA,st = next_reg st in
-      let rB,init,st = next_init st p init x in
-      let unroll = unroll_rmw p rA rA idx rB in
-      rA,init,unroll u,st
-
-    let loop_fno st p init x =
-      let rA,st = next_reg st in
-      let rB,init,st = next_init st p init x in
-      rA,init,loop_rmw rA rA r0 rB,st
-
-    let emit_fno = match O.unrollatomic with
-    | None -> loop_fno
-    | Some u -> fun st p init x -> unroll_fno u st p init x PPC.r0
-
-    let emit_fno2  st p init x =
-      let rA,st = next_reg st in
-      let rB,init,st = next_init st p init x in
-      rA,init, [PPC.Macro ("FNO2",[rA;rB])],st
-
-    let do_emit_open_fno st p init x =
-      let rA,st = next_reg st in
-      let rB,init,st = next_init st p init x in
-      let lab = Label.next_label "DIY" in
-      rA,init,
-      [ PPC.Label (lab,PPC.Instruction (PPC.Plwarx (rA,PPC.r0,rB))) ],
-      lab,st
-
-    let unroll_open_fno st p init x =
-      let rA,st = next_reg st in
-      let rB,init,st = next_init st p init x in
-      rA,init,
-      [PPC.Instruction (PPC.Plwarx (rA,PPC.r0,rB)) ],
-      "No",st
-
-    let emit_open_fno = match O.unrollatomic with
-    | None -> do_emit_open_fno
-    | Some _ -> unroll_open_fno
-
-    let do_emit_close_fno st p init lab r x =
-      let rB,init,st = next_init st p init x in
-      init,
-      pseudo [PPC.Pstwcx (r,PPC.r0,rB); PPC.Pbcc (PPC.Ne,lab)],
-      st
-
-    let unroll_close_fno u st p init _lab r x =
-      let rB,init,st = next_init st p init x in
-      let rec do_rec = function
-        | 0 -> []
-        | u ->
-            PPC.Instruction (PPC.Pstwcx (r,PPC.r0,rB))::
-            PPC.Instruction (PPC.Pbcc (PPC.Ne,Label.fail p))::
-            do_rec (u-1) in
-      init,do_rec u,st
-
-    let emit_close_fno = match O.unrollatomic with
-    | None -> do_emit_close_fno
-    | Some u -> unroll_close_fno u 
-
     let emit_load_idx st p init x idx =
       let rA,st = next_reg st in
       let rB,init,st = next_init st p init x in
@@ -324,15 +262,6 @@ module Make(O:CompileCommon.Config)(C:PPCArch.Config) : XXXCompile.S =
 
     let emit_one_stwcx st p init x v = emit_one_stwcx_idx st p init x PPC.r0 v
 
-    let loop_fno_idx st  p init x idx =
-      let rA,st = next_reg st in
-      let rB,init,st = next_init st p init x in
-      rA,init,loop_rmw rA rA idx rB,st
-
-    let emit_fno_idx = match O.unrollatomic with
-    | None -> loop_fno_idx
-    | Some u -> unroll_fno u
-
     let emit_access st p init e = match e.dir,e.atom with
     | R,None ->
         let emit = if e.rmw then emit_lwarx else emit_load in
@@ -342,21 +271,27 @@ module Make(O:CompileCommon.Config)(C:PPCArch.Config) : XXXCompile.S =
         let init,cs,st = emit_store st p init e.loc e.v in
         None,init,cs,st
     | R,Some PPC.Atomic ->
-        let r,init,cs,st = emit_fno st p init e.loc in
+        let r,init,cs,st = emit_lda st p init e.loc in
         Some r,init,cs,st
     | W,Some PPC.Atomic ->
-        let init,cs,st = emit_sta st p init e.loc e.v in
-        None,init,cs,st
+        let r,init,cs,st = emit_sta st p init e.loc e.v in
+        Some r,init,cs,st
     | R,Some PPC.Reserve ->
         let r,init,cs,st = emit_lwarx st p init e.loc  in
         Some r,init,cs,st
     | W,Some PPC.Reserve ->
         Warn.fatal "No store with reservation"
 
-    let emit_exch st p init er ew =
-      let r,init,csr,st = emit_lwarx st p init er.loc  in
-      let init,csw,st = emit_one_stwcx st p init ew.loc ew.v in
-      r,init,csr@csw,st
+    let emit_exch_idx st p init er ew idx =
+      let rA,init,st = next_init st p init er.loc in
+      let rR,st = next_reg st in
+      let rW,st = next_reg st in
+      let cs = emit_pair p rR rW idx rA in
+      rR,init,
+      PPC.Instruction (PPC.Pli (rW,ew.v))::cs,
+      st
+
+    let emit_exch st p init er ew  = emit_exch_idx st p init er ew r0
 
     let emit_access_dep_addr st p init e  r1 =
       let r2,st = next_reg st in
@@ -372,36 +307,39 @@ module Make(O:CompileCommon.Config)(C:PPCArch.Config) : XXXCompile.S =
           let init,cs,st = emit_store_idx st p init e.loc r2 e.v in
           None,init,PPC.Instruction c::cs,st
       | R,Some PPC.Atomic ->
-          let r,init,cs,st = emit_fno_idx st p init e.loc r2 in
+          let r,init,cs,st = emit_lda_idx st p init e.loc r2 in
           Some r,init, PPC.Instruction c::cs,st
       | W,Some PPC.Atomic ->
-          let init,cs,st = emit_sta_idx st p init e.loc r2 e.v in
-          None,init,PPC.Instruction c::cs,st
+          let r,init,cs,st = emit_sta_idx st p init e.loc r2 e.v in
+          Some r,init,PPC.Instruction c::cs,st
       | W,Some PPC.Reserve ->
           Warn.fatal "No store with reservation"        
 
     let emit_exch_dep_addr st  p init er ew rd =
       let idx,st = next_reg st in
       let c = PPC.Pxor(PPC.DontSetCR0,idx,rd,rd) in
-      let r,init,csr,st = emit_lwarx_idx st p init er.loc idx  in
-      let init,csw,st = emit_one_stwcx_idx st p init ew.loc idx ew.v in
-      r,init,PPC.Instruction c::csr@csw,st
+      let r,init,cs,st = emit_exch_idx st p init er ew idx in
+      r,init,PPC.Instruction c::cs,st
 
 
     let emit_access_dep_data st p init e  r1 =
       match e.dir with
       | R ->Warn.fatal "data dependency to load"
       | W ->
-          let r2,st = next_reg st in
+          let rW,st = next_reg st in
           let cs2 =
-            [PPC.Instruction (PPC.Pxor(PPC.DontSetCR0,r2,r1,r1)) ;
-             PPC.Instruction (PPC.Paddi (r2,r2,e.v)) ; ] in
-          let emit = match e.atom with
-          | None -> emit_store_reg
-          | Some PPC.Atomic -> emit_sta_reg
-          | Some PPC.Reserve -> Warn.fatal "No store with reservation" in
-          let init,cs,st = emit st p init e.loc r2 in
-          None,init,cs2@cs,st
+            [PPC.Instruction (PPC.Pxor(PPC.DontSetCR0,rW,r1,r1)) ;
+             PPC.Instruction (PPC.Paddi (rW,rW,e.v)) ; ] in
+          let ro,init,cs,st =
+            match e.atom with
+            | None ->
+                let init,cs,st = emit_store_reg st p init e.loc rW in
+                None,init,cs,st
+            | Some PPC.Atomic ->
+                let r,init,cs,st = emit_sta_reg st p init e.loc rW in
+                Some r,init,cs,st
+            | Some PPC.Reserve -> Warn.fatal "No store with reservation" in
+          ro,init,cs2@cs,st
 
     let insert_isync cs1 cs2 = cs1@[PPC.Instruction PPC.Pisync]@cs2
 
@@ -416,16 +354,20 @@ module Make(O:CompileCommon.Config)(C:PPCArch.Config) : XXXCompile.S =
           let emit = match e.atom with
           | None -> emit_load
           | Some PPC.Reserve ->emit_lwarx
-          | Some PPC.Atomic -> emit_fno in
+          | Some PPC.Atomic -> emit_lda in
           let r,init,cs,st = emit st p init e.loc in
           Some r,init,(if isync then insert_isync c cs else c@cs),st
       | W ->
-          let emit = match e.atom with
-          | None -> emit_store
-          | Some PPC.Reserve -> Warn.fatal "No store with reservation"
-          | Some PPC.Atomic -> emit_sta in
-          let init,cs,st = emit st p init e.loc e.v in
-          None,init,(if isync then insert_isync c cs else c@cs),st
+          let ro,init,cs,st =
+            match e.atom with
+            | None ->
+                let init,cs,st = emit_store st p init e.loc e.v in
+                None,init,cs,st
+            | Some PPC.Reserve -> Warn.fatal "No store with reservation"
+            | Some PPC.Atomic ->
+                let r,init,cs,st = emit_sta st p init e.loc e.v in
+                Some r,init,cs,st in
+          ro,init,(if isync then insert_isync c cs else c@cs),st
 
     let emit_exch_ctrl isync st p init er ew rd =
       let lab = Label.next_label "LC" in

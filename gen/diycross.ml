@@ -35,7 +35,6 @@ let opts =
 module type Config = sig  
   include DumpAll.Config
   val varatom : bool
-  val sta : bool
   val unrollatomic : int option
 end
 
@@ -194,7 +193,6 @@ let () =
          (match cond with
          | Config.Unicond -> true
          | _ -> false)
-      let sta = !Config.sta
       let unrollatomic = !Config.unrollatomic
       let list_edges = !Config.list_edges
       let overload = !Config.overload
@@ -202,7 +200,6 @@ let () =
       let docheck = !Config.docheck
       let optcoherence = !Config.optcoherence
       let optcond = !Config.optcond
-      let fno = !Config.fno
       let obs_type = !Config.obs_type
       let do_observers = !Config.do_observers
       let eprocs = !Config.eprocs

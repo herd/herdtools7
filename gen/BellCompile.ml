@@ -213,12 +213,6 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
 
     let emit_exch_dep _ = assert false
 
-(* No FNO's *)
-    let emit_fno _ = assert false
-    let emit_fno2 _ = assert false
-    let emit_open_fno _ = assert false
-    let emit_close_fno _ = assert false
-
 (* Check load *)
     let check_load p r e =
       let lab = Label.exit p in
