@@ -226,7 +226,15 @@ let () =
       let module M = Make(T(MIPSCompile.Make(C)))(Co) in
       M.go
   | Bell ->
-      let module M = Make(T(BellCompile.Make(C)))(Co) in
+      let module BellConfig =
+        struct
+          let debug = !Config.debug
+          let verbose = !Config.verbose
+          let libdir = Version.libdir
+          let prog = Config.prog
+          let bell = !Config.bell
+        end in
+      let module M = Make(T(BellCompile.Make(C)(BellConfig)))(Co) in
       M.go
   | C|CPP ->
       let module CoC = struct

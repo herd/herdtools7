@@ -96,11 +96,19 @@ let () =
   | AArch64 ->
       let module M = Build(AArch64Arch) in
       M.zyva
- | MIPS ->
+  | MIPS ->
       let module M = Build(MIPSArch) in
       M.zyva
- | Bell ->
-      let module M = Build(BellArch) in
+  | Bell ->
+      let module BellConfig =
+        struct
+          let debug = !Config.debug
+          let verbose = !Config.verbose
+          let libdir = Version.libdir
+          let prog = Config.prog
+          let bell = !Config.bell
+        end in
+      let module M = Build(BellArch.Make(BellConfig)) in
       M.zyva
   | C|CPP -> assert false)
     stdin

@@ -63,6 +63,7 @@ type cond = Cycle | Unicond | Observe
 let cond = ref Cycle
 let hout = ref None
 let list_edges = ref false
+let debug = ref Debug.none
 
 let parse_cond tag = match tag with
 | "cycle" -> Cycle
@@ -115,6 +116,11 @@ let common_specs =
   ("-v", Arg.Unit (fun () -> incr verbose),"  be verbose")::
   ("-version", Arg.Unit (fun () -> print_endline Version.version ; exit 0),
    " show version number and exit")::
+  Util.parse_tag "-debug"
+    (fun tag -> match Debug.parse !debug tag with
+    | None -> false
+    | Some d -> debug := d ; true)
+    Debug.tags "specify debugged part"::
   Util.parse_tag
     "-arch"
     (fun tag -> match Archs.parse tag with

@@ -13,7 +13,7 @@
 
 (** Bell model utilities *)
 
-let dbg = true
+let dbg = false
 
 open Printf
 
@@ -150,18 +150,14 @@ module Make
             error "no definition of scope order in bell file" in
         let nst =
           expand_scope scopes (StringRel.inverse order) st in
-        eprintf
-          "Scope tree:\n%s\n==>\n%s\n%!"
-          (BellInfo.pp_scopes st)
-          (BellInfo.pp_scopes nst) ;
+        if dbg then
+          eprintf
+            "Scope tree:\n%s\n==>\n%s\n%!"
+            (BellInfo.pp_scopes st)
+            (BellInfo.pp_scopes nst) ;
         nst
       with Error msg ->
         Warn.user_error "scope error, %s" msg
-
-    let rec same_length xs ys = match xs,ys with
-    | [],[] -> true
-    | _::xs,_::ys -> same_length xs ys
-    | ([],_::_) | (_::_,[]) -> false
 
     let check_instruction bi i =
       try
@@ -169,15 +165,11 @@ module Make
           try C.get_id_and_list i
           with Not_found -> raise Exit in (* If no annotation, no trouble *)
         assert (StringSet.mem id BellName.all_mem_sets) ;
-        let events_group = BellModel.get_events id bi in
-        let ok =
-          List.exists
-            (fun ag -> same_length ag al && List.for_all2 StringSet.mem al ag)
-            events_group in
+        let ok = BellModel.check_event id al bi in
         if not ok then begin
-          if dbg then eprintf "%s: %s\n" id (BellModel.pp_event_dec events_group) ;
-          error "instruction '%s' does not match bell declarations"
-            (A.dump_instruction i)
+          let eg = BellModel.get_events id bi in
+          error "instruction '%s' does not match bell declarations\n%s: %s"
+            (A.dump_instruction i) id (BellModel.pp_event_dec eg)
         end
       with
       | Exit -> () 

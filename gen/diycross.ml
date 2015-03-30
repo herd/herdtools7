@@ -231,7 +231,15 @@ let () =
         let module M = Make(C)(T(MIPSCompile.Make(C))) in
         M.zyva
     | Bell ->
-        let module M = Make(C)(T(BellCompile.Make(C))) in
+        let module BellConfig =
+        struct
+          let debug = !Config.debug
+          let verbose = !Config.verbose
+          let libdir = Version.libdir
+          let prog = Config.prog
+          let bell = !Config.bell
+        end in
+        let module M = Make(C)(T(BellCompile.Make(C)(BellConfig))) in
         M.zyva
     | C|CPP ->
         let module CoC = struct

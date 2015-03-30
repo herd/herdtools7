@@ -91,7 +91,15 @@ let () =
       let module M = Make(MIPSArch) in
       M.zyva 
   | Bell ->
-      let module M = Make(BellArch) in
+      let module BellConfig =
+        struct
+          let debug = !Config.debug
+          let verbose = !Config.verbose
+          let libdir = Version.libdir
+          let prog = Config.prog
+          let bell = !Config.bell
+        end in
+      let module M = Make(BellArch.Make(BellConfig)) in
       M.zyva 
   | C ->
       let module M = Make(CArch) in

@@ -331,6 +331,10 @@ let fold_tedges f r =
 (**********)
 (* Lexing *)
 (**********)
+  let debug_edge e =
+    sprintf
+      "{edge=%s, a1=%s, a2=%s}"
+      (pp_tedge e.edge) (pp_a e.a1) (pp_a e.a2)
 
   let iter_edges f = fold_edges (fun e () -> f e) ()
 
@@ -340,7 +344,12 @@ let fold_tedges f r =
     if dbg then eprintf "LXM: %s\n" lxm ;
     try
       let old = Hashtbl.find t lxm in
-      assert (compare old e = 0) ;
+      if compare old e <> 0 then begin
+        Warn.warn_always "ambiguous lexeme: %s" lxm ;
+        eprintf "%s\n%s\n" (debug_edge old) (debug_edge e) ;
+        assert false
+      end
+
     with Not_found ->
       Hashtbl.add t lxm e
 

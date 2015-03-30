@@ -213,8 +213,16 @@ let () =
       let module M = Build(T(MIPSCompile.Make(C))) in
       M.zyva
   | Bell ->
+      let module BellConfig =
+        struct
+          let debug = !Config.debug
+          let verbose = !Config.verbose
+          let libdir = Version.libdir
+          let prog = Config.prog
+          let bell = !Config.bell
+        end in
       let module T = Top.Make(Co) in
-      let module M = Build(T(BellCompile.Make(C))) in
+      let module M = Build(T(BellCompile.Make(C)(BellConfig))) in
       M.zyva
   | C|CPP as a ->
       let module CoC = struct

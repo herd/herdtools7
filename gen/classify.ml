@@ -154,7 +154,15 @@ let () =
       let module M = Build(MIPSArch) in
       M.zyva
   | Bell ->
-      let module M = Build(BellArch) in
+      let module BellConfig =
+        struct
+          let debug = !Config.debug
+          let verbose = !Config.verbose
+          let libdir = Version.libdir
+          let prog = Config.prog
+          let bell = !Config.bell
+        end in
+      let module M = Build(BellArch.Make(BellConfig)) in
       M.zyva
   | C|CPP ->
       let module M = Build(CArch) in

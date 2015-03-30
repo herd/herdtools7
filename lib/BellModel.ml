@@ -91,6 +91,19 @@ let get_regions i = i.regions
 (* By default, no annotation allowed *)
 let get_events tag {events;_} =  StringMap.safe_find [[]] tag events 
 
+
+let rec same_length xs ys = match xs,ys with
+| [],[] -> true
+| _::xs,_::ys -> same_length xs ys
+| ([],_::_) | (_::_,[]) -> false
+
+
+let check_event id al bi =
+  let events_group = get_events id bi in
+  List.exists
+    (fun ag -> same_length ag al && List.for_all2 StringSet.mem al ag)
+    events_group
+
 let get_mem_annots i = i.all_events
 
 let get_region_sets i = match i.regions with

@@ -38,6 +38,7 @@ val empty_info : info
 (* Get, do not fail *)
 val get_regions : info -> StringSet.t option
 val get_events : string -> info -> event_dec
+val check_event : string -> string list -> info -> bool
 val get_mem_annots : info -> StringSet.t
 val get_region_sets : info -> StringSet.t
 val get_scope_rels : info -> string list
