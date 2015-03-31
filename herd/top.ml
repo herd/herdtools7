@@ -27,6 +27,7 @@ module type Config = sig
   val dumplem : bool
   val dumptex : bool
   val badexecs : bool
+  val badflag : string option
   val throughflag : string option
   include Mem.Config
 end
@@ -349,7 +350,11 @@ module Make(O:Config)(M:XXXMem.S) =
         try begin
 (* Header *)
         let tname = test.Test.name.Name.name in
-        let has_bad_execs = Flag.Map.mem Flag.Undef c.flagged in
+        let has_bad_execs =
+          Flag.Map.mem Flag.Undef c.flagged ||
+          (match O.badflag with
+          | None -> false
+          | Some f -> Flag.Map.mem (Flag.Flag f) c.flagged) in
         if not O.badexecs &&  has_bad_execs then raise Exit ;
         printf "Test %s %s\n" tname (C.dump_as_kind cstr) ;        
 (**********)
@@ -361,7 +366,7 @@ module Make(O:Config)(M:XXXMem.S) =
           finals ;
 (* Condition result *)
         let ok = check_cond test c in
-        let is_bad = Flag.Map.mem Flag.Undef c.flagged in
+        let is_bad = has_bad_execs in
         printf "%s%s\n"
           (if loop then "Loop " else "")
           (if is_bad then "Undef" else if ok then "Ok" else "No") ;

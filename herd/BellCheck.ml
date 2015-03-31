@@ -13,11 +13,10 @@
 
 (** Bell model utilities *)
 
-let dbg = false
-
 open Printf
 
 module Make
+    (O:sig val debug : bool end)
     (A:Arch.S)
     (C:sig
       val info : BellModel.info option
@@ -59,7 +58,7 @@ module Make
 
     let add sc1 sc2 order =
       let p = StringRel.path sc1 sc2 order in
-      if dbg then eprintf "PATH %s %s = [%s]\n"
+      if O.debug then eprintf "PATH %s %s = [%s]\n"
         sc1 sc2 (String.concat "; " p) ;
       match p with
     | [] ->
@@ -85,10 +84,10 @@ module Make
           sc BellName.scopes
 
     let expand_scope scopes order =
-      if dbg then eprintf "ORDER: %s\n" (BellModel.pp_order_dec order) ;
+      if O.debug then eprintf "ORDER: %s\n" (BellModel.pp_order_dec order) ;
       let rec expand_rec top st =
         let sc = scope_of st in
-        if dbg then eprintf "EXPAND_REC top=%s, sc=%s\n" top sc;
+        if O.debug then eprintf "EXPAND_REC top=%s, sc=%s\n" top sc;
         check_tag sc scopes ;
         let st = match st with
         | Leaf (sc,ps) ->
@@ -98,7 +97,7 @@ module Make
         add top sc order st
 
       and expand_leaf sc ps order =
-        let leaves = StringRel.leaves sc order in
+        let leaves = StringRel.leaves_from sc order in
         begin match StringSet.as_singleton leaves with
         | None ->
             error
@@ -114,12 +113,12 @@ module Make
 
       fun st ->
         let sc = scope_of st in
-        if dbg then eprintf "EXPAND: sc='%s'\n" sc ;
+        if O.debug then eprintf "EXPAND: sc='%s'\n" sc ;
         match StringSet.as_singleton (StringRel.roots order) with
         | None ->
             error "ambiguity in scope tree: no unique root"
         | Some root ->
-            if dbg then eprintf "EXPAND: root=%s\n" root ;
+            if O.debug then eprintf "EXPAND: root=%s\n" root ;
             if String.compare sc root = 0 then
               match st with
               | Leaf (_,ps) ->
@@ -150,7 +149,7 @@ module Make
             error "no definition of scope order in bell file" in
         let nst =
           expand_scope scopes (StringRel.inverse order) st in
-        if dbg then
+        if O.debug then
           eprintf
             "Scope tree:\n%s\n==>\n%s\n%!"
             (BellInfo.pp_scopes st)

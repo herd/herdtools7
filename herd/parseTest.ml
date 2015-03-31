@@ -303,6 +303,7 @@ module Top (C:Config) = struct
              end)(BellS) in
         let module BellC =
           BellCheck.Make
+            (struct let debug = C.debug.Debug.barrier end)
             (Bell)
             (struct
               let info = Misc.app_opt (fun (_,y) -> y) C.bell_model_info

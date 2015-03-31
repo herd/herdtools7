@@ -14,7 +14,8 @@
 (** Check code w.r.t. bell definitions *)
 
 module Make :
-    functor (A:Arch.S) ->
+functor (O:sig val debug : bool end) ->
+  functor (A:Arch.S) ->
       functor
         (C:sig
           val info : BellModel.info option

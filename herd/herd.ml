@@ -223,6 +223,7 @@ let options = [
   Arg.Int (fun n -> nshow := Some n),
   "<n> collect at most <n> pictures, default is to collect all (specified) pictures";
   parse_bool "-badexecs" badexecs "list results of bad executions" ;
+  parse_string_opt "-badflag" badflag "executions with flag <string> are bad" ;
 (* undocumented *)
   "-showone",
   Arg.Bool (fun b -> if b then nshow := Some 1),
@@ -449,6 +450,7 @@ let () =
     let outcomereads = !outcomereads
     let show = !show
     let badexecs = !badexecs 
+    let badflag = !badflag
     let throughflag = !throughflag
 
     let check_name = match names with

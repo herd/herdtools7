@@ -34,6 +34,7 @@ let speedcheck = ref Speed.False
 let optace = ref None
 let initwrites = ref None
 let badexecs = ref true
+let badflag = ref None
 let through = ref Model.ThroughNone
 let throughflag = ref None
 let skipchecks = ref StringSet.empty

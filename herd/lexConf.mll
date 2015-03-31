@@ -149,6 +149,8 @@ and opt = parse
     { lex_tag "speedcheck" Speed.parse Speed.tags speedcheck arg }
 | "badexecs" arg
     { lex_bool badexecs arg }
+| "badflag" arg
+    { lex_string_opt badflag arg }
 (* Control output *)
 | "auto" arg
    { lex_bool auto arg }

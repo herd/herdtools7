@@ -33,6 +33,7 @@ val speedcheck : Speed.t ref
 val optace : bool option ref
 val initwrites : bool option ref
 val badexecs : bool ref
+val badflag : string option ref
 val through : Model.through ref
 val throughflag : string option ref
 val skipchecks : StringSet.t ref
