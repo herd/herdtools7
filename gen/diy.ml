@@ -192,6 +192,7 @@ let () =
     let nprocs = !Config.nprocs
     let neg = !Config.neg
     let cpp = cpp
+    let scope = !scope
     let docheck = !Config.docheck
  end in
   let module C = struct

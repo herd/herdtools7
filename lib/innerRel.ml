@@ -39,8 +39,10 @@ module type S =  sig
 
 (* One path from one node to another, returns [] if none *)
   val path : elt0 -> elt0 -> t -> elt0 list
+(* All leaves *)
+  val leaves : t -> Elts.t
 (* All leaves reachable from node *)
-  val leaves : elt0 -> t -> Elts.t
+  val leaves_from : elt0 -> t -> Elts.t
 (* All roots, ie all nodes with no predecessor *)
   val roots : t -> Elts.t
 
@@ -181,7 +183,13 @@ struct
       []
     with Path es -> e1::es
 
-  let leaves e t =
+  let leaves t =
+    let all_nodes = nodes t in
+    let non_leaves =
+      Elts.of_list (fold (fun (e,_) k -> e::k) t []) in
+    Elts.diff all_nodes non_leaves
+
+  let leaves_from e t =
     let rec dfs e (leaves,seen as r) =
       if Elts.mem e seen then r
       else

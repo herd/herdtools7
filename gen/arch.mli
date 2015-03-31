@@ -11,6 +11,7 @@
 module type S =
   sig
     include ArchBase.S
+    module ScopeGen:ScopeGen.S
     include Fence.S
     include ArchExtra.S with type arch_reg = reg
   end

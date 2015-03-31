@@ -23,9 +23,16 @@ rule main = parse
 | eof { [] }
 | "" { raise Error }
 
+and strings = parse
+| ',' { strings lexbuf }
+| [^',']+ as lxm { lxm :: strings lexbuf }
+| eof { [] }
+| "" { raise Error }
+
 {
 
 let ints s = main (Lexing.from_string s)
+let strings s = strings (Lexing.from_string s)
 
 let pp_ints xs = String.concat "," (List.map string_of_int xs)
 

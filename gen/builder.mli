@@ -18,6 +18,12 @@ module type S = sig
 
 
   type test
+(* Various access to test *)
+  val get_nprocs : test -> int
+  val get_name : test -> string
+  val set_name : test -> string -> test
+  val set_scope : test -> BellInfo.scopes -> test
+
   type node = C.node
   type edge = E.edge
   type check = edge list list -> bool
@@ -35,8 +41,8 @@ module type S = sig
   val test_of_cycle :
       string -> ?com:string -> ?info:Code.info -> ?check:check -> edge list ->
        node -> test  
+
 (* Dump the given test *)
-(*  val dump_test : test -> unit *)
   val dump_test_channel : out_channel -> test -> unit
 
 end

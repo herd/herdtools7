@@ -10,7 +10,7 @@
 
 open Code
 include X86Base
-
+module ScopeGen = ScopeGen.NoGen
 type atom = Atomic
 let default_atom = Atomic
 

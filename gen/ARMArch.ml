@@ -10,6 +10,7 @@
 
 open Printf
 include ARMBase
+module ScopeGen = ScopeGen.NoGen
 include MachAtom
 
 (**********)

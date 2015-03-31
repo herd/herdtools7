@@ -22,9 +22,10 @@ module type Config = sig
   val lowercase : bool
   val overload : int option
   val cpp : bool
+  val scope : Scope.t
 end
 
-module Make(Config:Config) (T:Builder.S)
+module Make(Config:Config)(T:Builder.S)
 
     = struct
 
@@ -259,20 +260,11 @@ module Make(Config:Config) (T:Builder.S)
 (* Normalized, for the cycle and info field. *)  
          }
 
-      let dump_test all_chan check cycle mk_info mk_name c res =
-        let n,env = match mk_name cycle.orig with
-        | None ->
-            let fam = mk_base cycle.orig in
-            let n,env = global_mk_name res.env fam cycle.orig in
-            n,env
-        | Some n -> n,res.env in
-        let n,dup = dup_name res.dup n in
-        let cy = T.E.pp_edges cycle.norm in
-        let info,relaxed = mk_info cycle.norm in
-        let info = ("Cycle",cy)::info in
-        let t = T.test_of_cycle n ~info:info ~check:check cycle.orig c in
 (* Output test proper *)
-        let src = sprintf "%s.%s" n (if Config.cpp then "c" else "litmus") in
+      let do_dump_test all_chan t res =
+        let n = T.get_name t in
+        let src =
+          sprintf "%s.%s" n (if Config.cpp then "c" else "litmus") in
         tar_output_protect
           (fun chan -> T.dump_test_channel chan t)
           src ;
@@ -280,12 +272,63 @@ module Make(Config:Config) (T:Builder.S)
         fprintf all_chan "%s\n" src ;
         if Config.verbose > 0 then eprintf "Test: %s\n" n ;
 (*    printf "%s: %s\n" n (pp_edges cycle.orig) ; *)
-        { res with
-          env = env ;
-          dup = dup;
-          ntests = res.ntests+1;
-          relaxed = T.R.SetSet.add relaxed res.relaxed; }
+        { res with ntests = res.ntests+1; }
 
+      let dump_test all_chan check cycle mk_info mk_name c res =
+        let n,env = match mk_name cycle.orig with
+        | None ->
+            let fam = mk_base cycle.orig in
+            let n,env = global_mk_name res.env fam cycle.orig in
+            n,env
+        | Some n -> n,res.env in
+        let cy = T.E.pp_edges cycle.norm in
+        let info,relaxed = mk_info cycle.norm in
+        let info = ("Cycle",cy)::info in
+        match Config.scope with
+        | Scope.No ->
+            let n,dup = dup_name res.dup n in
+            let t = T.test_of_cycle n ~info:info ~check:check cycle.orig c in
+            let res =
+              { res with
+                env; dup; relaxed= T.R.SetSet.add relaxed res.relaxed; } in
+            do_dump_test all_chan t res
+        | Scope.Default ->
+            let n,dup = dup_name res.dup n in
+            let t = T.test_of_cycle n ~info:info ~check:check cycle.orig c in
+            let res =
+              { res with
+                env; dup; relaxed= T.R.SetSet.add relaxed res.relaxed; } in
+            do_dump_test all_chan t res
+        | Scope.Gen scs ->
+            let t = 
+              T.test_of_cycle n ~info:info ~check:check cycle.orig c in
+            let res =
+              { res with
+                env; relaxed= T.R.SetSet.add relaxed res.relaxed; } in
+            T.A.ScopeGen.gen scs (T.get_nprocs t)
+              (fun st res ->
+                let n = n ^ "+" ^ Namer.of_scope st in
+                let n,dup = dup_name res.dup n in
+                let t = T.set_name t n in
+                let t = T.set_scope t st in
+                let res = { res with dup;} in
+                do_dump_test all_chan t res)
+              res
+        | Scope.All ->
+            let t = 
+              T.test_of_cycle n ~info:info ~check:check cycle.orig c in
+            let res =
+              { res with
+                env; relaxed= T.R.SetSet.add relaxed res.relaxed; } in
+            T.A.ScopeGen.all (T.get_nprocs t)
+              (fun st res ->
+                let n = n ^ "+" ^ Namer.of_scope st in
+                let n,dup = dup_name res.dup n in
+                let t = T.set_name t n in
+                let t = T.set_scope t st in
+                let res = { res with dup;} in
+                do_dump_test all_chan t res)
+              res
 (* Compose duplicate checker and dumper *)
       let check_dump =
         if Config.canonical_only then    

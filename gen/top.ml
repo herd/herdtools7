@@ -61,9 +61,14 @@ module Make (O:Config) (Comp:XXXCompile.S) : Builder.S
        edges : edge list ;
        init : A.init ;
        prog : A.pseudo list list ;
+       scopes : BellInfo.scopes option ;
        final : F.final ;
      }
 
+  let get_nprocs t = List.length t.prog
+  let get_name t = t.name
+  let set_name t n = { t with name=n; }
+  let set_scope t sc = { t with scopes = Some sc; }
   let extract_edges {edges=es; _} = es
 
 (* Utilities *)
@@ -611,15 +616,13 @@ let fmt_cols =
     Hint.dump O.hout t.name t.info ;
     dump_init chan t.init ;
     dump_code chan t.prog ;
+    begin match t.scopes with
+    | None -> ()
+    | Some st ->
+        fprintf chan "scopes: %s\n" (BellInfo.pp_scopes st)
+    end ;
     F.dump_final chan t.final ;
     ()
-
-
-let _dump_test ({ name = name; _ } as t) =
-  let fname = name ^ ".litmus" in
-  Misc.output_protect
-    (fun chan -> dump_test_channel chan t)
-    fname
 
 
 let test_of_cycle name ?com ?(info=[]) ?(check=(fun _ -> true)) es c =
@@ -628,7 +631,7 @@ let test_of_cycle name ?com ?(info=[]) ?(check=(fun _ -> true)) es c =
   let coms = String.concat " " coms in
   let info = info@["Prefetch",prf ; "Com",coms; "Orig",com; ] in
   { name=name ; info=info; com=com ;  edges = es ;
-    init=init ; prog=prog ; final=final ; }
+    init=init ; prog=prog ; scopes = None; final=final ; }
     
 let make_test name ?com ?info ?check es =
   try

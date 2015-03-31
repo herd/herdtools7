@@ -19,6 +19,7 @@ module Config = struct let eieio = true end
 module Make(C:Config)  =
   struct
     include PPCBase
+    module ScopeGen = ScopeGen.NoGen
     include MachAtom
 
 (**********)

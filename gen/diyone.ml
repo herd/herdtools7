@@ -174,6 +174,7 @@ let () =
 (* Specific *)
     let norm = !norm
     let cpp = cpp
+    let scope = !Config.scope
     let docheck = !Config.docheck
   end in
   let module Build = Make(Co) in

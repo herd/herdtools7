@@ -1,21 +1,21 @@
 (*********************************************************************)
 (*                         Diy                                       *)
 (*                                                                   *)
-(*   Luc Maranget INRIA Paris-Rocquencourt, France.                  *)
+(*       Luc Maranget INRIA Paris-Rocquencourt, France.              *)
 (*                                                                   *)
-(*  Copyright 2014 Institut National de Recherche en Informatique et *)
+(*  Copyright 2015 Institut National de Recherche en Informatique et *)
 (*  en Automatique. All rights reserved. This file is distributed    *)
 (*  under the terms of the Lesser GNU General Public License.        *)
 (*********************************************************************)
 
-(* Restricted arch, with abstract location *)
-module type S = sig
-  type arch_reg
-  module ScopeGen : ScopeGen.S
-  include Fence.S
-  type location
-  val of_loc : Code.loc -> location
-  val of_reg : Code.proc -> arch_reg -> location
-  val location_compare : location -> location -> int
-  val pp_location : location -> string
-end
+(** Scope tags *)
+
+type t =
+  | No
+  | Default
+  | Gen of (string * int * int) list
+  | All
+
+val tags : string list
+
+val parse : string -> t option

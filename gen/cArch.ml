@@ -11,7 +11,7 @@
 open Printf
 (* Memory order *)
 open MemOrder  
-
+module ScopeGen = ScopeGen.NoGen
 (* Atoms *)
 open Code
 type atom = MemOrder.t

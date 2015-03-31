@@ -10,6 +10,7 @@
 
 
 include MIPSBase
+module ScopeGen = ScopeGen.NoGen
 include MachAtom
 
 (**********)

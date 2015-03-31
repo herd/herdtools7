@@ -39,6 +39,7 @@ let addnum = ref true
 let lowercase = ref false
 let optcoherence = ref false
 let bell = ref None
+let scope = ref Scope.No
 
 type do_observers =
   | Avoid   (* was false *)
@@ -118,6 +119,12 @@ let common_specs =
   ("-bell",
    Arg.String (fun f -> bell := Some f),
    "<name> read bell file <name>")::
+  Util.parse_tag
+    "-scope"
+    (fun tag -> match Scope.parse tag with
+    | None -> false
+    | Some a -> scope := a; true)
+   Scope.tags  "<tag> specifiy scope tree"::
   Util.parse_tag
     "-type"
     (fun tag -> match TypBase.parse tag with

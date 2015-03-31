@@ -207,6 +207,7 @@ let () =
       let neg = !Config.neg
       let allow_back = false
       let cpp = match !Config.arch with Archs.CPP -> true | _ -> false
+      let scope = !Config.scope
     end in
     let open Archs in
     let module T = Top.Make(C) in

@@ -12,7 +12,7 @@ open Code
 open Printf
 
 include AArch64Base
-
+module ScopeGen = ScopeGen.NoGen
 (* AArch64 has more atoms that others *)
 type atom_rw =  PP | PL | AP | AL
 type atom = Acq | Rel | Atomic of atom_rw

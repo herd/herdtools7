@@ -971,6 +971,10 @@ module Make(O:Config) : Builder.S
            final : F.final ;
            types : A.typ StringMap.t;
          }
+      let get_nprocs t = List.length t.prog
+      let get_name t = t.name
+      let set_name t n = { t with name=n; }
+      let set_scope _t _sc = Warn.fatal "No scope for C"
 
       let extract_edges t = t.edges
 

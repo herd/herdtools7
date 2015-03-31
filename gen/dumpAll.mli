@@ -20,6 +20,7 @@ module type Config = sig
   val lowercase : bool
   val overload : int option
   val cpp : bool
+  val scope : Scope.t
 end
 
 module Make(Config:Config) (T:Builder.S) : sig

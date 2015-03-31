@@ -10,6 +10,16 @@
 
 (* Normalised names for cycles *)
 open Printf
+open BellInfo
+
+let rec of_scope = function
+  | Children ("",ts) -> of_scopes ts
+  | Leaf (sc,ps) ->
+      String.concat "" (List.map (sprintf "%i") ps) ^ "-" ^ sc
+  | Children (sc,ts) -> of_scopes ts ^ "-" ^ sc
+
+and of_scopes ts =
+  String.concat "-" (List.map of_scope ts)
 
 module type S = sig
   type edge
