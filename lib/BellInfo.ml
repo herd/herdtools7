@@ -80,6 +80,10 @@ and do_children sc0 sc1 ts = match ts with
 
 let contract st = match st with
 | Leaf _ -> st
+| Children ("",[t]) -> do_contract t
+| Children ("",ts) -> 
+    let ts =  List.map do_contract ts in
+    Children ("",ts)
 | Children (sc,ts) -> do_children sc "" ts
 
 type test = {

@@ -116,19 +116,23 @@ let compare_atom a1 a2 =
   Misc.list_compare String.compare a1 a2
 
 
-let fold_annots bi d f r =
-  let eg = BellModel.get_events (tr_dir d) bi in
+let fold_annots eg f r =
   List.fold_left
     (fun r ag ->
       Misc.fold_cross (List.map StringSet.elements ag) f r)
     r eg
         
 
+let fold_annots_dir bi d f r =
+  let eg = BellModel.get_events (tr_dir d) bi in
+  fold_annots eg f r
+        
+
 let fold_atom = match bi with
 | None -> fun _f r -> r
 | Some bi ->
     fun f r ->
-      fold_annots bi R f (fold_annots bi W f r)
+      fold_annots_dir bi R f (fold_annots_dir bi W f r)
 
 let worth_final _ = false
 
@@ -148,7 +152,12 @@ let strong = Fence []
 
 let pp_fence (Fence a) = sprintf "Fence%s" (pp_annots a)
 
-let fold_fences f k = f strong k
+let fold_fences = match bi with
+| None -> fun _f k -> k
+| Some bi ->
+    fun f k ->
+      let eg = BellModel.get_events BellName.f bi in
+      fold_annots eg (fun a k -> f (Fence a) k)  k
 
 let fold_cumul_fences _f k = k
 let fold_all_fences  = fold_fences

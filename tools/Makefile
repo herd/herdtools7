@@ -1,5 +1,6 @@
 PREFIX=$$HOME
 BINDIR=$(PREFIX)/bin
+LIBDIR=$(PREFIX)/lib/herd7
 
 OCB=ocamlbuild $(OCBOPT) -cflags -w,A-4-29-41-45 -classic-display $(J)
 
