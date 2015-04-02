@@ -39,7 +39,7 @@ A summary of bell constructs:
   that they define the same hierachy.
 
 
-* Scope tree, abrreviated.
+* Scope tree, abbreviated.
 
   Scope trees can be given in simplified form. In such a form, nodes with one
   child can be left implicit. For instance:
