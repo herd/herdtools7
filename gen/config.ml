@@ -120,7 +120,7 @@ let common_specs =
    Arg.String (fun f -> bell := Some f),
    "<name> read bell file <name>")::
   Util.parse_tag
-    "-scope"
+    "-scopes"
     (fun tag -> match Scope.parse tag with
     | None -> false
     | Some a -> scope := a; true)
