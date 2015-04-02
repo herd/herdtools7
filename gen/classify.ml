@@ -61,8 +61,6 @@ module Make(Co:Config) (A:Fence.S) = struct
     | '#'|'%' -> true
     | _ -> false
 
-  module StringSet = MySet.Make(String)
-
   let add name (key,ps,_) k =
     let xs =
       try StringMap.find  key k
