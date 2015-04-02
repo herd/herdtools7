@@ -975,7 +975,7 @@ module Make(O:Config) : Builder.S
       let get_name t = t.name
       let set_name t n = { t with name=n; }
       let set_scope _t _sc = Warn.fatal "No scope for C"
-
+      let add_info t k i = { t with info = (k,i)::t.info; }
       let extract_edges t = t.edges
 
       let dump_c_test_channel chan t =

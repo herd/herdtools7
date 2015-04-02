@@ -37,12 +37,16 @@ module Make(Config:Config) (T:Builder.S) : sig
   type mk_name =  edge list -> string option
   val no_name : mk_name
 
+(* Compute scope *)
+  type mk_scope = edge list -> BellInfo.scopes option
+  val no_scope : mk_scope
+
 (* Remains abstract: for dumper internal usage *)
   type t
 
 (* Type of cycle generator *)
   type generator =
-      ((edge list -> mk_info -> mk_name -> t -> t) -> t -> t)
+      (edge list -> mk_info -> mk_name ->  mk_scope -> t -> t) -> t -> t
 
 
 (* Combine generator and dumper: so as to dump all test

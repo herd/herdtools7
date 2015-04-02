@@ -52,7 +52,7 @@ module Make (Config:Config) (M:Builder.S) =
 
     let gen ess kont r =
       Misc.fold_cross ess
-        (fun es r -> kont (List.flatten es) D.no_info D.no_name r)
+        (fun es r -> kont (List.flatten es) D.no_info D.no_name D.no_scope r)
         r
 
     open Code

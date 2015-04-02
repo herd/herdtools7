@@ -16,12 +16,16 @@ let diyone = ref false
 let lowercase = ref false
 let uniq = ref false
 let map = ref None
+let bell = ref None
+
 let opts =
   ("-diyone", Arg.Set diyone," generate input for diyone")::
   ("-lowercase", Arg.Bool (fun b -> lowercase := b),
    sprintf "<bool> use lowercase familly names, default %b" !lowercase)::
   ("-u", Arg.Set uniq," reject duplicate normalised names")::
   ("-map", Arg.String (fun s -> map := Some s)," <name> save renaming map into file <name>")::
+  ("-bell",Arg.String (fun f -> bell := Some f),
+   "<name> read bell file <name>")::
   Util.parse_tag
     "-arch"
     (fun tag -> match Archs.parse tag with
@@ -43,17 +47,9 @@ module Make(Co:Config) (A:Fence.S) = struct
   module E = Edge.Make(A)
   module N = Namer.Make(A)(E)
   module Norm = Normaliser.Make(Co)(E)
+  module P = LineUtils.Make(E)
 
-  let parse_line s =
-    try
-      let r = String.index s ':' in
-      let name  = String.sub s 0 r
-      and es = String.sub s (r+1) (String.length s - (r+1)) in
-      let es = E.parse_edges es in
-      name,es
-    with
-    | Not_found | Invalid_argument _ ->
-        Warn.fatal "bad line: %s" s
+  let parse_line s = P.parse s
 
   let skip_line s = match s with
   | "" -> true
@@ -61,11 +57,11 @@ module Make(Co:Config) (A:Fence.S) = struct
     | '#'|'%' -> true
     | _ -> false
 
-  let add name (key,ps,_) k =
+  let add name (key,ps,_) st k =
     let xs =
       try StringMap.find  key k
       with Not_found -> [] in
-    StringMap.add key ((name,ps)::xs) k
+    StringMap.add key ((name,(ps,st))::xs) k
 
   let scan chan =
     let k = ref StringMap.empty in
@@ -73,13 +69,17 @@ module Make(Co:Config) (A:Fence.S) = struct
       let line = input_line chan in
       if skip_line line then do_rec ()
       else begin
-        let name,es = parse_line line in
+        let name,es,st = parse_line line in
         let ps = Norm.normalise_family (E.resolve_edges es) in
-        k := add name ps !k ;
+        k := add name ps st !k ;
         do_rec ()
     end in
     try do_rec ()
     with End_of_file ->  !k
+
+  let pp_scope_opt = function
+    | None -> ""
+    | Some st -> " " ^ BellInfo.pp_scopes st
 
   let dump_map outmap m =
     StringMap.iter
@@ -89,18 +89,20 @@ module Make(Co:Config) (A:Fence.S) = struct
 
         let rec do_rec seen = function
           | [] -> ()
-          | (name,es)::rem ->
-              let new_name = N.mk_name base es in              
+          | (name,(es,scope))::rem ->
+              let new_name = N.mk_name base ?scope es in              
               if Co.uniq &&  StringSet.mem new_name seen then
                 Warn.fatal "Duplicate name: %s" new_name ;
               if Co.diyone then
-                printf "%s: %s\n"
+                printf "%s: %s%s\n"
                   new_name
                   (E.pp_edges es)
+                  (pp_scope_opt scope)
               else
-                printf "  %s -> %s : %s\n"
+                printf "  %s -> %s: %s%s\n"
                   name new_name
-                  (E.pp_edges es) ;
+                  (E.pp_edges es)
+                  (pp_scope_opt scope) ;
               fprintf outmap "%s %s\n" name new_name ;
               let seen = StringSet.add new_name seen in
               do_rec seen rem in
@@ -158,7 +160,7 @@ let () =
           let verbose = !Config.verbose
           let libdir = Version.libdir
           let prog = Config.prog
-          let bell = !Config.bell
+          let bell = !bell
         end in
       let module M = Build(BellArch.Make(BellConfig)) in
       M.zyva

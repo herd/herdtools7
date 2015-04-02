@@ -29,10 +29,14 @@ let get_cycle info =
   | Some c,None -> One c
   | None,None -> raise Not_found
 
+let get_scope info =
+  try Some (List.assoc "Scopes" info)
+  with Not_found -> None
+
 let from_splitted splitted =
   let name = splitted.Splitter.name
   and info = splitted.Splitter.info in
-  name.Name.name,get_cycle info
+  name.Name.name,get_cycle info,get_scope info
 
 module SP = Splitter.Make(Splitter.Default)
 
@@ -56,20 +60,37 @@ let () =
 
 let tests = !arg
 
-let seen = ref StringSet.empty
+module S =
+  MySet.Make
+    (struct
+      type t = string * string option
+
+      let compare x y =
+        Misc.pair_compare 
+          String.compare
+          (Misc.opt_compare String.compare)
+          x y
+    end)
+
+let seen = ref S.empty
+
+let ppo = function
+  | None -> ""
+  | Some s -> " " ^ s
 
 let () =
   Misc.iter_argv
     (fun name ->
       try
-        let tname,cycle = from_file name in
+        let tname,cycle,st = from_file name in
         match cycle with
         | One c ->
-            printf "%s: %s\n" tname c
+            printf "%s: %s%s\n" tname c (ppo st)
         | Norm (o,c) ->
-            if not (StringSet.mem c !seen) then begin
-              seen := StringSet.add c !seen ;
-              printf "%s: %s\n" tname o
+            let k = c,st in
+            if not (S.mem k !seen) then begin
+              seen := S.add k !seen ;
+              printf "%s: %s%s\n" tname o (ppo st)
             end
       with
       | Not_found -> Warn.warn_always "%s: no cycle" name

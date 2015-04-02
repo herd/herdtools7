@@ -220,8 +220,11 @@ module Make(Config:Config)(T:Builder.S)
       type mk_name =  edge list -> string option
       let no_name _ = None
 
+      type mk_scope =  edge list -> BellInfo.scopes option
+      let no_scope _ = None
+
       type generator =
-          ((edge list -> mk_info -> mk_name -> t -> t) -> t -> t)
+          (edge list -> mk_info -> mk_name -> mk_scope -> t -> t) -> t -> t
 
       let empty_sig =
         { sig_next = 0 ; sig_map = T.E.Map.empty ; sig_set = StringSet.empty }
@@ -275,11 +278,14 @@ module Make(Config:Config)(T:Builder.S)
         { res with ntests = res.ntests+1; }
 
 (* Dump from cycle, with specified scope tree *)
-      let dump_test_st all_chan check cycle info relaxed env n c mk_st res =
-        (* Build test (we need number of procs... *)
+      let dump_test_st keep_name
+          all_chan check cycle info relaxed env n c mk_st res =
+        (* Build test (we need number of procs...) *)
         let t = T.test_of_cycle n ~info:info ~check:check cycle.orig c in
         let st = mk_st (T.get_nprocs t) in
-        let n = n ^ "+" ^ Namer.of_scope st in
+        let n =
+          if keep_name then n
+          else n ^ "+" ^ Namer.of_scope st in
         let n,dup = dup_name res.dup n in
         let t = T.set_name t n in
         let t = T.set_scope t st in
@@ -288,7 +294,7 @@ module Make(Config:Config)(T:Builder.S)
             env; dup; relaxed= T.R.SetSet.add relaxed res.relaxed; } in
         do_dump_test all_chan t res
 
-      let dump_test all_chan check cycle mk_info mk_name c res =
+      let dump_test all_chan check cycle mk_info mk_name mk_scope c res =
         let n,env = match mk_name cycle.orig with
         | None ->
             let fam = mk_base cycle.orig in
@@ -298,6 +304,7 @@ module Make(Config:Config)(T:Builder.S)
         let cy = T.E.pp_edges cycle.norm in
         let info,relaxed = mk_info cycle.norm in
         let info = ("Cycle",cy)::info in
+
         match Config.scope with
         | Scope.No ->
             let n,dup = dup_name res.dup n in
@@ -307,10 +314,15 @@ module Make(Config:Config)(T:Builder.S)
                 env; dup; relaxed= T.R.SetSet.add relaxed res.relaxed; } in
             do_dump_test all_chan t res
         | Scope.Default ->
-            dump_test_st all_chan check cycle info relaxed env n c
-              T.A.ScopeGen.default res
+            let keep_name,mk_st =
+              (match mk_scope cycle.orig with
+              | None -> false,T.A.ScopeGen.default
+              | Some st -> true,(fun _ -> st)) in
+            dump_test_st
+                keep_name all_chan check
+                cycle info relaxed env n c mk_st res
         | Scope.One st ->
-            dump_test_st all_chan check cycle info relaxed env n c
+            dump_test_st false all_chan check cycle info relaxed env n c
               (fun _ -> st) res
         | Scope.Gen scs ->
             let t = 
@@ -345,21 +357,21 @@ module Make(Config:Config)(T:Builder.S)
 (* Compose duplicate checker and dumper *)
       let check_dump =
         if Config.canonical_only then    
-          fun all_chan check es mk_info mk_name r  ->
+          fun all_chan check es mk_info mk_name mk_scope r  ->
             let es,c = T.C.resolve_edges es in
             let seen,nes,sigs = have_seen r.sigs es in
             if seen then Warn.fatal "Duplicate" ;
             T.C.finish c ;
             dump_test all_chan check { orig = es ; norm = nes }
-              mk_info mk_name c { r with sigs = sigs; } 
+              mk_info mk_name mk_scope c { r with sigs = sigs; } 
         else 
-          fun all_chan check es mk_info mk_name r ->
+          fun all_chan check es mk_info mk_name mk_scope r ->
             let es,c = T.C.resolve_edges es in
             T.C.finish c ;
             dump_test all_chan check { orig = es ; norm = es ; }
-              mk_info mk_name c r
+              mk_info mk_name mk_scope c r
 
-      let check_dump all_chan check es mk_info mk_name res =
+      let check_dump all_chan check es mk_info mk_name mk_scope res =
         let es = normalise es in
         if Config.verbose > 0 then begin
           eprintf "------------------------------------------------------\n" ;
@@ -369,7 +381,7 @@ module Make(Config:Config)(T:Builder.S)
             (fun (tag,i) -> eprintf "%s: %s\n" tag i) info
         end ;
         try
-          check_dump all_chan check es mk_info mk_name res
+          check_dump all_chan check es mk_info mk_name mk_scope res
         with
         | Misc.Fatal msg ->
             if Config.verbose > 0 then begin

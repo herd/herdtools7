@@ -23,6 +23,7 @@ module type S = sig
   val get_name : test -> string
   val set_name : test -> string -> test
   val set_scope : test -> BellInfo.scopes -> test
+  val add_info : test -> string -> string -> test
 
   type node = C.node
   type edge = E.edge

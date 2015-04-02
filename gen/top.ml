@@ -68,7 +68,10 @@ module Make (O:Config) (Comp:XXXCompile.S) : Builder.S
   let get_nprocs t = List.length t.prog
   let get_name t = t.name
   let set_name t n = { t with name=n; }
-  let set_scope t sc = { t with scopes = Some sc; }
+  let set_scope t sc =
+    let pp = BellInfo.pp_scopes sc in
+    { t with scopes = Some sc; info = ("Scopes",pp)::t.info; }
+  let add_info t k i =  { t with info = (k,i)::t.info; }
   let extract_edges {edges=es; _} = es
 
 (* Utilities *)

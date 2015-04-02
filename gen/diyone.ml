@@ -32,6 +32,7 @@ module type Config = sig
   val norm : bool
   val cpp : bool    
   val docheck : bool
+  val prog : string
 end
 
 module Make(O:Config) (M:Builder.S) =
@@ -54,13 +55,33 @@ module Make(O:Config) (M:Builder.S) =
         (fun chan -> M.dump_test_channel chan t; Some fname)
         fname
 
+    let gen_one_scope gen n =
+      try
+        gen n 
+          (fun st r -> match r with
+          | Some _ -> raise Exit
+          | None -> Some st)
+          None
+      with Exit -> None
+
     let get_scope n = match O.scope with
     | Scope.No -> None
     | Scope.One st -> Some st
     | Scope.Default -> Some (M.A.ScopeGen.default n)
-    | _ ->
-        Warn.warn_always "Cannot apply scope enumeration in diyone" ;
-        None
+    | Scope.Gen scs ->        
+        begin match gen_one_scope (M.A.ScopeGen.gen scs) n with
+        | None ->
+            Warn.fatal
+              "scope enumeration yields several scopes"
+        | Some _ as st -> st
+        end
+    | Scope.All ->
+        begin match gen_one_scope M.A.ScopeGen.all n with
+        | None ->
+            Warn.fatal
+              "scope enumeration yield several scopes"
+        | Some _ as st -> st
+        end
 
     let dump =
       let module Normer = Normaliser.Make(O)(M.E) in
@@ -81,21 +102,9 @@ module Make(O:Config) (M:Builder.S) =
           | None -> dump_stdout ?scope (M.E.resolve_edges es)
           | Some name -> dump_file name ?scope (M.E.resolve_edges es)
 
-    let parse_line s =
-      try
-        let r = String.index s ':' in
-        let name  = String.sub s 0 r
-        and es = String.sub s (r+1) (String.length s - (r+1)) in
-        let es = LexUtil.split es in
-        let es = M.R.parse_relaxs es in
-        let es =
-          List.fold_right
-            (fun r k -> M.R.edges_of r @ k)
-            es [] in
-        name,es
-      with
-      | Not_found | Invalid_argument _ ->
-          Warn.fatal "bad line: %s" s
+    module P = LineUtils.Make(M.E)
+ 
+    let parse_line s = P.parse s
 
 (********)
     let do_zyva name pp_rs =
@@ -119,11 +128,12 @@ module Make(O:Config) (M:Builder.S) =
                   try
                     let line = read_line () in
                     try
-                      let name,es = parse_line line in
+                      let name,es,st = parse_line line in
                       let mk_name =
-                        if dump_names then  D.no_name
+                        if dump_names then D.no_name
                         else (fun _ -> Some name) in
-                      Some (kont es D.no_info mk_name k0)
+                      let mk_scope _ = st in
+                      Some (kont es D.no_info mk_name mk_scope k0)
                     with
                     | Fatal msg | UserError msg ->
                         Warn.warn_always "%s on line '%s'" msg line ;
@@ -189,6 +199,7 @@ let () =
     let cpp = cpp
     let scope = !Config.scope
     let docheck = !Config.docheck
+    let prog = Config.prog
   end in
   let module Build = Make(Co) in
   let module C = struct

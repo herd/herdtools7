@@ -473,7 +473,7 @@ module Make(C:Builder.S)
                      "Safe", pp_relax_list ss;
                    ] in
                   info,C.R.Set.of_list rs in
-                f le mk_info D.no_name k
+                f le mk_info D.no_name D.no_scope k
               end
             with Normaliser.CannotNormalise -> k
           else k
