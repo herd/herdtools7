@@ -23,7 +23,7 @@ and of_scopes ts =
 
 module type S = sig
   type edge
-  val mk_name : string -> edge list -> string
+  val mk_name : string -> ?scope:BellInfo.scopes -> edge list -> string
 end
 
 module Make
@@ -148,7 +148,7 @@ module Make
          xs
 
 
-       let mk_name base es =
+       let mk_name base ?scope es =
          let name =
            let xs = new_namer es in
            let ys = match isolated_writes es with
@@ -161,6 +161,9 @@ module Make
            | Some x,_::_::_ -> (x ^ "s")::ys
            | None, _ -> xs@ys
            | Some _,[] -> assert false in
-           String.concat "+" (base::xs) in
-         name
+           String.concat "+" (base::xs) in         
+         let scope = match scope with
+         | None -> ""
+         | Some st -> "+" ^ of_scope st in
+         name ^ scope
      end

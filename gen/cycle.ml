@@ -693,7 +693,6 @@ let merge_changes n nss =
     then Warn.fatal "Forbidden po vs. com" ;
     nss
 
-
 (****************************)
 (* Compute coherence orders *)
 (****************************)

@@ -80,7 +80,7 @@ module Make (A:Fence.S) =
           try
             let line = read_line () in
             let _,es = parse_line line in
-            let base,es = Normer.normalise_family (atomize es) in
+            let base,es,_ = Normer.normalise_family (atomize es) in
             let name = Namer.mk_name base es in
             printf "%s: %s\n" name (pp_edges es)
           with Misc.Fatal msg -> Warn.warn_always "%s" msg

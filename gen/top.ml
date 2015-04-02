@@ -625,20 +625,21 @@ let fmt_cols =
     ()
 
 
-let test_of_cycle name ?com ?(info=[]) ?(check=(fun _ -> true)) es c =
+let test_of_cycle name
+  ?com ?(info=[]) ?(check=(fun _ -> true)) ?scope es c =
   let com = match com with None -> pp_edges es | Some com -> com in
   let(init,prog,final),(prf,coms) = compile_cycle check c in
   let coms = String.concat " " coms in
   let info = info@["Prefetch",prf ; "Com",coms; "Orig",com; ] in
   { name=name ; info=info; com=com ;  edges = es ;
-    init=init ; prog=prog ; scopes = None; final=final ; }
+    init=init ; prog=prog ; scopes = scope; final=final ; }
     
-let make_test name ?com ?info ?check es =
+let make_test name ?com ?info ?check ?scope es =
   try
     if O.verbose > 1 then eprintf "**Test %s**\n" name ;
     if O.verbose > 2 then eprintf "**Cycle %s**\n" (pp_edges es) ;
     let es,c = C.make es in
-    test_of_cycle name ?com ?info ?check es c
+    test_of_cycle name ?com ?info ?check ?scope es c
   with
   | Misc.Fatal msg|Misc.UserError msg ->
       Warn.fatal "Test %s [%s] failed:\n%s" name (pp_edges es) msg

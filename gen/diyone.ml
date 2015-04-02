@@ -37,8 +37,8 @@ end
 module Make(O:Config) (M:Builder.S) =
   struct
 
-    let dump_stdout es =
-      let t = M.make_test "A" es in
+    let dump_stdout ?scope es =
+      let t = M.make_test "A" ?scope es in
       M.dump_test_channel stdout t ;
       None
 
@@ -46,27 +46,40 @@ module Make(O:Config) (M:Builder.S) =
       if O.cpp then sprintf "%s.c"
       else sprintf "%s.litmus"
 
-    let dump_file name es =
+    let dump_file name ?scope es =
       if O.verbose > 0 then eprintf "Test name: %s\n" name ;
-      let t = M.make_test name es in
+      let t = M.make_test name ?scope es in
       let fname = litmus name in
       Misc.output_protect
         (fun chan -> M.dump_test_channel chan t; Some fname)
         fname
 
+    let get_scope n = match O.scope with
+    | Scope.No -> None
+    | Scope.One st -> Some st
+    | Scope.Default -> Some (M.A.ScopeGen.default n)
+    | _ ->
+        Warn.warn_always "Cannot apply scope enumeration in diyone" ;
+        None
+
     let dump =
+      let module Normer = Normaliser.Make(O)(M.E) in
       if O.norm then
         let module Namer = Namer.Make(M.A)(M.E) in
-        let module Normer = Normaliser.Make(O)(M.E) in
         fun _name es ->
 	  let es = M.E.resolve_edges es in
-          let base,es = Normer.normalise_family es in
-          let name = Namer.mk_name base es in
-          dump_file name es
+          let base,es,nprocs = Normer.normalise_family es in
+          let scope = get_scope nprocs in 
+          let name = Namer.mk_name base ?scope es in
+          dump_file name ?scope es
       else
-        fun name  -> match name with
-        | None -> fun es -> dump_stdout (M.E.resolve_edges es)
-        | Some name -> fun es -> dump_file name (M.E.resolve_edges es)
+        fun name es ->
+          let es = M.E.resolve_edges es in
+          let nprocs = Normer.get_nprocs es in
+          let scope =  get_scope nprocs in
+          match name with
+          | None -> dump_stdout ?scope (M.E.resolve_edges es)
+          | Some name -> dump_file name ?scope (M.E.resolve_edges es)
 
     let parse_line s =
       try

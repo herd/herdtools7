@@ -36,11 +36,15 @@ module type S = sig
    third argument is the last minute check *)
 
   val make_test :
-      string -> ?com:string -> ?info:Code.info -> ?check:check -> edge list -> test
+      string -> ?com:string -> ?info:Code.info -> ?check:check ->
+       ?scope:BellInfo.scopes  -> edge list -> test
+
 (* Build test from cycle *)
   val test_of_cycle :
-      string -> ?com:string -> ?info:Code.info -> ?check:check -> edge list ->
-       node -> test  
+      string ->
+        ?com:string -> ?info:Code.info -> ?check:check ->
+          ?scope:BellInfo.scopes ->
+            edge list -> node -> test  
 
 (* Dump the given test *)
   val dump_test_channel : out_channel -> test -> unit

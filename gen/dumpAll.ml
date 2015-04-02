@@ -274,6 +274,20 @@ module Make(Config:Config)(T:Builder.S)
 (*    printf "%s: %s\n" n (pp_edges cycle.orig) ; *)
         { res with ntests = res.ntests+1; }
 
+(* Dump from cycle, with specified scope tree *)
+      let dump_test_st all_chan check cycle info relaxed env n c mk_st res =
+        (* Build test (we need number of procs... *)
+        let t = T.test_of_cycle n ~info:info ~check:check cycle.orig c in
+        let st = mk_st (T.get_nprocs t) in
+        let n = n ^ "+" ^ Namer.of_scope st in
+        let n,dup = dup_name res.dup n in
+        let t = T.set_name t n in
+        let t = T.set_scope t st in
+        let res =
+          { res with
+            env; dup; relaxed= T.R.SetSet.add relaxed res.relaxed; } in
+        do_dump_test all_chan t res
+
       let dump_test all_chan check cycle mk_info mk_name c res =
         let n,env = match mk_name cycle.orig with
         | None ->
@@ -293,12 +307,11 @@ module Make(Config:Config)(T:Builder.S)
                 env; dup; relaxed= T.R.SetSet.add relaxed res.relaxed; } in
             do_dump_test all_chan t res
         | Scope.Default ->
-            let n,dup = dup_name res.dup n in
-            let t = T.test_of_cycle n ~info:info ~check:check cycle.orig c in
-            let res =
-              { res with
-                env; dup; relaxed= T.R.SetSet.add relaxed res.relaxed; } in
-            do_dump_test all_chan t res
+            dump_test_st all_chan check cycle info relaxed env n c
+              T.A.ScopeGen.default res
+        | Scope.One st ->
+            dump_test_st all_chan check cycle info relaxed env n c
+              (fun _ -> st) res
         | Scope.Gen scs ->
             let t = 
               T.test_of_cycle n ~info:info ~check:check cycle.orig c in

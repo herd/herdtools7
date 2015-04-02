@@ -13,6 +13,7 @@
 type t =
   | No
   | Default
+  | One of BellInfo.scopes
   | Gen of (string * int * int) list
   | All
 let tags = ["none";"default";"all";"(<scope>:<int>:<int>)+"]
@@ -25,18 +26,31 @@ let parse_gen tag =
   let max = int_of_string (String.sub tag (j+1) (String.length tag-(j+1))) in
   sc,min,max
 
+let some_colon s =
+  try ignore (String.index s ':') ; true
+  with Not_found -> false
+
 let parse tag = match tag with
 | "none"|"no" -> Some No
 | "default"|"def" -> Some Default
 | "all" -> Some All
 | _ ->
-    begin try
-      let tags = LexSplit.strings tag in
-      let t =
-        Gen
-          (List.map
-             (fun tag -> parse_gen tag)
-             tags) in
-      Some t
-    with _ -> None
-    end
+    if some_colon tag then
+      begin try
+        let tags = LexSplit.strings tag in
+        let t =
+          Gen
+            (List.map
+               (fun tag -> parse_gen tag)
+               tags) in
+        Some t
+      with _ -> None
+      end
+    else
+      let module Lexer = ScopeLexer.Make(LexUtils.Default) in
+      let lexbuf = Lexing.from_string tag in
+      let st =
+        GenParser.call_parser "_none_" lexbuf
+          Lexer.token ScopeParser.top_scope_tree in
+      Some (One st)
+

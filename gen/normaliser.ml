@@ -23,10 +23,12 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
     val normalise : E.edge list ->  E.edge list
 (* Return family name, without normalising *)
     val family : E.edge list -> string
-(* Both *)
-    val normalise_family : E.edge list ->  string * E.edge list
+(* Return number of procs in test *)
+    val get_nprocs : E.edge list -> int
+(* All at once *)
+    val normalise_family : E.edge list ->  string * E.edge list * int
   end
-    =  functor (C:Config) -> functor (E : Edge.S) ->
+    = functor (C:Config) -> functor (E : Edge.S) ->
   struct
 
     let debug = false
@@ -376,6 +378,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
       let compare n1 n2 = match compare_points_cycle n1 n2 with
       | 0 -> CE.compare_edges_cycle n1.cycle n2.cycle 
       | r -> r
+
       let norm n =
         let rec do_rec r m =
           let cmp = compare r m in
@@ -388,6 +391,16 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
       let pp n =
         let xs = map (fun n -> pp_points n.points) n in
         String.concat "+" xs
+
+      let fold f y0 n  =
+        let rec do_rec m y =
+          let y = f m y in
+          let m = m.next in
+          if m == n then y
+          else do_rec m y in
+        do_rec n y0
+
+      let size n = fold (fun _ n -> n+1) 0 n
 
     end
 
@@ -438,14 +451,18 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
       let ps = CP.mk_cycle cy in
       let key = CP.pp ps  in
       pp_key key
-        
+
+    let get_nprocs cy =
+      let ps = CP.mk_cycle cy in
+      CP.size ps
+
     let normalise_family cy =
       try
         let ps = CP.mk_cycle cy in
         let ps = CP.norm ps in
         let key = CP.pp ps  in
         let cy = CE.map (fun e -> e.CE.edge) ps.CP.cycle in
-        pp_key key,cy
+        pp_key key,cy,CP.size ps
       with CE.NotFound ->
         raise CannotNormalise
   end

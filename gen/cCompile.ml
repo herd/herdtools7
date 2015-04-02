@@ -1105,7 +1105,9 @@ module Make(O:Config) : Builder.S
         else dump_c_test
 *)
 
-      let test_of_cycle name ?com ?(info=[]) ?(check=(fun _ -> true)) es c =
+      let test_of_cycle name ?com ?(info=[]) ?(check=(fun _ -> true)) ?scope
+          es c =
+        ignore (scope) ;
         let com = match com with None -> E.pp_edges es | Some com -> com in
         let (prog,final),(prf,coms),env = compile_cycle check c in
         let coms = String.concat " " coms in
@@ -1113,7 +1115,8 @@ module Make(O:Config) : Builder.S
         { name=name ; info=info; com=com ;  edges = es ;
           prog=prog ; final=final ; types=env;}
           
-      let make_test name ?com ?info ?check es =
+      let make_test name ?com ?info ?check ?scope es =
+        ignore (scope) ;
         try
           if O.verbose > 1 then eprintf "**Test %s**\n" name ;
           if O.verbose > 2 then eprintf "**Cycle %s**\n" (E.pp_edges es) ;

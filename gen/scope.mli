@@ -13,6 +13,7 @@
 type t =
   | No
   | Default
+  | One of BellInfo.scopes
   | Gen of (string * int * int) list
   | All
 

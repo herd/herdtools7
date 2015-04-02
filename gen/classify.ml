@@ -63,7 +63,7 @@ module Make(Co:Config) (A:Fence.S) = struct
 
   module StringSet = MySet.Make(String)
 
-  let add name (key,ps) k =
+  let add name (key,ps,_) k =
     let xs =
       try StringMap.find  key k
       with Not_found -> [] in
