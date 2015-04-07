@@ -21,6 +21,7 @@ module Make
     (C:sig
       val info : BellModel.info option
       val get_id_and_list : A.instruction -> string * string list
+      val set_list : A.instruction -> string list -> A.instruction
     end) =
   struct
 
@@ -158,6 +159,11 @@ module Make
       with Error msg ->
         Warn.user_error "scope error, %s" msg
 
+    let error_instruction i id bi =
+      let eg = BellModel.get_events id bi in
+      error "instruction '%s' does not match bell declarations\n%s: %s"
+        (A.dump_instruction i) id (BellModel.pp_event_dec eg)
+
     let check_instruction bi i =
       try
         let id,al =
@@ -165,24 +171,31 @@ module Make
           with Not_found -> raise Exit in (* If no annotation, no trouble *)
         assert (StringSet.mem id BellName.all_mem_sets) ;
         let ok = BellModel.check_event id al bi in
-        if not ok then begin
-          let eg = BellModel.get_events id bi in
-          error "instruction '%s' does not match bell declarations\n%s: %s"
-            (A.dump_instruction i) id (BellModel.pp_event_dec eg)
-        end
+        if not ok then begin match al with
+        | [] ->
+            begin try
+              let al = BellModel.get_default id bi in
+              C.set_list i al
+            with
+              Not_found -> error_instruction i id bi
+            end
+        | _::_ -> error_instruction i id bi
+        end  else i
       with
-      | Exit -> () 
+      | Exit -> i
       | Error msg -> Warn.user_error "annotation error, %s" msg
 
     let do_check parsed bi = 
       (* checking instructions *)
-      List.iter
-        (fun (_,code) ->
-          List.iter
-            (A.pseudo_iter (check_instruction bi))
+      let prog =
+        List.map
+        (fun (p,code) ->
+          p,
+          List.map
+            (A.pseudo_map (check_instruction bi))
             code)
-        parsed.MiscParser.prog; 
-      
+        parsed.MiscParser.prog in
+      let parsed = { parsed with MiscParser.prog; } in
       let test_bi = parsed.MiscParser.bell_info in            
       let test_bi = match test_bi with
       | Some b -> b

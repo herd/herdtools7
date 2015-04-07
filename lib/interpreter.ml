@@ -780,7 +780,7 @@ module Make
               if O.debug then
                 eprintf
                   "Linearisation failed {%a}\n%!" debug_rel o ;
-              ValSet.singleton (Rel o))
+              ValSet.empty)
             (fun o os ->
               if O.debug && O.verbose > 1 then
                 eprintf "  -> {%a}\n%!" debug_rel o ;
@@ -1740,7 +1740,7 @@ module Make
           | _ -> error st.silent (get_loc e) "set or generator expected"
           end
       | Latex _ -> kont st res
-      | Events (loc,x,es) when O.bell ->
+      | Events (loc,x,es,def) when O.bell ->
           if not (StringSet.mem x BellName.all_sets) then
             error st.silent loc
               "event type %s is not part of legal {%s}\n"
@@ -1755,6 +1755,7 @@ module Make
                       (fun elt k -> as_tag elt::k)
                       elts [] in
                   StringSet.of_list tags
+              | V.Tag (_,tag) -> StringSet.singleton tag
               | _ ->
                   error false loc
                     "event declaration expected a set of tags, found %s"
@@ -1762,6 +1763,18 @@ module Make
               vs in
           let bell_info =
             BellModel.add_events x event_sets st.bell_info in
+          let bell_info =
+            if def then 
+              let defarg =
+                List.map2 
+                  (fun ss e -> match StringSet.as_singleton ss with
+                 | None ->
+                     error st.silent (get_loc e) "ambiguous default declaration"
+                 | Some a -> a) event_sets es in
+              try BellModel.add_default x defarg bell_info
+              with BellModel.Defined ->
+                error st.silent loc "second definition of default for %s" x
+            else bell_info in
           let st = { st with bell_info;} in
 	  kont st res
       | Events _ ->

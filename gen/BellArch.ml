@@ -148,7 +148,13 @@ let is_isync _ = false
 
 let compare_fence = barrier_compare
 
-let strong = Fence []
+
+let strong = match bi with
+| None -> Fence []
+| Some bi ->
+    try Fence (BellModel.get_default BellName.f bi)
+    with Not_found -> Fence []
+
 
 let pp_fence (Fence a) = sprintf "Fence%s" (pp_annots a)
 

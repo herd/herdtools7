@@ -59,11 +59,19 @@ let pp_order_bd t ol =  sprintf "%s: %s" t (pp_order_dec ol)
 
 let pp_order_decs decs = StringMap.pp_str_delim "\n" pp_order_bd decs
 
+type default_dec = string list
+type default_decs = default_dec StringMap.t
+
+let pp_default_dec xs = sprintf "[%s]" (String.concat "," xs)
+let pp_default_bd k d = sprintf "%s%s" k (pp_default_dec d)
+let pp_default_decs decs  = StringMap.pp_str_delim " " pp_default_bd decs
+
 type info = {
   all_events : annot_set; (* This field records all annotations *)
   events : event_decs;
   relations : relation_decs;
   orders : order_decs ;
+  defaults : default_decs ;
   regions : StringSet.t option ;
 }
 
@@ -72,6 +80,7 @@ let pp_info  i =
   "Events:\n" ^ pp_event_decs i.events ^ "\n" ^
   "Relations:\n" ^ pp_rel_decs i.relations ^ "\n" ^
   "Orders:\n" ^ pp_order_decs i.orders ^ "\n" ^
+  "Defaults: " ^ pp_default_decs i.defaults ^ "\n" ^
   (match i.regions with
   | None -> ""
   | Some r -> sprintf "Regions: %s\n" (pp_string_set r))
@@ -81,6 +90,7 @@ let empty_info = {
   events = StringMap.empty ;
   relations = StringMap.empty ;
   orders = StringMap.empty ;
+  defaults = StringMap.empty ;
   regions = None ;
 }
 
@@ -113,6 +123,7 @@ let get_region_sets i = match i.regions with
 let get_scope_rels i = StringMap.safe_find [] BellName.scopes i.relations
 let get_relation k i =  StringMap.find k i.relations
 let get_order k i = StringMap.find k i.orders
+let get_default k i = StringMap.find k i.defaults
   
 (* Add *)
 
@@ -140,6 +151,13 @@ let add_events k dec i =
       StringSet.union (StringSet.unions dec) i.all_events
     else i.all_events in
   { i with events; all_events; }
+
+let add_default k dec i =
+  try
+    ignore (StringMap.find k i.defaults) ; raise Defined
+  with Not_found ->
+    let defaults = StringMap.add k dec i.defaults in
+    { i with defaults; }
 
 let add_order k dec i =
   begin try

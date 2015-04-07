@@ -354,3 +354,19 @@ let set_shared _i = Warn.fatal "Bell set_shared has not been implemented"
 let set_global _i = Warn.fatal "Bell set_global has not been implmeneted"
 
 let get_reg_list _i = Warn.fatal "Bell get_reg_list has not been implemented"
+
+(* Annotations *)
+let get_id_and_list i = match i with
+| Pld(_,_,s) -> (BellName.r,s)
+| Pst(_,_,s) -> (BellName.w,s)
+| Pfence (Fence s) -> (BellName.f,s)      
+| Prmw2_op(_,_,_,_,s) | Prmw3_op(_,_,_,_,_,s) -> (BellName.rmw,s)
+| _ -> raise Not_found
+
+let set_list i al = match i with
+| Pld (a1,a2,_) -> Pld (a1,a2,al)
+| Pst (a1,a2,_) -> Pst (a1,a2,al)
+| Pfence (Fence _) -> Pfence (Fence al)
+| Prmw2_op(a1,a2,a3,a4,_) -> Prmw2_op(a1,a2,a3,a4,al)
+| Prmw3_op(a1,a2,a3,a4,a5,_) -> Prmw3_op(a1,a2,a3,a4,a5,al)
+| _ -> assert false

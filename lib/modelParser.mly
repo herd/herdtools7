@@ -53,7 +53,7 @@ let pp () =
 %token STAR PLUS OPT INV COMP HAT
 %token LET REC AND WHEN ACYCLIC IRREFLEXIVE TESTEMPTY EQUAL
 %token SHOW UNSHOW AS FUN IN PROCEDURE CALL FORALL DO FROM
-%token TRY EVENTS IF THEN ELSE YIELD
+%token TRY EVENTS DEFAULT IF THEN ELSE YIELD
 %token REQUIRES FLAG
 %token ARROW
 %token ENUM DEBUG MATCH WITH
@@ -113,7 +113,8 @@ ins:
 
 
 //Bell file declarations
-| EVENTS VAR LBRAC exp_list RBRAC  {Events(mk_loc(),$2,$4)}
+| EVENTS VAR LBRAC exp_list RBRAC  {Events(mk_loc(),$2,$4,false)}
+| DEFAULT VAR LBRAC exp_list RBRAC  {Events(mk_loc(),$2,$4,true)}
 
 
 altopt:

@@ -29,6 +29,11 @@ val pp_order_dec : order_dec -> string
 type order_decs = order_dec StringMap.t
 val pp_order_decs : order_decs -> string
 
+type default_dec = string list
+val pp_default_dec : default_dec -> string
+type default_decs = default_dec StringMap.t
+val pp_default_decs : default_decs -> string
+
 (* The type of information extracted from bell files *)
 type info
 
@@ -45,6 +50,7 @@ val get_scope_rels : info -> string list
 (* Get, may fail (raises Not_found) *)
 val get_relation : string -> info -> string list
 val get_order : string -> info -> order_dec
+val get_default : string -> info -> default_dec
 
 (*******)
 (* Add *)
@@ -56,6 +62,7 @@ exception Defined
 val add_rel : string -> relation_dec -> info -> info
 val add_regions : string list -> info -> info
 val add_order : string -> order_dec -> info -> info
+val add_default : string -> default_dec -> info -> info
 
 (* Cumulate information, ie does not raise Defined *)
 val add_events : string -> annot_group -> info -> info

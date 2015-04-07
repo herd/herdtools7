@@ -86,7 +86,7 @@ type ins =
   | WithFrom of TxtLoc.t * var * exp (* set of relations *)
 
 (*For bell files*)
-  | Events of TxtLoc.t * var * exp list
+  | Events of TxtLoc.t * var * exp list * bool (* define default *)
 
 
  

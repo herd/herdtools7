@@ -633,7 +633,12 @@ let test_of_cycle name
   let com = match com with None -> pp_edges es | Some com -> com in
   let(init,prog,final),(prf,coms) = compile_cycle check c in
   let coms = String.concat " " coms in
-  let info = info@["Prefetch",prf ; "Com",coms; "Orig",com; ] in
+  let info =
+    let myinfo = ["Prefetch",prf ; "Com",coms; "Orig",com; ] in
+    let myinfo = match scope with
+    | None -> myinfo
+    | Some st -> ("Scopes",BellInfo.pp_scopes st)::myinfo in
+    info@myinfo in
   { name=name ; info=info; com=com ;  edges = es ;
     init=init ; prog=prog ; scopes = scope; final=final ; }
     
