@@ -728,7 +728,9 @@ let one_init = match PC.graph with
     let init_envx =
       if one_init then
         let w1 = float_of_int max_proc in
-        let x = (w1 /. 2.0) -. 0.5 in
+        let x = match max_proc with
+        | 1 -> -0.3333
+        | _ -> (w1 /. 2.0) -. 0.5 in
          E.EventSet.fold
           (fun e env ->
             E.EventMap.add e x env)
@@ -751,9 +753,10 @@ let one_init = match PC.graph with
         fun e ->
           if E.EventSet.mem e inits then "eiidinit" else pp_node_eiid e
       else pp_node_eiid in
+    let yinit = 0.66667 in
     let maxy =
       if E.EventSet.is_empty inits then maxy
-      else maxy +. 1.0 in
+      else maxy +. yinit in
     let get_proc e = match E.proc_of e with
     | Some p -> p
     | None -> (-1) in
@@ -979,7 +982,7 @@ let one_init = match PC.graph with
 	        let pos =       
 	          sprintf "%f,%f"
                     (xfinal (float_of_int n))
-                    (yfinal (maxy +. 0.6))in
+                    (yfinal (maxy +. 0.4))in
 	        fprintf chan
                   "proc%i_label_node [shape=%s%a, label=\"%a\", pos=\"%s!\", fixedsize=true, width=%f, height=%f]\n"
                   n (if PC.verbose > 2 then "box" else "none")

@@ -117,8 +117,8 @@ let common_specs =
     | Some a -> arch := a ; true)
     Archs.tags "specify architecture"::
   ("-bell",
-   Arg.String (fun f -> bell := Some f),
-   "<name> read bell file <name>")::
+   Arg.String (fun f -> arch := Archs.bell; bell := Some f),
+   "<name> read bell file <name>, implies -arch Bell")::
   Util.parse_tag
     "-scopes"
     (fun tag -> match Scope.parse tag with
