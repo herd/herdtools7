@@ -76,6 +76,7 @@ module PP : sig
   val scale : float ref
   val xscale : float ref
   val yscale : float ref
+  val boxscale : float ref
   val ptscale : float ref
   val squished : bool ref
   val graph : Graph.t ref

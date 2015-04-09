@@ -194,7 +194,6 @@ let one_init = match PC.graph with
   | None -> 1.0
   | Some f -> float_of_int f /. defaultfontsize
 
-
 (*
   let condensednode =
   sprintf "[fixedsize=\"true\"][width=\"%f\"][height=\"%f\"]"
@@ -875,7 +874,7 @@ let one_init = match PC.graph with
         else pp in
       pp in
 
-    let boxwidth = xscale *. 0.65 in
+    let boxwidth = xscale *. 0.65 *. PC.boxscale in
     let boxheight = yscale *. 0.25 in
 
     let pp_event ?lbl color chan e =
@@ -924,7 +923,7 @@ let one_init = match PC.graph with
              (if PC.fixedsize then boxwidth
              else
                (float_of_int (String.length act) +. PC.extrachars) 
-                 *. fscale *. dsize)) ;
+               *. PC.boxscale *. fscale *. dsize)) ;
         fprintf chan "];\n"
       end in
 

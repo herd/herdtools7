@@ -210,6 +210,7 @@ and opt = parse
 | "scale" arg { lex_float PP.scale arg }
 | "xscale" arg { lex_float PP.xscale arg }
 | "yscale" arg { lex_float PP.yscale arg }
+| "boxscale" arg { lex_float PP.boxscale arg }
 | "ptscale" arg { lex_float PP.ptscale arg }
 | "squished" arg { lex_bool PP.squished arg }
 | "showpo" arg { lex_bool PP.showpo arg }
