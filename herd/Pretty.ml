@@ -481,11 +481,11 @@ let one_init = match PC.graph with
   type info = { ikey:string; icolor:string; }
 
   let edges = ref PairMap.empty
-  let edges_seen = ref PairSet.empty
+  let edges_seen = ref StringMap.empty
 
   let reset_pairs () =    
     edges := PairMap.empty ;
-    edges_seen := PairSet.empty ;
+    edges_seen := StringMap.empty ;
     ()
 
   let find_pair p m =
@@ -541,7 +541,8 @@ let one_init = match PC.graph with
           | _,[] -> add_end p i new_m,rem
           | _,_  -> add_end p i (add_end q i new_m),rem)
         (no,[]) yes in
-    List.fold_left (fun m (p,i) -> do_add_pair p i m) new_m rem
+    List.fold_left
+      (fun m (p,i) -> do_add_pair p i m) new_m rem
 
   let compute_colors cs = (* NB keep order *)
     let rec do_rec = function
@@ -641,6 +642,16 @@ let one_init = match PC.graph with
     fprintf chan "];\n" ;
     ()
 
+  let get_edge_seen lbl = StringMap.safe_find PairSet.empty lbl !edges_seen
+    
+  let known_edge n1 n2 lbl =
+    let seen = get_edge_seen lbl in
+    PairSet.mem (n1,n2) seen ||  PairSet.mem (n2,n1) seen
+
+  let record_edge_seen n1 n2 lbl =
+    let seen = get_edge_seen lbl in
+    edges_seen := StringMap.add lbl (PairSet.add (n1,n2) seen) !edges_seen
+
   let do_pp_edge
       chan n1 n2 lbl def_color override_style extra_attr backwards
       movelbl
@@ -648,11 +659,8 @@ let one_init = match PC.graph with
     try
       if StringSet.mem lbl PC.unshow then raise Exit ;
       if StringSet.mem lbl PC.symetric then begin
-        if
-          PairSet.mem (n1,n2) !edges_seen ||
-          PairSet.mem (n2,n1) !edges_seen
-        then raise Exit ;
-        edges_seen := PairSet.add (n1,n2) !edges_seen
+        if known_edge n1 n2 lbl then raise Exit ;
+        record_edge_seen n1 n2 lbl
       end ;
       if PC.edgemerge then
         do_merge_edge n1 n2 lbl def_color
