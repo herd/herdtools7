@@ -777,10 +777,12 @@ module Make
                   (fun (e1,e2) ->
                     E.EventSet.mem e1 es && E.EventSet.mem e2 es)
                   o in
-              if O.debug then
+              if O.debug then begin
                 eprintf
                   "Linearisation failed {%a}\n%!" debug_rel o ;
-              ValSet.empty)
+                ValSet.singleton (V.Rel o)
+              end else
+                ValSet.empty)
             (fun o os ->
               if O.debug && O.verbose > 1 then
                 eprintf "  -> {%a}\n%!" debug_rel o ;
