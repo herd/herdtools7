@@ -68,3 +68,6 @@ Another try
 (system
   (agent (wg (wave (wi 0)) (wave (wi 2))))
   (agent (wg (wave (wi 2))) (wg (wave (wi 3)))))
+
+
+

@@ -310,6 +310,14 @@ let _get_scope_rels evts sc =
           stores k)
       loads E.EventRel.empty
 
+  let make_write_mem_finals conc =
+    let ws = S.RFMap.fold
+      (fun wt rf k -> match wt,rf with
+      | S.Final _,S.Store e when E.is_mem_store e -> e::k
+      | _,_ -> k)
+      conc.S.rfmap [] in
+    E.EventSet.of_list ws
+
   let make_rf_regs conc =
     S.RFMap.fold
       (fun wt rf k -> match wt,rf with

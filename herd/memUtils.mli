@@ -62,6 +62,7 @@ module Make : functor (S: SemExtra.S) -> sig
 (* RF/FR relations for memory *)
   val make_rf_from_rfmap : S.rfmap -> S.event_rel
   val make_rf : S.concrete -> S.event_rel
+  val make_write_mem_finals : S.concrete -> S.event_set
   val make_rf_regs : S.concrete -> S.event_rel
 
 (* make_fr conc ws, where ws is write serialization as

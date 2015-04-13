@@ -8,6 +8,9 @@ let po-loc = po & loc
 let rfe = rf & ext
 let rfi = rf & int
 
+(* co0 *)
+let co0 = loc & ((IW * (W\IW)) | ((W\FW) * FW))
+
 (* Id relation on set *)
 let toid(s) = id & (s * s)
 

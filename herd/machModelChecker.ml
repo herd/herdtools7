@@ -151,6 +151,10 @@ module Make
            "M", E.is_mem;
 	   "F", E.is_barrier;
 	   "I", E.is_mem_store_init;
+	   "IW", E.is_mem_store_init;
+	   "FW",
+           (let ws = lazy (U.make_write_mem_finals conc) in
+           fun e -> E.EventSet.mem e (Lazy.force ws));
          ]) in
       let m =
         I.add_sets m
@@ -248,6 +252,6 @@ module Make
           run_interpret test ks m vb_pp kont res in
         U.apply_process_co test  conc process_co res
       else
-        let m = I.add_rels m ["co0",lazy  conc.S.pco] in
+(*        let m = I.add_rels m ["co0",lazy  conc.S.pco] in *)
         run_interpret test ks m vb_pp kont res
   end
