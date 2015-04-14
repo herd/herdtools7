@@ -136,7 +136,7 @@ type addr_op =
 
 let pp_addr_op a = match a with
   | Addr_op_atom roa -> string_of_reg_or_addr roa
-  | Addr_op_add(roa,roi) -> sprintf "%s + %s" (string_of_reg_or_addr roa) 
+  | Addr_op_add(roa,roi) -> sprintf "%s+%s" (string_of_reg_or_addr roa) 
     (string_of_reg_or_imm roi)
 
 type cond = Ne | Eq
@@ -180,55 +180,55 @@ include Pseudo.Make
      end)
 
 let dump_instruction i = match i with
-  | Pld(r, addr_op, s) -> sprintf "r[%s] %s %s"
-                     (string_of_annot_list s)
-                     (pp_reg r)
-                     (pp_addr_op addr_op)
+| Pld(r, addr_op, s) -> sprintf "r[%s] %s,%s"
+      (string_of_annot_list s)
+      (pp_reg r)
+      (pp_addr_op addr_op)
 
-  | Pst(addr_op,roi,s) -> sprintf "w[%s] %s %s" 
-                     (string_of_annot_list s)
-                     (pp_addr_op addr_op)
-                     (string_of_reg_or_imm roi)
+| Pst(addr_op,roi,s) -> sprintf "w[%s] %s,%s" 
+      (string_of_annot_list s)
+      (pp_addr_op addr_op)
+      (string_of_reg_or_imm roi)
 
-  | Pmov(r,roia) -> sprintf "mov %s, %s"
-		     (pp_reg r)
-		     (pp_iar roia)
+| Pmov(r,roia) -> sprintf "mov %s,%s"
+      (pp_reg r)
+      (pp_iar roia)
 
-  | Pop(op,r,roia1,roia2) ->
-      sprintf "%s %s, %s, %s"
-        (pp_op op)
-	(pp_reg r)
-	(pp_iar roia1)
-	(pp_iar roia2)
+| Pop(op,r,roia1,roia2) ->
+    sprintf "%s %s,%s,%s"
+      (pp_op op)
+      (pp_reg r)
+      (pp_iar roia1)
+      (pp_iar roia2)
 
-  | Pbal lbl -> sprintf "bal %s" lbl
+| Pbal lbl -> sprintf "bal %s" lbl
 
-  | Pbcc(cond,r1,roi2,lbl) ->
-      sprintf "b%s %s, %s, %s"
-        (match cond with Eq -> "eq" | Ne -> "ne")
-    	(pp_reg r1)
-	(string_of_reg_or_imm roi2)
-        (lbl)
+| Pbcc(cond,r1,roi2,lbl) ->
+    sprintf "b%s %s,%s,%s"
+      (match cond with Eq -> "eq" | Ne -> "ne")
+      (pp_reg r1)
+      (string_of_reg_or_imm roi2)
+      (lbl)
 
-  | Prmw2_op(r,roa,roi,op,s) ->
-                         sprintf "rmw.%s[%s] %s %s %s"
-			   (pp_rmw2_op op)
-			   (string_of_annot_list s)
-			   (pp_reg r)
-			   (string_of_reg_or_addr roa)
-			   (string_of_reg_or_imm roi)
+| Prmw2_op(r,roa,roi,op,s) ->
+    sprintf "rmw.%s[%s] %s,%s,%s"
+      (pp_rmw2_op op)
+      (string_of_annot_list s)
+      (pp_reg r)
+      (string_of_reg_or_addr roa)
+      (string_of_reg_or_imm roi)
 
-  | Prmw3_op(r,roa,roi1,roi2,op,s) ->
-                         sprintf "rmw.%s[%s] %s %s %s %s"
-			   (pp_rmw3_op op)
-			   (string_of_annot_list s)
-			   (pp_reg r)
-			   (string_of_reg_or_addr roa)
-			   (string_of_reg_or_imm roi1)
-			   (string_of_reg_or_imm roi2)
+| Prmw3_op(r,roa,roi1,roi2,op,s) ->
+    sprintf "rmw.%s[%s] %s,%s,%s,%s"
+      (pp_rmw3_op op)
+      (string_of_annot_list s)
+      (pp_reg r)
+      (string_of_reg_or_addr roa)
+      (string_of_reg_or_imm roi1)
+      (string_of_reg_or_imm roi2)
 
 
-  | Pfence (Fence a) -> sprintf "f[%s]" (string_of_annot_list a)
+| Pfence (Fence a) -> sprintf "f[%s]" (string_of_annot_list a)
 
 let fold_regs (f_reg,_f_sreg) = 
   let fold_reg reg (y_reg,y_sreg) = match reg with
