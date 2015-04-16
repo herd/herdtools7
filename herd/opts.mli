@@ -101,6 +101,8 @@ module PP : sig
   val get_edgeattrs : unit -> DotEdgeAttr.t
   val doshow : StringSet.t ref
   val unshow : StringSet.t ref
+  val add_doshow : StringSet.t -> unit
+  val add_unshow : StringSet.t -> unit
   val symetric : StringSet.t ref
   val showraw : StringSet.t ref
   val extrachars : float ref

@@ -1569,7 +1569,8 @@ module Make
             let show = lazy begin
               List.fold_left
                 (fun show x -> StringMap.remove x show)
-                (Lazy.force st.show) xs
+                (Lazy.force st.show)
+                (StringSet.(elements (diff (of_list xs) O.doshow)))
             end in
             kont { st with show;} res
           else kont st res

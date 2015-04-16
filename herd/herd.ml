@@ -86,13 +86,16 @@ let parse_string opt v msg =
   Arg.String (fun s -> v := s),
   sprintf "<string> %s, default %s" msg !v
 
-let parse_stringset opt v msg =
+let parse_stringsetfun opt f msg =
   opt,
   Arg.String
     (fun tag ->
       let es = Misc.split_comma tag in
-      v := StringSet.union (StringSet.of_list es) !v),
+      f (StringSet.of_list es)),
   sprintf "<name,..,name> %s" msg
+
+let parse_stringset opt v msg =
+  parse_stringsetfun opt (fun s -> v := StringSet.union s !v) msg
 
 (* Option list *)
 let load_config s =
@@ -313,8 +316,8 @@ let options = [
     "show from-read edges in pictures" ;
   parse_bool "-showinitwrites" PP.showinitwrites
     "show init write events in pictures" ;
- parse_stringset "-doshow" PP.doshow "show those edges";
- parse_stringset "-unshow" PP.unshow "do not show those edges" ;
+ parse_stringsetfun "-doshow" PP.add_doshow "show those edges";
+ parse_stringsetfun "-unshow" PP.add_unshow "do not show those edges" ;
  parse_stringset "-symetric" PP.symetric "declare those edges as symetric" ;
  parse_stringset "-showraw" PP.showraw
     "do not perform transitivity removal on those edges" ;

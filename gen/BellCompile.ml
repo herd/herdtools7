@@ -52,6 +52,10 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
     let xor r1 r2 r3 =
       Pop (Xor,r1,IAR_roa (Rega r2),IAR_roa (Rega r3))
 
+    let exch_tagged r x v a =
+      Prmw2_op (r,Abs (Constant.Symbolic x),Imm v,RMWExch,a)
+    let exch r x v =  exch_tagged r x v []
+      
 (**********)
 (* Export *)
 (**********)
@@ -150,7 +154,17 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
         let init,cs,st = emit_store_tagged st p init e.loc e.v a in
         None,init,cs,st
 
-    let emit_exch _ = assert false
+(* Dubious... *)
+    let tr_a ar aw = match ar,aw with
+    | None,None -> []
+    | (Some a,None)
+    | (None,Some a) -> a
+    | Some a,Some _ -> a
+        
+    let emit_exch st p init er ew =
+      let rR,st = next_reg st in
+      let arw = tr_a er.C.atom ew.C.atom in
+      rR,init,[Instruction (exch rR er.loc ew.v)],st
 
 (**********)
 (* Fences *)

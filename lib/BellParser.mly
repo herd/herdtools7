@@ -90,11 +90,11 @@ instr:
  | WRITE old_annot_list old_addr_op old_comma_opt roi 
  { Pst($3, $5, $2) }
 
-| RMW DOT rmw2_op LBRAC annot_list RBRAC reg roa roi
-  { Prmw2_op($7,$8,$9,$3,$5)}
+| RMW DOT rmw2_op LBRAC annot_list RBRAC reg old_comma_opt roa old_comma_opt roi
+  { Prmw2_op($7,$9,$11,$3,$5)}
 
-| RMW DOT rmw3_op LBRAC annot_list RBRAC reg roa roi roi
-  { Prmw3_op($7,$8,$9,$10,$3,$5)}
+| RMW DOT rmw3_op LBRAC annot_list RBRAC reg old_comma_opt roa old_comma_opt roi old_comma_opt roi
+  { Prmw3_op($7,$9,$11,$13,$3,$5)}
 
 
 | FENCE old_annot_list

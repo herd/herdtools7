@@ -104,6 +104,15 @@ module PP = struct
 
   let doshow = ref StringSet.empty
   let unshow = ref StringSet.empty
+
+  let add_doshow u =
+    doshow := StringSet.union u !doshow ;
+    unshow := StringSet.diff !unshow u
+
+  let add_unshow u =
+    unshow := StringSet.union u !unshow ;
+    doshow := StringSet.diff !doshow u
+
   let symetric = ref StringSet.empty
   let showraw = ref StringSet.empty
   let extrachars = ref 0.0

@@ -127,6 +127,16 @@ module Make (C:Sem.Config)(V:Value.S)
 	      read_roi roi ii) >>=
 	    (fun (addr,v) -> write_mem addr v s ii) >>!
 	    B.Next
+(* Exch is special, as there is no data-depency from memory read
+   from roa to memory write to roa *)
+	| BellBase.Prmw2_op(r,roa,roi,BellBase.RMWExch,s) ->
+            read_roa roa ii >>=
+            (fun addr ->
+               let r1 = read_mem_atom addr s ii
+               and r2 = read_roi roi ii
+               and w1 = fun v -> write_mem_atom addr v s ii 
+               and w2 = fun v -> write_reg r v ii in
+               M.exch r1 r2 w1 w2) >>! B.Next
 
 	| BellBase.Prmw2_op(r,roa,roi,op,s) ->
 	  (read_roa roa ii ) >>=

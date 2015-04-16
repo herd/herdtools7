@@ -68,9 +68,12 @@ let lex_float_opt r arg =
 let lex_string_opt v arg =
   v := lex_some "string" (fun s -> s) arg
 
-let lex_stringset v arg =
+let lex_stringsetfun f arg =
   let es =  Misc.split_comma arg in
-  v := StringSet.union (StringSet.of_list es) !v
+  f (StringSet.of_list es)
+
+let lex_stringset v arg =
+  lex_stringsetfun (fun s -> v := StringSet.union s !v) arg
 
 open Lexing 
 let dolex main fname =
@@ -231,9 +234,9 @@ and opt = parse
 | "extrachars" arg { lex_float PP.extrachars arg }
 | "dotheader" arg { PP.dotheader := Some arg }
 | "doshow" arg
-    { lex_stringset PP.doshow arg }
+    { lex_stringsetfun PP.add_doshow arg }
 | "unshow" arg
-    { lex_stringset PP.unshow arg }
+    { lex_stringsetfun PP.add_unshow arg }
 | "symetric" arg
     { lex_stringset PP.symetric arg }
 | "showraw" arg
