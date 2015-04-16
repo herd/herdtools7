@@ -59,7 +59,7 @@ module Make(Opt:Config) = struct
           end else if c > 0 then
             do_rec idx_nks (idx_ts+1)
           else (* c=0 *) match k with
-          | None -> 
+          | None ->
               out (n,Some t.LogState.kind,t.LogState.loop) ;
               do_rec (idx_nks+1) (idx_ts+1)
           | Some k1 ->
@@ -74,6 +74,11 @@ module Make(Opt:Config) = struct
       do_rec 0 0 ;
       ExtArray.to_array tout
 
+    let default_kind name =
+      try
+        Some (TblRename.find_value Opt.kinds name)
+      with Not_found ->  None
+
     let add names ts =
       let nks_init = Array.map (fun x -> x,None,false) names in
       let nks =
@@ -81,9 +86,15 @@ module Make(Opt:Config) = struct
           (fun nks t -> add_kind_tests nks t.tests)
           nks_init ts in
       Array.map
-        (fun (n,k,loop) -> match k with
-        | None ->
-            { name = n ;
+        (fun (n,k,loop) ->
+          let k =
+            let kdefault = default_kind n in
+            match kdefault with
+            | None -> k
+            | Some _ -> kdefault in
+          match k with
+          | None ->
+              { name = n ;
               info = { kind = NoKind ; loop = false}}
         | Some k ->
             { name = n ;
@@ -114,7 +125,7 @@ module Make(Opt:Config) = struct
 
   module Cond = struct
 
-    type info = 
+    type info =
      { cond : LogConstr.constr option ; unsure : bool ; kind : LogState.kind;}
 
 
@@ -136,12 +147,12 @@ module Make(Opt:Config) = struct
 
     let add_col t1 =
       Array.map
-        (fun t ->          
+        (fun t ->
           let _k,c =
             let c,from_log =
               try
                 Some (TblRename.find_value Opt.conds t.tname),false
-              with Not_found ->  t.condition,true in 
+              with Not_found ->  t.condition,true in
             try
               let k = TblRename.find_value Opt.kinds t.tname in
               k,change_condition k c

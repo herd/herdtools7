@@ -45,6 +45,11 @@ val is_reliable : kind -> bool
 
 type validation = Undef | Ok | No | DontKnow | Run
 
+(* tr_validate kref k v
+   Change validation v w.r.t k into a kind,
+   kref is a reference kind, to check test nature *)
+val tr_validate : kind -> kind -> validation -> kind option
+
 type test =
  { tname : string ;      (* name of the test, aka key *)
    states : sts ;        (* final states observed *)

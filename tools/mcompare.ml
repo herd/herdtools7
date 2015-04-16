@@ -56,7 +56,7 @@ let default_runopts =
   {mode = OutMode.Txt;
    do_show = "";
    show_litmus_summary = false;
-   do_sum = false; 
+   do_sum = false;
    outputfile = None;
    restrict_by_first_column = false;
    rename = None ;
@@ -86,10 +86,10 @@ let runopts = default_runopts
 
 let delayed_options = ref (fun ro -> ro)
 
-let delay_ro f x = 
+let delay_ro f x =
   let prev = !delayed_options in
-  delayed_options := 
-    (fun ro -> prev (f x ro)) 
+  delayed_options :=
+    (fun ro -> prev (f x ro))
 
 let options =
   [
@@ -101,18 +101,19 @@ let options =
    "<"^ runopts.do_show ^
    "> show control, argument is a string of
        * v (validation), V (verbose validation),
+       * k (validation in Allow/Forbid format)
        * r (revalidation against conditions found in first file),
        * w (witnesses), W (kind-oriented witnesses),
        * s (states),
        * d (state differences),
        * t (timing),
        * p (productivity),
-       * X special, for nice, informative, tables");
+       * X,Y,Z special, for nice, informative, tables");
    ("-show_litmus_summary", Arg.Bool (delay_ro (fun b ro -> {ro with show_litmus_summary = b})),
-    "<"^ string_of_bool runopts.show_litmus_summary ^ 
+    "<"^ string_of_bool runopts.show_litmus_summary ^
     "> show a summary of litmus logs passed in (roughly show V+W), and optionally any memevents log show V");
    ("-restrict", Arg.Bool (delay_ro (fun b ro -> {ro with restrict_by_first_column = b})),
-    "<"^ string_of_bool runopts.restrict_by_first_column ^ 
+    "<"^ string_of_bool runopts.restrict_by_first_column ^
     "> restrict to rows for which there is an entry in the first column");
    ("-nolitmus",
        Arg.Unit (delay_ro (fun () ro -> {ro with show_litmus = false})),
@@ -129,7 +130,7 @@ let options =
     (sprintf
        "output mode, %s" (OutMode.pp default_runopts.mode))
     None
-  end ;  
+  end ;
   ("-macro",
     Arg.Unit
       (delay_ro
@@ -138,15 +139,15 @@ let options =
    ("-names",
     Arg.String
       (delay_ro (fun s ro -> { ro with names = s :: ro.names})),
-    "<name> specify  selected name file, can be repeated") ;       
+    "<name> specify  selected name file, can be repeated") ;
    ("-select",
     Arg.String
       (delay_ro (fun s ro -> { ro with select = s :: ro.select})),
-    "<name> specify selected test file (or index file), can be repeated") ;       
+    "<name> specify selected test file (or index file), can be repeated") ;
    ("-rename",
     Arg.String
       (delay_ro (fun s ro -> { ro with rename = Some s })),
-    "<name> specify a rename mapping, for changing test names in output") ;    
+    "<name> specify a rename mapping, for changing test names in output") ;
    ("-nohash",
     Arg.Unit
       (delay_ro (fun () ro -> { ro with check_hash = false; })),
@@ -155,12 +156,12 @@ let options =
    ("-forcekind",
     Arg.String
       (delay_ro (fun s ro -> { ro with forcekind= Some s; })),
-        "<Allow|Forbid|Require> force kind of all tets") ;    
+        "<Allow|Forbid|Require> force kind of all tets") ;
 
    ("-kinds",
     Arg.String
       (delay_ro (fun s ro -> { ro with kinds= ro.kinds @ [s] })),
-        "<name> specify kinds of tests") ;    
+        "<name> specify kinds of tests") ;
    ("-showkinds",
     Arg.Bool
       (delay_ro (fun s ro -> { ro with show_kinds= s })),
@@ -168,11 +169,11 @@ let options =
    ("-conds",
     Arg.String
       (delay_ro (fun s ro -> { ro with conds= ro.conds @ [s] })),
-        "<name> specify conditions of tests") ;    
+        "<name> specify conditions of tests") ;
    ("-cost",
     Arg.String
       (delay_ro (fun s ro -> { ro with orders= ro.orders @ [s] })),
-        "<name> specify order of tests") ;    
+        "<name> specify order of tests") ;
    ("-e",
     Arg.String
      (delay_ro (fun s ro -> { ro with filter = Some s; })),
@@ -188,32 +189,32 @@ let options =
    ("-o",
     Arg.String
       (delay_ro
-	 (fun s ro -> {ro with outputfile = Some s})),
+         (fun s ro -> {ro with outputfile = Some s})),
     "<"^ (match runopts.outputfile with None -> "" | Some s -> s) ^ ">");
    ("-pos",
      Arg.String
       (delay_ro
-	 (fun s ro -> {ro with dump_pos = Some s})),
+         (fun s ro -> {ro with dump_pos = Some s})),
     " <file> dump positive differences, default "^ (match runopts.dump_pos with None -> "don't dump" | Some s -> s));
    ("-eq",
      Arg.String
       (delay_ro
-	 (fun s ro -> {ro with dump_eq = Some s})),
+         (fun s ro -> {ro with dump_eq = Some s})),
     " <file> dump perfect fits, default "^ (match runopts.dump_eq with None -> "don't dump" | Some s -> s));
    ("-neg",
      Arg.String
       (delay_ro
-	 (fun s ro -> {ro with dump_neg = Some s})),
+         (fun s ro -> {ro with dump_neg = Some s})),
     "<file> dump negative differences, default "^ (match runopts.dump_neg with None -> "don't dump" | Some s -> s));
    ("-cpos",
      Arg.String
       (delay_ro
-	 (fun s ro -> {ro with cond_pos = Some s})),
+         (fun s ro -> {ro with cond_pos = Some s})),
     " <file> dump positive conditions, default "^ (match runopts.cond_pos with None -> "don't dump" | Some s -> s));
    ("-cneg",
      Arg.String
       (delay_ro
-	 (fun s ro -> {ro with cond_neg = Some s})),
+         (fun s ro -> {ro with cond_neg = Some s})),
     "<file> dump negative conditions, default "^ (match runopts.cond_neg with None -> "don't dump" | Some s -> s));
    ("-optcond",
       Arg.Bool
@@ -244,7 +245,7 @@ module type Config = sig
   val mode : OutMode.t
   val verbose : int
   val show_litmus_summary : bool
-  val chan : out_channel 
+  val chan : out_channel
   val restrict : bool
   val forcekind :  LogState.kind option
   val rename : string TblRename.t
@@ -275,8 +276,8 @@ module LR = LexRename.Make(Verbose)
 module LS = LogState.Make(Verbose)
 
 
-module Config = struct 
-  let mode = runopts.mode 
+module Config = struct
+  let mode = runopts.mode
   let verbose = !verb
   let show_litmus_summary = runopts.show_litmus_summary
   let restrict = runopts.restrict_by_first_column
@@ -379,7 +380,7 @@ module Make (Opt:Config) = struct
   let erase_cols logs xs = match xs with
   | [] -> []
   | _ ->
-      List.fold_right2 
+      List.fold_right2
         (fun log x k ->
           let ok =
             if log.is_litmus then show_litmus else show_model in
@@ -434,7 +435,7 @@ module Make (Opt:Config) = struct
         | None -> ()
         | Some h ->
             if h <> "NOHASH"  then
-              begin try              
+              begin try
                 let oh = Hashtbl.find table t.tname  in
                 if  oh.h <> h then begin
                   hash_ok := false ;
@@ -450,7 +451,7 @@ module Make (Opt:Config) = struct
     let check_hashes ts =
       List.iter (fun t -> check_tests t.name t.tests) ts in
 
-    fun  logs -> 
+    fun  logs ->
       let ts = LL.read_names logs in
       if Opt.check_hash then begin
         check_hashes ts ;
@@ -460,12 +461,12 @@ module Make (Opt:Config) = struct
 
 (* utilities *)
   open OutMode
-  let my_error s = match mode with 
+  let my_error s = match mode with
   | Txt -> "ERROR:" ^ s
   | LaTeX|HeVeA|HeVeANew -> "\\myerror{" ^ s ^ "}"
 
 
-  let my_warn s =  match mode with 
+  let my_warn s =  match mode with
   | Txt -> "WARN:" ^ s
   | LaTeX|HeVeA|HeVeANew -> "\\mywarn{" ^ s ^ "}"
 
@@ -500,7 +501,7 @@ module Make (Opt:Config) = struct
     !r
 
   let build_tnames ts =
-    let names = 
+    let names =
       if restrict then
         match ts with
         | [] -> StringSet.empty
@@ -511,10 +512,10 @@ module Make (Opt:Config) = struct
           List.map (fun {tests=ts;_} -> from_tests ts) ts in
         StringSet.unions names
       |  Some set -> set in
-    let names = 
+    let names =
       match Opt.filter with
       | None -> names
-      | Some e ->  
+      | Some e ->
           StringSet.filter
             (fun name -> Str.string_match e name 0)
             names in
@@ -546,7 +547,8 @@ module Make (Opt:Config) = struct
     | _,_ -> DontKnow
   end
 
-  let show_validate tnames ts =
+
+  let show_validate as_kinds tnames ts =
     let keys = K.Kind.add tnames ts in
     let module B =
       Matrix.Build
@@ -557,10 +559,19 @@ module Make (Opt:Config) = struct
           let fmt_cell _col i t = match i.K.Kind.kind with
           | ErrorKind -> assert false
           | NoKind    ->
-              [sprintf "%s (%s)" 
+              [sprintf "%s (%s)"
                  (LS.pp_validation t.validation)
                  (LS.pp_kind t.kind)]
-          | _ -> [LS.pp_validation t.validation]
+          | k ->
+              if as_kinds then
+                begin match LogState.tr_validate k t.kind t.validation with
+                | Some k -> [LS.pp_kind k]
+                | None ->
+                    [sprintf "%s (%s)"
+                       (LS.pp_validation t.validation)
+                       (LS.pp_kind t.kind)]
+              end else
+                [LS.pp_validation t.validation]
 
           include ValidateAdd
 
@@ -572,31 +583,34 @@ module Make (Opt:Config) = struct
         keys
         m
     else
-      let sum = B.sum keys (List.map (fun _ -> Ok) ts) ts in
-      let sum = List.map LS.pp_validation sum in    
+      let sum =
+        if as_kinds then []
+        else
+          let sum = B.sum keys (List.map (fun _ -> Ok) ts) ts in
+          List.map LS.pp_validation sum in
       dump ts "Validation" true
         (List.map (fun t -> 1,pp_name t.name) ts) sum
         keys
         ~col2:(K.Kind.pps keys)
         m ;
-    output_char chan '\n' 
+    output_char chan '\n'
 
   module FmtValidate = struct
 
     type info = K.Kind.info
-          
+
     let fmt_cell col i t =
       let k = i.K.Kind.kind in
       [if col.is_litmus then begin
-	match k,t.validation with
-	| Allow,Ok -> "Allow val."
-	| Allow,No -> my_warn "Allow not val."
-	| _,Ok -> LS.pp_kind t.kind ^ " val."
-	| _,_ -> my_error (LS.pp_kind t.kind ^ " NOT val.")
-      end else begin 
-	if t.validation = Ok then LS.pp_kind k
+        match k,t.validation with
+        | Allow,Ok -> "Allow val."
+        | Allow,No -> my_warn "Allow not val."
+        | _,Ok -> LS.pp_kind t.kind ^ " val."
+        | _,_ -> my_error (LS.pp_kind t.kind ^ " NOT val.")
+      end else begin
+        if t.validation = Ok then LS.pp_kind k
         else my_error (LS.pp_kind k ^ " violated")
-      end]         
+      end]
 
     include ValidateAdd
   end
@@ -608,7 +622,7 @@ module Make (Opt:Config) = struct
     dump ts "Validation" false
       (List.map (fun t -> 1,pp_name t.name) ts) []
       keys ~col2:(K.Kind.pps keys) m ;
-    output_char chan '\n' 
+    output_char chan '\n'
 
 (****************)
 (* Revalidation *)
@@ -710,7 +724,7 @@ module Make (Opt:Config) = struct
                 { K.Cond.cond=cond; K.Cond.unsure=unsure; kind=k;} t =
               let v = LS.revalidate cond t.states in
               add_comment true t.tname
-                col.is_litmus unsure k v                
+                col.is_litmus unsure k v
                 (LS.pp_validation v)
             include Matrix.NoAdd
           end) in
@@ -734,7 +748,7 @@ module Make (Opt:Config) = struct
          dump ts "Revalidation" true
           (List.map (fun t -> 1,pp_name t.name) ts) []
           keys m ;
-      output_char chan '\n' 
+      output_char chan '\n'
 
 
 (************)
@@ -757,7 +771,7 @@ module Make (Opt:Config) = struct
     dump ts "Outcomes" true
       (List.map (fun t -> 1,pp_name t.name) ts) []
       keys r ;
-    output_char chan '\n' 
+    output_char chan '\n'
 
 (* Idem but use fst column as reference and omit it *)
   let show_states_fst ts = match ts with
@@ -769,14 +783,14 @@ module Make (Opt:Config) = struct
       dump ts "Outcomes" true
         (List.map (fun t -> 1,pp_name t.name) ts) []
         keys r ;
-      output_char chan '\n' 
+      output_char chan '\n'
 
 (*************)
 (* Witnesses *)
 (*************)
 
-let format_int_string s = 
-  let char_list_of_string s = 
+let format_int_string s =
+  let char_list_of_string s =
     let n = String.length s in
     let rec f i = if i=n then [] else String.get s i :: f (i+1) in
     f 0 in
@@ -784,28 +798,28 @@ let format_int_string s =
     let n = List.length ts in
     let buf = Buffer.create n in
     let rec f ts =
-      match ts with 
+      match ts with
       | [] -> ()
       | t::ts -> Buffer.add_char buf t; f ts
-    in 
+    in
     f ts;
     Buffer.contents buf in
   let string_rev s = string_of_char_list (List.rev_append (char_list_of_string s) []) in
   let rec split_in_threes cs = match cs with
   | c1::c2::c3::cs' -> (String.make 1 c1 ^ String.make 1 c2 ^ String.make 1 c3) :: split_in_threes cs'
-  | [] -> [] 
+  | [] -> []
   | _ -> [string_of_char_list cs] in
   (string_rev (String.concat " " (split_in_threes (List.rev (char_list_of_string s)))))
 
   let format_int64_as_int x =
     format_int_string (Int64.to_string x)
-      
+
   let format_int64 x =
     let xs =
       if Int64.compare x 1000L < 0 then format_int64_as_int x
       else
         Str.global_replace ((Str.regexp_string "e+1")) "e1"
-          (Str.global_replace ((Str.regexp_string "e+0")) "e" 
+          (Str.global_replace ((Str.regexp_string "e+0")) "e"
              (sprintf "%1.1g" (Int64.to_float x))) in
     sprintf "%3s" xs
 
@@ -823,17 +837,17 @@ let format_int_string s =
   let format_int64_alt x =
     if Int64.compare x 1000L < 0 then
       Int64.to_string x
-    else if Int64.compare x 1000000L < 0 then 
+    else if Int64.compare x 1000000L < 0 then
       fmt_approx x 1000L ^ "k"
-    else if Int64.compare x 1000000000L < 0 then 
+    else if Int64.compare x 1000000000L < 0 then
       fmt_approx x 1000000L ^ "M"
-    else if Int64.compare x 1000000000000L < 0 then 
+    else if Int64.compare x 1000000000000L < 0 then
       fmt_approx x 1000000000L ^ "G"
-    else if Int64.compare x 1000000000000000L < 0 then 
+    else if Int64.compare x 1000000000000000L < 0 then
       fmt_approx x 1000000000000L ^ "T"
     else failwith "Improbable :)"
 
-  let digit2 f = 
+  let digit2 f =
     if f < 1.0 then sprintf "%0.2f" f
     else if f < 10.0 then sprintf "%0.1f" f
     else sprintf "%02.0f" f
@@ -849,14 +863,14 @@ let format_int_string s =
       fmt_float_approx x 1000.0 ^ "k"
     else if x < 1000000000.0 then
       fmt_float_approx x 1000000.0 ^ "M"
-    else 
+    else
       fmt_float_approx x 1000000000.0 ^ "G"
 
-  let pp_wits p n = 
+  let pp_wits p n =
     let all = Int64.add p n in
     match mode with
-    | LaTeX|HeVeA|HeVeANew when not kmg -> 
-        sprintf "\\mydata{%s}{%s}{%s}{%s}{%s}" 
+    | LaTeX|HeVeA|HeVeANew when not kmg ->
+        sprintf "\\mydata{%s}{%s}{%s}{%s}{%s}"
           (format_int64_as_int p)
           (format_int64_as_int n)
           (format_int64_as_int all)
@@ -875,10 +889,10 @@ let format_int_string s =
 
     let fmt_cell _col i t =
       let p,n = t.witnesses in
-      let wits = 
-	let p,n = if O.oriented && t.kind = Forbid then n,p else p,n in
+      let wits =
+        let p,n = if O.oriented && t.kind = Forbid then n,p else p,n in
         if Int64.compare (Int64.add p n) 0L = 0 then "??"
-	else pp_wits p n in      
+        else pp_wits p n in
       let wits = match i.K.Kind.kind with
       | ErrorKind -> assert false
       | NoKind -> sprintf "%s (%s)" wits (LS.pp_kind t.kind)
@@ -886,18 +900,18 @@ let format_int_string s =
       [wits]
 
     include Matrix.NoAdd
-  end  
+  end
 
   let show_wits kind_oriented tnames ts =
     let keys = K.Kind.add tnames ts in
     let module B =
-      Matrix.Build 
+      Matrix.Build
         (FmtWitness (struct let oriented = kind_oriented end)) in
     let r = B.build keys ts in
     dump ts "Witnesses" true
       (List.map (fun t -> 1,pp_name t.name) ts) []
       keys ~col2:(K.Kind.pps keys) r ;
-    output_char chan '\n' 
+    output_char chan '\n'
 
 (***********************)
 (* Recompute witnesses *)
@@ -957,7 +971,7 @@ let format_int_string s =
                  let i =  k.Key.info in
                  let kind = i.K.Cond.kind
                  and unsure = i.K.Cond.unsure in
-                 let ppk = 
+                 let ppk =
                    if unsure then
                      if verbose > 0 then LS.pp_kind kind ^ "?"
                      else "---"
@@ -984,7 +998,7 @@ let format_int_string s =
               let v_pp =
                 match t.time with
                 | None -> "--"
-                | Some time -> 
+                | Some time ->
                     let p,_ = LS.witness_again cond t.states in
                     if Int64.compare p Int64.zero = 0 then
                       if verbose > 0 then
@@ -1001,7 +1015,7 @@ let format_int_string s =
               [v_pp]
 
             include Matrix.NoAdd
-                
+
           end) in
       let m = B.build keys ts in
       dump ts "Efficiency" true
@@ -1034,7 +1048,7 @@ let format_int_string s =
     dump ts "Time" true
       (List.map (fun t -> 1,pp_name t.name) ts) []
       keys r ;
-    output_char chan '\n' 
+    output_char chan '\n'
 
 (* Productivity (ie outcomes/sec) *)
   module FmtProd = struct
@@ -1065,13 +1079,13 @@ let format_int_string s =
         (fun (os,ti) ->
           let x = Int64.to_float os /. ti in
           fmt_float_alt x)
-        sum in          
+        sum in
     dump ts "Productivity" true
       (List.map (fun t -> 1,pp_name t.name) ts) sum
       keys r ;
-    output_char chan '\n' 
+    output_char chan '\n'
 
-      
+
 (*****************************************)
 (* Diff matrix, first colum is reference *)
 (*****************************************)
@@ -1183,10 +1197,10 @@ let format_int_string s =
                     | _,_  -> sprintf "%s /\\ (%s) \\/ (%s)"
                           (pp_bd bd_max) pp_ok pp_no in
                 do_rec bdss
-*)                
-                       
-              
-              
+*)
+
+
+
             let pp_cond =
               if Opt.opt_cond then CondPP.pp_opt
               else CondPP.pp_simple
@@ -1196,7 +1210,7 @@ let format_int_string s =
 
             type info = K.Full.info
 
-            let fmt_cell  _col r t = try 
+            let fmt_cell  _col r t = try
               let name = t.tname in
               let more = LS.diff_states t.states r.states
               and less = LS.diff_states r.states t.states in
@@ -1240,7 +1254,7 @@ let format_int_string s =
             List.iter
               (fun x -> fprintf chan " %c%s" c x)
               xs ;
-            output_char chan '\n' in      
+            output_char chan '\n' in
       dump_set "positive" '+' !pos ;
       dump_set "negative" '-' !neg ;
       let dump_chan s chan =
@@ -1276,31 +1290,31 @@ let format_int_string s =
     let module V = Matrix.Build(FmtValidate) in
     let module W =
       Matrix.Build(FmtWitness(struct let oriented = true end)) in
-    let r = 
+    let r =
       List.fold_right
-	(fun ({is_litmus=il;tests=ts;_} as t) k -> 
-          try              
-	    let valids = V.extract t keys ts in
-	    if il then
-	      let witnesses = W.extract t keys ts in
+        (fun ({is_litmus=il;tests=ts;_} as t) k ->
+          try
+            let valids = V.extract t keys ts in
+            if il then
+              let witnesses = W.extract t keys ts in
               valids :: witnesses :: k
             else
               valids :: k
           with Misc.Fatal msg ->
             Warn.fatal "Summary %s: %s" t.name msg
-	)
-	tests [] in
+        )
+        tests [] in
 
-    dump tests "Summary" false 
+    dump tests "Summary" false
       (List.map (fun t ->
-	let basename = pp_name t.name in
-	let name = try Filename.chop_extension basename with Invalid_argument _ -> basename in
-	(if t.is_litmus then 2 else 1),name) tests) []
+        let basename = pp_name t.name in
+        let name = try Filename.chop_extension basename with Invalid_argument _ -> basename in
+        (if t.is_litmus then 2 else 1),name) tests) []
       keys
       ~col2:(K.Kind.pps keys) r
 
 
-  let show do_show logs =    
+  let show do_show logs =
     let do_show = if do_show = "" then "d" else do_show in
     let tests = read_logs logs in
 
@@ -1310,7 +1324,8 @@ let format_int_string s =
 
     let t = Hashtbl.create 17 in
     let add c f = Hashtbl.add t c f in
-    add 'v' (show_validate tnames) ;
+    add 'v' (show_validate false tnames) ;
+    add 'k' (show_validate true tnames) ;
     add 'V' (show_validate_verbose tnames) ;
     add 'r' show_revalidate ;
     add 'X' (show_XYZ X) ;

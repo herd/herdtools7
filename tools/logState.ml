@@ -45,7 +45,7 @@ type parsed_st =
   {
     p_noccs : Int64.t ;
     p_st : st_concrete ;
-  }   
+  }
 
 
 type parsed_sts = {
@@ -67,6 +67,22 @@ let is_reliable k = match k with
 
 type validation = Undef | Ok | No | DontKnow | Run
 
+let tr_validate kref k v = match kref with
+| (Allow|Forbid) ->
+    begin match k,v with
+    | (Allow,Ok)
+    | (Forbid,No)
+    | (Require,No)
+      -> Some Allow
+    | (Allow,No)
+    | (Forbid,Ok)
+    | (Require,Ok)
+      -> Some Forbid
+    | _ -> None
+    end
+| _ -> None
+
+
 
 type test =
  { tname : string ;      (* name of the test, aka key *)
@@ -79,7 +95,7 @@ type test =
    validation : validation ; (* condition validation status *)
    witnesses : Int64.t * Int64.t ; (* witnesses pos/neg *)
    hash : string option ;  (* Hash of init state + code *)
-   time : float option ; 
+   time : float option ;
    topologies : topologies ;
  }
 
@@ -190,7 +206,7 @@ let dump_states_cond chan is_litmus t =
     fprintf chan "Histogram (%i states)\n"  (List.length t.p_sts)
   else
     fprintf chan "States %i\n"  (List.length t.p_sts) ;
-  List.iter (dump_state chan is_litmus) t.p_sts  
+  List.iter (dump_state chan is_litmus) t.p_sts
 
 let dump_states chan t = dump_states_cond chan true t
 
@@ -202,7 +218,7 @@ let card sts = List.length  sts.p_sts
 
 let millions x = Int64.to_float x /. 1000000.0
 
-let pretty_states pref mode with_noccs st =  
+let pretty_states pref mode with_noccs st =
   let r = List.map (pretty_state pref mode with_noccs) st.p_sts in
   if with_noccs then
     sprintf "nstates=%i, nouts=%.2fM"
@@ -253,7 +269,7 @@ let pp_validation = function
   | Undef -> "Undef"
 
 
-let extract_loc h = 
+let extract_loc h =
   let loc,_ = HashedPair.as_t h in
   loc
 
@@ -330,7 +346,7 @@ module LC =
 
       type state = st_concrete
 
-            
+
       let rec bds_assoc  bds loc = match bds.Hashcons.node with
       | Nil -> Warn.fatal "No value for location %s" loc
       | Cons (p,r) ->
@@ -355,7 +371,7 @@ module LC =
 let revalidate c sts = match c with
 | None -> DontKnow
 | Some c ->
-  if 
+  if
     LC.validate c (List.map (fun st -> st.p_st) sts.p_sts)
   then Ok
   else No
@@ -412,9 +428,9 @@ let count_outcomes t =
 
 (* Sum of logs *)
 
-(**********************)  
+(**********************)
 (* Union of log files *)
-(**********************)  
+(**********************)
 
 (* As union_test is used in two places, error report is by exception *)
 type union_error =
@@ -446,13 +462,13 @@ let save_cond c1 c2 = match c1,c2 with
 | None,None -> None
 
 let union_cond tname c1 c2 =
-  if c1 <> c2 then begin    
+  if c1 <> c2 then begin
     let c = save_cond c1 c2 in
     begin match c with
     | None ->
         W.warn "Test %s, changing condition" tname  ;
         c
-    | Some _ -> c 
+    | Some _ -> c
     end
   end else
     c1
@@ -502,13 +518,13 @@ let union_test_gen t1 t2 =
       union_kind t1.tname t1.kind t2.kind
     end else
       t1.kind in
-  let cond = union_cond t1.tname t1.condition t2.condition in  
+  let cond = union_cond t1.tname t1.condition t2.condition in
   let hash = union_hash t1.hash t2.hash in
   let (p1,n1) = t1.witnesses and (p2,n2) = t2.witnesses in
   let p = Int64.add p1 p2 and n = Int64.add n1 n2 in
   let v = match k with
   | Allow -> if gt0 p then Ok else No
-  | Forbid | Require -> if gt0 n then No else Ok 
+  | Forbid | Require -> if gt0 n then No else Ok
   | _ -> DontKnow in
 
   if O.verbose > 1 then
@@ -590,7 +606,7 @@ let rec unions a = match a with
   | [] -> [| |]
   | [_,xs] -> xs
   | xss -> unions (do_unions xss)
-      
+
 
 let unions0 =
   List.map
@@ -600,7 +616,7 @@ let unions0 =
       let tsts = Array.copy t.tests in
       Array.sort
         (fun t1 t2 -> String.compare t1.tname t2.tname)
-        tsts ;      
+        tsts ;
       [t.name],tsts)
 
 
@@ -695,7 +711,7 @@ let rec do_inter_states sts1 sts2 =  match sts1,sts2 with
     end
 
 let inter_states sts1 sts2 =
-  let sts =do_inter_states sts1.p_sts sts2.p_sts in 
+  let sts =do_inter_states sts1.p_sts sts2.p_sts in
   {
    p_nouts = comp_nouts sts ;
    p_sts = sts ;
@@ -814,7 +830,7 @@ let rename f t =
       | Some h -> Hashtbl.add htbl t.tname h)
       t.tests ;
   htbl in
-          
+
   let tests =
     Array.map
       (fun t ->
@@ -872,7 +888,7 @@ let uniq _is_litmus name =
         t1.tname name ;
     let k = t1.kind in
 
-    if (t1.condition <> t2.condition) then   
+    if (t1.condition <> t2.condition) then
       Warn.fatal
         "Different conditions for test %s in file %s"
         t1.tname name ;
@@ -887,7 +903,7 @@ let uniq _is_litmus name =
         t1.hash in
 
     let cond = t1.condition in
-    let (p1,n1) = t1.witnesses 
+    let (p1,n1) = t1.witnesses
     and (p2,n2) = t2.witnesses in
     let p = Int64.add p1 p2 and n = Int64.add n1 n2 in
     let v = match k with
@@ -905,7 +921,7 @@ let uniq _is_litmus name =
       time = None ;
       topologies = union_topos t1.topologies t2.topologies; } in
 
-  fun ts -> union_adjs union_test ts    
+  fun ts -> union_adjs union_test ts
 
 let union_same_log merge ts =
   Array.sort (fun t1 t2 -> String.compare t1.tname t2.tname) ts ;
@@ -940,7 +956,7 @@ let normalize name is_litmus ts =
   let ts =
     Array.map
       (fun (n,k,(sts,ok,wits,cond,loop,hash,topos,time)) ->
-        { tname = n ; kind=k ; 
+        { tname = n ; kind=k ;
           states = normalize_states sts ; validation=ok ;
           witnesses = wits ;
           condition = cond ;
@@ -963,7 +979,7 @@ let normalize name is_litmus ts =
       ts in
   { name = name ;
     is_litmus = is_litmus ;
-    tests = ts ; }    
+    tests = ts ; }
 
 
 let compare_simple_st st1 st2 =
@@ -1004,7 +1020,7 @@ let rec union_states_simple sts1 sts2 =  match sts1,sts2 with
       st2::union_states_simple (st1::sts1) sts2
     else begin
       st1::union_states_simple sts1 sts2
-    end 
+    end
 
 let union_litmus_simple _name t1 t2 =
   assert (t1.s_tname = t2.s_tname) ;
@@ -1059,11 +1075,11 @@ let rec diff_not_empty  xs ys = match xs,ys with
     if tx < ty then true
     else if tx > ty then diff_not_empty xs ry
     else diff_not_empty rx ry
-        
+
 let simple_diff_not_empty out t1 t2 k =
   simple_diff_gen diff_not_empty out t1 t2 k
 
-      
+
 let rec diff_simple_states xs ys = match xs,ys with
 | [],[] -> false
 | x::xs,y::ys -> x != y || diff_simple_states xs ys
