@@ -20,6 +20,6 @@ show fr,co
 (* Also check atomic pairs *)
 let coe = co & ext
 and fre = fr & ext
-empty atom & (fre; coe) as atom
+empty rmw & (fre; coe) as atom
 
 

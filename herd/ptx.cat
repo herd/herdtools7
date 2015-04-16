@@ -9,7 +9,7 @@
 %*)}
 
 (* Atomic *)
-empty atom & (fre;coe)
+empty rmw & (fre;coe)
 
 let com = rf | fr | co
 (* let po-loc-llh = WW(po-loc) | WR(po-loc) | RW(po-loc) *)

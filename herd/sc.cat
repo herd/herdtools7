@@ -1,7 +1,8 @@
 SC
 include "cos.cat"
+
 (* Atomic *)
-empty atom & (fre;coe) as atom
+empty rmw & (fre;coe) as atom
 
 (* Sequential consistency *)
 acyclic po | fr | rf | co as sc

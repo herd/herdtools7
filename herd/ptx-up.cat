@@ -39,7 +39,7 @@ acyclic (po-loc-llh | com | RRfence) as sc-per-loc-llh
 %*)}
 
 
-empty atom & (fre;coe)
+empty rmw & (fre;coe)
 
 {%(*
   \paragraph{No thin air} 

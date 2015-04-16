@@ -8,7 +8,7 @@ let com = rf | fr | co
 acyclic po-loc | com
 
 (* Atomic *)
-empty atom & (fre;coe)
+empty rmw & (fre;coe)
 
 (* GHB *)
 #ppo

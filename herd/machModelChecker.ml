@@ -116,7 +116,7 @@ module Make
               E.EventRel.restrict_rel
                 (fun e1 e2 -> not (E.same_proc e1 e2)) (Lazy.force unv)
             end ;
-           "atom",lazy conc.S.atomic_load_store;
+           "rmw",lazy conc.S.atomic_load_store;
            "po", lazy  begin
              E.EventRel.filter
                (fun (e1,e2) -> relevant e1 && relevant e2)

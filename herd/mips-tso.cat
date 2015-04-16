@@ -8,7 +8,7 @@ let com = rf | fr | co
 acyclic po-loc | com as uniproc
 
 (* Atomic *)
-empty atom & (fre;coe) as atomic
+empty rmw & (fre;coe) as atomic
 
 (* ppo, choosing pso at the moment *)
 include "mipsfences.cat"

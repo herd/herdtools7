@@ -6,7 +6,7 @@ include "cos.cat"
 acyclic po-loc | rf | fr | co
 
 (* Atomic *)
-empty atom & (fre;coe) as atomic
+empty rmw & (fre;coe) as atomic
 
 (* Utilities *)
 let dd = addr | data
