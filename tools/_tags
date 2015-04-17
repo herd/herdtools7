@@ -14,3 +14,5 @@ true: safe_string
 <mprog.{d.byte,byte,native}>:use_str
 <knames.{d.byte,byte,native}>:use_str
 <mtopos.{d.byte,byte,native}>:use_str
+<mcmp.{d.byte,byte,native}>:use_str
+
