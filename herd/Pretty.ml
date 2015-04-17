@@ -552,6 +552,18 @@ let one_init = match PC.graph with
           else c::do_rec cs in
     String.concat ":" (do_rec cs)
 
+  let fmt_merged_label fst i =
+    let pp_label = escape_html i.ikey in
+    let pp_label = pp_edge_label false pp_label in
+    sprintf "<font color=\"%s\">%s%s</font>" i.icolor
+      (if fst then "" else ",") pp_label
+
+  let fmt_merged_labels infos = match infos with
+  | [] -> []
+  | i::rem ->
+      fmt_merged_label true i::
+      List.map (fmt_merged_label false) rem
+    
   let dump_pairs chan =
     let new_edges = handle_symetric !edges in
     PairMap.iter
@@ -561,14 +573,7 @@ let one_init = match PC.graph with
             (fun i -> StringSet.mem i.ikey PC.symetric)
             infos in
         let colors = compute_colors (List.map (fun i -> i.icolor) infos)
-        and lbl =
-          String.concat ","
-            (List.map
-               (fun i ->
-                 let pp_label =  escape_html i.ikey in
-                 let pp_label = pp_edge_label false pp_label in
-                 sprintf "<font color=\"%s\">%s</font>"
-                   i.icolor pp_label) infos) in        
+        and lbl = String.concat "" (fmt_merged_labels infos) in
         fprintf chan "%s -> %s [label=<%s>, color=\"%s\""
           n1 n2 lbl colors ;
         pp_fontsize_edge chan ;
