@@ -17,6 +17,7 @@ type annot_set = StringSet.t
 type annot_group = annot_set list
 type event_dec = annot_group list
 type event_decs = event_dec StringMap.t
+val event_decs_empty : event_decs
 val pp_event_dec : event_dec -> string
 val pp_event_decs : event_decs -> string
 
@@ -65,4 +66,8 @@ val add_order : string -> order_dec -> info -> info
 val add_default : string -> default_dec -> info -> info
 
 (* Cumulate information, ie does not raise Defined *)
+
+(* On some event_decs structire *)
+val add_event_dec : string -> annot_group -> event_decs -> event_decs
+(* On complet info structure *)
 val add_events : string -> annot_group -> info -> info

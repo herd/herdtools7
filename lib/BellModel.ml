@@ -19,6 +19,7 @@ type annot_set = StringSet.t
 type annot_group = annot_set list
 type event_dec = annot_group list
 type event_decs = event_dec StringMap.t
+let event_decs_empty = StringMap.empty
 
 let pp_string_set set = StringSet.pp_str "," Misc.identity set
 
@@ -140,11 +141,12 @@ let add_regions dec i =
   | None -> { i with regions = Some (StringSet.of_list dec); }
   | Some _ -> raise Defined
 
+let add_event_dec k dec m =
+  let old = StringMap.safe_find [] k m in
+  StringMap.add k (dec::old) m
+
 let add_events k dec i =
-  let old =
-    try StringMap.find k i.events
-    with Not_found -> [] in
-  let events = StringMap.add k (dec::old) i.events
+  let events = add_event_dec  k dec i.events
   and all_events =
     if StringSet.mem k BellName.all_mem_sets then
       StringSet.union (StringSet.unions dec) i.all_events

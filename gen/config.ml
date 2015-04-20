@@ -40,6 +40,7 @@ let lowercase = ref false
 let optcoherence = ref false
 let bell = ref None
 let scope = ref Scope.No
+let atoms = ref []
 
 type do_observers =
   | Avoid   (* was false *)
@@ -119,12 +120,15 @@ let common_specs =
   ("-bell",
    Arg.String (fun f -> arch := Archs.bell; bell := Some f),
    "<name> read bell file <name>, implies -arch Bell")::
+
   Util.parse_tag
     "-scopes"
     (fun tag -> match Scope.parse tag with
     | None -> false
     | Some a -> scope := a; true)
    Scope.tags  "<tag> specifiy scope tree"::
+  ("-varatom", Arg.String (fun s -> atoms := !atoms @ [s]),
+   "<atom specs> specify atom variations")::
   Util.parse_tag
     "-type"
     (fun tag -> match TypBase.parse tag with
@@ -169,8 +173,6 @@ let common_specs =
   "<cycle|unicond|observe> style of final condition, default cycle")::
   ("-unicond", Arg.Unit (fun () -> cond := Unicond),
   "alias for -cond unicond (deprecated)")::
-  ("-vars",Arg.Bool (fun _b -> eprintf "option -vars is deprecated, does nothing\n%!"),
-   "<bool> deprecated, does nothing")::
   ("-oh", Arg.String (fun n -> hout := Some n),
    "<fname> save a copy of hints")::
   ("-addnum", Arg.Bool (fun n -> addnum := n),
@@ -246,3 +248,14 @@ let read_bell libfind fname =
         let prog = prog
       end) in
   R.read fname
+
+let parse_annots lines = match lines with
+| [] -> None
+| _ ->
+    let module P =
+      Annot.Make
+        (struct
+          let debug = !debug.Debug.lexer
+        end) in
+    Some (P.parse lines)
+      

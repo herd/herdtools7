@@ -347,9 +347,9 @@ let min_max xs =
               i,c::cs,f@fs
         with NoObserver -> build_observers p i x vss
             
-  let rec check_rec atoms p i =
+  let rec check_rec ats p i =
     let add_look_loc loc v k =
-      if not (StringSet.mem loc atoms) && O.optcond then
+      if not (StringSet.mem loc ats) && O.optcond then
         k else (A.Loc loc,IntSet.singleton v)::k in
     let open Config in
     function
@@ -389,7 +389,7 @@ let min_max xs =
               end
           end in
           let i,cs,fs =
-            check_rec atoms (p+List.length c) i xvs in
+            check_rec ats (p+List.length c) i xvs in
           i,c@cs,f@fs
 
   let check_writes atoms p i cos = check_rec atoms p i cos

@@ -198,6 +198,7 @@ let () =
     let norm = !norm
     let cpp = cpp
     let scope = !Config.scope
+    let varannots = None
     let docheck = !Config.docheck
     let prog = Config.prog
   end in

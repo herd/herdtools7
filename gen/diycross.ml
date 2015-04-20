@@ -208,6 +208,7 @@ let () =
       let allow_back = false
       let cpp = match !Config.arch with Archs.CPP -> true | _ -> false
       let scope = !Config.scope
+      let varannots = Config.parse_annots !Config.annots
     end in
     let open Archs in
     let module T = Top.Make(C) in

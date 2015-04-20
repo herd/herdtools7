@@ -1175,10 +1175,15 @@ module Make
           let env =
             { env with
               EV.env=add_args loc f.clo_args va env f.clo_env;} in
-          begin try eval env f.clo_body with
-            Misc.Exit ->
+          if O.debug then begin try
+            eval env f.clo_body
+          with
+          |  Misc.Exit ->
               error env.EV.silent loc "Calling"
-          end
+          | e ->
+              error env.EV.silent loc "Calling (%s)" (Printexc.to_string e)
+          end else
+            eval env f.clo_body
       | Prim (name,_,f) ->
           begin try f va with
           | PrimError msg ->

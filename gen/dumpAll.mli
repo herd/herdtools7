@@ -21,6 +21,7 @@ module type Config = sig
   val overload : int option
   val cpp : bool
   val scope : Scope.t
+  val varannots : BellModel.event_decs option
 end
 
 module Make(Config:Config) (T:Builder.S) : sig

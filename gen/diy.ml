@@ -193,6 +193,7 @@ let () =
     let neg = !Config.neg
     let cpp = cpp
     let scope = !scope
+    let varatom = Config.parse_annots !annots
     let docheck = !Config.docheck
  end in
   let module C = struct

@@ -136,6 +136,17 @@ let fold_atom = match bi with
 
 let worth_final _ = false
 
+
+let fold_from al f r =
+  List.fold_right
+    (fun al r ->
+      Misc.fold_cross
+        (List.map StringSet.elements al)
+        f r)
+    al r
+
+    
+
 (* End of atoms *)
 
 (**********)

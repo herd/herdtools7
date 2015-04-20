@@ -54,7 +54,6 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
 
     let exch_tagged r x v a =
       Prmw2_op (r,Abs (Constant.Symbolic x),Imm v,RMWExch,a)
-    let exch r x v =  exch_tagged r x v []
       
 (**********)
 (* Export *)
@@ -161,10 +160,10 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
     | (None,Some a) -> a
     | Some a,Some _ -> a
         
-    let emit_exch st p init er ew =
+    let emit_exch st _p init er ew =
       let rR,st = next_reg st in
       let arw = tr_a er.C.atom ew.C.atom in
-      rR,init,[Instruction (exch rR er.loc ew.v)],st
+      rR,init,[Instruction (exch_tagged rR er.loc ew.v arw)],st
 
 (**********)
 (* Fences *)
