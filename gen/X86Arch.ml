@@ -37,6 +37,8 @@ let fold_atom f k = f Atomic k
 
 let worth_final _ = true
 
+let varatom_dir _d f = f None
+
 (**********)
 (* Fences *)
 (**********)

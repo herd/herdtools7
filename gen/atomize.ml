@@ -130,6 +130,7 @@ let () =
           let libdir = Version.libdir
           let prog = Config.prog
           let bell = !Config.bell
+          let varatom = !Config.varatom
         end in
       let module M = Make(BellArch.Make(BellConfig)) in
       M.zyva

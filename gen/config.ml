@@ -40,7 +40,7 @@ let lowercase = ref false
 let optcoherence = ref false
 let bell = ref None
 let scope = ref Scope.No
-let atoms = ref []
+let varatom = ref []
 
 type do_observers =
   | Avoid   (* was false *)
@@ -127,7 +127,7 @@ let common_specs =
     | None -> false
     | Some a -> scope := a; true)
    Scope.tags  "<tag> specifiy scope tree"::
-  ("-varatom", Arg.String (fun s -> atoms := !atoms @ [s]),
+  ("-varatom", Arg.String (fun s -> varatom := !varatom @ [s]),
    "<atom specs> specify atom variations")::
   Util.parse_tag
     "-type"

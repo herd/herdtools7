@@ -38,3 +38,5 @@ let fold_atom f r = f Reserve (f Atomic r)
 let worth_final = function
   | Atomic -> true
   | Reserve -> false
+
+let varatom_dir _d f = f None

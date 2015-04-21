@@ -171,6 +171,7 @@ let () =
     let module C = struct
 (* Dump all *)
       let verbose = !Config.verbose
+      let debug = !Config.debug
       let hout = match !Config.hout with
       | None -> Hint.none
       | Some n -> Hint.open_out n
@@ -208,7 +209,6 @@ let () =
       let allow_back = false
       let cpp = match !Config.arch with Archs.CPP -> true | _ -> false
       let scope = !Config.scope
-      let varannots = Config.parse_annots !Config.annots
     end in
     let open Archs in
     let module T = Top.Make(C) in
@@ -237,6 +237,7 @@ let () =
           let libdir = Version.libdir
           let prog = Config.prog
           let bell = !Config.bell
+          let varatom = !Config.varatom
         end in
         let module M = Make(C)(T(BellCompile.Make(C)(BellConfig))) in
         M.zyva

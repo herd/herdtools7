@@ -17,6 +17,7 @@ module type Config = sig
   val libdir : string
   val prog : string
   val bell : string option
+  val varatom : string list
 end
 
 module Make(O:Config) = struct
@@ -136,16 +137,46 @@ let fold_atom = match bi with
 
 let worth_final _ = false
 
+(* Atomic variation *)
 
-let fold_from al f r =
+(* No atomic variation *)
+let no_varatom f r = f None r
+
+(* Some atomic variation *)
+let fold_from all f r =
   List.fold_right
     (fun al r ->
       Misc.fold_cross
         (List.map StringSet.elements al)
-        f r)
-    al r
+        (fun al r -> f (Some al) r)
+        r)
+    all r
 
-    
+let varatom = match  O.varatom with
+| [] -> None
+| lines ->
+    let module P =
+      Annot.Make
+        (struct
+          let debug = O.debug.Debug.lexer
+        end) in
+    Some
+      begin
+        let x = P.parse lines in
+        if O.debug.generator then
+          eprintf "Variations:\n%s\n" (BellModel.pp_event_decs x) ;
+        x
+      end 
+
+
+let varatom_dir = match varatom with
+| None -> fun _ -> no_varatom
+| Some va ->
+    fun d ->
+      try
+        let at =  StringMap.find  (tr_dir d) va in
+        fold_from at
+      with Not_found -> no_varatom
 
 (* End of atoms *)
 

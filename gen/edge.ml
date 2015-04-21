@@ -90,6 +90,9 @@ module type S = sig
 (* Resolve Irr directions and unspecified atom *)
   val resolve_edges : edge list -> edge list
 
+(* Atomic variation over yet unspecified atoms *)
+  val varatom : edge list -> (edge list -> 'a -> 'a) -> 'a -> 'a
+
 (* Possible interpretation of edge sequence as an edge *)
   val compact_sequence : edge list -> edge list -> edge -> edge -> edge list list
 (* Utilities *)
@@ -571,7 +574,35 @@ and set_src d e = { e with edge = do_set_src d e.edge ; }
       let fst1,fst2,es = do_rec fst es in
       let fst = merge_pair fst1 fst2 in
       fst::es
-             
+
+(* Atomic variation *)
+(* Apply atomic variation to nodes with no atomicity (ie a = None)
+   This is done after a resolution step (see resolve_edge above),
+   with leaves a1 and a2 to None when there us not neighbouring atomic
+   specification. One atomic variation has been applied to all the a` fields
+   of all edges, we do another step of resolution, so as to set the neighbouring
+   a2 *)
+  let varatom es f r =
+    let rec var_rec ves es r = match es with
+    | [] -> f (resolve_edges (List.rev ves)) r
+    | e::es ->
+        begin match e.a1 with
+        | Some _ -> var_rec (e::ves) es r
+        | None ->
+            let d =
+              match dir_src e with
+              | Dir d -> d
+              | Irr -> assert false (* resolved at this step *) in
+            F.varatom_dir d
+              (fun a r ->
+                var_rec
+                  ({e with a1=a}::ves)
+                  es r)
+              r
+        end in
+    var_rec [] es r
+
+
 (* compact *)
   let seq_sd e1 e2 = match loc_sd e1,loc_sd e2 with
   | Same,Same -> Same

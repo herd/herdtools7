@@ -23,7 +23,6 @@ module type Config = sig
   val overload : int option
   val cpp : bool
   val scope : Scope.t
-  val varannots : BellModel.event_decs option
 end
 
 module Make(Config:Config)(T:Builder.S)
@@ -395,10 +394,13 @@ module Make(Config:Config)(T:Builder.S)
 
       let check_dump all_chan check es mk_info mk_name mk_scope res =
         let es = normalise es in
-        match Config.varannots with
-        | None ->
-            check_dump all_chan check es mk_info mk_name mk_scope res 
-        | Some _ -> assert false
+        T.E.varatom
+          es
+          (fun es res ->
+            if Config.debug.Debug.generator then
+              eprintf "Atomic variation: %s\n" (T.E.pp_edges es) ;
+            check_dump all_chan check es mk_info mk_name mk_scope res)
+          res
 
 (* Exported *)
       let all ?(check=(fun _ -> true)) gen =

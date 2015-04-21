@@ -170,6 +170,7 @@ let () =
   let module Co = struct
 (* Dump all *)
     let verbose = !Config.verbose
+    let debug = !Config.debug
     let hout = match !Config.hout with
     | None -> Hint.none
     | Some n -> Hint.open_out n
@@ -198,13 +199,13 @@ let () =
     let norm = !norm
     let cpp = cpp
     let scope = !Config.scope
-    let varannots = None
     let docheck = !Config.docheck
     let prog = Config.prog
   end in
   let module Build = Make(Co) in
   let module C = struct
     let verbose = !Config.verbose
+    let debug = !Config.debug
     let list_edges = !Config.list_edges
     let coherence_decreasing = !Config.coherence_decreasing
     let same_loc =
@@ -244,6 +245,7 @@ let () =
           let libdir = Version.libdir
           let prog = Config.prog
           let bell = !Config.bell
+          let varatom = !Config.varatom
         end in
       let module T = Top.Make(Co) in
       let module M = Build(T(BellCompile.Make(C)(BellConfig))) in

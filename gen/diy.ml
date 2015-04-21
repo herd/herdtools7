@@ -157,6 +157,7 @@ let () =
   let module Co = struct
 (* Dump all *)
     let verbose = !Config.verbose
+    let debug = !Config.debug
     let hout = match !Config.hout with
     | None -> Hint.none
     | Some n -> Hint.open_out n
@@ -193,7 +194,6 @@ let () =
     let neg = !Config.neg
     let cpp = cpp
     let scope = !scope
-    let varatom = Config.parse_annots !annots
     let docheck = !Config.docheck
  end in
   let module C = struct
@@ -233,6 +233,7 @@ let () =
           let libdir = Version.libdir
           let prog = Config.prog
           let bell = !Config.bell
+          let varatom = !Config.varatom
         end in
       let module M = Make(T(BellCompile.Make(C)(BellConfig)))(Co) in
       M.go

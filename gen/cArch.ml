@@ -46,6 +46,8 @@ let fold_atom f k =
 
 let worth_final _ = false
 
+let varatom_dir _d f = f None
+
 (* Fences, to be completed *)
 type fence = MemOrder.t
 

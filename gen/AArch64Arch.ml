@@ -55,6 +55,8 @@ let worth_final = function
   | Atomic _ -> true
   | Acq|Rel -> false
 
+let varatom_dir _d f r = f None r
+
 (* End of atoms *)
 
 (**********)
