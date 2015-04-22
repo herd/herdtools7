@@ -15,6 +15,8 @@
 
 type annot_set = StringSet.t
 type annot_group = annot_set list
+val pp_annot_group : annot_group -> string
+
 type event_dec = annot_group list
 type event_decs = event_dec StringMap.t
 val event_decs_empty : event_decs

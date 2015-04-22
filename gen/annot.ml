@@ -38,7 +38,7 @@ module Make(O:LexUtils.Config) =
             let ts = StringSet.of_list (annot_list (lex lexbuf)) in
             begin match lex lexbuf with
             | COMMA -> ts::annot_list_list_rec (lex lexbuf)
-            | RBRAC -> []
+            | RBRAC -> [ts]
             | _ -> error ()
             end
         | _ -> error () in

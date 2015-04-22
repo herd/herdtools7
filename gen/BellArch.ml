@@ -143,14 +143,13 @@ let worth_final _ = false
 let no_varatom f r = f None r
 
 (* Some atomic variation *)
-let fold_from all f r =
+let fold_from_gen all f =
   List.fold_right
-    (fun al r ->
-      Misc.fold_cross
-        (List.map StringSet.elements al)
-        (fun al r -> f (Some al) r)
-        r)
-    all r
+    (fun al -> Misc.fold_cross (List.map StringSet.elements al) f)
+    all
+  
+let fold_from all f = fold_from_gen all (fun al -> f (Some al))
+
 
 let varatom = match  O.varatom with
 | [] -> None
@@ -163,11 +162,10 @@ let varatom = match  O.varatom with
     Some
       begin
         let x = P.parse lines in
-        if O.debug.generator then
+        if O.debug.Debug.generator then
           eprintf "Variations:\n%s\n" (BellModel.pp_event_decs x) ;
         x
       end 
-
 
 let varatom_dir = match varatom with
 | None -> fun _ -> no_varatom
@@ -178,6 +176,11 @@ let varatom_dir = match varatom with
         fold_from at
       with Not_found -> no_varatom
 
+let varatom_rmw = match varatom with
+| None -> no_varatom
+| Some _va -> fun _ -> assert false
+
+    
 (* End of atoms *)
 
 (**********)
@@ -212,6 +215,17 @@ let fold_all_fences  = fold_fences
 let fold_some_fences f k = f strong k
 
 let orders _ _ _ = true
+
+let no_varfence f r = f [] r
+
+let var_fence f = match varatom with
+| None -> no_varfence f
+| Some va ->
+    try
+        let at =  StringMap.find  BellName.f va in
+        fold_from_gen at f
+    with Not_found -> no_varfence f
+
 
 (********)
 (* Deps *)
