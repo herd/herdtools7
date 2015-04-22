@@ -295,10 +295,10 @@ module Make
         | t::ts ->
             begin match t.Tmpl.label with
             | Some _ ->
-                fprintf chan "\"%c_litmus_P%i_%i\\n\"\n" A.comment proc k
+                fprintf chan "\"%s_litmus_P%i_%i\\n\"\n" Tmpl.comment proc k
             | None ->
-                fprintf chan "\"%c_litmus_P%i_%i\\n%s\"\n"
-                  A.comment proc k
+                fprintf chan "\"%s_litmus_P%i_%i\\n%s\"\n"
+                  Tmpl.comment proc k
                   (if t.Tmpl.comment then "" else "\\t")
             end ;
             fprintf chan "\"%s\\n\"\n" (Tmpl.to_string t) ;
@@ -312,12 +312,12 @@ module Make
           compile_out_reg compile_val compile_cpy chan indent env proc t trashed;
         fprintf chan "asm __volatile__ (\n" ;
         fprintf chan "\"\\n\"\n" ;
-        fprintf chan "\"%s\\n\"\n" (LangUtils.start_comment A.comment proc) ;
+        fprintf chan "\"%s\\n\"\n" (LangUtils.start_comment Tmpl.comment proc) ;
         begin match t.Tmpl.code with
         | [] -> fprintf chan "\"\"\n"
         | code -> dump_ins 0 code
         end ;
-        fprintf chan "\"%s\\n\\t\"\n" (LangUtils.end_comment A.comment proc) ;
+        fprintf chan "\"%s\\n\\t\"\n" (LangUtils.end_comment Tmpl.comment proc) ;
         dump_outputs compile_addr compile_out_reg chan proc t trashed ;
         dump_inputs compile_val chan t trashed ;
         dump_clobbers chan t  ;

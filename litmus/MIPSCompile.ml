@@ -9,13 +9,7 @@
 (*  General Public License.                                          *)
 (*********************************************************************)
 
-module type Config = sig
-  val word : Word.t
-  val memory : Memory.t
-  val cautious : bool
-end
-
-module Make(V:Constant.S)(C:Config) =
+module Make(V:Constant.S)(C:Arch.Config) =
   struct
     module A = MIPSArch.Make(C)(V)
     open A

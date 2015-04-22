@@ -26,11 +26,14 @@ module type I = sig
   val reg_to_string  : arch_reg -> string
   val internal_init : arch_reg -> (string * string) option
   val reg_class : arch_reg -> string
-  val comment : char
+  val comment : string
 end
 
 module type S = sig
+
   module I : I
+
+  val comment : string (* ASM comment to use *)
 
   val vToName : Constant.v -> string
 
@@ -52,10 +55,16 @@ end
 
 module type Config = sig
   include Template.Config
+  val asmcomment : string option
 end
 
 module Make(O:Config)(I:I) : S with module I = I
 = struct
+
+  let comment = match O.asmcomment with
+  | Some c -> c
+  | None -> I.comment
+
   module I = I
   open Constant
 
@@ -79,7 +88,17 @@ module Make(O:Config)(I:I) : S with module I = I
         let global_compare = String.compare
       end)
 
-  module Out = Template.Make(O)(I) (I.V)
+  module Out =
+    Template.Make
+      (O)
+      (struct
+        type arch_reg = I.arch_reg
+        let arch = I.arch
+        let reg_compare = I.reg_compare
+        let reg_to_string = I.reg_to_string
+        let comment = comment
+      end)
+      (I.V)
 
   module MapValue =
     MyMap.Make

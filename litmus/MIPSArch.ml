@@ -9,7 +9,7 @@
 (*  General Public License.                                          *)
 (*********************************************************************)
 
-let comment = '#'
+let comment = "#"
 
 module Make(O:Arch.Config)(V:Constant.S) = struct
   include MIPSBase

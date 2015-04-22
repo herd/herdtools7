@@ -16,7 +16,7 @@ module type I = sig
   val reg_compare : arch_reg -> arch_reg -> int
   val reg_to_string : arch_reg -> string
 (* gas line comment char *)
-  val comment : char
+  val comment : string
 end
 
 
@@ -29,6 +29,7 @@ end
 
 module type S = sig
 
+  val comment : string
   type arch_reg
 
   type flow = Next | Branch of string
@@ -71,6 +72,8 @@ module Make(O:Config) (A:I) (V:Constant.S) =
 struct
   open Printf
   open Constant
+
+  let comment = A.comment
 
   type arch_reg = A.arch_reg
 
@@ -217,7 +220,7 @@ struct
           do_rec (j+nxt)
         with Not_found -> add (substring i len) in
     try
-      if t.comment then sprintf "%c%s" A.comment (escape_percent t.memo)
+      if t.comment then sprintf "%s%s" A.comment (escape_percent t.memo)
       else begin
         do_rec 0  ; Buffer.contents b
       end

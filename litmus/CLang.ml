@@ -10,9 +10,9 @@
 (*********************************************************************)
 
 module type Config = sig
-  val comment : char
   val memory : Memory.t
   val mode : Mode.t
+  val comment : string
 end
 
 module Make(C:Config) = struct

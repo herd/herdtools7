@@ -11,10 +11,8 @@
 (*********************************************************************)
 
 module type Config = sig
-  val word : Word.t
-  val memory : Memory.t
+  include Arch.Config
   val morearch : MoreArch.t
-  val cautious : bool
 end
 
 module Make(V:Constant.S)(C:Config) =

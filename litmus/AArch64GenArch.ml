@@ -11,8 +11,6 @@
 (**************************************************************************)
 
 
-let comment = '#' (* AArch64.comment ??? *)
-
 module Make(O:Arch.Config)(V:Constant.S) = struct
   include AArch64GenBase
   module V =
@@ -41,7 +39,7 @@ module Make(O:Arch.Config)(V:Constant.S) = struct
           else if reg_compare r loop_idx = 0 then Some ("_a->_p->max_loop","int")
           else None
         let reg_class _ = "=&r"
-        let comment = comment
+        let comment = AArch64Arch.comment
       end)
 
 end

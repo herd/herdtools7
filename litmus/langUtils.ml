@@ -12,9 +12,9 @@
 
 open Printf
 
-let start_comment com proc = sprintf "%cSTART _litmus_P%i" com proc
+let start_comment com proc = sprintf "%sSTART _litmus_P%i" com proc
 
-let end_comment com proc = sprintf "%cEND _litmus_P%i" com proc
+let end_comment com proc = sprintf "%sEND _litmus_P%i" com proc
 
 let code_fun proc = sprintf "code%i" proc
 

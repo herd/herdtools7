@@ -89,6 +89,8 @@ module type TopConfig = sig
   val mode : Mode.t
 (* usearch *)
   val usearch : UseArch.t
+(* Hum *)
+  val asmcomment : string option
 end
 
 module type Config = sig
@@ -318,7 +320,7 @@ end = struct
 
   module Make'
       (O:Config)
-      (A:sig val comment : char end) =
+      (A:sig val comment : string end) =
     struct
       module L = struct
         type token = CParser.token
@@ -436,6 +438,7 @@ end = struct
         let memory = OT.memory
         let morearch = OT.morearch
         let cautious = OT.cautious
+        let asmcomment = OT.asmcomment
       end in
       let module OX = struct
         include OT
@@ -548,12 +551,16 @@ end = struct
             X.compile
         | `C ->
             let module Arch' = struct
-              let comment = match OX.sysarch with
-              | `PPC -> PPCArch.comment
-              | `X86 -> X86Arch.comment
-              | `ARM -> ARMArch.comment
-              | `AArch64 -> ARMArch.comment
-              | `MIPS -> MIPSArch.comment
+              let comment =  match OT.asmcomment with
+              | Some c -> c
+              | None ->
+                  begin match OX.sysarch with
+                  | `PPC -> PPCArch.comment
+                  | `X86 -> X86Arch.comment
+                  | `ARM -> ARMArch.comment
+                  | `AArch64 -> AArch64Arch.comment
+                  | `MIPS -> MIPSArch.comment
+                  end
             end in
             let module X = Make'(Cfg)(Arch') in
             X.compile

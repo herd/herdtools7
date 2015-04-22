@@ -11,11 +11,10 @@
 (*********************************************************************)
 
 module type Config = sig
+  include Arch.Config
   val word : Word.t
-  val memory : Memory.t
   val syncmacro : int option
   val syncconst : int
-  val cautious : bool
 end
 
 module Make(V:Constant.S)(C:Config) =

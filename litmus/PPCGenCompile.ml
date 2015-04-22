@@ -10,13 +10,7 @@
 (*  General Public License.                                          *)
 (*********************************************************************)
 
-module type Config = sig
-  val word : Word.t
-  val memory : Memory.t
-  val syncmacro : int option
-  val syncconst : int
-  val cautious : bool
-end
+module type Config = PPCCompile.Config
 
 module Make(V:Constant.S)(C:Config) =
   struct

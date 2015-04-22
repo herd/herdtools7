@@ -317,6 +317,7 @@ let () =
 (* Mode *)
       let mode = !mode
       let usearch = !usearch
+      let asmcomment = !asmcomment
     end in
     let module T = Top.Top (Config) (Tar) in
     T.from_files sources ;

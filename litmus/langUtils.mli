@@ -10,8 +10,8 @@
 (*  General Public License.                                          *)
 (*********************************************************************)
 
-val start_comment : char -> int -> string
-val end_comment : char -> int -> string
+val start_comment : string -> int -> string
+val end_comment : string -> int -> string
 val dump_code_def : out_channel -> int -> string -> unit
 val dump_code_call : out_channel -> string -> int -> string -> unit
 

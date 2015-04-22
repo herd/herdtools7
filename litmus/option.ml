@@ -125,6 +125,7 @@ let linkopt = ref ""
 let targetos = ref TargetOS.Linux
 let gas = ref None
 let set_gas b = gas := Some b
+let asmcomment = ref None
 let get_numeric_labels () = match !gas with
 | Some b -> b
 | None ->

@@ -13,7 +13,7 @@
 open Printf
 
 (* let comment = '@' *)
-let comment = '#'
+let comment = "#"
 
 module Make(O:Arch.Config)(V:Constant.S) = struct
   include ARMBase

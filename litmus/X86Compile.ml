@@ -9,13 +9,8 @@
 (*  This file is distributed  under the terms of the Lesser GNU      *)
 (*  General Public License.                                          *)
 (*********************************************************************)
-module type Config = sig
-  val word : Word.t
-  val memory : Memory.t
-  val cautious : bool
-end
 
-module Make(V:Constant.S)(O:Config) =
+module Make(V:Constant.S)(O:Arch.Config) =
   struct
     module A = X86Arch.Make(O)(V)
     open A

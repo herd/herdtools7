@@ -13,6 +13,7 @@ module type Config = sig
   val word : Word.t
   val memory : Memory.t
   val cautious : bool
+  val asmcomment : string option
 end
 
 module Make(V:Constant.S)(C:Config) =

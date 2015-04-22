@@ -81,6 +81,7 @@ val linkopt : string ref
 val targetos : TargetOS.t ref
 val gas : bool option ref
 val set_gas : bool -> unit
+val asmcomment : string option ref
 val get_numeric_labels : unit -> bool
 val timeloop : int ref
 val set_timeloop : int -> unit
