@@ -181,6 +181,7 @@ let do_pp_barrier tag b = match b with
   | ISB -> "ISB"
 
 let pp_barrier b = do_pp_barrier " " b
+let pp_barrier_dot b = do_pp_barrier "." b
 
 let barrier_compare = Pervasives.compare
 
