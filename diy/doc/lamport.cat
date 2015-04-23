@@ -1,0 +1,18 @@
+"SC, L. Lamport style"
+
+let preS = po | (IW * (M \ IW))
+(* Compute the set of total orders that extend relation po on set M *)
+let allS = linearisations(M,preS)
+
+(* For all such orders *)
+with S from allS
+
+(* Define most recent write in the past  *)
+
+let WRS = W * R & S & loc  (* Writes from the past, same location *)
+let rf-S = WRS \ (S;WRS)   (* Most recent amongst them *)
+
+(* Check equality with rf *)
+empty rf \ rf-S as RfOk
+empty rf-S \ rf as RfOk
+

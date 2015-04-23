@@ -169,7 +169,7 @@ module Top (C:Config) = struct
             | ARM.DSB o -> DSB o
             | ARM.ISB -> ISB
           end in
-          let module ARMM = ARMMem.Make(ModelConfig)(ARMS) (ARMBarrier) in
+          let module ARMM = ARMMem.Make(ModelConfig)(ARMS)(ARMBarrier) in
           let module P = GenParser.Make (C) (ARM) (ARMLexParse) in
           let module X = Make (ARMS) (P) (NoCheck) (ARMM) in 
           X.run name chan env splitted

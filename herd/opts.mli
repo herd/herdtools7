@@ -21,6 +21,7 @@ val prog : string
 (* Local options *)
 val verbose : int ref
 val includes : string list ref
+val exit_if_failed : bool ref
 val debug : Debug.t ref
 val names : string list ref
 val rename : string option ref
@@ -88,6 +89,8 @@ module PP : sig
   val showlegend : bool ref
   val showfinalrf : bool ref
   val showinitrf : bool ref
+  val finaldotpos : (float * float) ref
+  val initdotpos : (float * float) ref
   val showpoloc : bool ref
   val showfr : bool ref
   val showinitwrites : bool ref

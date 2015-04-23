@@ -1,9 +1,11 @@
 "A second attempt for TSO"
 
+include "cos.cat"
+
 (* Communication relations that order events*)
 let com-tso = rfe | co | fr
 (* Program order that orders events *)
-let po-tso = WW(po) | RM(po)
+let po-tso = (W * W | R * M) & po
 
 (* TSP global-happens-before *)
 let ghb = po-tso | com-tso

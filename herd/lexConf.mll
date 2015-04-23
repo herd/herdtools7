@@ -65,6 +65,12 @@ let lex_float r arg = lex_float_fun (fun x -> r := x) arg
 let lex_float_opt r arg =
   r :=  lex_some "float"  float_of_string arg
 
+let lex_pos_fun set arg = match Misc.pos_of_string arg with
+| Some p -> set p
+| None -> error "pair of float parameter expected"
+
+let lex_pos r arg = lex_pos_fun (fun p -> r := p) arg
+  
 let lex_string_opt v arg =
   v := lex_some "string" (fun s -> s) arg
 
@@ -222,6 +228,8 @@ and opt = parse
 | "labelbox" arg { lex_bool PP.labelbox arg }
 | "showfinalrf" arg { lex_bool PP.showfinalrf arg }
 | "showinitrf" arg { lex_bool PP.showinitrf arg }
+| "finalrfpos" arg { lex_pos PP.finaldotpos arg }
+| "initrfpos" arg { lex_pos PP.initdotpos arg }
 | "showpoloc" arg { lex_bool PP.showpoloc arg }
 | "showfr" arg { lex_bool PP.showfr arg }
 | "showinitwrites" arg { lex_bool PP.showinitwrites arg }

@@ -6,7 +6,6 @@ axiomatic models of their own and run litmus tests on top
 of their model.
 The \herd{} distribution already includes some models.
 
-
 The authors of~\herd{} are Jade Alglave and Luc Maranget.
 
 
@@ -15,10 +14,19 @@ The authors of~\herd{} are Jade Alglave and Luc Maranget.
 \subsection{Sequential consistency}
 The simulator \herd{} accepts models written in text files.
 For instance here is \afile{sc.cat},
-the definition of the sequentially consistent (SC) model:
+the definition of the sequentially consistent (SC) model in the partial-order
+style:
 \verbatiminput{sc.cat}
-The model above illustrate two features of model definitions:
+The model above illustrates some features of model definitions:
 \begin{enumerate}
+\item A model file starts with a tag (here \verb+SC+), which can also be a
+string (in double quotes) in case the tag includes special characters or spaces.
+\item Pre-defined bindings. Here \verb+po+ (program order)
+and \texttt{rf} (read from) are pre-defined.
+The remaining two commnication relations (\texttt{co} and~\texttt{fr})
+are computed by the included file \verb+cos.cat+, which we describe later
+--- See Sec.~\ref{sec:with}.
+Equivalently, we may assume that \verb+co+ and~\verb+fr+ are pre-defined.
 \item The computation of new relations from other relations,
 and their binding to a name with the \verb+let+ construct.
 Here, a new relation \verb+com+ is the union ``\texttt{|}'' of
@@ -56,13 +64,13 @@ and as there is no ``Positive'' witness.
 Namely, the condition ``\verb+exists (0:EAX=0 /\ 1:EAX=0)+''
 reflects a non-SC behaviour, see Sec.~\ref{candidate:intro}.
 
-The simulator \herd{} works by generating all executions of a given test.
-By ``execution'' we mean a choice of events,
-program order~\textrel{po}, read-from~\textrel{rf},
-and coherence orders \textrel{co}\footnote{The last communication relation from-read \textrel{fr}, derives
-from \textrel{rf} and~\textrel{co}. A read event $r$ is \textrel{fr}-before
-a write event $w$ when $r$ takes its value from a write $w_0$
-that is \textrel{co}-before~$w$.}.
+The simulator \herd{} works by generating all candidate executions
+of a given test.
+By ``candidate execution'' we mean a choice of events,
+program order~\textrel{po} and of communication relations
+and final writes to memory (last write to a given location).
+\footnote{Alternatively, we may adopt the simpler view that
+a candidate execution includes a choice of all communication relations.}.
 In the case of the \ltest{SB} example, we get the following four executions:
 \begin{center}
 \img{SB-00}\quad\quad
@@ -71,14 +79,14 @@ In the case of the \ltest{SB} example, we get the following four executions:
 \img{SB-03}
 \end{center}
 Indeed, there is no choice for the program order \textrel{po}, as there are no
-conditional jumps in this example; and  no choice for the coherence
-orders \textrel{co} either, as there is only one store per location, which
-must be \textrel{co}-after the initial stores (not pictured for clarity).
+conditional jumps in this example; and  no choice for the final
+writes either, as there is only one store per location, which
+must be \textrel{co}-after the initial stores (pictured as small red dots).
 Then, there are two read events from locations $x$ and~$y$ respectively,
 which take their values either from the initial stores or from
 the stores in program. As a result, there are four possible executions.
 The model \afile{sc.cat} gets executed on each of the four
-(candidate) executions. The three first executions
+candidate executions. The three first executions
 are accepted and the last one is rejected, as it presents a cycle
 in $\textrel{po} \cup \textrel{fr}$.
 The following diagram pictures the \textrel{ghb} relation.
@@ -91,7 +99,12 @@ whose memory model is TSO. As TSO relaxes the write-to-read order, we attempt
 to write a TSO model \afile{tso-00.cat}, by simply removing write-to-read
 pairs from the acyclicity check:
 \verbatiminput{tso-00.cat}
-This model illustrates another feature of model definitions: filters
+This model illustrates several features
+of model definitions:
+\begin{itemize}
+\item
+\item
+\end{itemize}
 such as \verb+WW+ and~\verb+RM+ restrict their argument by selecting
 some sort of events. As \verb+W+ stands for write events, \verb+R+ for
 read events and \verb+M+ for all memory events, the effect of
@@ -252,6 +265,21 @@ the checks can be given names by suffixing them with
 ``\texttt{as~}\textit{name}''.
 This last feature will be used in Sec.~\ref{name:check}
 
+\subsection{Sequential consistency, total order definition}
+We now illustrate another style of model.
+We consider the original definition of sequential consistency~\cite{lam79}.
+An execution is SC when there exists a total order~\verb+S+ on events such that:
+\begin{itemize}
+\item $S$ includes the program order~\verb+po+;
+\item and read events read from the most recent write events in the past,
+\emph{i.e.} a read~$r$ from location~$x$ reads the value stored by
+the \verb+S+-maximal write amongst those writes to location~$x$
+that are \verb+S+ smaller than~$r$.
+\end{itemize}
+In other words, \verb+S+ is a topological order on memory events that extends~\verb+po+,
+while \verb+rf+ is defined (thanks to initial writes) without ambiguity.
+Hence we have the following implementation \afile{lamport.cat}:
+\verbatiminput{lamport.cat}
 
 \section{Producing pictures of executions}
 The simulator \herd{} can be instructed to produce pictures of
@@ -390,7 +418,7 @@ To display~\verb+ghb+ we could write another model file that would be just as
 The simulator \herd{} provides a simpler technique:
 one can instruct \herd{} to ignore
 either all checks (\opt{-through invalid}), or a selection of checks
-(\opt{-skipcheck~}\textit{name$_1$}\ldots~\textit{name$_n$}).
+(\opt{-skipchecks~\textit{name$_1$},\ldots,\textit{name$_n$}}).
 Thus, either of the following two commands
 \begin{verbatim}
 % herd -through invalid -model tso-02.cat -conf doc.cfg -show prop -gv SB+mfences.litmus
@@ -967,7 +995,7 @@ with the option~\opt{-skipcheck} --- see  next option.
 \end{itemize}
 Default is~\opt{none}.
 
-\item[{\tt -skipcheck <\textit{name}$_1$,\ldots,\textit{name}$_n$>}]
+\item[{\tt -skipchecks <\textit{name}$_1$,\ldots,\textit{name}$_n$>}]
 \aname{skipcheck}{This option} applies to text file models. It instructs \herd{} to ignore
 the outcomes of the given checks. For the option to operate, checks must
 be named in the model file with the \texttt{as }\textit{name} construct --
@@ -1293,7 +1321,7 @@ This section describes several extensions to \herd{} that have been implemented 
 
 \subsection{Curried function application}
 
-\begin{quote}\it 
+\begin{quote}\it
 This is an amendment to Section~\ref{language:expression}.
 \end{quote}
 

@@ -127,6 +127,8 @@ module type S = sig
   val showlegend : bool
   val showfinalrf : bool
   val showinitrf : bool
+  val finaldotpos : float * float
+  val initdotpos : float * float
   val showpoloc : bool
   val showfr : bool
   val showinitwrites : bool

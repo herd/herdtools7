@@ -688,7 +688,7 @@ let one_init = match PC.graph with
       
 
   let pp_none chan n pos =
-    fprintf chan "%s [shape=none, label=\"\"" n  ;
+    fprintf chan "%s [shape=none, height=0.0, width=0.0, label=\"\"" n  ;
     pp_extra chan pos ;
     fprintf chan "];\n"
 
@@ -864,10 +864,11 @@ let one_init = match PC.graph with
     | Graph.Columns ->
         fun e -> 
           let x = xevent e
-          and y = yevent e in        
+          and y = yevent e in
+          let dx,dy = PC.initdotpos in
           sprintf "pos=\"%f,%f!\""
-            (x -. xscale *. 0.4)
-            (y +. yscale *. 0.15) in
+            (x +. xscale *. dx)
+            (y +. yscale *. dy) in
 
     let pp_final_rf_position = match  PC.graph with
     | Graph.Cluster|Graph.Free -> fun _e -> ""
@@ -875,9 +876,10 @@ let one_init = match PC.graph with
         fun e ->
           let x = xevent e
           and y = yevent e in
+          let dx,dy = PC.finaldotpos in
           sprintf "pos=\"%f,%f!\""
-            (x +. xscale *. 0.4)
-            (y +. yscale *. 0.2) in
+            (x +. xscale *. dx)
+            (y +. yscale *. dy) in
 
     let pp_action e =
       let pp = E.pp_action e in

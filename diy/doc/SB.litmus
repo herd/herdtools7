@@ -4,4 +4,5 @@ X86 SB
  P0          | P1          ;
  MOV [x],$1  | MOV [y],$1  ;
  MOV EAX,[y] | MOV EAX,[x] ;
+locations [x;y;]
 exists (0:EAX=0 /\ 1:EAX=0)

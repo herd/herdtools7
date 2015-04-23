@@ -55,6 +55,9 @@ val opt_compare : ('a -> 'a -> int) -> 'a option -> 'a option -> int
 val pair_compare :
     ('a -> 'a -> int) -> ('b -> 'b -> int) -> 'a * 'b -> 'a * 'b -> int
 
+(* Float pair (position) parsint *)
+val pos_of_string : string -> (float * float) option
+
 (* Generalize int parsing *)
 val string_of_intkm : string -> int option
 val explode : string -> char list

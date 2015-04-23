@@ -95,6 +95,18 @@ let pair_compare cmpx cmpy (x1,y1) (x2,y2) =
   | 0 -> cmpy y1 y2
   | r -> r
 
+(********************)
+(* Position parsing *)
+(********************)
+
+let pos_of_string s =
+  try
+    let k = String.index s ',' in
+    Some
+      (float_of_string (String.sub s 0 k),    
+       float_of_string (String.sub s (k + 1) (String.length s-(k+1))))
+  with _ -> None
+
 (***************)
 (* int parsing *)
 (***************)

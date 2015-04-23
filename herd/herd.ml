@@ -66,6 +66,15 @@ let parse_float opt v msg =
   Arg.Float (fun b -> v := b),
   sprintf "<float> %s, default %.1f" msg !v
 
+let parse_pos opt v msg =
+  opt,
+  Arg.String
+    (fun tag -> match Misc.pos_of_string tag with
+    | Some p -> v := p
+    | None ->  badarg tag opt "float,float"),
+  let x,y = !v in
+  sprintf "<float,float> %s, default %.1f,%.1f" msg x y
+
 let parse_float_opt opt v msg =
   opt,
   Arg.String
@@ -120,6 +129,7 @@ let options = [
    "<default> do not show diagnostics");
   ("-I", Arg.String (fun s -> includes := !includes @ [s]),
    "<dir> add <dir> to search path");
+  parse_bool "-exit" Opts.exit_if_failed "exit in case of failure";
   ("-conf",
    Arg.String load_config,
    "<name> read configuration file <name>") ;
@@ -310,6 +320,10 @@ let options = [
     "show read-from edges from initial state in pictures" ;
   parse_bool "-showfinalrf" PP.showfinalrf
     "show read-from edges to final state in pictures" ;
+  parse_pos "-initrfpos" PP.initdotpos
+    "position of pseudo source event for initial rf" ;
+  parse_pos "-finalrfpos" PP.initdotpos
+    "position of pseudo target event for final rf" ;
   parse_bool "-showpoloc" PP.showpoloc
     "show po edges with identical locations explicitely" ;
   parse_bool "-showfr" PP.showfr 
@@ -524,6 +538,8 @@ let () =
       let showlegend = !PP.showlegend
       let showfinalrf = !PP.showfinalrf
       let showinitrf = !PP.showinitrf
+      let finaldotpos = !PP.finaldotpos
+      let initdotpos = !PP.initdotpos
       let showpoloc = !PP.showpoloc
       let showfr = !PP.showfr
       let showinitwrites = !PP.showinitwrites
@@ -580,6 +596,7 @@ let () =
 
 
 (* Just go *)
+
   let tests = !args in
   if Config.dumplem then begin
     match model with
@@ -595,18 +612,21 @@ let () =
       exit 0
     | _ -> Warn.user_error "No model given"
   end;
+  let check_exit =
+    let b = !Opts.exit_if_failed in
+    fun seen -> if b then exit 1 else seen in
   let _seen =
     Misc.fold_argv
       (fun name seen ->
         try from_file name seen
         with
-        | Misc.Exit -> seen
+        | Misc.Exit -> check_exit seen
         | Misc.Fatal msg ->
             Warn.warn_always "%a: %s" Pos.pp_pos0 name msg ;
-            seen
+             check_exit seen
         | Misc.UserError msg ->
             Warn.warn_always "%a: %s (User error)" Pos.pp_pos0 name msg ;
-            seen
+             check_exit seen
         | e ->
 	    Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
 	    raise e)

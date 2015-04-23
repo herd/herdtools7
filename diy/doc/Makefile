@@ -1,4 +1,5 @@
-INSTALLDIR=$$HOME/public_html/diy/tst
+INSTALLDIR=$$HOME/public_html/diy/tst7
+HERD=herd7 -exit true
 
 all: docps docpdf dochtml
 luc: dochtml installhtml
@@ -28,65 +29,65 @@ GENDOTS=SB-00.dot SB-01.dot SB-02.dot SB-03.dot CoRWR.dot \
 
 
 LB.dot: tst-arm/LB.litmus
-	herd -conf doc.cfg -showinitrf true -show prop -model minimal -o .  $< > /dev/null
+	$(HERD) -conf doc.cfg -showinitrf true -show prop -model minimal -o .  $< > /dev/null
 
 SB.dot: SB.litmus
-	herd -conf doc.cfg -showinitrf true -show all -model minimal -o . SB.litmus > /dev/null
+	$(HERD) -conf doc.cfg -showfinalrf true -showinitrf true -show all -model minimal -o . SB.litmus > /dev/null
 
 6.SB.dot: 6.SB.litmus
-	herd -conf doc.cfg -showinitrf true -showthread true -show prop -model minimal -o . $< > /dev/null
+	$(HERD) -conf doc.cfg -showinitrf true -showthread true -show prop -model minimal -o . $< > /dev/null
 
 
 SB+mfences.dot: SB+mfences.litmus
-	herd -conf doc.cfg -showinitrf true -show prop -model minimal -o . $< > /dev/null
+	$(HERD) -conf doc.cfg -showinitrf true -show prop -model minimal -o . $< > /dev/null
 
 SB+mfences+CLUSTER.dot: SB+mfences.litmus
-	herd -suffix +CLUSTER -skipcheck tso -conf doc.cfg -showinitrf true -show prop -model ./tso-02.cat -graph cluster -showthread true -o . $< > /dev/null
+	$(HERD) -suffix +CLUSTER -skipcheck tso -conf doc.cfg -showinitrf true -show prop -model ./tso-02.cat -graph cluster -showthread true -o . $< > /dev/null
 
 SB+mfences+FREE.dot: SB+mfences.litmus
-	herd -suffix +FREE -skipcheck tso -conf doc.cfg -showinitrf true -show prop -model ./tso-02.cat -graph free -pad 0.2 -showthread true -o . $< > /dev/null
+	$(HERD) -suffix +FREE -skipcheck tso -conf doc.cfg -showinitrf true -show prop -model ./tso-02.cat -graph free -pad 0.2 -showthread true -o . $< > /dev/null
 
 
 SB+mfences+GHB.dot: SB+mfences.litmus
-	herd -suffix +GHB -conf doc.cfg -showinitrf true -show prop -model ./tso-02.cat -skipcheck tso  -o . $< > /dev/null
+	$(HERD) -suffix +GHB -conf doc.cfg -showinitrf true -show prop -model ./tso-02.cat -skipcheck tso  -o . $< > /dev/null
 
 SB+CLUSTER.dot: SB.litmus
-	herd -suffix +CLUSTER -model tso-02.cat -show prop -o .  $< >/dev/null
+	$(HERD) -suffix +CLUSTER -model tso-02.cat -show prop -o .  $< >/dev/null
 
 THREEOPT=-showlegend false -squished true -margin 0.2
 SB+SQUISHED.dot: SB.litmus
-	herd -suffix +SQUISHED -model tso-02.cat $(THREEOPT) -show prop -graph cluster -o . $< >/dev/null
+	$(HERD) -suffix +SQUISHED -model tso-02.cat $(THREEOPT) -show prop -graph cluster -o . $< >/dev/null
 
 SB+FREE.dot: SB.litmus
-	herd -suffix +FREE -model tso-02.cat  $(THREEOPT) -graph free -show prop -o . $< >/dev/null
+	$(HERD) -suffix +FREE -model tso-02.cat  $(THREEOPT) -graph free -show prop -o . $< >/dev/null
 
 SB+COLUMNS.dot: SB.litmus
-	herd -suffix +COLUMNS -model tso-02.cat $(THREEOPT) -extrachars 1.0 -show prop -graph columns  -o . $< >/dev/null
+	$(HERD) -suffix +COLUMNS -model tso-02.cat $(THREEOPT) -extrachars 1.0 -show prop -graph columns  -o . $< >/dev/null
 
 SB+TSO.dot: SB.litmus
-	herd -suffix +TSO -model tso-02.cat -show prop -conf doc.cfg -o . $< >/dev/null
+	$(HERD) -suffix +TSO -model tso-02.cat -show prop -conf doc.cfg -o . $< >/dev/null
 
-SB+SC.dot: SB+SC.litmus
-	herd -conf doc.cfg -xscale 1.5 -showinitrf true -show prop -model ./sc.cat -through invalid -o . SB+SC.litmus > /dev/null
+SB+SC.dot: SB.litmus
+	$(HERD) -suffix +SC -conf doc.cfg -scale 1.5 -showfinalrf true -showinitrf true -show prop -model ./sc.cat -through invalid -o . SB.litmus > /dev/null
 
 SB+rfi-pos.dot: SB+rfi-pos.litmus
-	herd -conf doc.cfg -yscale 0.75 -showinitrf true -show prop -model minimal -o . SB+rfi-pos.litmus > /dev/null
+	$(HERD) -conf doc.cfg -yscale 0.75 -showinitrf true -show prop -model minimal -o . SB+rfi-pos.litmus > /dev/null
 
 SB+rfi-pos+BIS.dot: SB+rfi-pos.litmus
-	herd -suffix +BIS -conf doc.cfg -xscale 1.5  -showinitrf true -show prop -model tso-01.cat -o . $< > /dev/null
+	$(HERD) -suffix +BIS -conf doc.cfg -xscale 1.5  -showinitrf true -show prop -model tso-01.cat -o . $< > /dev/null
 
 SB+rfi-pos+TER.dot: SB+rfi-pos.litmus
-	herd -suffix +TER -conf doc.cfg -xscale 1.5 -showinitrf true -show prop -model tso-00.cat -through invalid -o . $< > /dev/null
+	$(HERD) -suffix +TER -conf doc.cfg -xscale 1.5 -showinitrf true -show prop -model tso-00.cat -through invalid -o . $< > /dev/null
 
 CoRWR.dot: CoRWR.litmus tso-01.cat
-	herd -conf doc.cfg -unshow ghb -showinitrf true -show prop -model tso-01.cat -o . CoRWR.litmus > /dev/null
+	$(HERD) -conf doc.cfg -unshow ghb -showinitrf true -show prop -model tso-01.cat -o . CoRWR.litmus > /dev/null
 
 MOREAPOIL=-fontsize 10
 IRIW+lwsyncs+APOIL.dot: IRIW+lwsyncs.litmus
-	herd  -suffix +APOIL -conf apoil.cfg $(MOREAPOIL) -show prop -o . $< > /dev/null	
+	$(HERD)  -suffix +APOIL -conf apoil.cfg $(MOREAPOIL) -show prop -o . $< > /dev/null	
 
 IRIW+syncs+APOIL.dot: IRIW+syncs.litmus
-	herd  -suffix +APOIL -through invalid -conf apoil.cfg  $(MOREAPOIL) -show prop -o . $< > /dev/null
+	$(HERD)  -suffix +APOIL -through invalid -conf apoil.cfg  $(MOREAPOIL) -show prop -o . $< > /dev/null
 
 SB-00.dot SB-01.dot SB-02.dot SB-03.dot: SB.dot
 	splitdot SB.dot >/dev/null
@@ -94,19 +95,19 @@ SB-00.dot SB-01.dot SB-02.dot SB-03.dot: SB.dot
 MORECO=-showlegend true -shortlegend true -model minimal
 
 RW.dot: tst-co/basic/RW.litmus
-	herd  -conf doc.cfg  $(MORECO) -show prop -o . $< >/dev/null
+	$(HERD)  -conf doc.cfg  $(MORECO) -show prop -o . $< >/dev/null
 
 WW.dot: tst-co/basic/WW.litmus
-	herd  -conf doc.cfg  $(MORECO) -show prop -o . $< >/dev/null
+	$(HERD)  -conf doc.cfg  $(MORECO) -show prop -o . $< >/dev/null
 
 WR.dot: tst-co/basic/WR.litmus
-	herd  -conf doc.cfg  $(MORECO) -show prop -o . $< >/dev/null
+	$(HERD)  -conf doc.cfg  $(MORECO) -show prop -o . $< >/dev/null
 
 W+RR.dot: tst-co/basic/W+RR.litmus
-	herd  -conf doc.cfg  $(MORECO) -show prop -o . $< >/dev/null
+	$(HERD)  -conf doc.cfg  $(MORECO) -show prop -o . $< >/dev/null
 
 W+RW.dot: tst-co/basic/W+RW.litmus
-	herd  -conf doc.cfg  $(MORECO) -show prop -o . $< >/dev/null
+	$(HERD)  -conf doc.cfg  $(MORECO) -show prop -o . $< >/dev/null
 
 
 # WW.dot WR.dot W+RR.dot W+RW.dot
@@ -115,7 +116,7 @@ clean::
 	/bin/rm -f SB.dot $(GENDOTS)
 
 %.dot: %.litmus
-	herd -model minimal -conf doc.cfg -showinitrf true -showlegend true -shortlegend true  -show prop -o . $< > /dev/null
+	$(HERD) -model minimal -conf doc.cfg -showinitrf true -showlegend true -shortlegend true  -show prop -o . $< > /dev/null
 
 DOTS=classic.dot classic-sc.dot ws-sc.dot iriw-small-caps.dot iriw-internal.dot \
  IRIW.dot 2+2WLocal+DOT.dot LB.dot LB-kinds.dot \
@@ -148,7 +149,7 @@ PNG=$(DOTS:.dot=.png)
 ALLPNG=$(PNG) m1l-time.png
 PSTEX=$(DOTS:.dot=.pstex_t)
 CFG=hpcx.cfg saumur.cfg doc.cfg apoil.cfg trimslice.cfg dragon.cfg
-CAT=sc.cat tso-00.cat tso-01.cat  tso-02.cat
+CAT=sc.cat tso-00.cat tso-01.cat  tso-02.cat lamport.cat
 GENCAT=herd.cat x86tso.cat minimal.cat uniproc.cat
 TXT=rename.txt cond.txt trimslice.sh dragon.sh
 DONT=x86.sc x86.explo x86-log.txt
@@ -514,3 +515,5 @@ clean::
 	/bin/rm -f $(PSTEX)
 	/bin/rm -f $(DOTS:.dot=.fig)
 	/bin/rm -f $(DOTS:.dot=.pstex)
+
+gendots: $(GENDOTS)

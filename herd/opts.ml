@@ -22,6 +22,7 @@ let prog =
 (* Local options *)
 let verbose = ref 0
 let includes = ref []
+let exit_if_failed = ref false
 let debug = ref Debug.none
 let names = ref []
 let rename = ref None
@@ -89,6 +90,8 @@ module PP = struct
   let showlegend = ref true
   let showfinalrf = ref false
   let showinitrf = ref false
+  let finaldotpos = ref (0.4,-0.3333)
+  let initdotpos = ref (-0.4,0.3333)
   let showpoloc = ref false
   let showfr = ref true
   let showinitwrites = ref true
