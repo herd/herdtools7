@@ -769,6 +769,10 @@ module Make
                  E.EventSet.mem e1 es && E.EventSet.mem e2 es)
                r)
         end ;
+        if O.debug && O.verbose > 1 then begin
+          let n = apply_orders es r (fun _ -> 0) (fun _ k -> k+1) 0 in
+          eprintf "number of orders: %i\n" n
+        end ;
         let rs =
           apply_orders es r
             (fun o ->
