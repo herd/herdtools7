@@ -96,7 +96,7 @@ let one_init = match PC.graph with
 (* Please avoid insterting references to Global in,
    for instance X86Base.ml, since this
    source file is shared with litmus.new & gen.new,
-   It is nicier if TeX processing belongs to this module, Pretty *)
+   It is nicer if TeX processing belongs to this module, Pretty *)
 
 (* partial escaping of strings into legal tex command identifiers *)
 

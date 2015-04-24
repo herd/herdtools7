@@ -99,10 +99,15 @@ module Top
                     | Some reg -> (reg,v)::k
                     | None -> k)
                   st [] in
-              String.concat " "
-                (List.map
-                   (fun a -> sprintf "%s;" (dump_state_atom dump_reg a))
-                   st)
+              match st with
+              | [] -> None
+              | _ ->
+                  let pp =
+                    String.concat " "
+                      (List.map
+                         (fun a -> sprintf "%s;" (dump_state_atom dump_reg a))
+                         st) in
+                  Some pp
                 
             type constr = MiscParser.constr
             let dump_atom a =
@@ -119,15 +124,16 @@ module Top
             let dump_location = dump_loc
           end)
 
+      let dump = D.dump (* Or D.dump_info *)
       let zyva = match O.outputdir with
-      | None -> D.dump_info stdout
+      | None -> dump stdout
       | Some d ->
           fun name parsed ->
             let fname = name.Name.file in
             let fname = Filename.basename fname in
             let fname = Filename.concat d fname in
             Misc.output_protect
-              (fun chan -> D.dump_info chan name parsed)
+              (fun chan -> dump chan name parsed)
               fname
 
     end

@@ -20,7 +20,7 @@ module type I = sig
 
   type state
   val dump_global_state : prog -> state -> string
-  val dump_proc_state : int -> state -> string
+  val dump_proc_state : int -> state -> string option
 
   type constr
   val dump_constr : constr -> string
@@ -62,7 +62,7 @@ end = struct
 
   open MiscParser
 
-  let dump_sep chan tag = fprintf chan "-------------------- %s\n" tag
+  let dump_sep chan tag = fprintf chan "\n----- %s\n" tag
 
   let do_dump withinfo chan doc t =
     fprintf chan "%s %s\n" (Archs.pp A.arch) doc.Name.name ;
@@ -83,13 +83,23 @@ end = struct
     let prog = t.prog in
     List.iter
       (fun (p,code) ->
-        dump_sep chan (sprintf "Process %i" p) ;
-        fprintf chan "%s\n" (dump_proc_state p t.init) ;
-        fprintf chan "***\n" ;
+        dump_sep chan (sprintf "P%i" p) ;
+        begin match dump_proc_state p t.init with
+        | Some st ->
+            fprintf chan "%s\n" st ; 
+            fprintf chan "***\n"
+        | None -> ()
+        end ;
         let code = clean_code code in
         List.iter (fun i -> fprintf chan "%s\n" (fmt_io i)) code ;
         ())
       prog ;
+    begin match t.bell_info with
+    | None -> ()
+    | Some bi ->
+        dump_sep chan "Scope" ;
+        BellInfo.pp chan bi
+    end ;
 (* Conditions *)
     dump_sep chan "Check" ;
     begin match t.locations with
