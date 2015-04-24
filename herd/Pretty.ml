@@ -298,6 +298,9 @@ let one_init = match PC.graph with
     add_eas ["LL" ; "LS" ; "PML"; "ll" ; "ls"; "pml"; "isync"; "dep"; "ctrl"; "data"; "addr"; "ctrlisync"; "isync"; "isb"; "ctrlisb";"ppo";]
       { color="indigo" ; style = "" ; }
       { color="black" ; style = "" ; } ;
+    add_ea "iico"
+      { def_ea with color="black" ; }
+      { def_ea with color="black" ; } ;
     add_ea "iico_data"
       { def_ea with color="black" ; }
       { def_ea with color="black" ; } ;
@@ -1058,7 +1061,7 @@ let one_init = match PC.graph with
       pl "/* the intra_causality_data edges */\n" ;
       E.EventRel.pp chan ""
         (fun chan (e,e') ->
-	  pp_edge chan (pp_node_eiid e) (pp_node_eiid e') "iico_data"
+	  pp_edge chan (pp_node_eiid e) (pp_node_eiid e') "iico"
             false false)
         es.E.intra_causality_data ;
 
