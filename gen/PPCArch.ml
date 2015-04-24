@@ -34,7 +34,8 @@ module Make(C:Config)  =
 
     let compare_fence = compare
 
-    let strong = Sync
+    let default = Sync
+    let strong = default
 
     let pp_fence = function
       | Sync -> "Sync"
@@ -60,6 +61,7 @@ module Make(C:Config)  =
     | Eieio,W,W -> true
     | Eieio,_,_ -> false
 
+    let var_fence f r = f default r
 
 (********)
 (* Deps *)

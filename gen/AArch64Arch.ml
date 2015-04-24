@@ -71,7 +71,8 @@ let is_isync = function
 
 let compare_fence = barrier_compare
 
-let strong = DMB (SY,FULL)
+let default = DMB (SY,FULL)
+let strong = default
 
 let pp_fence f = do_pp_barrier "." f
 
@@ -94,6 +95,8 @@ let orders f d1 d2 = match f,d1,d2 with
 | (DSB (_,LD)|DMB (_,LD)),Code.R,(W|Code.R) -> true
 | (DSB (_,LD)|DMB (_,LD)),_,_ -> false
 
+
+let var_fence f r = f default r
 
 (********)
 (* Deps *)

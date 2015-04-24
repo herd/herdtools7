@@ -193,6 +193,7 @@ let is_isync _ = false
 
 let compare_fence = barrier_compare
 
+let default = Fence []
 
 let strong = match bi with
 | None -> Fence []
@@ -216,14 +217,14 @@ let fold_some_fences f k = f strong k
 
 let orders _ _ _ = true
 
-let no_varfence f r = f [] r
+let no_varfence f r = f strong r
 
 let var_fence f = match varatom with
 | None -> no_varfence f
 | Some va ->
     try
         let at =  StringMap.find  BellName.f va in
-        fold_from_gen at f
+        fold_from_gen at (fun al -> f (Fence al))
     with Not_found -> no_varfence f
 
 

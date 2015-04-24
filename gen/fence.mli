@@ -18,6 +18,7 @@ module type S = sig
 
   val compare_fence : fence -> fence -> int
 
+  val default : fence
   val strong : fence
 
   val pp_fence : fence -> string
@@ -29,6 +30,7 @@ module type S = sig
   open Code
 
   val orders : fence -> dir -> dir -> bool
+  val var_fence : (fence -> 'a -> 'a) -> 'a -> 'a
 
 (* Dependencies *)
   type dp

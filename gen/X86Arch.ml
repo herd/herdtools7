@@ -49,7 +49,8 @@ let is_isync _ = false
 
 let compare_fence = compare
 
-let strong = MFence
+let default = MFence
+let strong = default
 
 let pp_fence = function
   | MFence -> "MFence"
@@ -60,6 +61,8 @@ let fold_some_fences f r =  f MFence r
 
 let orders f d1 d2 = match f,d1,d2 with
 | MFence,_,_ -> true
+
+let var_fence f r = f default r
 
 (********)
 (* Deps *)

@@ -582,24 +582,32 @@ and set_src d e = { e with edge = do_set_src d e.edge ; }
    specification. One atomic variation has been applied to all the a` fields
    of all edges, we do another step of resolution, so as to set the neighbouring
    a2 *)
+
+  let var_fence e f r = match e.edge with
+  | Fenced (fe,sd,ex1,ex2) when F.compare_fence fe F.strong = 0 ->
+      F.var_fence
+        (fun fe r -> f {e with edge = Fenced (fe,sd,ex1,ex2)} r) r
+  | _ -> f e r
+            
+
   let varatom es f r =
     let rec var_rec ves es r = match es with
     | [] -> f (resolve_edges (List.rev ves)) r
     | e::es ->
-        begin match e.a1 with
-        | Some _ -> var_rec (e::ves) es r
-        | None ->
-            let d =
-              match dir_src e with
+        var_fence e
+          (fun e r -> match e.a1 with
+          | Some _ -> var_rec (e::ves) es r
+          | None ->
+              let d = match dir_src e with
               | Dir d -> d
               | Irr -> assert false (* resolved at this step *) in
-            F.varatom_dir d
-              (fun a r ->
-                var_rec
-                  ({e with a1=a}::ves)
-                  es r)
-              r
-        end in
+              F.varatom_dir d
+                (fun a r ->
+                    var_rec
+                      ({e with a1=a}::ves)
+                      es r)
+                  r)
+          r in
     var_rec [] es r
 
 

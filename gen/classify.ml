@@ -24,7 +24,7 @@ let opts =
    sprintf "<bool> use lowercase familly names, default %b" !lowercase)::
   ("-u", Arg.Set uniq," reject duplicate normalised names")::
   ("-map", Arg.String (fun s -> map := Some s)," <name> save renaming map into file <name>")::
-  ("-bell",Arg.String (fun f -> bell := Some f),
+  ("-bell",Arg.String (fun f -> bell := Some f; arch := Bell),
    "<name> read bell file <name>")::
   Util.parse_tag
     "-arch"

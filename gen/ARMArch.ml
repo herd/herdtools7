@@ -25,7 +25,8 @@ let is_isync = function
 
 let compare_fence = compare
 
-let strong = DMB SY
+let default = DMB SY
+let strong = default
 
 let pp_fence = function
   | DMB SY -> "DMB"
@@ -43,6 +44,8 @@ let fold_some_fences f r = f ISB (fo (fun o -> f (DMB o)) r)
 
 
 let orders _f _d1 _d2 =true
+
+let var_fence f r = f default r
 
 (********)
 (* Deps *)

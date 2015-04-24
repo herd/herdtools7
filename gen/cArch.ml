@@ -55,6 +55,7 @@ let is_isync _ = false
 
 let compare_fence = MemOrder.compare
 
+let default = SC
 let strong = SC
 
 let pp_fence f = sprintf "Fence%s" (pp_mem_order_short f)
@@ -74,6 +75,8 @@ let fold_all_fences =  do_fold_fence
 let fold_some_fences =  do_fold_fence
 
 let orders _f _d1 _d2 = true
+
+let var_fence f r = f default r
 
 (* Basic C arch *)
 type arch_reg = { id:int }

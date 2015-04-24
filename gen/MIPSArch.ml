@@ -22,7 +22,8 @@ let is_isync _ = false
 
 let compare_fence = barrier_compare
 
-let strong = Sync
+let default = Sync
+let strong = default
 
 let pp_fence = pp_barrier
 
@@ -32,6 +33,8 @@ let fold_some_fences f r = f Sync r
 
 let orders f d1 d2 = match f,d1,d2 with
 | Sync,_,_ -> true
+
+let var_fence f r = f default r
 
 (********)
 (* Deps *)
