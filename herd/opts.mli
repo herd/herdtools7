@@ -91,6 +91,8 @@ module PP : sig
   val showinitrf : bool ref
   val finaldotpos : (float * float) ref
   val initdotpos : (float * float) ref
+  val oneinit : bool ref
+  val initpos : (float * float) option ref
   val showpoloc : bool ref
   val showfr : bool ref
   val showinitwrites : bool ref

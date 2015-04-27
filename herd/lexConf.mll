@@ -70,6 +70,7 @@ let lex_pos_fun set arg = match Misc.pos_of_string arg with
 | None -> error "pair of float parameter expected"
 
 let lex_pos r arg = lex_pos_fun (fun p -> r := p) arg
+let lex_pos_opt r arg = lex_pos_fun (fun p -> r := Some p) arg
   
 let lex_string_opt v arg =
   v := lex_some "string" (fun s -> s) arg
@@ -230,6 +231,8 @@ and opt = parse
 | "showinitrf" arg { lex_bool PP.showinitrf arg }
 | "finalrfpos" arg { lex_pos PP.finaldotpos arg }
 | "initrfpos" arg { lex_pos PP.initdotpos arg }
+| "oneinit" arg { lex_bool PP.oneinit arg }
+| "initpos" arg { lex_pos_opt PP.initpos arg }
 | "showpoloc" arg { lex_bool PP.showpoloc arg }
 | "showfr" arg { lex_bool PP.showfr arg }
 | "showinitwrites" arg { lex_bool PP.showinitwrites arg }

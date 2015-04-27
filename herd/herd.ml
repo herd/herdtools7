@@ -66,15 +66,6 @@ let parse_float opt v msg =
   Arg.Float (fun b -> v := b),
   sprintf "<float> %s, default %.1f" msg !v
 
-let parse_pos opt v msg =
-  opt,
-  Arg.String
-    (fun tag -> match Misc.pos_of_string tag with
-    | Some p -> v := p
-    | None ->  badarg tag opt "float,float"),
-  let x,y = !v in
-  sprintf "<float,float> %s, default %.1f,%.1f" msg x y
-
 let parse_float_opt opt v msg =
   opt,
   Arg.String
@@ -84,6 +75,23 @@ let parse_float_opt opt v msg =
         try v := Some (float_of_string tag)
         with _ -> badarg tag opt "float"   ),                
   sprintf "<float|none> %s" msg
+
+let parse_pos opt v msg =
+  opt,
+  Arg.String
+    (fun tag -> match Misc.pos_of_string tag with
+    | Some p -> v := p
+    | None ->  badarg tag opt "float,float"),
+  let x,y = !v in
+  sprintf "<float,float> %s, default %.1f,%.1f" msg x y
+
+let parse_posopt opt v msg =
+  opt,
+  Arg.String
+    (fun tag -> match Misc.pos_of_string tag with
+    | Some p -> v := Some p
+    | None ->  badarg tag opt "float,float"),
+  sprintf "<float,float> %s" msg
 
 let parse_string_opt opt v msg =
   opt,
@@ -324,6 +332,10 @@ let options = [
     "position of pseudo source event for initial rf" ;
   parse_pos "-finalrfpos" PP.initdotpos
     "position of pseudo target event for final rf" ;
+  parse_bool "-oneinit" PP.oneinit
+    "show a init writes pseudo-event, with all initial writes grouped" ;
+  parse_posopt "-initpos" PP.initpos
+    "position of the init writes pseudo-event" ;
   parse_bool "-showpoloc" PP.showpoloc
     "show po edges with identical locations explicitely" ;
   parse_bool "-showfr" PP.showfr 
@@ -540,6 +552,8 @@ let () =
       let showinitrf = !PP.showinitrf
       let finaldotpos = !PP.finaldotpos
       let initdotpos = !PP.initdotpos
+      let oneinit = !PP.oneinit
+      let initpos = !PP.initpos
       let showpoloc = !PP.showpoloc
       let showfr = !PP.showfr
       let showinitwrites = !PP.showinitwrites

@@ -66,7 +66,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
 (* One init *)
 
 let one_init = match PC.graph with
-| Graph.Columns -> true
+| Graph.Columns -> PC.oneinit
 | Graph.Free|Graph.Cluster -> false
 
 (* Attempt *)
@@ -743,18 +743,24 @@ let one_init = match PC.graph with
     let init_envx =
       if one_init then
         let w1 = float_of_int max_proc in
-        let x = match max_proc with
-        | 1 -> -0.3333
-        | _ -> (w1 /. 2.0) -. 0.5 in
-         E.EventSet.fold
+        let x =
+          match PC.initpos with
+          | Some (x,_) -> x
+          | None ->
+              match max_proc with
+              | 1 -> -0.3333
+              | _ -> (w1 /. 2.0) -. 0.5 in
+        E.EventSet.fold
           (fun e env ->
             E.EventMap.add e x env)
           inits E.EventMap.empty
       else
-        let delta = if max_proc >= n_inits then 1.0 else  0.75 in
-        let w1 = float_of_int max_proc
-        and w2 = float_of_int (n_inits-1) *. delta in
-        let shift = (w1 -. w2) /. 2.0 in
+        let delta = if max_proc+1 >= n_inits then 1.0 else  0.75 in
+        let w1 = float_of_int (max_proc+1)
+        and w2 = float_of_int n_inits *. delta in
+        let xinit = Misc.proj_opt 0.0 (Misc.app_opt fst PC.initpos) in
+(*        eprintf "w1=%f, w2=%f\n" w1 w2 ; *)
+        let shift = (w1 -. w2) /. 2.0 +. xinit in
         let _,r = E.EventSet.fold
           (fun e (k,env) ->
             k+1,
@@ -768,7 +774,7 @@ let one_init = match PC.graph with
         fun e ->
           if E.EventSet.mem e inits then "eiidinit" else pp_node_eiid e
       else pp_node_eiid in
-    let yinit = 0.66667 in
+    let yinit = Misc.proj_opt 0.66667 (Misc.app_opt snd PC.initpos) in
     let maxy =
       if E.EventSet.is_empty inits then maxy
       else maxy +. yinit in
