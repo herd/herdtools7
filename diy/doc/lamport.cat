@@ -1,14 +1,18 @@
 "SC, L. Lamport style"
 
-let preS = po | (IW * (M \ IW))
-(* Compute the set of total orders that extend relation po on set M *)
-let allS = linearisations(M,preS)
+(* Initial writes precede program writes to teh same location *)
+let preSC =  loc & (IW * (W \ IW))
+
+(* Compute the set of total orders that extend preorder preSe on set M *)
+let allS = linearisations(M,preSC)
 
 (* For all such orders *)
 with S from allS
 
-(* Define most recent write in the past  *)
+(* Check compatibility with po *)
+empty po \ S as ScPo
 
+(* Define most recent write in the past  *)
 let WRS = W * R & S & loc  (* Writes from the past, same location *)
 let rf-S = WRS \ (S;WRS)   (* Most recent amongst them *)
 
