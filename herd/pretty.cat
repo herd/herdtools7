@@ -1,7 +1,13 @@
 "Model pretty print"
 (* Same as model, shows only basic relations *)
 include "filters.cat"
-include "cos.cat"
+include "cross.cat"
+
+with co from generate_cos(co0)
+let fr = rf^-1;co
+let fre = fr & ext
+let coe = co & ext
+show fr,co
 
 (* Uniproc *)
 acyclic po-loc | rf | fr | co as uniproc
