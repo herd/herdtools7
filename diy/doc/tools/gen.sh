@@ -1,10 +1,10 @@
 #! /bin/sh -x
 #######################
 DIR=`dirname $0`
-MNAMES=mnames
-MSORT=msort
-COMPARE=mcompare
-MAPPLY=mapply
+MNAMES=mnames7
+MSORT=msort7
+COMPARE=mcompare7
+MAPPLY=mapply7
 #######################
 TMP=/tmp/gen.$$
 mkdir -p $TMP
