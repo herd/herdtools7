@@ -1,6 +1,6 @@
 INSTALLDIR=$$HOME/public_html/diy/tst7
 HERD=herd7 -exit true
-
+SPLITDOT=splitdot7
 all: docps docpdf dochtml
 luc: dochtml installhtml
 
@@ -90,7 +90,7 @@ IRIW+syncs+APOIL.dot: IRIW+syncs.litmus
 	$(HERD)  -suffix +APOIL -through invalid -conf apoil.cfg  $(MOREAPOIL) -show prop -o . $< > /dev/null
 
 SB-00.dot SB-01.dot SB-02.dot SB-03.dot: SB.dot
-	splitdot SB.dot >/dev/null
+	$(SPLITDOT) SB.dot >/dev/null
 
 MORECO=-showlegend true -shortlegend true -model minimal
 

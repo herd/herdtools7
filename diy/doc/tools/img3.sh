@@ -1,5 +1,5 @@
 DIR=$(dirname $0)
-HERD=$1
+zHERD=$1
 TAG=$2
 FILE=$3
 GEN=/tmp/herd.$$
@@ -10,7 +10,7 @@ BASE=$(basename $FILE .litmus)
 cat <<EOF
 \def\csname images-$TAG-$BASE\endcsname{
 EOF
-splitcond ${FILE} -o ${GEN} |\
+splitcond7 ${FILE} -o ${GEN} |\
 while read cond
 do
 SUF="+$(basename $cond .txt)"
