@@ -1,1 +1,1 @@
-herd7 -model pretty.cat -skipcheck uniproc -skipcheck thinair -skipcheck causality -skipcheck propagation $*
+herd7 -model pretty.cat -skipchecks ConsCo,thinair,observation,propagation $*

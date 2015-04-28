@@ -1,5 +1,5 @@
 DIR=$(dirname $0)
-zHERD=$1
+HERD=$1
 TAG=$2
 FILE=$3
 GEN=/tmp/herd.$$
@@ -27,7 +27,7 @@ MORE="-strictskip false"
 ${HERD} -conds ${COND} -suffix ${SUF} ${MORE} -web -showobserved true -show prop -nshow $max -speedcheck true -o ${GEN} ${FILE} >/dev/null 2>&1
 mkdir -p $GEN
 mkdir -p $TAG
-splitdot -max $maxone $GEN/${BASE}${SUF}.dot |
+splitdot7 -max $maxone $GEN/${BASE}${SUF}.dot |
 while read name
 do
   case $name in

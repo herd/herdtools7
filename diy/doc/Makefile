@@ -155,7 +155,7 @@ TXT=rename.txt cond.txt trimslice.sh dragon.sh
 DONT=x86.sc x86.explo x86-log.txt
 LITMUSDIR=../../litmus/
 HERDDIR=../../herd
-MAPPLY=mapply -j 16
+MAPPLY=mapply7 -j 16
 #Generated latex
 clean::
 	/bin/rm -rf $(GENTEX) $(GENSRC) $(GENIMG)
