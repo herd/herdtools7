@@ -339,7 +339,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
               let p =
                 if e == o then One e.CE.dir
                 else Two (e.CE.dir,o.CE.dir) in
-              { points=p; cycle=e; prev=nil; next=nil; })
+              { points=p; cycle=e;  prev=nil; next=nil; })
             eos in
         let patch = function
           | [] -> assert false
@@ -404,8 +404,14 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
 
     end
 
-    let pp_key key =
+    let pp_key allsame key =
       let pp = match key with
+      | "WW" when allsame -> "CoWW"
+      | "RW" when allsame -> "CoRW1"
+      | "W+RW" when allsame -> "CoRW2"
+      | "W+WR" when allsame -> "CoWR"
+      | "W+RR" when allsame -> "CoRR"
+      | "WR" when allsame -> "CoWR0"
       | "WW+RR" -> "MP"          
       | "WR+WR" -> "SB"
       | "WR+WR+WR" -> "3.SB"
@@ -447,10 +453,17 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
       with CE.NotFound ->
         raise CannotNormalise
 
+    let allsame cy =
+      List.for_all
+        (fun e -> match E.loc_sd e with
+        | Same -> true
+        | Diff -> false)
+        cy
+
     let family cy =
       let ps = CP.mk_cycle cy in
       let key = CP.pp ps  in
-      pp_key key
+      pp_key (allsame cy) key
 
     let get_nprocs cy =
       let ps = CP.mk_cycle cy in
@@ -462,7 +475,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
         let ps = CP.norm ps in
         let key = CP.pp ps  in
         let cy = CE.map (fun e -> e.CE.edge) ps.CP.cycle in
-        pp_key key,cy,CP.size ps
+        pp_key (allsame cy) key,cy,CP.size ps
       with CE.NotFound ->
         raise CannotNormalise
   end

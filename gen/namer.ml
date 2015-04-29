@@ -40,7 +40,8 @@ module Make
        let edge_name = function
          | Po (Same,_,_) -> Some "pos"
          | Po (Diff,_,_) -> Some "po"
-         | Fenced (f,_,_,_) -> Some (String.lowercase (A.pp_fence f))
+         | Fenced (f,Same,_,_) -> Some (String.lowercase (A.pp_fence f) ^ "s")
+         | Fenced (f,Diff,_,_) -> Some (String.lowercase (A.pp_fence f))
          | Dp (dp,_,_) -> Some (String.lowercase (A.pp_dp dp))
          | Rf Int -> Some "rfi"
          | Ws Int -> Some "wsi"
