@@ -482,6 +482,7 @@ static long my_pow10(int p,long x) {
     long y8 = my_add(y4,y4) ;
     r = my_add(y8,y2) ;
   }
+  if (r >= INT_MAX || r <= 0) {  errno = ERANGE ; fatal("overflow") ; }
   return r ;
 }
 
@@ -490,7 +491,7 @@ static int do_argint(char *p, char **q) {
   if (errno == ERANGE) { fatal("overflow") ; }
   if (**q == 'k' || **q == 'K') { r = my_pow10(3,r) ; *q += 1; }
   else if (**q == 'm' || **q == 'M') { r = my_pow10(6,r) ; *q +=1 ; }
-  return r ;
+  return (int)r ;
 }
 
 static int argint(char *prog,char *p,cmd_t *d) {
@@ -509,7 +510,7 @@ static cpus_t *argcpus(char *prog,char *p0,cmd_t *d) {
   p = p0 ;
   for ( ; ; ) {
     char *q ;
-    int x = strtol(p,&q,10) ;
+    int x = (int)strtol(p,&q,10) ;
     if (x < 0 || *p == '\0' || (*q != '\0' && *q != ','))  usage(prog,d) ;
     sz++ ;
     if (*q == '\0') break ;
@@ -519,7 +520,7 @@ static cpus_t *argcpus(char *prog,char *p0,cmd_t *d) {
   p = p0 ;
   for (int k = 0 ; k < sz ; k++) {
     char *q ;
-    r->cpu[k] = strtol(p,&q,10) ;
+    r->cpu[k] = (int)strtol(p,&q,10) ;
     p = q+1 ;
   }
   return r ;
@@ -528,7 +529,7 @@ static cpus_t *argcpus(char *prog,char *p0,cmd_t *d) {
 static void argints(char *prog,cmd_t *d, char *p,ints_t *r) {
   while (*p) {
     char *q ;
-    int idx = strtol(p,&q,10) ;
+    int idx = (int)strtol(p,&q,10) ;
     if (idx < 0 || idx >= r->sz || *p == '\0' || *q != ':')  usage(prog,d) ;
     p = q+1 ;
     int v = do_argint(p,&q) ;
@@ -572,7 +573,7 @@ int parse_prefetch(char *p, prfdirs_t *r) {
   if (!*p) return 1 ;
   for ( ;; ) {
     char *q ;
-    int proc = strtol(p,&q,10) ;
+    int proc = (int)strtol(p,&q,10) ;
     if (proc < 0 || proc >= r->nthreads || *p == '\0' || *q != ':')
       return 0 ;
     p = q+1 ;

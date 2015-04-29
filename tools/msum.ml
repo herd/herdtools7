@@ -16,7 +16,7 @@ open LogState
 
 let verbose = ref 0
 let logs = ref []
-let exclude = ref None
+let exclude = ref []
 let select = ref []
 let rename = ref []
 let npar = ref 1
@@ -30,7 +30,7 @@ let options =
    "<non-default> show various diagnostics, repeat to increase verbosity");
   ("-j", Arg.Int (fun i -> npar := i),
    (sprintf "<int> parallel sum using <n> processeses, default %i" !npar)) ;
-  ("-excl", Arg.String (fun s -> exclude := Some s),
+  ("-excl", Arg.String (fun s -> exclude := !exclude @ [s]),
    "<regexp> exclude tests whose name matches <regexp>");
   ("-select",
     Arg.String (fun s ->  select := !select @ [s]),
@@ -59,14 +59,16 @@ let verbose = !verbose
 module Verbose = struct let verbose = verbose end
 
 (* Options for recursive calls *)
-let par_opts =
+
+let expn_opt opt xs k =
   List.fold_right
-    (fun s k -> "-select"::s::k)
-    select
-    (List.fold_right
-       (fun s k -> "-rename"::s::k)
-       rename
-       (match exclude with None -> [] | Some e -> ["-excl";e]))
+    (fun x k -> opt::x::k)
+    xs k
+
+let par_opts =
+  expn_opt "-select" select
+    (expn_opt "-rename" rename
+       (expn_opt "-excl" exclude []))
 
 (* Now handle the same options, which are to be
    honnored only when there are no recursive calls *)
@@ -94,15 +96,16 @@ let select_name =
         fun name -> StringSet.mem name set
   else fun _ -> true
 
-let select_name = match exclude with
-| None -> select_name
-| Some e ->
-    if npar <= 1 then
-      let re = Str.regexp e in
-      (fun name -> 
-        not (Str.string_match re name 0) &&
-        select_name name)
-    else select_name
+let select_name =
+  if npar <= 1 then
+    let add t = StringSet.add (do_rename t) in
+    let excl =
+      List.fold_left
+        (fun r name -> ReadNames.from_file name add r)
+        StringSet.empty exclude in
+    fun name -> select_name name && not (StringSet.mem name excl)
+  else select_name
+
 
 let fnames = match !logs with
 | [] ->
