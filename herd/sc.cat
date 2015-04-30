@@ -1,4 +1,6 @@
 SC
+
+include "fences.cat"
 include "cos.cat"
 
 (* Atomic *)

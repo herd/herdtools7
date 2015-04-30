@@ -70,10 +70,14 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
         rf;}
 
     let pp_procrels pp_isync pr =
-      let ctrl = 
-        E.EventRel.diff pr.S.ctrl pr.S.ctrlisync in
-      ["data",pr.S.data; "ctrl",ctrl; "addr",pr.S.addr;
-       Printf.sprintf "ctrl%s" pp_isync,pr.S.ctrlisync;]
+      let pp =  ["data",pr.S.data; "addr",pr.S.addr;] in
+      match pp_isync with
+    | None -> ("ctrl",pr.S.ctrl)::pp
+    | Some isync ->
+        let ctrl =  E.EventRel.diff pr.S.ctrl pr.S.ctrlisync in
+        (Printf.sprintf "ctrl%s" isync,pr.S.ctrlisync)::
+        ("ctrl",ctrl)::pp
+
 
 (***************************)
 (* A few factorized checks *)

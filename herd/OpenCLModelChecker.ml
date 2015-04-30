@@ -77,7 +77,7 @@ module Make
 
     let check_event_structure test conc kont res =
       let pr = lazy (MU.make_procrels (fun _ -> false) conc) in
-      let vb_pp = lazy (MU.pp_procrels "???" (Lazy.force pr)) in
+      let vb_pp = lazy (MU.pp_procrels None (Lazy.force pr)) in
       let evts = conc.S.str.E.events in
       let id =
         lazy begin

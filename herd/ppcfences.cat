@@ -6,6 +6,12 @@ let eieio = try fencerel(EIEIO) with 0
 let isync = try fencerel(ISYNC) with 0
 show sync,lwsync,eieio
 
+(* Dependencies *)
+show data,addr
 let ctrlisync = try ctrlcfence(ISYNC) with 0
+let X = ctrlisync
+show ctrlisync
 show isync \ ctrlisync as isync
+show ctrl \ ctrlisync as ctrl
+
 

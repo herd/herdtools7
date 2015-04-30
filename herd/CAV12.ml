@@ -371,7 +371,7 @@ module Make
       let pr = MU.make_procrels is_isync conc in
       if O.debug && O.verbose > 0 then begin
         let module PP = Pretty.Make(S) in
-        let vb_pp = MU.pp_procrels B.pp_isync pr in
+        let vb_pp = MU.pp_procrels (Some B.pp_isync) pr in
         let legend =
           sprintf "%s: dependencies" test.Test.name.Name.name in
         eprintf "%s\n%!" legend ;

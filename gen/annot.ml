@@ -21,7 +21,7 @@ module Make(O:LexUtils.Config) =
     let do_parse lex lexbuf =
 
       let rec annot_list_rec = function
-        | TAG t ->
+        | TAG t|VAR t ->
             begin match lex lexbuf with
             | COMMA -> t::annot_list_rec (lex lexbuf)
             | RACC -> [t]
@@ -43,9 +43,8 @@ module Make(O:LexUtils.Config) =
             end
         | _ -> error () in
 
-      let annot_list_list = function
-        | RBRAC -> []
-        | tok -> annot_list_list_rec tok in
+(* Forbid empty annotation specification *)
+      let annot_list_list tok = annot_list_list_rec tok in
 
       let rec event_dec = function
         | VAR n ->

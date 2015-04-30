@@ -68,7 +68,7 @@ module LU = LexUtils.Make(O)
 
 let digit = [ '0'-'9' ]
 let alpha = [ 'a'-'z' 'A'-'Z']
-let name  = alpha (alpha|digit|'_' | '.' | '-')* '\''?
+let name  = '_' ? alpha (alpha|digit|'_' | '.' | '-')* '\''?
 
 rule token = parse
 | [' ''\t'] { token lexbuf }

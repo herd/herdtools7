@@ -18,13 +18,19 @@ let rdw = po-loc & (fre;rfe)
 let detour = po-loc & (coe ; rfe)
 let addrpo = addr;po
 
+
+(* Define fence relations, and correct isync/isb show *)
+include "armfences.cat"
+include "ppcfences.cat"
+let ctrlcfence = ctrlisync|ctrlisb
+show isync \ ctrlcfence as isync
+show isb \ ctrlcfence as isb
+show ctrl \ ctrlcfence as ctrl
+
+
 (*******)
 (* ppo *)
 (*******)
-
-include "armfences.cat"
-include "ppcfences.cat"
-show isync, isb, ctrlisync,ctrlisb
 
 (* Initial value *)
 let ci0 = ctrlisync| ctrlisb | detour

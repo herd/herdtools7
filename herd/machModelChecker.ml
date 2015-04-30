@@ -86,8 +86,8 @@ module Make
     let check_event_structure test conc kont res =
       let pr = lazy (MU.make_procrels E.is_isync conc) in
       let vb_pp =
-        if O.showsome then
-          lazy (MU.pp_procrels E.Act.pp_isync (Lazy.force pr))
+        if O.showsome && O.verbose > 0 then
+          lazy (MU.pp_procrels None (Lazy.force pr))
         else
           lazy [] in
       let relevant e = E.is_mem e || E.is_barrier e in

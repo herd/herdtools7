@@ -1,5 +1,6 @@
 "Uniproc, no co generated"
 
+include "fences.cat"
 (* Utilities *)
 let invrf = rf^-1
 let WW(r) = r & (W * W)

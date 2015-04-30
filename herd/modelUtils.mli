@@ -18,7 +18,7 @@ module Make : functor (O:Model.Config) -> functor (S:SemExtra.S) -> sig
 (*******************************************)
     
   val make_procrels : (S.event -> bool) -> S.concrete -> S.procrels
-  val pp_procrels : string -> S.procrels -> S.rel_pp
+  val pp_procrels : string option -> S.procrels -> S.rel_pp
 
 (*************************)
 (* Some checks factorized *)

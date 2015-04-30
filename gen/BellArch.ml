@@ -108,8 +108,10 @@ let applies_atom_rmw _ar _aw = true (* Wrong, extract from bell file? *)
 let pp_plain = "P"
 let pp_as_a = None
 
-let pp_annots a =
-  String.concat "" (List.map pp_annot a)
+let pp_annots a = match a with
+| [] -> ""
+| _ ->
+    String.concat "" (List.map pp_annot a)
 
 let pp_atom a =  pp_annots a
 
