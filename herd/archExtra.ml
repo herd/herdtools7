@@ -93,6 +93,7 @@ module type S = sig
 
   (* State restriction to some locations *)
   val state_restrict : state -> (location -> bool) -> state
+  val state_restrict_locs : LocSet.t -> state -> state
 
   (* Set of states *)
   module StateSet : MySet.S with type elt = state
@@ -301,6 +302,11 @@ module Make(C:Config) (I:I) : S with module I = I
         else k)
       st State.empty
 
+  let state_restrict_locs locs st =
+    LocSet.fold
+      (fun loc r -> state_add r loc (look_in_state st loc))
+      locs state_empty
+    
   (*********************************)
   (* Components of test structures *)
   (*********************************)

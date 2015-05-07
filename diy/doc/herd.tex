@@ -10,6 +10,15 @@ The authors of~\herd{} are Jade Alglave and Luc Maranget.
 
 
 \section{Writing simple models}
+This section introduces \cat{}, our language for describing memory models.
+The \cat{} language is a domain specific language for writing and executing
+memory models. From the language perspective, \cat{} is loosely inspired
+by OCaml. That is, it is a functional language, with similar syntax
+and constructs.
+The basic values of \cat{} are sets of events, which include memory events
+but also additional events such as fence events,
+and relations over events.
+
 
 \subsection{Sequential consistency}
 The simulator \herd{} accepts models written in text files.
@@ -25,18 +34,22 @@ string (in double quotes) in case the tag includes special characters or spaces.
 and \texttt{rf} (read from) are pre-defined.
 The remaining two commnication relations (\texttt{co} and~\texttt{fr})
 are computed by the included file \verb+cos.cat+, which we describe later
---- See Sec.~\ref{sec:with}.
-Equivalently, we may assume that \verb+co+ and~\verb+fr+ are pre-defined.
+--- See Sec.~\ref{sec:cos}.
+For simplicity, we may as well assume that \verb+co+
+and~\verb+fr+ are pre-defined.
 \item The computation of new relations from other relations,
 and their binding to a name with the \verb+let+ construct.
 Here, a new relation \verb+com+ is the union ``\texttt{|}'' of
 the three pre-defined communication relations.
-\item The peformance of some checks. Here the relation ``\verb+po|com+''
+\item The peformance of some checks. Here the relation ``\verb+po | com+''
 (\emph{i.e.} the union of program order \textrel{po} and of  communication
 relations) is required to be acyclic.
+Checks can be given names by suffixing them with
+``\texttt{as~}\textit{name}''.
+This last feature will be used in Sec.~\ref{name:check}
 \end{enumerate}
-We postpone the discussion of the \verb+show+ instruction, see
-Sec.~\ref{sec:show}.
+%We postpone the discussion of the \verb+show+ instruction, see
+%Sec.~\ref{sec:show}.
 
 One can then run some litmus test, for instance \atest{SB}
 (for \emph{Store Buffering},
@@ -62,14 +75,16 @@ One sees that the test condition does not validate on top of SC,
 as ``\texttt{No}'' appears just after the list of final states
 and as there is no ``Positive'' witness.
 Namely, the condition ``\verb+exists (0:EAX=0 /\ 1:EAX=0)+''
-reflects a non-SC behaviour, see Sec.~\ref{candidate:intro}.
+reflects a non-SC behaviour, see Sec.~\ref{intro:candidate}.
 
+\label{intro:candidate}%
 The simulator \herd{} works by generating all candidate executions
 of a given test.
 By ``candidate execution'' we mean a choice of events,
-program order~\textrel{po} and of communication relations
-and final writes to memory (last write to a given location).
-\footnote{Alternatively, we may adopt the simpler view that
+program order~\textrel{po}, of the read-from relation~\texttt{rf}
+and of final writes to memory
+(last write to a given location)\footnote{Alternatively,
+we may adopt the simpler view that
 a candidate execution includes a choice of all communication relations.}.
 In the case of the \ltest{SB} example, we get the following four executions:
 \begin{center}
@@ -88,9 +103,9 @@ the stores in program. As a result, there are four possible executions.
 The model \afile{sc.cat} gets executed on each of the four
 candidate executions. The three first executions
 are accepted and the last one is rejected, as it presents a cycle
-in $\textrel{po} \cup \textrel{fr}$.
-The following diagram pictures the \textrel{ghb} relation.
-The cycle  is obvious:
+in \texttt{po | fr}.
+On the following diagram,
+the cycle  is obvious:
 \begin{center}\img{SB+SC}\end{center}
 
 \subsection{Total Store Order (TSO)}
@@ -102,14 +117,16 @@ pairs from the acyclicity check:
 This model illustrates several features
 of model definitions:
 \begin{itemize}
-\item
-\item
+\item New predefined sets: \verb+W+, \verb+R+ and~\verb+M+, which are
+the sets of read events, write events and of memory events, respectively.
+\item The cartesian product operator ``\verb+*+'' that returns the cartesian
+product of two event sets as a relation.
+\item The intersection operator ``\verb+&+'' that operates on sets and
+relations.
 \end{itemize}
-such as \verb+WW+ and~\verb+RM+ restrict their argument by selecting
-some sort of events. As \verb+W+ stands for write events, \verb+R+ for
-read events and \verb+M+ for all memory events, the effect of
-\verb+let po-tso = WW(po)|RM(po)+ is to define \verb+po-tso+ as the program
-order minus write-to-read pairs.
+As a result, the effect of the declaration
+\verb+let po-tso = po & (W*W | R*M)+ is to define \verb+po-tso+
+as the program order on memory events minus write-to-read pairs.
 
 We run \atest{SB} on top of the tentative TSO model:
 \begin{verbatim}
@@ -129,7 +146,7 @@ Positive: 1 Negative: 3
 do not participate to the acyclicity check any more. In effect, this allows
 the \ahref{SB-03.png}{last execution} above,
 as $\textrel{ghb}$ (\emph{i.e.}
-$\textrel{po-tso} \cup \textrel{com-tso}$) is acyclic.
+\verb+po-tso | com-tso+) is acyclic.
 \begin{center}\img{SB+TSO}\end{center}
 
 
@@ -194,9 +211,10 @@ Hence, \textrel{rfi} is not included in \textrel{ghb}.
 We rephrase our tentative TSO model, resulting into the new model
 \afile{tso-01.cat}:
 \verbatiminput{tso-01.cat}
-As can be observed above \textrel{rfi} (internal read-from) is no longer
-included in \textrel{ghb}. However, \textrel{rfe} (external read-from)
-still is.
+As can be observed above \texttt{rfi} (internal read-from) is no longer
+included in \textrel{ghb}. However, \texttt{rfe} (external read-from)
+still is. Notice that \texttt{rfe} and~\texttt{rfi} are pre-defined.
+
 
 As intended, this new tentative TSO model allows the behaviour of test~\atest{SB+rfi-pos}:
 \begin{verbatim}
@@ -220,17 +238,32 @@ First, it has no semantics for fences.
 As a result the test \atest{SB+mfences} is allowed, whereas it should
 be forbidden, as this is the very purpose of the fence \texttt{mfence}.
 \begin{center}\img{SB+mfences}\end{center}
-One easily solves this issue by adding the \verb+mfence+ relation
-to the definition of \verb+po-tso+:
+One easily solves this issue by first defining the \verb+mfence+
+that relates events with a \verb+MFENCE+ event \texttt{po}-in-between them;
+and then by adding \verb+mfence+ to the definition of \verb+po-tso+:
 \begin{verbatim}
-let po-tso = WW(po) | RM(po) | mfence
+let mfence = po & (_ * MFENCE) ; po
+let po-tso = po & (W*W | R*M) | mfence
 \end{verbatim}
+Notice how the relation \verb+mfence+ is defined from two pre-defined sets:
+``\verb+_+'' the universal set of all events and \verb+MFENCE+ the set
+of fence events generated by the X86 \texttt{mfence} instruction.
+An alternative, more precise definition, is possible:
+\begin{verbatim}
+let mem-to-mfence = po & M * MFENCE
+let mfence-to-mem = po & MFENCE * M
+let mfence = mem-to-mfence; mfence-to-mem
+\end{verbatim}
+This alternative definition of \texttt{mfence},
+although yielding a smaller relation, is equivalent to the original one
+for our purpose of checking \texttt{ghb} acyclicity.
 
 But the resulting model is still too weak,
 as it allows some behaviours that any model must
 reject for the sake of single thread correctness.
 The following test \atest{CoRWR} illustrates the issue:
 \verbatiminput{CoRWR.litmus}
+The test final condition targets the following excution candidate:
 \begin{center}\img{CoRWR}\end{center}
 The TSO check ``\verb+acyclic po-tso|com-tso+'' does not suffice to reject
 two absurd behaviours pictured in the execution diagram above:
@@ -238,9 +271,8 @@ two absurd behaviours pictured in the execution diagram above:
 read from the \textrel{po}-after write~$b$, as \textrel{rfi} is not included
 in \textrel{com-tso}; and~(2)
 the read~$c$ is allowed to read the initial value of location~$x$
-although
-this (unpictured) write is \textrel{co}-before the write~$b$,
-as \verb+WR(po)+ is not in \textrel{po-tso}.
+although the initial write~$d$ is \textrel{co}-before the write~$b$,
+since \verb+po & (W * R)+ is not in \textrel{po-tso}.
 
 \label{defuniproc}For any model, we rule out those very
 untimely behaviours by the so-called
@@ -248,22 +280,20 @@ untimely behaviours by the so-called
 check that states that executions projected on events that access one variable
 only are SC.
 In practice, having defined \verb+po-loc+ as \verb+po+ restricted to
-events that touch the same address, we further require the acyclicity
+events that touch the same address (\emph{i.e.}
+as \verb+po & loc+), we further require the acyclicity
 of the relation \verb+po-loc|fr|rf|co+.
 In the TSO case, the \textsc{uniproc}~check can be
 somehow simplified by considering only
 the cycles in \verb+po-loc|fr|rf|co+ that 
 are not already rejected by the main check of the model.
 This amounts to design specific checks for the two relations that are
-not global in TSO: \verb+rfi+ and \verb+WR(po)+.
+not global in TSO: \verb+rfi+ and \verb+po & (W*R)+.
 Doing so, we finally produce a correct model for TSO \afile{tso-02.cat}:
 \verbatiminput{tso-02.cat}
-This last model illustrates other features of \herd{}:
+This last model illustrates another feature of \cat{}:
 \herd{} may also performs irreflexivity checks with the keyword
-``\verb+irreflexive+''; and
-the checks can be given names by suffixing them with
-``\texttt{as~}\textit{name}''.
-This last feature will be used in Sec.~\ref{name:check}
+``\verb+irreflexive+''.
 
 \subsection{Sequential consistency, total order definition}
 We now illustrate another style of model.
@@ -280,40 +310,341 @@ So we could just generate all total orders amongst memory events,
 and filter those ``scheduling order candidates'' according to the two rules
 above.
 
-Things are a bit more complex in~\herd{}, due to the presence of initial writes.
-Those are write events that initialise the memory locations.
+Things are a bit more complex in~\herd{}, due to the presence of initial and final writes.
+Initial writes are write events that initialise the memory locations.
 Initial writes are not generated by the instructions of the test.
 Instead, they are created by \herd{} machinery, and are available
 from model text as the set \verb+IW+.
-Up to now we have ignored initial writes, we are now going to
+Up to now we have ignored initial and final writes, we are now going to
 integrate them explicitly.
-From the model perspective the initial write~$w_i$ of location~$x$
-should precede any other write~$w$ to~$x$.
-Such a constraint can be expressed in \cat{} as a relation:
+
+Final writes may be  generated by program instructions, and, when such,
+they must be ordered by~$S$.
+A final write is a write to a phantom read performed once
+program execution is over.
+The constraint on final writes
+originates from \herd{} technique to enumerate execution candidates:
+actual execution candidates also include a choice of final writes for
+the locations that are observed in the test final condition\footnote{Doing
+so permits pruning executions that are irrelevant to the test final condition,
+see \herd{} option \ahrefloc{speedcheck:opt}{\opt{-speedcheck}}}.
+As test outcome (\emph{i.e.} the final values of observed locations) is
+settled before executing the model, it is important \emph{not} to accept
+executions that yield a different outcome. Doing so may validate outcomes
+that should be rejected.
+In practice, the final write $w_f$
+to location~$x$ must follow all other writes to~$x$ in~$S$.
+Considering that the set of final writes is available to \cat{}~models
+as the pre-defined set~\verb+FW+,
+the  constraint on final writes
+can be expressed as a relation:
 \begin{verbatim}
-let preS = loc & (IW * (W \ IW))
+let preS = loc & (W \ FW) * FW
 \end{verbatim}
 Where \verb+loc+ is a predefined relation that relates all events
 that access the same location.
 
+By contrast with final writes, initial writes are not generated
+by program instructions, and it is possible not to order them completely.
+In particular, it is not useful to order initial writes to different locations,
+nor the initial write to location~$x$ with any access to location~$y$.
+Notice that we could include initial writes in~$S$ as we did for
+final writes. Not doing so will improve efficiency.
 
-In the SC case,  the constraint on initial writes means that $w_i$ should
-precede~$w$ in the scheduling order~$S$.
-Hence, the order~$S$ is not just any order on memory events (predefined
-set~\verb+M+, which includes initial writes),
-it is a topological order that extends the pre-order~\verb+preSC+.
-We may generate all such topological orders with \cat{} primitive
+\label{intro:linearisations}%
+Finally, the order~$S$ is not just any order on memory events (predefined
+set~\verb+M+, which includes initial and final writes writes),
+it is a topological order of the program events (implemented as the set
+\verb+M\IW+) that extends the pre-order~\verb+preSC+
+We may generate all such topological orders with the \cat{}~primitive
 \verb+linearisations+:
 \begin{verbatim}
-let allS = linearisations(M,preS)
+let allS = linearisations(M\IW,preS)
 \end{verbatim}
-that con \verb+rf+ is defined (thanks to initial writes) without ambiguity.
-Hence we have the following implementation \afile{lamport.cat}:
+The call \texttt{linearisation($E$,$r$)}, where $E$ is a set of events
+and~$r$ is a relation on events, returns the set of all total
+orders defined on~$S$ that extend~$r$. Notice that if~$r$ is cyclic,
+the empty set is  returned.
+
+\label{intro:with}We now need to iterate over the set~\verb+allS+.
+We do so with the \verb+with+ construct:
+\begin{verbatim}
+with S from allS
+\end{verbatim}
+It is important to notice that the construct above extends the current
+execution candidate (\emph{i.e.} a choice of events, plus a choice of
+two relations~\texttt{po} and~\texttt{rf}) with a candidate order~$S$.
+In other words, the scope of the iteration is the remainder of the model text.
+Once model execution terminates for a choice of~$S$
+(some element of~\texttt{allS}), model execution restarts just
+after the \texttt{with} construct, with variable~$S$ bound to
+the next choice picked in~\texttt{allS}.
+
+As a first consistency check, we check that $S$ includes the program order:
+\begin{verbatim}
+empty po \ S as PoCons
+\end{verbatim}
+Notice that, to check for inclusion, we test the emptyness of relation
+difference (operator ``\verb+\+'').
 
 
+It remains to check that the \texttt{rf} relation of the execution candidate
+is the same as the one defined by condition~\ref{rfcond}.
+To that aim, we complement~$S$ with the constraint over initial
+writes that  must precede all events to their location:
+\begin{verbatim}
+let S = S | loc & IW * (M \ IW)
+\end{verbatim}
+Observe that $S$ is no longer a total order. However, it is still a total
+order when restricted to events that access a given location,
+which is all that matters for condition~\ref{rfcond} to give a value
+to all reads. As regards our SC model, we define \texttt{rf-S}
+the read-from relation induced by~$S$ as follows:
+\begin{verbatim}
+let WRS = W * R & S & loc  (* Writes from the past, same location *)
+let rf-S = WRS \ (S;WRS)   (* Most recent amongst them *)
+\end{verbatim}
+The definition is a two-step process: we first define
+a relation~\texttt{WRS} from writes to reads (to the same location)
+that follow them in~$S$. Observe that,
+by complementing~$S$ with initial writes, we achieve that for any read~$r$
+there exists at least a write~$w$ such thar $(w,r) \in \texttt{WRS}$.
+It then remains to filter out non-maximal writes in \texttt{WRS}
+as we do in the definition of \texttt{rf-S}, by the means of
+the difference operator ``\verb+\+''.
+We then check the equality of \texttt{rf} (pre-defined as part of the candidate
+execution) and of \texttt{rf-S} by double inclusion:
+\begin{verbatim}
+empty rf \ rf-S as RfCons
+empty rf-S \ rf as RfCons
+\end{verbatim}
+
+As an exemple, he show six attempts of \texttt{po} compatible $S$~orders
+for the non-SC outcome of the test~\atest{SB} in figure~\ref{sblamport}.
+\begin{figure}[htp]
+\caption{\label{sblamport}Failed attempts of SC scheduling orders~$S$.}
+\begin{center}
+\img{SB+L-00}\quad\img{SB+L-01}\quad\img{SB+L-02}\\
+\img{SB+L-03}\quad\img{SB+L-04}\quad\img{SB+L-05}
+\end{center}
+\end{figure}
+Observe that all attempts fail as \texttt{rf} and \texttt{rf-S}
+are different in all diagrams.
+
+We also show all successfull SC scheduling in figure~\ref{sbok}.
+\begin{figure}[htp]
+\caption{\label{sbok}SC executions of test~\atest{SB}.}
+\begin{center}
+\img{SB+OK-00}\quad\img{SB+OK-01}\quad\img{SB+OK-02}\\
+\img{SB+OK-03}\quad\img{SB+OK-04}\quad\img{SB+OK-05}
+\end{center}
+\end{figure}
 
 
+For reference we provide our complete model~\afile{lamport.cat}
 \verbatiminput{lamport.cat}
+
+\subsection{Computing \label{sec:cos}coherence orders}
+All the models seen so far include the file \afile{cos.cat} that define
+``coherence relations'', written~\texttt{co}.
+This section describes the file~\texttt{cos.cat}.
+It can be skipped in first reading, as users may find sufficient
+to include the file.
+
+For a given location~$x$ the coherence order is a total order on the
+write events to location~$x$. The coherence relation~\texttt{co} is the union
+of those total orders for all locations.
+In this section, we show how to compute all possible coherence orders for
+a candidate execution.
+We seize the opportunity to introduce advanced features of the \cat{}
+language, such as functions and pattern matching over sets.
+
+Possible coherence orders for a given location~$x$
+are not totally arbitrary in two aspects:
+\begin{enumerate}
+\item The write events to location~$x$ include
+the initial write event to location~$x$.  The initial write to~$x$ must come
+first in any coherence order for~$x$.
+\item One of the writes to~$x$ performed by the test (may) have been declared
+to be final by \herd{} machinery prior to model execution.
+In that case, the final write to~$x$ must come last in any coherence order
+for~$x$.
+\end{enumerate}
+See Sec.~\ref{intro:candidate} for details on initial and final writes.
+
+We can express the two conditions above for all locations of the program
+as a relation \texttt{co0}:
+\begin{verbatim}
+let co0 = loc & (IW*(W\IW)|(W\FW)*FW)
+\end{verbatim}
+Where the pre-defined sets \texttt{IW} and~\texttt{FW} are the sets
+of all initial and final writes respectively.
+%TODO exemple of co0 on 2+2W
+
+Then, assuming that $W_x$ is the set of all writes to location~$x$, one
+can compute the set of all possible coherence orders for~$x$ with
+the \texttt{linearisations} primitive as \texttt{linearisations($W_x$,co0)}.
+In practice, we define a function that takes the set~$W_x$ as an argument:
+\begin{verbatim}
+let makeCoX(Wx) = linearisations(Wx,co0)
+\end{verbatim}
+The \texttt{linearisations} primitive is introduced in
+Sec.~\ref{intro:linearisations}. It returns all topological sorts
+of the events  of the set~\texttt{Wx} that are compatible
+with the relation~\texttt{co0}.
+
+
+In fact, we want to compute the set of all possible \texttt{co} relations,
+\emph{i.e.} all the unions of all the possible coherence orders for all
+locations~$x$. To that end we use another \cat{} primitive:
+\texttt{partition($S$)}, which takes a set of events as argument and
+returns a set of set of events $T = \{S_1,\ldots,S_n\}$, where each
+$S_i$ is the set of all events in $S$ that act on location $L_i$,
+and, of course $S$ is the union $\bigcup_{i=1}^{i=n} S_i$.
+Hence we shall compute the set of all \texttt{Wx} sets
+as \texttt{partition(W)},
+where \texttt{W} is the pre-defined set of all writes (including initial
+writes).
+
+For combining the effect of the \texttt{partition} and \texttt{linearisations}
+primitives, we first define a \texttt{map} function that, given a set~$S=
+\{e_1,\ldots,e_n\}$ and a function $f$, returns the set
+$\{f(e_1),\ldots,f(e_n)\}$:
+\begin{verbatim}
+let map f  =
+  let rec do_map S = match S with
+  || {} -> {}
+  || e ++ S -> f e ++ do_map S
+  end in
+  do_map
+\end{verbatim}
+The \texttt{map} function is written in curried style.
+That is one calls it as \texttt{map~$f$~$S$}, parsed
+as \texttt{(map~$f$)~$S$}. More precisely, the left-most function
+call~\texttt{(map~$f$)} returns a function.
+Here it returns~\texttt{do\_map} with free variable \texttt{f} being bound
+to the argument~$f$.
+The definition of~\texttt{map} illustrate several new features:
+\begin{enumerate}
+\item The empty set constant~``\verb+{}+'',
+and the set addition operator \texttt{$e$ ++ $S$} that returns the set~$S$
+augmented with element~$e$.
+\item Recursive function definitions. The function~\verb+do_map+
+is recursive as it calls itself.
+\item Pattern matching on sets.
+This construct, similar to OCaml pattern matching on lists, discriminates
+between empty (\verb+|| {} ->+~$e_0$) and non-empty
+(\verb!|| e ++ es ->!~$e_1$) sets.
+In the second case of a non-empty set, the expression~$e_1$ is evaluated
+in a context extended with two bindings: a binding from the variable~\texttt{e}
+to an arbitrary element of the matched set, and a binding from
+the variable~\texttt{es} to the matched set minus the arbitrary element.
+\end{enumerate}
+
+Then, we generate the set of all possible coherence orders
+for all locations~$x$ as follows:
+\begin{verbatim}
+let allCoX = map makeCoX (partition(W))
+\end{verbatim}
+Notice that \texttt{allCoX} is a set of sets of relations,
+each element being the set of all possible coherence orders
+for a specific~$x$.  
+
+We still need to generate all possible \texttt{co} relations,
+that is all unions of the possible coherence orders for
+all locations~$x$.  It can be done by another \cat{} function:
+\texttt{cross}, which takes a set of sets $S = \{S_1, S_2, \ldots, S_n\}$ as
+argument and returns all possible unions built by picking elements from each of
+the $S_i$: 
+$$
+\left\{\, e_1 \cup e_2 \cup \cdots \cup e_n \mid
+e_1 \in S_1, e_2 \in S_2, \ldots, e_n \in S_n \,\right\}
+$$
+One may notice that if $S$ is empty, then \texttt{cross} should
+return one relation exactly: the empty relation, \emph{i.e.} the neutral
+element of the union operator.
+This choice for \texttt{cross($\emptyset$)} is natural
+when we define \texttt{cross} inductively:
+$$
+\texttt{cross}(S_1 \mathop{\texttt{++}} S) =
+\bigcup_{e_1 \in S_1, t \in \texttt{cross}(S)} \left\{ e_1 \cup t \right\}
+$$
+In the definition above, we simply build
+\texttt{cross($S_1 \mathop{\texttt{++}} S$)} by building the set
+of all unions of one relation~$e_1$ picked in~$S_1$
+and of one relation~$t$ picked in $\texttt{cross}(S)$.
+
+So as to write~\texttt{cross},
+we first define a classical \texttt{fold} function over sets:
+given a set $S = \{ e_1, e_2, \ldots, e_n\}$, an initial value~$y_0$
+and a function $f$~that takes a pair $(e,y)$ as argument,
+\texttt{fold} computes:
+$$
+f (e_{i_1},f (e_{i_2}, \ldots, f(e_{i_n},y_0)))  
+$$
+where $i_1, i_2, \ldots, i_n$ defines a permutation
+of the indices $1, 2, \ldots, n$.
+\begin{verbatim}
+let fold f =
+  let rec fold_rec (es,y) = match es with
+  || {} -> y
+  || e ++ es -> fold_rec (es,f (e,y))
+  end in
+  fold_rec
+\end{verbatim}
+The function~\texttt{fold} is written in the same curried style as~\texttt{map}.
+Notice that the inner function~\verb+fold_rec+ takes one argument.
+However this argument is a pair.
+As a gentle example of \texttt{fold} usage, we could have
+defined~\texttt{map} as:
+\begin{verbatim}
+let map f = fun S -> fold (fun (e,y) -> f e ++ y) (S,{})
+\end{verbatim}
+This example also introduce ``anonymous'' functions.
+
+
+As a more involved example of \texttt{fold} usage, we
+ write the function~\texttt{cross}.
+\begin{verbatim}
+let rec cross S = match S with
+  || {} -> { 0 } (* 0 is the empty relation *)
+  || S1 ++ S ->
+      let ts = cross S in
+      fold
+        (fun (e1,r) -> map (fun t -> e1 | t) ts | r)
+        (S1,{})
+  end      
+\end{verbatim}
+The function~\texttt{cross} is a recursive function over a set (of sets).
+Its code follows the inductive definition given above.
+
+Finally, we generate all possible \texttt{co} relations by:
+\begin{verbatim}
+let allCo = cross allCoX
+\end{verbatim}
+
+The file~\afile{cos.cat} goes on by iterating over \texttt{allCo} using
+the \texttt{with $x$ from~$S$} construct:
+\begin{verbatim}
+with co from allCo
+\end{verbatim}
+See Sec.~\ref{intro:with} for details on this construct.
+
+Once~\texttt{co} has been defined, one defines~\texttt{fr} and
+internal and external variations:
+\begin{verbatim}
+(* From now, co is a coherence relation *)
+let coi = co & int
+let coe = co & ext
+
+(* Compute fr *)
+let fr = rf^-1 ; co
+let fri = fr & int
+let fre = fr & ext
+\end{verbatim}
+The pre-defined relation \texttt{ext} (resp. \texttt{int}) relates
+events generated by different (resp. the same) threads.
+
 
 \section{Producing pictures of executions}
 The simulator \herd{} can be instructed to produce pictures of
@@ -411,7 +742,6 @@ that contains settings for \herd{} options and that are loaded with the
 \opt{-conf~}\textit{name} option.
 In this manual we mostly used the \afile{doc.cfg} configuration file.
 As this file is present in \herd{} distribution, users
-
 can use the diagram style of this manual:
 \begin{verbatim}
 % herd -conf doc.cfg ...
@@ -488,7 +818,7 @@ so that most of the settings of \afile{doc.cfg} are kept\footnote{The setting of
 
 \section{\label{herd:language}Model definitions}
 
-We describe our langage for defining models.
+We describe our \cat{}~langage for defining models.
 The syntax of the language is given in BNF-like notation. Terminal
 symbols are set in typewriter font (\synt{\T{like} \T{this}}).
 Non-terminal symbols are set in italic font (\synt{\NT{like} \NT{that}}).
@@ -498,12 +828,34 @@ Square brackets \synt{\boption{}\ldots\eoption{}} denote optional components. Cu
 \synt{\brepet{}\ldots\erepet{}} denotes zero,
 one or several repetitions of the enclosed
 components.
-%Parentheses \synt{\bparen{}\ldots\eparen{}} denote grouping.
+Parentheses \synt{\bparen{}\ldots\eparen{}} denote grouping.
 
 
 Model source files may contain comments of the OCaml type
 (\verb+(*+\ldots \verb+*)+, can be nested), or line comments starting with
-``\verb+#+'' and running until end of line.
+``\verb+//+'' and running until end of line.
+
+\subsection{\label{overview}Overview}
+The \cat{} language is much inspired by OCaml, featuring immutable bindings,
+first-class functions, pattern matching, etc.
+However, \cat{} is a domain specific language, with important differences
+from OCaml.
+\begin{enumerate}
+\item Base values are specialised, they are sets of events and relations
+over events. There are also tags, akin to C~enumerations or OCaml
+``constant'' constructors and first class functions. 
+There are two structured values: tuples of values and sets of values.
+\item There is a distinction between expressions that evaluate
+to some value, and instructions that are executed for their effect.
+\end{enumerate}
+A model, or \cat{} program is a sequence of instructions.
+At startup, pre-defined identifiers are bound to event sets and relations
+over events.
+Those pre-defined identifiers describe a candidate execution
+(in the sense of the memory model).
+Executing the model means allowing or forbiding that candidate
+execution.
+
 
 \subsection{\label{language:identifier}Identifiers}
 \begin{syntax}
@@ -522,18 +874,46 @@ starting with a letter.
 Using the minus character inside identifiers  may look a bit surprising.
 We did so as to allow identifiers such as \texttt{po-loc}.
 
-\label{sec:predef}At startup, pre-defined identifiers are bound to relations
-between memory events. Those relations describe a candidate execution.
-Executing the model means allowing or forbiding that candidate
-execution.
+\label{sec:predef}At startup, pre-defined identifiers are bound to
+event sets and to relations
+between events.
 
-A first pre-defined identifier is \tid{id}, the identity.
-Other pre-defined identifiers are the program order
-\tid{po} and its refinements:
+Those pre-defined identifiers first describe the events of
+the candidate execution as various sets, as described by the first table
+of figure~\ref{predefset}.
+\begin{figure}[htp]
+\caption{\label{predefset}Pre-defined event sets.}
+\begin{idtable}
+\textrel{W} & write events \\
+\textrel{R} & read events \\
+\textrel{M} & memory events &
+we have $\textrel{M} = \textrel{W} \cup \textrel{R}$\\
+\textrel{IW} & initial writes &
+feed reads that read from the initial state\\
+\textrel{FW} & final writes & writes that are observed at the end of test execution\\
+\textrel{F} & fence events\\
+\textit{NAME} & specific fence events & those depend on the test architecture\\
+\end{idtable}
+
+\begin{desctable}{architecture}{fence sets}
+\textrel{X86} & \textrel{MFENCE}, \textrel{SFENCE}, \textrel{LFENCE}\\
+\textrel{PPC} & \textrel{SYNC}, \textrel{LWSYNC}, \textrel{EIEIO}, \textrel{ISYNC}\\
+\textrel{ARM} &  \textrel{DMB}, \textrel{DMB.ST}, \textrel{DSB}, \textrel{DSB.ST}, \textrel{ISB}\\
+ \textrel{MIPS} & \textrel{SYNC}\\
+\textrel{AArch64} & \ldots\\
+\end{desctable}
+\end{figure}
+Specific fence event sets depends on the test architecture,
+their name is always uppercase and derive from the mnemonic of
+the instruction that generates them.
+The second table of figure~\ref{predefset} shows
+a (non-exhaustive) list.
+
+
+Other pre-defined identifiers are relations.
+Most of those are the program order~\tid{po} and its refinements:
 \begin{idtable}
 $\po$    & program order & instruction order lifted to events \\
-$\poloc$ & \po{} restricted to the same address &
-events are in \po{} and touch the same address\\
 $\addr$ & address dependency & the address of the second event depends on
 the value loaded by the first (read) event\\
 $\data$ & data dependency & the value stored by the second (write)
@@ -542,68 +922,48 @@ the value loaded by the first (read) event\\
 $\ctrl$ & control dependency &
 the second event is in a branch controled by the value loaded by the
 commfirst (read) event\\
-$\ctrlisync$/$\ctrlisb$ & control dependency + \isync/\isb{} &
-the branch additionally contains a \isync/\isb{} barrier before
-the second event\\
+$\rmwr$ & read-exclusive write-exclusive pair &
+relate the read and write events emitted
+by matching successful load-reserve store conditional instructions.
 \end{idtable}
-\bgroup\let\rln\tid
-Other pre-defined relations denote the presence of a specific
-fence (or barrier) in-between two events, those are
-\mfence{}, \sfence, \lfence{} (X86);
-\sync, \lwsync, \eieio, \isync{} (Power);
-and \dsb, \dmb, \dsbst, \dmbst, \isb{} (ARM).
-\egroup
 
-Finally, pre-defined identifiers are bound the communication relations:
+
+Finally, a few pre-defined relations describe the execution
+candidate structure and write-to-read communication:
 \begin{idtable}
-$\rf$    & read-from     & links a write $w$ to a read $r$ taking its value from $w$ \\
-$\co$    & coherence     & total order over writes to the same address \\
-$\fr$    & from-read     & links a read $r$ to a write $w'$ $\co$-after the write $w$ from which $r$ takes its value \\
-\rfi, \fri{}, \coi & internal communications &
-communication between events of the same thread\\
-\rfe, \fre{}, \coe & external communications &
-communication between events of different threads
+$\id$ & identity & relates each event to itself\\
+$\locr$ & same location & events that touch the same address\\
+$\extr$ & external & events from different threads\\
+$\intr$ & internal & events from the same thread\\
+
+$\rf$  & read-from & links a write $w$ to a read $r$ taking its value from $w$ \\
 \end{idtable}
+
+Some additional relations are defined by library files written in the \cat{}
+language, see Sec.~\ref{sec:library}.
 
 \subsection{\label{language:expression}Expressions}
-Expressions are evaluated by \herd, yielding a relation over memory events
-as a value.
-A relation can be seen as a set of pairs of memory events.
+Expressions are evaluated by \herd, yielding a value.
 \begin{syntax}
 \NT{expr} \is{} \T{0}
 \alt \NT{id}
+\alt \T{(}\T{)} \orelse \T{(} \NT{expr} \T{,} \NT{expr} \brepet{} \T{,} \NT{expr} \erepet \T{)}
+\alt \T{\{}\T{\}} \orelse \T{\{} \NT{expr} \brepet{} \T{,} \NT{expr} \erepet \T{\}}
 \alt \NT{expr}\T{*} \orelse \NT{expr}\T{+} \orelse \NT{expr}\T{?}
 \orelse \NT{expr}\T{\textasciicircum-1}
 \alt \NT{expr}\T{|}\NT{expr} \orelse
+\NT{expr}\T{++}\NT{expr} \orelse
 \NT{expr}\T{;}\NT{expr} \orelse
 \NT{expr}\T{\textbackslash}\NT{expr} \orelse
-\NT{expr}\T{\&}\NT{expr}
+\NT{expr}\T{\&}\NT{expr} \orelse
+\NT{expr} \T{*} \NT{expr}
+\alt \NT{expr} \NT{expr}
 \alt \NT{selector}\T{(}\NT{expr}\T{)}
 \alt \NT{id} \T{(} \NT{args} \T{)}
 \alt \T{fun} \T{(} \NT{params} \T{)} \T{->} \NT{expr}
 \alt \T{let} \NT{binding} \brepet{} \T{and} \NT{binding} \erepet{} \T{in} \NT{expr}
 \alt \T{let} \T{rec} \NT{valbinding} \brepet{} \T{and} \NT{valbinding} \erepet{} \T{in} \NT{expr}
 \alt \T{(}\NT{expr}\T{)} \orelse  \T{begin} \NT{expr} \T{end}
-\sep
-\NT{selector} \is
-\T{MM} \orelse
-\T{MR} \orelse
-\T{RM} \orelse
-\T{MW} \orelse
-\T{WM} \orelse
-\T{RR} \orelse
-\T{WR} \orelse
-\T{RW} \orelse
-\T{WW}
-\alt
-\T{AA} \orelse
-\T{AP} \orelse
-\T{PA} \orelse
-\T{PP}
-\alt
-\T{ext} \orelse
-\T{int} \orelse
-\T{noid}
 \sep
 \NT{args} \is \epsilon
 \alt \NT{expr} \brepet{} \T{,} \NT{expr} \erepet{}
@@ -925,6 +1285,77 @@ can be also controlled from the
 command-line (see option~\ahrefloc{opt:initwrites}{\opt{-initwrites}})
 and that command line settings override model options.
 
+\subsection{\label{sec:library}Library}
+
+\subsubsection*{Standard library}
+The standard library is a \cat{} file~\texttt{stdlib.cat}
+which all models include by default.
+It defines a a few convenient relations that are thus
+available to all models.
+\begin{idtable}
+$\poloc$ & \po{} restricted to the same address &
+events are in \po{} and touch the same address, namely $\po \cap \locr$\\
+$\rfe$ & external read-from & read-from by different threads, namely $\rf \cap \extr$\\
+$\rfi$ & internal read-from & read-from by the same thread, namely $\rf \cap \intr$\\
+\end{idtable}
+
+\subsubsection*{Coherence orders}
+\bgroup\let\rln\tid
+For most models, a complete list of communication relations would
+also include \co{} and~\fr{}.
+Those can be defined by including the file \texttt{cos.cat}
+(see Sec.~\ref{sec:cos}).
+\begin{idtable}
+$\co$    & coherence     & total order over writes to the same address \\
+$\fr$    & from-read     & links a read $r$ to a write $w'$ $\co$-after the write $w$ from which $r$ takes its value \\
+\coi, \fri & internal communications &
+communication between events of the same thread\\
+\coe, \fre & external communications &
+communication between events of different threads
+\end{idtable}
+Notice that the internal and external sub-relations of \co{} and~\fr{}
+are also defined.
+\egroup
+
+\subsubsection*{Fences}
+\bgroup\let\rln\tid
+Fence relations denote the presence of a specific
+fence (or barrier) in-between two events.
+Those can be defined by includinc architecture specific files.
+\begin{desctable}{file}{relations}
+x86fences.cat &  \mfence{}, \sfence, \lfence{}\\
+ppcfences.cat &  \sync, \lwsync, \eieio, \isync, \ctrlisync{}\\
+armfences.cat & \dsb, \dmb, \dsbst, \dmbst, \isb{}, \ctrlisb{}\\
+mipsfences.cat & \sync\\
+aarch64fences.cat & \ldots
+\end{desctable}
+In other words, models for, say, ARM machines should include the following
+instruction:
+\begin{verbatim}
+include "armfences.cat"
+\end{verbatim}
+
+Notice that for the Power (PPC) (resp. ARM) architecture,
+an additional relation \ctrlisync{} (res. \ctrlisb) is defined.
+The relation \ctrlisync{} reads control +\isync{}.
+It means that the branch to the instruction that generates the
+second event additionnaly contains
+a \texttt{isync} fence preceeding that instruction.
+For reference, here is a possible definition of \ctrlisync:
+\begin{verbatim}
+let ctrlisync  = ctrl & (_ * ISYNC); po
+\end{verbatim}
+
+One may define all fence relations by including the file
+\texttt{fences.cat}. As a result, fence relations that are
+relevant to the architecture of the test being simulated  are properly defined,
+while irrelevant fence relations are the empty relation.
+This feature proves convenient for writing generic models that apply
+to several concrete architectures.
+\egroup
+
+
+
 \section{Usage of \herd}
 
 \subsection{Arguments}
@@ -1089,7 +1520,7 @@ normally generate.
 
 \begin{description}
 \item[{\tt -speedcheck (false|true|fast)}] 
-When enabled by \opt{-speedcheck true}
+\aname{speedcheck:opt}{When} enabled by \opt{-speedcheck true}
 or \opt{-speedcheck fast}, attempt to settle the test condition.
 That is, \herd{} will
 generate a subset of executions (those named ``\emph{interesting}'' above)

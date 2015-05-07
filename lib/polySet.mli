@@ -45,6 +45,7 @@ module type S =
     val max_elt:'k t ->'k elt
     val choose:'k t ->'k elt
     val split:'k elt ->'k t ->'k t * bool *'k t
+    val split3: 'k t -> 'k t * 'k elt * 'k t
     val find:'k elt ->'k t ->'k elt
     val of_list:'k elt list ->'k t
 (* My additions (from MySet) *)

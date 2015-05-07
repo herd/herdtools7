@@ -5,9 +5,9 @@ include "cos.cat"
 (* Communication relations that order events*)
 let com-tso = rf | co | fr
 (* Program order that orders events *)
-let po-tso = (W * W | R * M) & po
+let po-tso = po & (W*W | R*M)
 
-(* TSP global-happens-before *)
+(* TSO global-happens-before *)
 let ghb = po-tso | com-tso
-acyclic ghb
+acyclic ghb as tso
 show ghb

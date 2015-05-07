@@ -51,10 +51,15 @@ type exp =
         var (* name *) * varset (* free vars *)
   | ExplicitSet of TxtLoc.t * exp list
   | Match of TxtLoc.t * exp * clause list * exp option
-  | MatchSet of TxtLoc.t * exp * exp * (string * string * exp)
+  | MatchSet of TxtLoc.t * exp * exp * set_clause
   | Try of TxtLoc.t * exp * exp
   | If of TxtLoc.t * cond * exp * exp
   | Yield of TxtLoc.t * exp * exp
+
+and set_clause =
+  | EltRem of string * string * exp
+  | PreEltPost of string * string * string * exp
+
 
 and pat = Pvar of var | Ptuple of var list
 

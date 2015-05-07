@@ -2,16 +2,16 @@
 
 include "cos.cat"
 
-let mfence = po & (M * MFENCE) ; po
-
 (* Uniproc check specialized for TSO *)
-irreflexive (R * W) & po-loc;rfi as uniprocRW
-irreflexive (W * R) & po-loc;fri as uniprocWR
+irreflexive po-loc & (R*W); rfi as uniprocRW
+irreflexive po-loc & (W*R); fri as uniprocWR
 
 (* Communication relations that order events*)
 let com-tso = rfe | co | fr
+
 (* Program order that orders events *)
-let po-tso = (W*W | R*M) & po | mfence
+let mfence = po & (_ * MFENCE) ; po
+let po-tso = po & (W*W | R*M) | mfence
 
 (* TSP global-happens-before *)
 let ghb = po-tso | com-tso

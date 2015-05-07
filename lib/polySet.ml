@@ -45,6 +45,7 @@ module type S =
     val max_elt:'k t ->'k elt
     val choose:'k t ->'k elt
     val split:'k elt ->'k t ->'k t * bool *'k t
+    val split3: 'k t -> 'k t * 'k elt * 'k t
     val find:'k elt ->'k t ->'k elt
     val of_list:'k elt list ->'k t
     val pp:
@@ -206,6 +207,10 @@ module Make(Ord: OrderedType) =
             let (ll, pres, rl) = split x l in (ll, pres, join rl v r)
           else
             let (lr, pres, rr) = split x r in (join l v lr, pres, rr)
+
+    let split3 = function
+      | Empty -> raise Not_found
+      | Node (l,v,r,_) -> l,v,r
 
     (* Implementation of the set operations *)
 

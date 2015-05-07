@@ -141,7 +141,12 @@
   \newcommand{\rln}[1]{\ensuremath{\stacklabel{#1}{\rightarrow}}}
   \newcommand{\tc}[1]{\ensuremath{\stacklabel{{#1} +}{\rightarrow}}}
   \newcommand{\mrln}[1]{\ensuremath{\stacklabel{?#1}{\rightarrow}}}
-
+  %misc
+  \newcommand{\id}{\rln{id}}
+  \newcommand{\locr}{\rln{loc}}
+  \newcommand{\extr}{\rln{ext}}
+  \newcommand{\intr}{\rln{int}}
+  \newcommand{\rmwr}{\rln{rmw}}
   %iico
   \newcommand{\iico}{\rln{iico}}
   \newcommand{\iicodata}{\rln{iico-data}}
@@ -388,7 +393,7 @@
 %instructions
 \newcommand{\fno}{\operatorname{fno}}
 \newcommand{\atom}{\operatorname{atom}}
-\newcommand{\rmw}{\operatorname{rmw}}
+%\newcommand{\rmw}{\operatorname{rmw}}
 \newcommand{\rrmw}{\operatorname{rrmw}}
 \newcommand{\res}{\operatorname{res}}
 \newcommand{\taken}{\operatorname{taken}}
@@ -432,7 +437,7 @@
 \newcommand{\lfence}{\rln{lfence}}
 \newcommand{\sync}{\rln{sync}}
 \newcommand{\lwsync}{\rln{lwsync}}
-\newcommand{\eieio}{\rln{lwsync}}
+\newcommand{\eieio}{\rln{eieio}}
 \newcommand{\dmb}{\rln{dmb}}
 \newcommand{\dsb}{\rln{dsb}}
 \newcommand{\dmbst}{\rln{dmb.st}}
@@ -470,6 +475,14 @@
 \multicolumn{1}{c}{identifier} &
 \multicolumn{1}{c}{name}  &
 \multicolumn{1}{c}{description}
+\\\hline}
+{\end{tabular}\end{showcenter}}
+
+\newenvironment{desctable}[2]
+{\begin{showcenter}\renewcommand{\rln}[1]{\tid{##1}}
+\begin{tabular}{l@{\quad\quad}p{.6\linewidth}}
+\multicolumn{1}{c}{#1} &
+\multicolumn{1}{c}{#2}
 \\\hline}
 {\end{tabular}\end{showcenter}}
 

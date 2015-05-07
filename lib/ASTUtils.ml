@@ -48,18 +48,22 @@ let rec free = function
       | None -> StringSet.empty
       | Some e -> free e in
       StringSet.union (StringSet.union e eo) cls
-  | MatchSet (_,e1,e2,(x,xs,e3)) ->
+  | MatchSet (_,e1,e2,cl) ->
       let e1 = free e1
       and e2 = free e2
-      and e3 = free e3 in
-      StringSet.union
-        (StringSet.union e1 e2)
-        (StringSet.remove x (StringSet.remove xs e3))
+      and cl = free_cl cl in
+      StringSet.unions [e1;e2;cl;]
   | Try (_,e1,e2) ->
       StringSet.union (free e1) (free e2)
   | If (_,cond,ifso,ifnot) ->
       StringSet.union (free_cond cond)
         (StringSet.union (free ifso) (free ifnot))
+
+and free_cl = function
+  | EltRem (x,xs,e) ->
+      StringSet.remove x (StringSet.remove xs (free e))
+  | PreEltPost (xs1,x,xs2,e) ->
+      StringSet.diff (free e) (StringSet.of_list [xs1;x;xs2])
 
 and free_cond c = match c with
 | Eq (e1,e2) -> StringSet.union (free e1) (free e2)

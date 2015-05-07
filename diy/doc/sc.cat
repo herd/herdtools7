@@ -1,10 +1,10 @@
 SC
 
-(* Compute co (coherence) relation *)
+(* Define co (and fr) *)
 include "cos.cat"
 
-(* Atomic *)
-let com = co | fr | rf
+(* All communication relations *)
+let com = rf | fr | co
 
 (* Sequential consistency *)
-acyclic po | com
+acyclic po | com as sc

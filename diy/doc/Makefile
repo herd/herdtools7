@@ -12,9 +12,15 @@ install: x86.tar
 
 clean::
 	/bin/rm -f *~
+SBL=SB+L-00.dot  SB+L-01.dot  SB+L-02.dot  \
+ SB+L-03.dot  SB+L-04.dot  SB+L-05.dot
+
+SBOK=SB+OK-00.dot  SB+OK-01.dot  SB+OK-02.dot  \
+ SB+OK-03.dot  SB+OK-04.dot  SB+OK-05.dot
 
 GENDOTS=SB-00.dot SB-01.dot SB-02.dot SB-03.dot CoRWR.dot \
  SB+SC.dot \
+ $(SBL) $(SBOK) \
  SB+rfi-pos.dot  SB+rfi-pos+BIS.dot SB+rfi-pos+TER.dot \
  SB+CLUSTER.dot SB+FREE.dot  SB+COLUMNS.dot SB+SQUISHED.dot \
  SB+TSO.dot \
@@ -33,6 +39,12 @@ LB.dot: tst-arm/LB.litmus
 
 SB.dot: SB.litmus
 	$(HERD) -conf doc.cfg -showfinalrf true -showinitrf true -show all -model minimal -o . SB.litmus > /dev/null
+
+SB+L.dot: SB.litmus lamport.cat
+	$(HERD) -suffix +L -conf doc.cfg -model lamport.cat -showinitwrites true  SB.litmus -skipchecks RfCons -oneinit false -show prop -o . -doshow S,rf-S -initpos -0.5,1  -xscale 1.75 -edgemerge true > /dev/null
+
+SB+OK.dot: SB.litmus lamport.cat sb11.txt
+	$(HERD) -suffix +OK -conf doc.cfg -model lamport.cat -showinitwrites true  SB.litmus -oneinit false -show prop -o . -doshow S,rf-S -initpos -0.5,1  -xscale 1.75 -edgemerge true -conds sb11.txt > /dev/null
 
 6.SB.dot: 6.SB.litmus
 	$(HERD) -conf doc.cfg -showinitrf true -showthread true -show prop -model minimal -o . $< > /dev/null
@@ -80,7 +92,7 @@ SB+rfi-pos+TER.dot: SB+rfi-pos.litmus
 	$(HERD) -suffix +TER -conf doc.cfg -xscale 1.5 -showinitrf true -show prop -model tso-00.cat -through invalid -o . $< > /dev/null
 
 CoRWR.dot: CoRWR.litmus tso-01.cat
-	$(HERD) -conf doc.cfg -unshow ghb -showinitrf true -show prop -model tso-01.cat -o . CoRWR.litmus > /dev/null
+	$(HERD) -conf doc.cfg -unshow ghb -initpos -1.0,0.3333 -oneinit false -showinitwrites true -show prop -model tso-01.cat -o . CoRWR.litmus -extrachars 1  > /dev/null
 
 MOREAPOIL=-fontsize 10
 IRIW+lwsyncs+APOIL.dot: IRIW+lwsyncs.litmus
@@ -91,6 +103,12 @@ IRIW+syncs+APOIL.dot: IRIW+syncs.litmus
 
 SB-00.dot SB-01.dot SB-02.dot SB-03.dot: SB.dot
 	$(SPLITDOT) SB.dot >/dev/null
+
+$(SBL): SB+L.dot
+	$(SPLITDOT) SB+L.dot >/dev/null
+
+$(SBOK): SB+OK.dot
+	$(SPLITDOT) SB+OK.dot >/dev/null
 
 MORECO=-showlegend true -shortlegend true -model minimal
 
@@ -113,7 +131,7 @@ W+RW.dot: tst-co/basic/W+RW.litmus
 # WW.dot WR.dot W+RR.dot W+RW.dot
 
 clean::
-	/bin/rm -f SB.dot $(GENDOTS)
+	/bin/rm -f SB.dot SB+L.dot SB+OK.dot $(GENDOTS)
 
 %.dot: %.litmus
 	$(HERD) -model minimal -conf doc.cfg -showinitrf true -showlegend true -shortlegend true  -show prop -o . $< > /dev/null
@@ -149,7 +167,7 @@ PNG=$(DOTS:.dot=.png)
 ALLPNG=$(PNG) m1l-time.png
 PSTEX=$(DOTS:.dot=.pstex_t)
 CFG=hpcx.cfg saumur.cfg doc.cfg apoil.cfg trimslice.cfg dragon.cfg
-CAT=sc.cat tso-00.cat tso-01.cat  tso-02.cat lamport.cat
+CAT=sc.cat tso-00.cat tso-01.cat  tso-02.cat lamport.cat cos.cat
 GENCAT=herd.cat x86tso.cat minimal.cat uniproc.cat
 TXT=rename.txt cond.txt trimslice.sh dragon.sh
 DONT=x86.sc x86.explo x86-log.txt
@@ -228,8 +246,10 @@ HACHAOPTS=-tocter
 
 dochtml: html/index.html
 
-html/diy.html: $(SRC) $(HVA) $(TST) $(CFG) $(CAT) $(GENCAT) $(TXT) $(DONT) $(ALLPNG) $(GENTEX)
-	@mkdir -p html
+html:
+	mkdir -p html
+
+html/diy.html: html $(SRC) $(HVA) $(TST) $(CFG) $(CAT) $(GENCAT) $(TXT) $(DONT) $(ALLPNG) $(GENTEX)
 	cp -r $(GENSRC) $(GENIMG) html
 	 $(HEVEA) $(HEVEAOPTS) -o $@ diy.tex && \
         ( cp jade.bib html && cd html && bibhva diy && rm jade.bib ) && \
@@ -244,44 +264,44 @@ TSTARM=html/tst-arm.tar html/tst-arm html/tegra3.cfg
 TSTCO=html/tst-co.tar html/tst-co
 CATS=html/uniproccat.txt
 
-html/index.html: html/diy.html $(TSTX86) $(TSTPPC) $(TSTARM) $(TSTCO) $(CATS)
-	$(HACHA) $(HACHAOPTS) -o $@ $<
+html/index.html: html html/diy.html $(TSTX86) $(TSTPPC) $(TSTARM) $(TSTCO) $(CATS)
+	$(HACHA) $(HACHAOPTS) -o html/index.html html/diy.html
 
-html/tst-x86.tar: tst-x86.tar
+html/tst-x86.tar: html tst-x86.tar
 	cp tst-x86.tar html/tst-x86.tar
  
-html/tst-x86: tst-x86.tar
+html/tst-x86: html tst-x86.tar
 	( cd html && tar xf ../tst-x86.tar )
 
-html/x86-64.cfg: x86-64.cfg
+html/x86-64.cfg: html x86-64.cfg
 	cp x86-64.cfg $@
 
-html/tst-ppc.tar: tst-ppc.tar
+html/tst-ppc.tar: html tst-ppc.tar
 	cp tst-ppc.tar html/tst-ppc.tar
 
-html/tst-ppc: tst-ppc.tar
+html/tst-ppc: html tst-ppc.tar
 	( cd html && tar xf ../tst-ppc.tar )
 
-html/power7.cfg: power7.cfg
+html/power7.cfg: html power7.cfg
 	cp power7.cfg $@
 
-html/tst-arm.tar: tst-arm.tar
+html/tst-arm.tar: html tst-arm.tar
 	cp tst-arm.tar html/tst-arm.tar
 
-html/tst-arm: tst-arm.tar
+html/tst-arm: html tst-arm.tar
 	( cd html && tar xf ../tst-arm.tar )
 
-html/tegra3.cfg: tegra3.cfg
+html/tegra3.cfg: html tegra3.cfg
 	cp tegra3.cfg $@
 
-html/tst-co.tar: tst-co.tar
+html/tst-co.tar: html tst-co.tar
 	cp tst-co.tar html/tst-co.tar
 
-html/tst-co: tst-co.tar
+html/tst-co: html tst-co.tar
 	( cd html && tar xf ../tst-co.tar )
 
-html/uniproccat.txt: $(HERDDIR)/uniproccat.cat
-	cp $< $@
+html/uniproccat.txt: html $(HERDDIR)/uniproccat.cat
+	cp $(HERDDIR)/uniproccat.cat $@
 
 cleanhtml:
 	/bin/rm -f html/diy.html \
@@ -400,6 +420,32 @@ SB-02.png: SB-02.dot
 
 SB-03.png: SB-03.dot
 	neato -Tpng SB-03.dot > $@
+
+SB+L-00.png: SB+L-00.dot
+	neato -Tpng $< > $@
+SB+L-01.png: SB+L-01.dot
+	neato -Tpng $< > $@
+SB+L-02.png: SB+L-02.dot
+	neato -Tpng $< > $@
+SB+L-03.png: SB+L-03.dot
+	neato -Tpng $< > $@
+SB+L-04.png: SB+L-04.dot
+	neato -Tpng $< > $@
+SB+L-05.png: SB+L-05.dot
+	neato -Tpng $< > $@
+
+SB+OK-00.png: SB+OK-00.dot
+	neato -Tpng $< > $@
+SB+OK-01.png: SB+OK-01.dot
+	neato -Tpng $< > $@
+SB+OK-02.png: SB+OK-02.dot
+	neato -Tpng $< > $@
+SB+OK-03.png: SB+OK-03.dot
+	neato -Tpng $< > $@
+SB+OK-04.png: SB+OK-04.dot
+	neato -Tpng $< > $@
+SB+OK-05.png: SB+OK-05.dot
+	neato -Tpng $< > $@
 
 RW.png: RW.dot
 	neato -Tpng $< > $@

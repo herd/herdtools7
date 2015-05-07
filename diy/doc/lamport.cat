@@ -1,10 +1,10 @@
 "SC, L. Lamport style"
 
-(* Initial writes precede program writes to teh same location *)
-let preSC =  loc & (IW * (W \ IW))
+(* writes to location x precede final write to location x *)
+let preSC =  loc & (W \ FW) * FW
 
-(* Compute the set of total orders that extend preorder preSe on set M *)
-let allS = linearisations(M,preSC)
+(* Compute the set of total orders that extend preSC on program events *)
+let allS = linearisations(M \ IW,preSC)
 
 (* For all such orders *)
 with S from allS
@@ -12,11 +12,15 @@ with S from allS
 (* Check compatibility with po *)
 empty po \ S as ScPo
 
+(* Add initial writes *)
+let S = S | loc & IW * (M \ IW)
+
+
 (* Define most recent write in the past  *)
 let WRS = W * R & S & loc  (* Writes from the past, same location *)
 let rf-S = WRS \ (S;WRS)   (* Most recent amongst them *)
 
 (* Check equality with rf *)
-empty rf \ rf-S as RfOk
-empty rf-S \ rf as RfOk
+empty rf \ rf-S as RfCons
+empty rf-S \ rf as RfCons
 

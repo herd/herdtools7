@@ -1117,7 +1117,7 @@ module Make
                   "matching on non-tag value of type '%s'"
                   (pp_typ (type_val v))
             end
-        | MatchSet (loc,e,ife,(x,xs,ex)) ->
+        | MatchSet (loc,e,ife,cl) ->
             let v = eval env e in
             begin match v with
             | V.Empty -> eval env ife
@@ -1127,7 +1127,8 @@ module Make
             | V.ValSet (t,s) ->
                 if ValSet.is_empty s then
                   eval env ife
-                else
+                else begin match cl with
+                | EltRem (x,xs,ex) ->
                   let elt =
                     lazy begin
                       try ValSet.choose s
@@ -1142,7 +1143,16 @@ module Make
                   let m = env.EV.env in
                   let m = add_val x elt m in
                   let m = add_val xs s m in
-                  eval { env with EV.env = m; }ex
+                  eval { env with EV.env = m; } ex
+                | PreEltPost (xs1,x,xs2,ex) ->
+                    let s1,elt,s2 =
+                      try ValSet.split3 s with Not_found -> assert false in
+                    let m = env.EV.env in
+                  let m = add_val x (lazy elt) m in
+                  let m = add_val xs1 (lazy (ValSet (t,s1))) m in
+                  let m = add_val xs2 (lazy (ValSet (t,s2))) m in
+                  eval { env with EV.env = m; } ex
+                end
             | _ ->
                 error env.EV.silent
                   (get_loc e) "set-matching on non-set value of type '%s'"

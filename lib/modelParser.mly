@@ -252,8 +252,15 @@ base:
 empty_clause:
 | LACC RACC ARROW exp { $4 }
 
+element_clause2:
+| VAR PLUSPLUS VAR ARROW exp { EltRem ($1, $3, $5) }
+
+element_clause3:
+| VAR UNION VAR PLUSPLUS VAR ARROW exp { PreEltPost ($1,$3,$5,$7) }
+
 element_clause:
-| VAR PLUSPLUS VAR ARROW exp { $1, $3, $5 }
+| element_clause2 { $1 }
+| element_clause3 { $1 }
 
 set_clauses:
 | empty_clause ALT element_clause { $1, $3 }

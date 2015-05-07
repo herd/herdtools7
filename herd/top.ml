@@ -171,6 +171,7 @@ module Make(O:Config)(M:XXXMem.S) =
 (* Called by model simulator in case of success *)
     let model_kont ochan test cstr =
       let check = check_prop test in
+      let test_locs = S.outcome_locations test in
       fun conc fsc vbpp flags c ->
         if do_observed && not (all_observed test conc) then c
         else if
@@ -244,6 +245,9 @@ module Make(O:Config)(M:XXXMem.S) =
               PP.dump_legend chan test legend conc (Lazy.force vbpp)
           | _ -> ()
           end ;
+          let fsc =
+            if O.outcomereads then fsc
+            else A.state_restrict_locs test_locs fsc in
           let r =
             { cands = c.cands+1;
               states = A.StateSet.add fsc c.states;
@@ -331,16 +335,15 @@ module Make(O:Config)(M:XXXMem.S) =
         Handler.pop () in
 (* Reduce final states, so as to show relevant locations only *)
       let finals =
-        let locs = 
-          A.LocSet.union
-            (S.outcome_locations test)
-            c.reads in
-        A.StateSet.map
-          (fun st ->
-            A.LocSet.fold
-              (fun loc r -> A.state_add r loc (A.look_in_state st loc))
-              locs A.state_empty)
-          c.states in
+        if O.outcomereads then
+          let locs = 
+            A.LocSet.union
+              (S.outcome_locations test)
+              c.reads in
+          A.StateSet.map
+            (fun st -> A.state_restrict_locs locs st)
+            c.states
+        else c.states in
       let nfinals = A.StateSet.cardinal finals in
       match O.restrict with
       | Observed when c.cands = 0 -> do_show ()
