@@ -44,7 +44,6 @@
 \newcommand{\stx@alias}[2]{\def\csname stx@#1@alias\endcsname{#2}}
 \stx@alias{typ}{typexpr}%
 \stx@alias{met}{method-name}%
-\stx@alias{tag}{tag-name}%
 \stx@alias{lab}{label-name}%
 \stx@alias{C}{constr-name}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%

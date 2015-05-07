@@ -1,0 +1,50 @@
+"Generate co's"
+
+(***************************************)
+(* Generates possible coherence orders *)
+(***************************************)
+
+(* Utilities *)
+
+let fold f =
+  let rec fold_rec (es,y) = match es with
+  || {} -> y
+  || e ++ es -> fold_rec (es,f (e,y))
+  end in
+  fold_rec
+
+let map f = fun S -> fold (fun (e,y) -> f e ++ y) (S,{})
+
+let rec cross S = match S with
+  || {} -> { 0 } (* 0 is the empty relation *)
+  || S1 ++ S ->
+      let ts = cross S in
+      fold
+        (fun (e1,r) -> map (fun t -> e1 | t) ts | r)
+        (S1,{})
+  end
+
+
+(* Define coherence pre-order(s) *)
+let co0 = loc & (IW*(W\IW)|(W\FW)*FW)
+
+(* All coherence orders for a location x *)
+let makeCoX(Wx) = linearisations(Wx,co0)
+
+(* All coherence orders for all locations *)
+let allCoX = map makeCoX (partition(W))
+
+(* All coherence relations *)
+let allCo = cross allCoX
+
+with co from allCo
+(* From now, co is a coherence relation *)
+let coi = co & int
+let coe = co & ext
+
+(* Compute fr *)
+let fr = rf^-1 ; co
+let fri = fr & int
+let fre = fr & ext
+
+show co,fr

@@ -947,6 +947,7 @@ Expressions are evaluated by \herd, yielding a value.
 \begin{syntax}
 \NT{expr} \is{} \T{0}
 \alt \NT{id}
+\alt \NT{tag}
 \alt \T{(}\T{)} \orelse \T{(} \NT{expr} \T{,} \NT{expr} \brepet{} \T{,} \NT{expr} \erepet \T{)}
 \alt \T{\{}\T{\}} \orelse \T{\{} \NT{expr} \brepet{} \T{,} \NT{expr} \erepet \T{\}}
 \alt \NT{expr}\T{*} \orelse \NT{expr}\T{+} \orelse \NT{expr}\T{?}
@@ -958,32 +959,51 @@ Expressions are evaluated by \herd, yielding a value.
 \NT{expr}\T{\&}\NT{expr} \orelse
 \NT{expr} \T{*} \NT{expr}
 \alt \NT{expr} \NT{expr}
-\alt \NT{selector}\T{(}\NT{expr}\T{)}
-\alt \NT{id} \T{(} \NT{args} \T{)}
-\alt \T{fun} \T{(} \NT{params} \T{)} \T{->} \NT{expr}
-\alt \T{let} \NT{binding} \brepet{} \T{and} \NT{binding} \erepet{} \T{in} \NT{expr}
-\alt \T{let} \T{rec} \NT{valbinding} \brepet{} \T{and} \NT{valbinding} \erepet{} \T{in} \NT{expr}
+\alt \T{fun} \NT{pat} \T{->} \NT{expr}
+\alt \T{let} \boption{} \T{rec} \eoption \NT{binding} \brepet{} \T{and} \NT{binding} \erepet{} \T{in} \NT{expr}
+\alt \T{match} \NT{expr} \T{with} \NT{clauses} \T{end}
 \alt \T{(}\NT{expr}\T{)} \orelse  \T{begin} \NT{expr} \T{end}
 \sep
-\NT{args} \is \epsilon
-\alt \NT{expr} \brepet{} \T{,} \NT{expr} \erepet{}
+\NT{tag} \is \T{'} \NT{id}
 \sep
-\NT{params} \is \epsilon
-\alt \NT{id} \brepet{} \T{,} \NT{id} \erepet{}
+\NT{pat} \is \NT{id} \orelse \T{(}\T{)} \orelse \T{(} \NT{id} \brepet{} \T{,} \NT{id} \erepet \T{)}
 \sep
 \NT{binding} \is \NT{valbinding} \orelse \NT{funbinding}
 \sep
 \NT{valbinding} \is \NT{id} \T{=} \NT{expr}
 \sep
-\NT{funbinding} \is \NT{id} \T{(} \NT{params} \T{)} \T{=} \NT{expr}
+\NT{funbinding} \is \NT{id} \NT{pat} \T{=} \NT{expr}
 \sep
+\NT{clauses} \is \NT{tagclauses} \orelse \NT{setclauses}
 \end{syntax}
 
 \subsubsection*{Simple expressions}
-Simple expressions are the empty relation (keyword~\synt{\T{0}}) and
-identifiers~\synt{\NT{id}}. Identifiers are bound to values, either
+Simple expressions are the empty relation (keyword~\synt{\T{0}}),
+identifiers~\synt{\NT{id}} and tags~\synt{\NT{tag}}.
+Identifiers are bound to values, either
 before the execution (see pre-defined identifiers in Sec.~\ref{sec:predef}),
 or by the model itself.
+Tags are constants similar to C enum values or OCaml constant constructors.
+
+
+\subsubsection*{Tuples}
+Tuples include a constant, the empty tuple \synth{\T{(}\T{)}},
+and constructed tuples
+\synt{\T{(} \NT{expr}_1 \T{,} \NT{expr}_1 \T{,}\ldots \T{,} \NT{expr}_n\T{)}},
+with $n \geq 2$. In other words there is no tuple of size one.
+Syntax \synt{\T{(} \NT{expr} \T{)}} denotes grouping and has the same
+value as~\synt{\NT{expr}}.
+
+
+\subsubsection*{Explicit sets of values}
+Explicit sets are written as the comma separated
+list of their elements between curly braces:
+\synt{\T{\{} \NT{expr}_1 \T{,} \NT{expr}_1 \T{,}\ldots \T{,} \NT{expr}_n\T{\}}},
+with $n \geq 0$.
+As events are not values, one cannot build a set of events using
+explicit set expressions.
+However, by exception, the empty set~\synt{\T{\{}\T{\}}}
+also is the empty set of events and the empty relation.
 
 \subsubsection*{Operator expressions}
 The transitive and reflexive-transitive closure of an expression are performed
@@ -992,14 +1012,26 @@ The  postfix operator \T{\textasciicircum-1} performs relation inversion.
 The construct \synt{\NT{expr}\T{?}} (option) evaluates to the union
 of  \NT{expr} value and of the identity relation.
 
-Infix operators are \T{|} (union), \T{;} (sequence), \T{\&} (intersection)
-and \T{\textbackslash} (set difference).
-The precedence of operators is as follows:
-postfix operators bind tighter than infix operators.
-Infix operators from higher precedence to lower precedence are:
-\T{\&}, \T{\textbackslash}, \T{;} and~\T{|}.
+Notice that postfix operators operate on relations only, exect the complement
+operator~\T{\textilde} that also operates on sets.
+
+Infix operators are
+\T{|} (union), \T{++} (set addition),
+\T{;} (sequence), \T{\&} (intersection), \T{\textbackslash} (set difference),
+and~\T{*} (cartesian product).
+Infix operators  are listed in order of decreasing precedence
+and postfix operators bind tighter then infix operators.
 All infix operators are right-associative,
-except set difference which is left-associative.
+except set difference which is left-associative, and cartesian product
+which is non-associative.
+
+The union, intersection and difference operators apply to relations
+and all kinds of sets.
+The addition operator \synt{\NT{expr}_1 \T{++} \NT{expr}_2} operates on
+sets: the value of \synt{\NT{expr}_2} must be a set of values
+~$S$ and the operator returns the set~$S$ augmented with the value of
+\synt{\NT{expr}_1}.
+
 
 
 For the record, given two relations $r_1$ and~$r_2$,
