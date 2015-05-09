@@ -1360,7 +1360,7 @@ label~\nt{id}.
 Hence  \synt{\T{show} \nt{id}} can be viewed as a shorthand
 for \synt{\T{show} \nt{id} \T{as} \nt{id}}
 
-\subsection{Iteration over sets}
+\subsection*{Iteration over sets}
 The \T{forall} iteration construct 
 permits the iteration of checks (in fact of any kind of instructions)
 over a set. Syntax is:
@@ -1378,13 +1378,13 @@ the bindings performed during the execution of an iteration
 are discarded at iteration ends, all other effects performed are
 retained.
 
-\subsection{Candidate execution extension}
+\subsection*{Candidate execution extension}
 This construct permits the extension of the current candidate
 execution by one binding.
 Syntax is \synt{\T{with} \NT{id} \T{from} \NT{expr}}.
 The expression \nt{expr} is evaluated to a set~$S$.
 Then the remainder of the model is executed for each choice
-of element~$e$ in~$S$ in a contex extended by a binding
+of element~$e$ in~$S$ in a context extended by a binding
 of the name~\nt{id} to~$e$.
 An example of the construct usage is described in Sec.~\ref{intro:with}.
 
