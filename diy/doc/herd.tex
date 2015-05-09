@@ -1360,7 +1360,7 @@ label~\nt{id}.
 Hence  \synt{\T{show} \nt{id}} can be viewed as a shorthand
 for \synt{\T{show} \nt{id} \T{as} \nt{id}}
 
-\subsection*{Iteration over sets}
+\subsubsection*{Iteration over sets}
 The \T{forall} iteration construct 
 permits the iteration of checks (in fact of any kind of instructions)
 over a set. Syntax is:
@@ -1378,7 +1378,7 @@ the bindings performed during the execution of an iteration
 are discarded at iteration ends, all other effects performed are
 retained.
 
-\subsection*{Candidate execution extension}
+\subsubsection*{Candidate execution extension}
 This construct permits the extension of the current candidate
 execution by one binding.
 Syntax is \synt{\T{with} \NT{id} \T{from} \NT{expr}}.
@@ -1408,17 +1408,13 @@ Notice that:
 
 \subsection{\label{language:model}Models}
 \begin{syntax}
-\NT{model} \is \NT{model-comment}  \brepet \NT{model-option} \erepet \brepet \NT{instruction} \erepet
+\NT{model} \is \NT{model-comment}  \NT{instruction} \erepet
 \sep
 \NT{model-comment} \is \NT{id} \orelse  \nt{string}
-\sep
-\NT{model-option} \is \T{withco} \orelse \T{withoutco}
-\orelse \T{withinit} \orelse \T{withoutinit}
 \end{syntax}
 A model is a a list of instruction preceded by a small comment,
 which can be either a name that follows \herd{} conventions for identifiers,
-or a string enclosed in double quotes~``\verb+"+'',
-and a list of options.
+or a string enclosed in double quotes~``\verb+"+''.
 
 Models operate on candidate executions
 (see Sec.~\ref{sec:predef}),
