@@ -175,14 +175,16 @@ module Make
 (* Internal typing *)
     type typ =
       | TEmpty | TEvents | TRel | TTag of string |TClo | TProc | TSet of typ
-      | TAnyTag | TTuple of typ list | TKont
+      | TTuple of typ list | TKont
 
     let rec eq_type t1 t2 = match t1,t2 with
     | TEmpty,TSet _ -> Some t2
     | TSet _,TEmpty -> Some t1
-    | TAnyTag,TTag _
-    | TTag _,TAnyTag -> Some TAnyTag
-    | TTag s1,TTag s2 when s1 <> s2 -> Some TAnyTag
+    | (TEmpty,TEvents)
+    | (TEvents,TEmpty) -> Some TEvents
+    | (TEmpty,TRel)
+    | (TRel,TEmpty) -> Some TRel
+    | TTag s1,TTag s2 when s1 = s2 -> Some t1
     | TSet t1,TSet t2 ->
         begin match eq_type t1 t2 with
         | None -> None
@@ -190,7 +192,11 @@ module Make
         end
     | TTuple ts1,TTuple ts2 ->
         Misc.app_opt (fun ts -> TTuple ts) (eq_types ts1 ts2)
-    | _,_ -> if t1 = t2 then Some t1 else None
+    | TClo,TClo -> Some TClo
+    | TProc,TProc -> Some TProc
+    | TKont,TKont -> Some TKont
+    | _,_ -> None
+
 
     and eq_types ts1 ts2 = match ts1,ts2 with
     | [],[] -> Some []
@@ -217,7 +223,6 @@ module Make
       | TEvents -> "event set"
       | TRel -> "rel"
       | TTag ty -> ty
-      | TAnyTag -> "anytag"
       | TClo -> "closure"
       | TProc -> "procedure"
       | TSet elt -> sprintf "%s set" (pp_typ elt)
@@ -1464,7 +1469,7 @@ module Make
                     loc "tag set %s must be defined while defining %s"
                     id_tags id_fun in
               match Lazy.force cat_tags with
-              | V.ValSet ((TTag _|TAnyTag),scs) -> scs
+              | V.ValSet (TTag _,scs) -> scs
               | v ->
                   error false loc "%s must be a tag set, found %s"
                     id_tags (pp_typ (type_val v)) in
@@ -1480,7 +1485,7 @@ module Make
                   match tgt with
                   | V.Empty -> order
                   | V.Tag (_,_) -> add tgt order
-                  | V.ValSet ((TTag _|TAnyTag),vs) ->
+                  | V.ValSet (TTag _,vs) ->
                       ValSet.fold add vs order
                   | _ ->
                       error false loc
@@ -1771,7 +1776,7 @@ module Make
 	  let event_sets =
             List.map
               (fun (loc,v) -> match v with 
-	      | ValSet((TTag _|TAnyTag),elts) -> 
+	      | ValSet(TTag _,elts) -> 
                   let tags = 
 	            ValSet.fold
                       (fun elt k -> as_tag elt::k)
