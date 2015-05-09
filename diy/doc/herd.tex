@@ -339,7 +339,7 @@ as the pre-defined set~\verb+FW+,
 the  constraint on final writes
 can be expressed as a relation:
 \begin{verbatim}
-let preS = loc & (W \ FW) * FW
+let preSC = loc & (W \ FW) * FW
 \end{verbatim}
 Where \verb+loc+ is a predefined relation that relates all events
 that access the same location.
@@ -952,6 +952,7 @@ Expressions are evaluated by \herd, yielding a value.
 \alt \T{\{}\T{\}} \orelse \T{\{} \NT{expr} \brepet{} \T{,} \NT{expr} \erepet \T{\}}
 \alt \NT{expr}\T{*} \orelse \NT{expr}\T{+} \orelse \NT{expr}\T{?}
 \orelse \NT{expr}\T{\textasciicircum-1}
+\alt \T{\textasciitilde}\NT{expr}
 \alt \NT{expr}\T{|}\NT{expr} \orelse
 \NT{expr}\T{++}\NT{expr} \orelse
 \NT{expr}\T{;}\NT{expr} \orelse
@@ -964,7 +965,9 @@ Expressions are evaluated by \herd, yielding a value.
 \alt \T{match} \NT{expr} \T{with} \NT{clauses} \T{end}
 \alt \T{(}\NT{expr}\T{)} \orelse  \T{begin} \NT{expr} \T{end}
 \sep
+\sep
 \NT{tag} \is \T{'} \NT{id}
+\sep
 \sep
 \NT{pat} \is \NT{id} \orelse \T{(}\T{)} \orelse \T{(} \NT{id} \brepet{} \T{,} \NT{id} \erepet \T{)}
 \sep
@@ -974,7 +977,15 @@ Expressions are evaluated by \herd, yielding a value.
 \sep
 \NT{funbinding} \is \NT{id} \NT{pat} \T{=} \NT{expr}
 \sep
+\sep
 \NT{clauses} \is \NT{tagclauses} \orelse \NT{setclauses}
+\sep
+\NT{tagclauses} \is \boption{} \T{||} \eoption \NT{tag} \T{->} \NT{expr}
+\brepet{} \T{||} \NT{tag} \T{->} \NT{expr} \erepet
+\boption \T{\_} \T{->} \NT{expr} \eoption
+\sep
+\NT{setclauses} \is \boption{} \T{||} \eoption \T{\{}\T{\}} \T{->} \NT{expr}
+\T{||} \NT{id} \T{++} \NT{id} \T{->} \NT{expr}
 \end{syntax}
 
 \subsubsection*{Simple expressions}
@@ -984,10 +995,10 @@ Identifiers are bound to values, either
 before the execution (see pre-defined identifiers in Sec.~\ref{sec:predef}),
 or by the model itself.
 Tags are constants similar to C enum values or OCaml constant constructors.
-
+Tags must be declared with the \T{enum} instruction.
 
 \subsubsection*{Tuples}
-Tuples include a constant, the empty tuple \synth{\T{(}\T{)}},
+Tuples include a constant, the empty tuple \synt{\T{(}\T{)}},
 and constructed tuples
 \synt{\T{(} \NT{expr}_1 \T{,} \NT{expr}_1 \T{,}\ldots \T{,} \NT{expr}_n\T{)}},
 with $n \geq 2$. In other words there is no tuple of size one.
@@ -1004,6 +1015,7 @@ As events are not values, one cannot build a set of events using
 explicit set expressions.
 However, by exception, the empty set~\synt{\T{\{}\T{\}}}
 also is the empty set of events and the empty relation.
+Sets are homogenous, in the sense that sets hold elements of the same type.
 
 \subsubsection*{Operator expressions}
 The transitive and reflexive-transitive closure of an expression are performed
@@ -1011,16 +1023,17 @@ by the postfix operators \T{+} and~\T{*}.
 The  postfix operator \T{\textasciicircum-1} performs relation inversion.
 The construct \synt{\NT{expr}\T{?}} (option) evaluates to the union
 of  \NT{expr} value and of the identity relation.
+Notice that postfix operators operate on relations only.
 
-Notice that postfix operators operate on relations only, exect the complement
-operator~\T{\textilde} that also operates on sets.
+There is one prefix operator~\T{\textasciitilde} that performes
+relation and set complement.
 
 Infix operators are
 \T{|} (union), \T{++} (set addition),
 \T{;} (sequence), \T{\&} (intersection), \T{\textbackslash} (set difference),
 and~\T{*} (cartesian product).
-Infix operators  are listed in order of decreasing precedence
-and postfix operators bind tighter then infix operators.
+Infix operators  are listed in order of decreasing precedence,
+while  postfix and prefix operators bind tighter then infix operators.
 All infix operators are right-associative,
 except set difference which is left-associative, and cartesian product
 which is non-associative.
@@ -1032,96 +1045,138 @@ sets: the value of \synt{\NT{expr}_2} must be a set of values
 ~$S$ and the operator returns the set~$S$ augmented with the value of
 \synt{\NT{expr}_1}.
 
-
-
 For the record, given two relations $r_1$ and~$r_2$,
 the sequence $r_1; r_2$ is defined
 as $\{ (x,y) \mid \exists z, (x,z) \in r_1 \wedge (z,y) \in r_2\}$.
 
-\subsubsection*{Selectors}
-Selectors are filters that operate on relations.
-The value of \synt{\NT{selector}\T{(}\NT{expr}\T{)}} is some subrelation
-of the value of~\synt{\NT{expr}}. Which subrelation depends upon
-\synt{\NT{selector}}.
-
-Most selectors are two-letters keywords
-with the first letter operating on the first component of pairs and
-the second letter operating on the second component of pairs.
-More precisely, we define the semantics of selector letters as
-predicates over memory events: \T{M} always yield true,
-\T{R} yields true on read events,
-\T{W} yields true on write events,
-\T{A} yields true on atomic events (produced by X86 locked instructions,
-or ARM/Power load reserve and store conditional instructions),
-and \T{P} yields true on ordinary (plain) events.
-Then, we define:
-$$
-XY(r) = \{ (x,y) \in r \mid X(x) \wedge Y(y)\}
-$$
-For instance, the expression \verb+RW(po)+ yields the read-to-write pairs
-in program order.
-
-Three additional selectors \synt{\T{ext}}, \synt{\T{int}}, and \synt{\T{noid}}
-performs specific operations.
-The first selects pairs of events in different threads (``external''),
-the second selects pairs of events in the same thread (``internal''),
-and the third selects pairs of events that are different (``not identical'').
-
 \subsubsection*{Function calls}
-Functions calls are written
-\synt{\NT{id}\T{(}\NT{expr}_1 \T{,} \ldots \T{,} \NT{expr}_n\T{)}}.
-That is, functions have an arity ($n$ above, which can be zero)
-and arguments are given as a comma separated list of expressions.
-Our language have call-by-value semantics. That is,
-the effective parameters
-\synt{\NT{expr}_1 \T{,} \ldots \T{,} \NT{expr}_n} are evaluated before
-being bound to formal parameters.
+Functions calls are written \synt{\NT{expr}_1 \NT{expr}_2}.
+That is, functions are of arity one and the application operator
+is left implicit. Notice that function application binds tighter
+than all binary operators and looser that postifix operators
+Furthermode the implicit application operator is left-associative.
+
+The \cat{} language have call-by-value semantics. That is,
+the effective parameter
+\synt{\NT{expr}_2} is evaluated before being bound to the
+function formal parameter(s).
+
+N-ary functions can be encoded either using tuples as arguments
+or by curryfication (\emph{i.e.} as functions that return functions).
+Considering binary functions, in the former case,
+a function call is written
+\synt{\NT{expr}_1 \T{(} \NT{expr}_2 \T{,} \NT{expr}_3\T{)}};
+while in the latter case, a function call is written
+\synt{\NT{expr}_1~\NT{expr}_2~\NT{expr}_3}
+(which by left-associativity, is to be understood
+as \synt{\T{(}\NT{expr}_1~\NT{expr}_2\T{)}~\NT{expr}_3}).
+The two forms of function call are not interchangeable, using one or the
+other depends on the definition of the function.
+
 
 \subsubsection*{Functions}
 Functions are first class values, as reflected by the anonymous
-function construct \synt{\T{fun} \T{(} \NT{params} \T{)} \T{->} \NT{expr}}.
-Function arity is defined by the length of its formal parameter list
-\synt{\NT{params}}, which can be empty.
-Notice that functions have the usual static scoping semantics:
+function construct \synt{\T{fun} \NT{pat}  \T{->} \NT{expr}}.
+A function takes one argument only.
+
+In the case where this argument is a tuple, it may de destructured
+by the means of a tuple pattern. That is \synt{\NT{pat}}
+above is \synt{\T{(} \NT{id}_1 \T{,} \ldots \NT{id}_n\T{)}}.
+For instance here is a function that takes a tuple of
+relations (or sets) as argument and return their symetric difference:
+\begin{verbatim}
+fun (a,b) -> (a\b)|(b\a)
+\end{verbatim}
+
+Functions have the usual static scoping semantics:
 variables that appear free in function bodies 
 (\synt{\NT{expr}} above) are bound to
 the value of such free variable at function creation time.
-
+As a result one may also write the sytemetric difference function
+as follows:
+\begin{verbatim}
+fun a -> fun b -> (a\b)|(b\a)
+\end{verbatim}
 
 \subsubsection*{\label{bindings}Local bindings}
 The local binding construct
 \synt{\T{let} \boption{} \T{rec} \eoption{} \nt{bindings} \T{in} \NT{expr}}
 binds the names defined by \nt{bindings} 
 for evaluating the expression \NT{expr}.
-
 Both non-recursive and recursive bindings are allowed.
 The function binding
-\synt{\NT{id} \T{(} \NT{params} \T{)} \T{=} \NT{expr}} is syntactic sugar
-for \synt{\NT{id} \T{=} \T{fun} \T{(} \NT{params} \T{)} \T{->} \NT{expr}}.
-It is allowed in non-recursive bindings only as there is little point
-in defining recursive function in our setting.
+\synt{\NT{id} \NT{pat}  \T{=} \NT{expr}} is syntactic sugar
+for \synt{\NT{id} \T{=} \T{fun} \NT{pat} \T{->} \NT{expr}}.
 
-In the following we only consider value bindings \synt{\NT{id} \T{=} \NT{expr}}.
 The construct
 \begin{center}
-\synt{\T{let} \NT{id}_1 \T{=} \NT{expr}_1 \T{and} \ldots \T{and} \NT{id}_n \T{=} \NT{expr}_n} \T{in} \NT{expr}
+\synt{\T{let} \NT{pat}_1 \T{=} \NT{expr}_1 \T{and} \ldots \T{and} \NT{pat}_n \T{=} \NT{expr}_n} \T{in} \NT{expr}
 \end{center}
 evaluates \synt{\nt{expr}_1,\ldots, \nt{expr}_n},
-and binds the names  \synt{\nt{id}_1,\ldots, \nt{id}_n} to the resulting values.
+and binds the names in the patterns
+\synt{\nt{pat}_1,\ldots, \nt{pat}_n} to the resulting values.
+The bindings for \synt{\nt{pat} \T{=} \nt{expr}} are as follows:
+if \nt{pat} is \T{(}\T{)}, then \nt{expr} must evaluate to the empty
+tuple;
+if \nt{pat} is \synt{\nt{id}} or \synt{\T{(}\nt{id}\T{)}},
+then \nt{id} is bound to the value of~\synt{\nt{expr}};
+if \nt{pat} is a proper tuple pattern
+\synt{\T{(}\nt{id}_1\T{,}\ldots \T{,}\nt{id}_n\T{)}} with $n \geq 2$,
+then \synt{\nt{expr}} must evaluate to a tuple value of size~$n$
+$(v_1,\ldots,v_n)$ and the names $\nt{id}_1,\ldots,\nt{id}_n$ are
+bound to the values  $v_1,\ldots,v_n$.
 
 \aname{letrec}{The} construct
 \begin{center}
-\synt{\T{let} \T{rec} \NT{id}_1 \T{=} \NT{expr}_1 \T{and} \ldots \T{and} \NT{id}_n \T{=} \NT{expr}_n} \T{in} \NT{expr}
+\synt{\T{let} \T{rec} \NT{pat}_1 \T{=} \NT{expr}_1 \T{and} \ldots \T{and} \NT{pat}_n \T{=} \NT{expr}_n} \T{in} \NT{expr}
 \end{center}
 computes the least fixpoint of the equations
-$\nt{id}_1 = \nt{expr}_1$,\ldots, $\nt{id}_n = \nt{expr}_n$.
-It then binds the names \synt{\nt{id}_1,\ldots, \nt{id}_n} to the
+$\nt{pat}_1 = \nt{expr}_1$,\ldots, $\nt{pat}_n = \nt{expr}_n$.
+It then binds the names in the patterns
+\synt{\nt{pat}_1,\ldots, \nt{pat}_n} to the
 resulting values.
-The least fixpoint computation applies only to relations, using
-inclusion for ordering.
-Notice that
-\synt{\T{let} \T{rec} \NT{id} \T{=} \T{fun} \T{(} \NT{params} \T{)} \T{->} \NT{expr} \T{in}\ldots} is legal syntax. Such a definition will yield
-a runtime error.
+The least fixpoint computation applies to set and relation values,
+(using inclusion for ordering); and to
+functions (using the usual definition ordering).
+
+
+\subsubsection*{Pattern matching over tags}
+The syntax for pattern matching over tags is:
+\begin{center}
+\synt{\T{match} \NT{expr} \T{with} \NT{tag}_1 \T{->} \NT{expr}_1
+\T{||} \cdots \T{||} \NT{tag}_n \T{->} \NT{expr}_n
+\T{||} \T{\_} \T{->} \NT{expr}_d
+\T{end}}
+\end{center}
+The value of the match expression is computed as follow: first evaluate
+\synt{\nt{expr}} to some value~$v$, which must be a tag~$t$.
+Then $v$ is compared with the tags \synt{\nt{tag}_1,\ldots,\nt{tag}_n},
+in that order.
+If some tag pattern~\synt{\nt{tag}_i} equals~$t$, then the value of the
+match is the value of the corresponding expression~\synt{\nt{expr}_i}.
+Otherwise, the value of the match is the value of the default
+expression~\synt{\nt{expr}_d}.
+As the default clause~\synt{\T{\_} \T{->} \NT{expr}_d} is optional,
+the match construct may fail.
+
+\subsubsection*{Pattern matching over sets}
+The syntax for pattern matching over sets is:
+\begin{center}
+\synt{\T{match} \NT{expr} \T{with}
+\T{\{}\T{\}} \T{->} \NT{expr}_1
+\T{||} \NT{id}_1 \T{++} \NT{id}_2 \T{->} \NT{expr}_2
+\T{end}}
+\end{center}
+The value of the match expression is computed as follow: first evaluate
+\synt{\nt{expr}} to some value~$v$, which must be a set of values.
+If $v$ is the empty set, that the value of the match is the
+value of the corresponding expression~\synt{\nt{expr}_1}.
+Otherwise, $v$ is a non-empty set, then let $v_e$ be some element in~$v$
+and $v_r$ be the set~$v$ minus the element~$v_e$.
+The value of the match is the value of \synt{\nt{expr}_2} in a context
+where \synt{\nt{id}_1} is bound to~$v_e$ and \synt{\nt{id}_2} is bound
+to~$v_r$.
+
 
 \subsubsection*{Parenthesised expressions}
 The expression \synt{\T{(}\NT{expr}\T{)}}
@@ -1134,17 +1189,22 @@ Instruction are executed for their  effect.
 There are three kind of effects: adding new bindings,
 checking a condition, and specifying relations that are shown in pictures.
 \begin{syntax}
-\NT{instruction} \is{} \T{let} \NT{binding} \brepet{} \T{and} \NT{binding} \erepet{}
-\alt \T{let} \T{rec} \NT{valbinding} \brepet{} \T{and} \NT{valbinding} \erepet{}
-\alt \NT{check} \NT{expr} \boption \T{as} \NT{id}\eoption
-\alt \T{procedure} \NT{id} \T{(} \NT{params} \T{)} \T{=} \brepet \NT{instruction} \erepet \T{END}
-\alt \T{call} \NT{id} \T{(} \NT{args} \T{)}
+\NT{instruction} \is{}  \T{let} \boption{} \T{rec} \eoption \NT{binding} \brepet{} \T{and} \NT{binding} \erepet{}
+\alt \boption \T{flag} \eoption \NT{check} \NT{expr} \boption \T{as} \NT{id}\eoption
+\alt \T{enum} \NT{id} \T{=} \boption \T{||} \NT{tag}
+\brepet \T{||} \NT{tag} \erepet
+\alt \T{procedure} \NT{id} \NT{pat} \T{=} \brepet \NT{instruction} \erepet \T{end}
+\alt \T{call} \NT{id} \NT{expr}  \boption \T{as} \NT{id}\eoption
 \alt \T{show} \NT{expr} \T{as} \NT{id}
 \alt \T{show} \NT{id} \brepet \T{,} \NT{id} \erepet
 \alt \T{unshow} \NT{id} \brepet \T{,} \NT{id} \erepet
+\alt \T{forall} \NT{id} \T{in} \NT{expr} \T{do} \brepet{} \NT{instruction} \erepet \T{end}
+\alt \T{with} \NT{id} \T{from} \NT{expr}
 \alt \T{include} \nt{string}
 \sep
-\NT{check} \is \T{acyclic} \orelse \T{irreflexive} \orelse \T{empty}
+\NT{check} \is \NT{checkname} \orelse \T{\textasciitilde} \NT{checkname}
+\sep
+\NT{checkname} \is \T{acyclic} \orelse \T{irreflexive} \orelse \T{empty}
 \end{syntax}
 
 \subsubsection*{Bindings}
@@ -1163,36 +1223,89 @@ let com = rf | co | fr
 let rec complus = com | (complus ; complus)
 \end{verbatim}
 Notice that the instruction \verb-let complus = (rf|co|fr)+- is equivalent.
+Notice that \herd{} assumes that recursive definitions are well-formed,
+\emph{i.e.} that they yield an increasing functional.
+The result of ill-formed definitions is undefined.
 
-%Notice that \herd{} assumes that recursive definitions are well-formed,
-%\emph{i.e.} that they yield an increasing functional.
-%The result of ill-formed definitions is undefined.
-
-There are no recursive functions, as those would not be very useful in
-our limited language. Nevertheless, one may for instance
+Although \herd{} features recursive functions, those cannot be used
+to compute a transitive closure, due to the lack of some construct
+say to test relation equality. Nevertheless, one can
 write a generic transitive closure
 function by using a local recursive binding:
 \begin{verbatim}
 let tr(r) = let rec t = r | (t;t) in t
-let complus = tr(rf|co|fr)
 \end{verbatim}
-Again notice that the instruction
-\verb-let complus = (rf|co|fr)+- is equivalent.
+Again, notice that the instruction \verb-let tr (r) = r+- is equivalent.
 
-\subsubsection*{\aname{sec:check}{Checks}}
+Thanks to pattern matching constructs,
+recursive functions are useful to compute over sets (and tags).
+For instance here is the definition of a function \texttt{power} that compute
+power sets:
+\begin{verbatim}
+let rec power S = match S with
+|| {} -> { {} }
+|| e ++ S ->
+    let rec add_e RR = match RR with
+    || {} -> { }
+    || R + RR -> R ++ (e ++ R) ++ add_e RR
+    end in
+    add_e (power S)
+end
+\end{verbatim}
+
+\subsubsection*{\label{sec:enum}Enumerations}
+The construct defined a set of enumerated values or tags. Syntax is
+\begin{center}
+\synt{\T{enum} \NT{id} \T{=} \NT{tag}_1 \T{||} \cdots \T{||} \NT{tag}_n}
+\end{center}
+The construct has two main effects.
+It first defines the tags \synt{\nt{tag}_1,\ldots,\nt{tag}_n}.
+Notice that tags do not exist before being defined, that is
+evaluating the expression \nt{tag} is an error without a prior
+\T{enum} that defines the tag~\nt{tag}. Tags are typed in the sense
+that they belong to the tag type \nt{id} and that tags from
+different types cannot be members of the same set.
+The second effect of the construct is to define a set of tags~\nt{id}
+as the set of all tags listed in the construct.
+That is, the \T{enum} construct performs the binding of~\nt{id}
+to \synt{\T{\{} \nt{tag}_1,\ldots,\nt{tag}_n\T{\}}}.
+
+
+\subsubsection*{\label{sec:check}Checks}
 The construct
 \begin{center}\synt{\NT{check} \NT{expr}}\end{center}
-evaluates \nt{expr} and applies \nt{check}.
-If the check succeeds, that is if the relation is acyclic, irreflexive
-or empty; depending on \nt{check} being \T{acyclic}, \T{irreflexive}
-or \T{empty}, execution goes on. Otherwise, execution stops.
+evaluates \nt{expr} and applies the check \nt{check}.
+There are six checks: the three basic acyclicity (keyword~\T{acyclic}),
+irreflexivity (keyword~\T{irreflexive})
+and emptyness (keyword~\T{empty}); and their
+negations.
+If the check succeeds, execution goes on. Otherwise, execution stops.
 
 \label{name:check:def}The performance of a
 check can optionally be named  by appending
 \synt{\T{as} \NT{id}} after it.
 The feature permits not to perform some checks at user's will,
-thanks to the \ahrefloc{skipcheck}{\opt{-skipcheck~}\nt{id}}
+thanks to the \ahrefloc{skipchecks}{\opt{-skipchecks~}\nt{id}}
 command line~option.
+
+A check can also be flagged, by prefixing it with the \T{flag}
+keyword. Flagged checks must be named with the \T{as} construct.
+Failed flagged do \emph{not} stop execution.
+Instead successful flagged checks are recorded under their name,
+for \herd{} machinery to handle flagged executions later.
+Flagged checks are useful for models that define conditions
+over executions that impact the semantics of teh whole program.
+This is typically the case of data races.
+Let us assume that some relation \verb+race+ have been defined,
+such that an non-empty \verb+race+ relation in  some execution
+would make the whole program undefined. We would then write:
+\begin{verbatim}
+flag ~empty race as undefined
+\end{verbatim}
+Then, \herd{} will indicate in its output that some
+execution have been flagged as \verb+undefined+.
+
+
 
 
 \subsubsection*{Procedure definition and call}
@@ -1202,13 +1315,20 @@ and the procedure will be called for the effect of executing
 those instructions. Intended usage of procedures is to define checks
 that are executed later. However, the body of a procedure may
 consist in any kind of instructions.
+Notice that procedure calls can be named with the \T{as} keyword.
+The intention is to control the performance of procedure calls
+from  the command line, exactly as for checks (see
+\ahrefloc{name:check:def}{above}).
 
-For instance, one may define the following \verb+uniproc+ procedure with
+
+As an exemple of procedure,
+one may define the following \verb+uniproc+ procedure with
 no arguments:
 \begin{verbatim}
 procedure uniproc() =
   let com = fr | rf | co in
   acyclic com | po
+end
 \end{verbatim}
 Then one can perform the acyclicity check (see
 \ahrefloc{sec:check}{previous section}) by executing the instruction:
@@ -1218,11 +1338,10 @@ call uniproc()
 As a result the execution will stop if the acyclicity check fails,
 or continue otherwise.
 
-
 Procedures are lexically scoped as functions are.
 Additionally, the bindings performed during the execution of a procedure call
-are discarded when the procedure returns, all other effects performed are
-retained.
+are discarded when the procedure returns, all other effects performed
+(namely flags and shows) are retained.
 
 \subsubsection*{Show (and unshow) directives}
 \label{show:def}The constructs:
@@ -1241,6 +1360,34 @@ label~\nt{id}.
 Hence  \synt{\T{show} \nt{id}} can be viewed as a shorthand
 for \synt{\T{show} \nt{id} \T{as} \nt{id}}
 
+\subsection{Iteration over sets}
+The \T{forall} iteration construct 
+permits the iteration of checks (in fact of any kind of instructions)
+over a set. Syntax is:
+\begin{center}
+\T{forall} \NT{id} \T{in} \NT{expr} \T{do} \nt{instructions} \T{end}
+\end{center}
+The expression \synt{\nt{expr}} must evaluate to a set~$S$.
+Then, the list of instructions \nt{instructions} is executed
+for all bindings of the name~\nt{id} to some element of~$S$.
+In practice, as failed checks stop execution, this amounts
+to check the conjunction of the checks performed by \nt{instructions}
+for all the elements of~$S$.
+Similarly to procedure calls,
+the bindings performed during the execution of an iteration
+are discarded at iteration ends, all other effects performed are
+retained.
+
+\subsection{Candidate execution extension}
+This construct permits the extension of the current candidate
+execution by one binding.
+Syntax is \synt{\T{with} \NT{id} \T{from} \NT{expr}}.
+The expression \nt{expr} is evaluated to a set~$S$.
+Then the remainder of the model is executed for each choice
+of element~$e$ in~$S$ in a contex extended by a binding
+of the name~\nt{id} to~$e$.
+An example of the construct usage is described in Sec.~\ref{intro:with}.
+
 \subsubsection*{Model inclusion}
 The construct \synt{\T{include} \T{"}\nt{filename}\T{"}} is interpreted as
 the inclusion of the model contained in the file whose name is given as
@@ -1249,14 +1396,15 @@ In practice the list of intructions defined by the included model file
 are executed.
 The string argument is delimited by double quotes ``\verb+"+'',
 which, of course, are not part of the filename.
-
-
+\iftrue
+Files are searched according to \herd{} rules --- see Sec.~\ref{herd:searchpath}.
+\else
 Notice that:
 \begin{itemize}
 \item Files are searched according to \herd{} rules --- see Sec.~\ref{herd:searchpath}.
 \item Model options defined in the model file \synt{\nt{filename}} are ignored.
 \end{itemize}
-
+\fi
 
 \subsection{\label{language:model}Models}
 \begin{syntax}
@@ -1281,6 +1429,7 @@ The accepted execution is then passed over to the rest of \herd{}
 engine, in order to collect final states of locations
 and to display pictures.
 
+\ifalse
 \subsubsection*{Model options}
 
 Model options control some experimental features of \herd.
@@ -1316,6 +1465,11 @@ Observe that the representation of initial writes as events
 can be also controlled from the
 command-line (see option~\ahrefloc{opt:initwrites}{\opt{-initwrites}})
 and that command line settings override model options.
+\fi
+
+\subsection{\label{sec:primitive}Primitives}
+
+TODO:
 
 \subsection{\label{sec:library}Library}
 
@@ -1421,6 +1575,8 @@ By default \herd{} does not generate \texttt{.dot} files.
 \item[{\tt -suffix <suf>}] Change the name of \texttt{.dot} files
 into \textit{base}\textit{suff}\texttt{.dot}. Useful when several \texttt{.dot} files derive from the same test. Default is the empty string (no suffix).
 \item[{\tt \aname{opt:gv}{-gv}}] Fork the \ahref{\urlgv}{\prog{gv} Postscript viewer} to display execution diagrams.
+\item[{\tt \aname{opt:evince}{-evince}}] Fork the evince document viewer to display execution diagrams. This option provides an alternative to the
+{\tt gv} viewer.
 \item[{\tt -dumpes <bool>}]
 Dump genererated event structures and exit. Default is \opt{false}.
 Event structures will be dumped in a \texttt{.dot} file whose
@@ -1438,23 +1594,21 @@ The main purpose of \herd{} is to run tests on top of memory models.
 For a given test, \herd{} performs a three stage process:
 \begin{enumerate}
 \item Generate candidate executions.
-\item For each exection, run the model. The model may reject or accept
-the execution.
-\item For each candidate that the model accepts, record observed locations
-and a diagram of the execution (if instructed so).
+\item For each candidate execution, run the model.
+The model may reject or accept the execution.
+\item For each candidate execution that the model accepts,
+record observed locations and, if so instructed,
+a diagram of the execution.
 \end{enumerate}
 We now describe options that control those three stages.
 
 \begin{description}
-\item[{\tt -model (herd|cav12|minimal|uniproc|x86tso|<filename>.cat)}]
+\item[{\tt -model (cav12|minimal|uniproc|<filename>.cat)}]
 Select model, this option accept one tag or one file name
 with extension~\texttt{.cat}.
 Tags instruct \herd{} to select an internal model,
 while file names are read for a model definition.
-By default, \herd{} run tests on top of an advanced (\opt{herd})
-model for Power and~ARM,
-and on top of \opt{x86tso} for X86.
-Other (documented) model tags are:
+Documented model tags are:
 \begin{itemize}
 \item \opt{cav12}, the model of~\cite{mms12} (Power);
 \item \opt{minimal}, the minimal model that allows all executions;
@@ -1472,6 +1626,9 @@ produce pictures that show different relations.
 Model files are searched according to  the same
 \ahrefloc{herd:searchpath}{rules}
 as configuration files.
+Some architectures have a default model:
+\opt{arm.cat} model for ARM, \opt{ppc.cat} model for PPC,
+\opt{x86tso.cat} for X86, and \opt{mips-pso.cat} for MIPS.
 
 \item[{\tt -through (all|invalid|none)}]
 Let additional executions reach the final stage of \herd{} engine.
@@ -1493,7 +1650,8 @@ with the option~\opt{-skipcheck} --- see  next option.
 Default is~\opt{none}.
 
 \item[{\tt -skipchecks <\textit{name}$_1$,\ldots,\textit{name}$_n$>}]
-\aname{skipcheck}{This option} applies to text file models. It instructs \herd{} to ignore
+\aname{skipchecks}{This option}
+applies to text file models. It instructs \herd{} to ignore
 the outcomes of the given checks. For the option to operate, checks must
 be named in the model file with the \texttt{as }\textit{name} construct --
 see Sec.~\ref{name:check:def}.
@@ -1811,54 +1969,11 @@ This section describes several extensions to \herd{} that have been implemented 
 \begin{description}
 \item[{\tt \aname{opt:dumplem}{-dumplem}}] Convert the given herd model to Lem format, and exit. The resultant Lem file is generated on {\tt stdout}. 
 \begin{quote}\emph{Note.} It is necessary to provide a litmus test when invoking \herd{} in this way, even though the litmus test will not be examined. This is due to a minor technical problem.\end{quote}
-\item[{\tt \aname{opt:evince}{-evince}}] Fork the evince document viewer to display execution diagrams. This option was implemented to provide an alternative to the {\tt gv} viewer.
 \end{description}
 
 
 
 \subsection{Curried function application}
-
-\begin{quote}\it
-This is an amendment to Section~\ref{language:expression}.
-\end{quote}
-
-The syntax of expressions with respect to function application is currently described as:
-\begin{syntax}
-\nt{expr} \is{} \dots 
-\alt \NT{id} \T{(} \NT{args} \T{)}
-\end{syntax}
-
-In fact, the syntax is more general: multiple arguments may be given, in a currying fashion. For instance, one may write such expressions as {\tt f (a,b) (c,d,e)}. The syntax should therefore be updated as follows:
-\begin{syntax}
-\nt{expr} \is{} \dots 
-\alt \NT{id} \brepet \T{(} \NT{args} \T{)} \erepet
-\end{syntax}
-
-\subsection{Expressions over sets}
-
-\begin{quote}\it
-This is an appendix to Section~\ref{language:expression}.
-\end{quote}
-
-Models can now define expressions over sets, and also bind identifiers to sets. The syntax of expressions thus becomes:
-
-\begin{syntax}
-\nt{expr} \is{} \ldots
-\alt \T{\{\}}
-\alt \T{\_}
-\alt \T{\textasciitilde}\NT{expr} 
-\alt \T{!}\NT{expr} 
-\alt \NT{expr} \T{*} \NT{expr}
-\alt \T{[} \NT{expr} \T{]}
-\end{syntax}
-
-We write \synt{\T{\{\}}} for the empty set (in contrast to \synt{\T{0}} for the empty relation), \synt{\T{\_}} for the universal set of all events in the event structure, \synt{\T{\textasciitilde}} for the complement of a relation, and \synt{\T{!}} for the complement of a set. If $s$ and $t$ represent sets, then \synt{\text{$s$} \T{*} \text{$t$}} builds their cross product. We also provide \synt{\T{[} \text{$s$} \T{]}}, which denotes the relation that links each element of $s$ to itself.
-
-\subsection{Provided conditions and undefined-unless conditions}
-
-\begin{quote}\it
-This is an appendix to Section~\ref{language:instruction}.
-\end{quote}
 
 A test-instruction is used to enforce a contract between the programming language and the programmer. There are two types: \emph{provided conditions} and \emph{undefined-unless conditions}. The latter are indicated with the \synt{\T{undefined\_unless}} keyword. A provided condition is an obligation on the programming language; that is, the programmer can assume that every execution of their program will satisfy every provided condition. An undefined-unless condition is an obligation on the programmer; that is, the compiler-writer can assume that every execution of the program will satisfy every undefined-unless condition. In other words, if a program has an execution that violates an undefined-unless condition, then its behaviour is completely undefined.
 
