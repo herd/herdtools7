@@ -174,6 +174,32 @@ module Top (C:Config) = struct
           let module X = Make (ARMS) (P) (NoCheck) (ARMM) in 
           X.run name chan env splitted
 
+      | `AArch64 ->
+	  let module AArch64 = AArch64Arch.Make(C.PC)(SymbValue) in
+	  let module AArch64LexParse = struct
+	    type instruction = AArch64.pseudo
+	    type token = AArch64Parser.token
+            module Lexer = AArch64Lexer.Make(LexConfig)
+	    let lexer = Lexer.token
+	    let parser = MiscParser.mach2generic AArch64Parser.main
+	  end in
+          let module AArch64S = AArch64Sem.Make(C)(SymbValue) in
+          let module AArch64Barrier = struct
+            type a = AArch64.barrier
+            type b =
+              | ISB
+              | DMB of AArch64Base.mBReqDomain * AArch64Base.mBReqTypes
+              | DSB of AArch64Base.mBReqDomain * AArch64Base.mBReqTypes
+            let a_to_b a = match a with
+            | AArch64.DMB(d,t) -> DMB(d,t)
+            | AArch64.DSB(d,t) -> DSB(d,t)
+            | AArch64.ISB -> ISB
+          end in
+          let module AArch64M = AArch64Mem.Make(ModelConfig)(AArch64S) (AArch64Barrier) in
+          let module P = GenParser.Make (C) (AArch64) (AArch64LexParse) in
+          let module X = Make (AArch64S) (P) (NoCheck) (AArch64M) in 
+          X.run name chan env splitted
+
       | `X86 ->
           let module X86 = X86Arch.Make(C.PC)(SymbValue) in
           let module X86LexParse = struct

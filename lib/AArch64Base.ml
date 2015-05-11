@@ -34,6 +34,8 @@ type reg =
   | Ireg of gpr
   | Symbolic_reg of string
   | Internal of int
+  | NZP
+  | ResAddr
 
 let gprs =
 [
@@ -98,6 +100,8 @@ let parse_wreg s =
 let pp_xreg r = match r with
 | Symbolic_reg r -> "X%" ^ r
 | Internal i -> Printf.sprintf "i%i" i
+| NZP -> "NZP"
+| ResAddr -> "Res"
 | _ -> try List.assoc r regs with Not_found -> assert false
 
 let pp_reg = pp_xreg
@@ -105,6 +109,8 @@ let pp_reg = pp_xreg
 let pp_wreg r = match r with
 | Symbolic_reg r -> "W%" ^ r
 | Internal i -> Printf.sprintf "i%i" i
+| NZP -> "NZP"
+| ResAddr -> "Res"
 | _ -> try List.assoc r wregs with Not_found -> assert false
 
 
@@ -359,7 +365,7 @@ let fold_regs (f_regs,f_sregs) =
   let fold_reg reg (y_reg,y_sreg) = match reg with
   | Ireg _ -> f_regs reg y_reg,y_sreg
   | Symbolic_reg reg ->  y_reg,f_sregs reg y_sreg
-  | Internal _|ZR -> y_reg,y_sreg in
+  | Internal _ | NZP | ZR | ResAddr -> y_reg,y_sreg in
 
   let fold_kr kr y = match kr with
   | K _ -> y
@@ -385,7 +391,7 @@ let map_regs f_reg f_symb =
   let map_reg reg = match reg with
   | Ireg _ -> f_reg reg
   | Symbolic_reg reg -> f_symb reg
-  | Internal _|ZR -> reg in
+  | Internal _ | ZR | NZP | ResAddr -> reg in
 
   let map_kr kr = match kr with
   | K _ -> kr

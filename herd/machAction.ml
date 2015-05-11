@@ -15,16 +15,22 @@
 
 module type A = sig
   include Arch.S
-  val arch_sets : (string * (barrier -> bool)) list
+	    
+  type lannot 
 
+  val empty_annot : lannot
+  val barrier_sets : (string * (barrier -> bool)) list
+  val annot_sets : (string * (lannot -> bool)) list
+  val is_atomic : lannot -> bool
   val is_isync : barrier -> bool 
   val pp_isync : string
+  val pp_annot : lannot -> string
 end
 
 module Make (A : A) : sig
 
   type action =    
-    | Access of Dir.dirn * A.location * A.V.v * bool (* atomicity flag *)
+    | Access of Dir.dirn * A.location * A.V.v * A.lannot
     | Barrier of A.barrier
     | Commit
 
@@ -37,20 +43,18 @@ end = struct
   open Dir
 
   type action = 
-    | Access of dirn * A.location * V.v * bool 
-          (* atomicity flag *)
+    | Access of dirn * A.location * V.v * A.lannot
     | Barrier of A.barrier
     | Commit
  
-  
-  let mk_init_write l v = Access(W,l,v,false)
+  let mk_init_write l v = Access(W,l,v,A.empty_annot)
 
   let pp_action a = match a with
-    | Access (d,l,v,ato) ->
+    | Access (d,l,v,an) ->
 	Printf.sprintf "%s%s%s=%s"
           (pp_dirn d)
           (A.pp_location l)
-	  (if ato then "*" else "")
+	  (A.pp_annot an)
 	  (V.pp_v v)
     | Barrier b -> A.pp_barrier b
     | Commit -> "Commit"
@@ -81,8 +85,8 @@ end = struct
     | _ -> false
 
     let is_atomic a = match a with
-      | Access (_,_,_,true) -> 
-	 assert (is_mem a); true
+      | Access (_,_,_,annot) -> 
+	 is_mem a && A.is_atomic annot
       | _ -> false
 
     let get_mem_dir a = match a with
@@ -150,17 +154,24 @@ end = struct
    let is_sc_action _ = false
 
 (* Architecture-specific sets *)
-  let map_act tr_tag =
-     List.map
-       (fun (tag,p) ->
-         let p act = match act with
-         | Barrier b -> p b
-         | _ -> false in
-         tr_tag tag,p)
 
   let arch_sets =
-    ("A",is_atomic)::
-    map_act (fun tag -> tag) A.arch_sets
+    let bsets = 
+      List.map
+	(fun (tag,p) -> 
+	 let p act = match act with
+	   | Barrier b -> p b
+	   | _ -> false
+	 in tag,p) A.barrier_sets
+    and asets = 
+      List.map
+	(fun (tag,p) -> 
+	 let p act = match act with
+	   | Access(_,_,_,annot) -> p annot
+	   | _ -> false
+	 in tag,p) A.annot_sets
+    in
+    bsets @ asets
 
   let arch_fences = []
 
@@ -184,10 +195,10 @@ end = struct
 
     let simplify_vars_in_action soln a =
       match a with
-      | Access (d,l,v,ato) -> 
+      | Access (d,l,v,an) -> 
 	 let l' = A.simplify_vars_in_loc soln l in
 	 let v' = V.simplify_var soln v in
-	 Access (d,l',v',ato)
+	 Access (d,l',v',an)
       | Barrier _ | Commit -> a
 
 (*************************************************************)	      
@@ -195,7 +206,7 @@ end = struct
 (*************************************************************)	 
 
     let make_action_atomic a = match a with
-      | Access (d,l,v,_) -> Access (d,l,v,true)
+      | Access (d,l,v,an) -> Access (d,l,v,an)
       | _ -> a
 
     let annot_in_list _str _ac = false

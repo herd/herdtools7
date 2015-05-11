@@ -16,9 +16,14 @@ module Make (C:Arch.Config) (V:Value.S) =
   struct
     include ARMBase
 
-    let is_barrier b1 b2 = barrier_compare b1 b2 = 0
+    type lannot = bool (* atomicity *)
 
-    let arch_sets =
+    let empty_annot = false
+
+    let is_barrier b1 b2 = barrier_compare b1 b2 = 0
+    let is_atomic annot = annot
+
+    let barrier_sets =
       [
        "DMB",is_barrier (DMB SY);
        "DSB",is_barrier (DSB SY);
@@ -26,9 +31,13 @@ module Make (C:Arch.Config) (V:Value.S) =
        "DSB.ST",is_barrier (DSB ST);
        "ISB", is_barrier ISB;
      ]
+    let annot_sets = ["X",is_atomic]
 
     let is_isync = is_barrier ISB
     let pp_isync = "isb"
+
+    let pp_annot annot = 
+      if annot then "*" else ""
 
     module V = V
 

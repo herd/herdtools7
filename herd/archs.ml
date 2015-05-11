@@ -20,6 +20,7 @@ module System = struct
     [ `X86
     | `PPC
     | `ARM
+    | `AArch64
     | `MIPS
     | `GPU_PTX
     | `Bell
@@ -31,6 +32,7 @@ module System = struct
   | "X86" -> Some `X86
   | "PPC" -> Some `PPC
   | "ARM" -> Some `ARM
+  | "AArch64" -> Some `AArch64
   | "MIPS" -> Some `MIPS
   | "GPU_PTX" -> Some `GPU_PTX
   | "Bell" -> Some `Bell
@@ -45,6 +47,7 @@ module System = struct
   | `X86 -> "X86"
   | `PPC -> "PPC"
   | `ARM -> "ARM"
+  | `AArch64 -> "AArch64"
   | `MIPS -> "MIPS"
   | `GPU_PTX -> "GPU_PTX"
   | `Bell -> "Bell"
@@ -52,12 +55,13 @@ end
 
 type t = [ System.t | `C | `OpenCL ]
 
-let tags = ["X86";"PPC";"ARM";"MIPS";"GPU_PTX";"C";"OpenCL"; "Bell"]
+let tags = ["X86";"PPC";"ARM";"AArch64";"MIPS";"GPU_PTX";"C";"OpenCL"; "Bell"]
 
 let parse s = match s with
 | "X86" -> Some `X86
 | "PPC" -> Some `PPC
 | "ARM" -> Some `ARM
+| "AArch64" -> Some `AArch64
 | "MIPS" -> Some `MIPS
 | "GPU_PTX" -> Some `GPU_PTX
 | "C" -> Some `C
@@ -74,6 +78,7 @@ let pp a = match a with
 | `X86 -> "X86"
 | `PPC -> "PPC"
 | `ARM -> "ARM"
+| `AArch64 -> "AArch64"
 | `MIPS -> "MIPS"
 | `GPU_PTX -> "GPU_PTX"
 | `Bell -> "Bell"
@@ -81,6 +86,7 @@ let pp a = match a with
 | `OpenCL -> "OpenCL"
 
 let arm = `ARM
+let aarch64 = `AArch64
 let ppc = `PPC
 let x86 = `X86
 let mips = `MIPS

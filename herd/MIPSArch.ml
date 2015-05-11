@@ -15,10 +15,19 @@ module Make (C:Arch.Config) (V:Value.S) =
   struct
     include MIPSBase
 
-    let arch_sets = ["SYNC",(function Sync -> true);]
+    type lannot = bool (* atomicity *)
+
+    let empty_annot = false
+    let is_atomic annot = annot 
+
+    let barrier_sets = ["SYNC",(function Sync -> true);]
+    let annot_sets = ["X", is_atomic]
 
     let is_isync _ = false
     let pp_isync = "???"
+
+    let pp_annot annot = 
+      if annot then "*" else ""
 
     module V = V
 

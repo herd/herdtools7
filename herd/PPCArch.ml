@@ -17,9 +17,13 @@ module Make (C:Arch.Config) (V:Value.S)
   struct
     include PPCBase
 
+    type lannot = bool (* atomicity *)
+
+    let empty_annot = false
+    let is_atomic annot = annot 
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
 
-    let arch_sets =
+    let barrier_sets =
       [
        "SYNC",is_barrier Sync;
        "ISYNC",is_barrier Isync;
@@ -27,8 +31,13 @@ module Make (C:Arch.Config) (V:Value.S)
        "EIEIO",is_barrier Eieio;
      ]
 
+    let annot_sets = ["X",is_atomic]
+
     let is_isync = is_barrier Isync
     let pp_isync = "isync"
+
+    let pp_annot annot = 
+      if annot then "*" else ""
 
 (* Now global locations, that include reservations *)
     module V = V

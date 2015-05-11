@@ -16,18 +16,26 @@ module Make (C:Arch.Config)(V:Value.S) =
   struct
     include X86Base
 
+    type lannot = bool (* atomicity *)
 
+    let empty_annot = false
+    let is_atomic annot = annot
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
 
-    let arch_sets =
+    let barrier_sets =
       [
        "MFENCE",is_barrier Mfence;
        "SFENCE",is_barrier Sfence;
        "LFENCE",is_barrier Lfence;
      ]
 
+    let annot_sets = ["X",is_atomic]
+
     let is_isync _ = false
     let pp_isync = "???"
+
+    let pp_annot annot = 
+      if annot then "*" else ""
 
 (********************)
 (* global locations *)
