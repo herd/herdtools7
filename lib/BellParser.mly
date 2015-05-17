@@ -20,7 +20,7 @@ open Bell
     
 %}
 
-%token EOF SEMI COMMA PIPE COLON LPAR RPAR RBRAC LBRAC LBRACE RBRACE SCOPES REGIONS MOV AND ADD BEQ BNE BAL READ WRITE FENCE RMW CAS EXCH DOT XOR PLUS
+%token EOF SEMI COMMA PIPE COLON LPAR RPAR RBRAC LBRAC LBRACE RBRACE SCOPES REGIONS MOV AND ADD BRANCH BEQ BNE BAL READ WRITE FENCE RMW CAS EXCH DOT XOR PLUS
 %token <BellBase.reg> REG
 %token <int> NUM
 %token <string> NAME 
@@ -83,6 +83,18 @@ old_comma_opt:
 | { () }
 | COMMA { () }
 
+condition:
+| BEQ { Eq }
+| BNE { Ne }
+
+rmw2_op_annot:
+| rmw2_op { ($1,[]) }
+| rmw2_op COMMA annot_list_ne { ($1,$3) }
+
+rmw3_op_annot:
+| rmw3_op { ($1,[]) }
+| rmw3_op COMMA annot_list_ne { ($1,$3) }
+
 instr:
 | READ old_annot_list reg old_comma_opt old_addr_op 
   { Pld($3, $5, $2) }
@@ -90,12 +102,11 @@ instr:
  | WRITE old_annot_list old_addr_op old_comma_opt roi 
  { Pst($3, $5, $2) }
 
-| RMW DOT rmw2_op LBRAC annot_list RBRAC reg old_comma_opt roa old_comma_opt roi
-  { Prmw2_op($7,$9,$11,$3,$5)}
+| RMW LBRAC rmw2_op_annot RBRAC reg old_comma_opt roa old_comma_opt roi
+  { Prmw2_op($5,$7,$9,fst $3,snd $3)}
 
-| RMW DOT rmw3_op LBRAC annot_list RBRAC reg old_comma_opt roa old_comma_opt roi old_comma_opt roi
-  { Prmw3_op($7,$9,$11,$13,$3,$5)}
-
+| RMW LBRAC rmw3_op_annot RBRAC reg old_comma_opt roa old_comma_opt roi old_comma_opt roi
+  { Prmw3_op($5,$7,$9,$11,fst $3,snd $3)}
 
 | FENCE old_annot_list
  { Pfence(Fence($2)) }
@@ -112,20 +123,19 @@ instr:
 | XOR reg COMMA iar COMMA iar
  { Pop(Xor,$2,$4,$6) }
 
-| BEQ reg COMMA roi COMMA NAME
- { Pbcc (Eq,$2,$4,$6) }
+| BRANCH LBRAC condition RBRAC reg COMMA roi COMMA NAME
+  { Pbcc ($3,$5,$7,$9) }
 
-| BNE reg COMMA roi COMMA NAME
- { Pbcc (Ne,$2,$4,$6) }
+| BRANCH LBRAC BAL RBRAC NAME
+  { Pbal $5 }
 
-| BAL NAME
- { Pbal $2 }
-
-annot_list:
+annot_list_ne:
 |  NAME COMMA annot_list
   {$1::$3}
 | NAME
   {[$1]}
+annot_list:
+| annot_list_ne {$1}
 | {[]}
 
 addr_op:

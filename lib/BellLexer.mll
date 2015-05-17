@@ -57,9 +57,10 @@ rule token = parse
 | "add"  { ADD }
 | "and"  { AND }
 | "xor"  { XOR }
-| "beq"  { BEQ }
-| "bne"  { BNE }
-| "bal"  { BAL }
+| "b" { BRANCH }
+| "eq"  { BEQ }
+| "ne"  { BNE }
+| "al"  { BAL }
 | "scopes"  { SCOPES  }
 | "regions" { REGIONS }
 | name as x
