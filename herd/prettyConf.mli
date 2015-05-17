@@ -12,6 +12,11 @@
 
 (** Pretty printing configuration *)
 
+type outputdir_mode =
+  | NoOutputdir
+  | Outputdir of string
+  | StdoutOutput
+
 (* What to show *)
 type show =
   | ShowProp  (* According to prop *)

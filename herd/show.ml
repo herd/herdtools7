@@ -27,7 +27,9 @@ module Make(O:PrettyConf.S) = struct
         W.warn "remove failed: %s" (Printexc.to_string e)
 
   let psfile name_dot =
-    let base = Filename.chop_extension name_dot in
+    let base =
+      try Filename.chop_extension name_dot
+      with Invalid_argument _ -> name_dot in
     base ^ ".ps"
              
 

@@ -21,7 +21,7 @@ module type Config = sig
   val showkind : bool
   val shortlegend : bool
   val outcomereads : bool
-  val outputdir : string option
+  val outputdir : PrettyConf.outputdir_mode
   val suffix : string
   val dumpes : bool
   val dumplem : bool
@@ -124,7 +124,7 @@ module Make(O:Config)(M:XXXMem.S) =
 (* Open a dot outfile or not *)
     let open_dot test =
       match O.outputdir with
-      | None ->
+      | PrettyConf.NoOutputdir ->
           if S.O.PC.gv || S.O.PC.evince then
             begin try
               let f,chan = Filename.open_temp_file "herd" ".dot" in
@@ -133,7 +133,11 @@ module Make(O:Config)(M:XXXMem.S) =
               W.warn "Cannot create temporary file: %s" msg ;
               None
             end else None
-      | Some d ->
+      | PrettyConf.StdoutOutput ->
+	 let fname = Test.basename test in
+	 fprintf stdout "\nDOTBEGIN %s\n" fname;
+	 Some (stdout, fname)
+      | PrettyConf.Outputdir d ->
           let base = Test.basename test in
           let base = base ^ O.suffix in
           let f = Filename.concat d base ^ ".dot" in
@@ -145,8 +149,12 @@ module Make(O:Config)(M:XXXMem.S) =
     let close_dot = function
       | None -> ()
       | Some (chan,fname) ->
-          if S.O.PC.debug then eprintf "close %s\n" fname ;
-          close_out chan
+	 match O.outputdir with
+	 | PrettyConf.NoOutputdir | PrettyConf.Outputdir _ ->
+            if S.O.PC.debug then eprintf "close %s\n" fname ;
+            close_out chan
+	 | PrettyConf.StdoutOutput ->
+	    fprintf stdout "\nDOTEND %s\n" fname
 
     let my_remove name =
       try Sys.remove name
@@ -154,9 +162,9 @@ module Make(O:Config)(M:XXXMem.S) =
         W.warn "remove failed: %s" (Printexc.to_string e)
           
     let erase_dot = match S.O.PC.debug,O.outputdir with
-    | false,None -> (* Erase temp file *)
+    | false,PrettyConf.NoOutputdir -> (* Erase temp file *)
         (function Some (_,f) -> my_remove f | None -> ())
-    | (_,Some _)|(true,None) -> (function _ -> ())
+    | (_,PrettyConf.Outputdir _)|(_,PrettyConf.StdoutOutput)|(true,PrettyConf.NoOutputdir) -> (function _ -> ())
 
     exception Over of count (* internal use, to stop everything *)
 

@@ -49,7 +49,7 @@ let shortlegend = ref false
 let outcomereads = ref false
 let suffix = ref ""
 let dumpes = ref false
-let outputdir = ref None
+let outputdir = ref PrettyConf.NoOutputdir
 let dumplem = ref false
 let dumptex = ref false
 

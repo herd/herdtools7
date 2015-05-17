@@ -46,7 +46,7 @@ val restrict : Restrict.t ref
 val showkind : bool ref
 val shortlegend : bool ref
 val outcomereads : bool ref
-val outputdir : string option ref
+val outputdir : PrettyConf.outputdir_mode ref
 val suffix : string ref
 val dumpes : bool ref
 val dumplem : bool ref

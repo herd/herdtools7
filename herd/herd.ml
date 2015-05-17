@@ -156,7 +156,7 @@ let options = [
   ("-bell",
    Arg.String (fun x -> Opts.bell := (Some x)),
    "<name> read bell file <name>") ;
-  ("-o", Arg.String (fun s ->outputdir := Some s),
+  ("-o", Arg.String (fun s -> outputdir := PrettyConf.Outputdir s),
    "<dir> generated files will go into <dir>, default: do not generate") ;
   ("-suffix", Arg.String (fun s -> suffix := s),
    "<suf> add <suf> at the end of the base of generated files") ;

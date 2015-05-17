@@ -39,7 +39,10 @@ let readable_name test =  test.name.Name.name
 let very_readable_name test =  test.name.Name.name
 
 (* Name from filename *)
-let basename test = Filename.chop_extension (Filename.basename test.name.Name.file)
+let basename test =
+  let base = Filename.basename test.name.Name.file in
+  try Filename.chop_extension base
+  with Invalid_argument _ -> base
 
 module Make(A:Arch.S) =
   struct
