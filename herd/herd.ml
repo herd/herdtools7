@@ -124,6 +124,18 @@ let load_config s =
       end) in
   LexConf.lex (ML.find s)
 
+let gen_model_opt s =
+  parse_tag
+    s
+    (fun tag -> match Model.parse tag with
+    | None -> false
+    | Some _ as m -> model :=  m ; true)
+    Model.tags
+    (sprintf " select model, defaults X86=%s, PPC=%s, ARM=%s"
+       (Model.pp (Model.get_default_model x86))
+       (Model.pp (Model.get_default_model ppc))
+       (Model.pp (Model.get_default_model arm)))
+
 let options = [
 (* Basic *)
   ("-version", Arg.Unit
@@ -181,16 +193,8 @@ let options = [
     Debug.tags
     "show debug messages for specific parts" ;
 (* Engine control *)
-  parse_tag
-    "-model"
-    (fun tag -> match Model.parse tag with
-    | None -> false
-    | Some _ as m -> model :=  m ; true)
-    Model.tags
-    (sprintf " select model, defaults X86=%s, PPC=%s, ARM=%s"
-       (Model.pp (Model.get_default_model x86))
-       (Model.pp (Model.get_default_model ppc))
-       (Model.pp (Model.get_default_model arm))) ;
+  gen_model_opt "-model";
+  gen_model_opt "-cat";
   parse_tag
     "-through"
     (fun tag -> match Model.parse_through tag with
