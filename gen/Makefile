@@ -1,7 +1,7 @@
 PREFIX=$$HOME
 BINDIR=$(PREFIX)/bin
 LIBDIR=$(PREFIX)/lib/herd7
-OCB=ocamlbuild $(OCBOPT) -cflags -w,A-4-9-29-41-45 -classic-display $(J)
+OCB=ocamlbuild $(OCBOPT) -cflags -bin-annot,-w,A-4-9-29-41-45 -classic-display $(J)
 EXTRAPROGS=atomize.byte mexpand.byte nexts.byte atoms.byte
 PROGS=diy.byte diyone.byte readRelax.byte dont.byte diycross.byte classify.byte $(EXTRAPROGS)
 

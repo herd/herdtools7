@@ -27,7 +27,7 @@ PLATFORM_XXX=platform_io.h platform_io.c
 PLATFORM_LINUX=$(PLATFORM_XXX)
 
 OCBOPT=
-OCB=ocamlbuild $(OCBOPT) -cflags -w,A-4-9-27-29-40-42-45 -classic-display
+OCB=ocamlbuild $(OCBOPT) -cflags -bin-annot,-w,A-4-9-27-29-40-42-45 -classic-display
 all: native
 
 install:
