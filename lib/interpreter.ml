@@ -180,8 +180,10 @@ module Make
     let rec eq_type t1 t2 = match t1,t2 with
     | TEmpty,TSet _ -> Some t2
     | TSet _,TEmpty -> Some t1
+    | (TEvents,TEvents)
     | (TEmpty,TEvents)
     | (TEvents,TEmpty) -> Some TEvents
+    | (TRel,TRel)
     | (TEmpty,TRel)
     | (TRel,TEmpty) -> Some TRel
     | TTag s1,TTag s2 when s1 = s2 -> Some t1
