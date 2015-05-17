@@ -355,11 +355,11 @@ final writes. Not doing so will improve efficiency.
 Finally, the order~$S$ is not just any order on memory events (predefined
 set~\verb+M+, which includes initial and final writes writes),
 it is a topological order of the program events (implemented as the set
-\verb+M\IW+) that extends the pre-order~\verb+preSC+
-We may generate all such topological orders with the \cat{}~primitive
+\verb+M\IW+) that extends the pre-order~\verb+preSC+.
+We can generate all such topological orders with the \cat{}~primitive
 \verb+linearisations+:
 \begin{verbatim}
-let allS = linearisations(M\IW,preS)
+let allS = linearisations(M\IW,preSC)
 \end{verbatim}
 The call \texttt{linearisation($E$,$r$)}, where $E$ is a set of events
 and~$r$ is a relation on events, returns the set of all total
