@@ -56,7 +56,7 @@ module Make
       I.add_sets m
         (StringSet.fold
            (fun annot k ->
-             let tag = BellName.tag2events_var annot in
+             let tag = BellName.tag2instrs_var annot in
              let bd =
                tag,
                lazy begin

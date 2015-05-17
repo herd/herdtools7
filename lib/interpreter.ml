@@ -821,9 +821,9 @@ module Make
         end
     | _ -> arg_mismatch ()
 
-    and tag2events env arg = match arg with
+    and tag2instrs env arg = match arg with
     | V.Tag (_,tag) ->
-        let x = BellName.tag2events_var tag in
+        let x = BellName.tag2instrs_var tag in
         begin try
           let v = Lazy.force (StringMap.find x env.vals) in
           match v with
@@ -865,7 +865,7 @@ module Make
          "classes",classes;
          "linearisations",linearisations;
          "tag2scope",tag2scope m;
-         "tag2events",tag2events m;
+         "tag2instrs",tag2instrs m;
          "domain",domain;
          "range",range;
          "fail",fail;

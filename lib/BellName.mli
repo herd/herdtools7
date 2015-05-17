@@ -20,7 +20,7 @@ val wider : string
 val narrower : string
 
 (* Change tag names into event set and relation name *)
-val tag2events_var : string -> string
+val tag2instrs_var : string -> string
 val tag2rel_var : string -> string
 
 (* Valid names of various categories *)

@@ -17,7 +17,7 @@ and regions = "regions"
 and wider = "wider"
 and narrower = "narrower"
 
-let tag2events_var s =
+let tag2instrs_var s =
   let len = String.length s in
   assert (len > 0) ;
   let c = s.[0] in
