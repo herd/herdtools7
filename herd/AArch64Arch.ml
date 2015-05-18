@@ -25,7 +25,7 @@ module Make (C:Arch.Config) (V:Value.S) =
         (fun b k ->
           let tag = pp_barrier_dot b in
           (tag,is_barrier b)::k)
-        []
+        ["ISB",is_barrier ISB]
 
     let annot_sets = [
       "X", is_atomic;
