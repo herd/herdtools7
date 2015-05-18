@@ -14,7 +14,7 @@ let com = fr | co | rf
 
 empty rmw & (fre;coe) as atomic
 
-include "AArch64fences.cat"
+include "aarch64fences.cat"
 
 let ci0 = ctrlisb | detour
 let ii0 = dd | rfi | rdw
@@ -45,7 +45,7 @@ acyclic hb as thin_air
 let prop_base = rfe?;fence;hb*
 let prop = prop_base & (W * W) 
 	 | (com*; prop_base*; strongf; hb*)
-	 | ((L * M) & rf | (A * M) & fr); hb*
+	 | ((L * A) & rf | (A * L) & fr)
 	 | (L * A) & po
 
 let xx = (W * W) & (X * X) & po

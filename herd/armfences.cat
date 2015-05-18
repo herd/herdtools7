@@ -11,7 +11,6 @@ show dmb.st,dsb.st,dmb,dsb
 (* Dependencies *)
 show data,addr
 let ctrlisb = try ctrlcfence(ISB) with 0
-let X = ctrlisb
 show ctrlisb
 show isb \ ctrlisb as isb
 show ctrl \ ctrlisb as ctrl

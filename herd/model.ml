@@ -96,6 +96,7 @@ match a with
 | `MIPS -> File "mips.cat"
 | `PPC ->  File "ppc.cat"
 | `ARM -> File "arm.cat"
+| `AArch64 -> File "aarch64.cat"
 | `C -> File "simple-c11.cat"
 | _ ->
     Warn.user_error 

@@ -21,8 +21,11 @@ module Make (C:Arch.Config) (V:Value.S) =
       | _ -> false
 
     let barrier_sets = 
-      let barriers = do_fold_dmb_dsb (fun h t -> h::t) [] in
-      List.map (fun b -> (pp_barrier_dot b,is_barrier b)) barriers
+      do_fold_dmb_dsb
+        (fun b k ->
+          let tag = pp_barrier_dot b in
+          (tag,is_barrier b)::k)
+        []
 
     let annot_sets = [
       "X", is_atomic;

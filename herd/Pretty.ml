@@ -286,6 +286,8 @@ let one_init = match PC.graph with
       [ "lwfence"; "lwf"; "ffence"; "ff";
         "implied"; "mfence"; "dmb"; "lwsync"; "eieio" ; "sync" ; "dmb-cumul" ; "dsb"; 
         "dmb.st"; "dsb.st" ;
+        "dmb.ld"; "dsb.ld" ;
+        "dmb.sy"; "dsb.sy";
         "dmbst"; "dsbst" ;
         "dsb-cumul"; "sync-cumul"; "lwsync-cumul";
 	"sync_cumul" ; "lwsync_cumul" ;

@@ -1,5 +1,6 @@
 AArch64Fences
 
+(* Fences *)
 let dmb.sy = fencerel(DMB.SY)
 let dmb.st = try fencerel(DMB.ST) with 0
 let dmb.ld = try fencerel(DMB.LD) with 0
@@ -7,8 +8,13 @@ let dsb.sy = try fencerel(DSB.SY) with 0
 let dsb.st = try fencerel(DSB.ST) with 0
 let dsb.ld = try fencerel(DSB.LD) with 0
 let isb = try fencerel(ISB) with 0
-show dmb.st,dmb.ld,dsb.st,dsb.ld,dmb,dsb
+show dmb.sy,dmb.st,dmb.ld,dsb.sy,sb.st,dsb.ld,dmb,dsb
 
+(* Dependencies *)
+show data,addr
 let ctrlisb = try ctrlcfence(ISB) with 0
+show ctrlisb
 show isb \ ctrlisb as isb
+show ctrl \ ctrlisb as ctrl
+
 

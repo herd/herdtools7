@@ -3,6 +3,7 @@ AllFences
 include "x86fences.cat"
 include "armfences.cat"
 include "ppcfences.cat"
+include "aarch64fences.cat"
 
 (* Correct isb/isync show *)
 let ctrlcfence = ctrlisb|ctrlisync
