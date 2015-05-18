@@ -1,7 +1,7 @@
 AArch64Fences
 
 (* Fences *)
-let dmb.sy = fencerel(DMB.SY)
+let dmb.sy = try fencerel(DMB.SY) with 0
 let dmb.st = try fencerel(DMB.ST) with 0
 let dmb.ld = try fencerel(DMB.LD) with 0
 let dsb.sy = try fencerel(DSB.SY) with 0
