@@ -817,7 +817,7 @@ module Make
                 
         with Not_found ->
           raise
-            (PrimError (sprintf "cannot find scope instance %s" tag))
+            (PrimError (sprintf "cannot find scope instance %s (the litmus test might be missing a scope tree declaration)" tag))
         end
     | _ -> arg_mismatch ()
 
