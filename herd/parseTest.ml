@@ -113,7 +113,7 @@ module Top (C:Config) = struct
               Model.Generic r
           | _ -> m
         let showsome =
-          begin match C.outputdir with PrettyConf.Outputdir _ -> true | _ -> false end
+          begin match C.outputdir with PrettyConf.StdoutOutput | PrettyConf.Outputdir _ -> true | _ -> false end
         || C.PC.gv || C.PC.evince
         let through = C.through
         let debug = C.debug.Debug.barrier
