@@ -31,10 +31,11 @@ module LU = LexUtils.Make(O)
     | "show" -> SHOW
     | "unshow" -> UNSHOW
     | "empty" -> TESTEMPTY
+    | "subset" -> SUBSET (*jade: not a check! needs to be married to if*)
     | "as" -> AS
     | "fun" ->  FUN
     | "in" -> IN
-    | "undefined_unless" -> REQUIRES
+(*    | "undefined_unless" -> REQUIRES jade: deprecated?*)
     | "flag" -> FLAG
     | "withco" -> WITHCO
     | "withoutco" ->  WITHOUTCO

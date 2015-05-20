@@ -67,6 +67,7 @@ and free_cl = function
 
 and free_cond c = match c with
 | Eq (e1,e2) -> StringSet.union (free e1) (free e2)
+| Subset (e1,e2) -> StringSet.union (free e1) (free e2)
 
 and frees es = StringSet.unions (List.map free es)
 

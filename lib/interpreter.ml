@@ -1173,7 +1173,7 @@ module Make
                 eval env e2
             end
         | If (_loc,cond,ifso,ifnot) ->
-            if eval_cond env cond then eval env ifso
+            if eval_cond _loc env cond then eval env ifso
             else eval env ifnot
         | Yield (_loc,res,a) ->
             let v = eval env a
@@ -1185,12 +1185,25 @@ module Make
                   "continuation expected, %s found" (pp_val vres)
             end
 
-      and eval_cond env c = match c with
+      and eval_cond loc env c = match c with
       | Eq (e1,e2) ->
           let v1 = eval env e1
           and v2 = eval env e2 in
           ValOrder.compare v1 v2 = 0
-              
+      | Subset(e1,e2) -> (*ici*)
+          let v1 = eval_loc env e1
+          and v2 = eval_loc env e2 in
+          let t,_ = type_list env.EV.silent [v1;v2] in
+          let a' = snd v1
+          and b' = snd v2 in
+          begin match t with
+            | TRel -> E.EventRel.subset (as_rel env.EV.ks a') (as_rel env.EV.ks b')
+            | TEvents -> E.EventSet.subset (as_set env.EV.ks a') (as_set env.EV.ks b')
+            | TSet _ -> ValSet.subset (as_valset a') (as_valset b')
+            | ty ->
+              error env.EV.silent loc
+              "cannot perform subset on type '%s'" (pp_typ ty) end
+
       and eval_app loc env vf va = match vf with
       | Clo f ->
           let env =

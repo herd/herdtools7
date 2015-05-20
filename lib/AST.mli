@@ -63,7 +63,7 @@ and set_clause =
 
 and pat = Pvar of var | Ptuple of var list
 
-and cond = Eq of exp * exp
+and cond = Eq of exp * exp | Subset of exp * exp
 
 and clause = string * exp
 

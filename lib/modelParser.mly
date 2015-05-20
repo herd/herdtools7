@@ -46,7 +46,7 @@ let pp () =
 %token <string> LATEX
 %token INCLUDE
 %token LPAR RPAR BEGIN END LACC RACC LBRAC RBRAC
-%token EMPTY UNDERSCORE
+%token EMPTY UNDERSCORE SUBSET
 %token WITHCO WITHOUTCO WITHINIT WITHOUTINIT
 %token WITHSC WITHOUTSC
 %token ALT SEMI UNION INTER COMMA DIFF PLUSPLUS
@@ -206,6 +206,7 @@ exp:
 
 cond:
 | exp EQUAL exp { Eq ($1,$3) }
+| exp SUBSET exp { Subset ($1,$3) }
 
 simple:
 | EMPTY { Konst (mk_loc(),Empty RLN) }
