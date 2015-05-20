@@ -34,21 +34,24 @@ let strongf = dmb.sy & (M * M)
 	    | dsb.st & (W * W)
 	    | dmb.ld & (R * M)
 	    | dsb.ld & (R * M)
-
+		 
 let weakf = rel
 
 let fence = strongf | weakf
 
 let hb = fence | rfe | ppo
+
 acyclic hb as thin_air
 
 let prop_base = rfe?;fence;hb*
+
 let prop = prop_base & (W * W) 
 	 | (com*; prop_base*; strongf; hb*)
-	 | ((L * A) & rf | (A * L) & fr)
-	 | (L * A) & po
+
+let prop_al = (L * A) & (rf | po)
+	    | (A * L) & fr
 
 let xx = (W * W) & (X * X) & po
 
 irreflexive fre;prop;hb* as observation
-acyclic co | prop | xx as propagation
+acyclic co | prop | xx | prop_al;hb* as propagation

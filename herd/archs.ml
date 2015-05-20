@@ -26,7 +26,7 @@ module System = struct
     | `Bell
     ]
 
-  let tags = ["X86";"PPC";"ARM";"MIPS";"GPU_PTX";"Bell"]
+  let tags = ["X86";"PPC";"ARM";"AArch64";"MIPS";"GPU_PTX";"Bell"]
 
   let parse s = match s with
   | "X86" -> Some `X86
