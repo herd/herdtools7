@@ -170,17 +170,20 @@ module Make
           try C.get_id_and_list i
           with Not_found -> raise Exit in (* If no annotation, no trouble *)
         assert (StringSet.mem id BellName.all_mem_sets) ;
+        (* Change empty to default, if defined *)
+        let i,al =
+          match al with
+          | [] ->
+              begin try
+                let al = BellModel.get_default id bi in
+                C.set_list i al,al
+              with
+                Not_found -> i,al
+            end              
+          | _::_ -> i,al in        
         let ok = BellModel.check_event id al bi in
-        if not ok then begin match al with
-        | [] ->
-            begin try
-              let al = BellModel.get_default id bi in
-              C.set_list i al
-            with
-              Not_found -> error_instruction i id bi
-            end
-        | _::_ -> error_instruction i id bi
-        end  else i
+        if not ok then error_instruction i id bi ;
+        i
       with
       | Exit -> i
       | Error msg -> Warn.user_error "annotation error, %s" msg

@@ -112,18 +112,13 @@ let check_event id al bi =
   let ok =
     let events_group = get_events id bi in
     List.exists
-      (fun ag -> same_length ag al && List.for_all2 StringSet.mem al ag)
+      (fun ag ->
+(*
+        eprintf "al=[%s], ag=%s\n" (String.concat ","  al) (pp_annot_group ag) ;
+*)
+        same_length ag al && List.for_all2 StringSet.mem al ag)
       events_group in
-  ok ||
-  begin match al with  (* accept empty annotations if default defined *)
-  | [] ->
-    begin try
-      ignore (StringMap.find id bi.defaults) ;
-      true
-    with Not_found -> false
-    end
-  | _::_ -> false
-  end
+  ok
 
 let get_mem_annots i = i.all_events
 
