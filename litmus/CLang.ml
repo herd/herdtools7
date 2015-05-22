@@ -13,6 +13,7 @@ module type Config = sig
   val memory : Memory.t
   val mode : Mode.t
   val comment : string
+  val asmcommentaslabel : bool
 end
 
 module Make(C:Config) = struct
@@ -22,14 +23,24 @@ module Make(C:Config) = struct
   type t = CTarget.t
 
   let dump_start chan indent proc =
-    fprintf chan
-      "%sasm __volatile__ (\"\\n%s\" ::: \"memory\");\n"
-      indent (LangUtils.start_comment C.comment proc)
+    if C.asmcommentaslabel then
+      fprintf chan
+        "%sasm __volatile__ (\"\\n%s:\" ::: \"memory\");\n"
+        indent (LangUtils.start_label proc)
+    else
+      fprintf chan
+        "%sasm __volatile__ (\"\\n%s\" ::: \"memory\");\n"
+        indent (LangUtils.start_comment C.comment proc)
 
   let dump_end chan indent proc =
-    fprintf chan
-      "%sasm __volatile__ (\"\\n%s\" ::: \"memory\");\n"
-      indent (LangUtils.end_comment C.comment proc)
+    if C.asmcommentaslabel then
+      fprintf chan
+        "%sasm __volatile__ (\"\\n%s:\" ::: \"memory\");\n"
+        indent (LangUtils.end_label proc)
+    else
+      fprintf chan
+        "%sasm __volatile__ (\"\\n%s\" ::: \"memory\");\n"
+        indent (LangUtils.end_comment C.comment proc)
 
   let dump_global_def env (x,ty) =
 (*

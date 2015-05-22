@@ -71,68 +71,75 @@ module Make(V:Constant.S)(C:Config) =
           { empty_ins with
             memo= sprintf "%s ^wo0,[^i0]" memo;
             inputs=[rA];
-            outputs=[rD]; }
+            outputs=[rD];
+            reg_addrs=[rA]; }
       | V32,K k ->
           { empty_ins with
             memo= sprintf "%s ^wo0,[^i0,#%i]" memo k;
             inputs=[rA];
-            outputs=[rD]; }
+            outputs=[rD];
+            reg_addrs=[rA];}
       | V32,RV (V32,rB) ->
           { empty_ins with
             memo=memo^ " ^wo0,[^i0,^wi1,sxtw]";
             inputs=[rA; rB];
-            outputs=[rD]; }
+            outputs=[rD];
+            reg_addrs=[rA]; }
       | V64,K 0 ->
           { empty_ins with
             memo=memo ^ sprintf " ^o0,[^i0]";
             inputs=[rA];
-            outputs=[rD]; }
+            outputs=[rD];
+            reg_addrs=[rA]; }
       | V64,K k ->
           { empty_ins with
             memo=memo ^ sprintf " ^o0,[^i0,#%i]" k;
             inputs=[rA];
-            outputs=[rD]; }
+            outputs=[rD];
+            reg_addrs=[rA]; }
       | V64,RV (V64,rB) ->
           { empty_ins with
             memo=memo^ " ^o0,[^i0,^i1]";
             inputs=[rA; rB];
-            outputs=[rD]; }
+            outputs=[rD];
+            reg_addrs=[rA]; }
       | V64,RV (V32,rB) ->
           { empty_ins with
             memo=memo^ " ^o0,[^i0,^wi1,sxtw]";
             inputs=[rA; rB];
-            outputs=[rD]; }
+            outputs=[rD];
+            reg_addrs=[rA]; }
       | V32,RV (V64,_) -> assert false
 
     let store memo v rA rB kr = match v,kr with
       | V32,K 0 ->
           { empty_ins with
             memo=memo ^ " ^wi0,[^i1]";
-            inputs=[rA;rB]; }
+            inputs=[rA;rB]; reg_addrs=[rB]; }
       | V32,K k ->
           { empty_ins with
             memo=memo ^ sprintf " ^wi0,[^i1,#%i]" k;
-            inputs=[rA;rB]; }
+            inputs=[rA;rB]; reg_addrs=[rB]; }
       | V32,RV (V32,rC) ->
           { empty_ins with
             memo=memo^ " ^wi0,[^i1,^wi2,sxtw]";
-            inputs=[rA; rB; rC]; }
+            inputs=[rA; rB; rC]; reg_addrs=[rB]; }
       | V64,K 0 ->
           { empty_ins with
             memo=memo ^ " ^i0,[^i1]";
-            inputs=[rA;rB]; }
+            inputs=[rA;rB]; reg_addrs=[rB]; }
       | V64,K k ->
           { empty_ins with
             memo=memo ^ sprintf " ^i0,[^i1,#%i]" k;
-            inputs=[rA;rB]; }
+            inputs=[rA;rB]; reg_addrs=[rB]; }
       | V64,RV (V64,rC) ->
           { empty_ins with
             memo=memo^ " ^i0,[^i1,^i2]";
-            inputs=[rA; rB; rC]; }
+            inputs=[rA; rB; rC]; reg_addrs=[rB]; }
       | V64,RV (V32,rC) ->
           { empty_ins with
             memo=memo^ " ^i0,[^i1,^wi2,sxtw]";
-            inputs=[rA; rB; rC;]; }
+            inputs=[rA; rB; rC;]; reg_addrs=[rB]; }
       | V32,RV (V64,_) -> assert false
 
     let stxr memo v r1 r2 r3 = match v with
@@ -140,12 +147,13 @@ module Make(V:Constant.S)(C:Config) =
         { empty_ins with
           memo = sprintf "%s ^wo0,^wi0,[^i1]" memo ;
           inputs = [r2;r3;];
-          outputs = [r1;]; }
+          outputs = [r1;]; reg_addrs=[r3]; }
     | V64 ->
         { empty_ins with
           memo = sprintf "%s ^wo0,^i0,[^i1]" memo ;
           inputs = [r2;r3;];
-          outputs = [r1;]; }
+          outputs = [r1;]; reg_addrs=[r3;]}
+
 (* Arithmetic *)
 
     let movk v r k =

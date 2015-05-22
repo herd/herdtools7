@@ -12,8 +12,10 @@
 
 open Printf
 
+let start_label proc = sprintf "LSTART_litmus_P%i" proc
 let start_comment com proc = sprintf "%sSTART _litmus_P%i" com proc
 
+let end_label proc = sprintf "LEND_litmus_P%i" proc
 let end_comment com proc = sprintf "%sEND _litmus_P%i" com proc
 
 let code_fun proc = sprintf "code%i" proc

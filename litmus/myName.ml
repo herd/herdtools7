@@ -68,6 +68,13 @@ let read_cfg name =
 
 
 (* Legal C symbol *)
+let start_with_letter s =
+  String.length s > 0 &&
+  begin match s.[0] with
+  | 'a'..'z'|'A'..'Z' -> true
+  | _ -> false
+  end
+
 let tr_symbol name =
   let b = Buffer.create 16 in
   let len = String.length name in
@@ -76,10 +83,7 @@ let tr_symbol name =
     else begin
       let c = name.[i] in
       begin match c with
-      | 'a'..'z' | 'A'..'Z' -> Buffer.add_char b c
-      | '0'..'9' ->
-          if i = 0 then Buffer.add_char b '_' ;
-          Buffer.add_char b c
+      | 'a'..'z' | 'A'..'Z' | '0'..'9' -> Buffer.add_char b c
       | _ ->
           Buffer.add_string b
             (Printf.sprintf "_%02X_" (Char.code c))
@@ -88,4 +92,8 @@ let tr_symbol name =
     end in
   do_rec 0
 
-let as_symbol t = tr_symbol t.Name.name
+let as_symbol t =
+  let name = t.Name.name in
+  let sym = tr_symbol name in
+  if start_with_letter name then sym
+  else "X" ^ sym

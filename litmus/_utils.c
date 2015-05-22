@@ -500,7 +500,7 @@ static int argint(char *prog,char *p,cmd_t *d) {
   if (*p == '\0' || *q != '\0') {
     usage(prog,d) ;
   }
-  return r ;
+  return (int)r ;
 }
 
 static cpus_t *argcpus(char *prog,char *p0,cmd_t *d) {
@@ -1030,7 +1030,7 @@ static int int_cmp(const void *_p, const void *_q) {
 int check_shuffle(int **t, int *min, int sz) {
   int *idx = malloc_check(sizeof(*idx)*sz) ;
   for (int k=0 ; k < sz ; k++) {  
-    idx[k] = t[k] - min ;
+    idx[k] = (int)(t[k] - min) ;
     //    fprintf(stderr," %i",idx[k]) ;
   }
   //  fprintf(stderr,"\n") ;

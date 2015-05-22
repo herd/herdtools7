@@ -30,6 +30,7 @@ module type Config = sig
   val driver : Driver.t
   val cross : bool
   val hexa : bool
+  val asmcommentaslabel : bool
   include RunUtils.CommonConfig
   val mkopt : Option.opt -> Option.opt
 end

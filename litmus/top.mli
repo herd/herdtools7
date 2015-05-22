@@ -84,6 +84,7 @@ module type TopConfig = sig
   val usearch : UseArch.t
 (* Hum *)
   val asmcomment : string option
+  val asmcommentaslabel : bool
 end
 
 (* Compile/Run tests *)

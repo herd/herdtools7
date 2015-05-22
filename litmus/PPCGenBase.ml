@@ -125,8 +125,6 @@ let pp_freg r =
 
 open Printf
 
-    let pp_crf crb = sprintf "cr%i" crb
-
     let pp_reg r =
       match r with
       | Ireg(ir) -> pp_ireg ir
@@ -212,42 +210,8 @@ type instruction =
   | `Pcomment of string
  ]
 
-    let pp_k = string_of_int
-    let pp_idx = string_of_int
-
-    let ppi_index_mode opcode r1 r2 r3 =
-      opcode^" "^pp_reg r1 ^ ","^pp_reg r2 ^ ","^pp_reg r3
-
-    let ppi_index_mode2 opcode r1 r2 =
-      opcode^" "^pp_reg r1 ^ ","^pp_reg r2
-
-    let ppi_imm_index_mode opcode r1 d r2 =
-      opcode^" "^pp_reg r1 ^ ","^pp_idx d ^ "("^pp_reg r2^")"
-
-    let ppi_imm_instr opcode r1 r2 v =
-      opcode^" "^pp_reg r1 ^ ","^pp_reg r2 ^ ","^pp_k v
-
-    let ppi_imm_instr_memo opcode set r1 r2 v =
-      let memo = match set with
-      | SetCR0 -> opcode ^ "."
-      | DontSetCR0 -> opcode in
-      ppi_imm_instr memo r1 r2 v
-
-    let ppi_ri opcode rD v = opcode^" "^pp_reg rD ^ ","^pp_k v
-
-    let ppi_rr opcode rD rS = opcode^" "^pp_reg rD^","^pp_reg rS
-
-    let pp_op3 memo set rD rA rB =
-      let memo = match set with
-      | SetCR0 -> memo ^ "."
-      | DontSetCR0 -> memo in
-      ppi_index_mode memo rD rA rB
-
-    let pp_op2 memo set rD rA =
-      let memo = match set with
-      | SetCR0 -> memo ^ "."
-      | DontSetCR0 -> memo in
-      ppi_index_mode2 memo rD rA
+    let pp_crf crb = sprintf "cr%i" crb
+    let pp_ds ds = sprintf "%i" (ds lsl 2)
 
     let pp_cond cond = match cond with
     | Eq -> "eq" | Ne -> "ne"

@@ -186,6 +186,9 @@ instr:
 k:
 | NUM  { $1 }
 
+ds:
+| NUM  { $1 lsr 2 }  /* Word offset, but written as byte offset */
+
 crindex:
 | NUM  { $1 }
 | CRK  { $1 }

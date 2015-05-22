@@ -40,7 +40,7 @@ install:
 	cp _presi.c _presi.h $(LIBDIR)
 	cp _outs.c _outs.h $(LIBDIR)
 	cp _aix_affinity.c _linux_affinity.c _affinity.h $(LIBDIR)
-	cp _show.awk _showC.awk _toh.sh $(LIBDIR)
+	cp _show.awk _showC.awk _showLabel.awk _toh.sh $(LIBDIR)
 	cp _mix.h _hash.c _instance.c _main.c $(LIBDIR)
 	cp $(CFG) $(LIBDIR)
 	mkdir -p  $(LIBDIR)/_ppc && ( cd _ppc && cp $(INSERT_PPC) $(LIBDIR)/_ppc )

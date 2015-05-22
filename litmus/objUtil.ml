@@ -87,6 +87,7 @@ module type Config = sig
   val mode : Mode.t
   val stdio : bool
   val platform : string
+  val asmcommentaslabel : bool
 end
 
 module Make(O:Config)(Tar:Tar.S) =
@@ -130,7 +131,10 @@ module Make(O:Config)(Tar:Tar.S) =
         | `C ->
             cpy' fnames "showC" "show" ".awk"
         | `X86 | `ARM | `PPC | `MIPS | `AArch64 ->
-            cpy fnames "show" ".awk"
+            if O.asmcommentaslabel then
+              cpy' fnames "showLabel" "show" ".awk"
+            else
+              cpy fnames "show" ".awk"
       in
       let fnames = cpy fnames "litmus_rand" ".c" in
       let fnames = cpy fnames "litmus_rand" ".h" in

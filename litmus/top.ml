@@ -91,11 +91,13 @@ module type TopConfig = sig
   val usearch : UseArch.t
 (* Hum *)
   val asmcomment : string option
+  val asmcommentaslabel : bool
 end
 
 module type Config = sig
   include GenParser.Config
   include Compile.Config
+  val asmcommentaslabel : bool
 (* Additions for Presi *)
   val line : int
   val noccs : int
@@ -383,6 +385,7 @@ end = struct
             let comment = A.comment
             let memory = O.memory
             let mode = O.mode
+            let asmcommentaslabel = O.asmcommentaslabel
           end)
       module Utils = Utils(O)(A')(Lang)(Pseudo)
       module P = CGenParser.Make(O)(Pseudo)(A')(L)

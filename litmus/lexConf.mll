@@ -88,6 +88,8 @@ rule main = parse
     { set_string linkopt arg ; main lexbuf }
 | "gas" arg
     { set_bool_withfun set_gas arg ; main lexbuf }
+| "asmcommentaslabel" arg
+    { set_bool asmcommentaslabel arg ; main lexbuf }
 | "asmcomment" arg
     { set_stringo asmcomment arg ; main lexbuf }
 | "barrier" arg
