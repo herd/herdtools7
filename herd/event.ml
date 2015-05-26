@@ -31,7 +31,7 @@ module type S = sig
 *)
   type event = {
       eiid : eiid;                       
-      iiid : A.inst_instance_id option;  
+      iiid : A.inst_instance_id option;
       action : action;  } 
 
 (* Only basic printing is here *)

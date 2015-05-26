@@ -95,6 +95,10 @@ rmw3_op_annot:
 | rmw3_op { ($1,[]) }
 | rmw3_op COMMA annot_list_ne { ($1,$3) }
 
+fence_labels_opt:
+| { None }
+| LPAR LBRACE annot_list_ne RBRACE COMMA LBRACE annot_list_ne RBRACE RPAR {Some($3,$7)}
+
 instr:
 | READ old_annot_list reg old_comma_opt old_addr_op 
   { Pld($3, $5, $2) }
@@ -108,8 +112,8 @@ instr:
 | RMW LBRAC rmw3_op_annot RBRAC reg old_comma_opt roa old_comma_opt roi old_comma_opt roi
   { Prmw3_op($5,$7,$9,$11,fst $3,snd $3)}
 
-| FENCE old_annot_list
- { Pfence(Fence($2)) }
+| FENCE old_annot_list fence_labels_opt
+ { Pfence(Fence ($2,$3)) }
 
 | MOV reg COMMA iar
  { Pmov($2,$4) }

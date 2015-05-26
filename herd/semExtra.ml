@@ -86,6 +86,7 @@ module type S = sig
         data_commit : event_rel;
         ctrl : event_rel;
         ctrlisync : event_rel;
+        fromto : event_rel;
         rf : event_rel; }
 
 (*********)
@@ -139,7 +140,7 @@ type concrete =
      init_load_vbf : event_rel;   (* load from init preceed all stores *)
      last_store_vbf : event_rel;  (* stores to final state come last *)
      atomic_load_store : event_rel; (* eg load-and-link/store conditional *)
-     
+     fromto : event_rel; 
     }
 
   val conc_zero : concrete
@@ -232,6 +233,7 @@ module Make(C:Config) (A:Arch.S) (Act:Action.S with module A = A)
         data_commit : event_rel;
         ctrl : event_rel;
         ctrlisync : event_rel;
+        fromto : event_rel;
         rf : event_rel; }
 
 (* Read-From maps exploitation *)
@@ -318,6 +320,7 @@ type concrete =
      init_load_vbf : event_rel;   (* load from init preceed all stores *)
      last_store_vbf : event_rel;  (* stores to final state come last *)
      atomic_load_store : event_rel; (* eg load-and-link/store conditional *)
+     fromto : event_rel;
     }
 
     let conc_zero =
@@ -332,6 +335,7 @@ type concrete =
        init_load_vbf = E.EventRel.empty ;
        last_store_vbf = E.EventRel.empty ;
        atomic_load_store = E.EventRel.empty ;
+       fromto = E.EventRel.empty;
      }
 (************)
 (* Branches *)

@@ -145,7 +145,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         {
          event_structures : (int * S.M.VC.cnstrnts * S.event_structure) list ;
          too_far : bool ; (* some events structures discarded (loop) *)
-       }
+        }
 
 (* All locations from init state, a bit contrieved *)
     let get_all_locs_init init =
@@ -201,6 +201,25 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       let procs = List.map fst starts in
       let tooFar = ref false in
 
+      let module InsMap = Map.Make 
+       (struct 
+        type t = A.I.arch_instruction
+        let compare = Pervasives.compare
+       end) in
+
+      let instr2labels =
+        let one_label lbl code res = match code with
+          | [] -> 
+            assert false (*jade: case where there's nothing after the label*)
+          | (_,ins)::_ -> try 
+              let ins_lbls = InsMap.find ins res in
+              InsMap.add ins (lbl::ins_lbls) res
+            with Not_found -> InsMap.add ins [lbl] res in
+        A.LabelMap.fold one_label p InsMap.empty in
+  
+      let labels_of_instr i = try InsMap.find i instr2labels 
+        with Not_found -> [] in
+
       let see seen lbl =
 	let x = try Imap.find lbl seen with Not_found -> 0 in
 	let seen = Imap.add lbl (x+1) seen in
@@ -226,7 +245,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       let rec add_next_instr proc prog_order seen addr inst nexts =
 	let ii = 
 	  { A.program_order_index = prog_order;
-	    proc = proc; inst = inst; unroll_count = 0; }
+	    proc = proc; inst = inst; unroll_count = 0; 
+            labels = labels_of_instr inst; }
         in
 	S.build_semantics ii >>> fun (prog_order, branch) -> 
           next_instr proc prog_order seen addr nexts branch
@@ -275,7 +295,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 	  let es = { (relabel es) with E.procs = procs } in
 	  (i,vcl,es)::index xs (i+1) in
       let r = EM.get_output set_of_all_instr_events  in
-      { event_structures=index r 0; too_far = !tooFar }
+      { event_structures=index r 0; too_far = !tooFar; }
 
 
 (*******************)	      
@@ -733,6 +753,30 @@ let make_atomic_load_store es =
                 k ws)
         loc_stores E.EventRel.empty
 
+    let make_fromto evts p = 
+    (*jade: scanning the whole program; otherwise would need to change the
+      event monad*)
+      let one_label _ code res =
+        let one_ins (cur_from,cur_to) (_,ins) = match A.I.fromto_of_instr ins with
+          | Some(l1,l2) -> 
+            let one_event l evt res =
+              match evt.E.iiid with
+              | Some id -> 
+                if List.exists (fun x -> List.mem x l) id.A.labels
+                then E.EventSet.add evt res
+                else res
+              | None -> res
+            in
+            let new_from = E.EventSet.fold (one_event l1) evts cur_from
+            and new_to = E.EventSet.fold (one_event l2) evts cur_to in
+            (new_from,new_to)
+          | None -> (cur_from,cur_to) in
+        let (final_from,final_to) = 
+          List.fold_left one_ins (E.EventSet.empty, E.EventSet.empty) code in
+        let fromto = E.EventRel.cartesian final_from final_to in
+        E.EventRel.union fromto res in
+      A.LabelMap.fold one_label p E.EventRel.empty
+
     let fold_mem_finals test es rfm kont res =
       (* We can build those now *)
       let evts = es.E.events in
@@ -742,6 +786,7 @@ let make_atomic_load_store es =
       and init_load_vbf = init_load es rfm in
 (* Atomic load/store pairs *)
       let atomic_load_store = make_atomic_load_store es in
+      let fromto = make_fromto evts test.Test.program in
 (* Now generate final stores *)
       let loc_stores = U.collect_mem_stores es in
       let loc_stores =
@@ -832,6 +877,7 @@ let make_atomic_load_store es =
                    init_load_vbf = init_load_vbf ;
                    last_store_vbf = last_store_vbf ;
                    atomic_load_store = atomic_load_store ;
+                   fromto = fromto;
                  } in
                 kont conc res
               else begin res end

@@ -69,14 +69,15 @@ let pc = PC
 (****************)
 
 type barrier =
- | Fence of string list (* list of annotations *)
+ | Fence of string list * (string list * string list) option
+ (* list of annotations, optional sets of labels*)
 
-(* I'm not sure what this is for either. We should
-   be okay *)
-let all_kinds_of_barriers =  [ Fence [] ;]
+(* jade: i'm guessing this is to give one possible example fence? picking this one *)
+let all_kinds_of_barriers =  [ Fence ([], None);]
 
 let pp_barrier b = match b with
-  | Fence s -> sprintf "Fence(%s)" (string_of_annot_list s)
+  | Fence(s, None) -> sprintf "Fence(%s)" (string_of_annot_list s)
+  | Fence(s, Some(s1,s2)) -> sprintf "Fence(%s)(%s,%s)" (string_of_annot_list s) (string_of_annot_list s1) (string_of_annot_list s2)
 
 let barrier_compare = Pervasives.compare
 
@@ -227,9 +228,8 @@ let dump_instruction i = match i with
       (string_of_reg_or_imm roi1)
       (string_of_reg_or_imm roi2)
 
-
-| Pfence (Fence a) -> sprintf "f[%s]" (string_of_annot_list a)
-
+| Pfence f -> pp_barrier f
+ 
 let fold_regs (f_reg,_f_sreg) = 
   let fold_reg reg (y_reg,y_sreg) = match reg with
     | GPRreg _ -> f_reg reg y_reg,y_sreg
@@ -359,14 +359,17 @@ let get_reg_list _i = Warn.fatal "Bell get_reg_list has not been implemented"
 let get_id_and_list i = match i with
 | Pld(_,_,s) -> (BellName.r,s)
 | Pst(_,_,s) -> (BellName.w,s)
-| Pfence (Fence s) -> (BellName.f,s)      
+| Pfence (Fence (s, _)) -> (BellName.f,s)      
 | Prmw2_op(_,_,_,_,s) | Prmw3_op(_,_,_,_,_,s) -> (BellName.rmw,s)
 | _ -> raise Not_found
+
+let get_from_and_to_labels b = match b with
+| Fence (_, a) -> a
 
 let set_list i al = match i with
 | Pld (a1,a2,_) -> Pld (a1,a2,al)
 | Pst (a1,a2,_) -> Pst (a1,a2,al)
-| Pfence (Fence _) -> Pfence (Fence al)
+| Pfence (Fence (_,a2)) -> Pfence (Fence (al,a2))
 | Prmw2_op(a1,a2,a3,a4,_) -> Prmw2_op(a1,a2,a3,a4,al)
 | Prmw3_op(a1,a2,a3,a4,a5,_) -> Prmw3_op(a1,a2,a3,a4,a5,al)
 | _ -> assert false

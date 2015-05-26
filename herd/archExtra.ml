@@ -22,6 +22,7 @@ module type I = sig
 
   type arch_instruction
 
+  val fromto_of_instr : arch_instruction -> (string list * string list) option
 end
 
 (** Output signature, functionalities added *)
@@ -45,6 +46,7 @@ module type S = sig
       program_order_index   : program_order_index;
       inst : I.arch_instruction; 
       unroll_count : int; (* number of loop unrollings *)
+      labels : Label.t list;
     }
 
   val inst_instance_compare :
@@ -157,6 +159,7 @@ module Make(C:Config) (I:I) : S with module I = I
       program_order_index   : program_order_index;
       inst : I.arch_instruction ;
       unroll_count: int; (* number of loop unrollings *)
+      labels : Label.t list;
     }
 
 

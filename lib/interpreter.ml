@@ -50,6 +50,7 @@ module type SimplifiedSem = sig
     module EventRel : InnerRel.S
     with type elt0 = event
     and module Elts = EventSet
+
   end
 
   type test
@@ -58,6 +59,7 @@ module type SimplifiedSem = sig
   type event_set = E.EventSet.t
   type event_rel = E.EventRel.t
   type rel_pp = (string * event_rel) list
+
 end
 
 module Make
@@ -98,10 +100,10 @@ module Make
 
       val interpret :
           S.test ->
-            ks ->
-              init_env ->
-                S.rel_pp Lazy.t ->
-                  (st_out -> 'a -> 'a) -> 'a -> 'a
+              ks ->
+                init_env ->
+                  S.rel_pp Lazy.t ->
+                    (st_out -> 'a -> 'a) -> 'a -> 'a
     end
     =
   struct
@@ -492,7 +494,7 @@ module Make
         add_vals (fun v -> lazy (Rel (Lazy.force v))) rels vals in
       { env_empty with vals; }
 
-(* Primmitive added internally to actual env *)
+(* Primitive added internally to actual env *)
     let add_prims env bds =
       let vals = env.vals in
       let vals =
@@ -841,6 +843,40 @@ module Make
         end
     | _ -> arg_mismatch ()
 
+    and tag2fenced env arg = match arg with
+    | V.Tag (_,tag) ->
+       let not_a_set_of_events x v =
+         raise
+           (PrimError
+              (sprintf
+                 "value %s is not a set of events, found %s"
+                 x  (pp_type_val v))) in
+        let find_rel id = match Lazy.force (StringMap.find id env.vals) with
+          | V.Rel rel -> rel
+          | _ -> assert false
+        in
+        let po = find_rel "po" in
+        let fromto = find_rel "fromto" in
+        let x = BellName.tag2instrs_var tag in
+        begin try
+          let v = Lazy.force (StringMap.find x env.vals) in
+          match v with
+          | V.Empty -> V.Rel E.EventRel.empty
+          | V.Unv -> assert false (* jade: we assert false when all the events in the execution bear the tag tag *)
+          | V.Set bevts ->
+            let filter (x, y) = 
+              E.EventSet.exists 
+                (fun b -> E.EventRel.mem (x,b) po && E.EventRel.mem (b,y) po)
+                bevts in
+            V.Rel (E.EventRel.filter filter fromto)
+          | _ -> not_a_set_of_events x v
+
+        with Not_found ->
+          raise
+            (PrimError (sprintf "cannot find event set %s" x))
+        end
+    | _ -> arg_mismatch ()
+
     and domain arg = match arg with
     | V.Empty ->  V.Empty
     | V.Unv -> V.Unv
@@ -866,6 +902,7 @@ module Make
          "linearisations",linearisations;
          "tag2scope",tag2scope m;
          "tag2instrs",tag2instrs m;
+         "tag2fenced",tag2fenced m;
          "domain",domain;
          "range",range;
          "fail",fail;

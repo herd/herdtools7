@@ -55,6 +55,7 @@ module Make (C:Arch.Config) (V:Value.S) =
 	  let reg_compare = reg_compare
 
 	  type arch_instruction = instruction
+          let fromto_of_instr _ = None
 	end)
 	  
   end

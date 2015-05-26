@@ -63,8 +63,8 @@ module Make (C:Sem.Config)(V:Value.S)
 
     let commit ii =  M.mk_singleton_es (Act.Commit) ii
 
-    let create_barrier b ii = 
-      M.mk_singleton_es (Act.Barrier b) ii
+    let create_barrier b o ii = 
+      M.mk_singleton_es (Act.Barrier(b,o)) ii
 	
     let read_roa roa ii = 
       match roa with 
@@ -184,8 +184,9 @@ module Make (C:Sem.Config)(V:Value.S)
 		(fun (v1,v2) -> M.op (tr_cond cond) v1 v2 >>=
 		  (fun v -> commit ii >>= fun () -> B.bccT v lbl))
 	    
-	| BellBase.Pfence(BellBase.Fence s) ->
-      	  create_barrier s ii >>! B.Next	  
+	| BellBase.Pfence(BellBase.Fence (s,o)) ->
+      	  create_barrier s o ii >>! B.Next	  
+
       in 
       M.addT (A.next_po_index ii.A.program_order_index) (build_semantics_inner ii)
   end

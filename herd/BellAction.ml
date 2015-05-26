@@ -20,7 +20,7 @@ module Make (A : Arch.S) : sig
     | Access of
         Dir.dirn * A.location * A.V.v *
           bool * string list 
-    | Barrier of string list
+    | Barrier of string list * (string list * string list) option
     | Commit
 
   include Action.S with module A = A and type action := action
@@ -36,7 +36,7 @@ end = struct
         dirn * A.location * V.v *
           bool (* atomicity flag *) * string list
           
-    | Barrier of string list
+    | Barrier of string list * (string list * string list) option
     | Commit
  
 (* I think this is right... *)
@@ -50,8 +50,13 @@ end = struct
           (A.pp_location  l)
 	  (if ato then "*" else "")
 	  (V.pp_v v)
-    | Barrier (s) ->
-      Printf.sprintf "f(%s)" (BellBase.string_of_annot_list s)
+    | Barrier (s,o) ->
+      (match o with
+      | None -> 
+          Printf.sprintf "f(%s)" (BellBase.string_of_annot_list s)
+      | Some(s1, s2) ->
+          Printf.sprintf "f(%s)({%s},{%s})" (BellBase.string_of_annot_list s) (BellBase.string_of_annot_list s1) (BellBase.string_of_annot_list s2)
+      )
     | Commit -> "Commit"
 
 (* Utility functions to pick out components *)
@@ -181,7 +186,8 @@ end = struct
 
     let annot_in_list st ac = match ac with 
       | Access(_,_,_,_,s)
-      | Barrier(s) -> (list_contains s st)	
+      | Barrier(s,_) -> (list_contains s st)	
+(*jade: il manque les branches ici; et peut etre les rmw sauf s'ils sont dans Access?*)
       | _ -> false
 
     let pp_isync = ""

@@ -126,6 +126,7 @@ module Make
            "data", lazy (Lazy.force pr).S.data;
            "ctrl", lazy (Lazy.force pr).S.ctrl;
            "rf", lazy (Lazy.force pr).S.rf;
+           "fromto", lazy (Lazy.force pr).S.fromto;
           ] @
           (match test.Test.scope_tree with
            | None -> []
