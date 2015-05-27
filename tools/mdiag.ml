@@ -34,13 +34,13 @@ module Top
       let old = StringMap.safe_find StringSet.empty k m in
       StringMap.add k (StringSet.add v old) m
 
-    let do_test name (byName,byHash,all as k) =
+    let do_test name (byName,byHash,fnames as k) =
       try
-        let {T.tname; hash; } as i = Z.from_file name in
+        let {T.tname; hash; } = Z.from_file name in
         let hash = match hash with
         | None -> assert false
         | Some h -> h in
-        add tname hash byName,add hash tname byHash
+        add tname hash byName,add hash tname byHash,add tname name fnames
       with
       | Misc.Exit -> k
       | Misc.Fatal msg ->
@@ -50,20 +50,34 @@ module Top
           Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
           raise e
 
+    let is_singleton s  = match StringSet.as_singleton s with
+    | Some _ -> true
+    | None -> false
+
     let zyva tests =
-      let byName,byHash,_ =
-        Misc.fold_argv do_test tests (StringMap.empty,StringMap.empty,[]) in
+      let byName,byHash,fnames =
+        Misc.fold_argv do_test tests (StringMap.empty,StringMap.empty,StringMap.empty) in
       StringMap.iter
         (fun tname hashes ->
-          if not (InfoSet.is_singleton hashes) then
-            eprintf "Error: name %s has different hashes\n"  name)
+          if not (is_singleton hashes) then
+            eprintf "Error: name %s has different hashes\n"  tname)
         byName ;
       StringMap.iter
         (fun _hash names ->
-          if not (InfoSet.is_singleton names) then
-            eprintf "Warning: names {%s} are the same test\n"
-              (StringSet.pp_str "," names))
+          if not (is_singleton names) then
+            eprintf "Warning: tests {%s} are the same test\n"
+              (StringSet.pp_str "," Misc.identity names))
         byHash ;
+      StringMap.iter
+        (fun name fnames ->
+          if not (is_singleton fnames) then begin
+            eprintf "Warning: test %s is referenced more than once:\n"
+              name ;
+            StringSet.iter
+              (fun fname -> eprintf "  %s\n" fname)
+              fnames
+          end)
+        fnames ;
       ()
   end
 
