@@ -5,6 +5,7 @@ module Top
        sig
          val verbose : bool
          val tnames : bool
+	 val ncheck : bool
        end) =
   struct
 
@@ -50,9 +51,13 @@ module Top
     let zyva tests =
       let xs = match tests with
 	| [] -> failwith "No given tests base"
-	| [base] -> (Misc.fold_argv do_test [base] [],
+	| [base] -> if Opt.verbose 
+		    then printf "#From base : %s" base; 
+		    (Misc.fold_argv do_test [base] [],
 		     Misc.fold_stdin do_test [])
-	| base::tests -> (Misc.fold_argv do_test [base] [],
+	| base::tests -> if Opt.verbose 
+			 then printf "#From base : %s" base; 
+			 (Misc.fold_argv do_test [base] [],
 			  Misc.fold_argv do_test tests []) in
 
       let fname_compare f1 f2 =
@@ -66,11 +71,15 @@ module Top
 	  | (f',h')::tail -> 
 	     let sameh = h = h' in 
 	     let samen = fname_compare f f' = 0 in
-	     if sameh then true else 
-	       (if samen
-	       then Warn.warn_always 
-		      "%s already exists with another name." f.tname;
-	       exists (f,h) tail)
+	     match samen,sameh with
+	     | true,true -> true
+	     | false,true -> if Opt.ncheck
+			     then true
+			     else exists (f,h) tail
+	     | true,false -> Warn.warn_always 
+			     "%s already exists in %s." f'.tname f.tname;
+			     true
+	     | _ -> exists (f,h) tail
 	in List.filter (fun n -> not (exists n (fst xs))) (snd xs)
       in
 
@@ -92,6 +101,7 @@ let verbose = ref false
 let arg = ref []
 let base = ref ""
 let tnames = ref false
+let ncheck = ref false
 let prog =
   if Array.length Sys.argv > 0 then Sys.argv.(0)
   else "madd"
@@ -99,7 +109,8 @@ let prog =
 let () =
   Arg.parse
     ["-v",Arg.Unit (fun () -> verbose := true), " be verbose";
-     "-t",Arg.Unit (fun () -> tnames := true)," output test names";]       
+     "-t",Arg.Unit (fun () -> tnames := true)," output test names";
+     "-s",Arg.Unit (fun () -> ncheck := true)," do not add already existing tests with different names"]       
     (fun s -> arg := s :: !arg)
     (sprintf "Usage: %s [options]* [test]*" prog)
 
@@ -114,6 +125,7 @@ module X =
     (struct
       let verbose = !verbose
       let tnames = !tnames
+      let ncheck = !ncheck
     end)
 
 let () = X.zyva tests
