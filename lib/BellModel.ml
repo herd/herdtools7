@@ -66,6 +66,7 @@ type default_decs = default_dec StringMap.t
 let pp_default_dec xs = sprintf "[%s]" (String.concat "," xs)
 let pp_default_bd k d = sprintf "%s%s" k (pp_default_dec d)
 let pp_default_decs decs  = StringMap.pp_str_delim " " pp_default_bd decs
+
 type info = {
   all_events : annot_set; (* This field records all annotations *)
   events : event_decs;

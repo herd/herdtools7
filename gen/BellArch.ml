@@ -195,23 +195,23 @@ let is_isync _ = false
 
 let compare_fence = barrier_compare
 
-let default = Fence []
+let default = Fence ([],None)
 
 let strong = match bi with
-| None -> Fence []
+| None -> Fence ([],None)
 | Some bi ->
-    try Fence (BellModel.get_default BellName.f bi)
-    with Not_found -> Fence []
+    try Fence (BellModel.get_default BellName.f bi,None)
+    with Not_found -> Fence ([],None)
 
 
-let pp_fence (Fence a) = sprintf "Fence%s" (pp_annots a)
+let pp_fence (Fence (a,_)) = sprintf "Fence%s" (pp_annots a)
 
 let fold_fences = match bi with
 | None -> fun _f k -> k
 | Some bi ->
     fun f k ->
       let eg = BellModel.get_events BellName.f bi in
-      fold_annots eg (fun a k -> f (Fence a) k)  k
+      fold_annots eg (fun a k -> f (Fence (a,None)) k)  k
 
 let fold_cumul_fences _f k = k
 let fold_all_fences  = fold_fences
@@ -226,7 +226,7 @@ let var_fence f = match varatom with
 | Some va ->
     try
         let at =  StringMap.find  BellName.f va in
-        fold_from_gen at (fun al -> f (Fence al))
+        fold_from_gen at (fun al -> f (Fence (al,None)))
     with Not_found -> no_varfence f
 
 

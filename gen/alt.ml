@@ -501,19 +501,21 @@ module Make(C:Builder.S)
     let debug_rs chan rs =
       List.iter (fun r -> fprintf chan "%s\n" (pp_relax r)) rs
 
-    let secret_gen l1 l2 n =
-      let l1 = expand_relaxs C.ppo l1
-      and l2 = expand_relaxs C.ppo l2 in
-      let s1 = C.R.Set.of_list l1
-      and s2 = C.R.Set.of_list l2 in
-      let l1 = C.R.Set.elements (C.R.Set.diff s1 s2) in
+    let secret_gen relax safe n =
+      let relax = expand_relaxs C.ppo relax
+      and safe = expand_relaxs C.ppo safe in
+      let relax_set = C.R.Set.of_list relax
+      and safe_set = C.R.Set.of_list safe in
+
+      let relax = C.R.Set.elements relax_set
+      and safe = C.R.Set.elements (C.R.Set.diff safe_set relax_set) in
       if O.verbose > 0 then begin
         eprintf "** Relax **\n" ;
-        debug_rs stderr l1 ;
+        debug_rs stderr relax ;
         eprintf "** Safe **\n" ;
-        debug_rs stderr l2
+        debug_rs stderr safe
       end ;
-      do_gen l1 l2 n
+      do_gen relax safe n
 
 (**********************)
 (* Default edge lists *)

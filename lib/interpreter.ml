@@ -37,7 +37,7 @@ end
 (* Simplified Sem module.
    In effect, the interpreter needs a restricted subset of Sem functionalities:
    set of events, relation on events and that is about all.
-   A few utlities are passed as the next "U" argument to functor. *)
+   A few utilities are passed as the next "U" argument to functor. *)
 module type SimplifiedSem = sig
   module E : sig
     type event
@@ -64,7 +64,7 @@ end
 
 module Make
     (O:Config)
-    (S:SimplifiedSem)    
+    (S:SimplifiedSem)
     (U: sig
       val partition_events : S.event_set -> S.event_set list
       val check_through : bool -> bool

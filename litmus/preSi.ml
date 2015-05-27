@@ -186,7 +186,8 @@ module Make
             | `PPC
             | `X86
             | `ARM
-            | `MIPS ->
+            | `MIPS
+            | `AArch64 ->
                 sprintf "barrier%s.c" lab_ext
             | _ -> assert false in
         Insert.insert O.o (fname Cfg.sysarch)
