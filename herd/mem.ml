@@ -201,9 +201,9 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       let procs = List.map fst starts in
       let tooFar = ref false in
 
-      let module InsMap = Map.Make 
+      let module ValMap = MyMap.Make 
        (struct 
-        type t = A.I.arch_instruction
+        type t = A.I.V.cst
         let compare = Pervasives.compare
        end) in
 
@@ -211,14 +211,13 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         let one_label lbl code res = match code with
           | [] -> res (* Luc, it is legal to have nothing after label *)
 (*            assert false (*jade: case where there's nothing after the label*) *)
-          | (_,ins)::_ -> try 
-              let ins_lbls = InsMap.find ins res in
-              InsMap.add ins (lbl::ins_lbls) res
-            with Not_found -> InsMap.add ins [lbl] res in
-        A.LabelMap.fold one_label p InsMap.empty in
+          | (addr,_)::_ ->
+              let ins_lbls = ValMap.safe_find [] addr res in
+              ValMap.add addr (lbl::ins_lbls) res in
+        A.LabelMap.fold one_label p ValMap.empty in
   
-      let labels_of_instr i = try InsMap.find i instr2labels 
-        with Not_found -> [] in
+      let labels_of_instr i = ValMap.safe_find [] i instr2labels in
+
 
       let see seen lbl =
 	let x = try Imap.find lbl seen with Not_found -> 0 in
@@ -246,7 +245,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 	let ii = 
 	  { A.program_order_index = prog_order;
 	    proc = proc; inst = inst; unroll_count = 0; 
-            labels = labels_of_instr inst; }
+            labels = labels_of_instr addr; }
         in
 	S.build_semantics ii >>> fun (prog_order, branch) -> 
           next_instr proc prog_order seen addr nexts branch
