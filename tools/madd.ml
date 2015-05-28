@@ -45,23 +45,23 @@ module Top
           Warn.warn_always "%a %s" Pos.pp_pos0 name msg ;
           k
       | e ->
-          Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
+          eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
           raise e
 
     let zyva tests =
       let xs = match tests with
-	| [] -> failwith "No given tests base"
+	| [] -> raise (Misc.Fatal "No given tests base\n")
 	| [base] -> if Opt.verbose 
-		    then printf "#From base : %s" base; 
+		    then eprintf "#From base : %s" base; 
 		    (Misc.fold_argv do_test [base] [],
 		     Misc.fold_stdin do_test [])
 	| base::tests -> if Opt.verbose 
-			 then printf "#From base : %s" base; 
+			 then eprintf "#From base : %s" base; 
 			 (Misc.fold_argv do_test [base] [],
 			  Misc.fold_argv do_test tests []) in
 
-      let fname_compare f1 f2 =
-        let f1 = f1.fname and f2 = f2.fname in
+      let tname_compare f1 f2 =
+        let f1 = f1.tname and f2 = f2.tname in
         String.compare f1 f2
       in
 
@@ -70,14 +70,14 @@ module Top
 	  | [] -> false
 	  | (f',h')::tail -> 
 	     let sameh = h = h' in 
-	     let samen = fname_compare f f' = 0 in
+	     let samen = tname_compare f f' = 0 in
 	     match samen,sameh with
 	     | true,true -> true
 	     | false,true -> if Opt.ncheck
 			     then true
 			     else exists (f,h) tail
 	     | true,false -> Warn.warn_always 
-			     "%s already exists in %s." f'.tname f.tname;
+			     "%s already exists in %s." f'.fname f.fname;
 			     true
 	     | _ -> exists (f,h) tail
 	in List.filter (fun n -> not (exists n (fst xs))) (snd xs)
