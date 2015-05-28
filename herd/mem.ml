@@ -209,8 +209,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
       let instr2labels =
         let one_label lbl code res = match code with
-          | [] -> 
-            assert false (*jade: case where there's nothing after the label*)
+          | [] -> res (* Luc, it is legal to have nothing after label *)
+(*            assert false (*jade: case where there's nothing after the label*) *)
           | (_,ins)::_ -> try 
               let ins_lbls = InsMap.find ins res in
               InsMap.add ins (lbl::ins_lbls) res
