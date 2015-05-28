@@ -73,11 +73,12 @@ module Top
 	     let samen = tname_compare f f' = 0 in
 	     match samen,sameh with
 	     | true,true -> true
-	     | false,true -> if Opt.ncheck
-			     then true
-			     else exists (f,h) tail
+	     | false,true -> 
+		if Opt.ncheck
+		then true
+		else exists (f,h) tail
 	     | true,false -> Warn.warn_always 
-			     "%s already exists in %s." f'.fname f.fname;
+			       "%s already exists in %s." f'.fname f.fname;
 			     true
 	     | _ -> exists (f,h) tail
 	in List.filter (fun n -> not (exists n (fst xs))) (snd xs)
