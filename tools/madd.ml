@@ -6,6 +6,7 @@ module Top
          val verbose : bool
          val tnames : bool
 	 val ncheck : bool
+	 val found : string option
        end) =
   struct
 
@@ -67,21 +68,27 @@ module Top
 
       let xs =
 	let rec exists (f,h) = function
-	  | [] -> false
+	  | [] -> None
 	  | (f',h')::tail -> 
 	     let sameh = h = h' in 
 	     let samen = tname_compare f f' = 0 in
 	     match samen,sameh with
-	     | true,true -> true
+	     | true,true -> Some (f',h')
 	     | false,true -> 
 		if Opt.ncheck
-		then true
+		then Some (f',h')
 		else exists (f,h) tail
 	     | true,false -> Warn.warn_always 
 			       "%s already exists in %s." f'.fname f.fname;
-			     true
+			     Some (f',h')
 	     | _ -> exists (f,h) tail
-	in List.filter (fun n -> not (exists n (fst xs))) (snd xs)
+	in let rec cut base (n,f) = function
+	     | [] -> (n,f)
+	     | t::ts -> match exists t base with 
+			| Some t -> cut base (n,t::f) ts
+			| None -> cut base (t::n,f) ts
+			  
+	in cut (fst xs) ([],[]) (snd xs)
       in
 
       let () =
@@ -92,7 +99,12 @@ module Top
         printf "\n" ;
         let pname =
           if Opt.tnames then (fun n -> n.tname) else (fun n -> n.fname) in
-        List.iter (fun (f,_) -> printf "%s\n" (pname f)) xs
+        List.iter (fun (f,_) -> printf "%s\n" (pname f)) (fst xs);
+	match Opt.found with
+	| None -> ()
+	| Some s -> 
+	   let file = open_out s in
+	   List.iter (fun (f,_) -> fprintf file "%s\n" (pname f)) (snd xs)
       in
       ()
   end
@@ -103,15 +115,17 @@ let arg = ref []
 let base = ref ""
 let tnames = ref false
 let ncheck = ref false
+let found = ref None
 let prog =
   if Array.length Sys.argv > 0 then Sys.argv.(0)
   else "madd"
 
 let () =
   Arg.parse
-    ["-v",Arg.Unit (fun () -> verbose := true), " be verbose";
-     "-t",Arg.Unit (fun () -> tnames := true)," output test names";
-     "-s",Arg.Unit (fun () -> ncheck := true)," do not add already existing tests with different names"]       
+    ["-v",Arg.Unit (fun () -> verbose := true), "- be verbose";
+     "-t",Arg.Unit (fun () -> tnames := true),"- output test names";
+     "-s",Arg.Unit (fun () -> ncheck := true),"- do not add already existing tests with different names";
+     "-found",Arg.String (fun s -> found := Some s),"<name> - list already existing tests in file <name>"]       
     (fun s -> arg := s :: !arg)
     (sprintf "Usage: %s [options]* [test]*" prog)
 
@@ -127,6 +141,7 @@ module X =
       let verbose = !verbose
       let tnames = !tnames
       let ncheck = !ncheck
+      let found = !found
     end)
 
 let () = X.zyva tests
