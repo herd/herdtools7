@@ -202,10 +202,10 @@ let dump_instruction i = match i with
       (pp_iar roia1)
       (pp_iar roia2)
 
-| Pbal lbl -> sprintf "bal %s" lbl
+| Pbal lbl -> sprintf "b[al] %s" lbl
 
 | Pbcc(cond,r1,roi2,lbl) ->
-    sprintf "b%s %s,%s,%s"
+    sprintf "b[%s] %s,%s,%s"
       (match cond with Eq -> "eq" | Ne -> "ne")
       (pp_reg r1)
       (string_of_reg_or_imm roi2)
