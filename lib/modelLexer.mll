@@ -35,7 +35,7 @@ module LU = LexUtils.Make(O)
     | "as" -> AS
     | "fun" ->  FUN
     | "in" -> IN
-(*    | "undefined_unless" -> REQUIRES jade: deprecated?*)
+    | "undefined_unless" -> REQUIRES (* jade: deprecated?, indeed but still here ! *)
     | "flag" -> FLAG
     | "withco" -> WITHCO
     | "withoutco" ->  WITHOUTCO
