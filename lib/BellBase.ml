@@ -76,10 +76,25 @@ type barrier =
 let all_kinds_of_barriers =  [ Fence ([], None);]
 
 let pp_barrier b = match b with
-  | Fence(s, None) -> sprintf "Fence(%s)" (string_of_annot_list s)
-  | Fence(s, Some(s1,s2)) -> sprintf "Fence(%s)(%s,%s)" (string_of_annot_list s) (string_of_annot_list s1) (string_of_annot_list s2)
+  | Fence(s, None) ->
+      sprintf "Fence(%s)" (string_of_annot_list s)
+  | Fence(s, Some(s1,s2)) ->
+      sprintf "Fence(%s)(%s,%s)"
+        (string_of_annot_list s)
+        (string_of_annot_list s1)
+        (string_of_annot_list s2)
 
 let barrier_compare = Pervasives.compare
+
+(* For barrier instructions, MUST be the same as parsed *)
+let pp_fence_ins = function
+  | Fence (s,None) ->
+      sprintf "f[%s]" (string_of_annot_list s)
+  | Fence(s, Some(s1,s2)) ->
+      sprintf "f[%s]([%s],[%s])"
+        (string_of_annot_list s)
+        (string_of_annot_list s1)
+        (string_of_annot_list s2)
 
 (****************)
 (* Instructions *)
@@ -228,7 +243,7 @@ let dump_instruction i = match i with
       (string_of_reg_or_imm roi1)
       (string_of_reg_or_imm roi2)
 
-| Pfence f -> pp_barrier f
+| Pfence f -> pp_fence_ins f
  
 let fold_regs (f_reg,_f_sreg) = 
   let fold_reg reg (y_reg,y_sreg) = match reg with
