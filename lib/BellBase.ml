@@ -132,20 +132,6 @@ let pp_iar iar = match iar with
   | IAR_roa roa -> string_of_reg_or_addr roa
   | IAR_imm i -> sprintf "%d" i
 
-type rmw2_op =
-| RMWExch
-| RMWAdd
-
-let pp_rmw2_op op = match op with
-  | RMWExch -> "exch"
-  | RMWAdd -> "add"
-
-type rmw3_op = 
-| RMWCAS
-
-let pp_rmw3_op op = match op with
-  | RMWCAS -> "cas"
-
 type addr_op = 
 | Addr_op_atom of reg_or_addr
 | Addr_op_add of reg_or_addr * reg_or_imm
@@ -155,24 +141,31 @@ let pp_addr_op a = match a with
   | Addr_op_add(roa,roi) -> sprintf "%s+%s" (string_of_reg_or_addr roa) 
     (string_of_reg_or_imm roi)
 
-type cond = Ne | Eq
-type op = Add | Xor | And
+type cond = 
+  | Eq of reg * reg_or_imm
+  | Ne of reg * reg_or_imm
+  | Bal 
+type op = 
+  | Add of reg * imm_or_addr_or_reg * imm_or_addr_or_reg 
+  | And of reg * imm_or_addr_or_reg * imm_or_addr_or_reg
+  | Mov of reg * imm_or_addr_or_reg 
 
 let pp_op = function
-  | Add -> "add"
-  | Xor -> "xor"
-  | And -> "and"
+  | Add(r,x,i) -> sprintf "add %s %s %s" (pp_reg r) (pp_iar x) (pp_iar i)
+  | And(r,x,i) -> sprintf "and %s %s %s" (pp_reg r) (pp_iar x) (pp_iar i) 
+  | Mov(r,i) -> sprintf "mov %s %s" (pp_reg r) (pp_iar i)
+
+let pp_cond = function
+  | Eq(r,x) -> sprintf "eq %s %s" (pp_reg r) (string_of_reg_or_imm x) 
+  | Ne(r,x) -> sprintf "ne %s %s" (pp_reg r) (string_of_reg_or_imm x)  
+  | Bal -> ""
 
 type instruction = 
-| Pld  of reg * addr_op * string list
-| Pst  of addr_op * reg_or_imm * string list
-| Pmov of reg * imm_or_addr_or_reg
-| Pop of op * reg * imm_or_addr_or_reg * imm_or_addr_or_reg
-| Pbal of lbl
-| Pbcc of cond * reg * reg_or_imm * lbl
-| Prmw2_op of reg * reg_or_addr * reg_or_imm * rmw2_op * string list
-| Prmw3_op of reg * reg_or_addr * reg_or_imm * reg_or_imm * rmw3_op * string list
+| Pld of reg * addr_op * string list
+| Pst of addr_op * reg_or_imm * string list
+| Prmw of op * string list
 | Pfence of barrier
+| Pbranch of cond * lbl * string list
 
 (* from GPU_PTXBase *)
 
@@ -196,54 +189,26 @@ include Pseudo.Make
      end)
 
 let dump_instruction i = match i with
-| Pld(r, addr_op, s) -> sprintf "r[%s] %s,%s"
+| Pld(r, addr_op, s) -> sprintf "r[%s] %s %s"
       (string_of_annot_list s)
       (pp_reg r)
       (pp_addr_op addr_op)
 
-| Pst(addr_op,roi,s) -> sprintf "w[%s] %s,%s" 
+| Pst(addr_op,roi,s) -> sprintf "w[%s] %s %s" 
       (string_of_annot_list s)
       (pp_addr_op addr_op)
       (string_of_reg_or_imm roi)
 
-| Pmov(r,roia) -> sprintf "mov %s,%s"
-      (pp_reg r)
-      (pp_iar roia)
-
-| Pop(op,r,roia1,roia2) ->
-    sprintf "%s %s,%s,%s"
+| Prmw(op,s) -> sprintf "rmw[%s](%s)"
+      (string_of_annot_list s)
       (pp_op op)
-      (pp_reg r)
-      (pp_iar roia1)
-      (pp_iar roia2)
 
-| Pbal lbl -> sprintf "b[al] %s" lbl
+| Pfence f -> pp_barrier f
 
-| Pbcc(cond,r1,roi2,lbl) ->
-    sprintf "b[%s] %s,%s,%s"
-      (match cond with Eq -> "eq" | Ne -> "ne")
-      (pp_reg r1)
-      (string_of_reg_or_imm roi2)
-      (lbl)
-
-| Prmw2_op(r,roa,roi,op,s) ->
-    sprintf "rmw.%s[%s] %s,%s,%s"
-      (pp_rmw2_op op)
+| Pbranch(c,l,s) -> sprintf "b[%s](%s) %s" 
       (string_of_annot_list s)
-      (pp_reg r)
-      (string_of_reg_or_addr roa)
-      (string_of_reg_or_imm roi)
-
-| Prmw3_op(r,roa,roi1,roi2,op,s) ->
-    sprintf "rmw.%s[%s] %s,%s,%s,%s"
-      (pp_rmw3_op op)
-      (string_of_annot_list s)
-      (pp_reg r)
-      (string_of_reg_or_addr roa)
-      (string_of_reg_or_imm roi1)
-      (string_of_reg_or_imm roi2)
-
-| Pfence f -> pp_fence_ins f
+      (pp_cond c) 
+      l 
  
 let fold_regs (f_reg,_f_sreg) = 
   let fold_reg reg (y_reg,y_sreg) = match reg with
@@ -266,16 +231,22 @@ let fold_regs (f_reg,_f_sreg) =
     | Addr_op_atom roa -> fold_roa roa c
     | Addr_op_add(roa,roi) -> fold_roa roa (fold_roi roi c)
   in
+  let fold_cond cond c = match cond with
+    | Eq(r,i) -> fold_reg r (fold_roi i c) 
+    | Ne(r,i) -> fold_reg r (fold_roi i c)  
+    | Bal -> c 
+  in
+  let fold_op op c = match op with
+    | Add(r,x,i) -> fold_reg r (fold_iar x (fold_iar i c)) 
+    | And(r,x,i) -> fold_reg r (fold_iar x (fold_iar i c)) 
+    | Mov(r,i) -> fold_reg r (fold_iar i c)
+  in
   let fold_ins (_y_reg,_y_sreg as c) ins = 
     begin match ins with      
     | Pld(r, addr_op, _) -> fold_reg r (fold_addr_op addr_op c)
     | Pst(addr_op,roi,_) -> fold_addr_op addr_op (fold_roi roi c)
-    | Pmov(r,roi) -> fold_reg r (fold_iar roi c)
-    | Pop(_,r,roi1,roi2) -> fold_reg r (fold_iar roi1 (fold_iar roi2 c))
-    | Pbcc(_,r1, roi2, _) -> fold_reg r1 (fold_roi roi2 c)
-    | Prmw2_op(r,roa,roi,_,_) -> fold_reg r (fold_roa roa (fold_roi roi c))
-    | Prmw3_op(r,roa,roi1,roi2,_,_) -> fold_reg r (fold_roa roa (fold_roi roi1 (fold_roi roi2 c)))
-    | Pbal _
+    | Prmw(op,_) -> fold_op op c
+    | Pbranch(cond,_,_) -> fold_cond cond c 
     | Pfence _ -> c
     end 
   in fold_ins
@@ -297,15 +268,22 @@ let map_regs f_reg _f_symb =
     | Addr_op_atom roa -> Addr_op_atom(map_roa roa)      
     | Addr_op_add(roa,roi) -> Addr_op_add(map_roa roa,map_roi roi)
   in
+  let map_cond cond = match cond with
+    | Eq(r,i) -> Eq(f_reg r, map_roi i)
+    | Ne(r,i) -> Ne(f_reg r, map_roi i)  
+    | Bal -> Bal
+  in
+  let map_op op = match op with
+    | Add(r,x,i) -> Add(f_reg r, map_iar x, map_iar i) 
+    | And(r,x,i) -> And(f_reg r, map_iar x, map_iar i) 
+    | Mov(r,i) -> Mov(f_reg r, map_iar i) 
+  in
   let map_ins ins = begin match ins with
-    | Pld(r, addr_op, s) -> Pld(f_reg r, map_addr_op addr_op, s)
+    | Pld(r,addr_op,s) -> Pld(f_reg r, map_addr_op addr_op, s)
     | Pst(addr_op,roi,s) -> Pst(map_addr_op addr_op, map_roi roi, s)
-    | Pmov(r,roi) -> Pmov(f_reg r, map_iar roi)
-    | Pop(op,r,roi1,roi2) -> Pop(op,f_reg r, map_iar roi1, map_iar roi2)
-    | Pbcc(cond,r1,roi2,lbl) -> Pbcc(cond,f_reg r1, map_roi roi2, lbl)
-    | Prmw2_op(r,roa,roi,op,s) -> Prmw2_op(f_reg r, map_roa roa, map_roi roi, op, s)
-    | Prmw3_op(r,roa,roi1,roi2,op,s) -> Prmw3_op(f_reg r, map_roa roa, map_roi roi1, map_roi roi2, op, s)
-    | Pbal _ | Pfence _ -> ins
+    | Prmw(op,s) -> Prmw(map_op op, s)
+    | Pbranch(cond,lbl,s) -> Pbranch(map_cond cond,lbl,s)
+    | Pfence _ -> ins
   end in
   map_ins
 
@@ -315,34 +293,28 @@ let norm_ins ins = ins
 
 
 let fold_addrs f =
- let fold_roa c = function
+ let fold_roa roa c = match roa with 
   | Rega _ -> c
-  | Abs a -> f a c in
-
- let fold_iar c = function
-  | IAR_roa roa -> fold_roa c roa
-  | IAR_imm _ -> c in
-
- let fold_ao c = function
+  | Abs a -> f a c
+ in
+ let fold_iar iar c = match iar with
+  | IAR_roa roa -> fold_roa roa c
+  | IAR_imm _ -> c 
+ in
+ let fold_ao ao c = match ao with 
    | Addr_op_atom roa
    | Addr_op_add (roa,_) ->
-       fold_roa c roa in
-
+       fold_roa roa c 
+  in
+  let fold_op op c = match op with
+    | Add(r,x,i) -> fold_iar x (fold_iar i c) 
+    | And(r,x,i) -> fold_iar x (fold_iar i c) 
+    | Mov(r,i) -> fold_iar i c
+  in
   fun c ins -> match ins with
-  | Pbal _
-  | Pbcc _
-  | Pfence _
-      -> c
-  | Pld (_,ao,_)
-  | Pst (ao,_,_)
-      -> fold_ao c ao
-  | Pmov (_,iar)
-      -> fold_iar c iar
-  | Pop (_,_,iar1,iar2)
-      -> fold_iar (fold_iar c iar1) iar2
-  | Prmw2_op (_,roa,_,_,_)
-  | Prmw3_op (_,roa,_,_,_,_)
-      -> fold_roa c roa
+  | Pbranch _ | Pfence _ -> c
+  | Pld (_,ao,_) | Pst (ao,_,_) -> fold_ao ao c
+  | Prmw (op,_) -> fold_op op c
 
 let pp_instruction _m ins = dump_instruction ins
 
@@ -375,7 +347,8 @@ let get_id_and_list i = match i with
 | Pld(_,_,s) -> (BellName.r,s)
 | Pst(_,_,s) -> (BellName.w,s)
 | Pfence (Fence (s, _)) -> (BellName.f,s)      
-| Prmw2_op(_,_,_,_,s) | Prmw3_op(_,_,_,_,_,s) -> (BellName.rmw,s)
+| Prmw(_,s) -> (BellName.rmw,s)
+| Pbranch(_,_,s) -> (BellName.b,s)
 | _ -> raise Not_found
 
 let get_from_and_to_labels b = match b with
@@ -385,6 +358,6 @@ let set_list i al = match i with
 | Pld (a1,a2,_) -> Pld (a1,a2,al)
 | Pst (a1,a2,_) -> Pst (a1,a2,al)
 | Pfence (Fence (_,a2)) -> Pfence (Fence (al,a2))
-| Prmw2_op(a1,a2,a3,a4,_) -> Prmw2_op(a1,a2,a3,a4,al)
-| Prmw3_op(a1,a2,a3,a4,a5,_) -> Prmw3_op(a1,a2,a3,a4,a5,al)
+| Prmw(a1,_) -> Prmw(a1,al)
+| Pbranch(a1,a2,_) -> Pbranch(a1,a2,al)
 | _ -> assert false

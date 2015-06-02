@@ -28,6 +28,7 @@ val r : string
 val w : string
 val f : string
 val rmw : string
+val b : string
 
 val all_mem_sets : StringSet.t
 val all_sets : StringSet.t

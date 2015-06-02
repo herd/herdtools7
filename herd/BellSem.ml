@@ -82,7 +82,7 @@ module Make (C:Sem.Config)(V:Value.S)
       | BellBase.IAR_imm i -> (M.unitT (V.intToV i))	
 
 
-    let do_2op v1 v2 op addr = match op with
+(*    let do_2op v1 v2 op addr = match op with
       | BellBase.RMWExch -> ((M.unitT v1) >>| 
 	                     (M.unitT v2) >>|
 			     (M.unitT addr))
@@ -96,7 +96,7 @@ module Make (C:Sem.Config)(V:Value.S)
 	                   (fun eq -> 
 			     (M.unitT v1) >>|
 	                     (M.op3 Op.If eq v3 v1) >>|
-	                     (M.unitT addr))
+	                     (M.unitT addr)) *)
 
     let solve_addr_op ao ii = match ao with
       | BellBase.Addr_op_atom roa -> read_roa roa ii
@@ -104,14 +104,58 @@ module Make (C:Sem.Config)(V:Value.S)
 	  read_roi roi ii) >>= 
 	(fun (v1,v2) -> M.op Op.Add v1 v2)
 
-    let tr_cond = function
-      | BellBase.Ne -> Op.Ne
-      | BellBase.Eq -> Op.Eq
+    let tr_cond ii lbl = function
+      | BellBase.Ne(r,i) | BellBase.Eq(r,i) as cond -> 
+        let op = match cond with 
+          | BellBase.Ne _ -> Op.Ne
+          | BellBase.Eq _ -> Op.Eq
+          | _ -> assert false
+        in
+	  (read_reg r ii) >>|
+	      (read_roi i ii) >>=
+		(fun (v1,v2) -> M.op op v1 v2 >>=
+		  (fun v -> commit ii >>= fun () -> B.bccT v lbl))
+      | BellBase.Bal ->  M.unitT (B.Jump lbl)
 
-    let tr_op = function
-      | BellBase.Add -> Op.Add
-      | BellBase.And -> Op.And
-      | BellBase.Xor -> Op.Xor
+    let op_of_rmw_op op = match op with
+          | BellBase.Add _ -> Op.Add 
+          | BellBase.And _ -> Op.And
+          | _ -> assert false
+
+(*  jade: j'aurais voulu mettre les calculs de rmw en facteur comme ca, mais du
+coup je n'arrivais pas a obtenir de iico entre le R* et le W* d'un rmw, car je
+n'arrivais pas a creer de iico_truc entre; pas sure de bien comprendre
+pourquoi!
+
+     let tr_op op r roi v ii = 
+          (read_iar roi ii) >>=
+          (fun v' -> M.op op v v') >>=
+          (fun res -> (write_reg r res ii)) (*>>=
+          (fun () -> read_reg r ii)*) 
+
+        | BellBase.Mov(r, iar) -> (*jade: todo*) 
+        (read_iar iar ii) >>=
+        (fun res -> (write_reg r res ii)) >>!
+        B.Next *)
+
+    let last_of_rmw_op op = match op with
+      | BellBase.Add(_,_,BellBase.IAR_roa(BellBase.Abs _ as x)) 
+      | BellBase.And(_,_,BellBase.IAR_roa(BellBase.Abs _ as x)) -> BellBase.Addr_op_atom(x)
+(*      | BellBase.Mov jade: todo; or Exch? *)
+      | _ -> failwith "the last operand of an rmw op must be an address" 
+
+    let second_of_rmw_op op = match op with
+      | BellBase.Add(_,(BellBase.IAR_roa(BellBase.Rega _) as x),_) 
+      | BellBase.And(_,(BellBase.IAR_roa(BellBase.Rega _) as x),_)
+      | BellBase.Add(_,(BellBase.IAR_imm _ as x),_) 
+      | BellBase.And(_,(BellBase.IAR_imm _ as x),_) -> x
+(*      | BellBase.Mov jade: todo; or Exch? *)
+      | _ -> failwith "the second operand of an rmw op must be an immediate value or a register" 
+
+    let first_of_rmw_op op = match op with
+      | BellBase.Add(r,_,_) | BellBase.And(r,_,_) -> r
+(*      | BellBase.Mov jade: todo; or Exch? *)
+      | _ -> failwith "the first operand of an rmw op must be a register" 
 
     let build_semantics ii = 
       let build_semantics_inner ii =
@@ -127,62 +171,22 @@ module Make (C:Sem.Config)(V:Value.S)
 	      read_roi roi ii) >>=
 	    (fun (addr,v) -> write_mem addr v s ii) >>!
 	    B.Next
-(* Exch is special, as there is no data-depency from memory read
-   from roa to memory write to roa *)
-	| BellBase.Prmw2_op(r,roa,roi,BellBase.RMWExch,s) ->
-            read_roa roa ii >>=
-            (fun addr ->
-               let r1 = read_mem_atom addr s ii
-               and r2 = read_roi roi ii
-               and w1 = fun v -> write_mem_atom addr v s ii 
-               and w2 = fun v -> write_reg r v ii in
-               M.exch r1 r2 w1 w2) >>! B.Next
 
-	| BellBase.Prmw2_op(r,roa,roi,op,s) ->
-	  (read_roa roa ii ) >>=
-	    (fun addr -> 
-	      (read_mem_atom addr s ii) >>|
-	      (read_roi roi ii) >>|
-	      (M.unitT addr)
-	    ) >>=
-	    (fun ((v1,v2),addr) -> do_2op v1 v2 op addr) >>=
-	    (fun ((prev,res),addr) -> 
-	      (write_reg r prev ii) >>|
-	      (write_mem_atom addr res s ii)) >>!
-	    B.Next
+	| BellBase.Prmw(op,s) ->
+          let addr_op = last_of_rmw_op op in
+          let roi = second_of_rmw_op op in
+          let r = first_of_rmw_op op in 
+          let op = op_of_rmw_op op in
+          (solve_addr_op addr_op ii) >>=
+          (fun x -> (read_mem_atom x s ii) >>=
+            (fun v -> 
+              (read_iar roi ii) >>=
+                (fun v' -> M.op op v v') >>=
+                  (fun res -> (write_reg r res ii) >>| 
+                               write_mem_atom x res s ii))) >>!
+          B.Next
 
-	| BellBase.Prmw3_op(r,roa,roi1,roi2,op,s) ->
-	  (read_roa roa ii ) >>=
-	    (fun addr -> 
-	      (read_mem_atom addr s ii) >>|
-	      (read_roi roi1 ii) >>|
-	      (read_roi roi2 ii) >>|
-		  (M.unitT addr)
-	     ) >>=
-	    (fun (((v1,v2),v3),addr) -> do_3op v1 v2 v3 op addr) >>=
-	    (fun ((prev,res),addr) -> 
-	      (write_reg r prev ii) >>|
-	      (write_mem_atom addr res s ii)) >>!
-	    B.Next
-
-
-	| BellBase.Pmov(r, roi) ->
-	   (read_iar roi ii) >>=
-	     (fun v -> write_reg r v ii) >>! B.Next
-					       
-	| BellBase.Pop(op,r, roi1, roi2) ->
-	   (read_iar roi1 ii) >>|
-	     (read_iar roi2 ii) >>=
-	     (fun (v1,v2) -> M.op (tr_op op) v1 v2) >>=
-	     (fun v -> write_reg r v ii) >>!
-	     B.Next
-        | BellBase.Pbal lbl ->
-             M.unitT (B.Jump lbl)
-	| BellBase.Pbcc(cond,r1,roi2,lbl) ->
-	  (read_reg r1 ii) >>|
-	      (read_roi roi2 ii) >>=
-		(fun (v1,v2) -> M.op (tr_cond cond) v1 v2 >>=
-		  (fun v -> commit ii >>= fun () -> B.bccT v lbl))
+	| BellBase.Pbranch(cond,lbl,_) -> tr_cond ii lbl cond
 	    
 	| BellBase.Pfence(BellBase.Fence (s,o)) ->
       	  create_barrier s o ii >>! B.Next	  

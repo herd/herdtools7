@@ -16,7 +16,7 @@
 module Make(O:LexUtils.Config) = struct
 open Lexing
 open LexMisc
-open BellParser
+open LISAParser
 module Bell = BellBase
 module LU = LexUtils.Make(O)
 

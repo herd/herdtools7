@@ -106,11 +106,11 @@ end = struct
         let module Bell = BellBase in
         let module BellLexParse = struct
 	  type instruction = Bell.pseudo
-	  type token = BellParser.token
+	  type token = LISAParser.token
 
           module L = BellLexer.Make(LexConf)
 	  let lexer = L.token
-	  let parser = BellParser.main
+	  let parser = LISAParser.main
         end in
         let module X = Make (Bell) (BellLexParse) in
         X.zyva chan splitted
@@ -238,11 +238,11 @@ module Tops
             let module Bell = BellBase in
             let module BellLexParse = struct
 	      type instruction = Bell.pseudo
-	      type token = BellParser.token
+	      type token = LISAParser.token
 
               module L = BellLexer.Make(LexConf)
 	      let lexer = L.token
-	      let parser = BellParser.main
+	      let parser = LISAParser.main
             end in
             let module X = Make (Bell) (BellLexParse) in
             X.zyva

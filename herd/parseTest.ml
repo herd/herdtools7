@@ -314,10 +314,10 @@ module Top (C:Config) = struct
         let module Bell = BellArch.Make(C.PC)(SymbValue) in
         let module BellLexParse = struct
   	  type instruction = Bell.pseudo
-	  type token = BellParser.token
+	  type token = LISAParser.token
           module Lexer = BellLexer.Make(LexConfig)
 	  let lexer = Lexer.token
-	  let parser = BellParser.main
+	  let parser = LISAParser.main
         end in
 
         let module BellS = BellSem.Make(C)(SymbValue) in

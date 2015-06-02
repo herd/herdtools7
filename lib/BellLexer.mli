@@ -15,6 +15,6 @@
 (** Lexing PTX assembly *)
 
 module Make : functor(O:LexUtils.Config) -> sig
-  val token : Lexing.lexbuf -> BellParser.token
+  val token : Lexing.lexbuf -> LISAParser.token
 end
 
