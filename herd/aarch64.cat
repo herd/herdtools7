@@ -34,7 +34,7 @@ let strongf = dmb.sy & (M * M)
 	    | dsb.st & (W * W)
 	    | dmb.ld & (R * M)
 	    | dsb.ld & (R * M)
-		 
+
 let weakf = rel
 
 let fence = strongf | weakf

@@ -17,30 +17,53 @@
 #include <limits.h>
 #include <errno.h>
 #include <stdint.h>
+#include <stdarg.h>
 #include "utils.h"
 
 /********/
 /* Misc */
 /********/
 
+FILE *errlog ;
+
+static void checkerrlog(void) {
+  if (!errlog) errlog = stderr ;
+}
+
+void seterrlog(FILE *chan) {
+  errlog = chan ;
+}
+
+int log_error(const char *fmt, ...) {
+  int result;
+  va_list args;
+  va_start(args, fmt);
+  checkerrlog() ;
+  result = vfprintf(errlog, fmt, args);
+  fflush(errlog);
+  va_end(args);
+  return result;
+}
+
 void fatal(char *msg) {
-  fprintf(stderr,"Failure: %s\n", msg) ;
+  log_error("Failure: %s\n", msg) ;
+  fclose(errlog);
   fprintf(stdout,"Failure: %s\n", msg) ;
   exit(1) ;
 }
 
 void errexit(char *msg,int err) {
-  fprintf(stderr,"%s: %s\n",msg,strerror(err)) ;
+  log_error("%s: %s\n",msg,strerror(err)) ;
+  fclose(errlog);
   exit(2) ;
 }
 
 void *malloc_check(size_t sz) {
   if (sz == 0) return NULL ;
   void *p = malloc(sz) ;
-  if (!p) { 
+  if (!p) {
     if (!errno) errno = ENOMEM ;
-    perror("malloc") ;
-    exit(2) ;
+    errexit("malloc",errno) ;
   }
   return p ;
 }
@@ -190,7 +213,7 @@ cpus_t *coremap_seq(int navail, int nways) {
   int ncores = navail / nways ;
   int i = 0 ;
   for (int c = 0 ; c < ncores ; c++) {
-    for (int k = 0 ; k < nways ; k++) {  
+    for (int k = 0 ; k < nways ; k++) {
       r->cpu[i++] = c ;
     }
   }
@@ -293,10 +316,10 @@ static int ok_one_color(int *cm,int *d,int *a,int n, int p, int c) {
     int op = a[k] ;
     if (op >= 0) {
       if (d[n*p+k]) {
-	int oc = cm[op] ;
-	if (oc == c) {
-	  return 0 ;
-	} 
+        int oc = cm[op] ;
+        if (oc == c) {
+          return 0 ;
+        }
       }
     }
   }
@@ -388,89 +411,89 @@ void custom_affinity (st_t *st,cpus_t *cm,int **color,int *diff,cpus_t *aff_cpus
 /* usage */
 
 static void usage(char *prog, cmd_t *d) {
-  fprintf(stderr,"usage: %s (options)*\n",prog) ;
-  fprintf(stderr,"  -v      be verbose\n") ;
-  fprintf(stderr,"  -q      be quiet\n") ;
-  fprintf(stderr,"  -a <n>  run maximal number of tests for n available processors (default %i)\n",d->avail) ;
-  fprintf(stderr,"  -n <n>  run n tests concurrently\n") ;
-  fprintf(stderr,"  -r <n>  perform n runs (default %i)\n",d->max_run) ;
-  fprintf(stderr,"  -fr <f> multiply run number per f\n") ;
-  fprintf(stderr,"  -s <n>  outcomes per run (default %i)\n",d->size_of_test) ;
+  log_error("usage: %s (options)*\n",prog) ;
+  log_error("  -v      be verbose\n") ;
+  log_error("  -q      be quiet\n") ;
+  log_error("  -a <n>  run maximal number of tests for n available processors (default %i)\n",d->avail) ;
+  log_error("  -n <n>  run n tests concurrently\n") ;
+  log_error("  -r <n>  perform n runs (default %i)\n",d->max_run) ;
+  log_error("  -fr <f> multiply run number per f\n") ;
+  log_error("  -s <n>  outcomes per run (default %i)\n",d->size_of_test) ;
   if (d->stride > 0) {
-    fprintf(stderr,"  -st <n> stride (default %i)\n",d->stride) ;
+    log_error("  -st <n> stride (default %i)\n",d->stride) ;
   }
-  fprintf(stderr,"  -fs <f> multiply outcomes per f\n") ;
-  fprintf(stderr,"  -f <f>  multiply outcomes per f, divide run number by f\n") ;
+  log_error("  -fs <f> multiply outcomes per f\n") ;
+  log_error("  -f <f>  multiply outcomes per f, divide run number by f\n") ;
   if (d->aff_mode != aff_none) {
-    fprintf(stderr,"  -i <n>  increment for allocating logical processors, -i 0 disables affinity mode") ;
+    log_error("  -i <n>  increment for allocating logical processors, -i 0 disables affinity mode") ;
     if (d->aff_mode == aff_incr) {
-      fprintf(stderr," (default %i)\n",d->aff_incr) ;
+      log_error(" (default %i)\n",d->aff_incr) ;
     } else {
-      fprintf(stderr,"\n") ;
+      log_error("\n") ;
     }
-    fprintf(stderr,"  -p <ns> specify logical processors (default '") ;
-    cpus_dump(stderr,d->aff_cpus) ;
-    fprintf(stderr,"')\n") ;
-    fprintf(stderr,"  +ra     randomise affinity%s\n",d->aff_mode == aff_random ? " (default)" : "") ;
+    log_error("  -p <ns> specify logical processors (default '") ;
+    cpus_dump(errlog,d->aff_cpus) ;
+    log_error("')\n") ;
+    log_error("  +ra     randomise affinity%s\n",d->aff_mode == aff_random ? " (default)" : "") ;
     if (d->aff_custom_enabled) {
-      fprintf(stderr,"  +ca     enable custom affinity%s\n",d->aff_mode == aff_custom ? " (default)" : "") ;
+      log_error("  +ca     enable custom affinity%s\n",d->aff_mode == aff_custom ? " (default)" : "") ;
     } else {
-      fprintf(stderr,"  +ca     alias for +ra\n") ;
+      log_error("  +ca     alias for +ra\n") ;
     }
     if (d->aff_scan_enabled) {
-      fprintf(stderr,"  +sa     enable scanning affinity%s\n",d->aff_mode == aff_scan ? " (default)" : "") ;
-      fprintf(stderr,"  +ta <topo> set topology affinity\n") ;
+      log_error("  +sa     enable scanning affinity%s\n",d->aff_mode == aff_scan ? " (default)" : "") ;
+      log_error("  +ta <topo> set topology affinity\n") ;
     } else {
-      fprintf(stderr,"  +sa     alias for +ra\n") ;
+      log_error("  +sa     alias for +ra\n") ;
     }
   }
   if (d->shuffle >= 0) {
-    fprintf(stderr,"  +rm     randomise memory accesses%s\n",d->shuffle ? " (default)" : "") ;
-    fprintf(stderr,"  -rm     do not randomise memory accesses%s\n",!d->shuffle ? " (default)" : "") ;
+    log_error("  +rm     randomise memory accesses%s\n",d->shuffle ? " (default)" : "") ;
+    log_error("  -rm     do not randomise memory accesses%s\n",!d->shuffle ? " (default)" : "") ;
   }
   if (d->speedcheck >= 0) {
-    fprintf(stderr,"  +sc     stop as soon as possible%s\n",d->speedcheck ? " (default)" : "") ;
-    fprintf(stderr,"  -sc     run test completly%s\n",!d->speedcheck ? " (default)" : "") ;
-  }   
+    log_error("  +sc     stop as soon as possible%s\n",d->speedcheck ? " (default)" : "") ;
+    log_error("  -sc     run test completly%s\n",!d->speedcheck ? " (default)" : "") ;
+  }
   if (!d->fix) {
-    fprintf(stderr,"  +fix    fix thread launch order\n") ;
+    log_error("  +fix    fix thread launch order\n") ;
   }
   if (d->delta_tb) {
-    fprintf(stderr,"  -tb <list> set timebase delays, default '") ;    
-    ints_dump(stderr,d->delta_tb) ;
-    fprintf(stderr,"'\n") ;
-    fprintf(stderr,"    List syntax is comma separated proc:delay\n") ;
-    fprintf(stderr,"  -ta <n>    set all timebase delays\n") ;
+    log_error("  -tb <list> set timebase delays, default '") ;
+    ints_dump(errlog,d->delta_tb) ;
+    log_error("'\n") ;
+    log_error("    List syntax is comma separated proc:delay\n") ;
+    log_error("  -ta <n>    set all timebase delays\n") ;
   }
   if (d->verbose_barrier >= 0) {
-    fprintf(stderr,"  +vb     show iteration timings%s\n",d->verbose_barrier ? " (default)" : "") ;
-    fprintf(stderr,"  -vb     do not show iteration timings%s\n",!d->verbose_barrier ? " (default)" : "") ;
+    log_error("  +vb     show iteration timings%s\n",d->verbose_barrier ? " (default)" : "") ;
+    log_error("  -vb     do not show iteration timings%s\n",!d->verbose_barrier ? " (default)" : "") ;
   }
   if (d->prefetch) {
-    fprintf(stderr,"  -pra (I|F|T|W) set all prefetch\n") ;
-    fprintf(stderr,"  -prf <list> set prefetch, default '") ;
-    prefetch_dump(stderr,d->prefetch) ;
-    fprintf(stderr,"'\n") ;
-    fprintf(stderr,"    List syntax is comma separated proc:name=(I|F|T|W)\n") ;
+    log_error("  -pra (I|F|T|W) set all prefetch\n") ;
+    log_error("  -prf <list> set prefetch, default '") ;
+    prefetch_dump(errlog,d->prefetch) ;
+    log_error("'\n") ;
+    log_error("    List syntax is comma separated proc:name=(I|F|T|W)\n") ;
   }
   if (d->static_prefetch >= 0) {
-    fprintf(stderr,"  -prs <n> prefetch probability is 1/n, -prs 0 disables feature, default %i\n",d->static_prefetch) ;
+    log_error("  -prs <n> prefetch probability is 1/n, -prs 0 disables feature, default %i\n",d->static_prefetch) ;
   }
   if (d->max_loop > 0) {
-    fprintf(stderr,"  -l <n>  measure time by running assembly in a loop of size <n> (default %i)\n",d->max_loop) ;
-  }  
+    log_error("  -l <n>  measure time by running assembly in a loop of size <n> (default %i)\n",d->max_loop) ;
+  }
   if (d->prelude > 0) {
-    fprintf(stderr,"  -vp     no verbose prelude\n") ;
+    log_error("  -vp     no verbose prelude\n") ;
   }
   if (d->sync_n > 0) {
-    fprintf(stderr,"  -k <n>  undocumented (default %i)\n",d->sync_n) ;
+    log_error("  -k <n>  undocumented (default %i)\n",d->sync_n) ;
   }
   exit(2) ;
 }
 
 static long my_add (long x, long y) {
   long r = x+y ;
-  if (r < x || r < y) { errno = ERANGE ; fatal("overflow") ; } 
+  if (r < x || r < y) { errno = ERANGE ; fatal("overflow") ; }
   return r ;
 }
 
@@ -514,7 +537,7 @@ static cpus_t *argcpus(char *prog,char *p0,cmd_t *d) {
     if (x < 0 || *p == '\0' || (*q != '\0' && *q != ','))  usage(prog,d) ;
     sz++ ;
     if (*q == '\0') break ;
-    p = q+1 ;    
+    p = q+1 ;
   }
   cpus_t *r = cpus_create(sz) ;
   p = p0 ;
@@ -564,7 +587,7 @@ static void argoneprefetch(char *prog,cmd_t *d, char *p, prfdirs_t *r) {
     break ;
   case 'W':
     dir = touch_store ;
-    break ;    
+    break ;
   }
   set_prefetch(r,dir) ;
 }
@@ -584,8 +607,8 @@ int parse_prefetch(char *p, prfdirs_t *r) {
     }
     *p = '\0' ;
     prfone_t *loc_slot = get_name_slot(&r->t[proc],p0) ;
-    if (loc_slot == NULL) { 
-      fprintf(stderr,"Proc %i does not access variable %s\n",proc,p0) ;
+    if (loc_slot == NULL) {
+      log_error("Proc %i does not access variable %s\n",proc,p0) ;
       *p = '=' ;
       return 0 ;
     }
@@ -634,33 +657,33 @@ void parse_cmd(int argc, char **argv, cmd_t *d, cmd_t *p) {
     char fst = **argv ;
     if (fst != '-' && fst != '+') break ;
     if (strcmp(*argv,"-q") == 0) p->verbose=0 ;
-    else if (strcmp(*argv,"-v") == 0) p->verbose++ ;   
+    else if (strcmp(*argv,"-v") == 0) p->verbose++ ;
     else if (strcmp(*argv,"-r") == 0) {
       --argc ; ++argv ;
       if (!*argv) usage(prog,d) ;
-      p->max_run = argint(prog,argv[0],d) ;   
+      p->max_run = argint(prog,argv[0],d) ;
     } else if (strcmp(*argv,"-fr") == 0) {
       --argc ; ++argv ;
       if (!*argv) usage(prog,d) ;
-      p->max_run *= argdouble(prog,argv[0],d) ;   
+      p->max_run *= argdouble(prog,argv[0],d) ;
     } else if (strcmp(*argv,"-s") == 0) {
       --argc ; ++argv ;
       if (!*argv) usage(prog,d) ;
-      p->size_of_test = argint(prog,argv[0],d) ;   
+      p->size_of_test = argint(prog,argv[0],d) ;
     } else if (d->stride > 0 && strcmp(*argv,"-st") == 0) {
       --argc ; ++argv ;
       if (!*argv) usage(prog,d) ;
-      p->stride = argint(prog,argv[0],d) ;   
+      p->stride = argint(prog,argv[0],d) ;
       if (p->stride <= 0) p->stride = 1 ;
     } else if (strcmp(*argv,"-fs") == 0) {
       --argc ; ++argv ;
       if (!*argv) usage(prog,d) ;
-      p->size_of_test *= argdouble(prog,argv[0],d) ;   
+      p->size_of_test *= argdouble(prog,argv[0],d) ;
     } else if (strcmp(*argv,"-f") == 0) {
       --argc ; ++argv ;
       if (!*argv) usage(prog,d) ;
       double f = argdouble(prog,argv[0],d) ;
-      p->size_of_test *= f ;     
+      p->size_of_test *= f ;
       p->max_run /= f ;
     } else if (strcmp(*argv,"-n") == 0) {
       --argc ; ++argv ;
@@ -679,7 +702,7 @@ void parse_cmd(int argc, char **argv, cmd_t *d, cmd_t *p) {
       p->sync_n = a < 0 ? 0 : a ;
     } else if (d->aff_mode != aff_none && strcmp(*argv,"-i") == 0) {
       --argc ; ++argv ;
-      if (!*argv) usage(prog,d) ;      
+      if (!*argv) usage(prog,d) ;
       int i = argint(prog,argv[0],d) ;
       p->aff_mode = aff_incr ;
       p->aff_incr = i < 0 ? 0 : i ;
@@ -1065,13 +1088,13 @@ static int int_cmp(const void *_p, const void *_q) {
 
 int check_shuffle(int **t, int *min, int sz) {
   int *idx = malloc_check(sizeof(*idx)*sz) ;
-  for (int k=0 ; k < sz ; k++) {  
+  for (int k=0 ; k < sz ; k++) {
     idx[k] = (int)(t[k] - min) ;
     //    fprintf(stderr," %i",idx[k]) ;
   }
   //  fprintf(stderr,"\n") ;
   qsort(&idx[0],sz, sizeof(idx[0]), int_cmp) ;
-  for (int k=0 ; k < sz ; k++) {  
+  for (int k=0 ; k < sz ; k++) {
     if (idx[k] != k) {
       free(idx) ;
       return 0 ;
@@ -1090,7 +1113,7 @@ int check_shuffle(int **t, int *min, int sz) {
 
 tsc_t timeofday(void) {
   struct timeval tv ;
-  if (gettimeofday(&tv,NULL)) errexit("gettimeoday",errno) ;  
+  if (gettimeofday(&tv,NULL)) errexit("gettimeoday",errno) ;
   return tv.tv_sec * ((tsc_t)1000000) + tv.tv_usec ;
 }
 
@@ -1113,4 +1136,3 @@ int find_string(char *t[], int sz, char *s) {
   }
   return -1 ;
 }
-

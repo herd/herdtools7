@@ -23,6 +23,10 @@
 /* Misc */
 /********/
 
+void seterrlog(FILE *chan) ;
+
+int log_error(const char *fmt,...) ;
+
 void fatal(char *msg) ;
 /* e is errno */
 void errexit(char *msg,int e) ;
@@ -128,7 +132,7 @@ typedef struct {
   /* show time of synchronisation */
   int verbose_barrier ;
   /* Stop as soon as condition is settled */
-  int speedcheck ;  
+  int speedcheck ;
   /* Enforce fixed launch order (ie cancel change lauch) */
   int fix ;
   /* Dump prelude to test output */
@@ -171,7 +175,7 @@ typedef struct {
   volatile unsigned int count ;
   volatile int turn ;
   pc_t *cond ;
-  unsigned int nprocs ; 
+  unsigned int nprocs ;
 } pb_t ;
 
 

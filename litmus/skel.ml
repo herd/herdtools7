@@ -326,7 +326,7 @@ module Insert =
     O.f "#define N %i" n ;
     if do_staticalloc then begin
       let nexe =
-        match Cfg.avail  with 
+        match Cfg.avail  with
         | None -> 1
         | Some a -> if a < n then 1 else a / n in
       O.f "#define NEXE %i" nexe ;
@@ -595,7 +595,7 @@ let user2_barrier_def () =
       O.o "inline static void mcautious(void) { mbar(); }" ;
       O.o ""
     end
-      
+
 (* All of them *)
 
   let dump_threads test =
@@ -737,12 +737,12 @@ let user2_barrier_def () =
        O.f "static %s %s[SIZE_OF_MEM];"
          (CType.dump t)
          (A.Out.dump_out_reg proc reg))
-     test    
+     test
 
   let fmt_outcome locs env =
     U.fmt_outcome
       (fun t -> match Compile.get_fmt Cfg.hexa t with
-      | CType.Direct fmt -> 
+      | CType.Direct fmt ->
           if Cfg.hexa then "0x%" ^ fmt else "%" ^ fmt
       | CType.Macro fmt ->
           (if Cfg.hexa then "0x%\"" else "%\"") ^ fmt ^ "\"")
@@ -767,7 +767,7 @@ let user2_barrier_def () =
           type t = Constant.v
           let compare = A.V.compare
           let dump = function
-            | Concrete i -> 
+            | Concrete i ->
                 if Cfg.hexa then sprintf "0x%x"i
                 else sprintf "%i" i
             | Symbolic s -> dump_val_param s
@@ -825,7 +825,7 @@ let user2_barrier_def () =
 (* Outcome type definition *)
     let outs = U.get_final_locs test in
     let nitems =
-      let map = 
+      let map =
         A.LocSet.fold
           (fun loc ->
             A.LocMap.add loc (SkelUtil.nitems (U.find_type loc env)))
@@ -881,14 +881,14 @@ let user2_barrier_def () =
       if not do_timebase && have_timebase then
         O.oi "tb_t _start0 = p->tb_start[0][_i];" ;
       O.oi "pm_lock(_m);" ;
-      O.oi "fprintf(stderr,\"%04i:\",_i);" ;
+      O.oi "log_error(\"%04i:\",_i);" ;
       O.oi "putc(cond ? '*' : ' ',stderr) ;" ;
       if do_diff then begin
         let xys = get_xys test.T.globals in
         List.iter
           (fun (d,(x,y)) ->
             let fmt = sprintf "%s,%s=%%i " x y in
-            O.fi "fprintf(stderr,\"%s\",d_%02i);" fmt d)
+            O.fi "log_error(\"%s\",d_%02i);" fmt d)
           xys
       end ;
       if have_timebase then begin
@@ -898,9 +898,9 @@ let user2_barrier_def () =
         O.oii "if (some) putc(' ',stderr); else some = 1;" ;
         if do_timebase then begin
           let fmt = "%5i[%i]" in
-          O.fii "fprintf(stderr,\"%s\",p->tb_delta[_p][_i],p->tb_count[_p][_i]);" fmt
+          O.fii "log_error(\"%s\",p->tb_delta[_p][_i],p->tb_count[_p][_i]);" fmt
         end else begin
-          O.oii "fprintf(stderr,\"%6\"PRIi64,p->tb_start[_p][_i]-_start0);"
+          O.oii "log_error(\"%6\"PRIi64,p->tb_start[_p][_i]-_start0);"
         end ;
         O.oi "}"
       end ;
@@ -919,7 +919,7 @@ let user2_barrier_def () =
           O.oii "putc('}',stderr);" ;
           if mk_dsa test then begin
             O.oii "if (_b->aff_mode == aff_scan) {" ;
-            O.oiii "fprintf(stderr,\" %s\",p->group);" ;
+            O.oiii "log_error(\" %s\",p->group);" ;
             O.oii "}"
           end
         end ;
@@ -1149,7 +1149,7 @@ let user2_barrier_def () =
             locs ;
           O.oii "}" ;
           let fmt = "%i: Stabilizing final state!\\n" in
-          O.fii "if (_found) { fprintf(stderr,\"%s\",_id); }" fmt ;
+          O.fii "if (_found) { log_error(\"%s\",_id); }" fmt ;
           O.oii "if (!po_wait(_a->s_or,_found)) return ;" ;
           O.oi "}" ;
           O.o "}" ;
@@ -1414,7 +1414,7 @@ let user2_barrier_def () =
               U.do_store t
                 (sprintf "_a->mem_%s[_i]" a) (dump_a_v v)
           | _,_ ->
-*)  
+*)
             begin match t with
               | CType.Array (_,sz) ->
                   let pp_a = tag a
@@ -1843,7 +1843,7 @@ let user2_barrier_def () =
       do_break indent2
     end ;
     O.oii
-      "if (_b->verbose>1) fprintf(stderr, \"Run %i of %i\\r\", n_run, _b->max_run);" ;
+      "if (_b->verbose>1) fprintf(stderr,\"Run %i of %i\\r\", n_run, _b->max_run);" ;
     O.oii "reinit(&ctx);"  ;
 (* Start/join threads *)
 
@@ -1855,7 +1855,7 @@ let user2_barrier_def () =
     choose_proc_prelude indent2 ;
     if Cfg.cautious then O.oiii "mbar();" ;
     if do_detached then
-      O.oiii "op[_p] = launch_detached(fun[_p],&parg[_p]);" 
+      O.oiii "op[_p] = launch_detached(fun[_p],&parg[_p]);"
     else
       O.oiii "launch(&thread[_p],fun[_p],&parg[_p]);" ;
     loop_proc_postlude indent2 ;
@@ -2039,9 +2039,9 @@ let user2_barrier_def () =
     if do_collect_local && do_collect_after && do_safer then begin
       O.oii "/* Check histogram against sum of local histogram */" ;
       O.oii "if (!same_hist(hist,hist0)) {" ;
-      O.oiii "fprintf(stderr,\"Zyva histogram:\\n\");" ;
+      O.oiii "log_error(\"Zyva histogram:\\n\");" ;
       O.oiii "just_dump_outcomes(stderr,hist);" ;
-      O.oiii "fprintf(stderr,\"Local histogram:\\n\");" ;
+      O.oiii "log_error(\"Local histogram:\\n\");" ;
       O.oiii "just_dump_outcomes(stderr,hist0);" ;
       O.oiii "fatal(\"check summed hist\");" ;
       O.oii "}"
@@ -2175,7 +2175,7 @@ let user2_barrier_def () =
           O.oi "if (cmd->aff_mode == aff_topo) {" ;
           O.oii "ntopo = find_string(group,SCANSZ,cmd->aff_topo);" ;
           O.oii "if (ntopo < 0) {" ;
-          O.oiii "fprintf(stderr,\"Bad topology %s, reverting to scan affinity\\n\",cmd->aff_topo);" ;
+          O.oiii "log_error(\"Bad topology %s, reverting to scan affinity\\n\",cmd->aff_topo);" ;
           O.oiii "cmd->aff_mode = aff_scan; cmd->aff_topo = NULL;" ;
           O.oii "}" ;
           O.oi "}"
@@ -2201,7 +2201,7 @@ let user2_barrier_def () =
     if do_affinity then begin
       O.oi "int n_avail = cmd->avail > 0 ? cmd->avail : cmd->aff_cpus->sz;";
       let fmt = "Warning: avail=%i, available=%i\\n" in
-      O.fi "if (n_avail >  cmd->aff_cpus->sz) fprintf(stderr,\"%s\",n_avail, cmd->aff_cpus->sz);" fmt
+      O.fi "if (n_avail >  cmd->aff_cpus->sz) log_error(\"%s\",n_avail, cmd->aff_cpus->sz);" fmt
     end else begin
       O.oi "int n_avail = cmd->avail;"
     end ;
@@ -2223,64 +2223,64 @@ let user2_barrier_def () =
     O.o "/* Show parameters to user */" ;
     O.oi "if (prm.verbose) {" ;
     let fmt = doc.Name.name ^ ": n=%i, r=%i, s=%i" in
-    O.fii "fprintf(stderr, \"%s\",n_exe,prm.max_run,prm.size_of_test);" fmt ;
+    O.fii "log_error( \"%s\",n_exe,prm.max_run,prm.size_of_test);" fmt ;
     begin match stride with
     | None -> ()
     | Some _ ->
         let fmt = ", st=%i" in
-        O.fii "fprintf(stderr,\"%s\",prm.stride);" fmt
+        O.fii "log_error(\"%s\",prm.stride);" fmt
     end ;
     begin match memory with
     | Direct -> ()
     | Indirect ->
         let fmt = ", %crm" in
-        O.fii "fprintf(stderr,\"%s\",prm.do_shuffle?'+':'-');" fmt
+        O.fii "log_error(\"%s\",prm.do_shuffle?'+':'-');" fmt
     end ;
     if do_affinity then begin
       O.oii "if (cmd->aff_mode == aff_incr) {" ;
       let fmt = ", i=%i" in
-      O.fiii "fprintf(stderr, \"%s\",cmd->aff_incr);" fmt ;
+      O.fiii "log_error( \"%s\",cmd->aff_incr);" fmt ;
       O.oii "} else if (cmd->aff_mode == aff_random) {" ;
-      O.oiii "fprintf(stderr,\", +ra\");" ;
+      O.oiii "log_error(\", +ra\");" ;
       O.oii "} else if (cmd->aff_mode == aff_custom) {" ;
-      O.oiii "fprintf(stderr,\", +ca\");" ;
+      O.oiii "log_error(\", +ca\");" ;
       O.oii "} else if (cmd->aff_mode == aff_scan) {" ;
-      O.oiii "fprintf(stderr,\", +sa\");" ;
+      O.oiii "log_error(\", +sa\");" ;
       O.oii "}" ;
-      O.oii "fprintf(stderr,\", p='\");" ;
+      O.oii "log_error(\", p='\");" ;
       O.oii "cpus_dump(stderr,cmd->aff_cpus);" ;
-      O.oii "fprintf(stderr,\"'\");"
+      O.oii "log_error(\"'\");"
     end ;
     if do_timebase && have_timebase then begin
-      O.oii "fprintf(stderr,\", tb=\");" ;
+      O.oii "log_error(\", tb=\");" ;
       O.oii "ints_dump(stderr,cmd->delta_tb);" ;
-      O.oii "fprintf(stderr,\"'\");"
+      O.oii "log_error(\"'\");"
     end ;
     if do_custom then begin
-      O.oii "fprintf(stderr,\", prf='\");" ;
+      O.oii "log_error(\", prf='\");" ;
       O.oii "prefetch_dump(stderr,cmd->prefetch);" ;
-      O.oii "fprintf(stderr,\"'\");"
+      O.oii "log_error(\"'\");"
     end ;
     if do_staticpl then begin
-      O.oii "fprintf(stderr,\", prs=%i\",cmd->static_prefetch);"
+      O.oii "log_error(\", prs=%i\",cmd->static_prefetch);"
     end ;
     if Cfg.timeloop > 0 then begin
       let fmt = ", l=%i" in
-      O.fii "fprintf(stderr,\"%s\",prm.max_loop);" fmt
+      O.fii "log_error(\"%s\",prm.max_loop);" fmt
     end ;
-    O.oii "fprintf(stderr,\"\\n\");" ;
+    O.oii "log_error(\"\\n\");" ;
     if dca then begin
       O.oii "if (prm.verbose > 1 && prm.cm) {" ;
-      O.oiii"fprintf(stderr,\"logical proc -> core: \");" ;
+      O.oiii"log_error(\"logical proc -> core: \");" ;
       O.oiii "cpus_dump(stderr,prm.cm);" ;
-      O.oiii "fprintf(stderr,\"\\n\");" ;
+      O.oiii "log_error(\"\\n\");" ;
       O.oii "}"
     end ;
     O.oi "}" ;
 (* check there is enough static space *)
     if do_staticalloc then begin
       O.oi "if (n_exe * prm.size_of_test > SIZE_OF_MEM) {" ;
-      O.oii "fprintf(stderr,\"static memory is too small for  parameters n=%i and s=%i\\n\",n_exe,prm.size_of_test);" ;
+      O.oii "log_error(\"static memory is too small for  parameters n=%i and s=%i\\n\",n_exe,prm.size_of_test);" ;
       O.oii "exit(2);" ;
       O.oi "}"
     end ;
@@ -2294,14 +2294,14 @@ let user2_barrier_def () =
         O.oii "st_t seed = 0;" ;
         O.oii "custom_affinity(&seed,prm.cm,color,diff,all_cpus,n_exe,aff_cpus);" ;
         O.oii "if (prm.verbose) {" ;
-        O.oiii"fprintf(stderr,\"thread allocation: \\n\");" ;
+        O.oiii"log_error(\"thread allocation: \\n\");" ;
         O.oiii "cpus_dump_test(stderr,aff_cpus,aff_cpus_sz,prm.cm,N);" ;
         O.oii "}"
       end ;
       if mk_dsa test then begin
         O.oi "} else if (cmd->aff_mode == aff_topo) {" ;
         O.oii "int *from = &cpu_scan[ntopo * SCANLINE];" ;
-        O.oii "for (int k = 0 ; k < aff_cpus_sz ; k++) {" ;        
+        O.oii "for (int k = 0 ; k < aff_cpus_sz ; k++) {" ;
         O.oiii "aff_cpus[k] = *from++;" ;
         O.oii "}" ;
       end ;
