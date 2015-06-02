@@ -35,8 +35,9 @@ open AArch64Base
 %token ISH ISHST ISHLD
 %token NSH NSHST NSHLD
 
-%type <int list * (AArch64Base.pseudo) list list> main 
-%start  main
+%type <int list * (AArch64Base.pseudo) list list> main
+%type <AArch64Base.pseudo list> instr_option_list
+%start  main instr_option_list
 
 %nonassoc SEMI
 %%

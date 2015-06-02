@@ -30,7 +30,8 @@ open Bell
 %token <int> PROC
 
 %type <int list * (BellBase.pseudo) list list * MiscParser.gpu_data option * BellInfo.test option > main 
-%start  main
+%type <BellBase.pseudo list> instr_option_list
+%start  main instr_option_list
 
 %nonassoc SEMI
 
