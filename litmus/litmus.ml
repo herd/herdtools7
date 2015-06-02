@@ -73,7 +73,8 @@ let opts =
      "show some additional information on test as a prelude to test output" ;
    begin let module P = ParseTag.Make(Driver) in
    P.parse "-driver" Option.driver "select language of driver" end ;
-   begin let module P = ParseTag.Make(Launch) in
+   argbool "-detached" Option.detached "used detached POSIX threads" ;
+   begin let module P = ParseTag.Make(Launch) in   
    P.parse "-launch" Option.launch "set type of phread lauch" end ;
    begin let module P = ParseTag.Make(Memory) in
    P.parse "-mem" Option.memory "set memory mode" end ;
@@ -292,6 +293,7 @@ let () =
       let logicalprocs = !logicalprocs
       let linkopt = !linkopt
       let barrier = !barrier
+      let detached = !detached
       let launch = !launch
       let alloc = !alloc
       let doublealloc = !doublealloc

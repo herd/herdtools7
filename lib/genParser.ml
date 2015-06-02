@@ -76,6 +76,7 @@ module type S = sig
   val parse_cond : Lexing.lexbuf -> MiscParser.constr
 
   val parse : in_channel -> Splitter.result ->  pseudo MiscParser.t
+  val parse_string : string -> Splitter.result ->  pseudo MiscParser.t
 end
 
 
@@ -188,12 +189,17 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
           SL.token StateParser.constr in
       cond
 
-    let call_parser_loc name chan loc =
-      let lexbuf = LU.from_section loc chan in
-      call_parser name lexbuf
-
     module D = TestHash.Make(A)
 
+    module Do
+        (I:
+           sig
+             type src
+             val call_parser_loc :
+                 string ->
+                   src -> Pos.pos2 ->
+                     'a -> ('a -> Lexing.lexbuf -> 'b) -> 'b
+           end) = struct
     let parse chan
         {
          Splitter.locs = (init_loc, prog_loc,constr_loc,_) ;
@@ -201,15 +207,15 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
          info = info ; _
        }  =
       let init =
-	call_parser_loc "init"
+	I.call_parser_loc "init"
 	  chan init_loc SL.token StateParser.init in
       let procs,prog,gpu_data,bell_info =
-	call_parser_loc "prog" chan prog_loc L.lexer L.parser in
+	I.call_parser_loc "prog" chan prog_loc L.lexer L.parser in
       check_procs procs ;
       let prog = transpose procs prog in
       let prog = expn_prog prog in
       let (locs,final,_quantifiers) =
-	call_parser_loc "final"
+	I.call_parser_loc "final"
 	  chan constr_loc SL.token StateParser.constraints in
       check_regs procs init locs final ;
       let all_locs =
@@ -245,5 +251,26 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
           MiscParser.info =
             ("Hash",D.digest init prog all_locs)::info ; } in
       parsed
+           end
+
+    let parse chan x =
+      let module Src = struct
+        type src = in_channel
+        let call_parser_loc name chan loc =
+          let lexbuf = LU.from_section loc chan in
+          call_parser name lexbuf
+      end in
+      let module P = Do(Src) in
+      P.parse chan x
+
+    let parse_string s x =
+      let module Src = struct
+        type src = string
+        let call_parser_loc name s loc =
+          let lexbuf = LU.from_section_string loc s in
+          call_parser name lexbuf
+      end in
+      let module P = Do(Src) in
+      P.parse s x
   end
           

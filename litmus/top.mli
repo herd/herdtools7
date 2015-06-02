@@ -28,6 +28,7 @@ module type CommonConfig = sig
   val memory : Memory.t
   val alloc : Alloc.t
   val doublealloc : bool
+  val detached : bool
   val launch : Launch.t
   val barrier : Barrier.t
   val linkopt : string

@@ -97,6 +97,8 @@ rule main = parse
     P.lexfun "barrier" barrier arg ; main lexbuf }
 | "delay" arg
     { set_int_withfun set_delay arg ; main lexbuf }
+| "detached" arg
+    { set_bool detached arg ; main lexbuf }
 | "launch" arg
     { let module P = LexTag(Launch) in
     P.lexfun "launch" launch arg ; main lexbuf }

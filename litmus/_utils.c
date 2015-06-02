@@ -962,6 +962,42 @@ void *join(pthread_t *th) {
   return r ;
 }
 
+/* Detached */
+
+typedef struct {
+  f_t *f;
+  void *a ;
+  op_t *op;
+} detarg_t ;
+
+static void *zyva_det(void *_b) {
+  detarg_t *b = (detarg_t *)_b;
+  f_t *f = b->f ;
+  void *a = b->a ;
+  op_t *op = b->op ;
+  free(b) ;
+  int e = pthread_detach(pthread_self());
+  if (e) errexit("pthread_detach",e) ;
+  void *r = f(a) ;
+  op_set(op,r) ;
+  return NULL ;
+}
+
+op_t *launch_detached(f_t *f,void *a) {
+  op_t *op = op_create() ;
+  detarg_t *b = malloc_check(sizeof(*b)) ;
+  b->f = f ; b->a = a; b->op = op ;
+  pthread_t th ;
+  launch(&th,zyva_det,b) ;
+  return op ;
+}
+
+void *join_detached(op_t *op) {
+  void *r = op_get(op) ;
+  op_free(op) ;
+  return r ;
+}
+
 /* Thread cache */
 
 void *start_thread(void *_a) {

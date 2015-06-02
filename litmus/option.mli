@@ -56,6 +56,7 @@ val barrier : Barrier.t ref
 val verbose_barrier : bool ref
 val verbose_prelude : bool option ref
 val driver : Driver.t ref
+val detached : bool ref
 val launch : Launch.t ref
 val memory : Memory.t ref
 val contiguous : bool ref

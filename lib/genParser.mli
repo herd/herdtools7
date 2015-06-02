@@ -49,6 +49,7 @@ module type S = sig
   val parse_cond : Lexing.lexbuf -> MiscParser.constr
 (* Main parser for memevents and litmus *)
   val parse : in_channel -> Splitter.result ->  pseudo MiscParser.t
+  val parse_string : string -> Splitter.result ->  pseudo MiscParser.t
 end
 
 (* Build a generic parser *)

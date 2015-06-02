@@ -31,6 +31,10 @@ module Make : functor (O:Config) -> sig
    pos1 in chan (included) and ends at position pos2 (excluded) *)
 val from_section : Pos.pos2 -> in_channel -> lexbuf
 
+(* Idem, source being a string *)
+
+val from_section_string : Pos.pos2 -> string -> lexbuf
+
 
 
 (* Lexer used elsewhere *)

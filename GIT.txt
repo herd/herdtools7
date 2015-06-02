@@ -1,3 +1,7 @@
+**Tue Jun  2 10:43:19 CEST 2015
+Last commit there  58a45ae5a17ddc492276af7310ec36370f5a9ca5
+Committed here as 524
+
 ** Wed May 27 14:34:36 CEST 2015
 Last commit there  26c1b3e42f0d0473a3895d9a7c4581d6b9456233
 Committed here as 509

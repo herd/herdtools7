@@ -218,6 +218,11 @@ void launch(pthread_t *th, f_t *f, void *a) ;
 
 void *join(pthread_t *th) ;
 
+/* Detached lauch and join */
+
+op_t *launch_detached(f_t *f,void *a) ;
+void *join_detached(op_t *p) ;
+
 /* Thread cache */
 
 typedef struct {

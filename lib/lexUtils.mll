@@ -24,13 +24,13 @@ end
 
 module Make(O:Config) = struct
 
-  let from_section (start_pos,end_pos) ic =
+  let do_from_section seek input (start_pos,end_pos) ic =
     if O.debug then begin
       Printf.eprintf
         "Section: %a -> %a\n" Pos.debug_pos start_pos Pos.debug_pos end_pos ;
     end ;
     (* Start at start_pos *)
-    seek_in ic start_pos.pos_cnum ; 
+    seek ic start_pos.pos_cnum ;
 
     (* Will hold position of the next refill *)
     let next_pos = ref start_pos.pos_cnum in
@@ -62,7 +62,34 @@ module Make(O:Config) = struct
        engine needs this information *)
     lexbuf.lex_abs_pos <- start_pos.pos_cnum ;
     lexbuf
-      
+
+  let from_section pos2 ic = do_from_section seek_in input pos2 ic
+
+  module Source = struct
+    type t =  { mutable pos : int ; b : string }
+
+    let create s = { pos = 0  ; b = s; }
+
+    let seek b pos = b.pos <- pos
+
+    let input b buff p sz =
+      let cur_pos = b.pos in
+      let last_pos = String.length b.b in
+      if cur_pos >= last_pos then 0 (* Passed end of buffer *)
+      else begin
+        let sz =
+          if cur_pos + sz >= last_pos then last_pos - cur_pos
+          else sz in
+        String.blit b.b b.pos buff p sz ;
+        b.pos <- cur_pos + sz ;
+        sz
+      end
+  end
+
+  let from_section_string pos2 s =
+    let ic = Source.create s in
+    do_from_section Source.seek Source.input pos2 ic
+
 }
 
 let digit = ['0'-'9']

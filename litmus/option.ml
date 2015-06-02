@@ -100,6 +100,7 @@ let barrier = ref Barrier.User
 let verbose_barrier = ref false
 let verbose_prelude = ref None
 let driver = ref Driver.Shell
+let detached = ref false
 let launch = ref Launch.Changing
 let memory = ref Memory.Direct
 let contiguous = ref false
