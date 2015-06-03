@@ -30,7 +30,7 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
     let pseudo = List.map (fun i -> Instruction i)
 
 (* Bell instructions *)
-    let movi r i = Pmov (r,IAR_imm i)
+(*    let movi r i = Pmov (r,IAR_imm i) *)
     let ld_tagged r x a = Pld (r, Addr_op_atom (Abs (Constant.Symbolic x)),a)
     let ld r x = ld_tagged r x []
     let ld_idx_tagged r x idx a =
@@ -45,15 +45,14 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
     let st_idx_tagged x v idx a =
       Pst (Addr_op_add (Abs (Constant.Symbolic x),Regi idx),Imm v,a)
 
-    let bcci cond r i lab = Pbcc (cond,r,Imm i,lab)
-    let bcc cond r1 r2 lab = Pbcc (cond,r1,Regi r2,lab)
-    let addi r1 r2 i = Pop (Add,r1,IAR_roa (Rega r2),IAR_imm i)
-    let subi r1 r2 i = Pop (Add,r1,IAR_roa (Rega r2),IAR_imm (-i))
-    let xor r1 r2 r3 =
-      Pop (Xor,r1,IAR_roa (Rega r2),IAR_roa (Rega r3))
+    let branch_tagged cond lab a = Pbranch (cond,lab,a)
+
+(*    let addi r1 r2 i = Add(r1,IAR_roa (Rega r2),IAR_imm i)
+    let subi r1 r2 i = Add(r1,IAR_roa (Rega r2),IAR_imm (-i))
+    let xor r1 r2 r3 = Xor(r1,IAR_roa (Rega r2),IAR_roa (Rega r3))
 
     let exch_tagged r x v a =
-      Prmw2_op (r,Abs (Constant.Symbolic x),Imm v,RMWExch,a)
+      Prmw2_op (r,Abs (Constant.Symbolic x),Imm v,RMWExch,a) *)
       
 (**********)
 (* Export *)
@@ -78,7 +77,7 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
       let lab = Label.next_label "L" in
       rA,init,
       Label (lab,Nop)::
-      pseudo [ld rA x; bcci Ne rA 0 lab],
+      pseudo [ld rA x; branch_tagged (Ne(rA, Imm(0))) lab []],
       st
 
     let emit_load_one st _p init x =
@@ -86,10 +85,10 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
       let lab = Label.next_label "L" in
       rA,init,
       Label (lab,Nop)::
-      pseudo [ld rA x; bcci Ne rA 1 lab],
+      pseudo [ld rA x; branch_tagged (Ne(rA, Imm(1))) lab []],
       st
 
-    let emit_load_not st _p init x bcc =
+(*    let emit_load_not st _p init x bcc =
       let rA,st = next_reg st in
       let rC,st = next_reg st in
       let lab = Label.next_label "L" in
@@ -105,7 +104,7 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
          bcci Ne rC 0 lab ;
        ]@
       [Label (out,Nop)],
-      st
+      st 
 
     let emit_load_not_eq st p init x rP =
       emit_load_not st p init x
@@ -114,7 +113,10 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
     let emit_load_not_value st p init x v =
       emit_load_not st p init x
         (fun r lab -> bcci Ne r v lab)
+*)
 
+let emit_load_not_eq = assert false
+let emit_load_not_value = assert false
 
 (* Stores *)
 
@@ -160,24 +162,31 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
     | (None,Some a) -> a
     | Some a,Some _ -> a
         
-    let emit_exch st _p init er ew =
+(*    let emit_exch st _p init er ew =
       let rR,st = next_reg st in
       let arw = tr_a er.C.atom ew.C.atom in
-      rR,init,[Instruction (exch_tagged rR er.loc ew.v arw)],st
+      rR,init,[Instruction (exch_tagged rR er.loc ew.v arw)],st *)
+
+let emit_exch = assert false
 
 (**********)
 (* Fences *)
 (**********)
 
     let emit_fence f =  Instruction (Pfence f)
+    let emit_fence_tagged o a = Instruction (Pfence(Fence(a,o)))
 
     let stronger_fence = strong
 
 (****************)
 (* Dependencies *)
 (****************)
+(*jade: l'idee c'est de tout faire par les labelled fences en LISA*)
 
-    let emit_access_dep_addr st p init e  rd =
+let emit_access_dep = assert false
+let emit_exch_dep = assert false (*jade: ca me parait un peu fort d'avoir ca required non?*)
+
+(*    let emit_access_dep_addr st p init e  rd =
       let r2,st = next_reg st in
       let c =  xor r2 rd rd in
       match e.dir,e.atom with
@@ -224,19 +233,19 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
     | CTRL -> emit_access_ctrl st p init e r1
 
 
-    let emit_exch_dep _ = assert false
+    let emit_exch_dep _ = assert false *)
 
 (* Check load *)
     let check_load p r e =
       let lab = Label.exit p in
-      fun k -> Instruction (bcci Ne r e.v lab)::k
+      fun k -> Instruction (branch_tagged (Ne(r, Imm(e.v))) lab [])::k
 
 (* Postlude for adding exit label *)
 
     let does_jump lab cs =
       List.exists
         (fun i -> match i with
-        | Instruction (Pbal lab0|Pbcc (_,_,_,lab0)) ->
+        | Instruction (Pbranch (_,lab0,_)) ->
             (lab0:string) = lab
         | _ -> false)
         cs

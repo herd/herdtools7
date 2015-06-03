@@ -20,7 +20,7 @@ module System : sig
     | `AArch64
     | `MIPS
     | `GPU_PTX
-    | `Bell
+    | `LISA
     ]
 
   val tags : string list

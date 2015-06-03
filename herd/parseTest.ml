@@ -310,7 +310,7 @@ module Top (C:Config) = struct
         let module X = Make (GPU_PTXS) (P) (NoCheck) (GPU_PTXM) in 
         X.run name chan env splitted
 
-      | `Bell ->
+      | `LISA ->
         let module Bell = BellArch.Make(C.PC)(SymbValue) in
         let module BellLexParse = struct
   	  type instruction = Bell.pseudo

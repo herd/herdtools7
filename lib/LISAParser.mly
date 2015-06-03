@@ -70,6 +70,13 @@ name_list_ne:
   {$1::$3}
 | NAME
   {[$1]}
+name_list:
+| name_list_ne {$1}
+| {[]}
+
+annot_list_option:
+| LBRAC name_list RBRAC {$2}
+| {[]}
 
 reg_or_addr:
 | REG {Rega $1}
@@ -109,39 +116,23 @@ fence_labels_option:
 | LPAR LBRACE name_list_ne RBRACE COMMA LBRACE name_list_ne RBRACE RPAR {Some($3,$7)}
 
 instr:
-| READ REG addr_op
-  { Pld($2,$3,[]) }
 
-| READ LBRAC name_list_ne RBRAC REG addr_op
-  { Pld($5,$6,$3) }
+| READ annot_list_option REG addr_op
+  { Pld($3,$4,$2) }
 
-| WRITE addr_op reg_or_imm
-  { Pst($2,$3,[]) }
+| WRITE annot_list_option addr_op reg_or_imm
+  { Pst($3,$4,$2) }
 
-| WRITE LBRAC name_list_ne RBRAC addr_op reg_or_imm
-  { Pst($5,$6,$3) }
+| RMW annot_list_option LPAR op RPAR
+  { Prmw($4,$2)}
 
-| RMW LPAR op RPAR
-  { Prmw($3,[])}
-
-| RMW LBRAC name_list_ne RBRAC LPAR op RPAR
-  { Prmw($6,$3)}
-
-| FENCE fence_labels_option
- { Pfence(Fence ([],$2)) 
+| FENCE annot_list_option fence_labels_option
+ { Pfence(Fence ($2,$3)) 
 (*jade: not sure why two levels here: could we just have Pfence, like for the others?*)
  }
 
-| FENCE LBRAC name_list_ne RBRAC fence_labels_option
- { Pfence(Fence ($3,$5)) 
-(*jade: not sure why two levels here: could we just have Pfence, like for the others?*)
- }
-
-| BRANCH LPAR condition RPAR NAME
-  { Pbranch ($3,$5,[]) }
-
-| BRANCH LBRAC name_list_ne RBRAC LPAR condition RPAR NAME
-  { Pbranch ($6,$8,$3) }
+| BRANCH annot_list_option LPAR condition RPAR NAME
+  { Pbranch ($4,$6,$2) }
 
 proc:
  | PROC { $1 }
