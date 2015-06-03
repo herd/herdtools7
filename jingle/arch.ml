@@ -42,9 +42,9 @@ let get_parser = function
  | `Bell ->
     let module BellLexParse = struct
       type instruction = BellArch.pseudo
-      type token = BellParser.token
+      type token = LISAParser.token
       module Lexer = BellLexer.Make(struct let debug = false end)
       let lexer = Lexer.token
-      let parser = BellParser.main
-      let instr_parser = BellParser.instr_option_list
+      let parser = LISAParser.main
+      let instr_parser = LISAParser.instr_option_list
     end in (module Make(BellArch)(BellLexParse) : Parser)
