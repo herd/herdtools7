@@ -102,13 +102,15 @@ let pp_fence_ins = function
 
 type lbl = Label.t
 
+type k = MetaConst.k
+
 type reg_or_imm =
 | Regi of reg
-| Imm of int
+| Imm of k
 
 let string_of_reg_or_imm r = match r with
   | Regi r -> pp_reg r
-  | Imm r -> sprintf "%d" r
+  | Imm r -> MetaConst.pp r
 
 open Constant
 
@@ -126,11 +128,10 @@ let string_of_reg_or_addr r = match r with
 
 type imm_or_addr_or_reg = 
   | IAR_roa of reg_or_addr
-  | IAR_imm of int
-
+  | IAR_imm of k
 let pp_iar iar = match iar with
   | IAR_roa roa -> string_of_reg_or_addr roa
-  | IAR_imm i -> sprintf "%d" i
+  | IAR_imm i -> MetaConst.pp i
 
 type addr_op = 
 | Addr_op_atom of reg_or_addr

@@ -20,6 +20,7 @@ open AArch64Base
 %token <string> SYMB_WREG
 %token <int> NUM
 %token <string> NAME
+%token <string> META
 %token <int> PROC
 
 %token SEMI COMMA PIPE COLON LBRK RBRK
@@ -85,7 +86,8 @@ wreg:
 | ARCH_WREG { $1 }
 
 k:
-| NUM { $1 }
+| NUM  { MetaConst.Int $1 }
+| META { MetaConst.Meta $1 }
 
 kr:
 | k { K $1 }
@@ -93,7 +95,7 @@ kr:
 | wreg COMMA SXTW { RV (V32,$1) }
 
 kr0:
-| { K 0 }
+| { K (MetaConst.zero) }
 | COMMA kr { $2 }
 
 kwr:

@@ -22,6 +22,7 @@ open Bell
 %token <BellBase.reg> REG
 %token <int> NUM
 %token <string> NAME 
+%token <string> META
 %token <string> MEM_ANNOT
 %token <string> SCOPE
 %token <string> REGION
@@ -82,13 +83,17 @@ reg_or_addr:
 | REG {Rega $1}
 | NAME { Abs (Constant.Symbolic $1)}
 
+k:
+| NUM  {MetaConst.Int $1}
+| META {MetaConst.Meta $1}
+
 reg_or_imm:
-| REG {Regi $1}
-| NUM { Imm $1}
+| REG  {Regi $1}
+| k    {Imm $1}
 
 any_value:
 | reg_or_addr { IAR_roa $1 }
-| NUM { IAR_imm $1}
+| k { IAR_imm $1}
 
 addr_op:
 | reg_or_addr {BellBase.Addr_op_atom($1)}

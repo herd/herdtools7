@@ -63,6 +63,7 @@ rule token = parse
 | "al"  { BAL }
 | "scopes"  { SCOPES  }
 | "regions" { REGIONS }
+| '&' (name as x) { META x }
 | name as x
     { 
       match Bell.parse_reg x with

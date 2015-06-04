@@ -100,7 +100,7 @@ module Make (C:Sem.Config)(V:Value.S)
 	   begin match kr with
 	   | K k ->
 	      (read_reg rs ii)
-	      >>= (fun v -> M.add v (V.intToV k))
+	      >>= (fun v -> M.add v (V.asIntV k))
 	   | RV(_,r) ->
 	      (read_reg rs ii >>| read_reg r ii)
 	      >>= (fun (v1,v2) -> M.add v1 v2)
@@ -133,7 +133,7 @@ module Make (C:Sem.Config)(V:Value.S)
 	      match kr with
 	      | K k ->
 		 (read_reg rd ii)
-		 >>= (fun v -> M.add v (V.intToV k))
+		 >>= (fun v -> M.add v (V.asIntV k))
 	      | RV(_,r) ->
 		 (read_reg rd ii >>| read_reg r ii)
 		 >>= (fun (v1,v2) -> M.add v1 v2))
@@ -160,7 +160,7 @@ module Make (C:Sem.Config)(V:Value.S)
 
 	(* Operations *)
 	| I_MOV(_,r,k) ->
-	   write_reg r (V.intToV k) ii >>! B.Next
+	   write_reg r (V.asIntV k) ii >>! B.Next
 
 	| I_SXTW(rd,rs) -> 
 	   (read_reg rs ii)
@@ -170,7 +170,7 @@ module Make (C:Sem.Config)(V:Value.S)
 	| I_OP3(_,op,rd,rn,kr) -> 
 	   (read_reg rn ii >>|
 	      match kr with
-	      | K k -> M.add V.zero (V.intToV k)
+	      | K k -> M.add V.zero (V.asIntV k)
 	      | RV(_,r) -> read_reg r ii
 	   ) >>=
 	     begin match op with

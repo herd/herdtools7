@@ -12,7 +12,13 @@
 
 type v = Constant.v
 open Constant
-        
+
+let asIntV =
+  let open MetaConst in
+  function
+    | Int i -> Concrete i
+    | Meta _ as v -> Warn.fatal "Unexpected meta variable: %s" (pp v)
+
 let intToV i = Concrete i
 and nameToV s = Symbolic s
 
