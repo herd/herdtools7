@@ -67,8 +67,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
       { S.addr=addr_dep; data=data_dep; ctrl=ctrl_dep;
         ctrlisync;
         data_commit;
-        rf;
-        fromto = conc.S.fromto;}
+        rf; }
 
     let pp_procrels pp_isync pr =
       let pp =  ["data",pr.S.data; "addr",pr.S.addr;] in
