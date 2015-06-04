@@ -106,6 +106,9 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
       [Label (out,Nop)],
       st 
 
+*)
+
+(*
     let emit_load_not_eq st p init x rP =
       emit_load_not st p init x
         (fun r lab -> bcc Ne r rP lab)
@@ -115,8 +118,8 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
         (fun r lab -> bcci Ne r v lab)
 *)
 
-let emit_load_not_eq = assert false
-let emit_load_not_value = assert false
+let emit_load_not_eq _ = assert false
+let emit_load_not_value _ = assert false
 
 (* Stores *)
 
@@ -167,7 +170,7 @@ let emit_load_not_value = assert false
       let arw = tr_a er.C.atom ew.C.atom in
       rR,init,[Instruction (exch_tagged rR er.loc ew.v arw)],st *)
 
-let emit_exch = assert false
+let emit_exch _ = assert false
 
 (**********)
 (* Fences *)
@@ -183,8 +186,8 @@ let emit_exch = assert false
 (****************)
 (*jade: l'idee c'est de tout faire par les labelled fences en LISA*)
 
-let emit_access_dep = assert false
-let emit_exch_dep = assert false (*jade: ca me parait un peu fort d'avoir ca required non?*)
+let emit_access_dep _ = assert false
+let emit_exch_dep _ = assert false (*jade: ca me parait un peu fort d'avoir ca required non?*)
 
 (*    let emit_access_dep_addr st p init e  rd =
       let r2,st = next_reg st in

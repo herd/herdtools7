@@ -23,7 +23,7 @@ type t =
   | Bell
   | C
 
-let tags = ["X86";"PPC";"ARM";"MIPS";"AArch64";"C";"Bell";]
+let tags = ["X86";"PPC";"ARM";"MIPS";"AArch64";"C";"LISA";]
 
 let parse s = match s with
 | "X86" -> Some X86
@@ -31,7 +31,7 @@ let parse s = match s with
 | "ARM" -> Some ARM
 | "MIPS" -> Some MIPS
 | "AArch64" -> Some AArch64
-| "Bell" -> Some Bell
+| "Bell"|"LISA" -> Some Bell
 | "C" -> Some C
 | _ -> None
 
@@ -46,7 +46,7 @@ let pp a = match a with
 | ARM -> "ARM"
 | MIPS -> "MIPS"
 | AArch64 -> "AArch64"
-| Bell -> "Bell"
+| Bell -> "LISA"
 | C -> "C"
 
 let arm = ARM

@@ -34,7 +34,7 @@ let parse s = match s with
 | "C"   -> Some C
 | "CPP"|"C++"   -> Some CPP
 | "AArch64" -> Some AArch64
-| "Bell" -> Some Bell
+| "Bell"|"LISA" -> Some Bell
 | _ -> None
 
 let lex s = match parse s with
@@ -50,7 +50,7 @@ let pp a = match a with
 | AArch64 -> "AArch64"
 | C -> "C"
 | CPP -> "C++"
-| Bell -> "Bell"
+| Bell -> "LISA"
 
 let arm = ARM
 let ppc = PPC

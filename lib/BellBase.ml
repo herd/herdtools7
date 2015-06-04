@@ -178,12 +178,13 @@ include Pseudo.Make
 	| Pst _  -> 1
 	| _ -> 0
 
-      (* We don't have instructions with labels yet 
-         and I'm not sure what these are used for anyways.*)
-      let fold_labels k _f = function 
+      (* We do have instructions with labels... *)
+      let fold_labels k f = function 
+        | Pbranch (_,lbl,_) -> f k lbl
 	| _ -> k
 
-      let map_labels _f = function 
+      let map_labels f = function 
+        | Pbranch(c,lbl,s) -> Pbranch(c,f lbl,s)
 	| ins -> ins
 
      end)
@@ -203,7 +204,7 @@ let dump_instruction i = match i with
       (string_of_annot_list s)
       (pp_op op)
 
-| Pfence f -> pp_barrier f
+| Pfence f -> pp_fence_ins f
 
 | Pbranch(c,l,s) -> sprintf "b[%s](%s) %s" 
       (string_of_annot_list s)
@@ -307,9 +308,9 @@ let fold_addrs f =
        fold_roa roa c 
   in
   let fold_op op c = match op with
-    | Add(r,x,i) -> fold_iar x (fold_iar i c) 
-    | And(r,x,i) -> fold_iar x (fold_iar i c) 
-    | Mov(r,i) -> fold_iar i c
+    | Add(_,x,i) -> fold_iar x (fold_iar i c) 
+    | And(_,x,i) -> fold_iar x (fold_iar i c) 
+    | Mov(_,i) -> fold_iar i c
   in
   fun c ins -> match ins with
   | Pbranch _ | Pfence _ -> c
@@ -349,7 +350,7 @@ let get_id_and_list i = match i with
 | Pfence (Fence (s, _)) -> (BellName.f,s)      
 | Prmw(_,s) -> (BellName.rmw,s)
 | Pbranch(_,_,s) -> (BellName.b,s)
-| _ -> raise Not_found
+
 
 let get_from_and_to_labels b = match b with
 | Fence (_, a) -> a
@@ -360,4 +361,4 @@ let set_list i al = match i with
 | Pfence (Fence (_,a2)) -> Pfence (Fence (al,a2))
 | Prmw(a1,_) -> Prmw(a1,al)
 | Pbranch(a1,a2,_) -> Pbranch(a1,a2,al)
-| _ -> assert false
+

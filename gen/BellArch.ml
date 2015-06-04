@@ -234,7 +234,7 @@ let var_fence f = match varatom with
 (* Deps *)
 (********)
 
-include StdDep
+include NoDep
 
 include
     ArchExtra.Make
