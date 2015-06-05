@@ -20,7 +20,7 @@ module type I = sig
 
   type state
   val dump_global_state : prog -> state -> string
-  val dump_proc_state : int -> state -> string option
+  val dump_proc_state : int -> A.pseudo list -> state -> string option
 
   type constr
   val dump_constr : constr -> string
@@ -84,7 +84,7 @@ end = struct
     List.iter
       (fun (p,code) ->
         dump_sep chan (sprintf "P%i" p) ;
-        begin match dump_proc_state p t.init with
+        begin match dump_proc_state p code t.init with
         | Some st ->
             fprintf chan "%s\n" st ; 
             fprintf chan "***\n"

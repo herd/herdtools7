@@ -16,6 +16,7 @@ open Printf
 
 module type Config = sig
   val texmacros : bool
+  val hexa : bool
 end
 
 module type S = sig
@@ -251,7 +252,7 @@ module Make (C:Config) (A : Arch.S) :
               mbox m (A.pp_location loc) ^
               pp_equal m ^          
               mbox m
-                (let v = V.pp_v v in
+                (let v = V.pp C.hexa v in
                 let add_asm =C.texmacros in
                 match m,add_asm with
                 | ((Ascii|Dot),_)

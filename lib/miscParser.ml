@@ -39,24 +39,26 @@ let location_compare loc1 loc2 = match loc1,loc2 with
 
 let dump_location = function
   | Location_reg (i,r) -> Printf.sprintf "%i:%s" i r
-  | Location_sreg s -> s
+  | Location_sreg s -> Misc.dump_symbolic s
   | Location_global v -> SymbConstant.pp_v v
 
 let dump_rval loc = match loc with
   | Location_reg (i,r) -> Printf.sprintf "%i:%s" i r
-  | Location_sreg s -> s
+  | Location_sreg s -> Misc.dump_symbolic s
   | Location_global v -> Printf.sprintf "*%s" (SymbConstant.pp_v v)
 
 let is_global = function
   | Location_global _ -> true
-  | Location_reg _ -> false
-  | Location_sreg _ -> assert false
+  | Location_reg _
+  | Location_sreg _ -> false
 
-let as_local_proc i = function
+let as_local_proc i syms = function
   | Location_reg (j,reg) -> if i=j then Some reg else None
   | Location_global _ -> None
-  | Location_sreg _ -> assert false
-
+  | Location_sreg reg ->
+      if StringSet.mem reg syms then
+        Some (Misc.dump_symbolic reg)
+      else None
 
 module LocSet =
   MySet.Make

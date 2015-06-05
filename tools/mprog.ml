@@ -91,11 +91,26 @@ module Top
                    (fun a -> sprintf "%s;" (dump_state_atom dump_loc a))
                    st)
 
-            let dump_proc_state p st =
+            let ignore_reg _r () = ()
+            let collect_sym = StringSet.add
+            let collect_regs = ignore_reg,collect_sym
+
+            let collect_ins syms i =
+              let _,syms =
+                A.pseudo_fold
+                  (A.fold_regs collect_regs)
+                  ((),syms) i in
+              syms
+
+            let collect_code code =
+              List.fold_left collect_ins StringSet.empty code
+
+            let dump_proc_state p code st =
+              let syms = collect_code code in
               let st =
                 List.fold_right
                   (fun (loc,v) k ->
-                    match MiscParser.as_local_proc p loc with
+                    match MiscParser.as_local_proc p syms loc with
                     | Some reg -> (reg,v)::k
                     | None -> k)
                   st [] in

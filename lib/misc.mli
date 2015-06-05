@@ -115,6 +115,9 @@ val pp_prog : out_channel -> string list list -> unit
 val string_of_prog : string list list -> string
 val lines_of_prog : string list list -> string list
 
+(* Prety print of symbolic registers *)
+val dump_symbolic : string -> string
+
 (***************)
 (* I/O helpers *)
 (***************)
