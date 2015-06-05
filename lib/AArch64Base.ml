@@ -462,8 +462,9 @@ include Pseudo.Make
       type pins = parsedInstruction
       type reg_arg = reg
 
+      let k_tr = MetaConst.as_int            
       let kr_tr = function
-        | K i -> K (MetaConst.as_int i)
+        | K i -> K (k_tr i)
         | RV _ as kr -> kr
 
       let parsed_tr i = match i with
@@ -474,24 +475,15 @@ include Pseudo.Make
         | I_LDAR _
         | I_STLR _
         | I_STXR _
+        | I_SXTW _
+        | I_FENCE _
             as keep -> keep
         | I_LDR (v,r1,r2,kr) -> I_LDR (v,r1,r2,kr_tr kr)
         | I_STR (v,r1,r2,kr) -> I_STR (v,r1,r2,kr_tr kr)
-        | _ -> assert false
+        | I_MOV (v,r,k) -> I_MOV (v,r,k_tr k)
+        | I_OP3 (v,op,r1,r2,kr) -> I_OP3 (v,op,r1,r2,kr_tr kr)
 
-(*
-(* Load and Store *)
-  | I_LDAR of variant * ld_type * reg * reg
-  | I_STR of variant * reg * reg * 'k kr
-  | I_STLR of variant * reg * reg
-  | I_STXR of variant * st_type * reg * reg * reg
-(* Operations *)
-  | I_MOV of variant * reg * 'k
-  | I_SXTW of reg * reg
-  | I_OP3 of variant * op * reg * reg * 'k kr
-(* Barrier *)
-  | I_FENCE of barrier
-*)
+
       let get_naccesses = function
         | I_LDR _ | I_LDAR _
         | I_STR _ | I_STLR _ | I_STXR _
