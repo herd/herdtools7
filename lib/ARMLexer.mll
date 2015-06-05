@@ -32,6 +32,7 @@ rule token = parse
 | 'P' (num as x)
     { PROC (int_of_string x) }
 | '%' (name as name) { SYMB_REG name }
+| '&' (name as name) { META name }
 | ';' { SEMI }
 | ',' { COMMA }
 | '|' { PIPE }

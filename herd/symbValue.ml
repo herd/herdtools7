@@ -61,7 +61,6 @@ let compare v1 v2 = match v1,v2 with
 | Var _,Val _ -> -1
 
 
-let asIntV m = Val (Cst.intToV (MetaConst.as_int m))
 let intToV i  = Val (Cst.intToV i)
 and nameToV s = Val (Cst.nameToV s)
 and cstToV cst = Val cst

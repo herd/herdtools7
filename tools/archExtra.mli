@@ -15,4 +15,4 @@ module Make :
       functor (A:ArchBase.S) -> Arch.S
 with type instruction = A.instruction
 and type reg = A.reg
-and type pseudo = A.pseudo
+and type 'ins kpseudo = 'ins A.kpseudo

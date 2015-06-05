@@ -154,25 +154,23 @@ let barrier_compare = Pervasives.compare
 (* Instructions *)
 (****************)
 
-type k = int 
-
 type lbl = Label.t
 
 type setflags = SetFlags | DontSetFlags
 
 type condition = NE | EQ | AL (* ALWAYS *)
 
-type instruction =
-  | I_ADD of setflags * reg * reg * k
+type 'k kinstruction =
+  | I_ADD of setflags * reg * reg * 'k
   | I_ADD3 of setflags * reg * reg * reg
-  | I_SUB of setflags * reg * reg * k
+  | I_SUB of setflags * reg * reg * 'k
   | I_SUB3 of setflags * reg * reg * reg
-  | I_AND of setflags * reg * reg * k
+  | I_AND of setflags * reg * reg * 'k
   | I_B of lbl
   | I_BEQ of lbl 
   | I_BNE of lbl (* Was maybeVal ??? *)
   | I_CB of bool * reg * lbl
-  | I_CMPI of reg * k
+  | I_CMPI of reg * 'k
   | I_CMP of reg * reg
   | I_LDR of reg * reg * condition
   | I_LDREX of reg * reg
@@ -180,7 +178,7 @@ type instruction =
   | I_STR of reg * reg * condition
   | I_STR3 of reg * reg * reg * condition
   | I_STREX of reg * reg * reg * condition
-  | I_MOVI of reg * k * condition
+  | I_MOVI of reg * 'k * condition
   | I_MOV of reg * reg * condition
   | I_XOR of setflags * reg * reg * reg
   | I_DMB of barrier_option
@@ -189,6 +187,9 @@ type instruction =
  (* SIMD *)
   | I_SADD16 of reg * reg * reg           
   | I_SEL of reg * reg * reg     	    
+
+type instruction = int kinstruction
+type parsedInstruction = MetaConst.k kinstruction
 
 let pp_lbl = fun i -> i
 
@@ -201,7 +202,7 @@ let pp_hash m = match m with
 
 let pp_k m v = pp_hash m ^ string_of_int v
 
-type basic_pp = { pp_k : k -> string; }
+type 'k basic_pp = { pp_k : 'k -> string; }
 
 let pp_memo memo = function
   | SetFlags -> memo ^ "S"
@@ -401,7 +402,37 @@ let get_next = function
 include Pseudo.Make
     (struct
       type ins = instruction
+      type pins = parsedInstruction
       type reg_arg = reg
+
+      let parsed_tr = function
+        | I_ADD (c,r1,r2,k) ->  I_ADD (c,r1,r2,MetaConst.as_int k)
+        | I_SUB (c,r1,r2,k) ->  I_SUB (c,r1,r2,MetaConst.as_int k)
+        | I_AND (c,r1,r2,k) ->  I_AND (c,r1,r2,MetaConst.as_int k)
+        | I_CMPI (r,k) -> I_CMPI (r,MetaConst.as_int k)
+        | I_MOVI (r,k,c) -> I_MOVI (r,MetaConst.as_int k,c)
+        | I_ADD3 _
+        | I_SUB3 _
+        | I_B _
+        | I_BEQ _
+        | I_BNE _
+        | I_CB _
+        | I_CMP _
+        | I_LDR _
+        | I_LDREX _
+        | I_LDR3 _
+        | I_STR _
+        | I_STR3 _
+        | I_STREX _
+        | I_MOV _
+        | I_XOR _
+        | I_DMB _
+        | I_DSB _
+        | I_ISB
+        | I_SADD16 _
+        | I_SEL _
+            as keep -> keep
+
 
       let get_naccesses = function
         | I_ADD _

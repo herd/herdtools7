@@ -148,6 +148,8 @@ type instruction =
 (* 64 bits mem-mem "string" move (operands in esi and edi) *)
   | I_MOVSD
 
+type parsedInstruction = instruction
+
       
 open Constant
 
@@ -488,7 +490,10 @@ let rec get_next = function
 include Pseudo.Make
     (struct
       type ins = instruction
+      type pins = parsedInstruction
       type reg_arg = reg
+
+      let parsed_tr i = i
 
       let rec get_naccesses = function
         | I_LOCK i -> get_naccesses i

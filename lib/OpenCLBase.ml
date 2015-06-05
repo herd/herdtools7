@@ -119,10 +119,16 @@ type instruction =
 | Pexpr    of expression
 | Pbarrier of string * gpu_memory_space list * mem_scope
 
+type parsedInstruction = instruction
+
 include Pseudo.Make
     (struct
       type ins = instruction
+      type pins = parsedInstruction
       type reg_arg = reg
+
+      let parsed_tr i = i
+
       let get_naccesses = function 
 	| _ -> 0 
        (* JPW: maybe locks/unlocks/RMWs should return something other

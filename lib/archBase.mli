@@ -39,7 +39,9 @@ module type S = sig
   val barrier_compare : barrier -> barrier -> int
 
 
+  type parsedInstruction
   type instruction
+
   val pp_instruction : PPMode.t -> instruction -> string
   (* Shorthand for parsable dump *)
   val dump_instruction : instruction -> string
@@ -79,7 +81,10 @@ module type S = sig
   val get_next : instruction -> Label.next list
 
 
-  include Pseudo.S with type ins = instruction and type reg_arg = reg
+  include Pseudo.S
+   with type ins = instruction
+   and type pins = parsedInstruction
+   and type reg_arg = reg
 
   val get_macro :
       string ->

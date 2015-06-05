@@ -37,7 +37,7 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
       Pld (r, Addr_op_add (Abs (Constant.Symbolic x),Regi idx),a)
 
     let st_tagged x v a =
-      Pst (Addr_op_atom (Abs (Constant.Symbolic x)),Imm (MetaConst.Int v),a)
+      Pst (Addr_op_atom (Abs (Constant.Symbolic x)),Imm v,a)
 
     let st_reg_tagged x r a =
       Pst (Addr_op_atom (Abs (Constant.Symbolic x)),Regi r,a)
@@ -77,7 +77,7 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
       let lab = Label.next_label "L" in
       rA,init,
       Label (lab,Nop)::
-      pseudo [ld rA x; branch_tagged (Ne(rA, Imm(MetaConst.zero))) lab []],
+      pseudo [ld rA x; branch_tagged (Ne(rA, Imm(0))) lab []],
       st
 
     let emit_load_one st _p init x =
@@ -85,7 +85,7 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
       let lab = Label.next_label "L" in
       rA,init,
       Label (lab,Nop)::
-      pseudo [ld rA x; branch_tagged (Ne(rA, Imm(MetaConst.Int 1))) lab []],
+      pseudo [ld rA x; branch_tagged (Ne(rA, Imm(1))) lab []],
       st
 
 (*    let emit_load_not st _p init x bcc =
@@ -241,7 +241,7 @@ let emit_exch_dep _ = assert false (*jade: ca me parait un peu fort d'avoir ca r
 (* Check load *)
     let check_load p r e =
       let lab = Label.exit p in
-      fun k -> Instruction (branch_tagged (Ne(r, Imm(MetaConst.Int e.v))) lab [])::k
+      fun k -> Instruction (branch_tagged (Ne(r, Imm(e.v))) lab [])::k
 
 (* Postlude for adding exit label *)
 

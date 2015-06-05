@@ -168,6 +168,8 @@ type instruction =
   | SC of reg * k * reg
   | SYNC
 
+type parsedInstruction = instruction
+
 let move r1 r2 = OPI (OR,r1,r2,0)
 
 let pp_lbl = fun i -> i
@@ -331,7 +333,10 @@ let get_next = function
 include Pseudo.Make
     (struct
       type ins = instruction
+      type pins = parsedInstruction
       type reg_arg = reg
+
+      let parsed_tr i = i
 
       let get_naccesses = function
         | LI _

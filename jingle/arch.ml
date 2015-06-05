@@ -10,20 +10,22 @@ module type S = sig
   end
 
 module type Parser = sig
-    include GenParser.S
-    val instr_from_string : string -> pseudo list
-  end
+  include GenParser.S
+  type parsedPseudo
+  val instr_from_string : string -> parsedPseudo list
+end
 
 module Make
 	 (A:S)
 	 (P:sig
-	      include GenParser.LexParse with type instruction = A.pseudo
+	      include GenParser.LexParse with type instruction = A.parsedPseudo
 	      val instr_parser : 
 		(Lexing.lexbuf -> token) -> Lexing.lexbuf ->
-		A.pseudo list
+		A.parsedPseudo list
 	    end) = struct
   include GenParser.Make(GenParser.DefaultConfig)(A)(P)
-			
+
+  type 	parsedPseudo = A.parsedPseudo
   let instr_from_string s =
     GenParser.call_parser "themes" (Lexing.from_string s) 
 			  P.lexer P.instr_parser
@@ -39,7 +41,7 @@ let get_arch = function
 let get_parser = function
   | `AArch64 -> 
      let module AArch64LexParse = struct
-       type instruction = AArch64Arch.pseudo
+       type instruction = AArch64Arch.parsedPseudo
        type token = AArch64Parser.token
        module Lexer = AArch64Lexer.Make(struct let debug = false end)
        let lexer = Lexer.token
@@ -48,7 +50,7 @@ let get_parser = function
      end in (module Make(AArch64Arch)(AArch64LexParse) : Parser)
  | `Bell ->
     let module BellLexParse = struct
-      type instruction = BellArch.pseudo
+      type instruction = BellArch.parsedPseudo
       type token = LISAParser.token
       module Lexer = BellLexer.Make(struct let debug = false end)
       let lexer = Lexer.token

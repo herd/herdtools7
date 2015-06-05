@@ -13,14 +13,20 @@
 (** Closed signature for basic view of architectures *)
 
 module type S = sig
-  type ins
+  type pins (* Parsed instruction *)
+  type ins  (* Final instruction  *)
+
   type reg_arg
 
-  type pseudo =
+  type 'ins kpseudo =
     | Nop
-    | Label of string * pseudo
-    | Instruction of ins
+    | Label of string * 'ins kpseudo
+    | Instruction of 'ins
     | Macro of string * reg_arg list
+
+  type pseudo = ins kpseudo
+  type parsedPseudo = pins kpseudo
+
 
 (* Lifting of fold/map *)
   val pseudo_map : (ins -> ins) -> pseudo -> pseudo
@@ -36,12 +42,19 @@ module type S = sig
 
 (* Counting (static) memory accesses *)
   val get_naccesses : pseudo list -> int
+
+(* Translare from parsed instructions *)
+  val pseudo_parsed_tr : parsedPseudo -> pseudo
+
 end
 
 (* Input signature *)
 module type I = sig
   type ins
+  type pins
   type reg_arg
+(* translate from parsed *)
+  val parsed_tr : pins -> ins
 
 (* Number of memory access per instruction *)
   val get_naccesses : ins -> int
@@ -49,23 +62,28 @@ module type I = sig
    used for label normalisation *)
   val fold_labels : 'a -> ('a -> string -> 'a) -> ins -> 'a
   val map_labels : (string -> string) -> ins -> ins
+
 end
 
 (* Common to all arch, memevents and  litmus *)
 
 module Make
     (I : I) : S
-with type ins = I.ins and type reg_arg = I.reg_arg
+with type ins = I.ins and type pins = I.pins and type reg_arg = I.reg_arg
 =
 struct
   type ins = I.ins
+  type pins = I.pins
   type reg_arg = I.reg_arg
 (* Parsed instructions, ie instructions enriched with labels *)
-  type pseudo =
+  type 'ins kpseudo =
     | Nop
-    | Label of string * pseudo
-    | Instruction of ins
+    | Label of string * 'ins kpseudo
+    | Instruction of 'ins
     | Macro of string * reg_arg list
+
+  type pseudo = ins kpseudo
+  type parsedPseudo = pins kpseudo
 
 (* Fold/Map lifting *)
   let rec pseudo_map f ins = match ins with
@@ -105,4 +123,8 @@ struct
       (pseudo_fold
          (fun k ins -> k + I.get_naccesses ins))
       0 code
+
+(* Translate *)
+  let pseudo_parsed_tr p = pseudo_map I.parsed_tr p
+
 end

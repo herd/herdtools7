@@ -74,12 +74,12 @@ module Make (C:Sem.Config)(V:Value.S)
     let read_roi roi ii = 
       match roi with
       | BellBase.Regi r -> read_reg r ii
-      | BellBase.Imm i -> (M.unitT (V.asIntV i))	
+      | BellBase.Imm i -> (M.unitT (V.intToV i))	
 
     let read_iar roi ii = 
       match roi with
       | BellBase.IAR_roa roa -> read_roa roa ii
-      | BellBase.IAR_imm i -> (M.unitT (V.asIntV i))	
+      | BellBase.IAR_imm i -> (M.unitT (V.intToV i))	
 
 
 (*    let do_2op v1 v2 op addr = match op with

@@ -103,9 +103,14 @@ type instruction =
 | Pblock  of instruction list
 | Pexpr   of expression
 
+type parsedInstruction = instruction
+
 include Pseudo.Make
     (struct
       type ins = instruction
+      type pins = parsedInstruction
+      let parsed_tr i = i
+
       type reg_arg = reg
       let get_naccesses = function 
 	| _ -> 0 

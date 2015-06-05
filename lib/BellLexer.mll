@@ -64,6 +64,7 @@ rule token = parse
 | "scopes"  { SCOPES  }
 | "regions" { REGIONS }
 | '&' (name as x) { META x }
+| '%' (name as x) { SYMB_REG x }
 | name as x
     { 
       match Bell.parse_reg x with

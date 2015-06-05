@@ -84,7 +84,7 @@ module Make
     (O:Config)
     (A:ArchBase.S)
     (L: LexParse
-    with type instruction = A.pseudo) : S with type pseudo = A.pseudo =
+    with type instruction = A.parsedPseudo) : S with type pseudo = A.pseudo =
   struct
     type pseudo = A.pseudo
     type init = MiscParser.state
@@ -151,6 +151,11 @@ let check_regs procs init locs final =
       Label.reset () ;
       List.map (fun (p,code) -> p,expn code)
 
+(* Translation from parsed instruction to internal ones *)
+    let parsed_tr prog =
+      List.map
+        (List.map A.pseudo_parsed_tr)
+        prog
 
 (***********)
 (* Parsing *)
@@ -180,6 +185,7 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
       let procs,prog,_,_ = 
         call_parser "prog" lexbuf L.lexer L.parser in
       check_procs procs ;
+      let prog = parsed_tr prog in
       let prog = transpose procs prog in
       let prog = expn_prog prog in
       prog
@@ -212,6 +218,7 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
       let procs,prog,gpu_data,bell_info =
 	I.call_parser_loc "prog" chan prog_loc L.lexer L.parser in
       check_procs procs ;
+      let prog = parsed_tr prog in
       let prog = transpose procs prog in
       let prog = expn_prog prog in
       let (locs,final,_quantifiers) =

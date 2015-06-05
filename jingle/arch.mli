@@ -11,7 +11,8 @@ module type S = sig
 
 module type Parser = sig
     include GenParser.S
-    val instr_from_string : string -> pseudo list
+    type parsedPseudo
+    val instr_from_string : string -> parsedPseudo list
   end
 
 val get_arch : Archs.t -> (module S)

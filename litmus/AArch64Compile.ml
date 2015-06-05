@@ -22,7 +22,6 @@ module Make(V:Constant.S)(C:Config) =
     open A
     open A.Out
     open Printf
-    open MetaConst
 
 (* No addresses in code *)
     let extract_addrs _ins = StringSet.empty
@@ -68,13 +67,13 @@ module Make(V:Constant.S)(C:Config) =
     let str_memo t = String.lowercase (str_memo t)
 
     let load memo v rD rA kr = match v,kr with
-      | V32,K (Int 0) ->
+      | V32,K 0 ->
           { empty_ins with
             memo= sprintf "%s ^wo0,[^i0]" memo;
             inputs=[rA];
             outputs=[rD];
             reg_addrs=[rA]; }
-      | V32,K (Int k) ->
+      | V32,K k ->
           { empty_ins with
             memo= sprintf "%s ^wo0,[^i0,#%i]" memo k;
             inputs=[rA];
@@ -86,13 +85,13 @@ module Make(V:Constant.S)(C:Config) =
             inputs=[rA; rB];
             outputs=[rD];
             reg_addrs=[rA]; }
-      | V64,K (Int 0) ->
+      | V64,K 0 ->
           { empty_ins with
             memo=memo ^ sprintf " ^o0,[^i0]";
             inputs=[rA];
             outputs=[rD];
             reg_addrs=[rA]; }
-      | V64,K (Int k) ->
+      | V64,K k ->
           { empty_ins with
             memo=memo ^ sprintf " ^o0,[^i0,#%i]" k;
             inputs=[rA];
@@ -111,14 +110,13 @@ module Make(V:Constant.S)(C:Config) =
             outputs=[rD];
             reg_addrs=[rA]; }
       | V32,RV (V64,_) -> assert false
-      | _,K (Meta _ as v) -> fatal_meta v
 
     let store memo v rA rB kr = match v,kr with
-      | V32,K (Int 0) ->
+      | V32,K 0 ->
           { empty_ins with
             memo=memo ^ " ^wi0,[^i1]";
             inputs=[rA;rB]; reg_addrs=[rB]; }
-      | V32,K (Int k) ->
+      | V32,K k ->
           { empty_ins with
             memo=memo ^ sprintf " ^wi0,[^i1,#%i]" k;
             inputs=[rA;rB]; reg_addrs=[rB]; }
@@ -126,11 +124,11 @@ module Make(V:Constant.S)(C:Config) =
           { empty_ins with
             memo=memo^ " ^wi0,[^i1,^wi2,sxtw]";
             inputs=[rA; rB; rC]; reg_addrs=[rB]; }
-      | V64,K (Int 0) ->
+      | V64,K 0 ->
           { empty_ins with
             memo=memo ^ " ^i0,[^i1]";
             inputs=[rA;rB]; reg_addrs=[rB]; }
-      | V64,K (Int k) ->
+      | V64,K k ->
           { empty_ins with
             memo=memo ^ sprintf " ^i0,[^i1,#%i]" k;
             inputs=[rA;rB]; reg_addrs=[rB]; }
@@ -143,7 +141,6 @@ module Make(V:Constant.S)(C:Config) =
             memo=memo^ " ^i0,[^i1,^wi2,sxtw]";
             inputs=[rA; rB; rC;]; reg_addrs=[rB]; }
       | V32,RV (V64,_) -> assert false
-      | _,K (Meta _ as v) -> fatal_meta v
 
     let stxr memo v r1 r2 r3 = match v with
     | V32 ->
@@ -160,7 +157,6 @@ module Make(V:Constant.S)(C:Config) =
 (* Arithmetic *)
 
     let movk v r k =
-      let k = as_int k in
       let memo =
         sprintf
           (match v with | V32 ->  "mov ^wo0,#%i" | V64 ->  "mov ^o0,#%i")
@@ -172,9 +168,7 @@ module Make(V:Constant.S)(C:Config) =
         memo = "sxtw ^o0,^wi1";
         inputs = [r2;]; outputs=[r1;]; }
 
-    let cmpk v r k =
-      let k = as_int k in
-      match v with
+    let cmpk v r k = match v with
     | V32 ->
         { empty_ins with
           memo = sprintf "cmp ^wi0,#%i" k ;
@@ -202,7 +196,7 @@ module Make(V:Constant.S)(C:Config) =
     let op3 v op rD rA kr =
       let memo = memo_of_op op in
       match v,kr with
-      | V32,K (Int k) ->
+      | V32,K k ->
           { empty_ins with
             memo=memo ^ sprintf " ^wo0,^wi0,#%i" k;
             inputs=[rA];
@@ -212,7 +206,7 @@ module Make(V:Constant.S)(C:Config) =
             memo=memo^ " ^wo0,^wi0,^wi1";
             inputs=[rA; rB];
             outputs=[rD]; }
-      | V64,K (Int k) ->
+      | V64,K k ->
           { empty_ins with
             memo=memo ^ sprintf " ^o0,^i0,#%i" k;
             inputs=[rA];
@@ -228,7 +222,6 @@ module Make(V:Constant.S)(C:Config) =
             inputs=[rA; rB];
             outputs=[rD]; }
       | V32,RV (V64,_) -> assert false
-      | _,K (Meta _ as v) -> fatal_meta v
 
 
     let fence f =

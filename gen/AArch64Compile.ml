@@ -52,23 +52,23 @@ let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
 
     let cbz r1 lbl = I_CBZ (vloc,r1,lbl)
     let cbnz r1 lbl = I_CBNZ (vloc,r1,lbl)
-    let mov r i = I_MOV (vloc,r,MetaConst.Int i)
-    let cmpi r i = I_OP3 (vloc,SUBS,ZR,r,K (MetaConst.Int i))
+    let mov r i = I_MOV (vloc,r,i)
+    let cmpi r i = I_OP3 (vloc,SUBS,ZR,r,K i)
     let cmp r1 r2 = I_OP3 (vloc,SUBS,ZR,r1,RV (vloc,r2))
     let bne lbl = I_BC (NE,lbl)
     let eor r1 r2 r3 = I_OP3 (vloc,EOR,r1,r2,RV (vloc,r3))
-    let addi r1 r2 k = I_OP3 (vloc,ADD,r1,r2,K (MetaConst.Int k))
+    let addi r1 r2 k = I_OP3 (vloc,ADD,r1,r2,K k)
 (*    let add r1 r2 r3 = I_OP3 (vloc,ADD,r1,r2,r3) *)
     let add64 r1 r2 r3 = I_OP3 (V64,ADD,r1,r2,RV (vloc,r3))
 
-    let ldr r1 r2 = I_LDR (vloc,r1,r2,K MetaConst.zero)
+    let ldr r1 r2 = I_LDR (vloc,r1,r2,K 0)
     let ldar r1 r2 = I_LDAR (vloc,AA,r1,r2)
     let ldxr r1 r2 = I_LDAR (vloc,XX,r1,r2)
     let ldaxr r1 r2 = I_LDAR (vloc,AX,r1,r2)
     let sxtw r1 r2 = I_SXTW (r1,r2)
     let ldr_idx r1 r2 idx = I_LDR (vloc,r1,r2,RV (vloc,idx))
 
-    let str r1 r2 = I_STR (vloc,r1,r2,K MetaConst.zero)
+    let str r1 r2 = I_STR (vloc,r1,r2,K 0)
     let stlr r1 r2 = I_STLR (vloc,r1,r2)
     let str_idx r1 r2 idx = I_STR (vloc,r1,r2,RV (vloc,idx))
     let stxr r1 r2 r3 = I_STXR (vloc,YY,r1,r2,r3)
@@ -133,7 +133,7 @@ let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
           pseudo
             [
              L.load rA rB; cmp rA ;
-             bne out; I_OP3 (vloc,SUBS,rC,rC,K (MetaConst.Int 1)) ;
+             bne out; I_OP3 (vloc,SUBS,rC,rC,K 1) ;
              cbnz rC lab ;
            ]@
           [Label (out,Nop)],

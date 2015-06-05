@@ -26,7 +26,7 @@ end = struct
 
   module Make
       (A:ArchBase.S) 
-      (L:GenParser.LexParse with type instruction = A.pseudo) =
+      (L:GenParser.LexParse with type instruction = A.parsedPseudo) =
     struct
       module P = GenParser.Make(GenParser.DefaultConfig)(A)(L)
       module X = B(A)
@@ -45,7 +45,7 @@ end = struct
     | PPC ->
         let module PPC = PPCBase in
         let module PPCLexParse = struct
-	  type instruction = PPC.pseudo
+	  type instruction = PPC.parsedPseudo
 	  type token = PPCParser.token
 
           module L = PPCLexer.Make(LexConf)
@@ -57,7 +57,7 @@ end = struct
     | X86 ->
         let module X86 = X86Base in
         let module X86LexParse = struct
-	  type instruction = X86.pseudo
+	  type instruction = X86.parsedPseudo
 	  type token = X86Parser.token
 
           module L = X86Lexer.Make(LexConf)
@@ -69,7 +69,7 @@ end = struct
     | ARM ->
         let module ARM = ARMBase in
         let module ARMLexParse = struct
-	  type instruction = ARM.pseudo
+	  type instruction = ARM.parsedPseudo
 	  type token = ARMParser.token
 
           module L = ARMLexer.Make(LexConf)
@@ -81,7 +81,7 @@ end = struct
     | AArch64 ->
         let module AArch64 = AArch64Base in
         let module AArch64LexParse = struct
-	  type instruction = AArch64.pseudo
+	  type instruction = AArch64.parsedPseudo
 	  type token = AArch64Parser.token
 
           module L = AArch64Lexer.Make(LexConf)
@@ -93,7 +93,7 @@ end = struct
     | MIPS ->
         let module MIPS = MIPSBase in
         let module MIPSLexParse = struct
-	  type instruction = MIPS.pseudo
+	  type instruction = MIPS.parsedPseudo
 	  type token = MIPSParser.token
 
           module L = MIPSLexer.Make(LexConf)
@@ -105,7 +105,7 @@ end = struct
     | Bell ->
         let module Bell = BellBase in
         let module BellLexParse = struct
-	  type instruction = Bell.pseudo
+	  type instruction = Bell.parsedPseudo
 	  type token = LISAParser.token
 
           module L = BellLexer.Make(LexConf)
@@ -141,7 +141,7 @@ module Tops
 
       module Make
           (A:ArchBase.S) 
-          (L:GenParser.LexParse with type instruction = A.pseudo) =
+          (L:GenParser.LexParse with type instruction = A.parsedPseudo) =
         struct
           module P = GenParser.Make(GenParser.DefaultConfig)(A)(L)
           module X = B(A)
@@ -177,7 +177,7 @@ module Tops
         | PPC ->
             let module PPC = PPCBase in
             let module PPCLexParse = struct
-	      type instruction = PPC.pseudo
+	      type instruction = PPC.parsedPseudo
 	      type token = PPCParser.token
 
               module L = PPCLexer.Make(LexConf)
@@ -189,7 +189,7 @@ module Tops
         | X86 ->
             let module X86 = X86Base in
             let module X86LexParse = struct
-	      type instruction = X86.pseudo
+	      type instruction = X86.parsedPseudo
 	      type token = X86Parser.token
 
               module L = X86Lexer.Make(LexConf)
@@ -201,7 +201,7 @@ module Tops
         | ARM ->
             let module ARM = ARMBase in
             let module ARMLexParse = struct
-	      type instruction = ARM.pseudo
+	      type instruction = ARM.parsedPseudo
 	      type token = ARMParser.token
 
               module L = ARMLexer.Make(LexConf)
@@ -213,7 +213,7 @@ module Tops
         | AArch64 ->
             let module AArch64 = AArch64Base in
             let module AArch64LexParse = struct
-	      type instruction = AArch64.pseudo
+	      type instruction = AArch64.parsedPseudo
 	      type token = AArch64Parser.token
 
               module L = AArch64Lexer.Make(LexConf)
@@ -225,7 +225,7 @@ module Tops
         | MIPS ->
             let module MIPS = MIPSBase in
             let module MIPSLexParse = struct
-	      type instruction = MIPS.pseudo
+	      type instruction = MIPS.parsedPseudo
 	      type token = MIPSParser.token
 
               module L = MIPSLexer.Make(LexConf)
@@ -237,7 +237,8 @@ module Tops
         | Bell ->
             let module Bell = BellBase in
             let module BellLexParse = struct
-	      type instruction = Bell.pseudo
+	      type instruction = Bell.parsedPseudo
+
 	      type token = LISAParser.token
 
               module L = BellLexer.Make(LexConf)

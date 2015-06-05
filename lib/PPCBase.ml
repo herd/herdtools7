@@ -273,6 +273,8 @@ type instruction =
   | Pstmw of reg * k * reg
   | Pcomment of string
 
+type parsedInstruction = instruction
+
     let pp_k = string_of_int
     let pp_idx = string_of_int
 
@@ -635,8 +637,10 @@ let get_next = function
 include Pseudo.Make
     (struct
       type ins = instruction
+      type pins = parsedInstruction
       type reg_arg = reg
 
+      let parsed_tr i = i
 
 (* Number if memory accesses per instruction (for estimating test complexity) *)
       let get_naccesses = function

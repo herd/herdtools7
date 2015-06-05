@@ -56,5 +56,5 @@ end
 module Make
     (C:Config)
     (A:ArchBase.S)
-    (L:LexParse with type instruction = A.pseudo) :
+    (L:LexParse with type instruction = A.parsedPseudo) :
     S with type pseudo = A.pseudo

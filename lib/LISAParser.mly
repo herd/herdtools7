@@ -21,15 +21,14 @@ open Bell
 %token EOF SEMI COMMA PIPE COLON LPAR RPAR RBRAC LBRAC LBRACE RBRACE SCOPES REGIONS MOV AND ADD BRANCH BEQ BNE BAL READ WRITE FENCE RMW CAS EXCH DOT XOR PLUS
 %token <BellBase.reg> REG
 %token <int> NUM
-%token <string> NAME 
+%token <string> NAME
 %token <string> META
+%token <string> SYMB_REG
 %token <string> MEM_ANNOT
-%token <string> SCOPE
-%token <string> REGION
 %token <int> PROC
 
-%type <int list * (BellBase.pseudo) list list * MiscParser.gpu_data option * BellInfo.test option > main 
-%type <BellBase.pseudo list> instr_option_list
+%type <int list * (BellBase.parsedPseudo) list list * MiscParser.gpu_data option * BellInfo.test option > main 
+%type <BellBase.parsedPseudo list> instr_option_list
 %start main instr_option_list
 
 %nonassoc SEMI
@@ -84,12 +83,12 @@ reg_or_addr:
 | NAME { Abs (Constant.Symbolic $1)}
 
 k:
-| NUM  {MetaConst.Int $1}
-| META {MetaConst.Meta $1}
+| NUM { MetaConst.Int $1 }
+| META { MetaConst.Meta $1 }
 
 reg_or_imm:
-| REG  {Regi $1}
-| k    {Imm $1}
+| REG {Regi $1}
+| k   { Imm $1}
 
 any_value:
 | reg_or_addr { IAR_roa $1 }
@@ -142,6 +141,7 @@ instr:
 proc:
  | PROC { $1 }
  | NUM { $1 }
+
 proc_list_sc:
 | proc proc_list_sc {$1::$2}
 | {[]}

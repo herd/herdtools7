@@ -16,14 +16,13 @@ type v =
   | Concrete of int
   | Symbolic of string
 
+
 module type S =
   sig
     val pp : bool -> v -> string (* true -> hexa *)
     val pp_v  : v -> string
     val compare : v -> v -> int
 
-    val asIntV : MetaConst.k -> v
     val intToV  : int -> v 
     val nameToV  : string -> v
   end
-

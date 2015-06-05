@@ -45,7 +45,6 @@ module type S =
       val compare : v -> v -> int
 
 (* Build constant values, either numerical or symbolic *)
-      val asIntV : MetaConst.k -> v
       val intToV  : int -> v 
       val nameToV  : string -> v
       val cstToV : cst -> v

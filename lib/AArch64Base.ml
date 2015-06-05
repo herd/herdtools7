@@ -195,14 +195,13 @@ let barrier_compare = Pervasives.compare
 (* Instructions *)
 (****************)
 
-type k = MetaConst.k
 type lbl = Label.t
 
 type condition = NE | EQ
 type op = ADD | EOR | SUBS
 type variant = V32 | V64
-type kr = K of k | RV of variant * reg
-let k0 = K (MetaConst.Int 0)
+type 'k kr = K of 'k | RV of variant * reg
+let k0 = K 0
 
 type ld_type = AA | XX | AX
 
@@ -218,24 +217,27 @@ let str_memo = function
   | LY -> "STLXR"
 
 
-type instruction =
+type 'k kinstruction =
 (* Branches *)
   | I_B of lbl
   | I_BC of condition * lbl
   | I_CBZ of variant * reg * lbl
   | I_CBNZ of variant * reg * lbl
 (* Load and Store *)
-  | I_LDR of variant * reg * reg * kr
+  | I_LDR of variant * reg * reg * 'k kr
   | I_LDAR of variant * ld_type * reg * reg
-  | I_STR of variant * reg * reg * kr
+  | I_STR of variant * reg * reg * 'k kr
   | I_STLR of variant * reg * reg
   | I_STXR of variant * st_type * reg * reg * reg
 (* Operations *)
-  | I_MOV of variant * reg * k
+  | I_MOV of variant * reg * 'k
   | I_SXTW of reg * reg
-  | I_OP3 of variant * op * reg * reg * kr
+  | I_OP3 of variant * op * reg * reg * 'k kr
 (* Barrier *)
   | I_FENCE of barrier
+
+type instruction = int kinstruction
+type parsedInstruction = MetaConst.k kinstruction
 
 let pp_label i = i
 
@@ -246,11 +248,9 @@ let pp_hash m = match m with
 | Latex -> "\\#"
 | DotFig -> "\\\\#"
 
-let pp_k m v = match v with
-| MetaConst.Int v -> pp_hash m ^ string_of_int v
-| MetaConst.Meta _ -> MetaConst.pp v
+let pp_k m v = pp_hash m ^ string_of_int v
 
-type basic_pp = { pp_k : k -> string; }
+type 'k basic_pp = { pp_k : 'k -> string; }
 
 
 let pp_memo memo = memo
@@ -283,7 +283,7 @@ let do_pp_instruction m =
     pp_memo memo ^ " " ^ pp_vreg v r1 ^ "," ^  pp_vreg v r2 in
 
   let pp_kr showzero kr = match kr with
-  | K (MetaConst.Int 0) when not showzero -> ""
+  | K 0 when not showzero -> ""
   | K k -> "," ^ m.pp_k k
   | RV (v,r) ->
       "," ^ pp_vreg v r ^
@@ -348,9 +348,13 @@ let do_pp_instruction m =
       pp_barrier b
 
 
-let pp_instruction m = do_pp_instruction  {pp_k = pp_k m}
+let pp_instruction m =
+  do_pp_instruction 
+    {pp_k = pp_k m}
 
-let dump_instruction = do_pp_instruction  {pp_k = pp_k Ascii}
+let dump_instruction =
+  do_pp_instruction 
+    {pp_k = (fun v -> "#" ^ string_of_int v)}
 
 (****************************)
 (* Symbolic registers stuff *)
@@ -440,7 +444,7 @@ let get_next = function
   | I_BC (_,lbl)
   | I_CBZ (_,_,lbl)
   | I_CBNZ (_,_,lbl)
-    -> [Label.Next; Label.To lbl;]
+      -> [Label.Next; Label.To lbl;]
   | I_LDR _
   | I_STR _
   | I_LDAR _
@@ -450,46 +454,72 @@ let get_next = function
   | I_SXTW _
   | I_OP3 _
   | I_FENCE _
-    -> [Label.Next;]
-
-
-let get_naccesses = function
-  | I_LDR _ | I_LDAR _
-  | I_STR _ | I_STLR _ | I_STXR _
-    -> 1
-  | I_B _
-  | I_BC _
-  | I_CBZ _
-  | I_CBNZ _
-  | I_MOV _
-  | I_SXTW _
-  | I_OP3 _
-  | I_FENCE _
-    -> 0
-
-let fold_labels k f = function
-  | I_B lbl
-  | I_BC (_,lbl)
-  | I_CBZ (_,_,lbl)
-  | I_CBNZ (_,_,lbl)
-    -> f k lbl
-  | _ -> k
-
-let map_labels f = function
-  | I_B lbl -> I_B (f lbl)
-  | I_BC (c,lbl) -> I_BC (c,f lbl)
-  | I_CBZ (v,r,lbl) -> I_CBZ (v,r,f lbl)
-  | I_CBNZ (v,r,lbl) -> I_CBNZ (v,r,f lbl)
-  | ins -> ins
+      -> [Label.Next;]
 
 include Pseudo.Make
     (struct
       type ins = instruction
+      type pins = parsedInstruction
       type reg_arg = reg
 
-      let map_labels = map_labels
-      let fold_labels = fold_labels
-      let get_naccesses = get_naccesses
+      let kr_tr = function
+        | K i -> K (MetaConst.as_int i)
+        | RV _ as kr -> kr
+
+      let parsed_tr i = match i with
+        | I_B _
+        | I_BC _
+        | I_CBZ _
+        | I_CBNZ _
+        | I_LDAR _
+        | I_STLR _
+        | I_STXR _
+            as keep -> keep
+        | I_LDR (v,r1,r2,kr) -> I_LDR (v,r1,r2,kr_tr kr)
+        | I_STR (v,r1,r2,kr) -> I_STR (v,r1,r2,kr_tr kr)
+        | _ -> assert false
+
+(*
+(* Load and Store *)
+  | I_LDAR of variant * ld_type * reg * reg
+  | I_STR of variant * reg * reg * 'k kr
+  | I_STLR of variant * reg * reg
+  | I_STXR of variant * st_type * reg * reg * reg
+(* Operations *)
+  | I_MOV of variant * reg * 'k
+  | I_SXTW of reg * reg
+  | I_OP3 of variant * op * reg * reg * 'k kr
+(* Barrier *)
+  | I_FENCE of barrier
+*)
+      let get_naccesses = function
+        | I_LDR _ | I_LDAR _
+        | I_STR _ | I_STLR _ | I_STXR _
+          -> 1
+        | I_B _
+        | I_BC _
+        | I_CBZ _
+        | I_CBNZ _
+        | I_MOV _
+        | I_SXTW _
+        | I_OP3 _
+        | I_FENCE _
+          -> 0
+
+      let fold_labels k f = function
+        | I_B lbl
+        | I_BC (_,lbl)
+        | I_CBZ (_,_,lbl)
+        | I_CBNZ (_,_,lbl)
+          -> f k lbl
+        | _ -> k
+
+      let map_labels f = function
+        | I_B lbl -> I_B (f lbl)
+        | I_BC (c,lbl) -> I_BC (c,f lbl)
+        | I_CBZ (v,r,lbl) -> I_CBZ (v,r,f lbl)
+        | I_CBNZ (v,r,lbl) -> I_CBNZ (v,r,f lbl)
+        | ins -> ins
     end)
 
 let get_macro _name = raise Not_found

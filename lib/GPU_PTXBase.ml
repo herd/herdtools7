@@ -206,10 +206,16 @@ type instruction =
 | Patom2op of reg*reg*ins_op*state_space*ptx_atom_op*op_type
 | Patom3op of reg*reg*ins_op*ins_op*state_space*ptx_atom_op*op_type
 
+type parsedInstruction = instruction
+
 include Pseudo.Make
     (struct
       type ins = instruction
+      type pins = parsedInstruction
       type reg_arg = reg
+
+      let parsed_tr i = i
+
       let get_naccesses = function 
 	| Pld _
 	| Pst _ 

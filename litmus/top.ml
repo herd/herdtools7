@@ -273,7 +273,7 @@ end = struct
   module Make
       (O:Config)
       (A:Arch.S)
-      (L:GenParser.LexParse with type instruction = A.pseudo)
+      (L:GenParser.LexParse with type instruction = A.parsedPseudo)
       (XXXComp : XXXCompile.S with module A = A) =
     struct
       module Pseudo = struct
@@ -502,7 +502,7 @@ end = struct
         | `ARM ->
             let module Arch' = ARMArch.Make(OC)(V) in
             let module LexParse = struct
-              type instruction = Arch'.pseudo
+              type instruction = Arch'.parsedPseudo
               type token = ARMParser.token
               module Lexer = ARMLexer.Make(LexConfig)
               let lexer = Lexer.token
@@ -516,7 +516,7 @@ end = struct
             | UseArch.Trad ->
                 let module Arch' = AArch64Arch.Make(OC)(V) in
                 let module LexParse = struct
-                  type instruction = Arch'.pseudo
+                  type instruction = Arch'.parsedPseudo
                   type token = AArch64Parser.token
                   module Lexer = AArch64Lexer.Make(LexConfig)
                   let lexer = Lexer.token

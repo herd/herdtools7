@@ -151,7 +151,7 @@ module Top (C:Config) = struct
       | `ARM ->
 	  let module ARM = ARMArch.Make(C.PC)(SymbValue) in
 	  let module ARMLexParse = struct
-	    type instruction = ARM.pseudo
+	    type instruction = ARM.parsedPseudo
 	    type token = ARMParser.token
             module Lexer = ARMLexer.Make(LexConfig)
 	    let lexer = Lexer.token
@@ -177,7 +177,7 @@ module Top (C:Config) = struct
       | `AArch64 ->
 	  let module AArch64 = AArch64Arch.Make(C.PC)(SymbValue) in
 	  let module AArch64LexParse = struct
-	    type instruction = AArch64.pseudo
+	    type instruction = AArch64.parsedPseudo
 	    type token = AArch64Parser.token
             module Lexer = AArch64Lexer.Make(LexConfig)
 	    let lexer = Lexer.token
@@ -313,7 +313,7 @@ module Top (C:Config) = struct
       | `LISA ->
         let module Bell = BellArch.Make(C.PC)(SymbValue) in
         let module BellLexParse = struct
-  	  type instruction = Bell.pseudo
+  	  type instruction = Bell.parsedPseudo
 	  type token = LISAParser.token
           module Lexer = BellLexer.Make(LexConfig)
 	  let lexer = Lexer.token

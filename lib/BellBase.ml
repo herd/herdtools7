@@ -36,7 +36,8 @@ let gpr_regs =
   ]
 
 type reg =
-  | GPRreg of gpr_reg 
+  | GPRreg of gpr_reg
+  | Symbolic_reg of string
   | PC (* program counter, not really sure why it's required... *)
 
 let pp_reg r =
@@ -45,6 +46,7 @@ let pp_reg r =
       try List.assoc ir gpr_regs with
       | Not_found -> assert false 
     end
+  | Symbolic_reg s -> sprintf "%%%s" s
   | PC -> "pc"
 
 let reg_compare = Pervasives.compare
@@ -102,15 +104,17 @@ let pp_fence_ins = function
 
 type lbl = Label.t
 
-type k = MetaConst.k
-
-type reg_or_imm =
+type 'k reg_or_imm =
 | Regi of reg
-| Imm of k
+| Imm of 'k
+
+let reg_or_imm_tr f = function
+  | Imm k -> Imm (f k)
+  | Regi _ as keep -> keep
 
 let string_of_reg_or_imm r = match r with
   | Regi r -> pp_reg r
-  | Imm r -> MetaConst.pp r
+  | Imm r -> sprintf "%d" r
 
 open Constant
 
@@ -126,30 +130,52 @@ let string_of_reg_or_addr r = match r with
   | Rega r -> pp_reg r
   | Abs r -> pp_abs r
 
-type imm_or_addr_or_reg = 
+type 'k imm_or_addr_or_reg = 
   | IAR_roa of reg_or_addr
-  | IAR_imm of k
+  | IAR_imm of 'k
+
+let imm_or_addr_or_reg_tr f = function
+  | IAR_roa _ as keep -> keep
+  | IAR_imm k -> IAR_imm (f k)
+
 let pp_iar iar = match iar with
   | IAR_roa roa -> string_of_reg_or_addr roa
-  | IAR_imm i -> MetaConst.pp i
+  | IAR_imm i -> sprintf "%d" i
 
-type addr_op = 
+type 'k addr_op = 
 | Addr_op_atom of reg_or_addr
-| Addr_op_add of reg_or_addr * reg_or_imm
+| Addr_op_add of reg_or_addr * 'k reg_or_imm
+
+let addr_op_tr f = function
+  | Addr_op_add (r,k) -> Addr_op_add (r,reg_or_imm_tr f k)
+  | Addr_op_atom _ as keep -> keep
 
 let pp_addr_op a = match a with
   | Addr_op_atom roa -> string_of_reg_or_addr roa
   | Addr_op_add(roa,roi) -> sprintf "%s+%s" (string_of_reg_or_addr roa) 
     (string_of_reg_or_imm roi)
 
-type cond = 
-  | Eq of reg * reg_or_imm
-  | Ne of reg * reg_or_imm
+type 'k cond = 
+  | Eq of reg * 'k reg_or_imm
+  | Ne of reg * 'k reg_or_imm
   | Bal 
-type op = 
-  | Add of reg * imm_or_addr_or_reg * imm_or_addr_or_reg 
-  | And of reg * imm_or_addr_or_reg * imm_or_addr_or_reg
-  | Mov of reg * imm_or_addr_or_reg 
+
+let cond_tr f = function
+  | Eq (r,ri) -> Eq (r,reg_or_imm_tr f ri)
+  | Ne (r,ri) -> Ne (r,reg_or_imm_tr f ri)
+  | Bal as keep -> keep
+
+type 'k op = 
+  | Add of reg * 'k imm_or_addr_or_reg * 'k imm_or_addr_or_reg 
+  | And of reg * 'k imm_or_addr_or_reg * 'k imm_or_addr_or_reg
+  | Mov of reg * 'k imm_or_addr_or_reg 
+
+let op_tr f = function
+  | Add (r,iar1,iar2) ->
+      Add (r,imm_or_addr_or_reg_tr f iar1,imm_or_addr_or_reg_tr f iar2)
+  | And (r,iar1,iar2) ->
+      And (r,imm_or_addr_or_reg_tr f iar1,imm_or_addr_or_reg_tr f iar2)
+  | Mov (r,iar) -> Mov (r,imm_or_addr_or_reg_tr f iar)
 
 let pp_op = function
   | Add(r,x,i) -> sprintf "add %s %s %s" (pp_reg r) (pp_iar x) (pp_iar i)
@@ -161,19 +187,33 @@ let pp_cond = function
   | Ne(r,x) -> sprintf "ne %s %s" (pp_reg r) (string_of_reg_or_imm x)  
   | Bal -> ""
 
-type instruction = 
-| Pld of reg * addr_op * string list
-| Pst of addr_op * reg_or_imm * string list
-| Prmw of op * string list
+type 'k kinstruction = 
+| Pld of reg * 'k addr_op * string list
+| Pst of 'k addr_op * 'k reg_or_imm * string list
+| Prmw of 'k op * string list
 | Pfence of barrier
-| Pbranch of cond * lbl * string list
+| Pbranch of 'k cond * lbl * string list
+
+let instruction_tr f = function
+  | Pld (r,ao,s) -> Pld (r,addr_op_tr f ao,s)
+  | Pst (ao,ri,s) -> Pst (addr_op_tr f ao,reg_or_imm_tr f ri,s)
+  | Prmw (op,s) -> Prmw (op_tr f op,s)
+  | Pfence _ as i -> i
+  | Pbranch (cond,lbl,s) -> Pbranch (cond_tr f cond,lbl,s)
+
+type instruction = int kinstruction
+type parsedInstruction = MetaConst.k kinstruction
 
 (* from GPU_PTXBase *)
 
 include Pseudo.Make
     (struct
       type ins = instruction
+      type pins = parsedInstruction
       type reg_arg = reg
+
+      let parsed_tr i = instruction_tr MetaConst.as_int i
+
       let get_naccesses = function 
 	| Pld _
 	| Pst _  -> 1
