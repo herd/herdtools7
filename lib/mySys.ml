@@ -63,6 +63,15 @@ let remove name =
   if not !save_temps then do_remove name
 
 (********)
+(* Move *)
+(********)
+
+(* handle windows/Unix dialectic => no error when s2 exists *)
+let move s1 s2 =
+  if Sys.os_type <> "Unix" && Sys.file_exists s2 then do_remove s2 ;
+  Sys.rename s1 s2
+  
+(********)
 (* grep *)
 (********)
 

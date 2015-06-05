@@ -33,6 +33,12 @@ val read_list : in_channel -> (string -> 'a option) -> 'a list
 (****************)
 val remove : string -> unit
 
+(**************)
+(* Move files *)
+(**************)
+
+val move : string -> string -> unit
+
 
 (****************)
 (* Select lines *)

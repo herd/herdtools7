@@ -22,3 +22,8 @@ let incr_lineno lexbuf =
     { pos with
       pos_lnum = pos.pos_lnum + 1;
       pos_bol = pos.pos_cnum; }
+
+let init_file name lexbuf =
+  lexbuf.lex_curr_p <-
+    {pos_fname = name; pos_lnum = 1;
+     pos_bol = 0; pos_cnum = 0};
