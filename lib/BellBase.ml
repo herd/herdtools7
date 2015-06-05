@@ -294,14 +294,20 @@ let fold_regs (f_reg,f_sreg) =
     end 
   in fold_ins
   
-let map_regs f_reg _f_symb = 
+let map_regs f_reg f_symb = 
+
+  let map_reg reg = match reg with
+  | GPRreg _ -> f_reg reg
+  | Symbolic_reg reg -> f_symb reg
+  | PC -> reg in
+
   let map_roa roa = match roa with
     | Abs _ -> roa
-    | Rega r -> Rega(f_reg r)
+    | Rega r -> Rega(map_reg r)
   in
   let map_roi roi = match roi with
     | Imm _ -> roi
-    | Regi r -> Regi(f_reg r)
+    | Regi r -> Regi(map_reg r)
   in
   let map_iar iar = match iar with
     | IAR_imm _ -> iar
@@ -312,17 +318,17 @@ let map_regs f_reg _f_symb =
     | Addr_op_add(roa,roi) -> Addr_op_add(map_roa roa,map_roi roi)
   in
   let map_cond cond = match cond with
-    | Eq(r,i) -> Eq(f_reg r, map_roi i)
-    | Ne(r,i) -> Ne(f_reg r, map_roi i)  
+    | Eq(r,i) -> Eq(map_reg r, map_roi i)
+    | Ne(r,i) -> Ne(map_reg r, map_roi i)  
     | Bal -> Bal
   in
   let map_op op = match op with
-    | Add(r,x,i) -> Add(f_reg r, map_iar x, map_iar i) 
-    | And(r,x,i) -> And(f_reg r, map_iar x, map_iar i) 
-    | Mov(r,i) -> Mov(f_reg r, map_iar i) 
+    | Add(r,x,i) -> Add(map_reg r, map_iar x, map_iar i) 
+    | And(r,x,i) -> And(map_reg r, map_iar x, map_iar i) 
+    | Mov(r,i) -> Mov(map_reg r, map_iar i) 
   in
   let map_ins ins = begin match ins with
-    | Pld(r,addr_op,s) -> Pld(f_reg r, map_addr_op addr_op, s)
+    | Pld(r,addr_op,s) -> Pld(map_reg r, map_addr_op addr_op, s)
     | Pst(addr_op,roi,s) -> Pst(map_addr_op addr_op, map_roi roi, s)
     | Prmw(op,s) -> Prmw(map_op op, s)
     | Pbranch(cond,lbl,s) -> Pbranch(map_cond cond,lbl,s)
