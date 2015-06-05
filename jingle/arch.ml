@@ -1,5 +1,12 @@
 module type S = sig
     include ArchBase.S
+    
+    type substitution = reg * reg
+
+    val match_instruction : substitution list -> 
+			    instruction -> instruction ->
+			    substitution list option
+
   end
 
 module type Parser = sig
