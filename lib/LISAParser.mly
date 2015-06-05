@@ -23,7 +23,7 @@ open Bell
 %token <int> NUM
 %token <string> NAME
 %token <string> META
-%token <string> SYMB_REG
+%token <BellBase.reg> SYMB_REG
 %token <string> MEM_ANNOT
 %token <int> PROC
 
@@ -78,8 +78,12 @@ annot_list_option:
 | LBRAC name_list RBRAC {$2}
 | {[]}
 
+reg:
+| REG { $1}
+| SYMB_REG { $1 }
+
 reg_or_addr:
-| REG {Rega $1}
+| reg  {Rega $1}
 | NAME { Abs (Constant.Symbolic $1)}
 
 k:
@@ -87,7 +91,7 @@ k:
 | META { MetaConst.Meta $1 }
 
 reg_or_imm:
-| REG {Regi $1}
+| reg {Regi $1}
 | k   { Imm $1}
 
 any_value:
@@ -98,19 +102,19 @@ addr_op:
 | reg_or_addr {BellBase.Addr_op_atom($1)}
 
 op:
-| MOV REG any_value 
+| MOV reg any_value 
  { Mov($2,$3) }
 
-| ADD REG any_value any_value
+| ADD reg any_value any_value
  { Add($2,$3,$4) }
 
-| AND REG any_value any_value
+| AND reg any_value any_value
  { And($2,$3,$4) }
 
 condition:
-| BEQ REG reg_or_imm
+| BEQ reg reg_or_imm
   { Eq($2,$3) }
-| BNE REG reg_or_imm
+| BNE reg reg_or_imm
   { Ne($2,$3) }
 | BAL
   { Bal }
@@ -121,7 +125,7 @@ fence_labels_option:
 
 instr:
 
-| READ annot_list_option REG addr_op
+| READ annot_list_option reg addr_op
   { Pld($3,$4,$2) }
 
 | WRITE annot_list_option addr_op reg_or_imm

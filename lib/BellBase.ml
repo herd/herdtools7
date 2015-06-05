@@ -252,10 +252,11 @@ let dump_instruction i = match i with
       (pp_cond c) 
       l 
  
-let fold_regs (f_reg,_f_sreg) = 
-  let fold_reg reg (y_reg,y_sreg) = match reg with
+let fold_regs (f_reg,f_sreg) = 
+  let fold_reg reg (y_reg,y_sreg as k) = match reg with
     | GPRreg _ -> f_reg reg y_reg,y_sreg
-    | _ -> y_reg, y_sreg 
+    | Symbolic_reg reg -> y_reg,f_sreg reg y_sreg
+    | PC -> k
   in
   let fold_roa roa c = match roa with
     | Rega r -> fold_reg r c
