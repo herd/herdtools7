@@ -57,11 +57,18 @@ let digest_init debug init =
     Misc.rem_dups
       (fun (loc1,_) (loc2,_) -> location_compare loc1 loc2 = 0)
       init in
+
+(* We perform explicit printing to be  more robust
+   against pretty printer changes *)
+
+  let dump_location = function
+    | Location_reg (i,r) -> Printf.sprintf "%i:%s" i r
+    | Location_sreg s -> s
+    | Location_global v -> SymbConstant.pp_v v in
+
   let pp =
     (String.concat "; "
        (List.map
-(* We explicit printing as as to be  more robust
-   against pretty printer changes *)
           (fun (loc,(t,v)) -> match t with
           | TyDef ->
               sprintf "%s=%s"
