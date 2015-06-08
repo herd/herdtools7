@@ -39,7 +39,7 @@ let weakf = rel
 
 let fence = strongf | weakf
 
-let hb = fence | rfe | ppo
+let hb = (R * M) & fence | rfe | ppo
 
 acyclic hb as thin_air
 
