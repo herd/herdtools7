@@ -28,8 +28,8 @@ open Bell
 %token <int> PROC
 
 %type <int list * (BellBase.parsedPseudo) list list * MiscParser.gpu_data option * BellInfo.test option > main 
-%type <BellBase.parsedPseudo list> instr_option_list
-%start main instr_option_list
+%type <BellBase.parsedPseudo list> instr_option_seq
+%start main instr_option_seq
 
 %nonassoc SEMI
 
@@ -55,11 +55,19 @@ instr_option :
 |            { Nop }
 | NAME COLON instr_option { Label ($1,$3) }
 | instr      { Instruction $1}
+
 instr_option_list :
   | instr_option
       {[$1]}
   | instr_option PIPE instr_option_list 
       {$1::$3}
+
+instr_option_seq:
+  | instr_option
+      {[$1]}
+  | instr_option SEMI instr_option_seq 
+      {$1::$3}
+
 iol_list :
 |  instr_option_list SEMI
     {[$1]}

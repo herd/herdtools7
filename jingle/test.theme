@@ -1,9 +1,3 @@
 AArch64 to Bell
-"STLR W1,[X2]" maps to: "r[L] x 1"
-
-"ovqud
-jqdov"
-maps to:
-" oziuvd 
-so
-"
+"STR %y,[%x]" maps to: "w[] %x %y"
+"LDR %x,[%y]" maps to: "r[] %y %x"

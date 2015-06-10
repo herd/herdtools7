@@ -22,29 +22,28 @@ let parsed = match !map with
   | None -> raise (Error "No map file provided.")
   | Some s -> Misc.input_protect ParseMap.parse s
 
-module SourceP = (val Arch.get_parser parsed.ParseMap.source)
+module Source = (val Arch.get_arch parsed.ParseMap.source)
+module Target = (val Arch.get_arch parsed.ParseMap.target)
 
 module Conf : Mapping.Config =
   struct
-    module Source = (val Arch.get_arch parsed.ParseMap.source)
-    module Target = (val Arch.get_arch parsed.ParseMap.target)
-    module SParser = SourceP
-    module TParser = (val Arch.get_parser parsed.ParseMap.target)
+    module Source = Source
+    module Target = Target
     let conversions = parsed.ParseMap.conversions
   end
 
 let () = if !verbose then
-	   eprintf "Reading theme file :\n";
-	 List.iter (fun (s,t) ->
-		    eprintf "\"%s\" -> \"%s\"\n" s t)
-		   parsed.ParseMap.conversions
-
+	   (eprintf "Reading theme file :\n";
+	    List.iter (fun (s,t) ->
+		       eprintf "\"%s\" -> \"%s\"\n" s t)
+		      parsed.ParseMap.conversions)
+	     
 let source_test = 
   let file = List.hd !args in
   let chin = open_in file in
   let sres = let module SP = Splitter.Make(Splitter.Default) in
 	     SP.split file chin
-  in SourceP.parse chin sres 
+  in Source.Parser.parse chin sres
 
 module Trad = Mapping.Make(Conf)
     

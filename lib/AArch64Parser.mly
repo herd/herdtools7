@@ -37,8 +37,8 @@ open AArch64Base
 %token NSH NSHST NSHLD
 
 %type <int list * (AArch64Base.parsedPseudo) list list> main
-%type <AArch64Base.parsedPseudo list> instr_option_list
-%start  main instr_option_list
+%type <AArch64Base.parsedPseudo list> instr_option_seq
+%start  main instr_option_seq
 
 %nonassoc SEMI
 %%
@@ -64,6 +64,12 @@ instr_option_list :
   | instr_option
       {[$1]}
   | instr_option PIPE instr_option_list 
+      {$1::$3}
+
+instr_option_seq :
+  | instr_option
+      {[$1]}
+  | instr_option SEMI instr_option_seq 
       {$1::$3}
 
 instr_option :
