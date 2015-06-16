@@ -893,6 +893,8 @@ we have $\textrel{M} = \textrel{W} \cup \textrel{R}$\\
 \textrel{IW} & initial writes &
 feed reads that read from the initial state\\
 \textrel{FW} & final writes & writes that are observed at the end of test execution\\
+\textrel{B} & branch events\\
+\textrel{RMW} & read-modify-write events\\
 \textrel{F} & fence events\\
 \textit{NAME} & specific fence events & those depend on the test architecture\\
 \end{idtable}
@@ -966,10 +968,12 @@ Expressions are evaluated by \herd, yielding a value.
 \alt \T{let} \boption{} \T{rec} \eoption \NT{binding} \brepet{} \T{and} \NT{binding} \erepet{} \T{in} \NT{expr}
 \alt \T{match} \NT{expr} \T{with} \NT{clauses} \T{end}
 \alt \T{(}\NT{expr}\T{)} \orelse  \T{begin} \NT{expr} \T{end}
+\alt \T{instructions} \NT{id}\NT{[taglist]}
 \sep
 \sep
 \NT{tag} \is \T{'} \NT{id}
 \sep
+\NT{taglist} \is \NT{tag, taglist}
 \sep
 \NT{pat} \is \NT{id} \orelse \T{(}\T{)} \orelse \T{(} \NT{id} \brepet{} \T{,} \NT{id} \erepet \T{)}
 \sep
@@ -992,12 +996,12 @@ Expressions are evaluated by \herd, yielding a value.
 
 \subsubsection*{Simple expressions}
 Simple expressions are the empty relation (keyword~\synt{\T{0}}),
-identifiers~\synt{\NT{id}} and tags~\synt{\NT{tag}}.
-Identifiers are bound to values, either
-before the execution (see pre-defined identifiers in Sec.~\ref{sec:predef}),
-or by the model itself.
-Tags are constants similar to C enum values or OCaml constant constructors.
-Tags must be declared with the \T{enum} instruction.
+identifiers~\synt{\NT{id}} and tags~\synt{\NT{tag}}.  Identifiers are bound to
+values, either before the execution (see pre-defined identifiers in
+Sec.~\ref{sec:predef}), or by the model itself.  Tags are constants similar to
+C enum values or OCaml constant constructors.  Tags must be declared with the
+\T{enum} instruction. We go back to \T{enum} and tags in Sec.~\ref{sec:enum}
+and \ref{sec:bell}.
 
 \subsubsection*{Tuples}
 Tuples include a constant, the empty tuple \synt{\T{(}\T{)}},
@@ -1255,24 +1259,6 @@ let rec power S = match S with
 end
 \end{verbatim}
 
-\subsubsection*{\label{sec:enum}Enumerations}
-The \T{enum} construct defines a set of enumerated values or tags. Syntax is
-\begin{center}
-\synt{\T{enum} \NT{id} \T{=} \NT{tag}_1 \T{||} \cdots \T{||} \NT{tag}_n}
-\end{center}
-The construct has two main effects.
-It first defines the tags \synt{\nt{tag}_1,\ldots,\nt{tag}_n}.
-Notice that tags do not exist before being defined, that is
-evaluating the expression \nt{tag} is an error without a prior
-\T{enum} that defines the tag~\nt{tag}. Tags are typed in the sense
-that they belong to the tag type \nt{id} and that tags from
-different types cannot be members of the same set.
-The second effect of the construct is to define a set of tags~\nt{id}
-as the set of all tags listed in the construct.
-That is, the \T{enum} construct performs the binding of~\nt{id}
-to \synt{\T{\{} \nt{tag}_1,\ldots,\nt{tag}_n\T{\}}}.
-
-
 \subsubsection*{\label{sec:check}Checks}
 The construct
 \begin{center}\synt{\NT{check} \NT{expr}}\end{center}
@@ -1408,6 +1394,76 @@ Notice that:
 \end{itemize}
 \fi
 
+\subsection*{Bell extensions}
+
+Users can attain more genericity in their models by defining a {\tt bell} file,
+as an addendum, or rather preamble, to a {\tt cat} file.
+
+\subsubsection*{\label{sec:enum}Enumerations}
+The \T{enum} construct defines a set of enumerated values or tags. Syntax is
+\begin{center}
+\synt{\T{enum} \NT{id} \T{=} \NT{tag}_1 \T{||} \cdots \T{||} \NT{tag}_n}
+\end{center}
+The construct has two main effects.
+It first defines the tags \synt{\nt{tag}_1,\ldots,\nt{tag}_n}.
+Notice that tags do not exist before being defined, that is
+evaluating the expression \nt{tag} is an error without a prior
+\T{enum} that defines the tag~\nt{tag}. Tags are typed in the sense
+that they belong to the tag type \nt{id} and that tags from
+different types cannot be members of the same set.
+The second effect of the construct is to define a set of tags~\nt{id}
+as the set of all tags listed in the construct.
+That is, the \T{enum} construct performs the binding of~\nt{id}
+to \synt{\T{\{} \nt{tag}_1,\ldots,\nt{tag}_n\T{\}}}.
+
+\emph{Scopes} are a special case of enumeration: the construct {\tt enum
+scopes} must be used to define hierarchical models such as Nvidia GPUs (see
+e.g.~\cite{abd15}).
+
+An {\tt enum scopes} declaration must be paired with two functions {\tt narrower} and {\tt wider} that implement the hierarchy amongst scopes. For example:
+
+\begin{verbatim}
+enum scopes = 'discography || 'I || 'II || 'III || 'IV
+
+let narrower(t) = match t with
+  || 'discography -> {'I, 'II, 'III, 'IV} 
+end
+
+let wider(t) = match t with
+  || 'I -> 'discography
+  || 'II -> 'discography
+  || 'III -> 'discography
+  || 'IV -> 'discography
+end
+\end{verbatim}
+
+Here we define five scopes, where the first one, {\tt discography}, is wider
+than all the other ones.
+
+\subsubsection*{Instructions}
+The predefined sets of events \textrel{W}, \textrel{R}, \textrel{RMW},
+\textrel{F}, and \textrel{B} can be \emph{annotated} with user-defined tags
+(see Sec.~\ref{sec:enum}).
+
+The constructs:
+
+\begin{center}
+\T{instructions}\NT{id}\NT{[taglist]}  
+\end{center}
+
+take the identifier of a pre-defined set and a possibly empty, square bracketed
+list of tags. 
+
+%jade@Luc: du coup il faudrait peut etre les distinguer dans la def des
+%expressions?
+The primitive {\tt tag2instrs} yields, given a tag {\tt 't}, the set of
+instructions bearing the annotation {\tt t} that was previously declared in an
+enumeration type.
+%\fixme{jade: enumeration type? c'est comme ca que ca se dit?} 
+
+The primitive {\tt tag2scope} yields, given a tag {\tt 't}, the relation
+between instructions TODO  
+ 
 \subsection{\label{language:model}Models}
 \begin{syntax}
 \NT{model} \is \NT{model-comment}  \NT{instruction} \erepet
@@ -1956,37 +2012,37 @@ by setting the shell environment variable \texttt{HERDDIR};
 and then in herd installation directory, which is defined
 while compiling~\herd.
 
-\section{Extensions to Herd}
+%\section{Extensions to Herd}
+%
+%\begin{quote}\it
+%This section describes several extensions to \herd{} that have been implemented by Tyler Sorensen and John Wickerson in collaboration with the original authors. In due course, the contents of this section will probably be merged into the previous sections to form a cohesive manual.
+%\end{quote}
+%
+%\subsection{Additional command line options}
+%
+%\begin{description}
+%\item[{\tt \aname{opt:dumplem}{-dumplem}}] Convert the given herd model to Lem format, and exit. The resultant Lem file is generated on {\tt stdout}. 
+%\begin{quote}\emph{Note.} It is necessary to provide a litmus test when invoking \herd{} in this way, even though the litmus test will not be examined. This is due to a minor technical problem.\end{quote}
+%\end{description}
+%
+%
+%
+%\subsection{Curried function application}
+%
+%A test-instruction is used to enforce a contract between the programming language and the programmer. There are two types: \emph{provided conditions} and \emph{undefined-unless conditions}. The latter are indicated with the \synt{\T{undefined\_unless}} keyword. A provided condition is an obligation on the programming language; that is, the programmer can assume that every execution of their program will satisfy every provided condition. An undefined-unless condition is an obligation on the programmer; that is, the compiler-writer can assume that every execution of the program will satisfy every undefined-unless condition. In other words, if a program has an execution that violates an undefined-unless condition, then its behaviour is completely undefined.
 
-\begin{quote}\it
-This section describes several extensions to \herd{} that have been implemented by Tyler Sorensen and John Wickerson in collaboration with the original authors. In due course, the contents of this section will probably be merged into the previous sections to form a cohesive manual.
-\end{quote}
+%The syntax for instructions thus becomes:
+%
+%\begin{syntax}
+%\nt{instruction} \is{} \ldots
+%\alt \T{undefined\_unless} \NT{check} \NT{expr} \boption \T{as} \NT{id}\eoption
+%\end{syntax}
 
-\subsection{Additional command line options}
-
-\begin{description}
-\item[{\tt \aname{opt:dumplem}{-dumplem}}] Convert the given herd model to Lem format, and exit. The resultant Lem file is generated on {\tt stdout}. 
-\begin{quote}\emph{Note.} It is necessary to provide a litmus test when invoking \herd{} in this way, even though the litmus test will not be examined. This is due to a minor technical problem.\end{quote}
-\end{description}
-
-
-
-\subsection{Curried function application}
-
-A test-instruction is used to enforce a contract between the programming language and the programmer. There are two types: \emph{provided conditions} and \emph{undefined-unless conditions}. The latter are indicated with the \synt{\T{undefined\_unless}} keyword. A provided condition is an obligation on the programming language; that is, the programmer can assume that every execution of their program will satisfy every provided condition. An undefined-unless condition is an obligation on the programmer; that is, the compiler-writer can assume that every execution of the program will satisfy every undefined-unless condition. In other words, if a program has an execution that violates an undefined-unless condition, then its behaviour is completely undefined.
-
-The syntax for instructions thus becomes:
-
-\begin{syntax}
-\nt{instruction} \is{} \ldots
-\alt \T{undefined\_unless} \NT{check} \NT{expr} \boption \T{as} \NT{id}\eoption
-\end{syntax}
-
-\subsection{Additional identifiers}
-
-\begin{quote}\it
-This is an appendix to Section~\ref{language:identifier}.
-\end{quote}
+%\subsection{Additional identifiers}
+%
+%\begin{quote}\it
+%This is an appendix to Section~\ref{language:identifier}.
+%\end{quote}
 
 %\paragraph*{Pre-defined relations}
 %
@@ -2020,20 +2076,20 @@ This is an appendix to Section~\ref{language:identifier}.
 %{\tt lo}     & lock order & a total order on all mutex operations (similar to {\tt co}, but for mutexes instead of writes) \\
 %\end{idtable}
 
-\paragraph*{Pre-defined sets}
-Here are some pre-defined sets, available in all models.
-\begin{idtable}
-{\tt \_}    & universal set & the set of all events in the structure \\
-{\tt R} & read events & set of all reads from memory \\
-{\tt W} & write events & set of all writes to memory \\
-{\tt M} & memory events & set of all reads from and writes to memory \\
-{\tt B} & barrier events & is a barrier \\
-{\tt A} & atomic events & is an atomic event \\
-{\tt P} & plain events & is not an atomic event \\
-{\tt I} & initial writes & is an initial write event \\
-\end{idtable}
+%\paragraph*{Pre-defined sets}
+%Here are some pre-defined sets, available in all models.
+%\begin{idtable}
+%{\tt \_}    & universal set & the set of all events in the structure \\
+%{\tt R} & read events & set of all reads from memory \\
+%{\tt W} & write events & set of all writes to memory \\
+%{\tt M} & memory events & set of all reads from and writes to memory \\
+%{\tt B} & barrier events & is a barrier \\
+%{\tt A} & atomic events & is an atomic event \\
+%{\tt P} & plain events & is not an atomic event \\
+%{\tt I} & initial writes & is an initial write event \\
+%\end{idtable}
 
-Having defined these sets, it is now possible to write expressions of the form {\tt RW($e$)} as {\tt [R * W] \& $e$}. However, the simulation in the latter case may be less efficient, owing to the need to construct the intermediate relation {\tt [R * W]}.
+%Having defined these sets, it is now possible to write expressions of the form {\tt RW($e$)} as {\tt [R * W] \& $e$}. However, the simulation in the latter case may be less efficient, owing to the need to construct the intermediate relation {\tt [R * W]}.
 
 %In C++ and OpenCL models, the following sets are pre-defined.
 %
