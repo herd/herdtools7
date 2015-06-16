@@ -32,7 +32,7 @@ The model above illustrates some features of model definitions:
 string (in double quotes) in case the tag includes special characters or spaces.
 \item Pre-defined bindings. Here \verb+po+ (program order)
 and \texttt{rf} (read from) are pre-defined.
-The remaining two commnication relations (\texttt{co} and~\texttt{fr})
+The remaining two communication relations (\texttt{co} and~\texttt{fr})
 are computed by the included file \verb+cos.cat+, which we describe later
 --- See Sec.~\ref{sec:cos}.
 For simplicity, we may as well assume that \verb+co+
@@ -1027,7 +1027,7 @@ The construct \synt{\NT{expr}\T{?}} (option) evaluates to the union
 of  \NT{expr} value and of the identity relation.
 Notice that postfix operators operate on relations only.
 
-There is one prefix operator~\T{\textasciitilde} that performes
+There is one prefix operator~\T{\textasciitilde} that performs
 relation and set complement.
 
 Infix operators are
@@ -1035,7 +1035,7 @@ Infix operators are
 \T{;} (sequence), \T{\&} (intersection), \T{\textbackslash} (set difference),
 and~\T{*} (cartesian product).
 Infix operators  are listed in order of decreasing precedence,
-while  postfix and prefix operators bind tighter then infix operators.
+while  postfix and prefix operators bind tighter than infix operators.
 All infix operators are right-associative,
 except set difference which is left-associative, and cartesian product
 which is non-associative.
@@ -1055,10 +1055,10 @@ as $\{ (x,y) \mid \exists z, (x,z) \in r_1 \wedge (z,y) \in r_2\}$.
 Functions calls are written \synt{\NT{expr}_1 \NT{expr}_2}.
 That is, functions are of arity one and the application operator
 is left implicit. Notice that function application binds tighter
-than all binary operators and looser that postifix operators
-Furthermode the implicit application operator is left-associative.
+than all binary operators and looser that postfix operators.
+Furthermore the implicit application operator is left-associative.
 
-The \cat{} language have call-by-value semantics. That is,
+The \cat{} language has call-by-value semantics. That is,
 the effective parameter
 \synt{\NT{expr}_2} is evaluated before being bound to the
 function formal parameter(s).
@@ -1081,11 +1081,11 @@ Functions are first class values, as reflected by the anonymous
 function construct \synt{\T{fun} \NT{pat}  \T{->} \NT{expr}}.
 A function takes one argument only.
 
-In the case where this argument is a tuple, it may de destructured
+In the case where this argument is a tuple, it may be destructured
 by the means of a tuple pattern. That is \synt{\NT{pat}}
 above is \synt{\T{(} \NT{id}_1 \T{,} \ldots \NT{id}_n\T{)}}.
 For instance here is a function that takes a tuple of
-relations (or sets) as argument and return their symetric difference:
+relations (or sets) as argument and return their symmetric difference:
 \begin{verbatim}
 fun (a,b) -> (a\b)|(b\a)
 \end{verbatim}
@@ -1094,7 +1094,7 @@ Functions have the usual static scoping semantics:
 variables that appear free in function bodies 
 (\synt{\NT{expr}} above) are bound to
 the value of such free variable at function creation time.
-As a result one may also write the sytemetric difference function
+As a result one may also write the symmetric difference function
 as follows:
 \begin{verbatim}
 fun a -> fun b -> (a\b)|(b\a)
@@ -1188,7 +1188,7 @@ can also be written as  \synt{\T{begin} \NT{expr} \T{end}}.
 
 \subsection{\label{language:instruction}Instructions}
 Instruction are executed for their  effect.
-There are three kind of effects: adding new bindings,
+There are three kinds of effects: adding new bindings,
 checking a condition, and specifying relations that are shown in pictures.
 \begin{syntax}
 \NT{instruction} \is{}  \T{let} \boption{} \T{rec} \eoption \NT{binding} \brepet{} \T{and} \NT{binding} \erepet{}
@@ -1256,7 +1256,7 @@ end
 \end{verbatim}
 
 \subsubsection*{\label{sec:enum}Enumerations}
-The construct defined a set of enumerated values or tags. Syntax is
+The \T{enum} construct defines a set of enumerated values or tags. Syntax is
 \begin{center}
 \synt{\T{enum} \NT{id} \T{=} \NT{tag}_1 \T{||} \cdots \T{||} \NT{tag}_n}
 \end{center}
@@ -1296,9 +1296,9 @@ Failed flagged do \emph{not} stop execution.
 Instead successful flagged checks are recorded under their name,
 for \herd{} machinery to handle flagged executions later.
 Flagged checks are useful for models that define conditions
-over executions that impact the semantics of teh whole program.
+over executions that impact the semantics of the whole program.
 This is typically the case of data races.
-Let us assume that some relation \verb+race+ have been defined,
+Let us assume that some relation \verb+race+ has been defined,
 such that an non-empty \verb+race+ relation in  some execution
 would make the whole program undefined. We would then write:
 \begin{verbatim}
@@ -1323,7 +1323,7 @@ from  the command line, exactly as for checks (see
 \ahrefloc{name:check:def}{above}).
 
 
-As an exemple of procedure,
+As an example of procedure,
 one may define the following \verb+uniproc+ procedure with
 no arguments:
 \begin{verbatim}
@@ -1414,7 +1414,7 @@ Notice that:
 \sep
 \NT{model-comment} \is \NT{id} \orelse  \nt{string}
 \end{syntax}
-A model is a a list of instruction preceded by a small comment,
+A model is a list of instruction preceded by a small comment,
 which can be either a name that follows \herd{} conventions for identifiers,
 or a string enclosed in double quotes~``\verb+"+''.
 
@@ -1988,37 +1988,37 @@ The syntax for instructions thus becomes:
 This is an appendix to Section~\ref{language:identifier}.
 \end{quote}
 
-\paragraph*{Pre-defined relations}
-
-Here are some more pre-defined relations.
-\begin{idtable}
-{\tt unv}    & universal relation & relates every event in the structure to every other event \\
-{\tt int-$s$} & internal at given scope & \emph{(applicable only to scoped memory models)} relates events that are in the same part of the execution hierarchy \\
-{\tt ext-$s$} & external at given scope & \emph{(applicable only to scoped memory models)} relates events that are in different parts of the execution hierarchy \\
-\end{idtable}
-Here, $s$ ranges over the following values:
-
-\begin{center}
-\begin{tabular}{ll}
-value of $s$ & description (in OpenCL terminology) \\ 
-\hline
-{\tt wi}, {\tt thread} & work-item \\
-{\tt sg}, {\tt warp} & sub-group \\
-{\tt wg}, {\tt block}, {\tt cta} & work-group \\
-{\tt kernel} & kernel \\
-{\tt dev} & device \\
-\end{tabular}
-\end{center}
-
-For example, {\tt int-cta} relates all events that are in the same work-group, while {\tt ext-wi} relates all events that are in different work-items (threads).
-
-We provide the following additional fence relations: \verb"membar.cta", \verb"membar.gl", \verb"membar.sys" (PTX). C++ and OpenCL fences do not appear in this list because those fences are modelled as events rather than relations. By modelling these fences as events, we are better able to attach parameters to them, such as the memory-order (C++ and OpenCL) and the memory-scope (OpenCL).
-
-In C++ models, the following relations are pre-defined.
-\begin{idtable}
-{\tt asw}    & additional synchronises-with & links every initial write to every event that is not an initial write \\
-{\tt lo}     & lock order & a total order on all mutex operations (similar to {\tt co}, but for mutexes instead of writes) \\
-\end{idtable}
+%\paragraph*{Pre-defined relations}
+%
+%Here are some more pre-defined relations.
+%\begin{idtable}
+%{\tt unv}    & universal relation & relates every event in the structure to every other event %\\
+%{\tt int-$s$} & internal at given scope & \emph{(applicable only to scoped memory models)} relates events that are in the same part of the execution hierarchy \\
+%{\tt ext-$s$} & external at given scope & \emph{(applicable only to scoped memory models)} relates events that are in different parts of the execution hierarchy \\
+%\end{idtable}
+%Here, $s$ ranges over the following values:
+%
+%\begin{center}
+%\begin{tabular}{ll}
+%value of $s$ & description (in OpenCL terminology) \\ 
+%\hline
+%{\tt wi}, {\tt thread} & work-item \\
+%{\tt sg}, {\tt warp} & sub-group \\
+%{\tt wg}, {\tt block}, {\tt cta} & work-group \\
+%{\tt kernel} & kernel \\
+%{\tt dev} & device \\
+%\end{tabular}
+%\end{center}
+%
+%For example, {\tt int-cta} relates all events that are in the same work-group, while {\tt ext-wi} relates all events that are in different work-items (threads).
+%
+%We provide the following additional fence relations: \verb"membar.cta", \verb"membar.gl", \verb"membar.sys" (PTX). C++ and OpenCL fences do not appear in this list because those fences are modelled as events rather than relations. By modelling these fences as events, we are better able to attach parameters to them, such as the memory-order (C++ and OpenCL) and the memory-scope (OpenCL).
+%
+%In C++ models, the following relations are pre-defined.
+%\begin{idtable}
+%{\tt asw}    & additional synchronises-with & links every initial write to every event that is not an initial write \\
+%{\tt lo}     & lock order & a total order on all mutex operations (similar to {\tt co}, but for mutexes instead of writes) \\
+%\end{idtable}
 
 \paragraph*{Pre-defined sets}
 Here are some pre-defined sets, available in all models.
@@ -2035,43 +2035,40 @@ Here are some pre-defined sets, available in all models.
 
 Having defined these sets, it is now possible to write expressions of the form {\tt RW($e$)} as {\tt [R * W] \& $e$}. However, the simulation in the latter case may be less efficient, owing to the need to construct the intermediate relation {\tt [R * W]}.
 
-In C++ and OpenCL models, the following sets are pre-defined.
+%In C++ and OpenCL models, the following sets are pre-defined.
+%
+%\begin{idtable}
+%{\tt rmw} & read-modify-writes & the set of all read-modify-write events \\
+%{\tt brmw} & blocked read-modify-writes & events representing an attempted read-modify-write operation that has become stuck \\
+%{\tt F} & fences & the set of all fences \\
+%{\tt acq} & acquire & atomic events with ``acquire'' memory-order \\
+%{\tt rel} & release & atomic events with ``release'' memory-order \\
+%{\tt acq\_rel} & acquire/release & atomic events with ``acquire/release'' memory-order \\
+%{\tt rlx} & relaxed & atomic events with ``relaxed'' memory-order \\
+%{\tt sc} & sequentially consistent & atomic events with ``sequentially consistent'' memory-order \\
+%{\tt na} & non-atomics & non-atomic events \\
+%\end{idtable}
 
-\begin{idtable}
-{\tt rmw} & read-modify-writes & the set of all read-modify-write events \\
-{\tt brmw} & blocked read-modify-writes & events representing an attempted read-modify-write operation that has become stuck \\
-{\tt F} & fences & the set of all fences \\
-{\tt acq} & acquire & atomic events with ``acquire'' memory-order \\
-{\tt rel} & release & atomic events with ``release'' memory-order \\
-{\tt acq\_rel} & acquire/release & atomic events with ``acquire/release'' memory-order \\
-{\tt rlx} & relaxed & atomic events with ``relaxed'' memory-order \\
-{\tt sc} & sequentially consistent & atomic events with ``sequentially consistent'' memory-order \\
-{\tt na} & non-atomics & non-atomic events \\
-\end{idtable}
+%In C++ models, the following sets are pre-defined.
+%
+%\begin{idtable}
+%{\tt lk} & locks & the set of all lock events \\
+%{\tt ls} & successful locks & the set of all successful lock events \\
+%{\tt ul} & unlocks & the set of all unlock events \\
+%{\tt con} & consume & atomic events with ``consume'' memory-order \\
+%{\tt atomicloc} & atomic locations & events acting on atomic locations \\
+%{\tt nonatomicloc} & non-atomic locations & events acting on non-atomic locations \\
+%{\tt mutexloc} & mutex locations & events acting on mutex locations \\
+%\end{idtable}
 
-In C++ models, the following sets are pre-defined.
-
-\begin{idtable}
-{\tt lk} & locks & the set of all lock events \\
-{\tt ls} & successful locks & the set of all successful lock events \\
-{\tt ul} & unlocks & the set of all unlock events \\
-{\tt con} & consume & atomic events with ``consume'' memory-order \\
-{\tt atomicloc} & atomic locations & events acting on atomic locations \\
-{\tt nonatomicloc} & non-atomic locations & events acting on non-atomic locations \\
-{\tt mutexloc} & mutex locations & events acting on mutex locations \\
-\end{idtable}
-
-In OpenCL models, the following sets are pre-defined.
-
-\begin{idtable}
-{\tt gF} & global fences & the set of all global fences \\
-{\tt lF} & local fences & the set of all local fences \\
-{\tt wi} & work-item scope & events with ``work-item'' memory-scope \\ 
-{\tt sg} & sub-group scope & events with ``sub-group'' memory-scope \\ 
-{\tt wg} & work-group scope & events with ``work-group'' memory-scope \\ 
-{\tt dev} & device scope & events with ``device'' memory-scope \\ 
-{\tt all\_dev} & all-devices scope & events with ``all\_svn\_devices'' memory-scope \\ 
-\end{idtable}
-
-
-
+%In OpenCL models, the following sets are pre-defined.
+%
+%\begin{idtable}
+%{\tt gF} & global fences & the set of all global fences \\
+%{\tt lF} & local fences & the set of all local fences \\
+%{\tt wi} & work-item scope & events with ``work-item'' memory-scope \\ 
+%{\tt sg} & sub-group scope & events with ``sub-group'' memory-scope \\ 
+%{\tt wg} & work-group scope & events with ``work-group'' memory-scope \\ 
+%{\tt dev} & device scope & events with ``device'' memory-scope \\ 
+%{\tt all\_dev} & all-devices scope & events with ``all\_svn\_devices'' memory-scope \\ 
+%\end{idtable}
