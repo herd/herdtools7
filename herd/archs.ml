@@ -3,7 +3,6 @@
 (*                                                                   *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                   *)
 (* Jade Alglave, University College London, UK.                      *)
-(* John Wickerson, Imperial College London, UK.                      *)
 (*                                                                   *)
 (*  Copyright 2013 Institut National de Recherche en Informatique et *)
 (*  en Automatique and the authors. All rights reserved.             *)
@@ -15,45 +14,14 @@
 (* Archs *)
 (*********)
 
-module System = struct
-  type t =
-    [ `X86
+type t = [`X86
     | `PPC
     | `ARM
     | `AArch64
     | `MIPS
     | `GPU_PTX
     | `LISA
-    ]
-
-  let tags = ["X86";"PPC";"ARM";"AArch64";"MIPS";"GPU_PTX";"LISA"]
-
-  let parse s = match s with
-  | "X86" -> Some `X86
-  | "PPC" -> Some `PPC
-  | "ARM" -> Some `ARM
-  | "AArch64" -> Some `AArch64
-  | "MIPS" -> Some `MIPS
-  | "GPU_PTX" -> Some `GPU_PTX
-  | "LISA" -> Some `LISA
-  | _ -> None
-
-  let lex s = match parse s with
-  | Some a -> a
-  | None -> assert false
-
-
-  let pp a = match a with
-  | `X86 -> "X86"
-  | `PPC -> "PPC"
-  | `ARM -> "ARM"
-  | `AArch64 -> "AArch64"
-  | `MIPS -> "MIPS"
-  | `GPU_PTX -> "GPU_PTX"
-  | `LISA -> "LISA"
-end
-
-type t = [ System.t | `C | `OpenCL ]
+    | `C | `OpenCL ]
 
 (*jade: des tonnes a virer!*)
 let tags = ["X86";"PPC";"ARM";"AArch64";"MIPS";"GPU_PTX";"C";"OpenCL"; "LISA"]
@@ -67,6 +35,9 @@ let parse s = match s with
 | "GPU_PTX" -> Some `GPU_PTX
 | "C" -> Some `C
 | "OpenCL" -> Some `OpenCL
+| "Bell" ->
+    Warn.warn_always "Bell is deprecated as an arch name, use LISA" ;
+    Some `LISA
 | "LISA" -> Some `LISA
 | _ -> None
 
