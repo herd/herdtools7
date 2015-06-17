@@ -447,7 +447,7 @@ let model,model_opts = match !model with
 | Some (Model.File fname) ->
     let module P = ParseModel.Make(ParserConfig) in
     begin try
-      let _,(b,_,_) as r = P.parse fname in
+      let (b,_,_) as r = P.parse fname in
       Some (Model.Generic r),b
     with
     | Misc.Fatal msg -> eprintf "%s: %s\n" prog msg ; exit 2
@@ -618,14 +618,14 @@ let () =
   let tests = !args in
   if Config.dumplem then begin
     match model with
-    | Some (Model.Generic (_,(_,_,prog))) -> 
+    | Some (Model.Generic (_,_,prog)) -> 
       Herd2lem.lem_of_prog stdout prog; 
       exit 0
     | _ -> Warn.user_error "No model given"
   end;
   if Config.dumptex then begin
     match model with
-    | Some (Model.Generic (_,(_,name,prog))) -> 
+    | Some (Model.Generic (_,name,prog)) -> 
       Herd2tex.tex_of_prog stdout name prog; 
       exit 0
     | _ -> Warn.user_error "No model given"

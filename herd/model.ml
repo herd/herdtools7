@@ -21,7 +21,7 @@ type t =
   | File of string (* To convey model filename *)
   | Minimal of bool
   | CAV12 of cav12_opt
-  | Generic of AST.pp_t
+  | Generic of AST.t
 
 let tags =
   [
@@ -52,7 +52,7 @@ let pp = function
   | CAV12 {cord=true; strongst=false;} ->"cav12_lightst"
   | CAV12 {cord=false; strongst=false;} ->"cav12_nocord_lightst"
   | File fname -> fname
-  | Generic (_,(opts,name,_)) ->
+  | Generic (opts,name,_) ->
       sprintf "Generic%s(%s)"
         (ModelOption.pp opts) name
 

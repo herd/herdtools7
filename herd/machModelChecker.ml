@@ -14,7 +14,7 @@
 (** Check an event structure against a machine model *)
 
 module type Config = sig
-  val m : AST.pp_t
+  val m : AST.t
   val bell_model_info : (string * BellModel.info) option
   include Model.Config
 end
@@ -66,7 +66,7 @@ module Make
            annots [])
 
 (* Intepreter call *)
-    let (pp,(opts,_,prog)) = O.m
+    let (opts,_,prog) = O.m
     let withco = opts.ModelOption.co
 
     let run_interpret test  =

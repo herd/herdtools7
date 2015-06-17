@@ -105,7 +105,7 @@ module Top (C:Config) = struct
                     include LexUtils.Default
                     let libfind = C.libfind
                    end) in
-              let _,(b,_,_) as r = P.parse fname in
+              let (b,_,_) as r = P.parse fname in
               if b <> ModelOption.default then
                 Warn.fatal
                   "default model in \"%s\" does not have default options"

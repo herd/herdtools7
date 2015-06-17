@@ -16,7 +16,7 @@
 open Printf
 
 module type Config = sig
-  val m : AST.pp_t
+  val m : AST.t
   include Model.Config
 end
 
@@ -43,7 +43,7 @@ module Make
     module E = S.E
 
 
-    let (pp,(opts,_,prog)) = O.m
+    let (opts,_,prog) = O.m
 
     let debug_proc chan p = fprintf chan "%i" p
     let debug_event chan e = fprintf chan "%s" (E.pp_eiid e)

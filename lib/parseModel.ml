@@ -22,6 +22,29 @@ end
 module Make(O:Config) = struct
   open Lexing
 
+(* Replace Test positions by text *)
+  open AST
+
+  let get_text pp = function
+    | Pos pos ->
+        Txt (try String.sub pp pos.pos pos.len with _ -> "????")
+    | Txt _ as p -> p
+
+  let set_text pp =
+    let f =  get_text pp in
+    let rec map_ins ins = match ins with
+    | Test ((loc, pos, test, exp, name),ty) ->
+        Test  ((loc, f pos, test, exp, name),ty)
+    | Procedure (loc,v,p,code) ->
+        Procedure (loc,v,p,map_code code)
+    | Forall (loc,v,e,code) ->
+        Forall  (loc,v,e,map_code code)
+    | _ -> ins
+
+    and map_code code = List.map map_ins code in
+
+    map_code
+
 (* A lexbuf that keeps scanned input *)
   let mk_lexbuf chan =
     let buff = Buffer.create 32 in
@@ -40,7 +63,8 @@ module Make(O:Config) = struct
     let model = GenParser.call_parser "model" lexbuf ML.token
         ModelParser.main in
     let pp = Buffer.contents buff in
-    pp,model
+    let opts,txt,code = model in
+    (opts,txt,set_text pp code)
 
   let parse fname =
     try Hashtbl.find t fname

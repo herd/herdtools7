@@ -13,7 +13,8 @@
 
 (** Syntax tree of model definitions *)
 
-type pos = { pos:int; len:int;}
+type loc =  { pos:int; len:int;} 
+type pos =  Pos of loc | Txt of string
 
 type set_or_rln = SET | RLN
 
@@ -97,4 +98,3 @@ type ins =
  
 (** Name X model definition *)
 type t = ModelOption.t * string * ins list
-type pp_t = string * t

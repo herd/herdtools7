@@ -20,7 +20,7 @@ type t =
   | File of string (* To convey model filename *)
   | Minimal of bool    (* true <=> check uniproc *)
   | CAV12 of cav12_opt 
-  | Generic of AST.pp_t
+  | Generic of AST.t
 
 val tags : string list
 val parse : string -> t option

@@ -18,6 +18,6 @@ module type Config = sig
 end
 
 module Make : functor (O:Config)  -> sig
-  val parse : string -> AST.pp_t
+  val parse : string -> AST.t
 end
 

@@ -17,7 +17,7 @@ open Printf
 
 
 module type Config = sig
-  val m : AST.pp_t
+  val m : AST.t
   val bell : bool (* executing bell file *)
   val bell_fname : string option (* name of bell file if present *)
 (* Restricted Model.Config *)
@@ -153,7 +153,7 @@ module Make
       with E.EventRel.Cyclic -> kfail vb
 
 (*  Model interpret *)
-    let (prog_txt,(_,_,prog)) = O.m
+    let (_,_,prog) = O.m
 
 (* Debug printing *)
 
@@ -505,7 +505,7 @@ module Make
           vals bds in
       { env with vals; }
 
-    type loc = { stack : (TxtLoc.t * string option) list ; txt : string ; }
+    type loc = (TxtLoc.t * string option) list
 
     type 'k st = {
         env : 'k V.env ;
@@ -545,13 +545,12 @@ module Make
 
 
     let push_loc st loc =
-      let loc = { st.loc with stack = loc :: st.loc.stack; } in
+      let loc = loc :: st.loc in
       { st with loc; }
-    let pop_loc st = match st.loc.stack with
+
+    let pop_loc st = match st.loc with
     | [] -> assert false
-    | _::stack ->
-        let loc = { st.loc with stack; } in
-        { st with loc; }
+    | _::stack -> { st with loc=stack; }
 
     let show_loc (loc,name) =
       eprintf "%a: calling procedure%s\n" TxtLoc.pp loc
@@ -559,14 +558,14 @@ module Make
         | None -> ""
         | Some n -> " as " ^ n)
 
-    let show_call_stack st = List.iter show_loc st.stack
+    let show_call_stack st = List.iter show_loc st
 
     let protect_call st f x =
       try f x
       with Misc.Exit ->
         List.iter
           (fun loc -> if O.debug || not st.silent then show_loc loc)
-          st.loc.stack ;
+          st.loc ;
         raise Misc.Exit
 
 (* Type of eval env *)
@@ -1608,8 +1607,9 @@ module Make
         warn loc "check failed" ;
         show_call_stack st.loc ;
         if O.debug && O.verbose > 0 then begin
-          let pp =
-            try String.sub st.loc.txt pos.pos pos.len with _ -> assert false in
+          let pp = match pos with
+          | Pos _ -> "???"
+          | Txt txt -> txt in
           let v = eval_rel (from_st st) e in
           let cy = E.EventRel.get_cycle v in
           U.pp_failure test st.ks.conc
@@ -1923,16 +1923,11 @@ module Make
               include LexUtils.Default 
               let libfind = O.libfind
             end) in
-        let txt0 = st.loc.txt in
-        let txt,(_,_,iprog) =
+        let (_,_,iprog) =
           try P.parse fname
           with Misc.Fatal msg | Misc.UserError msg ->
             error st.silent loc "%s" msg  in
-        run {st with loc = { st.loc with txt;}; } iprog
-          (fun st res ->
-            let loc = { st.loc with txt=txt0; } in
-            kont { st with loc; } res)
-          res
+        run st iprog kont res
 
       and run : 'a. 'a st -> ins list -> ('a st -> 'a -> 'a) -> 'a -> 'a =
       fun st c kont res -> match c with
@@ -1962,7 +1957,7 @@ module Make
           {env=m; show=show; skipped=StringSet.empty;
            silent=false; flags=Flag.Set.empty;
            ks; bell_info=BellModel.empty_info;
-           loc={stack =[]; txt=prog_txt;}} in        
+           loc=[]} in        
 
         let kont st res =  kont (st2out st) res in          
 

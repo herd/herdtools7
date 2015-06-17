@@ -36,7 +36,7 @@ let pp () =
   and fin = symbol_end () in
   let pos = start.pos_cnum in
   let len = fin - pos in
-  {pos;len}
+  Pos {pos;len}
 
 %}
 %token EOF
