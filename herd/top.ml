@@ -85,6 +85,24 @@ module Make(O:Config)(M:XXXMem.S) =
         flagged=Flag.Map.empty; shown=0;
         reads = A.LocSet.empty; }
 
+    let bad_flag = match O.badflag with
+    | None ->
+        (function
+          | Flag.Undef -> true
+          | Flag.Flag _ -> false)
+    | Some fbad ->
+         (function
+          | Flag.Undef -> true
+          | Flag.Flag f -> String.compare f fbad = 0)
+
+    let is_bad flags = Flag.Set.exists bad_flag flags
+
+    let has_bad_execs c =
+      Flag.Map.mem Flag.Undef c.flagged ||
+      (match O.badflag with
+      | None -> false
+      | Some f -> Flag.Map.mem (Flag.Flag f) c.flagged)
+
 (* Check condition *)
     open ConstrGen
 
@@ -273,6 +291,7 @@ module Make(O:Config)(M:XXXMem.S) =
                   A.LocSet.union (PU.all_regs_that_read conc.S.str) c.reads
                 else c.reads;
             } in
+          if not O.badexecs && is_bad flags then raise (Over r) ;
           let r = match O.nshow with
           | None -> r
           | Some m ->
@@ -361,12 +380,8 @@ module Make(O:Config)(M:XXXMem.S) =
         try begin
 (* Header *)
         let tname = test.Test.name.Name.name in
-        let has_bad_execs =
-          Flag.Map.mem Flag.Undef c.flagged ||
-          (match O.badflag with
-          | None -> false
-          | Some f -> Flag.Map.mem (Flag.Flag f) c.flagged) in
-        if not O.badexecs &&  has_bad_execs then raise Exit ;
+        let is_bad = has_bad_execs c in
+        if not O.badexecs &&  is_bad then raise Exit ;
         printf "Test %s %s\n" tname (C.dump_as_kind cstr) ;        
 (**********)
 (* States *)
@@ -377,7 +392,6 @@ module Make(O:Config)(M:XXXMem.S) =
           finals ;
 (* Condition result *)
         let ok = check_cond test c in
-        let is_bad = has_bad_execs in
         printf "%s%s\n"
           (if loop then "Loop " else "")
           (if is_bad then "Undef" else if ok then "Ok" else "No") ;
