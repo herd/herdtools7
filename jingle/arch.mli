@@ -6,14 +6,13 @@ module type Parser = sig
 module type S = sig
     include ArchBase.S
 
-    type mcst
-
     type substitution =
       | Reg of string * reg
       | Cst of string * int
+      | Lab of string * string
 
     val match_instruction : substitution list -> 
-			    parsedInstruction -> parsedInstruction ->
+			    parsedPseudo -> pseudo ->
 			    substitution list option
 
     val instanciate_with : substitution list -> reg list ->
@@ -21,6 +20,7 @@ module type S = sig
 			   parsedPseudo list
    					 
     module Parser : Parser with type parsedPseudo = parsedPseudo
+			    and type pseudo = pseudo
 
   end
 
