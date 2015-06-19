@@ -384,6 +384,21 @@ module Make(Ord: OrderedType) =
       in
       fst (sub (List.length l) l)
 
+    let uniq l =
+      let rec do_rec k = function
+        | [] -> k
+        | [x] -> x::k
+        | x::(y::_ as rem) ->
+            do_rec
+              (if Ord.compare x y = 0 then k else x::k)
+              rem in
+      do_rec [] l
+
+    let sort_uniq l =
+      let l = List.sort (fun x y -> Ord.compare y x) l in
+      uniq l
+
+
     let of_list l =
       match l with
       | [] -> empty
@@ -392,7 +407,7 @@ module Make(Ord: OrderedType) =
       | [x0; x1; x2] -> add x2 (add x1 (singleton x0))
       | [x0; x1; x2; x3] -> add x3 (add x2 (add x1 (singleton x0)))
       | [x0; x1; x2; x3; x4] -> add x4 (add x3 (add x2 (add x1 (singleton x0))))
-      | _ -> of_sorted_list (List.sort_uniq Ord.compare l)
+      | _ -> of_sorted_list (sort_uniq l)
 
 (* Pretty-print additions *)
     let pp chan delim pp_elt s =
