@@ -150,10 +150,11 @@ let instanciate_with subs free instrs =
 		let l = fresh_lbl () in
 		env := (s,l)::!env;
 		l in
-  let find_cst s = 
+  let find_cst s =
     let rec aux = function
-      | [] -> raise (Error("No conversion found for constant "^s))
-      | Cst(n,i)::_ when String.compare n s = 0 -> MetaConst.Int i
+      | [] -> raise (Error("No binding for constant "^s))
+      | Cst(n,i)::_ when String.compare n s = 0 ->
+	 MetaConst.Int i
       | _::subs -> aux subs
     in aux subs in
   let find_lab l =

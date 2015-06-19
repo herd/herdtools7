@@ -76,5 +76,5 @@ let sres = let module SP = Splitter.Make(Splitter.Default) in
 
 let trans_test = Trad.translate chin sres
 
-let () = Dumper.dump stdout sres.Splitter.name trans_test
+let () = Dumper.dump_info stdout sres.Splitter.name trans_test
 

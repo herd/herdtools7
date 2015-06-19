@@ -1,4 +1,8 @@
 AArch64 to Bell
-"STR %y,[%x]" maps to: "w[] %y %x"
+
+"MOV %x,&c;
+ STR %x,[%y]" maps to: "w[] %y &c"
+
 "LDR %y,[%x]" maps to: "r[] %y %x"
-"MOV %x,&c" maps to: "MOV %x &c"
+
+"STR %y,[%x]" maps to: "w[] %y %x"

@@ -1,4 +1,4 @@
-open Printf 
+ open Printf 
 
 exception Error of string
 
@@ -40,7 +40,15 @@ module Make(C:Config) = struct
     let get_free_register (_,free) = free
 	    
   end
-
+  
+  let rec dump_pseudos = Source.(function
+    | [] -> ""
+    | Nop::is -> "*Nop*\n" ^dump_pseudos is
+    | Label(s,i)::is -> s^": "^(dump_pseudos (i::is))
+    | Instruction i::is -> dump_instruction i ^" ;\n"^
+			     (dump_pseudos is)
+    | _ -> assert false)
+				  
   let conversions = 
     List.map
       (fun (s,t) ->
@@ -59,16 +67,13 @@ module Make(C:Config) = struct
   let rec find_pattern pat instrs subs = 
     let open Source in
     match pat,instrs with
-    | [],rs -> 
-       Some([],rs,subs)
-
-    | Nop::pat,instrs
-    | pat,Nop::instrs -> 
+    | pat,Nop::instrs
+    | Nop::pat,instrs -> 
        find_pattern pat instrs subs
 
     | p::ps,i::is ->
        begin
-	 match match_instruction [] p i with
+	 match match_instruction subs p i with
 	 | None -> None
 	 | Some subs ->
 	    match find_pattern ps is subs with
@@ -76,12 +81,21 @@ module Make(C:Config) = struct
 	    | Some(is,rs,subs) -> Some(i::is,rs,subs)
        end
 	 
+    | [],rs -> 
+       Some([],rs,subs)
+
     | _,_ -> None
 
-  and get_pattern_seq instrs = 
+  let get_pattern_seq instrs = 
     let rec aux instrs = 
       let rec find = function
-	| [] -> None
+	| [] -> begin
+		match find_pattern [] instrs [] with 
+		| Some(is,[],[]) -> Some((is,[],[]),[]) 
+		| _ -> eprintf "Unmatched instructions:\n%s" 
+			       (dump_pseudos instrs);
+		       None
+	      end
 	| (p,conv)::ps ->
 	   match find_pattern p instrs [] with
 	   | None -> find ps
@@ -97,9 +111,9 @@ module Make(C:Config) = struct
       | Some(ins,rs) -> ins::(aux rs)
     in aux instrs
 
-  and convert env instrs =
-    let rec aux env = function
-      | [] -> []
+  let convert env instrs =
+    let rec aux env l = match l with
+      | [] -> [],env
       | (src,tgt,subs)::ts ->
 	 let conv,env =
 	   List.fold_left
@@ -114,21 +128,61 @@ module Make(C:Config) = struct
 	     ([],env) subs in
 	 let tgt =
 	   Target.instanciate_with
-	     conv (Env.get_free_register env) tgt
-	 in tgt::(aux env ts)
+	     conv (Env.get_free_register env) tgt		     
+	 in 
+	 let flw,env = aux env ts 
+	 in tgt::flw,env
     in 
-    let pseudo_p = List.flatten (aux env (get_pattern_seq instrs)) in
-    List.map Target.pseudo_parsed_tr pseudo_p
-    
-  and translate chin sres =
-    
+    let chunks,env = aux env (get_pattern_seq instrs) in
+    let pseudo_p = List.flatten chunks in
+    (List.map Target.pseudo_parsed_tr pseudo_p,env)
+
+  let reg_mapping = 
+    List.map (fun (i,(b,_)) ->
+	      (i,
+	       List.map (fun (sr,tr) -> 
+			 (Source.pp_reg sr,Target.pp_reg tr))
+			b.Env.reg))
+		
+  let rec dump_map = 
+    let rec assocs = function
+      | [] -> ""
+      | [sr,tr] -> tr^"="^sr
+      | (sr,tr)::r -> tr^"="^sr^","^(assocs r)
+    in
+    function
+    | [] -> ""
+    | [i,asc] -> (string_of_int i)^":"^(assocs asc)
+    | (i,asc)::r -> (string_of_int i)^":"^(assocs asc)^";"^(dump_map r)
+
+  let conv_loc map = MiscParser.(function
+    | Location_reg(i,r) ->  
+       let r' = try let asc = List.assoc i map in 
+		    List.assoc r asc with
+		| Not_found -> 
+		   raise (Error("Register "^r^" does not appear."))
+       in Location_reg(i,r')
+    | l -> l)
+
+  let translate chin sres =
     let src = Source.Parser.parse chin sres in
     let open MiscParser in
-    let prog = List.map (fun (i,p) -> (i,convert Env.init p)) src.prog in
-    { info = src.info;
-      init = src.init;
+    let prog = List.map (fun (i,p) ->
+			 let p,e = convert Env.init p in
+			 ((i,p),(i,e))) src.prog in
+    let prog,convs = List.split prog in
+    let map = reg_mapping convs in
+    let init = List.map (fun (l,r) -> (conv_loc map l,r)) src.init in
+    let condition =
+      ConstrGen.(map_constr
+		   (function
+		     | LV(l,v) -> LV(conv_loc map l,v)
+		     | LL(l1,l2) -> LL(conv_loc map l1,conv_loc map l2))
+		   src.condition) in
+    { info = ("Mapping",dump_map map)::src.info;
+      init = init;
       prog = prog;
-      condition = src.condition;
+      condition = condition;
       locations = src.locations;
       gpu_data = src.gpu_data;
       bell_info = src.bell_info

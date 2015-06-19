@@ -25,9 +25,10 @@ let rec add_subs s s' = match s with
      else add_subs ss (s::s')
 
 let match_kr subs kr kr' = match kr,kr' with
-  | K(MetaConst.Meta m),K i -> 
+  | K(MetaConst.Meta m),K i ->
      Some(add_subs [Cst(m, i)] subs)
   | RV(_,r),RV(_,r') -> Some(add_subs [Reg(sr_name r,r')] subs)
+  | K(MetaConst.Int i),K(j) when i=j -> Some subs
   | _ -> None
 
 let match_instr subs pattern instr = match pattern,instr with
@@ -45,8 +46,9 @@ let match_instr subs pattern instr = match pattern,instr with
     -> Some(add_subs [Reg(sr_name r,r');
 		      Lab(lp,li)] subs)
 	   
-  | I_MOV(_,r,_),I_MOV(_,r',_)
-    -> Some(add_subs [Reg(sr_name r,r')] subs)
+  | I_MOV(_,r,MetaConst.Meta m),I_MOV(_,r',i)
+    -> Some(add_subs [Reg(sr_name r,r');
+		      Cst(m,i)] subs)
 
   | I_LDAR(_,tp,r1,r2),I_LDAR(_,ti,r1',r2') when tp = ti
     -> Some(add_subs [Reg(sr_name r1,r1');Reg(sr_name r2,r2')] subs)
