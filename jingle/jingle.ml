@@ -2,6 +2,7 @@ open Printf
 
 let verbose = ref false
 let map = ref None
+let outdir = ref None
 let args = ref []
 let prog =
   if Array.length Sys.argv > 0 
@@ -14,7 +15,9 @@ let () = Arg.parse
            ["-v",Arg.Unit (fun () -> verbose := true),
 	    "- be verbose";
 	    "-theme",Arg.String (fun s -> map := Some s),
-	    "<name> - give the theme file <name>"]
+	    "<name> - give the theme file <name>";
+	    "-o",Arg.String (fun s -> outdir := Some s),
+	    "<name> - directory for output files"]
 	   (fun s -> args := s :: !args)
 	   (sprintf "Usage: %s [option]* -map <file> [test]*" prog)
 
@@ -67,14 +70,25 @@ module Dumper = SimpleDumper.Make(struct
             type location = MiscParser.location
             let dump_location = dump_loc
           end)
+			    
+let do_trans file = 
+  let chin = open_in file in
+  let sres = let module SP = Splitter.Make(Splitter.Default) in
+	     SP.split file chin 
+  in
+  let f out = try
+      let trans_test = Trad.translate chin sres in
+      Dumper.dump_info out sres.Splitter.name trans_test
+    with e -> eprintf "Error in test %s.\n" file;
+	      raise e
+  in match !outdir with
+     | None -> f stdout
+     | Some s -> 
+	Misc.output_protect f (Filename.concat s (Filename.basename file))  
 
-let file = List.hd !args
-let chin = open_in file
-let sres = let module SP = Splitter.Make(Splitter.Default) in
-	   SP.split file chin 
-
-
-let trans_test = Trad.translate chin sres
-
-let () = Dumper.dump_info stdout sres.Splitter.name trans_test
+let () = 
+  let open Misc in
+  match !args with
+  | [] -> iter_stdin do_trans
+  | tests -> iter_argv do_trans tests
 
