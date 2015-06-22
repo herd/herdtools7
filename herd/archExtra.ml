@@ -56,6 +56,7 @@ module type S = sig
   with type loc_reg = I.arch_reg and type loc_global = I.V.v
 (* Extra for locations *)
   val maybev_to_location : MiscParser.maybev -> location
+  val do_dump_location : (string -> string) -> location -> string
   val dump_location : location -> string
 
   val undetermined_vars_in_loc : location -> I.V.v option
@@ -66,6 +67,7 @@ module type S = sig
 
   val state_empty : state
   val pp_state : state -> string
+  val do_dump_state : (string -> string) -> state -> string
   val dump_state : state -> string
   val pp_nice_state :
       state -> string (* delim, as in String.concat  *)
@@ -187,10 +189,12 @@ module Make(C:Config) (I:I) : S with module I = I
     if C.brackets then Printf.sprintf "[%s]"
     else fun s -> s
 
-  let dump_location = function
+  let do_dump_location tr = function
     | Location_reg (proc,r) ->
-        string_of_int proc ^ ":" ^ I.pp_reg r
+        tr (string_of_int proc ^ ":" ^ I.pp_reg r)
     | Location_global a -> do_brackets (pp_global a)
+
+  let dump_location = do_dump_location Misc.identity
 
 (* This redefines pp_location from Location.Make ... *)
   let pp_location l = match l with
@@ -243,9 +247,11 @@ module Make(C:Config) (I:I) : S with module I = I
     pp_nice_state st " "
       (fun l v -> pp_location l ^ pp_equal ^ I.V.pp C.hexa v ^";")
 
-  let dump_state st =
+  let do_dump_state tr st =
     pp_nice_state st " "
-      (fun l v -> pp_location l ^ "=" ^ I.V.pp C.hexa v ^";")
+      (fun l v -> do_dump_location tr l ^ "=" ^ I.V.pp C.hexa v ^";")
+
+  let dump_state st = do_dump_state Misc.identity st
 
   let build_state bds =
     List.fold_left (fun st (loc,(_,v)) -> State.add loc v st)

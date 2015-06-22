@@ -50,6 +50,14 @@ module Make(O:Config)(M:XXXMem.S) =
     | Observed -> true
     | No|NonAmbiguous|CondOne -> false
 
+(* Location out printing *)
+    let tr_out test =
+      try
+        let map = List.assoc "Mapping" test.Test.info in
+        let map = try LexOutMapping.parse map with _ -> assert false in
+        fun s -> StringMap.safe_find s s map
+      with Not_found -> Misc.identity
+
 (* Cond checking *)
     let check_prop test st =
       let c = T.find_our_constraint test in
@@ -386,9 +394,10 @@ module Make(O:Config)(M:XXXMem.S) =
 (**********)
 (* States *)
 (**********)
+        let tr_out = tr_out test in
         printf "States %i\n" nfinals ;
         A.StateSet.pp stdout ""
-          (fun chan st ->  fprintf chan "%s\n" (A.dump_state st))
+          (fun chan st ->  fprintf chan "%s\n" (A.do_dump_state tr_out st))
           finals ;
 (* Condition result *)
         let ok = check_cond test c in
@@ -406,7 +415,7 @@ module Make(O:Config)(M:XXXMem.S) =
                  (fun i s -> s ^ (if s="" then "" else ",") ^ sprintf "%i" i) 
                  execs ""))
           c.flagged ;
-        printf "Condition %a\n" C.dump_constraints cstr ;
+        printf "Condition %a\n" (C.do_dump_constraints tr_out) cstr ;
         printf "Observation %s %s %i %i\n%!" tname
           (if c.pos = 0 then "Never"
           else if c.neg = 0 then "Always"

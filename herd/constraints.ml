@@ -42,6 +42,7 @@ module type S = sig
 
 (* Parsable dumping *)
   val dump_as_kind : 'a ConstrGen.constr -> string
+  val do_dump_constraints :  (string -> string) -> out_channel -> constr -> unit
   val dump_constraints : out_channel -> constr -> unit
   val constraints_to_string : constr -> string
 
@@ -242,35 +243,44 @@ module Make (C:Config) (A : Arch.S) :
         | DotFig -> "\\\\mbox{" ^ s ^ "}"
                                         
 
-        let pp_rvalue loc = match loc with
-          | A.Location_global _ -> sprintf "*%s" (A.pp_location loc)
-          | _ -> A.pp_location loc
+        let pp_loc tr m loc = match m with
+        | Ascii|Dot -> A.do_dump_location tr loc
+        | Latex|DotFig -> A.pp_location loc
 
-        let pp_atom m a =
+        let pp_rvalue tr m loc = match loc with
+          | A.Location_global _ -> sprintf "*%s" (A.pp_location loc)
+          | _ -> pp_loc tr m loc
+
+          
+        let pp_atom tr m a =
           match a with
           | LV (loc,v) ->
-              mbox m (A.pp_location loc) ^
+              mbox m (pp_loc tr m loc) ^
               pp_equal m ^          
               mbox m
                 (let v = V.pp C.hexa v in
-                let add_asm =C.texmacros in
+                let add_asm = C.texmacros in
                 match m,add_asm with
                 | ((Ascii|Dot),_)
                 | ((Latex|DotFig),false) -> v
                 | Latex,true -> sprintf "\\asm{%s}" v
                 | DotFig,true -> sprintf "\\\\asm{%s}" v)
           | LL (l1,l2) ->
-              mbox m (A.pp_location l1) ^
+              mbox m (pp_loc tr m l1) ^
               pp_equal m ^ 
-              mbox m (pp_rvalue l2)
+              mbox m (pp_rvalue tr m l2)
             
 (* ascii, parsable dump *)
         let dump_as_kind c = pp_kind (kind_of c)          
+
+        let do_dump_constraints tr chan =
+          ConstrGen.dump_constraints chan (pp_atom tr Ascii)
+
         let dump_constraints chan =
-          ConstrGen.dump_constraints chan (pp_atom Ascii)
+          ConstrGen.dump_constraints chan (pp_atom Misc.identity Ascii)
           
         let constraints_to_string =
-          ConstrGen.constraints_to_string  (pp_atom Ascii)
+          ConstrGen.constraints_to_string  (pp_atom Misc.identity Ascii)
 (* pretty_print *)
 
         let arg m =
@@ -281,7 +291,7 @@ module Make (C:Config) (A : Arch.S) :
             pp_and = pp_and m;
             pp_implies = pp_implies m;
             pp_mbox = mbox m;
-            pp_atom = pp_atom m; }
+            pp_atom = pp_atom Misc.identity m; }
 
         let pp_as_kind c = 
           let bodytext = pp_kind (kind_of c) in
