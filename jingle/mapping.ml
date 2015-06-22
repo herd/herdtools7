@@ -16,19 +16,27 @@ module Make(C:Config) = struct
   module Env = struct
     type sub = {
       reg : (Source.reg * Target.reg) list;
+      addr: (string * Target.reg) list;
       lab : (string * string) list
     }
 		 
     type t = sub * Target.reg list
 			      
-    let init = {reg = []; lab = []},Target.allowed_for_symb 
+    let init = {reg = []; lab = []; addr = []},Target.allowed_for_symb 
 			    
-    let get_concrete_register (binds,free) reg =
+    let get_register_from_reg (binds,free) reg =
       try (List.assoc reg binds.reg,(binds,free)) with
       | Not_found ->
-     match free with
-     | [] -> raise (Error "No fresh register available.")
-     | r::fs -> r,({binds with reg=(reg,r)::binds.reg},fs)
+	 match free with
+	 | [] -> raise (Error "No fresh register available.")
+	 | r::fs -> r,({binds with reg=(reg,r)::binds.reg},fs)
+
+    let get_register_from_addr (binds,free) addr =
+      try (List.assoc addr binds.addr,(binds,free)) with
+      | Not_found ->
+	 match free with
+	 | [] -> raise (Error "No fresh register available.")
+	 | r::fs -> r,({binds with addr=(addr,r)::binds.addr},fs)
 
     let get_label (binds,free) l = 
       let fresh_label = 
@@ -40,14 +48,6 @@ module Make(C:Config) = struct
     let get_free_register (_,free) = free
 	    
   end
-  
-  let rec dump_pseudos = Source.(function
-    | [] -> ""
-    | Nop::is -> "*Nop*\n" ^dump_pseudos is
-    | Label(s,i)::is -> s^": "^(dump_pseudos (i::is))
-    | Instruction i::is -> dump_instruction i ^" ;\n"^
-			     (dump_pseudos is)
-    | _ -> assert false)
 				  
   let conversions = 
     List.map
@@ -93,7 +93,7 @@ module Make(C:Config) = struct
 		match find_pattern [] instrs [] with 
 		| Some(is,[],[]) -> Some((is,[],[]),[]) 
 		| _ -> eprintf "Unmatched instructions:\n%s" 
-			       (dump_pseudos instrs);
+			       (Source.dump_pseudos instrs);
 		       None
 	      end
 	| (p,conv)::ps ->
@@ -119,12 +119,16 @@ module Make(C:Config) = struct
 	   List.fold_left
 	     (fun (cv,env) -> function
 		  | Source.Reg(s,c) ->
-		     let r,env = Env.get_concrete_register env c in
+		     let r,env = Env.get_register_from_reg env c in
+		     (Target.Reg(s,r)::cv,env)
+		  | Source.Addr(s,a) ->
+		      let r,env = Env.get_register_from_addr env a in
 		     (Target.Reg(s,r)::cv,env)
 		  | Source.Cst(s,c) -> (Target.Cst(s,c)::cv,env)
 		  | Source.Lab(s,l) -> 
 		     let lbl,env = Env.get_label env l in
-		     (Target.Lab(s,lbl)::cv,env))
+		     (Target.Lab(s,lbl)::cv,env)
+	     )
 	     ([],env) subs in
 	 let tgt =
 	   Target.instanciate_with
@@ -140,20 +144,34 @@ module Make(C:Config) = struct
   let reg_mapping = 
     List.map (fun (i,(b,_)) ->
 	      (i,
-	       List.map (fun (sr,tr) -> 
+	      (List.map (fun (sr,tr) -> 
 			 (Source.pp_reg sr,Target.pp_reg tr))
-			b.Env.reg))
+			b.Env.reg)))
+
+  let addr_init = 
+    let open MiscParser in
+    List.fold_left (fun acc (i,(b,_)) ->
+		    acc@
+		      (List.map (fun (sa,tr) -> 
+				 (Location_reg(i,Target.pp_reg tr),
+				  (TyDefPointer,SymbConstant.nameToV sa)))
+				b.Env.addr)
+		   ) []
 		
   let rec dump_map = 
-    let rec assocs = function
+    let rec assocs i = function
       | [] -> ""
-      | [sr,tr] -> tr^"="^sr
-      | (sr,tr)::r -> tr^"="^sr^","^(assocs r)
+      | [sr,tr] -> (string_of_int i)^":"^tr^"="^sr
+      | (sr,tr)::r -> (string_of_int i)^":"^tr^"="^sr^","^(assocs i r)
     in
     function
     | [] -> ""
-    | [i,asc] -> (string_of_int i)^":"^(assocs asc)
-    | (i,asc)::r -> (string_of_int i)^":"^(assocs asc)^";"^(dump_map r)
+    | [i,asc] -> assocs i asc
+    | (i,asc)::r -> 
+       let s = assocs i asc in
+       if String.compare s "" = 0 
+       then dump_map r 
+       else s^","^(dump_map r)
 
   let conv_loc map = MiscParser.(function
     | Location_reg(i,r) ->  
@@ -172,7 +190,9 @@ module Make(C:Config) = struct
 			 ((i,p),(i,e))) src.prog in
     let prog,convs = List.split prog in
     let map = reg_mapping convs in
-    let init = List.map (fun (l,r) -> (conv_loc map l,r)) src.init in
+    let init = 
+      addr_init convs @ 
+	List.map (fun (l,r) -> (conv_loc map l,r)) src.init in
     let condition =
       ConstrGen.(map_constr
 		   (function

@@ -8,6 +8,7 @@ type substitution =
   | Reg of string * reg
   | Cst of string * int
   | Lab of string * string
+  | Addr of string * string
 
 let sr_name = function
   | Symbolic_reg s -> s
@@ -16,6 +17,14 @@ let sr_name = function
 let cv_name = function
   | MetaConst.Meta s -> s
   | _ -> raise (Error "Not a constant variable.")
+
+let rec dump_pseudos = function
+    | [] -> ""
+    | Nop::is -> "*Nop*\n" ^dump_pseudos is
+    | Label(s,i)::is -> s^": "^(dump_pseudos (i::is))
+    | Instruction i::is -> dump_instruction i ^" ;\n"^
+			     (dump_pseudos is)
+    | _ -> assert false
 
 let rec add_subs s s' = match s with
   | [] -> s'
@@ -141,6 +150,7 @@ let instanciate_with subs free instrs =
        let rec aux = function
 	 | [] -> get_register s
 	 | Reg(n,r)::_ when String.compare n s = 0 -> r
+	 | Addr(n,r)::_ when String.compare n s = 0 -> get_register r
 	 | _::subs -> aux subs
        in aux subs
     | r -> r in
@@ -151,11 +161,13 @@ let instanciate_with subs free instrs =
       | K(MetaConst.Meta v) -> K(find_cst v)
       | kr -> kr in
     function
+    | I_FENCE b -> I_FENCE b
     | I_B l -> I_B(find_lab l)
     | I_BC(a,l) -> I_BC(a,find_lab l)
     | I_CBZ(a,r,l) -> I_CBZ(a,conv_reg r,find_lab l)
     | I_CBNZ(a,r,l) -> I_CBNZ(a,conv_reg r,find_lab l)
-    | I_MOV(a,r,b) -> I_MOV(a,conv_reg r,b)
+    | I_MOV(a,r,MetaConst.Meta v) -> I_MOV(a,conv_reg r,find_cst v)
+    | I_MOV(a,r,c) -> I_MOV(a,conv_reg r,c)
     | I_LDAR(a,b,r1,r2) -> I_LDAR(a,b,conv_reg r1,conv_reg r2)
     | I_STLR(a,r1,r2) -> I_STLR(a,conv_reg r1,conv_reg r2)
     | I_SXTW(r1,r2) -> I_SXTW(conv_reg r1,conv_reg r2)
@@ -163,7 +175,7 @@ let instanciate_with subs free instrs =
     | I_LDR(a,r1,r2,kr) -> I_LDR(a,conv_reg r1,conv_reg r2,expl_kr kr)
     | I_STR(a,r1,r2,kr) -> I_STR(a,conv_reg r1,conv_reg r2,expl_kr kr)
     | I_OP3(a,b,r1,r2,kr) -> I_OP3(a,b,conv_reg r1,conv_reg r2,expl_kr kr)
-    | instr -> instr
+    
   in
   map_pseudos expl instrs
 

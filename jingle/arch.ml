@@ -12,6 +12,10 @@ module type S = sig
       | Reg of string * reg
       | Cst of string * int
       | Lab of string * string
+      | Addr of string * string
+
+
+    val dump_pseudos : pseudo list -> string
 
     val match_instruction : substitution list -> 
 			    parsedPseudo -> pseudo ->

@@ -28,7 +28,7 @@ rule main = parse
 	
 and conv l = parse
     | eof {l}
-    | '"' ([^'"']* as left) '"' blank+ "maps to:" blank* '"' ([^'"']* as right) '"' blank*
+    | '"' ([^'"']* as left) '"' blank+ ("maps to:" | "->") blank* '"' ([^'"']* as right) '"' blank*
 	{
 	  conv ((String.trim left, String.trim right)::l) lexbuf
 	}

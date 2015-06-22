@@ -8,6 +8,7 @@ type substitution =
   | Reg of string * reg
   | Cst of string * int
   | Lab of string * string
+  | Addr of string * string
 
 let sr_name = function
   | Symbolic_reg s -> s
@@ -16,6 +17,14 @@ let sr_name = function
 let cv_name = function
   | MetaConst.Meta s -> s
   | _ -> raise (Error "Not a constant variable.")
+
+let rec dump_pseudos = function
+    | [] -> ""
+    | Nop::is -> "*Nop*\n" ^dump_pseudos is
+    | Label(s,i)::is -> s^": "^(dump_pseudos (i::is))
+    | Instruction i::is -> dump_instruction i ^" ;\n"^
+			     (dump_pseudos is)
+    | _ -> assert false
 
 let annots_compare s s' = 
   let rec aux a s s' = 
@@ -44,7 +53,10 @@ let match_reg_or_imm subs ri ri' = match ri,ri' with
 
 let match_reg_or_addr subs ra ra' = match ra,ra' with
   | Rega r,Rega r' -> Some(add_subs [Reg(sr_name r,r')] subs)
-  | x,y when (compare x y)=0 -> Some subs
+  | Abs x,Abs y -> 
+     let s = SymbConstant.pp false x in
+     let regn = SymbConstant.pp false y in
+     Some(add_subs [Addr(s,regn)] subs)
   | _,_ -> None
 
 let match_iar subs iar iar' = match iar,iar' with
@@ -168,6 +180,7 @@ let instanciate_with subs free instrs =
        let rec aux = function
 	 | [] -> get_register s
 	 | Reg(n,r)::_ when String.compare n s = 0 -> r
+	 | Addr(n,r)::_ when String.compare n s = 0 -> get_register r
 	 | _::subs -> aux subs
        in aux subs
     | r -> r in
@@ -197,4 +210,6 @@ let instanciate_with subs free instrs =
     | IAR_imm(MetaConst.Meta v) -> IAR_imm(find_cst v)
     | i -> i
    
-in map_pseudos expl instrs
+in try map_pseudos expl instrs with
+   | e -> Printf.eprintf "Error on translated instructions :%s\n" "";
+	  raise e
