@@ -28,7 +28,8 @@ module type S = sig
   end
 
 module MakeParser : 
-functor(A:ArchBase.S)
+functor(A:ArchBase.S) ->
+    functor
 	 (P:sig
 	      include GenParser.LexParse 
 		      with type instruction = A.parsedPseudo
