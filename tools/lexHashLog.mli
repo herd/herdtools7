@@ -20,4 +20,7 @@ module Make :
    val check : string -> unit
    val rewrite : string -> unit
 
+   val check_chan : in_channel -> unit
+   val rewrite_chan : in_channel -> unit
+
  end

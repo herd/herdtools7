@@ -90,16 +90,23 @@ module Top
             let verbose = Opt.verbose > 0
             let env = env
           end) in
-      let action = match Opt.action with
-      | Check -> Lex.check
-      | Rewrite -> Lex.rewrite in
-      let action =
-        if Opt.verbose > 0 then
-          fun fname ->
-            eprintf "reading %s\n%!" fname ;
-            action fname
-        else action in
-      List.iter action logs
+      match logs with
+      | [] -> 
+          let action = match Opt.action with
+          | Check -> Lex.check_chan
+          | Rewrite -> Lex.rewrite_chan in
+          action stdin
+      | _::_ ->
+          let action = match Opt.action with
+          | Check -> Lex.check
+          | Rewrite -> Lex.rewrite in
+          let action =
+            if Opt.verbose > 0 then
+              fun fname ->
+                eprintf "reading %s\n%!" fname ;
+                action fname
+            else action in
+          List.iter action logs
   end
 
 

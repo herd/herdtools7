@@ -94,5 +94,16 @@ let rewrite fname =
     if C.verbose then eprintf "File changed\n" ;
     MySys.move outname fname
   end else MySys.remove outname
+
+  let check_chan chan =
+    let lexbuf = Lexing.from_channel chan in
+    LexMisc.init_file "*stdin*" lexbuf ;
+    ignore (main true no_out None lexbuf)
+
+  let rewrite_chan chan =
+    let lexbuf = Lexing.from_channel chan in
+    LexMisc.init_file "*stdin*" lexbuf ;
+    ignore (main true  (MySys.output_line stdout) None lexbuf)
+
 end
 }
