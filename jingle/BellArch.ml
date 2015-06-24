@@ -26,16 +26,11 @@ let rec dump_pseudos = function
 			     (dump_pseudos is)
     | _ -> assert false
 
-let annots_compare s s' = 
-  let rec aux a s s' = 
-    match a,s,s' with
-    | [],[],[] -> true
-    | _,_,[] -> false
-    | a,x::s,y::s' 
-    | x::a,s,y::s' when String.compare x y = 0 -> aux a s s'
-    | a,x::s,s' -> aux (x::a) s s'
+let rec annots_compare s s' = 
+  match s,s' with
+    | [],[] -> true
+    | x::s,y::s' when String.compare x y = 0 -> annots_compare s s'
     | _ -> false
-  in aux [] s s'
 
 let rec add_subs s s' = match s with
   | [] -> s'
@@ -115,11 +110,15 @@ let match_instr subs pattern instr = match pattern,instr with
      then match_op subs op op'
      else None
 
-  | Pfence _, Pfence _ 
-    -> Some subs
+  | Pfence Fence(s,_), Pfence Fence(s',_) 
+    -> if annots_compare s s' 
+       then Some subs
+       else None
 
-  | Pbranch(_,lp,_), Pbranch(_,li,_) 
-    -> Some(add_subs [Lab(lp,li)] subs)
+  | Pbranch(_,lp,s), Pbranch(_,li,s') 
+    -> if annots_compare s s'
+       then Some(add_subs [Lab(lp,li)] subs)
+       else None
 
   | _,_ -> None
 

@@ -130,14 +130,14 @@ module Make(C:Config) = struct
 		     (Target.Lab(s,lbl)::cv,env)
 	     )
 	     ([],env) subs in
-	 let tgt =
-	   Target.instanciate_with
-	     conv (Env.get_free_register env) tgt		     
-	 in 
 	 let flw,env = aux env ts 
-	 in tgt::flw,env
+	 in (tgt,conv)::flw,env
     in 
     let chunks,env = aux env (get_pattern_seq instrs) in
+    let chunks = List.map (fun (tgt,conv) -> 
+			   Target.instanciate_with
+			     conv (Env.get_free_register env) tgt)
+			  chunks in
     let pseudo_p = List.flatten chunks in
     (List.map Target.pseudo_parsed_tr pseudo_p,env)
 

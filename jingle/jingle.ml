@@ -72,19 +72,20 @@ module Dumper = SimpleDumper.Make(struct
           end)
 			    
 let do_trans file = 
-  let chin = open_in file in
-  let sres = let module SP = Splitter.Make(Splitter.Default) in
-	     SP.split file chin 
-  in
-  let f out = try
-      let trans_test = Trad.translate chin sres in
-      Dumper.dump_info out sres.Splitter.name trans_test
-    with e -> eprintf "Error in test %s.\n" file;
-	      raise e
-  in match !outdir with
-     | None -> f stdout
-     | Some s -> 
-	Misc.output_protect f (Filename.concat s (Filename.basename file))  
+  let fin chin =
+    let sres = let module SP = Splitter.Make(Splitter.Default) in
+	       SP.split (Filename.basename file) chin in
+    let fout out = try
+	let trans_test = Trad.translate chin sres in
+	Dumper.dump_info out sres.Splitter.name trans_test
+      with e -> eprintf "Error in test %s.\n" (Filename.basename file);
+		raise e
+    in match !outdir with
+       | None -> fout stdout
+       | Some s -> 
+	  Misc.output_protect fout (Filename.concat s 
+					     (Filename.basename file))
+  in Misc.input_protect fin file
 
 let () = 
   let open Misc in
