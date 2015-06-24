@@ -25,6 +25,10 @@ type t =
   | Global of t
   | Local of t
 
+let voidstar = Pointer (Base "void")
+let word = Base "int"
+let quad = Base "int64_t"
+
 let rec  dump = function
   | Base s -> s
   | Volatile (Base s) -> "volatile " ^ s

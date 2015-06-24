@@ -13,6 +13,7 @@
 %{
 module PPC = PPCBase
 open PPC
+open MachSize
 %}
 
 %token EOF
@@ -31,7 +32,7 @@ open PPC
 %token ADD ADDDOT SUB SUBF SUBFDOT SUBDOT XOR XORDOT OR ORDOT  AND ANDDOT
 %token MULL MULLDOT DIV DIVDOT
 %token ADDI SUBI ORI XORI ANDIDOT MULLI
-%token LWZ LWZU LWZX MR STW STWU STWX LWARX STWCX CMPWI CMPW
+%token LBZ LHZ LWZ LWZU LWZX MR STB STH STW STWU STWX LWARX STWCX CMPWI CMPW
 %token LD STD LDX STDX
 %token SYNC EIEIO ISYNC LWSYNC DCBF B BEQ BNE BLT BGT BLE BGE BNL BNG
 %token NOR NORDOT NEG NEGDOT SLW SRAWI SRAW BL BLR MTLR MFLR
@@ -137,6 +138,14 @@ instr:
     { Pdiv (DontSetCR0,$2,$4,$6) }
   | DIVDOT  reg COMMA reg COMMA reg
     { Pdiv (SetCR0,$2,$4,$6) }
+  | LBZ reg COMMA idx COMMA reg
+    { Pload (Byte,$2,$4,$6)}
+  | LBZ reg COMMA idx LPAR reg RPAR
+    { Pload (Byte,$2,$4,$6)}
+  | LHZ reg COMMA idx COMMA reg
+    { Pload (Short,$2,$4,$6)}
+  | LHZ reg COMMA idx LPAR reg RPAR
+    { Pload (Short,$2,$4,$6)}
   | LWZ reg COMMA idx COMMA reg
     { Plwz ($2,$4,$6)}
   | LWZ reg COMMA idx LPAR reg RPAR
@@ -155,6 +164,14 @@ instr:
     { Pldx ($2,$4,$6)}
   | MR reg COMMA reg
     { Pmr ($2,$4) }
+  | STB reg COMMA idx COMMA reg
+    { Pstore (Byte,$2,$4,$6) }
+  | STB reg COMMA idx LPAR reg RPAR
+    { Pstore (Byte,$2,$4,$6) }
+  | STH reg COMMA idx COMMA reg
+    { Pstore (Short,$2,$4,$6) }
+  | STH reg COMMA idx LPAR reg RPAR
+    { Pstore (Short,$2,$4,$6) }
   | STW reg COMMA idx COMMA reg
     { Pstw ($2,$4,$6) }
   | STW reg COMMA idx LPAR reg RPAR

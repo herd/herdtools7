@@ -116,7 +116,7 @@ end = struct
               fprintf chan "%s %s; " (I.dump_location loc) t
           | MiscParser.Pointer t ->
               fprintf chan "%s %s*; " (I.dump_location loc) t
-          |  MiscParser.TyArray _ -> assert false)
+          |  MiscParser.TyArray _|MiscParser.Atomic _ -> assert false)
           locs ;
         fprintf chan "]\n"
     end ;

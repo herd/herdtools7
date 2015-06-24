@@ -44,7 +44,8 @@ val fold_sd_extr : (sd -> extr -> 'a -> 'a) -> 'a -> 'a
 val fold_sd_extr_extr : (sd -> extr -> extr -> 'a -> 'a) -> 'a -> 'a
 
 type check =
-  | Sc | Uni | Thin | Critical | Free | Ppo | Transitive | Total
+  | Sc | Uni | Thin | Critical | Free
+  | Ppo | Transitive | Total | MixedCheck
 
 (* Com *)
 type com =  CRf | CFr | CWs

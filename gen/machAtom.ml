@@ -9,34 +9,100 @@
 (*********************************************************************)
 
 (* Atomicity of events *)
+module type Config = sig
+  val naturalsize : MachSize.sz option
+  val endian : MachSize.endian
+end
 
-type atom = Atomic | Reserve
+module Make(C:Config) = struct
+  open MachSize
 
-let default_atom = Atomic
+  module Mixed = MachMixed.Make(C)
 
-open Code
+  let bellatom = false
 
-let applies_atom a d = match a,d with
-| Reserve,W -> false
-| _,_ -> true
+  type hidden_atom = Atomic | Reserve | Mixed of MachMixed.t
+  type atom = hidden_atom
 
-let applies_atom_rmw ar aw = match ar,aw with
-| None,None -> true
-| _,_ -> false
+  let default_atom = Atomic
 
-let pp_plain = Code.plain
-let pp_as_a = None
+  open Code
 
-let pp_atom = function
-  | Atomic -> "A"
-  | Reserve -> "R"
+  let applies_atom a d = match a,d with
+  | Reserve,W -> false
+  | _,_ -> true
 
-let compare_atom = Pervasives.compare
+  let applies_atom_rmw ar aw = match ar,aw with
+  | None,None -> true
+  | _,_ -> false
 
-let fold_atom f r = f Reserve (f Atomic r)
+  let pp_plain = Code.plain
+  let pp_as_a = None
 
-let worth_final = function
-  | Atomic -> true
-  | Reserve -> false
+  let pp_atom = function
+    | Atomic -> "A"
+    | Reserve -> "R"
+    | Mixed mix -> Mixed.pp_mixed mix
 
-let varatom_dir _d f = f None
+  let compare_atom = Pervasives.compare
+
+  let fold_mixed f r = Mixed.fold_mixed (fun mix r -> f (Mixed mix) r) r
+
+  let fold_atom f r =
+    let r = fold_mixed f r in
+    f Reserve (f Atomic r)
+
+  let worth_final = function
+    | Atomic -> true
+    | Reserve -> false
+    | Mixed _ -> false
+
+  let varatom_dir _d f = f None
+
+  let tr_value ao v = match ao with
+  | None| Some (Atomic|Reserve) -> v
+  | Some (Mixed (sz,_)) -> Mixed.tr_value sz v
+
+
+  let correct_offset = match C.endian with
+  | Little -> fun _ o -> o
+  | Big ->
+      begin match C.naturalsize with
+      | None -> fun _ _ -> assert false
+      | Some nsz ->
+          fun sz o ->
+            let bsz = nbytes sz in
+            let bo = o / bsz in
+            let no = bsz * ((nbytes nsz/bsz)-bo-1) in
+(*            Printf.eprintf "tr: %i -> %i\n" o no ; *)
+            no
+      end
+
+  let overwrite_value v ao w = match ao with
+  | None| Some (Atomic|Reserve) -> w (* total overwrite *)
+  | Some (Mixed (sz,o)) ->
+      if sz = Misc.as_some C.naturalsize then w
+      else
+        let o = correct_offset sz o in
+        let sz_bits =  MachSize.nbits sz in
+        let nshift =  o * 8 in
+        let wshifted = w lsl nshift in
+        let mask = lnot (((1 lsl sz_bits) - 1) lsl nshift) in
+        (v land mask) lor wshifted
+
+  let extract_value v ao = match ao with
+  | None| Some (Atomic|Reserve) -> v
+  | Some (Mixed (sz,o)) ->
+      let sz_bits =  MachSize.nbits sz in
+      let o = correct_offset sz o in
+      let nshift =  o * 8 in
+      let mask =
+        match sz with
+        | Quad -> -1
+        | _ -> (1 lsl sz_bits) - 1 in
+      let r = (v lsr nshift) land mask in
+(*      Printf.eprintf "EXTRACT (%s,%i)[0x%x]: 0x%x -> 0x%x\n"
+        (MachSize.pp sz) o mask v r ; *)
+      r
+
+end

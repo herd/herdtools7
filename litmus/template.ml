@@ -35,7 +35,7 @@ module type S = sig
   type flow = Next | Branch of string
   type ins =
       { memo:string ; inputs:arch_reg list ;  outputs:arch_reg list;
-        reg_addrs: arch_reg list; (* Register used as address [ARMv8] *)
+        reg_env: (arch_reg * CType.t) list; (* Register typing [ARMv8] *)
         (* Jumps *)
         label:string option ;  branch : flow list ;
         (* A la ARM conditional execution *)
@@ -81,14 +81,14 @@ struct
   type flow = Next | Branch of string
   type ins =
       { memo:string ; inputs:arch_reg list ;  outputs:arch_reg list;
-        reg_addrs: arch_reg list; (* Register used as address [ARMv8] *)
+        reg_env: (arch_reg * CType.t) list; (* Register typing [ARMv8] *)
         (* Jumps *)
         label:string option ;  branch : flow list ;
         cond:bool ;
         comment:bool;}
 
   let empty_ins =
-    { memo="" ; inputs=[]; outputs=[]; reg_addrs=[];
+    { memo="" ; inputs=[]; outputs=[]; reg_env=[];
       label=None; branch=[Next]; cond=false; comment=false;}
 
   type t = {

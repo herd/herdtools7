@@ -13,6 +13,7 @@ module type Config = sig
   val cond : Config.cond
   val optcond : bool
   val coherence_decreasing : bool
+  val hexa : bool
 end
 
 module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
@@ -40,18 +41,18 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     type fenv = (C.A.location * IntSet.t) list
     type eventmap = C.A.location C.C.EventMap.t
 
-  let show_in_cond =
-    if O.optcond then
-      let valid_edge e =
-        let open C.E in
-        match e.C.E.edge with
-        | Rf _ | Fr _ | Ws _ | Hat|Detour _|DetourWs _
-        | Back _|Leave _ -> true
-        | Po _ | Fenced _ | Dp _|Rmw -> false
-        | Store -> assert false in
-      (fun n -> valid_edge n.C.C.prev.C.C.edge || valid_edge n.C.C.edge)
-    else
-      (fun _ -> true)
+    let show_in_cond =
+      if O.optcond then
+        let valid_edge e =
+          let open C.E in
+          match e.C.E.edge with
+          | Rf _ | Fr _ | Ws _ | Hat|Detour _|DetourWs _
+          | Back _|Leave _ -> true
+          | Po _ | Fenced _ | Dp _|Rmw -> false
+          | Store -> assert false in
+        (fun n -> valid_edge n.C.C.prev.C.C.edge || valid_edge n.C.C.edge)
+      else
+        (fun _ -> true)
 
     let add_final_v p r v finals = (C.A.of_reg p r,v)::finals
 
@@ -59,18 +60,18 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       if O.coherence_decreasing then fun v -> v+1
       else fun v -> v-1
 
-  let add_final p o n finals = match o with
-  | Some r ->
-      let m,fs = finals in
-      let evt = n.C.C.evt in
-      let v = match evt.C.C.dir with
-      | Code.R -> evt.C.C.v
-      | Code.W -> prev_value evt.C.C.v in
-      if show_in_cond n then
-        C.C.EventMap.add n.C.C.evt (C.A.of_reg p r) m,
-        add_final_v p r (IntSet.singleton v) fs
-      else finals
-  | None -> finals
+    let add_final p o n finals = match o with
+    | Some r ->
+        let m,fs = finals in
+        let evt = n.C.C.evt in
+        let v = match evt.C.C.dir with
+        | Code.R -> evt.C.C.v
+        | Code.W -> prev_value evt.C.C.v in
+        if show_in_cond n then
+          C.C.EventMap.add n.C.C.evt (C.A.of_reg p r) m,
+          add_final_v p r (IntSet.singleton v) fs
+        else finals
+    | None -> finals
 
 
     type final =
@@ -87,20 +88,26 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 (* Dumping *)
     open Printf
 
+    let dump_atom =
+      if O.hexa then
+        fun r v -> sprintf "%s=0x%x" (C.A.pp_location r) v
+      else
+        fun r v -> sprintf "%s=%i" (C.A.pp_location r) v
+
     let dump_state fs =
-    String.concat " /\\ " 
-      (List.map
-         (fun (r,vs) ->
-           match IntSet.as_singleton vs with
-           | Some v ->
-               sprintf "%s=%i" (C.A.pp_location r) v
-           | None ->
-               let pp =
-                 IntSet.pp_str " \\/ "
-                   (fun v -> sprintf "%s=%i" (C.A.pp_location r) v)
-                   vs in
-               sprintf "(%s)" pp)             
-         fs)
+      String.concat " /\\ "
+        (List.map
+           (fun (r,vs) ->
+             match IntSet.as_singleton vs with
+             | Some v ->
+                 dump_atom r v
+             | None ->
+                 let pp =
+                   IntSet.pp_str " \\/ "
+                     (fun v -> dump_atom r v)
+                     vs in
+                 sprintf "(%s)" pp)
+           fs)
 
     let dump_final chan f = match f with
     | Exists fs ->

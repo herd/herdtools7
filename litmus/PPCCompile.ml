@@ -155,6 +155,12 @@ module Make(V:Constant.S)(C:Config) =
         inputs=[rS;rA];
         outputs=(if update && rA <> r0 then [rA;] else []); }
 
+    let stwsz sz rS d rA =
+      { empty_ins with
+        memo = sprintf "%s ^i0,%i(^i1)" (memo_store sz) d;
+        inputs=[rS;rA];
+        outputs=[]; }
+
     let mftb r =
       { empty_ins with
         memo = "mftb ^o0";
@@ -232,6 +238,11 @@ module Make(V:Constant.S)(C:Config) =
           outputs=[]; }::k
     | Pb lbl -> jump tr_lab lbl::k
     | Pbcc(cond, lbl) -> bcc tr_lab cond lbl::k
+    | Pload (sz,rD,d,rA) ->
+         { empty_ins with
+          memo = sprintf "%s ^o0,%i(^i0)"  (memo_load sz) d;
+          inputs = [rA];
+          outputs= [rD]; }::k
     | Plwz (rD,d,rA) ->
         { empty_ins with
           memo = sprintf "lwz ^o0,%i(^i0)"  d;
@@ -271,6 +282,7 @@ module Make(V:Constant.S)(C:Config) =
               inputs = [rA;rB];
               outputs= [rD]; }
         end::k
+    | Pstore (sz,rS,d,rA) -> stwsz sz rS d rA::k
     | Pstw(rS,d,rA) -> stw false rS d rA::k
     | Pstwu(rS,d,rA) -> stw true rS d rA::k
     | Pstd(rS,d,rA) -> std rS d rA::k

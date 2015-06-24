@@ -3,20 +3,13 @@
 (*                                                                   *)
 (*   Luc Maranget INRIA Paris-Rocquencourt, France.                  *)
 (*                                                                   *)
-(*  Copyright 2014 Institut National de Recherche en Informatique et *)
+(*  Copyright 2015 Institut National de Recherche en Informatique et *)
 (*  en Automatique. All rights reserved. This file is distributed    *)
 (*  under the terms of the Lesser GNU General Public License.        *)
 (*********************************************************************)
 
-(* Atomicity of events *)
-module type Config = sig
-  val naturalsize : MachSize.sz option
-  val endian : MachSize.endian
-end
-
-
-module Make : functor (C:Config) ->
-  sig
-    type hidden_atom = Atomic | Reserve | Mixed of MachMixed.t
-    include Atom.S with type atom = hidden_atom
-  end
+(* Do nothing for mixed values, which should not appear *)
+val fold_mixed : ('a -> 'b -> 'b) -> 'b -> 'b
+val tr_value : 'a option -> Code.v -> Code.v
+val overwrite_value : Code. v -> 'a option -> Code.v -> Code.v
+val extract_value : Code. v -> 'a option -> Code.v

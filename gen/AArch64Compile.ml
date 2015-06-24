@@ -41,14 +41,18 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
 
     let pseudo = List.map (fun i -> Instruction i)
 
-let tempo1 st = A.alloc_trashed_reg "T1" st (* May be used for address *)
-let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
+    let tempo1 st = A.alloc_trashed_reg "T1" st (* May be used for address *)
+    let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
 
 (******************)
 (* Idiosyncrasies *)
 (******************)
 
-    let vloc = V32
+    let vloc = let open TypBase in
+    match Cfg.typ with
+    | Std (_,MachSize.Quad) -> V64
+    | Int |Std (_,MachSize.Word) -> V32
+    | t -> Warn.user_error "AArch64, illegal base type: %s" (pp t)
 
     let cbz r1 lbl = I_CBZ (vloc,r1,lbl)
     let cbnz r1 lbl = I_CBNZ (vloc,r1,lbl)

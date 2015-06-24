@@ -739,8 +739,8 @@ let user2_barrier_def () =
          (A.Out.dump_out_reg proc reg))
      test
 
-  let fmt_outcome locs env =
-    U.fmt_outcome
+  let fmt_outcome test locs env =
+    U.fmt_outcome test
       (fun t -> match Compile.get_fmt Cfg.hexa t with
       | CType.Direct fmt ->
           if Cfg.hexa then "0x%" ^ fmt else "%" ^ fmt
@@ -807,7 +807,7 @@ let user2_barrier_def () =
       O.o "static int idx_addr(ctx_t *_a,int _i,void *v_addr) {" ;
       O.oi "if (v_addr == NULL) { return 0;}" ;
       Misc.iteri (fun k (s,_) -> dump_test (k+1) s) test.T.globals ;
-      O.oi "else { fatal(\"???\"); return -1;}" ;
+      O.fi "else { fatal(\"%s, ???\"); return -1;}" doc.Name.name ;
       O.o "}" ;
       O.o "" ;
 (* Pretty-print indices *)
@@ -933,7 +933,7 @@ let user2_barrier_def () =
 (* Dumping *)
     O.o
       "static void do_dump_outcome(FILE *fhist, intmax_t *o, count_t c, int show) {" ;
-    let fmt_var = fmt_outcome outs env in
+    let fmt_var = fmt_outcome test outs env in
     let fmt ="\"%-6\"PCTR\"%c>" ^ fmt_var ^ "\\n\"" in
     let args =
       String.concat ","
@@ -1007,7 +1007,7 @@ let user2_barrier_def () =
 
   let do_copy t loc1 loc2 = U.do_store t loc1 (U.do_load t loc2)
 
-  let dump_check_globals env test =
+  let dump_check_globals env doc test =
     if do_check_globals then begin
 (* CHECKGLOBALS *)
       O.f "/**************************************/" ;
@@ -1051,14 +1051,15 @@ let user2_barrier_def () =
         (fun (s,t as x) -> match t with
         | Array (t,sz) ->
             O.fii "for (int _j = 0 ; _j < %i ; _j++) {" sz ;
-            O.fiii "if (%s%s) fatal(\"check_globals failed\");"
+            O.fiii "if (%s%s) fatal(\"%s, check_globals failed\");"
               (if do_randompl then "rand_bit(&(_a->seed)) && " else "")
-              (dump_test (sprintf "(%s)[_j]") (s,Base t)) ;
+              (dump_test (sprintf "(%s)[_j]") (s,Base t))
+              doc.Name.name ;
             O.fii "}"
         | _ ->
-            O.fii "if (%s%s) fatal(\"check_globals failed\");"
+            O.fii "if (%s%s) fatal(\"%s, check_globals failed\");"
               (if do_randompl then "rand_bit(&(_a->seed)) && " else "")
-              (dump_test (fun s -> s) x))
+              (dump_test (fun s -> s) x) doc.Name.name)
         test.T.globals ;
 (* Check locals *)
       if Cfg.cautious then begin
@@ -1066,13 +1067,14 @@ let user2_barrier_def () =
           (fun (proc,(_,(outs,_))) ->
             List.iter
               (fun (reg,t) ->
-                O.fii "if (%s%s)  fatal(\"check_globals failed\");"
+                O.fii "if (%s%s)  fatal(\"%s, check_globals failed\");"
                   (if do_randompl then "rand_bit(&(_a->seed)) && " else "")
                   (sprintf "_a->%s[_i] != %s"
                      (A.Out.dump_out_reg proc reg)
                      (match CType.is_ptr t with
                      | false -> sentinel
-                     | true -> "NULL")))
+                     | true -> "NULL"))
+                  doc.Name.name)
               outs)
           test.T.code ;
       end ;
@@ -1893,7 +1895,9 @@ let user2_barrier_def () =
       if do_safer then begin
         O.oii "/* Check local histograns */" ;
         O.oii "for (int _p = 0 ; _p < N-1 ; _p++) {" ;
-        O.oiii "if (!same_hist(phist[_p],phist[_p+1])) fatal(\"check hist\") ;" ;
+        O.fiii
+          "if (!same_hist(phist[_p],phist[_p+1])) fatal(\"%s, check hist\") ;"
+          doc.Name.name ;
         O.oii "}" ;
         O.oii "merge_hists(hist0,phist[0]);" ;
         O.oii "for (int _p = 0 ; _p < N-1 ; _p++) {" ;
@@ -1943,7 +1947,7 @@ let user2_barrier_def () =
             loop_proc_prelude indent3 ;
             let pp_test i e1 e2 =
               O.fx i
-                "if (%s != %s) fatal(\"%s: global %s unstabilized\") ;"
+                "if (%s != %s) fatal(\"%s, global %s unstabilized\") ;"
                 e1 e2
                 (doc.Name.name)  (dump_loc_name loc) in
             begin match t with
@@ -1967,7 +1971,7 @@ let user2_barrier_def () =
       List.iter
         (fun (cpy,loc) ->
           O.fiii
-            "if (ctx.%s[_i] != ctx.%s[_i]) fatal(\"%s: address copy %s is wrong\") ; "
+            "if (ctx.%s[_i] != ctx.%s[_i]) fatal(\"%s, address copy %s is wrong\") ; "
             cpy loc doc.Name.name cpy)
         cpys ;
 (* Compute final condition *)
@@ -2029,7 +2033,7 @@ let user2_barrier_def () =
               "if (!check_shuffle(ctx.%s,ctx.%s,_b->size_of_test))"
               loc (dump_ctx_tag loc) ;
             O.fiii
-              "fatal(\"%s: check_shuffle for %s\");"
+              "fatal(\"%s, check_shuffle for %s\");"
               doc.Name.name loc)
 
           locs
@@ -2043,7 +2047,7 @@ let user2_barrier_def () =
       O.oiii "just_dump_outcomes(stderr,hist);" ;
       O.oiii "log_error(\"Local histogram:\\n\");" ;
       O.oiii "just_dump_outcomes(stderr,hist0);" ;
-      O.oiii "fatal(\"check summed hist\");" ;
+      O.fiii "fatal(\"%s, check summed hist\");" doc.Name.name ;
       O.oii "}"
     end ;
     if do_speedcheck then begin
@@ -2387,7 +2391,7 @@ let user2_barrier_def () =
       (fun i ->
         O.ox i
           "if (sum_hist(hk) != n_outs || hk->n_pos + hk->n_neg != n_outs) {" ;
-        O.oy i "fatal(\"sum_hist\");" ;
+        O.oy i (sprintf "fatal(\"%s, sum_hist\");" doc.Name.name) ;
         O.ox i "}") ;
     O.oii "merge_hists(hist,hk);" ;
     O.oii "free_hist(hk);" ;
@@ -2403,7 +2407,7 @@ let user2_barrier_def () =
       (fun i ->
         O.ox i
           "if (sum_hist(hist) != n_outs || hist->n_pos + hist->n_neg != n_outs) {"  ;
-        O.oy i "fatal(\"sum_hist\") ;" ;
+        O.oy i (sprintf "fatal(\"%s, sum_hist\") ;" doc.Name.name);
         O.ox i "}") ;
     O.oi "count_t p_true = hist->n_pos, p_false = hist->n_neg;" ;
 (* Print results *)
@@ -2489,8 +2493,9 @@ let user2_barrier_def () =
                (List.map
                   (sprintf "'%c'")
                   (Misc.explode prf)@["'\\0'"])) ;
-          O.oi
-            "if (!parse_prefetch(_prefetch_txt,&_prefetch)) fatal(\"parse_prefetch\");"
+          O.fi
+            "if (!parse_prefetch(_prefetch_txt,&_prefetch)) fatal(\"%s, parse_prefetch\");" doc.Name.name ;
+          ()
         with Not_found -> ()
       end
     end ;
@@ -2549,7 +2554,7 @@ let user2_barrier_def () =
     dump_cond_fun env test ;
     dump_defs_outs doc env test ;
     dump_reinit env test cpys ;
-    dump_check_globals env test ;
+    dump_check_globals env doc test ;
     dump_templates env doc.Name.name test ;
     dump_zyva doc cpys env test ;
     if do_vp then UD.prelude doc test ;

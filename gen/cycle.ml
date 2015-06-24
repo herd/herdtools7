@@ -22,6 +22,7 @@ module type S = sig
         proc : Code.proc ;
         atom : atom option ;
         rmw : bool ;        
+        cell : v ;
         idx : int ; }
 
   val evt_null : event
@@ -48,7 +49,7 @@ module type S = sig
   val extract_edges : node -> edge list
 
 (* Resolve edge direction and build cycle *)
-  val resolve_edges : edge list -> edge list * node
+ val resolve_edges : edge list -> edge list * node
 
 (* Finish edge cycle, adding complete events *)
   val finish : node -> unit
@@ -75,6 +76,8 @@ module type Config = sig
   val verbose : int
 (* allow threads s.t start -> end is against com+ *)
   val allow_back : bool
+  val naturalsize : MachSize.sz
+  val hexa : bool
 end
 
 module Make (O:Config) (E:Edge.S) :
@@ -91,10 +94,12 @@ module Make (O:Config) (E:Edge.S) :
         proc : Code.proc ;
         atom : atom option ;
         rmw : bool ;
+        cell : v ; (* value of cell at node... *)
         idx : int ; }
 
   let evt_null = 
-    { loc="*" ; v=(-1) ; dir=R; proc=(-1); atom=None; rmw=false; idx=(-1); }
+    { loc="*" ; v=(-1) ; dir=R; proc=(-1); atom=None; rmw=false;
+      cell=(-1); idx=(-1); }
 
   let make_wsi idx loc =
     { evt_null with dir=W ; loc=loc; idx=idx; v=0;}
@@ -125,7 +130,10 @@ module Make (O:Config) (E:Edge.S) :
     match a with None -> "" | Some a -> E.pp_atom a
 
   let debug_evt e =
-    sprintf "%s%s %s %i" (debug_dir e.dir) (debug_atom e.atom) e.loc e.v
+    if O.hexa then
+      sprintf "%s%s %s 0x%x" (debug_dir e.dir) (debug_atom e.atom) e.loc e.v
+    else
+      sprintf "%s%s %s %i" (debug_dir e.dir) (debug_atom e.atom) e.loc e.v
 
 let debug_edge = E.pp_edge
 
@@ -441,40 +449,51 @@ let set_same_loc st n0 =
       else do_rec m.next in
     [do_rec n]
 
+  let tr_value e v = E.tr_value e.atom v
 
-  let rec do_set_write_val next = function
+  let set_cell n old =
+    let e = n.evt in
+    let e = { e with cell=E.overwrite_value old e.atom e.v} in
+    n.evt <- e
+
+  let rec do_set_write_val old next = function
     | [] -> ()
     | n::ns ->
-        let next = 
+        let next,old =
           let st = n.store in
-          if st == nil then next
+          if st == nil then next,old
           else begin
-            st.evt <- { st.evt with v=next; } ;
-            next_co next
+            st.evt <- { st.evt with v=tr_value st.evt next; } ;
+            set_cell st old ;
+            next_co next,st.evt.cell
           end in
         if E.is_detour n.edge then begin
           let m = n.detour in
           let v =  match n.evt.dir with
           | R -> next
           | W -> next_co next in
-          m.evt <- { m.evt with dir=W; loc=n.evt.loc; v=v ;};              
+          m.evt <- { m.evt with dir=W; loc=n.evt.loc; v=tr_value m.evt v ;};
+          set_cell m old ;
+          let old = m.evt.cell in
           begin match n.evt.dir with
           | W ->
-              n.evt <- { n.evt with v = next; } ;
-              do_set_write_val (next_co (next_co next)) ns
-          | R ->  do_set_write_val (next_co next) ns
+              n.evt <- { n.evt with v = tr_value n.evt next; } ;
+              set_cell n old ;
+              do_set_write_val n.evt.cell (next_co (next_co next)) ns
+          | R ->  do_set_write_val old (next_co next) ns
           end
         end else begin match n.evt.dir with
         | W ->
-            n.evt <- { n.evt with v = next; } ;
-            do_set_write_val (next_co next) ns
-        | R ->  do_set_write_val next ns
+            n.evt <- { n.evt with v = tr_value n.evt next; } ;
+            set_cell n old ;
+            do_set_write_val n.evt.cell (next_co next) ns
+        | R ->  do_set_write_val old next ns
         end
 
   let set_all_write_val nss =
     List.iter
       (fun ns ->
-        do_set_write_val (start_co ns) ns)
+        do_set_write_val 0 (start_co ns) ns)
       nss
   
   let set_write_v n =
@@ -501,27 +520,39 @@ let set_same_loc st n0 =
   
 
 (* TODO: this is wrong for Store CR's: consider Rfi Store PosRR *)
+let set_read_v n cell =
+  let e = n.evt in
+  let v = E.extract_value cell e.atom in
+(*  eprintf "SET READ: cell=0x%x, v=0x%x\n" cell v ; *)
+  let e = { e with v=v; } in
+  n.evt <- e
+(*  eprintf "AFTER %a\n" debug_node n *)
+
 let do_set_read_v =
 
-  let next n = match n.edge.E.edge with
-  | E.Detour _ -> next_co n.evt.v
-  | _ -> n.evt.v in
-
-  let rec do_rec v = function
-    | [] -> ()
+  let rec do_rec cell  = function
+    | [] -> cell
     | n::ns ->
-        let v = 
-          if n.store == nil then v
-          else n.store.evt.v in
+        let cell =
+          if n.store == nil then cell
+          else n.store.evt.cell in
         match n.evt.dir with
         | R ->
-            n.evt <- { n.evt with v=v; } ;
-            do_rec (next n) ns
+            set_read_v n cell ;
+            do_rec cell ns
         | W ->
-            do_rec (next n) ns in
+            do_rec n.evt.cell ns in
   do_rec 0
 
-let set_read_v nss = List.iter do_set_read_v nss
+let set_read_v nss =
+  List.fold_right
+    (fun ns k -> match ns with
+    | [] -> k
+    | n::_  ->
+        let vf = do_set_read_v ns in
+        (n.evt.loc,vf)::k)
+    nss []
+
 (* zyva... *)      
 
 let finish n =
@@ -554,10 +585,13 @@ let finish n =
     debug_cycle stderr n
   end ;    
 (* Set load values *)
-  set_read_v by_loc ;
+  let vs = set_read_v by_loc in
   if O.verbose > 1 then begin
     eprintf "READ VALUES\n" ;
-    debug_cycle stderr n
+    debug_cycle stderr n ;
+    eprintf "FINAL VALUES [%s]\n"
+      (String.concat ","
+         (List.map (fun (loc,v) -> sprintf "%s -> 0x%x" loc v) vs))
   end ;
   ()
 
@@ -582,7 +616,7 @@ let resolve_edges = function
 
 let make es =
   let es,c = resolve_edges es in
-  finish c ;
+  let () = finish c in
   es,c
 
 (*************************)

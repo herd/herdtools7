@@ -21,6 +21,7 @@ module Make(V:Constant.S)(C:Config) =
     module A = AArch64Arch.Make(C)(V)
     open A
     open A.Out
+    open CType
     open Printf
 
 (* No addresses in code *)
@@ -72,74 +73,74 @@ module Make(V:Constant.S)(C:Config) =
             memo= sprintf "%s ^wo0,[^i0]" memo;
             inputs=[rA];
             outputs=[rD];
-            reg_addrs=[rA]; }
+            reg_env=[(rA,voidstar);(rD,word)]; }
       | V32,K k ->
           { empty_ins with
             memo= sprintf "%s ^wo0,[^i0,#%i]" memo k;
             inputs=[rA];
             outputs=[rD];
-            reg_addrs=[rA];}
+            reg_env=[(rA,voidstar);(rD,word)];}
       | V32,RV (V32,rB) ->
           { empty_ins with
             memo=memo^ " ^wo0,[^i0,^wi1,sxtw]";
             inputs=[rA; rB];
             outputs=[rD];
-            reg_addrs=[rA]; }
+            reg_env=[(rA,voidstar); (rB,word); (rD,word);]; }
       | V64,K 0 ->
           { empty_ins with
             memo=memo ^ sprintf " ^o0,[^i0]";
             inputs=[rA];
             outputs=[rD];
-            reg_addrs=[rA]; }
+            reg_env=[rA,voidstar;rD,quad;]; }
       | V64,K k ->
           { empty_ins with
             memo=memo ^ sprintf " ^o0,[^i0,#%i]" k;
             inputs=[rA];
             outputs=[rD];
-            reg_addrs=[rA]; }
+            reg_env=[rA,voidstar; rD,quad;]; }
       | V64,RV (V64,rB) ->
           { empty_ins with
             memo=memo^ " ^o0,[^i0,^i1]";
             inputs=[rA; rB];
             outputs=[rD];
-            reg_addrs=[rA]; }
+            reg_env=[rA,voidstar;rB,quad;rD,quad]; }
       | V64,RV (V32,rB) ->
           { empty_ins with
             memo=memo^ " ^o0,[^i0,^wi1,sxtw]";
             inputs=[rA; rB];
             outputs=[rD];
-            reg_addrs=[rA]; }
+            reg_env=[rA,voidstar;rB,word;rD,quad;]; }
       | V32,RV (V64,_) -> assert false
 
     let store memo v rA rB kr = match v,kr with
       | V32,K 0 ->
           { empty_ins with
             memo=memo ^ " ^wi0,[^i1]";
-            inputs=[rA;rB]; reg_addrs=[rB]; }
+            inputs=[rA;rB]; reg_env=[rB,voidstar;rA,word;]; }
       | V32,K k ->
           { empty_ins with
             memo=memo ^ sprintf " ^wi0,[^i1,#%i]" k;
-            inputs=[rA;rB]; reg_addrs=[rB]; }
+            inputs=[rA;rB]; reg_env=[rB,voidstar;rA,word;]; }
       | V32,RV (V32,rC) ->
           { empty_ins with
             memo=memo^ " ^wi0,[^i1,^wi2,sxtw]";
-            inputs=[rA; rB; rC]; reg_addrs=[rB]; }
+            inputs=[rA; rB; rC]; reg_env=[rB,voidstar; rA,word; rC,word;]; }
       | V64,K 0 ->
           { empty_ins with
             memo=memo ^ " ^i0,[^i1]";
-            inputs=[rA;rB]; reg_addrs=[rB]; }
+            inputs=[rA;rB]; reg_env=[rB,voidstar; rA,quad;]; }
       | V64,K k ->
           { empty_ins with
             memo=memo ^ sprintf " ^i0,[^i1,#%i]" k;
-            inputs=[rA;rB]; reg_addrs=[rB]; }
+            inputs=[rA;rB]; reg_env=[rB,voidstar; rA,quad;]; }
       | V64,RV (V64,rC) ->
           { empty_ins with
             memo=memo^ " ^i0,[^i1,^i2]";
-            inputs=[rA; rB; rC]; reg_addrs=[rB]; }
+            inputs=[rA; rB; rC]; reg_env=[rB,voidstar; rA,quad; rC,quad;]; }
       | V64,RV (V32,rC) ->
           { empty_ins with
             memo=memo^ " ^i0,[^i1,^wi2,sxtw]";
-            inputs=[rA; rB; rC;]; reg_addrs=[rB]; }
+            inputs=[rA; rB; rC;]; reg_env=[rB,voidstar; rA,quad; rC,word;]; }
       | V32,RV (V64,_) -> assert false
 
     let stxr memo v r1 r2 r3 = match v with
@@ -147,12 +148,12 @@ module Make(V:Constant.S)(C:Config) =
         { empty_ins with
           memo = sprintf "%s ^wo0,^wi0,[^i1]" memo ;
           inputs = [r2;r3;];
-          outputs = [r1;]; reg_addrs=[r3]; }
+          outputs = [r1;]; reg_env=[r3,voidstar; r1,word; r2,word; ]; }
     | V64 ->
         { empty_ins with
-          memo = sprintf "%s ^wo0,^i0,[^i1]" memo ;
+          memo = sprintf "%s ^o0,^i0,[^i1]" memo ;
           inputs = [r2;r3;];
-          outputs = [r1;]; reg_addrs=[r3;]}
+          outputs = [r1;]; reg_env=[r3,voidstar; r2,quad; r1,quad; ]}
 
 (* Arithmetic *)
 
@@ -166,27 +167,27 @@ module Make(V:Constant.S)(C:Config) =
     let sxtw r1 r2 =
       { empty_ins with
         memo = "sxtw ^o0,^wi1";
-        inputs = [r2;]; outputs=[r1;]; }
+        inputs = [r2;]; outputs=[r1;]; reg_env=[r1,word; r2,voidstar];}
 
     let cmpk v r k = match v with
     | V32 ->
         { empty_ins with
           memo = sprintf "cmp ^wi0,#%i" k ;
-          inputs = [r;]; }
+          inputs = [r;]; reg_env=[r,word];}
     | V64 ->
         { empty_ins with
-          memo = sprintf "cmp ^wi0,#%i" k ;
-          inputs = [r;]; }
+          memo = sprintf "cmp ^i0,#%i" k ;
+          inputs = [r;]; reg_env=[r,quad;];}
       
     let cmp v r1 r2 = match v with
     | V32 ->
         { empty_ins with
           memo = "cmp ^wi0,^wi1" ;
-          inputs = [r1;r2;]; }
+          inputs = [r1;r2;]; reg_env=[r1,word;r2,word;]; }
     | V64 ->
         { empty_ins with
           memo = "cmp ^i0,^i1" ;
-          inputs = [r1;r2;]; }
+          inputs = [r1;r2;]; reg_env=[r1,quad;r2,quad;];}
 
     let memo_of_op op = match op with
     | ADD -> "add"
@@ -200,12 +201,12 @@ module Make(V:Constant.S)(C:Config) =
           { empty_ins with
             memo=memo ^ sprintf " ^wo0,^wi0,#%i" k;
             inputs=[rA];
-            outputs=[rD]; }
+            outputs=[rD]; reg_env = [rA,word; rD,word;];}
       | V32,RV (V32,rB) ->
           { empty_ins with
             memo=memo^ " ^wo0,^wi0,^wi1";
             inputs=[rA; rB];
-            outputs=[rD]; }
+            outputs=[rD]; reg_env = [rA,word; rB,word; rD,word;];}
       | V64,K k ->
           { empty_ins with
             memo=memo ^ sprintf " ^o0,^i0,#%i" k;
@@ -215,12 +216,12 @@ module Make(V:Constant.S)(C:Config) =
           { empty_ins with
             memo=memo^ " ^o0,^i0,^i1";
             inputs=[rA; rB];
-            outputs=[rD]; }
+            outputs=[rD]; reg_env=[rA,quad; rB,quad; rD,quad;];}
       | V64,RV (V32,rB) ->
           { empty_ins with
             memo=memo^ " ^o0,^i0,^wi1,sxtw";
             inputs=[rA; rB];
-            outputs=[rD]; }
+            outputs=[rD]; reg_env=[rA,quad; rD,quad; rB,word;]; }
       | V32,RV (V64,_) -> assert false
 
 

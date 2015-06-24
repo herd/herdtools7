@@ -9,6 +9,10 @@
 (*********************************************************************)
 
 {
+
+exception Error of string
+let error msg = raise (Error msg)
+
 type t =
   | One of string
   | Seq of string list
@@ -26,18 +30,20 @@ rule main = parse
 }
 | blank+ { main lexbuf }
 | not_blank+ as lxm { One lxm :: main lexbuf }
+| "" { error "main" }
 
 and pseq = parse
 | eof { failwith "] missing" }
 | ']' { [] }
 | blank+ { pseq lexbuf }
 | not_blank+ as lxm { lxm :: pseq lexbuf }
+| "" { error "pseq" }
 
 and just_split = parse
 | eof { [] }
 | blank+ { just_split lexbuf }
 | not_blank+ as lxm { lxm :: just_split lexbuf }
-
+| "" { error "just_split" }
 {
 
 

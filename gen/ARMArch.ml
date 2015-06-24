@@ -9,9 +9,21 @@
 (*********************************************************************)
 
 open Printf
+
 include ARMBase
+
 module ScopeGen = ScopeGen.NoGen
 include MachAtom
+
+let tr_endian = Misc.identity
+
+include MachAtom.Make
+    (struct
+      let naturalsize=None
+      let endian = MachSize.Little
+    end)
+
+let x = default_atom
 
 (**********)
 (* Fences *)

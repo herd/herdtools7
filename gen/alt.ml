@@ -109,7 +109,29 @@ module Make(C:Builder.S)
         | _,_ ->  C.E.get_ie e1 <> C.E.get_ie e2 in
 (*      eprintf "Choice: %s %s -> %b\n" (C.E.pp_edge e1) (C.E.pp_edge e2) r ; *)
       r
-
+    let choice_mixed e1 e2 =
+      let r =
+        match e1.edge,e2.edge with
+(* Two cases of allowed com composition *)
+        | (Ws _|Leave CWs|Back CWs|Fr _|Leave CFr|Back CFr),
+          (Rf _|Leave CRf|Back CRf) -> true
+(* Rmw allowed to compose arbitrarily *)
+        | (Rmw,_)|(_,Rmw) -> true
+(* Otherwise accept composition *)
+        | _,_ ->
+            let ie1 = C.E.get_ie e1 and ie2 =  C.E.get_ie e2 in
+            match ie1,ie2 with
+            | Int,Int ->
+                begin match loc_sd e1,loc_sd e2 with
+                | (Same,Same) | (Diff,Same) | (Same,Diff)
+                  -> true
+                | Diff,Diff -> false
+                end
+            | Ext,Ext -> false
+            | (Ext,Int) | (Int,Ext)
+                -> true  in
+(*      eprintf "Choice: %s %s -> %b\n" (C.E.pp_edge e1) (C.E.pp_edge e2) r ; *)
+      r
     let choice_uni e1 e2 =  match e1.edge,e2.edge with
     | (Ws _,Ws _)
     | (Fr _,Ws _)
@@ -168,6 +190,7 @@ module Make(C:Builder.S)
 
     let choose c = match c with
     | Sc -> (fun _safes po_safe _xs _ys -> choice_sc po_safe)
+    | MixedCheck -> iarg choice_mixed
     | Critical -> iarg choice_critical
     | Uni -> iarg choice_uni
     | Thin |Total -> iarg choice_id
@@ -175,6 +198,7 @@ module Make(C:Builder.S)
     | Ppo -> iarg choice_ppo
     | Transitive ->
         (fun safes _po_safe -> choice_transitive safes)
+
 
 
     let pair_ok safes po_safe xs ys e1 e2 = match e1.edge,e2.edge with
@@ -461,7 +485,7 @@ module Make(C:Builder.S)
             try
               if
                 (match O.choice with
-                | Sc | Ppo -> true
+                | Sc | Ppo | MixedCheck -> true
                 | Thin | Free | Uni | Critical | Transitive |Total -> false) &&
                 (count_ext le=1 || all_int le || count_changes le < 2) then k
               else begin

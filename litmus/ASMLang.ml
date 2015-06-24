@@ -46,12 +46,13 @@ module Make
       | Mode.Std -> Tmpl.dump_v
       | Mode.PreSi -> SymbConstant.pp_v
 
-      module RegSet =
-        MySet.Make
-          (struct
-            type t = Tmpl.arch_reg
-            let compare = A.reg_compare
-          end)
+      module OrderedReg = struct
+        type t = Tmpl.arch_reg
+        let compare = A.reg_compare
+      end
+      module RegSet = MySet.Make(OrderedReg)
+      module MapReg = MyMap.Make(OrderedReg)
+
 
       let all_regs t =
         let all_ins ins =
@@ -260,21 +261,32 @@ module Make
               (compile_out_reg proc reg) (dump_stable_reg reg))
           (RegSet.inter stable finals)
 
-      let all_reg_addrs ts =
-        RegSet.unions
-          (List.rev_map
-             (fun t -> RegSet.of_list t.Tmpl.reg_addrs)
-             ts)
+      let get_reg_env ts =
+        let m =
+          List.fold_left
+            (fun m t ->
+              List.fold_left
+                (fun m (r,t) ->
+                  let t0 = MapReg.safe_find t r m in
+                  if (t <> t0) then begin
+                    Warn.warn_always
+                      "Register %s has different types: <%s> and <%s>"
+                      (A.reg_to_string r) (CType.dump t0) (CType.dump t)
+                  end ;
+                  MapReg.add r t m)
+                m  t.Tmpl.reg_env)
+            MapReg.empty ts in
+        m
 
       let before_dump compile_out_reg compile_val compile_cpy
           chan indent env proc t trashed =
-        let reg_addrs = all_reg_addrs t.Tmpl.code in
+
+        let reg_env = get_reg_env t.Tmpl.code in
         RegSet.iter
           (fun reg ->
             let ty = match A.internal_init reg with
             | Some (_,ty) -> ty
-            | None ->
-                if RegSet.mem reg reg_addrs then "void *" else "int" in
+            | None -> CType.dump (MapReg.safe_find CType.word reg reg_env) in
             fprintf chan "%s%s %s;\n"
               indent ty (dump_trashed_reg reg))
           trashed ;

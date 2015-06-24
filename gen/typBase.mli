@@ -12,7 +12,8 @@
 
 (* Base type for produced tests *)
 
-type t = Long | LongLong | Int | Short | Char 
+type sgn = Signed | Unsigned
+type t =   Int | Std of sgn * MachSize.sz
 
 val tags : string list
 
@@ -20,3 +21,6 @@ val parse : string -> t option
 
 val pp : t -> string
 
+val default : t
+val is_default : t -> bool
+val get_size : t -> MachSize.sz

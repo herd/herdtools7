@@ -64,10 +64,14 @@ rule token = parse
 | "mulli" { MULLI }
 | "divw" { DIV }
 | "divw." { DIVDOT }
+| "lbz" { LBZ }
+| "lhz" { LHZ }
 | "lwz" { LWZ }
 | "lwzu" { LWZU }
 | "lwzx" { LWZX }
 | "mr" { MR }
+| "stb" { STB }
+| "sth" { STH }
 | "stw" { STW }
 | "stwu" { STWU }
 | "stwx" { STWX }

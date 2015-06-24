@@ -20,6 +20,7 @@ module type DiyConfig = sig
   val cumul :   LexUtil.t list Config.cumul
   val max_ins : int
   val upto : bool
+  val varatom : string list
 end
 
 module Make(C:Builder.S)(O:DiyConfig) = struct
@@ -40,33 +41,64 @@ let parse_edges = List.map parse_edge
 let parse_fences fs = List.fold_right parse_fence fs []
   
 
-module AltConfig = struct
-  include O
+  module AltConfig = struct
+    include O
 
-  type relax = C.R.relax
+    type relax = C.R.relax
 
-  let prefix = match O.prefix with
-  | None -> []
-  | Some ps -> parse_relaxs ps
+    let prefix = match O.prefix with
+    | None -> []
+    | Some ps -> parse_relaxs ps
 
-  type fence = C.A.fence
+    type fence = C.A.fence
 
-  let cumul =
-    let open Config in
-    match O.cumul with
-    | Empty -> Empty
-    | All -> All
-    | Set ps -> Set (parse_fences ps)
+    let cumul =
+      let open Config in
+      match O.cumul with
+      | Empty -> Empty
+      | All -> All
+      | Set ps -> Set (parse_fences ps)
 
-end
+  end
 
 
   module M =  Alt.Make(C)(AltConfig)
 
-      
+  let var_relax fold rs = function
+    | PPO as r -> r::rs
+    | ERS es ->
+        let ess = fold es in
+        List.fold_left
+          (fun k es -> ERS es::k) rs ess
+
+
+  let var_atom = 
+    if C.A.bellatom then Misc.identity
+    else match O.varatom with
+    | [] -> Misc.identity
+    | ["all"] ->
+        let module Fold = struct
+          type atom = C.E.atom
+          let fold = C.E.fold_atomo
+        end in
+        let module V = VarAtomic.Make(C.E)(Fold) in
+        List.fold_left
+          (var_relax V.varatom_one) []
+    | atoms ->
+        let atoms = C.E.parse_atoms atoms in
+        let module Fold = struct
+          type atom = C.E.atom
+          let fold f k = C.E.fold_atomo_list atoms f k
+        end in
+        let module V = VarAtomic.Make(C.E)(Fold) in
+        List.fold_left
+          (var_relax V.varatom_one) []
+
   let gen lr ls n =
     let lr = C.R.expand_relax_macros lr
     and ls = C.R.expand_relax_macros ls in
+    let lr = var_atom lr
+    and ls = var_atom ls in
     M.gen ~relax:lr ~safe:ls n
 
   let er e = ERS [plain_edge e]
@@ -91,7 +123,7 @@ end
 
   let go n (*size*) olr ols (*relax and safe lists*) _olc (*one + arg*) =
     match O.choice with
-    | Sc|Critical|Free|Ppo|Transitive|Total ->
+    | Sc|Critical|Free|Ppo|Transitive|Total|MixedCheck ->
         begin match olr,ols with
         | None,None -> M.gen n
         | None,Some ls -> gen [] ls n
@@ -141,8 +173,11 @@ let exec_conf s =
   ignore (Unix.execvp prog (Array.of_list (prog::conf@cmd))) ;
   ()
 
+let speclist =
+  Config.speclist @ [Config.varatomspec]
+
 let () =
-  Arg.parse (Config.speclist) get_arg Config.usage_msg;
+  Arg.parse speclist get_arg Config.usage_msg;
   begin
   match !Config.conf with
   | None -> ()
@@ -182,6 +217,7 @@ let () =
     | Set s -> Set (LexUtil.split s)
     let coherence_decreasing = !Config.coherence_decreasing
     let upto = !Config.upto
+    let varatom = !varatom
     let max_ins = !Config.max_ins
     let overload = !Config.overload
     let poll = !Config.poll
@@ -195,6 +231,8 @@ let () =
     let cpp = cpp
     let scope = !scope
     let docheck = !Config.docheck
+    let typ = !Config.typ
+    let hexa = !Config.hexa
  end in
   let module C = struct
     let verbose = !Config.verbose
@@ -206,7 +244,9 @@ let () =
     let unrollatomic = !Config.unrollatomic
     let allow_back = match !Config.mode with
     | Sc|Critical|Thin -> false
-    | _ -> true          
+    | _ -> true
+    let typ = !Config.typ
+    let hexa = !Config.hexa
   end in
   let module T = Top.Make(Co) in
   let f = match !Config.arch with

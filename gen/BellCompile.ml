@@ -69,7 +69,7 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
       let rA,st = next_reg st in
       rA,init,pseudo [ld_idx_tagged rA x idx a],st
 
-    let emit_load_idx st p init x idx =
+    let _emit_load_idx st p init x idx =
       emit_load_idx_tagged st p init x idx []
 
     let emit_load_not_zero st _p init x =
@@ -131,13 +131,13 @@ let emit_load_not_value _ = assert false
     let emit_store_idx_tagged st _p init x v idx a =
       init,[Instruction (st_idx_tagged x v idx a)],st
 
-    let emit_store_idx st p init x v idx =
+    let _emit_store_idx st p init x v idx =
       emit_store_idx_tagged st p init x v idx []
 
     let emit_store_reg_tagged st _p init x r a =
       init,[Instruction (st_reg_tagged x r a)],st
 
-    let emit_store_reg st p init x r =
+    let _emit_store_reg st p init x r =
       emit_store_reg_tagged st p init x r []
 
 (**********)
@@ -159,7 +159,7 @@ let emit_load_not_value _ = assert false
         None,init,cs,st
 
 (* Dubious... *)
-    let tr_a ar aw = match ar,aw with
+    let _tr_a ar aw = match ar,aw with
     | None,None -> []
     | (Some a,None)
     | (None,Some a) -> a
@@ -177,7 +177,7 @@ let emit_exch _ = assert false
 (**********)
 
     let emit_fence f =  Instruction (Pfence f)
-    let emit_fence_tagged o a = Instruction (Pfence(Fence(a,o)))
+    let _emit_fence_tagged o a = Instruction (Pfence(Fence(a,o)))
 
     let stronger_fence = strong
 

@@ -25,6 +25,10 @@ type t =
   | Global of t
   | Local of t
 
+val voidstar : t
+val word : t
+val quad : t
+
 val dump : t -> string
 
 type fmt = Direct of string | Macro of string

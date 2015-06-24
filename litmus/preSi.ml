@@ -249,8 +249,8 @@ let dump_loc_tag = function
 
 (* Collected locations *)
 
-      let fmt_outcome env locs =
-        U.fmt_outcome
+      let fmt_outcome test env locs =
+        U.fmt_outcome test
           (fun t -> match Compile.get_fmt Cfg.hexa t with
           | CType.Direct fmt|CType.Macro fmt ->
               if Cfg.hexa then "0x%" ^ fmt else "%" ^ fmt)
@@ -347,7 +347,7 @@ let dump_loc_tag = function
 
         O.o "/* Dump of outcome */" ;
         O.o "static void pp_log(FILE *chan,log_t *p) {" ;
-        let fmt = fmt_outcome env locs
+        let fmt = fmt_outcome test env locs
         and args =
           A.LocSet.map_list
             (fun loc -> match U.find_type loc env with

@@ -17,7 +17,10 @@ open Code
 
 module type Config = sig
   include Top.Config
-  include Cycle.Config
+  val coherence_decreasing : bool
+  val same_loc : bool
+  val verbose : int
+  val allow_back : bool
   val list_edges : bool
   val typ : TypBase.t
   val cpp : bool
@@ -46,13 +49,17 @@ module Make(O:Config) : Builder.S
           eprintf "Edges:" ;
           let es = E.fold_edges (fun e k -> E.pp_edge e::k) [] in
           let es = List.sort String.compare es in
-          List.iter (eprintf " %s") es ;        
+          List.iter (eprintf " %s") es ;
           eprintf "\n%!" ;
           exit 0
         end
 
       module R = Relax.Make(A)(E)
-      module C = Cycle.Make(O)(E)
+      module ConfWithSize = struct
+        include O
+        let naturalsize = TypBase.get_size O.typ
+      end
+      module C = Cycle.Make(ConfWithSize)(E)
 
       module AR = struct
         module A = A
@@ -103,7 +110,7 @@ module Make(O:Config) : Builder.S
         else
           (fun () -> ()),(fun _p st -> { A.id=st;},st+1)
 
-      let compile_store e = 
+      let compile_store e =
         let v = e.C.v in
         let loc = e.C.loc in
         match e.C.atom with
@@ -158,7 +165,7 @@ module Make(O:Config) : Builder.S
 
       let compile_load_assertvalue v st p mo loc =
         let r,st = alloc_reg p st in
-        let i = 
+        let i =
           A.Decl
             (A.Plain A.deftype,r,
              Some (assertval mo loc v)) in
@@ -211,7 +218,7 @@ module Make(O:Config) : Builder.S
              A.Decr idx ;
              breakcond A.Eq p idx 0;] in
         r,A.Seq (decls,A.Loop body),st
-          
+
       let compile_load_not_value st p mo x v =
         do_compile_load_not st p mo x (A.Const v)
 
@@ -324,7 +331,7 @@ module Make(O:Config) : Builder.S
         | [] -> A.Nop,[]
         | v::vs ->
             let r,c,st =
-              compile_load_assertvalue 
+              compile_load_assertvalue
                 (IntSet.choose v) st p mo x  in
             let cs,fs = straight_observer_std fenced st p  mo x vs in
             A.seq c (add_fence fenced cs),F.add_final_v p r v fs
@@ -359,7 +366,7 @@ module Make(O:Config) : Builder.S
         else straight_observer_std) true
 
       let loop_observer st p mo x = function
-        | []|[_] -> A.Nop,[]    
+        | []|[_] -> A.Nop,[]
         | v::vs ->
             let r,c,st = compile_load_not_zero st p mo x in
             let rec do_loop st prev_r = function
@@ -376,7 +383,7 @@ module Make(O:Config) : Builder.S
 
       let rec split_last = function
         | [] -> assert false
-        | [v] -> [],v 
+        | [v] -> [],v
         | v::vs ->
             let vs,w = split_last vs in
             v::vs,w
@@ -417,7 +424,7 @@ module Make(O:Config) : Builder.S
                   else x::y::remove_last rem in
             List.map IntSet.singleton (x::remove_last rem)
 
-              
+
 
       exception NoObserver
 
@@ -466,7 +473,7 @@ module Make(O:Config) : Builder.S
         | [_]::vss,(Avoid|Accept) ->
             build_observers p mo x vss
         | vs::vss,_ ->
-            try 
+            try
               let c,f = build_observer st0 p mo x vs in
               let is_nop = A.is_nop c in
               begin match is_nop,O.do_observers with
@@ -480,7 +487,7 @@ module Make(O:Config) : Builder.S
                 let cs,fs = build_observers (p+1) mo x vss in
                 c::cs,f@fs
             with NoObserver -> build_observers p mo x vss
-                
+
       let rec check_rec env p =
         let add_look_loc loc v k =
           if O.optcond then k else (A.Loc loc,IntSet.singleton v)::k in
@@ -511,7 +518,7 @@ module Make(O:Config) : Builder.S
                       begin match O.do_observers with
                       | Local -> [],add_look_loc x v []
                       | Avoid|Accept -> [],[A.Loc x,IntSet.singleton v]
-                      | Enforce ->  
+                      | Enforce ->
                           let c,f = build_observers p mo x vs in
                           c,add_look_loc x v f
                       end
@@ -594,7 +601,7 @@ module Make(O:Config) : Builder.S
           | Loop ->
               let c,f,st = do_add_loop st p f mo x prev_v v in
               A.Seq (code,c),f,st
-                
+
 
       let build_detour lsts st p n =
         let open Config in
@@ -603,13 +610,13 @@ module Make(O:Config) : Builder.S
             let e = n.C.evt in
             let mo = e.C.atom in
             begin match n.C.edge.E.edge with
-            | E.DetourWs (Dir W) ->          
+            | E.DetourWs (Dir W) ->
                 do_observe_local_before st p A.Nop [] mo n.C.evt.C.loc
                   n.C.prev.C.prev.C.evt.C.v n.C.prev.C.evt.C.v
-            | E.DetourWs (Dir R) ->          
+            | E.DetourWs (Dir R) ->
                 do_observe_local_before st p A.Nop [] mo n.C.evt.C.loc
                   n.C.prev.C.prev.C.evt.C.v n.C.prev.C.evt.C.v
-            | _ -> A.Nop,[],st 
+            | _ -> A.Nop,[],st
             end
         | _ -> A.Nop,[],st in
 
@@ -670,7 +677,7 @@ module Make(O:Config) : Builder.S
             do_observe_local st p f e.C.atom (A.Loc e.C.loc) e.C.v
               n.C.next.C.evt.C.v
         | _ -> A.Nop,f,st
-              
+
       let observe_local_check st _p f n =
         let open Config in
         match O.do_observers with
@@ -767,15 +774,15 @@ module Make(O:Config) : Builder.S
                 locs [] in
             args,i)
           prog
-          
-          
+
+
       let compile_cycle ok n =
         reset_alloc () ;
-        let env = type_cycle n in        
+        let env = type_cycle n in
         let open Config in
         let splitted =  C.split_procs n in
         (* Split before, as  proc numbers added by side effet.. *)
-        let cos0 = C.coherence n in    
+        let cos0 = C.coherence n in
         let lsts = U.last_map cos0 in
         let cos = U.compute_cos cos0 in
         if O.verbose > 1 then U.pp_coherence cos0 ;
@@ -818,7 +825,7 @@ module Make(O:Config) : Builder.S
             let f =
               match O.cond with
               | Unicond ->
-                  let evts = 
+                  let evts =
                     List.map
                       (List.map (fun n -> n.C.evt))
                       splitted in
@@ -935,11 +942,32 @@ module Make(O:Config) : Builder.S
 
       let dump_proc_code chan p (a,i) =
         fprintf chan "P%i (%s) {\n" p (dump_args a) ;
-        dump_ins chan indent1 i ; 
+        dump_ins chan indent1 i ;
         fprintf chan "}\n" ;
         ()
 
       type prog = (args * A.ins) list
+
+      let dump_init chan prog =
+        let vars =
+          List.fold_left
+            (fun m (args,_) ->
+              List.fold_left
+                (fun m (t,x) ->
+                  if CArch.is_default t then m
+                  else StringMap.add x t m)
+                m args)
+            StringMap.empty prog in
+
+        fprintf chan "\n{" ;
+        let env =
+          StringMap.fold
+            (fun x t k -> sprintf "%s %s;" (CArch.dump_typ t) x::k)
+            vars [] in
+        let pp = String.concat " " env in
+        fprintf chan "%s" pp ;
+        fprintf chan "}\n\n"
+
 
       let dump_code chan prog =
         Misc.iteri
@@ -947,9 +975,6 @@ module Make(O:Config) : Builder.S
             dump_proc_code chan p code ;
             output_string chan "\n")
           prog
-
-(* Empty init *)
-      let dump_init chan =  fprintf chan "\n{}\n\n"
 
 (********)
 (* Test *)
@@ -986,7 +1011,7 @@ module Make(O:Config) : Builder.S
           t.info ;
         Hint.dump O.hout t.name t.info ;
         (* Empty init *)
-        dump_init chan ;
+        dump_init chan t.prog ;
         dump_code chan t.prog ;
         F.dump_final chan t.final ;
         ()
@@ -1056,9 +1081,9 @@ module Make(O:Config) : Builder.S
                 dump_ins chan (i ^ indent1) ifalse ;
             end ;
             fx chan i "}"
-        | Fence _ 
-        | Loop _ 
-        | Break 
+        | Fence _
+        | Loop _
+        | Break
         | A.Decr _ ->
             Warn.fatal "Cannot compile to C++"
         | Nop -> ()
@@ -1074,7 +1099,7 @@ module Make(O:Config) : Builder.S
           | [] ->
               fx chan indent1 "%s" "}}}" in
         do_rec "{{{"
-          
+
       let dump_cpp_test_channel chan t =
         fprintf chan "// CPP %s\n" t.name ;
         if t.com <>  "" then fprintf chan "// \"%s\"\n" t.com ;
@@ -1087,7 +1112,7 @@ module Make(O:Config) : Builder.S
         fprintf chan "  return 0;\n" ;
         fprintf chan "}\n" ;
         ()
-          
+
 (*
       let dump_cpp_test  ({ name = name; _ } as t) =
         let fname = name ^ ".c" in
@@ -1125,7 +1150,7 @@ module Make(O:Config) : Builder.S
         with
         | Misc.Fatal msg ->
             Warn.fatal "Test %s [%s] failed:\n%s" name (E.pp_edges es) msg
-              
+
 
 
     end

@@ -341,6 +341,7 @@ let dump_c xcode names =
       let module O = Indent.Make(struct let hexa = Cfg.hexa let out = out_chan end) in
       O.o "#include <stdio.h>" ;
       O.o "#include <stdlib.h>" ;
+      if Cfg.sleep > 0 then  O.o "#include <unistd.h>" ;
       O.o "" ;
       O.o "/* Declarations of tests entry points */" ;
       let arch,docs,srcs,utils = run_tests names out_chan in
@@ -378,8 +379,9 @@ let dump_c xcode names =
         O.o "@implementation Run" ;
         O.o "+ (void) runWithArgc:(int) argc argv: (char **) argv out: (FILE *) out tick: (id <Ticker>)tick {" ;
         O.oi "my_date(out);" ;
-        List.iter
-          (fun doc ->
+        List.iteri
+          (fun k doc ->
+            if k > 0 && Cfg.sleep > 0 then  O.fi "sleep(%i);" Cfg.sleep ;
             O.fi "%s(argc,argv,out);" (MyName.as_symbol doc) ;
             O.oi "[tick tick];")
           (List.rev docs) ;
@@ -389,8 +391,9 @@ let dump_c xcode names =
       end else begin
         O.o "static void run(int argc,char **argv,FILE *out) {" ;
         O.oi "my_date(out);" ;
-        List.iter
-        (fun doc ->
+        List.iteri
+        (fun k doc ->
+          if k > 0 && Cfg.sleep > 0 then  O.fi "sleep(%i);" Cfg.sleep ;
           O.fi "%s(argc,argv,out);" (MyName.as_symbol doc))
           (List.rev docs) ;
         O.oi "end_report(argc,argv,out);" ;

@@ -16,7 +16,8 @@ let nprocs = ref 4
 let size = ref 6
 let one = ref false 
 let arch = ref PPC
-let typ = ref TypBase.Int
+let typ = ref TypBase.default
+let hexa = ref false
 let tarfile = ref None
 let prefix = ref None
 let safes = ref None 
@@ -40,7 +41,6 @@ let lowercase = ref false
 let optcoherence = ref false
 let bell = ref None
 let scope = ref Scope.No
-let varatom = ref []
 
 type do_observers =
   | Avoid   (* was false *)
@@ -80,7 +80,8 @@ let parse_mode s =
     | "ppo" -> Ppo
     | "transitive"|"trans" -> Transitive
     | "total" -> Total
-    | _ -> failwith "Wrong mode, choose sc,thin,uni,critical,free,ppo,total"
+    | "mixed" -> MixedCheck
+    | _ -> failwith "Wrong mode, choose sc,thin,uni,critical,free,ppo,total,mixed"
 
 let parse_do_observers s = match s with
 | "avoid"|"false" -> Avoid
@@ -127,8 +128,6 @@ let common_specs =
     | None -> false
     | Some a -> scope := a; true)
    Scope.tags  "<tag> specifiy scope tree"::
-  ("-varatom", Arg.String (fun s -> varatom := !varatom @ [s]),
-   "<atom specs> specify atom variations")::
   Util.parse_tag
     "-type"
     (fun tag -> match TypBase.parse tag with
@@ -136,6 +135,7 @@ let common_specs =
     | Some a -> typ := a ; true)
     TypBase.tags
     (sprintf "specify base type, default %s" (TypBase.pp !typ))::
+  ("-hexa", Arg.Unit (fun () -> hexa := true),"hexadecimal output")::
    ("-o", Arg.String (fun s -> tarfile := Some s),
     "<name.tar> output litmus tests in archive <name.tar> (default, output in curent directory)")::
   ("-c", Arg.Bool (fun b ->  canonical_only := b),
@@ -225,6 +225,12 @@ let speclist =
    ("-safe", Arg.String (fun s -> safes := Some s),
     "<relax-list> specify a safe list")::
   []
+
+let varatom = ref ([] : string list)
+
+let varatomspec =
+  ("-varatom", Arg.String (fun s -> varatom := !varatom @ [s]),
+   "<atom specs> specify atom variations")
 
 let prog = if Array.length Sys.argv > 0 then Sys.argv.(0) else "XXX"
 

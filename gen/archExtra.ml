@@ -32,6 +32,7 @@ module type S = sig
   val pp_location : location -> string
   val location_compare : location -> location -> int
 
+  module LocMap : MyMap.S with type key = location
 (* Initial states *)
   type init = (location * string) list
 
@@ -55,6 +56,12 @@ module Make(I:I) : S with type arch_reg = I.arch_reg
     | Reg of int * arch_reg
     | Loc of string
 
+  let pp_location = function
+    | Reg (i,r) ->
+        if I.is_symbolic r then I.pp_reg r
+        else sprintf "%i:%s" i (I.pp_reg r)
+    | Loc loc -> loc
+
   let location_compare loc1 loc2 = match loc1,loc2 with
   | Reg _,Loc _ -> -1
   | Loc _,Reg _ -> 1
@@ -65,11 +72,12 @@ module Make(I:I) : S with type arch_reg = I.arch_reg
       end
   | Loc loc1,Loc loc2 -> String.compare loc1 loc2
 
-  let pp_location = function
-    | Reg (i,r) ->
-        if I.is_symbolic r then I.pp_reg r
-        else sprintf "%i:%s" i (I.pp_reg r)
-    | Loc loc -> loc
+  module LocMap =
+    MyMap.Make
+      (struct
+        type t = location
+        let compare = location_compare
+      end)
 
   let of_loc loc = Loc loc
   let of_reg p r = Reg (p,r)

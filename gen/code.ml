@@ -54,7 +54,8 @@ let fold_sd_extr f = fold_sd (fun sd -> fold_extr (fun e -> f sd e))
 let fold_sd_extr_extr f =
   fold_sd_extr (fun sd e1 -> fold_extr (fun e2 -> f sd e1 e2))
 
-type check =  Sc | Uni | Thin | Critical | Free | Ppo | Transitive | Total
+type check =  Sc | Uni | Thin | Critical
+| Free | Ppo | Transitive | Total | MixedCheck
 
 
 

@@ -45,6 +45,7 @@ type run_type =
   | TyDef | TyDefPointer
   | Ty of string | Pointer of string
   | TyArray of string * int
+  | Atomic of string
 
 val pp_run_type : run_type -> string
 

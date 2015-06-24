@@ -59,6 +59,8 @@ rule token = parse
 | "final"    { FINAL }
 | "with"     { WITH }
 | "locations" { LOCATIONS }
+(* Typing *)
+| "_Atomic" { ATOMIC }
 (*for GPU*)
 | ".reg" {PTX_REG_DEC}
 | ".s32" as x 

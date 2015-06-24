@@ -12,8 +12,13 @@ open Code
 open Printf
 
 include AArch64Base
+
+(* Little endian *)
+let tr_endian = Misc.identity
+
 module ScopeGen = ScopeGen.NoGen
 (* AArch64 has more atoms that others *)
+let bellatom = false
 type atom_rw =  PP | PL | AP | AL
 type atom = Acq | Rel | Atomic of atom_rw
 
@@ -56,6 +61,8 @@ let worth_final = function
   | Acq|Rel -> false
 
 let varatom_dir _d f r = f None r
+
+include NoMixed
 
 (* End of atoms *)
 

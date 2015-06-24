@@ -8,6 +8,8 @@
 (*  under the terms of the Lesser GNU General Public License.        *)
 (*********************************************************************)
 
+exception Error of string
+
 type t =
   | One of string
   | Seq of string list

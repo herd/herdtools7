@@ -37,6 +37,7 @@ module Generic (A : Arch.Base) (C:Constr.S with module A = A) = struct
     | MiscParser.TyDef -> base
     | MiscParser.TyDefPointer  -> pointer
     | MiscParser.Ty t -> Base t
+    | MiscParser.Atomic t -> Atomic (Base t)
     | MiscParser.Pointer t -> Pointer (Base t)
     | MiscParser.TyArray (t,sz) -> Array (t,sz)
 
@@ -83,6 +84,7 @@ module Generic (A : Arch.Base) (C:Constr.S with module A = A) = struct
                    | MiscParser.TyDef -> None
                    | MiscParser.TyDefPointer -> Some pointer
                    | MiscParser.Ty s -> Some (Base s)
+                   | MiscParser.Atomic s -> Some (Atomic (Base s))
                    | MiscParser.Pointer s -> Some (Pointer (Base s))
                    | MiscParser.TyArray _ -> assert false (* No array register *)
                    end
@@ -97,7 +99,9 @@ module Generic (A : Arch.Base) (C:Constr.S with module A = A) = struct
         let tz = StringMap.find a env in
         match ty,tz with
         | (Pointer (Base s1), Pointer (Base s2))
-        | (Base s1, Base s2) when Misc.string_eq s1 s2 -> env
+        | (Atomic (Base s1), Atomic (Base s2))
+        | (Base s1, Base s2)
+          when Misc.string_eq s1 s2 -> env
         | _,_ (* (Pointer _|Base _),(Pointer _|Base _) *) ->
             Warn.fatal
               "Type mismatch detected on location %s, required %s vs. found %s"

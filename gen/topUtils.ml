@@ -13,6 +13,7 @@ module type Config = sig
   val do_observers : Config.do_observers
   val obs_type : Config.obs_type
   val poll : bool
+  val hexa : bool
 end
 
 module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
@@ -55,7 +56,10 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
                 (fun chan ->
                   Misc.pp_list chan ","
                     (fun chan (n,obs) ->
-                      fprintf chan "%i{%s}" n.C.C.evt.C.C.v
+                      let pp chan =
+                        if O.hexa then fprintf chan "0x%x{%s}"
+                        else fprintf chan "%i{%s}" in
+                      pp chan n.C.C.evt.C.C.cell
                         (IntSet.pp_str "," (sprintf "%i") obs)
                     )))
             vs)
@@ -92,8 +96,9 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         (fun (loc,ns) ->
           loc,
           List.map
-            (List.map (fun (n,obs) -> n.C.C.evt.C.C.v,obs))
+            (List.map (fun (n,obs) -> n.C.C.evt.C.C.cell,obs))
             ns)
+
 (******************)
 (* Prefetch hints *)
 (******************)

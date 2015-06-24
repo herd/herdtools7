@@ -251,6 +251,11 @@ type instruction =
   | Pstdx of reg*reg*reg
   | Pld of  reg*idx*reg
   | Pldx of reg*reg*reg
+(* Mixed size load and store, just added at the moment *)
+  | Pload of MachSize.sz * reg * idx * reg
+  | Ploadx of MachSize.sz * reg * reg * reg
+  | Pstore of MachSize.sz * reg * idx * reg
+  | Pstorex of MachSize.sz * reg * reg * reg
 (* Fence instructions *)
   | Psync
   | Peieio
@@ -317,6 +322,23 @@ type parsedInstruction = instruction
     | Lt -> "lt" | Ge -> "ge"
     | Gt -> "gt" | Le -> "le"
 
+open MachSize
+let memo_load = function
+  | Byte -> "lbz"
+  | Short -> "lhz"
+  | Word -> "lwz"
+  | Quad -> "ld"
+
+let memo_loadx sz = memo_load sz ^ "x"
+
+let memo_store = function
+  | Byte -> "stb"
+  | Short -> "sth"
+  | Word -> "stw"
+  | Quad -> "std"
+
+let memo_storex sz = memo_store sz ^ "x"
+
     let do_pp_instruction i = match i with
       | Padd(set,rD,rA,rB) -> pp_op3 "add" set rD rA rB
       | Psub(set,rD,rA,rB) -> pp_op3 "sub" set rD rA rB
@@ -359,6 +381,11 @@ type parsedInstruction = instruction
 
       | Plmw (rD,d,rA) -> ppi_imm_index_mode "lmw" rD d rA
       | Pstmw (rS,d,rA) -> ppi_imm_index_mode "stmw" rS d rA
+
+      | Pload (sz,rD,d,rA) ->  ppi_imm_index_mode (memo_load sz) rD d rA
+      | Ploadx (sz,rD,rA,rB) ->  ppi_index_mode (memo_loadx sz) rD rA rB
+      | Pstore (sz,rS,d,rA) ->  ppi_imm_index_mode (memo_store sz) rS d rA
+      | Pstorex (sz,rS,rA,rB) ->  ppi_index_mode (memo_storex sz) rS rA rB
 
       | Psync -> "sync"
       | Plwsync -> "lwsync"
@@ -418,6 +445,8 @@ let fold_regs (f_reg,f_sreg) =
   | Pstwcx (r1,r2,r3)
   | Pldx (r1,r2,r3)
   | Pstdx (r1,r2,r3)
+  | Ploadx (_,r1,r2,r3)
+  | Pstorex (_,r1,r2,r3)
   | Pnor (_,r1,r2,r3)
   | Pslw (_,r1,r2,r3)
   | Psraw (_,r1,r2,r3)
@@ -437,6 +466,8 @@ let fold_regs (f_reg,f_sreg) =
   | Pstwu (r1,_,r2)
   | Pld (r1,_,r2)
   | Pstd (r1,_,r2)
+  | Pload (_,r1,_,r2)
+  | Pstore (_,r1,_,r2)
   | Pneg (_,r1,r2)
   | Psrawi (_,r1,r2,_)
     ->  fold_reg r2 (fold_reg r1 (y_reg,y_sreg))
@@ -499,10 +530,14 @@ let map_regs f_reg f_symb =
       map3 (fun (r1,r2,r3) -> Plwzx (r1,r2,r3)) r1 r2 r3
   | Pldx (r1,r2,r3) ->
       map3 (fun (r1,r2,r3) -> Pldx (r1,r2,r3)) r1 r2 r3
+  | Ploadx (sz,r1,r2,r3) ->
+      map3 (fun (r1,r2,r3) -> Ploadx (sz,r1,r2,r3)) r1 r2 r3
   | Pstwx (r1,r2,r3) ->
       map3 (fun (r1,r2,r3) -> Pstwx (r1,r2,r3)) r1 r2 r3
   | Pstdx (r1,r2,r3) ->
       map3 (fun (r1,r2,r3) -> Pstdx (r1,r2,r3)) r1 r2 r3
+  | Pstorex (sz,r1,r2,r3) ->
+      map3 (fun (r1,r2,r3) -> Pstorex (sz,r1,r2,r3)) r1 r2 r3
   | Plwarx (r1,r2,r3) ->
       map3 (fun (r1,r2,r3) -> Plwarx (r1,r2,r3)) r1 r2 r3
   | Pstwcx (r1,r2,r3) ->
@@ -529,6 +564,8 @@ let map_regs f_reg f_symb =
       map2 (fun (r1,r2) -> Pcmpw (crf,r1,r2)) r1 r2
   | Plwz (r1,cst,r2) ->
       map2 (fun (r1,r2) -> Plwz (r1,cst,r2)) r1 r2
+  | Pload (sz,r1,cst,r2) ->
+      map2 (fun (r1,r2) -> Pload (sz,r1,cst,r2)) r1 r2
   | Plwzu (r1,cst,r2) ->
       map2 (fun (r1,r2) -> Plwzu (r1,cst,r2)) r1 r2
   | Pmr (r1,r2) ->
@@ -537,6 +574,8 @@ let map_regs f_reg f_symb =
       map2 (fun (r1,r2) -> Pdcbf (r1,r2)) r1 r2
   | Pstw (r1,cst,r2) ->
       map2 (fun (r1,r2) -> Pstw (r1,cst,r2)) r1 r2
+  | Pstore (sz,r1,cst,r2) ->
+      map2 (fun (r1,r2) -> Pstore (sz,r1,cst,r2)) r1 r2
   | Pstwu (r1,cst,r2) ->
       map2 (fun (r1,r2) -> Pstwu (r1,cst,r2)) r1 r2
   | Pld (r1,cst,r2) ->
@@ -583,6 +622,10 @@ let norm_ins ins = match ins with
   | Pstd (r1,cst,r2) -> Pstw (r1,cst,r2)
   | Pldx (r1,r2,r3)  -> Plwarx (r1,r2,r3)
   | Pstdx (r1,r2,r3) -> Pstwx (r1,r2,r3)
+  | Pload(_,r1,cst,r2) -> Pload(Word,r1,cst,r2)
+  | Ploadx(_,r1,r2,r3) -> Ploadx(Word,r1,r2,r3)
+  | Pstore(_,r1,cst,r2) -> Pstore(Word,r1,cst,r2)
+  | Pstorex(_,r1,r2,r3) -> Pstorex(Word,r1,r2,r3)
   | Pb _ | Pbcc (_,_)
   | Pdcbf (_, _)
   | Pstwcx (_, _, _)|Plwarx (_, _, _)
@@ -619,6 +662,7 @@ let get_next = function
   |Plwarx (_, _, _)
   |Pstwcx (_, _, _)|Pstd (_, _, _)|Pstdx (_, _, _)
   |Pld (_, _, _)|Pldx (_, _, _)
+  |Pload _|Ploadx _|Pstore _|Pstorex _
   |Psync|Peieio|Pisync|Plwsync
   |Pdcbf (_, _)|Pnor (_, _, _, _)|Pneg (_, _, _)
   |Pslw (_, _, _, _)|Psrawi (_, _, _, _)|Psraw (_, _, _, _)
@@ -693,6 +737,7 @@ include Pseudo.Make
         | Pstdx _
         | Pld _
         | Pldx _
+        | Pload _|Ploadx _|Pstore _|Pstorex _
           -> 1
         |Plmw (_r1,_,_)
         |Pstmw (_r1,_,_)
@@ -718,6 +763,7 @@ include Pseudo.Make
         | Pbl _ | Pblr | Pmtlr _ | Pmflr _
         | Pcomment _
         | Plmw _|Pstmw _
+        | Pload _|Ploadx _|Pstore _|Pstorex _
           -> k
 
 
@@ -743,6 +789,7 @@ include Pseudo.Make
         | Pbl _ | Pblr | Pmtlr _ | Pmflr _
         | Plmw _|Pstmw _
         | Pcomment _
+        | Pload _|Ploadx _|Pstore _|Pstorex _
             as ins
           -> ins
 

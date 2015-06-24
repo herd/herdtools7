@@ -1,5 +1,5 @@
 (*********************************************************************)
-(*                        DIY                                        *)
+(*                        Diy                                        *)
 (*                                                                   *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                   *)
 (*                                                                   *)
@@ -9,19 +9,13 @@
 (*  General Public License.                                          *)
 (*********************************************************************)
 
-open Printf
-open MiscParser
+type endian = Little | Big
 
+type sz = Byte | Short | Word | Quad
 
-let dump_locations dump_location env = match env with
-| [] -> ""
-| _::_ -> 
-    let dump_loc_type (loc,t) = match t with
-    | TyDef -> dump_location loc ^";"
-    | TyDefPointer -> dump_location loc ^"*;"
-    | Ty t -> sprintf "%s %s;" (dump_location loc) t
-    | Pointer t -> sprintf "%s %s*;" (dump_location loc) t
-    | TyArray _|Atomic _ -> assert false (* No arrays nor atomics here *) in
-    let pp = List.map dump_loc_type env in
-    let pp = String.concat " " pp in
-    sprintf "locations [%s]" pp
+val pp : sz -> string
+
+val nbytes : sz -> int
+val nbits : sz -> int
+
+val tr_endian : sz -> int -> int

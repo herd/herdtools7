@@ -27,6 +27,8 @@ module type Config = sig
   val poll : bool
   val optcoherence : bool
   val docheck : bool
+  val typ : TypBase.t
+  val hexa : bool
 end
 
 module Make (O:Config) (Comp:XXXCompile.S) : Builder.S 
@@ -64,6 +66,7 @@ module Make (O:Config) (Comp:XXXCompile.S) : Builder.S
        prog : A.pseudo list list ;
        scopes : BellInfo.scopes option ;
        final : F.final ;
+       env : TypBase.t A.LocMap.t
      }
 
   let get_nprocs t = List.length t.prog
@@ -549,6 +552,14 @@ let min_max xs =
                 i,obsc@cs,(m,f@fs),ios
             else Warn.fatal "Last minute check"
           else  Warn.fatal "Too many procs" in
+        let env =
+          List.fold_left
+            (fun m (loc,_) -> A.LocMap.add loc O.typ m)
+            A.LocMap.empty f in
+        let env =
+          List.fold_left
+            (fun m (loc,_) -> A.LocMap.add (A.Loc loc) O.typ m)
+            env cos0 in
         let f =
           match O.cond with
           | Unicond ->
@@ -559,7 +570,7 @@ let min_max xs =
               F.run evts m
           | Cycle -> F.check f
           | Observe -> F.observe f in
-        (i,c,f),
+        (i,c,f,env),
         (U.compile_prefetch_ios (List.length obsc) ios,
          U.compile_coms splitted)
 
@@ -572,8 +583,31 @@ let get_proc = function
   | A.Loc _ -> -1
   | A.Reg (p,_) -> p
 
-let dump_init chan inits =
+(*
+let pp_pointer t =
+  let open TypBase in
+  let open MachSize in
+  match t with
+  | Int|Std (Signed,Word) -> ""
+  | _ -> sprintf "%s* " (TypBase.pp t)
+*)
+
+let dump_init chan inits env =
   fprintf chan "{" ;
+  let pp =
+    A.LocMap.fold
+      (fun loc t k ->
+      let open TypBase in
+      let open MachSize in
+      match t with
+      | Int|Std (Signed,Word) -> k
+      | _ -> sprintf "%s %s;" (TypBase.pp t) (A.pp_location loc)::k)
+      env [] in
+  begin match pp with
+  | [] -> ()
+  | _::_ ->
+      fprintf chan "\n%s\n" (String.concat " " pp)
+  end ;
   let rec p_rec q = function
     | [] -> fprintf chan "\n}\n"
     | (left,loc)::rem ->
@@ -618,7 +652,7 @@ let fmt_cols =
       (fun (k,v) -> fprintf chan "%s=%s\n" k v)
       t.info ;
     Hint.dump O.hout t.name t.info ;
-    dump_init chan t.init ;
+    dump_init chan t.init t.env ;
     dump_code chan t.prog ;
     begin match t.scopes with
     | None -> ()
@@ -632,7 +666,7 @@ let fmt_cols =
 let test_of_cycle name
   ?com ?(info=[]) ?(check=(fun _ -> true)) ?scope es c =
   let com = match com with None -> pp_edges es | Some com -> com in
-  let(init,prog,final),(prf,coms) = compile_cycle check c in
+  let(init,prog,final,env),(prf,coms) = compile_cycle check c in
   let coms = String.concat " " coms in
   let info =
     let myinfo = ["Prefetch",prf ; "Com",coms; "Orig",com; ] in
@@ -641,7 +675,7 @@ let test_of_cycle name
     | Some st -> ("Scopes",BellInfo.pp_scopes st)::myinfo in
     info@myinfo in
   { name=name ; info=info; com=com ;  edges = es ;
-    init=init ; prog=prog ; scopes = scope; final=final ; }
+    init=init ; prog=prog ; scopes = scope; final=final ; env=env; }
     
 let make_test name ?com ?info ?check ?scope es =
   try

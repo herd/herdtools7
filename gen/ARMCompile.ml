@@ -255,6 +255,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
     | W,Some Atomic ->
         let ro,init,cs,st = emit_sta st p init e.loc e.v in
         ro,init,cs,st
+    | _,Some (Mixed _) -> assert false
 
     let emit_exch st p init er ew =
       let rA,init,st = next_init st p init er.loc in
@@ -285,6 +286,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
       | W,Some Atomic ->
           let ro,init,cs,st = emit_sta_idx st p init e.loc r2 e.v in
           ro,init,Instruction c::cs,st
+      | _,Some (Mixed _) -> assert false
 
     let emit_exch_dep_addr st p init er ew rd =
       let rA,init,st = next_init st p init er.loc in
@@ -313,6 +315,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
               ro,init,cs2@cs,st        
           | Some Reserve ->
                Warn.fatal "No store with reservation"
+          | Some (Mixed _) -> assert false
           end
 
     let insert_isb isb cs1 cs2 =

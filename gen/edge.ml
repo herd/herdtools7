@@ -20,6 +20,9 @@ module type S = sig
   type atom
 
   val pp_atom : atom -> string
+  val tr_value : atom option -> Code.v -> Code.v
+  val overwrite_value : Code.v -> atom option -> Code.v -> Code.v
+  val extract_value : Code.v -> atom option -> Code.v
 
   val strong : fence
   val pp_fence : fence -> string
@@ -42,6 +45,9 @@ module type S = sig
   val plain_edge : tedge -> edge
   
   val fold_atomo : (atom option -> 'a -> 'a) -> 'a -> 'a
+  val fold_mixed : (atom option -> 'a -> 'a) -> 'a -> 'a
+  val fold_atomo_list : atom list -> (atom option -> 'a -> 'a) -> 'a -> 'a
+
   val fold_edges : (edge -> 'a -> 'a) -> 'a -> 'a
   val iter_edges : (edge -> unit) -> unit
 
@@ -53,6 +59,9 @@ module type S = sig
   val pp_edge : edge -> string
   val compare_atomo : atom option -> atom option -> int
   val compare : edge -> edge -> int
+
+  val parse_atom : string -> atom
+  val parse_atoms : string list -> atom list
 
   val parse_fence : string -> fence
   val parse_edge : string -> edge
@@ -119,10 +128,15 @@ and type atom = F.atom = struct
   type atom = F.atom
 
   let pp_atom = F.pp_atom
+  let tr_value = F.tr_value
+  let overwrite_value = F.overwrite_value
+  let extract_value = F.extract_value
 
-  let pp_fence = F.pp_fence
+
 
   let strong = F.strong
+  let pp_fence = F.pp_fence
+
 
 (* edge proper *)
   type tedge =
@@ -292,7 +306,9 @@ let fold_tedges f r =
   r
 
   let fold_atomo f k = f None (F.fold_atom (fun a k -> f  (Some a) k) k)
-
+  let fold_mixed f k = F.fold_mixed (fun a k -> f  (Some a) k) k
+  let fold_atomo_list aos f k =
+    List.fold_right (fun a k -> f (Some a) k) aos k
 
   let _applies_atom a d = match a with
   | None -> true
@@ -326,6 +342,38 @@ let fold_tedges f r =
 
   let dir_tgt e = do_dir_tgt e.edge
   and dir_src e = do_dir_src e.edge
+
+(***************)
+(* Atom lexing *)
+(***************)
+
+let iter_atom f= F.fold_atom (fun a () -> f a) ()
+  let ta = Hashtbl.create  37
+
+  let add_lxm lxm a =
+    if dbg then eprintf "ATOM: %s\n" lxm ;
+    try
+      let old = Hashtbl.find ta lxm in
+      assert (F.compare_atom old a = 0) ;
+    with Not_found -> Hashtbl.add ta lxm a
+
+  let () = iter_atom (fun a -> add_lxm (pp_atom a) a)
+
+  let parse_atom s =
+    try Hashtbl.find ta s
+    with Not_found -> Warn.fatal "Bad atom: %s" s
+
+  let parse_atoms xs =
+    try
+      List.fold_left
+        (fun k x ->
+          List.fold_left
+            (fun k s -> parse_atom s::k)
+            k (LexUtil.just_split x))
+        [] xs
+    with LexUtil.Error msg ->
+      Warn.fatal "bad atoms list"
+
 
 (**********)
 (* Lexing *)

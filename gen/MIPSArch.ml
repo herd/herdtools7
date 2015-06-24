@@ -11,7 +11,14 @@
 
 include MIPSBase
 module ScopeGen = ScopeGen.NoGen
-include MachAtom
+
+let tr_endian = Misc.identity
+include MachAtom.Make
+    (struct
+      let naturalsize=None
+      let endian = MachSize.Little
+    end)
+
 
 (**********)
 (* Fences *)

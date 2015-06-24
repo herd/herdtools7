@@ -10,7 +10,11 @@
 
 open Code
 include X86Base
+let tr_endian = Misc.identity
+
 module ScopeGen = ScopeGen.NoGen
+
+let bellatom = false
 type atom = Atomic
 let default_atom = Atomic
 
@@ -38,6 +42,8 @@ let fold_atom f k = f Atomic k
 let worth_final _ = true
 
 let varatom_dir _d f = f None
+
+include NoMixed
 
 (**********)
 (* Fences *)

@@ -55,7 +55,7 @@ module Make
       val select_global : env -> (A.loc_global * CType.t) list
 
 (* Some dumping stuff *)
-      val fmt_outcome : (CType.base -> string) -> A.LocSet.t -> env -> string
+      val fmt_outcome : T.t -> (CType.base -> string) -> A.LocSet.t -> env -> string
 
 (* Locations *)
       val get_final_locs : T.t -> A.LocSet.t
@@ -133,14 +133,21 @@ module Make
           env
 
 (* Format stuff *)
-      let pp_loc loc =  match loc with
+      let tr_out test =
+        try
+          let map = List.assoc "Mapping" test.T.info in
+          let map = try LexOutMapping.parse map with _ -> assert false in
+          fun s -> StringMap.safe_find s s map
+        with Not_found -> Misc.identity
+
+      let pp_loc tr_out loc =  match loc with
       | A.Location_reg (proc,reg) ->
-          sprintf "%i:%s" proc (A.pp_reg reg)
+          tr_out (sprintf "%i:%s" proc (A.pp_reg reg))
       | A.Location_global s -> sprintf "%s" s
 
 
-      let fmt_outcome pp_fmt_base locs env =
-
+      let fmt_outcome test pp_fmt_base locs env =
+       let tr_out = tr_out test in
 (*
         let pp_fmt_base t = match Compile.get_fmt Cfg.hexa t with
         | CType.Direct fmt -> 
@@ -161,7 +168,7 @@ module Make
 
         A.LocSet.pp_str " "
           (fun loc ->
-            sprintf "%s=%s;" (pp_loc loc) (pp_fmt (find_type loc env)))
+            sprintf "%s=%s;" (pp_loc tr_out loc) (pp_fmt (find_type loc env)))
           locs
 
 (* Locations *)
@@ -249,14 +256,17 @@ module Make
 (* Postlude *)
         open ConstrGen
 
-        let pp_atom a =
+        let pp_atom tr_out a =
           match a with
           | LV (loc,v) ->
-              sprintf "%s=%s" (A.pp_location loc) (A.V.pp Cfg.hexa v)
+              sprintf "%s=%s" (tr_out (A.pp_location loc)) (A.V.pp Cfg.hexa v)
           | LL (loc1,loc2) ->
-              sprintf "%s=%s" (A.pp_location loc1) (A.pp_rval loc2)
+              sprintf "%s=%s" (tr_out (A.pp_location loc1))
+                (tr_out (A.pp_rval loc2))
 
-        let pp_cond c = ConstrGen.constraints_to_string pp_atom c
+        let pp_cond test c =
+          let tr_out = tr_out test in
+          ConstrGen.constraints_to_string (pp_atom tr_out) c
 
         let pp_nstates nstates =
           EPF.fi "Histogram (%i states)\n" [nstates]
@@ -309,11 +319,11 @@ module Make
               | ExistsState _ -> "p_false"
               | NotExistsState _|ForallStates _ -> "p_true")] ;
             EPF.fi
-              (sprintf "Condition %s is %%svalidated\n" (pp_cond c))
+              (sprintf "Condition %s is %%svalidated\n" (pp_cond test c))
               [sprintf "%s ? \"\" : \"NOT \"" to_check;] ;
           end else begin
             EPF.fi
-            (sprintf "\nCondition %s\n" (pp_cond c)) []
+            (sprintf "\nCondition %s\n" (pp_cond test c)) []
           end ;
 
 (* Print meta-information *)

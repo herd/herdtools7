@@ -24,6 +24,9 @@ module Make(O:Config) = struct
 
 include BellBase
 
+(* Assume little endian *)
+let tr_endian = Misc.identity
+
 let bi = match O.bell with
 | Some fname ->
     let module R =
@@ -90,7 +93,7 @@ let pp_annot a = match a with
 *)      
 
 (* No atoms yet *)
-
+let bellatom = true
 type atom = string list
 
 let default_atom = [] (* Wrong, extract from bell file? *)
@@ -182,7 +185,8 @@ let varatom_rmw = match varatom with
 | None -> no_varatom
 | Some _va -> fun _ -> assert false
 
-    
+include NoMixed
+
 (* End of atoms *)
 
 (**********)

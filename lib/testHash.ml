@@ -79,6 +79,9 @@ let digest_init debug init =
           | Ty t ->
               sprintf "%s %s=%s" t
                 (dump_location loc) (SymbConstant.pp_v v)
+          | Atomic t ->
+              sprintf "_Atomic %s %s=%s" t
+                (dump_location loc) (SymbConstant.pp_v v)
           | Pointer t ->
               sprintf "%s *%s=%s" t
                 (dump_location loc) (SymbConstant.pp_v v)
