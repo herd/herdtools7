@@ -1,5 +1,5 @@
 (*********************************************************************)
-(*                         DIY                                       *)
+(*                          DIY                                      *)
 (*                                                                   *)
 (*        Luc Maranget, INRIA Paris-Rocquencourt, France.            *)
 (*                                                                   *)
@@ -9,7 +9,6 @@
 (*  General Public License.                                          *)
 (*********************************************************************)
 
-(** Sets of ints *)
 
-include MySet.S with type elt = int and type t = MySet.Make(IntOrd).t
-
+type t = int
+let compare = Misc.int_compare

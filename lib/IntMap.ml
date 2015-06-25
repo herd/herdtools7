@@ -10,4 +10,4 @@
 (*  General Public License.                                          *)
 (*********************************************************************)
 
-include MyMap.Make(struct type t = int let compare = Misc.int_compare end)
+include MyMap.Make(IntOrd)

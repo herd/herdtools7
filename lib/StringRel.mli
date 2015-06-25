@@ -9,7 +9,4 @@
 (*  General Public License.                                          *)
 (*********************************************************************)
 
-(** Sets of ints *)
-
-include MySet.S with type elt = int and type t = MySet.Make(IntOrd).t
-
+include InnerRel.S with type elt0 = string and module Elts = MySet.Make(String)
