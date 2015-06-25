@@ -87,7 +87,21 @@ module Top
       let module Lex =
         LexHashLog.Make
           (struct
-            let verbose = Opt.verbose > 0
+            let verbose = Opt.verbose
+
+            let ppinfo = match Opt.action with
+            | Check ->
+                fun pos name ->
+                  printf
+	            "%a: hash mismatch for test %s\n" Pos.pp_pos pos name
+            | Rewrite ->
+                if Opt.verbose > 0 then
+                  fun pos name ->
+                    eprintf
+	              "%a: rewrite hash for test %s\n" Pos.pp_pos pos name
+                else
+                  fun _ _ -> ()
+
             let env = env
           end) in
       match logs with

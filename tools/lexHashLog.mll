@@ -14,7 +14,8 @@
 open Printf
 
 module type Config = sig
-  val verbose : bool  
+  val verbose : int
+  val ppinfo : Lexing.position -> string -> unit
   val env : string StringMap.t
 end
 
@@ -48,8 +49,7 @@ rule main same out name = parse
        let env_hash = StringMap.find name C.env in
        if hash <> env_hash then begin
          let pos = lexbuf.Lexing.lex_curr_p in
-         eprintf
-	   "%a: hash mismatch for test %s\n" Pos.pp_pos pos name ;
+         C.ppinfo pos name ;
          out (sprintf "Hash=%s" env_hash) ;
          false
      end else begin
@@ -57,7 +57,7 @@ rule main same out name = parse
        same
      end with Not_found ->
        let pos = lexbuf.Lexing.lex_curr_p in
-       if C.verbose then
+       if C.verbose > 0 then
          eprintf "%a: No hash for test %s\n" Pos.pp_pos pos name ;
        out line ;
        same in
@@ -91,7 +91,7 @@ let rewrite fname =
         call_lexer out fname)
       outname in
   if not same then  begin
-    if C.verbose then eprintf "File changed\n" ;
+    if C.verbose > 0 then eprintf "File changed\n" ;
     MySys.move outname fname
   end else MySys.remove outname
 

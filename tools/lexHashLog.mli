@@ -10,7 +10,8 @@
 (*********************************************************************)
 
 module type Config = sig
-  val verbose : bool  
+  val verbose : int
+  val ppinfo : Lexing.position -> string -> unit
   val env : string StringMap.t
 end
 
