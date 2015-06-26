@@ -31,5 +31,6 @@ val mips : t
 val gpu_ptx : t
 val c : t
 val opencl : t
- *)val bell : t
+ *)
+val lisa : t
 val aarch64 : t

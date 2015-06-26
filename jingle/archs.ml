@@ -92,5 +92,6 @@ let mips = `MIPS
 let gpu_ptx = `GPU_PTX
 let c = `C
 let opencl = `OpenCL
- *)let bell = `Bell
+ *)
+let lisa = `Bell
 let aarch64 = `AArch64
