@@ -56,7 +56,7 @@ luc: all install
 #To build several targets with ocamlbuild
 PROGS=litmus.byte
 
-byte native d.byte: config ./pp2ml.byte
+byte native d.byte: config
 	sh lib/handle402.sh
 	$(OCB) $(PROGS:.byte=.$@)
 	@for prog in $(PROGS:.byte=.$@) ; \
@@ -77,12 +77,6 @@ config:
 	@echo 'let version = "'`head -1 lib/VERSION.txt`'"' >> config.ml
 	@echo "let libdir = \"$(LIBDIR)\"" >> config.ml
 	@export LC_ALL=C && echo "let rev = \"`$(SVNVERSION)`\"" >> config.ml
-
-./pp2ml.byte: ./pp2ml.mll
-	$(OCB) $@
-
-clean::
-	/bin/rm -f ./pp2ml.byte
 
 clean::
 	/bin/rm -f config.ml

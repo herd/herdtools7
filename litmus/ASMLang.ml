@@ -388,8 +388,17 @@ module Make
 
       let compile_cpy_fun proc a = sprintf "*%s" (Tmpl.addr_cpy_name a proc)
 
+      let debug_globEnv e =
+        let pp =
+          List.map
+            (fun (a,ty) ->
+              sprintf "%s -> %s" a (SkelUtil.dump_global_type a ty))
+        e in
+        eprintf "ENV: [%s]\n"
+          (String.concat " " pp)
 
       let dump_fun chan env globEnv volatileEnv proc t =
+        if false then debug_globEnv globEnv ;
         let addrs_proc = Tmpl.get_addrs t in
         let addrs =
           List.map

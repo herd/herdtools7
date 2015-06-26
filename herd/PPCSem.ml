@@ -15,7 +15,7 @@
 module Make (C:Sem.Config)(V:Value.S)  
     = 
   struct
-
+    open MachSize
     module PPC = PPCArch.Make(C.PC)(V)
     module Act = MachAction.Make(PPC)
     include SemExtra.Make(C)(PPC)(Act) 
@@ -237,7 +237,7 @@ module Make (C:Sem.Config)(V:Value.S)
 	(read_reg rA ii >>| read_reg rB ii) >>=
 	fun (vA,vB) -> flags true cr vA vB ii >>! B.Next
 (* memory loads/stores *)
-    | PPC.Plwz(rD,d,rA)|PPC.Pld(rD,d,rA) ->
+    | PPC.Pload((Word|Quad),rD,d,rA) ->
         read_reg rA ii >>= 
 	fun aA -> 
 	  M.add aA (V.intToV d) >>=
@@ -255,14 +255,14 @@ module Make (C:Sem.Config)(V:Value.S)
             if rA <> PPC.r0 && rA <> rD then
               (write_reg rA a ii >>| load) >>! B.Next
             else load >>! B.Next)
-    | PPC.Plwzx(rD,rA,rB)|PPC.Pldx(rD,rA,rB) ->
+    | PPC.Ploadx((Word|Quad),rD,rA,rB) ->
 	(read_reg_or_zero rA ii >>| read_reg rB ii) >>=
 	fun (aA,aB) -> 
 	  M.add aA aB >>=
 	  fun a ->
 	    read_addr a ii >>=
 	    fun v -> write_reg rD v ii >>! B.Next
-    | PPC.Pstw(rS,d,rA)|PPC.Pstd(rS,d,rA) ->
+    | PPC.Pstore((Quad|Word),rS,d,rA) ->
 	(read_reg rS ii >>| read_reg rA ii) >>=
 	(fun (vS,aA) -> 
 	  M.add aA (V.intToV d) >>=
@@ -280,7 +280,7 @@ module Make (C:Sem.Config)(V:Value.S)
 	  M.add aA (V.intToV d) >>=
 	  fun a -> write_addr a vS ii >>! B.Next)
 
-    | PPC.Pstwx(rS,rA,rB) | PPC.Pstdx(rS,rA,rB)->
+    | PPC.Pstorex((Word|Quad),rS,rA,rB) ->
 	(read_reg rS ii
 	   >>| (* Enforce right associativity of >>| *)
 	   (read_reg_or_zero rA ii
@@ -328,6 +328,10 @@ module Make (C:Sem.Config)(V:Value.S)
     | PPC.Pmflr _
     | PPC.Pstmw _
     | PPC.Plmw _
+    | PPC.Pload ((Byte|Short),_,_,_)
+    | PPC.Ploadx ((Byte|Short),_,_,_)
+    | PPC.Pstore ((Byte|Short),_,_,_)
+    | PPC.Pstorex ((Byte|Short),_,_,_)
     | PPC.Pcomment _ ->
         Warn.fatal "Instruction %s not implemented"
           (PPC.dump_instruction ii.A.inst)

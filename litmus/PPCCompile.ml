@@ -20,6 +20,7 @@ end
 module Make(V:Constant.S)(C:Config) =
   struct
     module A = PPCArch.Make(C)(V)
+    open MachSize
     open A
     open A.Out
     open Printf
@@ -57,10 +58,10 @@ module Make(V:Constant.S)(C:Config) =
     | Word.W64 -> fun i -> i
     | Word.W32|Word.WXX ->
         fun i -> match i with
-        | Pld (a1,a2,a3) -> Plwz (a1,a2,a3)
-        | Pstd (a1,a2,a3) -> Pstw (a1,a2,a3)
-        | Pldx (a1,a2,a3) -> Plwzx (a1,a2,a3)
-        | Pstdx (a1,a2,a3) -> Pstwx (a1,a2,a3) 
+        | Pload (Quad,a1,a2,a3) -> Pload (Word,a1,a2,a3)
+        | Pstore (Quad,a1,a2,a3) -> Pstore (Word,a1,a2,a3)
+        | Ploadx (Quad,a1,a2,a3) -> Ploadx (Word,a1,a2,a3)
+        | Pstorex (Quad,a1,a2,a3) -> Pstorex (Word,a1,a2,a3)
         | _ -> i
 
     let emit_lbl lbl =
@@ -143,11 +144,15 @@ module Make(V:Constant.S)(C:Config) =
         inputs=[rS;rA];
         outputs=[]; }
 
-    let stwx rS rA rB =
+
+    let storex sz rS rA rB =
+      let memo = memo_storex sz in
       { empty_ins with
-        memo = "stwx ^i0,^i1,^i2";
+        memo = memo ^ " ^i0,^i1,^i2";
         inputs=[rS;rA;rB];
         outputs=[]; }
+
+    let stwx rS rA rB = storex Word rS rA rB
 
     let stw update rS d rA =
       { empty_ins with
@@ -243,11 +248,6 @@ module Make(V:Constant.S)(C:Config) =
           memo = sprintf "%s ^o0,%i(^i0)"  (memo_load sz) d;
           inputs = [rA];
           outputs= [rD]; }::k
-    | Plwz (rD,d,rA) ->
-        { empty_ins with
-          memo = sprintf "lwz ^o0,%i(^i0)"  d;
-          inputs = [rA];
-          outputs= [rD]; }::k
     | Plwzu (rD,d,rA) ->
         let outs =
           if rA <> r0 && rA <> rD then [rD;rA;] else [rD;] in
@@ -255,58 +255,31 @@ module Make(V:Constant.S)(C:Config) =
           memo = sprintf "lwzu ^o0,%i(^i0)"  d;
           inputs = [rA];
           outputs= outs; }::k
-    | Pld (rD,d,rA) ->ld rD d rA::k
-    | Plwzx (rD,rA,rB) ->
+    | Ploadx (sz,rD,rA,rB) ->
+        let memo = memo_loadx sz in
         begin match rA with
         | A.Ireg A.GPR0 -> (* Yes, it's this way cf. ISA p. 48 *)
             { empty_ins with
-              memo = "lwzx ^o0,0,^i0";
+              memo = memo ^ " ^o0,0,^i0";
               inputs = [rB];
               outputs= [rD]; }::k
         | _ -> 
             { empty_ins with
-              memo = "lwzx ^o0,^i0,^i1";
+              memo = memo ^ " ^o0,^i0,^i1";
               inputs = [rA;rB];
               outputs= [rD]; }::k
         end
-    | Pldx (rD,rA,rB) ->
-        begin match rA with
-        | A.Ireg A.GPR0 -> (* Yes, it's this way cf. ISA p. 48 *)
-            { empty_ins with
-              memo = "ldx ^o0,0,^i0";
-              inputs = [rB];
-              outputs= [rD]; }
-        | _ -> 
-            { empty_ins with
-              memo = "ldx ^o0,^i0,^i1";
-              inputs = [rA;rB];
-              outputs= [rD]; }
-        end::k
     | Pstore (sz,rS,d,rA) -> stwsz sz rS d rA::k
-    | Pstw(rS,d,rA) -> stw false rS d rA::k
     | Pstwu(rS,d,rA) -> stw true rS d rA::k
-    | Pstd(rS,d,rA) -> std rS d rA::k
-    | Pstwx (rS,rA,rB) ->
+    | Pstorex (sz,rS,rA,rB) ->
         begin match rA with
         | A.Ireg A.GPR0 -> (* ISA p. 53 *)
+            let memo = memo_storex sz in
             { empty_ins with
-              memo = "stwx ^i0,0,^i1";
+              memo = memo ^ " ^i0,0,^i1";
               inputs=[rS;rB];
               outputs=[]; }::k
-        | _ -> stwx rS rA rB::k
-        end
-    | Pstdx (rS,rA,rB) ->
-        begin match rA with
-        | A.Ireg A.GPR0 -> (* ISA p. 53 *)
-            { empty_ins with
-              memo = "stdx ^i0,0,^i1";
-              inputs=[rS;rB];
-              outputs=[]; }::k
-        | _ ->
-            { empty_ins with
-              memo = "stdx ^i0,^i1,^i2";
-              inputs=[rS;rA;rB];
-              outputs=[]; }::k
+        | _ -> storex sz rS rA rB::k
         end
     | Psync ->
         begin match C.syncmacro with

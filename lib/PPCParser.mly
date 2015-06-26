@@ -32,7 +32,8 @@ open MachSize
 %token ADD ADDDOT SUB SUBF SUBFDOT SUBDOT XOR XORDOT OR ORDOT  AND ANDDOT
 %token MULL MULLDOT DIV DIVDOT
 %token ADDI SUBI ORI XORI ANDIDOT MULLI
-%token LBZ LHZ LWZ LWZU LWZX MR STB STH STW STWU STWX LWARX STWCX CMPWI CMPW
+%token LBZ LBZX LHZ LHZX LWZ LWZU LWZX
+%token MR STB STBX STH STHX STW STWU STWX LWARX STWCX CMPWI CMPW
 %token LD STD LDX STDX
 %token SYNC EIEIO ISYNC LWSYNC DCBF B BEQ BNE BLT BGT BLE BGE BNL BNG
 %token NOR NORDOT NEG NEGDOT SLW SRAWI SRAW BL BLR MTLR MFLR
@@ -147,21 +148,25 @@ instr:
   | LHZ reg COMMA idx LPAR reg RPAR
     { Pload (Short,$2,$4,$6)}
   | LWZ reg COMMA idx COMMA reg
-    { Plwz ($2,$4,$6)}
+    { Pload (Word,$2,$4,$6)}
   | LWZ reg COMMA idx LPAR reg RPAR
-    { Plwz ($2,$4,$6)}
+    { Pload (Word,$2,$4,$6)}
   | LWZU reg COMMA idx COMMA reg
     { Plwzu ($2,$4,$6)}
   | LWZU reg COMMA idx LPAR reg RPAR
     { Plwzu ($2,$4,$6)}
   | LD reg COMMA idx COMMA reg
-    { Pld ($2,$4,$6)}
+    { Pload (Quad,$2,$4,$6)}
   | LD reg COMMA idx LPAR reg RPAR
-    { Pld ($2,$4,$6)}
+    { Pload (Quad,$2,$4,$6)}
+  | LBZX reg COMMA reg COMMA reg
+    { Ploadx (Byte,$2,$4,$6)}
+  | LHZX reg COMMA reg COMMA reg
+    { Ploadx (Short,$2,$4,$6)}
   | LWZX reg COMMA reg COMMA reg
-    { Plwzx ($2,$4,$6)}
+    { Ploadx (Word,$2,$4,$6)}
   | LDX reg COMMA reg COMMA reg
-    { Pldx ($2,$4,$6)}
+    { Ploadx (Quad,$2,$4,$6)}
   | MR reg COMMA reg
     { Pmr ($2,$4) }
   | STB reg COMMA idx COMMA reg
@@ -173,21 +178,25 @@ instr:
   | STH reg COMMA idx LPAR reg RPAR
     { Pstore (Short,$2,$4,$6) }
   | STW reg COMMA idx COMMA reg
-    { Pstw ($2,$4,$6) }
+    { Pstore (Word,$2,$4,$6) }
   | STW reg COMMA idx LPAR reg RPAR
-    { Pstw ($2,$4,$6) }
+    { Pstore (Word,$2,$4,$6) }
   | STWU reg COMMA idx COMMA reg
     { Pstwu ($2,$4,$6) }
   | STWU reg COMMA idx LPAR reg RPAR
     { Pstwu ($2,$4,$6) }
   | STD reg COMMA idx COMMA reg
-    { Pstd ($2,$4,$6) }
+    { Pstore (Quad,$2,$4,$6) }
   | STD reg COMMA idx LPAR reg RPAR
-    { Pstd ($2,$4,$6) }
+    { Pstore (Quad,$2,$4,$6) }
+  | STBX reg COMMA reg COMMA reg
+    { Pstorex (Byte,$2,$4,$6) }
+  | STHX reg COMMA reg COMMA reg
+    { Pstorex (Short,$2,$4,$6) }
   | STWX reg COMMA reg COMMA reg
-    { Pstwx ($2,$4,$6) }
+    { Pstorex (Word,$2,$4,$6) }
   | STDX reg COMMA reg COMMA reg
-    { Pstdx ($2,$4,$6) }
+    { Pstorex (Quad,$2,$4,$6) }
   | LWARX  reg COMMA reg COMMA reg
     { Plwarx ($2,$4,$6)}
   | STWCX reg COMMA reg COMMA reg

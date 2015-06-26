@@ -236,21 +236,11 @@ type instruction =
   | Pbcc of cond * lbl
   | Pcmpwi of crfindex * reg*k
   | Pcmpw of crfindex * reg*reg
-  | Plwz of reg*idx*reg (* load 32-bit int; lwzx: same, with 2 index regs, hidden in addressing mode *)
-  | Plwzx of reg*reg*reg
   | Plwzu of reg * idx * reg
   | Pmr of reg * reg
-  | Pstw of reg*idx*reg (* store 32-bit int; stwx: same, with 2 index regs, hidden in addressing mode *)
   | Pstwu of reg * idx * reg
-  | Pstwx of reg*reg*reg
   | Plwarx of reg*reg*reg (* load word and reserve indexed *)
   | Pstwcx of reg*reg*reg (* store word conditional indexed *)
-(* 64bit load & store, needed by litmus, memevent will consider
-   those as lwz/stw, better avoid those in articles... *)
-  | Pstd of  reg*idx*reg
-  | Pstdx of reg*reg*reg
-  | Pld of  reg*idx*reg
-  | Pldx of reg*reg*reg
 (* Mixed size load and store, just added at the moment *)
   | Pload of MachSize.sz * reg * idx * reg
   | Ploadx of MachSize.sz * reg * reg * reg
@@ -364,20 +354,12 @@ let memo_storex sz = memo_store sz ^ "x"
       | Pcmpw(0,rA,rB) -> ppi_rr "cmpw" rA rB
       | Pcmpw(crf,rA,rB) ->
           "cmpw" ^ " " ^pp_crf crf ^ "," ^ pp_reg rA  ^ "," ^ pp_reg rB
-      | Plwz(rD,d,rA) -> ppi_imm_index_mode "lwz" rD d rA
       | Plwzu(rD,d,rA) -> ppi_imm_index_mode "lwzu" rD d rA
-      | Plwzx(rD,rA,rB) -> ppi_index_mode "lwzx" rD rA rB
       | Pmr (rD,rS) -> ppi_rr "mr" rD rS
-      | Pstw(rS,d,rA) -> ppi_imm_index_mode "stw" rS d rA
       | Pstwu(rS,d,rA) -> ppi_imm_index_mode "stwu" rS d rA
-      | Pstwx(rS,rA,rB) -> ppi_index_mode "stwx" rS rA rB
       | Plwarx(rD,rA,rB) -> ppi_index_mode "lwarx" rD rA rB
       | Pstwcx(rS,rA,rB) -> ppi_index_mode "stwcx." rS rA rB
 
-      | Pld(rD,d,rA) -> ppi_imm_index_mode "ld" rD d rA
-      | Pldx(rD,rA,rB) -> ppi_index_mode "ldx" rD rA rB
-      | Pstd(rS,d,rA) -> ppi_imm_index_mode "std" rS d rA
-      | Pstdx(rS,rA,rB) -> ppi_index_mode "stdx" rS rA rB
 
       | Plmw (rD,d,rA) -> ppi_imm_index_mode "lmw" rD d rA
       | Pstmw (rS,d,rA) -> ppi_imm_index_mode "stmw" rS d rA
@@ -439,12 +421,8 @@ let fold_regs (f_reg,f_sreg) =
   | Pxor (_,r1,r2,r3)
   | Pmull (_,r1,r2,r3)
   | Pdiv (_,r1,r2,r3)
-  | Plwzx (r1,r2,r3)
-  | Pstwx (r1,r2,r3)
   | Plwarx (r1,r2,r3)
   | Pstwcx (r1,r2,r3)
-  | Pldx (r1,r2,r3)
-  | Pstdx (r1,r2,r3)
   | Ploadx (_,r1,r2,r3)
   | Pstorex (_,r1,r2,r3)
   | Pnor (_,r1,r2,r3)
@@ -458,14 +436,10 @@ let fold_regs (f_reg,f_sreg) =
   | Pxori (r1,r2,_)
   | Pmulli (r1,r2,_)
   | Pcmpw (_,r1,r2)
-  | Plwz (r1,_,r2)
   | Plwzu (r1,_,r2)
   | Pmr (r1,r2)
   | Pdcbf (r1,r2)
-  | Pstw (r1,_,r2)
   | Pstwu (r1,_,r2)
-  | Pld (r1,_,r2)
-  | Pstd (r1,_,r2)
   | Pload (_,r1,_,r2)
   | Pstore (_,r1,_,r2)
   | Pneg (_,r1,r2)
@@ -526,16 +500,8 @@ let map_regs f_reg f_symb =
       map3 (fun (r1,r2,r3) -> Pmull (set,r1,r2,r3)) r1 r2 r3
   | Pdiv (set,r1,r2,r3) ->
       map3 (fun (r1,r2,r3) -> Pdiv (set,r1,r2,r3)) r1 r2 r3
-  | Plwzx (r1,r2,r3) ->
-      map3 (fun (r1,r2,r3) -> Plwzx (r1,r2,r3)) r1 r2 r3
-  | Pldx (r1,r2,r3) ->
-      map3 (fun (r1,r2,r3) -> Pldx (r1,r2,r3)) r1 r2 r3
   | Ploadx (sz,r1,r2,r3) ->
       map3 (fun (r1,r2,r3) -> Ploadx (sz,r1,r2,r3)) r1 r2 r3
-  | Pstwx (r1,r2,r3) ->
-      map3 (fun (r1,r2,r3) -> Pstwx (r1,r2,r3)) r1 r2 r3
-  | Pstdx (r1,r2,r3) ->
-      map3 (fun (r1,r2,r3) -> Pstdx (r1,r2,r3)) r1 r2 r3
   | Pstorex (sz,r1,r2,r3) ->
       map3 (fun (r1,r2,r3) -> Pstorex (sz,r1,r2,r3)) r1 r2 r3
   | Plwarx (r1,r2,r3) ->
@@ -562,8 +528,6 @@ let map_regs f_reg f_symb =
       map2 (fun (r1,r2) -> Pmulli (r1,r2,v)) r1 r2
   | Pcmpw (crf,r1,r2) ->
       map2 (fun (r1,r2) -> Pcmpw (crf,r1,r2)) r1 r2
-  | Plwz (r1,cst,r2) ->
-      map2 (fun (r1,r2) -> Plwz (r1,cst,r2)) r1 r2
   | Pload (sz,r1,cst,r2) ->
       map2 (fun (r1,r2) -> Pload (sz,r1,cst,r2)) r1 r2
   | Plwzu (r1,cst,r2) ->
@@ -572,16 +536,10 @@ let map_regs f_reg f_symb =
       map2 (fun (r1,r2) -> Pmr (r1,r2)) r1 r2
   | Pdcbf (r1,r2) ->
       map2 (fun (r1,r2) -> Pdcbf (r1,r2)) r1 r2
-  | Pstw (r1,cst,r2) ->
-      map2 (fun (r1,r2) -> Pstw (r1,cst,r2)) r1 r2
   | Pstore (sz,r1,cst,r2) ->
       map2 (fun (r1,r2) -> Pstore (sz,r1,cst,r2)) r1 r2
   | Pstwu (r1,cst,r2) ->
       map2 (fun (r1,r2) -> Pstwu (r1,cst,r2)) r1 r2
-  | Pld (r1,cst,r2) ->
-      map2 (fun (r1,r2) -> Pld (r1,cst,r2)) r1 r2
-  | Pstd (r1,cst,r2) ->
-      map2 (fun (r1,r2) -> Pstd (r1,cst,r2)) r1 r2
   | Pneg (set,r1,r2) ->
       map2 (fun (r1,r2) -> Pneg (set,r1,r2)) r1 r2
   | Psrawi (set,r1,r2,v) ->
@@ -618,19 +576,19 @@ let map_addrs _f ins = ins
 (* Go back to 32bits mode *)
 
 let norm_ins ins = match ins with
-  | Pld (r1,cst,r2)  -> Plwz (r1,cst,r2)
-  | Pstd (r1,cst,r2) -> Pstw (r1,cst,r2)
-  | Pldx (r1,r2,r3)  -> Plwarx (r1,r2,r3)
-  | Pstdx (r1,r2,r3) -> Pstwx (r1,r2,r3)
-  | Pload(_,r1,cst,r2) -> Pload(Word,r1,cst,r2)
-  | Ploadx(_,r1,r2,r3) -> Ploadx(Word,r1,r2,r3)
-  | Pstore(_,r1,cst,r2) -> Pstore(Word,r1,cst,r2)
-  | Pstorex(_,r1,r2,r3) -> Pstorex(Word,r1,r2,r3)
+  | Pload(Quad,r1,cst,r2) -> Pload(Word,r1,cst,r2)
+  | Ploadx(Quad,r1,r2,r3) -> Ploadx(Word,r1,r2,r3)
+  | Pstore(Quad,r1,cst,r2) -> Pstore(Word,r1,cst,r2)
+  | Pstorex(Quad,r1,r2,r3) -> Pstorex(Word,r1,r2,r3)
+  | Pload ((Byte|Short|Word),_,_,_)
+  | Ploadx ((Byte|Short|Word),_,_,_)
+  | Pstore ((Byte|Short|Word),_,_,_)
+  | Pstorex ((Byte|Short|Word),_,_,_)
   | Pb _ | Pbcc (_,_)
   | Pdcbf (_, _)
   | Pstwcx (_, _, _)|Plwarx (_, _, _)
-  | Pstwx (_, _, _)|Pstw (_, _, _)|Pstwu (_,_,_)|Pmr (_, _)
-  | Plwzx (_, _, _)|Plwz (_, _, _)|Plwzu (_,_,_)|Pcmpw (_, _, _)
+  | Pstwu (_,_,_)|Pmr (_, _)
+  | Plwzu (_,_,_)|Pcmpw (_, _, _)
   | Pcmpwi (_, _, _)|Pli (_, _)
   | Pmulli (_, _, _)|Pxori (_, _, _)|Pori (_, _, _)
   | Pandi (_, _, _)|Paddi (_, _, _)|Pdiv (_, _, _, _)
@@ -646,9 +604,10 @@ let norm_ins ins = match ins with
           -> ins
 
 let is_data r1 i = match i with
-| Pstd (r,_,_)
+| Pstore (_,r,_,_)
+| Pstorex (_,r,_,_)
 | Pstwcx (r,_,_)
-| Pstw (r,_,_) -> r1 = r
+  -> r1 = r
 | _ -> false
 
 let get_next = function
@@ -657,11 +616,9 @@ let get_next = function
   |Pmull (_, _, _, _)|Pdiv (_, _, _, _)|Paddi (_, _, _)
   | Pandi (_, _, _)|Pori (_, _, _)|Pxori (_, _, _)|Pmulli (_, _, _)
   |Pli (_, _)
-  |Pcmpwi (_, _, _)|Pcmpw (_, _, _)|Plwz (_, _, _)|Plwzu(_,_,_)
-  |Plwzx (_, _, _)|Pmr (_, _)|Pstw (_, _, _)|Pstwu(_,_,_)|Pstwx (_, _, _)
-  |Plwarx (_, _, _)
-  |Pstwcx (_, _, _)|Pstd (_, _, _)|Pstdx (_, _, _)
-  |Pld (_, _, _)|Pldx (_, _, _)
+  |Pcmpwi (_, _, _)|Pcmpw (_, _, _)|Plwzu(_,_,_)
+  |Pmr (_, _)|Pstwu(_,_,_)
+  |Plwarx (_, _, _)|Pstwcx (_, _, _)
   |Pload _|Ploadx _|Pstore _|Pstorex _
   |Psync|Peieio|Pisync|Plwsync
   |Pdcbf (_, _)|Pnor (_, _, _, _)|Pneg (_, _, _)
@@ -725,18 +682,10 @@ include Pseudo.Make
         | Pmflr _
         | Pcomment _
           -> 0
-        | Plwz _
         | Plwzu _
-        | Plwzx _
-        | Pstw _
         | Pstwu _
-        | Pstwx _
         | Plwarx _
         | Pstwcx _
-        | Pstd _
-        | Pstdx _
-        | Pld _
-        | Pldx _
         | Pload _|Ploadx _|Pstore _|Pstorex _
           -> 1
         |Plmw (_r1,_,_)
@@ -746,11 +695,10 @@ include Pseudo.Make
       let fold_labels k f = function
         | Pb lab
         | Pbcc (_,lab) -> f k lab
-        | Pdcbf (_, _)|Pldx (_, _, _)|Pld (_, _, _)
-        | Pstdx (_, _, _)|Pstd (_, _, _)
+        | Pdcbf (_, _)
         | Pstwcx (_, _, _)|Plwarx (_, _, _)
-        | Pstwx (_, _, _)|Pstw (_, _, _)|Pstwu(_,_,_)|Pmr (_, _)
-        | Plwzx (_, _, _)|Plwz (_, _, _)|Plwzu(_,_,_)|Pcmpw (_, _, _)
+        | Pstwu(_,_,_)|Pmr (_, _)
+        | Plwzu(_,_,_)|Pcmpw (_, _, _)
         | Pcmpwi (_, _, _)|Pli (_, _)
         | Pmulli (_, _, _)|Pxori (_, _, _)|Pori (_, _, _)
         | Pandi (_, _, _)|Paddi (_, _, _)|Pdiv (_, _, _, _)
@@ -772,11 +720,10 @@ include Pseudo.Make
       let map_labels f = function
         | Pb lab -> Pb (f lab)
         | Pbcc (cc,lab) -> Pbcc (cc,f lab)
-        | Pdcbf (_, _)|Pldx (_, _, _)|Pld (_, _, _)
-        | Pstdx (_, _, _)|Pstd (_, _, _)
+        | Pdcbf (_, _)
         | Pstwcx (_, _, _)|Plwarx (_, _, _)
-        | Pstwx (_, _, _)|Pstw (_, _, _)|Pstwu(_,_,_)|Pmr (_, _)
-        | Plwzx (_, _, _)|Plwz (_, _, _)|Plwzu(_,_,_)|Pcmpw (_, _, _)
+        | Pstwu(_,_,_)|Pmr (_, _)
+        | Plwzu(_,_,_)|Pcmpw (_, _, _)
         | Pcmpwi (_, _, _)|Pli (_, _)
         | Pmulli (_, _, _)|Pxori (_, _, _)|Pori (_, _, _)
         | Pandi (_, _, _)|Paddi (_, _, _)|Pdiv (_, _, _, _)
@@ -804,7 +751,7 @@ let r0 = Ireg GPR0
 (* LWZ, a convenience *)
 let lwz regs k =  match regs with
 | [r; addr] ->
-    Instruction (Plwz (r,0,addr))::k
+    Instruction (Pload (Word,r,0,addr))::k
 | _  -> Warn.fatal "LWZ macros takes two reg arguments (tgt,address)"
 
 (* FNO *)
@@ -870,7 +817,7 @@ let lock regs k = match regs with
     let atom = Label.next_label "ATO" in
     Instruction (Pb atom)::
     Label (loop,Nop)::
-    Instruction (Plwz (sym,0,addr))::
+    Instruction (Pload (Word,sym,0,addr))::
     Instruction (Pcmpwi (0,sym,0))::
     Instruction (Pbcc (Ne,loop))::
     Label (atom,Nop)::
@@ -888,7 +835,7 @@ let unlock regs k = match regs with
 | [addr] ->
     Instruction (Plwsync)::
     Instruction (Pli (sym,0))::
-    Instruction (Pstw (sym,0,addr))::
+    Instruction (Pstore (Word,sym,0,addr))::
     k
 | _ -> Warn.fatal "UNLOCK takes one reg argument (address)"
 
@@ -897,13 +844,13 @@ let setflag regs k = match regs with
 | [addr] ->
     Instruction (Plwsync)::
     Instruction (Pli (sym,1))::
-    Instruction (Pstw (sym,0,addr))::k
+    Instruction (Pstore (Word,sym,0,addr))::k
 | _ -> Warn.fatal "SF takes one reg argument (address)"
 
 let readflag regs k =  match regs with
 | [r; addr] ->
     let next = Label.next_label "NEXT" in
-    Instruction (Plwz (r,0,addr))::
+    Instruction (Pload (Word,r,0,addr))::
     Instruction (Pcmpw (0,r,r))::
     Instruction (Pbcc (Ne,next))::
     Label (next,Nop)::
@@ -914,7 +861,7 @@ let readflagloop regs k = match regs with
 | [addr] ->
     let loop = Label.next_label "LOOP" in
     Label (loop,Nop)::
-    Instruction (Plwz (sym,0,addr))::
+    Instruction (Pload (Word,sym,0,addr))::
     Instruction (Pcmpwi (0,sym,0))::
     Instruction (Pbcc (Eq,loop))::
     Instruction (Pisync)::k

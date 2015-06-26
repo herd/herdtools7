@@ -13,6 +13,7 @@ open Code
 
 module Make(O:CompileCommon.Config)(C:sig val eieio : bool end) : XXXCompile.S =
   struct
+    open MachSize
 
     let naturalsize = TypBase.get_size O.typ
     module PPC =
@@ -178,7 +179,7 @@ module Make(O:CompileCommon.Config)(C:sig val eieio : bool end) : XXXCompile.S =
 
     let emit_store_idx_reg  st p init x idx rA =
       let rB,init,st = next_init st p init x in
-      init,[PPC.Instruction (PPC.Pstwx (rA,idx,rB))],st
+      init,[PPC.Instruction (PPC.Pstorex (Word,rA,idx,rB))],st
 
 
     let emit_const st p init v =
@@ -234,7 +235,7 @@ module Make(O:CompileCommon.Config)(C:sig val eieio : bool end) : XXXCompile.S =
       rA,init,
       PPC.Label (lab,PPC.Nop)::
       pseudo
-        [PPC.Plwz (rA,0,rB) ; PPC.Pcmpwi (0,rA,0) ; PPC.Pbcc (PPC.Eq,lab)],
+        [PPC.Pload (Word,rA,0,rB) ; PPC.Pcmpwi (0,rA,0) ; PPC.Pbcc (PPC.Eq,lab)],
       st
 
     let emit_load_one st p init x =
@@ -244,7 +245,7 @@ module Make(O:CompileCommon.Config)(C:sig val eieio : bool end) : XXXCompile.S =
       rA,init,
       PPC.Label (lab,PPC.Nop)::
       pseudo
-        [PPC.Plwz (rA,0,rB) ; PPC.Pcmpwi (0,rA,1) ; PPC.Pbcc (PPC.Ne,lab)],
+        [PPC.Pload (Word,rA,0,rB) ; PPC.Pcmpwi (0,rA,1) ; PPC.Pbcc (PPC.Ne,lab)],
       st
 
     let emit_load_not st p init x cmp =
@@ -259,7 +260,7 @@ module Make(O:CompileCommon.Config)(C:sig val eieio : bool end) : XXXCompile.S =
       PPC.Label (lab,PPC.Nop)::
       pseudo
         [
-         PPC.Plwz (rA,0,rB) ; cmp rA ;
+         PPC.Pload (Word,rA,0,rB) ; cmp rA ;
          PPC.Pbcc (PPC.Ne,out) ; PPC.Paddi (rC,rC,-1) ;
          PPC.Pcmpwi (0,rC,0) ; PPC.Pbcc (PPC.Ne,lab) ;
        ]@

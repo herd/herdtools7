@@ -89,21 +89,21 @@ module Make
 
 (* Subset of interpreter state used by the caller *)
       type st_out = {
-       out_show : S.rel_pp Lazy.t ;
-       out_skipped : StringSet.t ;
-       out_flags : Flag.Set.t ;
-       out_bell_info :  BellModel.info ;       
-      }
+          out_show : S.rel_pp Lazy.t ;
+          out_skipped : StringSet.t ;
+          out_flags : Flag.Set.t ;
+          out_bell_info :  BellModel.info ;       
+        }
 
 
 (* Interpreter *)
 
       val interpret :
           S.test ->
-              ks ->
-                init_env ->
-                  S.rel_pp Lazy.t ->
-                    (st_out -> 'a -> 'a) -> 'a -> 'a
+            ks ->
+              init_env ->
+                S.rel_pp Lazy.t ->
+                  (st_out -> 'a -> 'a) -> 'a -> 'a
     end
     =
   struct
@@ -307,7 +307,7 @@ module Make
         | Tuple vs -> TTuple (List.map type_val vs)
         | Kont _ -> TKont
 
-   end
+    end
     and ValOrder : PolySet.OrderedType with type 'k t = 'k V.v = struct
       (* Note: cannot use Full in sets.. *)
       type 'k t = 'k V.v
@@ -419,9 +419,9 @@ module Make
       | Pvar _ -> V.Empty
       | Ptuple xs -> V.Tuple (List.map (fun _ -> V.Empty) xs)
 
-      let bdvars (_,pat,_) = match pat with
-      | Pvar x -> StringSet.singleton x
-      | Ptuple xs -> StringSet.of_list xs
+    let bdvars (_,pat,_) = match pat with
+    | Pvar x -> StringSet.singleton x
+    | Ptuple xs -> StringSet.of_list xs
 
 
 (* Add values to env *)
@@ -455,9 +455,9 @@ module Make
 
 (* Hackish: check absence of continuation on env + change type param *)
     let tr_v = fun (type a) (type b) silent loc (v:a V.v) -> match v with
-      | Kont _ ->
-          error silent loc "kont value used during internal evaluation"
-      | v -> (Obj.magic v:b V.v)
+    | Kont _ ->
+        error silent loc "kont value used during internal evaluation"
+    | v -> (Obj.magic v:b V.v)
 
     let purge_env silent loc t =
       let venv =
@@ -519,11 +519,11 @@ module Make
 
 (* Interpretation result *)
 
-      type st_out = {
-       out_show : S.event_rel Misc.Simple.bds Lazy.t ;
-       out_skipped : StringSet.t ;
-       out_flags : Flag.Set.t ;
-       out_bell_info :  BellModel.info ;       
+    type st_out = {
+        out_show : S.event_rel Misc.Simple.bds Lazy.t ;
+        out_skipped : StringSet.t ;
+        out_flags : Flag.Set.t ;
+        out_bell_info :  BellModel.info ;       
       }
 
 (* Remove transitive edges, except if instructed not to *)
@@ -844,15 +844,15 @@ module Make
 
     and tag2fenced env arg = match arg with
     | V.Tag (_,tag) ->
-       let not_a_set_of_events x v =
-         raise
-           (PrimError
-              (sprintf
-                 "value %s is not a set of events, found %s"
-                 x  (pp_type_val v))) in
+        let not_a_set_of_events x v =
+          raise
+            (PrimError
+               (sprintf
+                  "value %s is not a set of events, found %s"
+                  x  (pp_type_val v))) in
         let find_rel id = match Lazy.force (StringMap.find id env.vals) with
-          | V.Rel rel -> rel
-          | _ -> assert false
+        | V.Rel rel -> rel
+        | _ -> assert false
         in
         let po = find_rel "po" in
         let fromto = find_rel "fromto" in
@@ -863,11 +863,11 @@ module Make
           | V.Empty -> V.Rel E.EventRel.empty
           | V.Unv -> assert false (* jade: we assert false when all the events in the execution bear the tag tag *)
           | V.Set bevts ->
-            let filter (x, y) = 
-              E.EventSet.exists 
-                (fun b -> E.EventRel.mem (x,b) po && E.EventRel.mem (b,y) po)
-                bevts in
-            V.Rel (E.EventRel.filter filter fromto)
+              let filter (x, y) = 
+                E.EventSet.exists 
+                  (fun b -> E.EventRel.mem (x,b) po && E.EventRel.mem (b,y) po)
+                  bevts in
+              V.Rel (E.EventRel.filter filter fromto)
           | _ -> not_a_set_of_events x v
 
         with Not_found ->
@@ -1172,29 +1172,29 @@ module Make
                   eval env ife
                 else begin match cl with
                 | EltRem (x,xs,ex) ->
-                  let elt =
-                    lazy begin
-                      try ValSet.choose s
-                      with Not_found -> assert false
-                    end in
-                  let s =
-                    lazy begin
-                      try ValSet (t,ValSet.remove (Lazy.force elt) s)
-                      with  CompError msg ->
-                        error env.EV.silent (get_loc e) "%s" msg
-                    end in
-                  let m = env.EV.env in
-                  let m = add_val x elt m in
-                  let m = add_val xs s m in
-                  eval { env with EV.env = m; } ex
+                    let elt =
+                      lazy begin
+                        try ValSet.choose s
+                        with Not_found -> assert false
+                      end in
+                    let s =
+                      lazy begin
+                        try ValSet (t,ValSet.remove (Lazy.force elt) s)
+                        with  CompError msg ->
+                          error env.EV.silent (get_loc e) "%s" msg
+                      end in
+                    let m = env.EV.env in
+                    let m = add_val x elt m in
+                    let m = add_val xs s m in
+                    eval { env with EV.env = m; } ex
                 | PreEltPost (xs1,x,xs2,ex) ->
                     let s1,elt,s2 =
                       try ValSet.split3 s with Not_found -> assert false in
                     let m = env.EV.env in
-                  let m = add_val x (lazy elt) m in
-                  let m = add_val xs1 (lazy (ValSet (t,s1))) m in
-                  let m = add_val xs2 (lazy (ValSet (t,s2))) m in
-                  eval { env with EV.env = m; } ex
+                    let m = add_val x (lazy elt) m in
+                    let m = add_val xs1 (lazy (ValSet (t,s1))) m in
+                    let m = add_val xs2 (lazy (ValSet (t,s2))) m in
+                    eval { env with EV.env = m; } ex
                 end
             | _ ->
                 error env.EV.silent
@@ -1233,12 +1233,12 @@ module Make
           let a' = snd v1
           and b' = snd v2 in
           begin match t with
-            | TRel -> E.EventRel.subset (as_rel env.EV.ks a') (as_rel env.EV.ks b')
-            | TEvents -> E.EventSet.subset (as_set env.EV.ks a') (as_set env.EV.ks b')
-            | TSet _ -> ValSet.subset (as_valset a') (as_valset b')
-            | ty ->
+          | TRel -> E.EventRel.subset (as_rel env.EV.ks a') (as_rel env.EV.ks b')
+          | TEvents -> E.EventSet.subset (as_set env.EV.ks a') (as_set env.EV.ks b')
+          | TSet _ -> ValSet.subset (as_valset a') (as_valset b')
+          | ty ->
               error env.EV.silent loc
-              "cannot perform subset on type '%s'" (pp_typ ty) end
+                "cannot perform subset on type '%s'" (pp_typ ty) end
 
       and eval_app loc env vf va = match vf with
       | Clo f ->
@@ -1622,112 +1622,117 @@ module Make
       let eval_st st e = eval (from_st st) e in
 
       let rec exec : 'a. 'a st -> ins -> ('a st -> 'a -> 'a) -> 'a -> 'a  =
-      fun  (type res) st i kont (res:res) ->  match i with
-      | Debug (_,e) ->
-          if O.debug then begin
-            let v = eval_st st e in
-            eprintf "%a: value is %a\n%!"
-              TxtLoc.pp (get_loc e) debug_val v
-          end ;
-          kont st res
-      | Show (_,xs) when not O.bell ->
-          if O.showsome then
-            let show = lazy begin
-              List.fold_left
-                (fun show x ->
-                  StringMap.add x (find_show_rel st.ks st.env x) show)
-                (Lazy.force st.show) xs
-            end in
-            kont { st with show;} res
-          else kont st res
-      | UnShow (_,xs) when not O.bell ->
-          if O.showsome then
-            let show = lazy begin
-              List.fold_left
-                (fun show x -> StringMap.remove x show)
-                (Lazy.force st.show)
-                (StringSet.(elements (diff (of_list xs) O.doshow)))
-            end in
-            kont { st with show;} res
-          else kont st res
-      | ShowAs (_,e,id) when not O.bell  ->
-          if O.showsome then
-            let show = lazy begin
-              StringMap.add id
-                (rt_loc id (eval_rel (from_st st) e)) (Lazy.force st.show)
-            end in
-            kont { st with show; } res
-          else kont st res
-      | Test (tst,ty) when not O.bell  ->
-          exec_test st tst ty kont res
-      | Let (_loc,bds) ->
-          let env = eval_bds (from_st st) bds in
-          let st = { st with env; } in
-          let st = doshow bds st in
-          let st = check_bell_order bds st in
-          kont st res
-      | Rec (loc,bds,testo) ->        
-          let env =
-            match
-              env_rec
-                (make_eval_test testo) (from_st st)
-                loc (fun pp -> pp@show_to_vbpp st) bds
-            with
-            | CheckOk env -> Some env
-            | CheckFailed env ->
-              if O.debug then begin
+        fun  (type res) st i kont (res:res) ->  match i with
+        | Debug (_,e) ->
+            if O.debug then begin
+              let v = eval_st st e in
+              eprintf "%a: value is %a\n%!"
+                TxtLoc.pp (get_loc e) debug_val v
+            end ;
+            kont st res
+        | Show (_,xs) when not O.bell ->
+            if O.showsome then
+              let show = lazy begin
+                List.fold_left
+                  (fun show x ->
+                    StringMap.add x (find_show_rel st.ks st.env x) show)
+                  (Lazy.force st.show) xs
+              end in
+              kont { st with show;} res
+            else kont st res
+        | UnShow (_,xs) when not O.bell ->
+            if O.showsome then
+              let show = lazy begin
+                List.fold_left
+                  (fun show x -> StringMap.remove x show)
+                  (Lazy.force st.show)
+                  (StringSet.(elements (diff (of_list xs) O.doshow)))
+              end in
+              kont { st with show;} res
+            else kont st res
+        | ShowAs (_,e,id) when not O.bell  ->
+            if O.showsome then
+              let show = lazy begin
+                StringMap.add id
+                  (rt_loc id (eval_rel (from_st st) e)) (Lazy.force st.show)
+              end in
+              kont { st with show; } res
+            else kont st res
+        | Test (tst,ty) when not O.bell  ->
+            exec_test st tst ty kont res
+        | Let (_loc,bds) ->
+            let env = eval_bds (from_st st) bds in
+            let st = { st with env; } in
+            let st = doshow bds st in
+            let st = check_bell_order bds st in
+            kont st res
+        | Rec (loc,bds,testo) ->        
+            let env =
+              match
+                env_rec
+                  (make_eval_test testo) (from_st st)
+                  loc (fun pp -> pp@show_to_vbpp st) bds
+              with
+              | CheckOk env -> Some env
+              | CheckFailed env ->
+                  if O.debug then begin
+                    let st = { st with env; } in
+                    let st = doshow bds st in
+                    pp_check_failure st (Misc.as_some testo)
+                  end ;
+                  None in
+            begin match env with
+            | None -> res
+            | Some env ->
                 let st = { st with env; } in
                 let st = doshow bds st in
-                pp_check_failure st (Misc.as_some testo)
-              end ;
-                None in
-          begin match env with
-          | None -> res
-          | Some env ->
-              let st = { st with env; } in
-              let st = doshow bds st in
 (* Check again for strictskip *)
-              let st = match testo with
-              | None -> st
-              | Some (_,_,t,e,name) ->
-                  if
-                    O.strictskip &&
-                    skip_this_check name &&
-                    not (eval_test Misc.identity (from_st st) t e)
-                  then begin
-                    { st with
-                      skipped =
-                      StringSet.add (Misc.as_some name) st.skipped;}
-                  end else st in
+                let st = match testo with
+                | None -> st
+                | Some (_,_,t,e,name) ->
+                    if
+                      O.strictskip &&
+                      skip_this_check name &&
+                      not (eval_test Misc.identity (from_st st) t e)
+                    then begin
+                      { st with
+                        skipped =
+                        StringSet.add (Misc.as_some name) st.skipped;}
+                    end else st in
 (* Check bell definitions *)
-              let st = check_bell_order bds st in
+                let st = check_bell_order bds st in
+                kont st res
+            end
+        | Include (loc,fname) ->
+            do_include loc fname st kont res
+        | Procedure (_,name,args,body) ->
+            let p =
+              Proc { proc_args=args; proc_env=st.env; proc_body=body; } in
+            kont { st with env = add_val name (lazy p) st.env } res
+        | Call (loc,name,es,tname) when not O.bell ->
+            let skip =
+              skip_this_check tname || skip_this_check (Some name) in
+            if O.debug && skip then
+              warn loc "skipping call: %s"
+                (match tname with | Some n -> n | None -> name);
+            if skip && not O.strictskip then (* won't call *)
               kont st res
-          end
-      | Include (loc,fname) ->
-          do_include loc fname st kont res
-      | Procedure (_,name,args,body) ->
-          let p =
-            Proc { proc_args=args; proc_env=st.env; proc_body=body; } in
-          kont { st with env = add_val name (lazy p) st.env } res
-      | Call (loc,name,es,tname) when not O.bell ->
-          let skip = skip_this_check tname in
-          if O.debug && skip then
-            warn loc "skipping call: %s" (Misc.as_some tname) ;
-          if skip && not O.strictskip then (* won't call *)
-            kont st res
-          else (* will call *)
-            let env0 = from_st st
-            and show0 = st.show in
-            let p = protect_call st (eval_proc loc env0) name in
-            let env1 =
-              protect_call st
-                (fun penv ->
-                  add_args loc p.proc_args (eval env0 es) env0 penv)
-                p.proc_env in
-            if skip then (* call for boolean... *)
+            else (* will call *)
+              let env0 = from_st st
+              and show0 = st.show in
+              let p = protect_call st (eval_proc loc env0) name in
+              let env1 =
+                protect_call st
+                  (fun penv ->
+                    add_args loc p.proc_args (eval env0 es) env0 penv)
+                  p.proc_env in
+              if skip then (* call for boolean... *)
+                let pname = match tname with
+                | Some _ -> tname
+                | None -> Some name in
                 let tval = 
                   let benv = purge_env st.silent loc env1 in
-                  run { (push_loc st (loc,tname)) with env=benv; } p.proc_body
+                  run { (push_loc st (loc,pname)) with env=benv; } p.proc_body
                     (fun _ _ -> true) false in
                 if tval then kont st res
                 else
@@ -1735,239 +1740,242 @@ module Make
                     { st with skipped =
                       StringSet.add (Misc.as_some tname) st.skipped;}
                     res
-            else
-              let st = push_loc st (loc,tname) in            
-              run { st with env = env1; } p.proc_body
-                (fun st_call res ->
-                  let st_call = pop_loc st_call in
-                  kont { st_call with env = st.env ; show=show0;} res)
-              res
-      | Enum (loc,name,xs) ->
-          let env = st.env in
-          let tags =
-            List.fold_left
-              (fun env x -> StringMap.add x name env)
-              env.tags xs in
-          let enums = StringMap.add name xs env.enums in
+              else
+                let pname = match tname with
+                | Some _ -> tname
+                | None -> Some name in
+                let st = push_loc st (loc,pname) in            
+                run { st with env = env1; } p.proc_body
+                  (fun st_call res ->
+                    let st_call = pop_loc st_call in
+                    kont { st_call with env = st.env ; show=show0;} res)
+                  res
+        | Enum (loc,name,xs) ->
+            let env = st.env in
+            let tags =
+              List.fold_left
+                (fun env x -> StringMap.add x name env)
+                env.tags xs in
+            let enums = StringMap.add name xs env.enums in
 (* add a set of all tags... *)
-          let alltags =
-            lazy begin
-              let vs =
-                List.fold_left
-                  (fun k x -> ValSet.add (V.Tag (name,x)) k)
-                  ValSet.empty xs in
-              V.ValSet (TTag name,vs)
-            end in
-          let env = add_val name alltags env in
-          if O.debug && O.verbose > 1 then
-            warn loc "adding set of all tags for %s" name ;
-          let env = { env with tags; enums; } in
-          let st = { st with env;} in
-          let st = check_bell_enum loc st name xs in
-          kont st res
-      | Forall (_loc,x,e,body) when not O.bell  ->
-          let st0 = st in
-          let env0 = st0.env in
-          let v = eval (from_st st0) e in
-          begin match tag2set v with
-          | V.Empty -> kont st res
-          | ValSet (_,set) ->
-              let rec run_set st vs res =
-                if ValSet.is_empty vs then
-                  kont st res
-                else
-                  let v =
-                    try ValSet.choose vs
-                    with Not_found -> assert false in
-                  let env = add_val x (lazy v) env0 in
-                  run { st with env;} body
-                    (fun st res ->
-                      run_set { st with env=env0;} (ValSet.remove v vs) res)
-                    res in
-              run_set st set res
-          | _ ->
-              error st.silent
-                (get_loc e) "forall instruction applied to non-set value"
-          end
-      | WithFrom (loc,x,e) when not O.bell  ->
-          let st0 = st in
-          let env0 = st0.env in
-          let v = eval (from_st st0) e in
-          begin match v with
-          | V.Empty -> res
-          | ValSet (_,vs) ->
-              ValSet.fold
-                (fun v res ->
-                  let env = add_val x (lazy v) env0 in
-                  kont (doshowone x {st with env;}) res)
-                vs res
-          | Clo _ ->
-              let kv =
-                Kont
-                  ((fun v (res:res) ->
-                    let env = add_val x (lazy v) env0 in
-                    kont (doshowone x {st with env;}) res),
-                  res) in
-              begin match eval_app loc (from_st st) v kv with
-              | Kont (_,res) -> res
-              | v -> 
-                  error
-                    st.silent (get_loc e)
-                    "improper generator, returns %s"
-                    (pp_val v)
-              end
-          | _ -> error st.silent (get_loc e) "set or generator expected"
-          end
-      | Latex _ -> kont st res
-      | Events (loc,x,es,def) when O.bell ->
-          if not (StringSet.mem x BellName.all_sets) then
-            error st.silent loc
-              "event type %s is not part of legal {%s}\n"
-              x (StringSet.pp_str "," Misc.identity BellName.all_sets) ;
-	  let vs = List.map (eval_loc (from_st st)) es in
-	  let event_sets =
-            List.map
-              (fun (loc,v) -> match v with 
-	      | ValSet(TTag _,elts) -> 
-                  let tags = 
-	            ValSet.fold
-                      (fun elt k -> as_tag elt::k)
-                      elts [] in
-                  StringSet.of_list tags
-              | V.Tag (_,tag) -> StringSet.singleton tag
-              | _ ->
-                  error false loc
-                    "event declaration expected a set of tags, found %s"
-                    (pp_val v))
-              vs in
-          let bell_info =
-            BellModel.add_events x event_sets st.bell_info in
-          let bell_info =
-            if def then 
-              let defarg =
-                List.map2 
-                  (fun ss e -> match StringSet.as_singleton ss with
-                 | None ->
-                     error st.silent (get_loc e) "ambiguous default declaration"
-                 | Some a -> a) event_sets es in
-              try BellModel.add_default x defarg bell_info
-              with BellModel.Defined ->
-                error st.silent loc "second definition of default for %s" x
-            else bell_info in
-          let st = { st with bell_info;} in
-	  kont st res
-      | Events _ ->
-          assert (not O.bell) ;
-          kont st res (* Ignore bell constructs when executing model *)
-      | Test _|UnShow _|Show _|ShowAs _
-      | Call _|Forall _
-      | WithFrom _ ->
-          assert O.bell ;
-          kont st res (* Ignore cat constructs when executing bell *)
-
-      and exec_test :
-        'a. 'a st -> app_test -> test_type ->
-          ('a st -> 'a -> 'a) -> 'a -> 'a =
-        fun st (loc,_,t,e,name as tst) test_type kont res ->
-        let skip = skip_this_check name in
-        if O.debug &&  skip then
-          warn loc "skipping check: %s" (Misc.as_some name) ;
-        if
-          O.strictskip || not skip
-        then
-          let ok = eval_test (check_through test_type) (from_st st) t e in
-          if ok then
-            match test_type with 
-            | Check|UndefinedUnless -> kont st res
-            | Flagged -> 
-                begin match name with
-                | None ->
-                    warn loc "this flagged test does not have a name" ;
+            let alltags =
+              lazy begin
+                let vs =
+                  List.fold_left
+                    (fun k x -> ValSet.add (V.Tag (name,x)) k)
+                    ValSet.empty xs in
+                V.ValSet (TTag name,vs)
+              end in
+            let env = add_val name alltags env in
+            if O.debug && O.verbose > 1 then
+              warn loc "adding set of all tags for %s" name ;
+            let env = { env with tags; enums; } in
+            let st = { st with env;} in
+            let st = check_bell_enum loc st name xs in
+            kont st res
+        | Forall (_loc,x,e,body) when not O.bell  ->
+            let st0 = st in
+            let env0 = st0.env in
+            let v = eval (from_st st0) e in
+            begin match tag2set v with
+            | V.Empty -> kont st res
+            | ValSet (_,set) ->
+                let rec run_set st vs res =
+                  if ValSet.is_empty vs then
                     kont st res
-                | Some name ->
-                    if O.debug then
-                      warn loc "flag %s recorded" name ;
-                    kont
-                      {st with flags=
-                       Flag.Set.add (Flag.Flag name) st.flags;}
-                      res
+                  else
+                    let v =
+                      try ValSet.choose vs
+                      with Not_found -> assert false in
+                    let env = add_val x (lazy v) env0 in
+                    run { st with env;} body
+                      (fun st res ->
+                        run_set { st with env=env0;} (ValSet.remove v vs) res)
+                      res in
+                run_set st set res
+            | _ ->
+                error st.silent
+                  (get_loc e) "forall instruction applied to non-set value"
+            end
+        | WithFrom (loc,x,e) when not O.bell  ->
+            let st0 = st in
+            let env0 = st0.env in
+            let v = eval (from_st st0) e in
+            begin match v with
+            | V.Empty -> res
+            | ValSet (_,vs) ->
+                ValSet.fold
+                  (fun v res ->
+                    let env = add_val x (lazy v) env0 in
+                    kont (doshowone x {st with env;}) res)
+                  vs res
+            | Clo _ ->
+                let kv =
+                  Kont
+                    ((fun v (res:res) ->
+                      let env = add_val x (lazy v) env0 in
+                      kont (doshowone x {st with env;}) res),
+                     res) in
+                begin match eval_app loc (from_st st) v kv with
+                | Kont (_,res) -> res
+                | v -> 
+                    error
+                      st.silent (get_loc e)
+                      "improper generator, returns %s"
+                      (pp_val v)
                 end
-          else if skip then begin
-            assert O.strictskip ;
-            kont
-              { st with
-                skipped = StringSet.add (Misc.as_some name) st.skipped;}
-              res
-          end else begin
-            match test_type with
-            | Check ->
-                if O.debug then pp_check_failure st tst ;
-                res
-            | UndefinedUnless ->
-                kont {st with flags=Flag.Set.add Flag.Undef st.flags;} res
-            | Flagged -> kont st res
-          end
-        else begin
-          W.warn "Skipping check %s" (Misc.as_some name) ;
-          kont st res
-        end
+            | _ -> error st.silent (get_loc e) "set or generator expected"
+            end
+        | Latex _ -> kont st res
+        | Events (loc,x,es,def) when O.bell ->
+            if not (StringSet.mem x BellName.all_sets) then
+              error st.silent loc
+                "event type %s is not part of legal {%s}\n"
+                x (StringSet.pp_str "," Misc.identity BellName.all_sets) ;
+	    let vs = List.map (eval_loc (from_st st)) es in
+	    let event_sets =
+              List.map
+                (fun (loc,v) -> match v with 
+	        | ValSet(TTag _,elts) -> 
+                    let tags = 
+	              ValSet.fold
+                        (fun elt k -> as_tag elt::k)
+                        elts [] in
+                    StringSet.of_list tags
+                | V.Tag (_,tag) -> StringSet.singleton tag
+                | _ ->
+                    error false loc
+                      "event declaration expected a set of tags, found %s"
+                      (pp_val v))
+                vs in
+            let bell_info =
+              BellModel.add_events x event_sets st.bell_info in
+            let bell_info =
+              if def then 
+                let defarg =
+                  List.map2 
+                    (fun ss e -> match StringSet.as_singleton ss with
+                    | None ->
+                        error st.silent (get_loc e) "ambiguous default declaration"
+                    | Some a -> a) event_sets es in
+                try BellModel.add_default x defarg bell_info
+                with BellModel.Defined ->
+                  error st.silent loc "second definition of default for %s" x
+              else bell_info in
+              let st = { st with bell_info;} in
+	      kont st res
+        | Events _ ->
+            assert (not O.bell) ;
+            kont st res (* Ignore bell constructs when executing model *)
+        | Test _|UnShow _|Show _|ShowAs _
+        | Call _|Forall _
+        | WithFrom _ ->
+            assert O.bell ;
+            kont st res (* Ignore cat constructs when executing bell *)
 
-      and do_include : 'a . TxtLoc.t -> string -> 'a st ->
-        ('a st -> 'a -> 'a) -> 'a -> 'a =
-      fun loc fname st kont res ->
-        (* Run sub-model file *)
-        if O.debug then warn loc "include \"%s\"" fname ;
-        let module P =
-          ParseModel.Make
-            (struct
-              include LexUtils.Default 
-              let libfind = O.libfind
-            end) in
-        let (_,_,iprog) =
-          try P.parse fname
-          with Misc.Fatal msg | Misc.UserError msg ->
-            error st.silent loc "%s" msg  in
-        run st iprog kont res
+            and exec_test :
+                'a. 'a st -> app_test -> test_type ->
+                  ('a st -> 'a -> 'a) -> 'a -> 'a =
+                    fun st (loc,_,t,e,name as tst) test_type kont res ->
+                      let skip = skip_this_check name in
+                      if O.debug &&  skip then
+                        warn loc "skipping check: %s" (Misc.as_some name) ;
+                      if
+                        O.strictskip || not skip
+                      then
+                        let ok = eval_test (check_through test_type) (from_st st) t e in
+                        if ok then
+                          match test_type with 
+                          | Check|UndefinedUnless -> kont st res
+                          | Flagged -> 
+                              begin match name with
+                              | None ->
+                                  warn loc "this flagged test does not have a name" ;
+                                  kont st res
+                              | Some name ->
+                                  if O.debug then
+                                    warn loc "flag %s recorded" name ;
+                                  kont
+                                    {st with flags=
+                                     Flag.Set.add (Flag.Flag name) st.flags;}
+                                    res
+                              end
+                        else if skip then begin
+                          assert O.strictskip ;
+                          kont
+                            { st with
+                              skipped = StringSet.add (Misc.as_some name) st.skipped;}
+                            res
+                        end else begin
+                          match test_type with
+                          | Check ->
+                              if O.debug then pp_check_failure st tst ;
+                              res
+                          | UndefinedUnless ->
+                              kont {st with flags=Flag.Set.add Flag.Undef st.flags;} res
+                          | Flagged -> kont st res
+                        end
+                      else begin
+                        W.warn "Skipping check %s" (Misc.as_some name) ;
+                        kont st res
+                      end
 
-      and run : 'a. 'a st -> ins list -> ('a st -> 'a -> 'a) -> 'a -> 'a =
-      fun st c kont res -> match c with
-      | [] ->  kont st res
-      | i::c ->
-          exec st i
-            (fun st res -> run st c kont res)
-            res in
+            and do_include : 'a . TxtLoc.t -> string -> 'a st ->
+              ('a st -> 'a -> 'a) -> 'a -> 'a =
+                fun loc fname st kont res ->
+                  (* Run sub-model file *)
+                  if O.debug then warn loc "include \"%s\"" fname ;
+                  let module P =
+                    ParseModel.Make
+                      (struct
+                        include LexUtils.Default 
+                        let libfind = O.libfind
+                      end) in
+                  let (_,_,iprog) =
+                    try P.parse fname
+                    with Misc.Fatal msg | Misc.UserError msg ->
+                      error st.silent loc "%s" msg  in
+                  run st iprog kont res
 
-      fun ks m vb_pp kont res ->
+            and run : 'a. 'a st -> ins list -> ('a st -> 'a -> 'a) -> 'a -> 'a =
+              fun st c kont res -> match c with
+              | [] ->  kont st res
+              | i::c ->
+                  exec st i
+                    (fun st res -> run st c kont res)
+                    res in
+
+            fun ks m vb_pp kont res ->
 (* Primitives *)
-        let m = add_primitives (env_from_ienv m) in
+              let m = add_primitives (env_from_ienv m) in
 (* Initial show's *)
-        let show =
-          if O.showsome then
-            lazy begin
               let show =
-                List.fold_left
-                  (fun show (tag,v) -> StringMap.add tag v show)
-                  StringMap.empty (Lazy.force vb_pp) in
-              StringSet.fold
-                (fun tag show -> StringMap.add tag (find_show_rel ks m tag) show)
-                O.doshow show
-            end else lazy StringMap.empty in
+                if O.showsome then
+                  lazy begin
+                    let show =
+                      List.fold_left
+                        (fun show (tag,v) -> StringMap.add tag v show)
+                        StringMap.empty (Lazy.force vb_pp) in
+                    StringSet.fold
+                      (fun tag show -> StringMap.add tag (find_show_rel ks m tag) show)
+                      O.doshow show
+                  end else lazy StringMap.empty in
 
-        let st =
-          {env=m; show=show; skipped=StringSet.empty;
-           silent=false; flags=Flag.Set.empty;
-           ks; bell_info=BellModel.empty_info;
-           loc=[]} in        
+              let st =
+                {env=m; show=show; skipped=StringSet.empty;
+                 silent=false; flags=Flag.Set.empty;
+                 ks; bell_info=BellModel.empty_info;
+                 loc=[]} in        
 
-        let kont st res =  kont (st2out st) res in          
+              let kont st res =  kont (st2out st) res in          
 
-        let just_run st res = run st prog kont res in
-        do_include TxtLoc.none "stdlib.cat" st
-          (match O.bell_fname with
-          | None -> just_run (* No bell file, just run *)
-          | Some fname ->
-            fun st res ->
-              do_include TxtLoc.none fname st just_run res)
-          res
+              let just_run st res = run st prog kont res in
+              do_include TxtLoc.none "stdlib.cat" st
+                (match O.bell_fname with
+                | None -> just_run (* No bell file, just run *)
+                | Some fname ->
+                    fun st res ->
+                      do_include TxtLoc.none fname st just_run res)
+                res
 
   end

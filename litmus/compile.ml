@@ -464,7 +464,7 @@ module Make
         List.fold_right
           (fun (_,(t,v)) env ->
             match t,v with
-            | MiscParser.TyDef,Constant.Symbolic a ->
+            | (MiscParser.TyDef|MiscParser.TyDefPointer),Constant.Symbolic a ->
                 begin try
                   let _ = StringMap.find a env in
                   env

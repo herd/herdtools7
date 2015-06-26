@@ -2,6 +2,3 @@ true:dtypes
 true:-traverse
 true: safe_string
 <lib>:include
-<PPCGenBase.ml> : pp(./pp2ml.byte)
-<PPCGenCompile.ml> : pp(./pp2ml.byte)
-<litmus.{d.byte,byte,native}>:use_nums

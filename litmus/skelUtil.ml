@@ -95,7 +95,9 @@ module Make
         let e = A.LocMap.empty in
         let e =
           List.fold_left
-            (fun e (s,t) -> A.LocMap.add (A.Location_global s) t e)
+            (fun e (s,t) ->
+(*              eprintf "BUILD %s <%s>\n" s (CType.dump t) ; *)
+              A.LocMap.add (A.Location_global s) t e)
             e test.T.globals in
         let e = 
           List.fold_left
