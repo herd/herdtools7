@@ -48,20 +48,29 @@ let bi = match O.bell with
   Some (R.read fname)
 | None -> None
 
-let scopegen = match bi with
-| None ->
-    let module M = ScopeGen.NoGen in
-    (module M : ScopeGen.S)
-| Some bi ->
-    let module M =
-      ScopeGen.Make
-        (struct
-          let debug = false
-          let info = bi
-        end) in
-    (module M : ScopeGen.S)
-
+(* Workaround, as we cannot simply write
 module ScopeGen =  (val scopegen : ScopeGen.S)
+in OCaml pre-4.02.1 *)
+
+module ScopeGen = 
+  struct
+    let scopegen = match bi with
+    | None ->
+        let module M = ScopeGen.NoGen in
+        (module M : ScopeGen.S)
+    | Some bi ->
+        let module M =
+          ScopeGen.Make
+            (struct
+              let debug = false
+              let info = bi
+            end) in
+        (module M : ScopeGen.S)
+
+    let default,gen,all = 
+      let module M = (val scopegen : ScopeGen.S) in
+      M.default,M.gen,M.all
+  end 
 
 (* Should check non-ambiguity *)
 let pp_annot a = match a with
