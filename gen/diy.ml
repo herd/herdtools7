@@ -265,7 +265,7 @@ let () =
   | MIPS ->
       let module M = Make(T(MIPSCompile.Make(C)))(Co) in
       M.go
-  | Bell ->
+  | LISA ->
       let module BellConfig =
         struct
           let debug = !Config.debug

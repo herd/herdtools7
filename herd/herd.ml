@@ -3,7 +3,6 @@
 (*                                                                   *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                   *)
 (* Jade Alglave, University College London, UK.                      *)
-(* John Wickerson, Imperial College London, UK.                      *)
 (*                                                                   *)
 (*  Copyright 2013 Institut National de Recherche en Informatique et *)
 (*  en Automatique and the authors. All rights reserved.             *)
@@ -167,12 +166,6 @@ let options = [
   ( "-evince",
     Arg.Unit (fun _ -> PP.evince := true),
     "<non-default>  fork evince to show output graphs") ;
-  ( "-dumplem",
-    Arg.Unit (fun _ -> dumplem := true),
-    "<non-default> convert the given model to Lem format") ;
-  ( "-dumptex",
-    Arg.Unit (fun _ -> dumptex := true),
-    "<non-default> convert the given model to Latex format") ;
   ("-unroll",
    Arg.Int (fun x -> unroll := x),
    sprintf "<int> branch unrolling upper limit, default %i" !unroll);
@@ -340,10 +333,6 @@ let options = [
     "show a init writes pseudo-event, with all initial writes grouped" ;
   parse_posopt "-initpos" PP.initpos
     "position of the init writes pseudo-event" ;
-  parse_bool "-showpoloc" PP.showpoloc
-    "show po edges with identical locations explicitely" ;
-  parse_bool "-showfr" PP.showfr 
-    "show from-read edges in pictures" ;
   parse_bool "-showinitwrites" PP.showinitwrites
     "show init write events in pictures" ;
  parse_stringsetfun "-doshow" PP.add_doshow "show those edges";
@@ -514,8 +503,6 @@ let () =
     let outputdir = !outputdir
     let suffix = !suffix
     let dumpes = !dumpes
-    let dumplem = !dumplem
-    let dumptex = !dumptex
 
     module PC = struct
       let debug = debug.Debug.pretty
@@ -558,8 +545,6 @@ let () =
       let initdotpos = !PP.initdotpos
       let oneinit = !PP.oneinit
       let initpos = !PP.initpos
-      let showpoloc = !PP.showpoloc
-      let showfr = !PP.showfr
       let showinitwrites = !PP.showinitwrites
       let brackets = !PP.brackets
       let showobserved = !PP.showobserved
@@ -616,20 +601,6 @@ let () =
 (* Just go *)
 
   let tests = !args in
-  if Config.dumplem then begin
-    match model with
-    | Some (Model.Generic (_,_,prog)) -> 
-      Herd2lem.lem_of_prog stdout prog; 
-      exit 0
-    | _ -> Warn.user_error "No model given"
-  end;
-  if Config.dumptex then begin
-    match model with
-    | Some (Model.Generic (_,name,prog)) -> 
-      Herd2tex.tex_of_prog stdout name prog; 
-      exit 0
-    | _ -> Warn.user_error "No model given"
-  end;
   let check_exit =
     let b = !Opts.exit_if_failed in
     fun seen -> if b then exit 1 else seen in

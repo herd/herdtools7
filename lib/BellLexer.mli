@@ -3,8 +3,6 @@
 (*                                                                   *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                   *)
 (* Jade Alglave, University College London, UK.                      *)
-(* John Wickerson, Imperial College London, UK.                      *)
-(* Tyler Sorensen, University College London                         *)
 (*                                                                   *)
 (*  Copyright 2013 Institut National de Recherche en Informatique et *)
 (*  en Automatique and the authors. All rights reserved.             *)
@@ -12,7 +10,7 @@
 (*  General Public License.                                          *)
 (*********************************************************************)
  
-(** Lexing PTX assembly *)
+(** Lexing LISA assembly *)
 
 module Make : functor(O:LexUtils.Config) -> sig
   val token : Lexing.lexbuf -> LISAParser.token

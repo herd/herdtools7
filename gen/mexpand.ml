@@ -78,7 +78,7 @@ let () =
   | MIPS ->
       let module M = Build(MIPSArch) in
       M.zyva
-  | Bell ->
+  | LISA ->
       let module BellConfig =
         struct
           let debug = !Config.debug

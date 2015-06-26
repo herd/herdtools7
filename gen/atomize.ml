@@ -122,7 +122,7 @@ let () =
   | MIPS ->
       let module M = Make(MIPSArch) in
       M.zyva
-  | Bell ->
+  | LISA ->
       let module BellConfig =
         struct
           let debug = !Config.debug

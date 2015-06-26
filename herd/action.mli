@@ -3,7 +3,6 @@
 (*                                                                   *)
 (* Jade Alglave, Luc Maranget, INRIA Paris-Rocquencourt, France.     *)
 (* Susmit Sarkar, Peter Sewell, University of Cambridge, UK.         *)
-(* John Wickerson, Imperial College London, UK.                      *)
 (*                                                                   *)
 (*  Copyright 2010 Institut National de Recherche en Informatique et *)
 (*  en Automatique and the authors. All rights reserved.             *)
@@ -78,15 +77,6 @@ module type S = sig
 
 (* Commits *)
   val is_commit : action -> bool
-
-(* Local/Global Fences *)
-  val is_local_fence : action -> bool
-  val is_global_fence : action -> bool
-
-(* Mutex operations *)
-  val is_mutex_action : action -> bool
-
-  val is_sc_action : action -> bool
 
 (********************)
 (* Equation solving *)

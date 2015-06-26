@@ -136,8 +136,6 @@ module type S = sig
   val initdotpos : float * float
   val oneinit : bool
   val initpos : (float * float) option
-  val showpoloc : bool
-  val showfr : bool
   val showinitwrites : bool
   val dotheader : string option
   val brackets : bool

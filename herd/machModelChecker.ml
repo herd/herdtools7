@@ -3,7 +3,6 @@
 (*                                                                   *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                   *)
 (* Jade Alglave, University College London, UK.                      *)
-(* John Wickerson, Imperial College London, UK.                      *)
 (*                                                                   *)
 (*  Copyright 2013 Institut National de Recherche en Informatique et *)
 (*  en Automatique and the authors. All rights reserved.             *)
@@ -223,14 +222,9 @@ module Make
           let fr = U.make_fr conc co in
           let vb_pp =
             if O.showsome then
-              lazy begin
-                if S.O.PC.showfr then
-                  ("fr",fr)::("co",co0)::Lazy.force vb_pp
-                else
-                  ("co",co0)::Lazy.force vb_pp
-              end
-            else lazy [] in
-
+              lazy (("fr",fr)::("co",co0)::Lazy.force vb_pp)
+            else
+              lazy [] in
           let m =
             I.add_rels m
               [

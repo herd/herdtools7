@@ -3,7 +3,6 @@
 (*                                                                   *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                   *)
 (* Jade Alglave, University College London, UK.                      *)
-(* John Wickerson, Imperial College London, UK.                      *)
 (*                                                                   *)
 (*  Copyright 2013 Institut National de Recherche en Informatique et *)
 (*  en Automatique and the authors. All rights reserved.             *)
@@ -93,8 +92,6 @@ module PP : sig
   val initdotpos : (float * float) ref
   val oneinit : bool ref
   val initpos : (float * float) option ref
-  val showpoloc : bool ref
-  val showfr : bool ref
   val showinitwrites : bool ref
   val dotheader : string option ref
   val brackets : bool ref

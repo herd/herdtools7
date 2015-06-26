@@ -183,10 +183,6 @@ end = struct
 (* Commits *)
    let is_commit _ = false
 
-(* Local/Global Fences *)
-   let is_local_fence _ = false
-   let is_global_fence _ = false
-
 (* RMWs *)
    let is_rmw a = match a with
      | RMW _ -> true
@@ -210,17 +206,11 @@ end = struct
      | Unlock _ -> true
      | _ -> false
 
-   let is_mutex_action a = match a with
-     | Lock _ | Unlock _ -> true
-     | _ -> false
-
    let mo_matches target a = match a with
      | Access(_,_,_,mo)
      | RMW (_,_,_,mo) 
      | Fence mo -> mo=target
      | _ -> false
-
-   let is_sc_action a = mo_matches CPP11Base.SC a
 
 (* Architecture-specific sets *)
    let arch_sets = [

@@ -102,7 +102,7 @@ end = struct
         end in
         let module X = Make (MIPS) (MIPSLexParse) in
         X.zyva chan splitted
-    | Bell ->
+    | LISA ->
         let module Bell = BellBase in
         let module BellLexParse = struct
 	  type instruction = Bell.parsedPseudo
@@ -234,7 +234,7 @@ module Tops
             end in
             let module X = Make (MIPS) (MIPSLexParse) in
             X.zyva
-        | Bell ->
+        | LISA ->
             let module Bell = BellBase in
             let module BellLexParse = struct
 	      type instruction = Bell.parsedPseudo

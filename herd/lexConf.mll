@@ -233,8 +233,10 @@ and opt = parse
 | "initrfpos" arg { lex_pos PP.initdotpos arg }
 | "oneinit" arg { lex_bool PP.oneinit arg }
 | "initpos" arg { lex_pos_opt PP.initpos arg }
-| "showpoloc" arg { lex_bool PP.showpoloc arg }
-| "showfr" arg { lex_bool PP.showfr arg }
+(* Deprecated *)
+| "showpoloc" arg { ignore(arg) }
+| "showfr" arg { ignore(arg) }
+(* end *)
 | "showinitwrites" arg { lex_bool PP.showinitwrites arg }
 | "showthread" arg { lex_bool PP.showthread arg }
 | "showlegend" arg { lex_bool PP.showlegend arg }

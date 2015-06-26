@@ -2,8 +2,6 @@
 (*                        Memevents                                  *)
 (*                                                                   *)
 (* Jade Alglave, Luc Maranget, INRIA Paris-Rocquencourt, France.     *)
-(* Susmit Sarkar, Peter Sewell, University of Cambridge, UK.         *)
-(* John Wickerson, Imperial College London, UK.                      *)
 (*                                                                   *)
 (*  Copyright 2010 Institut National de Recherche en Informatique et *)
 (*  en Automatique and the authors. All rights reserved.             *)
@@ -396,7 +394,6 @@ let _get_scope_rels evts sc =
   and collect_loads es = collect_by_loc es E.is_load
   and collect_stores es = collect_by_loc es E.is_store
   and collect_atomics es = collect_by_loc es E.is_atomic
-  and collect_mutex_actions es = collect_by_loc es E.is_mutex_action
 
   let partition_events es =
     let env =
@@ -410,16 +407,6 @@ let _get_scope_rels evts sc =
     LocEnv.fold (fun _ evts k -> E.EventSet.of_list evts::k) env []
 
       
-(*
-  and collect_sc_actions es = 
-    (* horrible hack ahead -- we're collecting sc actions per location, 
-       but associating them all with a sentinel location that's
-       then ignored. should really construct a single list, rather
-       than one list per location. *)
-    let random_loc = S.A.Location_global (V.intToV 0) in
-    LocEnv.add random_loc (List.filter E.is_sc_action (E.EventSet.fold (fun e k -> e :: k) es.E.events [])) LocEnv.empty
-*)
-
 (* fr to init stores only *)
   let make_fr_partial conc =
     let ws_by_loc = collect_mem_stores conc.S.str in
@@ -546,145 +533,12 @@ let _get_scope_rels evts sc =
       end ;
       res
 
-(********************************************)
-(* Mutex serialization candidate generator. *)
-(********************************************)
-
-  let fold_mutex_serialization_candidates conc (* vb *) _ kont res =
-    let mutex_actions_by_loc = collect_mutex_actions conc.S.str in
-    let lo_orders : E.EventRel.t list list =
-      LocEnv.fold
-	(fun _loc mutex_actions k ->
-          let orders =
-	    E.EventRel.all_topos (PC.verbose > 0)
-              (E.EventSet.of_list mutex_actions) E.EventRel.empty in
-          List.map E.EventRel.order_to_succ orders::k)
-        mutex_actions_by_loc [] in
-    Misc.fold_cross_gen E.EventRel.union E.EventRel.empty lo_orders kont res
-
-(* With check *)
-  let apply_process_lo test conc process_lo res =
-     try
-       fold_mutex_serialization_candidates
-         conc conc.S.pco process_lo res
-     with E.EventRel.Cyclic ->
-       if S.O.debug.Debug.barrier && S.O.PC.verbose > 2 then begin
-         let module PP = Pretty.Make(S) in
-           let legend =
-             sprintf "%s cyclic co or lo precursor"
-               test.Test.name.Name.name in
-           let pos = conc.S.pos in
-           prerr_endline legend ;
-           PP.show_legend test  legend conc
-             [ ("pos",S.rt pos); ("pco",S.rt conc.S.pco)]
-        end ;
-        res
-
-(*****************************************)
-(* SC serialization candidate generator. *)
-(*****************************************)
-
-(*
-  let fold_sc_serialization_candidates conc  kont res =
-    let sc_actions = collect_sc_actions conc.S.str in
-    let sc_orders : E.EventRel.t list list =
-      LocEnv.fold
-	(fun _loc sc_actions k ->
-          let orders =
-	    E.EventRel.all_topos (PC.verbose > 0)
-              (E.EventSet.of_list sc_actions) E.EventRel.empty in
-          List.map order_to_succ_rel orders::k)
-        sc_actions [] in
-    Misc.fold_cross_gen E.EventRel.union E.EventRel.empty sc_orders kont res
-*)
-
-
-(* Call kont on all orders of the events of xs *)
-  let all_elements xs kont =
-    let rec do_rec k xs =
-      if E.EventSet.is_empty xs then kont k
-      else
-        E.EventSet.fold (fun x -> do_rec (x::k) (E.EventSet.remove x xs)) xs in
-    do_rec [] xs
-
-  let apply_process_sc _test conc kont res =
-    let sc_actions =
-      E.EventSet.filter E.is_sc_action conc.S.str.E.events in
-    all_elements sc_actions
-      (fun xs -> kont (E.EventRel.order_to_succ xs)) res
-
-
-(*******************************************************)
-(* Saturate all memory accesses wrt atomicity classes  *)
-(*******************************************************)
-  exception FailFast
-
-  let fold_saturated_mem_order es mem_order kont res =
-
-    (* Inputs : es : E.event_structure
-       mem_order : possibly unsaturated memory order
-       Action: fold over all possibilities of saturating edges 
-     *)
-    let accesses = E.mem_of es.E.events in
-    let is_before e atom = 
-      E.EventSet.exists 
-	(fun elock -> E.EventRel.mem (e, elock) mem_order)
-	atom in
-    let is_after e atom = 
-      E.EventSet.exists 
-	(fun elock -> E.EventRel.mem (elock, e) mem_order)
-	atom in
-    let add_before e atom =
-      E.EventSet.fold
-	(fun elock k -> if E.is_mem elock then E.EventRel.add (e, elock) k else k)
-	atom E.EventRel.empty in
-    let add_after e atom =
-      E.EventSet.fold
-	(fun elock k -> if E.is_mem elock then E.EventRel.add (elock, e) k else k)
-	atom E.EventRel.empty in
-    try 
-      let (new_order,unresolved) = 
-	E.EventSet.fold
-	  (fun e (new_ord,unresolved) ->
-	    E.Atomicity.fold
-	      (fun atom (new_ord,unresolved) ->
-		if E.EventSet.mem e atom 
-		then (new_ord,unresolved)
-		else 
-		  let should_add_before = is_before e atom in
-		  let should_add_after = is_after e atom in
-		  match (should_add_before, should_add_after) with
-		  | true,true -> raise FailFast
-		  | true, false -> (E.EventRel.union new_ord (add_before e atom),
-				    unresolved)
-		  | false, true -> (E.EventRel.union new_ord (add_after e atom),
-				    unresolved)
-		  | false, false -> (new_ord,
-				     (e,atom)::unresolved)
-	      )
-	      es.E.atomicity (new_ord,unresolved)
-	  )
-	  accesses (E.EventRel.empty, [])
-      in
-      let resolved : E.EventRel.t list list = 
-	List.map 
-	  (fun (e,atom) -> 
-	    [
-	     add_before e atom;
-	     add_after e atom]
-	  )
-	  unresolved in
-      Misc.fold_cross_gen E.EventRel.union new_order resolved kont res
-    with
-      FailFast -> res
-          
-
 (*****************************************)
 (* Compute write serialization precursor *)
 (*****************************************)
 
-          (* We asssume unicity of init write event to x,
-             as a defensive measure, works when no init write exists *)
+  (* We asssume unicity of init write event to x,
+     as a defensive measure, works when no init write exists *)
   let rec find_init = function
     | []  -> raise Not_found
     | e::es ->

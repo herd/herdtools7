@@ -3,7 +3,6 @@
 (*                                                                   *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                   *)
 (* Jade Alglave, University College London, UK.                      *)
-(* John Wickerson, Imperial College London, UK.                      *)
 (*                                                                   *)
 (*  Copyright 2012 Institut National de Recherche en Informatique et *)
 (*  en Automatique and the authors. All rights reserved.             *)
@@ -24,8 +23,6 @@ module type Config = sig
   val outputdir : PrettyConf.outputdir_mode
   val suffix : string
   val dumpes : bool
-  val dumplem : bool
-  val dumptex : bool
   val badexecs : bool
   val badflag : string option
   val throughflag : string option

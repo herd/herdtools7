@@ -2,8 +2,6 @@
 (*                        Memevents                                  *)
 (*                                                                   *)
 (* Jade Alglave, Luc Maranget, INRIA Paris-Rocquencourt, France.     *)
-(* Susmit Sarkar, Peter Sewell, University of Cambridge, UK.         *)
-(* John Wickerson, Imperial College London, UK.                      *)
 (*                                                                   *)
 (*  Copyright 2010 Institut National de Recherche en Informatique et *)
 (*  en Automatique and the authors. All rights reserved.             *)
@@ -85,7 +83,6 @@ module Make : functor (S: SemExtra.S) -> sig
   val collect_loads : S.event_structure -> S.event list LocEnv.t
   val collect_stores : S.event_structure -> S.event list LocEnv.t
   val collect_atomics : S.event_structure -> S.event list LocEnv.t
-  val collect_mutex_actions : S.event_structure -> S.event list LocEnv.t
 
 (* Partition by location *)
   val partition_events : S.event_set -> S.event_set list
@@ -153,38 +150,11 @@ NOTICE: The generator takes care of placing stores to final state
 	S.event_rel ->
 	  (S.event_rel ->  'a -> 'a) -> 'a -> 'a
 
-  val fold_mutex_serialization_candidates :
-      S.concrete ->
-	S.event_rel ->
-	  (S.event_rel -> 'a -> 'a) -> 'a -> 'a
-
-
 (* Apply previous fold, catching cyclic graphs errors *)
   val apply_process_co :
       S.test ->
         S.concrete ->
           (S.event_rel -> 'a -> 'a) -> 'a -> 'a
-
-  val apply_process_lo :
-      S.test ->
-        S.concrete ->
-          (S.event_rel -> 'a -> 'a) -> 'a -> 'a
-
-val apply_process_sc :
-    S.test -> S.concrete -> (S.event_rel -> 'a -> 'a) -> 'a -> 'a
-
-
-(* fold over possibilities when saturating memory order wrt atomicity classes.
-     'fold_saturated_mem_order es mem_order kont res'
-     - es is the event structure for calculation
-     - mem_order is the order relation on accesses found so far
-     - kont and res are folded function and initial value, 
-	kont takes as additional argument the new saturating edges *)
-  val fold_saturated_mem_order :
-      S.event_structure ->
-	S.event_rel ->
-	  (S.event_rel -> 'a -> 'a) -> 'a -> 'a
-
 
 
 (*****************************************)

@@ -2,8 +2,6 @@
 (*                        Memevents                                  *)
 (*                                                                   *)
 (* Jade Alglave, Luc Maranget, INRIA Paris-Rocquencourt, France.     *)
-(* Susmit Sarkar, Peter Sewell, University of Cambridge, UK.         *)
-(* John Wickerson, Imperial College London, UK.                      *)
 (*                                                                   *)
 (*  Copyright 2010 Institut National de Recherche en Informatique et *)
 (*  en Automatique and the authors. All rights reserved.             *)
@@ -87,16 +85,6 @@ module type S = sig
 
 (* Commit *)
   val is_commit : event -> bool
-
-(* Local/Global Fences *)
-  val is_local_fence : event -> bool
-  val is_global_fence : event -> bool
-
-(* Mutex operations *)
-  val is_mutex_action : event -> bool
-
-(* SC operations *)
-  val is_sc_action : event -> bool
 
 (**************)
 (* Event sets *)
@@ -410,17 +398,6 @@ struct
 (* Commits *)
    let is_commit e = Act.is_commit e.action
 
-(* Local/Global Fences *)
-   let is_local_fence e = Act.is_local_fence e.action
-   let is_global_fence e = Act.is_global_fence e.action
-
-(* Mutex operations *)
-   let is_mutex_action e = Act.is_mutex_action e.action
-
-(* SC operations *)
-   (* For grabbing all the SC operations, so a total order
-   through them can be found. *)
-   let is_sc_action e = Act.is_sc_action e.action
 
 (******************************)
 (* Build structures of events *)

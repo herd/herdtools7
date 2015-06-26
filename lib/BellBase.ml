@@ -3,8 +3,6 @@
 (*                                                                   *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                   *)
 (* Jade Alglave, University College London, UK.                      *)
-(* John Wickerson, Imperial College London, UK.                      *)
-(* Tyler Sorensen, University College London                         *)
 (*                                                                   *)
 (*  Copyright 2013 Institut National de Recherche en Informatique et *)
 (*  en Automatique and the authors. All rights reserved.             *)
@@ -18,53 +16,30 @@ open Printf
 let string_of_annot_list a = String.concat "," a  
 
 (* Who am i ? *)
-let arch = Archs.bell
+let arch = Archs.lisa
 
-(* Registers mostly taken from GPU_PTX *)
-type gpr_reg =
-  | GPR0 | GPR1 | GPR2 | GPR3
-  | GPR4 | GPR5 | GPR6 | GPR7
-  | GPR8 | GPR9 
-
-let gpr_regs =
-  [
-   GPR0,"r0";  GPR1,"r1";
-   GPR2,"r2";  GPR3,"r3";
-   GPR4,"r4";  GPR5,"r5";
-   GPR6,"r6";  GPR7,"r7";
-   GPR8,"r8";  GPR9,"r9";
-  ]
+type gpr_reg = int
 
 type reg =
   | GPRreg of gpr_reg
   | Symbolic_reg of string
-  | PC (* program counter, not really sure why it's required... *)
 
-let pp_reg r =
-  match r with
-  | GPRreg ir -> begin 
-      try List.assoc ir gpr_regs with
-      | Not_found -> assert false 
-    end
-  | Symbolic_reg s -> sprintf "%%%s" s
-  | PC -> "pc"
+let pp_reg r = match r with
+| GPRreg ir -> sprintf "r%i" ir
+| Symbolic_reg s -> sprintf "%%%s" s
 
 let reg_compare = Pervasives.compare
 
-let parse_list =
-  List.map (fun (r,s) -> s, GPRreg r) gpr_regs
-(* Awful hack to handle register names, s0, s1 etc.
-@ 
-  List.map
-    (fun (r,s) -> "s" ^ String.sub s 1 (String.length s-1), GPRreg r) gpr_regs
-*)
-
 let parse_reg s =
-  let s = String.lowercase s in
-  try Some (List.assoc s parse_list)
-  with Not_found -> None
-
-let pc = PC
+  let len = String.length s in
+  assert (len > 0) ;
+  match s.[0] with
+  | 'r' ->
+      begin try
+        let rem = String.sub s 1 (len-1) in
+        Some (GPRreg (int_of_string rem))
+      with _ -> None end
+  | _ -> None
 
 (****************)
 (* Barriers     *)
@@ -253,10 +228,9 @@ let dump_instruction i = match i with
       l 
  
 let fold_regs (f_reg,f_sreg) = 
-  let fold_reg reg (y_reg,y_sreg as k) = match reg with
+  let fold_reg reg (y_reg,y_sreg) = match reg with
     | GPRreg _ -> f_reg reg y_reg,y_sreg
     | Symbolic_reg reg -> y_reg,f_sreg reg y_sreg
-    | PC -> k
   in
   let fold_roa roa c = match roa with
     | Rega r -> fold_reg r c
@@ -298,8 +272,7 @@ let map_regs f_reg f_symb =
 
   let map_reg reg = match reg with
   | GPRreg _ -> f_reg reg
-  | Symbolic_reg reg -> f_symb reg
-  | PC -> reg in
+  | Symbolic_reg reg -> f_symb reg in
 
   let map_roa roa = match roa with
     | Abs _ -> roa
@@ -367,10 +340,8 @@ let fold_addrs f =
 
 let pp_instruction _m ins = dump_instruction ins
 
-let allowed_for_symb =
-  List.map
-    (fun (r,_) ->  GPRreg r)
-    gpr_regs
+(* 64 register is probably enough *)
+let allowed_for_symb = List.map (fun r ->  GPRreg r) (Misc.interval 0 64)
 
 
 let _get_reg_list _ins = ([], [])

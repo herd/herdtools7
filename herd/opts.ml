@@ -3,7 +3,6 @@
 (*                                                                   *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                   *)
 (* Jade Alglave, University College London, UK.                      *)
-(* John Wickerson, Imperial College London, UK.                      *)
 (*                                                                   *)
 (*  Copyright 2013 Institut National de Recherche en Informatique et *)
 (*  en Automatique and the authors. All rights reserved.             *)
@@ -94,8 +93,6 @@ module PP = struct
   let initdotpos = ref (-0.4,0.3333)
   let oneinit = ref true
   let initpos = ref None
-  let showpoloc = ref false
-  let showfr = ref true
   let showinitwrites = ref true
   let dotheader = ref None
   let brackets = ref false

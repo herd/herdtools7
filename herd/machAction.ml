@@ -144,15 +144,6 @@ end = struct
    | Commit -> true
    | _ -> false
 
-(* Local/Global Fences *)
-   let is_local_fence _ = false
-   let is_global_fence _ = false
-
-(* Mutex operations *)
-   let is_mutex_action _ = false
-
-   let is_sc_action _ = false
-
 (* Architecture-specific sets *)
 
   let arch_sets =

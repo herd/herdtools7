@@ -30,4 +30,4 @@ val ppc : t
 val x86 : t
 val mips : t
 val c : t
-val bell : t
+val lisa : t

@@ -223,7 +223,7 @@ let () =
     | MIPS ->
         let module M = Make(C)(T(MIPSCompile.Make(C))) in
         M.zyva
-    | Bell ->
+    | LISA ->
         let module BellConfig =
         struct
           let debug = !Config.debug

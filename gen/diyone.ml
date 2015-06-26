@@ -241,7 +241,7 @@ let () =
       let module T = Top.Make(Co) in
       let module M = Build(T(MIPSCompile.Make(C))) in
       M.zyva
-  | Bell ->
+  | LISA ->
       let module BellConfig =
         struct
           let debug = !Config.debug

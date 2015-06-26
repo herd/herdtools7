@@ -22,9 +22,9 @@ type t =
   | AArch64
   | C
   | CPP
-  | Bell
+  | LISA
 
-let tags = ["X86";"PPC";"ARM";"MIPS";"C";"AArch64";"Bell"]
+let tags = ["X86";"PPC";"ARM";"MIPS";"C";"AArch64";"LISA"]
 
 let parse s = match s with
 | "X86" -> Some X86
@@ -34,7 +34,10 @@ let parse s = match s with
 | "C"   -> Some C
 | "CPP"|"C++"   -> Some CPP
 | "AArch64" -> Some AArch64
-| "Bell"|"LISA" -> Some Bell
+| "Bell" ->
+    Warn.warn_always "Bell is deprecated, use LISA instead" ;
+    Some LISA
+|"LISA" -> Some LISA
 | _ -> None
 
 let lex s = match parse s with
@@ -50,11 +53,11 @@ let pp a = match a with
 | AArch64 -> "AArch64"
 | C -> "C"
 | CPP -> "C++"
-| Bell -> "LISA"
+| LISA -> "LISA"
 
 let arm = ARM
 let ppc = PPC
 let x86 = X86
 let mips = MIPS
 let aarch64 = AArch64
-let bell = Bell
+let lisa = LISA

@@ -21,9 +21,6 @@ type t =
   | Pointer of t
 (** limited arrays *)
   | Array of base * int
-(** OpenCL *)
-  | Global of t
-  | Local of t
 
 let voidstar = Pointer (Base "void")
 let word = Base "int"
@@ -36,8 +33,6 @@ let rec  dump = function
   | Volatile t -> sprintf "%s volatile" (dump t)
   | Atomic t -> sprintf "_Atomic (%s)" (dump t)
   | Pointer t -> dump t  ^ "*"
-  | Global t -> sprintf "__global %s" (dump t)
-  | Local t -> sprintf "__local %s" (dump t)
   | Array (t,sz) -> sprintf "%s[%i]" t sz
 
 type fmt = Direct of string | Macro of string
@@ -78,22 +73,8 @@ let rec is_array = function
   | Atomic t|Volatile t -> is_array t
   | _ -> false
 
-let rec is_global = function
-  | Volatile t | Atomic t | Pointer t -> is_global t
-  | Global _ -> true
-  | _ -> false
-
-let rec is_local = function
-  | Volatile t | Atomic t | Pointer t -> is_local t
-  | Local _ -> true
-  | _ -> false
-
-let rec is_private = function
-  | Volatile t | Atomic t | Pointer t -> is_private t
-  | Local _ | Global _ -> false
-  | Base _|Array _ -> true
 let rec is_atomic = function
-  | Volatile t | Local t | Global t -> is_atomic t
+  | Volatile t -> is_atomic t
   | Atomic _ -> true
   | _ -> false
 
@@ -117,26 +98,7 @@ let strip_attributes t = strip_atomic (strip_volatile t)
 
 
 let rec is_ptr_to_atomic = function
-  | Volatile t | Local t | Global t -> is_ptr_to_atomic t
+  | Volatile t -> is_ptr_to_atomic t
   | Pointer t -> is_atomic t
   | _ -> false
 
-let rec is_ptr_to_global = function
-  | Volatile t | Atomic t -> is_ptr_to_global t
-  | Pointer t -> is_global t
-  | _ -> false
-
-let rec is_ptr_to_local = function
-  | Volatile t | Atomic t -> is_ptr_to_local t
-  | Pointer t -> is_local t
-  | _ -> false
-
-let rec is_ptr_to_private = function
-  | Volatile t | Atomic t -> is_ptr_to_private t
-  | Pointer t -> is_private t
-  | _ -> false
-
-let rec is_mutex = function
-  | Volatile t | Atomic t | Global t | Local t -> is_mutex t
-  | Base s -> RunTypeUtils.mutex_is_substring s
-  | Pointer _|Array _ -> assert false

@@ -59,4 +59,4 @@ let ppc = `PPC
 let x86 = `X86
 let mips = `MIPS
 let c = `C
-let bell = `LISA
+let lisa = `LISA
