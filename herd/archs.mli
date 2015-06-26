@@ -10,13 +10,14 @@
 (*  General Public License.                                          *)
 (*********************************************************************)
 
-type t = [  `X86
+type t = [
+    `X86
     | `PPC
     | `ARM
     | `AArch64
     | `MIPS
-    | `GPU_PTX
-    | `LISA | `C | `OpenCL ]
+    | `LISA
+    | `C ]
 
 val tags : string list
 val parse : string -> t option
@@ -28,7 +29,5 @@ val aarch64 : t
 val ppc : t
 val x86 : t
 val mips : t
-val gpu_ptx : t
 val c : t
-val opencl : t
 val bell : t

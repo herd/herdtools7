@@ -27,7 +27,7 @@ open Bell
 %token <string> MEM_ANNOT
 %token <int> PROC
 
-%type <int list * (BellBase.parsedPseudo) list list * MiscParser.gpu_data option * BellInfo.test option > main 
+%type <int list * (BellBase.parsedPseudo) list list * MiscParser.extra_data > main 
 %type <BellBase.parsedPseudo list> instr_option_seq
 %start main instr_option_seq
 
@@ -39,7 +39,8 @@ open Bell
 %%
 
 main:
-| semi_opt proc_list iol_list scopes_and_memory_map EOF { $2,$3, None, Some $4 }
+| semi_opt proc_list iol_list scopes_and_memory_map EOF
+   { $2,$3, MiscParser.BellExtra $4 }
 
 semi_opt:
 | { () }

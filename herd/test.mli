@@ -25,10 +25,7 @@ type ('prog,'nice_prog,'start,'state,'constr, 'loc, 'locset) t =
      cond : 'constr ;
      flocs : 'loc list ;
      observed : 'locset ;
-     scope_tree : ScopeTree.scope_tree option ;
-     mem_space_map : MemSpaceMap.mem_space_map ;
-     param_map : CAst.param list list ;
-     bell_info : BellInfo.test option ;
+     extra_data : MiscParser.extra_data ;
    }
 
 val simple_name :

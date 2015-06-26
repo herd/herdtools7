@@ -10,7 +10,7 @@
 (*  General Public License.                                          *)
 (*********************************************************************)
 
-(** A 'generic' parsing module for memevents/litmus files *)
+(** A 'generic' parsing module for herd/litmus/tools files *)
 
 (* Wapper (takes care of parsing exceptions *)
 val call_parser :
@@ -34,7 +34,7 @@ module type LexParse = sig
   val parser :
        (Lexing.lexbuf -> token) -> Lexing.lexbuf ->
 	 int list * instruction list list *
-           MiscParser.gpu_data option * BellInfo.test option
+           MiscParser.extra_data
 end
 
 module type S = sig
@@ -43,10 +43,12 @@ module type S = sig
   type prog = (int * pseudo list) list
   type locations = MiscParser.LocSet.t
 
+(*
 (* Partial access for external digest computation *)
   val parse_init : Lexing.lexbuf -> init
   val parse_prog : Lexing.lexbuf -> prog
   val parse_cond : Lexing.lexbuf -> MiscParser.constr
+*)
 (* Main parser for memevents and litmus *)
   val parse : in_channel -> Splitter.result ->  pseudo MiscParser.t
   val parse_string : string -> Splitter.result ->  pseudo MiscParser.t

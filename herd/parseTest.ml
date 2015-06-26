@@ -266,50 +266,6 @@ module Top (C:Config) = struct
         let module X = Make (CPP11S) (P) (NoCheck) (CPP11M) in
         X.run name chan env splitted
 
-      | `OpenCL ->
-        let module OpenCL = OpenCLArch.Make(C.PC)(SymbValue) in
-        let module OpenCLLexParse = struct
-  	  type pseudo = OpenCL.pseudo
-	  type token = OpenCLParser.token
-          module Lexer = OpenCLLexer.Make(LexConfig)
-	  let shallow_lexer = Lexer.token false
-	  let deep_lexer = Lexer.token true
-	  let shallow_parser = OpenCLParser.shallow_main
-	  let deep_parser = OpenCLParser.deep_main
-        end in
-        let module OpenCLS = OpenCLSem.Make(C)(SymbValue) in
-        let module OpenCLBarrier = struct
-          type a = OpenCL.barrier
-          type b = unit
-          let a_to_b _ = ()	    
-        end in
-        let module OpenCLM = OpenCLMem.Make(ModelConfig)(OpenCLS) (OpenCLBarrier) in
-        let module P = CGenParser.Make (C) (OpenCL) (OpenCLLexParse) in
-        let module X = Make (OpenCLS) (P) (NoCheck) (OpenCLM) in 
-        X.run name chan env splitted
-
-      | `GPU_PTX ->
-        let module GPU_PTX = GPU_PTXArch.Make(C.PC)(SymbValue) in
-        let module GPU_PTXLexParse = struct
-  	  type instruction = GPU_PTX.pseudo
-	  type token = GPU_PTXParser.token
-          module Lexer = GPU_PTXLexer.Make(LexConfig)
-	  let lexer = Lexer.token
-	  let parser = GPU_PTXParser.main
-        end in
-        let module GPU_PTXS = GPU_PTXSem.Make(C)(SymbValue) in
-        let module GPU_PTXBarrier = struct
-          type a = GPU_PTX.barrier
-          type b = Membar of GPU_PTX.bar_scope
-          let a_to_b a = match a with
-            | GPU_PTX.Membar (scope) -> Membar (scope)
-	    
-        end in
-        let module GPU_PTXM = GPU_PTXMem.Make(ModelConfig)(GPU_PTXS) (GPU_PTXBarrier) in
-        let module P = GenParser.Make (C) (GPU_PTX) (GPU_PTXLexParse) in
-        let module X = Make (GPU_PTXS) (P) (NoCheck) (GPU_PTXM) in 
-        X.run name chan env splitted
-
       | `LISA ->
         let module Bell = BellArch.Make(C.PC)(SymbValue) in
         let module BellLexParse = struct

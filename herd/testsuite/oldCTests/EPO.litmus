@@ -1,9 +1,0 @@
-CPP11 MP
-"Fre PodWR Fre PodWR"
-{ x=0; y=0; }
- P0                          | P1                       | P2                           ; 
- x.store(1,mo_relaxed)       | r1 = x.load(mo_acquire)  | r1 = x.load(mo_acquire)      ;
-                                                                          LK     
-x:atomic, y:atomic
-
-exists (1:r1=1 /\ 2:r1=0)

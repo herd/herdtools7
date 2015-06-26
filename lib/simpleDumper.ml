@@ -84,9 +84,9 @@ end = struct
     fprintf chan "\n" ;
     let locs = DumpUtils.dump_locations I.dump_location t.locations in
     if locs <> "" then fprintf chan "%s\n" locs ;
-    begin match t.bell_info with
-    | None -> ()
-    | Some bi ->
+    begin match t.extra_data with
+    | NoExtra|CExtra _ -> ()
+    | BellExtra bi ->
         fprintf chan "\n" ;
         BellInfo.pp chan bi ;
         fprintf chan "\n"

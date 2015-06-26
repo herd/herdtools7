@@ -113,17 +113,15 @@ let dump_state_atom dump_loc dump_val (loc,(t,v)) = match t with
 
 (* Packed result *)
 type info = (string * string) list
-type gpu_data = {
-      scope_tree : ScopeTree.scope_tree option ;
-      mem_space_map : MemSpaceMap.mem_space_map ;
-      param_map : CAst.param list list ;
-  }
 
-let empty_gpu = { 
-  scope_tree = None; 
-  mem_space_map = [];
-  param_map = []; 
-}
+(* Some source files contain addditionnal information *)
+
+type extra_data =
+  | NoExtra
+  | CExtra of CAst.param list list
+  | BellExtra of BellInfo.test
+
+let empty_extra = NoExtra
 
 type ('i, 'p, 'c, 'loc) result =
     { info : info ;
@@ -131,8 +129,7 @@ type ('i, 'p, 'c, 'loc) result =
       prog : 'p ;
       condition : 'c ;
       locations : ('loc * run_type) list ;
-      gpu_data : gpu_data option ;
-      bell_info : BellInfo.test option
+      extra_data : extra_data ;
 }
 
 (* Easier to handle *)
@@ -156,7 +153,7 @@ type 'pseudo t =
 
 let mach2generic parser lexer buff =
     let procs,code = parser lexer buff in
-    procs,code,None,None
+    procs,code,NoExtra
 
 (* get hash from info fields *)
 let get_hash p =

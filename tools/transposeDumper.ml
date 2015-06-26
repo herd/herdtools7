@@ -94,9 +94,9 @@ end = struct
         List.iter (fun i -> fprintf chan "%s\n" (fmt_io i)) code ;
         ())
       prog ;
-    begin match t.bell_info with
-    | None -> ()
-    | Some bi ->
+    begin match t.extra_data with
+    | NoExtra|CExtra _ -> ()
+    | BellExtra bi ->
         dump_sep chan "Scope" ;
         BellInfo.pp chan bi
     end ;

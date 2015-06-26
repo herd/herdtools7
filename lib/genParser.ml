@@ -60,8 +60,7 @@ module type LexParse = sig
   val lexer : Lexing.lexbuf -> token
   val parser :
         (Lexing.lexbuf -> token) -> Lexing.lexbuf ->
-	  int list * instruction list list *
-            MiscParser.gpu_data option * BellInfo.test option
+	  int list * instruction list list * MiscParser.extra_data
 end
 
 (* Output signature *)
@@ -70,10 +69,6 @@ module type S = sig
   type init = MiscParser.state
   type prog = (int * pseudo list) list
   type locations = MiscParser.LocSet.t
-
-  val parse_init : Lexing.lexbuf -> init
-  val parse_prog : Lexing.lexbuf -> prog
-  val parse_cond : Lexing.lexbuf -> MiscParser.constr
 
   val parse : in_channel -> Splitter.result ->  pseudo MiscParser.t
   val parse_string : string -> Splitter.result ->  pseudo MiscParser.t
@@ -176,19 +171,7 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
     module LexConfig = struct let debug = O.debuglexer end
     module LU = LexUtils.Make (LexConfig)
     module SL = StateLexer.Make (LexConfig)
-(*  module STL = ScopeTreeLexer.Make (LexConfig) *)
 
-    let parse_init lexbuf =
-      call_parser "init" lexbuf SL.token StateParser.init
-
-    let parse_prog lexbuf =
-      let procs,prog,_,_ = 
-        call_parser "prog" lexbuf L.lexer L.parser in
-      check_procs procs ;
-      let prog = parsed_tr prog in
-      let prog = transpose procs prog in
-      let prog = expn_prog prog in
-      prog
 
     let parse_cond lexbuf =
       let cond =  call_parser "cond" lexbuf
@@ -215,7 +198,7 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
       let init =
 	I.call_parser_loc "init"
 	  chan init_loc SL.token StateParser.init in
-      let procs,prog,gpu_data,bell_info =
+      let procs,prog,extra_data =
 	I.call_parser_loc "prog" chan prog_loc L.lexer L.parser in
       check_procs procs ;
       let prog = parsed_tr prog in
@@ -234,8 +217,7 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
          MiscParser.info; init; prog = prog;
          condition = final; 
          locations = locs;
-         gpu_data;
-	 bell_info;
+         extra_data ;
        } in
       let name  = name.Name.name in
       let parsed =

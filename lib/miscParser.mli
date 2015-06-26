@@ -56,13 +56,15 @@ val dump_state_atom :
 
 (* Packed result *)
 type info = (string * string) list
-type gpu_data = {
-      scope_tree : ScopeTree.scope_tree option ;
-      mem_space_map : MemSpaceMap.mem_space_map ;
-      param_map : CAst.param list list ;
-  }
 
-val empty_gpu : gpu_data
+(* Some source files contain addditionnal information *)
+
+type extra_data =
+  | NoExtra
+  | CExtra of CAst.param list list
+  | BellExtra of BellInfo.test
+
+val empty_extra : extra_data
 
 type ('i, 'p, 'c, 'loc) result =
     { info : info ;
@@ -70,9 +72,8 @@ type ('i, 'p, 'c, 'loc) result =
       prog : 'p ;
       condition : 'c ;
       locations : ('loc * run_type) list ;
-      gpu_data : gpu_data option ;
-      bell_info : BellInfo.test option ;
-}
+      extra_data : extra_data ;
+    }
 
 (* Easier to handle *)
 type ('loc,'v,'ins) r3 =
@@ -91,10 +92,10 @@ type ('loc,'v,'code) r4 =
 type 'pseudo t =
     (state, (int * 'pseudo list) list, constr, location) result
 
-(* Add empty GPU/Bell info to machine parsers *)
+(* Add empty extra info to machine parsers *)
 val mach2generic :
   (('lexbuf -> 'token) -> 'lexbuf -> 'a * 'b) ->
-    ('lexbuf -> 'token) -> 'lexbuf -> 'a * 'b * 'gpu option  * 'bell option
+    ('lexbuf -> 'token) -> 'lexbuf -> 'a * 'b * extra_data
 
 (* Extract hash *)
 val get_hash :  ('i, 'p, 'c, 'loc) result -> string option

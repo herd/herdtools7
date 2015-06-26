@@ -118,41 +118,6 @@ module FromCPP11(CB:CPP11Barrier.S) = struct
   let pp_isync = "???"
 end
 
-module FromOpenCL(OB:OpenCLBarrier.S) = struct
-
-  type a = OB.a
-
-  type b = 
-      | SYNC | LWSYNC | ISYNC | EIEIO (* PPC memory model barrier *)
-      | DSB | DMB | ISB               (* ARM barrier *)
-      | DSBST | DMBST
-      | MFENCE | SFENCE | LFENCE      (* X86 *)
-      | MEMBAR_CTA | MEMBAR_GL | MEMBAR_SYS (*PTX barriers*)
-
-  let a_to_b _ = assert false (* no (hardware) barriers in OpenCL *)
-
-  let pp_isync = "???"
-end
-
-module FromGPU_PTX(GB:GPU_PTXBarrier.S) = struct
-
-  type a = GB.a
-
-  type b = 
-      | SYNC | LWSYNC | ISYNC | EIEIO (* PPC memory model barrier *)
-      | DSB | DMB | ISB               (* ARM barrier *)
-      | DSBST | DMBST
-      | MFENCE | SFENCE | LFENCE      (* X86 *)
-      | MEMBAR_CTA | MEMBAR_GL | MEMBAR_SYS (*PTX barriers*)
-
-  let a_to_b a = match GB.a_to_b a with
-  | GB.Membar GPU_PTXBase.CTA_bar -> MEMBAR_CTA
-  | GB.Membar GPU_PTXBase.GL_bar  -> MEMBAR_GL
-  | GB.Membar GPU_PTXBase.SYS_bar -> MEMBAR_SYS
-
-  let pp_isync = "???"
-end
-
 module FromBell(BB:BellBarrier.S) = struct
 
   type a = BB.a

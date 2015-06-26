@@ -60,7 +60,7 @@ module type LexParse = sig
   val deep_lexer : Lexing.lexbuf -> token
   val deep_parser :
         (Lexing.lexbuf -> token) -> Lexing.lexbuf ->
-	  (int * pseudo list) list * MiscParser.gpu_data
+	  pseudo list CAst.test list
 
   val shallow_lexer : Lexing.lexbuf -> token
   val shallow_parser :
@@ -74,9 +74,6 @@ module type S = sig
   type init = MiscParser.state
   type prog = (int * pseudo list) list
   type locations = MiscParser.LocSet.t
-
-  val parse_init : Lexing.lexbuf -> init
-  val parse_cond : Lexing.lexbuf -> MiscParser.constr
 
   val parse : in_channel -> Splitter.result ->  pseudo MiscParser.t
 end
@@ -143,19 +140,7 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
     module LexConfig = struct let debug = O.debuglexer end
     module LU = LexUtils.Make (LexConfig)
     module SL = StateLexer.Make (LexConfig)
-(*  module STL = ScopeTreeLexer.Make (LexConfig) *)
 
-    let parse_init lexbuf =
-      call_parser "init" lexbuf SL.token StateParser.init
-
-    (* let parse_prog lexbuf =
-      let procs,prog,_ = 
-        call_parser "prog" lexbuf L.lexer L.parser in
-      check_procs procs ;
-      let prog = transpose procs prog in
-      let prog = expn_prog prog in
-      prog
-    *)
     let parse_cond lexbuf =
       let cond =  call_parser "cond" lexbuf
           SL.token StateParser.constr in
@@ -177,7 +162,7 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
       let init =
 	call_parser_loc "init"
 	  chan init_loc SL.token StateParser.init in
-      let prog,gpu_data =
+      let prog =
 	call_parser_loc "prog" chan prog_loc L.deep_lexer L.deep_parser in
       let prog_litmus =
         call_parser_loc "prog_litmus" chan prog_loc L.shallow_lexer L.shallow_parser in
@@ -197,8 +182,10 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
                     (ty,SymbConstant.nameToV loc))::env)
                  env t.params)
           init prog_litmus in
-      let procs = List.map fst prog in 
+      let procs = List.map (fun p -> p.CAst.proc) prog in 
       check_procs procs ;
+      let params =  List.map (fun p -> p.CAst.params) prog in 
+      let prog =  List.map (fun p -> p.CAst.proc,p.CAst.body) prog in 
       let (locs,final,_quantifiers) =
 	call_parser_loc "final"
 	  chan constr_loc SL.token StateParser.constraints in
@@ -212,8 +199,7 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
          MiscParser.info; init=full_init; prog = prog;
          condition = final; 
          locations = locs;
-         gpu_data = Some gpu_data;
-	 bell_info = None;
+         extra_data = MiscParser.CExtra params;
        } in
       let name  = name.Name.name in
       let parsed =

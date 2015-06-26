@@ -14,17 +14,17 @@
 (* Archs *)
 (*********)
 
-type t = [`X86
+type t =
+    [`X86
     | `PPC
     | `ARM
     | `AArch64
     | `MIPS
-    | `GPU_PTX
     | `LISA
-    | `C | `OpenCL ]
+    | `C ]
 
 (*jade: des tonnes a virer!*)
-let tags = ["X86";"PPC";"ARM";"AArch64";"MIPS";"GPU_PTX";"C";"OpenCL"; "LISA"]
+let tags = ["X86";"PPC";"ARM";"AArch64";"MIPS";"C"; "LISA"]
 
 let parse s = match s with
 | "X86" -> Some `X86
@@ -32,9 +32,7 @@ let parse s = match s with
 | "ARM" -> Some `ARM
 | "AArch64" -> Some `AArch64
 | "MIPS" -> Some `MIPS
-| "GPU_PTX" -> Some `GPU_PTX
 | "C" -> Some `C
-| "OpenCL" -> Some `OpenCL
 | "Bell" ->
     Warn.warn_always "Bell is deprecated as an arch name, use LISA" ;
     Some `LISA
@@ -52,17 +50,13 @@ let pp a = match a with
 | `ARM -> "ARM"
 | `AArch64 -> "AArch64"
 | `MIPS -> "MIPS"
-| `GPU_PTX -> "GPU_PTX"
 | `LISA -> "LISA"
 | `C -> "C"
-| `OpenCL -> "OpenCL"
 
 let arm = `ARM
 let aarch64 = `AArch64
 let ppc = `PPC
 let x86 = `X86
 let mips = `MIPS
-let gpu_ptx = `GPU_PTX
 let c = `C
-let opencl = `OpenCL
 let bell = `LISA

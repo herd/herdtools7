@@ -23,10 +23,7 @@ type ('prog,'nice_prog,'start,'state,'constr,'loc,'locset) t =
      cond : 'constr ;
      flocs : 'loc list ;
      observed : 'locset ;
-     scope_tree : ScopeTree.scope_tree option ;
-     mem_space_map : MemSpaceMap.mem_space_map ;
-     param_map : CAst.param list list ;
-     bell_info : BellInfo.test option ;
+     extra_data : MiscParser.extra_data
    }
 
 (* Name and nothing else *)
@@ -75,8 +72,7 @@ module Make(A:Arch.S) =
            prog = nice_prog ;
            condition = final ; 
            locations = locs ;
-           gpu_data = gpu_data ;
-	   bell_info = bell_info ;
+           extra_data = extra_data ;
 	 } = t in
 
       let prog,starts = Load.load nice_prog in
@@ -90,10 +86,6 @@ module Make(A:Arch.S) =
           final locs in
 (* Hum, half satisfactory,  but steems from the test structure having
    three fields that are gpu-specific *)
-      let scope_tree, mem_space_map,param_map = match gpu_data with
-      | None -> None,[],[]
-      | Some { MiscParser.scope_tree; mem_space_map; param_map; } ->
-          scope_tree, mem_space_map, param_map in
       {
        arch = A.arch ;
        name = name ;
@@ -105,10 +97,7 @@ module Make(A:Arch.S) =
        cond = final ;
        flocs = flocs ;
        observed = observed ;       
-       scope_tree = scope_tree ;
-       mem_space_map = mem_space_map ;
-       param_map = param_map ;
-       bell_info = bell_info;
+       extra_data = extra_data
      }
 
     let empty_test =
@@ -134,10 +123,7 @@ module Make(A:Arch.S) =
        cond = fake_constr ;
        flocs = [] ;
        observed = A.LocSet.empty;
-       scope_tree = None ;
-       mem_space_map = [];
-       param_map = [] ;
-       bell_info = None;
+       extra_data = MiscParser.empty_extra;
       }     
 
     let find_our_constraint test = test.cond 

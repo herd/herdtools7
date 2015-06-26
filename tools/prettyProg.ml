@@ -235,7 +235,7 @@ module Make(O:Config)(A:Arch.S) =
           | Pointer t ->
 	    "{} "^ pp_mbox (t ^ " *" ^ pp_location l) ^ " " ^
               pp_equal ^ " " ^ pp_v v ^ "\\\\ "
-          | TyArray _ -> Warn.fatal "Array type not implemented...")
+          | TyArray _|Atomic _ -> Warn.fatal "Array/Atomic type not implemented...")
       ^ "\\hline \\end{tabular}\n"
 
     let zero = Constant.Concrete 0

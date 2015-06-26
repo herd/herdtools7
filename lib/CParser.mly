@@ -47,7 +47,7 @@ open CType
 %token LD LD_EXPLICIT ST ST_EXPLICIT EXC EXC_EXPLICIT FENCE LOCK UNLOCK SCAS WCAS
 %token <Op.op> ATOMIC_FETCH
 %token <Op.op> ATOMIC_FETCH_EXPLICIT
-%type <(int * CPP11Base.pseudo list) list * MiscParser.gpu_data> deep_main 
+%type <(CPP11Base.pseudo list) CAst.test list> deep_main 
 %start deep_main
 %%
 
@@ -275,19 +275,9 @@ function_definition:
 translation_unit:
 | function_definition
   { [$1] }
-| translation_unit function_definition 
-  { $1 @ [$2] }
+| function_definition translation_unit
+  { $1 :: $2 }
 
 deep_main:
-| translation_unit EOF 
-  { let proc_list,param_map = 
-      List.fold_right (fun p (proc_list, param_map) -> 
-        let proc_list = (p.CAst.proc,p.CAst.body) :: proc_list in
-        let param_map = p.CAst.params :: param_map in
-        (proc_list, param_map)) $1 ([], [])  
-    in
-    let additional = 
-      { MiscParser.empty_gpu with 
-        MiscParser.param_map = param_map; } 
-    in
-    (proc_list, additional) }
+| translation_unit EOF  { $1 }
+

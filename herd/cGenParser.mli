@@ -34,7 +34,7 @@ module type LexParse = sig
   val deep_lexer : Lexing.lexbuf -> token
   val deep_parser :
         (Lexing.lexbuf -> token) -> Lexing.lexbuf ->
-	  (int * pseudo list) list * MiscParser.gpu_data
+	  (pseudo list) CAst.test list
 
   val shallow_lexer : Lexing.lexbuf -> token
   val shallow_parser :
@@ -42,16 +42,13 @@ module type LexParse = sig
 	  string CAst.t list
 end
 
+
 module type S = sig
   type pseudo
   type init = MiscParser.state
   type prog = (int * pseudo list) list
   type locations = MiscParser.LocSet.t
 
-(* Partial access for external digest computation *)
-  val parse_init : Lexing.lexbuf -> init
-(* val parse_prog : Lexing.lexbuf -> prog *)
-  val parse_cond : Lexing.lexbuf -> MiscParser.constr
 (* Main parser for memevents and litmus *)
   val parse : in_channel -> Splitter.result ->  pseudo MiscParser.t
 end

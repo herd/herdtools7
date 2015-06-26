@@ -199,10 +199,10 @@ module Make
             code)
         parsed.MiscParser.prog in
       let parsed = { parsed with MiscParser.prog; } in
-      let test_bi = parsed.MiscParser.bell_info in            
+      let test_bi = parsed.MiscParser.extra_data in            
       let test_bi = match test_bi with
-      | Some b -> b
-      | None -> Warn.fatal "Error getting bell information from test" in
+      | MiscParser.BellExtra b -> b
+      | _ -> Warn.fatal "Error getting bell information from test" in
       begin match test_bi.BellInfo.regions with 
       | Some r -> check_regions r bi
       | _ -> ()
@@ -212,7 +212,7 @@ module Make
         | Some s -> Some (check_scopes s bi)
         | _ -> None in        
       let test_bi = { test_bi with BellInfo.scopes=st;} in
-      { parsed with MiscParser.bell_info = Some test_bi; }
+      { parsed with MiscParser.extra_data = MiscParser.BellExtra test_bi; }
 
     let check = match C.info with
     | None -> Misc.identity

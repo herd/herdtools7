@@ -105,7 +105,7 @@ module Make
       let m =
         I.add_rels
           I.init_env_empty
-          (["id",id;
+          ["id",id;
             "loc", lazy begin
               E.EventRel.restrict_rel E.same_location (Lazy.force unv)
             end;
@@ -127,21 +127,7 @@ module Make
            "ctrl", lazy (Lazy.force pr).S.ctrl;
            "rf", lazy (Lazy.force pr).S.rf;
            "fromto", lazy conc.S.fromto;
-          ] @
-          (match test.Test.scope_tree with
-           | None -> []
-           | Some scope_tree ->
-        List.fold_left (fun z (k,v) ->
-            ("ext-" ^ k, lazy (U.ext_scope v (Lazy.force unv) scope_tree)) ::
-            ((* "int-" ^ *) k,
-             lazy (U.int_scope v (Lazy.force unv) scope_tree)) ::
-            z ) [] [
-          "wi", AST.Work_Item; "thread", AST.Work_Item;
-          "sg", AST.Sub_Group; "warp", AST.Sub_Group;
-          "wg", AST.Work_Group; "block", AST.Work_Group; "cta", AST.Work_Group;
-          "kernel", AST.Kernel;
-	  "dev", AST.Device; "gl", AST.Device;
-	])) in
+          ] in
       let m =
         I.add_sets m
           (List.map
@@ -190,28 +176,31 @@ module Make
                 (fun annot e -> E.Act.annot_in_list annot e.E.action)
                 evts
                 (BellModel.get_mem_annots bi) in
-            let m =
-              match test.Test.bell_info with
+            let open MiscParser in
+            begin match test.Test.extra_data with
               (* No region in test, no event sets *)
-              | None|Some {BellInfo.regions=None;_} -> m
-              | Some {BellInfo.regions=Some regions;_} ->
+              | NoExtra|BellExtra {BellInfo.regions=None;_} -> m
+              | BellExtra {BellInfo.regions=Some regions;_} ->
                   add_bell_events m
                     (fun region e -> match E.Act.location_of e.E.action with
                     | None -> false
                     | Some x ->
                        List.mem (E.Act.A.pp_location x, region) regions)
                     evts
-                    (BellModel.get_region_sets bi) in
-            m in
+                    (BellModel.get_region_sets bi)
+              | CExtra _ -> assert false (* This is Bell, not C *)
+            end in
 (* Scope relations from bell info *)
       let m =
         match bell_info with
         | None -> m
         | Some bi ->
             let scopes =
-              match test.Test.bell_info with
-              | None -> assert false (* must be here as, O.bell_mode_info is *)
-              | Some tbi -> tbi.BellInfo.scopes in
+              let open MiscParser in
+              match test.Test.extra_data with
+              | NoExtra|CExtra _ ->
+                  assert false (* must be here as, O.bell_mode_info is *)
+              | BellExtra tbi -> tbi.BellInfo.scopes in
             begin match scopes with
  (* If no scope definition in test, do not build relations, will fail
     later if the model attempts to use scope relations *)

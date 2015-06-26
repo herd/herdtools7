@@ -1,6 +1,6 @@
 * Requirements
 
-   You need Objective Caml, with a version as recent as 3.12.0.
+   You need Objective Caml, with a version as recent as 4.01.0
    Ocaml is available from http://caml.inria.fr/ocaml/
 
 * Configuration

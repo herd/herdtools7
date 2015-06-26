@@ -114,7 +114,7 @@ module Make(C:Config) = struct
   let convert env instrs =
     let rec aux env l = match l with
       | [] -> [],env
-      | (src,tgt,subs)::ts ->
+      | (_src,tgt,subs)::ts ->
 	 let conv,env =
 	   List.fold_left
 	     (fun (cv,env) -> function
@@ -204,8 +204,7 @@ module Make(C:Config) = struct
       prog = prog;
       condition = condition;
       locations = src.locations;
-      gpu_data = src.gpu_data;
-      bell_info = src.bell_info
+      extra_data = src.extra_data;
     }
 
 end
