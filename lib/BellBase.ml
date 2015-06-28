@@ -130,51 +130,51 @@ let pp_addr_op a = match a with
   | Addr_op_add(roa,roi) -> sprintf "%s+%s" (string_of_reg_or_addr roa) 
     (string_of_reg_or_imm roi)
 
-type 'k cond = 
-  | Eq of reg * 'k reg_or_imm
-  | Ne of reg * 'k reg_or_imm
-  | Bal 
-
-let cond_tr f = function
-  | Eq (r,ri) -> Eq (r,reg_or_imm_tr f ri)
-  | Ne (r,ri) -> Ne (r,reg_or_imm_tr f ri)
-  | Bal as keep -> keep
-
-type 'k op = 
-  | Add of reg * 'k imm_or_addr_or_reg * 'k imm_or_addr_or_reg 
-  | And of reg * 'k imm_or_addr_or_reg * 'k imm_or_addr_or_reg
-  | Mov of reg * 'k imm_or_addr_or_reg 
+type 'k op =
+  | RAI of 'k imm_or_addr_or_reg 
+  | Add of 'k imm_or_addr_or_reg * 'k imm_or_addr_or_reg 
+  | Xor of 'k imm_or_addr_or_reg * 'k imm_or_addr_or_reg 
+  | And of 'k imm_or_addr_or_reg * 'k imm_or_addr_or_reg
+  | Eq of 'k imm_or_addr_or_reg * 'k imm_or_addr_or_reg 
+  | Neq of 'k imm_or_addr_or_reg * 'k imm_or_addr_or_reg 
 
 let op_tr f = function
-  | Add (r,iar1,iar2) ->
-      Add (r,imm_or_addr_or_reg_tr f iar1,imm_or_addr_or_reg_tr f iar2)
-  | And (r,iar1,iar2) ->
-      And (r,imm_or_addr_or_reg_tr f iar1,imm_or_addr_or_reg_tr f iar2)
-  | Mov (r,iar) -> Mov (r,imm_or_addr_or_reg_tr f iar)
-
+  | RAI (iar) -> 
+      RAI (imm_or_addr_or_reg_tr f iar)
+  | Add (iar1,iar2) ->
+      Add (imm_or_addr_or_reg_tr f iar1,imm_or_addr_or_reg_tr f iar2)
+  | Xor (iar1,iar2) ->
+      Xor (imm_or_addr_or_reg_tr f iar1,imm_or_addr_or_reg_tr f iar2)
+  | And (iar1,iar2) ->
+      And (imm_or_addr_or_reg_tr f iar1,imm_or_addr_or_reg_tr f iar2)
+  | Eq (iar1,iar2) -> 
+      Eq (imm_or_addr_or_reg_tr f iar1,imm_or_addr_or_reg_tr f iar2)
+  | Neq (iar1,iar2) -> 
+      Neq (imm_or_addr_or_reg_tr f iar1,imm_or_addr_or_reg_tr f iar2)
+ 
 let pp_op = function
-  | Add(r,x,i) -> sprintf "add %s %s %s" (pp_reg r) (pp_iar x) (pp_iar i)
-  | And(r,x,i) -> sprintf "and %s %s %s" (pp_reg r) (pp_iar x) (pp_iar i) 
-  | Mov(r,i) -> sprintf "mov %s %s" (pp_reg r) (pp_iar i)
-
-let pp_cond = function
-  | Eq(r,x) -> sprintf "eq %s %s" (pp_reg r) (string_of_reg_or_imm x) 
-  | Ne(r,x) -> sprintf "ne %s %s" (pp_reg r) (string_of_reg_or_imm x)  
-  | Bal -> ""
+  | RAI(iar) -> sprintf "%s" (pp_iar iar)
+  | Add(x,i) -> sprintf "add %s %s" (pp_iar x) (pp_iar i)
+  | Xor(x,i) -> sprintf "xor %s %s" (pp_iar x) (pp_iar i)
+  | And(x,i) -> sprintf "and %s %s" (pp_iar x) (pp_iar i) 
+  | Eq(x,y) -> sprintf "eq %s %s" (pp_iar x) (pp_iar y) 
+  | Neq(x,y) -> sprintf "neq %s %s" (pp_iar x) (pp_iar y)  
 
 type 'k kinstruction = 
 | Pld of reg * 'k addr_op * string list
 | Pst of 'k addr_op * 'k reg_or_imm * string list
-| Prmw of 'k op * string list
 | Pfence of barrier
-| Pbranch of 'k cond * lbl * string list
+| Prmw of reg * 'k op * 'k addr_op * string list
+| Pbranch of reg * lbl * string list
+| Pmov of reg * 'k op
 
 let instruction_tr f = function
-  | Pld (r,ao,s) -> Pld (r,addr_op_tr f ao,s)
-  | Pst (ao,ri,s) -> Pst (addr_op_tr f ao,reg_or_imm_tr f ri,s)
-  | Prmw (op,s) -> Prmw (op_tr f op,s)
+  | Pld (r,x,s) -> Pld (r,addr_op_tr f x,s)
+  | Pst (x,ri,s) -> Pst (addr_op_tr f x,reg_or_imm_tr f ri,s)
   | Pfence _ as i -> i
-  | Pbranch (cond,lbl,s) -> Pbranch (cond_tr f cond,lbl,s)
+  | Prmw (r,op,x,s) -> Prmw (r,op_tr f op,addr_op_tr f x,s)
+  | Pbranch _ as i -> i
+  | Pmov (r,op) -> Pmov (r,op_tr f op)
 
 type instruction = int kinstruction
 type parsedInstruction = MetaConst.k kinstruction
@@ -216,17 +216,23 @@ let dump_instruction i = match i with
       (pp_addr_op addr_op)
       (string_of_reg_or_imm roi)
 
-| Prmw(op,s) -> sprintf "rmw[%s](%s)"
+| Prmw(r,op,x,s) -> sprintf "rmw[%s] %s %s %s"
       (string_of_annot_list s)
+      (pp_reg r)
       (pp_op op)
+      (pp_addr_op x)
 
 | Pfence f -> pp_fence_ins f
 
-| Pbranch(c,l,s) -> sprintf "b[%s](%s) %s" 
+| Pbranch(r,l,s) -> sprintf "b[%s] %s %s" 
       (string_of_annot_list s)
-      (pp_cond c) 
+      (pp_reg r) 
       l 
- 
+
+| Pmov(r,op) -> sprintf "mov %s %s"
+      (pp_reg r)
+      (pp_op op)
+
 let fold_regs (f_reg,f_sreg) = 
   let fold_reg reg (y_reg,y_sreg) = match reg with
     | GPRreg _ -> f_reg reg y_reg,y_sreg
@@ -248,23 +254,22 @@ let fold_regs (f_reg,f_sreg) =
     | Addr_op_atom roa -> fold_roa roa c
     | Addr_op_add(roa,roi) -> fold_roa roa (fold_roi roi c)
   in
-  let fold_cond cond c = match cond with
-    | Eq(r,i) -> fold_reg r (fold_roi i c) 
-    | Ne(r,i) -> fold_reg r (fold_roi i c)  
-    | Bal -> c 
-  in
   let fold_op op c = match op with
-    | Add(r,x,i) -> fold_reg r (fold_iar x (fold_iar i c)) 
-    | And(r,x,i) -> fold_reg r (fold_iar x (fold_iar i c)) 
-    | Mov(r,i) -> fold_reg r (fold_iar i c)
+    | RAI(i) -> fold_iar i c
+    | Add(x,i) -> fold_iar x (fold_iar i c) 
+    | Xor(x,i) -> fold_iar x (fold_iar i c) 
+    | And(x,i) -> fold_iar x (fold_iar i c) 
+    | Eq(r,i) -> fold_iar r (fold_iar i c) 
+    | Neq(r,i) -> fold_iar r (fold_iar i c)  
   in
   let fold_ins (_y_reg,_y_sreg as c) ins = 
     begin match ins with      
     | Pld(r, addr_op, _) -> fold_reg r (fold_addr_op addr_op c)
     | Pst(addr_op,roi,_) -> fold_addr_op addr_op (fold_roi roi c)
-    | Prmw(op,_) -> fold_op op c
-    | Pbranch(cond,_,_) -> fold_cond cond c 
     | Pfence _ -> c
+    | Prmw(r,op,_,_) -> fold_reg r (fold_op op c)
+    | Pbranch(r,_,_) -> fold_reg r c 
+    | Pmov(r,op) -> fold_reg r (fold_op op c) 
     end 
   in fold_ins
   
@@ -290,22 +295,21 @@ let map_regs f_reg f_symb =
     | Addr_op_atom roa -> Addr_op_atom(map_roa roa)      
     | Addr_op_add(roa,roi) -> Addr_op_add(map_roa roa,map_roi roi)
   in
-  let map_cond cond = match cond with
-    | Eq(r,i) -> Eq(map_reg r, map_roi i)
-    | Ne(r,i) -> Ne(map_reg r, map_roi i)  
-    | Bal -> Bal
-  in
   let map_op op = match op with
-    | Add(r,x,i) -> Add(map_reg r, map_iar x, map_iar i) 
-    | And(r,x,i) -> And(map_reg r, map_iar x, map_iar i) 
-    | Mov(r,i) -> Mov(map_reg r, map_iar i) 
+    | RAI(i) -> RAI(map_iar i)
+    | Add(x,i) -> Add(map_iar x, map_iar i) 
+    | Xor(x,i) -> Xor(map_iar x, map_iar i) 
+    | And(x,i) -> And(map_iar x, map_iar i) 
+    | Eq(r,i) -> Eq(map_iar r, map_iar i)
+    | Neq(r,i) -> Neq(map_iar r, map_iar i)  
   in
   let map_ins ins = begin match ins with
     | Pld(r,addr_op,s) -> Pld(map_reg r, map_addr_op addr_op, s)
     | Pst(addr_op,roi,s) -> Pst(map_addr_op addr_op, map_roi roi, s)
-    | Prmw(op,s) -> Prmw(map_op op, s)
-    | Pbranch(cond,lbl,s) -> Pbranch(map_cond cond,lbl,s)
+    | Prmw(r,op,x,s) -> Prmw(map_reg r,map_op op, map_addr_op x, s)
+    | Pbranch(r,lbl,s) -> Pbranch(map_reg r,lbl,s)
     | Pfence _ -> ins
+    | Pmov(r,op) -> Pmov(map_reg r,map_op op)
   end in
   map_ins
 
@@ -329,14 +333,14 @@ let fold_addrs f =
        fold_roa roa c 
   in
   let fold_op op c = match op with
-    | Add(_,x,i) -> fold_iar x (fold_iar i c) 
-    | And(_,x,i) -> fold_iar x (fold_iar i c) 
-    | Mov(_,i) -> fold_iar i c
+    | RAI(i) -> fold_iar i c
+    | Add(x,i) | Xor(x,i) | And(x,i) | Eq(x,i) | Neq(x,i) -> fold_iar x (fold_iar i c) 
   in
   fun c ins -> match ins with
   | Pbranch _ | Pfence _ -> c
   | Pld (_,ao,_) | Pst (ao,_,_) -> fold_ao ao c
-  | Prmw (op,_) -> fold_op op c
+  | Prmw (_,op,x,_) -> fold_op op (fold_ao x c)
+  | Pmov (_,op) -> fold_op op c
 
 let pp_instruction _m ins = dump_instruction ins
 
@@ -358,7 +362,7 @@ let get_next _ins = Warn.fatal "Bell get_next not implemented"
 
 let set_shared _i = Warn.fatal "Bell set_shared has not been implemented"
 
-let set_global _i = Warn.fatal "Bell set_global has not been implmeneted"
+let set_global _i = Warn.fatal "Bell set_global has not been implemented"
 
 let get_reg_list _i = Warn.fatal "Bell get_reg_list has not been implemented"
 
@@ -367,9 +371,9 @@ let get_id_and_list i = match i with
 | Pld(_,_,s) -> (BellName.r,s)
 | Pst(_,_,s) -> (BellName.w,s)
 | Pfence (Fence (s, _)) -> (BellName.f,s)      
-| Prmw(_,s) -> (BellName.rmw,s)
+| Prmw(_,_,_,s) -> (BellName.rmw,s)
 | Pbranch(_,_,s) -> (BellName.b,s)
-
+| Pmov _ -> raise Not_found 
 
 let get_from_and_to_labels b = match b with
 | Fence (_, a) -> a
@@ -378,6 +382,7 @@ let set_list i al = match i with
 | Pld (a1,a2,_) -> Pld (a1,a2,al)
 | Pst (a1,a2,_) -> Pst (a1,a2,al)
 | Pfence (Fence (_,a2)) -> Pfence (Fence (al,a2))
-| Prmw(a1,_) -> Prmw(a1,al)
+| Prmw(a1,a2,a3,_) -> Prmw(a1,a2,a3,al)
 | Pbranch(a1,a2,_) -> Pbranch(a1,a2,al)
+| Pmov _ as i -> i
 

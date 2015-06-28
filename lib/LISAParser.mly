@@ -18,7 +18,7 @@ open Bell
     
 %}
 
-%token EOF SEMI COMMA PIPE COLON LPAR RPAR RBRAC LBRAC LBRACE RBRACE SCOPES REGIONS MOV AND ADD BRANCH BEQ BNE BAL READ WRITE FENCE RMW CAS EXCH DOT XOR PLUS
+%token EOF SEMI COMMA PIPE COLON LPAR RPAR RBRAC LBRAC LBRACE RBRACE SCOPES REGIONS MOV AND ADD BRANCH EQ NEQ READ WRITE FENCE RMW CAS EXCH DOT XOR PLUS
 %token <BellBase.reg> REG
 %token <int> NUM
 %token <string> NAME
@@ -110,27 +110,28 @@ any_value:
 addr_op:
 | reg_or_addr {BellBase.Addr_op_atom($1)}
 
-op:
-| MOV reg any_value 
- { Mov($2,$3) }
+operation:
+| any_value
+  { RAI($1) }
 
-| ADD reg any_value any_value
- { Add($2,$3,$4) }
+| LPAR ADD any_value any_value RPAR
+ { Add($3,$4) }
 
-| AND reg any_value any_value
- { And($2,$3,$4) }
+| LPAR XOR any_value any_value RPAR
+ { Xor($3,$4) }
 
-condition:
-| BEQ reg reg_or_imm
-  { Eq($2,$3) }
-| BNE reg reg_or_imm
-  { Ne($2,$3) }
-| BAL
-  { Bal }
+| LPAR AND any_value any_value RPAR
+ { And($3,$4) }
+
+| LPAR EQ any_value any_value RPAR
+  { Eq($3,$4) }
+
+| LPAR NEQ any_value any_value RPAR
+  { Neq($3,$4) }
 
 fence_labels_option:
 | { None }
-| LPAR LBRACE name_list_ne RBRACE COMMA LBRACE name_list_ne RBRACE RPAR {Some($3,$7)}
+| LBRACE name_list_ne RBRACE LBRACE name_list_ne RBRACE {Some($2,$5)}
 
 instr:
 
@@ -140,16 +141,19 @@ instr:
 | WRITE annot_list_option addr_op reg_or_imm
   { Pst($3,$4,$2) }
 
-| RMW annot_list_option LPAR op RPAR
-  { Prmw($4,$2)}
-
 | FENCE annot_list_option fence_labels_option
  { Pfence(Fence ($2,$3)) 
 (*jade: not sure why two levels here: could we just have Pfence, like for the others?*)
  }
 
-| BRANCH annot_list_option LPAR condition RPAR NAME
-  { Pbranch ($4,$6,$2) }
+| RMW annot_list_option reg operation addr_op  
+  { Prmw($3,$4,$5,$2)}
+
+| BRANCH annot_list_option reg NAME
+  { Pbranch ($3,$4,$2) }
+
+| MOV reg operation
+  { Pmov ($2,$3)}
 
 proc:
  | PROC { $1 }

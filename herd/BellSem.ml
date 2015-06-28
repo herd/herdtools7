@@ -102,58 +102,22 @@ module Make (C:Sem.Config)(V:Value.S)
 	  read_roi roi ii) >>= 
 	(fun (v1,v2) -> M.op Op.Add v1 v2)
 
-    let tr_cond ii lbl = function
-      | BellBase.Ne(r,i) | BellBase.Eq(r,i) as cond -> 
-        let op = match cond with 
-          | BellBase.Ne _ -> Op.Ne
-          | BellBase.Eq _ -> Op.Eq
-          | _ -> assert false
-        in
-	  (read_reg r ii) >>|
-	      (read_roi i ii) >>=
-		(fun (v1,v2) -> M.op op v1 v2 >>=
-		  (fun v -> commit ii >>= fun () -> B.bccT v lbl))
-      | BellBase.Bal ->  M.unitT (B.Jump lbl)
-
-    let op_of_rmw_op op = match op with
-          | BellBase.Add _ -> Op.Add 
-          | BellBase.And _ -> Op.And
-          | _ -> assert false
-
-(*  jade: j'aurais voulu mettre les calculs de rmw en facteur comme ca, mais du
-coup je n'arrivais pas a obtenir de iico entre le R* et le W* d'un rmw, car je
-n'arrivais pas a creer de iico_truc entre; pas sure de bien comprendre
-pourquoi!
-
-     let tr_op op r roi v ii = 
-          (read_iar roi ii) >>=
-          (fun v' -> M.op op v v') >>=
-          (fun res -> (write_reg r res ii)) (*>>=
-          (fun () -> read_reg r ii)*) 
-
-        | BellBase.Mov(r, iar) -> (*jade: todo*) 
-        (read_iar iar ii) >>=
-        (fun res -> (write_reg r res ii)) >>!
-        B.Next *)
-
-    let last_of_rmw_op op = match op with
-      | BellBase.Add(_,_,BellBase.IAR_roa(BellBase.Abs _ as x)) 
-      | BellBase.And(_,_,BellBase.IAR_roa(BellBase.Abs _ as x)) -> BellBase.Addr_op_atom(x)
-(*      | BellBase.Mov jade: todo; or Exch? *)
-      | _ -> failwith "the last operand of an rmw op must be an address" 
-
-    let second_of_rmw_op op = match op with
-      | BellBase.Add(_,(BellBase.IAR_roa(BellBase.Rega _) as x),_) 
-      | BellBase.And(_,(BellBase.IAR_roa(BellBase.Rega _) as x),_)
-      | BellBase.Add(_,(BellBase.IAR_imm _ as x),_) 
-      | BellBase.And(_,(BellBase.IAR_imm _ as x),_) -> x
-(*      | BellBase.Mov jade: todo; or Exch? *)
-      | _ -> failwith "the second operand of an rmw op must be an immediate value or a register" 
-
-    let first_of_rmw_op op = match op with
-      | BellBase.Add(r,_,_) | BellBase.And(r,_,_) -> r
-(*      | BellBase.Mov jade: todo; or Exch? *)
-      | _ -> failwith "the first operand of an rmw op must be a register" 
+    let tr_op ii = function
+      | BellBase.Add(x,y) | BellBase.And(x,y) | BellBase.Xor(x,y) | BellBase.Eq(x,y) | BellBase.Neq(x,y) as bell_op -> 
+      let op = match bell_op with 
+        | BellBase.RAI _ -> assert false
+        | BellBase.Xor _ -> Op.Xor
+        | BellBase.Add _ -> Op.Add
+        | BellBase.And _ -> Op.And 
+        | BellBase.Eq _ -> Op.Eq 
+        | BellBase.Neq _ -> Op.Ne  
+      in
+      ((read_iar x ii) >>| (read_iar y ii)) >>=
+        (fun (v1,v2) -> M.op op v1 v2) 
+      | BellBase.RAI(i) -> (read_iar i ii) 
+    
+    let tr_mov r op ii = 
+      (tr_op ii op) >>= (fun v -> write_reg r v ii) 
 
     let build_semantics ii = 
       let build_semantics_inner ii =
@@ -170,24 +134,26 @@ pourquoi!
 	    (fun (addr,v) -> write_mem addr v s ii) >>!
 	    B.Next
 
-	| BellBase.Prmw(op,s) ->
-          let addr_op = last_of_rmw_op op in
-          let roi = second_of_rmw_op op in
-          let r = first_of_rmw_op op in 
-          let op = op_of_rmw_op op in
+	| BellBase.Pfence(BellBase.Fence (s,o)) ->
+      	  create_barrier s o ii >>! B.Next	  
+
+	| BellBase.Prmw(r,op,addr_op,s) ->
           (solve_addr_op addr_op ii) >>=
           (fun x -> (read_mem_atom x s ii) >>=
             (fun v -> 
-              (read_iar roi ii) >>=
-                (fun v' -> M.op op v v') >>=
-                  (fun res -> (write_reg r res ii) >>| 
-                               write_mem_atom x res s ii))) >>!
+              (write_reg r v ii) >>=
+(*                (fun () -> tr_mov r op ii) >>= *)
+                  (fun () -> (tr_op ii op) >>= 
+                  (fun v -> write_reg r v ii >>|
+                            write_mem_atom x v s ii)))) >>!
           B.Next
 
-	| BellBase.Pbranch(cond,lbl,_) -> tr_cond ii lbl cond
-	    
-	| BellBase.Pfence(BellBase.Fence (s,o)) ->
-      	  create_barrier s o ii >>! B.Next	  
+	| BellBase.Pbranch(r,lbl,_) -> 
+   	  (read_reg r ii) >>=
+            (fun v -> commit ii >>= fun () -> B.bccT v lbl)
+ 
+        | BellBase.Pmov(r,op) ->
+          (tr_mov r op ii) >>! B.Next
 
       in 
       M.addT (A.next_po_index ii.A.program_order_index) (build_semantics_inner ii)

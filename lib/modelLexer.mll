@@ -30,18 +30,18 @@ module LU = LexUtils.Make(O)
     | "show" -> SHOW
     | "unshow" -> UNSHOW
     | "empty" -> TESTEMPTY
-    | "subset" -> SUBSET (*jade: not a check! needs to be married to if*)
+    | "subset" -> SUBSET (*jade: a virer*)
     | "as" -> AS
     | "fun" ->  FUN
     | "in" -> IN
     | "undefined_unless" -> REQUIRES (* jade: deprecated?, indeed but still here ! *)
     | "flag" -> FLAG
-    | "withco" -> WITHCO
-    | "withoutco" ->  WITHOUTCO
-    | "withinit" -> WITHINIT
-    | "withoutinit" ->  WITHOUTINIT
-    | "withsc" -> WITHSC
-    | "withoutsc" -> WITHOUTSC
+    | "withco" -> WITHCO (*jade: a virer*) 
+    | "withoutco" ->  WITHOUTCO (*jade: a virer*)
+    | "withinit" -> WITHINIT  (*jade: a virer*) 
+    | "withoutinit" ->  WITHOUTINIT (*jade: a virer*)    
+    | "withsc" -> WITHSC  (*jade: a virer*)    
+    | "withoutsc" -> WITHOUTSC (*jade: a virer*)
     | "include" -> INCLUDE
     | "begin" -> BEGIN
     | "end" -> END
