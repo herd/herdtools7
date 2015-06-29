@@ -88,10 +88,14 @@ ins_list:
 | { [] }
 | ins ins_list { $1 :: $2 }
 
+in_opt:
+|    { () }
+| IN { () }
+
 ins:
-| LET pat_bind_list { Let (mk_loc (),$2) }
-| LET REC pat_bind_list  { Rec (mk_loc (),$3,None) }
-| LET REC pat_bind_list WHEN app_test { Rec (mk_loc (),$3,Some $5) }
+| LET pat_bind_list in_opt { Let (mk_loc (),$2) }
+| LET REC pat_bind_list  in_opt { Rec (mk_loc (),$3,None) }
+| LET REC pat_bind_list WHEN app_test in_opt { Rec (mk_loc (),$3,Some $5) }
 | deftest { $1 }
 | SHOW exp AS VAR { ShowAs (mk_loc(),$2, $4) }
 | SHOW var_list { Show (mk_loc(),$2) }
