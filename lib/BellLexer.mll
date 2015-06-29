@@ -57,7 +57,7 @@ rule token = parse
 | "xor"  { XOR }
 | "b" { BRANCH }
 | "eq"  { EQ }
-| "ne"  { NEQ }
+| "ne"|"neq"  { NEQ }
 | "scopes"  { SCOPES  }
 | "regions" { REGIONS }
 | '&' (name as x) { META x }

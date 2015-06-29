@@ -154,11 +154,11 @@ let op_tr f = function
  
 let pp_op = function
   | RAI(iar) -> sprintf "%s" (pp_iar iar)
-  | Add(x,i) -> sprintf "add %s %s" (pp_iar x) (pp_iar i)
-  | Xor(x,i) -> sprintf "xor %s %s" (pp_iar x) (pp_iar i)
-  | And(x,i) -> sprintf "and %s %s" (pp_iar x) (pp_iar i) 
-  | Eq(x,y) -> sprintf "eq %s %s" (pp_iar x) (pp_iar y) 
-  | Neq(x,y) -> sprintf "neq %s %s" (pp_iar x) (pp_iar y)  
+  | Add(x,i) -> sprintf "(add %s %s)" (pp_iar x) (pp_iar i)
+  | Xor(x,i) -> sprintf "(xor %s %s)" (pp_iar x) (pp_iar i)
+  | And(x,i) -> sprintf "(and %s %s)" (pp_iar x) (pp_iar i) 
+  | Eq(x,y) -> sprintf "(eq %s %s)" (pp_iar x) (pp_iar y) 
+  | Neq(x,y) -> sprintf "(neq %s %s)" (pp_iar x) (pp_iar y)  
 
 type 'k kinstruction = 
 | Pld of reg * 'k addr_op * string list

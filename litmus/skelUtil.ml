@@ -35,7 +35,6 @@ let rec nitems t = match t with
 | Array (_,sz) -> sz
 | Volatile t|Atomic t -> nitems t
 | Base _|Pointer _ -> 1
-| Global _|Local _ -> assert false
 
 
 (* Skeleton utilities, useful for Skel and PreSi *)
@@ -165,8 +164,7 @@ module Make
             let fmt_elt = pp_fmt_base t in
             let fmts = Misc.replicate sz fmt_elt in
             let fmt = String.concat "," fmts in
-            sprintf "{%s}" fmt
-        | CType.Global _|CType.Local _ -> assert false in
+            sprintf "{%s}" fmt in
 
         A.LocSet.pp_str " "
           (fun loc ->

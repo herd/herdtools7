@@ -24,7 +24,7 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
 
 (* Utilities *)
 
-
+    let tempo1 = Symbolic_reg "T1" (* May be used for branch cond *)
     let next_reg x = Bell.alloc_reg x
 
     let pseudo = List.map (fun i -> Instruction i)
@@ -45,7 +45,11 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
     let st_idx_tagged x v idx a =
       Pst (Addr_op_add (Abs (Constant.Symbolic x),Regi idx),Imm v,a)
 
-    let branch_tagged cond lab a = Pbranch (cond,lab,a)
+    let mov rA op = Pmov (rA,op)
+
+    let movne rA rB k = mov  rA (Neq (IAR_roa (Rega rB),IAR_imm k))
+
+    let branch reg lab = Pbranch (reg,lab,[])
 
 (*    let addi r1 r2 i = Add(r1,IAR_roa (Rega r2),IAR_imm i)
     let subi r1 r2 i = Add(r1,IAR_roa (Rega r2),IAR_imm (-i))
@@ -74,18 +78,21 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
 
     let emit_load_not_zero st _p init x =
       let rA,st = next_reg st in
+      let rB,st = next_reg st in
       let lab = Label.next_label "L" in
       rA,init,
       Label (lab,Nop)::
-      pseudo [ld rA x; branch_tagged (Ne(rA, Imm(0))) lab []],
+      pseudo
+        [ld rA x; movne rB rA 0 ; branch rB lab;],
       st
 
     let emit_load_one st _p init x =
       let rA,st = next_reg st in
+      let rB,st = next_reg st in
       let lab = Label.next_label "L" in
       rA,init,
       Label (lab,Nop)::
-      pseudo [ld rA x; branch_tagged (Ne(rA, Imm(1))) lab []],
+      pseudo [ld rA x; movne rB rA 1; branch rB lab],
       st
 
 (*    let emit_load_not st _p init x bcc =
@@ -241,7 +248,9 @@ let emit_exch_dep _ = assert false (*jade: ca me parait un peu fort d'avoir ca r
 (* Check load *)
     let check_load p r e =
       let lab = Label.exit p in
-      fun k -> Instruction (branch_tagged (Ne(r, Imm(e.v))) lab [])::k
+      fun k ->
+        Instruction (movne tempo1 r e.v)::
+        Instruction (branch tempo1 lab)::k
 
 (* Postlude for adding exit label *)
 

@@ -65,7 +65,7 @@ end = struct
   | TyDefPointer -> I.dump_location loc ^"*;"
   | Ty t -> sprintf "%s %s;" (I.dump_location loc) t
   | Pointer t -> sprintf "%s %s*;" (I.dump_location loc) t
-  | TyArray _ -> assert false (* No arrays in locations *)
+  | TyArray _|Atomic _ -> assert false (* No arrays nor atomics in locations *)
   let dump_locations env =
     let pp = List.map dump_loc_type env in
     String.concat " " pp

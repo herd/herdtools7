@@ -36,12 +36,12 @@ let dump_instruction ins = assert false
 
 let allowed_for_symb = []
 
-let fold_regs = assert false
-let map_regs = assert false
-let fold_addrs = assert false
-let map_addrs = assert false
-let norm_ins = assert false
-let get_next = assert false
+let fold_regs _ = assert false
+let map_regs _ = assert false
+let fold_addrs _ = assert false
+let map_addrs _ = assert false
+let norm_ins _ = assert false
+let get_next _ = assert false
 
 include Pseudo.Make
 	  (struct
