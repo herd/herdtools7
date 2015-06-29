@@ -74,3 +74,16 @@ let get_arch = function
 	       include BellArch
 	       module Parser = MakeParser(BellBase)(BellLexParse)
 	     end : S)
+(*  | `C ->
+     let module CLexParse = struct
+       type pseudo = CArch.pseudo
+       type token = CParser.token
+       module Lexer = CLexer.Make(struct let debug = false end)
+       let lexer = Lexer.token true
+       let parser = CParser.new_main
+       let instr_parser = CParser.ins_seq
+     end in (module struct 
+	       include CArch
+	       module Parser = MakeParser(CBase)(CLexParse)
+	     end : S)
+ *)

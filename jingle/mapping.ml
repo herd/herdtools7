@@ -154,7 +154,7 @@ module Make(C:Config) = struct
 		    acc@
 		      (List.map (fun (sa,tr) -> 
 				 (Location_reg(i,Target.pp_reg tr),
-				  (TyDefPointer,SymbConstant.nameToV sa)))
+				  (TyDef,SymbConstant.nameToV sa)))
 				b.Env.addr)
 		   ) []
 		

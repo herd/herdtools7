@@ -62,21 +62,16 @@ let match_iar subs iar iar' = match iar,iar' with
   | _,_ -> None
 
 let match_op subs op op' = match op,op' with
-  | Add(r,iar1,iar2),Add(r',iar1',iar2') 
-  | And(r,iar1,iar2),And(r',iar1',iar2') ->
+  | Add(iar1,iar2),Add(iar1',iar2') 
+  | And(iar1,iar2),And(iar1',iar2')
+  | Xor(iar1,iar2),Xor(iar1',iar2') 
+  | Eq(iar1,iar2),Eq(iar1',iar2') 
+  | Neq(iar1,iar2),Neq(iar1',iar2') ->
      begin match (match_iar subs iar1 iar1') with
-	   | Some subs -> 
-	      begin match (match_iar subs iar2 iar2') with
-		    | Some subs -> Some(add_subs [Reg(sr_name r,r')] subs)
-		    | None -> None
-	      end
+	   | Some subs -> match_iar subs iar2 iar2'
 	   | None -> None
      end
-  | Mov(r,iar),Mov(r',iar') ->
-     begin match (match_iar subs iar iar') with
-	   | Some subs -> Some(add_subs [Reg(sr_name r,r')] subs)
-	   | None -> None
-     end
+  | RAI(iar),RAI(iar') -> match_iar subs iar iar'
   | _,_ -> None
 
 let match_addr_op subs ao ao' = match ao,ao' with
@@ -105,9 +100,14 @@ let match_instr subs pattern instr = match pattern,instr with
 	 | None -> None
     else None
 
-  | Prmw(op,s),Prmw(op',s') ->
+  | Prmw(r,op,ao,s),Prmw(r',op',ao',s') ->
      if annots_compare s s'
-     then match_op subs op op'
+     then match match_op subs op op' with
+	  | None -> None
+	  | Some subs ->
+	     match match_addr_op subs ao ao' with
+	     | Some subs -> Some (add_subs [Reg(sr_name r,r')] subs)
+	     | None -> None
      else None
 
   | Pfence Fence(s,_), Pfence Fence(s',_) 
@@ -187,7 +187,7 @@ let instanciate_with subs free instrs =
   let rec expl = function
     | Pld(r,ao,s) -> Pld(conv_reg r,expl_ao ao,s)
     | Pst(ao,ri,s) -> Pst(expl_ao ao,expl_ri ri,s)
-    | Prmw(op,s) -> Prmw(expl_op op,s)
+    | Prmw(r,op,ao,s) -> Prmw(conv_reg r,expl_op op,expl_ao ao,s)
     | Pbranch(a,l,b) -> Pbranch(a,find_lab l,b)
     | i -> i
   and expl_ao = function
@@ -198,9 +198,12 @@ let instanciate_with subs free instrs =
     | Imm(MetaConst.Meta v) -> Imm(find_cst v)
     | i -> i
   and expl_op = function
-    | Add(r,iar1,iar2) -> Add(conv_reg r,expl_iar iar1,expl_iar iar2)
-    | And(r,iar1,iar2) -> And(conv_reg r,expl_iar iar1,expl_iar iar2)
-    | Mov(r,iar) -> Mov(conv_reg r,expl_iar iar)
+    | Add(iar1,iar2) -> Add(expl_iar iar1,expl_iar iar2)
+    | And(iar1,iar2) -> And(expl_iar iar1,expl_iar iar2)
+    | Xor(iar1,iar2) -> Xor(expl_iar iar1,expl_iar iar2)
+    | Eq(iar1,iar2) -> Eq(expl_iar iar1,expl_iar iar2)
+    | Neq(iar1,iar2) -> Neq(expl_iar iar1,expl_iar iar2)
+    | RAI(iar) -> RAI(expl_iar iar)
   and expl_ra = function
     | Rega r -> Rega(conv_reg r)
     | abs -> abs

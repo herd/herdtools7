@@ -13,6 +13,7 @@
 %{
 open Constant
 open CPP11Base
+open CBase
 open CType
 %}
 
@@ -49,6 +50,19 @@ open CType
 %token <Op.op> ATOMIC_FETCH_EXPLICIT
 %type <(CPP11Base.pseudo list) CAst.test list> deep_main 
 %start deep_main
+
+/* New base */
+
+%left PIPE
+%left XOR
+%left LAND
+%nonassoc EQ_OP NEQ_OP
+%left ADD SUB
+%left STAR DIV
+
+%type <(CBase.pseudo list) CAst.test list> new_main
+%start new_main
+
 %%
 
 parameter_list:
@@ -270,7 +284,7 @@ function_definition:
 | PROC LPAR parameter_list RPAR compound_statement
   { { CAst.proc = $1; 
       CAst.params = $3; 
-      CAst.body = List.map (fun ins -> Instruction ins) $5 } }
+      CAst.body = List.map (fun ins -> CPP11Base.Instruction ins) $5 } }
 
 translation_unit:
 | function_definition
@@ -281,3 +295,55 @@ translation_unit:
 deep_main:
 | translation_unit EOF  { $1 }
 
+
+
+op:
+| STAR { Op.Mul }
+| ADD { Op.Add }
+| SUB { Op.Sub }
+| DIV { Op.Div }
+| LAND { Op.And }
+| PIPE { Op.Or }
+| XOR { Op.Xor }
+| EQ_OP { Op.Eq }
+| NEQ_OP { Op.Ne }
+
+location:
+| IDENTIFIER { CBase.Local $1 }
+| STAR IDENTIFIER { CBase.Shared $2 }
+
+expr:
+| LPAR expr RPAR { $2 }
+| CONSTANT { Const $1 }
+| location { Load $1 }
+| expr op expr { Op($2,$1,$3) }
+
+instruction:
+| IF LPAR expr RPAR block_ins %prec LOWER_THAN_ELSE 
+  { If($3,$5,None) }
+| IF LPAR expr RPAR block_ins ELSE block_ins 
+  { If($3,$5,Some $7) }
+| location EQ expr {Store($1,$3)}
+
+ins_seq:
+| block_ins { [$1] }
+| block_ins SEMI ins_seq { $1::$3 }
+
+block_ins:
+| instruction SEMI { $1 }
+| LBRACE ins_seq RBRACE { Seq($2) }
+
+function_def:
+| PROC LPAR parameter_list RPAR LBRACE ins_seq RBRACE
+  { { CAst.proc = $1; 
+      CAst.params = $3; 
+      CAst.body = List.map (fun ins -> CBase.Instruction ins) $6 } }
+
+trans_unit:
+| function_def
+  { [$1] }
+| trans_unit function_def 
+  { $1 @ [$2] }
+
+new_main:
+| trans_unit EOF { $1 }
