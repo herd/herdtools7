@@ -35,7 +35,7 @@ module NoCheck = struct
   let check parsed= parsed
 end
 
-module Top (C:Config) = struct
+module Top (Conf:Config) = struct
   module Make
       (S:Sem.Semantics)
       (P:sig 
@@ -65,7 +65,7 @@ module Top (C:Config) = struct
           | Some hash ->
               TestHash.check_env env name.Name.name filename hash in
           let test = T.build name parsed in
-          let module T = Top.Make(C)(M) in
+          let module T = Top.Make(Conf)(M) in
           T.run test ;
           env
           with TestHash.Seen -> env
@@ -74,25 +74,25 @@ module Top (C:Config) = struct
   module SP =
     Splitter.Make
       (struct
-        let debug = C.debug.Debug.lexer
-        let check_rename = C.check_rename
+        let debug = Conf.debug.Debug.lexer
+        let check_rename = Conf.check_rename
       end)
 
   let do_from_file env name chan =
 (* First split the input file in sections *)
     let (splitted:Splitter.result) =  SP.split name chan in
     let tname = splitted.Splitter.name.Name.name in
-    if C.check_name tname then begin
+    if Conf.check_name tname then begin
       let arch = splitted.Splitter.arch in
 (* Now, we have the architecture, call specific parsers
    generically. *)
       let module LexConfig = struct
-        let debug = C.debug.Debug.lexer
+        let debug = Conf.debug.Debug.lexer
       end in
       let module ModelConfig = struct
         let model =
           let m =
-            match C.model with
+            match Conf.model with
             | None -> Model.get_default_model arch
             | Some m -> m in
           match m with
@@ -101,7 +101,7 @@ module Top (C:Config) = struct
                 ParseModel.Make
                   (struct
                     include LexUtils.Default
-                    let libfind = C.libfind
+                    let libfind = Conf.libfind
                    end) in
               let (b,_,_) as r = P.parse fname in
               if b <> ModelOption.default then
@@ -111,19 +111,19 @@ module Top (C:Config) = struct
               Model.Generic r
           | _ -> m
         let showsome =
-          begin match C.outputdir with PrettyConf.StdoutOutput | PrettyConf.Outputdir _ -> true | _ -> false end
-        || C.PC.gv || C.PC.evince
-        let through = C.through
-        let debug = C.debug.Debug.barrier
-        let verbose = C.verbose
-        let skipchecks = C.skipchecks
-        let strictskip = C.strictskip
-        let optace = C.optace
-        let libfind = C.libfind
+          begin match Conf.outputdir with PrettyConf.StdoutOutput | PrettyConf.Outputdir _ -> true | _ -> false end
+        || Conf.PC.gv || Conf.PC.evince
+        let through = Conf.through
+        let debug = Conf.debug.Debug.barrier
+        let verbose = Conf.verbose
+        let skipchecks = Conf.skipchecks
+        let strictskip = Conf.strictskip
+        let optace = Conf.optace
+        let libfind = Conf.libfind
       end in
       match arch with
       | `PPC ->
-	  let module PPC = PPCArch.Make(C.PC)(SymbValue) in
+	  let module PPC = PPCArch.Make(Conf.PC)(SymbValue) in
 	  let module PPCLexParse = struct
 	    type instruction = PPC.pseudo
 	    type token = PPCParser.token
@@ -131,7 +131,7 @@ module Top (C:Config) = struct
 	    let lexer = Lexer.token
 	    let parser = MiscParser.mach2generic PPCParser.main
 	  end in
-          let module PPCS = PPCSem.Make(C)(SymbValue) in
+          let module PPCS = PPCSem.Make(Conf)(SymbValue) in
           let module PPCBarrier = struct
             type a = PPC.barrier
             type b = SYNC | LWSYNC | ISYNC | EIEIO
@@ -142,12 +142,12 @@ module Top (C:Config) = struct
             | PPC.Eieio ->  EIEIO
           end in
           let module PPCM = PPCMem.Make(ModelConfig)(PPCS) (PPCBarrier) in
-          let module P = GenParser.Make (C) (PPC) (PPCLexParse) in
+          let module P = GenParser.Make (Conf) (PPC) (PPCLexParse) in
           let module X = Make (PPCS) (P) (NoCheck) (PPCM) in 
           X.run name chan env splitted
 
       | `ARM ->
-	  let module ARM = ARMArch.Make(C.PC)(SymbValue) in
+	  let module ARM = ARMArch.Make(Conf.PC)(SymbValue) in
 	  let module ARMLexParse = struct
 	    type instruction = ARM.parsedPseudo
 	    type token = ARMParser.token
@@ -155,7 +155,7 @@ module Top (C:Config) = struct
 	    let lexer = Lexer.token
 	    let parser = MiscParser.mach2generic ARMParser.main
 	  end in
-          let module ARMS = ARMSem.Make(C)(SymbValue) in
+          let module ARMS = ARMSem.Make(Conf)(SymbValue) in
           let module ARMBarrier = struct
             type a = ARM.barrier
             type b =
@@ -168,12 +168,12 @@ module Top (C:Config) = struct
             | ARM.ISB -> ISB
           end in
           let module ARMM = ARMMem.Make(ModelConfig)(ARMS)(ARMBarrier) in
-          let module P = GenParser.Make (C) (ARM) (ARMLexParse) in
+          let module P = GenParser.Make (Conf) (ARM) (ARMLexParse) in
           let module X = Make (ARMS) (P) (NoCheck) (ARMM) in 
           X.run name chan env splitted
 
       | `AArch64 ->
-	  let module AArch64 = AArch64Arch.Make(C.PC)(SymbValue) in
+	  let module AArch64 = AArch64Arch.Make(Conf.PC)(SymbValue) in
 	  let module AArch64LexParse = struct
 	    type instruction = AArch64.parsedPseudo
 	    type token = AArch64Parser.token
@@ -181,7 +181,7 @@ module Top (C:Config) = struct
 	    let lexer = Lexer.token
 	    let parser = MiscParser.mach2generic AArch64Parser.main
 	  end in
-          let module AArch64S = AArch64Sem.Make(C)(SymbValue) in
+          let module AArch64S = AArch64Sem.Make(Conf)(SymbValue) in
           let module AArch64Barrier = struct
             type a = AArch64.barrier
             type b =
@@ -194,12 +194,12 @@ module Top (C:Config) = struct
             | AArch64.ISB -> ISB
           end in
           let module AArch64M = AArch64Mem.Make(ModelConfig)(AArch64S) (AArch64Barrier) in
-          let module P = GenParser.Make (C) (AArch64) (AArch64LexParse) in
+          let module P = GenParser.Make (Conf) (AArch64) (AArch64LexParse) in
           let module X = Make (AArch64S) (P) (NoCheck) (AArch64M) in 
           X.run name chan env splitted
 
       | `X86 ->
-          let module X86 = X86Arch.Make(C.PC)(SymbValue) in
+          let module X86 = X86Arch.Make(Conf.PC)(SymbValue) in
           let module X86LexParse = struct
 	    type instruction = X86.pseudo
 	    type token = X86Parser.token
@@ -207,7 +207,7 @@ module Top (C:Config) = struct
 	    let lexer = Lexer.token
 	    let parser = MiscParser.mach2generic X86Parser.main
 	  end in
-          let module X86S = X86Sem.Make(C)(SymbValue) in
+          let module X86S = X86Sem.Make(Conf)(SymbValue) in
           let module X86Barrier = struct
             type a = X86.barrier
             type b = MFENCE|LFENCE|SFENCE
@@ -217,12 +217,12 @@ module Top (C:Config) = struct
             | X86.Lfence -> LFENCE
           end in
           let module X86M = X86Mem.Make(ModelConfig)(X86S) (X86Barrier) in
-          let module P = GenParser.Make (C) (X86) (X86LexParse) in
+          let module P = GenParser.Make (Conf) (X86) (X86LexParse) in
           let module X = Make (X86S) (P) (NoCheck) (X86M) in 
           X.run name chan env splitted
 
       | `MIPS ->
-          let module MIPS = MIPSArch.Make(C.PC)(SymbValue) in
+          let module MIPS = MIPSArch.Make(Conf.PC)(SymbValue) in
           let module MIPSLexParse = struct
 	    type instruction = MIPS.pseudo
 	    type token = MIPSParser.token
@@ -230,7 +230,7 @@ module Top (C:Config) = struct
 	    let lexer = Lexer.token
 	    let parser = MiscParser.mach2generic MIPSParser.main
 	  end in
-          let module MIPSS = MIPSSem.Make(C)(SymbValue) in
+          let module MIPSS = MIPSSem.Make(Conf)(SymbValue) in
           let module MIPSBarrier = struct
             type a = MIPS.barrier
             type b = SYNC
@@ -238,14 +238,14 @@ module Top (C:Config) = struct
             | MIPS.Sync -> SYNC
           end in
           let module MIPSM = MIPSMem.Make(ModelConfig)(MIPSS)(MIPSBarrier) in
-          let module P = GenParser.Make (C) (MIPS) (MIPSLexParse) in
+          let module P = GenParser.Make (Conf) (MIPS) (MIPSLexParse) in
           let module X = Make (MIPSS) (P) (NoCheck) (MIPSM) in
           X.run name chan env splitted
 
       | `C ->
-        let module CPP11 = CPP11Arch.Make(C.PC)(SymbValue) in
-        let module CPP11LexParse = struct
-    	  type pseudo = CPP11.pseudo
+        let module C = CArch.Make(Conf.PC)(SymbValue) in
+        let module CLexParse = struct
+    	  type pseudo = C.pseudo
 	  type token = CParser.token
           module Lexer = CLexer.Make(LexConfig)
 	  let shallow_lexer = Lexer.token false
@@ -253,19 +253,19 @@ module Top (C:Config) = struct
 	  let shallow_parser = CParser.shallow_main
 	  let deep_parser = CParser.deep_main
         end in
-        let module CPP11S = CPP11Sem.Make(C)(SymbValue) in
-        let module  CPP11Barrier = struct
-          type a = CPP11.barrier
+        let module CS = CSem.Make(Conf)(SymbValue) in
+        let module  CBarrier = struct
+          type a = C.barrier
           type b = unit
           let a_to_b _ = ()
         end in
-        let module CPP11M = CPP11Mem.Make(ModelConfig)(CPP11S) (CPP11Barrier) in
-        let module P = CGenParser.Make (C) (CPP11) (CPP11LexParse) in
-        let module X = Make (CPP11S) (P) (NoCheck) (CPP11M) in
+        let module CM = CMem.Make(ModelConfig)(CS) (CBarrier) in
+        let module P = CGenParser.Make (Conf) (C) (CLexParse) in
+        let module X = Make (CS) (P) (NoCheck) (CM) in
         X.run name chan env splitted
 
       | `LISA ->
-        let module Bell = BellArch.Make(C.PC)(SymbValue) in
+        let module Bell = BellArch.Make(Conf.PC)(SymbValue) in
         let module BellLexParse = struct
   	  type instruction = Bell.parsedPseudo
 	  type token = LISAParser.token
@@ -274,23 +274,23 @@ module Top (C:Config) = struct
 	  let parser = LISAParser.main
         end in
 
-        let module BellS = BellSem.Make(C)(SymbValue) in
+        let module BellS = BellSem.Make(Conf)(SymbValue) in
         let module BellM =
           BellMem.Make
             (struct
-              let bell_model_info = C.bell_model_info
+              let bell_model_info = Conf.bell_model_info
               include ModelConfig
              end)(BellS) in
         let module BellC =
           BellCheck.Make
-            (struct let debug = C.debug.Debug.barrier end)
+            (struct let debug = Conf.debug.Debug.barrier end)
             (Bell)
             (struct
-              let info = Misc.app_opt (fun (_,y) -> y) C.bell_model_info
+              let info = Misc.app_opt (fun (_,y) -> y) Conf.bell_model_info
               let get_id_and_list = Bell.get_id_and_list
               let set_list = Bell.set_list
              end) in
-        let module P = GenParser.Make (C) (Bell) (BellLexParse) in
+        let module P = GenParser.Make (Conf) (Bell) (BellLexParse) in
         let module X = Make (BellS) (P) (BellC) (BellM) in 
         X.run name chan env splitted
     end else env

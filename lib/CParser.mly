@@ -12,8 +12,8 @@
 
 %{
 open Constant
-open CPP11Base
 open CBase
+open MemOrder
 open CType
 %}
 
@@ -44,14 +44,10 @@ open CType
 %token WHILE IF ELSE
 %nonassoc LOWER_THAN_ELSE /* This fixes the dangling-else problem */
 %nonassoc ELSE
-%token <CPP11Base.mem_order> MEMORDER
+%token <MemOrder.t> MEMORDER
 %token LD LD_EXPLICIT ST ST_EXPLICIT EXC EXC_EXPLICIT FENCE LOCK UNLOCK SCAS WCAS
 %token <Op.op> ATOMIC_FETCH
 %token <Op.op> ATOMIC_FETCH_EXPLICIT
-%type <(CPP11Base.pseudo list) CAst.test list> deep_main 
-%start deep_main
-
-/* New base */
 
 %left PIPE
 %left XOR
@@ -60,8 +56,8 @@ open CType
 %left ADD SUB
 %left STAR DIV
 
-%type <(CBase.pseudo list) CAst.test list> new_main
-%start new_main
+%type <(CBase.pseudo list) CAst.test list> deep_main
+%start deep_main
 
 %%
 
@@ -111,192 +107,6 @@ shallow_main:
 | PROC LPAR parameter_list RPAR BODY shallow_main
     { CAst.Test {CAst.proc = $1; params = $3; body = $5} :: $6 }
 
-primary_expression:
-| IDENTIFIER
-  { Eregister $1 }
-| CONSTANT 
-  { Econstant (Concrete $1) }
-| NULL
-  { Econstant (Concrete 0) }
-| LPAR expression RPAR 
-  { Eparen $2 }
-
-postfix_expression:
-| primary_expression 
-  { $1 }
-| ST LPAR assignment_expression COMMA assignment_expression RPAR
-  { Estore ($3, $5, CPP11Base.SC) }
-| ST_EXPLICIT LPAR assignment_expression COMMA assignment_expression COMMA MEMORDER RPAR
-  { Estore ($3, $5, $7) }
-| EXC LPAR assignment_expression COMMA assignment_expression RPAR
-  { Eexchange ($3, $5, CPP11Base.SC) }
-| EXC_EXPLICIT LPAR assignment_expression COMMA assignment_expression COMMA MEMORDER RPAR
-  { Eexchange ($3, $5, $7) }
-| ATOMIC_FETCH LPAR assignment_expression COMMA assignment_expression RPAR
-  { Efetch ($1, $3, $5, CPP11Base.SC) }
-| ATOMIC_FETCH_EXPLICIT LPAR assignment_expression COMMA assignment_expression COMMA MEMORDER RPAR
-  { Efetch ($1, $3, $5, $7) }
-| LD LPAR assignment_expression RPAR
-  { Eload ($3, CPP11Base.SC) }
-| LD_EXPLICIT LPAR assignment_expression COMMA MEMORDER RPAR
-  { Eload ($3, $5) }
-| FENCE LPAR MEMORDER RPAR
-  { Efence ($3) }
-| LOCK LPAR assignment_expression RPAR
-  { Elock ($3) }
-| UNLOCK LPAR assignment_expression RPAR
-  { Eunlock ($3) }
-| WCAS LPAR  assignment_expression COMMA assignment_expression COMMA assignment_expression COMMA MEMORDER COMMA MEMORDER RPAR
-  { Ecas ($3,$5,$7,$9,$11,false) }
-| SCAS LPAR  assignment_expression COMMA  assignment_expression COMMA assignment_expression COMMA MEMORDER COMMA MEMORDER RPAR
-  { Ecas ($3,$5,$7,$9,$11,true) }
-
-unary_expression:
-| postfix_expression 
-  { $1 }
-| STAR unary_expression
-  { Eload ($2, CPP11Base.NA) }
-
-cast_expression:
-| unary_expression { $1 }
-
-multiplicative_expression:
-| cast_expression { $1 }
-| multiplicative_expression STAR cast_expression
-   { Eop (Op.Mul,$1,$3) }
-| multiplicative_expression DIV cast_expression
-   { Eop (Op.Div,$1,$3) }
-
-additive_expression:
-| multiplicative_expression { $1 }
-| additive_expression ADD multiplicative_expression
-  { Eop (Op.Add,$1,$3) }
-| additive_expression SUB multiplicative_expression
-  { Eop (Op.Sub,$1,$3) }
-
-shift_expression:
-| additive_expression { $1 }
-
-relational_expression:
-| shift_expression { $1 }
-
-equality_expression:
-| relational_expression 
-  { $1 }
-| equality_expression EQ_OP relational_expression 
-  { Eop (Op.Eq,$1,$3) }
-| equality_expression NEQ_OP relational_expression 
-  { Eop (Op.Ne,$1,$3) }
-
-and_expression:
-| equality_expression { $1 }
-| and_expression LAND  equality_expression
-  { Eop (Op.And,$1,$3) }
-
-exclusive_or_expression:
-| and_expression { $1 }
-| exclusive_or_expression XOR  and_expression
-  { Eop (Op.Xor,$1,$3) }
-
-inclusive_or_expression: 
-| exclusive_or_expression { $1 }
-| inclusive_or_expression PIPE exclusive_or_expression
-  { Eop (Op.Or,$1,$3) }
-
-logical_and_expression: 
-| inclusive_or_expression { $1 }
-
-logical_or_expression:
-| logical_and_expression { $1 }
-
-conditional_expression:
-| logical_or_expression { $1 }
-
-assignment_expression:
-| conditional_expression 
-  { $1 }
-| IDENTIFIER assignment_operator assignment_expression
-  { Eassign ($1, $3) }
-| STAR IDENTIFIER assignment_operator assignment_expression
-  { Estore (Eregister $2, $4, CPP11Base.NA) }
-
-assignment_operator:
-| EQ { () }
-
-expression:
-| assignment_expression { $1 }
-| expression COMMA assignment_expression { Ecomma ($1,$3) }
-
-declaration:
-| typ  init_declarator SEMI  { $2; }
-
-init_declarator:
-| IDENTIFIER
-  { Pblock [] }
-| IDENTIFIER EQ initialiser 
-  { Pexpr (Eassign ($1, $3)) }
-
-initialiser:
-| assignment_expression 
-  { $1 }
-
-statement:
-| declaration /* (* Added to allow mid-block declarations *) */
-  { $1 }
-| compound_statement
-  { Pblock $1 }
-| expression_statement
-  { $1 }
-| selection_statement
-  { $1 }
-| iteration_statement
-  { $1 }
-
-compound_statement:
-| LBRACE RBRACE
-  { [] }
-| LBRACE statement_list RBRACE
-  { $2 }
-
-statement_list:
-| statement
-  { [$1] }
-| statement statement_list
-  { $1 :: $2 }
-
-expression_statement:
-| SEMI
-  { Pblock [] }
-| expression SEMI
-  { Pexpr $1 }
-
-selection_statement:
-| IF LPAR expression RPAR statement %prec LOWER_THAN_ELSE
-  { Pif ($3, $5, Pblock []) }
-| IF LPAR expression RPAR statement ELSE statement
-  { Pif ($3, $5, $7) }
-
-iteration_statement:
-| WHILE LPAR expression RPAR statement
-  { Pwhile($3,$5) }
-
-function_definition:
-| PROC LPAR parameter_list RPAR compound_statement
-  { { CAst.proc = $1; 
-      CAst.params = $3; 
-      CAst.body = List.map (fun ins -> CPP11Base.Instruction ins) $5 } }
-
-translation_unit:
-| function_definition
-  { [$1] }
-| function_definition translation_unit
-  { $1 :: $2 }
-
-deep_main:
-| translation_unit EOF  { $1 }
-
-
-
 op:
 | STAR { Op.Mul }
 | ADD { Op.Add }
@@ -309,13 +119,15 @@ op:
 | NEQ_OP { Op.Ne }
 
 location:
-| IDENTIFIER { CBase.Local $1 }
-| STAR IDENTIFIER { CBase.Shared $2 }
+| IDENTIFIER { CBase.Reg $1 }
+| STAR IDENTIFIER { CBase.Mem $2 }
 
 expr:
 | LPAR expr RPAR { $2 }
-| CONSTANT { Const $1 }
-| location { Load $1 }
+| CONSTANT { Const(Concrete $1) }
+| location { Load($1,None) }
+| LD LPAR location RPAR { Load($3,Some SC) }
+| LD_EXPLICIT LPAR location COMMA MEMORDER RPAR { Load($3,Some $5) }
 | expr op expr { Op($2,$1,$3) }
 
 instruction:
@@ -323,7 +135,18 @@ instruction:
   { If($3,$5,None) }
 | IF LPAR expr RPAR block_ins ELSE block_ins 
   { If($3,$5,Some $7) }
-| location EQ expr {Store($1,$3)}
+| location EQ expr 
+  { Store($1,$3,None) }
+| ST LPAR location COMMA expr RPAR
+  { Store($3, $5, Some SC) }
+| ST_EXPLICIT LPAR location COMMA expr COMMA MEMORDER RPAR
+  { Store($3, $5, Some $7) }
+| ATOMIC_FETCH LPAR location COMMA expr RPAR
+  { Fetch ($3, $1, $5, SC) }
+| ATOMIC_FETCH_EXPLICIT LPAR location COMMA expr COMMA MEMORDER RPAR
+  { Fetch ($3, $1, $5, $7) }
+| FENCE LPAR MEMORDER RPAR
+  { Fence(F $3) }
 
 ins_seq:
 | block_ins { [$1] }
@@ -345,5 +168,5 @@ trans_unit:
 | trans_unit function_def 
   { $1 @ [$2] }
 
-new_main:
+deep_main:
 | trans_unit EOF { $1 }

@@ -26,7 +26,7 @@ module type S = sig
   module E : Event.S with module A = A and module Act.A = A
   module M  : Monad.S
   with module A = A and module E = E and type evt_struct = E.event_structure
-  module C : Constraints.S with module A = A
+  module Cons : Constraints.S with module A = A
 
 (* A good place to (re)define all these types *)
   type cst = A.V.cst
@@ -169,7 +169,7 @@ module Make(C:Config) (A:Arch.S) (Act:Action.S with module A = A)
     module V = A.V
     module E = Event.Make(A)(Act)
     module M = EventsMonad.Make(C)(A)(E)
-    module C = Constraints.Make (C.PC)(A)
+    module Cons = Constraints.Make (C.PC)(A)
 
 (* A good place to (re)define all these types *)
     type cst = A.V.cst

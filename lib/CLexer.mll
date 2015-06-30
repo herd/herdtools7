@@ -127,12 +127,12 @@ rule token deep = parse
 | "==" {EQ_OP}
 | "!=" {NEQ_OP}
 | '.' {DOT}
-| "memory_order_acquire" {MEMORDER (CPP11Base.Acq)}
-| "memory_order_release" {MEMORDER (CPP11Base.Rel)}
-| "memory_order_acq_rel" {MEMORDER (CPP11Base.Acq_Rel)}
-| "memory_order_seq_cst" {MEMORDER (CPP11Base.SC)}
-| "memory_order_relaxed" {MEMORDER (CPP11Base.Rlx)}
-| "memory_order_consume" {MEMORDER (CPP11Base.Con)}
+| "memory_order_acquire" {MEMORDER (MemOrder.Acq)}
+| "memory_order_release" {MEMORDER (MemOrder.Rel)}
+| "memory_order_acq_rel" {MEMORDER (MemOrder.Acq_Rel)}
+| "memory_order_seq_cst" {MEMORDER (MemOrder.SC)}
+| "memory_order_relaxed" {MEMORDER (MemOrder.Rlx)}
+| "memory_order_consume" {MEMORDER (MemOrder.Con)}
 | "fence"|"atomic_thread_fence" { FENCE }
 | "atomic_load"  { LD }
 | "atomic_store" { ST }

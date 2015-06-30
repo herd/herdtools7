@@ -60,7 +60,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
   module A = S.A
   module E = S.E
   module M = S.M
-  module C = S.C
+  module C = S.Cons
   module PC = S.O.PC
 
 (* One init *)
