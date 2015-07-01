@@ -98,7 +98,7 @@ let map_regs _fc _fs ins = ins
 let fold_addrs _f acc _ins = acc
 let map_addrs _f ins = ins
 let norm_ins ins = ins
-let get_next = Warn.fatal "C get_next not implemented"
+let get_next _ins = Warn.fatal "C get_next not implemented"
 
 include Pseudo.Make
 	  (struct

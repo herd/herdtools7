@@ -1,15 +1,3 @@
-/*********************************************************************/
-/*                          Litmus                                   */
-/*                                                                   */
-/*     Jacques-Pascal Deplaix, INRIA Paris-Rocquencourt, France.     */
-/*     John Wickerson, Imperial College London, UK.                  */
-/*                                                                   */
-/*  Copyright 2010 Institut National de Recherche en Informatique et */
-/*  en Automatique and the authors. All rights reserved.             */
-/*  This file is distributed  under the terms of the Lesser GNU      */
-/*  General Public License.                                          */
-/*********************************************************************/
-
 %{
 open Constant
 open CBase
@@ -52,6 +40,7 @@ open CType
 %left PIPE
 %left XOR
 %left LAND
+
 %nonassoc EQ_OP NEQ_OP
 %left ADD SUB
 %left STAR DIV
@@ -107,20 +96,13 @@ shallow_main:
 | PROC LPAR parameter_list RPAR BODY shallow_main
     { CAst.Test {CAst.proc = $1; params = $3; body = $5} :: $6 }
 
-op:
-| STAR { Op.Mul }
-| ADD { Op.Add }
-| SUB { Op.Sub }
-| DIV { Op.Div }
-| LAND { Op.And }
-| PIPE { Op.Or }
-| XOR { Op.Xor }
-| EQ_OP { Op.Eq }
-| NEQ_OP { Op.Ne }
-
 location:
 | IDENTIFIER { CBase.Reg $1 }
 | STAR IDENTIFIER { CBase.Mem $2 }
+
+declaration:
+| typ IDENTIFIER EQ expr
+  { Store(Reg $2,$4,None) }
 
 expr:
 | LPAR expr RPAR { $2 }
@@ -128,32 +110,42 @@ expr:
 | location { Load($1,None) }
 | LD LPAR location RPAR { Load($3,Some SC) }
 | LD_EXPLICIT LPAR location COMMA MEMORDER RPAR { Load($3,Some $5) }
-| expr op expr { Op($2,$1,$3) }
+| expr STAR expr { Op(Op.Mul,$1,$3) }
+| expr ADD expr { Op(Op.Add,$1,$3) }
+| expr SUB expr { Op(Op.Sub,$1,$3) }
+| expr DIV expr { Op(Op.Div,$1,$3) }
+| expr LAND expr { Op(Op.And,$1,$3) }
+| expr PIPE expr { Op(Op.Or,$1,$3) }
+| expr XOR expr { Op(Op.Xor,$1,$3) }
+| expr EQ_OP expr { Op(Op.Eq,$1,$3) }
+| expr NEQ_OP expr { Op(Op.Ne,$1,$3) }
 
 instruction:
 | IF LPAR expr RPAR block_ins %prec LOWER_THAN_ELSE 
   { If($3,$5,None) }
 | IF LPAR expr RPAR block_ins ELSE block_ins 
   { If($3,$5,Some $7) }
-| location EQ expr 
+| declaration SEMI
+  { $1 }
+| location EQ expr SEMI
   { Store($1,$3,None) }
-| ST LPAR location COMMA expr RPAR
+| ST LPAR location COMMA expr RPAR SEMI
   { Store($3, $5, Some SC) }
-| ST_EXPLICIT LPAR location COMMA expr COMMA MEMORDER RPAR
+| ST_EXPLICIT LPAR location COMMA expr COMMA MEMORDER RPAR SEMI
   { Store($3, $5, Some $7) }
-| ATOMIC_FETCH LPAR location COMMA expr RPAR
+| ATOMIC_FETCH LPAR location COMMA expr RPAR SEMI
   { Fetch ($3, $1, $5, SC) }
-| ATOMIC_FETCH_EXPLICIT LPAR location COMMA expr COMMA MEMORDER RPAR
+| ATOMIC_FETCH_EXPLICIT LPAR location COMMA expr COMMA MEMORDER RPAR SEMI
   { Fetch ($3, $1, $5, $7) }
-| FENCE LPAR MEMORDER RPAR
+| FENCE LPAR MEMORDER RPAR SEMI
   { Fence(F $3) }
 
 ins_seq:
 | block_ins { [$1] }
-| block_ins SEMI ins_seq { $1::$3 }
+| block_ins ins_seq { $1::$2 }
 
 block_ins:
-| instruction SEMI { $1 }
+| instruction { $1 }
 | LBRACE ins_seq RBRACE { Seq($2) }
 
 function_def:
