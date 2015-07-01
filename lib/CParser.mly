@@ -136,7 +136,15 @@ instruction:
 | ATOMIC_FETCH LPAR location COMMA expr RPAR SEMI
   { Fetch ($3, $1, $5, SC) }
 | ATOMIC_FETCH_EXPLICIT LPAR location COMMA expr COMMA MEMORDER RPAR SEMI
-  { Fetch ($3, $1, $5, $7) }
+  { Fetch($3, $1, $5, $7) }
+| EXC LPAR location COMMA expr RPAR SEMI
+  { Exchange($3, $5, SC) }
+| EXC_EXPLICIT LPAR location COMMA expr COMMA MEMORDER RPAR SEMI
+  { Exchange($3, $5, $7) }
+| LOCK LPAR location RPAR SEMI
+  { Lock $3 }
+| UNLOCK LPAR location RPAR SEMI
+  { Unlock $3 }
 | FENCE LPAR MEMORDER RPAR SEMI
   { Fence(F $3) }
 

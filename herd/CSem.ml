@@ -39,12 +39,19 @@ module Make (Conf:Sem.Config)(V:Value.S)
       | C.Const v -> 	
         M.unitT (V.maybevToV v)
 
-      | C.Load(l,mo) ->
+      | C.Load(l,(None as mo)) ->
          begin match l with 
 	  | C.Reg r -> read_reg r ii
 	  | C.Mem r -> read_reg r ii >>= (fun l -> read_mem mo l ii)
 	 end
 
+      | C.Load(l,(Some _ as mo)) ->
+         begin match l with
+	 | C.Reg a -> read_reg a ii >>= (fun l -> read_mem mo l ii)
+	 | C.Mem r -> read_reg r ii >>= fun a -> 
+	              read_mem mo a ii >>= fun l -> read_mem mo l ii
+	 end
+	   
       | C.Op(op,e1,e2) ->
         (build_semantics_expr e1 ii >>| 
          build_semantics_expr e2 ii) >>= fun (v1,v2) ->
@@ -76,7 +83,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
           let then_branch = build_semantics {ii' with A.inst = t} in
           M.choiceT ret then_branch (build_semantics_list [] ii)
 	    
-	| C.Store(l,e,mo) -> 
+	| C.Store(l,e,(None as mo)) -> 
 	  begin
 	    match l with 
 	    | C.Reg r -> 
@@ -84,8 +91,21 @@ module Make (Conf:Sem.Config)(V:Value.S)
 		write_reg r v ii)
 	    | C.Mem r -> 
 	      (read_reg r ii >>| 
-		  build_semantics_expr e ii) >>= (fun (l,v) ->
-		    write_mem mo l v ii)
+	       build_semantics_expr e ii) >>= (fun (l,v) ->
+	      write_mem mo l v ii)
+	  end
+	  >>= (fun _ -> M.unitT (ii.A.program_order_index, B.Next))
+
+	| C.Store(l,e,(Some _ as mo)) -> 
+	  begin
+	    match l with 
+	    | C.Reg a -> (read_reg a ii >>| 
+		          build_semantics_expr e ii) >>= (fun (l,v) ->
+			 write_mem mo l v ii)
+	    | C.Mem r -> read_reg r ii >>= fun a -> 
+	                 (read_mem mo a ii >>|
+		          build_semantics_expr e ii) >>= fun (l,v) -> 
+	                 write_mem mo l v ii
 	  end
 	  >>= (fun _ -> M.unitT (ii.A.program_order_index, B.Next))
 	    
@@ -93,8 +113,8 @@ module Make (Conf:Sem.Config)(V:Value.S)
 	  (build_semantics_expr e ii >>|
 	      (match l with
 	      | C.Reg r -> read_reg r ii
-	      | C.Mem r -> read_reg r ii >>= fun l -> 
-		read_mem (Some mo) l ii)) 
+	      | C.Mem r -> read_reg r ii >>= fun l ->
+		read_mem (Some mo) l ii))
 	  >>= (fun (v,l) ->
 	    fetch_op op v mo (A.Location_global l) ii)
 	  >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
