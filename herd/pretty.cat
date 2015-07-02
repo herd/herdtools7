@@ -21,6 +21,7 @@ let addrpo = addr;po
 
 (* Define fence relations, and correct isync/isb show *)
 include "armfences.cat"
+include "aarch64fences.cat"
 include "ppcfences.cat"
 let ctrlcfence = ctrlisync|ctrlisb
 show isync \ ctrlcfence as isync
@@ -55,8 +56,12 @@ let dmb.st_eff=WW(dmb.st)
 let dsb.st_eff=WW(dsb.st)
 show dmb, dsb, dmb.st, dsb.st
 
+(* AArch64 *)
+let f64 = dsb.sy | dmb.sy | WW(dsb.st) | WW(dmb.st) | RM(dmb.ld) | RM(dsb.ld)
+show dmb.sy,dsb.sy,dmb.st,dsb.st,dmb.ld,dsb.ld
+
 (* Common, all arm barriers are strong *)
-let strong = sync|dmb|dsb|dmb.st_eff|dsb.st_eff
+let strong = sync|dmb|dsb|dmb.st_eff|dsb.st_eff|f64
 let light = lwsync_eff|eieio_eff
 
 include "ppc-checks.cat"
