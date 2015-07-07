@@ -1,0 +1,15 @@
+Bell to C
+
+"r[] %x %y" -> "x = y;"
+
+"r[] %x y" -> "x = *y;"
+
+"r[acq] %x y" -> "x = atomic_load_explicit(y,memory_order_acquire);"
+
+"w[] %x &c" -> "x = constvar:c;"
+
+"w[] x &c" -> "*x = constvar:c;"
+
+"w[] %x %y" -> "x = y;"
+
+"w[rel] x &c" -> "atomic_store_explicit(x,constvar:c,memory_order_release);"

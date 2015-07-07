@@ -9,6 +9,8 @@ open CType
 %token <string> IDENTIFIER
 %token <string> BASE_TYPE
 %token <string> ATOMIC_TYPE
+%token <string> CONSTVAR
+%token <string> CODEVAR
 %token <int> PROC
 %token LPAR RPAR COMMA LBRACE RBRACE STAR 
 %token UNSIGNED SIGNED ATOMIC LONG DOUBLE BOOL INT VOID FLOAT CHAR SHORT
@@ -30,7 +32,7 @@ open CType
 %token ADD SUB
 %token MUL DIV
 %token WHILE IF ELSE
-%nonassoc LOWER_THAN_ELSE /* This fixes the dangling-else problem */
+%nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
 %token <MemOrder.t> MEMORDER
 %token LD LD_EXPLICIT ST ST_EXPLICIT EXC EXC_EXPLICIT FENCE LOCK UNLOCK SCAS WCAS
@@ -47,6 +49,9 @@ open CType
 
 %type <(CBase.pseudo list) CAst.test list> deep_main
 %start deep_main
+
+%type <CBase.pseudo list> pseudo_seq
+%start pseudo_seq
 
 %%
 
@@ -107,6 +112,7 @@ declaration:
 expr:
 | LPAR expr RPAR { $2 }
 | CONSTANT { Const(Concrete $1) }
+| CONSTVAR { Const(Symbolic $1) }
 | location { Load($1,None) }
 | LD LPAR location RPAR { Load($3,Some SC) }
 | LD_EXPLICIT LPAR location COMMA MEMORDER RPAR { Load($3,Some $5) }
@@ -147,6 +153,8 @@ instruction:
   { Unlock $3 }
 | FENCE LPAR MEMORDER RPAR SEMI
   { Fence(F $3) }
+| CODEVAR SEMI
+  { Symb $1 }
 
 ins_seq:
 | block_ins { [$1] }
@@ -156,11 +164,15 @@ block_ins:
 | instruction { $1 }
 | LBRACE ins_seq RBRACE { Seq($2) }
 
+pseudo_seq:
+| block_ins { [Instruction $1] }
+| block_ins pseudo_seq { (Instruction $1)::$2 }
+
 function_def:
-| PROC LPAR parameter_list RPAR LBRACE ins_seq RBRACE
+| PROC LPAR parameter_list RPAR LBRACE pseudo_seq RBRACE
   { { CAst.proc = $1; 
       CAst.params = $3; 
-      CAst.body = List.map (fun ins -> CBase.Instruction ins) $6 } }
+      CAst.body = $6 } }
 
 trans_unit:
 | function_def

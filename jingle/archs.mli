@@ -17,7 +17,7 @@ module System : sig
   val pp : t -> string
 end
 
-type t = System.t (*[ | `C | `OpenCL ]*)
+type t = [ System.t | `C (*| `OpenCL*) ]
 
 val tags : string list
 val parse : string -> t option
@@ -29,8 +29,8 @@ val ppc : t
 val x86 : t
 val mips : t
 val gpu_ptx : t
-val c : t
 val opencl : t
  *)
+val c : t
 val lisa : t
 val aarch64 : t

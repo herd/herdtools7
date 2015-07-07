@@ -53,7 +53,7 @@ module System = struct
   | `AArch64 -> "AArch64"
 end
 
-type t = System.t (*[ | `C | `OpenCL ]*)
+type t = [ System.t | `C (*| `OpenCL *)]
 
 let tags = ["X86";"PPC";"ARM";"AArch64";"MIPS";"GPU_PTX";"C";"OpenCL"; "Bell"]
 
@@ -63,10 +63,11 @@ let parse s = match s with
 | "ARM" -> Some `ARM
 | "MIPS" -> Some `MIPS
 | "GPU_PTX" -> Some `GPU_PTX
-| "C" -> Some `C
 | "OpenCL" -> Some `OpenCL
- *)| "Bell"|"BELL"|"LISA"-> Some `Bell
-  | "AArch64" -> Some `AArch64
+ *)
+| "C" -> Some `C
+| "Bell"|"BELL"|"LISA"-> Some `Bell
+| "AArch64" -> Some `AArch64
 | _ -> None
 
 let lex s = match parse s with
@@ -80,9 +81,9 @@ let pp a = match a with
 | `ARM -> "ARM"
 | `MIPS -> "MIPS"
 | `GPU_PTX -> "GPU_PTX"
-| `C -> "C"
 | `OpenCL -> "OpenCL"
- *)| `AArch64 -> "AArch64"
+ *)| `C -> "C"
+| `AArch64 -> "AArch64"
 | `Bell -> "LISA"
 
 (*let arm = `ARM
@@ -90,8 +91,8 @@ let ppc = `PPC
 let x86 = `X86
 let mips = `MIPS
 let gpu_ptx = `GPU_PTX
-let c = `C
 let opencl = `OpenCL
  *)
+let c = `C
 let lisa = `Bell
 let aarch64 = `AArch64

@@ -777,7 +777,7 @@ let stu rD rEA wEA wM =
     let check_both do_it es1 es2 =
       if
 	not
-	  (EventSet.disjoint es1.events es2.events  &&
+	  (EventSet.disjoint es1.events es2.events &&
 	   disjoint_iiis es1 es2)
       then assert false
       else Some (do_it es1 es2)

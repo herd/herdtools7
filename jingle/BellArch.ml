@@ -9,6 +9,7 @@ type substitution =
   | Cst of string * int
   | Lab of string * string
   | Addr of string * string
+  | Code of string * pseudo list
 
 let sr_name = function
   | Symbolic_reg s -> s
@@ -44,7 +45,8 @@ let match_reg_or_imm subs ri ri' = match ri,ri' with
     -> Some(add_subs [Reg(sr_name r,r')] subs)
   | Imm (MetaConst.Meta m),Imm i
     -> Some(add_subs [Cst(m,i)] subs)
-  | i -> Some(subs)
+  | Imm (MetaConst.Int m),Imm i when m=i -> Some(subs)
+  | _ -> None
 
 let match_reg_or_addr subs ra ra' = match ra,ra' with
   | Rega r,Rega r' -> Some(add_subs [Reg(sr_name r,r')] subs)
@@ -86,21 +88,21 @@ let match_addr_op subs ao ao' = match ao,ao' with
   | _,_ -> None
 
 let match_instr subs pattern instr = match pattern,instr with
-  | Pld(r,ao,s),Pld(r',ao',s') -> 
+  | Pld(r,ao,s),Pld(r',ao',s') -> None,
      if annots_compare s s'
      then match match_addr_op subs ao ao' with
 	  | Some subs -> Some (add_subs [Reg(sr_name r,r')] subs)
 	  | None -> None
      else None
 
-  | Pst(ao,ri,s),Pst(ao',ri',s') ->
+  | Pst(ao,ri,s),Pst(ao',ri',s') -> None,
     if annots_compare s s'
     then match match_addr_op subs ao ao' with
 	 | Some subs -> match_reg_or_imm subs ri ri'
 	 | None -> None
     else None
 
-  | Prmw(r,op,ao,s),Prmw(r',op',ao',s') ->
+  | Prmw(r,op,ao,s),Prmw(r',op',ao',s') -> None,
      if annots_compare s s'
      then match match_op subs op op' with
 	  | None -> None
@@ -110,22 +112,22 @@ let match_instr subs pattern instr = match pattern,instr with
 	     | None -> None
      else None
 
-  | Pfence Fence(s,_), Pfence Fence(s',_) 
-    -> if annots_compare s s' 
-       then Some subs
-       else None
+  | Pfence Fence(s,_), Pfence Fence(s',_) -> None, 
+     if annots_compare s s' 
+     then Some subs
+     else None
 
-  | Pbranch(_,lp,s), Pbranch(_,li,s') 
-    -> if annots_compare s s'
-       then Some(add_subs [Lab(lp,li)] subs)
-       else None
+  | Pbranch(_,lp,s), Pbranch(_,li,s') -> None,
+     if annots_compare s s'
+     then Some(add_subs [Lab(lp,li)] subs)
+     else None
 
-  | _,_ -> None
+  | _,_ -> None,None
 
 let rec match_instruction subs pattern instr= match pattern,instr with
   | Label(lp,insp),Label(li,insi) 
     -> match_instruction (add_subs [Lab(lp,li)] subs) insp insi
-  | Label _, _ -> None
+  | Label _, _ -> None,None
   | pattern, Label(_,instr)
     -> match_instruction subs pattern instr
   | Instruction ip, Instruction ii 

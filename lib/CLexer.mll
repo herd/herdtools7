@@ -146,6 +146,8 @@ rule token deep = parse
 | "atomic_compare_exchange_weak_explicit" { WCAS}
 | "atomic_compare_exchange_strong_explicit" { SCAS}
 | "unlock"    { UNLOCK }
+| "constvar:" (name as s) { CONSTVAR s }
+| "codevar:" (name as s) { CODEVAR s }
 | name as x   { tr_name x  }
 | eof { EOF }
 | "" { LexMisc.error "C lexer" lexbuf }

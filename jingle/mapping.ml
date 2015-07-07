@@ -64,6 +64,18 @@ module Make(C:Config) = struct
       )
       C.conversions
 
+  let rec dig subs pat instr = match pat,instr with
+    | [],_ -> Some (instr,[])
+    | _::_,[] -> None
+    | p::ps,i::is -> 
+       match Source.match_instruction subs p i with
+       | Some _,_ -> dig subs ps (i::is)
+       | None,Some _ -> Some([],i::is)
+       | _,None -> 
+	  match dig subs (p::ps) is with
+	  | None -> None
+	  | Some(stash,rem) -> Some(i::stash,rem)
+	 
   let rec find_pattern pat instrs subs = 
     let open Source in
     match pat,instrs with
@@ -74,8 +86,14 @@ module Make(C:Config) = struct
     | p::ps,i::is ->
        begin
 	 match match_instruction subs p i with
-	 | None -> None
-	 | Some subs ->
+	 | _,None -> None
+	 | Some s,Some subs -> 
+	    begin match dig subs ps (i::is) with
+		  | None -> None
+		  | Some(stash,rem) -> 
+		     find_pattern ps rem (Code(s,stash)::subs)
+	    end
+	 | None,Some subs ->
 	    match find_pattern ps is subs with
 	    | None -> None
 	    | Some(is,rs,subs) -> Some(i::is,rs,subs)
@@ -111,7 +129,7 @@ module Make(C:Config) = struct
       | Some(ins,rs) -> ins::(aux rs)
     in aux instrs
 
-  let convert env instrs =
+  let rec convert env instrs =
     let rec aux env l = match l with
       | [] -> [],env
       | (_src,tgt,subs)::ts ->
@@ -128,6 +146,9 @@ module Make(C:Config) = struct
 		  | Source.Lab(s,l) -> 
 		     let lbl,env = Env.get_label env l in
 		     (Target.Lab(s,lbl)::cv,env)
+		  | Source.Code(s,c) ->
+		     let c,env = convert env c in
+		     (Target.Code(s,c)::cv,env)
 	     )
 	     ([],env) subs in
 	 let flw,env = aux env ts 

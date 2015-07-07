@@ -13,13 +13,14 @@ module type S = sig
       | Cst of string * int
       | Lab of string * string
       | Addr of string * string
+      | Code of string * pseudo list
 
 
     val dump_pseudos : pseudo list -> string
 
     val match_instruction : substitution list -> 
 			    parsedPseudo -> pseudo ->
-			    substitution list option
+			    string option * substitution list option
 
     val instanciate_with : substitution list -> reg list ->
 			   parsedPseudo list ->
@@ -74,16 +75,26 @@ let get_arch = function
 	       include BellArch
 	       module Parser = MakeParser(BellBase)(BellLexParse)
 	     end : S)
-(*  | `C ->
+  | `C ->
      let module CLexParse = struct
-       type pseudo = CArch.pseudo
+       type pseudo = CArch.parsedPseudo
        type token = CParser.token
        module Lexer = CLexer.Make(struct let debug = false end)
-       let lexer = Lexer.token true
-       let parser = CParser.new_main
-       let instr_parser = CParser.ins_seq
+       let shallow_lexer = Lexer.token false
+       let deep_lexer = Lexer.token true
+       let shallow_parser = CParser.shallow_main
+       let deep_parser = CParser.deep_main
+       let instr_parser = CParser.pseudo_seq
      end in (module struct 
 	       include CArch
-	       module Parser = MakeParser(CBase)(CLexParse)
+	       module Parser = struct
+		 include CGenParser.Make(CGenParser.DefaultConfig)
+					(CArch)(CLexParse)
+		 type parsedPseudo = CArch.parsedPseudo
+		 let instr_from_string s =
+		   CGenParser.call_parser "themes" (Lexing.from_string s) 
+					 CLexParse.deep_lexer 
+					 CLexParse.instr_parser
+	       end
 	     end : S)
- *)
+	      

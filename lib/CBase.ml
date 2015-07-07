@@ -84,9 +84,10 @@ let rec dump_instruction =
      sprintf "atomic_exchange_explicit(%s,%s,%s);"
 	     (dump_loc l) (dump_expr e) (MemOrder.pp_mem_order mo)
   | Lock l -> 
-     sprintf "lock(%s)" (dump_loc l) 
+     sprintf "lock(%s);" (dump_loc l) 
   | Unlock l -> 
-     sprintf "unlock(%s)" (dump_loc l)
+     sprintf "unlock(%s);" (dump_loc l)
+  | Symb s -> sprintf "codevar:%s;" s
 
 
 let pp_instruction _mode = dump_instruction 

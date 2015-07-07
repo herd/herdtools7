@@ -9,6 +9,7 @@ type substitution =
   | Cst of string * int
   | Lab of string * string
   | Addr of string * string
+  | Code of string * pseudo list
 
 let sr_name = function
   | Symbolic_reg s -> s
@@ -42,32 +43,32 @@ let match_kr subs kr kr' = match kr,kr' with
 
 let match_instr subs pattern instr = match pattern,instr with
   | I_FENCE fp,I_FENCE fi when fp = fi
-    -> Some subs
+    -> None,Some subs
 
   | I_B lp, I_B li
-    -> Some(add_subs [Lab(lp,li)] subs)
+    -> None,Some(add_subs [Lab(lp,li)] subs)
 
   | I_BC(cp,lp), I_BC(ci,li) when cp = ci
-    -> Some(add_subs [Lab(lp,li)] subs)
+    -> None,Some(add_subs [Lab(lp,li)] subs)
 
   | I_CBZ(_,r,lp),I_CBZ(_,r',li)
   | I_CBNZ(_,r,lp),I_CBNZ(_,r',li)
-    -> Some(add_subs [Reg(sr_name r,r');
+    -> None,Some(add_subs [Reg(sr_name r,r');
 		      Lab(lp,li)] subs)
 	   
   | I_MOV(_,r,MetaConst.Meta m),I_MOV(_,r',i)
-    -> Some(add_subs [Reg(sr_name r,r');
+    -> None,Some(add_subs [Reg(sr_name r,r');
 		      Cst(m,i)] subs)
 
   | I_LDAR(_,tp,r1,r2),I_LDAR(_,ti,r1',r2') when tp = ti
-    -> Some(add_subs [Reg(sr_name r1,r1');Reg(sr_name r2,r2')] subs)
+    -> None,Some(add_subs [Reg(sr_name r1,r1');Reg(sr_name r2,r2')] subs)
 	   
   | I_STLR(_,r1,r2),I_STLR(_,r1',r2')
   | I_SXTW(r1,r2),I_SXTW(r1',r2')
-    -> Some(add_subs [Reg(sr_name r1,r1');Reg(sr_name r2,r2')] subs)
+    -> None,Some(add_subs [Reg(sr_name r1,r1');Reg(sr_name r2,r2')] subs)
 
   | I_STXR(_,tp,r1,r2,r3),I_STXR(_,ti,r1',r2',r3') when tp = ti 
-    -> Some(add_subs [Reg(sr_name r1,r1');
+    -> None,Some(add_subs [Reg(sr_name r1,r1');
 		      Reg(sr_name r2,r2');
 		      Reg(sr_name r3,r3')]
 		     subs)
@@ -76,27 +77,27 @@ let match_instr subs pattern instr = match pattern,instr with
   | I_STR(_,r1,r2,kr),I_STR(_,r1',r2',kr')
     -> begin match match_kr subs kr kr' with 
 	     | Some subs 
-	       -> Some(add_subs [Reg(sr_name r1,r1');
+	       -> None,Some(add_subs [Reg(sr_name r1,r1');
 				 Reg(sr_name r2,r2')]
 				subs)
-	     | None -> None
+	     | None -> None,None
        end
 
   | I_OP3(_,opp,r1,r2,kr),I_OP3(_,opi,r1',r2',kr') when opp=opi
     -> begin match match_kr subs kr kr' with 
 	     | Some subs 
-	       -> Some(add_subs [Reg(sr_name r1,r1');
+	       -> None,Some(add_subs [Reg(sr_name r1,r1');
 				 Reg(sr_name r2,r2')]
 				subs)
-	     | None -> None
+	     | None -> None,None
        end
 
-  | _,_ -> None
+  | _,_ -> None,None
 
 let rec match_instruction subs pattern instr = match pattern,instr with
   | Label(lp,insp),Label(li,insi) 
     -> match_instruction (add_subs [Lab(lp,li)] subs) insp insi
-  | Label _, _ -> None
+  | Label _, _ -> None,None
   | pattern, Label(_,instr)
     -> match_instruction subs pattern instr
   | Instruction ip, Instruction ii 
