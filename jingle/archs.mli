@@ -1,23 +1,14 @@
-module System : sig
-  (* Current architecture *)
-  type t =
-    [ 
- (*   | `X86
-    | `PPC
-    | `ARM
-    | `MIPS
-    | `GPU_PTX
-      *)    | `Bell
-    | `AArch64
-    ]
-
-  val tags : string list
-  val parse : string -> t option
-  val lex : string -> t
-  val pp : t -> string
-end
-
-type t = [ System.t | `C (*| `OpenCL*) ]
+type t = [ 
+       (*| `X86
+       | `PPC
+       | `ARM
+       | `MIPS
+       | `GPU_PTX
+      *)    
+       | `Bell
+       | `AArch64
+       | `C 
+     ]
 
 val tags : string list
 val parse : string -> t option

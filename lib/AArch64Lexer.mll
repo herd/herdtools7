@@ -88,6 +88,7 @@ rule token = parse
 | ']' { RBRK }
 | ':' { COLON }
 | '&' (name as x) { META x }
+| "codevar:" (name as x) { CODEVAR x }
 | name as x  { check_name x }
 | eof { EOF }
 | ""  { error "AArch64 lexer" lexbuf }

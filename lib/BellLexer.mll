@@ -60,6 +60,7 @@ rule token = parse
 | "ne"|"neq"  { NEQ }
 | "scopes"  { SCOPES  }
 | "regions" { REGIONS }
+| "codevar:" (name as x) { CODEVAR x }
 | '&' (name as x) { META x }
 | '%' (name as x) { SYMB_REG (BellBase.Symbolic_reg x) }
 | name as x

@@ -69,9 +69,8 @@ module Make(C:Config) = struct
     | _::_,[] -> None
     | p::ps,i::is -> 
        match Source.match_instruction subs p i with
-       | Some _,_ -> dig subs ps (i::is)
-       | None,Some _ -> Some([],i::is)
-       | _,None -> 
+       | Some _ -> Some([],i::is)
+       | None -> 
 	  match dig subs (p::ps) is with
 	  | None -> None
 	  | Some(stash,rem) -> Some(i::stash,rem)
@@ -83,17 +82,19 @@ module Make(C:Config) = struct
     | Nop::pat,instrs -> 
        find_pattern pat instrs subs
 
+    | Symbolic s::pat,instrs ->
+       begin 
+	 match dig subs pat instrs with
+	 | None -> None
+	 | Some(stash,rem) -> 
+	    find_pattern pat rem (Code(s,stash)::subs)
+       end
+
     | p::ps,i::is ->
        begin
 	 match match_instruction subs p i with
-	 | _,None -> None
-	 | Some s,Some subs -> 
-	    begin match dig subs ps (i::is) with
-		  | None -> None
-		  | Some(stash,rem) -> 
-		     find_pattern ps rem (Code(s,stash)::subs)
-	    end
-	 | None,Some subs ->
+	 | None -> None
+	 | Some subs ->
 	    match find_pattern ps is subs with
 	    | None -> None
 	    | Some(is,rs,subs) -> Some(i::is,rs,subs)
@@ -160,7 +161,7 @@ module Make(C:Config) = struct
 			     conv (Env.get_free_register env) tgt)
 			  chunks in
     let pseudo_p = List.flatten chunks in
-    (List.map Target.pseudo_parsed_tr pseudo_p,env)
+    (pseudo_p,env)
 
   let reg_mapping = 
     List.map (fun (i,(b,_)) ->
@@ -207,8 +208,8 @@ module Make(C:Config) = struct
     let src = Source.Parser.parse chin sres in
     let open MiscParser in
     let prog = List.map (fun (i,p) ->
-			 let p,e = convert Env.init p in
-			 ((i,p),(i,e))) src.prog in
+	        let p,e = convert Env.init p in
+		((i,p),(i,e))) src.prog in
     let prog,convs = List.split prog in
     let map = reg_mapping convs in
     let init = 

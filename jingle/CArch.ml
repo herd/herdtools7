@@ -17,6 +17,13 @@ let rec wrap_pseudo = function
   | [] -> []
   | i::is -> (Instruction i)::(wrap_pseudo is)
 
+let rec unwrap_pseudo = function 
+  | [] -> []
+  | (Instruction i)::is -> i::(unwrap_pseudo is)
+  | (Label(_,p))::is -> (unwrap_pseudo [p])@(unwrap_pseudo is)
+  | Nop:: is -> unwrap_pseudo is
+  | _ -> assert false
+
 let rec dump_pseudos = function
     | [] -> ""
     | Nop::is -> "*Nop*\n" ^dump_pseudos is
@@ -56,54 +63,54 @@ let rec match_expr subs pat instr = match pat,instr with
 
 let rec match_instr subs pattern instr = match pattern,instr with
   | Fence b,Fence b' when barrier_compare b b' = 0 ->
-     None,Some subs
-  | Seq l, Seq l' -> None,
+     Some subs
+  | Seq l, Seq l' -> 
      let rec aux subs ips iis = match subs,ips,iis with
        | None,_,_ -> None
        | Some _ as subs,[],[] -> subs
        | Some subs,ip::ips,ii::iis ->
-	  aux (snd(match_instr subs ip ii)) ips iis
+	  aux (match_instr subs ip ii) ips iis
        | _ -> None
      in aux (Some subs) l l'
-  | If(c,t,e),If(c',t',e') -> None,begin 
+  | If(c,t,e),If(c',t',e') -> begin 
      match match_expr subs c c' with
      | None -> None
      | Some subs ->
-	match snd (match_instr subs t t') with
+	match match_instr subs t t' with
 	| None -> None
 	| Some subs ->
 	   match e,e' with
 	   | None,None -> Some subs
-	   | Some e,Some e' -> snd (match_instr subs e e')
+	   | Some e,Some e' -> match_instr subs e e'
 	   | _ -> None
      end
-  | Store(l,ex,mo),Store(l',ex',mo') when mo=mo' -> None,
+  | Store(l,ex,mo),Store(l',ex',mo') when mo=mo' ->
      begin match match_location subs l l' with
      | None -> None
      | Some subs -> match_expr subs ex ex'
      end
-  | Fetch(l,op,ex,mo),Fetch(l',op',ex',mo') when mo=mo' && op=op' -> None,
+  | Fetch(l,op,ex,mo),Fetch(l',op',ex',mo') when mo=mo' && op=op' ->
      begin match match_location subs l l' with
      | None -> None
      | Some subs -> match_expr subs ex ex'
      end
-  | Exchange(l,ex,mo),Exchange(l',ex',mo') when mo=mo' -> None,
+  | Exchange(l,ex,mo),Exchange(l',ex',mo') when mo=mo' ->
      begin match match_location subs l l' with
      | None -> None
      | Some subs -> match_expr subs ex ex'
      end
-  | Lock l,Lock l' -> None,match_location subs l l'
-  | Unlock l,Unlock l' -> None,match_location subs l l'
+  | Lock l,Lock l' -> match_location subs l l'
+  | Unlock l,Unlock l' -> match_location subs l l'
   | Symb s,Seq l -> 
-     None, Some(add_subs [Code(s,wrap_pseudo l)] subs)
+     Some(add_subs [Code(s,wrap_pseudo l)] subs)
   | Symb s,ins -> 
-     None, Some(add_subs [Code(s,wrap_pseudo [ins])] subs)
-  | _ -> None,None
+     Some(add_subs [Code(s,wrap_pseudo [ins])] subs)
+  | _ -> None
   
 let rec match_instruction subs pattern instr = match pattern,instr with
   | Label(lp,insp),Label(li,insi) 
     -> match_instruction (add_subs [Lab(lp,li)] subs) insp insi
-  | Label _, _ -> None,None
+  | Label _, _ -> None
   | pattern, Label(_,instr)
     -> match_instruction subs pattern instr
   | Instruction ip, Instruction ii 
@@ -133,6 +140,13 @@ let instanciate_with subs _ instrs =
     let rec aux = function
       | [] -> raise (Error("No conversion found for constant "^s))
       | Cst(n,i)::_ when String.compare n s = 0 -> Constant.Concrete i
+      | _::subs -> aux subs
+    in aux subs in
+  let find_code s =
+    let rec aux = function
+      | [] -> raise (Error("No conversion found for code "^s))
+      | Code(n,c)::_ when String.compare n s = 0 ->
+	 Seq(unwrap_pseudo c)
       | _::subs -> aux subs
     in aux subs in
   let conv_reg s = 
@@ -168,6 +182,6 @@ let instanciate_with subs _ instrs =
     | Exchange(l,e,mo) -> Exchange(expl_loc l, expl_expr e,mo)
     | Lock l -> Lock(expl_loc l)
     | Unlock l -> Unlock(expl_loc l)
-    | Symb s -> raise (Error("Symbolic instruction "^s^" not allowed."))
+    | Symb s -> find_code s
   in
   map_pseudos expl instrs

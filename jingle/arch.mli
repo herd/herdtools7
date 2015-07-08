@@ -17,11 +17,11 @@ module type S = sig
 
     val match_instruction : substitution list -> 
 			    parsedPseudo -> pseudo ->
-			    string option * substitution list option
+			    substitution list option
 
     val instanciate_with : substitution list -> reg list ->
 			   parsedPseudo list ->
-			   parsedPseudo list
+			   pseudo list
    					 
     module Parser : Parser with type parsedPseudo = parsedPseudo
 			    and type pseudo = pseudo

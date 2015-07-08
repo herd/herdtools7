@@ -21,6 +21,7 @@ open AArch64Base
 %token <int> NUM
 %token <string> NAME
 %token <string> META
+%token <string> CODEVAR
 %token <int> PROC
 
 %token SEMI COMMA PIPE COLON LBRK RBRK
@@ -75,6 +76,7 @@ instr_option_seq :
 instr_option :
 |            { Nop }
 | NAME COLON instr_option { Label ($1,$3) }
+| CODEVAR    { Symbolic $1 }
 | instr      { Instruction $1}
 
 reg:

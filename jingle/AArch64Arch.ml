@@ -43,32 +43,32 @@ let match_kr subs kr kr' = match kr,kr' with
 
 let match_instr subs pattern instr = match pattern,instr with
   | I_FENCE fp,I_FENCE fi when fp = fi
-    -> None,Some subs
+    -> Some subs
 
   | I_B lp, I_B li
-    -> None,Some(add_subs [Lab(lp,li)] subs)
+    -> Some(add_subs [Lab(lp,li)] subs)
 
   | I_BC(cp,lp), I_BC(ci,li) when cp = ci
-    -> None,Some(add_subs [Lab(lp,li)] subs)
+    -> Some(add_subs [Lab(lp,li)] subs)
 
   | I_CBZ(_,r,lp),I_CBZ(_,r',li)
   | I_CBNZ(_,r,lp),I_CBNZ(_,r',li)
-    -> None,Some(add_subs [Reg(sr_name r,r');
+    -> Some(add_subs [Reg(sr_name r,r');
 		      Lab(lp,li)] subs)
 	   
   | I_MOV(_,r,MetaConst.Meta m),I_MOV(_,r',i)
-    -> None,Some(add_subs [Reg(sr_name r,r');
+    -> Some(add_subs [Reg(sr_name r,r');
 		      Cst(m,i)] subs)
 
   | I_LDAR(_,tp,r1,r2),I_LDAR(_,ti,r1',r2') when tp = ti
-    -> None,Some(add_subs [Reg(sr_name r1,r1');Reg(sr_name r2,r2')] subs)
+    -> Some(add_subs [Reg(sr_name r1,r1');Reg(sr_name r2,r2')] subs)
 	   
   | I_STLR(_,r1,r2),I_STLR(_,r1',r2')
   | I_SXTW(r1,r2),I_SXTW(r1',r2')
-    -> None,Some(add_subs [Reg(sr_name r1,r1');Reg(sr_name r2,r2')] subs)
+    -> Some(add_subs [Reg(sr_name r1,r1');Reg(sr_name r2,r2')] subs)
 
   | I_STXR(_,tp,r1,r2,r3),I_STXR(_,ti,r1',r2',r3') when tp = ti 
-    -> None,Some(add_subs [Reg(sr_name r1,r1');
+    -> Some(add_subs [Reg(sr_name r1,r1');
 		      Reg(sr_name r2,r2');
 		      Reg(sr_name r3,r3')]
 		     subs)
@@ -77,43 +77,32 @@ let match_instr subs pattern instr = match pattern,instr with
   | I_STR(_,r1,r2,kr),I_STR(_,r1',r2',kr')
     -> begin match match_kr subs kr kr' with 
 	     | Some subs 
-	       -> None,Some(add_subs [Reg(sr_name r1,r1');
+	       -> Some(add_subs [Reg(sr_name r1,r1');
 				 Reg(sr_name r2,r2')]
 				subs)
-	     | None -> None,None
+	     | None -> None
        end
 
   | I_OP3(_,opp,r1,r2,kr),I_OP3(_,opi,r1',r2',kr') when opp=opi
     -> begin match match_kr subs kr kr' with 
 	     | Some subs 
-	       -> None,Some(add_subs [Reg(sr_name r1,r1');
+	       -> Some(add_subs [Reg(sr_name r1,r1');
 				 Reg(sr_name r2,r2')]
 				subs)
-	     | None -> None,None
+	     | None -> None
        end
 
-  | _,_ -> None,None
+  | _,_ -> None
 
 let rec match_instruction subs pattern instr = match pattern,instr with
   | Label(lp,insp),Label(li,insi) 
     -> match_instruction (add_subs [Lab(lp,li)] subs) insp insi
-  | Label _, _ -> None,None
+  | Label _, _ -> None
   | pattern, Label(_,instr)
     -> match_instruction subs pattern instr
   | Instruction ip, Instruction ii 
     -> match_instr subs ip ii
   | _,_ -> assert false
-
-
-let rec map_pseudos f = 
-  let rec aux = function
-    | Nop -> Nop
-    | Instruction ins -> Instruction (f ins)
-    | Label (lbl,ins) -> Label (lbl, aux ins)
-    | Macro (_,_) -> assert false
-  in function
-  | [] -> []
-  | i::is -> (aux i)::(map_pseudos f is)
 	
 let instanciate_with subs free instrs =
   let get_register =
@@ -138,6 +127,12 @@ let instanciate_with subs free instrs =
     let rec aux = function
       | [] -> raise (Error("No conversion found for constant "^s))
       | Cst(n,i)::_ when String.compare n s = 0 -> MetaConst.Int i
+      | _::subs -> aux subs
+    in aux subs in
+  let find_code s =
+    let rec aux = function
+      | [] -> raise (Error("No conversion found for code "^s))
+      | Code(n,c)::_ when String.compare n s = 0 -> c
       | _::subs -> aux subs
     in aux subs in
   let find_lab l =
@@ -176,7 +171,21 @@ let instanciate_with subs free instrs =
     | I_LDR(a,r1,r2,kr) -> I_LDR(a,conv_reg r1,conv_reg r2,expl_kr kr)
     | I_STR(a,r1,r2,kr) -> I_STR(a,conv_reg r1,conv_reg r2,expl_kr kr)
     | I_OP3(a,b,r1,r2,kr) -> I_OP3(a,b,conv_reg r1,conv_reg r2,expl_kr kr)
-    
-  in
-  map_pseudos expl instrs
+  in 
+  let rec expl_pseudos = 
+    let rec aux = function
+      | Nop -> []
+      | Instruction ins -> [pseudo_parsed_tr (Instruction (expl ins))]
+      | Label (lbl,ins) ->  begin
+	 match aux ins with
+	 | [] -> [pseudo_parsed_tr (Label (lbl, Nop))]
+	 | h::t -> Label(lbl,h)::t
+	end
+      | Symbolic s -> find_code s
+      | Macro (_,_) -> assert false
+    in function
+    | [] -> []
+    | i::is -> (aux i)@(expl_pseudos is)
+  
+  in expl_pseudos instrs
 

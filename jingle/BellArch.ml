@@ -88,21 +88,21 @@ let match_addr_op subs ao ao' = match ao,ao' with
   | _,_ -> None
 
 let match_instr subs pattern instr = match pattern,instr with
-  | Pld(r,ao,s),Pld(r',ao',s') -> None,
+  | Pld(r,ao,s),Pld(r',ao',s') ->
      if annots_compare s s'
      then match match_addr_op subs ao ao' with
 	  | Some subs -> Some (add_subs [Reg(sr_name r,r')] subs)
 	  | None -> None
      else None
 
-  | Pst(ao,ri,s),Pst(ao',ri',s') -> None,
+  | Pst(ao,ri,s),Pst(ao',ri',s') ->
     if annots_compare s s'
     then match match_addr_op subs ao ao' with
 	 | Some subs -> match_reg_or_imm subs ri ri'
 	 | None -> None
     else None
 
-  | Prmw(r,op,ao,s),Prmw(r',op',ao',s') -> None,
+  | Prmw(r,op,ao,s),Prmw(r',op',ao',s') ->
      if annots_compare s s'
      then match match_op subs op op' with
 	  | None -> None
@@ -112,37 +112,27 @@ let match_instr subs pattern instr = match pattern,instr with
 	     | None -> None
      else None
 
-  | Pfence Fence(s,_), Pfence Fence(s',_) -> None, 
+  | Pfence Fence(s,_), Pfence Fence(s',_) ->
      if annots_compare s s' 
      then Some subs
      else None
 
-  | Pbranch(_,lp,s), Pbranch(_,li,s') -> None,
+  | Pbranch(_,lp,s), Pbranch(_,li,s') -> 
      if annots_compare s s'
      then Some(add_subs [Lab(lp,li)] subs)
      else None
 
-  | _,_ -> None,None
+  | _,_ -> None
 
 let rec match_instruction subs pattern instr= match pattern,instr with
   | Label(lp,insp),Label(li,insi) 
     -> match_instruction (add_subs [Lab(lp,li)] subs) insp insi
-  | Label _, _ -> None,None
+  | Label _, _ -> None
   | pattern, Label(_,instr)
     -> match_instruction subs pattern instr
   | Instruction ip, Instruction ii 
     -> match_instr subs ip ii
   | _,_ -> assert false
-       
-let rec map_pseudos f = 
-  let rec aux = function
-    | Nop -> Nop
-    | Instruction ins -> Instruction (f ins)
-    | Label (lbl,ins) -> Label (lbl, aux ins)
-    | Macro (_,_) -> assert false
-  in function
-  | [] -> []
-  | i::is -> (aux i)::(map_pseudos f is)
 		
 let instanciate_with subs free instrs =
   let get_register = 
@@ -168,6 +158,12 @@ let instanciate_with subs free instrs =
       | [] -> raise (Error("No binding for constant "^s))
       | Cst(n,i)::_ when String.compare n s = 0 ->
 	 MetaConst.Int i
+      | _::subs -> aux subs
+    in aux subs in
+  let find_code s =
+    let rec aux = function
+      | [] -> raise (Error("No conversion found for code "^s))
+      | Code(n,c)::_ when String.compare n s = 0 -> c
       | _::subs -> aux subs
     in aux subs in
   let find_lab l =
@@ -213,7 +209,22 @@ let instanciate_with subs free instrs =
     | IAR_roa ra -> IAR_roa(expl_ra ra)
     | IAR_imm(MetaConst.Meta v) -> IAR_imm(find_cst v)
     | i -> i
-   
-in try map_pseudos expl instrs with
-   | e -> Printf.eprintf "Error on translated instructions :%s\n" "";
-	  raise e
+  in
+  let rec expl_pseudos = 
+    let rec aux = function
+      | Nop -> []
+      | Instruction ins -> [pseudo_parsed_tr (Instruction (expl ins))]
+      | Label (lbl,ins) ->  begin
+	 match aux ins with
+	 | [] -> [pseudo_parsed_tr (Label (lbl, Nop))]
+	 | h::t -> Label(lbl,h)::t
+	end
+      | Symbolic s -> find_code s
+      | Macro (_,_) -> assert false
+    in function
+    | [] -> []
+    | i::is -> (aux i)@(expl_pseudos is)
+
+  in try expl_pseudos instrs with
+     | e -> Printf.eprintf "Error on translated instructions :%s\n" "";
+	    raise e

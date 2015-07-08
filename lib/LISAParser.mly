@@ -21,6 +21,7 @@ open Bell
 %token EOF SEMI COMMA PIPE COLON LPAR RPAR RBRAC LBRAC LBRACE RBRACE SCOPES REGIONS MOV AND ADD BRANCH EQ NEQ READ WRITE FENCE RMW CAS EXCH DOT XOR PLUS
 %token <BellBase.reg> REG
 %token <int> NUM
+%token <string> CODEVAR
 %token <string> NAME
 %token <string> META
 %token <BellBase.reg> SYMB_REG
@@ -56,6 +57,7 @@ instr_option :
 |            { Nop }
 | NAME COLON instr_option { Label ($1,$3) }
 | instr      { Instruction $1}
+| CODEVAR    { Symbolic $1 }
 
 instr_option_list :
   | instr_option

@@ -49,6 +49,7 @@ and type start_points = A.start_points =
 	  Warn.user_error
 	    "Label %s occurs more that once" lbl ;
 	A.LabelMap.add lbl start mem,start
+    | A.Symbolic _
     | A.Macro (_,_) -> assert false
 
     let rec load = function

@@ -23,6 +23,7 @@ module type S = sig
     | Label of string * 'ins kpseudo
     | Instruction of 'ins
     | Macro of string * reg_arg list
+    | Symbolic of string
 
   type pseudo = ins kpseudo
   type parsedPseudo = pins kpseudo
@@ -81,6 +82,7 @@ struct
     | Label of string * 'ins kpseudo
     | Instruction of 'ins
     | Macro of string * reg_arg list
+    | Symbolic of string
 
   type pseudo = ins kpseudo
   type parsedPseudo = pins kpseudo
@@ -90,12 +92,14 @@ struct
     | Nop -> Nop
     | Instruction ins -> Instruction (f ins)
     | Label (lbl,ins) -> Label (lbl, pseudo_map f ins)
+    | Symbolic s -> Symbolic s
     | Macro (_,_) -> assert false
 
   let rec pseudo_fold f k ins = match ins with
     | Nop -> k
     | Instruction ins -> f k ins
     | Label (_,ins) -> pseudo_fold f k ins
+    | Symbolic _ -> k
     | Macro (_,_) -> assert false
 
   let pseudo_iter f ins = pseudo_fold (fun () ins -> f ins) () ins
@@ -106,12 +110,14 @@ struct
   | Nop -> k
   | Instruction ins -> I.fold_labels k f ins
   | Label (lbl,ins) -> fold_labels f (f k lbl) ins
+  | Symbolic _ -> k
   | Macro _ -> assert false
 
   let rec map_labels f ins = match ins with
   | Nop -> Nop
   | Instruction ins -> Instruction (I.map_labels f ins)
   | Label (lbl,ins) -> Label (f lbl, map_labels f ins)
+  | Symbolic s -> Symbolic s
   | Macro _ -> assert false
 
 (* For printing the program, code per processor *)
