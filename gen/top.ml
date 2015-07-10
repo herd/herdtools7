@@ -624,6 +624,7 @@ let rec dump_pseudo = function
   | A.Label (lbl,ins)::rem ->
       sprintf "%s:" lbl::dump_pseudo (ins::rem)
   | A.Nop::rem -> dump_pseudo rem
+  | A.Symbolic _::_ -> assert false (* no symbolic in diy *)
   | A.Macro (m,args)::rem ->
       sprintf "%s(%s)"
         m

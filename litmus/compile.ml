@@ -214,6 +214,7 @@ module Make
     | A.Nop -> nop
     | A.Label (_,ins) -> do_extract_pseudo nop f ins
     | A.Instruction ins -> f ins
+    | A.Symbolic _ (*no symbolic in litmus *)
     | A.Macro (_,_) -> assert false
 
     let extract_pseudo = do_extract_pseudo StringSet.empty C.extract_addrs
@@ -245,6 +246,7 @@ module Make
     | A.Label(lbl,i) ->
         let m = StringMap.add lbl c m in
         lblmap_pseudo (c+1) m i
+    | A.Symbolic _ (*no symbolic in litmus *)
     | A.Macro _ -> assert false
 
     let lblmap_code =
@@ -301,6 +303,7 @@ module Make
           seen,ilab::k
       | A.Instruction ins ->
           seen,C.compile_ins (tr_lab seen) ins []
+      | A.Symbolic _ (*no symbolic in litmus *)
       | A.Macro (_,_) -> assert false in
 
       let rec do_rec seen = function

@@ -11,6 +11,7 @@
 let space = [' ' '\t' '\r']
 let blank = (space | '\n')
 let archname = ([ '0'-'9' 'a'-'z' 'A'-'Z'])*
+let arrow = ("->" | "maps" space "to")
 
 rule main = parse
 | space* (archname as src) space+ "to" space+ (archname as tgt) space* '\n' blank*
@@ -28,7 +29,7 @@ rule main = parse
 	
 and conv l = parse
     | eof {l}
-    | '"' ([^'"']* as left) '"' blank+ ("maps to:" | "->") blank* '"' ([^'"']* as right) '"' blank*
+    | '"' ([^'"']* as left) '"' blank+ arrow blank+ '"' ([^'"']* as right) '"' blank*
 	{
 	  conv ((String.trim left, String.trim right)::l) lexbuf
 	}

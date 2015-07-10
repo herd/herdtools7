@@ -1,5 +1,4 @@
 %{
-open Constant
 open CBase
 open MemOrder
 open CType
@@ -111,8 +110,8 @@ declaration:
 
 expr:
 | LPAR expr RPAR { $2 }
-| CONSTANT { Const(Concrete $1) }
-| CONSTVAR { Const(Symbolic $1) }
+| CONSTANT { Const(Constant.Concrete $1) }
+| CONSTVAR { Const(Constant.Symbolic $1) }
 | location { Load($1,None) }
 | LD LPAR location RPAR { Load($3,Some SC) }
 | LD_EXPLICIT LPAR location COMMA MEMORDER RPAR { Load($3,Some $5) }

@@ -52,6 +52,7 @@ module Make(O:Config)(A:Arch.S) =
         | A.Nop -> ""
         | A.Instruction ins -> a_pp_instruction ins
         | A.Label (lbl,i) -> sprintf "%s: %s" lbl (pp_rec i)
+	| A.Symbolic s -> sprintf "codevar:%s" s
         | A.Macro (_,_) -> assert false in
         pp_rec i::k
 

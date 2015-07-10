@@ -122,6 +122,7 @@ let rec map_pseudos f =
     | Nop -> Nop
     | Instruction ins -> Instruction (f ins)
     | Label (lbl,ins) -> Label (lbl, aux ins)
+    | Symbolic _
     | Macro (_,_) -> assert false
   in function
   | [] -> []

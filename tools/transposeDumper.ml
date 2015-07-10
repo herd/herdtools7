@@ -49,6 +49,7 @@ end = struct
   | A.Nop -> ""
   | A.Instruction ins -> A.dump_instruction ins
   | A.Label (lbl,io) -> lbl ^ ": " ^ fmt_io io
+  | A.Symbolic s -> sprintf "codevar:%s" s
   | A.Macro (f,regs) ->
       sprintf
         "%s(%s)"

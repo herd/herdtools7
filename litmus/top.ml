@@ -282,6 +282,7 @@ end = struct
         | A.Nop -> ""
         | A.Instruction ins -> A.dump_instruction ins
         | A.Label (lbl,io) -> lbl ^ ": " ^ fmt_io io
+	| A.Symbolic _ -> assert false (*no symbolic in litmus *)
         | A.Macro (f,regs) ->
             Printf.sprintf
               "%s(%s)"
