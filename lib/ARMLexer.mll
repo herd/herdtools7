@@ -74,6 +74,7 @@ rule token = parse
 | "nshst" | "NSHST" { I_NSHST }
 | "osh" | "OSH" { I_OSH }
 | "oshst" | "OSHST" { I_OSHST }
+| "codevar:" (name as x) { CODEVAR x }
 | name as x
   { match ARM.parse_reg x with
   | Some r -> ARCH_REG r

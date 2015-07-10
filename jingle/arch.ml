@@ -51,7 +51,19 @@ end
 
     
 let get_arch = function
-  | `AArch64 -> 
+   | `ARM ->
+      let module ARMLexParse = struct
+	type instruction = ARMArch.parsedPseudo
+	type token = ARMParser.token
+        module Lexer = ARMLexer.Make(struct let debug = false end)
+	let lexer = Lexer.token
+	let parser = MiscParser.mach2generic ARMParser.main
+       let instr_parser = ARMParser.instr_option_seq
+      end in (module struct
+		include ARMArch
+		module Parser = MakeParser(ARMBase)(ARMLexParse)
+	      end : S)
+   | `AArch64 -> 
      let module AArch64LexParse = struct
        type instruction = AArch64Arch.parsedPseudo
        type token = AArch64Parser.token

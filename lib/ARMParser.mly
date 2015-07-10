@@ -20,6 +20,7 @@ open ARMBase
 %token <int> NUM
 %token <string> NAME
 %token <string> META
+%token <string> CODEVAR
 %token <int> PROC
 
 %token SEMI COMMA PIPE COLON LBRK RBRK
@@ -31,6 +32,9 @@ open ARMBase
 %token I_SY I_ST I_ISH I_ISHST I_NSH I_NSHST I_OSH I_OSHST
 %type <int list * (ARMBase.parsedPseudo) list list> main 
 %start  main
+
+%type <ARMBase.parsedPseudo list> instr_option_seq
+%start instr_option_seq
 
 %nonassoc SEMI
 %%
@@ -59,9 +63,16 @@ instr_option_list :
   | instr_option PIPE instr_option_list 
       {$1::$3}
 
+instr_option_seq :
+  | instr_option
+      {[$1]}
+  | instr_option SEMI instr_option_seq 
+      {$1::$3}
+
 instr_option :
 |            { Nop }
 | NAME COLON instr_option { Label ($1,$3) }
+| CODEVAR { Symbolic $1 }
 | instr      { Instruction $1}
 
 reg:
