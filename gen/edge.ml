@@ -372,7 +372,7 @@ let iter_atom f= F.fold_atom (fun a () -> f a) ()
             k (LexUtil.just_split x))
         [] xs
     with LexUtil.Error msg ->
-      Warn.fatal "bad atoms list"
+      Warn.fatal "bad atoms list (%s)" msg
 
 
 (**********)

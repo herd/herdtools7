@@ -30,6 +30,7 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
     let pseudo = List.map (fun i -> Instruction i)
 
 (* Bell instructions *)
+
 (*    let movi r i = Pmov (r,IAR_imm i) *)
     let ld_tagged r x a = Pld (r, Addr_op_atom (Abs (Constant.Symbolic x)),a)
     let ld r x = ld_tagged r x []
@@ -48,8 +49,10 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
     let mov rA op = Pmov (rA,op)
 
     let movne rA rB k = mov  rA (Neq (IAR_roa (Rega rB),IAR_imm k))
+    let moveq rA rB k = mov  rA (Eq (IAR_roa (Rega rB),IAR_imm k))
 
     let branch reg lab = Pbranch (reg,lab,[])
+
 
 (*    let addi r1 r2 i = Add(r1,IAR_roa (Rega r2),IAR_imm i)
     let subi r1 r2 i = Add(r1,IAR_roa (Rega r2),IAR_imm (-i))
@@ -191,10 +194,30 @@ let emit_exch _ = assert false
 (****************)
 (* Dependencies *)
 (****************)
+
 (*jade: l'idee c'est de tout faire par les labelled fences en LISA*)
 
-let emit_access_dep _ = assert false
-let emit_exch_dep _ = assert false (*jade: ca me parait un peu fort d'avoir ca required non?*)
+let emit_access_dep_addr st p init e r1 = assert false
+let emit_access_dep_data st p init e r1 = assert false
+
+let emit_access_ctrl st p init e r1 =
+  let lab = Label.next_label "LC" in
+  let rd,st = next_reg st in
+  let c =
+    [Instruction (moveq rd r1 0) ;
+     Instruction (branch rd lab) ;
+     Label (lab,Nop);] in
+  let ropt,init,cs,st = emit_access st p init e in
+  ropt,init,c@cs,st
+
+let emit_access_dep  st p init e dp r1 = match dp with
+| ADDR -> emit_access_dep_addr st p init e r1
+| DATA -> emit_access_dep_data st p init e r1
+| CTRL -> emit_access_ctrl st p init e r1
+
+let emit_exch_dep _ = assert false
+
+(*jade: ca me parait un peu fort d'avoir ca required non?*)
 
 (*    let emit_access_dep_addr st p init e  rd =
       let r2,st = next_reg st in

@@ -133,8 +133,10 @@ let compare_atom a1 a2 =
 
 let fold_annots eg f r =
   List.fold_left
-    (fun r ag ->
-      Misc.fold_cross (List.map StringSet.elements ag) f r)
+    (fun r ag -> match ag with
+    | [] -> r
+    | _  ->
+        Misc.fold_cross (List.map StringSet.elements ag) f r)
     r eg
         
 
@@ -247,7 +249,7 @@ let var_fence f = match varatom with
 (* Deps *)
 (********)
 
-include NoDep
+include ClassicDep
 
 include
     ArchExtra.Make
