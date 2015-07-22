@@ -188,6 +188,8 @@ module Top
 
             type location = MiscParser.location
             let dump_location = dump_loc
+
+	    let pp_prog = Misc.pp_prog
           end)
 
       let zyva = match O.outputdir with

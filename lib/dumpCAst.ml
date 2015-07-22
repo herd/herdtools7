@@ -21,7 +21,7 @@ let dump_prog cfun =
           Printf.sprintf "%s %s" (string_of_ty param_ty) param_name
         in
         let params = String.concat ", " (List.map f params) in
-        Printf.sprintf "static void P%i(%s) {%s}\n" i params body
+        Printf.sprintf "P%i(%s) {\n%s\n}\n" i params body
     | CAst.Global x -> Printf.sprintf "{%s}\n\n" x
   in
   [f cfun]

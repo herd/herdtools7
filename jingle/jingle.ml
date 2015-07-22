@@ -39,37 +39,6 @@ module Trad = Mapping.Make(struct
 			    module Target = Target
 			    let conversions = parsed.ParseMap.conversions
 			  end)
-    
-module Dumper = SimpleDumper.Make(struct
-            module A = Target
-
-            let dump_loc = MiscParser.dump_location
-
-            let dump_state_atom a =
-              MiscParser.dump_state_atom dump_loc SymbConstant.pp_v a
-
-            type state = MiscParser.state
-
-            let dump_state st =
-              String.concat " "
-                (List.map
-                   (fun a -> sprintf "%s;" (dump_state_atom a))
-                   st)
-
-                
-            type constr = MiscParser.constr
-            let dump_atom a =
-              let open ConstrGen in
-              match a with
-              | LV (loc,v) -> dump_state_atom (loc,(MiscParser.TyDef,v))
-              | LL (loc1,loc2) ->
-                  sprintf "%s=%s" (dump_loc loc1) (MiscParser.dump_rval loc2)
-
-            let dump_constr = ConstrGen.constraints_to_string dump_atom
-
-            type location = MiscParser.location
-            let dump_location = dump_loc
-          end)
 			    
 let do_trans file = 
   let fin chin =
@@ -77,7 +46,7 @@ let do_trans file =
 	       SP.split (Filename.basename file) chin in
     let fout out = try
 	let trans_test = Trad.translate chin sres in
-	Dumper.dump_info out sres.Splitter.name trans_test
+	Target.Dumper.dump_info out sres.Splitter.name trans_test
       with e -> eprintf "Error in test %s.\n" (Filename.basename file);
 		raise e
     in match !outdir with

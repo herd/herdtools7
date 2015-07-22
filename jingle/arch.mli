@@ -3,6 +3,17 @@ module type Parser = sig
     type parsedPseudo
     val instr_from_string : string -> parsedPseudo list
   end
+
+module type Dumper = sig
+    type pseudo
+    val dump_info : 
+      out_channel -> Name.t ->
+      (MiscParser.state, (int * pseudo list) list,
+       MiscParser.constr, MiscParser.location)
+        MiscParser.result
+      -> unit
+end
+
 module type S = sig
     include ArchBase.S
 
@@ -26,6 +37,7 @@ module type S = sig
     module Parser : Parser with type parsedPseudo = parsedPseudo
 			    and type pseudo = pseudo
 
+    module Dumper : Dumper with type pseudo = pseudo
   end
 
 module MakeParser : 

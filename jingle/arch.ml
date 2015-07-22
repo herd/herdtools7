@@ -1,9 +1,21 @@
+open Printf
+
 module type Parser = sig
   include GenParser.S
 	    
   type parsedPseudo
   val instr_from_string : string -> parsedPseudo list
   end
+
+module type Dumper = sig
+    type pseudo
+    val dump_info : 
+      out_channel -> Name.t ->
+      (MiscParser.state, (int * pseudo list) list,
+       MiscParser.constr, MiscParser.location)
+        MiscParser.result
+      -> unit
+end
 
 module type S = sig
     include ArchBase.S
@@ -29,6 +41,7 @@ module type S = sig
     module Parser : Parser with type parsedPseudo = parsedPseudo
 			    and type pseudo = pseudo
 
+    module Dumper : Dumper with type pseudo = pseudo
   end
 
 module MakeParser
@@ -49,6 +62,40 @@ module MakeParser
 		
 end
 
+module DefaultDumper(A:ArchBase.S) = struct 
+  type pseudo = A.pseudo
+  include SimpleDumper.Make(struct
+	    module A = A
+
+            let dump_loc = MiscParser.dump_location
+
+            let dump_state_atom a =
+              MiscParser.dump_state_atom dump_loc SymbConstant.pp_v a
+
+            type state = MiscParser.state
+
+            let dump_state st =
+              String.concat " "
+                (List.map
+                   (fun a -> sprintf "%s;" (dump_state_atom a))
+                   st)
+
+                
+            type constr = MiscParser.constr
+            let dump_atom a =
+              let open ConstrGen in
+              match a with
+              | LV (loc,v) -> dump_state_atom (loc,(MiscParser.TyDef,v))
+              | LL (loc1,loc2) ->
+                  sprintf "%s=%s" (dump_loc loc1) (MiscParser.dump_rval loc2)
+
+            let dump_constr = ConstrGen.constraints_to_string dump_atom
+
+            type location = MiscParser.location
+            let dump_location = dump_loc
+          end)
+end
+
     
 let get_arch = function
    | `ARM ->
@@ -62,6 +109,7 @@ let get_arch = function
       end in (module struct
 		include ARMArch
 		module Parser = MakeParser(ARMBase)(ARMLexParse)
+		module Dumper = DefaultDumper(ARMBase)
 	      end : S)
    | `AArch64 -> 
      let module AArch64LexParse = struct
@@ -74,6 +122,7 @@ let get_arch = function
      end in (module struct
 	       include AArch64Arch
 	       module Parser = MakeParser(AArch64Base)(AArch64LexParse)
+	       module Dumper = DefaultDumper(AArch64Base)
 	     end : S)
   | `Bell ->
      let module BellLexParse = struct
@@ -86,6 +135,7 @@ let get_arch = function
      end in (module struct 
 	       include BellArch
 	       module Parser = MakeParser(BellBase)(BellLexParse)
+	       module Dumper = DefaultDumper(BellBase)
 	     end : S)
   | `C ->
      let module CLexParse = struct
@@ -108,5 +158,6 @@ let get_arch = function
 					 CLexParse.deep_lexer 
 					 CLexParse.instr_parser
 	       end
+	       module Dumper = CDumper
 	     end : S)
 	      

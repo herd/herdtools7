@@ -1,9 +1,5 @@
 include CBase
 
-let allowed_for_symb = ["r0";"r1";"r2";
-			"r3";"r4";"r5";
-			"r6";"r7";"r8";]
-
 exception Error of string
 
 type substitution = 
@@ -121,7 +117,7 @@ let rec map_pseudos f =
   let rec aux = function
     | Nop -> Nop
     | Instruction ins -> Instruction (f ins)
-    | Label (lbl,ins) -> Label (lbl, aux ins)
+    | Label (_,ins) -> aux ins
     | Symbolic _
     | Macro (_,_) -> assert false
   in function

@@ -12,6 +12,16 @@ type loc =
   | Reg of reg
   | Mem of reg
 
+let loc_compare l1 l2 = match l1,l2 with
+  | Reg s1,Reg s2 -> reg_compare s1 s2
+  | Mem s1,Mem s2 -> reg_compare s1 s2
+  | Reg _,Mem _ -> -1
+  | Mem _,Reg _ -> 1
+
+let dump_loc = function
+  | Reg r -> r
+  | Mem r -> "*"^r
+
 type mem_order = MemOrder.t 
 
 type barrier = F of MemOrder.t
@@ -47,9 +57,6 @@ let rec dump_instruction =
     | Xor -> "xor"
     | And -> "and"
     | _ -> assert false in
-  let dump_loc = function
-    | Reg r -> r
-    | Mem r -> "*"^r in
   let rec dump_expr = function
     | Const c -> SymbConstant.pp_v c
     | Load(l,None) -> dump_loc l
@@ -92,7 +99,8 @@ let rec dump_instruction =
 
 let pp_instruction _mode = dump_instruction 
 
-let allowed_for_symb = []
+let allowed_for_symb = List.map (fun x -> "r"^(string_of_int x)) 
+				(Misc.interval 0 64)
 
 let fold_regs (_fc,_fs) acc _ins = acc
 let map_regs _fc _fs ins = ins

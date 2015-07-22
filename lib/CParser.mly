@@ -105,6 +105,9 @@ location:
 | STAR IDENTIFIER { CBase.Mem $2 }
 
 declaration:
+| typ IDENTIFIER SEMI {}
+
+initialisation:
 | typ IDENTIFIER EQ expr
   { Store(Reg $2,$4,None) }
 
@@ -130,7 +133,7 @@ instruction:
   { If($3,$5,None) }
 | IF LPAR expr RPAR block_ins ELSE block_ins 
   { If($3,$5,Some $7) }
-| declaration SEMI
+| initialisation SEMI
   { $1 }
 | location EQ expr SEMI
   { Store($1,$3,None) }
@@ -158,6 +161,8 @@ instruction:
 ins_seq:
 | block_ins { [$1] }
 | block_ins ins_seq { $1::$2 }
+| declaration { [] }
+| declaration ins_seq { $2 }
 
 block_ins:
 | instruction { $1 }
@@ -166,6 +171,8 @@ block_ins:
 pseudo_seq:
 | block_ins { [Instruction $1] }
 | block_ins pseudo_seq { (Instruction $1)::$2 }
+| declaration { [] }
+| declaration pseudo_seq { $2 }
 
 function_def:
 | PROC LPAR parameter_list RPAR LBRACE pseudo_seq RBRACE
