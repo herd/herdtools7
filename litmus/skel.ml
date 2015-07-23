@@ -57,6 +57,7 @@ module type Config = sig
   val c11_fence : bool
   val ascall : bool
   val stdio : bool
+  val limit : bool
   include DumpParams.Config
 end
 
@@ -2457,6 +2458,17 @@ let user2_barrier_def () =
         O.oi "cpus_t *def_all_cpus = NULL;" ;
         false
       end in
+    if alloc_def_all_cpus then begin
+      O.oi "if (def_all_cpus->sz < N) {" ;
+      if Cfg.limit then begin
+        O.oii "cpus_free(def_all_cpus);" ;
+        O.oii "return EXIT_SUCCESS;" ;
+      end else begin
+        let fmt = "Warning: ncores found=%i, nthreads=%i\\n" in
+        O.fii "log_error(\"%s\",def_all_cpus->sz,N);" fmt
+      end ;
+      O.oi "}"
+    end ;
     if do_timebase && have_timebase then begin
       O.fi "int delta_t[] = {%s};"
         (String.concat ","
