@@ -38,12 +38,16 @@ module Make(C:Config) = struct
 	 | [] -> raise (Error "No fresh register available.")
 	 | r::fs -> r,({binds with addr=(addr,r)::binds.addr},fs)
 
-    let get_label (binds,free) l = 
+    let get_label = 
       let fresh_label = 
 	let i = ref 0 in (fun () -> incr i;"label"^(string_of_int !i)) in
+      fun (binds,free) l -> 
       try (List.assoc l binds.lab,(binds,free)) with
       | Not_found -> let lbl = fresh_label () in
 		     lbl,({binds with lab=(l,lbl)::binds.lab},free)
+
+    let get_lab_convs (binds,_) =
+      List.map (fun (s,t) -> Target.Lab(s,t)) binds.lab
 
     let get_free_register (_,free) = free
 	    
@@ -81,6 +85,11 @@ module Make(C:Config) = struct
     | pat,Nop::instrs
     | Nop::pat,instrs -> 
        find_pattern pat instrs subs
+
+    | pat,Label(l,Nop)::i::is ->
+       find_pattern pat (Label(l,i)::is) subs
+    | pat,Label(_,Nop)::[] ->
+       find_pattern pat [] subs
 
     | Symbolic s::pat,instrs ->
        begin 
@@ -146,14 +155,15 @@ module Make(C:Config) = struct
 		  | Source.Cst(s,c) -> (Target.Cst(s,c)::cv,env)
 		  | Source.Lab(s,l) -> 
 		     let lbl,env = Env.get_label env l in
+		     (*eprintf "%s,%s,%s\n" l s lbl;*)
 		     (Target.Lab(s,lbl)::cv,env)
 		  | Source.Code(s,c) ->
 		     let c,env = convert env c in
 		     (Target.Code(s,c)::cv,env)
 	     )
 	     ([],env) subs in
-	 let flw,env = aux env ts 
-	 in (tgt,conv)::flw,env
+	 let flw,env = aux env ts
+	 in (tgt,(Env.get_lab_convs env)@conv)::flw,env
     in 
     let chunks,env = aux env (get_pattern_seq instrs) in
     let chunks = List.map (fun (tgt,conv) -> 

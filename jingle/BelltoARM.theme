@@ -1,10 +1,8 @@
-Bell to AArch64
+Bell to ARM
 
 "r[] %x %y" -> "LDR %x,[%y]"
 
 "r[] %x y" -> "LDR %x,[%y]"
-
-"r[acq] %x y" -> "LDAR %x,[%y]"
 
 "w[] %x &c" -> "MOV %tmp,&c;
                 STR %tmp,[%x]"
@@ -14,11 +12,15 @@ Bell to AArch64
 
 "w[] %x %y" -> "STR %x,[%y]"
 
-"w[rel] x &c" -> "MOV %tmp,&c;
-	          STLR %tmp,[%x]"
+"f[DMB,SY]" -> "DMB SY"
 
-"f[dmb,all,sy]" -> "DMB SY"
+"f[DMB,ST]" -> "DMB ST"
 
-"f[dmb,ld,sy]" -> "DMB LD"
+"f[DSB,SY]" -> "DSB SY"
 
-"f[dmb,st,sy]" -> "DMB ST"
+"f[DSB,ST]" -> "DSB ST"
+
+"f[ISB]" -> "ISB"
+
+"mov %test (eq %r 0);
+ b[] %test label"      -> "CBZ %r,label"

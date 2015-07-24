@@ -178,8 +178,8 @@ let instanciate_with subs free instrs =
       | Instruction ins -> [pseudo_parsed_tr (Instruction (expl ins))]
       | Label (lbl,ins) ->  begin
 	 match aux ins with
-	 | [] -> [pseudo_parsed_tr (Label (lbl, Nop))]
-	 | h::t -> Label(lbl,h)::t
+	 | [] -> [pseudo_parsed_tr (Label (find_lab lbl, Nop))]
+	 | h::t -> Label(find_lab lbl,h)::t
 	end
       | Symbolic s -> find_code s
       | Macro (_,_) -> assert false

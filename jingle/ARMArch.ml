@@ -99,7 +99,7 @@ let rec match_instruction subs pattern instr = match pattern,instr with
     -> match_instr subs ip ii
   | _,_ -> assert false
 	
-let instanciate_with subs free instrs =
+let instanciate_with subs free instrs = 
   let get_register =
     let env,free = ref [],ref free in
     fun s -> try List.assoc s !env with
@@ -188,15 +188,15 @@ let instanciate_with subs free instrs =
     | I_SADD16(r1,r2,r3) -> I_SADD16(conv_reg r1,conv_reg r2,conv_reg r3)
     | I_SEL(r1,r2,r3) -> I_SEL(conv_reg r1,conv_reg r2,conv_reg r3)
    
-  in 
-  let rec expl_pseudos = 
+  in
+  let rec expl_pseudos =
     let rec aux = function
       | Nop -> []
       | Instruction ins -> [pseudo_parsed_tr (Instruction (expl ins))]
       | Label (lbl,ins) ->  begin
 	 match aux ins with
-	 | [] -> [pseudo_parsed_tr (Label (lbl, Nop))]
-	 | h::t -> Label(lbl,h)::t
+	 | [] -> [pseudo_parsed_tr (Label (find_lab lbl, Nop))]
+	 | h::t -> Label(find_lab lbl,h)::t
 	end
       | Symbolic s -> find_code s
       | Macro (_,_) -> assert false

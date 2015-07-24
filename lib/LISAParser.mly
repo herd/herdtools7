@@ -96,6 +96,11 @@ reg:
 reg_or_addr:
 | reg  {Rega $1}
 | NAME { Abs (Constant.Symbolic $1)}
+/*(* hideous fix for instruction characters *)*/
+| READ {Abs (Constant.Symbolic "r")}
+| WRITE {Abs (Constant.Symbolic "w")}
+| BRANCH {Abs (Constant.Symbolic "b")}
+| FENCE {Abs (Constant.Symbolic "f")}
 
 k:
 | NUM { MetaConst.Int $1 }

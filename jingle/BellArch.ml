@@ -11,6 +11,10 @@ type substitution =
   | Addr of string * string
   | Code of string * pseudo list
 
+let fresh_lbl = 
+  let i = ref 0 in 
+  fun () -> incr i;"lbl"^(string_of_int !i)
+
 let sr_name = function
   | Symbolic_reg s -> s
   | _ -> raise (Error "Not a symbolic register.")
@@ -33,10 +37,34 @@ let rec annots_compare s s' =
     | x::s,y::s' when String.compare x y = 0 -> annots_compare s s'
     | _ -> false
 
-let rec add_subs s s' = match s with
+let rec add_subs s s' = 
+  let rec exists sub s' = match sub,s' with
+    | _,[] -> false
+    | Reg(_,i),Reg(_,s)::s' -> 
+       if reg_compare i s = 0
+       then true
+       else exists sub s'
+    | Cst(_,i),Cst(_,s)::s' -> 
+       if s = i
+       then true
+       else exists sub s'
+    | Lab(_,i),Lab(_,s)::s' -> 
+       if String.compare s i = 0
+       then true
+       else exists sub s'
+    | Addr(_,i),Addr(_,s)::s' -> 
+       if String.compare s i = 0
+       then true
+       else exists sub s'
+    | Code(_,i),Code(_,s)::s' -> 
+       if s = i
+       then true
+       else exists sub s'
+    | _,_::s' -> exists sub s'
+  in match s with
   | [] -> s'
   | s::ss -> 
-     if List.mem s s'
+     if exists s s'
      then add_subs ss s'
      else add_subs ss (s::s')
 
@@ -61,6 +89,8 @@ let match_iar subs iar iar' = match iar,iar' with
     -> match_reg_or_addr subs ra ra'
   | IAR_imm (MetaConst.Meta m), IAR_imm i 
     -> Some(add_subs [Cst(m,i)] subs)
+  | IAR_imm (MetaConst.Int v), IAR_imm i 
+    when v = i -> Some subs
   | _,_ -> None
 
 let match_op subs op op' = match op,op' with
@@ -122,9 +152,15 @@ let match_instr subs pattern instr = match pattern,instr with
      then Some(add_subs [Lab(lp,li)] subs)
      else None
 
+  | Pmov(r,op),Pmov(r',op') ->
+     begin match match_op subs op op' with
+	   | None -> None
+	   | Some subs -> Some (add_subs [Reg(sr_name r,r')] subs)
+     end
+
   | _,_ -> None
 
-let rec match_instruction subs pattern instr= match pattern,instr with
+let rec match_instruction subs pattern instr = match pattern,instr with
   | Label(lp,insp),Label(li,insi) 
     -> match_instruction (add_subs [Lab(lp,li)] subs) insp insi
   | Label _, _ -> None
@@ -143,10 +179,7 @@ let instanciate_with subs free instrs =
 	  env := (s,r)::!env;
 	  free := List.tl !free;
 	  r in
-  let get_label = 
-    let fresh_lbl = 
-      let i = ref 0 in 
-      fun () -> incr i;"lbl"^(string_of_int !i) in
+  let get_label =
     let env = ref [] in
     fun s -> try List.assoc s !env with
 	     | Not_found ->
@@ -187,6 +220,7 @@ let instanciate_with subs free instrs =
     | Pst(ao,ri,s) -> Pst(expl_ao ao,expl_ri ri,s)
     | Prmw(r,op,ao,s) -> Prmw(conv_reg r,expl_op op,expl_ao ao,s)
     | Pbranch(a,l,b) -> Pbranch(a,find_lab l,b)
+    | Pmov(r,op) -> Pmov(conv_reg r,expl_op op)
     | i -> i
   and expl_ao = function
     | Addr_op_atom ra -> Addr_op_atom(expl_ra ra)
@@ -216,8 +250,8 @@ let instanciate_with subs free instrs =
       | Instruction ins -> [pseudo_parsed_tr (Instruction (expl ins))]
       | Label (lbl,ins) ->  begin
 	 match aux ins with
-	 | [] -> [pseudo_parsed_tr (Label (lbl, Nop))]
-	 | h::t -> Label(lbl,h)::t
+	 | [] -> [pseudo_parsed_tr (Label (find_lab lbl, Nop))]
+	 | h::t -> Label(find_lab lbl,h)::t
 	end
       | Symbolic s -> find_code s
       | Macro (_,_) -> assert false
