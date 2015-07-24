@@ -37,34 +37,10 @@ let rec annots_compare s s' =
     | x::s,y::s' when String.compare x y = 0 -> annots_compare s s'
     | _ -> false
 
-let rec add_subs s s' = 
-  let rec exists sub s' = match sub,s' with
-    | _,[] -> false
-    | Reg(_,i),Reg(_,s)::s' -> 
-       if reg_compare i s = 0
-       then true
-       else exists sub s'
-    | Cst(_,i),Cst(_,s)::s' -> 
-       if s = i
-       then true
-       else exists sub s'
-    | Lab(_,i),Lab(_,s)::s' -> 
-       if String.compare s i = 0
-       then true
-       else exists sub s'
-    | Addr(_,i),Addr(_,s)::s' -> 
-       if String.compare s i = 0
-       then true
-       else exists sub s'
-    | Code(_,i),Code(_,s)::s' -> 
-       if s = i
-       then true
-       else exists sub s'
-    | _,_::s' -> exists sub s'
-  in match s with
+let rec add_subs s s' = match s with
   | [] -> s'
   | s::ss -> 
-     if exists s s'
+     if List.mem s s'
      then add_subs ss s'
      else add_subs ss (s::s')
 

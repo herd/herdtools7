@@ -1,5 +1,5 @@
 ##Top level makefile for local installation of source tree
-SRC=herd gen litmus tools
+SRC=herd gen litmus tools jingle
 PREFIX=$$HOME
 OCBOPT=
 default: all
