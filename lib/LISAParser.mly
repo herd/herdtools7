@@ -116,6 +116,7 @@ any_value:
 
 addr_op:
 | reg_or_addr {BellBase.Addr_op_atom($1)}
+| reg_or_addr PLUS reg_or_imm { BellBase.Addr_op_add($1,$3) }
 
 operation:
 | any_value
