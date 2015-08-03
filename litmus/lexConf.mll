@@ -186,7 +186,7 @@ rule main = parse
    { set_string adbdir arg ; main lexbuf }
 | "pldw" arg
    { set_bool pldw arg ; main lexbuf }
-| "cachflush" arg
+| "cacheflush" arg
    { set_bool cacheflush arg ; main lexbuf }
 (* Change input *)
 | "names" arg
