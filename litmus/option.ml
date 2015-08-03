@@ -212,3 +212,4 @@ let set_carch x = carch := Some x
 (* More *)
 
 let pldw = ref true
+let cacheflush = ref true

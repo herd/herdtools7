@@ -32,6 +32,8 @@ module type Config = sig
   val timelimit : float option
   val check_nstates : string -> int option
   val stdio : bool
+  val pldw : bool
+  val cacheflush : bool
   include DumpParams.Config
 end
 
@@ -171,6 +173,16 @@ module Make
       let dump_cache_def () =
         if have_cache then begin
           O.o "/* Cache flush/fetch instructions */" ;
+          begin match Cfg.sysarch with
+          | `ARM when Cfg.pldw ->
+              O.o "#define HAS_PLDW 1" ;
+              O.o ""
+          | _ -> ()
+          end ;
+          begin match Cfg.cacheflush with
+          | true ->  O.o "#define CACHE_FLUSH 1" ;
+          | false -> ()
+          end ;
           Insert.insert O.o "cache.c" ;
           O.o ""
         end

@@ -47,6 +47,7 @@ module type CommonConfig = sig
   val stdio : bool
   val xy : bool
   val pldw : bool
+  val cacheflush : bool
   val morearch : MoreArch.t
   val carch : Archs.System.t option
   val syncconst : int

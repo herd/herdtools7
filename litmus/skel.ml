@@ -53,6 +53,7 @@ module type Config = sig
   val morearch : MoreArch.t
   val xy : bool
   val pldw : bool
+  val cacheflush : bool
   val c11 : bool
   val c11_fence : bool
   val ascall : bool
@@ -558,15 +559,19 @@ let user2_barrier_def () =
     end
 
   let dump_cache_def () =
+    O.o "/*************************/" ;
+    O.o "/* cache flush and touch */" ;
+    O.o "/*************************/" ;
     begin match Cfg.sysarch with
     | `ARM when Cfg.pldw ->
         O.o "#define HAS_PLDW 1" ;
         O.o ""
     | _ -> ()
     end ;
-    O.o "/*************************/" ;
-    O.o "/* cache flush and touch */" ;
-    O.o "/*************************/" ;
+    begin match Cfg.cacheflush with
+    | true ->  O.o "#define CACHE_FLUSH 1" ;
+    | false -> ()
+    end ;
     Insert.insert O.o "cache.c"
 
   let do_dump_cache_def = match Cfg.preload with

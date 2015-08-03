@@ -161,6 +161,7 @@ let opts =
    P.parse_withfun "-carch"
      Option.set_carch "Target architechture (C arch only)" None end ;
    argbool "-pldw" Option.pldw "use pldw instruction (ARM)" ;
+   argbool "-cacheflush" Option.cacheflush "use cache flush instruction (AArch64)" ;
 (********)
 (* Misc *)
 (********)
@@ -265,6 +266,7 @@ let () =
       let carch = !carch
       let xy = !xy
       let pldw = !pldw
+      let cacheflush = !cacheflush
       let gcc = !gcc
       let c11 = !c11
       let c11_fence =
