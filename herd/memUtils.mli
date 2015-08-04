@@ -50,11 +50,6 @@ module Make : functor (S: SemExtra.S) -> sig
   val ext : S.event_rel -> S.event_rel
   val internal : S.event_rel -> S.event_rel
 
-(* bell scope operations *)
-  val int_scope_bell :  string -> BellInfo.scopes -> S.event_rel -> S.event_rel
-
-  
-
 (* RF/FR relations for memory *)
   val make_rf_from_rfmap : S.rfmap -> S.event_rel
   val make_rf : S.concrete -> S.event_rel
