@@ -14,7 +14,7 @@
 (* Latex pretty print of programs *)
 
 module type Config = sig
- val texmacros : bool
+  val texmacros : bool
   val hexa : bool
   val outputdir : string option
 end
@@ -247,8 +247,11 @@ module Make(O:Config)(A:Arch.S) =
 	  (fun (l,(_,v))->
 	    if SymbConstant.compare v zero = 0 then None
 	    else
+              let ppv =
+                if O.texmacros then "\\asm{" ^ pp_v v ^"}"
+                else pp_v v in
               Some (" \\mbox{"^ pp_location l ^
-                    "} \\mathord{=} \\asm{"^pp_v v^"} "))
+                    "} \\mathord{=} " ^ ppv ^" "))
 	  sc in (* That will do *)
       match non_zero_constraints with 
       | [] -> None
@@ -257,11 +260,17 @@ module Make(O:Config)(A:Arch.S) =
             List.exists
               (fun (_,(_,v)) -> SymbConstant.compare v zero = 0)
               sc in
-          Some begin
-            "Initial state: $"
-	    ^ String.concat "\\mywedge " non_zero_constraints
-            ^ "$"
-	    ^ (if has_zero then " (elsewhere $\\asm{0}$)" else "")
+          Some
+            begin
+              "Initial state: $"
+	      ^ String.concat "\\mywedge " non_zero_constraints
+              ^ "$"
+	      ^
+                begin if has_zero then
+                  sprintf " (elsewhere $%s$)"
+                    (if O.texmacros then "\\asm{0}" else "0")
+                else ""
+                end
           end
 
     let pp_binding l v =  pp_location l ^ "= "^ pp_v v

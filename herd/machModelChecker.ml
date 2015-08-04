@@ -193,7 +193,7 @@ module Make
       let m =
         match bell_info with
         | None -> m
-        | Some bi ->
+        | Some _ ->
             let scopes =
               let open MiscParser in
               match test.Test.extra_data with
@@ -206,6 +206,13 @@ module Make
             | None -> m
  (* Otherwise, build scope relations *)
             | Some scopes ->
+                let rs = U.get_scope_rels evts scopes in
+                I.add_rels m
+                  (List.map
+                     (fun (scope,r) -> BellName.tag2rel_var scope,lazy r)
+                     rs)
+            end in
+(*
                 I.add_rels m
                   (List.map
                      (fun scope ->
@@ -214,7 +221,7 @@ module Make
                          U.int_scope_bell scope scopes (Lazy.force unv)
                        end)
                      (BellModel.get_scope_rels bi))
-            end in
+            end in *) 
 (* Now call interpreter, with or without generated co *)
       if withco then
         let process_co co0 res =

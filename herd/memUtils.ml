@@ -66,6 +66,7 @@ module Make(S : SemExtra.S) = struct
 
 (*Scope operations*)
 
+
   let concrete_proc_of e = 
     match (E.proc_of e) with
     | Some x -> x
@@ -154,7 +155,7 @@ let get_scope_classes evts =
     let _,cls = do_rec sc in
     cls
 
-let _get_scope_rels evts sc =
+let get_scope_rels evts sc =
   let cls = get_scope_classes evts sc in
   StringMap.fold
     (fun s cls k -> 
@@ -163,8 +164,8 @@ let _get_scope_rels evts sc =
           (List.map
              (fun evts -> E.EventRel.cartesian evts evts)
              cls) in
-      StringMap.add s r k)
-    cls StringMap.empty
+      (s,r)::k)
+    cls []
 
  
 (******************)

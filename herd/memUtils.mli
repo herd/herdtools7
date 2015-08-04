@@ -27,6 +27,10 @@ module Make : functor (S: SemExtra.S) -> sig
   val trans_close_mem : S.event_rel -> S.event_rel
   val trans_close_mems : S.event_rel list -> S.event_rel list
 
+(* All scope relations *)
+  val get_scope_rels :
+      S.event_set -> BellInfo.scopes -> (string * S.event_rel) list
+
 (* View of a relation by a processor:
    restricted to local events and mem_stores *)
   val proc_view : S.proc -> S.event_rel -> S.event_rel
