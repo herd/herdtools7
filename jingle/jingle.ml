@@ -19,7 +19,7 @@ let () = Arg.parse
 	    "-o",Arg.String (fun s -> outdir := Some s),
 	    "<name> - directory for output files"]
 	   (fun s -> args := s :: !args)
-	   (sprintf "Usage: %s [option]* -map <file> [test]*" prog)
+	   (sprintf "Usage: %s [option]* -theme <file> [test]*" prog)
 
 let parsed = match !map with
   | None -> raise (Error "No map file provided.")

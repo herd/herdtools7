@@ -37,7 +37,7 @@ let rec add_subs s s' : substitution list = match s with
 
 let match_location subs pat instr = match pat,instr with
   | CBase.Reg s,CBase.Reg s'
-  | Mem s,Mem s' when String.compare s s' = 0 ->
+  | Mem s,Mem s' ->
      Some(add_subs [Reg(s,s')] subs)
   | _ -> None
 

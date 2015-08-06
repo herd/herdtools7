@@ -110,6 +110,8 @@ declaration:
 initialisation:
 | typ IDENTIFIER EQ expr
   { Store(Reg $2,$4,None) }
+| typ STAR IDENTIFIER EQ expr
+  { Store(Mem $3,$5,None) }
 
 expr:
 | LPAR expr RPAR { $2 }

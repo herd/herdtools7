@@ -84,13 +84,13 @@ For this purpose, we must allow the expression of chunks of code:
 C to LISA
 
 "if(x==constvar:c)
-   codevar:t
+   codevar:t;
  else
-   codevar:e"     -> "mov %test (eq %x &c);
+   codevar:e;"     -> "mov %test (eq %x &c);
                       b[] %test then;
-                      codevar:e
+                      codevar:e;
                       b[] 1 end;
-                      then : codevar:t
+                      then : codevar:t;
                       end :"
 \end{verbatim}
 
