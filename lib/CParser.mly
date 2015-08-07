@@ -12,8 +12,8 @@ open CType
 %token <string> CODEVAR
 %token <int> PROC
 %token LPAR RPAR COMMA LBRACE RBRACE STAR 
-%token UNSIGNED SIGNED ATOMIC LONG DOUBLE BOOL INT VOID FLOAT CHAR SHORT
-%token MUTEX 
+%token ATOMIC CHAR INT
+%token MUTEX
 %token TYPEDEF EXTERN STATIC AUTO REGISTER
 %token CONST VOLATILE 
 
@@ -78,12 +78,7 @@ base0:
 | ty_attr MUTEX { Base ($1 ^ "mutex") }
 | ty_attr CHAR { Base ($1 ^ "char") }
 | ty_attr INT { Base ($1 ^ "int") }
-| ty_attr LONG { Base ($1 ^ "long") }
-| ty_attr FLOAT { Base ($1 ^ "float") }
-| ty_attr DOUBLE { Base ($1 ^ "double") }
-| ty_attr LONG LONG { Base ($1 ^ "long long") }
-| ty_attr LONG DOUBLE { Base ($1 ^ "long double") }
-| BOOL { Base ("_Bool") }
+
 
 base:
 | base0 { $1 }
@@ -91,8 +86,6 @@ base:
 
 ty_attr:
 | { "" }
-| UNSIGNED { "unsigned " }
-| SIGNED { "signed " }
 
 shallow_main:
 | EOF { [] }
