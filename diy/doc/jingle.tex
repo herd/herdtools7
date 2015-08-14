@@ -1,46 +1,80 @@
 \cutname{jingle.html}
 
-The tool \jingle{} is a litmus test convertor.
-Users may define convertions rules of instructions and have the tool convert
-tests meant for some architecture to ones for another.
+The tool \jingle{} is a litmus test converter.
+It translates tests from one architecture to another.
+For instance a LISA test may be translated into an AArch64 (or ARMv8)~test.
 
-\section{Writing convertions rules}
-For the tool to know how to convert each instruction as for allowing users to
-freely define optimisations and workarounds, a file gathering all the allowed
-convertions is necessary.
 
-\subsection{Minimal conversions}
-Such files are writen in a simple manner, first we tell from which to which
-architectures the file stands for, then associate patterns of instructions
-for the source architecture to assumed equivalent patterns
-for the target one.\newline
-Since the main purpose of the tool is the use of our abstract language LISA,
-the examples in this tutorial will be conversions from LISA to a concrete
-assembly language (namely AArch64).
+\section{Writing conversions rules}
+Transation is directed by user-specified conversion rules.
+All conversion rules of a specific (\emph{i.e.} one architecture
+to another) are regrouped in a specific ``theme'' files.
 
+
+\subsection{Mimimal conversion rules}
+A theme file starts by specififing source and target architectures.
+For instance:
 \begin{verbatim}
 LISA to AArch64
+\end{verbatim}
 
+Then conversion rules follow. For instance here are two rules
+that translate LISA loads and stores to AArch64 loads and stores:
+\begin{verbatim}
 "r[] %x %y" -> "LDR %x,[%y]"
 
 "w[] %x %y" -> "STR %y,[%x]"
 \end{verbatim}
+More generally, conversions rules are akin to rewrite
+rules~$\myquoted{L} \texttt{->} \myquoted{R}$.
+In the simplest case,
+a rule associates a source instruction pattern~$L$
+to a target instruction pattern~$R$.
+Patterns may contain identifiers, which are bound to concrete items
+during matching.
+Identifiers starting with the character~``\verb+%+" represent registers.
 
-The first line \textbf{must} be of the form
-\verb+[source_arch] to [target_arch]+.\newline
-Each rule is code from the given architectures in double-quotes,
-separated by an arrow (or the key word \verb+maps to+).
-Such code is the same as seen in any well-formed tests with some
-abstract expressions.
+The above rules suffice to translate the LISA (register indirect)
+load instruction ``\verb+r[] r0 r1+
+into the equivalent AArch64 instruction~``\verb+LDR R3,[R4]+''.
+Observe that registers are translated.
+Here LISA~\verb+r0+ and~\verb+r1+
+are translated into  AArch64 \verb+R3+ and~\verb+R4+.
+If a later LISA instruction uses, say, \verb+r1+ again,
+that register will be translated to the same AArch64 register~\verb+R4+.
+As a result, the sequence \verb+r[] r0 r1; w[] r2 r1+ will get
+translated to \verb+LDR R3,[R4]; STR R5,[R4]+.
 
-There would be no point to have a rule for each different usage of a same
-usage of instruction therefore we can express various elements in the code
-by identification.
-Representing registers with symbolics is the most common use of identification:
-in the rules above, all that matters is to have the registers \verb+x+
-and \verb+y+ of the source program be at the right place in the converted test.
 
-\subsection{Multiple instructions pattern and other identifications}
+\subsection{More on identifiers}
+There are additional categories of identifiers:
+
+Identifiers starting with~``\verb+&+ represent constants.
+For instance, the following rule translates register load by a constant:
+\begin{verbatim}
+"mov %r &c" -> "MOV %r,&c"
+\end{verbatim}
+
+Identifiers starting with an alphabetical letter represent memory locations.
+Consider for instance the following LISA to AArch64 converstion rule:
+\begin{verbatim}
+"w[] x %r" -> "STR %r,[%x]"
+\end{verbatim}
+The identifier~``\verb+x+'' will match any symbol.
+In LISA, such symbols embedded in code are memory locations.
+By constrast modern architectures, such as AArch64, do
+not permit to embed memory addresses in code.
+As a consequence, the matched symbolic location from the left hand-side
+pattern is replaced by a register, written ``\verb+%x+'' above.
+The tool \jingle{} will initialise the corresponding AArch64 register
+appropriately.
+For instance the LISA instrucation \verb+w[] z r0+ will get translated
+to say \verb+STR R1,[R2]+, with \verb+R2+ initial value being specified
+as~\verb+z+ in the final target litmus test.
+
+
+
+\subsection{Multiple instructions patterns}
 Sometimes, a single instruction with a couple of symbolic register
 is not nearly enough to express every conversion in a good fashion.
 
@@ -113,7 +147,7 @@ that \verb+&+ has an entirely different meaning.
 Now with a well defined file, we can let the burden of converting our
 thousands of tests to \jingle{}.
 
-In order to fully understand its behavior, we shall explore
+In order to fully understand its behaviour, we shall explore
 more in detail its mechanisms.
 
 \subsection{Rule application and substitution mechanism}
@@ -127,7 +161,7 @@ defined in the right side plus a set of what we call substitutions.
 The substitutions are the link between the identifiers in the rule
 and their actual representations in both the source and target programs.
 
-To roughly formalize,
+To roughly formalise,
 $App(R, P) = \left(R_{right}, \left\{\left(id,Src_{id},Tgt_{id}\right) \mid id \text{is an identifier of} R\right\}\right)$
 would be the application of the rule $R$ on a part of the source program $P$,
 where $P$ is a possible instance of $R_{left}$ and $Src_{id}$ ($Tgt_{id}$) is the source
@@ -147,10 +181,10 @@ according to its substitutions.
 
 \paragraph{Decomposing}
 Starting at the beginning, the first rule (in the priority order) to match
-a part of the program, in other words, the first possible application od the rule,
+a part of the program, in other words, the first possible application of the rule,
 is considered and the process repeat itself on the rest of the program until
 eventually it has been completely consumed. We end up with a sequence of
-patterns and associed substitutions.
+patterns and associated substitutions.
 
 A recursive definition would be:
 \begin{align*}
@@ -164,7 +198,7 @@ program will be matched. If not, users have to refine it.
 \paragraph{Recomposing}
 With the result of the previous step, which already looks like a converted program,
 we have to actually substitute the abstract identifiers for their representation
-in the target language given by the associed substitutions, for each part.
+in the target language given by the associated substitutions, for each part.
 Then simply append the results to one another in order.
 
 \begin{align*}
@@ -178,7 +212,7 @@ procedure thus any code substitution have the form $(id,Src_{id},Recomp(Decomp(S
 \end{remark}
 
 \subsection{Representation coherence and environment}
-There is one key aspect that we have yet to cover. Until now, the coherence between the source et target representation of
+There is one key aspect that we have yet to cover. Until now, the coherence between the source and target representation of
 a substitution in regards to the others was assumed, i.e.:
 \begin{equation*}
 \forall id_1,id_2, \; Src_{id_1} = Src_{id_2} \Rightarrow Tgt_{id_1} = Tgt_{id_2}
@@ -210,10 +244,10 @@ There is one option that must always be used:
 
 \begin{description}
 \item[{\tt -theme <name>}] Read the conversion rules file <name>.
-By convention, such files have the extention \verb+.theme+.
+By convention, such files have the extension \verb+.theme+.
 \end{description}
 
-\paragraph{General behavior}
+\paragraph{General behaviour}
 \begin{description}
 \item[{\tt -v}] Be verbose.
 \item[{\tt -o <dest>}] Instead of printing the result on the standard output,
