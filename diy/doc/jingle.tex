@@ -180,11 +180,8 @@ according to its substitutions.
 \end{itemize}
 
 \paragraph{Decomposing}
-Starting at the beginning, the first rule (in the priority order) to match
-a part of the program, in other words, the first possible application of the rule,
-is considered and the process repeat itself on the rest of the program until
-eventually it has been completely consumed. We end up with a sequence of
-patterns and associated substitutions.
+The program is decomposed witha greedy algorithm
+applying the rules according to their priority order.
 
 A recursive definition would be:
 \begin{align*}
@@ -231,6 +228,69 @@ language representation for each source value:
 
 Nothing exotic here, this is a part of the application of a rule as it is supposed
 to be the only safe way to obtain a target representation.
+
+\section{Example}
+
+Considering the LISA litmus test
+\afile{MP+poplainplain+fencedmballsyplainplain.litmus}:
+
+\verbatiminput{MP+poplainplain+fencedmballsyplainplain.litmus} 
+
+and the theme file \afile{BelltoAArch64.theme} in which the
+only relevant rules, in regards of the test above, are:
+
+\begin{verbatim}
+"r[] %x y" -> "LDR %x,[%y]"
+
+"w[] x &c" -> "MOV %tmp,&c;
+               STR %tmp,[%x]"
+
+"f[dmb,all,sy]" -> "DMB SY"
+\end{verbatim}
+
+the output of a call to \jingle{} with those in arguments will be:
+\begin{verbatim}
+AArch64 MP+poplainplain+fencedmballsyplainplain
+"PodWWPlainPlain RfePlainPlain FenceDmbAllSydRRPlainPlain FrePlainPlain"
+Mapping=1:X2=r1,1:X0=r0
+Hash=6945a3af44248d1d826a14b204ccf067
+Cycle=RfePlainPlain FenceDmbAllSydRRPlainPlain FrePlainPlain PodWWPlainPlain
+Relax=
+Safe=Rfe Fre PodWW FencedRR
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=PodWWPlainPlain RfePlainPlain FenceDmbAllSydRRPlainPlain FrePlainPlain
+
+{0:X1=y; 0:X0=x; 1:X3=x; 1:X1=y;}
+
+ P0          | P1          ;
+ MOV X2,#1   | LDR X0,[X1] ;
+ STR X2,[X0] | DMB SY      ;
+ MOV X2,#1   | LDR X2,[X3] ;
+ STR X2,[X1] |             ;
+
+
+
+exists (1:X0=1 /\ 1:X2=0)
+\end{verbatim}
+
+According to the algorithm described in the last section,
+\jingle{} has converted the three instructions of P1 with,
+in order, the load rule, the fence rule and the load again.
+For P0 it apply the store rule twice.
+
+Notice that the same AArch64 register \verb+X2+ is used as
+the temporary register for both applications. It is safe to do so
+as long as  its value is not needed but outside the scope
+of each application.
+
+The initialisation and test conditions are converted as well:
+the registers are from the right architecture and
+the location, directly used in LISA, are now bound to
+specific registers.
+
+A \verb+Mapping+ metadatum is also added to allow comparison tools
+to work properly.
 
 \section{Usage of \jingle{}}
 
