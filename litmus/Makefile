@@ -15,7 +15,7 @@ CFG=conti.cfg saumur.cfg saumur.close.cfg doko.cfg squale.cfg hpcx.cfg \
  nexus10.cfg nexus7.cfg nexus9.cfg \
  odroid-xu.cfg odroid-xu-ubuntu.cfg \
  cubietruck.cfg R4000.cfg bonga.cfg \
- LG-H955.cfg
+ LG-H955.cfg src-aarch64.cfg HiKey.cfgx
 
 INSERT_XXX=mbar.c barrier.c
 INSERT_X86=$(INSERT_XXX) timebase.c cache.c
