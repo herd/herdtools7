@@ -42,7 +42,7 @@ end = struct
 
   let pp_action a = match a with    
     | Access (d,l,v,ato,s) ->
-	Printf.sprintf "%s(%s) %s%s=%s"
+	Printf.sprintf "%s[%s] %s%s %s"
           (pp_dirn d)
           (BellBase.string_of_annot_list s)
           (A.pp_location  l)
@@ -51,9 +51,9 @@ end = struct
     | Barrier (s,o) ->
       (match o with
       | None -> 
-          Printf.sprintf "f(%s)" (BellBase.string_of_annot_list s)
+          Printf.sprintf "f[%s]" (BellBase.string_of_annot_list s)
       | Some(s1, s2) ->
-          Printf.sprintf "f(%s)({%s},{%s})" (BellBase.string_of_annot_list s) (BellBase.string_of_annot_list s1) (BellBase.string_of_annot_list s2)
+          Printf.sprintf "f[%s]({%s},{%s})" (BellBase.string_of_annot_list s) (BellBase.string_of_annot_list s1) (BellBase.string_of_annot_list s2)
       )
     | Commit -> "Commit"
 
