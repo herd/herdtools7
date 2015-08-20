@@ -3,6 +3,9 @@ stdlib
 (* Herd standard library *)
 (*************************)
 
+(* Backward compatibility *)
+let partition = classes-loc
+
 (* Basic relations *)
 let po-loc = po & loc
 let rfe = rf & ext

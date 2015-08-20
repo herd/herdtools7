@@ -895,7 +895,7 @@ module Make
     let add_primitives m =
       add_prims m
         [
-         "partition",partition;
+         "classes-loc",partition;
          "classes",classes;
          "linearisations",linearisations;
          "tag2scope",tag2scope m;
