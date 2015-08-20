@@ -920,20 +920,22 @@ let one_init = match PC.graph with
         pp_attr chan "color" color ;
         fprintf chan "];\n"
       end else begin
-        begin match lbl with
-        | None ->
-            fprintf chan "%s [label=\"%s%s\""
-              (pp_node_eiid e) (pp_node_eiid_label e)
-	      (escape_label dm act)
-        | Some es ->
-            let acts =
-              E.EventSet.fold
-                (fun e k -> pp_action e::k)
-                es [] in
-            let acts = String.concat "," acts in
-            fprintf chan "eiidinit [label=\"%s\""
-              (escape_label dm acts)
-        end ;
+        let act =
+          match lbl with
+          | None ->
+              fprintf chan "%s [label=\"%s%s\""
+                (pp_node_eiid e) (pp_node_eiid_label e)
+	        (escape_label dm act) ;
+              act
+          | Some es ->
+              let acts =
+                E.EventSet.fold
+                  (fun e k -> pp_action e::k)
+                  es [] in
+              let acts = String.concat "," acts in
+              fprintf chan "eiidinit [label=\"%s\""
+                (escape_label dm acts) ;
+              acts in
         pp_attr chan "shape" (if PC.verbose > 2 then "box" else "none") ;
         pp_fontsize chan ;
         if PC.verbose > 2 then pp_attr chan "color" color ;
