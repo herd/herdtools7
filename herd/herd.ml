@@ -335,6 +335,8 @@ let options = [
     "position of the init writes pseudo-event" ;
   parse_bool "-showinitwrites" PP.showinitwrites
     "show init write events in pictures" ;
+  parse_float "-threadposy" PP.threadposy
+    "thread number position in the y direction" ;
  parse_stringsetfun "-doshow" PP.add_doshow "show those edges";
  parse_stringsetfun "-unshow" PP.add_unshow "do not show those edges" ;
  parse_stringset "-symetric" PP.symetric "declare those edges as symetric" ;
@@ -545,6 +547,7 @@ let () =
       let initdotpos = !PP.initdotpos
       let oneinit = !PP.oneinit
       let initpos = !PP.initpos
+      let threadposy = !PP.threadposy
       let showinitwrites = !PP.showinitwrites
       let brackets = !PP.brackets
       let showobserved = !PP.showobserved

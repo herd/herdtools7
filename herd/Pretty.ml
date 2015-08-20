@@ -1009,7 +1009,7 @@ let one_init = match PC.graph with
 	        let pos =       
 	          sprintf "%f,%f"
                     (xfinal (float_of_int n))
-                    (yfinal (maxy +. 0.6))in
+                    (yfinal (maxy +. PC.threadposy)) in
 	        fprintf chan
                   "proc%i_label_node [shape=%s%a, label=\"%a\", pos=\"%s!\", fixedsize=true, width=%f, height=%f]\n"
                   n (if PC.verbose > 2 then "box" else "none")

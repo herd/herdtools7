@@ -193,10 +193,12 @@ and opt = parse
         PrettyConf.tags_dotmode
         (fun x -> PP.dotcom := Some x)
         arg }
+(*
 | "gv" arg
     { lex_bool PP.gv arg }
 | "evince" arg
     { lex_bool PP.evince arg }
+*)
 | "showevents" arg
     { lex_tag "showevents"
         PrettyConf.parse_showevents PrettyConf.tags_showevents
@@ -233,9 +235,9 @@ and opt = parse
 | "initrfpos" arg { lex_pos PP.initdotpos arg }
 | "oneinit" arg { lex_bool PP.oneinit arg }
 | "initpos" arg { lex_pos_opt PP.initpos arg }
+| "threadposy" arg { lex_float PP.threadposy arg }
 (* Deprecated *)
-| "showpoloc" arg { ignore(arg) }
-| "showfr" arg { ignore(arg) }
+| ("showpoloc" | "showfr") arg { ignore(arg) }
 (* end *)
 | "showinitwrites" arg { lex_bool PP.showinitwrites arg }
 | "showthread" arg { lex_bool PP.showthread arg }

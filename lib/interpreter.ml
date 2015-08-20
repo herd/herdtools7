@@ -821,7 +821,7 @@ module Make
         end
     | _ -> arg_mismatch ()
 
-    and tag2instrs env arg = match arg with
+    and tag2events env arg = match arg with
     | V.Tag (_,tag) ->
         let x = BellName.tag2instrs_var tag in
         begin try
@@ -899,7 +899,7 @@ module Make
          "classes",classes;
          "linearisations",linearisations;
          "tag2scope",tag2scope m;
-         "tag2instrs",tag2instrs m;
+         "tag2events",tag2events m;
          "tag2fenced",tag2fenced m;
          "domain",domain;
          "range",range;

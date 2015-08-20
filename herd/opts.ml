@@ -94,6 +94,7 @@ module PP = struct
   let oneinit = ref true
   let initpos = ref None
   let showinitwrites = ref true
+  let threadposy = ref 0.6
   let dotheader = ref None
   let brackets = ref false
   let showobserved = ref false

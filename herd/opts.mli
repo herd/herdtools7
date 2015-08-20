@@ -93,6 +93,7 @@ module PP : sig
   val oneinit : bool ref
   val initpos : (float * float) option ref
   val showinitwrites : bool ref
+  val threadposy : float ref
   val dotheader : string option ref
   val brackets : bool ref
   val showobserved : bool ref
