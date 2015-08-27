@@ -61,6 +61,7 @@ module Make (C: Config) = struct
         (struct
           (* Should not be called *)
           let partition_events _ = assert false
+          let loc2events _ _ = assert false
           let check_through _ = assert false
           let pp_failure _ _ msg _ =
             if C.debug then eprintf "%s\n" msg
@@ -83,7 +84,8 @@ module Make (C: Config) = struct
 
     (* call the interpreter  and collect bell info *)
     match I.interpret
-        empty_test ks I.init_env_empty vb_pp function_arg None with
+        empty_test Misc.identity ks I.init_env_empty vb_pp
+        function_arg None with
     | None -> assert false (* Continuation must be called at least once *)
     | Some i ->
         if C.debug then begin

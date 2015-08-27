@@ -359,7 +359,7 @@ module Make
 (* Entry point *)
 (***************)
 
-    let check_event_structure test conc =
+    let check_event_structure test conc _kfail =
 
       if E.EventSet.exists
           (fun x ->

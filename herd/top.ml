@@ -73,6 +73,7 @@ module Make(O:Config)(M:XXXMem.S) =
 (* Test result *)
     type count =
         { states : A.StateSet.t;
+          cfail : int ;
           cands : int ;
 (* NB: pos and neg are w.r.t. proposition *)
           pos : int ;
@@ -86,9 +87,11 @@ module Make(O:Config)(M:XXXMem.S) =
         }
 
     let start =
-      { states = A.StateSet.empty; cands=0; pos=0; neg=0;
+      { states = A.StateSet.empty; cfail=0; cands=0; pos=0; neg=0;
         flagged=Flag.Map.empty; shown=0;
         reads = A.LocSet.empty; }
+
+    let kfail c = { c with cfail=c.cfail+1; }
 
     let bad_flag = match O.badflag with
     | None ->
@@ -281,6 +284,7 @@ module Make(O:Config)(M:XXXMem.S) =
             else A.state_restrict_locs test_locs fsc in
           let r =
             { cands = c.cands+1;
+              cfail = c.cfail;
               states = A.StateSet.add fsc c.states;
               pos = if ok then c.pos+1 else c.pos;
               neg = if ok then c.neg else c.neg+1;
@@ -343,7 +347,7 @@ module Make(O:Config)(M:XXXMem.S) =
         let check_test = M.check_event_structure test  in
         let call_model conc =
           check_test
-            conc (model_kont ochan test cstr) in
+            conc kfail (model_kont ochan test cstr) in
       let c =
         try iter_rfms test rfms call_model (fun c -> c) start
         with

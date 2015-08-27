@@ -40,6 +40,15 @@ module Make
 
     module IUtils = struct
       let partition_events = U.partition_events
+      let loc2events x es =
+        let open S in
+        let x = A.V.nameToV x in
+        E.EventSet.filter
+          (fun e -> match E.location_of e with
+          | Some (A.Location_global loc) -> A.V.compare loc x = 0
+          | None | Some _ -> false)
+          es
+              
       let check_through = MU.check_through
       let pp_failure test conc msg vb_pp =
         MU.pp_failure
@@ -68,8 +77,8 @@ module Make
     let (opts,_,prog) = O.m
     let withco = opts.ModelOption.co
 
-    let run_interpret test  =
-      let run =  I.interpret test in
+    let run_interpret test  kfail =
+      let run =  I.interpret test kfail in
       fun ks m vb_pp kont res ->
         run ks m vb_pp
           (fun st res ->
@@ -82,7 +91,7 @@ module Make
           res
 
 (* Enter here *)
-    let check_event_structure test conc kont res =
+    let check_event_structure test conc kfail kont res =
       let pr = lazy (MU.make_procrels E.is_isync conc) in
       let vb_pp =
         if O.showsome && O.verbose > 0 then
@@ -240,9 +249,9 @@ module Make
                "co", lazy co;
                "coe", lazy (U.ext co); "coi", lazy (U.internal co);
 	     ] in
-          run_interpret test ks m vb_pp kont res in
+          run_interpret test kfail ks m vb_pp kont res in
         U.apply_process_co test  conc process_co res
       else
 (*        let m = I.add_rels m ["co0",lazy  conc.S.pco] in *)
-        run_interpret test ks m vb_pp kont res
+        run_interpret test kfail ks m vb_pp kont res
   end

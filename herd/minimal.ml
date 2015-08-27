@@ -113,7 +113,7 @@ module Make (O:Cfg) (S:Sem.Semantics)
       | None -> "??"
       | Some b -> b.S.pp
 
-    let check_event_structure test conc kont res =
+    let check_event_structure test conc _kfail kont res =
       let pr = make_procrels conc in
       let pp_relns =
         lazy begin

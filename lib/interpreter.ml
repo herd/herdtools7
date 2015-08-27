@@ -66,6 +66,7 @@ module Make
     (S:SimplifiedSem)
     (U: sig
       val partition_events : S.event_set -> S.event_set list
+      val loc2events : string -> S.event_set -> S.event_set
       val check_through : bool -> bool
       val pp_failure : S.test -> S.concrete -> string -> S.rel_pp -> unit
     end)
@@ -98,7 +99,7 @@ module Make
 (* Interpreter *)
 
       val interpret :
-          S.test ->
+          S.test -> ('a -> 'a) ->
             ks ->
               init_env ->
                 S.rel_pp Lazy.t ->
@@ -875,6 +876,13 @@ module Make
         end
     | _ -> arg_mismatch ()
 
+    and loc2events ks arg = match arg with
+    | V.Tag (s,_) ->
+        let evts = ks.evts in
+        let r = U.loc2events s evts in
+        Set r
+    | _ -> arg_mismatch ()
+
     and domain arg = match arg with
     | V.Empty ->  V.Empty
     | V.Unv -> V.Unv
@@ -892,7 +900,7 @@ module Make
       let msg = sprintf "fail on %s" pp in
       raise (PrimError msg)
 
-    let add_primitives m =
+    let add_primitives ks m =
       add_prims m
         [
          "classes-loc",partition;
@@ -901,6 +909,7 @@ module Make
          "tag2scope",tag2scope m;
          "tag2events",tag2events m;
          "tag2fenced",tag2fenced m;
+         "loc2events",loc2events ks;
          "domain",domain;
          "range",range;
          "fail",fail;
@@ -912,7 +921,7 @@ module Make
 (***************)
 
 (* For all success call kont, accumulating results *)
-    let interpret test =
+    let interpret test kfail =
 
       let rec eval_loc env e = get_loc e,eval env e
 
@@ -1620,8 +1629,9 @@ module Make
 
       let eval_st st e = eval (from_st st) e in
 
-      let rec exec : 'a. 'a st -> ins -> ('a st -> 'a -> 'a) -> 'a -> 'a  =
-        fun  (type res) st i kont (res:res) ->  match i with
+      let rec exec : 'a. 'a st -> ins -> ('a -> 'a) ->
+        ('a st -> 'a -> 'a) -> 'a -> 'a  =
+        fun  (type res) st i kfail kont (res:res) ->  match i with
         | Debug (_,e) ->
             if O.debug then begin
               let v = eval_st st e in
@@ -1658,7 +1668,7 @@ module Make
               kont { st with show; } res
             else kont st res
         | Test (tst,ty) when not O.bell  ->
-            exec_test st tst ty kont res
+            exec_test st tst ty kfail kont res
         | Let (_loc,bds) ->
             let env = eval_bds (from_st st) bds in
             let st = { st with env; } in
@@ -1681,7 +1691,7 @@ module Make
                   end ;
                   None in
             begin match env with
-            | None -> res
+            | None -> kfail res
             | Some env ->
                 let st = { st with env; } in
                 let st = doshow bds st in
@@ -1703,7 +1713,7 @@ module Make
                 kont st res
             end
         | Include (loc,fname) ->
-            do_include loc fname st kont res
+            do_include loc fname st kfail kont res
         | Procedure (_,name,args,body) ->
             let p =
               Proc { proc_args=args; proc_env=st.env; proc_body=body; } in
@@ -1732,6 +1742,7 @@ module Make
                 let tval = 
                   let benv = purge_env st.silent loc env1 in
                   run { (push_loc st (loc,pname)) with env=benv; } p.proc_body
+                    (fun x -> x)
                     (fun _ _ -> true) false in
                 if tval then kont st res
                 else
@@ -1744,7 +1755,7 @@ module Make
                 | Some _ -> tname
                 | None -> Some name in
                 let st = push_loc st (loc,pname) in            
-                run { st with env = env1; } p.proc_body
+                run { st with env = env1; } p.proc_body kfail
                   (fun st_call res ->
                     let st_call = pop_loc st_call in
                     kont { st_call with env = st.env ; show=show0;} res)
@@ -1787,7 +1798,7 @@ module Make
                       try ValSet.choose vs
                       with Not_found -> assert false in
                     let env = add_val x (lazy v) env0 in
-                    run { st with env;} body
+                    run { st with env;} body kfail
                       (fun st res ->
                         run_set { st with env=env0;} (ValSet.remove v vs) res)
                       res in
@@ -1801,7 +1812,7 @@ module Make
             let env0 = st0.env in
             let v = eval (from_st st0) e in
             begin match v with
-            | V.Empty -> res
+            | V.Empty -> kfail res
             | ValSet (_,vs) ->
                 ValSet.fold
                   (fun v res ->
@@ -1874,8 +1885,9 @@ module Make
 
             and exec_test :
                 'a. 'a st -> app_test -> test_type ->
+                  ('a -> 'a) ->
                   ('a st -> 'a -> 'a) -> 'a -> 'a =
-                    fun st (loc,_,t,e,name as tst) test_type kont res ->
+                    fun st (loc,_,t,e,name as tst) test_type kfail kont res ->
                       let skip = skip_this_check name in
                       if O.debug &&  skip then
                         warn loc "skipping check: %s" (Misc.as_some name) ;
@@ -1909,7 +1921,7 @@ module Make
                           match test_type with
                           | Check ->
                               if O.debug then pp_check_failure st tst ;
-                              res
+                              kfail res
                           | UndefinedUnless ->
                               kont {st with flags=Flag.Set.add Flag.Undef st.flags;} res
                           | Flagged -> kont st res
@@ -1919,9 +1931,9 @@ module Make
                         kont st res
                       end
 
-            and do_include : 'a . TxtLoc.t -> string -> 'a st ->
+            and do_include : 'a . TxtLoc.t -> string -> 'a st -> ('a -> 'a) ->
               ('a st -> 'a -> 'a) -> 'a -> 'a =
-                fun loc fname st kont res ->
+                fun loc fname st kfail kont res ->
                   (* Run sub-model file *)
                   if O.debug then warn loc "include \"%s\"" fname ;
                   let module P =
@@ -1934,19 +1946,19 @@ module Make
                     try P.parse fname
                     with Misc.Fatal msg | Misc.UserError msg ->
                       error st.silent loc "%s" msg  in
-                  run st iprog kont res
+                  run st iprog kfail kont res
 
-            and run : 'a. 'a st -> ins list -> ('a st -> 'a -> 'a) -> 'a -> 'a =
-              fun st c kont res -> match c with
+            and run : 'a. 'a st -> ins list -> ('a -> 'a) -> ('a st -> 'a -> 'a) -> 'a -> 'a =
+              fun st c kfail kont res -> match c with
               | [] ->  kont st res
               | i::c ->
-                  exec st i
-                    (fun st res -> run st c kont res)
+                  exec st i kfail
+                    (fun st res -> run st c kfail kont res)
                     res in
 
             fun ks m vb_pp kont res ->
 (* Primitives *)
-              let m = add_primitives (env_from_ienv m) in
+              let m = add_primitives ks (env_from_ienv m) in
 (* Initial show's *)
               let show =
                 if O.showsome then
@@ -1968,13 +1980,13 @@ module Make
 
               let kont st res =  kont (st2out st) res in          
 
-              let just_run st res = run st prog kont res in
-              do_include TxtLoc.none "stdlib.cat" st
+              let just_run st res = run st prog kfail kont res in
+              do_include TxtLoc.none "stdlib.cat" st kfail
                 (match O.bell_fname with
                 | None -> just_run (* No bell file, just run *)
                 | Some fname ->
                     fun st res ->
-                      do_include TxtLoc.none fname st just_run res)
+                      do_include TxtLoc.none fname st kfail just_run res)
                 res
 
   end
