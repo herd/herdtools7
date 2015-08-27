@@ -310,7 +310,7 @@ So we could just generate all total orders amongst memory events,
 and filter those ``scheduling order candidates'' according to the two rules
 above.
 
-Things are a bit more complex in~\herd{}, due to the presence of initial and final writes.
+\label{sec:final:initial}Things are a bit more complex in~\herd{}, due to the presence of initial and final writes.
 Up to now we have ignored initial and final writes, we are now going to
 integrate them explicitly.
 
@@ -472,7 +472,7 @@ to be final by \herd{} machinery prior to model execution.
 In that case, the final write to~$x$ must come last in any coherence order
 for~$x$.
 \end{enumerate}
-See Sec.~\ref{intro:candidate} for details on initial and final writes.
+See Sec.~\ref{sec:final:initial} for details on initial and final writes.
 
 We can express the two conditions above for all locations of the program
 as a relation \texttt{co0}:
