@@ -771,6 +771,7 @@ let one_init = match PC.graph with
             E.EventMap.add e x env)
           inits (0,E.EventMap.empty) in
         r in
+
     let pp_node_eiid =
       if one_init then
         fun e ->
@@ -903,7 +904,11 @@ let one_init = match PC.graph with
     let boxwidth = xscale *. 0.65 *. PC.boxscale in
     let boxheight = yscale *. 0.25 in
 
-    let pp_event ?lbl color chan e =
+    let pp_loc e = match E.location_of e with
+    | None -> assert false
+    | Some loc -> A.pp_location loc in
+
+    let pp_event ?lbl isinit color chan e =
       let act = pp_action e in
       if not PC.squished then begin
         begin match lbl with
@@ -923,16 +928,27 @@ let one_init = match PC.graph with
         let act =
           match lbl with
           | None ->
+              let eiid_lab =
+                if PC.labelinit && isinit then
+                  sprintf "i%s:" (pp_loc e)
+                else
+                  pp_node_eiid_label e in
               fprintf chan "%s [label=\"%s%s\""
-                (pp_node_eiid e) (pp_node_eiid_label e)
+                (pp_node_eiid e) (eiid_lab)
 	        (escape_label dm act) ;
               act
           | Some es ->
               let acts =
                 E.EventSet.fold
-                  (fun e k -> pp_action e::k)
+                  (fun e k ->
+                    let act = pp_action e in
+                    if PC.labelinit then
+                      let  loc = pp_loc e in
+                      sprintf "i%s: %s" loc act::k
+                    else
+                      act::k)
                   es [] in
-              let acts = String.concat "," acts in
+              let acts = String.concat ", " acts in
               fprintf chan "eiidinit [label=\"%s\""
                 (escape_label dm acts) ;
               acts in
@@ -957,28 +973,10 @@ let one_init = match PC.graph with
 
     let pp_init_event color chan inits =
       let e = try E.EventSet.choose inits with Not_found -> assert false in
-      pp_event ~lbl:inits color chan e in
+      pp_event ~lbl:inits false color chan e in
 
     let pp_event_structure chan vbss es =
       let pl = fprintf chan "%s\n" in
-
-(*
-  pl "" ;
-  pl  "/* the locked events */" ;
-  E.Atomicity.pp chan ""
-  (fun chan evts ->
-  let evt0 = 
-  try E.EventSet.choose evts
-  with Not_found -> assert false in
-  fprintf chan "subgraph cluster_atomicity%i" evt0.E.eiid ;
-  fprintf chan
-  " { rank = sink; %s label = \"\"; shape=box;\n"
-  (if not (get_ro ()).mono then "color=red;" else "") ;
-  E.EventSet.pp
-  chan "" (pp_event "red" "[rank=same]") evts ;
-  fprintf chan "}\n")
-  es.E.atomicity ;
- *)
 
 (* Init events, if any *)
       if not (E.EventSet.is_empty inits) then begin
@@ -988,7 +986,7 @@ let one_init = match PC.graph with
           pp_init_event "blue" chan inits
         else
           E.EventSet.iter
-            (fun ew -> pp_event "blue" chan ew)
+            (fun ew -> pp_event true "blue" chan ew)
             inits
       end ;
       pl "" ;
@@ -1050,12 +1048,12 @@ let one_init = match PC.graph with
                   pp_ins ;
                 (* assuming atomicity sets are always full instructions *)
                 E.EventSet.pp chan ""
-                  (pp_event
+                  (pp_event false
                      (if is_locked_instruction then "red" else "blue")) evts ;
                 fprintf chan "}\n"
               end else begin (* no green box around one event only *)
                 E.EventSet.pp chan ""
-                  (pp_event
+                  (pp_event false
                      (if is_locked_instruction then "red" else "blue"))
                   evts
               end)

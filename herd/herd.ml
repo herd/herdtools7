@@ -302,7 +302,8 @@ let options = [
           fs in
       PP.shift := Array.of_list fs),
   "<float,...,float> add vertical space at thread start (column mode only)";
-  parse_bool "-edgemerge" PP.edgemerge "merhe edges, cppmem style" ;
+  parse_bool "-edgemerge" PP.edgemerge "merge edges, cppmem style" ;
+  parse_bool "-labelinit" PP.labelinit "show labels on the init node" ;
 (* Legend *)
   parse_bool "-showlegend" PP.showlegend  "show legend in pictures" ;
   parse_bool "-showkind" showkind  "show test kind in legends" ;
@@ -576,6 +577,7 @@ let () =
             exit 2
       let shift = !PP.shift
       let edgemerge = !PP.edgemerge
+      let labelinit = !PP.labelinit
     end
 
   end in

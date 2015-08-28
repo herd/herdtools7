@@ -121,5 +121,6 @@ module PP = struct
   let extrachars = ref 0.0
   let shift = ref [| |]
   let edgemerge = ref false
+  let labelinit = ref true
 end
 

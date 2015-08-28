@@ -877,7 +877,7 @@ module Make
     | _ -> arg_mismatch ()
 
     and loc2events ks arg = match arg with
-    | V.Tag (s,_) ->
+    | V.Tag (_,s) ->
         let evts = ks.evts in
         let r = U.loc2events s evts in
         Set r

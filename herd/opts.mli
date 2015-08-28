@@ -111,5 +111,6 @@ module PP : sig
   val extrachars : float ref
   val shift : float array ref      
   val edgemerge : bool ref
+  val labelinit : bool ref
 end
 

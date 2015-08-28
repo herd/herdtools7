@@ -152,4 +152,5 @@ module type S = sig
   val shift : float array
   val ptscale : float
   val edgemerge : bool
+  val labelinit : bool
 end
