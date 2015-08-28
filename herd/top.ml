@@ -408,14 +408,20 @@ module Make(O:Config)(M:XXXMem.S) =
         let pos,neg = check_wit test c in
         printf "Witnesses\n" ;
         printf "Positive: %i Negative: %i\n" pos neg ;
-        Flag.Map.iter
-          (fun flag execs ->
-            printf "Flag %s: %s \n" 
-              (Flag.pp flag) 
-              (List.fold_right 
-                 (fun i s -> s ^ (if s="" then "" else ",") ^ sprintf "%i" i) 
-                 execs ""))
-          c.flagged ;
+        begin if O.verbose > 0 then
+          Flag.Map.iter
+            (fun flag execs ->
+              printf "Flag %s: %s \n" 
+                (Flag.pp flag) 
+                (List.fold_right 
+                   (fun i s -> s ^ (if s="" then "" else ",") ^ sprintf "%i" i) 
+                   execs ""))
+          c.flagged
+        else
+           Flag.Map.iter
+            (fun flag _ ->  printf "Flag %s\n" (Flag.pp flag))
+            c.flagged
+        end ;
         printf "Condition %a\n" (C.do_dump_constraints tr_out) cstr ;
         printf "Observation %s %s %i %i\n%!" tname
           (if c.pos = 0 then "Never"
