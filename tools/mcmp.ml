@@ -50,15 +50,26 @@ module Make(O:Opt) = struct
       (fun n _ -> pp n ; true)
       t1 t2 false
 
-  let run f1 f2 =
+  let simple_same pp1 pp2 t1 t2 =
+    LS.simple_same
+      (fun n _ -> pp1 n ; true)
+      (fun n _ -> pp2 n ; true)
+      t1 t2 false
+
+ let run f1 f2 =
     match read_logs [f1;f2;] with
     | [t1;t2] ->
+        let b =
+          simple_same
+            (if O.quiet then (fun _ -> ()) else printf "%s: %s\n" f1)
+            (if O.quiet then (fun _ -> ()) else printf "%s: %s\n" f2)
+            t1 t2 in
         let b0 =
           simple_diff
             (if O.quiet then (fun _ -> ()) else printf "%s\n") t1 t2 in
         let b1 = cmp_logs O.pos t1 t2 in
         let b2 = cmp_logs O.neg t2 t1 in
-        b0 || b1 || b2
+        b0 || b1 || b2 || b
     | _ -> assert false
 end
 

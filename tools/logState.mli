@@ -167,6 +167,12 @@ val normalize_simple :
         (string * st_concrete list * string option) list ->
           simple_t
 
+
+(* Check that tests in logs are the same *)
+val simple_same :
+    (string -> 'a -> 'a) -> (string -> 'a -> 'a) ->
+      simple_t -> simple_t -> 'a -> 'a
+
 (* Output test names whose output has elements  present in log and not in
    second *)
 val simple_diff_not_empty :

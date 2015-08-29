@@ -1050,6 +1050,20 @@ let normalize_simple name is_litmus ts =
   { s_name = name ; s_tests = ts ; }
 
 
+let simple_same out1 out2 t1 t2 k =
+  let rec do_rec ts1 ts2 k = match ts1,ts2 with
+  | [],[] -> k
+  | [],t2::r2 -> do_rec [] r2 (out2 t2.s_tname k)
+  | t1::r1,[] -> do_rec r1 [] (out1 t1.s_tname k)
+  | t1::r1,t2::r2 ->
+      let c = String.compare t1.s_tname t2.s_tname in
+      if c < 0 then do_rec r1 ts2 (out1 t1.s_tname k)
+      else if c > 0 then do_rec ts1 r2 (out2 t2.s_tname k)
+      else if String.compare t1.s_hash t2.s_hash != 0 then
+        Warn.fatal "Hashes for test %s differ\n" t1.s_tname
+      else do_rec r1 r2 k in
+  do_rec t1.s_tests t2.s_tests k
+
 let simple_diff_gen diff out t1 t2 k =
  let rec do_diff ts1 ts2 k = match ts1,ts2 with
   | ([],_)|(_,[]) -> k
