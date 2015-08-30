@@ -68,8 +68,8 @@ let name_ok = match !names with
     fun n -> StringSet.mem n set
 
 let flag name tst fs =
-  printf "Only in %s, flags {%s}, test %s\n" name tst
-    StringSet.pp_str "," Misc.identity
+  printf "Only in %s, flags {%s}, test %s\n" name
+    (StringSet.pp_str "," Misc.identity fs) tst
 
 
 let check name k1 k2 =
@@ -77,7 +77,7 @@ let check name k1 k2 =
     (fun tst fs1 ->
         let fs2 =
           try StringMap.find tst k2
-          with StringSet.empty in
+          with Not_found -> StringSet.empty in
         let d = StringSet.diff fs1 fs2 in
         if not (StringSet.is_empty d) then
           flag name tst d)
