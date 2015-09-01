@@ -26,7 +26,7 @@ rule main name_ok tst k = parse
 | "Test" blank+ (testname as name) ('\n'|blank+ [^'\n']* '\n')
   { main name_ok (Some name)  k lexbuf }
 | "Flag" blank+ (name as flag) [^'\n']* '\n'
-  { 
+  {
     let tst = match tst with Some tst -> tst | None -> assert false in
     if name_ok tst then
       main name_ok None (add_flag tst flag k) lexbuf

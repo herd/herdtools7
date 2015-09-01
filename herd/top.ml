@@ -14,6 +14,7 @@
 
 module type Config = sig
   val auto : bool
+  val candidates : bool
   val show : PrettyConf.show
   val nshow : int option
   val restrict : Restrict.t
@@ -428,6 +429,8 @@ module Make(O:Config)(M:XXXMem.S) =
           else if c.neg = 0 then "Always"
           else "Sometimes") c.pos c.neg ;
         do_show () ;
+        if O.candidates then
+          printf "Candidates %s %i\n" tname (c.cfail+c.cands) ;
 (* Auto info or Hash only*)
         if O.auto then begin
           List.iter

@@ -203,8 +203,6 @@ exp:
     { Try (mk_loc(),$2,$4) }
 | IF cond THEN exp ELSE exp
     { If (mk_loc(),$2,$4,$6) }
-| YIELD exp WITH exp
-    { Yield (mk_loc(),$2,$4) }
 | base { $1 }
 
 cond:

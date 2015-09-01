@@ -44,6 +44,9 @@ module type S = sig
   val map : (elt -> elt) -> t -> t
   val map_list : (elt -> 'a) -> t -> 'a list
   val disjoint : t -> t -> bool
+  (* Decomposition, should be efficient an trivial, given
+     set iplementation as a tree. It is not. *)
+  val split3 : t -> t * elt * t
 
   (* second argument is delimiter (as in String.concat) *)  
   val pp : out_channel -> string -> (out_channel -> elt -> unit) -> t -> unit

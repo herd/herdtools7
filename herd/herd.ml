@@ -386,6 +386,8 @@ let options = [
 (* Undocumented *)
   parse_bool "-auto" auto 
   "produce output suitable for the dont tool";
+  parse_bool "-candidates" candidates
+  "show complete candidate count in output" ;
   parse_tag "-restrict"
     (fun tag -> match Restrict.parse tag with
     | None -> false
@@ -465,6 +467,7 @@ let conds = LR.read_from_files !conds (fun s -> Some s)
 let () =
   let module Config = struct
     let auto = !auto
+    let candidates = !candidates
     let nshow = !nshow
     let restrict = !restrict
     let showkind = !showkind

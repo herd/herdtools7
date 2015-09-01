@@ -54,7 +54,6 @@ type exp =
   | MatchSet of TxtLoc.t * exp * exp * set_clause
   | Try of TxtLoc.t * exp * exp
   | If of TxtLoc.t * cond * exp * exp
-  | Yield of TxtLoc.t * exp * exp
 
 and set_clause =
   | EltRem of string * string * exp

@@ -42,6 +42,7 @@ let strictskip = ref false
 let show = ref PrettyConf.ShowNone
 let nshow = ref None
 let auto = ref false
+let candidates = ref false
 let restrict = ref Restrict.No
 let showkind = ref false
 let shortlegend = ref false

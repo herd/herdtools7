@@ -27,8 +27,7 @@ let rec free = function
   | Op1 (_,_,e)
     -> free e
   | Op (_,_,es)|ExplicitSet (_,es) -> frees es
-  | App (_,e1,e2)
-  | Yield (_,e1,e2) ->
+  | App (_,e1,e2) ->
       StringSet.union (free e1) (free e2)
   | Bind (_,bds,e) ->
       let xs = bound_bds bds in

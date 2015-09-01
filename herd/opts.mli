@@ -41,6 +41,7 @@ val strictskip : bool ref
 val show : PrettyConf.show ref
 val nshow :int option ref
 val auto : bool ref
+val candidates : bool ref
 val restrict : Restrict.t ref
 val showkind : bool ref
 val shortlegend : bool ref

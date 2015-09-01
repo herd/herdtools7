@@ -43,6 +43,10 @@ module type S = sig
   val map_list : (elt -> 'a) -> t -> 'a list
   val disjoint : t -> t -> bool
 
+  (* Decomposition, should be efficient an trivial, given
+     set iplementation as a tree. It is not. *)
+  val split3 : t -> t * elt * t
+
   (* second argument is delimiter (as in String.concat) *)  
   val pp : out_channel -> string -> (out_channel -> elt -> unit) -> t -> unit
 
@@ -103,6 +107,12 @@ module Make(O:OrderedType) : S with type elt = O.t =
       List.rev (fold (fun e k -> f e::k) s [])
       
     let disjoint s1 s2 = for_all (fun e -> not (mem e s2)) s1
+
+(* split3, no gain unfortunately *)
+    let split3 t =
+      let e = choose t in
+      let less,_,more = split e t in
+      less,e,more
 
     let pp chan delim pp_elt s =
       try

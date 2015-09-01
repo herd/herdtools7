@@ -16,6 +16,7 @@ open Printf
 module type Opt = sig
   val verbose : int
   val quiet : bool
+  val same : bool
   val name_ok : string -> bool
   val pos : string option
   val neg : string option
@@ -59,17 +60,18 @@ module Make(O:Opt) = struct
  let run f1 f2 =
     match read_logs [f1;f2;] with
     | [t1;t2] ->
-        let b =
+        if O.same then
           simple_same
-            (if O.quiet then (fun _ -> ()) else printf "%s: %s\n" f1)
-            (if O.quiet then (fun _ -> ()) else printf "%s: %s\n" f2)
-            t1 t2 in
-        let b0 =
-          simple_diff
-            (if O.quiet then (fun _ -> ()) else printf "%s\n") t1 t2 in
-        let b1 = cmp_logs O.pos t1 t2 in
-        let b2 = cmp_logs O.neg t2 t1 in
-        b0 || b1 || b2 || b
+            (if O.quiet then (fun _ -> ()) else printf "%s: %s\n%!" f1)
+            (if O.quiet then (fun _ -> ()) else printf "%s: %s\n%!" f2)
+            t1 t2
+        else
+          let b0 =
+            simple_diff
+              (if O.quiet then (fun _ -> ()) else printf "%s\n") t1 t2 in
+          let b1 = cmp_logs O.pos t1 t2 in
+          let b2 = cmp_logs O.neg t2 t1 in
+          b0 || b1 || b2
     | _ -> assert false
 end
 
@@ -79,13 +81,15 @@ let names = ref []
 let pos = ref None
 let neg = ref None
 let quiet = ref false
-
+let same = ref false
 let options =
   [
    ("-v", Arg.Unit (fun _ -> incr verbose),
     "<non-default> show various diagnostics, repeat to increase verbosity") ;
    ("-q", Arg.Unit (fun _ -> quiet := true; verbose := 0;),
     "<non-default> be quite, no output at all") ;
+   ("-same", Arg.Unit (fun _ -> same := true),
+    "<non-default> check that logs contain the same tests") ;
    ("-pos",
      Arg.String (fun s -> pos := Some s),
     " <file> dump positive differences, default "^ (match !pos with None -> "don't dump" | Some s -> s));
@@ -140,6 +144,7 @@ module M =
     (struct
       let verbose = !verbose
       let quiet = !quiet
+      let same = !same
       let name_ok = match names with
       | None -> fun _ -> true
       | Some ns -> (fun n -> StringSet.mem n ns)

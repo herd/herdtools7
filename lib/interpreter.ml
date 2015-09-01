@@ -177,7 +177,7 @@ module Make
 (* Internal typing *)
     type typ =
       | TEmpty | TEvents | TRel | TTag of string |TClo | TProc | TSet of typ
-      | TTuple of typ list | TKont
+      | TTuple of typ list
 
     let rec eq_type t1 t2 = match t1,t2 with
     | TEmpty,TSet _ -> Some t2
@@ -198,7 +198,6 @@ module Make
         Misc.app_opt (fun ts -> TTuple ts) (eq_types ts1 ts2)
     | TClo,TClo -> Some TClo
     | TProc,TProc -> Some TProc
-    | TKont,TKont -> Some TKont
     | _,_ -> None
 
 
@@ -232,67 +231,64 @@ module Make
       | TSet elt -> sprintf "%s set" (pp_typ elt)
       | TTuple ts ->
           sprintf "(%s)" (String.concat " * " (List.map pp_typ ts))
-      | TKont -> "<kont>"
 
     module rec V : sig
 
-      type 'k v =
+      type v =
         | Empty | Unv
         | Rel of S.event_rel
         | Set of S.event_set
-        | Clo of 'k closure
-        | Prim of string * int * ('k v -> 'k v)
-        | Proc of 'k procedure
+        | Clo of  closure
+        | Prim of string * int * (v -> v)
+        | Proc of  procedure
         | Tag of string * string     (* type  X name *)
-        | ValSet of typ * 'k ValSet.t   (* elt type X set *)
-        | Tuple of 'k v list
-        | Kont of ('k v -> 'k -> 'k) * 'k
+        | ValSet of typ *  ValSet.t   (* elt type X set *)
+        | Tuple of  v list
 
-      and 'k env =
-          { vals  : 'k v Lazy.t StringMap.t;
+      and env =
+          { vals  : v Lazy.t StringMap.t;
             enums : string list StringMap.t;
             tags  : string StringMap.t; }
-      and 'k closure =
+      and closure =
           { clo_args : AST.pat ;
-            mutable clo_env : 'k env ;
+            mutable clo_env : env ;
             clo_body : AST.exp;
             clo_name : string * int; } (* unique id (hack) *)
 
-      and 'k procedure = {
+      and procedure = {
           proc_args : AST.pat ;
-          proc_env : 'k env;
+          proc_env : env;
           proc_body : AST.ins list; }
 
-      val type_val : 'k v -> typ
+      val type_val : v -> typ
 
     end = struct
 
 
-      type 'k v =
+      type v =
         | Empty | Unv
         | Rel of S.event_rel
         | Set of S.event_set
-        | Clo of 'k closure
-        | Prim of string * int * ('k v -> 'k v)
-        | Proc of 'k procedure
+        | Clo of  closure
+        | Prim of string * int * (v -> v)
+        | Proc of  procedure
         | Tag of string * string     (* type  X name *)
-        | ValSet of typ * 'k ValSet.t   (* elt type X set *)
-        | Tuple of 'k v list
-        | Kont of ('k v -> 'k -> 'k) * 'k
+        | ValSet of typ *  ValSet.t   (* elt type X set *)
+        | Tuple of v list
 
-      and 'k env =
-          { vals  : 'k v Lazy.t StringMap.t;
+      and env =
+          { vals  : v  Lazy.t StringMap.t;
             enums : string list StringMap.t;
             tags  : string StringMap.t; }
-      and 'k closure =
+      and  closure =
           { clo_args : AST.pat ;
-            mutable clo_env : 'k env ;
+            mutable clo_env : env ;
             clo_body : AST.exp;
             clo_name : string * int; } (* unique id (hack) *)
 
-      and 'k procedure = {
+      and  procedure = {
           proc_args : AST.pat ;
-          proc_env : 'k env;
+          proc_env : env;
           proc_body : AST.ins list; }
 
       let rec type_val = function
@@ -305,12 +301,11 @@ module Make
         | Tag (t,_) -> TTag t
         | ValSet (t,_) -> TSet t
         | Tuple vs -> TTuple (List.map type_val vs)
-        | Kont _ -> TKont
 
     end
-    and ValOrder : PolySet.OrderedType with type 'k t = 'k V.v = struct
+    and ValOrder : Set.OrderedType with type t = V.v = struct
       (* Note: cannot use Full in sets.. *)
-      type 'k t = 'k V.v
+      type t = V.v
       open V
 
       let error fmt = ksprintf (fun msg -> raise (CompError msg)) fmt
@@ -357,10 +352,9 @@ module Make
           | r -> r
           end
 
-    end and ValSet : (PolySet.S with type 'k elt = 'k V.v) =
-        PolySet.Make(ValOrder)
+    end and ValSet : (MySet.S with type elt = V.v) = MySet.Make(ValOrder)
 
-    type 'k fix = CheckFailed of 'k V.env | CheckOk of 'k V.env
+    type fix = CheckFailed of V.env | CheckOk of V.env
 
     let error silent loc fmt =
       ksprintf
@@ -453,24 +447,6 @@ module Make
        enums=StringMap.empty;
        tags=StringMap.empty; }
 
-(* Hackish: check absence of continuation on env + change type param *)
-    let tr_v = fun (type a) (type b) silent loc (v:a V.v) -> match v with
-    | Kont _ ->
-        error silent loc "kont value used during internal evaluation"
-    | v -> (Obj.magic v:b V.v)
-
-    let purge_env silent loc t =
-      let venv =
-        StringMap.fold
-          (fun x v k ->
-            if true then
-              let nv = lazy begin tr_v silent loc (Lazy.force v) end in
-              StringMap.add x nv k
-            else k)
-          t.vals StringMap.empty in
-      { t with vals = venv;}
-
-
 (* Initial env, a restriction of env *)
 
     type init_env =
@@ -507,8 +483,8 @@ module Make
 
     type loc = (TxtLoc.t * string option) list
 
-    type 'k st = {
-        env : 'k V.env ;
+    type st = {
+        env : V.env ;
         show : S.event_rel StringMap.t Lazy.t ;
         skipped : StringSet.t ;
         silent : bool ; flags : Flag.Set.t ;
@@ -570,8 +546,8 @@ module Make
 
 (* Type of eval env *)
     module EV = struct
-      type 'k env =
-          { env : 'k V.env ; silent : bool; ks : ks; }
+      type env =
+          { env : V.env ; silent : bool; ks : ks; }
     end
     let from_st st = { EV.env=st.env; silent=st.silent; ks=st.ks; }
 
@@ -685,7 +661,6 @@ module Make
       | MatchSet (loc,_,_,_)
       | Try (loc,_,_)
       | If (loc,_,_,_)
-      | Yield (loc,_,_)
         -> loc
 
 
@@ -1056,10 +1031,10 @@ module Make
                 set_op env loc t ValSet.inter s1 s2
             | (Unv,r)|(r,Unv) -> r
             | (V.Empty,_)|(_,V.Empty) -> V.Empty
-            | (Clo _|Prim _|Proc _|V.Tuple _|Kont _),_ ->
+            | (Clo _|Prim _|Proc _|V.Tuple _),_ ->
                 error env.EV.silent loc1
                   "intersection on %s" (pp_typ (type_val v1))
-            | _,(Clo _|Prim _|Proc _|V.Tuple _|Kont _) ->
+            | _,(Clo _|Prim _|Proc _|V.Tuple _) ->
                 error env.EV.silent loc2
                   "intersection on %s" (pp_typ (type_val v2))
             | (Rel _,Set _)
@@ -1094,10 +1069,10 @@ module Make
             | (Rel _|Set _|V.Empty|Unv|ValSet _),Unv
             | V.Empty,(Rel _|Set _|V.Empty|ValSet _) -> V.Empty
             | (Rel _|Set _|ValSet _),V.Empty -> v1
-            | (Clo _|Proc _|Prim _|V.Tuple _|Kont _),_ ->
+            | (Clo _|Proc _|Prim _|V.Tuple _),_ ->
                 error env.EV.silent loc1
                   "difference on %s" (pp_typ (type_val v1))
-            | _,(Clo _|Proc _|Prim _|V.Tuple _|Kont _) ->
+            | _,(Clo _|Proc _|Prim _|V.Tuple _) ->
                 error env.EV.silent loc2
                   "difference on %s" (pp_typ (type_val v2))
             | ((Set _|ValSet _),Rel _)|(Rel _,(Set _|ValSet _)) ->
@@ -1123,7 +1098,7 @@ module Make
                 set_op env loc t2 ValSet.add v1 s2
             | _,V.ValSet (_,s2) ->
                 set_op env loc (type_val v1) ValSet.add v1 s2
-            | _,(Rel _|Set _|Clo _|Prim _|Proc _|V.Tag (_, _)|V.Tuple _|Kont _) ->
+            | _,(Rel _|Set _|Clo _|Prim _|Proc _|V.Tag (_, _)|V.Tuple _) ->
                 error env.EV.silent (get_loc e2)
                   "this expression of type '%s' should be a set"
                   (pp_typ (type_val v2))
@@ -1219,15 +1194,6 @@ module Make
         | If (_loc,cond,ifso,ifnot) ->
             if eval_cond _loc env cond then eval env ifso
             else eval env ifnot
-        | Yield (_loc,res,a) ->
-            let v = eval env a
-            and vres = eval env res in
-            begin match vres with
-            | Kont (kont,res) -> Kont (kont,kont v res)
-            | _ ->
-                error env.EV.silent (get_loc res)
-                  "continuation expected, %s found" (pp_val vres)
-            end
 
       and eval_cond loc env c = match c with
       | Eq (e1,e2) ->
@@ -1629,8 +1595,8 @@ module Make
 
       let eval_st st e = eval (from_st st) e in
 
-      let rec exec : 'a. 'a st -> ins -> ('a -> 'a) ->
-        ('a st -> 'a -> 'a) -> 'a -> 'a  =
+      let rec exec : 'a. st -> ins -> ('a -> 'a) ->
+        (st -> 'a -> 'a) -> 'a -> 'a  =
         fun  (type res) st i kfail kont (res:res) ->  match i with
         | Debug (_,e) ->
             if O.debug then begin
@@ -1740,7 +1706,7 @@ module Make
                 | Some _ -> tname
                 | None -> Some name in
                 let tval = 
-                  let benv = purge_env st.silent loc env1 in
+                  let benv = env1 in
                   run { (push_loc st (loc,pname)) with env=benv; } p.proc_body
                     (fun x -> x)
                     (fun _ _ -> true) false in
@@ -1807,7 +1773,7 @@ module Make
                 error st.silent
                   (get_loc e) "forall instruction applied to non-set value"
             end
-        | WithFrom (loc,x,e) when not O.bell  ->
+        | WithFrom (_loc,x,e) when not O.bell  ->
             let st0 = st in
             let env0 = st0.env in
             let v = eval (from_st st0) e in
@@ -1819,22 +1785,7 @@ module Make
                     let env = add_val x (lazy v) env0 in
                     kont (doshowone x {st with env;}) res)
                   vs res
-            | Clo _ ->
-                let kv =
-                  Kont
-                    ((fun v (res:res) ->
-                      let env = add_val x (lazy v) env0 in
-                      kont (doshowone x {st with env;}) res),
-                     res) in
-                begin match eval_app loc (from_st st) v kv with
-                | Kont (_,res) -> res
-                | v -> 
-                    error
-                      st.silent (get_loc e)
-                      "improper generator, returns %s"
-                      (pp_val v)
-                end
-            | _ -> error st.silent (get_loc e) "set or generator expected"
+            | _ -> error st.silent (get_loc e) "set expected"
             end
         | Latex _ -> kont st res
         | Events (loc,x,es,def) when O.bell ->
@@ -1884,9 +1835,9 @@ module Make
             kont st res (* Ignore cat constructs when executing bell *)
 
             and exec_test :
-                'a. 'a st -> app_test -> test_type ->
+                'a.st -> app_test -> test_type ->
                   ('a -> 'a) ->
-                  ('a st -> 'a -> 'a) -> 'a -> 'a =
+                  (st -> 'a -> 'a) -> 'a -> 'a =
                     fun st (loc,_,t,e,name as tst) test_type kfail kont res ->
                       let skip = skip_this_check name in
                       if O.debug &&  skip then
@@ -1931,8 +1882,8 @@ module Make
                         kont st res
                       end
 
-            and do_include : 'a . TxtLoc.t -> string -> 'a st -> ('a -> 'a) ->
-              ('a st -> 'a -> 'a) -> 'a -> 'a =
+            and do_include : 'a . TxtLoc.t -> string ->st -> ('a -> 'a) ->
+              (st -> 'a -> 'a) -> 'a -> 'a =
                 fun loc fname st kfail kont res ->
                   (* Run sub-model file *)
                   if O.debug then warn loc "include \"%s\"" fname ;
@@ -1948,7 +1899,8 @@ module Make
                       error st.silent loc "%s" msg  in
                   run st iprog kfail kont res
 
-            and run : 'a. 'a st -> ins list -> ('a -> 'a) -> ('a st -> 'a -> 'a) -> 'a -> 'a =
+            and run : 'a.st -> ins list ->
+              ('a -> 'a) -> (st -> 'a -> 'a) -> 'a -> 'a =
               fun st c kfail kont res -> match c with
               | [] ->  kont st res
               | i::c ->
