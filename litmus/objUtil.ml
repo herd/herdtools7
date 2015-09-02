@@ -129,7 +129,10 @@ module Make(O:Config)(Tar:Tar.S) =
       | Driver.C|Driver.XCode -> cpy fnames "toh" ".sh" in
       let fnames = match O.arch with
         | `C ->
-            cpy' fnames "showC" "show" ".awk"
+            if O.asmcommentaslabel then
+              cpy' fnames "showLabel" "show" ".awk"
+            else
+              cpy' fnames "showC" "show" ".awk"
         | `X86 | `ARM | `PPC | `MIPS | `AArch64 ->
             if O.asmcommentaslabel then
               cpy' fnames "showLabel" "show" ".awk"
