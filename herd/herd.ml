@@ -240,7 +240,7 @@ let options = [
   "-nshow",
   Arg.Int (fun n -> nshow := Some n),
   "<n> collect at most <n> pictures, default is to collect all (specified) pictures";
-  parse_bool "-badexecs" badexecs "list results of bad executions" ;
+  parse_bool "-badexecs" badexecs "give output for tests that have bad executions (see -badflag)" ;
   parse_string_opt "-badflag" badflag "executions with flag <string> are bad" ;
 (* undocumented *)
   "-showone",
@@ -248,7 +248,7 @@ let options = [
   "<bool> alias for -nshow 1";
 
 (************************)
-(* Control dot pitcures *)
+(* Control dot pictures *)
 (************************)
 (* General *)
   parse_tag "-graph"
