@@ -41,4 +41,4 @@ version:
 
 
 clean::
-	rm version.ml
+	rm -f version.ml

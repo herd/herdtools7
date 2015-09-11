@@ -18,6 +18,38 @@
 
 open Printf
 
+type status = Before | Inside | After
+
+let is_com s =
+  let len = String.length s in
+  len >= 3 && s.[0] = '/' && s.[1] = '*' &&
+  s.[len-2] = '*' && s.[len-1] = '/'
+
+let no_header out =
+  let st = ref Before in
+  fun s -> match !st with
+  | Before ->
+      if String.length s > 0 then begin
+        if is_com s then st := Inside
+        else begin
+          st := After ;
+          out s        
+        end
+      end
+  | Inside ->
+      if not (is_com s) then begin
+        st := After ;
+        out s
+      end
+  | After -> out s
+
+let add_no_header fname out =
+  if
+    Filename.check_suffix fname ".c" ||
+    Filename.check_suffix fname ".h"
+  then no_header out
+  else out
+
 let cp_lib_file src dst =
   let _,in_chan = MyName.open_lib src in
   begin try MySys.cp in_chan dst
@@ -26,6 +58,7 @@ let cp_lib_file src dst =
 
 let insert_lib_file o src =
   let _,in_chan = MyName.open_lib src in
+  let o = add_no_header src o in
   MySys.cat_chan in_chan o ;
   close_in in_chan
 
@@ -72,6 +105,7 @@ module Insert (O:InsertConfig) :
 
     let insert out src =
       let _,in_chan = find_lib src in
+      let out = add_no_header src out  in
       MySys.cat_chan in_chan out ;
       close_in in_chan
 
