@@ -19,7 +19,7 @@ Just type
   % make all
   % make install (you may have to gain root privilege for this step)
 
-This will install binaries herd, litmus, diy, diyone, diycross,
+This will install binaries herd7, litmus7, diy7, diyone7, diycross7,
 and some other tools in $(PREFIX)/bin; and some files in
 $(PREFIX)/lib/herd  and $(PREFIX)/lib/litmus.
   

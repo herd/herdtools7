@@ -1,18 +1,19 @@
-** What is diy? **
+** What is diy7 ? **
 
-This is diy version a tool suite to test weak memory models.
+This is diy7, a tool suite to test weak memory models.
 
 We provide the following subtools
- - herd: A generic simulator for weak memory models.
+ - herd7: A generic simulator for weak memory models.
 
- - litmus: Given assembler programs for Power, ARM or X86 (a litmus test)
+ - litmus7: Given assembler programs for Power, ARM or X86 (a litmus test)
            generates C programs, whose execution
            will test the memory model of the executing machine.
            
- - diy proper: Produce litmus tests from concise specifications.
+ - diy7 proper: Produce litmus tests from concise specifications.
 
  - Some tools to analyse run logs of both herd and litmus.
  
+** diy7 is the successor of the diy tool suite.
 
 ** Home **
 http://diy.inria.fr/
@@ -31,15 +32,11 @@ See file INSTALL.txt
 
 ** Law **
 
-Herd authors are Jade Alglave and Luc Maranget.
+The authors of the diy7 tool suite are Jade Alglave and Luc Maranget.
 
-Litmus authors are Luc Maranget and Susmit Sarkar.
-
-Diy proper authors are Jade Alglave and Luc Maranget.
-
-Copyright 2010--2013: Institut National de Recherche en Informatique et
+Copyright 2010--present: Institut National de Recherche en Informatique et
 en Automatique, and the authors.
 
-Diy is released under the terms of the Gnu Lesser General Public License
-(LGPL). See file LICENSE.txt
+Diy7 is released under the terms of the CeCILL-B free software license
+agreement. See file LICENSE.txt
 
