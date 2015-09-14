@@ -2565,6 +2565,7 @@ let user2_barrier_def () =
     ()
 
   let dump doc test =
+    ObjUtil.insert_lib_file O.o "header.txt" ;
 (* Minimal type environemnt *)
     let env = U.build_env test in
     dump_header test ;

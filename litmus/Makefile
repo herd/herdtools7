@@ -1,6 +1,7 @@
 PREFIX=$$HOME
 BINDIR=$(PREFIX)/bin
 LIBDIR=$(PREFIX)/lib/litmus7
+TXT=header.txt
 CFG=conti.cfg saumur.cfg saumur.close.cfg doko.cfg squale.cfg hpcx.cfg \
  vargas.cfg vargas.cache.cfg vargas.close.cfg vargas16.cfg \
  abducens.cfg  abducens.big.cfg abducens.cache.cfg abducens.close.cfg \
@@ -43,7 +44,7 @@ install:
 	cp _aix_affinity.c _linux_affinity.c _affinity.h $(LIBDIR)
 	cp _show.awk _showC.awk _showLabel.awk _toh.sh $(LIBDIR)
 	cp _mix.h _hash.c _instance.c _main.c $(LIBDIR)
-	cp $(CFG) $(LIBDIR)
+	cp $(CFG) $(TXT) $(LIBDIR)
 	mkdir -p  $(LIBDIR)/_ppc && ( cd _ppc && cp $(INSERT_PPC) $(LIBDIR)/_ppc )
 	mkdir -p  $(LIBDIR)/_x86 && ( cd _x86 && cp $(INSERT_X86) $(LIBDIR)/_x86 )
 	mkdir -p  $(LIBDIR)/_arm  && ( cd _arm && cp $(INSERT_ARM) $(LIBDIR)/_arm )

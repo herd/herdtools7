@@ -1124,6 +1124,7 @@ let dump_main_def doc env test stats =
 (***************)
 
   let dump doc test =
+    ObjUtil.insert_lib_file O.o "header.txt" ;
     dump_header test ;
     dump_delay_def () ;
     dump_read_timebase () ;
