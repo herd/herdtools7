@@ -31,24 +31,37 @@ specifications, and
 In Part~\ref{part:examples} we describe
 a few concrete experiments, illustrating frequent usage patterns of
 \diy{} generators and of \litmus.
-Finally (Part~\ref{part:auto}), we briefly
-describe our experimental \dont{} tool
-for either checking the
-conformance of a machine to an architecture or exploring the memory model of a
-given machine automatically.
+%Finally (Part~\ref{part:auto}), we briefly
+%describe our experimental \dont{} tool
+%for either checking the
+%conformance of a machine to an architecture or exploring the memory model of a
+%given machine automatically.
+
 
 The software is written in
 \footahref{http://caml.inria.fr/ocaml/}{Objective Caml}, and released as
 sources.  The web site of~\diy{} is
 \ahrefurl{\url{http://diy.inria.fr/}}, authors can be contacted at
 \texttt{diy-devel@inria.fr}.
-This software is released under the terms of the Lesser GNU Public License.
+This software is released under the terms of the CILL-B Free Software License
+Agreement.
+
+
 
 \begin{htmlonly}
 \begin{quote}
 This document in \ahref{diy.ps}{\sc Postscript} and \ahref{diy.pdf}{{\sc Pdf}}.
 \end{quote}
 \end{htmlonly}
+
+The authors of the \diy{} tool suite are Jade Alglave and Luc Maranget,
+with contributions by Jacques-Pascal Deplaix (\litmus{} for C) and
+Keryan Didier (\herd{} semantics for ARMv8 and simple ARMv8 models).
+
+Past contributors are Susmit Sarkar (\litmus),
+Tyler Sorensen (\herd), John Wickerson (\herd).
+The tool \litmus{} is inspired from an unreleased prototype by
+Thomas Braibant and Francesco Zappa Nardelli.
 
 \cutdef{section}
 \tableofcontents
@@ -66,17 +79,18 @@ This document in \ahref{diy.ps}{\sc Postscript} and \ahref{diy.pdf}{{\sc Pdf}}.
 \part{Simulating\label{part:herd} memory models with \herd}
 \input{herd.tex}
 
-\clearpage
-\part{Converting\label{part:jingle} tests with \jingle}
-\input{jingle.tex}
+%\clearpage
+%\part{Converting\label{part:jingle} tests with \jingle}
+%\input{jingle.tex}
 
 \clearpage
 \part{Some \label{part:examples} examples}
 \input{examples.tex}
 
-\clearpage
-\part{Automating\label{part:auto} the testing process}
-\input{auto.tex}
+%\clearpage
+%\part{Automating\label{part:auto} the testing process}
+%\input{auto.tex}
+
 
 \bibliographystyle{plain}
 \bibliography{jade}

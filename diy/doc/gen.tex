@@ -1,8 +1,5 @@
 \cutname{gen.html}
 
-The authors of~\prog{diy} are Jade Alglave and Luc Maranget
-(INRIA Paris--Rocquencourt).
-
 \section{Preamble} \label{preamble}
 
 We wrote~\diy{} as part of our empirical approach to studying relaxed memory
@@ -12,8 +9,8 @@ Readers interested by the companion formalism are invited
 to refer to our CAV~2010 publication~\cite{ams10}.
 
 The distribution includes additional test generators:
-\ahrefloc{diyone:intro}{\prog{diyone}} for generating one test
-and \ahrefloc{diycross:intro}{\diycross{}}
+\ahrefloc{diyone:intro}{\diyone} for generating one test
+and \ahrefloc{diycross:intro}{\diycross}
 for generating simple variations on one test.
 
 \subsection{Relaxation of Sequential Consistency}
@@ -137,13 +134,13 @@ The \diy{} suite precisely provides tools for this approach.
 \afile{SB.litmus}
 can be created as follows:
 \begin{verbatim}
-% diyone -arch X86 -name SB Fre PodWR Fre PodWR
+% diyone7 -arch X86 -name SB Fre PodWR Fre PodWR
 \end{verbatim}
 
 As a second example, we can produce several similar tests
 as follows:
 \begin{verbatim}
-% diy -arch X86 -safe Fre -relax PodWR -name SB
+% diy7 -arch X86 -safe Fre -relax PodWR -name SB
 Generator produced 2 tests
 Relaxations tested: {PodWR}
 \end{verbatim}
@@ -191,7 +188,7 @@ the coherence order of~$\ell$.
 The condition of the produced test then selects the specified coherence orders.
 Consider for instance:
 \begin{verbatim}
-% diyone -arch X86 -name x86-2+2W Wse PodWW Wse PodWW
+% diyone7 -arch X86 -name x86-2+2W Wse PodWW Wse PodWW
 \end{verbatim}
 The cycle that reveals a violation of the SC memory model is:
 \begin{center}
@@ -215,11 +212,11 @@ writes to reads that load their value.
 We are now equipped to generate the famous iriw test
 (independent reads of independent writes):
 \begin{verbatim}
-% diyone -arch X86 Rfe PodRR Fre Rfe PodRR Fre -name iriw
+% diyone7 -arch X86 Rfe PodRR Fre Rfe PodRR Fre -name iriw
 \end{verbatim}
 We generate its internal variation (\emph{i.e.} where all Rfe are replaced by Rfi) as easily:
 \begin{verbatim}
-% diyone -arch X86 Rfi PodRR Fre Rfi PodRR Fre -name iriw-internal
+% diyone7 -arch X86 Rfi PodRR Fre Rfi PodRR Fre -name iriw-internal
 \end{verbatim}
 We get the cycles of \myfig{\ref{fig:iriw}},
 \begin{figure}[p]
@@ -247,8 +244,8 @@ Candidate relaxations given as arguments really are a
 we get iriw for Power, simply by changing \opt{-arch X86} into
 \opt{-arch PPC}.
 \begin{verbatim}
-% diyone -arch PPC Rfe PodRR Fre Rfe PodRR Fre
-PPC a
+% diyone7 -arch PPC Rfe PodRR Fre Rfe PodRR Fre
+PPC A
 "Rfe PodRR Fre Rfe PodRR Fre"
 {
 0:r2=y; 0:r4=x;
@@ -261,7 +258,7 @@ PPC a
  lwz r3,0(r4) | stw r1,0(r2) | lwz r3,0(r4) | stw r1,0(r2) ;
 exists (0:r1=1 /\ 0:r3=0 /\ 2:r1=1 /\ 2:r3=0)
 \end{verbatim}
-Also notice that without the \opt{-name} option, \prog{diyone} writes
+Also notice that without the \opt{-name} option, \diyone{} writes
 its result to standard output.
 
 \subsection{Summary of simple candidate relaxations}
@@ -319,7 +316,7 @@ location(s);
 In practice, we have:
 \begin{center}
 \begin{tabular}{c|c|c|c}
-\prog{diy} syntax  &  Source & Target  & Location \\ \hline
+\diy syntax  &  Source & Target  & Location \\ \hline
 \tt PosRR & R & R & Same \\ \hline
 \tt PodRR & R & R & Diff  \\ \hline
 \tt PosRW & R & W & Same \\ \hline
@@ -370,8 +367,8 @@ models.
 The \opt{-safe} and \opt{-relax} options are crucial here.
 We describe our technique by the means of an example: X86-TSO.
 
-Notice that this style of model exploration is mechanised
-by~\dont\prog{ (diy)} --- see Part~\ref{part:auto}.
+%Notice that this style of model exploration is mechanised
+%by~\dont\prog{ (diy)} --- see Part~\ref{part:auto}.
 
 \subsection{\aname{test2}{Principle}}
 
@@ -442,7 +439,7 @@ relaxations \texttt{PodRR} and~\texttt{PodRW}.
 We get safe tests by issuing the following command, preferably in a
 specific directory, say \texttt{safe}.
 \begin{verbatim}
-% diy -conf x86-safe.conf
+% diy7 -conf x86-safe.conf
 Generator produced 38 tests
 Relaxations tested: {}
 \end{verbatim}
@@ -462,11 +459,11 @@ Tests are to be generated in specific directories.
 %HEVEA To that aim, we provide a convenient archive~\ahref{x86.tar}{\texttt{x86.tar}}.
 \begin{verbatim}
 % cd rfi
-% diy -conf x86-rfi.conf 
+% diy7 -conf x86-rfi.conf 
 Generator produced 11 tests
 Relaxations tested: {Rfi}
 % cd ../podwr
-% diy -conf x86-podwr.conf 
+% diy7 -conf x86-podwr.conf 
 Generator produced 2 tests
 Relaxations tested: {PodWR}
 % cd ..
@@ -475,18 +472,18 @@ Relaxations tested: {PodWR}
 Now, \ahref{litmus.html}{let us run} all tests at once, with the
 parameters of machine \texttt{saumur} (4 physical cores with hyper-threading):
 \begin{verbatim}
-% litmus -mach saumur rfi/@all > rfi/saumur.rfi.00
-% litmus -mach saumur podwr/@all > podwr/saumur.podwr.00
-% litmus -mach saumur safe/@all > safe/saumur.safe.00
+% litmus7 -mach saumur rfi/@all > rfi/saumur.rfi.00
+% litmus7 -mach saumur podwr/@all > podwr/saumur.podwr.00
+% litmus7 -mach saumur safe/@all > safe/saumur.safe.00
 \end{verbatim}
 If your machine has 2 cores only, try \verb+litmus -a 2 -limit true+\ldots
 
 \label{readRelax:intro}We now look for
 the tests that have validated their condition
 in the result files of~\litmus.
-A simple tool, \prog{readRelax}, does the job:
+A simple tool, \readRelax, does the job:
 \begin{verbatim}
-% readRelax rfi/saumur.rfi.00 podwr/saumur.podwr.00 safe/saumur.safe.00
+% readRelax7 rfi/saumur.rfi.00 podwr/saumur.podwr.00 safe/saumur.safe.00
    .
    .
    .
@@ -496,7 +493,7 @@ A simple tool, \prog{readRelax}, does the job:
 {Fre, PodWW, PodRR, MFencedWR} {Fre, PodRR} {Fre, PodRR, MFencedWR}
 {PodWR} With {Fre}
 \end{verbatim}
-The tool \prog{readRelax} first lists the result of all tests
+The tool \readRelax{} first lists the result of all tests
 (which is omitted above), and then dumps a summary of the 
 relaxations it found.
 The sets of the candidate relaxations  that need to be safe for the tests to
@@ -557,8 +554,8 @@ a data dependency by a \emph{false dependency} (or \emph{dummy dependency})
 that operates on the address of the target memory access.
 For instance:
 \begin{verbatim}
-% diyone DpdW Rfe DpdW Rfe
-PPC a
+% diyone7 DpdW Rfe DpdW Rfe
+PPC A
 "DpAddrdW Rfe DpAddrdW Rfe"
 {
 0:r2=y; 0:r5=x;
@@ -581,8 +578,8 @@ field of the test.
 As a matter of fact, DpdW is a macro for the address dependency
 DpAddrW. We could have specified data dependency instead:
 \begin{verbatim}
-% diyone DpDatadW Rfe DpAddrdW Rfe
-PPC a
+% diyone7 DpDatadW Rfe DpAddrdW Rfe
+PPC A
 "DpDatadW Rfe DpAddrdW Rfe"
 {
 0:r2=y; 0:r4=x;
@@ -606,8 +603,8 @@ dependency is implemented by the means of an useless compare
 and branch sequence, plus the \texttt{isync} instruction when the target event
 is a load. For instance
 \begin{verbatim}
-% diyone CtrldR Fre SyncdWW Rfe
-PPC a
+% diyone7 CtrldR Fre SyncdWW Rfe
+PPC A
 "DpCtrlIsyncdR Fre SyncdWW Rfe"
 {
 0:r2=y; 0:r4=x;
@@ -652,7 +649,7 @@ while \texttt{ABC}$r$ stands for~\texttt{[Rfe,}$r$\texttt{,Rfe]},
 Hence, a simple way to generate iriw-like (see~\mysec{\ref{iriw}})
 litmus tests  with \texttt{lwsync} is as follows:
 \begin{verbatim}
-% diy -name iriw-lwsync -nprocs 8 -size 8 -relax ACLwSyncdRR -safe Fre
+% diy7 -name iriw-lwsync -nprocs 8 -size 8 -relax ACLwSyncdRR -safe Fre
 Generator produced 3 tests
 Relaxations tested: {ACLwSyncdRR}
 \end{verbatim}
@@ -685,7 +682,7 @@ two communication candidate relaxations, whose target and source
 are a common event whose processor is new.
 \begin{center}
 \begin{tabular}{c|c|c|c}
-\prog{diy} syntax  &  Source & Target  & Detour \\ \hline
+\diy{} syntax  &  Source & Target  & Detour \\ \hline
 \tt DetourR & R & R & Fre; Rfe \\ \hline
 \tt DetourW & W & R & Wse; Rfe  \\ \hline
 \tt DetourRW & R & W & Fre;Wse \\ \hline
@@ -715,7 +712,7 @@ For instance, one can generate all variations on the IRIW test
 involve data dependencies and the lightweight barrier~\texttt{lwsync}
 as follows:
 \begin{verbatim}
-% diycross -arch PPC -name IRIW Rfe DpdR,LwSyncdRR Fre Rfe DpdR,LwSyncdRR Fre
+% diycross7 -arch PPC -name IRIW Rfe DpdR,LwSyncdRR Fre Rfe DpdR,LwSyncdRR Fre
 Generator produced 3 tests
 % ls
 @all  IRIW+addrs.litmus  IRIW+lwsync+addr.litmus  IRIW+lwsyncs.litmus
@@ -746,7 +743,7 @@ specify the set of all existing program order candidate relaxations
 between the specified ``R'' or ``W''. For instance, we get the complete
 variations on IRIW by:
 \begin{verbatim}
-% diycross -arch PPC -name IRIW Rfe allRR Fre Rfe allRR Fre
+% diycross7 -arch PPC -name IRIW Rfe allRR Fre Rfe allRR Fre
 Generator produced 28 tests
 % ls
 @all
@@ -761,7 +758,7 @@ IRIW+isyncs.litmus
 We first produce the ``\emph{four writes}'' test~\ahref{2+2W.litmus}{\file{2+2W}}
 for Power:
 \begin{verbatim}
-% diyone -name 2+2W -arch PPC PodWW Wse PodWW Wse
+% diyone7 -name 2+2W -arch PPC PodWW Wse PodWW Wse
 % cat 2+2W.litmus
 PPC 2+2W
 "PodWW Wse PodWW Wse"
@@ -790,7 +787,7 @@ identifies the coherence order  $0$, $1$, $2$.
 The command line switch \opt{-obs force} commands the production
 of observers (test \ahref{2+2WObs.litmus}{\file{2+2WObs}}):
 \begin{verbatim}
-% diyone -name 2+2WObs -obs force -obstype straight -arch PPC PodWW Wse PodWW Wse
+% diyone7 -name 2+2WObs -obs force -obstype straight -arch PPC PodWW Wse PodWW Wse
 % cat 2+2WObs.litmus
 PPC 2+2WObs
 "PodWW Wse PodWW Wse"
@@ -834,7 +831,7 @@ Those are selected by the homonymous tags given as arguments to the command
 line switch \opt{-obstype}. For instance, we get the test
 \ahref{2+2WObsFenced.litmus}{\file{2+2WObsFenced}} by:
 \begin{verbatim}
-% diyone -name 2+2WObsFenced -obs force -obstype fenced -arch PPC PodWW Wse PodWW Wse
+% diyone7 -name 2+2WObsFenced -obs force -obstype fenced -arch PPC PodWW Wse PodWW Wse
 % cat 2+2WObsFenced.litmus
 PPC 2+2WObsFenced
 "PodWW Wse PodWW Wse"
@@ -867,10 +864,10 @@ The idea is as follows: when two threads are connected by a Wse candidate
 relaxation, meaning that the first thread ends by writing $v$ to some location~$\ell$ and that the second threads starts by writing $v+1$ to the same location~$\ell$, we add an observing read of location~$\ell$ at the end of
 the first thread. Then, reading $v+1$ means that the write by the first thread
 precedes the write by the second thread in $\ell$ coherence order.
-More concretely, we instruct \prog{diy} generators to emit such local observers
+More concretely, we instruct \diy{} generators to emit such local observers
 with option \opt{-obs local}:
 \begin{verbatim}
-% diyone -name 2+2WLocal -obs local -obstype straight -arch PPC PodWW Wse PodWW Wse
+% diyone7 -name 2+2WLocal -obs local -obstype straight -arch PPC PodWW Wse PodWW Wse
 % cat 2+2WLocal.litmus 
 PPC 2+2WLocal
 "PodWW Wse PodWW Wse"
@@ -907,7 +904,7 @@ For instance, one produces
 the fenced local observer version of \ltest{2+2W}
 as follows:
 \begin{verbatim}
-% diyone -name 2+2WLocalFenced -obs local -obstype fenced -arch PPC PodWW Wse PodWW Wse
+% diyone7 -name 2+2WLocalFenced -obs local -obstype fenced -arch PPC PodWW Wse PodWW Wse
 % cat 2+2WLocalFenced.litmus 
 PPC 2+2WLocalFenced
 "PodWW Wse PodWW Wse"
@@ -928,7 +925,7 @@ exists
 While one produces
 \ahref{2+2WLocalLoop.litmus}{\ltest{2+2WLocalLoop}}, the looping local observer version of~\ltest{2+2W} as follows:
 \begin{verbatim}
-% diyone -name 2+2WLocalLoop -obs local -obstype loop -arch PPC PodWW Wse PodWW Wse
+% diyone7 -name 2+2WLocalLoop -obs local -obstype loop -arch PPC PodWW Wse PodWW Wse
 % cat 2+2WLocalLoop.litmus 
 PPC 2+2WLocalLoop
 "PodWW Wse PodWW Wse"
@@ -1003,7 +1000,7 @@ are three writes to the same location.
 With \diyone, one easily build a three writes test as for instance
 the following~\ahref{W5.litmus}{\file{W5}}:
 \begin{verbatim}
-% diyone -obs accept -obstype fenced -arch PPC -name W5 Wse Wse PodWW Wse PodWW
+% diyone7 -obs accept -obstype fenced -arch PPC -name W5 Wse Wse PodWW Wse PodWW
 % cat W5.litmus
 PPC W5
 "Wse Wse PodWW Wse PodWW"
@@ -1026,7 +1023,7 @@ while \opt{-obs avoid} would lead to failure.
 With command line switch \opt{-obs local} we get three local observations of coherence,
 which suffice to reconstruct the complete coherence orders:
 \begin{verbatim}
-% diyone -obs local -obstype fenced -arch PPC -name W5Local Wse Wse PodWW Wse PodWW
+% diyone7 -obs local -obstype fenced -arch PPC -name W5Local Wse Wse PodWW Wse PodWW
 chi% cat W5Local.litmus 
 PPC W5Local
 "Wse Wse PodWW Wse PodWW"
@@ -1049,14 +1046,14 @@ exists (0:r5=2 /\ 1:r5=2 /\ 2:r3=3)
 
 The~\diy{} suite consists in four main tools:
 \begin{description}
-\item[\prog{diyone}] generates one litmus test from the specification
+\item[\diyone] generates one litmus test from the specification
 of a violation of the sequential consistency memory model as a cycle
 --- see~\mysec{\ref{diyone:intro}}.
-\item[\prog{diycross}] generates variations of \diyone{} style tests
+\item[\diycross] generates variations of \diyone{} style tests
 --- see~\mysec{\ref{diycross:intro}}.
-\item[\prog{diy}] generates several tests, aimed at confirming
+\item[\diy] generates several tests, aimed at confirming
 that candidate relaxations are relaxed or safe---see~\mysec{\ref{diy:intro}}.
-\item[\prog{readRelax}] Extract relevant information from
+\item[\readRelax] Extract relevant information from
 the results of tests---see~\mysec{\ref{readRelax:intro}}.
 \end{description}
 
@@ -1165,12 +1162,12 @@ For instance,
 In that situation tools will either fail or silently add a numeric suffix,
 depending on the boolean \texttt{-addnum} option.
 \begin{verbatim}
-% diycross -addnum false LwSyncdWW Rfe [DpAddrdR,PodRR],[DpAddrdW,PodWR] Fre
+% diycross7 -addnum false LwSyncdWW Rfe [DpAddrdR,PodRR],[DpAddrdW,PodWR] Fre
 Fatal error: Duplicate name MP+lwsync+addr-po
-% diycross -addnum true LwSyncdWW Rfe [DpAddrdR,PodRR],[DpAddrdW,PodWR] Fre
+% diycross7 -addnum true LwSyncdWW Rfe [DpAddrdR,PodRR],[DpAddrdW,PodWR] Fre
 Generator produced 2 tests
 % cat @all
-# diycross -addnum true LwSyncdWW Rfe [DpAddrdR,PodRR],[DpAddrdW,PodWR] Fre
+# diycross7 -addnum true LwSyncdWW Rfe [DpAddrdR,PodRR],[DpAddrdW,PodWR] Fre
 MP+lwsync+addr-po.litmus
 MP+lwsync+addr-po001.litmus
 \end{verbatim}
@@ -1180,17 +1177,17 @@ As a result, we get the two tests:
 \cycle{MP+lwsync+addr-po}\qquad\cycle{MP+lwsync+addr-po001}
 \end{center}
 
-Future versions of \prog{diy} may solve this issue in a more satisfying manner.
+Future versions of \diy{} may solve this issue in a more satisfying manner.
 At the moment, users are advised not to rely too much
 on the automatic naming scheme.
 Users may name tests in a non-ambiguous fashion by (1) specifying
 an explicit family name  (\texttt{-name \emph{name}}) and~(2)
 selecting the numeric scheme (\texttt{-num true}):
 \begin{verbatim}
-% diycross -name MP+X -num true LwSyncdWW Rfe [DpAddrdR,PodRR],[DpAddrdW,PodWR] Fre
+% diycross7 -name MP+X -num true LwSyncdWW Rfe [DpAddrdR,PodRR],[DpAddrdW,PodWR] Fre
 Generator produced 2 tests
 \end{verbatim}
-The \prog{diycross} generator outputs the same tests as above, with
+The \diycross{} generator outputs the same tests as above, with
 names \atest{MP+X000} and~\atest{MP+X001}.
 \ifhevea
 \begin{center}
@@ -1201,7 +1198,7 @@ names \atest{MP+X000} and~\atest{MP+X001}.
 
 
 \subsection{Common options}
-All \prog{diy} test generators accept the following documented
+All test generators accept the following documented
 command-line options:
 \begin{description}
 \item[{\tt -v}] Be verbose, repeat to increase verbosity.
@@ -1212,7 +1209,7 @@ ARM support is experimental.
 Redirect output to \opt{<dest>}.
 This option applies when tools generate a set of tests and
 an index file \texttt{@all}, \emph{.i.e.} in all situations
-except for \prog{diyone} simplest operating mode.
+except for \diyone{} simplest operating mode.
 
 If  argument \opt{<dest>} is an archive (extension \opt{.tar})
 or a compressed archive (extension \opt{.tgz}),
@@ -1232,7 +1229,7 @@ that correspond to the generating cycle.
 In mode \opt{unicond}, the final condition identifies executions
 that are valid w.r.t. the uniproc model (see Sec.~\ref{defuniproc}).
 In mode  \opt{observe} there is no final condition:
-the \prog{litmus} and \prog{herd} tools will simply list the final
+the \litmus{} and \herd{} tools will simply list the final
 values of locations.
 \item [{\tt -optcond}] Optimise conditions by disregarding the values
 of loads that are neither the target of~Rf, nor the source of~Fr. This is
@@ -1262,18 +1259,18 @@ The default depends upon the generator.
 \item[{\tt -fmt <n>}] Size of numerical suffixes, default is 3.
 \end{description}
 
-\subsection{Usage\label{diyone:usage} of \prog{diyone}}
-The tool \aname{diyone}{\prog{diyone}}
+\subsection{Usage\label{diyone:usage} of \diyone}
+The tool \aname{diyone}{\diyone}
 has two operating modes.
 The selected mode depends on the presence of command-line arguments,
 
-In the first operating mode, \prog{diyone}
+In the first operating mode, \diyone{}
 takes a non-empty list of candidate relaxations as arguments
 and outputs a litmus test.
-Note that \prog{diyone} may fail to produce the test, with a message
+Note that \diyone{} may fail to produce the test, with a message
 that briefly details the failure.
 \begin{verbatim}
-% diyone Rfe Rfe PodRR
+% diyone7 Rfe Rfe PodRR
 Test a [Rfe Rfe PodRR] failed:
 Impossible direction PodRR Rfe
 \end{verbatim}
@@ -1284,16 +1281,16 @@ If absent, the test name is \texttt{A} and output goes to standard output.
 
 
 Otherwise, \emph{i.e.} when there are no command-line arguments,
-\prog{diyone} reads the standard input and generates the tests described
+\diyone{} reads the standard input and generates the tests described
 by the lines it reads.
 Each line starts with a test name~\textit{name},
 followed by ``\texttt{:}'', followed
 by a list of candidate relaxations~\textit{RS}.
-Then, \prog{diyone} acts as if invoked as \texttt{diyone}~\textit{opts}
+Then, \diyone{} acts as if invoked as \texttt{diyone}~\textit{opts}
 \texttt{-name}~\textit{name}~\textit{RS}.
 
 \aname{diyone:norm}{The tool}
-\prog{diyone} accepts the following documented option:
+\diyone{} accepts the following documented option:
 \begin{description}
 \item[{\tt -norm}] Normalise tests and give them normalised names.
 In the first operating mode (when a cycle is explicitly given) the test
@@ -1315,22 +1312,22 @@ If option \opt{-name <name>} is given, it sets the family name of
 generated tests, otherwise standard family names are used
 (cf. Sec.~\ref{sec:names}).
 By default descriptive names are used (\emph{i.e.} \texttt{-num false})
-and \prog{diycross} will fail if two different tests have the same name
+and \diycross{} will fail if two different tests have the same name
 (\emph{i.e.} \texttt{-addnum false}):
 \begin{verbatim}
-% diycross PodWW Rfe [DpAddrdR,PodRR],[DpAddrdW,PodWR] Fre
+% diycross7 PodWW Rfe [DpAddrdR,PodRR],[DpAddrdW,PodWR] Fre
 Fatal error: Duplicate name MP+po+addr-po
 \end{verbatim}
 Should this happen users can resort either to numeric names,
 \begin{verbatim}
-%diycross -num true PodWW Rfe [DpAddrdR,PodRR],[DpAddrdW,PodWR] Fre
+%diycross7 -num true PodWW Rfe [DpAddrdR,PodRR],[DpAddrdW,PodWR] Fre
 Generator produced 2 tests
 con% ls
 @all  MP000.litmus  MP001.litmus
 \end{verbatim}
 or to disambiguating numeric suffixes.
 \begin{verbatim}
-%diycross -addnum true PodWW Rfe [DpAddrdR,PodRR],[DpAddrdW,PodWR] Fre
+%diycross7 -addnum true PodWW Rfe [DpAddrdR,PodRR],[DpAddrdW,PodWR] Fre
 Generator produced 2 tests
 con% ls
 @all  MP+po+addr-po001.litmus  MP+po+addr-po.litmus
@@ -1474,8 +1471,8 @@ are restricted in the same manner as for
 \item Sequences of Po candidate relaxation are rejected.
 \end{enumerate}
 
-\subsection{\aname{readRelax}{Usage} of \prog{readRelax}}
-\prog{readRelax} is a simple tool to extract relevant information
+\subsection{\aname{readRelax}{Usage} of \readRelax}
+\readRelax{} is a simple tool to extract relevant information
 out of \litmus{} run logs of tests produced by the \diy{} generator.
 For a given run of a given litmus test, the relevant information is:
 \begin{itemize}
@@ -1488,21 +1485,21 @@ the safe candidate relaxations that appear in the tested cycle.
 \end{itemize}
 See \mysec{\ref{readRelax:intro}} for an example.
 
-The tool \prog{readRelax} takes file names as arguments.
+The tool \readRelax{} takes file names as arguments.
 If no argument is present, it reads a list
 of file names on standard input, one name per line.
 
 \section{Additional tools: extracting cycles and classification}
 When non-standard family names or numeric names are used, it proves convenient
 to rename tests with the standard naming scheme.
-We provide two tools to do so: \prog{mcycles} that extracts cycles from
-litmus source files and \prog{classify} that normalises and renames cycles.
+We provide two tools to do so: \mcycles{} that extracts cycles from
+litmus source files and \classify{} that normalises and renames cycles.
 
 For instance, one can use \diy{} to generate all simple, critical, tests up
 to three threads for X86 with the following configuration file~\afile{X.conf}
 \verbatiminput{X.conf}
 \begin{verbatim}
-% diy -conf X.conf
+% diy7 -conf X.conf
 Generator produced 23 tests
 % ls
 @all         X003.litmus  X007.litmus  X011.litmus  X015.litmus  X019.litmus  X.conf
@@ -1510,9 +1507,9 @@ X000.litmus  X004.litmus  X008.litmus  X012.litmus  X016.litmus  X020.litmus
 X001.litmus  X005.litmus  X009.litmus  X013.litmus  X017.litmus  X021.litmus
 X002.litmus  X006.litmus  X010.litmus  X014.litmus  X018.litmus  X022.litmus
 \end{verbatim}
-Cycles are extracted with \prog{mcycles}, which takes the index file \texttt{@all} as argument:
+Cycles are extracted with \mcycles, which takes the index file \texttt{@all} as argument:
 \begin{verbatim}
-% mcycles @all
+% mcycles7 @all
 X000: Wse PodWR Fre PodWR Fre PodWW
 X001: Rfe PodRR Fre PodWR Fre PodWW
 X002: Wse PodWR Fre PodWW
@@ -1525,10 +1522,10 @@ X008: Wse Rfe PodRR Fre PodWW
 X009: Wse PodWW Wse PodWW
 ...
 \end{verbatim}
-The output of \prog{mcycles} can be piped into \prog{classify} for family
+The output of \mcycles{} can be piped into \classify{} for family
 classification:
 \begin{verbatim}
-% mcycles @all | classify -arch X86
+% mcycles7 @all | classify7 -arch X86
 2+2W
   X009 -> 2+2W : PodWW Wse PodWW Wse
 3.2W
@@ -1545,15 +1542,15 @@ MP
   X005 -> MP : PodWW Rfe PodRR Fre
 ...
 \end{verbatim}
-Notice that \prog{classify} accepts the \opt{arch} option, as it needs
+Notice that \classify{} accepts the \opt{arch} option, as it needs
 to parse cycles.
 
 Finally, one can normalise tests, using normalised names by piping
-\prog{mcycles} output into \prog{diyone} with options
+\mcycles{} output into \diyone{} with options
 \ahrefloc{diyone:norm}{\opt{-norm -num false}}:
 \begin{verbatim}
 % mkdir src
-% mcycles @all | diyone -arch X86 -norm -num false -o src
+% mcycles7 @all | diyone7 -arch X86 -norm -num false -o src
 Generator produced 23 tests
 % ls src
 2+2W.litmus  @all         R.litmus    WRC.litmus     WRW+WR.litmus  Z6.2.litmus
@@ -1561,12 +1558,12 @@ Generator produced 23 tests
 3.LB.litmus  LB.litmus    SB.litmus   WRW+2W.litmus  Z6.0.litmus    Z6.4.litmus
 3.SB.litmus  MP.litmus    S.litmus    W+RWC.litmus   Z6.1.litmus    Z6.5.litmus
 \end{verbatim}
-Alternatively, one may instruct \prog{classify} to produce output for
-\diyone. In that case one should pass option \opt{-diyone} to \prog{classify}
-so as to instruct it to produce output that is parsable by \prog{diyone}:
+Alternatively, one may instruct \classify{} to produce output for
+\diyone. In that case one should pass option \opt{-diyone} to \classify{}
+so as to instruct it to produce output that is parsable by \diyone:
 \begin{verbatim}
 % rm -rf src && mkdir src
-% mcycles @all | classify -arch X86 -diyone | diyone -arch X86 -o src
+% mcycles7 @all | classify7 -arch X86 -diyone | diyone7 -arch X86 -o src
 Generator produced 23 tests
 % ls src
 2+2W.litmus  @all         R.litmus    WRC.litmus     WRW+WR.litmus  Z6.2.litmus
@@ -1576,34 +1573,34 @@ Generator produced 23 tests
 \end{verbatim}
 
 
-\subsection{Usage of \prog{mcycles}}
-The tool \prog{mcycles} has no options and takes litmus source files or
+\subsection{Usage of \mcycles{}}
+The tool \mcycles{} has no options and takes litmus source files or
 index files as arguments.
 It outputs a list of lines to standard output.
 Each line starts with a test name, suffixed by ``\texttt{:}'', then
 the cycle of the named test. Notice that this format is the input format
-to \prog{diyone} in its second operating mode --- see Sec.~\ref{diyone:usage}.
+to \diyone{} in its second operating mode --- see Sec.~\ref{diyone:usage}.
 
-It is important to notice that, for \prog{mcycles} to extract cycles, those
+It is important to notice that, for \mcycles{} to extract cycles, those
 must be present as meta-information in source files.
-In practice, this means that  \prog{mcycles} operates normally on
+In practice, this means that  \mcycles{} operates normally on
 sources produced by \diyone, \diycross{} and~\diy.
 Moreover only one instance of a given cycle will be output.
 
 
-\subsection{Usage of \prog{classify}}
-The tool \prog{classify} reads its standard input, interpreting is as
-a list of cycles in the output format of \prog{mcycles}.
+\subsection{Usage of \classify}
+The tool \classify{} reads its standard input, interpreting is as
+a list of cycles in the output format of \mcycles.
 It normalises and classifies those cycles.
-The tool \prog{classify} accepts the following documented options:
+The tool \classify{} accepts the following documented options:
 \begin{description}
 \item[{\tt -arch (X86|PPC|ARM)}] Set architecture. Default is \texttt{PPC}.
 ARM support is experimental.
-\item[{\tt -u}] Instruct \prog{classify} to fail when two tests have the same
-normalised name. Otherwise \prog{classify} will output one line per test,
+\item[{\tt -u}] Instruct \classify{} to fail when two tests have the same
+normalised name. Otherwise \classify{} will output one line per test,
 regardless of duplicate names.
 \item[{\tt -diyone}] Output a normalised list of names and cycles,
-which is legal input for \prog{diyone}.
+which is legal input for \diyone.
 \end{description}
 
 \endinput

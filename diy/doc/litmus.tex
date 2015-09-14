@@ -1,25 +1,20 @@
 \cutname{litmus.html}
 Traditionally, a \emph{litmus test} is a small parallel program designed
 to exercise the memory model of a parallel, shared-memory, computer.
-Given a litmus test in assembler (X86, Power or ARM) \prog{litmus}
+Given a litmus test in assembler (X86, Power or ARM) \litmus{}
 runs the test.
 
-Using \prog{litmus} thus requires a parallel machine,
+Using \litmus{} thus requires a parallel machine,
 which must additionally feature \prog{gcc} and the \prog{pthreads} library.
 At the moment,
-\prog{litmus}
+\litmus{}
 is a prototype and has numerous limitations (recognised instructions,
-limited porting). Nevertheless, \prog{litmus} should accept all tests
+limited porting). Nevertheless, \litmus{} should accept all tests
 produced by the companion \prog{diy} tool and has
-been successfully used on Linux, MacOS and on AIX.
-
-The authors of~\prog{litmus} are Luc Maranget and Susmit Sarkar.
-The present \prog{litmus}~is inspired from a prototype by
-Thomas Braibant and Francesco Zappa Nardelli.
+been successfully used on Linux, MacOS, AIX and~Android.
 
 
-
-\section{A tour of~\prog{litmus}}
+\section{A tour of~\litmus{}}
 
 \subsection{A \label{litmus:simple} simple run}
 \aname{SB}{Consider} the following (rather classical, store buffering)
@@ -39,7 +34,7 @@ of registers and memory locations.
 \label{x86:classic}Run the test by\ifhevea{}
 (complete \ahref{SB.log}{run log})\fi:
 \begin{verbatim}
-% litmus SB.litmus
+% litmus7 SB.litmus
 %%%%%%%%%%%%%%%%%%%%%%%%%
 % Results for SB.litmus %
 %%%%%%%%%%%%%%%%%%%%%%%%%
@@ -88,7 +83,7 @@ The test run validates the condition, with $40$~positive witnesses.
 
 \subsection{Cross\label{cross} compilation}
 
-With option \opt{-o <name.tar>}, \prog{litmus} does not run the test.
+With option \opt{-o <name.tar>}, \litmus{} does not run the test.
 Instead, it produces a tar archive that contains the C~sources for
 the test.
 
@@ -99,7 +94,7 @@ of the previous test:
 
 Our target machine (ppc) runs MacOS, which we specify with the \opt{-os}~option:
 \begin{verbatim}
-% litmus -o /tmp/a.tar -os mac SB-PPC.litmus
+% litmus7 -o /tmp/a.tar -os mac SB-PPC.litmus
 % scp /tmp/a.tar ppc:/tmp
 \end{verbatim}
 Then, on the remote machine ppc:
@@ -146,7 +141,7 @@ which can be run directly, for a less verbose output.
 To compile the two tests together,
 we can give two file names as arguments to litmus:
 \begin{verbatim}
-$ litmus -o /tmp/a.tar -os mac SB-PPC.litmus STFW-PPC.litmus 
+$ litmus7 -o /tmp/a.tar -os mac SB-PPC.litmus STFW-PPC.litmus 
 \end{verbatim}
 Or, more conveniently, list the litmus sources in a file whose
 name starts with \file{@}:
@@ -154,7 +149,7 @@ name starts with \file{@}:
 $ cat @ppc
 SB-PPC.litmus
 STFW-PPC.litmus
-$ litmus -o /tmp/a.tar -os mac @ppc
+$ litmus7 -o /tmp/a.tar -os mac @ppc
 \end{verbatim}
 %$
 To run the test on the remote ppc machine, the same sequence
@@ -333,7 +328,7 @@ with the same command line options. In fact those settings command
 he default values of \file{.exe}~files controls.
 Additionally, the synchronisation technique for iterations,
 the memory mode, and several others compile time parameters
-can be selected by appropriate \prog{litmus} command line options.
+can be selected by appropriate \litmus{} command line options.
 Finally, users can record frequently used parameters in configuration files.
 
 \subsection{Affinity\label{sec:affinity}}
@@ -380,7 +375,7 @@ The \litmus{} tool is absent on \texttt{vargas}.
 All these conditions command the following invocation of \litmus{},
 performed on our local machine:
 \begin{verbatim}
-$ litmus -r 1000 -s 1000 -a 4 -os aix -ws w64 ppc-iriw-lwsync.litmus -o ppc.tar
+$ litmus7 -r 1000 -s 1000 -a 4 -os aix -ws w64 ppc-iriw-lwsync.litmus -o ppc.tar
 $ scp ppc.tar vargas:/var/tmp
 \end{verbatim}
 On \texttt{vargas} we unpack the archive and compile the test:
@@ -425,7 +420,7 @@ with option \texttt{-a 64}.
 Affinity control offers an alternative, which is enabled at compilation time
 with \litmus{} option \texttt{-affinity}:
 \begin{verbatim}
-$ litmus ... -affinity incr1 ppc-iriw-lwsync.litmus -o ppc.tar
+$ litmus7 ... -affinity incr1 ppc-iriw-lwsync.litmus -o ppc.tar
 $ scp ppc.tar vargas:/var/tmp
 \end{verbatim}
 Option \texttt{-affinity} takes one argument (\texttt{incr1} above)
@@ -449,7 +444,7 @@ $T_k$ correspond to different test threads~$P_i$ at each run.
 The unpack compile and run sequence on \texttt{vargas} now yields
 the non-SC outcome, better outcome variety and a lower running time:
 \begin{verbatim}
-vargas% tar xf /var/tmp/ppc.tar && sh comp.sh
+vargas% tar xf /var/tmp/ppc.tar && make
 vargas% ./ppc-iriw-lwsync.exe
 Test ppc-iriw-lwsync Allowed
 Histogram (16 states)
@@ -728,7 +723,7 @@ More specifically we generate
 (\ahref{ppc-iriw-lwsync.litmus}{\ltest{ppc-iriw-lwsync}} in the previous
 section) as follows:
 \begin{verbatim}
-% diyone -arch PPC -name IRIW+lwsyncs Rfe LwSyncdRR Fre Rfe LwSyncdRR Fre
+% diyone7 -arch PPC -name IRIW+lwsyncs Rfe LwSyncdRR Fre Rfe LwSyncdRR Fre
 \end{verbatim}
 We get the new source file~\afile{IRIW+lwsyncs.litmus}:
 \verbatiminput{IRIW+lwsyncs.litmus}
@@ -744,7 +739,7 @@ and \texttt{-smt\_mode (seq|end)} that specifies how logical processors
 from the same core are numbered.
 For a 8-cores 4-ways SMT power7 machine we invoke \litmus{} as follows:
 \begin{verbatim}
-% litmus -mem direct -smt 4 -smt_mode seq -affinity custom -o a.tar IRIW+lwsyncs.litmus
+% litmus7 -mem direct -smt 4 -smt_mode seq -affinity custom -o a.tar IRIW+lwsyncs.litmus
 \end{verbatim}
 Notice that memory mode is direct and that the number of available
 logical processors is unspecified, resulting in running one instance of
@@ -841,7 +836,7 @@ on affinity control.
 \subsection{Controlling\label{exec:control} executable files}
 
 \paragraph{Test conditions}
-Any executable file produced by \prog{litmus} accepts the following
+Any executable file produced by \litmus{} accepts the following
 command line options.
 \begin{description}
 \item[{\tt -v}] Be verbose, can be repeated to increase verbosity.
@@ -891,7 +886,7 @@ Insert the assembly code of each thread in a loop of size \opt{<n>}.
 If affinity control has been enabled at compilation time
 (for instance, by supplying option \texttt{-affinity incr1}
 to \litmus),
-the  executable file produced by \prog{litmus} accepts the following
+the  executable file produced by \litmus{} accepts the following
 command line options.
 \begin{description}
 \item[{\tt -p <ns>}] Logical processors sequence.
@@ -959,7 +954,7 @@ We first compile the test in user synchronisation mode, saving
 \litmus{} output files into the directory~\file{R}:
 \begin{verbatim}
 % mkdir -p R
-% litmus -barrier user -vb true -o R 6.SB.litmus
+% litmus7 -barrier user -vb true -o R 6.SB.litmus
 % cd R
 % make
 \end{verbatim}
@@ -1007,7 +1002,7 @@ We now compile the same test in timebase synchronisation mode,
 saving \litmus{} output files into the pre-existing directory~\file{RT}:
 \begin{verbatim}
 % mkdir -p RT
-% litmus -barrier timebase -vb true -o RT 6.SB.litmus
+% litmus7 -barrier timebase -vb true -o RT 6.SB.litmus
 % cd RT
 % make
 \end{verbatim}
@@ -1104,7 +1099,7 @@ the running logical processors of threads are also shown.
 \subsection{Advanced \label{preload:custom}prefetch control}
 Supplying the tags
 \opt{custom}, \opt{static}, \opt{static1} or~\opt{static2} to
-\prog{litmus} command line option \opt{-preload}
+\litmus{} command line option \opt{-preload}
 commands the insertion of cache prefetch or flush
 instructions before every test instance.
 
@@ -1116,11 +1111,11 @@ less control to the user, for the sake of not altering test code proper.
 Custom prefetch mode offers complete control over
 cache management instructions.
 Users enable this mode by supplying the command line option
-\opt{-preload custom} to \prog{litmus}. For instance one may compile
+\opt{-preload custom} to \litmus{}. For instance one may compile
 the x86 test \afile{6.SB.litmus} as follows:
 \begin{verbatim}
 % mkdir -p R
-% litmus -mem indirect -preload custom -o R 6.SB.litmus
+% litmus7 -mem indirect -preload custom -o R 6.SB.litmus
 % cd R
 % make
 \end{verbatim}
@@ -1223,7 +1218,7 @@ while delaying the entry access (with a cache flush).
 When prefetch metadata is available, it acts as the default of
 prefetch directives:
 \begin{verbatim}
-% litmus -mem indirect -preload custom -o R 6.SB+Prefetch.litmus
+% litmus7 -mem indirect -preload custom -o R 6.SB+Prefetch.litmus
 % cd R
 % make
 \end{verbatim}
@@ -1254,7 +1249,7 @@ accelerating entry accesses and delaying exit accesses:
 \begin{verbatim}
 % cat map.txt
 6.SB Prefetch=0:x=W,0:y=F,1:y=W,1:z=F,2:a=F,2:z=W,3:a=W,3:b=F,4:b=W,4:c=F,5:c=W,5:x=F
-% litmus -mem indirect -preload custom -hints map.txt -o R 6.SB.litmus
+% litmus7 -mem indirect -preload custom -hints map.txt -o R 6.SB.litmus
 % cd R
 % make 
 ...
@@ -1318,7 +1313,7 @@ As this code get executed before each test thread code, it may impact test
 results.
 It is desirable to supress this code from test executables, still
 performing cache management instructions.
-To that aim, \prog{litmus} provides some ``static'' preload modes, enabled
+To that aim, \litmus{} provides some ``static'' preload modes, enabled
 with command line options \opt{-preload static},
 \opt{-preload static1} and~\opt{-preload static2}.
 
@@ -1327,7 +1322,7 @@ intervention, each test thread executes the cache management
 instructions commanded by the \verb+Prefetch+ metadata:
 \begin{verbatim}
 % mkdir -p S
-% litmus -mem indirect -preload static -o R 6.SB+Prefetch.litmus
+% litmus7 -mem indirect -preload static -o R 6.SB+Prefetch.litmus
 % make -C S
 % S/6.SB+Prefetch.exe
 Test 6.SB Allowed
@@ -1359,7 +1354,7 @@ Observation 6.SB Sometimes 29 999971
 % S/6.SB+Prefetch.exe -prs 3 | grep Observation
 Observation 6.SB Sometimes 16 999984
 \end{verbatim}
-In those experiments we show the ``\verb+Observation+'' field of \prog{litmus}
+In those experiments we show the ``\verb+Observation+'' field of \litmus{}
 output: this field gives the count of outcomes that validate the final
 condition, followed by the count of outcomes that do not validate
 the final condition. The above counts confirm that
@@ -1372,7 +1367,7 @@ mode \opt{-preload static1} cache management instructions are always executed,
 while in the latter mode \opt{-preload static2}
 cache management instructions are  executed with probability~$1/2$.
 Those modes thus act as pure static mode
-(\prog{litmus} option \opt{-preload static}),
+(\litmus{} option \opt{-preload static}),
 with runtime options \opt{-prs 1} and~\opt{-prs 2} respectively.
 Moreover,
 as the test scaffold includes no code to interpret the \opt{-prs <n>}
@@ -1380,8 +1375,8 @@ switch, the test code is less perturbed.
 In practice and for the \ltest{6.SB} example, there is little difference:
 \begin{verbatim}
 % mkdir -p S1 S2
-% litmus -mem indirect -preload static1 -o S1 6.SB+Prefetch.litmus
-% litmus -mem indirect -preload static2 -o S2 6.SB+Prefetch.litmus
+% litmus7 -mem indirect -preload static1 -o S1 6.SB+Prefetch.litmus
+% litmus7 -mem indirect -preload static2 -o S2 6.SB+Prefetch.litmus
 % make -C S1 && make -C S2
 ...
 % S1/6.SB+Prefetch.exe | grep Observation
@@ -1390,10 +1385,10 @@ Observation 6.SB Sometimes 1119 998881
 Observation 6.SB Sometimes 16 999984
 \end{verbatim}
 
-\section{Usage of \prog{litmus}}
+\section{Usage of \litmus{}}
 
 \subsection*{Arguments}
-\prog{litmus} takes file names as command line arguments.
+\litmus{} takes file names as command line arguments.
 Those files are either a single litmus test,
 when having extension \file{.litmus},
 or a list of file names, when prefixed by \file{@}.
@@ -1416,7 +1411,7 @@ for the syntax of configuration files.
 Save C-source of test files into \opt{<dest>} instead of running them.
 If  argument \opt{<dest>} is an archive (extension \opt{.tar})
 or a compressed archive (extension \opt{.tgz}),
-\prog{litmus} builds an archive: this is the ``cross~compilation feature''
+\litmus{} builds an archive: this is the ``cross~compilation feature''
 demonstrated in Sec.~\ref{cross}.
 Otherwise, \opt{<dest>} is interpreted as the name of an
 existing directory and tests are saved in it.
@@ -1426,7 +1421,8 @@ In the ``\opt{shell}'' (and default) mode,
 each test will be compiled into an executable. A dedicated shell script
 \file{run.sh} will launch the test executables.
 In the ``\opt{C}'' mode, one executable \file{run.exe} is produced, which
-will launch the tests (see Sec.~\ref{driverc:example} for an example).
+will launch the tests.
+%(see Sec.~\ref{driverc:example} for an example).
 Finally, the \opt{XCode} mode is for inclusion of the tests into
 a dedicated iOS App, which we do not distribute at the moment.
 \item[{\tt -crossrun <(user@)?host(:port)?|adb>}]
@@ -1480,7 +1476,7 @@ default is $100000$ (or \opt{100k}).
 
 The following additional options control the various modes described
 in Sec.~\ref{sec:arch}, and more.
-Those cannot be changed without running \prog{litmus} again:
+Those cannot be changed without running \litmus{} again:
 \begin{description}
 \item[{\tt -barrier (user|userfence|pthread|none|timebase)}] Set synchronisation mode, default \opt{user}. Synchronisation modes are described
 in Sec.~\ref{defsynchronisation}
@@ -1693,7 +1689,7 @@ SB+SC "forall (0:EAX=1 \/ 1:EAX=1)"
 \end{center}
 Then, we run litmus:
 \begin{verbatim}
-% litmus -mach x86 -rename rename.txt -conds cond.txt SB.litmus
+% litmus7 -mach x86 -rename rename.txt -conds cond.txt SB.litmus
 %%%%%%%%%%%%%%%%%%%%%%%%%
 % Results for SB.litmus %
 %%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1755,7 +1751,7 @@ usually \opt{-}\textit{key}, except for single-letter options:
 \opt{-l} & loop & integer\\
 \end{opts}
 \end{center}
-Notice that \prog{litmus} in fact accepts long versions of options
+Notice that \litmus{} in fact accepts long versions of options
 (\emph{e.g.} \opt{-avail} for~\opt{-a}).
 
 As command line option are processed left-to-right,
@@ -1772,4 +1768,4 @@ Configuration files are searched first in the current directory;
 then in any directory specified
 by setting the shell environment variable \texttt{LITMUSDIR};
 and then in litmus installation directory, which is defined
-while compiling~\prog{litmus}.
+while compiling~\litmus{}.
