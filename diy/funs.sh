@@ -3,7 +3,7 @@ erasetxt ()
   for t in *.txt
   do
     case $t in
-     LICENSE.txt|CHANGES.txt|README.txt|INSTALL.txt|VERSION.txt)
+     LICENSE.txt|CHANGES.txt|README.txt|INSTALL.txt|VERSION.txt|header.txt)
      ;;
     
      *)
