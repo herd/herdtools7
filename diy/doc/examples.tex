@@ -12,7 +12,7 @@ We assume a directory \ahref{tst-x86}{\texttt{tst-x86}}%
 \ifhevea{} (\ahref{tst-x86.tar}{archive})\fi,
 that contains a series of litmus tests
 and an index file~\ahref{tst-x86/@all}{\file{@all}}.
-Those tests where produced by the \prog{diy} tool (see Sec.~\ref{diy:intro}).
+Those tests where produced by the \diy{} tool (see Sec.~\ref{diy:intro}).
 They are two thread tests that exercise various relaxed behaviour
 of x86~machines.
 More specifically, \diy{} is run as ``\texttt{diy -conf X.conf}'',
@@ -37,7 +37,7 @@ leading to running one instance of the test only (cf parameter $a$ in Sec.~\ref{
 We invoke \litmus{} as follows,
 where \texttt{run} is a pre-existing empty directory:
 \begin{verbatim}
-% litmus -mach x86-64 -o run tst-x86/@all
+% litmus7 -mach x86-64 -o run tst-x86/@all
 \end{verbatim}
 The directory \texttt{run} now contains C-source files for the tests,
 as well as some additional files:
@@ -159,7 +159,7 @@ look more challenging than others.
 
 Finally, it may be interesting to classify the ``\texttt{X}'' tests:
 \begin{verbatim}
-% mcycles @all | classify -arch X86
+% mcycles7 @all | classify7 -arch X86
 R
   X003 -> R+po+rfi-po : PodWW Wse Rfi PodRR Fre
   X006 -> R : PodWW Wse PodWR Fre
@@ -184,7 +184,7 @@ We assume a directory \ahref{tst-ppc}{\texttt{tst-ppc}}%
 \ifhevea{} (\ahref{tst-ppc.tar}{archive})\fi,
 that contains a series of litmus tests
 and an index file~\ahref{tst-ppc/@all}{\file{@all}}.
-Those tests where produced by the \prog{diycross}
+Those tests where produced by the \diycross{}
 tool. They illustrate variations of the
 classical \ahref{tst-ppc/IRIW.litmus}{\ltest{IRIW}} test.
 \ifhevea\begin{center}\img{IRIW}\end{center}\fi
@@ -192,7 +192,7 @@ More specifically, the \ltest{IRIW} variations are produced as follows
 (see also Sec.~\ref{diycross:intro}):
 \begin{verbatim}
 % mkdir tst-ppc
-% diycross -name IRIW -o tst-ppc Rfe PodRR,DpAddrdR,LwSyncdRR,EieiodRR,SyncdRR Fre Rfe PodRR,DpAddrdR,LwSyncdRR,EieiodRR,SyncdRR Fre
+% diycross7 -name IRIW -o tst-ppc Rfe PodRR,DpAddrdR,LwSyncdRR,EieiodRR,SyncdRR Fre Rfe PodRR,DpAddrdR,LwSyncdRR,EieiodRR,SyncdRR Fre
 Generator produced 15 tests
 \end{verbatim}
 
@@ -219,7 +219,7 @@ the number of logical processors available on the target machine.
 We compile tests to C-sources packed in archive \file{a.tar}
 and upload the archive to the target power7 machine as follows:
 \begin{verbatim}
-% litmus -mach power7 -o a.tar tst-ppc/@all
+% litmus7 -mach power7 -o a.tar tst-ppc/@all
 % scp a.tar power7:
 \end{verbatim}
 Then, on \texttt{power7} we unpack the archive and produce executable tests
@@ -297,12 +297,12 @@ where the \texttt{sync} fences forbid them.
 \section{Cross running, testing low-end devices}
 Together \litmus{} options \ahrefloc{gcc}{\opt{-gcc}}
 and~\ahrefloc{linkopt}{\opt{-linkopt}} permit using
-a C~cross compiler. For instance, assume that \prog{litmus}
+a C~cross compiler. For instance, assume that \litmus{}
 runs on machine~$A$ and that \opt{crossgcc}, a cross compiler for machine~$C$,
 is available on machine~$B$. Then, the following sequence of
 commands can be used to test machine~$C$:
 \begin{verbatim}
-A% litmus -gcc crossgcc -linkopt -static -o C-files.tar ...
+A% litmus7 -gcc crossgcc -linkopt -static -o C-files.tar ...
 A% scp C-files.tar B:
 
 B% tar xf C-files.tar
@@ -316,7 +316,7 @@ C% sh run.sh
 Alternatively, using option \ahrefloc{crossrun}{\opt{-crossrun $C$}},
 one can avoid copying the archive \verb+C-compiled.tar+ to machine~$C$:
 \begin{verbatim}
-A% litmus -crossrun C -gcc crossgcc -linkopt -static -o C-files.tar ...
+A% litmus7 -crossrun C -gcc crossgcc -linkopt -static -o C-files.tar ...
 A% scp C-files.tar B:
 
 B% tar xf C-files.tar
@@ -344,10 +344,10 @@ they may be some fence in-betweeen
 (\texttt{isb} and \texttt{dmb}).
 We first generate tests \ahref{tst-arm}{\texttt{tst-arm}}%
 \ifhevea{} (\ahref{tst-arm.tar}{archive}) \fi
-with \prog{diycross}:
+with \diycross:
 \begin{verbatim}
 % mkdir tst-arm
-% diycross -arch ARM -name LB -o tst-arm PodRW,DpDatadW,DpCtrldW,ISBdRW,DMBdRW Rfe PodRW,DpDatadW,DpCtrldW,ISBdRW,DMBdRW Rfe
+% diycross7 -arch ARM -name LB -o tst-arm PodRW,DpDatadW,DpCtrldW,ISBdRW,DMBdRW Rfe PodRW,DpDatadW,DpCtrldW,ISBdRW,DMBdRW Rfe
 Generator produced 15 tests
 \end{verbatim}
 
@@ -362,7 +362,7 @@ We compile the tests from litmus source files to C~source files in
 directory \texttt{TST} as follows:
 \begin{verbatim}
 % mkdir TST
-% litmus -mach tegra3 -crossrun app_81@wifi-auth-188153:2222 tst-arm/@all -o TST
+% litmus7 -mach tegra3 -crossrun app_81@wifi-auth-188153:2222 tst-arm/@all -o TST
 \end{verbatim}
 The extra option \texttt{-crossrun app\_81@wifi-auth-188153:2222}
 specifies the address to log onto the tablet by \texttt{ssh},
@@ -445,7 +445,7 @@ relaxations --- See Sec.~\ref{communication:cr}.
 
 \subsection*{Test generation}
 We first produce a few simple tests that access one memory location
-only. We use the \prog{diy} test generator with configuration
+only. We use the \diy{} test generator with configuration
 file~\ahref{tst-co/CO.conf}{\texttt{CO.conf}}:
 \verbatiminput{tst-co/src/CO.conf}
 The first section above describes generated cycles: the vocabulary
@@ -455,13 +455,13 @@ on the number of consecutive internal candidate relaxations
 (the setting \opt{ins 2} by rejecting 2 or more consecutive internal candidate
 relaxations in effect forbids sequences of internal candidate
 relaxations).
-We also specify \prog{diy} \opt{uni} mode (See Sec.~\ref{uni:def})
+We also specify \diy{} \opt{uni} mode (See Sec.~\ref{uni:def})
 that will allow test generation from one-location cycles,
 and replace final conditions by the observation of test outcomes
 (\opt{cond observe}).
 Here we go:
 \begin{verbatim}
-% diy -conf CO.conf
+% diy7 -conf CO.conf
 Generator produced 31 tests
 % ls
 2+2W+dmb+pos.litmus  MP+dmbs.litmus     SB+dmb+pos.litmus  W+RR+dmb.litmus
@@ -522,11 +522,11 @@ As the Trimslice machine runs some Linux distribution, we proceed by ordinary
 cross-compilation (\emph{i.e.} we compile litmus tests into C sources
 on our local machine and compile C files on the remote machine):
 \begin{verbatim}
-% litmus -mach trimslice -mem direct -st 1 -o /tmp/A.tar tst-co/@all
+% litmus7 -mach trimslice -mem direct -st 1 -o /tmp/A.tar tst-co/@all
 % scp /tmp/A.tar trimslice:/tmp/A.tar
 \end{verbatim}
-We use the \afile{trimslice.cfg} (\prog{litmus}) configuration file present
-in the \prog{litmus} distribution, additionnally specifying
+We use the \afile{trimslice.cfg} (\litmus) configuration file present
+in the \litmus{} distribution, additionnally specifying
 \ahrefloc{defmemorymode}{memory direct mode}
 and a \ahrefloc{defstride}{stride value} of~\opt{1}.
 We then copy the \texttt{A.tar} archive to our Trimslice machine.
@@ -567,13 +567,13 @@ This board runs Android and is connected to our local computer
 by the \emph{Android Debug Bridge} (adb).
 We perform complete cross-compilation, \emph{i.e.} we shall compile
 both litmus sources into C~sources and C~sources into executables
-on our local machine. We first run \prog{litmus} as follows:
+on our local machine. We first run \litmus{} as follows:
 \begin{verbatim}
 % mkdir -p SRC/DRAGON
-% litmus -mach dragon -mem direct -st 1 -o SRC/DRAGON -driver C tst-co/@all
+% litmus7 -mach dragon -mem direct -st 1 -o SRC/DRAGON -driver C tst-co/@all
 \end{verbatim}
-We use the \afile{dragon.cfg} (\prog{litmus}) configuration file present
-in the \prog{litmus} distribution:
+We use the \afile{dragon.cfg} (\litmus{}) configuration file present
+in the \litmus{} distribution:
 \verbatiminput{dragon.cfg}
 The configuration file defines the number of available cores
 (\verb+avail = 2+),

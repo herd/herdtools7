@@ -55,7 +55,7 @@ One can then run some litmus test, for instance \atest{SB}
 (for \emph{Store Buffering},
 see also Sec.~\ref{litmus:simple}), on top of the SC model:
 \begin{verbatim}
-% herd -model ./sc.cat SB.litmus
+% herd7 -model ./sc.cat SB.litmus
 Test SB Allowed
 States 3
 0:EAX=0; 1:EAX=1;
@@ -130,7 +130,7 @@ as the program order on memory events minus write-to-read pairs.
 
 We run \atest{SB} on top of the tentative TSO model:
 \begin{verbatim}
-% herd -model tso-00.cat SB.litmus 
+% herd7 -model tso-00.cat SB.litmus 
 Test SB Allowed
 States 4
 0:EAX=0; 1:EAX=0;
@@ -170,7 +170,7 @@ being  satisfied from local stores.
 As can be seen by running the test on top of the \afile{tso-00.cat}
 model, the target execution is forbidden:
 \begin{verbatim}
-% herd -model tso-00.cat SB+rfi-pos.litmus 
+% herd7 -model tso-00.cat SB+rfi-pos.litmus 
 Test SB+rfi-pos Allowed
 States 15
 0:EAX=0; 0:EBX=0; 1:EAX=0; 1:EBX=0;
@@ -186,7 +186,7 @@ is observed on some X86 machine:
 \begin{verbatim}
 % arch
 x86_64
-% litmus -mach x86 SB+rfi-pos.litmus
+% litmus7 -mach x86 SB+rfi-pos.litmus
 ...
 Test SB+rfi-pos Allowed
 Histogram (4 states)
@@ -218,7 +218,7 @@ still is. Notice that \texttt{rfe} and~\texttt{rfi} are pre-defined.
 
 As intended, this new tentative TSO model allows the behaviour of test~\atest{SB+rfi-pos}:
 \begin{verbatim}
-%  herd -model tso-01.cat SB+rfi-pos.litmus
+%  herd7 -model tso-01.cat SB+rfi-pos.litmus
 Test SB+rfi-pos Allowed
 States 16
 ...
@@ -680,14 +680,14 @@ For displaying images, one uses the \opt{-gv} option.
 so as to display the image of the non-SC behaviour of \atest{SB}, one
 should invoke \herd{} as:
 \begin{verbatim}
-% herd -model tso-02.cat -show prop -gv SB.litmus
+% herd7 -model tso-02.cat -show prop -gv SB.litmus
 \end{verbatim}
 \aname{sb:cluster}{As}
 a result, users should see a window popping and displaying this image:
 \begin{center}\img{SB+CLUSTER}\end{center}
 Notice that we got the PNG version of this image as follows:
 \begin{verbatim}
-% herd -model tso-02.cat -show prop -o /tmp SB.litmus
+% herd7 -model tso-02.cat -show prop -o /tmp SB.litmus
 % dot -Tpng /tmp/SB.dot -o SB+CLUSTER.png
 \end{verbatim}
 That is, we applied the \prog{dot} tool from the
@@ -746,7 +746,7 @@ In this manual we mostly used the \afile{doc.cfg} configuration file.
 As this file is present in \herd{} distribution, users
 can use the diagram style of this manual:
 \begin{verbatim}
-% herd -conf doc.cfg ...
+% herd7 -conf doc.cfg ...
 \end{verbatim}
 
 \subsection{\label{show:forbidden}Showing forbidden executions}
@@ -757,7 +757,7 @@ Consider for instance the test \atest{SB+mfences},
 where the \texttt{mfence} instruction is used to forbid
 \atest{SB} non-SC execution. Runing \herd{} as
 \begin{verbatim}
-% herd -model tso-02.cat -conf doc.cfg -show prop -gv SB+mfences.litmus
+% herd7 -model tso-02.cat -conf doc.cfg -show prop -gv SB+mfences.litmus
 \end{verbatim}
 will produce no picture, as the TSO model forbids the target execution
 of~\textsf{SB+mfences}.
@@ -765,7 +765,7 @@ of~\textsf{SB+mfences}.
 To get a picture, we can run \textsf{SB+mfences} on top of the mininal
 model, a pre-defined model that allows all executions:
 \begin{verbatim}
-% herd -model minimal -conf doc.cfg -show prop -gv SB+mfences.litmus
+% herd7 -model minimal -conf doc.cfg -show prop -gv SB+mfences.litmus
 \end{verbatim}
 And we get the picture:
 \begin{center}\img{SB+mfences}\end{center}
@@ -787,8 +787,8 @@ either all checks (\opt{-through invalid}), or a selection of checks
 (\opt{-skipchecks~\textit{name$_1$},\ldots,\textit{name$_n$}}).
 Thus, either of the following two commands
 \begin{verbatim}
-% herd -through invalid -model tso-02.cat -conf doc.cfg -show prop -gv SB+mfences.litmus
-% herd -skipcheck tso -model tso-02.cat -conf doc.cfg -show prop -gv SB+mfences.litmus
+% herd7 -through invalid -model tso-02.cat -conf doc.cfg -show prop -gv SB+mfences.litmus
+% herd7 -skipcheck tso -model tso-02.cat -conf doc.cfg -show prop -gv SB+mfences.litmus
 \end{verbatim}
 will produce the picture we wish:
 \begin{center}\img{SB+mfences+GHB}\end{center}
@@ -802,8 +802,8 @@ The image above is barely readable.
 For such graphs with many relations, the \verb+cluster+ and~\verb+free+ modes
 are worth a try. The commands:
 \begin{verbatim}
-% herd -skipcheck tso -model tso-02.cat -conf doc.cfg -show prop -graph cluster -gv SB+mfences.litmus
-% herd -skipcheck tso -model tso-02.cat -conf doc.cfg -show prop -graph free -gv SB+mfences.litmus
+% herd7 -skipcheck tso -model tso-02.cat -conf doc.cfg -show prop -graph cluster -gv SB+mfences.litmus
+% herd7 -skipcheck tso -model tso-02.cat -conf doc.cfg -show prop -graph free -gv SB+mfences.litmus
 \end{verbatim}
 will produce the images:
 \begin{center}
@@ -1993,8 +1993,8 @@ The above configuration file comes handy to eye-proof model output,
 even for relatively complex tests, such as \atest{IRIW+lwsyncs}
 and \atest{IRIW+syncs}:
 \begin{verbatim}
-% herd -conf apoil.cfg -show prop -gv IRIW+lwsyncs.litmus
-% herd -through invalid -conf apoil.cfg -show prop -gv IRIW+syncs.litmus
+% herd7 -conf apoil.cfg -show prop -gv IRIW+lwsyncs.litmus
+% herd7 -through invalid -conf apoil.cfg -show prop -gv IRIW+syncs.litmus
 \end{verbatim}
 We run the two tests on top of the default model that computes,
 amongst others, a \texttt{prop} relation. The model rejects executions

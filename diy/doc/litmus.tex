@@ -6,12 +6,11 @@ runs the test.
 
 Using \litmus{} thus requires a parallel machine,
 which must additionally feature \prog{gcc} and the \prog{pthreads} library.
-At the moment,
-\litmus{}
-is a prototype and has numerous limitations (recognised instructions,
-limited porting). Nevertheless, \litmus{} should accept all tests
-produced by the companion \prog{diy} tool and has
-been successfully used on Linux, MacOS, AIX and~Android.
+Our tool \litmus{} has some limitations especially
+as regards recognised instructions.
+Nevertheless, \litmus{} should accept all tests
+produced by the companion test generators (see Part~\ref{part:diy})
+and has been successfully used on Linux, MacOS, AIX and~Android.
 
 
 \section{A tour of~\litmus{}}
@@ -717,7 +716,7 @@ Most tests run by \litmus{} are produced by the litmus test generators
 described in Part~\ref{part:diy}.
 Those tests include meta-information that may direct affinity control.
 For instance we generate one test with the
-\prog{diyone} tool, see Sec.~\ref{diyone:intro}.
+\diyone{} tool, see Sec.~\ref{diyone:intro}.
 More specifically we generate
 \ahref{IRIW+lwsyncs.litmus}{\ltest{IRIW+lwsyncs}} for Power
 (\ahref{ppc-iriw-lwsync.litmus}{\ltest{ppc-iriw-lwsync}} in the previous
@@ -1199,7 +1198,7 @@ effect as above with:
 \subsubsection{Prefetch metadata}
 The source code of tests may include prefetch directives as metadata
 prefixed with ``\verb+Prefetch=+''.
-In particular, the generators of the \prog{diy}
+In particular, the generators of the \diy{}
 suite  (see Part~\ref{part:diy}) produce such metadata.
 For instance in the case of the
 \ltest{6.SB} test (generated source \afile{6.SB+Prefetch.litmus}),
@@ -1244,7 +1243,7 @@ or better by using the \opt{-hints} command line option.
 The  \opt{-hints} command line option takes a filename as  argument.
 This file is a \ahrefloc{defmapping}{mapping} that associates
 new metadata to test names.
-As an example, we reverse \prog{diy} scheme for cache management directives:
+As an example, we reverse \diy{} scheme for cache management directives:
 accelerating entry accesses and delaying exit accesses:
 \begin{verbatim}
 % cat map.txt
