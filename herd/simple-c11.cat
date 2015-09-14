@@ -143,4 +143,4 @@ let ur =
   r2 \ (po | po^-1)       (* unrelated by po *)
 show ur
 
-undefined_unless empty ur as unsequencedRace
+flag ~empty ur as unsequencedRace
