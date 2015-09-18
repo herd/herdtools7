@@ -1,10 +1,12 @@
-** What is litmus? **
+** What is litmus 'Seven' ? **
 
-  Given assembler programs for Power, ARM, or X86 (a litmus test)
-  litmus generates C programs, whose execution
+  Given assembler programs for Power, ARM, AArch64 or X86 (a litmus test)
+  litmus7 generates C programs, whose execution
   will test the memory model of the executing machine.
            
-  Litmus is part of the diy tool suite.
+  Litmus7 is part of the diy tool suite.
+
+** litmus7 is the successor of litmus
 
 ** Home **
 http://diy.inria.fr/
@@ -23,11 +25,11 @@ This release contains litmus sources.
 
 ** Law **
 
-Litmus authors are Luc Maranget and Susmit Sarkar.
+Litmus 'Seven' authors are Jade Alglave and Luc Maranget
 
-Copyright 2010-2013: Institut National de Recherche en Informatique et
+Copyright 2010--present: Institut National de Recherche en Informatique et
 en Automatique, and the authors.
 
-litmus is released under the terms of the Gnu Lesser General Public License
-(LGPL). See file LICENSE.txt
+Litmus7 is released under the terms of the CeCILL-B free software license
+agreement. See file LICENSE.txt
 

@@ -19,7 +19,7 @@ Just type
   % make all
   % make install (you may have to gain root privilege for this step)
 
-This will install binary file 'litmus' in $(PREFIX)/bin
+This will install binary file 'litmus7' in $(PREFIX)/bin
 and some files in  $(PREFIX)/lib/litmus.
   
 You can now get rid of the sources.
