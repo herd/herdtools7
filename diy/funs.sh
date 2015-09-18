@@ -53,14 +53,14 @@ extract ()
   TO=$2
   TOD=$(dirname $TO)
   TOB=$(basename $TO)
-  ( cd $DIR/../$FROMD && svn export $FROMB $EXPORT/$TOB ) && \
+  ( cd $DIR/../$FROMD && svn export $FROMB $EXPORT/$TO ) && \
   ( cd $EXPORT && \
-  if test -f $TOB/.unreleased
+  if test -f $TO/.unreleased
   then
-    for f in $(cat $TOB/.unreleased)
+    for f in $(cat $TO/.unreleased)
     do
-      /bin/rm -rf $TOB/$f
+      /bin/rm -rf $TO/$f
     done
-    /bin/rm -f  $TOB/.unreleased
+    /bin/rm -f  $TO/.unreleased
   fi )
 }
