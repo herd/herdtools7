@@ -3,7 +3,7 @@ erasetxt ()
   for t in *.txt
   do
     case $t in
-     LICENSE.txt|CHANGES.txt|README.txt|INSTALL.txt|VERSION.txt|header.txt)
+     LICENSE.txt|README.txt|INSTALL.txt|VERSION.txt|header.txt)
      ;;
     
      *)
@@ -22,6 +22,7 @@ erasesrc ()
   fi
 }
 
+
 TMPFILE=/tmp/tmp.$$
 
 cleandir ()
@@ -36,7 +37,10 @@ cleandir ()
   then
     for f in lib/*.ml lib/*.ml[iyl]
     do
-      erasesrc $f
+      case $(basename $f) in
+      check402.ml) ;;
+      *) erasesrc $f ;;
+      esac
     done
   fi && \
   for f in *.ml *.ml[iyl]
