@@ -19,8 +19,8 @@ Just type
   % make all
   % make install (you may have to gain root privilege for this step)
 
-This will install binary file 'herd' in $(PREFIX)/bin
-and some files in  $(PREFIX)/lib/herd
+This will install binary file 'herd7' in $(PREFIX)/bin
+and some files in  $(PREFIX)/lib/herd7
   
 You can now get rid of the sources.
 
