@@ -5,5 +5,3 @@ find . -name '*.mli' -o -name '*.ml'\
  grep -v _build | \
  grep -v version.ml | \
  grep -v legacy
-
-
