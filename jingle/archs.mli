@@ -15,11 +15,11 @@
 (****************************************************************************)
 type t = [ 
        (*| `X86
-       | `PPC
        | `MIPS
        | `GPU_PTX
       *)    
        | `Bell
+       | `PPC
        | `ARM
        | `AArch64
        | `C 
@@ -30,12 +30,12 @@ val parse : string -> t option
 val lex : string -> t
 val pp : t -> string
 
-(*val ppc : t
-val x86 : t
+(*val x86 : t
 val mips : t
 val gpu_ptx : t
 val opencl : t
- *)
+*)
+val ppc : t
 val c : t
 val lisa : t
 val arm : t

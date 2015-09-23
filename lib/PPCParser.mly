@@ -25,6 +25,7 @@ open MachSize
 %token <string> SYMB_REG
 %token <int> NUM
 %token <string> NAME
+%token <string> CSTVAR
 %token <int> PROC
 
 %token SEMI COMMA PIPE COLON LPAR RPAR
@@ -45,8 +46,11 @@ open MachSize
 %token COMMENT
 %token <string> STRING
 
-%type <int list * (PPCBase.pseudo) list list> main
-%start  main
+%type <int list * (PPCBase.parsedPseudo) list list> main
+%start main
+
+%type <PPCBase.parsedPseudo list> instr_option_seq
+%start instr_option_seq
 
 %nonassoc SEMI
 %%
@@ -74,6 +78,12 @@ instr_option_list :
   | instr_option
       {[$1]}
   | instr_option PIPE instr_option_list 
+      {$1::$3}
+
+instr_option_seq :
+  | instr_option
+      {[$1]}
+  | instr_option SEMI instr_option_seq 
       {$1::$3}
 
 instr_option :
@@ -104,7 +114,8 @@ instr:
   | ADDI reg COMMA reg COMMA k
     { Paddi ($2,$4,$6) }
   | SUBI reg COMMA reg COMMA k
-    { Paddi ($2,$4, 0 - $6) }
+      { Paddi ($2,$4, match $6 with MetaConst.Meta _ as k -> k
+                     | MetaConst.Int i -> MetaConst.Int(-i)) }
   | CMPWI reg COMMA k
     { Pcmpwi (0,$2,$4) }
   | CMPWI crindex COMMA reg COMMA k
@@ -247,10 +258,12 @@ instr:
   | COMMENT STRING { Pcomment $2 }
  
 k:
-| NUM  { $1 }
+| NUM  { MetaConst.Int $1 }
+| CSTVAR { MetaConst.Meta $1 }
 
 idx:
-| NUM  { $1 }
+| NUM  { MetaConst.Int $1 }
+| CSTVAR { MetaConst.Meta $1 }
 
 
 crindex:

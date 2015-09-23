@@ -176,3 +176,16 @@ let get_arch = function
 	       module Dumper = CDumper
 	     end : S)
 	      
+  | `PPC ->
+     let module PPCLexParse = struct
+       type instruction = PPCArch.parsedPseudo
+       type token = PPCParser.token
+       module Lexer = PPCLexer.Make(struct let debug = false end)
+       let lexer = Lexer.token
+       let parser = MiscParser.mach2generic PPCParser.main
+       let instr_parser = PPCParser.instr_option_seq
+     end in (module struct 
+	       include PPCArch
+	       module Parser = MakeParser(PPCBase)(PPCLexParse)
+	       module Dumper = DefaultDumper(PPCBase)
+	     end : S)

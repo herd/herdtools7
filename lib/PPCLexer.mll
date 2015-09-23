@@ -36,6 +36,7 @@ rule token = parse
     { PROC (int_of_string x) }
 | "cr" (digit as x) { CRK (int_of_string (String.make 1 x)) }
 | '%' (name as name) { SYMB_REG name }
+| '&' (name as name) { CSTVAR name }
 | '\"' ([^'\"''\n']* as c) '\"' { STRING c}
 | ';' { SEMI }
 | ',' { COMMA }

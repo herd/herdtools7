@@ -204,8 +204,8 @@ let barrier_compare = Pervasives.compare
 (* Instructions *)
 (****************)
 
-type idx = int (* limited to ? bits *)
-type k = int   (* limited to ? bits *)
+(*type idx = int (* limited to ? bits *)*)
+(*type k = int   (* limited to ? bits *)*)
 type lbl = Label.t
 type cond =
   | Eq | Ne
@@ -217,7 +217,7 @@ type crfindex = int (* in fact [0..7] *)
 type setcr0 = SetCR0 | DontSetCR0
 
 (* j: for arithm at least, should be ireg *)
-type instruction =
+type 'k kinstruction =
 (* Two forms of ins: set cr0 or not *)
   | Padd of setcr0*reg*reg*reg
   | Psub of setcr0*reg*reg*reg
@@ -229,26 +229,26 @@ type instruction =
   | Pdiv of setcr0*reg*reg*reg
 
 (* cr0 seting is implicit... *)
-  | Paddi of reg*reg*k (* no *)
-  | Pandi of reg*reg*k (* yes *)
-  | Pori of reg*reg*k  (* no *)
-  | Pxori of reg*reg*k (* no *)
-  | Pmulli of  reg*reg*k (* no *)
+  | Paddi of reg*reg*'k (* no *)
+  | Pandi of reg*reg*'k (* yes *)
+  | Pori of reg*reg*'k  (* no *)
+  | Pxori of reg*reg*'k (* no *)
+  | Pmulli of  reg*reg*'k (* no *)
 
-  | Pli of reg*k
+  | Pli of reg*'k
   | Pb of lbl
   | Pbcc of cond * lbl
-  | Pcmpwi of crfindex * reg*k
+  | Pcmpwi of crfindex * reg*'k
   | Pcmpw of crfindex * reg*reg
-  | Plwzu of reg * idx * reg
+  | Plwzu of reg * 'k * reg
   | Pmr of reg * reg
-  | Pstwu of reg * idx * reg
+  | Pstwu of reg * 'k * reg
   | Plwarx of reg*reg*reg (* load word and reserve indexed *)
   | Pstwcx of reg*reg*reg (* store word conditional indexed *)
 (* Mixed size load and store, just added at the moment *)
-  | Pload of MachSize.sz * reg * idx * reg
+  | Pload of MachSize.sz * reg * 'k * reg
   | Ploadx of MachSize.sz * reg * reg * reg
-  | Pstore of MachSize.sz * reg * idx * reg
+  | Pstore of MachSize.sz * reg * 'k * reg
   | Pstorex of MachSize.sz * reg * reg * reg
 (* Fence instructions *)
   | Psync
@@ -261,18 +261,19 @@ type instruction =
   | Pnor of setcr0*reg*reg*reg
   | Pneg of setcr0*reg*reg
   | Pslw  of setcr0*reg*reg*reg
-  | Psrawi  of setcr0*reg*reg*k
+  | Psrawi  of setcr0*reg*reg*'k
   | Psraw  of setcr0*reg*reg*reg
   | Pbl of lbl
   | Pblr
   | Pmtlr of reg
   | Pmflr of reg
 (* Extra load and store multiple, litmus only *)
-  | Plmw of reg * k * reg
-  | Pstmw of reg * k * reg
+  | Plmw of reg * 'k * reg
+  | Pstmw of reg * 'k * reg
   | Pcomment of string
 
-type parsedInstruction = instruction
+type instruction = int kinstruction
+type parsedInstruction = MetaConst.k kinstruction
 
     let pp_k = string_of_int
     let pp_idx = string_of_int
@@ -645,7 +646,37 @@ include Pseudo.Make
       type pins = parsedInstruction
       type reg_arg = reg
 
-      let parsed_tr i = i
+      let parsed_tr = function
+	| Pli (r, k) -> Pli(r,MetaConst.as_int k)
+	| Pmulli (r1, r2, k) -> Pmulli(r1,r2,MetaConst.as_int k)
+	| Pxori (r1, r2, k) -> Pxori(r1,r2,MetaConst.as_int k)
+	| Pori (r1, r2, k) -> Pori(r1,r2,MetaConst.as_int k)
+	| Pandi (r1, r2, k) -> Pandi(r1,r2,MetaConst.as_int k)
+	| Paddi (r1, r2, k) -> Paddi(r1,r2,MetaConst.as_int k)
+	| Pcmpwi (i, r, k) -> Pcmpwi(i,r,MetaConst.as_int k)
+	| Plwzu (r1,k,r2) -> Plwzu(r1,MetaConst.as_int k,r2)
+	| Pstwu (r1,k,r2) -> Pstwu(r1,MetaConst.as_int k,r2)
+	| Pload (s,r1,k,r2) -> Pload(s,r1,MetaConst.as_int k,r2)
+	| Pstore(s,r1,k,r2) -> Pstore(s,r1,MetaConst.as_int k,r2)
+	| Psrawi(s,r1,r2,k) -> Psrawi(s,r1,r2,MetaConst.as_int k)
+	| Plmw(r1,k,r2) -> Plmw(r1,MetaConst.as_int k,r2)
+	| Pstmw (r1,k,r2) -> Pstmw(r1,MetaConst.as_int k,r2)
+	    
+	| Ploadx (_,_,_,_)
+	| Pstorex (_,_,_,_)
+	| Pb _ | Pbcc (_,_)
+	| Pdcbf (_, _)
+	| Pstwcx (_, _, _)|Plwarx (_, _, _)|Pmr (_, _)
+	| Pcmpw (_, _, _)|Pdiv (_, _, _, _)
+	| Pmull (_, _, _, _)|Pxor (_, _, _, _)
+	| Pand (_, _, _, _)|Por (_, _, _, _)
+	| Psub (_, _, _, _)| Psubf (_, _, _, _)|Padd (_, _, _, _)
+	| Plwsync|Pisync|Peieio|Psync
+	| Pnor (_,_,_,_) | Pneg(_,_,_)
+	| Pslw(_,_,_,_) | Psraw(_,_,_,_)
+	| Pbl _ | Pblr | Pmtlr _ | Pmflr _
+	| Pcomment _
+          as same -> same
 
 (* Number if memory accesses per instruction (for estimating test complexity) *)
       let get_naccesses = function

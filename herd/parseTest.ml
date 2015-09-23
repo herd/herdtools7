@@ -130,7 +130,7 @@ module Top (Conf:Config) = struct
       | `PPC ->
 	  let module PPC = PPCArch.Make(Conf.PC)(SymbValue) in
 	  let module PPCLexParse = struct
-	    type instruction = PPC.pseudo
+	    type instruction = PPC.parsedPseudo
 	    type token = PPCParser.token
             module Lexer = PPCLexer.Make(LexConfig)
 	    let lexer = Lexer.token

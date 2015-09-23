@@ -468,7 +468,7 @@ end = struct
             | UseArch.Trad ->
                 let module Arch' = PPCArch.Make(OC)(V) in
                 let module LexParse = struct
-                  type instruction = Arch'.pseudo
+                  type instruction = Arch'.parsedPseudo
                   type token = PPCParser.token
                   module Lexer = PPCLexer.Make(LexConfig)
                   let lexer = Lexer.token

@@ -26,32 +26,30 @@ include "ppo.cat"
 let acq = (A * M) & po
 let rel = (M * L) & po
 
-let ppo = ppo | acq
+let syf = dmb.sy & (M * M)
+        | dsb.sy & (M * M)
 
-let strongf = dmb.sy & (M * M)
-	    | dsb.sy & (M * M)
-	    | dmb.st & (W * W)
-	    | dsb.st & (W * W)
-	    | dmb.ld & (R * M)
-	    | dsb.ld & (R * M)
+let stf = dmb.st & (W * W)
+        | dsb.st & (W * W)
 
-let weakf = rel
-
-let fence = strongf | weakf
-
+let ldf = dmb.ld & (R * M)
+	| dsb.ld & (R * M)
+	    
+let fence = syf | stf | ldf
+	  | acq | rel
+    
 let hb = (R * M) & fence | rfe | ppo
 
 acyclic hb as thin_air
 
-let prop_base = rfe?;fence;hb*
-
-let prop = prop_base & (W * W) 
-	 | (com*; prop_base*; strongf; hb*)
+let prop = com*; syf
+	 | stf
+	 | rfe?; rel
 
 let prop_al = (L * A) & (rf | po)
 	    | (A * L) & fr
 
 let xx = (W * W) & (X * X) & po
 
-irreflexive fre;prop;hb* as observation
-acyclic co | prop | xx | prop_al;hb* as propagation
+irreflexive prop; rfe; (fence | ppo); fre as observation
+acyclic co | prop;hb* | xx | prop_al;hb* as propagation
