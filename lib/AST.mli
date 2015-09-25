@@ -76,25 +76,28 @@ type do_test = Acyclic | Irreflexive | TestEmpty
 type test = Yes of do_test | No of do_test 
 type test_type = Flagged | UndefinedUnless | Check
 type app_test = TxtLoc.t * pos * test * exp * string option
+type is_rec = IsRec | IsNotRec
 
 type ins =
   | Let of TxtLoc.t * binding list
   | Rec of  TxtLoc.t * binding list * app_test option
+  | InsMatch of TxtLoc.t * exp * insclause list * ins list option
   | Test of  app_test * test_type
   | UnShow of  TxtLoc.t * string list
   | Show of  TxtLoc.t * string list
   | ShowAs of  TxtLoc.t * exp * string
   | Latex of  TxtLoc.t * string
   | Include of  TxtLoc.t * string (* file name, interpreter will read/parse file... *)
-  | Procedure of  TxtLoc.t * var * pat * ins list
+  | Procedure of  TxtLoc.t * var * pat * ins list * is_rec
   | Call of  TxtLoc.t * var * exp * string option (* optional name, for skip *)
   | Enum of TxtLoc.t * var * tag list
   | Forall of  TxtLoc.t * var * exp * ins list
   | Debug of TxtLoc.t * exp
   | WithFrom of TxtLoc.t * var * exp (* set of relations *)
-
 (*For bell files*)
   | Events of TxtLoc.t * var * exp list * bool (* define default *)
+
+and insclause = string * ins list
 
 
  

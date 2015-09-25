@@ -77,8 +77,8 @@ let pp () =
 %%
 
 main:
-| VAR options ins_list EOF { $2, $1,$3 }
-| STRING options ins_list EOF { $2,$1,$3 }
+| VAR options topins_list EOF { $2, $1,$3 }
+| STRING options topins_list EOF { $2,$1,$3 }
 
 options:
 | WITHCO options { ModelOption.set_enumco true $2 }
@@ -89,6 +89,10 @@ options:
 | WITHOUTSC options { ModelOption.set_enumsc false $2 }
 |    { ModelOption.default }
 
+topins_list:
+| { [] }
+| topins topins_list { $1 :: $2 }
+
 ins_list:
 | { [] }
 | ins ins_list { $1 :: $2 }
@@ -97,10 +101,33 @@ in_opt:
 |    { () }
 | IN { () }
 
+ins_clause:
+| TAG ARROW ins_list { $1,$3 }
+
+ins_clause_list:
+| ins_clause { [$1],None }
+| UNDERSCORE ARROW ins_list { [],Some $3 }
+| ins_clause ALT ins_clause_list
+    {
+     let cls,d = $3 in
+     $1 :: cls, d
+    }
+
+
+topins:
+| ENUM VAR EQUAL altopt alttags { Enum (mk_loc (),$2,$5) }
+| ins { $1 }
+
+
 ins:
 | LET pat_bind_list in_opt { Let (mk_loc (),$2) }
 | LET REC pat_bind_list  in_opt { Rec (mk_loc (),$3,None) }
 | LET REC pat_bind_list WHEN app_test in_opt { Rec (mk_loc (),$3,Some $5) }
+| MATCH exp WITH altopt ins_clause_list END
+    {
+     let cls,d = $5 in
+     InsMatch (mk_loc(),$2,cls,d)
+    }
 | deftest { $1 }
 | SHOW exp AS VAR { ShowAs (mk_loc(),$2, $4) }
 | SHOW var_list { Show (mk_loc(),$2) }
@@ -108,11 +135,16 @@ ins:
 | LATEX { Latex (mk_loc(),$1) }
 | INCLUDE STRING { Include (mk_loc(),$2) }
 | PROCEDURE VAR LPAR formals RPAR EQUAL ins_list END
-   { Procedure (mk_loc (),$2,Ptuple $4,$7) }
+   { Procedure (mk_loc (),$2,Ptuple $4,$7,IsNotRec) }
 | PROCEDURE VAR VAR EQUAL ins_list END
-   { Procedure (mk_loc (),$2,Pvar $3,$5) }
+   { Procedure (mk_loc (),$2,Pvar $3,$5,IsNotRec) }
+
+| PROCEDURE REC VAR LPAR formals RPAR EQUAL ins_list END
+   { Procedure (mk_loc (),$3,Ptuple $5,$8,IsRec) }
+| PROCEDURE REC VAR VAR EQUAL ins_list END
+   { Procedure (mk_loc (),$3,Pvar $4,$6,IsRec) }
+
 | CALL VAR simple optional_name { Call (mk_loc (),$2,$3,$4) }
-| ENUM VAR EQUAL altopt alttags { Enum (mk_loc (),$2,$5) }
 | DEBUG exp { Debug (mk_loc (),$2) }
 | FORALL VAR IN exp DO ins_list END
     { Forall (mk_loc (),$2,$4,$6) }
@@ -208,10 +240,20 @@ exp:
     { Try (mk_loc(),$2,$4) }
 | IF cond THEN exp ELSE exp
     { If (mk_loc(),$2,$4,$6) }
+| MATCH exp WITH altopt clause_list END
+    {
+     let cls,d = $5 in
+     Match (mk_loc(),$2,cls,d)
+    }
+| MATCH exp WITH altopt set_clauses END
+    {
+     let e,f = $5 in
+     MatchSet (mk_loc (),$2,e,f)
+   }
 | base { $1 }
 
 cond:
-| exp EQUAL exp { Eq ($1,$3) }
+| exp EQUAL exp  { Eq ($1,$3) }
 | exp SUBSET exp { Subset ($1,$3) }
 
 simple:
@@ -245,16 +287,6 @@ base:
 | base DIFF base { Op (mk_loc (),Diff, [$1; $3;]) }
 | base INTER base {  Op (mk_loc (),Inter, [$1; $3;]) }
 | COMP base { Op1 (mk_loc(),Comp, $2) }
-| MATCH exp WITH altopt clause_list END
-    {
-     let cls,d = $5 in
-     Match (mk_loc(),$2,cls,d)
-    }
-| MATCH exp WITH altopt set_clauses END
-    {
-     let e,f = $5 in
-     MatchSet (mk_loc (),$2,e,f)
-   }
 
 empty_clause:
 | LACC RACC ARROW exp { $4 }
@@ -284,6 +316,7 @@ clause_list:
      let cls,d = $3 in
      $1 :: cls, d
     }
+
 
 exp0:
 | VAR                 { Var (mk_loc (),$1) }

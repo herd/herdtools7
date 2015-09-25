@@ -39,8 +39,8 @@ module Make(O:Config) = struct
     let rec map_ins ins = match ins with
     | Test ((loc, pos, test, exp, name),ty) ->
         Test  ((loc, f pos, test, exp, name),ty)
-    | Procedure (loc,v,p,code) ->
-        Procedure (loc,v,p,map_code code)
+    | Procedure (loc,v,p,code,is_rec) ->
+        Procedure (loc,v,p,map_code code,is_rec)
     | Forall (loc,v,e,code) ->
         Forall  (loc,v,e,map_code code)
     | _ -> ins

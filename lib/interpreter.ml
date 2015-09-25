@@ -157,7 +157,7 @@ module Make
       with E.EventRel.Cyclic -> kfail vb
 
 (*  Model interpret *)
-    let (_,_,prog) = O.m
+    let (_,_,mprog) = O.m
 
 (* Debug printing *)
 
@@ -261,7 +261,7 @@ module Make
 
       and procedure = {
           proc_args : AST.pat ;
-          proc_env : env;
+          mutable proc_env : env;
           proc_body : AST.ins list; }
 
       val type_val : v -> typ
@@ -292,7 +292,7 @@ module Make
 
       and  procedure = {
           proc_args : AST.pat ;
-          proc_env : env;
+          mutable proc_env : env;
           proc_body : AST.ins list; }
 
       let rec type_val = function
@@ -1682,12 +1682,43 @@ module Make
                 let st = check_bell_order bds st in
                 kont st res
             end
+
+        | InsMatch (loc,e,cls,d) ->
+            let v = eval_st st e in 
+            begin match v with
+            | V.Tag (_,s) ->
+                let rec match_rec = function
+                  | [] ->
+                      begin match d with
+                      | Some dseq -> run st dseq kfail kont res
+                      | None ->
+                          error st.silent
+                            loc "pattern matching failed on value '%s'" s
+                      end
+                  | (ps,pprog)::cls ->
+                      if s = ps then run st pprog kfail kont res
+                      else match_rec cls in
+                match_rec cls
+            | V.Empty ->
+                error st.silent (get_loc e) "matching on empty"
+            | V.Unv ->
+                error st.silent (get_loc e) "matching on universe"
+            | _ ->
+                error st.silent (get_loc e)
+                  "matching on non-tag value of type '%s'"
+                  (pp_typ (type_val v))
+            end
+
         | Include (loc,fname) ->
             do_include loc fname st kfail kont res
-        | Procedure (_,name,args,body) ->
-            let p =
-              Proc { proc_args=args; proc_env=st.env; proc_body=body; } in
-            kont { st with env = add_val name (lazy p) st.env } res
+        | Procedure (_,name,args,body,is_rec) ->
+          let p =  { proc_args=args; proc_env=st.env; proc_body=body; } in
+          let proc = Proc p in
+          let env_plus_p = add_val name (lazy proc) st.env in
+          begin match is_rec with
+          | IsRec -> p.proc_env <- env_plus_p
+          | IsNotRec -> () end ;
+          kont { st with env = env_plus_p } res
         | Call (loc,name,es,tname) when not O.bell ->
             let skip =
               skip_this_check tname || skip_this_check (Some name) in
@@ -1936,7 +1967,7 @@ module Make
 
               let kont st res =  kont (st2out st) res in          
 
-              let just_run st res = run st prog kfail kont res in
+              let just_run st res = run st mprog kfail kont res in
               do_include TxtLoc.none "stdlib.cat" st kfail
                 (match O.bell_fname with
                 | None -> just_run (* No bell file, just run *)
