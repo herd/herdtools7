@@ -31,19 +31,38 @@ module type Dumper = sig
         MiscParser.result
       -> unit
 end
+  
+module type Common = sig
+    
+  include ArchBase.S
+    
+  exception Error of string
 
+  type substitution =
+    | Reg of string * reg
+    | Cst of string * int
+    | Lab of string * string
+    | Addr of string * string
+    | Code of string * pseudo list
+
+  val add_subs : substitution list -> substitution list ->
+                 substitution list
+  val sr_name : reg -> string
+  val cv_name : MetaConst.k -> string
+  val dump_pseudos : pseudo list -> string
+  val conv_reg : substitution list -> reg list ->
+                 reg -> reg
+  val find_lab : substitution list -> reg list ->
+                 string -> string
+  val find_code : substitution list -> reg list ->
+                  string -> pseudo list
+  val find_cst : substitution list -> reg list ->
+                 string -> MetaConst.k
+    
+end
+  
 module type S = sig
-    include ArchBase.S
-
-    type substitution = 
-      | Reg of string * reg
-      | Cst of string * int
-      | Lab of string * string
-      | Addr of string * string
-      | Code of string * pseudo list
-
-
-    val dump_pseudos : pseudo list -> string
+    include Common
 
     val match_instruction : substitution list -> 
 			    parsedPseudo -> pseudo ->
@@ -54,15 +73,104 @@ module type S = sig
 			   pseudo list
    
     module Parser : Parser with type parsedPseudo = parsedPseudo
-			    and type pseudo = pseudo
+			   and type pseudo = pseudo
 
     module Dumper : Dumper with type pseudo = pseudo
   end
 
+module MakeCommon(A:ArchBase.S) = struct
+  include A
+    
+  exception Error of string
+
+  type substitution =
+    | Reg of string * reg
+    | Cst of string * int
+    | Lab of string * string
+    | Addr of string * string
+    | Code of string * pseudo list
+
+	
+  let rec add_subs s s' = match s with
+    | [] -> s'
+    | s::ss -> 
+       if List.mem s s'
+       then add_subs ss s'
+       else add_subs ss (s::s')
+	 
+  let sr_name r = match symb_reg_name r with
+    | Some s -> s
+    | None -> raise (Error "Not a symbolic register.")
+     
+  let cv_name = function
+    | MetaConst.Meta s -> s
+    | _ -> raise (Error "Not a constant variable.")
+
+  let rec dump_pseudos = function
+    | [] -> ""
+    | Nop::is -> "*Nop*\n" ^dump_pseudos is
+    | Label(s,i)::is -> s^": "^(dump_pseudos (i::is))
+    | Instruction i::is -> dump_instruction i ^" ;\n"^
+                           (dump_pseudos is)
+    | _ -> assert false
+
+  let conv_reg subs free r =
+    let get_register =
+      let env,free = ref [],ref free in
+      fun s -> try List.assoc s !env with
+      | Not_found ->
+	 let r = List.hd !free in
+	 env := (s,r)::!env;
+	 free := List.tl !free;
+	 r in
+    match symb_reg_name r with
+    | Some s ->
+       let rec aux = function
+	 | [] -> get_register s
+	 | Reg(n,r)::_ when String.compare n s = 0 -> r
+	 | Addr(n,r)::_ when String.compare n s = 0 -> get_register r
+	 | _::subs -> aux subs
+       in aux subs
+    | None -> r
+
+       
+  let find_lab subs _ l =
+    let get_label = 
+      let fresh_lbl = 
+	let i = ref 0 in 
+	fun () -> incr i;"lbl"^(string_of_int !i) in
+      let env = ref [] in
+      fun s -> try List.assoc s !env with
+      | Not_found ->
+	 let l = fresh_lbl () in
+	 env := (s,l)::!env;
+	 l in
+    let rec aux = function
+      | [] -> get_label l
+      | Lab(n,lbl)::_ when String.compare n l = 0 -> lbl
+      | _::subs -> aux subs
+    in aux subs
+
+  let find_code subs _ s =
+    let rec aux = function
+      | [] -> raise (Error("No conversion found for code "^s))
+      | Code(n,c)::_ when String.compare n s = 0 -> c
+      | _::subs -> aux subs
+    in aux subs 
+
+  let find_cst subs _ s =
+    let rec aux = function
+      | [] -> raise (Error("No conversion found for constant "^s))
+      | Cst(n,i)::_ when String.compare n s = 0 -> MetaConst.Int i
+      | _::subs -> aux subs
+    in aux subs
+    
+end
+  
 module MakeParser
 	 (A:ArchBase.S)
 	 (P:sig
-	      include GenParser.LexParse 
+	      include GenParser.LexParse
 		      with type instruction = A.parsedPseudo
 	      val instr_parser : 
 		(Lexing.lexbuf -> token) -> Lexing.lexbuf ->
@@ -77,6 +185,51 @@ module MakeParser
 		
 end
 
+module MakeArch(I:sig
+  include Common
+  val match_instr : substitution list ->
+                    parsedInstruction ->
+                    instruction ->
+                    substitution list option
+  val expl_instr : substitution list -> reg list ->
+                   parsedInstruction ->
+                   parsedInstruction
+end) = struct
+  include I
+    
+  let rec match_instruction subs pattern instr = match pattern,instr with
+    | Label(lp,insp),Label(li,insi) 
+      -> match_instruction (add_subs [Lab(lp,li)] subs) insp insi
+    | Label _, _ -> None
+    | pattern, Label(_,instr)
+      -> match_instruction subs pattern instr
+    | Instruction ip, Instruction ii 
+      -> match_instr subs ip ii
+    | _,_ -> assert false
+
+  let instanciate_with subs free instrs =
+    let expl_instr = expl_instr subs free in
+    let find_lab = find_lab subs free in
+    let find_code = find_code subs free in
+    let rec expl_pseudos = 
+      let rec aux = function
+	| Nop -> []
+	| Instruction ins ->
+	   [pseudo_parsed_tr (Instruction (expl_instr ins))]
+	| Label (lbl,ins) ->  begin
+	  match aux ins with
+	  | [] -> [pseudo_parsed_tr (Label (find_lab lbl, Nop))]
+	  | h::t -> Label(find_lab lbl,h)::t
+	end
+	| Symbolic s -> find_code s
+	| Macro (_,_) -> assert false
+      in function
+      | [] -> []
+      | i::is -> (aux i)@(expl_pseudos is)
+    in expl_pseudos instrs
+    
+end 
+  
 module DefaultDumper(A:ArchBase.S) = struct 
   type pseudo = A.pseudo
   include SimpleDumper.Make(struct
@@ -110,82 +263,3 @@ module DefaultDumper(A:ArchBase.S) = struct
             let dump_location = dump_loc
           end)
 end
-
-    
-let get_arch = function
-   | `ARM ->
-      let module ARMLexParse = struct
-	type instruction = ARMArch.parsedPseudo
-	type token = ARMParser.token
-        module Lexer = ARMLexer.Make(struct let debug = false end)
-	let lexer = Lexer.token
-	let parser = MiscParser.mach2generic ARMParser.main
-       let instr_parser = ARMParser.instr_option_seq
-      end in (module struct
-		include ARMArch
-		module Parser = MakeParser(ARMBase)(ARMLexParse)
-		module Dumper = DefaultDumper(ARMBase)
-	      end : S)
-   | `AArch64 -> 
-     let module AArch64LexParse = struct
-       type instruction = AArch64Arch.parsedPseudo
-       type token = AArch64Parser.token
-       module Lexer = AArch64Lexer.Make(struct let debug = false end)
-       let lexer = Lexer.token
-       let parser = MiscParser.mach2generic AArch64Parser.main
-       let instr_parser = AArch64Parser.instr_option_seq
-     end in (module struct
-	       include AArch64Arch
-	       module Parser = MakeParser(AArch64Base)(AArch64LexParse)
-	       module Dumper = DefaultDumper(AArch64Base)
-	     end : S)
-  | `Bell ->
-     let module BellLexParse = struct
-       type instruction = BellArch.parsedPseudo
-       type token = LISAParser.token
-       module Lexer = BellLexer.Make(struct let debug = false end)
-       let lexer = Lexer.token
-       let parser = LISAParser.main
-       let instr_parser = LISAParser.instr_option_seq
-     end in (module struct 
-	       include BellArch
-	       module Parser = MakeParser(BellBase)(BellLexParse)
-	       module Dumper = DefaultDumper(BellBase)
-	     end : S)
-  | `C ->
-     let module CLexParse = struct
-       type pseudo = CArch.parsedPseudo
-       type token = CParser.token
-       module Lexer = CLexer.Make(struct let debug = false end)
-       let shallow_lexer = Lexer.token false
-       let deep_lexer = Lexer.token true
-       let shallow_parser = CParser.shallow_main
-       let deep_parser = CParser.deep_main
-       let instr_parser = CParser.pseudo_seq
-     end in (module struct 
-	       include CArch
-	       module Parser = struct
-		 include CGenParser.Make(CGenParser.DefaultConfig)
-					(CArch)(CLexParse)
-		 type parsedPseudo = CArch.parsedPseudo
-		 let instr_from_string s =
-		   CGenParser.call_parser "themes" (Lexing.from_string s) 
-					 CLexParse.deep_lexer 
-					 CLexParse.instr_parser
-	       end
-	       module Dumper = CDumper
-	     end : S)
-	      
-  | `PPC ->
-     let module PPCLexParse = struct
-       type instruction = PPCArch.parsedPseudo
-       type token = PPCParser.token
-       module Lexer = PPCLexer.Make(struct let debug = false end)
-       let lexer = Lexer.token
-       let parser = MiscParser.mach2generic PPCParser.main
-       let instr_parser = PPCParser.instr_option_seq
-     end in (module struct 
-	       include PPCArch
-	       module Parser = MakeParser(PPCBase)(PPCLexParse)
-	       module Dumper = DefaultDumper(PPCBase)
-	     end : S)

@@ -134,6 +134,10 @@ let pp_reg = do_pp_reg Ascii
 
 let reg_compare = Pervasives.compare
 
+let symb_reg_name = function
+  | Symbolic_reg s -> Some s
+  | _ -> None
+
 (************)
 (* Barriers *)
 (************)

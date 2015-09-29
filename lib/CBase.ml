@@ -22,6 +22,7 @@ type reg = string
 let parse_reg s = Some s
 let pp_reg r = r
 let reg_compare = String.compare
+let symb_reg_name r = Some r
 
 type loc = 
   | Reg of reg

@@ -124,6 +124,10 @@ let pc = PC
 
 let reg_compare = Pervasives.compare
 
+let symb_reg_name = function
+  | Symbolic_reg s -> Some s
+  | _ -> None
+
 let pp_ireg r =
   try List.assoc r iregs with
   | Not_found -> assert false

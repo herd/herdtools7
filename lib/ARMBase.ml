@@ -93,7 +93,11 @@ let pp_reg r = match r with
 | _ -> try List.assoc r regs with Not_found -> assert false
 	  
 
-let reg_compare = Pervasives.compare 
+let reg_compare = Pervasives.compare
+
+let symb_reg_name = function
+  | Symbolic_reg r -> Some r
+  | _ -> None
 
 
 (************)

@@ -69,6 +69,10 @@ let pp_reg r = match r with
 
 let reg_compare = Pervasives.compare (* Will do, no doubt *)
 
+let symb_reg_name = function
+  | Symbolic_reg s -> Some s
+  | _ -> None
+  
 (************)
 (* Barriers *)
 (************)
