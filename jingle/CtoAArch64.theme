@@ -1,0 +1,53 @@
+C to AArch64
+
+"if(constvar:c == x) codevar:t;" -> "CMP %x,&c;
+	       	     		    B.NE else;
+				    codevar:t;
+				    else:"
+
+"x = constvar:c;" -> "MOV %x,&c"
+
+"*x = constvar:c;" -> "MOV %tmp,&c;
+                       STR %tmp,[%x]"
+
+"*x = y;" -> "STR %x,[%y]"
+
+"x = *y;" -> "LDR %x,[%y]"
+
+"x = atomic_load(y);" -> "LDAR %x,[%y]"
+
+"x = atomic_load_explicit(y,memory_order_relaxed);"
+  -> "LDR %x,[%y]"
+
+"x = atomic_load_explicit(y,memory_order_consume);"
+  -> "LDAR %x,[%y]"
+
+"x = atomic_load_explicit(y,memory_order_acquire);"
+  -> "LDAR %x,[%y]"
+
+"atomic_store(y,x);" -> "STLR %x,[%y]"
+  
+"atomic_store_explicit(y,x,memory_order_relaxed);"
+  -> "STR %x,[%y]"
+  
+"atomic_store_explicit(y,x,memory_order_release);"
+  -> "STLR %x,[%y]"
+
+"atomic_store(y,constvar:c);" -> "MOV %tmp,&c;
+			          STLR %tmp,[%y]"
+  
+"atomic_store_explicit(y,constvar:c,memory_order_relaxed);"
+  -> "MOV %tmp,&c;
+      STR %tmp,[%y]"
+  
+"atomic_store_explicit(y,constvar:c,memory_order_release);"
+  -> "MOV %tmp,&c;
+      STLR %tmp,[%y]"
+
+"atomic_thread_fence(memory_order_seq_cst);" -> "DMB SY"
+
+"atomic_thread_fence(memory_order_acq_rel);" -> "DMB SY"
+
+"atomic_thread_fence(memory_order_release);" -> "DMB SY"
+
+"atomic_thread_fence(memory_order_acquire);" -> "DMB LD"
