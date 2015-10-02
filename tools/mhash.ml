@@ -45,7 +45,8 @@ module Top
     module T = struct
       type t = 
         { tname : string ;
-          hash : string option; } 
+          hash : string option;
+          map : string -> string; }
     end
 
     module Make(A:ArchBase.S) = struct
@@ -53,31 +54,39 @@ module Top
       let zyva name parsed =
 	let tname = name.Name.name in
 	let hash = MiscParser.get_hash parsed in
+        let map =
+          try
+            let map =  List.assoc "Mapping" parsed.MiscParser.info in
+            let map = try LexOutMapping.parse map with _ -> assert false in
+            fun s -> StringMap.safe_find s s map
+          with Not_found -> Misc.identity in
 	if Opt.verbose > 1
-	then eprintf "%s %s\n"
-			   tname
-			    (match hash with 
-			    | None -> "none" 
-			    | Some h -> h);
+	then
+          eprintf "%s %s\n"
+	    tname
+	    (match hash with 
+	    | None -> "none" 
+	    | Some h -> h);
         { T.tname = tname ;
-          hash = hash; }
+          hash = hash;
+          map=map; }
     end
 
     module Z = ToolParse.Top(T)(Make)
 
     type name = {fname:string; tname:string;}
 
-    let do_test name k =
+    let do_test name (kh,km as k) =
       try
         let {T.tname = tname;
-             hash = h; } = Z.from_file name in
+             hash = h; map=map;} = Z.from_file name in
         let h = Misc.as_some h in
-        let old = StringMap.safe_find h tname k in
+        let old = StringMap.safe_find h tname kh in
         if old <> h then begin
           eprintf "Different hashes for test %s" tname ;
           raise Over
         end ;
-        StringMap.add tname h k
+        StringMap.add tname h kh,StringMap.add tname map km
       with
       | Misc.Exit -> k
       | Misc.Fatal msg ->
@@ -88,7 +97,7 @@ module Top
           raise e
 
     let zyva tests logs =
-      let env = Misc.fold_argv do_test tests StringMap.empty in
+      let env,map = Misc.fold_argv do_test tests (StringMap.empty,StringMap.empty) in
       let module Lex =
         LexHashLog.Make
           (struct
@@ -108,6 +117,7 @@ module Top
                   fun _ _ -> ()
 
             let env = env
+            let map = map
           end) in
       match logs with
       | [] -> 

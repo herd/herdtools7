@@ -18,7 +18,8 @@ module type Config = sig
   val verbose : int
   val ppinfo : Lexing.position -> string -> unit
   val env : string StringMap.t
-end
+  val map : (string->string) StringMap.t
+end 
 
 module Make :
  functor (C:Config) -> sig
