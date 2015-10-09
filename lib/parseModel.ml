@@ -43,6 +43,8 @@ module Make(O:Config) = struct
         Procedure (loc,v,p,map_code code,is_rec)
     | Forall (loc,v,e,code) ->
         Forall  (loc,v,e,map_code code)
+    | Rec (loc0,bds,Some (loc, pos, test, exp, name)) ->
+        Rec (loc0,bds,Some (loc, f pos, test, exp, name))
     | _ -> ins
 
     and map_code code = List.map map_ins code in
