@@ -103,7 +103,7 @@ module Make(H : HashedType) : (S with type key = H.t) = struct
     in
     Array.iter (iter_bucket 0) t.table
 
-  let count t =
+  let _count t =
     let rec count_bucket i b accu =
       if i >= Weak.length b then accu else
       count_bucket (i+1) b (accu + (if Weak.check b i then 1 else 0))

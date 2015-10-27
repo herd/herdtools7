@@ -18,6 +18,8 @@
 (* Latex pretty print of programs *)
 
 module type Config = sig
+  val withindex : bool
+  val ascommands : bool
   val texmacros : bool
   val hexa : bool
   val outputdir : string option
@@ -104,7 +106,8 @@ module Make(O:Config)(A:Arch.S) =
 	    let numinstrs = List.length instrs in
 	    max numinstrs maxcnt)
 	  divd_program 0 in
-      fprintf chan "\\index{%s}\n" (very_readable_name test);
+      if O.withindex then
+        fprintf chan "\\index{%s}\n" (very_readable_name test);
       fprintf chan "\\begin{tabular}{" ;
       (* Tabular argument *)
       output_string chan (if show_po then "|l|" else "|") ;
@@ -116,7 +119,9 @@ module Make(O:Config)(A:Arch.S) =
           pp_arch test.arch
         else "" in
       if numberofcolumns > 1 then 
-        fprintf chan "\\multicolumn{%i}{@{}l}{%s}\n&\\multicolumn{1}{r@{}}{%s}\\\\\n" (numberofcolumns-1)
+        fprintf chan
+          "\\multicolumn{%i}{@{}l}{\\makebox[0pt][l]{%s}}\n&\\multicolumn{1}{r@{}}{\\makebox[0pt][r]{%s}}\\\\\n"
+          (numberofcolumns-1)
           (just_name test)
           pp_arch
       else
@@ -401,7 +406,7 @@ module Make(O:Config)(A:Arch.S) =
           constr = parsed.MiscParser.condition;
         } in 
       match O.outputdir with
-      | None -> dump_prog_internal test true stdout
+      | None -> dump_prog_internal test O.ascommands stdout
       | Some d ->
           let b = filebase test in
           let f = Filename.concat d b in

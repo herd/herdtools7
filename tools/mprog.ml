@@ -23,6 +23,8 @@ module Top
     (O:
        sig
          val verbose : int
+         val withindex : bool
+         val ascommands : bool
          val texmacros : bool
          val hexa : bool
          val outputdir : string option
@@ -193,7 +195,7 @@ module Top
             type location = MiscParser.location
             let dump_location = dump_loc
 
-	    let pp_prog = Misc.pp_prog
+	    let _pp_prog = Misc.pp_prog
           end)
 
       let zyva = match O.outputdir with
@@ -273,6 +275,8 @@ module X =
   Top
     (struct
       let verbose = !verbose
+      let withindex = false
+      let ascommands = false
       let texmacros = !texmacros
       let hexa = !hexa
       let outputdir = !outputdir
