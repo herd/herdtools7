@@ -1,8 +1,13 @@
 PPC
 (* Model for Power *)
 include "cos.cat"
+
+
 (* Uniproc *)
 acyclic po-loc | rf | fr | co as scperlocation
+
+(* Atomic *)
+empty rmw & (fre;coe) as atomic
 
 (* Utilities *)
 let dd = addr | data

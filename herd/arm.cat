@@ -6,6 +6,9 @@ include "cos.cat"
 (* Uniproc *)
 acyclic po-loc | rf | fr | co as uniproc
 
+(* Atomic *)
+empty rmw & (fre;coe) as atomic
+
 (* Utilities *)
 let dd = addr | data
 let rdw = po-loc & (fre;rfe)
