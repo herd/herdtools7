@@ -258,7 +258,7 @@ module Make(O:Config)(A:Arch.S) =
 	    else
               let ppv =
                 if O.texmacros then "\\asm{" ^ pp_v v ^"}"
-                else pp_v v in
+                else "\\mbox{" ^ pp_v v ^ "}" in
               Some (" \\mbox{"^ pp_location l ^
                     "} \\mathord{=} " ^ ppv ^" "))
 	  sc in (* That will do *)
