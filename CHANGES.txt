@@ -1,10 +1,25 @@
+7.01
+
+  *herd: Add minimal atomicity to LL/SS (PPC and ARM).
+  * herd: Recursive procedure + match instruction.
+
+7.00 Release 'Seven'
+  * herd: refactored release.
   * litmus:  -driver optiopn to generate standalone C programs or Objective C
   * litmus:  More configuration files (nexus10..)
   * litmus:  Refactoring: avoid mutable internal flags.
+
+  
 5.01 Release
   * litmus:  litmus option -crossrun adb -> run.sh connects to device using adb
     (Android Debugging Bridge)
+
 5.00 Release
+   * gen: Added classify tool
+   * gen: Uniform naming scheme, clarify usage and document
+   * gen: Refactor diyone second mode, in the same style as diy/diycross
+   * gen: Support for atomic accesses (undocumented)
+
   * litmus:  added the mcycles tool
   * litmus:  iPad and asus TF300T configuration files.
   * litmus:  New user synchronisation mode userfence (suggested by Javi Merino)
@@ -21,6 +36,26 @@
   * litmus:  ARM and cortex9 (cross-compilation) configuration files
 
 4.00 Release
+   * gen: ARM support.
+   * gen: Generalize -o option, as for litmus.
+   * gen: option -var for diycross for nice variables.,
+   * gen: new tool diycross, similar to diyvar, but let user
+     specify  the list of alternatives eg:
+     diycross -name SB PodWR,SyncdWR Fre PodWR,SyncdWR Fre
+     For 3 MP-like tests (MP, MP+sync+po, MP+syncs)
+     diyvar behavior is still here with the pseudo-relaxation all(R|W)(R|W)
+     eg: diycross -name SB allWR Fre allWR Fre
+   * gen: Add a new functionality for diyone: generate tests from a list
+     of cycles given in stdin.
+   * Mode precise edge dependencies, DpdR, DpdW, CltrdR, CtrldW
+     are still recognised by parser and are default values
+     (backward compatibility).
+     However, Dpd* and Ctrld* are not available anymore.
+   * gen: dont: uncompress archive with gunzip (AIX: tar z.. not accepted)
+   * gen: diy: -cumul false also acts on RfStar
+   * gen: dont: Corrected bug in default safe_conform list for PPC.
+   * gen: dont: Use compressed archive
+
   * litmus:  new -o support -> dir/tar/tgz
   * litmus:  ARM support, tested on uniproc only
   * litmus:  -loop option, for time measurement
@@ -41,7 +76,25 @@
   * litmus:  added -index <@name>, for dumping an index of compiled tests.
   * litmus:  added the -no <cyclelist> option (used by dont).
 
+2.99 Release (beta)
+
+   * gen: Introduce dont, for automating testing.
+   * gen: Additional mode for diy: critical, for generating critical cycles
+     (no Po/Po consing)
+   * gen: Additional option for diy: -cumul, for avoiding ambiguous tests.
+
 2.00 Release
+
+   * gen: -mix option (default false, for backward compatibility)
+   * gen: Clarification of observers and documentation
+     [three modes accept/avoid/force, three sorts straight/fenced/loop]
+     Defaults avoid/fenced.
+   * gen: Added PPO pseudo-relaxation, very ad-hoc.
+   * gen: Added RfStar edge (ie Rf to a read by lwarx)
+   * gen: various -fno mode
+   * gen: -sta mode
+   * gen: PPO macro
+   * gen: Arch independant readRelax
 
   * litmus:  Added affinity control
   * litmus:  Added prealloc mode.
@@ -50,4 +103,4 @@
   * litmus:  Added call mode.
   * litmus:  Added cache mode.
 
-1.0 Initial release.
+1.0   Initial release.
