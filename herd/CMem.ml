@@ -24,7 +24,6 @@ end
 module Make
     (O:Config)
     (S:Sem.Semantics)
-    (B:CPP11Barrier.S with type a = S.barrier)
  :
     (XXXMem.S with module S = S)
     =

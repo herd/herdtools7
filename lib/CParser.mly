@@ -118,10 +118,7 @@ declaration:
 | typ IDENTIFIER SEMI {}
 
 initialisation:
-| typ IDENTIFIER EQ expr
-  { Store(Reg $2,$4,None) }
-| typ STAR IDENTIFIER EQ expr
-  { Store(Mem $3,$5,None) }
+| typ IDENTIFIER EQ expr { Store(Reg $2,$4,None) }
 
 expr:
 | LPAR expr RPAR { $2 }
@@ -139,6 +136,10 @@ expr:
 | expr XOR expr { Op(Op.Xor,$1,$3) }
 | expr EQ_OP expr { Op(Op.Eq,$1,$3) }
 | expr NEQ_OP expr { Op(Op.Ne,$1,$3) }
+| EXC LPAR location COMMA expr RPAR
+  { Exchange($3, $5, SC) }
+| EXC_EXPLICIT LPAR location COMMA expr COMMA MEMORDER RPAR
+  { Exchange($3, $5, $7) }
 
 instruction:
 | IF LPAR expr RPAR block_ins %prec LOWER_THAN_ELSE 
@@ -157,10 +158,6 @@ instruction:
   { Fetch ($3, $1, $5, SC) }
 | ATOMIC_FETCH_EXPLICIT LPAR location COMMA expr COMMA MEMORDER RPAR SEMI
   { Fetch($3, $1, $5, $7) }
-| EXC LPAR location COMMA expr RPAR SEMI
-  { Exchange($3, $5, SC) }
-| EXC_EXPLICIT LPAR location COMMA expr COMMA MEMORDER RPAR SEMI
-  { Exchange($3, $5, $7) }
 | LOCK LPAR location RPAR SEMI
   { Lock $3 }
 | UNLOCK LPAR location RPAR SEMI

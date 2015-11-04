@@ -49,6 +49,11 @@ include Arch.MakeArch(struct
        | Some subs ->
 	  match_expr subs ex2 ex2'
        end
+    | Exchange(l,ex,mo),Exchange(l',ex',mo') when mo=mo' ->
+       begin match match_location subs l l' with
+       | None -> None
+       | Some subs -> match_expr subs ex ex'
+       end
     | _ -> None
        
   let rec match_instr subs pattern instr = match pattern,instr with
@@ -80,11 +85,6 @@ include Arch.MakeArch(struct
        | Some subs -> match_expr subs ex ex'
        end
     | Fetch(l,op,ex,mo),Fetch(l',op',ex',mo') when mo=mo' && op=op' ->
-       begin match match_location subs l l' with
-       | None -> None
-       | Some subs -> match_expr subs ex ex'
-       end
-    | Exchange(l,ex,mo),Exchange(l',ex',mo') when mo=mo' ->
        begin match match_location subs l l' with
        | None -> None
        | Some subs -> match_expr subs ex ex'
@@ -123,6 +123,7 @@ include Arch.MakeArch(struct
       | Const(Constant.Symbolic s) -> Const(find_cst s)
       | Load(l,mo) -> Load(expl_loc l,mo)
       | Op(op,e1,e2) -> Op(op,expl_expr e1,expl_expr e2)
+      | Exchange(l,e,mo) -> Exchange(expl_loc l, expl_expr e,mo)
       | x -> x 
     in
     function
@@ -136,7 +137,6 @@ include Arch.MakeArch(struct
        If(expl_expr c,expl_instr subs free t,e)
     | Store(l,e,mo) -> Store(expl_loc l, expl_expr e,mo)
     | Fetch(l,op,e,mo) -> Fetch(expl_loc l,op,expl_expr e,mo)
-    | Exchange(l,e,mo) -> Exchange(expl_loc l, expl_expr e,mo)
     | Lock l -> Lock(expl_loc l)
     | Unlock l -> Unlock(expl_loc l)
     | Symb s -> find_code s

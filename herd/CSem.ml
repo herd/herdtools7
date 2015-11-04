@@ -72,6 +72,16 @@ module Make (Conf:Sem.Config)(V:Value.S)
          build_semantics_expr e2 ii) >>= fun (v1,v2) ->
         M.op op v1 v2
         
+      | C.Exchange(l,e,mo) ->
+          (build_semantics_expr e ii >>|
+	  (match l with
+	  | C.Reg r -> read_reg r ii
+	  | C.Mem r -> read_reg r ii >>= fun l -> 
+	      read_mem (Some mo) l ii)) 
+	    >>= (fun (v,l) ->
+              read_exchange v mo (A.Location_global l) ii)
+
+	  
     let rec build_semantics ii : (A.program_order_index * B.t) M.t = 
       let ii = {ii with A.program_order_index = 
 	  A.next_po_index ii.A.program_order_index;} in
@@ -134,16 +144,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
 	    fetch_op op v mo (A.Location_global l) ii)
 	  >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
  	  
-	| C.Exchange(l,e,mo) ->
-          (build_semantics_expr e ii >>|
-	      (match l with
-	      | C.Reg r -> read_reg r ii
-	      | C.Mem r -> read_reg r ii >>= fun l -> 
-		read_mem (Some mo) l ii)) 
-	  >>= (fun (v,l) ->
-            read_exchange v mo (A.Location_global l) ii)
-	  >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
-	  
+
 	| C.Lock l ->
 	  (match l with
 	  | C.Reg r -> read_reg r ii

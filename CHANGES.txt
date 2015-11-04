@@ -1,6 +1,9 @@
+  * herd : amke exchange an expression (was an instruction !)
+  * herd : use short memory model names in pictures
+  * tools : handle C arch
 7.01
 
-  *herd: Add minimal atomicity to LL/SS (PPC and ARM).
+  * herd: Add minimal atomicity to LL/SS (PPC and ARM).
   * herd: Recursive procedure + match instruction.
 
 7.00 Release 'Seven'

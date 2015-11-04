@@ -49,6 +49,7 @@ type expression =
   | Const of SymbConstant.v
   | Load of loc * mem_order option
   | Op of Op.op * expression * expression
+  | Exchange of loc * expression * mem_order
 
 type instruction = 
   | Fence of barrier
@@ -56,7 +57,6 @@ type instruction =
   | If of expression * instruction * instruction option
   | Store of loc * expression * mem_order option
   | Fetch of loc * Op.op * expression * mem_order
-  | Exchange of loc * expression * mem_order
   | Lock of loc
   | Unlock of loc
   | Symb of string
@@ -73,6 +73,7 @@ let rec dump_instruction =
     | Xor -> "xor"
     | And -> "and"
     | _ -> assert false in
+
   let rec dump_expr = function
     | Const c -> SymbConstant.pp_v c
     | Load(l,None) -> dump_loc l
@@ -81,6 +82,9 @@ let rec dump_instruction =
 	       (dump_loc l) (MemOrder.pp_mem_order mo)
     | Op(op,e1,e2) -> 
        sprintf "%s %s %s" (dump_expr e1) (Op.pp_op op) (dump_expr e2)
+    | Exchange(l,e,mo) ->
+        sprintf "atomic_exchange_explicit(%s,%s,%s)"
+	  (dump_loc l) (dump_expr e) (MemOrder.pp_mem_order mo)
   in function
   | Fence b -> (pp_barrier b)^";\n"
   | Seq l -> 
@@ -103,9 +107,6 @@ let rec dump_instruction =
      sprintf "atomic_fetch_%s_explicit(%s,%s,%s);" 
 	     (dump_op op) (dump_loc l) (dump_expr e) 
 	     (MemOrder.pp_mem_order mo)
-  | Exchange(l,e,mo) ->
-     sprintf "atomic_exchange_explicit(%s,%s,%s);"
-	     (dump_loc l) (dump_expr e) (MemOrder.pp_mem_order mo)
   | Lock l -> 
      sprintf "lock(%s);" (dump_loc l) 
   | Unlock l -> 
@@ -137,6 +138,7 @@ include Pseudo.Make
 		 Warn.fatal "No constant variable allowed"
 	      | Load _ as l -> l
 	      | Op(op,e1,e2) -> Op(op,parsed_expr_tr e1,parsed_expr_tr e2)
+	      | Exchange(l,e,mo) -> Exchange(l,parsed_expr_tr e,mo)
 
 	    and parsed_tr = function
 	      | Fence _ as f -> f
@@ -148,7 +150,6 @@ include Pseudo.Make
 		 If(parsed_expr_tr e,parsed_tr it,tr_ie)
 	      | Store(l,e,mo) -> Store(l,parsed_expr_tr e,mo)
 	      | Fetch(l,op,e,mo) -> Fetch(l,op,parsed_expr_tr e,mo)
-	      | Exchange(l,e,mo) -> Exchange(l,parsed_expr_tr e,mo)
 	      | Lock _ | Unlock _ as i -> i
 	      | Symb _ -> Warn.fatal "No term variable allowed"
 

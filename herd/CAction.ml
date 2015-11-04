@@ -51,15 +51,15 @@ end = struct
     | Access (d,l,v,Some mo) ->
 	sprintf "%s(%s)%s=%s"
           (pp_dirn d)
-          (MemOrder.pp_mem_order mo)
+          (MemOrder.pp_mem_order_short mo)
           (A.pp_location l)
 	  (V.pp_v v)
     | Fence mo -> 
        sprintf "F(%s)"
-	  (MemOrder.pp_mem_order mo)
+	  (MemOrder.pp_mem_order_short mo)
     | RMW (l,v1,v2,mo) ->
        	sprintf "RMW(%s)%s(%s>%s)"
-          (MemOrder.pp_mem_order mo)
+          (MemOrder.pp_mem_order_short mo)
           (A.pp_location l)
 	  (V.pp_v v1) (V.pp_v v2)
     | Lock (l,o) ->

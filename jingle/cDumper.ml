@@ -70,10 +70,12 @@ let list_loc prog =
 	      type t = loc
 	      let compare = loc_compare
 	    end) in
+
   let rec expr s = function
     | Const _ -> s
     | Load(l,_) -> LocSet.add l s
     | Op(_,e1,e2) -> expr (expr s e1) e2
+    | Exchange(l,e,_) -> LocSet.add l (expr s e)
   in 
   let rec ins s = function
     | Seq(l) -> List.fold_left ins s l
@@ -81,7 +83,6 @@ let list_loc prog =
     | If(c,t,None) -> expr (ins s t) c
     | Store(l,e,_) -> LocSet.add l (expr s e)
     | Fetch(l,_,e,_) -> LocSet.add l (expr s e)
-    | Exchange(l,e,_) -> LocSet.add l (expr s e)
     | Lock l -> LocSet.add l s
     | Unlock l -> LocSet.add l s
     | _ -> s

@@ -259,12 +259,7 @@ module Top (Conf:Config) = struct
 	  let deep_parser = CParser.deep_main
         end in
         let module CS = CSem.Make(Conf)(SymbValue) in
-        let module  CBarrier = struct
-          type a = C.barrier
-          type b = unit
-          let a_to_b _ = ()
-        end in
-        let module CM = CMem.Make(ModelConfig)(CS) (CBarrier) in
+        let module CM = CMem.Make(ModelConfig)(CS) in
         let module P = CGenParser.Make (Conf) (C) (CLexParse) in
         let module X = Make (CS) (P) (NoCheck) (CM) in
         X.run name chan env splitted
