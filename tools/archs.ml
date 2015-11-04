@@ -60,3 +60,4 @@ let x86 = X86
 let mips = MIPS
 let aarch64 = AArch64
 let lisa = LISA
+let c = C

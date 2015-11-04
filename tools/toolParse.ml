@@ -118,8 +118,36 @@ end = struct
         end in
         let module X = Make (Bell) (BellLexParse) in
         X.zyva chan splitted
-    | C -> Warn.fatal "No C arch in toolParse.ml"
+    | C ->
+        let module C = CBase in
+        let module L = struct
+          type pseudo = C.pseudo
+	  type token = CParser.token
+          module Lexer = CLexer.Make(LexConf)
+	  let shallow_lexer = Lexer.token false
+	  let deep_lexer = Lexer.token true
+	  let shallow_parser = CParser.shallow_main
+	  let deep_parser = CParser.deep_main
+        end in
+        let module P = CGenParser.Make(GenParser.DefaultConfig)(C)(L) in
+        let module X = B(C) in
+        let name =  splitted.Splitter.name in
+        let parsed = P.parse chan splitted in
+        X.zyva name parsed
+        
 
+(*
+        let module C = CBase in
+        let module CLexParse = struct
+	  type instruction = C.parsedPseudo
+	  type token = CParser.token
+          module L = CLexer.Make(LexConf)
+	  let lexer = L.token true
+	  let parser = CParser.deep_main
+        end in
+        let module X = Make (C) (CLexParse) in
+        X.zyva chan splitted
+*)
   module SP = Splitter.Make(LexConf)
 
 

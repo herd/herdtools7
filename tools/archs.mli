@@ -36,3 +36,4 @@ val x86 : t
 val mips : t
 val aarch64 : t
 val lisa : t
+val c : t
