@@ -105,7 +105,7 @@ let rec dump_instruction =
   | Store(l,e,None) -> 
      sprintf "%s = %s;" (dump_loc l) (dump_expr e)
   | Store(l,e,Some mo) -> 
-     sprintf "atomic_load_explicit(%s,%s,%s);"
+     sprintf "atomic_store_explicit(%s,%s,%s);"
 	     (dump_loc l) (dump_expr e) (MemOrder.pp_mem_order mo)
   | Lock l -> 
      sprintf "lock(%s);" (dump_loc l) 
@@ -155,9 +155,14 @@ include Pseudo.Make
 
 	    let get_naccesses =
 
+              let get_loc k = function
+                | Mem _ -> k+1
+                | Reg _ -> k in
+
               let rec get_exp k = function
                 | Const _ -> k
-                | Load _ -> k+1
+                | Load (loc,None) -> get_loc k loc
+                | Load (loc,Some _) -> get_loc (k+1) loc
                 | Op (_,e1,e2) -> get_exp (get_exp k e1) e2
                 | Fetch (_,_,e,_)
                 | Exchange (_,e,_) -> get_exp (k+2) e in
@@ -168,7 +173,8 @@ include Pseudo.Make
                 | If (cond,ifso,ifno) ->
                     let k = get_exp k cond in
                     get_opt (get_rec k ifso) ifno
-                | Store (_,e,_) -> get_exp (k+1) e
+                | Store (loc,e,None) -> get_exp (get_loc k loc) e
+                | Store (loc,e,Some _) -> get_exp (get_loc (k+1) loc) e
                 | Lock _|Unlock _ -> k+1
 
               and get_opt k = function
