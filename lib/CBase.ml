@@ -153,7 +153,31 @@ include Pseudo.Make
 	      | Lock _ | Unlock _ as i -> i
 	      | Symb _ -> Warn.fatal "No term variable allowed"
 
-	    let get_naccesses _ins = 0
+	    let get_naccesses =
+
+              let rec get_exp k = function
+                | Const _ -> k
+                | Load _ -> k+1
+                | Op (_,e1,e2) -> get_exp (get_exp k e1) e2
+                | Fetch (_,_,e,_)
+                | Exchange (_,e,_) -> get_exp (k+2) e in
+
+              let rec get_rec k = function
+                | Fence _|Symb _-> k
+                | Seq seq -> List.fold_left get_rec k seq
+                | If (cond,ifso,ifno) ->
+                    let k = get_exp k cond in
+                    get_opt (get_rec k ifso) ifno
+                | Store (_,e,_) -> get_exp (k+1) e
+                | Lock _|Unlock _ -> k+1
+
+              and get_opt k = function
+                | None -> k
+                | Some i -> get_rec k i in
+
+              fun i -> get_rec 0 i
+
+
 	    let fold_labels acc _f _ins = acc
 	    let map_labels _f ins = ins
 	  end)
