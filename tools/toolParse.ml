@@ -134,20 +134,7 @@ end = struct
         let name =  splitted.Splitter.name in
         let parsed = P.parse chan splitted in
         X.zyva name parsed
-        
 
-(*
-        let module C = CBase in
-        let module CLexParse = struct
-	  type instruction = C.parsedPseudo
-	  type token = CParser.token
-          module L = CLexer.Make(LexConf)
-	  let lexer = L.token true
-	  let parser = CParser.deep_main
-        end in
-        let module X = Make (C) (CLexParse) in
-        X.zyva chan splitted
-*)
   module SP = Splitter.Make(LexConf)
 
 
@@ -170,25 +157,28 @@ module Tops
       module LexConf = Splitter.Default
       module SP = Splitter.Make(LexConf)
 
-
-      module Make
-          (A:ArchBase.S) 
-          (L:GenParser.LexParse with type instruction = A.parsedPseudo) =
+(* Code shared between mach argch's and C *)
+      module Util
+          (Arg:sig
+            val arch : Archs.t
+            type parsed
+            val parse : in_channel -> Splitter.result -> parsed
+            val zyva : (Name.t * parsed) list -> T.t
+          end) =
         struct
-          module P = GenParser.Make(GenParser.DefaultConfig)(A)(L)
-          module X = B(A)
 
-          let justparse chan splitted =
-            let parsed = P.parse chan splitted
-            and doc = splitted.Splitter.name in
+          let justparse chan sp =
+            let parsed = Arg.parse chan sp
+            and doc = sp.Splitter.name in
             doc,parsed
+
 
           let from_chan name chan =
             let { Splitter.arch=arch;_ } as splitted = SP.split name chan in
-            if arch <> A.arch then
+            if arch <> Arg.arch then
               Warn.fatal
                 "Arch mismatch on %s (%s <-> %s)"
-                name (Archs.pp A.arch)  (Archs.pp arch) ;
+                name (Archs.pp Arg.arch)  (Archs.pp arch) ;
             justparse chan splitted
 
           let from_name name = Misc.input_protect (from_chan name) name
@@ -201,7 +191,25 @@ module Tops
 
           let zyva names =
             let dts = from_names names in
-            X.zyva dts
+            Arg.zyva dts
+        end
+
+(* Code shared for machine arch's *)
+      module Make
+          (A:ArchBase.S) 
+          (L:GenParser.LexParse with type instruction = A.parsedPseudo) =
+        struct
+          module P = GenParser.Make(GenParser.DefaultConfig)(A)(L)
+          module X = B(A)
+
+          include
+            Util
+              (struct
+                let arch = A.arch
+                type parsed = P.pseudo MiscParser.t
+                let parse = P.parse
+                let zyva = X.zyva
+              end)
         end
 
       let from_arch arch = 
@@ -270,16 +278,40 @@ module Tops
             let module Bell = BellBase in
             let module BellLexParse = struct
 	      type instruction = Bell.parsedPseudo
-
 	      type token = LISAParser.token
-
               module L = BellLexer.Make(LexConf)
 	      let lexer = L.token
 	      let parser = LISAParser.main
             end in
             let module X = Make (Bell) (BellLexParse) in
             X.zyva
-        | C -> Warn.fatal "No C arch in toolParse.ml"
+        | C ->
+            let module C = CBase in
+            let module L = struct
+              type pseudo = C.pseudo
+	      type token = CParser.token
+              module Lexer = CLexer.Make(LexConf)
+	      let shallow_lexer = Lexer.token false
+	      let deep_lexer = Lexer.token true
+	      let shallow_parser = CParser.shallow_main
+	      let deep_parser = CParser.deep_main
+            end in
+
+            let module P = CGenParser.Make(GenParser.DefaultConfig)(C)(L) in
+            let module X = B(C) in
+
+            let module U =
+              Util
+                (struct
+                  let arch = C
+                  type parsed =  P.pseudo MiscParser.t
+                  let parse = P.parse
+                  let zyva = X.zyva
+                end) in
+
+            U.zyva
+
+
 
       let from_files names = match names with
       | [] -> assert false

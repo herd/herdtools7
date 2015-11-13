@@ -140,6 +140,10 @@ expr:
   { Exchange($3, $5, SC) }
 | EXC_EXPLICIT LPAR location COMMA expr COMMA MEMORDER RPAR
   { Exchange($3, $5, $7) }
+| ATOMIC_FETCH LPAR location COMMA expr RPAR
+  { Fetch ($3, $1, $5, SC) }
+| ATOMIC_FETCH_EXPLICIT LPAR location COMMA expr COMMA MEMORDER RPAR
+  { Fetch($3, $1, $5, $7) }
 
 instruction:
 | IF LPAR expr RPAR block_ins %prec LOWER_THAN_ELSE 
@@ -154,10 +158,6 @@ instruction:
   { Store($3, $5, Some SC) }
 | ST_EXPLICIT LPAR location COMMA expr COMMA MEMORDER RPAR SEMI
   { Store($3, $5, Some $7) }
-| ATOMIC_FETCH LPAR location COMMA expr RPAR SEMI
-  { Fetch ($3, $1, $5, SC) }
-| ATOMIC_FETCH_EXPLICIT LPAR location COMMA expr COMMA MEMORDER RPAR SEMI
-  { Fetch($3, $1, $5, $7) }
 | LOCK LPAR location RPAR SEMI
   { Lock $3 }
 | UNLOCK LPAR location RPAR SEMI
