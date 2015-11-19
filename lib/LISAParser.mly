@@ -20,7 +20,7 @@ open Bell
     
 %}
 
-%token EOF SEMI COMMA PIPE COLON LPAR RPAR RBRAC LBRAC LBRACE RBRACE SCOPES REGIONS MOV AND ADD BRANCH EQ NEQ READ WRITE FENCE RMW CAS EXCH DOT XOR PLUS
+%token EOF SEMI COMMA PIPE COLON LPAR RPAR RBRAC LBRAC LBRACE RBRACE SCOPES REGIONS MOV AND ADD BRANCH EQ NEQ READ WRITE FENCE RMW CAS EXCH DOT XOR PLUS CALL
 %token <BellBase.reg> REG
 %token <int> NUM
 %token <string> CODEVAR
@@ -155,6 +155,9 @@ instr:
  { Pfence(Fence ($2,$3)) 
 (*jade: not sure why two levels here: could we just have Pfence, like for the others?*)
  }
+
+| CALL LBRAC NAME RBRAC
+  { Pcall $3 }
 
 | RMW annot_list_option reg operation addr_op  
   { Prmw($3,$4,$5,$2)}

@@ -51,7 +51,8 @@ rule token = parse
 | '+' { PLUS }
 | 'r'   { READ }
 | 'w'   { WRITE }
-| "f"   { FENCE }
+| "f"  { FENCE }
+| "call"   { CALL }
 | "rmw"  { RMW  }
 | "exch" { EXCH }
 | "cas"  { CAS }

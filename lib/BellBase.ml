@@ -172,6 +172,7 @@ type 'k kinstruction =
 | Pld of reg * 'k addr_op * string list
 | Pst of 'k addr_op * 'k reg_or_imm * string list
 | Pfence of barrier
+| Pcall of string
 | Prmw of reg * 'k op * 'k addr_op * string list
 | Pbranch of reg * lbl * string list
 | Pmov of reg * 'k op
