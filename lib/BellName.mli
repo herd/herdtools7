@@ -33,8 +33,9 @@ val w : string
 val f : string
 val rmw : string
 val b : string
+val call : string
 
-val all_mem_sets : StringSet.t
+(* val all_mem_sets : StringSet.t *)
 val all_sets : StringSet.t
 val all_rels : StringSet.t
 val all_orders : StringSet.t

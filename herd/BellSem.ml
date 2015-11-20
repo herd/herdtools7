@@ -70,7 +70,12 @@ module Make (C:Sem.Config)(V:Value.S)
 
     let create_barrier b o ii = 
       M.mk_singleton_es (Act.Barrier(b,o)) ii
-	
+
+    let create_call s ii =
+      M.mk_singleton_es (Act.CallStart s) ii >>*=
+      fun () ->  create_barrier [s] None ii >>*=
+      fun () ->  M.mk_singleton_es (Act.CallEnd s) ii
+
     let read_roa ?(stack=[]) roa ii = 
       match roa with 
       | BellBase.Rega r -> read_reg ~stack:stack r ii
@@ -127,6 +132,9 @@ module Make (C:Sem.Config)(V:Value.S)
 
 	| BellBase.Pfence(BellBase.Fence (s,o)) ->
       	  create_barrier s o ii >>! B.Next	  
+
+        | BellBase.Pcall s ->
+            create_call s ii >>! B.Next
 
 	| BellBase.Prmw(r,op,addr_op,s) ->
           (solve_addr_op addr_op ii) >>=

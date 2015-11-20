@@ -177,12 +177,13 @@ type 'k kinstruction =
 | Pbranch of reg * lbl * string list
 | Pmov of reg * 'k op
 
+
 let instruction_tr f = function
   | Pld (r,x,s) -> Pld (r,addr_op_tr f x,s)
   | Pst (x,ri,s) -> Pst (addr_op_tr f x,reg_or_imm_tr f ri,s)
   | Pfence _ as i -> i
   | Prmw (r,op,x,s) -> Prmw (r,op_tr f op,addr_op_tr f x,s)
-  | Pbranch _ as i -> i
+  | Pbranch _|Pcall _ as i -> i
   | Pmov (r,op) -> Pmov (r,op_tr f op)
 
 type instruction = int kinstruction
@@ -233,6 +234,8 @@ let dump_instruction i = match i with
 
 | Pfence f -> pp_fence_ins f
 
+| Pcall s -> sprintf "call[%s]" s
+
 | Pbranch(r,l,s) -> sprintf "b[%s] %s %s" 
       (string_of_annot_list s)
       (pp_reg r) 
@@ -275,7 +278,7 @@ let fold_regs (f_reg,f_sreg) =
     begin match ins with      
     | Pld(r, addr_op, _) -> fold_reg r (fold_addr_op addr_op c)
     | Pst(addr_op,roi,_) -> fold_addr_op addr_op (fold_roi roi c)
-    | Pfence _ -> c
+    | Pfence _|Pcall _ -> c
     | Prmw(r,op,_,_) -> fold_reg r (fold_op op c)
     | Pbranch(r,_,_) -> fold_reg r c 
     | Pmov(r,op) -> fold_reg r (fold_op op c) 
@@ -317,7 +320,7 @@ let map_regs f_reg f_symb =
     | Pst(addr_op,roi,s) -> Pst(map_addr_op addr_op, map_roi roi, s)
     | Prmw(r,op,x,s) -> Prmw(map_reg r,map_op op, map_addr_op x, s)
     | Pbranch(r,lbl,s) -> Pbranch(map_reg r,lbl,s)
-    | Pfence _ -> ins
+    | Pfence _|Pcall _ -> ins
     | Pmov(r,op) -> Pmov(map_reg r,map_op op)
   end in
   map_ins
@@ -346,7 +349,7 @@ let fold_addrs f =
     | Add(x,i) | Xor(x,i) | And(x,i) | Eq(x,i) | Neq(x,i) -> fold_iar x (fold_iar i c) 
   in
   fun c ins -> match ins with
-  | Pbranch _ | Pfence _ -> c
+  | Pbranch _ | Pfence _|Pcall _ -> c
   | Pld (_,ao,_) | Pst (ao,_,_) -> fold_ao ao c
   | Prmw (_,op,x,_) -> fold_op op (fold_ao x c)
   | Pmov (_,op) -> fold_op op c
@@ -382,6 +385,7 @@ let get_id_and_list i = match i with
 | Pfence (Fence (s, _)) -> (BellName.f,s)      
 | Prmw(_,_,_,s) -> (BellName.rmw,s)
 | Pbranch(_,_,s) -> (BellName.b,s)
+| Pcall s -> (BellName.call,[s])
 | Pmov _ -> raise Not_found 
 
 let get_from_and_to_labels b = match b with
@@ -393,5 +397,10 @@ let set_list i al = match i with
 | Pfence (Fence (_,a2)) -> Pfence (Fence (al,a2))
 | Prmw(a1,a2,a3,_) -> Prmw(a1,a2,a3,al)
 | Pbranch(a1,a2,_) -> Pbranch(a1,a2,al)
+| Pcall _ ->
+    begin match al with
+    | [] -> i
+    | s::_ -> Pcall s
+    end
 | Pmov _ as i -> i
 

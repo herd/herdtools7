@@ -172,7 +172,7 @@ module Make
         let id,al =
           try C.get_id_and_list i
           with Not_found -> raise Exit in (* If no annotation, no trouble *)
-        assert (StringSet.mem id BellName.all_mem_sets) ;
+        assert (StringSet.mem id BellName.all_sets) ;
         (* Change empty to default, if defined *)
         let i,al =
           match al with

@@ -34,9 +34,9 @@ and w = "W"
 and f = "F"
 and rmw = "RMW"
 and b = "B"
+and call = "CALL"
 
-let all_mem_sets = StringSet.of_list [r; w; f; rmw; b;]
-let all_sets = StringSet.of_list [r; w; f; rmw; b;]
+let all_sets = StringSet.of_list [r; w; f; rmw; b; call;]
 (*jade: why both all_mem_sets and all_sets? is all_mem_sets supposed to be sets
 of memory events, in which case f and b shouldn't be in there?*)
 let all_rels = StringSet.of_list [scopes;]

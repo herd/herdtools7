@@ -83,6 +83,7 @@ module type S = sig
 (* Barriers *)
   val is_barrier : event -> bool
   val barrier_of : event -> A.barrier option
+
 (*
   val same_barrier_id : event -> event -> bool
 *)

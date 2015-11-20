@@ -1,4 +1,5 @@
-  * herd : amke exchange an expression (was an instruction !)
+  * LISA : introduce call instructions.
+  * herd : make exchange an expression (was an instruction !)
   * herd : use short memory model names in pictures
   * lib : C make exchange and fetch expressions, as they should be.
   * tools : handle C arch completely

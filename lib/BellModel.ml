@@ -158,7 +158,7 @@ let add_event_dec k dec m =
 let add_events k dec i =
   let events = add_event_dec  k dec i.events
   and all_events =
-    if StringSet.mem k BellName.all_mem_sets then
+    if StringSet.mem k BellName.all_sets then
       StringSet.union (StringSet.unions dec) i.all_events
     else i.all_events in
   { i with events; all_events; }

@@ -102,7 +102,7 @@ module Make
           lazy (MU.pp_procrels None (Lazy.force pr))
         else
           lazy [] in
-      let relevant e = E.is_mem e || E.is_barrier e in
+      let relevant e = not (E.is_reg_any e && E.is_commit e) in
       let evts = E.EventSet.filter relevant conc.S.str.E.events in
       let id =
         lazy begin

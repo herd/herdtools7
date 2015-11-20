@@ -30,9 +30,8 @@ module Make(S : SemExtra.S) = struct
 (*************)	    
 
   let iico es =
-    E.EventRel.union
-      es.E.intra_causality_data
-      es.E.intra_causality_control
+    E.EventRel.transitive_closure
+    (E.EventRel.union es.E.intra_causality_data  es.E.intra_causality_control)
 
   let po_strict es =
     E.EventRel.of_pred
