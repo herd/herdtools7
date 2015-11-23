@@ -1,3 +1,4 @@
+  * LISA :backward compatibility: f[sync] -> call[sync]
   * LISA : introduce call instructions.
   * herd : make exchange an expression (was an instruction !)
   * herd : use short memory model names in pictures

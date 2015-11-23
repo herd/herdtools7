@@ -68,13 +68,13 @@ module Make (C:Sem.Config)(V:Value.S)
 
     let commit ii =  M.mk_singleton_es (Act.Commit) ii
 
-    let create_barrier b o ii = 
-      M.mk_singleton_es (Act.Barrier(b,o)) ii
 
     let create_call s ii =
       M.mk_singleton_es (Act.CallStart s) ii >>*=
-      fun () ->  create_barrier [s] None ii >>*=
       fun () ->  M.mk_singleton_es (Act.CallEnd s) ii
+
+    let create_barrier b o ii = 
+      M.mk_singleton_es (Act.Barrier(b,o)) ii
 
     let read_roa ?(stack=[]) roa ii = 
       match roa with 

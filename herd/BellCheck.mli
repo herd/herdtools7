@@ -24,6 +24,7 @@ functor (O:sig val debug : bool end) ->
           val info : BellModel.info option
           val get_id_and_list : A.instruction -> string * string list
           val set_list : A.instruction -> string list -> A.instruction
+          val tr_compat : A.instruction -> A.instruction
         end) ->
   sig
     val check : A.pseudo MiscParser.t -> A.pseudo MiscParser.t

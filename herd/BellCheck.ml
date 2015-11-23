@@ -25,6 +25,7 @@ module Make
       val info : BellModel.info option
       val get_id_and_list : A.instruction -> string * string list
       val set_list : A.instruction -> string list -> A.instruction
+      val tr_compat : A.instruction -> A.instruction
     end) =
   struct
 
@@ -168,6 +169,7 @@ module Make
         (A.dump_instruction i) id (BellModel.pp_event_dec eg)
 
     let check_instruction bi i =
+      let i = C.tr_compat i in
       try
         let id,al =
           try C.get_id_and_list i

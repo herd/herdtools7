@@ -152,9 +152,7 @@ instr:
   { Pst($3,$4,$2) }
 
 | FENCE annot_list_option fence_labels_option
- { Pfence(Fence ($2,$3)) 
-(*jade: not sure why two levels here: could we just have Pfence, like for the others?*)
- }
+ { Pfence(Fence ($2,$3)) }
 
 | CALL LBRAC NAME RBRAC
   { Pcall $3 }
@@ -166,7 +164,7 @@ instr:
   { Pbranch ($3,$4,$2) }
 
 | MOV reg operation
-  { Pmov ($2,$3)}
+  { Pmov ($2,$3) }
 
 proc:
  | PROC { $1 }

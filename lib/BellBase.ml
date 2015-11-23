@@ -404,3 +404,9 @@ let set_list i al = match i with
     end
 | Pmov _ as i -> i
 
+let tr_compat = function
+  | Pfence (Fence (["sync" as a],None)) ->
+      Warn.warn_always "Obselete f[sync] -> call[sync]" ;
+      Pcall a
+  | i -> i
+

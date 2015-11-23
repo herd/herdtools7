@@ -289,6 +289,7 @@ module Top (Conf:Config) = struct
               let info = Misc.app_opt (fun (_,y) -> y) Conf.bell_model_info
               let get_id_and_list = Bell.get_id_and_list
               let set_list = Bell.set_list
+              let tr_compat = Bell.tr_compat
              end) in
         let module P = GenParser.Make (Conf) (Bell) (BellLexParse) in
         let module X = Make (BellS) (P) (BellC) (BellM) in 

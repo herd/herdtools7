@@ -66,6 +66,7 @@ module LU = LexUtils.Make(O)
     (* for bell files *)
     | "instructions" -> INSTRUCTIONS
     | "default" -> DEFAULT
+    | "compat" -> COMPAT
     | x -> VAR x
 
 }
