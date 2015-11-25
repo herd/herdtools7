@@ -406,7 +406,7 @@ let set_list i al = match i with
 
 let tr_compat = function
   | Pfence (Fence (["sync" as a],None)) ->
-      Warn.warn_always "Obselete f[sync] -> call[sync]" ;
+      Warn.warn_always "Changing deprecared f[sync] into call[sync]" ;
       Pcall a
   | i -> i
 
