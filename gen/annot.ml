@@ -53,7 +53,7 @@ module Make(O:LexUtils.Config) =
 
       let rec event_dec = function
         | VAR n ->
-            if StringSet.mem n BellName.all_mem_sets then
+            if StringSet.mem n BellName.all_sets then
               match lex lexbuf with
               | LBRAC ->
                   let ts = annot_list_list (lex lexbuf) in

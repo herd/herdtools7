@@ -383,14 +383,14 @@ let min_max xs =
                   begin match O.do_observers with
                   | Local -> i,[],add_look_loc x v []
                   | Avoid|Accept -> i,[],[A.Loc x,IntSet.singleton v]
-              | Enforce ->  
-                  let i,c,f = build_observers p i x vs in
-                  i,c,add_look_loc x v f
+                  | Enforce ->  
+                      let i,c,f = build_observers p i x vs in
+                      i,c,add_look_loc x v f
                   end
               | _ ->
-              let v =
-                let v,_ = Misc.last (List.flatten vs) in
-                v in
+                  let v =
+                    let v,_ = Misc.last (List.flatten vs) in
+                    v in
               begin match O.do_observers with
               | Local -> i,[],add_look_loc x v []
               | _ ->
