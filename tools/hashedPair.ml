@@ -17,7 +17,11 @@
 module S = struct
   type t = HashedString.t * HashedString.t
   let equal (a1,b1) (a2,b2) =  a1 == a2 && b1 == b2
-  let hash (a,b) = abs (19 * HashedString.as_hash a +  HashedString.as_hash b)
+  let combine seed v =
+    (v + 0x9e3779b9 + (seed lsl 6) + (seed lsr 2)) lxor seed
+  let hash (a,b) =
+    let seed =  HashedString.as_hash a in
+    abs (combine seed (HashedString.as_hash b))
 end
 
 include(Hashcons.Make(S))

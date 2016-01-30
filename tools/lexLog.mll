@@ -29,7 +29,7 @@ open Printf
 open LogState
 module LS = LogState.Make(O)
 
-let c_init = 1000
+let c_init = 100
 let count = ref 0
 let poolize loc v = HashedPair.as_hashed loc v
 let no_wits = Int64.zero,Int64.zero
