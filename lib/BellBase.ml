@@ -405,8 +405,10 @@ let set_list i al = match i with
 | Pmov _ as i -> i
 
 let tr_compat = function
+(* function
   | Pfence (Fence (["sync" as a],None)) ->
-      Warn.warn_always "Changing deprecared f[sync] into call[sync]" ;
+      Warn.warn_always "Changing deprecated f[sync] into call[sync]" ;
       Pcall a
+*)
   | i -> i
 
