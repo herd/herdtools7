@@ -1,5 +1,6 @@
 filters
-(* Define filter functions (backward compatibilit) *)
+(* Define filter functions (backward compatibility) *)
+let A = try A with X
 let P = M \ A
 
 let WW(r) = r & (W * W)
