@@ -1,4 +1,9 @@
 set -e
+case "$DOC" in
+  "")
+   DOC=true
+   ;;
+esac
 DIR=`dirname $0`
 . $DIR/version.sh
 . $DIR/funs.sh
@@ -24,7 +29,12 @@ EXPORT=$FINAL
 ( cleandir $FINAL/tools )
 
 # add example and documentation
-sh $DIR/installdoc.sh $FINAL
+if $DOC
+then
+  sh $DIR/installdoc.sh $FINAL
+fi
 NAME=`basename $FINAL`
 ( cd $TMP && tar cf - $NAME ) | gzip --best > $NAME.tar.gz
+cp $NAME.tar.gz $DEST/old
+ln -sf $DEST/old/$NAME.tar.gz $DEST/diy.tar.gz
 /bin/rm -rf $FINAL

@@ -40,14 +40,10 @@ module S = struct
     let c = c lxor (c lsr  15) in
     c
 
-
-
-  let combine seed v =
-    (v + 0x9e3779b9 + (seed lsl 6) + (seed lsr 2)) lxor seed
   let hash (a,b) =
     let ah =  HashedString.as_hash a
     and bh = HashedString.as_hash b in
-    abs (mix ah bh 0)
+    abs (mix (0x9e3779b9+ah) (0x9e3779b9+bh) 0)
 end
 
 include(Hashcons.Make(S))

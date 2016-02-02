@@ -1,3 +1,4 @@
+DEST=$HOME/public_html/diy/sources
 erasetxt ()
 {
   for t in *.txt

@@ -22,6 +22,7 @@ let verbose = ref 0
 let logs = ref []
 let exclude = ref None
 let select = ref []
+let names = ref []
 let rename = ref []
 let conds = ref []
 let inverse = ref false
@@ -40,6 +41,9 @@ let options =
   ("-select",
     Arg.String (fun s ->  select := !select @ [s]),
    "<name> specify test or test index  file, can be repeated") ;
+  ("-names",
+    Arg.String (fun s ->  names := !names @ [s]),
+   "<name> specify names file, can be repeated") ;
   ("-conds",
     Arg.String (fun s -> conds := !conds @ [s]),
    "<name> specify condition to apply to outcomes, can be repeated") ;
@@ -60,6 +64,7 @@ Options are:" prog)
 
 let exclude = !exclude
 let select = !select
+let names = !names
 let rename = !rename
 let verbose = !verbose
 let conds = !conds
@@ -91,6 +96,16 @@ let select_name =
       fun name -> StringSet.mem name set
 
 
+let select_name = match names with
+| [] -> select_name
+| _ ->
+    let add t = StringSet.add (do_rename t) in
+    let set =
+      List.fold_left
+        (fun r name -> ReadNames.from_file name add r)
+        StringSet.empty names in
+    fun name -> StringSet.mem name set && select_name name
+
 let select_name = match exclude with
 | None -> select_name
 | Some e ->
@@ -98,7 +113,6 @@ let select_name = match exclude with
     (fun name -> 
       not (Str.string_match re name 0) &&
       select_name name)
-
 
 
 module LS = LogState.Make(Verbose)
