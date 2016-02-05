@@ -20,27 +20,27 @@ open Printf
 
 let verbose = ref 0
 let logs = ref []
-let exclude = ref None
+let rename = ref []
 let select = ref []
-
+let names = ref []
+let excl = ref []
 
 let options =
-  [
-  
+  let open CheckName in
+  [  
   ("-q", Arg.Unit (fun _ -> verbose := -1),
    "<non-default> be silent");  
   ("-v", Arg.Unit (fun _ -> incr verbose),
    "<non-default> show various diagnostics, repeat to increase verbosity");
-  ("-excl", Arg.String (fun s -> exclude := Some s),
-   "<regexp> exclude tests whose name matches <regexp>");
-  ("-select",
-    Arg.String (fun s ->  select := !select @ [s]),
-   "<name> specify test or test index  file, can be repeated") ;
+     parse_rename rename;
+     parse_select select;
+     parse_names names;
+     parse_excl excl;
   ]
 
 let prog =
   if Array.length Sys.argv > 0 then Sys.argv.(0)
-  else "mfilter"
+  else "moutcome"
 
 let () =
   Arg.parse options
@@ -49,8 +49,10 @@ let () =
 log is a log file names.
 Options are:" prog)
 
-let exclude = !exclude
+let rename = !rename
 let select = !select
+let names = !names
+let excl = !excl
 let verbose = !verbose
 let log = match !logs with
 | [log;] -> Some log
@@ -61,32 +63,19 @@ let log = match !logs with
 
 module Verbose = struct let verbose = verbose end
 
-let select_name =
-  match select with
-  | [] -> fun _ -> true
-  | args ->
-      let names = Names.from_fnames (Misc.expand_argv args) in
-      let set = StringSet.of_list names in
-      fun name -> StringSet.mem name set
-
-
-let select_name = match exclude with
-| None -> select_name
-| Some e ->
-    let re = Str.regexp e in
-    (fun name -> 
-      not (Str.string_match re name 0) &&
-      select_name name)
-
-
-
 module LS = LogState.Make(Verbose)
 module LL =
   LexLog.Make
     (struct
       let verbose = verbose
-      let rename x = x
-      let ok = select_name
+      include CheckName.Make
+          (struct
+            let verbose = verbose
+            let rename = rename
+            let select = select
+            let names = names
+            let excl = excl
+          end)
     end)
 
 

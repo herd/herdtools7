@@ -20,24 +20,22 @@ open LogState
 
 let verbose = ref 0
 let logs = ref []
-let exclude = ref None
 let select = ref []
 let rename = ref []
+let names = ref []
+let excl = ref []
 
 let options =
+  let open CheckName in
   [
   
   ("-q", Arg.Unit (fun _ -> verbose := -1),
    "<non-default> be silent");  
   ("-v", Arg.Unit (fun _ -> incr verbose),
    "<non-default> show various diagnostics, repeat to increase verbosity");
-  ("-excl", Arg.String (fun s -> exclude := Some s),
-   "<regexp> exclude tests whose name matches <regexp>");
-  ("-select",
-    Arg.String (fun s ->  select := !select @ [s]),
-   "<name> specify test or test index  file, can be repeated") ;
-  ("-rename", Arg.String (fun s -> rename := !rename @ [s]),     
-    "<name> specify a rename mapping, for renaming some tests, hashes checked") ;
+   parse_rename rename;
+   parse_select select; parse_names names;
+   parse_excl excl;
   ]
 
 let prog =
@@ -62,8 +60,9 @@ let () =
 log1 log2 are log file names.
 Options are:" prog)
 
-let exclude = !exclude
+let excl = !excl
 let select = !select
+let names = !names
 let rename = !rename
 let verbose = !verbose
 let log1,log2 = match !logs with
@@ -72,43 +71,21 @@ let log1,log2 = match !logs with
     eprintf "%s takes two arguments\n" prog ;
     exit 2
 
+
 module Verbose = struct let verbose = verbose end
-
-module LR = LexRename.Make(Verbose)
-
-let rename = LR.read_from_files rename (fun s -> Some s)
-
-let do_rename name =
-  try TblRename.find_value rename name
-  with Not_found -> name
-
-let select_name =
-  match select with
-  | [] -> fun _ -> true
-  | args ->
-      let names = Names.from_fnames (Misc.expand_argv args) in
-      let names = List.rev_map do_rename names in
-      let set = StringSet.of_list names in
-      fun name -> StringSet.mem name set
-
-
-let select_name = match exclude with
-| None -> select_name
-| Some e ->
-    let re = Str.regexp e in
-    (fun name -> 
-      not (Str.string_match re name 0) &&
-      select_name name)
-
-
-
 module LS = LogState.Make(Verbose)
 module LL =
   LexLog.Make
     (struct
       let verbose = verbose
-      let rename = do_rename
-      let ok = select_name
+      include CheckName.Make
+          (struct
+            let verbose = verbose
+            let rename = rename
+            let select = select
+            let names = names
+            let excl = excl
+          end)
     end)
 
 let readlog log = match log with

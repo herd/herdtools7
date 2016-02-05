@@ -22,7 +22,7 @@ module type Opt = sig
   val verbose : int
   val quiet : bool
   val same : bool
-  val name_ok : string -> bool
+  val ok : string -> bool
   val pos : string option
   val neg : string option
 end
@@ -34,7 +34,7 @@ module Make(O:Opt) = struct
       (struct
         let verbose = O.verbose
         let rename n = n
-        let ok = O.name_ok
+        let ok = O.ok
       end)
 
   module LS = LogState.Make(O)
@@ -83,6 +83,7 @@ end
 let verbose = ref 0
 let select = ref []
 let names = ref []
+let excl = ref []
 let pos = ref None
 let neg = ref None
 let quiet = ref false
@@ -101,15 +102,10 @@ let options =
    ("-neg",
      Arg.String (fun s -> neg := Some s),
     "<file> dump negative differences, default "^ (match !neg with None -> "don't dump" | Some s -> s));
-   ("-names",
-    Arg.String
-      (fun s -> names := s :: !names),
-    "<name> specify  selected name file, can be repeated") ;
-   ("-select",
-    Arg.String
-      (fun s -> select := s :: !select),
-    "<name> specify selected test file (or index file), can be repeated") ;       ]
-
+   CheckName.parse_select select;
+   CheckName.parse_names names;
+   CheckName.parse_excl excl;
+ ]
 let logs = ref []
 
 let prog =
@@ -124,25 +120,15 @@ let () =
   - logs are log file names from memevents or litmus
   - options are:" prog)
 
-
-  let names1 = match !names with
-  | [] -> None
-  | args ->
-      Some
-        (List.fold_left
-           (fun r name -> ReadNames.from_file name StringSet.add r)
-           StringSet.empty args)
-
-  let names2 = match !select with
-  | [] -> None
-  | args ->
-      Some
-        (StringSet.of_list
-           (Names.from_fnames (Misc.expand_argv args)))
-
-  let names = match names1,names2 with
-  | (None,ns)|(ns,None) -> ns
-  | Some ns1,Some ns2 -> Some (StringSet.union ns1 ns2)
+module Check =
+  CheckName.Make
+    (struct
+      let verbose = !verbose
+      let rename = []
+      let select = !select
+      let names = !names
+      let excl = !excl
+    end)
 
 module M =
   Make
@@ -150,9 +136,7 @@ module M =
       let verbose = !verbose
       let quiet = !quiet
       let same = !same
-      let name_ok = match names with
-      | None -> fun _ -> true
-      | Some ns -> (fun n -> StringSet.mem n ns)
+      let ok = Check.ok
       let pos = !pos
       let neg = !neg
     end)

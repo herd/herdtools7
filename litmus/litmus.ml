@@ -174,13 +174,10 @@ let opts =
      "<n> insert assembly code in a loop of size <n>" ;
    argbool "-kind" Option.kind "show kind information in output" ;
 (* Change input *)
-   ("-names",
-   Arg.String (fun s -> names := !names @ [s]),
-   "<file> execute on tests whose names are listed in <file>");
+   CheckName.parse_names names ;
+   CheckName.parse_excl excl ;
 (* Change input *)
-  ("-rename",
-   Arg.String (fun s -> rename := Some s),
-   "<file> specify rename mapping");
+   CheckName.parse_rename rename ;
    argstring_withfun "-kinds" set_kinds
      "<file> specify kinds of tests (can be repeated)" ;
    argstring_withfun "-conds" set_conds
@@ -200,6 +197,9 @@ let usage = sprintf   "Usage: %s [opts]* filename" pgm
 let () = Arg.parse opts (fun s -> sources := s :: !sources) usage
 
 let sources = !sources
+let rename = !rename
+let names = !names
+let excl = !excl
 let kinds = !Option.kinds
 let conds = !Option.conds
 let nstates = !Option.nstates
@@ -207,15 +207,16 @@ let verbose = !Option.verbose
 let () =
   try
 (* Time to read kind files.. *)
-    let names = match !names with
-    | [] -> None
-    | names ->
-        Some
-          (ReadNames.from_files names StringSet.add StringSet.empty) in
+    let module Check =
+      CheckName.Make
+        (struct
+          let verbose = verbose
+          let rename = rename
+          let select = []
+          let names = names
+          let excl = excl
+        end) in
     let module L = LexRename.Make(struct let verbose = verbose end) in
-    let rename =  match !rename with
-    | None -> TblRename.empty
-    | Some fname -> L.read_from_file fname (fun s -> Some s) in
     let kinds =
       L.read_from_files kinds ConstrGen.parse_kind in
     let conds =
@@ -236,10 +237,8 @@ let () =
         end) in
     let module Config = struct
 (* Parser *)
-      let check_name = match names with
-      | None -> fun _ -> true
-      | Some names -> (fun name -> StringSet.mem name names)
-      let check_rename = TblRename.find_value_opt rename
+      let check_name = Check.ok
+      let check_rename = Check.rename_opt
       let check_kind = TblRename.find_value_opt kinds
       let check_cond = TblRename.find_value_opt conds
       let check_nstates = TblRename.find_value_opt nstates

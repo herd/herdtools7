@@ -143,7 +143,8 @@ let timeloop = ref (-1)
 let set_timeloop i = timeloop :=  i
 let kind = ref true
 let names = ref []
-let rename = ref None
+let excl = ref []
+let rename = ref []
 let kinds = ref []
 let set_kinds s = kinds := !kinds @ [s]
 let conds = ref []

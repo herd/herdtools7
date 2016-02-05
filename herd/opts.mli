@@ -27,7 +27,8 @@ val includes : string list ref
 val exit_if_failed : bool ref
 val debug : Debug.t ref
 val names : string list ref
-val rename : string option ref
+val excl : string list ref
+val rename : string list ref
 val kinds : string list ref
 val conds : string list ref
 val model : Model.t option  ref

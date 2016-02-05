@@ -22,7 +22,7 @@ open Printf
 module type Config = sig
   val verbose : int
   val shownames : bool
-  val names : StringSet.t option
+  val ok : string -> bool
 end
 
 module Make(O:Config) = struct
@@ -32,9 +32,7 @@ module Make(O:Config) = struct
       (struct
         let verbose = O.verbose
         let rename s = s
-        let ok = match O.names with
-        | None -> fun _ -> true
-        | Some set -> fun s -> StringSet.mem s set 
+        let ok = O.ok
       end)
 
   module LS = LogState.Make(O)
@@ -66,19 +64,13 @@ let shownames = ref true
 let log = ref None
 
 let options =
+  let open CheckName in
   [
   ("-v", Arg.Unit (fun _ -> incr verbose),
    "<non-default> show various diagnostics, repeat to increase verbosity");
    ("-shownames", Arg.Bool (fun b -> shownames := b),
     (sprintf "<bool> show test names in output, default %b" !shownames));
-   ("-names",
-    Arg.String
-      (fun s -> names := s :: !names),
-    "<name> specify  selected name file, can be repeated") ;       
-   ("-select",
-    Arg.String
-      (fun s -> select := s :: !select),
-    "<name> specify selected test file (or index file), can be repeated") ;
+   parse_select select; parse_names names;
  ]
 
 let prog =
@@ -96,29 +88,20 @@ let () =
   - log is a  litmus log
   - options are:" prog)
 
-let names1 = match !names with
-| [] -> None
-| args ->
-    let add t = StringSet.add t in
-    Some
-      (List.fold_left
-         (fun r name -> ReadNames.from_file name add r)
-         StringSet.empty args)
-
-let names2 = match !select with
-| [] -> None
-| args ->
-    let names = Names.from_fnames (Misc.expand_argv args) in
-    Some (StringSet.of_list names)
-
-let names = match names1,names2 with
-| (None,ns)|(ns,None) -> ns
-| Some ns1,Some ns2 -> Some (StringSet.union ns1 ns2)
+module Check =
+  CheckName.Make
+    (struct
+      let verbose = !verbose
+      let rename = []
+      let select = !select
+      let names = !names
+      let excl = []
+    end)
 
 module Config = struct
   let verbose = !verbose
   let shownames = !shownames
-  let names = names
+  let ok = Check.ok
 end
 
 module X = Make(Config)

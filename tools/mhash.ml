@@ -142,7 +142,7 @@ module Top
 
 let verbose = ref 0
 let action = ref Action.Check
-let tests = ref [] 
+let tests = ref []
 let arg = ref []
 
 let prog =
@@ -150,12 +150,12 @@ let prog =
   else "mhash"
 
 let () =
+  let open CheckName in
   Arg.parse
     [
      "-v",Arg.Unit (fun () -> incr verbose), " be verbose";
-     "-select", Arg.String (fun s -> tests := !tests @ [s]),
-     "<name> extract hashes from those tests";
-     begin let module P = ParseTag.Make(Action) in
+     parse_select tests;
+     begin let module P = ParseTag.Make(Action) in     
      P.parse "-action" action "action performed" end ;
     ]
     (fun s -> arg := !arg @ [s])

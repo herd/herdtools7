@@ -20,35 +20,26 @@ open LogState
 
 let verbose = ref 0
 let logs = ref []
-let exclude = ref None
 let select = ref []
 let names = ref []
+let excl = ref []
 let rename = ref []
 let conds = ref []
 let inverse = ref false
 
 let options =
-  [
-  
+  let open CheckName in
+  [ 
   ("-q", Arg.Unit (fun _ -> verbose := -1),
    "<non-default> be silent");  
   ("-v", Arg.Unit (fun _ -> incr verbose),
    "<non-default> show various diagnostics, repeat to increase verbosity");
   ("-inverse", Arg.Bool (fun b -> inverse := b),
    Printf.sprintf "<bool> inverse selection, default %b" !inverse) ;
-  ("-excl", Arg.String (fun s -> exclude := Some s),
-   "<regexp> exclude tests whose name matches <regexp>");
-  ("-select",
-    Arg.String (fun s ->  select := !select @ [s]),
-   "<name> specify test or test index  file, can be repeated") ;
-  ("-names",
-    Arg.String (fun s ->  names := !names @ [s]),
-   "<name> specify names file, can be repeated") ;
+  parse_select select ; parse_names names; parse_excl excl; parse_rename rename ;
   ("-conds",
     Arg.String (fun s -> conds := !conds @ [s]),
    "<name> specify condition to apply to outcomes, can be repeated") ;
-  ("-rename", Arg.String (fun s -> rename := !rename @ [s]),     
-    "<name> specify a rename mapping, for renaming some tests, hashes checked") ;
   ]
 
 let prog =
@@ -62,9 +53,9 @@ let () =
 log is a log file names.
 Options are:" prog)
 
-let exclude = !exclude
 let select = !select
 let names = !names
+let excl = !excl
 let rename = !rename
 let verbose = !verbose
 let conds = !conds
@@ -80,48 +71,22 @@ module Verbose = struct let verbose = verbose end
 
 module LR = LexRename.Make(Verbose)
 let conds = LR.read_from_files conds LogConstr.parse
-let rename = LR.read_from_files rename (fun s -> Some s)
-
-let do_rename name =
-  try TblRename.find_value rename name
-  with Not_found -> name
-
-let select_name =
-  match select with
-  | [] -> fun _ -> true
-  | args ->
-      let names = Names.from_fnames (Misc.expand_argv args) in
-      let names = List.rev_map do_rename names in
-      let set = StringSet.of_list names in
-      fun name -> StringSet.mem name set
-
-
-let select_name = match names with
-| [] -> select_name
-| _ ->
-    let add t = StringSet.add (do_rename t) in
-    let set =
-      List.fold_left
-        (fun r name -> ReadNames.from_file name add r)
-        StringSet.empty names in
-    fun name -> StringSet.mem name set && select_name name
-
-let select_name = match exclude with
-| None -> select_name
-| Some e ->
-    let re = Str.regexp e in
-    (fun name -> 
-      not (Str.string_match re name 0) &&
-      select_name name)
-
 
 module LS = LogState.Make(Verbose)
+
 module LL =
   LexLog.Make
     (struct
       let verbose = verbose
-      let rename = do_rename
-      let ok = select_name
+      include
+        CheckName.Make
+         (struct
+           let verbose = verbose
+           let rename = rename
+           let select = select
+           let names = names
+           let excl = excl
+         end)
     end)
 
 

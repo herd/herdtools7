@@ -20,28 +20,24 @@ open LogState
 
 let verbose = ref 0
 let logs = ref []
-let exclude = ref []
 let select = ref []
+let names = ref []
 let rename = ref []
+let excl = ref []
 let npar = ref 1
 
 let options =
-  [
-  
+  let open CheckName in
+  [  
   ("-q", Arg.Unit (fun _ -> verbose := -1),
    "<non-default> be silent");  
   ("-v", Arg.Unit (fun _ -> incr verbose),
    "<non-default> show various diagnostics, repeat to increase verbosity");
   ("-j", Arg.Int (fun i -> npar := i),
    (sprintf "<int> parallel sum using <n> processeses, default %i" !npar)) ;
-  ("-excl", Arg.String (fun s -> exclude := !exclude @ [s]),
-   "<regexp> exclude tests whose name matches <regexp>");
-  ("-select",
-    Arg.String (fun s ->  select := !select @ [s]),
-   "<name> specify test or test index  file, can be repeated") ;
-  ("-rename", Arg.String (fun s -> rename := !rename @ [s]),     
-    "<name> specify a rename mapping, for renaming some tests, hashes checked") ;
-  ]
+   parse_rename rename;
+   parse_select select; parse_names names; parse_excl excl;
+ ]
 
 let prog =
   if Array.length Sys.argv > 0 then Sys.argv.(0)
@@ -56,10 +52,12 @@ log names are taken from standard input.
 Options are:" prog)
 
 let npar = !npar
-let exclude = !exclude
 let select = !select
 let rename = !rename
+let names = !names
+let excl = !excl
 let verbose = !verbose
+
 module Verbose = struct let verbose = verbose end
 
 (* Options for recursive calls *)
@@ -72,44 +70,23 @@ let expn_opt opt xs k =
 let par_opts =
   expn_opt "-select" select
     (expn_opt "-rename" rename
-       (expn_opt "-excl" exclude []))
+       (expn_opt "-names" names
+          (expn_opt "-select" excl [])))
 
 (* Now handle the same options, which are to be
    honnored only when there are no recursive calls *)
 
-module LR = LexRename.Make(Verbose)
 
-let rename =
-  if npar <= 1 then
-    LR.read_from_files rename (fun s -> Some s)
-  else
-    TblRename.empty
-
-let do_rename name =
-  try TblRename.find_value rename name
-  with Not_found -> name
-
-let select_name =
-  if npar <= 1 then
-    match select with
-    | [] -> fun _ -> true
-    | args ->
-        let names = Names.from_fnames (Misc.expand_argv args) in
-        let names = List.rev_map do_rename names in
-        let set = StringSet.of_list names in
-        fun name -> StringSet.mem name set
-  else fun _ -> true
-
-let select_name =
-  if npar <= 1 then
-    let add t = StringSet.add (do_rename t) in
-    let excl =
-      List.fold_left
-        (fun r name -> ReadNames.from_file name add r)
-        StringSet.empty exclude in
-    fun name -> select_name name && not (StringSet.mem name excl)
-  else select_name
-
+module Check =
+  CheckName.Make
+    (struct
+      let verbose = verbose
+      let check v =  if npar <= 1 then v else []
+      let rename = check rename
+      let select = check select
+      let names = check names
+      let excl = check excl
+    end)
 
 let fnames = match !logs with
 | [] ->
@@ -125,12 +102,12 @@ let fnames = match !logs with
 
 
 module LS = LogState.Make(Verbose)
+
 module LL =
   LexLog.Make
     (struct
       let verbose = verbose
-      let rename = do_rename
-      let ok = select_name
+      include Check
     end)
 
 

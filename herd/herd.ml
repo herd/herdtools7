@@ -374,13 +374,10 @@ let options = [
              (sprintf "bad argument for option -edgeattr: '%s'" tag))),
   "<label,attribute,value> specify an attribute for edges labelled by label";
 (* Select input *)
-  ("-names",
-   Arg.String (fun s -> names := !names @ [s]),
-   "<filename> execute on tests whose names are listed in <filename>");
+  CheckName.parse_names names ;
+  CheckName.parse_excl excl ;
 (* Change input *)
-  ("-rename",
-   Arg.String (fun s -> rename := Some s),
-   "<name> specify rename mapping");
+  CheckName.parse_rename rename ;
   ( "-kinds",
     Arg.String (fun s -> kinds := !kinds @ [s]),
     "<name> specify kind of tests (can be repeated)");
@@ -421,11 +418,6 @@ let () =
   with
   | Misc.Fatal msg -> eprintf "%s: %s\n" prog msg ; exit 2
 
-(* Read names *)
-let names = match !names with
-| [] -> None
-| names -> Some (ReadNames.from_files names StringSet.add StringSet.empty)
-
 (* Read generic model, if any *)
 let libfind =
   let module ML =
@@ -455,13 +447,22 @@ let model,model_opts = match !model with
 | Some _ as m -> m,ModelOption.compat
 | None -> None,ModelOption.default
 
-(* Read kinds/conds files *)
-module LR = LexRename.Make
-  (struct let verbose = if !debug.Debug.lexer  then !verbose else 0 end)
+(* Check names, NB no select argument! *)
+module Verbose =
+  struct let verbose = if !debug.Debug.lexer  then !verbose else 0 end
 
-let rename = match !rename with
-| None -> TblRename.empty
-| Some fname -> LR.read_from_file fname (fun s -> Some s)
+module Check =
+  CheckName.Make
+    (struct
+      include Verbose
+      let rename = !rename
+      let select = []
+      let names = !names
+      let excl = !excl
+    end)
+
+(* Read kinds/conds files *)
+module LR = LexRename.Make(Verbose)
 
 let kinds = LR.read_from_files !kinds ConstrGen.parse_kind 
 
@@ -486,10 +487,8 @@ let () =
     let badflag = !badflag
     let throughflag = !throughflag
 
-    let check_name = match names with
-    | None -> fun _ -> true
-    | Some names -> (fun name -> StringSet.mem name names)
-    let check_rename = TblRename.find_value_opt rename
+    let check_name = Check.ok
+    let check_rename = Check.rename_opt
     let check_kind = TblRename.find_value_opt kinds
     let check_cond =  TblRename.find_value_opt conds
     let libfind = libfind

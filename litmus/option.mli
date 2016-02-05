@@ -93,7 +93,8 @@ val timeloop : int ref
 val set_timeloop : int -> unit
 val kind : bool ref
 val names : string list ref
-val rename : string option ref
+val excl : string list ref
+val rename : string list ref
 val kinds : string list ref
 val set_kinds : string -> unit
 val conds : string list ref

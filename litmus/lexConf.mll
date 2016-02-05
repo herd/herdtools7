@@ -197,8 +197,10 @@ rule main = parse
 (* Change input *)
 | "names" arg
    { names := !names @ [arg] ; main lexbuf }
+| "excl" arg
+   { excl := !excl @ [arg] ; main lexbuf }
 | "rename" arg
-   { rename := Some arg ; main lexbuf }
+   { rename := !rename @ [arg] ; main lexbuf }
 | "kinds" arg
    { set_kinds arg ; main lexbuf }
 | "conds" arg

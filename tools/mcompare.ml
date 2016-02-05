@@ -31,7 +31,7 @@ type runopts =
      do_sum:bool;
      outputfile:string option;
      restrict_by_first_column:bool;
-     rename:string option;
+     rename:string list;
      forcekind: string option;
      kinds:string list;
      show_kinds: bool;
@@ -46,6 +46,7 @@ type runopts =
      quiet : bool ;
      select : string list ;
      names : string list ;
+     excl : string list ;
      check_hash : bool ;
      texmacro : bool ;
      dump_eq : string option ;
@@ -63,7 +64,7 @@ let default_runopts =
    do_sum = false;
    outputfile = None;
    restrict_by_first_column = false;
-   rename = None ;
+   rename = [] ;
    forcekind = None ;
    kinds = [] ; conds = [] ; orders=[];
    show_litmus = true ;
@@ -76,6 +77,7 @@ let default_runopts =
    quiet = false ;
    names = [];
    select = [];
+   excl = [];
    check_hash = true ;
    texmacro = false ;
    dump_eq = None;
@@ -138,7 +140,7 @@ let options =
   ("-macro",
     Arg.Unit
       (delay_ro
-         (fun () ro -> { ro with texmacro = true; })),
+          (fun () ro -> { ro with texmacro = true; })),
       " macros in latex/hevea output");
    ("-names",
     Arg.String
@@ -150,7 +152,7 @@ let options =
     "<name> specify selected test file (or index file), can be repeated") ;
    ("-rename",
     Arg.String
-      (delay_ro (fun s ro -> { ro with rename = Some s })),
+      (delay_ro (fun s ro -> { ro with rename = ro.rename @ [s] })),
     "<name> specify a rename mapping, for changing test names in output") ;
    ("-nohash",
     Arg.Unit
@@ -252,7 +254,7 @@ module type Config = sig
   val chan : out_channel
   val restrict : bool
   val forcekind :  LogState.kind option
-  val rename : string TblRename.t
+  val rename : string -> string
   val kinds : LogState.kind TblRename.t
   val conds : LogConstr.constr TblRename.t
   val orders : unit TblRename.t
@@ -265,6 +267,7 @@ module type Config = sig
   val kmg : bool
   val quiet : bool
   val names : StringSet.t option
+  val ok : string -> bool
   val check_hash : bool
   val macro : bool
   val dump_eq : string option
@@ -278,7 +281,15 @@ end
 module Verbose = struct let verbose = !verb end
 module LR = LexRename.Make(Verbose)
 module LS = LogState.Make(Verbose)
-
+module Check =
+  CheckName.Make
+    (struct
+      let verbose = !verb
+      let rename = runopts.rename
+      let select = runopts.select
+      let names = runopts.names
+      let excl = runopts.excl
+    end)
 
 module Config = struct
   let mode = runopts.mode
@@ -304,13 +315,7 @@ module Config = struct
 
   let orders = LR.read_from_files runopts.orders (fun _ -> Some ())
 
-  let rename = match runopts.rename with
-  | None -> TblRename.empty
-  | Some fname -> LR.read_from_file fname (fun s -> Some s)
-
-  let do_rename name =
-    try TblRename.find_value rename name
-    with Not_found -> name
+  let rename = Check.rename
 
   let show_litmus = runopts.show_litmus
   let show_model = runopts.show_model
@@ -323,27 +328,9 @@ module Config = struct
   let kmg = runopts.kmg
   let quiet = runopts.quiet
 
-
-  let names1 = match runopts.names with
-  | [] -> None
-  | args ->
-      let add t = StringSet.add (do_rename t) in
-      Some
-        (List.fold_left
-           (fun r name -> ReadNames.from_file name add r)
-           StringSet.empty args)
-
-  let names2 = match runopts.select with
-  | [] -> None
-  | args ->
-      let names = Names.from_fnames (Misc.expand_argv args) in
-      let names = List.rev_map do_rename names in
-      Some (StringSet.of_list names)
-
-  let names = match names1,names2 with
-  | (None,ns)|(ns,None) -> ns
-  | Some ns1,Some ns2 -> Some (StringSet.union ns1 ns2)
-
+  let names = Check.names
+  let ok = Check.ok
+      
   let check_hash = runopts.check_hash
   let macro = runopts.texmacro
   let dump_eq = runopts.dump_eq
@@ -363,22 +350,6 @@ module Make (Opt:Config) = struct
   open LogState
 
   module D = Matrix.Dump(Opt)
-
-  let do_rename name =
-    try TblRename.find_value Opt.rename name
-    with Not_found -> name
-
-(* Filter test by names while reading logs *)
-  let ok_match = match Opt.filter with
-  | None -> (fun _ -> true)
-  | Some e ->  (fun name -> Str.string_match e name 0)
-
-  let ok_select = match  Opt.names with
-  | None -> fun _ -> true
-  | Some set -> fun name -> StringSet.mem name set
-
-
-  let ok_name name = ok_select name && ok_match name
 
 (* Erase some columns at the very last moment *)
   let erase_cols logs xs = match xs with
@@ -415,13 +386,8 @@ module Make (Opt:Config) = struct
 (* Read log files *)
 (******************)
 
-  module LL =
-    LexLog.Make
-      (struct
-        let verbose = Opt.verbose
-        let rename = do_rename
-        let ok = ok_select
-      end)
+  module LL = LexLog.Make(Opt)
+
 
 
   type hash_t =
@@ -1355,7 +1321,7 @@ end
 
 let () =
 try
-    let module S = Make(Config) in
+  let module S = Make(Config) in
     S.show runopts.do_show (List.rev !logs) ; exit 0
   with Misc.Fatal msg ->
     eprintf "Fatal error: %s\n%!" msg ; exit 2

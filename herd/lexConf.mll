@@ -132,8 +132,10 @@ and opt = parse
 (* Change input *)
 | "names" arg
    { names := !names @ [arg] }
+| "excl" arg
+   { excl := !excl @ [arg] }
 | "rename" arg
-   { rename := Some arg }
+   { rename := !rename @ [arg] }
 | "kinds" arg
    { kinds := !kinds @ [arg] }
 | "conds" arg
