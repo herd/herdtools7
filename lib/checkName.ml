@@ -26,7 +26,7 @@ let parse_select select =
 let parse_names names =
   "-names",
   Arg.String (fun s ->  names := !names @ [s]),
-  "<name> specify name file, can be repeated"
+  "<name> specify file of names, can be repeated"
 
 let parse_rename rename =
   "-rename", Arg.String (fun s -> rename := !rename @ [s]),     
@@ -34,7 +34,7 @@ let parse_rename rename =
 
 let parse_excl excl =
   "-excl", Arg.String (fun s -> excl := !excl @ [s]),     
-  "<name> secify file of names to be excluded, can be repeated"
+  "<name> specify file of names to be excluded, can be repeated"
 
 module
   Make

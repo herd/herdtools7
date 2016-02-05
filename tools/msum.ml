@@ -71,10 +71,10 @@ let par_opts =
   expn_opt "-select" select
     (expn_opt "-rename" rename
        (expn_opt "-names" names
-          (expn_opt "-select" excl [])))
+          (expn_opt "-excl" excl [])))
 
 (* Now handle the same options, which are to be
-   honnored only when there are no recursive calls *)
+   honored only when there are no recursive calls *)
 
 
 module Check =
