@@ -313,7 +313,9 @@ let transpose_out m =
       let m = List.sort (fun (k1,_) (k2,_) -> order k1 k2) m in
       transpose_out m
 
-  let sort_matrix_by_col1 col1 ?col2:col2 m =
+  let sort_matrix_by_col1 col1 ?col2:col2 m = match col1 with
+  | [| |] -> col1,col2,m
+  | _ ->
 (* Add col2 *)
     let m = match col2 with
     | None -> m

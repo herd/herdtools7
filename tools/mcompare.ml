@@ -351,6 +351,31 @@ module Make (Opt:Config) = struct
 
   module D = Matrix.Dump(Opt)
 
+
+(* File utilities *)
+
+let dump_chan s chan = StringSet.iter (fprintf chan "%s\n") s
+
+let dump_file s name = Misc.output_protect (dump_chan s) name
+
+(* Highlight *)
+
+  let highlight_bad s = 
+    let open OutMode in
+    match mode with
+    | Txt -> s
+    | LaTeX|HeVeA|HeVeANew ->
+        if Config.macro then sprintf "\\colorinvalid{%s}" s
+        else sprintf "{\\color{red}%s}" s
+
+  let highlight_moderate s =
+    let open OutMode in
+    match mode with
+    | Txt -> s
+    | LaTeX|HeVeA|HeVeANew ->
+        if Config.macro then sprintf "\\colorunseen{%s}" s
+        else sprintf "{\\color{blue}%s}" s
+
 (* Erase some columns at the very last moment *)
   let erase_cols logs xs = match xs with
   | [] -> []
@@ -415,7 +440,7 @@ module Make (Opt:Config) = struct
                 end
               with Not_found ->
                 Hashtbl.replace table t.tname {h=h; orig=fname;}
-                end)
+              end)
         ts in
 
     let check_hashes ts =
@@ -478,9 +503,9 @@ module Make (Opt:Config) = struct
         | t1::_ -> from_tests t1.tests
       else match Opt.names with
       | None ->
-        let names =
-          List.map (fun {tests=ts;_} -> from_tests ts) ts in
-        StringSet.unions names
+          let names =
+            List.map (fun {tests=ts;_} -> from_tests ts) ts in
+          StringSet.unions names
       |  Some set -> set in
     let names =
       match Opt.filter with
@@ -519,6 +544,7 @@ module Make (Opt:Config) = struct
 
 
   let show_validate as_kinds tnames ts =
+    let neg = ref StringSet.empty and pos = ref StringSet.empty in
     let keys = K.Kind.add tnames ts in
     let module B =
       Matrix.Build
@@ -533,14 +559,24 @@ module Make (Opt:Config) = struct
                  (LS.pp_validation t.validation)
                  (LS.pp_kind t.kind)]
           | k ->
+              begin match k,t.validation with
+              | Forbid,Ok ->
+                  pos := StringSet.add  t.tname !pos
+              | Allow,No ->
+                  neg := StringSet.add  t.tname !neg
+              | _,_ -> ()
+              end ;
               if as_kinds then
                 begin match LogState.tr_validate k t.kind t.validation with
-                | Some k -> [LS.pp_kind k]
+                | Some kv ->
+                    let pp =
+                      if k <> kv then highlight_bad else Misc.identity in
+                    [pp (LS.pp_kind kv)]
                 | None ->
                     [sprintf "%s (%s)"
                        (LS.pp_validation t.validation)
                        (LS.pp_kind t.kind)]
-              end else
+                end else
                 [LS.pp_validation t.validation]
 
           include ValidateAdd
@@ -552,7 +588,7 @@ module Make (Opt:Config) = struct
         (List.map (fun t -> 1,pp_name t.name) ts) []
         keys
         m
-    else
+    else begin
       let sum =
         if as_kinds then []
         else
@@ -563,7 +599,18 @@ module Make (Opt:Config) = struct
         keys
         ~col2:(K.Kind.pps keys)
         m ;
-    output_char chan '\n'
+      output_char chan '\n'
+    end ;
+    begin match dump_pos with
+    | None -> ()
+    | Some file ->  dump_file !pos file
+    end ;
+    begin match dump_neg with
+    | None -> ()
+    | Some file ->  dump_file !neg file
+    end ;
+    ()
+      
 
   module FmtValidate = struct
 
@@ -604,20 +651,6 @@ module Make (Opt:Config) = struct
     | ConstrGen.NotExistsState _ -> Forbid
     | ConstrGen.ExistsState _ -> Allow
     | ConstrGen.ForallStates _ -> Require
-
-
-
-  let highlight_bad s =  match mode with
-  | Txt -> s
-  | LaTeX|HeVeA|HeVeANew ->
-      if Config.macro then sprintf "\\colorinvalid{%s}" s
-      else sprintf "{\\color{red}%s}" s
-
-  let highlight_moderate s =  match mode with
-  | Txt -> s
-  | LaTeX|HeVeA|HeVeANew ->
-      if Config.macro then sprintf "\\colorunseen{%s}" s
-      else sprintf "{\\color{blue}%s}" s
 
 
 
@@ -715,7 +748,7 @@ module Make (Opt:Config) = struct
              t1.tests keys)
           m
       else
-         dump ts "Revalidation" true
+        dump ts "Revalidation" true
           (List.map (fun t -> 1,pp_name t.name) ts) []
           keys m ;
       output_char chan '\n'
@@ -1227,10 +1260,6 @@ let format_int_string s =
             output_char chan '\n' in
       dump_set "positive" '+' !pos ;
       dump_set "negative" '-' !neg ;
-      let dump_chan s chan =
-        StringSet.iter
-          (fprintf chan "%s\n") s in
-      let dump_file s name = Misc.output_protect (dump_chan s) name in
       begin match dump_eq with
       | None -> ()
       | Some file -> dump_file !eq file
