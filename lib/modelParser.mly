@@ -265,7 +265,8 @@ simple:
 | LPAR tupleargs RPAR { Op (mk_loc (),Tuple,$2) }
 | LPAR exp RPAR { $2 }
 | BEGIN exp END { $2 }
-
+| LBRAC exp RBRAC { Op1 (mk_loc(),ToId,$2) }
+ 
 tupleargs:
 | exp COMMA tupleend { $1 :: $3 }
 

@@ -4,6 +4,6 @@ PREFIX=$$HOME
 OCBOPT=
 default: all
 
-luc all install clean:
+luc all byte install clean:
 	for d in $(SRC) ; \
 	do $(MAKE) $(MFLAGS) PREFIX=$(PREFIX) OCBOPT=$(OCBOPT) -C $$d $@ ; done

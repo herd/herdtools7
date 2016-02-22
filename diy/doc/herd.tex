@@ -957,6 +957,7 @@ Expressions are evaluated by \herd, yielding a value.
 \alt \NT{expr}\T{*} \orelse \NT{expr}\T{+} \orelse \NT{expr}\T{?}
 \orelse \NT{expr}\T{\textasciicircum-1}
 \alt \T{\textasciitilde}\NT{expr}
+\alt \T{[}\NT{expr}\T{]}
 \alt \NT{expr}\T{|}\NT{expr} \orelse
 \NT{expr}\T{++}\NT{expr} \orelse
 \NT{expr}\T{;}\NT{expr} \orelse
@@ -1033,6 +1034,12 @@ Notice that postfix operators operate on relations only.
 
 There is one prefix operator~\T{\textasciitilde} that performs
 relation and set complement.
+
+Finally, there is one last unary operator: \synt{\T{[}\NT{expr}\T{]}}
+that evaluate \synt{\NT{expr}} to an event set and returns the identity
+relation over this set.
+
+
 
 Infix operators are
 \T{|} (union), \T{++} (set addition),

@@ -34,6 +34,7 @@ type op1 =
   | Plus | Star | Opt 
   | Comp (** Set or relation complement *)
   | Inv  (** Relation inverse *)
+  | ToId (** Lift set to id relation (ie toido(S) = (S * S) & id *)
 
 type konst = Empty of set_or_rln | Universe of set_or_rln
 type var = string
