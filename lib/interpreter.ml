@@ -969,7 +969,6 @@ module Make
             | Rel r -> Rel (E.EventRel.inverse r)
             | v -> error_rel env.EV.silent (get_loc e) v
             end
-(*
         | Op1 (_,ToId,e) ->
             begin match eval env e with
             | V.Empty -> V.Empty
@@ -977,7 +976,6 @@ module Make
             | Set s -> Rel (E.EventRel.set_to_rln s)
             | v -> error_events env.EV.silent (get_loc e) v
             end
-*)
 (* One xplicit N-ary operator *)
         | ExplicitSet (loc,es) ->
             let vs = List.map (eval_loc env) es in
