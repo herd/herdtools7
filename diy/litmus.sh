@@ -17,3 +17,5 @@ EXPORT=$FINAL
 ( cleandir $FINAL/$NAME )
 ( cd $EXPORT && tar zcf $NAME.tar.gz $NAME )
 ( mv $EXPORT/$NAME.tar.gz . && /bin/rm -rf $EXPORT )
+cp $NAME.tar.gz $DEST/old
+ln -sf $DEST/old/$NAME.tar.gz $DEST/diy.tar.gz
