@@ -367,7 +367,9 @@ let transpose_out m =
   (* Totally innefficient, well... *)
   let add_last xs x = Array.append xs [| x |]
 
-  let dump legend _horiz row1 rown col1 ?col2:col2 m =
+  let dump legend _horiz row1 rown col1 ?col2:col2 m = match col1 with
+  | [| |] -> ()
+  | _ ->
     let col1 = Array.map (fun k -> k.Key.name) col1 in
     let col1,col2,m = match rown with
     | [] -> col1,col2,m

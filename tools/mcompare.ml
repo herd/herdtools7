@@ -599,7 +599,7 @@ let dump_file s name = Misc.output_protect (dump_chan s) name
         keys
         ~col2:(K.Kind.pps keys)
         m ;
-      output_char chan '\n'
+(*      output_char chan '\n' *)
     end ;
     begin match dump_pos with
     | None -> ()
