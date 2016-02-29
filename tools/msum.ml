@@ -25,6 +25,7 @@ let names = ref []
 let rename = ref []
 let excl = ref []
 let npar = ref 1
+let hexa = ref false
 
 let options =
   let open CheckName in
@@ -35,6 +36,7 @@ let options =
    "<non-default> show various diagnostics, repeat to increase verbosity");
   ("-j", Arg.Int (fun i -> npar := i),
    (sprintf "<int> parallel sum using <n> processeses, default %i" !npar)) ;
+   parse_hexa hexa;
    parse_rename rename;
    parse_select select; parse_names names; parse_excl excl;
  ]
@@ -57,6 +59,7 @@ let rename = !rename
 let names = !names
 let excl = !excl
 let verbose = !verbose
+let hexa = !hexa
 
 module Verbose = struct let verbose = verbose end
 
@@ -108,6 +111,7 @@ module LL =
     (struct
       let verbose = verbose
       include Check
+      let hexa = hexa
     end)
 
 

@@ -23,6 +23,8 @@ let logs = ref []
 let forall = ref false
 let optcond = ref false
 let acceptempty = ref false
+let hexa = ref false
+
 let options =
   [
   
@@ -39,6 +41,7 @@ let options =
    ("-acceptempty", Arg.Bool (fun b -> acceptempty := b),
     sprintf
       "<bool> output enmpty conditions, default %b" !acceptempty);
+    CheckName.parse_hexa hexa;
   ]
 
 let prog =
@@ -53,6 +56,7 @@ log is a log file names.
 Options are:" prog)
 
 let verbose = !verbose
+let hexa = !hexa
 let log = match !logs with
 | [log;] -> Some log
 | [] -> None
@@ -72,6 +76,7 @@ module LL =
       let verbose = verbose
       let rename = do_rename
       let ok = select_name
+      let hexa = hexa
     end)
 
 let acceptempty = !acceptempty

@@ -26,6 +26,7 @@ let excl = ref []
 let rename = ref []
 let conds = ref []
 let inverse = ref false
+let hexa = ref false
 
 let options =
   let open CheckName in
@@ -36,6 +37,7 @@ let options =
    "<non-default> show various diagnostics, repeat to increase verbosity");
   ("-inverse", Arg.Bool (fun b -> inverse := b),
    Printf.sprintf "<bool> inverse selection, default %b" !inverse) ;
+  parse_hexa hexa;
   parse_select select ; parse_names names; parse_excl excl; parse_rename rename ;
   ("-conds",
     Arg.String (fun s -> conds := !conds @ [s]),
@@ -59,6 +61,7 @@ let excl = !excl
 let rename = !rename
 let verbose = !verbose
 let conds = !conds
+let hexa = !hexa
 let log = match !logs with
 | [log;] -> Some log
 | [] -> None
@@ -87,6 +90,7 @@ module LL =
            let names = names
            let excl = excl
          end)
+      let hexa = hexa
     end)
 
 

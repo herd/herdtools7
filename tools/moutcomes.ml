@@ -24,6 +24,7 @@ let rename = ref []
 let select = ref []
 let names = ref []
 let excl = ref []
+let hexa = ref false
 
 let options =
   let open CheckName in
@@ -32,6 +33,7 @@ let options =
    "<non-default> be silent");  
   ("-v", Arg.Unit (fun _ -> incr verbose),
    "<non-default> show various diagnostics, repeat to increase verbosity");
+     parse_hexa hexa;
      parse_rename rename;
      parse_select select;
      parse_names names;
@@ -54,6 +56,7 @@ let select = !select
 let names = !names
 let excl = !excl
 let verbose = !verbose
+let hexa = !hexa
 let log = match !logs with
 | [log;] -> Some log
 | [] -> None
@@ -76,6 +79,7 @@ module LL =
             let names = names
             let excl = excl
           end)
+      let hexa = hexa
     end)
 
 

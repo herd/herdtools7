@@ -36,6 +36,10 @@ let parse_excl excl =
   "-excl", Arg.String (fun s -> excl := !excl @ [s]),     
   "<name> specify file of names to be excluded, can be repeated"
 
+let parse_hexa hexa =
+  "-hexa", Arg.Bool (fun b -> hexa := b),     
+  (Printf.sprintf "<bool> specify hexadecimal output, default %b" !hexa)
+
 module
   Make
     (I:sig
