@@ -53,6 +53,9 @@ type do_observers =
   | Accept  (* was true  *)
   | Enforce (* is new *)
   | Local   (* Local observer when possible *)
+  | Three   (* Accept up to three writes, no observers *)
+  | Four    (* Accept up to four writes, no observers  *)
+
 let do_observers = ref Avoid
 type obs_type = Straight | Fenced | Loop
 let obs_type = ref Straight
@@ -94,7 +97,9 @@ let parse_do_observers s = match s with
 | "accept"|"true" -> Accept
 | "force" -> Enforce
 | "local" -> Local
-| _ -> failwith "Wrong observer mode, choose avoid, accept, force or local"
+| "three" -> Three
+| "four"  -> Four
+| _ -> failwith "Wrong observer mode, choose avoid, accept, force, local, three or four"
 
 let parse_obs_type = function
   | "straight" -> Straight
