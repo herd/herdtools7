@@ -56,7 +56,7 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
 
     let movne rA rB k = mov  rA (Neq (IAR_roa (Rega rB),IAR_imm k))
     let moveq rA rB k = mov  rA (Eq (IAR_roa (Rega rB),IAR_imm k))
-    let xor r1 r2 r3 = mov r1 (Xor (IAR_roa (Rega r2),IAR_roa (Rega r2)))
+    let xor r1 r2 r3 = mov r1 (Xor (IAR_roa (Rega r2),IAR_roa (Rega r3)))
     let addk r1 r2 k = mov r1 (Add (IAR_roa (Rega r2),IAR_imm k))
     let branch reg lab = Pbranch (reg,lab,[])
 

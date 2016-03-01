@@ -14,6 +14,11 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+module Config = struct
+  let naturalsize = MachSize.Word
+end
+
+module Make(C:sig val naturalsize : MachSize.sz end) = struct
 open Code
 open Printf
 
@@ -23,10 +28,18 @@ include AArch64Base
 let tr_endian = Misc.identity
 
 module ScopeGen = ScopeGen.NoGen
+(* Mixed size *)
+
+module Mixed =
+  MachMixed.Make
+    (struct
+      let naturalsize = Some C.naturalsize
+    end)
+
 (* AArch64 has more atoms that others *)
 let bellatom = false
 type atom_rw =  PP | PL | AP | AL
-type atom = Acq | Rel | Atomic of atom_rw
+type atom = Acq | Rel | Atomic of atom_rw | Mixed of MachMixed.t
 
 let default_atom = Atomic PP
 
@@ -34,6 +47,7 @@ let applies_atom a d = match a,d with
 | Acq,R
 | Rel,W
 | Atomic _,(R|W)
+| Mixed _,(R|W)
   -> true
 | _ -> false
 
@@ -55,20 +69,45 @@ let pp_atom = function
   | Atomic rw -> sprintf "X%s" (pp_atom_rw rw)
   | Rel -> "L"
   | Acq -> "A"
+  | Mixed mix -> Mixed.pp_mixed mix
 
 let compare_atom = Pervasives.compare
 
+let fold_mixed f r = Mixed.fold_mixed (fun mix r -> f (Mixed mix) r) r
+
 let fold_atom_rw f r = f PP (f PL (f AP (f AL r)))
+
 let fold_atom f r = 
+  let r = fold_mixed f r in
   f Acq (f Rel (fold_atom_rw (fun rw -> f (Atomic rw)) r))
 
-let worth_final = function
-  | Atomic _ -> true
-  | Acq|Rel -> false
+  let worth_final = function
+    | Atomic _ -> true
+    | Acq|Rel|Mixed _ -> false
 
-let varatom_dir _d f r = f None r
 
-include NoMixed
+  let varatom_dir _d f r = f None r
+
+  let tr_value ao v = match ao with
+  | None| Some (Acq|Rel|Atomic _) -> v
+  | Some (Mixed (sz,_)) -> Mixed.tr_value sz v
+
+  module ValsMixed =
+    MachMixed.Vals
+      (struct
+        let naturalsize () = C.naturalsize
+        let endian = MachSize.Little
+      end)
+
+let overwrite_value v ao w = match ao with
+  | None| Some (Atomic _|Acq|Rel) -> w (* total overwrite *)
+  | Some (Mixed (sz,o)) ->
+      ValsMixed.overwrite_value v sz o w
+
+ let extract_value v ao = match ao with
+  | None| Some (Atomic _|Acq|Rel) -> v
+  | Some (Mixed (sz,o)) ->
+      ValsMixed.extract_value v sz o
 
 (* End of atoms *)
 
@@ -135,3 +174,4 @@ include
       let free_registers = allowed_for_symb
     end)
 
+end

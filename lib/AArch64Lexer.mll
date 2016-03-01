@@ -31,6 +31,8 @@ let check_name name = match name with
 | "cbnz"  | "CBNZ" -> CBNZ
 (* Memory *)
 | "ldr"|"LDR" -> LDR
+| "ldrb"|"LDRB" -> LDRB
+| "ldrh"|"LDRH" -> LDRH
 | "ldar"|"LDAR" -> LDAR
 | "ldxr"|"LDXR" -> LDXR
 | "ldaxr"|"LDAXR" -> LDAXR
@@ -38,6 +40,8 @@ let check_name name = match name with
 | "stlr"|"STLR" -> STLR
 | "stxr"|"STXR" -> STXR
 | "stlxr"|"STLXR" -> STLXR
+| "strb"|"STRB" -> STRB
+| "strh"|"STRH" -> STRH
 (* Operations *)
 | "sxtw"|"SXTW" -> SXTW
 | "mov"|"MOV" -> MOV

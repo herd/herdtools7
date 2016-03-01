@@ -200,6 +200,11 @@ module Make (C:Sem.Config)(V:Value.S)
 	(* Barrier *)
 	| I_FENCE b -> 
 	   (create_barrier b ii) >>! B.Next
+        (*  Cannot handle *)
+        | (I_LDRBH (_, _, _, _)|I_STRBH (_, _, _, _)) as i ->
+            Warn.fatal "illegal instruction: %s\n"
+              (AArch64.dump_instruction i)
+              
       )
   end
 

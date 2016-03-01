@@ -224,6 +224,11 @@ let str_memo = function
   | YY -> "STXR"
   | LY -> "STLXR"
 
+type bh = B | H (* Byte or Halfword *)
+let pp_bh = function
+  | B -> "B"
+  | H -> "H"
+
 
 type 'k kinstruction =
 (* Branches *)
@@ -237,6 +242,9 @@ type 'k kinstruction =
   | I_STR of variant * reg * reg * 'k kr
   | I_STLR of variant * reg * reg
   | I_STXR of variant * st_type * reg * reg * reg
+(* Idem for bytes and half words *)
+  | I_LDRBH of bh * reg * reg * 'k kr
+  | I_STRBH of bh * reg * reg * 'k kr
 (* Operations *)
   | I_MOV of variant * reg * 'k
   | I_SXTW of reg * reg
@@ -338,6 +346,10 @@ let do_pp_instruction m =
       pp_mem "STLR" v r1 r2 k0
   | I_STXR (v,t,r1,r2,r3) ->
       pp_stxr (str_memo t) v r1 r2 r3
+  | I_LDRBH (bh,r1,r2,k) ->
+      pp_mem ("LDR"^pp_bh bh) V32 r1 r2 k
+  | I_STRBH (bh,r1,r2,k) ->
+      pp_mem ("STR"^pp_bh bh) V32 r1 r2 k
 (* Operations *)
   | I_MOV (v,r,k) ->
       pp_ri "MOV" v r k
@@ -391,6 +403,7 @@ let fold_regs (f_regs,f_sregs) =
     -> fold_reg r1 (fold_reg r2 c)
   | I_LDR (_,r1,r2,kr) | I_STR (_,r1,r2,kr)
   | I_OP3 (_,_,r1,r2,kr)
+  | I_LDRBH (_,r1,r2,kr) | I_STRBH (_,r1,r2,kr)
     -> fold_reg r1 (fold_reg r2 (fold_kr kr c))
   | I_STXR (_,_,r1,r2,r3)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
@@ -428,6 +441,11 @@ let map_regs f_reg f_symb =
       I_STLR (v,map_reg r1,map_reg r2)
   | I_STXR (v,t,r1,r2,r3) ->
       I_STXR (v,t,map_reg r1,map_reg r2,map_reg r3)
+(* Byte and Half loads and stores *)
+  | I_LDRBH (v,r1,r2,kr) ->
+     I_LDRBH (v,map_reg r1,map_reg r2,map_kr kr)
+  | I_STRBH (v,r1,r2,kr) ->
+     I_STRBH (v,map_reg r1,map_reg r2,map_kr kr)
 (* Operations *)
   | I_MOV (v,r,k) ->
       I_MOV (v,map_reg r,k)
@@ -458,6 +476,8 @@ let get_next = function
   | I_LDAR _
   | I_STLR _
   | I_STXR _
+  | I_LDRBH _
+  | I_STRBH _
   | I_MOV _
   | I_SXTW _
   | I_OP3 _
@@ -488,6 +508,8 @@ include Pseudo.Make
             as keep -> keep
         | I_LDR (v,r1,r2,kr) -> I_LDR (v,r1,r2,kr_tr kr)
         | I_STR (v,r1,r2,kr) -> I_STR (v,r1,r2,kr_tr kr)
+        | I_LDRBH (v,r1,r2,kr) -> I_LDRBH (v,r1,r2,kr_tr kr)
+        | I_STRBH (v,r1,r2,kr) -> I_STRBH (v,r1,r2,kr_tr kr)
         | I_MOV (v,r,k) -> I_MOV (v,r,k_tr k)
         | I_OP3 (v,op,r1,r2,kr) -> I_OP3 (v,op,r1,r2,kr_tr kr)
 
@@ -495,6 +517,7 @@ include Pseudo.Make
       let get_naccesses = function
         | I_LDR _ | I_LDAR _
         | I_STR _ | I_STLR _ | I_STXR _
+        | I_LDRBH _ | I_STRBH _
           -> 1
         | I_B _
         | I_BC _

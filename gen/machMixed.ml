@@ -63,4 +63,50 @@ module Make(C:Config) = struct
   | Quad ->
       let x = tr_value Word v in
       x lsl 32 + x
+
+
 end
+
+
+module type ValsConfig = sig
+  val naturalsize : unit -> MachSize.sz 
+  val endian : MachSize.endian
+end
+
+module Vals(C:ValsConfig) = struct
+  let correct_offset = match C.endian with
+  | Little -> fun _ o -> o
+  | Big ->
+      let nsz = C.naturalsize () in
+      fun sz o ->
+        let bsz = nbytes sz in
+        let bo = o / bsz in
+        let no = bsz * ((nbytes nsz/bsz)-bo-1) in
+(*            Printf.eprintf "tr: %i -> %i\n" o no ; *)
+        no
+
+  let overwrite_value v sz o w  =
+    if sz = C.naturalsize () then w
+    else
+      let o = correct_offset sz o in
+      let sz_bits =  MachSize.nbits sz in
+      let nshift =  o * 8 in
+      let wshifted = w lsl nshift in
+      let mask = lnot (((1 lsl sz_bits) - 1) lsl nshift) in
+      (v land mask) lor wshifted
+
+  let extract_value v sz o =
+    let sz_bits =  MachSize.nbits sz in
+    let o = correct_offset sz o in
+    let nshift =  o * 8 in
+    let mask =
+      match sz with
+      | Quad -> -1
+      | _ -> (1 lsl sz_bits) - 1 in
+    let r = (v lsr nshift) land mask in
+(*      Printf.eprintf "EXTRACT (%s,%i)[0x%x]: 0x%x -> 0x%x\n"
+        (MachSize.pp sz) o mask v r ; *)
+    r
+
+end
+    

@@ -100,7 +100,7 @@ let () =
       let module M = Build(ARMArch) in
       M.zyva
   | AArch64 ->
-      let module M = Build(AArch64Arch) in
+      let module M = Build(AArch64Arch.Make(AArch64Arch.Config)) in
       M.zyva
   | MIPS ->
       let module M = Build(MIPSArch) in

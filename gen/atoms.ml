@@ -92,7 +92,7 @@ let () =
       let module M = Make(ARMArch) in
       M.zyva
   | AArch64 ->
-      let module M = Make(AArch64Arch) in
+      let module M = Make(AArch64Arch.Make(AArch64Arch.Config)) in
       M.zyva
   | MIPS ->
       let module M = Make(MIPSArch) in

@@ -21,7 +21,6 @@ module type Config = sig
 end
 
 module Make(C:Config) = struct
-  open MachSize
 
   module Mixed = MachMixed.Make(C)
 
@@ -70,45 +69,20 @@ module Make(C:Config) = struct
   | Some (Mixed (sz,_)) -> Mixed.tr_value sz v
 
 
-  let correct_offset = match C.endian with
-  | Little -> fun _ o -> o
-  | Big ->
-      begin match C.naturalsize with
-      | None -> fun _ _ -> assert false
-      | Some nsz ->
-          fun sz o ->
-            let bsz = nbytes sz in
-            let bo = o / bsz in
-            let no = bsz * ((nbytes nsz/bsz)-bo-1) in
-(*            Printf.eprintf "tr: %i -> %i\n" o no ; *)
-            no
-      end
+  module ValsMixed =
+    MachMixed.Vals
+      (struct
+        let naturalsize () = Misc.as_some C.naturalsize
+        let endian = C.endian
+      end)
 
   let overwrite_value v ao w = match ao with
   | None| Some (Atomic|Reserve) -> w (* total overwrite *)
   | Some (Mixed (sz,o)) ->
-      if sz = Misc.as_some C.naturalsize then w
-      else
-        let o = correct_offset sz o in
-        let sz_bits =  MachSize.nbits sz in
-        let nshift =  o * 8 in
-        let wshifted = w lsl nshift in
-        let mask = lnot (((1 lsl sz_bits) - 1) lsl nshift) in
-        (v land mask) lor wshifted
+      ValsMixed.overwrite_value v sz o w
 
   let extract_value v ao = match ao with
   | None| Some (Atomic|Reserve) -> v
   | Some (Mixed (sz,o)) ->
-      let sz_bits =  MachSize.nbits sz in
-      let o = correct_offset sz o in
-      let nshift =  o * 8 in
-      let mask =
-        match sz with
-        | Quad -> -1
-        | _ -> (1 lsl sz_bits) - 1 in
-      let r = (v lsr nshift) land mask in
-(*      Printf.eprintf "EXTRACT (%s,%i)[0x%x]: 0x%x -> 0x%x\n"
-        (MachSize.pp sz) o mask v r ; *)
-      r
-
+      ValsMixed.extract_value v sz o
 end

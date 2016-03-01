@@ -20,7 +20,8 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
   struct
 
 (* Common *)
-    module A64 = AArch64Arch
+    let naturalsize = TypBase.get_size Cfg.typ
+    module A64 = AArch64Arch.Make(struct let naturalsize = naturalsize end)
     include CompileCommon.Make(Cfg)(A64)
 
     let ppo _f k = k
@@ -45,6 +46,10 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
             r,(Reg (p,r),loc)::init,st in
       find_rec init
 
+    let next_const st p init v =
+      let r,st = next_reg st in
+      r,(Reg (p,r),Printf.sprintf "0x%x" v)::init,st
+
     let pseudo = List.map (fun i -> Instruction i)
 
     let tempo1 st = A.alloc_trashed_reg "T1" st (* May be used for address *)
@@ -63,6 +68,13 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
     let cbz r1 lbl = I_CBZ (vloc,r1,lbl)
     let cbnz r1 lbl = I_CBNZ (vloc,r1,lbl)
     let mov r i = I_MOV (vloc,r,i)
+    let mov_mixed sz r i =
+      let v =
+        let open MachSize in
+        match sz with
+        | Byte|Short|Word -> V32
+        | Quad -> V64 in
+      I_MOV (v,r,i)
     let cmpi r i = I_OP3 (vloc,SUBS,ZR,r,K i)
     let cmp r1 r2 = I_OP3 (vloc,SUBS,ZR,r1,RV (vloc,r2))
     let bne lbl = I_BC (NE,lbl)
@@ -71,12 +83,28 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
 (*    let add r1 r2 r3 = I_OP3 (vloc,ADD,r1,r2,r3) *)
     let add64 r1 r2 r3 = I_OP3 (V64,ADD,r1,r2,RV (vloc,r3))
 
+    let ldr_mixed r1 r2 sz o =
+      let open MachSize in
+      match sz with
+      | Byte -> I_LDRBH (B,r1,r2,K o)
+      | Short -> I_LDRBH (H,r1,r2,K o)
+      | Word -> I_LDR (V32,r1,r2,K o)
+      | Quad -> I_LDR (V64,r1,r2,K o)
+
     let ldr r1 r2 = I_LDR (vloc,r1,r2,K 0)
     let ldar r1 r2 = I_LDAR (vloc,AA,r1,r2)
     let ldxr r1 r2 = I_LDAR (vloc,XX,r1,r2)
     let ldaxr r1 r2 = I_LDAR (vloc,AX,r1,r2)
     let sxtw r1 r2 = I_SXTW (r1,r2)
     let ldr_idx r1 r2 idx = I_LDR (vloc,r1,r2,RV (vloc,idx))
+
+    let str_mixed sz o r1 r2 =
+      let open MachSize in
+      match sz with
+      | Byte -> I_STRBH (B,r1,r2,K o)
+      | Short -> I_STRBH (H,r1,r2,K o)
+      | Word -> I_STR (V32,r1,r2,K o)
+      | Quad -> I_STR (V64,r1,r2,K o)
 
     let str r1 r2 = I_STR (vloc,r1,r2,K 0)
     let stlr r1 r2 = I_STLR (vloc,r1,r2)
@@ -101,6 +129,11 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
       val load : reg -> reg -> instruction
       val load_idx : A.st -> reg -> reg -> reg -> instruction list * A.st
     end
+
+    let emit_load_mixed sz o st p init x =
+      let rA,st = next_reg st in
+      let rB,init,st = next_init st p init x in
+      rA,init,pseudo [ldr_mixed rA rB sz o],st
 
     module LOAD(L:L) =
       struct
@@ -193,6 +226,29 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
       val store : reg -> reg -> instruction
       val store_idx : A.st -> reg -> reg -> reg -> instruction list * A.st
     end
+
+    let emit_const st p init v =
+      if 0 <= v && v < 0xffff then
+        None,init,st
+      else
+        let rA,init,st = next_const st p init v in
+        Some rA,init,st
+
+    let emit_mov sz st p init v = match emit_const st p init v with
+    | None,init,st ->
+        let rA,st = next_reg st in
+        rA,init,[Instruction (mov_mixed sz rA v)],st
+    | Some rA,init,st ->
+        rA,init,[],st
+
+    let emit_store_reg_mixed sz o st p init x rA =
+      let rB,init,st = next_init st p init x in
+      init,[Instruction (str_mixed sz o rA rB)],st
+
+    let emit_store_mixed sz o st p init x v =
+      let rA,init,csi,st = emit_mov sz st p init v in
+      let init,cs,st = emit_store_reg_mixed sz o st p init x rA in
+      init,csi@cs,st
 
     module STORE(S:S) =
       struct
@@ -348,6 +404,9 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
     | R,Some Atomic rw ->
         let r,init,cs,st = emit_lda rw st p init e.loc  in
         Some r,init,cs,st
+    | R,Some (Mixed (sz,o)) ->        
+        let r,init,cs,st = emit_load_mixed sz o st p init e.loc in
+        Some r,init,cs,st
     | W,None ->
         let init,cs,st = STR.emit_store st p init e.loc e.v in
         None,init,cs,st
@@ -358,6 +417,9 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
     | W,Some Atomic rw ->
         let r,init,cs,st = emit_sta rw st p init e.loc e.v in
         Some r,init,cs,st
+    | W,Some (Mixed (sz,o)) ->
+        let init,cs,st = emit_store_mixed sz o st p init e.loc e.v in
+        None,init,cs,st
 
     let tr_a ar aw = match ar,aw with
     | None,None -> PP
@@ -412,6 +474,9 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
       | W,Some Atomic rw ->
           let r,init,cs,st = emit_sta_idx rw st p init e.loc r2 e.v in
           Some r,init,Instruction c::cs,st
+      | _,Some (Mixed _) ->
+          Warn.fatal "addr dep with mixed"
+
 
     let emit_exch_dep_addr st p init er ew rd =
       let r2,st = next_reg st in
@@ -446,6 +511,8 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
               Some r,init,cs2@cs,st        
           | Some Acq ->
               Warn.fatal "No store acquire"
+          | Some (Mixed _) ->
+              Warn.fatal "data dep with mixed"
           end
 
     let insert_isb isb cs1 cs2 =
