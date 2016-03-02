@@ -40,7 +40,10 @@ let options =
       "<bool> optimise conditions, default %b" !optcond);
    ("-acceptempty", Arg.Bool (fun b -> acceptempty := b),
     sprintf
-      "<bool> output enmpty conditions, default %b" !acceptempty);
+      "<bool> output empty conditions, default %b" !acceptempty);
+   ("-hexa", Arg.Bool (fun b -> hexa := b),
+    sprintf
+      "<bool> hexadecimal output, default %b" !hexa);
     CheckName.parse_hexa hexa;
   ]
 
@@ -85,7 +88,7 @@ let zyva log =
   let test = match log with
   | None -> LL.read_chan "stdin" stdin
   | Some log -> LL.read_name log in
-  
+
 (* Dumping of condition *)
   let pp_cond =
     if !optcond then CondPP.pp_opt

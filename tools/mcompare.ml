@@ -233,7 +233,7 @@ let options =
       Arg.Bool
         (delay_ro
            (fun b ro -> { ro with hexa = b; })),
-    (sprintf "<bool> hexadecimal output, default %b" runopts.opt_cond));
+    (sprintf "<bool> hexadecimal output, default %b" runopts.hexa));
  ]
 
 let prog =
