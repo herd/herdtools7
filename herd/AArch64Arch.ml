@@ -13,7 +13,7 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
-module Make (C:Arch.Config) (V:Value.S) =
+module Make (C:sig include Arch.Config val moreedges : bool end) (V:Value.S) =
   struct
     include AArch64Base
 
@@ -36,7 +36,7 @@ module Make (C:Arch.Config) (V:Value.S) =
       | _ -> false
 
     let barrier_sets = 
-      do_fold_dmb_dsb
+      do_fold_dmb_dsb C.moreedges
         (fun b k ->
           let tag = pp_barrier_dot b in
           (tag,is_barrier b)::k)

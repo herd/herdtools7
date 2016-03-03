@@ -72,6 +72,7 @@ let cond = ref Cycle
 let hout = ref None
 let list_edges = ref false
 let debug = ref Debug.none
+let moreedges = ref false
 
 let parse_cond tag = match tag with
 | "cycle" -> Cycle
@@ -163,6 +164,9 @@ let common_specs =
   ("-nooptcond", Arg.Clear optcond, "do not optimize conditions")::
   ("-optcoherence", Arg.Set optcoherence, " optimize coherence")::
   ("-nooptcoherence", Arg.Clear optcoherence, "do not optimize coherence (default)")::
+  ("-moreedges", Arg.Bool (fun b -> moreedges := b),
+   Printf.sprintf
+     "consider a very complete set of edges, default %b" !moreedges)::     
   ("-overload", Arg.Int (fun n -> overload := Some n),
    "<n> stress load unit by <n> useless loads")::
   ("-unrollatomic",Arg.Int (fun i -> unrollatomic := Some i),

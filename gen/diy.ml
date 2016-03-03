@@ -253,6 +253,7 @@ let () =
     | _ -> true
     let typ = !Config.typ
     let hexa = !Config.hexa
+    let moreedges = !Config.moreedges
   end in
   let module T = Top.Make(Co) in
   let f = match !Config.arch with

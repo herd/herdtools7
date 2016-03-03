@@ -57,6 +57,7 @@ let dumpes = ref false
 let outputdir = ref PrettyConf.NoOutputdir
 let dumplem = ref false
 let dumptex = ref false
+let moreedges = ref true
 
 (* Pretty printing configuration, deserves its own module *)
 module PP = struct

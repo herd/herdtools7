@@ -56,6 +56,7 @@ val suffix : string ref
 val dumpes : bool ref
 val dumplem : bool ref
 val dumptex : bool ref
+val moreedges : bool ref
 
 (* Pretty printing configuration, deserves its own module *)
 module PP : sig

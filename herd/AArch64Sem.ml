@@ -16,13 +16,15 @@
 module Make (C:Sem.Config)(V:Value.S)
 =
   struct
-    module AArch64 = AArch64Arch.Make(C.PC)(V)
+    module AArch64 =
+      AArch64Arch.Make
+        (struct include C.PC let moreedges = C.moreedges end)(V)
     module Act = MachAction.Make(AArch64)
     include SemExtra.Make(C)(AArch64)(Act)
 
 (* Barrier pretty print *)
     let barriers = 
-      let bs = AArch64Base.do_fold_dmb_dsb (fun h t -> h::t) []
+      let bs = AArch64Base.do_fold_dmb_dsb C.moreedges (fun h t -> h::t) []
       in List.map 
 	   (fun b ->
 	    { barrier = b;

@@ -189,6 +189,7 @@ let options = [
     | Some t -> debug := t ; true)
     Debug.tags
     "show debug messages for specific parts" ;
+   parse_bool "-morefences" moreedges "consider complete set of fences" ;
 (* Engine control *)
   gen_model_opt "-model";
   gen_model_opt "-cat";
@@ -512,6 +513,7 @@ let () =
     let outputdir = !outputdir
     let suffix = !suffix
     let dumpes = !dumpes
+    let moreedges = !moreedges
 
     module PC = struct
       let debug = debug.Debug.pretty

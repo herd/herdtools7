@@ -225,6 +225,7 @@ let () =
     let allow_back = true
     let typ = !Config.typ
     let hexa = !Config.hexa
+    let moreedges = !Config.moreedges
   end in
   (match !Config.arch with
   | X86 ->

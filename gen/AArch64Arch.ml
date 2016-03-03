@@ -16,9 +16,11 @@
 
 module Config = struct
   let naturalsize = MachSize.Word
+  let moreedges = false
 end
 
-module Make(C:sig val naturalsize : MachSize.sz end) = struct
+module Make
+ (C:sig val naturalsize : MachSize.sz val moreedges : bool end) = struct
 open Code
 open Printf
 
@@ -65,39 +67,39 @@ let pp_atom_rw = function
   | AP -> "A"
   | AL -> "AL"
 
-let pp_atom = function
-  | Atomic rw -> sprintf "X%s" (pp_atom_rw rw)
-  | Rel -> "L"
-  | Acq -> "A"
-  | Mixed mix -> Mixed.pp_mixed mix
+   let pp_atom = function
+     | Atomic rw -> sprintf "X%s" (pp_atom_rw rw)
+     | Rel -> "L"
+     | Acq -> "A"
+     | Mixed mix -> Mixed.pp_mixed mix
 
-let compare_atom = Pervasives.compare
+   let compare_atom = Pervasives.compare
 
-let fold_mixed f r = Mixed.fold_mixed (fun mix r -> f (Mixed mix) r) r
+   let fold_mixed f r = Mixed.fold_mixed (fun mix r -> f (Mixed mix) r) r
 
-let fold_atom_rw f r = f PP (f PL (f AP (f AL r)))
+   let fold_atom_rw f r = f PP (f PL (f AP (f AL r)))
 
-let fold_atom f r = 
-  let r = fold_mixed f r in
-  f Acq (f Rel (fold_atom_rw (fun rw -> f (Atomic rw)) r))
+   let fold_atom f r = 
+     let r = fold_mixed f r in
+     f Acq (f Rel (fold_atom_rw (fun rw -> f (Atomic rw)) r))
 
-  let worth_final = function
-    | Atomic _ -> true
-    | Acq|Rel|Mixed _ -> false
+   let worth_final = function
+     | Atomic _ -> true
+     | Acq|Rel|Mixed _ -> false
 
 
-  let varatom_dir _d f r = f None r
+   let varatom_dir _d f r = f None r
 
-  let tr_value ao v = match ao with
-  | None| Some (Acq|Rel|Atomic _) -> v
-  | Some (Mixed (sz,_)) -> Mixed.tr_value sz v
+   let tr_value ao v = match ao with
+   | None| Some (Acq|Rel|Atomic _) -> v
+   | Some (Mixed (sz,_)) -> Mixed.tr_value sz v
 
-  module ValsMixed =
-    MachMixed.Vals
-      (struct
-        let naturalsize () = C.naturalsize
-        let endian = MachSize.Little
-      end)
+   module ValsMixed =
+     MachMixed.Vals
+       (struct
+         let naturalsize () = C.naturalsize
+         let endian = MachSize.Little
+       end)
 
 let overwrite_value v ao w = match ao with
   | None| Some (Atomic _|Acq|Rel) -> w (* total overwrite *)
@@ -128,9 +130,9 @@ let strong = default
 
 let pp_fence f = do_pp_barrier "." f
 
-let fold_cumul_fences f k = do_fold_dmb_dsb f k
+let fold_cumul_fences f k = do_fold_dmb_dsb C.moreedges f k
 
-let fold_all_fences f k = fold_barrier f k
+let fold_all_fences f k = fold_barrier  C.moreedges f k
 
 let fold_some_fences f k =
   let k = f ISB k  in

@@ -16,12 +16,17 @@
 
 open Code
 
-module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
+module Make(Cfg:sig include CompileCommon.Config val moreedges : bool end) : XXXCompile.S =
   struct
 
 (* Common *)
     let naturalsize = TypBase.get_size Cfg.typ
-    module A64 = AArch64Arch.Make(struct let naturalsize = naturalsize end)
+    module A64 =
+      AArch64Arch.Make
+        (struct
+          let naturalsize = naturalsize
+          let moreedges = Cfg.moreedges
+        end)
     include CompileCommon.Make(Cfg)(A64)
 
     let ppo _f k = k

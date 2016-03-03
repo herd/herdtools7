@@ -17,6 +17,7 @@
 (** Semantics of instructions *)
 
 module type Config = sig
+  val moreedges : bool
   include SemExtra.Config
 end
 

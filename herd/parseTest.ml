@@ -178,7 +178,11 @@ module Top (Conf:Config) = struct
           X.run name chan env splitted
 
       | `AArch64 ->
-	  let module AArch64 = AArch64Arch.Make(Conf.PC)(SymbValue) in
+          let module AArch64Conf = struct
+            include Conf.PC
+            let moreedges = Conf.moreedges
+          end in
+	  let module AArch64 = AArch64Arch.Make(AArch64Conf)(SymbValue) in
 	  let module AArch64LexParse = struct
 	    type instruction = AArch64.parsedPseudo
 	    type token = AArch64Parser.token
