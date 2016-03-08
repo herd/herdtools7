@@ -42,6 +42,7 @@ module type Config = sig
   val contiguous : bool
   val alloc : Alloc.t
   val doublealloc : bool
+  val noalign : Align.t
   val detached : bool
   val launch : Launch.t
   val affinity : Affinity.t
@@ -164,6 +165,13 @@ end = struct
 
   let stride = Cfg.stride
   let do_contiguous = Cfg.contiguous
+
+  let do_noalign = match Cfg.noalign with
+  | Align.All -> fun _ -> true
+  | Align.No -> fun _ -> false
+  | Align.Not s -> fun x -> StringSet.mem x s
+
+
 
   let do_prealloc = match Cfg.alloc with
   | Alloc.Before -> true
@@ -657,7 +665,10 @@ let user2_barrier_def () =
         | Direct,Array _,false ->
             O.fi "%s *%s;" pp_t (tag_malloc s) ;
             O.fi "%s *%s;" pp_t s
-        | _,_,_ ->
+        | Direct,_,_ ->
+            if do_noalign s then  O.fi "%s *%s;" pp_t (tag_malloc s) ;
+            O.fi "%s%s *%s;" pp_t indirect_star s
+        | Indirect,_,_->
             O.fi "%s%s *%s;" pp_t indirect_star s)
       test.T.globals ;
     begin match memory with
@@ -665,14 +676,15 @@ let user2_barrier_def () =
     | Indirect ->
         let r =
           List.fold_right
-            (fun (a,t) k ->
-              let pp_t = dump_global_type a (CType.strip_volatile t) in
-              let a = tag_mem a in
+            (fun (b,t) k ->
+              let pp_t = dump_global_type b (CType.strip_volatile t) in
+              let a = tag_mem b in
               begin match t,do_staticalloc with
               | Array _,false ->
                   O.fi "%s *%s;" pp_t (tag_malloc a) ;
                   O.fi "%s *%s;" pp_t a
               | _,_ ->
+                  if do_noalign b then  O.fi "%s *%s;" pp_t (tag_malloc a) ;
                   O.fi "%s *%s;" pp_t a
               end ;
               if Cfg.cautious then
@@ -1200,9 +1212,11 @@ let user2_barrier_def () =
     | Direct -> ()
     end ;
 (* Initialization, called once *)
+
     let malloc_gen sz indent name =
       O.fx  indent "_a->%s = malloc_check(%s*sizeof(*(_a->%s)));"
         name sz name
+
     and set_mem_gen sz indent name =
        O.fx indent "_a->%s = &%s[id*%s];" name name sz
 
@@ -1215,14 +1229,19 @@ let user2_barrier_def () =
 
     let set_or_malloc = if do_staticalloc then set_mem else malloc in
     let set_or_malloc2 = if do_staticalloc then set_mem_gen "N" else malloc2 in
-    let set_or_malloc3  =
+
+    let align_or_noalign a =
+      if do_noalign a then "do_noalign" else "do_align" in
+
+    let set_or_malloc3 a =
+      let alg = align_or_noalign a in
       if do_staticalloc then
         fun indent a ->
-          O.fx indent "_a->%s = do_align(&%s[fst],sizeof(*%s));" a a a
+          O.fx indent "_a->%s = %s(&%s[fst],sizeof(*%s));" a alg a a
       else fun indent a ->
         malloc3 indent a ;
         O.fx indent "_a->%s = _a->%s;" (tag_malloc a) a ;
-        O.fx indent "_a->%s = do_align(_a->%s,sizeof(*_a->%s));" a a a
+        O.fx indent "_a->%s = %s(_a->%s,sizeof(*_a->%s));" a alg a a
     in
     O.f "static void init(ctx_t *_a%s) {"
       (if do_staticalloc then ",int id" else "") ;
@@ -1259,16 +1278,21 @@ let user2_barrier_def () =
       end
     end else begin
       List.iter (fun (a,t) -> match memory,t with
-      | Direct,Array _ -> set_or_malloc3 indent a
-      | _,_ -> set_or_malloc indent a)
+      | Direct,Array _ -> set_or_malloc3 a indent a
+      | Direct,_ ->
+          (if do_noalign a then set_or_malloc3 a else set_or_malloc)
+            indent a
+      | Indirect,_ -> set_or_malloc indent a)
         test.T.globals ;
       begin match memory with
       | Direct -> ()
       | Indirect ->
           List.iter
             (fun (a,t) -> match t with
-            | Array _ -> set_or_malloc3 indent (sprintf "mem_%s" a)
-            | _ -> set_or_malloc indent (sprintf "mem_%s" a))
+            | Array _ -> set_or_malloc3 a indent (sprintf "mem_%s" a)
+            | _ ->
+                (if do_noalign a then set_or_malloc3 a else set_or_malloc)
+                  indent (sprintf "mem_%s" a))
             test.T.globals ;
           ()
       end
@@ -1352,7 +1376,8 @@ let user2_barrier_def () =
           let tag = dump_ctx_tag a in
           let tag = match t with
           | Array _ -> tag_malloc tag
-          | _ -> tag in
+          | _ ->
+              if do_noalign a then tag_malloc tag else tag in
           nop_or_free indent tag)
         test.T.globals ;
     begin match memory with

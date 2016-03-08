@@ -42,6 +42,8 @@ void pp_ints (FILE *fp,int *p,int n) ;
 
 void *do_align(void *p, size_t sz) ;
 
+void *do_noalign(void *p, size_t sz) ;
+
 void cat_file(char *path,char *msg,FILE *out) ;
 
 /***********/

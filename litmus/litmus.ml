@@ -123,6 +123,9 @@ let opts =
      "perform a malloc/free once before allocating for real" ;
    argbool "-contiguous" Option.contiguous
    "allocate shared locations as a big chunk of memory" ;
+   begin let module P = ParseTag.Make(Align) in
+   P.parse"-noalign" Option.noalign
+     "specify non alignment"  end ;
 (* Premature stop *)
    begin let module P = ParseTag.Make(Speedcheck) in
    P.parse"-speedcheck" Option.speedcheck
@@ -258,6 +261,7 @@ let () =
       let collect = !collect
       let syncmacro = if !syncmacro > 0 then Some !syncmacro else None
       let contiguous = !contiguous
+      let noalign = !noalign
       let smt = !smt
       let nsockets = !nsockets
       let smtmode = !smtmode

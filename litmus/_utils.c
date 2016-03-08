@@ -91,6 +91,13 @@ void *do_align(void *p,size_t sz) {
   return (void *)x ;
 }
 
+void *do_noalign(void *p,size_t sz) {
+  void *q = do_align(p,sz) ;
+  void *r = q - sz/2 ;
+  if (r < p) r = q + sz/2 ;
+  return r ;
+}
+
 void cat_file(char *path, char *msg, FILE *out) {
   FILE *fp = fopen(path,"r") ;
   if (fp == NULL) return ;
