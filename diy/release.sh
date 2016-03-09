@@ -36,5 +36,5 @@ fi
 NAME=`basename $FINAL`
 ( cd $TMP && tar cf - $NAME ) | gzip --best > $NAME.tar.gz
 cp $NAME.tar.gz $DEST/old
-ln -sf $DEST/old/$NAME.tar.gz $DEST/diy.tar.gz
+( cd $DEST && ln -sf old/$NAME.tar.gz diy.tar.gz )
 /bin/rm -rf $FINAL
