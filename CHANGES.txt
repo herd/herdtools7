@@ -1,3 +1,6 @@
+7.05
+7.04
+7.03
 7.02
 
   * LISA :backward compatibility: f[sync] -> call[sync]
