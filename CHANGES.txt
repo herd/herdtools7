@@ -1,4 +1,5 @@
 7.05
+  * litmus -noalign option
 7.04
 7.03
 7.02
