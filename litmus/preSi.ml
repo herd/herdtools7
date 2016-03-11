@@ -814,7 +814,7 @@ let dump_loc_tag = function
           O.oii "hash_add(&_ctx->t,_log,_p,1,_cond);" ;
           (* Result and stats *)
           O.oii "if (_cond) {" ;
-          O.oiii "ok = 1;" ;
+          O.oiii "_ok = 1;" ;
           O.oiii "(void)__sync_add_and_fetch(&_g->stats.groups[_p->part],1);" ;
           let open SkelUtil in
           List.iter
@@ -835,9 +835,9 @@ let dump_loc_tag = function
         O.o "/*************/" ;
         O.o "" ;
         O.o "inline static int do_run(thread_ctx_t *_c, param_t *_p,global_t *_g) {" ;
-        O.oi "int ok = 0;" ;
+        O.oi "int _ok = 0;" ;
         O.oi "int _role = _c->role;" ;
-        O.oi "if (_role < 0) return ok;" ;
+        O.oi "if (_role < 0) return _ok;" ;
         O.oi "ctx_t *_ctx = _c->ctx;" ;
         O.oi "sense_t *_b = &_ctx->b;" ;
         O.oi "log_t *_log = &_ctx->out;" ;
@@ -864,7 +864,7 @@ let dump_loc_tag = function
           (part_vars test)
           test.T.code ;
         O.oi "}" ;
-        O.oi "return ok;" ;
+        O.oi "return _ok;" ;
         O.o "}" ;
         O.o ""
 
