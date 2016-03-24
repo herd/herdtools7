@@ -1,3 +1,4 @@
+  * LISA, non-conditional branch.
 7.05
   * litmus -noalign option
 7.04
