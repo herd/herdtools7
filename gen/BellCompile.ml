@@ -58,7 +58,7 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
     let moveq rA rB k = mov  rA (Eq (IAR_roa (Rega rB),IAR_imm k))
     let xor r1 r2 r3 = mov r1 (Xor (IAR_roa (Rega r2),IAR_roa (Rega r3)))
     let addk r1 r2 k = mov r1 (Add (IAR_roa (Rega r2),IAR_imm k))
-    let branch reg lab = Pbranch (reg,lab,[])
+    let branchcc reg lab = Pbranch (Some reg,lab,[])
 
 
 (*    let addi r1 r2 i = Add(r1,IAR_roa (Rega r2),IAR_imm i)
@@ -93,7 +93,7 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
       rA,init,
       Label (lab,Nop)::
       pseudo
-        [ld rA x; movne rB rA 0 ; branch rB lab;],
+        [ld rA x; movne rB rA 0 ; branchcc rB lab;],
       st
 
     let emit_load_one st _p init x =
@@ -102,7 +102,7 @@ module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
       let lab = Label.next_label "L" in
       rA,init,
       Label (lab,Nop)::
-      pseudo [ld rA x; movne rB rA 1; branch rB lab],
+      pseudo [ld rA x; movne rB rA 1; branchcc rB lab],
       st
 
 (*    let emit_load_not st _p init x bcc =
@@ -242,7 +242,7 @@ let emit_access_ctrl st p init e r1 =
   let rd,st = next_reg st in
   let c =
     [Instruction (moveq rd r1 0) ;
-     Instruction (branch rd lab) ;
+     Instruction (branchcc rd lab) ;
      Label (lab,Nop);] in
   let ropt,init,cs,st = emit_access st p init e in
   ropt,init,c@cs,st
@@ -310,7 +310,7 @@ let emit_exch_dep _ = assert false
       let lab = Label.exit p in
       fun k ->
         Instruction (movne tempo1 r e.v)::
-        Instruction (branch tempo1 lab)::k
+        Instruction (branchcc tempo1 lab)::k
 
 (* Postlude for adding exit label *)
 

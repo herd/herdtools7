@@ -161,7 +161,10 @@ instr:
   { Prmw($3,$4,$5,$2)}
 
 | BRANCH annot_list_option reg NAME
-  { Pbranch ($3,$4,$2) }
+  { Pbranch (Some $3,$4,$2) }
+
+| BRANCH annot_list_option NAME
+  { Pbranch (None,$3,$2) }
 
 | MOV reg operation
   { Pmov ($2,$3) }

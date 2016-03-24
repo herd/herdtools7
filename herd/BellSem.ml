@@ -145,9 +145,11 @@ module Make (C:Sem.Config)(V:Value.S)
                             write_mem_atom x v s ii))) >>!
           B.Next
 
-	| BellBase.Pbranch(r,lbl,_) -> 
+	| BellBase.Pbranch(Some r,lbl,_) -> 
    	  (read_reg r ii) >>=
             (fun v -> commit ii >>= fun () -> B.bccT v lbl)
+
+	| BellBase.Pbranch(None ,lbl,_) ->  B.branchT lbl
  
         | BellBase.Pmov(r,op) ->
           (tr_mov r op ii) >>! B.Next

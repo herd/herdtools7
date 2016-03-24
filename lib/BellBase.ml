@@ -174,7 +174,7 @@ type 'k kinstruction =
 | Pfence of barrier
 | Pcall of string
 | Prmw of reg * 'k op * 'k addr_op * string list
-| Pbranch of reg * lbl * string list
+| Pbranch of reg option * lbl * string list
 | Pmov of reg * 'k op
 
 
@@ -236,9 +236,13 @@ let dump_instruction i = match i with
 
 | Pcall s -> sprintf "call[%s]" s
 
-| Pbranch(r,l,s) -> sprintf "b[%s] %s %s" 
+| Pbranch(Some r,l,s) -> sprintf "b[%s] %s %s" 
       (string_of_annot_list s)
       (pp_reg r) 
+      l 
+
+| Pbranch(None,l,s) -> sprintf "b[%s] %s" 
+      (string_of_annot_list s)
       l 
 
 | Pmov(r,op) -> sprintf "mov %s %s"
@@ -278,9 +282,9 @@ let fold_regs (f_reg,f_sreg) =
     begin match ins with      
     | Pld(r, addr_op, _) -> fold_reg r (fold_addr_op addr_op c)
     | Pst(addr_op,roi,_) -> fold_addr_op addr_op (fold_roi roi c)
-    | Pfence _|Pcall _ -> c
+    | Pfence _|Pcall _|Pbranch (None,_,_) -> c
     | Prmw(r,op,_,_) -> fold_reg r (fold_op op c)
-    | Pbranch(r,_,_) -> fold_reg r c 
+    | Pbranch(Some r,_,_) -> fold_reg r c 
     | Pmov(r,op) -> fold_reg r (fold_op op c) 
     end 
   in fold_ins
@@ -319,8 +323,8 @@ let map_regs f_reg f_symb =
     | Pld(r,addr_op,s) -> Pld(map_reg r, map_addr_op addr_op, s)
     | Pst(addr_op,roi,s) -> Pst(map_addr_op addr_op, map_roi roi, s)
     | Prmw(r,op,x,s) -> Prmw(map_reg r,map_op op, map_addr_op x, s)
-    | Pbranch(r,lbl,s) -> Pbranch(map_reg r,lbl,s)
-    | Pfence _|Pcall _ -> ins
+    | Pbranch(Some r,lbl,s) -> Pbranch(Some (map_reg r),lbl,s)
+    | Pfence _|Pcall _|Pbranch (None,_,_) -> ins
     | Pmov(r,op) -> Pmov(map_reg r,map_op op)
   end in
   map_ins

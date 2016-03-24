@@ -106,9 +106,12 @@ atom_init:
 | STAR location { ($2,(TyDefPointer,Concrete 0))}
 | STAR location EQUAL amperopt maybev { ($2,(TyDefPointer,$5))}
 | NAME NAME LBRK NUM RBRK { (Location_global (Symbolic $2),(TyArray ($1,$4),Concrete 0)) }
+
 amperopt:
 | AMPER { () }
 | { () }
+
+
 init_semi_list:
 | {[]}
 | SEMI {[]}

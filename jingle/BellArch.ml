@@ -103,9 +103,14 @@ include Arch.MakeArch(struct
        then Some subs
        else None
 	 
-    | Pbranch(_,lp,s), Pbranch(_,li,s') -> 
+    | Pbranch(None,lp,s), Pbranch(None,li,s') -> 
        if annots_compare s s'
        then Some(add_subs [Lab(lp,li)] subs)
+       else None
+
+    | Pbranch(Some r,lp,s), Pbranch(Some r',li,s') -> 
+       if annots_compare s s'
+       then Some(add_subs [Reg(sr_name r,r');Lab(lp,li)] subs)
        else None
 	 
     | Pmov(r,op),Pmov(r',op') ->
