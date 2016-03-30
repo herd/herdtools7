@@ -15,8 +15,12 @@
 (****************************************************************************)
 
 open Code
+module type Config = sig
+  include CompileCommon.Config
+  val realdep : bool
+end
 
-module Make(Cfg:CompileCommon.Config)(BO:BellArch.Config) : XXXCompile.S =
+module Make(Cfg:Config)(BO:BellArch.Config) : XXXCompile.S =
   struct
 
 (* Common *)
@@ -238,14 +242,23 @@ let emit_access_dep_data st p init e r1 = match e.dir with
     end
 
 let emit_access_ctrl st p init e r1 =
-  let lab = Label.next_label "LC" in
-  let rd,st = next_reg st in
-  let c =
-    [Instruction (moveq rd r1 0) ;
-     Instruction (branchcc rd lab) ;
-     Label (lab,Nop);] in
-  let ropt,init,cs,st = emit_access st p init e in
-  ropt,init,c@cs,st
+  if Cfg.realdep then
+    let lab =  Label.exit p in
+    let rd,st = next_reg st in
+    let c =
+       [Instruction (moveq rd r1 kbig) ;
+       Instruction (branchcc rd lab) ;] in
+    let ropt,init,cs,st = emit_access st p init e in
+    ropt,init,c@cs,st
+  else
+    let lab = Label.next_label "LC" in
+    let rd,st = next_reg st in
+    let c =
+      [Instruction (moveq rd r1 0) ;
+       Instruction (branchcc rd lab) ;
+       Label (lab,Nop);] in
+    let ropt,init,cs,st = emit_access st p init e in
+    ropt,init,c@cs,st
 
 let emit_access_dep  st p init e dp r1 = match dp with
 | ADDR -> emit_access_dep_addr st p init e r1

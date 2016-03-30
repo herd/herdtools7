@@ -16,8 +16,12 @@
 
 open Printf
 open Code
+module type Config = sig
+  include CompileCommon.Config
+  val realdep : bool
+end
 
-module Make(O:CompileCommon.Config)(C:sig val eieio : bool end) : XXXCompile.S =
+module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile.S =
   struct
     open MachSize
 
@@ -400,11 +404,16 @@ module Make(O:CompileCommon.Config)(C:sig val eieio : bool end) : XXXCompile.S =
     let insert_isync cs1 cs2 = cs1@[PPC.Instruction PPC.Pisync]@cs2
 
     let emit_access_ctrl isync st p init e r1 =      
-      let lab = Label.next_label "LC" in
       let c =
-        [PPC.Instruction (PPC.Pcmpw (0,r1,r1));
-         PPC.Instruction (PPC.Pbcc (PPC.Eq,lab));
-         PPC.Label (lab,PPC.Nop);] in
+        if O.realdep then
+          let lab = Label.exit p in
+          [PPC.Instruction (PPC.Pcmpwi (0,r1,kbig));
+           PPC.Instruction (PPC.Pbcc (PPC.Eq,lab))]
+       else
+          let lab = Label.next_label "LC" in
+          [PPC.Instruction (PPC.Pcmpw (0,r1,r1));
+           PPC.Instruction (PPC.Pbcc (PPC.Eq,lab));
+           PPC.Label (lab,PPC.Nop);] in
       match e.dir with
       | R ->
           let emit = match e.atom with

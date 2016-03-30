@@ -254,6 +254,7 @@ let () =
     let typ = !Config.typ
     let hexa = !Config.hexa
     let moreedges = !Config.moreedges
+    let realdep = !Config.realdep
   end in
   let module T = Top.Make(Co) in
   let f = match !Config.arch with

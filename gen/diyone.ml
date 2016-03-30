@@ -226,6 +226,7 @@ let () =
     let typ = !Config.typ
     let hexa = !Config.hexa
     let moreedges = !Config.moreedges
+    let realdep = !Config.realdep
   end in
   (match !Config.arch with
   | X86 ->

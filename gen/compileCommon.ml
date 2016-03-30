@@ -70,5 +70,7 @@ struct
     let naturalsize = TypBase.get_size C.typ
   end
   module C = Cycle.Make(Conf)(E)
+(* Big constant *)
+  let kbig = 128
 end
 

@@ -208,6 +208,7 @@ let () =
       let typ = !Config.typ
       let hexa = !Config.hexa
       let moreedges = !Config.moreedges
+      let realdep = !Config.realdep
       let cpp = match !Config.arch with Archs.CPP -> true | _ -> false
       let scope = !Config.scope
     end in
