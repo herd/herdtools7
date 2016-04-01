@@ -106,7 +106,7 @@ module U = TopUtils.Make(O)(Comp)
 
   type prev_load =
     | No       (* Non-existent or irrelevant *)
-    | Yes of E.dp * A.arch_reg
+    | Yes of E.dp * A.arch_reg * Code.v
 
 (* Catch exchanges at the very last moment... *)
 
@@ -129,7 +129,7 @@ module U = TopUtils.Make(O)(Comp)
         (E.pp_edge n.C.edge)
         (E.pp_atom_option e.C.atom) (pp_dir e.C.dir)
 
-  let call_emit_access_dep st p init n dp r1 =
+  let call_emit_access_dep st p init n dp r1 v1 =
     let e = n.C.evt in
      if e.C.rmw then match e.C.dir with
      | R ->
@@ -138,7 +138,7 @@ module U = TopUtils.Make(O)(Comp)
          Some r,init,cs,st
      | W -> None,init,[],st
      else
-       Comp.emit_access_dep st p init e dp r1
+       Comp.emit_access_dep st p init e dp r1 v1
 
 (* Encodes load of first non-initial value in chain,
    can poll on value in place of checking it *)
@@ -156,14 +156,14 @@ module U = TopUtils.Make(O)(Comp)
           Some r,init,i,st
         else
           call_emit_access st p init n
-    | Yes (dp,r1) -> call_emit_access_dep st p init n dp r1 in
+    | Yes (dp,r1,v1) -> call_emit_access_dep st p init n dp r1 v1 in
     o,init,ip@i,st
 
-let edge_to_prev_load o e = match o with
+let edge_to_prev_load o n = match o with
 | None -> No
 | Some r ->
-    begin match e.E.edge with
-    | Dp (dp,_,_) -> Yes (dp,r)
+    begin match n.C.edge.E.edge with
+    | Dp (dp,_,_) -> Yes (dp,r,n.C.evt.C.v)
     | _ -> No
     end
 
@@ -194,7 +194,7 @@ let rec compile_proc chk loc_writes st p ro_prev init ns = match ns with
           | _ -> chk,Misc.identity  in
         let init,is,finals,st =
           compile_proc nchk loc_writes
-            st p (edge_to_prev_load o n.C.edge)
+            st p (edge_to_prev_load o n)
             init ns in
         add_init_check chk p o init,
         i@

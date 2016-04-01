@@ -332,7 +332,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
       let ropt,init,cs,st = emit_exch st p init er ew in
       ropt,init, c@cs,st
 
-    let emit_access_dep st p init e dp r1 = match dp with
+    let emit_access_dep st p init e dp r1 _v1 = match dp with
     | ADDR -> emit_access_dep_addr st p init e r1
     | DATA -> emit_access_dep_data st p init e r1
     | CTRL -> emit_access_ctrl st p init e r1

@@ -347,7 +347,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
       ropt,init,insert_isb isb c cs,st
 
 
-    let emit_access_dep st p init e dp r1 = match dp with
+    let emit_access_dep st p init e dp r1 _v1 = match dp with
     | ADDR -> emit_access_dep_addr st p init e r1
     | DATA -> emit_access_dep_data st p init e r1
     | CTRL -> emit_access_ctrl false st p init e r1

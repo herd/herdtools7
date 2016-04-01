@@ -407,12 +407,12 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile.S =
 
     let insert_isync cs1 cs2 = cs1@[PPC.Instruction PPC.Pisync]@cs2
 
-    let emit_access_ctrl isync st p init e r1 =      
+    let emit_access_ctrl isync st p init e r1 v1 =      
       let c =
         if O.realdep then
           let lab = Label.exit p in
-          [PPC.Instruction (PPC.Pcmpwi (0,r1,kbig));
-           PPC.Instruction (PPC.Pbcc (PPC.Eq,lab))]
+          [PPC.Instruction (PPC.Pcmpwi (0,r1,v1));
+           PPC.Instruction (PPC.Pbcc (PPC.Ne,lab))]
        else
           let lab = Label.next_label "LC" in
           [PPC.Instruction (PPC.Pcmpw (0,r1,r1));
@@ -454,11 +454,11 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile.S =
       let cs = if isync then insert_isync c cs else c@cs in
       r,init,cs,st
 
-    let emit_access_dep st p init e dp r1 = match dp with
+    let emit_access_dep st p init e dp r1 v1 = match dp with
     | PPC.ADDR -> emit_access_dep_addr st p init e r1
     | PPC.DATA -> emit_access_dep_data st p init e r1
-    | PPC.CTRL -> emit_access_ctrl false st p init e r1
-    | PPC.CTRLISYNC -> emit_access_ctrl true st p init e r1
+    | PPC.CTRL -> emit_access_ctrl false st p init e r1 v1
+    | PPC.CTRLISYNC -> emit_access_ctrl true st p init e r1 v1
 
     let emit_exch_dep st p init er ew dp rd = match dp with
     | PPC.ADDR -> emit_exch_dep_addr st p init er ew rd
