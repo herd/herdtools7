@@ -110,8 +110,9 @@ include Arch.MakeArch(struct
 
     | Pbranch(Some r,lp,s), Pbranch(Some r',li,s') -> 
        if annots_compare s s'
-       then Some(add_subs [Reg(sr_name r,r');Lab(lp,li)] subs)
-       else None
+       then begin
+         Some(add_subs [Reg(sr_name r,r');Lab(lp,li)] subs)
+       end else None
 	 
     | Pmov(r,op),Pmov(r',op') ->
        begin match match_op subs op op' with

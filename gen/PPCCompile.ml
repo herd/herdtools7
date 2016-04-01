@@ -343,9 +343,13 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile.S =
 
     let emit_exch st p init er ew  = emit_exch_idx st p init er ew r0
 
+    let calc_zero =
+      if O.realdep then fun dst src ->  PPC.Pandi(dst,src,kbig)
+      else fun dst src -> PPC.Pxor(PPC.DontSetCR0,dst,src,src)
+
     let emit_access_dep_addr st p init e  r1 =
       let r2,st = next_reg st in
-      let c = PPC.Pxor(PPC.DontSetCR0,r2,r1,r1) in
+      let c = calc_zero r2 r1 in
       match e.dir,e.atom with
       | R,None ->
           let r,init,cs,st = emit_load_idx st p init e.loc r2 in
@@ -369,7 +373,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile.S =
 
     let emit_exch_dep_addr st  p init er ew rd =
       let idx,st = next_reg st in
-      let c = PPC.Pxor(PPC.DontSetCR0,idx,rd,rd) in
+      let c = calc_zero idx rd in
       let r,init,cs,st = emit_exch_idx st p init er ew idx in
       r,init,PPC.Instruction c::cs,st
 
@@ -382,10 +386,10 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile.S =
           let ro,init,st = emit_const st p init e.v in
           let cs2 = match ro with
           | None ->
-              [PPC.Instruction (PPC.Pxor(PPC.DontSetCR0,rW,r1,r1)) ;
+              [PPC.Instruction (calc_zero rW r1) ;
                PPC.Instruction (PPC.Paddi (rW,rW,e.v)) ; ]
           | Some rC ->
-               [PPC.Instruction (PPC.Pxor(PPC.DontSetCR0,rW,r1,r1)) ;
+               [PPC.Instruction (calc_zero rW r1) ;
                PPC.Instruction (PPC.Padd (PPC.DontSetCR0,rW,rW,rC)) ; ] in
           let ro,init,cs,st =
             match e.atom with

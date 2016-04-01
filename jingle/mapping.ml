@@ -93,25 +93,38 @@ module Make(C:Config) = struct
 	  match dig subs (p::ps) is with
 	  | None -> None
 	  | Some(stash,rem) -> Some(i::stash,rem)
-	 
-  let rec find_pattern pat instrs subs = 
+
+  let pp_lab tag is =
+    if false then
+      let open Source in
+      match is with
+      | Label (_,_)::_ ->
+          eprintf "*%s*\n" tag ;
+          eprintf "%s" (dump_pseudos is) ;
+          eprintf "------\n" ;
+          ()
+      | _ -> ()
+
+  let rec find_pattern tag pat instrs subs = 
     let open Source in
+    pp_lab (tag ^ "FIND") instrs ;
     match pat,instrs with
     | pat,Nop::instrs
     | Nop::pat,instrs -> 
-       find_pattern pat instrs subs
-
+       find_pattern tag pat instrs subs
     | pat,Label(l,Nop)::i::is ->
-       find_pattern pat (Label(l,i)::is) subs
+       find_pattern tag pat (Label(l,i)::is) subs
+    | [],Label(_,Nop)::[] ->
+       Some ([],instrs,subs)
     | pat,Label(_,Nop)::[] ->
-       find_pattern pat [] subs
+       find_pattern tag pat [] subs
 
     | Symbolic s::pat,instrs ->
        begin 
 	 match dig subs pat instrs with
 	 | None -> None
 	 | Some(stash,rem) -> 
-	    find_pattern pat rem (Code(s,stash)::subs)
+	    find_pattern "SYMB" pat rem (Code(s,stash)::subs)
        end
 
     | p::ps,i::is ->
@@ -119,7 +132,8 @@ module Make(C:Config) = struct
 	 match match_instruction subs p i with
 	 | None -> None
 	 | Some subs ->
-	    match find_pattern ps is subs with
+	    match find_pattern (sprintf "REC<%i>" (List.length ps))
+                ps is subs with
 	    | None -> None
 	    | Some(is,rs,subs) -> Some(i::is,rs,subs)
        end
@@ -129,18 +143,22 @@ module Make(C:Config) = struct
 
     | _,_ -> None
 
-  let get_pattern_seq instrs = 
+  let get_pattern_seq instrs =
     let rec aux instrs = 
+      pp_lab "AUX" instrs ;
       let rec find = function
-	| [] -> begin
-		match find_pattern [] instrs [] with 
+	| [] ->
+            begin
+		match find_pattern "EMPTY" [] instrs [] with 
 		| Some(is,[],[]) -> Some((is,[],[]),[]) 
+		| Some([],[Source.Label (lab,Source.Nop)],[]) ->
+                    Some ((instrs,[Target.Label(lab,Target.Nop)],[]),[])
 		| _ -> eprintf "Unmatched instructions:\n%s" 
 			       (Source.dump_pseudos instrs);
 		       None
 	      end
 	| (p,conv)::ps ->
-	   match find_pattern p instrs [] with
+	   match find_pattern "LOC" p instrs [] with
 	   | None -> find ps
 	   | Some(is,rs,subs) -> 
 	      match is,conv with
@@ -239,18 +257,20 @@ module Make(C:Config) = struct
     let map = reg_mapping convs in
     let init = 
       addr_init convs @ 
-	List.map (fun (l,r) -> (conv_loc map l,r)) src.init in
+	List.map (fun (l,r) -> (conv_loc map l,r)) src.init in    
     let condition =
       ConstrGen.(map_constr
 		   (function
 		     | LV(l,v) -> LV(conv_loc map l,v)
 		     | LL(l1,l2) -> LL(conv_loc map l1,conv_loc map l2))
 		   src.condition) in
+    let locations =
+      List.map (fun (loc,ty) -> conv_loc map loc,ty) src.locations in
     { info = ("Mapping",dump_map map)::src.info;
       init = init;
       prog = prog;
       condition = condition;
-      locations = src.locations;
+      locations = locations;
       extra_data = src.extra_data;
     }
 

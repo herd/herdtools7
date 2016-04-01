@@ -141,16 +141,24 @@ let do_trans file =
     let sres = let module SP = Splitter.Make(Splitter.Default) in
 	       SP.split (Filename.basename file) chin in
     let fout out = try
-	let trans_test = Trad.translate chin sres in
+	let trans_test =
+          try Trad.translate chin sres with
+          | Mapping.Error msg -> Warn.fatal "%s" msg in
 	Target.Dumper.dump_info out sres.Splitter.name trans_test
-      with e -> eprintf "Error in test %s.\n" (Filename.basename file);
-		raise e
+      with e ->
+        eprintf "Error in test %s.\n" (Filename.basename file);
+	raise e
     in match !outdir with
        | None -> fout stdout
        | Some s -> 
-	  Misc.output_protect fout (Filename.concat s 
-					     (Filename.basename file))
-  in Misc.input_protect fin file
+           let outname = Filename.concat s  (Filename.basename file) in
+	   try Misc.output_protect fout outname
+           with e -> MySys.remove outname ; raise e
+  in
+  try Misc.input_protect fin file
+  with
+  | Misc.Exit -> ()
+  | Misc.Fatal msg -> eprintf "Non fatal: %s\n" msg
 
 let () = 
   let open Misc in
@@ -158,3 +166,4 @@ let () =
   | [] -> iter_stdin do_trans
   | tests -> iter_argv do_trans tests
 
+ 

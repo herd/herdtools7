@@ -62,6 +62,7 @@ module Make(Cfg:Config)(BO:BellArch.Config) : XXXCompile.S =
     let moveq rA rB k = mov  rA (Eq (IAR_roa (Rega rB),IAR_imm k))
     let xor r1 r2 r3 = mov r1 (Xor (IAR_roa (Rega r2),IAR_roa (Rega r3)))
     let addk r1 r2 k = mov r1 (Add (IAR_roa (Rega r2),IAR_imm k))
+    let andk r1 r2 k = mov r1 (And (IAR_roa (Rega r2),IAR_imm k))
     let branchcc reg lab = Pbranch (Some reg,lab,[])
 
 
@@ -208,30 +209,34 @@ let emit_exch _ = assert false
 
 (*jade: l'idee c'est de tout faire par les labelled fences en LISA*)
 
-let emit_access_dep_addr st p init e r1 =
-  let idx,st = next_reg st in
-  let cA = Instruction  (xor idx r1 r1) in
-  begin match e.dir,e.atom with
-  | R,None ->
-      let rC,init,cs,st = emit_load_idx st p init e.loc idx in
-      Some rC,init,cA::cs,st
-  | R,Some a ->
-      let rC,init,cs,st = emit_load_idx_tagged st p init e.loc idx a in
-      Some rC,init,cA::cs,st
-  | W,None ->
-      let init,cs,st = emit_store_idx st p init e.loc e.v idx in
-      None,init,cA::cs,st
-  | W,Some a ->
-      let init,cs,st = emit_store_idx_tagged st p init e.loc e.v idx a in
-      None,init,cA::cs,st
-      
-  end
+    let calc_zero =
+      if Cfg.realdep then fun dst src ->  Instruction  (andk dst src kbig)
+      else fun dst src ->  Instruction  (xor dst src src)
+
+    let emit_access_dep_addr st p init e r1 =
+      let idx,st = next_reg st in
+      let cA = calc_zero idx r1 in
+      begin match e.dir,e.atom with
+      | R,None ->
+          let rC,init,cs,st = emit_load_idx st p init e.loc idx in
+          Some rC,init,cA::cs,st
+      | R,Some a ->
+          let rC,init,cs,st = emit_load_idx_tagged st p init e.loc idx a in
+          Some rC,init,cA::cs,st
+      | W,None ->
+          let init,cs,st = emit_store_idx st p init e.loc e.v idx in
+          None,init,cA::cs,st
+      | W,Some a ->
+          let init,cs,st = emit_store_idx_tagged st p init e.loc e.v idx a in
+          None,init,cA::cs,st
+            
+      end
 
 let emit_access_dep_data st p init e r1 = match e.dir with
 | R ->  Warn.fatal "data dependency to load"
 | W ->
     let r2,st = next_reg st in
-    let cs2 =  [Instruction (xor r2 r1 r1);Instruction (addk r2 r2 e.v);] in
+    let cs2 =  [calc_zero r2 r1;Instruction (addk r2 r2 e.v);] in
     begin match e.atom with
     | None -> 
         let init,cs,st = emit_store_reg st p init e.loc r2 in
