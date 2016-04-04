@@ -125,11 +125,12 @@ let dump_typ = function
 
 type exp =
   | Load of location
-  | AtomicLoad of MemOrder.t * location
-  | AtomicExcl of MemOrder.t * location * Code.v
+  | AtomicLoad of MemOrder.t * exp
+  | AtomicExcl of MemOrder.t * exp * Code.v
   | Deref of exp
   | Const of Code.v
   | AssertVal of exp * Code.v
+  | AddZero of exp * location
 
 let addrs_of_location = function
   | Reg _ -> StringSet.empty
@@ -137,8 +138,13 @@ let addrs_of_location = function
 
 let rec addrs_of_exp = function
   | Const _ -> StringSet.empty
-  | AtomicLoad (_,loc)|AtomicExcl (_,loc,_)|Load loc -> addrs_of_location loc
-  | Deref e|AssertVal (e,_) -> addrs_of_exp e
+  | Load loc -> addrs_of_location loc
+  | AddZero (loc1,loc2) ->
+      StringSet.union
+        (addrs_of_exp loc1)
+        (addrs_of_location loc2)
+  | Deref e|AssertVal (e,_)
+  | AtomicLoad (_,e)|AtomicExcl (_,e,_)-> addrs_of_exp e
 
 type cond = Eq | Ne
 
@@ -146,9 +152,9 @@ type condexp = exp * cond * exp
 type ins =
   | Seq of ins * ins
   | Decl of typ * arch_reg * exp option
-  | Store of Code.loc * exp
+  | Store of exp * exp
   | SetReg of arch_reg * exp
-  | AtomicStore of MemOrder.t * Code.loc * exp
+  | AtomicStore of MemOrder.t * exp * exp
   | Fence of fence
   | Loop of ins
   | If of condexp * ins * ins option
@@ -164,7 +170,8 @@ let rec addrs_of = function
   | Seq (i1,i2) -> StringSet.union (addrs_of i1) (addrs_of i2)
   | Decl (_,_,Some e)
   | SetReg (_,e) -> addrs_of_exp e
-  | Store (loc,e)|AtomicStore (_,loc,e) -> StringSet.add loc (addrs_of_exp e)
+  | Store (loc,e)|AtomicStore (_,loc,e) ->
+      StringSet.union  (addrs_of_exp loc) (addrs_of_exp e)
   | Loop i -> addrs_of i
   | If (ce,itrue,ifalse) ->
       StringSet.union (addrs_ofcondexp ce)
@@ -184,19 +191,12 @@ let rec is_nop = function
   | Seq (i1,i2) -> is_nop i1 && is_nop i2
   | _ -> false
 
-(* No dependencies *)
-type dp
+(* Dependencies, no CTRLISYNC *)
 
-let pp_dp _ = assert false
-let fold_dpr  _f k = k
-let fold_dpw _f k = k
+include CDep
 
-let ddr_default = None
-let ddw_default = None
-let ctrlr_default = None
-let ctrlw_default = None
-
-let is_ctrlr _ = assert false
-let fst_dp _ = assert false
-let sequence_dp _ _ = assert false
+let pp_dp = function
+  | ADDR -> "Addr"
+  | DATA -> "Data"
+  | CTRL -> "Ctrl"
 

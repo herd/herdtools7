@@ -1,3 +1,4 @@
+  * Dependencies for C, always "real".
   * generators: -realdep <bool> option
   * LISA, non-conditional branch.
 7.05
