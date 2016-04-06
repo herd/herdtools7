@@ -199,7 +199,7 @@ end = struct
     | CallEnd _ -> true
     | _ -> false
 
-  let arch_sets = ["Start",is_start; "End",is_end;]
+  let arch_sets = ["Start",is_start; "End",is_end;"Atom",is_atomic;]
   let arch_fences = []
       
       

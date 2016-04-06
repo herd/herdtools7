@@ -125,7 +125,7 @@ let string_of_intkm s =
       | _ -> int_of_string s in
     Some x
   with
-  | Failure "int_of_string" -> None
+  | Failure _ -> None
 
 
 (***********)
@@ -284,7 +284,7 @@ let transpose rows = match rows with
     let cols =
       try
 	List.fold_right (List.map2 cons) rows cols
-     with Invalid_argument "List.map2" -> raise TransposeFailure in
+     with Invalid_argument _ -> raise TransposeFailure in
     cols
 
 (* Code pretty print *)

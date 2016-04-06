@@ -16,7 +16,13 @@
 
 open Code
 
-module Make(Cfg:sig include CompileCommon.Config val moreedges : bool end) : XXXCompile.S =
+module type Config = sig
+  include CompileCommon.Config
+  val moreedges : bool
+  val realdep : bool
+end
+
+module Make(Cfg:Config) : XXXCompile.S =
   struct
 
 (* Common *)
