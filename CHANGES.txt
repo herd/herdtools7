@@ -1,3 +1,4 @@
+7.06
   * herd: Add set 'Atom' for LISA atimic events.
   * Dependencies for C, always "real".
   * generators: -realdep <bool> option
