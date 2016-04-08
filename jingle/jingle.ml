@@ -106,64 +106,102 @@ let get_arch =
 	       module Dumper = DefaultDumper(PPCArch)
 	     end : S)
 
-    
-let () = Arg.parse
-           ["-v",Arg.Unit (fun () -> verbose := true),
-	    "- be verbose";
-	    "-theme",Arg.String (fun s -> map := Some s),
-	    "<name> - give the theme file <name>";
-	    "-o",Arg.String (fun s -> outdir := Some s),
-	    "<name> - directory for output files"]
-	   (fun s -> args := s :: !args)
-	   (sprintf "Usage: %s [option]* -theme <file> [test]*" prog)
+let () =
+  Arg.parse
+    ["-v",Arg.Unit (fun () -> verbose := true),
+     "- be verbose";
+     "-theme",Arg.String (fun s -> map := Some s),
+     "<name> - give the theme file <name>";
+     "-o",Arg.String (fun s -> outdir := Some s),
+     "<name> - directory for output files"]
+    (fun s -> args := s :: !args)
+    (sprintf "Usage: %s [option]* -theme <file> [test]*" prog)
 
-let parsed = match !map with
-  | None -> raise (Error "No map file provided.")
-  | Some s -> Misc.input_protect ParseMap.parse s
 
-let () = if !verbose then
-	   (eprintf "Reading theme file :\n";
-	    List.iter (fun (s,t) ->
-		       eprintf "\"%s\" -> \"%s\"\n" s t)
-		      parsed.ParseMap.conversions)
-	     
+let map = !map
+let verbose = !verbose
+let outdir = !outdir
+let args = !args
+
+let parsed = match map with
+| None -> raise (Error "No map file provided.")
+| Some s -> Misc.input_protect ParseMap.parse s
+
+let () =
+  if verbose then begin
+   eprintf "Reading theme file :\n";
+    List.iter (fun (s,t) ->
+      eprintf "\"%s\" -> \"%s\"\n" s t)
+      parsed.ParseMap.conversions
+  end
+
 module Source = (val get_arch parsed.ParseMap.source)
 module Target = (val get_arch parsed.ParseMap.target)
 
-module Trad = Mapping.Make(struct
-			    module Source = Source
-			    module Target = Target
-			    let conversions = parsed.ParseMap.conversions
-			  end)
-			    
-let do_trans file = 
-  let fin chin =
-    let sres = let module SP = Splitter.Make(Splitter.Default) in
-	       SP.split (Filename.basename file) chin in
-    let fout out = try
-	let trans_test =
-          try Trad.translate chin sres with
-          | Mapping.Error msg -> Warn.fatal "%s" msg in
-	Target.Dumper.dump_info out sres.Splitter.name trans_test
-      with e ->
-        eprintf "Error in test %s.\n" (Filename.basename file);
-	raise e
-    in match !outdir with
-       | None -> fout stdout
-       | Some s -> 
-           let outname = Filename.concat s  (Filename.basename file) in
-	   try Misc.output_protect fout outname
-           with e -> MySys.remove outname ; raise e
-  in
-  try Misc.input_protect fin file
-  with
-  | Misc.Exit -> ()
-  | Misc.Fatal msg -> eprintf "Non fatal: %s\n" msg
+module Trad =
+  Mapping.Make
+    (struct
+      let verbose = verbose
+      module Source = Source
+      module Target = Target
+      let conversions = parsed.ParseMap.conversions
+    end)
 
-let () = 
-  let open Misc in
-  match !args with
-  | [] -> iter_stdin do_trans
-  | tests -> iter_argv do_trans tests
 
- 
+module Top(Out:OutTests.S) = struct			    
+
+  let idx_out = Out.open_all ()
+
+  let do_trans file k = 
+
+    let fin chin =
+      let sres =
+        let module SP = Splitter.Make(Splitter.Default) in
+        SP.split (Filename.basename file) chin in
+      let tgt_test =
+        try Trad.translate chin sres
+        with  Mapping.Error msg -> Warn.fatal "File \"%s\":%s" file msg in
+        
+      let dump out =
+        let out = Out.chan out in
+        Target.Dumper.dump_info out sres.Splitter.name tgt_test in
+      
+
+      let base = Filename.basename file in
+      let out = Out.open_file base in
+      Misc.output_protect_close Out.close dump out ;
+      Out.fprintf idx_out "%s\n" base in
+      
+        
+
+    try Misc.input_protect fin file ; k+1
+    with
+    | Misc.Exit -> k
+    | Misc.Fatal msg ->
+        if verbose then eprintf "%s\n" msg ;
+        k
+
+
+  let zyva () = 
+    let nout =
+      match args with
+      | [] -> Misc.fold_stdin do_trans 0
+      | tests -> Misc.fold_argv do_trans tests 0 in
+    Out.tar() ;
+    eprintf "Generated %i tests\n" nout
+end
+
+let () = match outdir with
+| None ->
+    let module X = Top(OutStd) in
+    X.zyva()
+| Some _ ->
+    let module Out =
+      OutTar.Make
+        (struct
+          let verbose = 0
+          let outname = outdir
+        end) in
+    let module X = Top(Out) in
+    X.zyva ()
+

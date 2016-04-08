@@ -18,10 +18,11 @@
 exception Error of string
 
 module type Config = sig
-    module Source : Arch.S
-    module Target : Arch.S
-    val conversions : (string * string) list 
-  end
+  val verbose : bool
+  module Source : Arch.S
+  module Target : Arch.S
+  val conversions : (string * string) list 
+end
 
 module Make(C:Config) = struct
 	   
@@ -153,9 +154,11 @@ module Make(C:Config) = struct
 		| Some(is,[],[]) -> Some((is,[],[]),[]) 
 		| Some([],[Source.Label (lab,Source.Nop)],[]) ->
                     Some ((instrs,[Target.Label(lab,Target.Nop)],[]),[])
-		| _ -> eprintf "Unmatched instructions:\n%s" 
-			       (Source.dump_pseudos instrs);
-		       None
+		| _ ->
+                    if C.verbose then
+                      eprintf "Unmatched instructions:\n%s" 
+			(Source.dump_pseudos instrs);
+		    None
 	      end
 	| (p,conv)::ps ->
 	   match find_pattern "LOC" p instrs [] with
@@ -188,7 +191,6 @@ module Make(C:Config) = struct
 		  | Source.Cst(s,c) -> (Target.Cst(s,c)::cv,env)
 		  | Source.Lab(s,l) -> 
 		     let lbl,env = Env.get_label env l in
-		     (*eprintf "%s,%s,%s\n" l s lbl;*)
 		     (Target.Lab(s,lbl)::cv,env)
 		  | Source.Code(s,c) ->
 		     let c,env = convert env c in

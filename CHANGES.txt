@@ -1,3 +1,5 @@
+7.07
+  * herd: set 'Atom' -> set 'X' (compatibility)
 7.06
   * herd: Add set 'Atom' for LISA atimic events.
   * Dependencies for C, always "real".

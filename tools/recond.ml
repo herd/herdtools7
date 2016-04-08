@@ -15,57 +15,10 @@
 (****************************************************************************)
 
 (********************)
-(*  Change condition *)
+(* Change condition *)
 (********************)
 
 open Printf
-
-module type Out = sig
-  type t
-  val open_all : unit -> t
-  val open_file : string -> t
-  val close : t -> unit
-  val put_char : t -> char -> unit
-  val fprintf : t -> ('a, out_channel, unit) format -> 'a
-  val tar : unit -> unit
-  val chan : t -> out_channel
-end
-
-module OutStd = struct
-  type t = No | Out
-
-  let open_all () = No
-  let open_file _ = Out
-  let close _ = ()
-
-  let put_char out c = match out with
-  | No -> ()
-  | Out -> output_char stdout c
-
-  let fprintf t fmt =  match t with
-  | No -> ifprintf stdout fmt
-  | Out -> fprintf stdout fmt
-
-  let tar () = ()
-
-  let chan = function
-    | No -> assert false
-    | Out -> stdout
-end
-
-module OutTar(O:Tar.Option) = struct
-  module T = Tar.Make(O)
-
-  type t = out_channel
-  let do_open name = open_out (T.outname name)
-  let open_all () = do_open "@all"
-  let open_file name = do_open name
-  let close chan = close_out chan
-  let put_char = output_char
-  let fprintf chan fmt = Printf.fprintf chan fmt
-  let tar = T.tar
-  let chan t = t
-end
 
 module type Config = sig
   val verbose : int
@@ -76,7 +29,7 @@ module type Config = sig
   val toexists : bool
 end
 
-module Make(Config:Config)(Out:Out) =
+module Make(Config:Config)(Out:OutTests.S) =
   struct
     module D = Splitter.Default
     module LU = LexUtils.Make(D)
@@ -138,7 +91,7 @@ module Make(Config:Config)(Out:Out) =
         if Config.check_name name.Name.name then begin
           let base = Filename.basename fname in
           let out = Out.open_file base in
-          Misc.output_protect_close Out.close        
+          Misc.output_protect_close Out.close       
             (fun out ->
               let _,_,(constr_start,constr_end),(last_start,loc_eof) = locs in
               let echo sec =
@@ -295,7 +248,7 @@ let from_args =
       Y.from_args
   | Some _ as t ->
       let module T =
-        OutTar
+        OutTar.Make
           (struct
 	    let verbose = !verbose
 	    let outname = t
