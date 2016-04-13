@@ -405,7 +405,7 @@ let options = [
   parse_bool "-labelbox" PP.labelbox
     "label instruction instruction boxes with instruction" ;
   parse_bool "-movelabel" PP.movelabel
-    "apply various tricks to enanche edge label placement in pictures" ;
+    "apply various tricks to enhance edge label placement in pictures" ;
   ("-dotheader",Arg.String (fun s -> PP.dotheader := Some s),
    "<name> insert the contents of <name> at the beginning of generated dot files");
 ]
