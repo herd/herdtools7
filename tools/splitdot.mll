@@ -25,8 +25,15 @@ let eof = ref false
    else
      let b = Buffer.create 32 in
      Buffer.add_string b lxm ;
-     image 0 b lexbuf ;
-     Buffer.contents b :: main (c-1) lexbuf
+     let now =
+       try 
+         image 0 b lexbuf ;
+         Some (Buffer.contents b)
+       with End_of_file -> None in
+     match now with
+     | None -> []
+     | Some img -> img :: main (c-1) lexbuf
+
  }
 | [^'\n']* '\n'  { main c lexbuf }
 | eof { eof := true ; [] }
@@ -42,7 +49,7 @@ and image depth b = parse
     { Buffer.add_string b lxm ; image (depth+1) b lexbuf }
 |  [^'\n']* '\n'  as lxm
     { Buffer.add_string b lxm ; image depth b lexbuf }
-
+| eof { eof := true ; raise End_of_file }
 {
  
 let args = ref []
