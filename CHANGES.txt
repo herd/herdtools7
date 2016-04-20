@@ -1,3 +1,4 @@
+  * LISA: change rmw sematics as fetch_and_op , was op_and_fetch
 7.07
   * herd: set 'Atom' -> set 'X' (compatibility)
 7.06

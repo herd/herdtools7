@@ -139,9 +139,9 @@ module Make (C:Sem.Config)(V:Value.S)
 	| BellBase.Prmw(r,op,addr_op,s) ->
           (solve_addr_op addr_op ii) >>=
           (fun x -> (read_mem_atom x s ii) >>=
-            (fun v -> 
-                  (tr_op ~stack:[(r,v)] ii op) >>= 
-                  (fun v -> write_reg r v ii >>|
+            (fun v_read -> 
+                  (tr_op ~stack:[(r,v_read)] ii op) >>= 
+                  (fun v -> write_reg r v_read ii >>|
                             write_mem_atom x v s ii))) >>!
           B.Next
 
