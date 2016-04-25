@@ -213,6 +213,7 @@ end = struct
      "RLX", mo_matches MemOrder.Rlx;
      "CON", mo_matches MemOrder.Con;
      "A",old_is_atomic;
+     "NA",(fun a -> not (old_is_atomic a));
    ]
 
   let arch_fences = []
