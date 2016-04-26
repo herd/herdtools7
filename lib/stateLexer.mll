@@ -32,7 +32,7 @@ let hexadecimal = ("0x"|"0X") hexadigit+
 let num = decimal | hexadecimal
 
 rule token = parse
-| [' ''\t'] { token lexbuf }
+| [' ''\t''\r'] { token lexbuf }
 | '\n'      { incr_lineno lexbuf; token lexbuf }
 | "(*"      { LU.skip_comment lexbuf ; token lexbuf }
 | num as num

@@ -57,7 +57,7 @@ let name = (alpha | '_') (alpha|digit|'_')*
 let num = digit+
 
 rule token deep = parse
-| [' ''\t']+ { token deep lexbuf }
+| [' ''\t''\r']+ { token deep lexbuf }
 | '\n' { incr_lineno lexbuf ; token deep lexbuf ; }
 | "/*" { LU.skip_c_comment lexbuf ; token deep lexbuf }
 | "//" { LU.skip_c_line_comment lexbuf ; token deep lexbuf }

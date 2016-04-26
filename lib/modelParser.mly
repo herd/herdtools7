@@ -77,8 +77,12 @@ let pp () =
 %%
 
 main:
-| VAR options topins_list EOF { $2, $1,$3 }
-| STRING options topins_list EOF { $2,$1,$3 }
+| identity options topins_list EOF { $2, $1,$3 }
+
+identity:
+| VAR { $1 }
+| STRING { $1 }
+|  { "Unknown" }
 
 options:
 | WITHCO options { ModelOption.set_enumco true $2 }

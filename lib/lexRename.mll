@@ -28,8 +28,8 @@ end
 module Make(O:Config) = struct
 }
 
-let blank = [' ''\t']
-let name = [^' ''\t''\n' '%' '#''"']+
+let blank = [' ''\t''\r']
+let name = [^' ''\t''\n''\r''%' '#''"']+
 let comment = ('#'|'%') [^'\n']*
 rule main parse_value t idx = parse 
 | blank* (name as key)

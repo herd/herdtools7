@@ -76,7 +76,7 @@ let alpha = [ 'a'-'z' 'A'-'Z']
 let name  = '_' ? alpha (alpha|digit|'_' | '.' | '-')* '\''?
 
 rule token = parse
-| [' ''\t'] { token lexbuf }
+| [' ''\t''\r'] { token lexbuf }
 | '\n'      { incr_lineno lexbuf; token lexbuf }
 | "//" [^'\n']* { token lexbuf }
 | "(*"      { LU.skip_comment lexbuf ; token lexbuf }

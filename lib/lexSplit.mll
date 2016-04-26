@@ -18,7 +18,7 @@
 exception Error
 }
 
-let blank = [' ''\n']
+let blank = [' ''\n''\r''\t']
 let digit = ['0'-'9']
 
 rule main = parse

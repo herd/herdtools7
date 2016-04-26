@@ -41,7 +41,7 @@ let do_include lex fname =
 
 }
 
-let space = [' ''\t']
+let space = [' ''\t''\r']
 let non_space = [^' ''\t''\n']
 let non_space_eq = [^'='' ''\t''\n']
 

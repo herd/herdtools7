@@ -1,3 +1,5 @@
+  * All lexers, ignore '\r'.
+  * CAT: make the initial "identity" string optional.
 7.08  
   * C11: add NA for non-atomics events (needed by popl15c11 models from the catalogue)
   * LISA: change rmw sematics as fetch_and_op , was op_and_fetch
