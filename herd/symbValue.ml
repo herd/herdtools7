@@ -144,7 +144,7 @@ let eq v1 v2 = match v1,v2 with
     binop Op.Eq (bool_to_int Misc.int_eq) v1 v2
 
 let ne v1 v2 = match v1,v2 with
-| Var i1,Var i2 when not (Misc.int_eq i1 i2) -> one
+| Var i1,Var i2 when Misc.int_eq i1 i2 -> zero
 | Val (Symbolic s1),Val (Symbolic s2) ->
     intToV (bool_to_int (fun s1 s2 -> (not (Misc.string_eq s1 s2))) s1 s2)
 (* Assume symbolic value not to be zero *)
