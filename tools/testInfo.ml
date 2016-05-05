@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2011-present Institut National de Recherche en Informatique et *)
+(* Copyright 2016-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,46 +14,38 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(******************************)
-(* Extract names from test(s) *)
-(******************************)
+(* Extract information from test, at the moment name + fname + hash *)
 
-open Printf
+module T = struct
+  type t = 
+      { tname : string ;
+        fname : string ;
+        hash : string ; } 
 
-let from_file name = name,Names.from_fname name
+      let cmp_pair cmp1 cmp2 t1 t2 = match cmp1 t1 t2 with
+      | 0 -> cmp2 t1 t2
+      | r -> r
 
-let with_source = ref true
-let arg = ref []
+      let compare t1 t2 =
+        cmp_pair
+          (fun t1 t2 -> String.compare t1.tname t2.tname)
+          (cmp_pair
+             (fun t1 t2 ->  String.compare t1.hash t2.hash)
+             (fun t1 t2 ->  String.compare t1.fname t2.fname))
+          t1 t2
+end
 
-let prog =
-  if Array.length Sys.argv > 0 then Sys.argv.(0)
-  else "mnames"
+module Make(A:ArchBase.S) = struct
 
-let () =
-  Arg.parse
-    [
-     "-src",Arg.Bool (fun b -> with_source := b),
-     (sprintf "<bool> include source file names into output, default %b" !with_source)]
-    (fun s -> arg := s :: !arg)
-    (sprintf "Usage: %s [test]*" prog)
+  let zyva name parsed =
+    let tname = name.Name.name in
+    let fname =  name.Name.file in
+    let hash = MiscParser.get_hash parsed in
+    let hash =
+      match hash with 
+      | None -> assert false
+      | Some h -> h in
+    { T.tname = tname ; fname=fname; hash = hash; }
+end
 
-let tests = !arg
-
-let do_test name =
-  try
-    let fname,name =  from_file name in
-    if !with_source then
-      printf "%s %s\n" fname name
-    else
-      printf "%s\n" name
-  with
-  | Misc.Exit -> ()
-  | Misc.Fatal msg ->
-      Warn.warn_always "%a %s" Pos.pp_pos0 name msg
-  | e ->
-      Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
-      raise e
-
-let () = match tests with
-| [] -> Misc.iter_stdin do_test
-| _ ->  Misc.iter_argv do_test tests
+module Z = ToolParse.Top(T)(Make)

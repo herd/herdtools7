@@ -22,38 +22,7 @@ module Top
        end) =
   struct
 
-    module T = struct
-      type t = 
-        { tname : string ;
-          fname : string ;
-          hash : string ; } 
-      let cmp_pair cmp1 cmp2 t1 t2 = match cmp1 t1 t2 with
-      | 0 -> cmp2 t1 t2
-      | r -> r
-
-      let compare t1 t2 =
-        cmp_pair
-          (fun t1 t2 -> String.compare t1.tname t2.tname)
-          (cmp_pair
-             (fun t1 t2 ->  String.compare t1.hash t2.hash)
-             (fun t1 t2 ->  String.compare t1.fname t2.fname))
-          t1 t2
-    end
-
-    module Make(A:ArchBase.S) = struct
-
-      let zyva name parsed =
-	let tname = name.Name.name in
-        let fname =  name.Name.file in
-	let hash = MiscParser.get_hash parsed in
-        let hash = match hash with  | None -> assert false | Some h -> h in
-	if Opt.verbose > 1 then eprintf "Name=%s Hash=%s\n" tname hash ;
-        { T.tname = tname ; fname=fname; hash = hash; }
-    end
-
-    module Z = ToolParse.Top(T)(Make)
-    module TSet = MySet.Make(T)
-
+    open TestInfo
 
     let do_test name k =
       try Z.from_file name::k
@@ -65,6 +34,8 @@ module Top
       | e ->
           Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
           raise e
+
+    module TSet = MySet.Make(T)
 
     let is_singleton s  = match StringSet.as_singleton s with
     | Some _ -> true

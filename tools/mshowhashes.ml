@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2011-present Institut National de Recherche en Informatique et *)
+(* Copyright 2016-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,46 +14,53 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(******************************)
-(* Extract names from test(s) *)
-(******************************)
+(* Show test hashes *)
 
 open Printf
 
-let from_file name = name,Names.from_fname name
+module Top
+    (Opt:
+       sig
+         val verbose : int
+       end) =
+  struct
+    open TestInfo
 
-let with_source = ref true
+    let do_test name =
+      try
+        let t = Z.from_file name in
+        printf "%s %s\n" t.T.tname t.T.hash
+      with
+      | Misc.Exit -> ()
+      | Misc.Fatal msg ->
+          Warn.warn_always "%a %s" Pos.pp_pos0 name msg ;
+          ()
+      | e ->
+          Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
+          raise e
+            
+    let zyva tests = Misc.iter_argv do_test tests
+  end
+
+
+let verbose = ref 0
 let arg = ref []
-
 let prog =
   if Array.length Sys.argv > 0 then Sys.argv.(0)
-  else "mnames"
+  else "mshowhash"
 
 let () =
   Arg.parse
-    [
-     "-src",Arg.Bool (fun b -> with_source := b),
-     (sprintf "<bool> include source file names into output, default %b" !with_source)]
-    (fun s -> arg := s :: !arg)
-    (sprintf "Usage: %s [test]*" prog)
+    ["-v",Arg.Unit (fun () -> incr verbose), " be verbose";]
+    (fun s -> arg := !arg @ [s])
+    (sprintf "Usage: %s [options]* [test]*" prog)
 
-let tests = !arg
+let tests = List.rev !arg
 
-let do_test name =
-  try
-    let fname,name =  from_file name in
-    if !with_source then
-      printf "%s %s\n" fname name
-    else
-      printf "%s\n" name
-  with
-  | Misc.Exit -> ()
-  | Misc.Fatal msg ->
-      Warn.warn_always "%a %s" Pos.pp_pos0 name msg
-  | e ->
-      Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
-      raise e
+module X =
+  Top
+    (struct
+      let verbose = !verbose
+    end)
 
-let () = match tests with
-| [] -> Misc.iter_stdin do_test
-| _ ->  Misc.iter_argv do_test tests
+let () = X.zyva tests
