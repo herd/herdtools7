@@ -1034,9 +1034,11 @@ let union_litmus_simple _name t1 t2 =
   if t1.s_hash <> t2.s_hash then error DiffHash ;
   { t1 with s_states = sts ; }
 
+(*
 let union_equal_simple _name t1 t2 = assert (t1 = t2) ;  t1
+*)
 
-let normalize_simple name is_litmus ts =
+let normalize_simple name _is_litmus ts =
   let ts =
     List.map
       (fun (n,sts,hash) ->
@@ -1049,7 +1051,8 @@ let normalize_simple name is_litmus ts =
       ts in
   let ts =
     union_same_log_simple
-      (if is_litmus then union_litmus_simple name else union_equal_simple name)
+(*      (if is_litmus then union_litmus_simple name else union_equal_simple name) *)
+      (union_litmus_simple name)
       ts in
   { s_name = name ; s_tests = ts ; }
 

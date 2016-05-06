@@ -1,4 +1,7 @@
-  * tools : add mshowhashes to list test hashes + share code with mdiag
+7.11
+  * tools: correct mcmp (normalize_simple in logState), so as to accept
+           flowing model output.
+  * tools: add mshowhashes to list test hashes + share code with mdiag
 7.10
   * Correct bug in computing ne (not equal): was 1 (true) for two different
     "S" vars...
