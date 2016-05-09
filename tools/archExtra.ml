@@ -18,6 +18,20 @@
 module Make (O:sig val hexa : bool end)(A:ArchBase.S) = struct
   include A
 
+  module RegSet =
+    MySet.Make
+      (struct
+        type t = reg
+        let compare = reg_compare
+      end)
+
+  module ProcMap =
+    MyMap.Make
+      (struct
+        type t = int
+        let compare = Misc.int_compare
+      end)
+
   type v = SymbConstant.v
   let maybevToV c = c
   let pp_v = SymbConstant.pp O.hexa

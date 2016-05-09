@@ -34,8 +34,7 @@ struct
     let compare = A.reg_compare
   end
 
-  module RegSet = MySet.Make(OR)
-  let pp_rs rs = sprintf "{%s}" (RegSet.pp_str "," A.pp_reg rs)
+  let pp_rs rs = sprintf "{%s}" (A.RegSet.pp_str "," A.pp_reg rs)
 
 
   module RegMap = MyMap.Make(OR)
@@ -55,15 +54,8 @@ struct
 (* Find all (integer) registers *)
 (********************************)
 
-  let collect_pseudo f = A.pseudo_fold (fun k ins -> A.fold_regs f k ins)
+  module Collect =  CollectRegs.Make(A)
 
-  let collect_code c =
-    let rs,_ =
-      List.fold_left
-	(collect_pseudo  (RegSet.add,(fun _ () -> ())))
-	(RegSet.empty,())
-        c in
-    rs
 
   let collect_location loc regs = match loc with
   | A.Location_reg (p,r) -> ProcRegSet.add (p,r) regs
@@ -83,25 +75,19 @@ struct
 
   let collect_locs = List.fold_right (fun (loc,_) -> collect_location loc)
 
+
 (***************************)
 (* Alpha conversion proper *)
 (***************************)
 
-(* proc -> reg set *)
-  module ProcMap =
-    MyMap.Make
-      (struct
-        type t = int
-        let compare = Misc.int_compare
-      end)
 
 (* group according to proc *)
   let by_proc rs =
     ProcRegSet.fold
       (fun (p,r) m ->
-        let rs = ProcMap.safe_find RegSet.empty p m in
-        ProcMap.add p (RegSet.add r rs) m)
-      rs ProcMap.empty
+        let rs = A.ProcMap.safe_find A.RegSet.empty p m in
+        A.ProcMap.add p (A.RegSet.add r rs) m)
+      rs A.ProcMap.empty
 
 (* Lift reg -> reg map into a procreg -> procreg map *)
   let add_reg_map p m =
@@ -131,16 +117,16 @@ struct
 (* alpha convert code, also returns the conversion map. *)
   let alpha_code ars rs ac c =
     (* Registers to avoid *)
-    let ars = RegSet.union (collect_code ac) ars in
+    let ars = A.RegSet.union (Collect.collect_code ac) ars in
     (* Registers to convert *)
-    let rs = RegSet.union (collect_code c) rs in
-    let free = RegSet.diff (RegSet.of_list A.allowed_for_symb) ars in
+    let rs = A.RegSet.union (Collect.collect_code c) rs in
+    let free = A.RegSet.diff (A.RegSet.of_list A.allowed_for_symb) ars in
     if O.verbose > 0 then begin
       eprintf "Free=%s\n" (pp_rs free)
     end ;
-    let free = RegSet.elements free in
+    let free = A.RegSet.elements free in
     let env,_ =
-      RegSet.fold
+      A.RegSet.fold
         (fun r (env,free) -> match free with
         | [] -> Warn.user_error "not enough registers for alpha conversion"
         | f::free ->
@@ -160,16 +146,16 @@ struct
   | [],(p,c)::pcs ->
       let c,cm =
         alpha_code
-          (ProcMap.safe_find RegSet.empty p ma)
-          (ProcMap.safe_find RegSet.empty p mt)
+          (A.ProcMap.safe_find A.RegSet.empty p ma)
+          (A.ProcMap.safe_find A.RegSet.empty p mt)
           [] c in
       let pcs,m = alpha_prog ma mt [] pcs in
       (p,c)::pcs,add_reg_map p cm m      
   | (_,ac)::apcs,(p,c)::pcs ->
       let c,cm =
         alpha_code
-          (ProcMap.safe_find RegSet.empty p ma)
-          (ProcMap.safe_find RegSet.empty p mt)
+          (A.ProcMap.safe_find A.RegSet.empty p ma)
+          (A.ProcMap.safe_find A.RegSet.empty p mt)
           ac c in
       let pcs,m = alpha_prog ma mt apcs pcs in
       (p,c)::pcs,add_reg_map p cm m      
