@@ -56,8 +56,16 @@ val parse_kind : string -> kind option
 
 (* Polymorphic constraint combinators *)
 
+ val fold_prop :
+     (('loc, 'v) atom -> 'a -> 'a) -> ('loc,'v) prop -> 'a -> 'a
+
  val fold_constr :
      (('loc, 'v) atom -> 'a -> 'a) -> ('loc,'v) prop constr -> 'a -> 'a
+
+val  map_prop :
+    (('loc1, 'v1) atom -> ('loc2, 'v2) atom) ->
+      ('loc1,'v1) prop ->
+          ('loc2,'v2) prop
 
 val  map_constr :
     (('loc1, 'v1) atom -> ('loc2, 'v2) atom) ->
@@ -80,6 +88,9 @@ val pp_prop : ('loc,'v) atom pp_arg -> ('loc,'v) prop  -> string
 
 val dump_prop : 
     (('loc, 'v) atom -> string) -> out_channel -> ('loc,'v) prop -> unit
+
+val prop_to_string :
+    (('loc, 'v) atom -> string) -> ('loc,'v) prop -> string
 
 val dump_constraints : 
     out_channel -> (('loc, 'v) atom -> string) -> ('loc,'v) prop constr -> unit

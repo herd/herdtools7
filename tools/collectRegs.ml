@@ -47,6 +47,12 @@ module Make(A:Arch.S) = struct
 
   let collect_state st = List.fold_right collect_state_atom st
 
+  let collect_prop = ConstrGen.fold_prop collect_atom
+
+  let collect_filter = function
+    | None -> Misc.identity
+    | Some p -> collect_prop p
+
   let collect_constr = ConstrGen.fold_constr collect_atom
 
   let collect_locs = List.fold_right (fun (loc,_) -> collect_location loc)
@@ -59,7 +65,9 @@ module Make(A:Arch.S) = struct
         (fun m (p,cs) ->
           A.ProcMap.add p (collect_code cs) m)
         A.ProcMap.empty t.prog in
+    let m = collect_state t.init m in
     let m = collect_locs t.locations m in
+    let m = collect_filter t.filter m in
     let m = collect_constr t.condition m in
     m
 end

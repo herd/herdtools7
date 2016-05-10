@@ -25,8 +25,9 @@ module type I = sig
   type state
   val dump_state :state -> string
 
-  type constr
-  val dump_constr : constr -> string
+  type prop
+  val dump_prop : prop -> string
+  val dump_constr : prop ConstrGen.constr -> string
 
   type location
   val dump_location : location -> string
@@ -35,17 +36,17 @@ end
 module Make(I:I) : sig
   val dump : out_channel ->
     Name.t ->
-    (I.state, I.P.code list, I.constr, I.location)
+    (I.state, I.P.code list, I.prop, I.location)
         MiscParser.result
       -> unit
   val dump_info : out_channel ->
     Name.t ->
-    (I.state, I.P.code list, I.constr, I.location)
+    (I.state, I.P.code list, I.prop, I.location)
         MiscParser.result
       -> unit
   val lines :
       Name.t ->
-        (I.state, I.P.code list, I.constr, I.location)
+        (I.state, I.P.code list, I.prop, I.location)
           MiscParser.result
       -> string list
 end = struct

@@ -22,8 +22,9 @@ module type I = sig
   type state
   val dump_state :state -> string
 
-  type constr
-  val dump_constr : constr -> string
+  type prop
+  val dump_prop : prop -> string
+  val dump_constr : prop ConstrGen.constr -> string
 
   type location
   val dump_location : location -> string
@@ -32,17 +33,17 @@ end
 module Make(I:I) : sig
   val dump : out_channel ->
     Name.t ->
-    (I.state, (int * I.A.pseudo list) list, I.constr, I.location)
+    (I.state, (int * I.A.pseudo list) list, I.prop, I.location)
         MiscParser.result
       -> unit
   val dump_info : out_channel ->
     Name.t ->
-    (I.state, (int * I.A.pseudo list) list, I.constr, I.location)
+    (I.state, (int * I.A.pseudo list) list, I.prop, I.location)
         MiscParser.result
       -> unit
   val lines :
       Name.t ->
-        (I.state, (int * I.A.pseudo list) list, I.constr, I.location)
+        (I.state, (int * I.A.pseudo list) list, I.prop, I.location)
           MiscParser.result
       -> string list
 end = struct
@@ -89,6 +90,10 @@ end = struct
     fprintf chan "\n" ;
     let locs = DumpUtils.dump_locations I.dump_location t.locations in
     if locs <> "" then fprintf chan "%s\n" locs ;
+    begin match t.filter with
+    | None -> ()
+    | Some p -> fprintf chan "filter %s" (I.dump_prop p)
+    end ;
     begin match t.extra_data with
     | NoExtra|CExtra _ -> ()
     | BellExtra bi ->

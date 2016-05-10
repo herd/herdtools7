@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type ('prog,'nice_prog,'start,'state,'constr,'loc,'locset) t =
+type ('prog,'nice_prog,'start,'state,'prop,'loc,'locset) t =
     {
      arch : Archs.t ; 
      name : Name.t ;
@@ -23,7 +23,8 @@ type ('prog,'nice_prog,'start,'state,'constr,'loc,'locset) t =
      nice_prog : 'nice_prog ;
      start_points : 'start ;
      init_state : 'state ;
-     cond : 'constr ;
+     filter : 'prop option ;
+     cond : 'prop ConstrGen.constr ;
      flocs : 'loc list ;
      observed : 'locset ;
      extra_data : MiscParser.extra_data
@@ -49,7 +50,7 @@ module Make(A:Arch.S) =
 
     type result =
         (A.program, A.nice_prog, A.start_points,
-         A.state, A.constr, A.location, A.LocSet.t) t
+         A.state, A.prop, A.location, A.LocSet.t) t
 
 (* Symb register allocation is external, since litmus needs it *)
     module ArchAlloc = struct
@@ -73,6 +74,7 @@ module Make(A:Arch.S) =
           {MiscParser.init = init ;
            info = info ;
            prog = nice_prog ;
+           filter = filter ; 
            condition = final ; 
            locations = locs ;
            extra_data = extra_data ;
@@ -87,8 +89,6 @@ module Make(A:Arch.S) =
           | ConstrGen.LV (loc,_v) -> A.LocSet.add loc r
           | ConstrGen.LL (l1,l2) -> A.LocSet.add l1 (A.LocSet.add l2 r))
           final locs in
-(* Hum, half satisfactory,  but steems from the test structure having
-   three fields that are gpu-specific *)
       {
        arch = A.arch ;
        name = name ;
@@ -97,6 +97,7 @@ module Make(A:Arch.S) =
        nice_prog = nice_prog ;
        start_points = starts ;
        init_state = A.build_state init ;
+       filter = filter ;
        cond = final ;
        flocs = flocs ;
        observed = observed ;       
@@ -123,6 +124,7 @@ module Make(A:Arch.S) =
        nice_prog = [] ;
        start_points = [] ;
        init_state = A.state_empty;
+       filter = None ;
        cond = fake_constr ;
        flocs = [] ;
        observed = A.LocSet.empty;

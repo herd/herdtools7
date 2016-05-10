@@ -16,7 +16,7 @@
 
 (** Litmus tests *)
 
-type ('prog,'nice_prog,'start,'state,'constr, 'loc, 'locset) t =
+type ('prog,'nice_prog,'start,'state,'prop, 'loc, 'locset) t =
     {
      arch : Archs.t ; 
      name : Name.t ;
@@ -25,20 +25,21 @@ type ('prog,'nice_prog,'start,'state,'constr, 'loc, 'locset) t =
      nice_prog : 'nice_prog ;
      start_points : 'start ;
      init_state : 'state ;
-     cond : 'constr ;
+     filter : 'prop option ;
+     cond : 'prop ConstrGen.constr ;
      flocs : 'loc list ;
      observed : 'locset ;
      extra_data : MiscParser.extra_data ;
    }
 
 val simple_name :
-    ('prog,'nice_prog,'start,'state,'constr, 'loc, 'locset) t -> string
+    ('prog,'nice_prog,'start,'state,'prop, 'loc, 'locset) t -> string
 val readable_name :
-    ('prog,'nice_prog,'start,'state,'constr, 'loc, 'locset) t -> string
+    ('prog,'nice_prog,'start,'state,'prop, 'loc, 'locset) t -> string
 val very_readable_name :
-    ('prog,'nice_prog,'start,'state,'constr, 'loc, 'locset) t -> string
+    ('prog,'nice_prog,'start,'state,'prop, 'loc, 'locset) t -> string
 val basename :
-    ('prog,'nice_prog,'start,'state,'constr, 'loc, 'locset) t -> string
+    ('prog,'nice_prog,'start,'state,'prop, 'loc, 'locset) t -> string
 
 
 module Make(A:Arch.S) : sig
@@ -48,7 +49,7 @@ module Make(A:Arch.S) : sig
        A.nice_prog,
        A.start_points,
        A.state,
-       A.constr, 
+       A.prop, 
        A.location,
        A.LocSet.t
       ) t

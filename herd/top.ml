@@ -61,6 +61,10 @@ module Make(O:Config)(M:XXXMem.S) =
       with Not_found -> Misc.identity
 
 (* Cond checking *)
+    let check_filter test st = match test.Test.filter with
+    | None -> false
+    | Some p -> C.check_prop p st
+
     let check_prop test st =
       let c = T.find_our_constraint test in
       let p = ConstrGen.prop_of c in

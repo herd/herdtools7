@@ -26,6 +26,7 @@ module Top
        sig
          val verbose : int
          val outputdir : string option
+         val outall : string -> unit
        end) =
   struct
 
@@ -47,36 +48,213 @@ module Top
 
     module D = Dumper.Make(A)
 
+    module RegAlloc = struct
+
+      type t = A.RegSet.t A.ProcMap.t
+      let all_regs = A.RegSet.of_list  A.allowed_for_symb      
+      module Collect = CollectRegs.Make(A)
+
+      let create t =
+        let m0 = Collect.collect t in
+        A.ProcMap.map
+          (fun rs -> A.RegSet.diff all_regs rs)
+          m0
+
+      let alloc p m =
+        let rs = A.ProcMap.safe_find all_regs p m in
+        let r =
+          try A.RegSet.min_elt rs
+          with Not_found -> Warn.fatal "Not enough registers" in
+        r,A.ProcMap.add p (A.RegSet.remove r rs) m
+    end
+
     module F = struct
       open LISA
 
-      let st_release x v =
+(* Reduce critical sections to useful ones *)
+      let rec opt d p = match p with
+        | Macro _|Symbolic _ -> assert false
+        | Label (lbl,p) ->     
+            let d,p = opt d p  in
+            d,Label (lbl,p)
+        | Nop -> d,Nop
+        | Instruction i ->
+            begin match i with
+            |  Pfence (Fence (["unlock"],None)) ->
+                if d <= 0 then Warn.user_error "extra unlock"
+                else if d = 1 then 0,p
+                else d-1,Nop
+            |  Pfence (Fence (["lock"],None)) ->
+                if d > 0 then d+1,Nop
+                else 1,p
+            | _ -> d,p
+            end
+
+
+      let rec do_opt_code  d = function
+        | [] -> d,[]
+        | p::k ->
+            let d,p = opt d p in
+            begin match p with
+            | Nop -> do_opt_code d k
+            | _   ->
+                let d,k = do_opt_code d k in
+                d,p::k
+            end
+
+      let opt_code cs =
+        let d,cs = do_opt_code 0 cs in
+        if d > 0 then  Warn.user_error "extra lock"
+        else cs
+
+      let opt_test t = 
+        let open MiscParser in
+        { t with prog = List.map (fun (i,cs) -> i,opt_code cs) t.prog; }
+
+(* Count sync and unlock *)
+      let count (syncs,unlocks as c) = function
+        | Pcall "sync" -> syncs+1,unlocks
+        | Pfence (Fence (["unlock"],None)) -> syncs,unlocks+1
+        | _ -> c
+
+      let count_test t =
+        List.fold_right
+          (fun (_,cs) k ->
+            List.fold_right
+              (fun c k -> pseudo_fold count k c)
+              cs k)
+          t.MiscParser.prog (0,0)
+
+
+(* Big work: translate call[sync], f[lock] and f[unlock]  *)
+      let sync_var i = sprintf "S%i" i
+      let cs_var i = sprintf "C%i" i
+
+      let fence = Pfence (Fence (["mb"],None))
+
+      let store_release x v =
         Pst  (Addr_op_atom (Abs (Constant.Symbolic x)),Imm v,["release"])
 
-      let map_call n k i  = match i with
-      | Pcall _ ->
-          let rec add_rec idx k = if idx >= n then k
-          else
-            Instruction (st_release (sprintf "s%i" idx) 1)::
-            add_rec (idx+1) k in
-              
-          Instruction (Pfence (Fence (["mb"],None)))::
-          add_rec 0
-            (Instruction (Pfence (Fence (["mb"],None)))::k)
-      | _ -> Instruction i::k
-                         
-              
-      let map_pseudo_call x = pseudo_fold (map_call 2) x
+      let read_acquire r x =
+        Pld (r,Addr_op_atom (Abs (Constant.Symbolic x)),["acquire"])
 
-      let map_code cs =
-        List.fold_right 
-          (fun c k -> map_pseudo_call k c)
-          cs []
+      let cons_ins i k= Instruction i::k
+
+      let tr n m u v id =
+        let rec do_tr (idx_sync,idx_unlock,free as st) p = match p with
+        | Macro _|Symbolic _ -> assert false
+        | Nop -> st,[Nop]
+        | Label (lbl,p) ->
+            let st,ps = do_tr st p in
+            begin match ps with
+            | [] ->  st,[Label (lbl,Nop); ]
+            | p::ps -> st,Label (lbl,p)::ps
+            end
+        | Instruction i ->
+            begin match i with
+            | Pcall "sync" ->
+                let k = cons_ins fence [] in
+
+                let rec add_reads free i k =
+                  if i >= m then free,k
+                  else
+                    let r,free = RegAlloc.alloc id free in
+                    v.(i).(idx_sync) <- (id,r) ;
+                    let free,k = add_reads free (i+1) k in
+                    free,cons_ins (read_acquire r (cs_var i)) k in
+
+                let free,k = add_reads free 0 k in
+                let k = cons_ins fence k in
+                let k = cons_ins (store_release (sync_var idx_sync) 1) k in
+                (idx_sync+1,idx_unlock,free),k
+            |  Pfence (Fence (["lock"],None)) ->
+                let rec add_reads free j k =
+                  if j >= n then free,k
+                  else
+                    let r,free = RegAlloc.alloc id free in
+                    u.(j).(idx_unlock) <- (id,r) ;
+                    let free,k = add_reads free (j+1) k in
+                    free,cons_ins  (read_acquire r (sync_var j)) k in
+                let free,ps = add_reads free 0 [] in
+                (idx_sync,idx_unlock,free),ps
+            |  Pfence (Fence (["unlock"],None)) ->
+                (idx_sync,idx_unlock+1,free),
+                cons_ins
+                  (store_release  (cs_var idx_unlock) 1) []
+            | _ -> st,[p]
+            end
+
+        and tr_code st ps = match ps with
+        | [] -> st,[]
+        | p::ps ->
+            let st,p = do_tr st p in
+            let st,ps = tr_code st ps in
+            st,p@ps in
+
+        tr_code
+
+      let one = A.one
+
+      let tr_test n m u v free =
+        let rec tr_rec st = function
+          | [] -> []
+          | (id,ps)::rem ->
+              let st,ps = tr n m u v id st ps in
+              (id,ps)::tr_rec st rem in
+        fun t ->
+          let open MiscParser in
+          let prog = tr_rec (0,0,free) t.prog in
+
+          let open ConstrGen in          
+          let rec loop_i i k =
+            if i >= m then k
+            else
+              let rec loop_j j k =
+                if j >= n then k
+                else
+                  let id1,r1 = v.(i).(j) and id2,r2 = u.(j).(i) in
+                  Or
+                    [
+                     Atom (LV (A.Location_reg (id1,r1),one));
+                     Atom (LV (A.Location_reg (id2,r2),one));
+                   ]::loop_j (j+1) k in
+              loop_j 0 (loop_i (i+1) k) in
+          let filter = Some (ConstrGen.And (loop_i 0 []) ) in
+          { t with prog; filter; }
+
+
+      let noreg = -1,LISA.GPRreg (-1)
+
+      let dump = match O.outputdir with
+      | None -> D.dump_info stdout
+      | Some d ->
+          fun name t ->
+            let fname = name.Name.file in
+            let base = Filename.basename fname in
+            let fname = Filename.concat d base in
+            Misc.output_protect
+              (fun chan -> D.dump_info chan name t)
+              fname ;
+            O.outall base
 
       let zyva name t =
-        let open MiscParser in
-        let nprog = List.map (fun (p,c) -> p,map_code c) t.prog in
-        D.dump_info stdout name { t with prog = nprog;}
+        try
+          let t = opt_test t in
+          let n,m = count_test t in
+          if O.verbose > 0 then begin
+            eprintf "%s: nsyncs=%i, nunlock=%i\n" name.Name.name n m ;
+          end ;
+ (* silent fail if no real rcu *)
+          if n = 0 || m = 0 then raise Misc.Exit ;
+          let u = Array.make_matrix n m noreg
+          and v = Array.make_matrix m n noreg
+          and free = RegAlloc.create t in
+          let t = tr_test n m u v free t in
+          dump name t
+        with Misc.Fatal msg|Misc.UserError msg ->
+          eprintf "Adios: %s\n" msg ;
+          D.dump_info stderr name t ;
+          raise Misc.Exit
     end
 
 open Archs
@@ -117,11 +295,18 @@ let () =
     (sprintf "Usage: %s [options]* [test]*" prog)
 
 
+let allchan = match !outputdir with
+| None -> None
+| Some d -> Some (open_out (Filename.concat d "@all"))
+
 module X = 
   Top
     (struct
       let verbose = !verbose
       let outputdir = !outputdir
+      let outall = match allchan with
+      | None -> assert false
+      | Some chan -> Printf.fprintf chan "%s\n"
     end)
 
 
@@ -136,4 +321,8 @@ let () =
       | e ->
           Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 fname ;
           raise e)
-    !args
+    !args ;
+  match allchan with
+  | None -> ()
+  | Some chan -> close_out chan
+

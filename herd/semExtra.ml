@@ -51,7 +51,7 @@ module type S = sig
 
   type test =
       (program, nice_prog, start_points,
-       state, constr, location, A.LocSet.t) Test.t
+       state, prop, location, A.LocSet.t) Test.t
 
 (* Get list of locations observed in outcomes *)
   type loc_set = A.LocSet.t
@@ -193,7 +193,7 @@ module Make(C:Config) (A:Arch.S) (Act:Action.S with module A = A)
 
     type test =
       (program, nice_prog, start_points,
-       state, constr, location, A.LocSet.t) Test.t
+       state, prop, location, A.LocSet.t) Test.t
 
     module T = Test.Make(A)
 (* List of relevant location *)

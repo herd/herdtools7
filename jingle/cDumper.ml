@@ -31,7 +31,7 @@ let dump_state st =
                    (fun a -> sprintf "%s;" (dump_state_atom a))
                    st)
 		
-                
+type prop = MiscParser.prop
 type constr = MiscParser.constr
 let dump_atom a =
   let open ConstrGen in
@@ -39,7 +39,8 @@ let dump_atom a =
   | LV (loc,v) -> dump_state_atom (loc,(MiscParser.TyDef,v))
   | LL (loc1,loc2) ->
      sprintf "%s=%s" (dump_loc loc1) (MiscParser.dump_rval loc2)
-	     
+
+let dump_prop = ConstrGen.prop_to_string dump_atom	     
 let dump_constr = ConstrGen.constraints_to_string dump_atom
 						  
 type location = MiscParser.location

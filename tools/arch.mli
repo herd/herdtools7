@@ -23,6 +23,7 @@ module type S = sig
   module ProcMap : MyMap.S with type key = int
 
   type v = Constant.v
+  val one : v
   val maybevToV  : v -> v
   val pp_v : v -> string
 
@@ -39,6 +40,7 @@ module type S = sig
   val pp_rval : location -> string
 *)
   type test = (location,v,pseudo) MiscParser.r3
-  type constr = (location,v) ConstrGen.prop ConstrGen.constr
+  type prop = (location,v) ConstrGen.prop
+  type constr = prop ConstrGen.constr
 
 end

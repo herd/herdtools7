@@ -325,9 +325,3 @@ module Tops
 
     end
 
-
-module TopArch(T : sig type t end)(A:ArchBase.S)
-    (F:sig val zyva : Name.t -> A.pseudo MiscParser.t -> T.t end) =
-  struct
-
-  end

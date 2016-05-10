@@ -68,7 +68,7 @@ end
 module type S = sig
   val parse : in_channel -> Splitter.result ->
     (MiscParser.state, string CAst.t list,
-     MiscParser.constr, MiscParser.location) MiscParser.result
+     MiscParser.prop, MiscParser.location) MiscParser.result
 end
 
 
@@ -172,7 +172,7 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
 	call_parser_loc "prog" chan prog_loc L.lexer L.parser in
       let prog = List.map CAstUtils.strip_pointers prog in
       let procs = check_procs prog in
-      let (locs,final,_quantifiers) =
+      let (locs,filter,final,_quantifiers) =
 	call_parser_loc "final"
 	  chan constr_loc SL.token StateParser.constraints in
       check_regs procs init locs final ;
@@ -183,6 +183,7 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
       let parsed =
         {
          MiscParser.info; init; prog = prog;
+         filter = filter;
          condition = final;
          locations = locs;
          extra_data = MiscParser.empty_extra;

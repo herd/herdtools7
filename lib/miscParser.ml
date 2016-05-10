@@ -126,11 +126,12 @@ type extra_data =
 
 let empty_extra = NoExtra
 
-type ('i, 'p, 'c, 'loc) result =
+type ('i, 'p, 'prop, 'loc) result =
     { info : info ;
       init : 'i ;
       prog : 'p ;
-      condition : 'c ;
+      filter : 'prop option ;
+      condition : 'prop ConstrGen.constr ;
       locations : ('loc * run_type) list ;
       extra_data : extra_data ;
 }
@@ -139,18 +140,17 @@ type ('i, 'p, 'c, 'loc) result =
 type ('loc,'v,'ins) r3 =
       (('loc * (run_type * 'v)) list,
        (int * 'ins list) list,
-       ('loc, 'v) ConstrGen.prop ConstrGen.constr,
+       ('loc, 'v) ConstrGen.prop,
        'loc) result
 
 type ('loc,'v,'code) r4 =
       (('loc * (run_type * 'v)) list,
        'code list,
-       ('loc, 'v) ConstrGen.prop ConstrGen.constr,
+       ('loc, 'v) ConstrGen.prop,
        'loc) result
 
 (* Result of generic parsing *)
-type 'pseudo t =
-    (state, (int * 'pseudo list) list, constr, location) result
+type 'pseudo t = (state, (int * 'pseudo list) list, prop, location) result
 
 (* Add empty GPU/Bell info to machine parsers *)
 

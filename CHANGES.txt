@@ -1,3 +1,4 @@
+  * tools added mrcu (for rcu translation) => add "filter" component to tests.
 7.11
   * tools: correct mcmp (normalize_simple in logState), so as to accept
            flowing model output.

@@ -25,8 +25,9 @@ module type I = sig
   val dump_global_state : prog -> state -> string
   val dump_proc_state : int -> A.pseudo list -> state -> string option
 
-  type constr
-  val dump_constr : constr -> string
+  type prop
+  val dump_prop : prop -> string
+  val dump_constr : prop ConstrGen.constr -> string
 
   type location
   val dump_location : location -> string
@@ -37,11 +38,11 @@ module Make(I:I) : sig
   type prog =  (int * I.A.pseudo list) list
   val dump : out_channel ->
     Name.t ->
-      (I.state, prog, I.constr, I.location)  MiscParser.result
+      (I.state, prog, I.prop, I.location)  MiscParser.result
       -> unit
   val dump_info : out_channel ->
     Name.t ->
-    (I.state, prog, I.constr, I.location)
+    (I.state, prog, I.prop, I.location)
         MiscParser.result
       -> unit
 end = struct

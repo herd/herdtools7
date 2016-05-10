@@ -25,7 +25,7 @@ module type S = sig
 
   type src =
     ((A.location * (MiscParser.run_type * Constant.v)) list, P.code list,
-          C.constr, A.location)
+          C.prop, A.location)
          MiscParser.result
 
   type 'a type_env = ('a * CType.t) list
@@ -67,7 +67,7 @@ struct
   type 'a type_env = ('a * CType.t) list
   type src =
     ((A.location * (MiscParser.run_type * Constant.v)) list, P.code list,
-          C.constr, A.location)
+          C.prop, A.location)
          MiscParser.result
 
   type env_volatile = string list

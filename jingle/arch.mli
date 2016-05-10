@@ -24,7 +24,7 @@ module type Dumper = sig
     val dump_info : 
       out_channel -> Name.t ->
       (MiscParser.state, (int * pseudo list) list,
-       MiscParser.constr, MiscParser.location)
+       MiscParser.prop, MiscParser.location)
         MiscParser.result
       -> unit
 end

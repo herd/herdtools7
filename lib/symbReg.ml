@@ -86,6 +86,12 @@ and type pseudo = A.pseudo
     | LV (loc,v) -> LV (finish_location f_reg loc, A.maybevToV v)
     | LL (l1,l2) -> LL (finish_location f_reg l1,finish_location f_reg l2)
 
+  let finish_prop f_reg = ConstrGen.map_prop (finish_atom f_reg)
+
+  let finish_filter f_reg = function
+    | None -> None
+    | Some p -> Some (finish_prop f_reg p)
+
   let finish_constr f_reg = ConstrGen.map_constr (finish_atom f_reg)
 
   let finish_pseudo f_reg =
@@ -144,6 +150,12 @@ and type pseudo = A.pseudo
     | LL (loc1,loc2) ->
         fun c -> collect_location loc1 (collect_location loc2 c)
 
+  let collect_prop = ConstrGen.fold_prop collect_atom
+
+  let collect_filter = function
+    | None -> Misc.identity
+    | Some p -> collect_prop p
+
   let collect_constr = ConstrGen.fold_constr collect_atom
 
   let collect_locs = List.fold_right (fun (loc,_) -> collect_location loc)
@@ -163,13 +175,15 @@ and type pseudo = A.pseudo
     let initial = test.init
     and prog = test.prog
     and final = test.condition
+    and filter = test.filter
     and locs = test.locations in
     (* Collect all registers, either real or symbolic *)
     let regs,symbs =
-      collect_constr final
-        (collect_locs locs
-	   (collect_state initial
-	      (ProcRegSet.empty,StringSet.empty)))
+      collect_filter test.filter
+      (collect_constr final
+         (collect_locs locs
+	    (collect_state initial
+	       (ProcRegSet.empty,StringSet.empty))))
     in
 
     let in_code = collect_prog (List.map snd prog) in
@@ -241,6 +255,7 @@ and type pseudo = A.pseudo
     { test with
       init = finish_state replace initial ;
       prog = prog;
+      filter = finish_filter replace filter;
       condition = finish_constr replace final;
       locations = finish_locations replace locs;
     }

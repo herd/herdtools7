@@ -625,6 +625,10 @@ let compatible_locs_mem e1 e2 =
 (* Final condition invalidation mode *)
 (*************************************)
 
+(* Internal filter *)
+    let check_filter test fsc = match test.Test.filter with
+    | None -> true
+    | Some p -> S.Cons.check_prop p fsc
 (*
   A little optimisation: we check whether the existence/non-existence
   of some vo would help in validation/invalidating the constraint
@@ -855,7 +859,7 @@ let make_atomic_load_store es =
                   S.RFMap.add (S.Final (get_loc w)) (S.Store w) k)
                 rfm ws in
             let fsc = compute_final_state test rfm  in
-            if worth_going test fsc then begin
+            if check_filter test fsc && worth_going test fsc then begin
               if C.debug.Debug.solver then begin
 	        let module PP = Pretty.Make(S) in
 	        prerr_endline "Final rfmap" ;

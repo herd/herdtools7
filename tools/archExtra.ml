@@ -33,6 +33,8 @@ module Make (O:sig val hexa : bool end)(A:ArchBase.S) = struct
       end)
 
   type v = SymbConstant.v
+  let one = SymbConstant.intToV 1
+
   let maybevToV c = c
   let pp_v = SymbConstant.pp O.hexa
 
@@ -64,5 +66,6 @@ module Make (O:sig val hexa : bool end)(A:ArchBase.S) = struct
 
 *)
   type test = (location,v,pseudo) MiscParser.r3
-  type constr = (location,v) ConstrGen.prop ConstrGen.constr
+  type prop = (location,v) ConstrGen.prop
+  type constr = prop ConstrGen.constr
 end

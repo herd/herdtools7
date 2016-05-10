@@ -63,15 +63,16 @@ rule token = parse
 | "final"    { FINAL }
 | "with"     { WITH }
 | "locations" { LOCATIONS }
+| "filter" { FILTER }
 (* Typing *)
 | "_Atomic" { ATOMIC }
 (*for GPU*)
 | ".reg" {PTX_REG_DEC}
-| ".s32" as x 
-| ".b64" as x 
-| ".b32" as x 
-| ".u64" as x 
-| ".u32" as x 
+| ".s32" as x
+| ".b64" as x
+| ".b32" as x
+| ".u64" as x
+| ".u32" as x
 | ".pred" as x {PTX_REG_TYPE x}
 
 | "*" { STAR }

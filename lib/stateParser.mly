@@ -29,7 +29,7 @@ open ConstrGen
 
 %token TRUE FALSE
 %token EQUAL PLUS_DISJ
-%token FINAL FORALL EXISTS OBSERVED TOKAND NOT AND OR IMPLIES CASES WITH
+%token FINAL FORALL EXISTS OBSERVED TOKAND NOT AND OR IMPLIES CASES WITH FILTER
 %token LOCATIONS STAR
 %token LBRK RBRK LPAR RPAR SEMI COLON AMPER
 %token ATOMIC
@@ -47,7 +47,7 @@ open ConstrGen
 %start init
 %type <MiscParser.location> location
 %start location
-%type <(MiscParser.location * MiscParser.run_type) list * MiscParser.constr * (string * MiscParser.quantifier) list> constraints
+%type <(MiscParser.location * MiscParser.run_type) list * MiscParser.prop option * MiscParser.constr * (string * MiscParser.quantifier) list> constraints
 %start constraints
 %type  <MiscParser.constr> constr
 %start constr
@@ -141,11 +141,16 @@ locs:
 | { [] }
 | location locs { $1 :: $2 }
 
-constraints :
-| locations old_constraints
+filter:
+| { None }
+| FILTER prop { Some $2 }
+
+constraints:
+| locations filter old_constraints
   { let x = $1 in
-    let y,z = $2 in
-    x,y,z }
+    let f = $2 in
+    let y,z = $3 in
+    x,f,y,z }
 
 old_constraints :
 | final EOF { $1,[] }

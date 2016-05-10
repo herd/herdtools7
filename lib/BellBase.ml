@@ -360,8 +360,8 @@ let fold_addrs f =
 
 let pp_instruction _m ins = dump_instruction ins
 
-(* 64 register is probably enough *)
-let allowed_for_symb = List.map (fun r ->  GPRreg r) (Misc.interval 0 64)
+(* 100 registers are probably enough *)
+let allowed_for_symb = List.map (fun r ->  GPRreg r) (Misc.interval 0 100)
 
 
 let _get_reg_list _ins = ([], [])

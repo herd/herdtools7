@@ -36,7 +36,6 @@ module Make(A:Arch.S) = struct
                st)
 
         type prop = (A.location,A.v) ConstrGen.prop
-        type constr = prop ConstrGen.constr
 
         let dump_atom a =
           let open ConstrGen in
@@ -48,6 +47,8 @@ module Make(A:Arch.S) = struct
               sprintf "%s=%s"
                 (A.pp_location loc1)
                 (A.pp_rval loc2)
+
+        let dump_prop = ConstrGen.prop_to_string dump_atom
 
         let dump_constr = ConstrGen.constraints_to_string dump_atom
 

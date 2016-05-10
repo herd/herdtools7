@@ -131,7 +131,7 @@ module Top
                          st) in
                   Some pp
                 
-            type constr = MiscParser.constr
+            type prop = MiscParser.prop
             let dump_atom a =
               let open ConstrGen in
               match a with
@@ -140,6 +140,7 @@ module Top
               | LL (loc1,loc2) ->
                   sprintf "%s=%s" (dump_loc loc1) (MiscParser.dump_rval loc2)
 
+            let dump_prop = ConstrGen.prop_to_string dump_atom
             let dump_constr = ConstrGen.constraints_to_string dump_atom
 
             type location = MiscParser.location

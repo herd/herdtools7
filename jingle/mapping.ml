@@ -271,6 +271,10 @@ module Make(C:Config) = struct
     { info = ("Mapping",dump_map map)::src.info;
       init = init;
       prog = prog;
+      filter = begin match src.filter with
+      | None -> None
+      | Some _ -> Warn.fatal "Non empy filter in jingle"
+      end ;
       condition = condition;
       locations = locations;
       extra_data = src.extra_data;
