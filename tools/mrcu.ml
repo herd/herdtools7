@@ -40,19 +40,38 @@ module Top
       let parser = LISAParser.main
     end
 
+    module Dec = struct let hexa = false end
     module P = GenParser.Make(GenParser.DefaultConfig)(LISA)(LISALexParse)
-    module D = DumperMiscParser.Make(LISA)
+    module A = ArchExtra.Make(Dec)(LISA) 
+    module Alloc = SymbReg.Make(A)
+
+    module D = Dumper.Make(A)
 
     module F = struct
       open LISA
 
-      let map_call = function
-        | Pcall _ -> Pfence (Fence (["mb"],None))
-        | i -> i
-              
-      let map_pseudo_call k = pseudo_map map_call k
+      let st_release x v =
+        Pst  (Addr_op_atom (Abs (Constant.Symbolic x)),Imm v,["release"])
 
-      let map_code = List.map map_pseudo_call
+      let map_call n k i  = match i with
+      | Pcall _ ->
+          let rec add_rec idx k = if idx >= n then k
+          else
+            Instruction (st_release (sprintf "s%i" idx) 1)::
+            add_rec (idx+1) k in
+              
+          Instruction (Pfence (Fence (["mb"],None)))::
+          add_rec 0
+            (Instruction (Pfence (Fence (["mb"],None)))::k)
+      | _ -> Instruction i::k
+                         
+              
+      let map_pseudo_call x = pseudo_fold (map_call 2) x
+
+      let map_code cs =
+        List.fold_right 
+          (fun c k -> map_pseudo_call k c)
+          cs []
 
       let zyva name t =
         let open MiscParser in
@@ -66,6 +85,7 @@ let from_chan chan splitted =  match splitted.Splitter.arch with
 | LISA ->
     let name = splitted.Splitter.name in
     let parsed = P.parse chan splitted in
+    let parsed = Alloc.allocate_regs parsed in
     F.zyva name parsed
 | arch -> Warn.user_error "Bad arch for %s: %s" prog (Archs.pp arch)
 
