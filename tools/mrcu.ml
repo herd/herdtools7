@@ -166,6 +166,7 @@ module Top
                 let free,k = add_reads free 0 k in
                 let k = cons_ins fence k in
                 let k = cons_ins (store_release (sync_var idx_sync) 1) k in
+                let k = cons_ins fence k in
                 (idx_sync+1,idx_unlock,free),k
             |  Pfence (Fence (["lock"],None)) ->
                 let rec add_reads free j k =
