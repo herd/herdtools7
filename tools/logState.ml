@@ -1026,7 +1026,7 @@ let rec union_states_simple sts1 sts2 =  match sts1,sts2 with
       st1::union_states_simple sts1 sts2
     end
 
-let union_litmus_simple _name t1 t2 =
+let do_union_litmus_simple t1 t2 =
   assert (t1.s_tname = t2.s_tname) ;
   let sts =
     try union_states_simple t1.s_states t2.s_states
@@ -1037,6 +1037,20 @@ let union_litmus_simple _name t1 t2 =
 (*
 let union_equal_simple _name t1 t2 = assert (t1 = t2) ;  t1
 *)
+
+let union_litmus_simple name t1 t2 =
+  try do_union_litmus_simple t1 t2
+  with Error e ->
+    begin match e with
+    | NoHashLeft|NoHashRight ->
+        assert false (* Same log, hence impossible *)    
+    | DiffHash ->
+        Warn.fatal "Hash mismatch for test %s in file %s" t1.s_tname name
+    | State loc ->
+        Warn.fatal
+          "Incompatible outcomes for location %s in test %s (file %s)"
+          loc t1.s_tname name
+      end
 
 let normalize_simple name _is_litmus ts =
   let ts =

@@ -306,7 +306,7 @@ module X =
       let verbose = !verbose
       let outputdir = !outputdir
       let outall = match allchan with
-      | None -> assert false
+      | None -> fun _ -> ()
       | Some chan -> Printf.fprintf chan "%s\n"
     end)
 
