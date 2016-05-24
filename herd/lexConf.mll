@@ -240,10 +240,11 @@ and opt = parse
 | "finalrfpos" arg { lex_pos PP.finaldotpos arg }
 | "initrfpos" arg { lex_pos PP.initdotpos arg }
 | "oneinit" arg { lex_bool PP.oneinit arg }
+| "labelinit" arg { lex_bool PP.labelinit arg }
 | "initpos" arg { lex_pos_opt PP.initpos arg }
 | "threadposy" arg { lex_float PP.threadposy arg }
 (* Deprecated *)
-| ("showpoloc" | "showfr") arg { ignore(arg) }
+(* | ("showpoloc" | "showfr") arg { ignore(arg) } *)
 (* end *)
 | "showinitwrites" arg { lex_bool PP.showinitwrites arg }
 | "showthread" arg { lex_bool PP.showthread arg }

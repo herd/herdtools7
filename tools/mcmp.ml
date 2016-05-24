@@ -16,6 +16,10 @@
 
 open Printf
 
+let prog =
+  if Array.length Sys.argv > 0 then Sys.argv.(0)
+  else "mcmp"
+
 (* Simple outcome comparator, memory efficient *)
 
 module type Opt = sig
@@ -78,7 +82,8 @@ module Make(O:Opt) = struct
           let b1 = cmp_logs O.pos t1 t2 in
           let b2 = cmp_logs O.neg t2 t1 in
           b0 || b1 || b2
-    | _ -> assert false
+    | _ ->
+        Warn.user_error "%s operates on two log files" prog
 end
 
 let verbose = ref 0
@@ -109,9 +114,6 @@ let options =
  ]
 let logs = ref []
 
-let prog =
-  if Array.length Sys.argv > 0 then Sys.argv.(0)
-  else "mcmp"
 
 
 let () =
