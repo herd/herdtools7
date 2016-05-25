@@ -33,8 +33,9 @@ module Make (O:sig val hexa : bool end)(A:ArchBase.S) = struct
       end)
 
   type v = SymbConstant.v
+  let zero = SymbConstant.intToV 0
   let one = SymbConstant.intToV 1
-
+  let symbToV =  SymbConstant.nameToV   
   let maybevToV c = c
   let pp_v = SymbConstant.pp O.hexa
 

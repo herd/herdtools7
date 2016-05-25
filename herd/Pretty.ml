@@ -621,11 +621,20 @@ let one_init = match PC.graph with
         ignore (DotEdgeAttr.find lbl a PC.edgeattrs) ; true
       with Not_found -> false in
 
+    let checklabel a =
+      try begin match  DotEdgeAttr.find a "label" PC.edgeattrs with
+      | "tail" -> "taillabel"
+      | "head" -> "headlabel"
+      | _ -> "label"
+      end with
+      | Not_found -> "label" in
+
     let {color=color ; style=style; } = get_ea def_color lbl in
     fprintf chan "%s -> %s [%s=\"%s\""
       (if backwards then n2 else n1)
       (if backwards then n1 else n2)      
-      (if PC.movelabel && movelbl then "taillabel" else "label")
+      (if not (overridden "label") && PC.movelabel && movelbl then "taillabel"
+      else checklabel lbl)
       (pp_edge_label movelbl lbl) ;
 
     if StringSet.mem lbl PC.symetric then pp_attr chan "arrowhead" "none" ;
@@ -650,6 +659,7 @@ let one_init = match PC.graph with
       | "color" ->
           pp_attr chan "color" v ;
           pp_attr chan "fontcolor" v
+      | "label" -> ()
       | _ ->
           pp_attr chan a v)
       (DotEdgeAttr.find_all lbl PC.edgeattrs) ;

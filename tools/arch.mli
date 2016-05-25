@@ -23,7 +23,9 @@ module type S = sig
   module ProcMap : MyMap.S with type key = int
 
   type v = Constant.v
+  val zero : v
   val one : v
+  val symbToV : string -> v
   val maybevToV  : v -> v
   val pp_v : v -> string
 

@@ -194,6 +194,7 @@ module Top
 
         tr_code
 
+      let zero = A.zero
       let one = A.one
 
       let tr_test n m u v free =
@@ -218,6 +219,10 @@ module Top
                     [
                      Atom (LV (A.Location_reg (id1,r1),one));
                      Atom (LV (A.Location_reg (id2,r2),one));
+                     Atom (LV
+                             (A.Location_global (A.symbToV (sync_var j)),zero));
+                     Atom (LV
+                             (A.Location_global (A.symbToV (cs_var i)),zero));
                    ]::loop_j (j+1) k in
               loop_j 0 (loop_i (i+1) k) in
           let filter = Some (ConstrGen.And (loop_i 0 []) ) in
