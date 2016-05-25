@@ -1,3 +1,7 @@
+7.14
+  * <correct> mrcu (check that call[sync] L...U ran at most once
+    (replace condition on shared location by specific register, because
+     of "last write" problem)
 7.13
   * <correct> mrcu (check that call[sync] L...U ran at most once.
 7.12

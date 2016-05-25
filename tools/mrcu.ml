@@ -138,9 +138,11 @@ module Top
       let read_acquire r x =
         Pld (r,Addr_op_atom (Abs (Constant.Symbolic x)),["acquire"])
 
+      let set r = Pmov (r,RAI (IAR_imm 1))
+
       let cons_ins i k= Instruction i::k
 
-      let tr n m u v id =
+      let tr n m u v s c id =
         let rec do_tr (idx_sync,idx_unlock,free as st) p = match p with
         | Macro _|Symbolic _ -> assert false
         | Nop -> st,[Nop]
@@ -164,7 +166,10 @@ module Top
                     free,cons_ins (read_acquire r (cs_var i)) k in
 
                 let free,k = add_reads free 0 k in
+                let r,free =  RegAlloc.alloc id free in
+                s.(idx_sync) <- (id,r) ;
                 let k = cons_ins fence k in
+                let k = cons_ins (set r) k in
                 let k = cons_ins (store_release (sync_var idx_sync) 1) k in
                 let k = cons_ins fence k in
                 (idx_sync+1,idx_unlock,free),k
@@ -179,9 +184,12 @@ module Top
                 let free,ps = add_reads free 0 [] in
                 (idx_sync,idx_unlock,free),ps
             |  Pfence (Fence (["unlock"],None)) ->
+                let r,free =  RegAlloc.alloc id free in
+                c.(idx_unlock) <- (id,r) ;
                 (idx_sync,idx_unlock+1,free),
                 cons_ins
-                  (store_release  (cs_var idx_unlock) 1) []
+                  (store_release  (cs_var idx_unlock) 1)
+                  (cons_ins (set r) [])
             | _ -> st,[p]
             end
 
@@ -197,11 +205,11 @@ module Top
       let zero = A.zero
       let one = A.one
 
-      let tr_test n m u v free =
+      let tr_test n m u v s c free =
         let rec tr_rec st = function
           | [] -> []
           | (id,ps)::rem ->
-              let st,ps = tr n m u v id st ps in
+              let st,ps = tr n m u v s c id st ps in
               (id,ps)::tr_rec st rem in
         fun t ->
           let open MiscParser in
@@ -215,14 +223,13 @@ module Top
                 if j >= n then k
                 else
                   let id1,r1 = v.(i).(j) and id2,r2 = u.(j).(i) in
+                  let id3,r3 = s.(j) and id4,r4 = c.(i) in
                   Or
                     [
                      Atom (LV (A.Location_reg (id1,r1),one));
                      Atom (LV (A.Location_reg (id2,r2),one));
-                     Atom (LV
-                             (A.Location_global (A.symbToV (sync_var j)),zero));
-                     Atom (LV
-                             (A.Location_global (A.symbToV (cs_var i)),zero));
+                     Atom (LV (A.Location_reg (id3,r3),zero));
+                     Atom (LV (A.Location_reg (id4,r4),zero));
                    ]::loop_j (j+1) k in
               loop_j 0 (loop_i (i+1) k) in
           let filter = Some (ConstrGen.And (loop_i 0 []) ) in
@@ -254,8 +261,10 @@ module Top
           if n = 0 || m = 0 then raise Misc.Exit ;
           let u = Array.make_matrix n m noreg
           and v = Array.make_matrix m n noreg
+          and s = Array.make n noreg
+          and c = Array.make m noreg
           and free = RegAlloc.create t in
-          let t = tr_test n m u v free t in
+          let t = tr_test n m u v s c free t in
           dump name t
         with Misc.Fatal msg|Misc.UserError msg ->
           eprintf "Adios: %s\n" msg ;
