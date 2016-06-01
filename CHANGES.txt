@@ -1,3 +1,4 @@
+  * Correct x86tso bug + use A in filters as atomic.
 7.14
   * <correct> mrcu (check that call[sync] L...U ran at most once
     (replace condition on shared location by specific register, because

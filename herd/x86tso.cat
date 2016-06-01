@@ -19,8 +19,8 @@ include "x86fences.cat"
 
 #implied barriers
 let poWR = WR(po)
-let i1 = PA(poWR)
-let i2 = AP(poWR)
+let i1 = MA(poWR)
+let i2 = AM(poWR)
 let implied = i1 | i2
 
 let ghb = mfence | implied | po_ghb | rfe | fr | co

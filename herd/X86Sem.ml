@@ -30,6 +30,10 @@ module Make (C:Sem.Config)(V : Value.S)
     let barriers = [mfence; lfence;sfence;]
     let isync = None
 
+    let is_global = function
+      | A.Location_global _ -> true
+      | A.Location_reg _ -> false
+
 (* semantics proper *)
 
     let (>>=) = M.(>>=)
@@ -38,7 +42,10 @@ module Make (C:Sem.Config)(V : Value.S)
     let (>>!) = M.(>>!)
 
     let mk_read ato loc v = Act.Access (Dir.R, loc, v, ato)
-					      
+
+    let mk_read_choose_atomic loc = mk_read (is_global loc) loc
+
+
     let read_loc = 
       M.read_loc (mk_read false)
     let read_reg r ii = 
@@ -47,7 +54,9 @@ module Make (C:Sem.Config)(V : Value.S)
       M.read_loc (mk_read false) (A.Location_global a) ii
     let read_mem_atomic a ii = 
       M.read_loc (mk_read true) (A.Location_global a) ii
-		 
+
+    let read_loc_atomic = M.read_loc mk_read_choose_atomic        
+
     let write_loc loc v ii = 
       M.mk_singleton_es (Act.Access (Dir.W, loc, v, false)) ii
     let write_reg r v ii = 
@@ -56,6 +65,9 @@ module Make (C:Sem.Config)(V : Value.S)
       M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v, false)) ii
     let write_mem_atomic a v ii = 
       M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v, true)) ii
+
+    let write_loc_atomic loc v ii =
+      M.mk_singleton_es (Act.Access (Dir.W, loc, v, (is_global loc))) ii
 
     let write_flag r o v1 v2 ii =
 	M.addT
@@ -107,10 +119,10 @@ module Make (C:Sem.Config)(V : Value.S)
     let xchg ea1 ea2 ii =
       (lval_ea ea1 ii >>| lval_ea ea2 ii) >>=
       (fun (l1,l2) ->
-        let r1 = read_loc l1 ii
-        and r2 = read_loc l2 ii
-        and w1 = fun v -> write_loc l1 v ii
-        and w2 = fun v -> write_loc l2 v ii in
+        let r1 = read_loc_atomic l1 ii
+        and r2 = read_loc_atomic l2 ii
+        and w1 = fun v -> write_loc_atomic l1 v ii
+        and w2 = fun v -> write_loc_atomic l2 v ii in
         M.exch r1 r2 w1 w2) >>! B.Next
 
     let build_semantics ii = 

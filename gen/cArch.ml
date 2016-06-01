@@ -22,8 +22,11 @@ module ScopeGen = ScopeGen.NoGen
 open Code
 
 let bellatom = false
+
 type atom = MemOrder.t
+
 let default_atom = SC
+
 let applies_atom a d = match a,d with
 | (Acq|Acq_Rel|Con),W -> false
 | (Rel|Acq_Rel),R -> false
