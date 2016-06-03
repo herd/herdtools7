@@ -178,8 +178,7 @@ end = struct
 
         (* Update the arch_sets based on the bell file *)
 
-  let list_contains s st =
-    List.mem st s
+  let list_contains s st = List.mem st s
 
   let annot_in_list st ac = match ac with 
   | Access(_,_,_,_,s)

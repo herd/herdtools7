@@ -34,6 +34,7 @@ let kinds = ref []
 let conds = ref []
 let model = ref None
 let bell = ref None
+let macros = ref None
 let unroll = ref 2
 let speedcheck = ref Speed.False
 let optace = ref None

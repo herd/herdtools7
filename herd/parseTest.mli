@@ -22,6 +22,7 @@ module type Config = sig
   val skipchecks : StringSet.t
   val strictskip : bool
   val bell_model_info : (string * BellModel.info) option
+  val macros : string option
   val check_name : string -> bool
   val check_rename : string -> string option
   val libfind : string -> string

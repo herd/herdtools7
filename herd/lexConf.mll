@@ -147,10 +147,14 @@ and opt = parse
        (fun x -> model := Some x) arg }
 | "bell" arg
    { bell := Some arg }
+| "macros" arg
+   { macros := Some arg }
+(*
 | "through" arg
    { lex_tag
        "through" Model.parse_through Model.tags_through
        through arg }
+*)
 | "skipchecks" arg
    { lex_stringset skipchecks arg }
 | "strictskip" arg

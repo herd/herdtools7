@@ -33,6 +33,7 @@ val kinds : string list ref
 val conds : string list ref
 val model : Model.t option  ref
 val bell : string option ref
+val macros : string option ref
 val unroll : int ref
 val speedcheck : Speed.t ref
 val optace : bool option ref

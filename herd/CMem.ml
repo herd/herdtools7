@@ -18,6 +18,7 @@
 
 module type Config = sig
   val model : Model.t
+  val bell_model_info : (string * BellModel.info) option
   include Model.Config
 end
 
@@ -35,16 +36,13 @@ module Make
 
     module S = S
 
-    module ModelConfig = (O : Model.Config)
-
     let check_event_structure test = match O.model with
     | Generic m ->
         let module X =
           MachModelChecker.Make
             (struct
               let m = m
-              let bell_model_info = None
-              include ModelConfig
+              include O
              end)(S) in
         X.check_event_structure test
     | File _ -> assert false

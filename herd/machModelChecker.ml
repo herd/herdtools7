@@ -200,7 +200,7 @@ module Make
                        List.mem (E.Act.A.pp_location x, region) regions)
                     evts
                     (BellModel.get_region_sets bi)
-              | CExtra _ -> assert false (* This is Bell, not C *)
+              | CExtra _ -> m (* Ignore CExtra ?? *)
             end in
 (* Scope relations from bell info *)
       let m =
@@ -211,7 +211,7 @@ module Make
               let open MiscParser in
               match test.Test.extra_data with
               | NoExtra|CExtra _ ->
-                  assert false (* must be here as, O.bell_mode_info is *)
+                  None (* must be here as, O.bell_mode_info is *)
               | BellExtra tbi -> tbi.BellInfo.scopes in
             begin match scopes with
  (* If no scope definition in test, do not build relations, will fail

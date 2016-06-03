@@ -23,6 +23,7 @@ module type Config = sig
   val skipchecks : StringSet.t
   val strictskip : bool
   val bell_model_info : (string * BellModel.info) option
+  val macros : string option
   val check_name : string -> bool
   val check_rename : string -> string option
   val libfind : string -> string
@@ -95,6 +96,7 @@ module Top (Conf:Config) = struct
         let debug = Conf.debug.Debug.lexer
       end in
       let module ModelConfig = struct
+        let bell_model_info = Conf.bell_model_info
         let model =
           let m =
             match Conf.model with
@@ -254,6 +256,7 @@ module Top (Conf:Config) = struct
       | `C ->
         let module C = CArch.Make(Conf.PC)(SymbValue) in
         let module CLexParse = struct
+          (* Parsing *)
     	  type pseudo = C.pseudo
 	  type token = CParser.token
           module Lexer = CLexer.Make(LexConfig)
@@ -261,6 +264,11 @@ module Top (Conf:Config) = struct
 	  let deep_lexer = Lexer.token true
 	  let shallow_parser = CParser.shallow_main
 	  let deep_parser = CParser.deep_main
+
+          (* Macros *)
+          type macro = C.macro
+          let macros_parser = CParser.macros
+          let macros_expand = CBase.expand
         end in
         let module CS = CSem.Make(Conf)(SymbValue) in
         let module CM = CMem.Make(ModelConfig)(CS) in
@@ -279,12 +287,7 @@ module Top (Conf:Config) = struct
         end in
 
         let module BellS = BellSem.Make(Conf)(SymbValue) in
-        let module BellM =
-          BellMem.Make
-            (struct
-              let bell_model_info = Conf.bell_model_info
-              include ModelConfig
-             end)(BellS) in
+        let module BellM = BellMem.Make(ModelConfig)(BellS) in
         let module BellC =
           BellCheck.Make
             (struct let debug = Conf.debug.Debug.barrier end)

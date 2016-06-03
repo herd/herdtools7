@@ -33,38 +33,43 @@ module Make (Conf:Sem.Config)(V:Value.S)
     let (>>::) = M.(>>::)
     let (>>!) = M.(>>!)
     let (>>>) = M.(>>>)
-		       
+
+    module MOorAN = MemOrderOrAnnot
+    let no_mo = MOorAN.AN []
+
     let read_loc mo = M.read_loc (fun loc v -> Act.Access (Dir.R, loc, v, mo))
     let read_exchange vstored mo =
       M.read_loc (fun loc v -> Act.RMW (loc,v,vstored,mo))
 
-    let read_reg r ii = read_loc None (A.Location_reg (ii.A.proc,r)) ii
+    let read_reg r ii = read_loc no_mo (A.Location_reg (ii.A.proc,r)) ii
     let read_mem mo a = read_loc mo (A.Location_global a)
 
     let write_loc mo loc v ii =
       M.mk_singleton_es (Act.Access (Dir.W, loc, v, mo)) ii >>! v
 
-    let write_reg r v ii = write_loc None (A.Location_reg (ii.A.proc,r)) v ii
+    let write_reg r v ii = write_loc no_mo (A.Location_reg (ii.A.proc,r)) v ii
     let write_mem mo a  = write_loc mo (A.Location_global a) 	     
 		 
     let fetch_op op v mo loc =
       M.fetch op v (fun v vstored -> Act.RMW (loc,v,vstored,mo))
 
-    let rec build_semantics_expr e ii : V.v M.t = match e with
+    let rec build_semantics_expr e ii : V.v M.t =
+      let open MemOrderOrAnnot in
+      match e with
       | C.Const v -> 	
         M.unitT (V.maybevToV v)
 
-      | C.Load(l,(None as mo)) ->
+      | C.Load(l,(AN _ as mo)) ->
          begin match l with 
 	  | C.Reg r -> read_reg r ii
 	  | C.Mem r -> read_reg r ii >>= (fun l -> read_mem mo l ii)
 	 end
 
-      | C.Load(l,(Some _ as mo)) ->
+      | C.Load(l,(MO _ as mo)) ->
          begin match l with
 	 | C.Reg a -> read_reg a ii >>= (fun l -> read_mem mo l ii)
 	 | C.Mem r -> read_reg r ii >>= fun a -> 
-	              read_mem mo a ii >>= fun l -> read_mem mo l ii
+	              read_mem (AN []) a ii >>= fun l -> read_mem mo l ii
 	 end
 	   
       | C.Op(op,e1,e2) ->
@@ -77,7 +82,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
 	  (match l with
 	  | C.Reg r -> read_reg r ii
 	  | C.Mem r -> read_reg r ii >>= fun l -> 
-	      read_mem (Some mo) l ii)) 
+	      read_mem (MOorAN.MO mo) l ii)) 
 	    >>= (fun (v,l) ->
               read_exchange v mo (A.Location_global l) ii)
 
@@ -86,10 +91,10 @@ module Make (Conf:Sem.Config)(V:Value.S)
 	      (match l with
 	      | C.Reg r -> read_reg r ii
 	      | C.Mem r -> read_reg r ii >>= fun l ->
-		read_mem (Some mo) l ii))
+		read_mem (MOorAN.MO mo) l ii))
 	  >>= (fun (v,l) ->
 	    fetch_op op v mo (A.Location_global l) ii)
-
+        | C.ECall _ -> Warn.fatal "Macro call in CSem"
 	  
     let rec build_semantics ii : (A.program_order_index * B.t) M.t = 
       let ii = {ii with A.program_order_index = 
@@ -117,7 +122,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
           let then_branch = build_semantics {ii' with A.inst = t} in
           M.choiceT ret then_branch (build_semantics_list [] ii)
 	    
-	| C.Store(l,e,(None as mo)) -> 
+	| C.Store(l,e,(MOorAN.AN [])) -> 
 	  begin
 	    match l with 
 	    | C.Reg r -> 
@@ -126,11 +131,22 @@ module Make (Conf:Sem.Config)(V:Value.S)
 	    | C.Mem r -> 
 	      (read_reg r ii >>| 
 	       build_semantics_expr e ii) >>= (fun (l,v) ->
+	      write_mem no_mo l v ii)
+	  end
+	  >>= (fun _ -> M.unitT (ii.A.program_order_index, B.Next))
+
+	| C.Store(l,e,(MOorAN.AN _ as mo)) -> 
+	  begin
+	    match l with 
+	    | C.Reg r -> Warn.user_error "annoted write to register %s" r
+	    | C.Mem r -> 
+	      (read_reg r ii >>| 
+	       build_semantics_expr e ii) >>= (fun (l,v) ->
 	      write_mem mo l v ii)
 	  end
 	  >>= (fun _ -> M.unitT (ii.A.program_order_index, B.Next))
 
-	| C.Store(l,e,(Some _ as mo)) -> 
+	| C.Store(l,e,(MOorAN.MO _ as mo)) -> 
 	  begin
 	    match l with 
 	    | C.Reg a -> (read_reg a ii >>| 
@@ -147,7 +163,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
 	  (match l with
 	  | C.Reg r -> read_reg r ii
 	  | C.Mem r -> read_reg r ii >>= fun l -> 
-	    read_mem None l ii) >>= fun l ->
+	    read_mem no_mo l ii) >>= fun l ->
 	  (M.altT
            (* successful attempt to obtain mutex *)
 	     (M.mk_singleton_es (Act.Lock (A.Location_global l, true)) ii)
@@ -160,16 +176,16 @@ module Make (Conf:Sem.Config)(V:Value.S)
 	  (match l with
 	  | C.Reg r -> read_reg r ii
 	  | C.Mem r -> read_reg r ii >>= fun l -> 
-	    read_mem None l ii) >>= fun l ->
+	    read_mem no_mo l ii) >>= fun l ->
 	  M.mk_singleton_es (Act.Unlock (A.Location_global l)) ii
 	  >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
 	  
-	| C.Fence(C.F mo) -> 
+	| C.Fence(mo) -> 
 	  M.mk_singleton_es (Act.Fence mo) ii
 	  >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
 	  
 	| C.Symb _ -> Warn.fatal "No symbolic instructions allowed."
-       
+        | C.PCall _ -> Warn.fatal "Procedure call in CSem"
         
     and build_semantics_list insts ii = match insts with
       | [] -> M.unitT (ii.A.program_order_index, B.Next)

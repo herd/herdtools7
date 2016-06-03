@@ -159,6 +159,9 @@ let options = [
   ("-bell",
    Arg.String (fun x -> Opts.bell := (Some x)),
    "<name> read bell file <name>") ;
+  ("-macros",
+   Arg.String (fun x -> Opts.macros := (Some x)),
+   "<name> read bell file <name>") ;
   ("-o", Arg.String (fun s -> outputdir := PrettyConf.Outputdir s),
    "<dir> generated files will go into <dir>, default: do not generate") ;
   ("-suffix", Arg.String (fun s -> suffix := s),
@@ -493,6 +496,7 @@ let () =
     let check_kind = TblRename.find_value_opt kinds
     let check_cond =  TblRename.find_value_opt conds
     let libfind = libfind
+    let macros = !macros
 
     let model_enumco = model_opts.ModelOption.co
     let observed_finals_only = not model_enumco

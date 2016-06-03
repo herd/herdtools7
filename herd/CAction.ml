@@ -18,8 +18,8 @@ open Printf
 module Make (A : Arch.S) : sig
 
   type action =    
-    | Access of Dir.dirn * A.location * A.V.v * MemOrder.t option
-    | Fence of MemOrder.t
+    | Access of Dir.dirn * A.location * A.V.v * MemOrderOrAnnot.t
+    | Fence of MemOrderOrAnnot.t
 (* LM: ??? RMW (location, read, written, mo) *)
     | RMW of A.location * A.V.v * A.V.v * MemOrder.t
     | Lock of A.location * bool (* true = success, false = blocked *)
@@ -31,32 +31,36 @@ end = struct
   module A = A
   module V = A.V
   open Dir
+  open MemOrderOrAnnot
 
   type action = 
-    | Access of dirn * A.location * V.v * MemOrder.t option
-    | Fence of MemOrder.t
+    | Access of dirn * A.location * V.v * MemOrderOrAnnot.t
+    | Fence of MemOrderOrAnnot.t
     | RMW of A.location * V.v * V.v * MemOrder.t
     | Lock of A.location * bool (* true = success, false = blocked *)
     | Unlock of A.location
 
- 
-  let mk_init_write l v = Access (W,l,v,None)
+
+  let mk_init_write l v = Access (W,l,v,AN [])
+
+  let par f x = sprintf "(%s)" (f x)
+  let bra f x = sprintf "{%s}" (f x)
 
   let pp_action a = match a with
-    | Access (d,l,v,None) ->
-	sprintf "%s%s=%s"
+    | Access (d,l,v,mo) ->
+	sprintf "%s%s%s=%s"
           (pp_dirn d)
-          (A.pp_location l)
-	  (V.pp_v v)
-    | Access (d,l,v,Some mo) ->
-	sprintf "%s(%s)%s=%s"
-          (pp_dirn d)
-          (MemOrder.pp_mem_order_short mo)
+          (match mo with
+          | MO mo -> par MemOrder.pp_mem_order_short mo
+          | AN [] -> ""
+          | AN a -> bra pp_annot a)
           (A.pp_location l)
 	  (V.pp_v v)
     | Fence mo -> 
-       sprintf "F(%s)"
-	  (MemOrder.pp_mem_order_short mo)
+       sprintf "F%s"
+	  (match mo with
+          | MO mo -> par MemOrder.pp_mem_order_short mo
+          | AN a ->  bra pp_annot a)
     | RMW (l,v1,v2,mo) ->
        	sprintf "RMW(%s)%s(%s>%s)"
           (MemOrder.pp_mem_order_short mo)
@@ -71,6 +75,7 @@ end = struct
         (A.pp_location l)
 
 (* Utility functions to pick out components *)
+
     let value_of a = match a with
     | Access (_,_ , v,_) -> Some v
     | _ -> None
@@ -116,7 +121,8 @@ end = struct
        is quite arbitrary. *)
 
     let old_is_atomic a = match a with
-    | Access (_,A.Location_global _,_,mo) -> mo != None
+    | Access (_,A.Location_global _,_,AN _) -> false
+    | Access (_,A.Location_global _,_,MO _) -> true
     | RMW _ -> true
     | _ -> false
 
@@ -196,12 +202,16 @@ end = struct
      | _ -> false
 
    let mo_matches target a = match a with
-     | Access(_,_,_,Some mo)
-     | RMW (_,_,_,mo) 
-     | Fence mo -> mo=target
+     | Access(_,_,_,MO mo)
+     | RMW (_,_,_,mo)
+     | Fence (MO mo) -> mo=target
      | _ -> false
 
 (* Architecture-specific sets *)
+  let is_fence = function
+    | Fence _ -> true
+    | _ -> false
+
    let arch_sets = [
      "RMW", is_rmw;
      "LK", is_lock; "LS", is_successful_lock;
@@ -214,6 +224,7 @@ end = struct
      "CON", mo_matches MemOrder.Con;
      "A",old_is_atomic;
      "NA",(fun a -> not (old_is_atomic a));
+     "Start", is_fence;
    ]
 
   let arch_fences = []
@@ -274,7 +285,10 @@ end = struct
 
     let make_action_atomic _ = assert false
 
-    let annot_in_list _str _ac = false
-
+    let annot_in_list str ac = match ac with
+    | Access (_,_,_,AN a)
+    | Fence (AN a) -> List.exists (fun a -> Misc.string_eq str a) a 
+    | Access (_, _, _, MO _)|Fence (MO _)|RMW (_, _, _, _)
+    | Lock (_, _)|Unlock _ -> false
 end
 
