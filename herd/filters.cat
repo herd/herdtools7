@@ -1,7 +1,7 @@
 filters
 (* Define filter functions (backward compatibility) *)
 
-let A = (try X with 0)|(try A with 0)
+let A = (try X with {})|(try A with {})
 let P = M \ A
 
 let WW(r) = r & (W * W)
