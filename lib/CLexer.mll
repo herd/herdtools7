@@ -95,6 +95,9 @@ rule token deep = parse
 | "memory_order_relaxed" {MEMORDER (MemOrder.Rlx)}
 | "memory_order_consume" {MEMORDER (MemOrder.Con)}
 | "fence"|"atomic_thread_fence" { FENCE }
+| "__fence" { UNDERFENCE }
+| "__load" { LOAD }
+| "__store" { STORE }
 | "atomic_load"  { LD }
 | "atomic_store" { ST }
 | "atomic_load_explicit"  { LD_EXPLICIT }

@@ -1,0 +1,14 @@
+// ONCE
+READ_ONCE(X) __load{once}(X)
+WRITE_ONCE(X,V) { __store{once}(X,V); }
+
+// Release Acquire and friends
+smp_store_release(X,V) { __store{release}(*X,V); }
+smp_load_acquire(X) __load{acquire}(X)
+rcu_assign_pointer(X,V) { __store{release}(X,V); }
+rcu_derefence(X) __load{deref}(*X)
+
+// RCU
+rcu_read_lock() { __fence{lock}; }
+rcu_read_unlock() { __fence{unlock}; }
+synchronize_rcu() { __fence{sync}; }

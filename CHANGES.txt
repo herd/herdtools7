@@ -1,3 +1,6 @@
+  * Add M. Batty et all's models and take the most advanced
+   (with partial orders) one as the C default.
+  * Add macros to C arch and bell support
   * Correct x86tso bug + use A in filters as atomic.
 7.14
   * <correct> mrcu (check that call[sync] L...U ran at most once

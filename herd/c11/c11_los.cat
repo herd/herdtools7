@@ -1,0 +1,19 @@
+"C++11, generate lock-order"
+
+(* Direct generation, replaced by optimised generation *)
+
+(* with lo from generate_orders(LS|UL,po) *)
+
+(* Non-nested critical section *)
+let crit =
+  let Mutex = LS|UL in
+  let poMutex = po-loc & (Mutex * Mutex)  in
+  (po-loc & (LS * UL)) \ (poMutex;poMutex)
+
+with loLL from generate_orders(LS,po)
+
+(* Locks are ordered, place unlock in-between *)
+
+let loLU = loLL?;crit
+and loUL = crit^-1;loLL
+let lo = (loLL|loLU|loUL)+

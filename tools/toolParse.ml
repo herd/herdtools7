@@ -128,8 +128,12 @@ end = struct
 	  let deep_lexer = Lexer.token true
 	  let shallow_parser = CParser.shallow_main
 	  let deep_parser = CParser.deep_main
+(* No macros *)
+          type macro = unit
+          let macros_parser _ _ = assert false
+          let macros_expand _ i = i
         end in
-        let module P = CGenParser.Make(GenParser.DefaultConfig)(C)(L) in
+        let module P = CGenParser.Make(CGenParser.DefaultConfig)(C)(L) in
         let module X = B(C) in
         let name =  splitted.Splitter.name in
         let parsed = P.parse chan splitted in
@@ -295,9 +299,13 @@ module Tops
 	      let deep_lexer = Lexer.token true
 	      let shallow_parser = CParser.shallow_main
 	      let deep_parser = CParser.deep_main
+(* No macros *)
+              type macro = unit
+              let macros_parser _ _ = assert false
+              let macros_expand _ i = i
             end in
 
-            let module P = CGenParser.Make(GenParser.DefaultConfig)(C)(L) in
+            let module P = CGenParser.Make(CGenParser.DefaultConfig)(C)(L) in
             let module X = B(C) in
 
             let module U =

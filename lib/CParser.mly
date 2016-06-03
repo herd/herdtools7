@@ -19,6 +19,7 @@
 open CBase
 open MemOrder
 open CType
+open MemOrderOrAnnot
 %}
 
 %token EOF
@@ -51,7 +52,7 @@ open CType
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
 %token <MemOrder.t> MEMORDER
-%token LD LD_EXPLICIT ST ST_EXPLICIT EXC EXC_EXPLICIT FENCE LOCK UNLOCK SCAS WCAS
+%token LD LOAD LD_EXPLICIT ST STORE ST_EXPLICIT EXC EXC_EXPLICIT UNDERFENCE FENCE LOCK UNLOCK SCAS WCAS
 %token <Op.op> ATOMIC_FETCH
 %token <Op.op> ATOMIC_FETCH_EXPLICIT
 
@@ -68,6 +69,9 @@ open CType
 
 %type <CBase.pseudo list> pseudo_seq
 %start pseudo_seq
+
+%type <CBase.macro list> macros
+%start macros
 
 %%
 
@@ -118,15 +122,28 @@ declaration:
 | typ IDENTIFIER SEMI {}
 
 initialisation:
-| typ IDENTIFIER EQ expr { Store(Reg $2,$4,None) }
+| typ IDENTIFIER EQ expr { Store(Reg $2,$4,AN []) }
+
+annot:
+| IDENTIFIER { $1 }
+| LOCK       { "lock" }
+| UNLOCK       { "unlock" }
+
+annot_list:
+| annot COMMA annot_list
+  {$1::$3}
+| annot
+  {[$1]}
+
 
 expr:
 | LPAR expr RPAR { $2 }
 | CONSTANT { Const(Constant.Concrete $1) }
 | CONSTVAR { Const(Constant.Symbolic $1) }
-| location { Load($1,None) }
-| LD LPAR location RPAR { Load($3,Some SC) }
-| LD_EXPLICIT LPAR location COMMA MEMORDER RPAR { Load($3,Some $5) }
+| location { Load($1,AN []) }
+| LD LPAR location RPAR { Load($3,MO SC) }
+| LOAD LBRACE annot_list RBRACE LPAR location RPAR { Load($6,AN $3) }
+| LD_EXPLICIT LPAR location COMMA MEMORDER RPAR { Load($3,MO $5) }
 | expr STAR expr { Op(Op.Mul,$1,$3) }
 | expr ADD expr { Op(Op.Add,$1,$3) }
 | expr SUB expr { Op(Op.Sub,$1,$3) }
@@ -144,6 +161,16 @@ expr:
   { Fetch ($3, $1, $5, SC) }
 | ATOMIC_FETCH_EXPLICIT LPAR location COMMA expr COMMA MEMORDER RPAR
   { Fetch($3, $1, $5, $7) }
+| IDENTIFIER LPAR args RPAR
+  { ECall ($1,$3) }
+
+args:
+| { [] }
+| args_ne { $1 }
+
+args_ne:
+| expr { [$1] }
+| expr COMMA args_ne { $1 :: $3 }
 
 instruction:
 | IF LPAR expr RPAR block_ins %prec LOWER_THAN_ELSE 
@@ -153,19 +180,25 @@ instruction:
 | initialisation SEMI
   { $1 }
 | location EQ expr SEMI
-  { Store($1,$3,None) }
+  { Store($1,$3,AN []) }
+| STORE LBRACE annot_list RBRACE LPAR location COMMA expr RPAR SEMI
+  { Store($6,$8,AN $3) }
 | ST LPAR location COMMA expr RPAR SEMI
-  { Store($3, $5, Some SC) }
+  { Store($3, $5, MO SC) }
 | ST_EXPLICIT LPAR location COMMA expr COMMA MEMORDER RPAR SEMI
-  { Store($3, $5, Some $7) }
+  { Store($3, $5, MO $7) }
 | LOCK LPAR location RPAR SEMI
   { Lock $3 }
 | UNLOCK LPAR location RPAR SEMI
   { Unlock $3 }
+| UNDERFENCE LBRACE annot_list RBRACE SEMI
+  { Fence(AN $3) }
 | FENCE LPAR MEMORDER RPAR SEMI
-  { Fence(F $3) }
+  { Fence(MO $3) }
 | CODEVAR SEMI
   { Symb $1 }
+| IDENTIFIER LPAR args RPAR SEMI
+  { PCall ($1,$3) }
 
 ins_seq:
 | block_ins { [$1] }
@@ -197,3 +230,25 @@ trans_unit:
 
 deep_main:
 | trans_unit EOF { $1 }
+
+formals_ne:
+| IDENTIFIER { [ $1 ] }
+| IDENTIFIER COMMA formals_ne { $1 :: $3 }
+
+formals:
+| { [] }
+| formals_ne { $1 }
+
+body:
+| LBRACE ins_seq RBRACE
+  { match $2 with
+  | [i]  -> i
+  | is -> Seq is }
+
+macro:
+| IDENTIFIER LPAR formals RPAR expr { EDef ($1,$3,$5) }
+| IDENTIFIER LPAR formals RPAR body { PDef ($1,$3,$5) }
+macros:
+| { [] }
+| macro macros { $1 :: $2 }
+

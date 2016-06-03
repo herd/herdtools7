@@ -1,0 +1,103 @@
+"C++11" withinit
+
+include "c11_cos.cat"
+include "c11_los.cat"
+
+
+
+let asw = I * (M \ I)
+let sb = po
+let mo = co
+
+let cacq = ACQ | (SC & (R | F)) | ACQ_REL | (F & CON)
+let crel = REL | (SC & (W | F)) | ACQ_REL
+let ccon = R & CON				   	   
+
+let fr = rf^-1 ; mo
+
+let dd = (data | addr)+
+
+let fsb = sb & (F * _)
+let sbf = sb & (_ * F)
+
+(* release_acquire_fenced_synchronizes_with,
+   hypothetical_release_sequence_set,
+   release_sequence_set *)
+
+(* OLD: let rs = [crel] ; fsb? ; [A & W] ;
+	 (((mo ; [rmw]) | coi) & ~(coe ; [!rmw] ; mo))? *)
+
+let rs_prime = int | (_ * (R & W))
+let rs = mo & rs_prime \ ((mo \ rs_prime) ; mo)
+		       
+(* OLD: let swra = ext (rs ; rf ; [A] ; sbf? ; [cacq]) *)
+let swra =
+ ext &
+ (toid(crel) ; fsb? ; toid(A & W) ; rs? ; rf ;
+ toid(R & A) ; sbf? ; toid(cacq))
+								     
+let swul = ext & (toid(UL) ; lo ; toid(LK))
+let pp_asw = asw \ (asw ; sb)
+let sw = pp_asw | swul | swra
+
+(* with_consume_cad_set,
+   dependency_ordered_before *)
+let cad = ((rf & sb) | dd)+
+let dob =
+ (ext &
+  (toid(W & crel) ; fsb? ; toid(A & W) ;
+   rs?; rf; toid(ccon)));
+ cad?
+
+(* happens_before,
+   inter_thread_happens_before,
+   consistent_hb *)
+let ithbr = sw | dob | (sw ; sb)
+let ithb = (ithbr | (sb ; ithbr))+
+let hb = sb | ithb
+acyclic hb as Hb
+
+
+(* coherent_memory_use *)
+let hbl = hb & loc
+
+irreflexive ((rf^-1)? ; mo ; rf? ; hb) as Coh
+
+(* visible_side_effect_set *)
+let vis = (hbl & (W * R)) \ (hbl; toid(W) ; hbl)
+
+(* consistent_atomic_rf *) 
+irreflexive (rf ; hb) as Rf
+	      
+(* consistent_non_atomic_rf  *)
+let nal = R\A
+empty ((rf ; toid(nal)) \ vis) as NaRf
+
+irreflexive (rf | (mo ; mo ; rf^-1) | (mo ; rf)) as Rmw
+
+
+(* locks_only_consistent_lo *)
+irreflexive (lo ; hb) as Lo1
+
+(* locks_only_consistent_locks *)
+irreflexive
+   (toid(LS) ; lo^-1 ; toid(LS) ; ~(lo ; toid(UL) ; lo)) as Lo2
+
+
+(* data_races *)
+let cnf = ((W * _) | (_ * W)) & loc
+let dr = ext & (cnf \ hb \ (hb^-1) \ (A * A))
+
+(* unsequenced_races *)
+let ur = int & ((W * M) | (M * W)) &
+         loc & ~id & ~(sb+) & ~((sb+)^-1)
+
+(* locks_only_good_mutex_use,  locks_only_bad_mutexes *)
+
+let bl = (toid(LS); (sb & lo); toid(LK)) & ~(lo; toid(UL); lo)
+
+let losbwoul = (sb & lo & ~(lo; toid(UL); lo))
+
+let lu = toid(UL) &
+  ~(toid(UL) ; losbwoul^-1 ; toid(LS) ; losbwoul ; toid(UL))
+

@@ -48,12 +48,16 @@ module type Config = sig
   val debuglexer : bool
   val check_kind : string -> ConstrGen.kind option
   val check_cond : string -> string option
+  val macros : string option
+  val libfind : string -> string
 end
 
 module DefaultConfig = struct
   let debuglexer = false
   let check_kind _ = None
   let check_cond _ = None
+  let macros = None
+  let libfind = Misc.identity
 end
 (* input signature, a lexer and a parser for a given architecture *)
 module type LexParse = sig
@@ -69,11 +73,16 @@ module type LexParse = sig
   val shallow_parser :
         (Lexing.lexbuf -> token) -> Lexing.lexbuf ->
 	  string CAst.t list
+
+  type macro
+  val macros_parser :
+      (Lexing.lexbuf -> token) -> Lexing.lexbuf -> macro list	
+  val macros_expand : macro list -> pseudo -> pseudo
 end
 
 (* Output signature *)
 module type S = sig
-  type pseudo
+  type pseudo   
   type init = MiscParser.state
   type prog = (int * pseudo list) list
   type locations = MiscParser.LocSet.t
@@ -192,9 +201,23 @@ module Do
 			   env t.params)
         init prog_litmus in
     let procs = List.map (fun p -> p.CAst.proc) prog in 
-    check_procs procs ;
+    check_procs procs ;    
     let params =  List.map (fun p -> p.CAst.params) prog in 
-    let prog =  List.map (fun p -> p.CAst.proc,p.CAst.body) prog in 
+
+    let expand_body = match O.macros with
+    | None -> Misc.identity
+    | Some fmacros ->
+        let ms =
+          Misc.input_protect
+            (fun chan -> 
+              call_parser "macros"
+                (Lexing.from_channel chan)
+                L.deep_lexer
+                L.macros_parser)
+            (O.libfind fmacros) in
+        List.map (L.macros_expand ms) in
+    let prog =  List.map (fun p -> p.CAst.proc,expand_body p.CAst.body) prog in 
+
     let (locs,filter,final,_quantifiers) =
       I.call_parser_loc "final"
 		      chan constr_loc SL.token StateParser.constraints in

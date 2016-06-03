@@ -78,6 +78,10 @@ let get_arch =
        let shallow_parser = CParser.shallow_main
        let deep_parser = CParser.deep_main
        let instr_parser = CParser.pseudo_seq
+(* No macro.. *)
+       type macro = unit
+       let macros_parser _ _ = assert false
+       let macros_expand _ i = i
      end in (module struct 
 	       include CArch
 	       module Parser = struct

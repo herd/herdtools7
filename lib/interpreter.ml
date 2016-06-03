@@ -114,6 +114,11 @@ module Make
 
     let _dbg = false
 
+    let () =
+      if _dbg then match O.bell_fname with
+      | None ->  eprintf "Interpret has no bell file\n"
+      | Some fname -> eprintf "Interpret bell file is %s\n" fname
+          
     let next_id =
       let id = ref 0 in
       fun () -> let r = !id in id := r+1 ; r

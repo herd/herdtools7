@@ -1,0 +1,13 @@
+"C++11"
+
+include "c11_base.cat"
+
+let scp = ((SC * SC) & (fsb?; (mo | fr | hb); sbf?)) \ id
+
+acyclic scp as Ssimp
+show scp
+
+undefined_unless empty dr as Dr 
+undefined_unless empty ur as unsequencedRace 
+undefined_unless empty bl as badLock
+undefined_unless empty lu as badUnlock

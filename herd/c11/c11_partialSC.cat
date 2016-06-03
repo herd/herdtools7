@@ -1,0 +1,21 @@
+"C++11" withinit
+
+include "c11_base.cat"
+
+let r1 = hb
+let r2 = fsb? ; mo ; sbf?
+let r3 = rf^-1; toid(SC) ; mo
+let r4 = rf^-1 ; hbl ; toid(W)
+let r5 = fsb ; fr
+let r6 = fr ; sbf
+let r7 = fsb ; fr ; sbf
+
+let scp = r1|r2|r3|r4|r5|r6|r7
+
+acyclic (((SC * SC) & scp) \ id) as Spartial
+show scp
+
+undefined_unless empty dr as Dr 
+undefined_unless empty ur as unsequencedRace 
+undefined_unless empty bl as badLock
+undefined_unless empty lu as badUnlock

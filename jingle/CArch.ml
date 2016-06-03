@@ -121,11 +121,13 @@ include Arch.MakeArch(struct
     in
     let rec expl_expr = function
       | Const(Constant.Symbolic s) -> Const(find_cst s)
+      | Const(Constant.Concrete _) as e -> e
       | Load(l,mo) -> Load(expl_loc l,mo)
       | Op(op,e1,e2) -> Op(op,expl_expr e1,expl_expr e2)
       | Exchange(l,e,mo) -> Exchange(expl_loc l, expl_expr e,mo)
       | Fetch(l,op,e,mo) -> Fetch(expl_loc l,op,expl_expr e,mo)
-      | x -> x 
+      | ECall (f,es) -> ECall (f,List.map expl_expr es)
+
     in
     function
     | Fence b -> Fence b
@@ -140,5 +142,5 @@ include Arch.MakeArch(struct
     | Lock l -> Lock(expl_loc l)
     | Unlock l -> Unlock(expl_loc l)
     | Symb s -> find_code s
-       
+    | PCall (f,es) -> PCall (f,List.map expl_expr es)
 end)

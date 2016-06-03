@@ -31,6 +31,7 @@ install:
 	@mkdir -p $(BINDIR)
 	@for prog in $(PROGS:.byte=) ; \
 	do cp $$prog $(BINDIR)/$${prog}7; done
+	@for f in c11/*.cat c11/*.def ; do cp $$f $(LIBDIR); done
 
 luc: native install
 

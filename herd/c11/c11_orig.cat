@@ -1,0 +1,20 @@
+"C++11"
+
+include "c11_base.cat"	   
+
+with S from linearisations(SC,hb)	  
+let Simm = S \ (mo ; S)
+
+irreflexive (S ; hb) as S1
+irreflexive (S ; fsb? ; mo ; sbf?) as S2
+irreflexive (S ; rf^-1; toid(SC) ; mo) as S3
+let r4 = rf^-1 ; hbl ; toid(W)
+irreflexive (Simm ; r4) as S4
+irreflexive (S ; fsb ; fr) as S5
+irreflexive (S ; fr ; sbf) as S6
+irreflexive (S ; fsb ; fr ; sbf) as S7
+
+undefined_unless empty dr as Dr 
+undefined_unless empty ur as unsequencedRace 
+undefined_unless empty bl as badLock
+undefined_unless empty lu as badUnlock

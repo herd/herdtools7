@@ -101,7 +101,7 @@ match a with
 | `PPC ->  File "ppc.cat"
 | `ARM -> File "arm.cat"
 | `AArch64 -> File "doc64.cat"
-| `C -> File "simple-c11.cat"
+| `C -> File "c11_partialSC.cat"
 | _ ->
     Warn.user_error 
     "There is no default model for architecture %s.\nSpecify a model explicitly using the -model flag." (Archs.pp a)
