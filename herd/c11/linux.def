@@ -6,7 +6,7 @@ WRITE_ONCE(X,V) { __store{once}(X,V); }
 smp_store_release(X,V) { __store{release}(*X,V); }
 smp_load_acquire(X) __load{acquire}(X)
 rcu_assign_pointer(X,V) { __store{release}(X,V); }
-rcu_derefence(X) __load{deref}(*X)
+rcu_derefence(X) __load{deref}(X)
 
 // RCU
 rcu_read_lock() { __fence{lock}; }
