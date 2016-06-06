@@ -706,6 +706,7 @@ let make_atomic_load_store es =
           List.fold_left
             (fun k w ->
               if
+                S.atomic_pair_allowed r w &&
                 U.is_before_strict es r w &&
                 not
                   (E.EventSet.exists

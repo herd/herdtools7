@@ -45,7 +45,7 @@ module type S =
     val (>>|) : 'a t -> 'b t -> ('a * 'b)  t
     val (>>::) : 'a t -> 'a list t -> 'a list t
     val (|*|)   : unit t -> unit t -> unit t   (* Cross product *)
-    val lockT : 'a t -> 'a t
+(*    val lockT : 'a t -> 'a t *)
     val forceT : 'a -> 'b t -> 'a t
     val (>>!) : 'a t -> 'b -> 'b t
 

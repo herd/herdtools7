@@ -28,7 +28,8 @@ module type Semantics =
 (* Barrier pretty print (for minimal model) *)
     val barriers : pp_barrier list
     val isync : pp_barrier option
-
+(* Extra condition on RMW *)
+    val atomic_pair_allowed : event -> event -> bool
 (* Instruction semantics, highly arch dependant *)
     val build_semantics : A.inst_instance_id -> (A.program_order_index * branch) M.t
   end

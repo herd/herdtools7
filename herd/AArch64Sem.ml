@@ -81,6 +81,8 @@ module Make (C:Sem.Config)(V:Value.S)
     let is_zero v = M.op Op.Eq v V.zero
     let is_not_zero v = M.op Op.Ne v V.zero
     
+    let atomic_pair_allowed _ _ = true
+
     let build_semantics ii = 
       M.addT (A.next_po_index ii.A.program_order_index)
         AArch64Base.( 

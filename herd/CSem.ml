@@ -53,6 +53,8 @@ module Make (Conf:Sem.Config)(V:Value.S)
     let fetch_op op v mo loc =
       M.fetch op v (fun v vstored -> Act.RMW (loc,v,vstored,mo))
 
+    let atomic_pair_allowed _ _ = true
+
     let rec build_semantics_expr e ii : V.v M.t =
       let open MemOrderOrAnnot in
       match e with

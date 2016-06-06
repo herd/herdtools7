@@ -182,15 +182,6 @@ struct
 		  s2act (eiid2, acc)) 
 		s1act (eiid_next,Evt.empty)) 
 	      
-      let lockT : 'a t -> 'a t
-	  = fun s ->
-	    fun eiid ->
-	      let (eiid1,sact) = s eiid in
-              (eiid1,
-	       Evt.map (fun (v, vcl,es) -> (v, vcl, E.lock_all_events es))
-		 sact)
-		
-
 (* Force monad value *)
       let forceT : 'a -> 'b t -> 'a t =
 	fun v s eiid ->
@@ -314,8 +305,7 @@ struct
       	{ E.procs = [] ;
 	  events = es ;
 	  intra_causality_data = E.EventRel.empty ;
-	  intra_causality_control = E.EventRel.empty ;
-	  atomicity = E.Atomicity.empty ; }
+	  intra_causality_control = E.EventRel.empty ; }
 
       let trivial_event_structure e = do_trivial (E.EventSet.singleton e)
 

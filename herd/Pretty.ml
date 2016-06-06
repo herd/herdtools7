@@ -1033,11 +1033,9 @@ let one_init = match PC.graph with
 (* Now output events *)
           Misc.iteri 
             (fun m evts ->
-              let is_locked_instruction = 
-                (E.Atomicity.mem evts es.E.atomicity) in
               if
                 PC.withbox &&  
-                (show_all_events || is_locked_instruction)
+                show_all_events
                   (* SS: Let there be silently many events per proc without boxing ||
                      E.EventSet.cardinal evts > 1) *)
               then begin
@@ -1056,19 +1054,16 @@ let one_init = match PC.graph with
                 fprintf chan
 	          " { %s label = \"%s\"; labelloc=\"b\"; shape=box;\n"
 	          (if not PC.mono then
-                    "color="^
-                    (if is_locked_instruction then "red" else "green")^";"
+                    "color=green;"
                   else "color=\"grey30\"; style=dashed; ")
                   pp_ins ;
                 (* assuming atomicity sets are always full instructions *)
                 E.EventSet.pp chan ""
-                  (pp_event false
-                     (if is_locked_instruction then "red" else "blue")) evts ;
+                  (pp_event false "blue") evts ;
                 fprintf chan "}\n"
               end else begin (* no green box around one event only *)
                 E.EventSet.pp chan ""
-                  (pp_event false
-                     (if is_locked_instruction then "red" else "blue"))
+                  (pp_event false "blue")
                   evts
               end)
             evtss;
@@ -1263,14 +1258,6 @@ let one_init = match PC.graph with
   let select_rel =
     E.EventRel.filter (fun (e1,e2) -> select_event e1 && select_event e2)
 
-  let select_atomicity a =
-    E.Atomicity.fold
-      (fun es k ->
-        let es = select_events es in
-        if E.EventSet.is_empty es then k
-        else E.Atomicity.add es k)
-      a E.Atomicity.empty
-
   let select_es es =
     { es with
       E.events = select_events
@@ -1278,9 +1265,7 @@ let one_init = match PC.graph with
       intra_causality_data = select_rel
         es.E.intra_causality_data;
       intra_causality_control = select_rel
-        es.E.intra_causality_control;
-      atomicity =  select_atomicity
-        es.E.atomicity; }
+        es.E.intra_causality_control; }
 
   let select_rfmap rfm =
     S.RFMap.fold

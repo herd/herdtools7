@@ -160,16 +160,6 @@ let get_scope_rels evts sc =
 
   let transitive_closure_p = List.map E.EventRel.transitive_closure
 
-(* Convert the ordered list representation of a total order to a relation *)
-  let rec order_to_pairs k evts = match evts with
-  | [] -> k
-  | e1 :: tl ->      
-      let k = List.fold_left (fun k e2 -> (e1,e2)::k) k tl in
-      order_to_pairs k tl
-	
-  let order_to_rel evts = E.EventRel.of_list (order_to_pairs []  evts)
-
-
 (********)
 (* Misc *)
 (********)
@@ -401,57 +391,6 @@ let get_scope_rels evts sc =
 (* Event atomicity class are canonized as
    a mapping from one representant to the class *)
   module Canon = Map.Make(E.OrderedEvent)
-
-  let find_class e map =
-    try Canon.find e map with Not_found -> assert false
-
-  let canonical_locked_events_of es =
-    E.Atomicity.fold
-      (fun evts k ->
-	let canon =
-	  (* An atomicity class is not empty *)
-	  try E.EventSet.choose evts with Not_found -> assert false in
-	Canon.add canon evts k)
-      es.E.atomicity Canon.empty
-      
-
-  let get_canonical_locked_events_of es =
-    let lockeds = canonical_locked_events_of es in
-    Canon.fold
-      (fun e _ k -> E.EventSet.add e k)
-      lockeds E.EventSet.empty 
-
-  let get_atomicity_candidates vb es =
-(* Canonize *)
-    let lockeds = canonical_locked_events_of es in
-    let reprs =
-      Canon.fold
-        (fun e _ k -> E.EventSet.add e k)
-        lockeds E.EventSet.empty in
-    let filtered_vb =
-      E.EventRel.filter
-        (fun (e1,e2) -> E.EventSet.mem e1 reprs && E.EventSet.mem e2 reprs)
-        vb in
-(* Generate orderings, over representants *)
-    let perms = E.EventRel.all_topos (PC.verbose > 0) reprs filtered_vb in
-    let cands =
-(* For every candidate ordering *)
-      List.rev_map (* why not be tail-recursive ? *)
-        (fun perm ->
-	  (* Change into relation *)
-	  let canon_cand = order_to_rel perm in
-	  (* And lift relation to atomicity classes,
-             maybe not the most efficient way... *)
-	  let cand =
-	    E.EventRel.fold
-	      (fun (c1,c2) k ->
-	        let atom1 = find_class c1 lockeds
-	        and atom2 = find_class c2 lockeds in
-	        E.EventRel.union (E.EventRel.cartesian atom1 atom2) k)
-	      canon_cand E.EventRel.empty in
-	  canon_cand,cand)
-        perms in
-    reprs,cands
 
 (********************************************)
 (* Write serialization candidate generator. *)

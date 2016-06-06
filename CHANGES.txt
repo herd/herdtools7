@@ -1,3 +1,5 @@
+  * Locked intructions for X86, simplify setting: 1. suppress atomicity
+    component of event structures + set atomicity at event creation time.
 7.16
   * Oups trivial bug in filters.cat
 7.15

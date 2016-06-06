@@ -97,29 +97,6 @@ module Make : functor (S: SemExtra.S) -> sig
 (* Place loads given write serialization *)
 val make_load_stores : S.concrete -> S.event_rel -> S.event_rel
 
-(*************)
-(* Atomicity *)
-(*************)
-
-val get_canonical_locked_events_of :  S.event_structure -> S.event_set
-
-(*
-  'get_atomicity_candidates rel es'
-     1. rel is a constraining relation on order over locked events.
-        all generated orderings are implied (include) the relation.
-     2. es is event structure
-  Return a pair of
-
-  1. set of representatives of atomicity class
-  2. A list of candidates, each being a pair
-  or ordering amongst representative X amongst all locked events.
-*)
-
-val get_atomicity_candidates :
-    S.event_rel ->
-      S.event_structure ->
-           S.event_set * (S.event_rel * S.event_rel) list
-
 (************************************************************)
 (* Stop early if we can, final condition invalisation mode. *)
 (************************************************************)

@@ -154,16 +154,11 @@ module type S = sig
 
   val debug_rel : out_channel -> event_rel -> unit
 
-  module Atomicity : MySet.S with type elt = EventSet.t
-
-  val pp_atomicity : out_channel -> Atomicity.t -> unit
-
   type event_structure = {
       procs : A.proc list ;
       events : EventSet.t ;                         (* really a set *)
       intra_causality_data : EventRel.t ;              (* really a partial order relation *)
       intra_causality_control : EventRel.t ;              (* really a partial order relation *)	  
-      atomicity : Atomicity.t;                 (* really a PER *)
     } 
   val procs_of    : event_structure -> A.proc list
   val locs_of     : event_structure -> A.location list
@@ -260,7 +255,6 @@ module type S = sig
       event_structure -> event_structure -> event_structure option      
 
   val empty_event_structure   : event_structure
-  val lock_all_events         : event_structure -> event_structure
 
 end
       
@@ -469,53 +463,11 @@ struct
             debug_event_in_rel e1 debug_event_in_rel e2)
         r
 
-    module Atomicity =
-      MySet.Make
-	(struct
-	  type t = EventSet.t
-	  let compare = EventSet.compare
-	end)
-
-
-    let pp_atomicity chan a =
-      fprintf chan "{" ;
-      Atomicity.pp chan "; "
-	(fun chan es ->
-	  fprintf chan "{" ;
-	  EventSet.pp chan "; "
-	    (fun chan e -> fprintf chan "eeid_%i" e.eiid)
-	    es ;
-	  fprintf chan "}")
-	a ;
-      fprintf chan "}"
-
-(* Equivalence closure of atomicity classes *)
-    let unions xss xs =  Atomicity.fold EventSet.union xss xs
-
-    let equiv_closure xss yss =
-(*
-  eprintf "CLOSURE: %a %a -> " pp_atomicity xss pp_atomicity yss ;
- *)
-      let r =
-	Atomicity.fold
-	  (fun xs acc ->
-	    let non_inter,inter =
-	      Atomicity.partition (EventSet.disjoint xs) acc in
-	    Atomicity.add (unions inter xs) non_inter)
-	  xss yss in
-(*
-  eprintf "%a\n" pp_atomicity r ;
- *)
-      r
-	
-	
-
     type event_structure = {
 	procs : A.proc list ; (* will prove convenient *)
 	events : EventSet.t ;        (* really a set *)
 	intra_causality_data : EventRel.t ;   (* really a (partial order) relation *)
 	intra_causality_control : EventRel.t ;(* really a (partial order) relation *)
-	atomicity : Atomicity.t ;                 (* a set of sets *)
       } 
 	  
     let procs_of es = es.procs
@@ -530,14 +482,13 @@ struct
        events = map_set es.events ;
        intra_causality_data = map_rel  es.intra_causality_data ;
        intra_causality_control = map_rel es.intra_causality_control ;
-       atomicity = Atomicity.map map_set es.atomicity ;
      }
 
     let empty =
       { procs = [] ; events = EventSet.empty ;
 	intra_causality_data = EventRel.empty ;
 	intra_causality_control = EventRel.empty ;
-	atomicity = Atomicity.empty ; }
+      }
 
       
 (****************************)
@@ -663,9 +614,7 @@ let para_comp es1 es2 =
     intra_causality_data = EventRel.union
       es1.intra_causality_data es2.intra_causality_data ;
     intra_causality_control = EventRel.union
-      es1.intra_causality_control  es2.intra_causality_control ; 
-    atomicity = equiv_closure
-      es1.atomicity es2.atomicity; }
+      es1.intra_causality_control  es2.intra_causality_control ; }
 
 let (=|=) = check_disjoint para_comp
     
@@ -678,7 +627,7 @@ let (=|=) = check_disjoint para_comp
 	  (EventRel.cartesian (maximals es1) (minimals es2)) ;
         intra_causality_control = EventRel.union
 	  es1.intra_causality_control es2.intra_causality_control ;
-	atomicity = equiv_closure es1.atomicity es2.atomicity }
+      }
 
     let (=*$=) = check_disjoint data_comp
 
@@ -691,7 +640,7 @@ let (=|=) = check_disjoint para_comp
 	  (EventRel.union es1.intra_causality_control
 	     es2.intra_causality_control)
 	  (EventRel.cartesian (maximals es1) (minimals es2));
-	atomicity = equiv_closure es1.atomicity es2.atomicity; }
+      }
 
     let (=**=) = check_disjoint control_comp
 
@@ -713,11 +662,7 @@ let (=|=) = check_disjoint para_comp
              [rs1.intra_causality_control;rs2.intra_causality_control;
               ws1.intra_causality_control;ws2.intra_causality_control;];
            EventRel.cartesian (maximals rs1) (minimals ws1);
-           EventRel.cartesian (maximals rs2) (minimals ws2);];
-	atomicity =
-        equiv_closure
-          (equiv_closure rs1.atomicity rs2.atomicity)
-          (equiv_closure ws1.atomicity ws2.atomicity);}
+           EventRel.cartesian (maximals rs2) (minimals ws2);]; }
 
 (* disjointness is awful *)
   let exch rx ry wx wy =
@@ -742,11 +687,6 @@ let stu rD rEA wEA wM =
     EventRel.is_empty rEA.intra_causality_control &&
     EventRel.is_empty wEA.intra_causality_control &&
     EventRel.is_empty wM.intra_causality_control) ;
-  assert
-    (Atomicity.is_empty rD.atomicity &&
-     Atomicity.is_empty rEA.atomicity &&
-     Atomicity.is_empty wEA.atomicity &&
-     Atomicity.is_empty wM.atomicity) ;
   { empty with
     events = EventSet.unions [rD.events;rEA.events;wEA.events;wM.events;];
     intra_causality_data = begin
@@ -792,26 +732,6 @@ let stu rD rEA wEA wM =
     let (+|+) = check_both para_comp
 
     let empty_event_structure = empty
-
-    let make_load_store_atomic es =
-      let module M = Map.Make(OrderedEvent) in
-      let env =
-        EventSet.fold
-	  (fun e k ->
-	   if is_mem e then 
-	     M.add e { e with action = Act.make_action_atomic e.action } k
-	   else k)
-          es.events M.empty in
-      map_event_structure
-        (fun e -> try M.find e env with Not_found -> e)
-        es
-
-    let lock_all_events es =
-      if EventSet.is_empty es.events then es
-      else
-        let es = make_load_store_atomic es in
-	{ es with atomicity = Atomicity.singleton es.events} 
-
 
   end
 

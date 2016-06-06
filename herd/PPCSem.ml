@@ -173,6 +173,8 @@ module Make (C:Sem.Config)(V:Value.S)
       M.op1 Op.Not >>=
       fun v ->  commit ii >>= fun () -> B.bccT v lbl
 
+    let atomic_pair_allowed _ _ = true
+
     let build_semantics ii = 
       M.addT (A.next_po_index ii.A.program_order_index)
         begin match ii.A.inst with

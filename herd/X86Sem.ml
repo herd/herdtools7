@@ -57,8 +57,22 @@ module Make (C:Sem.Config)(V : Value.S)
 
     let read_loc_atomic = M.read_loc mk_read_choose_atomic        
 
+    let read_loc_gen locked loc ii = match loc with
+    |  A.Location_global _ ->
+        M.read_loc (mk_read locked) loc ii
+    | _ -> 
+        M.read_loc (mk_read false) loc ii
+
+
+    let write_loc_gen locked loc v ii = match loc with
+    |  A.Location_global _ ->
+        M.mk_singleton_es (Act.Access (Dir.W, loc, v, locked)) ii
+    | _ -> 
+        M.mk_singleton_es (Act.Access (Dir.W, loc, v, locked)) ii
+          
     let write_loc loc v ii = 
       M.mk_singleton_es (Act.Access (Dir.W, loc, v, false)) ii
+
     let write_reg r v ii = 
       M.mk_singleton_es (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false)) ii
     let write_mem a v ii  = 
@@ -125,26 +139,30 @@ module Make (C:Sem.Config)(V : Value.S)
         and w2 = fun v -> write_loc_atomic l2 v ii in
         M.exch r1 r2 w1 w2) >>! B.Next
 
+    let atomic_pair_allowed e1 e2 = match e1.E.iiid, e2.E.iiid with
+    | Some i1,Some i2 -> i1 == i2
+    | _,_ -> false
+
     let build_semantics ii = 
-    let rec build_semantics_inner ii =
+    let rec build_semantics_inner locked ii =
       match ii.A.inst with
     |  X86.I_XOR (ea,op) ->
 	(lval_ea ea ii >>=
-	 fun loc -> M.addT loc (read_loc loc ii) >>| rval_op op ii)
+	 fun loc -> M.addT loc (read_loc_gen locked loc ii) >>| rval_op op ii)
 	  >>=
 	fun ((loc,v_ea),v_op) ->
 	  M.op Op.Xor v_ea v_op >>=
 	  fun v_result ->
-	    (write_loc loc v_result ii >>|
+	    (write_loc_gen locked loc v_result ii >>|
 	    write_all_flags v_result V.zero ii) >>! B.Next
     |  X86.I_ADD (ea,op) ->
 	(lval_ea ea ii >>=
-	 fun loc -> M.addT loc (read_loc loc ii) >>| rval_op op ii)
+	 fun loc -> M.addT loc (read_loc_gen locked loc ii) >>| rval_op op ii)
 	  >>=
 	fun ((loc,v_ea),v_op) ->
 	  M.add v_ea v_op >>=
 	  fun v_result ->
-	    (write_loc loc v_result ii >>|
+	    (write_loc_gen locked loc v_result ii >>|
 	    write_all_flags v_result V.zero ii) >>! B.Next
     |  X86.I_MOV (ea,op)|X86.I_MOVQ (ea,op) ->
 	(lval_ea ea ii >>| rval_op op ii) >>=
@@ -154,20 +172,20 @@ module Make (C:Sem.Config)(V : Value.S)
 	rval_op op ii >>! B.Next
     |  X86.I_DEC (ea) ->
 	lval_ea ea ii >>=
-	fun loc -> read_loc loc ii >>=
+	fun loc -> read_loc_gen locked loc ii >>=
 	  fun v ->
 	    M.op Op.Sub v V.one >>= 
 	    fun v ->
-	      (write_loc loc v ii >>|
+	      (write_loc_gen locked loc v ii >>|
               write_sf v V.zero ii >>|
               write_zf v V.zero ii) >>! B.Next
     | X86.I_INC (ea) ->
 	lval_ea ea ii >>=
-	fun loc -> read_loc loc ii >>=
+	fun loc -> read_loc_gen locked loc ii >>=
 	  fun v ->
 	    M.add v V.one >>=
 	    fun v ->
-	      (write_loc loc v ii >>|
+	      (write_loc_gen locked loc v ii >>|
 	      write_sf v V.zero ii >>|
 	      write_zf v V.zero ii) >>! B.Next
     |  X86.I_CMP (ea,op) ->
@@ -218,14 +236,14 @@ module Make (C:Sem.Config)(V : Value.S)
 	fun v -> B.bccT v lbl 
 
     | X86.I_LOCK inst ->
-	M.lockT (build_semantics_inner {ii with A.inst = inst})
+	build_semantics_inner true {ii with A.inst = inst}
     | X86.I_SETNB (ea) ->
 	(lval_ea ea ii >>| read_reg X86.CF ii) >>=
 	fun (loc,cf) ->
 	  flip_flag cf >>=
 	  fun v -> write_loc loc v ii >>! B.Next
     | X86.I_XCHG (ea1,ea2) ->
-	M.lockT (xchg ea1 ea2 ii)
+	xchg ea1 ea2 ii
     | X86.I_XCHG_UNLOCKED (ea1,ea2) ->
 	xchg ea1 ea2 ii
     | X86.I_CMPXCHG (_,_) -> Warn.fatal "I_CMPXCHG not implemented"
@@ -237,5 +255,7 @@ module Make (C:Sem.Config)(V : Value.S)
 	create_barrier X86.Mfence ii >>! B.Next
     |  X86.I_MOVSD -> Warn.fatal "I_MOVSD not implemented"
     in 
-    M.addT (A.next_po_index ii.A.program_order_index) (build_semantics_inner ii)
+    M.addT
+      (A.next_po_index ii.A.program_order_index)
+      (build_semantics_inner false ii)
   end
