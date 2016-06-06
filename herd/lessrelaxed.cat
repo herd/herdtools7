@@ -1,6 +1,6 @@
 "Less Relaxed ARM llh model"
 
-include "filter.cat"
+include "filters.cat"
 include "cosllh.cat"
 
 (* Uniproc *)
