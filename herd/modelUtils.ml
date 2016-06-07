@@ -54,8 +54,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
       let ctrl_one =
         S.restrict E.is_commit_bcc evt_relevant po
       and ctrl_two =
-        S.restrict E.is_commit_pred evt_relevant
-          conc.S.str.E.intra_causality_control in
+        S.restrict E.is_commit_pred evt_relevant (U.iico conc.S.str) in
       let ctrl = E.EventRel.union ctrl_one ctrl_two in
       let ctrl_dep =
         S.restrict E.is_mem_load (fun x -> evt_relevant x)
