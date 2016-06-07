@@ -44,7 +44,7 @@ end = struct
   let mk_init_write l v = Access (W,l,v,AN [])
 
   let par f x = sprintf "(%s)" (f x)
-  let bra f x = sprintf "{%s}" (f x)
+  let bra f x = sprintf "[%s]" (f x)
 
   let pp_action a = match a with
     | Access (d,l,v,mo) ->

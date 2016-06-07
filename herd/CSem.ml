@@ -187,7 +187,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
 	  >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
 	  
 	| C.Symb _ -> Warn.fatal "No symbolic instructions allowed."
-        | C.PCall _ -> Warn.fatal "Procedure call in CSem"
+        | C.PCall (f,_) -> Warn.fatal "Procedure call %s in CSem" f
         
     and build_semantics_list insts ii = match insts with
       | [] -> M.unitT (ii.A.program_order_index, B.Next)

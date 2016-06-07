@@ -4,11 +4,19 @@ WRITE_ONCE(X,V) { __store{once}(X,V); }
 
 // Release Acquire and friends
 smp_store_release(X,V) { __store{release}(*X,V); }
-smp_load_acquire(X) __load{acquire}(X)
+smp_load_acquire(X) __load{acquire}(*X)
 rcu_assign_pointer(X,V) { __store{release}(X,V); }
-rcu_derefence(X) __load{deref}(X)
+lockless_dereference(X) __load{lderef}(X)
+rcu_dereference(X) __load{deref}(X)
 
 // RCU
 rcu_read_lock() { __fence{lock}; }
-rcu_read_unlock() { __fence{unlock}; }
+rcu_read_unlock() { __fence{unlock};}
 synchronize_rcu() { __fence{sync}; }
+synchronize_rcu_expedited() { __fence{sync}; }
+
+//Fences
+smp_mb() { __fence{mb} ; }
+smp_rmb() { __fence{rmb} ; }
+smp_wmb() { __fence{wmb} ; }
+smp_read_barrier_depends() { __fence{rb_dep}; }
