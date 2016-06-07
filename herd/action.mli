@@ -80,7 +80,8 @@ module type S = sig
   val same_barrier_id : action -> action -> bool
 
 (* Commits *)
-  val is_commit : action -> bool
+  val is_commit_bcc : action -> bool
+  val is_commit_pred : action -> bool
 
 (********************)
 (* Equation solving *)

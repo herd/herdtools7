@@ -180,8 +180,9 @@ end = struct
 
   let same_barrier_id _ _ = assert false
 
-(* Commits *)
-   let is_commit _ = false
+(* (No) commits *)
+   let is_commit_bcc _ = false
+   let is_commit_pred _ = false
 
 (* RMWs *)
    let is_rmw a = match a with

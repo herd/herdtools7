@@ -144,9 +144,11 @@ end = struct
   let same_barrier_id _ _ = false
 
 (* Commits *)
-  let is_commit a = match a with
+  let is_commit_bcc  a = match a with
   | Commit -> true
   | _ -> false
+
+  let is_commit_pred  _a = false (* No predicated instructions... *)
 
 (* Equations *)
 

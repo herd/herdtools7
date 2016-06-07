@@ -90,6 +90,8 @@ module type S = sig
   val is_isync : event -> bool
 
 (* Commit *)
+  val is_commit_bcc : event -> bool
+  val is_commit_pred : event -> bool
   val is_commit : event -> bool
 
 (**************)
@@ -395,9 +397,12 @@ struct
 *)
   let is_isync e = Act.is_isync e.action
 
-(* Commits *)
-   let is_commit e = Act.is_commit e.action
-
+(* Commits *)      
+  let is_commit_bcc e = Act.is_commit_bcc e.action
+  let is_commit_pred e = Act.is_commit_pred e.action
+  let is_commit e =
+    let act = e.action in
+    Act.is_commit_bcc act ||  Act.is_commit_pred act
 
 (******************************)
 (* Build structures of events *)

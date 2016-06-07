@@ -75,7 +75,7 @@ module Make (C:Sem.Config)(V:Value.S)
       M.mk_singleton_es (Act.Barrier b) ii
 
     let commit ii = 
-      M.mk_singleton_es (Act.Commit) ii
+      M.mk_singleton_es (Act.Commit true) ii
 		  
     let flip_flag v = M.op Op.Xor v V.one	
     let is_zero v = M.op Op.Eq v V.zero

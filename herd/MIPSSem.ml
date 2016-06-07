@@ -80,7 +80,7 @@ module Make (C:Sem.Config)(V:Value.S)
       M.mk_singleton_es (Act.Barrier b) ii
 
     let commit ii = 
-      M.mk_singleton_es (Act.Commit) ii
+      M.mk_singleton_es (Act.Commit true) ii
 
 (* Entry point *)
     let atomic_pair_allowed _ _ = true

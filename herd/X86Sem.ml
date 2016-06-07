@@ -91,9 +91,6 @@ module Make (C:Sem.Config)(V : Value.S)
     let create_barrier b ii = 
       M.mk_singleton_es (Act.Barrier b) ii
 
-    let commit ii = 
-      M.mk_singleton_es (Act.Commit) ii
-
     let lval_ea ea ii = match ea with
     | X86.Effaddr_rm32 (X86.Rm32_reg r)->
 	M.unitT (X86.Location_reg (ii.X86.proc,r))

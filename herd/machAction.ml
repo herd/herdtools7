@@ -35,7 +35,7 @@ module Make (A : A) : sig
   type action =    
     | Access of Dir.dirn * A.location * A.V.v * A.lannot
     | Barrier of A.barrier
-    | Commit
+    | Commit of bool (* true = bcc / false = pred *)
 
   include Action.S with type action := action and module A = A
 
@@ -48,7 +48,7 @@ end = struct
   type action = 
     | Access of dirn * A.location * V.v * A.lannot
     | Barrier of A.barrier
-    | Commit
+    | Commit of bool
  
   let mk_init_write l v = Access(W,l,v,A.empty_annot)
 
@@ -60,7 +60,7 @@ end = struct
 	  (A.pp_annot an)
 	  (V.pp_v v)
     | Barrier b -> A.pp_barrier b
-    | Commit -> "Commit"
+    | Commit bcc -> if bcc then "Commit" else "Pred"
 
 (* Utility functions to pick out components *)
     let value_of a = match a with
@@ -143,8 +143,13 @@ end = struct
   let same_barrier_id _ _ = assert false
 
 (* Commits *)
-   let is_commit a = match a with
-   | Commit -> true
+
+   let is_commit_bcc a = match a with
+   | Commit b -> b
+   | _ -> false
+
+   let is_commit_pred a = match a with
+   | Commit b -> not b
    | _ -> false
 
 (* Architecture-specific sets *)
@@ -185,7 +190,7 @@ end = struct
 	  | Some v -> V.ValueSet.singleton v in
 	  if V.is_var_determined v then undet_loc
 	  else V.ValueSet.add v undet_loc
-      | Barrier _|Commit -> V.ValueSet.empty
+      | Barrier _|Commit _ -> V.ValueSet.empty
 
     let simplify_vars_in_action soln a =
       match a with
@@ -193,7 +198,7 @@ end = struct
 	 let l' = A.simplify_vars_in_loc soln l in
 	 let v' = V.simplify_var soln v in
 	 Access (d,l',v',an)
-      | Barrier _ | Commit -> a
+      | Barrier _ | Commit _ -> a
 
 (*************************************************************)	      
 (* Add together event structures from different instructions *)
