@@ -448,7 +448,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
       | "WW+WR+WR" -> "Z6.4"
       | "WW+WW+WR" -> "Z6.5"
       | k -> k in
-      if C.lowercase then String.lowercase pp else pp
+      if C.lowercase then Misc.lowercase pp else pp
 
     let normalise cy =
       try

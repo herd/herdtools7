@@ -19,7 +19,7 @@ type t = W32 | W64 |WXX
 
 let tags = ["w32"; "w64"; "wXX";]
 
-let parse tag = match String.lowercase tag with
+let parse tag = match Misc.lowercase tag with
 | "w32" -> Some W32
 | "w64" -> Some W64
 | "wxx" -> Some WXX

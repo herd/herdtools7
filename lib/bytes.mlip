@@ -13,4 +13,6 @@ type t = string
 
 include module type of String with type t := string
 
+val unsafe_to_string : t -> string
 val sub_string : string -> int -> int -> string
+val init : int -> (int -> char) -> string

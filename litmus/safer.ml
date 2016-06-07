@@ -21,7 +21,7 @@ type t = No | All | Write
 let tags = [ "no"; "all"; "write"; ]
 
 
-let parse tag  = match String.lowercase tag with
+let parse tag  = match Misc.lowercase tag with
 | "false"|"no" -> Some No
 | "true"|"all" -> Some All
 | "write" -> Some Write

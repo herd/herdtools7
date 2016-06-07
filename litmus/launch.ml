@@ -20,7 +20,7 @@ type t = Fixed | Changing
 
 let tags = ["fixed";"changing";]
 
-let parse tag = match String.lowercase tag with
+let parse tag = match Misc.lowercase tag with
 | "fixed" -> Some Fixed
 | "changing" -> Some Changing
 | _ -> None

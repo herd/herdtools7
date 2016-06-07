@@ -20,7 +20,7 @@ module Permut = struct
 
   let tags = ["random"; "[<int>,]*";]
 
-  let parse tag = match String.lowercase tag with
+  let parse tag = match Misc.lowercase tag with
   | "random" -> Some Random
   | _ ->
       try Some (Permut (LexSplit.ints tag))
@@ -37,7 +37,7 @@ module Action = struct
 
   let tags = ["mix";"append";"cat";]
 
-  let parse s = match String.lowercase s with
+  let parse s = match Misc.lowercase s with
   | "mix" -> Some Mix
   | "append"|"app" -> Some Append
   | "cat" -> Some Cat
@@ -55,7 +55,7 @@ module Cond = struct
 
   let tags = ["auto"; "or"; "and"; "no";]
 
-  let parse tag = match String.lowercase tag with
+  let parse tag = match Misc.lowercase tag with
   | "auto" -> Some Auto
   | "or" -> Some Or
   | "and" -> Some And

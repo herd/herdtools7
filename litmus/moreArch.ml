@@ -21,7 +21,7 @@ type t = No | ARMv6K | Cheri
 
 let tags = ["armv6k";"cheri"; "none"]
 
-let parse tag = match String.lowercase tag with
+let parse tag = match Misc.lowercase tag with
 | "none" -> Some No
 | "armv6k" -> Some ARMv6K
 | "cheri" -> Some Cheri

@@ -165,7 +165,7 @@ let parse_list =
   List.map (fun (r,s) -> s,Freg r) fregs
 
 let parse_reg s =
-  let s = String.lowercase s in
+  let s = Misc.lowercase s in
   try Some (List.assoc s parse_list)
   with Not_found -> None
 

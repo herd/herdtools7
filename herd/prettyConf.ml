@@ -43,7 +43,7 @@ let pp_show = function
   | ShowWit -> "wit"
   | ShowFlag f -> Printf.sprintf "flag<%s>" f
 
-let parse_show tag = match String.lowercase tag with
+let parse_show tag = match Misc.lowercase tag with
 | "prop" -> Some ShowProp
 | "cond" -> Some ShowCond
 | "none" -> Some ShowNone

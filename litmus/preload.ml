@@ -23,7 +23,7 @@ type t =
 
 let tags = ["no";"random";"custom";"static";"static2"]
 
-let parse tag = match String.lowercase tag with
+let parse tag = match Misc.lowercase tag with
 | "false"|"no" -> Some NoPL
 | "true"|"random" -> Some RandomPL
 | "custom" -> Some CustomPL

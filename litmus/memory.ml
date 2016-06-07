@@ -20,7 +20,7 @@ type t = Direct | Indirect
 
 let tags = ["direct";"indirect";]
 
-let parse tag  = match String.lowercase tag with
+let parse tag  = match Misc.lowercase tag with
 | "direct" -> Some Direct
 | "indirect" -> Some Indirect
 | _ -> None

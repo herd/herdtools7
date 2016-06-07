@@ -23,7 +23,7 @@ module Action = struct
 
   let tags = ["check"; "rewrite";]
 
-  let parse s = match String.lowercase s with
+  let parse s = match Misc.lowercase s with
   | "check" -> Some Check
   | "rewrite" -> Some Rewrite
   | _ -> None

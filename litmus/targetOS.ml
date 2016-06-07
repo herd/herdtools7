@@ -20,7 +20,7 @@ type t = Linux | Mac |AIX
 
 let tags = ["linux"; "mac"; "aix"; ]
 
-let parse tag = match String.lowercase tag with
+let parse tag = match Misc.lowercase tag with
 | "linux" -> Some Linux
 | "mac"|"macos" -> Some Mac
 | "aix"|"aix5" -> Some AIX

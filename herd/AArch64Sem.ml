@@ -28,7 +28,7 @@ module Make (C:Sem.Config)(V:Value.S)
       in List.map 
 	   (fun b ->
 	    { barrier = b;
-	      pp = String.lowercase (AArch64Base.pp_barrier b)})
+	      pp = Misc.lowercase (AArch64Base.pp_barrier b)})
 	   bs
     let isync = Some { barrier = AArch64Base.ISB;pp = "isb";}
  

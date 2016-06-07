@@ -36,7 +36,7 @@ module Make(O:Arch.Config)(V:Constant.S) = struct
   | Symbolic_reg _ -> assert false
   | Internal i -> sprintf "i%i" i
   | _ ->
-      try String.lowercase (Hashtbl.find tab r) with Not_found -> assert false
+      try Misc.lowercase (Hashtbl.find tab r) with Not_found -> assert false
 
   include
       ArchExtra.Make(O)

@@ -42,13 +42,13 @@ module Make
        open Code
        open E
 
-       let pp_com c = String.lowercase (pp_com c)
+       let pp_com c = Misc.lowercase (pp_com c)
        let edge_name = function
          | Po (Same,_,_) -> Some "pos"
          | Po (Diff,_,_) -> Some "po"
-         | Fenced (f,Same,_,_) -> Some (String.lowercase (A.pp_fence f) ^ "s")
-         | Fenced (f,Diff,_,_) -> Some (String.lowercase (A.pp_fence f))
-         | Dp (dp,_,_) -> Some (String.lowercase (A.pp_dp dp))
+         | Fenced (f,Same,_,_) -> Some (Misc.lowercase (A.pp_fence f) ^ "s")
+         | Fenced (f,Diff,_,_) -> Some (Misc.lowercase (A.pp_fence f))
+         | Dp (dp,_,_) -> Some (Misc.lowercase (A.pp_dp dp))
          | Rf Int -> Some "rfi"
          | Ws Int -> Some "wsi"
          | Fr Int -> Some "fri"
@@ -57,19 +57,19 @@ module Make
          | Fr Ext -> Some "fre"
          | Rmw -> Some "rmw"
          | Detour e ->
-             Some (sprintf "det%s" (String.lowercase (pp_extr e)))
+             Some (sprintf "det%s" (Misc.lowercase (pp_extr e)))
          | DetourWs e ->
-             Some (sprintf "det%sw" (String.lowercase (pp_extr e)))
+             Some (sprintf "det%sw" (Misc.lowercase (pp_extr e)))
          | Store -> Some "sto"
          | Leave c -> Some ("["^pp_com c)
          | Back c -> Some (pp_com c^"]")
          | _ -> None
 
-       let plain  = String.lowercase (A.pp_plain)
+       let plain  = Misc.lowercase (A.pp_plain)
 
        let atom_name = function
          | None ->  plain
-         | Some a -> String.lowercase (A.pp_atom a)
+         | Some a -> Misc.lowercase (A.pp_atom a)
 
        let atoms_name a1 a2 = match a1,a2 with
        | None,None -> ""

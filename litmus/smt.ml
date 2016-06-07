@@ -20,7 +20,7 @@ type t = Seq | End | No
 
 let tags = ["none"; "seq" ; "end";]
 
-let parse tag  = match String.lowercase tag with
+let parse tag  = match Misc.lowercase tag with
   | "none" -> Some No
   | "seq" -> Some Seq
   | "end" -> Some End

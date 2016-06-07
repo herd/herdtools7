@@ -99,6 +99,71 @@ let pair_compare cmpx cmpy (x1,y1) (x2,y2) =
   | 0 -> cmpy y1 y2
   | r -> r
 
+(* Avoid String.lowercase warning *)
+let char_lowercase = function
+  | 'A' -> 'a'
+  | 'B' -> 'b'
+  | 'C' -> 'c'
+  | 'D' -> 'd'
+  | 'E' -> 'e'
+  | 'F' -> 'f'
+  | 'G' -> 'g'
+  | 'H' -> 'h'
+  | 'I' -> 'i'
+  | 'J' -> 'j'
+  | 'K' -> 'k'
+  | 'L' -> 'l'
+  | 'M' -> 'm'
+  | 'N' -> 'n'
+  | 'O' -> 'o'
+  | 'P' -> 'p'
+  | 'Q' -> 'q'
+  | 'R' -> 'r'
+  | 'S' -> 's'
+  | 'T' -> 't'
+  | 'U' -> 'u'
+  | 'V' -> 'v'
+  | 'W' -> 'w'
+  | 'X' -> 'x'
+  | 'Y' -> 'y'
+  | 'Z' -> 'z'
+  | c -> c
+
+let char_uppercase = function
+  | 'a' -> 'A'
+  | 'b' -> 'B'
+  | 'c' -> 'C'
+  | 'd' -> 'D'
+  | 'e' -> 'E'
+  | 'f' -> 'F'
+  | 'g' -> 'G'
+  | 'h' -> 'H'
+  | 'i' -> 'I'
+  | 'j' -> 'J'
+  | 'k' -> 'K'
+  | 'l' -> 'L'
+  | 'm' -> 'M'
+  | 'n' -> 'N'
+  | 'o' -> 'O'
+  | 'p' -> 'P'
+  | 'q' -> 'Q'
+  | 'r' -> 'R'
+  | 's' -> 'S'
+  | 't' -> 'T'
+  | 'u' -> 'U'
+  | 'v' -> 'V'
+  | 'w' -> 'W'
+  | 'x' -> 'X'
+  | 'y' -> 'Y'
+  | 'z' -> 'Z'
+  | c -> c
+  
+let lowercase s =
+  let r =
+    Bytes.init (String.length s)
+      (fun k -> char_lowercase (String.unsafe_get s k)) in      
+  Bytes.unsafe_to_string r
+
 (********************)
 (* Position parsing *)
 (********************)

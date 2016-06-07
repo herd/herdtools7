@@ -200,7 +200,7 @@ module Make(V:Constant.S)(O:Arch.Config) =
       {empty_ins with
        memo =
        sprintf "j%s %s"
-         (String.lowercase (pp_condition cond))
+         (Misc.lowercase (pp_condition cond))
          (A.Out.dump_label (tr_lab lbl)) ;
        label=None ; branch=[Next ; Branch lbl]; }
 

@@ -20,7 +20,7 @@ let tags =
   ["spline"; "true"; "line"; "false"; "polyline"; "ortho";
    "curved";"none"]
 
-let parse tag = match String.lowercase tag with
+let parse tag = match Misc.lowercase tag with
 | "spline"|"true" -> Some Spline
 | "line"|"false" -> Some Line
 | "polyline" -> Some Polyline

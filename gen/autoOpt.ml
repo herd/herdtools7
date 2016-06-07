@@ -19,7 +19,7 @@ open Printf
 (* Main mode *)
 type mode = Explo | Conform
 
-let parse_mode s = match String.lowercase s with
+let parse_mode s = match Misc.lowercase s with
 | "explo" -> Some Explo
 | "conform" -> Some Conform
 | _ -> None
@@ -47,7 +47,7 @@ let split_space s =
 let parse_mach s =
 
   let key,v = split_space s in
-  match String.lowercase key with
+  match Misc.lowercase key with
   | "local" -> Some Local
   | "ssh" -> Some (Distant v)
   | ("memevents"|"ppcmem"|"herd") as prog ->
@@ -69,7 +69,7 @@ let pp_mach = function
 
 type interpretation = Single | Multi
 
-let parse_interpretation s = match String.lowercase s with
+let parse_interpretation s = match Misc.lowercase s with
 | "single" -> Some Single
 | "multi" -> Some Multi
 | _ -> None

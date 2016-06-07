@@ -28,7 +28,7 @@ module Make (C:Sem.Config)(V:Value.S)
       ARMBase.fold_barrier_option
         (fun o k ->
           { barrier = ARMBase.DMB o;
-            pp = String.lowercase
+            pp = Misc.lowercase
               (ARMBase.pp_barrier_option "dmb" o);}::k)
         []
 
@@ -36,7 +36,7 @@ module Make (C:Sem.Config)(V:Value.S)
       ARMBase.fold_barrier_option
         (fun o k ->
           { barrier = ARMBase.DSB o;
-            pp = String.lowercase
+            pp = Misc.lowercase
               (ARMBase.pp_barrier_option "dsb" o);}::k)
         dmb
         

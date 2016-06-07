@@ -20,7 +20,7 @@ type t = Dynamic | Static | Before
 
 let tags = ["dynamic"; "static" ; "before"; ]
 
-let parse tag = match String.lowercase tag with
+let parse tag = match Misc.lowercase tag with
 | "dynamic" -> Some Dynamic
 | "static" -> Some  Static
 | "before" -> Some Before

@@ -11,4 +11,13 @@
 
 include String
 
+let unsafe_to_string s = s
+
 let sub_string = sub
+
+let init n f =
+  let r = String.create n in
+  for k = 0 to n-1 do
+    unsafe_set r k (f k)
+  done ;
+  r

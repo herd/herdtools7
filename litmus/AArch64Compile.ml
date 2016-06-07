@@ -69,8 +69,8 @@ module Make(V:Constant.S)(C:Config) =
 
 (* Load and Store *)
 
-    let ldr_memo t = String.lowercase (ldr_memo t)
-    let str_memo t = String.lowercase (str_memo t)
+    let ldr_memo t = Misc.lowercase (ldr_memo t)
+    let str_memo t = Misc.lowercase (str_memo t)
 
     let load memo v rD rA kr = match v,kr with
       | V32,K 0 ->
@@ -231,7 +231,7 @@ module Make(V:Constant.S)(C:Config) =
 
 
     let fence f =
-      { empty_ins with memo=String.lowercase (A.pp_barrier f); }
+      { empty_ins with memo = Misc.lowercase (A.pp_barrier f); }
 
 (* Not that useful *)
     let emit_loop k = assert false

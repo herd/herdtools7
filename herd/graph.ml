@@ -18,7 +18,7 @@ type t = Free | Cluster | Columns
 
 let tags = ["free"; "cluster";"columns";]
 
-let parse tag = match String.lowercase tag with
+let parse tag = match Misc.lowercase tag with
 | "free" -> Some Free
 | "cluster" -> Some Cluster
 | "columns" -> Some Columns

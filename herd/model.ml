@@ -39,7 +39,7 @@ let parse tag =
   if Filename.check_suffix tag ".mdl" || Filename.check_suffix tag ".cat" then
     Some (File tag)
   else
-    match String.lowercase tag with
+    match Misc.lowercase tag with
     | "minimal" -> Some (Minimal false)
     | "uniproc" -> Some (Minimal true)
     | "cav12" -> Some (CAV12 {cord=true; strongst=true;})
@@ -70,7 +70,7 @@ type through =
 
 let tags_through = ["all";"invalid";"none";]
 
-let parse_through tag = match String.lowercase tag with
+let parse_through tag = match Misc.lowercase tag with
 | "all" -> Some ThroughAll
 | "invalid" -> Some ThroughInvalid
 | "none" -> Some ThroughNone

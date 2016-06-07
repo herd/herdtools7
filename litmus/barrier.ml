@@ -21,7 +21,7 @@ type t = User | Pthread | NoBarrier | User2 | TimeBase | UserFence | UserFence2
 
 let tags = ["user";"userfence";"user2";"userfence2";"pthread";"none";"timebase";]
 
-let parse tag = match String.lowercase tag with
+let parse tag = match Misc.lowercase tag with
 | "user" -> Some User
 | "userfence" -> Some UserFence
 | "user2" -> Some User2

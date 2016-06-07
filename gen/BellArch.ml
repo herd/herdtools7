@@ -89,7 +89,7 @@ let pp_annot a = match a with
     | _ ->
         let fst = a.[0] in
         sprintf "%c%s"
-          (Char.uppercase fst)
+          (Misc.char_uppercase fst)
           (String.sub a 1 (len-1))
 (*
     let len = String.length a in

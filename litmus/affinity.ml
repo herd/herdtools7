@@ -29,7 +29,7 @@ let pref_len = String.length incr_pref
 let tags = ["none"; "random"; "custom" ; sprintf "%s<n>" incr_pref; "scan";]
 
 
-let parse tag = match String.lowercase tag with
+let parse tag = match Misc.lowercase tag with
 | "none" -> Some No
 | "random"|"rand" -> Some Random
 | "custom" -> Some Custom

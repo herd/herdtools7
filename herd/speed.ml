@@ -18,7 +18,7 @@ type t = False | True | Fast
 
 let tags = ["false";"true";"fast";]
 
-let parse tag = match String.lowercase tag with
+let parse tag = match Misc.lowercase tag with
 | "false" -> Some False
 | "true" -> Some True
 | "fast" -> Some Fast

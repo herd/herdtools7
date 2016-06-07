@@ -18,7 +18,7 @@ type t = Std | PreSi
 
 let tags = ["std";"presi";]
 
-let parse tag = match String.lowercase tag with
+let parse tag = match Misc.lowercase tag with
 | "std" -> Some Std
 | "presi" -> Some PreSi
 | _ -> None

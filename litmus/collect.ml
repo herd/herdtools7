@@ -20,7 +20,7 @@ type t = Local|After|Both
 
 let tags = ["local";"after";"both";]
 
-let parse tag = match String.lowercase tag with
+let parse tag = match Misc.lowercase tag with
 | "local" -> Some Local
 | "after" -> Some After
 | "both" -> Some Both

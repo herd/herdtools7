@@ -78,6 +78,7 @@ let list_loc prog =
     | Op(_,e1,e2) -> expr (expr s e1) e2
     | Exchange(l,e,_) -> LocSet.add l (expr s e)
     | Fetch(l,_,e,_) -> LocSet.add l (expr s e)
+    | ECall (_,es) -> List.fold_left expr s es
   in 
   let rec ins s = function
     | Seq(l) -> List.fold_left ins s l
@@ -86,7 +87,9 @@ let list_loc prog =
     | Store(l,e,_) -> LocSet.add l (expr s e)
     | Lock l -> LocSet.add l s
     | Unlock l -> LocSet.add l s
-    | _ -> s
+    | PCall (_,es) ->
+        List.fold_left expr s es
+    | Fence _|Symb _ -> s
   in
   LocSet.elements (List.fold_left ins LocSet.empty prog)
 

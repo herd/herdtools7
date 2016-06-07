@@ -20,7 +20,7 @@ type t = C | Shell | XCode
 
 let tags = ["C";"shell";"xcode";]
 
-let parse tag = match String.lowercase tag with
+let parse tag = match Misc.lowercase tag with
 | "c" -> Some C
 | "shell" -> Some Shell
 | "xcode" -> Some XCode

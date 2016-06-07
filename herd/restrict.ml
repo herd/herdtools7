@@ -20,7 +20,7 @@ type t = Observed | NonAmbiguous | No | CondOne
 
 let tags = ["observed"; "nonambiguous"; "condone"; "none"; ]
 
-let parse tag = match String.lowercase tag with
+let parse tag = match Misc.lowercase tag with
 | "none" -> Some No
 | "observed" -> Some Observed
 | "nonambiguous" -> Some NonAmbiguous

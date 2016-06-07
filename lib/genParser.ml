@@ -101,7 +101,7 @@ module Make
 	let prog = Misc.transpose prog in
 	List.combine procs prog 
       with
-      |  Misc.TransposeFailure | Invalid_argument "List.combine" ->
+      |  Misc.TransposeFailure | Invalid_argument _ ->
 	  Warn.fatal "mismatch in instruction lines"
 
 
