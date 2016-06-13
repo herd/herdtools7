@@ -41,18 +41,26 @@ module Make (C:Sem.Config)(V:Value.S)
 
     let mk_read an loc v = Act.Access (Dir.R, loc, v,an)
 					      
-    let read_loc = 
-      M.read_loc (mk_read AArch64.N)
-    let read_reg r ii = 
-      M.read_loc (mk_read AArch64.N) (A.Location_reg (ii.A.proc,r)) ii
+    let read_loc is_data = 
+      M.read_loc is_data (mk_read AArch64.N)
+
+    let read_reg is_data r ii = 
+      M.read_loc is_data (mk_read AArch64.N) (A.Location_reg (ii.A.proc,r)) ii
+
+    let read_reg_ord = read_reg false
+    let read_reg_data = read_reg true
+
     let read_mem a ii  = 
-      M.read_loc (mk_read AArch64.N) (A.Location_global a) ii
+      M.read_loc false (mk_read AArch64.N) (A.Location_global a) ii
+
     let read_mem_acquire a ii  = 
-      M.read_loc (mk_read AArch64.A) (A.Location_global a) ii
+      M.read_loc false (mk_read AArch64.A) (A.Location_global a) ii
+
     let read_mem_atomic a ii = 
-      M.read_loc (mk_read AArch64.X) (A.Location_global a) ii
+      M.read_loc false (mk_read AArch64.X) (A.Location_global a) ii
+
     let read_mem_atomic_acquire a ii = 
-      M.read_loc (mk_read AArch64.XA) (A.Location_global a) ii
+      M.read_loc false (mk_read AArch64.XA) (A.Location_global a) ii
 		 
     let write_loc loc v ii = 
       M.mk_singleton_es (Act.Access (Dir.W, loc, v, AArch64.N)) ii
@@ -97,19 +105,19 @@ module Make (C:Sem.Config)(V:Value.S)
 	     | NE -> is_not_zero
 	     | EQ -> is_zero
 	   in
-	   (read_reg NZP ii) 
+	   (read_reg_ord NZP ii) 
 	   >>= cond
 	   >>= fun v -> commit ii
 	   >>= fun () -> B.bccT v l
 
 	| I_CBZ(_,r,l) -> 
-	   (read_reg r ii)
+	   (read_reg_ord r ii)
 	   >>= is_zero
 	   >>= fun v -> commit ii
 	   >>= fun () -> B.bccT v l
 
 	| I_CBNZ(_,r,l) -> 
-	   (read_reg r ii)
+	   (read_reg_ord r ii)
 	   >>= is_not_zero
 	   >>= fun v -> commit ii
 	   >>= fun () -> B.bccT v l
@@ -118,10 +126,10 @@ module Make (C:Sem.Config)(V:Value.S)
 	| I_LDR(_,rd,rs,kr) ->
 	   begin match kr with
 	   | K k ->
-	      (read_reg rs ii)
+	      (read_reg_ord rs ii)
 	      >>= (fun v -> M.add v (V.intToV k))
 	   | RV(_,r) ->
-	      (read_reg rs ii >>| read_reg r ii)
+	      (read_reg_ord rs ii >>| read_reg_ord r ii)
 	      >>= (fun (v1,v2) -> M.add v1 v2)
 	   end
 	   >>= (fun a -> read_mem a ii)
@@ -129,7 +137,7 @@ module Make (C:Sem.Config)(V:Value.S)
 	   >>! B.Next
 
 	| I_LDAR(_,t,rd,rs) ->
-	   (read_reg rs ii)
+	   (read_reg_ord rs ii)
 	   >>= fun a -> begin match t with
 		 | XX ->
 		    (write_reg ResAddr a ii >>|
@@ -148,24 +156,24 @@ module Make (C:Sem.Config)(V:Value.S)
 	   end
 	
 	| I_STR(_,rs,rd,kr) ->
-	   (read_reg rs ii >>|
+	   (read_reg_data rs ii >>|
 	      match kr with
 	      | K k ->
-		 (read_reg rd ii)
+		 (read_reg_ord rd ii)
 		 >>= (fun v -> M.add v (V.intToV k))
 	      | RV(_,r) ->
-		 (read_reg rd ii >>| read_reg r ii)
+		 (read_reg_ord rd ii >>| read_reg_ord r ii)
 		 >>= (fun (v1,v2) -> M.add v1 v2))
 	   >>= (fun (v,a) -> write_mem a v ii)
 	   >>! B.Next
 
 	| I_STLR(_,rs,rd) -> 
-	   (read_reg rd ii >>| read_reg rs ii)
+	   (read_reg_ord rd ii >>| read_reg_data rs ii)
 	   >>= (fun (a,v) -> write_mem_release a v ii)
 	   >>! B.Next
 	
 	| I_STXR(_,t,rr,rs,rd) -> 
-	   (read_reg rd ii >>| read_reg rs ii >>| read_reg ResAddr ii)
+	   (read_reg_ord rd ii >>| read_reg_data rs ii >>| read_reg_ord ResAddr ii)
 	   >>= (fun ((a,v),res) -> 
 		(write_reg ResAddr V.zero ii
 		 >>| M.altT
@@ -182,15 +190,15 @@ module Make (C:Sem.Config)(V:Value.S)
 	   write_reg r (V.intToV k) ii >>! B.Next
 
 	| I_SXTW(rd,rs) -> 
-	   (read_reg rs ii)
+	   (read_reg_ord rs ii)
 	   >>= fun v -> (write_reg rd v ii)
 	   >>! B.Next
 	
 	| I_OP3(_,op,rd,rn,kr) -> 
-	   (read_reg rn ii >>|
+	   (read_reg_ord rn ii >>|
 	      match kr with
 	      | K k -> M.add V.zero (V.intToV k)
-	      | RV(_,r) -> read_reg r ii
+	      | RV(_,r) -> read_reg_ord r ii
 	   ) >>=
 	     begin match op with
 		   | ADD -> fun (v1,v2) -> M.add v1 v2

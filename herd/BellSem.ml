@@ -40,17 +40,20 @@ module Make (C:Sem.Config)(V:Value.S)
 
     let mk_read ato s loc v = Act.Access (Dir.R, loc, v, ato, s)
 
-    let read_reg ?(stack=[]) r ii = 
+    let read_reg is_data ?(stack=[]) r ii = 
       try 
         let v = List.assoc r stack in (M.unitT v)	
       with Not_found -> 
-        M.read_loc (mk_read false []) (A.Location_reg (ii.A.proc,r)) ii
+        M.read_loc is_data (mk_read false []) (A.Location_reg (ii.A.proc,r)) ii
+
+    let read_reg_ord = read_reg false
+    and read_reg_data = read_reg true
 
     let read_mem a s ii = 
-      M.read_loc (mk_read false s) (A.Location_global a) ii
+      M.read_loc false (mk_read false s) (A.Location_global a) ii
 
     let read_mem_atom a s ii = 
-      M.read_loc (mk_read true s) (A.Location_global a) ii
+      M.read_loc false (mk_read true s) (A.Location_global a) ii
 
 
 (*    let read_mem_atom cop a ii = 
@@ -76,25 +79,26 @@ module Make (C:Sem.Config)(V:Value.S)
     let create_barrier b o ii = 
       M.mk_singleton_es (Act.Barrier(b,o)) ii
 
-    let read_roa ?(stack=[]) roa ii = 
+    let read_roa is_data ?(stack=[]) roa ii = 
       match roa with 
-      | BellBase.Rega r -> read_reg ~stack:stack r ii
+      | BellBase.Rega r -> read_reg is_data ~stack:stack r ii
       | BellBase.Abs a -> (M.unitT (V.maybevToV a))
 
-    let read_roi roi ii = 
+    let read_roi is_data roi ii = 
       match roi with
-      | BellBase.Regi r -> read_reg r ii
+      | BellBase.Regi r -> read_reg is_data r ii
       | BellBase.Imm i -> (M.unitT (V.intToV i))	
 
-    let read_iar ?(stack=[]) roi ii = 
+    let read_iar is_data ?(stack=[]) roi ii = 
       match roi with
-      | BellBase.IAR_roa roa -> read_roa ~stack:stack roa ii
+      | BellBase.IAR_roa roa -> read_roa is_data ~stack:stack roa ii
       | BellBase.IAR_imm i -> (M.unitT (V.intToV i))	
 
     let solve_addr_op ao ii = match ao with
-      | BellBase.Addr_op_atom roa -> read_roa roa ii
-      | BellBase.Addr_op_add(roa,roi) -> (read_roa roa ii >>|
-	  read_roi roi ii) >>= 
+      | BellBase.Addr_op_atom roa -> read_roa false roa ii
+      | BellBase.Addr_op_add(roa,roi) ->
+          (read_roa false roa ii >>|
+	  read_roi false roi ii) >>= 
 	(fun (v1,v2) -> M.op Op.Add v1 v2)
 
     let tr_op ?(stack=[]) ii = function
@@ -108,9 +112,9 @@ module Make (C:Sem.Config)(V:Value.S)
         | BellBase.Eq _ -> Op.Eq 
         | BellBase.Neq _ -> Op.Ne  
       in
-      ((read_iar ~stack:stack x ii) >>| (read_iar ~stack:stack y ii)) >>=
+      ((read_iar false ~stack:stack x ii) >>| (read_iar false ~stack:stack y ii)) >>=
         (fun (v1,v2) -> M.op op v1 v2) 
-      | BellBase.RAI(i) -> (read_iar ~stack:stack i ii) 
+      | BellBase.RAI(i) -> (read_iar false ~stack:stack i ii) 
     
     let tr_mov r op ii = 
       (tr_op ii op) >>= (fun v -> write_reg r v ii) 
@@ -128,7 +132,7 @@ module Make (C:Sem.Config)(V:Value.S)
 	    
 	| BellBase.Pst(addr_op, roi, s) ->
 	  (solve_addr_op addr_op ii >>|
-	      read_roi roi ii) >>=
+	      read_roi true roi ii) >>=
 	    (fun (addr,v) -> write_mem addr v s ii) >>!
 	    B.Next
 
@@ -148,7 +152,7 @@ module Make (C:Sem.Config)(V:Value.S)
           B.Next
 
 	| BellBase.Pbranch(Some r,lbl,_) -> 
-   	  (read_reg r ii) >>=
+   	  (read_reg false r ii) >>=
             (fun v -> commit ii >>= fun () -> B.bccT v lbl)
 
 	| BellBase.Pbranch(None ,lbl,_) ->  B.branchT lbl

@@ -24,7 +24,10 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
   let evt_relevant x =  E.is_mem x || E.is_commit x || E.is_barrier x
 
   let make_procrels is_isync conc =
-      let iico = conc.S.str.E.intra_causality_data
+    let is_data_port =
+      let data_ports = conc.S.str.E.data_ports in
+      fun e -> E.EventSet.mem e data_ports in
+    let iico = conc.S.str.E.intra_causality_data
       and po = U.po_iico conc.S.str
       and rf_regs = U.make_rf_regs conc in
 
@@ -35,15 +38,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
         let r1 =
           E.EventRel.filter (fun (_,e2) -> E.is_mem_load e2) data_dep in
 
-        let is_data (e1,e2) = 
-          if E.is_reg_load_any e1 && E.is_mem_store e2 then begin
-          (* See comments in event.ml, definition of same_subst_value *)
-            E.same_subst_value e1 e2
-          (* JW: I removed the "assert false" in the following line
-             because the assertion fails if a single instruction
-             gives rise to multiple memory accesses (as is the
-             case for a failed CAS in C++11) *)
-	  end else (*assert false*) false in
+        let is_data (e1,e2) = is_data_port e1 && E.is_mem_store e2 in
         let r2 =
           E.EventRel.sequence
             (S.restrict E.is_mem E.is_reg_load_any dd)

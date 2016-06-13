@@ -59,11 +59,12 @@ module type S =
 
     val tooFar : string -> 'a t
 
-    (* read_loc mk_action loc ii:  
+    (* read_loc is_data mk_action loc ii:  
        for each value v that could be read,
        make an event structure comprising a single event with
-       instruction id "ii", and action "mk_action v loc". *)
-    val read_loc : (A.location -> A.V.v -> E.action) -> 
+       instruction id "ii", and action "mk_action v loc".
+       is_data charaterizes the data port of a store *)
+    val read_loc : bool -> (A.location -> A.V.v -> E.action) -> 
 		   A.location -> A.inst_instance_id -> A.V.v t
                        
     (* mk_singleton_es a ii: 

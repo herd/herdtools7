@@ -162,7 +162,9 @@ module type S = sig
       intra_causality_data : EventRel.t ;       (* really a partial order relation *)
       intra_causality_control : EventRel.t ;    (* really a partial order relation *)
       control : EventRel.t ;
+      data_ports : EventSet.t ;
     } 
+
   val procs_of    : event_structure -> A.proc list
   val locs_of     : event_structure -> A.location list
 
@@ -213,8 +215,6 @@ module type S = sig
   val location_compare : event -> event -> int
   val same_location : event -> event -> bool
   val same_value : event -> event -> bool
-(* Value is ==, used for data dependencies *)
-  val same_subst_value : event -> event -> bool
   val is_visible_location : A.location -> bool
 
 
@@ -326,21 +326,6 @@ struct
     let same_value e1 e2 = match value_of e1, value_of e2 with
     | Some v1,Some v2 -> V.compare v1 v2 = 0
     | _,_ -> assert false
-
-(* Used for detecting data dependencies,
-   e1 is a reg load and e2 is a mem store, from the same instruction.
-   As a consequence : values exists and are determined.
-   Physical equality of values implies that e1 is the data port.
-   Converse should hold in the current implementation... *)
-
-    let same_subst_value e1 e2 =
-(*      eprintf "SUBST: %a vs. %a:%!" debug_event e1 debug_event e2 ; *)
-      let r = match read_of e1, written_of e2 with
-      | Some (v1),Some (v2) -> v1 == v2
-      | _,_ -> assert false in
-(*      eprintf "%b\n" r  ; *)
-      r
-
 
     let proc_of e = match e.iiid with
     | Some i -> Some i.A.proc
@@ -479,6 +464,7 @@ struct
 	intra_causality_data : EventRel.t ;   (* really a (partial order) relation *)
 	intra_causality_control : EventRel.t ;(* really a (partial order) relation *)
         control : EventRel.t ;
+        data_ports : EventSet.t ;
       } 
 	  
     let procs_of es = es.procs
@@ -493,6 +479,7 @@ struct
        intra_causality_data = map_rel  es.intra_causality_data ;
        intra_causality_control = map_rel es.intra_causality_control ;
        control = map_rel es.control ;
+       data_ports = map_set es.data_ports ;
      }
 
     let empty =
@@ -500,6 +487,7 @@ struct
 	intra_causality_data = EventRel.empty ;
 	intra_causality_control = EventRel.empty ;
         control = EventRel.empty ;
+        data_ports = EventSet.empty ;
       }
 
       
@@ -627,7 +615,8 @@ let para_comp es1 es2 =
       es1.intra_causality_data es2.intra_causality_data ;
     intra_causality_control = EventRel.union
       es1.intra_causality_control  es2.intra_causality_control ;
-    control = EventRel.union es1.control es2.control; }
+    control = EventRel.union es1.control es2.control;
+    data_ports = EventSet.union es1.data_ports es2.data_ports; }
 
 let (=|=) = check_disjoint para_comp
     
@@ -640,7 +629,8 @@ let (=|=) = check_disjoint para_comp
 	  (EventRel.cartesian (maximals es1) (minimals es2)) ;
         intra_causality_control = EventRel.union
 	  es1.intra_causality_control es2.intra_causality_control ;
-        control = EventRel.union es1.control es2.control; }
+        control = EventRel.union es1.control es2.control;
+        data_ports = EventSet.union es1.data_ports es2.data_ports; }
 
     let (=*$=) = check_disjoint data_comp
 
@@ -653,7 +643,8 @@ let (=|=) = check_disjoint para_comp
 	  (EventRel.union es1.intra_causality_control
 	     es2.intra_causality_control)
 	  (EventRel.cartesian (maximals es1) (minimals es2));
-        control = EventRel.union es1.control es2.control; }
+        control = EventRel.union es1.control es2.control;
+        data_ports = EventSet.union es1.data_ports es2.data_ports; }
 
     let (=**=) = check_disjoint control_comp
 
@@ -745,7 +736,7 @@ let stu rD rEA wEA wM =
     let (+|+) = check_both para_comp
 
 
-    let empty_event_structure = empty
+  let empty_event_structure = empty
 
 (* Instruction control *)
 

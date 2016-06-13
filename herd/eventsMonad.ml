@@ -308,22 +308,24 @@ struct
    and no relation *)
 
       let do_trivial es =
-      	{ E.procs = [] ;
-	  events = es ;
-	  intra_causality_data = E.EventRel.empty ;
-	  intra_causality_control = E.EventRel.empty ;
-          control = E.EventRel.empty ; }
+      	{ E.empty_event_structure with 	E.events = es ; }
 
-      let trivial_event_structure e = do_trivial (E.EventSet.singleton e)
 
-      let read_loc mk_action loc ii =
+      let trivial_event_structure is_data e =
+        let es = E.EventSet.singleton e in
+        let st = do_trivial es in
+        if is_data then
+          { st with E.data_ports = st.E.events; }
+        else st
+
+      let read_loc is_data mk_action loc ii =
 	fun eiid ->
 	  V.fold_over_vals
 	    (fun v (eiid1,acc_inner) ->
 	      (eiid1+1,
 	       Evt.add 
 		 (v, [],
-		  trivial_event_structure
+		  trivial_event_structure is_data
 		    {E.eiid = eiid1 ;
 		     E.iiid = Some ii;
 		     E.action = mk_action loc v })
@@ -334,7 +336,7 @@ struct
 	  (eiid+1,
 	   Evt.singleton
 	     ((), [],
-	      trivial_event_structure
+	      trivial_event_structure false
 		{E.eiid = eiid ;
 		 E.iiid = Some ii;
 		 E.action = a }))
@@ -355,7 +357,7 @@ struct
 	  (eiid+1,
 	   Evt.singleton
 	     ((), eqs,
-	      trivial_event_structure
+	      trivial_event_structure false
 		{E.eiid = eiid ;
 		 E.iiid = Some ii;
 		 E.action = a }))
@@ -406,7 +408,7 @@ struct
 	     (eiid1+1,
 	      Evt.add 
 		(v, [VC.Assign (vstored,VC.Binop (op,v,arg))],
-		 trivial_event_structure
+		 trivial_event_structure false
 		   {E.eiid = eiid1 ;
 		    E.iiid = Some ii;
 		    E.action = mk_action v vstored})

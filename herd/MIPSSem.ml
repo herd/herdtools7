@@ -48,17 +48,18 @@ module Make (C:Sem.Config)(V:Value.S)
 
     let mk_read ato loc v = Act.Access (Dir.R, loc, v, ato)
 					      
-    let read_loc = 
-      M.read_loc (mk_read false)
-    let read_reg r ii = match r with
+    let _read_reg is_data r ii = match r with
     | MIPS.IReg MIPS.R0 -> M.unitT V.zero
     | _ -> 
-        M.read_loc (mk_read false) (A.Location_reg (ii.A.proc,r)) ii
+        M.read_loc is_data (mk_read false) (A.Location_reg (ii.A.proc,r)) ii
+
+    let read_reg_ord = _read_reg false
+    let read_reg_data = _read_reg true
 
     let read_mem a ii  = 
-      M.read_loc (mk_read false) (A.Location_global a) ii
+      M.read_loc false (mk_read false) (A.Location_global a) ii
     let read_mem_atomic a ii = 
-      M.read_loc (mk_read true) (A.Location_global a) ii
+      M.read_loc false (mk_read true) (A.Location_global a) ii
 		 
     let write_loc loc v ii = 
       M.mk_singleton_es (Act.Access (Dir.W, loc, v, false)) ii
@@ -91,23 +92,23 @@ module Make (C:Sem.Config)(V:Value.S)
         | MIPS.LI (r,k) ->
             write_reg r (V.intToV k) ii >>! B.Next
         | MIPS.OP (op,r1,r2,r3) ->
-            (read_reg r2 ii >>|  read_reg r3 ii) >>=
+            (read_reg_ord r2 ii >>|  read_reg_ord r3 ii) >>=
             (fun (v1,v2) -> M.op (tr_op op) v1 v2) >>=
             (fun v -> write_reg r1 v ii) >>! B.Next
         | MIPS.OPI (op,r1,r2,k) ->
-            read_reg r2 ii >>=
+            read_reg_ord r2 ii >>=
             fun v -> M.op (tr_op op) v (V.intToV k) >>=
             fun v -> write_reg r1 v ii >>! B.Next
         | MIPS.B lbl -> B.branchT lbl
         | MIPS.BC (cond,r1,r2,lbl) ->
-            (read_reg r1 ii >>| read_reg r2 ii) >>=
+            (read_reg_ord r1 ii >>| read_reg_ord r2 ii) >>=
             (fun (v1,v2) ->
               M.op
                 (match cond with MIPS.EQ -> Op.Eq | MIPS.NE -> Op.Ne)
                 v1 v2) >>=
             fun v -> commit ii >>= fun () -> B.bccT v lbl
         | MIPS.BCZ (cond,r,lbl) ->
-            read_reg r ii >>=
+            read_reg_ord r ii >>=
             fun v ->
               M.op
                 (match cond with
@@ -118,17 +119,17 @@ module Make (C:Sem.Config)(V:Value.S)
                 v V.zero >>=
               fun v -> commit ii >>= fun () -> B.bccT v lbl
         | MIPS.LW (r1,k,r2) ->
-            read_reg r2 ii >>=
+            read_reg_ord r2 ii >>=
             (fun a -> M.add a (V.intToV k)) >>=
             (fun ea -> read_mem ea ii) >>=
             (fun v -> write_reg r1 v ii) >>! B.Next
         | MIPS.SW (r1,k,r2) ->
-            (read_reg r1 ii >>| read_reg r2 ii) >>=
+            (read_reg_data r1 ii >>| read_reg_ord r2 ii) >>=
             (fun (d,a) ->
               (M.add a (V.intToV k)) >>=
               (fun ea -> write_mem ea d ii)) >>! B.Next
         | MIPS.LL (r1,k,r2) ->
-            read_reg r2 ii >>=
+            read_reg_ord r2 ii >>=
             (fun a ->
               (M.add a (V.intToV k) >>=
                (fun ea ->
@@ -136,7 +137,9 @@ module Make (C:Sem.Config)(V:Value.S)
                  (read_mem_atomic ea ii >>= fun v -> write_reg r1 v ii))))
                 >>! B.Next
         | MIPS.SC (r1,k,r2) ->
-            (read_reg MIPS.RESADDR ii >>| read_reg r1 ii >>| read_reg r2 ii) >>=
+            (read_reg_ord MIPS.RESADDR ii >>|
+            read_reg_data r1 ii >>|
+            read_reg_ord r2 ii) >>=
             (fun ((resa,v),a) ->
               M.add a (V.intToV k) >>=
               (fun ea ->

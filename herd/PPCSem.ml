@@ -45,14 +45,16 @@ module Make (C:Sem.Config)(V:Value.S)
 
     let mk_read ato loc v = Act.Access (Dir.R, loc, v, ato)
 					      
-    let read_loc = 
-      M.read_loc (mk_read false)
-    let read_reg r ii = 
-      M.read_loc (mk_read false) (A.Location_reg (ii.A.proc,r)) ii
+    let _read_reg is_data r ii = 
+      M.read_loc is_data (mk_read false) (A.Location_reg (ii.A.proc,r)) ii
+
+    let read_reg_data = _read_reg true
+    and read_reg_ord = _read_reg false
+
     let read_mem a ii  = 
-      M.read_loc (mk_read false) (A.Location_global a) ii
+      M.read_loc false (mk_read false) (A.Location_global a) ii
     let read_mem_atomic a ii = 
-      M.read_loc (mk_read true) (A.Location_global a) ii
+      M.read_loc false (mk_read true) (A.Location_global a) ii
 		 
     let write_loc loc v ii = 
       M.mk_singleton_es (Act.Access (Dir.W, loc, v, false)) ii
@@ -91,11 +93,11 @@ module Make (C:Sem.Config)(V:Value.S)
     let read_addr a ii = read_mem a ii
     let read_addr_res a ii = read_mem_atomic a ii
 
-    let read_reg_or_zero r ii = match r with
+    let read_reg_or_zero is_data r ii = match r with
     | PPC.Ireg PPC.GPR0 ->
         M.unitT V.zero
     | _ ->
-        read_reg r ii
+        _read_reg is_data r ii
 
 (**********************)
 (* Condition register *)
@@ -113,7 +115,7 @@ module Make (C:Sem.Config)(V:Value.S)
     and ppc_bitreg cr bit = PPC.CRBit (32+4*cr+bit)
 
     let read_flag cr bit ii =
-      read_reg (PPC.CRField cr) ii >>=
+      read_reg_ord (PPC.CRField cr) ii >>=
       M.op1 (Op.ReadBit (caml_bitof bit))
 
           (* Set flags by comparing v1 v2 *)
@@ -146,7 +148,7 @@ module Make (C:Sem.Config)(V:Value.S)
       | PPC.SetCR0 -> true
       | PPC.DontSetCR0 -> false in
       let proc = ii.PPC.proc in
-      ((read_reg rA ii >>| read_reg rB ii) >>=
+      ((read_reg_ord rA ii >>| read_reg_ord rB ii) >>=
        (fun (vA,vB) ->
 	 M.addT (PPC.Location_reg (proc,rD)) (M.op op vA vB)
 	   >>= (fun (l,v) ->
@@ -156,7 +158,7 @@ module Make (C:Sem.Config)(V:Value.S)
         (* operations RD <- RA op im *) 
     let op2regi ii op with_flags rD rA im =
       let proc = ii.PPC.proc in
-      (read_reg rA ii >>=
+      (read_reg_ord rA ii >>=
        (fun vA ->
 	 M.addT (PPC.Location_reg (proc,rD)) (M.op op vA im) >>=
 	 (fun (l,v) ->
@@ -202,7 +204,7 @@ module Make (C:Sem.Config)(V:Value.S)
 (* Hum, maybe of an exageration, 2 read events, against one *)
 	  op3regs ii Op.Or PPC.DontSetCR0 rD rS rS
 	else
-	  read_reg rS ii >>=
+	  read_reg_ord rS ii >>=
 	  fun v -> write_reg rD v ii >>!
 	    B.Next
 (* 2 reg + immediate *)
@@ -236,15 +238,15 @@ module Make (C:Sem.Config)(V:Value.S)
     | PPC.Pbcc(PPC.Ne,lbl) -> bcc_no 0 bit_eq ii lbl
 (* Compare, to result in any cr *)
     | PPC.Pcmpwi (cr,rA,v) ->
-	read_reg rA ii >>=
+	read_reg_ord rA ii >>=
 	fun vA -> flags true cr vA (V.intToV v) ii >>!
 	  B.Next
     | PPC.Pcmpw (cr,rA,rB) ->
-	(read_reg rA ii >>| read_reg rB ii) >>=
+	(read_reg_ord rA ii >>| read_reg_ord rB ii) >>=
 	fun (vA,vB) -> flags true cr vA vB ii >>! B.Next
 (* memory loads/stores *)
     | PPC.Pload((Word|Quad),rD,d,rA) ->
-        read_reg rA ii >>= 
+        read_reg_ord rA ii >>= 
 	fun aA -> 
 	  M.add aA (V.intToV d) >>=
 	  fun a -> 
@@ -253,7 +255,7 @@ module Make (C:Sem.Config)(V:Value.S)
 	      write_reg rD v ii >>!
 	      B.Next
     | PPC.Plwzu (rD,d,rA) ->
-        read_reg rA ii >>=
+        read_reg_ord rA ii >>=
 	fun aA ->
 	  M.add aA (V.intToV d) >>=
 	  (fun a ->
@@ -262,40 +264,40 @@ module Make (C:Sem.Config)(V:Value.S)
               (write_reg rA a ii >>| load) >>! B.Next
             else load >>! B.Next)
     | PPC.Ploadx((Word|Quad),rD,rA,rB) ->
-	(read_reg_or_zero rA ii >>| read_reg rB ii) >>=
+	(read_reg_or_zero false rA ii >>| read_reg_ord rB ii) >>=
 	fun (aA,aB) -> 
 	  M.add aA aB >>=
 	  fun a ->
 	    read_addr a ii >>=
 	    fun v -> write_reg rD v ii >>! B.Next
     | PPC.Pstore((Quad|Word),rS,d,rA) ->
-	(read_reg rS ii >>| read_reg rA ii) >>=
+	(read_reg_data rS ii >>| read_reg_ord rA ii) >>=
 	(fun (vS,aA) -> 
 	  M.add aA (V.intToV d) >>=
 	  fun a -> write_addr a vS ii >>! B.Next)
     | PPC.Pstwu(rS,d,rA) ->
         if rA <> PPC.r0 then
           M.stu
-            (read_reg rS ii)
-            (read_reg rA ii >>= fun a -> M.add a (V.intToV d))
+            (read_reg_data rS ii)
+            (read_reg_ord rA ii >>= fun a -> M.add a (V.intToV d))
             (fun a -> write_reg rA a ii)
             (fun (vS,a) ->  write_addr a vS ii) >>! B.Next
         else
-	(read_reg rS ii >>| read_reg rA ii) >>=
+	(read_reg_data rS ii >>| read_reg_ord rA ii) >>=
 	(fun (vS,aA) ->
 	  M.add aA (V.intToV d) >>=
 	  fun a -> write_addr a vS ii >>! B.Next)
 
     | PPC.Pstorex((Word|Quad),rS,rA,rB) ->
-	(read_reg rS ii
+	(read_reg_data rS ii
 	   >>| (* Enforce right associativity of >>| *)
-	   (read_reg_or_zero rA ii
-              >>| read_reg rB ii)) >>=
+	   (read_reg_or_zero false rA ii
+              >>| read_reg_ord rB ii)) >>=
 	(fun (vS,(aA,aB)) ->
 	  M.add aA aB  >>=
 	  fun a -> write_addr a vS ii >>! B.Next)
     | PPC.Plwarx(rD,rA,rB) ->
-	(read_reg_or_zero rA ii >>| read_reg rB ii) >>=
+	(read_reg_or_zero false rA ii >>| read_reg_ord rB ii) >>=
 	fun (aA,aB) -> 
 	  M.add aA aB >>=
 	  fun a ->
@@ -303,9 +305,9 @@ module Make (C:Sem.Config)(V:Value.S)
 	    (fun v -> write_reg rD v ii >>| write_reg PPC.RES V.one ii >>| write_reg PPC.RESADDR a ii) 
               >>! B.Next
     | PPC.Pstwcx(rS,rA,rB) ->
-	((read_reg rS ii >>| read_reg PPC.RES ii >>| read_reg PPC.RESADDR ii)
+	((read_reg_data rS ii >>| read_reg_ord PPC.RES ii >>| read_reg_ord PPC.RESADDR ii)
 	   >>| (* Enforce right associativity of >>| *)
-	   (read_reg_or_zero rA ii >>| read_reg rB ii)) >>=
+	   (read_reg_or_zero false rA ii >>| read_reg_ord rB ii)) >>=
 	fun (((vS,vR),aR),(aA,aB)) ->
 	  M.add aA aB  >>=
 	  fun a ->

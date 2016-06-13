@@ -43,25 +43,25 @@ module Make (C:Sem.Config)(V : Value.S)
 
     let mk_read ato loc v = Act.Access (Dir.R, loc, v, ato)
 
+    let read_loc is_d = M.read_loc is_d (mk_read false)
+
     let mk_read_choose_atomic loc = mk_read (is_global loc) loc
 
+    let read_reg is_data r ii = 
+      M.read_loc is_data (mk_read false) (A.Location_reg (ii.A.proc,r)) ii
 
-    let read_loc = 
-      M.read_loc (mk_read false)
-    let read_reg r ii = 
-      M.read_loc (mk_read false) (A.Location_reg (ii.A.proc,r)) ii
     let read_mem a ii  = 
-      M.read_loc (mk_read false) (A.Location_global a) ii
+      M.read_loc false (mk_read false) (A.Location_global a) ii
     let read_mem_atomic a ii = 
-      M.read_loc (mk_read true) (A.Location_global a) ii
+      M.read_loc false (mk_read true) (A.Location_global a) ii
 
-    let read_loc_atomic = M.read_loc mk_read_choose_atomic        
+    let read_loc_atomic is_d = M.read_loc is_d mk_read_choose_atomic        
 
-    let read_loc_gen locked loc ii = match loc with
+    let read_loc_gen data locked loc ii = match loc with
     |  A.Location_global _ ->
-        M.read_loc (mk_read locked) loc ii
+        M.read_loc data (mk_read locked) loc ii
     | _ -> 
-        M.read_loc (mk_read false) loc ii
+        M.read_loc data (mk_read false) loc ii
 
 
     let write_loc_gen locked loc v ii = match loc with
@@ -95,13 +95,13 @@ module Make (C:Sem.Config)(V : Value.S)
     | X86.Effaddr_rm32 (X86.Rm32_reg r)->
 	M.unitT (X86.Location_reg (ii.X86.proc,r))
     | X86.Effaddr_rm32 (X86.Rm32_deref r)     ->
-        read_reg r ii >>=
+        read_reg false r ii >>=
 	fun vreg -> M.unitT (X86.Location_global vreg)
     | X86.Effaddr_rm32 (X86.Rm32_abs v)->
 	M.unitT (X86.maybev_to_location v)
 	  
     let rval_ea ea ii =
-      lval_ea ea ii >>=  fun loc -> read_loc loc ii
+      lval_ea ea ii >>=  fun loc -> read_loc true loc ii
 
     let rval_op op ii = match op with
     | X86.Operand_effaddr ea -> rval_ea ea ii
@@ -130,8 +130,8 @@ module Make (C:Sem.Config)(V : Value.S)
     let xchg ea1 ea2 ii =
       (lval_ea ea1 ii >>| lval_ea ea2 ii) >>=
       (fun (l1,l2) ->
-        let r1 = read_loc_atomic l1 ii
-        and r2 = read_loc_atomic l2 ii
+        let r1 = read_loc_atomic true l1 ii
+        and r2 = read_loc_atomic true l2 ii
         and w1 = fun v -> write_loc_atomic l1 v ii
         and w2 = fun v -> write_loc_atomic l2 v ii in
         M.exch r1 r2 w1 w2) >>! B.Next
@@ -145,7 +145,7 @@ module Make (C:Sem.Config)(V : Value.S)
       match ii.A.inst with
     |  X86.I_XOR (ea,op) ->
 	(lval_ea ea ii >>=
-	 fun loc -> M.addT loc (read_loc_gen locked loc ii) >>| rval_op op ii)
+	 fun loc -> M.addT loc (read_loc_gen true locked loc ii) >>| rval_op op ii)
 	  >>=
 	fun ((loc,v_ea),v_op) ->
 	  M.op Op.Xor v_ea v_op >>=
@@ -154,7 +154,7 @@ module Make (C:Sem.Config)(V : Value.S)
 	    write_all_flags v_result V.zero ii) >>! B.Next
     |  X86.I_ADD (ea,op) ->
 	(lval_ea ea ii >>=
-	 fun loc -> M.addT loc (read_loc_gen locked loc ii) >>| rval_op op ii)
+	 fun loc -> M.addT loc (read_loc_gen true locked loc ii) >>| rval_op op ii)
 	  >>=
 	fun ((loc,v_ea),v_op) ->
 	  M.add v_ea v_op >>=
@@ -169,7 +169,7 @@ module Make (C:Sem.Config)(V : Value.S)
 	rval_op op ii >>! B.Next
     |  X86.I_DEC (ea) ->
 	lval_ea ea ii >>=
-	fun loc -> read_loc_gen locked loc ii >>=
+	fun loc -> read_loc_gen true locked loc ii >>=
 	  fun v ->
 	    M.op Op.Sub v V.one >>= 
 	    fun v ->
@@ -178,7 +178,7 @@ module Make (C:Sem.Config)(V : Value.S)
               write_zf v V.zero ii) >>! B.Next
     | X86.I_INC (ea) ->
 	lval_ea ea ii >>=
-	fun loc -> read_loc_gen locked loc ii >>=
+	fun loc -> read_loc_gen true locked loc ii >>=
 	  fun v ->
 	    M.add v V.one >>=
 	    fun v ->
@@ -190,7 +190,7 @@ module Make (C:Sem.Config)(V : Value.S)
 	fun (v_ea,v_op) ->
 	  write_all_flags v_ea v_op ii >>! B.Next
     | X86.I_CMOVC (r,ea) ->
-	read_reg X86.CF ii >>*=
+	read_reg false X86.CF ii >>*=
 	(fun vcf ->
 	  M.choiceT vcf
 	    (rval_ea ea ii >>= fun vea -> write_reg r vea ii >>! B.Next)
@@ -200,42 +200,42 @@ module Make (C:Sem.Config)(V : Value.S)
 (* Conditional branZch, I need to look at doc for
    interpretation of conditions *)
     |  X86.I_JCC (X86.C_LE,lbl) ->
-	read_reg X86.SF ii >>=
+	read_reg false X86.SF ii >>=
         (* control, data ? no event generated after this read anyway *)
 	fun sf -> (* LE simply is the negation of GT, given by sign flag *)
 	  flip_flag sf >>=
 	  fun v -> B.bccT v lbl
     | X86.I_JCC (X86.C_LT,lbl) ->
-	(read_reg X86.ZF ii >>|
-	(read_reg X86.SF ii >>= flip_flag)) >>=
+	(read_reg false X86.ZF ii >>|
+	(read_reg false X86.SF ii >>= flip_flag)) >>=
 	fun (v1,v2) ->
 	  M.op Op.Or v1 v2 >>=
 	  fun v -> B.bccT v lbl
     | X86.I_JCC (X86.C_GE,lbl) ->
-	(read_reg X86.ZF ii >>| read_reg X86.SF ii) >>=
+	(read_reg false X86.ZF ii >>| read_reg false X86.SF ii) >>=
 	fun (v1,v2) ->
 	  M.op Op.Or v1 v2 >>=
 	  fun v -> B.bccT v lbl 
     | X86.I_JCC (X86.C_GT,lbl) ->
-	read_reg X86.SF ii >>=
+	read_reg false X86.SF ii >>=
 	fun v -> B.bccT v lbl 
     | X86.I_JCC (X86.C_EQ,lbl) -> 
-	read_reg X86.ZF ii >>=
+	read_reg false X86.ZF ii >>=
 	fun v -> B.bccT v lbl 
     | X86.I_JCC (X86.C_NE,lbl) -> 
-	read_reg X86.ZF ii >>= flip_flag >>=
+	read_reg false X86.ZF ii >>= flip_flag >>=
 	fun v -> B.bccT v lbl 
     | X86.I_JCC (X86.C_S,lbl) -> 
-	read_reg X86.SF ii >>=
+	read_reg false X86.SF ii >>=
 	fun v -> B.bccT v lbl 
     | X86.I_JCC (X86.C_NS,lbl) -> 
-	read_reg X86.SF ii >>= flip_flag >>=
+	read_reg false X86.SF ii >>= flip_flag >>=
 	fun v -> B.bccT v lbl 
 
     | X86.I_LOCK inst ->
 	build_semantics_inner true {ii with A.inst = inst}
     | X86.I_SETNB (ea) ->
-	(lval_ea ea ii >>| read_reg X86.CF ii) >>=
+	(lval_ea ea ii >>| read_reg false X86.CF ii) >>=
 	fun (loc,cf) ->
 	  flip_flag cf >>=
 	  fun v -> write_loc loc v ii >>! B.Next
