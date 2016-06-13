@@ -1,4 +1,4 @@
-
+  * Add intruction level control dependency (for C).
   * Suppress deprecaton warnings, by writing code in misc...
 7.17
   * More Linux macros

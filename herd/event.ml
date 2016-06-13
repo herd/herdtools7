@@ -158,9 +158,10 @@ module type S = sig
 
   type event_structure = {
       procs : A.proc list ;
-      events : EventSet.t ;                         (* really a set *)
-      intra_causality_data : EventRel.t ;              (* really a partial order relation *)
-      intra_causality_control : EventRel.t ;              (* really a partial order relation *)	  
+      events : EventSet.t ;                     (* really a set *)
+      intra_causality_data : EventRel.t ;       (* really a partial order relation *)
+      intra_causality_control : EventRel.t ;    (* really a partial order relation *)
+      control : EventRel.t ;
     } 
   val procs_of    : event_structure -> A.proc list
   val locs_of     : event_structure -> A.location list
@@ -257,6 +258,10 @@ module type S = sig
       event_structure -> event_structure -> event_structure option      
 
   val empty_event_structure   : event_structure
+
+(* Condition at instruction level *)
+  val cond_comp :
+      event_structure -> event_structure -> event_structure
 
 end
       
@@ -473,6 +478,7 @@ struct
 	events : EventSet.t ;        (* really a set *)
 	intra_causality_data : EventRel.t ;   (* really a (partial order) relation *)
 	intra_causality_control : EventRel.t ;(* really a (partial order) relation *)
+        control : EventRel.t ;
       } 
 	  
     let procs_of es = es.procs
@@ -482,17 +488,18 @@ struct
     let map_event_structure f es =
       let map_rel = EventRel.map (fun (e1,e2) -> f e1,f e2)
       and map_set = EventSet.map f in
-      {
-       procs = es.procs ;
+      { es with
        events = map_set es.events ;
        intra_causality_data = map_rel  es.intra_causality_data ;
        intra_causality_control = map_rel es.intra_causality_control ;
+       control = map_rel es.control ;
      }
 
     let empty =
       { procs = [] ; events = EventSet.empty ;
 	intra_causality_data = EventRel.empty ;
 	intra_causality_control = EventRel.empty ;
+        control = EventRel.empty ;
       }
 
       
@@ -619,7 +626,8 @@ let para_comp es1 es2 =
     intra_causality_data = EventRel.union
       es1.intra_causality_data es2.intra_causality_data ;
     intra_causality_control = EventRel.union
-      es1.intra_causality_control  es2.intra_causality_control ; }
+      es1.intra_causality_control  es2.intra_causality_control ;
+    control = EventRel.union es1.control es2.control; }
 
 let (=|=) = check_disjoint para_comp
     
@@ -632,7 +640,7 @@ let (=|=) = check_disjoint para_comp
 	  (EventRel.cartesian (maximals es1) (minimals es2)) ;
         intra_causality_control = EventRel.union
 	  es1.intra_causality_control es2.intra_causality_control ;
-      }
+        control = EventRel.union es1.control es2.control; }
 
     let (=*$=) = check_disjoint data_comp
 
@@ -645,7 +653,7 @@ let (=|=) = check_disjoint para_comp
 	  (EventRel.union es1.intra_causality_control
 	     es2.intra_causality_control)
 	  (EventRel.cartesian (maximals es1) (minimals es2));
-      }
+        control = EventRel.union es1.control es2.control; }
 
     let (=**=) = check_disjoint control_comp
 
@@ -736,7 +744,14 @@ let stu rD rEA wEA wM =
 (* Parallel composition *)
     let (+|+) = check_both para_comp
 
+
     let empty_event_structure = empty
 
-  end
+(* Instruction control *)
+
+  let cond_comp es1 es2 =
+    let r = para_comp es1 es2 in
+    { r with control =
+      EventRel.union (EventRel.cartesian es1.events es2.events) r.control; }
+end
 

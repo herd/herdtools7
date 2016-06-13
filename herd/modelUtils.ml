@@ -51,14 +51,16 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
                (fun (_,e2 as p) -> E.is_mem_store e2 && not (is_data p))
                iico) in
         E.EventRel.union r1 r2 in
-      let ctrl_one =
+      let ctrl_one = (* For bcc: from commit to event by po *)
         S.restrict E.is_commit_bcc evt_relevant po
-      and ctrl_two =
-        S.restrict E.is_commit_pred evt_relevant (U.iico conc.S.str) in
-      let ctrl = E.EventRel.union ctrl_one ctrl_two in
+      and ctrl_two = (* For predicated instruction from commit to event by iico *)
+        S.restrict E.is_commit_pred evt_relevant (U.iico conc.S.str)
+      and ctrl_three = (* For structured if from event to event by instruction control *)
+        E.EventRel.restrict_codomain evt_relevant conc.S.str.E.control in
+      let ctrl = E.EventRel.union ctrl_one (E.EventRel.union ctrl_two ctrl_three) in
       let ctrl_dep =
         S.restrict E.is_mem_load (fun x -> evt_relevant x)
-          (S.seq dd ctrl) in
+          (S.union (S.seq dd ctrl) ctrl_three) in
       let data_dep = E.EventRel.diff data_dep addr_dep in
       let po =
         S.restrict evt_relevant evt_relevant po in

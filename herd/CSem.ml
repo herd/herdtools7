@@ -33,6 +33,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
     let (>>::) = M.(>>::)
     let (>>!) = M.(>>!)
     let (>>>) = M.(>>>)
+    let (>>>>) = M.(>>>>)
 
     module MOorAN = MemOrderOrAnnot
     let no_mo = MOorAN.AN []
@@ -105,8 +106,8 @@ module Make (Conf:Sem.Config)(V:Value.S)
 	| C.Seq insts -> 
           build_semantics_list insts ii 
 	    
-	| C.If(c,t,Some e) ->
-          build_semantics_expr c ii >>> fun ret ->
+	| C.If(c,t,Some e) ->            
+          build_semantics_expr c ii >>>> fun ret ->
           let ii' = 
             {ii with A.program_order_index = 
 		A.next_po_index ii.A.program_order_index;} 
@@ -194,8 +195,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
       | inst :: insts ->
 	let ii = {ii with A.inst=inst; } in
 	build_semantics ii >>> fun (prog_order, _branch) -> 
-        build_semantics_list insts {ii with 
-	  A.program_order_index = prog_order;}
+        build_semantics_list insts {ii with  A.program_order_index = prog_order;}
 	  
   end
     

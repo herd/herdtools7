@@ -34,15 +34,6 @@ struct
           (A)
 
 
-(* LM: What'a that ??? is  Pervasives.compare adequate here ???
-   module Evt =
-   Set1.Make
-   (struct
-   type 'a t = ('a * VC.cnstrnts * E.event_structure)
-   let compare = Pervasives.compare
-   end)
- *)
-
 (* LM Use lists for polymorphism.
    It is assumed that list elts are pairwise distinct.
 *)
@@ -298,6 +289,21 @@ struct
 	      b_setact (eiid_b,acc)) 
 	  sact (eiid_next,Evt.empty)
 	      
+(* For combining conditions and branches of an if,
+   as above + instruction dependencies *)
+      let (>>>>) s f = fun eiid ->
+	let (eiid_next, sact) = s eiid in
+	Evt.fold
+	  (fun (v1, vcl1, es1) (eiid1,acc) -> 
+	    let b_set = f v1 in
+	    let eiid_b,b_setact = b_set eiid1 in
+	    Evt.fold
+	      (fun (v2,vcl2,es2) (eiid2,acc_inner) ->
+		let es = E.cond_comp es1 es2 in
+		eiid2,Evt.add (v2,vcl2@vcl1,es) acc_inner)
+	      b_setact (eiid_b,acc)) 
+	  sact (eiid_next,Evt.empty)
+	      
 (* trivial event_structure with just one event
    and no relation *)
 
@@ -305,7 +311,8 @@ struct
       	{ E.procs = [] ;
 	  events = es ;
 	  intra_causality_data = E.EventRel.empty ;
-	  intra_causality_control = E.EventRel.empty ; }
+	  intra_causality_control = E.EventRel.empty ;
+          control = E.EventRel.empty ; }
 
       let trivial_event_structure e = do_trivial (E.EventSet.singleton e)
 
