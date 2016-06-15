@@ -138,6 +138,7 @@ module Make
            "data", lazy (Lazy.force pr).S.data;
            "ctrl", lazy (Lazy.force pr).S.ctrl;
            "rf", lazy (Lazy.force pr).S.rf;
+           "control",lazy conc.S.str.E.control ;
            "fromto", lazy conc.S.fromto;
           ] in
       let m =

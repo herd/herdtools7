@@ -115,7 +115,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
 	| C.Seq insts -> 
           build_semantics_list insts ii 
 	    
-	| C.If(c,t,Some e) ->            
+	| C.If(c,t,Some e) ->
           build_semantics_expr false c ii >>>> fun ret ->
           let ii' = 
             {ii with A.program_order_index = 
@@ -126,7 +126,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
           M.choiceT ret then_branch else_branch
  
 	| C.If(c,t,None) ->
-            build_semantics_expr false c ii >>> fun ret ->
+            build_semantics_expr false c ii >>>> fun ret ->
               let ii' = 
                 {ii with A.program_order_index = 
 		 A.next_po_index ii.A.program_order_index;} 

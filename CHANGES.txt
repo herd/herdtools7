@@ -1,3 +1,6 @@
+7.20
+  * C arch, correct stupid bug in control dependencies
+   (forgot if without else....)
 7.19
   * herd/cat : empty check also operates on sets.
   * Litmus: noalign meta information

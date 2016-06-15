@@ -742,7 +742,7 @@ let stu rD rEA wEA wM =
 
   let cond_comp es1 es2 =
     let r = para_comp es1 es2 in
-    { r with control =
-      EventRel.union (EventRel.cartesian es1.events es2.events) r.control; }
+    let control = EventRel.cartesian es1.events es2.events in
+    { r with control =  EventRel.union control r.control; }
 end
 

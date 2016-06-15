@@ -52,7 +52,8 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
         S.restrict E.is_commit_pred evt_relevant (U.iico conc.S.str)
       and ctrl_three = (* For structured if from event to event by instruction control *)
         E.EventRel.restrict_codomain evt_relevant conc.S.str.E.control in
-      let ctrl = E.EventRel.union ctrl_one (E.EventRel.union ctrl_two ctrl_three) in
+      let ctrl =
+        E.EventRel.union ctrl_one (E.EventRel.union ctrl_two ctrl_three) in
       let ctrl_dep =
         S.restrict E.is_mem_load (fun x -> evt_relevant x)
           (S.union (S.seq dd ctrl) ctrl_three) in
