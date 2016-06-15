@@ -1,3 +1,6 @@
+7.19
+  * herd/cat : empty check also operates on sets.
+  * Litmus: noalign meta information
 7.18
   * Add a set of data ports to event structures, in order to separate
     data and address dependencies. Brittle on RMW.

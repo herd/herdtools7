@@ -42,7 +42,7 @@ module type Config = sig
   val contiguous : bool
   val alloc : Alloc.t
   val doublealloc : bool
-  val noalign : Align.t
+  val noalign : Align.t option
   val detached : bool
   val launch : Launch.t
   val affinity : Affinity.t
@@ -166,10 +166,24 @@ end = struct
   let stride = Cfg.stride
   let do_contiguous = Cfg.contiguous
 
-  let do_noalign = match Cfg.noalign with
-  | Align.All -> fun _ -> true
-  | Align.No -> fun _ -> false
-  | Align.Not s -> fun x -> StringSet.mem x s
+  let noalign_info t =
+    try
+      let info = List.assoc "Noalign" t.T.info in
+      match Align.parse info with
+      | Some _ as r -> r
+      | None -> Warn.fatal "Align info parsing failure on '%s'" info
+    with Not_found -> None
+
+  let do_noalign test =
+    let no = match Cfg.noalign with
+    | Some no -> no
+    | None -> match noalign_info test with
+      | None -> Align.No
+      | Some no -> no in
+    match no with
+    | Align.All -> fun _ -> true
+    | Align.No -> fun _ -> false
+    | Align.Not s -> fun x -> StringSet.mem x s
 
 
 
@@ -666,7 +680,7 @@ let user2_barrier_def () =
             O.fi "%s *%s;" pp_t (tag_malloc s) ;
             O.fi "%s *%s;" pp_t s
         | Direct,_,_ ->
-            if do_noalign s then  O.fi "%s *%s;" pp_t (tag_malloc s) ;
+            if do_noalign test s then  O.fi "%s *%s;" pp_t (tag_malloc s) ;
             O.fi "%s%s *%s;" pp_t indirect_star s
         | Indirect,_,_->
             O.fi "%s%s *%s;" pp_t indirect_star s)
@@ -684,7 +698,8 @@ let user2_barrier_def () =
                   O.fi "%s *%s;" pp_t (tag_malloc a) ;
                   O.fi "%s *%s;" pp_t a
               | _,_ ->
-                  if do_noalign b then  O.fi "%s *%s;" pp_t (tag_malloc a) ;
+                  if do_noalign test b then 
+                    O.fi "%s *%s;" pp_t (tag_malloc a) ;
                   O.fi "%s *%s;" pp_t a
               end ;
               if Cfg.cautious then
@@ -1231,7 +1246,7 @@ let user2_barrier_def () =
     let set_or_malloc2 = if do_staticalloc then set_mem_gen "N" else malloc2 in
 
     let align_or_noalign a =
-      if do_noalign a then "do_noalign" else "do_align" in
+      if do_noalign test a then "do_noalign" else "do_align" in
 
     let set_or_malloc3 a =
       let alg = align_or_noalign a in
@@ -1280,7 +1295,7 @@ let user2_barrier_def () =
       List.iter (fun (a,t) -> match memory,t with
       | Direct,Array _ -> set_or_malloc3 a indent a
       | Direct,_ ->
-          (if do_noalign a then set_or_malloc3 a else set_or_malloc)
+          (if do_noalign test a then set_or_malloc3 a else set_or_malloc)
             indent a
       | Indirect,_ -> set_or_malloc indent a)
         test.T.globals ;
@@ -1291,7 +1306,7 @@ let user2_barrier_def () =
             (fun (a,t) -> match t with
             | Array _ -> set_or_malloc3 a indent (sprintf "mem_%s" a)
             | _ ->
-                (if do_noalign a then set_or_malloc3 a else set_or_malloc)
+                (if do_noalign test a then set_or_malloc3 a else set_or_malloc)
                   indent (sprintf "mem_%s" a))
             test.T.globals ;
           ()
@@ -1377,7 +1392,7 @@ let user2_barrier_def () =
           let tag = match t with
           | Array _ -> tag_malloc tag
           | _ ->
-              if do_noalign a then tag_malloc tag else tag in
+              if do_noalign test a then tag_malloc tag else tag in
           nop_or_free indent tag)
         test.T.globals ;
     begin match memory with

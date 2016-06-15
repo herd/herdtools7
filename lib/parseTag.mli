@@ -27,4 +27,6 @@ module Make : functor (O:Opt) -> sig
   val argfun : string -> (string -> bool) ->  (string -> unit)
   val parse_withfun : string -> (O.t -> unit) -> string -> O.t option -> string * Arg.spec * string
   val parse : string -> O.t ref -> string -> string * Arg.spec * string
+  val parse_opt : string -> O.t option ref ->
+    string -> string * Arg.spec * string
 end

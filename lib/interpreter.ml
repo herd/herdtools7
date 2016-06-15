@@ -143,16 +143,6 @@ module Make
     | UndefinedUnless|Flagged -> ok
 
 
-    let test2pred t = match t with
-    | Acyclic -> E.EventRel.is_acyclic
-    | Irreflexive -> E.EventRel.is_irreflexive
-    | TestEmpty -> E.EventRel.is_empty
-
-    let test2pred = function
-      | Yes t -> test2pred t
-      | No t -> fun r -> not (test2pred t r)
-
-
 (* Generic toplogical order generator *)
     let apply_orders es vb kfail kont res =
       try
@@ -558,6 +548,8 @@ module Make
       type env =
           { env : V.env ; silent : bool; ks : ks; }
     end
+
+
     let from_st st = { EV.env=st.env; silent=st.silent; ks=st.ks; }
 
     let set_op env loc t op s1 s2 =
@@ -681,6 +673,21 @@ module Make
     let error_rel silent loc v = error_typ silent loc TRel (type_val v)
 
     let error_events silent loc v = error_typ silent loc TEvents (type_val v)
+
+
+(* Polymorphic empty test *)
+    let test2pred env t e v = match t,v with
+    | Acyclic,Rel r -> E.EventRel.is_acyclic r
+    | Irreflexive,Rel r -> E.EventRel.is_irreflexive r
+    | TestEmpty,Rel r -> E.EventRel.is_empty r
+    | TestEmpty,Set s -> E.EventSet.is_empty s
+    | (Acyclic|Irreflexive),Set _ ->
+        error env.EV.silent (get_loc e) "relation expected"
+    | _,_ -> assert false (* Called on Rel or Set *)
+
+    let test2pred  env t e v = match  t with
+    | Yes t -> test2pred env t e v
+    | No t -> not (test2pred env t e v)
 
 
 (********************************)
@@ -1299,6 +1306,12 @@ module Make
       | Unv -> env.EV.ks.evts
       | _ -> error env.EV.silent (get_loc e) "set expected"
 
+      and eval_rel_set env e = match eval env e with
+      | Rel _ | Set _ as v ->  v
+      | V.Empty -> Rel E.EventRel.empty
+      | Unv -> Rel (Lazy.force env.EV.ks.unv)
+      | _ -> error env.EV.silent (get_loc e) "relation or set expected"
+
       and eval_set_mem env e = match eval env e with
       | Set s -> fun e -> E.EventSet.mem e s
       | V.Empty -> fun _ -> false
@@ -1584,7 +1597,8 @@ module Make
 
 (* Evaluate test -> bool *)
 
-      let eval_test check env t e = check (test2pred t (eval_rel env e)) in
+      let eval_test check env t e =
+        check (test2pred env t e (eval_rel_set env e)) in
 
       let make_eval_test = function
         | None -> fun _env -> true

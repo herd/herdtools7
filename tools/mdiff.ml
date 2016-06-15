@@ -33,6 +33,7 @@ let options =
    "<non-default> be silent");  
   ("-v", Arg.Unit (fun _ -> incr verbose),
    "<non-default> show various diagnostics, repeat to increase verbosity");
+   "
    parse_hexa hexa;
    parse_rename rename;
    parse_select select; parse_names names;
@@ -50,8 +51,8 @@ let act =
   let base =
     try Filename.chop_extension base with Invalid_argument _ -> base in
   match base with
-  | "mdiff" -> Diff
-  | "minter" -> Inter
+  | "mdiff"|"mdiff7" -> Diff
+  | "minter"|"minter7" -> Inter
   | _ -> assert false
 
 let () =

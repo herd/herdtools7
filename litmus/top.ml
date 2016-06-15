@@ -69,7 +69,7 @@ module type CommonConfig = sig
   val smt : int
   val nsockets : int
   val contiguous : bool
-  val noalign : Align.t
+  val noalign : Align.t option
   val syncmacro : int option
   val collect : Collect.t
   val hexa : bool

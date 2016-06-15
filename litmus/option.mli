@@ -76,7 +76,7 @@ val smt : int ref
 val nsockets : int ref
 val alloc : Alloc.t ref
 val doublealloc : bool ref
-val noalign : Align.t ref
+val noalign : Align.t option ref
 val speedcheck : Speedcheck.t ref
 val gcc : string ref
 val c11 : bool ref

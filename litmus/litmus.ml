@@ -124,7 +124,7 @@ let opts =
    argbool "-contiguous" Option.contiguous
    "allocate shared locations as a big chunk of memory" ;
    begin let module P = ParseTag.Make(Align) in
-   P.parse"-noalign" Option.noalign
+   P.parse_opt "-noalign" Option.noalign
      "specify non alignment"  end ;
 (* Premature stop *)
    begin let module P = ParseTag.Make(Speedcheck) in
