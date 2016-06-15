@@ -33,7 +33,6 @@ let options =
    "<non-default> be silent");  
   ("-v", Arg.Unit (fun _ -> incr verbose),
    "<non-default> show various diagnostics, repeat to increase verbosity");
-   "
    parse_hexa hexa;
    parse_rename rename;
    parse_select select; parse_names names;
