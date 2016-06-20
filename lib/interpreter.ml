@@ -1852,6 +1852,7 @@ module Make
             end
         | Latex _ -> kont st res
         | Events (loc,x,es,def) when O.bell ->
+            let x = BellName.tr_compat x in
             if not (StringSet.mem x BellName.all_sets) then
               error st.silent loc
                 "event type %s is not part of legal {%s}\n"

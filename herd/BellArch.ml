@@ -30,6 +30,7 @@ module Make (C:Arch.Config) (V:Value.S) = struct
 	let reg_compare = reg_compare
             
 	type arch_instruction = instruction
+
         let fromto_of_instr ins = match ins with
           | Pfence(Fence(_,Some o)) -> Some o
           | _ -> None

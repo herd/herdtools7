@@ -42,3 +42,7 @@ of memory events, in which case f and b shouldn't be in there?*)
 let all_rels = StringSet.of_list [scopes;]
 let all_orders = StringSet.of_list [scopes;]
 
+
+let tr_compat = function
+  | "CALL" -> f
+  | n -> n

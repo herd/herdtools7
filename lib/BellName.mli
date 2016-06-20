@@ -39,3 +39,5 @@ val call : string
 val all_sets : StringSet.t
 val all_rels : StringSet.t
 val all_orders : StringSet.t
+
+val tr_compat : string -> string

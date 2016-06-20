@@ -225,7 +225,6 @@ end = struct
      "CON", mo_matches MemOrder.Con;
      "A",old_is_atomic;
      "NA",(fun a -> not (old_is_atomic a));
-     "Start", is_fence;
    ]
 
   let arch_fences = []

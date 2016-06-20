@@ -51,7 +51,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
       and ctrl_two = (* For predicated instruction from commit to event by iico *)
         S.restrict E.is_commit_pred evt_relevant (U.iico conc.S.str)
       and ctrl_three = (* For structured if from event to event by instruction control *)
-        E.EventRel.restrict_codomain evt_relevant conc.S.str.E.control in
+        S.restrict E.is_load evt_relevant conc.S.str.E.control in
       let ctrl =
         E.EventRel.union ctrl_one (E.EventRel.union ctrl_two ctrl_three) in
       let ctrl_dep =

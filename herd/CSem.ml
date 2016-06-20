@@ -150,7 +150,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
 	| C.Store(l,e,(MOorAN.AN _ as mo)) -> 
 	  begin
 	    match l with 
-	    | C.Reg r -> Warn.user_error "annoted write to register %s" r
+	    | C.Reg r -> Warn.user_error "annotated write to register %s" r
 	    | C.Mem r -> 
 	      (read_reg false r ii >>| 
 	       build_semantics_expr true e ii) >>= (fun (l,v) ->

@@ -23,7 +23,6 @@ module Make (A : Arch.S) : sig
         Dir.dirn * A.location * A.V.v *
           bool * string list 
     | Barrier of string list * (string list * string list) option
-    | CallStart of string | CallEnd of string
     | Commit
 
   include Action.S with module A = A and type action := action
@@ -40,7 +39,6 @@ end = struct
           bool (* atomicity flag *) * string list
           
     | Barrier of string list * (string list * string list) option
-    | CallStart of string | CallEnd of string
     | Commit
         
 (* I think this is right... *)
@@ -61,8 +59,6 @@ end = struct
       | Some(s1, s2) ->
           Printf.sprintf "f[%s]({%s},{%s})" (BellBase.string_of_annot_list s) (BellBase.string_of_annot_list s1) (BellBase.string_of_annot_list s2)
       )
-  | CallStart name -> Printf.sprintf "start[%s]" name
-  | CallEnd  name -> Printf.sprintf "end[%s]" name
   | Commit -> "Commit"
 
 (* Utility functions to pick out components *)
@@ -160,7 +156,7 @@ end = struct
 	| Some v -> V.ValueSet.singleton v in
 	if V.is_var_determined v then undet_loc
 	else V.ValueSet.add v undet_loc
-    | Barrier _|CallStart _|CallEnd _|Commit -> V.ValueSet.empty
+    | Barrier _|Commit -> V.ValueSet.empty
 
   let simplify_vars_in_action soln a =
     match a with
@@ -168,7 +164,7 @@ end = struct
 	let l' = A.simplify_vars_in_loc soln l in
 	let v' = V.simplify_var soln v in
 	Access (d,l',v',ato,s)
-    | Barrier _ |CallStart _|CallEnd _| Commit -> a
+    | Barrier _ | Commit -> a
 
 (*************************************************************)	      
 (* Add together event structures from different instructions *)
@@ -186,21 +182,12 @@ end = struct
   | Access(_,_,_,_,s)
   | Barrier(s,_) -> (list_contains s st)	
 (*jade: il manque les branches ici; et peut etre les rmw sauf s'ils sont dans Access?*)
-  | CallStart s|CallEnd s -> s=st
   | _ -> false
 
   let pp_isync = ""
   let is_isync _a = false
 
-  let is_start = function
-    | CallStart _ -> true
-    | _ -> false
-
-  and is_end = function
-    | CallEnd _ -> true
-    | _ -> false
-
-  let arch_sets = ["Start",is_start; "End",is_end;"X",is_atomic;]
+  let arch_sets = ["X",is_atomic;]
   let arch_fences = []
       
       

@@ -1,3 +1,6 @@
+7.21
+  * LISA: CALL instructuction reversed to  F instruction. Compatibility
+    mode present.
 7.20
   * C arch, correct stupid bug in control dependencies
    (forgot if without else....)

@@ -72,10 +72,6 @@ module Make (C:Sem.Config)(V:Value.S)
     let commit ii =  M.mk_singleton_es (Act.Commit) ii
 
 
-    let create_call s ii =
-      M.mk_singleton_es (Act.CallStart s) ii >>*=
-      fun () ->  M.mk_singleton_es (Act.CallEnd s) ii
-
     let create_barrier b o ii = 
       M.mk_singleton_es (Act.Barrier(b,o)) ii
 
@@ -139,8 +135,8 @@ module Make (C:Sem.Config)(V:Value.S)
 	| BellBase.Pfence(BellBase.Fence (s,o)) ->
       	  create_barrier s o ii >>! B.Next	  
 
-        | BellBase.Pcall s ->
-            create_call s ii >>! B.Next
+        | BellBase.Pcall _ ->
+            Warn.fatal "Obsolete 'call' instruction in BellSem\n"
 
 	| BellBase.Prmw(r,op,addr_op,s) ->
           (solve_addr_op addr_op ii) >>=
