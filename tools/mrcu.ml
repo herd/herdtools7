@@ -27,6 +27,7 @@ module Top
          val verbose : int
          val outputdir : string option
          val outall : string -> unit
+         val force : bool
        end) =
   struct
 
@@ -113,7 +114,7 @@ module Top
 
 (* Count sync and unlock *)
       let count (syncs,unlocks as c) = function
-        | Pcall "sync" -> syncs+1,unlocks
+        | Pcall "sync"|Pfence (Fence (["sync"],None)) -> syncs+1,unlocks
         | Pfence (Fence (["unlock"],None)) -> syncs,unlocks+1
         | _ -> c
 
@@ -154,7 +155,8 @@ module Top
             end
         | Instruction i ->
             begin match i with
-            | Pcall "sync" ->
+            | Pcall "sync"
+            | Pfence (Fence (["sync"],None)) ->
                 let k = cons_ins fence [] in
 
                 let rec add_reads free i k =
@@ -258,7 +260,11 @@ module Top
             eprintf "%s: nsyncs=%i, nunlock=%i\n" name.Name.name n m ;
           end ;
  (* silent fail if no real rcu *)
-          if n = 0 || m = 0 then raise Misc.Exit ;
+          if O.force then begin
+            if (n = 0 && m = 0) then raise Misc.Exit
+          end else begin
+            if (n = 0 || m = 0) then raise Misc.Exit
+          end ;
           let u = Array.make_matrix n m noreg
           and v = Array.make_matrix m n noreg
           and s = Array.make n noreg
@@ -295,6 +301,7 @@ end
 
 let verbose = ref 0
 let outputdir = ref None
+let force = ref false
 let args = ref []
 
 let opts =
@@ -302,6 +309,8 @@ let opts =
    "-v",Arg.Unit (fun () -> incr verbose), " be verbose";
     "-o", Arg.String (fun s -> outputdir := Some s),
    "<name>  all output in directory <name>";
+   "-force", Arg.Bool (fun b -> force := b),
+   sprintf "<bool> force translation, default %b" !force;
   ]
 
 let () =
@@ -322,6 +331,7 @@ module X =
       let outall = match allchan with
       | None -> fun _ -> ()
       | Some chan -> Printf.fprintf chan "%s\n"
+      let force = !force
     end)
 
 
