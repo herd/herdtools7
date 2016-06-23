@@ -1,3 +1,4 @@
+7.22
   * litmus option -exit true --> exit status reflects final condition success
     or failure.
   * qemu mode for litmus
