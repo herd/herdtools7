@@ -64,6 +64,7 @@ module type Config = sig
   val ascall : bool
   val stdio : bool
   val limit : bool
+  val exit_cond : bool
   include DumpParams.Config
 end
 
@@ -2191,7 +2192,8 @@ let user2_barrier_def () =
       end else
         None in
     UD.postlude doc test affi (mk_dsa test) [] ;
-    O.o "static void run(cmd_t *cmd,cpus_t *def_all_cpus,FILE *out) {" ;
+    O.f "static %s run(cmd_t *cmd,cpus_t *def_all_cpus,FILE *out) {"
+      (if Cfg.exit_cond then "int" else "void") ;
 (* Prelude *)
     if do_vp then O.oi "if (cmd->prelude) prelude(out);" ;
 (* Void cache operation to avoid warnings *)
@@ -2461,9 +2463,15 @@ let user2_barrier_def () =
         O.ox i "}") ;
     O.oi "count_t p_true = hist->n_pos, p_false = hist->n_neg;" ;
 (* Print results *)
-    O.oi "postlude(out,cmd,hist,p_true,p_false,total);" ;
+    let call_post = "postlude(out,cmd,hist,p_true,p_false,total)" in
+    begin if Cfg.exit_cond then
+      O.fi "int cond = %s;"  call_post
+    else
+      O.fi "%s;" call_post
+    end ;
     O.oi "free_hist(hist);" ;
     if do_cores then  O.oi "cpus_free(prm.cm);" ;
+    if Cfg.exit_cond then O.oi "return cond;" ;
     O.o "}" ;
     O.o "" ;
     ()
@@ -2596,11 +2604,19 @@ let user2_barrier_def () =
     O.oi "cmd_t cmd = def;" ;
 (* Parse command line *)
     O.oi "parse_cmd(argc,argv,&def,&cmd);" ;
-    O.fi "run(&cmd,def_all_cpus,%s);" outchan;
+    begin if Cfg.exit_cond then
+      O.fi "int cond = run(&cmd,def_all_cpus,%s);" outchan
+    else
+      O.fi "run(&cmd,def_all_cpus,%s);" outchan
+    end ;
     if alloc_def_all_cpus then begin
       O.oi "if (def_all_cpus != cmd.aff_cpus) cpus_free(def_all_cpus);"
     end ;
-    O.oi "return  EXIT_SUCCESS;" ;
+    begin if Cfg.exit_cond then
+      O.oi "return cond ? EXIT_SUCCESS : EXIT_FAILURE;"
+    else
+      O.oi "return EXIT_SUCCESS;"
+    end ;
     O.o "}" ;
     ()
 

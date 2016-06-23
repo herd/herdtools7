@@ -47,6 +47,7 @@ module type CommonConfig = sig
   val affinity : Affinity.t
   val targetos : TargetOS.t
   val is_out : bool
+  val exit_cond : bool
   val sleep : int
   val driver : Driver.t
   val crossrun : Crossrun.t

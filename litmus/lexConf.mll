@@ -205,7 +205,10 @@ rule main = parse
    { set_kinds arg ; main lexbuf }
 | "conds" arg
    { set_conds arg ; main lexbuf }
-
+| "sleep" arg
+   { set_int sleep arg ; main lexbuf }
+| "exit" arg
+   { set_bool exit_cond arg ; main lexbuf }
 | [^'\n']* as lxm '\n'?
   { raise (Error (sprintf "format: %s" lxm)) }
 {

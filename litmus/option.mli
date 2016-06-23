@@ -102,6 +102,7 @@ val conds : string list ref
 val set_conds : string -> unit
 val nstates : string list ref
 val set_nstates : string -> unit
+val exit_cond : bool ref
 val sleep : int ref
 val isync : bool ref
 val syncconst : int

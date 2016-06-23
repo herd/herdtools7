@@ -173,6 +173,7 @@ let opts =
 (* Misc *)
 (********)
    argint "-sleep" Option.sleep "sleep n seconds between tests" ;
+   argbool "-exit" Option.exit_cond "exit status reflects final condition success or failure" ;
    argkm_withfun "-loop" set_timeloop
      "<n> insert assembly code in a loop of size <n>" ;
    argbool "-kind" Option.kind "show kind information in output" ;
@@ -292,6 +293,7 @@ let () =
       let crossrun = !crossrun
       let adbdir = !adbdir
       let driver = !driver
+      let exit_cond = !exit_cond
       let sleep = !sleep
       let is_out = is_out ()
       let targetos = !targetos

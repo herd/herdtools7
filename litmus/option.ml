@@ -152,6 +152,7 @@ let conds = ref []
 let set_conds s = conds := !conds @ [s]
 let nstates = ref []
 let set_nstates s = nstates := !nstates @ [s]
+let exit_cond = ref false
 let sleep = ref 0
 let isync = ref false
 let syncconst = 128

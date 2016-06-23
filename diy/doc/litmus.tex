@@ -1732,6 +1732,12 @@ Time SB+SC 0.48
 \end{verbatim}
 One sees that the test name and final condition have changed.
 
+\paragraph*{Miscellaneous\label{misc}}
+\begin{description}
+\item[{\tt -sleep <n>}] Insert a delay of $n$ seconds between each individual test run.
+\item[{\tt -exit <bool>}] Exit status of each individual test executable reflects the final condition success or failure, default \texttt{false} (test exit status always is success in absence  of errors).
+\end{description}
+
 \subsection*{\aname{config:sec}{Configuration} files}
 The syntax of configuration files is minimal:
 lines ``\textit{key} \texttt{=} \textit{arg}'' are interpreted

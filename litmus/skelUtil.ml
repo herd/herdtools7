@@ -20,6 +20,7 @@ module type Config = sig
   val mode : Mode.t
   val kind : bool
   val hexa : bool
+  val exit_cond : bool
 end
 
 type stat =
@@ -277,15 +278,16 @@ module Make
           EPF.fi "Histogram (%i states)\n" [nstates]
 
         let cstring s = sprintf "%S" s
-
+            
         let postlude doc test affi show_topos stats =
+          let t = if Cfg.exit_cond then "int" else "void" in
           O.o "#define ENOUGH 10" ;
           O.o "" ;
           begin match Cfg.mode with
           | Mode.Std ->
-              O.o "static void postlude(FILE *out,cmd_t *cmd,hist_t *hist,count_t p_true,count_t p_false,tsc_t total) {"
+              O.f "static %s postlude(FILE *out,cmd_t *cmd,hist_t *hist,count_t p_true,count_t p_false,tsc_t total) {" t
           | Mode.PreSi ->
-              O.o "static void postlude(FILE *out,global_t *g,count_t p_true,count_t p_false,tsc_t total) {" ;
+              O.f "static %s postlude(FILE *out,global_t *g,count_t p_true,count_t p_false,tsc_t total) {" t ;
               O.oi "hash_t *hash = &g->hash ;"
           end ;
 (* Print header *)
@@ -325,7 +327,7 @@ module Make
               | NotExistsState _|ForallStates _ -> "p_true")] ;
             EPF.fi
               (sprintf "Condition %s is %%svalidated\n" (pp_cond test c))
-              [sprintf "%s ? \"\" : \"NOT \"" to_check;] ;
+              [sprintf "%s ? \"\" : \"NOT \"" "cond" ;] ;
           end else begin
             EPF.fi
             (sprintf "\nCondition %s\n" (pp_cond test c)) []
@@ -454,6 +456,7 @@ module Make
           let fmt = sprintf "Time %s %%f\n"  doc.Name.name in
           EPF.fi fmt ["total / 1000000.0"] ;
           O.oi "fflush(out);" ;
+          if Cfg.exit_cond then O.oi "return cond;" ;
           O.o "}" ;
           O.o "" ;
           ()

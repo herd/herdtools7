@@ -39,6 +39,7 @@ module type Config = sig
   val stdio : bool
   val pldw : bool
   val cacheflush : bool
+  val exit_cond : bool
   include DumpParams.Config
 end
 
@@ -83,6 +84,7 @@ module Make
         let mode = Cfg.mode
         let kind = Cfg.kind
         let hexa = Cfg.hexa
+        let exit_cond = Cfg.exit_cond
       end
       module U = SkelUtil.Make(UCfg)(P)(A)(T)
       module UD = U.Dump(O)(EPF)
@@ -721,14 +723,6 @@ let dump_loc_tag = function
           if proc <> 0 then
             O.fii "_delay += (_p->d%i - (NSTEPS-1)/2)*STEP;" proc
         end ;
-(* --->>> before switch..
-        (* Define locations *)
-        List.iter
-          (fun a ->
-            let t =  SkelUtil.dump_global_type a (find_addr_type a env) in
-            O.fii "%s volatile *%s = (%s *)_vars->%s;" t a t a)
-          (vars@addrs) ;
-*)
         (* Initialize them*)
         List.iter
           (fun a ->
