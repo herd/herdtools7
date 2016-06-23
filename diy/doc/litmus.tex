@@ -1424,9 +1424,9 @@ will launch the tests.
 %(see Sec.~\ref{driverc:example} for an example).
 Finally, the \opt{XCode} mode is for inclusion of the tests into
 a dedicated iOS App, which we do not distribute at the moment.
-\item[{\tt -crossrun <(user@)?host(:port)?|adb>}]
+\item[{\tt -crossrun <(user@)?host(:port)?|adb|qemu>}]
 When the shell driver is used (\opt{-driver shell} above),
-\aname{crossrun}{instruct}
+the first two possible arguments \aname{crossrun}{instruct}
 the \texttt{run.sh} script to run individual tests on a remote machine.
 The remote host can be contacted by the means of \texttt{ssh}
 or the Android Debug Bridge.
@@ -1442,6 +1442,11 @@ This option may be useful when the tested machine has little disk space or a
 crippled installation.
 Default is disabled --- \emph{i.e.} run tests on
 the machine where the \file{run.sh} script runs.
+
+The argument \opt{qemu} instruct the shell script to use the \texttt{qemu}
+emulator. The \texttt{QEMU} environment variable must be defined to the
+emulator path before running the \texttt{run.sh} script, as in (\texttt{sh} syntax): \verb+QEMU=qemu sh run.sh+.
+
 
 \item[{\tt -index <@name>}] Save the source names of compiled files in index
 file~\file{@name}.

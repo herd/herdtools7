@@ -21,6 +21,7 @@ type addr ={ host : string ; port : int option ; }
 
 type t =
   | Host of addr
+  | Qemu
   | Adb
   | No
 

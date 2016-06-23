@@ -1,3 +1,6 @@
+  * qemu mode for litmus
+  * add  -force option to mrcu forces translation in all conditions.
+  * handle the CALL[sync] -> f[sync] change un mrcu
 7.21
   * LISA: CALL instructuction reversed to  F instruction. Compatibility
     mode present.
