@@ -187,7 +187,7 @@ end = struct
   let pp_isync = ""
   let is_isync _a = false
 
-  let arch_sets = ["X",is_atomic;]
+  let arch_sets = ["X",is_atomic;"RMW",is_atomic;]
   let arch_fences = []
       
       
