@@ -58,14 +58,15 @@ extract ()
   TO=$2
   TOD=$(dirname $TO)
   TOB=$(basename $TO)
-  ( cd $DIR/../$FROMD && svn export $FROMB $EXPORT/$TO ) && \
-  ( cd $EXPORT && \
-  if test -f $TO/.unreleased
+  ( cd $DIR/../$FROMD && git archive --format=tar HEAD $FROMB ) | \
+  ( cd $EXPORT && mkdir -p $TOD && cd $TOD && tar xmf - && \
+  ( mv $FROMB $TOB 2> /dev/null || true ) &&
+  if test -f $TOB/.unreleased
   then
-    for f in $(cat $TO/.unreleased)
+    for f in $(cat $TOB/.unreleased)
     do
-      /bin/rm -rf $TO/$f
+      /bin/rm -rf $TOB/$f
     done
-    /bin/rm -f  $TO/.unreleased
+    /bin/rm -f  $TOB/.unreleased
   fi )
 }
