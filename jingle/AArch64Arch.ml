@@ -100,6 +100,7 @@ include Arch.MakeArch(struct
     | I_SXTW(r1,r2) -> I_SXTW(conv_reg r1,conv_reg r2)
     | I_STXR(a,b,r1,r2,r3) -> I_STXR(a,b,conv_reg r1,conv_reg r2,conv_reg r3)
     | I_LDR(a,r1,r2,kr) -> I_LDR(a,conv_reg r1,conv_reg r2,expl_kr kr)
+    | I_LDP(a,r1,r2,r3,kr) -> I_LDR(a,conv_reg r1,conv_reg r2,conv_reg r3,expl_kr kr)
     | I_LDRBH(a,r1,r2,kr) -> I_LDRBH(a,conv_reg r1,conv_reg r2,expl_kr kr)
     | I_STR(a,r1,r2,kr) -> I_STR(a,conv_reg r1,conv_reg r2,expl_kr kr)
     | I_STRBH(a,r1,r2,kr) -> I_STRBH(a,conv_reg r1,conv_reg r2,expl_kr kr)

@@ -31,6 +31,7 @@ let check_name name = match name with
 | "cbnz"  | "CBNZ" -> CBNZ
 (* Memory *)
 | "ldr"|"LDR" -> LDR
+| "ldp"|"LDP" -> LDP
 | "ldrb"|"LDRB" -> LDRB
 | "ldrh"|"LDRH" -> LDRH
 | "ldar"|"LDAR" -> LDAR

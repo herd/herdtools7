@@ -209,9 +209,6 @@ end = struct
      | _ -> false
 
 (* Architecture-specific sets *)
-  let is_fence = function
-    | Fence _ -> true
-    | _ -> false
 
    let arch_sets = [
      "RMW", is_rmw;

@@ -117,6 +117,51 @@ module Make(V:Constant.S)(C:Config) =
             reg_env=[rA,voidstar;rB,word;rD,quad;]; }
       | V32,RV (V64,_) -> assert false
 
+    let load_pair memo v rD1 rD2 rA kr = match v,kr with
+      | V32,K 0 ->
+          { empty_ins with
+            memo= sprintf "%s ^wo0,^wo1,[^i0]" memo;
+            inputs=[rA];
+            outputs=[rD1;rD2;];
+            reg_env=[(rA,voidstar);(rD1,word);(rD2,word);]; }
+      | V32,K k ->
+          { empty_ins with
+            memo= sprintf "%s ^wo0,^wo1,[^i0,#%i]" memo k;
+            inputs=[rA];
+            outputs=[rD1;rD2;];
+            reg_env=[(rA,voidstar);(rD1,word);(rD2,word);];}
+      | V32,RV (V32,rB) ->
+          { empty_ins with
+            memo=memo^ " ^wo0,^wo1,[^i0,^wi1,sxtw]";
+            inputs=[rA; rB];
+            outputs=[rD1;rD2;];
+            reg_env=[(rA,voidstar); (rB,word); (rD1,word);(rD2,word);]; }
+      | V64,K 0 ->
+          { empty_ins with
+            memo=memo ^ sprintf " ^o0,^o1,[^i0]";
+            inputs=[rA];
+            outputs=[rD1;rD2;];
+            reg_env=[rA,voidstar;(rD1,quad);(rD2,quad);]; }
+      | V64,K k ->
+          { empty_ins with
+            memo=memo ^ sprintf " ^o0,^o1,[^i0,#%i]" k;
+            inputs=[rA];
+            outputs=[rD1;rD2;];
+            reg_env=[rA,voidstar; (rD1,quad);(rD2,quad);]; }
+      | V64,RV (V64,rB) ->
+          { empty_ins with
+            memo=memo^ " ^o0,^o1,[^i0,^i1]";
+            inputs=[rA; rB];
+            outputs=[rD1;rD2;];
+            reg_env=[rA,voidstar;rB,quad;(rD1,quad);(rD2,quad)]; }
+      | V64,RV (V32,rB) ->
+          { empty_ins with
+            memo=memo^ " ^o0,^o1,[^i0,^wi1,sxtw]";
+            inputs=[rA; rB];
+            outputs=[rD1;rD2;];
+            reg_env=[rA,voidstar;rB,word;(rD1,quad);(rD2,quad);]; }
+      | V32,RV (V64,_) -> assert false
+
     let store memo v rA rB kr = match v,kr with
       | V32,K 0 ->
           { empty_ins with
@@ -244,6 +289,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_CBNZ (v,r,lbl) -> cbz tr_lab "cbnz" v r lbl::k
 (* Load and Store *)
     | I_LDR (v,r1,r2,kr) -> load "ldr" v r1 r2 kr::k
+    | I_LDP (v,r1,r2,r3,kr) -> load_pair "ldp" v r1 r2 r3 kr::k
     | I_LDRBH (B,r1,r2,kr) -> load "ldrb" V32 r1 r2 kr::k
     | I_LDRBH (H,r1,r2,kr) -> load "ldrh" V32 r1 r2 kr::k
     | I_LDAR (v,t,r1,r2) -> load (ldr_memo t) v r1 r2 k0::k

@@ -35,7 +35,7 @@ open AArch64Base
 
 /* Instructions */
 %token B BEQ BNE CBZ CBNZ
-%token LDR LDRB LDRH STR STRB STRH LDAR LDXR LDAXR STLR STXR STLXR CMP
+%token LDR LDP LDRB LDRH STR STRB STRH LDAR LDXR LDAXR STLR STXR STLXR CMP
 %token MOV ADD EOR SUBS
 %token DMB DSB ISB
 %token SY ST LD
@@ -126,6 +126,10 @@ instr:
 /* Memory */
 | LDR reg COMMA LBRK xreg kr0 RBRK
   { let v,r = $2 in I_LDR (v,r,$5,$6) }
+| LDP wreg COMMA wreg COMMA LBRK xreg kr0 RBRK
+  { I_LDP (V32,$2,$4,$7,$8) }
+| LDP xreg COMMA xreg COMMA LBRK xreg kr0 RBRK
+  { I_LDP (V64,$2,$4,$7,$8) }
 | LDRB wreg COMMA LBRK xreg kr0 RBRK
   { I_LDRBH (B,$2,$5,$6) }
 | LDRH wreg COMMA LBRK xreg kr0 RBRK
