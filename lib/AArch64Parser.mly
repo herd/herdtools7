@@ -35,7 +35,7 @@ open AArch64Base
 
 /* Instructions */
 %token B BEQ BNE CBZ CBNZ
-%token LDR LDP LDRB LDRH STR STRB STRH LDAR LDXR LDAXR STLR STXR STLXR CMP
+%token LDR LDP LDNP LDRB LDRH STR STRB STRH LDAR LDXR LDAXR STLR STXR STLXR CMP
 %token MOV ADD EOR SUBS
 %token DMB DSB ISB
 %token SY ST LD
@@ -116,6 +116,12 @@ kwr:
 | k { K $1 }
 | wreg { RV (V32,$1) }
 
+ldp_instr:
+| LDP
+  { (fun v r1 r2 r3 kr -> I_LDP (T,v,r1,r2,r3,kr)) }
+| LDNP
+  { (fun v r1 r2 r3 kr -> I_LDP (N,v,r1,r2,r3,kr)) }
+
 instr:
 /* Branch */
 | B NAME { I_B $2 }
@@ -126,10 +132,10 @@ instr:
 /* Memory */
 | LDR reg COMMA LBRK xreg kr0 RBRK
   { let v,r = $2 in I_LDR (v,r,$5,$6) }
-| LDP wreg COMMA wreg COMMA LBRK xreg kr0 RBRK
-  { I_LDP (V32,$2,$4,$7,$8) }
-| LDP xreg COMMA xreg COMMA LBRK xreg kr0 RBRK
-  { I_LDP (V64,$2,$4,$7,$8) }
+| ldp_instr wreg COMMA wreg COMMA LBRK xreg kr0 RBRK
+  { $1 V32 $2 $4 $7 $8 }
+| ldp_instr xreg COMMA xreg COMMA LBRK xreg kr0 RBRK
+  { $1 V64 $2 $4 $7 $8 }
 | LDRB wreg COMMA LBRK xreg kr0 RBRK
   { I_LDRBH (B,$2,$5,$6) }
 | LDRH wreg COMMA LBRK xreg kr0 RBRK

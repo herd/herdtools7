@@ -234,6 +234,7 @@ let pp_bh = function
   | B -> "B"
   | H -> "H"
 
+type temporal = T | N
 
 type 'k kinstruction =
 (* Branches *)
@@ -243,7 +244,7 @@ type 'k kinstruction =
   | I_CBNZ of variant * reg * lbl
 (* Load and Store *)
   | I_LDR of variant * reg * reg * 'k kr
-  | I_LDP of variant * reg * reg * reg * 'k kr
+  | I_LDP of temporal * variant * reg * reg * reg * 'k kr
   | I_LDAR of variant * ld_type * reg * reg
   | I_STR of variant * reg * reg * 'k kr
   | I_STLR of variant * reg * reg
@@ -350,8 +351,8 @@ let do_pp_instruction m =
 (* Load and Store *)
   | I_LDR (v,r1,r2,k) ->
       pp_mem "LDR" v r1 r2 k
-  | I_LDP (v,r1,r2,r3,k) ->
-      pp_memp "LDP" v r1 r2 r3 k
+  | I_LDP (t,v,r1,r2,r3,k) ->
+      pp_memp (match t with T -> "LDP" | N -> "LDNP") v r1 r2 r3 k
   | I_LDAR (v,t,r1,r2) ->
       pp_mem (ldr_memo t) v r1 r2 k0
   | I_STR (v,r1,r2,k) ->
@@ -419,7 +420,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_OP3 (_,_,r1,r2,kr)
   | I_LDRBH (_,r1,r2,kr) | I_STRBH (_,r1,r2,kr)
     -> fold_reg r1 (fold_reg r2 (fold_kr kr c))
-  | I_STXR (_,_,r1,r2,r3) | I_LDP (_,r1,r2,r3,_)
+  | I_STXR (_,_,r1,r2,r3) | I_LDP (_,_,r1,r2,r3,_)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
 
 
@@ -447,8 +448,8 @@ let map_regs f_reg f_symb =
 (* Load and Store *)
   | I_LDR (v,r1,r2,kr) ->
      I_LDR (v,map_reg r1,map_reg r2,map_kr kr)
-  | I_LDP (v,r1,r2,r3,kr) ->
-     I_LDP (v,map_reg r1,map_reg r2,map_reg r3,map_kr kr)
+  | I_LDP (t,v,r1,r2,r3,kr) ->
+     I_LDP (t,v,map_reg r1,map_reg r2,map_reg r3,map_kr kr)
   | I_LDAR (t,v,r1,r2) ->
      I_LDAR (t,v,map_reg r1,map_reg r2)
   | I_STR (v,r1,r2,k) ->
@@ -524,7 +525,7 @@ include Pseudo.Make
         | I_FENCE _
             as keep -> keep
         | I_LDR (v,r1,r2,kr) -> I_LDR (v,r1,r2,kr_tr kr)
-        | I_LDP (v,r1,r2,r3,kr) -> I_LDP (v,r1,r2,r3,kr_tr kr)
+        | I_LDP (t,v,r1,r2,r3,kr) -> I_LDP (t,v,r1,r2,r3,kr_tr kr)
         | I_STR (v,r1,r2,kr) -> I_STR (v,r1,r2,kr_tr kr)
         | I_LDRBH (v,r1,r2,kr) -> I_LDRBH (v,r1,r2,kr_tr kr)
         | I_STRBH (v,r1,r2,kr) -> I_STRBH (v,r1,r2,kr_tr kr)

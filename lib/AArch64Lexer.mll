@@ -32,6 +32,7 @@ let check_name name = match name with
 (* Memory *)
 | "ldr"|"LDR" -> LDR
 | "ldp"|"LDP" -> LDP
+| "ldnp"|"LDNP" -> LDP
 | "ldrb"|"LDRB" -> LDRB
 | "ldrh"|"LDRH" -> LDRH
 | "ldar"|"LDAR" -> LDAR

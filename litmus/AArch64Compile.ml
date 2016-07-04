@@ -289,7 +289,8 @@ module Make(V:Constant.S)(C:Config) =
     | I_CBNZ (v,r,lbl) -> cbz tr_lab "cbnz" v r lbl::k
 (* Load and Store *)
     | I_LDR (v,r1,r2,kr) -> load "ldr" v r1 r2 kr::k
-    | I_LDP (v,r1,r2,r3,kr) -> load_pair "ldp" v r1 r2 r3 kr::k
+    | I_LDP (t,v,r1,r2,r3,kr) ->
+        load_pair (match t with T -> "ldp" | N -> "ldnp") v r1 r2 r3 kr::k
     | I_LDRBH (B,r1,r2,kr) -> load "ldrb" V32 r1 r2 kr::k
     | I_LDRBH (H,r1,r2,kr) -> load "ldrh" V32 r1 r2 kr::k
     | I_LDAR (v,t,r1,r2) -> load (ldr_memo t) v r1 r2 k0::k
