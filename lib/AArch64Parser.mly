@@ -35,7 +35,7 @@ open AArch64Base
 
 /* Instructions */
 %token B BEQ BNE CBZ CBNZ
-%token LDR LDP LDNP LDRB LDRH STR STRB STRH LDAR LDXR LDAXR STLR STXR STLXR CMP
+%token LDR LDP LDNP STP STNP LDRB LDRH STR STRB STRH LDAR LDXR LDAXR STLR STXR STLXR CMP
 %token MOV ADD EOR SUBS
 %token DMB DSB ISB
 %token SY ST LD
@@ -118,9 +118,15 @@ kwr:
 
 ldp_instr:
 | LDP
-  { (fun v r1 r2 r3 kr -> I_LDP (T,v,r1,r2,r3,kr)) }
+  { (fun v r1 r2 r3 kr -> I_LDP (TT,v,r1,r2,r3,kr)) }
 | LDNP
-  { (fun v r1 r2 r3 kr -> I_LDP (N,v,r1,r2,r3,kr)) }
+  { (fun v r1 r2 r3 kr -> I_LDP (NT,v,r1,r2,r3,kr)) }
+
+stp_instr:
+| STP
+  { (fun v r1 r2 r3 kr -> I_STP (TT,v,r1,r2,r3,kr)) }
+| STNP
+  { (fun v r1 r2 r3 kr -> I_STP (NT,v,r1,r2,r3,kr)) }
 
 instr:
 /* Branch */
@@ -135,6 +141,10 @@ instr:
 | ldp_instr wreg COMMA wreg COMMA LBRK xreg kr0 RBRK
   { $1 V32 $2 $4 $7 $8 }
 | ldp_instr xreg COMMA xreg COMMA LBRK xreg kr0 RBRK
+  { $1 V64 $2 $4 $7 $8 }
+| stp_instr wreg COMMA wreg COMMA LBRK xreg kr0 RBRK
+  { $1 V32 $2 $4 $7 $8 }
+| stp_instr xreg COMMA xreg COMMA LBRK xreg kr0 RBRK
   { $1 V64 $2 $4 $7 $8 }
 | LDRB wreg COMMA LBRK xreg kr0 RBRK
   { I_LDRBH (B,$2,$5,$6) }

@@ -234,7 +234,7 @@ let pp_bh = function
   | B -> "B"
   | H -> "H"
 
-type temporal = T | N
+type temporal = TT | NT
 
 type 'k kinstruction =
 (* Branches *)
@@ -245,6 +245,7 @@ type 'k kinstruction =
 (* Load and Store *)
   | I_LDR of variant * reg * reg * 'k kr
   | I_LDP of temporal * variant * reg * reg * reg * 'k kr
+  | I_STP of temporal * variant * reg * reg * reg * 'k kr
   | I_LDAR of variant * ld_type * reg * reg
   | I_STR of variant * reg * reg * 'k kr
   | I_STLR of variant * reg * reg
@@ -352,7 +353,9 @@ let do_pp_instruction m =
   | I_LDR (v,r1,r2,k) ->
       pp_mem "LDR" v r1 r2 k
   | I_LDP (t,v,r1,r2,r3,k) ->
-      pp_memp (match t with T -> "LDP" | N -> "LDNP") v r1 r2 r3 k
+      pp_memp (match t with TT -> "LDP" | NT -> "LDNP") v r1 r2 r3 k
+  | I_STP (t,v,r1,r2,r3,k) ->
+      pp_memp (match t with TT -> "STP" | NT -> "STNP") v r1 r2 r3 k
   | I_LDAR (v,t,r1,r2) ->
       pp_mem (ldr_memo t) v r1 r2 k0
   | I_STR (v,r1,r2,k) ->
@@ -420,9 +423,11 @@ let fold_regs (f_regs,f_sregs) =
   | I_OP3 (_,_,r1,r2,kr)
   | I_LDRBH (_,r1,r2,kr) | I_STRBH (_,r1,r2,kr)
     -> fold_reg r1 (fold_reg r2 (fold_kr kr c))
-  | I_STXR (_,_,r1,r2,r3) | I_LDP (_,_,r1,r2,r3,_)
+  | I_STXR (_,_,r1,r2,r3)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
-
+  | I_LDP (_,_,r1,r2,r3,kr)
+  | I_STP (_,_,r1,r2,r3,kr)
+    -> fold_reg r1 (fold_reg r2 (fold_reg r3 (fold_kr kr c)))
 
 let map_regs f_reg f_symb =
 
@@ -450,6 +455,8 @@ let map_regs f_reg f_symb =
      I_LDR (v,map_reg r1,map_reg r2,map_kr kr)
   | I_LDP (t,v,r1,r2,r3,kr) ->
      I_LDP (t,v,map_reg r1,map_reg r2,map_reg r3,map_kr kr)
+  | I_STP (t,v,r1,r2,r3,kr) ->
+     I_STP (t,v,map_reg r1,map_reg r2,map_reg r3,map_kr kr)
   | I_LDAR (t,v,r1,r2) ->
      I_LDAR (t,v,map_reg r1,map_reg r2)
   | I_STR (v,r1,r2,k) ->
@@ -490,6 +497,7 @@ let get_next = function
       -> [Label.Next; Label.To lbl;]
   | I_LDR _
   | I_LDP _
+  | I_STP _
   | I_STR _
   | I_LDAR _
   | I_STLR _
@@ -526,6 +534,7 @@ include Pseudo.Make
             as keep -> keep
         | I_LDR (v,r1,r2,kr) -> I_LDR (v,r1,r2,kr_tr kr)
         | I_LDP (t,v,r1,r2,r3,kr) -> I_LDP (t,v,r1,r2,r3,kr_tr kr)
+        | I_STP (t,v,r1,r2,r3,kr) -> I_STP (t,v,r1,r2,r3,kr_tr kr)
         | I_STR (v,r1,r2,kr) -> I_STR (v,r1,r2,kr_tr kr)
         | I_LDRBH (v,r1,r2,kr) -> I_LDRBH (v,r1,r2,kr_tr kr)
         | I_STRBH (v,r1,r2,kr) -> I_STRBH (v,r1,r2,kr_tr kr)
@@ -538,7 +547,7 @@ include Pseudo.Make
         | I_STR _ | I_STLR _ | I_STXR _
         | I_LDRBH _ | I_STRBH _
           -> 1
-        | I_LDP _ -> 2
+        | I_LDP _|I_STP _ -> 2
         | I_B _
         | I_BC _
         | I_CBZ _

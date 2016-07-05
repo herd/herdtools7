@@ -34,17 +34,29 @@ let parse s =
   | Parsing.Parse_error
   | LexMisc.Error _ -> None
 
-let pp_atom a =
-  match a with
+let pp_atom a = match a with
   | LV (l,v) -> MiscParser.pp_atom (l,v)
   | LL (l1,l2) ->
       sprintf "%s=%s"
         (MiscParser.dump_location l1)
         (MiscParser.dump_location l2)
 
-  
+let pp_atom_tr hexa a =match a with
+  | LV (l,v) ->
+       sprintf "%s=%s"
+        (MiscParser.dump_location l)
+        (SymbConstant.pp hexa v)
+  | LL (l1,l2) ->
+      sprintf "%s=%s"
+        (MiscParser.dump_location l1)
+        (MiscParser.dump_location l2)
+
+
 let dump_prop chan = ConstrGen.dump_prop pp_atom chan
 let dump chan = ConstrGen.dump_constraints chan pp_atom
+
+let dump_prop_tr hexa chan = ConstrGen.dump_prop (pp_atom_tr hexa) chan
+let dump_tr hexa chan = ConstrGen.dump_constraints chan (pp_atom_tr hexa)
 
 
 let get_locs_atom a =

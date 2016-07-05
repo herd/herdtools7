@@ -162,6 +162,53 @@ module Make(V:Constant.S)(C:Config) =
             reg_env=[rA,voidstar;rB,word;(rD1,quad);(rD2,quad);]; }
       | V32,RV (V64,_) -> assert false
 
+    let store_pair memo v rD1 rD2 rA kr = match v,kr with
+      | V32,K 0 ->
+          { empty_ins with
+            memo= sprintf "%s ^wi1,^wi2,[^i0]" memo;
+            inputs=[rA;rD1;rD2;];
+            outputs=[];
+            reg_env=[(rA,voidstar);(rD1,word);(rD2,word);]; }
+      | V32,K k ->
+          { empty_ins with
+            memo= sprintf "%s ^wi1,^wi2,[^i0,#%i]" memo k;
+            inputs=[rA;rD1;rD2;];
+            outputs=[];
+            reg_env=[(rA,voidstar);(rD1,word);(rD2,word);];}
+      | V32,RV (V32,rB) ->
+          { empty_ins with
+            memo=memo^ " ^wi2,^wi3,[^i0,^wi1,sxtw]";
+            inputs=[rA;rB;rD1;rD2;];
+            outputs=[];
+            reg_env=[(rA,voidstar); (rB,word); (rD1,word);(rD2,word);]; }
+      | V64,K 0 ->
+          { empty_ins with
+            memo=memo ^ sprintf " ^i1,^i2,[^i0]";
+            inputs=[rA;rD1;rD2;];
+            outputs=[];
+            reg_env=[rA,voidstar;(rD1,quad);(rD2,quad);]; }
+      | V64,K k ->
+          { empty_ins with
+            memo=memo ^ sprintf " ^i1,^i2,[^i0,#%i]" k;
+            inputs=[rA;rD1;rD2;];
+            outputs=[];
+            reg_env=[rA,voidstar; (rD1,quad);(rD2,quad);]; }
+      | V64,RV (V64,rB) ->
+          { empty_ins with
+            memo=memo^ " ^i2,^i3,[^i0,^i1]";
+            inputs=[rA; rB;rD1;rD2;];
+            outputs=[];
+            reg_env=[rA,voidstar;rB,quad;(rD1,quad);(rD2,quad)]; }
+      | V64,RV (V32,rB) ->
+          { empty_ins with
+            memo=memo^ " ^i2,^i3,[^i0,^wi1,sxtw]";
+            inputs=[rA; rB;rD1;rD2;];
+            outputs=[];
+            reg_env=[rA,voidstar;rB,word;(rD1,quad);(rD2,quad);]; }
+      | V32,RV (V64,_) -> assert false
+
+
+
     let store memo v rA rB kr = match v,kr with
       | V32,K 0 ->
           { empty_ins with
@@ -290,7 +337,9 @@ module Make(V:Constant.S)(C:Config) =
 (* Load and Store *)
     | I_LDR (v,r1,r2,kr) -> load "ldr" v r1 r2 kr::k
     | I_LDP (t,v,r1,r2,r3,kr) ->
-        load_pair (match t with T -> "ldp" | N -> "ldnp") v r1 r2 r3 kr::k
+        load_pair (match t with TT -> "ldp" | NT -> "ldnp") v r1 r2 r3 kr::k
+    | I_STP (t,v,r1,r2,r3,kr) ->
+        store_pair (match t with TT -> "stp" | NT -> "stnp") v r1 r2 r3 kr::k
     | I_LDRBH (B,r1,r2,kr) -> load "ldrb" V32 r1 r2 kr::k
     | I_LDRBH (H,r1,r2,kr) -> load "ldrh" V32 r1 r2 kr::k
     | I_LDAR (v,t,r1,r2) -> load (ldr_memo t) v r1 r2 k0::k

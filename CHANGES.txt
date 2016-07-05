@@ -1,3 +1,6 @@
+7.24
+ * Add AArch64 instruction STP/STNP (litmus only)
+ * Correct msum7 -hexa ---> Conditions are also in hexa.
  * Add AArch64 instruction LDNP (litmus only).
 7.23
  * Add AArch64 instruction LDP (litmus only).

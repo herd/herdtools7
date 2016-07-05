@@ -33,6 +33,8 @@ let check_name name = match name with
 | "ldr"|"LDR" -> LDR
 | "ldp"|"LDP" -> LDP
 | "ldnp"|"LDNP" -> LDP
+| "stp"|"STP" -> STP
+| "stnp"|"STNP" -> STNP
 | "ldrb"|"LDRB" -> LDRB
 | "ldrh"|"LDRH" -> LDRH
 | "ldar"|"LDAR" -> LDAR
