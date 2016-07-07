@@ -1,3 +1,4 @@
+ * Start linux atomic operations, no semantics.
 7.24
  * Add AArch64 instruction STP/STNP (litmus only)
  * Correct msum7 -hexa ---> Conditions are also in hexa.

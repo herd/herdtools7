@@ -54,11 +54,11 @@ let barrier_compare = Pervasives.compare
 
 type expression = 
   | Const of SymbConstant.v
-  | Load of loc * MemOrderOrAnnot.t
   | Op of Op.op * expression * expression
-  | Exchange of loc * expression * mem_order
+  | Exchange of loc * expression * MemOrderOrAnnot.t
   | Fetch of loc * Op.op * expression * mem_order
   | ECall of string * expression list
+  | Load of loc * MemOrderOrAnnot.t
 
 type instruction = 
   | Fence of barrier
@@ -95,9 +95,12 @@ let rec dump_expr =
 	  (dump_loc l) (MemOrder.pp_mem_order mo)
     | Op(op,e1,e2) -> 
         sprintf "%s %s %s" (dump_expr e1) (Op.pp_op op) (dump_expr e2)
-    | Exchange(l,e,mo) ->
+    | Exchange(l,e,MO mo) ->
         sprintf "atomic_exchange_explicit(%s,%s,%s)"
 	  (dump_loc l) (dump_expr e) (MemOrder.pp_mem_order mo)
+    | Exchange(l,e,AN a) ->
+        sprintf "__xchg{%s}(%s,%s)"
+	  (string_of_annot a) (dump_loc l) (dump_expr e)
     | Fetch(l,op,e,mo) -> 
         sprintf "atomic_fetch_%s_explicit(%s,%s,%s);" 
 	  (dump_op op) (dump_loc l) (dump_expr e) 

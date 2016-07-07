@@ -38,7 +38,7 @@ let tr_name s = match s with
     BASE_TYPE s
 | "atomic_int" -> ATOMIC_TYPE "int"
 | "NULL" -> NULL
-(* Atomic fetch *)
+(* C11 primitives, quite a lot! *)
 | "atomic_fetch_add" -> ATOMIC_FETCH Op.Add
 | "atomic_fetch_add_explicit" -> ATOMIC_FETCH_EXPLICIT Op.Add
 | "atomic_fetch_sub" -> ATOMIC_FETCH Op.Add
@@ -49,8 +49,34 @@ let tr_name s = match s with
 | "atomic_fetch_xor_explicit" -> ATOMIC_FETCH_EXPLICIT Op.Xor
 | "atomic_fetch_and" -> ATOMIC_FETCH Op.And
 | "atomic_fetch_and_explicit" -> ATOMIC_FETCH_EXPLICIT Op.And
+| "memory_order_acquire" -> MEMORDER (MemOrder.Acq)
+| "memory_order_release" -> MEMORDER (MemOrder.Rel)
+| "memory_order_acq_rel" -> MEMORDER (MemOrder.Acq_Rel)
+| "memory_order_seq_cst" -> MEMORDER (MemOrder.SC)
+| "memory_order_relaxed" -> MEMORDER (MemOrder.Rlx)
+| "memory_order_consume" -> MEMORDER (MemOrder.Con)
+| "fence"|"atomic_thread_fence" ->  FENCE 
+| "atomic_load"  ->  LD 
+| "atomic_store" ->  ST 
+| "atomic_load_explicit"  ->  LD_EXPLICIT 
+| "atomic_store_explicit" ->  ST_EXPLICIT 
+| "atomic_exchange" ->  EXC 
+| "atomic_exchange_explicit" ->  EXC_EXPLICIT 
+| "lock"  ->  LOCK 
+| "WCAS"  ->  WCAS 
+| "SCAS"  ->  SCAS 
+| "atomic_compare_exchange_weak_explicit" ->  WCAS
+| "atomic_compare_exchange_strong_explicit" ->  SCAS
+| "unlock"    ->  UNLOCK 
+(* Internal Linux *)
+| "__fence" ->  UNDERFENCE 
+| "__load" ->  LOAD 
+| "__store" ->  STORE 
+| "__xchg" -> XCHG
+(* Others *)
 |  x -> IDENTIFIER x
 }
+
 let digit = ['0'-'9']
 let alpha = ['a'-'z' 'A'-'Z']
 let name = (alpha | '_') (alpha|digit|'_')*
@@ -88,28 +114,7 @@ rule token deep = parse
 | "==" {EQ_OP}
 | "!=" {NEQ_OP}
 | '.' {DOT}
-| "memory_order_acquire" {MEMORDER (MemOrder.Acq)}
-| "memory_order_release" {MEMORDER (MemOrder.Rel)}
-| "memory_order_acq_rel" {MEMORDER (MemOrder.Acq_Rel)}
-| "memory_order_seq_cst" {MEMORDER (MemOrder.SC)}
-| "memory_order_relaxed" {MEMORDER (MemOrder.Rlx)}
-| "memory_order_consume" {MEMORDER (MemOrder.Con)}
-| "fence"|"atomic_thread_fence" { FENCE }
-| "__fence" { UNDERFENCE }
-| "__load" { LOAD }
-| "__store" { STORE }
-| "atomic_load"  { LD }
-| "atomic_store" { ST }
-| "atomic_load_explicit"  { LD_EXPLICIT }
-| "atomic_store_explicit" { ST_EXPLICIT }
-| "atomic_exchange" { EXC }
-| "atomic_exchange_explicit" { EXC_EXPLICIT }
-| "lock"  { LOCK }
-| "WCAS"  { WCAS }
-| "SCAS"  { SCAS }
-| "atomic_compare_exchange_weak_explicit" { WCAS}
-| "atomic_compare_exchange_strong_explicit" { SCAS}
-| "unlock"    { UNLOCK }
+
 | "constvar:" (name as s) { CONSTVAR s }
 | "codevar:" (name as s) { CODEVAR s }
 | name as x   { tr_name x  }

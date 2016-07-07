@@ -20,3 +20,8 @@ smp_mb() { __fence{mb} ; }
 smp_rmb() { __fence{rmb} ; }
 smp_wmb() { __fence{wmb} ; }
 smp_read_barrier_depends() { __fence{rb_dep}; }
+
+xchg(X,V)  __xchg{mb}(X,V)
+xchg_relaxed(X,V) __xchg{relaxed}(X,V)
+xchg_release(X,V) __xchg{release}(X,V)
+xchg_acquire(X,V) __xchg{acquire}(X,V)

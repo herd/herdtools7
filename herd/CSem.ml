@@ -44,6 +44,8 @@ module Make (Conf:Sem.Config)(V:Value.S)
     let read_exchange is_data vstored mo =
       M.read_loc is_data (fun loc v -> Act.RMW (loc,v,vstored,mo))
 
+    let xchg is_data loc v a ii = assert false
+
     let read_reg is_data r ii =
       read_loc is_data no_mo (A.Location_reg (ii.A.proc,r)) ii
     let read_mem is_data mo a =
@@ -88,13 +90,22 @@ module Make (Conf:Sem.Config)(V:Value.S)
         (build_semantics_expr is_data e1 ii >>| 
          build_semantics_expr is_data e2 ii) >>= fun (v1,v2) ->
         M.op op v1 v2
-        
-      | C.Exchange(l,e,mo) ->
+
+      | C.Exchange(l,e,(MOorAN.AN a)) ->
+          (build_semantics_expr true e ii >>|
+	  (match l with
+	  | C.Reg r -> read_reg is_data r ii
+	  | C.Mem r -> Warn.user_error "Complex location in __xchg"))
+	    >>= (fun (v,l) ->
+              xchg is_data  (A.Location_global l) v a ii)
+
+
+      | C.Exchange(l,e,(MOorAN.MO mo as top_mo)) ->
           (build_semantics_expr true e ii >>|
 	  (match l with
 	  | C.Reg r -> read_reg is_data r ii
 	  | C.Mem r -> read_reg is_data r ii >>= fun l -> 
-	      read_mem is_data (MOorAN.MO mo) l ii)) 
+	      read_mem is_data top_mo l ii)) 
 	    >>= (fun (v,l) ->
               read_exchange is_data v mo (A.Location_global l) ii)
 

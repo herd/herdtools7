@@ -52,7 +52,8 @@ open MemOrderOrAnnot
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
 %token <MemOrder.t> MEMORDER
-%token LD LOAD LD_EXPLICIT ST STORE ST_EXPLICIT EXC EXC_EXPLICIT UNDERFENCE FENCE LOCK UNLOCK SCAS WCAS
+%token LD LD_EXPLICIT ST ST_EXPLICIT EXC EXC_EXPLICIT FENCE LOCK UNLOCK SCAS WCAS
+%token LOAD STORE UNDERFENCE XCHG
 %token <Op.op> ATOMIC_FETCH
 %token <Op.op> ATOMIC_FETCH_EXPLICIT
 
@@ -154,9 +155,11 @@ expr:
 | expr EQ_OP expr { Op(Op.Eq,$1,$3) }
 | expr NEQ_OP expr { Op(Op.Ne,$1,$3) }
 | EXC LPAR location COMMA expr RPAR
-  { Exchange($3, $5, SC) }
+  { Exchange($3, $5, MO SC) }
 | EXC_EXPLICIT LPAR location COMMA expr COMMA MEMORDER RPAR
-  { Exchange($3, $5, $7) }
+  { Exchange($3, $5, MO $7) }
+| XCHG LBRACE annot_list RBRACE LPAR location COMMA expr RPAR
+  { Exchange($6,$8,AN $3) }
 | ATOMIC_FETCH LPAR location COMMA expr RPAR
   { Fetch ($3, $1, $5, SC) }
 | ATOMIC_FETCH_EXPLICIT LPAR location COMMA expr COMMA MEMORDER RPAR
