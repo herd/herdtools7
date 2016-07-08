@@ -18,7 +18,7 @@ open Printf
 module Make (A : Arch.S) : sig
 
   type action =    
-    | Access of Dir.dirn * A.location * A.V.v * MemOrderOrAnnot.t
+    | Access of Dir.dirn * A.location * A.V.v * MemOrderOrAnnot.t * bool (* from RWM op *)
     | Fence of MemOrderOrAnnot.t
 (* LM: ??? RMW (location, read, written, mo) *)
     | RMW of A.location * A.V.v * A.V.v * MemOrder.t
@@ -34,22 +34,22 @@ end = struct
   open MemOrderOrAnnot
 
   type action = 
-    | Access of dirn * A.location * V.v * MemOrderOrAnnot.t
+    | Access of dirn * A.location * V.v * MemOrderOrAnnot.t * bool
     | Fence of MemOrderOrAnnot.t
     | RMW of A.location * V.v * V.v * MemOrder.t
     | Lock of A.location * bool (* true = success, false = blocked *)
     | Unlock of A.location
 
 
-  let mk_init_write l v = Access (W,l,v,AN [])
+  let mk_init_write l v = Access (W,l,v,AN [],false)
 
   let par f x = sprintf "(%s)" (f x)
   let bra f x = sprintf "[%s]" (f x)
 
   let pp_action a = match a with
-    | Access (d,l,v,mo) ->
-	sprintf "%s%s%s=%s"
-          (pp_dirn d)
+    | Access (d,l,v,mo,at) ->
+	sprintf "%s%s%s%s=%s"
+          (pp_dirn d) (if at then "*" else "")
           (match mo with
           | MO mo -> par MemOrder.pp_mem_order_short mo
           | AN [] -> ""
@@ -77,23 +77,23 @@ end = struct
 (* Utility functions to pick out components *)
 
     let value_of a = match a with
-    | Access (_,_ , v,_) -> Some v
+    | Access (_,_ ,v,_,_) -> Some v
     | _ -> None
 
     let read_of a = match a with
-    | Access (R,_ , v,_) 
+    | Access (R,_ , v,_,_) 
     | RMW (_,v,_,_)
         -> Some v
     | _ -> None
 
     let written_of a = match a with
-    | Access (W,_ , v,_) 
+    | Access (W,_ , v,_,_) 
     | RMW (_,_,v,_)
         -> Some v
     | _ -> None
 
     let location_of a = match a with
-    | Access (_, l, _,_) 
+    | Access (_, l, _,_,_) 
     | Lock (l,_)
     | Unlock l
     | RMW (l,_,_,_) -> Some l
@@ -101,19 +101,19 @@ end = struct
 
 (* relative to memory *)
     let is_mem_store a = match a with
-    | Access (W,A.Location_global _,_,_)
+    | Access (W,A.Location_global _,_,_,_)
     | RMW (A.Location_global _,_,_,_)
       -> true
     | _ -> false
 
     let is_mem_load a = match a with
-    | Access (R,A.Location_global _,_,_)
+    | Access (R,A.Location_global _,_,_,_)
     | RMW (A.Location_global _,_,_,_)
       -> true
     | _ -> false
 
     let is_mem a = match a with
-    | Access (_,A.Location_global _,_,_) -> true
+    | Access (_,A.Location_global _,_,_,_) -> true
     | RMW _ -> true
     | _ -> false
 
@@ -121,54 +121,56 @@ end = struct
        is quite arbitrary. *)
 
     let old_is_atomic a = match a with
-    | Access (_,A.Location_global _,_,AN _) -> false
-    | Access (_,A.Location_global _,_,MO _) -> true
+    | Access (_,A.Location_global _,_,AN _,_) -> false
+    | Access (_,A.Location_global _,_,MO _,_) -> true
     | RMW _ -> true
     | _ -> false
 
-(* LM: Indeed: *)
-    let is_atomic _ = false
+(* LM: This one is for R and W issued by RWM *)
+    let is_atomic = function
+      | Access (_,A.Location_global _,_,_,at) -> at
+      | _ -> false
 
     let get_mem_dir a = match a with
-    | Access (d,A.Location_global _,_,_) -> d
+    | Access (d,A.Location_global _,_,_,_) -> d
     | _ -> assert false
 
 (* relative to the registers of the given proc *)
     let is_reg_store a (p:int) = match a with
-    | Access (W,A.Location_reg (q,_),_,_) -> p = q
+    | Access (W,A.Location_reg (q,_),_,_,_) -> p = q
     | _ -> false
 
     let is_reg_load a (p:int) = match a with
-    | Access (R,A.Location_reg (q,_),_,_) -> p = q
+    | Access (R,A.Location_reg (q,_),_,_,_) -> p = q
     | _ -> false
 
     let is_reg a (p:int) = match a with
-    | Access (_,A.Location_reg (q,_),_,_) -> p = q
+    | Access (_,A.Location_reg (q,_),_,_,_) -> p = q
     | _ -> false
 
 
 (* Store/Load anywhere *)
     let is_store a = match a with
-    | Access (W,_,_,_)
+    | Access (W,_,_,_,_)
     | RMW _
       -> true
     | _ -> false
 
     let is_load a = match a with
-    | Access (R,_,_,_)
+    | Access (R,_,_,_,_)
     | RMW _ -> true
     | _ -> false
 
     let is_reg_any a = match a with
-    | Access (_,A.Location_reg _,_,_) -> true
+    | Access (_,A.Location_reg _,_,_,_) -> true
     | _ -> false
 
     let is_reg_store_any a = match a with
-    | Access (W,A.Location_reg _,_,_) -> true
+    | Access (W,A.Location_reg _,_,_,_) -> true
     | _ -> false
 
     let is_reg_load_any a = match a with
-    | Access (R,A.Location_reg _,_,_) -> true
+    | Access (R,A.Location_reg _,_,_,_) -> true
     | _ -> false
 
 (* Barriers *)
@@ -203,7 +205,7 @@ end = struct
      | _ -> false
 
    let mo_matches target a = match a with
-     | Access(_,_,_,MO mo)
+     | Access(_,_,_,MO mo,_)
      | RMW (_,_,_,mo)
      | Fence (MO mo) -> mo=target
      | _ -> false
@@ -211,7 +213,7 @@ end = struct
 (* Architecture-specific sets *)
 
    let arch_sets = [
-     "RMW", is_rmw;
+     "RMW", Misc.(|||) is_rmw is_atomic;
      "LK", is_lock; "LS", is_successful_lock;
      "UL", is_unlock;
      "ACQ", mo_matches MemOrder.Acq;
@@ -233,7 +235,7 @@ end = struct
 
     let undetermined_vars_in_action a =
       match a with
-      | Access (_,l,v,_) -> 
+      | Access (_,l,v,_,_) -> 
 	  let undet_loc = match A.undetermined_vars_in_loc l with
 	  | None -> V.ValueSet.empty
 	  | Some v -> V.ValueSet.singleton v in
@@ -259,10 +261,10 @@ end = struct
 
     let simplify_vars_in_action soln a =
       match a with
-      | Access (d,l,v,mo) -> 
+      | Access (d,l,v,mo,at) -> 
 	 let l' = A.simplify_vars_in_loc soln l in
 	 let v' = V.simplify_var soln v in
-	 Access (d,l',v',mo)
+	 Access (d,l',v',mo,at)
       | RMW(l,v1,v2,mo) ->
         let l' = A.simplify_vars_in_loc soln l in
         let v1' = V.simplify_var soln v1 in
@@ -283,9 +285,9 @@ end = struct
     let make_action_atomic _ = assert false
 
     let annot_in_list str ac = match ac with
-    | Access (_,_,_,AN a)
+    | Access (_,_,_,AN a,_)
     | Fence (AN a) -> List.exists (fun a -> Misc.string_eq str a) a 
-    | Access (_, _, _, MO _)|Fence (MO _)|RMW (_, _, _, _)
+    | Access (_, _, _, MO _,_)|Fence (MO _)|RMW (_, _, _, _)
     | Lock (_, _)|Unlock _ -> false
 end
 

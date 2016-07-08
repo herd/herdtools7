@@ -39,28 +39,61 @@ module Make (Conf:Sem.Config)(V:Value.S)
     let no_mo = MOorAN.AN []
 
     let read_loc is_data mo =
-      M.read_loc is_data (fun loc v -> Act.Access (Dir.R, loc, v, mo))
+      M.read_loc is_data (fun loc v -> Act.Access (Dir.R, loc, v, mo, false))
 
     let read_exchange is_data vstored mo =
       M.read_loc is_data (fun loc v -> Act.RMW (loc,v,vstored,mo))
 
-    let xchg is_data loc v a ii = assert false
-
     let read_reg is_data r ii =
       read_loc is_data no_mo (A.Location_reg (ii.A.proc,r)) ii
+
     let read_mem is_data mo a =
       read_loc is_data mo (A.Location_global a)
 
+    let read_mem_atomic is_data a loc =
+       M.read_loc is_data
+        (fun loc v -> Act.Access (Dir.R, loc, v, MOorAN.AN a, true))
+        (A.Location_global loc)
+
     let write_loc mo loc v ii =
-      M.mk_singleton_es (Act.Access (Dir.W, loc, v, mo)) ii >>! v
+      M.mk_singleton_es (Act.Access (Dir.W, loc, v, mo, false)) ii >>! v
 
     let write_reg r v ii = write_loc no_mo (A.Location_reg (ii.A.proc,r)) v ii
     let write_mem mo a  = write_loc mo (A.Location_global a) 	     
-		 
+    let write_mem_atomic a loc v ii =
+       M.mk_singleton_es
+        (Act.Access (Dir.W, A.Location_global loc, v, MOorAN.AN a, true)) ii >>! v
+
     let fetch_op op v mo loc =
       M.fetch op v (fun v vstored -> Act.RMW (loc,v,vstored,mo))
 
-    let atomic_pair_allowed _ _ = true
+    let xchg is_data loc v a ii =
+      let add_mb = match a with
+      | ["mb"] -> true | _ -> false in
+      let aw = match a with
+      | ["release"] -> a
+      | _ -> ["once";]
+      and ar = match a with
+      | ["acquire"] -> a
+      | _ -> ["once";] in
+      let next_m =
+        read_mem_atomic is_data ar loc ii >>=
+        fun vr ->
+          if add_mb then
+            write_mem_atomic aw loc v ii  >>=
+            fun _ -> 
+              M.mk_singleton_es (Act.Fence  (MOorAN.AN a)) ii >>! vr
+          else begin
+            write_mem_atomic aw loc v ii  >>! vr
+          end in
+      if add_mb then 
+        M.mk_singleton_es (Act.Fence  (MOorAN.AN a)) ii
+          >>= fun _ -> next_m
+      else next_m
+
+    let atomic_pair_allowed e1 e2 = match e1.E.iiid, e2.E.iiid with
+    | Some i1,Some i2 -> i1 == i2
+    | _,_ -> false
 
     let rec build_semantics_expr is_data e ii : V.v M.t =
       let open MemOrderOrAnnot in
@@ -95,9 +128,9 @@ module Make (Conf:Sem.Config)(V:Value.S)
           (build_semantics_expr true e ii >>|
 	  (match l with
 	  | C.Reg r -> read_reg is_data r ii
-	  | C.Mem r -> Warn.user_error "Complex location in __xchg"))
+	  | C.Mem _ -> Warn.user_error "Complex location in __xchg"))
 	    >>= (fun (v,l) ->
-              xchg is_data  (A.Location_global l) v a ii)
+              xchg is_data  l v a ii)
 
 
       | C.Exchange(l,e,(MOorAN.MO mo as top_mo)) ->
@@ -120,8 +153,8 @@ module Make (Conf:Sem.Config)(V:Value.S)
         | C.ECall _ -> Warn.fatal "Macro call in CSem"
 	  
     let rec build_semantics ii : (A.program_order_index * B.t) M.t = 
-      let ii = {ii with A.program_order_index = 
-	  A.next_po_index ii.A.program_order_index;} in
+      let ii =
+        {ii with A.program_order_index = A.next_po_index ii.A.program_order_index;} in
       match ii.A.inst with
 	| C.Seq insts -> 
           build_semantics_list insts ii 
