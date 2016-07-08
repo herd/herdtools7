@@ -161,7 +161,7 @@ instr:
 | STRB wreg COMMA LBRK xreg kr0 RBRK
   { I_STRBH (B,$2,$5,$6) }
 | STRH wreg COMMA LBRK xreg kr0 RBRK
-  { I_STRBH (B,$2,$5,$6) }
+  { I_STRBH (H,$2,$5,$6) }
 | STLR reg COMMA LBRK xreg RBRK
   { let v,r = $2 in I_STLR (v,r,$5) }
 | STXR wreg COMMA reg COMMA LBRK xreg RBRK
