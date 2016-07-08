@@ -1,4 +1,6 @@
- * Start linux atomic operations, no semantics.
+7.25
+ * litmus bug, strh instruction were parsed as strb (copy-paste bug)
+ * Linux atomic operations, xchg only.
 7.24
  * Add AArch64 instruction STP/STNP (litmus only)
  * Correct msum7 -hexa ---> Conditions are also in hexa.
