@@ -4,7 +4,6 @@ include "c11_cos.cat"
 include "c11_los.cat"
 
 
-
 let asw = I * (M \ I)
 let sb = po
 let mo = co
@@ -70,8 +69,8 @@ let vis = (hbl & (W * R)) \ (hbl; toid(W) ; hbl)
 irreflexive (rf ; hb) as Rf
 	      
 (* consistent_non_atomic_rf  *)
-let nal = R\A
-empty ((rf ; toid(nal)) \ vis) as NaRf
+empty ((rf ; [R\A]) \ vis) as NaRf
+empty [FW\A];hbl;[W] as NaRf (* implicit read of Na final writes.. *)
 
 irreflexive (rf | (mo ; mo ; rf^-1) | (mo ; rf)) as Rmw
 
