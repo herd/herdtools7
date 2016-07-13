@@ -18,3 +18,4 @@
 
 type v = Constant.v
 include Constant.S
+val eq : v -> v -> bool

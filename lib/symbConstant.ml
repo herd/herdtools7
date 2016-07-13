@@ -32,3 +32,10 @@ let pp hexa = function
   | Symbolic s -> s
 
 let pp_v = pp false
+
+let eq c1 c2 =  match c1,c2 with
+| Concrete i1, Concrete i2 -> i1 = i2
+| Symbolic s1,Symbolic s2 -> Misc.string_eq  s1 s2
+| (Concrete _,Symbolic _)
+| (Symbolic _,Concrete _) -> false
+

@@ -382,18 +382,31 @@ let min_max xs =
               | [[_;(v,_)]] ->
                   begin match O.do_observers with
                   | Local -> i,[],add_look_loc x v []
-                  | Avoid|Accept|Three|Four -> i,[],[A.Loc x,IntSet.singleton v]
+                  | Avoid|Accept|Three|Four|Infinity
+                    -> i,[],[A.Loc x,IntSet.singleton v]
                   | Enforce ->  
                       let i,c,f = build_observers p i x vs in
                       i,c,add_look_loc x v f
                   end
-              | _ ->                  
-                  let v =
-                    let v,_ = Misc.last (List.flatten vs) in
-                    v in
+              | _ ->
+                  let vs_flat = List.flatten vs in
+                  let v,_ = Misc.last vs_flat in
               begin match O.do_observers with
               | Local -> i,[],add_look_loc x v []
-              | Three|Four -> i,[],[A.Loc x,IntSet.singleton v]
+              | Three ->
+                  begin match vs_flat with
+                  | _x1::_x2::_x3::_x4::_ ->
+                      Warn.fatal "More than three writes"
+                  | _ -> i,[],[A.Loc x,IntSet.singleton v]
+                  end 
+              |Four ->
+                  begin match vs_flat with
+                  | _x1::_x2::_x3::_x4::_x5::_ ->
+                      Warn.fatal "More than three writes"
+                  | _ -> i,[],[A.Loc x,IntSet.singleton v]
+                  end 
+              | Infinity ->
+                  i,[],[A.Loc x,IntSet.singleton v]
               | _ ->
                   let i,c,f = build_observers p i x vs in
                   i,c,add_look_loc x v f
@@ -521,7 +534,7 @@ let min_max xs =
             | Cycle|Observe ->
                 match O.do_observers with
                 | Local -> add_co_local_check lsts n st p i c f
-                | Avoid|Accept|Enforce|Three|Four -> i,c,f,st in
+                | Avoid|Accept|Enforce|Three|Four|Infinity -> i,c,f,st in
           let i,c,_ = Comp.postlude st p i c in
           let ds = C.get_detours_from_list n in
           let i,cds,fds = build_detours lsts (p+1) i ds in

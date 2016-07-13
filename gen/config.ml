@@ -55,6 +55,7 @@ type do_observers =
   | Local   (* Local observer when possible *)
   | Three   (* Accept up to three writes, no observers *)
   | Four    (* Accept up to four writes, no observers  *)
+  | Infinity  (* Accept all tests, no observers *)
 
 let do_observers = ref Avoid
 type obs_type = Straight | Fenced | Loop
@@ -101,6 +102,7 @@ let parse_do_observers s = match s with
 | "local" -> Local
 | "three" -> Three
 | "four"  -> Four
+| "oo"|"infinity" -> Infinity
 | _ -> failwith "Wrong observer mode, choose avoid, accept, force, local, three or four"
 
 let parse_obs_type = function

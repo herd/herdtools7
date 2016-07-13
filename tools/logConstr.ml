@@ -159,10 +159,10 @@ end  =
           (Int64.zero,Int64.zero) states in
       match c with
       | ExistsState _
-      | NotExistsState _
+      | ForallStates _
         ->
           pos,neg
-      | ForallStates _ ->
+      | NotExistsState _ ->
           neg,pos
 
 

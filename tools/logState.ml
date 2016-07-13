@@ -361,9 +361,13 @@ module LC =
 
 
       let state_mem bds loc v =
-         Misc.string_eq
-          (bds_assoc bds (MiscParser.dump_location  loc))
-          (SymbConstant.pp_v v)
+        let v_bound_pp = bds_assoc bds (MiscParser.dump_location  loc) in
+        let v_bound =
+          try
+            let i = int_of_string v_bound_pp in
+            SymbConstant.intToV i
+          with Failure _ -> SymbConstant.nameToV v_bound_pp in
+        SymbConstant.eq v v_bound
 
       let state_eqloc bds loc1 loc2 =
         let v1 = bds_assoc bds (MiscParser.dump_location  loc1)

@@ -1,3 +1,4 @@
+ * Generators, implement -obs three,four,infinity
 7.25
  * litmus bug, strh instruction were parsed as strb (copy-paste bug)
  * Linux atomic operations, xchg only.

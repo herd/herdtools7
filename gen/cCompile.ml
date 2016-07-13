@@ -545,7 +545,7 @@ module Make(O:Config) : Builder.S
                   | [[_;(v,_)]] ->
                       begin match O.do_observers with
                       | Local -> [],add_look_loc x v []
-                      | Avoid|Accept|Three|Four ->
+                      | Avoid|Accept|Three|Four|Infinity ->
                           [],[A.Loc x,IntSet.singleton v]
                       | Enforce ->
                           let c,f = build_observers p mo x vs in
