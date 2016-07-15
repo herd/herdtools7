@@ -1,0 +1,74 @@
+"AArch64"
+
+include "cos.cat"
+
+(* Uniproc *)
+acyclic po-loc | rf | fr | co as uniproc
+
+(* Utilities *)
+let dd = addr | data
+let rdw = po-loc & (fre;rfe)
+let detour = po-loc & (coe ; rfe)
+let addrpo = addr;po
+let com = fr | co | rf
+
+empty rmw & (fre;coe) as atomic
+
+include "aarch64fences.cat"
+
+let ci0 = ctrlisb | detour
+let ii0 = dd | rfi | rdw
+let cc0 = dd | ctrl | addrpo
+let ic0 = 0
+
+include "ppo.cat"
+
+let acq = (A * M) & po
+let rel = (M * L) & po
+
+let ppo = ppo | acq
+
+let fence = dmb.sy & (M * M)
+	    | dsb.sy & (M * M)
+	    | dmb.st & (W * W)
+	    | dsb.st & (W * W)
+	    | dmb.ld & (R * M)
+	    | dsb.ld & (R * M)
+
+let hb = (R * M) & fence | rfe | ppo
+
+acyclic hb as thin_air
+
+(* Prop is more complex... *)
+
+let B = hb*
+
+let prop =
+  com+;(dmb.sy|dsb.sy);B // Strongest fence, no big deal
+| coe;((dmb.st|dsb.st)&(W*W));B
+| (rfe|coe|(co;rfe))?;rel
+| fence;B
+
+
+
+let come = com & ext
+
+let observer =
+  rfe;(ppo|fence);come
+| come;((L*A&po)|dmb.sy);come
+| coe;(rfe;(dmb.sy));come
+| come;rel;come
+| coe;(rfe;rel);come
+| come;fence;come
+
+let OBS = prop+;observer
+irreflexive OBS as observation
+
+let prop_al = (L * A) & (rf | po)
+	    | (A * L) & fr
+            | (L * L) & co
+
+let xx = (W * W) & (X * X) & po
+
+
+acyclic prop | (co & (X * X)) | xx | (prop_al;hb*) as propagation
