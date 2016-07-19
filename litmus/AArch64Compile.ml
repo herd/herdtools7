@@ -290,6 +290,7 @@ module Make(V:Constant.S)(C:Config) =
     | ADD -> "add"
     | EOR -> "eor"
     | SUBS -> "subs"
+    | AND -> "and"
 
     let op3 v op rD rA kr =
       let memo = memo_of_op op in

@@ -1,3 +1,4 @@
+ * AArch64, add logical and instruction.
  * Generators, implement -obs three,four,infinity
 7.25
  * litmus bug, strh instruction were parsed as strb (copy-paste bug)
