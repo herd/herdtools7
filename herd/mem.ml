@@ -691,34 +691,34 @@ let compatible_locs_mem e1 e2 =
 
 (* Reconstruct load/store atomic pairs *)
         
-let make_atomic_load_store es =
-  let all = E.atomics_of es.E.events in
-  let atms = U.collect_atomics es in
-  U.LocEnv.fold
-    (fun _loc atms k ->
-      let atms =
-        List.filter
-          (fun e -> not (E.is_load e && E.is_store e))
-          atms in (* get rid of C RMW *)
-      let rs,ws = List.partition E.is_load atms in
-      List.fold_left
-        (fun k r ->
+    let make_atomic_load_store es =
+      let all = E.atomics_of es.E.events in
+      let atms = U.collect_atomics es in
+      U.LocEnv.fold
+        (fun _loc atms k ->
+          let atms =
+            List.filter
+              (fun e -> not (E.is_load e && E.is_store e))
+              atms in (* get rid of C RMW *)
+          let rs,ws = List.partition E.is_load atms in
           List.fold_left
-            (fun k w ->
-              if
-                S.atomic_pair_allowed r w &&
-                U.is_before_strict es r w &&
-                not
-                  (E.EventSet.exists
-                     (fun e ->
-                       U.is_before_strict es r e &&
-                       U.is_before_strict es e w)
-                     all)
-              then E.EventRel.add (r,w) k
-              else k)
-            k ws)
-        k rs)
-    atms E.EventRel.empty
+            (fun k r ->
+              List.fold_left
+                (fun k w ->
+                  if
+                    S.atomic_pair_allowed r w &&
+                    U.is_before_strict es r w &&
+                    not
+                      (E.EventSet.exists
+                         (fun e ->
+                           U.is_before_strict es r e &&
+                           U.is_before_strict es e w)
+                         all)
+                  then E.EventRel.add (r,w) k
+                  else k)
+                k ws)
+            k rs)
+        atms E.EventRel.empty
 
 
 (* Retrieve last store from rfmap *)
@@ -728,11 +728,11 @@ let make_atomic_load_store es =
       | S.Init -> None       (* means no store to loc *)
       with Not_found -> None
 (*
-        let module PP = Pretty.Make(S) in
-        eprintf "Uncomplete rfmap: %s\n%!" (A.pp_location loc) ;
-	PP.show_es_rfm test es rfm ;
-        assert false
-*)
+  let module PP = Pretty.Make(S) in
+  eprintf "Uncomplete rfmap: %s\n%!" (A.pp_location loc) ;
+  PP.show_es_rfm test es rfm ;
+  assert false
+ *)
 (* Store to final state comes last *)
     let last_store test es rfm =
       let loc_stores = U.collect_stores es
@@ -761,28 +761,31 @@ let make_atomic_load_store es =
         loc_stores E.EventRel.empty
 
     let make_fromto evts p = 
-    (*jade: scanning the whole program; otherwise would need to change the
-      event monad*)
-      let one_label _ code res =
+      (*jade: scanning the whole program; otherwise would need to change the
+        event monad*)
+      let one_label res code =
         let one_ins (cur_from,cur_to) (_,ins) = match A.I.fromto_of_instr ins with
-          | Some(l1,l2) -> 
+        | Some(l1,l2) ->
             let one_event l evt res =
-              match evt.E.iiid with
+              if E.is_mem evt then match evt.E.iiid with
               | Some id -> 
-                if List.exists (fun x -> List.mem x l) id.A.labels
-                then E.EventSet.add evt res
-                else res
+                  if List.exists (fun x -> List.mem x l) id.A.labels
+                  then begin
+                    E.EventSet.add evt res
+                  end  else res
               | None -> res
+              else res
             in
             let new_from = E.EventSet.fold (one_event l1) evts cur_from
             and new_to = E.EventSet.fold (one_event l2) evts cur_to in
             (new_from,new_to)
-          | None -> (cur_from,cur_to) in
+        | None -> (cur_from,cur_to) in
         let (final_from,final_to) = 
           List.fold_left one_ins (E.EventSet.empty, E.EventSet.empty) code in
         let fromto = E.EventRel.cartesian final_from final_to in
         E.EventRel.union fromto res in
-      A.LabelMap.fold one_label p E.EventRel.empty
+      List.fold_left (fun k (_,code) -> one_label k code) E.EventRel.empty p
+
 
     let fold_mem_finals test es rfm kont res =
       (* We can build those now *)
@@ -793,7 +796,7 @@ let make_atomic_load_store es =
       and init_load_vbf = init_load es rfm in
 (* Atomic load/store pairs *)
       let atomic_load_store = make_atomic_load_store es in
-      let fromto = make_fromto evts test.Test.program in
+      let fromto = make_fromto evts test.Test.start_points in
 (* Now generate final stores *)
       let loc_stores = U.collect_mem_stores es in
       let loc_stores =
@@ -844,16 +847,16 @@ let make_atomic_load_store es =
             | None -> raise Exit
             | Some pco -> E.EventRel.union pco0 pco in
 (* Cross product *)
-   
+        
         Misc.fold_cross
           possible_finals
           (fun ws res ->
 (*
-            eprintf "Finals:" ;
-            List.iter
-              (fun e -> eprintf " %a"  E.debug_event e) ws ;
-            eprintf "\n";
-*)
+  eprintf "Finals:" ;
+  List.iter
+  (fun e -> eprintf " %a"  E.debug_event e) ws ;
+  eprintf "\n";
+ *)
             let rfm =
               List.fold_left
                 (fun k w ->
@@ -879,7 +882,7 @@ let make_atomic_load_store es =
                    po = po_iico ;
 	           pos = ppoloc ;
                    pco = pco ;
-                 
+                   
                    store_load_vbf = store_load_vbf ;
                    init_load_vbf = init_load_vbf ;
                    last_store_vbf = last_store_vbf ;
@@ -892,7 +895,7 @@ let make_atomic_load_store es =
           res
       with Exit -> res
 
-        
+          
 (* Initial check of rfmap validity: no intervening writes.
    Limited to memory, since  generated rfmaps are correct for registers *)
 (* NOTE: this is more like an optimization,
