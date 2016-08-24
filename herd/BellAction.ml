@@ -135,6 +135,10 @@ end = struct
   | Barrier _ -> true
   | _ -> false
 
+  let is_total_barrier a = match a with
+  | Barrier (_,None) -> true
+  | _ -> false
+
   let barrier_of _a = None
 
   let same_barrier_id _ _ = false
@@ -187,7 +191,11 @@ end = struct
   let pp_isync = ""
   let is_isync _a = false
 
-  let arch_sets = ["X",is_atomic;"RMW",is_atomic;]
+  let arch_sets =
+    ["X",is_atomic;
+     "RMW",is_atomic;
+     "Ftotal",is_total_barrier;]
+
   let arch_fences = []
       
       
