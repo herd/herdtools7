@@ -10,8 +10,8 @@ lockless_dereference(X) __load{lderef}(X)
 rcu_dereference(X) __load{deref}(X)
 
 // RCU
-rcu_read_lock() { __fence{lock}; }
-rcu_read_unlock() { __fence{unlock};}
+rcu_read_lock() { __fence{rcu_read_lock}; }
+rcu_read_unlock() { __fence{rcu_read_unlock};}
 synchronize_rcu() { __fence{sync}; }
 synchronize_rcu_expedited() { __fence{sync}; }
 
