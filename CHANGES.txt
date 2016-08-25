@@ -1,3 +1,6 @@
+7.27
+ * linux: lock -> rcu_read_lock; unlock -> rcu_read_unlock
+7.26
  * AArch64, add logical and instruction.
  * Generators, implement -obs three,four,infinity
 7.25
