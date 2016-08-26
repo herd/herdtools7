@@ -32,7 +32,7 @@ module Make (C:Arch.Config) (V:Value.S) = struct
 	type arch_instruction = instruction
 
         let fromto_of_instr ins = match ins with
-          | Pfence(Fence(_,Some o)) -> Some o
+          | Pfence(Fence(_,ft)) -> ft
           | _ -> None
       end)
   end

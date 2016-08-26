@@ -22,7 +22,7 @@ module Make (A : Arch.S) : sig
     | Access of
         Dir.dirn * A.location * A.V.v *
           bool * string list 
-    | Barrier of string list * (string list * string list) option
+    | Barrier of string list * (Label.Set.t * Label.Set.t) option
     | Commit
 
   include Action.S with module A = A and type action := action
@@ -38,7 +38,7 @@ end = struct
         dirn * A.location * V.v *
           bool (* atomicity flag *) * string list
           
-    | Barrier of string list * (string list * string list) option
+    | Barrier of string list * (Label.Set.t * Label.Set.t) option
     | Commit
         
 (* I think this is right... *)
@@ -57,7 +57,10 @@ end = struct
       | None -> 
           Printf.sprintf "f[%s]" (BellBase.string_of_annot_list s)
       | Some(s1, s2) ->
-          Printf.sprintf "f[%s]({%s},{%s})" (BellBase.string_of_annot_list s) (BellBase.string_of_annot_list s1) (BellBase.string_of_annot_list s2)
+          Printf.sprintf "f[%s]{%s}{%s}"
+            (BellBase.string_of_annot_list s)
+            (BellBase.string_of_labels s1)
+            (BellBase.string_of_labels s2)
       )
   | Commit -> "Commit"
 

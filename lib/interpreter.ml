@@ -73,19 +73,23 @@ module Make
       val loc2events : string -> S.event_set -> S.event_set
       val check_through : bool -> bool
       val pp_failure : S.test -> S.concrete -> string -> S.rel_pp -> unit
+      val fromto :
+          S.event_rel -> (* po *)
+            S.event_set (* labelled fence(s) *) ->
+              S.event_rel (* localised fence relation *)
     end)
     :
     sig
 
 (* Some constants passed to the interpreter, made open for the
-   convenience of uilding them from outside *)
+   convenience of building them from outside *)
       type ks =
           { id : S.event_rel Lazy.t; unv : S.event_rel Lazy.t;
-            evts : S.event_set;  conc : S.concrete; }
+            evts : S.event_set;  conc : S.concrete; po:S.event_rel;}
 
 
 (* Initial environment, they differ from internal env, so
-   as not to expose the polymorphic argument of teh later *)
+   as not to expose the polymorphic argument of the later *)
       type init_env
       val init_env_empty : init_env
       val add_rels : init_env -> S.event_rel Lazy.t Misc.Simple.bds -> init_env
@@ -171,7 +175,7 @@ module Make
 
     type ks =
         { id : S.event_rel Lazy.t; unv : S.event_rel Lazy.t;
-          evts : S.event_set; conc : S.concrete; }
+          evts : S.event_set; conc : S.concrete; po:S.event_rel; }
 
 (* Internal typing *)
     type typ =
@@ -835,6 +839,10 @@ module Make
         end
     | _ -> arg_mismatch ()
 
+    and fromto ks arg = match arg with
+    | V.Set es -> V.Rel (U.fromto ks.po es)
+    | _ -> arg_mismatch () 
+
     and tag2fenced env arg = match arg with
     | V.Tag (_,tag) ->
         let not_a_set_of_events x v =
@@ -896,6 +904,7 @@ module Make
     let add_primitives ks m =
       add_prims m
         [
+         "fromto",fromto ks;
          "classes-loc",partition;
          "classes",classes;
          "linearisations",linearisations;

@@ -1,0 +1,5 @@
+//T *xchg(T *p, v)
+xchg(X,Y) { __xchg{mb}(X,Y) }
+xchg_relaxed(X,Y) { __xchg{relaxed}(X,Y) }
+xchg_release(X,Y) { __xchg{release}(X,Y) }
+xchg_acquire(X,Y) { __xchg{acquire}(X,Y) }

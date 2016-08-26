@@ -142,7 +142,6 @@ type concrete =
      init_load_vbf : event_rel;   (* load from init preceed all stores *)
      last_store_vbf : event_rel;  (* stores to final state come last *)
      atomic_load_store : event_rel; (* eg load-and-link/store conditional *)
-     fromto : event_rel; 
     }
 
   val conc_zero : concrete
@@ -321,7 +320,6 @@ type concrete =
      init_load_vbf : event_rel;   (* load from init preceed all stores *)
      last_store_vbf : event_rel;  (* stores to final state come last *)
      atomic_load_store : event_rel; (* eg load-and-link/store conditional *)
-     fromto : event_rel;
     }
 
     let conc_zero =
@@ -336,7 +334,6 @@ type concrete =
        init_load_vbf = E.EventRel.empty ;
        last_store_vbf = E.EventRel.empty ;
        atomic_load_store = E.EventRel.empty ;
-       fromto = E.EventRel.empty;
      }
 (************)
 (* Branches *)

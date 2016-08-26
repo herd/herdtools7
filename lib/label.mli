@@ -24,3 +24,6 @@ val fail : int -> t
 val exit : int -> t
 
 type next = Next | To of t
+
+module Set = StringSet
+module Map = StringMap

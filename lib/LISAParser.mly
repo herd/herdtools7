@@ -83,9 +83,14 @@ name_list_ne:
   {$1::$3}
 | NAME
   {[$1]}
+
 name_list:
 | name_list_ne {$1}
 | {[]}
+
+name_set:
+| name_list { Label.Set.of_list $1}
+
 
 annot_list_option:
 | LBRAC name_list RBRAC {$2}
@@ -141,7 +146,7 @@ operation:
 
 fence_labels_option:
 | { None }
-| LBRACE name_list_ne RBRACE LBRACE name_list_ne RBRACE {Some($2,$5)}
+| LBRACE name_set RBRACE LBRACE name_set RBRACE {Some($2,$5)}
 
 instr:
 

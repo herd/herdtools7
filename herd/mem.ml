@@ -215,11 +215,11 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           | [] -> res (* Luc, it is legal to have nothing after label *)
 (*            assert false (*jade: case where there's nothing after the label*) *)
           | (addr,_)::_ ->
-              let ins_lbls = ValMap.safe_find [] addr res in
-              ValMap.add addr (lbl::ins_lbls) res in
+              let ins_lbls = ValMap.safe_find Label.Set.empty addr res in
+              ValMap.add addr (Label.Set.add lbl ins_lbls) res in
         A.LabelMap.fold one_label p ValMap.empty in
   
-      let labels_of_instr i = ValMap.safe_find [] i instr2labels in
+      let labels_of_instr i = ValMap.safe_find Label.Set.empty i instr2labels in
 
 
       let see seen lbl =
@@ -760,33 +760,6 @@ let compatible_locs_mem e1 e2 =
                 k ws)
         loc_stores E.EventRel.empty
 
-    let make_fromto evts p = 
-      (*jade: scanning the whole program; otherwise would need to change the
-        event monad*)
-      let one_label res code =
-        let one_ins (cur_from,cur_to) (_,ins) = match A.I.fromto_of_instr ins with
-        | Some(l1,l2) ->
-            let one_event l evt res =
-              if E.is_mem evt then match evt.E.iiid with
-              | Some id -> 
-                  if List.exists (fun x -> List.mem x l) id.A.labels
-                  then begin
-                    E.EventSet.add evt res
-                  end  else res
-              | None -> res
-              else res
-            in
-            let new_from = E.EventSet.fold (one_event l1) evts cur_from
-            and new_to = E.EventSet.fold (one_event l2) evts cur_to in
-            (new_from,new_to)
-        | None -> (cur_from,cur_to) in
-        let (final_from,final_to) = 
-          List.fold_left one_ins (E.EventSet.empty, E.EventSet.empty) code in
-        let fromto = E.EventRel.cartesian final_from final_to in
-        E.EventRel.union fromto res in
-      List.fold_left (fun k (_,code) -> one_label k code) E.EventRel.empty p
-
-
     let fold_mem_finals test es rfm kont res =
       (* We can build those now *)
       let evts = es.E.events in
@@ -796,7 +769,6 @@ let compatible_locs_mem e1 e2 =
       and init_load_vbf = init_load es rfm in
 (* Atomic load/store pairs *)
       let atomic_load_store = make_atomic_load_store es in
-      let fromto = make_fromto evts test.Test.start_points in
 (* Now generate final stores *)
       let loc_stores = U.collect_mem_stores es in
       let loc_stores =
@@ -887,7 +859,6 @@ let compatible_locs_mem e1 e2 =
                    init_load_vbf = init_load_vbf ;
                    last_store_vbf = last_store_vbf ;
                    atomic_load_store = atomic_load_store ;
-                   fromto = fromto;
                  } in
                 kont conc res
               else begin res end

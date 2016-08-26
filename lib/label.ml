@@ -31,3 +31,6 @@ let fail p = sprintf "Fail%i" p
 and exit p = sprintf "Exit%i" p
 
 type next = Next | To of t
+
+module Set = StringSet
+module Map = StringMap

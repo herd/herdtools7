@@ -18,6 +18,7 @@ open Printf
 
 (* Should be put in a bell library *)
 let string_of_annot_list a = String.concat "," a  
+let string_of_labels a = Label.Set.pp_str "," Misc.identity a
 
 (* Who am i ? *)
 let arch = Archs.lisa
@@ -54,7 +55,7 @@ let parse_reg s =
 (****************)
 
 type barrier =
- | Fence of string list * (string list * string list) option
+ | Fence of string list * (Label.Set.t * Label.Set.t) option
  (* list of annotations, optional sets of labels*)
 
 (* jade: i'm guessing this is to give one possible example fence? picking this one *)
@@ -64,10 +65,11 @@ let pp_barrier b = match b with
   | Fence(s, None) ->
       sprintf "Fence(%s)" (string_of_annot_list s)
   | Fence(s, Some(s1,s2)) ->
-      sprintf "Fence(%s)(%s,%s)"
+      sprintf "Fence(%s)(%s X %s)"
         (string_of_annot_list s)
-        (string_of_annot_list s1)
-        (string_of_annot_list s2)
+        (string_of_labels s1)
+        (string_of_labels s2)
+
 
 let barrier_compare = Pervasives.compare
 
@@ -76,10 +78,11 @@ let pp_fence_ins = function
   | Fence (s,None) ->
       sprintf "f[%s]" (string_of_annot_list s)
   | Fence(s, Some(s1,s2)) ->
-      sprintf "f[%s]([%s],[%s])"
+      sprintf "f[%s] {%s} {%s}"
         (string_of_annot_list s)
-        (string_of_annot_list s1)
-        (string_of_annot_list s2)
+        (string_of_labels s1)
+        (string_of_labels s2)
+
 
 (****************)
 (* Instructions *)

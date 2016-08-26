@@ -80,6 +80,7 @@ module Make (C: Config) = struct
           let check_through _ = assert false
           let pp_failure _ _ msg _ =
             if C.debug then eprintf "%s\n" msg
+          let fromto _ _ = assert false
         end) in
 
     let empty_test = () in
@@ -88,8 +89,9 @@ module Make (C: Config) = struct
     let conc = () in
     let evts = UnitS.E.EventSet.empty
     and id = lazy UnitS.E.EventRel.empty
-    and unv = lazy UnitS.E.EventRel.empty in
-    let ks = {I.id; unv; evts; conc;} in
+    and unv = lazy UnitS.E.EventRel.empty
+    and po = UnitS.E.EventRel.empty in
+    let ks = {I.id; unv; evts; conc; po;} in
     let vb_pp = lazy [] in
 
     (* Continuation: notice that it should be called once at most *)
