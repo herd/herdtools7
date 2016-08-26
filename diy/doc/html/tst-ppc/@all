@@ -1,0 +1,17 @@
+# diycross -name IRIW Rfe PodRR,DpAddrdR,LwSyncdRR,EieiodRR,SyncdRR Fre Rfe PodRR,DpAddrdR,LwSyncdRR,EieiodRR,SyncdRR Fre
+# Version 4.00+1, Revision: 8982
+IRIW.litmus
+IRIW+addr+po.litmus
+IRIW+lwsync+po.litmus
+IRIW+eieio+po.litmus
+IRIW+sync+po.litmus
+IRIW+addrs.litmus
+IRIW+lwsync+addr.litmus
+IRIW+eieio+addr.litmus
+IRIW+sync+addr.litmus
+IRIW+lwsyncs.litmus
+IRIW+eieio+lwsync.litmus
+IRIW+sync+lwsync.litmus
+IRIW+eieios.litmus
+IRIW+sync+eieio.litmus
+IRIW+syncs.litmus

@@ -1,0 +1,34 @@
+digraph G {
+
+fontname="Arial";
+
+
+/* the unlocked events */
+eiid0 [label="a: Wx=1", shape="none", fontsize=12, pos="1.000000,1.125000!", fixedsize="true", height="0.166667", width="0.666667"];
+eiid1 [label="b: Rx=1", shape="none", fontsize=12, pos="1.000000,0.562500!", fixedsize="true", height="0.166667", width="0.666667"];
+eiid2 [label="c: Ry=0", shape="none", fontsize=12, pos="1.000000,0.000000!", fixedsize="true", height="0.166667", width="0.666667"];
+eiid3 [label="d: Wy=1", shape="none", fontsize=12, pos="2.000000,1.125000!", fixedsize="true", height="0.166667", width="0.666667"];
+eiid4 [label="e: Ry=1", shape="none", fontsize=12, pos="2.000000,0.562500!", fixedsize="true", height="0.166667", width="0.666667"];
+eiid5 [label="f: Rx=0", shape="none", fontsize=12, pos="2.000000,0.000000!", fixedsize="true", height="0.166667", width="0.666667"];
+
+/* the intra_causality_data edges */
+
+
+/* the intra_causality_control edges */
+
+/* the poi edges */
+eiid1 -> eiid2 [label="po", color="black", fontcolor="black", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+eiid4 -> eiid5 [label="po", color="black", fontcolor="black", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+/* the rfmap edges */
+eiid0 -> eiid1 [label="rf", color="red", fontcolor="red", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+initeiid2 [shape=point, height=0.06, width=0.06, color="red", pos="0.400000,0.084375!"];
+initeiid2 -> eiid2 [label="rf", color="red", fontcolor="red", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+eiid4 -> eiid3 [label="rf", color="red", fontcolor="red", fontsize=12, penwidth="1.500000", arrowsize="0.600000", dir="back"];
+initeiid5 [shape=point, height=0.06, width=0.06, color="red", pos="1.400000,0.084375!"];
+initeiid5 -> eiid5 [label="rf", color="red", fontcolor="red", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+
+
+/* The viewed-before edges */
+eiid2 -> eiid3 [label="fr", color="#ffa040", fontcolor="#ffa040", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+eiid5 -> eiid0 [label="fr", color="#ffa040", fontcolor="#ffa040", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+}

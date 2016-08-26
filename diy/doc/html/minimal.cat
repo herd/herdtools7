@@ -1,0 +1,9 @@
+"Minimal model"
+
+include "fences.cat"
+include "cross.cat"
+
+with co from generate_cos(co0)
+let fr = (rf^-1 ; co)\id
+show co,fr
+

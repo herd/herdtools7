@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<meta name="generator" content="hevea 2.27">
+<link rel="stylesheet" type="text/css" href="diy.css">
+<title>Some  examples</title>
+</head>
+<body>
+<a href="herd.html"><img src="previous_motif.gif" alt="Previous"></a>
+<a href="index.html"><img src="contents_motif.gif" alt="Up"></a>
+<a href="diy006.html"><img src="next_motif.gif" alt="Next"></a>
+<hr>
+<table class="center"><tr><td><h1 class="part" id="part:examples">Part&#XA0;IV<br>
+Some  examples</h1></td></tr>
+</table>
+<ul>
+<li><a href="examples.html#sec119">Running several tests at once, changing critical parameters</a>
+</li><li><a href="examples.html#affinity%3Aexperiment">Cross compiling, affinity experiment</a>
+</li><li><a href="examples.html#sec121">Cross running, testing low-end devices</a>
+</li></ul>
+<p>
+In the following experiment reports we describe both how we generate tests
+and how we run them on various machines under various conditions.</p>
+<h2 class="section" id="sec119">16&#XA0;&#XA0;Running several tests at once, changing critical parameters</h2>
+<p>
+In this section we describe an experiment on changing the stride
+(cf Sec.&#XA0;<a href="litmus.html#defstride">2.1</a>).
+This usage pattern applies to many situations, where a series of
+test is compiled once and run many times under changing conditions.</p><p>We assume a directory <a href="tst-x86"><span class="c004">tst-x86</span></a> (<a href="tst-x86.tar">archive</a>),
+that contains a series of litmus tests
+and an index file&#XA0;<a href="tst-x86/@all"><span class="c004">@all</span></a>.
+Those tests where produced by the <span class="c007">diy7</span> tool (see Sec.&#XA0;<a href="gen.html#diy%3Aintro">6</a>).
+They are two thread tests that exercise various relaxed behaviour
+of x86&#XA0;machines.
+More specifically, <span class="c007">diy7</span> is run as &#X201C;<span class="c004">diy -conf X.conf</span>&#X201D;,
+where <a href="tst-x86/X.conf"><span class="c004">X.conf</span></a> is the
+following configuration file
+</p><pre class="verbatim">-arch  X86
+-name  X
+-safe  Rfe,Fre,Wse,PodR*,PodWW,MFencedWR
+-relax PodWR,[Rfi,PodRR]
+-mix   true
+-mode  critical
+-size  5
+-nprocs 2
+</pre><p>
+As described in Sec.&#XA0;<a href="gen.html#diy%3Ausage">10.5</a>, <span class="c007">diy7</span> will generate all
+<em>critical</em> cycles of size at most 5, built from the given lists
+of candidate relaxations, spanning other two threads,
+and including at least one occurrence of PodWR, [Rfi,PodRR] or both.
+In effect, as x86 machines follow the TSO model that relaxes write to read
+pairs, all produced tests should <em>a priori</em> validate.</p><p>We test some <span class="c004">x86-64</span> machine, using the following 
+<a href="x86-64.cfg"><span class="c004">x86-64.cfg</span></a> <span class="c007">litmus7</span> configuration file:
+</p><pre class="verbatim">#Machine/OS specification
+os = linux
+word = w64
+#Test parameters
+size_of_test = 1000
+number_of_run = 10
+memory = direct
+stride = 1
+</pre><p>
+The number of available logical processors is unspecified,
+it thus defaults to&#XA0;1,
+leading to running one instance of the test only (cf parameter <span class="c010">a</span> in Sec.&#XA0;<a href="litmus.html#defa">2.1</a>)</p><p>We invoke <span class="c007">litmus7</span> as follows,
+where <span class="c004">run</span> is a pre-existing empty directory:
+</p><pre class="verbatim">% litmus7 -mach x86-64 -o run tst-x86/@all
+</pre><p>The directory <span class="c004">run</span> now contains C-source files for the tests,
+as well as some additional files:
+</p><pre class="verbatim">% ls run
+comp.sh   outs.c  README.txt  utils.c  X000.c  X002.c  X004.c  X006.c
+Makefile  outs.h  run.sh      utils.h  X001.c  X003.c  X005.c
+</pre><p>One notices a short <span class="c004">README.txt</span> file, two scripts to compile
+(<span class="c004">com.sh</span>) and run the tests (<span class="c004">run.sh</span>), and a <span class="c004">Makefile</span>.
+We use the latter to build test executables:
+</p><pre class="verbatim">% cd run
+% make -j 8
+gcc -Wall -std=gnu99 -fomit-frame-pointer -O2 -m64 -pthread -O2 -c outs.c
+gcc -Wall -std=gnu99 -fomit-frame-pointer -O2 -m64 -pthread -O2 -c utils.c
+gcc -Wall -std=gnu99 -fomit-frame-pointer -O2 -m64 -pthread -S X000.c
+...
+gcc -Wall -std=gnu99 -fomit-frame-pointer -O2 -m64 -pthread  -o X005.exe outs.o utils.o X005.s
+gcc -Wall -std=gnu99 -fomit-frame-pointer -O2 -m64 -pthread  -o X006.exe outs.o utils.o X006.s
+rm X005.s X004.s X006.s X000.s X001.s X002.s X003.s
+</pre><p>This builds the seven tests <span class="c004">X000.exe</span> to&#XA0;<span class="c004">X006.exe</span>.
+The size parameters (<code>size_of_test = 1000</code> and
+<code>number_of_run = 10</code>) are rather small, leading to fast tests:
+</p><pre class="verbatim">% ./X000.exe 
+Test X000 Allowed
+Histogram (2 states)
+5000  :&gt;0:EAX=1; 0:EBX=1; 1:EAX=1; 1:EBX=0;
+5000  :&gt;0:EAX=1; 0:EBX=0; 1:EAX=1; 1:EBX=1;
+No
+...
+Condition exists (0:EAX=1 /\ 0:EBX=0 /\ 1:EAX=1 /\ 1:EBX=0) is NOT validated
+...
+Observation X000 Never 0 10000
+Time X000 0.01
+</pre><p>However, the test fails, in the sense that the relaxed outcome targeted by
+<span class="c004">X000.exe</span> is not observed, as can be seen quite easily from
+the &#X201C;<span class="c004">Observation Never&#X2026;</span>&#X201D; line above .</p><p>To observe the relaxed outcome,
+it happens it suffices to change the stride value to&#XA0;2:
+</p><pre class="verbatim">% ./X000.exe -st 2
+Test X000 Allowed
+Histogram (3 states)
+21    *&gt;0:EAX=1; 0:EBX=0; 1:EAX=1; 1:EBX=0;
+4996  :&gt;0:EAX=1; 0:EBX=1; 1:EAX=1; 1:EBX=0;
+4983  :&gt;0:EAX=1; 0:EBX=0; 1:EAX=1; 1:EBX=1;
+Ok
+...
+Condition exists (0:EAX=1 /\ 0:EBX=0 /\ 1:EAX=1 /\ 1:EBX=0) is validated
+...
+Observation X000 Sometimes 21 9979
+Time X000 0.00
+</pre><p>We easily perform a more complete experiment with the stride changing
+from&#XA0;1 to&#XA0;8, by running the <span class="c004">run.sh</span> script,
+which transmits its command line options to all test executables:
+</p><pre class="verbatim">% for i in $(seq 1 8)
+&gt; do
+&gt; sh run.sh -st $i &gt; X.0$i
+&gt; done
+</pre><p>Run logs are thus saved into files <span class="c004">X.01</span> to&#XA0;<span class="c004">X.08</span>.
+The following table summarises the results:
+</p><div class="center"><table class="c000 cellpadding1" border=1><tr><td class="c016">&nbsp;</td><td class="c018">X.01</td><td class="c018">X.02</td><td class="c018">X.03</td><td class="c018">X.04</td><td class="c018">X.05</td><td class="c018">X.06</td><td class="c018">X.07</td><td class="c018">X.08 </td></tr>
+<tr><td class="c016"><a href="tst-x86/X000.litmus"><span class="c008">X000</span></a></td><td class="c018">0/10k</td><td class="c018">21/10k</td><td class="c018">0/10k</td><td class="c018">17/10k</td><td class="c018">0/10k</td><td class="c018">19/10k</td><td class="c018">2/10k</td><td class="c018">40/10k </td></tr>
+<tr><td class="c016"><a href="tst-x86/X001.litmus"><span class="c008">X001</span></a></td><td class="c018">0/10k</td><td class="c018">108/10k</td><td class="c018">0/10k</td><td class="c018">77/10k</td><td class="c018">2/10k</td><td class="c018">29/10k</td><td class="c018">0/10k</td><td class="c018">29/10k </td></tr>
+<tr><td class="c016"><a href="tst-x86/X002.litmus"><span class="c008">X002</span></a></td><td class="c018">0/10k</td><td class="c018">2/10k</td><td class="c018">0/10k</td><td class="c018">6/10k</td><td class="c018">0/10k</td><td class="c018">7/10k</td><td class="c018">0/10k</td><td class="c018">5/10k </td></tr>
+<tr><td class="c016"><a href="tst-x86/X003.litmus"><span class="c008">X003</span></a></td><td class="c018">0/10k</td><td class="c018">4/10k</td><td class="c018">2/10k</td><td class="c018">1/10k</td><td class="c018">0/10k</td><td class="c018">5/10k</td><td class="c018">0/10k</td><td class="c018">11/10k </td></tr>
+<tr><td class="c016"><a href="tst-x86/X004.litmus"><span class="c008">X004</span></a></td><td class="c018">0/10k</td><td class="c018">4/10k</td><td class="c018">0/10k</td><td class="c018">33/10k</td><td class="c018">0/10k</td><td class="c018">10/10k</td><td class="c018">0/10k</td><td class="c018">8/10k </td></tr>
+<tr><td class="c016"><a href="tst-x86/X005.litmus"><span class="c008">X005</span></a></td><td class="c018">0/10k</td><td class="c018">1/10k</td><td class="c018">0/10k</td><td class="c018">0/10k</td><td class="c018">0/10k</td><td class="c018">5/10k</td><td class="c018">0/10k</td><td class="c018">4/10k </td></tr>
+<tr><td class="c016"><a href="tst-x86/X006.litmus"><span class="c008">X006</span></a></td><td class="c018">0/10k</td><td class="c018">8/10k</td><td class="c018">0/10k</td><td class="c018">9/10k</td><td class="c018">0/10k</td><td class="c018">11/10k</td><td class="c018">1/10k</td><td class="c018">12/10k </td></tr>
+</table></div><p>
+For every test and stride value cells show how many times the targeted relaxed
+outcome was observed/total number of outcomes.
+One sees that even stride value perfom better &#X2014; noticeably 2, 6 and&#XA0;8.
+Moreover variation of the stride parameters permits the observation of
+the relaxed outcomes targeted by all tests.</p><p>We can perform another, similar, experiment changing the <span class="c010">s</span> (<code>size_of_test</code>) and&#XA0;<span class="c010">r</span> (<code>number_of_run</code>) parameters.
+Notice that the respective default values of <span class="c010">s</span> and&#XA0;<span class="c010">r</span> are
+1000 and&#XA0;10, as specified in the <a href="x86-64.cfg"><span class="c004">x86-64.cfg</span></a>
+configuration file.
+We now try the following settings:
+</p><pre class="verbatim">% sh run.sh -a 16 -s 10 -r 10000 &gt; Y.01
+% sh run.sh -a 16 -s 100 -r 1000 &gt; Y.02
+% sh run.sh -a 16 -s 1000 -r 100 &gt; Y.03
+% sh run.sh -a 16 -s 10000 -r 10 &gt; Y.04
+% sh run.sh -a 16 -s 100000 -r 1 &gt; Y.05
+</pre><p>The additional <span class="c004">-a 16</span> command line option informs test executable
+to use 16 logical processors, hence running 8 instances of
+the &#X201C;<span class="c008">X</span>&#X201D; tests concurrently, as those tests all are two thread tests.
+This technique of flooding the tested machine obviously
+yields better ressource usage
+and, according to our experience, favours outcome variability.</p><p>The following table summarises the results:
+</p><div class="center"><table class="c000 cellpadding1" border=1><tr><td class="c016">&nbsp;</td><td class="c016">Y.01</td><td class="c018">Y.02</td><td class="c018">Y.03</td><td class="c018">Y.04</td><td class="c018">Y.05 </td></tr>
+<tr><td class="c016"><a href="tst-x86/X000.litmus"><span class="c008">X000</span></a></td><td class="c016">2.3k/800k</td><td class="c018">602/800k</td><td class="c018">465/800k</td><td class="c018">551/800k</td><td class="c018">297/800k </td></tr>
+<tr><td class="c016"><a href="tst-x86/X001.litmus"><span class="c008">X001</span></a></td><td class="c016">2.9k/800k</td><td class="c018">632/800k</td><td class="c018">774/800k</td><td class="c018">667/800k</td><td class="c018">315/800k </td></tr>
+<tr><td class="c016"><a href="tst-x86/X002.litmus"><span class="c008">X002</span></a></td><td class="c016">633/800k</td><td class="c018">55/800k</td><td class="c018">5/800k</td><td class="c018">7/800k</td><td class="c018">0/800k </td></tr>
+<tr><td class="c016"><a href="tst-x86/X003.litmus"><span class="c008">X003</span></a></td><td class="c016">1.2k/800k</td><td class="c018">182/800k</td><td class="c018">152/800k</td><td class="c018">390/800k</td><td class="c018">57/800k </td></tr>
+<tr><td class="c016"><a href="tst-x86/X004.litmus"><span class="c008">X004</span></a></td><td class="c016">2.4k/800k</td><td class="c018">974/800k</td><td class="c018">1.5k/800k</td><td class="c018">2.4k/800k</td><td class="c018">1.6k/800k </td></tr>
+<tr><td class="c016"><a href="tst-x86/X005.litmus"><span class="c008">X005</span></a></td><td class="c016">239/800k</td><td class="c018">21/800k</td><td class="c018">8/800k</td><td class="c018">0/800k</td><td class="c018">1/800k </td></tr>
+<tr><td class="c016"><a href="tst-x86/X006.litmus"><span class="c008">X006</span></a></td><td class="c016">912/800k</td><td class="c018">129/800k</td><td class="c018">102/800k</td><td class="c018">143/800k</td><td class="c018">14/800k </td></tr>
+</table></div><p>
+Again, we observe all targeted relaxed outcomes. In fact,
+x86 relaxations are relatively easy to observe on our 16
+logical core machine.</p><p>Another test statistic of interest is
+<em>efficiency</em>, that is the number of targeted outcomes observed per
+second:
+</p><div class="center"><table class="c000 cellpadding1" border=1><tr><td class="c016">&nbsp;</td><td class="c018">Y.01</td><td class="c018">Y.02</td><td class="c018">Y.03</td><td class="c018">Y.04</td><td class="c018">Y.05 </td></tr>
+<tr><td class="c016"><a href="tst-x86/X000.litmus"><span class="c008">X000</span></a></td><td class="c018">285</td><td class="c018">2.2k</td><td class="c018">6.6k</td><td class="c018">9.2k</td><td class="c018">4.2k </td></tr>
+<tr><td class="c016"><a href="tst-x86/X001.litmus"><span class="c008">X001</span></a></td><td class="c018">366</td><td class="c018">2.4k</td><td class="c018">13k</td><td class="c018">11k</td><td class="c018">5.2k </td></tr>
+<tr><td class="c016"><a href="tst-x86/X002.litmus"><span class="c008">X002</span></a></td><td class="c018">78</td><td class="c018">212</td><td class="c018">71</td><td class="c018">140</td><td class="c018">&nbsp;</td></tr>
+<tr><td class="c016"><a href="tst-x86/X003.litmus"><span class="c008">X003</span></a></td><td class="c018">150</td><td class="c018">650</td><td class="c018">2.5k</td><td class="c018">7.8k</td><td class="c018">950 </td></tr>
+<tr><td class="c016"><a href="tst-x86/X004.litmus"><span class="c008">X004</span></a></td><td class="c018">288</td><td class="c018">3.7k</td><td class="c018">25k</td><td class="c018">59k</td><td class="c018">32k </td></tr>
+<tr><td class="c016"><a href="tst-x86/X005.litmus"><span class="c008">X005</span></a></td><td class="c018">28</td><td class="c018">72</td><td class="c018">114</td><td class="c018">&nbsp;</td><td class="c018">17 </td></tr>
+<tr><td class="c016"><a href="tst-x86/X006.litmus"><span class="c008">X006</span></a></td><td class="c018">118</td><td class="c018">461</td><td class="c018">1.7k</td><td class="c018">2.9k</td><td class="c018">280 </td></tr>
+</table></div><p>
+As we can see, although the setting <span class="c004">-s 10 -r 10000</span> yields the most
+relaxed outcomes, it may not be considered as the most efficient.
+Moreover, we see that tests <span class="c008">X002</span> and&#XA0;<span class="c008">X005</span>
+look more challenging than others.</p><p>Finally, it may be interesting to classify the &#X201C;<span class="c004">X</span>&#X201D; tests:
+</p><pre class="verbatim">% mcycles7 @all | classify7 -arch X86
+R
+  X003 -&gt; R+po+rfi-po : PodWW Wse Rfi PodRR Fre
+  X006 -&gt; R : PodWW Wse PodWR Fre
+SB
+  X000 -&gt; SB+rfi-pos : Rfi PodRR Fre Rfi PodRR Fre
+  X001 -&gt; SB+rfi-po+po : Rfi PodRR Fre PodWR Fre
+  X002 -&gt; SB+mfence+rfi-po : MFencedWR Fre Rfi PodRR Fre
+  X004 -&gt; SB : PodWR Fre PodWR Fre
+  X005 -&gt; SB+mfence+po : MFencedWR Fre PodWR Fre
+</pre><p>One sees that two thread non-SC tests for x86 are basically of two kinds.</p>
+<h2 class="section" id="affinity:experiment">17&#XA0;&#XA0;Cross compiling, affinity experiment</h2>
+<p>
+In this section we describe how to produce the C&#XA0;sources of tests
+on a machine, while running the tests on another.
+We also describe a sophisticated affinity experiment.</p><p>We assume a directory <a href="tst-ppc"><span class="c004">tst-ppc</span></a> (<a href="tst-ppc.tar">archive</a>),
+that contains a series of litmus tests
+and an index file&#XA0;<a href="tst-ppc/@all"><span class="c004">@all</span></a>.
+Those tests where produced by the <span class="c007">diycross7</span>
+tool. They illustrate variations of the
+classical <a href="tst-ppc/IRIW.litmus"><span class="c008">IRIW</span></a> test.
+</p><div class="center"><img src="IRIW.png"></div><p>More specifically, the <span class="c008">IRIW</span> variations are produced as follows
+(see also Sec.&#XA0;<a href="gen.html#diycross%3Aintro">8</a>):
+</p><pre class="verbatim">% mkdir tst-ppc
+% diycross7 -name IRIW -o tst-ppc Rfe PodRR,DpAddrdR,LwSyncdRR,EieiodRR,SyncdRR Fre Rfe PodRR,DpAddrdR,LwSyncdRR,EieiodRR,SyncdRR Fre
+Generator produced 15 tests
+</pre><p>We target a Power7 machine described by the configuration file
+<a href="power7.cfg"><span class="c004">power7.cfg</span></a>:
+</p><pre class="verbatim">#Machine/OS specification
+os = linux
+word = w64
+smt = 4
+smt_mode = seq
+#Test parameters
+size_of_test = 1000
+number_of_run = 10
+avail = 0
+memory = direct
+stride = 1
+affinity = incr0
+</pre><p>
+One may notice the SMT (<em>Simultaneaous Multi-Threading</em>) specification:
+4-ways SMT (<code>smt=4</code>), logical processors pertaining
+to the same core being numbered in sequence (<code>smt_mode = seq</code>) &#X2014;
+that is, logical processors from the first core are 0, 1 ,2 and&#XA0;3;
+logical processors from the second core are 4, 5 ,6 and&#XA0;7; etc.
+The SMT specification is necessary to enable
+custom affinity mode
+(see Sec.&#XA0;<a href="litmus.html#affinity%3Acustom">2.2.4</a>).</p><p>One may also notice the specification of 0 available logical processors
+(<code>avail=0</code>).
+As affinity support is enabled (<code>affinity=incr0</code>),
+test executables will find themselves
+the number of logical processors available on the target machine.</p><p>We compile tests to C-sources packed in archive <span class="c004">a.tar</span>
+and upload the archive to the target power7 machine as follows:
+</p><pre class="verbatim">% litmus7 -mach power7 -o a.tar tst-ppc/@all
+% scp a.tar power7:
+</pre><p>Then, on <span class="c004">power7</span> we unpack the archive and produce executable tests
+as follows:
+</p><pre class="verbatim">power7% tar xmf a.tar
+power7% make -j 8
+gcc -D_GNU_SOURCE -Wall -std=gnu99 -O -m64 -pthread -O2 -c affinity.c
+gcc -D_GNU_SOURCE -Wall -std=gnu99 -O -m64 -pthread -O2 -c outs.c
+gcc -D_GNU_SOURCE -Wall -std=gnu99 -O -m64 -pthread -S IRIW+eieios.c
+...
+</pre><p>As a starter, we can check the effect of available logical processor detection
+and custom affinity control (option <span class="c004">+ca</span>)
+by passing the command line option <span class="c004">-v</span> to one test executable,
+for instance
+<span class="c004">IRIW.exe</span>:
+</p><pre class="verbatim">power7% ./IRIW.exe -v +ca
+./IRIW.exe -v +ca
+IRIW: n=8, r=10, s=1000, st=1, +ca, p='0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31'
+thread allocation: 
+[23,22,3,2] {5,5,0,0}
+[7,6,15,14] {1,1,3,3}
+[11,10,5,4] {2,2,1,1}
+[21,20,27,26] {5,5,6,6}
+[9,8,25,24] {2,2,6,6}
+[31,30,13,12] {7,7,3,3}
+[19,18,29,28] {4,4,7,7}
+[1,0,17,16] {0,0,4,4}
+...
+</pre><p>We see that our machine <span class="c004">power7</span> features 32 logical processors
+numbered from 0 to&#XA0;31
+(cf <code>p=...</code> above) and will thus run <code>n=8</code> concurrent
+instances of the 4&#XA0;thread IRIW&#XA0;test.
+Additionally allocation of threads to logical processors is shown:
+here, the four threads of the test are partitioned into two groups, which are
+scheduled to run on different cores. For example, threads 0 and&#XA0;1 of
+the first instance of the test will run on logical processors 23 and&#XA0;22
+(core&#XA0;5); while threads 2 and&#XA0;3 will run on logical
+processors 3 and&#XA0;2 (core&#XA0;0).</p><p>Our experiment consists in running all tests
+with affinity increment (see Sec.&#XA0;<a href="litmus.html#defi">2.2.1</a>) being from 0
+and then 1 to&#XA0;8 (option <span class="c004">-i </span><span class="c010">i</span>),
+as well as in random and custom affinity mode
+(options <span class="c004">+ra</span> and&#XA0;<span class="c004">+ca</span>):
+</p><pre class="verbatim">power7% for i in $(seq 0 8)
+&gt; do
+&gt; sh run.sh -i $i &gt; Z.0$i
+&gt; done
+power7% sh run.sh +ra &gt; Z.0R
+power7% sh run.sh +ca &gt; Z.0C
+
+</pre><p>The following table summarises the results, with X meaning that the targeted
+relaxed outcome is observed:
+</p><div class="center"><table class="c000 cellpadding1" border=1><tr><td class="c016">&nbsp;</td><td class="c014">Z.00</td><td class="c014">Z.01</td><td class="c014">Z.02</td><td class="c014">Z.03</td><td class="c014">Z.04</td><td class="c014">Z.05</td><td class="c014">Z.06</td><td class="c014">Z.07</td><td class="c014">Z.08</td><td class="c014">Z.0C</td><td class="c014">Z.0R </td></tr>
+<tr><td class="c016"><a href="tst-ppc/IRIW.litmus"><span class="c008">IRIW</span></a></td><td class="c014">X</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">X</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">X</td><td class="c014">X</td><td class="c014">X</td><td class="c014">X</td><td class="c014">X </td></tr>
+<tr><td class="c016"><a href="tst-ppc/IRIW+addr+po.litmus"><span class="c008">IRIW+addr+po</span></a></td><td class="c014">X</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">X</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">X</td><td class="c014">&nbsp;</td></tr>
+<tr><td class="c016"><a href="tst-ppc/IRIW+addrs.litmus"><span class="c008">IRIW+addrs</span></a></td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">X </td></tr>
+<tr><td class="c016"><a href="tst-ppc/IRIW+eieio+addr.litmus"><span class="c008">IRIW+eieio+addr</span></a></td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">X</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">&nbsp;</td></tr>
+<tr><td class="c016"><a href="tst-ppc/IRIW+eieio+po.litmus"><span class="c008">IRIW+eieio+po</span></a></td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">X</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">&nbsp;</td></tr>
+<tr><td class="c016"><a href="tst-ppc/IRIW+eieios.litmus"><span class="c008">IRIW+eieios</span></a></td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">X</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">X </td></tr>
+<tr><td class="c016"><a href="tst-ppc/IRIW+lwsync+addr.litmus"><span class="c008">IRIW+lwsync+addr</span></a></td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">X</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">&nbsp;</td></tr>
+<tr><td class="c016"><a href="tst-ppc/IRIW+lwsync+eieio.litmus"><span class="c008">IRIW+lwsync+eieio</span></a></td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">X</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">&nbsp;</td></tr>
+<tr><td class="c016"><a href="tst-ppc/IRIW+lwsync+po.litmus"><span class="c008">IRIW+lwsync+po</span></a></td><td class="c014">X</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">X</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">&nbsp;</td></tr>
+<tr><td class="c016"><a href="tst-ppc/IRIW+lwsyncs.litmus"><span class="c008">IRIW+lwsyncs</span></a></td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">&nbsp;</td></tr>
+<tr><td class="c016"><a href="tst-ppc/IRIW+sync+addr.litmus"><span class="c008">IRIW+sync+addr</span></a></td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">&nbsp;</td></tr>
+<tr><td class="c016"><a href="tst-ppc/IRIW+sync+eieio.litmus"><span class="c008">IRIW+sync+eieio</span></a></td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">&nbsp;</td></tr>
+<tr><td class="c016"><a href="tst-ppc/IRIW+sync+lwsync.litmus"><span class="c008">IRIW+sync+lwsync</span></a></td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">&nbsp;</td></tr>
+<tr><td class="c016"><a href="tst-ppc/IRIW+sync+po.litmus"><span class="c008">IRIW+sync+po</span></a></td><td class="c014">X</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">X</td><td class="c014">X</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">X</td><td class="c014">X </td></tr>
+<tr><td class="c016"><a href="tst-ppc/IRIW+syncs.litmus"><span class="c008">IRIW+syncs</span></a></td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td><td class="c014">&nbsp;</td></tr>
+</table></div><p>
+On sees that all possible relaxed outcomes shows up with proper affinity
+control. More precisely, setting the affinity increment to 2 or resorting
+to custom affinity result in the same effect:
+the first two threads of the test run on one core, while the last two threads
+of the test run on a different core.
+As demonstrated by the experiment, this allocation of test threads to cores
+suffices to favour relaxed outcomes for all tests except for
+<a href="tst-ppc/IRIW+syncs.litmus"><span class="c008">IRIW+syncs</span></a>,
+where the <span class="c004">sync</span> fences forbid them.</p>
+<h2 class="section" id="sec121">18&#XA0;&#XA0;Cross running, testing low-end devices</h2>
+<p>
+Together <span class="c007">litmus7</span> options <a href="litmus.html#gcc"><span class="c004">-gcc</span></a>
+and&#XA0;<a href="litmus.html#linkopt"><span class="c004">-linkopt</span></a> permit using
+a C&#XA0;cross compiler. For instance, assume that <span class="c007">litmus7</span>
+runs on machine&#XA0;<span class="c010">A</span> and that <span class="c004">crossgcc</span>, a cross compiler for machine&#XA0;<span class="c010">C</span>,
+is available on machine&#XA0;<span class="c010">B</span>. Then, the following sequence of
+commands can be used to test machine&#XA0;<span class="c010">C</span>:
+</p><pre class="verbatim">A% litmus7 -gcc crossgcc -linkopt -static -o C-files.tar ...
+A% scp C-files.tar B:
+
+B% tar xf C-files.tar
+B% make
+B% tar cf /tmp/C-compiled.tar .
+B% scp /tmp/C-compiled.tar C:
+
+C% tar xf C-compiled.tar
+C% sh run.sh
+</pre><p>Alternatively, using option <a href="litmus.html#crossrun"><span class="c004">-crossrun </span><span class="c010">C</span></a>,
+one can avoid copying the archive <code>C-compiled.tar</code> to machine&#XA0;<span class="c010">C</span>:
+</p><pre class="verbatim">A% litmus7 -crossrun C -gcc crossgcc -linkopt -static -o C-files.tar ...
+A% scp C-files.tar B:
+
+B% tar xf C-files.tar
+B% make
+B% sh run.sh
+</pre><p>More specifically, option <span class="c004">-crossrun </span><span class="c010">C</span> instructs the <span class="c004">run.sh</span>
+script to upload executables individually to machine&#XA0;<span class="c010">C</span>, just before running
+them. Notice that executables are removed from&#XA0;<span class="c010">C</span> once run.</p><p>We illustrate the crossrun feature by testing <span class="c008">LB</span> variations on
+an ARM-based Tegra3 (4 cores) tablet.
+Test <a href="tst-arm/LB.litmus"><span class="c008">LB</span></a> (load-buffering) exercises
+the following &#X201C;causality&#X201D; loop:
+</p><div class="center"><img src="LB.png"></div><p>
+That is, thread&#XA0;0 reads the values stored to location&#XA0;<span class="c004">x</span> by thread&#XA0;1,
+thread&#XA0;1 reads the values stored to location&#XA0;<span class="c004">y</span> by thread&#XA0;0,
+and both threads read &#X201C;before&#X201D; they write.</p><p>We shall consider tests with varying interpretations of &#X201C;before&#X201D;:
+the write may simply follow the read in program order
+(<span class="c004">po</span> in test names),
+may depend on the read (<span class="c004">data</span> and <span class="c004">addr</span>), or
+they may be some fence in-betweeen
+(<span class="c004">isb</span> and <span class="c004">dmb</span>).
+We first generate tests <a href="tst-arm"><span class="c004">tst-arm</span></a> (<a href="tst-arm.tar">archive</a>) with <span class="c007">diycross7</span>:
+</p><pre class="verbatim">% mkdir tst-arm
+% diycross7 -arch ARM -name LB -o tst-arm PodRW,DpDatadW,DpCtrldW,ISBdRW,DMBdRW Rfe PodRW,DpDatadW,DpCtrldW,ISBdRW,DMBdRW Rfe
+Generator produced 15 tests
+</pre><p>We use the following, <a href="tegra3.cfg"><span class="c004">tegra3.cfg</span></a>, configuration file:
+</p><pre class="verbatim">#Tegra 3
+size_of_test = 5k
+number_of_run = 200
+avail = 4
+memory = direct
+#Cross compilation
+gcc = arm-linux-gnueabi-gcc
+ccopts = -march=armv7-a -O2 
+linkopt = -static
+</pre><p>
+Notice the &#X201C;cross-compilation&#X201D; section:
+the name of the gcc cross-compiler is <span class="c004">arm-linux-gnueabi-gcc</span>,
+while the adequate version of the target ARM variant
+and static linking are specified.</p><p>We compile the tests from litmus source files to C&#XA0;source files in
+directory <span class="c004">TST</span> as follows:
+</p><pre class="verbatim">% mkdir TST
+% litmus7 -mach tegra3 -crossrun app_81@wifi-auth-188153:2222 tst-arm/@all -o TST
+</pre><p>The extra option <span class="c004">-crossrun app_81@wifi-auth-188153:2222</span>
+specifies the address to log onto the tablet by <span class="c004">ssh</span>,
+which is connected on a local WiFi network and runs a <span class="c004">ssh</span> daemon
+that listens on port&#XA0;2222.</p><p>We compile to executables and run them as as follows:
+</p><pre class="verbatim">% cd TST
+% make
+arm-linux-gnueabi-gcc -Wall -std=gnu99 -march=armv7-a -O2 -pthread -O2 -c outs.c
+arm-linux-gnueabi-gcc -Wall -std=gnu99 -march=armv7-a -O2 -pthread -O2 -c utils.c
+arm-linux-gnueabi-gcc -Wall -std=gnu99 -march=armv7-a -O2 -pthread -S LB.c
+...
+% sh run.sh &gt; ARM-LB.log
+</pre><p>(Complete <a href="ARM-LB.log">run log</a>.) It is important to notice that the shell script <span class="c004">run.sh</span> runs
+on the local machine, not on the remote tablet.
+Each test executable is copied (by using <span class="c004">scp</span>) to the tablet, runs there
+and is deleted (by using <span class="c004">ssh</span>), as can be seen with <span class="c004">sh</span>
+&#X201C;<span class="c004">-x</span>&#X201D; option:
+</p><pre class="verbatim">% sh -x run.sh 2&gt;&amp;1 &gt;ARM-LB.log | grep -e scp -e ssh
++ scp -P 2222 -q ./LB.exe app_81@wifi-auth-188153:
++ ssh -p 2222 -q -n app_81@wifi-auth-188153 ./LB.exe -q  &amp;&amp; rm ./LB.exe
++ scp -P 2222 -q ./LB+data+po.exe app_81@wifi-auth-188153:
++ ssh -p 2222 -q -n app_81@wifi-auth-188153 ./LB+data+po.exe -q  &amp;&amp; rm ./LB+data+po.exe
+...
+</pre><p>Experiment results can be extracted from the log file quite easily,
+by reading the &#X201C;Observation&#X201D; information from test output:
+</p><pre class="verbatim">% grep Observation ARM-LB.log
+Observation LB Sometimes 1395 1998605
+Observation LB+data+po Sometimes 360 1999640
+Observation LB+ctrl+po Sometimes 645 1999355
+Observation LB+isb+po Sometimes 1676 1998324
+Observation LB+dmb+po Sometimes 18 1999982
+Observation LB+datas Never 0 2000000
+Observation LB+ctrl+data Never 0 2000000
+Observation LB+isb+data Sometimes 654 1999346
+Observation LB+dmb+data Never 0 2000000
+Observation LB+ctrls Never 0 2000000
+Observation LB+isb+ctrl Sometimes 1143 1998857
+Observation LB+dmb+ctrl Never 0 2000000
+Observation LB+isbs Sometimes 2169 1997831
+Observation LB+dmb+isb Sometimes 178 1999822
+Observation LB+dmbs Never 0 2000000
+</pre><p>What is observed (<span class="c004">Sometimes</span>) or not (<span class="c004">Never</span>) is the occurence
+of the non-SC behaviour of tests. All tests have the same structure
+and the observation of the non-SC behaviour can be interpreted as
+some read not being &#X201C;before&#X201D; the write by the same thread.
+This situation occurs for plain program order (plain test <span class="c008">LB</span> and
+<span class="c004">po</span> variations) and for the <span class="c004">isb</span> fence.</p><p>The following graph summarises the observations and illustrates
+that data dependencies, control dependencies and the <span class="c004">dmb</span> barrier
+apparently suffice to restore SC in the case of the LB family.
+</p><div class="center"><img src="LB-kinds.png"></div><p>
+In the graph above, a red node means an observation of the non-SC behaviour.
+</p><hr>
+<a href="herd.html"><img src="previous_motif.gif" alt="Previous"></a>
+<a href="index.html"><img src="contents_motif.gif" alt="Up"></a>
+<a href="diy006.html"><img src="next_motif.gif" alt="Next"></a>
+</body>
+</html>

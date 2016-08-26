@@ -1,0 +1,15 @@
+IRIW Allow
+IRIW+addrs Allow
+IRIW+addr+po Allow
+IRIW+eieios Allow
+IRIW+eieio+po Allow
+IRIW+eieio+addr Allow
+IRIW+lwsyncs Allow
+IRIW+lwsync+po Allow
+IRIW+lwsync+addr Allow
+IRIW+lwsync+eieio Allow
+IRIW+sync+po Allow
+IRIW+sync+addr Allow
+IRIW+sync+eieio Allow
+IRIW+sync+lwsync Allow
+IRIW+syncs Forbid

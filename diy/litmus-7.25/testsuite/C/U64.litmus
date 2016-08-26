@@ -1,0 +1,24 @@
+C U64
+"Missaligned accesses, uint64_t"
+{
+uint32_t p[2] ; 
+uint32_t 1:r1 ; 
+uint32_t 1:r2 ; 
+uint64_t 1:r3 ; 
+}
+
+P0(volatile uint32_t *p) {
+  uint64_t *q = (uint64_t *)p;
+  *q = 0x100000002 ;
+}
+
+P1(volatile uint32_t *p) {
+  uint32_t r1 = p[1] ;
+  mbar() ;
+  uint32_t r2 = p[0] ;
+  mbar() ;
+  uint64_t r3 = *(uint64_t *)(p);
+}
+
+locations[1:r3;]
+exists (1:r1=2 /\ 1:r2=0)

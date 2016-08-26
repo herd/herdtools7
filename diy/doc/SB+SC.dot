@@ -1,0 +1,34 @@
+digraph G {
+
+fontname="Arial";
+
+
+/* the unlocked events */
+eiid0 [label="a: Wx=1", shape="none", fontsize=12, pos="1.000000,1.125000!", fixedsize="true", height="0.166667", width="0.666667"];
+eiid1 [label="b: Ry=0", shape="none", fontsize=12, pos="1.000000,0.000000!", fixedsize="true", height="0.166667", width="0.666667"];
+eiid2 [label="c: Wy=1", shape="none", fontsize=12, pos="2.500000,1.125000!", fixedsize="true", height="0.166667", width="0.666667"];
+eiid3 [label="d: Rx=0", shape="none", fontsize=12, pos="2.500000,0.000000!", fixedsize="true", height="0.166667", width="0.666667"];
+
+/* the intra_causality_data edges */
+
+
+/* the intra_causality_control edges */
+
+/* the poi edges */
+eiid0 -> eiid1 [label="po", color="black", fontcolor="black", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+eiid2 -> eiid3 [label="po", color="black", fontcolor="black", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+/* the rfmap edges */
+finaleiid0 [shape=none, height=0.0, width=0.0, label="", pos="1.900000,0.843750!"];
+eiid0 -> finaleiid0 [label="rf", color="red", fontcolor="red", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+finaleiid2 [shape=none, height=0.0, width=0.0, label="", pos="3.400000,0.843750!"];
+eiid2 -> finaleiid2 [label="rf", color="red", fontcolor="red", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+initeiid1 [shape=point, height=0.06, width=0.06, color="red", pos="0.100000,0.168750!"];
+initeiid1 -> eiid1 [label="rf", color="red", fontcolor="red", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+initeiid3 [shape=point, height=0.06, width=0.06, color="red", pos="1.600000,0.168750!"];
+initeiid3 -> eiid3 [label="rf", color="red", fontcolor="red", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+
+
+/* The viewed-before edges */
+eiid1 -> eiid2 [label="fr", color="#ffa040", fontcolor="#ffa040", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+eiid3 -> eiid0 [label="fr", color="#ffa040", fontcolor="#ffa040", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+}

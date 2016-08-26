@@ -1,0 +1,60 @@
+digraph G {
+
+fontname="Arial";
+
+
+/* the unlocked events */
+proc0_label_node [shape=none, fontsize=12, label="Thread 0", pos="1.000000,1.200000!", fixedsize=true, width=0.650000, height=0.187500]
+eiid0 [label="a: Wx=1", shape="none", fontsize=12, pos="1.000000,0.750000!", fixedsize="true", height="0.166667", width="0.666667"];
+eiid1 [label="b: Ry=0", shape="none", fontsize=12, pos="1.000000,0.000000!", fixedsize="true", height="0.166667", width="0.666667"];
+proc1_label_node [shape=none, fontsize=12, label="Thread 1", pos="2.000000,1.200000!", fixedsize=true, width=0.650000, height=0.187500]
+eiid2 [label="c: Wy=1", shape="none", fontsize=12, pos="2.000000,0.750000!", fixedsize="true", height="0.166667", width="0.666667"];
+eiid3 [label="d: Rz=0", shape="none", fontsize=12, pos="2.000000,0.000000!", fixedsize="true", height="0.166667", width="0.666667"];
+proc2_label_node [shape=none, fontsize=12, label="Thread 2", pos="3.000000,1.200000!", fixedsize=true, width=0.650000, height=0.187500]
+eiid4 [label="e: Wz=1", shape="none", fontsize=12, pos="3.000000,0.750000!", fixedsize="true", height="0.166667", width="0.666667"];
+eiid5 [label="f: Ra=0", shape="none", fontsize=12, pos="3.000000,0.000000!", fixedsize="true", height="0.166667", width="0.666667"];
+proc3_label_node [shape=none, fontsize=12, label="Thread 3", pos="4.000000,1.200000!", fixedsize=true, width=0.650000, height=0.187500]
+eiid6 [label="g: Wa=1", shape="none", fontsize=12, pos="4.000000,0.750000!", fixedsize="true", height="0.166667", width="0.666667"];
+eiid7 [label="h: Rb=0", shape="none", fontsize=12, pos="4.000000,0.000000!", fixedsize="true", height="0.166667", width="0.666667"];
+proc4_label_node [shape=none, fontsize=12, label="Thread 4", pos="5.000000,1.200000!", fixedsize=true, width=0.650000, height=0.187500]
+eiid8 [label="i: Wb=1", shape="none", fontsize=12, pos="5.000000,0.750000!", fixedsize="true", height="0.166667", width="0.666667"];
+eiid9 [label="j: Rc=0", shape="none", fontsize=12, pos="5.000000,0.000000!", fixedsize="true", height="0.166667", width="0.666667"];
+proc5_label_node [shape=none, fontsize=12, label="Thread 5", pos="6.000000,1.200000!", fixedsize=true, width=0.650000, height=0.187500]
+eiid10 [label="k: Wc=1", shape="none", fontsize=12, pos="6.000000,0.750000!", fixedsize="true", height="0.166667", width="0.666667"];
+eiid11 [label="l: Rx=0", shape="none", fontsize=12, pos="6.000000,0.000000!", fixedsize="true", height="0.166667", width="0.666667"];
+
+/* the intra_causality_data edges */
+
+
+/* the intra_causality_control edges */
+
+/* the poi edges */
+eiid0 -> eiid1 [label="po", color="black", fontcolor="black", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+eiid2 -> eiid3 [label="po", color="black", fontcolor="black", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+eiid4 -> eiid5 [label="po", color="black", fontcolor="black", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+eiid6 -> eiid7 [label="po", color="black", fontcolor="black", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+eiid8 -> eiid9 [label="po", color="black", fontcolor="black", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+eiid10 -> eiid11 [label="po", color="black", fontcolor="black", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+/* the rfmap edges */
+initeiid1 [shape=point, height=0.06, width=0.06, color="red", pos="0.400000,0.112500!"];
+initeiid1 -> eiid1 [label="rf", color="red", fontcolor="red", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+initeiid3 [shape=point, height=0.06, width=0.06, color="red", pos="1.400000,0.112500!"];
+initeiid3 -> eiid3 [label="rf", color="red", fontcolor="red", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+initeiid5 [shape=point, height=0.06, width=0.06, color="red", pos="2.400000,0.112500!"];
+initeiid5 -> eiid5 [label="rf", color="red", fontcolor="red", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+initeiid7 [shape=point, height=0.06, width=0.06, color="red", pos="3.400000,0.112500!"];
+initeiid7 -> eiid7 [label="rf", color="red", fontcolor="red", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+initeiid9 [shape=point, height=0.06, width=0.06, color="red", pos="4.400000,0.112500!"];
+initeiid9 -> eiid9 [label="rf", color="red", fontcolor="red", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+initeiid11 [shape=point, height=0.06, width=0.06, color="red", pos="5.400000,0.112500!"];
+initeiid11 -> eiid11 [label="rf", color="red", fontcolor="red", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+
+
+/* The viewed-before edges */
+eiid1 -> eiid2 [label="fr", color="#ffa040", fontcolor="#ffa040", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+eiid3 -> eiid4 [label="fr", color="#ffa040", fontcolor="#ffa040", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+eiid5 -> eiid6 [label="fr", color="#ffa040", fontcolor="#ffa040", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+eiid7 -> eiid8 [label="fr", color="#ffa040", fontcolor="#ffa040", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+eiid9 -> eiid10 [label="fr", color="#ffa040", fontcolor="#ffa040", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+eiid0 -> eiid11 [label="fr", color="#ffa040", fontcolor="#ffa040", fontsize=12, penwidth="1.500000", arrowsize="0.600000", dir="back"];
+}

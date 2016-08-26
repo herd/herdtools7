@@ -1,0 +1,896 @@
+| `Pb (DontSetAA,DontSetLK,target_addr) -> sprintf "b %d" target_addr
+| `Pb (SetAA,DontSetLK,target_addr) -> sprintf "ba %d" target_addr
+| `Pb (DontSetAA,SetLK,target_addr) -> sprintf "bl %d" target_addr
+| `Pb (SetAA,SetLK,target_addr) -> sprintf "bla %d" target_addr
+| `Pbc (DontSetAA,DontSetLK,bO,bI,target_addr) -> sprintf "bc %d,%d,%d" bO bI target_addr
+| `Pbc (SetAA,DontSetLK,bO,bI,target_addr) -> sprintf "bca %d,%d,%d" bO bI target_addr
+| `Pbc (DontSetAA,SetLK,bO,bI,target_addr) -> sprintf "bcl %d,%d,%d" bO bI target_addr
+| `Pbc (SetAA,SetLK,bO,bI,target_addr) -> sprintf "bcla %d,%d,%d" bO bI target_addr
+| `Pbclr (DontSetLK,bO,bI,bH) -> sprintf "bclr %d,%d,%d" bO bI bH
+| `Pbclr (SetLK,bO,bI,bH) -> sprintf "bclrl %d,%d,%d" bO bI bH
+| `Pbcctr (DontSetLK,bO,bI,bH) -> sprintf "bcctr %d,%d,%d" bO bI bH
+| `Pbcctr (SetLK,bO,bI,bH) -> sprintf "bcctrl %d,%d,%d" bO bI bH
+| `Pcrand (bT,bA,bB) -> sprintf "crand %d,%d,%d" bT bA bB
+| `Pcrnand (bT,bA,bB) -> sprintf "crnand %d,%d,%d" bT bA bB
+| `Pcror (bT,bA,bB) -> sprintf "cror %d,%d,%d" bT bA bB
+| `Pcrxor (bT,bA,bB) -> sprintf "crxor %d,%d,%d" bT bA bB
+| `Pcrnor (bT,bA,bB) -> sprintf "crnor %d,%d,%d" bT bA bB
+| `Pcreqv (bT,bA,bB) -> sprintf "creqv %d,%d,%d" bT bA bB
+| `Pcrandc (bT,bA,bB) -> sprintf "crandc %d,%d,%d" bT bA bB
+| `Pcrorc (bT,bA,bB) -> sprintf "crorc %d,%d,%d" bT bA bB
+| `Pmcrf (bF,bFA) -> sprintf "mcrf %d,%d" bF bFA
+| `Psc (lEV) -> sprintf "sc %d" lEV
+| `Pscv (lEV) -> sprintf "scv %d" lEV
+| `Plbz (rT,d,rA) -> sprintf "lbz %s,%d(%s)" (pp_reg rT) d (pp_reg rA)
+| `Plbzx (rT,rA,rB) -> sprintf "lbzx %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Plbzu (rT,d,rA) -> sprintf "lbzu %s,%d(%s)" (pp_reg rT) d (pp_reg rA)
+| `Plbzux (rT,rA,rB) -> sprintf "lbzux %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Plhz (rT,d,rA) -> sprintf "lhz %s,%d(%s)" (pp_reg rT) d (pp_reg rA)
+| `Plhzx (rT,rA,rB) -> sprintf "lhzx %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Plhzu (rT,d,rA) -> sprintf "lhzu %s,%d(%s)" (pp_reg rT) d (pp_reg rA)
+| `Plhzux (rT,rA,rB) -> sprintf "lhzux %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Plha (rT,d,rA) -> sprintf "lha %s,%d(%s)" (pp_reg rT) d (pp_reg rA)
+| `Plhax (rT,rA,rB) -> sprintf "lhax %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Plhau (rT,d,rA) -> sprintf "lhau %s,%d(%s)" (pp_reg rT) d (pp_reg rA)
+| `Plhaux (rT,rA,rB) -> sprintf "lhaux %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Plwz (rT,d,rA) -> sprintf "lwz %s,%d(%s)" (pp_reg rT) d (pp_reg rA)
+| `Plwzx (rT,rA,rB) -> sprintf "lwzx %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Plwzu (rT,d,rA) -> sprintf "lwzu %s,%d(%s)" (pp_reg rT) d (pp_reg rA)
+| `Plwzux (rT,rA,rB) -> sprintf "lwzux %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Plwa (rT,dS,rA) -> sprintf "lwa %s,%d(%s)" (pp_reg rT) dS (pp_reg rA)
+| `Plwax (rT,rA,rB) -> sprintf "lwax %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Plwaux (rT,rA,rB) -> sprintf "lwaux %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pld (rT,dS,rA) -> sprintf "ld %s,%d(%s)" (pp_reg rT) dS (pp_reg rA)
+| `Pldx (rT,rA,rB) -> sprintf "ldx %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pldu (rT,dS,rA) -> sprintf "ldu %s,%d(%s)" (pp_reg rT) dS (pp_reg rA)
+| `Pldux (rT,rA,rB) -> sprintf "ldux %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pstb (rS,d,rA) -> sprintf "stb %s,%d(%s)" (pp_reg rS) d (pp_reg rA)
+| `Pstbx (rS,rA,rB) -> sprintf "stbx %s,%s,%s" (pp_reg rS) (pp_reg rA) (pp_reg rB)
+| `Pstbu (rS,d,rA) -> sprintf "stbu %s,%d(%s)" (pp_reg rS) d (pp_reg rA)
+| `Pstbux (rS,rA,rB) -> sprintf "stbux %s,%s,%s" (pp_reg rS) (pp_reg rA) (pp_reg rB)
+| `Psth (rS,d,rA) -> sprintf "sth %s,%d(%s)" (pp_reg rS) d (pp_reg rA)
+| `Psthx (rS,rA,rB) -> sprintf "sthx %s,%s,%s" (pp_reg rS) (pp_reg rA) (pp_reg rB)
+| `Psthu (rS,d,rA) -> sprintf "sthu %s,%d(%s)" (pp_reg rS) d (pp_reg rA)
+| `Psthux (rS,rA,rB) -> sprintf "sthux %s,%s,%s" (pp_reg rS) (pp_reg rA) (pp_reg rB)
+| `Pstw (rS,d,rA) -> sprintf "stw %s,%d(%s)" (pp_reg rS) d (pp_reg rA)
+| `Pstwx (rS,rA,rB) -> sprintf "stwx %s,%s,%s" (pp_reg rS) (pp_reg rA) (pp_reg rB)
+| `Pstwu (rS,d,rA) -> sprintf "stwu %s,%d(%s)" (pp_reg rS) d (pp_reg rA)
+| `Pstwux (rS,rA,rB) -> sprintf "stwux %s,%s,%s" (pp_reg rS) (pp_reg rA) (pp_reg rB)
+| `Pstd (rS,dS,rA) -> sprintf "std %s,%d(%s)" (pp_reg rS) dS (pp_reg rA)
+| `Pstdx (rS,rA,rB) -> sprintf "stdx %s,%s,%s" (pp_reg rS) (pp_reg rA) (pp_reg rB)
+| `Pstdu (rS,dS,rA) -> sprintf "stdu %s,%d(%s)" (pp_reg rS) dS (pp_reg rA)
+| `Pstdux (rS,rA,rB) -> sprintf "stdux %s,%s,%s" (pp_reg rS) (pp_reg rA) (pp_reg rB)
+| `Plq (rTp,dQ,rA,pT) -> sprintf "lq %d,%d(%s),%d" rTp dQ (pp_reg rA) pT
+| `Pstq (rSp,dS,rA) -> sprintf "stq %d,%d(%s)" rSp dS (pp_reg rA)
+| `Plhbrx (rT,rA,rB) -> sprintf "lhbrx %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Psthbrx (rS,rA,rB) -> sprintf "sthbrx %s,%s,%s" (pp_reg rS) (pp_reg rA) (pp_reg rB)
+| `Plwbrx (rT,rA,rB) -> sprintf "lwbrx %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pstwbrx (rS,rA,rB) -> sprintf "stwbrx %s,%s,%s" (pp_reg rS) (pp_reg rA) (pp_reg rB)
+| `Pldbrx (rT,rA,rB) -> sprintf "ldbrx %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pstdbrx (rS,rA,rB) -> sprintf "stdbrx %s,%s,%s" (pp_reg rS) (pp_reg rA) (pp_reg rB)
+| `Plmw (rT,d,rA) -> sprintf "lmw %d,%d(%s)" rT d (pp_reg rA)
+| `Pstmw (rS,d,rA) -> sprintf "stmw %d,%d(%s)" rS d (pp_reg rA)
+| `Plswi (rT,rA,nB) -> sprintf "lswi %d,%s,%d" rT (pp_reg rA) nB
+| `Plswx (rT,rA,rB) -> sprintf "lswx %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pstswi (rS,rA,nB) -> sprintf "stswi %d,%s,%d" rS (pp_reg rA) nB
+| `Pstswx (rS,rA,rB) -> sprintf "stswx %d,%s,%s" rS (pp_reg rA) (pp_reg rB)
+| `Paddi (rT,rA,sI) -> sprintf "addi %s,%s,%d" (pp_reg rT) (pp_reg rA) sI
+| `Paddis (rT,rA,sI) -> sprintf "addis %s,%s,%d" (pp_reg rT) (pp_reg rA) sI
+| `Padd (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "add %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Padd (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "add. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Padd (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "addo %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Padd (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "addo. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Psubf (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "subf %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Psubf (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "subf. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Psubf (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "subfo %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Psubf (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "subfo. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Paddic (rT,rA,sI) -> sprintf "addic %s,%s,%d" (pp_reg rT) (pp_reg rA) sI
+| `Paddicdot (rT,rA,sI) -> sprintf "addic. %s,%s,%d" (pp_reg rT) (pp_reg rA) sI
+| `Psubfic (rT,rA,sI) -> sprintf "subfic %s,%s,%d" (pp_reg rT) (pp_reg rA) sI
+| `Paddc (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "addc %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Paddc (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "addc. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Paddc (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "addco %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Paddc (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "addco. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Psubfc (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "subfc %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Psubfc (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "subfc. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Psubfc (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "subfco %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Psubfc (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "subfco. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Padde (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "adde %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Padde (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "adde. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Padde (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "addeo %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Padde (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "addeo. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Psubfe (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "subfe %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Psubfe (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "subfe. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Psubfe (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "subfeo %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Psubfe (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "subfeo. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Paddme (DontSetSOOV,DontSetCR0,rT,rA) -> sprintf "addme %s,%s" (pp_reg rT) (pp_reg rA)
+| `Paddme (DontSetSOOV,SetCR0,rT,rA) -> sprintf "addme. %s,%s" (pp_reg rT) (pp_reg rA)
+| `Paddme (SetSOOV,DontSetCR0,rT,rA) -> sprintf "addmeo %s,%s" (pp_reg rT) (pp_reg rA)
+| `Paddme (SetSOOV,SetCR0,rT,rA) -> sprintf "addmeo. %s,%s" (pp_reg rT) (pp_reg rA)
+| `Psubfme (DontSetSOOV,DontSetCR0,rT,rA) -> sprintf "subfme %s,%s" (pp_reg rT) (pp_reg rA)
+| `Psubfme (DontSetSOOV,SetCR0,rT,rA) -> sprintf "subfme. %s,%s" (pp_reg rT) (pp_reg rA)
+| `Psubfme (SetSOOV,DontSetCR0,rT,rA) -> sprintf "subfmeo %s,%s" (pp_reg rT) (pp_reg rA)
+| `Psubfme (SetSOOV,SetCR0,rT,rA) -> sprintf "subfmeo. %s,%s" (pp_reg rT) (pp_reg rA)
+| `Paddze (DontSetSOOV,DontSetCR0,rT,rA) -> sprintf "addze %s,%s" (pp_reg rT) (pp_reg rA)
+| `Paddze (DontSetSOOV,SetCR0,rT,rA) -> sprintf "addze. %s,%s" (pp_reg rT) (pp_reg rA)
+| `Paddze (SetSOOV,DontSetCR0,rT,rA) -> sprintf "addzeo %s,%s" (pp_reg rT) (pp_reg rA)
+| `Paddze (SetSOOV,SetCR0,rT,rA) -> sprintf "addzeo. %s,%s" (pp_reg rT) (pp_reg rA)
+| `Psubfze (DontSetSOOV,DontSetCR0,rT,rA) -> sprintf "subfze %s,%s" (pp_reg rT) (pp_reg rA)
+| `Psubfze (DontSetSOOV,SetCR0,rT,rA) -> sprintf "subfze. %s,%s" (pp_reg rT) (pp_reg rA)
+| `Psubfze (SetSOOV,DontSetCR0,rT,rA) -> sprintf "subfzeo %s,%s" (pp_reg rT) (pp_reg rA)
+| `Psubfze (SetSOOV,SetCR0,rT,rA) -> sprintf "subfzeo. %s,%s" (pp_reg rT) (pp_reg rA)
+| `Pneg (DontSetSOOV,DontSetCR0,rT,rA) -> sprintf "neg %s,%s" (pp_reg rT) (pp_reg rA)
+| `Pneg (DontSetSOOV,SetCR0,rT,rA) -> sprintf "neg. %s,%s" (pp_reg rT) (pp_reg rA)
+| `Pneg (SetSOOV,DontSetCR0,rT,rA) -> sprintf "nego %s,%s" (pp_reg rT) (pp_reg rA)
+| `Pneg (SetSOOV,SetCR0,rT,rA) -> sprintf "nego. %s,%s" (pp_reg rT) (pp_reg rA)
+| `Pmulli (rT,rA,sI) -> sprintf "mulli %s,%s,%d" (pp_reg rT) (pp_reg rA) sI
+| `Pmullw (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "mullw %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmullw (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "mullw. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmullw (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "mullwo %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmullw (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "mullwo. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmulhw (DontSetCR0,rT,rA,rB) -> sprintf "mulhw %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmulhw (SetCR0,rT,rA,rB) -> sprintf "mulhw. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmulhwu (DontSetCR0,rT,rA,rB) -> sprintf "mulhwu %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmulhwu (SetCR0,rT,rA,rB) -> sprintf "mulhwu. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivw (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "divw %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivw (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "divw. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivw (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "divwo %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivw (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "divwo. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivwu (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "divwu %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivwu (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "divwu. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivwu (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "divwuo %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivwu (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "divwuo. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivwe (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "divwe %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivwe (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "divwe. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivwe (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "divweo %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivwe (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "divweo. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivweu (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "divweu %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivweu (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "divweu. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivweu (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "divweuo %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivweu (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "divweuo. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmulld (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "mulld %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmulld (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "mulld. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmulld (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "mulldo %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmulld (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "mulldo. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmulhd (DontSetCR0,rT,rA,rB) -> sprintf "mulhd %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmulhd (SetCR0,rT,rA,rB) -> sprintf "mulhd. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmulhdu (DontSetCR0,rT,rA,rB) -> sprintf "mulhdu %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmulhdu (SetCR0,rT,rA,rB) -> sprintf "mulhdu. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivd (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "divd %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivd (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "divd. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivd (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "divdo %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivd (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "divdo. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivdu (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "divdu %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivdu (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "divdu. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivdu (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "divduo %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivdu (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "divduo. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivde (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "divde %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivde (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "divde. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivde (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "divdeo %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivde (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "divdeo. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivdeu (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "divdeu %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivdeu (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "divdeu. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivdeu (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "divdeuo %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pdivdeu (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "divdeuo. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pcmpi (bF,l,rA,sI) -> sprintf "cmpi %d,%d,%s,%d" bF l (pp_reg rA) sI
+| `Pcmp (bF,l,rA,rB) -> sprintf "cmp %d,%d,%s,%s" bF l (pp_reg rA) (pp_reg rB)
+| `Pcmpli (bF,l,rA,uI) -> sprintf "cmpli %d,%d,%s,%d" bF l (pp_reg rA) uI
+| `Pcmpl (bF,l,rA,rB) -> sprintf "cmpl %d,%d,%s,%s" bF l (pp_reg rA) (pp_reg rB)
+| `Ptwi (tO,rA,sI) -> sprintf "twi %d,%s,%d" tO (pp_reg rA) sI
+| `Ptw (tO,rA,rB) -> sprintf "tw %d,%s,%s" tO (pp_reg rA) (pp_reg rB)
+| `Ptdi (tO,rA,sI) -> sprintf "tdi %d,%s,%d" tO (pp_reg rA) sI
+| `Ptd (tO,rA,rB) -> sprintf "td %d,%s,%s" tO (pp_reg rA) (pp_reg rB)
+| `Pisel (rT,rA,rB,bC) -> sprintf "isel %s,%s,%s,%d" (pp_reg rT) (pp_reg rA) (pp_reg rB) bC
+| `Pandi (rA,rS,uI) -> sprintf "andi. %s,%s,%d" (pp_reg rA) (pp_reg rS) uI
+| `Pandis (rA,rS,uI) -> sprintf "andis. %s,%s,%d" (pp_reg rA) (pp_reg rS) uI
+| `Pori (rA,rS,uI) -> sprintf "ori %s,%s,%d" (pp_reg rA) (pp_reg rS) uI
+| `Poris (rA,rS,uI) -> sprintf "oris %s,%s,%d" (pp_reg rA) (pp_reg rS) uI
+| `Pxori (rA,rS,uI) -> sprintf "xori %s,%s,%d" (pp_reg rA) (pp_reg rS) uI
+| `Pxoris (rA,rS,uI) -> sprintf "xoris %s,%s,%d" (pp_reg rA) (pp_reg rS) uI
+| `Pand (DontSetCR0,rA,rS,rB) -> sprintf "and %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Pand (SetCR0,rA,rS,rB) -> sprintf "and. %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Pxor (DontSetCR0,rA,rS,rB) -> sprintf "xor %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Pxor (SetCR0,rA,rS,rB) -> sprintf "xor. %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Pnand (DontSetCR0,rA,rS,rB) -> sprintf "nand %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Pnand (SetCR0,rA,rS,rB) -> sprintf "nand. %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Por (DontSetCR0,rA,rS,rB) -> sprintf "or %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Por (SetCR0,rA,rS,rB) -> sprintf "or. %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Pnor (DontSetCR0,rA,rS,rB) -> sprintf "nor %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Pnor (SetCR0,rA,rS,rB) -> sprintf "nor. %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Peqv (DontSetCR0,rA,rS,rB) -> sprintf "eqv %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Peqv (SetCR0,rA,rS,rB) -> sprintf "eqv. %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Pandc (DontSetCR0,rA,rS,rB) -> sprintf "andc %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Pandc (SetCR0,rA,rS,rB) -> sprintf "andc. %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Porc (DontSetCR0,rA,rS,rB) -> sprintf "orc %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Porc (SetCR0,rA,rS,rB) -> sprintf "orc. %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Pextsb (DontSetCR0,rA,rS) -> sprintf "extsb %s,%s" (pp_reg rA) (pp_reg rS)
+| `Pextsb (SetCR0,rA,rS) -> sprintf "extsb. %s,%s" (pp_reg rA) (pp_reg rS)
+| `Pextsh (DontSetCR0,rA,rS) -> sprintf "extsh %s,%s" (pp_reg rA) (pp_reg rS)
+| `Pextsh (SetCR0,rA,rS) -> sprintf "extsh. %s,%s" (pp_reg rA) (pp_reg rS)
+| `Pcntlzw (DontSetCR0,rA,rS) -> sprintf "cntlzw %s,%s" (pp_reg rA) (pp_reg rS)
+| `Pcntlzw (SetCR0,rA,rS) -> sprintf "cntlzw. %s,%s" (pp_reg rA) (pp_reg rS)
+| `Pcmpb (rA,rS,rB) -> sprintf "cmpb %s,%d,%s" (pp_reg rA) rS (pp_reg rB)
+| `Ppopcntb (rA,rS) -> sprintf "popcntb %s,%s" (pp_reg rA) (pp_reg rS)
+| `Ppopcntw (rA,rS) -> sprintf "popcntw %s,%s" (pp_reg rA) (pp_reg rS)
+| `Pprtyd (rA,rS) -> sprintf "prtyd %s,%s" (pp_reg rA) (pp_reg rS)
+| `Pprtyw (rA,rS) -> sprintf "prtyw %s,%s" (pp_reg rA) (pp_reg rS)
+| `Pextsw (DontSetCR0,rA,rS) -> sprintf "extsw %s,%s" (pp_reg rA) (pp_reg rS)
+| `Pextsw (SetCR0,rA,rS) -> sprintf "extsw. %s,%s" (pp_reg rA) (pp_reg rS)
+| `Pcntlzd (DontSetCR0,rA,rS) -> sprintf "cntlzd %s,%s" (pp_reg rA) (pp_reg rS)
+| `Pcntlzd (SetCR0,rA,rS) -> sprintf "cntlzd. %s,%s" (pp_reg rA) (pp_reg rS)
+| `Ppopcntd (rA,rS) -> sprintf "popcntd %s,%s" (pp_reg rA) (pp_reg rS)
+| `Pbpermd (rA,rS,rB) -> sprintf "bpermd %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Prlwinm (DontSetCR0,rA,rS,sH,mB,mE) -> sprintf "rlwinm %s,%s,%d,%d,%d" (pp_reg rA) (pp_reg rS) sH mB mE
+| `Prlwinm (SetCR0,rA,rS,sH,mB,mE) -> sprintf "rlwinm. %s,%s,%d,%d,%d" (pp_reg rA) (pp_reg rS) sH mB mE
+| `Prlwnm (DontSetCR0,rA,rS,rB,mB,mE) -> sprintf "rlwnm %s,%s,%s,%d,%d" (pp_reg rA) (pp_reg rS) (pp_reg rB) mB mE
+| `Prlwnm (SetCR0,rA,rS,rB,mB,mE) -> sprintf "rlwnm. %s,%s,%s,%d,%d" (pp_reg rA) (pp_reg rS) (pp_reg rB) mB mE
+| `Prlwimi (DontSetCR0,rA,rS,sH,mB,mE) -> sprintf "rlwimi %s,%s,%d,%d,%d" (pp_reg rA) (pp_reg rS) sH mB mE
+| `Prlwimi (SetCR0,rA,rS,sH,mB,mE) -> sprintf "rlwimi. %s,%s,%d,%d,%d" (pp_reg rA) (pp_reg rS) sH mB mE
+| `Prldicl (DontSetCR0,rA,rS,sH,mB) -> sprintf "rldicl %s,%s,%d,%d" (pp_reg rA) (pp_reg rS) sH mB
+| `Prldicl (SetCR0,rA,rS,sH,mB) -> sprintf "rldicl. %s,%s,%d,%d" (pp_reg rA) (pp_reg rS) sH mB
+| `Prldicr (DontSetCR0,rA,rS,sH,mE) -> sprintf "rldicr %s,%s,%d,%d" (pp_reg rA) (pp_reg rS) sH mE
+| `Prldicr (SetCR0,rA,rS,sH,mE) -> sprintf "rldicr. %s,%s,%d,%d" (pp_reg rA) (pp_reg rS) sH mE
+| `Prldic (DontSetCR0,rA,rS,sH,mB) -> sprintf "rldic %s,%s,%d,%d" (pp_reg rA) (pp_reg rS) sH mB
+| `Prldic (SetCR0,rA,rS,sH,mB) -> sprintf "rldic. %s,%s,%d,%d" (pp_reg rA) (pp_reg rS) sH mB
+| `Prldcl (DontSetCR0,rA,rS,rB,mB) -> sprintf "rldcl %s,%s,%s,%d" (pp_reg rA) (pp_reg rS) (pp_reg rB) mB
+| `Prldcl (SetCR0,rA,rS,rB,mB) -> sprintf "rldcl. %s,%s,%s,%d" (pp_reg rA) (pp_reg rS) (pp_reg rB) mB
+| `Prldcr (DontSetCR0,rA,rS,rB,mE) -> sprintf "rldcr %s,%s,%s,%d" (pp_reg rA) (pp_reg rS) (pp_reg rB) mE
+| `Prldcr (SetCR0,rA,rS,rB,mE) -> sprintf "rldcr. %s,%s,%s,%d" (pp_reg rA) (pp_reg rS) (pp_reg rB) mE
+| `Prldimi (DontSetCR0,rA,rS,sH,mB) -> sprintf "rldimi %s,%s,%d,%d" (pp_reg rA) (pp_reg rS) sH mB
+| `Prldimi (SetCR0,rA,rS,sH,mB) -> sprintf "rldimi. %s,%s,%d,%d" (pp_reg rA) (pp_reg rS) sH mB
+| `Pslw (DontSetCR0,rA,rS,rB) -> sprintf "slw %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Pslw (SetCR0,rA,rS,rB) -> sprintf "slw. %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Psrw (DontSetCR0,rA,rS,rB) -> sprintf "srw %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Psrw (SetCR0,rA,rS,rB) -> sprintf "srw. %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Psrawi (DontSetCR0,rA,rS,sH) -> sprintf "srawi %s,%s,%d" (pp_reg rA) (pp_reg rS) sH
+| `Psrawi (SetCR0,rA,rS,sH) -> sprintf "srawi. %s,%s,%d" (pp_reg rA) (pp_reg rS) sH
+| `Psraw (DontSetCR0,rA,rS,rB) -> sprintf "sraw %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Psraw (SetCR0,rA,rS,rB) -> sprintf "sraw. %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Psld (DontSetCR0,rA,rS,rB) -> sprintf "sld %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Psld (SetCR0,rA,rS,rB) -> sprintf "sld. %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Psrd (DontSetCR0,rA,rS,rB) -> sprintf "srd %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Psrd (SetCR0,rA,rS,rB) -> sprintf "srd. %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Psradi (DontSetCR0,rA,rS,sH) -> sprintf "sradi %s,%s,%d" (pp_reg rA) (pp_reg rS) sH
+| `Psradi (SetCR0,rA,rS,sH) -> sprintf "sradi. %s,%s,%d" (pp_reg rA) (pp_reg rS) sH
+| `Psrad (DontSetCR0,rA,rS,rB) -> sprintf "srad %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Psrad (SetCR0,rA,rS,rB) -> sprintf "srad. %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Pcdtbcd (rA,rS) -> sprintf "cdtbcd %s,%s" (pp_reg rA) (pp_reg rS)
+| `Pcbcdtd (rA,rS) -> sprintf "cbcdtd %s,%s" (pp_reg rA) (pp_reg rS)
+| `Paddg6s (rT,rA,rB) -> sprintf "addg6s %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmtspr (sPR,rS) -> sprintf "mtspr %d,%s" sPR (pp_reg rS)
+| `Pmfspr (rT,sPR) -> sprintf "mfspr %s,%d" (pp_reg rT) sPR
+| `Pmtcrf (fXM,rS) -> sprintf "mtcrf %d,%s" fXM (pp_reg rS)
+| `Pmfcr (rT) -> sprintf "mfcr %s" (pp_reg rT)
+| `Pmtocrf (fXM,rS) -> sprintf "mtocrf %d,%s" fXM (pp_reg rS)
+| `Pmfocrf (rT,fXM) -> sprintf "mfocrf %s,%d" (pp_reg rT) fXM
+| `Pmcrxr (bF) -> sprintf "mcrxr %d" bF
+| `Pmtdcrux (rS,rA) -> sprintf "mtdcrux %d,%s" rS (pp_reg rA)
+| `Pmfdcrux (rT,rA) -> sprintf "mfdcrux %s,%s" (pp_reg rT) (pp_reg rA)
+| `Plfs (fRT,d,rA) -> sprintf "lfs %s,%d(%s)" (pp_reg fRT) d (pp_reg rA)
+| `Plfsx (fRT,rA,rB) -> sprintf "lfsx %s,%s,%s" (pp_reg fRT) (pp_reg rA) (pp_reg rB)
+| `Plfsu (fRT,d,rA) -> sprintf "lfsu %s,%d(%s)" (pp_reg fRT) d (pp_reg rA)
+| `Plfsux (fRT,rA,rB) -> sprintf "lfsux %s,%s,%s" (pp_reg fRT) (pp_reg rA) (pp_reg rB)
+| `Plfd (fRT,d,rA) -> sprintf "lfd %s,%d(%s)" (pp_reg fRT) d (pp_reg rA)
+| `Plfdx (fRT,rA,rB) -> sprintf "lfdx %s,%s,%s" (pp_reg fRT) (pp_reg rA) (pp_reg rB)
+| `Plfdu (fRT,d,rA) -> sprintf "lfdu %s,%d(%s)" (pp_reg fRT) d (pp_reg rA)
+| `Plfdux (fRT,rA,rB) -> sprintf "lfdux %s,%s,%s" (pp_reg fRT) (pp_reg rA) (pp_reg rB)
+| `Plfiwax (fRT,rA,rB) -> sprintf "lfiwax %s,%s,%s" (pp_reg fRT) (pp_reg rA) (pp_reg rB)
+| `Plfiwzx (fRT,rA,rB) -> sprintf "lfiwzx %s,%s,%s" (pp_reg fRT) (pp_reg rA) (pp_reg rB)
+| `Pstfs (fRS,d,rA) -> sprintf "stfs %s,%d(%s)" (pp_reg fRS) d (pp_reg rA)
+| `Pstfsx (fRS,rA,rB) -> sprintf "stfsx %s,%s,%s" (pp_reg fRS) (pp_reg rA) (pp_reg rB)
+| `Pstfsu (fRS,d,rA) -> sprintf "stfsu %s,%d(%s)" (pp_reg fRS) d (pp_reg rA)
+| `Pstfsux (fRS,rA,rB) -> sprintf "stfsux %s,%s,%s" (pp_reg fRS) (pp_reg rA) (pp_reg rB)
+| `Pstfd (fRS,d,rA) -> sprintf "stfd %s,%d(%s)" (pp_reg fRS) d (pp_reg rA)
+| `Pstfdx (fRS,rA,rB) -> sprintf "stfdx %s,%s,%s" (pp_reg fRS) (pp_reg rA) (pp_reg rB)
+| `Pstfdu (fRS,d,rA) -> sprintf "stfdu %s,%d(%s)" (pp_reg fRS) d (pp_reg rA)
+| `Pstfdux (fRS,rA,rB) -> sprintf "stfdux %s,%s,%s" (pp_reg fRS) (pp_reg rA) (pp_reg rB)
+| `Pstfiwx (fRS,rA,rB) -> sprintf "stfiwx %s,%s,%s" (pp_reg fRS) (pp_reg rA) (pp_reg rB)
+| `Plfdp (fRTp,dS,rA) -> sprintf "lfdp %s,%d(%s)" (pp_reg fRTp) dS (pp_reg rA)
+| `Plfdpx (fRTp,rA,rB) -> sprintf "lfdpx %s,%s,%s" (pp_reg fRTp) (pp_reg rA) (pp_reg rB)
+| `Pstfdp (fRSp,dS,rA) -> sprintf "stfdp %d,%d(%s)" fRSp dS (pp_reg rA)
+| `Pstfdpx (fRSp,rA,rB) -> sprintf "stfdpx %d,%s,%s" fRSp (pp_reg rA) (pp_reg rB)
+| `Pfmr (DontSetCR0,fRT,fRB) -> sprintf "fmr %d,%d" fRT fRB
+| `Pfmr (SetCR0,fRT,fRB) -> sprintf "fmr. %d,%d" fRT fRB
+| `Pfneg (DontSetCR0,fRT,fRB) -> sprintf "fneg %d,%d" fRT fRB
+| `Pfneg (SetCR0,fRT,fRB) -> sprintf "fneg. %d,%d" fRT fRB
+| `Pfabs (DontSetCR0,fRT,fRB) -> sprintf "fabs %d,%d" fRT fRB
+| `Pfabs (SetCR0,fRT,fRB) -> sprintf "fabs. %d,%d" fRT fRB
+| `Pfnabs (DontSetCR0,fRT,fRB) -> sprintf "fnabs %d,%d" fRT fRB
+| `Pfnabs (SetCR0,fRT,fRB) -> sprintf "fnabs. %d,%d" fRT fRB
+| `Pfcpsgn (DontSetCR0,fRT,fRA,fRB) -> sprintf "fcpsgn %d,%d,%d" fRT fRA fRB
+| `Pfcpsgn (SetCR0,fRT,fRA,fRB) -> sprintf "fcpsgn. %d,%d,%d" fRT fRA fRB
+| `Pfadds (DontSetCR0,fRT,fRA,fRB) -> sprintf "fadds %d,%d,%d" fRT fRA fRB
+| `Pfadds (SetCR0,fRT,fRA,fRB) -> sprintf "fadds. %d,%d,%d" fRT fRA fRB
+| `Pfadd (DontSetCR0,fRT,fRA,fRB) -> sprintf "fadd %d,%d,%d" fRT fRA fRB
+| `Pfadd (SetCR0,fRT,fRA,fRB) -> sprintf "fadd. %d,%d,%d" fRT fRA fRB
+| `Pfsubs (DontSetCR0,fRT,fRA,fRB) -> sprintf "fsubs %d,%d,%d" fRT fRA fRB
+| `Pfsubs (SetCR0,fRT,fRA,fRB) -> sprintf "fsubs. %d,%d,%d" fRT fRA fRB
+| `Pfsub (DontSetCR0,fRT,fRA,fRB) -> sprintf "fsub %d,%d,%d" fRT fRA fRB
+| `Pfsub (SetCR0,fRT,fRA,fRB) -> sprintf "fsub. %d,%d,%d" fRT fRA fRB
+| `Pfmuls (DontSetCR0,fRT,fRA,fRC) -> sprintf "fmuls %d,%d,%d" fRT fRA fRC
+| `Pfmuls (SetCR0,fRT,fRA,fRC) -> sprintf "fmuls. %d,%d,%d" fRT fRA fRC
+| `Pfmul (DontSetCR0,fRT,fRA,fRC) -> sprintf "fmul %d,%d,%d" fRT fRA fRC
+| `Pfmul (SetCR0,fRT,fRA,fRC) -> sprintf "fmul. %d,%d,%d" fRT fRA fRC
+| `Pfdivs (DontSetCR0,fRT,fRA,fRB) -> sprintf "fdivs %d,%d,%d" fRT fRA fRB
+| `Pfdivs (SetCR0,fRT,fRA,fRB) -> sprintf "fdivs. %d,%d,%d" fRT fRA fRB
+| `Pfdiv (DontSetCR0,fRT,fRA,fRB) -> sprintf "fdiv %d,%d,%d" fRT fRA fRB
+| `Pfdiv (SetCR0,fRT,fRA,fRB) -> sprintf "fdiv. %d,%d,%d" fRT fRA fRB
+| `Pfsqrts (DontSetCR0,fRT,fRB) -> sprintf "fsqrts %d,%d" fRT fRB
+| `Pfsqrts (SetCR0,fRT,fRB) -> sprintf "fsqrts. %d,%d" fRT fRB
+| `Pfsqrt (DontSetCR0,fRT,fRB) -> sprintf "fsqrt %d,%d" fRT fRB
+| `Pfsqrt (SetCR0,fRT,fRB) -> sprintf "fsqrt. %d,%d" fRT fRB
+| `Pfres (DontSetCR0,fRT,fRB) -> sprintf "fres %d,%d" fRT fRB
+| `Pfres (SetCR0,fRT,fRB) -> sprintf "fres. %d,%d" fRT fRB
+| `Pfre (DontSetCR0,fRT,fRB) -> sprintf "fre %d,%d" fRT fRB
+| `Pfre (SetCR0,fRT,fRB) -> sprintf "fre. %d,%d" fRT fRB
+| `Pfrsqrtes (DontSetCR0,fRT,fRB) -> sprintf "frsqrtes %d,%d" fRT fRB
+| `Pfrsqrtes (SetCR0,fRT,fRB) -> sprintf "frsqrtes. %d,%d" fRT fRB
+| `Pfrsqrte (DontSetCR0,fRT,fRB) -> sprintf "frsqrte %d,%d" fRT fRB
+| `Pfrsqrte (SetCR0,fRT,fRB) -> sprintf "frsqrte. %d,%d" fRT fRB
+| `Pftdiv (bF,fRA,fRB) -> sprintf "ftdiv %d,%d,%d" bF fRA fRB
+| `Pftsqrt (bF,fRB) -> sprintf "ftsqrt %d,%d" bF fRB
+| `Pfmadds (DontSetCR0,fRT,fRA,fRC,fRB) -> sprintf "fmadds %d,%d,%d,%d" fRT fRA fRC fRB
+| `Pfmadds (SetCR0,fRT,fRA,fRC,fRB) -> sprintf "fmadds. %d,%d,%d,%d" fRT fRA fRC fRB
+| `Pfmadd (DontSetCR0,fRT,fRA,fRC,fRB) -> sprintf "fmadd %d,%d,%d,%d" fRT fRA fRC fRB
+| `Pfmadd (SetCR0,fRT,fRA,fRC,fRB) -> sprintf "fmadd. %d,%d,%d,%d" fRT fRA fRC fRB
+| `Pfmsubs (DontSetCR0,fRT,fRA,fRC,fRB) -> sprintf "fmsubs %d,%d,%d,%d" fRT fRA fRC fRB
+| `Pfmsubs (SetCR0,fRT,fRA,fRC,fRB) -> sprintf "fmsubs. %d,%d,%d,%d" fRT fRA fRC fRB
+| `Pfmsub (DontSetCR0,fRT,fRA,fRC,fRB) -> sprintf "fmsub %d,%d,%d,%d" fRT fRA fRC fRB
+| `Pfmsub (SetCR0,fRT,fRA,fRC,fRB) -> sprintf "fmsub. %d,%d,%d,%d" fRT fRA fRC fRB
+| `Pfnmadds (DontSetCR0,fRT,fRA,fRC,fRB) -> sprintf "fnmadds %d,%d,%d,%d" fRT fRA fRC fRB
+| `Pfnmadds (SetCR0,fRT,fRA,fRC,fRB) -> sprintf "fnmadds. %d,%d,%d,%d" fRT fRA fRC fRB
+| `Pfnmadd (DontSetCR0,fRT,fRA,fRC,fRB) -> sprintf "fnmadd %d,%d,%d,%d" fRT fRA fRC fRB
+| `Pfnmadd (SetCR0,fRT,fRA,fRC,fRB) -> sprintf "fnmadd. %d,%d,%d,%d" fRT fRA fRC fRB
+| `Pfnmsubs (DontSetCR0,fRT,fRA,fRC,fRB) -> sprintf "fnmsubs %d,%d,%d,%d" fRT fRA fRC fRB
+| `Pfnmsubs (SetCR0,fRT,fRA,fRC,fRB) -> sprintf "fnmsubs. %d,%d,%d,%d" fRT fRA fRC fRB
+| `Pfnmsub (DontSetCR0,fRT,fRA,fRC,fRB) -> sprintf "fnmsub %d,%d,%d,%d" fRT fRA fRC fRB
+| `Pfnmsub (SetCR0,fRT,fRA,fRC,fRB) -> sprintf "fnmsub. %d,%d,%d,%d" fRT fRA fRC fRB
+| `Pfrsp (DontSetCR0,fRT,fRB) -> sprintf "frsp %d,%d" fRT fRB
+| `Pfrsp (SetCR0,fRT,fRB) -> sprintf "frsp. %d,%d" fRT fRB
+| `Pfctid (DontSetCR0,fRT,fRB) -> sprintf "fctid %d,%d" fRT fRB
+| `Pfctid (SetCR0,fRT,fRB) -> sprintf "fctid. %d,%d" fRT fRB
+| `Pfctidz (DontSetCR0,fRT,fRB) -> sprintf "fctidz %d,%d" fRT fRB
+| `Pfctidz (SetCR0,fRT,fRB) -> sprintf "fctidz. %d,%d" fRT fRB
+| `Pfctidu (DontSetCR0,fRT,fRB) -> sprintf "fctidu %d,%d" fRT fRB
+| `Pfctidu (SetCR0,fRT,fRB) -> sprintf "fctidu. %d,%d" fRT fRB
+| `Pfctiduz (DontSetCR0,fRT,fRB) -> sprintf "fctiduz %d,%d" fRT fRB
+| `Pfctiduz (SetCR0,fRT,fRB) -> sprintf "fctiduz. %d,%d" fRT fRB
+| `Pfctiw (DontSetCR0,fRT,fRB) -> sprintf "fctiw %d,%d" fRT fRB
+| `Pfctiw (SetCR0,fRT,fRB) -> sprintf "fctiw. %d,%d" fRT fRB
+| `Pfctiwz (DontSetCR0,fRT,fRB) -> sprintf "fctiwz %d,%d" fRT fRB
+| `Pfctiwz (SetCR0,fRT,fRB) -> sprintf "fctiwz. %d,%d" fRT fRB
+| `Pfctiwu (DontSetCR0,fRT,fRB) -> sprintf "fctiwu %d,%d" fRT fRB
+| `Pfctiwu (SetCR0,fRT,fRB) -> sprintf "fctiwu. %d,%d" fRT fRB
+| `Pfctiwuz (DontSetCR0,fRT,fRB) -> sprintf "fctiwuz %d,%d" fRT fRB
+| `Pfctiwuz (SetCR0,fRT,fRB) -> sprintf "fctiwuz. %d,%d" fRT fRB
+| `Pfcfid (DontSetCR0,fRT,fRB) -> sprintf "fcfid %d,%d" fRT fRB
+| `Pfcfid (SetCR0,fRT,fRB) -> sprintf "fcfid. %d,%d" fRT fRB
+| `Pfcfidu (DontSetCR0,fRT,fRB) -> sprintf "fcfidu %d,%d" fRT fRB
+| `Pfcfidu (SetCR0,fRT,fRB) -> sprintf "fcfidu. %d,%d" fRT fRB
+| `Pfcfids (DontSetCR0,fRT,fRB) -> sprintf "fcfids %d,%d" fRT fRB
+| `Pfcfids (SetCR0,fRT,fRB) -> sprintf "fcfids. %d,%d" fRT fRB
+| `Pfcfidus (DontSetCR0,fRT,fRB) -> sprintf "fcfidus %d,%d" fRT fRB
+| `Pfcfidus (SetCR0,fRT,fRB) -> sprintf "fcfidus. %d,%d" fRT fRB
+| `Pfrin (DontSetCR0,fRT,fRB) -> sprintf "frin %d,%d" fRT fRB
+| `Pfrin (SetCR0,fRT,fRB) -> sprintf "frin. %d,%d" fRT fRB
+| `Pfrip (DontSetCR0,fRT,fRB) -> sprintf "frip %d,%d" fRT fRB
+| `Pfrip (SetCR0,fRT,fRB) -> sprintf "frip. %d,%d" fRT fRB
+| `Pfriz (DontSetCR0,fRT,fRB) -> sprintf "friz %d,%d" fRT fRB
+| `Pfriz (SetCR0,fRT,fRB) -> sprintf "friz. %d,%d" fRT fRB
+| `Pfrim (DontSetCR0,fRT,fRB) -> sprintf "frim %d,%d" fRT fRB
+| `Pfrim (SetCR0,fRT,fRB) -> sprintf "frim. %d,%d" fRT fRB
+| `Pfcmpu (bF,fRA,fRB) -> sprintf "fcmpu %d,%d,%d" bF fRA fRB
+| `Pfcmpo (bF,fRA,fRB) -> sprintf "fcmpo %d,%d,%d" bF fRA fRB
+| `Pfsel (DontSetCR0,fRT,fRA,fRC,fRB) -> sprintf "fsel %d,%d,%d,%d" fRT fRA fRC fRB
+| `Pfsel (SetCR0,fRT,fRA,fRC,fRB) -> sprintf "fsel. %d,%d,%d,%d" fRT fRA fRC fRB
+| `Pmffs (DontSetCR0,fRT) -> sprintf "mffs %d" fRT
+| `Pmffs (SetCR0,fRT) -> sprintf "mffs. %d" fRT
+| `Pmcrfs (bF,bFA) -> sprintf "mcrfs %d,%d" bF bFA
+| `Pmtfsfi (DontSetCR0,bF,u,w) -> sprintf "mtfsfi %d,%d,%d" bF u w
+| `Pmtfsfi (SetCR0,bF,u,w) -> sprintf "mtfsfi. %d,%d,%d" bF u w
+| `Pmtfsf (DontSetCR0,fLM,fRB,l,w) -> sprintf "mtfsf %d,%d,%d,%d" fLM fRB l w
+| `Pmtfsf (SetCR0,fLM,fRB,l,w) -> sprintf "mtfsf. %d,%d,%d,%d" fLM fRB l w
+| `Pmtfsb0 (DontSetCR0,bT) -> sprintf "mtfsb0 %d" bT
+| `Pmtfsb0 (SetCR0,bT) -> sprintf "mtfsb0. %d" bT
+| `Pmtfsb1 (DontSetCR0,bT) -> sprintf "mtfsb1 %d" bT
+| `Pmtfsb1 (SetCR0,bT) -> sprintf "mtfsb1. %d" bT
+| `Pdaddq (DontSetCR0,fRTp,fRAp,fRBp) -> sprintf "daddq %d,%d,%d" fRTp fRAp fRBp
+| `Pdaddq (SetCR0,fRTp,fRAp,fRBp) -> sprintf "daddq. %d,%d,%d" fRTp fRAp fRBp
+| `Pdadd (DontSetCR0,fRT,fRA,fRB) -> sprintf "dadd %d,%d,%d" fRT fRA fRB
+| `Pdadd (SetCR0,fRT,fRA,fRB) -> sprintf "dadd. %d,%d,%d" fRT fRA fRB
+| `Pdsubq (DontSetCR0,fRTp,fRAp,fRBp) -> sprintf "dsubq %d,%d,%d" fRTp fRAp fRBp
+| `Pdsubq (SetCR0,fRTp,fRAp,fRBp) -> sprintf "dsubq. %d,%d,%d" fRTp fRAp fRBp
+| `Pdsub (DontSetCR0,fRT,fRA,fRB) -> sprintf "dsub %d,%d,%d" fRT fRA fRB
+| `Pdsub (SetCR0,fRT,fRA,fRB) -> sprintf "dsub. %d,%d,%d" fRT fRA fRB
+| `Pdmulq (DontSetCR0,fRTp,fRAp,fRBp) -> sprintf "dmulq %d,%d,%d" fRTp fRAp fRBp
+| `Pdmulq (SetCR0,fRTp,fRAp,fRBp) -> sprintf "dmulq. %d,%d,%d" fRTp fRAp fRBp
+| `Pdmul (DontSetCR0,fRT,fRA,fRB) -> sprintf "dmul %d,%d,%d" fRT fRA fRB
+| `Pdmul (SetCR0,fRT,fRA,fRB) -> sprintf "dmul. %d,%d,%d" fRT fRA fRB
+| `Pddivq (DontSetCR0,fRTp,fRAp,fRBp) -> sprintf "ddivq %d,%d,%d" fRTp fRAp fRBp
+| `Pddivq (SetCR0,fRTp,fRAp,fRBp) -> sprintf "ddivq. %d,%d,%d" fRTp fRAp fRBp
+| `Pddiv (DontSetCR0,fRT,fRA,fRB) -> sprintf "ddiv %d,%d,%d" fRT fRA fRB
+| `Pddiv (SetCR0,fRT,fRA,fRB) -> sprintf "ddiv. %d,%d,%d" fRT fRA fRB
+| `Pdcmpuq (bF,fRAp,fRBp) -> sprintf "dcmpuq %d,%d,%d" bF fRAp fRBp
+| `Pdcmpu (bF,fRA,fRB) -> sprintf "dcmpu %d,%d,%d" bF fRA fRB
+| `Pdcmpoq (bF,fRAp,fRBp) -> sprintf "dcmpoq %d,%d,%d" bF fRAp fRBp
+| `Pdcmpo (bF,fRA,fRB) -> sprintf "dcmpo %d,%d,%d" bF fRA fRB
+| `Pdtstdcq (bF,fRAp,dCM) -> sprintf "dtstdcq %d,%d,%d" bF fRAp dCM
+| `Pdtstdc (bF,fRA,dCM) -> sprintf "dtstdc %d,%d,%d" bF fRA dCM
+| `Pdtstdgq (bF,fRAp,dGM) -> sprintf "dtstdgq %d,%d,%d" bF fRAp dGM
+| `Pdtstdg (bF,fRA,dGM) -> sprintf "dtstdg %d,%d,%d" bF fRA dGM
+| `Pdtstexq (bF,fRAp,fRBp) -> sprintf "dtstexq %d,%d,%d" bF fRAp fRBp
+| `Pdtstex (bF,fRA,fRB) -> sprintf "dtstex %d,%d,%d" bF fRA fRB
+| `Pdtstsfq (bF,fRA,fRBp) -> sprintf "dtstsfq %d,%d,%d" bF fRA fRBp
+| `Pdtstsf (bF,fRA,fRB) -> sprintf "dtstsf %d,%d,%d" bF fRA fRB
+| `Pdquaiq (DontSetCR0,tE,fRTp,fRBp,rMC) -> sprintf "dquaiq %d,%d,%d,%d" tE fRTp fRBp rMC
+| `Pdquaiq (SetCR0,tE,fRTp,fRBp,rMC) -> sprintf "dquaiq. %d,%d,%d,%d" tE fRTp fRBp rMC
+| `Pdquai (DontSetCR0,tE,fRT,fRB,rMC) -> sprintf "dquai %d,%d,%d,%d" tE fRT fRB rMC
+| `Pdquai (SetCR0,tE,fRT,fRB,rMC) -> sprintf "dquai. %d,%d,%d,%d" tE fRT fRB rMC
+| `Pdquaq (DontSetCR0,fRTp,fRAp,fRBp,rMC) -> sprintf "dquaq %d,%d,%d,%d" fRTp fRAp fRBp rMC
+| `Pdquaq (SetCR0,fRTp,fRAp,fRBp,rMC) -> sprintf "dquaq. %d,%d,%d,%d" fRTp fRAp fRBp rMC
+| `Pdqua (DontSetCR0,fRT,fRA,fRB,rMC) -> sprintf "dqua %d,%d,%d,%d" fRT fRA fRB rMC
+| `Pdqua (SetCR0,fRT,fRA,fRB,rMC) -> sprintf "dqua. %d,%d,%d,%d" fRT fRA fRB rMC
+| `Pdrrndq (DontSetCR0,fRTp,fRA,fRBp,rMC) -> sprintf "drrndq %d,%d,%d,%d" fRTp fRA fRBp rMC
+| `Pdrrndq (SetCR0,fRTp,fRA,fRBp,rMC) -> sprintf "drrndq. %d,%d,%d,%d" fRTp fRA fRBp rMC
+| `Pdrrnd (DontSetCR0,fRT,fRA,fRB,rMC) -> sprintf "drrnd %d,%d,%d,%d" fRT fRA fRB rMC
+| `Pdrrnd (SetCR0,fRT,fRA,fRB,rMC) -> sprintf "drrnd. %d,%d,%d,%d" fRT fRA fRB rMC
+| `Pdrintxq (DontSetCR0,r,fRTp,fRBp,rMC) -> sprintf "drintxq %d,%d,%d,%d" r fRTp fRBp rMC
+| `Pdrintxq (SetCR0,r,fRTp,fRBp,rMC) -> sprintf "drintxq. %d,%d,%d,%d" r fRTp fRBp rMC
+| `Pdrintx (DontSetCR0,r,fRT,fRB,rMC) -> sprintf "drintx %d,%d,%d,%d" r fRT fRB rMC
+| `Pdrintx (SetCR0,r,fRT,fRB,rMC) -> sprintf "drintx. %d,%d,%d,%d" r fRT fRB rMC
+| `Pdrintnq (DontSetCR0,r,fRTp,fRBp,rMC) -> sprintf "drintnq %d,%d,%d,%d" r fRTp fRBp rMC
+| `Pdrintnq (SetCR0,r,fRTp,fRBp,rMC) -> sprintf "drintnq. %d,%d,%d,%d" r fRTp fRBp rMC
+| `Pdrintn (DontSetCR0,r,fRT,fRB,rMC) -> sprintf "drintn %d,%d,%d,%d" r fRT fRB rMC
+| `Pdrintn (SetCR0,r,fRT,fRB,rMC) -> sprintf "drintn. %d,%d,%d,%d" r fRT fRB rMC
+| `Pdctdp (DontSetCR0,fRT,fRB) -> sprintf "dctdp %d,%d" fRT fRB
+| `Pdctdp (SetCR0,fRT,fRB) -> sprintf "dctdp. %d,%d" fRT fRB
+| `Pdctqpq (DontSetCR0,fRTp,fRB) -> sprintf "dctqpq %d,%d" fRTp fRB
+| `Pdctqpq (SetCR0,fRTp,fRB) -> sprintf "dctqpq. %d,%d" fRTp fRB
+| `Pdrsp (DontSetCR0,fRT,fRB) -> sprintf "drsp %d,%d" fRT fRB
+| `Pdrsp (SetCR0,fRT,fRB) -> sprintf "drsp. %d,%d" fRT fRB
+| `Pdrdpq (DontSetCR0,fRTp,fRBp) -> sprintf "drdpq %d,%d" fRTp fRBp
+| `Pdrdpq (SetCR0,fRTp,fRBp) -> sprintf "drdpq. %d,%d" fRTp fRBp
+| `Pdcffix (DontSetCR0,fRT,fRB) -> sprintf "dcffix %d,%d" fRT fRB
+| `Pdcffix (SetCR0,fRT,fRB) -> sprintf "dcffix. %d,%d" fRT fRB
+| `Pdcffixq (DontSetCR0,fRTp,fRB) -> sprintf "dcffixq %d,%d" fRTp fRB
+| `Pdcffixq (SetCR0,fRTp,fRB) -> sprintf "dcffixq. %d,%d" fRTp fRB
+| `Pdctfixq (DontSetCR0,fRT,fRBp) -> sprintf "dctfixq %d,%d" fRT fRBp
+| `Pdctfixq (SetCR0,fRT,fRBp) -> sprintf "dctfixq. %d,%d" fRT fRBp
+| `Pdctfix (DontSetCR0,fRT,fRB) -> sprintf "dctfix %d,%d" fRT fRB
+| `Pdctfix (SetCR0,fRT,fRB) -> sprintf "dctfix. %d,%d" fRT fRB
+| `Pddedpdq (DontSetCR0,sP,fRTp,fRBp) -> sprintf "ddedpdq %d,%d,%d" sP fRTp fRBp
+| `Pddedpdq (SetCR0,sP,fRTp,fRBp) -> sprintf "ddedpdq. %d,%d,%d" sP fRTp fRBp
+| `Pddedpd (DontSetCR0,sP,fRT,fRB) -> sprintf "ddedpd %d,%d,%d" sP fRT fRB
+| `Pddedpd (SetCR0,sP,fRT,fRB) -> sprintf "ddedpd. %d,%d,%d" sP fRT fRB
+| `Pdenbcdq (DontSetCR0,s,fRTp,fRBp) -> sprintf "denbcdq %d,%d,%d" s fRTp fRBp
+| `Pdenbcdq (SetCR0,s,fRTp,fRBp) -> sprintf "denbcdq. %d,%d,%d" s fRTp fRBp
+| `Pdenbcd (DontSetCR0,s,fRT,fRB) -> sprintf "denbcd %d,%d,%d" s fRT fRB
+| `Pdenbcd (SetCR0,s,fRT,fRB) -> sprintf "denbcd. %d,%d,%d" s fRT fRB
+| `Pdxexq (DontSetCR0,fRT,fRBp) -> sprintf "dxexq %d,%d" fRT fRBp
+| `Pdxexq (SetCR0,fRT,fRBp) -> sprintf "dxexq. %d,%d" fRT fRBp
+| `Pdxex (DontSetCR0,fRT,fRB) -> sprintf "dxex %d,%d" fRT fRB
+| `Pdxex (SetCR0,fRT,fRB) -> sprintf "dxex. %d,%d" fRT fRB
+| `Pdiexq (DontSetCR0,fRTp,fRA,fRBp) -> sprintf "diexq %d,%d,%d" fRTp fRA fRBp
+| `Pdiexq (SetCR0,fRTp,fRA,fRBp) -> sprintf "diexq. %d,%d,%d" fRTp fRA fRBp
+| `Pdiex (DontSetCR0,fRT,fRA,fRB) -> sprintf "diex %d,%d,%d" fRT fRA fRB
+| `Pdiex (SetCR0,fRT,fRA,fRB) -> sprintf "diex. %d,%d,%d" fRT fRA fRB
+| `Pdscliq (DontSetCR0,fRTp,fRAp,sH) -> sprintf "dscliq %d,%d,%d" fRTp fRAp sH
+| `Pdscliq (SetCR0,fRTp,fRAp,sH) -> sprintf "dscliq. %d,%d,%d" fRTp fRAp sH
+| `Pdscli (DontSetCR0,fRT,fRA,sH) -> sprintf "dscli %d,%d,%d" fRT fRA sH
+| `Pdscli (SetCR0,fRT,fRA,sH) -> sprintf "dscli. %d,%d,%d" fRT fRA sH
+| `Pdscriq (DontSetCR0,fRTp,fRAp,sH) -> sprintf "dscriq %d,%d,%d" fRTp fRAp sH
+| `Pdscriq (SetCR0,fRTp,fRAp,sH) -> sprintf "dscriq. %d,%d,%d" fRTp fRAp sH
+| `Pdscri (DontSetCR0,fRT,fRA,sH) -> sprintf "dscri %d,%d,%d" fRT fRA sH
+| `Pdscri (SetCR0,fRT,fRA,sH) -> sprintf "dscri. %d,%d,%d" fRT fRA sH
+| `Plvebx (vRT,rA,rB) -> sprintf "lvebx %s,%s,%s" (pp_reg vRT) (pp_reg rA) (pp_reg rB)
+| `Plvehx (vRT,rA,rB) -> sprintf "lvehx %s,%s,%s" (pp_reg vRT) (pp_reg rA) (pp_reg rB)
+| `Plvewx (vRT,rA,rB) -> sprintf "lvewx %s,%s,%s" (pp_reg vRT) (pp_reg rA) (pp_reg rB)
+| `Plvx (vRT,rA,rB) -> sprintf "lvx %s,%s,%s" (pp_reg vRT) (pp_reg rA) (pp_reg rB)
+| `Plvxl (vRT,rA,rB) -> sprintf "lvxl %s,%s,%s" (pp_reg vRT) (pp_reg rA) (pp_reg rB)
+| `Pstvebx (vRS,rA,rB) -> sprintf "stvebx %d,%s,%s" vRS (pp_reg rA) (pp_reg rB)
+| `Pstvehx (vRS,rA,rB) -> sprintf "stvehx %d,%s,%s" vRS (pp_reg rA) (pp_reg rB)
+| `Pstvewx (vRS,rA,rB) -> sprintf "stvewx %d,%s,%s" vRS (pp_reg rA) (pp_reg rB)
+| `Pstvx (vRS,rA,rB) -> sprintf "stvx %s,%s,%s" (pp_reg vRS) (pp_reg rA) (pp_reg rB)
+| `Pstvxl (vRS,rA,rB) -> sprintf "stvxl %s,%s,%s" (pp_reg vRS) (pp_reg rA) (pp_reg rB)
+| `Plvsl (vRT,rA,rB) -> sprintf "lvsl %d,%s,%s" vRT (pp_reg rA) (pp_reg rB)
+| `Plvsr (vRT,rA,rB) -> sprintf "lvsr %d,%s,%s" vRT (pp_reg rA) (pp_reg rB)
+| `Pvpkpx (vRT,vRA,vRB) -> sprintf "vpkpx %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvpkshss (vRT,vRA,vRB) -> sprintf "vpkshss %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvpkshus (vRT,vRA,vRB) -> sprintf "vpkshus %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvpkswss (vRT,vRA,vRB) -> sprintf "vpkswss %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvpkswus (vRT,vRA,vRB) -> sprintf "vpkswus %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvpkuhum (vRT,vRA,vRB) -> sprintf "vpkuhum %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvpkuhus (vRT,vRA,vRB) -> sprintf "vpkuhus %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvpkuwum (vRT,vRA,vRB) -> sprintf "vpkuwum %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvpkuwus (vRT,vRA,vRB) -> sprintf "vpkuwus %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvupkhpx (vRT,vRB) -> sprintf "vupkhpx %s,%s" (pp_reg vRT) (pp_reg vRB)
+| `Pvupkhsb (vRT,vRB) -> sprintf "vupkhsb %s,%s" (pp_reg vRT) (pp_reg vRB)
+| `Pvupkhsh (vRT,vRB) -> sprintf "vupkhsh %s,%s" (pp_reg vRT) (pp_reg vRB)
+| `Pvupklpx (vRT,vRB) -> sprintf "vupklpx %s,%s" (pp_reg vRT) (pp_reg vRB)
+| `Pvupklsb (vRT,vRB) -> sprintf "vupklsb %s,%s" (pp_reg vRT) (pp_reg vRB)
+| `Pvupklsh (vRT,vRB) -> sprintf "vupklsh %s,%s" (pp_reg vRT) (pp_reg vRB)
+| `Pvmrghb (vRT,vRA,vRB) -> sprintf "vmrghb %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvmrghh (vRT,vRA,vRB) -> sprintf "vmrghh %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvmrghw (vRT,vRA,vRB) -> sprintf "vmrghw %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvmrglb (vRT,vRA,vRB) -> sprintf "vmrglb %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvmrglh (vRT,vRA,vRB) -> sprintf "vmrglh %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvmrglw (vRT,vRA,vRB) -> sprintf "vmrglw %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvspltb (vRT,vRB,uIM) -> sprintf "vspltb %s,%s,%d" (pp_reg vRT) (pp_reg vRB) uIM
+| `Pvsplth (vRT,vRB,uIM) -> sprintf "vsplth %s,%s,%d" (pp_reg vRT) (pp_reg vRB) uIM
+| `Pvspltw (vRT,vRB,uIM) -> sprintf "vspltw %s,%s,%d" (pp_reg vRT) (pp_reg vRB) uIM
+| `Pvspltisb (vRT,sIM) -> sprintf "vspltisb %s,%d" (pp_reg vRT) sIM
+| `Pvspltish (vRT,sIM) -> sprintf "vspltish %s,%d" (pp_reg vRT) sIM
+| `Pvspltisw (vRT,sIM) -> sprintf "vspltisw %s,%d" (pp_reg vRT) sIM
+| `Pvperm (vRT,vRA,vRB,vRC) -> sprintf "vperm %s,%s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB) (pp_reg vRC)
+| `Pvsel (vRT,vRA,vRB,vRC) -> sprintf "vsel %d,%d,%d,%d" vRT vRA vRB vRC
+| `Pvsl (vRT,vRA,vRB) -> sprintf "vsl %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvsldoi (vRT,vRA,vRB,sHB) -> sprintf "vsldoi %s,%s,%s,%d" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB) sHB
+| `Pvslo (vRT,vRA,vRB) -> sprintf "vslo %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvsr (vRT,vRA,vRB) -> sprintf "vsr %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvsro (vRT,vRA,vRB) -> sprintf "vsro %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvaddcuw (vRT,vRA,vRB) -> sprintf "vaddcuw %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvaddsbs (vRT,vRA,vRB) -> sprintf "vaddsbs %s,%d,%d" (pp_reg vRT) vRA vRB
+| `Pvaddshs (vRT,vRA,vRB) -> sprintf "vaddshs %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvaddsws (vRT,vRA,vRB) -> sprintf "vaddsws %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvaddubm (vRT,vRA,vRB) -> sprintf "vaddubm %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvadduhm (vRT,vRA,vRB) -> sprintf "vadduhm %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvadduwm (vRT,vRA,vRB) -> sprintf "vadduwm %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvaddubs (vRT,vRA,vRB) -> sprintf "vaddubs %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvadduhs (vRT,vRA,vRB) -> sprintf "vadduhs %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvadduws (vRT,vRA,vRB) -> sprintf "vadduws %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvsubcuw (vRT,vRA,vRB) -> sprintf "vsubcuw %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvsubsbs (vRT,vRA,vRB) -> sprintf "vsubsbs %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvsubshs (vRT,vRA,vRB) -> sprintf "vsubshs %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvsubsws (vRT,vRA,vRB) -> sprintf "vsubsws %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvsububm (vRT,vRA,vRB) -> sprintf "vsububm %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvsubuhm (vRT,vRA,vRB) -> sprintf "vsubuhm %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvsubuwm (vRT,vRA,vRB) -> sprintf "vsubuwm %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvsububs (vRT,vRA,vRB) -> sprintf "vsububs %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvsubuhs (vRT,vRA,vRB) -> sprintf "vsubuhs %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvsubuws (vRT,vRA,vRB) -> sprintf "vsubuws %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvmulesb (vRT,vRA,vRB) -> sprintf "vmulesb %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvmulesh (vRT,vRA,vRB) -> sprintf "vmulesh %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvmuleub (vRT,vRA,vRB) -> sprintf "vmuleub %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvmuleuh (vRT,vRA,vRB) -> sprintf "vmuleuh %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvmulosb (vRT,vRA,vRB) -> sprintf "vmulosb %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvmulosh (vRT,vRA,vRB) -> sprintf "vmulosh %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvmuloub (vRT,vRA,vRB) -> sprintf "vmuloub %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvmulouh (vRT,vRA,vRB) -> sprintf "vmulouh %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvmhaddshs (vRT,vRA,vRB,vRC) -> sprintf "vmhaddshs %d,%d,%d,%d" vRT vRA vRB vRC
+| `Pvmhraddshs (vRT,vRA,vRB,vRC) -> sprintf "vmhraddshs %d,%d,%d,%d" vRT vRA vRB vRC
+| `Pvmladduhm (vRT,vRA,vRB,vRC) -> sprintf "vmladduhm %s,%s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB) (pp_reg vRC)
+| `Pvmsumubm (vRT,vRA,vRB,vRC) -> sprintf "vmsumubm %s,%s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB) (pp_reg vRC)
+| `Pvmsummbm (vRT,vRA,vRB,vRC) -> sprintf "vmsummbm %d,%d,%d,%d" vRT vRA vRB vRC
+| `Pvmsumshm (vRT,vRA,vRB,vRC) -> sprintf "vmsumshm %d,%d,%d,%d" vRT vRA vRB vRC
+| `Pvmsumshs (vRT,vRA,vRB,vRC) -> sprintf "vmsumshs %s,%s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB) (pp_reg vRC)
+| `Pvmsumuhm (vRT,vRA,vRB,vRC) -> sprintf "vmsumuhm %s,%s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB) (pp_reg vRC)
+| `Pvmsumuhs (vRT,vRA,vRB,vRC) -> sprintf "vmsumuhs %s,%s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB) (pp_reg vRC)
+| `Pvsumsws (vRT,vRA,vRB) -> sprintf "vsumsws %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvsum2sws (vRT,vRA,vRB) -> sprintf "vsum2sws %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvsum4sbs (vRT,vRA,vRB) -> sprintf "vsum4sbs %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvsum4shs (vRT,vRA,vRB) -> sprintf "vsum4shs %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvsum4ubs (vRT,vRA,vRB) -> sprintf "vsum4ubs %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvavgsb (vRT,vRA,vRB) -> sprintf "vavgsb %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvavgsh (vRT,vRA,vRB) -> sprintf "vavgsh %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvavgsw (vRT,vRA,vRB) -> sprintf "vavgsw %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvavgub (vRT,vRA,vRB) -> sprintf "vavgub %d,%d,%d" vRT vRA vRB
+| `Pvavguh (vRT,vRA,vRB) -> sprintf "vavguh %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvavguw (vRT,vRA,vRB) -> sprintf "vavguw %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvmaxsb (vRT,vRA,vRB) -> sprintf "vmaxsb %d,%d,%d" vRT vRA vRB
+| `Pvmaxsh (vRT,vRA,vRB) -> sprintf "vmaxsh %d,%d,%d" vRT vRA vRB
+| `Pvmaxsw (vRT,vRA,vRB) -> sprintf "vmaxsw %d,%d,%d" vRT vRA vRB
+| `Pvmaxub (vRT,vRA,vRB) -> sprintf "vmaxub %d,%d,%d" vRT vRA vRB
+| `Pvmaxuh (vRT,vRA,vRB) -> sprintf "vmaxuh %d,%d,%d" vRT vRA vRB
+| `Pvmaxuw (vRT,vRA,vRB) -> sprintf "vmaxuw %d,%d,%d" vRT vRA vRB
+| `Pvminsb (vRT,vRA,vRB) -> sprintf "vminsb %d,%d,%d" vRT vRA vRB
+| `Pvminsh (vRT,vRA,vRB) -> sprintf "vminsh %d,%d,%d" vRT vRA vRB
+| `Pvminsw (vRT,vRA,vRB) -> sprintf "vminsw %d,%d,%d" vRT vRA vRB
+| `Pvminub (vRT,vRA,vRB) -> sprintf "vminub %d,%d,%d" vRT vRA vRB
+| `Pvminuh (vRT,vRA,vRB) -> sprintf "vminuh %d,%d,%d" vRT vRA vRB
+| `Pvminuw (vRT,vRA,vRB) -> sprintf "vminuw %d,%d,%d" vRT vRA vRB
+| `Pvcmpequb (DontSetCR0,vRT,vRA,vRB) -> sprintf "vcmpequb %d,%d,%d" vRT vRA vRB
+| `Pvcmpequb (SetCR0,vRT,vRA,vRB) -> sprintf "vcmpequb. %d,%d,%d" vRT vRA vRB
+| `Pvcmpequh (DontSetCR0,vRT,vRA,vRB) -> sprintf "vcmpequh %d,%d,%d" vRT vRA vRB
+| `Pvcmpequh (SetCR0,vRT,vRA,vRB) -> sprintf "vcmpequh. %d,%d,%d" vRT vRA vRB
+| `Pvcmpequw (DontSetCR0,vRT,vRA,vRB) -> sprintf "vcmpequw %d,%d,%d" vRT vRA vRB
+| `Pvcmpequw (SetCR0,vRT,vRA,vRB) -> sprintf "vcmpequw. %d,%d,%d" vRT vRA vRB
+| `Pvcmpgtsb (DontSetCR0,vRT,vRA,vRB) -> sprintf "vcmpgtsb %d,%d,%d" vRT vRA vRB
+| `Pvcmpgtsb (SetCR0,vRT,vRA,vRB) -> sprintf "vcmpgtsb. %d,%d,%d" vRT vRA vRB
+| `Pvcmpgtsh (DontSetCR0,vRT,vRA,vRB) -> sprintf "vcmpgtsh %d,%d,%d" vRT vRA vRB
+| `Pvcmpgtsh (SetCR0,vRT,vRA,vRB) -> sprintf "vcmpgtsh. %d,%d,%d" vRT vRA vRB
+| `Pvcmpgtsw (DontSetCR0,vRT,vRA,vRB) -> sprintf "vcmpgtsw %d,%d,%d" vRT vRA vRB
+| `Pvcmpgtsw (SetCR0,vRT,vRA,vRB) -> sprintf "vcmpgtsw. %d,%d,%d" vRT vRA vRB
+| `Pvcmpgtub (DontSetCR0,vRT,vRA,vRB) -> sprintf "vcmpgtub %d,%d,%d" vRT vRA vRB
+| `Pvcmpgtub (SetCR0,vRT,vRA,vRB) -> sprintf "vcmpgtub. %d,%d,%d" vRT vRA vRB
+| `Pvcmpgtuh (DontSetCR0,vRT,vRA,vRB) -> sprintf "vcmpgtuh %d,%d,%d" vRT vRA vRB
+| `Pvcmpgtuh (SetCR0,vRT,vRA,vRB) -> sprintf "vcmpgtuh. %d,%d,%d" vRT vRA vRB
+| `Pvcmpgtuw (DontSetCR0,vRT,vRA,vRB) -> sprintf "vcmpgtuw %d,%d,%d" vRT vRA vRB
+| `Pvcmpgtuw (SetCR0,vRT,vRA,vRB) -> sprintf "vcmpgtuw. %d,%d,%d" vRT vRA vRB
+| `Pvand (vRT,vRA,vRB) -> sprintf "vand %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvandc (vRT,vRA,vRB) -> sprintf "vandc %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvnor (vRT,vRA,vRB) -> sprintf "vnor %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvor (vRT,vRA,vRB) -> sprintf "vor %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvxor (vRT,vRA,vRB) -> sprintf "vxor %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvrlb (vRT,vRA,vRB) -> sprintf "vrlb %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvrlh (vRT,vRA,vRB) -> sprintf "vrlh %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvrlw (vRT,vRA,vRB) -> sprintf "vrlw %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvslb (vRT,vRA,vRB) -> sprintf "vslb %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvslh (vRT,vRA,vRB) -> sprintf "vslh %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvslw (vRT,vRA,vRB) -> sprintf "vslw %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvsrb (vRT,vRA,vRB) -> sprintf "vsrb %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvsrh (vRT,vRA,vRB) -> sprintf "vsrh %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvsrw (vRT,vRA,vRB) -> sprintf "vsrw %s,%s,%s" (pp_reg vRT) (pp_reg vRA) (pp_reg vRB)
+| `Pvsrab (vRT,vRA,vRB) -> sprintf "vsrab %d,%d,%d" vRT vRA vRB
+| `Pvsrah (vRT,vRA,vRB) -> sprintf "vsrah %d,%d,%d" vRT vRA vRB
+| `Pvsraw (vRT,vRA,vRB) -> sprintf "vsraw %d,%d,%d" vRT vRA vRB
+| `Pvaddfp (vRT,vRA,vRB) -> sprintf "vaddfp %d,%d,%d" vRT vRA vRB
+| `Pvsubfp (vRT,vRA,vRB) -> sprintf "vsubfp %d,%d,%d" vRT vRA vRB
+| `Pvmaddfp (vRT,vRA,vRC,vRB) -> sprintf "vmaddfp %d,%d,%d,%d" vRT vRA vRC vRB
+| `Pvnmsubfp (vRT,vRA,vRC,vRB) -> sprintf "vnmsubfp %d,%d,%d,%d" vRT vRA vRC vRB
+| `Pvmaxfp (vRT,vRA,vRB) -> sprintf "vmaxfp %d,%d,%d" vRT vRA vRB
+| `Pvminfp (vRT,vRA,vRB) -> sprintf "vminfp %d,%d,%d" vRT vRA vRB
+| `Pvctsxs (vRT,vRB,uIM) -> sprintf "vctsxs %s,%s,%d" (pp_reg vRT) (pp_reg vRB) uIM
+| `Pvctuxs (vRT,vRB,uIM) -> sprintf "vctuxs %s,%s,%d" (pp_reg vRT) (pp_reg vRB) uIM
+| `Pvcfsx (vRT,vRB,uIM) -> sprintf "vcfsx %d,%d,%d" vRT vRB uIM
+| `Pvcfux (vRT,vRB,uIM) -> sprintf "vcfux %d,%d,%d" vRT vRB uIM
+| `Pvrfim (vRT,vRB) -> sprintf "vrfim %s,%s" (pp_reg vRT) (pp_reg vRB)
+| `Pvrfin (vRT,vRB) -> sprintf "vrfin %s,%s" (pp_reg vRT) (pp_reg vRB)
+| `Pvrfip (vRT,vRB) -> sprintf "vrfip %s,%s" (pp_reg vRT) (pp_reg vRB)
+| `Pvrfiz (vRT,vRB) -> sprintf "vrfiz %s,%s" (pp_reg vRT) (pp_reg vRB)
+| `Pvcmpbfp (DontSetCR0,vRT,vRA,vRB) -> sprintf "vcmpbfp %d,%d,%d" vRT vRA vRB
+| `Pvcmpbfp (SetCR0,vRT,vRA,vRB) -> sprintf "vcmpbfp. %d,%d,%d" vRT vRA vRB
+| `Pvcmpeqfp (DontSetCR0,vRT,vRA,vRB) -> sprintf "vcmpeqfp %d,%d,%d" vRT vRA vRB
+| `Pvcmpeqfp (SetCR0,vRT,vRA,vRB) -> sprintf "vcmpeqfp. %d,%d,%d" vRT vRA vRB
+| `Pvcmpgefp (DontSetCR0,vRT,vRA,vRB) -> sprintf "vcmpgefp %d,%d,%d" vRT vRA vRB
+| `Pvcmpgefp (SetCR0,vRT,vRA,vRB) -> sprintf "vcmpgefp. %d,%d,%d" vRT vRA vRB
+| `Pvcmpgtfp (DontSetCR0,vRT,vRA,vRB) -> sprintf "vcmpgtfp %d,%d,%d" vRT vRA vRB
+| `Pvcmpgtfp (SetCR0,vRT,vRA,vRB) -> sprintf "vcmpgtfp. %d,%d,%d" vRT vRA vRB
+| `Pvexptefp (vRT,vRB) -> sprintf "vexptefp %s,%s" (pp_reg vRT) (pp_reg vRB)
+| `Pvlogefp (vRT,vRB) -> sprintf "vlogefp %s,%s" (pp_reg vRT) (pp_reg vRB)
+| `Pvrefp (vRT,vRB) -> sprintf "vrefp %s,%s" (pp_reg vRT) (pp_reg vRB)
+| `Pvrsqrtefp (vRT,vRB) -> sprintf "vrsqrtefp %s,%s" (pp_reg vRT) (pp_reg vRB)
+| `Pmtvscr (vRB) -> sprintf "mtvscr %s" (pp_reg vRB)
+| `Pmfvscr (vRT) -> sprintf "mfvscr %s" (pp_reg vRT)
+| `Plxsdx (xT,rA,rB) -> sprintf "lxsdx %d,%s,%s" xT (pp_reg rA) (pp_reg rB)
+| `Plxvd2x (xT,rA,rB) -> sprintf "lxvd2x %d,%s,%s" xT (pp_reg rA) (pp_reg rB)
+| `Plxvdsx (xT,rA,rB) -> sprintf "lxvdsx %d,%s,%s" xT (pp_reg rA) (pp_reg rB)
+| `Plxvw4x (xT,rA,rB) -> sprintf "lxvw4x %d,%s,%s" xT (pp_reg rA) (pp_reg rB)
+| `Pstxsdx (xS,rA,rB) -> sprintf "stxsdx %d,%s,%s" xS (pp_reg rA) (pp_reg rB)
+| `Pstxvd2x (xS,rA,rB) -> sprintf "stxvd2x %d,%s,%s" xS (pp_reg rA) (pp_reg rB)
+| `Pstxvw4x (xS,rA,rB) -> sprintf "stxvw4x %d,%s,%s" xS (pp_reg rA) (pp_reg rB)
+| `Pxsabsdp (xT,xB) -> sprintf "xsabsdp %d,%d" xT xB
+| `Pxsadddp (xT,xA,xB) -> sprintf "xsadddp %d,%d,%d" xT xA xB
+| `Pxscmpodp (bF,xA,xB) -> sprintf "xscmpodp %d,%d,%d" bF xA xB
+| `Pxscmpudp (bF,xA,xB) -> sprintf "xscmpudp %d,%d,%d" bF xA xB
+| `Pxscpsgndp (xT,xA,xB) -> sprintf "xscpsgndp %d,%d,%d" xT xA xB
+| `Pxscvdpsp (xT,xB) -> sprintf "xscvdpsp %d,%d" xT xB
+| `Pxscvdpsxds (xT,xB) -> sprintf "xscvdpsxds %d,%d" xT xB
+| `Pxscvdpsxws (xT,xB) -> sprintf "xscvdpsxws %d,%d" xT xB
+| `Pxscvdpuxds (xT,xB) -> sprintf "xscvdpuxds %d,%d" xT xB
+| `Pxscvdpuxws (xT,xB) -> sprintf "xscvdpuxws %d,%d" xT xB
+| `Pxscvspdp (xT,xB) -> sprintf "xscvspdp %d,%d" xT xB
+| `Pxscvsxddp (xT,xB) -> sprintf "xscvsxddp %d,%d" xT xB
+| `Pxscvuxddp (xT,xB) -> sprintf "xscvuxddp %d,%d" xT xB
+| `Pxsdivdp (xT,xA,xB) -> sprintf "xsdivdp %d,%d,%d" xT xA xB
+| `Pxsmaddmdp (xT,xA,xB) -> sprintf "xsmaddmdp %d,%d,%d" xT xA xB
+| `Pxsmaddadp (xT,xA,xB) -> sprintf "xsmaddadp %d,%d,%d" xT xA xB
+| `Pxsmaxdp (xT,xA,xB) -> sprintf "xsmaxdp %d,%d,%d" xT xA xB
+| `Pxsmindp (xT,xA,xB) -> sprintf "xsmindp %d,%d,%d" xT xA xB
+| `Pxsmsubmdp (xT,xA,xB) -> sprintf "xsmsubmdp %d,%d,%d" xT xA xB
+| `Pxsmsubadp (xT,xA,xB) -> sprintf "xsmsubadp %d,%d,%d" xT xA xB
+| `Pxsmuldp (xT,xA,xB) -> sprintf "xsmuldp %d,%d,%d" xT xA xB
+| `Pxsnabsdp (xT,xB) -> sprintf "xsnabsdp %d,%d" xT xB
+| `Pxsnegdp (xT,xB) -> sprintf "xsnegdp %d,%d" xT xB
+| `Pxsnmaddmdp (xT,xA,xB) -> sprintf "xsnmaddmdp %d,%d,%d" xT xA xB
+| `Pxsnmaddadp (xT,xA,xB) -> sprintf "xsnmaddadp %d,%d,%d" xT xA xB
+| `Pxsnmsubmdp (xT,xA,xB) -> sprintf "xsnmsubmdp %d,%d,%d" xT xA xB
+| `Pxsnmsubadp (xT,xA,xB) -> sprintf "xsnmsubadp %d,%d,%d" xT xA xB
+| `Pxsrdpi (xT,xB) -> sprintf "xsrdpi %d,%d" xT xB
+| `Pxsrdpic (xT,xB) -> sprintf "xsrdpic %d,%d" xT xB
+| `Pxsrdpim (xT,xB) -> sprintf "xsrdpim %d,%d" xT xB
+| `Pxsrdpip (xT,xB) -> sprintf "xsrdpip %d,%d" xT xB
+| `Pxsrdpiz (xT,xB) -> sprintf "xsrdpiz %d,%d" xT xB
+| `Pxsredp (xT,xB) -> sprintf "xsredp %d,%d" xT xB
+| `Pxsrsqrtedp (xT,xB) -> sprintf "xsrsqrtedp %d,%d" xT xB
+| `Pxssqrtdp (xT,xB) -> sprintf "xssqrtdp %d,%d" xT xB
+| `Pxssubdp (xT,xA,xB) -> sprintf "xssubdp %d,%d,%d" xT xA xB
+| `Pxstdivdp (bF,xA,xB) -> sprintf "xstdivdp %d,%d,%d" bF xA xB
+| `Pxstsqrtdp (bF,xB) -> sprintf "xstsqrtdp %d,%d" bF xB
+| `Pxvabsdp (xT,xB) -> sprintf "xvabsdp %d,%d" xT xB
+| `Pxvabssp (xT,xB) -> sprintf "xvabssp %d,%d" xT xB
+| `Pxvadddp (xT,xA,xB) -> sprintf "xvadddp %d,%d,%d" xT xA xB
+| `Pxvaddsp (xT,xA,xB) -> sprintf "xvaddsp %d,%d,%d" xT xA xB
+| `Pxvcmpeqdp (DontSetCR0,xT,xA,xB) -> sprintf "xvcmpeqdp %d,%d,%d" xT xA xB
+| `Pxvcmpeqsp (DontSetCR0,xT,xA,xB) -> sprintf "xvcmpeqsp %d,%d,%d" xT xA xB
+| `Pxvcmpgedp (DontSetCR0,xT,xA,xB) -> sprintf "xvcmpgedp %d,%d,%d" xT xA xB
+| `Pxvcmpgesp (DontSetCR0,xT,xA,xB) -> sprintf "xvcmpgesp %d,%d,%d" xT xA xB
+| `Pxvcmpgtdp (DontSetCR0,xT,xA,xB) -> sprintf "xvcmpgtdp %d,%d,%d" xT xA xB
+| `Pxvcmpgtsp (DontSetCR0,xT,xA,xB) -> sprintf "xvcmpgtsp %d,%d,%d" xT xA xB
+| `Pxvcpsgndp (xT,xA,xB) -> sprintf "xvcpsgndp %d,%d,%d" xT xA xB
+| `Pxvcpsgnsp (xT,xA,xB) -> sprintf "xvcpsgnsp %d,%d,%d" xT xA xB
+| `Pxvcvdpsp (xT,xB) -> sprintf "xvcvdpsp %d,%d" xT xB
+| `Pxvcvdpsxds (xT,xB) -> sprintf "xvcvdpsxds %d,%d" xT xB
+| `Pxvcvdpsxws (xT,xB) -> sprintf "xvcvdpsxws %d,%d" xT xB
+| `Pxvcvdpuxds (xT,xB) -> sprintf "xvcvdpuxds %d,%d" xT xB
+| `Pxvcvdpuxws (xT,xB) -> sprintf "xvcvdpuxws %d,%d" xT xB
+| `Pxvcvspdp (xT,xB) -> sprintf "xvcvspdp %d,%d" xT xB
+| `Pxvcvspsxds (xT,xB) -> sprintf "xvcvspsxds %d,%d" xT xB
+| `Pxvcvspsxws (xT,xB) -> sprintf "xvcvspsxws %d,%d" xT xB
+| `Pxvcvspuxds (xT,xB) -> sprintf "xvcvspuxds %d,%d" xT xB
+| `Pxvcvspuxws (xT,xB) -> sprintf "xvcvspuxws %d,%d" xT xB
+| `Pxvcvsxddp (xT,xB) -> sprintf "xvcvsxddp %d,%d" xT xB
+| `Pxvcvsxdsp (xT,xB) -> sprintf "xvcvsxdsp %d,%d" xT xB
+| `Pxvcvsxwdp (xT,xB) -> sprintf "xvcvsxwdp %d,%d" xT xB
+| `Pxvcvsxwsp (xT,xB) -> sprintf "xvcvsxwsp %d,%d" xT xB
+| `Pxvcvuxddp (xT,xB) -> sprintf "xvcvuxddp %d,%d" xT xB
+| `Pxvcvuxdsp (xT,xB) -> sprintf "xvcvuxdsp %d,%d" xT xB
+| `Pxvcvuxwdp (xT,xB) -> sprintf "xvcvuxwdp %d,%d" xT xB
+| `Pxvcvuxwsp (xT,xB) -> sprintf "xvcvuxwsp %d,%d" xT xB
+| `Pxvdivdp (xT,xA,xB) -> sprintf "xvdivdp %d,%d,%d" xT xA xB
+| `Pxvdivsp (xT,xA,xB) -> sprintf "xvdivsp %d,%d,%d" xT xA xB
+| `Pxvmaddmdp (xT,xA,xB) -> sprintf "xvmaddmdp %d,%d,%d" xT xA xB
+| `Pxvmaddadp (xT,xA,xB) -> sprintf "xvmaddadp %d,%d,%d" xT xA xB
+| `Pxvmaddmsp (xT,xA,xB) -> sprintf "xvmaddmsp %d,%d,%d" xT xA xB
+| `Pxvmaddasp (xT,xA,xB) -> sprintf "xvmaddasp %d,%d,%d" xT xA xB
+| `Pxvmaxdp (xT,xA,xB) -> sprintf "xvmaxdp %d,%d,%d" xT xA xB
+| `Pxvmaxsp (xT,xA,xB) -> sprintf "xvmaxsp %d,%d,%d" xT xA xB
+| `Pxvmindp (xT,xA,xB) -> sprintf "xvmindp %d,%d,%d" xT xA xB
+| `Pxvminsp (xT,xA,xB) -> sprintf "xvminsp %d,%d,%d" xT xA xB
+| `Pxvmsubmdp (xT,xA,xB) -> sprintf "xvmsubmdp %d,%d,%d" xT xA xB
+| `Pxvmsubadp (xT,xA,xB) -> sprintf "xvmsubadp %d,%d,%d" xT xA xB
+| `Pxvmsubmsp (xT,xA,xB) -> sprintf "xvmsubmsp %d,%d,%d" xT xA xB
+| `Pxvmsubasp (xT,xA,xB) -> sprintf "xvmsubasp %d,%d,%d" xT xA xB
+| `Pxvmuldp (xT,xA,xB) -> sprintf "xvmuldp %d,%d,%d" xT xA xB
+| `Pxvmulsp (xT,xA,xB) -> sprintf "xvmulsp %d,%d,%d" xT xA xB
+| `Pxvnabsdp (xT,xB) -> sprintf "xvnabsdp %d,%d" xT xB
+| `Pxvnabssp (xT,xB) -> sprintf "xvnabssp %d,%d" xT xB
+| `Pxvnegdp (xT,xB) -> sprintf "xvnegdp %d,%d" xT xB
+| `Pxvnegsp (xT,xB) -> sprintf "xvnegsp %d,%d" xT xB
+| `Pxvnmaddmdp (xT,xA,xB) -> sprintf "xvnmaddmdp %d,%d,%d" xT xA xB
+| `Pxvnmaddadp (xT,xA,xB) -> sprintf "xvnmaddadp %d,%d,%d" xT xA xB
+| `Pxvnmaddmsp (xT,xA,xB) -> sprintf "xvnmaddmsp %d,%d,%d" xT xA xB
+| `Pxvnmaddasp (xT,xA,xB) -> sprintf "xvnmaddasp %d,%d,%d" xT xA xB
+| `Pxvnmsubmdp (xT,xA,xB) -> sprintf "xvnmsubmdp %d,%d,%d" xT xA xB
+| `Pxvnmsubadp (xT,xA,xB) -> sprintf "xvnmsubadp %d,%d,%d" xT xA xB
+| `Pxvnmsubmsp (xT,xA,xB) -> sprintf "xvnmsubmsp %d,%d,%d" xT xA xB
+| `Pxvnmsubasp (xT,xA,xB) -> sprintf "xvnmsubasp %d,%d,%d" xT xA xB
+| `Pxvrdpi (xT,xB) -> sprintf "xvrdpi %d,%d" xT xB
+| `Pxvrdpic (xT,xB) -> sprintf "xvrdpic %d,%d" xT xB
+| `Pxvrdpim (xT,xB) -> sprintf "xvrdpim %d,%d" xT xB
+| `Pxvrdpip (xT,xB) -> sprintf "xvrdpip %d,%d" xT xB
+| `Pxvrdpiz (xT,xB) -> sprintf "xvrdpiz %d,%d" xT xB
+| `Pxvredp (xT,xB) -> sprintf "xvredp %d,%d" xT xB
+| `Pxvresp (xT,xB) -> sprintf "xvresp %d,%d" xT xB
+| `Pxvrspi (xT,xB) -> sprintf "xvrspi %d,%d" xT xB
+| `Pxvrspic (xT,xB) -> sprintf "xvrspic %d,%d" xT xB
+| `Pxvrspim (xT,xB) -> sprintf "xvrspim %d,%d" xT xB
+| `Pxvrspip (xT,xB) -> sprintf "xvrspip %d,%d" xT xB
+| `Pxvrspiz (xT,xB) -> sprintf "xvrspiz %d,%d" xT xB
+| `Pxvrsqrtedp (xT,xB) -> sprintf "xvrsqrtedp %d,%d" xT xB
+| `Pxvrsqrtesp (xT,xB) -> sprintf "xvrsqrtesp %d,%d" xT xB
+| `Pxvsqrtdp (xT,xB) -> sprintf "xvsqrtdp %d,%d" xT xB
+| `Pxvsqrtsp (xT,xB) -> sprintf "xvsqrtsp %d,%d" xT xB
+| `Pxvsubdp (xT,xA,xB) -> sprintf "xvsubdp %d,%d,%d" xT xA xB
+| `Pxvsubsp (xT,xA,xB) -> sprintf "xvsubsp %d,%d,%d" xT xA xB
+| `Pxvtdivdp (bF,xA,xB) -> sprintf "xvtdivdp %d,%d,%d" bF xA xB
+| `Pxvtdivsp (bF,xA,xB) -> sprintf "xvtdivsp %d,%d,%d" bF xA xB
+| `Pxvtsqrtdp (bF,xB) -> sprintf "xvtsqrtdp %d,%d" bF xB
+| `Pxvtsqrtsp (bF,xB) -> sprintf "xvtsqrtsp %d,%d" bF xB
+| `Pxxland (xT,xA,xB) -> sprintf "xxland %d,%d,%d" xT xA xB
+| `Pxxlandc (xT,xA,xB) -> sprintf "xxlandc %d,%d,%d" xT xA xB
+| `Pxxlnor (xT,xA,xB) -> sprintf "xxlnor %d,%d,%d" xT xA xB
+| `Pxxlor (xT,xA,xB) -> sprintf "xxlor %d,%d,%d" xT xA xB
+| `Pxxlxor (xT,xA,xB) -> sprintf "xxlxor %d,%d,%d" xT xA xB
+| `Pxxmrghw (xT,xA,xB) -> sprintf "xxmrghw %d,%d,%d" xT xA xB
+| `Pxxmrglw (xT,xA,xB) -> sprintf "xxmrglw %d,%d,%d" xT xA xB
+| `Pxxpermdi (xT,xA,xB,dM) -> sprintf "xxpermdi %d,%d,%d,%d" xT xA xB dM
+| `Pxxsel (xT,xA,xB,xC) -> sprintf "xxsel %d,%d,%d,%d" xT xA xB xC
+| `Pxxsldwi (xT,xA,xB,sHW) -> sprintf "xxsldwi %d,%d,%d,%d" xT xA xB sHW
+| `Pxxspltw (xT,xB,uIM) -> sprintf "xxspltw %d,%d,%d" xT xB uIM
+| `Pdlmzb (DontSetCR0,rA,rS,rB) -> sprintf "dlmzb %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Pdlmzb (SetCR0,rA,rS,rB) -> sprintf "dlmzb. %s,%s,%s" (pp_reg rA) (pp_reg rS) (pp_reg rB)
+| `Pmacchw (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "macchw %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmacchw (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "macchw. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmacchw (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "macchwo %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmacchw (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "macchwo. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmacchws (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "macchws %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmacchws (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "macchws. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmacchws (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "macchwso %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmacchws (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "macchwso. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmacchwu (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "macchwu %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmacchwu (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "macchwu. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmacchwu (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "macchwuo %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmacchwu (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "macchwuo. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmacchwsu (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "macchwsu %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmacchwsu (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "macchwsu. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmacchwsu (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "macchwsuo %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmacchwsu (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "macchwsuo. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmachhw (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "machhw %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmachhw (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "machhw. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmachhw (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "machhwo %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmachhw (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "machhwo. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmachhws (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "machhws %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmachhws (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "machhws. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmachhws (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "machhwso %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmachhws (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "machhwso. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmachhwu (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "machhwu %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmachhwu (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "machhwu. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmachhwu (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "machhwuo %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmachhwu (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "machhwuo. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmachhwsu (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "machhwsu %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmachhwsu (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "machhwsu. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmachhwsu (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "machhwsuo %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmachhwsu (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "machhwsuo. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmaclhw (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "maclhw %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmaclhw (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "maclhw. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmaclhw (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "maclhwo %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmaclhw (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "maclhwo. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmaclhws (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "maclhws %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmaclhws (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "maclhws. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmaclhws (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "maclhwso %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmaclhws (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "maclhwso. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmaclhwu (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "maclhwu %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmaclhwu (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "maclhwu. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmaclhwu (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "maclhwuo %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmaclhwu (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "maclhwuo. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmaclhwsu (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "maclhwsu %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmaclhwsu (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "maclhwsu. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmaclhwsu (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "maclhwsuo %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmaclhwsu (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "maclhwsuo. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmulchw (DontSetCR0,rT,rA,rB) -> sprintf "mulchw %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmulchw (SetCR0,rT,rA,rB) -> sprintf "mulchw. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmulchwu (DontSetCR0,rT,rA,rB) -> sprintf "mulchwu %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmulchwu (SetCR0,rT,rA,rB) -> sprintf "mulchwu. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmulhhw (DontSetCR0,rT,rA,rB) -> sprintf "mulhhw %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmulhhw (SetCR0,rT,rA,rB) -> sprintf "mulhhw. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmulhhwu (DontSetCR0,rT,rA,rB) -> sprintf "mulhhwu %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmulhhwu (SetCR0,rT,rA,rB) -> sprintf "mulhhwu. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmullhw (DontSetCR0,rT,rA,rB) -> sprintf "mullhw %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmullhw (SetCR0,rT,rA,rB) -> sprintf "mullhw. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmullhwu (DontSetCR0,rT,rA,rB) -> sprintf "mullhwu %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pmullhwu (SetCR0,rT,rA,rB) -> sprintf "mullhwu. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pnmacchw (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "nmacchw %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pnmacchw (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "nmacchw. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pnmacchw (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "nmacchwo %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pnmacchw (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "nmacchwo. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pnmacchws (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "nmacchws %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pnmacchws (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "nmacchws. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pnmacchws (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "nmacchwso %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pnmacchws (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "nmacchwso. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pnmachhw (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "nmachhw %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pnmachhw (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "nmachhw. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pnmachhw (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "nmachhwo %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pnmachhw (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "nmachhwo. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pnmachhws (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "nmachhws %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pnmachhws (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "nmachhws. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pnmachhws (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "nmachhwso %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pnmachhws (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "nmachhwso. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pnmaclhw (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "nmaclhw %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pnmaclhw (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "nmaclhw. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pnmaclhw (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "nmaclhwo %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pnmaclhw (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "nmaclhwo. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pnmaclhws (DontSetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "nmaclhws %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pnmaclhws (DontSetSOOV,SetCR0,rT,rA,rB) -> sprintf "nmaclhws. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pnmaclhws (SetSOOV,DontSetCR0,rT,rA,rB) -> sprintf "nmaclhwso %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Pnmaclhws (SetSOOV,SetCR0,rT,rA,rB) -> sprintf "nmaclhwso. %s,%s,%s" (pp_reg rT) (pp_reg rA) (pp_reg rB)
+| `Picbi (rA,rB) -> sprintf "icbi %s,%s" (pp_reg rA) (pp_reg rB)
+| `Picbt (cT,rA,rB) -> sprintf "icbt %d,%s,%s" cT (pp_reg rA) (pp_reg rB)
+| `Pdcba (rA,rB) -> sprintf "dcba %s,%s" (pp_reg rA) (pp_reg rB)
+| `Pdcbt (rA,rB,tH) -> sprintf "dcbt %s,%s,%d" (pp_reg rA) (pp_reg rB) tH
+| `Pdcbtst (rA,rB,tH) -> sprintf "dcbtst %s,%s,%d" (pp_reg rA) (pp_reg rB) tH
+| `Pdcbz (rA,rB) -> sprintf "dcbz %s,%s" (pp_reg rA) (pp_reg rB)
+| `Pdcbst (rA,rB) -> sprintf "dcbst %s,%s" (pp_reg rA) (pp_reg rB)
+| `Pdcbf (rA,rB,l) -> sprintf "dcbf %s,%s,%d" (pp_reg rA) (pp_reg rB) l
+| `Pisync -> sprintf "isync " 
+| `Plbarx (rT,rA,rB,eH) -> sprintf "lbarx %s,%s,%s,%d" (pp_reg rT) (pp_reg rA) (pp_reg rB) eH
+| `Plharx (rT,rA,rB,eH) -> sprintf "lharx %s,%s,%s,%d" (pp_reg rT) (pp_reg rA) (pp_reg rB) eH
+| `Plwarx (rT,rA,rB,eH) -> sprintf "lwarx %s,%s,%s,%d" (pp_reg rT) (pp_reg rA) (pp_reg rB) eH
+| `Pstbcx (rS,rA,rB) -> sprintf "stbcx. %s,%s,%s" (pp_reg rS) (pp_reg rA) (pp_reg rB)
+| `Psthcx (rS,rA,rB) -> sprintf "sthcx. %s,%s,%s" (pp_reg rS) (pp_reg rA) (pp_reg rB)
+| `Pstwcx (rS,rA,rB) -> sprintf "stwcx. %s,%s,%s" (pp_reg rS) (pp_reg rA) (pp_reg rB)
+| `Pldarx (rT,rA,rB,eH) -> sprintf "ldarx %s,%s,%s,%d" (pp_reg rT) (pp_reg rA) (pp_reg rB) eH
+| `Pstdcx (rS,rA,rB) -> sprintf "stdcx. %s,%s,%s" (pp_reg rS) (pp_reg rA) (pp_reg rB)
+| `Psync (l) -> sprintf "sync %d" l
+| `Peieio -> sprintf "eieio " 
+| `Pmbar (mO) -> sprintf "mbar %d" mO
+| `Pwait (wC) -> sprintf "wait %d" wC

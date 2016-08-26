@@ -1,0 +1,34 @@
+digraph G {
+
+fontname="Arial";
+
+
+/* the unlocked events */
+eiid0 [label="a: Wx=1", shape="none", fontsize=12, pos="1.000000,0.750000!", fixedsize="true", height="0.166667", width="0.666667"];
+eiid1 [label="b: Ry=0", shape="none", fontsize=12, pos="1.000000,0.000000!", fixedsize="true", height="0.166667", width="0.666667"];
+eiid2 [label="c: Wy=1", shape="none", fontsize=12, pos="2.000000,0.750000!", fixedsize="true", height="0.166667", width="0.666667"];
+eiid3 [label="d: Rx=0", shape="none", fontsize=12, pos="2.000000,0.000000!", fixedsize="true", height="0.166667", width="0.666667"];
+
+/* the intra_causality_data edges */
+
+
+/* the intra_causality_control edges */
+
+/* the poi edges */
+/* the rfmap edges */
+initeiid1 [shape=point, height=0.06, width=0.06, color="red", pos="0.400000,0.112500!"];
+initeiid1 -> eiid1 [label="rf", color="red", fontcolor="red", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+initeiid3 [shape=point, height=0.06, width=0.06, color="red", pos="1.400000,0.112500!"];
+initeiid3 -> eiid3 [label="rf", color="red", fontcolor="red", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+
+
+/* The viewed-before edges */
+eiid0 -> eiid1 [label="mfence", color="darkgreen", fontcolor="darkgreen", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+eiid3 -> eiid2 [label="mfence", color="darkgreen", fontcolor="darkgreen", fontsize=12, penwidth="1.500000", arrowsize="0.600000", dir="back"];
+eiid0 -> eiid1 [label="ghb", fontsize=12, penwidth="3.0", color="blueviolet", fontcolor="blueviolet", arrowsize="1.2"];
+eiid1 -> eiid2 [label="ghb", fontsize=12, penwidth="3.0", color="blueviolet", fontcolor="blueviolet", arrowsize="1.2"];
+eiid3 -> eiid2 [label="ghb", fontsize=12, dir="back", penwidth="3.0", color="blueviolet", fontcolor="blueviolet", arrowsize="1.2"];
+eiid3 -> eiid0 [label="ghb", fontsize=12, penwidth="3.0", color="blueviolet", fontcolor="blueviolet", arrowsize="1.2"];
+eiid1 -> eiid2 [label="fr", color="#ffa040", fontcolor="#ffa040", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+eiid3 -> eiid0 [label="fr", color="#ffa040", fontcolor="#ffa040", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+}

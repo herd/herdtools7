@@ -1,0 +1,44 @@
+digraph G {
+
+
+/* legend */
+label="Test SB, Generic(A third attempt for TSO)";
+
+
+/* init events */
+eiid4 [label="e: Wy=0\lInit", shape="box", color="blue"];
+eiid5 [label="f: Wx=0\lInit", shape="box", color="blue"];
+
+/* the unlocked events */
+subgraph cluster_proc0 { rank=sink; label = "Thread 0"; color=magenta; shape=box;
+eiid0 [label="a: Wx=1\lproc:0 poi:0\lMOV [x],1", shape="box", color="blue"];
+eiid1 [label="b: Ry=0\lproc:0 poi:1\lMOV EAX,[y]", shape="box", color="blue"];
+}
+subgraph cluster_proc1 { rank=sink; label = "Thread 1"; color=magenta; shape=box;
+eiid2 [label="c: Wy=1\lproc:1 poi:0\lMOV [y],1", shape="box", color="blue"];
+eiid3 [label="d: Rx=0\lproc:1 poi:1\lMOV EAX,[x]", shape="box", color="blue"];
+}
+
+/* the intra_causality_data edges */
+
+
+/* the intra_causality_control edges */
+
+/* the poi edges */
+eiid0 -> eiid1 [label="po", color="black", fontcolor="black"];
+eiid2 -> eiid3 [label="po", color="black", fontcolor="black"];
+/* the rfmap edges */
+eiid4 -> eiid1 [label="rf", color="red", fontcolor="red"];
+eiid5 -> eiid3 [label="rf", color="red", fontcolor="red"];
+
+
+/* The viewed-before edges */
+eiid1 -> eiid2 [label="ghb", color="brown", fontcolor="brown"];
+eiid3 -> eiid0 [label="ghb", color="brown", fontcolor="brown"];
+eiid4 -> eiid1 [label="ghb", color="brown", fontcolor="brown"];
+eiid5 -> eiid3 [label="ghb", color="brown", fontcolor="brown"];
+eiid1 -> eiid2 [label="fr", color="#ffa040", fontcolor="#ffa040"];
+eiid3 -> eiid0 [label="fr", color="#ffa040", fontcolor="#ffa040"];
+eiid4 -> eiid2 [label="co", color="brown", fontcolor="brown"];
+eiid5 -> eiid0 [label="co", color="brown", fontcolor="brown"];
+}

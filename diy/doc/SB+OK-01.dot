@@ -1,0 +1,32 @@
+digraph G {
+
+fontname="Arial";
+
+
+/* init events */
+eiid4 [label="iy:Wy=0", shape="none", fontsize=12, pos="0.125000,1.500000!", fixedsize="true", height="0.166667", width="0.666667"];
+eiid5 [label="ix:Wx=0", shape="none", fontsize=12, pos="1.875000,1.500000!", fixedsize="true", height="0.166667", width="0.666667"];
+
+/* the unlocked events */
+eiid0 [label="a: Wx=1", shape="none", fontsize=12, pos="1.000000,0.750000!", fixedsize="true", height="0.166667", width="0.666667"];
+eiid1 [label="b: Ry=1", shape="none", fontsize=12, pos="1.000000,0.000000!", fixedsize="true", height="0.166667", width="0.666667"];
+eiid2 [label="c: Wy=1", shape="none", fontsize=12, pos="2.750000,0.750000!", fixedsize="true", height="0.166667", width="0.666667"];
+eiid3 [label="d: Rx=0", shape="none", fontsize=12, pos="2.750000,0.000000!", fixedsize="true", height="0.166667", width="0.666667"];
+
+/* the intra_causality_data edges */
+
+
+/* the intra_causality_control edges */
+
+/* the poi edges */
+/* the rfmap edges */
+
+
+/* The viewed-before edges */
+eiid0 -> eiid1 [label=<<font color="violetred2">S</font>>, color="violetred2", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+eiid2 -> eiid1 [label=<<font color="indigo">rf-S</font><font color="red">,rf</font>>, color="indigo:red", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+eiid2 -> eiid3 [label=<<font color="violetred2">S</font>>, color="violetred2", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+eiid3 -> eiid0 [label=<<font color="violetred2">S</font>>, color="violetred2", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+eiid4 -> eiid2 [label=<<font color="violetred2">S</font>>, color="violetred2", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+eiid5 -> eiid3 [label=<<font color="violetred2">S</font><font color="indigo">,rf-S</font><font color="red">,rf</font>>, color="violetred2:indigo:red", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+}

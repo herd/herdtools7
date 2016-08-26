@@ -1,0 +1,17 @@
+ARM LB+poss
+"PosRW Rfe PosRW Rfe"
+Cycle=Rfe PosRW Rfe PosRW
+Relax=
+Safe=Rfe PosRW
+Prefetch=
+Com=Rf Rf
+Orig=PosRW Rfe PosRW Rfe
+{
+%x0=x;
+%x1=x;
+}
+ P0           | P1           ;
+ LDR R0,[%x0] | LDR R0,[%x1] ;
+ MOV R1,#1    | MOV R1,#2    ;
+ STR R1,[%x0] | STR R1,[%x1] ;
+locations [x;0:R0;1:R0;]

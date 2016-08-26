@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<meta name="generator" content="hevea 2.27">
+<link rel="stylesheet" type="text/css" href="diy.css">
+<title>Generating tests</title>
+</head>
+<body>
+<a href="litmus.html"><img src="previous_motif.gif" alt="Previous"></a>
+<a href="index.html"><img src="contents_motif.gif" alt="Up"></a>
+<a href="herd.html"><img src="next_motif.gif" alt="Next"></a>
+<hr>
+<table class="center"><tr><td><h1 class="part" id="part:diy">Part&#XA0;II<br>
+Generating tests</h1></td></tr>
+</table>
+<ul>
+<li><a href="gen.html#sec33">Preamble</a>
+<ul>
+<li><a href="gen.html#sec34">Relaxation of Sequential Consistency</a>
+</li><li><a href="gen.html#candidate%3Aintro">Introduction to candidate relaxations</a>
+</li><li><a href="gen.html#sec36">More candidate relaxations</a>
+</li><li><a href="gen.html#sec37">Summary of simple candidate relaxations</a>
+</li></ul>
+</li><li><a href="gen.html#diy%3Aintro">Testing candidate relaxations with <span class="c007">diy7</span></a>
+<ul>
+<li><a href="gen.html#sec42">Principle</a>
+</li><li><a href="gen.html#sec43">Testing&#XA0;x86</a>
+</li></ul>
+</li><li><a href="gen.html#sec44">Additional relaxations</a>
+<ul>
+<li><a href="gen.html#sec45">Intra-processor dependencies</a>
+</li><li><a href="gen.html#sec46">Composite relaxations and cumulativity</a>
+</li><li><a href="gen.html#detour%3Adef">Detour candidate relaxations</a>
+</li></ul>
+</li><li><a href="gen.html#diycross%3Aintro">Test variations with <span class="c007">diycross7</span></a>
+</li><li><a href="gen.html#observers">Identifying coherence orders with observers</a>
+<ul>
+<li><a href="gen.html#sec50">Simple observers</a>
+</li><li><a href="gen.html#sec%3Aobstype">More observers</a>
+</li><li><a href="gen.html#sec%3Aobs">Three stores or more</a>
+</li></ul>
+</li><li><a href="gen.html#sec56">Command usage</a>
+<ul>
+<li><a href="gen.html#sec%3Anames">A note on test names</a>
+</li><li><a href="gen.html#sec60">Common options</a>
+</li><li><a href="gen.html#diyone%3Ausage">Usage of <span class="c007">diyone7</span></a>
+</li><li><a href="gen.html#sec62">Usage of <span class="c007">diycross7</span></a>
+</li><li><a href="gen.html#diy%3Ausage">Usage of <span class="c007">diy7</span></a>
+</li><li><a href="gen.html#sec64">Usage of <span class="c007">readRelax7</span></a>
+</li></ul>
+</li><li><a href="gen.html#sec65">Additional tools: extracting cycles and classification</a>
+<ul>
+<li><a href="gen.html#sec66">Usage of <span class="c007">mcycle7</span></a>
+</li><li><a href="gen.html#sec67">Usage of <span class="c007">classify7</span></a>
+</li></ul>
+</li></ul>
+
+<h2 class="section" id="sec33">5&#XA0;&#XA0;Preamble</h2>
+<p> <a id="preamble"></a></p><p>We wrote&#XA0;<span class="c007">diy7</span> as part of our empirical approach to studying relaxed memory
+models: developing in tandem testing tools and models of multiprocessor
+behaviour. In this tutorial, we attempt an independent tool presentation.
+Readers interested by the companion formalism are invited
+to refer to our CAV&#XA0;2010 publication&#XA0;[<a href="diy006.html#ams10">1</a>].</p><p>The distribution includes additional test generators:
+<a href="#diyone%3Aintro"><span class="c007">diyone7</span></a> for generating one test
+and <a href="#diycross%3Aintro"><span class="c007">diycross7</span></a>
+for generating simple variations on one test.</p>
+<h3 class="subsection" id="sec34">5.1&#XA0;&#XA0;Relaxation of Sequential Consistency</h3>
+<p>Relaxation is one of the key concepts behind simple analysis of weak memory
+models. We define a candidate relaxation by reference to
+the most natural model of
+parallel execution in shared memory: Sequential Consistency (SC), as defined by
+L.&#XA0;Lamport [<a href="diy006.html#lam79">3</a>]. A parallel program running on a sequentially
+consistent machine behaves as an interleaving of its sequential threads.</p><p>Consider once more the
+example&#XA0;<a href="SB-labelled.litmus"><span class="c004">SB.litmus</span></a>:
+</p><pre class="verbatim">X86 SB
+"Fre PodWR Fre PodWR"
+{ x=0; y=0; }
+ P0          | P1          ; 
+ MOV [y],$1  | MOV [x],$1  ; #(a)Wy1  | (c)Wx1
+ MOV EAX,[x] | MOV EAX,[y] ; #(b)Rx0  | (d)Ry0
+exists (0:EAX=0 /\ 1:EAX=0)
+</pre><p> To focus on interaction through shared
+memory, let us consider memory accesses, or <em>memory events</em>. A memory
+event will hold a direction (write, written W, or read, written R), a memory
+location (written x, y) a value and a unique label. In any run of the simple
+example above, four memory events occur: two writes (<span class="c010">c</span>)&#XA0;Wx1
+and&#XA0;(<span class="c010">a</span>)&#XA0;Wy1 and two reads (<span class="c010">b</span>)&#XA0;Rx<span class="c010">v</span><sub>1</sub> with a certain value <span class="c010">v</span><sub>1</sub>
+and (<span class="c010">d</span>)&#XA0;Ry<span class="c010">v</span><sub>2</sub> with a certain value <span class="c010">v</span><sub>2</sub>.</p><p>If the program&#X2019;s
+behaviour is modelled by the interleaving of its events, the first event must
+be a write of value&#XA0;<code>1</code> to location&#XA0;<code>x</code> or <code>y</code> and at least one
+of the loads must see a&#XA0;<code>1</code>. Thus, a SC machine would exhibit only three
+possible outcomes for this test:</p><div class="center">
+<table class="c000 cellpadding1" border=1><tr><td class="c016">Allowed: 0:EAX = 0 &#X2227; 1:EAX = 1</td></tr>
+<tr><td class="c016">Allowed: 0:EAX = 1 &#X2227; 1:EAX = 0</td></tr>
+<tr><td class="c016">Allowed: 0:EAX = 1 &#X2227; 1:EAX = 1</td></tr>
+</table>
+</div><p>However, running (see Sec.&#XA0;<a href="litmus.html#x86%3Aclassic">1.1</a>)
+this test on a x86 machine yields an additional result:
+</p><div class="center">
+<table class="c000 cellpadding1" border=1><tr><td class="c016">Allowed: 0:EAX = 0 &#X2227; 1:EAX = 0</td></tr>
+</table>
+</div><p>And indeed, x86 allows each write-read pair on both processors to be
+reordered [<a href="diy006.html#intel%3Awhite">2</a>]: thus the write-read pair in program order is relaxed on each of these
+architectures. We cannot use SC as an accurate memory model for modern
+architectures.
+Instead we analyse memory models as <em>relaxing</em> the
+ordering constraints of the SC&#XA0;memory model.</p>
+<h3 class="subsection" id="candidate:intro">5.2&#XA0;&#XA0;Introduction to candidate relaxations</h3>
+<p>
+Consider again our classical example,
+from a&#XA0;SC perspective.
+We briefly argued that the outcome 
+&#X201C;0:EAX = 0 &#X2227;
+1:EAX = 0&#X201D;
+is forbidden by&#XA0;SC.
+We now present a more complete reasoning:
+</p><ul class="itemize"><li class="li-itemize">
+From the condition on outcome, we get the values in
+read events: (<span class="c010">b</span>)&#XA0;Rx0 and&#XA0;(<span class="c010">d</span>)&#XA0;Ry0.
+</li><li class="li-itemize">Because of these values,
+(<span class="c010">b</span>)&#XA0;Rx0 must precede the write (<span class="c010">c</span>)&#XA0;Wx1
+in the final interleaving of&#XA0;SC.
+Similarly, (<span class="c010">d</span>)&#XA0;Ry0 must precede the write (<span class="c010">a</span>)&#XA0;Wy1.
+This we note (<span class="c010">b</span>) &#X2192;<sup><span class="c009">fr</span></sup> (<span class="c010">c</span>) and (<span class="c010">d</span>) &#X2192;<sup><span class="c009">fr</span></sup> (<span class="c010">a</span>).</li><li class="li-itemize">Because of sequential execution order on one single processor
+(a.k.a. <em>program order</em>),
+(<span class="c010">a</span>)&#XA0;Wy1 must precede (<span class="c010">b</span>)&#XA0;Rx0 (first processor);
+while (<span class="c010">c</span>)&#XA0;Wx1 must precede&#XA0;(<span class="c010">d</span>)&#XA0;Ry0 (second processor).
+This we note (<span class="c010">a</span>) &#X2192;<sup><span class="c009">po</span></sup> (<span class="c010">b</span>) and (<span class="c010">c</span>) &#X2192;<sup><span class="c009">po</span></sup> (<span class="c010">d</span>).</li><li class="li-itemize">We synthesise the four constraints above as the following graph:
+<div class="center">
+<img src="classic-sc.png">
+</div>
+Constraint arrows or <em>global</em> arrows are shown in brown colour.
+As the graph contains a cycle of brown arrows, the events cannot be ordered.
+Hence the execution presented is not allowed by&#XA0;SC.
+</li></ul><p>The key idea of <span class="c007">diy7</span> resides in producing programs from similar
+cycles. To that aim, the edges in cycles must convey additional
+information:
+</p><ul class="itemize"><li class="li-itemize">
+For &#X2192;<sup><span class="c009">po</span></sup> edges, we consider whether the locations
+of the events on both sides of the edge are the same or not
+(&#X2019;s&#X2019; or &#X2019;d&#X2019;); and the direction of these events (W or&#XA0;R).
+For instance the two &#X2192;<sup><span class="c009">po</span></sup> edges in the example are PodWR.
+(program order edge between a write and a read whose locations are
+different).
+</li><li class="li-itemize">For &#X2192;<sup><span class="c009">fr</span></sup> edges, we consider whether the processor
+of the events on both sides of the edge are the same or not
+(&#X2019;i&#X2019; for internal, or &#X2019;e&#X2019; for external).
+For instance the two &#X2192;<sup><span class="c009">fr</span></sup> edges in the example are Fre.
+</li></ul><p>So far so good, but our x86 machine produced the outcome
+0:EAX = 0 &#X2227;
+1:EAX = 0.
+The Intel Memory Ordering White Paper&#XA0;[<a href="diy006.html#intel%3Awhite">2</a>]
+specifies: &#X201C;Loads may be reordered with older stores to different locations&#X201D;,
+which we rephrase as: PodWR is relaxed.
+Considering Fre to be safe, we have the graph:
+</p><div class="center">
+<img src="classic.png">
+</div><p>
+And the brown sub-graph becomes acyclic.</p><p>We shall see later why we choose to relax PodWR and not Fre.
+At the moment, we observe that we can assume PodWR to be relaxed
+and Fre not to be (<em>i.e.</em> to be <em>safe</em>) and test
+our assumptions, by producing and running more litmus tests.
+The <span class="c007">diy7</span> suite precisely provides tools for this approach.</p><p><a id="diyone:intro"></a>As a first example,
+<a href="SB.litmus"><span class="c004">SB.litmus</span></a>
+can be created as follows:
+</p><pre class="verbatim">% diyone7 -arch X86 -name SB Fre PodWR Fre PodWR
+</pre><p>As a second example, we can produce several similar tests
+as follows:
+</p><pre class="verbatim">% diy7 -arch X86 -safe Fre -relax PodWR -name SB
+Generator produced 2 tests
+Relaxations tested: {PodWR}
+</pre><p><span class="c007">diy7</span> produces two litmus tests, <span class="c004">SB000.litmus</span>
+and <span class="c004">SB001.litmus</span>, plus one index file&#XA0;<span class="c004">@all</span>.
+One of the litmus tests generated is the same as above, while
+the new test is:
+</p><pre class="verbatim">% cat SB001.litmus
+X86 SB001
+"Fre PodWR Fre PodWR Fre PodWR"
+Cycle=Fre PodWR Fre PodWR Fre PodWR
+Relax=PodWR
+Safe=Fre
+{ }
+ P0          | P1          | P2          ;
+ MOV [z],$1  | MOV [x],$1  | MOV [y],$1  ;
+ MOV EAX,[x] | MOV EAX,[y] | MOV EAX,[z] ;
+exists (0:EAX=0 /\ 1:EAX=0 /\ 2:EAX=0)
+% cat @all
+# diy -arch X86 -safe Fre -relax PodWR -name SB
+# Revision: 3333
+SB000.litmus
+SB001.litmus
+</pre><p><span class="c007">diy7</span> first generates cycles from the candidate relaxations
+given as arguments, up to a limited size, and then generates
+litmus tests from these cycles.</p>
+<h3 class="subsection" id="sec36">5.3&#XA0;&#XA0;More candidate relaxations</h3>
+<p>We assume the memory to be <em>coherent</em>.
+Coherence implies that, in a given execution,
+the writes to a given location are performed by following a sequence,
+or <em>coherence order</em>,
+and that all processors see the same sequence.</p><p><a id="sec:ws"></a>In <span class="c007">diy7</span>, the coherence orders are specified indirectly.
+For instance, the candidate relaxation Wse (resp. Wsi) specifies two writes,
+performed by different processors (resp. the same processor),
+to the same location&#XA0;&#X2113;, the first write preceding the second in
+the coherence order of&#XA0;&#X2113;.
+The condition of the produced test then selects the specified coherence orders.
+Consider for instance:
+</p><pre class="verbatim">% diyone7 -arch X86 -name x86-2+2W Wse PodWW Wse PodWW
+</pre><p>The cycle that reveals a violation of the SC memory model is:
+</p><div class="center">
+<img src="ws-sc.png">
+</div><p>
+So the coherence order is 0 (initial store, not depicted),
+1, 2 for both locations x and&#XA0;y.
+While the produced test is:
+</p><pre class="verbatim">X86 x86-2+2W
+"Wse PodWW Wse PodWW"
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Ws Ws
+Orig=Wse PodWW Wse PodWW
+{
+}
+ P0         | P1         ;
+ MOV [x],$2 | MOV [y],$2 ;
+ MOV [y],$1 | MOV [x],$1 ;
+exists
+(x=2 /\ y=2)
+</pre><p>
+By the coherence hypothesis, checking the final
+value of locations suffices to characterise those two coherence orders,
+as expressed by the final condition of&#XA0;<a href="x86-2+2W.litmus"><span class="c008">x86-2+2W</span></a>:
+</p><pre class="verbatim">exists (x=2 /\ y=2)
+</pre><p>See Sec.&#XA0;<a href="#observers">9</a> for alternative means
+to identify coherence orders.</p><p><a id="iriw"></a>Candidate relaxations Rfe and Rfi relate
+writes to reads that load their value.
+We are now equipped to generate the famous iriw test
+(independent reads of independent writes):
+</p><pre class="verbatim">% diyone7 -arch X86 Rfe PodRR Fre Rfe PodRR Fre -name iriw
+</pre><p>We generate its internal variation (<em>i.e.</em> where all Rfe are replaced by Rfi) as easily:
+</p><pre class="verbatim">% diyone7 -arch X86 Rfi PodRR Fre Rfi PodRR Fre -name iriw-internal
+</pre><p>We get the cycles of Fig.&#XA0;<a href="#fig%3Airiw">1</a>,
+</p><blockquote class="figure"><div class="center"><hr class="c026"></div>
+<div class="caption"><table class="c001 cellpading0"><tr><td class="c023">Figure 1: <a id="fig:iriw"></a> Cycles for iriw and iriw-internal</td></tr>
+</table></div>
+<div class="center">
+<table class="c001 cellpading0"><tr><td class="c021"><div class="center"><img src="iriw-small-caps.png"></div></td><td class="c015">&#XA0;&#XA0;</td><td class="c015">&#XA0;&#XA0;</td><td class="c021"><div class="center"><img src="iriw-internal.png"></div>
+</td></tr>
+</table>
+</div>
+<div class="center"><hr class="c026"></div></blockquote><p>
+and the litmus tests of&#XA0;Fig.&#XA0;<a href="#fig%3Airiw%3Atest">2</a>.
+</p><blockquote class="figure"><div class="center"><hr class="c026"></div>
+<div class="caption"><table class="c001 cellpading0"><tr><td class="c023">Figure 2: <a id="fig:iriw:test"></a> Litmus tests iriw and iriw-internal</td></tr>
+</table></div>
+<div class="center"><table class="c000 cellpadding1" border=1><tr><td class="c024"><pre class="verbatim"><span class="c009">X86 iriw
+"Rfe PodRR Fre Rfe PodRR Fre"
+{ }
+ P0          | P1         | P2          | P3         ;
+ MOV EAX,[y] | MOV [x],$1 | MOV EAX,[x] | MOV [y],$1 ;
+ MOV EBX,[x] |            | MOV EBX,[y] |            ;
+exists (0:EAX=1 /\ 0:EBX=0 /\ 2:EAX=1 /\ 2:EBX=0)
+</span></pre></td><td class="c015"><span class="c009">&#XA0;&#XA0;</span></td><td class="c015"><span class="c009">&#XA0;&#XA0;</span></td><td class="c024"><pre class="verbatim"><span class="c009">X86 iriw-internal
+"Rfi PodRR Fre Rfi PodRR Fre"
+{ }
+ P0          | P1          ;
+ MOV [x],$1  | MOV [y],$1  ;
+ MOV EAX,[x] | MOV EAX,[y] ;
+ MOV EBX,[y] | MOV EBX,[x] ;
+exists
+(0:EAX=1 /\ 0:EBX=0 /\
+ 1:EAX=1 /\ 1:EBX=0)
+</span></pre><span class="c009"> </span></td></tr>
+</table><span class="c009">
+</span></div>
+<div class="center"><hr class="c026"></div></blockquote><p>Candidate relaxations given as arguments really are a
+&#X201C;concise specification&#X201D;. As an example,
+we get iriw for Power, simply by changing <span class="c004">-arch X86</span> into
+<span class="c004">-arch PPC</span>.
+</p><pre class="verbatim">% diyone7 -arch PPC Rfe PodRR Fre Rfe PodRR Fre
+PPC A
+"Rfe PodRR Fre Rfe PodRR Fre"
+{
+0:r2=y; 0:r4=x;
+1:r2=x;
+2:r2=x; 2:r4=y;
+3:r2=y;
+}
+ P0           | P1           | P2           | P3           ;
+ lwz r1,0(r2) | li r1,1      | lwz r1,0(r2) | li r1,1      ;
+ lwz r3,0(r4) | stw r1,0(r2) | lwz r3,0(r4) | stw r1,0(r2) ;
+exists (0:r1=1 /\ 0:r3=0 /\ 2:r1=1 /\ 2:r3=0)
+</pre><p>Also notice that without the <span class="c004">-name</span> option, <span class="c007">diyone7</span> writes
+its result to standard output.</p>
+<h3 class="subsection" id="sec37">5.4&#XA0;&#XA0;Summary of simple candidate relaxations</h3>
+<p>
+We summarise the candidate relaxations available on all architectures.</p>
+<h4 class="subsubsection" id="communication:cr">5.4.1&#XA0;&#XA0;Communication candidate relaxations</h4>
+<p>
+We call communication candidate relaxations the relations between two events
+communicating through memory, though they could belong to the same processor.
+Thus, these events operate on the same memory location.
+</p><div class="center">
+<table class="c000 cellpadding1" border=1><tr><td class="c022"><span class="c007">diy7</span> syntax</td><td class="c022">Source</td><td class="c022">Target</td><td class="c022">Processor</td><td class="c014">Additional property
+</td></tr>
+<tr><td class="c022"><span class="c004">Rfi</span></td><td class="c022">W</td><td class="c022">R</td><td class="c022">Same</td><td class="c024">Target reads its value from source </td></tr>
+<tr><td class="c022"><span class="c004">Rfe</span></td><td class="c022">W</td><td class="c022">R</td><td class="c022">Different</td><td class="c024">Target reads its value from source </td></tr>
+<tr><td class="c022"><span class="c004">Wsi</span></td><td class="c022">W</td><td class="c022">W</td><td class="c022">Same</td><td class="c024">Source precedes target in coherence order
+</td></tr>
+<tr><td class="c022"><span class="c004">Wse</span></td><td class="c022">W</td><td class="c022">W</td><td class="c022">Different</td><td class="c024">Source precedes target in coherence order </td></tr>
+<tr><td class="c022"><span class="c004">Fri</span></td><td class="c022">R</td><td class="c022">W</td><td class="c022">Same</td><td class="c024">Source reads a value from a write that precedes target in coherence order
+</td></tr>
+<tr><td class="c022"><span class="c004">Fre</span></td><td class="c022">R</td><td class="c022">W</td><td class="c022">Different</td><td class="c024">Source reads a value from a write that precedes target in coherence order
+</td></tr>
+</table>
+</div>
+<h4 class="subsubsection" id="sec39">5.4.2&#XA0;&#XA0;Program order candidate relaxations</h4>
+<p>We call program order candidate relaxations each relation
+between two events in the
+program order. These events are on the same processor, since they are in
+program order.
+As regards code output,
+<span class="c007">diy7</span> interprets a program order candidate relaxation by generating
+two memory instructions (load or store) following one another.</p><p>Program order candidate relaxations have the following syntax: 
+</p><div class="center">
+Po(s<span class="c004">|</span>d)(R<span class="c004">|</span>W)(R<span class="c004">|</span>W)
+</div><p>
+where:
+</p><ul class="itemize"><li class="li-itemize">
+s (resp. d) indicates that the two events are to the same (resp. different)
+location(s);
+</li><li class="li-itemize">R (resp. W) indicates an event to be a read (resp. a write);
+</li></ul><p>In practice, we have:
+</p><div class="center">
+<table class="c000 cellpadding1" border=1><tr><td class="c014"><span class="c007">diy7</span>syntax</td><td class="c014">Source</td><td class="c014">Target</td><td class="c014">Location </td></tr>
+<tr><td class="c014"><span class="c004">PosRR</span></td><td class="c014">R</td><td class="c014">R</td><td class="c014">Same </td></tr>
+<tr><td class="c014"><span class="c004">PodRR</span></td><td class="c014">R</td><td class="c014">R</td><td class="c014">Diff </td></tr>
+<tr><td class="c014"><span class="c004">PosRW</span></td><td class="c014">R</td><td class="c014">W</td><td class="c014">Same </td></tr>
+<tr><td class="c014"><span class="c004">PodRW</span></td><td class="c014">R</td><td class="c014">W</td><td class="c014">Diff </td></tr>
+<tr><td class="c014"><span class="c004">PosWW</span></td><td class="c014">W</td><td class="c014">W</td><td class="c014">Same </td></tr>
+<tr><td class="c014"><span class="c004">PodWW</span></td><td class="c014">W</td><td class="c014">W</td><td class="c014">Diff </td></tr>
+<tr><td class="c014"><span class="c004">PosWR</span></td><td class="c014">W</td><td class="c014">R</td><td class="c014">Same </td></tr>
+<tr><td class="c014"><span class="c004">PodWR</span></td><td class="c014">W</td><td class="c014">R</td><td class="c014">Diff </td></tr>
+</table>
+</div><p>
+It is to be noticed
+that PosWR, PosWW and PosRW are similar to Rfi, Wsi and&#XA0;Fri, respectively.
+More precisely, <span class="c007">diy7</span> is unable to consider a PosWR (or PosWW, or PosRW)
+candidate relaxation as not being also a Rfi (or Wsi, or Fri) candidate
+relaxation.
+However, litmus tests conditions may be more informative in the case of
+Rfi and&#XA0;Fri.</p>
+<h4 class="subsubsection" id="sec40">5.4.3&#XA0;&#XA0;Fence candidate relaxations</h4>
+<p>
+Relaxed architectures provide specific instructions, namely <em>barriers</em>
+or <em>fences</em>, to enforce order of memory accesses.
+In <span class="c007">diy7</span> the presence of a fence instruction is specified with
+fence candidate relaxations, similar to program order candidate relaxations,
+except that a fence instruction is inserted.
+Hence we have FencedsRR, FenceddRR. etc.
+The inserted fence is the strongest fence provided by
+the architecture &#X2014; that is, <span class="c004">mfence</span> for x86 and
+<span class="c004">sync</span>&#XA0;for&#XA0;Power.</p><p>Fences can also be specified by using specific names.
+More precisely, we have MFence for x86;
+while on Power we have Sync, LwSync, Eieio and&#XA0;Isync.
+Hence, to yield two reads to different locations
+and separated by the lightweight Power barrier&#XA0;<span class="c004">lwsync</span>,
+we specify LwSyncdRR.
+On ARM we have DMB, DSB and ISB.</p>
+<h2 class="section" id="diy:intro">6&#XA0;&#XA0;Testing candidate relaxations with <span class="c007">diy7</span></h2>
+<p>The tool&#XA0;<span class="c007">diy7</span> can probably be used in various, creative, ways;
+but the tool first stems from our technique for testing relaxed memory
+models.
+The <span class="c004">-safe</span> and <span class="c004">-relax</span> options are crucial here.
+We describe our technique by the means of an example: X86-TSO.</p>
+<h3 class="subsection" id="sec42">6.1&#XA0;&#XA0;<a id="test2">Principle</a></h3>
+<p>Before engaging in testing it is important to categorise
+candidate relaxations as safe or relaxed.</p><p>This can done by interpretation of vendor&#X2019;s documentation.
+For instance, the iriw test of&#XA0;Sec.&#XA0;<a href="#iriw">5.3</a> is the example 7.7 of
+[<a href="diy006.html#intel%3Awhite">2</a>]
+&#X201C;Stores Are Seen in a Consistent Order by Other Processors&#X201D;,
+with a Forbid specification.
+Hence we deduce that Fre, Rfe and PodRR are safe.
+Then, from test&#XA0;iriw-internal of&#XA0;Sec.&#XA0;<a href="#iriw">5.3</a>,
+which is Intel&#X2019;s test&#XA0;7.5 &#X201C;Intra-Processor Forwarding Is Allowed&#X201D;
+with an allow specification,
+we deduce that Rfi is relaxed.
+Namely, the cycle of iriw-internal is
+&#X201C;Fre Rfi PodRR Fre Rfi PodRR&#X201D;. Therefore, the only possibility is for
+Rfi to be relaxed.</p><p>Overall, we deduce:
+</p><ul class="itemize"><li class="li-itemize">
+Candidate relaxations PosWR (Rfi) and PodWR are relaxed
+</li><li class="li-itemize">The remaining candidate relaxations PosRR, PodRR, PosWW (Wsi), PodWW,
+PosRW (Fri), Fre and Wse are safe.
+Fence relaxations FencedsWR and FenceddWR are also safe
+and worth testing.
+</li></ul><p>Of course these remain assumptions to be tested.
+To do so, we perform one series of tests per relaxed candidate relaxation,
+and one series of tests for confirming safe candidate relaxations
+as much as possible. Let <span class="c010">S</span>&#XA0;be all safe candidate relaxations.
+</p><ul class="itemize"><li class="li-itemize">
+Let <span class="c010">r</span> be a relaxed candidate relaxation.
+We produce tests for confirming <span class="c010">r</span>&#XA0;being relaxed by
+<span class="c004">diy -relax</span>&#XA0;<span class="c010">r</span>&#XA0;<span class="c004">-safe</span>&#XA0;<span class="c010">S</span>.
+We run these tests with <span class="c007">litmus7</span>. If one of the tests yields&#XA0;<span class="c004">Ok</span>,
+then <span class="c010">r</span>&#XA0;is confirmed to be relaxed, provided the experiments on&#XA0;<span class="c010">S</span> below
+do not fail.
+</li><li class="li-itemize">For confirming the safe set, we produce tests
+by <span class="c004">diy -safe</span>&#XA0;<span class="c010">S</span>.
+We run these tests as much as possible and expect never to see&#XA0;<span class="c004">Ok</span>.
+</li></ul><p>
+<a id="diy:one:relax"></a>Namely, <span class="c007">diy7</span> builds cycles as follows:
+</p><ul class="itemize"><li class="li-itemize">
+<span class="c004">diy -relax</span>&#XA0;<span class="c010">r</span>&#XA0;<span class="c004">-safe</span>&#XA0;<span class="c010">S</span> build cycles
+with at least one&#XA0;<span class="c010">r</span> taking other candidate relaxations from&#XA0;<span class="c010">S</span>.
+</li><li class="li-itemize"><span class="c004">diy -safe</span>&#XA0;<span class="c010">S</span> build cycles from the candidate relaxations in&#XA0;<span class="c010">S</span>.
+</li></ul><p>
+For the purpose of confirming relaxed
+candidate relaxations, <span class="c010">S</span> can be replaced by a subset.</p>
+<h3 class="subsection" id="sec43">6.2&#XA0;&#XA0;Testing&#XA0;x86</h3>
+<p>
+Repeating command line options is painful and error prone.
+Besides, configuration parameters may get lost.
+Thus, we regroup those in configuration files
+that simply list the options to be passed to <span class="c007">diy7</span>, one option per line.
+For instance here is the configuration file for testing the safe relaxations
+of&#XA0;x86, <a href="x86-safe.conf"><span class="c004">x86-safe.conf</span></a>.
+</p><pre class="verbatim">#safe x86 conf file
+-arch X86
+#Generate tests on four processors or less
+-nprocs 4
+#From cycles of size at most six
+-size 6
+#With names safe000, safe0001,...
+-name safe
+#List  of safe relaxations
+-safe PosR* PodR* PodWW PosWW Rfe Wse Fre FencesWR FencedWR 
+</pre><p>
+Observe that the syntax of candidate relaxations allows one shortcut:
+the wildcard <span class="c004">*</span> stands for <span class="c004">W</span> and&#XA0;<span class="c004">R</span>.
+Thus <span class="c004">PodR*</span> gets expanded to the two candidate
+relaxations <span class="c004">PodRR</span> and&#XA0;<span class="c004">PodRW</span>.</p><p><a id="safe:test:sec"></a>We get safe tests by issuing the following command, preferably in a
+specific directory, say <span class="c004">safe</span>.
+</p><pre class="verbatim">% diy7 -conf x86-safe.conf
+Generator produced 38 tests
+Relaxations tested: {}
+</pre><p>Here are the configuration files for confirming
+that Rfi and PodWR are relaxed, <a href="x86-rfi.conf"><span class="c004">x86-rfi.conf</span></a>
+and&#XA0;<a href="x86-podwr.conf"><span class="c004">x86-podwr.conf</span></a>.
+</p><div class="center"><table class="c000 cellpadding1" border=1><tr><td class="c024"><pre class="verbatim"><span class="c009">#rfi x86 conf file
+-arch X86
+-nprocs 4
+-size 6 
+-name rfi
+-safe PosR* PodR* PodWW PosWW Rfe Wse Fre FencesWR FencedWR 
+-relax Rfi
+</span></pre></td><td class="c015"><span class="c009">&#XA0;&#XA0;</span></td><td class="c015"><span class="c009">&#XA0;&#XA0;</span></td><td class="c024"><pre class="verbatim"><span class="c009">#podrw x86 conf file
+-arch X86
+-nprocs 4
+-size 6
+-name podwr
+-safe Fre
+-relax PodWR
+</span></pre><span class="c009">
+</span></td></tr>
+</table><span class="c009">
+</span></div><p>
+Notice that we used the complete safe list in
+<span class="c004">x86-rfi.conf</span> and a reduced list in&#XA0;<span class="c004">x86-podwr.conf</span>.
+Tests are to be generated in specific directories.
+To that aim, we provide a convenient archive&#XA0;<a href="x86.tar"><span class="c004">x86.tar</span></a>.
+</p><pre class="verbatim">% cd rfi
+% diy7 -conf x86-rfi.conf 
+Generator produced 11 tests
+Relaxations tested: {Rfi}
+% cd ../podwr
+% diy7 -conf x86-podwr.conf 
+Generator produced 2 tests
+Relaxations tested: {PodWR}
+% cd ..
+</pre><p>Now, <a href="litmus.html">let us run</a> all tests at once, with the
+parameters of machine <span class="c004">saumur</span> (4 physical cores with hyper-threading):
+</p><pre class="verbatim">% litmus7 -mach saumur rfi/@all &gt; rfi/saumur.rfi.00
+% litmus7 -mach saumur podwr/@all &gt; podwr/saumur.podwr.00
+% litmus7 -mach saumur safe/@all &gt; safe/saumur.safe.00
+</pre><p>If your machine has 2 cores only, try <code>litmus -a 2 -limit true</code>&#X2026;</p><p><a id="readRelax:intro"></a>We now look for
+the tests that have validated their condition
+in the result files of&#XA0;<span class="c007">litmus7</span>.
+A simple tool, <span class="c007">readRelax7</span>, does the job:
+</p><pre class="verbatim">% readRelax7 rfi/saumur.rfi.00 podwr/saumur.podwr.00 safe/saumur.safe.00
+   .
+   .
+   .
+** Relaxation summary **
+{Rfi} With {Rfe, Fre, Wse, PodRW, PodRR} {Rfe, Fre, PodRR}\
+{Fre, Wse, PodWW, PodRR} {Fre, PosWW, PodRR, MFencedWR}\
+{Fre, PodWW, PodRR, MFencedWR} {Fre, PodRR} {Fre, PodRR, MFencedWR}
+{PodWR} With {Fre}
+</pre><p>The tool <span class="c007">readRelax7</span> first lists the result of all tests
+(which is omitted above), and then dumps a summary of the 
+relaxations it found.
+The sets of the candidate relaxations that need to be safe for the tests to
+indeed reveal a relaxed candidate relaxation are also given.
+Here, Rfi and&#XA0;PodWR are confirmed to be relaxed, while no candidate relaxation
+in the safe set is found to be relaxed.
+Had it been the case, a line <code>{} With {...}</code> would have occurred
+in the relaxation summary.
+The safe tests need to be run a lot of times, to increase our
+confidence in the safe set.</p>
+<h2 class="section" id="sec44">7&#XA0;&#XA0;Additional relaxations</h2>
+<p>
+We introduce some additional candidate relaxations
+that are specific to the Power architecture.
+We shall not detail here our experiments on Power machines.
+See our experience report&#XA0;<a href="http://diy.inria.fr/phat/"><span class="c004">http://diy.inria.fr/phat/</span></a>
+for more details.</p>
+<h3 class="subsection" id="sec45">7.1&#XA0;&#XA0;Intra-processor dependencies</h3>
+<p>
+In a very relaxed architecture such as Power,
+<em>intra-processor dependencies</em> becomes significant.
+Roughly, intra-processor dependencies fall into two categories:
+</p><dl class="description"><dt class="dt-description">
+<span style="font-weight:bold">Data dependencies</span></dt><dd class="dd-description"> occur when a memory access instruction
+reads a register whose contents depends upon a previous (in program order)
+load. In <span class="c007">diy7</span> we specify such a dependency as:
+<div class="center">Dp(s<span class="c004">|</span>d)(R<span class="c004">|</span>W)</div>
+where, as usual,
+s (resp. d) indicates that the source and target events
+are to the same (resp. different) location(s);
+and R (resp. W) indicates that the target event is a read (resp. a write).
+As a matter of fact, we do not need to specify the direction of
+the source event, since it always is a read.<p>Finally, one may control the nature of the dependency:
+address dependency (DpAddr(s<span class="c004">|</span>d)(R<span class="c004">|</span>W) or
+data dependency (DpData(s<span class="c004">|</span>d)W).</p></dd><dt class="dt-description"><span style="font-weight:bold">Control dependencies</span></dt><dd class="dd-description"> occur when the execution of a memory access
+is conditioned by the contents of a previous load.
+Their syntax is similar to the one of Dp&#XA0;relaxations, with a Ctrl&#XA0;tag:
+<div class="center">Ctrl(s<span class="c004">|</span>d)(R<span class="c004">|</span>W)</div>
+This default syntax expands to control dependencies as
+guaranteed by the Power documentation.
+For read to write, conditioning execution is enough
+(expanded syntax, DpCtrl(s<span class="c004">|</span>d)W).
+But for read to read, an extra instruction, <span class="c004">isync</span>, is needed
+(expanded syntax DpCtrlIsync(s<span class="c004">|</span>d)R, see <a href="#ctrlisync">below</a>).
+The syntax DpCtrl(s<span class="c004">|</span>d)R also exists,
+it expresses the conditional execution of a load instruction and
+does <em>not</em> create ordering.<p>ARM has similar candidate relaxations, Isync being replaced by ISB.
+</p></dd></dl><p>
+In the produced code, <span class="c007">diy7</span> expresses
+a data dependency by a <em>false dependency</em> (or <em>dummy dependency</em>)
+that operates on the address of the target memory access.
+For instance:
+</p><pre class="verbatim">% diyone7 DpdW Rfe DpdW Rfe
+PPC A
+"DpAddrdW Rfe DpAddrdW Rfe"
+{
+0:r2=y; 0:r5=x;
+1:r2=x; 1:r5=y;
+}
+ P0            | P1            ;
+ lwz r1,0(r2)  | lwz r1,0(r2)  ;
+ xor r3,r1,r1  | xor r3,r1,r1  ;
+ li r4,1       | li r4,1       ;
+ stwx r4,r3,r5 | stwx r4,r3,r5 ;
+exists (0:r1=1 /\ 1:r1=1)
+</pre><p>On <span class="c010">P</span><sub>0</sub>, the effective address of the indexed store <code>stwx r4,r3,r5</code>
+depends on the contents of the index register&#XA0;<code>r3</code>, which itself
+depends on the contents of&#XA0;<code>r1</code>.
+The dependency is a &#X201C;false&#X201D; one, since the contents of&#XA0;<code>r3</code>
+always is zero, regardless of the contents of&#XA0;<code>r1</code>.
+One may observe that DpdW is changed into DpAddrdW in the comment
+field of the test.
+As a matter of fact, DpdW is a macro for the address dependency
+DpAddrW. We could have specified data dependency instead:
+</p><pre class="verbatim">% diyone7 DpDatadW Rfe DpAddrdW Rfe
+PPC A
+"DpDatadW Rfe DpAddrdW Rfe"
+{
+0:r2=y; 0:r4=x;
+1:r2=x; 1:r5=y;
+}
+ P0           | P1            ;
+ lwz r1,0(r2) | lwz r1,0(r2)  ;
+ xor r3,r1,r1 | xor r3,r1,r1  ;
+ addi r3,r3,1 | li r4,1       ;
+ stw r3,0(r4) | stwx r4,r3,r5 ;
+exists
+(0:r1=1 /\ 1:r1=1)
+</pre><p>On <span class="c010">P</span><sub>0</sub>, the value stored by the last (store) instruction
+<code>stw r3,0(r4)</code> is now computed from the 
+value read by the first (load) instruction <code>lwz r1,0(r2)</code>.
+Again, this is a &#X201C;false&#X201D; dependency.</p><p><a id="ctrlisync">A control</a>
+dependency is implemented by the means of an useless compare
+and branch sequence, plus the <span class="c004">isync</span> instruction when the target event
+is a load. For instance
+</p><pre class="verbatim">% diyone7 CtrldR Fre SyncdWW Rfe
+PPC A
+"DpCtrlIsyncdR Fre SyncdWW Rfe"
+{
+0:r2=y; 0:r4=x;
+1:r2=x; 1:r4=y;
+}
+ P0           | P1           ;
+ lwz r1,0(r2) | li r1,1      ;
+ cmpw r1,r1   | stw r1,0(r2) ;
+ beq  LC00    | sync         ;
+ LC00:        | li r3,1      ;
+ isync        | stw r3,0(r4) ;
+ lwz r3,0(r4) |              ;
+exists
+(0:r1=1 /\ 0:r3=0)
+</pre><p>Also notice that CtrldR is interpreted as DpCtrlIsyncR in the comment
+field of the test.</p><p>Of course, in all cases, we assume that &#X201C;false&#X201D; dependencies are not
+&#X201C;optimised out&#X201D; by the assembler or the hardware.</p>
+<h3 class="subsection" id="sec46">7.2&#XA0;&#XA0;<a id="composite">Composite</a> relaxations and cumulativity</h3>
+<p>
+Users may specify a small sequence of single candidate relaxations
+as behaving as a single candidate relaxation to&#XA0;<span class="c007">diy7</span>. The&#XA0;syntax&#XA0;is:
+</p><div class="center">
+[<span class="c010">r</span>1, <span class="c010">r</span>2, &#X2026;]
+</div><p>
+The main usage of the feature is to specify
+<em>cumulativity candidate relaxations</em>,
+that is, the sequence of Rfe and of a fence candidate relaxation
+(A-cumulativity),
+the sequence of a fence candidate relaxation and of&#XA0;Rfe (B-cumulativity),
+or both (AB-cumulativity).</p><p>Cumulativity candidate relaxations are best expressed by the following
+syntactical shortcuts:
+let <span class="c010">r</span> be a fence candidate relaxation, then
+<span class="c004">AC</span><span class="c010">r</span> stands for&#XA0;<span class="c004">[Rfe,</span><span class="c010">r</span><span class="c004">]</span>,
+<span class="c004">BC</span><span class="c010">r</span> stands for&#XA0;<span class="c004">[</span><span class="c010">r</span><span class="c004">,Rfe]</span>,
+while <span class="c004">ABC</span><span class="c010">r</span> stands for&#XA0;<span class="c004">[Rfe,</span><span class="c010">r</span><span class="c004">,Rfe]</span>,</p><p>Hence, a simple way to generate iriw-like (see&#XA0;Sec.&#XA0;<a href="#iriw">5.3</a>)
+litmus tests with <span class="c004">lwsync</span> is as follows:
+</p><pre class="verbatim">% diy7 -name iriw-lwsync -nprocs 8 -size 8 -relax ACLwSyncdRR -safe Fre
+Generator produced 3 tests
+Relaxations tested: {ACLwSyncdRR}
+</pre><p>where we have for instance:
+</p><pre class="verbatim">% cat iriw-lwsync001.litmus 
+PPC iriw-lwsync001
+"Fre Rfe LwSyncdRR Fre Rfe LwSyncdRR Fre Rfe LwSyncdRR"
+Cycle=Fre Rfe LwSyncdRR Fre Rfe LwSyncdRR Fre Rfe LwSyncdRR
+Relax=ACLwSyncdRR
+Safe=Fre
+{
+0:r2=z; 0:r4=x; 1:r2=x;
+2:r2=x; 2:r4=y; 3:r2=y;
+4:r2=y; 4:r4=z; 5:r2=z;
+}
+ P0           | P1           | P2           | P3           | P4           | P5           ;
+ lwz r1,0(r2) | li r1,1      | lwz r1,0(r2) | li r1,1      | lwz r1,0(r2) | li r1,1      ;
+ lwsync       | stw r1,0(r2) | lwsync       | stw r1,0(r2) | lwsync       | stw r1,0(r2) ;
+ lwz r3,0(r4) |              | lwz r3,0(r4) |              | lwz r3,0(r4) |              ;
+exists (0:r1=1 /\ 0:r3=0 /\ 2:r1=1 /\ 2:r3=0 /\ 4:r1=1 /\ 4:r3=0)
+</pre>
+<h3 class="subsection" id="detour:def">7.3&#XA0;&#XA0;Detour candidate relaxations</h3>
+<p>
+Detours combine a Pos candidate relaxation and a sequence
+of two <em>external</em> communication candidate relaxations.
+More precisely detours are some constrained Pos candidate relaxations:
+the source and target events must be related by a sequence of
+two communication candidate relaxations, whose target and source
+are a common event whose processor is new.
+</p><div class="center">
+<table class="c000 cellpadding1" border=1><tr><td class="c014"><span class="c007">diy7</span> syntax</td><td class="c014">Source</td><td class="c014">Target</td><td class="c014">Detour </td></tr>
+<tr><td class="c014"><span class="c004">DetourR</span></td><td class="c014">R</td><td class="c014">R</td><td class="c014">Fre; Rfe </td></tr>
+<tr><td class="c014"><span class="c004">DetourW</span></td><td class="c014">W</td><td class="c014">R</td><td class="c014">Wse; Rfe </td></tr>
+<tr><td class="c014"><span class="c004">DetourRW</span></td><td class="c014">R</td><td class="c014">W</td><td class="c014">Fre;Wse </td></tr>
+<tr><td class="c014"><span class="c004">DetourWW</span></td><td class="c014">W</td><td class="c014">W</td><td class="c014">Wse;Wse </td></tr>
+</table>
+</div><p>
+DetourRR and DetourWR are accepted as synonyms for
+DetourR and DetourW respectively.</p><p>Graphically, we have:
+</p><div class="center">
+<img src="DetourR.png">&#XA0;&#XA0;<img src="DetourW.png">&#XA0;&#XA0;<img src="DetourRW.png">&#XA0;&#XA0;<img src="DetourWW.png">
+</div><p>
+Finally notice that &#X201C;internal&#X201D; detours need no special treatement
+as they can be expressed by the sequences &#X201C;Fri; Rfi&#X201D;, &#X201C;Wsi;Rfi&#X201D;, etc.</p>
+<h2 class="section" id="diycross:intro">8&#XA0;&#XA0;Test variations with <span class="c007">diycross7</span></h2>
+<p>
+The tool <span class="c007">diycross7</span> has an interface similar to <span class="c007">diyone7</span>,
+except it accepts list of candidate relaxations where <span class="c007">diyone7</span> accepts
+single candidate relaxations.
+The new tool produces the test resulting by &#X201C;cross producing&#X201D; the lists.
+For instance, one can generate all variations on the IRIW test
+(see Sec.&#XA0;<a href="#iriw">5.3</a>) that
+involve data dependencies and the lightweight barrier&#XA0;<span class="c004">lwsync</span>
+as follows:
+</p><pre class="verbatim">% diycross7 -arch PPC -name IRIW Rfe DpdR,LwSyncdRR Fre Rfe DpdR,LwSyncdRR Fre
+Generator produced 3 tests
+% ls
+@all  IRIW+addrs.litmus  IRIW+lwsync+addr.litmus  IRIW+lwsyncs.litmus
+</pre><p><span class="c007">diycross7</span> outputs the index file <span class="c004">@all</span>
+that lists the test source files, and three tests, with
+names we believe to be self-explanatory:
+</p><pre class="verbatim">% cat IRIW+lwsync+addr.litmus
+PPC IRIW+lwsync+addr
+"Rfe LwSyncdRR Fre Rfe DpAddrdR Fre"
+Cycle=Rfe LwSyncdRR Fre Rfe DpAddrdR Fre
+{
+0:r2=y;
+1:r2=y; 1:r4=x;
+2:r2=x;
+3:r2=x; 3:r5=y;
+}
+ P0           | P1           | P2           | P3            ;
+ li r1,1      | lwz r1,0(r2) | li r1,1      | lwz r1,0(r2)  ;
+ stw r1,0(r2) | lwsync       | stw r1,0(r2) | xor r3,r1,r1  ;
+              | lwz r3,0(r4) |              | lwzx r4,r3,r5 ;
+exists (1:r1=1 /\ 1:r3=0 /\ 3:r1=1 /\ 3:r4=0)
+</pre><p>Users may use the special keywords allRR, allRW, allWR and allWW to
+specify the set of all existing program order candidate relaxations
+between the specified &#X201C;R&#X201D; or &#X201C;W&#X201D;. For instance, we get the complete
+variations on IRIW by:
+</p><pre class="verbatim">% diycross7 -arch PPC -name IRIW Rfe allRR Fre Rfe allRR Fre
+Generator produced 28 tests
+% ls
+@all
+IRIW.litmus
+IRIW+addr+po.litmus
+IRIW+lwsync+addr.litmus
+...
+IRIW+isyncs.litmus
+</pre>
+<h2 class="section" id="observers">9&#XA0;&#XA0;Identifying coherence orders with observers</h2>
+<p>
+We first produce the &#X201C;<em>four writes</em>&#X201D; test&#XA0;<a href="2+2W.litmus"><span class="c004">2+2W</span></a>
+for Power:
+</p><pre class="verbatim">% diyone7 -name 2+2W -arch PPC PodWW Wse PodWW Wse
+% cat 2+2W.litmus
+PPC 2+2W
+"PodWW Wse PodWW Wse"
+{ 0:r2=x; 0:r4=y; 1:r2=y; 1:r4=x; }
+ P0           | P1           ;
+ li r1,2      | li r1,2      ;
+ stw r1,0(r2) | stw r1,0(r2) ;
+ li r3,1      | li r3,1      ;
+ stw r3,0(r4) | stw r3,0(r4) ;
+exists (x=2 /\ y=2)
+</pre><p>Test <span class="c008">2+2W</span> is the Power version of the x86 test
+<a href="x86-2+2W.litmus"><span class="c008">x86-2+2W</span></a> of Sec.&#XA0;<a href="#sec%3Aws">5.3</a>.
+In that section, we argued that the final condition <code>exists (x=2 /\ y=2)</code> 
+suffices to identify the coherence orders 0, 1, 2
+for locations <span class="c004">x</span> and&#XA0;<span class="c004">y</span>.
+As a consequence, a positive final condition reveals the occurrence
+of the specified cycle: Wse PodWW Wse PodWW.</p>
+<h3 class="subsection" id="sec50">9.1&#XA0;&#XA0;Simple observers</h3>
+<p>
+<em>Observers</em> provide an alternative, perhaps more intuitive,
+means to identify coherence orders: an observer simply is an additional thread
+that performs several loads from the same location in sequence.
+Here, loading value&#XA0;1 and then value&#XA0;2 from location&#XA0;<span class="c004">x</span>
+identifies the coherence order 0, 1, 2.
+The command line switch <span class="c004">-obs force</span> commands the production
+of observers (test <a href="2+2WObs.litmus"><span class="c004">2+2WObs</span></a>):
+</p><pre class="verbatim">% diyone7 -name 2+2WObs -obs force -obstype straight -arch PPC PodWW Wse PodWW Wse
+% cat 2+2WObs.litmus
+PPC 2+2WObs
+"PodWW Wse PodWW Wse"
+{ 0:r2=x; 1:r2=y; 2:r2=x; 2:r4=y; 3:r2=y; 3:r4=x; }
+ P0           | P1           | P2           | P3           ;
+ lwz r1,0(r2) | lwz r1,0(r2) | li r1,2      | li r1,2      ;
+ lwz r3,0(r2) | lwz r3,0(r2) | stw r1,0(r2) | stw r1,0(r2) ;
+              |              | li r3,1      | li r3,1      ;
+              |              | stw r3,0(r4) | stw r3,0(r4) ;
+exists (0:r1=1 /\ 0:r3=2 /\ 1:r1=1 /\ 1:r3=2)
+</pre><p>Thread <span class="c004">P0</span> observes location&#XA0;<span class="c004">x</span>, while
+thread <span class="c004">P1</span> observes location&#XA0;<span class="c004">y</span>.
+With respect to <span class="c004">2+2W</span>, final condition has changed, the direct
+observation of the final contents of locations <span class="c004">x</span> and&#XA0;<span class="c004">y</span>
+being replaced by two successive observations of the contents of
+<span class="c004">x</span> and&#XA0;<span class="c004">y</span>.</p><p>It should first be noticed that the reasoning above assumes
+that having the same thread to read 1 from say&#XA0;<span class="c004">x</span>
+and then 2 implies that 1 takes place before 2
+in the coherence order of&#XA0;<span class="c004">x</span>.
+This may not be the case in general &#X2014; although it holds for Power.
+Moreover, running <span class="c004">2+2W</span> and&#XA0;<span class="c004">2+2WObs</span>
+yields contrasted results. While a positive conclusion is
+immediate for <span class="c004">2+2W</span>, we were not able to reach a similar conclusion
+for <span class="c004">2+2WObs</span>.
+As a matter of fact, <span class="c004">2+2WObs</span> yielding Ok stems from the
+still-to-be-observed coincidence
+of several events: <em>both</em> observers threads must run at the right pace to
+observe the change from&#XA0;1 to&#XA0;2, while the cycle must indeed occur.</p>
+<h3 class="subsection" id="sec:obstype">9.2&#XA0;&#XA0;More observers</h3>
+<h4 class="subsubsection" id="sec52">9.2.1&#XA0;&#XA0;Fences and loops in observers</h4>
+<p>
+A simple observer consisting of loads performed in sequence is a
+<em>straight</em> observer. We define two additional sorts of observers:
+<em>fenced</em> observers, where loads are separated by the strongest fence
+available, and <em>loop</em> observers, which poll on location contents change.
+Those are selected by the homonymous tags given as arguments to the command
+line switch <span class="c004">-obstype</span>. For instance, we get the test
+<a href="2+2WObsFenced.litmus"><span class="c004">2+2WObsFenced</span></a> by:
+</p><pre class="verbatim">% diyone7 -name 2+2WObsFenced -obs force -obstype fenced -arch PPC PodWW Wse PodWW Wse
+% cat 2+2WObsFenced.litmus
+PPC 2+2WObsFenced
+"PodWW Wse PodWW Wse"
+{ 0:r2=x; 1:r2=y; 2:r2=x; 2:r4=y; 3:r2=y; 3:r4=x; }
+ P0           | P1           | P2           | P3           ;
+ lwz r1,0(r2) | lwz r1,0(r2) | li r1,2      | li r1,2      ;
+ sync         | sync         | stw r1,0(r2) | stw r1,0(r2) ;
+ lwz r3,0(r2) | lwz r3,0(r2) | li r3,1      | li r3,1      ;
+              |              | stw r3,0(r4) | stw r3,0(r4) ;
+exists (0:r1=1 /\ 0:r3=2 /\ 1:r1=1 /\ 1:r3=2)
+</pre><p>Invoking <span class="c007">diyone7</span> as &#X201C;<code>diyone -obs force -obstype loop ...</code>&#X201D;
+yields the additional test <a href="2+2WObsLoop.litmus"><span class="c004">2+2WObsLoop</span></a>:
+</p><pre class="verbatim">PPC 2+2WObsLoop
+"PodWW Wse PodWW Wse"
+{ 0:r2=x; 1:r2=y;
+  2:r2=x; 2:r4=y; 3:r2=y; 3:r4=x; }
+ P0            | P1            | P2           | P3           ;
+ L00:          | L03:          | li r1,2      | li r1,2      ;
+ lwz r1,0(r2)  | lwz r1,0(r2)  | stw r1,0(r2) | stw r1,0(r2) ;
+ cmpwi r1,0    | cmpwi r1,0    | li r3,1      | li r3,1      ;
+ beq  L00      | beq  L03      | stw r3,0(r4) | stw r3,0(r4) ;
+ li r4,200     | li r4,200     |              |              ;
+ L01:          | L04:          |              |              ;
+ lwz r3,0(r2)  | lwz r3,0(r2)  |              |              ;
+ cmpw r3,r1    | cmpw r3,r1    |              |              ;
+ bne  L02      | bne  L05      |              |              ;
+ addi r4,r4,-1 | addi r4,r4,-1 |              |              ;
+ cmpwi r4,0    | cmpwi r4,0    |              |              ;
+ bne  L01      | bne  L04      |              |              ;
+ L02:          | L05:          |              |              ;
+exists (0:r1=1 /\ 0:r3=2 /\ 1:r1=1 /\ 1:r3=2)
+</pre><p>
+A loop observer first busily waits for the observed location not
+to hold its initial contents&#XA0;0, and then busily waits for another change
+of location contents.
+The second loop is performed at most a finite number of times
+(here&#XA0;200), in order to ensure termination.
+</p>
+<h4 class="subsubsection" id="sec53">9.2.2&#XA0;&#XA0;Local observers</h4>
+<p>
+With local observers, coherence order is observed by the test threads.
+This implies changing the tests, and some care must be exercised when
+interpreting results.</p><p>The idea is as follows: when two threads are connected by a Wse candidate
+relaxation, meaning that the first thread ends by writing <span class="c010">v</span> to some location&#XA0;&#X2113; and that the second threads starts by writing <span class="c010">v</span>+1 to the same location&#XA0;&#X2113;, we add an observing read of location&#XA0;&#X2113; at the end of
+the first thread. Then, reading <span class="c010">v</span>+1 means that the write by the first thread
+precedes the write by the second thread in &#X2113; coherence order.
+More concretely, we instruct <span class="c007">diy7</span> generators to emit such local observers
+with option <span class="c004">-obs local</span>:
+</p><pre class="verbatim">% diyone7 -name 2+2WLocal -obs local -obstype straight -arch PPC PodWW Wse PodWW Wse
+% cat 2+2WLocal.litmus 
+PPC 2+2WLocal
+"PodWW Wse PodWW Wse"
+{
+0:r2=x; 0:r4=y;
+1:r2=y; 1:r4=x;
+}
+ P0           | P1           ;
+ li r1,2      | li r1,2      ;
+ stw r1,0(r2) | stw r1,0(r2) ;
+ li r3,1      | li r3,1      ;
+ stw r3,0(r4) | stw r3,0(r4) ;
+ lwz r5,0(r4) | lwz r5,0(r4) ;
+exists
+(0:r5=2 /\ 1:r5=2)
+</pre><p>With respect to <span class="c004">2+2W</span>, final condition has changed, the direct
+observation of the final contents of locations <span class="c004">y</span> and&#XA0;<span class="c004">x</span>
+being replaced local observation of <span class="c004">y</span> by thread&#XA0;0 and
+local observation of&#XA0;<span class="c004">x</span> by thread&#XA0;1.</p><p>Based for instance on the test execution witness, whose only SC-violation
+cycle is the same as as for <span class="c008">2+2W</span>,
+</p><div class="center">
+<img src="2+2WLocal+DOT.png">
+</div><p>
+one may argue that tests
+<span class="c008">2+2W</span> and&#XA0;<span class="c008">2+2WLocal</span> are equivalent, in the sense that
+both are allowed or both are forbidden by a model or machine.</p><p>Local observers can also be fenced or looping.
+For instance, one produces
+<a href="2+2WLocalFenced.litmus"><span class="c008">2+2WLocalFenced</span></a>,
+the fenced local observer version of <span class="c008">2+2W</span>
+as follows:
+</p><pre class="verbatim">% diyone7 -name 2+2WLocalFenced -obs local -obstype fenced -arch PPC PodWW Wse PodWW Wse
+% cat 2+2WLocalFenced.litmus 
+PPC 2+2WLocalFenced
+"PodWW Wse PodWW Wse"
+{
+0:r2=x; 0:r4=y;
+1:r2=y; 1:r4=x;
+}
+ P0           | P1           ;
+ li r1,2      | li r1,2      ;
+ stw r1,0(r2) | stw r1,0(r2) ;
+ li r3,1      | li r3,1      ;
+ stw r3,0(r4) | stw r3,0(r4) ;
+ sync         | sync         ;
+ lwz r5,0(r4) | lwz r5,0(r4) ;
+exists
+(0:r5=2 /\ 1:r5=2)
+</pre><p>While one produces
+<a href="2+2WLocalLoop.litmus"><span class="c008">2+2WLocalLoop</span></a>, the looping local observer version of&#XA0;<span class="c008">2+2W</span> as follows:
+</p><pre class="verbatim">% diyone7 -name 2+2WLocalLoop -obs local -obstype loop -arch PPC PodWW Wse PodWW Wse
+% cat 2+2WLocalLoop.litmus 
+PPC 2+2WLocalLoop
+"PodWW Wse PodWW Wse"
+{
+0:r2=x; 0:r4=y;
+1:r2=y; 1:r4=x;
+}
+ P0            | P1            ;
+ li r1,2       | li r1,2       ;
+ stw r1,0(r2)  | stw r1,0(r2)  ;
+ li r3,1       | li r3,1       ;
+ stw r3,0(r4)  | stw r3,0(r4)  ;
+ li r6,200     | li r6,200     ;
+ L00:          | L02:          ;
+ lwz r5,0(r4)  | lwz r5,0(r4)  ;
+ cmpwi r5,1    | cmpwi r5,1    ;
+ bne  L01      | bne  L03      ;
+ addi r6,r6,-1 | addi r6,r6,-1 ;
+ cmpwi r6,0    | cmpwi r6,0    ;
+ bne  L00      | bne  L02      ;
+ L01:          | L03:          ;
+exists (0:r5=2 /\ 1:r5=2)
+</pre><p>In the code above,
+observing loads are attempted at most 200&#XA0;time or until a value different
+from&#XA0;1 is read.</p>
+<h4 class="subsubsection" id="sec54">9.2.3&#XA0;&#XA0;Performance of observers</h4>
+<p>
+As an indication of the performance of the various sorts of observers,
+the following table summarises a <span class="c007">litmus7</span> experiment performed on
+a 8-cores 4-ways SMT Power7 machine
+machine&#X2014; <a href="W.00">complete <span class="c007">litmus7</span> log</a>.
+</p><div class="center">
+<table class="c000 cellpadding1" border=1><tr><td class="c016">&nbsp;</td><td class="c014"><span class="c008">2+2W</span></td><td class="c014"><span class="c008">2+2WObs</span></td><td class="c014"><span class="c008">2+2WObsFenced</span></td><td class="c014"><span class="c008">2+2WObsLoop</span></td><td class="c014"><span class="c008">2+2WLocal</span></td><td class="c014"><span class="c008">2+2WLocalFenced</span></td><td class="c014"><span class="c008">2+2WLocalLoop</span> </td></tr>
+<tr><td class="c016">Positive</td><td class="c014">2.2M/160M</td><td class="c014">0/80M</td><td class="c014">326/80M</td><td class="c014">25k/80M</td><td class="c014">2/160M</td><td class="c014">34k/160M</td><td class="c014">111k/160M</td></tr>
+</table>
+</div><p>
+The row &#X201C;Positive&#X201D; shows the number of observed positive outcomes/total
+number of outcomes produced.
+For instance, in the case of <span class="c008">2+2W</span>, we observed the positive outcome
+<code>x=2 /\ y=2</code>
+more than 2 millions times out of a total of 160 millions outcomes.
+As a conclusion, all techniques achieve decent results, except straight
+observers.</p>
+<h3 class="subsection" id="sec:obs">9.3&#XA0;&#XA0;Three stores or more</h3>
+<p>
+In test <span class="c008">2+2W</span> the coherence orders sequence two writes.
+If there are three writes or more to the same location,
+it is no longer possible to
+identify a coherence order by observing the final contents of the
+memory location involved. In other words, observers are mandatory.</p><p>The argument to the <span class="c004">-obs</span> switch commands
+the production of observers. It can take four values:
+</p><dl class="description"><dt class="dt-description">
+<span class="c006">accept</span></dt><dd class="dd-description"> Produce observers when absolutely needed.
+More precisely, given memory location&#XA0;<span class="c004">x</span>, no equality
+on&#XA0;<span class="c004">x</span> appears
+in the final condition for zero or one write to&#XA0;<span class="c004">x</span>,
+one such appears for two writes, and observers are produced for
+three writes or more.
+</dd><dt class="dt-description"><span class="c006">avoid</span></dt><dd class="dd-description"> Never produce observers, <em>i.e.</em> fail when there
+are three writes to the same location.
+</dd><dt class="dt-description"><span class="c006">force</span></dt><dd class="dd-description"> Produce observers for two writes or more.
+</dd><dt class="dt-description"><span class="c006">local</span></dt><dd class="dd-description"> Always produce local observers.
+</dd></dl><p>With <span class="c007">diyone7</span>, one easily build a three writes test as for instance
+the following&#XA0;<a href="W5.litmus"><span class="c004">W5</span></a>:
+</p><pre class="verbatim">% diyone7 -obs accept -obstype fenced -arch PPC -name W5 Wse Wse PodWW Wse PodWW
+% cat W5.litmus
+PPC W5
+"Wse Wse PodWW Wse PodWW"
+{ 0:r2=y; 1:r2=y; 1:r4=x; 2:r2=x; 2:r4=y; 3:r2=y; }
+ P0           | P1           | P2           | P3           ;
+ lwz r1,0(r2) | li r1,3      | li r1,2      | li r1,2      ;
+ sync         | stw r1,0(r2) | stw r1,0(r2) | stw r1,0(r2) ;
+ lwz r3,0(r2) | li r3,1      | li r3,1      |              ;
+ sync         | stw r3,0(r4) | stw r3,0(r4) |              ;
+ lwz r4,0(r2) |              |              |              ;
+exists (x=2 /\ 0:r1=1 /\ 0:r3=2 /\ 0:r4=3)
+</pre><p>As apparent from the code above, we have a fenced observer thread
+on&#XA0;<span class="c004">y</span> (<code>P0</code>),
+while the final state of&#XA0;<span class="c004">x</span> is observed directly
+(<code>x=2</code>).
+The command line switch <span class="c004">-obs force</span> would yield two observers,
+while <span class="c004">-obs avoid</span> would lead to failure.</p><p>With command line switch <span class="c004">-obs local</span> we get three local observations of coherence,
+which suffice to reconstruct the complete coherence orders:
+</p><pre class="verbatim">% diyone7 -obs local -obstype fenced -arch PPC -name W5Local Wse Wse PodWW Wse PodWW
+chi% cat W5Local.litmus 
+PPC W5Local
+"Wse Wse PodWW Wse PodWW"
+{
+0:r2=x; 0:r4=y;
+1:r2=y; 1:r4=x;
+2:r2=x;
+}
+ P0           | P1           | P2           ;
+ li r1,3      | li r1,2      | li r1,2      ;
+ stw r1,0(r2) | stw r1,0(r2) | stw r1,0(r2) ;
+ li r3,1      | li r3,1      | sync         ;
+ stw r3,0(r4) | stw r3,0(r4) | lwz r3,0(r2) ;
+ sync         | sync         |              ;
+ lwz r5,0(r4) | lwz r5,0(r4) |              ;
+exists (0:r5=2 /\ 1:r5=2 /\ 2:r3=3)
+</pre>
+<h2 class="section" id="sec56">10&#XA0;&#XA0;Command usage</h2>
+<p>The&#XA0;<span class="c007">diy7</span> suite consists in four main tools:
+</p><dl class="description"><dt class="dt-description">
+<span class="c008">diyone7</span></dt><dd class="dd-description"> generates one litmus test from the specification
+of a violation of the sequential consistency memory model as a cycle
+&#X2014; see&#XA0;Sec.&#XA0;<a href="#diyone%3Aintro">5.2</a>.
+</dd><dt class="dt-description"><span class="c008">diycross7</span></dt><dd class="dd-description"> generates variations of <span class="c007">diyone7</span> style tests
+&#X2014; see&#XA0;Sec.&#XA0;<a href="#diycross%3Aintro">8</a>.
+</dd><dt class="dt-description"><span class="c008">diy7</span></dt><dd class="dd-description"> generates several tests, aimed at confirming
+that candidate relaxations are relaxed or safe&#X2014;see&#XA0;Sec.&#XA0;<a href="#diy%3Aintro">6</a>.
+</dd><dt class="dt-description"><span class="c008">readRelax7</span></dt><dd class="dd-description"> Extract relevant information from
+the results of tests&#X2014;see&#XA0;Sec.&#XA0;<a href="#readRelax%3Aintro">6.2</a>.
+</dd></dl>
+<h3 class="subsection" id="sec:names">10.1&#XA0;&#XA0;A note <a id="naming"></a>on test names</h3>
+<p>
+We have designed a simple naming scheme for tests.
+A normalised test name decomposes first as a family name,
+and second as a description of program-order (or internal)
+candidate relaxations.</p>
+<h4 class="subsubsection" id="sec58">10.1.1&#XA0;&#XA0;Family names</h4>
+<p>
+Cycles (and thus tests) are first grouped by families.
+Family names describe test structure,
+based upon external communication candidates relaxations.
+More specifically, external communication candidates relaxations
+suffice to settle the directions (<span class="c004">W</span> or&#XA0;<span class="c004">R</span>) of 
+first and last events of threads,
+considering the case when those two events are the same.
+For instance, consider the cycle &#X201C;PodWW Rfe PodRR Fre&#X201D;:
+there are two threads
+in the corresponding test (as there are two external communication candidate
+relaxations), one thread starts and ends with a write (written <span class="c004">WW</span>),
+while the other thread starts and ends with a read (written <span class="c004">RR</span>).
+The family name is thus
+<span class="c004">WW+RR</span>, (or <span class="c004">RR+WW</span>, but we choose the former).
+For reference, a normalised family name is the minimal
+amongst the representations of a given cycle, following the lexical order
+derived from the order
+<span class="c004">W</span> &lt; <span class="c004">WW</span> &lt;
+<span class="c004">RR</span> &lt; <span class="c004">RW</span> &lt; <span class="c004">WR</span> &lt; <span class="c004">R</span>.</p><p>The most common families have nicknames, which are defined
+by <a href="http://www.cl.cam.ac.uk/~pes20/ppc-supplemental/test6.pdf">this document</a>.
+For instance, consider the test whose cycle is
+&#X201C;<a href="SB.litmus">PodWR Fre PodWR Fre</a>&#X201D;.
+The family name is <span class="c004">WR+WR</span>, as
+this is a two-thread test, both threads starting with
+a write and ending with a read.
+The nickname for this family is, as we already know, SB (store-buffering).
+Here is the list of nicknames and family names for two thread tests:
+</p><div class="center">
+<table class="c000 cellpadding1" border=1><tr><td class="c016">2+2W</td><td class="c016"><span class="c004">WW+WW</span></td><td class="c016">PodWW Wse PodWW Wse </td></tr>
+<tr><td class="c016">LB</td><td class="c016"><span class="c004">RW+RW</span></td><td class="c016">PodRW Rfe PodRW Rfe </td></tr>
+<tr><td class="c016">MP</td><td class="c016"><span class="c004">WW+RR</span></td><td class="c016">PodWW Rfe PodRR Fre </td></tr>
+<tr><td class="c016">R</td><td class="c016"><span class="c004">WW+WR</span></td><td class="c016">PodWW Wse PodWR Fre </td></tr>
+<tr><td class="c016">S</td><td class="c016"><span class="c004">WW+RW</span></td><td class="c016">PodWW Rfe PodRW Wse </td></tr>
+<tr><td class="c016">SB</td><td class="c016"><span class="c004">WR+WR</span></td><td class="c016">PodWR Fre PodWR Fre </td></tr>
+</table>
+</div><p>Isolated writes (and reads) originate from the combinations of
+communication relaxations,
+for instance [Fre,Rfe].
+They appear as &#X201C;<span class="c004">W</span>&#X201D; (and&#XA0;<span class="c004">R</span>) in family names.
+For instance, &#X201C;<a href="tst-ppc/IRIW.litmus">Rfe PodRR Fre Rfe PodRR Fre</a>&#X201D;
+contains two such isolated
+writes, its name is thus <span class="c004">W+RR+W+RR</span> and its nickname is,
+as we know, IRIW (Independent reads of independent writes).
+The test &#X201C;<a href="WRC.litmus">Rfe PodRW Rfe PodRR Fre</a>&#X201D;
+contains one isolated write, as apparent from
+this diagram:
+</p><div class="center"><img src="WRC.png"></div><p>
+The family name is thus <span class="c004">W+RW+RR</span> and the nickname is
+WRC (Write to Read Causality).</p>
+<h4 class="subsubsection" id="sec59">10.1.2&#XA0;&#XA0;Descriptive names for variants</h4>
+<p>
+Every family has a prototype, homonymous test where every thread code
+consists in one (for <span class="c004">W</span> or&#XA0;<span class="c004">R</span>) or two memory accesses
+to different locations (for <span class="c004">WW</span>, <span class="c004">WR</span> etc.).
+For instance, the <a href="MP.litmus"><span class="c008">MP</span></a> test
+is derived from the cycle &#X201C;PodWW Rfe PodRR Fre&#X201D;.
+Variants are described by tags that illustrates the various
+program-order relaxations: they appear after the family name, still with &#X201C;<span class="c004">+</span>&#X201D; as a separation.
+For instance the test derived from &#X201C;LwSyncdWW Rfe DpAddrdR Fre&#X201D;
+is named <a href="MP+lwsync+addr.litmus"><span class="c008">MP+lwsync+addr</span></a>.</p><p>When all threads have the same tag <em>tag</em>, the test name is abbreviated
+as <span class="c004"><em>Family</em>+<em>tag</em>s</span>. For instance,
+the test <span class="c008">MP+lwsync+lwsync</span> (&#X201C;LwSyncdWW Rfe LwSyncdRR Fre&#X201D;) is in fact
+<a href="MP+lwsyncs.litmus"><span class="c008">MP+lwsyncs</span></a>.
+Additionally, the tag <span class="c004">pos</span> (all <span class="c004">po</span>&#X2019;s) is omitted,
+in order to yield family names for the prototype tests &#X2014; cf.
+<a href="MP.litmus"><span class="c008">MP</span></a> whose name would have been
+<span class="c004">MP+pos</span> otherwise.</p><p>For the sake of terseness, tags do not describe program-order relaxations
+completely. For instance both DpAddrdR and DpAddrdW (address dependency to
+read and write, respectively) have the same tag, <span class="c004">addr</span>.
+It does not harm for simple tests, as the missing direction can be inferred from
+the family name. Consider for instance
+<a href="MP+lwsync+addr.litmus"><span class="c008">MP+lwsync+addr</span></a> and
+<a href="LB+lwsync+addr.litmus"><span class="c008">LB+lwsync+addr</span></a>.
+</p><div class="center">
+<img src="MP+lwsync+addr.png">&#XA0;&#XA0;&#XA0;&#XA0;<img src="LB+lwsync+addr.png">
+</div><p>The naming scheme extends to cycles with consecutive program-order relaxations,
+by separating tags with &#X201C;<span class="c004">-</span>&#X201D; when they follow one another:
+for instance &#X201C;LwSyncdWW Rfe DpAddrdR PodRR Fre&#X201D; is named
+<span class="c008">MP+lwsync+addr-po</span>. Unfortunately, the current naming scheme falls short
+in supplying non-ambiguous names to all tests.
+For instance,
+&#X201C;LwSyncdWW Rfe DpAddrdW PodWR Fre&#X201D; is also named <span class="c008">MP+lwsync+addr-po</span>.
+In that situation tools will either fail or silently add a numeric suffix,
+depending on the boolean <span class="c004">-addnum</span> option.
+</p><pre class="verbatim">% diycross7 -addnum false LwSyncdWW Rfe [DpAddrdR,PodRR],[DpAddrdW,PodWR] Fre
+Fatal error: Duplicate name MP+lwsync+addr-po
+% diycross7 -addnum true LwSyncdWW Rfe [DpAddrdR,PodRR],[DpAddrdW,PodWR] Fre
+Generator produced 2 tests
+% cat @all
+# diycross7 -addnum true LwSyncdWW Rfe [DpAddrdR,PodRR],[DpAddrdW,PodWR] Fre
+MP+lwsync+addr-po.litmus
+MP+lwsync+addr-po001.litmus
+</pre><p>As a result, we get the two tests:
+<a href="MP+lwsync+addr-po.litmus"><span class="c008">MP+lwsync+addr-po</span></a> and&#XA0;<a href="MP+lwsync+addr-po001.litmus"><span class="c008">MP+lwsync+addr-po001</span></a>.
+</p><div class="center">
+<img src="MP+lwsync+addr-po.png">&#XA0;&#XA0;&#XA0;&#XA0;<img src="MP+lwsync+addr-po001.png">
+</div><p>Future versions of <span class="c007">diy7</span> may solve this issue in a more satisfying manner.
+At the moment, users are advised not to rely too much
+on the automatic naming scheme.
+Users may name tests in a non-ambiguous fashion by (1) specifying
+an explicit family name (<span class="c004">-name <em>name</em></span>) and&#XA0;(2)
+selecting the numeric scheme (<span class="c004">-num true</span>):
+</p><pre class="verbatim">% diycross7 -name MP+X -num true LwSyncdWW Rfe [DpAddrdR,PodRR],[DpAddrdW,PodWR] Fre
+Generator produced 2 tests
+</pre><p>The <span class="c007">diycross7</span> generator outputs the same tests as above, with
+names <a href="MP+X000.litmus"><span class="c008">MP+X000</span></a> and&#XA0;<a href="MP+X001.litmus"><span class="c008">MP+X001</span></a>.
+</p><div class="center">
+<img src="MP+X000.png">&#XA0;&#XA0;&#XA0;&#XA0;<img src="MP+X001.png">
+</div>
+<h3 class="subsection" id="sec60">10.2&#XA0;&#XA0;Common options</h3>
+<p>
+All test generators accept the following documented
+command-line options:
+</p><dl class="description"><dt class="dt-description">
+<span class="c006">-v</span></dt><dd class="dd-description"> Be verbose, repeat to increase verbosity.
+</dd><dt class="dt-description"><span class="c006">-version</span></dt><dd class="dd-description"> Show version number and exit.
+</dd><dt class="dt-description"><span class="c006">-arch (X86|PPC|ARM)</span></dt><dd class="dd-description"> Set architecture. Default is <span class="c004">PPC</span>.
+ARM support is experimental.
+</dd><dt class="dt-description"><span class="c006">-o &lt;dest&gt;</span></dt><dd class="dd-description">
+Redirect output to <span class="c004">&lt;dest&gt;</span>.
+This option applies when tools generate a set of tests and
+an index file <span class="c004">@all</span>, <em>.i.e.</em> in all situations
+except for <span class="c007">diyone7</span> simplest operating mode.<p>If argument <span class="c004">&lt;dest&gt;</span> is an archive (extension <span class="c004">.tar</span>)
+or a compressed archive (extension <span class="c004">.tgz</span>),
+the tool builds an archive.
+Otherwise, <span class="c004">&lt;dest&gt;</span> is interpreted as the name of an
+existing directory.
+Default is &#X201C;<span class="c004">.</span>&#X201D;, that is tool output goes into the
+current&#XA0;directory.
+</p></dd><dt class="dt-description"><span class="c006">-obs (accept|avoid|force|local)</span></dt><dd class="dd-description"> Management of observers,
+default is <span class="c004">avoid</span>. See Sec.&#XA0;<a href="#sec%3Aobs">9.3</a>.
+</dd><dt class="dt-description"><span class="c006">-obstype (fenced|loop|straight)</span></dt><dd class="dd-description"> 
+Style of observers, default is <span class="c004">fenced</span>. See Sec.&#XA0;<a href="#sec%3Aobstype">9.2</a>.
+</dd><dt class="dt-description"><span class="c006">-cond (cycle|uni|observe)</span></dt><dd class="dd-description">
+Control final condition of tests, default is <span class="c004">cycle</span>.
+In mode <span class="c004">cycle</span>, the final condition identifies executions
+that correspond to the generating cycle.
+In mode <span class="c004">unicond</span>, the final condition identifies executions
+that are valid w.r.t. the uniproc model (see Sec.&#XA0;<a href="herd.html#defuniproc">12.2</a>).
+In mode <span class="c004">observe</span> there is no final condition:
+the <span class="c007">litmus7</span> and <span class="c007">herd7</span> tools will simply list the final
+values of locations.
+</dd><dt class="dt-description"><span class="c006">-optcond</span></dt><dd class="dd-description"> Optimise conditions by disregarding the values
+of loads that are neither the target of&#XA0;Rf, nor the source of&#XA0;Fr. This is
+the default.
+</dd><dt class="dt-description"><span class="c006">-nooptcond</span></dt><dd class="dd-description"> Do not optimise conditions.
+</dd><dt class="dt-description"><span class="c006">-optcoherence</span></dt><dd class="dd-description"> Optimise conditions assuming that
+the tested system (at least) follows the uniproc model
+(see Sec.&#XA0;<a href="herd.html#defuniproc">12.2</a>).
+</dd><dt class="dt-description"><span class="c006">-nooptcoherence</span></dt><dd class="dd-description"> Do not optimise conditions assuming that
+the tested system (at least) follows the uniproc model. This is the default.
+</dd><dt class="dt-description"><span class="c006">-neg &lt;bool&gt;</span></dt><dd class="dd-description"> Negate final condition, default is&#XA0;<span class="c004">false</span>.
+</dd><dt class="dt-description"><span class="c006">-c &lt;bool&gt;</span></dt><dd class="dd-description"> Avoid equivalent cycles. Default is&#XA0;<span class="c004">true</span>.
+Setting <span class="c004">-c true</span> is intended for debug.
+</dd></dl><p>The naming of tests is controlled by the following options:
+</p><dl class="description"><dt class="dt-description">
+<span class="c006">-name &lt;name&gt;</span></dt><dd class="dd-description"> Use name for naming tests, the exact consequences
+depend on the generator. By default the generator has no name available.
+</dd><dt class="dt-description"><span class="c006">-num &lt;bool&gt;</span></dt><dd class="dd-description"> Use numeric names, <em>i.e.</em> from a base name
+&lt;base&gt; the generator will name tests as <span class="c004">&lt;base&gt;000</span>, <span class="c004">&lt;base&gt;001</span> etc. The default depends upon the generator.
+</dd><dt class="dt-description"><span class="c006">-addnum &lt;bool&gt;</span></dt><dd class="dd-description"> If true, when faced with tests whose name
+<span class="c004">&lt;name&gt;</span> has already been given, use names 
+<span class="c004">&lt;name&gt;001</span>, <span class="c004">&lt;name&gt;002</span>, etc.
+Otherwise fail in the same situation.
+The default depends upon the generator.
+</dd><dt class="dt-description"><span class="c006">-fmt &lt;n&gt;</span></dt><dd class="dd-description"> Size of numerical suffixes, default is 3.
+</dd></dl>
+<h3 class="subsection" id="diyone:usage">10.3&#XA0;&#XA0;Usage of <span class="c007">diyone7</span></h3>
+<p>
+The tool <a id="diyone"><span class="c007">diyone7</span></a>
+has two operating modes.
+The selected mode depends on the presence of command-line arguments,</p><p>In the first operating mode, <span class="c007">diyone7</span>
+takes a non-empty list of candidate relaxations as arguments
+and outputs a litmus test.
+Note that <span class="c007">diyone7</span> may fail to produce the test, with a message
+that briefly details the failure.
+</p><pre class="verbatim">% diyone7 Rfe Rfe PodRR
+Test a [Rfe Rfe PodRR] failed:
+Impossible direction PodRR Rfe
+</pre><p>In this mode, <span class="c004">-name &lt;name&gt;</span> sets the name of the test to <span class="c004">&lt;name&gt;</span>
+and output it into file <span class="c004">&lt;name&gt;.litmus</span>.
+If absent, the test name is <span class="c004">A</span> and output goes to standard output.</p><p>Otherwise, <em>i.e.</em> when there are no command-line arguments,
+<span class="c007">diyone7</span> reads the standard input and generates the tests described
+by the lines it reads.
+Each line starts with a test name&#XA0;<span class="c010">name</span>,
+followed by &#X201C;<span class="c004">:</span>&#X201D;, followed
+by a list of candidate relaxations&#XA0;<span class="c010">RS</span>.
+Then, <span class="c007">diyone7</span> acts as if invoked as <span class="c004">diyone</span>&#XA0;<span class="c010">opts</span>
+<span class="c004">-name</span>&#XA0;<span class="c010">name</span>&#XA0;<span class="c010">RS</span>.</p><p><a id="diyone:norm">The tool</a>
+<span class="c007">diyone7</span> accepts the following documented option:
+</p><dl class="description"><dt class="dt-description">
+<span class="c006">-norm</span></dt><dd class="dd-description"> Normalise tests and give them normalised names.
+In the first operating mode (when a cycle is explicitly given) the test
+will be named with a family name and a descriptive name.
+In the second operating mode,
+numeric names are used, base being either given explicitly
+(with option <span class="c004">-name &lt;base&gt;</span>) or being a normalised family name.
+</dd></dl>
+<h3 class="subsection" id="sec62">10.4&#XA0;&#XA0;Usage of <span class="c007">diycross7</span></h3>
+<p>
+<span class="c007">diycross7</span> produces several tests by &#X201C;cross&#XA0;producing&#X201D; lists
+of candidate relaxations given as arguments, see
+Sec&#XA0;<a href="#diycross%3Aintro">8</a>.
+<span class="c007">diycross7</span> also produces an index file <span class="c004">@all</span> that lists all produced
+litmus source files.</p><p>If option <span class="c004">-name &lt;name&gt;</span> is given, it sets the family name of
+generated tests, otherwise standard family names are used
+(cf. Sec.&#XA0;<a href="#sec%3Anames">10.1</a>).
+By default descriptive names are used (<em>i.e.</em> <span class="c004">-num false</span>)
+and <span class="c007">diycross7</span> will fail if two different tests have the same name
+(<em>i.e.</em> <span class="c004">-addnum false</span>):
+</p><pre class="verbatim">% diycross7 PodWW Rfe [DpAddrdR,PodRR],[DpAddrdW,PodWR] Fre
+Fatal error: Duplicate name MP+po+addr-po
+</pre><p>Should this happen users can resort either to numeric names,
+</p><pre class="verbatim">%diycross7 -num true PodWW Rfe [DpAddrdR,PodRR],[DpAddrdW,PodWR] Fre
+Generator produced 2 tests
+con% ls
+@all  MP000.litmus  MP001.litmus
+</pre><p>or to disambiguating numeric suffixes.
+</p><pre class="verbatim">%diycross7 -addnum true PodWW Rfe [DpAddrdR,PodRR],[DpAddrdW,PodWR] Fre
+Generator produced 2 tests
+con% ls
+@all  MP+po+addr-po001.litmus  MP+po+addr-po.litmus
+</pre>
+<h3 class="subsection" id="diy:usage">10.5&#XA0;&#XA0;Usage of <span class="c007">diy7</span></h3>
+<p>
+As <span class="c007">diycross7</span>, <span class="c007">diy7</span> produce several files, hence naming issues are critical.
+By default, <span class="c007">diy7</span> uses family names and the numeric naming scheme
+(<span class="c004">-num true</span>).
+Users can specify a family name&#XA0;<em>family</em>
+for all tests with <span class="c004">-name <em>family</em></span>,
+or attempt using the descriptive names of Sec&#XA0;<a href="#sec%3Anames">10.1</a>
+with <span class="c004">-num false</span>.
+Moreover, <span class="c007">diy7</span> produces an index file <span class="c004">@all</span> that lists
+the file names of all tests produced.</p><p>The tool <span class="c007">diy7</span> also accepts the following, additional, documented options.
+</p><dl class="description"><dt class="dt-description">
+<span class="c006">-conf &lt;file&gt;</span></dt><dd class="dd-description"> Read configuration file <span class="c004">&lt;file&gt;</span>.
+A configuration file consists in a list of options, one option per line.
+Lines introduced by <code>#</code> are comments and are thus ignored.
+</dd><dt class="dt-description"><span class="c006">-size &lt;n&gt;</span></dt><dd class="dd-description"> Set the maximal size of cycles. Default is&#XA0;6.
+</dd><dt class="dt-description"><span class="c006">-exact</span></dt><dd class="dd-description"> Produce cycles of size exactly&#XA0;<span class="c004">&lt;n&gt;</span>,
+in place of size up to&#XA0;<span class="c004">&lt;n&gt;</span>.
+</dd><dt class="dt-description"><span class="c006">-nprocs &lt;n&gt;</span></dt><dd class="dd-description"> Reject tests with more than <span class="c004">&lt;n&gt;</span> threads.
+Default is&#XA0;4.
+</dd><dt class="dt-description"><span class="c006">-eprocs</span></dt><dd class="dd-description"> Produce tests with exactly <span class="c004">&lt;n&gt;</span>
+threads, where <span class="c004">&lt;n&gt;</span> is set above.
+</dd><dt class="dt-description"><span class="c006">-ins &lt;n&gt;</span></dt><dd class="dd-description"> Reject tests as soon as the code of one thread
+originates from <span class="c004">&lt;n&gt;</span> edges or more. Default is&#XA0;4.
+</dd><dt class="dt-description"><span class="c006">-relax &lt;relax-list&gt;</span></dt><dd class="dd-description"> Set relax list. Default is empty.
+The syntax of <span class="c004">&lt;relax-list&gt;</span> is a comma (or space)
+separated list of candidate relaxations.
+</dd><dt class="dt-description"><span class="c006">-mix &lt;bool&gt;</span></dt><dd class="dd-description"> Mix the elements of the relax list
+(see below), default <span class="c004">false</span>.
+</dd><dt class="dt-description"><span class="c006">-maxrelax &lt;n&gt;</span></dt><dd class="dd-description">
+In mix mode, upper bound on the number of different candidate
+relaxations tested together.
+Default is&#XA0;100
+</dd><dt class="dt-description"><span class="c006">-safe &lt;relax-list&gt;</span></dt><dd class="dd-description"> Set safe list. Default is empty.
+</dd><dt class="dt-description"><span class="c006">-mode (critical|sc|free|uni)</span></dt><dd class="dd-description">
+Control generation of cycles, default&#XA0;<span class="c004">sc</span>.
+Those tags command the activation of some constraints over cycle
+generation, see <a href="#mode%3Adescribe">below</a>.</dd><dt class="dt-description"><span class="c006">-cumul &lt;bool&gt;</span></dt><dd class="dd-description">
+Permit implicit cumulativity,
+<em>i.e.</em> authorise building up the sequence Rfe followed by a fence,
+or the reverse. Default is&#XA0;<span class="c004">true</span>.
+</dd></dl><p>
+The relax and safe lists command the generation of
+cycles as follows:
+</p><ol class="enumerate" type=1><li class="li-enumerate">
+When the relax list is empty,
+cycles are built from the candidate relaxations of the safe list.
+</li><li class="li-enumerate">When the relax list is of size&#XA0;1,
+cycles are built from its single element&#XA0;<span class="c010">r</span> and from the elements of
+the safe list. Additionally, the cycle produced contains&#XA0;<span class="c010">r</span> at least once.
+</li><li class="li-enumerate">When the relax list is of size&#XA0;<span class="c010">n</span>, with&#XA0;<span class="c010">n</span> &gt; 1,
+the behaviour of&#XA0;<span class="c007">diy7</span> depends on the mix mode:
+<ol class="enumerate" type=a><li class="li-enumerate">
+By default (<span class="c004">-mix false</span>),
+<span class="c007">diy7</span> generates&#XA0;<span class="c010">n</span> independent sets of cycles,
+each set being built with one relaxation from the relax list and all
+the relaxations in the safe list.
+In other words, <span class="c007">diy7</span> on a relax list of size&#XA0;<span class="c010">n</span> behaves similarly
+to <span class="c010">n</span>&#XA0;runs of&#XA0;<span class="c007">diy7</span> on each candidate relaxation in the list.
+</li><li class="li-enumerate">Otherwise (<span class="c004">-mix true</span>), <span class="c007">diy7</span> generates cycles that contains
+at least one element from the relax list, including some cycles
+that contain different relaxations from the relax list.
+The cycles will contain at most&#XA0;<span class="c010">m</span> different elements from the relax list,
+where <span class="c010">m</span> is specified with option&#XA0;&#X201C;<span class="c004">-maxrelax</span>&#XA0;<span class="c010">m</span>&#X201D;.
+</li></ol>
+</li></ol><p><a id="mode:describe"></a>Generally
+speaking, <span class="c007">diy7</span> generates &#X201C;some&#X201D; cycles and does not generate
+&#X201C;all&#X201D; cycles (up to a certain size <em>e.g.</em>).
+In (default) sc mode, <span class="c007">diy7</span> performs some optimisation,
+most of which we leave unspecified.
+<a id="compose:com"></a>As an exception to
+this non-specification, <span class="c007">diy7</span> in <span class="c004">sc</span> (default) mode
+is guaranteed not to
+generate redundant elementary communication relaxation in the following sense:
+let us call Com the union of Ws, Rf and Fr (the e<span class="c004">|</span>i specification
+is irrelevant here).
+Ws being transitive and by definition of Fr,
+one easily shows that the transitive closure Com+ of Com is the union
+of Com plus [Ws,Rf] (Ws followed by Rf) plus [Fr,Rf].
+As a consequence, maximal subsequences of communication
+relaxations in <span class="c007">diy7</span> cycles are limited
+to single relaxations (<em>i.e.</em> Ws, Rf and Fr)
+and to the above mentioned two sequences
+(<em>i.e.</em> [Ws,Rf] and [Fr,Rf]).
+For instance, [Ws,Ws] and [Fr,Ws] should never appear in <span class="c007">diy7</span> generated
+cycles.
+However, such subsequences can be generated on an individual basis with
+<span class="c007">diyone7</span>, see the example of <span class="c004">W5</span> in Sec&#XA0;<a href="#sec%3Aobs">9.3</a>.</p><p><a id="critical:def"></a>In critical mode (<span class="c004">-mode critical</span>), cycles are strictly specified as
+follows:
+</p><ol class="enumerate" type=1><li class="li-enumerate">
+Communication candidate relaxations sequences are
+limited to Rf,Fr,Ws,[Ws,Rf] and&#XA0;[Fr,Rf], as in sc mode.
+</li><li class="li-enumerate">No two internal<sup><a id="text3" href="#note3">3</a></sup> candidate relaxations follow one another.
+</li><li class="li-enumerate">If the option <span class="c004">-cumul false</span> is specified,
+<span class="c007">diy7</span> will not construct
+the sequence of&#XA0;Rfe followed by a fence (or B-cumulativity) candidate
+relaxation or
+of a fence (or A-cumulativity) candidate relaxation followed by Rfe.
+</li><li class="li-enumerate">Cycles that access one single memory location are rejected.
+</li><li class="li-enumerate">None of the rules above applies to the internal sequences of
+composite candidate relaxations. For instance, if [Rfi,PodRR]
+is given as a candidate relaxation, the sequence &#X201C;Rfi,PodRR&#X201D; appears
+in cycles.
+</li></ol><p>
+The cycles described above are the <em>critical</em> cycles of&#XA0;[<a href="diy006.html#ss88">5</a>].</p><p><a id="free:def"></a>In free mode (<span class="c004">-mode free</span>), cycles are strictly specified as
+follows:
+</p><ol class="enumerate" type=1><li class="li-enumerate">
+Communication candidate relaxations sequences are
+limited to Rf,Fr,Ws,[Ws,Rf] and&#XA0;[Fr,Rf]. However, arbitrary sequences
+of communication candidates are accepted when they are internal and external
+or external and internal.
+</li><li class="li-enumerate">Cycles that access one single memory location are rejected.
+</li></ol><p><a id="uni:def"></a>Finally, the <span class="c004">uni</span> mode enforces the following constraints
+on cycles:
+</p><ol class="enumerate" type=1><li class="li-enumerate">
+Sequences of communication candidate relaxations
+are restricted in the same manner as for
+<span class="c004">free</span> mode (see <a href="#free%3Adef">above</a>).
+</li><li class="li-enumerate">Sequences of Po candidate relaxation are rejected.
+</li></ol>
+<h3 class="subsection" id="sec64">10.6&#XA0;&#XA0;<a id="readRelax">Usage</a> of <span class="c007">readRelax7</span></h3>
+<p>
+<span class="c007">readRelax7</span> is a simple tool to extract relevant information
+out of <span class="c007">litmus7</span> run logs of tests produced by the <span class="c007">diy7</span> generator.
+For a given run of a given litmus test, the relevant information is:
+</p><ul class="itemize"><li class="li-itemize">
+Whether the test yielded <span class="c004">Ok</span> or not,
+</li><li class="li-itemize">An optional candidate relaxation, which is the one
+given as argument to <span class="c007">diy7</span>&#XA0;option
+<span class="c004">-relax</span> at test build time, or none.
+</li><li class="li-itemize">The safe list relevant to the given test, <em>i.e.</em>
+the safe candidate relaxations that appear in the tested cycle.
+</li></ul><p>
+See Sec.&#XA0;<a href="#readRelax%3Aintro">6.2</a> for an example.</p><p>The tool <span class="c007">readRelax7</span> takes file names as arguments.
+If no argument is present, it reads a list
+of file names on standard input, one name per line.</p>
+<h2 class="section" id="sec65">11&#XA0;&#XA0;Additional tools: extracting cycles and classification</h2>
+<p>
+When non-standard family names or numeric names are used, it proves convenient
+to rename tests with the standard naming scheme.
+We provide two tools to do so: <span class="c007">mcycle7</span> that extracts cycles from
+litmus source files and <span class="c007">classify7</span> that normalises and renames cycles.</p><p>For instance, one can use <span class="c007">diy7</span> to generate all simple, critical, tests up
+to three threads for X86 with the following configuration file&#XA0;<a href="X.conf"><span class="c004">X.conf</span></a>
+</p><pre class="verbatim">-arch X86
+-name X
+-nprocs 3
+-size 6
+-safe Pod**,Fre,Rfe,Wse
+-mode critical
+</pre><pre class="verbatim">% diy7 -conf X.conf
+Generator produced 23 tests
+% ls
+@all         X003.litmus  X007.litmus  X011.litmus  X015.litmus  X019.litmus  X.conf
+X000.litmus  X004.litmus  X008.litmus  X012.litmus  X016.litmus  X020.litmus
+X001.litmus  X005.litmus  X009.litmus  X013.litmus  X017.litmus  X021.litmus
+X002.litmus  X006.litmus  X010.litmus  X014.litmus  X018.litmus  X022.litmus
+</pre><p>Cycles are extracted with <span class="c007">mcycle7</span>, which takes the index file <span class="c004">@all</span> as argument:
+</p><pre class="verbatim">% mcycles7 @all
+X000: Wse PodWR Fre PodWR Fre PodWW
+X001: Rfe PodRR Fre PodWR Fre PodWW
+X002: Wse PodWR Fre PodWW
+X003: Wse PodWW Wse PodWR Fre PodWW
+X004: Rfe PodRW Wse PodWR Fre PodWW
+X005: Rfe PodRR Fre PodWW
+X006: Wse PodWW Rfe PodRR Fre PodWW
+X007: Rfe PodRW Rfe PodRR Fre PodWW
+X008: Wse Rfe PodRR Fre PodWW
+X009: Wse PodWW Wse PodWW
+...
+</pre><p>The output of <span class="c007">mcycle7</span> can be piped into <span class="c007">classify7</span> for family
+classification:
+</p><pre class="verbatim">% mcycles7 @all | classify7 -arch X86
+2+2W
+  X009 -&gt; 2+2W : PodWW Wse PodWW Wse
+3.2W
+  X010 -&gt; 3.2W : PodWW Wse PodWW Wse PodWW Wse
+3.LB
+  X020 -&gt; 3.LB : PodRW Rfe PodRW Rfe PodRW Rfe
+3.SB
+  X016 -&gt; 3.SB : PodWR Fre PodWR Fre PodWR Fre
+ISA2
+  X007 -&gt; ISA2 : PodWW Rfe PodRW Rfe PodRR Fre
+LB
+  X019 -&gt; LB : PodRW Rfe PodRW Rfe
+MP
+  X005 -&gt; MP : PodWW Rfe PodRR Fre
+...
+</pre><p>Notice that <span class="c007">classify7</span> accepts the <span class="c004">arch</span> option, as it needs
+to parse cycles.</p><p>Finally, one can normalise tests, using normalised names by piping
+<span class="c007">mcycle7</span> output into <span class="c007">diyone7</span> with options
+<a href="#diyone%3Anorm"><span class="c004">-norm -num false</span></a>:
+</p><pre class="verbatim">% mkdir src
+% mcycles7 @all | diyone7 -arch X86 -norm -num false -o src
+Generator produced 23 tests
+% ls src
+2+2W.litmus  @all         R.litmus    WRC.litmus     WRW+WR.litmus  Z6.2.litmus
+3.2W.litmus  ISA2.litmus  RWC.litmus  WRR+2W.litmus  WWC.litmus     Z6.3.litmus
+3.LB.litmus  LB.litmus    SB.litmus   WRW+2W.litmus  Z6.0.litmus    Z6.4.litmus
+3.SB.litmus  MP.litmus    S.litmus    W+RWC.litmus   Z6.1.litmus    Z6.5.litmus
+</pre><p>Alternatively, one may instruct <span class="c007">classify7</span> to produce output for
+<span class="c007">diyone7</span>. In that case one should pass option <span class="c004">-diyone</span> to <span class="c007">classify7</span>
+so as to instruct it to produce output that is parsable by <span class="c007">diyone7</span>:
+</p><pre class="verbatim">% rm -rf src &amp;&amp; mkdir src
+% mcycles7 @all | classify7 -arch X86 -diyone | diyone7 -arch X86 -o src
+Generator produced 23 tests
+% ls src
+2+2W.litmus  @all         R.litmus    WRC.litmus     WRW+WR.litmus  Z6.2.litmus
+3.2W.litmus  ISA2.litmus  RWC.litmus  WRR+2W.litmus  WWC.litmus     Z6.3.litmus
+3.LB.litmus  LB.litmus    SB.litmus   WRW+2W.litmus  Z6.0.litmus    Z6.4.litmus
+3.SB.litmus  MP.litmus    S.litmus    W+RWC.litmus   Z6.1.litmus    Z6.5.litmus
+</pre>
+<h3 class="subsection" id="sec66">11.1&#XA0;&#XA0;Usage of <span class="c007">mcycle7</span></h3>
+<p>
+The tool <span class="c007">mcycle7</span> has no options and takes litmus source files or
+index files as arguments.
+It outputs a list of lines to standard output.
+Each line starts with a test name, suffixed by &#X201C;<span class="c004">:</span>&#X201D;, then
+the cycle of the named test. Notice that this format is the input format
+to <span class="c007">diyone7</span> in its second operating mode &#X2014; see Sec.&#XA0;<a href="#diyone%3Ausage">10.3</a>.</p><p>It is important to notice that, for <span class="c007">mcycle7</span> to extract cycles, those
+must be present as meta-information in source files.
+In practice, this means that <span class="c007">mcycle7</span> operates normally on
+sources produced by <span class="c007">diyone7</span>, <span class="c007">diycross7</span> and&#XA0;<span class="c007">diy7</span>.
+Moreover only one instance of a given cycle will be output.</p>
+<h3 class="subsection" id="sec67">11.2&#XA0;&#XA0;Usage of <span class="c007">classify7</span></h3>
+<p>
+The tool <span class="c007">classify7</span> reads its standard input, interpreting is as
+a list of cycles in the output format of <span class="c007">mcycle7</span>.
+It normalises and classifies those cycles.
+The tool <span class="c007">classify7</span> accepts the following documented options:
+</p><dl class="description"><dt class="dt-description">
+<span class="c006">-arch (X86|PPC|ARM)</span></dt><dd class="dd-description"> Set architecture. Default is <span class="c004">PPC</span>.
+ARM support is experimental.
+</dd><dt class="dt-description"><span class="c006">-u</span></dt><dd class="dd-description"> Instruct <span class="c007">classify7</span> to fail when two tests have the same
+normalised name. Otherwise <span class="c007">classify7</span> will output one line per test,
+regardless of duplicate names.
+</dd><dt class="dt-description"><span class="c006">-diyone</span></dt><dd class="dd-description"> Output a normalised list of names and cycles,
+which is legal input for <span class="c007">diyone7</span>.
+</dd></dl>
+<hr class="ffootnoterule"><dl class="thefootnotes"><dt class="dt-thefootnotes">
+<a id="note3" href="#text3">3</a></dt><dd class="dd-thefootnotes"><div class="footnotetext">That is, the source and target
+accesses are by the same processor.</div></dd></dl>
+<hr>
+<a href="litmus.html"><img src="previous_motif.gif" alt="Previous"></a>
+<a href="index.html"><img src="contents_motif.gif" alt="Up"></a>
+<a href="herd.html"><img src="next_motif.gif" alt="Next"></a>
+</body>
+</html>

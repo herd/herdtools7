@@ -1,0 +1,502 @@
+% foundations
+
+@article{ss88,
+ author = {Shasha, Dennis and Snir, Marc},
+ title = {Efficient and correct execution of parallel programs that share memory},
+ journal = {ACM Trans. Program. Lang. Syst.},
+ volume = {10},
+ number = {2},
+ year = {1988},
+ issn = {0164-0925},
+ pages = {282--312},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ }
+
+@inproceedings{ds87,
+ author = {Scheurich, C. and Dubois, M.},
+ title = {Correct memory operation of cache-based multiprocessors},
+ booktitle = {ISCA},
+ year = {1987},
+ isbn = {0-8186-0776-9},
+ pages = {234--243},
+ location = {Pittsburgh, Pennsylvania, United States},
+ doi = {http://doi.acm.org/10.1145/30350.30377},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ }
+
+@Article{ds90,
+  author = {M. Dubois and C. Scheurich},
+  title = {Memory Access Dependencies in Shared-Memory Multiprocessors},
+  journal ={IEEE Transactions on Software Engineering},
+  volume = {16},
+  number = {6},
+  year = {1990},
+  month ={June},
+}
+
+@INPROCEEDINGS{gha90,
+    author = {Kourosh Gharachorloo and Daniel Lenoski and James Laudon and Phillip Gibbons and Anoop Gupta and John Hennessy},
+    title = {Memory Consistency and Event Ordering in Scalable Shared-Memory Multiprocessors},
+    booktitle = {ISCA 1990}
+}
+@article{gha95,
+author = {K. Gharachorloo},
+journal = {WRL Research Report},
+title = {Memory Consistency Models for Shared-Memory Multiprocessors},
+number = {9},
+volume = {95},
+year = {1995},
+}
+
+@article{ag96,
+author = {S. V. Adve and K. Gharachorloo},
+    title = {Shared Memory Consistency Models: A Tutorial},
+    journal = {IEEE Computer},
+    year = {1995},
+    volume = {29},
+    pages = {66--76}
+}
+
+@mastersthesis{fri97,
+author = {M. Frigo},
+title = {The weakest reasonable memory model},
+school = {MIT},
+year = {1997},
+month = oct}
+
+@article{fl98,
+author = {M. Frigo and Victor Luchangco},
+title = {Computation-Centric Memory Models},
+booktitle = {SPAA 1998}}
+
+@article{apr99,
+author = {S. V. Adve and V. S. Pai and P. Ranganathan},
+journal = {Proceedings of the IEEE},
+title = {Recent advances in memory consistency models for hardware shared memory systems},
+number = {3},
+pages = {445--455},
+volume = {87},
+year = {1999},
+}
+
+@article{hkv98,
+author = {L. Higham and J. Kawash and N. Verwaal},
+journal = {Technical Report98/612/03, Department of Computer Science, The University of Calgary, January},
+title = {Weak memory consistency models part I: Definitions and comparisons},
+year = {1998},
+}
+
+@article{lam79,
+ author = {L. Lamport},
+ title = {How to Make a Correct Multiprocess Program Execute Correctly on a Multiprocessor},
+ journal = {IEEE Trans. Comput.},
+ volume = {46},
+ number = {7},
+ year = {1979},
+ pages = {779--782},
+ publisher = {IEEE Computer Society},
+ address = {Washington, DC, USA},
+ }
+
+@inproceedings{aas03,
+Title={Information-{F}low {M}odels for {S}hared {M}emory with an {A}pplication to the {P}ower{PC} {A}rchitecture},
+Author={A. Adir and H. Attiya and G. Shurek},
+booktitle={TPDS},
+Year={2003}
+}
+
+@Article{ygls03,
+    author = {Y. Yang and G. Gopalakrishnan and G. Lindstrom and K. Slind},
+    title = {Analyzing the {I}ntel {I}tanium {M}emory {O}rdering {R}ules {U}sing {L}ogic {P}rogramming and {SAT}},
+    booktitle = {CHARME},
+    year = {2003},
+    pages = {81--95}
+}
+
+@inproceedings{ygl05,
+ author = {Y. Yang and G. Gopalakrishnan and G. Lindstrom},
+ title = {{UMM}: an operational memory model specification framework with integrated model checking capability},
+ booktitle = {CCPE 2007},
+ }
+
+@book{hs08,
+      author       ={M. Herlihy and N. Shavit},
+      title        ={The Art of Multiprocessor Programming},
+      publisher    ={Morgan and Kaufmann},
+      address      ={Burlington},
+      year         ={2008},
+}
+
+@InProceedings{sjm07,
+  author = {V. Saraswat and R. Jagadeesan and M. Michael and C. von Praun},
+  title = {A Theory of Memory Models},
+  booktitle = {PPoPP 2007}}
+
+@misc{lea07,
+  author = {D. Lea},
+  title = {Alternatives to {SC}. {M}essage to the {C++} standardisation list},
+  year = {2007},
+  note = {\url{http://www.decadentplace.org.uk/pipermail/cpp-threads/2007-January/001287.html}},  
+  month = jan,
+}
+
+@inproceedings{am06,
+  author = {Arvind and J.-W. Maessen},
+  title = {Memory Model = Instruction Reordering + Store Atomicity},
+  booktitle = {ISCA 2006}}
+
+@inproceedings{bm08:ec2,
+  author = {S. Burckhardt and M. Musuvathi},
+  title = {Memory Model Safety of Programs},
+  booktitle = {ECA-2 2008}
+  }
+
+@inproceedings{bm08:cav,
+  author = {S. Burckhardt and M. Musuvathi},
+  title = {Effective Program Verification for Relaxed Memory Models},
+  booktitle = {CAV 2008},
+  }
+
+%tools
+
+@Article{ygls04,
+Title={Nemos: {A} {F}ramework for {A}xiomatic and {E}xecutable {S}pecifications of {M}emory {C}onsistency {M}odels},
+Author = {Y. Yang and G. Gopalakrishnan and G. Linstrom and K. Slind},
+Journal = {IPDPS},
+Year = {2004}
+}
+
+@inproceedings{hvm04,
+author = {S. Hangal and D. Vahia and C. Manovit and J.-Y. J. Lu and S. Narayanan},
+title = {{TSOT}ool: {A} {P}rogram for {V}erifying {M}emory {S}ystems {U}sing the {M}emory {C}onsistency {M}odel},
+booktitle = {ISCA 2004}
+}
+
+@inproceedings{bam07,
+author = {S. Burckhardt and Rajeev Alur and Milo M. K. Martin},
+title = {Checkfence: Checking Consistency of Concurrent Data Types on Relaxed Memory Models},
+booktitle = {PLDI 2007}}
+
+% us
+
+@InProceedings{ssz09,
+  author =       {S. Sarkar and P. Sewell and Zappa Nardelli, F. and S. Owens and T. Ridge and T. Braibant and M. Myreen and J. Alglave},
+  title =        {The Semantics of {x86-CC} Multiprocessor Machine Code},
+  booktitle =    {POPL 2009}}
+
+@InProceedings{afi09,
+  author =       {J. Alglave and A. Fox and S. Ishtiaq and M. O. Myreen and S. Sarkar and P. Sewell and F. Zappa Nardelli},
+  title =        {The Semantics of {P}ower and {ARM} Multiprocessor Machine Code},
+  booktitle =    {DAMP 2009},
+}
+
+@inproceedings{oss09,
+author = {S. Owens and S. Sarkar and P. Sewell},
+title = {A {B}etter x86 {M}emory {M}odel: x86-{TSO}},
+booktitle = {TPHOL 2009},
+}
+
+@inproceedings{ams10,
+author = {J. Alglave and L. Maranget and S. Sarkar and P. Sewell},
+title = {\ahref{\url{http://moscova.inria.fr/~alglave/papers/cav10.pdf}}{Fences in {W}eak {M}emory {M}odels}},
+booktitle = {CAV},
+year = 2010},
+}
+
+% docs
+
+%% ppc
+
+@Book{ppc:book1,
+Author={J. Wetzel and E. Silha and C. May and B. Frey},
+Title={PowerPC User Instruction Set Architecture - Book I - Version 2.01},
+Year={September 2003},
+url={http://www.ibm.com/developerworks/eserver/articles/archguide.html}
+}
+
+@Book{ppc:book2,
+Author={J. Wetzel and E. Silha and C. May and B. Frey},
+Title={PowerPC Virtual Environment Architecture - Book II - Version 2.01},
+Year={December 2003},
+url={http://www.ibm.com/developerworks/eserver/articles/archguide.html}
+}
+
+@Book{ppc:book3,
+Author={J. Wetzel and E. Silha and C. May and B. Frey},
+Title={PowerPC Operating Environment Architecture - Book III - Version 2.01},
+Year={December 2003},
+url={http://www.ibm.com/developerworks/eserver/articles/archguide.html}
+}
+
+@Book{ppc:book4,
+Title={PowerPC Implementation Features - Book IV}
+}
+
+@Book{ppc:booke,
+Title={Book {E} - Enhanced {P}ower{PC} {A}rchitecture},
+author={IBM},
+Year={May~2002},
+url={http://www-01.ibm.com/chips/techlib/techlib.nsf/techdocs/852569B20050FF778525699600682CC7}
+}
+
+@Article{ppc:storage,
+Title={Storage in the {P}ower{PC}},
+Author={J. M. Stone and R. P. Fitzgerald},
+Journal={IEEE Micro},
+Year={1995}
+}
+
+@Article{ppc:aix,
+Title={Power{PC} {S}torage {M}odel and {AIX} {P}rogramming},
+Author={M. Lyons and B. Hay and B. Frey},
+Year={November 2005},
+url={http://www.ibm.com/developerworks/eserver/articles/powerpc.html}
+}
+
+@TechReport{ppc:formal,
+  author =       {F. Corella and J. M. Stone and C. M. Barton},
+  title =        {A formal specification of the {P}ower{PC} shared memory architecture},
+  institution =  {IBM},
+  year =         {},
+  number =       {RC18638},
+}
+
+@Book{ppc:2.05,
+title={Power ISA Version 2.05},
+month = oct,
+Year={2007},
+note={\url{http://www.power.org/resources/reading/PowerISA_V2.05.pdf}}
+}
+
+@Book{ppc:2.06,
+title={Power ISA Version 2.06},
+key={power},
+Year={2009},
+}
+%month = jan,
+%note={\url{power.org/resources/reading/PowerISA_V2.06_PUBLIC.pdf}}
+
+%% intel
+
+@misc{intel:white,
+Title={Intel 64 {A}rchitecture {M}emory {O}rdering {W}hite {P}aper},
+key={intel},
+month=aug,
+Year={2007}
+}
+@misc{intel:rev30,
+  title = {Intel 64 and IA-32 Architectures Software Developer's Manual, Vol.~3A, rev.~30},
+  key={intel},
+  month = mar,
+  year ={2009},
+}
+%  note = {\url{intel.com/products/processor/manuals}}
+%  month =        mar,
+
+@Article{intel:itanium,
+title = {A Formal Specification of {I}ntel {I}tanium Processor Family Memory Ordering},
+key={itanium},
+publisher = {Intel Corporation},
+year = {2002},
+month = oct,
+note = {Intel Document 251429-001}}
+%note = {Application Note},
+
+%% arm
+
+@misc{arm:arm08,
+  title =        {{ARM} {A}rchitecture {R}eference {M}anual ({ARMv7-A} and {ARMv7-R})},
+  year =         {2008},
+  key =          {ARM08},
+  month =        apr,
+}
+
+
+@Misc{arm:cookbook,
+  OPTkey =       {},
+  OPTauthor =       {R. Grisenthwaite},
+  author = {ARM},
+  title =        {{ARM} {B}arrier {L}itmus {T}ests and {C}ookbook},
+  OPThowpublished = {},
+  month =        feb,
+  year =         2008,
+  OPTnote =      {},
+  OPTannote =    {}
+}
+
+@InProceedings{ci08,
+  author =       {N. Chong and S. Ishtiaq},
+  title =        {Reasoning about the {ARM} weakly consistent memory model},
+  booktitle =    {MSPC 2008}}
+
+
+%% alpha
+
+@misc{alpha:02,
+title = {Alpha {A}rchitecture {R}eference {M}anual, {F}ourth {E}dition},
+key={alpha},
+year = {2002},
+}
+%note = {\url{download.majix.org/dec/alpha_arch_ref.pdf}},
+
+%% java
+
+@Article{lea06,
+Title={The {JSR}-133 {C}ookbook for {C}ompiler {W}riters},
+Author={D. Lea},
+Year={September 2006},
+url={http://gee.cs.oswego.edu/dl/jmm/cookbook.html}
+}
+
+@inproceedings{mpa05,
+title={The {J}ava {M}emory {M}odel},
+Author={J. Manson and W. Pugh and S. V. Adve},
+booktitle = {POPL 2005}}
+
+@inproceedings{cks07,
+author = {P. Cenciarelli and A. Knapp and E. Sibilio},
+journal = {ESOP 2007},
+title = {The {Java} Memory Model: Operationally, Denotationally, Axiomatically},
+}
+
+@inproceedings{hp07,
+author = {M. Huisman and G. Petri},
+journal = {VAMP 07},
+title = {The {Java} Memory Model: a Formal Explanation},
+}
+
+@article{as07a,
+author = {D. Aspinall and J.Sevcik},
+journal = {TPHOL 07},
+title = {Formalizing {J}ava's Data Race Free Guarantee},
+year = {2007},
+} %mettre les accents
+
+@article{as07b,
+author = {D. Aspinall and J.Sevcik},
+journal = {VAMP 07},
+title = {Java Memory Model Examples: Good, Bad and Ugly},
+year = {2007},
+} %mettre les accents
+
+@phdthesis{sev08,
+title = {Program Transformations in Weak Memory Models},
+author = {J. Sevcik},
+school = {University of Edinburgh},
+year = {2008}} %mettre les accents
+ 
+%%sparc
+
+@misc{sparc:92,
+title = {{S}PARC {A}rchitecture {M}anual {V}ersion 8},
+key={sparc},
+year = {1992}}
+%note = {\url{sparc.org/standards/V8.pdf}},
+
+@misc{sparc:94,
+title = {{S}PARC {A}rchitecture {M}anual {V}ersion 9},
+key={sparc},
+year = {1994}}
+%note = {\url{sparc.org/standards/V9.pdf}},
+%% c++
+
+@misc{sparcboth,
+title = {{S}PARC {A}rchitecture {M}anual {V}ersions 8 and 9},
+key={sparc},
+year = {1992 and 1994}}
+
+@InProceedings{ba08,
+ author = {H.-J. Boehm and S.V. Adve},
+ title = {Foundations of the {C}++ concurrency memory model},
+ booktitle = {PLDI 2008}
+ }
+
+% general
+
+@inproceedings{bp09,
+  author    = {G. Boudol and
+               G. Petri},
+  title     = {Relaxed memory models: an operational approach},
+  booktitle = {POPL 2009},
+}
+
+% coq
+
+@Book{coqart,
+Author = {Y. Bertot and P. Casteran},
+Title = {Coq'Art},
+Publisher = {Springer Verlag, EATCS Texts in Theoretical Computer Science}
+}
+%Title = {Interactive Theorem Proving and Program Development: Coq'Art: The Calc%ulus of Inductive Constructions},
+
+
+%%Added by luc, to sort out later???
+@Book{col92,
+Author = {W. W. Collier},
+Title = {Reasoning About Parallel Architectures},
+Publisher = { Prentice-Hall },
+Year={1992}
+}
+
+@Article{hig07,
+title = "What is {I}tanium Memory Consistency from the Programmer's Point of View?",
+journal = "Electronic Notes in Theoretical Computer Science",
+volume = "174",
+number = "9",
+pages = "63--84",
+year = "2007",
+note = "Proceedings of the Thread Verification Workshop (TV 2006)",
+issn = "1571-0661",
+doi = "DOI: 10.1016/j.entcs.2007.04.007",
+url = "http://www.sciencedirect.com/science/article/B75H1-4NYD490-5/2/aec181169e22c7210f231773e8cda113",
+author = "L. Higham and L. Jackson and J. Kawash",
+keywords = "Programmer-centric memory consistency",
+keywords = "itanium multiprocessor"
+}
+
+@article{gib97,
+author = {P. B. Gibbons and E. Korach},
+collaboration = {},
+title = {Testing Shared Memories},
+publisher = {SIAM},
+year = {1997},
+journal = {SIAM Journal on Computing},
+volume = {26},
+number = {4},
+pages = {1208-1244},
+keywords = {sequential consistency; linearizability; multiprocessors; shared memory; testing; NP-completeness},
+url = {http://link.aip.org/link/?SMJ/26/1208/1},
+doi = {10.1137/S0097539794279614}
+}
+
+@article{lhh91,
+ author = {A. Landin and E. Hagersten and S. Haridi},
+ title = {Race-free interconnection networks and multiprocessor consistency},
+ journal = {SIGARCH Comput. Archit. News},
+ volume = {19},
+ number = {3},
+ year = {1991},
+ issn = {0163-5964},
+ pages = {106--115},
+ doi = {http://doi.acm.org/10.1145/115953.115964},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ }
+
+@inproceedings{cls03,
+ author = {J. Cantin and M. Lipasti and J. Smith},
+ title = {The complexity of verifying memory coherence},
+ booktitle = {SPAA 2003}
+}
+
+@misc{machines,
+  note = {\url{http://www.hpcx.ac.uk/} and {\url{http://www.idris.fr/}}},  
+}
+
+@inproceedings{mms12,
+  title = {An Axiomatic Memory Model for {Power} Multiprocessors},
+  author = {Sela Mador-Haim and Luc Maranget and Susmit Sarkar and Kayvan Memarian and Jade Alglave and Scott Owens and Rajeev Alur and Milo Martin and Peter Sewell and Derek Williams},
+  booktitle = {CAV},
+  year = {2012}}

@@ -1,0 +1,38 @@
+digraph G {
+
+margin="0.200000";
+
+
+/* init events */
+eiid4 [label="iy:Wy=0", shape="none", fixedsize="true", height="0.194444", width="0.777778"];
+eiid5 [label="ix:Wx=0", shape="none", fixedsize="true", height="0.194444", width="0.777778"];
+
+/* the unlocked events */
+eiid0 [label="a: Wx=1", shape="none", fixedsize="true", height="0.194444", width="0.777778"];
+eiid1 [label="b: Ry=0", shape="none", fixedsize="true", height="0.194444", width="0.777778"];
+eiid2 [label="c: Wy=1", shape="none", fixedsize="true", height="0.194444", width="0.777778"];
+eiid3 [label="d: Rx=0", shape="none", fixedsize="true", height="0.194444", width="0.777778"];
+
+/* the intra_causality_data edges */
+
+
+/* the intra_causality_control edges */
+
+/* the poi edges */
+eiid0 -> eiid1 [label="po:0", color="black", fontcolor="black"];
+eiid2 -> eiid3 [label="po:1", color="black", fontcolor="black"];
+/* the rfmap edges */
+eiid4 -> eiid1 [label="rf", color="red", fontcolor="red"];
+eiid5 -> eiid3 [label="rf", color="red", fontcolor="red"];
+
+
+/* The viewed-before edges */
+eiid1 -> eiid2 [label="ghb", color="brown", fontcolor="brown"];
+eiid3 -> eiid0 [label="ghb", color="brown", fontcolor="brown"];
+eiid4 -> eiid1 [label="ghb", color="brown", fontcolor="brown"];
+eiid5 -> eiid3 [label="ghb", color="brown", fontcolor="brown"];
+eiid1 -> eiid2 [label="fr", color="#ffa040", fontcolor="#ffa040"];
+eiid3 -> eiid0 [label="fr", color="#ffa040", fontcolor="#ffa040"];
+eiid4 -> eiid2 [label="co", color="brown", fontcolor="brown"];
+eiid5 -> eiid0 [label="co", color="brown", fontcolor="brown"];
+}

@@ -1,0 +1,35 @@
+\input{BASIC-img/index.tex}%
+\def\csname RW@base\endcsname{BASIC-RW}%
+\def\csname RW@img\endcsname{\csname images-BASIC-img-RW\endcsname}%
+\def\csname RW@src\endcsname{BASIC-src/RW.litmus}%
+\gentest{RW}%
+\def\csname WR@base\endcsname{BASIC-WR}%
+\def\csname WR@img\endcsname{\csname images-BASIC-img-WR\endcsname}%
+\def\csname WR@src\endcsname{BASIC-src/WR.litmus}%
+\gentest{WR}%
+\def\csname WW@base\endcsname{BASIC-WW}%
+\def\csname WW@img\endcsname{\csname images-BASIC-img-WW\endcsname}%
+\def\csname WW@src\endcsname{BASIC-src/WW.litmus}%
+\gentest{WW}%
+\def\csname W+RR@base\endcsname{BASIC-W+RR}%
+\def\csname W+RR@img\endcsname{\csname images-BASIC-img-W+RR\endcsname}%
+\def\csname W+RR@src\endcsname{BASIC-src/W+RR.litmus}%
+\gentest{W+RR}%
+\def\csname W+RW@base\endcsname{BASIC-W+RW}%
+\def\csname W+RW@img\endcsname{\csname images-BASIC-img-W+RW\endcsname}%
+\def\csname W+RW@src\endcsname{BASIC-src/W+RW.litmus}%
+\gentest{W+RW}%
+\def\BASIC{%
+\ahref{\base{RW}.html}{\textsf{RW}}%
+, \ahref{\base{WR}.html}{\textsf{WR}}%
+, \ahref{\base{WW}.html}{\textsf{WW}}%
+, \ahref{\base{W+RR}.html}{\textsf{W+RR}}%
+{} and \ahref{\base{W+RW}.html}{\textsf{W+RW}}%
+}%
+\def\applyBASIC#1{%
+#1{RW}%
+#1{WR}%
+#1{WW}%
+#1{W+RR}%
+#1{W+RW}%
+}%

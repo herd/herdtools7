@@ -1,0 +1,9 @@
+# diy -arch X86 -name X -safe Rfe,Fre,Wse,PodR*,PodWW,MFencedWR -relax PodWR,[Rfi,PodRR] -mix true -mode critical -size 5 -nprocs 2
+# Version 4.00+1, Revision: 8829M
+X000.litmus
+X001.litmus
+X002.litmus
+X003.litmus
+X004.litmus
+X005.litmus
+X006.litmus

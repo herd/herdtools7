@@ -1,0 +1,18 @@
+PPC MP+X000
+"LwSyncdWW Rfe DpAddrdR PodRR Fre"
+Cycle=Rfe DpAddrdR PodRR Fre LwSyncdWW
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=LwSyncdWW Rfe DpAddrdR PodRR Fre
+{
+0:r2=x; 0:r4=y;
+1:r2=y; 1:r5=z; 1:r7=x;
+}
+ P0           | P1            ;
+ li r1,1      | lwz r1,0(r2)  ;
+ stw r1,0(r2) | xor r3,r1,r1  ;
+ lwsync       | lwzx r4,r3,r5 ;
+ li r3,1      | lwz r6,0(r7)  ;
+ stw r3,0(r4) |               ;
+exists
+(1:r1=1 /\ 1:r6=0)

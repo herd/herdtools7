@@ -1,0 +1,200 @@
+\relax 
+\@writefile{toc}{\contentsline {part}{I\hspace  {1em}Running tests with \textsf  {litmus7}}{4}}
+\newlabel{part:litmus}{{I}{4}}
+\@writefile{toc}{\contentsline {section}{\numberline {1}A tour of\nobreakspace  {}\textsf  {litmus7}{}}{4}}
+\newlabel{litmus:simple}{{1.1}{4}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.1}A  simple run}{4}}
+\newlabel{x86:classic}{{1.1}{4}}
+\newlabel{cross}{{1.2}{5}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.2}Cross compilation}{5}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.3}Running several tests at once}{6}}
+\newlabel{stfw}{{1.3}{6}}
+\newlabel{litmus:control}{{2}{7}}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Controlling test parameters}{7}}
+\newlabel{sec:arch}{{2.1}{7}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Architecture of tests}{7}}
+\newlabel{defn}{{2.1}{7}}
+\newlabel{defa}{{2.1}{7}}
+\newlabel{defr}{{2.1}{7}}
+\newlabel{defs}{{2.1}{8}}
+\newlabel{defmemorymode}{{2.1}{8}}
+\newlabel{defstride}{{2.1}{8}}
+\newlabel{defpreload}{{2.1}{8}}
+\newlabel{defsynchronisation}{{2.1}{8}}
+\newlabel{timebase:intro}{{2.1}{8}}
+\newlabel{sec:affinity}{{2.2}{9}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Affinity}{9}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.2.1}Introduction to affinity}{9}}
+\newlabel{defi}{{2.2.1}{10}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.2.2}Study of affinity}{12}}
+\newlabel{affinity:advanced}{{2.2.3}{13}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.2.3}Advanced control}{13}}
+\newlabel{affinity:custom}{{2.2.4}{15}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.2.4}Custom control}{15}}
+\newlabel{exec:control}{{2.3}{17}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Controlling executable files}{17}}
+\@writefile{toc}{\contentsline {paragraph}{Test conditions}{17}}
+\newlabel{generalized:integer}{{2.3}{17}}
+\newlabel{rm}{{2.3}{17}}
+\newlabel{st}{{2.3}{18}}
+\@writefile{toc}{\contentsline {paragraph}{{Affinity}}{18}}
+\newlabel{incr:full}{{2.3}{18}}
+\newlabel{advanced:control}{{3}{18}}
+\@writefile{toc}{\contentsline {section}{\numberline {3}Advanced control of test parameters}{18}}
+\newlabel{timebase}{{3.1}{18}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Timebase synchronisation mode}{18}}
+\newlabel{preload:custom}{{3.2}{21}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Advanced prefetch control}{21}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.1}Custom prefetch}{21}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.2}Prefetch metadata}{22}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.3}``Static'' prefetch control}{24}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Usage of \textsf  {litmus7}{}}{25}}
+\newlabel{litmus:option:sec}{{4}{26}}
+\newlabel{change:input}{{4}{28}}
+\newlabel{misc}{{4}{29}}
+\citation{ams10}
+\citation{lam79}
+\citation{intel:white}
+\@writefile{toc}{\contentsline {part}{II\hspace  {1em}Generating tests}{31}}
+\newlabel{part:diy}{{II}{31}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Preamble}{31}}
+\newlabel{preamble}{{5}{31}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Relaxation of Sequential Consistency}{31}}
+\citation{intel:white}
+\newlabel{candidate:intro}{{5.2}{32}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Introduction to candidate relaxations}{32}}
+\newlabel{diyone:intro}{{5.2}{33}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}More candidate relaxations}{33}}
+\newlabel{sec:ws}{{5.3}{33}}
+\newlabel{iriw}{{5.3}{34}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces  Cycles for iriw and iriw-internal}}{35}}
+\newlabel{fig:iriw}{{1}{35}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces  Litmus tests iriw and iriw-internal}}{35}}
+\newlabel{fig:iriw:test}{{2}{35}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Summary of simple candidate relaxations}{36}}
+\newlabel{communication:cr}{{5.4.1}{36}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.4.1}Communication candidate relaxations}{36}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.4.2}Program order candidate relaxations}{36}}
+\citation{intel:white}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.4.3}Fence candidate relaxations}{37}}
+\newlabel{diy:intro}{{6}{37}}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Testing candidate relaxations with \textsf  {diy7}}{37}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}{Principle}}{37}}
+\newlabel{diy:one:relax}{{6.1}{38}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Testing\nobreakspace  {}x86}{38}}
+\newlabel{safe:test:sec}{{6.2}{38}}
+\newlabel{readRelax:intro}{{6.2}{39}}
+\@writefile{toc}{\contentsline {section}{\numberline {7}Additional relaxations}{39}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1}Intra-processor dependencies}{39}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2}{Composite} relaxations and cumulativity}{41}}
+\newlabel{detour:def}{{7.3}{42}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.3}Detour candidate relaxations}{42}}
+\newlabel{diycross:intro}{{8}{43}}
+\@writefile{toc}{\contentsline {section}{\numberline {8}Test variations with \textsf  {diycross7}{}}{43}}
+\newlabel{observers}{{9}{43}}
+\@writefile{toc}{\contentsline {section}{\numberline {9}Identifying coherence orders with observers}{43}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.1}Simple observers}{44}}
+\newlabel{sec:obstype}{{9.2}{44}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.2}More observers}{44}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.2.1}Fences and loops in observers}{44}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.2.2}Local observers}{45}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.2.3}Performance of observers}{47}}
+\newlabel{sec:obs}{{9.3}{47}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.3}Three stores or more}{47}}
+\@writefile{toc}{\contentsline {section}{\numberline {10}Command usage}{48}}
+\newlabel{sec:names}{{10.1}{48}}
+\newlabel{naming}{{10.1}{48}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.1}A note on test names}{48}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {10.1.1}Family names}{48}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {10.1.2}Descriptive names for variants}{49}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.2}Common options}{50}}
+\newlabel{diyone:usage}{{10.3}{51}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.3}Usage of \textsf  {diyone7}}{51}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.4}Usage of \textsf  {diycross7}}{52}}
+\newlabel{diy:usage}{{10.5}{52}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.5}Usage of {\textsf  {diy7}}}{52}}
+\citation{ss88}
+\newlabel{mode:describe}{{10.5}{53}}
+\newlabel{compose:com}{{10.5}{53}}
+\newlabel{critical:def}{{10.5}{53}}
+\newlabel{free:def}{{10.5}{54}}
+\newlabel{uni:def}{{10.5}{54}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.6}{Usage} of \textsf  {readRelax7}}{54}}
+\@writefile{toc}{\contentsline {section}{\numberline {11}Additional tools: extracting cycles and classification}{54}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.1}Usage of \textsf  {mcycle7}{}}{56}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.2}Usage of \textsf  {classify7}}{56}}
+\@writefile{toc}{\contentsline {part}{III\hspace  {1em}Simulating memory models with \textsf  {herd7}}{57}}
+\newlabel{part:herd}{{III}{57}}
+\@writefile{toc}{\contentsline {section}{\numberline {12}Writing simple models}{57}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {12.1}Sequential consistency}{57}}
+\newlabel{intro:candidate}{{12.1}{58}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {12.2}Total Store Order (TSO)}{59}}
+\newlabel{sb:image}{{12.2}{60}}
+\citation{lam79}
+\newlabel{defuniproc}{{12.2}{66}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {12.3}Sequential consistency, total order definition}{67}}
+\newlabel{rfcond}{{2}{67}}
+\newlabel{sec:final:initial}{{12.3}{67}}
+\newlabel{intro:linearisations}{{12.3}{67}}
+\newlabel{intro:with}{{12.3}{67}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Failed attempts of SC scheduling orders\nobreakspace  {}$S$.}}{69}}
+\newlabel{sblamport}{{3}{69}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces SC executions of test\nobreakspace  {}{\textsf  {\textbf  {SB}}}.}}{70}}
+\newlabel{sbok}{{4}{70}}
+\newlabel{sec:cos}{{12.4}{71}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {12.4}Computing coherence orders}{71}}
+\@writefile{toc}{\contentsline {section}{\numberline {13}Producing pictures of executions}{73}}
+\newlabel{sec:show}{{13}{73}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces The non-SC behaviour of {\textsf  {\textbf  {SB}}} is allowed by TSO}}{75}}
+\newlabel{fig:sb}{{5}{75}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {13.1}Graph modes}{75}}
+\newlabel{mode:example}{{13.1}{75}}
+\newlabel{show:forbidden}{{13.2}{76}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {13.2}Showing forbidden executions}{76}}
+\newlabel{name:check}{{13.2}{77}}
+\newlabel{herd:language}{{14}{79}}
+\@writefile{toc}{\contentsline {section}{\numberline {14}Model definitions}{79}}
+\newlabel{overview}{{14.1}{79}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {14.1}Overview}{79}}
+\newlabel{language:identifier}{{14.2}{80}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {14.2}Identifiers}{80}}
+\newlabel{sec:predef}{{14.2}{80}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Pre-defined event sets.}}{80}}
+\newlabel{predefset}{{6}{80}}
+\newlabel{language:expression}{{14.3}{82}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {14.3}Expressions}{82}}
+\newlabel{bindings}{{14.3}{84}}
+\newlabel{language:instruction}{{14.4}{85}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {14.4}Instructions}{85}}
+\newlabel{sec:check}{{14.4}{86}}
+\newlabel{name:check:def}{{14.4}{86}}
+\newlabel{show:def}{{14.4}{86}}
+\newlabel{sec:enum}{{14.4}{87}}
+\newlabel{language:model}{{14.5}{88}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {14.5}Models}{88}}
+\newlabel{sec:primitive}{{14.6}{88}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {14.6}Primitives}{88}}
+\newlabel{sec:library}{{14.7}{89}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {14.7}Library}{89}}
+\citation{mms12}
+\@writefile{toc}{\contentsline {section}{\numberline {15}Usage of \textsf  {herd7}}{90}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {15.1}Arguments}{90}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {15.2}Options}{90}}
+\@writefile{toc}{\contentsline {paragraph}{Engine control}{90}}
+\newlabel{herd:configfile}{{15.3}{94}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {15.3}{Configuration files}}{94}}
+\newlabel{herd:searchpath}{{15.4}{97}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {15.4}File searching}{97}}
+\@writefile{toc}{\contentsline {part}{IV\hspace  {1em}Some  examples}{98}}
+\newlabel{part:examples}{{IV}{98}}
+\@writefile{toc}{\contentsline {section}{\numberline {16}Running several tests at once, changing critical parameters}{98}}
+\newlabel{affinity:experiment}{{17}{101}}
+\@writefile{toc}{\contentsline {section}{\numberline {17}Cross compiling, affinity experiment}{101}}
+\@writefile{toc}{\contentsline {section}{\numberline {18}Cross running, testing low-end devices}{103}}
+\bibstyle{plain}
+\bibdata{jade}
+\bibcite{ams10}{1}
+\bibcite{intel:white}{2}
+\bibcite{lam79}{3}
+\bibcite{mms12}{4}
+\bibcite{ss88}{5}

@@ -1,0 +1,85 @@
+\contentsline {part}{I\hspace {1em}Running tests with \textsf {litmus7}}{4}
+\contentsline {section}{\numberline {1}A tour of\nobreakspace {}\textsf {litmus7}{}}{4}
+\contentsline {subsection}{\numberline {1.1}A simple run}{4}
+\contentsline {subsection}{\numberline {1.2}Cross compilation}{5}
+\contentsline {subsection}{\numberline {1.3}Running several tests at once}{6}
+\contentsline {section}{\numberline {2}Controlling test parameters}{7}
+\contentsline {subsection}{\numberline {2.1}Architecture of tests}{7}
+\contentsline {subsection}{\numberline {2.2}Affinity}{9}
+\contentsline {subsubsection}{\numberline {2.2.1}Introduction to affinity}{9}
+\contentsline {subsubsection}{\numberline {2.2.2}Study of affinity}{12}
+\contentsline {subsubsection}{\numberline {2.2.3}Advanced control}{13}
+\contentsline {subsubsection}{\numberline {2.2.4}Custom control}{15}
+\contentsline {subsection}{\numberline {2.3}Controlling executable files}{17}
+\contentsline {paragraph}{Test conditions}{17}
+\contentsline {paragraph}{{Affinity}}{18}
+\contentsline {section}{\numberline {3}Advanced control of test parameters}{18}
+\contentsline {subsection}{\numberline {3.1}Timebase synchronisation mode}{18}
+\contentsline {subsection}{\numberline {3.2}Advanced prefetch control}{21}
+\contentsline {subsubsection}{\numberline {3.2.1}Custom prefetch}{21}
+\contentsline {subsubsection}{\numberline {3.2.2}Prefetch metadata}{22}
+\contentsline {subsubsection}{\numberline {3.2.3}``Static'' prefetch control}{24}
+\contentsline {section}{\numberline {4}Usage of \textsf {litmus7}{}}{25}
+\contentsline {part}{II\hspace {1em}Generating tests}{31}
+\contentsline {section}{\numberline {5}Preamble}{31}
+\contentsline {subsection}{\numberline {5.1}Relaxation of Sequential Consistency}{31}
+\contentsline {subsection}{\numberline {5.2}Introduction to candidate relaxations}{32}
+\contentsline {subsection}{\numberline {5.3}More candidate relaxations}{33}
+\contentsline {subsection}{\numberline {5.4}Summary of simple candidate relaxations}{36}
+\contentsline {subsubsection}{\numberline {5.4.1}Communication candidate relaxations}{36}
+\contentsline {subsubsection}{\numberline {5.4.2}Program order candidate relaxations}{36}
+\contentsline {subsubsection}{\numberline {5.4.3}Fence candidate relaxations}{37}
+\contentsline {section}{\numberline {6}Testing candidate relaxations with \textsf {diy7}}{37}
+\contentsline {subsection}{\numberline {6.1}{Principle}}{37}
+\contentsline {subsection}{\numberline {6.2}Testing\nobreakspace {}x86}{38}
+\contentsline {section}{\numberline {7}Additional relaxations}{39}
+\contentsline {subsection}{\numberline {7.1}Intra-processor dependencies}{39}
+\contentsline {subsection}{\numberline {7.2}{Composite} relaxations and cumulativity}{41}
+\contentsline {subsection}{\numberline {7.3}Detour candidate relaxations}{42}
+\contentsline {section}{\numberline {8}Test variations with \textsf {diycross7}{}}{43}
+\contentsline {section}{\numberline {9}Identifying coherence orders with observers}{43}
+\contentsline {subsection}{\numberline {9.1}Simple observers}{44}
+\contentsline {subsection}{\numberline {9.2}More observers}{44}
+\contentsline {subsubsection}{\numberline {9.2.1}Fences and loops in observers}{44}
+\contentsline {subsubsection}{\numberline {9.2.2}Local observers}{45}
+\contentsline {subsubsection}{\numberline {9.2.3}Performance of observers}{47}
+\contentsline {subsection}{\numberline {9.3}Three stores or more}{47}
+\contentsline {section}{\numberline {10}Command usage}{48}
+\contentsline {subsection}{\numberline {10.1}A note on test names}{48}
+\contentsline {subsubsection}{\numberline {10.1.1}Family names}{48}
+\contentsline {subsubsection}{\numberline {10.1.2}Descriptive names for variants}{49}
+\contentsline {subsection}{\numberline {10.2}Common options}{50}
+\contentsline {subsection}{\numberline {10.3}Usage of \textsf {diyone7}}{51}
+\contentsline {subsection}{\numberline {10.4}Usage of \textsf {diycross7}}{52}
+\contentsline {subsection}{\numberline {10.5}Usage of {\textsf {diy7}}}{52}
+\contentsline {subsection}{\numberline {10.6}{Usage} of \textsf {readRelax7}}{54}
+\contentsline {section}{\numberline {11}Additional tools: extracting cycles and classification}{54}
+\contentsline {subsection}{\numberline {11.1}Usage of \textsf {mcycle7}{}}{56}
+\contentsline {subsection}{\numberline {11.2}Usage of \textsf {classify7}}{56}
+\contentsline {part}{III\hspace {1em}Simulating memory models with \textsf {herd7}}{57}
+\contentsline {section}{\numberline {12}Writing simple models}{57}
+\contentsline {subsection}{\numberline {12.1}Sequential consistency}{57}
+\contentsline {subsection}{\numberline {12.2}Total Store Order (TSO)}{59}
+\contentsline {subsection}{\numberline {12.3}Sequential consistency, total order definition}{67}
+\contentsline {subsection}{\numberline {12.4}Computing coherence orders}{71}
+\contentsline {section}{\numberline {13}Producing pictures of executions}{73}
+\contentsline {subsection}{\numberline {13.1}Graph modes}{75}
+\contentsline {subsection}{\numberline {13.2}Showing forbidden executions}{76}
+\contentsline {section}{\numberline {14}Model definitions}{79}
+\contentsline {subsection}{\numberline {14.1}Overview}{79}
+\contentsline {subsection}{\numberline {14.2}Identifiers}{80}
+\contentsline {subsection}{\numberline {14.3}Expressions}{82}
+\contentsline {subsection}{\numberline {14.4}Instructions}{85}
+\contentsline {subsection}{\numberline {14.5}Models}{88}
+\contentsline {subsection}{\numberline {14.6}Primitives}{88}
+\contentsline {subsection}{\numberline {14.7}Library}{89}
+\contentsline {section}{\numberline {15}Usage of \textsf {herd7}}{90}
+\contentsline {subsection}{\numberline {15.1}Arguments}{90}
+\contentsline {subsection}{\numberline {15.2}Options}{90}
+\contentsline {paragraph}{Engine control}{90}
+\contentsline {subsection}{\numberline {15.3}{Configuration files}}{94}
+\contentsline {subsection}{\numberline {15.4}File searching}{97}
+\contentsline {part}{IV\hspace {1em}Some examples}{98}
+\contentsline {section}{\numberline {16}Running several tests at once, changing critical parameters}{98}
+\contentsline {section}{\numberline {17}Cross compiling, affinity experiment}{101}
+\contentsline {section}{\numberline {18}Cross running, testing low-end devices}{103}

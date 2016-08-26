@@ -1,0 +1,23 @@
+(*********************************************************************)
+(*                        DIY                                        *)
+(*                                                                   *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                   *)
+(*                                                                   *)
+(*  Copyright 2014 Institut National de Recherche en Informatique et *)
+(*  en Automatique and the authors. All rights reserved.             *)
+(*  This file is distributed  under the terms of the Lesser GNU      *)
+(*  General Public License.                                          *)
+(*********************************************************************)
+
+include String
+
+let unsafe_to_string s = s
+
+let sub_string = sub
+
+let init n f =
+  let r = String.create n in
+  for k = 0 to n-1 do
+    unsafe_set r k (f k)
+  done ;
+  r

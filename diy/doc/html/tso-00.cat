@@ -1,0 +1,13 @@
+"A first attempt for TSO"
+
+include "cos.cat"
+
+(* Communication relations that order events*)
+let com-tso = rf | co | fr
+(* Program order that orders events *)
+let po-tso = po & (W*W | R*M)
+
+(* TSO global-happens-before *)
+let ghb = po-tso | com-tso
+acyclic ghb as tso
+show ghb
