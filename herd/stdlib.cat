@@ -22,11 +22,6 @@ let toid(s) = id & (s * s)
 (* Turn a fence set into a fence relation *)
 let fencerel(B) = (po & (_ * B)) ;  po
 
-(*  Complete fromto *)
-let fromto =
-  let Ftotal = try Ftotal with F in
-  fromto | fencerel(Ftotal)  
-
 (* Control+cfence *)
 let ctrlcfence(CFENCE) = (ctrl & (_ * CFENCE)) ; po
 
