@@ -1,3 +1,7 @@
+7.29
+ * herd: bug stdlib.cat (old fromto).
+7.28
+ * herd: correcy fromto ? At least compatible with article.
 7.27
  * linux: lock -> rcu_read_lock; unlock -> rcu_read_unlock
 7.26
