@@ -33,7 +33,7 @@ clean::
 	do /bin/rm -f $$prog $$prog.byte $$prog.native ; done
 
 
-SVNVERSION=sh -c "svnversion" 2>/dev/null || echo exported
+SVNVERSION=sh -c "LC_ALL=C git rev-parse HEAD" 2>/dev/null || echo exported
 
 version:
 	@echo "(* GENERATED, DO NOT EDIT *)" > version.ml
