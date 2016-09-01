@@ -78,10 +78,18 @@ iol_list :
     {[$1]}
 |  instr_option_list SEMI iol_list {$1::$3}
 
+name:
+| NAME { $1}
+/*(* hideous fix for instruction characters *)*/
+| READ {"r"}
+| WRITE {"w"}
+| BRANCH {"b"}
+| FENCE {"f"}
+
 name_list_ne:
-|  NAME COMMA name_list_ne
+|  name COMMA name_list_ne
   {$1::$3}
-| NAME
+| name
   {[$1]}
 
 name_list:
@@ -102,12 +110,7 @@ reg:
 
 reg_or_addr:
 | reg  {Rega $1}
-| NAME { Abs (Constant.Symbolic $1)}
-/*(* hideous fix for instruction characters *)*/
-| READ {Abs (Constant.Symbolic "r")}
-| WRITE {Abs (Constant.Symbolic "w")}
-| BRANCH {Abs (Constant.Symbolic "b")}
-| FENCE {Abs (Constant.Symbolic "f")}
+| name { Abs (Constant.Symbolic $1)}
 
 k:
 | NUM { MetaConst.Int $1 }
@@ -159,7 +162,7 @@ instr:
 | FENCE annot_list_option fence_labels_option
  { Pfence(Fence ($2,$3)) }
 
-| CALL LBRAC NAME RBRAC
+| CALL LBRAC name RBRAC
   { Pcall $3 }
 
 | RMW annot_list_option reg operation addr_op  

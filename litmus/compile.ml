@@ -183,7 +183,9 @@ module Generic (A : Arch.Base) (C:Constr.S with module A = A) = struct
 
   let find_type loc env =
     try A.LocMap.find loc env
-    with Not_found -> assert false
+    with Not_found ->
+      eprintf "No type for %s\n" (A.pp_location loc) ;
+      assert false
 
 (* All observed locations *)
   let observed final locs =

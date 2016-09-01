@@ -1,3 +1,4 @@
+ * herd: bug LISA, parsing, add one-letter instruction as possible annotations.
 7.29
  * herd: bug stdlib.cat (old fromto).
 7.28
