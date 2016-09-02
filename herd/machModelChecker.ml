@@ -63,7 +63,7 @@ module Make
 (* fromto evts fs wher evts are all events and fs are fences *)
 
       let labels_of e = match e.S.E.iiid with
-      | None -> StringSet.empty
+      | None -> Label.Set.empty
       | Some id -> id.S.A.labels
 
       let fencerel pbef paft po f =

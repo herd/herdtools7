@@ -25,5 +25,5 @@ val exit : int -> t
 
 type next = Next | To of t
 
-module Set = StringSet
-module Map = StringMap
+module Set : MySet.S with type elt = string
+module Map : MyMap.S with type key = string

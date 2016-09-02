@@ -1,3 +1,5 @@
+7.31
+ * Backward compatibility
 7.30
  * herd: bug LISA, parsing, add one-letter instruction as possible annotations.
 7.29
