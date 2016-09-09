@@ -1,3 +1,4 @@
+ * X86, correct data ports for the exchange instruction.
 7.31
  * Backward compatibility
 7.30

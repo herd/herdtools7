@@ -37,6 +37,8 @@ module type S = sig
   (* Check for a singleton *)
   val as_singleton : t -> elt option
 
+  (* union of four sets *)
+  val union4 : t -> t -> t -> t -> t
   (* Quite convenient: union of sets given in a list *)
   val unions : t list -> t
 

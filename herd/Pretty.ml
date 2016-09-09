@@ -927,10 +927,13 @@ let one_init = match PC.graph with
       if not PC.squished then begin
         begin match lbl with
         | None ->
-            fprintf chan "%s [label=\"%s%s\\l%a%a\""
+            fprintf chan "%s [label=\"%s%s%s\\l%a%a\""
 	      (pp_node_eiid e) (pp_node_eiid_label e)
-	      (escape_label dm act)  pp_node_ii e.E.iiid
+	      (escape_label dm act)
+              (if E.EventSet.mem e es.E.data_ports then " (data)" else "")
+              pp_node_ii e.E.iiid
 	      (pp_instruction dm m) e.E.iiid
+              
         | Some _ ->
             fprintf chan "eiidinit [label=\"Init\""
         end ;

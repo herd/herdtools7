@@ -609,7 +609,7 @@ let check_disjoint do_it es1 es2 =
       
 (* Parallel composition *)
 let para_comp es1 es2 =
-  { empty with
+  { procs = [] ;
     events = EventSet.union es1.events es2.events;
     intra_causality_data = EventRel.union
       es1.intra_causality_data es2.intra_causality_data ;
@@ -622,7 +622,7 @@ let (=|=) = check_disjoint para_comp
     
 (* Composition with intra_causality_data from first to second *)
     let data_comp es1 es2 =
-      { empty with events = EventSet.union es1.events es2.events;
+      { procs = [];  events = EventSet.union es1.events es2.events;
 	intra_causality_data = EventRel.union
 	  (EventRel.union es1.intra_causality_data
 	     es2.intra_causality_data)
@@ -636,7 +636,8 @@ let (=|=) = check_disjoint para_comp
 
 (* Composition with intra_causality_control from first to second *)
     let control_comp es1 es2 =
-      { empty with events =  EventSet.union es1.events es2.events;
+      { procs = [] ;
+        events =  EventSet.union es1.events es2.events;
         intra_causality_data = EventRel.union
 	  es1.intra_causality_data es2.intra_causality_data ;
 	intra_causality_control = EventRel.union
@@ -651,8 +652,8 @@ let (=|=) = check_disjoint para_comp
 (* Multi composition for exchange *)
 (* rsX/wsX are from/to the same location *)    
     let exch_comp rs1 rs2 ws1 ws2 =
-      { empty with
-        events = EventSet.unions [rs1.events;rs2.events;ws1.events;ws2.events;];
+      { procs = [] ;
+        events = EventSet.union4 rs1.events rs2.events ws1.events ws2.events;
         intra_causality_data =
         EventRel.unions
           [EventRel.unions
@@ -666,7 +667,11 @@ let (=|=) = check_disjoint para_comp
              [rs1.intra_causality_control;rs2.intra_causality_control;
               ws1.intra_causality_control;ws2.intra_causality_control;];
            EventRel.cartesian (maximals rs1) (minimals ws1);
-           EventRel.cartesian (maximals rs2) (minimals ws2);]; }
+           EventRel.cartesian (maximals rs2) (minimals ws2);];
+        control =
+          EventRel.union4 rs1.control rs2.control ws1.control ws2.control;
+        data_ports =
+          EventSet.union4 rs1.data_ports rs2.data_ports ws1.data_ports ws2.data_ports; }
 
 (* disjointness is awful *)
   let exch rx ry wx wy =
@@ -691,7 +696,7 @@ let stu rD rEA wEA wM =
     EventRel.is_empty rEA.intra_causality_control &&
     EventRel.is_empty wEA.intra_causality_control &&
     EventRel.is_empty wM.intra_causality_control) ;
-  { empty with
+  { procs = [] ;
     events = EventSet.unions [rD.events;rEA.events;wEA.events;wM.events;];
     intra_causality_data = begin
       let drD = rD.intra_causality_data
@@ -704,6 +709,13 @@ let stu rD rEA wEA wM =
          EventRel.cartesian
            (EventSet.union (maximals rEA) (maximals rD)) (minimals wM);]
     end ;
+    intra_causality_control = EventRel.empty;
+    control =
+      EventRel.union4 rD.control rEA.control wEA.control wM.control ;
+    data_ports =
+      EventSet.union4
+        rD.data_ports rEA.data_ports wEA.data_ports wM.data_ports ;
+
   }
 
 (*************************************************************)	      
