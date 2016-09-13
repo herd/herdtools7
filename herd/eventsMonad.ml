@@ -129,7 +129,22 @@ struct
              let es = 
                E.exch esrx esry eswx eswy in
              eiid,Evt.singleton((vwx,vwy),vclrx@vclry@vclwx@vclwy,es)
-           
+(* linux exchange *)
+  let linux_exch : 'loc t -> 'v t -> ('loc -> 'w t) -> ('loc -> 'v -> unit t) -> 'w t = fun rloc rexpr rmem wmem ->
+    fun eiid ->
+      let eiid,locm = rloc eiid in
+      let eiid,expm = rexpr eiid in
+      let (loc,vlcloc,esloc) =  Evt.as_singleton locm
+      and (v,vclexp,esexp) = Evt.as_singleton expm in
+      let eiid,rmemm = rmem loc eiid in
+      let eiid,wmemm = wmem loc v eiid in
+      let w,vclrmem,esrmem =  Evt.as_singleton rmemm
+      and (),vclwmem,eswmem = Evt.as_singleton wmemm in
+      let es = E.linux_exch esexp esloc esrmem eswmem in
+      eiid,
+      Evt.singleton (w,vlcloc@vclexp@vclrmem@vclwmem,es)
+        
+
 (* stu comninator *)
   let stu : 'a t -> 'b t -> ('a -> unit t) -> (('a * 'b) -> unit t) -> unit t
       = fun rD rEA wEA wM  ->

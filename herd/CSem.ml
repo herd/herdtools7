@@ -67,7 +67,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
     let fetch_op op v mo loc =
       M.fetch op v (fun v vstored -> Act.RMW (loc,v,vstored,mo))
 
-    let xchg is_data loc v a ii =
+    let xchg is_data rloc re a ii =
       let add_mb = match a with
       | ["mb"] -> true | _ -> false in
       let aw = match a with
@@ -76,6 +76,24 @@ module Make (Conf:Sem.Config)(V:Value.S)
       and ar = match a with
       | ["acquire"] -> a
       | _ -> ["once";] in
+      let rmem =
+        fun loc ->
+          if add_mb then
+            M.mk_singleton_es (Act.Fence  (MOorAN.AN a)) ii >>=
+            fun _ -> read_mem_atomic is_data ar loc ii
+          else read_mem_atomic is_data ar loc ii
+      and wmem =
+        fun loc v ->
+          if add_mb then
+            write_mem_atomic aw loc v ii  >>=
+            fun _ -> 
+              M.mk_singleton_es (Act.Fence  (MOorAN.AN a)) ii >>! ()
+          else
+            write_mem_atomic aw loc v ii >>! () in
+      M.linux_exch rloc re rmem wmem
+
+(*
+      (re >>| rloc) >>= fun (v,loc) ->
       let next_m =
         read_mem_atomic is_data ar loc ii >>=
         fun vr ->
@@ -90,7 +108,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
         M.mk_singleton_es (Act.Fence  (MOorAN.AN a)) ii
           >>= fun _ -> next_m
       else next_m
-
+*)
     let atomic_pair_allowed e1 e2 = match e1.E.iiid, e2.E.iiid with
     | Some i1,Some i2 -> i1 == i2
     | _,_ -> false
@@ -125,12 +143,11 @@ module Make (Conf:Sem.Config)(V:Value.S)
         M.op op v1 v2
 
       | C.Exchange(l,e,(MOorAN.AN a)) ->
-          (build_semantics_expr true e ii >>|
-	  (match l with
+          let re = build_semantics_expr true e ii
+          and rloc = match l with
 	  | C.Reg r -> read_reg is_data r ii
-	  | C.Mem _ -> Warn.user_error "Complex location in __xchg"))
-	    >>= (fun (v,l) ->
-              xchg is_data  l v a ii)
+          | C.Mem _ -> Warn.user_error "Complex location in __xchg" in
+          xchg is_data rloc re a ii
 
 
       | C.Exchange(l,e,(MOorAN.MO mo as top_mo)) ->

@@ -242,6 +242,11 @@ module type S = sig
      event_structure -> event_structure ->
      event_structure
 
+  val linux_exch :
+      event_structure -> event_structure ->
+        event_structure -> event_structure ->
+          event_structure
+
 (* stu computation :
    stu rD rEA wEA wM ->
       rEA -data-> wEA,
@@ -589,9 +594,25 @@ let minimals es =
 	(fun (_,e2) -> e.eiid <> e2.eiid) intra_causality)
     es.events
 
+let minimals_data es =
+  let intra_causality = es.intra_causality_data in
+  EventSet.filter 
+    (fun e ->
+      EventRel.for_all
+	(fun (_,e2) -> e.eiid <> e2.eiid) intra_causality)
+    es.events
+
 let maximals es =
   let intra_causality =
     EventRel.union es.intra_causality_data es.intra_causality_control in 
+  EventSet.filter 
+    (fun e ->
+      EventRel.for_all
+	(fun (e1,_) -> e.eiid <> e1.eiid) intra_causality)
+    es.events
+
+let maximals_data es =
+  let intra_causality = es.intra_causality_data in
   EventSet.filter 
     (fun e ->
       EventRel.for_all
@@ -626,7 +647,7 @@ let (=|=) = check_disjoint para_comp
 	intra_causality_data = EventRel.union
 	  (EventRel.union es1.intra_causality_data
 	     es2.intra_causality_data)
-	  (EventRel.cartesian (maximals es1) (minimals es2)) ;
+	  (EventRel.cartesian (maximals_data es1) (minimals_data es2)) ;
         intra_causality_control = EventRel.union
 	  es1.intra_causality_control es2.intra_causality_control ;
         control = EventRel.union es1.control es2.control;
@@ -687,6 +708,33 @@ let (=|=) = check_disjoint para_comp
     else
       assert false
 
+  let linux_exch re rloc rmem wmem =
+    let input_wmem = minimals wmem in
+    let output_rloc = maximals rloc in
+   { procs = [];
+     events =
+        EventSet.union4 re.events rloc.events rmem.events wmem.events;
+     intra_causality_data =
+        EventRel.unions
+          [EventRel.union4
+              re.intra_causality_data rloc.intra_causality_data
+              rmem.intra_causality_data wmem.intra_causality_data;
+           EventRel.cartesian (maximals re) input_wmem;
+           EventRel.cartesian output_rloc input_wmem;
+           EventRel.cartesian output_rloc (minimals rmem);];
+     intra_causality_control =
+        EventRel.union
+          (EventRel.union4
+             re.intra_causality_control rloc.intra_causality_control
+             rmem.intra_causality_control wmem.intra_causality_control)
+          (EventRel.cartesian (maximals rmem) (minimals wmem));
+     control =
+       EventRel.union4
+         re.control rloc.control rmem.control wmem.control;
+     data_ports =
+       EventSet.union4
+         re.data_ports rloc.data_ports rmem.data_ports wmem.data_ports;
+    }
 (* Store update composition, read data, read EA, write EA and  write Mem *)
 
 (* Dijointness not checked..., useless *)

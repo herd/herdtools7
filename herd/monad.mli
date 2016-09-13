@@ -40,6 +40,8 @@ module type S =
     val (>>=) : 'a t -> ('a -> 'b t) -> ('b) t
     val (>>*=) : 'a t -> ('a -> 'b t) -> ('b) t
     val exch : 'a t -> 'a t -> ('a -> 'b t) ->  ('a -> 'b t) ->  ('b * 'b) t
+    val linux_exch :
+        'loc t -> 'v t -> ('loc -> 'w t) -> ('loc -> 'v -> unit t) -> 'w t
     val stu : 'a t -> 'a t -> ('a -> unit t) -> (('a * 'a) -> unit t) -> unit t
     val (>>>) : 'a t -> ('a -> 'b t) -> 'b t
     val (>>>>) : 'a t -> ('a -> 'b t) -> 'b t
