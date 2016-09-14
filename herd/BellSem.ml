@@ -139,13 +139,20 @@ module Make (C:Sem.Config)(V:Value.S)
             Warn.fatal "Obsolete 'call' instruction in BellSem\n"
 
 	| BellBase.Prmw(r,op,addr_op,s) ->
-          (solve_addr_op addr_op ii) >>=
-          (fun x -> (read_mem_atom x s ii) >>=
-            (fun v_read -> 
+            let rloc = solve_addr_op addr_op ii in
+            if BellBase.r_in_op r op then
+              rloc >>=
+              (fun x -> (read_mem_atom x s ii) >>=
+                (fun v_read -> 
                   (tr_op ~stack:[(r,v_read)] ii op) >>= 
-                  (fun v -> write_reg r v_read ii >>|
-                            write_mem_atom x v s ii))) >>!
-          B.Next
+                  (fun v -> write_reg r v_read ii >>| write_mem_atom x v s ii))) >>!
+              B.Next
+            else
+              rloc >>=
+              (fun x ->
+                (read_mem_atom x s ii >>= fun v -> write_reg r v ii) >>*=
+                (fun () -> tr_op ii op >>=  fun v -> write_mem_atom x v s ii)) >>!
+              B.Next
 
 	| BellBase.Pbranch(Some r,lbl,_) -> 
    	  (read_reg false r ii) >>=

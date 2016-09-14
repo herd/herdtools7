@@ -145,7 +145,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
       | C.Exchange(l,e,(MOorAN.AN a)) ->
           let re = build_semantics_expr true e ii
           and rloc = match l with
-	  | C.Reg r -> read_reg is_data r ii
+	  | C.Reg r -> read_reg false r ii
           | C.Mem _ -> Warn.user_error "Complex location in __xchg" in
           xchg is_data rloc re a ii
 
@@ -153,8 +153,8 @@ module Make (Conf:Sem.Config)(V:Value.S)
       | C.Exchange(l,e,(MOorAN.MO mo as top_mo)) ->
           (build_semantics_expr true e ii >>|
 	  (match l with
-	  | C.Reg r -> read_reg is_data r ii
-	  | C.Mem r -> read_reg is_data r ii >>= fun l -> 
+	  | C.Reg r -> read_reg false r ii
+	  | C.Mem r -> read_reg false r ii >>= fun l -> 
 	      read_mem is_data top_mo l ii)) 
 	    >>= (fun (v,l) ->
               read_exchange is_data v mo (A.Location_global l) ii)

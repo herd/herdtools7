@@ -149,6 +149,20 @@ type 'k op =
   | Eq of 'k imm_or_addr_or_reg * 'k imm_or_addr_or_reg 
   | Neq of 'k imm_or_addr_or_reg * 'k imm_or_addr_or_reg 
 
+let r_in_op =
+  let in_addr r = function
+    | IAR_roa (Rega ra) -> reg_compare r ra = 0
+    | IAR_roa (Abs _)
+    | IAR_imm _ -> false in
+  fun r x -> match x with
+  | RAI a -> in_addr r a
+  | Add (x,y)
+  | Xor (x,y)
+  | And (x,y)
+  | Eq (x,y)
+  | Neq (x,y) ->
+      in_addr r x || in_addr r y
+
 let op_tr f = function
   | RAI (iar) -> 
       RAI (imm_or_addr_or_reg_tr f iar)
@@ -162,7 +176,7 @@ let op_tr f = function
       Eq (imm_or_addr_or_reg_tr f iar1,imm_or_addr_or_reg_tr f iar2)
   | Neq (iar1,iar2) -> 
       Neq (imm_or_addr_or_reg_tr f iar1,imm_or_addr_or_reg_tr f iar2)
- 
+
 let pp_op = function
   | RAI(iar) -> sprintf "%s" (pp_iar iar)
   | Add(x,i) -> sprintf "(add %s %s)" (pp_iar x) (pp_iar i)

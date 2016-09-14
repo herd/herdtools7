@@ -161,8 +161,12 @@ module type S = sig
       events : EventSet.t ;                     (* really a set *)
       intra_causality_data : EventRel.t ;       (* really a partial order relation *)
       intra_causality_control : EventRel.t ;    (* really a partial order relation *)
+      (* If style control inside structure *)
       control : EventRel.t ;
+      (* Wvents that lead to the data port of a W *)
       data_ports : EventSet.t ;
+      (* Result of structure, by default maximal iico *)
+      output : EventSet.t option ;
     } 
 
   val procs_of    : event_structure -> A.proc list
@@ -470,6 +474,7 @@ struct
 	intra_causality_control : EventRel.t ;(* really a (partial order) relation *)
         control : EventRel.t ;
         data_ports : EventSet.t ;
+        output : EventSet.t option ;
       } 
 	  
     let procs_of es = es.procs
@@ -485,6 +490,7 @@ struct
        intra_causality_control = map_rel es.intra_causality_control ;
        control = map_rel es.control ;
        data_ports = map_set es.data_ports ;
+       output = Misc.app_opt map_set es.output ;
      }
 
     let empty =
@@ -493,6 +499,7 @@ struct
 	intra_causality_control = EventRel.empty ;
         control = EventRel.empty ;
         data_ports = EventSet.empty ;
+        output = None ;
       }
 
       
@@ -618,6 +625,12 @@ let maximals_data es =
       EventRel.for_all
 	(fun (e1,_) -> e.eiid <> e1.eiid) intra_causality)
     es.events
+
+let get_output es = match es.output with
+| None -> maximals_data es
+| Some o -> o
+
+
 (**********************************)      
 (* Add together event structures  *)
 (**********************************)
@@ -629,6 +642,14 @@ let check_disjoint do_it es1 es2 =
   else Some (do_it es1 es2)
       
 (* Parallel composition *)
+    let union_output es1 es2 = match es1.output,es2.output with
+    | Some o1, Some o2 -> Some (EventSet.union o1 o2)
+    | None,None -> None
+    | None,Some o2 ->
+        Some (EventSet.union (maximals_data es1) o2)
+    | Some o1,None ->
+        Some (EventSet.union o1 (maximals_data es2))
+
 let para_comp es1 es2 =
   { procs = [] ;
     events = EventSet.union es1.events es2.events;
@@ -637,21 +658,23 @@ let para_comp es1 es2 =
     intra_causality_control = EventRel.union
       es1.intra_causality_control  es2.intra_causality_control ;
     control = EventRel.union es1.control es2.control;
-    data_ports = EventSet.union es1.data_ports es2.data_ports; }
+    data_ports = EventSet.union es1.data_ports es2.data_ports;
+    output = union_output es1 es2; }
 
 let (=|=) = check_disjoint para_comp
     
 (* Composition with intra_causality_data from first to second *)
-    let data_comp es1 es2 =
+  let data_comp es1 es2 =
       { procs = [];  events = EventSet.union es1.events es2.events;
 	intra_causality_data = EventRel.union
 	  (EventRel.union es1.intra_causality_data
 	     es2.intra_causality_data)
-	  (EventRel.cartesian (maximals_data es1) (minimals_data es2)) ;
+	  (EventRel.cartesian (get_output es1) (minimals_data es2)) ;
         intra_causality_control = EventRel.union
 	  es1.intra_causality_control es2.intra_causality_control ;
         control = EventRel.union es1.control es2.control;
-        data_ports = EventSet.union es1.data_ports es2.data_ports; }
+        data_ports = EventSet.union es1.data_ports es2.data_ports;
+        output = es2.output; }
 
     let (=*$=) = check_disjoint data_comp
 
@@ -666,7 +689,8 @@ let (=|=) = check_disjoint para_comp
 	     es2.intra_causality_control)
 	  (EventRel.cartesian (maximals es1) (minimals es2));
         control = EventRel.union es1.control es2.control;
-        data_ports = EventSet.union es1.data_ports es2.data_ports; }
+        data_ports = EventSet.union es1.data_ports es2.data_ports;
+        output = union_output es1 es2; }
 
     let (=**=) = check_disjoint control_comp
 
@@ -692,7 +716,8 @@ let (=|=) = check_disjoint para_comp
         control =
           EventRel.union4 rs1.control rs2.control ws1.control ws2.control;
         data_ports =
-          EventSet.union4 rs1.data_ports rs2.data_ports ws1.data_ports ws2.data_ports; }
+          EventSet.union4 rs1.data_ports rs2.data_ports ws1.data_ports ws2.data_ports;
+        output = None; }
 
 (* disjointness is awful *)
   let exch rx ry wx wy =
@@ -734,7 +759,8 @@ let (=|=) = check_disjoint para_comp
      data_ports =
        EventSet.union4
          re.data_ports rloc.data_ports rmem.data_ports wmem.data_ports;
-    }
+     output = Some (get_output rmem); }
+
 (* Store update composition, read data, read EA, write EA and  write Mem *)
 
 (* Dijointness not checked..., useless *)
@@ -763,7 +789,7 @@ let stu rD rEA wEA wM =
     data_ports =
       EventSet.union4
         rD.data_ports rEA.data_ports wEA.data_ports wM.data_ports ;
-
+    output = None; 
   }
 
 (*************************************************************)	      
