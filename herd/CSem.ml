@@ -76,21 +76,16 @@ module Make (Conf:Sem.Config)(V:Value.S)
       and ar = match a with
       | ["acquire"] -> a
       | _ -> ["once";] in
-      let rmem =
-        fun loc ->
-          if add_mb then
-            M.mk_singleton_es (Act.Fence  (MOorAN.AN a)) ii >>=
-            fun _ -> read_mem_atomic is_data ar loc ii
-          else read_mem_atomic is_data ar loc ii
-      and wmem =
-        fun loc v ->
-          if add_mb then
-            write_mem_atomic aw loc v ii  >>=
-            fun _ -> 
-              M.mk_singleton_es (Act.Fence  (MOorAN.AN a)) ii >>! ()
-          else
-            write_mem_atomic aw loc v ii >>! () in
-      M.linux_exch rloc re rmem wmem
+      let rmem = fun loc -> read_mem_atomic is_data ar loc ii
+      and wmem = fun loc v -> write_mem_atomic aw loc v ii >>! () in
+      let exch = M.linux_exch rloc re rmem wmem in
+      if add_mb then
+        M.mk_fence (Act.Fence  (MOorAN.AN a)) ii >>*=
+        fun () -> exch >>*= 
+          fun v -> M.mk_fence (Act.Fence  (MOorAN.AN a)) ii >>! v
+      else exch
+
+
 
 (*
       (re >>| rloc) >>= fun (v,loc) ->
@@ -254,7 +249,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
 	  >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
 	  
 	| C.Fence(mo) -> 
-	  M.mk_singleton_es (Act.Fence mo) ii
+	  M.mk_fence (Act.Fence mo) ii
 	  >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
 	  
 	| C.Symb _ -> Warn.fatal "No symbolic instructions allowed."

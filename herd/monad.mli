@@ -74,6 +74,8 @@ module type S =
        instruction id "ii", and action "a". *)
     val mk_singleton_es : E.action -> A.inst_instance_id -> unit t
     val mk_singleton_es_eq : E.action -> VC.cnstrnts -> A.inst_instance_id -> unit t
+    (* Similar, explicit empty output *)
+    val mk_fence : E.action -> A.inst_instance_id -> unit t
 	
 
     val op1 : Op.op1 -> A.V.v -> A.V.v t
