@@ -100,11 +100,11 @@ module Make (C:Sem.Config)(V : Value.S)
     | X86.Effaddr_rm32 (X86.Rm32_abs v)->
 	M.unitT (X86.maybev_to_location v)
 	  
-    let rval_ea ea ii =
-      lval_ea ea ii >>=  fun loc -> read_loc true loc ii
+    let rval_ea locked ea ii =
+      lval_ea ea ii >>=  fun loc -> read_loc locked loc ii
 
-    let rval_op op ii = match op with
-    | X86.Operand_effaddr ea -> rval_ea ea ii
+    let rval_op locked op ii = match op with
+    | X86.Operand_effaddr ea -> rval_ea locked ea ii
     | X86.Operand_immediate s -> M.unitT (V.intToV s)
 
     let flip_flag v = M.op Op.Xor v V.one	
@@ -145,7 +145,7 @@ module Make (C:Sem.Config)(V : Value.S)
       match ii.A.inst with
     |  X86.I_XOR (ea,op) ->
 	(lval_ea ea ii >>=
-	 fun loc -> M.addT loc (read_loc_gen true locked loc ii) >>| rval_op op ii)
+	 fun loc -> M.addT loc (read_loc_gen true locked loc ii) >>| rval_op locked op ii)
 	  >>=
 	fun ((loc,v_ea),v_op) ->
 	  M.op Op.Xor v_ea v_op >>=
@@ -154,7 +154,7 @@ module Make (C:Sem.Config)(V : Value.S)
 	    write_all_flags v_result V.zero ii) >>! B.Next
     |  X86.I_ADD (ea,op) ->
 	(lval_ea ea ii >>=
-	 fun loc -> M.addT loc (read_loc_gen true locked loc ii) >>| rval_op op ii)
+	 fun loc -> M.addT loc (read_loc_gen true locked loc ii) >>| rval_op locked op ii)
 	  >>=
 	fun ((loc,v_ea),v_op) ->
 	  M.add v_ea v_op >>=
@@ -162,11 +162,11 @@ module Make (C:Sem.Config)(V : Value.S)
 	    (write_loc_gen locked loc v_result ii >>|
 	    write_all_flags v_result V.zero ii) >>! B.Next
     |  X86.I_MOV (ea,op)|X86.I_MOVQ (ea,op) ->
-	(lval_ea ea ii >>| rval_op op ii) >>=
+	(lval_ea ea ii >>| rval_op locked op ii) >>=
 	fun (loc,v_op) ->
-	  write_loc loc v_op ii >>! B.Next
+	  write_loc_gen locked loc v_op ii >>! B.Next
     |  X86.I_READ (op) ->
-	rval_op op ii >>! B.Next
+	rval_op locked op ii >>! B.Next
     |  X86.I_DEC (ea) ->
 	lval_ea ea ii >>=
 	fun loc -> read_loc_gen true locked loc ii >>=
@@ -186,14 +186,14 @@ module Make (C:Sem.Config)(V : Value.S)
 	      write_sf v V.zero ii >>|
 	      write_zf v V.zero ii) >>! B.Next
     |  X86.I_CMP (ea,op) ->
-	(rval_ea ea ii >>| rval_op op ii) >>=
+	(rval_ea locked ea ii >>| rval_op locked op ii) >>=
 	fun (v_ea,v_op) ->
 	  write_all_flags v_ea v_op ii >>! B.Next
     | X86.I_CMOVC (r,ea) ->
 	read_reg false X86.CF ii >>*=
 	(fun vcf ->
 	  M.choiceT vcf
-	    (rval_ea ea ii >>= fun vea -> write_reg r vea ii >>! B.Next)
+	    (rval_ea locked ea ii >>= fun vea -> write_reg r vea ii >>! B.Next)
 	    (M.unitT B.Next))
     |  X86.I_JMP lbl -> M.unitT (B.Jump lbl)
 
@@ -232,8 +232,18 @@ module Make (C:Sem.Config)(V : Value.S)
 	read_reg false X86.SF ii >>= flip_flag >>=
 	fun v -> B.bccT v lbl 
 
-    | X86.I_LOCK inst ->
-	build_semantics_inner true {ii with A.inst = inst}
+    | X86.I_LOCK inst -> begin
+        let open X86 in
+        match inst with
+        | I_XCHG _ |  I_XCHG_UNLOCKED _
+        | I_ADD _  | I_XOR _
+        | I_DEC _ | I_INC _ ->
+	    build_semantics_inner true {ii with A.inst = inst}
+        | _ ->
+            Warn.user_error "Illegal lock prefix on instruction %s"
+              (dump_instruction inst)
+              
+    end
     | X86.I_SETNB (ea) ->
 	(lval_ea ea ii >>| read_reg false X86.CF ii) >>=
 	fun (loc,cf) ->
