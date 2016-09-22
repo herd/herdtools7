@@ -56,6 +56,7 @@ let ithb = (ithbr | (sb ; ithbr))+
 let hb = sb | ithb
 acyclic hb as Hb
 
+show (hb \ (IW * _)) & ext as hb
 
 (* coherent_memory_use *)
 let hbl = hb & loc

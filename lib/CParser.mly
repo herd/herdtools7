@@ -115,15 +115,11 @@ shallow_main:
 | PROC LPAR parameter_list RPAR BODY shallow_main
     { CAst.Test {CAst.proc = $1; params = $3; body = $5} :: $6 }
 
-location:
-| IDENTIFIER { CBase.Reg $1 }
-| STAR IDENTIFIER { CBase.Mem $2 }
-
 declaration:
 | typ IDENTIFIER SEMI {}
 
 initialisation:
-| typ IDENTIFIER EQ expr { Store(Reg $2,$4,AN []) }
+| typ IDENTIFIER EQ expr { StoreReg ($2,$4) ; }
 
 annot:
 | IDENTIFIER { $1 }
@@ -141,10 +137,12 @@ expr:
 | LPAR expr RPAR { $2 }
 | CONSTANT { Const(Constant.Concrete $1) }
 | CONSTVAR { Const(Constant.Symbolic $1) }
-| location { Load($1,AN []) }
-| LD LPAR location RPAR { Load($3,MO SC) }
-| LOAD LBRACE annot_list RBRACE LPAR location RPAR { Load($6,AN $3) }
-| LD_EXPLICIT LPAR location COMMA MEMORDER RPAR { Load($3,MO $5) }
+| IDENTIFIER { LoadReg $1 }
+| STAR IDENTIFIER { LoadMem (LoadReg $2,AN []) }
+| STAR LPAR expr RPAR { LoadMem ($3,AN []) }
+| LD LPAR expr RPAR { LoadMem($3,MO SC) }
+| LOAD LBRACE annot_list RBRACE LPAR expr RPAR { LoadMem($6,AN $3) }
+| LD_EXPLICIT LPAR expr COMMA MEMORDER RPAR { LoadMem($3,MO $5) }
 | expr STAR expr { Op(Op.Mul,$1,$3) }
 | expr ADD expr { Op(Op.Add,$1,$3) }
 | expr SUB expr { Op(Op.Sub,$1,$3) }
@@ -154,15 +152,15 @@ expr:
 | expr XOR expr { Op(Op.Xor,$1,$3) }
 | expr EQ_OP expr { Op(Op.Eq,$1,$3) }
 | expr NEQ_OP expr { Op(Op.Ne,$1,$3) }
-| EXC LPAR location COMMA expr RPAR
+| EXC LPAR expr COMMA expr RPAR
   { Exchange($3, $5, MO SC) }
-| EXC_EXPLICIT LPAR location COMMA expr COMMA MEMORDER RPAR
+| EXC_EXPLICIT LPAR expr COMMA expr COMMA MEMORDER RPAR
   { Exchange($3, $5, MO $7) }
-| XCHG LBRACE annot_list RBRACE LPAR location COMMA expr RPAR
+| XCHG LBRACE annot_list RBRACE LPAR expr COMMA expr RPAR
   { Exchange($6,$8,AN $3) }
-| ATOMIC_FETCH LPAR location COMMA expr RPAR
+| ATOMIC_FETCH LPAR expr COMMA expr RPAR
   { Fetch ($3, $1, $5, SC) }
-| ATOMIC_FETCH_EXPLICIT LPAR location COMMA expr COMMA MEMORDER RPAR
+| ATOMIC_FETCH_EXPLICIT LPAR expr COMMA expr COMMA MEMORDER RPAR
   { Fetch($3, $1, $5, $7) }
 | IDENTIFIER LPAR args RPAR
   { ECall ($1,$3) }
@@ -175,6 +173,11 @@ args_ne:
 | expr { [$1] }
 | expr COMMA args_ne { $1 :: $3 }
 
+location:
+| IDENTIFIER { LoadReg($1) }
+| STAR location { LoadMem($2,AN []) }
+| LPAR expr RPAR { $2 }
+
 instruction:
 | IF LPAR expr RPAR block_ins %prec LOWER_THAN_ELSE 
   { If($3,$5,None) }
@@ -182,17 +185,19 @@ instruction:
   { If($3,$5,Some $7) }
 | initialisation SEMI
   { $1 }
-| location EQ expr SEMI
-  { Store($1,$3,AN []) }
-| STORE LBRACE annot_list RBRACE LPAR location COMMA expr RPAR SEMI
-  { Store($6,$8,AN $3) }
-| ST LPAR location COMMA expr RPAR SEMI
-  { Store($3, $5, MO SC) }
-| ST_EXPLICIT LPAR location COMMA expr COMMA MEMORDER RPAR SEMI
-  { Store($3, $5, MO $7) }
-| LOCK LPAR location RPAR SEMI
+| IDENTIFIER EQ expr SEMI
+  { StoreReg($1,$3) }
+| STAR location EQ expr SEMI
+  { StoreMem($2,$4,AN []) }
+| STORE LBRACE annot_list RBRACE LPAR expr COMMA expr RPAR SEMI
+  { StoreMem($6,$8,AN $3) }
+| ST LPAR expr COMMA expr RPAR SEMI
+  { StoreMem($3, $5, MO SC) }
+| ST_EXPLICIT LPAR expr COMMA expr COMMA MEMORDER RPAR SEMI
+  { StoreMem($3, $5, MO $7) }
+| LOCK LPAR expr RPAR SEMI
   { Lock $3 }
-| UNLOCK LPAR location RPAR SEMI
+| UNLOCK LPAR expr RPAR SEMI
   { Unlock $3 }
 | UNDERFENCE LBRACE annot_list RBRACE SEMI
   { Fence(AN $3) }

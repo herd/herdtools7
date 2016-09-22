@@ -109,28 +109,22 @@ module Make (Conf:Sem.Config)(V:Value.S)
     | _,_ -> false
 
     let rec build_semantics_expr is_data e ii : V.v M.t =
-      let open MemOrderOrAnnot in
       match e with
       | C.Const v -> 	
         M.unitT (V.maybevToV v)
 
-      | C.Load(l,(AN _ as mo)) ->
-         begin match l with 
-	  | C.Reg r -> read_reg is_data r ii
-	  | C.Mem r ->
-              read_reg is_data r ii >>= (fun l -> read_mem is_data mo l ii)
-	 end
-
-      | C.Load(l,(MO _ as mo)) ->
-         begin match l with
-	 | C.Reg a ->
-             read_reg is_data a ii >>=
-             (fun l -> read_mem is_data mo l ii)
-	 | C.Mem r ->
-             read_reg is_data r ii >>=
-             fun a -> read_mem is_data (AN []) a ii >>=
-               fun l -> read_mem is_data mo l ii
-	 end
+      | C.LoadReg r -> read_reg is_data r ii
+      | C.LoadMem(loc,mo) ->
+          (let open MemOrderOrAnnot in
+          match mo with
+          | AN [] | MO _ -> build_semantics_expr is_data loc ii
+          | AN (_::_) ->  begin match loc with
+            | C.LoadMem (loc,AN []) ->
+                build_semantics_expr is_data loc ii
+            | _ ->
+                Warn.user_error "Bad __load argument: %s"
+                  (C.dump_expr loc) end) >>=
+          fun l -> read_mem is_data mo l ii
 	   
       | C.Op(op,e1,e2) ->
         (build_semantics_expr is_data e1 ii >>| 
@@ -139,27 +133,19 @@ module Make (Conf:Sem.Config)(V:Value.S)
 
       | C.Exchange(l,e,(MOorAN.AN a)) ->
           let re = build_semantics_expr true e ii
-          and rloc = match l with
-	  | C.Reg r -> read_reg false r ii
-          | C.Mem _ -> Warn.user_error "Complex location in __xchg" in
+          and rloc =  build_semantics_expr false l ii in
           xchg is_data rloc re a ii
 
 
-      | C.Exchange(l,e,(MOorAN.MO mo as top_mo)) ->
+      | C.Exchange(l,e,MOorAN.MO mo) ->
           (build_semantics_expr true e ii >>|
-	  (match l with
-	  | C.Reg r -> read_reg false r ii
-	  | C.Mem r -> read_reg false r ii >>= fun l -> 
-	      read_mem is_data top_mo l ii)) 
+	  build_semantics_expr false l ii)
 	    >>= (fun (v,l) ->
               read_exchange is_data v mo (A.Location_global l) ii)
 
 	| C.Fetch(l,op,e,mo) ->
 	  (build_semantics_expr true e ii >>|
-	      (match l with
-	      | C.Reg r -> read_reg is_data r ii
-	      | C.Mem r -> read_reg is_data r ii >>= fun l ->
-		read_mem is_data (MOorAN.MO mo) l ii))
+	  build_semantics_expr false l ii)
 	  >>= (fun (v,l) ->
 	    fetch_op op v mo (A.Location_global l) ii)
         | C.ECall _ -> Warn.fatal "Macro call in CSem"
@@ -190,63 +176,38 @@ module Make (Conf:Sem.Config)(V:Value.S)
               let then_branch = build_semantics {ii' with A.inst = t} in
               M.choiceT ret then_branch (build_semantics_list [] ii)
 	    
-	| C.Store(l,e,(MOorAN.AN [])) -> 
-	  begin
-	    match l with 
-	    | C.Reg r -> 
-              build_semantics_expr true e ii >>= (fun v ->
-		write_reg r v ii)
-	    | C.Mem r -> 
-	      (read_reg false r ii >>| 
-	       build_semantics_expr true e ii) >>= (fun (l,v) ->
-	      write_mem no_mo l v ii)
-	  end
-	  >>= (fun _ -> M.unitT (ii.A.program_order_index, B.Next))
-
-	| C.Store(l,e,(MOorAN.AN _ as mo)) -> 
-	  begin
-	    match l with 
-	    | C.Reg r -> Warn.user_error "annotated write to register %s" r
-	    | C.Mem r -> 
-	      (read_reg false r ii >>| 
-	       build_semantics_expr true e ii) >>= (fun (l,v) ->
-	      write_mem mo l v ii)
-	  end
-	  >>= (fun _ -> M.unitT (ii.A.program_order_index, B.Next))
-
-	| C.Store(l,e,(MOorAN.MO _ as mo)) -> 
-	  begin
-	    match l with 
-	    | C.Reg a -> (read_reg false a ii >>| 
-		          build_semantics_expr true e ii) >>= (fun (l,v) ->
-			 write_mem mo l v ii)
-	    | C.Mem r -> read_reg false r ii >>= fun a -> 
-	                 (read_mem false mo a ii >>|
-		          build_semantics_expr true e ii) >>= fun (l,v) -> 
-	                 write_mem mo l v ii
-	  end
-	  >>= (fun _ -> M.unitT (ii.A.program_order_index, B.Next))
-	    
-	| C.Lock l ->
-	  (match l with
-	  | C.Reg r -> read_reg false r ii
-	  | C.Mem r -> read_reg false r ii >>= fun l -> 
-	    read_mem false no_mo l ii) >>= fun l ->
-	  (M.altT
+	| C.StoreReg(r,e) -> 
+            build_semantics_expr true e ii >>=
+            fun v -> write_reg r v ii >>=
+              fun _ ->  M.unitT (ii.A.program_order_index, B.Next)
+	| C.StoreMem(loc,e,mo) -> 
+	    (begin
+              let open MemOrderOrAnnot in
+              match mo with
+              | AN [] | MO _ ->  build_semantics_expr false loc ii
+              | AN (_::_) -> match loc with
+                | C.LoadMem (loc,AN []) -> build_semantics_expr false loc ii
+                | _ ->
+                    Warn.user_error "Bad __store argument: %s"
+                      (C.dump_expr loc)                    
+            end >>|
+            build_semantics_expr true e ii) >>=
+            fun (l,v) -> write_mem mo l v ii >>=
+              fun _ -> M.unitT (ii.A.program_order_index, B.Next)
+	| C.Lock l ->            
+	    build_semantics_expr false l ii >>=
+            fun l ->
+	      M.altT
            (* successful attempt to obtain mutex *)
-	     (M.mk_singleton_es (Act.Lock (A.Location_global l, true)) ii)
-	     
+	         (M.mk_singleton_es (Act.Lock (A.Location_global l, true)) ii)
            (* unsuccessful attempt to obtain mutex *)
-             (M.mk_singleton_es (Act.Lock (A.Location_global l, false)) ii)) 
-	 >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
-	  
+                 (M.mk_singleton_es (Act.Lock (A.Location_global l, false)) ii) 
+	        >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
 	| C.Unlock l ->
-	  (match l with
-	  | C.Reg r -> read_reg false r ii
-	  | C.Mem r -> read_reg false r ii >>= fun l -> 
-	    read_mem false no_mo l ii) >>= fun l ->
-	  M.mk_singleton_es (Act.Unlock (A.Location_global l)) ii
-	  >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
+            build_semantics_expr false l ii >>=
+            fun l ->
+	      M.mk_singleton_es (Act.Unlock (A.Location_global l)) ii
+	        >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
 	  
 	| C.Fence(mo) -> 
 	  M.mk_fence (Act.Fence mo) ii

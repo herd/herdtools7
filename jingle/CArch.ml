@@ -29,19 +29,16 @@ include Arch.MakeArch(struct
     | Nop:: is -> unwrap_pseudo is
     | _ -> assert false
 
-  let match_location subs pat instr = match pat,instr with
-    | CBase.Reg s,CBase.Reg s'
-    | Mem s,Mem s' ->
-       Some(add_subs [Reg(s,s')] subs)
-    | _ -> None
+  let rec match_location subs pat instr =  match_expr subs pat instr
        
-  let rec match_expr subs pat instr = match pat,instr with
+  and match_expr subs pat instr = match pat,instr with
     | Const(Constant.Symbolic s),Const(Constant.Concrete c) ->
      Some(add_subs [Cst(s, c)] subs)
     | Const(Constant.Concrete s),Const(Constant.Concrete c) 
       when c=s ->
        Some subs
-    | Load(l,mo),Load(l',mo') when mo=mo' ->
+    | LoadReg(l),LoadReg(l') when l=l' -> Some subs
+    | LoadMem(l,mo),LoadMem(l',mo') when mo=mo' ->
        match_location subs l l'
     | Op(op,ex1,ex2),Op(op',ex1',ex2') when op=op' ->
        begin match match_expr subs ex1 ex1' with
@@ -84,7 +81,9 @@ include Arch.MakeArch(struct
 	    | Some e,Some e' -> match_instr subs e e'
 	    | _ -> None
     end
-    | Store(l,ex,mo),Store(l',ex',mo') when mo=mo' ->
+    | StoreReg (r,ex),StoreReg(r',ex') when r=r' ->
+        match_expr subs ex ex'
+    | StoreMem(l,ex,mo),StoreMem(l',ex',mo') when mo=mo' ->
        begin match match_location subs l l' with
        | None -> None
        | Some subs -> match_expr subs ex ex'
@@ -115,14 +114,13 @@ include Arch.MakeArch(struct
       | _::subs -> aux subs
       in aux subs
     in
-    let expl_loc = function
-      | CBase.Reg s -> CBase.Reg(conv_reg s)
-      | Mem s -> Mem(conv_reg s)
-    in
-    let rec expl_expr = function
+    let rec expl_loc loc = expl_expr loc
+
+    and expl_expr = function
       | Const(Constant.Symbolic s) -> Const(find_cst s)
       | Const(Constant.Concrete _) as e -> e
-      | Load(l,mo) -> Load(expl_loc l,mo)
+      | LoadReg r -> LoadReg(conv_reg r)
+      | LoadMem(l,mo) -> LoadMem(expl_loc l,mo)
       | Op(op,e1,e2) -> Op(op,expl_expr e1,expl_expr e2)
       | Exchange(l,e,mo) -> Exchange(expl_loc l, expl_expr e,mo)
       | Fetch(l,op,e,mo) -> Fetch(expl_loc l,op,expl_expr e,mo)
@@ -138,7 +136,8 @@ include Arch.MakeArch(struct
 	 | Some e -> Some(expl_instr subs free e)
        in
        If(expl_expr c,expl_instr subs free t,e)
-    | Store(l,e,mo) -> Store(expl_loc l, expl_expr e,mo)
+    | StoreReg(r,e) -> StoreReg(r, expl_expr e)
+    | StoreMem(l,e,mo) -> StoreMem(expl_loc l, expl_expr e,mo)
     | Lock l -> Lock(expl_loc l)
     | Unlock l -> Unlock(expl_loc l)
     | Symb s -> find_code s
