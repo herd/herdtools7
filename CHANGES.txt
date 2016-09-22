@@ -1,3 +1,6 @@
+7.33
+ * herd: reformulate C load and store to use expressions as locations.
+   Brittle (cf. jingle)
 7.32
  * Specific internal dependencies for C exchange and LISA Rmw...
  * X86, correct data ports for the exchange instruction.
