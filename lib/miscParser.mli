@@ -102,3 +102,6 @@ val mach2generic :
 
 (* Extract hash *)
 val get_hash :  ('i, 'p, 'c, 'loc) result -> string option
+
+(* Extract meta information from key *)
+val get_info :  ('i, 'p, 'c, 'loc) result -> string -> string option

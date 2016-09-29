@@ -162,3 +162,8 @@ let mach2generic parser lexer buff =
 let get_hash p =
   try Some (List.assoc "Hash" p.info)
   with Not_found -> None
+
+let get_info p key =
+  try Some (List.assoc "Hash" p.info)
+  with Not_found -> None
+  
