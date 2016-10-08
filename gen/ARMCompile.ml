@@ -17,7 +17,12 @@
 open Printf
 open Code
 
-module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
+module type Config = sig
+  include CompileCommon.Config
+  val realdep : bool
+end
+
+module Make(Cfg:Config) : XXXCompile.S =
   struct
 
     module ARM = ARMArch
@@ -272,9 +277,15 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
       Instruction (I_MOVI (rW,ew.v,AL))::cs,
       st
 
+    let calc0 =
+      if Cfg.realdep then
+        fun r2 r1 -> I_AND (DontSetFlags,r2,r1,128)
+      else
+        fun r2 r1 -> I_XOR (DontSetFlags,r2,r1,r1)
+
     let emit_access_dep_addr st p init e  r1 =
       let r2,st = next_reg st in
-      let c =  I_XOR (DontSetFlags,r2,r1,r1) in
+      let c =  calc0 r2 r1 in
       match e.dir,e.atom with
       | R,None ->
           let r,init,cs,st = emit_load_idx st p init e.loc r2 in
@@ -297,7 +308,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
     let emit_exch_dep_addr st p init er ew rd =
       let rA,init,st = next_init st p init er.loc in
       let c =
-        [Instruction (I_XOR (DontSetFlags,tempo1,rd,rd));
+        [Instruction (calc0 tempo1 rd);
          Instruction (I_ADD3 (DontSetFlags,tempo1,rA,tempo1));] in
       let r,init,csr,st = emit_ldrex_reg st p init tempo1 in
       let init,csw,st = emit_one_strex_reg st p init tempo1 ew.v in
@@ -310,7 +321,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile.S =
       | W ->
           let r2,st = next_reg st in
           let cs2 =
-            [Instruction (I_XOR (DontSetFlags,r2,r1,r1)) ;
+            [Instruction (calc0 r2 r1) ;
              Instruction (I_ADD (DontSetFlags,r2,r2,e.v)) ; ] in
           begin match e.atom with
           | None ->

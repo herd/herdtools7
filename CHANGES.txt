@@ -1,3 +1,4 @@
+ * gen : follow -realdep true option for AArch64
 7.32
  * Specific internal dependencies for C exchange and LISA Rmw...
  * X86, correct data ports for the exchange instruction.

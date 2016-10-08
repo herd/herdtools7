@@ -90,6 +90,7 @@ module Make(Cfg:Config) : XXXCompile.S =
     let cmp r1 r2 = I_OP3 (vloc,SUBS,ZR,r1,RV (vloc,r2))
     let bne lbl = I_BC (NE,lbl)
     let eor r1 r2 r3 = I_OP3 (vloc,EOR,r1,r2,RV (vloc,r3))
+    let andi r1 r2 k = I_OP3 (vloc,AND,r1,r2,K k)
     let addi r1 r2 k = I_OP3 (vloc,ADD,r1,r2,K k)
 (*    let add r1 r2 r3 = I_OP3 (vloc,ADD,r1,r2,r3) *)
     let add64 r1 r2 r3 = I_OP3 (V64,ADD,r1,r2,RV (vloc,r3))
@@ -459,10 +460,15 @@ module Make(Cfg:Config) : XXXCompile.S =
 
 
 (* Dependencies *)
+    let calc0 =
+      if Cfg.realdep then
+        fun dst src ->  andi dst src 128 
+      else
+        fun dst src -> eor dst src src 
 
     let emit_access_dep_addr st p init e  rd =
       let r2,st = next_reg st in
-      let c =  eor r2 rd rd in
+      let c =  calc0 r2 rd in
       match e.dir,e.atom with
       | R,None ->
           let r,init,cs,st = LDR.emit_load_idx st p init e.loc r2 in
@@ -491,7 +497,7 @@ module Make(Cfg:Config) : XXXCompile.S =
 
     let emit_exch_dep_addr st p init er ew rd =
       let r2,st = next_reg st in
-      let c = eor r2 rd rd in
+      let c = calc0 r2 rd in
       let rA,init,st = next_init st p init er.loc in
       let rA,csum,st = sum_addr st rA r2 in
       let rR,st = next_reg st in
@@ -508,7 +514,7 @@ module Make(Cfg:Config) : XXXCompile.S =
       | W ->
           let r2,st = next_reg st in
           let cs2 =
-            [Instruction (eor r2 r1 r1) ;
+            [Instruction (calc0 r2 r1) ;
              Instruction (addi r2 r2 e.v) ; ] in
           begin match e.atom with
           | None ->
