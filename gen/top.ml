@@ -402,7 +402,7 @@ let min_max xs =
               |Four ->
                   begin match vs_flat with
                   | _x1::_x2::_x3::_x4::_x5::_ ->
-                      Warn.fatal "More than three writes"
+                      Warn.fatal "More than four writes"
                   | _ -> i,[],[A.Loc x,IntSet.singleton v]
                   end 
               | Infinity ->

@@ -26,20 +26,13 @@ let pp_reg r = r
 let reg_compare = String.compare
 let symb_reg_name r = Some r
 
-type loc = 
-  | Reg of reg
-  | Mem of reg
-
+(*
 let loc_compare l1 l2 = match l1,l2 with
   | Reg s1,Reg s2 -> reg_compare s1 s2
   | Mem s1,Mem s2 -> reg_compare s1 s2
   | Reg _,Mem _ -> -1
   | Mem _,Reg _ -> 1
-
-let dump_loc = function
-  | Reg r -> r
-  | Mem r -> "*"^r
-
+*)
 type mem_order = MemOrder.t 
 
 type barrier = MemOrderOrAnnot.t
@@ -54,19 +47,22 @@ let barrier_compare = Pervasives.compare
 
 type expression = 
   | Const of SymbConstant.v
+  | LoadReg of reg
+  | LoadMem of expression * MemOrderOrAnnot.t
   | Op of Op.op * expression * expression
-  | Exchange of loc * expression * MemOrderOrAnnot.t
-  | Fetch of loc * Op.op * expression * mem_order
+  | Exchange of expression * expression * MemOrderOrAnnot.t
+  | Fetch of expression * Op.op * expression * mem_order
   | ECall of string * expression list
-  | Load of loc * MemOrderOrAnnot.t
+
 
 type instruction = 
   | Fence of barrier
   | Seq of instruction list
   | If of expression * instruction * instruction option
-  | Store of loc * expression * MemOrderOrAnnot.t
-  | Lock of loc
-  | Unlock of loc
+  | StoreReg of reg * expression
+  | StoreMem of expression * expression * MemOrderOrAnnot.t
+  | Lock of expression
+  | Unlock of expression
   | Symb of string
   | PCall of string * expression list
 
@@ -87,23 +83,25 @@ let rec dump_expr =
   let open MemOrderOrAnnot in
   function
     | Const c -> SymbConstant.pp_v c
-    | Load(l,AN []) -> dump_loc l
-    | Load(l,AN a) ->
-        sprintf "__load{%s}(%s)" (string_of_annot a) (dump_loc l)
-    | Load(l,MO mo) ->
+    | LoadReg(r) -> r
+    | LoadMem(LoadReg r,AN []) ->
+        sprintf "*%s" r
+    | LoadMem(l,AN a) ->
+        sprintf "__load{%s}(%s)" (string_of_annot a) (dump_expr l)
+    | LoadMem(l,MO mo) ->
         sprintf "atomic_load_explicit(%s,%s)"
-	  (dump_loc l) (MemOrder.pp_mem_order mo)
+	  (dump_expr l) (MemOrder.pp_mem_order mo)
     | Op(op,e1,e2) -> 
         sprintf "%s %s %s" (dump_expr e1) (Op.pp_op op) (dump_expr e2)
     | Exchange(l,e,MO mo) ->
         sprintf "atomic_exchange_explicit(%s,%s,%s)"
-	  (dump_loc l) (dump_expr e) (MemOrder.pp_mem_order mo)
+	  (dump_expr l) (dump_expr e) (MemOrder.pp_mem_order mo)
     | Exchange(l,e,AN a) ->
         sprintf "__xchg{%s}(%s,%s)"
-	  (string_of_annot a) (dump_loc l) (dump_expr e)
+	  (string_of_annot a) (dump_expr l) (dump_expr e)
     | Fetch(l,op,e,mo) -> 
         sprintf "atomic_fetch_%s_explicit(%s,%s,%s);" 
-	  (dump_op op) (dump_loc l) (dump_expr e) 
+	  (dump_op op) (dump_expr l) (dump_expr e) 
 	  (MemOrder.pp_mem_order mo)
     | ECall(f,es) ->
         sprintf "%s(%s)" f (dump_args es)
@@ -126,18 +124,20 @@ let rec dump_instruction =
        | None -> ""
        | Some e -> dump_instruction e
      in "if("^dump_expr c^") "^(dump_instruction t)^"else "^els
-  | Store(l,e,AN []) -> 
-     sprintf "%s = %s;" (dump_loc l) (dump_expr e)
-  | Store(l,e,AN a) ->
+  | StoreReg(r,e) -> 
+     sprintf "%s = %s;" r (dump_expr e)
+  | StoreMem(LoadReg r,e,AN []) -> 
+     sprintf "*%s = %s;" r (dump_expr e)
+  | StoreMem(l,e,AN a) ->
       sprintf "__store{%s}(%s,%s);"
-        (string_of_annot a) (dump_loc l) (dump_expr e)
-  | Store(l,e,MO mo) -> 
+        (string_of_annot a) (dump_expr l) (dump_expr e)
+  | StoreMem(l,e,MO mo) -> 
      sprintf "atomic_store_explicit(%s,%s,%s);"
-	     (dump_loc l) (dump_expr e) (MemOrder.pp_mem_order mo)
+	     (dump_expr l) (dump_expr e) (MemOrder.pp_mem_order mo)
   | Lock l -> 
-     sprintf "lock(%s);" (dump_loc l) 
+     sprintf "lock(%s);" (dump_expr l) 
   | Unlock l -> 
-     sprintf "unlock(%s);" (dump_loc l)
+     sprintf "unlock(%s);" (dump_expr l)
   | Symb s -> sprintf "codevar:%s;" s
   | PCall (f,es) ->
       sprintf "%s(%s);" f (dump_args es)
@@ -164,10 +164,14 @@ include Pseudo.Make
 	      | Const(Constant.Concrete _) as k -> k 
 	      | Const(Constant.Symbolic _) -> 
 		 Warn.fatal "No constant variable allowed"
-	      | Load _ as l -> l
+	      | LoadReg _ as l -> l
+              | LoadMem (l,mo) ->
+                  LoadMem (parsed_expr_tr l,mo)
 	      | Op(op,e1,e2) -> Op(op,parsed_expr_tr e1,parsed_expr_tr e2)
-	      | Exchange(l,e,mo) -> Exchange(l,parsed_expr_tr e,mo)
-	      | Fetch(l,op,e,mo) -> Fetch(l,op,parsed_expr_tr e,mo)
+	      | Exchange(l,e,mo) ->
+                  Exchange(parsed_expr_tr l,parsed_expr_tr e,mo)
+	      | Fetch(l,op,e,mo) ->
+                  Fetch(parsed_expr_tr l,op,parsed_expr_tr e,mo)
               | ECall (f,es) -> ECall (f,List.map parsed_expr_tr es)
 
 	    and parsed_tr = function
@@ -178,24 +182,22 @@ include Pseudo.Make
 		   | None -> None
 		   | Some ie -> Some(parsed_tr ie) in
 		 If(parsed_expr_tr e,parsed_tr it,tr_ie)
-	      | Store(l,e,mo) -> Store(l,parsed_expr_tr e,mo)
+	      | StoreReg(l,e) -> StoreReg(l,parsed_expr_tr e)
+	      | StoreMem(l,e,mo) ->
+                  StoreMem(parsed_expr_tr l,parsed_expr_tr e,mo)
 	      | Lock _ | Unlock _ as i -> i
 	      | Symb _ -> Warn.fatal "No term variable allowed"
               | PCall (f,es) -> PCall (f,List.map parsed_expr_tr es)
 
 	    let get_naccesses =
-              let open MemOrderOrAnnot in
-              let get_loc k = function
-                | Mem _ -> k+1
-                | Reg _ -> k in
 
               let rec get_exp k = function
                 | Const _ -> k
-                | Load (loc,AN _) -> get_loc k loc
-                | Load (loc,MO _) -> get_loc (k+1) loc
+                | LoadReg _ -> k
+                | LoadMem (e,_) -> get_exp (k+1) e
                 | Op (_,e1,e2) -> get_exp (get_exp k e1) e2
-                | Fetch (_,_,e,_)
-                | Exchange (_,e,_) -> get_exp (k+2) e
+                | Fetch (loc,_,e,_)
+                | Exchange (loc,e,_) -> get_exp (get_exp (k+2) e) loc
                 | ECall (_,es) -> List.fold_left get_exp k es in
 
               let rec get_rec k = function
@@ -204,9 +206,9 @@ include Pseudo.Make
                 | If (cond,ifso,ifno) ->
                     let k = get_exp k cond in
                     get_opt (get_rec k ifso) ifno
-                | Store (loc,e,AN _) -> get_exp (get_loc k loc) e
-                | Store (loc,e,MO _) -> get_exp (get_loc (k+1) loc) e
-                | Lock _|Unlock _ -> k+1
+                | StoreReg (_,e) -> get_exp k e
+                | StoreMem (loc,e,_) -> get_exp (get_exp k loc) e
+                | Lock e|Unlock e -> get_exp (k+1) e
                 | PCall (_,es) ->  List.fold_left get_exp k es
 
               and get_opt k = function
@@ -246,8 +248,6 @@ let add m env =  match m with
 | PDef (f,args,body) ->
     { env with proc = StringMap.add f (args,body) env.proc ; }
 
-open MemOrderOrAnnot
-
 let find_macro f env =
   try StringMap.find f env with
   | Not_found ->
@@ -259,34 +259,14 @@ let rec build_frame f tr xs es = match xs,es with
 | _,_ -> Warn.user_error "Argument mismatch for macro %s" f
 
 
-let subst_lvalue env loc = try match loc with
-  | Reg r ->
-      begin match StringMap.find r env.args with
-      | Load (loc,AN []) -> loc
-      | e ->
-          Warn.user_error
-            "Bad lvalue '%s' while substituting macro argument %s"
-            (dump_expr e) r
-      end
-  | Mem r ->
-      begin match StringMap.find r env.args with
-      | Load (Reg r,AN []) -> Mem r
-      | e ->
-          Warn.user_error
-            "Bad lvalue '%s' while substituting macro argument %s"
-            (dump_expr e) r
-      end
-  with Not_found -> loc
-
-        
 let rec subst_expr env e = match e with
-| Load (Reg r,AN []) ->
+| LoadReg r ->
     begin try StringMap.find r env.args with Not_found -> e end
-| Load (loc,mo) -> Load (subst_lvalue env loc,mo)
+| LoadMem (loc,mo) -> LoadMem (subst_expr env loc,mo)
 | Const _ -> e
 | Op (op,e1,e2) -> Op (op,subst_expr env e1,subst_expr env e2)
-| Exchange (loc,e,mo) ->  Exchange (subst_lvalue env loc,subst_expr env e,mo)
-| Fetch (loc,op,e,mo) -> Fetch (subst_lvalue env loc,op,subst_expr env e,mo)
+| Exchange (loc,e,mo) ->  Exchange (subst_expr env loc,subst_expr env e,mo)
+| Fetch (loc,op,e,mo) -> Fetch (subst_expr env loc,op,subst_expr env e,mo)
 | ECall (f,es) ->
     let xs,e = find_macro f env.expr in
     let frame = build_frame f (subst_expr env) xs es in 
@@ -300,10 +280,21 @@ let rec subst env i = match i with
     If (subst_expr env c,subst env ifso,None)
 | If (c,ifso,Some ifno) ->
     If (subst_expr env c,subst env ifso,Some (subst env ifno))
-| Store (loc,e,mo) ->
-    Store (subst_lvalue env loc,subst_expr env e,mo)
-| Lock loc -> Lock (subst_lvalue env loc)
-| Unlock loc -> Unlock (subst_lvalue env loc)
+| StoreReg (r,e) ->
+    let e = subst_expr env e in
+    begin try
+      match StringMap.find r env.args with
+      | LoadReg r -> StoreReg (r,e)
+      | LoadMem (loc,mo) -> StoreMem (loc,e,mo)
+      | e ->
+          Warn.user_error
+            "Bad lvalue '%s' while substituting macro argument %s"
+            (dump_expr e) r
+    with Not_found -> StoreReg (r,e) end
+| StoreMem (loc,e,mo) ->
+    StoreMem (subst_expr env loc,subst_expr env e,mo)
+| Lock loc -> Lock (subst_expr env loc)
+| Unlock loc -> Unlock (subst_expr env loc)
 | PCall (f,es) ->
     let xs,body = find_macro f env.proc in
     let frame = build_frame f (subst_expr env) xs es in 

@@ -68,25 +68,28 @@ let rec unwrap_pseudo = function
 let list_loc prog = 
   let module LocSet = 
     Set.Make(struct 
-	      type t = loc
-	      let compare = loc_compare
+	      type t = reg
+	      let compare = reg_compare
 	    end) in
 
-  let rec expr s = function
+  let rec loc s e =  expr s e
+  and expr s = function
     | Const _ -> s
-    | Load(l,_) -> LocSet.add l s
+    | LoadReg(r) -> LocSet.add r s
+    | LoadMem(l,_) -> loc s l
     | Op(_,e1,e2) -> expr (expr s e1) e2
-    | Exchange(l,e,_) -> LocSet.add l (expr s e)
-    | Fetch(l,_,e,_) -> LocSet.add l (expr s e)
+    | Exchange(l,e,_) -> loc (expr s e) l
+    | Fetch(l,_,e,_) -> loc (expr s e) l
     | ECall (_,es) -> List.fold_left expr s es
   in 
   let rec ins s = function
     | Seq(l) -> List.fold_left ins s l
     | If(c,t,Some e) -> expr (ins (ins s e) t) c
     | If(c,t,None) -> expr (ins s t) c
-    | Store(l,e,_) -> LocSet.add l (expr s e)
-    | Lock l -> LocSet.add l s
-    | Unlock l -> LocSet.add l s
+    | StoreReg(r,e) ->  LocSet.add r (expr s e)
+    | StoreMem(l,e,_) -> loc (expr s e) l
+    | Lock l 
+    | Unlock l -> loc s l
     | PCall (_,es) ->
         List.fold_left expr s es
     | Fence _|Symb _ -> s
@@ -113,16 +116,19 @@ let extract_decl init i prog =
        Some (SymbConstant.pp_v v)
     | _::init -> find_v s init in
   let to_decl = function
-    | Reg s -> 
+    | s -> 
        let aff = match find_v s init with
 		| None -> ";"
 		| Some s -> " = "^s^";"
        in sprintf "int %s%s" s aff
-    | Mem s -> 
+(*
+    | Mem (Load (Reg s, MemOrderOrAnnot.AN [])) -> 
        let aff = match find_v s init with
 		| None -> ";"
-		| Some s -> " = "^s^";"
+		| Some s -> " = "^s^";"                
        in sprintf "int* %s%s" s aff
+    | _loc ->  assert false
+*)
   in List.map to_decl (list_loc prog)
 
 let code init prog = 

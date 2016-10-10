@@ -356,6 +356,17 @@ struct
 		 E.iiid = Some ii;
 		 E.action = a }))
 
+      let mk_fence a ii =
+	fun eiid ->
+	  (eiid+1,
+	   Evt.singleton
+	     ((), [],
+              let es =
+	        trivial_event_structure false
+		  {E.eiid = eiid ;
+		   E.iiid = Some ii;
+		   E.action = a } in
+              { es with E.output = Some E.EventSet.empty; }))
 (*
       let mk_singleton_es_eq a x rr y ii =
 	fun eiid ->
