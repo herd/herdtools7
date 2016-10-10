@@ -81,11 +81,11 @@ module Top
         | Nop -> d,Nop
         | Instruction i ->
             begin match i with
-            |  Pfence (Fence (["unlock"],None)) ->
+            |  Pfence (Fence (["rcu_read_unlock"],None)) ->
                 if d <= 0 then Warn.user_error "extra unlock"
                 else if d = 1 then 0,p
                 else d-1,Nop
-            |  Pfence (Fence (["lock"],None)) ->
+            |  Pfence (Fence (["rcu_read_lock"],None)) ->
                 if d > 0 then d+1,Nop
                 else 1,p
             | _ -> d,p
@@ -115,7 +115,7 @@ module Top
 (* Count sync and unlock *)
       let count (syncs,unlocks as c) = function
         | Pcall "sync"|Pfence (Fence (["sync"],None)) -> syncs+1,unlocks
-        | Pfence (Fence (["unlock"],None)) -> syncs,unlocks+1
+        | Pfence (Fence (["rcu_read_unlock"],None)) -> syncs,unlocks+1
         | _ -> c
 
       let count_test t =
@@ -175,7 +175,7 @@ module Top
                 let k = cons_ins (store_release (sync_var idx_sync) 1) k in
                 let k = cons_ins fence k in
                 (idx_sync+1,idx_unlock,free),k
-            |  Pfence (Fence (["lock"],None)) ->
+            |  Pfence (Fence (["rcu_read_lock"],None)) ->
                 let rec add_reads free j k =
                   if j >= n then free,k
                   else
@@ -185,7 +185,7 @@ module Top
                     free,cons_ins  (read_acquire r (sync_var j)) k in
                 let free,ps = add_reads free 0 [] in
                 (idx_sync,idx_unlock,free),ps
-            |  Pfence (Fence (["unlock"],None)) ->
+            |  Pfence (Fence (["rcu_read_unlock"],None)) ->
                 let r,free =  RegAlloc.alloc id free in
                 c.(idx_unlock) <- (id,r) ;
                 (idx_sync,idx_unlock+1,free),
