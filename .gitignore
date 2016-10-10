@@ -1,3 +1,9 @@
 _build/
 version.ml
 *.native
+/diy/*.tar.gz
+/diy/doc/*.fig
+/diy/doc/*.png
+/diy/doc/*.pstex
+/diy/doc/*.pstex_t
+
