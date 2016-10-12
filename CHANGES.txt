@@ -1,3 +1,6 @@
+ * Correct LISA rmw "exchange" -> same semantics as X86 xch
+7.34
+ * suppress some 32 bits constants -> 31 bits
  * gen : follow -realdep true option for AArch64 and ARM
 7.33
  * herd: reformulate C load and store to use expressions as locations.

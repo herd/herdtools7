@@ -147,13 +147,15 @@ module Make (C:Sem.Config)(V:Value.S)
                   (tr_op ~stack:[(r,v_read)] ii op) >>= 
                   (fun v -> write_reg r v_read ii >>| write_mem_atom x v s ii))) >>!
               B.Next
-            else
+            else begin
               rloc >>=
               (fun x ->
-                (read_mem_atom x s ii >>= fun v -> write_reg r v ii) >>*=
-                (fun () -> tr_op ii op >>=  fun v -> write_mem_atom x v s ii)) >>!
-              B.Next
-
+                let r1 = read_mem_atom x s ii
+                and r2 = tr_op ii op
+                and w1 = fun v -> write_mem_atom x v s ii
+                and w2 = fun v -> write_reg r v ii in
+                M.exch r1 r2 w1 w2) >>! B.Next
+            end
 	| BellBase.Pbranch(Some r,lbl,_) -> 
    	  (read_reg false r ii) >>=
             (fun v -> commit ii >>= fun () -> B.bccT v lbl)
