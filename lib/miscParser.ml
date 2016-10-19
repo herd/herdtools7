@@ -164,6 +164,6 @@ let get_hash p =
   with Not_found -> None
 
 let get_info p key =
-  try Some (List.assoc "Hash" p.info)
+  try Some (List.assoc key p.info)
   with Not_found -> None
   
