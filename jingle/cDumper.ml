@@ -88,8 +88,8 @@ let list_loc prog =
     | If(c,t,None) -> expr (ins s t) c
     | StoreReg(r,e) ->  LocSet.add r (expr s e)
     | StoreMem(l,e,_) -> loc (expr s e) l
-    | Lock l 
-    | Unlock l -> loc s l
+    | Lock (l,_) 
+    | Unlock (l,_) -> loc s l
     | PCall (_,es) ->
         List.fold_left expr s es
     | Fence _|Symb _ -> s

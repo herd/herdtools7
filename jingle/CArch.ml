@@ -88,8 +88,10 @@ include Arch.MakeArch(struct
        | None -> None
        | Some subs -> match_expr subs ex ex'
        end
-    | Lock l,Lock l' -> match_location subs l l'
-    | Unlock l,Unlock l' -> match_location subs l l'
+    | Lock (l,MutexC11),Lock (l',MutexC11) -> match_location subs l l'
+    | Lock (l,MutexLinux),Lock (l',MutexLinux) -> match_location subs l l'
+    | Unlock (l,MutexC11),Unlock (l',MutexC11) -> match_location subs l l'
+    | Unlock (l,MutexLinux),Unlock (l',MutexLinux) -> match_location subs l l'
     | Symb s,Seq l -> 
        Some(add_subs [Code(s,wrap_pseudo l)] subs)
     | Symb s,ins -> 
@@ -138,8 +140,8 @@ include Arch.MakeArch(struct
        If(expl_expr c,expl_instr subs free t,e)
     | StoreReg(r,e) -> StoreReg(r, expl_expr e)
     | StoreMem(l,e,mo) -> StoreMem(expl_loc l, expl_expr e,mo)
-    | Lock l -> Lock(expl_loc l)
-    | Unlock l -> Unlock(expl_loc l)
+    | Lock (l,k) -> Lock(expl_loc l,k)
+    | Unlock (l,k) -> Unlock(expl_loc l,k)
     | Symb s -> find_code s
     | PCall (f,es) -> PCall (f,List.map expl_expr es)
 end)
