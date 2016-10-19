@@ -55,14 +55,16 @@ type expression =
   | ECall of string * expression list
 
 
+type mutex_kind = MutexLinux | MutexC11
+
 type instruction = 
   | Fence of barrier
   | Seq of instruction list
   | If of expression * instruction * instruction option
   | StoreReg of reg * expression
   | StoreMem of expression * expression * MemOrderOrAnnot.t
-  | Lock of expression
-  | Unlock of expression
+  | Lock of expression * mutex_kind
+  | Unlock of expression * mutex_kind
   | Symb of string
   | PCall of string * expression list
 
@@ -134,10 +136,14 @@ let rec dump_instruction =
   | StoreMem(l,e,MO mo) -> 
      sprintf "atomic_store_explicit(%s,%s,%s);"
 	     (dump_expr l) (dump_expr e) (MemOrder.pp_mem_order mo)
-  | Lock l -> 
+  | Lock (l,MutexC11) -> 
      sprintf "lock(%s);" (dump_expr l) 
-  | Unlock l -> 
+  | Unlock (l,MutexC11) -> 
      sprintf "unlock(%s);" (dump_expr l)
+  | Lock (l,MutexLinux) -> 
+     sprintf "spin_lock(%s);" (dump_expr l) 
+  | Unlock (l,MutexLinux) -> 
+     sprintf "spin_unlock(%s);" (dump_expr l)
   | Symb s -> sprintf "codevar:%s;" s
   | PCall (f,es) ->
       sprintf "%s(%s);" f (dump_args es)
@@ -208,7 +214,7 @@ include Pseudo.Make
                     get_opt (get_rec k ifso) ifno
                 | StoreReg (_,e) -> get_exp k e
                 | StoreMem (loc,e,_) -> get_exp (get_exp k loc) e
-                | Lock e|Unlock e -> get_exp (k+1) e
+                | Lock (e,_)|Unlock (e,_) -> get_exp (k+1) e
                 | PCall (_,es) ->  List.fold_left get_exp k es
 
               and get_opt k = function
@@ -293,8 +299,8 @@ let rec subst env i = match i with
     with Not_found -> StoreReg (r,e) end
 | StoreMem (loc,e,mo) ->
     StoreMem (subst_expr env loc,subst_expr env e,mo)
-| Lock loc -> Lock (subst_expr env loc)
-| Unlock loc -> Unlock (subst_expr env loc)
+| Lock (loc,k) -> Lock (subst_expr env loc,k)
+| Unlock (loc,k) -> Unlock (subst_expr env loc,k)
 | PCall (f,es) ->
     let xs,body = find_macro f env.proc in
     let frame = build_frame f (subst_expr env) xs es in 

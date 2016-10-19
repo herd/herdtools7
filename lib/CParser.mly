@@ -52,7 +52,7 @@ open MemOrderOrAnnot
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
 %token <MemOrder.t> MEMORDER
-%token LD LD_EXPLICIT ST ST_EXPLICIT EXC EXC_EXPLICIT FENCE LOCK UNLOCK SCAS WCAS
+%token LD LD_EXPLICIT ST ST_EXPLICIT EXC EXC_EXPLICIT FENCE LOCK UNLOCK SPINLOCK SPINUNLOCK SCAS WCAS
 %token LOAD STORE UNDERFENCE XCHG
 %token <Op.op> ATOMIC_FETCH
 %token <Op.op> ATOMIC_FETCH_EXPLICIT
@@ -195,10 +195,15 @@ instruction:
   { StoreMem($3, $5, MO SC) }
 | ST_EXPLICIT LPAR expr COMMA expr COMMA MEMORDER RPAR SEMI
   { StoreMem($3, $5, MO $7) }
+
 | LOCK LPAR expr RPAR SEMI
-  { Lock $3 }
+  { Lock ($3,MutexC11) }
 | UNLOCK LPAR expr RPAR SEMI
-  { Unlock $3 }
+  { Unlock ($3,MutexC11) }
+| SPINLOCK LPAR expr RPAR SEMI
+  { Lock ($3,MutexLinux) }
+| SPINUNLOCK LPAR expr RPAR SEMI
+  { Unlock ($3,MutexLinux) }
 | UNDERFENCE LBRACE annot_list RBRACE SEMI
   { Fence(AN $3) }
 | FENCE LPAR MEMORDER RPAR SEMI

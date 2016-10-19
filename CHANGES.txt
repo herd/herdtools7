@@ -1,3 +1,5 @@
+7.36
+ * herd: support for linux spin_lock and spin_unlock.
 7.35
  * herd: Correct LISA rmw "exchange" -> same semantics as X86 xch
 7.34

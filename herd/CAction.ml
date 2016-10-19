@@ -23,7 +23,8 @@ module Make (A : Arch.S) : sig
 (* LM: ??? RMW (location, read, written, mo) *)
     | RMW of A.location * A.V.v * A.V.v * MemOrder.t
     | Lock of A.location * bool (* true = success, false = blocked *)
-    | Unlock of A.location
+          * CBase.mutex_kind
+    | Unlock of A.location * CBase.mutex_kind
 
   include Action.S with type action := action and module A = A
 
@@ -37,8 +38,9 @@ end = struct
     | Access of dirn * A.location * V.v * MemOrderOrAnnot.t * bool
     | Fence of MemOrderOrAnnot.t
     | RMW of A.location * V.v * V.v * MemOrder.t
-    | Lock of A.location * bool (* true = success, false = blocked *)
-    | Unlock of A.location
+    | Lock of A.location * bool (* true = success, false = blocked *) * CBase.mutex_kind
+    | Unlock of A.location  * CBase.mutex_kind
+
 
 
   let mk_init_write l v = Access (W,l,v,AN [],false)
@@ -66,12 +68,18 @@ end = struct
           (MemOrder.pp_mem_order_short mo)
           (A.pp_location l)
 	  (V.pp_v v1) (V.pp_v v2)
-    | Lock (l,o) ->
+    | Lock (l,o,CBase.MutexC11) ->
       sprintf "L%s%s"
 	(if o then "S" else "B")
         (A.pp_location l)
-    | Unlock l ->
+    | Unlock (l,CBase.MutexC11) ->
       sprintf "U%s"
+        (A.pp_location l)
+    | Lock (l,_,CBase.MutexLinux) ->
+      sprintf "Lock(%s)"
+        (A.pp_location l)
+    | Unlock (l,CBase.MutexLinux) ->
+      sprintf "Unlock(%s)"
         (A.pp_location l)
 
 (* Utility functions to pick out components *)
@@ -94,8 +102,8 @@ end = struct
 
     let location_of a = match a with
     | Access (_, l, _,_,_) 
-    | Lock (l,_)
-    | Unlock l
+    | Lock (l,_,_)
+    | Unlock (l,_)
     | RMW (l,_,_,_) -> Some l
     | _ -> None
 
@@ -197,7 +205,7 @@ end = struct
      | _ -> false
 
    let is_successful_lock a = match a with
-     | Lock (_,true) -> true
+     | Lock (_,true,CBase.MutexC11) -> true
      | _ -> false
 
    let is_unlock a = match a with
@@ -252,8 +260,8 @@ end = struct
            (if V.is_var_determined v2 then undet_loc
 	    else V.ValueSet.add v2 undet_loc) in
          undet_loc
-      | Lock(l,_) 
-      | Unlock l -> 
+      | Lock(l,_,_) 
+      | Unlock (l,_) -> 
 	 (match A.undetermined_vars_in_loc l with
 	  | None -> V.ValueSet.empty
 	  | Some v -> V.ValueSet.singleton v) 
@@ -270,12 +278,12 @@ end = struct
         let v1' = V.simplify_var soln v1 in
 	let v2' = V.simplify_var soln v2 in
         RMW(l',v1',v2',mo)
-      | Lock(l,o) ->
+      | Lock(l,o,k) ->
         let l' = A.simplify_vars_in_loc soln l in
-        Lock(l',o)
-      | Unlock l  ->
+        Lock(l',o, k)
+      | Unlock (l,k)  ->
         let l' = A.simplify_vars_in_loc soln l in
-        Unlock l'
+        Unlock (l',k)
       | Fence _ -> a
 
 (*************************************************************)	      
@@ -288,6 +296,6 @@ end = struct
     | Access (_,_,_,AN a,_)
     | Fence (AN a) -> List.exists (fun a -> Misc.string_eq str a) a 
     | Access (_, _, _, MO _,_)|Fence (MO _)|RMW (_, _, _, _)
-    | Lock (_, _)|Unlock _ -> false
+    | Lock _|Unlock _ -> false
 end
 

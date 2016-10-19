@@ -194,21 +194,29 @@ module Make (Conf:Sem.Config)(V:Value.S)
             build_semantics_expr true e ii) >>=
             fun (l,v) -> write_mem mo l v ii >>=
               fun _ -> M.unitT (ii.A.program_order_index, B.Next)
-	| C.Lock l ->            
+(* C11 mutex, not sure about them... *)
+	| C.Lock (l,k) ->            
 	    build_semantics_expr false l ii >>=
-            fun l ->
-	      M.altT
+            fun l -> begin match k with
+            | C.MutexC11 ->
+	        M.altT
            (* successful attempt to obtain mutex *)
-	         (M.mk_singleton_es (Act.Lock (A.Location_global l, true)) ii)
+	          (M.mk_singleton_es
+                     (Act.Lock (A.Location_global l, true,k)) ii)
            (* unsuccessful attempt to obtain mutex *)
-                 (M.mk_singleton_es (Act.Lock (A.Location_global l, false)) ii) 
-	        >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
-	| C.Unlock l ->
+                  (M.mk_singleton_es
+                     (Act.Lock (A.Location_global l, false,k)) ii)
+            | C.MutexLinux ->
+                M.mk_singleton_es
+                  (Act.Lock (A.Location_global l,true,k)) ii
+            end
+           >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
+	| C.Unlock (l,k) ->
             build_semantics_expr false l ii >>=
             fun l ->
-	      M.mk_singleton_es (Act.Unlock (A.Location_global l)) ii
+	      M.mk_singleton_es (Act.Unlock (A.Location_global l,k)) ii
 	        >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
-	  
+(********************)	  
 	| C.Fence(mo) -> 
 	  M.mk_fence (Act.Fence mo) ii
 	  >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)

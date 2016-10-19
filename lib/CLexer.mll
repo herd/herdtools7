@@ -34,7 +34,10 @@ let tr_name s = match s with
 | "int32_t"
 | "uint32_t"
 | "int64_t" 
-| "uint64_t" ->
+| "uint64_t"
+| "mutex_t"
+| "spinlock_t"
+->
     BASE_TYPE s
 | "atomic_int" -> ATOMIC_TYPE "int"
 | "NULL" -> NULL
@@ -73,6 +76,8 @@ let tr_name s = match s with
 | "__load" ->  LOAD 
 | "__store" ->  STORE 
 | "__xchg" -> XCHG
+| "__lock" -> SPINLOCK
+| "__unlock" -> SPINUNLOCK
 (* Others *)
 |  x -> IDENTIFIER x
 }
