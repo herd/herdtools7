@@ -248,7 +248,7 @@ module Make(V:Constant.S)(C:Config) =
           outputs = [r1;]; reg_env=[r3,voidstar; r1,word; r2,word; ]; }
     | V64 ->
         { empty_ins with
-          memo = sprintf "%s ^o0,^i0,[^i1]" memo ;
+          memo = sprintf "%s ^wo0,^i0,[^i1]" memo ;
           inputs = [r2;r3;];
           outputs = [r1;]; reg_env=[r3,voidstar; r2,quad; r1,quad; ]}
 
