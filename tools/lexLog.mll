@@ -137,7 +137,7 @@ and skip_empty_lines = parse
 
 and pline k = parse
 | blank*
- ((num ':' loc as loc)|(('['?) (loc as loc) ( ']'?)))
+ ((num ':' loc as loc)|(('['?) (loc as loc) ( ']'?))|(loc '[' num ']' as loc))
     blank* '=' blank* (('-' ? (num|hexanum))|name|set as v)
     blank* ';'
     {

@@ -27,6 +27,7 @@ module type Config = sig
   val outcomes : bool
   val asobserved : bool
   val toexists : bool
+  val hexa : bool
 end
 
 module Make(Config:Config)(Out:OutTests.S) =
@@ -43,7 +44,7 @@ module Make(Config:Config)(Out:OutTests.S) =
             (fun (loc,v) ->
               Out.fprintf chan "%s=%s;"
                 (MiscParser.dump_location loc)
-                (SymbConstant.pp_v v))
+                (SymbConstant.pp Config.hexa v))
             bds ;
           Out.fprintf chan "\n") ()
 
@@ -58,7 +59,7 @@ module Make(Config:Config)(Out:OutTests.S) =
                 (fun (loc,v) ->
                   sprintf "%s=%s;"
                     (MiscParser.dump_location loc)
-                    (SymbConstant.pp_v v)) bds in
+                    (SymbConstant.pp Config.hexa v)) bds in
             Out.fprintf chan "%s\n" (String.concat " " pp) ;
             "and ")
           "    " in
@@ -173,6 +174,7 @@ module Make(Config:Config)(Out:OutTests.S) =
 (**********)
 
 let tar = ref None
+and hexa = ref false
 and conds = ref []
 and verbose = ref 0
 and outcomes = ref false
@@ -188,6 +190,9 @@ let opts =
   [ "-v",
     Arg.Unit (fun () -> incr verbose),
     " be verbose";
+    "-hexa",
+    Arg.Bool (fun b -> hexa := b),
+    "<bool> set hexadecimal output";
     "-names",
     Arg.String (fun s -> names := [s] @ !names),
    "<name> select tests whose names are listed in file <name> (cumulate when repeated)";
@@ -241,6 +246,7 @@ let from_args =
         | None -> fun _ -> true
         | Some names -> (fun name -> StringSet.mem name names)
         let check_cond name = TblRename.find_value_opt conds name
+        let hexa = !hexa
       end) in
   match !tar with
   | None ->
