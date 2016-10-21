@@ -30,9 +30,7 @@ module Make (C:Sem.Config)(V : Value.S)
     let barriers = [mfence; lfence;sfence;]
     let isync = None
 
-    let is_global = function
-      | A.Location_global _ -> true
-      | A.Location_reg _ -> false
+    let is_global = A.is_global
 
 (* semantics proper *)
 

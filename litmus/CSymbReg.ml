@@ -47,6 +47,7 @@ with type v = A.V.v and type location = A.location
 
   let finish_location f_reg loc = match loc with
   | Location_global m -> A.Location_global (A.vToName m)
+  | Location_deref (m,i) -> A.Location_deref (A.vToName m,i)
   | Location_reg (i,r) -> A.Location_reg (i,finish_reg r)
   | Location_sreg reg  ->
       let p,r = f_reg reg in A.Location_reg (p,r)
@@ -95,7 +96,7 @@ with type v = A.V.v and type location = A.location
       ProcRegSet.add (p,get_reg r) regs,symbs
   | Location_sreg reg ->
       regs,StringSet.add reg symbs
-  | Location_global _ -> c
+  | Location_global _|Location_deref _ -> c
 
   let collect_state_atom (loc,(_,(_:maybev))) = collect_location loc
 

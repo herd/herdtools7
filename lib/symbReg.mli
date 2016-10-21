@@ -28,6 +28,7 @@ module type Arch = sig
 (* Manifest location type *)
   type location = 
     | Location_global of global
+    | Location_deref of global * int
     | Location_reg of int * reg
 
 end

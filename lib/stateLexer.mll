@@ -36,7 +36,8 @@ rule token = parse
 | '\n'      { incr_lineno lexbuf; token lexbuf }
 | "(*"      { LU.skip_comment lexbuf ; token lexbuf }
 | num as num
-    {NUM (int_of_string num) }
+   {let x = int_of_string num in
+   NUM x }
 | 'P' (decimal as x)
     { PROC (int_of_string x) }
 | '%' (name as name) { SYMB_REG name }

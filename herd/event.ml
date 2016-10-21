@@ -323,7 +323,7 @@ struct
 
 (* Visible locations *)
     let is_visible_location  = function 
-      | A.Location_global _ -> true
+      | A.Location_global _|A.Location_deref _ -> true
       | A.Location_reg _ -> false
 
     let same_location e1 e2 = 

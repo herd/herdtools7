@@ -286,6 +286,8 @@ module Insert =
   let dump_loc_name loc =  match loc with
   | A.Location_reg (proc,reg) -> A.Out.dump_out_reg proc reg
   | A.Location_global s -> s
+  | A.Location_deref (s,i) -> sprintf "%s_%i" s i
+
 
   let dump_loc_copy loc = "_" ^ dump_loc_name loc ^ "_i"
   let dump_loc_param loc = "_" ^ dump_loc_name loc
@@ -300,6 +302,13 @@ module Insert =
           sprintf "%s%s[_i]" pref s
       | Indirect ->
           sprintf "*(%s%s[_i])" pref s
+      end
+  | A.Location_deref (s,idx) ->
+      begin match memory with
+      | Direct ->
+          sprintf "%s%s[_i][%i]" pref s idx
+      | Indirect ->
+          sprintf "(*(%s%s[_i]))[%i]" pref s idx
       end
 
   let dump_loc = dump_ctx_loc ""
@@ -1962,26 +1971,55 @@ let user2_barrier_def () =
       O.oii "/* Log final states */" ;
       loop_test_prelude indent2 "_b->" ;
       let locs = U.get_final_locs test in
-
+      let loc_arrays =
+        A.LocSet.fold
+          (fun loc k -> match loc with
+          | A.Location_deref (s,_) -> StringSet.add s  k
+          | A.Location_global s ->
+              let t = U.find_type loc env in
+              let t = CType.strip_attributes t in
+              begin match t with
+              | CType.Array _ ->  StringSet.add s  k
+              | _ -> k
+              end
+          | A.Location_reg _ -> k)
+          locs StringSet.empty in
 (* Make copies of final locations *)
       if Cfg.cautious && not (A.LocSet.is_empty locs) then begin
         O.oiii "mcautious();"
       end ;
-      A.LocSet.iter
-        (fun loc ->
-          let t = U.find_type loc env in
-          let t = CType.strip_attributes t in
-          begin match t with
+      (* Arrays first (because of deref just below) *)
+      StringSet.iter
+        (fun s ->
+          let loc = A.Location_global s in
+          match  CType.strip_attributes (U.find_type loc env) with
           | CType.Array (t,_) ->
               O.fiii "%s *%s = %s;"
                 t
                 (dump_loc_copy loc)
                 (U.do_load (CType.Base t) (dump_ctx_loc "ctx." loc))
+          | t ->
+              Warn.user_error "array type expected for '%s', type %s found"
+                s (CType.dump t))
+        loc_arrays ;
+      (* Rest of locs *)
+      A.LocSet.iter
+        (fun loc ->
+          let t = U.find_type loc env in
+          let t = CType.strip_attributes t in
+          begin match t with
+          | CType.Array _ -> ()
           | _ ->
               O.fiii "%s %s = %s;"
                 (CType.dump t)
                 (dump_loc_copy loc)
-                (U.do_load t (dump_ctx_loc "ctx." loc))
+                (let loc = match loc with
+                | A.Location_deref (s,idx) ->
+                    sprintf "%s[%i]"
+                      (dump_loc_copy (A.Location_global s))
+                      idx
+                | _ -> dump_ctx_loc "ctx." loc in
+                U.do_load t loc) 
           end ;
           if Cfg.cautious then O.oiii "mcautious();")
         locs ;

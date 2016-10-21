@@ -24,6 +24,7 @@ type location =
   | Location_reg of int * reg
   | Location_sreg of string
   | Location_global of maybev
+  | Location_deref of maybev * int
 
 let location_compare loc1 loc2 = match loc1,loc2 with
 | Location_reg (i1,r1), Location_reg (i2,r2) ->
@@ -35,29 +36,40 @@ let location_compare loc1 loc2 = match loc1,loc2 with
     String.compare r1 r2
 | Location_global v1,Location_global v2 ->
     SymbConstant.compare v1 v2
-| Location_reg _,(Location_sreg _|Location_global _) -> -1
-| (Location_sreg _|Location_global _),Location_reg _ -> 1
-| Location_sreg _, Location_global _ -> -1
-| Location_global _, Location_sreg _ -> 1
+| Location_deref (v1,i1),Location_deref (v2,i2) ->
+    begin match SymbConstant.compare v1 v2 with
+    | 0 -> Misc.int_compare i1 i2
+    | r -> r
+    end
+| Location_reg _,(Location_sreg _|Location_global _|Location_deref _) -> -1
+| (Location_sreg _|Location_global _|Location_deref _),Location_reg _ -> 1
+| Location_sreg _, (Location_global _|Location_deref _) -> -1
+| (Location_global _|Location_deref _), Location_sreg _ -> 1
+| Location_global  _,Location_deref _ -> -1
+| Location_deref  _,Location_global _ -> 1
 
 let dump_location = function
   | Location_reg (i,r) -> Printf.sprintf "%i:%s" i r
   | Location_sreg s -> Misc.dump_symbolic s
   | Location_global v -> SymbConstant.pp_v v
+  | Location_deref (v,i) ->
+      Printf.sprintf "%s[%i]" (SymbConstant.pp_v v) i
 
 let dump_rval loc = match loc with
   | Location_reg (i,r) -> Printf.sprintf "%i:%s" i r
   | Location_sreg s -> Misc.dump_symbolic s
   | Location_global v -> Printf.sprintf "*%s" (SymbConstant.pp_v v)
+  | Location_deref _ -> assert false
 
 let is_global = function
-  | Location_global _ -> true
+  | Location_global _
+  | Location_deref _ -> true
   | Location_reg _
   | Location_sreg _ -> false
 
 let as_local_proc i syms = function
   | Location_reg (j,reg) -> if i=j then Some reg else None
-  | Location_global _ -> None
+  | Location_global _|Location_deref _ -> None
   | Location_sreg reg ->
       if StringSet.mem reg syms then
         Some (Misc.dump_symbolic reg)

@@ -121,7 +121,11 @@ init_semi_list:
 
 /* For final state constraints */
 
+loc_deref:
+ NAME LBRK NUM RBRK { Location_deref (Symbolic $1, $3) }
+
 loc_typ:
+| loc_deref { ($1,TyDef) }
 | location { ($1, TyDef) }
 | location STAR { ($1, TyDefPointer) }
 | location NAME { ($1, Ty $2) }
@@ -203,13 +207,12 @@ skip_loc_constr:
 
 
 atom_prop:
-| atom { let l,v = $1 in LV (l,v) }
+| loc_deref  EQUAL maybev {LV ($1,$3)}
+| location EQUAL maybev {LV ($1,$3)}
 | location EQUAL location_deref {LL ($1,$3)}
 
 
 prop:
-|
-    {And []}
 | TRUE
     {And []}
 | FALSE

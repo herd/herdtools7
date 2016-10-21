@@ -248,9 +248,10 @@ module Make
 (* Outcomes *)
 (************)
 
-let dump_loc_tag = function
-  | A.Location_reg (proc,reg) -> A.Out.dump_out_reg proc reg
-  | A.Location_global s -> s
+      let dump_loc_tag = function
+        | A.Location_reg (proc,reg) -> A.Out.dump_out_reg proc reg
+        | A.Location_global s -> s
+        | A.Location_deref (s,i) -> sprintf "%s_%i" s i
 
       let does_pad t =
         let open CType in
@@ -776,9 +777,15 @@ let dump_loc_tag = function
             StringSet.inter
               globs
               (StringSet.of_list inits) in
-          StringSet.iter
-            (fun a ->
-              let loc = A.Location_global a in
+          let to_collect =
+            A.LocSet.filter
+              (fun loc -> match loc with
+              | A.Location_global s|A.Location_deref (s,_) ->
+                  StringSet.mem s to_collect
+              | A.Location_reg _ -> false)
+              (U.get_final_locs test) in
+          A.LocSet.iter
+            (fun loc ->
               let tag = dump_loc_tag loc in
               match U.find_type loc env with
               | Array (_,sz) ->

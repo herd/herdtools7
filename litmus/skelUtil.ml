@@ -114,9 +114,20 @@ module Make
             e test.T.code in
         e
 
-      let find_type loc env =
+
+      let do_find_type loc env =
         try A.LocMap.find loc env
         with Not_found -> Compile.base
+
+      let find_type loc env = match loc with
+      | A.Location_deref (s,i) ->
+          begin match do_find_type (A.Location_global s) env with
+          | CType.Array (t,_) -> CType.Base t
+          | _ -> Warn.user_error "Non array %s refered as array" s
+          end
+      | _ -> do_find_type loc env
+
+
 
       let select_types f env =
         A.LocMap.fold
@@ -129,13 +140,15 @@ module Make
         select_types
           (function
             | A.Location_reg (q,reg) when p = q -> Some reg
-            | A.Location_global _ | A.Location_reg _ -> None)
+            | A.Location_global _ | A.Location_reg _ -> None
+            | A.Location_deref _ -> assert false)
           env
 
       let select_global env =
         select_types
           (function
             | A.Location_reg _ -> None
+            | A.Location_deref _ -> assert false
             | A.Location_global loc -> Some loc)
           env
 
@@ -151,7 +164,7 @@ module Make
       | A.Location_reg (proc,reg) ->
           tr_out (sprintf "%i:%s" proc (A.pp_reg reg))
       | A.Location_global s -> sprintf "%s" s
-
+      | A.Location_deref (s,i) -> sprintf "%s[%i]" s i
 
       let fmt_outcome test pp_fmt_base locs env =
        let tr_out = tr_out test in
@@ -174,7 +187,9 @@ module Make
 
         A.LocSet.pp_str " "
           (fun loc ->
-            sprintf "%s=%s;" (pp_loc tr_out loc) (pp_fmt (find_type loc env)))
+            sprintf "%s=%s;"
+              (pp_loc tr_out loc)
+              (pp_fmt (find_type loc env)))
           locs
 
 (* Locations *)
@@ -186,7 +201,7 @@ module Make
       let get_final_globals t =
         A.LocSet.fold
           (fun a k -> match a with
-          | A.Location_global a -> StringSet.add a k
+          | A.Location_global a|A.Location_deref (a,_) -> StringSet.add a k
           | A.Location_reg _ -> k)
           (get_final_locs t) StringSet.empty
 

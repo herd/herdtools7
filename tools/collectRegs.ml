@@ -17,6 +17,7 @@
 (* Collect registers from tests *)
 
 
+
 module Make(A:Arch.S) = struct
 
   let collect_pseudo f = A.pseudo_fold (fun k ins -> A.fold_regs f k ins)
@@ -35,7 +36,7 @@ module Make(A:Arch.S) = struct
 
   let collect_location loc m = match loc with
   | A.Location_reg (p,r) -> add_proc_reg p r m
-  | A.Location_global _ -> m
+  | A.Location_global _|A.Location_deref _ -> m
 
   let collect_state_atom (loc,_) = collect_location loc
 

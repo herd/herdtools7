@@ -68,7 +68,10 @@ let digest_init debug init =
   let dump_location = function
     | Location_reg (i,r) -> Printf.sprintf "%i:%s" i r
     | Location_sreg s -> s
-    | Location_global v -> SymbConstant.pp_v v in
+    | Location_global v -> SymbConstant.pp_v v
+    | Location_deref (v,i) ->
+        Printf.sprintf "%s[%i]" (SymbConstant.pp_v v) i
+  in
 
   let pp =
     (String.concat "; "
