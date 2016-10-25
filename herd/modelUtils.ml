@@ -28,55 +28,65 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
       let data_ports = conc.S.str.E.data_ports in
       fun e -> E.EventSet.mem e data_ports in
     let iico = conc.S.str.E.intra_causality_data
-      and po = U.po_iico conc.S.str
-      and rf_regs = U.make_rf_regs conc in
-
-      let dd = S.tr (E.EventRel.union rf_regs iico) in
-      let data_dep = S.restrict E.is_mem evt_relevant dd in
-      let addr_dep =
+    and po = U.po_iico conc.S.str
+    and rf_regs = U.make_rf_regs conc in
+    let iico_regs =
+      E.EventRel.restrict_rel
+        (fun  e1 e2  -> not (evt_relevant e1 || evt_relevant e2)) iico in    
+    let dd_inside = S.tr (E.EventRel.union rf_regs iico_regs) in
+    let dd_pre =
+(* All dependencies start with a mem load *)
+      S.seq 
+        (E.EventRel.restrict_domain E.is_mem_load iico)
+        dd_inside in    
+    let data_dep =
+(* Data deps are (1) dd to commits (2) data deps to stores *)
+      let last_data =
+        E.EventRel.restrict_rel
+          (fun e1 e2 ->
+            E.is_commit e2 ||
+            (E.is_mem_store e2 && is_data_port e1)) iico in
+      S.seq dd_pre last_data
+    and addr_dep =
 (* Address deps are (1) dd to loads, (2) non-data deps to stores *)
-        let r1 =
-          E.EventRel.filter (fun (_,e2) -> E.is_mem_load e2) data_dep in
+      let last_addr =
+        E.EventRel.restrict_rel
+          (fun e1 e2 ->
+            E.is_mem_load e2 ||
+             (E.is_mem_store e2 && not (is_data_port e1))) iico in
+      S.seq dd_pre last_addr in
+    let ctrl_one = (* For bcc: from commit to event by po *)
+      S.restrict E.is_commit_bcc evt_relevant po
+    and ctrl_two = (* For predicated instruction from commit to event by iico *)
+      S.restrict E.is_commit_pred evt_relevant (U.iico conc.S.str)
+    and ctrl_three = (* For structured if from event to event by instruction control *)
+      S.restrict E.is_load evt_relevant conc.S.str.E.control in
+    let ctrl =
+      E.EventRel.union ctrl_one (E.EventRel.union ctrl_two ctrl_three) in
+    let ctrl_dep =
+      (* All dependendicies, including to reg loads *)
+      let dd = S.union dd_pre (S.union addr_dep data_dep) in
+      S.restrict E.is_mem_load evt_relevant
+        (S.union (S.seq dd ctrl) ctrl_three) in
+    let po =
+      S.restrict evt_relevant evt_relevant po in
+    let data_commit =
+      E.EventRel.restrict_codomain E.is_commit data_dep in
+    let ctrlisync =
+      try
+        let r1 = S.restrict E.is_mem_load is_isync ctrl_dep
+        and r2 = S.restrict is_isync E.is_mem po in
+        S.seq r1 r2
+      with Misc.NoIsync -> S.E.EventRel.empty in
+    let rf = U.make_rf conc in
+    { S.addr=addr_dep; data=data_dep; ctrl=ctrl_dep;
+      ctrlisync;
+      data_commit;
+      rf; }
 
-        let is_data (e1,e2) = is_data_port e1 && E.is_mem_store e2 in
-        let r2 =
-          E.EventRel.sequence
-            (S.restrict E.is_mem E.is_reg_load_any dd)
-            (E.EventRel.filter
-               (fun (_,e2 as p) -> E.is_mem_store e2 && not (is_data p))
-               iico) in
-        E.EventRel.union r1 r2 in
-      let ctrl_one = (* For bcc: from commit to event by po *)
-        S.restrict E.is_commit_bcc evt_relevant po
-      and ctrl_two = (* For predicated instruction from commit to event by iico *)
-        S.restrict E.is_commit_pred evt_relevant (U.iico conc.S.str)
-      and ctrl_three = (* For structured if from event to event by instruction control *)
-        S.restrict E.is_load evt_relevant conc.S.str.E.control in
-      let ctrl =
-        E.EventRel.union ctrl_one (E.EventRel.union ctrl_two ctrl_three) in
-      let ctrl_dep =
-        S.restrict E.is_mem_load (fun x -> evt_relevant x)
-          (S.union (S.seq dd ctrl) ctrl_three) in
-      let data_dep = E.EventRel.diff data_dep addr_dep in
-      let po =
-        S.restrict evt_relevant evt_relevant po in
-      let data_commit =
-        S.restrict E.is_mem_load E.is_commit data_dep in
-      let ctrlisync =
-        try
-          let r1 = S.restrict E.is_mem_load is_isync ctrl_dep
-          and r2 = S.restrict is_isync E.is_mem po in
-          S.seq r1 r2
-        with Misc.NoIsync -> S.E.EventRel.empty in
-      let rf = U.make_rf conc in
-      { S.addr=addr_dep; data=data_dep; ctrl=ctrl_dep;
-        ctrlisync;
-        data_commit;
-        rf; }
-
-    let pp_procrels pp_isync pr =
-      let pp =  ["data",pr.S.data; "addr",pr.S.addr;] in
-      match pp_isync with
+  let pp_procrels pp_isync pr =
+    let pp =  ["data",pr.S.data; "addr",pr.S.addr;] in
+    match pp_isync with
     | None -> ("ctrl",pr.S.ctrl)::pp
     | Some isync ->
         let ctrl =  E.EventRel.diff pr.S.ctrl pr.S.ctrlisync in
@@ -98,9 +108,9 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
 
 (* Through *)
   let check_through =
-      match O.through with
-      | ThroughAll|ThroughInvalid -> fun _ -> true
-      | ThroughNone -> fun ok -> ok
+    match O.through with
+    | ThroughAll|ThroughInvalid -> fun _ -> true
+    | ThroughNone -> fun ok -> ok
 
 (* Uniproc *)
   let check_uniproc test conc rf fr co =
@@ -115,7 +125,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
       pp_failure
         test conc
         (Printf.sprintf "%s: Uniproc violation" test.Test.name.Name.name)
-              [("co",S.rt co); ("fr",fr); ("pos",S.rt conc.S.pos)] ;
+        [("co",S.rt co); ("fr",fr); ("pos",S.rt conc.S.pos)] ;
     r
 
   let check_atom test conc fr co =
@@ -137,10 +147,10 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
                ws))
         conc.S.atomic_load_store in
     let r = check_through r in
-     if not r then
-       pp_failure
-         test conc
-         (Printf.sprintf "%s: Atomicity violation" test.Test.name.Name.name)
-         ["co",S.rt co; "fr",fr;"r*/w*",conc.S.atomic_load_store;];
+    if not r then
+      pp_failure
+        test conc
+        (Printf.sprintf "%s: Atomicity violation" test.Test.name.Name.name)
+        ["co",S.rt co; "fr",fr;"r*/w*",conc.S.atomic_load_store;];
     r
 end

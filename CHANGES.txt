@@ -1,3 +1,4 @@
+ * Data dependencies are through registers only.
 7.37
  * Add array access as a location, meaningfull only for litmus at present
 7.36
