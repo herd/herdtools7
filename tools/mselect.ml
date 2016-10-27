@@ -15,7 +15,8 @@
 (****************************************************************************)
 
 (* Select tests according to various criteria
-   -maxins <n> maximal number of instruction on a thread
+   -threads <n>    maximal number of threads
+   -ins <n> maximal number of instruction on a thread
 *)
 
 open Printf
@@ -24,7 +25,8 @@ module Top
     (Opt:
        sig
          val verbose : int
-         val maxins : int
+         val ins : Interval.t
+         val threads : Interval.t
        end) =
   struct
 
@@ -36,9 +38,11 @@ module Top
     module Make(A:ArchBase.S) = struct
 
       let zyva _name parsed =
+        let prog = parsed.MiscParser.prog in
+        Interval.inside Opt.threads (List.length prog) &&
         List.for_all
-          (fun (_,code) -> List.length code <= Opt.maxins)
-          parsed.MiscParser.prog
+          (fun (_,code) -> Interval.inside Opt.ins (List.length code))
+          prog
 
     end
 
@@ -47,7 +51,10 @@ module Top
     let do_test name  =
       try
         let ok = Z.from_file name in
-        if ok then Printf.printf "%s\n" name
+        if ok then begin
+          if Opt.verbose >= 0 then Printf.printf "%s\n" name
+        end ;
+        if Opt.verbose < 0 then exit (if ok then 0 else 1)
       with
       | Misc.Exit -> ()
       | Misc.Fatal msg ->
@@ -62,7 +69,15 @@ module Top
 
 
 (* Go *)
-let maxins = ref 3
+let parse_inter s =
+  try
+    LexInterval.parse s
+  with LexInterval.Error ->
+    raise (Arg.Bad (sprintf "'%s' is not an interval specification" s))
+let set_inter x s = x := parse_inter s
+
+let ins = ref Interval.all
+let threads = ref Interval.all
 let verbose = ref 0
 let tests = ref []
 
@@ -73,15 +88,19 @@ let prog =
 let () =
   Arg.parse
     ["-v",Arg.Unit (fun () -> incr verbose), " be verbose";
-     "-ins", Arg.Int (fun x -> maxins := x),
-     Printf.sprintf "maximal instruction count, default %i" !maxins;]
+     "-q",Arg.Unit (fun () -> verbose := -1), " quiet mode, status only";
+     "-ins", Arg.String (set_inter ins),
+     sprintf "<inter> instruction count, default %s" (Interval.pp !ins);
+     "-threads", Arg.String (set_inter threads),
+     sprintf "<inter> thread count, default %s" (Interval.pp !threads);]
     (fun s -> tests := s :: !tests)
     (sprintf "Usage: %s [options]* [test]*" prog)
 
 module X = Top
     (struct
       let verbose = !verbose
-      let maxins = !maxins
+      let ins = !ins
+      let threads = !threads
     end)
 
 let () = X.zyva !tests
