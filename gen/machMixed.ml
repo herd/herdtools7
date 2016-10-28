@@ -30,6 +30,15 @@ module Make(C:Config) = struct
 
   let do_fold f sz xs r = List.fold_right (fun o r -> f (sz,o) r) xs r
 
+  let off_byte = function
+    | Byte -> [0;]
+    | Short|Word|Quad -> []
+
+  let off_short = function
+    | Byte -> [0;1;]
+    | Short -> [0;]
+    | Word|Quad -> []
+
   let off_word = function
     | Byte -> [0;1;2;3;4;]
     | Short -> [0;2;]
@@ -44,7 +53,8 @@ module Make(C:Config) = struct
 
   let get_off = match C.naturalsize with
   | None -> fun _ -> []
-  | Some (Byte|Short) -> assert false
+  | Some Byte -> off_byte
+  | Some Short -> off_short
   | Some Word -> off_word
   | Some Quad -> off_quad
 

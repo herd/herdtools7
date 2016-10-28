@@ -69,6 +69,8 @@ module type S = sig
 
 (* Return coherence orders *)
   val coherence : node -> (loc * (node * IntSet.t) list list) list
+(* All locations *)
+  val get_globals : node -> loc list
 
 (* Get all detour events *)
   val get_detours : node -> node list
@@ -837,6 +839,16 @@ let rec group_rec x ns = function
           ns)
       r
 
+(* Get all shared locations *)
+  let get_globals m =
+    let rec do_rec k n =
+      if n.next == m then k          
+      else
+        do_rec (n.evt.loc::k) n.next in
+    let locs = do_rec [] m in
+    StringSet.elements (StringSet.of_list locs)
+
+
 (* Get all detour events *)
   let get_detours m =
     let rec do_rec k n =
@@ -853,4 +865,6 @@ let rec group_rec x ns = function
         if E.is_detour n.edge then n.detour::k
         else k)
       ns []
+
+
 end

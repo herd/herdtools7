@@ -578,8 +578,8 @@ let min_max xs =
             A.LocMap.empty f in
         let env =
           List.fold_left
-            (fun m (loc,_) -> A.LocMap.add (A.Loc loc) O.typ m)
-            env cos0 in
+            (fun m loc -> A.LocMap.add (A.Loc loc) O.typ m)
+            env (C.get_globals n) in
         let f =
           match O.cond with
           | Unicond ->

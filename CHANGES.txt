@@ -1,3 +1,4 @@
+ * gen: list all global variables in init when type is non-default
  * new mselect: specify intervals for number of ins and number of threads.
  * Data dependencies are through registers only.
 7.37
