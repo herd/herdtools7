@@ -30,13 +30,23 @@ module type I = sig
   val dump_location : location -> string
 end
 
-module Make(I:I) : sig
-  val dump : out_channel ->
+module type Out = sig
+  type t
+  val fprintf : t -> ('a, out_channel, unit) format -> 'a
+end
+
+module OutChannel = struct
+  type t = out_channel
+  let fprintf chan fmt = Printf.fprintf chan fmt
+end
+
+module Make(Out:Out)(I:I) : sig
+  val dump : Out.t ->
     Name.t ->
     (I.state, (int * I.A.pseudo list) list, I.prop, I.location)
         MiscParser.result
       -> unit
-  val dump_info : out_channel ->
+  val dump_info : Out.t ->
     Name.t ->
     (I.state, (int * I.A.pseudo list) list, I.prop, I.location)
         MiscParser.result
@@ -65,7 +75,7 @@ end = struct
 
   let prog chan prog =
     let pp = List.map fmt_col prog in
-    Misc.pp_prog chan pp
+    Out.fprintf chan "%s" (Misc.string_of_prog pp)
 (*
     dump_procs chan prog ;
     iter_prog (dump_ios chan)
@@ -75,33 +85,31 @@ end = struct
 
 
   let do_dump withinfo chan doc t =
-    fprintf chan "%s %s\n" (Archs.pp A.arch) doc.Name.name ;
+    Out.fprintf chan "%s %s\n" (Archs.pp A.arch) doc.Name.name ;
     begin match doc.Name.doc with
     | "" -> ()
-    | doc -> fprintf chan "\"%s\"\n" doc
+    | doc -> Out.fprintf chan "\"%s\"\n" doc
     end ;
     if withinfo then begin
       List.iter
-        (fun (k,i) -> fprintf chan "%s=%s\n" k i)
+        (fun (k,i) -> Out.fprintf chan "%s=%s\n" k i)
         t.info
     end ;
-    fprintf chan "\n{%s}\n\n" (dump_state  t.init) ;
+    Out.fprintf chan "\n{%s}\n\n" (dump_state  t.init) ;
     prog chan t.prog ;
-    fprintf chan "\n" ;
+    Out.fprintf chan "\n" ;
     let locs = DumpUtils.dump_locations I.dump_location t.locations in
-    if locs <> "" then fprintf chan "%s\n" locs ;
+    if locs <> "" then Out.fprintf chan "%s\n" locs ;
     begin match t.filter with
     | None -> ()
-    | Some p -> fprintf chan "filter %s" (I.dump_prop p)
+    | Some p -> Out.fprintf chan "filter %s" (I.dump_prop p)
     end ;
     begin match t.extra_data with
     | NoExtra|CExtra _ -> ()
     | BellExtra bi ->
-        fprintf chan "\n" ;
-        BellInfo.pp chan bi ;
-        fprintf chan "\n"
+        Out.fprintf chan "\n%s\n" (BellInfo.pp bi)
     end ;
-    fprintf chan "%s\n" (I.dump_constr t.condition) ;
+    Out.fprintf chan "%s\n" (I.dump_constr t.condition) ;
     ()
 
   let dump = do_dump false

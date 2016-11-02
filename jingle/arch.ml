@@ -232,36 +232,37 @@ end
   
 module DefaultDumper(A:ArchBase.S) = struct 
   type pseudo = A.pseudo
-  include SimpleDumper.Make(struct
-	    module A = A
+  include SimpleDumper.Make(SimpleDumper.OutChannel)
+      (struct
+	module A = A
 
-            let dump_loc = MiscParser.dump_location
+        let dump_loc = MiscParser.dump_location
 
-            let dump_state_atom a =
-              MiscParser.dump_state_atom dump_loc SymbConstant.pp_v a
+        let dump_state_atom a =
+          MiscParser.dump_state_atom dump_loc SymbConstant.pp_v a
 
-            type state = MiscParser.state
+        type state = MiscParser.state
 
-            let dump_state st =
-              String.concat " "
-                (List.map
-                   (fun a -> sprintf "%s;" (dump_state_atom a))
-                   st)
+        let dump_state st =
+          String.concat " "
+            (List.map
+               (fun a -> sprintf "%s;" (dump_state_atom a))
+               st)
 
-                
-            type prop = MiscParser.prop
+            
+        type prop = MiscParser.prop
 
-            let dump_atom a =
-              let open ConstrGen in
-              match a with
-              | LV (loc,v) -> dump_state_atom (loc,(MiscParser.TyDef,v))
-              | LL (loc1,loc2) ->
-                  sprintf "%s=%s" (dump_loc loc1) (MiscParser.dump_rval loc2)
+        let dump_atom a =
+          let open ConstrGen in
+          match a with
+          | LV (loc,v) -> dump_state_atom (loc,(MiscParser.TyDef,v))
+          | LL (loc1,loc2) ->
+              sprintf "%s=%s" (dump_loc loc1) (MiscParser.dump_rval loc2)
 
-            let dump_prop = ConstrGen.prop_to_string dump_atom
-            let dump_constr = ConstrGen.constraints_to_string dump_atom
+        let dump_prop = ConstrGen.prop_to_string dump_atom
+        let dump_constr = ConstrGen.constraints_to_string dump_atom
 
-            type location = MiscParser.location
-            let dump_location = dump_loc
-          end)
+        type location = MiscParser.location
+        let dump_location = dump_loc
+      end)
 end

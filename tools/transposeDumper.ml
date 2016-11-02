@@ -103,7 +103,7 @@ end = struct
     | NoExtra|CExtra _ -> ()
     | BellExtra bi ->
         dump_sep chan "Scope" ;
-        BellInfo.pp chan bi
+        fprintf chan "%s" (BellInfo.pp bi)
     end ;
 (* Conditions *)
     dump_sep chan "Check" ;

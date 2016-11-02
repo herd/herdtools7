@@ -165,9 +165,7 @@ let do_dump withinfo chan doc t =
   begin match t.MiscParser.extra_data with
 	| MiscParser.NoExtra|MiscParser.CExtra _ -> ()
 	| MiscParser.BellExtra bi ->
-           fprintf chan "\n" ;
-           BellInfo.pp chan bi ;
-           fprintf chan "\n"
+           fprintf chan "\n%s\n" (BellInfo.pp bi)
   end ;
   fprintf chan "%s\n" (dump_constr t.MiscParser.condition) ;
   ()

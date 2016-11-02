@@ -163,8 +163,7 @@ module Top
 
     (* Text dump *)
     module Text(A:ArchBase.S) = struct
-
-      module D = DumperMiscParser.Make(A)
+      module D = DumperMiscParser.Make(O)(SimpleDumper.OutChannel)(A)
 
       let zyva = match O.outputdir with
       | None -> D.dump_info stdout

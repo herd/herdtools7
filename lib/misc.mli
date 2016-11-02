@@ -152,7 +152,6 @@ val output_protect_close  :
       ('chan -> 'b) (* action *) ->
         'chan -> 'b
 
-
 (****************************)
 (* Expand command line args *)
 (****************************)

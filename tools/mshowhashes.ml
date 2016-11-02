@@ -24,9 +24,8 @@ module Top
          val verbose : int
        end) =
   struct
-    open TestInfo
-
     let do_test name =
+      let open TestInfo in
       try
         let t = Z.from_file name in
         printf "%s %s\n" t.T.tname t.T.hash

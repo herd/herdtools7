@@ -171,9 +171,17 @@ let mach2generic parser lexer buff =
     procs,code,NoExtra
 
 (* get hash from info fields *)
+let hash_key =  "Hash"
 let get_hash p =
-  try Some (List.assoc "Hash" p.info)
+  try Some (List.assoc hash_key p.info)
   with Not_found -> None
+
+let rec set_hash_rec h = function
+  | [] -> [hash_key,h]
+  | ("Hash" as k,_)::rem -> (k,h)::rem
+  | p::rem -> p::set_hash_rec h rem
+
+let set_hash p h = { p with info = set_hash_rec  h p.info; }
 
 let get_info p key =
   try Some (List.assoc key p.info)

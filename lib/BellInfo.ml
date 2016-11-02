@@ -93,14 +93,14 @@ type test = {
   scopes : scopes option;
 }
 
-let pp chan t =
+let pp t =
   begin match t.scopes with
-  | None -> ()
+  | None -> ""
   | Some sc ->
-      fprintf chan "scopes: %s\n" (pp_scopes sc)
-  end ;
+      sprintf "scopes: %s\n" (pp_scopes sc)
+  end ^ 
   begin match t.regions with
-  | None -> ()
+  | None -> ""
   | Some m -> 
-      fprintf chan "regions: %s\n" (pp_mem_map m) ;
+      sprintf "regions: %s\n" (pp_mem_map m) ;
   end

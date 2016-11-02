@@ -16,12 +16,16 @@
 
 (* Simple pretty printer for parsed tests (no alloc..) *)
 
-module Make(A:ArchBase.S) : sig
+module type Opt = sig
+  val hexa : bool
+end
+
+module Make(Opt:Opt)(Out:SimpleDumper.Out)(A:ArchBase.S) : sig
   val dump_info :
-      out_channel -> Name.t -> A.pseudo MiscParser.t -> unit
+      Out.t -> Name.t -> A.pseudo MiscParser.t -> unit
 end = struct
   include
-   SimpleDumper.Make
+   SimpleDumper.Make(Out)
       (struct
         open Printf
 
@@ -30,7 +34,7 @@ end = struct
         let dump_loc = MiscParser.dump_location
 
         let dump_state_atom a =
-          MiscParser.dump_state_atom dump_loc SymbConstant.pp_v a
+          MiscParser.dump_state_atom dump_loc (SymbConstant.pp Opt.hexa) a
 
         type state = MiscParser.state
 
