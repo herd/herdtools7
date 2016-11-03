@@ -19,6 +19,7 @@ module type Config = sig
   val ppinfo : Lexing.position -> string -> unit
   val env : string StringMap.t
   val map : (string->string) StringMap.t
+  val check_name : string -> bool
 end 
 
 module Make :

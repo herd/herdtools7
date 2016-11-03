@@ -38,6 +38,7 @@ module Top
        sig
          val verbose : int
          val action : Action.t
+         val check_name : string -> bool
        end) =
   struct
     open Action
@@ -118,6 +119,7 @@ module Top
 
             let env = env
             let map = map
+            let check_name  = Opt.check_name
           end) in
       match logs with
       | [] -> 
@@ -142,7 +144,10 @@ module Top
 
 let verbose = ref 0
 let action = ref Action.Check
+let names = ref []
+let excl = ref []
 let tests = ref []
+
 let arg = ref []
 
 let prog =
@@ -155,6 +160,8 @@ let () =
     [
      "-v",Arg.Unit (fun () -> incr verbose), " be verbose";
      parse_select tests;
+     parse_names names;
+     parse_excl excl;
      begin let module P = ParseTag.Make(Action) in     
      P.parse "-action" action "action performed" end ;
     ]
@@ -163,11 +170,23 @@ let () =
 
 let tests = !tests
 let logs = !arg
+
+module Check =
+  CheckName.Make
+    (struct
+      let verbose = !verbose
+      let rename = []
+      let select = []
+      let names = !names
+      let excl = !excl
+    end)
+
 module X =
   Top
     (struct
       let verbose = !verbose
       let action = !action
+      let check_name n = Check.ok n
     end)
 
 let () = X.zyva tests logs
