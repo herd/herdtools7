@@ -102,6 +102,7 @@ val mach2generic :
     ('lexbuf -> 'token) -> 'lexbuf -> 'a * 'b * extra_data
 
 (* Extract hash *)
+val hash_key : string
 val get_hash : ('i, 'p, 'c, 'loc) result -> string option
 val set_hash :
     ('i, 'p, 'c, 'loc) result -> string ->

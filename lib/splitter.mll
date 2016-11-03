@@ -20,11 +20,13 @@
 
 
 (*  Result of splitter *)
+type info = string * string
+
 type result =
   {
     arch : Archs.t ;
     name : Name.t ;
-    info : (string * string) list ;
+    info : info list ;
     locs : Pos.pos2 * Pos.pos2 * Pos.pos2 *Pos.pos2 ;
     start : Lexing.position ;
   }
@@ -38,6 +40,12 @@ module Default = struct
   include LexUtils.Default
   let check_rename _ = None
 end
+
+let add_info buff k v =
+  Buffer.add_string buff k ;
+  Buffer.add_char buff '=' ;
+  Buffer.add_string buff v ;
+  Buffer.add_char buff '\n'        
 
 module Make(O:Config) = struct
   module LU = LexUtils.Make(O)
@@ -60,6 +68,7 @@ rule main_pos = parse
      let start = lexeme_start_p lexbuf  in
      main start lexbuf
     }
+
 and main start = parse
 | blank* (alpha|digit|'_')+ as arch
   blank+
@@ -151,6 +160,52 @@ and find_eof = parse
 | [^'\n']+ { find_eof lexbuf }
 | eof {  lexeme_start_p lexbuf }
 
+(* Change info in the init section *)
+and change_main buff p = parse
+| blank* (alpha|digit|'_')+
+  blank+
+  testname
+  blank*
+  ('(' name ')' blank*) ?
+  ( ('\n'? as line) blank*'"'[^'"']* '"' blank*) ? (* '"' *)
+  ';' ? as lexed
+  { begin match line with Some _ -> incr_lineno lexbuf | None -> () end ;
+    Buffer.add_string buff lexed ;
+    change_info false p buff lexbuf }
+
+and change_info found p buff = parse
+| eof
+    { () }
+| '\n'
+    { incr_lineno lexbuf ;
+      Buffer.add_char buff '\n' ;
+      change_info found p buff lexbuf }
+| '{'
+    { incr_lineno lexbuf ;
+      if not found then begin
+        let k,v = p in
+        add_info buff k v
+      end ;
+      Buffer.add_char buff '{' ;
+      change_info found p buff lexbuf }
+| (name as key) blank* '=' blank* [^'\n']* '\n' as line
+  { incr_lineno lexbuf ;
+    let k,v = p in
+    let found = 
+      if k = key then begin
+        if not found then add_info  buff k v ;
+        true
+      end else begin
+        Buffer.add_string buff line ;
+        false
+      end in
+    change_info found p buff lexbuf }
+| [^'\n''{']+  as lexed
+    { Buffer.add_string buff lexed ;
+      change_info found p buff lexbuf }
+| "" { error "change info" lexbuf }
+
+
 {
 
 (* Useful for debug *)
@@ -197,6 +252,13 @@ let split name chan =
 	assert false in
   if O.debug then show r ;
   r
+
+  let reinfo p lexbuf =
+    let buff = Buffer.create 32 in
+    change_main buff p lexbuf ;
+    Buffer.contents buff
+
+   let rehash v lexbuf = reinfo (MiscParser.hash_key,v) lexbuf
 
 end
 }

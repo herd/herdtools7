@@ -33,6 +33,7 @@
 
 
 (*  Result of splitter *)
+type info = string * string
 type result =
   {
    (* architecture *)
@@ -40,7 +41,7 @@ type result =
    (* All names of the test grouped *)
     name : Name.t ;
    (* Additional information as (key * value) pairs *)
-    info : (string * string) list ;
+    info : info list ;
     (* The four sections of a litmus file *)
     locs : Pos.pos2 * Pos.pos2 * Pos.pos2  * Pos.pos2;
     (* Initial position *)
@@ -56,5 +57,9 @@ module Default : Config
 
 module Make : functor (O:Config) -> sig
   val split : string -> in_channel -> result
+
+  (* Init section with info changed or added *)
+  val reinfo : info -> Lexing.lexbuf -> string
+  val rehash : string -> Lexing.lexbuf -> string
 end
 
