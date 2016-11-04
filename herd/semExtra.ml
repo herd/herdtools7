@@ -58,7 +58,6 @@ module type S = sig
   val outcome_locations : test -> loc_set
 
   type event = E.event
-
   type event_structure = E.event_structure
   type event_set = E.EventSet.t
   type event_rel = E.EventRel.t

@@ -44,7 +44,7 @@ end
 module type SimplifiedSem = sig
   module E : sig
     type event
-
+    val event_compare : event -> event -> int
     val pp_eiid : event -> string
 
     module EventSet : MySet.S
@@ -59,6 +59,7 @@ module type SimplifiedSem = sig
   type test
   type concrete
 
+  type event = E.event
   type event_set = E.EventSet.t
   type event_rel = E.EventRel.t
   type rel_pp = (string * event_rel) list
@@ -179,18 +180,20 @@ module Make
 
 (* Internal typing *)
     type typ =
-      | TEmpty | TEvents | TRel | TTag of string |TClo | TProc | TSet of typ
+      | TEmpty | TEvent | TEvents | TRel
+      | TTag of string |TClo | TProc | TSet of typ
       | TTuple of typ list
 
     let rec eq_type t1 t2 = match t1,t2 with
-    | TEmpty,TSet _ -> Some t2
-    | TSet _,TEmpty -> Some t1
+    | (TEmpty,(TSet _ as t))
+    | ((TSet _ as t),TEmpty) -> Some t
     | (TEvents,TEvents)
     | (TEmpty,TEvents)
     | (TEvents,TEmpty) -> Some TEvents
     | (TRel,TRel)
     | (TEmpty,TRel)
     | (TRel,TEmpty) -> Some TRel
+    | TEvent,TEvent -> Some TEvent
     | TTag s1,TTag s2 when s1 = s2 -> Some t1
     | TSet t1,TSet t2 ->
         begin match eq_type t1 t2 with
@@ -226,7 +229,8 @@ module Make
 
     let rec pp_typ = function
       | TEmpty -> "{}"
-      | TEvents -> "event set"
+      | TEvent -> "event"
+      | TEvents -> "events"
       | TRel -> "rel"
       | TTag ty -> ty
       | TClo -> "closure"
@@ -239,6 +243,7 @@ module Make
 
       type v =
         | Empty | Unv
+        | Event of S.event
         | Rel of S.event_rel
         | Set of S.event_set
         | Clo of  closure
@@ -270,6 +275,7 @@ module Make
 
       type v =
         | Empty | Unv
+        | Event of S.event
         | Rel of S.event_rel
         | Set of S.event_set
         | Clo of  closure
@@ -297,6 +303,7 @@ module Make
       let rec type_val = function
         | V.Empty -> TEmpty
         | Unv -> assert false (* Discarded before *)
+        | Event _ -> TEvent
         | Rel _ -> TRel
         | Set _ -> TEvents
         | Clo _|Prim _ -> TClo
@@ -325,6 +332,7 @@ module Make
       | Set s,V.Empty -> E.EventSet.compare s E.EventSet.empty
 (* Legitimate cmp *)
       | Tag (_,s1), Tag (_,s2) -> String.compare s1 s2
+      | Event e1,Event e2 -> E.event_compare e1 e2
       | ValSet (_,s1),ValSet (_,s2) -> ValSet.compare s1 s2
       | Rel r1,Rel r2 -> E.EventRel.compare r1 r2
       | Set s1,Set s2 -> E.EventSet.compare s1 s2
@@ -762,13 +770,6 @@ module Make
         ValSet (TEvents,ValSet.of_list vs)
     | _ -> arg_mismatch ()
 
-    and singletons arg = match arg with
-    | Set evts ->
-        let evts = E.EventSet.elements evts in
-        let evts = List.rev_map (fun e -> Set (E.EventSet.singleton e)) evts in
-        ValSet (TEvents,ValSet.of_list evts)
-    | _ -> arg_mismatch ()
-
     and linearisations arg = match arg with
     | V.Tuple [Set es;Rel r;] ->
         if O.debug && O.verbose > 1 then begin
@@ -914,7 +915,6 @@ module Make
          "fromto",fromto ks;
          "classes-loc",partition;
          "classes",classes;
-         "singletons",singletons;
          "linearisations",linearisations;
          "tag2scope",tag2scope m;
          "tag2events",tag2events m;
@@ -1013,7 +1013,14 @@ module Make
             | [] -> V.Empty
             | _ ->
                 let t,vs = type_list env.EV.silent vs in
-                try ValSet (t,ValSet.of_list vs)
+                try match t with
+                | TEvent ->
+                    let vs =
+                      List.rev_map
+                        (function Event e -> e | _ -> assert false)
+                        vs in
+                    Set (E.EventSet.of_list vs)
+                | _ -> ValSet (t,ValSet.of_list vs)
                 with CompError msg ->
                   error env.EV.silent loc "%s" msg
             end
@@ -1073,10 +1080,10 @@ module Make
                 set_op env loc t ValSet.inter s1 s2
             | (Unv,r)|(r,Unv) -> r
             | (V.Empty,_)|(_,V.Empty) -> V.Empty
-            | (Clo _|Prim _|Proc _|V.Tuple _),_ ->
+            | (Event _|Clo _|Prim _|Proc _|V.Tuple _),_ ->
                 error env.EV.silent loc1
                   "intersection on %s" (pp_typ (type_val v1))
-            | _,(Clo _|Prim _|Proc _|V.Tuple _) ->
+            | _,(Event _|Clo _|Prim _|Proc _|V.Tuple _) ->
                 error env.EV.silent loc2
                   "intersection on %s" (pp_typ (type_val v2))
             | (Rel _,Set _)
@@ -1111,10 +1118,10 @@ module Make
             | (Rel _|Set _|V.Empty|Unv|ValSet _),Unv
             | V.Empty,(Rel _|Set _|V.Empty|ValSet _) -> V.Empty
             | (Rel _|Set _|ValSet _),V.Empty -> v1
-            | (Clo _|Proc _|Prim _|V.Tuple _),_ ->
+            | (Event _|Clo _|Proc _|Prim _|V.Tuple _),_ ->
                 error env.EV.silent loc1
                   "difference on %s" (pp_typ (type_val v1))
-            | _,(Clo _|Proc _|Prim _|V.Tuple _) ->
+            | _,(Event _|Clo _|Proc _|Prim _|V.Tuple _) ->
                 error env.EV.silent loc2
                   "difference on %s" (pp_typ (type_val v2))
             | ((Set _|ValSet _),Rel _)|(Rel _,(Set _|ValSet _)) ->
@@ -1134,14 +1141,19 @@ module Make
             begin match v1,v2 with
             | V.Unv,_ -> error env.EV.silent loc "universe in set ++"
             | _,V.Unv -> V.Unv
+            | Event e,V.Empty -> Set (E.EventSet.singleton e)
             | _,V.Empty -> V.ValSet (type_val v1,ValSet.singleton v1)
             | V.Empty,V.ValSet (TSet e2 as t2,s2) ->
                 let v1 = ValSet (e2,ValSet.empty) in
                 set_op env loc t2 ValSet.add v1 s2
             | _,V.ValSet (_,s2) ->
                 set_op env loc (type_val v1) ValSet.add v1 s2
-            | _,(Rel _|Set _|Clo _|Prim _|Proc _|V.Tag (_, _)|V.Tuple _) ->
-                error env.EV.silent (get_loc e2)
+            | Event e,Set es ->
+                Set (E.EventSet.add e es)
+            | _,
+                (Event _|Rel _|Set _|Clo _|Prim _
+              |Proc _|V.Tag (_, _)|V.Tuple _) ->
+                  error env.EV.silent (get_loc e2)
                   "this expression of type '%s' should be a set"
                   (pp_typ (type_val v2))
             end
@@ -1192,9 +1204,35 @@ module Make
             | V.Unv ->
                 error env.EV.silent loc
                   "%s" "Cannot set-match on universe"
-            | V.ValSet (t,s) ->
-                if ValSet.is_empty s then
-                  eval env ife
+            | Set es ->
+                if E.EventSet.is_empty es then eval env ife
+                else begin match cl with
+                | EltRem (x,xs,ex) ->
+                    let elt =
+                      lazy begin
+                        try E.EventSet.choose es
+                        with Not_found -> assert false
+                      end in
+                    let s =
+                      lazy begin
+                        Set (E.EventSet.remove (Lazy.force elt) es)
+                      end in
+                    let elt = lazy (Event (Lazy.force elt)) in
+                    let m = env.EV.env in
+                    let m = add_val x elt m in
+                    let m = add_val xs s m in
+                    eval { env with EV.env = m; } ex
+                | PreEltPost (xs1,x,xs2,ex) ->
+                    let s1,elt,s2 =
+                      try E.EventSet.split3 es with Not_found -> assert false in
+                    let m = env.EV.env in
+                    let m = add_val x (lazy (Event elt)) m in
+                    let m = add_val xs1 (lazy (Set s1)) m in
+                    let m = add_val xs2 (lazy (Set s2)) m in
+                    eval { env with EV.env = m; } ex
+                end
+            | ValSet (t,s) ->
+                if ValSet.is_empty s then eval env ife
                 else begin match cl with
                 | EltRem (x,xs,ex) ->
                     let elt =

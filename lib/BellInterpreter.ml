@@ -49,12 +49,14 @@ module Make (C: Config) = struct
 
     let module UnitS = struct
       module E = struct
+
         type event = unit
+        let event_compare () () = 0
         let pp_eiid () = "a"
 
         module Ordered = struct
           type t = unit
-          let compare () () = 0
+          let compare = event_compare
         end
 
         module EventSet = MySet.Make(Ordered)
@@ -64,6 +66,7 @@ module Make (C: Config) = struct
       type test = unit
       type concrete = unit
 
+      type event = E.event
       type event_set = E.EventSet.t
       type event_rel = E.EventRel.t
       type rel_pp = (string * event_rel) list

@@ -48,6 +48,7 @@ module type S = sig
 
   val proc_of       : event -> A.proc option
   val same_proc     : event -> event -> bool
+  val same_proc_not_init : event -> event -> bool
   val progorder_of  : event -> A.program_order_index option
 
 (* Is e1 before e2 w.r.t. prog order ? Nothing assumed on e1 and a2 *)
@@ -344,6 +345,11 @@ struct
     | Some p1,Some p2 -> Misc.int_eq p1 p2
     | (None,Some _)|(Some _,None) -> false
     | None,None -> true
+
+    let same_proc_not_init e1 e2 = match proc_of e1, proc_of e2 with
+    | Some p1,Some p2 -> Misc.int_eq p1 p2
+    | (None,Some _)|(Some _,None)
+    | None,None -> false
 
     let progorder_of e = match e.iiid with
     | Some i -> Some i.A.program_order_index

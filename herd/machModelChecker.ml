@@ -162,7 +162,7 @@ module Make
               E.EventRel.restrict_rel E.same_location (Lazy.force unv)
             end;
             "int",lazy begin
-              E.EventRel.restrict_rel E.same_proc (Lazy.force unv)
+              E.EventRel.restrict_rel E.same_proc_not_init (Lazy.force unv)
             end ;
             "ext",lazy begin
               E.EventRel.restrict_rel

@@ -1,4 +1,4 @@
- * herd: enable matching over event sets, first try (singletons primitive).
+ * herd: enable matching over event sets.
  * tools: add msethashes, for changing *test* hashes.
 7.38
  * gen: list all global variables in init when type is non-default
