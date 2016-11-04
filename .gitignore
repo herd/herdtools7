@@ -1,6 +1,7 @@
 _build/
 version.ml
 *.native
+*.byte
 *~
 /diy/*.tar.gz
 /diy/doc/*.fig
