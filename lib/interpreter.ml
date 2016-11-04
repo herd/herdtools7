@@ -762,6 +762,13 @@ module Make
         ValSet (TEvents,ValSet.of_list vs)
     | _ -> arg_mismatch ()
 
+    and singletons arg = match arg with
+    | Set evts ->
+        let evts = E.EventSet.elements evts in
+        let evts = List.rev_map (fun e -> Set (E.EventSet.singleton e)) evts in
+        ValSet (TEvents,ValSet.of_list evts)
+    | _ -> arg_mismatch ()
+
     and linearisations arg = match arg with
     | V.Tuple [Set es;Rel r;] ->
         if O.debug && O.verbose > 1 then begin
@@ -907,6 +914,7 @@ module Make
          "fromto",fromto ks;
          "classes-loc",partition;
          "classes",classes;
+         "singletons",singletons;
          "linearisations",linearisations;
          "tag2scope",tag2scope m;
          "tag2events",tag2events m;
