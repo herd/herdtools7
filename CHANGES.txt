@@ -1,3 +1,4 @@
+7.39
  * herd: enable matching over event sets.
  * tools: add msethashes, for changing *test* hashes.
 7.38
