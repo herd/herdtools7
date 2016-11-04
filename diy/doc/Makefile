@@ -94,12 +94,12 @@ SB+rfi-pos+TER.dot: SB+rfi-pos.litmus
 CoRWR.dot: CoRWR.litmus tso-01.cat
 	$(HERD) -conf doc.cfg -unshow ghb -initpos -1.0,0.3333 -oneinit false -showinitwrites true -show prop -model tso-01.cat -o . CoRWR.litmus -extrachars 1  > /dev/null
 
-MOREAPOIL=-fontsize 10
+MOREAPOIL=-fontsize 10 -edgeattr prop,color,blueviolet
 IRIW+lwsyncs+APOIL.dot: IRIW+lwsyncs.litmus
-	$(HERD)  -suffix +APOIL -conf apoil.cfg $(MOREAPOIL) -show prop -o . $< > /dev/null	
+	$(HERD)  -suffix +APOIL -conf apoil.cfg $(MOREAPOIL) -doshow prop -show prop -o . $< > /dev/null	
 
 IRIW+syncs+APOIL.dot: IRIW+syncs.litmus
-	$(HERD)  -suffix +APOIL -through invalid -conf apoil.cfg  $(MOREAPOIL) -show prop -o . $< > /dev/null
+	$(HERD)  -suffix +APOIL -through invalid -conf apoil.cfg  $(MOREAPOIL) -doshow prop -show prop -o . $< > /dev/null
 
 SB-00.dot SB-01.dot SB-02.dot SB-03.dot: SB.dot
 	$(SPLITDOT) SB.dot >/dev/null

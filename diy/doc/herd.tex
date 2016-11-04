@@ -1906,7 +1906,7 @@ Default is~\opt{false}.
 \emph{i.e} show the last store to locations. Default is~\opt{false}.
 \emph{i.e} show the last store to locations. Default is~\opt{false}.
 \item[{\tt -showfr <bool>}] Show from-read edges. Default is~\opt{true}.
-\item[{\tt -doshow <\textit{name}$_1$,\ldots,\textit{name}$_n$>}]
+\item[{\tt \aname{opt:doshow}{-doshow} <\textit{name}$_1$,\ldots,\textit{name}$_n$>}]
 Do show edges labelled with \textit{name}$_1$,\ldots,\textit{name}$_n$.
 This setting applies when names are bound in model definition.
 \item[{\tt -unshow <\textit{name}$_1$,\ldots,\textit{name}$_n$>}]
@@ -2000,10 +2000,16 @@ The above configuration file comes handy to eye-proof model output,
 even for relatively complex tests, such as \atest{IRIW+lwsyncs}
 and \atest{IRIW+syncs}:
 \begin{verbatim}
-% herd7 -conf apoil.cfg -show prop -gv IRIW+lwsyncs.litmus
-% herd7 -through invalid -conf apoil.cfg -show prop -gv IRIW+syncs.litmus
+% herd7 -conf apoil.cfg -show prop -doshow prop -gv IRIW+lwsyncs.litmus
+% herd7 -through invalid -conf apoil.cfg -show prop -doshow prop -gv IRIW+syncs.litmus
 \end{verbatim}
-We run the two tests on top of the default model that computes,
+In the command lines above, \ahrefloc{opt:show}{\opt{-show prop}}
+instructs \herd{} to produce images of the executions that validate
+the final test condtion, while \ahrefloc{opt:doshow}{\opt{-doshow prop}}
+instructs \herd{} to display the relation named ``\texttt{prop}''.
+In spite of the unfortunate name clashes, those are not to be confused\ldots
+
+We run the two tests on top of the default Power model that computes,
 amongst others, a \texttt{prop} relation. The model rejects executions
 with a cyclic \textrel{prop}.
 One can then see that the relation \textrel{prop} is acyclic
