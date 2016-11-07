@@ -1,5 +1,0 @@
-BS01 Allow
-BS02 Forbid
-BS03 Allow
-BS04 Allow
-BS05 Forbid
