@@ -27,9 +27,9 @@ let opts =
   [
 (* General behavior *)
    "-v", Arg.Unit (fun () -> incr verbose), " be verbose";
-   "-version", Arg.Unit (fun () -> print_endline Config.version; exit 0),
+   "-version", Arg.Unit (fun () -> print_endline Version.version; exit 0),
    " show version number and exit";
-   "-libdir", Arg.Unit (fun () -> print_endline Config.libdir; exit 0),
+   "-libdir", Arg.Unit (fun () -> print_endline Version.libdir; exit 0),
    " show installation directory and exit";
    "-switch", Arg.Set Misc.switch, "switch something" ;
    "-o", Arg.String set_tar,
