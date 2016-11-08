@@ -248,7 +248,7 @@ let () =
           include C
           let typ = !Config.typ
         end in
-        let module T = CCompile.Make(CoC) in
+        let module T = CCompile_gen.Make(CoC) in
         let module M = Make(C)(T) in
         M.zyva
     end pp_es

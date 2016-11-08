@@ -272,7 +272,7 @@ module Top (Conf:Config) = struct
         end in
         let module CS = CSem.Make(Conf)(SymbValue) in
         let module CM = CMem.Make(ModelConfig)(CS) in
-        let module P = CGenParser.Make (Conf) (C) (CLexParse) in
+        let module P = CGenParser_lib.Make (Conf) (C) (CLexParse) in
         let module X = Make (CS) (P) (NoCheck) (CM) in
         X.run name chan env splitted
 

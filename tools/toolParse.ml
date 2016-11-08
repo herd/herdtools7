@@ -133,7 +133,7 @@ end = struct
           let macros_parser _ _ = assert false
           let macros_expand _ i = i
         end in
-        let module P = CGenParser.Make(CGenParser.DefaultConfig)(C)(L) in
+        let module P = CGenParser_lib.Make(CGenParser_lib.DefaultConfig)(C)(L) in
         let module X = B(C) in
         let name =  splitted.Splitter.name in
         let parsed = P.parse chan splitted in
@@ -305,7 +305,7 @@ module Tops
               let macros_expand _ i = i
             end in
 
-            let module P = CGenParser.Make(CGenParser.DefaultConfig)(C)(L) in
+            let module P = CGenParser_lib.Make(CGenParser_lib.DefaultConfig)(C)(L) in
             let module X = B(C) in
 
             let module U =

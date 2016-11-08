@@ -291,7 +291,7 @@ let () =
         include C
         let typ = !Config.typ
       end in
-      let module M = Make(CCompile.Make(CoC))(Co) in
+      let module M = Make(CCompile_gen.Make(CoC))(Co) in
       M.go in
   try
     f !Config.size relax_list safe_list one_list ;

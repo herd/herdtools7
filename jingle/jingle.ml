@@ -85,11 +85,11 @@ let get_arch =
      end in (module struct 
 	       include CArch_jingle
 	       module Parser = struct
-		 include CGenParser.Make(CGenParser.DefaultConfig)
+		 include CGenParser_lib.Make(CGenParser_lib.DefaultConfig)
 					(CArch_jingle)(CLexParse)
 		 type parsedPseudo = CArch_jingle.parsedPseudo
 		 let instr_from_string s =
-		   CGenParser.call_parser "themes" (Lexing.from_string s) 
+		   CGenParser_lib.call_parser "themes" (Lexing.from_string s) 
 					 CLexParse.deep_lexer 
 					 CLexParse.instr_parser
 	       end

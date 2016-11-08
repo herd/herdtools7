@@ -269,7 +269,7 @@ let () =
         let typ = !Config.typ
         let cpp = match a with CPP -> true | _ -> false
       end in
-      let module T = CCompile.Make(CoC) in
+      let module T = CCompile_gen.Make(CoC) in
       let module M = Build(T) in
       M.zyva
 )

@@ -397,8 +397,8 @@ end = struct
             let asmcommentaslabel = O.asmcommentaslabel
           end)
       module Utils = Utils(O)(A')(Lang)(Pseudo)
-      module P = CGenParser.Make(O)(Pseudo)(A')(L)
-      module Comp = CCompile.Make(O)(Utils.T)
+      module P = CGenParser_litmus.Make(O)(Pseudo)(A')(L)
+      module Comp = CCompile_litmus.Make(O)(Utils.T)
 
       let rec count_procs = function
         | CAst.Test _::xs -> 1 + count_procs xs
