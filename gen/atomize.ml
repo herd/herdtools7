@@ -114,19 +114,19 @@ let pp_es = List.rev !pp_es
 let () =
   (match !arch with
   | X86 ->
-      let module M = Make(X86Arch) in
+      let module M = Make(X86Arch_gen) in
       M.zyva
   | PPC ->
-      let module M = Make(PPCArch.Make(PPCArch.Config)) in
+      let module M = Make(PPCArch_gen.Make(PPCArch_gen.Config)) in
       M.zyva
   | ARM ->
-      let module M = Make(ARMArch) in
+      let module M = Make(ARMArch_gen) in
       M.zyva
   | AArch64 ->
-      let module M = Make(AArch64Arch.Make(AArch64Arch.Config)) in
+      let module M = Make(AArch64Arch_gen.Make(AArch64Arch_gen.Config)) in
       M.zyva
   | MIPS ->
-      let module M = Make(MIPSArch) in
+      let module M = Make(MIPSArch_gen) in
       M.zyva
   | LISA ->
       let module BellConfig =
@@ -138,10 +138,10 @@ let () =
           let bell = !Config.bell
           let varatom = !Config.varatom
         end in
-      let module M = Make(BellArch.Make(BellConfig)) in
+      let module M = Make(BellArch_gen.Make(BellConfig)) in
       M.zyva
   | C ->
-      let module M = Make(CArch) in
+      let module M = Make(CArch_gen) in
       M.zyva
   | CPP -> Warn.fatal "CCP arch in atomize")      
      pp_es

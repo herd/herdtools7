@@ -16,11 +16,11 @@
 
 open Code
 
-module Make(C:CompileCommon.Config) : XXXCompile.S =
+module Make(C:CompileCommon.Config) : XXXCompile_gen.S =
 
 struct
 
-  module X86 = X86Arch
+  module X86 = X86Arch_gen
   include CompileCommon.Make(C)(X86)
 
 (******)

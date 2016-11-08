@@ -21,13 +21,13 @@ module type Config = sig
   val realdep : bool
 end
 
-module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile.S =
+module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
   struct
     open MachSize
 
     let naturalsize = TypBase.get_size O.typ
     module PPC =
-      PPCArch.Make
+      PPCArch_gen.Make
         (struct include C let naturalsize = naturalsize end)
 
     include CompileCommon.Make(O)(PPC)

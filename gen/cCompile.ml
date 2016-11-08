@@ -46,7 +46,7 @@ module Make(O:Config) : Builder.S
       end
 
       module A = struct
-        include CArch
+        include CArch_gen
         let deftype = O.typ
       end
       module E = Edge.Make(A)
@@ -1023,7 +1023,7 @@ module Make(O:Config) : Builder.S
             (fun m (args,_) ->
               List.fold_left
                 (fun m (t,x) ->
-                  if CArch.is_default t then m
+                  if CArch_gen.is_default t then m
                   else StringMap.add x t m)
                 m args)
             StringMap.empty prog in
@@ -1031,7 +1031,7 @@ module Make(O:Config) : Builder.S
         fprintf chan "\n{" ;
         let env =
           StringMap.fold
-            (fun x t k -> sprintf "%s %s;" (CArch.dump_typ t) x::k)
+            (fun x t k -> sprintf "%s %s;" (CArch_gen.dump_typ t) x::k)
             vars [] in
         let pp = String.concat " " env in
         fprintf chan "%s" pp ;

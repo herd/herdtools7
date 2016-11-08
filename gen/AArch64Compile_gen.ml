@@ -22,13 +22,13 @@ module type Config = sig
   val realdep : bool
 end
 
-module Make(Cfg:Config) : XXXCompile.S =
+module Make(Cfg:Config) : XXXCompile_gen.S =
   struct
 
 (* Common *)
     let naturalsize = TypBase.get_size Cfg.typ
     module A64 =
-      AArch64Arch.Make
+      AArch64Arch_gen.Make
         (struct
           let naturalsize = naturalsize
           let moreedges = Cfg.moreedges

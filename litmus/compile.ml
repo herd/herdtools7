@@ -205,7 +205,7 @@ module Make
      module A.LocMap = A.LocMap and
      type A.Out.t = A.Out.t and
      type P.code = int * A.pseudo list)
-    (C:XXXCompile.S with module A = A) =
+    (C:XXXCompile_litmus.S with module A = A) =
   struct
     open Printf
     open Constant

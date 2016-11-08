@@ -16,7 +16,7 @@
 
 
 module PPC = struct
-  module P = PPCArch.Make(PPCArch.Config)
+  module P = PPCArch_gen.Make(PPCArch_gen.Config)
   module A = AutoArch.Make(P)
   let testing =
     "Pod**, DpAddrdR,DpAddrdW, DpDatadW,\
@@ -36,7 +36,7 @@ module PPC = struct
 end
 
 module X86 = struct
-  module X = X86Arch
+  module X = X86Arch_gen
   module A = AutoArch.Make(X)
   let testing = "Rfe,Pod**,MFenced**,[Rfi,MFencedR*],[Rfi,PodR*]"
   let safe = "Fre,Wse"
@@ -44,7 +44,7 @@ module X86 = struct
 end
 
 module MIPS = struct
-  module X = MIPSArch
+  module X = MIPSArch_gen
   module A = AutoArch.Make(X)
   let testing = "Rfe,Pod**,Syncd**,[Rfi,SyncdR*],[Rfi,PodR*]"
   let safe = "Fre,Wse"
@@ -52,7 +52,7 @@ module MIPS = struct
 end
 
 module ARM = struct
-  module P = ARMArch
+  module P = ARMArch_gen
   module A = AutoArch.Make(P)
   let testing =
     "Pod**, DpAddrdR,DpAddrdW, DpDatadW,\

@@ -17,7 +17,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
     = 
   struct
 
-    module C = CArch.Make(Conf.PC)(V)
+    module C = CArch_herd.Make(Conf.PC)(V)
     module Act = CAction.Make(C)
     include SemExtra.Make(Conf)(C)(Act)
     let barriers = []

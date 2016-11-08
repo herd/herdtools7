@@ -281,7 +281,7 @@ end = struct
       (O:Config)
       (A:Arch.S)
       (L:GenParser.LexParse with type instruction = A.parsedPseudo)
-      (XXXComp : XXXCompile.S with module A = A) =
+      (XXXComp : XXXCompile_litmus.S with module A = A) =
     struct
       module Pseudo = struct
         type code = int * A.pseudo list
@@ -468,7 +468,7 @@ end = struct
         | `PPC ->
             begin match OT.usearch with
             | UseArch.Trad ->
-                let module Arch' = PPCArch.Make(OC)(V) in
+                let module Arch' = PPCArch_litmus.Make(OC)(V) in
                 let module LexParse = struct
                   type instruction = Arch'.parsedPseudo
                   type token = PPCParser.token
@@ -476,7 +476,7 @@ end = struct
                   let lexer = Lexer.token
                   let parser = MiscParser.mach2generic PPCParser.main
                 end in
-                let module Compile = PPCCompile.Make(V)(OC) in
+                let module Compile = PPCCompile_litmus.Make(V)(OC) in
                 let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
                 X.compile
             | UseArch.Gen ->
@@ -496,7 +496,7 @@ end = struct
  *)  
           end
         | `X86 ->
-            let module Arch' = X86Arch.Make(OC)(V) in
+            let module Arch' = X86Arch_litmus.Make(OC)(V) in
             let module LexParse = struct
               type instruction = Arch'.pseudo
               type token = X86Parser.token
@@ -504,11 +504,11 @@ end = struct
               let lexer = Lexer.token
               let parser = MiscParser.mach2generic X86Parser.main
             end in
-            let module Compile = X86Compile.Make(V)(OC) in
+            let module Compile = X86Compile_litmus.Make(V)(OC) in
             let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
             X.compile
         | `ARM ->
-            let module Arch' = ARMArch.Make(OC)(V) in
+            let module Arch' = ARMArch_litmus.Make(OC)(V) in
             let module LexParse = struct
               type instruction = Arch'.parsedPseudo
               type token = ARMParser.token
@@ -516,13 +516,13 @@ end = struct
               let lexer = Lexer.token
               let parser = MiscParser.mach2generic ARMParser.main
             end in
-            let module Compile = ARMCompile.Make(V)(OC) in
+            let module Compile = ARMCompile_litmus.Make(V)(OC) in
             let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
             X.compile
         | `AArch64 ->
             begin match OT.usearch with
             | UseArch.Trad ->
-                let module Arch' = AArch64Arch.Make(OC)(V) in
+                let module Arch' = AArch64Arch_litmus.Make(OC)(V) in
                 let module LexParse = struct
                   type instruction = Arch'.parsedPseudo
                   type token = AArch64Parser.token
@@ -530,7 +530,7 @@ end = struct
                   let lexer = Lexer.token
                   let parser = MiscParser.mach2generic AArch64Parser.main
                 end in
-                let module Compile = AArch64Compile.Make(V)(OC) in
+                let module Compile = AArch64Compile_litmus.Make(V)(OC) in
                 let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
                 X.compile
             | UseArch.Gen ->
@@ -550,7 +550,7 @@ end = struct
 *)
             end
         | `MIPS ->
-            let module Arch' = MIPSArch.Make(OC)(V) in
+            let module Arch' = MIPSArch_litmus.Make(OC)(V) in
             let module LexParse = struct
               type instruction = Arch'.pseudo
               type token = MIPSParser.token
@@ -558,7 +558,7 @@ end = struct
               let lexer = Lexer.token
               let parser = MiscParser.mach2generic MIPSParser.main
             end in
-            let module Compile = MIPSCompile.Make(V)(OC) in
+            let module Compile = MIPSCompile_litmus.Make(V)(OC) in
             let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
             X.compile
         | `C ->
@@ -567,11 +567,11 @@ end = struct
               | Some c -> c
               | None ->
                   begin match OX.sysarch with
-                  | `PPC -> PPCArch.comment
-                  | `X86 -> X86Arch.comment
-                  | `ARM -> ARMArch.comment
-                  | `AArch64 -> AArch64Arch.comment
-                  | `MIPS -> MIPSArch.comment
+                  | `PPC -> PPCArch_litmus.comment
+                  | `X86 -> X86Arch_litmus.comment
+                  | `ARM -> ARMArch_litmus.comment
+                  | `AArch64 -> AArch64Arch_litmus.comment
+                  | `MIPS -> MIPSArch_litmus.comment
                   end
             end in
             let module X = Make'(Cfg)(Arch') in

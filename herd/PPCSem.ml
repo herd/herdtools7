@@ -20,7 +20,7 @@ module Make (C:Sem.Config)(V:Value.S)
     = 
   struct
     open MachSize
-    module PPC = PPCArch.Make(C.PC)(V)
+    module PPC = PPCArch_herd.Make(C.PC)(V)
     module Act = MachAction.Make(PPC)
     include SemExtra.Make(C)(PPC)(Act) 
 

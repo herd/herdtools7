@@ -23,7 +23,7 @@ end
 
 module Make(V:Constant.S)(C:Config) =
   struct
-    module A = PPCArch.Make(C)(V)
+    module A = PPCArch_litmus.Make(C)(V)
     open MachSize
     open A
     open A.Out

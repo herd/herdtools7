@@ -70,19 +70,19 @@ let () =
   let module Build = Make(Co) in
   (match !arch with
   | X86 ->
-      let module M = Build(X86Arch) in
+      let module M = Build(X86Arch_gen) in
       M.zyva
   | PPC ->
-      let module M = Build(PPCArch.Make(PPCArch.Config)) in
+      let module M = Build(PPCArch_gen.Make(PPCArch_gen.Config)) in
       M.zyva
   | ARM ->
-      let module M = Build(ARMArch) in
+      let module M = Build(ARMArch_gen) in
       M.zyva
   | AArch64 ->
-      let module M = Build(AArch64Arch.Make(AArch64Arch.Config)) in
+      let module M = Build(AArch64Arch_gen.Make(AArch64Arch_gen.Config)) in
       M.zyva
   | MIPS ->
-      let module M = Build(MIPSArch) in
+      let module M = Build(MIPSArch_gen) in
       M.zyva
   | LISA ->
       let module BellConfig =
@@ -94,7 +94,7 @@ let () =
           let bell = !Config.bell
           let varatom = []
         end in
-      let module M = Build(BellArch.Make(BellConfig)) in
+      let module M = Build(BellArch_gen.Make(BellConfig)) in
       M.zyva
   | C|CPP -> assert false)
     stdin

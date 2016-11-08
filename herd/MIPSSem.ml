@@ -19,7 +19,7 @@
 module Make (C:Sem.Config)(V:Value.S)
 =
   struct
-    module MIPS = MIPSArch.Make(C.PC)(V)
+    module MIPS = MIPSArch_herd.Make(C.PC)(V)
     module Act = MachAction.Make(MIPS)
     include SemExtra.Make(C)(MIPS)(Act)
 

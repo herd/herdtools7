@@ -216,20 +216,20 @@ let () =
     let module T = Top.Make(C) in
     begin match !Config.arch with
     | X86 ->
-        let module M = Make(C)(T(X86Compile.Make(C))) in
+        let module M = Make(C)(T(X86Compile_gen.Make(C))) in
         M.zyva
     | PPC -> 
         let module PPCConf = struct let eieio = !use_eieio end in
-        let module M = Make(C)(T(PPCCompile.Make(C)(PPCConf))) in
+        let module M = Make(C)(T(PPCCompile_gen.Make(C)(PPCConf))) in
         M.zyva
     | ARM ->
-        let module M = Make(C)(T(ARMCompile.Make(C))) in
+        let module M = Make(C)(T(ARMCompile_gen.Make(C))) in
         M.zyva
     | AArch64 ->
-        let module M = Make(C)(T(AArch64Compile.Make(C))) in
+        let module M = Make(C)(T(AArch64Compile_gen.Make(C))) in
         M.zyva
     | MIPS ->
-        let module M = Make(C)(T(MIPSCompile.Make(C))) in
+        let module M = Make(C)(T(MIPSCompile_gen.Make(C))) in
         M.zyva
     | LISA ->
         let module BellConfig =

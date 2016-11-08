@@ -23,7 +23,7 @@ end
 
 module Make(V:Constant.S)(C:Config) =
   struct
-    module A = AArch64Arch.Make(C)(V)
+    module A = AArch64Arch_litmus.Make(C)(V)
     open A
     open A.Out
     open CType

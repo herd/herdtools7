@@ -16,7 +16,7 @@
 
 module Make(V:Constant.S)(O:Arch.Config) =
   struct
-    module A = X86Arch.Make(O)(V)
+    module A = X86Arch_litmus.Make(O)(V)
     open A
     open A.Out
     open Printf

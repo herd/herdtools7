@@ -37,7 +37,7 @@ module type Config = sig
   val hexa : bool
 end
 
-module Make (O:Config) (Comp:XXXCompile.S) : Builder.S 
+module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S 
 = struct
 
 (* Config *)

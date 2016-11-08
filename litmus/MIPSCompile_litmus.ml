@@ -16,7 +16,7 @@
 
 module Make(V:Constant.S)(C:Arch.Config) =
   struct
-    module A = MIPSArch.Make(C)(V)
+    module A = MIPSArch_litmus.Make(C)(V)
     open A
     open A.Out
     open Printf

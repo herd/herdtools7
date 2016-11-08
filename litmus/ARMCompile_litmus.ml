@@ -21,7 +21,7 @@ end
 
 module Make(V:Constant.S)(C:Config) =
   struct
-    module A = ARMArch.Make(C)(V)
+    module A = ARMArch_litmus.Make(C)(V)
     open A
     open A.Out
     open Printf

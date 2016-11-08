@@ -20,11 +20,11 @@ module type Config = sig
   val realdep : bool
 end
 
-module Make(Cfg:Config)(BO:BellArch.Config) : XXXCompile.S =
+module Make(Cfg:Config)(BO:BellArch_gen.Config) : XXXCompile_gen.S =
   struct
 
 (* Common *)
-    module Bell = BellArch.Make(BO)
+    module Bell = BellArch_gen.Make(BO)
     include CompileCommon.Make(Cfg)(Bell)
 
     let ppo _f k = k

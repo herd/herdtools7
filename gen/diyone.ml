@@ -231,23 +231,23 @@ let () =
   (match !Config.arch with
   | X86 ->
       let module T = Top.Make(Co) in
-      let module M = Build(T(X86Compile.Make(C))) in
+      let module M = Build(T(X86Compile_gen.Make(C))) in
       M.zyva
   | PPC ->
       let module T = Top.Make(Co) in
-      let module M = Build(T(PPCCompile.Make(C)(PPCArch.Config))) in
+      let module M = Build(T(PPCCompile_gen.Make(C)(PPCArch_gen.Config))) in
       M.zyva
   | ARM ->
       let module T = Top.Make(Co) in
-      let module M = Build(T(ARMCompile.Make(C))) in
+      let module M = Build(T(ARMCompile_gen.Make(C))) in
       M.zyva
   | AArch64 ->
       let module T = Top.Make(Co) in
-      let module M = Build(T(AArch64Compile.Make(C))) in
+      let module M = Build(T(AArch64Compile_gen.Make(C))) in
       M.zyva
   | MIPS ->
       let module T = Top.Make(Co) in
-      let module M = Build(T(MIPSCompile.Make(C))) in
+      let module M = Build(T(MIPSCompile_gen.Make(C))) in
       M.zyva
   | LISA ->
       let module BellConfig =
