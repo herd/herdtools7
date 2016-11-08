@@ -122,7 +122,7 @@ let pp_opt chan t =
 
 let  default =
   {
-   arch = Archs.X86 ;
+   arch = `X86 ;
    output = "." ;
    testing = None ;
    safe = None ;
@@ -169,13 +169,13 @@ let get_nprocs a cfg = match cfg.nprocs with
     begin
       let open Archs in
       match a with
-      | PPC -> 4
-      | X86 -> 2
-      | ARM -> 2
-      | MIPS -> 2
-      | LISA -> 2
-      | AArch64 -> 2
-      | C|CPP -> 2
+      | `PPC -> 4
+      | `X86 -> 2
+      | `ARM -> 2
+      | `MIPS -> 2
+      | `LISA -> 2
+      | `AArch64 -> 2
+      | `C | `CPP -> 2
     end
 | Some i -> i
 

@@ -17,7 +17,7 @@
 open Archs
 open Printf
 
-let arch = ref PPC
+let arch = ref `PPC
 let diyone = ref false
 let lowercase = ref false
 let uniq = ref false
@@ -30,7 +30,7 @@ let opts =
    sprintf "<bool> use lowercase familly names, default %b" !lowercase)::
   ("-u", Arg.Set uniq," reject duplicate normalised names")::
   ("-map", Arg.String (fun s -> map := Some s)," <name> save renaming map into file <name>")::
-  ("-bell",Arg.String (fun f -> bell := Some f; arch := LISA),
+  ("-bell",Arg.String (fun f -> bell := Some f; arch := `LISA),
    "<name> read bell file <name>")::
   Util.parse_tag
     "-arch"
@@ -144,22 +144,22 @@ let () =
   end in
   let module Build = Make(Co) in
   (match !arch with
-  | X86 ->
+  | `X86 ->
       let module M = Build(X86Arch_gen) in
       M.zyva
-  | PPC ->
+  | `PPC ->
       let module M = Build(PPCArch_gen.Make(PPCArch_gen.Config)) in
       M.zyva
-  | ARM ->
+  | `ARM ->
       let module M = Build(ARMArch_gen) in
       M.zyva
-  | AArch64 ->
+  | `AArch64 ->
       let module M = Build(AArch64Arch_gen.Make(AArch64Arch_gen.Config)) in
       M.zyva
-  | MIPS ->
+  | `MIPS ->
       let module M = Build(MIPSArch_gen) in
       M.zyva
-  | LISA ->
+  | `LISA ->
       let module BellConfig =
         struct
           let debug = !Config.debug
@@ -171,7 +171,7 @@ let () =
         end in
       let module M = Build(BellArch_gen.Make(BellConfig)) in
       M.zyva
-  | C|CPP ->
+  | `C | `CPP ->
       let module M = Build(CArch_gen) in
       M.zyva)
     stdin

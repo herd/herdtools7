@@ -83,7 +83,7 @@ end = struct
         | Some a -> a
         | None -> assert false
         end
-    | `OpenCL -> assert false
+    | `OpenCL | `CPP | `LISA -> assert false
     | #Archs.System.t as a -> a in
     let opt = Option.get_default arch in
     let opt = Cfg.mkopt opt in

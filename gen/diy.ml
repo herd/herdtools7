@@ -193,7 +193,7 @@ let () =
   and safe_list = split !Config.safes 
   and one_list = if !Config.one then Some !lc else None in
 
-  let cpp = match !Config.arch with CPP -> true  |  _ -> false in
+  let cpp = match !Config.arch with `CPP -> true  |  _ -> false in
 
   let module Co = struct
 (* Dump all *)
@@ -258,22 +258,22 @@ let () =
   end in
   let module T = Top_gen.Make(Co) in
   let f = match !Config.arch with
-  | PPC ->
+  | `PPC ->
       let module M = Make(T(PPCCompile_gen.Make(C)(PPCArch_gen.Config)))(Co) in
     M.go
-  | X86 ->
+  | `X86 ->
     let module M = Make(T(X86Compile_gen.Make(C)))(Co) in
     M.go
-  | ARM ->
+  | `ARM ->
       let module M = Make(T(ARMCompile_gen.Make(C)))(Co) in
       M.go
-  | AArch64 ->
+  | `AArch64 ->
       let module M = Make(T(AArch64Compile_gen.Make(C)))(Co) in
       M.go
-  | MIPS ->
+  | `MIPS ->
       let module M = Make(T(MIPSCompile_gen.Make(C)))(Co) in
       M.go
-  | LISA ->
+  | `LISA ->
       let module BellConfig =
         struct
           let debug = !Config.debug
@@ -285,7 +285,7 @@ let () =
         end in
       let module M = Make(T(BellCompile.Make(C)(BellConfig)))(Co) in
       M.go
-  | C|CPP ->
+  | `C | `CPP ->
       let module CoC = struct
         include Co
         include C

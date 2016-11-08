@@ -55,7 +55,7 @@ let get_arch =
 		module Parser = MakeParser(ARMArch_jingle)(ARMLexParse)
 		module Dumper = DefaultDumper(ARMArch_jingle)
 	      end : S)
-  | `Bell ->
+  | `LISA ->
      let module BellLexParse = struct
        type instruction = BellArch_jingle.parsedPseudo
        type token = LISAParser.token
@@ -109,6 +109,8 @@ let get_arch =
 	       module Parser = MakeParser(PPCArch_jingle)(PPCLexParse)
 	       module Dumper = DefaultDumper(PPCArch_jingle)
 	     end : S)
+
+  | _ -> assert false
 
 let () =
   Arg.parse

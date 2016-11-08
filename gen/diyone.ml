@@ -169,7 +169,7 @@ let () =
 
 let pp_es = List.rev !pp_es
 let cpp = match !Config.arch with
-| CPP -> true
+| `CPP -> true
 | _ -> false
 
 let () =
@@ -229,27 +229,27 @@ let () =
     let realdep = !Config.realdep
   end in
   (match !Config.arch with
-  | X86 ->
+  | `X86 ->
       let module T = Top_gen.Make(Co) in
       let module M = Build(T(X86Compile_gen.Make(C))) in
       M.zyva
-  | PPC ->
+  | `PPC ->
       let module T = Top_gen.Make(Co) in
       let module M = Build(T(PPCCompile_gen.Make(C)(PPCArch_gen.Config))) in
       M.zyva
-  | ARM ->
+  | `ARM ->
       let module T = Top_gen.Make(Co) in
       let module M = Build(T(ARMCompile_gen.Make(C))) in
       M.zyva
-  | AArch64 ->
+  | `AArch64 ->
       let module T = Top_gen.Make(Co) in
       let module M = Build(T(AArch64Compile_gen.Make(C))) in
       M.zyva
-  | MIPS ->
+  | `MIPS ->
       let module T = Top_gen.Make(Co) in
       let module M = Build(T(MIPSCompile_gen.Make(C))) in
       M.zyva
-  | LISA ->
+  | `LISA ->
       let module BellConfig =
         struct
           let debug = !Config.debug
@@ -262,12 +262,12 @@ let () =
       let module T = Top_gen.Make(Co) in
       let module M = Build(T(BellCompile.Make(C)(BellConfig))) in
       M.zyva
-  | C|CPP as a ->
+  | `C | `CPP as a ->
       let module CoC = struct
         include Co
         include C
         let typ = !Config.typ
-        let cpp = match a with CPP -> true | _ -> false
+        let cpp = match a with `CPP -> true | _ -> false
       end in
       let module T = CCompile_gen.Make(CoC) in
       let module M = Build(T) in

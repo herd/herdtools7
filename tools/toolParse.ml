@@ -46,7 +46,7 @@ end = struct
 
   let from_chan chan splitted = 
     match splitted.Splitter.arch with
-    | PPC ->
+    | `PPC ->
         let module PPC = PPCBase in
         let module PPCLexParse = struct
 	  type instruction = PPC.parsedPseudo
@@ -58,7 +58,7 @@ end = struct
         end in
         let module X = Make (PPC) (PPCLexParse) in
         X.zyva chan splitted
-    | X86 ->
+    | `X86 ->
         let module X86 = X86Base in
         let module X86LexParse = struct
 	  type instruction = X86.parsedPseudo
@@ -70,7 +70,7 @@ end = struct
         end in
         let module X = Make (X86) (X86LexParse) in
         X.zyva chan splitted
-    | ARM ->
+    | `ARM ->
         let module ARM = ARMBase in
         let module ARMLexParse = struct
 	  type instruction = ARM.parsedPseudo
@@ -82,7 +82,7 @@ end = struct
         end in
         let module X = Make (ARM) (ARMLexParse) in
         X.zyva chan splitted
-    | AArch64 ->
+    | `AArch64 ->
         let module AArch64 = AArch64Base in
         let module AArch64LexParse = struct
 	  type instruction = AArch64.parsedPseudo
@@ -94,7 +94,7 @@ end = struct
         end in
         let module X = Make (AArch64) (AArch64LexParse) in
         X.zyva chan splitted
-    | MIPS ->
+    | `MIPS ->
         let module MIPS = MIPSBase in
         let module MIPSLexParse = struct
 	  type instruction = MIPS.parsedPseudo
@@ -106,7 +106,7 @@ end = struct
         end in
         let module X = Make (MIPS) (MIPSLexParse) in
         X.zyva chan splitted
-    | LISA ->
+    | `LISA ->
         let module Bell = BellBase in
         let module BellLexParse = struct
 	  type instruction = Bell.parsedPseudo
@@ -118,7 +118,7 @@ end = struct
         end in
         let module X = Make (Bell) (BellLexParse) in
         X.zyva chan splitted
-    | C ->
+    | `C ->
         let module C = CBase in
         let module L = struct
           type pseudo = C.pseudo
@@ -218,7 +218,7 @@ module Tops
 
       let from_arch arch = 
         match arch with
-        | PPC ->
+        | `PPC ->
             let module PPC = PPCBase in
             let module PPCLexParse = struct
 	      type instruction = PPC.parsedPseudo
@@ -230,7 +230,7 @@ module Tops
             end in
             let module X = Make (PPC) (PPCLexParse) in
             X.zyva 
-        | X86 ->
+        | `X86 ->
             let module X86 = X86Base in
             let module X86LexParse = struct
 	      type instruction = X86.parsedPseudo
@@ -242,7 +242,7 @@ module Tops
             end in
             let module X = Make (X86) (X86LexParse) in
             X.zyva
-        | ARM ->
+        | `ARM ->
             let module ARM = ARMBase in
             let module ARMLexParse = struct
 	      type instruction = ARM.parsedPseudo
@@ -254,7 +254,7 @@ module Tops
             end in
             let module X = Make (ARM) (ARMLexParse) in
             X.zyva
-        | AArch64 ->
+        | `AArch64 ->
             let module AArch64 = AArch64Base in
             let module AArch64LexParse = struct
 	      type instruction = AArch64.parsedPseudo
@@ -266,7 +266,7 @@ module Tops
             end in
             let module X = Make (AArch64) (AArch64LexParse) in
             X.zyva
-        | MIPS ->
+        | `MIPS ->
             let module MIPS = MIPSBase in
             let module MIPSLexParse = struct
 	      type instruction = MIPS.parsedPseudo
@@ -278,7 +278,7 @@ module Tops
             end in
             let module X = Make (MIPS) (MIPSLexParse) in
             X.zyva
-        | LISA ->
+        | `LISA ->
             let module Bell = BellBase in
             let module BellLexParse = struct
 	      type instruction = Bell.parsedPseudo
@@ -289,7 +289,7 @@ module Tops
             end in
             let module X = Make (Bell) (BellLexParse) in
             X.zyva
-        | C ->
+        | `C ->
             let module C = CBase in
             let module L = struct
               type pseudo = C.pseudo
@@ -311,13 +311,14 @@ module Tops
             let module U =
               Util
                 (struct
-                  let arch = C
+                  let arch = `C
                   type parsed =  P.pseudo MiscParser.t
                   let parse = P.parse
                   let zyva = X.zyva
                 end) in
-
             U.zyva
+
+        | _ -> assert false
 
 
 

@@ -17,7 +17,7 @@
 open Printf
 open Archs
 
-let arch = ref PPC
+let arch = ref (`PPC: Archs.t)
 let names = ref []
 let verbose = ref 0
 

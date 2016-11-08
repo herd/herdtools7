@@ -84,11 +84,11 @@ end
 let get_arch a =
   let open Archs in
   match a with
-  | X86 -> (module X86 : ArchConf)
-  | PPC -> (module PPC : ArchConf)
-  | ARM -> (module ARM : ArchConf)
-  | MIPS -> (module MIPS : ArchConf)
-  | LISA|AArch64|C|CPP ->
+  | `X86 -> (module X86 : ArchConf)
+  | `PPC -> (module PPC : ArchConf)
+  | `ARM -> (module ARM : ArchConf)
+  | `MIPS -> (module MIPS : ArchConf)
+  | _ ->
       Warn.fatal "architecture %s not implemented" (Archs.pp a)
 
 open AutoOpt 

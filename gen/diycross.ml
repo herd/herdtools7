@@ -209,29 +209,29 @@ let () =
       let hexa = !Config.hexa
       let moreedges = !Config.moreedges
       let realdep = !Config.realdep
-      let cpp = match !Config.arch with Archs.CPP -> true | _ -> false
+      let cpp = match !Config.arch with `CPP -> true | _ -> false
       let scope = !Config.scope
     end in
     let open Archs in
     let module T = Top_gen.Make(C) in
     begin match !Config.arch with
-    | X86 ->
+    | `X86 ->
         let module M = Make(C)(T(X86Compile_gen.Make(C))) in
         M.zyva
-    | PPC -> 
+    | `PPC -> 
         let module PPCConf = struct let eieio = !use_eieio end in
         let module M = Make(C)(T(PPCCompile_gen.Make(C)(PPCConf))) in
         M.zyva
-    | ARM ->
+    | `ARM ->
         let module M = Make(C)(T(ARMCompile_gen.Make(C))) in
         M.zyva
-    | AArch64 ->
+    | `AArch64 ->
         let module M = Make(C)(T(AArch64Compile_gen.Make(C))) in
         M.zyva
-    | MIPS ->
+    | `MIPS ->
         let module M = Make(C)(T(MIPSCompile_gen.Make(C))) in
         M.zyva
-    | LISA ->
+    | `LISA ->
         let module BellConfig =
         struct
           let debug = !Config.debug
@@ -243,7 +243,7 @@ let () =
         end in
         let module M = Make(C)(T(BellCompile.Make(C)(BellConfig))) in
         M.zyva
-    | C|CPP ->
+    | `C | `CPP ->
         let module CoC = struct
           include C
           let typ = !Config.typ

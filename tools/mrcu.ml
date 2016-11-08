@@ -281,7 +281,7 @@ module Top
 open Archs
 
 let from_chan chan splitted =  match splitted.Splitter.arch with
-| LISA ->
+| `LISA ->
     let name = splitted.Splitter.name in
     let parsed = P.parse chan splitted in
     let parsed = Alloc.allocate_regs parsed in

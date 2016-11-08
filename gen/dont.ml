@@ -48,9 +48,9 @@ let speclist =
    Arg.Int (fun i -> opt := set_nprocs i !opt),
    sprintf
      "<n> generate tests up to <n> processors (defaults: X86=%i, PPC=%i, ARM=%i)"
-     (get_nprocs Archs.X86 default)
-     (get_nprocs Archs.PPC default)
-     (get_nprocs Archs.ARM default)
+     (get_nprocs `X86 default)
+     (get_nprocs `PPC default)
+     (get_nprocs `ARM default)
   )::
   ("-restart", Arg.Set restart, "restart the experiment in hand")::
   ("-i", Arg.Set interactive, " force interactive mode for restarted experiment")::

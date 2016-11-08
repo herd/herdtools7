@@ -19,7 +19,7 @@ open Printf
 open Code
 
 (* Configuration *)
-let arch = ref PPC
+let arch = ref `PPC
  
 let opts = [Util.arch_opt arch]
 
@@ -113,22 +113,22 @@ let pp_es = List.rev !pp_es
 
 let () =
   (match !arch with
-  | X86 ->
+  | `X86 ->
       let module M = Make(X86Arch_gen) in
       M.zyva
-  | PPC ->
+  | `PPC ->
       let module M = Make(PPCArch_gen.Make(PPCArch_gen.Config)) in
       M.zyva
-  | ARM ->
+  | `ARM ->
       let module M = Make(ARMArch_gen) in
       M.zyva
-  | AArch64 ->
+  | `AArch64 ->
       let module M = Make(AArch64Arch_gen.Make(AArch64Arch_gen.Config)) in
       M.zyva
-  | MIPS ->
+  | `MIPS ->
       let module M = Make(MIPSArch_gen) in
       M.zyva
-  | LISA ->
+  | `LISA ->
       let module BellConfig =
         struct
           let debug = !Config.debug
@@ -140,8 +140,8 @@ let () =
         end in
       let module M = Make(BellArch_gen.Make(BellConfig)) in
       M.zyva
-  | C ->
+  | `C ->
       let module M = Make(CArch_gen) in
       M.zyva
-  | CPP -> Warn.fatal "CCP arch in atomize")      
+  | `CPP -> Warn.fatal "CCP arch in atomize")      
      pp_es
