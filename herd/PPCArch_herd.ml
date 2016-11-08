@@ -16,7 +16,7 @@
 
 (** Define PPC architecture *)
 
-module Make (C:Arch.Config) (V:Value.S)
+module Make (C:Arch_herd.Config) (V:Value.S)
 =
   struct
     include PPCBase
@@ -46,7 +46,7 @@ module Make (C:Arch.Config) (V:Value.S)
 (* Now global locations, that include reservations *)
     module V = V
 
-    include ArchExtra.Make(C)        
+    include ArchExtra_herd.Make(C)        
 	(struct
 	  module V = V 
 

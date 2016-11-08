@@ -258,7 +258,7 @@ let var_fence f = match varatom with
 include ClassicDep
 
 include
-    ArchExtra.Make
+    ArchExtra_gen.Make
     (struct
       type arch_reg = reg
 

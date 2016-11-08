@@ -18,7 +18,7 @@ open Printf
 
 let comment = "#"
 
-module Make(O:Arch.Config)(V:Constant.S) = struct
+module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
 
   include AArch64Base
   module V =
@@ -38,7 +38,7 @@ module Make(O:Arch.Config)(V:Constant.S) = struct
       try Misc.lowercase (Hashtbl.find tab r) with Not_found -> assert false
 
   include
-      ArchExtra.Make(O)
+      ArchExtra_litmus.Make(O)
       (struct
         module V = V
 

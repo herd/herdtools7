@@ -16,7 +16,7 @@
 
 (** Define X86 architecture *)
 
-module Make (C:Arch.Config)(V:Value.S) =
+module Make (C:Arch_herd.Config)(V:Value.S) =
   struct
     include X86Base
 
@@ -47,7 +47,7 @@ module Make (C:Arch.Config)(V:Value.S) =
     module V = V
 
 
-    include ArchExtra.Make
+    include ArchExtra_herd.Make
 	(C)(struct
 	  module V = V 
 

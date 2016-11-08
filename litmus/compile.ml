@@ -27,7 +27,7 @@ let get_fmt hexa base = match CType.get_fmt hexa base with
 let base =  CType.Base "int"
 let pointer = CType.Pointer base
 
-module Generic (A : Arch.Base) (C:Constr.S with module A = A) = struct
+module Generic (A : Arch_litmus.Base) (C:Constr.S with module A = A) = struct
   open CType
 
   let base =  base
@@ -197,7 +197,7 @@ end
 
 module Make
     (O:Config)
-    (A:Arch.S)
+    (A:Arch_litmus.S)
     (T:Test_litmus.S with
      type A.reg = A.reg and
      type A.location = A.location and

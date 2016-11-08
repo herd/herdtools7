@@ -14,13 +14,13 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 module type S = sig
-  module A : Arch.S
+  module A : Arch_gen.S
   module E : Edge.S  with type fence = A.fence
   module R : Relax.S with type edge = E.edge and type fence = A.fence
   module L : LogRelax.S with type relax = R.relax
 end
 
-module Make(A:Arch.S) : S
+module Make(A:Arch_gen.S) : S
 = struct
   module A = A
   module E = Edge.Make(A)

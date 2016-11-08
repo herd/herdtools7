@@ -16,7 +16,7 @@
 
 
 module type S = sig
-  module A : Arch.Base
+  module A : Arch_litmus.Base
 
   type prop = (A.location,Constant.v) ConstrGen.prop
   type constr = prop ConstrGen.constr
@@ -29,7 +29,7 @@ end
 
 open ConstrGen
 
-module Make(A : Arch.Base) : S with module A = A  =
+module Make(A : Arch_litmus.Base) : S with module A = A  =
   struct
     open Constant
     module A = A

@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module Make(V:Constant.S)(C:Arch.Config) =
+module Make(V:Constant.S)(C:Arch_litmus.Config) =
   struct
     module A = MIPSArch_litmus.Make(C)(V)
     open A

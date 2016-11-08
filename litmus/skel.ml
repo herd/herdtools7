@@ -73,7 +73,7 @@ let sentinel = "-239487" (* Susmit's sentinel *)
 module Make
          (Cfg:sig include Config val sysarch : Archs.System.t end)
          (P:sig type code end)
-         (A:Arch.Base)
+         (A:Arch_litmus.Base)
          (T:Test_litmus.S with type P.code = P.code and module A = A)
          (O:Indent.S)
          (Lang:Language.S with type arch_reg = T.A.reg and type t = A.Out.t) : sig

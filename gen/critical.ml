@@ -148,7 +148,7 @@ let () =
       M.zyva
   | PPC ->
       let module T = Top.Make(Co) in
-      let module M = Build(T(PPCCompile.Make(V)(C)(PPCArch.Config))) in
+      let module M = Build(T(PPCCompile.Make(V)(C)(PPCArch_gen.Config))) in
       M.zyva
   | ARM ->
       let module T = Top.Make(Co) in

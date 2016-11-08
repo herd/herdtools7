@@ -13,7 +13,7 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
-module Make (C:sig include Arch.Config val moreedges : bool end) (V:Value.S) =
+module Make (C:sig include Arch_herd.Config val moreedges : bool end) (V:Value.S) =
   struct
     include AArch64Base
 
@@ -61,7 +61,7 @@ module Make (C:sig include Arch.Config val moreedges : bool end) (V:Value.S) =
 
     module V = V
 
-    include ArchExtra.Make(C)
+    include ArchExtra_herd.Make(C)
 	(struct
 	  module V = V 
 

@@ -42,7 +42,7 @@ val basename :
     ('prog,'nice_prog,'start,'state,'prop, 'loc, 'locset) t -> string
 
 
-module Make(A:Arch.S) : sig
+module Make(A:Arch_herd.S) : sig
 
   type result =
       (A.program,

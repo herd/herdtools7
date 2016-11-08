@@ -25,7 +25,7 @@ module type S = sig
   val load : nice_prog -> program * start_points
 end
 
-module Make(A:Arch.S) : S
+module Make(A:Arch_herd.S) : S
 with type nice_prog = A.nice_prog
 and type program = A.program
 and type start_points = A.start_points =

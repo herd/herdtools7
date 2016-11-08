@@ -17,7 +17,7 @@
 (** Implementation of the action interface for machine models *)
 
 module type A = sig
-  include Arch.S
+  include Arch_herd.S
 	    
   type lannot 
 

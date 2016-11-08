@@ -179,7 +179,7 @@ module Top
     end
 
     module Latex(A:ArchBase.S) = struct
-      module Arch = ArchExtra.Make(O)(A)
+      module Arch = ArchExtra_tools.Make(O)(A)
       module M = PrettyProg.Make(O)(Arch)
       module Alloc = SymbReg.Make(Arch)
 

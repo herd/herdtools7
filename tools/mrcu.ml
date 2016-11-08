@@ -44,7 +44,7 @@ module Top
 
     module Dec = struct let hexa = false end
     module P = GenParser.Make(GenParser.DefaultConfig)(LISA)(LISALexParse)
-    module A = ArchExtra.Make(Dec)(LISA) 
+    module A = ArchExtra_tools.Make(Dec)(LISA) 
     module Alloc = SymbReg.Make(A)
 
     module D = Dumper.Make(A)

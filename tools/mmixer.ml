@@ -27,7 +27,7 @@ module Top (Opt:MixOption.S) = struct
 
 
       module Make(A:ArchBase.S) = struct
-        module Arch=ArchExtra.Make(Opt)(A)
+        module Arch=ArchExtra_tools.Make(Opt)(A)
         module D = Dumper.Make(Arch)
         module M = MixMerge.Make(Opt)(Arch)
         module Alloc = SymbReg.Make(Arch)

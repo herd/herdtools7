@@ -20,7 +20,7 @@ module type Config = sig
     val debug : Debug_herd.t
 end
 
-module Make (C:Config) (A:Arch.S) (E:Event.S with module A = A and module Act.A = A) :
+module Make (C:Config) (A:Arch_herd.S) (E:Event.S with module A = A and module Act.A = A) :
 (Monad.S with module A = A and module E = E 
 	  and type evt_struct = E.event_structure) = 
 struct 

@@ -16,7 +16,7 @@
 
 (** Implementation of the action interface for Bell *)
 
-module Make (A : Arch.S) : sig
+module Make (A : Arch_herd.S) : sig
 
   type action =    
     | Access of

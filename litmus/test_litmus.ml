@@ -19,7 +19,7 @@ module type Cfg = sig
 end
 
 module type S = sig
-  module A : Arch.Base
+  module A : Arch_litmus.Base
   module C : Constr.S with module A = A
   module P : PseudoAbstract.S
 
@@ -57,7 +57,7 @@ end
 
 
 
-module Make(Cfg:Cfg)(A:Arch.Base)(P:PseudoAbstract.S) : S
+module Make(Cfg:Cfg)(A:Arch_litmus.Base)(P:PseudoAbstract.S) : S
 with module A = A and module P = P =
 struct
   module A  = A

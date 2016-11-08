@@ -18,7 +18,7 @@
 
 
 
-module Make(A:Arch.S) = struct
+module Make(A:Arch_tools.S) = struct
 
   let collect_pseudo f = A.pseudo_fold (fun k ins -> A.fold_regs f k ins)
 

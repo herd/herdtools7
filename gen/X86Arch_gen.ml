@@ -97,7 +97,7 @@ let fst_dp _ = assert false
 let sequence_dp _ _ = assert false
 
 include
-    ArchExtra.Make
+    ArchExtra_gen.Make
     (struct
       type arch_reg = reg
       let is_symbolic = function

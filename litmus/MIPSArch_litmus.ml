@@ -16,7 +16,7 @@
 
 let comment = "#"
 
-module Make(O:Arch.Config)(V:Constant.S) = struct
+module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
   include MIPSBase
   module V =
     struct
@@ -31,7 +31,7 @@ module Make(O:Arch.Config)(V:Constant.S) = struct
 
 
   include
-      ArchExtra.Make(O)
+      ArchExtra_litmus.Make(O)
       (struct
         module V = V
 

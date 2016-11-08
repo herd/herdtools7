@@ -164,7 +164,7 @@ let pp_dp = function
   | CTRLISYNC -> "CtrlIsb"
 
 include
-    ArchExtra.Make
+    ArchExtra_gen.Make
     (struct
       type arch_reg = reg
 

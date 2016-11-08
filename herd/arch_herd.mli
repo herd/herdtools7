@@ -14,11 +14,23 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+(** Basic arch, ie with no definition of what a global location is *)
+
+module type Config = sig
+  val texmacros : bool
+  val hexa : bool
+  val brackets : bool
+end
+
 module type S =
   sig
+
     include ArchBase.S
-    val tr_endian : int -> int
-    module ScopeGen:ScopeGen.S
-    include Fence.S
-    include ArchExtra.S with type arch_reg = reg
-  end
+
+    module V : Value.S
+
+    include ArchExtra_herd.S with module I.V = V
+    and type I.arch_reg = reg
+    and type I.arch_instruction = instruction
+   end
+      

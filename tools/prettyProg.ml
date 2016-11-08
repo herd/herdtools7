@@ -25,7 +25,7 @@ module type Config = sig
   val outputdir : string option
 end
 
-module Make(O:Config)(A:Arch.S) =
+module Make(O:Config)(A:Arch_tools.S) =
   struct
 
     open Printf

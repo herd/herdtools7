@@ -15,7 +15,7 @@
 (****************************************************************************)
 
 module type Config = sig
-  include Arch.Config
+  include Arch_litmus.Config
   val word : Word.t
   val syncmacro : int option
   val syncconst : int

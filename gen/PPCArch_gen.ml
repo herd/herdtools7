@@ -95,7 +95,7 @@ module Make(C:Config)  =
       | CTRLISYNC -> "CtrlIsync"
 
     include
-        ArchExtra.Make
+        ArchExtra_gen.Make
         (struct
           type arch_reg = reg
           let is_symbolic = function

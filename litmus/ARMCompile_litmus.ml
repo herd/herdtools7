@@ -15,7 +15,7 @@
 (****************************************************************************)
 
 module type Config = sig
-  include Arch.Config
+  include Arch_litmus.Config
   val morearch : MoreArch.t
 end
 

@@ -13,12 +13,12 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
-module Make (C:Arch.Config) (V:Value.S) = struct
+module Make (C:Arch_herd.Config) (V:Value.S) = struct
   include CBase
 
    module V = V
 
-    include ArchExtra.Make(C)        
+    include ArchExtra_herd.Make(C)        
 	(struct
 	  module V = V 
 

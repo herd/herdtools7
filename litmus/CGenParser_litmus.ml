@@ -75,7 +75,7 @@ end
 module Make
     (O:Config)
     (P:PseudoAbstract.S with type code = string CAst.t)
-    (A:Arch.Base)
+    (A:Arch_litmus.Base)
     (L: LexParse) : S =
   struct
 

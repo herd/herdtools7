@@ -147,7 +147,7 @@ end = struct
   module W = Warn.Make(OT)
 
 
-  module Utils (O:Config) (A':Arch.Base)
+  module Utils (O:Config) (A':Arch_litmus.Base)
       (Lang:Language.S
       with type arch_reg = A'.Out.arch_reg
       and type t = A'.Out.t)
@@ -279,7 +279,7 @@ end = struct
 
   module Make
       (O:Config)
-      (A:Arch.S)
+      (A:Arch_litmus.S)
       (L:GenParser.LexParse with type instruction = A.parsedPseudo)
       (XXXComp : XXXCompile_litmus.S with module A = A) =
     struct

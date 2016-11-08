@@ -45,7 +45,7 @@ let basename test =
   try Filename.chop_extension base
   with Invalid_argument _ -> base
 
-module Make(A:Arch.S) =
+module Make(A:Arch_herd.S) =
   struct
 
     type result =

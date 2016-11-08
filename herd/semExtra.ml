@@ -26,7 +26,7 @@ end
 
 module type S = sig
   module O : Config (* Options, for Sem consummer *)
-  module A   : Arch.S
+  module A   : Arch_herd.S
   module E : Event.S with module A = A and module Act.A = A
   module M  : Monad.S
   with module A = A and module E = E and type evt_struct = E.event_structure
@@ -163,7 +163,7 @@ type concrete =
 
 end
 
-module Make(C:Config) (A:Arch.S) (Act:Action.S with module A = A) 
+module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A) 
        : (S with module A = A and module E.Act = Act) =
   struct
     module O = C

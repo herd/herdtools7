@@ -81,7 +81,7 @@ let sequence_dp d1 d2 = match d1 with
 | DATA|CTRL -> []
 
 include
-    ArchExtra.Make
+    ArchExtra_gen.Make
     (struct
       type arch_reg = reg
       let is_symbolic = function

@@ -24,7 +24,7 @@ module type Config = sig
 end
 
 module type S = sig
-  module A : Arch.S
+  module A : Arch_herd.S
 
   type prop = (A.location,A.V.v) ConstrGen.prop
 
@@ -59,7 +59,7 @@ end
 open ConstrGen
 
 
-module Make (C:Config) (A : Arch.S) :
+module Make (C:Config) (A : Arch_herd.S) :
     S with module A = A
 	=
       struct

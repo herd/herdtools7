@@ -16,12 +16,12 @@
 
 (** Define Bell architecture *)
 
-module Make (C:Arch.Config) (V:Value.S) = struct
+module Make (C:Arch_herd.Config) (V:Value.S) = struct
   include BellBase
 
   module V = V
 
-  include ArchExtra.Make(C)        
+  include ArchExtra_herd.Make(C)        
       (struct
 	module V = V 
             

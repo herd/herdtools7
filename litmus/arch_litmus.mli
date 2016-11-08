@@ -14,23 +14,54 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Basic arch, ie with no definition of what a global location is *)
-
 module type Config = sig
-  val texmacros : bool
-  val hexa : bool
-  val brackets : bool
+  include ArchExtra_litmus.Config
+end
+
+(* Abstract signature of architectures *)
+
+module type Base = sig
+  module V : sig
+    type v = Constant.v
+    include Constant.S
+    val maybevToV  : v -> v
+  end
+
+  type reg
+
+  include Location.S
+  with type loc_reg = reg and
+  type loc_global = string
+
+  val vToName : V.v -> loc_global
+
+  val parse_reg : string -> reg option
+  val reg_compare : reg -> reg -> int
+
+  type state = (location * V.v) list
+  type fullstate = (location * (MiscParser.run_type * V.v)) list
+
+  module Out : Target.S with type arch_reg = reg (* Out abstracted *)
+
+  val arch : Archs.t
+
+  val find_in_state : location -> state -> V.v
+  val pp_reg : reg -> string
 end
 
 module type S =
   sig
-
     include ArchBase.S
+    module V :
+        sig
+          type v = Constant.v
+          include Constant.S
+          val maybevToV  : v -> v
+        end
 
-    module V : Value.S
+    val reg_to_string : reg -> string
 
-    include ArchExtra.S with module I.V = V
+    include ArchExtra_litmus.S with module I.V = V
     and type I.arch_reg = reg
-    and type I.arch_instruction = instruction
-   end
-      
+
+  end

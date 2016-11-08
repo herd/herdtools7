@@ -18,7 +18,7 @@
 
 module type I = sig
   val hexa : bool
-  module A : Arch.Base
+  module A : Arch_litmus.Base
   module C : Constr.S with module A = A
   module P : PseudoAbstract.S
 end

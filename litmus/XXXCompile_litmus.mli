@@ -15,7 +15,7 @@
 (****************************************************************************)
 
 module type S = sig
-  module A : Arch.S
+  module A : Arch_litmus.S
 
   val extract_addrs : A.instruction -> StringSet.t
   val stable_regs : A.instruction -> A.RegSet.t

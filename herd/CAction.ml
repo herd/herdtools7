@@ -15,7 +15,7 @@
 (****************************************************************************)
 open Printf
 
-module Make (A : Arch.S) : sig
+module Make (A : Arch_herd.S) : sig
 
   type action =    
     | Access of Dir.dirn * A.location * A.V.v * MemOrderOrAnnot.t * bool (* from RWM op *)

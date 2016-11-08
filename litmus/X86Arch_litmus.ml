@@ -18,7 +18,7 @@ open Printf
 
 let comment = "#"
 
-module Make(O:Arch.Config)(V:Constant.S) = struct
+module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
   include X86Base
   module V =
     struct
@@ -39,7 +39,7 @@ module Make(O:Arch.Config)(V:Constant.S) = struct
   | _ -> assert false
 
   include
-      ArchExtra.Make(O)
+      ArchExtra_litmus.Make(O)
       (struct
         module V = V
 

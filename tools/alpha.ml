@@ -16,7 +16,7 @@
 
 open Printf
 
-module Make(O:MixOption.S)(A:Arch.S) : sig
+module Make(O:MixOption.S)(A:Arch_tools.S) : sig
 
   val alpha : Name.t -> A.test (* avoid *) -> A.test (* alpha *) -> A.test
   val global : Name.t -> A.test (* avoid *) -> A.test (* alpha *) -> A.test
