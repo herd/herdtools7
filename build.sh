@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -o verbose
 set -o errexit
 
 OCAMLBUILD="ocamlbuild -no-links -j 5"
