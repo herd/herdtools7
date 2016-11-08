@@ -14,14 +14,12 @@ else
   LIBDIR=$1
 fi
 
-cat > lib/VersionMaker.ml <<EOD
+cat > lib/Version.ml <<EOD
 (* GENERATED, DO NOT EDIT *)
 
-module Make(Tool: sig val name: string end) = struct
-  let version = "$VERSION"
-  let rev = "$REV"
-  let libdir = "$LIBDIR/" ^ Tool.name
-end
+let version = "$VERSION"
+let rev = "$REV"
+let libdir = "$LIBDIR/"
 EOD
 
 

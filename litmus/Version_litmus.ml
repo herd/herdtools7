@@ -1,1 +1,3 @@
-include VersionMaker.Make(struct let name = "litmus" end)
+include Version
+
+let libdir = libdir ^ "litmus"
