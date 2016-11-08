@@ -19,7 +19,7 @@ open Printf
 
 module type Config = sig
   val verbose : int
-  val debug : Debug.t
+  val debug : Debug_gen.t
   val hout : Hint.out
   val cond : Config.cond
   val coherence_decreasing : bool

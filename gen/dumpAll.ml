@@ -17,7 +17,7 @@
 open Printf
 
 module type Config = sig
-  include Top.Config
+  include Top_gen.Config
   val family : string option
   val canonical_only : bool
   val fmt : int
@@ -403,7 +403,7 @@ module Make(Config:Config)(T:Builder.S)
         T.E.varatom
           es
           (fun es res ->
-            if Config.debug.Debug.generator then
+            if Config.debug.Debug_gen.generator then
               eprintf "Atomic variation: %s\n" (T.E.pp_edges es) ;
             check_dump all_chan check es mk_info mk_name mk_scope res)
           res

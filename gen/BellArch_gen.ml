@@ -18,7 +18,7 @@ open Printf
 open Code
 
 module type Config = sig
-  val debug : Debug.t
+  val debug : Debug_gen.t
   val verbose : int
   val libdir : string
   val prog : string
@@ -38,8 +38,8 @@ let bi = match O.bell with
     let module R =
     ReadBell.Make
       (struct
-        let debug_lexer = O.debug.Debug.lexer
-        let debug_model = O.debug.Debug.model
+        let debug_lexer = O.debug.Debug_gen.lexer
+        let debug_model = O.debug.Debug_gen.model
         let verbose = O.verbose        
         let libfind =
           let module ML =
@@ -179,12 +179,12 @@ let varatom = match  O.varatom with
     let module P =
       Annot.Make
         (struct
-          let debug = O.debug.Debug.lexer
+          let debug = O.debug.Debug_gen.lexer
         end) in
     Some
       begin
         let x = P.parse lines in
-        if O.debug.Debug.generator then
+        if O.debug.Debug_gen.generator then
           eprintf "Variations:\n%s\n" (BellModel.pp_event_decs x) ;
         x
       end 

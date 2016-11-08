@@ -49,7 +49,7 @@ module Make
     (Cfg:Config)
     (P:sig type code end)
     (A:Arch.Base)
-    (T:Test.S with type P.code = P.code and module A = A) : sig
+    (T:Test_litmus.S with type P.code = P.code and module A = A) : sig
 
 (* Typing utilities *)
       type env

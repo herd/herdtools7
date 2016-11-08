@@ -15,7 +15,7 @@
 (****************************************************************************)
 
 module type Config = sig
-  include Top.Config
+  include Top_gen.Config
   val family : string option
   val canonical_only : bool
   val fmt : int

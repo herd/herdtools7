@@ -213,7 +213,7 @@ let () =
       let scope = !Config.scope
     end in
     let open Archs in
-    let module T = Top.Make(C) in
+    let module T = Top_gen.Make(C) in
     begin match !Config.arch with
     | X86 ->
         let module M = Make(C)(T(X86Compile_gen.Make(C))) in

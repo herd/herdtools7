@@ -113,7 +113,7 @@ module type Config = sig
   val check_nstates : string -> int option
 (* End of additions *)
   include Skel.Config
-  include Run.Config
+  include Run_litmus.Config
   val limit : bool
   val sysarch : Archs.System.t
 end
@@ -153,8 +153,8 @@ end = struct
       and type t = A'.Out.t)
       (Pseudo:PseudoAbstract.S) =
     struct
-      module T = Test.Make(O)(A')(Pseudo)
-      module R = Run.Make(O)(Tar)(T.D)
+      module T = Test_litmus.Make(O)(A')(Pseudo)
+      module R = Run_litmus.Make(O)(Tar)(T.D)
 
       let get_cycle t =
         let info = t.MiscParser.info in

@@ -256,7 +256,7 @@ let () =
     let moreedges = !Config.moreedges
     let realdep = !Config.realdep
   end in
-  let module T = Top.Make(Co) in
+  let module T = Top_gen.Make(Co) in
   let f = match !Config.arch with
   | PPC ->
       let module M = Make(T(PPCCompile_gen.Make(C)(PPCArch_gen.Config)))(Co) in

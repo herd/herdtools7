@@ -198,7 +198,7 @@ end
 module Make
     (O:Config)
     (A:Arch.S)
-    (T:Test.S with
+    (T:Test_litmus.S with
      type A.reg = A.reg and
      type A.location = A.location and
      module A.LocSet = A.LocSet and

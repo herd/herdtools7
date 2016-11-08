@@ -19,7 +19,7 @@
 (* Some configuration *)
 module type Config = sig
   val optace : bool
-  val debug : Debug.t
+  val debug : Debug_herd.t
   module PC : PrettyConf.S
 end
 
@@ -51,7 +51,7 @@ module type S = sig
 
   type test =
       (program, nice_prog, start_points,
-       state, prop, location, A.LocSet.t) Test.t
+       state, prop, location, A.LocSet.t) Test_herd.t
 
 (* Get list of locations observed in outcomes *)
   type loc_set = A.LocSet.t
@@ -191,12 +191,12 @@ module Make(C:Config) (A:Arch.S) (Act:Action.S with module A = A)
 
     type test =
       (program, nice_prog, start_points,
-       state, prop, location, A.LocSet.t) Test.t
+       state, prop, location, A.LocSet.t) Test_herd.t
 
-    module T = Test.Make(A)
+    module T = Test_herd.Make(A)
 (* List of relevant location *)
     type loc_set = A.LocSet.t
-    let outcome_locations t = t.Test.observed
+    let outcome_locations t = t.Test_herd.observed
 
     type event = E.event
 

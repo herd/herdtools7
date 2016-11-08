@@ -148,7 +148,7 @@ let options = [
     " show installation directory and exit");
   ("-v", Arg.Unit (fun _ -> incr verbose),
    "<non-default> show various diagnostics, repeat to increase verbosity");
-  ("-q", Arg.Unit (fun _ -> verbose := -1; debug := Debug.none),
+  ("-q", Arg.Unit (fun _ -> verbose := -1; debug := Debug_herd.none),
    "<default> do not show diagnostics");
   ("-I", Arg.String (fun s -> includes := !includes @ [s]),
    "<dir> add <dir> to search path");
@@ -187,10 +187,10 @@ let options = [
    Arg.Unit (fun () -> load_config "cpp11.cfg")," alias for -conf cpp11.cfg");
   parse_tag
     "-debug"
-    (fun tag -> match Debug.parse !debug tag with
+    (fun tag -> match Debug_herd.parse !debug tag with
     | None -> false
     | Some t -> debug := t ; true)
-    Debug.tags
+    Debug_herd.tags
     "show debug messages for specific parts" ;
    parse_bool "-morefences" moreedges "consider complete set of fences" ;
 (* Engine control *)
@@ -433,7 +433,7 @@ let libfind =
   ML.find
 
 module ParserConfig = struct
-  let debug = !debug.Debug.lexer
+  let debug = !debug.Debug_herd.lexer
   let libfind =  libfind
 end
 
@@ -453,7 +453,7 @@ let model,model_opts = match !model with
 
 (* Check names, NB no select argument! *)
 module Verbose =
-  struct let verbose = if !debug.Debug.lexer  then !verbose else 0 end
+  struct let verbose = if !debug.Debug_herd.lexer  then !verbose else 0 end
 
 module Check =
   CheckName.Make
@@ -504,7 +504,7 @@ let () =
     | None -> model_opts.ModelOption.init
     | Some b -> b
     let debug = !debug
-    let debuglexer = debug.Debug.lexer
+    let debuglexer = debug.Debug_herd.lexer
     let verbose = !verbose
     let unroll = !unroll
     let speedcheck = !speedcheck
@@ -520,7 +520,7 @@ let () =
     let moreedges = !moreedges
 
     module PC = struct
-      let debug = debug.Debug.pretty
+      let debug = debug.Debug_herd.pretty
       let verbose = verbose
       let dotmode = !PP.dotmode
       let dotcom = !PP.dotcom
@@ -600,8 +600,8 @@ let () =
       let module R =
         ReadBell.Make
           (struct
-            let debug_lexer = Config.debug.Debug.lexer
-            let debug_model = Config.debug.Debug.barrier
+            let debug_lexer = Config.debug.Debug_herd.lexer
+            let debug_model = Config.debug.Debug_herd.barrier
             let verbose = Config.verbose
             let libfind = libfind
             let prog = prog

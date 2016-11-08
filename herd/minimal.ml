@@ -106,7 +106,7 @@ module Make (O:Cfg) (S:Sem.Semantics)
       if not ok then begin
         pp_failure
           test conc
-          (sprintf "%s: Uniproc violation" test.Test.name.Name.name)
+          (sprintf "%s: Uniproc violation" test.Test_herd.name.Name.name)
           [("co",S.rt ws); ("fr",fr); ("pos",S.rt conc.S.pos)]
       end ;
       ok

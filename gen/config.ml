@@ -72,7 +72,7 @@ type cond = Cycle | Unicond | Observe
 let cond = ref Cycle
 let hout = ref None
 let list_edges = ref false
-let debug = ref Debug.none
+let debug = ref Debug_gen.none
 let moreedges = ref false
 let realdep = ref false
 
@@ -123,10 +123,10 @@ let common_specs =
   ("-version", Arg.Unit (fun () -> print_endline Version.version ; exit 0),
    " show version number and exit")::
   Util.parse_tag "-debug"
-    (fun tag -> match Debug.parse !debug tag with
+    (fun tag -> match Debug_gen.parse !debug tag with
     | None -> false
     | Some d -> debug := d ; true)
-    Debug.tags "specify debugged part"::
+    Debug_gen.tags "specify debugged part"::
   Util.parse_tag
     "-arch"
     (fun tag -> match Archs.parse tag with
@@ -282,7 +282,7 @@ let parse_annots lines = match lines with
     let module P =
       Annot.Make
         (struct
-          let debug = !debug.Debug.lexer
+          let debug = !debug.Debug_gen.lexer
         end) in
     Some (P.parse lines)
       

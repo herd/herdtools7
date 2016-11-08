@@ -42,7 +42,7 @@ module Make(O:Config)(M:XXXMem.S) =
     module MC = Mem.Make(O)(S)
     module C = S.Cons
     module A = S.A
-    module T = Test.Make(A)
+    module T = Test_herd.Make(A)
     module W = Warn.Make(O)
 
 (* Utilities *)
@@ -55,13 +55,13 @@ module Make(O:Config)(M:XXXMem.S) =
 (* Location out printing *)
     let tr_out test =
       try
-        let map = List.assoc "Mapping" test.Test.info in
+        let map = List.assoc "Mapping" test.Test_herd.info in
         let map = try LexOutMapping.parse map with _ -> assert false in
         fun s -> StringMap.safe_find s s map
       with Not_found -> Misc.identity
 
 (* Cond checking *)
-    let check_filter test st = match test.Test.filter with
+    let check_filter test st = match test.Test_herd.filter with
     | None -> false
     | Some p -> C.check_prop p st
 
@@ -79,7 +79,7 @@ module Make(O:Config)(M:XXXMem.S) =
         sts
         0
 
-(* Test result *)
+(* Test_herd result *)
     type count =
         { states : A.StateSet.t;
           cfail : int ;
@@ -169,11 +169,11 @@ module Make(O:Config)(M:XXXMem.S) =
               None
             end else None
       | PrettyConf.StdoutOutput ->
-	 let fname = Test.basename test in
+	 let fname = Test_herd.basename test in
 	 fprintf stdout "\nDOTBEGIN %s\n" fname;
 	 Some (stdout, fname)
       | PrettyConf.Outputdir d ->
-          let base = Test.basename test in
+          let base = Test_herd.basename test in
           let base = base ^ O.suffix in
           let f = Filename.concat d base ^ ".dot" in
           try Some (open_out f,f) with
@@ -251,7 +251,7 @@ module Make(O:Config)(M:XXXMem.S) =
                 let pp_flag = match O.show with
                 | PrettyConf.ShowFlag f -> sprintf ", flag %s" f
                 | _ -> "" in
-                let name = Test.readable_name test in
+                let name = Test_herd.readable_name test in
                 let pp_model = match M.model with
                 | Model.Minimal false -> ""
                 | _ -> sprintf "%s" (Model.pp M.model) in
@@ -264,7 +264,7 @@ module Make(O:Config)(M:XXXMem.S) =
                       (C.dump_as_kind cstr)
                       pp_model
                   else
-                    sprintf "Test %s%s%s%s"
+                    sprintf "Test_herd %s%s%s%s"
                       name
                       (sprintf ": %s" (C.dump_as_kind cstr))
                       (match pp_model with
@@ -278,7 +278,7 @@ module Make(O:Config)(M:XXXMem.S) =
                       name
                       pp_model
                   else
-                    sprintf "Test %s%s%s" name
+                    sprintf "Test_herd %s%s%s" name
                       (match pp_model with
                       | "" -> ""
                       | _ -> sprintf ", %s" pp_model)
@@ -397,10 +397,10 @@ module Make(O:Config)(M:XXXMem.S) =
       | _ ->
         try begin
 (* Header *)
-        let tname = test.Test.name.Name.name in
+        let tname = test.Test_herd.name.Name.name in
         let is_bad = has_bad_execs c in
         if not O.badexecs &&  is_bad then raise Exit ;
-        printf "Test %s %s\n" tname (C.dump_as_kind cstr) ;        
+        printf "Test_herd %s %s\n" tname (C.dump_as_kind cstr) ;        
 (**********)
 (* States *)
 (**********)
@@ -449,13 +449,13 @@ module Make(O:Config)(M:XXXMem.S) =
                   (if ok then "Ok" else "No") v
               else if Misc.string_eq k "Cycle" ||  Misc.string_eq k "Safe" then
                 fprintf stdout "%s=%s\n" k v)
-            test.Test.info
+            test.Test_herd.info
         end  else 
           List.iter
             (fun (k,v) ->
               if Misc.string_eq k "Hash" then
                 printf "%s=%s\n" k v)
-            test.Test.info ;
+            test.Test_herd.info ;
         print_newline ()
       end with Exit -> () ;
       ()

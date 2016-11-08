@@ -27,7 +27,7 @@ module type Config = sig
   val check_rename : string -> string option
   val libfind : string -> string
   include GenParser.Config
-  include Top.Config
+  include Top_herd.Config
   include Sem.Config
 end
 

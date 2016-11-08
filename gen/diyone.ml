@@ -33,7 +33,7 @@ let opts =
 
 
 module type Config = sig
-  include Top.Config
+  include Top_gen.Config
   include DumpAll.Config
   val norm : bool
   val cpp : bool    
@@ -230,23 +230,23 @@ let () =
   end in
   (match !Config.arch with
   | X86 ->
-      let module T = Top.Make(Co) in
+      let module T = Top_gen.Make(Co) in
       let module M = Build(T(X86Compile_gen.Make(C))) in
       M.zyva
   | PPC ->
-      let module T = Top.Make(Co) in
+      let module T = Top_gen.Make(Co) in
       let module M = Build(T(PPCCompile_gen.Make(C)(PPCArch_gen.Config))) in
       M.zyva
   | ARM ->
-      let module T = Top.Make(Co) in
+      let module T = Top_gen.Make(Co) in
       let module M = Build(T(ARMCompile_gen.Make(C))) in
       M.zyva
   | AArch64 ->
-      let module T = Top.Make(Co) in
+      let module T = Top_gen.Make(Co) in
       let module M = Build(T(AArch64Compile_gen.Make(C))) in
       M.zyva
   | MIPS ->
-      let module T = Top.Make(Co) in
+      let module T = Top_gen.Make(Co) in
       let module M = Build(T(MIPSCompile_gen.Make(C))) in
       M.zyva
   | LISA ->
@@ -259,7 +259,7 @@ let () =
           let bell = !Config.bell
           let varatom = !Config.varatom
         end in
-      let module T = Top.Make(Co) in
+      let module T = Top_gen.Make(Co) in
       let module M = Build(T(BellCompile.Make(C)(BellConfig))) in
       M.zyva
   | C|CPP as a ->

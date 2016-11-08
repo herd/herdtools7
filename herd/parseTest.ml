@@ -28,7 +28,7 @@ module type Config = sig
   val check_rename : string -> string option
   val libfind : string -> string
   include GenParser.Config
-  include Top.Config
+  include Top_herd.Config
   include Sem.Config
 end
 
@@ -54,7 +54,7 @@ module Top (Conf:Config) = struct
          end) 
       (M:XXXMem.S with module S = S) =
     struct
-      module T = Test.Make(S.A) 
+      module T = Test_herd.Make(S.A) 
 
       let run filename chan env splitted =
         try
@@ -71,7 +71,7 @@ module Top (Conf:Config) = struct
           | Some hash ->
               TestHash.check_env env name.Name.name filename hash in
           let test = T.build name parsed in
-          let module T = Top.Make(Conf)(M) in
+          let module T = Top_herd.Make(Conf)(M) in
           T.run test ;
           env
           with TestHash.Seen -> env
@@ -80,7 +80,7 @@ module Top (Conf:Config) = struct
   module SP =
     Splitter.Make
       (struct
-        let debug = Conf.debug.Debug.lexer
+        let debug = Conf.debug.Debug_herd.lexer
         let check_rename = Conf.check_rename
       end)
 
@@ -93,7 +93,7 @@ module Top (Conf:Config) = struct
 (* Now, we have the architecture, call specific parsers
    generically. *)
       let module LexConfig = struct
-        let debug = Conf.debug.Debug.lexer
+        let debug = Conf.debug.Debug_herd.lexer
       end in
       let module ModelConfig = struct
         let bell_model_info = Conf.bell_model_info
@@ -121,7 +121,7 @@ module Top (Conf:Config) = struct
           begin match Conf.outputdir with PrettyConf.StdoutOutput | PrettyConf.Outputdir _ -> true | _ -> false end
         || Conf.PC.gv || Conf.PC.evince
         let through = Conf.through
-        let debug = Conf.debug.Debug.barrier
+        let debug = Conf.debug.Debug_herd.barrier
         let verbose = Conf.verbose
         let skipchecks = Conf.skipchecks
         let strictskip = Conf.strictskip
@@ -290,7 +290,7 @@ module Top (Conf:Config) = struct
         let module BellM = BellMem.Make(ModelConfig)(BellS) in
         let module BellC =
           BellCheck.Make
-            (struct let debug = Conf.debug.Debug.barrier end)
+            (struct let debug = Conf.debug.Debug_herd.barrier end)
             (Bell)
             (struct
               let info = Misc.app_opt (fun (_,y) -> y) Conf.bell_model_info

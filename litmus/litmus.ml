@@ -333,7 +333,7 @@ let () =
       let asmcomment = !asmcomment
       let asmcommentaslabel = !asmcommentaslabel
     end in
-    let module T = Top.Top (Config) (Tar) in
+    let module T = Top_litmus.Top (Config) (Tar) in
     T.from_files sources ;
     if not (Option.is_out ()) then MySys.rmdir outname ;
     exit 0

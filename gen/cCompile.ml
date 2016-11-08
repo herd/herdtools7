@@ -22,7 +22,7 @@ open Printf
 open Code
 
 module type Config = sig
-  include Top.Config
+  include Top_gen.Config
   val coherence_decreasing : bool
   val same_loc : bool
   val verbose : int

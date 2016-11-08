@@ -25,7 +25,7 @@ val prog : string
 val verbose : int ref
 val includes : string list ref
 val exit_if_failed : bool ref
-val debug : Debug.t ref
+val debug : Debug_herd.t ref
 val names : string list ref
 val excl : string list ref
 val rename : string list ref

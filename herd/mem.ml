@@ -22,7 +22,7 @@ module type Config = sig
   val optace : bool
   val unroll : int
   val speedcheck : Speed.t
-  val debug : Debug.t
+  val debug : Debug_herd.t
   val observed_finals_only : bool
   val initwrites : bool
 end
@@ -172,8 +172,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           (function
             | A.Location_global _|A.Location_deref _ -> true
             | A.Location_reg _ -> false)
-          test.Test.observed
-      and locs_init = get_all_locs_init test.Test.init_state in
+          test.Test_herd.observed
+      and locs_init = get_all_locs_init test.Test_herd.init_state in
       let locs = A.LocSet.union locs_final locs_init in
       let locs =
         List.fold_left
@@ -187,20 +187,20 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                   locs ins)
               locs code)
           locs
-          test.Test.start_points in
+          test.Test_herd.start_points in
       let env =
         A.LocSet.fold
           (fun loc env ->
             try
-              let v = A.look_in_state test.Test.init_state loc in
+              let v = A.look_in_state test.Test_herd.init_state loc in
               (loc,v)::env
             with A.LocUndetermined -> assert false)
           locs [] in
       env
 
     let glommed_event_structures (test:S.test) =
-      let p = test.Test.program in
-      let starts = test.Test.start_points in
+      let p = test.Test_herd.program in
+      let starts = test.Test_herd.start_points in
       let procs = List.map fst starts in
       let tooFar = ref false in
 
@@ -388,7 +388,7 @@ let match_reg_events es =
 let get_rf_value test read rf = match rf with
 | S.Init ->
     let loc = get_loc read in
-    begin try A.look_in_state test.Test.init_state loc
+    begin try A.look_in_state test.Test_herd.init_state loc
     with A.LocUndetermined -> assert false end
 | S.Store e -> get_written e
  
@@ -424,7 +424,7 @@ let solve_regs test es csn =
       rfm csn in
   match VC.solve csn with
   | VC.NoSolns ->       
-      if C.debug.Debug.solver then begin
+      if C.debug.Debug_herd.solver then begin
 	  let module PP = Pretty.Make(S) in
 	  prerr_endline "No solution at register level"; 
 	  PP.show_es_rfm test es rfm ;
@@ -467,7 +467,7 @@ let compatible_locs_mem e1 e2 =
       match rf with
       | S.Init -> (* Tricky, if location (of load) is
                      not know yet, emit a specific constraint *)    
-          let state = test.Test.init_state
+          let state = test.Test_herd.init_state
           and loc_load = get_loc load in
           begin try
 	    let v_stored = A.look_in_state state loc_load in
@@ -498,7 +498,7 @@ let compatible_locs_mem e1 e2 =
       match E.EventRel.get_cycle causality with
       | None -> prerr_endline "no cycle"; false 
       | Some cy -> 
-          if C.debug.Debug.rfm then begin
+          if C.debug.Debug_herd.rfm then begin
             let debug_event chan e = Printf.fprintf chan "%i" e.E.eiid in
             eprintf "cycle = %a\n" debug_event
               (match cy with e::_ -> e | [] -> assert false)
@@ -593,7 +593,7 @@ let compatible_locs_mem e1 e2 =
       if unroll_only then
         kont_loop res
       else begin
-        if C.debug.Debug.solver then begin
+        if C.debug.Debug_herd.solver then begin
 	  let module PP = Pretty.Make(S) in
 	  prerr_endline "Unsolvable system" ;
 	  PP.show_es_rfm test es rfm ;
@@ -626,7 +626,7 @@ let compatible_locs_mem e1 e2 =
 (*************************************)
 
 (* Internal filter *)
-    let check_filter test fsc = match test.Test.filter with
+    let check_filter test fsc = match test.Test_herd.filter with
     | None -> true
     | Some p -> S.Cons.check_prop p fsc
 (*
@@ -654,7 +654,7 @@ let compatible_locs_mem e1 e2 =
         | S.Final loc,S.Store ew ->
             A.state_add k loc (get_written ew)
         | _,_ -> k)
-        rfm test.Test.init_state
+        rfm test.Test_herd.init_state
 
 
 (* View before relations easily available, from po_iico and rfmap *)
@@ -836,7 +836,7 @@ let compatible_locs_mem e1 e2 =
                 rfm ws in
             let fsc = compute_final_state test rfm  in
             if check_filter test fsc && worth_going test fsc then begin
-              if C.debug.Debug.solver then begin
+              if C.debug.Debug_herd.solver then begin
 	        let module PP = Pretty.Make(S) in
 	        prerr_endline "Final rfmap" ;
 	        PP.show_es_rfm test es rfm ;
@@ -903,7 +903,7 @@ let compatible_locs_mem e1 e2 =
       match solve_regs test es cs with
       | None -> res
       | Some (es,rfm,cs) ->
-          if C.debug.Debug.solver && C.verbose > 0 then begin
+          if C.debug.Debug_herd.solver && C.verbose > 0 then begin
 	    let module PP = Pretty.Make(S) in
 	    prerr_endline "Reg solved" ;
 	    PP.show_es_rfm test es rfm ;
@@ -912,7 +912,7 @@ let compatible_locs_mem e1 e2 =
             (fun es rfm cs res -> 
               match cs with
               | [] ->
-	          if C.debug.Debug.solver && C.verbose > 0 then begin
+	          if C.debug.Debug_herd.solver && C.verbose > 0 then begin
 	            let module PP = Pretty.Make(S) in
 	            prerr_endline "Mem solved" ;
 	            PP.show_es_rfm test es rfm

@@ -22,7 +22,7 @@ end
 
 module Make
     (O:Config)
-    (T:Test.S with
+    (T:Test_litmus.S with
      type P.code = string CAst.t and
      type A.reg = string and
      type A.loc_reg = string and
