@@ -125,7 +125,7 @@ let load_config s =
         let includes = !includes
         let libdir = Version.libdir
       end) in
-  LexConf.lex (ML.find s)
+  LexConf_herd.lex (ML.find s)
 
 let gen_model_opt s =
   parse_tag

@@ -107,7 +107,7 @@ let fnames = match !logs with
 module LS = LogState.Make(Verbose)
 
 module LL =
-  LexLog.Make
+  LexLog_tools.Make
     (struct
       let verbose = verbose
       include Check

@@ -34,7 +34,7 @@ end
 module Make(O:Opt) = struct
 
   module LL =
-    LexLog.Make
+    LexLog_tools.Make
       (struct
         let verbose = O.verbose
         let rename n = n

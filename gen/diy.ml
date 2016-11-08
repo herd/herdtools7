@@ -170,7 +170,7 @@ let norm_cmd cmd =
     in no_conf s
 
 let exec_conf s =
-  let conf = Misc.input_protect LexConf.conf s in
+  let conf = Misc.input_protect LexConf_gen.conf s in
   let prog = Sys.argv.(0) in
   let cmd = Array.to_list Sys.argv in
   let cmd = norm_cmd cmd in

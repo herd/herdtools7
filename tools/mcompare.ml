@@ -420,7 +420,7 @@ let dump_file s name = Misc.output_protect (dump_chan s) name
 (* Read log files *)
 (******************)
 
-  module LL = LexLog.Make(Opt)
+  module LL = LexLog_tools.Make(Opt)
 
 
 

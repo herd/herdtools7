@@ -74,7 +74,7 @@ let select_name = fun _ -> true
 
 module LS = LogState.Make(Verbose)
 module LL =
-  LexLog.Make
+  LexLog_tools.Make
     (struct
       let verbose = verbose
       let rename = do_rename
