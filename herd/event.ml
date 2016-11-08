@@ -20,7 +20,7 @@ open Printf
 
 module type S = sig
 
-  module A : Arch.S
+  module A : Arch_herd.S
 
   module Act : Action.S
 
@@ -275,7 +275,7 @@ module type S = sig
 
 end
       
-module Make (AI:Arch.S) (Act:Action.S with module A = AI) : 
+module Make (AI:Arch_herd.S) (Act:Action.S with module A = AI) : 
   (S with module A = AI and module Act = Act) = 
 struct
 

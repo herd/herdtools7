@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module Make(O:MixOption.S)(A:Arch.S) : sig
+module Make(O:MixOption.S)(A:Arch_tools.S) : sig
   val merge : Name.t -> A.test -> Name.t -> A.test -> A.test
   val append : Name.t -> A.test -> Name.t -> A.test -> A.test
   val cat : Name.t -> A.test -> Name.t -> A.test -> A.test

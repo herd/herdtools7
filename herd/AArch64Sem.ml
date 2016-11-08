@@ -17,7 +17,7 @@ module Make (C:Sem.Config)(V:Value.S)
 =
   struct
     module AArch64 =
-      AArch64Arch.Make
+      AArch64Arch_herd.Make
         (struct include C.PC let moreedges = C.moreedges end)(V)
     module Act = MachAction.Make(AArch64)
     include SemExtra.Make(C)(AArch64)(Act)

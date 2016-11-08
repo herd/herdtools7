@@ -425,11 +425,11 @@ let get_scope_rels evts sc =
       fold_write_serialization_candidates
         conc conc.S.pco process_co res
     with E.EventRel.Cyclic ->
-      if S.O.debug.Debug.barrier && S.O.PC.verbose > 2 then begin
+      if S.O.debug.Debug_herd.barrier && S.O.PC.verbose > 2 then begin
         let module PP = Pretty.Make(S) in
         let legend =
           sprintf "%s cyclic co precursor"
-            test.Test.name.Name.name in
+            test.Test_herd.name.Name.name in
         let pos = conc.S.pos in
         prerr_endline legend ;
         PP.show_legend test  legend conc
@@ -517,7 +517,7 @@ let get_scope_rels evts sc =
   If no, not need to go on
  *)
 
-  module T = Test.Make(S.A)
+  module T = Test_herd.Make(S.A)
       
   let final_is_relevant test fsc =
     let open ConstrGen in

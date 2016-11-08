@@ -28,7 +28,7 @@ module type Config = sig
   val check_rename : string -> string option
   val libfind : string -> string
   include GenParser.Config
-  include Top.Config
+  include Top_herd.Config
   include Sem.Config
 end
 
@@ -54,7 +54,7 @@ module Top (Conf:Config) = struct
          end) 
       (M:XXXMem.S with module S = S) =
     struct
-      module T = Test.Make(S.A) 
+      module T = Test_herd.Make(S.A) 
 
       let run filename chan env splitted =
         try
@@ -71,7 +71,7 @@ module Top (Conf:Config) = struct
           | Some hash ->
               TestHash.check_env env name.Name.name filename hash in
           let test = T.build name parsed in
-          let module T = Top.Make(Conf)(M) in
+          let module T = Top_herd.Make(Conf)(M) in
           T.run test ;
           env
           with TestHash.Seen -> env
@@ -80,7 +80,7 @@ module Top (Conf:Config) = struct
   module SP =
     Splitter.Make
       (struct
-        let debug = Conf.debug.Debug.lexer
+        let debug = Conf.debug.Debug_herd.lexer
         let check_rename = Conf.check_rename
       end)
 
@@ -93,7 +93,7 @@ module Top (Conf:Config) = struct
 (* Now, we have the architecture, call specific parsers
    generically. *)
       let module LexConfig = struct
-        let debug = Conf.debug.Debug.lexer
+        let debug = Conf.debug.Debug_herd.lexer
       end in
       let module ModelConfig = struct
         let bell_model_info = Conf.bell_model_info
@@ -121,7 +121,7 @@ module Top (Conf:Config) = struct
           begin match Conf.outputdir with PrettyConf.StdoutOutput | PrettyConf.Outputdir _ -> true | _ -> false end
         || Conf.PC.gv || Conf.PC.evince
         let through = Conf.through
-        let debug = Conf.debug.Debug.barrier
+        let debug = Conf.debug.Debug_herd.barrier
         let verbose = Conf.verbose
         let skipchecks = Conf.skipchecks
         let strictskip = Conf.strictskip
@@ -130,7 +130,7 @@ module Top (Conf:Config) = struct
       end in
       match arch with
       | `PPC ->
-	  let module PPC = PPCArch.Make(Conf.PC)(SymbValue) in
+	  let module PPC = PPCArch_herd.Make(Conf.PC)(SymbValue) in
 	  let module PPCLexParse = struct
 	    type instruction = PPC.parsedPseudo
 	    type token = PPCParser.token
@@ -154,7 +154,7 @@ module Top (Conf:Config) = struct
           X.run name chan env splitted
 
       | `ARM ->
-	  let module ARM = ARMArch.Make(Conf.PC)(SymbValue) in
+	  let module ARM = ARMArch_herd.Make(Conf.PC)(SymbValue) in
 	  let module ARMLexParse = struct
 	    type instruction = ARM.parsedPseudo
 	    type token = ARMParser.token
@@ -184,7 +184,7 @@ module Top (Conf:Config) = struct
             include Conf.PC
             let moreedges = Conf.moreedges
           end in
-	  let module AArch64 = AArch64Arch.Make(AArch64Conf)(SymbValue) in
+	  let module AArch64 = AArch64Arch_herd.Make(AArch64Conf)(SymbValue) in
 	  let module AArch64LexParse = struct
 	    type instruction = AArch64.parsedPseudo
 	    type token = AArch64Parser.token
@@ -210,7 +210,7 @@ module Top (Conf:Config) = struct
           X.run name chan env splitted
 
       | `X86 ->
-          let module X86 = X86Arch.Make(Conf.PC)(SymbValue) in
+          let module X86 = X86Arch_herd.Make(Conf.PC)(SymbValue) in
           let module X86LexParse = struct
 	    type instruction = X86.pseudo
 	    type token = X86Parser.token
@@ -233,7 +233,7 @@ module Top (Conf:Config) = struct
           X.run name chan env splitted
 
       | `MIPS ->
-          let module MIPS = MIPSArch.Make(Conf.PC)(SymbValue) in
+          let module MIPS = MIPSArch_herd.Make(Conf.PC)(SymbValue) in
           let module MIPSLexParse = struct
 	    type instruction = MIPS.pseudo
 	    type token = MIPSParser.token
@@ -254,7 +254,7 @@ module Top (Conf:Config) = struct
           X.run name chan env splitted
 
       | `C ->
-        let module C = CArch.Make(Conf.PC)(SymbValue) in
+        let module C = CArch_herd.Make(Conf.PC)(SymbValue) in
         let module CLexParse = struct
           (* Parsing *)
     	  type pseudo = C.pseudo
@@ -272,12 +272,12 @@ module Top (Conf:Config) = struct
         end in
         let module CS = CSem.Make(Conf)(SymbValue) in
         let module CM = CMem.Make(ModelConfig)(CS) in
-        let module P = CGenParser.Make (Conf) (C) (CLexParse) in
+        let module P = CGenParser_lib.Make (Conf) (C) (CLexParse) in
         let module X = Make (CS) (P) (NoCheck) (CM) in
         X.run name chan env splitted
 
       | `LISA ->
-        let module Bell = BellArch.Make(Conf.PC)(SymbValue) in
+        let module Bell = BellArch_herd.Make(Conf.PC)(SymbValue) in
         let module BellLexParse = struct
   	  type instruction = Bell.parsedPseudo
 	  type token = LISAParser.token
@@ -290,7 +290,7 @@ module Top (Conf:Config) = struct
         let module BellM = BellMem.Make(ModelConfig)(BellS) in
         let module BellC =
           BellCheck.Make
-            (struct let debug = Conf.debug.Debug.barrier end)
+            (struct let debug = Conf.debug.Debug_herd.barrier end)
             (Bell)
             (struct
               let info = Misc.app_opt (fun (_,y) -> y) Conf.bell_model_info

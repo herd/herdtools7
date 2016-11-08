@@ -19,7 +19,7 @@
 module Make (C:Sem.Config)(V:Value.S)
 =
   struct
-    module ARM = ARMArch.Make(C.PC)(V)
+    module ARM = ARMArch_herd.Make(C.PC)(V)
     module Act = MachAction.Make(ARM)
     include SemExtra.Make(C)(ARM)(Act)
 

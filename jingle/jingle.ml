@@ -31,46 +31,46 @@ let get_arch =
   function
   | `AArch64 ->
      let module AArch64LexParse = struct
-       type instruction = AArch64Arch.parsedPseudo
+       type instruction = AArch64Arch_jingle.parsedPseudo
        type token = AArch64Parser.token
        module Lexer = AArch64Lexer.Make(struct let debug = false end)
        let lexer = Lexer.token
        let parser = MiscParser.mach2generic AArch64Parser.main
        let instr_parser = AArch64Parser.instr_option_seq
      end in (module struct
-	       include AArch64Arch
-	       module Parser = MakeParser(AArch64Arch)(AArch64LexParse)
-	       module Dumper = DefaultDumper(AArch64Arch)
+	       include AArch64Arch_jingle
+	       module Parser = MakeParser(AArch64Arch_jingle)(AArch64LexParse)
+	       module Dumper = DefaultDumper(AArch64Arch_jingle)
 	     end : Arch.S)
    | `ARM ->
       let module ARMLexParse = struct
-	type instruction = ARMArch.parsedPseudo
+	type instruction = ARMArch_jingle.parsedPseudo
 	type token = ARMParser.token
         module Lexer = ARMLexer.Make(struct let debug = false end)
 	let lexer = Lexer.token
 	let parser = MiscParser.mach2generic ARMParser.main
        let instr_parser = ARMParser.instr_option_seq
       end in (module struct
-		include ARMArch
-		module Parser = MakeParser(ARMArch)(ARMLexParse)
-		module Dumper = DefaultDumper(ARMArch)
+		include ARMArch_jingle
+		module Parser = MakeParser(ARMArch_jingle)(ARMLexParse)
+		module Dumper = DefaultDumper(ARMArch_jingle)
 	      end : S)
-  | `Bell ->
+  | `LISA ->
      let module BellLexParse = struct
-       type instruction = BellArch.parsedPseudo
+       type instruction = BellArch_jingle.parsedPseudo
        type token = LISAParser.token
        module Lexer = BellLexer.Make(struct let debug = false end)
        let lexer = Lexer.token
        let parser = LISAParser.main
        let instr_parser = LISAParser.instr_option_seq
      end in (module struct 
-	       include BellArch
-	       module Parser = MakeParser(BellArch)(BellLexParse)
-	       module Dumper = DefaultDumper(BellArch)
+	       include BellArch_jingle
+	       module Parser = MakeParser(BellArch_jingle)(BellLexParse)
+	       module Dumper = DefaultDumper(BellArch_jingle)
 	     end : S)
   | `C ->
      let module CLexParse = struct
-       type pseudo = CArch.parsedPseudo
+       type pseudo = CArch_jingle.parsedPseudo
        type token = CParser.token
        module Lexer = CLexer.Make(struct let debug = false end)
        let shallow_lexer = Lexer.token false
@@ -83,13 +83,13 @@ let get_arch =
        let macros_parser _ _ = assert false
        let macros_expand _ i = i
      end in (module struct 
-	       include CArch
+	       include CArch_jingle
 	       module Parser = struct
-		 include CGenParser.Make(CGenParser.DefaultConfig)
-					(CArch)(CLexParse)
-		 type parsedPseudo = CArch.parsedPseudo
+		 include CGenParser_lib.Make(CGenParser_lib.DefaultConfig)
+					(CArch_jingle)(CLexParse)
+		 type parsedPseudo = CArch_jingle.parsedPseudo
 		 let instr_from_string s =
-		   CGenParser.call_parser "themes" (Lexing.from_string s) 
+		   CGenParser_lib.call_parser "themes" (Lexing.from_string s) 
 					 CLexParse.deep_lexer 
 					 CLexParse.instr_parser
 	       end
@@ -98,17 +98,19 @@ let get_arch =
 	      
   | `PPC ->
      let module PPCLexParse = struct
-       type instruction = PPCArch.parsedPseudo
+       type instruction = PPCArch_jingle.parsedPseudo
        type token = PPCParser.token
        module Lexer = PPCLexer.Make(struct let debug = false end)
        let lexer = Lexer.token
        let parser = MiscParser.mach2generic PPCParser.main
        let instr_parser = PPCParser.instr_option_seq
      end in (module struct 
-	       include PPCArch
-	       module Parser = MakeParser(PPCArch)(PPCLexParse)
-	       module Dumper = DefaultDumper(PPCArch)
+	       include PPCArch_jingle
+	       module Parser = MakeParser(PPCArch_jingle)(PPCLexParse)
+	       module Dumper = DefaultDumper(PPCArch_jingle)
 	     end : S)
+
+  | _ -> assert false
 
 let () =
   Arg.parse

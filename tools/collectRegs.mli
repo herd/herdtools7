@@ -17,7 +17,7 @@
 (* Collect registers from tests *)
 
 
-module Make(A:Arch.S) : sig
+module Make(A:Arch_tools.S) : sig
   val collect_code : A.pseudo list -> A.RegSet.t
   val collect : A.test -> A.RegSet.t  A.ProcMap.t
 end

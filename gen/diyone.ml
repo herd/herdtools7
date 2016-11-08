@@ -33,7 +33,7 @@ let opts =
 
 
 module type Config = sig
-  include Top.Config
+  include Top_gen.Config
   include DumpAll.Config
   val norm : bool
   val cpp : bool    
@@ -169,7 +169,7 @@ let () =
 
 let pp_es = List.rev !pp_es
 let cpp = match !Config.arch with
-| CPP -> true
+| `CPP -> true
 | _ -> false
 
 let () =
@@ -229,47 +229,47 @@ let () =
     let realdep = !Config.realdep
   end in
   (match !Config.arch with
-  | X86 ->
-      let module T = Top.Make(Co) in
-      let module M = Build(T(X86Compile.Make(C))) in
+  | `X86 ->
+      let module T = Top_gen.Make(Co) in
+      let module M = Build(T(X86Compile_gen.Make(C))) in
       M.zyva
-  | PPC ->
-      let module T = Top.Make(Co) in
-      let module M = Build(T(PPCCompile.Make(C)(PPCArch.Config))) in
+  | `PPC ->
+      let module T = Top_gen.Make(Co) in
+      let module M = Build(T(PPCCompile_gen.Make(C)(PPCArch_gen.Config))) in
       M.zyva
-  | ARM ->
-      let module T = Top.Make(Co) in
-      let module M = Build(T(ARMCompile.Make(C))) in
+  | `ARM ->
+      let module T = Top_gen.Make(Co) in
+      let module M = Build(T(ARMCompile_gen.Make(C))) in
       M.zyva
-  | AArch64 ->
-      let module T = Top.Make(Co) in
-      let module M = Build(T(AArch64Compile.Make(C))) in
+  | `AArch64 ->
+      let module T = Top_gen.Make(Co) in
+      let module M = Build(T(AArch64Compile_gen.Make(C))) in
       M.zyva
-  | MIPS ->
-      let module T = Top.Make(Co) in
-      let module M = Build(T(MIPSCompile.Make(C))) in
+  | `MIPS ->
+      let module T = Top_gen.Make(Co) in
+      let module M = Build(T(MIPSCompile_gen.Make(C))) in
       M.zyva
-  | LISA ->
+  | `LISA ->
       let module BellConfig =
         struct
           let debug = !Config.debug
           let verbose = !Config.verbose
-          let libdir = Version.libdir
+          let libdir = Version_gen.libdir
           let prog = Config.prog
           let bell = !Config.bell
           let varatom = !Config.varatom
         end in
-      let module T = Top.Make(Co) in
+      let module T = Top_gen.Make(Co) in
       let module M = Build(T(BellCompile.Make(C)(BellConfig))) in
       M.zyva
-  | C|CPP as a ->
+  | `C | `CPP as a ->
       let module CoC = struct
         include Co
         include C
         let typ = !Config.typ
-        let cpp = match a with CPP -> true | _ -> false
+        let cpp = match a with `CPP -> true | _ -> false
       end in
-      let module T = CCompile.Make(CoC) in
+      let module T = CCompile_gen.Make(CoC) in
       let module M = Build(T) in
       M.zyva
 )

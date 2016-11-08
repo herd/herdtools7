@@ -74,7 +74,7 @@ module Make
       if O.debug then
         let module PP = Pretty.Make(S) in
         let legend =
-          sprintf "%s: %s" test.Test.name.Name.name msg in
+          sprintf "%s: %s" test.Test_herd.name.Name.name msg in
         eprintf "%s\n%!" legend ;
         PP.show_legend test  legend conc (Lazy.force vb_pp)
 
@@ -377,7 +377,7 @@ module Make
         let module PP = Pretty.Make(S) in
         let vb_pp = MU.pp_procrels (Some B.pp_isync) pr in
         let legend =
-          sprintf "%s: dependencies" test.Test.name.Name.name in
+          sprintf "%s: dependencies" test.Test_herd.name.Name.name in
         eprintf "%s\n%!" legend ;
         PP.show_legend test  legend conc vb_pp
 

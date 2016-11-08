@@ -19,7 +19,7 @@
 module Make (C:Sem.Config)(V : Value.S)
     =
   struct
-    module X86 = X86Arch.Make(C.PC)(V)
+    module X86 = X86Arch_herd.Make(C.PC)(V)
     module Act = MachAction.Make(X86)
     include SemExtra.Make(C)(X86)(Act)
 

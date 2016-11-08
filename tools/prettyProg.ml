@@ -25,7 +25,7 @@ module type Config = sig
   val outputdir : string option
 end
 
-module Make(O:Config)(A:Arch.S) =
+module Make(O:Config)(A:Arch_tools.S) =
   struct
 
     open Printf
@@ -91,7 +91,7 @@ module Make(O:Config)(A:Arch.S) =
 
     let pp_arch a =
       match a with
-      | Archs.PPC -> "POWER"
+      | `PPC -> "POWER"
       | _ -> Archs.pp a
 
     let pp_prog chan prog test initial_opt finals_opt show_po =
@@ -115,7 +115,7 @@ module Make(O:Config)(A:Arch.S) =
       output_string chan "}\n" ;
       let numberofcolumns = (if show_po then 1 else 0) + numprocs in
       let pp_arch =
-        if test.arch <> Archs.X86 then
+        if test.arch <> `X86 then
           pp_arch test.arch
         else "" in
       if numberofcolumns > 1 then 

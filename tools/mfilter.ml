@@ -78,7 +78,7 @@ let conds = LR.read_from_files conds LogConstr.parse
 module LS = LogState.Make(Verbose)
 
 module LL =
-  LexLog.Make
+  LexLog_tools.Make
     (struct
       let verbose = verbose
       include

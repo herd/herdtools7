@@ -209,46 +209,46 @@ let () =
       let hexa = !Config.hexa
       let moreedges = !Config.moreedges
       let realdep = !Config.realdep
-      let cpp = match !Config.arch with Archs.CPP -> true | _ -> false
+      let cpp = match !Config.arch with `CPP -> true | _ -> false
       let scope = !Config.scope
     end in
     let open Archs in
-    let module T = Top.Make(C) in
+    let module T = Top_gen.Make(C) in
     begin match !Config.arch with
-    | X86 ->
-        let module M = Make(C)(T(X86Compile.Make(C))) in
+    | `X86 ->
+        let module M = Make(C)(T(X86Compile_gen.Make(C))) in
         M.zyva
-    | PPC -> 
+    | `PPC -> 
         let module PPCConf = struct let eieio = !use_eieio end in
-        let module M = Make(C)(T(PPCCompile.Make(C)(PPCConf))) in
+        let module M = Make(C)(T(PPCCompile_gen.Make(C)(PPCConf))) in
         M.zyva
-    | ARM ->
-        let module M = Make(C)(T(ARMCompile.Make(C))) in
+    | `ARM ->
+        let module M = Make(C)(T(ARMCompile_gen.Make(C))) in
         M.zyva
-    | AArch64 ->
-        let module M = Make(C)(T(AArch64Compile.Make(C))) in
+    | `AArch64 ->
+        let module M = Make(C)(T(AArch64Compile_gen.Make(C))) in
         M.zyva
-    | MIPS ->
-        let module M = Make(C)(T(MIPSCompile.Make(C))) in
+    | `MIPS ->
+        let module M = Make(C)(T(MIPSCompile_gen.Make(C))) in
         M.zyva
-    | LISA ->
+    | `LISA ->
         let module BellConfig =
         struct
           let debug = !Config.debug
           let verbose = !Config.verbose
-          let libdir = Version.libdir
+          let libdir = Version_gen.libdir
           let prog = Config.prog
           let bell = !Config.bell
           let varatom = !Config.varatom
         end in
         let module M = Make(C)(T(BellCompile.Make(C)(BellConfig))) in
         M.zyva
-    | C|CPP ->
+    | `C | `CPP ->
         let module CoC = struct
           include C
           let typ = !Config.typ
         end in
-        let module T = CCompile.Make(CoC) in
+        let module T = CCompile_gen.Make(CoC) in
         let module M = Make(C)(T) in
         M.zyva
     end pp_es

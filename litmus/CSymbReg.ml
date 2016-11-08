@@ -27,7 +27,7 @@ module type S = sig
       (MiscParser.location, MiscParser.maybev) t -> (location,v) t
 end
 
-module Make (A:Arch.Base) : S
+module Make (A:Arch_litmus.Base) : S
 with type v = A.V.v and type location = A.location
  = struct
 

@@ -62,7 +62,7 @@ module type Config = sig
   val debug : bool
 end
 
-module Make (C:Config) (A:Arch.S) : S
+module Make (C:Config) (A:Arch_herd.S) : S
 with type  atom = A.V.v
 and type cst = A.V.cst
 and type solution = A.V.solution

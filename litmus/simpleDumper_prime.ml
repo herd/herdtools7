@@ -18,7 +18,7 @@
 (* Parsable dump *)
 (*****************)
 module type I = sig
-  module A : Arch.Base
+  module A : Arch_litmus.Base
 
   module P : PseudoAbstract.S
 

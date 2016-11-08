@@ -170,7 +170,7 @@ let norm_cmd cmd =
     in no_conf s
 
 let exec_conf s =
-  let conf = Misc.input_protect LexConf.conf s in
+  let conf = Misc.input_protect LexConf_gen.conf s in
   let prog = Sys.argv.(0) in
   let cmd = Array.to_list Sys.argv in
   let cmd = norm_cmd cmd in
@@ -193,7 +193,7 @@ let () =
   and safe_list = split !Config.safes 
   and one_list = if !Config.one then Some !lc else None in
 
-  let cpp = match !Config.arch with CPP -> true  |  _ -> false in
+  let cpp = match !Config.arch with `CPP -> true  |  _ -> false in
 
   let module Co = struct
 (* Dump all *)
@@ -256,42 +256,42 @@ let () =
     let moreedges = !Config.moreedges
     let realdep = !Config.realdep
   end in
-  let module T = Top.Make(Co) in
+  let module T = Top_gen.Make(Co) in
   let f = match !Config.arch with
-  | PPC ->
-      let module M = Make(T(PPCCompile.Make(C)(PPCArch.Config)))(Co) in
+  | `PPC ->
+      let module M = Make(T(PPCCompile_gen.Make(C)(PPCArch_gen.Config)))(Co) in
     M.go
-  | X86 ->
-    let module M = Make(T(X86Compile.Make(C)))(Co) in
+  | `X86 ->
+    let module M = Make(T(X86Compile_gen.Make(C)))(Co) in
     M.go
-  | ARM ->
-      let module M = Make(T(ARMCompile.Make(C)))(Co) in
+  | `ARM ->
+      let module M = Make(T(ARMCompile_gen.Make(C)))(Co) in
       M.go
-  | AArch64 ->
-      let module M = Make(T(AArch64Compile.Make(C)))(Co) in
+  | `AArch64 ->
+      let module M = Make(T(AArch64Compile_gen.Make(C)))(Co) in
       M.go
-  | MIPS ->
-      let module M = Make(T(MIPSCompile.Make(C)))(Co) in
+  | `MIPS ->
+      let module M = Make(T(MIPSCompile_gen.Make(C)))(Co) in
       M.go
-  | LISA ->
+  | `LISA ->
       let module BellConfig =
         struct
           let debug = !Config.debug
           let verbose = !Config.verbose
-          let libdir = Version.libdir
+          let libdir = Version_gen.libdir
           let prog = Config.prog
           let bell = !Config.bell
           let varatom = !Config.varatom
         end in
       let module M = Make(T(BellCompile.Make(C)(BellConfig)))(Co) in
       M.go
-  | C|CPP ->
+  | `C | `CPP ->
       let module CoC = struct
         include Co
         include C
         let typ = !Config.typ
       end in
-      let module M = Make(CCompile.Make(CoC))(Co) in
+      let module M = Make(CCompile_gen.Make(CoC))(Co) in
       M.go in
   try
     f !Config.size relax_list safe_list one_list ;

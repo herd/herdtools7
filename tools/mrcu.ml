@@ -44,7 +44,7 @@ module Top
 
     module Dec = struct let hexa = false end
     module P = GenParser.Make(GenParser.DefaultConfig)(LISA)(LISALexParse)
-    module A = ArchExtra.Make(Dec)(LISA) 
+    module A = ArchExtra_tools.Make(Dec)(LISA) 
     module Alloc = SymbReg.Make(A)
 
     module D = Dumper.Make(A)
@@ -281,7 +281,7 @@ module Top
 open Archs
 
 let from_chan chan splitted =  match splitted.Splitter.arch with
-| LISA ->
+| `LISA ->
     let name = splitted.Splitter.name in
     let parsed = P.parse chan splitted in
     let parsed = Alloc.allocate_regs parsed in

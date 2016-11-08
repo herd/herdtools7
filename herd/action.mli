@@ -18,7 +18,7 @@
 
 module type S = sig
 
-  module A : Arch.S
+  module A : Arch_herd.S
 
   type action
 

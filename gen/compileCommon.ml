@@ -27,7 +27,7 @@ module type Config = sig
 end
 
 module type S = sig
-  module A : Arch.S
+  module A : Arch_gen.S
 
   module E : Edge.S
   with type fence = A.fence
@@ -46,7 +46,7 @@ end
 
 open Printf
 
-module Make(C:Config) (A:Arch.S) =
+module Make(C:Config) (A:Arch_gen.S) =
 struct
   module A = A 
 

@@ -193,6 +193,8 @@ let get_default arch = match arch with
 | `ARM -> armopt
 | `MIPS -> mipsopt
 | `C -> copt
+| `CPP
+| `LISA
 | `GPU_PTX 
 | `OpenCL -> assert false
 

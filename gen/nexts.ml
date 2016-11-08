@@ -19,7 +19,7 @@ open Code
 open Archs
 open Printf
 
-let arch = ref PPC
+let arch = ref `PPC
 let n = ref None
 let verbose = ref 0
 
@@ -36,7 +36,7 @@ module type Config = sig
   val nacc : int
 end
 
-module Make (Co:Config) (A:Arch.S) = struct
+module Make (Co:Config) (A:Arch_gen.S) = struct
   module E = Edge.Make(A)
 
   let parse_line s =
@@ -90,32 +90,32 @@ let () =
   end in
   let module Build = Make(Co) in
   (match !arch with
-  | X86 ->
-      let module M = Build(X86Arch) in
+  | `X86 ->
+      let module M = Build(X86Arch_gen) in
       M.zyva
-  | PPC ->
-      let module M = Build(PPCArch.Make(PPCArch.Config)) in
+  | `PPC ->
+      let module M = Build(PPCArch_gen.Make(PPCArch_gen.Config)) in
       M.zyva
-  | ARM ->
-      let module M = Build(ARMArch) in
+  | `ARM ->
+      let module M = Build(ARMArch_gen) in
       M.zyva
-  | AArch64 ->
-      let module M = Build(AArch64Arch.Make(AArch64Arch.Config)) in
+  | `AArch64 ->
+      let module M = Build(AArch64Arch_gen.Make(AArch64Arch_gen.Config)) in
       M.zyva
-  | MIPS ->
-      let module M = Build(MIPSArch) in
+  | `MIPS ->
+      let module M = Build(MIPSArch_gen) in
       M.zyva
-  | LISA ->
+  | `LISA ->
       let module BellConfig =
         struct
           let debug = !Config.debug
           let verbose = !Config.verbose
-          let libdir = Version.libdir
+          let libdir = Version_gen.libdir
           let prog = Config.prog
           let bell = !Config.bell
           let varatom = []
         end in
-      let module M = Build(BellArch.Make(BellConfig)) in
+      let module M = Build(BellArch_gen.Make(BellConfig)) in
       M.zyva
-  | C|CPP -> assert false)
+  | _ -> assert false)
     stdin

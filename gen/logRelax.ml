@@ -67,7 +67,7 @@ module Make(R:I) : S with type relax = R.relax
     try
       Misc.input_protect
         (fun chan ->
-          LexLog.tokens add_outcome env
+          LexLog_gen.tokens add_outcome env
             (Lexing.from_channel chan))
         name
     with Misc.Fatal msg ->

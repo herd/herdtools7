@@ -1,0 +1,14 @@
+<gen>: include
+<herd>: include
+<jingle>: include
+<lib>: include
+<litmus>: include
+<tools>: include
+
+true: safe_string
+true: dtypes
+true: -traverse
+
+<*/*.byte>: debug
+<*/*.cmo>: debug
+<*/*.{d.byte,byte,native}>: use_unix,use_str

@@ -21,7 +21,7 @@ let verbose = ref 0
 let nprocs = ref 4
 let size = ref 6
 let one = ref false 
-let arch = ref PPC
+let arch = ref (`PPC: Archs.t)
 let typ = ref TypBase.default
 let hexa = ref false
 let tarfile = ref None
@@ -72,7 +72,7 @@ type cond = Cycle | Unicond | Observe
 let cond = ref Cycle
 let hout = ref None
 let list_edges = ref false
-let debug = ref Debug.none
+let debug = ref Debug_gen.none
 let moreedges = ref false
 let realdep = ref false
 
@@ -120,13 +120,13 @@ let parse_cumul = function
 
 let common_specs =
   ("-v", Arg.Unit (fun () -> incr verbose),"  be verbose")::
-  ("-version", Arg.Unit (fun () -> print_endline Version.version ; exit 0),
+  ("-version", Arg.Unit (fun () -> print_endline Version_gen.version ; exit 0),
    " show version number and exit")::
   Util.parse_tag "-debug"
-    (fun tag -> match Debug.parse !debug tag with
+    (fun tag -> match Debug_gen.parse !debug tag with
     | None -> false
     | Some d -> debug := d ; true)
-    Debug.tags "specify debugged part"::
+    Debug_gen.tags "specify debugged part"::
   Util.parse_tag
     "-arch"
     (fun tag -> match Archs.parse tag with
@@ -282,7 +282,7 @@ let parse_annots lines = match lines with
     let module P =
       Annot.Make
         (struct
-          let debug = !debug.Debug.lexer
+          let debug = !debug.Debug_gen.lexer
         end) in
     Some (P.parse lines)
       

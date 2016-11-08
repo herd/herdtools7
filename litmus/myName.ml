@@ -44,7 +44,7 @@ let open_lib name =
   with Exit -> try match envlib with
   | Some lib -> try_open lib name
   | None -> raise Exit
-  with Exit -> try try_open Version.libdir name
+  with Exit -> try try_open Version_litmus.libdir name
   with Exit -> Warn.fatal "Cannot find file %s" name
   
 
@@ -61,13 +61,13 @@ let read_cfg name =
     else name ^ ".cfg" in
   if Filename.is_implicit name then
     let _rname,chan = open_lib name in
-    LexConf.lex chan ;
+    LexConf_litmus.lex chan ;
     close_in chan
   else
-    Misc.input_protect LexConf.lex name
+    Misc.input_protect LexConf_litmus.lex name
   with
   | Arg.Bad msg
-  | LexConf.Error msg ->
+  | LexConf_litmus.Error msg ->
      Warn.fatal "Bad configuration file: %s" msg
 
 

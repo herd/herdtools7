@@ -68,7 +68,7 @@ module Verbose = struct let verbose = verbose end
 
 module LS = LogState.Make(Verbose)
 module LL =
-  LexLog.Make
+  LexLog_tools.Make
     (struct
       let verbose = verbose
       include CheckName.Make

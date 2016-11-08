@@ -85,7 +85,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       | Forall of (C.A.location * Code.v) list list
       | Locations of C.A.location list
 
-    module Run = Run.Make(O)(C)
+    module Run = Run_gen.Make(O)(C)
 
     let check f = Exists f
     let observe f = Locations (List.map fst f)

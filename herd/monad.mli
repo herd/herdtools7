@@ -21,7 +21,7 @@
 
 module type S =
   sig
-    module A     : Arch.S
+    module A     : Arch_herd.S
 
     module E : Event.S 
 	   with module Act.A = A

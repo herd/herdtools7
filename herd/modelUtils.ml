@@ -124,7 +124,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
     if not r then
       pp_failure
         test conc
-        (Printf.sprintf "%s: Uniproc violation" test.Test.name.Name.name)
+        (Printf.sprintf "%s: Uniproc violation" test.Test_herd.name.Name.name)
         [("co",S.rt co); ("fr",fr); ("pos",S.rt conc.S.pos)] ;
     r
 
@@ -150,7 +150,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
     if not r then
       pp_failure
         test conc
-        (Printf.sprintf "%s: Atomicity violation" test.Test.name.Name.name)
+        (Printf.sprintf "%s: Atomicity violation" test.Test_herd.name.Name.name)
         ["co",S.rt co; "fr",fr;"r*/w*",conc.S.atomic_load_store;];
     r
 end

@@ -20,7 +20,7 @@ open Archs
 open Printf
 
 (* Configuration *)
-let arch = ref PPC
+let arch = ref `PPC
  
 let opts = [Util.arch_opt arch]
 
@@ -82,35 +82,35 @@ let () =
 
 let () =
   (match !arch with
-  | X86 ->
-      let module M = Make(X86Arch) in
+  | `X86 ->
+      let module M = Make(X86Arch_gen) in
       M.zyva
-  | PPC ->
-      let module M = Make(PPCArch.Make(PPCArch.Config)) in
+  | `PPC ->
+      let module M = Make(PPCArch_gen.Make(PPCArch_gen.Config)) in
       M.zyva
-  | ARM ->
-      let module M = Make(ARMArch) in
+  | `ARM ->
+      let module M = Make(ARMArch_gen) in
       M.zyva
-  | AArch64 ->
-      let module M = Make(AArch64Arch.Make(AArch64Arch.Config)) in
+  | `AArch64 ->
+      let module M = Make(AArch64Arch_gen.Make(AArch64Arch_gen.Config)) in
       M.zyva
-  | MIPS ->
-      let module M = Make(MIPSArch) in
+  | `MIPS ->
+      let module M = Make(MIPSArch_gen) in
       M.zyva 
-  | LISA ->
+  | `LISA ->
       let module BellConfig =
         struct
           let debug = !Config.debug
           let verbose = !Config.verbose
-          let libdir = Version.libdir
+          let libdir = Version_gen.libdir
           let prog = Config.prog
           let bell = !Config.bell
           let varatom = []
         end in
-      let module M = Make(BellArch.Make(BellConfig)) in
+      let module M = Make(BellArch_gen.Make(BellConfig)) in
       M.zyva 
-  | C ->
-      let module M = Make(CArch) in
+  | `C ->
+      let module M = Make(CArch_gen) in
       M.zyva
-  | CPP -> Warn.fatal "CCP arch in atoms")      
+  | `CPP -> Warn.fatal "CCP arch in atoms")      
      ()

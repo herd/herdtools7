@@ -17,10 +17,10 @@
 (** A monad for event structures *)
 
 module type Config = sig
-    val debug : Debug.t
+    val debug : Debug_herd.t
 end
 
-module Make (C:Config) (A:Arch.S) (E:Event.S with module A = A and module Act.A = A) :
+module Make (C:Config) (A:Arch_herd.S) (E:Event.S with module A = A and module Act.A = A) :
 (Monad.S with module A = A and module E = E 
 	  and type evt_struct = E.event_structure) = 
 struct 
@@ -30,7 +30,7 @@ struct
       module V = A.V
       module VC =
         Valconstraint.Make
-          (struct let debug = C.debug.Debug.solver end)
+          (struct let debug = C.debug.Debug_herd.solver end)
           (A)
 
 

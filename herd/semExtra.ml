@@ -19,14 +19,14 @@
 (* Some configuration *)
 module type Config = sig
   val optace : bool
-  val debug : Debug.t
+  val debug : Debug_herd.t
   module PC : PrettyConf.S
 end
 
 
 module type S = sig
   module O : Config (* Options, for Sem consummer *)
-  module A   : Arch.S
+  module A   : Arch_herd.S
   module E : Event.S with module A = A and module Act.A = A
   module M  : Monad.S
   with module A = A and module E = E and type evt_struct = E.event_structure
@@ -51,7 +51,7 @@ module type S = sig
 
   type test =
       (program, nice_prog, start_points,
-       state, prop, location, A.LocSet.t) Test.t
+       state, prop, location, A.LocSet.t) Test_herd.t
 
 (* Get list of locations observed in outcomes *)
   type loc_set = A.LocSet.t
@@ -163,7 +163,7 @@ type concrete =
 
 end
 
-module Make(C:Config) (A:Arch.S) (Act:Action.S with module A = A) 
+module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A) 
        : (S with module A = A and module E.Act = Act) =
   struct
     module O = C
@@ -191,12 +191,12 @@ module Make(C:Config) (A:Arch.S) (Act:Action.S with module A = A)
 
     type test =
       (program, nice_prog, start_points,
-       state, prop, location, A.LocSet.t) Test.t
+       state, prop, location, A.LocSet.t) Test_herd.t
 
-    module T = Test.Make(A)
+    module T = Test_herd.Make(A)
 (* List of relevant location *)
     type loc_set = A.LocSet.t
-    let outcome_locations t = t.Test.observed
+    let outcome_locations t = t.Test_herd.observed
 
     type event = E.event
 

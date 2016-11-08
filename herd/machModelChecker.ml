@@ -57,7 +57,7 @@ module Make
       let pp_failure test conc msg vb_pp =
         MU.pp_failure
           test conc
-          (Printf.sprintf "%s: %s" test.Test.name.Name.name msg)
+          (Printf.sprintf "%s: %s" test.Test_herd.name.Name.name msg)
           vb_pp
 
 (* fromto evts fs wher evts are all events and fs are fences *)
@@ -225,7 +225,7 @@ module Make
                 evts
                 (BellModel.get_mem_annots bi) in
             let open MiscParser in
-            begin match test.Test.extra_data with
+            begin match test.Test_herd.extra_data with
               (* No region in test, no event sets *)
               | NoExtra|BellExtra {BellInfo.regions=None;_} -> m
               | BellExtra {BellInfo.regions=Some regions;_} ->
@@ -245,7 +245,7 @@ module Make
         | Some _ ->
             let scopes =
               let open MiscParser in
-              match test.Test.extra_data with
+              match test.Test_herd.extra_data with
               | NoExtra|CExtra _ ->
                   None (* must be here as, O.bell_mode_info is *)
               | BellExtra tbi -> tbi.BellInfo.scopes in

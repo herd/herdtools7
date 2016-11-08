@@ -16,7 +16,7 @@
 
 open Printf
 
-module Make(A:Arch.S) = struct
+module Make(A:Arch_tools.S) = struct
   include
       SimpleDumper.Make(SimpleDumper.OutChannel)
       (struct

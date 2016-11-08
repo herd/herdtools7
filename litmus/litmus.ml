@@ -27,9 +27,9 @@ let opts =
   [
 (* General behavior *)
    "-v", Arg.Unit (fun () -> incr verbose), " be verbose";
-   "-version", Arg.Unit (fun () -> print_endline Version.version; exit 0),
+   "-version", Arg.Unit (fun () -> print_endline Version_litmus.version; exit 0),
    " show version number and exit";
-   "-libdir", Arg.Unit (fun () -> print_endline Version.libdir; exit 0),
+   "-libdir", Arg.Unit (fun () -> print_endline Version_litmus.libdir; exit 0),
    " show installation directory and exit";
    "-switch", Arg.Set Misc.switch, "switch something" ;
    "-o", Arg.String set_tar,
@@ -333,7 +333,7 @@ let () =
       let asmcomment = !asmcomment
       let asmcommentaslabel = !asmcommentaslabel
     end in
-    let module T = Top.Top (Config) (Tar) in
+    let module T = Top_litmus.Top (Config) (Tar) in
     T.from_files sources ;
     if not (Option.is_out ()) then MySys.rmdir outname ;
     exit 0

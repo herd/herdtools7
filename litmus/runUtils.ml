@@ -123,7 +123,7 @@ let pp_barrier_loc =
 
 let report_parameters out =
   let pf fmt = ksprintf out fmt in
-  pf "Revision %s, version %s" Version.rev Version.version;
+  pf "Revision %s, version %s" Version_litmus.rev Version_litmus.version;
   pf "Command line:%s"
     (String.concat ""
        (List.map (sprintf " %s") (Array.to_list Sys.argv))) ;

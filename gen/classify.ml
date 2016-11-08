@@ -17,7 +17,7 @@
 open Archs
 open Printf
 
-let arch = ref PPC
+let arch = ref `PPC
 let diyone = ref false
 let lowercase = ref false
 let uniq = ref false
@@ -30,7 +30,7 @@ let opts =
    sprintf "<bool> use lowercase familly names, default %b" !lowercase)::
   ("-u", Arg.Set uniq," reject duplicate normalised names")::
   ("-map", Arg.String (fun s -> map := Some s)," <name> save renaming map into file <name>")::
-  ("-bell",Arg.String (fun f -> bell := Some f; arch := LISA),
+  ("-bell",Arg.String (fun f -> bell := Some f; arch := `LISA),
    "<name> read bell file <name>")::
   Util.parse_tag
     "-arch"
@@ -144,34 +144,34 @@ let () =
   end in
   let module Build = Make(Co) in
   (match !arch with
-  | X86 ->
-      let module M = Build(X86Arch) in
+  | `X86 ->
+      let module M = Build(X86Arch_gen) in
       M.zyva
-  | PPC ->
-      let module M = Build(PPCArch.Make(PPCArch.Config)) in
+  | `PPC ->
+      let module M = Build(PPCArch_gen.Make(PPCArch_gen.Config)) in
       M.zyva
-  | ARM ->
-      let module M = Build(ARMArch) in
+  | `ARM ->
+      let module M = Build(ARMArch_gen) in
       M.zyva
-  | AArch64 ->
-      let module M = Build(AArch64Arch.Make(AArch64Arch.Config)) in
+  | `AArch64 ->
+      let module M = Build(AArch64Arch_gen.Make(AArch64Arch_gen.Config)) in
       M.zyva
-  | MIPS ->
-      let module M = Build(MIPSArch) in
+  | `MIPS ->
+      let module M = Build(MIPSArch_gen) in
       M.zyva
-  | LISA ->
+  | `LISA ->
       let module BellConfig =
         struct
           let debug = !Config.debug
           let verbose = !Config.verbose
-          let libdir = Version.libdir
+          let libdir = Version_gen.libdir
           let prog = Config.prog
           let bell = !bell
           let varatom = []
         end in
-      let module M = Build(BellArch.Make(BellConfig)) in
+      let module M = Build(BellArch_gen.Make(BellConfig)) in
       M.zyva
-  | C|CPP ->
-      let module M = Build(CArch) in
+  | `C | `CPP ->
+      let module M = Build(CArch_gen) in
       M.zyva)
     stdin

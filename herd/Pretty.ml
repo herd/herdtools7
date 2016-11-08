@@ -16,7 +16,7 @@
 
 (** Producing .dot output *)
 
-open Test
+open Test_herd
 open Printf
 
 module type S = sig
@@ -167,7 +167,7 @@ let one_init = match PC.graph with
 
   let pp_no_solutions chan test msg =
     let legend =
-      escape_dot(readable_name test) ^ ": " ^ test.Test.name.Name.doc in
+      escape_dot(readable_name test) ^ ": " ^ test.Test_herd.name.Name.doc in
 
     fprintf chan "digraph G {\n\n" ;
     fprintf chan "/* legend */\n" ;
