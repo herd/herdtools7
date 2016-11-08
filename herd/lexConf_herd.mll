@@ -121,7 +121,7 @@ and opt = parse
       MyLib.Make
         (struct
           let includes = !includes
-          let libdir = Version.libdir
+          let libdir = Version_herd.libdir
         end) in
       dolex main (ML.find arg) }
 | "verbose" arg { lex_int verbose arg }

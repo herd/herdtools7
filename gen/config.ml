@@ -120,7 +120,7 @@ let parse_cumul = function
 
 let common_specs =
   ("-v", Arg.Unit (fun () -> incr verbose),"  be verbose")::
-  ("-version", Arg.Unit (fun () -> print_endline Version.version ; exit 0),
+  ("-version", Arg.Unit (fun () -> print_endline Version_gen.version ; exit 0),
    " show version number and exit")::
   Util.parse_tag "-debug"
     (fun tag -> match Debug_gen.parse !debug tag with

@@ -123,7 +123,7 @@ let load_config s =
     MyLib.Make
       (struct
         let includes = !includes
-        let libdir = Version.libdir
+        let libdir = Version_herd.libdir
       end) in
   LexConf_herd.lex (ML.find s)
 
@@ -142,9 +142,9 @@ let gen_model_opt s =
 let options = [
 (* Basic *)
   ("-version", Arg.Unit
-     (fun () -> printf "%s, Rev: %s\n" Version.version Version.rev ; exit 0),
+     (fun () -> printf "%s, Rev: %s\n" Version_herd.version Version_herd.rev ; exit 0),
    " show version number and exit") ;   
-  ("-libdir", Arg.Unit (fun () -> print_endline Version.libdir; exit 0),
+  ("-libdir", Arg.Unit (fun () -> print_endline Version_herd.libdir; exit 0),
     " show installation directory and exit");
   ("-v", Arg.Unit (fun _ -> incr verbose),
    "<non-default> show various diagnostics, repeat to increase verbosity");
@@ -428,7 +428,7 @@ let libfind =
     MyLib.Make
       (struct
         let includes = !includes
-        let libdir = Version.libdir
+        let libdir = Version_herd.libdir
       end) in
   ML.find
 

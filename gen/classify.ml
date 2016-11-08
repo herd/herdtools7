@@ -164,7 +164,7 @@ let () =
         struct
           let debug = !Config.debug
           let verbose = !Config.verbose
-          let libdir = Version.libdir
+          let libdir = Version_gen.libdir
           let prog = Config.prog
           let bell = !bell
           let varatom = []

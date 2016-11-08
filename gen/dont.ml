@@ -33,7 +33,7 @@ let read_conf name = opt := AutoLex.conf !opt name
 
 let speclist = 
   ("-v", Arg.Unit (fun () -> opt := incr_verbose !opt),"be verbose")::
-  ("-version", Arg.Unit (fun () -> print_endline Version.version ; exit 0),
+  ("-version", Arg.Unit (fun () -> print_endline Version_gen.version ; exit 0),
    " show version number and exit")::
   ("-switch", Arg.Set Misc.switch,"switch something")::
   ("-arch",
