@@ -1,3 +1,7 @@
+7.41
+ * More opam
+7.40
+ * Opam build
 7.39
  * herd: enable matching over event sets.
  * tools: add msethashes, for changing *test* hashes.

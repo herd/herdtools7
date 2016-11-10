@@ -1,6 +1,6 @@
 opam-version: "1.2"
 name: "herdtools7"
-version: "7.40"
+version: "7.41"
 maintainer: "Vincent Jacques <vincent@russian-dolls-sunflowers.com>"
 authors: [
   "Luc Maranget <Luc.Maranget@inria.fr>"
@@ -10,96 +10,8 @@ authors: [
 dev-repo: "https://github.com/herd/herdtools7.git"
 bug-reports: "http://github.com/herd/herdtools7/issues/"
 available: [ ocaml-version >= "4.02.0" ]
-build: ["./build.sh" "%{share}%/herdtools7"]
-install: [
-  ["cp" "_build/gen/classify.native" "%{prefix}%/bin/classify7"]
-  ["cp" "_build/gen/diy.native" "%{prefix}%/bin/diy7"]
-  ["cp" "_build/gen/diycross.native" "%{prefix}%/bin/diycross7"]
-  ["cp" "_build/gen/diyone.native" "%{prefix}%/bin/diyone7"]
-  ["cp" "_build/herd/herd.native" "%{prefix}%/bin/herd7"]
-  ["cp" "_build/jingle/jingle.native" "%{prefix}%/bin/jingle7"]
-  ["cp" "_build/tools/knames.native" "%{prefix}%/bin/knames7"]
-  ["cp" "_build/tools/ksort.native" "%{prefix}%/bin/ksort7"]
-  ["cp" "_build/litmus/litmus.native" "%{prefix}%/bin/litmus7"]
-  ["cp" "_build/tools/madd.native" "%{prefix}%/bin/madd7"]
-  ["cp" "_build/tools/mapply.native" "%{prefix}%/bin/mapply7"]
-  ["cp" "_build/tools/mcmp.native" "%{prefix}%/bin/mcmp7"]
-  ["cp" "_build/tools/mcompare.native" "%{prefix}%/bin/mcompare7"]
-  ["cp" "_build/tools/mcond.native" "%{prefix}%/bin/mcond7"]
-  ["cp" "_build/tools/mcycles.native" "%{prefix}%/bin/mcycles7"]
-  ["cp" "_build/tools/mdiag.native" "%{prefix}%/bin/mdiag7"]
-  ["cp" "_build/tools/mdiff.native" "%{prefix}%/bin/mdiff7"]
-  ["cp" "_build/tools/mfilter.native" "%{prefix}%/bin/mfilter7"]
-  ["cp" "_build/tools/mfind.native" "%{prefix}%/bin/mfind7"]
-  ["cp" "_build/tools/mflags.native" "%{prefix}%/bin/mflags7"]
-  ["cp" "_build/tools/mhash.native" "%{prefix}%/bin/mhash7"]
-  ["cp" "_build/tools/mlog2cond.native" "%{prefix}%/bin/mlog2cond7"]
-  ["cp" "_build/tools/mmixer.native" "%{prefix}%/bin/mmixer7"]
-  ["cp" "_build/tools/mnames.native" "%{prefix}%/bin/mnames7"]
-  ["cp" "_build/tools/mobserved.native" "%{prefix}%/bin/mobserved7"]
-  ["cp" "_build/tools/moutcomes.native" "%{prefix}%/bin/moutcomes7"]
-  ["cp" "_build/tools/mprog.native" "%{prefix}%/bin/mprog7"]
-  ["cp" "_build/tools/mproj.native" "%{prefix}%/bin/mproj7"]
-  ["cp" "_build/tools/mrcu.native" "%{prefix}%/bin/mrcu7"]
-  ["cp" "_build/tools/mselect.native" "%{prefix}%/bin/mselect7"]
-  ["cp" "_build/tools/mshowhashes.native" "%{prefix}%/bin/mshowhashes7"]
-  ["cp" "_build/tools/msort.native" "%{prefix}%/bin/msort7"]
-  ["cp" "_build/tools/msum.native" "%{prefix}%/bin/msum7"]
-  ["cp" "_build/tools/mtopos.native" "%{prefix}%/bin/mtopos7"]
-  ["cp" "_build/gen/readRelax.native" "%{prefix}%/bin/readRelax7"]
-  ["cp" "_build/tools/recond.native" "%{prefix}%/bin/recond7"]
-  ["cp" "_build/tools/rehash.native" "%{prefix}%/bin/rehash7"]
-  ["cp" "_build/tools/splitcond.native" "%{prefix}%/bin/splitcond7"]
-  ["cp" "_build/tools/splitdot.native" "%{prefix}%/bin/splitdot7"]
-  ["rm" "-rf" "%{share}%/herdtools7"]
-  ["mkdir" "-p" "%{share}%/herdtools7"]
-  ["cp" "-r" "herd/libdir" "%{share}%/herdtools7/herd"]
-  ["cp" "-r" "litmus/libdir" "%{share}%/herdtools7/litmus"]
-  ["cp" "-r" "jingle/libdir" "%{share}%/herdtools7/jingle"]
-]
-remove: [
-  ["rm" "-f"
-    "%{prefix}%/bin/classify7"
-    "%{prefix}%/bin/diy7"
-    "%{prefix}%/bin/diycross7"
-    "%{prefix}%/bin/diyone7"
-    "%{prefix}%/bin/herd7"
-    "%{prefix}%/bin/jingle7"
-    "%{prefix}%/bin/knames7"
-    "%{prefix}%/bin/ksort7"
-    "%{prefix}%/bin/litmus7"
-    "%{prefix}%/bin/madd7"
-    "%{prefix}%/bin/mapply7"
-    "%{prefix}%/bin/mcmp7"
-    "%{prefix}%/bin/mcompare7"
-    "%{prefix}%/bin/mcond7"
-    "%{prefix}%/bin/mcycles7"
-    "%{prefix}%/bin/mdiag7"
-    "%{prefix}%/bin/mdiff7"
-    "%{prefix}%/bin/mfilter7"
-    "%{prefix}%/bin/mfind7"
-    "%{prefix}%/bin/mflags7"
-    "%{prefix}%/bin/mhash7"
-    "%{prefix}%/bin/mlog2cond7"
-    "%{prefix}%/bin/mmixer7"
-    "%{prefix}%/bin/mnames7"
-    "%{prefix}%/bin/mobserved7"
-    "%{prefix}%/bin/moutcomes7"
-    "%{prefix}%/bin/mprog7"
-    "%{prefix}%/bin/mproj7"
-    "%{prefix}%/bin/mrcu7"
-    "%{prefix}%/bin/mselect7"
-    "%{prefix}%/bin/mshowhashes7"
-    "%{prefix}%/bin/msort7"
-    "%{prefix}%/bin/msum7"
-    "%{prefix}%/bin/mtopos7"
-    "%{prefix}%/bin/readRelax7"
-    "%{prefix}%/bin/recond7"
-    "%{prefix}%/bin/rehash7"
-    "%{prefix}%/bin/splitcond7"
-    "%{prefix}%/bin/splitdot7"
-  ]
-  ["rm" "-rf" "%{share}%/herdtools7"]
-]
+build: ["./build.sh" "%{prefix}%"]
+install: ["./install.sh" "%{prefix}%"]
+uninstall: ["./uninstall.sh" "%{prefix}%"]
 depends: [
 ]
