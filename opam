@@ -9,7 +9,7 @@ authors: [
 ]
 dev-repo: "https://github.com/herd/herdtools7.git"
 bug-reports: "http://github.com/herd/herdtools7/issues/"
-available: [ ocaml-version = "4.02.3" ]
+available: [ ocaml-version >= "4.02.0" ]
 build: ["./build.sh" "%{share}%/herdtools7"]
 install: [
   ["cp" "_build/gen/classify.native" "%{prefix}%/bin/classify7"]
