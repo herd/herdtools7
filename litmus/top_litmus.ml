@@ -458,6 +458,7 @@ end = struct
         let debuglexer = debuglexer
         let sysarch = match arch with
         | #Archs.System.t as a -> a
+        | (`CPP|`LISA) -> Warn.fatal "no support for arch '%s'" (Archs.pp arch)
         | `C -> begin match OT.carch with
           | Some a -> a
           | None  -> Warn.fatal "Test %s not performed because -carch is not given but required while using C arch" tname

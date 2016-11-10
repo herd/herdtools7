@@ -275,7 +275,7 @@ module Top (Conf:Config) = struct
         let module P = CGenParser_lib.Make (Conf) (C) (CLexParse) in
         let module X = Make (CS) (P) (NoCheck) (CM) in
         X.run name chan env splitted
-
+      | `CPP as arch -> Warn.fatal "no support for arch '%s'" (Archs.pp arch)
       | `LISA ->
         let module Bell = BellArch_herd.Make(Conf.PC)(SymbValue) in
         let module BellLexParse = struct

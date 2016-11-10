@@ -176,6 +176,7 @@ module Make(O:Config)(Tar:Tar.S) =
               cpy' fnames "showLabel" "show" ".awk"
             else
               cpy fnames "show" ".awk"
+        | `CPP|`LISA -> Warn.fatal "no support for arch '%s'" (Archs.pp O.arch) 
       in
       let fnames = cpy fnames "litmus_rand" ".c" in
       let fnames = cpy fnames "litmus_rand" ".h" in
