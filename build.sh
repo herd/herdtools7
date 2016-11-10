@@ -1,5 +1,6 @@
 #!/bin/bash
-
+DIR=$(dirname $0)
+. $DIR/defs.sh
 set -o verbose
 set -o errexit
 
@@ -10,11 +11,11 @@ then
   LIBDIR=$(pwd)/_build/libdir
   rm -rf $LIBDIR
   mkdir -p $LIBDIR
-  cp -r herd/libdir $LIBDIR/herd
-  cp -r litmus/libdir $LIBDIR/litmus
-  cp -r jingle/libdir $LIBDIR/jingle
+  cpdir herd/libdir $LIBDIR/herd
+  cpdir litmus/libdir $LIBDIR/litmus
+  cpdir jingle/libdir $LIBDIR/jingle
 else
-  LIBDIR=$1
+  LIBDIR=$1/share/herdtools7
 fi
 
 cat > Version.ml <<EOD
@@ -25,11 +26,4 @@ let rev = "$REV"
 let libdir = "$LIBDIR/"
 EOD
 
-ocamlbuild -no-links -j 5 \
-herd.native atomize.native atoms.native classify.native diy.native diycross.native diyone.native \
-dont.native mexpand.native nexts.native readRelax.native litmus.native knames.native ksort.native \
-madd.native mapply.native mcmp.native mcompare.native mcond.native mcycles.native mdiag.native \
-mdiff.native mfilter.native mfind.native mflags.native mhash.native mlog2cond.native mmixer.native \
-mnames.native mobserved.native moutcomes.native mprog.native mproj.native mrcu.native \
-mselect.native mshowhashes.native msort.native msum.native mtopos.native recond.native \
-rehash.native splitcond.native splitdot.native jingle.native
+ocamlbuild -no-links -j 5 $NATIVE
