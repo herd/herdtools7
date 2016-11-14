@@ -1,3 +1,5 @@
+ * Correct libdir definition for gen: same as herd, as it may parse bell
+   files and  would thus include stdlib.cat
 7.41
  * More opam
 7.40

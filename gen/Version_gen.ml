@@ -1,3 +1,3 @@
 include Version
 
-let libdir = libdir ^ "gen"
+let libdir = libdir ^ "herd"

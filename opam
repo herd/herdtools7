@@ -1,6 +1,6 @@
 opam-version: "1.2"
 name: "herdtools7"
-version: "7.41"
+version: "7.41+1"
 maintainer: "Vincent Jacques <vincent@russian-dolls-sunflowers.com>"
 authors: [
   "Luc Maranget <Luc.Maranget@inria.fr>"
