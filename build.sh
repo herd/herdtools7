@@ -1,8 +1,6 @@
 #!/bin/bash
-DIR=$(dirname $0)
-. $DIR/defs.sh
-set -o verbose
-set -o errexit
+
+. defs.sh
 
 VERSION=$(grep "^version:" opam | cut -d ":" -f 2 | cut -d '"' -f 2)
 REV=$(git rev-parse HEAD 2>/dev/null || echo exported)

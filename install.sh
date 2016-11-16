@@ -1,6 +1,6 @@
 #!/bin/bash
-DIR=$(dirname $0)
-. $DIR/defs.sh
+
+. defs.sh
 
 if [ "x$1" = "x" ]
 then
@@ -22,18 +22,18 @@ cpbin () {
   EXECS="$2"
   for exec in $EXECS
   do
-    cp $DIR/_build/$SUB/$exec $BINDIR/$(basename $exec .native)7
+    cp _build/$SUB/$exec $BINDIR/$(basename $exec .native)7
   done
 }
 
-#copy binaries
+# Copy binaries
 cpbin herd "$HERD"
 cpbin litmus "$LITMUS"
 cpbin tools "$TOOLS"
 cpbin gen "$GEN"
 cpbin jingle "$JINGLE"
 
-#copy libfiles
+# Copy libfiles
 cpdir herd/libdir $LIBDIR/herd
 cpdir litmus/libdir $LIBDIR/litmus
 cpdir jingle/libdir $LIBDIR/jingle

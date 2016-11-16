@@ -1,6 +1,6 @@
 #!/bin/bash
-DIR=$(dirname $0)
-. $DIR/defs.sh
+
+. defs.sh
 
 if [ "x$1" = "x" ]
 then
@@ -25,8 +25,8 @@ rmbin () {
   done
 }
 
-#remove binaries
+# Remove binaries
 rmbin "$NATIVE"
 
-#remove libfiles
+# Remove libfiles
 rm -rf $LIBDIR
