@@ -1,0 +1,626 @@
+\cutname{examples.html}
+In the following experiment reports we describe both how we generate tests
+and how we run them on various machines under various conditions.
+
+\section{Running several tests at once, changing critical parameters}
+In this section we describe an experiment on changing the stride
+(cf Sec.~\ref{defstride}).
+This usage pattern applies to many situations, where a series of
+test is compiled once and run many times under changing conditions.
+
+We assume a directory \ahref{tst-x86}{\texttt{tst-x86}}%
+\ifhevea{} (\ahref{tst-x86.tar}{archive})\fi,
+that contains a series of litmus tests
+and an index file~\ahref{tst-x86/@all}{\file{@all}}.
+Those tests where produced by the \diy{} tool (see Sec.~\ref{diy:intro}).
+They are two thread tests that exercise various relaxed behaviour
+of x86~machines.
+More specifically, \diy{} is run as ``\texttt{diy -conf X.conf}'',
+where \ahref{tst-x86/X.conf}{\texttt{X.conf}} is the
+following configuration file
+\verbatiminput{tst-x86/X.conf}
+As described in Sec.~\ref{diy:usage}, \diy{} will generate all
+\emph{critical} cycles of size at most 5, built from the given lists
+of candidate relaxations, spanning other two threads,
+and including at least one occurrence of PodWR, [Rfi,PodRR] or both.
+In effect, as x86 machines follow the TSO model that relaxes write to read
+pairs, all produced tests should \emph{a priori} validate.
+
+
+We test some \texttt{x86-64} machine, using the following 
+\ahref{x86-64.cfg}{\texttt{x86-64.cfg}} \litmus{} configuration file:
+\verbatiminput{x86-64.cfg}
+The number of available logical processors is unspecified,
+it thus defaults to~$1$,
+leading to running one instance of the test only (cf parameter $a$ in Sec.~\ref{defa})
+
+We invoke \litmus{} as follows,
+where \texttt{run} is a pre-existing empty directory:
+\begin{verbatim}
+% litmus7 -mach x86-64 -o run tst-x86/@all
+\end{verbatim}
+The directory \texttt{run} now contains C-source files for the tests,
+as well as some additional files:
+\begin{verbatim}
+% ls run
+comp.sh   outs.c  README.txt  utils.c  X000.c  X002.c  X004.c  X006.c
+Makefile  outs.h  run.sh      utils.h  X001.c  X003.c  X005.c
+\end{verbatim}
+One notices a short \texttt{README.txt} file, two scripts to compile
+(\texttt{com.sh}) and run the tests (\texttt{run.sh}), and a \texttt{Makefile}.
+We use the latter to build test executables:
+\begin{verbatim}
+% cd run
+% make -j 8
+gcc -Wall -std=gnu99 -fomit-frame-pointer -O2 -m64 -pthread -O2 -c outs.c
+gcc -Wall -std=gnu99 -fomit-frame-pointer -O2 -m64 -pthread -O2 -c utils.c
+gcc -Wall -std=gnu99 -fomit-frame-pointer -O2 -m64 -pthread -S X000.c
+...
+gcc -Wall -std=gnu99 -fomit-frame-pointer -O2 -m64 -pthread  -o X005.exe outs.o utils.o X005.s
+gcc -Wall -std=gnu99 -fomit-frame-pointer -O2 -m64 -pthread  -o X006.exe outs.o utils.o X006.s
+rm X005.s X004.s X006.s X000.s X001.s X002.s X003.s
+\end{verbatim}
+This builds the seven tests \texttt{X000.exe} to~\texttt{X006.exe}.
+The size parameters (\verb+size_of_test = 1000+ and
+\verb+number_of_run = 10+) are rather small, leading to fast tests:
+\begin{verbatim}
+% ./X000.exe 
+Test X000 Allowed
+Histogram (2 states)
+5000  :>0:EAX=1; 0:EBX=1; 1:EAX=1; 1:EBX=0;
+5000  :>0:EAX=1; 0:EBX=0; 1:EAX=1; 1:EBX=1;
+No
+...
+Condition exists (0:EAX=1 /\ 0:EBX=0 /\ 1:EAX=1 /\ 1:EBX=0) is NOT validated
+...
+Observation X000 Never 0 10000
+Time X000 0.01
+\end{verbatim}
+However, the test fails, in the sense that the relaxed outcome targeted by
+\texttt{X000.exe} is not observed, as can be seen quite easily from
+the ``\texttt{Observation Never\ldots}'' line above .
+
+
+To observe the relaxed outcome,
+it happens it suffices to change the stride value to~$2$:
+\begin{verbatim}
+% ./X000.exe -st 2
+Test X000 Allowed
+Histogram (3 states)
+21    *>0:EAX=1; 0:EBX=0; 1:EAX=1; 1:EBX=0;
+4996  :>0:EAX=1; 0:EBX=1; 1:EAX=1; 1:EBX=0;
+4983  :>0:EAX=1; 0:EBX=0; 1:EAX=1; 1:EBX=1;
+Ok
+...
+Condition exists (0:EAX=1 /\ 0:EBX=0 /\ 1:EAX=1 /\ 1:EBX=0) is validated
+...
+Observation X000 Sometimes 21 9979
+Time X000 0.00
+\end{verbatim}
+
+We easily perform a more complete experiment with the stride changing
+from~$1$ to~$8$, by running the \texttt{run.sh} script,
+which transmits its command line options to all test executables:
+\begin{verbatim}
+% for i in $(seq 1 8)
+> do
+> sh run.sh -st $i > X.0$i
+> done
+\end{verbatim}
+Run logs are thus saved into files \texttt{X.01} to~\texttt{X.08}.
+The following table summarises the results:
+\begin{center}\let\handletest\xhandletest
+\input{X86.tex}
+\end{center}
+For every test and stride value cells show how many times the targeted relaxed
+outcome was observed/total number of outcomes.
+One sees that even stride value perfom better --- noticeably $2$, $6$ and~$8$.
+Moreover variation of the stride parameters permits the observation of
+the relaxed outcomes targeted by all tests.
+
+
+We can perform another, similar, experiment changing the $s$ (\verb+size_of_test+) and~$r$ (\verb+number_of_run+) parameters.
+Notice that the respective default values of $s$ and~$r$ are
+$1000$ and~$10$, as specified in the \ahref{x86-64.cfg}{\file{x86-64.cfg}}
+configuration file.
+We now try the following settings:
+\begin{verbatim}
+% sh run.sh -a 16 -s 10 -r 10000 > Y.01
+% sh run.sh -a 16 -s 100 -r 1000 > Y.02
+% sh run.sh -a 16 -s 1000 -r 100 > Y.03
+% sh run.sh -a 16 -s 10000 -r 10 > Y.04
+% sh run.sh -a 16 -s 100000 -r 1 > Y.05
+\end{verbatim}
+The additional \opt{-a 16}  command line option informs test executable
+to use $16$ logical processors, hence running $8$ instances of
+the ``\ltest{X}'' tests concurrently, as those tests all are two thread tests.
+This technique of flooding the tested machine obviously
+yields better ressource usage
+and, according to our experience, favours outcome variability.
+
+The following table summarises the results:
+\begin{center}\let\handletest\xhandletest
+\input{X86-SR.tex}
+\end{center}
+Again, we observe all targeted relaxed outcomes. In fact,
+x86 relaxations are relatively easy to observe on our $16$
+logical core machine.
+
+Another test statistic of interest is
+\emph{efficiency}, that is the number of targeted outcomes observed per
+second:
+\begin{center}\let\handletest\xhandletest
+\input{X86-E.tex}
+\end{center}
+As we can see, although the setting \opt{-s 10 -r 10000} yields the most
+relaxed outcomes, it may not be considered as the most efficient.
+Moreover, we see that tests \ltest{X002} and~\ltest{X005}
+look more challenging than others.
+
+Finally, it may be interesting to classify the ``\texttt{X}'' tests:
+\begin{verbatim}
+% mcycles7 @all | classify7 -arch X86
+R
+  X003 -> R+po+rfi-po : PodWW Wse Rfi PodRR Fre
+  X006 -> R : PodWW Wse PodWR Fre
+SB
+  X000 -> SB+rfi-pos : Rfi PodRR Fre Rfi PodRR Fre
+  X001 -> SB+rfi-po+po : Rfi PodRR Fre PodWR Fre
+  X002 -> SB+mfence+rfi-po : MFencedWR Fre Rfi PodRR Fre
+  X004 -> SB : PodWR Fre PodWR Fre
+  X005 -> SB+mfence+po : MFencedWR Fre PodWR Fre
+\end{verbatim}
+One sees that two thread non-SC tests for x86 are basically of two kinds.
+
+
+
+
+\section{Cross compiling, \label{affinity:experiment}affinity experiment}
+In this section we describe how to produce the C~sources of tests
+on a machine, while running the tests on another.
+We also describe a sophisticated affinity experiment.
+
+We assume a directory \ahref{tst-ppc}{\texttt{tst-ppc}}%
+\ifhevea{} (\ahref{tst-ppc.tar}{archive})\fi,
+that contains a series of litmus tests
+and an index file~\ahref{tst-ppc/@all}{\file{@all}}.
+Those tests where produced by the \diycross{}
+tool. They illustrate variations of the
+classical \ahref{tst-ppc/IRIW.litmus}{\ltest{IRIW}} test.
+\ifhevea\begin{center}\img{IRIW}\end{center}\fi
+More specifically, the \ltest{IRIW} variations are produced as follows
+(see also Sec.~\ref{diycross:intro}):
+\begin{verbatim}
+% mkdir tst-ppc
+% diycross7 -name IRIW -o tst-ppc Rfe PodRR,DpAddrdR,LwSyncdRR,EieiodRR,SyncdRR Fre Rfe PodRR,DpAddrdR,LwSyncdRR,EieiodRR,SyncdRR Fre
+Generator produced 15 tests
+\end{verbatim}
+
+
+We target a Power7 machine described by the configuration file
+\ahref{power7.cfg}{\file{power7.cfg}}:
+\verbatiminput{power7.cfg}
+One may notice the SMT (\emph{Simultaneaous Multi-Threading}) specification:
+$4$-ways SMT (\verb+smt=4+), logical processors pertaining
+to the same core being numbered in sequence (\verb+smt_mode = seq+) ---
+that is, logical processors from the first core are $0$, $1$ ,$2$ and~$3$;
+logical processors from the second core are $4$, $5$ ,$6$ and~$7$; etc.
+The SMT specification is necessary to enable
+custom affinity mode
+(see Sec.~\ref{affinity:custom}).
+
+One may also notice the specification of $0$ available logical processors
+(\verb+avail=0+).
+As affinity support is enabled (\verb+affinity=incr0+),
+test executables will find themselves
+the number of logical processors available on the target machine.
+
+
+We compile tests to C-sources packed in archive \file{a.tar}
+and upload the archive to the target power7 machine as follows:
+\begin{verbatim}
+% litmus7 -mach power7 -o a.tar tst-ppc/@all
+% scp a.tar power7:
+\end{verbatim}
+Then, on \texttt{power7} we unpack the archive and produce executable tests
+as follows:
+\begin{verbatim}
+power7% tar xmf a.tar
+power7% make -j 8
+gcc -D_GNU_SOURCE -Wall -std=gnu99 -O -m64 -pthread -O2 -c affinity.c
+gcc -D_GNU_SOURCE -Wall -std=gnu99 -O -m64 -pthread -O2 -c outs.c
+gcc -D_GNU_SOURCE -Wall -std=gnu99 -O -m64 -pthread -S IRIW+eieios.c
+...
+\end{verbatim}
+
+As a starter, we can check the effect of available logical processor detection
+and custom affinity control (option \opt{+ca})
+by passing the command line option \opt{-v} to one test executable,
+for instance
+\texttt{IRIW.exe}:
+\begin{verbatim}
+power7% ./IRIW.exe -v +ca
+./IRIW.exe -v +ca
+IRIW: n=8, r=10, s=1000, st=1, +ca, p='0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31'
+thread allocation: 
+[23,22,3,2] {5,5,0,0}
+[7,6,15,14] {1,1,3,3}
+[11,10,5,4] {2,2,1,1}
+[21,20,27,26] {5,5,6,6}
+[9,8,25,24] {2,2,6,6}
+[31,30,13,12] {7,7,3,3}
+[19,18,29,28] {4,4,7,7}
+[1,0,17,16] {0,0,4,4}
+...
+\end{verbatim}
+We see that our machine \texttt{power7} features $32$ logical processors
+numbered from $0$ to~$31$
+(cf \verb+p=...+ above) and will thus run \verb+n=8+ concurrent
+instances of the $4$~thread IRIW~test.
+Additionally allocation of threads to logical processors is shown:
+here, the four threads of the test are partitioned into two groups, which are
+scheduled to run on different cores. For example, threads $0$ and~$1$ of
+the first instance of the test will run on logical processors $23$ and~$22$
+(core~$5$); while threads $2$ and~$3$ will run on logical
+processors $3$ and~$2$ (core~$0$).
+
+Our experiment consists in running all tests
+with affinity increment (see Sec.~\ref{defi}) being from $0$
+and then $1$ to~$8$ (option \opt{-i $i$}),
+as well as in random and custom affinity mode
+(options \opt{+ra} and~\opt{+ca}):
+\begin{verbatim}
+power7% for i in $(seq 0 8)
+> do
+> sh run.sh -i $i > Z.0$i
+> done
+power7% sh run.sh +ra > Z.0R
+power7% sh run.sh +ca > Z.0C
+
+\end{verbatim}
+The following table summarises the results, with X meaning that the targeted
+relaxed outcome is observed:
+\begin{center}\def\tstdir{tst-ppc}\let\handletest\xhandletest
+\input{PPC.tex}
+\end{center}
+On sees that all possible relaxed outcomes shows up with proper affinity
+control. More precisely, setting the affinity increment to $2$ or resorting
+to custom affinity result in the same effect:
+the first two threads of the test run on one core, while the last two threads
+of the test run on a different core.
+As demonstrated by the experiment, this allocation of test threads to cores
+suffices to favour relaxed outcomes for all tests except for
+\ahref{tst-ppc/IRIW+syncs.litmus}{\ltest{IRIW+syncs}},
+where the \texttt{sync} fences forbid them.
+
+
+\section{Cross running, testing low-end devices}
+Together \litmus{} options \ahrefloc{gcc}{\opt{-gcc}}
+and~\ahrefloc{linkopt}{\opt{-linkopt}} permit using
+a C~cross compiler. For instance, assume that \litmus{}
+runs on machine~$A$ and that \opt{crossgcc}, a cross compiler for machine~$C$,
+is available on machine~$B$. Then, the following sequence of
+commands can be used to test machine~$C$:
+\begin{verbatim}
+A% litmus7 -gcc crossgcc -linkopt -static -o C-files.tar ...
+A% scp C-files.tar B:
+
+B% tar xf C-files.tar
+B% make
+B% tar cf /tmp/C-compiled.tar .
+B% scp /tmp/C-compiled.tar C:
+
+C% tar xf C-compiled.tar
+C% sh run.sh
+\end{verbatim}
+Alternatively, using option \ahrefloc{crossrun}{\opt{-crossrun $C$}},
+one can avoid copying the archive \verb+C-compiled.tar+ to machine~$C$:
+\begin{verbatim}
+A% litmus7 -crossrun C -gcc crossgcc -linkopt -static -o C-files.tar ...
+A% scp C-files.tar B:
+
+B% tar xf C-files.tar
+B% make
+B% sh run.sh
+\end{verbatim}
+More specifically, option \opt{-crossrun $C$} instructs the \file{run.sh}
+script to upload executables individually to machine~$C$, just before running
+them. Notice that executables are removed from~$C$ once run.
+
+We illustrate the crossrun feature by testing \ltest{LB} variations on
+an ARM-based Tegra3 ($4$ cores) tablet.
+Test \ahref{tst-arm/LB.litmus}{\ltest{LB}} (load-buffering) exercises
+the following ``causality'' loop:
+\begin{center}\cycle{LB}\end{center}
+That is, thread~0 reads the values stored to location~\texttt{x} by thread~1,
+thread~1 reads the values stored to location~\texttt{y} by thread~0,
+and both threads read ``before'' they write.
+
+We shall consider tests with varying interpretations of ``before'':
+the write may simply follow the read in program order
+(\texttt{po} in test names),
+may depend on the read (\texttt{data} and \texttt{addr}), or
+they may be some fence in-betweeen
+(\texttt{isb} and \texttt{dmb}).
+We first generate tests \ahref{tst-arm}{\texttt{tst-arm}}%
+\ifhevea{} (\ahref{tst-arm.tar}{archive}) \fi
+with \diycross:
+\begin{verbatim}
+% mkdir tst-arm
+% diycross7 -arch ARM -name LB -o tst-arm PodRW,DpDatadW,DpCtrldW,ISBdRW,DMBdRW Rfe PodRW,DpDatadW,DpCtrldW,ISBdRW,DMBdRW Rfe
+Generator produced 15 tests
+\end{verbatim}
+
+We use the following, \afile{tegra3.cfg}, configuration file:
+\verbatiminput{tegra3.cfg}
+Notice the ``cross-compilation'' section:
+the name of the gcc cross-compiler is \texttt{arm-linux-gnueabi-gcc},
+while the adequate version of the target ARM variant
+and static linking are specified.
+
+We compile the tests from litmus source files to C~source files in
+directory \texttt{TST} as follows:
+\begin{verbatim}
+% mkdir TST
+% litmus7 -mach tegra3 -crossrun app_81@wifi-auth-188153:2222 tst-arm/@all -o TST
+\end{verbatim}
+The extra option \texttt{-crossrun app\_81@wifi-auth-188153:2222}
+specifies the address to log onto the tablet by \texttt{ssh},
+which is connected on a local WiFi network and runs a \texttt{ssh} daemon
+that listens on port~$2222$.
+
+We compile to executables and run them  as as follows:
+\begin{verbatim}
+% cd TST
+% make
+arm-linux-gnueabi-gcc -Wall -std=gnu99 -march=armv7-a -O2 -pthread -O2 -c outs.c
+arm-linux-gnueabi-gcc -Wall -std=gnu99 -march=armv7-a -O2 -pthread -O2 -c utils.c
+arm-linux-gnueabi-gcc -Wall -std=gnu99 -march=armv7-a -O2 -pthread -S LB.c
+...
+% sh run.sh > ARM-LB.log
+\end{verbatim}
+\ifhevea(Complete \ahref{ARM-LB.log}{run log}.) \fi
+It is important to notice that the shell script \texttt{run.sh} runs
+on the local machine, not on the remote tablet.
+Each test executable is copied (by using \texttt{scp}) to the tablet, runs there
+and is deleted (by using \texttt{ssh}), as can be seen with \texttt{sh}
+``\texttt{-x}'' option:
+\begin{verbatim}
+% sh -x run.sh 2>&1 >ARM-LB.log | grep -e scp -e ssh
++ scp -P 2222 -q ./LB.exe app_81@wifi-auth-188153:
++ ssh -p 2222 -q -n app_81@wifi-auth-188153 ./LB.exe -q  && rm ./LB.exe
++ scp -P 2222 -q ./LB+data+po.exe app_81@wifi-auth-188153:
++ ssh -p 2222 -q -n app_81@wifi-auth-188153 ./LB+data+po.exe -q  && rm ./LB+data+po.exe
+...
+\end{verbatim}
+
+
+Experiment results can be extracted from the log file quite easily,
+by reading the ``Observation'' information from test output:
+\begin{verbatim}
+% grep Observation ARM-LB.log
+Observation LB Sometimes 1395 1998605
+Observation LB+data+po Sometimes 360 1999640
+Observation LB+ctrl+po Sometimes 645 1999355
+Observation LB+isb+po Sometimes 1676 1998324
+Observation LB+dmb+po Sometimes 18 1999982
+Observation LB+datas Never 0 2000000
+Observation LB+ctrl+data Never 0 2000000
+Observation LB+isb+data Sometimes 654 1999346
+Observation LB+dmb+data Never 0 2000000
+Observation LB+ctrls Never 0 2000000
+Observation LB+isb+ctrl Sometimes 1143 1998857
+Observation LB+dmb+ctrl Never 0 2000000
+Observation LB+isbs Sometimes 2169 1997831
+Observation LB+dmb+isb Sometimes 178 1999822
+Observation LB+dmbs Never 0 2000000
+\end{verbatim}
+What is observed (\texttt{Sometimes}) or not (\texttt{Never}) is the occurence
+of the non-SC behaviour of tests. All tests have the same structure
+and the observation of the non-SC behaviour can be interpreted as
+some read not being ``before'' the write by the same thread.
+This situation occurs for plain program order (plain test \ltest{LB} and
+\texttt{po} variations) and for the \texttt{isb} fence.
+
+\ifhevea
+The following graph summarises the observations and illustrates
+that data dependencies, control dependencies and the \texttt{dmb} barrier
+apparently suffice to restore SC in the case of the LB family.
+\begin{center}\img{LB-kinds}\end{center}
+In the graph above, a red node means an observation of the non-SC behaviour.
+\fi
+
+\endinput
+\ifhevea
+\section{Finding\label{example:invalid} and showing invalid executions}
+
+We now describe a complete experiment that will use some of
+the additional tools we distribute.
+The experiment aims at comparing ARM machines with the uniproc model.
+The uniproc model is a very relaxed memory model that only enforces
+single-thread correctness --- See Sec.~\ref{defuniproc}.
+Single thread correctness can be defined as accesses to same
+location by the same thread do not contradict communication candidate
+relaxations --- See Sec.~\ref{communication:cr}.
+
+\subsection*{Test generation}
+We first produce a few simple tests that access one memory location
+only. We use the \diy{} test generator with configuration
+file~\ahref{tst-co/CO.conf}{\texttt{CO.conf}}:
+\verbatiminput{tst-co/src/CO.conf}
+The first section above describes generated cycles: the vocabulary
+of candidate relaxations (we also consider DMB barriers),
+the size of cycles, the (maximal) number of threads, and a strong limitation
+on the number of consecutive internal candidate relaxations
+(the setting \opt{ins 2} by rejecting 2 or more consecutive internal candidate
+relaxations in effect forbids sequences of internal candidate
+relaxations).
+We also specify \diy{} \opt{uni} mode (See Sec.~\ref{uni:def})
+that will allow test generation from one-location cycles,
+and replace final conditions by the observation of test outcomes
+(\opt{cond observe}).
+Here we go:
+\begin{verbatim}
+% diy7 -conf CO.conf
+Generator produced 31 tests
+% ls
+2+2W+dmb+pos.litmus  MP+dmbs.litmus     SB+dmb+pos.litmus  W+RR+dmb.litmus
+2+2W+dmbs.litmus     MP+pos+dmb.litmus  SB+dmbs.litmus     W+RR.litmus
+2+2W+poss.litmus     MP+poss.litmus     SB+poss.litmus     W+RW+dmb.litmus
+@all                 R+dmb+pos.litmus   S+dmb+pos.litmus   W+RW.litmus
+CO.conf              R+dmbs.litmus      S+dmbs.litmus      WW+dmb.litmus
+LB+dmb+pos.litmus    R+pos+dmb.litmus   S+pos+dmb.litmus   WW.litmus
+LB+dmbs.litmus       R+poss.litmus      S+poss.litmus
+LB+poss.litmus       RW+dmb.litmus      WR+dmb.litmus
+MP+dmb+pos.litmus    RW.litmus          WR.litmus
+\end{verbatim}
+\input{BASIC.tex}\newcommand{\basic}[1]{\ahref{BASIC-#1.html}{\ltest{#1}}}%
+We get 31~tests, 
+available in directory \ahref{tst-co}{\texttt{tst-co}}%
+\ifhevea{} (\ahref{tst-co.tar}{archive})\fi.
+Amongst those $31$~tests, are five tests that may exhibit
+the five ``basic'' uniproc violations.
+Those five basic uniproc violations are three direct contraditions of
+program order and communication candidate relaxations Ws,Rf and~Fr ---
+which we show
+as executions of the tests \basic{WW}, \basic{RW} and~\basic{WR}:
+\begin{center}
+\img{WW}\qquad\qquad
+\img{RW}\qquad\qquad
+\img{WR}
+\end{center}
+plus two contradictions of
+program order and communication candidate relaxation
+sequences Ws;Rf and~Fr;Rf,
+which we show
+as executions of the tests \basic{W+RW} and~\basic{W+RR}:
+\begin{center}
+\img{W+RW}\qquad
+\img{W+RR}
+\end{center}
+
+Namely, due to the transitivity of Ws and to the definition of Fr
+(that implies $\textrm{Fr;Ws} \subseteq \textrm{Fr}$) all sequences of
+communications are covered by the above listed five cases.
+
+\input{MPPOSS.tex}\newcommand{\mpposs}[1]{\ahref{MPPOSS-#1.html}{#1}}%
+However, having more tests than the five basic ones is relevant to
+hardware testing, as the \textsc{uniproc} check will be exercised in
+more contexts. For instance the test \mpposs{MP+poss}
+may reveal $12$~different violations of \textsc{uniproc}.
+We shall also test similar violations
+in the presence of one or two \texttt{dmb} fences
+(tests \mpposs{MP+dmb+pos}, \mpposs{MP+pos+dmb} and~\mpposs{MP+dmbs}).
+
+\subsection{Running tests on hardware}
+
+\subsubsection{Trimslice computer (a machine that runs linux)}
+We first run our test set on a
+\ahref{http://utilite-computer.com/web/trim-slice}{Trimslice computer},
+which is powered by a NVIDIA cortex-A9 based Tegra2 chipset.
+As the Trimslice machine runs some Linux distribution, we proceed by ordinary
+cross-compilation (\emph{i.e.} we compile litmus tests into C sources
+on our local machine and compile C files on the remote machine):
+\begin{verbatim}
+% litmus7 -mach trimslice -mem direct -st 1 -o /tmp/A.tar tst-co/@all
+% scp /tmp/A.tar trimslice:/tmp/A.tar
+\end{verbatim}
+We use the \afile{trimslice.cfg} (\litmus) configuration file present
+in the \litmus{} distribution, additionnally specifying
+\ahrefloc{defmemorymode}{memory direct mode}
+and a \ahrefloc{defstride}{stride value} of~\opt{1}.
+We then copy the \texttt{A.tar} archive to our Trimslice machine.
+
+We unpack and compile the C~sources on the remote Trimslice computer:
+\begin{verbatim}
+$ mkdir TST
+$ cd TST
+$ tar xf /tmp/A.tar
+$ make -j 4 all
+gcc -D_GNU_SOURCE -Wall -std=gnu99 -mcpu=cortex-a9 -marm -O2 -pthread -O2 -c affinity.c
+gcc -D_GNU_SOURCE -Wall -std=gnu99 -mcpu=cortex-a9 -marm -O2 -pthread -O2 -c outs.c
+gcc -D_GNU_SOURCE -Wall -std=gnu99 -mcpu=cortex-a9 -marm -O2 -pthread -O2 -c utils.c
+gcc -D_GNU_SOURCE -Wall -std=gnu99 -mcpu=cortex-a9 -marm -O2 -pthread -S R+dmbs.c
+...
+gcc -D_GNU_SOURCE -Wall -std=gnu99 -mcpu=cortex-a9 -marm -O2 -pthread  -o W+RW.exe affinity.o outs.o utils.o W+RW.s
+gcc -D_GNU_SOURCE -Wall -std=gnu99 -mcpu=cortex-a9 -marm -O2 -pthread  -o W+RR.exe affinity.o outs.o utils.o W+RR.s
+\end{verbatim}
+We are now ready for running the tests, we perform $10$~runs of the tests,
+with varying strides, using a shell script \afile{trimslice.sh}.
+\verbatiminput{trimslice.sh}
+Notice that we also use the
+\ahrefloc{affinity:runopt}{affinity setting \opt{-i 1}}.
+We do so in order to accelerate the tests, as very little
+can ne expected from a dual-core system as regards thread placement on cores.
+We run the tests:
+\begin{verbatim}
+$ sh ./trimslice.sh
+\end{verbatim}
+After a bit less then $20$~minutes we get ten files
+\texttt{CO.00} to~\texttt{CO.09} that we transfer back to our local machine,
+into some sub-directory \texttt{trimslice}.
+
+\subsubsection{\label{driverc:example}APQ8060 (a development board that runs Android)}
+We then run our test set on a development board
+powered by a Qualcomm \ahref{http://en.wikipedia.org/wiki/Snapdragon_(system_on_chip)#Snapdragon_S3}{APQ8060 system-on-chip} (dual-core Scorpion).
+This board runs Android and is connected to our local computer
+by the \emph{Android Debug Bridge} (adb).
+We perform complete cross-compilation, \emph{i.e.} we shall compile
+both litmus sources into C~sources and C~sources into executables
+on our local machine. We first run \litmus{} as follows:
+\begin{verbatim}
+% mkdir -p SRC/DRAGON
+% litmus7 -mach dragon -mem direct -st 1 -o SRC/DRAGON -driver C tst-co/@all
+\end{verbatim}
+We use the \afile{dragon.cfg} (\litmus{}) configuration file present
+in the \litmus{} distribution:
+\verbatiminput{dragon.cfg}
+The configuration file defines the number of available cores
+(\verb+avail = 2+),
+gives some defaults for standard tests parameters,
+specifies a few \ahrefloc{affinity:control}{affinity settings}
+(\verb+affinity = incr0+ and \verb+force_affinity = true+), and then
+define the C~cross-compiler and its options.
+Notice that the C~sources are dumped into the pre-existing
+directory (\opt{-o SRC/DRAGON}) and that we build a single executable
+(\opt{-driver C}).
+We then compile C~sources, on the local machine.
+\begin{verbatim}
+% cd SRC/DRAGON
+% make -j 8
+arm-linux-gnueabi-gcc -D_GNU_SOURCE -Wall -std=gnu99 -march=armv7-a -mthumb -O2 -pthread -O2 -c affinity.c
+arm-linux-gnueabi-gcc -D_GNU_SOURCE -Wall -std=gnu99 -march=armv7-a -mthumb -O2 -pthread -O2 -c outs.c
+arm-linux-gnueabi-gcc -D_GNU_SOURCE -Wall -std=gnu99 -march=armv7-a -mthumb -O2 -pthread -O2 -c utils.c
+arm-linux-gnueabi-gcc -DASS -D_GNU_SOURCE -Wall -std=gnu99 -march=armv7-a -mthumb -O2 -pthread -S R+dmbs.c
+...
+arm-linux-gnueabi-gcc  -D_GNU_SOURCE -Wall -std=gnu99 -march=armv7-a -mthumb -O2 -pthread -static -o run.exe affinity.o outs.o utils.o R+dmbs.o MP+dmbs.o R+dmb+pos.o MP+dmb+pos.o WW+dmb.o 2+2W+dmbs.o S+dmbs.o 2+2W+dmb+pos.o S+dmb+pos.o WR+dmb.o SB+dmbs.o SB+dmb+pos.o R+pos+dmb.o RW+dmb.o LB+dmbs.o S+pos+dmb.o LB+dmb+pos.o W+RW+dmb.o MP+pos+dmb.o W+RR+dmb.o R+poss.o MP+poss.o WW.o 2+2W+poss.o S+poss.o WR.o SB+poss.o RW.o LB+poss.o W+RW.o W+RR.o run.o
+rm W+R
+...
+\end{verbatim}
+Thanks to the setting \opt{-driver C} the above compilation produced one
+executable file ``\file{run.exe}'', which we upload onto the Android device:
+\begin{verbatim}
+% adb push ./run.exe /data/tmp
+6104 KB/s (892848 bytes in 0.142s)
+\end{verbatim}
+Then, we perform ten runs of the test set with stride variation,
+by running the shell script \afile{dragon.sh} on our local machine:
+\begin{verbatim}
+% cat dragon.sh
+adb shell /data/tmp/run.exe -s 5k -r 2k -i 1 -st 133 > CO.00
+...
+adb shell /data/tmp/run.exe -s 5k -r 2k -i 1 -st 37 > CO.09
+% sh dragon.sh
+\end{verbatim}
+After a bit less then $20$~minutes we get ten files
+\texttt{CO.00} to~\texttt{CO.09} in directory \file{SRC/DRAGON}
+that we move into some sub-directory \texttt{dragon}.
+
+\subsubsection{Other machines}
+We also run our test set on more recent
+Google nexus7 tablet (dual-core Cortex-A15 based Exynos5250, runing Android)
+and Hardkernel ODROID-XU development board
+(quad-core CortexA7-Cortex-A15 in tandem based Exynos5410, running Linux),
+resulting in log files into sub-directories \file{nexus10} and~\file{odroid-xu}.
+
+\fi

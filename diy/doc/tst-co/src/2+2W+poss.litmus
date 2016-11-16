@@ -1,0 +1,18 @@
+ARM 2+2W+poss
+"PosWW Wse PosWW Wse"
+Cycle=Wse PosWW Wse PosWW
+Relax=
+Safe=Wse PosWW
+Prefetch=
+Com=Ws Ws
+Orig=PosWW Wse PosWW Wse
+{
+%x0=x;
+%x1=x;
+}
+ P0           | P1           ;
+ MOV R0,#1    | MOV R0,#3    ;
+ STR R0,[%x0] | STR R0,[%x1] ;
+ MOV R1,#2    | MOV R1,#4    ;
+ STR R1,[%x0] | STR R1,[%x1] ;
+locations [x;]

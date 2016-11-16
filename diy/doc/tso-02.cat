@@ -1,0 +1,21 @@
+"A third attempt for TSO"
+
+include "cos.cat"
+
+(* Uniproc check specialized for TSO *)
+irreflexive po-loc & (R*W); rfi as uniprocRW
+irreflexive po-loc & (W*R); fri as uniprocWR
+
+(* Communication relations that order events*)
+let com-tso = rfe | co | fr
+
+(* Program order that orders events *)
+let mfence = po & (_ * MFENCE) ; po
+let po-tso = po & (W*W | R*M) | mfence
+
+(* TSP global-happens-before *)
+let ghb = po-tso | com-tso
+show mfence,ghb
+acyclic ghb as tso
+
+

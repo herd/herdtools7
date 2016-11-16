@@ -1,0 +1,7 @@
+X86 iriw
+"Rfe PodRR Fre Rfe PodRR Fre"
+{ }
+ P0          | P1         | P2          | P3         ;
+ MOV EAX,[y] | MOV [x],$1 | MOV EAX,[x] | MOV [y],$1 ;
+ MOV EBX,[x] |            | MOV EBX,[y] |            ;
+exists (0:EAX=1 /\ 0:EBX=0 /\ 2:EAX=1 /\ 2:EBX=0)

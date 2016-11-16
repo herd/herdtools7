@@ -1,0 +1,104 @@
+Tue Mar 20 15:07:08 CET 2012
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for SB-PPC.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC SB-PPC
+"Fre PodWR Fre PodWR"
+
+{0:r2=x; 0:r4=y; 1:r2=y; 1:r4=x;}
+
+ P0           | P1           ;
+ li r1,1      | li r1,1      ;
+ stw r1,0(r2) | stw r1,0(r2) ;
+ lwz r3,0(r4) | lwz r3,0(r4) ;
+
+exists (0:r3=0 /\ 1:r3=0)
+Generated assembler
+#START _litmus_P1
+	li r10,1
+	stw r10,0(r9)
+	lwz r11,0(r2)
+#START _litmus_P0
+	li r10,1
+	stw r10,0(r9)
+	lwz r11,0(r2)
+Test SB-PPC Allowed
+Histogram (3 states)
+1765  *>0:r3=0; 1:r3=0;
+498741:>0:r3=1; 1:r3=0;
+499494:>0:r3=0; 1:r3=1;
+Ok
+
+Witnesses
+Positive: 1765, Negative: 998235
+Condition exists (0:r3=0 /\ 1:r3=0) is validated
+Hash=4edecf6abc507611612efaecc1c4a9bc
+Observation SB-PPC Sometimes 1765 998235
+Time SB-PPC 0.57
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for STFW-PPC.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC STFW-PPC
+"Rfi PodRR Fre Rfi PodRR Fre"
+
+{0:r2=x; 0:r5=y; 1:r2=y; 1:r5=x;}
+
+ P0           | P1           ;
+ li r1,1      | li r1,1      ;
+ stw r1,0(r2) | stw r1,0(r2) ;
+ lwz r3,0(r2) | lwz r3,0(r2) ;
+ lwz r4,0(r5) | lwz r4,0(r5) ;
+
+exists (0:r3=1 /\ 0:r4=0 /\ 1:r3=1 /\ 1:r4=0)
+Generated assembler
+#START _litmus_P1
+	li r8,1
+	stw r8,0(r9)
+	lwz r11,0(r9)
+	lwz r10,0(r2)
+#START _litmus_P0
+	li r8,1
+	stw r8,0(r9)
+	lwz r11,0(r9)
+	lwz r10,0(r2)
+Test STFW-PPC Allowed
+Histogram (4 states)
+480   *>0:r3=1; 0:r4=0; 1:r3=1; 1:r4=0;
+499560:>0:r3=1; 0:r4=1; 1:r3=1; 1:r4=0;
+499827:>0:r3=1; 0:r4=0; 1:r3=1; 1:r4=1;
+133   :>0:r3=1; 0:r4=1; 1:r3=1; 1:r4=1;
+Ok
+
+Witnesses
+Positive: 480, Negative: 999520
+Condition exists (0:r3=1 /\ 0:r4=0 /\ 1:r3=1 /\ 1:r4=0) is validated
+Hash=92b2c3f6332309325000656d0632131e
+Observation STFW-PPC Sometimes 480 999520
+Time STFW-PPC 0.56
+Revision 8829:8832M, version 4.00+1
+Command line: litmus -o /tmp/a.tar -os mac SB-PPC.litmus STFW-PPC.litmus
+Parameters
+#ifndef SIZE_OF_TEST
+#define SIZE_OF_TEST 100000
+#endif
+#ifndef NUMBER_OF_RUN
+#define NUMBER_OF_RUN 10
+#endif
+#ifndef AVAIL
+#define AVAIL 1
+#endif
+/* gcc options: -Wall -std=gnu99 -O2 */
+/* barrier: user */
+/* launch: changing */
+/* cache: false */
+/* call: false */
+/* affinity: none */
+/* prealloc: false */
+/* memory: indirect */
+/* safer: all */
+/* preload: random */
+/* para: self */
+/* speedcheck: false */
+GCC=gcc
+LITMUSOPTS=
+Tue Mar 20 15:07:09 CET 2012

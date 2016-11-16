@@ -1,0 +1,17 @@
+# diycross -arch ARM -name LB -o tst-arm PodRW,DpDatadW,DpCtrldW,ISBdRW,DMBdRW Rfe PodRW,DpDatadW,DpCtrldW,ISBdRW,DMBdRW Rfe
+# Version 4.00+1, Revision: 8990
+LB.litmus
+LB+data+po.litmus
+LB+ctrl+po.litmus
+LB+isb+po.litmus
+LB+dmb+po.litmus
+LB+datas.litmus
+LB+ctrl+data.litmus
+LB+isb+data.litmus
+LB+dmb+data.litmus
+LB+ctrls.litmus
+LB+isb+ctrl.litmus
+LB+dmb+ctrl.litmus
+LB+isbs.litmus
+LB+dmb+isb.litmus
+LB+dmbs.litmus

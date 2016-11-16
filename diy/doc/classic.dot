@@ -1,0 +1,44 @@
+digraph G {
+
+splines=true;
+ 
+overlap=scale;
+ 
+compound=true;
+ 
+
+/* the unlocked events */
+eiid0 [shape=plaintext  ] [color=blue] [rank=sink] [label="(a)Wy1" ];
+eiid1 [shape=plaintext  ] [color=blue] [rank=sink] [label="(b)Rx0" ];
+eiid2 [shape=plaintext  ] [color=blue] [rank=sink] [label="(c)Wx1" ];
+eiid3 [shape=plaintext  ] [color=blue] [rank=sink] [label="(d)Ry0" ];
+
+/* the intra_causality_data edges */
+
+
+/* the intra_causality_control edges */
+
+/* the poi edges */
+/*eiid0 -> eiid1 [label="po:0"];
+eiid2 -> eiid3 [label="po:1"];*/
+/* the rfmap edges */
+finaleiid2 [shape=none, label=""];
+eiid2 -> finaleiid2 [label="Rf", color="red", fontcolor="red"];
+finaleiid0 [shape=none, label=""];
+eiid0 -> finaleiid0 [label="Rf", color="red", fontcolor="red"];
+initeiid1 [label="", shape=point , color="red"];
+initeiid1 -> eiid1 [label="Rf", color="red", fontcolor="red"];
+initeiid3 [label="", shape=point , color="red"];
+initeiid3 -> eiid3 [label="Rf", color="red", fontcolor="red"];
+
+/* the view order edges */
+
+/* The viewed-before edges */
+eiid0 -> eiid1 [label="PodWR", color="black", fontcolor="black", ];
+eiid2 -> eiid3 [label="PodWR", color="black", fontcolor="black", ];
+eiid1 -> eiid2 [label="Fre", color="brown", fontcolor="brown", style="setlinewidth(3)"];
+eiid3 -> eiid0 [label="Fre", color="brown", fontcolor="brown", style="setlinewidth(3)"];
+/* The calculated basic viewed-before edges */
+
+/* the groupA and groupB of barriers */
+}

@@ -1,0 +1,17 @@
+ARM WW
+"PosWW Wse"
+Cycle=Wse PosWW
+Relax=
+Safe=Wse PosWW
+Prefetch=
+Com=Ws
+Orig=PosWW Wse
+{
+%x0=x;
+}
+ P0           ;
+ MOV R0,#1    ;
+ STR R0,[%x0] ;
+ MOV R1,#2    ;
+ STR R1,[%x0] ;
+exists x=1

@@ -1,0 +1,28 @@
+digraph G {
+
+fontname="Arial";
+
+/* legend */
+fontsize=12;
+label="DetourR";
+
+
+/* the unlocked events */
+eiid0 [label="a: Rx=0", shape="none", fontsize=12, pos="1.000000,0.750000!", fixedsize="true", height="0.166667", width="0.666667"];
+eiid1 [label="b: Rx=1", shape="none", fontsize=12, pos="1.000000,0.000000!", fixedsize="true", height="0.166667", width="0.666667"];
+eiid2 [label="c: Wx=1", shape="none", fontsize=12, pos="2.000000,0.750000!", fixedsize="true", height="0.166667", width="0.666667"];
+
+/* the intra_causality_data edges */
+
+
+/* the intra_causality_control edges */
+
+/* the poi edges */
+eiid0 -> eiid1 [label="po", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+/* the rfmap edges */
+eiid2 -> eiid1 [label="rf", color="red", fontcolor="red", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+
+
+/* The viewed-before edges */
+eiid0 -> eiid2 [label="fr", color="#ffa040", fontcolor="#ffa040", fontsize=12, penwidth="1.500000", arrowsize="0.600000"];
+}

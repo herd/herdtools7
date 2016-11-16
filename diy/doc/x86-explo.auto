@@ -1,0 +1,6 @@
+arch = X86 
+mode = explo
+output = conti 
+litmus_opts = -mach conti -limit true
+mach = local
+

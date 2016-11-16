@@ -1,0 +1,8 @@
+arch = X86
+litmus_opts = -a 2 -i 1
+nprocs = 2
+diy_sz = 4
+run_opts = -i 1 -s 100 -r 1000,-i 0 -s 1000000 -r 1
+build = make -s -j 2
+mode = conform
+safe = Rfe,Fre,Wse,PodR*,PodWW,MFencedWR

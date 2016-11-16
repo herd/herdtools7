@@ -1,0 +1,8 @@
+#General behaviour
+mode = conform
+#Cycle control
+nprocs = 4
+#External tool control
+litmus_opts = -s 5000 -r 200 -a 8 -i 0
+run_opts = -i 1,-i 4
+build = make -j 4 -s

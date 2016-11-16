@@ -1,0 +1,76 @@
+** Step 0 **
+Testing: {[Rfi,PodRW], [Rfi,PodRR], Rfe, PodWW, PodWR, PodRW, PodRR, MFencedWW, MFencedWR, MFencedRW, MFencedRR}
+Relaxed: {}
+Safe   : {Fre, Wse}
+Phase 1 in A (6 tests)
+Actually tested: {[Rfi,PodRW], [Rfi,PodRR], PodWW, PodWR, MFencedWW, MFencedWR}
+Added relax: {[Rfi,PodRR], PodWR}
+Added safe: {[Rfi,PodRW], PodWW, MFencedWW, MFencedWR}
+Phase 2 in B (6 tests)
+Not tested: {[Rfi,PodRW]}
+** Step 1 **
+Testing: {Rfe, PodRW, PodRR, MFencedRW, MFencedRR}
+Relaxed: {[Rfi,PodRR], PodWR}
+Safe   : {[Rfi,PodRW], Fre, Wse, PodWW, MFencedWW, MFencedWR}
+Phase 1 in C (10 tests)
+Actually tested: {Rfe, PodRW, PodRR, MFencedRW, MFencedRR}
+Added safe: {Rfe, PodRW, PodRR, MFencedRW, MFencedRR}
+Phase 2 in D (17 tests)
+Not tested: {[Rfi,PodRW]}
+** Step 2 **
+Testing: {}
+Relaxed: {[Rfi,PodRR], PodWR}
+Safe   : {[Rfi,PodRW], Rfe, Fre, Wse, PodWW, PodRW, PodRR, MFencedWW, MFencedWR, MFencedRW, MFencedRR}
+Phase 1 in E (0 tests)
+Phase 2 in D (17 tests)
+Not tested: {[Rfi,PodRW]}
+** Step 3 **
+Testing: {}
+Relaxed: {[Rfi,PodRR], PodWR}
+Safe   : {[Rfi,PodRW], Rfe, Fre, Wse, PodWW, PodRW, PodRR, MFencedWW, MFencedWR, MFencedRW, MFencedRR}
+Phase 1 in E (0 tests)
+Phase 2 in D (17 tests)
+Not tested: {[Rfi,PodRW]}
+** Step 4 **
+Testing: {}
+Relaxed: {[Rfi,PodRR], PodWR}
+Safe   : {[Rfi,PodRW], Rfe, Fre, Wse, PodWW, PodRW, PodRR, MFencedWW, MFencedWR, MFencedRW, MFencedRR}
+Phase 1 in E (0 tests)
+Phase 2 in D (17 tests)
+Not tested: {[Rfi,PodRW]}
+** Step 5 **
+Testing: {}
+Relaxed: {[Rfi,PodRR], PodWR}
+Safe   : {[Rfi,PodRW], Rfe, Fre, Wse, PodWW, PodRW, PodRR, MFencedWW, MFencedWR, MFencedRW, MFencedRR}
+Phase 1 in E (0 tests)
+Phase 2 in D (17 tests)
+Not tested: {[Rfi,PodRW]}
+** Step 6 **
+Testing: {}
+Relaxed: {[Rfi,PodRR], PodWR}
+Safe   : {[Rfi,PodRW], Rfe, Fre, Wse, PodWW, PodRW, PodRR, MFencedWW, MFencedWR, MFencedRW, MFencedRR}
+Phase 1 in E (0 tests)
+Phase 2 in D (17 tests)
+Not tested: {[Rfi,PodRW]}
+++ Witness(es) for relaxed [Rfi,PodRR] ++
+A001: 'Rfi PodRR Fre Rfi PodRR Fre' {[Rfi,PodRR], Fre}
+++++++++
+++ Witness(es) for relaxed PodWR ++
+A003: 'Fre PodWR Fre PodWR' {Fre, PodWR}
+++++++++
+Observed relaxed: {Rfi, PodWR}
+Observed safe: {Rfe, Fre, Wse, PodWW, PodRW, PodRR, MFencedWW, MFencedWR, MFencedRW, MFencedRR}
+** Now checking safe set conformance **
+** Step 7 **
+Phase 2 in F (17 tests)
+** Step 8 **
+Phase 2 in F (17 tests)
+** Step 9 **
+Phase 2 in F (17 tests)
+** Step 10 **
+Phase 2 in F (17 tests)
+** Step 11 **
+Phase 2 in F (17 tests)
+** Step 12 **
+Observed relaxed: {Rfi, PodWR}
+Observed safe: {Rfe, Fre, Wse, PodWW, PodRW, PodRR, MFencedWW, MFencedWR, MFencedRW, MFencedRR}

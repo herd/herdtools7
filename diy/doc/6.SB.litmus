@@ -1,0 +1,9 @@
+X86 6.SB
+"Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR"
+{
+}
+ P0          | P1          | P2          | P3          | P4          | P5          ;
+ MOV [x],$1  | MOV [y],$1  | MOV [z],$1  | MOV [a],$1  | MOV [b],$1  | MOV [c],$1  ;
+ MOV EAX,[y] | MOV EAX,[z] | MOV EAX,[a] | MOV EAX,[b] | MOV EAX,[c] | MOV EAX,[x] ;
+exists
+(0:EAX=0 /\ 1:EAX=0 /\ 2:EAX=0 /\ 3:EAX=0 /\ 4:EAX=0 /\ 5:EAX=0)

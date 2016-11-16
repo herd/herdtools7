@@ -1,0 +1,7 @@
+X86 SB
+"Fre PodWR Fre PodWR"
+{ x=0; y=0; }
+ P0          | P1          ; 
+ MOV [y],$1  | MOV [x],$1  ; #(a)Wy1  | (c)Wx1
+ MOV EAX,[x] | MOV EAX,[y] ; #(b)Rx0  | (d)Ry0
+exists (0:EAX=0 /\ 1:EAX=0)

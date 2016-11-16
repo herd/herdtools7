@@ -1,0 +1,25 @@
+PPC 2+2WLocalLoop
+"PodWW Wse PodWW Wse"
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Ws Ws
+Orig=PodWW Wse PodWW Wse
+{
+0:r2=x; 0:r4=y;
+1:r2=y; 1:r4=x;
+}
+ P0            | P1            ;
+ li r1,2       | li r1,2       ;
+ stw r1,0(r2)  | stw r1,0(r2)  ;
+ li r3,1       | li r3,1       ;
+ stw r3,0(r4)  | stw r3,0(r4)  ;
+ li r6,200     | li r6,200     ;
+ L00:          | L02:          ;
+ lwz r5,0(r4)  | lwz r5,0(r4)  ;
+ cmpwi r5,1    | cmpwi r5,1    ;
+ bne  L01      | bne  L03      ;
+ addi r6,r6,-1 | addi r6,r6,-1 ;
+ cmpwi r6,0    | cmpwi r6,0    ;
+ bne  L00      | bne  L02      ;
+ L01:          | L03:          ;
+exists
+(0:r5=2 /\ 1:r5=2)
