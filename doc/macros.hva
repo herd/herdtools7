@@ -1,0 +1,20 @@
+\usepackage{fancysection}
+\colorsections{10}
+\newcommand{\smash}{}
+\newcommand{\eqdef}{=}
+\input{common.tex}
+\renewcommand{\cuttingunit}{part}
+\flushdef{part}
+\setcounter{cuttingdepth}{2}
+\newcommand{\cycle}[2][]{\imgsrc{#2.png}}
+\newcommand{\image}[2][]{\imgsrc{#2.png}}
+\let\@bibliosection\part*
+\def\tstdir{tst-x86}
+\newcommand{\xhandletest}[1]{\ahref{\tstdir/#1.litmus}{\ltest{#1}}}
+\newcommand{\img}[1]{\imgsrc{#1.png}}
+%%
+\newstyle{.showcenter}{padding:0ex;width:80\%;margin:2ex auto;}
+\newenvironment{showcenter}
+{\begin{divstyle}{showcenter}}
+{\end{divstyle}}
+\usepackage{tests}

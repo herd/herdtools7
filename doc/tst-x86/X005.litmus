@@ -1,0 +1,16 @@
+X86 X005
+"Fre MFencedWR Fre PodWR"
+Cycle=Fre PodWR Fre MFencedWR
+Relax=PodWR
+Safe=Fre MFencedWR
+Prefetch=0:y=T,1:x=T
+Com=Fr Fr
+Orig=Fre MFencedWR Fre PodWR
+{
+}
+ P0          | P1          ;
+ MOV [x],$1  | MOV [y],$1  ;
+ MFENCE      | MOV EAX,[x] ;
+ MOV EAX,[y] |             ;
+exists
+(0:EAX=0 /\ 1:EAX=0)

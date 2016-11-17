@@ -1,0 +1,1781 @@
+\cutname{litmus.html}
+Traditionally, a \emph{litmus test} is a small parallel program designed
+to exercise the memory model of a parallel, shared-memory, computer.
+Given a litmus test in assembler (X86, Power or ARM) \litmus{}
+runs the test.
+
+Using \litmus{} thus requires a parallel machine,
+which must additionally feature \prog{gcc} and the \prog{pthreads} library.
+Our tool \litmus{} has some limitations especially
+as regards recognised instructions.
+Nevertheless, \litmus{} should accept all tests
+produced by the companion test generators (see Part~\ref{part:diy})
+and has been successfully used on Linux, MacOS, AIX and~Android.
+
+
+\section{A tour of~\litmus{}}
+
+\subsection{A \label{litmus:simple} simple run}
+\aname{SB}{Consider} the following (rather classical, store buffering)
+\afile{SB.litmus} litmus test for X86:
+\verbatiminput{SB.litmus}
+A litmus test source has three main sections:
+\begin{enumerate}
+\item The initial state defines the initial values of registers
+and memory locations. Initialisation to zero may be omitted.
+\item The code section defines the code to be run concurrently
+--- above there are two threads.
+Yes we know, our X86 assembler syntax is a mistake.
+\item The final condition applies to the final values
+of registers and memory locations.
+\end{enumerate}
+
+\label{x86:classic}Run the test by\ifhevea{}
+(complete \ahref{SB.log}{run log})\fi:
+\begin{verbatim}
+% litmus7 SB.litmus
+%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for SB.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%
+X86 SB
+"Fre PodWR Fre PodWR"
+
+{x=0; y=0;}
+
+ P0          | P1          ;
+ MOV [x],$1  | MOV [y],$1  ;
+ MOV EAX,[y] | MOV EAX,[x] ;
+
+exists (0:EAX=0 /\ 1:EAX=0)
+Generated assembler
+#START _litmus_P1
+	movl $1,(%r10)
+	movl (%r9),%eax
+#START _litmus_P0
+	movl $1,(%r9)
+	movl (%r10),%eax
+
+Test SB Allowed
+Histogram (4 states)
+40    *>0:EAX=0; 1:EAX=0;
+499923:>0:EAX=1; 1:EAX=0;
+500009:>0:EAX=0; 1:EAX=1;
+28    :>0:EAX=1; 1:EAX=1;
+Ok
+
+Witnesses
+Positive: 40, Negative: 999960
+Condition exists (0:EAX=0 /\ 1:EAX=0) is validated
+Hash=7dbd6b8e6dd4abc2ef3d48b0376fb2e3
+Observation SB Sometimes 40 999960
+Time SB 0.44
+...
+\end{verbatim}
+The  litmus test is first reminded, followed by actual assembler
+--- the machine is a 64~bits one, in-line address references disappeared,
+registers may change, and assembler syntax is now more familiar.
+The test has run one million times, producing one million final states,
+or \emph{outcomes} for the registers \verb+EAX+ of threads \P{0} and~\P{1}.
+The test run validates the condition, with $40$~positive witnesses.
+
+
+
+\subsection{Cross\label{cross} compilation}
+
+With option \opt{-o <name.tar>}, \litmus{} does not run the test.
+Instead, it produces a tar archive that contains the C~sources for
+the test.
+
+Consider \afile{SB-PPC.litmus}, a Power version
+of the previous test:
+\verbatiminput{SB-PPC.litmus}
+
+
+Our target machine (ppc) runs MacOS, which we specify with the \opt{-os}~option:
+\begin{verbatim}
+% litmus7 -o /tmp/a.tar -os mac SB-PPC.litmus
+% scp /tmp/a.tar ppc:/tmp
+\end{verbatim}
+Then, on the remote machine ppc:
+\begin{verbatim}
+ppc% mkdir SB && cd SB
+ppc% tar xf /tmp/a.tar
+ppc% ls
+comp.sh  Makefile  outs.c  outs.h  README.txt  run.sh  SB-PPC.c  show.awk  utils.c  utils.h
+\end{verbatim}
+Test is compiled by the shell script \file{comp.sh} (or
+by (Gnu) \texttt{make}, at user's choice) and run by the shell script
+\file{run.sh}:
+\begin{verbatim}
+ppc% sh comp.sh
+ppc% sh run.sh
+...
+Test SB-PPC Allowed
+Histogram (3 states)
+1784  *>0:r3=0; 1:r3=0;
+498564:>0:r3=1; 1:r3=0;
+499652:>0:r3=0; 1:r3=1;
+Ok
+
+Witnesses
+Positive: 1784, Negative: 998216
+Condition exists (0:r3=0 /\ 1:r3=0) is validated
+Hash=4edecf6abc507611612efaecc1c4a9bc
+Observation SB-PPC Sometimes 1784 998216
+Time SB-PPC 0.55
+...
+\end{verbatim}
+%$
+\ifhevea(Complete \ahref{SB-PPC.log}{run log}.) \fi
+As we see, the condition validates also on Power.
+Notice that compilation produces an executable file, \file{SB-PPC.exe},
+which can be run directly, for a less verbose output.
+
+
+\subsection{Running several tests at once}
+
+\label{stfw}Consider the additional test~\afile{STFW-PPC.litmus}:
+\verbatiminput{STFW-PPC.litmus}
+
+To compile the two tests together,
+we can give two file names as arguments to litmus:
+\begin{verbatim}
+$ litmus7 -o /tmp/a.tar -os mac SB-PPC.litmus STFW-PPC.litmus 
+\end{verbatim}
+Or, more conveniently, list the litmus sources in a file whose
+name starts with \file{@}:
+\begin{verbatim}
+$ cat @ppc
+SB-PPC.litmus
+STFW-PPC.litmus
+$ litmus7 -o /tmp/a.tar -os mac @ppc
+\end{verbatim}
+%$
+To run the test on the remote ppc machine, the same sequence
+of commands as in the one test case applies:
+\begin{verbatim}
+ppc% tar xf /tmp/a.tar && make && sh run.sh
+...
+Test SB-PPC Allowed
+Histogram (3 states)
+1765  *>0:r3=0; 1:r3=0;
+498741:>0:r3=1; 1:r3=0;
+499494:>0:r3=0; 1:r3=1;
+Ok
+
+Witnesses
+Positive: 1765, Negative: 998235
+Condition exists (0:r3=0 /\ 1:r3=0) is validated
+Hash=4edecf6abc507611612efaecc1c4a9bc
+Observation SB-PPC Sometimes 1765 998235
+Time SB-PPC 0.57
+...
+Test STFW-PPC Allowed
+Histogram (4 states)
+480   *>0:r3=1; 0:r4=0; 1:r3=1; 1:r4=0;
+499560:>0:r3=1; 0:r4=1; 1:r3=1; 1:r4=0;
+499827:>0:r3=1; 0:r4=0; 1:r3=1; 1:r4=1;
+133   :>0:r3=1; 0:r4=1; 1:r3=1; 1:r4=1;
+Ok
+
+Witnesses
+Positive: 480, Negative: 999520
+Condition exists (0:r3=1 /\ 0:r4=0 /\ 1:r3=1 /\ 1:r4=0) is validated
+Hash=92b2c3f6332309325000656d0632131e
+Observation STFW-PPC Sometimes 480 999520
+Time STFW-PPC 0.56
+...
+\end{verbatim}
+\ifhevea(Complete \ahref{SB-PPC2.log}{run log}.) \fi
+Now, the output of \file{run.sh} shows the result of two tests.
+
+\section{Controlling\label{litmus:control} test parameters}
+Users can control some of testing conditions.
+Those impact efficiency and outcome variability.
+
+Sometimes one looks for a particular outcome
+--- for instance, one may seek to get the
+outcome \verb+0:r3=1; 1:r3=1;+ that is missing
+in the previous experiment for test~\ltest{SB-PPC}.
+To that aim, varying test conditions may help.
+
+
+\subsection{Architecture\label{sec:arch} of tests}
+
+Consider a test \file{a.litmus}
+designed to run on $t$ threads \P{0},\ldots, \P{t-1}.
+The structure of the executable \file{a.exe} that performs
+the experiment is as follows:
+\begin{itemize}
+\item \label{defn}\label{defa}So as to benefit from parallelism, 
+we run $n = \max(1,a/t)$ (integer division)
+tests concurrently on a machine where $a$~logical processors are available.
+\item \label{defr}Each of these (identical)
+tests consists in repeating $r$ times
+the following sequence:
+\begin{itemize}
+\item Fork ~$t$ (POSIX) threads $T_0,\ldots T_{t-1}$
+for executing \P{0},\ldots, \P{t-1}.
+Which thread executes which code is either fixed, or changing,
+controlled by the \emph{launch mode}.
+In our experience, the launch mode has marginal impact.
+
+In \emph{cache mode} the $T_k$ threads are re-used.
+As a consequence, $t$~threads only are forked.
+
+\item \label{defs}Each thread $T_k$ executes a loop of size~$s$.
+Loop iteration number~$i$ executes the code of \P{k} (in fixed mode)
+and saves
+the final contents of its observed registers in some arrays indexed by~$i$.
+Furthermore, still for iteration~$i$, memory location~$x$ is in fact
+an array cell.
+
+\label{defmemorymode}\label{defstride}How this array cell is accessed depends
+upon the \emph{memory mode}.
+In \emph{direct mode} the array cell is accessed directly as~$x[i]$;
+as a result, cells are accessed sequentially and false sharing effects
+are likely.
+In \emph{indirect mode} the array cell is accessed by the means of a
+shuffled array of pointers;
+as a result we observed a much greater variability of outcomes.
+Additionally, the increment of the main loop (of size~$s$)
+can be set to a value or \emph{stride} different from the default of~one.
+Running a test several times with changing the stride value also
+proved quite effective in favouring outcome variability.
+
+
+
+\label{defpreload}If the \emph{random preload mode} is enabled,
+a preliminary loop of size~$s$ reads
+a random subset of the memory locations accessed by~\P{k}.
+Preload have a noticeable effect and teh random preload mode is
+enabled by default.
+Starting from version~5.0, we provide a more precise control
+over preloading memory locations --- See Sec.~\ref{preload:custom}.
+
+
+\label{defsynchronisation}The iterations performed
+by the different threads~$T_k$ may be unsynchronised,
+exactly synchronised by a pthread based barrier, or approximately synchronised
+by specific code.
+Absence of synchronisation may be interesting when $t$ exceeds~$a$.
+As a matter of fact, in this situation,
+any kind of synchronisation leads to prohibitive running times.
+However, for a large value of parameter~$s$ and small $t$ we have observed
+spontaneous concurrent execution of some iterations amongst many.
+Pthread based barriers are exact but they are slow
+and in fact offers poor synchronisation for short code sequences.
+The approximate synchronisation is thus the preferred technique.
+
+Starting from version 5.0, we provide a slightly altered
+user synchronisation mode: \emph{userfence}, which alters
+user mode by executing memory fences to speedup write propagation.
+The new mode features overall better synchronisation, yielding dramatic
+improvements on some examples. However,
+outcome variability may suffer from this more accurate synchronisation,
+hence user mode remains the default.
+
+\label{timebase:intro}More importantly,
+we provide an additional exact, \emph{timebase}
+synchronisation
+technique: test threads will first synchronise using polling synchronisation
+barrier code,
+agree on a target timebase\footnote{Power and x86-based systems
+provide a user accessible timebase counter that should provide
+consistent times to all cores and processors.}  value and then loop
+reading the timebase until it exceeds the target value.
+This technique yields very good synchronisation and allows
+fine synchronisation tuning by assigning different starting delays to
+different threads --- see Sec.~\ref{timebase}.
+As ARM does not provide timebase counters,
+notice that ``timebase'' synchronisation for ARM silently degrades
+to synchronisation by the means of the polling synchronisation barrier.
+
+
+\item Wait for the $t$ threads to terminate and collect outcomes
+in some histogram like structure.
+\end{itemize}
+\item Wait for the $n$~tests to terminate and sum their histograms.
+\end{itemize}
+
+Hence, running \file{a.exe} produces $n \times r \times s$ outcomes.
+Parameters $n$, $a$, $r$ and~$s$ can first be set directly while
+invoking \file{a.exe}, using the appropriate command line options.
+For instance, assuming $t=2$,
+\verb+./a.exe -a 201 -r 10k -s 1+ and \verb+./a.exe -n 1 -r 1 -s 1M+
+will both produce one million outcomes, but the latter is probably
+more efficient.
+If our machine has $8$~cores,
+\verb+./a.exe -a 8 -r 1 -s 1M+ will yield $4$~millions outcomes,
+in a time that we hope not to exceed too much the one experienced
+with~\verb+./a.exe -n 1+.
+Also observe that the memory allocated is roughly proportional
+to $n \times s$, while the number of $T_k$~threads created will be
+$t \times n \times r$ ($t \times n$ in cache mode).
+The \file{run.sh} shell script transmits its command line to all
+the executable (\file{.exe}) files
+it invokes, thereby providing a convenient means
+to control testing condition for several tests.
+Satisfactory test parameters are found by experimenting and
+the control of executable files by command line options is designed for
+that purpose.
+
+Once satisfactory parameters are found, it is a nuisance to repeat them
+for every experiment.
+Thus, parameters $a$, $r$ and~$s$ can also be set while invoking litmus,
+with the same command line options. In fact those settings command
+he default values of \file{.exe}~files controls.
+Additionally, the synchronisation technique for iterations,
+the memory mode, and several others compile time parameters
+can be selected by appropriate \litmus{} command line options.
+Finally, users can record frequently used parameters in configuration files.
+
+\subsection{Affinity\label{sec:affinity}}
+
+We view affinity as
+a scheduler property that binds a (software, POSIX) thread to
+a given (hardware) \emph{logical processor}.
+In the most simple situation a logical processor is a core.
+However in the presence of hyper-threading (x86) or simultaneous multi threading
+(SMT, Power) a given core can host several logical processors.
+
+\subsubsection{Introduction to affinity}
+In our experience,
+binding the threads of test programs to selected logical processors
+yields significant speedups and, more importantly, greater outcome variety.
+We illustrate the issue by the means of an example.
+
+We consider the test~\afile{ppc-iriw-lwsync.litmus}:
+\verbatiminput{ppc-iriw-lwsync.litmus}
+The test consists of four threads.
+There are  two writers (P0 and P2) that write the value
+one into two different locations (\texttt{x} and \texttt{y}),
+and two readers that read the contents of \texttt{x} and \texttt{y}
+in different orders --- P1 reads \texttt{x} first, while P3 reads
+\texttt{y} first.
+The load instructions \texttt{lwz} in reader threads are separated
+by a lightweight barrier instruction~\texttt{lwsync}.
+The final condition \verb+exists (1:r1=1 /\ 1:r3=0 /\ 3:r1=1 /\ 3:r3=0)+
+characterises the situation where the reader threads see the writes
+by P0 and P2 in opposite order.
+The corresponding outcome  \verb+1:r1=1; 1:r3=0; 3:r1=1; 3:r3=0;+
+is the only non-sequential consistent (non-SC, see Part~\ref{part:diy}) possible outcome.
+By any reasonable memory model for Power,
+one expects the condition to validate,
+\emph{i.e.} the non-SC outcome to show up.
+
+The tested machine
+\ahref{http://www.idris.fr/su/Scalaire/vargas/hw-vargas.html}{\texttt{vargas}}
+is a Power~6 featuring 32~cores (\emph{i.e.}
+64 logical processors, since SMT is enabled) and running AIX in 64 bits mode.
+So as not to disturb other users, we run only one instance of the test,
+thus specifying four available processors.
+The \litmus{} tool is absent on \texttt{vargas}.
+All these conditions command the following invocation of \litmus{},
+performed on our local machine:
+\begin{verbatim}
+$ litmus7 -r 1000 -s 1000 -a 4 -os aix -ws w64 ppc-iriw-lwsync.litmus -o ppc.tar
+$ scp ppc.tar vargas:/var/tmp
+\end{verbatim}
+On \texttt{vargas} we unpack the archive and compile the test:
+\begin{verbatim}
+vargas% tar xf /var/tmp/ppc.tar && sh comp.sh
+\end{verbatim}
+Then we run the test:
+\begin{verbatim}
+vargas% ./ppc-iriw-lwsync.exe
+Test ppc-iriw-lwsync Allowed
+Histogram (15 states)
+163674:>1:r1=0; 1:r3=0; 3:r1=0; 3:r3=0;
+34045 :>1:r1=1; 1:r3=0; 3:r1=0; 3:r3=0;
+40283 :>1:r1=0; 1:r3=1; 3:r1=0; 3:r3=0;
+95079 :>1:r1=1; 1:r3=1; 3:r1=0; 3:r3=0;
+33848 :>1:r1=0; 1:r3=0; 3:r1=1; 3:r3=0;
+72201 :>1:r1=0; 1:r3=1; 3:r1=1; 3:r3=0;
+32452 :>1:r1=1; 1:r3=1; 3:r1=1; 3:r3=0;
+43031 :>1:r1=0; 1:r3=0; 3:r1=0; 3:r3=1;
+73052 :>1:r1=1; 1:r3=0; 3:r1=0; 3:r3=1;
+1     :>1:r1=0; 1:r3=1; 3:r1=0; 3:r3=1;
+42482 :>1:r1=1; 1:r3=1; 3:r1=0; 3:r3=1;
+90470 :>1:r1=0; 1:r3=0; 3:r1=1; 3:r3=1;
+30306 :>1:r1=1; 1:r3=0; 3:r1=1; 3:r3=1;
+43239 :>1:r1=0; 1:r3=1; 3:r1=1; 3:r3=1;
+205837:>1:r1=1; 1:r3=1; 3:r1=1; 3:r3=1;
+No
+
+Witnesses
+Positive: 0, Negative: 1000000
+Condition exists (1:r1=1 /\ 1:r3=0 /\ 3:r1=1 /\ 3:r3=0) is NOT validated
+Hash=4fbfaafa51f6784d699e9bdaf5ba047d
+Observation ppc-iriw-lwsync Never 0 1000000
+Time ppc-iriw-lwsync 1.32
+\end{verbatim}
+%$
+The non-SC outcome does not show up.
+
+Altering parameters may yield this outcome.
+In particular, we may try using all the available logical processors
+with option \texttt{-a 64}.
+Affinity control offers an alternative, which is enabled at compilation time
+with \litmus{} option \texttt{-affinity}:
+\begin{verbatim}
+$ litmus7 ... -affinity incr1 ppc-iriw-lwsync.litmus -o ppc.tar
+$ scp ppc.tar vargas:/var/tmp
+\end{verbatim}
+Option \texttt{-affinity} takes one argument (\texttt{incr1} above)
+that specifies the increment used while allocating
+logical processors to test threads.
+Here, the  (POSIX) threads created by the test
+(named $T_0$, $T_1$, $T_2$ and $T_3$ in Sec.~\ref{sec:arch})
+will get bound to logical processors
+$0$, $1$, $2$, and~$3$, respectively.
+
+\label{defi}Namely, by default, the logical processors are
+ordered as the sequence $0, 1, \ldots, A-1$ ---
+where $A$ is the number of available logical processors, which is
+inferred by the test executable\footnote{Parameter $A$ is not to be confused with~$a$ of section~\ref{sec:arch}. The former  serves to compute logical threads while the latter governs the number of tests that run simultaneously. However
+parameters~$a$ will be set to~$A$ when affinity control is enabled and when
+$a$~value is~$0$.}.
+Furthermore, logical processors are allocated to threads by
+applying the affinity increment while scanning the logical processor sequence.
+Observe that since the launch mode is changing (the default) threads
+$T_k$ correspond to different test threads~$P_i$ at each run.
+The unpack compile and run sequence on \texttt{vargas} now yields
+the non-SC outcome, better outcome variety and a lower running time:
+\begin{verbatim}
+vargas% tar xf /var/tmp/ppc.tar && make
+vargas% ./ppc-iriw-lwsync.exe
+Test ppc-iriw-lwsync Allowed
+Histogram (16 states)
+180600:>1:r1=0; 1:r3=0; 3:r1=0; 3:r3=0;
+3656  :>1:r1=1; 1:r3=0; 3:r1=0; 3:r3=0;
+18812 :>1:r1=0; 1:r3=1; 3:r1=0; 3:r3=0;
+77692 :>1:r1=1; 1:r3=1; 3:r1=0; 3:r3=0;
+2973  :>1:r1=0; 1:r3=0; 3:r1=1; 3:r3=0;
+9     *>1:r1=1; 1:r3=0; 3:r1=1; 3:r3=0;
+28881 :>1:r1=0; 1:r3=1; 3:r1=1; 3:r3=0;
+75126 :>1:r1=1; 1:r3=1; 3:r1=1; 3:r3=0;
+20939 :>1:r1=0; 1:r3=0; 3:r1=0; 3:r3=1;
+30498 :>1:r1=1; 1:r3=0; 3:r1=0; 3:r3=1;
+1234  :>1:r1=0; 1:r3=1; 3:r1=0; 3:r3=1;
+89993 :>1:r1=1; 1:r3=1; 3:r1=0; 3:r3=1;
+75769 :>1:r1=0; 1:r3=0; 3:r1=1; 3:r3=1;
+76361 :>1:r1=1; 1:r3=0; 3:r1=1; 3:r3=1;
+87864 :>1:r1=0; 1:r3=1; 3:r1=1; 3:r3=1;
+229593:>1:r1=1; 1:r3=1; 3:r1=1; 3:r3=1;
+Ok
+
+Witnesses
+Positive: 9, Negative: 999991
+Condition exists (1:r1=1 /\ 1:r3=0 /\ 3:r1=1 /\ 3:r3=0) is validated
+Hash=4fbfaafa51f6784d699e9bdaf5ba047d
+Observation ppc-iriw-lwsync Sometimes 9 999991
+Time ppc-iriw-lwsync 0.68
+\end{verbatim}
+
+
+One may change the affinity increment with the command line option
+\texttt{-i} of executable files. For instance, one binds the test threads
+to logical processors $0$, $2$, $4$ and~$6$ as follows:
+\begin{verbatim}
+vargas% ./ppc-iriw-lwsync.exe -i 2 
+Test ppc-iriw-lwsync Allowed
+Histogram (15 states)
+160629:>1:r1=0; 1:r3=0; 3:r1=0; 3:r3=0;
+33389 :>1:r1=1; 1:r3=0; 3:r1=0; 3:r3=0;
+43725 :>1:r1=0; 1:r3=1; 3:r1=0; 3:r3=0;
+93114 :>1:r1=1; 1:r3=1; 3:r1=0; 3:r3=0;
+33556 :>1:r1=0; 1:r3=0; 3:r1=1; 3:r3=0;
+64875 :>1:r1=0; 1:r3=1; 3:r1=1; 3:r3=0;
+34908 :>1:r1=1; 1:r3=1; 3:r1=1; 3:r3=0;
+43770 :>1:r1=0; 1:r3=0; 3:r1=0; 3:r3=1;
+64544 :>1:r1=1; 1:r3=0; 3:r1=0; 3:r3=1;
+4     :>1:r1=0; 1:r3=1; 3:r1=0; 3:r3=1;
+54633 :>1:r1=1; 1:r3=1; 3:r1=0; 3:r3=1;
+92617 :>1:r1=0; 1:r3=0; 3:r1=1; 3:r3=1;
+34754 :>1:r1=1; 1:r3=0; 3:r1=1; 3:r3=1;
+54027 :>1:r1=0; 1:r3=1; 3:r1=1; 3:r3=1;
+191455:>1:r1=1; 1:r3=1; 3:r1=1; 3:r3=1;
+No
+
+Witnesses
+Positive: 0, Negative: 1000000
+Condition exists (1:r1=1 /\ 1:r3=0 /\ 3:r1=1 /\ 3:r3=0) is NOT validated
+Hash=4fbfaafa51f6784d699e9bdaf5ba047d
+Observation ppc-iriw-lwsync Never 0 1000000
+Time ppc-iriw-lwsync 0.92
+\end{verbatim}
+One observes that the non-SC outcome does not show up
+with the new affinity setting.
+
+One may also bind test thread to logical processors randomly with
+executable option \texttt{+ra}.
+\begin{verbatim}
+vargas% ./ppc-iriw-lwsync.exe +ra
+Test ppc-iriw-lwsync Allowed
+Histogram (15 states)
+...
+No
+
+Witnesses
+Positive: 0, Negative: 1000000
+Condition exists (1:r1=1 /\ 1:r3=0 /\ 3:r1=1 /\ 3:r3=0) is NOT validated
+Hash=4fbfaafa51f6784d699e9bdaf5ba047d
+Observation ppc-iriw-lwsync Never 0 1000000
+Time ppc-iriw-lwsync 1.85
+\end{verbatim}
+
+As we see, the condition does not validate either with random affinity.
+As a matter of fact, logical processors are taken at random in the
+sequence $0$, $1$, \ldots, $63$;
+while the successful run with \texttt{-i 1} took
+them in the sequence $0$, $1$, $2$, $3$.
+One can limit the sequence of  logical processor with option \texttt{-p},
+which takes a sequence of logical processors numbers as argument:
+\begin{verbatim}
+vargas% ./ppc-iriw-lwsync.exe +ra -p 0,1,2,3
+Test ppc-iriw-lwsync Allowed
+Histogram (16 states)
+...
+8     *>1:r1=1; 1:r3=0; 3:r1=1; 3:r3=0;
+...
+Ok
+
+Witnesses
+Positive: 8, Negative: 999992
+Condition exists (1:r1=1 /\ 1:r3=0 /\ 3:r1=1 /\ 3:r3=0) is validated
+Hash=4fbfaafa51f6784d699e9bdaf5ba047d
+Observation ppc-iriw-lwsync Sometimes 8 999992
+Time ppc-iriw-lwsync 0.70
+\end{verbatim}
+The condition now validates.
+
+\subsubsection{Study of affinity}
+As illustrated by the previous example, both the running time and the outcomes
+of a test are sensitive to affinity settings.
+We measured running time for increasing values of the affinity increment
+from $0$ (which disables affinity control)
+to~$20$, producing the following figure:
+\begin{center}\image[height=75ex]{m1l-time}\end{center}
+As regards outcome variety,
+we get all of the $16$ possible
+outcomes only for an affinity increment of~$1$.
+
+The differences in running times can be explained by reference to the mapping
+of logical processors to hardware.
+The machine~\texttt{vargas} consists in four MCM's (Multi-Chip-Module), each MCM
+consists in four ``chips'', each chip consists in two cores, and
+each core may support two logical processors.
+As far as we know, by querying \texttt{vargas}
+with the AIX commands
+\texttt{lsattr}, \texttt{bindprocessor}
+and \texttt{llstat},
+the MCM's hold the logical processors
+$0$--$15$, $16$--$31$, $32$--$47$ and~$48$--$63$,
+each chip holds the logical processors $4k, 4k+1, 4k+2, 4k+3$
+and each core holds the logical processors $2k, 2k+1$.
+
+The measure of running times for varying increments
+reveals two noticeable slowdowns:
+from an increment of~$1$ to an increment of~$2$ and from $5$ to~$6$.
+The gap between~$1$ and~$2$ reveals the benefits of
+SMT for our testing application.
+An increment of~$1$ yields both the greatest outcome
+variety and the minimal running time.
+The other gap may perhaps be explained by reference to MCM's:
+for a value of~$5$ the tests runs on the logical processors
+$0, 5, 10, 15$, all belonging to the same
+MCM; while the next affinity increment of~$6$ results in
+running the test on two different MCM ($0, 6, 12$ on the one hand
+and $18$ on the other).
+
+
+As a conclusion, affinity control provides users with a certain level
+of control over thread placement, which is likely to yield faster tests when
+threads are constrained to run on logical processors that are ``close'' one
+to another.
+The best results are obtained when SMT is effectively enforced.
+However, affinity control is no panacea, and the memory system may
+be stressed by other means, such as, for instance, allocating important
+chunks of memory (option~\texttt{-s}).
+
+\subsubsection{Advanced\label{affinity:advanced} control}
+For specific experiments, the technique of
+allocating logical processors sequentially by following a fixed increment
+may be two rigid. \litmus{} offers a finer control on affinity by allowing
+users to supply the logical processors sequence.
+Notice that most users will probably not need this advanced feature.
+
+Anyhow, so as to confirm that testing \afile{ppc-iriw-lwsync}
+benefits from not crossing chip boundaries, one may wish to confine
+its four threads to logical processors $16$ to~$19$,
+that is to the first chip of the second MCM.
+This can be done by overriding  the default logical processors sequence
+by an user supplied one given as an argument to command-line
+option~\texttt{-p}:
+\begin{verbatim}
+vargas% ./ppc-iriw-lwsync.exe -p 16,17,18,19 -i 1
+Test ppc-iriw-lwsync Allowed
+Histogram (16 states)
+169420:>1:r1=0; 1:r3=0; 3:r1=0; 3:r3=0;
+1287  :>1:r1=1; 1:r3=0; 3:r1=0; 3:r3=0;
+17344 :>1:r1=0; 1:r3=1; 3:r1=0; 3:r3=0;
+85329 :>1:r1=1; 1:r3=1; 3:r1=0; 3:r3=0;
+1548  :>1:r1=0; 1:r3=0; 3:r1=1; 3:r3=0;
+3     *>1:r1=1; 1:r3=0; 3:r1=1; 3:r3=0;
+27014 :>1:r1=0; 1:r3=1; 3:r1=1; 3:r3=0;
+75160 :>1:r1=1; 1:r3=1; 3:r1=1; 3:r3=0;
+19828 :>1:r1=0; 1:r3=0; 3:r1=0; 3:r3=1;
+29521 :>1:r1=1; 1:r3=0; 3:r1=0; 3:r3=1;
+441   :>1:r1=0; 1:r3=1; 3:r1=0; 3:r3=1;
+93878 :>1:r1=1; 1:r3=1; 3:r1=0; 3:r3=1;
+81081 :>1:r1=0; 1:r3=0; 3:r1=1; 3:r3=1;
+76701 :>1:r1=1; 1:r3=0; 3:r1=1; 3:r3=1;
+93623 :>1:r1=0; 1:r3=1; 3:r1=1; 3:r3=1;
+227822:>1:r1=1; 1:r3=1; 3:r1=1; 3:r3=1;
+Ok
+
+Witnesses
+Positive: 3, Negative: 999997
+Condition exists (1:r1=1 /\ 1:r3=0 /\ 3:r1=1 /\ 3:r3=0) is validated
+Hash=4fbfaafa51f6784d699e9bdaf5ba047d
+Observation ppc-iriw-lwsync Sometimes 3 999997
+Time ppc-iriw-lwsync 0.63
+\end{verbatim}
+%$
+Thus we get results similar to the previous experiment on logical processors
+$0$ to~$3$ (option \texttt{-i 1} alone).
+
+We may also run four simultaneous instances (\texttt{-n 4}, parameter~$n$ of
+section~\ref{sec:arch}) of the test on
+the four available MCM's:
+\begin{verbatim}
+vargas% ./ppc-iriw-lwsync.exe -p 0,1,2,3,16,17,18,19,32,33,34,35,48,49,50,51 -n 4 -i 1
+Test ppc-iriw-lwsync Allowed
+Histogram (16 states)
+...
+57    *>1:r1=1; 1:r3=0; 3:r1=1; 3:r3=0;
+...
+Ok
+
+Witnesses
+Positive: 57, Negative: 3999943
+Condition exists (1:r1=1 /\ 1:r3=0 /\ 3:r1=1 /\ 3:r3=0) is validated
+Hash=4fbfaafa51f6784d699e9bdaf5ba047d
+Observation ppc-iriw-lwsync Sometimes 57 3999943
+Time ppc-iriw-lwsync 0.75
+\end{verbatim}
+%$
+Observe that, for a negligible penalty in running time, the number
+of non-SC outcomes increases significantly.
+
+By contrast, binding threads of a given instance of the test
+to different MCM's results in poor running time and no non-SC outcome.
+\begin{verbatim}
+vargas% ./ppc-iriw-lwsync.exe -p 0,1,2,3,16,17,18,19,32,33,34,35,48,49,50,51 -n 4 -i 4
+Test ppc-iriw-lwsync Allowed
+Histogram (15 states)
+...
+Witnesses
+Positive: 0, Negative: 4000000
+Condition exists (0:r1=1 /\ 0:r3=0 /\ 2:r1=1 /\ 2:r3=0) is NOT validated
+Time ppc-iriw-lwsync 1.48
+\end{verbatim}
+%$
+In the experiment above, the increment is~$4$, hence the logical processors
+allocated to the first
+instance of the test are $0, 16, 32, 48$,
+of which indices in the logical processors sequence are $0, 4, 8, 12$,
+respectively.
+The next allocated index in the sequence is~$12+4 = 16$.
+However, the sequence has $16$ items.
+Wrapping around yields index~$0$ which happens to be
+the same as the starting index.
+Then, so as to allocate fresh processors, the starting index is incremented
+by one, resulting in allocating processors $1, 17, 33, 49$
+(indices $1, 5, 9, 13$) to the second instance --- see section~\ref{incr:full}
+for the full story.
+Similarly, the third and fourth instances will get processors
+$2, 18, 34, 50$ and $3, 19, 35, 51$, respectively.
+Attentive readers may have noticed that the same experiment can
+be performed with option \opt{-i 16} and no \opt{-p} option.
+
+Finally, users should probably be aware that at least some versions of Linux
+for x86 feature a less obvious mapping of logical processors to hardware.
+On a bi-processor, dual-core, 2-ways hyper-threading, Linux,  AMD64 machine,
+we have checked that logical processors residing on the same core
+are $k$ and $k+4$, where $k$ is an arbitrary core number ranging from
+$0$ to~$3$.
+As a result, a proper choice for favouring effective hyper-threading
+on such a machine is \opt{-i 4} (or \opt{-p 0,4,1,5,2,6,3,7 -i 1}).
+More worthwhile noticing, perhaps,
+the straightforward choice \opt{-i 1} disfavours effective hyper-threading\ldots
+
+\subsubsection{Custom\label{affinity:custom} control}
+Most tests run by \litmus{} are produced by the litmus test generators
+described in Part~\ref{part:diy}.
+Those tests include meta-information that may direct affinity control.
+For instance we generate one test with the
+\diyone{} tool, see Sec.~\ref{diyone:intro}.
+More specifically we generate
+\ahref{IRIW+lwsyncs.litmus}{\ltest{IRIW+lwsyncs}} for Power
+(\ahref{ppc-iriw-lwsync.litmus}{\ltest{ppc-iriw-lwsync}} in the previous
+section) as follows:
+\begin{verbatim}
+% diyone7 -arch PPC -name IRIW+lwsyncs Rfe LwSyncdRR Fre Rfe LwSyncdRR Fre
+\end{verbatim}
+We get the new source file~\afile{IRIW+lwsyncs.litmus}:
+\verbatiminput{IRIW+lwsyncs.litmus}
+The relevant meta-information  is the ``\texttt{Com}'' line that describes
+how test threads are related --- for instance, thread~0 stores a value
+to memory that is read by thread~1, written ``\texttt{Rf}'' (see Part~\ref{part:diy} for more details).
+Custom affinity control will tend to run threads related by ``\texttt{Rf}''
+on ``close'' logical processors, where we can for instance consider
+that close logical processors belong to the same physical core (SMT for Power).
+This minimal logical processor topology is described by two \litmus{}
+command-line option: \texttt{-smt <n>} that specifies $n$-way SMT;
+and \texttt{-smt\_mode (seq|end)} that specifies how logical processors
+from the same core are numbered.
+For a 8-cores 4-ways SMT power7 machine we invoke \litmus{} as follows:
+\begin{verbatim}
+% litmus7 -mem direct -smt 4 -smt_mode seq -affinity custom -o a.tar IRIW+lwsyncs.litmus
+\end{verbatim}
+Notice that memory mode is direct and that the number of available
+logical processors is unspecified, resulting in running one instance of
+the test. More importantly, notice that affinity control is enabled
+\texttt{-affinity custom}, additionally specifying custom affinity mode.
+
+We then upload the archive \texttt{a.tar} to our Power7 machine,
+unpack, compile and run the test:
+\begin{verbatim}
+power7% tar xmf a.tar
+power7% make
+...
+power7% ./IRIW+lwsyncs.exe -v
+./IRIW+lwsyncs.exe  -v
+IRIW+lwsyncs: n=1, r=1000, s=1000, +rm, +ca, p='0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31'
+thread allocation: 
+[23,22,3,2] {5,5,0,0}
+\end{verbatim}
+Option \texttt{-v} instructs the executable to show settings of the test harness: we see that one instance of the test is run (\texttt{n=1}),
+size parameters are reminded (\texttt{r=1000, s=1000}) and
+shuffling of indirect memory mode is performed (\texttt{+rm}).
+Affinity settings are also given: mode is custom (\texttt{+ca}) and
+the logical processor sequence inferred is given (\texttt{-p 0,1,\ldots,31}).
+Additionally, the allocation  of test threads to logical processors is
+given, as \texttt{[\ldots]}, as well as the allocation  of test threads
+to physical cores, as \texttt{\{\ldots\}}.
+
+Here is the run output proper:
+\begin{verbatim}
+Test IRIW+lwsyncs Allowed
+Histogram (15 states)
+2700  :>1:r1=0; 1:r3=0; 3:r1=0; 3:r3=0;
+142   :>1:r1=1; 1:r3=0; 3:r1=0; 3:r3=0;
+37110 :>1:r1=0; 1:r3=1; 3:r1=0; 3:r3=0;
+181257:>1:r1=1; 1:r3=1; 3:r1=0; 3:r3=0;
+78    :>1:r1=0; 1:r3=0; 3:r1=1; 3:r3=0;
+15    *>1:r1=1; 1:r3=0; 3:r1=1; 3:r3=0;
+103459:>1:r1=0; 1:r3=1; 3:r1=1; 3:r3=0;
+149486:>1:r1=1; 1:r3=1; 3:r1=1; 3:r3=0;
+30820 :>1:r1=0; 1:r3=0; 3:r1=0; 3:r3=1;
+9837  :>1:r1=1; 1:r3=0; 3:r1=0; 3:r3=1;
+2399  :>1:r1=1; 1:r3=1; 3:r1=0; 3:r3=1;
+204629:>1:r1=0; 1:r3=0; 3:r1=1; 3:r3=1;
+214700:>1:r1=1; 1:r3=0; 3:r1=1; 3:r3=1;
+5186  :>1:r1=0; 1:r3=1; 3:r1=1; 3:r3=1;
+58182 :>1:r1=1; 1:r3=1; 3:r1=1; 3:r3=1;
+Ok
+
+Witnesses
+Positive: 15, Negative: 999985
+Condition exists (1:r1=1 /\ 1:r3=0 /\ 3:r1=1 /\ 3:r3=0) is validated
+Hash=836eb3085132d3cb06973469a08098df
+Com=Rf Fr Rf Fr
+Orig=Rfe LwSyncdRR Fre Rfe LwSyncdRR Fre
+Affinity=[2, 3] [0, 1] ; (1,2) (3,0)
+Observation IRIW+lwsyncs Sometimes 15 999985
+Time IRIW+lwsyncs 0.70
+\end{verbatim}
+As we see, the test validates. Namely we observe the non-SC behaviour of
+\ltest{IRIW} in spite of the presence of two \texttt{lwsync} barriers.
+We may also notice, in the executable output some meta-information related
+to affinity: it reads that threads 2 and~3 on the one hand and threads 0
+and~1 on the other are considered ``close'' (\emph{i.e.} will run on the
+same physical core); while threads 1 and~2 on the one hand and threads 3 and~0
+on the other are considered ``far'' (\emph{i.e.} will run on different cores).
+
+
+Custom affinity can be disabled by enabling another affinity mode.
+For instance with \texttt{-i 0} we specify an affinity increment of zero.
+That is, affinity control is disabled altogether:
+\begin{verbatim}
+power7% ./IRIW+lwsyncs.exe -i 0 -v
+./IRIW+lwsyncs.exe -i 0  -v
+IRIW+lwsyncs: n=1, r=1000, s=1000, +rm, i=0, p='0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31'
+Test IRIW+lwsyncs Allowed
+Histogram (15 states)
+...
+No
+
+Witnesses
+Positive: 0, Negative: 1000000
+Condition exists (1:r1=1 /\ 1:r3=0 /\ 3:r1=1 /\ 3:r3=0) is NOT validated
+Hash=836eb3085132d3cb06973469a08098df
+Com=Rf Fr Rf Fr
+Orig=Rfe LwSyncdRR Fre Rfe LwSyncdRR Fre
+Observation IRIW+lwsyncs Never 0 1000000
+Time IRIW+lwsyncs 0.90
+\end{verbatim}
+As we see, the test does not validate under those conditions.
+
+Notice that section~\ref{affinity:experiment} describes a complete experiment
+on affinity control.
+
+\subsection{Controlling\label{exec:control} executable files}
+
+\paragraph{Test conditions}
+Any executable file produced by \litmus{} accepts the following
+command line options.
+\begin{description}
+\item[{\tt -v}] Be verbose, can be repeated to increase verbosity.
+Specifying \opt{-v} is a convenient way to look at the default of options.
+\item[{\tt -q}] Be quiet.
+\item[{\tt -a <n>}] Run maximal number of tests concurrently for $n$~available
+logical processors --- parameter~$a$ in Sec.~\ref{defa}.
+Notice that if affinity control is enabled (see below), \opt{-a 0} will
+set parameter~$a$ to the number of logical processors effectively available. 
+\item[{\tt -n <n>}] Run $n$~tests concurrently --- parameter~$n$
+in Sec.~\ref{defn}. 
+\item[{\tt -r <n>}] Perform $n$ runs --- parameter~$r$ in Sec.~\ref{defr}.
+\item[{\tt -fr <f>}] Multiply~$r$ by~$f$ ($f$~is a floating point number).
+\item[{\tt -s <n>}] Size of a run --- parameter~$s$ in Sec.~\ref{defs}.
+\item[{\tt -fs <f>}] Multiply~$s$ by~$f$.
+\item[{\tt -f <f>}] Multiply~$s$ by~$f$ and divide $r$ by~$f$.
+\end{description}
+\label{generalized:integer}Notice that options \opt{-s} and~\opt{-r}
+accept a generalised
+syntax for their integer argument: when suffixed by~\opt{k} (resp.~\opt{M})
+the integer gets multiplied by~$10^3$ (resp.~$10^6$).
+
+\label{rm}The following options are accepted only for tests compiled
+in indirect memory mode (see Sec.~\ref{defmemorymode}):
+\begin{description}
+\item[{\tt -rm}] Do not shuffle pointer arrays, resulting a behaviour
+similar do direct mode, without recompilation.
+\item[{\tt +rm}] Shuffle pointer arrays, provided for regularity.
+\end{description}
+
+\label{st}The following option is accepted only for tests compiled
+with a specified stride value (see Sec.~\ref{defstride}).
+\begin{description}
+\item[{\tt -st <n>}] Change stride to~\opt{<n>}.
+The default stride is specified at compile time by \litmus{}
+option \opt{-stride}.
+\end{description}
+
+
+The following option is accepted when enabled at compile time:
+\begin{description}
+\item[{\tt -l <n>}]
+Insert the assembly code of each thread in a loop of size \opt{<n>}.
+\end{description}
+
+\paragraph{\aname{affinity:runopt}{Affinity}}
+If affinity control has been enabled at compilation time
+(for instance, by supplying option \texttt{-affinity incr1}
+to \litmus),
+the  executable file produced by \litmus{} accepts the following
+command line options.
+\begin{description}
+\item[{\tt -p <ns>}] Logical processors sequence.
+The sequence \texttt{<ns>} is a comma separated list of integers,
+The default sequence is inferred by the executable as $0,1,\ldots,A-1$,
+where $A$ is the number of logical processors featured by the tested machine;
+or is a sequence specified at compile time
+with \litmus{} option~\texttt{-p}.
+\item[{\tt -i <n>}] Increment for allocating logical processors to threads.
+Default is specified at compile time by \litmus{} option~\texttt{-affinity
+incr<\textit{n}>}.
+Notice that \texttt{-i 0} disable affinity
+and that \texttt{.exe} files reject the \texttt{-i} option when affinity
+control has not been enabled at compile~time.
+\item[{\tt +ra}] Perform random allocation of affinity at each test round.
+\item[{\tt +ca}] Perform custom affinity.
+\end{description}
+Notice that when custom affinity is not available, would it be that
+the test source lacked meta-information or that logical processor
+topology was not specified at compile-time, then \texttt{+ca}
+behaves as \texttt{+ra}.
+
+\label{incr:full}Logical processors are allocated
+test instance by test instance
+(parameter~$n$ of Sec.~\ref{sec:arch}) and then
+thread by thread, scanning the logical processor sequence
+left-to-right by steps of the given increment.
+More precisely, assume a logical processor sequence
+$P = p_0, p_1, \ldots, p_{A-1}$ and an increment~$i$.
+The first processor allocated is $p_0$, then $p_i$, then $p_{2i}$ etc,
+Indices in the sequence~$P$ are reduced modulo $A$ so as to wrap around.
+The starting index of the allocation sequence (initially $0$) is recorded,
+and coincidence with the index of the next processor to be 
+allocated is checked.
+When coincidence occurs, a new index is computed, as the previous
+starting index plus one, which also becomes the new starting index.
+Allocation then proceeds from this new starting index.
+That way, all the processors in the sequence
+will get allocated to different threads naturally, provided of
+course that less than $A$~threads are scheduled to run.
+See section~\ref{affinity:advanced} for an example with $A=16$ and~$i=4$.
+
+\section{Advanced\label{advanced:control} control of test parameters}
+
+\subsection{Timebase \label{timebase}synchronisation mode}
+Timebase synchronisation of the testing loop iterations
+(see Sec.~\ref{timebase:intro}) is selected by \litmus{} command line option
+\opt{-barrier timebase}.
+In that mode,
+test threads will first synchronise using polling synchronisation
+barrier code, agree on a target timebase value and then loop
+reading the timebase until it exceeds the target value.
+Some tests demonstrate that timebase synchronisation
+is more precise than user synchronisation (\opt{-barrier user} and default).
+
+For instance, consider the x86 test \atest{6.SB},
+a 6-thread analog of the \ahrefloc{SB}{\ltest{SB}}~test:
+\verbatiminput{6.SB.litmus}
+As for \atest{SB}, the final condition of
+\atest{6.SB} identifies executions where each thread loads the initial
+value~$0$ of a location that is writtent into by another thread.
+\begin{center}\img{6.SB}\end{center}
+
+We first compile the test in user synchronisation mode, saving
+\litmus{} output files into the directory~\file{R}:
+\begin{verbatim}
+% mkdir -p R
+% litmus7 -barrier user -vb true -o R 6.SB.litmus
+% cd R
+% make
+\end{verbatim}
+The additional command line option \opt{-vb true} activates the printing
+of some timing information on synchronisations.
+
+We then directly run the test executable \file{6.SB.exe}:
+\begin{verbatim}
+% ./6.SB.exe
+Test 6.SB Allowed
+Histogram (62 states)
+7569  :>0:EAX=1; 1:EAX=0; 2:EAX=0; 3:EAX=0; 4:EAX=0; 5:EAX=0;
+8672  :>0:EAX=0; 1:EAX=1; 2:EAX=0; 3:EAX=0; 4:EAX=0; 5:EAX=0;
+...
+326   :>0:EAX=1; 1:EAX=0; 2:EAX=1; 3:EAX=1; 4:EAX=1; 5:EAX=1;
+907   :>0:EAX=0; 1:EAX=1; 2:EAX=1; 3:EAX=1; 4:EAX=1; 5:EAX=1;
+No
+
+Witnesses
+Positive: 0, Negative: 1000000
+Condition exists (0:EAX=0 /\ 1:EAX=0 /\ 2:EAX=0 /\ 3:EAX=0 /\ 4:EAX=0 /\ 5:EAX=0) is NOT validated
+Hash=107f1303932972b3abace3ee4027408e
+Observation 6.SB Never 0 1000000
+Time 6.SB 0.85
+\end{verbatim}
+The targeted outcome --- reading zero in the \verb+EAX+ registers
+of the $6$ threads --- is not observed.
+We can observe synchronisation times for all tests runs
+with the executable  command line option \opt{+vb}:
+\begin{verbatim}
+% ./6.SB.exe  +vb
+99999: 162768 420978 564546   -894 669468
+99998:    -93      3     81   -174   -651
+99997:   -975    -30    -33     93   -192
+99996:    990   1098    852   1176    774
+...
+\end{verbatim}
+We see five columns of numbers that list, for each test run,
+the starting delays of \P{1}, \P{2} etc. with respect to \P{0}, expressed
+in timebase ticks. Obviously, synchronisation is rather loose,
+there are always two threads whose starting delays differ of
+about $1000$~ticks.
+
+We now compile the same test in timebase synchronisation mode,
+saving \litmus{} output files into the pre-existing directory~\file{RT}:
+\begin{verbatim}
+% mkdir -p RT
+% litmus7 -barrier timebase -vb true -o RT 6.SB.litmus
+% cd RT
+% make
+\end{verbatim}
+And we run the test directly
+(option \opt{-vb} disable the printing of any
+synchronisation timing information):
+\begin{verbatim}
+% ./6.SB.exe -vb
+Test 6.SB Allowed
+Histogram (64 states)
+60922 *>0:EAX=0; 1:EAX=0; 2:EAX=0; 3:EAX=0; 4:EAX=0; 5:EAX=0;
+38299 :>0:EAX=1; 1:EAX=0; 2:EAX=0; 3:EAX=0; 4:EAX=0; 5:EAX=0;
+...
+598   :>0:EAX=0; 1:EAX=1; 2:EAX=1; 3:EAX=1; 4:EAX=1; 5:EAX=1;
+142   :>0:EAX=1; 1:EAX=1; 2:EAX=1; 3:EAX=1; 4:EAX=1; 5:EAX=1;
+Ok
+
+Witnesses
+Positive: 60922, Negative: 939078
+Condition exists (0:EAX=0 /\ 1:EAX=0 /\ 2:EAX=0 /\ 3:EAX=0 /\ 4:EAX=0 /\ 5:EAX=0) is validated
+Hash=107f1303932972b3abace3ee4027408e
+Observation 6.SB Sometimes 60922 939078
+Time 6.SB 1.62
+\end{verbatim}
+We now see that the test validates. Moreover
+all of the $64$~possible outcomes are observed.
+
+Timebase synchronisation works as follows: at every iteration,
+\begin{enumerate}
+\item one of the threads reads timebase~$T$;
+\item all threads synchronise by the means of a polling synchronisation
+barrier;
+\item each thread computes $T_i = T + \delta_i$, where $\delta_i$ is
+\emph{the timebase delay}, a thread
+specific constant;
+\item each thread loops, reading the timebase until the read value exceeds
+$T_i$.
+\end{enumerate}
+By default the timebase delay $\delta_i$ is $2^{11} = 2048$ for all threads.
+
+The precision of timebase synchronisation can be illustrated
+by enabling the printing of all synchronisation timings:
+\begin{verbatim}
+% ./6.SB.exe +vb
+99999: 672294[1] 671973[1] 672375[1] 672144[1] 672303[1] 672222[1]
+99998:  4524[1]  4332[1]  4446[1]  2052[65]  2064[73]  4095[1]
+...
+99983:  4314[1]  3036[1]  3141[1]  2769[1]  4551[1]  3243[1]
+99982:* 2061[36]  2064[33]  2067[11]  2079[12]  2064[14]  2064[24]
+99981:  2121[1]  2382[1]  2586[1]  2643[1]  2502[1]  2592[1]
+...
+\end{verbatim}
+For each test iteration and each thread, two numbers are shown (1) the last
+timebase value read by and~(2) (in brackets \verb+[+\ldots\verb+]+) how many iterations of loop~4. were performed.
+Additionally a star ``\verb+*+'' indicates the occurrence
+of the targeted outcome.
+Here, we see that a nearly perfect synchronisation can be achieved
+(cf. line \verb+99982:+ above).
+
+
+Once timebase synchronisation have been selected
+(\litmus{} option \opt{-barrier timebase}),
+test executable behaviour can be altered by the following
+two command line options:
+\begin{description}
+\item[{\tt -ta <n>}]
+Change the timebase delay~$\delta_i$ of all threads.
+\item[{\tt -tb <0:n$_0$;1:$n_1$;$\cdots$>}]
+Change the timebase delay~$\delta_i$ of individual threads.
+\end{description}
+
+The \litmus{} command line option~\opt{-vb true}
+(verbose barrier)
+governs the printing of synchronisation timings. It comes handy when
+choosing values for the \opt{-ta} and \opt{-tb} options.
+When set, the executable show synchronisation timings
+for outcomes that validate the test final condition.
+This default behaviour can be altered with
+the following two command line options:
+\begin{description}
+\item[{\tt -vb}] Do not show synchronisation timings.
+\item[{\tt +vb}] Show synchronisation timings for all outcomes.
+\end{description}
+Synchronisation timings are expressed in timebase ticks.
+The format depends on the synchronisation mode
+(\litmus{} option \opt{-barrier}).
+This section just gave two examples for user mode
+(timings are show as differences from thread~\P{0}); and for
+timebase mode (timings are shown as differences
+from a commonly agreed by all thread timebase value).
+Notice that, when affinity control is enabled,
+the running logical processors of threads are also shown.
+
+\subsection{Advanced \label{preload:custom}prefetch control}
+Supplying the tags
+\opt{custom}, \opt{static}, \opt{static1} or~\opt{static2} to
+\litmus{} command line option \opt{-preload}
+commands the insertion of cache prefetch or flush
+instructions before every test instance.
+
+In custom mode the execution of such cache management instruction
+is under total user control, the other, ``static'', modes offer
+less control to the user, for the sake of not altering test code proper.
+
+\subsubsection{Custom prefetch}
+Custom prefetch mode offers complete control over
+cache management instructions.
+Users enable this mode by supplying the command line option
+\opt{-preload custom} to \litmus{}. For instance one may compile
+the x86 test \afile{6.SB.litmus} as follows:
+\begin{verbatim}
+% mkdir -p R
+% litmus7 -mem indirect -preload custom -o R 6.SB.litmus
+% cd R
+% make
+\end{verbatim}
+Notice the test is compiled in \ahrefloc{defmemorymode}{indirect memory mode},
+in order to reduce false sharing effects.
+
+The executable \texttt{6.SB.exe} accepts two new command line options:
+\opt{-prf} and~\opt{-pra}. Those options takes arguments that describe
+cache management instructions.
+The option \opt{-pra} takes one letter that stands for a cache
+management instruction as we here describe:
+\begin{center}
+\texttt{I}: do nothing,
+\texttt{F}: cache flush,
+\texttt{T}: cache touch,
+\texttt{W}: cache touch for a write.
+\end{center}
+All those cache management instructions are not provided by all architectures,
+in case some instruction is missing, the letters behave as follows:
+\begin{center}
+\texttt{F}: do nothing,
+\texttt{T}: do nothing,
+\texttt{W}: behave as \texttt{T}.
+\end{center}
+
+With \opt{-pra $X$} the commanded action applies to all
+threads and all variables, for instance:
+\begin{verbatim}
+% ./6.SB.exe -pra T
+\end{verbatim}
+will perform a run where every test thread touches the test locations
+that it refers to
+(\emph{i.e.} \texttt{x} and~\texttt{y} for Thread~0, \texttt{y}
+and \texttt{z} for Thread~1, etc.)
+before executing test code proper.
+Although one may achieve interesting results by using
+this \opt{-pra} option, the more selective
+\opt{-prf} option should prove more useful.
+The \opt{-prf} option takes a comma separated list of cache managment
+directives.
+A cache management directive is $n$:\textit{loc}=$X$,
+where $n$ is a thread number, \textit{loc} is a program variable,
+and $X$ is a cache management controle letter.
+For instance, \texttt{-prf 0:y=T} instructs
+thread~0 to touch location~\texttt{y}.
+More generally, having each thread of the test
+\ahref{6.SB.litmus}{\ltest{6.SB}} to touch the memory location
+it reads with its second instruction would favor reading the initial value
+of these locations,
+and thus validating
+the final condition of the test 
+``\verb+(0:EAX=0 /\ 1:EAX=0 /\ 2:EAX=0 /\ 3:EAX=0 /\ 4:EAX=0 /\ 5:EAX=0)+''.
+
+Notice that those locations can be found by looking
+at the \ahref{6.SB.litmus}{test code}
+or at the \ahref{6.SB.png}{diagram} of the target execution.
+Let us have a try:
+\begin{verbatim}
+./6.SB.exe -prf 0:y=T,1:z=T,2:a=T,3:b=T,4:c=T,5:x=T               
+Test 6.SB Allowed
+Histogram (63 states)
+10    *>0:EAX=0; 1:EAX=0; 2:EAX=0; 3:EAX=0; 4:EAX=0; 5:EAX=0;
+...
+Witnesses
+Positive: 10, Negative: 999990
+...
+Prefetch=0:y=T,1:z=T,2:a=T,3:b=T,4:c=T,5:x=T
+...
+\end{verbatim}
+As can be seen, the final condition is validated. Also notice
+that the prefetch directives used during the run are reminded.
+If given several times, \opt{-prf} options cumulate,
+the rightmost directives taking precedence in case of ambiguity.
+As a consequence, one may achieve the same prefetching
+effect as above with:
+\begin{verbatim}
+% ./6.SB.exe -prf 0:y=T -prf 1:z=T -prf 2:a=T -prf 3:b=T -prf 4:c=T -prf 5:x=T
+\end{verbatim}
+
+
+\subsubsection{Prefetch metadata}
+The source code of tests may include prefetch directives as metadata
+prefixed with ``\verb+Prefetch=+''.
+In particular, the generators of the \diy{}
+suite  (see Part~\ref{part:diy}) produce such metadata.
+For instance in the case of the
+\ltest{6.SB} test (generated source \afile{6.SB+Prefetch.litmus}),
+this metadata reads:
+\begin{verbatim}
+Prefetch=0:x=F,0:y=T,1:y=F,1:z=T,2:z=F,2:a=T,3:a=F,3:b=T,4:b=F,4:c=T,5:c=F,5:x=T
+\end{verbatim}
+That is, each thread flushes the location it stores to and touches
+each location it reads from.
+Notice that each thread starts with a memory location access
+(here a store) and ends with another (here a load).
+The idea simply is to accelerate the exit access (with a cache touch)
+while delaying the entry access (with a cache flush).
+
+
+When prefetch metadata is available, it acts as the default of
+prefetch directives:
+\begin{verbatim}
+% litmus7 -mem indirect -preload custom -o R 6.SB+Prefetch.litmus
+% cd R
+% make
+\end{verbatim}
+Then we run the test by:
+\begin{verbatim}
+% ./6.SB+Prefetch.exe
+Test 6.SB Allowed
+Histogram (63 states)
+674   *>0:EAX=0; 1:EAX=0; 2:EAX=0; 3:EAX=0; 4:EAX=0; 5:EAX=0;
+...
+Witnesses
+Positive: 674, Negative: 999326
+...
+Prefetch=0:x=F,0:y=T,1:y=F,1:z=T,2:a=T,2:z=F,3:a=F,3:b=T,4:b=F,4:c=T,5:c=F,5:x=T
+...
+\end{verbatim}
+One may notice that the prefetch directives from the source file
+medata found its way to the test executable.
+
+As with any kind of metadata,
+one can change the prefetch metadata by editing the litmus source file,
+or better by using the \opt{-hints} command line option.
+The  \opt{-hints} command line option takes a filename as  argument.
+This file is a \ahrefloc{defmapping}{mapping} that associates
+new metadata to test names.
+As an example, we reverse \diy{} scheme for cache management directives:
+accelerating entry accesses and delaying exit accesses:
+\begin{verbatim}
+% cat map.txt
+6.SB Prefetch=0:x=W,0:y=F,1:y=W,1:z=F,2:a=F,2:z=W,3:a=W,3:b=F,4:b=W,4:c=F,5:c=W,5:x=F
+% litmus7 -mem indirect -preload custom -hints map.txt -o R 6.SB.litmus
+% cd R
+% make 
+...
+% ./6.SB.exe 
+Test 6.SB Allowed
+Histogram (63 states)
+24    *>0:EAX=0; 1:EAX=0; 2:EAX=0; 3:EAX=0; 4:EAX=0; 5:EAX=0;
+...
+Prefetch=0:x=W,0:y=F,1:y=W,1:z=F,2:a=F,2:z=W,3:a=W,3:b=F,4:b=W,4:c=F,5:c=W,5:x=F
+...
+\end{verbatim}
+As we see above, the final condition validates.
+It does so in spite of
+the apparently unfavourable cache management directives.
+
+We can experiment further without recompilation, by
+using the \opt{-pra} and~\opt{-prf} command line options of
+the test executable. Those are parsed left-to-right, so that we can
+(1) cancel any default cache management directive with
+\opt{-pra I} and~(2) enable cache touch for the stores:
+\begin{verbatim}
+% ./6.SB.exe -pra I -prf 0:x=W -prf 1:y=W -prf 2:z=W -prf 3:a=W -prf 4:b=W -prf 5:c=W
+Test 6.SB Allowed
+...
+Witnesses
+Positive: 0, Negative: 1000000
+...
+Prefetch=0:x=W,1:y=W,2:z=W,3:a=W,4:b=W,5:c=W
+\end{verbatim}
+As we see, the final condition does not validate.
+
+By contrast, flushing or touching the locations that the threads load permit to
+repetitively achieve validation:
+\begin{verbatim}
+chi% ./6.SB.exe -pra I -prf 0:y=F -prf 1:z=F -prf 2:a=F -prf 3:b=F -prf 4:c=F -prf 5:x=F
+Test 6.SB Allowed
+Histogram (63 states)
+211   *>0:EAX=0; 1:EAX=0; 2:EAX=0; 3:EAX=0; 4:EAX=0; 5:EAX=0;
+...
+% ./6.SB.exe -pra I -prf 0:y=T -prf 1:z=T -prf 2:a=T -prf 3:b=T -prf 4:c=T -prf 5:x=T
+Test 6.SB Allowed
+Histogram (63 states)
+10    *>0:EAX=0; 1:EAX=0; 2:EAX=0; 3:EAX=0; 4:EAX=0; 5:EAX=0;
+...
+\end{verbatim}
+As a conclusion, interpreting the impact of cache management
+directives is not easy. However, custom preload mode
+(litmus command line option \opt{-preload custom}) and test executable
+options \opt{-pra} and~\opt{-prf} allow experimentation on specific tests.
+
+
+\subsubsection{``Static'' prefetch control}
+Custom prefetch mode comes handy when one wants to tailor cache management
+directives for a particular test.
+In practice, we run batches of tests using source metadata for
+prefetch directives.
+In such a setting, the code that interprets the
+prefetch directives is useless,
+as we do not use the \opt{-prf} option of the test executables.
+As this code get executed before each test thread code, it may impact test
+results.
+It is desirable to supress this code from test executables, still
+performing cache management instructions.
+To that aim, \litmus{} provides some ``static'' preload modes, enabled
+with command line options \opt{-preload static},
+\opt{-preload static1} and~\opt{-preload static2}.
+
+In the former mode  \opt{-preload static} and without any further user
+intervention, each test thread executes the cache management
+instructions commanded by the \verb+Prefetch+ metadata:
+\begin{verbatim}
+% mkdir -p S
+% litmus7 -mem indirect -preload static -o R 6.SB+Prefetch.litmus
+% make -C S
+% S/6.SB+Prefetch.exe
+Test 6.SB Allowed
+Histogram (63 states)
+804   *>0:EAX=0; 1:EAX=0; 2:EAX=0; 3:EAX=0; 4:EAX=0; 5:EAX=0;
+...
+Observation 804 999196
+...
+\end{verbatim}
+As we can see above, the effect of the  cache management
+instructions looks more favorable than in custom preload mode.
+
+Users still have a limited control on the
+execution of cache management instructions: produced executable accept
+a new \opt{-prs <n>} option, which take a positive or null integer as argument.
+Then, each test thread executes the cache
+management instructions commanded by source metadata with probability~$1/n$,
+the special value $n=0$ disabling prefetch altogether.
+The default for the \opt{-prs} options is ``\opt{1}'' (always execute
+the cache management instructions).
+Let us try:
+\begin{verbatim}
+% S/6.SB+Prefetch.exe -prs 0 | grep Observation
+Observation 6.SB Never 0 1000000
+% S/6.SB+Prefetch.exe -prs 1 | grep Observation
+Observation 6.SB Sometimes 901 999099
+% S/6.SB+Prefetch.exe -prs 2 | grep Observation
+Observation 6.SB Sometimes 29 999971
+% S/6.SB+Prefetch.exe -prs 3 | grep Observation
+Observation 6.SB Sometimes 16 999984
+\end{verbatim}
+In those experiments we show the ``\verb+Observation+'' field of \litmus{}
+output: this field gives the count of outcomes that validate the final
+condition, followed by the count of outcomes that do not validate
+the final condition. The above counts confirm that
+cache management instructions favor validation.
+
+The remaining preload modes \opt{static1} and~\opt{static2} are similar,
+except that they produce executable files that do not accept
+the \opt{-prs} option. Furthermore, in the former
+mode \opt{-preload static1} cache management instructions are always executed,
+while in the latter mode \opt{-preload static2}
+cache management instructions are  executed with probability~$1/2$.
+Those modes thus act as pure static mode
+(\litmus{} option \opt{-preload static}),
+with runtime options \opt{-prs 1} and~\opt{-prs 2} respectively.
+Moreover,
+as the test scaffold includes no code to interpret the \opt{-prs <n>}
+switch, the test code is less perturbed.
+In practice and for the \ltest{6.SB} example, there is little difference:
+\begin{verbatim}
+% mkdir -p S1 S2
+% litmus7 -mem indirect -preload static1 -o S1 6.SB+Prefetch.litmus
+% litmus7 -mem indirect -preload static2 -o S2 6.SB+Prefetch.litmus
+% make -C S1 && make -C S2
+...
+% S1/6.SB+Prefetch.exe | grep Observation
+Observation 6.SB Sometimes 1119 998881
+% S2/6.SB+Prefetch.exe | grep Observation
+Observation 6.SB Sometimes 16 999984
+\end{verbatim}
+
+\section{Usage of \litmus{}}
+
+\subsection*{Arguments}
+\litmus{} takes file names as command line arguments.
+Those files are either a single litmus test,
+when having extension \file{.litmus},
+or a list of file names, when prefixed by \file{@}.
+Of course, the file names in \file{@}files can themselves be
+\file{@}files.
+
+\subsection*{Options}
+There are many command line options.
+We describe the more useful ones:
+
+\paragraph*{General behaviour}
+\begin{description}
+\item[{\tt -version}] Show version number and exit.
+\item[{\tt -libdir}] Show installation directory and exit.
+\item[{\tt -v}] Be verbose, can be repeated to increase verbosity.
+\item[{\tt -mach <name>}] Read configuration file~\file{name.cfg}.
+See the \ahrefloc{config:sec}{next section}
+for the syntax of configuration files.
+\item[{\tt -o <dest>}]
+Save C-source of test files into \opt{<dest>} instead of running them.
+If  argument \opt{<dest>} is an archive (extension \opt{.tar})
+or a compressed archive (extension \opt{.tgz}),
+\litmus{} builds an archive: this is the ``cross~compilation feature''
+demonstrated in Sec.~\ref{cross}.
+Otherwise, \opt{<dest>} is interpreted as the name of an
+existing directory and tests are saved in it.
+\item[{\tt -driver (shell|C|XCode)}]
+Choose the driver that will run the tests.
+In the ``\opt{shell}'' (and default) mode,
+each test will be compiled into an executable. A dedicated shell script
+\file{run.sh} will launch the test executables.
+In the ``\opt{C}'' mode, one executable \file{run.exe} is produced, which
+will launch the tests.
+%(see Sec.~\ref{driverc:example} for an example).
+Finally, the \opt{XCode} mode is for inclusion of the tests into
+a dedicated iOS App, which we do not distribute at the moment.
+\item[{\tt -crossrun <(user@)?host(:port)?|adb|qemu>}]
+When the shell driver is used (\opt{-driver shell} above),
+the first two possible arguments \aname{crossrun}{instruct}
+the \texttt{run.sh} script to run individual tests on a remote machine.
+The remote host can be contacted by the means of \texttt{ssh}
+or the Android Debug Bridge.
+\begin{description}
+\item[\tt ssh]
+\opt{user} is a login name on the the remote host,
+\opt{<host>} is the name of the remote host,
+and \texttt{port} is a port-number which can be omitted when standard~(22).
+\item[\tt adb]
+Tests will be run in the remote directory \opt{/data/tmp}.
+\end{description}
+This option may be useful when the tested machine has little disk space or a
+crippled installation.
+Default is disabled --- \emph{i.e.} run tests on
+the machine where the \file{run.sh} script runs.
+
+The argument \opt{qemu} instruct the shell script to use the \texttt{qemu}
+emulator. The \texttt{QEMU} environment variable must be defined to the
+emulator path before running the \texttt{run.sh} script, as in (\texttt{sh} syntax): \verb+QEMU=qemu sh run.sh+.
+
+
+\item[{\tt -index <@name>}] Save the source names of compiled files in index
+file~\file{@name}.
+\end{description}
+
+\paragraph*{Test conditions\label{litmus:option:sec}}
+The following options set the default values of
+the options of the executable files produced:
+\begin{description}
+\item[\aname{avail}{{\tt -a <n>}}]Run maximal number of tests concurrently for $n$~available
+logical processors ---
+set default value for \opt{-a} of Sec.~\ref{exec:control}.
+Default is~$1$ (run one test).
+When affinity control is enabled, the value~$0$ has the special
+meaning of having executables to set the
+number of available logical processors according to
+how many are actually present.
+\item[{\tt -limit <bool>}] Do not process tests with more than~$n$
+threads, where $n$ is the number of available cores defined above.
+Default is \opt{true}.
+\item[{\tt -r <n>}] Perform $n$ runs --- set default value for
+option~\opt{-r} of Sec.~\ref{exec:control}.
+The option accepts generalised syntax for integers and
+default is~$10$.
+\item[\aname{sizeoftest}{{\tt -s <n>}}]Size of a run --- set default value for
+option \opt{-s} of Sec.~\ref{exec:control}.
+The option accepts generalised syntax for integers and
+default is $100000$ (or \opt{100k}).
+\end{description}
+
+
+The following additional options control the various modes described
+in Sec.~\ref{sec:arch}, and more.
+Those cannot be changed without running \litmus{} again:
+\begin{description}
+\item[{\tt -barrier (user|userfence|pthread|none|timebase)}] Set synchronisation mode, default \opt{user}. Synchronisation modes are described
+in Sec.~\ref{defsynchronisation}
+\item[{\tt -launch (changing|fixed)}] Set launch mode,
+default \opt{changing}.
+\item[{\tt -mem (indirect|direct)}] Set memory mode,
+default \opt{indirect}.
+It is possible to instruct executables compiled in indirect mode
+to behave almost as if compiled in direct mode, see Sec.~\ref{rm}.
+\item[{\tt -stride <n>}]
+Specify a stride value of \opt{<n>} --- set default value for option \opt{-st} of Sec.~\ref{st}. See Sec.~\ref{defstride} for details on the stride parameter.
+If <n> is negative or zero, restore the default,
+which is stride feature disabled.
+\item[{\tt -st <n>}] Alias for \opt{-stride <n>}.
+\item[{\tt -para (self|shell)}]
+Perform several tests concurrently, either by forking POSIX
+threads (as described in Sec.~\ref{sec:arch}), or by forking
+Unix processes. Only applies for cross compilation.
+Default is \opt{self}.
+\item[{\tt -alloc (dynamic|static|before)}]
+Set memory allocation mode. In ``dynamic'' and ``before'' modes, the memory
+used by test threads is allocated with \texttt{malloc} --- in ``before'' mode,
+memory is allocated before forking test instances.
+In ``static'' mode, the memory is pre-allocated as static arrays.
+In that latter case, the size of allocated arrays depend upon
+compile time defined parameters: the number of available logical processors
+(see option \ahrefloc{avail}{\opt{-a <n>}})
+and the size of a run (see option \ahrefloc{sizeoftest}{\opt{-s <n>}}).
+It remains possible to change those those at execution time, provided
+the resulting memory size does not exceed the compile time value.
+Default is \texttt{dynamic}.
+
+\item[{\tt -preload (no|random|custom|static|static1|static2)}]
+Specify preload mode (see Sec.~\ref{defpreload}), default is \texttt{random}.
+Starting from version 5.0 we provide additional ``custom'' and ``static''
+modes for a finer control of prefetching and flushing of some memory locations
+by some threads. See Sec~\ref{preload:custom}.
+\item[{\tt -safer (no|all|write)}] Specify safer mode,
+default is \texttt{write}.
+When instructed to do so, executable files perform some consistency checks.
+Those are intended both for debugging and for dynamically checking
+some assumptions on POSIX threads that we rely upon.
+More specifically the test harness checks for the stabilisation of
+memory locations after a test round in the ``\texttt{all}'' and
+``\texttt{write}'' mode, while
+the initial values of memory locations are checked in ``\texttt{all}'' mode.
+\item[{\tt -speedcheck (no|some|all)}] 
+Quick condition check mode,
+default is ``\texttt{no}''.
+In mode ``\texttt{some}'', test executable will stop as soon as its
+condition is settled.
+In mode ``\texttt{all}'', the \texttt{run.sh} script will additionally
+not run the test if invoked once more later.
+\end{description}
+
+\aname{affinity:control}{The} following optiondra commands affinity control:
+\begin{description}
+\item[{\tt -affinity (none|incr<n>|random|custom)}]
+Enable (of disable with tag \opt{none}) affinity control,
+specifying default affinity mode of executables.
+Default is \opt{none}, \emph{i.e.} executables do not
+include affinity control code.
+The various tags are interpreted as follows:
+\begin{enumerate}
+\item \opt{incr<n>}:
+integer \opt{<n>} is the increment  for allocating logical
+processors to threads --- see Sec.~\ref{sec:affinity}.
+Notice that with \opt{-affinity incr0}
+the produced code features affinity control, which executable
+files do not exercise by default.
+\item \opt{random}: executables perform random allocation of
+test threads to logical processors.
+\item \opt{custom}: executables perform custom allocation of
+test threads to logical processors.
+\end{enumerate}
+Notice that the default for executables can be overridden using
+options \opt{-i},\opt{+ra} and~\opt{+ca}
+of Sec.~\ref{exec:control}.
+
+\item[{\tt -i <n>}] Alias for \opt{-affinity incr<n>}.
+\end{description}
+Notice that affinity control is not implemented for MacOs.
+
+The following options are significant when affinity control is enabled.
+Otherwise they are silent no-ops.
+\begin{description}
+\item[{\tt -p <ns>}]
+Specify the sequence of logical processors.
+The notation \opt{<ns>} stands for a comma separated list of integers.
+Set default value for option \opt{-p} of Sec.~\ref{exec:control}.
+Default for this \opt{-p} option
+will let executable files compute the logical processor sequence
+themselves.
+\item[{\tt -force\_afffinity <bool>}]
+Code that sets affinity will spin until all specified
+cores (as given with option \opt{-avail <n>}) processors
+are up. This option is necessary on devices that let core sleep
+when the computing load is low. Default is false.
+\end{description}
+
+Custom affinity control (see Sec.~\ref{affinity:custom}) is enabled,
+first by enabling affinity control (\emph{e.g.} with \opt{-affinity \ldots}),
+and then by specifying a logical processor topology with options \texttt{-smt}
+and \texttt{-smt\_mode}.
+\begin{description}
+\item[{\tt -smt <n>}] Specify that logical processors are close by groups
+of $n$, default is \texttt{1}.
+\item[{\tt -smt\_mode (none|seq|end)}] Specify how ``close'' logical processors
+are numbered, default is \texttt{none}.
+In mode~``\texttt{end}'', logical processors of the same core
+are numbered as $c$, $c+A_c$ etc. where $c$ is a physical core number and
+$A_c$ is the number of physical cores available.
+In mode~``\texttt{seq}'', logical processors of the same core
+are numbered in sequence.
+\end{description}
+Notice that custom affinity works only for those tests that include the proper
+meta-information. Otherwise, custom affinity silently degrades
+to random affinity.
+
+Finally, a few miscellaneous options are documented:
+\begin{description}
+\item[{\tt -l <n>}]
+Insert the assembly code of each thread in test in a loop of size \opt{<n>}.
+Accepts generalised integer syntax, disabled by default.
+Sets default value for option \opt{-l} of Sec.~\ref{exec:control}.
+
+This feature may prove useful for measuring running times that are not
+too much perturbed by the test harness, in combination
+with options~\opt{-s 1 -r 1}.
+\item[{\tt -vb <bool>}]
+Disable/enable the printing of synchronisation timings, default is \opt{false}.
+
+This feature may prove useful for analysing the synchronisation behaviour of
+a specific test, see Sec.~\ref{timebase}.
+\item[{\tt -ccopts <flags>}] Set \prog{gcc} compilation flags
+(defaults: X86=\opt{"-fomit-frame-pointer -O2"}, PPC/ARM=\opt{"-O2"}).
+\item[\aname{gcc}{{\tt -gcc <name>}}]
+Change the name of C compiler, default \opt{gcc}.
+\item[\aname{linkopt}{{\tt -linkopt <flags>}}] Set \prog{gcc} linking flags.
+(default: void).
+\item[\aname{gas}{{\tt -gas <bool>}}]
+Emit Gnu as extensions  (default Linux/Mac=\opt{true}, AIX=\opt{false})
+\end{description}
+
+\paragraph*{Target architecture description}
+Litmus compilation chain may slightly vary depending on the following
+parameters:
+\begin{description}
+\item[{\tt -os (linux|mac|aix)}] Set target operating system.
+This parameter mostly impacts some of \prog{gcc} options. Default \opt{linux}.
+\item[{\tt -ws (w32|w64)}] Set word size.
+This option first selects \prog{gcc} $32$ or~$64$ bits mode,
+by providing it with the appropriate option (\texttt{-m32}
+or \texttt{-m64} on linux, \texttt{-maix32}
+or \texttt{-maix64} on AIX).
+It also slightly impacts code generation in the corner case
+where memory locations hold other memory locations.
+Default is a bit contrived: it acts as \opt{w32} as regards code
+generation, while it provides no $32$/$64$ bits mode selection option
+to~\texttt{gcc}.
+\end{description}
+
+\paragraph*{Change\label{change:input} input}
+Some items in
+the source of tests can be changed at the very last moment.
+\aname{defmapping}{The}
+new items are defined in mapping files whose names are arguments to
+the appropriate command line options.
+Mapping files simply are lists of pairs, with one line starting with a test
+name, and the rest of line defining the changed item.
+The changed item may also contains several lines: in that case it should be
+included in double quotes~``\texttt{"}.''.
+\begin{description}
+\item[{\tt -names <file>}] Run \litmus{} only on tests whose names are
+listed in \texttt{<file>}.
+\item[{\tt -rename <file>}] Change test names.
+\item[{\tt -kinds <file>}] Change test kinds.
+This amonts to changing the quantifier of final conditions, with
+kind \texttt{Allow} being \verb+exists+,
+kind \texttt{Forbid} being \verb+~exists+
+and kind \texttt{Require} being \verb+forall+.
+\item[{\tt -conds <file>}] Change the final condition of tests.
+\item[{\tt -hints <file>}] Change meta-data, or hints.
+Hints command avanced features such as custom affinity
+(option \opt{-affinity custom} and Sec.~\ref{affinity:custom})
+and prefech control
+(option \opt{-preload custom} and Sec.~\ref{preload:custom}).
+
+\end{description}
+Observe that the rename mapping is applied first. As a result kind or condition
+change must refer to new names. For instance, we can highlight
+that a X86 machine is not sequentially consistent by first
+renaming \atest{SB} into \ltest{SB+SC}, and then changing the
+final condition.
+The new condition expresses
+that the first instruction (a store)
+of one of the threads must come first:
+\begin{center}
+\begin{tabular}{p{.3\linewidth}p{.2\linewidth}p{.3\linewidth}}
+\multicolumn{1}{c}{\afile{rename.txt}} & &
+\multicolumn{1}{c}{\afile{cond.txt}}\\ \hline
+\begin{verbatim}
+SB SB+SC
+\end{verbatim}
+& \quad\quad\quad &
+\begin{verbatim}
+SB+SC "forall (0:EAX=1 \/ 1:EAX=1)"
+\end{verbatim}
+\end{tabular}
+\end{center}
+Then, we run litmus:
+\begin{verbatim}
+% litmus7 -mach x86 -rename rename.txt -conds cond.txt SB.litmus
+%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for SB.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%
+X86 SB+SC
+"Fre PodWR Fre PodWR"
+
+{x=0; y=0;}
+
+ P0          | P1          ;
+ MOV [x],$1  | MOV [y],$1  ;
+ MOV EAX,[y] | MOV EAX,[x] ;
+
+forall (0:EAX=1 \/ 1:EAX=1)
+Generated assembler
+#START _litmus_P1
+        movl $1,(%r8,%rdx)
+        movl (%rdx),%eax
+#START _litmus_P0
+        movl $1,(%rdx)
+        movl (%r8,%rdx),%eax
+
+Test SB+SC Required
+Histogram (4 states)
+39954 *>0:EAX=0; 1:EAX=0;
+3979407:>0:EAX=1; 1:EAX=0;
+3980444:>0:EAX=0; 1:EAX=1;
+195   :>0:EAX=1; 1:EAX=1;
+No
+
+Witnesses
+Positive: 7960046, Negative: 39954
+Condition forall (0:EAX=1 \/ 1:EAX=1) is NOT validated
+Hash=7dbd6b8e6dd4abc2ef3d48b0376fb2e3
+Observation SB+SC Sometimes 7960046 39954
+Time SB+SC 0.48
+\end{verbatim}
+One sees that the test name and final condition have changed.
+
+\paragraph*{Miscellaneous\label{misc}}
+\begin{description}
+\item[{\tt -sleep <n>}] Insert a delay of $n$ seconds between each individual test run.
+\item[{\tt -exit <bool>}] Exit status of each individual test executable reflects the final condition success or failure, default \texttt{false} (test exit status always is success in absence  of errors).
+\end{description}
+
+\subsection*{\aname{config:sec}{Configuration} files}
+The syntax of configuration files is minimal:
+lines ``\textit{key} \texttt{=} \textit{arg}'' are interpreted
+as setting the value of parameter~\textit{key} to \textit{arg}.
+Each parameter has a corresponding option,
+usually \opt{-}\textit{key}, except for single-letter options:
+\begin{center}
+\newenvironment{opts}
+{\begin{tabular}{lll}
+\hline \hline
+\multicolumn{1}{c}{\quad\textit{option}\quad} &
+\multicolumn{1}{c}{\quad\textit{key}\quad} &
+\multicolumn{1}{c}{\quad\textit{arg}\quad} \\
+\hline \hline}
+{\hline \hline \end{tabular}}
+\begin{opts}
+\opt{-a} & avail & integer \\
+\opt{-s} & size\_of\_test & integer\\
+\opt{-r} & number\_of\_run & integer\\
+\opt{-p} & procs & list of integers\\
+\opt{-l} & loop & integer\\
+\end{opts}
+\end{center}
+Notice that \litmus{} in fact accepts long versions of options
+(\emph{e.g.} \opt{-avail} for~\opt{-a}).
+
+As command line option are processed left-to-right,
+settings from a configuration file (option \opt{-mach})
+can be overridden by a later
+command line option.
+Some configuration files for the machines we have tested
+are present in the distribution. As an example here is the configuration
+file \file{hpcx.cfg}.
+\verbatiminput{hpcx.cfg}
+Lines introduced by \verb+#+ are comments and are thus ignored.
+
+Configuration files are searched first in the current directory;
+then in any directory specified
+by setting the shell environment variable \texttt{LITMUSDIR};
+and then in litmus installation directory, which is defined
+while compiling~\litmus{}.

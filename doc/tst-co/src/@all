@@ -1,0 +1,33 @@
+# diy -arch ARM -safe DMBs**,Pos**,Rfe,Fre,Wse -size 4 -nprocs 2 -ins 2 -mode uni -cond observe -num false
+# Version 5.99, Revision: 15M
+R+dmbs.litmus
+MP+dmbs.litmus
+R+dmb+pos.litmus
+MP+dmb+pos.litmus
+WW+dmb.litmus
+2+2W+dmbs.litmus
+S+dmbs.litmus
+2+2W+dmb+pos.litmus
+S+dmb+pos.litmus
+WR+dmb.litmus
+SB+dmbs.litmus
+SB+dmb+pos.litmus
+R+pos+dmb.litmus
+RW+dmb.litmus
+LB+dmbs.litmus
+S+pos+dmb.litmus
+LB+dmb+pos.litmus
+W+RW+dmb.litmus
+MP+pos+dmb.litmus
+W+RR+dmb.litmus
+R+poss.litmus
+MP+poss.litmus
+WW.litmus
+2+2W+poss.litmus
+S+poss.litmus
+WR.litmus
+SB+poss.litmus
+RW.litmus
+LB+poss.litmus
+W+RW.litmus
+W+RR.litmus

@@ -1,0 +1,16 @@
+X86 X000
+"Fre Rfi PodRR Fre Rfi PodRR"
+Cycle=Rfi PodRR Fre Rfi PodRR Fre
+Relax=[Rfi,PodRR]
+Safe=Fre
+Prefetch=0:y=T,1:x=T
+Com=Fr Fr
+Orig=Fre Rfi PodRR Fre Rfi PodRR
+{
+}
+ P0          | P1          ;
+ MOV [x],$1  | MOV [y],$1  ;
+ MOV EAX,[x] | MOV EAX,[y] ;
+ MOV EBX,[y] | MOV EBX,[x] ;
+exists
+(0:EAX=1 /\ 0:EBX=0 /\ 1:EAX=1 /\ 1:EBX=0)

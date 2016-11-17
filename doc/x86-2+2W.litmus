@@ -1,0 +1,12 @@
+X86 x86-2+2W
+"Wse PodWW Wse PodWW"
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Ws Ws
+Orig=Wse PodWW Wse PodWW
+{
+}
+ P0         | P1         ;
+ MOV [x],$2 | MOV [y],$2 ;
+ MOV [y],$1 | MOV [x],$1 ;
+exists
+(x=2 /\ y=2)

@@ -1,0 +1,84 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%This command format the 'Test' table entries'
+%%A simpler remdering:
+%%\newcommand{\handletest}[1]
+%%{\ahref{src/#1.litmus}{#1}, \ahref{img/#1-rf.png}{diagram}}
+\newcommand{\src}[1]{\csname #1@src\endcsname}
+\newcommand{\base}[1]{\csname #1@base\endcsname}
+\newcommand{\tst@img}[1]{\csname #1@img\endcsname}
+\newif\ifarm\armfalse
+\ifarm\newcommand{\@tstline}[1]{\aname{toptst@#1}{}}\else
+\newcommand{\@tstline}[1]{}\fi
+\newcommand{\link@arm}[1]
+{\ifu\csname toptst@#1\endcsname\else\ifu\csname arm@#1\endcsname\else{}
+(\ahref{\csname toptst@#1\endcsname}{\textsc{arm} \csname arm@#1\endcsname})\fi\fi}
+\providecommand{\@out@par}[1]{#1}
+\newcommand{\gentest}[1]
+{\ifu\csname seen@\base{#1}\endcsname
+\global\let\csname seen@\base{#1}\endcsname\relax
+\begin{cutflow}{Test #1}\cutname{\base{#1}.html}
+\@open{H3}{}Test \ahref{\src{#1}}{#1}\@close{H3}
+\@iffileexists{\base{#1}.tex}
+{\bgroup\renewcommand{\handletest}[1]{##1}\input{\base{#1}.tex}\egroup}
+{\typeout{No \base{#1}.tex}}
+\tst@img{#1}
+\verbatiminput{\src{#1}}
+\end{cutflow}}
+%%%%%%%%%%%%%%
+\newcommand{\handletest}[1]
+{\ifu\csname seen@\base{#1}\endcsname
+\global\let\csname seen@\base{#1}\endcsname\relax
+\begin{cutflow}{Test #1}\cutname{\base{#1}.html}
+\@open{H3}{}\aname{tst@\base{#1}}{Test} \ahref{\src{#1}}{#1}\@close{H3}
+
+\ifu\tst@img{#1}
+\@iffileexists{img/\src{#1}.png}{\imgsrc{img/\src{#1}.png}}{}\else
+\tst@img{#1}\fi
+
+
+\verbatiminput{\src{#1}}
+\end{cutflow}\@tstline{#1}\else\fi
+\@out@par{\ahref[id="top@\base{#1}" ]{\base{#1}.html}{#1}}}
+%%This command includes a table #1.tex
+\newcommand{\zyva}[1]
+{\begin{center}\newcommand{\@more}[1]{}%
+\aname{family@#1}{}\include{#1.tex}
+\end{center}}
+\newcommand{\zyva@arm}[1]
+{\begin{center}\let\@more\link@arm
+\aname{family@#1}{}\include{#1.tex}
+\end{center}}
+
+%%Classification tables
+%%#1key for total #2 key for batch, 3# key for batch exp.
+\newcommand{\donumbers}[3]
+{Number of invalid (forbidden by model, observed on hardware)
+and unseen (allowed by model, not observed on hardware)
+tests by batch:
+\begin{center}
+\newcommand{\dobatch}[2]
+{\textsc{##2} &
+  \csname n#2{}##1\endcsname &
+  \ahrefloc{{}##1more}{\csname n#3{}##1{}invalid\endcsname} &
+  \ahrefloc{{}##1less}{\csname n#3{}##1{}unseen\endcsname}}
+\begin{tabular}{lccc}
+& \#{}tests & invalid & unseen \\ \hline
+\textsc{All} &
+  \csname n#1\endcsname &
+  \csname n#1invalid\endcsname &
+  \csname n#1unseen\endcsname \\
+\dobatch{uniproc}{Uniproc}\\
+\dobatch{thinair}{Thinair}\\
+\dobatch{causality}{Causality}\\
+\dobatch{propagation}{Propagation}
+\end{tabular}
+\end{center}}
+%%%%More
+\newcommand{\@mysec}[3]
+{\csname #1*\endcsname{\label{#2}#3}%
+\addcontentsline{toc}{#1}{\ahrefloc{#2}{#3}}}
+\newcommand{\mypart}[2]{\@mysec{part}{#1}{#2}}
+\newcommand{\mysection}[2]{\@mysec{section}{#1}{#2}}
+\newcommand{\mysubsection}[2]{\@mysec{subsection}{#1}{#2}}
+\newcommand{\mysubsubsection}[2]{\@mysec{subsubsection}{#1}{#2}}
+

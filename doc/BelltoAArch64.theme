@@ -1,0 +1,24 @@
+Bell to AArch64
+
+"r[] %x %y" -> "LDR %x,[%y]"
+
+"r[] %x y" -> "LDR %x,[%y]"
+
+"r[acq] %x y" -> "LDAR %x,[%y]"
+
+"w[] %x &c" -> "MOV %tmp,&c;
+                STR %tmp,[%x]"
+
+"w[] x &c" -> "MOV %tmp,&c;
+               STR %tmp,[%x]"
+
+"w[] %x %y" -> "STR %x,[%y]"
+
+"w[rel] x &c" -> "MOV %tmp,&c;
+	          STLR %tmp,[%x]"
+
+"f[dmb,all,sy]" -> "DMB SY"
+
+"f[dmb,ld,sy]" -> "DMB LD"
+
+"f[dmb,st,sy]" -> "DMB ST"

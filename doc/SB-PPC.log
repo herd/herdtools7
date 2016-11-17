@@ -1,0 +1,64 @@
+Tue Mar 20 13:47:32 CET 2012
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for SB-PPC.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PPC SB-PPC
+"Fre PodWR Fre PodWR"
+
+{0:r2=x; 0:r4=y; 1:r2=y; 1:r4=x;}
+
+ P0           | P1           ;
+ li r1,1      | li r1,1      ;
+ stw r1,0(r2) | stw r1,0(r2) ;
+ lwz r3,0(r4) | lwz r3,0(r4) ;
+
+exists (0:r3=0 /\ 1:r3=0)
+Generated assembler
+#START _litmus_P1
+	li r10,1
+	stw r10,0(r9)
+	lwz r11,0(r2)
+#START _litmus_P0
+	li r10,1
+	stw r10,0(r9)
+	lwz r11,0(r2)
+Test SB-PPC Allowed
+Histogram (3 states)
+1784  *>0:r3=0; 1:r3=0;
+498564:>0:r3=1; 1:r3=0;
+499652:>0:r3=0; 1:r3=1;
+Ok
+
+Witnesses
+Positive: 1784, Negative: 998216
+Condition exists (0:r3=0 /\ 1:r3=0) is validated
+Hash=4edecf6abc507611612efaecc1c4a9bc
+Observation SB-PPC Sometimes 1784 998216
+Time SB-PPC 0.55
+Revision 8829:8832M, version 4.00+1
+Command line: litmus -o /tmp/a.tar -os mac SB-PPC.litmus
+Parameters
+#ifndef SIZE_OF_TEST
+#define SIZE_OF_TEST 100000
+#endif
+#ifndef NUMBER_OF_RUN
+#define NUMBER_OF_RUN 10
+#endif
+#ifndef AVAIL
+#define AVAIL 1
+#endif
+/* gcc options: -Wall -std=gnu99 -O2 */
+/* barrier: user */
+/* launch: changing */
+/* cache: false */
+/* call: false */
+/* affinity: none */
+/* prealloc: false */
+/* memory: indirect */
+/* safer: all */
+/* preload: random */
+/* para: self */
+/* speedcheck: false */
+GCC=gcc
+LITMUSOPTS=
+Tue Mar 20 13:47:33 CET 2012

@@ -1,0 +1,684 @@
+Fri May 25 16:05:24 CEST 2012
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for tst-arm/LB.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ARM LB
+"PodRW Rfe PodRW Rfe"
+
+{0:R2=x; 0:R3=y; 1:R3=y; 1:R2=x;}
+
+ P0          | P1          ;
+ LDR R0,[R2] | LDR R0,[R3] ;
+ MOV R1,#1   | MOV R1,#1   ;
+ STR R1,[R3] | STR R1,[R2] ;
+
+exists (0:R0=1 /\ 1:R0=1)
+Generated assembler
+@START _litmus_P1
+	ldr r3,[r5]
+	mov r6,#1
+	str r6,[r1]
+@START _litmus_P0
+	ldr r3,[r1]
+	mov r6,#1
+	str r6,[r5]
+Test LB Allowed
+Histogram (4 states)
+5414  :>0:R0=0; 1:R0=0;
+995254:>0:R0=1; 1:R0=0;
+997937:>0:R0=0; 1:R0=1;
+1395  *>0:R0=1; 1:R0=1;
+Ok
+
+Witnesses
+Positive: 1395, Negative: 1998605
+Condition exists (0:R0=1 /\ 1:R0=1) is validated
+Hash=2dbf4ebf53beb3f4a80550908ca7e997
+Cycle=Rfe PodRW Rfe PodRW
+Com=Rf Rf
+Orig=PodRW Rfe PodRW Rfe
+Observation LB Sometimes 1395 1998605
+Time LB 0.78
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for tst-arm/LB+data+po.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ARM LB+data+po
+"DpDatadW Rfe PodRW Rfe"
+
+{0:R2=x; 0:R3=y; 1:R3=y; 1:R2=x;}
+
+ P0           | P1          ;
+ LDR R0,[R2]  | LDR R0,[R3] ;
+ EOR R1,R0,R0 | MOV R1,#1   ;
+ ADD R1,R1,#1 | STR R1,[R2] ;
+ STR R1,[R3]  |             ;
+
+exists (0:R0=1 /\ 1:R0=1)
+Generated assembler
+@START _litmus_P1
+	ldr r3,[r5]
+	mov r6,#1
+	str r6,[r1]
+@START _litmus_P0
+	ldr r3,[r1]
+	eor r6,r3,r3
+	add r6,r6,#1
+	str r6,[r5]
+Test LB+data+po Allowed
+Histogram (4 states)
+3974  :>0:R0=0; 1:R0=0;
+998303:>0:R0=1; 1:R0=0;
+997363:>0:R0=0; 1:R0=1;
+360   *>0:R0=1; 1:R0=1;
+Ok
+
+Witnesses
+Positive: 360, Negative: 1999640
+Condition exists (0:R0=1 /\ 1:R0=1) is validated
+Hash=d846fcea34d4df60061a9fe87505b401
+Cycle=Rfe PodRW Rfe DpDatadW
+Com=Rf Rf
+Orig=DpDatadW Rfe PodRW Rfe
+Observation LB+data+po Sometimes 360 1999640
+Time LB+data+po 1.18
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for tst-arm/LB+ctrl+po.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ARM LB+ctrl+po
+"DpCtrldW Rfe PodRW Rfe"
+
+{0:R2=x; 0:R3=y; 1:R3=y; 1:R2=x;}
+
+ P0          | P1          ;
+ LDR R0,[R2] | LDR R0,[R3] ;
+ CMP R0,R0   | MOV R1,#1   ;
+ BNE LC00    | STR R1,[R2] ;
+ LC00:       |             ;
+ MOV R1,#1   |             ;
+ STR R1,[R3] |             ;
+
+exists (0:R0=1 /\ 1:R0=1)
+Generated assembler
+@START _litmus_P1
+	ldr r3,[r5]
+	mov r6,#1
+	str r6,[r1]
+@START _litmus_P0
+	ldr r3,[r1]
+	cmp r3,r3
+	bne 0f
+0:
+	mov r6,#1
+	str r6,[r5]
+Test LB+ctrl+po Allowed
+Histogram (4 states)
+9465  :>0:R0=0; 1:R0=0;
+991967:>0:R0=1; 1:R0=0;
+997923:>0:R0=0; 1:R0=1;
+645   *>0:R0=1; 1:R0=1;
+Ok
+
+Witnesses
+Positive: 645, Negative: 1999355
+Condition exists (0:R0=1 /\ 1:R0=1) is validated
+Hash=02b5aa3bda4925967287d4f5d51abffb
+Cycle=Rfe PodRW Rfe DpCtrldW
+Com=Rf Rf
+Orig=DpCtrldW Rfe PodRW Rfe
+Observation LB+ctrl+po Sometimes 645 1999355
+Time LB+ctrl+po 1.12
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for tst-arm/LB+isb+po.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ARM LB+isb+po
+"ISBdRW Rfe PodRW Rfe"
+
+{0:R2=x; 0:R3=y; 1:R3=y; 1:R2=x;}
+
+ P0          | P1          ;
+ LDR R0,[R2] | LDR R0,[R3] ;
+ ISB         | MOV R1,#1   ;
+ MOV R1,#1   | STR R1,[R2] ;
+ STR R1,[R3] |             ;
+
+exists (0:R0=1 /\ 1:R0=1)
+Generated assembler
+@START _litmus_P1
+	ldr r3,[r5]
+	mov r6,#1
+	str r6,[r1]
+@START _litmus_P0
+	ldr r3,[r1]
+	isb
+	mov r6,#1
+	str r6,[r5]
+Test LB+isb+po Allowed
+Histogram (4 states)
+56018 :>0:R0=0; 1:R0=0;
+965438:>0:R0=1; 1:R0=0;
+976868:>0:R0=0; 1:R0=1;
+1676  *>0:R0=1; 1:R0=1;
+Ok
+
+Witnesses
+Positive: 1676, Negative: 1998324
+Condition exists (0:R0=1 /\ 1:R0=1) is validated
+Hash=8e286b64dcd5694c3345c14bb16e44df
+Cycle=Rfe PodRW Rfe ISBdRW
+Com=Rf Rf
+Orig=ISBdRW Rfe PodRW Rfe
+Observation LB+isb+po Sometimes 1676 1998324
+Time LB+isb+po 1.04
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for tst-arm/LB+dmb+po.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ARM LB+dmb+po
+"DMBdRW Rfe PodRW Rfe"
+
+{0:R2=x; 0:R3=y; 1:R3=y; 1:R2=x;}
+
+ P0          | P1          ;
+ LDR R0,[R2] | LDR R0,[R3] ;
+ DMB         | MOV R1,#1   ;
+ MOV R1,#1   | STR R1,[R2] ;
+ STR R1,[R3] |             ;
+
+exists (0:R0=1 /\ 1:R0=1)
+Generated assembler
+@START _litmus_P1
+	ldr r3,[r5]
+	mov r6,#1
+	str r6,[r1]
+@START _litmus_P0
+	ldr r3,[r1]
+	dmb
+	mov r6,#1
+	str r6,[r5]
+Test LB+dmb+po Allowed
+Histogram (4 states)
+66193 :>0:R0=0; 1:R0=0;
+977816:>0:R0=1; 1:R0=0;
+955973:>0:R0=0; 1:R0=1;
+18    *>0:R0=1; 1:R0=1;
+Ok
+
+Witnesses
+Positive: 18, Negative: 1999982
+Condition exists (0:R0=1 /\ 1:R0=1) is validated
+Hash=210b236aabeabb6f86edc3dbfc62de75
+Cycle=Rfe PodRW Rfe DMBdRW
+Com=Rf Rf
+Orig=DMBdRW Rfe PodRW Rfe
+Observation LB+dmb+po Sometimes 18 1999982
+Time LB+dmb+po 1.15
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for tst-arm/LB+datas.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ARM LB+datas
+"DpDatadW Rfe DpDatadW Rfe"
+
+{0:R2=x; 0:R3=y; 1:R3=y; 1:R2=x;}
+
+ P0           | P1           ;
+ LDR R0,[R2]  | LDR R0,[R3]  ;
+ EOR R1,R0,R0 | EOR R1,R0,R0 ;
+ ADD R1,R1,#1 | ADD R1,R1,#1 ;
+ STR R1,[R3]  | STR R1,[R2]  ;
+
+exists (0:R0=1 /\ 1:R0=1)
+Generated assembler
+@START _litmus_P1
+	ldr r3,[r5]
+	eor r6,r3,r3
+	add r6,r6,#1
+	str r6,[r1]
+@START _litmus_P0
+	ldr r3,[r1]
+	eor r6,r3,r3
+	add r6,r6,#1
+	str r6,[r5]
+Test LB+datas Allowed
+Histogram (3 states)
+5066  :>0:R0=0; 1:R0=0;
+997537:>0:R0=1; 1:R0=0;
+997397:>0:R0=0; 1:R0=1;
+No
+
+Witnesses
+Positive: 0, Negative: 2000000
+Condition exists (0:R0=1 /\ 1:R0=1) is NOT validated
+Hash=c8254cbae1f0cbbf61cc518830b05bb0
+Cycle=Rfe DpDatadW Rfe DpDatadW
+Com=Rf Rf
+Orig=DpDatadW Rfe DpDatadW Rfe
+Observation LB+datas Never 0 2000000
+Time LB+datas 0.85
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for tst-arm/LB+ctrl+data.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ARM LB+ctrl+data
+"DpCtrldW Rfe DpDatadW Rfe"
+
+{0:R2=x; 0:R3=y; 1:R3=y; 1:R2=x;}
+
+ P0          | P1           ;
+ LDR R0,[R2] | LDR R0,[R3]  ;
+ CMP R0,R0   | EOR R1,R0,R0 ;
+ BNE LC00    | ADD R1,R1,#1 ;
+ LC00:       | STR R1,[R2]  ;
+ MOV R1,#1   |              ;
+ STR R1,[R3] |              ;
+
+exists (0:R0=1 /\ 1:R0=1)
+Generated assembler
+@START _litmus_P1
+	ldr r3,[r5]
+	eor r6,r3,r3
+	add r6,r6,#1
+	str r6,[r1]
+@START _litmus_P0
+	ldr r3,[r1]
+	cmp r3,r3
+	bne 0f
+0:
+	mov r6,#1
+	str r6,[r5]
+Test LB+ctrl+data Allowed
+Histogram (3 states)
+3524  :>0:R0=0; 1:R0=0;
+997797:>0:R0=1; 1:R0=0;
+998679:>0:R0=0; 1:R0=1;
+No
+
+Witnesses
+Positive: 0, Negative: 2000000
+Condition exists (0:R0=1 /\ 1:R0=1) is NOT validated
+Hash=de85770c5ee1e3a5e74a3e4b3d08a388
+Cycle=Rfe DpDatadW Rfe DpCtrldW
+Com=Rf Rf
+Orig=DpCtrldW Rfe DpDatadW Rfe
+Observation LB+ctrl+data Never 0 2000000
+Time LB+ctrl+data 1.10
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for tst-arm/LB+isb+data.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ARM LB+isb+data
+"ISBdRW Rfe DpDatadW Rfe"
+
+{0:R2=x; 0:R3=y; 1:R3=y; 1:R2=x;}
+
+ P0          | P1           ;
+ LDR R0,[R2] | LDR R0,[R3]  ;
+ ISB         | EOR R1,R0,R0 ;
+ MOV R1,#1   | ADD R1,R1,#1 ;
+ STR R1,[R3] | STR R1,[R2]  ;
+
+exists (0:R0=1 /\ 1:R0=1)
+Generated assembler
+@START _litmus_P1
+	ldr r3,[r5]
+	eor r6,r3,r3
+	add r6,r6,#1
+	str r6,[r1]
+@START _litmus_P0
+	ldr r3,[r1]
+	isb
+	mov r6,#1
+	str r6,[r5]
+Test LB+isb+data Allowed
+Histogram (4 states)
+56850 :>0:R0=0; 1:R0=0;
+997408:>0:R0=1; 1:R0=0;
+945088:>0:R0=0; 1:R0=1;
+654   *>0:R0=1; 1:R0=1;
+Ok
+
+Witnesses
+Positive: 654, Negative: 1999346
+Condition exists (0:R0=1 /\ 1:R0=1) is validated
+Hash=575f9016038856e969c4fd723db283e0
+Cycle=Rfe ISBdRW Rfe DpDatadW
+Com=Rf Rf
+Orig=ISBdRW Rfe DpDatadW Rfe
+Observation LB+isb+data Sometimes 654 1999346
+Time LB+isb+data 1.15
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for tst-arm/LB+dmb+data.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ARM LB+dmb+data
+"DMBdRW Rfe DpDatadW Rfe"
+
+{0:R2=x; 0:R3=y; 1:R3=y; 1:R2=x;}
+
+ P0          | P1           ;
+ LDR R0,[R2] | LDR R0,[R3]  ;
+ DMB         | EOR R1,R0,R0 ;
+ MOV R1,#1   | ADD R1,R1,#1 ;
+ STR R1,[R3] | STR R1,[R2]  ;
+
+exists (0:R0=1 /\ 1:R0=1)
+Generated assembler
+@START _litmus_P1
+	ldr r3,[r5]
+	eor r6,r3,r3
+	add r6,r6,#1
+	str r6,[r1]
+@START _litmus_P0
+	ldr r3,[r1]
+	dmb
+	mov r6,#1
+	str r6,[r5]
+Test LB+dmb+data Allowed
+Histogram (3 states)
+170059:>0:R0=0; 1:R0=0;
+951717:>0:R0=1; 1:R0=0;
+878224:>0:R0=0; 1:R0=1;
+No
+
+Witnesses
+Positive: 0, Negative: 2000000
+Condition exists (0:R0=1 /\ 1:R0=1) is NOT validated
+Hash=b84bc81a807c85f28a2f8612a1883d0b
+Cycle=Rfe DMBdRW Rfe DpDatadW
+Com=Rf Rf
+Orig=DMBdRW Rfe DpDatadW Rfe
+Observation LB+dmb+data Never 0 2000000
+Time LB+dmb+data 1.20
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for tst-arm/LB+ctrls.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ARM LB+ctrls
+"DpCtrldW Rfe DpCtrldW Rfe"
+
+{0:R2=x; 0:R3=y; 1:R3=y; 1:R2=x;}
+
+ P0          | P1          ;
+ LDR R0,[R2] | LDR R0,[R3] ;
+ CMP R0,R0   | CMP R0,R0   ;
+ BNE LC00    | BNE LC01    ;
+ LC00:       | LC01:       ;
+ MOV R1,#1   | MOV R1,#1   ;
+ STR R1,[R3] | STR R1,[R2] ;
+
+exists (0:R0=1 /\ 1:R0=1)
+Generated assembler
+@START _litmus_P1
+	ldr r3,[r5]
+	cmp r3,r3
+	bne 0f
+0:
+	mov r6,#1
+	str r6,[r1]
+@START _litmus_P0
+	ldr r3,[r1]
+	cmp r3,r3
+	bne 0f
+0:
+	mov r6,#1
+	str r6,[r5]
+Test LB+ctrls Allowed
+Histogram (3 states)
+5036  :>0:R0=0; 1:R0=0;
+997111:>0:R0=1; 1:R0=0;
+997853:>0:R0=0; 1:R0=1;
+No
+
+Witnesses
+Positive: 0, Negative: 2000000
+Condition exists (0:R0=1 /\ 1:R0=1) is NOT validated
+Hash=4b0b314730fba79fe7f1ecb94bafdc03
+Cycle=Rfe DpCtrldW Rfe DpCtrldW
+Com=Rf Rf
+Orig=DpCtrldW Rfe DpCtrldW Rfe
+Observation LB+ctrls Never 0 2000000
+Time LB+ctrls 1.31
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for tst-arm/LB+isb+ctrl.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ARM LB+isb+ctrl
+"ISBdRW Rfe DpCtrldW Rfe"
+
+{0:R2=x; 0:R3=y; 1:R3=y; 1:R2=x;}
+
+ P0          | P1          ;
+ LDR R0,[R2] | LDR R0,[R3] ;
+ ISB         | CMP R0,R0   ;
+ MOV R1,#1   | BNE LC00    ;
+ STR R1,[R3] | LC00:       ;
+             | MOV R1,#1   ;
+             | STR R1,[R2] ;
+
+exists (0:R0=1 /\ 1:R0=1)
+Generated assembler
+@START _litmus_P1
+	ldr r3,[r5]
+	cmp r3,r3
+	bne 0f
+0:
+	mov r6,#1
+	str r6,[r1]
+@START _litmus_P0
+	ldr r3,[r1]
+	isb
+	mov r6,#1
+	str r6,[r5]
+Test LB+isb+ctrl Allowed
+Histogram (4 states)
+4752  :>0:R0=0; 1:R0=0;
+996001:>0:R0=1; 1:R0=0;
+998104:>0:R0=0; 1:R0=1;
+1143  *>0:R0=1; 1:R0=1;
+Ok
+
+Witnesses
+Positive: 1143, Negative: 1998857
+Condition exists (0:R0=1 /\ 1:R0=1) is validated
+Hash=4a9f61aed58932c45dc65b4f276bfc6b
+Cycle=Rfe ISBdRW Rfe DpCtrldW
+Com=Rf Rf
+Orig=ISBdRW Rfe DpCtrldW Rfe
+Observation LB+isb+ctrl Sometimes 1143 1998857
+Time LB+isb+ctrl 0.91
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for tst-arm/LB+dmb+ctrl.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ARM LB+dmb+ctrl
+"DMBdRW Rfe DpCtrldW Rfe"
+
+{0:R2=x; 0:R3=y; 1:R3=y; 1:R2=x;}
+
+ P0          | P1          ;
+ LDR R0,[R2] | LDR R0,[R3] ;
+ DMB         | CMP R0,R0   ;
+ MOV R1,#1   | BNE LC00    ;
+ STR R1,[R3] | LC00:       ;
+             | MOV R1,#1   ;
+             | STR R1,[R2] ;
+
+exists (0:R0=1 /\ 1:R0=1)
+Generated assembler
+@START _litmus_P1
+	ldr r3,[r5]
+	cmp r3,r3
+	bne 0f
+0:
+	mov r6,#1
+	str r6,[r1]
+@START _litmus_P0
+	ldr r3,[r1]
+	dmb
+	mov r6,#1
+	str r6,[r5]
+Test LB+dmb+ctrl Allowed
+Histogram (3 states)
+18748 :>0:R0=0; 1:R0=0;
+997160:>0:R0=1; 1:R0=0;
+984092:>0:R0=0; 1:R0=1;
+No
+
+Witnesses
+Positive: 0, Negative: 2000000
+Condition exists (0:R0=1 /\ 1:R0=1) is NOT validated
+Hash=81dbc5078ef5b8d261cc1dfd24edb6d6
+Cycle=Rfe DMBdRW Rfe DpCtrldW
+Com=Rf Rf
+Orig=DMBdRW Rfe DpCtrldW Rfe
+Observation LB+dmb+ctrl Never 0 2000000
+Time LB+dmb+ctrl 0.83
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for tst-arm/LB+isbs.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ARM LB+isbs
+"ISBdRW Rfe ISBdRW Rfe"
+
+{0:R2=x; 0:R3=y; 1:R3=y; 1:R2=x;}
+
+ P0          | P1          ;
+ LDR R0,[R2] | LDR R0,[R3] ;
+ ISB         | ISB         ;
+ MOV R1,#1   | MOV R1,#1   ;
+ STR R1,[R3] | STR R1,[R2] ;
+
+exists (0:R0=1 /\ 1:R0=1)
+Generated assembler
+@START _litmus_P1
+	ldr r3,[r5]
+	isb
+	mov r6,#1
+	str r6,[r1]
+@START _litmus_P0
+	ldr r3,[r1]
+	isb
+	mov r6,#1
+	str r6,[r5]
+Test LB+isbs Allowed
+Histogram (4 states)
+14917 :>0:R0=0; 1:R0=0;
+996507:>0:R0=1; 1:R0=0;
+986407:>0:R0=0; 1:R0=1;
+2169  *>0:R0=1; 1:R0=1;
+Ok
+
+Witnesses
+Positive: 2169, Negative: 1997831
+Condition exists (0:R0=1 /\ 1:R0=1) is validated
+Hash=3dcec016d0ce78401655b63114a0237c
+Cycle=Rfe ISBdRW Rfe ISBdRW
+Com=Rf Rf
+Orig=ISBdRW Rfe ISBdRW Rfe
+Observation LB+isbs Sometimes 2169 1997831
+Time LB+isbs 1.14
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for tst-arm/LB+dmb+isb.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ARM LB+dmb+isb
+"DMBdRW Rfe ISBdRW Rfe"
+
+{0:R2=x; 0:R3=y; 1:R3=y; 1:R2=x;}
+
+ P0          | P1          ;
+ LDR R0,[R2] | LDR R0,[R3] ;
+ DMB         | ISB         ;
+ MOV R1,#1   | MOV R1,#1   ;
+ STR R1,[R3] | STR R1,[R2] ;
+
+exists (0:R0=1 /\ 1:R0=1)
+Generated assembler
+@START _litmus_P1
+	ldr r3,[r5]
+	isb
+	mov r6,#1
+	str r6,[r1]
+@START _litmus_P0
+	ldr r3,[r1]
+	dmb
+	mov r6,#1
+	str r6,[r5]
+Test LB+dmb+isb Allowed
+Histogram (4 states)
+200207:>0:R0=0; 1:R0=0;
+950439:>0:R0=1; 1:R0=0;
+849176:>0:R0=0; 1:R0=1;
+178   *>0:R0=1; 1:R0=1;
+Ok
+
+Witnesses
+Positive: 178, Negative: 1999822
+Condition exists (0:R0=1 /\ 1:R0=1) is validated
+Hash=5d23ffa8136528f8d9c91f78c57007c5
+Cycle=Rfe ISBdRW Rfe DMBdRW
+Com=Rf Rf
+Orig=DMBdRW Rfe ISBdRW Rfe
+Observation LB+dmb+isb Sometimes 178 1999822
+Time LB+dmb+isb 1.04
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for tst-arm/LB+dmbs.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ARM LB+dmbs
+"DMBdRW Rfe DMBdRW Rfe"
+
+{0:R2=x; 0:R3=y; 1:R3=y; 1:R2=x;}
+
+ P0          | P1          ;
+ LDR R0,[R2] | LDR R0,[R3] ;
+ DMB         | DMB         ;
+ MOV R1,#1   | MOV R1,#1   ;
+ STR R1,[R3] | STR R1,[R2] ;
+
+exists (0:R0=1 /\ 1:R0=1)
+Generated assembler
+@START _litmus_P1
+	ldr r3,[r5]
+	dmb
+	mov r6,#1
+	str r6,[r1]
+@START _litmus_P0
+	ldr r3,[r1]
+	dmb
+	mov r6,#1
+	str r6,[r5]
+Test LB+dmbs Allowed
+Histogram (3 states)
+521929:>0:R0=0; 1:R0=0;
+714129:>0:R0=1; 1:R0=0;
+763942:>0:R0=0; 1:R0=1;
+No
+
+Witnesses
+Positive: 0, Negative: 2000000
+Condition exists (0:R0=1 /\ 1:R0=1) is NOT validated
+Hash=073afc49bcd6f90c6ecc26d3673604cc
+Cycle=Rfe DMBdRW Rfe DMBdRW
+Com=Rf Rf
+Orig=DMBdRW Rfe DMBdRW Rfe
+Observation LB+dmbs Never 0 2000000
+Time LB+dmbs 0.42
+Revision 8990:8994, version 4.00+1
+Command line: litmus -mach tegra3 -crossrun app_81@wifi-auth-188153:2222 tst-arm/@all -o /home/yquem/moscova/maranget/tmp/a.tar
+Parameters
+#ifndef SIZE_OF_TEST
+#define SIZE_OF_TEST 5000
+#endif
+#ifndef NUMBER_OF_RUN
+#define NUMBER_OF_RUN 200
+#endif
+#ifndef AVAIL
+#define AVAIL 4
+#endif
+/* gcc options: -Wall -std=gnu99 -march=armv7-a -O2  -pthread */
+/* gcc link options: -static */
+/* barrier: user */
+/* launch: changing */
+/* cache: false */
+/* call: false */
+/* affinity: none */
+/* prealloc: false */
+/* memory: direct */
+/* safer: write */
+/* preload: random */
+/* para: self */
+/* speedcheck: false */
+/* proc used: 4 */
+GCC=arm-linux-gnueabi-gcc
+LITMUSOPTS=
+Fri May 25 16:06:08 CEST 2012
