@@ -1,3 +1,11 @@
+# @todo Fix this error ('make' needs to be called twice to build the doc):
+# ...
+# compiling /Users/vincent/Dropbox/Hacking/Active/RDaS/main/herdtools7/doc/diy.tex...
+# /Users/vincent/Dropbox/Hacking/Active/RDaS/main/herdtools7/doc/SB+CLUSTER.pstex_t:21: Missing $ inserted.
+# /Users/vincent/Dropbox/Hacking/Active/RDaS/main/herdtools7/doc/SB+CLUSTER.pstex_t:21: leading text: }}}}
+# /Users/vincent/Dropbox/Hacking/Active/RDaS/main/herdtools7/doc/SB+CLUSTER.pstex_t:21: Extra }, or forgotten $.
+# ...
+
 INSTALLDIR=$$HOME/public_html/diy/tst7
 HERD=herd7 -exit true
 SPLITDOT=splitdot7
@@ -166,13 +174,13 @@ GENIMG=$(GENTEX:.tex=-img)
 PNG=$(DOTS:.dot=.png)
 ALLPNG=$(PNG) m1l-time.png
 PSTEX=$(DOTS:.dot=.pstex_t)
-CFG=hpcx.cfg saumur.cfg doc.cfg apoil.cfg trimslice.cfg dragon.cfg
+CFG=hpcx.cfg saumur.cfg apoil.cfg trimslice.cfg dragon.cfg
 CAT=sc.cat tso-00.cat tso-01.cat  tso-02.cat lamport.cat cos.cat
 GENCAT=herd.cat x86tso.cat minimal.cat uniproc.cat
 TXT=rename.txt cond.txt trimslice.sh dragon.sh
 DONT=x86.sc x86.explo x86-log.txt
-LITMUSDIR=../../litmus/
-HERDDIR=../../herd
+LITMUSDIR=../litmus/libdir
+HERDDIR=../herd/libdir
 MAPPLY=mapply7 -j 16
 #Generated latex
 clean::
@@ -213,26 +221,25 @@ clean::
 	/bin/rm -f x86.tar
 #tar of x86/ppc allowed tests
 tst-x86.tar:
-	tar --exclude-vcs -cf tst-x86.tar tst-x86
+	tar -cf tst-x86.tar tst-x86
 
 tst-ppc.tar:
-	tar --exclude-vcs -cf tst-ppc.tar tst-ppc
+	tar -cf tst-ppc.tar tst-ppc
 
 tst-arm.tar:
-	tar --exclude-vcs -cf tst-arm.tar tst-arm
+	tar -cf tst-arm.tar tst-arm
 
 tst-co.tar:
 	/bin/rm -rf /tmp/tst-co && \
 	cp -r tst-co/src /tmp/tst-co  && \
-	(cd /tmp && tar --exclude-vcs -cf - tst-co ) > $@
+	(cd /tmp && tar -cf - tst-co ) > $@
 
 clean::
 	/bin/rm -f tst-ppc.tar tst-x86.tar tst-arm.tar tst-co.tar
 
 #version
-VERSION= $(HERDDIR)/lib/VERSION.txt
-version.tex: $(VERSION)
-	/bin/echo '\def\version{'`head -1 $(VERSION)`'}' > $@
+version.tex: ../opam
+	/bin/echo '\def\version{'`grep "^version:" ../opam | cut -d ":" -f 2 | cut -d '"' -f 2`'}' > $@
 
 clean::
 	/bin/rm -f version.tex
