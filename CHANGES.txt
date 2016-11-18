@@ -1,3 +1,5 @@
+ * tools: option -alloc <bool> for mprog [allocate symbolic registers].
+ * herd: the match constructs also applies to relation.
  * Correct libdir definition for gen: same as herd, as it may parse bell
    files and  would thus include stdlib.cat
 7.41
