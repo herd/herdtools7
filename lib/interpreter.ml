@@ -180,7 +180,7 @@ module Make
 
 (* Internal typing *)
     type typ =
-      | TEmpty | TEvent | TEvents | TRel
+      | TEmpty | TEvent | TEvents | TPair | TRel
       | TTag of string |TClo | TProc | TSet of typ
       | TTuple of typ list
 
@@ -194,6 +194,7 @@ module Make
     | (TEmpty,TRel)
     | (TRel,TEmpty) -> Some TRel
     | TEvent,TEvent -> Some TEvent
+    | TPair,TPair -> Some TPair
     | TTag s1,TTag s2 when s1 = s2 -> Some t1
     | TSet t1,TSet t2 ->
         begin match eq_type t1 t2 with
@@ -231,6 +232,7 @@ module Make
       | TEmpty -> "{}"
       | TEvent -> "event"
       | TEvents -> "events"
+      | TPair -> "pair"
       | TRel -> "rel"
       | TTag ty -> ty
       | TClo -> "closure"
@@ -243,8 +245,9 @@ module Make
 
       type v =
         | Empty | Unv
-        | Event of S.event
+        | Pair of (S.event * S.event)
         | Rel of S.event_rel
+        | Event of S.event
         | Set of S.event_set
         | Clo of  closure
         | Prim of string * int * (v -> v)
@@ -275,8 +278,9 @@ module Make
 
       type v =
         | Empty | Unv
-        | Event of S.event
+        | Pair of (S.event * S.event)
         | Rel of S.event_rel
+        | Event of S.event
         | Set of S.event_set
         | Clo of  closure
         | Prim of string * int * (v -> v)
@@ -303,8 +307,9 @@ module Make
       let rec type_val = function
         | V.Empty -> TEmpty
         | Unv -> assert false (* Discarded before *)
-        | Event _ -> TEvent
+        | Pair _ -> TPair
         | Rel _ -> TRel
+        | Event _ -> TEvent
         | Set _ -> TEvents
         | Clo _|Prim _ -> TClo
         | Proc _ -> TProc
@@ -418,6 +423,7 @@ module Make
 
     let v_as_vs = function
       | V.Tuple vs -> vs
+      | Pair (ev1,ev2) -> [Event ev1;Event ev2;]
       | v -> [v]
 
     let pat2empty = function
@@ -1080,10 +1086,10 @@ module Make
                 set_op env loc t ValSet.inter s1 s2
             | (Unv,r)|(r,Unv) -> r
             | (V.Empty,_)|(_,V.Empty) -> V.Empty
-            | (Event _|Clo _|Prim _|Proc _|V.Tuple _),_ ->
+            | (Event _|Pair _|Clo _|Prim _|Proc _|V.Tuple _),_ ->
                 error env.EV.silent loc1
                   "intersection on %s" (pp_typ (type_val v1))
-            | _,(Event _|Clo _|Prim _|Proc _|V.Tuple _) ->
+            | _,(Event _|Pair _|Clo _|Prim _|Proc _|V.Tuple _) ->
                 error env.EV.silent loc2
                   "intersection on %s" (pp_typ (type_val v2))
             | (Rel _,Set _)
@@ -1118,10 +1124,10 @@ module Make
             | (Rel _|Set _|V.Empty|Unv|ValSet _),Unv
             | V.Empty,(Rel _|Set _|V.Empty|ValSet _) -> V.Empty
             | (Rel _|Set _|ValSet _),V.Empty -> v1
-            | (Event _|Clo _|Proc _|Prim _|V.Tuple _),_ ->
+            | (Event _|Pair _|Clo _|Proc _|Prim _|V.Tuple _),_ ->
                 error env.EV.silent loc1
                   "difference on %s" (pp_typ (type_val v1))
-            | _,(Event _|Clo _|Proc _|Prim _|V.Tuple _) ->
+            | _,(Event _|Pair _|Clo _|Proc _|Prim _|V.Tuple _) ->
                 error env.EV.silent loc2
                   "difference on %s" (pp_typ (type_val v2))
             | ((Set _|ValSet _),Rel _)|(Rel _,(Set _|ValSet _)) ->
@@ -1142,16 +1148,29 @@ module Make
             | V.Unv,_ -> error env.EV.silent loc "universe in set ++"
             | _,V.Unv -> V.Unv
             | Event e,V.Empty -> Set (E.EventSet.singleton e)
+            | Pair p,V.Empty -> Rel (E.EventRel.singleton p)
             | _,V.Empty -> V.ValSet (type_val v1,ValSet.singleton v1)
             | V.Empty,V.ValSet (TSet e2 as t2,s2) ->
                 let v1 = ValSet (e2,ValSet.empty) in
                 set_op env loc t2 ValSet.add v1 s2
             | _,V.ValSet (_,s2) ->
                 set_op env loc (type_val v1) ValSet.add v1 s2
+            | Pair p,Rel r ->
+                Rel (E.EventRel.add p r)
+            | Tuple [Event ev1;Event ev2;],Rel r ->
+                Rel (E.EventRel.add (ev1,ev2) r)
+            | _,Rel _ ->
+                error env.EV.silent (get_loc e1)
+                  "this expression of type '%s' should be a pair"
+                  (pp_typ (type_val v2))
             | Event e,Set es ->
                 Set (E.EventSet.add e es)
+            | _,Set _ ->
+                error env.EV.silent (get_loc e1)
+                  "this expression of type '%s' should be an event"
+                  (pp_typ (type_val v1))
             | _,
-                (Event _|Rel _|Set _|Clo _|Prim _
+              (Event _|Pair _|Clo _|Prim _
               |Proc _|V.Tag (_, _)|V.Tuple _) ->
                   error env.EV.silent (get_loc e2)
                   "this expression of type '%s' should be a set"
@@ -1229,6 +1248,33 @@ module Make
                     let m = add_val x (lazy (Event elt)) m in
                     let m = add_val xs1 (lazy (Set s1)) m in
                     let m = add_val xs2 (lazy (Set s2)) m in
+                    eval { env with EV.env = m; } ex
+                end
+            | Rel r ->
+                if E.EventRel.is_empty r then eval env ife
+                else begin match cl with
+                | EltRem (x,xs,ex) ->
+                    let p =
+                      lazy begin
+                        try E.EventRel.choose r
+                        with Not_found -> assert false
+                      end in
+                    let s =
+                      lazy begin
+                        Rel (E.EventRel.remove (Lazy.force p) r)
+                      end in
+                    let p = lazy (Pair (Lazy.force p)) in
+                    let m = env.EV.env in
+                    let m = add_val x p m in
+                    let m = add_val xs s m in
+                    eval { env with EV.env = m; } ex
+                | PreEltPost (xs1,x,xs2,ex) ->
+                    let s1,elt,s2 =
+                      try E.EventRel.split3 r with Not_found -> assert false in
+                    let m = env.EV.env in
+                    let m = add_val x (lazy (Pair elt)) m in
+                    let m = add_val xs1 (lazy (Rel s1)) m in
+                    let m = add_val xs2 (lazy (Rel s2)) m in
                     eval { env with EV.env = m; } ex
                 end
             | ValSet (t,s) ->
@@ -1337,8 +1383,8 @@ module Make
         {clo_args=pat; clo_env=env; clo_body=body; clo_name=(name,next_id ()); }
 
       and add_args loc pat v env_es env_clo =
-        let xs = pat_as_vars pat
-        and vs = v_as_vs v in
+        let xs = pat_as_vars pat in
+        let vs = match xs with [_] -> [v] | _ -> v_as_vs v in
         let bds =
           try
             List.combine xs vs
