@@ -30,6 +30,7 @@ module Top
          val outputdir : string option
          val mode : OutMode.t
          val transpose : bool
+         val alloc : bool
        end) =
   struct
 
@@ -161,7 +162,11 @@ module Top
 
     end
 
+    (*************)
     (* Text dump *)
+    (*************)
+
+    (* No alloc *)
     module Text(A:ArchBase.S) = struct
       module D = DumperMiscParser.Make(O)(SimpleDumper.OutChannel)(A)
 
@@ -174,6 +179,28 @@ module Top
             let fname = Filename.concat d fname in
             Misc.output_protect
               (fun chan -> D.dump_info chan name parsed)
+              fname
+
+    end
+
+    (* Some alloc *)
+    module TextAlloc(A:ArchBase.S) = struct
+      module Arch = ArchExtra_tools.Make(O)(A)
+      module Alloc = SymbReg.Make(Arch)
+      module D = Dumper.Make(Arch)
+
+      let zyva = match O.outputdir with
+      | None -> 
+          fun name parsed ->
+            D.dump_info stdout name (Alloc.allocate_regs parsed)
+      | Some d ->
+          fun name parsed ->
+            let fname = name.Name.file in
+            let fname = Filename.basename fname in
+            let fname = Filename.concat d fname in
+            Misc.output_protect
+              (fun chan ->
+                D.dump_info chan name (Alloc.allocate_regs parsed))
               fname
 
     end
@@ -197,8 +224,12 @@ module Top
         Z.from_file
       else match O.mode with
       | Txt ->
-          let module Z =  ToolParse.Top(T)(Text) in
-          Z.from_file
+          if O.alloc then
+            let module Z =  ToolParse.Top(T)(TextAlloc) in
+            Z.from_file
+          else
+            let module Z =  ToolParse.Top(T)(Text) in
+            Z.from_file
       | LaTeX|HeVeA|HeVeANew ->
           let module Z =  ToolParse.Top(T)(Latex) in
           Z.from_file
@@ -213,6 +244,7 @@ let hexa = ref false
 let outputdir = ref None
 let mode = ref OutMode.LaTeX
 let transpose = ref false
+let alloc = ref false
 let opts =
   [
    "-v",Arg.Unit (fun () -> incr verbose), " be verbose";
@@ -224,6 +256,8 @@ let opts =
    P.parse "-mode" mode "output mode" end ;
    "-transpose", Arg.Bool (fun b -> transpose := b),
    (sprintf "<bool> show code proc by proc, default %b" !transpose);
+   "-alloc", Arg.Bool (fun b -> alloc := b),
+   (sprintf "<bool> alloc symbolic registers (text mode only), default %b" !alloc);   
    "-o", Arg.String (fun s -> outputdir := Some s),
    "<name>  all output in directory <name>";
  ]
@@ -249,6 +283,7 @@ module X =
       let outputdir = !outputdir
       let mode = !mode
       let transpose = !transpose
+      let alloc = !alloc
     end)
 
 let () =
