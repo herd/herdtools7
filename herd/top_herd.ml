@@ -79,7 +79,7 @@ module Make(O:Config)(M:XXXMem.S) =
         sts
         0
 
-(* Test_herd result *)
+(* Test result *)
     type count =
         { states : A.StateSet.t;
           cfail : int ;
@@ -264,7 +264,7 @@ module Make(O:Config)(M:XXXMem.S) =
                       (C.dump_as_kind cstr)
                       pp_model
                   else
-                    sprintf "Test_herd %s%s%s%s"
+                    sprintf "Test %s%s%s%s"
                       name
                       (sprintf ": %s" (C.dump_as_kind cstr))
                       (match pp_model with
@@ -278,7 +278,7 @@ module Make(O:Config)(M:XXXMem.S) =
                       name
                       pp_model
                   else
-                    sprintf "Test_herd %s%s%s" name
+                    sprintf "Test %s%s%s" name
                       (match pp_model with
                       | "" -> ""
                       | _ -> sprintf ", %s" pp_model)
@@ -400,7 +400,7 @@ module Make(O:Config)(M:XXXMem.S) =
         let tname = test.Test_herd.name.Name.name in
         let is_bad = has_bad_execs c in
         if not O.badexecs &&  is_bad then raise Exit ;
-        printf "Test_herd %s %s\n" tname (C.dump_as_kind cstr) ;        
+        printf "Test %s %s\n" tname (C.dump_as_kind cstr) ;        
 (**********)
 (* States *)
 (**********)
