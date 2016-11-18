@@ -1,6 +1,6 @@
 #!/bin/bash
 
-. defs.sh
+. ./defs.sh
 
 if [ "x$1" = "x" ]
 then
