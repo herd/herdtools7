@@ -46,6 +46,11 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 
     let pseudo = List.map (fun i -> Instruction i)
 
+(* Pseudo instructions *)
+    let li r v =
+      if (v < 0 || v > 0xffff) then
+        Warn.fatal "MIPS generator cannot handle constant %i\n" v ;
+      OPI (OR,r,MIPS.r0,v)
 
 (* RMW utilities *)
     let atom r1 r2 addr k =
@@ -84,7 +89,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     | 0 ->
         BC (cond,r,MIPS.r0,lab)::k
     | _ ->
-        LI (MIPS.tmp3,i)::
+        li MIPS.tmp3 i::
         BC (cond,r,tmp3,lab)::k
 
 
@@ -123,7 +128,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       let lab = Label.next_label "L" in
       let out = Label.next_label "L" in
       rA,init,
-      Instruction (LI (rC,200))::
+      Instruction (li rC 200)::
       (* 200 X about 5 ins looks for a typical memory delay *)
       Label (lab,Nop)::
       pseudo
@@ -161,12 +166,12 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let emit_store st p init x v =
       let rA,st = next_reg st in
       let init,cs,st = emit_store_reg st p init x rA in
-      init,Instruction (LI (rA,v))::cs,st
+      init,Instruction (li rA v)::cs,st
 
     let emit_store_idx st p init x idx v =
       let rA,st = next_reg st in
       let init,cs,st = emit_store_idx_reg st p init x idx rA in
-      init,Instruction (LI (rA,v))::cs,st
+      init,Instruction (li rA v)::cs,st
 
 (* Load exclusive *)
 
@@ -217,7 +222,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       let rW,st = next_reg st in
       let ro,init,cs,st = emit_sta_reg st p init x rW in
       ro,init,
-      Instruction (LI (rW,v))::cs,
+      Instruction (li rW v)::cs,
       st
 
     let emit_sta_idx st p init x idx v =
@@ -226,7 +231,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       let ro,init,cs,st =  do_emit_sta st p init tmp1 rW in
       ro,
       init,
-      Instruction (LI (rW,v))::
+      Instruction (li rW v)::
       Instruction (OP (ADDU,tmp1,idx,rA))::cs,
       st
 
@@ -259,7 +264,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       let rW,st = next_reg st in
       let cs = emit_pair p rR rW rA in
       rR,init,
-      Instruction (LI (rW,ew.v))::cs,
+      Instruction (li rW ew.v)::cs,
       st
 
     let emit_access_dep_addr st p init e  r1 =
@@ -290,7 +295,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       let rW,st = next_reg st in
       let cs = emit_pair p rR rW tmp1 in
       rR,init,
-      Instruction (LI (rW,ew.v))::
+      Instruction (li rW ew.v)::
       Instruction (OP (XOR,tmp1,rd,rd))::
       Instruction (OP (ADDU,tmp1,rA,tmp1))::
       cs,
