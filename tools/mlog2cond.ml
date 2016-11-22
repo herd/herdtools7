@@ -41,9 +41,6 @@ let options =
    ("-acceptempty", Arg.Bool (fun b -> acceptempty := b),
     sprintf
       "<bool> output empty conditions, default %b" !acceptempty);
-   ("-hexa", Arg.Bool (fun b -> hexa := b),
-    sprintf
-      "<bool> hexadecimal output, default %b" !hexa);
     CheckName.parse_hexa hexa;
   ]
 
