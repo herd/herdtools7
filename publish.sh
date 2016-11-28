@@ -7,7 +7,7 @@ set -o errexit
 
 if ! git branch | grep "^\* master$" >/dev/null
 then
-  echo "Cowardly refusing to publish from branch other than master"
+  echo "Cowardly refusing to publish from branch other than master."
   exit 1
 fi
 
@@ -18,9 +18,15 @@ then
   exit 1
 fi
 
-if git tag | grep "$VERSION"
+if git tag | grep "^$VERSION$"
 then
   echo "Set (and 'git add') new version in file 'opam' before running './publish.sh'."
+  exit 1
+fi
+
+if echo "$VERSION" | grep "+"
+then
+  echo "Cowardly refusing to publish a version containing a '+'."
   exit 1
 fi
 
@@ -31,9 +37,9 @@ git tag $VERSION
 git push origin master --tags
 
 opam-publish prepare >/dev/null
+trap "rm -r herdtools7.$VERSION" EXIT
 
 echo "Please check and fix files in herdtools7.$VERSION/. Press 'Enter' if correct, 'Ctrl+C' to interrupt publication."
 read
 
-# opam-publish submit
-# rm -r herdtools7.$VERSION
+opam-publish submit
