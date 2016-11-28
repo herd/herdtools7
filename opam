@@ -1,17 +1,34 @@
+# Fields described at https://opam.ocaml.org/doc/Manual.html#opam
 opam-version: "1.2"
 name: "herdtools7"
-version: "7.41+1"
+version: "7.42-beta.1"
 maintainer: "Vincent Jacques <vincent@russian-dolls-sunflowers.com>"
 authors: [
   "Luc Maranget <Luc.Maranget@inria.fr>"
   "Jade Alglave <j.alglave@ucl.ac.uk>"
   "Vincent Jacques <vincent@russian-dolls-sunflowers.com>"
 ]
-dev-repo: "https://github.com/herd/herdtools7.git"
+licence: "CeCILL-B"
+homepage: "http://diy.inria.fr/"
+doc: "http://diy.inria.fr/doc/index.html"
 bug-reports: "http://github.com/herd/herdtools7/issues/"
-available: [ ocaml-version >= "4.02.0" ]
+dev-repo: "https://github.com/herd/herdtools7.git"
+# @todo Add "tags" field
+# No "patches" field
+# No "subst" field
 build: ["./build.sh" "%{prefix}%"]
 install: ["./install.sh" "%{prefix}%"]
-uninstall: ["./uninstall.sh" "%{prefix}%"]
+# @todo Add "build-doc" field
+# @todo Add "build-test" field
+remove: ["./uninstall.sh" "%{prefix}%"]
 depends: [
+  "ocamlbuild" {build}
 ]
+# No "depopts" field
+# No "conflicts" field
+# No "depexts" field
+# No "messages" field
+# No "post-messages" field
+available: [ ocaml-version >= "4.02.0" ]
+# No "flags" field
+# No "features" field

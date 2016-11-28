@@ -12,3 +12,6 @@ cpdir () {
   TO=$2
   rm -rf $TO && mkdir -p $TO && ( cd $FROM && rsync -r . $TO )
 }
+
+VERSION=$(grep "^version:" opam | cut -d ":" -f 2 | cut -d '"' -f 2)
+REV=$(git rev-parse HEAD 2>/dev/null || echo exported)

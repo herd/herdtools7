@@ -1,3 +1,5 @@
+7.42
+ * Fix license, add README, publish as an OPAM package
  * gen: avoid pseudo-instruction li in generated tests.
  * tools: option -alloc <bool> for mprog [allocate symbolic registers].
  * herd: the match constructs also applies to relation.

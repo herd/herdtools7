@@ -2,8 +2,6 @@
 #Assume run as ./build.sh
 . ./defs.sh
 
-VERSION=$(grep "^version:" opam | cut -d ":" -f 2 | cut -d '"' -f 2)
-REV=$(git rev-parse HEAD 2>/dev/null || echo exported)
 if [ "x$1" = "x" ]
 then
   LIBDIR=$(pwd)/_build/libdir
