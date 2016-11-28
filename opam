@@ -1,7 +1,7 @@
 # Fields described at https://opam.ocaml.org/doc/Manual.html#opam
 opam-version: "1.2"
 name: "herdtools7"
-version: "7.42-beta.1"
+version: "7.42-beta.2"
 maintainer: "Vincent Jacques <vincent@russian-dolls-sunflowers.com>"
 authors: [
   "Luc Maranget <Luc.Maranget@inria.fr>"
@@ -10,8 +10,8 @@ authors: [
 ]
 licence: "CeCILL-B"
 homepage: "http://diy.inria.fr/"
-doc: "http://diy.inria.fr/doc/index.html"
 bug-reports: "http://github.com/herd/herdtools7/issues/"
+doc: "http://diy.inria.fr/doc/index.html"
 dev-repo: "https://github.com/herd/herdtools7.git"
 # @todo Add "tags" field
 # No "patches" field
@@ -29,6 +29,6 @@ depends: [
 # No "depexts" field
 # No "messages" field
 # No "post-messages" field
-available: [ ocaml-version >= "4.02.0" ]
+available: [ocaml-version >= "4.02.0"]
 # No "flags" field
 # No "features" field
