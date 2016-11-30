@@ -1,3 +1,4 @@
+ * Add support for C11 atomic_compare_exchange_... primitives.
 7.42
  * Fix license, add README, publish as an OPAM package
  * gen: avoid pseudo-instruction li in generated tests.

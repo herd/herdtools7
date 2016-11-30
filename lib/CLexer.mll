@@ -26,19 +26,19 @@ let tr_name s = match s with
 | "volatile" -> VOLATILE
 | "_Atomic" -> ATOMIC
 | "char" -> CHAR
-| "int" ->  INT
+| "int" -> INT
 | "int8_t"
 | "uint8_t"
 | "int16_t"
 | "uint16_t"
 | "int32_t"
 | "uint32_t"
-| "int64_t" 
+| "int64_t"
 | "uint64_t"
 | "mutex_t"
 | "spinlock_t"
 ->
-    BASE_TYPE s
+  BASE_TYPE s
 | "atomic_int" -> ATOMIC_TYPE "int"
 | "NULL" -> NULL
 (* C11 primitives, quite a lot! *)
@@ -58,28 +58,30 @@ let tr_name s = match s with
 | "memory_order_seq_cst" -> MEMORDER (MemOrder.SC)
 | "memory_order_relaxed" -> MEMORDER (MemOrder.Rlx)
 | "memory_order_consume" -> MEMORDER (MemOrder.Con)
-| "fence"|"atomic_thread_fence" ->  FENCE 
-| "atomic_load"  ->  LD 
-| "atomic_store" ->  ST 
-| "atomic_load_explicit"  ->  LD_EXPLICIT 
-| "atomic_store_explicit" ->  ST_EXPLICIT 
-| "atomic_exchange" ->  EXC 
-| "atomic_exchange_explicit" ->  EXC_EXPLICIT 
-| "lock"  ->  LOCK 
-| "WCAS"  ->  WCAS 
-| "SCAS"  ->  SCAS 
-| "atomic_compare_exchange_weak_explicit" ->  WCAS
-| "atomic_compare_exchange_strong_explicit" ->  SCAS
-| "unlock"    ->  UNLOCK 
+| "fence"|"atomic_thread_fence" -> FENCE
+| "atomic_load" -> LD
+| "atomic_store" -> ST
+| "atomic_load_explicit" -> LD_EXPLICIT
+| "atomic_store_explicit" -> ST_EXPLICIT
+| "atomic_exchange" -> EXC
+| "atomic_exchange_explicit" -> EXC_EXPLICIT
+| "lock" -> LOCK
+| "WCAS" -> WCAS
+| "SCAS" -> SCAS
+| "atomic_compare_exchange_weak" -> WCAS
+| "atomic_compare_exchange_strong" -> SCAS
+| "atomic_compare_exchange_weak_explicit" -> WCAS_EXPLICIT
+| "atomic_compare_exchange_strong_explicit" -> SCAS_EXPLICIT
+| "unlock"  -> UNLOCK
 (* Internal Linux *)
-| "__fence" ->  UNDERFENCE 
-| "__load" ->  LOAD 
-| "__store" ->  STORE 
+| "__fence" -> UNDERFENCE
+| "__load" -> LOAD
+| "__store" -> STORE
 | "__xchg" -> XCHG
 | "__lock" -> SPINLOCK
 | "__unlock" -> SPINUNLOCK
 (* Others *)
-|  x -> IDENTIFIER x
+| x -> IDENTIFIER x
 }
 
 let digit = ['0'-'9']
@@ -92,7 +94,7 @@ rule token deep = parse
 | '\n' { incr_lineno lexbuf ; token deep lexbuf ; }
 | "/*" { LU.skip_c_comment lexbuf ; token deep lexbuf }
 | "//" { LU.skip_c_line_comment lexbuf ; token deep lexbuf }
-| '-' ? num as x { CONSTANT (int_of_string x) } 
+| '-' ? num as x { CONSTANT (int_of_string x) }
 | 'P' (num+ as x) { PROC (int_of_string x) }
 | ';' { SEMI }
 | ',' { COMMA }
