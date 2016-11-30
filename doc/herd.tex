@@ -1260,7 +1260,7 @@ let rec power S = match S with
 || e ++ S ->
     let rec add_e RR = match RR with
     || {} -> { }
-    || R + RR -> R ++ (e ++ R) ++ add_e RR
+    || R ++ RR -> R ++ (e ++ R) ++ add_e RR
     end in
     add_e (power S)
 end
