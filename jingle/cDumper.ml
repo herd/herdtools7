@@ -81,6 +81,7 @@ let list_loc prog =
     | Exchange(l,e,_) -> loc (expr s e) l
     | Fetch(l,_,e,_) -> loc (expr s e) l
     | ECall (_,es) -> List.fold_left expr s es
+    | ECas (e1,e2,e3,_,_,_) -> expr (expr (expr s e1) e2) e3        
   in 
   let rec ins s = function
     | Seq(l) -> List.fold_left ins s l

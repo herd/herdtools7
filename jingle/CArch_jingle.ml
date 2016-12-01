@@ -127,7 +127,7 @@ include Arch.MakeArch(struct
       | Exchange(l,e,mo) -> Exchange(expl_loc l, expl_expr e,mo)
       | Fetch(l,op,e,mo) -> Fetch(expl_loc l,op,expl_expr e,mo)
       | ECall (f,es) -> ECall (f,List.map expl_expr es)
-
+      | ECas (e1,e2,e3,mo1,mo2,st) -> ECas (expl_expr e1,expl_expr e2,expl_expr e3,mo1,mo2,st)
     in
     function
     | Fence b -> Fence b
