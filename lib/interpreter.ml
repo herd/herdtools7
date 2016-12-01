@@ -2034,11 +2034,21 @@ module Make
                   (st -> 'a -> 'a) -> 'a -> 'a =
                     fun st (loc,_,t,e,name as tst) test_type kfail kont res ->
                       let skip = skip_this_check name in
+                      let cycle = cycle_this_check name in                      
                       if O.debug &&  skip then warn loc "skipping check: %s" (Misc.as_some name) ;
                       if
-                        O.strictskip || not skip
+                        O.strictskip || not skip || cycle
                       then
                         let ok = eval_test (check_through test_type) (from_st st) t e in
+                        if 
+                          cycle &&
+                          begin match ok,t with
+                          | (false,Yes _)
+                          | (true,No _) -> true
+                          | (false,No _)
+                          | (true,Yes _) -> false
+                          end
+                        then show_cycle st tst ;
                         if ok then
                           match test_type with 
                           | Check|UndefinedUnless -> kont st res
@@ -2056,7 +2066,6 @@ module Make
                                     res
                               end
                         else begin
-                          if cycle_this_check name then show_cycle st tst ;
                           if skip then begin
                             assert O.strictskip ;
                             kont
