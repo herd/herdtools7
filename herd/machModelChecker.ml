@@ -54,8 +54,15 @@ module Make
           es
               
       let check_through = MU.check_through
+
       let pp_failure test conc msg vb_pp =
         MU.pp_failure
+          test conc
+          (Printf.sprintf "%s: %s" test.Test_herd.name.Name.name msg)
+          vb_pp
+
+      let pp test conc msg vb_pp =
+        MU.pp
           test conc
           (Printf.sprintf "%s: %s" test.Test_herd.name.Name.name msg)
           vb_pp

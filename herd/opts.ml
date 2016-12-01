@@ -45,6 +45,7 @@ let through = ref Model.ThroughNone
 let throughflag = ref None
 let skipchecks = ref StringSet.empty
 let strictskip = ref false
+let cycles = ref StringSet.empty
 let show = ref PrettyConf.ShowNone
 let nshow = ref None
 let auto = ref false

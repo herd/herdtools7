@@ -212,17 +212,10 @@ let options = [
   ("-skipcheck",
    Arg.String (fun tag -> skipchecks := StringSet.add tag !skipchecks),
    "<name> do not apply check, cumulates") ;
-  ("-skipchecks",
-   Arg.String
-     (fun s ->
-       let tags = Misc.split_comma s in
-       List.iter
-         (fun tag ->
-           skipchecks := StringSet.add tag !skipchecks)
-         tags),
-   "<name1,...,nameN> do not apply checks, cumulates") ;
-  parse_bool "-strictskip" strictskip
-   "retain outcomes allowed by ALL skipped checks" ;
+  parse_stringset "-skipchecks" skipchecks "do not apply listed checks, cumulative" ;
+  parse_bool "-strictskip" strictskip "retain outcomes allowed by ALL skipped checks" ;
+  parse_stringset "-cycles" cycles  "<name1,...,nameN> show failing checks as cycles, cumulates" ;
+
 (* Model control *)
   "-optace", Arg.Bool (fun b -> optace := Some b),
     "<bool> optimize axiomatic candidate generation, default is true except for the minimal model and all generic models";
@@ -485,6 +478,7 @@ let () =
     let through = !through
     let skipchecks = !skipchecks
     let strictskip = !strictskip
+    let cycles = !cycles
     let outcomereads = !outcomereads
     let show = !show
     let badexecs = !badexecs 

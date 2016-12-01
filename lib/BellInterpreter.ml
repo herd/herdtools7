@@ -38,6 +38,7 @@ module Make (C: Config) = struct
       let verbose = C.verbose
       let skipchecks = StringSet.empty
       let strictskip = false
+      let cycles = StringSet.empty
 (* Show control, useless.. *)
       let doshow = StringSet.empty
       let showraw = StringSet.empty
@@ -83,6 +84,7 @@ module Make (C: Config) = struct
           let check_through _ = assert false
           let pp_failure _ _ msg _ =
             if C.debug then eprintf "%s\n" msg
+          let pp _ _ _ _ = ()
           let fromto _ _ = assert false
         end) in
 

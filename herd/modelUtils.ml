@@ -99,12 +99,13 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
 (***************************)
   open Model
 
+  let pp test conc legend vb_pp =
+    let module PP = Pretty.Make(S) in
+    Printf.eprintf "%s\n%!" legend ;
+    PP.show_legend test  legend conc vb_pp
+
   let pp_failure test conc legend vb_pp =
-    if O.debug then begin
-      let module PP = Pretty.Make(S) in
-      Printf.eprintf "%s\n%!" legend ;
-      PP.show_legend test  legend conc vb_pp
-    end
+    if O.debug then pp test conc legend vb_pp
 
 (* Through *)
   let check_through =

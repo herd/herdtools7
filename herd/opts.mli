@@ -44,6 +44,7 @@ val through : Model.through ref
 val throughflag : string option ref
 val skipchecks : StringSet.t ref
 val strictskip : bool ref
+val cycles : StringSet.t ref
 val show : PrettyConf.show ref
 val nshow :int option ref
 val auto : bool ref

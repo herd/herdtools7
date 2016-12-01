@@ -22,6 +22,7 @@ module type Config = sig
   val through : Model.through
   val skipchecks : StringSet.t
   val strictskip : bool
+  val cycles : StringSet.t
   val bell_model_info : (string * BellModel.info) option
   val macros : string option
   val check_name : string -> bool
@@ -125,6 +126,7 @@ module Top (Conf:Config) = struct
         let verbose = Conf.verbose
         let skipchecks = Conf.skipchecks
         let strictskip = Conf.strictskip
+        let cycles = Conf.cycles
         let optace = Conf.optace
         let libfind = Conf.libfind
       end in

@@ -24,11 +24,18 @@ module Make : functor (O:Model.Config) -> functor (S:SemExtra.S) -> sig
   val make_procrels : (S.event -> bool) -> S.concrete -> S.procrels
   val pp_procrels : string option -> S.procrels -> S.rel_pp
 
+
+(***************************)
+(* Draw execution diagrams *)
+(***************************)
+
+  val pp : S.test -> S.concrete -> string -> S.rel_pp -> unit
+  val pp_failure : S.test -> S.concrete -> string -> S.rel_pp -> unit
+
+
 (*************************)
 (* Some checks factorized *)
 (*************************)
-
-  val pp_failure : S.test -> S.concrete -> string -> S.rel_pp -> unit
 
   val check_through : bool -> bool
 

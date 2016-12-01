@@ -29,6 +29,7 @@ module type Config = sig
   val verbose : int
   val skipchecks : StringSet.t
   val strictskip : bool
+  val cycles : StringSet.t
 (* Show control *)
   val doshow : StringSet.t
   val showraw : StringSet.t
@@ -74,6 +75,7 @@ module Make
       val loc2events : string -> S.event_set -> S.event_set
       val check_through : bool -> bool
       val pp_failure : S.test -> S.concrete -> string -> S.rel_pp -> unit
+      val pp : S.test -> S.concrete -> string -> S.rel_pp -> unit
       val fromto :
           S.event_rel -> (* po *)
             S.event_set (* labelled fence(s) *) ->
@@ -141,6 +143,10 @@ module Make
 
     let skip_this_check name = match name with
     | Some name -> StringSet.mem name O.skipchecks
+    | None -> false
+
+    let cycle_this_check name = match name with
+    | Some name -> StringSet.mem name O.cycles
     | None -> false
 
     let check_through test_type ok = match test_type with
@@ -1717,13 +1723,36 @@ module Make
           let pp = match pos with
           | Pos _ -> "???"
           | Txt txt -> txt in
-          let v = eval_rel (from_st st) e in
+          let v = eval_rel (from_st st) e in          
           let cy = E.EventRel.get_cycle v in
           U.pp_failure test st.ks.conc
             (sprintf "Failure of '%s'" pp)
             (let k = show_to_vbpp st in
             ("CY",E.EventRel.cycle_option_to_rel cy)::k)
-        end in
+        end
+
+      and show_cycle st (_loc,pos,tst,e,_) =
+        let pp = match pos with
+          | Pos _ -> "???"
+          | Txt txt -> txt in
+          let v = eval_rel (from_st st) e in
+          let tst = match tst with Yes tst|No tst -> tst in
+          let v = match tst with
+          | Acyclic -> v
+          | Irreflexive | TestEmpty -> E.EventRel.remove_transitive_edges v in
+
+          let tag,cy = match tst with
+          | Acyclic |Irreflexive -> "CY",E.EventRel.cycle_option_to_rel (E.EventRel.get_cycle v)
+          | TestEmpty -> "NE",v in
+          U.pp test st.ks.conc
+            (sprintf "%s for '%s'"
+               (match tst with
+               | Acyclic | Irreflexive -> "Cycle"
+               | TestEmpty -> "Relation")
+               pp)            
+            (let k = show_to_vbpp st in
+            (tag,cy)::k) in
+
 (* Execute one instruction *)
 
       let eval_st st e = eval (from_st st) e in
@@ -2005,8 +2034,7 @@ module Make
                   (st -> 'a -> 'a) -> 'a -> 'a =
                     fun st (loc,_,t,e,name as tst) test_type kfail kont res ->
                       let skip = skip_this_check name in
-                      if O.debug &&  skip then
-                        warn loc "skipping check: %s" (Misc.as_some name) ;
+                      if O.debug &&  skip then warn loc "skipping check: %s" (Misc.as_some name) ;
                       if
                         O.strictskip || not skip
                       then
@@ -2027,22 +2055,24 @@ module Make
                                      Flag.Set.add (Flag.Flag name) st.flags;}
                                     res
                               end
-                        else if skip then begin
-                          assert O.strictskip ;
-                          kont
-                            { st with
-                              skipped = StringSet.add (Misc.as_some name) st.skipped;}
-                            res
-                        end else begin
-                          match test_type with
-                          | Check ->
-                              if O.debug then pp_check_failure st tst ;
-                              kfail res
-                          | UndefinedUnless ->
-                              kont {st with flags=Flag.Set.add Flag.Undef st.flags;} res
-                          | Flagged -> kont st res
-                        end
-                      else begin
+                        else begin
+                          if cycle_this_check name then show_cycle st tst ;
+                          if skip then begin
+                            assert O.strictskip ;
+                            kont
+                              { st with
+                                skipped = StringSet.add (Misc.as_some name) st.skipped;}
+                              res
+                          end else begin
+                            match test_type with
+                            | Check ->
+                                if O.debug then pp_check_failure st tst ;
+                                kfail res
+                            | UndefinedUnless ->
+                                kont {st with flags=Flag.Set.add Flag.Undef st.flags;} res
+                            | Flagged -> kont st res
+                          end
+                      end else begin
                         W.warn "Skipping check %s" (Misc.as_some name) ;
                         kont st res
                       end
