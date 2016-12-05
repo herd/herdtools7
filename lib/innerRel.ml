@@ -267,10 +267,16 @@ struct
 (* Acyclicity check *)
   exception Cycle of (Elts.elt list)
 
+  let rec mk_cycle f = function
+    | [] -> assert false
+    | e::rem ->
+        if O.compare f e = 0 then [e]
+        else e::mk_cycle f rem
+
   let get_cycle m =
     let rec dfs path above e seen =
       if Elts.mem e above then 
-        raise (Cycle (e::path)) ;
+        raise (Cycle (e::mk_cycle e path)) ;
       if Elts.mem e seen then
 	seen
       else

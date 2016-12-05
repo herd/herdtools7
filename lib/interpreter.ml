@@ -1742,7 +1742,16 @@ module Make
           | Irreflexive | TestEmpty -> E.EventRel.remove_transitive_edges v in
 
           let tag,cy = match tst with
-          | Acyclic |Irreflexive -> "CY",E.EventRel.cycle_option_to_rel (E.EventRel.get_cycle v)
+          | Acyclic |Irreflexive ->
+              let cy = E.EventRel.get_cycle v in
+              if O.verbose > 0 then begin match cy with
+              | Some xs ->
+                  eprintf "Cycle: %s\n"
+                    (String.concat " " (List.map E.pp_eiid xs))
+              | None -> ()
+              end ;
+
+              "CY",E.EventRel.cycle_option_to_rel cy
           | TestEmpty -> "NE",v in
           U.pp test st.ks.conc
             (sprintf "%s for '%s'"
