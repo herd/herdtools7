@@ -268,7 +268,7 @@ module Make(C:Config) = struct
 		   src.condition) in
     let locations =
       List.map (fun (loc,ty) -> conv_loc map loc,ty) src.locations in
-    { info = ("Mapping",dump_map map)::src.info;
+    { info = (OutMapping.key,dump_map map)::src.info;
       init = init;
       prog = prog;
       filter = begin match src.filter with

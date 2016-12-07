@@ -58,6 +58,17 @@ let dump chan = ConstrGen.dump_constraints chan pp_atom
 let dump_prop_tr hexa chan = ConstrGen.dump_prop (pp_atom_tr hexa) chan
 let dump_tr hexa chan = ConstrGen.dump_constraints chan (pp_atom_tr hexa)
 
+let pp_atom_map tr a =match a with
+  | LV (l,v) ->
+       sprintf "%s=%s"
+        (tr (MiscParser.dump_location l))
+        (SymbConstant.pp_v v)
+  | LL (l1,l2) ->
+      sprintf "%s=%s"
+        (tr (MiscParser.dump_location l1))
+        (tr (MiscParser.dump_location l2))
+
+let dump_map chan tr = ConstrGen.dump_constraints chan (pp_atom_map tr)
 
 let get_locs_atom a =
   match a with

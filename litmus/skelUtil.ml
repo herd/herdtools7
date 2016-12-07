@@ -153,12 +153,7 @@ module Make
           env
 
 (* Format stuff *)
-      let tr_out test =
-        try
-          let map = List.assoc "Mapping" test.T.info in
-          let map = try LexOutMapping.parse map with _ -> assert false in
-          fun s -> StringMap.safe_find s s map
-        with Not_found -> Misc.identity
+      let tr_out test = OutMapping.info_to_tr test.T.info
 
       let pp_loc tr_out loc =  match loc with
       | A.Location_reg (proc,reg) ->

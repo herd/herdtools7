@@ -36,19 +36,26 @@ module Make(Config:Config)(Out:OutTests.S) =
     module LU = LexUtils.Make(D)
     module S = Splitter.Make(D)
 
-    let dump_outcomes chan c =
+    let mk_dump_loc map = match map with
+    | None -> MiscParser.dump_location
+    | Some m ->
+        fun loc ->
+          let pp = MiscParser.dump_location loc in
+          StringMap.safe_find pp pp m
+
+    let dump_outcomes chan dump_loc c =
       CondUtils.fold_outcomes c
         (fun bds () ->
           Out.fprintf chan "  " ;
           List.iter
             (fun (loc,v) ->
               Out.fprintf chan "%s=%s;"
-                (MiscParser.dump_location loc)
+                (dump_loc loc)
                 (SymbConstant.pp Config.hexa v))
             bds ;
           Out.fprintf chan "\n") ()
 
-    let dump_observed chan c =
+    let dump_observed chan dump_loc c =
       Out.fprintf chan "Observed\n" ;
       let _ =
         CondUtils.fold_outcomes c
@@ -58,21 +65,24 @@ module Make(Config:Config)(Out:OutTests.S) =
               List.map
                 (fun (loc,v) ->
                   sprintf "%s=%s;"
-                    (MiscParser.dump_location loc)
+                    (dump_loc loc)
                     (SymbConstant.pp Config.hexa v)) bds in
             Out.fprintf chan "%s\n" (String.concat " " pp) ;
             "and ")
           "    " in
       ()
 
-    let dump_locs out locs = match locs with
+    let dump_locs out dump_loc locs = match locs with
     | [] -> ()
     | _::_ ->
         Out.fprintf out "%s\n"
-          (DumpUtils.dump_locations MiscParser.dump_location locs)
+          (DumpUtils.dump_locations dump_loc locs)
 
-    let reparse =
-      if Config.outcomes || Config.asobserved || Config.toexists then
+    let reparse map =
+      if
+        Config.outcomes || Config.asobserved ||
+        Config.toexists || (match map with Some _ -> true | None -> false)
+      then
         fun mk x -> LogConstr.parse_locs_cond (mk x)
       else
         fun _ _ -> None
@@ -87,9 +97,17 @@ module Make(Config:Config)(Out:OutTests.S) =
 
     let from_chan idx_out fname in_chan =    
       try
-        let { Splitter.locs = locs; start = start; name=name; _} =
+        let { Splitter.locs = locs; start = start; name=name; info; _} =
           S.split fname in_chan in
         if Config.check_name name.Name.name then begin
+          let map =
+            try
+              let map = List.assoc OutMapping.key info in
+              let map =
+                try LexOutMapping.parse map with _ -> assert false in
+              let map = OutMapping.inverse map in
+              Some map
+            with Not_found -> None in
           let base = Filename.basename fname in
           let out = Out.open_file base in
           Misc.output_protect_close Out.close       
@@ -100,45 +118,63 @@ module Make(Config:Config)(Out:OutTests.S) =
                 Echo.echo_fun lexbuf (Out.put_char out)  in
               echo (start,constr_start) ;
 
-              let echocond =  not (Config.asobserved || Config.toexists) in
+              let echocond =
+                not
+                  (Config.asobserved || Config.toexists || Misc.is_some map) in
               let cond_checked =  Config.check_cond name.Name.name in
               let echo_cond c = match c with
-              | Some f -> Out.fprintf out "%s\n" f 
+              | Some f ->  Out.fprintf out "%s\n" f 
               | None -> echo (constr_start,constr_end) in
 
               let cond =
                 begin match cond_checked with
                 | Some f ->
                     if echocond then echo_cond cond_checked ;
-                    reparse Lexing.from_string f
+                    reparse map Lexing.from_string f
                 | None ->
                     if echocond then echo_cond None ;
                     let sec = constr_start,constr_end in
-                    reparse (LU.from_section sec) in_chan
+                    reparse None (LU.from_section sec) in_chan
                 end in
               if Config.asobserved then begin match cond with
               | Some (locs,cond) ->
-                  dump_locs out locs ;
-                  dump_observed out cond
+                  dump_locs out (mk_dump_loc map) locs ;
+                  dump_observed out (mk_dump_loc map) cond
               | None -> assert false
               end else if Config.toexists then begin match cond with
               | Some (locs,cond) ->
-                  begin match cond with
-                  | ConstrGen.ExistsState _ ->
+                  begin match cond,map with
+                  | ConstrGen.ExistsState _,None ->
                       echo_cond cond_checked
                   | _ ->
-                      dump_locs out locs ;
-                      LogConstr.dump (Out.chan out) (toexists cond) ;
+                      dump_locs out (mk_dump_loc map) locs ;
+                      LogConstr.dump_map
+                        (Out.chan out)
+                        (match map with
+                        | None -> Misc.identity
+                        | Some m -> fun loc -> StringMap.safe_find loc loc m)
+                        (toexists cond) ;
                       Out.fprintf out "\n"
                   end
               | None -> assert false
+              end else begin match cond with
+              | Some (locs,cond) ->
+                  dump_locs out (mk_dump_loc map) locs ;
+                  LogConstr.dump_map
+                        (Out.chan out)
+                        (match map with
+                        | None -> Misc.identity
+                        | Some m -> fun loc -> StringMap.safe_find loc loc m)
+                        cond ;
+                      Out.fprintf out "\n"
+              | None -> ()
               end ;
               echo (last_start,loc_eof) ;
               if Config.outcomes then begin match cond with
               | None -> ()
               | Some (_,c) ->
                   Out.fprintf out "(* Outcomes: \n" ;
-                  dump_outcomes out c ;
+                  dump_outcomes out (mk_dump_loc map) c ;
                   Out.fprintf out "*)\n"
               end ;
               ())

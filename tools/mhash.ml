@@ -55,12 +55,7 @@ module Top
       let zyva name parsed =
 	let tname = name.Name.name in
 	let hash = MiscParser.get_hash parsed in
-        let map =
-          try
-            let map =  List.assoc "Mapping" parsed.MiscParser.info in
-            let map = try LexOutMapping.parse map with _ -> assert false in
-            fun s -> StringMap.safe_find s s map
-          with Not_found -> Misc.identity in
+        let map = OutMapping.info_to_tr parsed.MiscParser.info in
 	if Opt.verbose > 1
 	then
           eprintf "%s %s\n"

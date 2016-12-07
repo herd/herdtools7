@@ -53,12 +53,7 @@ module Make(O:Config)(M:XXXMem.S) =
     | No|NonAmbiguous|CondOne -> false
 
 (* Location out printing *)
-    let tr_out test =
-      try
-        let map = List.assoc "Mapping" test.Test_herd.info in
-        let map = try LexOutMapping.parse map with _ -> assert false in
-        fun s -> StringMap.safe_find s s map
-      with Not_found -> Misc.identity
+    let tr_out test = OutMapping.info_to_tr  test.Test_herd.info
 
 (* Cond checking *)
     let check_filter test st = match test.Test_herd.filter with

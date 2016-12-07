@@ -50,6 +50,7 @@ val string_eq : string -> string -> bool
 external identity : 'a -> 'a = "%identity"
 
 val is_none : 'a option -> bool
+val is_some : 'a option -> bool
 val as_some : 'a option -> 'a
 val proj_opt : 'a -> 'a option -> 'a
 val app_opt : ('a -> 'b) -> 'a option -> 'b option
