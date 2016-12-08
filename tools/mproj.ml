@@ -64,6 +64,13 @@ struct
     | ExistsState p -> ExistsState (proj_p locs p)
     | NotExistsState p -> NotExistsState (proj_p locs p)
 
+  module Dump =
+    LogConstr.Dump
+      (struct
+        let hexa = false
+        let tr = Misc.identity
+      end)
+
   let from_chan chan fname in_chan =    
     try
       let { Splitter.locs = locs;  name=name; _} =
@@ -80,7 +87,7 @@ struct
               assert (ls0=[]) ;
               let c = proj ls c0 in
               fprintf chan "%s \"" tname ;
-              LogConstr.dump chan c ;
+              Dump.dump chan c ;
               fprintf chan "\"\n" ;
               ()
     with LexMisc.Error (msg,pos) ->

@@ -96,6 +96,12 @@ let readlog log = match log with
 | "stdin" -> LL.read_chan log stdin
 | _       -> LL.read_name log
 
+module D =
+  LogConstr.Dump
+    (struct
+      let hexa = hexa
+      let tr = Misc.identity
+    end)
 let zyva log1 log2  =
 
   let test1 = readlog log1 in
@@ -111,11 +117,12 @@ let zyva log1 log2  =
   | None -> ()
   | Some h -> fprintf chan "Hash=%s\n" h in
 
+  
   let dump_condition chan v c = match c,v with
   | Some c,(Ok|No) ->
       fprintf chan
         "Condition %a is%s validated\n"
-        LogConstr.dump c
+        D.dump c
         (if v = Ok then "" else " not")
   | _,_ -> () in
 
@@ -123,7 +130,7 @@ let zyva log1 log2  =
   | Some c ->
       fprintf chan
         "Condition (%a)\n"
-        LogConstr.dump_prop (ConstrGen.prop_of c)
+        D.dump_prop (ConstrGen.prop_of c)
   | None -> () in
 
   let dump_test chan t =

@@ -34,41 +34,28 @@ let parse s =
   | Parsing.Parse_error
   | LexMisc.Error _ -> None
 
-let pp_atom a = match a with
-  | LV (l,v) -> MiscParser.pp_atom (l,v)
-  | LL (l1,l2) ->
-      sprintf "%s=%s"
-        (MiscParser.dump_location l1)
-        (MiscParser.dump_location l2)
+module type DumpConfig = sig
+  val hexa : bool
+  val tr : string -> string
+end
 
-let pp_atom_tr hexa a =match a with
+module Dump(O:DumpConfig) = struct
+
+  let pp_loc loc =
+    let s = MiscParser.dump_location loc in
+    O.tr s
+
+  let pp_atom a = match a with
   | LV (l,v) ->
-       sprintf "%s=%s"
-        (MiscParser.dump_location l)
-        (SymbConstant.pp hexa v)
+      sprintf "%s=%s" (pp_loc l) (SymbConstant.pp O.hexa v)
   | LL (l1,l2) ->
-      sprintf "%s=%s"
-        (MiscParser.dump_location l1)
-        (MiscParser.dump_location l2)
+      sprintf "%s=%s" (pp_loc l1) (pp_loc l2)
 
+  let dump_prop chan = ConstrGen.dump_prop pp_atom chan
+  let dump chan = ConstrGen.dump_constraints chan pp_atom
 
-let dump_prop chan = ConstrGen.dump_prop pp_atom chan
-let dump chan = ConstrGen.dump_constraints chan pp_atom
+end
 
-let dump_prop_tr hexa chan = ConstrGen.dump_prop (pp_atom_tr hexa) chan
-let dump_tr hexa chan = ConstrGen.dump_constraints chan (pp_atom_tr hexa)
-
-let pp_atom_map tr a =match a with
-  | LV (l,v) ->
-       sprintf "%s=%s"
-        (tr (MiscParser.dump_location l))
-        (SymbConstant.pp_v v)
-  | LL (l1,l2) ->
-      sprintf "%s=%s"
-        (tr (MiscParser.dump_location l1))
-        (tr (MiscParser.dump_location l2))
-
-let dump_map chan tr = ConstrGen.dump_constraints chan (pp_atom_map tr)
 
 let get_locs_atom a =
   match a with

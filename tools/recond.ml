@@ -141,32 +141,32 @@ module Make(Config:Config)(Out:OutTests.S) =
                   dump_locs out (mk_dump_loc map) locs ;
                   dump_observed out (mk_dump_loc map) cond
               | None -> assert false
-              end else if Config.toexists then begin match cond with
-              | Some (locs,cond) ->
-                  begin match cond,map with
-                  | ConstrGen.ExistsState _,None ->
-                      echo_cond cond_checked
-                  | _ ->
-                      dump_locs out (mk_dump_loc map) locs ;
-                      LogConstr.dump_map
-                        (Out.chan out)
-                        (match map with
-                        | None -> Misc.identity
-                        | Some m -> fun loc -> StringMap.safe_find loc loc m)
-                        (toexists cond) ;
-                      Out.fprintf out "\n"
+              end else
+                let module D =
+                  LogConstr.Dump
+                    (struct
+                      let hexa = Config.hexa
+                      let tr = match map with
+                      | None -> Misc.identity
+                      | Some m ->
+                          fun loc -> StringMap.safe_find loc loc m
+                    end) in
+                if Config.toexists then begin match cond with
+                | Some (locs,cond) ->
+                    begin match cond,map with
+                    | ConstrGen.ExistsState _,None ->
+                        echo_cond cond_checked
+                    | _ ->
+                        dump_locs out (mk_dump_loc map) locs ;
+                        D.dump (Out.chan out) (toexists cond) ;
+                        Out.fprintf out "\n"
                   end
-              | None -> assert false
+                | None -> assert false
               end else begin match cond with
               | Some (locs,cond) ->
                   dump_locs out (mk_dump_loc map) locs ;
-                  LogConstr.dump_map
-                        (Out.chan out)
-                        (match map with
-                        | None -> Misc.identity
-                        | Some m -> fun loc -> StringMap.safe_find loc loc m)
-                        cond ;
-                      Out.fprintf out "\n"
+                  D.dump (Out.chan out) cond ;
+                  Out.fprintf out "\n"
               | None -> ()
               end ;
               echo (last_start,loc_eof) ;

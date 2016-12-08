@@ -114,6 +114,12 @@ module LL =
       let hexa = hexa
     end)
 
+module D =
+  LogConstr.Dump
+    (struct
+      let hexa = hexa
+      let tr = Misc.identity
+    end)
 
 let zyva fnames  =
   let tests = LL.read_names fnames in
@@ -129,7 +135,7 @@ let zyva fnames  =
   | Some c,(Ok|No) ->
       fprintf chan
         "Condition %a is%s validated\n"
-        (LogConstr.dump_tr hexa) c
+        D.dump c
         (if v = Ok then "" else " not")
   | _,_ -> () in
 
@@ -137,7 +143,7 @@ let zyva fnames  =
   | Some c ->
       fprintf chan
         "Condition (%a)\n"
-        (LogConstr.dump_prop_tr hexa) (ConstrGen.prop_of c)
+        D.dump_prop (ConstrGen.prop_of c)
   | None -> () in
 
   let dump_test chan t =

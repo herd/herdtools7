@@ -931,6 +931,13 @@ let format_int_string s =
 
   type xyz = X | Y | Z
 
+  module Dump =
+    LogConstr.Dump
+      (struct
+        let hexa = hexa
+        let tr = Misc.identity
+      end)
+
   let show_XYZ xyz =
     let asY = match xyz with Y -> true | X|Z -> false in
     let asZ = match xyz with Z -> true | X|Y -> false in
@@ -950,7 +957,7 @@ let format_int_string s =
                   | None -> eprintf "No cond for %s\n" t.tname
                   | Some c ->
                       eprintf "Cond for %s: <%a>[kind=%s]\n"
-                        t.tname LogConstr.dump c (LS.pp_kind k)
+                        t.tname Dump.dump c (LS.pp_kind k)
                   end ;
                 let v = LS.revalidate cond t.states in
                 let v_pp =
