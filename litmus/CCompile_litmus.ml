@@ -147,7 +147,7 @@ module Make
       in
       List.fold_left f []
 
-    let compile t =
+    let compile _name t =
       let
         { MiscParser.init = init ;
           info = info;

@@ -254,7 +254,7 @@ end = struct
             let hash_env = StringMap.add tname hash hash_env in
             let parsed = change_hint hint doc.Name.name parsed in
             let allocated = allocate parsed in
-            let compiled = compile allocated in
+            let compiled = compile doc allocated in
             let source = MyName.outname name ".c" in
             dump source doc compiled;
             if not OT.is_out then begin

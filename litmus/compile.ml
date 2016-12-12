@@ -414,7 +414,7 @@ module Make
 
     let compile_final proc observed = RegSet.elements observed
 
-    let mk_templates init code observed =
+    let mk_templates name init code observed =
       let outs =
         List.map
           (fun (proc,code) ->
@@ -437,7 +437,7 @@ module Make
             addrs = StringSet.elements addrs ;
             stable = A.RegSet.elements stable;
             final = compile_final proc observed_proc;
-            code = code; })
+            code = code; name=name;})
         pecs
 
     let _pp_env env =
@@ -508,7 +508,7 @@ module Make
   let pp = List.map pp_out outs in
   String.concat " " pp
  *)
-    let compile t =
+    let compile name t =
       let
           { MiscParser.init = init ;
             info = info;
@@ -519,7 +519,7 @@ module Make
       let initenv = List.map (fun (loc,(_,v)) -> loc,v) init in
       let observed = Generic.observed final locs in
       let ty_env = Generic.build_type_env init final locs in
-      let code = mk_templates initenv code observed in
+      let code = mk_templates name initenv code observed in
       let code_typed = type_outs ty_env code in
       { T.init = initenv ;
         info = info;

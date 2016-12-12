@@ -266,7 +266,7 @@ module Make
               (compile_out_reg proc reg) (dump_stable_reg reg))
           (RegSet.inter stable finals)
 
-      let get_reg_env ts =
+      let get_reg_env name ts =
         let m =
           List.fold_left
             (fun m t ->
@@ -275,8 +275,8 @@ module Make
                   let t0 = MapReg.safe_find t r m in
                   if (t <> t0) then begin
                     Warn.warn_always
-                      "Register %s has different types: <%s> and <%s>"
-                      (A.reg_to_string r) (CType.dump t0) (CType.dump t)
+                      "File \"%s\" Register %s has different types: <%s> and <%s>"
+                      name.Name.file (A.reg_to_string r) (CType.dump t0) (CType.dump t)
                   end ;
                   MapReg.add r t m)
                 m  t.Tmpl.reg_env)
@@ -286,7 +286,7 @@ module Make
       let before_dump compile_out_reg compile_val compile_cpy
           chan indent env proc t trashed =
 
-        let reg_env = get_reg_env t.Tmpl.code in
+        let reg_env = get_reg_env t.Tmpl.name t.Tmpl.code in
         RegSet.iter
           (fun reg ->
             let ty = match A.internal_init reg with

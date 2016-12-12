@@ -54,6 +54,7 @@ module type S = sig
       stable : arch_reg list; (* stable registers, ie must be self-allocated by gcc *)
       final : arch_reg list ;
       code : ins list;
+      name : Name.t ;
     }
   val get_addrs : t -> string list
   val fmt_reg : arch_reg -> string
@@ -101,6 +102,7 @@ struct
       stable : arch_reg list;
       final : arch_reg list ;
       code : ins list;
+      name : Name.t ;
     }
 
 
