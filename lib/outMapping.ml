@@ -29,3 +29,21 @@ let inverse m =
       assert (not (StringMap.mem v r)) ;
       StringMap.add v k r)
     m StringMap.empty
+
+let toloc s =
+  let i =
+    try String.index s ':' with Not_found -> assert false in
+  let proc =
+    try int_of_string (String.sub s 0 i) with Failure _ -> assert false in
+  let reg = String.sub s (i+1) (String.length s-i-1) in
+  MiscParser.Location_reg (proc,reg)
+
+
+let locmap_inverse m =
+  StringMap.fold
+    (fun k v r ->
+      let k = toloc k
+      and v = toloc v in
+      assert (not (MiscParser.LocMap.mem v r)) ;
+      MiscParser.LocMap.add v k r)
+    m MiscParser.LocMap.empty

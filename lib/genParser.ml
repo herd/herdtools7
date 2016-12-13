@@ -229,7 +229,27 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
         match O.check_cond name  with
         | None -> parsed
         | Some k ->
-            let cond = parse_cond (Lexing.from_string k) in
+            let cond =
+              let cond = parse_cond (Lexing.from_string k) in
+              try (* Apply mapping as condition may be expressed with external
+                     registers *)
+                let map = List.assoc OutMapping.key info in
+                let map = try LexOutMapping.parse map with _ -> assert false in
+                let map = OutMapping.locmap_inverse map in
+                MiscParser.LocMap.iter
+                  (fun k v ->
+                    Printf.eprintf "Loc %s -> %s\n"
+                      (MiscParser.dump_location k)
+                      (MiscParser.dump_location v))
+                      map ;
+                let map_loc loc = MiscParser.LocMap.safe_find loc loc map in
+                let open ConstrGen in
+                let map_atom = function
+                  | LV (loc,v) -> LV (map_loc loc,v)
+                  | LL (loc1,loc2) ->  LL (map_loc loc1,map_loc loc2) in
+                prerr_endline "Bingo" ;
+                ConstrGen.map_constr map_atom cond
+              with Not_found -> cond in
             { parsed with
               MiscParser.condition = cond ;} in
       let parsed =

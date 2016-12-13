@@ -22,3 +22,7 @@ val info_to_tr : (string * string) list -> (string -> string)
 
 (* Inverse explicit map *)
 val inverse : string StringMap.t -> string StringMap.t
+
+(* Build location map *)
+val locmap_inverse :
+    string StringMap.t -> MiscParser.location MiscParser.LocMap.t

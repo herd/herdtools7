@@ -79,6 +79,10 @@ module LocSet =
   MySet.Make
     (struct type t = location let compare = location_compare end)
 
+module LocMap =
+  MyMap.Make
+    (struct type t = location let compare = location_compare end)
+
 type prop = (location, maybev) ConstrGen.prop
 type constr = prop ConstrGen.constr
 type quantifier = ConstrGen.kind
