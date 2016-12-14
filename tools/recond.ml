@@ -132,7 +132,10 @@ module Make(Config:Config)(Out:OutTests.S) =
                     if echocond then echo_cond cond_checked ;
                     reparse map Lexing.from_string f
                 | None ->
-                    if echocond then echo_cond None ;
+                    if
+                      not
+                        (Config.asobserved || Config.toexists) then
+                      echo_cond None ;
                     let sec = constr_start,constr_end in
                     reparse None (LU.from_section sec) in_chan
                 end in
