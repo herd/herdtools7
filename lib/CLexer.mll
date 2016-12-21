@@ -124,6 +124,7 @@ rule token deep = parse
 
 | "constvar:" (name as s) { CONSTVAR s }
 | "codevar:" (name as s) { CODEVAR s }
+| '%' name as s { IDENTIFIER s }
 | name as x   { tr_name x  }
 | eof { EOF }
 | "" { LexMisc.error "C lexer" lexbuf }

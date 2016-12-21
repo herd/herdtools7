@@ -14,7 +14,10 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 include Arch.MakeArch(struct
+  open Printf
   open CBase
+
+  let debug = false
 
   include Arch.MakeCommon(CBase)
 
@@ -31,13 +34,19 @@ include Arch.MakeArch(struct
 
   let rec match_location subs pat instr =  match_expr subs pat instr
        
-  and match_expr subs pat instr = match pat,instr with
+  and match_expr subs pat instr =
+    let r =  match pat,instr with
     | Const(Constant.Symbolic s),Const(Constant.Concrete c) ->
-     Some(add_subs [Cst(s, c)] subs)
+        Some(add_subs [Cst(s, c)] subs)
     | Const(Constant.Concrete s),Const(Constant.Concrete c) 
       when c=s ->
        Some subs
-    | LoadReg(l),LoadReg(l') when l=l' -> Some subs
+    | LoadReg(l),LoadReg(l') ->
+        (* Awful ack to encode address registers... *)
+        let to_add = match symb_reg_name l with
+        | None -> Reg (l,l')
+        | Some s -> Reg (s,l') in
+        Some (add_subs [to_add] subs)
     | LoadMem(l,mo),LoadMem(l',mo') when mo=mo' ->
        match_location subs l l'
     | Op(op,ex1,ex2),Op(op',ex1',ex2') when op=op' ->
@@ -56,9 +65,15 @@ include Arch.MakeArch(struct
        | None -> None
        | Some subs -> match_expr subs ex ex'
        end
-    | _ -> None
+    | _ -> None in
+    if debug then
+      eprintf "Match_expr pat=<%s> expr=<%s> -> %s\n"
+        (CBase.dump_expr pat) (CBase.dump_expr instr)
+        (match r with Some _ -> "ok" | None -> "no") ;
+    r
        
-  let rec match_instr subs pattern instr = match pattern,instr with
+  let rec match_instr subs pattern instr =
+    let r = match pattern,instr with
     | Fence b,Fence b' when b = b'->
        Some subs
     | Seq l, Seq l' -> 
@@ -81,12 +96,13 @@ include Arch.MakeArch(struct
 	    | Some e,Some e' -> match_instr subs e e'
 	    | _ -> None
     end
-    | StoreReg (r,ex),StoreReg(r',ex') when r=r' ->
-        match_expr subs ex ex'
+    | StoreReg (r,ex),StoreReg(r',ex') ->
+        match_expr (add_subs [Reg (sr_name r,r')] subs) ex ex'
     | StoreMem(l,ex,mo),StoreMem(l',ex',mo') when mo=mo' ->
-       begin match match_location subs l l' with
+        begin match match_location subs l l' with
        | None -> None
-       | Some subs -> match_expr subs ex ex'
+       | Some subs ->
+           match_expr subs ex ex'
        end
     | Lock (l,MutexC11),Lock (l',MutexC11) -> match_location subs l l'
     | Lock (l,MutexLinux),Lock (l',MutexLinux) -> match_location subs l l'
@@ -96,8 +112,13 @@ include Arch.MakeArch(struct
        Some(add_subs [Code(s,wrap_pseudo l)] subs)
     | Symb s,ins -> 
        Some(add_subs [Code(s,wrap_pseudo [ins])] subs)
-    | _ -> None
-
+    | _ -> None in
+    if debug then
+      eprintf "Match Instr <%s> <%s> -> %s\n"
+        (dump_instruction pattern)
+        (dump_instruction instr)
+        (match r with Some _ -> "ok" | None -> "no") ;
+    r
 
   let rec expl_instr subs free =
     let conv_reg = conv_reg subs free in

@@ -45,6 +45,8 @@ module type Common = sig
     | Addr of string * string
     | Code of string * pseudo list
 
+  val pp_subs :  substitution list -> string
+
   val add_subs : substitution list -> substitution list ->
                  substitution list
   val sr_name : reg -> string
@@ -79,6 +81,9 @@ module type S = sig
   end
 
 module MakeCommon(A:ArchBase.S) = struct
+
+  let debug = false
+
   include A
     
   exception Error of string
@@ -90,7 +95,16 @@ module MakeCommon(A:ArchBase.S) = struct
     | Addr of string * string
     | Code of string * pseudo list
 
-	
+
+  let pp_sub = function
+    | Reg (s,r) -> sprintf "Reg (%s,%s)" s (pp_reg r)
+    | Cst (s,i) -> sprintf "Cst (%s,%i)" s i
+    | Lab (l1,l2) -> sprintf "Lab (%s,%s)" l1 l2
+    | Addr (s,r) ->  sprintf "Addr (%s,%s)" s r
+    | Code (s,_) -> sprintf "Code (%s,...)" s
+
+  let pp_subs subs = String.concat ";" (List.map pp_sub subs)
+
   let rec add_subs s s' = match s with
     | [] -> s'
     | s::ss -> 
@@ -123,15 +137,19 @@ module MakeCommon(A:ArchBase.S) = struct
 	 env := (s,r)::!env;
 	 free := List.tl !free;
 	 r in
-    match symb_reg_name r with
+    let res = match symb_reg_name r with
     | Some s ->
-       let rec aux = function
-	 | [] -> get_register s
-	 | Reg(n,r)::_ when String.compare n s = 0 -> r
-	 | Addr(n,r)::_ when String.compare n s = 0 -> get_register r
-	 | _::subs -> aux subs
-       in aux subs
-    | None -> r
+        let rec aux = function
+	  | [] -> get_register s
+	  | Reg(n,r)::_ when String.compare n s = 0 -> r
+	  | Addr(n,r)::_ when String.compare n s = 0 -> get_register r
+	  | _::subs -> aux subs
+        in aux subs
+    | None -> r in
+    if debug then
+      eprintf "conv_reg subs=<%s> %s -> %s\n"
+        (pp_subs subs) (pp_reg r) (pp_reg res) ;
+    res
 
        
   let find_lab subs _ l =

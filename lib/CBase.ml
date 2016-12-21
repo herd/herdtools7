@@ -24,7 +24,12 @@ type reg = string
 let parse_reg s = Some s
 let pp_reg r = r
 let reg_compare = String.compare
-let symb_reg_name r = Some r
+let symb_reg_name r =
+  let len = String.length r in
+  assert (len > 0) ;
+  match r.[0] with
+  | '%' -> Some (String.sub r 1 (len-1))
+  | _ -> None
 
 (*
 let loc_compare l1 l2 = match l1,l2 with
