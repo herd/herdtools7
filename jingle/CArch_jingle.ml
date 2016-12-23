@@ -17,9 +17,10 @@ include Arch.MakeArch(struct
   open Printf
   open CBase
 
+  include Arch.MakeCommon(CBase)
+
   let debug = false
 
-  include Arch.MakeCommon(CBase)
 
   let rec wrap_pseudo = function 
     | [] -> []
@@ -65,13 +66,24 @@ include Arch.MakeArch(struct
        | None -> None
        | Some subs -> match_expr subs ex ex'
        end
+    | ECall (f,es),ECall (g,fs) when f=g ->
+        match_exprs subs es fs
     | _ -> None in
     if debug then
       eprintf "Match_expr pat=<%s> expr=<%s> -> %s\n"
         (CBase.dump_expr pat) (CBase.dump_expr instr)
         (match r with Some _ -> "ok" | None -> "no") ;
     r
-       
+
+  and match_exprs subs es fs = match es,fs with
+  | [],[] -> Some subs
+  | e::es,f::fs ->
+      begin match match_expr subs e f with
+      | None -> None
+      | Some subs -> match_exprs subs es fs
+      end
+  | ([],_::_) | (_::_,[]) -> None
+
   let rec match_instr subs pattern instr =
     let r = match pattern,instr with
     | Fence b,Fence b' when b = b'->
@@ -108,6 +120,8 @@ include Arch.MakeArch(struct
     | Lock (l,MutexLinux),Lock (l',MutexLinux) -> match_location subs l l'
     | Unlock (l,MutexC11),Unlock (l',MutexC11) -> match_location subs l l'
     | Unlock (l,MutexLinux),Unlock (l',MutexLinux) -> match_location subs l l'
+    | PCall (f,es),PCall (g,fs) when f = g ->
+        match_exprs subs es fs
     | Symb s,Seq l -> 
        Some(add_subs [Code(s,wrap_pseudo l)] subs)
     | Symb s,ins -> 
