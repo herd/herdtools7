@@ -20,7 +20,7 @@ module type I = sig
   module A : ArchBase.S
 
   type state
-  val dump_state :state -> string
+  val dump_state : state -> string
 
   type prop
   val dump_prop : prop -> string

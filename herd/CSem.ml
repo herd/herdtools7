@@ -183,8 +183,8 @@ module Make (Conf:Sem.Config)(V:Value.S)
             in
             let then_branch = build_semantics {ii' with A.inst = t} in
             M.choiceT ret then_branch (build_semantics_list [] ii)
-	      
-      | C.StoreReg(r,e) -> 
+      | C.DeclReg _ ->  M.unitT (ii.A.program_order_index, B.Next)	      
+      | C.StoreReg(_,r,e) -> 
           build_semantics_expr true e ii >>=
           fun v -> write_reg r v ii >>=
             fun _ ->  M.unitT (ii.A.program_order_index, B.Next)

@@ -116,10 +116,10 @@ shallow_main:
     { CAst.Test {CAst.proc = $1; params = $3; body = $5} :: $6 }
 
 declaration:
-| typ IDENTIFIER SEMI {}
+| typ IDENTIFIER SEMI { DeclReg ($1,$2) }
 
 initialisation:
-| typ IDENTIFIER EQ expr { StoreReg ($2,$4) ; }
+| typ IDENTIFIER EQ expr { StoreReg (Some $1,$2,$4) ; }
 
 annot:
 | IDENTIFIER { $1 }
@@ -190,7 +190,7 @@ instruction:
 | initialisation SEMI
   { $1 }
 | IDENTIFIER EQ expr SEMI
-  { StoreReg($1,$3) }
+  { StoreReg(None,$1,$3) }
 | STAR location EQ expr SEMI
   { StoreMem($2,$4,AN []) }
 | STORE LBRACE annot_list RBRACE LPAR expr COMMA expr RPAR SEMI
@@ -220,8 +220,8 @@ instruction:
 ins_seq:
 | block_ins { [$1] }
 | block_ins ins_seq { $1::$2 }
-| declaration { [] }
-| declaration ins_seq { $2 }
+| declaration { [$1] }
+| declaration ins_seq { $1::$2 }
 
 block_ins:
 | instruction { $1 }

@@ -66,7 +66,8 @@ type instruction =
   | Fence of barrier
   | Seq of instruction list
   | If of expression * instruction * instruction option
-  | StoreReg of reg * expression
+  | DeclReg of CType.t * reg
+  | StoreReg of CType.t option * reg * expression
   | StoreMem of expression * expression * MemOrderOrAnnot.t
   | Lock of expression * mutex_kind
   | Unlock of expression * mutex_kind
@@ -145,8 +146,12 @@ let rec dump_instruction =
        | None -> ""
        | Some e -> dump_instruction e
      in "if("^dump_expr c^") "^(dump_instruction t)^"else "^els
-  | StoreReg(r,e) -> 
-     sprintf "%s = %s;" r (dump_expr e)
+  | StoreReg(None,r,e) -> 
+     sprintf "None %s = %s;" r (dump_expr e)
+  | StoreReg(Some t,r,e) -> 
+     sprintf "%s %s = %s;" (CType.dump t) r (dump_expr e)
+  | DeclReg(t,r) -> 
+     sprintf "%s %s;" (CType.dump t) r
   | StoreMem(LoadReg r,e,AN []) -> 
      sprintf "*%s = %s;" r (dump_expr e)
   | StoreMem(l,e,AN a) ->
@@ -204,17 +209,18 @@ include Pseudo.Make
                mo1,mo2,strong)
 
       and parsed_tr = function
-	| Fence _ as f -> f
+	| Fence _|DeclReg _ as i -> i
 	| Seq(li) -> Seq(List.map parsed_tr li)
 	| If(e,it,ie) -> 
 	    let tr_ie = match ie with
 	    | None -> None
 	    | Some ie -> Some(parsed_tr ie) in
 	    If(parsed_expr_tr e,parsed_tr it,tr_ie)
-	| StoreReg(l,e) -> StoreReg(l,parsed_expr_tr e)
+	| StoreReg(ot,l,e) -> StoreReg(ot,l,parsed_expr_tr e)
 	| StoreMem(l,e,mo) ->
             StoreMem(parsed_expr_tr l,parsed_expr_tr e,mo)
-	| Lock _ | Unlock _ as i -> i
+	| Lock (e,k) -> Lock (parsed_expr_tr e,k)
+        | Unlock (e,k) -> Unlock  (parsed_expr_tr e,k)
 	| Symb _ -> Warn.fatal "No term variable allowed"
         | PCall (f,es) -> PCall (f,List.map parsed_expr_tr es)
 
@@ -234,12 +240,12 @@ include Pseudo.Make
               get_exp k e3 in
         
         let rec get_rec k = function
-          | Fence _|Symb _-> k
+          | Fence _|Symb _ | DeclReg _ -> k
           | Seq seq -> List.fold_left get_rec k seq
           | If (cond,ifso,ifno) ->
               let k = get_exp k cond in
               get_opt (get_rec k ifso) ifno
-          | StoreReg (_,e) -> get_exp k e
+          | StoreReg (_,_,e) -> get_exp k e
           | StoreMem (loc,e,_) -> get_exp (get_exp k loc) e
           | Lock (e,_)|Unlock (e,_) -> get_exp (k+1) e
           | PCall (_,es) ->  List.fold_left get_exp k es
@@ -311,23 +317,23 @@ let rec subst_expr env e = match e with
     ECas (e1,e2,e3,mo1,mo2,strong)
     
 let rec subst env i = match i with
-| Fence _|Symb _ -> i
+| Fence _|Symb _|DeclReg _ -> i
 | Seq is -> Seq (List.map (subst env) is)
 | If (c,ifso,None) ->
     If (subst_expr env c,subst env ifso,None)
 | If (c,ifso,Some ifno) ->
     If (subst_expr env c,subst env ifso,Some (subst env ifno))
-| StoreReg (r,e) ->
+| StoreReg (ot,r,e) ->
     let e = subst_expr env e in
     begin try
       match StringMap.find r env.args with
-      | LoadReg r -> StoreReg (r,e)
+      | LoadReg r -> StoreReg (ot,r,e)
       | LoadMem (loc,mo) -> StoreMem (loc,e,mo)
       | e ->
           Warn.user_error
             "Bad lvalue '%s' while substituting macro argument %s"
             (dump_expr e) r
-    with Not_found -> StoreReg (r,e) end
+    with Not_found -> i end
 | StoreMem (loc,e,mo) ->
     StoreMem (subst_expr env loc,subst_expr env e,mo)
 | Lock (loc,k) -> Lock (subst_expr env loc,k)

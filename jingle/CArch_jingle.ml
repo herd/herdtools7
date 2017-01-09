@@ -108,7 +108,9 @@ include Arch.MakeArch(struct
 	    | Some e,Some e' -> match_instr subs e e'
 	    | _ -> None
     end
-    | StoreReg (r,ex),StoreReg(r',ex') ->
+    | DeclReg (t,r),DeclReg(t',r') when t = t' ->
+        Some (add_subs [Reg (sr_name r,r')] subs)
+    | StoreReg (ot,r,ex),StoreReg(ot',r',ex') when ot = ot' ->
         match_expr (add_subs [Reg (sr_name r,r')] subs) ex ex'
     | StoreMem(l,ex,mo),StoreMem(l',ex',mo') when mo=mo' ->
         begin match match_location subs l l' with
@@ -165,7 +167,7 @@ include Arch.MakeArch(struct
       | ECas (e1,e2,e3,mo1,mo2,st) -> ECas (expl_expr e1,expl_expr e2,expl_expr e3,mo1,mo2,st)
     in
     function
-    | Fence b -> Fence b
+    | Fence _|DeclReg _ as i -> i
     | Seq l -> Seq(List.map (expl_instr subs free) l)
     | If(c,t,e) -> 
        let e = match e with 
@@ -173,7 +175,7 @@ include Arch.MakeArch(struct
 	 | Some e -> Some(expl_instr subs free e)
        in
        If(expl_expr c,expl_instr subs free t,e)
-    | StoreReg(r,e) -> StoreReg(r, expl_expr e)
+    | StoreReg(ot,r,e) -> StoreReg(ot, r, expl_expr e)
     | StoreMem(l,e,mo) -> StoreMem(expl_loc l, expl_expr e,mo)
     | Lock (l,k) -> Lock(expl_loc l,k)
     | Unlock (l,k) -> Unlock(expl_loc l,k)
