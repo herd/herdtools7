@@ -225,7 +225,7 @@ ins_seq:
 
 block_ins:
 | instruction { $1 }
-| LBRACE ins_seq RBRACE { Seq($2) }
+| LBRACE ins_seq RBRACE { Seq($2,true) }
 
 pseudo_seq:
 | block_ins { [Instruction $1] }
@@ -257,10 +257,7 @@ formals:
 | formals_ne { $1 }
 
 body:
-| LBRACE ins_seq RBRACE
-  { match $2 with
-  | [i]  -> i
-  | is -> Seq is }
+| LBRACE ins_seq RBRACE { Seq ($2,true) }
 
 macro:
 | IDENTIFIER LPAR formals RPAR expr { EDef ($1,$3,$5) }

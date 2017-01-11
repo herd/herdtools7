@@ -64,7 +64,7 @@ type mutex_kind = MutexLinux | MutexC11
 
 type instruction = 
   | Fence of barrier
-  | Seq of instruction list
+  | Seq of instruction list * bool (* scope ? *)
   | If of expression * instruction * instruction option
   | DeclReg of CType.t * reg
   | StoreReg of CType.t option * reg * expression
@@ -130,47 +130,53 @@ let rec dump_expr =
 
 and dump_args es = String.concat "," (List.map dump_expr es)
 
-
-let rec dump_instruction = 
+let rec do_dump_instruction indent =
+  let pindent fmt = ksprintf (fun msg -> indent ^ msg) fmt in
   let open MemOrderOrAnnot in
   function
-  | Fence b -> (pp_barrier b)^";\n"
-  | Seq l -> 
-     let seq = List.fold_left (fun a i -> a^(dump_instruction i)^"\n") 
-			      "" l in
-     if List.length l < 2
-     then seq
-     else "{\n"^seq^"}\n"
+  | Fence b -> indent ^ pp_barrier b^";\n"
+  | Seq (l,false) ->
+      String.concat "\n"
+        (List.map (do_dump_instruction indent) l)
+  | Seq (l,true) ->
+      let seq =
+        String.concat ""
+          (List.map (do_dump_instruction (indent^"  ")) l) in
+      indent ^ "{\n" ^ seq ^ indent ^ "}\n"
   | If(c,t,e) ->
      let els =  match e with
        | None -> ""
-       | Some e -> dump_instruction e
-     in "if("^dump_expr c^") "^(dump_instruction t)^"else "^els
+       | Some e -> do_dump_instruction indent e in
+     indent ^ "if("^dump_expr c^") "^
+     do_dump_instruction indent t^
+     "else "^els
   | StoreReg(None,r,e) -> 
-     sprintf "None %s = %s;" r (dump_expr e)
+     pindent "%s = %s;" r (dump_expr e)
   | StoreReg(Some t,r,e) -> 
-     sprintf "%s %s = %s;" (CType.dump t) r (dump_expr e)
+     pindent "%s %s = %s;" (CType.dump t) r (dump_expr e)
   | DeclReg(t,r) -> 
-     sprintf "%s %s;" (CType.dump t) r
+     pindent "%s %s;" (CType.dump t) r
   | StoreMem(LoadReg r,e,AN []) -> 
-     sprintf "*%s = %s;" r (dump_expr e)
+     pindent "*%s = %s;" r (dump_expr e)
   | StoreMem(l,e,AN a) ->
-      sprintf "__store{%s}(%s,%s);"
+      pindent "__store{%s}(%s,%s);"
         (string_of_annot a) (dump_expr l) (dump_expr e)
   | StoreMem(l,e,MO mo) -> 
-     sprintf "atomic_store_explicit(%s,%s,%s);"
+     pindent "atomic_store_explicit(%s,%s,%s);"
 	     (dump_expr l) (dump_expr e) (MemOrder.pp_mem_order mo)
   | Lock (l,MutexC11) -> 
-     sprintf "lock(%s);" (dump_expr l) 
+     pindent "lock(%s);" (dump_expr l)
   | Unlock (l,MutexC11) -> 
-     sprintf "unlock(%s);" (dump_expr l)
+     pindent "unlock(%s);" (dump_expr l)
   | Lock (l,MutexLinux) -> 
-     sprintf "spin_lock(%s);" (dump_expr l) 
+     pindent "spin_lock(%s);" (dump_expr l)
   | Unlock (l,MutexLinux) -> 
-     sprintf "spin_unlock(%s);" (dump_expr l)
-  | Symb s -> sprintf "codevar:%s;" s
+     pindent "spin_unlock(%s);" (dump_expr l)
+  | Symb s -> pindent "codevar:%s;" s
   | PCall (f,es) ->
-      sprintf "%s(%s);" f (dump_args es)
+      pindent "%s(%s);" f (dump_args es)
+
+let dump_instruction = do_dump_instruction ""
 
 let pp_instruction _mode = dump_instruction 
 
@@ -210,7 +216,7 @@ include Pseudo.Make
 
       and parsed_tr = function
 	| Fence _|DeclReg _ as i -> i
-	| Seq(li) -> Seq(List.map parsed_tr li)
+	| Seq(li,b) -> Seq(List.map parsed_tr li,b)
 	| If(e,it,ie) -> 
 	    let tr_ie = match ie with
 	    | None -> None
@@ -241,7 +247,7 @@ include Pseudo.Make
         
         let rec get_rec k = function
           | Fence _|Symb _ | DeclReg _ -> k
-          | Seq seq -> List.fold_left get_rec k seq
+          | Seq (seq,_) -> List.fold_left get_rec k seq
           | If (cond,ifso,ifno) ->
               let k = get_exp k cond in
               get_opt (get_rec k ifso) ifno
@@ -318,7 +324,7 @@ let rec subst_expr env e = match e with
     
 let rec subst env i = match i with
 | Fence _|Symb _|DeclReg _ -> i
-| Seq is -> Seq (List.map (subst env) is)
+| Seq (is,b) -> Seq (List.map (subst env) is,b)
 | If (c,ifso,None) ->
     If (subst_expr env c,subst env ifso,None)
 | If (c,ifso,Some ifno) ->

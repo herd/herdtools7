@@ -83,7 +83,7 @@ end = struct
               (fun pseudo ->
                 CBase.pseudo_iter
                   (fun i ->
-                    Out.fprintf chan "  %s\n" (CBase.dump_instruction i))
+                    Out.fprintf chan "%s\n" (CBase.do_dump_instruction "  " i))
                   pseudo)
               code ;
             Out.fprintf chan "}\n")

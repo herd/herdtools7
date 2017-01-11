@@ -88,7 +88,7 @@ include Arch.MakeArch(struct
     let r = match pattern,instr with
     | Fence b,Fence b' when b = b'->
        Some subs
-    | Seq l, Seq l' -> 
+    | Seq (l,b), Seq (l',b') when b=b' ->
        let rec aux subs ips iis = match subs,ips,iis with
 	 | None,_,_ -> None
 	 | Some _ as subs,[],[] -> subs
@@ -124,7 +124,7 @@ include Arch.MakeArch(struct
     | Unlock (l,MutexLinux),Unlock (l',MutexLinux) -> match_location subs l l'
     | PCall (f,es),PCall (g,fs) when f = g ->
         match_exprs subs es fs
-    | Symb s,Seq l -> 
+    | Symb s,Seq (l,_) ->
        Some(add_subs [Code(s,wrap_pseudo l)] subs)
     | Symb s,ins -> 
        Some(add_subs [Code(s,wrap_pseudo [ins])] subs)
@@ -142,7 +142,7 @@ include Arch.MakeArch(struct
       let rec aux = function
 	| [] -> raise (Error("No conversion found for code "^s))
 	| Code(n,c)::_ when String.compare n s = 0 ->
-	   Seq(unwrap_pseudo c)
+	   Seq(unwrap_pseudo c,true)
 	| _::subs -> aux subs
       in aux subs
     in
@@ -168,7 +168,7 @@ include Arch.MakeArch(struct
     in
     function
     | Fence _|DeclReg _ as i -> i
-    | Seq l -> Seq(List.map (expl_instr subs free) l)
+    | Seq (l,b) -> Seq(List.map (expl_instr subs free) l,b)
     | If(c,t,e) -> 
        let e = match e with 
 	 | None -> None

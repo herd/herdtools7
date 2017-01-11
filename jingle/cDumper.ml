@@ -84,7 +84,7 @@ let list_loc prog =
     | ECas (e1,e2,e3,_,_,_) -> expr (expr (expr s e1) e2) e3        
   in 
   let rec ins s = function
-    | Seq(l) -> List.fold_left ins s l
+    | Seq(l,_) -> List.fold_left ins s l
     | If(c,t,Some e) -> expr (ins (ins s e) t) c
     | If(c,t,None) -> expr (ins s t) c
     | DeclReg (_,r) ->  LocSet.add r s

@@ -162,7 +162,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
       let ii =
         {ii with A.program_order_index = A.next_po_index ii.A.program_order_index;} in
       match ii.A.inst with
-      | C.Seq insts -> 
+      | C.Seq (insts,_) ->
           build_semantics_list insts ii 
 	    
       | C.If(c,t,Some e) ->
