@@ -339,7 +339,7 @@ let rec subst env i = match i with
           Warn.user_error
             "Bad lvalue '%s' while substituting macro argument %s"
             (dump_expr e) r
-    with Not_found -> i end
+    with Not_found -> StoreReg (ot,r,e) end
 | StoreMem (loc,e,mo) ->
     StoreMem (subst_expr env loc,subst_expr env e,mo)
 | Lock (loc,k) -> Lock (subst_expr env loc,k)

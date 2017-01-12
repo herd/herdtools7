@@ -156,7 +156,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
            V.intToV 1)
 
 
-    | C.ECall _ -> Warn.fatal "Macro call in CSem"
+    | C.ECall (f,_) -> Warn.fatal "Macro call %s in CSem" f
 	  
     let rec build_semantics ii : (A.program_order_index * B.t) M.t = 
       let ii =

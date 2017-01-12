@@ -216,8 +216,20 @@ module Do
                 L.macros_parser)
             (O.libfind fmacros) in
         List.map (L.macros_expand ms) in
-    let prog =  List.map (fun p -> p.CAst.proc,expand_body p.CAst.body) prog in 
 
+    let prog =  List.map (fun p -> p.CAst.proc,expand_body p.CAst.body) prog in
+(*
+    List.iter
+      (fun (p,code) ->
+        Printf.eprintf "++++++ %i\n" p ;
+        List.iter
+          (fun p ->
+            A.pseudo_iter
+              (fun i -> Printf.eprintf "%s\n" (A.dump_instruction i))
+              p)
+          code)
+      prog ;
+*)
     let (locs,filter,final,_quantifiers) =
       I.call_parser_loc "final"
 		      chan constr_loc SL.token StateParser.constraints in
