@@ -261,14 +261,16 @@ module Do
          { parsed with
            MiscParser.condition =
              ConstrGen.set_kind k parsed.MiscParser.condition; } in
-    let parsed =
-      let info = parsed.MiscParser.info in
-      { parsed with MiscParser.info =
+    let parsed = match MiscParser.get_hash parsed with
+        | None ->
+            let info = parsed.MiscParser.info in
+            { parsed with MiscParser.info =
 	       ("Hash",
 		(* For computing hash, we must parse as litmus does.
                 This includes stripping away toplevel '*' of types *)
 		let prog = List.map CAstUtils.strip_pointers prog_litmus in
-		D.digest init prog all_locs)::info ; } in
+		D.digest init prog all_locs)::info ; }
+        | Some _ -> parsed in
     parsed
 end
       		     

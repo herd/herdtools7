@@ -1,0 +1,16 @@
+"C11 Bell annotation"
+
+enum memorder = 'rlx || 'acq || 'rel || 'con || 'acq_rel || 'sc
+
+instructions R[{'rlx,'acq,'con,'sc}]
+instructions W[{'rlx,'rel,'sc}]
+instructions F[{'acq,'rel,'acq_rel,'sc}]
+
+let ACQ= tag2set('acq)
+let SC = tag2set('sc)
+let REL = tag2set('rel)
+let RLX = tag2set('rlx)
+let ACQ_REL = tag2set('acq_rel)
+let CON = tag2set('con)
+let A = M & (ACQ|SC|REL|RLX|ACQ_REL|CON)
+let NA = M \ A
