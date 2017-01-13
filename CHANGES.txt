@@ -1,4 +1,7 @@
+7.43+1
  * New tool mlock
+7.43
+ * opam release
 7.42+1
  * Add -cycles names option, to display cycles of failing checks.
  * Add support for C11 atomic_compare_exchange_... primitives.
