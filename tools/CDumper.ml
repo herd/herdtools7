@@ -20,6 +20,8 @@
 module Make(Out:SimpleDumper.Out) : sig
   val dump :
       Out.t -> Name.t -> CBase.pseudo MiscParser.t -> unit
+  val dump_withhash :
+      Out.t -> Name.t -> CBase.pseudo MiscParser.t -> unit
 end = struct
 
   open Printf
@@ -27,7 +29,7 @@ end = struct
 
 (* state *)
   let dump_loc = MiscParser.dump_location
-      
+
   let dump_atom_state a =
     MiscParser.dump_state_atom dump_loc SymbConstant.pp_v a
 
@@ -58,18 +60,18 @@ end = struct
   let dump_prop = ConstrGen.prop_to_string dump_atom
 
   let dump_constr = ConstrGen.constraints_to_string dump_atom
-      
+
 (* Parameters *)
   let dump_param p =
     let open CAst in
-    sprintf "%s %s" (CType.dump p.param_ty) p.param_name     
+    sprintf "%s %s" (CType.dump p.param_ty) p.param_name
 
   let dump_params ps = String.concat "," (List.map dump_param ps)
 
-  let do_dump with_hash chan doc t =    
+  let do_dump with_hash chan doc t =
     Out.fprintf chan "%s %s\n" (Archs.pp CBase.arch) doc.Name.name ;
     List.iter
-      (fun (k,i) -> 
+      (fun (k,i) ->
         if with_hash || k <> MiscParser.hash_key then
           Out.fprintf chan "%s=%s\n" k i)
       t.info ;
@@ -87,11 +89,11 @@ end = struct
                   pseudo)
               code ;
             Out.fprintf chan "}\n")
-          t.prog pss 
+          t.prog pss
     | _ -> ()
     end ;
     let locs = DumpUtils.dump_locations dump_loc t.locations in
-    if locs <> "" then Out.fprintf chan "%s\n" locs ;   
+    if locs <> "" then Out.fprintf chan "%s\n" locs ;
     begin match t.filter with
     | None -> ()
     | Some p -> Out.fprintf chan "filter %s" (dump_prop p)
@@ -100,5 +102,6 @@ end = struct
     ()
 
     let dump = do_dump false
+    let dump_withhash = do_dump true
 
 end
