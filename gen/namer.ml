@@ -48,7 +48,8 @@ module Make
          | Po (Diff,_,_) -> Some "po"
          | Fenced (f,Same,_,_) -> Some (Misc.lowercase (A.pp_fence f) ^ "s")
          | Fenced (f,Diff,_,_) -> Some (Misc.lowercase (A.pp_fence f))
-         | Dp (dp,_,_) -> Some (Misc.lowercase (A.pp_dp dp))
+         | Dp (dp,Same,_) -> Some (Misc.lowercase (A.pp_dp dp) ^ "s")
+         | Dp (dp,Diff,_) -> Some (Misc.lowercase (A.pp_dp dp))
          | Rf Int -> Some "rfi"
          | Ws Int -> Some "wsi"
          | Fr Int -> Some "fri"
