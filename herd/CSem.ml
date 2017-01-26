@@ -157,7 +157,16 @@ module Make (Conf:Sem.Config)(V:Value.S)
 
 
     | C.ECall (f,_) -> Warn.fatal "Macro call %s in CSem" f
-	  
+
+    let zero = SymbConstant.intToV 0
+
+    let build_cond e ii =
+      let open Op in
+      let e = match e with
+      | C.Op ((Lt|Gt|Eq|Ne|Le|Ge),_,_) -> e
+      | _ -> C.Op (Ne,e,C.Const zero) in
+      build_semantics_expr false e ii
+
     let rec build_semantics ii : (A.program_order_index * B.t) M.t = 
       let ii =
         {ii with A.program_order_index = A.next_po_index ii.A.program_order_index;} in
@@ -166,7 +175,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
           build_semantics_list insts ii 
 	    
       | C.If(c,t,Some e) ->
-          build_semantics_expr false c ii >>>> fun ret ->
+          build_cond c ii >>>> fun ret ->
             let ii' = 
               {ii with A.program_order_index = 
 	       A.next_po_index ii.A.program_order_index;} 
@@ -176,7 +185,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
             M.choiceT ret then_branch else_branch
               
       | C.If(c,t,None) ->
-          build_semantics_expr false c ii >>>> fun ret ->
+          build_cond c ii >>>> fun ret ->
             let ii' = 
               {ii with A.program_order_index = 
 	       A.next_po_index ii.A.program_order_index;} 
