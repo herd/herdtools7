@@ -1,3 +1,4 @@
+ * herd: PPC, avoid data or address dependencies from lwarx to matchin stwcx. 
 7.43+2
  * Correct C semantics bug if (e) was understood as direct boolean 0/1 test.
    Now understood as if (e != 0), as it should.

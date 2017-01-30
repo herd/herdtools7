@@ -300,12 +300,13 @@ module Make (C:Sem.Config)(V:Value.S)
 	(read_reg_or_zero false rA ii >>| read_reg_ord rB ii) >>=
 	fun (aA,aB) -> 
 	  M.add aA aB >>=
-	  fun a ->
-	    read_addr_res a ii >>=
-	    (fun v -> write_reg rD v ii >>| write_reg PPC.RES V.one ii >>| write_reg PPC.RESADDR a ii) 
+	  (fun a ->
+	    write_reg PPC.RES V.one ii >>| write_reg PPC.RESADDR a ii >>|
+	    (read_addr_res a ii >>=  fun v -> write_reg rD v ii))
               >>! B.Next
     | PPC.Pstwcx(rS,rA,rB) ->
-	((read_reg_data rS ii >>| read_reg_ord PPC.RES ii >>| read_reg_ord PPC.RESADDR ii)
+	((read_reg_data rS ii >>|
+          read_reg_data PPC.RES ii >>| read_reg_data PPC.RESADDR ii)
 	   >>| (* Enforce right associativity of >>| *)
 	   (read_reg_or_zero false rA ii >>| read_reg_ord rB ii)) >>=
 	fun (((vS,vR),aR),(aA,aB)) ->
