@@ -13,8 +13,9 @@ let obsco =
   (ww|rw|wr|rr)
 
 (* The following applies to C only, where RMW is both R and W *)
-let RMW = R & W
-let rmwco = rf & (W * RMW) (* co observation by atomicity *)
+let rmwco =
+  let _RMW = R & W in
+  rf & (W * _RMW) (* co observation by atomicity *)
 
 let cobase = obsco|rmwco|co0
 

@@ -134,7 +134,7 @@ end = struct
     | RMW _ -> true
     | _ -> false
 
-(* LM: This one is for R and W issued by RWM *)
+   (* LM: This one is for R and W issued by RWM *)
     let is_atomic = function
       | Access (_,A.Location_global _,_,_,at) -> at
       | _ -> false
@@ -221,7 +221,7 @@ end = struct
 (* Architecture-specific sets *)
 
    let arch_sets = [
-     "RMW", Misc.(|||) is_rmw is_atomic;
+     "RMW",(fun e -> is_rmw e || is_atomic e);
      "LK", is_lock; "LS", is_successful_lock;
      "UL", is_unlock;
      "ACQ", mo_matches MemOrder.Acq;
