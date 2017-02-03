@@ -55,7 +55,8 @@ module Make (C:Sem.Config)(V:Value.S)
 
     let read_mem_acquire a ii  = 
       M.read_loc false (mk_read AArch64.A) (A.Location_global a) ii
-
+    let read_mem_acquire_pc a ii  =
+      M.read_loc false (mk_read AArch64.Q) (A.Location_global a) ii
     let read_mem_atomic a ii = 
       M.read_loc false (mk_read AArch64.X) (A.Location_global a) ii
 
@@ -152,6 +153,10 @@ module Make (C:Sem.Config)(V:Value.S)
 		    (write_reg ResAddr a ii
 		    >>| (read_mem_atomic_acquire a ii 
 			 >>= (fun v -> write_reg rd v ii)))
+		    >>! B.Next
+		 | AQ ->
+		    (read_mem_acquire_pc a ii)
+		    >>= (fun v -> (write_reg rd v ii))
 		    >>! B.Next
 	   end
 	

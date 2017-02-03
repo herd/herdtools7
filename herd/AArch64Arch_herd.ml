@@ -17,7 +17,7 @@ module Make (C:sig include Arch_herd.Config val moreedges : bool end) (V:Value.S
   struct
     include AArch64Base
 
-    type lannot = A | XA | L | XL | X | N
+    type lannot = A | XA | L | XL | X | N | Q
 					 
     let empty_annot = N
 
@@ -29,6 +29,10 @@ module Make (C:sig include Arch_herd.Config val moreedges : bool end) (V:Value.S
 
     let is_acquire = function
       | A | XA -> true
+      | _ -> false
+
+    let is_acquire_pc = function
+      | Q -> true
       | _ -> false
 
     let is_release = function
@@ -45,6 +49,7 @@ module Make (C:sig include Arch_herd.Config val moreedges : bool end) (V:Value.S
     let annot_sets = [
       "X", is_atomic;
       "A", is_acquire;
+      "Q", is_acquire_pc;
       "L", is_release
     ]
 
@@ -54,6 +59,7 @@ module Make (C:sig include Arch_herd.Config val moreedges : bool end) (V:Value.S
     let pp_annot = function
       | XA -> "Acq*"
       | A -> "Acq"
+      | Q -> "AcqPc"
       | XL -> "Rel*"
       | L -> "Rel"
       | X -> "*"
@@ -63,7 +69,7 @@ module Make (C:sig include Arch_herd.Config val moreedges : bool end) (V:Value.S
 
     include ArchExtra_herd.Make(C)
 	(struct
-	  module V = V 
+	  module V = V
 
 	  type arch_reg = reg
 	  let pp_reg = pp_reg

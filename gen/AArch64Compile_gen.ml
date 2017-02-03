@@ -105,6 +105,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let ldr r1 r2 = I_LDR (vloc,r1,r2,K 0)
     let ldar r1 r2 = I_LDAR (vloc,AA,r1,r2)
+    let ldapr r1 r2 = I_LDAR (vloc,AQ,r1,r2)
     let ldxr r1 r2 = I_LDAR (vloc,XX,r1,r2)
     let ldaxr r1 r2 = I_LDAR (vloc,AX,r1,r2)
     let sxtw r1 r2 = I_SXTW (r1,r2)
@@ -228,6 +229,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let load_idx st rA rB idx =
             let r,ins,st = sum_addr st rB idx in
             ins@[ldar rA r],st
+        end)
+
+    module LDAPR = LOAD
+        (struct
+          let load = ldapr
+          let load_idx st rA rB idx =
+            let r,ins,st = sum_addr st rB idx in
+            ins@[ldapr rA r],st
         end)
 
 (**********)
@@ -411,6 +420,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | R,Some Acq ->
         let r,init,cs,st = LDAR.emit_load st p init e.loc  in
         Some r,init,cs,st
+    | R,Some AcqPc ->
+        let r,init,cs,st = LDAPR.emit_load st p init e.loc  in
+        Some r,init,cs,st
     | R,Some Rel ->
         Warn.fatal "No load release"
     | R,Some Atomic rw ->
@@ -426,6 +438,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let init,cs,st = STLR.emit_store st p init e.loc e.v in
         None,init,cs,st
     | W,Some Acq -> Warn.fatal "No store acquire"
+    | W,Some AcqPc -> Warn.fatal "No store acquirePc"
     | W,Some Atomic rw ->
         let r,init,cs,st = emit_sta rw st p init e.loc e.v in
         Some r,init,cs,st
@@ -476,6 +489,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | R,Some Acq ->
           let r,init,cs,st = LDAR.emit_load_idx st p init e.loc r2 in
           Some r,init, Instruction c::cs,st
+      | R,Some AcqPc ->
+          let r,init,cs,st = LDAPR.emit_load_idx st p init e.loc r2 in
+          Some r,init, Instruction c::cs,st
       | R,Some Rel ->
           Warn.fatal "No load release"
       | R,Some Atomic rw ->
@@ -488,6 +504,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let init,cs,st = STLR.emit_store_idx st p init e.loc r2 e.v in
           None,init,Instruction c::cs,st
       | W,Some Acq -> Warn.fatal "No store acquire"
+      | W,Some AcqPc -> Warn.fatal "No store acquirePc"
       | W,Some Atomic rw ->
           let r,init,cs,st = emit_sta_idx rw st p init e.loc r2 e.v in
           Some r,init,Instruction c::cs,st
@@ -528,6 +545,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               Some r,init,cs2@cs,st        
           | Some Acq ->
               Warn.fatal "No store acquire"
+          | Some AcqPc ->
+              Warn.fatal "No store acquirePc"
           | Some (Mixed _) ->
               Warn.fatal "data dep with mixed"
           end

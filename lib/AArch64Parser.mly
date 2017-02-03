@@ -35,7 +35,7 @@ open AArch64Base
 
 /* Instructions */
 %token B BEQ BNE CBZ CBNZ
-%token LDR LDP LDNP STP STNP LDRB LDRH STR STRB STRH LDAR LDXR LDAXR STLR STXR STLXR CMP
+%token LDR LDP LDNP STP STNP LDRB LDRH STR STRB STRH LDAR LDAPR LDXR LDAXR STLR STXR STLXR CMP
 %token MOV ADD EOR SUBS AND
 %token DMB DSB ISB
 %token SY ST LD
@@ -156,6 +156,8 @@ instr:
   { let v,r = $2 in I_LDAR (v,XX,r,$5) }
 | LDAXR reg COMMA LBRK xreg RBRK
   { let v,r = $2 in I_LDAR (v,AX,r,$5) }
+| LDAPR reg COMMA LBRK xreg RBRK
+  { let v,r = $2 in I_LDAR (v,AQ,r,$5) }
 | STR reg COMMA LBRK xreg kr0 RBRK
   { let v,r = $2 in I_STR (v,r,$5,$6) }
 | STRB wreg COMMA LBRK xreg kr0 RBRK

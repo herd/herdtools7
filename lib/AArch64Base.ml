@@ -216,12 +216,13 @@ type variant = V32 | V64
 type 'k kr = K of 'k | RV of variant * reg
 let k0 = K 0
 
-type ld_type = AA | XX | AX
+type ld_type = AA | XX | AX | AQ
 
 let ldr_memo = function
   | AA -> "LDAR"
   | XX -> "LDXR"
   | AX -> "LDAXR"
+  | AQ -> "LDAPR"
 
 type st_type = YY | LY
 

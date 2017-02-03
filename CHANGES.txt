@@ -1,4 +1,6 @@
-  * herd: cos-opt.cat do not redefine RMW
+7.43+3
+  * gen/litmus/herd: add ARMv8 LDAPR instruction (contribution by Will Deacon)
+  * herd: cos-opt.cat, bug ! --> Do not redefine RMW
   * herd: PPC, avoid data or address dependencies from lwarx to matchin stwcx. 
 7.43+2
  * Correct C semantics bug if (e) was understood as direct boolean 0/1 test.

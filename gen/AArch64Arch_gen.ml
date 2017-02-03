@@ -41,12 +41,13 @@ module Mixed =
 (* AArch64 has more atoms that others *)
 let bellatom = false
 type atom_rw =  PP | PL | AP | AL
-type atom = Acq | Rel | Atomic of atom_rw | Mixed of MachMixed.t
+type atom = Acq | AcqPc | Rel | Atomic of atom_rw | Mixed of MachMixed.t
 
 let default_atom = Atomic PP
 
 let applies_atom a d = match a,d with
 | Acq,R
+| AcqPc,R
 | Rel,W
 | Atomic _,(R|W)
 | Mixed _,(R|W)
@@ -54,7 +55,7 @@ let applies_atom a d = match a,d with
 | _ -> false
 
 let applies_atom_rmw ar aw = match ar,aw with
-| (Some Acq|None),(Some Rel|None) -> true
+| (Some (Acq|AcqPc)|None),(Some Rel|None) -> true
 | _ -> false
 
 let pp_plain = "P"
@@ -71,6 +72,7 @@ let pp_atom_rw = function
      | Atomic rw -> sprintf "X%s" (pp_atom_rw rw)
      | Rel -> "L"
      | Acq -> "A"
+     | AcqPc -> "Q"
      | Mixed mix -> Mixed.pp_mixed mix
 
    let compare_atom = Pervasives.compare
@@ -81,17 +83,17 @@ let pp_atom_rw = function
 
    let fold_atom f r = 
      let r = fold_mixed f r in
-     f Acq (f Rel (fold_atom_rw (fun rw -> f (Atomic rw)) r))
+     f Acq (f AcqPc (f Rel (fold_atom_rw (fun rw -> f (Atomic rw)) r)))
 
    let worth_final = function
      | Atomic _ -> true
-     | Acq|Rel|Mixed _ -> false
+     | Acq|AcqPc|Rel|Mixed _ -> false
 
 
    let varatom_dir _d f r = f None r
 
    let tr_value ao v = match ao with
-   | None| Some (Acq|Rel|Atomic _) -> v
+   | None| Some (Acq|AcqPc|Rel|Atomic _) -> v
    | Some (Mixed (sz,_)) -> Mixed.tr_value sz v
 
    module ValsMixed =
@@ -102,12 +104,12 @@ let pp_atom_rw = function
        end)
 
 let overwrite_value v ao w = match ao with
-  | None| Some (Atomic _|Acq|Rel) -> w (* total overwrite *)
+  | None| Some (Atomic _|Acq|AcqPc|Rel) -> w (* total overwrite *)
   | Some (Mixed (sz,o)) ->
       ValsMixed.overwrite_value v sz o w
 
  let extract_value v ao = match ao with
-  | None| Some (Atomic _|Acq|Rel) -> v
+  | None| Some (Atomic _|Acq|AcqPc|Rel) -> v
   | Some (Mixed (sz,o)) ->
       ValsMixed.extract_value v sz o
 
