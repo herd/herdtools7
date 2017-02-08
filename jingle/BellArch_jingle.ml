@@ -130,7 +130,8 @@ include Arch.MakeArch(struct
       | Pld(r,ao,s) -> Pld(conv_reg r,expl_ao ao,s)
       | Pst(ao,ri,s) -> Pst(expl_ao ao,expl_ri ri,s)
       | Prmw(r,op,ao,s) -> Prmw(conv_reg r,expl_op op,expl_ao ao,s)
-      | Pbranch(a,l,b) -> Pbranch(a,find_lab l,b)
+      | Pbranch(None,l,b) -> Pbranch(None,find_lab l,b)
+      | Pbranch(Some r,l,b) -> Pbranch(Some (conv_reg r),find_lab l,b)
       | Pmov(r,op) -> Pmov(conv_reg r,expl_op op)
       | i -> i
     and expl_ao = function

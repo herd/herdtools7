@@ -44,11 +44,20 @@ rule main = parse
 	
 and conv l = parse
     | eof {l}
-    | '"' ([^'"']* as left) '"' blank+ arrow blank+ '"' ([^'"']* as right) '"' blank*
+    | '"' ([^'"']* as left) '"' blank* arrow blank* '"' ([^'"']* as right) '"' blank*
 	{
 	  conv ((String.trim left, String.trim right)::l) lexbuf
 	}
-    | "" {raise (Error "Bad syntax in conversion rule.")}
+    | ("#"|"//") [^'\n']* '\n' { conv l lexbuf }
+    | "" {
+      let last = match l with
+      | [] -> "*start*"
+      | (left,right)::_ ->
+          Printf.sprintf "\"%s\" -> \"%s\"" left right in
+      let msg =
+        Printf.sprintf
+          "Bad syntax in conversion rule, after %s" last in
+      raise (Error msg)}
 
 {
   
