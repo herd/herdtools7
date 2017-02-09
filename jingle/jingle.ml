@@ -131,7 +131,7 @@ let args = !args
 
 let parsed = match map with
 | None -> raise (Error "No map file provided.")
-| Some sz ->
+| Some s ->
       try Misc.input_protect ParseMap.parse s
       with ParseMap.Error msg ->
         eprintf "File \"%s\": %s\n" s msg ;
