@@ -29,6 +29,8 @@ module type I = sig
   val internal_init : arch_reg -> (string * string) option
 (* gcc assembly template register class *)
   val reg_class : arch_reg -> string
+(* type errors *)
+  val error : CType.t -> CType.t  -> bool
 end
 
 module Make
@@ -274,9 +276,14 @@ module Make
                 (fun m (r,t) ->
                   let t0 = MapReg.safe_find t r m in
                   if (t <> t0) then begin
-                    Warn.warn_always
+                    if A.error t t0 then begin
+                      Warn.user_error
+                      "Register %s has different types: <%s> and <%s>"
+                        (A.reg_to_string r) (CType.dump t0) (CType.dump t)
+                    end else
+                      Warn.warn_always
                       "File \"%s\" Register %s has different types: <%s> and <%s>"
-                      name.Name.file (A.reg_to_string r) (CType.dump t0) (CType.dump t)
+                        name.Name.file (A.reg_to_string r) (CType.dump t0) (CType.dump t)
                   end ;
                   MapReg.add r t m)
                 m  t.Tmpl.reg_env)

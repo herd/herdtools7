@@ -50,6 +50,7 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
 *)
         let reg_class _ = "=&r"
         let comment = comment
+        let error _ _ = false
       end)
 
 end

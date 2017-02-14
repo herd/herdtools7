@@ -200,20 +200,25 @@ end = struct
         with Not_found -> t
 
       let dump source doc compiled =
-        Misc.output_protect
-          (fun chan ->
-            let module Out =
-              Indent.Make(struct let hexa = O.hexa let out = chan end) in
-            let dump =
-              match OT.mode with
-              | Mode.Std ->
-                  let module S = Skel.Make(O)(Pseudo)(A')(T)(Out)(Lang) in
-                  S.dump
-              | Mode.PreSi ->
-                  let module S = PreSi.Make(O)(Pseudo)(A')(T)(Out)(Lang) in
-                  S.dump in
-            dump doc compiled)
-          (Tar.outname source)
+        let outname = Tar.outname source in
+        try
+          Misc.output_protect
+            (fun chan ->
+              let module Out =
+                Indent.Make(struct let hexa = O.hexa let out = chan end) in
+              let dump =
+                match OT.mode with
+                | Mode.Std ->
+                    let module S = Skel.Make(O)(Pseudo)(A')(T)(Out)(Lang) in
+                    S.dump
+                | Mode.PreSi ->
+                    let module S = PreSi.Make(O)(Pseudo)(A')(T)(Out)(Lang) in
+                    S.dump in
+              dump doc compiled)
+            outname
+        with e ->
+          begin try Sys.remove outname with _ -> () end ;
+          raise e
 
       let limit_ok nprocs = match O.avail with
       | None|Some 0 -> true
@@ -483,19 +488,19 @@ end = struct
             | UseArch.Gen ->
                 assert false
 (*
-                let module Arch' = PPCGenArch.Make(OC)(V) in
-                let module LexParse = struct
-                  type instruction = Arch'.pseudo
-                  type token = PPCGenParser.token
-                  module Lexer = PPCGenLexer.Make(LexConfig)
-                  let lexer = Lexer.token
-                  let parser = PPCGenParser.main
-                end in
-                let module Compile = PPCGenCompile.Make(V)(OC) in
-                let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
-                X.compile
+  let module Arch' = PPCGenArch.Make(OC)(V) in
+  let module LexParse = struct
+  type instruction = Arch'.pseudo
+  type token = PPCGenParser.token
+  module Lexer = PPCGenLexer.Make(LexConfig)
+  let lexer = Lexer.token
+  let parser = PPCGenParser.main
+  end in
+  let module Compile = PPCGenCompile.Make(V)(OC) in
+  let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
+  X.compile
  *)  
-          end
+            end
         | `X86 ->
             let module Arch' = X86Arch_litmus.Make(OC)(V) in
             let module LexParse = struct
@@ -537,18 +542,18 @@ end = struct
             | UseArch.Gen ->
                 assert false
 (*
-                let module Arch' = AArch64GenArch.Make(OC)(V) in
-                let module LexParse = struct
-                  type instruction = Arch'.pseudo
-                  type token = AArch64GenParser.token
-                  module Lexer = AArch64GenLexer.Make(LexConfig)
-                  let lexer = Lexer.token
-                  let parser = AArch64GenParser.main
-                end in
-                let module Compile = AArch64GenCompile.Make(V)(OC) in
-                let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
-                X.compile
-*)
+  let module Arch' = AArch64GenArch.Make(OC)(V) in
+  let module LexParse = struct
+  type instruction = Arch'.pseudo
+  type token = AArch64GenParser.token
+  module Lexer = AArch64GenLexer.Make(LexConfig)
+  let lexer = Lexer.token
+  let parser = AArch64GenParser.main
+  end in
+  let module Compile = AArch64GenCompile.Make(V)(OC) in
+  let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
+  X.compile
+ *)
             end
         | `MIPS ->
             let module Arch' = MIPSArch_litmus.Make(OC)(V) in

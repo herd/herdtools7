@@ -31,6 +31,7 @@ val word : t
 val quad : t
 
 val dump : t -> string
+val debug : t -> string
 
 type fmt = Direct of string | Macro of string
 

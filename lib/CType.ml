@@ -39,6 +39,15 @@ let rec  dump = function
   | Pointer t -> dump t  ^ "*"
   | Array (t,sz) -> sprintf "%s[%i]" t sz
 
+let rec  debug = function
+  | Base s -> sprintf "<%s>" s
+  | Volatile (Base s) -> "volatile " ^ s
+  | Atomic (Base s) -> "_Atomic " ^ s
+  | Volatile t -> sprintf "%s volatile" (debug t)
+  | Atomic t -> sprintf "_Atomic (%s)" (debug t)
+  | Pointer t -> debug t  ^ "*"
+  | Array (t,sz) -> sprintf "%s[%i]" t sz
+
 type fmt = Direct of string | Macro of string
 
 let fmt10 = function
