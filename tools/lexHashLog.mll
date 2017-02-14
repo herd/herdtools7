@@ -63,7 +63,7 @@ rule main keep same out name = parse
          plines keep out map lexbuf ; (* If same name and some map -> rewrite *)
          if same then not keep else false in
      main keep same out name lexbuf }
-| ("Hash" blank* '=' blank* (hexa+ as hash) blank* as line)  nl 
+| ("Hash" blank* '=' blank* (hexa* as hash) blank* as line) nl
   {
    let same =
      match name with
@@ -75,7 +75,7 @@ rule main keep same out name = parse
              C.ppinfo pos n ;
              out keep (sprintf "Hash=%s" env_hash) ;
              (* If output then hash changed... *)
-             if same then not keep else false 
+             if same then not keep else false
            end else begin
              out keep line ;
              same
@@ -94,7 +94,30 @@ rule main keep same out name = parse
          false in
    incr_lineno lexbuf ;
    main keep same out None lexbuf
-  }
+ }
+| nl as line
+    {
+     let same = match name with
+     | Some n ->
+          begin try
+            let env_hash = StringMap.find n C.env in
+            let pos = lexbuf.Lexing.lex_curr_p in
+            C.ppinfo pos n ;
+            out keep (sprintf "Hash=%s" env_hash) ;
+            (* If output then hash changed... *)
+            if same then not keep else false
+          with Not_found ->
+             let pos = lexbuf.Lexing.lex_curr_p in
+             if C.verbose > 0 then
+               eprintf "%a: No hash for test %s\n" Pos.pp_pos pos n ;
+             out keep line ;
+           same
+         end
+     | None -> same in
+     out keep line ;
+     incr_lineno lexbuf ;
+     main keep same out name lexbuf
+   }
 | [^'\r''\n']*  as line nl
  { out keep line ; incr_lineno lexbuf ; main keep same out name lexbuf }
 | eof { same }

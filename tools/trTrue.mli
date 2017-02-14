@@ -15,7 +15,7 @@
 (****************************************************************************)
 
 module type Config = sig
-  val check_sync : bool
+  val aarch64 : bool
 end
 
 module type Out = sig

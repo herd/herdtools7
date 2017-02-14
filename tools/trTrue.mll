@@ -16,7 +16,7 @@
 
 {
 module type Config = sig
-  val check_sync : bool
+  val aarch64 : bool
 end
 
 module type Out = sig
@@ -42,8 +42,8 @@ rule main out = parse
  end ;
  main out lexbuf
 }
-| "f[sync]" as token
-    { if O.check_sync then false else begin
+| "f[sync]"|"[deref]"|"[lderef]" as token
+    { if O.aarch64 then false else begin
         Out.put out token ;
         main out lexbuf
       end }

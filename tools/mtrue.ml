@@ -22,7 +22,7 @@ open Printf
 
 module type Config = sig
   val verbose : int
-  val sync : bool
+  val aarch64 : bool
   val check_name : string -> bool
 end
 
@@ -40,7 +40,7 @@ module Make(Config:Config)(Out:OutTests.S) =
     module TR =
       TrTrue.Make
         (struct
-          let check_sync =  not Config.sync
+          let aarch64 =  Config.aarch64
         end)
         (OutStr)
 
@@ -104,7 +104,7 @@ module Make(Config:Config)(Out:OutTests.S) =
 
 let tar = ref None
 and verbose = ref 0
-and sync = ref true
+and aarch64 = ref false
 let names = ref []
 
 let set_tar x = tar := Some x
@@ -116,9 +116,9 @@ let opts =
     " be verbose";
     "-o", Arg.String set_tar,
     "<name> output to directory or tar file <name>" ;
-    "-sync",
-    Arg.Bool (fun b -> sync := b),
-    sprintf "<bool> output tests with synchornize_rcu or not, default %b" !sync;
+    "-aarch64",
+    Arg.Bool (fun b -> aarch64 := b),
+    sprintf "<bool> reduce tests for aarc64 (no deref, no sync) default %b" !aarch64;
     "-names",
     Arg.String (fun s -> names := [s] @ !names),
    "<name> select tests whose names are listed in file <name> (cumulate when repeated)";
@@ -144,7 +144,7 @@ let from_args =
     Make
       (struct
         let verbose = !verbose
-        let sync = !sync
+        let aarch64 = !aarch64
         let check_name = match names with
         | None -> fun _ -> true
         | Some names -> (fun name -> StringSet.mem name names)
