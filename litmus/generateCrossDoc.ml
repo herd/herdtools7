@@ -37,7 +37,7 @@ let gen_makefile () =
   let cpuinfo =
     match O.targetos with
     | TargetOS.Linux -> "\tcat /proc/cpuinfo > $(LOGDIR)/log_cpuinfo\n"
-    | TargetOS.AIX ->
+    | TargetOS.AIX|TargetOS.FreeBsd ->
         "\techo 'CPUINFO unsupported for this OS' > $(LOGDIR)/log_cpuinfo\n"
     | TargetOS.Mac -> Warn.fatal "generateCrossDoc.ml does not support Mac"  in
   logdir ^
@@ -56,6 +56,7 @@ let pp_os = function
   | TargetOS.Linux -> "linux"
   | TargetOS.AIX   -> "AIX"
   | TargetOS.Mac   -> "MacOs"
+  | TargetOS.FreeBsd -> "FreeBsd"
 
 let gen_readme chan  =
   let pl fmt = ksprintf (fun s -> fprintf chan "%s\n" s) fmt in

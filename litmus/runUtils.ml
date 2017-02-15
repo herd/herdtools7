@@ -40,6 +40,7 @@ end
 module type Config = sig
   include CommonConfig
 (* Arch dependant *)
+  val gcc : string
   val gccopts : string
   val word : Word.t
   val delay : int
@@ -81,7 +82,11 @@ let target_os =
 
 let get_gcc_opts =
   let std = if O.c11 then "gnu11" else "gnu99" in
-  let std_opts = sprintf "-Wall -std=%s " std ^  O.gccopts in
+  let std_opt =
+    match O.gcc,std with
+    | "clang","gnu99" -> ""
+    | _,_ -> sprintf "-std=%s "std in
+  let std_opts = sprintf "-Wall %s" std_opt ^  O.gccopts in
   let opts =
     match target_os with
     | TargetOS.Mac -> begin match O.word with
@@ -89,7 +94,7 @@ let get_gcc_opts =
       | Word.W32 -> std_opts ^ " -m32"
       | Word.WXX -> std_opts
     end
-    | TargetOS.Linux -> begin match O.word with
+    | TargetOS.Linux|TargetOS.FreeBsd -> begin match O.word with
       | Word.W64 -> std_opts ^ " -m64 -pthread"
       | Word.W32 -> std_opts ^ " -m32 -pthread"
       | Word.WXX -> std_opts ^ " -pthread"
@@ -103,9 +108,10 @@ let get_gcc_opts =
   let opts = match O.affinity with
   | Affinity.No -> opts
   | Affinity.Incr _|Affinity.Random|Affinity.Custom|Affinity.Scan ->
-      "-D_GNU_SOURCE " ^
-      if O.force_affinity then "-DFORCE_AFFINITY " ^opts
-      else opts in
+      (if TargetOS.is_freebsd target_os then fun s -> s
+      else fun s ->  "-D_GNU_SOURCE " ^ s)
+        (if O.force_affinity then "-DFORCE_AFFINITY " ^opts
+        else opts ) in
   opts
 
 let get_link_opts =
@@ -168,6 +174,7 @@ let report_machine chan =
     exec "hostname" (output_line chan) ;
     begin match target_os with
     | TargetOS.Linux -> cat "/proc/cpuinfo" (output_line chan)
+    | TargetOS.FreeBsd -> exec "sysctl -a | grep dev.cpu" (output_line chan)
     | TargetOS.Mac ->
         exec "system_profiler SPHardwareDataType" (output_line chan)
     | TargetOS.AIX -> ()

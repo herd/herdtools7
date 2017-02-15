@@ -15,8 +15,10 @@
 (****************************************************************************)
 
 
-type t = Linux | Mac |AIX
+type t = Linux | Mac | AIX | FreeBsd
 
 val tags : string list
 val parse : string -> t option
 val pp : t -> string
+
+val is_freebsd : t -> bool

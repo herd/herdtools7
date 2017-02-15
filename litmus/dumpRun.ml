@@ -135,7 +135,13 @@ end = struct
       (fun u ->
         let src = u ^ ".c" and obj = u ^ ".o" in
         fprintf chan "%s: %s\n" obj src ;
-        fprintf chan "\t$(GCC) $(GCCOPTS) -O2 -c %s\n" src ;
+        fprintf chan "\t$(GCC) $(GCCOPTS) %s-O2 -c %s\n"
+          (if
+            TargetOS.is_freebsd Cfg.targetos &&
+            u = "affinity"
+          then "-D _FREEBSD_AFFINITY "
+          else "")
+          src ;
         fprintf chan "\n")
       utils ;
 (* UTIL objs *)
@@ -324,7 +330,7 @@ let dump_shell_cont arch sources utils =
    and because #comments makes the preprocessor crash ! *)
       let src_ext = match Cfg.targetos with
       | TargetOS.Mac -> 'c'
-      | TargetOS.Linux|TargetOS.AIX -> 's' in
+      | TargetOS.Linux|TargetOS.AIX|TargetOS.FreeBsd -> 's' in
       fprintf chan "%%.exe:%%.%c $(UTILS)\n" src_ext ;
       fprintf chan
         "\t$(GCC) $(GCCOPTS) $(LINKOPTS) -o $@ $(UTILS) $<\n" ;

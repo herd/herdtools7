@@ -16,6 +16,11 @@
 #include <stdio.h>
 #include <sched.h>
 #include <unistd.h>
+#ifdef _FREEBSD_AFFINITY
+#include <sys/cpuset.h>
+#include <pthread_np.h>
+typedef cpuset_t cpu_set_t;
+#endif
 #include "utils.h"
 #include "affinity.h"
 

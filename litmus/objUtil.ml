@@ -156,9 +156,10 @@ module Make(O:Config)(Tar:Tar.S) =
       do_cpy fnames (Filename.concat O.platform name) name ext
 
     let affinity_base () = match O.targetos with
-    | Linux -> "_linux_affinity"
+    | Linux|FreeBsd -> "_linux_affinity"
     | AIX -> "_aix_affinity"
-    | os -> Warn.fatal "Affinity not implemented for %s" (TargetOS.pp os)
+    | Mac as os ->
+        Warn.fatal "Affinity not implemented for %s" (TargetOS.pp os)
 
     let dump () =
       let fnames = [] in

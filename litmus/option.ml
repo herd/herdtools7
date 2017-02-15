@@ -138,7 +138,7 @@ let get_numeric_labels () = match !gas with
 | None ->
     begin match !targetos with
     | TargetOS.AIX -> false
-    | TargetOS.Linux|TargetOS.Mac -> true
+    | TargetOS.Linux|TargetOS.Mac|TargetOS.FreeBsd -> true
     end
 let timeloop = ref (-1)
 let set_timeloop i = timeloop :=  i

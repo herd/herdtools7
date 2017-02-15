@@ -15,13 +15,14 @@
 (****************************************************************************)
 
 
-type t = Linux | Mac |AIX
+type t = Linux | Mac | AIX | FreeBsd
 
 
-let tags = ["linux"; "mac"; "aix"; ]
+let tags = ["linux"; "mac"; "aix"; "freebsd" ]
 
 let parse tag = match Misc.lowercase tag with
 | "linux" -> Some Linux
+| "freebsd" -> Some FreeBsd
 | "mac"|"macos" -> Some Mac
 | "aix"|"aix5" -> Some AIX
 | _ -> None
@@ -30,3 +31,8 @@ let pp = function
   | Linux -> "linux"
   | Mac -> "mac"
   | AIX -> "aix"
+  | FreeBsd -> "freebsd"
+
+let is_freebsd = function
+  | FreeBsd -> true
+  | Linux|Mac|AIX -> false
