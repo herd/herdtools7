@@ -514,6 +514,7 @@ module Make
             info = info;
             prog = code;
             condition = final;
+            filter ;
             locations = locs ; _
           } = t in
       let initenv = List.map (fun (loc,(_,v)) -> loc,v) init in
@@ -525,6 +526,7 @@ module Make
         info = info;
         code = code_typed;
         condition = final;
+        filter = filter;
         globals = comp_globals ty_env init code;
         flocs = List.map fst locs ;
         global_code = [];

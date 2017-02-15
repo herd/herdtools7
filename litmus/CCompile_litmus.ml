@@ -152,7 +152,7 @@ module Make
         { MiscParser.init = init ;
           info = info;
           prog = code;
-          condition = final;
+          condition = final; filter;
           locations = locs ; _
         } = t in
       let initenv = List.map (fun (x,(_,v)) -> x,v) init in
@@ -161,7 +161,7 @@ module Make
       { T.init = initenv;
         info = info;
         code = comp_code observed env code;
-        condition = final;
+        condition = final; filter;
         globals = comp_globals env code;
         flocs = List.map fst locs;
         global_code = get_global_code code;

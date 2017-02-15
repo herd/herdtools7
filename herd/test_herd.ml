@@ -27,6 +27,7 @@ type ('prog,'nice_prog,'start,'state,'prop,'loc,'locset) t =
      cond : 'prop ConstrGen.constr ;
      flocs : 'loc list ;
      observed : 'locset ;
+     displayed : 'locset ;
      extra_data : MiscParser.extra_data
    }
 
@@ -68,6 +69,10 @@ module Make(A:Arch_herd.S) =
 (* Code loader is external, since litmus tests need it too *)
     module Load = Loader.Make(A) 
 
+    let collect_atom a r = match a with
+    | ConstrGen.LV (loc,_v) -> A.LocSet.add loc r
+    | ConstrGen.LL (l1,l2) -> A.LocSet.add l1 (A.LocSet.add l2 r)
+
     let build name t =
       let t = Alloc.allocate_regs t in
       let
@@ -82,13 +87,13 @@ module Make(A:Arch_herd.S) =
 
       let prog,starts = Load.load nice_prog in
       let flocs = List.map fst locs in
-      let observed =
-        let locs = A.LocSet.of_list flocs in
-        ConstrGen.fold_constr
-          (fun a r -> match a with
-          | ConstrGen.LV (loc,_v) -> A.LocSet.add loc r
-          | ConstrGen.LL (l1,l2) -> A.LocSet.add l1 (A.LocSet.add l2 r))
-          final locs in
+      let displayed =
+        let flocs = A.LocSet.of_list flocs in
+        ConstrGen.fold_constr collect_atom final flocs in
+      let observed = match filter with
+      | None -> displayed
+      | Some filter ->
+          ConstrGen.fold_prop collect_atom filter displayed in
       {
        arch = A.arch ;
        name = name ;
@@ -101,6 +106,7 @@ module Make(A:Arch_herd.S) =
        cond = final ;
        flocs = flocs ;
        observed = observed ;       
+       displayed = displayed ;
        extra_data = extra_data
      }
 
@@ -127,7 +133,7 @@ module Make(A:Arch_herd.S) =
        filter = None ;
        cond = fake_constr ;
        flocs = [] ;
-       observed = A.LocSet.empty;
+       observed = A.LocSet.empty; displayed = A.LocSet.empty;
        extra_data = MiscParser.empty_extra;
       }     
 

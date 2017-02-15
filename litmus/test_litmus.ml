@@ -36,6 +36,7 @@ module type S = sig
       info : MiscParser.info ;
       code : (int * (A.Out.t * (A.reg type_env * env_volatile))) list ;
       condition : C.constr ;
+      filter : C.prop option ;
       globals : string type_env ;
       flocs : A.location list ;
       global_code : string list;
@@ -77,6 +78,7 @@ struct
       info : MiscParser.info ;
       code : (int * (A.Out.t * (A.reg type_env * env_volatile))) list ;
       condition : C.constr ;
+      filter : C.prop option ;
       globals : string type_env ;
       flocs : A.location list ;
       global_code : string list;

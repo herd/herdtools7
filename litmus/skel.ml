@@ -279,8 +279,8 @@ module Insert =
   let find_global_init a t =
     A.find_in_state (A.Location_global a) t.T.init
 
-  let have_finals_globals t =
-    not (StringSet.is_empty (U.get_final_globals t))
+  let have_observed_globals t =
+    not (StringSet.is_empty (U.get_observed_globals t))
 
 
   let dump_loc_name loc =  match loc with
@@ -870,7 +870,7 @@ let user2_barrier_def () =
     O.o "/* Outcome collection */" ;
     O.o "/**********************/" ;
 (* Outcome type definition *)
-    let outs = U.get_final_locs test in
+    let outs = U.get_displayed_locs test in
     let nitems =
       let map =
         A.LocSet.fold
@@ -1027,7 +1027,7 @@ let user2_barrier_def () =
       O.o "/* Check data */" ;
       O.oi "pb_t *fst_barrier;" ;
       if do_safer_write then begin
-        let locs = U.get_final_globals test in
+        let locs = U.get_observed_globals test in
         if not (StringSet.is_empty locs) then begin
           O.oi "po_t *s_or;" ;
           StringSet.iter
@@ -1043,7 +1043,7 @@ let user2_barrier_def () =
 
   let dump_static_check_vars env test =
     if do_check_globals && do_safer_write then begin
-      let locs = U.get_final_globals test in
+      let locs = U.get_observed_globals test in
       StringSet.iter
         (fun a ->
           let loc = A.Location_global a in
@@ -1132,7 +1132,7 @@ let user2_barrier_def () =
 
 (* STABILIZE *)
       if  do_safer_write then begin
-        let locs = U.get_final_globals test in
+        let locs = U.get_observed_globals test in
         if not (StringSet.is_empty locs) then begin
           O.f "" ;
           O.f "static void stabilize_globals(int _id, ctx_t *_a) {" ;
@@ -1343,7 +1343,7 @@ let user2_barrier_def () =
       O.oi "_a->fst_barrier = pb_create(N);" ;
     end ;
     if do_safer && do_collect_after then begin
-      let locs = U.get_final_globals test in
+      let locs = U.get_observed_globals test in
       if not (StringSet.is_empty locs) then begin
         O.oi "_a->s_or = po_create(N);" ;
         loop_proc_prelude indent ;
@@ -1420,7 +1420,7 @@ let user2_barrier_def () =
       test ;
     if do_safer && do_collect_after then  begin
       pb_free "fst_barrier" ;
-      let locs = U.get_final_globals test in
+      let locs = U.get_observed_globals test in
       if not (StringSet.is_empty locs) then begin
           po_free "s_or" ;
           if do_dynamicalloc  then begin
@@ -1754,7 +1754,7 @@ let user2_barrier_def () =
         end ;
 
         if do_collect then begin
-          let locs = U.get_final_locs test in
+          let locs = U.get_displayed_locs test in
           O.fx iloop "barrier_wait(barrier);" ;
           O.fx iloop "int cond = final_ok(%s);"
             (dump_cond_fun_call test
@@ -1792,7 +1792,7 @@ let user2_barrier_def () =
             loop_test_postlude indent
         end ;
 
-        if do_safer && do_collect_after && have_finals_globals test then begin
+        if do_safer && do_collect_after && have_observed_globals test then begin
           O.fi "stabilize_globals(%i,_a);" proc ;
         end ;
         O.oi "mbar();" ;
@@ -1970,7 +1970,7 @@ let user2_barrier_def () =
     if do_collect_after then begin
       O.oii "/* Log final states */" ;
       loop_test_prelude indent2 "_b->" ;
-      let locs = U.get_final_locs test in
+      let locs = U.get_observed_locs test in
       let loc_arrays =
         A.LocSet.fold
           (fun loc k -> match loc with
@@ -2028,7 +2028,7 @@ let user2_barrier_def () =
       O.o "" ;
 (* check globals against stabilized value *)
       if do_safer && do_collect_after then begin
-        let locs =  U.get_final_globals test in
+        let locs =  U.get_observed_globals test in
         StringSet.iter
           (fun loc ->
             let loc = A.Location_global loc in
@@ -2085,7 +2085,7 @@ let user2_barrier_def () =
                   sprintf "idx_addr(&ctx,_i,%s)" (dump_loc_copy loc)
                 else
                   dump_loc_copy loc))
-        locs ;
+        (U.get_displayed_locs test) ;
       O.oiii "add_outcome(hist,1,o,cond);" ;
       if mk_dsa test then begin
         O.oiii

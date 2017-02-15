@@ -63,8 +63,10 @@ module Make
       val fmt_outcome : T.t -> (CType.base -> string) -> A.LocSet.t -> env -> string
 
 (* Locations *)
-      val get_final_locs : T.t -> A.LocSet.t
-      val get_final_globals : T.t -> StringSet.t
+      val get_displayed_locs : T.t -> A.LocSet.t
+      val get_displayed_globals : T.t -> StringSet.t
+      val get_observed_locs : T.t -> A.LocSet.t
+      val get_observed_globals : T.t -> StringSet.t
       val is_ptr : A.location -> env -> bool
       val ptr_in_outs : env -> T.t -> bool
 
@@ -188,22 +190,33 @@ module Make
           locs
 
 (* Locations *)
-      let get_final_locs t =
+      let get_displayed_locs t =
         A.LocSet.union
           (T.C.locations t.T.condition)
           (A.LocSet.of_list t.T.flocs)
 
-      let get_final_globals t =
-        A.LocSet.fold
+      let filter_globals locs =
+         A.LocSet.fold
           (fun a k -> match a with
           | A.Location_global a|A.Location_deref (a,_) -> StringSet.add a k
           | A.Location_reg _ -> k)
-          (get_final_locs t) StringSet.empty
+          locs StringSet.empty
+
+      let get_displayed_globals t = filter_globals (get_displayed_locs t)
+
+      let get_observed_locs t =
+        let locs =  get_displayed_locs t in
+        match t.T.filter with
+        | None ->  get_displayed_locs t
+        | Some filter ->
+            A.LocSet.union locs (T.C.locations_prop filter)
+
+      let get_observed_globals t =  filter_globals (get_observed_locs t)
 
       let is_ptr loc env = CType.is_ptr (find_type loc env)
 
       let ptr_in_outs env test =
-        let locs = get_final_locs test in
+        let locs = get_displayed_locs test in
         A.LocSet.exists (fun loc ->is_ptr loc env ) locs
 
 (* Instructions *)

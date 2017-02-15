@@ -46,7 +46,7 @@ module Make(S : SemExtra.S) = struct
     List.map progorder_as_list by_proc
 
   let observed test es =
-    let locs = S.outcome_locations test in
+    let locs = S.observed_locations test in
     let xss = make_by_proc_and_poi es in
     let xss = Misc.mapi (fun i x -> i,x) xss in
     let _,obs =

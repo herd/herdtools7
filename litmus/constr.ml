@@ -23,6 +23,8 @@ module type S = sig
 
 (* List of read locations *)
   val locations : constr -> A.LocSet.t
+  val locations_prop : prop -> A.LocSet.t
+
 (* List locations that appears as  values *)
   val location_values : constr -> string list
 end
@@ -46,6 +48,8 @@ module Make(A : Arch_litmus.Base) : S with module A = A  =
     let locations (c:constr) =
       let locs = fold_constr locations_atom c A.LocSet.empty in
       locs
+
+    let locations_prop p = fold_prop locations_atom p A.LocSet.empty
 
     module Strings = Set.Make(String)
 

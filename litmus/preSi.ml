@@ -279,7 +279,7 @@ module Make
       let dump_addr_idx s = sprintf "_idx_%s" s
 
       let dump_outcomes env test =
-        let locs = U.get_final_locs test in
+        let locs = U.get_displayed_locs test in
         O.o "/************/" ;
         O.o "/* Outcomes */" ;
         O.o "/************/" ;
@@ -649,7 +649,7 @@ module Make
         c_rec n 2
 
       let dump_hash_def tname env test =
-        let locs = U.get_final_locs test in
+        let locs = U.get_displayed_locs test in
         let hashsz = match Cfg.check_nstates tname with
         | Some sz -> 3*sz
         | None -> hash_size (A.LocSet.cardinal locs) in
@@ -771,7 +771,7 @@ module Make
           my_regs global_env envVolatile proc out ;
         O.oii "barrier_wait(_b);" ;
 (* Collect shared locations final values, if appropriate *)
-        let globs = U.get_final_globals test in
+        let globs = U.get_displayed_globals test in
         if not (StringSet.is_empty globs) then begin
           let to_collect =
             StringSet.inter
@@ -783,7 +783,7 @@ module Make
               | A.Location_global s|A.Location_deref (s,_) ->
                   StringSet.mem s to_collect
               | A.Location_reg _ -> false)
-              (U.get_final_locs test) in
+              (U.get_displayed_locs test) in
           A.LocSet.iter
             (fun loc ->
               let tag = dump_loc_tag loc in
@@ -808,7 +808,7 @@ module Make
                 O.fii "%s = idx_addr((intmax_t *)%s,_vars);"
                   (OutUtils.fmt_presi_index (dump_loc_tag_coded loc))
                   (OutUtils.fmt_presi_ptr_index (dump_loc_tag loc)))
-            (U.get_final_locs test) ;
+            (U.get_displayed_locs test) ;
           (* condition *)
           O.oii "int _cond = final_ok(final_cond(_log));" ;
           (* recorded outcome *)

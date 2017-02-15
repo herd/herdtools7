@@ -29,6 +29,7 @@ type ('prog,'nice_prog,'start,'state,'prop, 'loc, 'locset) t =
      cond : 'prop ConstrGen.constr ;
      flocs : 'loc list ;
      observed : 'locset ;
+     displayed : 'locset ;
      extra_data : MiscParser.extra_data ;
    }
 

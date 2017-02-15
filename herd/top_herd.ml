@@ -209,7 +209,6 @@ module Make(O:Config)(M:XXXMem.S) =
 (* Called by model simulator in case of success *)
     let model_kont ochan test cstr =
       let check = check_prop test in
-      let test_locs = S.outcome_locations test in
       fun conc fsc vbpp flags c ->
         if do_observed && not (all_observed test conc) then c
         else if
@@ -285,7 +284,10 @@ module Make(O:Config)(M:XXXMem.S) =
           end ;
           let fsc =
             if O.outcomereads then fsc
-            else A.state_restrict_locs test_locs fsc in
+            else begin
+              let dlocs = S.displayed_locations test in
+              A.state_restrict_locs dlocs fsc
+            end in
           let r =
             { cands = c.cands+1;
               cfail = c.cfail;
@@ -378,7 +380,7 @@ module Make(O:Config)(M:XXXMem.S) =
         if O.outcomereads then
           let locs = 
             A.LocSet.union
-              (S.outcome_locations test)
+              (S.displayed_locations test)
               c.reads in
           A.StateSet.map
             (fun st -> A.state_restrict_locs locs st)

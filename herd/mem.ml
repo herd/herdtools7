@@ -773,7 +773,7 @@ let compatible_locs_mem e1 e2 =
       let loc_stores = U.collect_mem_stores es in
       let loc_stores =
         if C.observed_finals_only then
-          let observed_locs = S.outcome_locations test in        
+          let observed_locs = S.observed_locations test in
 (*          eprintf "Observed locs: {%s}\n"
             (S.LocSet.pp_str "," A.pp_location   observed_locs) ; *)
           U.LocEnv.fold

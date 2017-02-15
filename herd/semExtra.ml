@@ -55,7 +55,8 @@ module type S = sig
 
 (* Get list of locations observed in outcomes *)
   type loc_set = A.LocSet.t
-  val outcome_locations : test -> loc_set
+  val observed_locations : test -> loc_set
+  val displayed_locations : test -> loc_set
 
   type event = E.event
   type event_structure = E.event_structure
@@ -196,7 +197,8 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
     module T = Test_herd.Make(A)
 (* List of relevant location *)
     type loc_set = A.LocSet.t
-    let outcome_locations t = t.Test_herd.observed
+    let observed_locations t = t.Test_herd.observed
+    and displayed_locations t = t.Test_herd.displayed
 
     type event = E.event
 
