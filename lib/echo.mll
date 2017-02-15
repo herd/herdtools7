@@ -34,4 +34,7 @@ let get lexbuf =
 
 let echo_fun lexbuf put = doecho put lexbuf
 
+let echo_escape lexbuf chan =
+  let put c = match c with | '"' -> () | _ -> output_char chan c in
+  doecho put lexbuf
 }

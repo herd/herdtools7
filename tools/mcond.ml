@@ -42,7 +42,7 @@ module Make(Config:Config) =
           let _,_,(constr_start,constr_end),(_last_start,_loc_eof) = locs in
           let echo sec =
             let lexbuf = LU.from_section sec in_chan in
-            Echo.echo lexbuf chan in
+            Echo.echo_escape lexbuf chan in
           fprintf chan "%s \"" name.Name.name ;
           echo (constr_start,constr_end) ;
           fprintf chan "\"\n" ;
