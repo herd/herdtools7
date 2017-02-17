@@ -23,6 +23,8 @@ let sources = ref []
 
 open Option
 
+module PStride = ParseTag.Make(Stride)
+
 let opts =
   [
 (* General behavior *)
@@ -82,8 +84,8 @@ let opts =
    P.parse "-launch" Option.launch "set type of phread lauch" end ;
    begin let module P = ParseTag.Make(Memory) in
    P.parse "-mem" Option.memory "set memory mode" end ;
-   argint "-st" Option.stride "stride for scanning memory" ;
-   argint "-stride" Option.stride "alias for -st" ;
+   PStride.parse "-st" Option.stride "stride for scanning memory" ;
+   PStride.parse "-stride" Option.stride "stride for scanning memory" ;
    begin let module P = ParseTag.Make(Preload) in
    P.parse "-preload" Option.preload "set preload mode" end ;
    begin let module P = ParseTag.Make(Collect) in
@@ -319,7 +321,12 @@ let () =
       let noccs = !noccs
       let timelimit = !timelimit
       let avail = !avail
-      let stride = if !stride > 0 then Some !stride else None
+      let stride =
+        let open Stride in
+        let st = !stride in
+        match st with
+        | No|Adapt -> st
+        | St i ->  if i > 0 then st else No
       let timeloop = !timeloop
       let limit = !limit
 (* tar stuff *)

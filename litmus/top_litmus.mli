@@ -18,7 +18,7 @@ module type CommonConfig = sig
   val verbose : int
   val limit : bool
   val timeloop : int
-  val stride : int option
+  val stride : Stride.t
   val avail : int option
   val runs : int
   val size : int

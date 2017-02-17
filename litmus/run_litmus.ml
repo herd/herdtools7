@@ -20,7 +20,6 @@ open Printf
 open MySys
 
 module type Config = sig
-  val gcc : string
   val crossrun : Crossrun.t
   val driver : Driver.t
   val sleep : int

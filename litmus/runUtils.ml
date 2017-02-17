@@ -152,8 +152,8 @@ let report_parameters out =
   pf "/* alloc: %s */" (Alloc.pp O.alloc) ;
   pf "/* memory: %s */" (Memory.pp O.memory) ;
   begin match O.stride with
-  | None -> ()
-  | Some i ->  pf "/* stride: %i */" i
+  | Stride.No -> ()
+  | Stride.Adapt | Stride.St _ ->  pf "/* stride: %s */" (Stride.pp O.stride)
   end ;
   pf "/* safer: %s */" (Safer.pp O.safer) ;
   pf "/* preload: %s */" (Preload.pp O.preload) ;

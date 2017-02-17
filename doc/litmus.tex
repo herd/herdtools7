@@ -872,6 +872,7 @@ with a specified stride value (see Sec.~\ref{defstride}).
 \item[{\tt -st <n>}] Change stride to~\opt{<n>}.
 The default stride is specified at compile time by \litmus{}
 option \opt{-stride}.
+A value of zero or less is replaced by the number of threads in the test.
 \end{description}
 
 
@@ -1490,10 +1491,13 @@ default \opt{changing}.
 default \opt{indirect}.
 It is possible to instruct executables compiled in indirect mode
 to behave almost as if compiled in direct mode, see Sec.~\ref{rm}.
-\item[{\tt -stride <n>}]
+\item[{\tt -stride (none|adapt|<n>)}]
 Specify a stride value of \opt{<n>} --- set default value for option \opt{-st} of Sec.~\ref{st}. See Sec.~\ref{defstride} for details on the stride parameter.
-If <n> is negative or zero, restore the default,
-which is stride feature disabled.
+The default is \opt{none}\footnote{For backward compatibility, \opt{<n>} being negative or zero is equivalent to \opt{none}.}
+--- \emph{i.e.} tests have no
+\opt{-st} option. The special tag \opt{adapt} sets the default
+stride to be the number of threads in test.
+
 \item[{\tt -st <n>}] Alias for \opt{-stride <n>}.
 \item[{\tt -para (self|shell)}]
 Perform several tests concurrently, either by forking POSIX

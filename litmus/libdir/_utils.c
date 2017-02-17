@@ -684,7 +684,7 @@ void parse_cmd(int argc, char **argv, cmd_t *d, cmd_t *p) {
       --argc ; ++argv ;
       if (!*argv) usage(prog,d) ;
       p->stride = argint(prog,argv[0],d) ;
-      if (p->stride <= 0) p->stride = 1 ;
+      if (p->stride <= 0) p->stride = 0 ;
     } else if (strcmp(*argv,"-fs") == 0) {
       --argc ; ++argv ;
       if (!*argv) usage(prog,d) ;

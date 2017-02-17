@@ -64,7 +64,7 @@ val detached : bool ref
 val launch : Launch.t ref
 val memory : Memory.t ref
 val contiguous : bool ref
-val stride : int ref
+val stride : Stride.t ref
 val preload : Preload.t ref
 val collect : Collect.t ref
 val safer : Safer.t ref

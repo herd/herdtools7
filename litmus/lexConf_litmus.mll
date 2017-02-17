@@ -162,7 +162,8 @@ rule main = parse
 | "avail" arg
   { set_int_withfun (fun i ->  avail := Some i) arg ; main lexbuf }
 | ("st"|"stride") arg
-  { set_int stride arg ; main lexbuf }
+    { let module P = LexTag(Stride) in
+      P.lexfun "stride" stride arg ; main lexbuf }
 | ("vb"|"verbose_barrier") arg
    { set_bool verbose_barrier arg ; main lexbuf }
 | ("vp"|"verbose_prelude") arg

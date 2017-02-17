@@ -402,9 +402,8 @@ module Insert =
     O.oi "int verbose;" ;
     O.oi "int size_of_test,max_run;" ;
     if do_verbose_barrier then O.oi "int verbose_barrier;" ;
-    begin match stride with
-    | None -> ()
-    | Some _ -> O.oi "int stride;"
+    begin if Stride.some stride then
+      O.oi "int stride;"
     end ;
     if Cfg.timeloop > 0 then O.oi "int max_loop;" ;
     if do_affinity then begin
@@ -1587,9 +1586,8 @@ let user2_barrier_def () =
         | _::_ ->
             O.oi "unsigned int _static_prefetch = _a->_p->static_prefetch;"
         end ;
-        begin match stride with
-        | None -> ()
-        | Some _ -> O.fi "int _stride = _a->_p->stride;"
+        begin if Stride.some stride then
+          O.oi "int _stride = _a->_p->stride;"
         end ;
         let addrs = A.Out.get_addrs out in
 (*
@@ -1606,14 +1604,12 @@ let user2_barrier_def () =
           outregs ;
 
         let iloop =
-          match stride with
-          | Some _ ->
-              O.fi "for (int _j = _stride ; _j > 0 ; _j--) {" ;
-              O.fii "for (int _i = _size_of_test-_j ; _i >= 0 ; _i -= _stride) {" ;
-              indent3
-          | None ->
+          if Stride.some stride then begin
+            O.fi "for (int _j = _stride ; _j > 0 ; _j--) {" ;
+            O.fii "for (int _i = _size_of_test-_j ; _i >= 0 ; _i -= _stride) {" ;
+            indent3 end else begin
               loop_test_prelude indent "_" ;
-              indent2 in
+              indent2 end in
         if do_custom then begin
           let i = iloop in
           begin match addrs with
@@ -1784,14 +1780,12 @@ let user2_barrier_def () =
 (*          O.fx iloop "barrier_wait(barrier);"
             Problematic 4.2W on squale *)
         end  ;
-        begin match stride with
-        | Some _ ->
-            loop_test_postlude indent2 ;
-            loop_test_postlude indent
-        | None ->
+        if Stride.some stride then begin
+          loop_test_postlude indent2 ;
+          loop_test_postlude indent
+        end else begin
             loop_test_postlude indent
         end ;
-
         if do_safer && do_collect_after && have_observed_globals test then begin
           O.fi "stabilize_globals(%i,_a);" proc ;
         end ;
@@ -2251,9 +2245,8 @@ let user2_barrier_def () =
       O.oi "prm.verbose_barrier = cmd->verbose_barrier;" ;
     O.oi "prm.size_of_test = cmd->size_of_test;" ;
     O.oi "prm.max_run = cmd->max_run;" ;
-    begin match stride with
-    | None -> ()
-    | Some _ -> O.oi "prm.stride = cmd->stride;"
+    begin if Stride.some stride then
+      O.oi "prm.stride = cmd->stride > 0 ? cmd->stride : N ;"
     end ;
     if do_speedcheck then
       O.oi "prm.speedcheck = cmd->speedcheck; prm.stop_now = 0;" ;
@@ -2318,11 +2311,9 @@ let user2_barrier_def () =
     O.oi "if (prm.verbose) {" ;
     let fmt = doc.Name.name ^ ": n=%i, r=%i, s=%i" in
     O.fii "log_error( \"%s\",n_exe,prm.max_run,prm.size_of_test);" fmt ;
-    begin match stride with
-    | None -> ()
-    | Some _ ->
-        let fmt = ", st=%i" in
-        O.fii "log_error(\"%s\",prm.stride);" fmt
+    if Stride.some stride then begin
+      let fmt = ", st=%i" in
+      O.fii "log_error(\"%s\",prm.stride);" fmt
     end ;
     begin match memory with
     | Direct -> ()
