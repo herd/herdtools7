@@ -56,10 +56,6 @@ module Make(O:Config)(M:XXXMem.S) =
     let tr_out test = OutMapping.info_to_tr  test.Test_herd.info
 
 (* Cond checking *)
-    let check_filter test st = match test.Test_herd.filter with
-    | None -> false
-    | Some p -> C.check_prop p st
-
     let check_prop test st =
       let c = T.find_our_constraint test in
       let p = ConstrGen.prop_of c in
