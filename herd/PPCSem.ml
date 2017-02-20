@@ -326,6 +326,10 @@ module Make (C:Sem.Config)(V:Value.S)
 	create_barrier PPC.Isync ii >>! B.Next
     |PPC.Pdcbf (_rA,_rB) ->
         M.unitT B.Next
+    | PPC.Pcomment _ ->
+        Warn.warn_always "Instruction %s interpreted as a NOP"
+          (PPC.dump_instruction ii.A.inst);
+        M.unitT B.Next
     | PPC.Pnor (_, _, _, _)
     | PPC.Pneg (_, _, _)
     | PPC.Pslw (_, _, _, _)
@@ -341,9 +345,9 @@ module Make (C:Sem.Config)(V:Value.S)
     | PPC.Ploadx ((Byte|Short),_,_,_)
     | PPC.Pstore ((Byte|Short),_,_,_)
     | PPC.Pstorex ((Byte|Short),_,_,_)
-    | PPC.Pcomment _ ->
-        Warn.fatal "Instruction %s not implemented"
-          (PPC.dump_instruction ii.A.inst)
+        ->
+          Warn.fatal "Instruction %s not implemented"
+            (PPC.dump_instruction ii.A.inst)
         end
   end
     
