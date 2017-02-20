@@ -473,12 +473,18 @@ module Make
               end
             end) in
 
+        begin match test.T.filter with
+        | None -> ()
+        | Some f ->
+            DC.fundef_onlog_prop "filter_cond" f ;
+            O.o "" ;
+            ()
+        end ;
         let cond = test.T.condition in
         DC.fundef_onlog cond ;
         ()
 
       let dump_cond_def env test =
-        O.o "/* Condition check */" ;
         dump_cond_fun env test ;
         O.o "" ;
         ()
@@ -810,22 +816,31 @@ module Make
                   (OutUtils.fmt_presi_ptr_index (dump_loc_tag loc)))
             (U.get_displayed_locs test) ;
           (* condition *)
-          O.oii "int _cond = final_ok(final_cond(_log));" ;
+          let id = match test.T.filter with
+          | None -> Indent.indent2
+          | Some f ->
+              O.oii "if (filter_cond(_log)) {" ;
+              Indent.indent3 in
+          O.ox id "int _cond = final_ok(final_cond(_log));" ;
           (* recorded outcome *)
-          O.oii "hash_add(&_ctx->t,_log,_p,1,_cond);" ;
+          O.ox id "hash_add(&_ctx->t,_log,_p,1,_cond);" ;
           (* Result and stats *)
-          O.oii "if (_cond) {" ;
-          O.oiii "_ok = 1;" ;
-          O.oiii "(void)__sync_add_and_fetch(&_g->stats.groups[_p->part],1);" ;
+          O.ox id "if (_cond) {" ;
+          let nid = Indent.tab id in
+          O.ox nid "_ok = 1;" ;
+          O.ox nid "(void)__sync_add_and_fetch(&_g->stats.groups[_p->part],1);" ;
           let open SkelUtil in
           List.iter
             (fun {tags; name; _} ->
               let idx =
                 String.concat ""
                   (List.map (sprintf "[_p->%s]") tags) in
-              O.fiii "(void)__sync_add_and_fetch(&_g->stats.%s%s,1);" name idx)
+              O.fx nid "(void)__sync_add_and_fetch(&_g->stats.%s%s,1);" name idx)
             stats ;
-          O.oii "}"
+          O.ox id "}" ;
+          begin match test.T.filter with
+          | None -> () | Some _ -> O.oii "}"
+          end
         end ;
         O.oii "break; }" ;
         ()

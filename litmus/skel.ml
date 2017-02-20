@@ -825,16 +825,25 @@ let user2_barrier_def () =
         end
       end)
 
-
-  let dump_cond_fun env test =
-    let cond = test.T.condition in
+  let do_dump_cond_fun env cond =
     let find_type loc =
       let t = U.find_type loc env in
       CType.dump (CType.strip_atomic t) in
     DC.fundef find_type cond
 
+  let dump_cond_fun env test = do_dump_cond_fun env test.T.condition
+
+  let dump_filter env test = match test.T.filter with
+  | None -> ()
+  | Some f ->
+      let find_type loc =
+      let t = U.find_type loc env in
+      CType.dump (CType.strip_atomic t) in
+    DC.fundef_prop "filter_cond" find_type f
+
+
   let dump_cond_fun_call test dump_loc dump_val =
-    DC.funcall (test.T.condition) dump_loc dump_val
+    DC.funcall test.T.condition dump_loc dump_val
 
   let dump_defs_outs doc env test =
     (* If some of the output registers is of pointer type,
@@ -2057,8 +2066,16 @@ let user2_barrier_def () =
             "if (ctx.%s[_i] != ctx.%s[_i]) fatal(\"%s, address copy %s is wrong\") ; "
             cpy loc doc.Name.name cpy)
         cpys ;
+(* Check filter *)
+      let indent =
+        match test.T.filter with
+        | None -> indent3
+        | Some f ->
+            O.fiii "if (%s) {"
+              (DC.funcall_prop "filter_cond" f dump_loc_copy dump_ctx_addr) ;
+            indent4 in
 (* Compute final condition *)
-      O.fiii "cond = final_ok(%s);"
+      O.fx indent "cond = final_ok(%s);"
         (dump_cond_fun_call test dump_loc_copy dump_ctx_addr) ;
 (* Save outcome *)
       A.LocSet.iter
@@ -2071,37 +2088,40 @@ let user2_barrier_def () =
                   "o[%s_f+_j] = %s[_j]"
                   (dump_loc_name loc)
                   (dump_loc_copy loc) in
-              O.fiii "for (int _j = 0 ; _j < %i ; _j++) %s;" sz ins
+              O.fx indent "for (int _j = 0 ; _j < %i ; _j++) %s;" sz ins
           | _ ->
-              O.fiii "o[%s_f] = %s;"
+              O.fx indent "o[%s_f] = %s;"
                 (dump_loc_name loc)
                 (if CType.is_ptr t then
                   sprintf "idx_addr(&ctx,_i,%s)" (dump_loc_copy loc)
                 else
                   dump_loc_copy loc))
         (U.get_displayed_locs test) ;
-      O.oiii "add_outcome(hist,1,o,cond);" ;
+      O.ox indent "add_outcome(hist,1,o,cond);" ;
       if mk_dsa test then begin
-        O.oiii
+        O.ox indent
           "if (_b->aff_mode == aff_scan && _a->cpus[0] >= 0 && cond) {" ;
-        O.oiv "pm_lock(_a->p_mutex);" ;
-        O.oiv "ngroups[n_run % SCANSZ]++;" ;
-        O.oiv "pm_unlock(_a->p_mutex);" ;
-        O.oiii
+        let ni = Indent.tab indent in
+        O.ox ni "pm_lock(_a->p_mutex);" ;
+        O.ox ni "ngroups[n_run % SCANSZ]++;" ;
+        O.ox ni "pm_unlock(_a->p_mutex);" ;
+        O.ox indent
           "} else if (_b->aff_mode == aff_topo && _a->cpus[0] >= 0 && cond) {" ;
-        O.oiv "pm_lock(_a->p_mutex);" ;
-        O.oiv "ngroups[0]++;" ;
-        O.oiv "pm_unlock(_a->p_mutex);" ;
-        O.oiii "}"
+        O.ox ni "pm_lock(_a->p_mutex);" ;
+        O.ox ni "ngroups[0]++;" ;
+        O.ox ni "pm_unlock(_a->p_mutex);" ;
+        O.ox indent "}"
       end ;
 
 (****************)
-
-      O.oiii "if (cond) { hist->n_pos++; } else { hist->n_neg++; }" ;
+      O.ox indent "if (cond) { hist->n_pos++; } else { hist->n_neg++; }" ;
       if (do_verbose_barrier) then begin
-        O.oiii "if (_b->verbose_barrier) {" ;
-        O.oiv "pp_tb_log(_a->p_mutex,&ctx,_i,cond);" ;
-        O.oiii "}"
+        O.ox indent "if (_b->verbose_barrier) {" ;
+        O.ox (Indent.tab indent) "pp_tb_log(_a->p_mutex,&ctx,_i,cond);" ;
+        O.ox indent "}"
+      end ;
+      begin match test.T.filter with
+      | None -> () | Some _ -> O.fiii "}"
       end ;
       loop_test_postlude indent2 ;
       ()
@@ -2193,6 +2213,10 @@ let user2_barrier_def () =
       f (Indent.tab i) ;
       O.fx i "}"
     end else f i
+
+  let check_speedcheck_filter test i f = match test.T.filter with
+  | Some _ -> ()
+  | None -> check_speedcheck i f
 
   let dump_run doc _env test =
 (* Custom affinity information *)
@@ -2468,10 +2492,10 @@ let user2_barrier_def () =
       O.oii "hist_t *hk = (hist_t *)join_detached(op[k]);"
     else
       O.oii "hist_t *hk = (hist_t *)join(&th[k]);" ;
-    check_speedcheck indent2
+    check_speedcheck_filter test indent2
       (fun i ->
         O.ox i
-          "if (sum_hist(hk) != n_outs || hk->n_pos + hk->n_neg != n_outs) {" ;
+          "if (sum_outs(hk->outcomes) != n_outs || hk->n_pos + hk->n_neg != n_outs) {" ;
         O.oy i (sprintf "fatal(\"%s, sum_hist\");" doc.Name.name) ;
         O.ox i "}") ;
     O.oii "merge_hists(hist,hk);" ;
@@ -2484,10 +2508,10 @@ let user2_barrier_def () =
     O.oi "pb_free(p_barrier);" ;
     O.o "" ;
     O.oi "n_outs *= n_exe ;" ;
-    check_speedcheck indent
+    check_speedcheck_filter test indent
       (fun i ->
         O.ox i
-          "if (sum_hist(hist) != n_outs || hist->n_pos + hist->n_neg != n_outs) {"  ;
+          "if (sum_outs(hist->outcomes) != n_outs || hist->n_pos + hist->n_neg != n_outs) {"  ;
         O.oy i (sprintf "fatal(\"%s, sum_hist\") ;" doc.Name.name);
         O.ox i "}") ;
     O.oi "count_t p_true = hist->n_pos, p_false = hist->n_neg;" ;
@@ -2658,6 +2682,7 @@ let user2_barrier_def () =
     dump_threads test ;
     if mk_dsa test then dump_topology test ;
     let cpys = dump_def_ctx env test in
+    dump_filter env test ;
     dump_cond_fun env test ;
     dump_defs_outs doc env test ;
     dump_reinit env test cpys ;

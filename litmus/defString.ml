@@ -77,8 +77,4 @@ static void merge_hists(hist_t *h0, hist_t *h1) {
   h0->outcomes = merge_outs(h0->outcomes,h1->outcomes,NOUTS) ;
 }
 
-static count_t sum_hist(hist_t *h) {
-  return sum_outs(h->outcomes) ;
-}
-
 "

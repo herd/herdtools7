@@ -122,12 +122,14 @@ module Generic (A : Arch_litmus.Base) (C:Constr.S with module A = A) = struct
 (********************)
 
 (* final, only default types *)
-    let type_final final env =
-      let type_atom a env = match a with
-      | ConstrGen.LV (loc,v) ->
-          A.LocMap.add loc (typeof v) env
-      | ConstrGen.LL _ -> env in
-      ConstrGen.fold_constr type_atom final env
+  let type_atom a env = match a with
+  | ConstrGen.LV (loc,v) ->
+      A.LocMap.add loc (typeof v) env
+  | ConstrGen.LL _ -> env
+
+  let type_final final env = ConstrGen.fold_constr type_atom final env
+
+  let type_prop prop env = ConstrGen.fold_prop type_atom prop env
 
 (* locations, default and explicit types *)
   let type_locations flocs env =
@@ -172,9 +174,15 @@ module Generic (A : Arch_litmus.Base) (C:Constr.S with module A = A) = struct
     eprintf "%s: %s\n" tag (String.concat " " pp)
 
 
-  let build_type_env init final flocs =
+  let build_type_env init final filter flocs =
     let env = type_final final A.LocMap.empty in
     if false then dump_type_env "FINAL" env ;
+    let env = match filter with
+    | None -> env
+    | Some f ->
+         let env = type_prop f env in
+         if false then dump_type_env "FILTER" env ;
+         env in
     let env = type_locations flocs env in
     if false then dump_type_env "LOCS" env ;
     let env = type_init init env in
@@ -519,7 +527,10 @@ module Make
           } = t in
       let initenv = List.map (fun (loc,(_,v)) -> loc,v) init in
       let observed = Generic.observed final locs in
-      let ty_env = Generic.build_type_env init final locs in
+      let observed = match filter with
+      | None -> observed
+      | Some f -> A.LocSet.union observed (Constr.locations_prop f) in
+      let ty_env = Generic.build_type_env init final filter locs in
       let code = mk_templates name initenv code observed in
       let code_typed = type_outs ty_env code in
       { T.init = initenv ;

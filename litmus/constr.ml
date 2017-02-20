@@ -27,6 +27,7 @@ module type S = sig
 
 (* List locations that appears as  values *)
   val location_values : constr -> string list
+  val location_values_prop : prop -> string list
 end
 
 open ConstrGen
@@ -53,19 +54,24 @@ module Make(A : Arch_litmus.Base) : S with module A = A  =
 
     module Strings = Set.Make(String)
 
+    let atom_values a k =
+      let open ConstrGen in
+      match a with
+      | LV (_,v) ->
+          begin
+            match v with
+            | Symbolic s -> Strings.add s k
+            | Concrete _ -> k
+          end
+      | LL _ -> k
+
     let location_values c =
-      let locs =
-        fold_constr
-          (fun a k ->
-            let open ConstrGen in
-            match a with
-            | LV (_,v) ->
-                begin
-                  match v with
-                  | Symbolic s -> Strings.add s k
-                  | Concrete _ -> k
-                end
-            | LL _ -> k)
-          c Strings.empty in
+      let locs =  fold_constr atom_values c Strings.empty in
       Strings.elements locs
+
+    let location_values_prop p =
+      let locs =  fold_prop atom_values p Strings.empty in
+      Strings.elements locs
+
+
   end
