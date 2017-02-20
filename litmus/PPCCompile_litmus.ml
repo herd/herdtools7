@@ -378,7 +378,11 @@ module Make(V:Constant.S)(C:Config) =
             if rA = A.Ireg A.GPR0 then rs else rA::rs;
           end; }::k
     | Pcomment c ->
-        { empty_ins with memo = c; comment = true; }::k
+        { empty_ins with memo = c; comment = true; }::
+        (match c with
+        | "attn" ->
+            { empty_ins with memo = ".long 0x00000200"; }::k
+        | _ -> k )
 
     let extract_addrs _ins = StringSet.empty
 
