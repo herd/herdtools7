@@ -44,21 +44,25 @@ end = struct
 (* I think this is right... *)
   let mk_init_write l v = Access(W,l,v,false,[])
 
+  let pp_annots = function
+    | [] -> ""
+    | xs -> "[" ^ BellBase.string_of_annot_list xs ^ "]"
+
   let pp_action a = match a with    
   | Access (d,l,v,ato,s) ->
-      Printf.sprintf "%s[%s] %s%s %s"
+      Printf.sprintf "%s%s %s%s %s"
         (pp_dirn d)
-        (BellBase.string_of_annot_list s)
+        (pp_annots s)
         (A.pp_location  l)
 	(if ato then "*" else "")
 	(V.pp_v v)
   | Barrier (s,o) ->
       (match o with
       | None -> 
-          Printf.sprintf "f[%s]" (BellBase.string_of_annot_list s)
+          Printf.sprintf "f%s" (pp_annots s)
       | Some(s1, s2) ->
-          Printf.sprintf "f[%s]{%s}{%s}"
-            (BellBase.string_of_annot_list s)
+          Printf.sprintf "f%s{%s}{%s}"
+            (pp_annots s)
             (BellBase.string_of_labels s1)
             (BellBase.string_of_labels s2)
       )
