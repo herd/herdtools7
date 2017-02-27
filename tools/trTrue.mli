@@ -15,7 +15,8 @@
 (****************************************************************************)
 
 module type Config = sig
-  val aarch64 : bool
+  val sync : bool
+  val deref : bool
 end
 
 module type Out = sig

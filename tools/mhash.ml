@@ -140,6 +140,7 @@ module Top
 let verbose = ref 0
 let action = ref Action.Check
 let names = ref []
+let rename = ref []
 let excl = ref []
 let tests = ref []
 
@@ -155,6 +156,7 @@ let () =
     [
      "-v",Arg.Unit (fun () -> incr verbose), " be verbose";
      parse_select tests;
+     parse_rename rename;
      parse_names names;
      parse_excl excl;
      begin let module P = ParseTag.Make(Action) in     
@@ -170,7 +172,7 @@ module Check =
   CheckName.Make
     (struct
       let verbose = !verbose
-      let rename = []
+      let rename = !rename
       let select = []
       let names = !names
       let excl = !excl

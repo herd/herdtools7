@@ -79,8 +79,9 @@ rule main  mk islitmus rem = parse
           let t = O.rename t in
           if O.ok t then            
             main  mk (islitmusst || islitmus) (mk (t,kind,st)::rem) lexbuf
-          else
-            main  mk islitmus rem lexbuf
+          else begin
+            main mk islitmus rem lexbuf
+          end
       end }
 | [^'\r''\n']*  nl  { incr_lineno lexbuf ; main  mk islitmus rem lexbuf }
 | eof { islitmus,rem }
@@ -214,8 +215,9 @@ and main_simple  mk islitmus rem = parse
           let t = O.rename t in
           if O.ok t then
             main_simple  mk (islitmusst || islitmus) (mk (t,st)::rem) lexbuf
-          else
+          else begin
             main_simple  mk islitmus rem lexbuf
+          end
       end }
 | [^'\r''\n']*  nl  { incr_lineno lexbuf ; main_simple  mk islitmus rem lexbuf }
 | eof { islitmus,rem }

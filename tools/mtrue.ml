@@ -22,7 +22,8 @@ open Printf
 
 module type Config = sig
   val verbose : int
-  val aarch64 : bool
+  val sync : bool
+  val deref : bool
   val check_name : string -> bool
 end
 
@@ -39,9 +40,7 @@ module Make(Config:Config)(Out:OutTests.S) =
 
     module TR =
       TrTrue.Make
-        (struct
-          let aarch64 =  Config.aarch64
-        end)
+        (Config)
         (OutStr)
 
     let from_chan idx_out fname in_chan =
@@ -144,7 +143,8 @@ let from_args =
     Make
       (struct
         let verbose = !verbose
-        let aarch64 = !aarch64
+        let sync = false
+        let deref = !aarch64
         let check_name = match names with
         | None -> fun _ -> true
         | Some names -> (fun name -> StringSet.mem name names)

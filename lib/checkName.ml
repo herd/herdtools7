@@ -53,7 +53,6 @@ module
 (******************)
 (* Rename mapping *)
 (******************)
-
     module LR = LexRename.Make(I)
 
     let rename_table = LR.read_from_files I.rename (fun s -> Some s)
@@ -94,6 +93,8 @@ module
             (fun r name -> ReadNames.from_file (rename name) Misc.cons r)
             [] args in
         let set = StringSet.of_list names in
+        if I.verbose > 0 then
+          Printf.eprintf "Excl {%s}\n" (StringSet.pp_str "," (fun s -> s) set) ;
         Some set
 
     let names3 = match names1,names2 with
@@ -110,7 +111,13 @@ module
     | None ->
         begin match names_excl with
         | None ->fun _ -> true
-        | Some e -> fun n -> not (StringSet.mem n e)
+        | Some e ->
+            if I.verbose > 0 then
+              fun n ->
+                let b = not (StringSet.mem n e) in
+                Printf.eprintf "Check %s -> %b\n" n b ;
+                b
+            else fun n -> not (StringSet.mem n e)
         end
     | Some ns -> fun n -> StringSet.mem n ns
   end
