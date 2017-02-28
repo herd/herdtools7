@@ -16,6 +16,8 @@
 
 open Printf
 
+type arg_triple =  string * Arg.spec * string
+
 (* Helpers *)
 
 let parse_km opt s =  match Misc.string_of_intkm s with
