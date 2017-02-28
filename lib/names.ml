@@ -16,10 +16,10 @@
 
 (* Extract names from file list *)
 
-module S =Splitter.Make(Splitter.Default)
+module S = Splitter.Make(Splitter.Default)
 
 let from_file name chan = 
-  let splitted =  S.split name chan in
+  let splitted = S.split name chan in
   splitted.Splitter.name.Name.name
 
 let from_fname name = Misc.input_protect (from_file name) name

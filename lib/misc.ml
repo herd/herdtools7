@@ -609,3 +609,12 @@ module Simple = struct
 
 end
 
+    (*************)
+(* Test name *)
+(*************)
+
+let clean_name n =
+  if Filename.check_suffix n ".litmus"  then
+    Filename.chop_suffix n ".litmus"
+  else
+    n

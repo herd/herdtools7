@@ -63,6 +63,7 @@ rule main  mk islitmus rem = parse
  | "Test" blank+ (testname as t)
     ((blank+ (name as  kind))| ("" as kind)) nl 
     { incr_lineno lexbuf ;
+      let t = Misc.clean_name t in
       if O.verbose > 0 then begin
         decr count ;
         if !count <= 0 then begin
@@ -205,11 +206,9 @@ and main_simple  mk islitmus rem = parse
           eprintf "+%!" ;
           count := c_init
         end
-      end ;      let t =
-        if Filename.check_suffix t ".litmus" then
-          Filename.chop_suffix t ".litmus"
-        else t in
-      begin match  sstate lexbuf with
+      end ;
+      let t = Misc.clean_name t in
+      begin match sstate lexbuf with
       | None -> main_simple  mk islitmus rem lexbuf
       | Some (islitmusst,st) ->
           let t = O.rename t in

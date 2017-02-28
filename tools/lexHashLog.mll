@@ -45,9 +45,10 @@ let validation = "Undef"|"Succeeded"|"Failed"|"Ok"|"No"|"??"
 
 rule main keep same out name = parse
 | ("Test" blank+ (testname as t) ((blank+ (name))| ("")) as line) nl 
-  { let keep = C.check_name t in
-    out keep line ;
-    incr_lineno lexbuf ;
+    {let t = Misc.clean_name t in
+     let keep = C.check_name t in
+     out keep line ;
+     incr_lineno lexbuf ;
     main keep same out (Some t) lexbuf }
 | ("States" (blank+ (digit+ as _x))? | "Histogram" (blank+  '(' (digit+ as _x) blank+ "states" blank* ')')? as line)  nl
    { out keep line ;

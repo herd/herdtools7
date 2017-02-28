@@ -88,11 +88,9 @@ and main start = parse
       if tname = "--" then
         Filename.chop_extension
           (Filename.basename init1.pos_fname)
-      else if Filename.check_suffix tname ".litmus" then
- (* GRR follow litmus here *)
-        Filename.chop_suffix tname ".litmus"
       else
-        tname in
+ (* GRR follow litmus here *)
+        Misc.clean_name tname in
     let tname = match O.check_rename tname with
     | None -> tname
     | Some n -> n in

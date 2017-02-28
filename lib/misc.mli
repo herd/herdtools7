@@ -207,3 +207,9 @@ module Simple : sig
   val mem : string -> string list -> bool
   val mem_assoc : string -> 'a bds -> bool
 end
+
+(*************)
+(* Test name *)
+(*************)
+
+val clean_name : string -> string
