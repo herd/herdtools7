@@ -166,8 +166,12 @@ expr:
   { ECall ($1,$3) }
 | WCAS LPAR expr COMMA expr COMMA expr RPAR
   { ECas ($3,$5,$7,SC,SC,false) }
+| WCAS_EXPLICIT LPAR expr COMMA expr COMMA expr COMMA MEMORDER COMMA MEMORDER  RPAR
+  { ECas ($3,$5,$7,$9,$11,false) }
 | SCAS LPAR expr COMMA expr COMMA expr RPAR
   { ECas ($3,$5,$7,SC,SC,true) }
+| SCAS_EXPLICIT LPAR expr COMMA expr COMMA expr COMMA MEMORDER COMMA MEMORDER  RPAR
+  { ECas ($3,$5,$7,$9,$11,true) }
 
 args:
 | { [] }
