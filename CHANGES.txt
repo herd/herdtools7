@@ -1,3 +1,4 @@
+7.44
   * herd: add atomic_compare_exchange_..._explicit in C parser.
   * Suppress " in mcond output.
 7.43+3
