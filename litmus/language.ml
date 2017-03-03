@@ -17,6 +17,7 @@
 module type S = sig
   type arch_reg
   type t
+
 (* Function dump *)
   val dump_fun :
     out_channel ->

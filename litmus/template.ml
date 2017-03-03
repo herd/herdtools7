@@ -31,6 +31,12 @@ module type Config = sig
   val cautious : bool
 end
 
+module DefaultConfig = struct
+  let memory = Memory.Direct
+  let cautious = false
+end
+
+
 module type S = sig
 
   val comment : string

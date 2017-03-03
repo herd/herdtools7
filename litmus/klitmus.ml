@@ -118,12 +118,15 @@ let () =
 (* Parser *)
       let check_name = Check.ok
       let check_rename = Check.rename_opt
+      let check_kind _ = None
+      let check_cond _ = None
 (* Static options *)
       let verbose = verbose
       let hexa = !hexa
       let is_out = is_out ()
       let size = !size
       let runs = !runs
+      let avail = !avail
       let stride =
         let open Stride in
         let st = !stride in
@@ -133,7 +136,7 @@ let () =
 (* tar stuff *)
       let tarname = KOption.get_tar ()
     end in
-    let module T = Top_klitmus.Make(Config) (Tar) in
+    let module T = Top_klitmus.Top(Config) (Tar) in
     T.from_files sources ;
     if not (KOption.is_out ()) then MySys.rmdir outname ;
     exit 0

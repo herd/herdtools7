@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2010-present Institut National de Recherche en Informatique et *)
+(* Copyright 2017-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,27 +14,42 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module type S = sig
-  module A : Arch_litmus.S
+open Printf
 
-  val extract_addrs : A.instruction -> StringSet.t
-  val stable_regs : A.instruction -> A.RegSet.t
-  val emit_loop : A.Out.ins list -> A.Out.ins list
-  val compile_ins :
-      (Label.t -> string) ->
-        A.instruction ->  A.Out.ins list -> A.Out.ins list
-end
+let comment = "//"
 
-module type K = sig
-  module A : Arch_litmus.S
+module Make(V:Constant.S) = struct
+  include BellBase
+  module V =
+    struct
+      type v = Constant.v
+      include V
+      let maybevToV c = c
+    end
 
-  val extract_addrs : A.instruction -> StringSet.t
-  val stable_regs : A.instruction -> A.RegSet.t
-  val emit_loop : A.Out.ins list -> A.Out.ins list
-  val compile_ins :
-      (Label.t -> string) ->
-        A.instruction ->  A.Out.ins list -> A.Out.ins list
+  let reg_to_string r = match r with
+  | GPRreg _ -> pp_reg r
+  | Symbolic_reg _ -> assert false
 
-(* For time base barrier *)
-  val emit_tb_wait :  A.Out.ins list ->  A.Out.ins list
+  include
+      ArchExtra_litmus.Make
+      (struct
+        include Template.DefaultConfig
+        let asmcomment = None
+      end)
+       (struct
+        module V = V
+
+        type arch_reg = reg
+        let arch = `LISA
+        let forbidden_regs = []
+        let pp_reg = pp_reg
+        let reg_compare = reg_compare
+        let reg_to_string = reg_to_string
+        let internal_init _r = None
+        let reg_class _ = assert false
+        let comment = comment
+        let error _ _ = false
+      end)
+
 end

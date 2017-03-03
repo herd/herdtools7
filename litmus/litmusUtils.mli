@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2010-present Institut National de Recherche en Informatique et *)
+(* Copyright 2017-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,27 +14,14 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module type S = sig
-  module A : Arch_litmus.S
 
-  val extract_addrs : A.instruction -> StringSet.t
-  val stable_regs : A.instruction -> A.RegSet.t
-  val emit_loop : A.Out.ins list -> A.Out.ins list
-  val compile_ins :
-      (Label.t -> string) ->
-        A.instruction ->  A.Out.ins list -> A.Out.ins list
-end
+(* Some utilities *)
 
-module type K = sig
-  module A : Arch_litmus.S
+module Hash : functor(O:Warn.Config) ->
+  sig
+    open Answer
+    val mk_hash_info : string -> MiscParser.info  -> hash
+    val hash_ok : hash_env -> string -> hash -> bool
+  end
 
-  val extract_addrs : A.instruction -> StringSet.t
-  val stable_regs : A.instruction -> A.RegSet.t
-  val emit_loop : A.Out.ins list -> A.Out.ins list
-  val compile_ins :
-      (Label.t -> string) ->
-        A.instruction ->  A.Out.ins list -> A.Out.ins list
-
-(* For time base barrier *)
-  val emit_tb_wait :  A.Out.ins list ->  A.Out.ins list
-end
+module Pseudo : functor(A:Arch_litmus.S) -> PseudoAbstract.S with type code = int * A.pseudo list
