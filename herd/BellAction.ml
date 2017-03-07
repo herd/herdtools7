@@ -59,9 +59,9 @@ end = struct
   | Barrier (s,o) ->
       (match o with
       | None -> 
-          Printf.sprintf "f%s" (pp_annots s)
+          Printf.sprintf "F%s" (pp_annots s)
       | Some(s1, s2) ->
-          Printf.sprintf "f%s{%s}{%s}"
+          Printf.sprintf "F%s{%s}{%s}"
             (pp_annots s)
             (BellBase.string_of_labels s1)
             (BellBase.string_of_labels s2)
