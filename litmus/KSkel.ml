@@ -33,14 +33,54 @@ module type Config = sig
 end
 
 module Make
-         (Cfg:Config)
-         (P:sig type code end)
-         (A:Arch_litmus.Base)
-         (T:Test_litmus.S with type P.code = P.code and module A = A)
-         (O:Indent.S)
-         (Lang:Language.S with type arch_reg = T.A.reg and type t = A.Out.t) : sig
-  val dump : Name.t -> T.t -> unit
-         end =
-struct
-  let dump name test = ()
-end
+    (Cfg:Config)
+    (P:sig type code end)
+    (A:Arch_litmus.Base)
+    (T:Test_litmus.S with type P.code = P.code and module A = A)
+    (O:Indent.S)
+    (Lang:Language.S with type arch_reg = T.A.reg and type t = A.Out.t) :
+    sig
+      val dump : Name.t -> T.t -> unit
+    end =
+  struct
+(*
+    module PF = DoEmitPrintf.Make
+        (struct
+          let emitprintf = false
+          let ctr = Fmt.I64
+        end)(O)
+*)
+    let dump_header () =
+      O.o "#include <linux/module.h>\n" ;
+      O.o "#include <linux/kernel.h>\n" ;
+      O.o "#include <linux/init.h>\n" ;
+      O.o "#include <linux/kthread.h>\n" ;
+      O.o "#include <linux/ktime.h>\n" ;
+      O.o "#include <linux/atomic.h>\n" ;
+      O.o "#include <linux/kobject.h>\n" ;
+      O.o "#include <linux/sysfs.h>\n" ;
+      O.o "#include <linux/string.h>\n" ;
+      O.o "#include <linux/sched.h>\n" ;
+      O.o "#include <linux/wait.h>\n" ;
+      O.o "#include <linux/slab.h>\n" ;
+      O.o "" ;
+      ()
+
+    let dump_params test =
+      O.f "static int runs = %i\n" Cfg.runs ;
+      O.f "static int size = %i\n" Cfg.size ;
+      O.f "static int stride = %i\n"
+        (let open Stride in
+        match Cfg.stride with
+        | No -> 1
+        | St i -> i
+        | Adapt -> List.length test.T.code) ;
+      ()
+
+    let dump name test =
+      dump_header () ;
+      dump_params test ;
+      ()
+
+
+  end

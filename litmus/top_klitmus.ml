@@ -52,11 +52,13 @@ module Top(O:Config)(Tar:Tar.S) = struct
       (Lang:Language.S
       with type arch_reg = A.Out.arch_reg
       and type t = A.Out.t)
-      (L:GenParser.LexParse with type instruction = A.parsedPseudo) =
+      (L:GenParser.LexParse with type instruction = A.parsedPseudo)
+      (XXXComp : XXXCompile_litmus.S with module A = A) =
     struct
       module Pseudo = LitmusUtils.Pseudo(A)
       module P = GenParser.Make(OX)(A)(L)
       module T = Test_litmus.Make(O)(A)(Pseudo)
+      module Comp = Compile.Make (Compile.Default)(A)(T)(XXXComp)
 
       let dump source doc compiled =
         let outname = Tar.outname source in
@@ -113,7 +115,8 @@ module Top(O:Config)(Tar:Tar.S) = struct
             let parser = LISAParser.main
           end in
           let module Lang = ASMLang.Make(OX)(A.I)(A.Out) in
-          let module X = Make(A)(Lang)(LexParse) in
+          let module Comp = LISACompile.Make(V) in
+          let module X = Make(A)(Lang)(LexParse)(Comp) in
           X.compile hash_env fname chan splitted
       | _ ->
           W.warn "%s, cannot handle arch %s" (Pos.str_pos0 fname)

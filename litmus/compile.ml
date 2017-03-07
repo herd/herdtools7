@@ -20,6 +20,12 @@ module type Config = sig
   val barrier : Barrier.t
 end
 
+module Default = struct
+  let numeric_labels = false
+  let timeloop = 5
+  let barrier = Barrier.UserFence
+end
+
 let get_fmt hexa base = match CType.get_fmt hexa base with
 | Some fmt -> fmt
 | None -> Warn.fatal "No format for type '%s'" base
