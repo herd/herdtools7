@@ -384,9 +384,12 @@ let revalidate c sts = match c with
   then Ok
   else No
 
+let to_exists c = ConstrGen.ExistsState (ConstrGen.prop_of c)
+
 let witness_again c sts = match c with
 | None -> Int64.zero,Int64.zero
 | Some c ->
+    let c = to_exists c in
     LC.witness c (List.map (fun {p_st=st; p_noccs=c} -> st,c) sts.p_sts)
 
 let filter inv tbl t =

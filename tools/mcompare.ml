@@ -971,7 +971,7 @@ let format_int_string s =
                           sprintf "%s, %s" (LS.pp_validation v) (pp_wits p n)
                     | _ -> LS.pp_validation v
                   else
-                    "X" ^ LS.pp_validation v in
+                    LS.pp_validation v in
                 (if asY then add_short_comment else add_comment (not asZ))
                   t.tname col.is_litmus unsure k v v_pp
 
