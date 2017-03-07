@@ -222,7 +222,7 @@ end = struct
 
       let limit_ok nprocs = match O.avail with
       | None|Some 0 -> true
-      | Some navail -> nprocs <= navail
+      | Some navail -> not O.limit || nprocs <= navail
 
       let warn_limit name nprocs = match O.avail with
       | None|Some 0 -> ()
@@ -275,7 +275,7 @@ end = struct
             R.run name out_chan doc allocated source ;
             Completed (A'.arch,doc,source,cycles,hash_env)
           end else begin
-            W.warn "%stest not compiled" (Pos.str_pos0 doc.Name.file) ;
+            W.warn "%s test not compiled" (Pos.str_pos0 doc.Name.file) ;
             Absent A'.arch
           end
         end with e -> Interrupted (A'.arch,e)
