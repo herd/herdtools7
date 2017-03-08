@@ -18,3 +18,4 @@
 
 include MySet.S with type elt = string and type t = MySet.Make(String).t
 
+val pp_id : string -> t -> string

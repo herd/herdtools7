@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+let do_debug = false
+
 module type Config = sig
   val numeric_labels : bool
   val timeloop : int
@@ -148,7 +150,7 @@ module Generic (A : Arch_litmus.Base) (C:Constr.S with module A = A) = struct
           (A.pp_location loc)
           (MiscParser.pp_run_type t) ;
 *)
-        match t with
+       let env =  match t with
         | MiscParser.TyDef ->
           begin try
             ignore (A.LocMap.find loc env) ;
@@ -156,7 +158,16 @@ module Generic (A : Arch_litmus.Base) (C:Constr.S with module A = A) = struct
           with Not_found ->
             A.LocMap.add loc (typeof v) env
           end
-        | _ -> A.LocMap.add loc (misc_to_c t) env)
+        | _ -> A.LocMap.add loc (misc_to_c t) env in
+       match v with
+       | Constant.Concrete _ -> env
+       | Constant.Symbolic s ->
+           let loc = A.Location_global s in
+           try
+            ignore (A.LocMap.find loc env) ;
+            env
+          with Not_found ->
+            A.LocMap.add loc base env)
       env init
 
   let dump_type_env tag env =
@@ -176,17 +187,17 @@ module Generic (A : Arch_litmus.Base) (C:Constr.S with module A = A) = struct
 
   let build_type_env init final filter flocs =
     let env = type_final final A.LocMap.empty in
-    if false then dump_type_env "FINAL" env ;
+    if do_debug then dump_type_env "FINAL" env ;
     let env = match filter with
     | None -> env
     | Some f ->
          let env = type_prop f env in
-         if false then dump_type_env "FILTER" env ;
+         if do_debug then dump_type_env "FILTER" env ;
          env in
     let env = type_locations flocs env in
-    if false then dump_type_env "LOCS" env ;
+    if do_debug then dump_type_env "LOCS" env ;
     let env = type_init init env in
-    if false then dump_type_env "INIT" env ;
+    if do_debug then dump_type_env "INIT" env ;
     env
 
   let find_type loc env =

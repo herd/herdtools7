@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+let debug = false
+
 module type I = sig
   type arch_reg
   val arch : Archs.t
@@ -116,6 +118,8 @@ struct
                 match v with Symbolic s -> s::k
                 | Concrete _ -> k)
               [] init)) in
+    if debug then
+      eprintf "addrs: {%s}\n" (StringSet.pp_id "; " set) ;
     StringSet.elements set
 
   let get_stable { stable; _} = stable
