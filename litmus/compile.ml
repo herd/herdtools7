@@ -22,7 +22,7 @@ end
 
 module Default = struct
   let numeric_labels = false
-  let timeloop = 5
+  let timeloop = 0
   let barrier = Barrier.UserFence
 end
 
@@ -33,7 +33,10 @@ let get_fmt hexa base = match CType.get_fmt hexa base with
 let base =  CType.Base "int"
 let pointer = CType.Pointer base
 
-module Generic (A : Arch_litmus.Base) (C:Constr.S with module A = A) = struct
+module Generic (A : Arch_litmus.Base)
+    (C:Constr.S
+    with type location = A.location and module LocSet = A.LocSet) = struct
+
   open CType
 
   let base =  base

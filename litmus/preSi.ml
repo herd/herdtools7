@@ -456,6 +456,7 @@ module Make
           CompCond.Make(O)
             (struct
               open Constant
+              let with_ok = true
               module C = T.C
               module V = struct
                 type t = Constant.v

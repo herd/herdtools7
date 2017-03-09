@@ -43,43 +43,488 @@ module Make
       val dump : Name.t -> T.t -> unit
     end =
   struct
-(*
-    module PF = DoEmitPrintf.Make
+(*************)
+(* Utilities *)
+(*************)
+    module UCfg = struct
+      let memory = Memory.Direct
+      let preload = Preload.NoPL
+      let mode = Mode.Std
+      let kind = true
+      let hexa = Cfg.hexa
+      let exit_cond = false
+    end
+
+    module U = SkelUtil.Make(UCfg)(P)(A)(T)
+
+    let iter_outs f proc = List.iter (f proc)
+
+    let iter_all_outs f test =
+      List.iter
+        (fun (proc,(_,(outs,_))) -> iter_outs f proc outs)
+        test.T.code
+
+    let dump_loc_name loc =  match loc with
+    | A.Location_reg (proc,reg) -> A.Out.dump_out_reg proc reg
+    | A.Location_global s -> s
+    | A.Location_deref (s,i) -> sprintf "%s_%i" s i
+
+
+    module DC =
+      CompCond.Make(O)
         (struct
-          let emitprintf = false
-          let ctr = Fmt.I64
-        end)(O)
-*)
+          open Constant
+          let with_ok = false
+          module C = T.C
+          module V = struct
+            type t = Constant.v
+            let compare = A.V.compare
+            let dump = function
+              | Concrete i ->
+                  if Cfg.hexa then sprintf "0x%x"i
+                  else sprintf "%i" i
+              | Symbolic _ -> assert false
+          end
+          module Loc = struct
+            type t = A.location
+            let compare = A.location_compare
+            let dump loc = "_" ^ dump_loc_name loc
+          end
+        end)
+
+    let do_dump_cond_fun env cond =
+      let find_type loc =
+        let t = U.find_type loc env in
+        CType.dump (CType.strip_atomic t) in
+      DC.fundef find_type cond
+
+    let dump_cond_fun env test = do_dump_cond_fun env test.T.condition
+
+    let dump_cond_fun_call test dump_loc dump_val =
+      DC.funcall test.T.condition dump_loc dump_val
+
+(***********)
+(* Headers *)
+(***********)
+
     let dump_header () =
-      O.o "#include <linux/module.h>\n" ;
-      O.o "#include <linux/kernel.h>\n" ;
-      O.o "#include <linux/init.h>\n" ;
-      O.o "#include <linux/kthread.h>\n" ;
-      O.o "#include <linux/ktime.h>\n" ;
-      O.o "#include <linux/atomic.h>\n" ;
-      O.o "#include <linux/kobject.h>\n" ;
-      O.o "#include <linux/sysfs.h>\n" ;
-      O.o "#include <linux/string.h>\n" ;
-      O.o "#include <linux/sched.h>\n" ;
-      O.o "#include <linux/wait.h>\n" ;
-      O.o "#include <linux/slab.h>\n" ;
+      O.o "#include <linux/module.h>" ;
+      O.o "#include <linux/kernel.h>" ;
+      O.o "#include <linux/init.h>" ;
+      O.o "#include <linux/fs.h>" ;
+      O.o "#include <linux/proc_fs.h>" ;
+      O.o "#include <linux/seq_file.h>" ;
+      O.o "#include <linux/kthread.h>" ;
+      O.o "#include <linux/ktime.h>" ;
+      O.o "#include <linux/atomic.h>" ;
+      O.o "#include <linux/kobject.h>" ;
+      O.o "#include <linux/sysfs.h>" ;
+      O.o "#include <linux/string.h>" ;
+      O.o "#include <linux/sched.h>" ;
+      O.o "#include <linux/wait.h>" ;
+      O.o "#include <linux/slab.h>" ;
+      O.o "" ;
+      O.o "typedef u64 count_t;" ;
+      O.o "#define PCTR \"llu\"" ;
       O.o "" ;
       ()
 
+
+(********)
+(* Outs *)
+(********)
+    let dump_loc_idx loc = sprintf "%s_f" (dump_loc_name loc)
+
+    let fmt_outcome test locs env =
+      U.fmt_outcome test
+        (fun t -> match Compile.get_fmt Cfg.hexa t with
+        | CType.Direct fmt ->
+            if Cfg.hexa then "0x%" ^ fmt else "%" ^ fmt
+        | CType.Macro fmt ->
+            (if Cfg.hexa then "0x%\"" else "%\"") ^ fmt ^ "\"")
+        locs env
+
+    let dump_outs env test =
+      O.o "/************/" ;
+      O.o "/* Outcomes */" ;
+      O.o "/************/" ;
+      O.o "" ;
+      let outs = U.get_displayed_locs test in
+      let nitems =
+        let map =
+          A.LocSet.fold
+            (fun loc ->
+              A.LocMap.add loc (SkelUtil.nitems (U.find_type loc env)))
+            outs A.LocMap.empty in
+        fun loc ->
+          try A.LocMap.find loc map
+          with Not_found -> assert false in
+      let nouts =
+        A.LocSet.fold
+          (fun loc k -> nitems loc + k)
+          outs 0 in
+
+      O.f "#define NOUTS %i" nouts ;
+      O.o "typedef u64 outcome_t[NOUTS];" ;
+      O.o "" ;
+      let _ =
+        A.LocSet.fold
+          (fun loc pos ->
+            O.f "static const int %s = %i ;" (dump_loc_idx loc) pos ;
+            pos+nitems loc)
+          outs 0 in
+      O.o "" ;
+      ObjUtil.insert_lib_file O.o "outs.txt" ;
+      O.o "" ;
+      O.o "static outs_t *add_outcome_outs(outs_t *p,u64 *k,int show) {" ;
+      O.oi "return loop_add_outcome_outs(p,k,nthreads-1,1,show);" ;
+      O.o "}" ;
+      O.o "" ;
+(* Only dump depends on test... *)
+      O.o "static void do_dump_outs (struct seq_file *m,outs_t *p,u64 *o,int sz) {" ;
+      O.oi "for ( ; p ; p = p->next) {" ;
+      O.oii "o[sz-1] = p->k;" ;
+      O.oii "if (p->c > 0) {" ;
+      let fmt_var = fmt_outcome test outs env in
+      let fmt ="\"%-8\"PCTR\"%c>" ^ fmt_var ^ "\\n\"" in
+      let args =
+        String.concat ","
+          ("p->c"::"p->show ? '*' : ':'"::
+           [A.LocSet.pp_str ","
+              (fun loc ->
+                let sloc = dump_loc_name loc in
+                match U.find_type loc env with
+                | CType.Pointer _
+                | CType.Array _ -> assert false
+                | t -> sprintf "(%s)o[%s_f]" (CType.dump t) sloc)
+              outs]) in
+      O.fiii "seq_printf(m,%s,%s);" fmt args ;
+      O.oii "} else {" ;
+      O.oiii "do_dump_outs(m,p->down,o,sz-1);" ;
+      O.oii "}" ;
+      O.oi "}" ;
+      O.o "}" ;
+      O.o "" ;
+      O.o "static void dump_outs(struct seq_file *m,outs_t *p) {" ;
+      O.oi "outcome_t buff;" ;
+      O.oi "do_dump_outs(m,p,buff,nthreads);" ;
+      O.o "}" ;
+      O.o "" ;
+      ()
+
+(**************)
+(* Parameters *)
+(**************)
+
     let dump_params test =
-      O.f "static int runs = %i\n" Cfg.runs ;
-      O.f "static int size = %i\n" Cfg.size ;
-      O.f "static int stride = %i\n"
+      O.o "/**************/" ;
+      O.o "/* Parameters */" ;
+      O.o "/**************/" ;
+      O.o "" ;
+      O.f "static const int nthreads = %i;" (T.get_nprocs test) ;
+      O.f "static unsigned int nruns = %i;" Cfg.runs ;
+      O.f "static unsigned int size = %i;" Cfg.size ;
+      O.f "static unsigned int stride = %i;"
         (let open Stride in
         match Cfg.stride with
         | No -> 1
         | St i -> i
         | Adapt -> List.length test.T.code) ;
+      O.f "static unsigned int avail = %i;"
+        (match Cfg.avail with None -> 0 | Some a -> a) ;
+      O.o "static unsigned int ninst = 0;" ;
+      O.o "" ;
+      let module_param v = O.f "module_param(%s,uint,0644);" v in
+      module_param "nruns" ;
+      module_param "size" ;
+      module_param "stride" ;
+      module_param "avail" ;
+      module_param "ninst" ;
+      O.o "" ;
+      O.o "static wait_queue_head_t *wq;" ;
+      O.o "static atomic_t done = ATOMIC_INIT(0);" ;
+      O.o "" ;
       ()
 
+
+(***********)
+(* Context *)
+(***********)
+(* Dump left & right values when pointer to context is available *)
+
+(* Left value *)
+    let dump_a_leftval a = sprintf "_a->%s[_i]" a
+
+(* Right value *)
+    let dump_a_addr s = sprintf "&(_a->%s[_i])" s
+
+    let dump_a_v = function
+      | Constant.Concrete i -> sprintf "%i" i
+      | Constant.Symbolic s -> dump_a_addr s
+
+(* Right value, casted if pointer *)
+    let _dump_a_v_casted = function
+      | Constant.Concrete i -> sprintf "%i" i
+      | Constant.Symbolic s -> sprintf "((int *)%s)" (dump_a_addr s)
+
+    let dump_ctx env test =
+      O.o "/****************/" ;
+      O.o "/* Test Context */" ;
+      O.o "/****************/" ;
+      O.o "" ;
+      O.o "typedef struct {" ;
+      O.o "/* Shared locations */" ;
+      List.iter
+        (fun (s,t) ->
+          let pp_t = SkelUtil.dump_global_type s (CType.strip_volatile t) in
+          O.fi "%s *%s;" pp_t s)
+        test.T.globals ;
+      O.o "/* Final contents of observed registers */" ;
+      iter_all_outs
+        (fun proc (reg,t) ->
+          O.fi "%s *%s;"
+            (CType.dump t)
+            (A.Out.dump_out_reg proc reg))
+        test ;
+      O.o "/* For synchronisation */" ;
+      O.oi "int *barrier;" ;
+      O.o "} ctx_t ;" ;
+      O.o "" ;
+      O.o "static ctx_t **ctx;" ;
+      O.o "" ;
+      O.o "static void free_ctx(ctx_t *p) { " ;
+      O.oi "if (p == NULL) return;" ;
+      let free tag = O.fi "kfree(p->%s);" tag in
+      List.iter (fun (s,_) ->  free s) test.T.globals ;
+      iter_all_outs
+        (fun proc (reg,t) ->
+          let tag = A.Out.dump_out_reg proc reg in
+          free tag) test ;
+      free "barrier" ;
+      O.oi "kfree(p);" ;
+      O.o "}" ;
+      O.o "" ;
+      O.o "static ctx_t *alloc_ctx(size_t sz) { " ;
+      O.oi "ctx_t *r = kzalloc(sizeof(*r),GFP_KERNEL);" ;
+      O.oi "if (!r) { return NULL; }" ;
+      let alloc tag =
+        O.fi "r->%s = kmalloc(sizeof(r->%s[0])*sz,GFP_KERNEL);" tag tag ;
+        O.fi "if (!r->%s) { free_ctx(r); return NULL; }" tag in
+      List.iter (fun (s,_) ->  alloc s) test.T.globals ;
+      iter_all_outs
+        (fun proc (reg,t) ->
+          let tag = A.Out.dump_out_reg proc reg in
+          alloc tag) test ;
+      alloc "barrier" ;
+      O.oi "return r;" ;
+      O.o "}" ;
+      O.o "" ;
+      O.o "static void init_ctx(ctx_t *_a,size_t sz) {" ;
+      O.oi "for (int _i = 0 ; _i < sz ; _i++) {" ;
+      List.iter
+        (fun (s,t) ->
+          let v = A.find_in_state (A.Location_global s) test.T.init in
+          O.fii "%s = %s;" (dump_a_leftval s) (dump_a_v v))
+        test.T.globals ;
+      List.iter
+        (fun (proc,(_,(outs,_))) ->
+          List.iter
+            (fun (reg,t) ->
+              O.fii "_a->%s[_i] = %s;"
+                (A.Out.dump_out_reg proc reg)
+                (match CType.is_ptr t with
+                | false -> Skel.sentinel
+                | true -> "NULL"))
+            outs)
+        test.T.code ;
+      O.oii "_a->barrier[_i] = 0;" ;
+      O.oi "}" ;
+      O.o "}" ;
+      O.o "" ;
+      ()
+
+(***************)
+(* Test proper *)
+(***************)
+    let dump_barrier_def () =
+      O.o "static inline void barrier_wait(int id,int i,int *b) {" ;
+      O.oi "if ((i % nthreads) == i) {" ;
+      O.oii "ACCESS_ONCE(*b) = 1;" ;
+      O.oii "smp_mb();" ;
+      O.oi "} else {" ;
+      O.oii "while (ACCESS_ONCE(*b) == 0) cpu_relax();" ;
+      O.oi "}" ;
+      O.o "}" ;
+      O.o ""
+
+    let dump_threads tname env test =
+      O.o "/***************/" ;
+      O.o "/* Litmus code */" ;
+      O.o "/***************/" ;
+      O.o "" ;
+      dump_barrier_def () ;
+      List.iter
+        (fun (proc,(out,(outregs,envVolatile))) ->
+          let myenv = U.select_proc proc env
+          and global_env = U.select_global env in
+          Lang.dump_fun O.out myenv global_env envVolatile proc out ;
+          O.f "static int thread%i(void *_p) {" proc ;
+          O.oi "ctx_t *_a = (ctx_t *)_p;" ;
+          O.o "" ;
+          O.oi "for (int _j = 0 ; _j < stride ; _j++) {" ;
+          O.oii "for (int _i = _j ; _i < size ; _i += stride) {" ;
+          O.fiii "barrier_wait(%i,_i,&_a->barrier[_i]);" proc ;
+          Lang.dump_call O.out (Indent.as_string indent3)
+            myenv global_env envVolatile proc out ;
+          O.oii "}" ;
+          O.oi "}" ;
+          O.oi "atomic_inc(&done);" ;
+          O.oi "wake_up(wq);" ;
+          O.oi "do_exit(0);" ;
+          O.o "}" ;
+          O.o "" ;
+          ())
+        test.T.code ;
+      ()
+
+    let dump_zyva tname test =
+      O.o "/********/" ;
+      O.o "/* Zyva */" ;
+      O.o "/********/" ;
+      O.o "" ;
+      O.o "static outs_t *zyva(void) {" ;
+      O.oi "ctx_t **c = ctx;" ;
+      O.oi "outs_t *outs = NULL;" ;
+      O.oi "const int nth = ninst * nthreads;" ;
+      O.o "" ;
+      O.oi "for (int _k = 0 ; _k < nruns ; _k++) {" ;
+      O.oii "int _nth = 0;" ;
+      O.oii "struct task_struct *th[nth];" ;
+      O.o "" ;
+      O.oii "for (int _ni = 0 ; _ni < ninst ; _ni++) init_ctx(c[_ni],size);" ;
+      O.oii "atomic_set(&done,0);" ;
+      O.oii "for (int _ni = 0 ; _ni < ninst ; _ni++) {" ;
+      for i = 0 to T.get_nprocs test-1 do
+        O.fiii "th[_nth] = kthread_create(thread%i,c[_ni],\"thread%i\");"
+          i i ;
+        O.oiii "if (IS_ERR(th[_nth])) return NULL;" ;
+        O.oiii "_nth++;"
+      done ;
+      O.oii "}" ;
+      O.oii "for (int _t = 0 ; _t < nth ; _t++) wake_up_process(th[_t]);" ;
+      O.oii "wait_event_interruptible(*wq, atomic_read(&done) == nth);" ;
+      O.oii "for (int _ni = 0 ; _ni < ninst ; _ni++) {" ;
+      O.oiii "ctx_t *_a = c[_ni];" ;
+      O.oiii "for (int _i = 0 ; _i < size ; _i++) {" ;
+      let dump_a_loc loc = sprintf "_a->%s[_i]" (dump_loc_name loc) in
+      O.oiv "outcome_t _o;" ;
+      O.fiv "int _cond = %s;"
+        (dump_cond_fun_call test dump_a_loc dump_a_addr)  ;
+      let locs = U.get_displayed_locs test in
+      A.LocSet.iter
+        (fun loc ->
+          O.fiv "_o[%s] = %s;"
+            (dump_loc_idx loc) (dump_a_loc loc))
+        locs ;
+      O.oiv "outs = add_outcome_outs(outs,_o,_cond);" ;
+      O.oiii "}" ;
+      O.oii "}" ;
+      O.oi "}" ;
+      O.oi "return outs;" ;
+      O.o "}" ;
+      O.o ""
+
+(**********)
+(* ProcFs *)
+(**********)
+
+    let dump_proc tname =
+      O.o "static int\nlitmus_proc_show(struct seq_file *m,void *v) {" ;
+      let fmt = "%s\\n"  in
+      O.fi "seq_printf(m,\"%s\",\"%s\");" fmt (String.escaped tname) ;
+      let out tag =
+        let fmt = tag ^ "=" ^ "%i\\n" in
+        O.fi "seq_printf(m,\"%s\",%s);" fmt tag in
+      out "size" ; out "nruns" ; out "stride" ;
+      O.oi "return 0;" ;
+      O.o "}" ;
+      O.o "" ;
+      O.o "static int\nlitmus_proc_open(struct inode *inode,struct file *fp) {" ;
+      O.oi "return single_open(fp,litmus_proc_show,NULL);" ;
+      O.o "}" ;
+      O.o "" ;
+      O.o "static const struct file_operations litmus_proc_fops = {" ;
+      O.oi ".owner   = THIS_MODULE," ;
+      O.oi ".open    = litmus_proc_open," ;
+      O.oi ".read    = seq_read," ;
+      O.oi ".llseek   = seq_lseek," ;
+      O.oi ".release = single_release," ;
+      O.o "};" ;
+      O.o ""
+
+(**************************)
+(* Init, Exit and friends *)
+(**************************)
+
+    let dump_init_exit test =
+      O.o "static int __init" ;
+      O.o "litmus_init(void) {" ;
+      O.oi "int err=0;" ;
+      O.oi "struct proc_dir_entry *litmus_pde = proc_create(\"litmus\",0,NULL,&litmus_proc_fops);" ;
+      O.oi "if (litmus_pde == NULL) { return -ENOMEM; }" ;
+      O.oi "if (avail == 0) avail = num_online_cpus ();" ;
+      O.oi "if (ninst == 0) ninst = avail / nthreads ;" ;
+      O.o "" ;
+      O.oi "ctx = kzalloc(sizeof(ctx[0])*ninst,GFP_KERNEL);" ;
+      O.oi "if (ctx == NULL) { err = -ENOMEM ; goto clean_pde; }" ;
+      O.oi "for (int _k=0 ; _k < ninst ; _k++) {" ;
+      O.oii "ctx[_k] = alloc_ctx(size);" ;
+      O.oii "if (ctx[_k] == NULL) { err = -ENOMEM; goto clean_ctx; }" ;
+      O.oi "}" ;
+      O.o "" ;
+      O.oi "wq =  kzalloc(sizeof(*wq), GFP_KERNEL);" ;
+      O.oi "if (wq == NULL) { err = -ENOMEM; goto clean_ctx; }" ;
+      O.oi "init_waitqueue_head(wq);" ;
+      O.oi "return 0; " ;
+      O.o "clean_ctx:" ;
+      O.oi "for (int k=0 ; k < ninst ; k++) free_ctx(ctx[k]);" ;
+      O.oi "kfree(ctx);" ;
+      O.o  "clean_pde:" ;
+      O.oi "remove_proc_entry(\"litmus\",NULL);" ;
+      O.oi "return err;" ;
+      O.o "}" ;
+      O.o "" ;
+
+      O.o "static void __exit" ;
+      O.o "litmus_exit(void) {" ;
+      O.oi "for (int k=0 ; k < ninst ; k++) free_ctx(ctx[k]);" ;
+      O.oi "kfree(ctx);" ;
+      O.oi "remove_proc_entry(\"litmus\",NULL);" ;
+      O.o "}" ;
+      O.o "" ;
+      O.o "module_init(litmus_init);" ;
+      O.o "module_exit(litmus_exit);" ;
+      O.o "" ;
+      O.o "MODULE_LICENSE(\"GPL\");" ;
+      O.o "MODULE_AUTHOR(\"Luc\");" ;
+      O.o "MODULE_DESCRIPTION(\"Litmus module\");" ;
+      ()
+
+
+
     let dump name test =
+      ObjUtil.insert_lib_file O.o "header.txt" ;
+      let tname = name.Name.name in
+      let env = U.build_env test in
       dump_header () ;
       dump_params test ;
+      dump_outs env test ;
+      dump_ctx env test ;
+      dump_threads tname env test ;
+      dump_cond_fun env test ;
+      dump_zyva tname test ;
+      dump_proc tname ;
+      dump_init_exit test ;
       ()
 
 

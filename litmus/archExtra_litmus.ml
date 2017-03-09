@@ -73,9 +73,7 @@ module Make(O:Config)(I:I) : S with module I = I
   module I = I
   open Constant
 
-  let vToName v = match v with
-  | Concrete i -> "addr_" ^ string_of_int i
-  | Symbolic s -> s
+  let vToName v = SymbConstant.vToName v
 
   module RegSet =
     MySet.Make

@@ -10,46 +10,26 @@
 (* This software is governed by the CeCILL-B license under French law and   *)
 (* abiding by the rules of distribution of free software. You can use,      *)
 (* modify and/ or redistribute the software under the terms of the CeCILL-B *)
-(* license as circulated by CEA, CNRS and INRIA at the following URL        *)
+ (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-open Printf
+(* LISA target, a simplified template *)
 
-let comment = "//"
+type arch_reg = BellBase.reg
 
-module Make(V:Constant.S) = struct
-  include BellBase
-  module V =
-    struct
-      type v = Constant.v
-      include V
-      let maybevToV c = c
-    end
+type code
 
-  let reg_to_string r = match r with
-  | GPRreg _ -> pp_reg r
-  | Symbolic_reg _ -> assert false
+type t =
+  { inputs : (arch_reg * CType.t) list ;
+    finals : arch_reg list ;
+    code : code ; }
 
-  include
-      ArchExtra_litmus.Make
-      (struct
-        include Template.DefaultConfig
-        let asmcomment = None
-      end)
-      (struct
-        module V = V
-
-        type arch_reg = reg
-        let arch = `LISA
-        let forbidden_regs = []
-        let pp_reg = pp_reg
-        let reg_compare = reg_compare
-        let reg_to_string = reg_to_string
-        let internal_init _r = None
-        let reg_class _ = ""
-        let comment = comment
-        let error _ _ = false
-      end)
-
-end
+   
+val fmt_reg : arch_reg -> string
+val dump_out_reg : int -> arch_reg -> string
+val compile_out_reg : int -> arch_reg -> string
+val compile_presi_out_reg : int -> arch_reg -> string
+val compile_presi_out_ptr_reg : int -> arch_reg -> string
+val get_addrs : t -> string list
+val out_code : out_channel -> code -> unit

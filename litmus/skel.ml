@@ -331,12 +331,6 @@ module Insert =
   | Direct -> sprintf "&(_a->%s[_i])"
   | Indirect -> sprintf "_a->%s[_i]"
 
-(*
-  let dump_a_v = function
-    | Concrete i ->  sprintf "%i" i
-    | Symbolic s -> dump_a_addr s
-*)
-
 (* Right value, casted if pointer *)
   let dump_a_v_casted = function
     | Concrete i ->  sprintf "%i" i
@@ -808,6 +802,7 @@ let user2_barrier_def () =
   module DC =
     CompCond.Make(O)
       (struct
+        let with_ok = true
         module C = C
         module V = struct
           type t = Constant.v

@@ -28,6 +28,9 @@ module type Base = sig
   end
 
   type reg
+  type instruction
+
+  module RegSet : MySet.S with type elt = reg
 
   include Location.S
   with type loc_reg = reg and
@@ -41,13 +44,41 @@ module type Base = sig
   type state = (location * V.v) list
   type fullstate = (location * (MiscParser.run_type * V.v)) list
 
-  module Out : Target.S with type arch_reg = reg (* Out abstracted *)
+  module Out : Target.S
+  with type arch_reg = reg (* Out abstracted *)
 
   val arch : Archs.t
 
   val find_in_state : location -> state -> V.v
   val pp_reg : reg -> string
 end
+
+module type K = sig
+  include ArchBase.S
+  module V :
+      sig
+        type v = Constant.v
+        include Constant.S
+        val maybevToV  : v -> v
+      end
+
+  module RegSet : MySet.S with type elt = reg
+
+  include Location.S
+  with type loc_reg = reg and
+  type loc_global = string
+
+  type state = (location * V.v) list
+  type fullstate = (location * (MiscParser.run_type * V.v)) list
+
+  module Out : Target.S
+  with type arch_reg = reg (* Out abstracted *)
+
+  val find_in_state : location -> state -> V.v
+  val pp_reg : reg -> string
+end
+
+
 
 module type S =
   sig

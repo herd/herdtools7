@@ -53,6 +53,7 @@ module type S = sig
         comment: bool; }
 
   val empty_ins : ins
+  val get_branch : ins -> flow list
 
   type t = {
       init : (arch_reg * Constant.v) list ;
@@ -65,6 +66,7 @@ module type S = sig
   val get_addrs : t -> string list
   val fmt_reg : arch_reg -> string
   val dump_label : string -> string
+  val emit_label : (string -> string) -> string -> ins
   val dump_out_reg : int -> arch_reg -> string
   val dump_v : Constant.v -> string
   val addr_cpy_name : string -> int -> string
@@ -101,6 +103,8 @@ struct
   let empty_ins =
     { memo="" ; inputs=[]; outputs=[]; reg_env=[];
       label=None; branch=[Next]; cond=false; comment=false;}
+
+  let get_branch  ins = ins.branch
 
   type t = {
       init : (arch_reg * Constant.v) list ;
@@ -144,6 +148,11 @@ struct
   let fmt_reg = pp_reg
 
   let dump_label lbl = lbl
+
+  let emit_label tr lbl =
+    { empty_ins with
+      memo=sprintf "%s:" (dump_label (tr lbl)) ;
+      label = Some lbl ; branch=[Next] ; }
 
   let clean_reg s =
     Misc.map_string

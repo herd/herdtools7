@@ -39,3 +39,6 @@ let eq c1 c2 =  match c1,c2 with
 | (Concrete _,Symbolic _)
 | (Symbolic _,Concrete _) -> false
 
+let vToName = function
+  | Concrete _ -> assert false
+  | Symbolic s -> s

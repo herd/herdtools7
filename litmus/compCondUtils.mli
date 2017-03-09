@@ -23,7 +23,8 @@ module type X = sig
 end
 
 module type I = sig
+  val with_ok : bool
   module C : Constr.S
   module V : X with type t = Constant.v
-  module Loc : X with type  t = C.A.location
+  module Loc : X with type  t = C.location
 end

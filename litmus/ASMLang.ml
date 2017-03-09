@@ -153,6 +153,7 @@ module Make
         fprintf chan ":%s\n" (String.concat "," (ins@rem))
 
       let (@@) f k  = f k
+
       let dump_outputs compile_addr compile_out_reg chan proc t trashed =
         let stable = RegSet.of_list t.Tmpl.stable in
         let final = RegSet.of_list t.Tmpl.final in
@@ -446,7 +447,7 @@ module Make
               let x = Tmpl.dump_out_reg proc x in
               sprintf "%s *%s" (CType.dump ty) x) t.Tmpl.final in
         let params =  String.concat "," (addrs@cpys@outs) in
-        LangUtils.dump_code_def chan proc params ;
+        LangUtils.dump_code_def chan true proc params ;
         do_dump
           compile_val_fun
           compile_addr_fun

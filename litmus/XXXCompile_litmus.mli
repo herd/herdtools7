@@ -25,6 +25,7 @@ module type S = sig
         A.instruction ->  A.Out.ins list -> A.Out.ins list
 end
 
+      (*
 module type K = sig
   module A : Arch_litmus.S
 
@@ -38,3 +39,4 @@ module type K = sig
 (* For time base barrier *)
   val emit_tb_wait :  A.Out.ins list ->  A.Out.ins list
 end
+*)

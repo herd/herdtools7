@@ -273,7 +273,7 @@ end = struct
       module Comp = Compile.Make (O)(A)(Utils.T)(XXXComp)
 
       module AllocArch = struct
-        include A 
+        include A
         type v = A.V.v
         let maybevToV = V.maybevToV
         type global = string
@@ -305,6 +305,9 @@ end = struct
             let maybevToV c = c
           end
         type reg = string
+        type instruction = unit
+
+        module RegSet = StringSet
 
         let vToName = function
           | Constant.Concrete i -> "addr_" ^ string_of_int i
@@ -354,7 +357,7 @@ end = struct
             let memory = O.memory
             let mode = O.mode
             let asmcommentaslabel = O.asmcommentaslabel
-          end)
+          end)(CTarget)
       module Utils = Utils(O)(A')(Lang)(Pseudo)
       module P = CGenParser_litmus.Make(O)(Pseudo)(A')(L)
       module Comp = CCompile_litmus.Make(O)(Utils.T)
@@ -453,7 +456,7 @@ end = struct
   let module Compile = PPCGenCompile.Make(V)(OC) in
   let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
   X.compile
- *)  
+ *)
             end
         | `X86 ->
             let module Arch' = X86Arch_litmus.Make(OC)(V) in

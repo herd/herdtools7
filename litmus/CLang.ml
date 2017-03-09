@@ -21,11 +21,37 @@ module type Config = sig
   val asmcommentaslabel : bool
 end
 
-module Make(C:Config) = struct
+module DefaultConfig = struct
+  let memory = Memory.Direct
+  let mode = Mode.Std
+  let comment = "//"
+  let asmcommentaslabel = false
+end
+
+module type Target = sig
+  type arch_reg
+  type code
+
+  type t =
+      { inputs : (arch_reg * CType.t) list ;
+        finals : arch_reg list ;
+        code : code ; }
+
+
+  val fmt_reg : arch_reg -> string
+  val dump_out_reg : int -> arch_reg -> string
+  val compile_out_reg : int -> arch_reg -> string
+  val compile_presi_out_reg : int -> arch_reg -> string
+  val compile_presi_out_ptr_reg : int -> arch_reg -> string
+  val get_addrs : t -> string list
+  val out_code : out_channel -> code -> unit
+end
+
+module Make(C:Config)(Target:Target) = struct
   open Printf
 
-  type arch_reg = CTarget.arch_reg
-  type t = CTarget.t
+  type arch_reg = Target.arch_reg
+  type t = Target.t
 
   let dump_start chan indent proc =
     if C.asmcommentaslabel then
@@ -48,29 +74,25 @@ module Make(C:Config) = struct
         indent (LangUtils.end_comment C.comment proc)
 
   let dump_global_def env (x,ty) =
-(*
-    let oty =
-      try List.assoc x env with Not_found -> assert false in
-*)
-    let x = CTarget.fmt_reg x in
+    let x = Target.fmt_reg x in
     let pp_ty =  CType.dump ty in
     pp_ty ^ "*",x
 
   let out_type env x =
     try List.assoc x env
-    with Not_found -> assert false 
+    with Not_found -> assert false
 
   let dump_output_def env proc x =
-    let outname = CTarget.dump_out_reg proc x
+    let outname = Target.dump_out_reg proc x
     and ty = out_type env x in
     sprintf "%s*" (CType.dump ty),outname
 
   let dump_fun chan env globEnv envVolatile proc t =
     let out x = fprintf chan x in
     let input_defs =
-      List.map (dump_global_def globEnv) t.CTarget.inputs
+      List.map (dump_global_def globEnv) t.Target.inputs
     and output_defs =
-      List.map (dump_output_def env proc) t.CTarget.finals in
+      List.map (dump_output_def env proc) t.Target.finals in
     let defs = input_defs@output_defs in
     let params =
       String.concat ","
@@ -78,19 +100,19 @@ module Make(C:Config) = struct
            (fun (ty,v) -> sprintf "%s %s" ty v)
            defs) in
     (* Function prototype  *)
-    LangUtils.dump_code_def chan proc params ;
+    LangUtils.dump_code_def chan true proc params ;
     (* body *)
     dump_start chan "  " proc ;
-    out "%s\n" t.CTarget.code ;
+    Target.out_code chan t.Target.code ;
     dump_end chan "  " proc ;
     (* output parameters *)
     List.iter
       (fun reg ->
         out "  *%s = (%s)%s;\n"
-          (CTarget.dump_out_reg proc reg)
+          (Target.dump_out_reg proc reg)
           (CType.dump (out_type env reg))
-          (CTarget.fmt_reg reg))
-      t.CTarget.finals ;
+          (Target.fmt_reg reg))
+      t.Target.finals ;
     out "}\n\n"
 
 
@@ -106,14 +128,14 @@ module Make(C:Config) = struct
           | None -> "" in
           match C.memory with
         | Memory.Direct ->
-            sprintf "%s&_a->%s[_i]" cast x
+            sprintf "%s&_a->%s[_i]" cast (Target.fmt_reg x)
         | Memory.Indirect ->
-            sprintf "%s_a->%s[_i]" cast x)
-        t.CTarget.inputs
+            sprintf "%s_a->%s[_i]" cast (Target.fmt_reg x))
+        t.Target.inputs
     and out_args =
       List.map
-        (fun x -> sprintf "&%s" (CTarget.compile_out_reg proc x))
-        t.CTarget.finals in
+        (fun x -> sprintf "&%s" (Target.compile_out_reg proc x))
+        t.Target.finals in
     let args = String.concat "," (global_args@out_args) in
     LangUtils.dump_code_call chan indent proc args
 
@@ -138,26 +160,26 @@ module Make(C:Config) = struct
         let ty = out_type env x in
         match C.mode with
         | Mode.Std ->
-            let outname = CTarget.compile_out_reg proc x in
+            let outname = Target.compile_out_reg proc x in
             out "%s%s = (%s)%s;\n"
-              indent outname (CType.dump ty) (CTarget.fmt_reg x)
+              indent outname (CType.dump ty) (Target.fmt_reg x)
         | Mode.PreSi ->
             let outname =
               if CType.is_ptr ty then
-                CTarget.compile_presi_out_ptr_reg proc x
+                Target.compile_presi_out_ptr_reg proc x
               else
-                CTarget.compile_presi_out_reg proc x in
+                Target.compile_presi_out_reg proc x in
             out "%s%s = (%s)%s;\n"
-              indent outname (CType.dump ty) (CTarget.fmt_reg x)
+              indent outname (CType.dump ty) (Target.fmt_reg x)
 
       in
       let print_start = dump_start chan in
       let print_end = dump_end chan in
-      List.iter dump_input t.CTarget.inputs;
+      List.iter dump_input t.Target.inputs;
       print_start indent proc;
-      out "%s\n" t.CTarget.code ;
+      Target.out_code chan t.Target.code ;
       print_end indent proc;
-      List.iter dump_output t.CTarget.finals
+      List.iter dump_output t.Target.finals
     end;
     out "%s} while(0);\n" indent
 

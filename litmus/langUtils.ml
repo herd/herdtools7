@@ -24,8 +24,10 @@ let end_comment com proc = sprintf "%sEND _litmus_P%i" com proc
 
 let code_fun proc = sprintf "code%i" proc
 
-let dump_code_def chan proc params =
-  fprintf chan "__attribute__ ((noinline)) static void %s(%s) {\n"
+let dump_code_def chan noinline proc params =
+  fprintf chan "%sstatic void %s(%s) {\n"
+    (if noinline then "__attribute__ ((noinline))"
+    else "")
     (code_fun proc) params
 
 let dump_code_call chan indent proc args =

@@ -20,7 +20,8 @@ end
 
 module type S = sig
   module A : Arch_litmus.Base
-  module C : Constr.S with module A = A
+  module C : Constr.S
+  with type location = A.location and module LocSet = A.LocSet
   module P : PseudoAbstract.S
 
   type src =

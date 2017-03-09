@@ -97,7 +97,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
       let fundef_prop fname find_type p =
         let locs = I.C.locations_prop p in
         let plocs =
-          I.C.A.LocSet.map_list
+          I.C.LocSet.map_list
             (fun loc ->
               let t = find_type loc in
               Printf.sprintf "%s %s" t (I.Loc.dump loc))
@@ -123,7 +123,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
 
       let fundef find_type cond =
         fundef_prop funname find_type (ConstrGen.prop_of cond) ;
-        dump_ok cond ;
+        if I.with_ok then dump_ok cond ;
         ()
 
       let fundef_onlog_prop fname p =
@@ -147,7 +147,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
 
       let funcall_prop fname  prop dump_loc dump_val =
         let locs = I.C.locations_prop prop in
-        let plocs = I.C.A.LocSet.map_list dump_loc locs in
+        let plocs = I.C.LocSet.map_list dump_loc locs in
         let vals = I.C.location_values_prop prop in
         let pvals = List.map dump_val vals in
         Printf.sprintf "%s(%s)" fname (String.concat "," (plocs@pvals))
