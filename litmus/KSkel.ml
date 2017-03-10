@@ -117,9 +117,7 @@ module Make
       O.o "#include <linux/kthread.h>" ;
       O.o "#include <linux/ktime.h>" ;
       O.o "#include <linux/atomic.h>" ;
-      O.o "#include <linux/kobject.h>" ;
       O.o "#include <linux/sysfs.h>" ;
-      O.o "#include <linux/string.h>" ;
       O.o "#include <linux/sched.h>" ;
       O.o "#include <linux/wait.h>" ;
       O.o "#include <linux/slab.h>" ;
@@ -177,7 +175,7 @@ module Make
       ObjUtil.insert_lib_file O.o "outs.txt" ;
       O.o "" ;
       O.o "static outs_t *add_outcome_outs(outs_t *p,u64 *k,int show) {" ;
-      O.oi "return loop_add_outcome_outs(p,k,nthreads-1,1,show);" ;
+      O.oi "return loop_add_outcome_outs(p,k,NOUTS-1,1,show);" ;
       O.o "}" ;
       O.o "" ;
 (* Only dump depends on test... *)
@@ -207,7 +205,7 @@ module Make
       O.o "" ;
       O.o "static void dump_outs(struct seq_file *m,outs_t *p) {" ;
       O.oi "outcome_t buff;" ;
-      O.oi "do_dump_outs(m,p,buff,nthreads);" ;
+      O.oi "do_dump_outs(m,p,buff,NOUTS);" ;
       O.o "}" ;
       O.o "" ;
       ()
@@ -348,7 +346,7 @@ module Make
 (***************)
     let dump_barrier_def () =
       O.o "static inline void barrier_wait(int id,int i,int *b) {" ;
-      O.oi "if ((i % nthreads) == i) {" ;
+      O.oi "if ((i % nthreads) == id) {" ;
       O.oii "ACCESS_ONCE(*b) = 1;" ;
       O.oii "smp_mb();" ;
       O.oi "} else {" ;
@@ -437,15 +435,53 @@ module Make
 (**********)
 (* ProcFs *)
 (**********)
-
-    let dump_proc tname =
+    let dump_proc tname test =
+      let tname = String.escaped tname in
       O.o "static int\nlitmus_proc_show(struct seq_file *m,void *v) {" ;
-      let fmt = "%s\\n"  in
-      O.fi "seq_printf(m,\"%s\",\"%s\");" fmt (String.escaped tname) ;
-      let out tag =
-        let fmt = tag ^ "=" ^ "%i\\n" in
-        O.fi "seq_printf(m,\"%s\",%s);" fmt tag in
-      out "size" ; out "nruns" ; out "stride" ;
+      O.oi "ktime_t time_start = ktime_get();" ;
+      O.oi "outs_t *outs = zyva();" ;
+      O.oi "ktime_t time_end = ktime_get();" ;
+      let fmt = sprintf "Test %s %s\\n" tname
+          (ConstrGen.pp_kind (ConstrGen.kind_of test.T.condition)) in
+      O.fi "seq_printf(m,\"%s\");" fmt ;
+      let fmt = "Histogram (%\"PCTR\" states)\\n" in
+      O.fi "seq_printf(m,\"%s\",count_nstates(outs));" fmt ;
+      O.oi "dump_outs(m,outs);" ;
+      O.oi "{" ;
+      O.oii "count_t pos=count_show(outs),neg=count_noshow(outs);" ;
+      O.oii "char *msg = \"Sometimes\";" ;
+      O.oii "u64 delta =  ktime_to_ms(ktime_sub(time_end, time_start));";
+      O.oii "u64 sec = delta / 1000;" ;
+      O.oii "u64 cent = ((delta % 1000) + 5) / 10;" ;
+      let ok_expr =
+        let open ConstrGen in
+        match test.T.condition with
+        | ExistsState _ -> "pos > 0"
+        | NotExistsState _ |ForallStates _-> "neg == 0" in
+      O.fii "seq_printf(m,\"%%s\\n\\n\",%s ? \"Ok\" : \"No\");" ok_expr ;
+      let pos,neg  = let open ConstrGen in match test.T.condition with
+      | ExistsState _|ForallStates _ -> "pos","neg"
+      | NotExistsState _ -> "neg","pos" in
+      let fmt = "Witnesses\\nPositive: %\"PCTR\", Negative: %\"PCTR\"\\n" in
+      O.fii "seq_printf(m,\"%s\",%s,%s);" fmt pos neg ;
+      let fmt =
+        "Condition " ^ U.pp_cond test ^ " is %svalidated\n" in
+      O.fii "seq_printf(m,%S,%s?\"\":\"NOT \");" fmt ok_expr ;
+      begin match U.get_info MiscParser.hash_key test with
+      | None -> ()
+      | Some h ->
+          let fmt = MiscParser.hash_key ^ "=" ^ h in
+          O.fii "seq_printf(m,\"%%s\\n\",%S);" fmt ;
+          ()
+      end ;
+      O.oii "if (pos == 0) msg = \"Never\";" ;
+      O.oii "else if (neg == 0) msg = \"Always\";" ;
+      let fmt = sprintf "Observation %s %%s %%\"PCTR\" %%\"PCTR\"\\n" tname in
+      O.fii "seq_printf(m,\"%s\",msg,pos,neg);" fmt ;
+      let fmt = sprintf "Time %s %%llu.%%02llu\\n" tname in
+      O.fii "seq_printf(m,\"%s\",sec,cent);" fmt ;
+      O.oi "}" ;
+      O.oi "free_outs(outs);" ;
       O.oi "return 0;" ;
       O.o "}" ;
       O.o "" ;
@@ -523,7 +559,7 @@ module Make
       dump_threads tname env test ;
       dump_cond_fun env test ;
       dump_zyva tname test ;
-      dump_proc tname ;
+      dump_proc tname test ;
       dump_init_exit test ;
       ()
 

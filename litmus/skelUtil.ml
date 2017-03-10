@@ -78,15 +78,18 @@ module Make
       val get_info : string -> T.t -> string option
       val get_prefetch_info : T.t -> string
 
+(* Condition *)          
+      val pp_cond : T.t -> string
+          
 (* Dump stuff *)
       module Dump : functor (O:Indent.S) -> functor(EPF:EmitPrintf.S) -> sig
         (* Some small dump functions common std/presi *)
         val dump_vars_types : T.t -> unit
 
-        (* Same output as shell script in (normal) shell driver mode *)
+            (* Same output as shell script in (normal) shell driver mode *)
         val prelude : Name.t -> T.t -> unit
 
-        (* Dump results *)
+            (* Dump results *)
         val postlude :
             Name.t -> T.t -> Affi.t option -> bool ->
               stat list -> unit
@@ -164,14 +167,14 @@ module Make
       | A.Location_deref (s,i) -> sprintf "%s[%i]" s i
 
       let fmt_outcome test pp_fmt_base locs env =
-       let tr_out = tr_out test in
+        let tr_out = tr_out test in
 (*
-        let pp_fmt_base t = match Compile.get_fmt Cfg.hexa t with
-        | CType.Direct fmt -> 
-            if Cfg.hexa then "0x%" ^ fmt else fmt
-        | CType.Macro fmt ->
-            (if Cfg.hexa then "0x%\"" else "%\"") ^ fmt ^ "\"" in
-*)
+  let pp_fmt_base t = match Compile.get_fmt Cfg.hexa t with
+  | CType.Direct fmt -> 
+  if Cfg.hexa then "0x%" ^ fmt else fmt
+  | CType.Macro fmt ->
+  (if Cfg.hexa then "0x%\"" else "%\"") ^ fmt ^ "\"" in
+ *)
         let rec pp_fmt t = match t with
         | CType.Pointer _ -> "%s"
         | CType.Base t -> pp_fmt_base t
@@ -196,7 +199,7 @@ module Make
           (A.LocSet.of_list t.T.flocs)
 
       let filter_globals locs =
-         A.LocSet.fold
+        A.LocSet.fold
           (fun a k -> match a with
           | A.Location_global a|A.Location_deref (a,_) -> StringSet.add a k
           | A.Location_reg _ -> k)
@@ -242,6 +245,19 @@ module Make
       | None -> ""
 
 (* Dump *)
+      open ConstrGen
+
+      let pp_atom tr_out a =
+        match a with
+        | LV (loc,v) ->
+            sprintf "%s=%s" (tr_out (A.pp_location loc)) (A.V.pp Cfg.hexa v)
+        | LL (loc1,loc2) ->
+            sprintf "%s=%s" (tr_out (A.pp_location loc1))
+              (tr_out (A.pp_rval loc2))
+
+      let pp_cond test =
+        let tr_out = tr_out test in
+        ConstrGen.constraints_to_string (pp_atom tr_out) test.T.condition
 
       module Dump (O:Indent.S) (EPF:EmitPrintf.S) = struct
 
@@ -283,19 +299,6 @@ module Make
           ()
 
 (* Postlude *)
-        open ConstrGen
-
-        let pp_atom tr_out a =
-          match a with
-          | LV (loc,v) ->
-              sprintf "%s=%s" (tr_out (A.pp_location loc)) (A.V.pp Cfg.hexa v)
-          | LL (loc1,loc2) ->
-              sprintf "%s=%s" (tr_out (A.pp_location loc1))
-                (tr_out (A.pp_rval loc2))
-
-        let pp_cond test c =
-          let tr_out = tr_out test in
-          ConstrGen.constraints_to_string (pp_atom tr_out) c
 
         let pp_nstates nstates =
           EPF.fi "Histogram (%i states)\n" [nstates]
@@ -345,15 +348,15 @@ module Make
               [(match c with
               | ExistsState _ -> "p_true"
               | NotExistsState _|ForallStates _ -> "p_false");
-              (match c with
-              | ExistsState _ -> "p_false"
-              | NotExistsState _|ForallStates _ -> "p_true")] ;
+               (match c with
+               | ExistsState _ -> "p_false"
+               | NotExistsState _|ForallStates _ -> "p_true")] ;
             EPF.fi
-              (sprintf "Condition %s is %%svalidated\n" (pp_cond test c))
+              (sprintf "Condition %s is %%svalidated\n" (pp_cond test))
               [sprintf "%s ? \"\" : \"NOT \"" "cond" ;] ;
           end else begin
             EPF.fi
-            (sprintf "\nCondition %s\n" (pp_cond test c)) []
+              (sprintf "\nCondition %s\n" (pp_cond test)) []
           end ;
 
 (* Print meta-information *)
