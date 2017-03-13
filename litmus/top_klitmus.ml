@@ -70,7 +70,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
           raise e
 
       let compile parse compile allocate
-          hash_env fname chan splitted =
+          (hash_env,id) fname chan splitted =
         let parsed = parse chan splitted in
         close_in chan ;
         let doc = splitted.Splitter.name in
@@ -79,15 +79,12 @@ module Top(O:Config)(Tar:Tar.S) = struct
         let hash_ok = H.hash_ok hash_env tname hash in
         if hash_ok then begin
           let hash_env = StringMap.add tname hash hash_env in
-          let base =
-            try
-              Filename.chop_suffix (Filename.basename fname) ".litmus"
-            with _ -> assert false in
+          let base = sprintf "litmus%03i" id in
           let src = sprintf "%s.c" base in
           let parsed = allocate parsed in
           let compiled =  compile doc parsed in
           dump src doc compiled ;
-          base,hash_env
+          base,(hash_env,id+1)
         end else begin
           W.warn "%s, test not compiled" (Pos.str_pos0 doc.Name.file) ;
           raise Misc.Exit
@@ -198,7 +195,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
        fname
 
   let from_files args =
-    let sources,_ = Misc.fold_argv from_file args ([],StringMap.empty)in
+    let sources,_ = Misc.fold_argv from_file args ([],(StringMap.empty,0))in
     dump_makefile sources ;
     dump_run sources ;
     ()

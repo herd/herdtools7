@@ -197,7 +197,7 @@ module Make
 (* Parameters *)
 (**************)
 
-    let dump_params test =
+    let dump_params tname test =
       O.o "/**************/" ;
       O.o "/* Parameters */" ;
       O.o "/**************/" ;
@@ -221,6 +221,9 @@ module Make
       module_param "stride" ;
       module_param "avail" ;
       module_param "ninst" ;
+      O.o "" ;
+      O.f "static char *name = %S;" tname ;
+      O.o "module_param(name,charp,0444);" ;
       O.o "" ;
       O.o "static wait_queue_head_t *wq;" ;
       O.o "static atomic_t done = ATOMIC_INIT(0);" ;
@@ -376,6 +379,7 @@ module Make
       O.o "static outs_t *zyva(void) {" ;
       O.oi "ctx_t **c = ctx;" ;
       O.oi "outs_t *outs = NULL;" ;
+      O.oi "int cpu = -1;" ;
       O.oi "const int nth = ninst * nthreads;" ;
       O.o "" ;
       O.oi "for (int _k = 0 ; _k < nruns ; _k++) {" ;
@@ -391,6 +395,10 @@ module Make
         O.oiii "if (IS_ERR(th[_nth])) return NULL;" ;
         O.oiii "_nth++;"
       done ;
+      O.oii "}" ;
+      O.oii "for (int _t = 0 ; _t < nth ; _t++) {" ;
+      O.oiii "cpu = cpumask_next(cpu,cpu_online_mask);" ;
+      O.oiii "kthread_bind(th[_t],cpu);" ;
       O.oii "}" ;
       O.oii "for (int _t = 0 ; _t < nth ; _t++) wake_up_process(th[_t]);" ;
       O.oii "wait_event_interruptible(*wq, atomic_read(&done) == nth);" ;
@@ -413,14 +421,8 @@ module Make
       O.oi "}" ;
       O.oi "return outs;" ;
       O.o "}" ;
-      O.o ""
-
-(**********)
-(* ProcFs *)
-(**********)
-    let dump_proc tname test =
-      let tname = String.escaped tname in
-      O.o "static int\nlitmus_proc_show(struct seq_file *m,void *v) {" ;
+      O.o "" ;
+      O.o "static int do_it(struct seq_file *m) {" ;
       O.oi "ktime_t time_start = ktime_get();" ;
       O.oi "outs_t *outs = zyva();" ;
       O.oi "ktime_t time_end = ktime_get();" ;
@@ -466,6 +468,23 @@ module Make
       O.oi "}" ;
       O.oi "free_outs(outs);" ;
       O.oi "return 0;" ;
+      O.o "}" ;
+      O.o "" ;
+      ()
+
+(**********)
+(* ProcFs *)
+(**********)
+    let dump_proc tname test =
+      let tname = String.escaped tname in
+      O.o "static int\nlitmus_proc_show(struct seq_file *m,void *v) {" ;
+      O.oi "if (ninst == 0) {" ;
+      let fmt = "%s: skipped\\n" in
+      O.fii "seq_printf(m,\"%s\",\"%s\");" fmt tname ;
+      O.oii "return 0;" ;
+      O.oi "} else {" ;
+      O.oi "return do_it(m);" ;
+      O.oi "}" ;
       O.o "}" ;
       O.o "" ;
       O.o "static int\nlitmus_proc_open(struct inode *inode,struct file *fp) {" ;
@@ -536,7 +555,7 @@ module Make
       let tname = name.Name.name in
       let env = U.build_env test in
       dump_header () ;
-      dump_params test ;
+      dump_params tname test ;
       dump_outs env test ;
       dump_ctx env test ;
       dump_threads tname env test ;
