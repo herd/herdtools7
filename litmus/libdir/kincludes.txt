@@ -1,0 +1,24 @@
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/init.h>
+#include <linux/fs.h>
+#include <linux/proc_fs.h>
+#include <linux/seq_file.h>
+#include <linux/kthread.h>
+#include <linux/ktime.h>
+#include <linux/atomic.h>
+#include <linux/sysfs.h>
+#include <linux/sched.h>
+#include <linux/wait.h>
+#include <linux/slab.h>
+
+typedef u64 count_t;
+#define PCTR "llu"
+
+#ifndef WRITE_ONCE
+#define WRITE_ONCE(x,v) ACCESS_ONCE((x)) = (v)
+#endif
+#ifndef READ_ONCE
+#define READ_ONCE(x) ACCESS_ONCE((x))
+#endif
+

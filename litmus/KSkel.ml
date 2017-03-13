@@ -108,25 +108,8 @@ module Make
 (***********)
 
     let dump_header () =
-      O.o "#include <linux/module.h>" ;
-      O.o "#include <linux/kernel.h>" ;
-      O.o "#include <linux/init.h>" ;
-      O.o "#include <linux/fs.h>" ;
-      O.o "#include <linux/proc_fs.h>" ;
-      O.o "#include <linux/seq_file.h>" ;
-      O.o "#include <linux/kthread.h>" ;
-      O.o "#include <linux/ktime.h>" ;
-      O.o "#include <linux/atomic.h>" ;
-      O.o "#include <linux/sysfs.h>" ;
-      O.o "#include <linux/sched.h>" ;
-      O.o "#include <linux/wait.h>" ;
-      O.o "#include <linux/slab.h>" ;
-      O.o "" ;
-      O.o "typedef u64 count_t;" ;
-      O.o "#define PCTR \"llu\"" ;
-      O.o "" ;
+      ObjUtil.insert_lib_file O.o "kincludes.txt" ;
       ()
-
 
 (********)
 (* Outs *)
@@ -478,7 +461,7 @@ module Make
       O.oii "else if (neg == 0) msg = \"Always\";" ;
       let fmt = sprintf "Observation %s %%s %%\"PCTR\" %%\"PCTR\"\\n" tname in
       O.fii "seq_printf(m,\"%s\",msg,pos,neg);" fmt ;
-      let fmt = sprintf "Time %s %%llu.%%02llu\\n" tname in
+      let fmt = sprintf "Time %s %%llu.%%02llu\\n\\n" tname in
       O.fii "seq_printf(m,\"%s\",sec,cent);" fmt ;
       O.oi "}" ;
       O.oi "free_outs(outs);" ;

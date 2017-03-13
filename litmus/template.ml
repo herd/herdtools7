@@ -80,181 +80,212 @@ module type S = sig
   val compile_presi_out_reg : int -> arch_reg -> string
   val compile_presi_out_ptr_reg : int -> arch_reg -> string
   val dump_type : ('a * CType.t) list -> 'a -> string
+
+  module RegSet : MySet.S with type elt = arch_reg
+  module RegMap : MyMap.S with type key = arch_reg
+
+  val all_regs : t -> RegSet.t
+  val trashed_regs : t -> RegSet.t
 end
 
 module Make(O:Config) (A:I) (V:Constant.S) =
-struct
-  open Printf
-  open Constant
+  struct
+    open Printf
+    open Constant
 
-  let comment = A.comment
+    let comment = A.comment
 
-  type arch_reg = A.arch_reg
+    type arch_reg = A.arch_reg
 
-  type flow = Next | Branch of string
-  type ins =
-      { memo:string ; inputs:arch_reg list ;  outputs:arch_reg list;
-        reg_env: (arch_reg * CType.t) list; (* Register typing [ARMv8] *)
-        (* Jumps *)
-        label:string option ;  branch : flow list ;
-        cond:bool ;
-        comment:bool;}
+    type flow = Next | Branch of string
+    type ins =
+        { memo:string ; inputs:arch_reg list ;  outputs:arch_reg list;
+          reg_env: (arch_reg * CType.t) list; (* Register typing [ARMv8] *)
+          (* Jumps *)
+          label:string option ;  branch : flow list ;
+          cond:bool ;
+          comment:bool;}
 
-  let empty_ins =
-    { memo="" ; inputs=[]; outputs=[]; reg_env=[];
-      label=None; branch=[Next]; cond=false; comment=false;}
+    let empty_ins =
+      { memo="" ; inputs=[]; outputs=[]; reg_env=[];
+        label=None; branch=[Next]; cond=false; comment=false;}
 
-  let get_branch  ins = ins.branch
+    let get_branch  ins = ins.branch
 
-  type t = {
-      init : (arch_reg * Constant.v) list ;
-      addrs : string list ;
-      stable : arch_reg list;
-      final : arch_reg list ;
-      code : ins list;
-      name : Name.t ;
-    }
-
-
-  let get_addrs { init=init; addrs=addrs; _ } =
-    let set =
-      StringSet.union
-        (StringSet.of_list addrs)
-        (StringSet.of_list
-           (List.fold_left
-              (fun k (_,v) ->
-                match v with Symbolic s -> s::k
-                | Concrete _ -> k)
-              [] init)) in
-    StringSet.elements set
-
-  let get_stable { stable; _} = stable
-
-  exception Internal of string
-  let internal msg = raise (Internal msg)
-
-  let error msg = raise (Error msg)
+    type t = {
+        init : (arch_reg * Constant.v) list ;
+        addrs : string list ;
+        stable : arch_reg list;
+        final : arch_reg list ;
+        code : ins list;
+        name : Name.t ;
+      }
 
 
-  let escape_percent s =
-    Misc.map_string
-      (fun c -> match c with
-      | '%' -> "%%"
-      | '$' -> "r"
-      | _ -> String.make 1 c)
-      s
+    let get_addrs { init=init; addrs=addrs; _ } =
+      let set =
+        StringSet.union
+          (StringSet.of_list addrs)
+          (StringSet.of_list
+             (List.fold_left
+                (fun k (_,v) ->
+                  match v with Symbolic s -> s::k
+                  | Concrete _ -> k)
+                [] init)) in
+      StringSet.elements set
 
-  let pp_reg r = escape_percent (A.reg_to_string r)
-  let fmt_reg = pp_reg
+    let get_stable { stable; _} = stable
 
-  let dump_label lbl = lbl
+    exception Internal of string
+    let internal msg = raise (Internal msg)
 
-  let emit_label tr lbl =
-    { empty_ins with
-      memo=sprintf "%s:" (dump_label (tr lbl)) ;
-      label = Some lbl ; branch=[Next] ; }
-
-  let clean_reg s =
-    Misc.map_string
-      (fun c -> match c with
-      | '%' -> ""
-      | '$' -> "r"
-      | _  -> String.make 1 c)
-      s
-
-  let tag_reg reg = clean_reg (A.reg_to_string reg)
-
-  let tag_reg_ref w reg =
-    sprintf "%%%s[%s]" (if w then "w" else "") (tag_reg reg)
-
-  let dump_out_reg proc reg =
-    OutUtils.fmt_out_reg
-      proc
-      (clean_reg (A.reg_to_string reg))
-
-  let compile_out_reg proc reg =
-    OutUtils.fmt_index (dump_out_reg proc reg)
-
-  let compile_presi_out_reg proc reg =
-    OutUtils.fmt_presi_index (dump_out_reg proc reg)
-
-  let compile_presi_out_ptr_reg proc reg =
-    OutUtils.fmt_presi_ptr_index (dump_out_reg proc reg)
+    let error msg = raise (Error msg)
 
 
-  let get_reg k rs =
-    try List.nth rs k
-    with _ ->
-      internal
-        (sprintf "get_reg %i in {%s}"
-           k (String.concat ","
-                (List.map pp_reg rs)))
+    let escape_percent s =
+      Misc.map_string
+        (fun c -> match c with
+        | '%' -> "%%"
+        | '$' -> "r"
+        | _ -> String.make 1 c)
+        s
 
-  let escape_percent s =
-    let len = String.length s in
-    let buff = Buffer.create 16 in
-    let rec do_rec i =
-      if i < len then begin
-        begin match s.[i] with
-        | '%' -> Buffer.add_string buff "%%"
-        | c -> Buffer.add_char buff c
-        end ;
-        do_rec (i+1)
-      end in
-    do_rec 0 ; Buffer.contents buff
+    let pp_reg r = escape_percent (A.reg_to_string r)
+    let fmt_reg = pp_reg
 
-  let to_string t =
+    let dump_label lbl = lbl
 
-    let digit i =
-      let c = Char.code t.memo.[i] in
-      let n = c - Char.code '0' in
-      if 0 <= n && n <= 2 then n
-      else internal (sprintf "bad digit '%i' (%c)" n t.memo.[i])
+    let emit_label tr lbl =
+      { empty_ins with
+        memo=sprintf "%s:" (dump_label (tr lbl)) ;
+        label = Some lbl ; branch=[Next] ; }
 
-    and substring i j =
-      try String.sub t.memo i (j-i)
-      with _ -> internal (sprintf "substring %i-%i" i j)
+    let clean_reg s =
+      Misc.map_string
+        (fun c -> match c with
+        | '%' -> ""
+        | '$' -> "r"
+        | _  -> String.make 1 c)
+        s
 
-    and look_escape i =
-      try String.index_from t.memo i '^'
-      with
-      | Not_found -> raise Not_found
-      | _ -> internal (sprintf "look_escape %i" i) in
+    let tag_reg reg = clean_reg (A.reg_to_string reg)
+
+    let tag_reg_ref w reg =
+      sprintf "%%%s[%s]" (if w then "w" else "") (tag_reg reg)
+
+    let dump_out_reg proc reg =
+      OutUtils.fmt_out_reg
+        proc
+        (clean_reg (A.reg_to_string reg))
+
+    let compile_out_reg proc reg =
+      OutUtils.fmt_index (dump_out_reg proc reg)
+
+    let compile_presi_out_reg proc reg =
+      OutUtils.fmt_presi_index (dump_out_reg proc reg)
+
+    let compile_presi_out_ptr_reg proc reg =
+      OutUtils.fmt_presi_ptr_index (dump_out_reg proc reg)
 
 
-    let b = Buffer.create 20 in
-    let add = Buffer.add_string b in
-    let len = String.length t.memo in
+    let get_reg k rs =
+      try List.nth rs k
+      with _ ->
+        internal
+          (sprintf "get_reg %i in {%s}"
+             k (String.concat ","
+                  (List.map pp_reg rs)))
 
-    let rec do_rec i =
-      if i < len then
-        try
-          let j = look_escape i in
-          add (substring i j) ;
-          let w,ty,n,nxt =
-            match t.memo.[j+1] with
-            | 'w' -> true,t.memo.[j+2],digit (j+3),4
-            | _ -> false,t.memo.[j+1],digit (j+2),3 in
-          begin match ty with
-          | 'i' -> add (tag_reg_ref w (get_reg n t.inputs))
-          | 'o' -> add (tag_reg_ref w (get_reg n t.outputs))
-          | c -> internal (sprintf "bad escape '%c'" c)
+    let escape_percent s =
+      let len = String.length s in
+      let buff = Buffer.create 16 in
+      let rec do_rec i =
+        if i < len then begin
+          begin match s.[i] with
+          | '%' -> Buffer.add_string buff "%%"
+          | c -> Buffer.add_char buff c
           end ;
-          do_rec (j+nxt)
-        with Not_found -> add (substring i len) in
-    try
-      if t.comment then sprintf "%s%s" A.comment (escape_percent t.memo)
-      else begin
-        do_rec 0  ; Buffer.contents b
-      end
-    with Internal msg ->
-      error (sprintf "memo: %s, error: %s" t.memo msg)
+          do_rec (i+1)
+        end in
+      do_rec 0 ; Buffer.contents buff
 
-  let dump_type env reg =
-    try CType.dump (List.assoc reg env) with
+    let to_string t =
+
+      let digit i =
+        let c = Char.code t.memo.[i] in
+        let n = c - Char.code '0' in
+        if 0 <= n && n <= 2 then n
+        else internal (sprintf "bad digit '%i' (%c)" n t.memo.[i])
+
+      and substring i j =
+        try String.sub t.memo i (j-i)
+        with _ -> internal (sprintf "substring %i-%i" i j)
+
+      and look_escape i =
+        try String.index_from t.memo i '^'
+        with
+        | Not_found -> raise Not_found
+        | _ -> internal (sprintf "look_escape %i" i) in
+
+
+      let b = Buffer.create 20 in
+      let add = Buffer.add_string b in
+      let len = String.length t.memo in
+
+      let rec do_rec i =
+        if i < len then
+          try
+            let j = look_escape i in
+            add (substring i j) ;
+            let w,ty,n,nxt =
+              match t.memo.[j+1] with
+              | 'w' -> true,t.memo.[j+2],digit (j+3),4
+              | _ -> false,t.memo.[j+1],digit (j+2),3 in
+            begin match ty with
+            | 'i' -> add (tag_reg_ref w (get_reg n t.inputs))
+            | 'o' -> add (tag_reg_ref w (get_reg n t.outputs))
+            | c -> internal (sprintf "bad escape '%c'" c)
+            end ;
+            do_rec (j+nxt)
+          with Not_found -> add (substring i len) in
+      try
+        if t.comment then sprintf "%s%s" A.comment (escape_percent t.memo)
+        else begin
+          do_rec 0  ; Buffer.contents b
+        end
+      with Internal msg ->
+        error (sprintf "memo: %s, error: %s" t.memo msg)
+
+    let dump_type env reg =
+      try CType.dump (List.assoc reg env) with
       | Not_found -> "int"
 
 
-  include OutUtils.Make(O)
+    include OutUtils.Make(O)
 
-end
+    module OrderedReg = struct
+      type t = arch_reg
+      let compare = A.reg_compare
+    end
+
+    module RegSet = MySet.Make(OrderedReg)
+    module RegMap = MyMap.Make(OrderedReg)
+
+
+    let all_regs t =
+      let all_ins ins =
+        RegSet.union (RegSet.of_list (ins.inputs@ins.outputs)) in
+      List.fold_right all_ins t.code  (RegSet.of_list t.final)
+
+
+    let trashed_regs t =
+      let trashed_ins ins = RegSet.union (RegSet.of_list ins.outputs) in
+      let all_trashed =
+        List.fold_right trashed_ins t.code RegSet.empty in
+      RegSet.diff all_trashed
+        (RegSet.union
+           (RegSet.of_list t.final)
+           (RegSet.of_list t.stable))
+
+
+  end

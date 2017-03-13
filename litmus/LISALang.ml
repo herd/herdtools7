@@ -25,6 +25,60 @@ module Make(V:Constant.S) = struct
 
   module Tmpl = A.Out
 
+  module RegSet = A.Out.RegSet
+  module RegMap = A.Out.RegMap
+
+  let do_dump compile_val compile_addr compile_out_reg
+      chan indent env proc t =
+    let rec dump_ins k ts = match ts with
+    | [] -> ()
+    | t::ts ->
+        fprintf chan "%s%s\n" indent (Tmpl.to_string t) ;
+(*
+  fprintf chan "\"%-20s%c_litmus_P%i_%i\\n\\t\"\n"
+  (to_string t) A.comment proc k ;
+ *)
+        dump_ins (k+1) ts in
+(* Prefix *)
+    let all_regs = Tmpl.all_regs t in
+    let init =
+      List.fold_left (fun m (r,v) -> RegMap.add r v m)
+        RegMap.empty
+        t.Tmpl.init in
+    RegSet.iter
+      (fun r ->
+        fprintf chan "%s%s %s%s;\n" indent
+          (Tmpl.dump_type env r)
+          (Tmpl.tag_reg r)
+          (try
+            let v = RegMap.find r init in
+            sprintf " = %s" (compile_val v)
+          with Not_found -> ""))
+      all_regs ;
+(* Code *)
+    begin match t.Tmpl.code with
+    | [] -> ()
+    | code -> dump_ins 0 code
+    end ;
+(* Postfix *)
+    List.iter
+      (fun reg ->
+         fprintf chan "%s%s = %s;\n" indent
+          (compile_out_reg proc reg) (Tmpl.tag_reg reg))
+      t.Tmpl.final ;
+    ()
+
+(*****************)
+(* As a function *)
+(*****************)
+  let compile_val_fun v = match v with
+  | Constant.Symbolic s -> sprintf "%s" s
+  | Constant.Concrete _ -> Tmpl.dump_v v
+
+  and compile_addr_fun x = sprintf "*%s" x
+
+  and compile_out_reg_fun p r = sprintf "*%s" (Tmpl.dump_out_reg p r)
+
   let dump_fun chan env globEnv volatileEnv proc t =
     let addrs_proc = A.Out.get_addrs t in
     let addrs =
@@ -46,8 +100,15 @@ module Make(V:Constant.S) = struct
           sprintf "%s *%s" (CType.dump ty) x) t.Tmpl.final in
     let params =  String.concat "," (addrs@outs) in
     LangUtils.dump_code_def chan false proc params ;
+    do_dump
+      compile_val_fun
+      compile_addr_fun
+      (fun p r  -> sprintf "*%s" (Tmpl.dump_out_reg p r))
+      chan "  " env proc t ;
     fprintf chan "}\n\n" ;
     ()
+
+
   let compile_addr_call x = sprintf "&_a->%s[_i]" x
   let compile_out_reg_call proc reg =
     sprintf "&_a->%s" (Tmpl.compile_out_reg proc reg)
@@ -58,8 +119,8 @@ module Make(V:Constant.S) = struct
     and outs = List.map (compile_out_reg_call proc) t.Tmpl.final in
     let args = String.concat "," (addrs@outs) in
     LangUtils.dump_code_call chan indent proc args
-      
-      
+
+
   let dump chan indent env globEnv volatileEnv proc t = ()
 
 end

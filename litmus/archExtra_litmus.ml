@@ -43,6 +43,7 @@ module type S = sig
   val vToName : Constant.v -> string
 
   module RegSet : MySet.S with type elt = I.arch_reg
+  module RegMap : MyMap.S with type key = I.arch_reg
   include Location.S
   with type loc_reg = I.arch_reg and type loc_global = string
 
@@ -77,6 +78,13 @@ module Make(O:Config)(I:I) : S with module I = I
 
   module RegSet =
     MySet.Make
+      (struct
+        type t = I.arch_reg
+        let compare = I.reg_compare
+      end)
+
+  module RegMap =
+    MyMap.Make
       (struct
         type t = I.arch_reg
         let compare = I.reg_compare

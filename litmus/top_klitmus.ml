@@ -108,6 +108,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
       module LISAComp = LISACompile.Make(V)
       module Pseudo = LitmusUtils.Pseudo(A)
       module Lang = LISALang.Make(V)
+(*      module Lang = ASMLang.Make(OX)(A.I)(A.Out) *)
       module Utils = Utils(A)(Lang)(Pseudo)
       module P = GenParser.Make(OX)(A)(LexParse)
       module T = Test_litmus.Make(O)(A)(Pseudo)
@@ -169,7 +170,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
         let module Out =
           Indent.Make(struct let hexa = O.hexa let out = chan end) in
         Out.o "ccflags-y += -std=gnu99";
-        List.iter (fun src -> Out.f "obj-m := %s.o" src) srcs ;
+        List.iter (fun src -> Out.f "obj-m += %s.o" src) srcs ;
         Out.o "" ;
         Out.o "all:" ;
         Out.o "\tmake -C /lib/modules/$(shell uname -r)/build/ M=$(PWD) modules" ;
@@ -179,8 +180,27 @@ module Top(O:Config)(Tar:Tar.S) = struct
         ())
       fname
 
+  let dump_run srcs =
+     let fname = Tar.outname "run.sh" in
+     Misc.output_protect
+      (fun chan ->
+        let module Out =
+          Indent.Make(struct let hexa = O.hexa let out = chan end) in
+        Out.o "OPT=\"$*\"" ;
+        List.iter
+          (fun src ->
+            Out.f "insmod %s.ko $OPT" src ;
+            Out.o "cat /proc/litmus" ;
+            Out.f "rmmod %s.ko" src ;
+            Out.o "" ;
+            ()) srcs ;
+        ())
+       fname
+
   let from_files args =
     let sources,_ = Misc.fold_argv from_file args ([],StringMap.empty)in
-    dump_makefile sources
+    dump_makefile sources ;
+    dump_run sources ;
+    ()
 
 end

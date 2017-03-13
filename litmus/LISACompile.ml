@@ -61,13 +61,44 @@ module Make(V:Constant.S) =
 (* Compilation (to kernel C) *)
 (*****************************)
 
-            
     let compile_ins tr_lab ins k = match ins with
     | Pld (r,Addr_op_atom (Abs (Constant.Symbolic s)) ,["once"]) ->
         { empty_ins with
-          memo = sprintf "^o0 = READ_ONCE(*%s);" s;
+          memo = sprintf "%s = READ_ONCE(*%s);" (reg_to_string r) s;
           outputs = [r;] }::k
-    | _ -> k
+    | Pld (r,Addr_op_atom (Abs (Constant.Symbolic s)) ,["acquire"]) ->
+        { empty_ins with
+          memo = sprintf "%s = smp_load_acquire(%s);" (reg_to_string r) s;
+          outputs = [r;] }::k
+    | Pst
+        (Addr_op_atom (Abs (Constant.Symbolic s)),Imm ik,["once"])
+      ->
+          { empty_ins with
+            memo = sprintf "WRITE_ONCE(*%s,%i);" s ik; }::k
+    | Pst
+        (Addr_op_atom (Abs (Constant.Symbolic s)),Regi r,["once"])
+      ->
+          { empty_ins with
+            memo = sprintf "WRITE_ONCE(*%s,%s);" s (reg_to_string r);
+            inputs = [r;]
+          }::k
+    | Pst
+        (Addr_op_atom (Abs (Constant.Symbolic s)),Imm ik,["release"])
+      ->
+          { empty_ins with
+            memo = sprintf "smp_store_release(%s,%i);" s ik; }::k
+    | Pfence (Fence ([fence],None)) ->
+        let fence = match fence with
+        | "mb" -> "smp_mb"
+        | "rmb" -> "smp_rmb"
+        | "wmb" -> "smp_wmb"
+        | "rb_dep" -> "smp_read_barrier_depends"
+        | "rcu_read_lock" -> "rcu_read_lock"
+        | "rcu_read_unlock" -> "rcu_read_unlock"
+        | "sync" -> "synchronize_rcu_expedited"
+        | _ -> Warn.fatal "bad fence: '%s'" fence in
+        { empty_ins with memo = sprintf "%s();" fence; }::k
+    | _ -> Warn.fatal "Cannot compile '%s'" (dump_instruction ins)
 
 
 (********)
