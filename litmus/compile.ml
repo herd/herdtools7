@@ -37,180 +37,175 @@ module Generic (A : Arch_litmus.Base)
     (C:Constr.S
     with type location = A.location and module LocSet = A.LocSet) = struct
 
-  open CType
+      open CType
 
-  let base =  base
-  let pointer = pointer
+      let base =  base
+      let pointer = pointer
 
-  let typeof = function
-    | Constant.Concrete _ -> base
-    | Constant.Symbolic _ -> pointer
+      let typeof = function
+        | Constant.Concrete _ -> base
+        | Constant.Symbolic _ -> pointer
 
-  let misc_to_c  = function
-    | MiscParser.TyDef -> base
-    | MiscParser.TyDefPointer  -> pointer
-    | MiscParser.Ty t -> Base t
-    | MiscParser.Atomic t -> Atomic (Base t)
-    | MiscParser.Pointer t -> Pointer (Base t)
-    | MiscParser.TyArray (t,sz) -> Array (t,sz)
+      let misc_to_c  = function
+        | MiscParser.TyDef -> base
+        | MiscParser.TyDefPointer  -> pointer
+        | MiscParser.Ty t -> Base t
+        | MiscParser.Atomic t -> Atomic (Base t)
+        | MiscParser.Pointer t -> Pointer (Base t)
+        | MiscParser.TyArray (t,sz) -> Array (t,sz)
 
-  let type_in_init p reg =
-    let rec find_rec = function
-      | [] -> None
-      | (loc,(t,_))::rem ->
-          begin match loc with
-          | A.Location_reg (q,r) when q = p &&  A.reg_compare reg r = 0
-            -> Some (misc_to_c t)
-          | _ -> find_rec rem
-          end in
-    find_rec
+      let type_in_init p reg =
+        let rec find_rec = function
+          | [] -> None
+          | (loc,(t,_))::rem ->
+              begin match loc with
+              | A.Location_reg (q,r) when q = p &&  A.reg_compare reg r = 0
+                -> Some (misc_to_c t)
+              | _ -> find_rec rem
+              end in
+        find_rec
 
 
-  let type_in_final p reg final flocs =
-    Misc.proj_opt
-      base
-      (ConstrGen.fold_constr
-         (fun a t ->
-            let open ConstrGen in
-            match a with
-            | LV (A.Location_reg (q,r),v) when p=q && A.reg_compare reg r = 0 ->
-                begin match typeof v,t with
-                | (Base _ as t, Some (Base _)) ->
-                    Some t (* location takes precedence *)
-                | (Pointer (Base s1), Some (Pointer (Base s2)))
-                  when Misc.string_eq s1 s2 ->
-                    t
-                | (ty, None) -> Some ty
-                | (loc_ty, Some cond_ty) ->
-                    Warn.fatal
-                      "Type mismatch between the locations \
-                       (type: %s) and the final condition (type: %s)"
-                      (CType.dump loc_ty)
-                      (CType.dump cond_ty)
-                end
-            | _ -> t)
-         final
-         (List.fold_right
-            (fun (loc,t) k -> match loc with
-               | A.Location_reg (q,r) when p=q && A.reg_compare reg r = 0 ->
-                   begin match t with
-                   | MiscParser.TyDef -> None
-                   | MiscParser.TyDefPointer -> Some pointer
-                   | MiscParser.Ty s -> Some (Base s)
-                   | MiscParser.Atomic s -> Some (Atomic (Base s))
-                   | MiscParser.Pointer s -> Some (Pointer (Base s))
-                   | MiscParser.TyArray _ -> assert false (* No array register *)
+      let type_in_final p reg final flocs =
+        Misc.proj_opt
+          base
+          (ConstrGen.fold_constr
+             (fun a t ->
+               let open ConstrGen in
+               match a with
+               | LV (A.Location_reg (q,r),v) when p=q && A.reg_compare reg r = 0 ->
+                   begin match typeof v,t with
+                   | (Base _ as t, Some (Base _)) ->
+                       Some t (* location takes precedence *)
+                   | (Pointer (Base s1), Some (Pointer (Base s2)))
+                     when Misc.string_eq s1 s2 ->
+                       t
+                   | (ty, None) -> Some ty
+                   | (loc_ty, Some cond_ty) ->
+                       Warn.fatal
+                         "Type mismatch between the locations \
+                         (type: %s) and the final condition (type: %s)"
+                               (CType.dump loc_ty)
+                               (CType.dump cond_ty)
                    end
-               | _ -> k)
-            flocs
-            None)
-      )
+               | _ -> t)
+             final
+             (List.fold_right
+                (fun (loc,t) k -> match loc with
+                | A.Location_reg (q,r) when p=q && A.reg_compare reg r = 0 ->
+                    begin match t with
+                    | MiscParser.TyDef -> None
+                    | MiscParser.TyDefPointer -> Some pointer
+                    | MiscParser.Ty s -> Some (Base s)
+                    | MiscParser.Atomic s -> Some (Atomic (Base s))
+                    | MiscParser.Pointer s -> Some (Pointer (Base s))
+                    | MiscParser.TyArray _ -> assert false (* No array register *)
+                    end
+                | _ -> k)
+                flocs
+                None)
+          )
 
-    let add_addr_type a ty env =
+      let add_addr_type a ty env =
 (*      Printf.eprintf "Type %s : %s\n"  a (CType.dump ty) ; *)
-      try
-        let tz = StringMap.find a env in
-        match ty,tz with
-        | (Pointer (Base s1), Pointer (Base s2))
-        | (Atomic (Base s1), Atomic (Base s2))
-        | (Base s1, Base s2)
-          when Misc.string_eq s1 s2 -> env
-        | _,_ (* (Pointer _|Base _),(Pointer _|Base _) *) ->
-            Warn.fatal
-              "Type mismatch detected on location %s, required %s vs. found %s"
-              a (dump ty) (dump tz)
-      with
-        Not_found -> StringMap.add a ty env
+        try
+          let tz = StringMap.find a env in
+          match ty,tz with
+          | (Pointer (Base s1), Pointer (Base s2))
+          | (Atomic (Base s1), Atomic (Base s2))
+          | (Base s1, Base s2)
+            when Misc.string_eq s1 s2 -> env
+          | _,_ (* (Pointer _|Base _),(Pointer _|Base _) *) ->
+              Warn.fatal
+                "Type mismatch detected on location %s, required %s vs. found %s"
+                a (dump ty) (dump tz)
+        with
+          Not_found -> StringMap.add a ty env
 
-    let add_value v env = match v with
-    | Constant.Concrete _ -> env
-    | Constant.Symbolic a -> add_addr_type a base env
+      let add_value v env = match v with
+      | Constant.Concrete _ -> env
+      | Constant.Symbolic a -> add_addr_type a base env
 
 (********************)
 (* Complete typing  *)
 (********************)
 
 (* final, only default types *)
-  let type_atom a env = match a with
-  | ConstrGen.LV (loc,v) ->
-      A.LocMap.add loc (typeof v) env
-  | ConstrGen.LL _ -> env
+      let type_atom a env = match a with
+      | ConstrGen.LV (loc,v) ->
+          A.LocMap.add loc (typeof v) env
+      | ConstrGen.LL _ -> env
 
-  let type_final final env = ConstrGen.fold_constr type_atom final env
+      let type_final final env = ConstrGen.fold_constr type_atom final env
 
-  let type_prop prop env = ConstrGen.fold_prop type_atom prop env
+      let type_prop prop env = ConstrGen.fold_prop type_atom prop env
 
 (* locations, default and explicit types *)
-  let type_locations flocs env =
-    List.fold_left
-      (fun env (loc,t) -> A.LocMap.add loc (misc_to_c t) env)
-      env flocs
+      let type_locations flocs env =
+        List.fold_left
+          (fun env (loc,t) -> A.LocMap.add loc (misc_to_c t) env)
+          env flocs
 
 (* init, default and explicit types *)
-  open Printf
+      open Printf
 
-  let type_init init env =
-    List.fold_left
-      (fun env (loc,(t,v)) ->
-(*
-        Printf.eprintf "add %s -> %s\n"
-          (A.pp_location loc)
-          (MiscParser.pp_run_type t) ;
-*)
-        match t with
-        | MiscParser.TyDef ->
-          begin try
-            ignore (A.LocMap.find loc env) ;
-            env
-          with Not_found ->
-            A.LocMap.add loc (typeof v) env
-          end
-        | _ -> A.LocMap.add loc (misc_to_c t) env)
-      env init
+      let type_init init env =
+        List.fold_left
+          (fun env (loc,(t,v)) -> match t with
+          | MiscParser.TyDef ->
+              begin try
+                ignore (A.LocMap.find loc env) ;
+                env
+              with Not_found ->
+                A.LocMap.add loc (typeof v) env
+              end
+          | _ -> A.LocMap.add loc (misc_to_c t) env)
+          env init
 
-  let dump_type_env tag env =
-    let bds =
-      A.LocMap.fold
-        (fun loc ty k -> (loc,ty)::k)
-        env [] in
-    let pp =
-      List.map
-        (fun (loc,ty) ->
-          sprintf "<%s,%s>"
-            (A.pp_location loc)
-            (CType.dump ty))
-        bds in
-    eprintf "%s: %s\n" tag (String.concat " " pp)
+      let dump_type_env tag env =
+        let bds =
+          A.LocMap.fold
+            (fun loc ty k -> (loc,ty)::k)
+            env [] in
+        let pp =
+          List.map
+            (fun (loc,ty) ->
+              sprintf "<%s,%s>"
+                (A.pp_location loc)
+                (CType.dump ty))
+            bds in
+        eprintf "%s: %s\n" tag (String.concat " " pp)
 
+      let debug = false
 
-  let build_type_env init final filter flocs =
-    let env = type_final final A.LocMap.empty in
-    if false then dump_type_env "FINAL" env ;
-    let env = match filter with
-    | None -> env
-    | Some f ->
-         let env = type_prop f env in
-         if false then dump_type_env "FILTER" env ;
-         env in
-    let env = type_locations flocs env in
-    if false then dump_type_env "LOCS" env ;
-    let env = type_init init env in
-    if false then dump_type_env "INIT" env ;
-    env
+      let build_type_env init final filter flocs =
+        let env = type_final final A.LocMap.empty in
+        if debug then dump_type_env "FINAL" env ;
+        let env = match filter with
+        | None -> env
+        | Some f ->
+            let env = type_prop f env in
+            if debug then dump_type_env "FILTER" env ;
+            env in
+        let env = type_locations flocs env in
+        if debug then dump_type_env "LOCS" env ;
+        let env = type_init init env in
+        if debug then dump_type_env "INIT" env ;
+        env
 
-  let find_type loc env =
-    try A.LocMap.find loc env
-    with Not_found ->
-      eprintf "No type for %s\n" (A.pp_location loc) ;
-      assert false
+      let find_type loc env =
+        try A.LocMap.find loc env
+        with Not_found ->
+          Warn.fatal "no type for %s\n" (A.pp_location loc)
+
 
 (* All observed locations *)
-  let observed final locs =
-    A.LocSet.union
-      (C.locations final)
-      (A.LocSet.of_list (List.map fst locs))
+      let observed final locs =
+        A.LocSet.union
+          (C.locations final)
+          (A.LocSet.of_list (List.map fst locs))
 
-end
+    end
 
 module Make
     (O:Config)
@@ -551,6 +546,7 @@ module Make
         flocs = List.map fst locs ;
         global_code = [];
         src = t;
+        type_env = ty_env;
       }
 
   end

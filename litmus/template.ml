@@ -237,16 +237,21 @@ module Make(O:Config) (A:I) (V:Constant.S) =
           try
             let j = look_escape i in
             add (substring i j) ;
-            let w,ty,n,nxt =
-              match t.memo.[j+1] with
-              | 'w' -> true,t.memo.[j+2],digit (j+3),4
-              | _ -> false,t.memo.[j+1],digit (j+2),3 in
-            begin match ty with
-            | 'i' -> add (tag_reg_ref w (get_reg n t.inputs))
-            | 'o' -> add (tag_reg_ref w (get_reg n t.outputs))
-            | c -> internal (sprintf "bad escape '%c'" c)
-            end ;
-            do_rec (j+nxt)
+            match t.memo.[j+1] with
+            | '^' ->
+                add "^" ;
+                do_rec (j+2)
+            | _ ->
+                let w,ty,n,nxt =
+                  match t.memo.[j+1] with
+                  | 'w' -> true,t.memo.[j+2],digit (j+3),4
+                  | _ -> false,t.memo.[j+1],digit (j+2),3 in
+                begin match ty with
+                | 'i' -> add (tag_reg_ref w (get_reg n t.inputs))
+                | 'o' -> add (tag_reg_ref w (get_reg n t.outputs))
+                | c -> internal (sprintf "bad escape '%c'" c)
+                end ;
+                do_rec (j+nxt)
           with Not_found -> add (substring i len) in
       try
         if t.comment then sprintf "%s%s" A.comment (escape_percent t.memo)

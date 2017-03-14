@@ -87,7 +87,7 @@ module Make(V:Constant.S) = struct
         (fun x ->
           let ty =
             try List.assoc x globEnv
-            with Not_found -> assert false in
+            with Not_found -> Compile.base in
           let ty = SkelUtil.dump_global_type x ty in
           sprintf "%s *%s" ty x)
         addrs_proc in

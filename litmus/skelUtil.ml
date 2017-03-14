@@ -101,7 +101,9 @@ module Make
 (* Typing stuff *)
       type env = CType.t A.LocMap.t
 
-      let build_env test =
+      let build_env test = test.T.type_env
+
+        (*
         let e = A.LocMap.empty in
         let e =
           List.fold_left
@@ -117,8 +119,13 @@ module Make
                   A.LocMap.add (A.Location_reg (proc,reg)) t e)
                 e outs)
             e test.T.code in
+        let pp = A.LocMap.fold
+          (fun loc t k ->
+            sprintf "%s -> %s" (A.pp_location loc) (CType.dump t)::k)
+            e [] in
+        eprintf "Env: {%s}\n" (String.concat "; " pp) ;
         e
-
+*)
 
       let do_find_type loc env =
         try A.LocMap.find loc env

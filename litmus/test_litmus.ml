@@ -41,7 +41,8 @@ module type S = sig
       globals : string type_env ;
       flocs : A.location list ;
       global_code : string list;
-      src : src ; }
+      src : src ;
+      type_env : CType.t A.LocMap.t ;  }
 
   val find_our_constraint : t -> C.constr
   val get_nprocs : t -> int
@@ -83,7 +84,8 @@ struct
       globals : string type_env ;
       flocs : A.location list ;
       global_code : string list;
-      src : src ; }
+      src : src ;
+      type_env : CType.t A.LocMap.t; }
 
   let find_our_constraint test = test.condition
 

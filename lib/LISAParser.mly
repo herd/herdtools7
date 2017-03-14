@@ -133,19 +133,19 @@ operation:
   { RAI($1) }
 
 | LPAR ADD any_value any_value RPAR
- { Add($3,$4) }
+ { OP (Add,$3,$4) }
 
 | LPAR XOR any_value any_value RPAR
- { Xor($3,$4) }
+ { OP (Xor,$3,$4) }
 
 | LPAR AND any_value any_value RPAR
- { And($3,$4) }
+ { OP (And,$3,$4) }
 
 | LPAR EQ any_value any_value RPAR
-  { Eq($3,$4) }
+  { OP (Eq,$3,$4) }
 
 | LPAR NEQ any_value any_value RPAR
-  { Neq($3,$4) }
+  { OP (Neq,$3,$4) }
 
 fence_labels_option:
 | { None }

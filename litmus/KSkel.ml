@@ -69,6 +69,7 @@ module Make
     | A.Location_global s -> s
     | A.Location_deref (s,i) -> sprintf "%s_%i" s i
 
+    let dump_val_param loc = "_val_" ^ loc
 
     module DC =
       CompCond.Make(O)
@@ -83,7 +84,7 @@ module Make
               | Concrete i ->
                   if Cfg.hexa then sprintf "0x%x"i
                   else sprintf "%i" i
-              | Symbolic _ -> assert false
+              | Symbolic s ->  dump_val_param s
           end
           module Loc = struct
             type t = A.location
@@ -130,6 +131,15 @@ module Make
       O.o "/* Outcomes */" ;
       O.o "/************/" ;
       O.o "" ;
+      if U.ptr_in_outs env test then begin
+(* Pretty-print indices *)
+        let naddrs = List.length test.T.globals in
+        O.f "static char *pretty_addr[%i] = {\"NULL\",%s,\"???\",};"
+          (naddrs+2)
+          (String.concat ","
+             (List.map (fun (s,_) -> sprintf "\"%s\"" s) test.T.globals)) ;
+        O.o "" ;
+      end ;
       let outs = U.get_displayed_locs test in
       let nitems =
         let map =
@@ -175,7 +185,8 @@ module Make
               (fun loc ->
                 let sloc = dump_loc_name loc in
                 match U.find_type loc env with
-                | CType.Pointer _
+                | CType.Pointer _ ->
+                    sprintf "pretty_addr[(int)o[%s_f]]" sloc
                 | CType.Array _ -> assert false
                 | t -> sprintf "(%s)o[%s_f]" (CType.dump t) sloc)
               outs]) in
@@ -274,6 +285,18 @@ module Make
       O.oi "int *barrier;" ;
       O.o "} ctx_t ;" ;
       O.o "" ;
+      if U.ptr_in_outs env test then begin
+      (*  Translation to indices *)
+        let dump_test k s =
+          O.fi "else if (v_addr == (void *)&(_a->%s[_i])) return %i;"
+            s k in
+        O.o "static int idx_addr(ctx_t *_a,int _i,void *v_addr) {" ;
+        O.oi "if (v_addr == NULL) { return 0;}" ;
+        Misc.iteri (fun k (s,_) -> dump_test (k+1) s) test.T.globals ;
+        O.fi "else { return %i;}" (List.length test.T.globals+1) ;
+        O.o "}" ;
+        O.o "" ;
+      end ;
       O.o "static ctx_t **ctx;" ;
       O.o "" ;
       O.o "static void free_ctx(ctx_t *p) { " ;
@@ -331,7 +354,7 @@ module Make
 (* Test proper *)
 (***************)
     let dump_barrier_def () =
-      O.o "static inline void barrier_wait(int id,int i,int *b) {" ;      
+      O.o "static inline void barrier_wait(int id,int i,int *b) {" ;
       O.oi "if ((i % nthreads) == id) {" ;
       O.oii "ACCESS_ONCE(*b) = 1;" ;
       O.oii "smp_mb();" ;
@@ -376,7 +399,7 @@ module Make
         test.T.code ;
       ()
 
-    let dump_zyva tname test =
+    let dump_zyva tname env test =
       O.o "/********/" ;
       O.o "/* Zyva */" ;
       O.o "/********/" ;
@@ -385,8 +408,8 @@ module Make
       O.oi "ctx_t **c = ctx;" ;
       O.oi "outs_t *outs = NULL;" ;
 (*
-      O.oi "int cpu = -1;" ;
-*)
+  O.oi "int cpu = -1;" ;
+ *)
       O.oi "const int nth = ninst * nthreads;" ;
       O.o "" ;
       O.oi "for (int _k = 0 ; _k < nruns ; _k++) {" ;
@@ -404,11 +427,11 @@ module Make
       done ;
       O.oii "}" ;
 (*
-      O.oii "for (int _t = 0 ; _t < nth ; _t++) {" ;
-      O.oiii "cpu = cpumask_next(cpu,cpu_online_mask);" ;
-      O.oiii "kthread_bind(th[_t],cpu);" ;
-      O.oii "}" ;
-*)  
+  O.oii "for (int _t = 0 ; _t < nth ; _t++) {" ;
+  O.oiii "cpu = cpumask_next(cpu,cpu_online_mask);" ;
+  O.oiii "kthread_bind(th[_t],cpu);" ;
+  O.oii "}" ;
+ *)
       O.oii "for (int _t = 0 ; _t < nth ; _t++) wake_up_process(th[_t]);" ;
       O.oii "wait_event_interruptible(*wq, atomic_read(&done) == nth);" ;
       O.oii "for (int _ni = 0 ; _ni < ninst ; _ni++) {" ;
@@ -422,7 +445,10 @@ module Make
       A.LocSet.iter
         (fun loc ->
           O.fiv "_o[%s] = %s;"
-            (dump_loc_idx loc) (dump_a_loc loc))
+            (dump_loc_idx loc)
+            (let sloc = dump_a_loc loc in
+            if U.is_ptr loc env then sprintf "idx_addr(_a,_i,%s)" sloc
+            else sloc))
         locs ;
       O.oiv "outs = add_outcome_outs(outs,_o,_cond);" ;
       O.oiii "}" ;
@@ -518,9 +544,10 @@ module Make
       O.o "static int __init" ;
       O.o "litmus_init(void) {" ;
       O.oi "int err=0;" ;
+      O.oi "int online = num_online_cpus ();" ;
       O.oi "struct proc_dir_entry *litmus_pde = proc_create(\"litmus\",0,NULL,&litmus_proc_fops);" ;
       O.oi "if (litmus_pde == NULL) { return -ENOMEM; }" ;
-      O.oi "if (avail == 0) avail = num_online_cpus ();" ;
+      O.oi "if (avail == 0 || avail > online) avail = online;" ;
       O.oi "if (ninst == 0) ninst = avail / nthreads ;" ;
       O.o "" ;
       O.oi "ctx = kzalloc(sizeof(ctx[0])*ninst,GFP_KERNEL);" ;
@@ -570,7 +597,7 @@ module Make
       dump_ctx env test ;
       dump_threads tname env test ;
       dump_cond_fun env test ;
-      dump_zyva tname test ;
+      dump_zyva tname env test ;
       dump_proc tname test ;
       dump_init_exit test ;
       ()

@@ -58,11 +58,11 @@ module Make(Cfg:Config)(BO:BellArch_gen.Config) : XXXCompile_gen.S =
 
     let mov rA op = Pmov (rA,op)
 
-    let movne rA rB k = mov  rA (Neq (IAR_roa (Rega rB),IAR_imm k))
-    let moveq rA rB k = mov  rA (Eq (IAR_roa (Rega rB),IAR_imm k))
-    let xor r1 r2 r3 = mov r1 (Xor (IAR_roa (Rega r2),IAR_roa (Rega r3)))
-    let addk r1 r2 k = mov r1 (Add (IAR_roa (Rega r2),IAR_imm k))
-    let andk r1 r2 k = mov r1 (And (IAR_roa (Rega r2),IAR_imm k))
+    let movne rA rB k = mov  rA (OP (Neq,IAR_roa (Rega rB),IAR_imm k))
+    let moveq rA rB k = mov  rA (OP (Eq,IAR_roa (Rega rB),IAR_imm k))
+    let xor r1 r2 r3 = mov r1 (OP (Xor,IAR_roa (Rega r2),IAR_roa (Rega r3)))
+    let addk r1 r2 k = mov r1 (OP (Add,IAR_roa (Rega r2),IAR_imm k))
+    let andk r1 r2 k = mov r1 (OP (And,IAR_roa (Rega r2),IAR_imm k))
     let branchcc reg lab = Pbranch (Some reg,lab,[])
 
 

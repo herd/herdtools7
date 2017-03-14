@@ -13,6 +13,7 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
+
 module Make(V:Constant.S) =
   struct
     module A = LISAArch_litmus.Make(V)
@@ -20,7 +21,7 @@ module Make(V:Constant.S) =
     open A.Out
     open CType
     open Printf
-      
+
 (***************************************************)
 (* Extract explicit [symbolic] addresses from code *)
 (***************************************************)
@@ -41,11 +42,7 @@ module Make(V:Constant.S) =
 
     let extract_op = function
       | RAI iar -> extract_iar iar
-      | Add (iar1,iar2)
-      | Xor (iar1,iar2)
-      | And (iar1,iar2)
-      | Eq (iar1,iar2)
-      | Neq (iar1,iar2)
+      | OP (_,iar1,iar2)
           ->  StringSet.union (extract_iar iar1) (extract_iar iar2)
 
     let extract_addrs = function
@@ -54,39 +51,67 @@ module Make(V:Constant.S) =
         -> extract_ao ao
       | Prmw (_,op,ao,_) ->
           StringSet.union (extract_op op) (extract_ao ao)
-      | Pmov  (_,op) -> extract_op op            
+      | Pmov  (_,op) -> extract_op op
       | Pfence _|Pcall _|Pbranch _ -> StringSet.empty
 
 (*****************************)
 (* Compilation (to kernel C) *)
 (*****************************)
+    let compile_iar = function
+      | IAR_imm i -> sprintf "%i" i,[]
+      | IAR_roa (Rega r) -> reg_to_string r,[r]
+      | IAR_roa (Abs (Constant.Symbolic s)) -> s,[]
+      | IAR_roa (Abs (Constant.Concrete _)) -> assert false
+
+    let compile_roi = function
+      | Imm i -> sprintf "%i" i,[]
+      | Regi r -> reg_to_string r,[r;]
+
+    let add_par par s = if par then "(" ^ s ^ ")" else s
+
+    let compile_addr_op par = function
+      | Addr_op_atom (Abs (Constant.Symbolic s)) -> s,[]
+      | Addr_op_atom (Rega r) -> reg_to_string r,[r;]
+      | Addr_op_add (Abs (Constant.Symbolic s),roi) ->
+          let m,i = compile_roi roi in
+          add_par par (s ^ "+" ^ m),i
+      | Addr_op_add (Rega r,roi) ->
+          let m,i = compile_roi roi in
+          add_par par (reg_to_string r ^ "+" ^ m),r::i
+      | Addr_op_atom (Abs (Constant.Concrete _))
+      | Addr_op_add (Abs (Constant.Concrete _),_)
+        ->
+          assert false
 
     let compile_ins tr_lab ins k = match ins with
-    | Pld (r,Addr_op_atom (Abs (Constant.Symbolic s)) ,["once"]) ->
+    | Pld (r,a,["once"]) ->
+        let m,i = compile_addr_op true a in
         { empty_ins with
-          memo = sprintf "%s = READ_ONCE(*%s);" (reg_to_string r) s;
+          memo = sprintf "%s = READ_ONCE(*%s);" (reg_to_string r) m;
+          inputs = i;
           outputs = [r;] }::k
-    | Pld (r,Addr_op_atom (Abs (Constant.Symbolic s)) ,["acquire"]) ->
+    | Pld (r,a,["acquire"]) ->
+        let m,i = compile_addr_op false a in
         { empty_ins with
-          memo = sprintf "%s = smp_load_acquire(%s);" (reg_to_string r) s;
-          outputs = [r;] }::k
-    | Pst
-        (Addr_op_atom (Abs (Constant.Symbolic s)),Imm ik,["once"])
-      ->
-          { empty_ins with
-            memo = sprintf "WRITE_ONCE(*%s,%i);" s ik; }::k
-    | Pst
-        (Addr_op_atom (Abs (Constant.Symbolic s)),Regi r,["once"])
-      ->
-          { empty_ins with
-            memo = sprintf "WRITE_ONCE(*%s,%s);" s (reg_to_string r);
-            inputs = [r;]
-          }::k
-    | Pst
-        (Addr_op_atom (Abs (Constant.Symbolic s)),Imm ik,["release"])
-      ->
-          { empty_ins with
-            memo = sprintf "smp_store_release(%s,%i);" s ik; }::k
+          memo = sprintf "%s = smp_load_acquire(%s);" (reg_to_string r) m;
+          outputs = r::i }::k
+    | Pld (r,a,["lderef"]) ->
+        let m,i = compile_addr_op true a in
+        { empty_ins with
+          memo = sprintf "%s = lockless_dereference(*%s);" (reg_to_string r) m;
+          outputs = r::i }::k
+    | Pst (a,roi,["once"]) ->
+        let m_roi,i_roi = compile_roi roi
+        and m_a,i_a = compile_addr_op true a in
+        { empty_ins with
+          memo = sprintf "WRITE_ONCE(*%s,%s);" m_a m_roi;
+          inputs = i_roi@i_a;}::k
+    | Pst (a,roi,["release"]) ->
+        let m_roi,i_roi = compile_roi roi
+        and m_a,i_a = compile_addr_op false a in
+        { empty_ins with
+          memo = sprintf "smp_store_release(%s,%s);" m_a m_roi;
+          inputs = i_roi@i_a;}::k
     | Pfence (Fence ([fence],None)) ->
         let fence = match fence with
         | "mb" -> "smp_mb"
@@ -98,6 +123,41 @@ module Make(V:Constant.S) =
         | "sync" -> "synchronize_rcu_expedited"
         | _ -> Warn.fatal "bad fence: '%s'" fence in
         { empty_ins with memo = sprintf "%s();" fence; }::k
+    | Pmov (r,RAI (IAR_imm i)) ->
+        { empty_ins with
+          memo = sprintf "%s = %i;" (reg_to_string r) i;
+          outputs=[r;]; }::k
+    | Pmov (r,RAI (IAR_roa (Rega r0))) ->
+        { empty_ins with
+          memo = sprintf "%s = %s;" (reg_to_string r) (reg_to_string r0);
+          outputs=[r;]; inputs=[r0;]}::k
+    | Pmov (r,RAI (IAR_roa (Abs (Constant.Symbolic x)))) ->
+        { empty_ins with
+          memo = sprintf "%s = %s;" (reg_to_string r) x;
+          outputs=[r;] }::k
+    | Pmov (r,OP (op,iar1,iar2)) ->
+        let memo1,input1 = compile_iar iar1 in
+        let memo2,input2 = compile_iar iar2 in
+        let op = match op with
+        | Add -> "+"
+        | Xor -> "^^"
+        | And -> "&"
+        | Eq -> "=="
+        | Neq -> "!=" in
+        { empty_ins with
+          memo = sprintf "%s = %s %s %s;"
+            (reg_to_string r) memo1 op memo2;
+          outputs = [r;]; inputs = input1@input2; }::k
+    | Pbranch (None,lbl,_) ->
+        { empty_ins with
+          memo = sprintf "goto %s;" (A.Out.dump_label (tr_lab lbl));
+          branch =[Branch lbl;] }::k
+    | Pbranch (Some r,lbl,_) ->
+        { empty_ins with
+          memo = sprintf "if (%s) goto %s;"
+            (reg_to_string r) (A.Out.dump_label (tr_lab lbl));
+          inputs=[r;];
+          branch =[Branch lbl;] }::k
     | _ -> Warn.fatal "Cannot compile '%s'" (dump_instruction ins)
 
 

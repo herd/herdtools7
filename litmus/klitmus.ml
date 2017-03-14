@@ -45,7 +45,12 @@ module KOption : sig
   val names : string list ref
   val excl : string list ref
   val rename : string list ref
-end = Option
+  val rcu : Rcu.t ref
+end = struct
+  include Option
+  let rcu = ref Rcu.No
+end
+
 open KOption
   
 module PStride = ParseTag.Make(Stride)
@@ -73,15 +78,18 @@ let opts =
    argkm "-size_of_test" KOption.size  "alias for -s";
    argkm "-r" KOption.runs "number of runs" ;
    argkm "-number_of_run" KOption.runs "alias for -r" ;
+   PStride.parse "-st" Option.stride "stride for scanning memory" ;
+   PStride.parse "-stride" Option.stride "stride for scanning memory" ;
 (********)
 (* Misc *)
 (********)
 (* Change input *)
    CheckName.parse_names names ;
    CheckName.parse_excl excl ;
-(* Change input *)
    CheckName.parse_rename rename ;
-  ]
+   let module P = ParseTag.Make(Rcu) in
+   P.parse "-rcu" KOption.rcu "accept RCU tests or not" ;
+ ]
 
 
 let usage = sprintf   "Usage: %s [opts]* filename" pgm
@@ -133,6 +141,7 @@ let () =
         match st with
         | No|Adapt -> st
         | St i ->  if i > 0 then st else No
+      let rcu = !rcu
 (* tar stuff *)
       let tarname = KOption.get_tar ()
     end in

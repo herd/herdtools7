@@ -30,6 +30,7 @@ module type Config = sig
   val runs : int
   val avail : int option
   val stride : Stride.t
+  val rcu : Rcu.t
   val tarname : string
 end
 
@@ -46,6 +47,10 @@ module Top(O:Config)(Tar:Tar.S) = struct
 
   module H = LitmusUtils.Hash(O)
   module W = Warn.Make(O)
+
+  let exit_not_compiled fname =
+    W.warn "%s Test not compiled" (Pos.str_pos0 fname) ;
+    raise Misc.Exit
 
   module Utils(A:Arch_litmus.Base)
       (Lang:Language.S
@@ -70,7 +75,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
           raise e
 
       let compile parse compile allocate
-          (hash_env,id) fname chan splitted =
+          fname (hash_env,id) chan splitted =
         let parsed = parse chan splitted in
         close_in chan ;
         let doc = splitted.Splitter.name in
@@ -86,8 +91,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
           dump src doc compiled ;
           base,(hash_env,id+1)
         end else begin
-          W.warn "%s, test not compiled" (Pos.str_pos0 doc.Name.file) ;
-          raise Misc.Exit
+          exit_not_compiled fname
         end
     end
 
@@ -119,11 +123,38 @@ module Top(O:Config)(Tar:Tar.S) = struct
             type global = string
             let maybevToGlobal = vToName
           end)
-      let allocate = Alloc.allocate_regs
+
+      let allocate =
+        let open MiscParser in
+        let have_rcu p =
+          List.exists
+            (fun (_,code) ->
+              List.exists
+                (fun p ->
+                  A.pseudo_fold
+                    (fun r ins -> match ins with
+                    | A.Pfence
+                        (A.Fence
+                           ([("rcu_read_lock"|"rcu_read_unlock"|"sync")],_))
+                      -> true
+                    | _ -> r)
+                    false p)
+                code)
+            p in
+        fun fname parsed ->
+          let p = Alloc.allocate_regs parsed in
+          let ok = match O.rcu with
+          | Rcu.Yes -> true
+          | Rcu.No -> not (have_rcu p.MiscParser.prog)
+          | Rcu.Only -> have_rcu p.MiscParser.prog in
+          if ok then p
+          else exit_not_compiled fname
 
       module Comp = Compile.Make (Compile.Default)(A)(T)(LISAComp)
 
-      let compile = Utils.compile P.parse Comp.compile allocate
+      let compile fname =
+        Utils.compile P.parse Comp.compile (allocate fname)
+          fname
     end
 
   module SP = Splitter.Make(OX)
@@ -137,7 +168,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
       let module V = SymbConstant in
       match arch with
       | `LISA ->
-          MakeLISA.compile hash_env fname chan splitted
+          MakeLISA.compile fname hash_env chan splitted
       | _ ->
           W.warn "%s, cannot handle arch %s" (Pos.str_pos0 fname)
             (Archs.pp arch) ;
@@ -178,8 +209,8 @@ module Top(O:Config)(Tar:Tar.S) = struct
       fname
 
   let dump_run srcs =
-     let fname = Tar.outname "run.sh" in
-     Misc.output_protect
+    let fname = Tar.outname "run.sh" in
+    Misc.output_protect
       (fun chan ->
         let module Out =
           Indent.Make(struct let hexa = O.hexa let out = chan end) in
@@ -192,7 +223,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
             Out.o "" ;
             ()) srcs ;
         ())
-       fname
+      fname
 
   let from_files args =
     let sources,_ = Misc.fold_argv from_file args ([],(StringMap.empty,0))in
