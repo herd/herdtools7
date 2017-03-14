@@ -383,6 +383,7 @@ module Make
           O.f "static int thread%i(void *_p) {" proc ;
           O.oi "ctx_t *_a = (ctx_t *)_p;" ;
           O.o "" ;
+          O.oi "smp_mb();" ;
           O.oi "for (int _j = 0 ; _j < stride ; _j++) {" ;
           O.oii "for (int _i = _j ; _i < size ; _i += stride) {" ;
           O.fiii "barrier_wait(%i,_i,&_a->barrier[_i]);" proc ;
@@ -390,6 +391,7 @@ module Make
             myenv global_env envVolatile proc out ;
           O.oii "}" ;
           O.oi "}" ;
+          O.oi "smp_mb();" ;
           O.oi "atomic_inc(&done);" ;
           O.oi "wake_up(wq);" ;
           O.oi "do_exit(0);" ;
@@ -434,6 +436,7 @@ module Make
  *)
       O.oii "for (int _t = 0 ; _t < nth ; _t++) wake_up_process(th[_t]);" ;
       O.oii "wait_event_interruptible(*wq, atomic_read(&done) == nth);" ;
+      O.oii "smp_mb();" ;
       O.oii "for (int _ni = 0 ; _ni < ninst ; _ni++) {" ;
       O.oiii "ctx_t *_a = c[_ni];" ;
       O.oiii "for (int _i = 0 ; _i < size ; _i++) {" ;
