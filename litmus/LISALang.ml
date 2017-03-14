@@ -61,6 +61,7 @@ module Make(V:Constant.S) = struct
     | code -> dump_ins 0 code
     end ;
 (* Postfix *)
+    fprintf chan "%sbarrier();" indent ;
     List.iter
       (fun reg ->
          fprintf chan "%s%s = %s;\n" indent
