@@ -391,9 +391,9 @@ module Make
             myenv global_env envVolatile proc out ;
           O.oii "}" ;
           O.oi "}" ;
-          O.oi "smp_mb();" ;
           O.oi "atomic_inc(&done);" ;
           O.oi "wake_up(wq);" ;
+          O.oi "smp_mb();" ;
           O.oi "do_exit(0);" ;
           O.o "}" ;
           O.o "" ;
