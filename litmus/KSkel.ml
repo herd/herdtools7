@@ -331,12 +331,17 @@ module Make
 (* Test proper *)
 (***************)
     let dump_barrier_def () =
-      O.o "static inline void barrier_wait(int id,int i,int *b) {" ;
+      O.o "static inline void barrier_wait(int id,int i,int *b) {" ;      
       O.oi "if ((i % nthreads) == id) {" ;
       O.oii "ACCESS_ONCE(*b) = 1;" ;
       O.oii "smp_mb();" ;
       O.oi "} else {" ;
-      O.oii "while (ACCESS_ONCE(*b) == 0) cpu_relax();" ;
+      O.oii "int _spin = 256;" ;
+      O.oii "for  ( ; ; ) {" ;
+      O.oiii "if (ACCESS_ONCE(*b) != 0) return;" ;
+      O.oiii "if (--_spin <= 0) return;" ;
+      O.oiii "cpu_relax();" ;
+      O.oii "}" ;
       O.oi "}" ;
       O.o "}" ;
       O.o ""
@@ -418,6 +423,7 @@ module Make
       O.oiv "outs = add_outcome_outs(outs,_o,_cond);" ;
       O.oiii "}" ;
       O.oii "}" ;
+      O.oii "cond_resched();" ;
       O.oi "}" ;
       O.oi "return outs;" ;
       O.o "}" ;
