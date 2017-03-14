@@ -384,7 +384,9 @@ module Make
       O.o "static outs_t *zyva(void) {" ;
       O.oi "ctx_t **c = ctx;" ;
       O.oi "outs_t *outs = NULL;" ;
+(*
       O.oi "int cpu = -1;" ;
+*)
       O.oi "const int nth = ninst * nthreads;" ;
       O.o "" ;
       O.oi "for (int _k = 0 ; _k < nruns ; _k++) {" ;
@@ -401,10 +403,12 @@ module Make
         O.oiii "_nth++;"
       done ;
       O.oii "}" ;
+(*
       O.oii "for (int _t = 0 ; _t < nth ; _t++) {" ;
       O.oiii "cpu = cpumask_next(cpu,cpu_online_mask);" ;
       O.oiii "kthread_bind(th[_t],cpu);" ;
       O.oii "}" ;
+*)  
       O.oii "for (int _t = 0 ; _t < nth ; _t++) wake_up_process(th[_t]);" ;
       O.oii "wait_event_interruptible(*wq, atomic_read(&done) == nth);" ;
       O.oii "for (int _ni = 0 ; _ni < ninst ; _ni++) {" ;
