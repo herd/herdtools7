@@ -16,12 +16,13 @@
 
 module type S = sig
   type arch_reg
+  module RegMap : MyMap.S with type key = arch_reg
   type t
 
 (* Function dump *)
   val dump_fun :
     out_channel ->
-    (arch_reg * CType.t) list ->
+    CType.t RegMap.t ->
     (string * CType.t) list ->
     string list ->
     int ->
@@ -31,7 +32,7 @@ module type S = sig
   val dump_call :
     out_channel ->
     string ->
-    (arch_reg * CType.t) list ->
+    CType.t RegMap.t ->
     (string * CType.t) list ->
     string list ->
     int ->
@@ -42,7 +43,7 @@ module type S = sig
   val dump :
     out_channel ->
     string ->
-    (arch_reg * CType.t) list ->
+    CType.t RegMap.t ->
     (string * CType.t) list ->
     string list ->
     int ->

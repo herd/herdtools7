@@ -67,17 +67,21 @@ module Make(V:Constant.S) =
       | Imm i -> sprintf "%i" i,[]
       | Regi r -> reg_to_string r,[r;]
 
-    let add_par par s = if par then "(" ^ s ^ ")" else s
+    let add_par s = "(" ^ s ^ ")"
 
-    let compile_addr_op par = function
-      | Addr_op_atom (Abs (Constant.Symbolic s)) -> s,[]
-      | Addr_op_atom (Rega r) -> reg_to_string r,[r;]
+    let type_vo = function
+      | Some (Imm _) -> Compile.pointer
+      | Some (Regi _)|None  -> voidstar
+
+    let compile_addr_op vo = function
+      | Addr_op_atom (Abs (Constant.Symbolic s)) -> s,[],[]
+      | Addr_op_atom (Rega r) -> reg_to_string r,[r;],[r,type_vo vo]
       | Addr_op_add (Abs (Constant.Symbolic s),roi) ->
           let m,i = compile_roi roi in
-          add_par par (s ^ "+" ^ m),i
+          add_par (s ^ "+" ^ m),i,[]
       | Addr_op_add (Rega r,roi) ->
           let m,i = compile_roi roi in
-          add_par par (reg_to_string r ^ "+" ^ m),r::i
+          add_par (reg_to_string r ^ "+" ^ m),r::i,[r,type_vo vo]
       | Addr_op_atom (Abs (Constant.Concrete _))
       | Addr_op_add (Abs (Constant.Concrete _),_)
         ->
@@ -85,33 +89,39 @@ module Make(V:Constant.S) =
 
     let compile_ins tr_lab ins k = match ins with
     | Pld (r,a,["once"]) ->
-        let m,i = compile_addr_op true a in
+        let m,i,tenv = compile_addr_op None a in
         { empty_ins with
           memo = sprintf "%s = READ_ONCE(*%s);" (reg_to_string r) m;
-          inputs = i;
+          inputs = i;reg_env=tenv;
           outputs = [r;] }::k
     | Pld (r,a,["acquire"]) ->
-        let m,i = compile_addr_op false a in
+        let m,i,env = compile_addr_op None a in
         { empty_ins with
           memo = sprintf "%s = smp_load_acquire(%s);" (reg_to_string r) m;
-          outputs = r::i }::k
-    | Pld (r,a,["lderef"]) ->
-        let m,i = compile_addr_op true a in
+          outputs = r::i; reg_env=env;}::k
+    | Pld (r,a,["lderef"|"deref"]) ->
+        let m,i,env = compile_addr_op None a in
         { empty_ins with
           memo = sprintf "%s = lockless_dereference(*%s);" (reg_to_string r) m;
-          outputs = r::i }::k
+          outputs = r::i; reg_env=env;}::k
     | Pst (a,roi,["once"]) ->
         let m_roi,i_roi = compile_roi roi
-        and m_a,i_a = compile_addr_op true a in
+        and m_a,i_a,env = compile_addr_op (Some roi) a in
         { empty_ins with
           memo = sprintf "WRITE_ONCE(*%s,%s);" m_a m_roi;
-          inputs = i_roi@i_a;}::k
+          inputs = i_roi@i_a; reg_env=env;}::k
     | Pst (a,roi,["release"]) ->
         let m_roi,i_roi = compile_roi roi
-        and m_a,i_a = compile_addr_op false a in
+        and m_a,i_a,env = compile_addr_op (Some roi) a in
         { empty_ins with
           memo = sprintf "smp_store_release(%s,%s);" m_a m_roi;
-          inputs = i_roi@i_a;}::k
+          inputs = i_roi@i_a; reg_env=env;}::k
+    | Pst (a,(Regi _ as roi),["assign"]) ->
+        let m_roi,i_roi = compile_roi roi
+        and m_a,i_a,env = compile_addr_op None a in
+        { empty_ins with
+          memo = sprintf "rcu_assign_pointer(*%s,%s);" m_a m_roi;
+          inputs = i_roi@i_a; reg_env=env;}::k
     | Pfence (Fence ([fence],None)) ->
         let fence = match fence with
         | "mb" -> "smp_mb"

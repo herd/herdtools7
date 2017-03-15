@@ -16,6 +16,8 @@
 
 module type I = sig
   type arch_reg
+  module RegSet : MySet.S with type elt = arch_reg
+  module RegMap : MyMap.S with type key = arch_reg
   val arch : Archs.t
   val reg_compare : arch_reg -> arch_reg -> int
   val reg_to_string : arch_reg -> string
@@ -79,13 +81,14 @@ module type S = sig
   val compile_out_reg : int -> arch_reg -> string
   val compile_presi_out_reg : int -> arch_reg -> string
   val compile_presi_out_ptr_reg : int -> arch_reg -> string
-  val dump_type : ('a * CType.t) list -> 'a -> string
 
   module RegSet : MySet.S with type elt = arch_reg
   module RegMap : MyMap.S with type key = arch_reg
 
   val all_regs : t -> RegSet.t
   val trashed_regs : t -> RegSet.t
+  val get_reg_env :
+      (CType.t -> CType.t -> bool) -> t -> CType.t RegMap.t
 end
 
 module Make(O:Config) (A:I) (V:Constant.S) =
@@ -261,21 +264,10 @@ module Make(O:Config) (A:I) (V:Constant.S) =
       with Internal msg ->
         error (sprintf "memo: %s, error: %s" t.memo msg)
 
-    let dump_type env reg =
-      try CType.dump (List.assoc reg env) with
-      | Not_found -> "int"
-
-
     include OutUtils.Make(O)
 
-    module OrderedReg = struct
-      type t = arch_reg
-      let compare = A.reg_compare
-    end
-
-    module RegSet = MySet.Make(OrderedReg)
-    module RegMap = MyMap.Make(OrderedReg)
-
+    module RegSet = A.RegSet
+    module RegMap = A.RegMap
 
     let all_regs t =
       let all_ins ins =
@@ -292,5 +284,27 @@ module Make(O:Config) (A:I) (V:Constant.S) =
            (RegSet.of_list t.final)
            (RegSet.of_list t.stable))
 
+    let get_reg_env error tst =
+      let m =
+        List.fold_left
+          (fun m t ->
+            List.fold_left
+              (fun m (r,t) ->
+                let t0 = RegMap.safe_find t r m in
+                if (t <> t0) then begin
+                  if error t t0 then begin
+                    Warn.user_error
+                      "Register %s has different types: <%s> and <%s>"
+                      (A.reg_to_string r) (CType.dump t0) (CType.dump t)
+                  end else
+                    Warn.warn_always
+                      "File \"%s\" Register %s has different types: <%s> and <%s>"
+                      tst.name.Name.file
+                      (A.reg_to_string r) (CType.dump t0) (CType.dump t)
+                end ;
+                RegMap.add r t m)
+              m  t.reg_env)
+          RegMap.empty tst.code in
+      m
 
   end

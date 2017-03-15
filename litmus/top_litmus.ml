@@ -150,7 +150,8 @@ end = struct
   module Utils (O:Config) (A':Arch_litmus.Base)
       (Lang:Language.S
       with type arch_reg = A'.Out.arch_reg
-      and type t = A'.Out.t)
+      and type t = A'.Out.t
+      and module RegMap = A'.RegMap)
       (Pseudo:PseudoAbstract.S) =
     struct
       module T = Test_litmus.Make(O)(A')(Pseudo)
@@ -267,7 +268,12 @@ end = struct
       (XXXComp : XXXCompile_litmus.S with module A = A) =
     struct
       module Pseudo = LitmusUtils.Pseudo(A)
-      module Lang = ASMLang.Make(O)(A.I)(A.Out)
+      module ALang = struct
+        include A.I
+        module RegSet = A.Out.RegSet
+        module RegMap = A.Out.RegMap
+      end
+      module Lang = ASMLang.Make(O)(ALang)(A.Out)
       module Utils = Utils(O)(A)(Lang)(Pseudo)
       module P = GenParser.Make(O)(A) (L)
       module Comp = Compile.Make (O)(A)(Utils.T)(XXXComp)
@@ -308,6 +314,7 @@ end = struct
         type instruction = unit
 
         module RegSet = StringSet
+        module RegMap = StringMap
 
         let vToName = function
           | Constant.Concrete i -> "addr_" ^ string_of_int i
@@ -357,7 +364,7 @@ end = struct
             let memory = O.memory
             let mode = O.mode
             let asmcommentaslabel = O.asmcommentaslabel
-          end)(CTarget)
+          end)
       module Utils = Utils(O)(A')(Lang)(Pseudo)
       module P = CGenParser_litmus.Make(O)(Pseudo)(A')(L)
       module Comp = CCompile_litmus.Make(O)(Utils.T)

@@ -31,6 +31,7 @@ module type Base = sig
   type instruction
 
   module RegSet : MySet.S with type elt = reg
+  module RegMap : MyMap.S with type key = reg
 
   include Location.S
   with type loc_reg = reg and

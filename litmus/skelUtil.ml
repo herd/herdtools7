@@ -55,8 +55,8 @@ module Make
       type env
       val build_env : T.t -> env
       val find_type : A.location -> env -> CType.t
-      val select_types : (A.location -> 'a option) -> env -> ('a * CType.t) list
-      val select_proc : int -> env -> (A.reg * CType.t) list
+
+      val select_proc : int -> env -> CType.t A.RegMap.t
       val select_global : env -> (A.loc_global * CType.t) list
 
 (* Some dumping stuff *)
@@ -141,20 +141,27 @@ module Make
 
 
 
+      let select_types_reg f env =
+        A.LocMap.fold
+          (fun loc t k -> match f loc with
+          | Some r -> A.RegMap.add r t k
+          | None -> k)
+          env A.RegMap.empty
+
+      let select_proc (p:int) env =
+        select_types_reg
+          (function
+            | A.Location_reg (q,reg) when p = q -> Some reg
+            | A.Location_global _ | A.Location_reg _ -> None
+            | A.Location_deref _ -> assert false)
+          env
+
       let select_types f env =
         A.LocMap.fold
           (fun loc t k -> match f loc with
           | Some r -> (r,t)::k
           | None -> k)
           env []
-
-      let select_proc (p:int) env =
-        select_types
-          (function
-            | A.Location_reg (q,reg) when p = q -> Some reg
-            | A.Location_global _ | A.Location_reg _ -> None
-            | A.Location_deref _ -> assert false)
-          env
 
       let select_global env =
         select_types

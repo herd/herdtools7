@@ -17,6 +17,7 @@
 (* C target, a simplified template *)
 
 type arch_reg = string
+module RegMap : MyMap.S with type key = String.t
 type ins = unit
 type code = string
 

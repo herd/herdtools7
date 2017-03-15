@@ -35,7 +35,11 @@ end
 
 module Make
     (O:Config)
-    (A:I)(Tmpl:Template.S with type arch_reg = A.arch_reg)
+    (A:I)
+    (Tmpl:Template.S
+    with type arch_reg = A.arch_reg
+    and module RegSet = A.RegSet
+    and module RegMap = A.RegMap)
     = struct
 
       type arch_reg = Tmpl.arch_reg
@@ -181,7 +185,8 @@ module Make
                  (RegSet.diff stable final) []) in
         fprintf chan ":%s\n" outs
 
-      let dump_copies compile_out_reg compile_val compile_cpy chan indent env proc t =
+      let dump_copies
+          compile_out_reg compile_val compile_cpy chan indent env proc t =
 (*
   List.iter
   (fun (_,a) ->
@@ -195,7 +200,9 @@ module Make
         List.iter
           (fun reg ->
             fprintf chan "%s%s %s = %s;\n" indent
-              (Tmpl.dump_type env reg)
+              (let ty =
+                RegMap.safe_find Compile.base reg env in
+              CType.dump ty)
               (copy_name (Tmpl.dump_out_reg proc reg))
               (compile_out_reg proc reg) ;
             fprintf chan "%smcautious();\n" indent)
@@ -249,32 +256,12 @@ module Make
               (compile_out_reg proc reg) (dump_stable_reg reg))
           (RegSet.inter stable finals)
 
-      let get_reg_env name ts =
-        let m =
-          List.fold_left
-            (fun m t ->
-              List.fold_left
-                (fun m (r,t) ->
-                  let t0 = RegMap.safe_find t r m in
-                  if (t <> t0) then begin
-                    if A.error t t0 then begin
-                      Warn.user_error
-                      "Register %s has different types: <%s> and <%s>"
-                        (A.reg_to_string r) (CType.dump t0) (CType.dump t)
-                    end else
-                      Warn.warn_always
-                      "File \"%s\" Register %s has different types: <%s> and <%s>"
-                        name.Name.file (A.reg_to_string r) (CType.dump t0) (CType.dump t)
-                  end ;
-                  RegMap.add r t m)
-                m  t.Tmpl.reg_env)
-            RegMap.empty ts in
-        m
+      let get_reg_env name t = Tmpl.get_reg_env A.error t
 
       let before_dump compile_out_reg compile_val compile_cpy
           chan indent env proc t trashed =
 
-        let reg_env = get_reg_env t.Tmpl.name t.Tmpl.code in
+        let reg_env = get_reg_env A.error t in
         RegSet.iter
           (fun reg ->
             let ty = match A.internal_init reg with
@@ -286,7 +273,7 @@ module Make
         List.iter
           (fun reg ->
             let ty =
-              try List.assoc reg env
+              try RegMap.find reg env
               with Not_found -> Compile.base in
             fprintf chan "%sregister %s %s asm(\"%s\")%s;\n"
               indent (CType.dump ty) (dump_stable_reg reg)
@@ -357,7 +344,8 @@ module Make
         | Mode.Std -> Tmpl.compile_out_reg
         | Mode.PreSi ->
             fun proc reg ->
-              let ty = List.assoc reg env in
+              let ty =
+                try RegMap.find reg env with Not_found -> assert false in
               if CType.is_ptr ty then
                 Tmpl.compile_presi_out_ptr_reg proc reg
               else
@@ -422,7 +410,7 @@ module Make
           List.map
             (fun x ->
               let ty =
-                try List.assoc x env
+                try RegMap.find x env
                 with Not_found -> assert false in
               let x = Tmpl.dump_out_reg proc x in
               sprintf "%s *%s" (CType.dump ty) x) t.Tmpl.final in

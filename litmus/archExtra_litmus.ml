@@ -44,11 +44,15 @@ module type S = sig
 
   module RegSet : MySet.S with type elt = I.arch_reg
   module RegMap : MyMap.S with type key = I.arch_reg
+
   include Location.S
   with type loc_reg = I.arch_reg and type loc_global = string
 
   module Out : Template.S
   with type arch_reg = I.arch_reg
+  and module RegSet = RegSet
+  and module RegMap = RegMap
+
   module MapValue : MyMap.S with type key = Constant.v
 
 (* A bit of state handling *)
@@ -108,6 +112,8 @@ module Make(O:Config)(I:I) : S with module I = I
         let reg_compare = I.reg_compare
         let reg_to_string = I.reg_to_string
         let comment = comment
+        module RegSet = RegSet
+        module RegMap = RegMap
       end)
       (I.V)
 

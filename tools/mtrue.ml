@@ -105,7 +105,7 @@ let tar = ref None
 and verbose = ref 0
 and aarch64 = ref false
 let names = ref []
-
+let excl = ref []
 let set_tar x = tar := Some x
 let args = ref []
 
@@ -118,9 +118,8 @@ let opts =
     "-aarch64",
     Arg.Bool (fun b -> aarch64 := b),
     sprintf "<bool> reduce tests for aarc64 (no deref, no sync) default %b" !aarch64;
-    "-names",
-    Arg.String (fun s -> names := [s] @ !names),
-   "<name> select tests whose names are listed in file <name> (cumulate when repeated)";
+    CheckName.parse_names names ;
+    CheckName.parse_excl excl ;
   ]
 
 let prog =
@@ -133,21 +132,23 @@ let () =
     (sprintf "Usage %s [options] [test]*" prog)
 
 (* Read names *)
-let names = match !names with
-| [] -> None
-| names -> Some (ReadNames.from_files names StringSet.add StringSet.empty)
-
-
 let from_args =
+  let module Check =
+    CheckName.Make
+      (struct
+        let verbose = !verbose
+        let rename = []
+        let select = []
+        let names = !names
+        let excl = !excl
+      end) in
   let module X =
     Make
       (struct
         let verbose = !verbose
         let sync = false
         let deref = !aarch64
-        let check_name = match names with
-        | None -> fun _ -> true
-        | Some names -> (fun name -> StringSet.mem name names)
+        let check_name = Check.ok
       end) in
   match !tar with
   | None ->
@@ -160,7 +161,7 @@ let from_args =
             let verbose = !verbose
             let outname = t
           end) in
-       let module Y = X(T) in
-       Y.from_args
+      let module Y = X(T) in
+      Y.from_args
 
 let () = from_args !args

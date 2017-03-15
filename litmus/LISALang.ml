@@ -28,6 +28,8 @@ module Make(V:Constant.S) = struct
   module RegSet = A.Out.RegSet
   module RegMap = A.Out.RegMap
 
+  let debug = false
+
   let do_dump compile_val compile_addr compile_out_reg
       chan indent env proc t =
     let rec dump_ins k ts = match ts with
@@ -40,6 +42,7 @@ module Make(V:Constant.S) = struct
  *)
         dump_ins (k+1) ts in
 (* Prefix *)
+    let reg_env = Tmpl.get_reg_env A.I.error t in
     let all_regs = Tmpl.all_regs t in
     let init =
       List.fold_left (fun m (r,v) -> RegMap.add r v m)
@@ -47,8 +50,15 @@ module Make(V:Constant.S) = struct
         t.Tmpl.init in
     RegSet.iter
       (fun r ->
+        let ty =
+          try RegMap.find r env
+          with  Not_found ->
+            try RegMap.find r reg_env with
+            | Not_found -> Compile.base  in
+        if debug then
+          eprintf "%i:%s -> %s\n" proc (Tmpl.tag_reg r) (CType.dump ty) ;
         fprintf chan "%s%s %s%s;\n" indent
-          (Tmpl.dump_type env r)
+          (CType.dump ty)
           (Tmpl.tag_reg r)
           (try
             let v = RegMap.find r init in
@@ -95,7 +105,7 @@ module Make(V:Constant.S) = struct
       List.map
         (fun x ->
           let ty =
-            try List.assoc x env
+            try RegMap.find x env
             with Not_found -> assert false in
           let x = Tmpl.dump_out_reg proc x in
           sprintf "%s *%s" (CType.dump ty) x) t.Tmpl.final in
@@ -105,7 +115,7 @@ module Make(V:Constant.S) = struct
       compile_val_fun
       compile_addr_fun
       (fun p r  -> sprintf "*%s" (Tmpl.dump_out_reg p r))
-      chan "  " env proc t ;
+      chan "  "  env proc t ;
     fprintf chan "}\n\n" ;
     ()
 

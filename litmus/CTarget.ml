@@ -16,6 +16,7 @@
 
 (* C target, a simplified template *)
 type arch_reg = string
+module RegMap = StringMap
 type ins = unit
 type code = string
 

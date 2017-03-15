@@ -49,7 +49,13 @@ module Make(V:Constant.S) = struct
         let internal_init _r = None
         let reg_class _ = ""
         let comment = comment
-        let error _ _ = false
+        let error t1 t2 =
+          let open CType in
+          match t1,t2 with
+          | (Base "int",Pointer _)
+          | (Pointer _,Base "int")  ->
+              true
+          | _ -> false
       end)
 
 end

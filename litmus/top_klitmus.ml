@@ -55,7 +55,8 @@ module Top(O:Config)(Tar:Tar.S) = struct
   module Utils(A:Arch_litmus.Base)
       (Lang:Language.S
       with type arch_reg = A.Out.arch_reg
-      and type t = A.Out.t)
+      and type t = A.Out.t
+      and module RegMap = A.RegMap)
       (Pseudo:PseudoAbstract.S) =
     struct
       module T = Test_litmus.Make(O)(A)(Pseudo)
