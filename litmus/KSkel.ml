@@ -422,6 +422,7 @@ module Make
       O.o "" ;
       O.oii "for (int _ni = 0 ; _ni < ninst ; _ni++) init_ctx(c[_ni],size);" ;
       O.oii "atomic_set(&done,0);" ;
+      O.oii "smp_mb();" ;
       O.oii "for (int _ni = 0 ; _ni < ninst ; _ni++) {" ;
       for i = 0 to T.get_nprocs test-1 do
         O.fiii "th[_nth] = kthread_create(thread%i,c[_ni],\"thread%i\");"
