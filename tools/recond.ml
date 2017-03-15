@@ -95,7 +95,7 @@ module Make(Config:Config)(Out:OutTests.S) =
       | ForallStates (And []) -> ExistsState (And [])
       | ForallStates p -> ExistsState (Not p)
 
-    let from_chan idx_out fname in_chan =    
+    let from_chan idx_out fname in_chan =
       try
         let { Splitter.locs = locs; start = start; name=name; info; _} =
           S.split fname in_chan in
@@ -110,7 +110,7 @@ module Make(Config:Config)(Out:OutTests.S) =
             with Not_found -> None in
           let base = Filename.basename fname in
           let out = Out.open_file base in
-          Misc.output_protect_close Out.close       
+          Misc.output_protect_close Out.close
             (fun out ->
               let _,_,(constr_start,constr_end),(last_start,loc_eof) = locs in
               let echo sec =
@@ -123,7 +123,7 @@ module Make(Config:Config)(Out:OutTests.S) =
                   (Config.asobserved || Config.toexists || Misc.is_some map) in
               let cond_checked =  Config.check_cond name.Name.name in
               let echo_cond c = match c with
-              | Some f ->  Out.fprintf out "%s\n" f 
+              | Some f ->  Out.fprintf out "%s\n" f
               | None -> echo (constr_start,constr_end) in
 
               let cond =
@@ -186,9 +186,9 @@ module Make(Config:Config)(Out:OutTests.S) =
         end
       with LexMisc.Error (msg,pos) ->
         Printf.eprintf
-	  "%a: Lex error %s (in %s)\n" Pos.pp_pos pos msg fname ;
+          "%a: Lex error %s (in %s)\n" Pos.pp_pos pos msg fname ;
         raise Misc.Exit
-          
+
     let from_file idx_chan name =
       try
         Misc.input_protect
@@ -220,21 +220,21 @@ and outcomes = ref false
 and asobserved = ref false
 and toexists = ref false
 let names = ref []
+let excl = ref []
 
 let set_conds c = conds := !conds @ [c]
 let set_tar x = tar := Some x
 let args = ref []
 
-let opts = 
+let opts =
   [ "-v",
     Arg.Unit (fun () -> incr verbose),
     " be verbose";
     "-hexa",
     Arg.Bool (fun b -> hexa := b),
     "<bool> set hexadecimal output";
-    "-names",
-    Arg.String (fun s -> names := [s] @ !names),
-   "<name> select tests whose names are listed in file <name> (cumulate when repeated)";
+    CheckName.parse_names names ;
+    CheckName.parse_excl excl ;
     "-conds",
     Arg.String set_conds,
     "<name> specify conditions of tests (can be repeated)";
@@ -264,16 +264,22 @@ let () =
     (sprintf "Usage %s [options] [test]*" prog)
 
 (* Read names *)
-let names = match !names with
-| [] -> None
-| names -> Some (ReadNames.from_files names StringSet.add StringSet.empty)
+module Check =
+  CheckName.Make
+    (struct
+      let verbose = !verbose
+      let rename = []
+      let select = []
+      let names = !names
+      let excl = !excl
+    end)
 
 (* Read conditions *)
 module LR = LexRename.Make(struct let verbose = !verbose end)
 let conds = LR.read_from_files !conds (fun s -> Some s)
 
 
-let from_args = 
+let from_args =
   let module X =
     Make
       (struct
@@ -281,9 +287,7 @@ let from_args =
         let outcomes = !outcomes
         let asobserved = !asobserved
         let toexists = !toexists
-        let check_name = match names with
-        | None -> fun _ -> true
-        | Some names -> (fun name -> StringSet.mem name names)
+        let check_name = Check.ok
         let check_cond name = TblRename.find_value_opt conds name
         let hexa = !hexa
       end) in
@@ -295,11 +299,10 @@ let from_args =
       let module T =
         OutTar.Make
           (struct
-	    let verbose = !verbose
-	    let outname = t
-	  end) in
+            let verbose = !verbose
+            let outname = t
+          end) in
        let module Y = X(T) in
        Y.from_args
 
 let () = from_args !args
-
