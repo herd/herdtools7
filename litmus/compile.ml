@@ -396,16 +396,15 @@ module Make
     let live_in_code code env live_in_final =
       List.fold_right live_in_ins code (env,live_in_final)
 
+    let debug = false
 (* Fixpoint *)
     let comp_fix code live_in_final =
-(*
-  eprintf "FINAL: {%a}\n" pp_reg_set live_in_final ;
- *)
+      if debug then
+        eprintf "FINAL: {%a}\n" pp_reg_set live_in_final ;
       let rec do_rec env0 =
         let env,r = live_in_code code env0 live_in_final in
-(*
-  eprintf "FIX: {%a}\n" pp_reg_set r ;
- *)
+        if debug then
+          eprintf "FIX: {%a}\n" pp_reg_set r ;
         let c =
           LabEnv.compare RegSet.compare env env0 in
         if c = 0 then r

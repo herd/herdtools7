@@ -90,7 +90,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
           let parsed = allocate parsed in
           let compiled =  compile doc parsed in
           dump src doc compiled ;
-          base,(hash_env,id+1)
+          (base,tname),(hash_env,id+1)
         end else begin
           exit_not_compiled fname
         end
@@ -199,7 +199,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
         let module Out =
           Indent.Make(struct let hexa = O.hexa let out = chan end) in
         Out.o "ccflags-y += -std=gnu99";
-        List.iter (fun src -> Out.f "obj-m += %s.o" src) srcs ;
+        List.iter (fun (src,_) -> Out.f "obj-m += %s.o" src) srcs ;
         Out.o "" ;
         Out.o "all:" ;
         Out.o "\tmake -C /lib/modules/$(shell uname -r)/build/ M=$(PWD) modules" ;
@@ -216,13 +216,29 @@ module Top(O:Config)(Tar:Tar.S) = struct
         let module Out =
           Indent.Make(struct let hexa = O.hexa let out = chan end) in
         Out.o "OPT=\"$*\"" ;
+        Out.o "date" ;
+        Out.f "echo Compilation command: \"%s\""
+          (String.concat " " (Array.to_list Sys.argv)) ;
+        Out.o "echo \"OPT=$OPT\"" ;
+        Out.o "echo" ;
+        Out.o "" ;
+        Out.o "zyva () {" ;
+        Out.oi "name=$1" ;
+        Out.oi "ko=$2" ;
+        Out.oi "if test -f  $ko" ;
+        Out.oi "then" ;
+        Out.oii "insmod $ko $OPT" ;
+        Out.oii "cat /proc/litmus" ;
+        Out.oii "rmmod $ko" ;
+        Out.oi "fi" ;
+        Out.o "}" ;
+        Out.o "" ;
+
         List.iter
-          (fun src ->
-            Out.f "insmod %s.ko $OPT" src ;
-            Out.o "cat /proc/litmus" ;
-            Out.f "rmmod %s.ko" src ;
-            Out.o "" ;
-            ()) srcs ;
+          (fun (src,name) ->
+            Out.f "zyva %S %s.ko" name src)
+          srcs ;
+        Out.o "date" ;
         ())
       fname
 

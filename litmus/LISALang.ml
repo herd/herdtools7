@@ -109,7 +109,12 @@ module Make(V:Constant.S) = struct
             with Not_found -> assert false in
           let x = Tmpl.dump_out_reg proc x in
           sprintf "%s *%s" (CType.dump ty) x) t.Tmpl.final in
-    let params =  String.concat "," (addrs@outs) in
+
+    let params =
+      let p = addrs@outs in
+      match p with
+      | [] -> "void"
+      | _::_ -> String.concat "," p in
     LangUtils.dump_code_def chan false proc params ;
     do_dump
       compile_val_fun

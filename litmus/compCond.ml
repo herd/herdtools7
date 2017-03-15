@@ -24,11 +24,11 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
 
       val fundef :
           (I.Loc.t -> string) -> (* For types *)
-            (I.Loc.t,I.V.t) ConstrGen.cond -> unit 
+            (I.Loc.t,I.V.t) ConstrGen.cond -> unit
 
       val fundef_onlog_prop : string -> (I.Loc.t,I.V.t) ConstrGen.prop -> unit
 
-      val fundef_onlog : (I.Loc.t,I.V.t) ConstrGen.cond -> unit 
+      val fundef_onlog : (I.Loc.t,I.V.t) ConstrGen.cond -> unit
 
       val funcall_prop :
         string -> I.C.prop ->
@@ -44,7 +44,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
 
       let dump  =
         let rec dump_prop p = match p with
-        | Atom (LV (loc,v)) ->          
+        | Atom (LV (loc,v)) ->
             O.fprintf "%s == %s" (I.Loc.dump loc) (I.V.dump v)
         | Atom (LL (loc1,loc2)) ->
             O.fprintf"%s == %s" (I.Loc.dump loc1) (I.Loc.dump loc2)
@@ -107,7 +107,11 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
           List.map
             (fun loc -> Printf.sprintf
                 "void *%s" (I.V.dump (Constant.Symbolic loc))) vals in
-        let formals = String.concat "," (plocs@pvals) in          
+        let formals =
+          let p = plocs@pvals in
+          match p with
+          | [] -> "void"
+          | _::_ -> String.concat "," p in
         O.f "inline static int %s(%s) {" fname formals ;
         begin try
           let switch_tree = S.compile p in

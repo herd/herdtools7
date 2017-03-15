@@ -164,10 +164,10 @@ module Make(V:Constant.S) =
           branch =[Branch lbl;] }::k
     | Pbranch (Some r,lbl,_) ->
         { empty_ins with
-          memo = sprintf "if (%s) goto %s;"
+          memo = sprintf "if (%s) goto %s; barrier();"
             (reg_to_string r) (A.Out.dump_label (tr_lab lbl));
           inputs=[r;];
-          branch =[Branch lbl;] }::k
+          branch =[Branch lbl;Next;] }::k
     | _ -> Warn.fatal "Cannot compile '%s'" (dump_instruction ins)
 
 
