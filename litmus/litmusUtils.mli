@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2010-present Institut National de Recherche en Informatique et *)
+(* Copyright 2017-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,31 +14,14 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type v = Constant.v
-open Constant
-        
-let intToV i = Concrete i
-and nameToV s = Symbolic s
 
-let compare c1 c2 = match c1,c2 with
-| Concrete i1, Concrete i2 -> Pervasives.compare i1 i2
-| Symbolic s1,Symbolic s2 -> String.compare s1 s2
-| Concrete _,Symbolic _ -> -1
-| Symbolic _,Concrete _ -> 1
+(* Some utilities *)
 
-open Printf
-let pp hexa = function
-  | Concrete i -> if hexa then sprintf "0x%x" i else sprintf "%i" i
-  | Symbolic s -> s
+module Hash : functor(O:Warn.Config) ->
+  sig
+    open Answer
+    val mk_hash_info : string -> MiscParser.info  -> hash
+    val hash_ok : hash_env -> string -> hash -> bool
+  end
 
-let pp_v = pp false
-
-let eq c1 c2 =  match c1,c2 with
-| Concrete i1, Concrete i2 -> i1 = i2
-| Symbolic s1,Symbolic s2 -> Misc.string_eq  s1 s2
-| (Concrete _,Symbolic _)
-| (Symbolic _,Concrete _) -> false
-
-let vToName = function
-  | Concrete _ -> assert false
-  | Symbolic s -> s
+module Pseudo : functor(A:Arch_litmus.S) -> PseudoAbstract.S with type code = int * A.pseudo list

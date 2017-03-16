@@ -17,11 +17,14 @@
 (* C target, a simplified template *)
 
 type arch_reg = string
+module RegMap : MyMap.S with type key = String.t
+type ins = unit
+type code = string
 
 type t =
-  { inputs : (string * CType.t) list ;
+  { inputs : (arch_reg * CType.t) list ;
     finals : arch_reg list ;
-    code : string ; }
+    code : code ; }
 
    
 val fmt_reg : arch_reg -> string
@@ -30,4 +33,4 @@ val compile_out_reg : int -> arch_reg -> string
 val compile_presi_out_reg : int -> arch_reg -> string
 val compile_presi_out_ptr_reg : int -> arch_reg -> string
 val get_addrs : t -> string list
-
+val out_code : out_channel -> code -> unit

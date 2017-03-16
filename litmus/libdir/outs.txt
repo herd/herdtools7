@@ -1,0 +1,92 @@
+typedef struct outs_t {
+  struct outs_t *next,*down ;
+  count_t c ;
+  u64 k ;
+  int show ;
+} outs_t ;
+
+
+static outs_t *alloc_outs(u64 k) {
+  outs_t *r = kmalloc(sizeof(*r),GFP_KERNEL) ;
+  if (r == NULL) return NULL ;
+  r->k = k ;
+  r->c = 0 ;
+  r->show = 0 ;
+  r->next = r->down = NULL ;
+  return r ;
+}
+
+static void free_outs(outs_t *p) {
+  if (p == NULL) return ;
+  free_outs(p->next) ;
+  free_outs(p->down) ;
+  kfree(p) ;
+}
+
+static outs_t *
+loop_add_outcome_outs(outs_t *p, u64 *k, int i, count_t c, int show) {
+  outs_t *r = p ;
+  if (p == NULL || k[i] < p->k) {
+    r = alloc_outs(k[i]) ;
+    if (r == NULL) return NULL ;
+    r->next = p ;
+    p = r ;
+  }
+  for ( ; ; ) {
+    outs_t **q ;
+    if (k[i] > p->k) {
+      q = &(p->next) ;
+      p = p->next ;
+    } else if (i <= 0) {
+      p->c += c ;
+      p->show = show || p->show ;
+      return r ;
+    } else {
+      i-- ;
+      q = &(p->down) ;
+      p = p->down ;
+    }
+    if (p == NULL || k[i] < p->k) {
+      outs_t *a = alloc_outs(k[i]) ;
+      if (a == NULL) return NULL ;
+      a->next = p ;
+      p = a ;
+      *q = a ;
+    }
+  }
+}
+
+typedef count_t cfun(outs_t *) ;
+
+static count_t count_scan(cfun *f,outs_t *p) {
+  count_t r = 0 ;
+  for ( ; p ; p = p->next) {
+    r += f(p) ;
+    if (p->down) {
+      r += count_scan(f,p->down) ;
+    }
+  }
+  return r ;
+} 
+
+static count_t cshow(outs_t *p) {
+  if (p->show) return p->c ;
+  return 0 ;
+}
+
+static count_t count_show(outs_t *p) { return count_scan(cshow,p) ; }
+
+static count_t cnoshow(outs_t *p) {
+  if (!p->show) return p->c ;
+  return 0 ;
+}
+
+static count_t count_noshow(outs_t *p) { return count_scan(cnoshow,p); }
+
+static count_t cnstates(outs_t *p) {
+  if (p->c > 0) return 1 ;
+  return 0 ;
+}
+
+static count_t count_nstates(outs_t *p) { return count_scan(cnstates,p); }
+

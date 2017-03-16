@@ -29,6 +29,10 @@ module type Config = sig
   val memory : Memory.t
 end
 
+module DefaultConfig = struct
+  let memory = Memory.Direct
+end
+
 module Make(O:Config) = struct
   open Memory
   open Constant

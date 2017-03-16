@@ -50,11 +50,7 @@ include Arch.MakeArch(struct
     | _,_ -> None
        
   let match_op subs op op' = match op,op' with
-    | Add(iar1,iar2),Add(iar1',iar2') 
-    | And(iar1,iar2),And(iar1',iar2')
-    | Xor(iar1,iar2),Xor(iar1',iar2') 
-    | Eq(iar1,iar2),Eq(iar1',iar2') 
-    | Neq(iar1,iar2),Neq(iar1',iar2') ->
+    | OP (op,iar1,iar2),OP (op',iar1',iar2') when op=op' ->
        begin match (match_iar subs iar1 iar1') with
        | Some subs -> match_iar subs iar2 iar2'
        | None -> None
@@ -142,11 +138,7 @@ include Arch.MakeArch(struct
       | Imm(MetaConst.Meta v) -> Imm(find_cst v)
       | i -> i
     and expl_op = function
-      | Add(iar1,iar2) -> Add(expl_iar iar1,expl_iar iar2)
-      | And(iar1,iar2) -> And(expl_iar iar1,expl_iar iar2)
-      | Xor(iar1,iar2) -> Xor(expl_iar iar1,expl_iar iar2)
-      | Eq(iar1,iar2) -> Eq(expl_iar iar1,expl_iar iar2)
-      | Neq(iar1,iar2) -> Neq(expl_iar iar1,expl_iar iar2)
+      | OP(op,iar1,iar2) -> OP(op,expl_iar iar1,expl_iar iar2)
       | RAI(iar) -> RAI(expl_iar iar)
     and expl_ra = function
       | Rega r -> Rega(conv_reg r)

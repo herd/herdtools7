@@ -20,7 +20,8 @@ end
 
 module type S = sig
   module A : Arch_litmus.Base
-  module C : Constr.S with module A = A
+  module C : Constr.S
+  with type location = A.location and module LocSet = A.LocSet
   module P : PseudoAbstract.S
 
   type src =
@@ -40,7 +41,8 @@ module type S = sig
       globals : string type_env ;
       flocs : A.location list ;
       global_code : string list;
-      src : src ; }
+      src : src ;
+      type_env : CType.t A.LocMap.t ;  }
 
   val find_our_constraint : t -> C.constr
   val get_nprocs : t -> int
@@ -82,7 +84,8 @@ struct
       globals : string type_env ;
       flocs : A.location list ;
       global_code : string list;
-      src : src ; }
+      src : src ;
+      type_env : CType.t A.LocMap.t; }
 
   let find_our_constraint test = test.condition
 

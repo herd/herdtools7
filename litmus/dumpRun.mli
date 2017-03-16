@@ -41,8 +41,7 @@ end
 
 module type OneTest = sig
   val from_file :
-      StringSet.t -> Answer.info  StringMap.t ->
-        string -> out_channel -> answer
+      StringSet.t -> hash_env-> string -> out_channel -> answer
 end
 
 module Make :

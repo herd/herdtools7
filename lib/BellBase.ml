@@ -17,7 +17,7 @@
 open Printf
 
 (* Should be put in a bell library *)
-let string_of_annot_list a = String.concat "," a  
+let string_of_annot_list a = String.concat "," a
 let string_of_labels a = Label.Set.pp_str "," Misc.identity a
 
 (* Who am i ? *)
@@ -38,7 +38,7 @@ let reg_compare = Pervasives.compare
 let symb_reg_name = function
   | Symbolic_reg s -> Some s
   | _ -> None
-  
+
 let parse_reg s =
   let len = String.length s in
   assert (len > 0) ;
@@ -104,7 +104,7 @@ let string_of_reg_or_imm r = match r with
 
 open Constant
 
-type reg_or_addr = 
+type reg_or_addr =
   | Rega of reg  (* address given in register *)
   | Abs of SymbConstant.v (* address given as a constant *)
 
@@ -112,11 +112,11 @@ let pp_abs = function
   | Symbolic s -> s
   | Concrete i -> string_of_int i
 
-let string_of_reg_or_addr r = match r with 
+let string_of_reg_or_addr r = match r with
   | Rega r -> pp_reg r
   | Abs r -> pp_abs r
 
-type 'k imm_or_addr_or_reg = 
+type 'k imm_or_addr_or_reg =
   | IAR_roa of reg_or_addr
   | IAR_imm of 'k
 
@@ -128,7 +128,7 @@ let pp_iar iar = match iar with
   | IAR_roa roa -> string_of_reg_or_addr roa
   | IAR_imm i -> sprintf "%d" i
 
-type 'k addr_op = 
+type 'k addr_op =
 | Addr_op_atom of reg_or_addr
 | Addr_op_add of reg_or_addr * 'k reg_or_imm
 
@@ -138,16 +138,15 @@ let addr_op_tr f = function
 
 let pp_addr_op a = match a with
   | Addr_op_atom roa -> string_of_reg_or_addr roa
-  | Addr_op_add(roa,roi) -> sprintf "%s+%s" (string_of_reg_or_addr roa) 
+  | Addr_op_add(roa,roi) -> sprintf "%s+%s" (string_of_reg_or_addr roa)
     (string_of_reg_or_imm roi)
 
+type op_t =
+  | Add | Xor | And | Eq | Neq
+
 type 'k op =
-  | RAI of 'k imm_or_addr_or_reg 
-  | Add of 'k imm_or_addr_or_reg * 'k imm_or_addr_or_reg 
-  | Xor of 'k imm_or_addr_or_reg * 'k imm_or_addr_or_reg 
-  | And of 'k imm_or_addr_or_reg * 'k imm_or_addr_or_reg
-  | Eq of 'k imm_or_addr_or_reg * 'k imm_or_addr_or_reg 
-  | Neq of 'k imm_or_addr_or_reg * 'k imm_or_addr_or_reg 
+  | RAI of 'k imm_or_addr_or_reg
+  | OP of op_t * 'k imm_or_addr_or_reg * 'k imm_or_addr_or_reg
 
 let r_in_op =
   let in_addr r = function
@@ -156,36 +155,24 @@ let r_in_op =
     | IAR_imm _ -> false in
   fun r x -> match x with
   | RAI a -> in_addr r a
-  | Add (x,y)
-  | Xor (x,y)
-  | And (x,y)
-  | Eq (x,y)
-  | Neq (x,y) ->
+  | OP (_,x,y) ->
       in_addr r x || in_addr r y
 
 let op_tr f = function
-  | RAI (iar) -> 
+  | RAI (iar) ->
       RAI (imm_or_addr_or_reg_tr f iar)
-  | Add (iar1,iar2) ->
-      Add (imm_or_addr_or_reg_tr f iar1,imm_or_addr_or_reg_tr f iar2)
-  | Xor (iar1,iar2) ->
-      Xor (imm_or_addr_or_reg_tr f iar1,imm_or_addr_or_reg_tr f iar2)
-  | And (iar1,iar2) ->
-      And (imm_or_addr_or_reg_tr f iar1,imm_or_addr_or_reg_tr f iar2)
-  | Eq (iar1,iar2) -> 
-      Eq (imm_or_addr_or_reg_tr f iar1,imm_or_addr_or_reg_tr f iar2)
-  | Neq (iar1,iar2) -> 
-      Neq (imm_or_addr_or_reg_tr f iar1,imm_or_addr_or_reg_tr f iar2)
+  | OP (op,iar1,iar2) ->
+      OP (op,imm_or_addr_or_reg_tr f iar1,imm_or_addr_or_reg_tr f iar2)
 
 let pp_op = function
   | RAI(iar) -> sprintf "%s" (pp_iar iar)
-  | Add(x,i) -> sprintf "(add %s %s)" (pp_iar x) (pp_iar i)
-  | Xor(x,i) -> sprintf "(xor %s %s)" (pp_iar x) (pp_iar i)
-  | And(x,i) -> sprintf "(and %s %s)" (pp_iar x) (pp_iar i) 
-  | Eq(x,y) -> sprintf "(eq %s %s)" (pp_iar x) (pp_iar y) 
-  | Neq(x,y) -> sprintf "(neq %s %s)" (pp_iar x) (pp_iar y)  
+  | OP(Add,x,i) -> sprintf "(add %s %s)" (pp_iar x) (pp_iar i)
+  | OP(Xor,x,i) -> sprintf "(xor %s %s)" (pp_iar x) (pp_iar i)
+  | OP(And,x,i) -> sprintf "(and %s %s)" (pp_iar x) (pp_iar i)
+  | OP(Eq,x,y) -> sprintf "(eq %s %s)" (pp_iar x) (pp_iar y)
+  | OP(Neq,x,y) -> sprintf "(neq %s %s)" (pp_iar x) (pp_iar y)
 
-type 'k kinstruction = 
+type 'k kinstruction =
 | Pld of reg * 'k addr_op * string list
 | Pst of 'k addr_op * 'k reg_or_imm * string list
 | Pfence of barrier
@@ -216,19 +203,19 @@ include Pseudo.Make
 
       let parsed_tr i = instruction_tr MetaConst.as_int i
 
-      let get_naccesses = function 
-	| Pld _
-	| Pst _  -> 1
-	| _ -> 0
+      let get_naccesses = function
+        | Pld _
+        | Pst _  -> 1
+        | _ -> 0
 
       (* We do have instructions with labels... *)
-      let fold_labels k f = function 
+      let fold_labels k f = function
         | Pbranch (_,lbl,_) -> f k lbl
-	| _ -> k
+        | _ -> k
 
-      let map_labels f = function 
+      let map_labels f = function
         | Pbranch(c,lbl,s) -> Pbranch(c,f lbl,s)
-	| ins -> ins
+        | ins -> ins
 
      end)
 
@@ -238,7 +225,7 @@ let dump_instruction i = match i with
       (pp_reg r)
       (pp_addr_op addr_op)
 
-| Pst(addr_op,roi,s) -> sprintf "w[%s] %s %s" 
+| Pst(addr_op,roi,s) -> sprintf "w[%s] %s %s"
       (string_of_annot_list s)
       (pp_addr_op addr_op)
       (string_of_reg_or_imm roi)
@@ -253,20 +240,20 @@ let dump_instruction i = match i with
 
 | Pcall s -> sprintf "call[%s]" s
 
-| Pbranch(Some r,l,s) -> sprintf "b[%s] %s %s" 
+| Pbranch(Some r,l,s) -> sprintf "b[%s] %s %s"
       (string_of_annot_list s)
-      (pp_reg r) 
-      l 
+      (pp_reg r)
+      l
 
-| Pbranch(None,l,s) -> sprintf "b[%s] %s" 
+| Pbranch(None,l,s) -> sprintf "b[%s] %s"
       (string_of_annot_list s)
-      l 
+      l
 
 | Pmov(r,op) -> sprintf "mov %s %s"
       (pp_reg r)
       (pp_op op)
 
-let fold_regs (f_reg,f_sreg) = 
+let fold_regs (f_reg,f_sreg) =
   let fold_reg reg (y_reg,y_sreg) = match reg with
     | GPRreg _ -> f_reg reg y_reg,y_sreg
     | Symbolic_reg reg -> y_reg,f_sreg reg y_sreg
@@ -289,24 +276,20 @@ let fold_regs (f_reg,f_sreg) =
   in
   let fold_op op c = match op with
     | RAI(i) -> fold_iar i c
-    | Add(x,i) -> fold_iar x (fold_iar i c) 
-    | Xor(x,i) -> fold_iar x (fold_iar i c) 
-    | And(x,i) -> fold_iar x (fold_iar i c) 
-    | Eq(r,i) -> fold_iar r (fold_iar i c) 
-    | Neq(r,i) -> fold_iar r (fold_iar i c)  
+    | OP(_,x,i) -> fold_iar x (fold_iar i c)
   in
-  let fold_ins (_y_reg,_y_sreg as c) ins = 
-    begin match ins with      
+  let fold_ins (_y_reg,_y_sreg as c) ins =
+    begin match ins with
     | Pld(r, addr_op, _) -> fold_reg r (fold_addr_op addr_op c)
     | Pst(addr_op,roi,_) -> fold_addr_op addr_op (fold_roi roi c)
     | Pfence _|Pcall _|Pbranch (None,_,_) -> c
     | Prmw(r,op,_,_) -> fold_reg r (fold_op op c)
-    | Pbranch(Some r,_,_) -> fold_reg r c 
-    | Pmov(r,op) -> fold_reg r (fold_op op c) 
-    end 
+    | Pbranch(Some r,_,_) -> fold_reg r c
+    | Pmov(r,op) -> fold_reg r (fold_op op c)
+    end
   in fold_ins
-  
-let map_regs f_reg f_symb = 
+
+let map_regs f_reg f_symb =
 
   let map_reg reg = match reg with
   | GPRreg _ -> f_reg reg
@@ -325,16 +308,12 @@ let map_regs f_reg f_symb =
     | IAR_roa roa -> IAR_roa(map_roa roa)
   in
   let map_addr_op ao = match ao with
-    | Addr_op_atom roa -> Addr_op_atom(map_roa roa)      
+    | Addr_op_atom roa -> Addr_op_atom(map_roa roa)
     | Addr_op_add(roa,roi) -> Addr_op_add(map_roa roa,map_roi roi)
   in
   let map_op op = match op with
     | RAI(i) -> RAI(map_iar i)
-    | Add(x,i) -> Add(map_iar x, map_iar i) 
-    | Xor(x,i) -> Xor(map_iar x, map_iar i) 
-    | And(x,i) -> And(map_iar x, map_iar i) 
-    | Eq(r,i) -> Eq(map_iar r, map_iar i)
-    | Neq(r,i) -> Neq(map_iar r, map_iar i)  
+    | OP(op,x,i) -> OP(op,map_iar x, map_iar i)
   in
   let map_ins ins = begin match ins with
     | Pld(r,addr_op,s) -> Pld(map_reg r, map_addr_op addr_op, s)
@@ -352,22 +331,22 @@ let norm_ins ins = ins
 
 
 let fold_addrs f =
- let fold_roa roa c = match roa with 
+ let fold_roa roa c = match roa with
   | Rega _ -> c
   | Abs a -> f a c
  in
  let fold_iar iar c = match iar with
   | IAR_roa roa -> fold_roa roa c
-  | IAR_imm _ -> c 
+  | IAR_imm _ -> c
  in
- let fold_ao ao c = match ao with 
+ let fold_ao ao c = match ao with
    | Addr_op_atom roa
    | Addr_op_add (roa,_) ->
-       fold_roa roa c 
+       fold_roa roa c
   in
   let fold_op op c = match op with
     | RAI(i) -> fold_iar i c
-    | Add(x,i) | Xor(x,i) | And(x,i) | Eq(x,i) | Neq(x,i) -> fold_iar x (fold_iar i c) 
+    | OP(_,x,i) -> fold_iar x (fold_iar i c)
   in
   fun c ins -> match ins with
   | Pbranch _ | Pfence _|Pcall _ -> c
@@ -403,11 +382,11 @@ let get_reg_list _i = Warn.fatal "Bell get_reg_list has not been implemented"
 let get_id_and_list i = match i with
 | Pld(_,_,s) -> (BellName.r,s)
 | Pst(_,_,s) -> (BellName.w,s)
-| Pfence (Fence (s, _)) -> (BellName.f,s)      
+| Pfence (Fence (s, _)) -> (BellName.f,s)
 | Prmw(_,_,_,s) -> (BellName.rmw,s)
 | Pbranch(_,_,s) -> (BellName.b,s)
 | Pcall s -> (BellName.call,[s])
-| Pmov _ -> raise Not_found 
+| Pmov _ -> raise Not_found
 
 let get_from_and_to_labels b = match b with
 | Fence (_, a) -> a
@@ -428,4 +407,3 @@ let set_list i al = match i with
 let tr_compat = function
   | Pcall "sync" -> Pfence (Fence (["sync";],None))
   | i -> i
-

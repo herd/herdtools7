@@ -24,11 +24,11 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
 
       val fundef :
           (I.Loc.t -> string) -> (* For types *)
-            (I.Loc.t,I.V.t) ConstrGen.cond -> unit 
+            (I.Loc.t,I.V.t) ConstrGen.cond -> unit
 
       val fundef_onlog_prop : string -> (I.Loc.t,I.V.t) ConstrGen.prop -> unit
 
-      val fundef_onlog : (I.Loc.t,I.V.t) ConstrGen.cond -> unit 
+      val fundef_onlog : (I.Loc.t,I.V.t) ConstrGen.cond -> unit
 
       val funcall_prop :
         string -> I.C.prop ->
@@ -44,7 +44,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
 
       let dump  =
         let rec dump_prop p = match p with
-        | Atom (LV (loc,v)) ->          
+        | Atom (LV (loc,v)) ->
             O.fprintf "%s == %s" (I.Loc.dump loc) (I.V.dump v)
         | Atom (LL (loc1,loc2)) ->
             O.fprintf"%s == %s" (I.Loc.dump loc1) (I.Loc.dump loc2)
@@ -97,7 +97,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
       let fundef_prop fname find_type p =
         let locs = I.C.locations_prop p in
         let plocs =
-          I.C.A.LocSet.map_list
+          I.C.LocSet.map_list
             (fun loc ->
               let t = find_type loc in
               Printf.sprintf "%s %s" t (I.Loc.dump loc))
@@ -107,7 +107,11 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
           List.map
             (fun loc -> Printf.sprintf
                 "void *%s" (I.V.dump (Constant.Symbolic loc))) vals in
-        let formals = String.concat "," (plocs@pvals) in          
+        let formals =
+          let p = plocs@pvals in
+          match p with
+          | [] -> "void"
+          | _::_ -> String.concat "," p in
         O.f "inline static int %s(%s) {" fname formals ;
         begin try
           let switch_tree = S.compile p in
@@ -123,7 +127,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
 
       let fundef find_type cond =
         fundef_prop funname find_type (ConstrGen.prop_of cond) ;
-        dump_ok cond ;
+        if I.with_ok then dump_ok cond ;
         ()
 
       let fundef_onlog_prop fname p =
@@ -147,7 +151,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
 
       let funcall_prop fname  prop dump_loc dump_val =
         let locs = I.C.locations_prop prop in
-        let plocs = I.C.A.LocSet.map_list dump_loc locs in
+        let plocs = I.C.LocSet.map_list dump_loc locs in
         let vals = I.C.location_values_prop prop in
         let pvals = List.map dump_val vals in
         Printf.sprintf "%s(%s)" fname (String.concat "," (plocs@pvals))

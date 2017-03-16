@@ -16,11 +16,14 @@
 
 (* C target, a simplified template *)
 type arch_reg = string
+module RegMap = StringMap
+type ins = unit
+type code = string
 
 type t =
   { inputs : (string * CType.t) list ;
     finals : arch_reg list ;
-    code : string ; }
+    code : code ; }
 
    
 let fmt_reg x = x
@@ -36,3 +39,5 @@ let compile_presi_out_ptr_reg proc reg =
   OutUtils.fmt_presi_ptr_index (dump_out_reg proc reg)
 
 let get_addrs t = List.map fst t.inputs
+
+let out_code chan code = Printf.fprintf chan "%s\n" code

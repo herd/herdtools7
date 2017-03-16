@@ -16,13 +16,15 @@
 
 (* Answer of a test compilation or run *)
 
-type info = { filename : string ;  hash : string ; }
+
+type hash = { filename : string ;  hash : string ; }
+type hash_env = hash StringMap.t
 
 type answer =
   | Completed of
-      Archs.t * Name.t (* Test arch and name *)
-        * string (* C source file of test *)
-        * StringSet.t (* cycles *)
-        * info StringMap.t (* name -> hash *)
+      Archs.t * Name.t   (* Test arch and name *)
+        * string         (* C source file of test *)
+        * StringSet.t    (* cycles *)
+        * hash_env       (* name -> hash *)
   | Interrupted of Archs.t * exn
   | Absent of Archs.t

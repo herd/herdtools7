@@ -21,10 +21,19 @@ module type Config = sig
   val asmcommentaslabel : bool
 end
 
+module DefaultConfig = struct
+  let memory = Memory.Direct
+  let mode = Mode.Std
+  let comment = "//"
+  let asmcommentaslabel = false
+end
+
 module Make(C:Config) = struct
   open Printf
 
-  type arch_reg = CTarget.arch_reg
+  type arch_reg = string
+  module RegMap = StringMap
+
   type t = CTarget.t
 
   let dump_start chan indent proc =
@@ -48,17 +57,13 @@ module Make(C:Config) = struct
         indent (LangUtils.end_comment C.comment proc)
 
   let dump_global_def env (x,ty) =
-(*
-    let oty =
-      try List.assoc x env with Not_found -> assert false in
-*)
     let x = CTarget.fmt_reg x in
     let pp_ty =  CType.dump ty in
     pp_ty ^ "*",x
 
   let out_type env x =
-    try List.assoc x env
-    with Not_found -> assert false 
+    try RegMap.find x env
+    with Not_found -> assert false
 
   let dump_output_def env proc x =
     let outname = CTarget.dump_out_reg proc x
@@ -78,10 +83,10 @@ module Make(C:Config) = struct
            (fun (ty,v) -> sprintf "%s %s" ty v)
            defs) in
     (* Function prototype  *)
-    LangUtils.dump_code_def chan proc params ;
+    LangUtils.dump_code_def chan true proc params ;
     (* body *)
     dump_start chan "  " proc ;
-    out "%s\n" t.CTarget.code ;
+    CTarget.out_code chan t.CTarget.code ;
     dump_end chan "  " proc ;
     (* output parameters *)
     List.iter
@@ -106,9 +111,9 @@ module Make(C:Config) = struct
           | None -> "" in
           match C.memory with
         | Memory.Direct ->
-            sprintf "%s&_a->%s[_i]" cast x
+            sprintf "%s&_a->%s[_i]" cast (CTarget.fmt_reg x)
         | Memory.Indirect ->
-            sprintf "%s_a->%s[_i]" cast x)
+            sprintf "%s_a->%s[_i]" cast (CTarget.fmt_reg x))
         t.CTarget.inputs
     and out_args =
       List.map
@@ -155,7 +160,7 @@ module Make(C:Config) = struct
       let print_end = dump_end chan in
       List.iter dump_input t.CTarget.inputs;
       print_start indent proc;
-      out "%s\n" t.CTarget.code ;
+      CTarget.out_code chan t.CTarget.code ;
       print_end indent proc;
       List.iter dump_output t.CTarget.finals
     end;

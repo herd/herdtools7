@@ -23,7 +23,20 @@ module type S = sig
   val compile_ins :
       (Label.t -> string) ->
         A.instruction ->  A.Out.ins list -> A.Out.ins list
+end
+
+      (*
+module type K = sig
+  module A : Arch_litmus.S
+
+  val extract_addrs : A.instruction -> StringSet.t
+  val stable_regs : A.instruction -> A.RegSet.t
+  val emit_loop : A.Out.ins list -> A.Out.ins list
+  val compile_ins :
+      (Label.t -> string) ->
+        A.instruction ->  A.Out.ins list -> A.Out.ins list
 
 (* For time base barrier *)
   val emit_tb_wait :  A.Out.ins list ->  A.Out.ins list
 end
+*)

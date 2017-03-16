@@ -19,17 +19,18 @@
 (***********************************************************)
 
 (* Helpers *)
-val argkm : string -> int ref -> string -> string * Arg.spec * string
-val argkm_withfun : string -> (int -> unit) -> string -> string * Arg.spec * string
+type arg_triple =  string * Arg.spec * string
+val argkm : string -> int ref -> string -> arg_triple
+val argkm_withfun : string -> (int -> unit) -> string -> arg_triple
 val argstringo : string option ref -> Arg.spec
 val arginto : int option ref -> Arg.spec
-val argstring : string -> string ref -> string -> string * Arg.spec * string
+val argstring : string -> string ref -> string -> arg_triple
 val argstring_withfun :
-    string -> (string -> unit) -> string -> string * Arg.spec * string
-val argint : string -> int ref -> string -> string * Arg.spec * string
-val argbool : string -> bool ref -> string -> string * Arg.spec * string
-val argboolo : string -> bool option ref -> string -> string * Arg.spec * string
-val argfloato : string -> float option ref -> string -> string * Arg.spec * string
+    string -> (string -> unit) -> string -> arg_triple
+val argint : string -> int ref -> string -> arg_triple
+val argbool : string -> bool ref -> string -> arg_triple
+val argboolo : string -> bool option ref -> string -> arg_triple
+val argfloato : string -> float option ref -> string -> arg_triple
 (* Verbose *)
 val verbose : int ref
 

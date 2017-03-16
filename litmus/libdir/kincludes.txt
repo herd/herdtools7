@@ -1,0 +1,49 @@
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/init.h>
+#include <linux/fs.h>
+#include <linux/proc_fs.h>
+#include <linux/seq_file.h>
+#include <linux/kthread.h>
+#include <linux/ktime.h>
+#include <linux/atomic.h>
+#include <linux/sysfs.h>
+#include <linux/sched.h>
+#include <linux/wait.h>
+#include <linux/slab.h>
+
+typedef u64 count_t;
+#define PCTR "llu"
+
+#ifndef WRITE_ONCE
+#define WRITE_ONCE(x,v) ACCESS_ONCE((x)) = (v)
+#endif
+#ifndef READ_ONCE
+#define READ_ONCE(x) ACCESS_ONCE((x))
+#endif
+
+#ifndef smp_store_release
+#define smp_store_release(p, v)                                         \
+do {                                                                    \
+        smp_mb();                                                       \
+        WRITE_ONCE(*p, v);                                              \
+} while (0)
+#endif
+
+#ifndef smp_load_acquire
+#define smp_load_acquire(p)                                             \
+({                                                                      \
+        typeof(*p) ___p1 = READ_ONCE(*p);                               \
+        smp_mb();                                                       \
+        ___p1;                                                          \
+})
+#endif
+
+#ifndef lockless_dereference 
+#define lockless_dereference(p)                                         \
+({                                                                      \
+        typeof(p) ____p1 = READ_ONCE(p);                                \
+        smp_read_barrier_depends();                                     \
+        ____p1;                                                         \
+})
+#endif

@@ -14,16 +14,20 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+module type Arch = sig
+  type location
+  module LocSet : MySet.S with type elt = location
+end
 
 module type S = sig
-  module A : Arch_litmus.Base
+  include Arch
 
-  type prop = (A.location,Constant.v) ConstrGen.prop
+  type prop = (location,Constant.v) ConstrGen.prop
   type constr = prop ConstrGen.constr
 
 (* List of read locations *)
-  val locations : constr -> A.LocSet.t
-  val locations_prop : prop -> A.LocSet.t
+  val locations : constr -> LocSet.t
+  val locations_prop : prop -> LocSet.t
 
 (* List locations that appears as  values *)
   val location_values : constr -> string list
@@ -32,27 +36,31 @@ end
 
 open ConstrGen
 
-module Make(A : Arch_litmus.Base) : S with module A = A  =
+module Make(A : Arch) : S
+with type location = A.location
+and module LocSet = A.LocSet =
   struct
     open Constant
-    module A = A
 
-    type prop = (A.location,Constant.v) ConstrGen.prop
+    type location = A.location
+    module LocSet = A.LocSet
+
+    type prop = (location,Constant.v) ConstrGen.prop
     type constr = prop ConstrGen.constr
 
     let locations_atom a r =
       let open ConstrGen in
       match a with
-      | LV (loc,_) -> A.LocSet.add loc r
-      | LL (loc1,loc2) -> A.LocSet.add loc1 (A.LocSet.add loc2 r)
+      | LV (loc,_) -> LocSet.add loc r
+      | LL (loc1,loc2) -> LocSet.add loc1 (LocSet.add loc2 r)
 
     let locations (c:constr) =
-      let locs = fold_constr locations_atom c A.LocSet.empty in
+      let locs = fold_constr locations_atom c LocSet.empty in
       locs
 
-    let locations_prop p = fold_prop locations_atom p A.LocSet.empty
+    let locations_prop p = fold_prop locations_atom p LocSet.empty
 
-    module Strings = Set.Make(String)
+    module Strings = StringSet
 
     let atom_values a k =
       let open ConstrGen in

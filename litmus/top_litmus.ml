@@ -150,11 +150,13 @@ end = struct
   module Utils (O:Config) (A':Arch_litmus.Base)
       (Lang:Language.S
       with type arch_reg = A'.Out.arch_reg
-      and type t = A'.Out.t)
+      and type t = A'.Out.t
+      and module RegMap = A'.RegMap)
       (Pseudo:PseudoAbstract.S) =
     struct
       module T = Test_litmus.Make(O)(A')(Pseudo)
       module R = Run_litmus.Make(O)(Tar)(T.D)
+      module H = LitmusUtils.Hash(O)
 
       let get_cycle t =
         let info = t.MiscParser.info in
@@ -166,23 +168,6 @@ end = struct
           not (avoid cy)
         with Not_found -> true
 
-
-      let hash_ok env tname hash =
-        try
-          let ohash = StringMap.find tname env in
-          if String.compare hash.hash ohash.hash <> 0 then begin
-            Warn.user_error "Unconsistent hashes for test %s, previous file %s"
-              tname ohash.filename
-          end else begin
-            if  ohash.filename <> hash.filename then
-              W.warn  "Duplicate occurrence of test %s (%s,%s)"
-                tname ohash.filename hash.filename
-            else
-              W.warn "File %s is referenced more then once"
-                ohash.filename
-          end ;
-          false
-        with Not_found ->  true
 
       let change_hint hint name t =
         try
@@ -232,12 +217,6 @@ end = struct
               "%stest with more threads (%i) than available (%i) is compiled"
               (Pos.str_pos0 name.Name.file) nprocs navail
 
-      let hash name parsed =
-        try
-          let hash = List.assoc "Hash" parsed.MiscParser.info in
-          { filename=name; hash=hash;}
-        with Not_found -> assert false
-
       let compile
           parse count_procs compile allocate
           cycles hash_env
@@ -248,9 +227,9 @@ end = struct
           let tname = doc.Name.name in
           close_in in_chan ;
           let nprocs = count_procs parsed.MiscParser.prog in
-          let hash = hash name parsed in
+          let hash =  H.mk_hash_info name parsed.MiscParser.info in
           let cycle_ok = cycle_ok avoid_cycle parsed
-          and hash_ok = hash_ok hash_env tname hash
+          and hash_ok = H.hash_ok hash_env tname hash
           and limit_ok = limit_ok nprocs in
           if
             cycle_ok && hash_ok && limit_ok
@@ -288,38 +267,19 @@ end = struct
       (L:GenParser.LexParse with type instruction = A.parsedPseudo)
       (XXXComp : XXXCompile_litmus.S with module A = A) =
     struct
-      module Pseudo = struct
-        type code = int * A.pseudo list
-        let rec fmt_io io = match io with
-        | A.Nop -> ""
-        | A.Instruction ins -> A.dump_instruction ins
-        | A.Label (lbl,io) -> lbl ^ ": " ^ fmt_io io
-	| A.Symbolic _ -> assert false (*no symbolic in litmus *)
-        | A.Macro (f,regs) ->
-            Printf.sprintf
-              "%s(%s)"
-              f
-              (String.concat "," (List.map A.pp_reg regs))
-
-        let dump_prog (p,is) = Printf.sprintf "P%i" p::List.map fmt_io is
-
-        let dump_prog_lines prog =
-          let pp = List.map dump_prog prog in
-          let pp = Misc.lines_of_prog pp in
-          List.map (Printf.sprintf "%s;") pp
-
-        let print_prog chan prog =
-          let pp = List.map dump_prog prog in
-          Misc.pp_prog chan pp
+      module Pseudo = LitmusUtils.Pseudo(A)
+      module ALang = struct
+        include A.I
+        module RegSet = A.Out.RegSet
+        module RegMap = A.Out.RegMap
       end
-
-      module Lang = ASMLang.Make(O)(A.I)(A.Out)
+      module Lang = ASMLang.Make(O)(ALang)(A.Out)
       module Utils = Utils(O)(A)(Lang)(Pseudo)
       module P = GenParser.Make(O)(A) (L)
       module Comp = Compile.Make (O)(A)(Utils.T)(XXXComp)
 
       module AllocArch = struct
-        include A 
+        include A
         type v = A.V.v
         let maybevToV = V.maybevToV
         type global = string
@@ -351,6 +311,10 @@ end = struct
             let maybevToV c = c
           end
         type reg = string
+        type instruction = unit
+
+        module RegSet = StringSet
+        module RegMap = StringMap
 
         let vToName = function
           | Constant.Concrete i -> "addr_" ^ string_of_int i
@@ -499,7 +463,7 @@ end = struct
   let module Compile = PPCGenCompile.Make(V)(OC) in
   let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
   X.compile
- *)  
+ *)
             end
         | `X86 ->
             let module Arch' = X86Arch_litmus.Make(OC)(V) in

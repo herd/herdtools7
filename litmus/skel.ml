@@ -71,12 +71,14 @@ end
 let sentinel = "-239487" (* Susmit's sentinel *)
 
 module Make
-         (Cfg:sig include Config val sysarch : Archs.System.t end)
-         (P:sig type code end)
-         (A:Arch_litmus.Base)
-         (T:Test_litmus.S with type P.code = P.code and module A = A)
-         (O:Indent.S)
-         (Lang:Language.S with type arch_reg = T.A.reg and type t = A.Out.t) : sig
+    (Cfg:sig include Config val sysarch : Archs.System.t end)
+    (P:sig type code end)
+    (A:Arch_litmus.Base)
+    (T:Test_litmus.S with type P.code = P.code and module A = A)
+    (O:Indent.S)
+    (Lang:Language.S
+    with type arch_reg = T.A.reg and type t = A.Out.t
+    and module RegMap = T.A.RegMap) : sig
   val dump : Name.t -> T.t -> unit
 end = struct
   module A = T.A
@@ -330,12 +332,6 @@ module Insert =
   let dump_a_addr = match memory with
   | Direct -> sprintf "&(_a->%s[_i])"
   | Indirect -> sprintf "_a->%s[_i]"
-
-(*
-  let dump_a_v = function
-    | Concrete i ->  sprintf "%i" i
-    | Symbolic s -> dump_a_addr s
-*)
 
 (* Right value, casted if pointer *)
   let dump_a_v_casted = function
@@ -808,6 +804,7 @@ let user2_barrier_def () =
   module DC =
     CompCond.Make(O)
       (struct
+        let with_ok = true
         module C = C
         module V = struct
           type t = Constant.v
