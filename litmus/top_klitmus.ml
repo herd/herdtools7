@@ -32,6 +32,7 @@ module type Config = sig
   val stride : Stride.t
   val rcu : Rcu.t
   val tarname : string
+  val pad : int
 end
 
 module Top(O:Config)(Tar:Tar.S) = struct
@@ -85,7 +86,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
         let hash_ok = H.hash_ok hash_env tname hash in
         if hash_ok then begin
           let hash_env = StringMap.add tname hash hash_env in
-          let base = sprintf "litmus%03i" id in
+          let base = sprintf "litmus%0*i" O.pad id in
           let src = sprintf "%s.c" base in
           let parsed = allocate parsed in
           let compiled =  compile doc parsed in

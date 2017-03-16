@@ -27,6 +27,7 @@ module KOption : sig
 (* Generic setings *)
   type arg_triple =  string * Arg.spec * string
 
+  val argint :  string -> int ref -> string -> arg_triple
   val arginto : int option ref -> Arg.spec   
   val argkm : string -> int ref -> string -> arg_triple
 
@@ -46,9 +47,11 @@ module KOption : sig
   val excl : string list ref
   val rename : string list ref
   val rcu : Rcu.t ref
+  val pad : int ref
 end = struct
   include Option
   let rcu = ref Rcu.No
+  let pad = ref 3
 end
 
 open KOption
@@ -69,7 +72,7 @@ let opts =
    "<name> read configuration file name.cfg";
    "-hexa", Arg.Set KOption.hexa,
    " output variables in hexadecimal";
-
+   argint "-pad" KOption.pad "size of padding for C litmus source names";   
 (* Test parameters *)
    "-a", arginto KOption.avail,
      "<n> Run maximal number of tests concurrently for n available cores (default, run one test)";
@@ -142,6 +145,7 @@ let () =
         | No|Adapt -> st
         | St i ->  if i > 0 then st else No
       let rcu = !rcu
+      let pad = !pad
 (* tar stuff *)
       let tarname = KOption.get_tar ()
     end in
