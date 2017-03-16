@@ -35,7 +35,6 @@ and type start_points = A.start_points =
     type nice_prog = A.nice_prog
     type program = A.program
     type start_points = A.start_points
-    module V = A.V
 
     let rec load_code addr mem code = match code with
     | [] -> mem,[]

@@ -194,7 +194,6 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
       (program, nice_prog, start_points,
        state, prop, location, A.LocSet.t) Test_herd.t
 
-    module T = Test_herd.Make(A)
 (* List of relevant location *)
     type loc_set = A.LocSet.t
     let observed_locations t = t.Test_herd.observed

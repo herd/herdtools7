@@ -21,7 +21,6 @@ module Make(S : SemExtra.S) = struct
   module S = S
   module E = S.E
   module A = S.A
-  module V = A.V
   module C = S.Cons
   module PC = S.O.PC
 
@@ -311,14 +310,6 @@ let get_scope_rels evts sc =
 (* Sets and Maps on locations *)
 (******************************)
 
-  module LocSet =
-    MySet.Make
-      (struct
-	type t = A.global_loc
-	let compare = A.V.compare
-      end)
-
-
   module LocEnv =
     Map.Make
       (struct
@@ -382,15 +373,6 @@ let get_scope_rels evts sc =
             k rs)
         rs_by_loc [] in
     E.EventRel.of_list k
-
-(*************)
-(* Atomicity *)
-(*************)
-
-
-(* Event atomicity class are canonized as
-   a mapping from one representant to the class *)
-  module Canon = Map.Make(E.OrderedEvent)
 
 (********************************************)
 (* Write serialization candidate generator. *)

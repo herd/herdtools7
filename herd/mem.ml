@@ -611,15 +611,6 @@ let compatible_locs_mem e1 e2 =
       solve_mem_or_res test es rfm cns kont res
         loads stores compat_locs add_mem_eqs
 
-(* Let us change all possible loads from local stores to
-  loads from store buffer *)
-    module EventMap =
-      Map.Make
-        (struct
-          type t = S.event
-          let compare = E.event_compare
-        end)
-
 
 (*************************************)
 (* Final condition invalidation mode *)
