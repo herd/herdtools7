@@ -30,6 +30,7 @@ module type Config = sig
   val runs : int
   val avail : int option
   val stride : Stride.t
+  val barrier : KBarrier.t
   val rcu : Rcu.t
   val tarname : string
   val pad : int

@@ -1,0 +1,29 @@
+/* C version of sense barrier */
+
+typedef struct {
+  atomic_t c;
+  int sense;
+} sense_t;
+
+static void barrier_init (sense_t *p) {
+  atomic_set(&(p->c),nthreads) ;
+  p->sense = 0;
+}
+
+static void barrier_wait(sense_t *p) {
+  int sense = READ_ONCE(p->sense) ;
+  int last ;
+
+  smp_mb() ;
+  last = atomic_dec_and_test(&(p->c)) ;
+  smp_mb() ;
+  if (last) {
+    atomic_set(&p->c,nthreads) ;
+    smp_mb() ;
+    WRITE_ONCE(p->sense,1-sense);
+    smp_mb() ;
+  } else {
+    while (READ_ONCE(p->sense) == sense) cpu_relax();
+    smp_mb() ;
+  }
+}

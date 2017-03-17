@@ -48,10 +48,12 @@ module KOption : sig
   val rename : string list ref
   val rcu : Rcu.t ref
   val pad : int ref
+  val barrier : KBarrier.t ref
 end = struct
   include Option
   let rcu = ref Rcu.No
   let pad = ref 3
+  let barrier = ref KBarrier.User
 end
 
 open KOption
@@ -81,8 +83,10 @@ let opts =
    argkm "-size_of_test" KOption.size  "alias for -s";
    argkm "-r" KOption.runs "number of runs" ;
    argkm "-number_of_run" KOption.runs "alias for -r" ;
-   PStride.parse "-st" Option.stride "stride for scanning memory" ;
-   PStride.parse "-stride" Option.stride "stride for scanning memory" ;
+   PStride.parse "-st" KOption.stride "stride for scanning memory" ;
+   PStride.parse "-stride" KOption.stride "stride for scanning memory" ;
+   begin let module P = ParseTag.Make(KBarrier)  in
+   P.parse "-barrier" KOption.barrier "synchronisation barrier style" end;
 (********)
 (* Misc *)
 (********)
@@ -90,8 +94,8 @@ let opts =
    CheckName.parse_names names ;
    CheckName.parse_excl excl ;
    CheckName.parse_rename rename ;
-   let module P = ParseTag.Make(Rcu) in
-   P.parse "-rcu" KOption.rcu "accept RCU tests or not" ;
+   begin let module P = ParseTag.Make(Rcu) in
+   P.parse "-rcu" KOption.rcu "accept RCU tests or not" end ;
  ]
 
 
@@ -144,6 +148,7 @@ let () =
         match st with
         | No|Adapt -> st
         | St i ->  if i > 0 then st else No
+      let barrier = !barrier
       let rcu = !rcu
       let pad = !pad
 (* tar stuff *)

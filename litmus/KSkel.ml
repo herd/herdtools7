@@ -30,6 +30,7 @@ module type Config = sig
   val runs : int
   val avail : int option
   val stride : Stride.t
+  val barrier : KBarrier.t
 end
 
 module Make
@@ -284,7 +285,13 @@ module Make
             (A.Out.dump_out_reg proc reg))
         test ;
       O.o "/* For synchronisation */" ;
-      O.oi "int *barrier;" ;
+      begin let open KBarrier in
+      match Cfg.barrier with
+      | User ->
+          O.oi "int *barrier;" ;
+      | TimeBase ->
+          O.oi "sense_t barrier;" ;
+      end ;
       O.o "} ctx_t ;" ;
       O.o "" ;
       if U.ptr_in_outs env test then begin
@@ -309,7 +316,11 @@ module Make
         (fun proc (reg,t) ->
           let tag = A.Out.dump_out_reg proc reg in
           free tag) test ;
-      free "barrier" ;
+      begin let open KBarrier in
+      match Cfg.barrier with
+      | User -> free "barrier"
+      | TimeBase -> ()
+      end ;
       O.oi "kfree(p);" ;
       O.o "}" ;
       O.o "" ;
@@ -324,7 +335,11 @@ module Make
         (fun proc (reg,t) ->
           let tag = A.Out.dump_out_reg proc reg in
           alloc tag) test ;
-      alloc "barrier" ;
+      begin let open KBarrier in
+      match Cfg.barrier with
+      | User -> alloc "barrier"
+      | TimeBase -> O.oi "barrier_init(&r->barrier);";
+      end ;
       O.oi "return r;" ;
       O.o "}" ;
       O.o "" ;
@@ -346,7 +361,13 @@ module Make
                 | true -> "NULL"))
             outs)
         test.T.code ;
-      O.oii "_a->barrier[_i] = 0;" ;
+      begin let open KBarrier in
+      match Cfg.barrier with
+      | User ->
+          O.oii "_a->barrier[_i] = 0;"
+      | TimeBase ->
+          ()
+      end ;
       O.oi "}" ;
       O.o "}" ;
       O.o "" ;
@@ -356,27 +377,21 @@ module Make
 (* Test proper *)
 (***************)
     let dump_barrier_def () =
-      O.o "static inline void barrier_wait(int id,int i,int *b) {" ;
-      O.oi "if ((i % nthreads) == id) {" ;
-      O.oii "ACCESS_ONCE(*b) = 1;" ;
-      O.oii "smp_mb();" ;
-      O.oi "} else {" ;
-      O.oii "int _spin = 256;" ;
-      O.oii "for  ( ; ; ) {" ;
-      O.oiii "if (ACCESS_ONCE(*b) != 0) return;" ;
-      O.oiii "if (--_spin <= 0) return;" ;
-      O.oiii "cpu_relax();" ;
-      O.oii "}" ;
-      O.oi "}" ;
-      O.o "}" ;
+      begin let open KBarrier in
+      match Cfg.barrier with
+      | User ->
+          ObjUtil.insert_lib_file O.o "kbarrier-user.txt" ;
+      | TimeBase ->
+          ObjUtil.insert_lib_file O.o "kbarrier-tb.txt" ;
+      end ;
       O.o ""
+
 
     let dump_threads tname env test =
       O.o "/***************/" ;
       O.o "/* Litmus code */" ;
       O.o "/***************/" ;
       O.o "" ;
-      dump_barrier_def () ;
       List.iter
         (fun (proc,(out,(outregs,envVolatile))) ->
           let myenv = U.select_proc proc env
@@ -388,7 +403,13 @@ module Make
           O.oi "smp_mb();" ;
           O.oi "for (int _j = 0 ; _j < stride ; _j++) {" ;
           O.oii "for (int _i = _j ; _i < size ; _i += stride) {" ;
-          O.fiii "barrier_wait(%i,_i,&_a->barrier[_i]);" proc ;
+          begin let open KBarrier in
+          match Cfg.barrier with
+          | User ->
+              O.fiii "barrier_wait(%i,_i,&_a->barrier[_i]);" proc
+          | TimeBase ->
+              O.oiii "barrier_wait(&_a->barrier);"
+          end ;
           Lang.dump_call O.out (Indent.as_string indent3)
             myenv global_env envVolatile proc out ;
           O.oii "}" ;
@@ -600,6 +621,7 @@ module Make
       dump_header () ;
       dump_params tname test ;
       dump_outs env test ;
+      dump_barrier_def () ;
       dump_ctx env test ;
       dump_threads tname env test ;
       dump_cond_fun env test ;
