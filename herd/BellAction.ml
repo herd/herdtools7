@@ -44,9 +44,17 @@ end = struct
 (* I think this is right... *)
   let mk_init_write l v = Access(W,l,v,false,[])
 
+(*  Quite ad-hoc, should devise a more general mechanism *)
+  let tr_annot = function
+    | "rcu_read_unlock" -> "rcu-unlock"
+    | "rcu_read_lock" -> "rcu-lock"
+    | s -> s
+
   let pp_annots = function
     | [] -> ""
-    | xs -> "[" ^ BellBase.string_of_annot_list xs ^ "]"
+    | xs ->
+        let xs = List.map  tr_annot xs in
+        "[" ^ BellBase.string_of_annot_list xs ^ "]"
 
   let pp_action a = match a with    
   | Access (d,l,v,ato,s) ->
