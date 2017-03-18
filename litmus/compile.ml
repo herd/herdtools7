@@ -197,8 +197,7 @@ module Generic (A : Arch_litmus.Base)
 
       let find_type loc env =
         try A.LocMap.find loc env
-        with Not_found ->
-          Warn.fatal "no type for %s\n" (A.pp_location loc)
+        with Not_found -> Warn.fatal "no type for %s" (A.pp_location loc)
 
 (* All observed locations *)
       let observed final locs =
