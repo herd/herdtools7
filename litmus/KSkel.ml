@@ -550,7 +550,7 @@ let dump_zyva tname env test =
 let dump_proc tname test =
   let tname = String.escaped tname in
   O.o "static int\nlitmus_proc_show(struct seq_file *m,void *v) {" ;
-  O.oi "if (ninst == 0 || ninst * threads > num_online_cpus()) {" ;
+  O.oi "if (ninst == 0 || ninst * nthreads > num_online_cpus()) {" ;
   let fmt = "%s: skipped\\n" in
   O.fii "seq_printf(m,\"%s\",\"%s\");" fmt tname ;
   O.oii "return 0;" ;
