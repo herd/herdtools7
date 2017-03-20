@@ -38,6 +38,7 @@ end
 
 module Top(O:Config)(Tar:Tar.S) = struct
 
+
   module OX = struct
     let debuglexer = O.verbose > 2
     let debug = debuglexer
@@ -53,6 +54,17 @@ module Top(O:Config)(Tar:Tar.S) = struct
   let exit_not_compiled fname =
     W.warn "%s Test not compiled" (Pos.str_pos0 fname) ;
     raise Misc.Exit
+
+  let wrap_allocate have_rcu allocate =
+    fun fname parsed ->
+      let p = allocate parsed in
+      let ok = match O.rcu with
+      | Rcu.Yes -> true
+          | Rcu.No -> not (have_rcu p.MiscParser.prog)
+          | Rcu.Only -> have_rcu p.MiscParser.prog in
+      if ok then p
+      else exit_not_compiled fname
+
 
   module Utils(A:Arch_litmus.Base)
       (Lang:Language.S
@@ -112,10 +124,9 @@ module Top(O:Config)(Tar:Tar.S) = struct
       module LISAComp = LISACompile.Make(V)
       module Pseudo = LitmusUtils.Pseudo(A)
       module Lang = LISALang.Make(V)
-(*      module Lang = ASMLang.Make(OX)(A.I)(A.Out) *)
       module Utils = Utils(A)(Lang)(Pseudo)
       module P = GenParser.Make(OX)(A)(LexParse)
-      module T = Test_litmus.Make(O)(A)(Pseudo)
+      module T = Utils.T
 
       module Alloc =
         SymbReg.Make
@@ -144,14 +155,8 @@ module Top(O:Config)(Tar:Tar.S) = struct
                     false p)
                 code)
             p in
-        fun fname parsed ->
-          let p = Alloc.allocate_regs parsed in
-          let ok = match O.rcu with
-          | Rcu.Yes -> true
-          | Rcu.No -> not (have_rcu p.MiscParser.prog)
-          | Rcu.Only -> have_rcu p.MiscParser.prog in
-          if ok then p
-          else exit_not_compiled fname
+
+        wrap_allocate have_rcu Alloc.allocate_regs
 
       module Comp = Compile.Make (Compile.Default)(A)(T)(LISAComp)
 
@@ -159,6 +164,48 @@ module Top(O:Config)(Tar:Tar.S) = struct
         Utils.compile P.parse Comp.compile (allocate fname)
           fname
     end
+
+
+  module MakeC = struct
+
+    module V = SymbConstant
+    module A = CArch_litmus.Make(OX)
+    module LexParse = struct
+      type token = CParser.token
+      module CL = CLexer.Make(struct let debug = false end)
+      let lexer = CL.token false
+      let parser = CParser.shallow_main
+    end
+    module Pseudo = DumpCAst
+    module Lang = CLang.Make(CLang.DefaultConfig)
+        (struct
+          let verbose = O.verbose
+          let noinline = false
+          let simple = true
+          let out_ctx s = "_a->" ^ s
+        end)
+    module Utils = Utils(A)(Lang)(Pseudo)
+    module T = Utils.T
+    module P = CGenParser_litmus.Make(OX)(Pseudo)(A)(LexParse)
+    module CComp = CCompile_litmus.Make(Compile.Default)(T)
+    module Alloc = CSymbReg.Make(A)
+
+    let have_rcu =
+      let open MiscParser in
+      fun p ->
+        List.exists
+          (fun code -> match code with
+          | CAst.Test {CAst.body=body}
+          | CAst.Global body -> LexHaveRcu.search body)
+          p
+
+    let allocate =  wrap_allocate have_rcu Alloc.allocate_regs
+
+    let compile fname =
+      Utils.compile P.parse CComp.compile (allocate fname)
+        fname
+
+  end
 
   module SP = Splitter.Make(OX)
 
@@ -172,6 +219,8 @@ module Top(O:Config)(Tar:Tar.S) = struct
       match arch with
       | `LISA ->
           MakeLISA.compile fname hash_env chan splitted
+      | `C ->
+          MakeC.compile fname hash_env chan splitted
       | _ ->
           W.warn "%s, cannot handle arch %s" (Pos.str_pos0 fname)
             (Archs.pp arch) ;
@@ -192,7 +241,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
     | e ->
         let msg = sprintf "exception %s"  (Printexc.to_string e) in
         eprintf "%a %s\n%!" Pos.pp_pos0 fname msg ;
-        assert false
+        raise e (* asserrt false *)
 
   let dump_makefile srcs =
     let fname = Tar.outname "Makefile" in

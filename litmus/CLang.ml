@@ -28,8 +28,16 @@ module DefaultConfig = struct
   let asmcommentaslabel = false
 end
 
-module Make(C:Config) = struct
+module type Extra = sig
+  val verbose : int
+  val noinline : bool
+  val simple : bool
+  val out_ctx : string -> string
+end
+
+module Make(C:Config)(E:Extra) = struct
   open Printf
+  module W = Warn.Make(E)
 
   type arch_reg = string
   module RegMap = StringMap
@@ -37,24 +45,28 @@ module Make(C:Config) = struct
   type t = CTarget.t
 
   let dump_start chan indent proc =
-    if C.asmcommentaslabel then
-      fprintf chan
-        "%sasm __volatile__ (\"\\n%s:\" ::: \"memory\");\n"
-        indent (LangUtils.start_label proc)
-    else
-      fprintf chan
-        "%sasm __volatile__ (\"\\n%s\" ::: \"memory\");\n"
-        indent (LangUtils.start_comment C.comment proc)
+    if not E.simple then begin
+      if C.asmcommentaslabel then
+        fprintf chan
+          "%sasm __volatile__ (\"\\n%s:\" ::: \"memory\");\n"
+          indent (LangUtils.start_label proc)
+      else
+        fprintf chan
+          "%sasm __volatile__ (\"\\n%s\" ::: \"memory\");\n"
+          indent (LangUtils.start_comment C.comment proc)
+    end
 
   let dump_end chan indent proc =
-    if C.asmcommentaslabel then
-      fprintf chan
-        "%sasm __volatile__ (\"\\n%s:\" ::: \"memory\");\n"
-        indent (LangUtils.end_label proc)
-    else
-      fprintf chan
-        "%sasm __volatile__ (\"\\n%s\" ::: \"memory\");\n"
-        indent (LangUtils.end_comment C.comment proc)
+    if not E.simple then begin
+      if C.asmcommentaslabel then
+        fprintf chan
+          "%sasm __volatile__ (\"\\n%s:\" ::: \"memory\");\n"
+          indent (LangUtils.end_label proc)
+      else
+        fprintf chan
+          "%sasm __volatile__ (\"\\n%s\" ::: \"memory\");\n"
+          indent (LangUtils.end_comment C.comment proc)
+    end
 
   let dump_global_def env (x,ty) =
     let x = CTarget.fmt_reg x in
@@ -83,7 +95,7 @@ module Make(C:Config) = struct
            (fun (ty,v) -> sprintf "%s %s" ty v)
            defs) in
     (* Function prototype  *)
-    LangUtils.dump_code_def chan true proc params ;
+    LangUtils.dump_code_def chan E.noinline proc params ;
     (* body *)
     dump_start chan "  " proc ;
     CTarget.out_code chan t.CTarget.code ;
@@ -100,9 +112,12 @@ module Make(C:Config) = struct
 
 
   let dump_call chan indent env globEnv envVolatile proc t =
-    let is_array_of a = match List.assoc a globEnv with
-    | CType.Array (t,_) -> Some t
-    | _ -> None in
+    let is_array_of a =
+      try  match List.assoc a globEnv with
+      | CType.Array (t,_) -> Some t
+      | _ -> None
+      with Not_found ->
+        None in
     let global_args =
       List.map
         (fun (x,_) ->
@@ -117,7 +132,7 @@ module Make(C:Config) = struct
         t.CTarget.inputs
     and out_args =
       List.map
-        (fun x -> sprintf "&%s" (CTarget.compile_out_reg proc x))
+        (fun x -> sprintf "&%s" (E.out_ctx (CTarget.compile_out_reg proc x)))
         t.CTarget.finals in
     let args = String.concat "," (global_args@out_args) in
     LangUtils.dump_code_call chan indent proc args
