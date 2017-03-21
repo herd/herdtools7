@@ -298,6 +298,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
     let sources = List.rev sources in
     dump_makefile sources ;
     dump_run sources ;
+    Tar.tar () ;
     ()
 
 end
