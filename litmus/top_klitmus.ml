@@ -149,7 +149,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
                     (fun r ins -> match ins with
                     | A.Pfence
                         (A.Fence
-                           ([("rcu_read_lock"|"rcu_read_unlock"|"sync")],_))
+                           ([("sync"|"sync_expedited")],_))
                       -> true
                     | _ -> r)
                     false p)
