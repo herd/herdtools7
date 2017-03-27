@@ -27,6 +27,7 @@ module Top
          val verbose : int
          val ins : Interval.t
          val threads : Interval.t
+         val arch_ok : Archs.t -> bool
        end) =
   struct
 
@@ -39,6 +40,7 @@ module Top
 
       let zyva _name parsed =
         let prog = parsed.MiscParser.prog in
+        Opt.arch_ok A.arch &&
         Interval.inside Opt.threads (List.length prog) &&
         List.for_all
           (fun (_,code) -> Interval.inside Opt.ins (List.length code))
@@ -80,6 +82,7 @@ let ins = ref Interval.all
 let threads = ref Interval.all
 let verbose = ref 0
 let tests = ref []
+let archs = ref []
 
 let prog =
   if Array.length Sys.argv > 0 then Sys.argv.(0)
@@ -92,7 +95,10 @@ let () =
      "-ins", Arg.String (set_inter ins),
      sprintf "<inter> instruction count, default %s" (Interval.pp !ins);
      "-threads", Arg.String (set_inter threads),
-     sprintf "<inter> thread count, default %s" (Interval.pp !threads);]
+     sprintf "<inter> thread count, default %s" (Interval.pp !threads);
+    begin let module P = ParseTag.Make(Archs) in
+    P.parse_fun
+      "-arch" (fun a -> archs := !archs @ [a]) "select architecture, can be repeated" end ; ]
     (fun s -> tests := s :: !tests)
     (sprintf "Usage: %s [options]* [test]*" prog)
 
@@ -101,6 +107,12 @@ module X = Top
       let verbose = !verbose
       let ins = !ins
       let threads = !threads
+      let arch_ok = match !archs with
+      | [] -> fun _ -> true
+      | archs ->
+          let module S = MySet.Make(Archs) in
+          let archs = S.of_list archs in
+          fun a -> S.mem a archs
     end)
 
 let () = X.zyva !tests

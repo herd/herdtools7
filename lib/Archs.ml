@@ -99,3 +99,5 @@ let x86 = `X86
 let c = `C
 let cpp = `CPP
 let lisa = `LISA
+
+let compare = Pervasives.compare

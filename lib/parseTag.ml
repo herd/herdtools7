@@ -59,5 +59,6 @@ module Make (O:Opt) =
     let parse_opt opt r msg =
       parse_withfun opt (fun o -> r := Some o) msg None
 
+    let parse_fun opt f msg = parse_withfun opt f msg None
   end
 
