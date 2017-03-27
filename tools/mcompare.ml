@@ -663,11 +663,10 @@ let dump_file s name = Misc.output_protect (dump_chan s) name
 
 
 
-  let add_comment eqallowed _name is_litmus unsure k v v_pp =
-    if quiet then [v_pp]
-    else if is_litmus then
+  let add_comment quiet_model eqallowed _name is_litmus unsure k v v_pp =
+    if is_litmus then
       v_pp::
-      if unsure && verbose=0 then
+      if quiet || (unsure && verbose=0) then
         []
       else
         match Opt.forcekind,k,v with
@@ -678,6 +677,7 @@ let dump_file s name = Misc.output_protect (dump_chan s) name
             [highlight_moderate (sprintf "Allow unseen")]
         | _,_,_ -> []
 (* Model log *)
+    else if quiet_model then [v_pp]
     else
       match k,v with
       | k,Ok ->
@@ -710,8 +710,7 @@ let dump_file s name = Misc.output_protect (dump_chan s) name
     else
       match k,v with
       | k,Ok ->
-          if unsure && verbose=0 then [LS.pp_kind k]
-          else ["="]
+          [LS.pp_kind k]
       | Allow,No ->
           let pp = LS.pp_kind Forbid in
           let pp = if unsure then pp else highlight_bad pp in
@@ -735,7 +734,7 @@ let dump_file s name = Misc.output_protect (dump_chan s) name
             let fmt_cell col
                 { K.Cond.cond=cond; K.Cond.unsure=unsure; kind=k;} t =
               let v = LS.revalidate cond t.states in
-              add_comment true t.tname
+              add_comment quiet true t.tname
                 col.is_litmus unsure k v
                 (LS.pp_validation v)
             include Matrix.NoAdd
@@ -972,13 +971,16 @@ let format_int_string s =
                     | _ -> LS.pp_validation v
                   else
                     LS.pp_validation v in
-                (if asY then add_short_comment else add_comment (not asZ))
+                (if asY then add_short_comment else
+                add_comment
+                  (if show_kinds then quiet else false)
+                  (show_kinds && not asZ))
                   t.tname col.is_litmus unsure k v v_pp
 
               include Matrix.NoAdd
             end) in
         let m = B.build keys ts in
-        if quiet || ( asZ && not show_kinds ) then
+        if quiet || ((asZ||asY) && not show_kinds) then
           dump ts "WitnessesRecomputed" true
             (List.map (fun t -> 1,pp_name t.name) ts) [] keys m
         else
