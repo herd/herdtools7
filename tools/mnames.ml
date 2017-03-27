@@ -19,10 +19,25 @@
 (******************************)
 
 open Printf
+module type Config = sig
+  val ok : string -> bool
+  val rename : string -> string
+end
 
-let from_file name = name,Names.from_fname name
+module Make(O:Config) =
+  struct
+    let from_file fname =
+      let name = Names.from_fname fname in
+      if O.ok name then begin
+        fname,O.rename name
+      end else
+        raise Misc.Exit
+  end
 
 let with_source = ref true
+let names = ref []
+and excl = ref []
+and rename = ref []
 let arg = ref []
 
 let prog =
@@ -32,16 +47,31 @@ let prog =
 let () =
   Arg.parse
     [
+     CheckName.parse_names names;
+     CheckName.parse_excl excl;
+     CheckName.parse_rename rename;
      "-src",Arg.Bool (fun b -> with_source := b),
      (sprintf "<bool> include source file names into output, default %b" !with_source)]
     (fun s -> arg := s :: !arg)
     (sprintf "Usage: %s [test]*" prog)
 
 let tests = !arg
+(* Read names *)
+module Check =
+  CheckName.Make
+    (struct
+      let verbose = 0
+      let rename = !rename
+      let select = []
+      let names = !names
+      let excl = !excl
+    end)
+
+module X = Make(Check)
 
 let do_test name =
   try
-    let fname,name =  from_file name in
+    let fname,name =  X.from_file name in
     if !with_source then
       printf "%s %s\n" fname name
     else
