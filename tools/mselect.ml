@@ -28,6 +28,7 @@ module Top
          val ins : Interval.t
          val threads : Interval.t
          val arch_ok : Archs.t -> bool
+         val name_ok : string -> bool
        end) =
   struct
 
@@ -84,6 +85,10 @@ let verbose = ref 0
 let tests = ref []
 let archs = ref []
 
+let names = ref []
+and excl = ref []
+and rename = ref []
+
 let prog =
   if Array.length Sys.argv > 0 then Sys.argv.(0)
   else "mselect"
@@ -92,15 +97,28 @@ let () =
   Arg.parse
     ["-v",Arg.Unit (fun () -> incr verbose), " be verbose";
      "-q",Arg.Unit (fun () -> verbose := -1), " quiet mode, status only";
+     begin let module P = ParseTag.Make(Archs) in
+     P.parse_fun
+       "-arch" (fun a -> archs := !archs @ [a]) "select architecture, can be repeated" end ;
+     CheckName.parse_names names ;
+     CheckName.parse_excl excl ;
+     CheckName.parse_rename rename ;
      "-ins", Arg.String (set_inter ins),
      sprintf "<inter> instruction count, default %s" (Interval.pp !ins);
      "-threads", Arg.String (set_inter threads),
-     sprintf "<inter> thread count, default %s" (Interval.pp !threads);
-    begin let module P = ParseTag.Make(Archs) in
-    P.parse_fun
-      "-arch" (fun a -> archs := !archs @ [a]) "select architecture, can be repeated" end ; ]
+     sprintf "<inter> thread count, default %s" (Interval.pp !threads);]
     (fun s -> tests := s :: !tests)
     (sprintf "Usage: %s [options]* [test]*" prog)
+
+module Check =
+  CheckName.Make
+    (struct
+      let verbose = !verbose
+      let rename = []
+      let select = []
+      let names = !names
+      let excl = !excl
+    end)
 
 module X = Top
     (struct
@@ -113,6 +131,7 @@ module X = Top
           let module S = MySet.Make(Archs) in
           let archs = S.of_list archs in
           fun a -> S.mem a archs
+      let name_ok = Check.ok
     end)
 
 let () = X.zyva !tests
