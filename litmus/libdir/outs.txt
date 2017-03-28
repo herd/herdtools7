@@ -28,7 +28,7 @@ loop_add_outcome_outs(outs_t *p, u64 *k, int i, count_t c, int show) {
   outs_t *r = p ;
   if (p == NULL || k[i] < p->k) {
     r = alloc_outs(k[i]) ;
-    if (r == NULL) return NULL ;
+    if (r == NULL) return p ; /* simply ignore insert */
     r->next = p ;
     p = r ;
   }
@@ -48,7 +48,7 @@ loop_add_outcome_outs(outs_t *p, u64 *k, int i, count_t c, int show) {
     }
     if (p == NULL || k[i] < p->k) {
       outs_t *a = alloc_outs(k[i]) ;
-      if (a == NULL) return NULL ;
+      if (a == NULL) return r ;
       a->next = p ;
       p = a ;
       *q = a ;
