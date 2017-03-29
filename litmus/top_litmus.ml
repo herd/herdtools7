@@ -327,18 +327,13 @@ end = struct
       module P = CGenParser_litmus.Make(O)(Pseudo)(A')(L)
       module Comp = CCompile_litmus.Make(O)(Utils.T)
 
-      let rec count_procs = function
-        | CAst.Test _::xs -> 1 + count_procs xs
-        | CAst.Global _::xs -> count_procs xs
-        | [] -> 0
-
       let compile =
         let allocate parsed =
           let module Alloc = CSymbReg.Make(A') in
           let allocated = Alloc.allocate_regs parsed in
           { allocated with MiscParser.prog = allocated.MiscParser.prog; }
         in
-        Utils.compile P.parse count_procs Comp.compile allocate
+        Utils.compile P.parse A'.count_procs Comp.compile allocate
     end
 
 

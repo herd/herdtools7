@@ -64,4 +64,10 @@ module Make(O:sig val memory : Memory.t end) = struct
         else find_in_state loc rem
 
   let pp_reg x = x
+
+  let rec count_procs = function
+    | CAst.Test _::xs -> 1 + count_procs xs
+    | CAst.Global _::xs -> count_procs xs
+    | [] -> 0
+
 end

@@ -89,22 +89,31 @@ module Top(O:Config)(Tar:Tar.S) = struct
           begin try Sys.remove outname with _ -> () end ;
           raise e
 
-      let compile parse compile allocate
+      let compile parse count_procs  compile allocate
           fname (hash_env,id) chan splitted =
         let parsed = parse chan splitted in
         close_in chan ;
-        let doc = splitted.Splitter.name in
-        let tname = doc.Name.name in
-        let hash = H.mk_hash_info fname parsed.MiscParser.info in
-        let hash_ok = H.hash_ok hash_env tname hash in
-        if hash_ok then begin
-          let hash_env = StringMap.add tname hash hash_env in
-          let base = sprintf "litmus%0*i" O.pad id in
-          let src = sprintf "%s.c" base in
-          let parsed = allocate parsed in
-          let compiled =  compile doc parsed in
-          dump src doc compiled ;
-          (base,tname),(hash_env,id+1)
+
+        let avail_ok = match O.avail with
+        | None -> true
+        | Some a -> count_procs parsed.MiscParser.prog <= a in
+
+        if avail_ok then begin
+          let doc = splitted.Splitter.name in
+          let tname = doc.Name.name in
+          let hash = H.mk_hash_info fname parsed.MiscParser.info in
+          let hash_ok = H.hash_ok hash_env tname hash in
+          if hash_ok then begin
+            let hash_env = StringMap.add tname hash hash_env in
+            let base = sprintf "litmus%0*i" O.pad id in
+            let src = sprintf "%s.c" base in
+            let parsed = allocate parsed in
+            let compiled =  compile doc parsed in
+            dump src doc compiled ;
+            (base,tname),(hash_env,id+1)
+          end else begin
+            exit_not_compiled fname
+          end
         end else begin
           exit_not_compiled fname
         end
@@ -161,7 +170,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
       module Comp = Compile.Make (Compile.Default)(A)(T)(LISAComp)
 
       let compile fname =
-        Utils.compile P.parse Comp.compile (allocate fname)
+        Utils.compile P.parse List.length Comp.compile (allocate fname)
           fname
     end
 
@@ -202,7 +211,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
     let allocate =  wrap_allocate have_rcu Alloc.allocate_regs
 
     let compile fname =
-      Utils.compile P.parse CComp.compile (allocate fname)
+      Utils.compile P.parse A.count_procs CComp.compile (allocate fname)
         fname
 
   end
