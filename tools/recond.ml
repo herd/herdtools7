@@ -20,6 +20,13 @@
 
 open Printf
 
+let prog =
+  if Array.length Sys.argv > 0 then Sys.argv.(0)
+  else "recond"
+
+let nprog = Filename.basename prog
+
+
 module type Config = sig
   val verbose : int
   val check_cond : string -> string option
@@ -67,7 +74,8 @@ module Make(Config:Config)(Out:OutTests.S) =
                   sprintf "%s=%s;"
                     (dump_loc loc)
                     (SymbConstant.pp Config.hexa v)) bds in
-            Out.fprintf chan "%s\n" (String.concat " " pp) ;
+            let pp = String.concat " " pp in
+            Out.fprintf chan "%s\n" pp ;
             "and ")
           "    " in
       ()
@@ -100,6 +108,8 @@ module Make(Config:Config)(Out:OutTests.S) =
         let { Splitter.locs = locs; start = start; name=name; info; _} =
           S.split fname in_chan in
         if Config.check_name name.Name.name then begin
+          if Config.verbose > 0 then
+            eprintf "Let's go on %s\n%!" fname ;
           let map =
             try
               let map = List.assoc OutMapping.key info in
@@ -142,7 +152,7 @@ module Make(Config:Config)(Out:OutTests.S) =
               if Config.asobserved then begin match cond with
               | Some (locs,cond) ->
                   dump_locs out (mk_dump_loc map) locs ;
-                  dump_observed out (mk_dump_loc map) cond
+                  dump_observed out (mk_dump_loc map) cond ;
               | None -> assert false
               end else
                 let module D =
@@ -190,6 +200,7 @@ module Make(Config:Config)(Out:OutTests.S) =
         raise Misc.Exit
 
     let from_file idx_chan name =
+      if Config.verbose > 0 then eprintf "Test file %s\n" name ;
       try
         Misc.input_protect
           (fun in_chan -> from_chan idx_chan name in_chan)
@@ -199,6 +210,9 @@ module Make(Config:Config)(Out:OutTests.S) =
           eprintf "Fatal error is not fatal, %s\n" msg
 
     let from_args args =
+      if Config.verbose > 0 then
+        eprintf "Scanning test files from %s\n"
+          (String.concat "," args) ;
       let idx_out = Out.open_all () in
       Misc.output_protect_close Out.close
         (fun idx_out ->
@@ -254,10 +268,6 @@ let opts =
       !toexists;
   ]
 
-let prog =
-  if Array.length Sys.argv > 0 then Sys.argv.(0)
-  else "recond"
-
 let () =
   Arg.parse opts
     (fun a -> args := a :: !args)
@@ -278,6 +288,9 @@ module Check =
 module LR = LexRename.Make(struct let verbose = !verbose end)
 let conds = LR.read_from_files !conds (fun s -> Some s)
 
+let () =
+  if !verbose > 0 then
+    eprintf "%s: conditions loaded\n%!" nprog
 
 let from_args =
   let module X =
@@ -295,14 +308,19 @@ let from_args =
   | None ->
       let module Y = X(OutStd) in
       Y.from_args
-  | Some _ as t ->
+  | Some n as t ->
       let module T =
         OutTar.Make
           (struct
             let verbose = !verbose
             let outname = t
           end) in
-       let module Y = X(T) in
-       Y.from_args
+      let module Y = X(T) in
+      if !verbose > 0 then eprintf "%s: output to %s\n%!" nprog n ;
+      Y.from_args
+
+let () =
+  if !verbose > 0 then
+    eprintf "%s: calling from_args\n%!" nprog
 
 let () = from_args !args

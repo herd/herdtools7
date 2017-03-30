@@ -43,8 +43,6 @@ module X =
       let state_eqloc _ _ _ = assert false
     end)
 
-exception NotInside
-
 let rec collect p m = match p with
 |  Atom (LV (loc,v)) ->
     let old = M.safe_find VS.empty loc m in
@@ -52,11 +50,28 @@ let rec collect p m = match p with
 | And ps|Or ps ->
     List.fold_right collect ps m
 | Implies _
-|  Atom (LL _)|Not _ -> raise NotInside
+|  Atom (LL _)|Not _ -> raise Exit
+
+let rec as_outcome p = match p with
+| Atom (LV (loc,v)) -> [loc,v]
+| Or [p] -> as_outcome p
+| And ps ->
+    List.fold_left (fun k p -> as_outcome p@k) [] ps
+| Atom (LL (_, _))|Or (_::_::_|[])|Not _|Implies (_, _)
+    -> raise Exit
+
+let rec as_outcomes p = match p with
+| Or ps ->
+    List.fold_left (fun k p -> as_outcomes p @ k) [] ps
+| _ -> [as_outcome p]
+
 
 let fold_outcomes c kont k =
+  let p = prop_of c in
   try
-    let p = prop_of c in
+    let bdss = as_outcomes p in
+    List.fold_left (fun k bds -> kont bds k) k bdss
+  with Exit -> try
     let m = collect p M.empty in
     let xss =
       M.fold
@@ -67,9 +82,17 @@ let fold_outcomes c kont k =
     Misc.fold_cross vss
       (fun vs k ->
         let bds = List.combine locs vs in
+(*
+        Printf.eprintf "Test: %s\n%!"
+          (String.concat " "
+             (List.map
+                (fun (loc,v) ->
+                  MiscParser.dump_location loc ^ "=" ^
+                  SymbConstant.pp_v v)
+                bds)) ;
+*)
         if X.check_prop p (M.from_bindings bds) then begin
           kont bds k
         end else k)
       k
-  with NotInside -> k
-
+  with Exit -> k
