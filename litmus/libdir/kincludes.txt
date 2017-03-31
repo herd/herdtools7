@@ -16,7 +16,7 @@ typedef u64 count_t;
 #define PCTR "llu"
 
 #ifndef WRITE_ONCE
-#define WRITE_ONCE(x,v) ACCESS_ONCE((x)) = (v)
+#define WRITE_ONCE(x,v) ({ ACCESS_ONCE((x)) = (v); })
 #endif
 #ifndef READ_ONCE
 #define READ_ONCE(x) ACCESS_ONCE((x))
