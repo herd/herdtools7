@@ -205,6 +205,11 @@ module Generic (A : Arch_litmus.Base)
           (C.locations final)
           (A.LocSet.of_list (List.map fst locs))
 
+      let all_observed final filter locs =
+        let obs = observed final locs in
+        match filter with
+        | None -> obs
+        | Some f -> A.LocSet.union obs (C.locations_prop f)
     end
 
 module Make
@@ -529,10 +534,7 @@ module Make
             locations = locs ; _
           } = t in
       let initenv = List.map (fun (loc,(_,v)) -> loc,v) init in
-      let observed = Generic.observed final locs in
-      let observed = match filter with
-      | None -> observed
-      | Some f -> A.LocSet.union observed (Constr.locations_prop f) in
+      let observed = Generic.all_observed final filter locs in
       let ty_env = Generic.build_type_env init final filter locs in
       let code = mk_templates name initenv code observed in
       let code_typed = type_outs ty_env code in

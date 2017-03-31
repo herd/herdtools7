@@ -107,6 +107,15 @@ module Make
     let dump_cond_fun_call test dump_loc dump_val =
       DC.funcall test.T.condition dump_loc dump_val
 
+    let dump_filter env test = match test.T.filter with
+    | None -> ()
+    | Some f ->
+        let find_type loc =
+          let t = U.find_type loc env in
+          CType.dump (CType.strip_atomic t) in
+        DC.fundef_prop "filter_cond" find_type f
+
+
 (***********)
 (* Headers *)
 (***********)
@@ -377,10 +386,10 @@ module Make
       | User -> ()
       | TimeBase ->
           O.oi "barrier_init(_a->barrier);"
-  end ;
-  O.o "}" ;
-  O.o "" ;
-  ()
+      end ;
+      O.o "}" ;
+      O.o "" ;
+      ()
 
 (***************)
 (* Test proper *)
@@ -475,7 +484,14 @@ let dump_zyva tname env test =
   O.oiii "for (int _i = 0 ; _i < size ; _i++) {" ;
   let dump_a_loc loc = sprintf "_a->%s[_i]" (dump_loc_name loc) in
   O.oiv "outcome_t _o;" ;
-  O.fiv "int _cond = %s;"
+  O.oiv "int _cond;" ;
+  begin match test.T.filter with
+  | None -> ()
+  | Some f ->
+      O.fiv "if (!%s) continue;"
+        (DC.funcall_prop "filter_cond" f dump_a_loc dump_a_addr)
+  end ;
+  O.fiv "_cond = %s;"
     (dump_cond_fun_call test dump_a_loc dump_a_addr)  ;
   let locs = U.get_displayed_locs test in
   A.LocSet.iter
@@ -633,6 +649,7 @@ let dump name test =
   dump_barrier_def () ;
   dump_ctx env test ;
   dump_threads tname env test ;
+  dump_filter env test ;
   dump_cond_fun env test ;
   dump_zyva tname env test ;
   dump_proc tname test ;

@@ -157,7 +157,7 @@ module Make
         } = t in
       let initenv = List.map (fun (x,(_,v)) -> x,v) init in
       let env = Generic.build_type_env init final filter locs in
-      let observed = Generic.observed final locs in
+      let observed = Generic.all_observed final filter locs in
       { T.init = initenv;
         info = info;
         code = comp_code observed env code;

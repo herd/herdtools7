@@ -66,6 +66,7 @@ with type v = A.V.v and type location = A.location
     | LV (loc,v) -> LV (finish_location f_reg loc, A.V.maybevToV v)
     | LL (l1,l2) -> LL (finish_location f_reg l1,finish_location f_reg l2)
 
+  let finish_prop f_reg = ConstrGen.map_prop (finish_atom f_reg)
   let finish_constr f_reg = ConstrGen.map_constr (finish_atom f_reg)
 
 
@@ -196,7 +197,7 @@ with type v = A.V.v and type location = A.location
       init = finish_state replace initial ;      
       filter = begin match test.filter with
       | None -> None
-      | Some _ -> Warn.fatal "Active filter in litmus" end;
+      | Some f -> Some (finish_prop replace f) end;
       condition = finish_constr replace final;
       locations = finish_locations replace locs;
     }
