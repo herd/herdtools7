@@ -83,7 +83,15 @@ module Make(C:Config)(E:Extra) = struct
     sprintf "%s*" (CType.dump ty),outname
 
   let dump_fun chan env globEnv envVolatile proc t =
-    let out x = fprintf chan x in
+(*
+    let pp_env =
+      String.concat "; "
+        (List.map
+           (fun (x,ty) -> sprintf "%s -> %s" x (CType.debug ty))
+           globEnv) in
+    eprintf "FUN: [%s]\n%!" pp_env ;
+*)
+    let out fmt = fprintf chan fmt in
     let input_defs =
       List.map (dump_global_def globEnv) t.CTarget.inputs
     and output_defs =

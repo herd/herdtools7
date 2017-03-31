@@ -196,7 +196,9 @@ module Top(O:Config)(Tar:Tar.S) = struct
     module Utils = Utils(A)(Lang)(Pseudo)
     module T = Utils.T
     module P = CGenParser_litmus.Make(OX)(Pseudo)(A)(LexParse)
-    module CComp = CCompile_litmus.Make(Compile.Default)(T)
+    module CComp =
+      CCompile_litmus.Make
+        (struct include Compile.Default let kernel = true end)(T)
     module Alloc = CSymbReg.Make(A)
 
     let have_rcu =

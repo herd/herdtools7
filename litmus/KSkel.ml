@@ -340,7 +340,15 @@ module Make
       let alloc tag =
         O.fi "r->%s = kmalloc(sizeof(r->%s[0])*sz,GFP_KERNEL);" tag tag ;
         O.fi "if (!r->%s) { free_ctx(r); return NULL; }" tag in
-      List.iter (fun (s,_) ->  alloc s) test.T.globals ;
+      List.iter
+        (fun (s,t) ->
+          alloc s ;
+          match t with
+          | CType.Base "spinlock_t" ->
+              O.fi
+                "for (int _i=0 ; _i < sz ; _i++) spin_lock_init(&r->%s[_i]);" s
+          | _ -> ())
+        test.T.globals ;
       iter_all_outs
         (fun proc (reg,t) ->
           let tag = A.Out.dump_out_reg proc reg in
@@ -359,8 +367,13 @@ module Make
       O.oi "for (int _i = 0 ; _i < sz ; _i++) {" ;
       List.iter
         (fun (s,t) ->
-          let v = A.find_in_state (A.Location_global s) test.T.init in
-          O.fii "%s = %s;" (dump_a_leftval s) (dump_a_v v))
+          let loc = A.Location_global s in
+          let v = A.find_in_state loc test.T.init in
+          let ty = U.find_type loc env in
+          match ty with
+          | CType.Base "spinlock_t" -> ()
+          | _ ->
+              O.fii "%s = %s;" (dump_a_leftval s) (dump_a_v v))
         test.T.globals ;
       List.iter
         (fun (proc,(_,(outs,_))) ->
@@ -410,10 +423,14 @@ let dump_threads tname env test =
   O.o "/* Litmus code */" ;
   O.o "/***************/" ;
   O.o "" ;
+  let global_env = U.select_global env in
+  let global_env =
+    List.map
+      (fun (x,ty) -> x,CType.strip_volatile ty)
+      global_env in
   List.iter
     (fun (proc,(out,(outregs,envVolatile))) ->
-      let myenv = U.select_proc proc env
-      and global_env = U.select_global env in
+      let myenv = U.select_proc proc env in
       Lang.dump_fun O.out myenv global_env envVolatile proc out ;
       O.f "static int thread%i(void *_p) {" proc ;
       O.oi "ctx_t *_a = (ctx_t *)_p;" ;

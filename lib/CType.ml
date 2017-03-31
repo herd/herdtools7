@@ -41,7 +41,7 @@ let rec  dump = function
 
 let rec  debug = function
   | Base s -> sprintf "<%s>" s
-  | Volatile (Base s) -> "volatile " ^ s
+  | Volatile (Base s) -> "volatile <" ^ s ^ ">"
   | Atomic (Base s) -> "_Atomic " ^ s
   | Volatile t -> sprintf "%s volatile" (debug t)
   | Atomic t -> sprintf "_Atomic (%s)" (debug t)

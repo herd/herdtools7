@@ -18,6 +18,7 @@ module type Config = sig
   val numeric_labels : bool
   val timeloop : int
   val barrier : Barrier.t
+  val kernel : bool
 end
 
 module Make
@@ -103,8 +104,12 @@ module Make
         (fun a ty k -> (a,ty)::k)
         env []
 
+    let tr_param_ty =
+      if O.kernel then CType.strip_volatile
+      else Misc.identity
+
      let string_of_params =
-       let f {CAst.param_name; param_ty; } = param_name,param_ty in
+       let f {CAst.param_name; param_ty; } = param_name,tr_param_ty param_ty in
        List.map f
 
     let comp_template final code =
@@ -157,12 +162,19 @@ module Make
         } = t in
       let initenv = List.map (fun (x,(_,v)) -> x,v) init in
       let env = Generic.build_type_env init final filter locs in
+      let globals = comp_globals env code in
+(* Add global types in environment as they in fact come from parameter
+   declaration *)
+      let env =
+        List.fold_left
+          (fun env (s,ty) -> A.LocMap.add (A.Location_global s) ty env)
+          env globals in
       let observed = Generic.all_observed final filter locs in
       { T.init = initenv;
         info = info;
         code = comp_code observed env code;
         condition = final; filter;
-        globals = comp_globals env code;
+        globals = globals;
         flocs = List.map fst locs;
         global_code = get_global_code code;
         src = t;
