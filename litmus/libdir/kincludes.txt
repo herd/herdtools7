@@ -11,6 +11,7 @@
 #include <linux/sched.h>
 #include <linux/wait.h>
 #include <linux/slab.h>
+#include <linux/random.h>
 
 typedef u64 count_t;
 #define PCTR "llu"
@@ -74,3 +75,17 @@ inline static u64 divBy1000(u64 n) {
   return q + ((r + 24) >> 10);
 }
 
+static int randmod(unsigned int m) {
+  unsigned int x ;
+  get_random_bytes(&x,sizeof(x));
+  return x % m ;
+}
+
+static void shuffle_array(int *t,int sz) {
+  for  (int k = 0 ; k < sz-1; k++) {
+    int j = k + randmod(sz-k);
+    int tmp = t[k] ;
+    t[k] = t[j];
+    t[j] = tmp;
+  }
+}

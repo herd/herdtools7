@@ -49,11 +49,13 @@ module KOption : sig
   val rcu : Rcu.t ref
   val pad : int ref
   val barrier : KBarrier.t ref
+  val affinity : KAffinity.t ref
 end = struct
   include Option
   let rcu = ref Rcu.No
   let pad = ref 3
   let barrier = ref KBarrier.User
+  let affinity = ref KAffinity.No
 end
 
 open KOption
@@ -87,6 +89,16 @@ let opts =
    PStride.parse "-stride" KOption.stride "stride for scanning memory" ;
    begin let module P = ParseTag.Make(KBarrier)  in
    P.parse "-barrier" KOption.barrier "synchronisation barrier style" end;
+(* Affinity *)
+   begin let module P = ParseTag.Make(KAffinity) in
+   P.parse "-affinity" KOption.affinity
+     "attach threads to logical processors" end ;
+   "-i",
+   Arg.Int
+     (fun i ->
+       let i = if i >=0 then i else 0 in
+       KOption.affinity := KAffinity.Incr i),
+   "<n> alias for -affinity incr<n>" ;
 (********)
 (* Misc *)
 (********)
@@ -149,6 +161,7 @@ let () =
         | No|Adapt -> st
         | St i ->  if i > 0 then st else No
       let barrier = !barrier
+      let affinity = !affinity
       let rcu = !rcu
       let pad = !pad
 (* tar stuff *)

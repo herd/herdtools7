@@ -31,6 +31,7 @@ module type Config = sig
   val avail : int option
   val stride : Stride.t
   val barrier : KBarrier.t
+  val affinity : KAffinity.t
 end
 
 module Make
@@ -237,13 +238,21 @@ module Make
       O.f "static unsigned int avail = %i;"
         (match Cfg.avail with None -> 0 | Some a -> a) ;
       O.o "static unsigned int ninst = 0;" ;
+      O.f "static int affincr = %i;"
+        (let open KAffinity in
+        match Cfg.affinity with
+        | No -> 0
+        | Incr i -> i
+        | Random -> -1) ;
       O.o "" ;
-      let module_param v = O.f "module_param(%s,uint,0644);" v in
+      let do_module_param t v = O.f "module_param(%s,%s,0644);" v t in
+      let module_param = do_module_param "uint" in
       module_param "nruns" ;
       module_param "size" ;
       module_param "stride" ;
       module_param "avail" ;
       module_param "ninst" ;
+      do_module_param "int" "affincr" ;
       O.o "" ;
       O.f "static char *name = %S;" tname ;
       O.o "module_param(name,charp,0444);" ;
@@ -275,6 +284,13 @@ module Make
       | Constant.Symbolic s -> sprintf "((int *)%s)" (dump_a_addr s)
 
     let dump_ctx env test =
+      O.o "/****************/" ;
+      O.o "/* Affinity     */" ;
+      O.o "/****************/" ;
+      O.o "" ;
+      O.o "static int *online;" ;
+      O.o "static int nonline;" ;
+      O.o "" ;
       O.o "/****************/" ;
       O.o "/* Test Context */" ;
       O.o "/****************/" ;
@@ -467,9 +483,6 @@ let dump_zyva tname env test =
   O.o "static outs_t *zyva(void) {" ;
   O.oi "ctx_t **c = ctx;" ;
   O.oi "outs_t *outs = NULL;" ;
-(*
-  O.oi "int cpu = -1;" ;
- *)
   O.oi "const int nth = ninst * nthreads;" ;
   O.o "" ;
   O.oi "for (int _k = 0 ; _k < nruns ; _k++) {" ;
@@ -487,12 +500,15 @@ let dump_zyva tname env test =
     O.oiii "_nth++;"
   done ;
   O.oii "}" ;
-(*
-  O.oii "for (int _t = 0 ; _t < nth ; _t++) {" ;
-  O.oiii "cpu = cpumask_next(cpu,cpu_online_mask);" ;
-  O.oiii "kthread_bind(th[_t],cpu);" ;
+  O.oii "if (affincr != 0) {" ;
+  O.oiii "int _idx=0, _idx0=0, _incr=affincr > 0 ? affincr : 1;" ;
+  O.oiii "if (affincr < 0) shuffle_array(online,nonline);" ;
+  O.oiii "for (int _t = 0 ; _t < nth ; _t++) {" ;
+  O.oiv "kthread_bind(th[_t],online[_idx]);" ;
+  O.oiv "_idx += _incr; ";
+  O.oiv "if (_idx >= nonline) _idx = ++_idx0;" ;
+  O.oiii "}" ;
   O.oii "}" ;
- *)
   O.oii "for (int _t = 0 ; _t < nth ; _t++) wake_up_process(th[_t]);" ;
   O.oii "wait_event_interruptible(*wq, atomic_read(&done) == nth);" ;
   O.oii "smp_mb();" ;
@@ -583,7 +599,7 @@ let dump_zyva tname env test =
 let dump_proc tname test =
   let tname = String.escaped tname in
   O.o "static int\nlitmus_proc_show(struct seq_file *m,void *v) {" ;
-  O.oi "if (ninst == 0 || ninst * nthreads > num_online_cpus()) {" ;
+  O.oi "if (ninst == 0 || ninst * nthreads > nonline) {" ;
   let fmt = "%s: skipped\\n" in
   O.fii "seq_printf(m,\"%s\",\"%s\");" fmt tname ;
   O.oii "return 0;" ;
@@ -613,14 +629,20 @@ let dump_init_exit test =
   O.o "static int __init" ;
   O.o "litmus_init(void) {" ;
   O.oi "int err=0;" ;
-  O.oi "int online = num_online_cpus ();" ;
   O.oi "struct proc_dir_entry *litmus_pde = proc_create(\"litmus\",0,NULL,&litmus_proc_fops);" ;
   O.oi "if (litmus_pde == NULL) { return -ENOMEM; }" ;
-  O.oi "if (avail == 0 || avail > online) avail = online;" ;
+  O.oi "nonline = num_online_cpus ();" ;
+  O.oi "online = kzalloc(sizeof(*online)*nonline,GFP_KERNEL);" ;
+  O.oi "if (online == NULL) goto clean_pde;" ;
+  O.oi "{" ;
+  O.oii "int cpu,_k;" ;
+  O.oii "_k=0; for_each_cpu(cpu,cpu_online_mask) online[_k++] = cpu;";
+  O.oi "}" ;
+  O.oi "if (avail == 0 || avail > nonline) avail = nonline;" ;
   O.oi "if (ninst == 0) ninst = avail / nthreads ;" ;
   O.o "" ;
   O.oi "ctx = kzalloc(sizeof(ctx[0])*ninst,GFP_KERNEL);" ;
-  O.oi "if (ctx == NULL) { err = -ENOMEM ; goto clean_pde; }" ;
+  O.oi "if (ctx == NULL) { err = -ENOMEM ; goto clean_online; }" ;
   O.oi "for (int _k=0 ; _k < ninst ; _k++) {" ;
   O.oii "ctx[_k] = alloc_ctx(size);" ;
   O.oii "if (ctx[_k] == NULL) { err = -ENOMEM; goto clean_ctx; }" ;
@@ -633,6 +655,8 @@ let dump_init_exit test =
   O.o "clean_ctx:" ;
   O.oi "for (int k=0 ; k < ninst ; k++) free_ctx(ctx[k]);" ;
   O.oi "kfree(ctx);" ;
+  O.o  "clean_online:" ;
+  O.oi "kfree(online);" ;
   O.o  "clean_pde:" ;
   O.oi "remove_proc_entry(\"litmus\",NULL);" ;
   O.oi "return err;" ;

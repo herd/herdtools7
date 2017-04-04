@@ -31,6 +31,7 @@ module type Config = sig
   val avail : int option
   val stride : Stride.t
   val barrier : KBarrier.t
+  val affinity : KAffinity.t
   val rcu : Rcu.t
   val tarname : string
   val pad : int
