@@ -541,8 +541,8 @@ let dump_zyva tname env test =
   O.oii "count_t pos=count_show(outs),neg=count_noshow(outs);" ;
   O.oii "char *msg = \"Sometimes\";" ;
   O.oii "u64 delta =  ktime_to_ms(ktime_sub(time_end, time_start));";
-  O.oii "u64 sec = delta / 1000;" ;
-  O.oii "u64 cent = ((delta % 1000) + 5) / 10;" ;
+  O.oii "u64 sec = divBy1000(delta);" ;
+  O.oii "u64 cent = divBy10(delta-1000*sec + 5);" ;
   let ok_expr =
     let open ConstrGen in
     match test.T.condition with
