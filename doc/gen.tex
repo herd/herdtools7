@@ -1203,8 +1203,7 @@ command-line options:
 \begin{description}
 \item[{\tt -v}] Be verbose, repeat to increase verbosity.
 \item[{\tt -version}]  Show version number and exit.
-\item[{\tt -arch (X86|PPC|ARM)}] Set architecture. Default is \texttt{PPC}.
-ARM support is experimental.
+\item[{\tt -arch (X86|PPC|ARM|AArch64|LISA|C)}] Set architecture. Default is \texttt{PPC}.
 \item[{\tt -o <dest>}]
 Redirect output to \opt{<dest>}.
 This option applies when tools generate a set of tests and
@@ -1231,6 +1230,10 @@ that are valid w.r.t. the uniproc model (see Sec.~\ref{defuniproc}).
 In mode  \opt{observe} there is no final condition:
 the \litmus{} and \herd{} tools will simply list the final
 values of locations.
+\item[{\tt -oneloc}] Do not reject tests that acts on unique location.
+Notice that conditions on such tests usually are not significant
+and should probaly be edited by hand. See also options
+\texttt{-cond unicond} and~ \texttt{-cond observe} above.
 \item [{\tt -optcond}] Optimise conditions by disregarding the values
 of loads that are neither the target of~Rf, nor the source of~Fr. This is
 the default.
