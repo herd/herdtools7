@@ -507,6 +507,7 @@ let dump_zyva tname env test =
   O.oiv "kthread_bind(th[_t],online[_idx]);" ;
   O.oiv "_idx += _incr; ";
   O.oiv "if (_idx >= nonline) _idx = ++_idx0;" ;
+  O.oiv "if (_idx >= nonline) _idx = _idx0 = 0;" ;
   O.oiii "}" ;
   O.oii "}" ;
   O.oii "for (int _t = 0 ; _t < nth ; _t++) wake_up_process(th[_t]);" ;
