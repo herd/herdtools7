@@ -33,6 +33,7 @@ module type Config = sig
   val barrier : KBarrier.t
   val affinity : KAffinity.t
   val rcu : Rcu.t
+  val expedited : bool
   val tarname : string
   val pad : int
 end
@@ -199,7 +200,15 @@ module Top(O:Config)(Tar:Tar.S) = struct
     module P = CGenParser_litmus.Make(OX)(Pseudo)(A)(LexParse)
     module CComp =
       CCompile_litmus.Make
-        (struct include Compile.Default let kernel = true end)(T)
+        (struct
+          include Compile.Default
+          let kernel = true
+          let rcu =
+            O.expedited &&
+            (match  O.rcu with
+            | Rcu.Yes | Rcu.Only -> true
+            | Rcu.No -> false)
+        end)(T)
     module Alloc = CSymbReg.Make(A)
 
     let have_rcu =

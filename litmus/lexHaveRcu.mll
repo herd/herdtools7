@@ -25,6 +25,22 @@ rule main = parse
 | _   { main lexbuf }
 | eof { false }
 
+and tr buff = parse
+| "synchronize_rcu"
+| "synchronize_rcu_expedited"
+  {
+   Buffer.add_string  buff "synchronize_rcu_expedited" ;
+   tr buff lexbuf
+  }
+| _ as lxm
+   {
+    Buffer.add_char buff lxm ;
+    tr buff lexbuf
+  }
+| eof { Buffer.contents buff }
+
 {
- let search body = main (Lexing.from_string body)
+  let search body = main (Lexing.from_string body)
+
+  let tr body = tr (Buffer.create 32) (Lexing.from_string body)
 }

@@ -15,5 +15,8 @@
 (****************************************************************************)
 
 
+(* Look for synchronize_rcu in text *)
 val search : string -> bool
-    
+
+(* Change synchronize_rcu to   synchronize_rcu_expedited *)
+val tr : string -> string

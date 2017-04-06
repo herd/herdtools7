@@ -327,7 +327,7 @@ end = struct
       module P = CGenParser_litmus.Make(O)(Pseudo)(A')(L)
       module Comp =
         CCompile_litmus.Make
-          (struct include O let kernel = false end)(Utils.T)
+          (struct include O let kernel = false let rcu = false end)(Utils.T)
 
       let compile =
         let allocate parsed =

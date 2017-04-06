@@ -27,6 +27,7 @@ module KOption : sig
 (* Generic setings *)
   type arg_triple =  string * Arg.spec * string
 
+  val argbool :  string -> bool ref -> string -> arg_triple
   val argint :  string -> int ref -> string -> arg_triple
   val arginto : int option ref -> Arg.spec   
   val argkm : string -> int ref -> string -> arg_triple
@@ -47,12 +48,14 @@ module KOption : sig
   val excl : string list ref
   val rename : string list ref
   val rcu : Rcu.t ref
+  val expedited : bool ref
   val pad : int ref
   val barrier : KBarrier.t ref
   val affinity : KAffinity.t ref
 end = struct
   include Option
   let rcu = ref Rcu.No
+  let expedited = ref true
   let pad = ref 3
   let barrier = ref KBarrier.User
   let affinity = ref KAffinity.No
@@ -108,6 +111,7 @@ let opts =
    CheckName.parse_rename rename ;
    begin let module P = ParseTag.Make(Rcu) in
    P.parse "-rcu" KOption.rcu "accept RCU tests or not" end ;
+   argbool "-expedited" KOption.expedited "translate syncronize_rcu to synchronize_expedited";
  ]
 
 
@@ -163,6 +167,7 @@ let () =
       let barrier = !barrier
       let affinity = !affinity
       let rcu = !rcu
+      let expedited = !expedited
       let pad = !pad
 (* tar stuff *)
       let tarname = KOption.get_tar ()

@@ -19,6 +19,7 @@ module type Config = sig
   val timeloop : int
   val barrier : Barrier.t
   val kernel : bool
+  val rcu : bool
 end
 
 module Make
@@ -114,10 +115,14 @@ module Make
 
     let comp_template final code =
       let inputs = string_of_params code.CAst.params in
+      let body =
+        let body =  code.CAst.body in
+        if O.rcu then  LexHaveRcu.tr body
+        else body in
       {
         CTarget.inputs ;
         finals=final ;
-        code = code.CAst.body; }
+        code=body; }
 
 
     let comp_code obs env procs =
