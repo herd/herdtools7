@@ -64,7 +64,6 @@ module Make(C:AutoConf.S) : S with module A = C.A
     = struct
       open C
       module A = A
-      module E = A.E
       module R = A.R
       module L = A.L
 

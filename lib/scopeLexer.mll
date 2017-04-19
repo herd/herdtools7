@@ -19,8 +19,6 @@ module Make(O:LexUtils.Config) = struct
 open Lexing
 open ScopeParser
 open LexMisc
-module LU = LexUtils.Make(O)
-
 }
 
 
