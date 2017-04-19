@@ -52,6 +52,7 @@ module KOption : sig
   val pad : int ref
   val barrier : KBarrier.t ref
   val affinity : KAffinity.t ref
+  val ccopts : string list ref
 end = struct
   include Option
   let rcu = ref Rcu.No
@@ -59,6 +60,7 @@ end = struct
   let pad = ref 3
   let barrier = ref KBarrier.User
   let affinity = ref KAffinity.No
+  let ccopts = ref []
 end
 
 open KOption
@@ -105,6 +107,9 @@ let opts =
 (********)
 (* Misc *)
 (********)
+(* Compilation options *)
+   "-ccopts", Arg.String (fun s -> KOption.ccopts := !KOption.ccopts @ [s]),
+   "<string> Additional option for C compiler";
 (* Change input *)
    CheckName.parse_names names ;
    CheckName.parse_excl excl ;
@@ -169,6 +174,7 @@ let () =
       let rcu = !rcu
       let expedited = !expedited
       let pad = !pad
+      let ccopts = !ccopts
 (* tar stuff *)
       let tarname = KOption.get_tar ()
     end in

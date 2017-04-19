@@ -36,6 +36,7 @@ module type Config = sig
   val expedited : bool
   val tarname : string
   val pad : int
+  val ccopts : string list
 end
 
 module Top(O:Config)(Tar:Tar.S) = struct
@@ -270,7 +271,8 @@ module Top(O:Config)(Tar:Tar.S) = struct
       (fun chan ->
         let module Out =
           Indent.Make(struct let hexa = O.hexa let out = chan end) in
-        Out.o "ccflags-y += -std=gnu99";
+        Out.f "ccflags-y += %s"
+          (String.concat " " ("-std=gnu99"::O.ccopts)) ;
         List.iter (fun (src,_) -> Out.f "obj-m += %s.o" src) srcs ;
         Out.o "" ;
         Out.o "all:" ;
