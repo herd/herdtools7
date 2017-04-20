@@ -26,6 +26,7 @@ let prog =
 
 let args = ref []
 let names = ref []
+let excl = ref []
 let uniq = ref false
 let neg = ref false
 
@@ -33,6 +34,8 @@ let () =
   Arg.parse
     ["-names", Arg.String (fun n -> names := n :: !names),
      "<file> list of names (cumulate when repeated)";
+     "-excl", Arg.String (fun n -> excl := n :: !excl),
+     "<file>  names to exclude (cumulate when repeated)";
      "-u", Arg.Set uniq, " one source per matching sources";
      "-neg", Arg.Set neg, " find sources whose names are not given";]
     (fun s -> args := s :: !args)
@@ -43,12 +46,19 @@ let tests = !args
 let uniq = !uniq
 let neg = !neg
 
+let excl =
+  ReadNames.from_files !excl
+    (fun name -> StringSet.add name) StringSet.empty
+
 let names =
   ReadNames.from_files !names
-    (fun name -> StringMap.add name []) StringMap.empty
+    (fun name k ->
+      if StringSet.mem name excl then k
+      else StringMap.add name [] k)
+    StringMap.empty
 
 let from_file name = name,Names.from_fname name
-  
+
 (* Positive version: find tests with name in k *)
 let do_test_pos src k =
   try
@@ -87,7 +97,7 @@ let names =
 
 
 let () =
-  StringMap.iter 
+  StringMap.iter
     (fun _name xs -> match xs with
     | []-> ()
     | src::_ ->
@@ -96,4 +106,3 @@ let () =
         else
           Misc.rev_iter (printf "%s\n") xs)
     names
-    
