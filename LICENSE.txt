@@ -1,3 +1,11 @@
+NOTE
+
+This license applies to all files in the distribution, except as stated
+below:
+
+* The file herd/libdir/aarch64.cat, which is courtesy of ARM Ltd.
+
+----------------------------------------
 
 CeCILL-B FREE SOFTWARE LICENSE AGREEMENT
 
