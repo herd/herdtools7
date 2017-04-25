@@ -1,3 +1,4 @@
+  * New ARMv8 model
   * klitmus tool
 7.44
   * herd: add atomic_compare_exchange_..._explicit in C parser.
