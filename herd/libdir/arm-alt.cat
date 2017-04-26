@@ -1,0 +1,48 @@
+ARM
+
+(* Alternative model for ARM, ie with MR(po-loc) ommited from ppo *)
+include "cos.cat"
+
+(* Uniproc *)
+acyclic po-loc | rf | fr | co as uniproc
+
+(* Atomic *)
+empty rmw & (fre;coe) as atomic
+
+(* Utilities *)
+let dd = addr | data
+let rdw = po-loc & (fre;rfe)
+let detour = po-loc & (coe ; rfe)
+let addrpo = addr;po
+
+
+(*******)
+(* ppo *)
+(*******)
+
+include "armfences.cat"
+
+(* Initial value *)
+let ci0 = ctrlisb | detour
+let ii0 = dd | rfi | rdw
+let cc0 = dd | ctrl | addrpo | (M*W) & po-loc
+let ic0 = 0
+
+include "ppo.cat"
+
+
+(**********)
+(* fences *)
+(**********)
+
+(* ARM *)
+let WW = W * W
+let dmb.st=dmb.st & WW
+let dsb.st=dsb.st & WW
+
+
+(* Common, all arm barriers are strong *)
+let strong = dmb|dsb|dmb.st|dsb.st
+let light = 0
+
+include "ppc-checks.cat"
