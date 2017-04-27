@@ -1,91 +1,74 @@
-(*
- * The ARMv8 Application Level Memory Model.
- *
- * See section B2.3 of the ARMv8 ARM:
- *   https://developer.arm.com/docs/ddi0487/latest/arm-architecture-reference-manual-armv8-for-armv8-a-architecture-profile
- *
- * Copyright (C) 2016, ARM Ltd.
- *
- * Author: Will Deacon <will.deacon@arm.com>
- *)
+"AArch64"
 
-"ARMv8 AArch64"
-
-(*
- * Include the cos.cat file shipped with herd.
- * This builds the co relation as a total order over writes to the same
- * location and then consequently defines the fr relation using co and
- * rf.
- *)
 include "cos.cat"
 
-(*
- * Include aarch64fences.cat so that barriers show up in generated diagrams.
- *)
+(* Uniproc *)
+acyclic po-loc | rf | fr | co as uniproc
+
+(* Utilities *)
+let dd = addr | data
+let rdw = po-loc & (fre;rfe)
+let detour = po-loc & (coe ; rfe)
+let addrpo = addr;po
+let com = fr | co | rf
+
+empty rmw & (fre;coe) as atomic
+
 include "aarch64fences.cat"
 
-(*
- * As a restriction of the model, all observers are limited to the same
- * inner-shareable domain. Consequently, the ISH, OSH and SY barrier
- * options are all equivalent to each other.
- *)
-let dsb.full = DSB.ISH | DSB.OSH | DSB.SY
-let dsb.ld = DSB.ISHLD | DSB.OSHLD | DSB.LD
-let dsb.st = DSB.ISHST | DSB.OSHST | DSB.ST
+let ci0 = ctrlisb | detour
+let ii0 = dd | rfi | rdw
+let cc0 = dd | ctrl | addrpo
+let ic0 = 0
 
-(*
- * A further restriction is that standard litmus tests are unable to
- * distinguish between DMB and DSB instructions, so the model treats
- * them as equivalent to each other.
- *)
-let dmb.full = DMB.ISH | DMB.OSH | DMB.SY | dsb.full
-let dmb.ld = DMB.ISHLD | DMB.OSHLD | DMB.LD | dsb.ld
-let dmb.st = DMB.ISHST | DMB.OSHST | DMB.ST | dsb.st
+include "ppo.cat"
 
-(* Flag any use of shareability options, due to the restrictions above. *)
-flag ~empty (dmb.full | dmb.ld | dmb.st) \
-	    (DMB.SY | DMB.LD | DMB.ST | DSB.SY | DSB.LD | DSB.ST)
-	    as Assuming-common-inner-shareable-domain
+let acq = (A * M) & po
+let rel = (M * L) & po
 
-(* Coherence-after *)
-let ca = fr | co
+let ppo = ppo | acq
 
-(* Observed-by *)
-let obs = rfe | fre | coe
+let fence = dmb.sy & (M * M)
+	    | dsb.sy & (M * M)
+	    | dmb.st & (W * W)
+	    | dsb.st & (W * W)
+	    | dmb.ld & (R * M)
+	    | dsb.ld & (R * M)
 
-(* Dependency-ordered-before *)
-let dob = addr | data
-	| ctrl; [W]
-	| (ctrl | (addr; po)); [ISB]; po; [R]
-	| addr; po; [W]
-	| (ctrl | data); coi
-	| (addr | data); rfi
+let hb = (R * M) & fence | rfe | ppo
 
-(* Atomic-ordered-before *)
-let aob = rmw
-	| rmw; rfi
+acyclic hb as thin_air
 
-(* Barrier-ordered-before *)
-let bob = po; [dmb.full]; po
-	| [L]; po; [A]
-	| [R]; po; [dmb.ld]; po
-	| [A | Q]; po
-	| [W]; po; [dmb.st]; po; [W]
-	| po; [L]
-	| po; [L]; coi
+(* Prop is more complex... *)
 
-(* Ordered-before *)
-let rec ob = obs
-	| dob
-	| aob
-	| bob
-	| ob; ob
+let B = hb*
 
-(* Internal visibility requirement *)
-acyclic po-loc | ca | rf as internal
+let prop =
+  com+;(dmb.sy|dsb.sy);B // Strongest fence, no big deal
+| coe;((dmb.st|dsb.st)&(W*W));B
+| (rfe|coe|(co;rfe))?;rel
+| fence;B
 
-(* External visibility requirement *)
-irreflexive ob as external
 
-(* Atomic: Basic LDXR/STXR constraint to forbid intervening writes. *)
-empty rmw & (fre; coe) as atomic
+
+let come = com & ext
+
+let observer =
+  rfe;(ppo|fence);come
+| come;((L*A&po)|dmb.sy);come
+| coe;(rfe;(dmb.sy));come
+| come;rel;come
+| coe;(rfe;rel);come
+| come;fence;come
+
+let OBS = prop+;observer
+irreflexive OBS as observation
+
+let prop_al = (L * A) & (rf | po)
+	    | (A * L) & fr
+            | (L * L) & co
+
+let xx = (W * W) & (X * X) & po
+
+
+acyclic prop | (co & (X * X)) | xx | (prop_al;hb*) as propagation
