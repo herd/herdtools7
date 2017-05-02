@@ -1,3 +1,4 @@
+7.45
   * New ARMv8 model
   * klitmus tool
 7.44
