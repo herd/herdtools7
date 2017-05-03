@@ -34,9 +34,9 @@ open AArch64Base
 %token SXTW
 
 /* Instructions */
-%token B BEQ BNE CBZ CBNZ
+%token B BEQ BNE CBZ CBNZ EQ NE
 %token LDR LDP LDNP STP STNP LDRB LDRH STR STRB STRH LDAR LDAPR LDXR LDAXR STLR STXR STLXR CMP
-%token MOV ADD EOR SUBS AND
+%token MOV ADD EOR SUBS AND CSEL
 %token DMB DSB ISB
 %token SY ST LD
 %token OSH OSHST OSHLD
@@ -70,13 +70,13 @@ iol_list :
 instr_option_list :
   | instr_option
       {[$1]}
-  | instr_option PIPE instr_option_list 
+  | instr_option PIPE instr_option_list
       {$1::$3}
 
 instr_option_seq :
   | instr_option
       {[$1]}
-  | instr_option SEMI instr_option_seq 
+  | instr_option SEMI instr_option_seq
       {$1::$3}
 
 instr_option :
@@ -127,6 +127,10 @@ stp_instr:
   { (fun v r1 r2 r3 kr -> I_STP (TT,v,r1,r2,r3,kr)) }
 | STNP
   { (fun v r1 r2 r3 kr -> I_STP (NT,v,r1,r2,r3,kr)) }
+
+cond:
+| EQ { EQ }
+| NE { NE }
 
 instr:
 /* Branch */
@@ -196,6 +200,11 @@ instr:
   { I_OP3 (V32,SUBS,ZR,$2,K $4) }
 | CMP xreg COMMA k
   { I_OP3 (V64,SUBS,ZR,$2,K $4) }
+/* Misc */
+| CSEL xreg COMMA  xreg COMMA  xreg COMMA cond
+  { I_CSEL (V64,$2,$4,$6,$8) }
+| CSEL wreg COMMA  wreg COMMA  wreg COMMA cond
+  { I_CSEL (V32,$2,$4,$6,$8) }
 /* Fences */
 | DMB fenceopt
   { let d,t = $2 in I_FENCE (DMB (d,t)) }

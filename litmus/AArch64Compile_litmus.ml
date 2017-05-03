@@ -355,8 +355,18 @@ module Make(V:Constant.S)(C:Config) =
     | I_OP3 (v,SUBS,ZR,r,K i) ->  cmpk v r i::k
     | I_OP3 (v,SUBS,ZR,r2,RV (v3,r3)) when v=v3->  cmp v r2 r3::k
     | I_OP3 (v,op,r1,r2,kr) ->  op3 v op r1 r2 kr::k
+(* Fence *)
     | I_FENCE f -> fence f::k
-
+(* Conditional selection *)
+    | I_CSEL (v,r1,r2,r3,c) ->
+        let memo,t = match v with
+        | V32 -> "csel ^wo0,^wi0,^wi1," ^ pp_cond c,word
+        | V64 -> "csel ^o0,^i0,^i1," ^ pp_cond c,quad in
+        {
+         empty_ins with
+         memo = memo; inputs=[r2;r3;]; outputs=[r1;];
+         reg_env=[r1,t; r2,t; r3,t;]; cond=true;
+        }::k
 
     let no_tr lbl = lbl
     let branch_neq r i lab k = cmpk V32 r i::bcc no_tr NE lab::k

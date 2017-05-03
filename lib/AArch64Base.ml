@@ -51,7 +51,7 @@ let gprs =
   R20; R21; R22; R23 ;
   R24; R25; R26; R27 ;
   R28; R29; R30 ;
-] 
+]
 
 let xgprs =
 [
@@ -172,12 +172,12 @@ let fold_barrier_option more f k =
     fold_type (fun t k -> f SY t k) k
 
 let do_fold_dmb_dsb more f k =
-  let k = 
+  let k =
     fold_barrier_option more
       (fun d t k -> f (DMB (d,t)) k)
       k in
   if more then
-    let k = 
+    let k =
       fold_barrier_option more
         (fun d t k -> f (DSB (d,t)) k)
         k in
@@ -188,7 +188,7 @@ let fold_barrier more f k =
   let k = do_fold_dmb_dsb more f k in
   let k = f ISB k in
   k
-  
+
 let pp_option d t = match d,t with
 | SY,FULL    -> pp_domain d
 | SY,(LD|ST) -> pp_type t
@@ -260,7 +260,8 @@ type 'k kinstruction =
   | I_OP3 of variant * op * reg * reg * 'k kr
 (* Barrier *)
   | I_FENCE of barrier
-
+(* Conditional select *)
+  | I_CSEL of variant * reg *reg * reg * condition
 type instruction = int kinstruction
 type parsedInstruction = MetaConst.k kinstruction
 
@@ -385,14 +386,16 @@ let do_pp_instruction m =
 (* Barrier *)
   | I_FENCE b ->
       pp_barrier b
-
+(* Conditional select *)
+  | I_CSEL (v,r1,r2,r3,c) ->
+      pp_rrr "csel" v r1 r2 r3 ^ "," ^ pp_cond c
 
 let pp_instruction m =
-  do_pp_instruction 
+  do_pp_instruction
     {pp_k = pp_k m}
 
 let dump_instruction =
-  do_pp_instruction 
+  do_pp_instruction
     {pp_k = (fun v -> "#" ^ string_of_int v)}
 
 (****************************)
@@ -424,11 +427,14 @@ let fold_regs (f_regs,f_sregs) =
   | I_OP3 (_,_,r1,r2,kr)
   | I_LDRBH (_,r1,r2,kr) | I_STRBH (_,r1,r2,kr)
     -> fold_reg r1 (fold_reg r2 (fold_kr kr c))
+  | I_CSEL (_,r1,r2,r3,_)
   | I_STXR (_,_,r1,r2,r3)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_LDP (_,_,r1,r2,r3,kr)
   | I_STP (_,_,r1,r2,r3,kr)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 (fold_kr kr c)))
+
+
 
 let map_regs f_reg f_symb =
 
@@ -478,6 +484,9 @@ let map_regs f_reg f_symb =
       I_SXTW (map_reg r1,map_reg r2)
   | I_OP3 (v,op,r1,r2,kr) ->
       I_OP3 (v,op,map_reg r1,map_reg r2,map_kr kr)
+(* Conditinal select *)
+  | I_CSEL (v,r1,r2,r3,c) ->
+      I_CSEL (v,map_reg r1,map_reg r2,map_reg r3,c)
 
 (* No addresses burried in ARM code *)
 let fold_addrs _f c _ins = c
@@ -509,6 +518,7 @@ let get_next = function
   | I_SXTW _
   | I_OP3 _
   | I_FENCE _
+  | I_CSEL _
       -> [Label.Next;]
 
 include Pseudo.Make
@@ -517,7 +527,7 @@ include Pseudo.Make
       type pins = parsedInstruction
       type reg_arg = reg
 
-      let k_tr = MetaConst.as_int            
+      let k_tr = MetaConst.as_int
       let kr_tr = function
         | K i -> K (k_tr i)
         | RV _ as kr -> kr
@@ -532,6 +542,7 @@ include Pseudo.Make
         | I_STXR _
         | I_SXTW _
         | I_FENCE _
+        | I_CSEL _
             as keep -> keep
         | I_LDR (v,r1,r2,kr) -> I_LDR (v,r1,r2,kr_tr kr)
         | I_LDP (t,v,r1,r2,r3,kr) -> I_LDP (t,v,r1,r2,r3,kr_tr kr)
@@ -557,6 +568,7 @@ include Pseudo.Make
         | I_SXTW _
         | I_OP3 _
         | I_FENCE _
+        | I_CSEL _
           -> 0
 
       let fold_labels k f = function

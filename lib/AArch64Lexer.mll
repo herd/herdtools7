@@ -25,6 +25,8 @@ module LU = LexUtils.Make(O)
 let check_name name = match name with
 (* Branch *)
 | "b"  | "B"  -> B
+| "ne"  | "NE"  -> NE
+| "eq"  | "EQ"  -> EQ
 | "b.eq" | "B.EQ" -> BEQ
 | "b.ne" | "B.NE" -> BNE
 | "cbz"  | "CBZ" -> CBZ
@@ -55,6 +57,8 @@ let check_name name = match name with
 | "and"|"AND" -> AND
 | "subs"|"SUBS" -> ADD
 | "cmp"|"CMP" -> CMP
+(* Misc *)
+| "csel"|"CSEL" -> CSEL
 (* Fences *)
 | "dmb"|"DMB" -> DMB
 | "dsb"|"DSB" -> DSB
