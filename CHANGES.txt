@@ -1,3 +1,4 @@
+  * herd, global behaviour for 'show' (no purge of state show component at procedure return)
   * Add AArch64 instruction csel
 7.45
   * New ARMv8 model

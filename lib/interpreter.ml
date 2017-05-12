@@ -103,7 +103,7 @@ module Make
           out_show : S.rel_pp Lazy.t ;
           out_skipped : StringSet.t ;
           out_flags : Flag.Set.t ;
-          out_bell_info :  BellModel.info ;       
+          out_bell_info :  BellModel.info ;
         }
 
 
@@ -125,7 +125,7 @@ module Make
       if _dbg then match O.bell_fname with
       | None ->  eprintf "Interpret has no bell file\n"
       | Some fname -> eprintf "Interpret bell file is %s\n" fname
-          
+
     let next_id =
       let id = ref 0 in
       fun () -> let r = !id in id := r+1 ; r
@@ -385,7 +385,7 @@ module Make
           raise Misc.Exit) (* Silent failure *)
         fmt
 
-    let warn loc fmt =      
+    let warn loc fmt =
       ksprintf
         (fun msg ->
           Warn.warn_always "%a: %s" TxtLoc.pp loc msg)
@@ -474,7 +474,7 @@ module Make
 
     type init_env =
         E.EventSet.t Lazy.t Misc.Simple.bds *
-          E.EventRel.t Lazy.t Misc.Simple.bds 
+          E.EventRel.t Lazy.t Misc.Simple.bds
 
     let init_env_empty = [],[]
 
@@ -522,7 +522,7 @@ module Make
         out_show : S.event_rel Misc.Simple.bds Lazy.t ;
         out_skipped : StringSet.t ;
         out_flags : Flag.Set.t ;
-        out_bell_info :  BellModel.info ;       
+        out_bell_info :  BellModel.info ;
       }
 
 (* Remove transitive edges, except if instructed not to *)
@@ -690,7 +690,7 @@ module Make
 
 
     let empty_rel = Rel E.EventRel.empty
-        
+
     let error_typ silent loc t0 t1  =
       error silent loc"type %s expected, %s found" (pp_typ t0) (pp_typ t1)
 
@@ -832,7 +832,7 @@ module Make
                    (sprintf
                       "value %s is not a relation, found %s"
                       tag  (pp_type_val v)))
-                
+
         with Not_found ->
           raise
             (PrimError (sprintf "cannot find scope instance %s (the litmus test might be missing a scope tree declaration)" tag))
@@ -852,7 +852,7 @@ module Make
                    (sprintf
                       "value %s is not a set of events, found %s"
                       x  (pp_type_val v)))
-                
+
         with Not_found ->
           raise
             (PrimError (sprintf "cannot find event set %s" x))
@@ -861,7 +861,7 @@ module Make
 
     and fromto ks arg = match arg with
     | V.Set es -> V.Rel (U.fromto ks.po es)
-    | _ -> arg_mismatch () 
+    | _ -> arg_mismatch ()
 
     and tag2fenced env arg = match arg with
     | V.Tag (_,tag) ->
@@ -884,8 +884,8 @@ module Make
           | V.Empty -> V.Rel E.EventRel.empty
           | V.Unv -> assert false (* jade: we assert false when all the events in the execution bear the tag tag *)
           | V.Set bevts ->
-              let filter (x, y) = 
-                E.EventSet.exists 
+              let filter (x, y) =
+                E.EventSet.exists
                   (fun b -> E.EventRel.mem (x,b) po && E.EventRel.mem (b,y) po)
                   bevts in
               V.Rel (E.EventRel.filter filter fromto)
@@ -937,7 +937,7 @@ module Make
          "fail",fail;
        ]
 
-        
+
 (***************)
 (* Interpreter *)
 (***************)
@@ -976,7 +976,7 @@ module Make
             | Rel r ->
                 Rel
                   (E.EventRel.union
-                     (E.EventRel.transitive_closure r) 
+                     (E.EventRel.transitive_closure r)
                      (Lazy.force env.EV.ks.id))
             | v -> error_rel env.EV.silent (get_loc e) v
             end
@@ -1080,7 +1080,7 @@ module Make
               E.EventRel.filter
                 (fun (e1,e2) -> f1 e1 && f2 e2)
                 r in
-            Rel r              
+            Rel r
         | Op (loc,Inter,[e1;e2;]) -> (* Binary notation kept in parser *)
             let loc1,v1 = eval_loc env e1
             and loc2,v2 = eval_loc env e2 in
@@ -1368,7 +1368,7 @@ module Make
               error env.EV.silent loc "Calling primitive %s" name
           end
       | _ -> error env.EV.silent loc "closure or primitive expected"
-            
+
       and eval_fun is_rec env loc pat body name fvs =
         if O.debug && O.verbose > 1 then begin
           let sz =
@@ -1558,8 +1558,7 @@ module Make
           env,(v::vs) in
 
 (* Showing bound variables, (-doshow option) *)
-
-      let find_show_rel ks env x =
+    let find_show_rel ks env x =
 
         let as_rel v = match v with
         | Rel r -> r
@@ -1605,10 +1604,10 @@ module Make
             try
               if name = BellName.scopes then
                 let bell_info = BellModel.add_rel name tags st.bell_info in
-                { st with bell_info;}                  
+                { st with bell_info;}
               else if name = BellName.regions then
                 let bell_info = BellModel.add_regions tags st.bell_info in
-                { st with bell_info;}              
+                { st with bell_info;}
               else st
             with BellModel.Defined ->
               error st.silent loc "second definition of bell enum %s" name
@@ -1620,7 +1619,7 @@ module Make
         if O.bell then
           let fun_as_rel f_order loc st id_tags id_fun =
 (* This function evaluate all calls to id_fun on all tags in id_tags *)
-            let env = from_st st in                  
+            let env = from_st st in
             let cat_fun =
               try find_env_loc TxtLoc.none env id_fun
               with _ -> assert false in
@@ -1638,7 +1637,7 @@ module Make
                     id_tags (pp_typ (type_val v)) in
             let order =
               ValSet.fold
-                (fun tag order ->                        
+                (fun tag order ->
                   let tgt =
                     try
                       eval_app loc { env with EV.silent=true;} cat_fun tag
@@ -1723,7 +1722,7 @@ module Make
           let pp = match pos with
           | Pos _ -> "???"
           | Txt txt -> txt in
-          let v = eval_rel (from_st st) e in          
+          let v = eval_rel (from_st st) e in
           let cy = E.EventRel.get_cycle v in
           U.pp_failure test st.ks.conc
             (sprintf "Failure of '%s'" pp)
@@ -1758,7 +1757,7 @@ module Make
                (match tst with
                | Acyclic | Irreflexive -> "Cycle"
                | TestEmpty -> "Relation")
-               pp)            
+               pp)
             (let k = show_to_vbpp st in
             (tag,cy)::k) in
 
@@ -1778,6 +1777,11 @@ module Make
             kont st res
         | Show (_,xs) when not O.bell ->
             if O.showsome then
+              let xs =
+                List.filter
+                  (fun x ->
+                    try ignore (StringMap.find x st.env.vals); true
+                    with Not_found -> false) xs in
               let show = lazy begin
                 List.fold_left
                   (fun show x ->
@@ -1812,7 +1816,7 @@ module Make
             let st = doshow bds st in
             let st = check_bell_order bds st in
             kont st res
-        | Rec (loc,bds,testo) ->        
+        | Rec (loc,bds,testo) ->
             let env =
               match
                 env_rec
@@ -1851,7 +1855,7 @@ module Make
             end
 
         | InsMatch (loc,e,cls,d) ->
-            let v = eval_st st e in 
+            let v = eval_st st e in
             begin match v with
             | V.Tag (_,s) ->
                 let rec match_rec = function
@@ -1895,8 +1899,7 @@ module Make
             if skip && not O.strictskip then (* won't call *)
               kont st res
             else (* will call *)
-              let env0 = from_st st
-              and show0 = st.show in
+              let env0 = from_st st in
               let p = protect_call st (eval_proc loc env0) name in
               let env1 =
                 protect_call st
@@ -1907,7 +1910,7 @@ module Make
                 let pname = match tname with
                 | Some _ -> tname
                 | None -> Some name in
-                let tval = 
+                let tval =
                   let benv = env1 in
                   run { (push_loc st (loc,pname)) with env=benv; } p.proc_body
                     (fun x -> x)
@@ -1922,11 +1925,11 @@ module Make
                 let pname = match tname with
                 | Some _ -> tname
                 | None -> Some name in
-                let st = push_loc st (loc,pname) in            
+                let st = push_loc st (loc,pname) in
                 run { st with env = env1; } p.proc_body kfail
                   (fun st_call res ->
                     let st_call = pop_loc st_call in
-                    kont { st_call with env = st.env ; show=show0;} res)
+                    kont { st_call with env = st.env ;} res) (* Note, show is preserved *)
                   res
         | Enum (loc,name,xs) ->
             let env = st.env in
@@ -1996,13 +1999,13 @@ module Make
               error st.silent loc
                 "event type %s is not part of legal {%s}\n"
                 x (StringSet.pp_str "," Misc.identity BellName.all_sets) ;
-	    let vs = List.map (eval_loc (from_st st)) es in
-	    let event_sets =
+            let vs = List.map (eval_loc (from_st st)) es in
+            let event_sets =
               List.map
-                (fun (loc,v) -> match v with 
-	        | ValSet(TTag _,elts) -> 
-                    let tags = 
-	              ValSet.fold
+                (fun (loc,v) -> match v with
+                | ValSet(TTag _,elts) ->
+                    let tags =
+                      ValSet.fold
                         (fun elt k -> as_tag elt::k)
                         elts [] in
                     StringSet.of_list tags
@@ -2015,9 +2018,9 @@ module Make
             let bell_info =
               BellModel.add_events x event_sets st.bell_info in
             let bell_info =
-              if def then 
+              if def then
                 let defarg =
-                  List.map2 
+                  List.map2
                     (fun ss e -> match StringSet.as_singleton ss with
                     | None ->
                         error st.silent (get_loc e) "ambiguous default declaration"
@@ -2027,7 +2030,7 @@ module Make
                   error st.silent loc "second definition of default for %s" x
               else bell_info in
               let st = { st with bell_info;} in
-	      kont st res
+              kont st res
         | Events _ ->
             assert (not O.bell) ;
             kont st res (* Ignore bell constructs when executing model *)
@@ -2043,13 +2046,13 @@ module Make
                   (st -> 'a -> 'a) -> 'a -> 'a =
                     fun st (loc,_,t,e,name as tst) test_type kfail kont res ->
                       let skip = skip_this_check name in
-                      let cycle = cycle_this_check name in                      
+                      let cycle = cycle_this_check name in
                       if O.debug &&  skip then warn loc "skipping check: %s" (Misc.as_some name) ;
                       if
                         O.strictskip || not skip || cycle
                       then
                         let ok = eval_test (check_through test_type) (from_st st) t e in
-                        if 
+                        if
                           cycle &&
                           begin match ok,t with
                           | (false,Yes _)
@@ -2059,9 +2062,9 @@ module Make
                           end
                         then show_cycle st tst ;
                         if ok then
-                          match test_type with 
+                          match test_type with
                           | Check|UndefinedUnless -> kont st res
-                          | Flagged -> 
+                          | Flagged ->
                               begin match name with
                               | None ->
                                   warn loc "this flagged test does not have a name" ;
@@ -2103,7 +2106,7 @@ module Make
                   let module P =
                     ParseModel.Make
                       (struct
-                        include LexUtils.Default 
+                        include LexUtils.Default
                         let libfind = O.libfind
                       end) in
                   let (_,_,iprog) =
@@ -2141,9 +2144,9 @@ module Make
                 {env=m; show=show; skipped=StringSet.empty;
                  silent=false; flags=Flag.Set.empty;
                  ks; bell_info=BellModel.empty_info;
-                 loc=[]} in        
+                 loc=[]} in
 
-              let kont st res =  kont (st2out st) res in          
+              let kont st res =  kont (st2out st) res in
 
               let just_run st res = run st mprog kfail kont res in
               do_include TxtLoc.none "stdlib.cat" st kfail
