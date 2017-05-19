@@ -196,10 +196,10 @@ instr:
   { I_OP3 (V64,SUBS,$2,$4,$6) }
 | SUBS wreg COMMA wreg COMMA kwr
   { I_OP3 (V32,SUBS,$2,$4,$6) }
-| CMP wreg COMMA k
-  { I_OP3 (V32,SUBS,ZR,$2,K $4) }
-| CMP xreg COMMA k
-  { I_OP3 (V64,SUBS,ZR,$2,K $4) }
+| CMP wreg COMMA kwr
+  { I_OP3 (V32,SUBS,ZR,$2,$4) }
+| CMP xreg COMMA kr
+  { I_OP3 (V64,SUBS,ZR,$2,$4) }
 /* Misc */
 | CSEL xreg COMMA  xreg COMMA  xreg COMMA cond
   { I_CSEL (V64,$2,$4,$6,$8) }

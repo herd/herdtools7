@@ -34,6 +34,21 @@ module Make(V:Constant.S)(C:Config) =
 
     let stable_regs _ins = A.RegSet.empty
 
+
+(* Handle zero reg *)
+    let arg1 ppz fmt r = match r with
+      | ZR -> [],ppz
+      | _  -> [r],fmt "0"
+
+    let args2 ppz fmt r1 r2 = match r1,r2 with
+    | ZR,ZR -> [],ppz,[],ppz
+    | ZR,_  -> [],ppz,[r2],fmt "0"
+    | _,ZR  -> [r1],fmt "0",[],ppz
+    | _,_ -> [r1],fmt "0",[r2],fmt "1"
+
+    let add_type t rs = List.map (fun r -> r,t) rs
+    let add_w = add_type word
+    let add_q = add_type quad
 (************************)
 (* Template compilation *)
 (************************)
@@ -275,16 +290,20 @@ module Make(V:Constant.S)(C:Config) =
         { empty_ins with
           memo = sprintf "cmp ^i0,#%i" k ;
           inputs = [r;]; reg_env=[r,quad;];}
-      
+
     let cmp v r1 r2 = match v with
     | V32 ->
+        let r1,fm1,r2,fm2 = args2 "wzr" (fun s -> "^wi"^s) r1 r2 in
+        let rs = r1 @ r2 in
         { empty_ins with
-          memo = "cmp ^wi0,^wi1" ;
-          inputs = [r1;r2;]; reg_env=[r1,word;r2,word;]; }
+          memo = sprintf "cmp %s,%s" fm1 fm2;
+          inputs = rs; reg_env=List.map (fun r -> r,word) rs; }
     | V64 ->
+        let r1,fm1,r2,fm2 = args2 "zr" (fun s -> "^i"^s) r1 r2 in
+        let rs = r1 @ r2 in
         { empty_ins with
-          memo = "cmp ^i0,^i1" ;
-          inputs = [r1;r2;]; reg_env=[r1,quad;r2,quad;];}
+          memo = sprintf "cmp %s,%s" fm1 fm2;
+          inputs = rs; reg_env=List.map (fun r -> r,quad) rs; }
 
     let memo_of_op op = match op with
     | ADD -> "add"
@@ -296,21 +315,29 @@ module Make(V:Constant.S)(C:Config) =
       let memo = memo_of_op op in
       match v,kr with
       | V32,K k ->
+          let rD,fD = arg1 "wzr" (fun s -> "^wo"^s) rD
+          and rA,fA = arg1 "wzr" (fun s -> "^wi"^s) rA in
           { empty_ins with
-            memo=memo ^ sprintf " ^wo0,^wi0,#%i" k;
-            inputs=[rA];
-            outputs=[rD]; reg_env = [rA,word; rD,word;];}
+            memo=sprintf "%s %s,%s,#%i" memo fD fA k;
+            inputs=rA;
+            outputs=rD; reg_env = add_w (rA@rD);}
       | V32,RV (V32,rB) ->
+          let rD,fD = arg1 "wzr" (fun s -> "^wo"^s) rD
+          and rA,fA,rB,fB = args2 "wzr"  (fun s -> "^wi"^s) rA rB in
+          let inputs = rA@rB in
           { empty_ins with
-            memo=memo^ " ^wo0,^wi0,^wi1";
-            inputs=[rA; rB];
-            outputs=[rD]; reg_env = [rA,word; rB,word; rD,word;];}
+            memo=sprintf "%s %s,%s,%s" memo fD fA fB;
+            inputs=inputs;
+            outputs=rD; reg_env = add_q (rD@inputs);}
       | V64,K k ->
+          let rD,fD = arg1 "zr" (fun s -> "^o"^s) rD
+          and rA,fA = arg1 "zr" (fun s -> "^i"^s) rA in
           { empty_ins with
-            memo=memo ^ sprintf " ^o0,^i0,#%i" k;
-            inputs=[rA];
-            outputs=[rD]; }
+            memo=sprintf "%s %s,%s,#%i" memo fD fA k;
+            inputs=rA;
+            outputs=rD; reg_env = add_q (rA@rD);}
       | V64,RV (V64,rB) ->
+
           { empty_ins with
             memo=memo^ " ^o0,^i0,^i1";
             inputs=[rA; rB];

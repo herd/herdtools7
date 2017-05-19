@@ -388,7 +388,7 @@ let do_pp_instruction m =
       pp_barrier b
 (* Conditional select *)
   | I_CSEL (v,r1,r2,r3,c) ->
-      pp_rrr "csel" v r1 r2 r3 ^ "," ^ pp_cond c
+      pp_rrr "CSEL" v r1 r2 r3 ^ "," ^ pp_cond c
 
 let pp_instruction m =
   do_pp_instruction
