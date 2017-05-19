@@ -112,6 +112,17 @@ module Make(O:Config) (M:Builder.S) =
  
     let parse_line s = P.parse s
 
+
+(********)
+    let rec read_line_no_comment  () =
+      let line = read_line () in
+      if
+        String.length line = 0 ||
+        (String.length line > 0 && line.[0] = '#')
+      then
+        read_line_no_comment ()
+      else line
+
 (********)
     let do_zyva name pp_rs =
       try begin
@@ -132,7 +143,7 @@ module Make(O:Config) (M:Builder.S) =
               let rec do_rec k0 =
                 let k = 
                   try
-                    let line = read_line () in
+                    let line = read_line_no_comment () in
                     try
                       let name,es,st = parse_line line in
                       let mk_name =
