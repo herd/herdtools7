@@ -142,6 +142,8 @@ and plines keep out map = parse
 and pline out map = parse
 | num ':' loc as loc
   { out (map loc) ;  pline out map lexbuf  }
+| "=4294967295;"
+  { out "=-1;" ;  pline out map lexbuf  }
 | nl { () }
 | _ as tok
   { out (String.make 1 tok) ; pline out map lexbuf  }
