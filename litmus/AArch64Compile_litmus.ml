@@ -308,6 +308,7 @@ module Make(V:Constant.S)(C:Config) =
     let memo_of_op op = match op with
     | ADD -> "add"
     | EOR -> "eor"
+    | ORR -> "orr"
     | SUBS -> "subs"
     | AND -> "and"
 
@@ -328,7 +329,7 @@ module Make(V:Constant.S)(C:Config) =
           { empty_ins with
             memo=sprintf "%s %s,%s,%s" memo fD fA fB;
             inputs=inputs;
-            outputs=rD; reg_env = add_q (rD@inputs);}
+            outputs=rD; reg_env = add_w (rD@inputs);}
       | V64,K k ->
           let rD,fD = arg1 "zr" (fun s -> "^o"^s) rD
           and rA,fA = arg1 "zr" (fun s -> "^i"^s) rA in

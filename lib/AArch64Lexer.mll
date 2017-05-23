@@ -54,8 +54,9 @@ let check_name name = match name with
 | "mov"|"MOV" -> MOV
 | "add"|"ADD" -> ADD
 | "eor"|"EOR" -> EOR
+| "orr"|"ORR" -> ORR
 | "and"|"AND" -> AND
-| "subs"|"SUBS" -> ADD
+| "subs"|"SUBS" -> SUBS
 | "cmp"|"CMP" -> CMP
 (* Misc *)
 | "csel"|"CSEL" -> CSEL

@@ -208,6 +208,7 @@ module Make (C:Sem.Config)(V:Value.S)
              begin match op with
                    | ADD -> fun (v1,v2) -> M.add v1 v2
                    | EOR -> fun (v1,v2) -> M.op Op.Xor v1 v2
+                   | ORR -> fun (v1,v2) -> M.op Op.Or v1 v2
                    | SUBS -> fun (v1,v2) -> M.op Op.Sub v1 v2
                    | AND -> fun (v1,v2) -> M.op Op.And v1 v2
              end

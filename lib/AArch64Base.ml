@@ -211,7 +211,7 @@ let barrier_compare = Pervasives.compare
 type lbl = Label.t
 
 type condition = NE | EQ
-type op = ADD | EOR | SUBS | AND
+type op = ADD | EOR | SUBS | AND | ORR
 type variant = V32 | V64
 type 'k kr = K of 'k | RV of variant * reg
 let k0 = K 0
@@ -293,6 +293,7 @@ let pp_vreg v r = match v with
 let pp_op = function
   | ADD -> "ADD"
   | EOR -> "EOR"
+  | ORR -> "ORR"
   | SUBS -> "SUBS"
   | AND  -> "AND"
 

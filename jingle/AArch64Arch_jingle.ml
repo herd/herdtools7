@@ -108,6 +108,6 @@ include Arch.MakeArch(struct
     | I_STR(a,r1,r2,kr) -> I_STR(a,conv_reg r1,conv_reg r2,expl_kr kr)
     | I_STRBH(a,r1,r2,kr) -> I_STRBH(a,conv_reg r1,conv_reg r2,expl_kr kr)
     | I_OP3(a,b,r1,r2,kr) -> I_OP3(a,b,conv_reg r1,conv_reg r2,expl_kr kr)
-       
+    | I_CSEL(v,r1,r2,r3,c) -> I_CSEL(v,conv_reg r1,conv_reg r2,conv_reg r3,c)
 end)
 

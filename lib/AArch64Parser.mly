@@ -36,7 +36,7 @@ open AArch64Base
 /* Instructions */
 %token B BEQ BNE CBZ CBNZ EQ NE
 %token LDR LDP LDNP STP STNP LDRB LDRH STR STRB STRH LDAR LDAPR LDXR LDAXR STLR STXR STLXR CMP
-%token MOV ADD EOR SUBS AND CSEL
+%token MOV ADD EOR ORR SUBS AND CSEL
 %token DMB DSB ISB
 %token SY ST LD
 %token OSH OSHST OSHLD
@@ -184,10 +184,15 @@ instr:
   { I_OP3 (V64,ADD,$2,$4,$6) }
 | ADD wreg COMMA wreg COMMA kwr
   { I_OP3 (V32,ADD,$2,$4,$6) }
+
 | EOR xreg COMMA xreg COMMA kr
   { I_OP3 (V64,EOR,$2,$4,$6) }
 | EOR wreg COMMA wreg COMMA kwr
   { I_OP3 (V32,EOR,$2,$4,$6) }
+| ORR xreg COMMA xreg COMMA kr
+  { I_OP3 (V64,ORR,$2,$4,$6) }
+| ORR wreg COMMA wreg COMMA kwr
+  { I_OP3 (V32,ORR,$2,$4,$6) }
 | AND xreg COMMA xreg COMMA kr
   { I_OP3 (V64,AND,$2,$4,$6) }
 | AND wreg COMMA wreg COMMA kwr
