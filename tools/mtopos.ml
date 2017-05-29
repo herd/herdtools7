@@ -24,6 +24,7 @@ module type Config = sig
   val shownames : bool
   val ok : string -> bool
   val hexa : bool
+  val int32 : bool
 end
 
 module Make(O:Config) = struct
@@ -35,6 +36,7 @@ module Make(O:Config) = struct
         let rename s = s
         let ok = O.ok
         let hexa = O.hexa
+        let int32 = O.int32
       end)
 
   module LS = LogState.Make(O)
@@ -105,6 +107,7 @@ module Config = struct
   let shownames = !shownames
   let ok = Check.ok
   let hexa = false
+  let int32 = true
 end
 
 module X = Make(Config)

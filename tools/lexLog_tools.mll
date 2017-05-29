@@ -21,6 +21,7 @@ module type Config = sig
   val rename : string -> string
   val ok : string -> bool
   val hexa : bool
+  val int32 : bool
 end
 
 module Make(O:Config) = struct
@@ -40,8 +41,20 @@ let no_loop = false
 let no_hash = None
 let no_time = None
 
-let to_dec num = try string_of_int (int_of_string num) with _ -> num
-let to_hex num = try sprintf "0x%x" (int_of_string num) with _ -> num
+let to_dec32 num =
+  try Int32.to_string (Int32.of_string num) with _ -> num
+
+let to_hex32 num =
+  try sprintf "0x%lx" (Int32.of_string num) with _ -> num
+
+let to_dec =
+  if O.int32 then to_dec32
+  else fun num -> try string_of_int (int_of_string num) with _ -> num
+
+let to_hex =
+  if O.int32 then to_hex32
+  else fun num -> try sprintf "0x%x" (int_of_string num) with _ -> num
+
 let to_xxx = if O.hexa then to_hex else to_dec
 
 }
@@ -61,7 +74,7 @@ let validation = "Undef"|"Succeeded"|"Failed"|"Ok"|"No"|"??"
 
 rule main  mk islitmus rem = parse
  | "Test" blank+ (testname as t)
-    ((blank+ (name as  kind))| ("" as kind)) nl 
+    ((blank+ (name as  kind))| ("" as kind)) nl
     { incr_lineno lexbuf ;
       let t = Misc.clean_name t in
       if O.verbose > 0 then begin
@@ -78,7 +91,7 @@ rule main  mk islitmus rem = parse
       | None -> main  mk islitmus rem lexbuf
       | Some (islitmusst,st) ->
           let t = O.rename t in
-          if O.ok t then            
+          if O.ok t then
             main  mk (islitmusst || islitmus) (mk (t,kind,st)::rem) lexbuf
           else begin
             main mk islitmus rem lexbuf
@@ -94,18 +107,18 @@ and pstate = parse
       match pstate lexbuf with
       | None -> None
       | Some (_,rem) -> Some (true,rem) }
-| ("States" as key) (blank+ (digit+ as _x))?  nl 
+| ("States" as key) (blank+ (digit+ as _x))?  nl
 | ("Histogram" as key)
-     (blank+  '(' (digit+ as _x) blank+ "states" blank* ')')?  nl 
+     (blank+  '(' (digit+ as _x) blank+ "states" blank* ')')?  nl
     { incr_lineno lexbuf ; Some (key="Histogram",plines [] lexbuf ) }
-| "Fatal" [':'' ']  [^'\r''\n']*  nl 
+| "Fatal" [':'' ']  [^'\r''\n']*  nl
     { incr_lineno lexbuf ; None }
 | [^'\r''\n']*  nl  { incr_lineno lexbuf ; pstate  lexbuf }
 | eof { Some (false,([],Run,no_wits,no_cond,no_loop,no_hash,no_topos,no_time)) }
 | "" { error "pstate" lexbuf }
 
 
-and plines k = parse 
+and plines k = parse
 | ((num as c) blank* (":>"|"*>"))?
     { let line = pline [] lexbuf in
       let st =
@@ -151,10 +164,10 @@ and pline k = parse
 
 and pwitnesses = parse
  blank*  nl  { incr_lineno lexbuf ; pwitnesses lexbuf }
-| "Witnesses" blank*  nl 
- "Positive:" blank* (num as pos) ','? blank* 
- "Negative:" blank* (num as neg) blank* 
- nl 
+| "Witnesses" blank*  nl
+ "Positive:" blank* (num as pos) ','? blank*
+ "Negative:" blank* (num as neg) blank*
+ nl
 { incr_lineno lexbuf ; incr_lineno lexbuf ;
   Int64.of_string pos, Int64.of_string neg }
 | "" { no_wits }
@@ -164,24 +177,24 @@ and pcond = parse
 | "Bad executions" [^'\n''\r']* nl
   { incr_lineno lexbuf ; pcond lexbuf }
 | "Condition" blank+
-  ([^'\r''\n']+ as c)  nl 
+  ([^'\r''\n']+ as c)  nl
  {  incr_lineno lexbuf ;
     strip_end_cond (Buffer.create 10) (Lexing.from_string c) }
 | "" { no_cond }
 
 and strip_end_cond buff = parse
   blank+ "is" _* "validated"
-| eof 
+| eof
   { let lxm = Buffer.contents buff in
     let c = LogConstr.parse lxm in
     c }
 | _ as c { Buffer.add_char buff c ; strip_end_cond buff lexbuf }
 
 and phash st = parse
-| "Hash" blank* '=' blank* ([^' ''\t''\n''\r']+ as hash) blank*  nl 
+| "Hash" blank* '=' blank* ([^' ''\t''\n''\r']+ as hash) blank*  nl
   { let _,p_topos,p_time = st in
    incr_lineno lexbuf ; phash (Some hash,p_topos,p_time) lexbuf }
-| "Time" blank+ testname blank+ (num '.' num as t) blank*  nl 
+| "Time" blank+ testname blank+ (num '.' num as t) blank*  nl
   { let p_hash,p_topos,_ = st in
     incr_lineno lexbuf ; phash (p_hash,p_topos,Some (float_of_string t)) lexbuf }
 | "Topology" blank+ (num as n) blank* ":>" blank*
@@ -190,15 +203,15 @@ and phash st = parse
     let n = try Int64.of_string n with _ -> assert false in
     let topo = HashedString.as_hashed topo in
     phash (p_hash,(topo,n)::p_topo,p_time) lexbuf  }
-| (alpha+ as key) blank* '=' [^'\r''\n']*  nl 
-| (alpha+ as key)  blank+ testname blank+ [^'\r''\n']*  nl 
+| (alpha+ as key) blank* '=' [^'\r''\n']*  nl
+| (alpha+ as key)  blank+ testname blank+ [^'\r''\n']*  nl
   { ignore(key) ; incr_lineno lexbuf ; phash  st lexbuf }
 | ""
   { st }
 
 and main_simple  mk islitmus rem = parse
 | "Test" blank+ (testname as t)
-    ((blank+ name)| "") nl 
+    ((blank+ name)| "") nl
     { incr_lineno lexbuf ;
       if O.verbose > 0 then begin
         decr count ;
@@ -228,18 +241,18 @@ and sstate = parse
       match sstate lexbuf with
       | None -> None
       | Some (_,rem) -> Some (true,rem) }
-| ("States" as key) (blank+ (digit+ as _x))?  nl 
+| ("States" as key) (blank+ (digit+ as _x))?  nl
 | ("Histogram" as key)
-     (blank+  '(' (digit+ as _x) blank+ "states" blank* ')')?  nl 
+     (blank+  '(' (digit+ as _x) blank+ "states" blank* ')')?  nl
     { incr_lineno lexbuf ; Some (key="Histogram",slines [] lexbuf ) }
-| "Fatal" [':'' ']  [^'\r''\n']*  nl 
+| "Fatal" [':'' ']  [^'\r''\n']*  nl
     { incr_lineno lexbuf ; None }
 | [^'\r''\n']*  nl  { incr_lineno lexbuf ; sstate  lexbuf }
 | eof { Some (false,([],no_hash)) }
 | "" { error "pstate" lexbuf }
 
 
-and slines k = parse 
+and slines k = parse
 | ((num) blank* (":>"|"*>"))?
     { let line = pline [] lexbuf in
       let st = LS.as_st_concrete line in
@@ -253,7 +266,7 @@ and slines k = parse
 | eof { (k,no_hash) }
 
 and shash = parse
-| "Hash" blank* '=' blank* ([^' ''\t''\r''\n']+ as hash) blank*  nl 
+| "Hash" blank* '=' blank* ([^' ''\t''\r''\n']+ as hash) blank*  nl
   { incr_lineno lexbuf ; Some hash }
 | [^'\r''\n']*  nl  {  incr_lineno lexbuf ; shash lexbuf }
 | eof { no_hash }
@@ -269,8 +282,8 @@ let zyva main mk name lexbuf =
     main mk false [] lexbuf
   with
   | LexMisc.Error (msg,loc) ->
-	Printf.eprintf "%a: Lex error %s\n"
-	  Pos.pp_pos loc msg ;
+        Printf.eprintf "%a: Lex error %s\n"
+          Pos.pp_pos loc msg ;
         raise Misc.Exit
 
 let do_read_chan main mk name chan =
@@ -280,7 +293,7 @@ let read_name main normalize mk name k =
   if O.verbose > 0 then
     eprintf "Reading file: %s\n%!" name ;
   try
-    let (is_litmus,r) = 
+    let (is_litmus,r) =
       Misc.input_protect
         (do_read_chan main mk name)
         name in
@@ -323,4 +336,3 @@ let read_names_simple names =
   do_read_names main_simple LS.normalize_simple simplify names
 end
 }
-

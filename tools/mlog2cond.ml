@@ -24,6 +24,7 @@ let forall = ref false
 let optcond = ref false
 let acceptempty = ref false
 let hexa = ref false
+let int32 = ref true
 
 let options =
   [
@@ -42,6 +43,7 @@ let options =
     sprintf
       "<bool> output empty conditions, default %b" !acceptempty);
     CheckName.parse_hexa hexa;
+    CheckName.parse_int32 int32;
   ]
 
 let prog =
@@ -57,6 +59,7 @@ Options are:" prog)
 
 let verbose = !verbose
 let hexa = !hexa
+let int32 = !int32
 let log = match !logs with
 | [log;] -> Some log
 | [] -> None
@@ -77,6 +80,7 @@ module LL =
       let rename = do_rename
       let ok = select_name
       let hexa = hexa
+      let int32 = int32
     end)
 
 let acceptempty = !acceptempty

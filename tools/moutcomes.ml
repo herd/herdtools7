@@ -25,15 +25,17 @@ let select = ref []
 let names = ref []
 let excl = ref []
 let hexa = ref false
+let int32 = ref true
 
 let options =
   let open CheckName in
-  [  
+  [
   ("-q", Arg.Unit (fun _ -> verbose := -1),
-   "<non-default> be silent");  
+   "<non-default> be silent");
   ("-v", Arg.Unit (fun _ -> incr verbose),
    "<non-default> show various diagnostics, repeat to increase verbosity");
      parse_hexa hexa;
+     parse_int32 int32;
      parse_rename rename;
      parse_select select;
      parse_names names;
@@ -57,6 +59,7 @@ let names = !names
 let excl = !excl
 let verbose = !verbose
 let hexa = !hexa
+let int32 = !int32
 let log = match !logs with
 | [log;] -> Some log
 | [] -> None
@@ -80,6 +83,7 @@ module LL =
             let excl = excl
           end)
       let hexa = hexa
+      let int32 = int32
     end)
 
 
@@ -96,4 +100,3 @@ let () =
   try zyva log
   with Misc.Fatal msg ->
     eprintf "Fatal error: %s\n%!" msg
-

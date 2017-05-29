@@ -18,7 +18,7 @@
 (* Command line *)
 (****************)
 
-let parse_select select = 
+let parse_select select =
   "-select",
   Arg.String (fun s ->  select := !select @ [s]),
   "<name> specify test or test index  file, can be repeated"
@@ -29,16 +29,20 @@ let parse_names names =
   "<name> specify file of names, can be repeated"
 
 let parse_rename rename =
-  "-rename", Arg.String (fun s -> rename := !rename @ [s]),     
+  "-rename", Arg.String (fun s -> rename := !rename @ [s]),
   "<name> specify a rename mapping, hashes are checked"
 
 let parse_excl excl =
-  "-excl", Arg.String (fun s -> excl := !excl @ [s]),     
+  "-excl", Arg.String (fun s -> excl := !excl @ [s]),
   "<name> specify file of names to be excluded, can be repeated"
 
 let parse_hexa hexa =
-  "-hexa", Arg.Bool (fun b -> hexa := b),     
+  "-hexa", Arg.Bool (fun b -> hexa := b),
   (Printf.sprintf "<bool> specify hexadecimal output, default %b" !hexa)
+
+let parse_int32 int32 =
+  "-int32", Arg.Bool (fun b -> int32 := b),
+  (Printf.sprintf "<bool> integer in logs are 32 bits wide, default %b" !int32)
 
 module
   Make
@@ -57,7 +61,7 @@ module
 
     let rename_table = LR.read_from_files I.rename (fun s -> Some s)
 
-    let rename name = 
+    let rename name =
       try TblRename.find_value rename_table name
       with Not_found -> name
 

@@ -19,6 +19,7 @@ module type Config = sig
   val rename : string -> string
   val ok : string -> bool
   val hexa : bool
+  val int32 : bool
 end
 
 module Make(O:Config) : sig

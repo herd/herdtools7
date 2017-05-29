@@ -40,6 +40,7 @@ module Make(O:Opt) = struct
         let rename n = n
         let ok = O.ok
         let hexa = false
+        let int32 = true
       end)
 
   module LS = LogState.Make(O)

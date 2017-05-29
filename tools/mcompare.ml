@@ -56,6 +56,7 @@ type runopts =
      cond_neg : string option ;
      opt_cond : bool ;
      hexa : bool ;
+     int32 : bool ;
    }
 
 let default_runopts =
@@ -88,6 +89,7 @@ let default_runopts =
    cond_neg = None;
    opt_cond = false;
    hexa = false;
+   int32 = true;
  }
 
 let runopts = default_runopts
@@ -234,6 +236,12 @@ let options =
         (delay_ro
            (fun b ro -> { ro with hexa = b; })),
     (sprintf "<bool> hexadecimal output, default %b" runopts.hexa));
+   ("-int32",
+      Arg.Bool
+        (delay_ro
+           (fun b ro -> { ro with int32 = b; })),
+    (sprintf "<bool> integers in logs are 32 bits wide, default %b"
+       runopts.int32));
  ]
 
 let prog =
@@ -284,6 +292,7 @@ module type Config = sig
   val cond_neg : string option
   val opt_cond : bool
   val hexa : bool
+  val int32 : bool
 end
 
 module Verbose = struct let verbose = !verb end
@@ -348,6 +357,7 @@ module Config = struct
   let cond_neg = runopts.cond_neg
   let opt_cond = runopts.opt_cond
   let hexa = runopts.hexa
+  let int32 = runopts.int32
 end
 
 (************)

@@ -1,4 +1,7 @@
-  * herd, global behaviour for 'show' (no purge of state show component at procedure return)
+  * tools, add -int32 <bool> command-line option.
+  * gen Arch64, for -ua 0, now emit a LDXR/STXR pair and observe result
+   register of STXR.
+  * herd, global behaviour for 'show' instruction (no purge of state show component at procedure return)
   * Add AArch64 instruction csel
 7.45
   * New ARMv8 model
