@@ -47,6 +47,7 @@ module type Config = sig
   val uniq : bool
   val outmap : string option
   val lowercase : bool
+  val sufname : string option
 end
 
 module Make(Co:Config) (A:Fence.S) = struct
@@ -141,6 +142,7 @@ let () =
     let uniq = !uniq
     let outmap = !map
     let lowercase = !lowercase
+    let sufname = None
   end in
   let module Build = Make(Co) in
   (match !arch with

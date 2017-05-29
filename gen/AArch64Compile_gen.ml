@@ -342,27 +342,27 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       Instruction (cbnz r (Label.fail p))::k
 
     let emit_unroll_pair u rw p st rR rW rA =
-      let r,st = tempo3 st in      
-      let cs =
-        if u <= 0 then
-          pseudo
-            [get_xload rw rR rA;
-             get_xstore rw r rW rA;]
-        else if u = 1 then
-          emit_one_pair rw p r rR rW rA []
-        else
-          let out = Label.next_label "Go" in
-          let rec do_rec = function
-            | 1 ->
-                emit_one_pair
-                  rw p r rR rW rA [Label (out,Nop)]
-            | u ->
-                Instruction (get_xload rw rR rA)::
-                Instruction (get_xstore rw r rW rA)::
-                Instruction (cbz r out)::
-                do_rec (u-1) in
-          do_rec u in
-      cs,st
+      if u <= 0 then
+        let r,st = next_reg st in
+        pseudo
+          [get_xload rw rR rA;
+           get_xstore rw r rW rA;],st
+      else if u = 1 then
+        let r,st = tempo3 st in
+        emit_one_pair rw p r rR rW rA [],st
+      else
+        let r,st = tempo3 st in
+        let out = Label.next_label "Go" in
+        let rec do_rec = function
+          | 1 ->
+              emit_one_pair
+                rw p r rR rW rA [Label (out,Nop)]
+          | u ->
+              Instruction (get_xload rw rR rA)::
+              Instruction (get_xstore rw r rW rA)::
+              Instruction (cbz r out)::
+              do_rec (u-1) in
+        do_rec u,st
 
     let emit_pair = match Cfg.unrollatomic with
     | None -> emit_loop_pair
@@ -428,7 +428,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | R,Some Atomic rw ->
         let r,init,cs,st = emit_lda rw st p init e.loc  in
         Some r,init,cs,st
-    | R,Some (Mixed (sz,o)) ->        
+    | R,Some (Mixed (sz,o)) ->
         let r,init,cs,st = emit_load_mixed sz o st p init e.loc in
         Some r,init,cs,st
     | W,None ->
@@ -475,9 +475,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (* Dependencies *)
     let calc0 =
       if Cfg.realdep then
-        fun dst src ->  andi dst src 128 
+        fun dst src ->  andi dst src 128
       else
-        fun dst src -> eor dst src src 
+        fun dst src -> eor dst src src
 
     let emit_access_dep_addr st p init e  rd =
       let r2,st = next_reg st in
@@ -542,7 +542,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               None,init,cs2@cs,st
           | Some Atomic rw ->
               let r,init,cs,st = emit_sta_reg rw st p init e.loc r2 in
-              Some r,init,cs2@cs,st        
+              Some r,init,cs2@cs,st
           | Some Acq ->
               Warn.fatal "No store acquire"
           | Some AcqPc ->
@@ -619,4 +619,19 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         init,cs@[Label (Label.exit p,Nop)],st
       else
         init,cs,st
+
+
+    let get_strx_result k = function
+      | I_STXR (_,_,r,_,_)  -> r::k
+      | _ -> k
+
+    let get_strx_result_pseudo k = pseudo_fold  get_strx_result k
+
+    let get_xstore_results = match Cfg.unrollatomic with
+    | Some x when x <= 0 ->
+        fun cs ->
+          let rs = List.fold_left get_strx_result_pseudo [] cs in
+          List.rev_map (fun r -> r,0) rs
+    | Some _|None -> fun _ -> []
+
   end

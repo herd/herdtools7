@@ -21,6 +21,7 @@ module type Config = sig
   val fmt : int
   val no : string list
   val tarfile : string option
+  val sufname : string option
   val addnum : bool
   val numeric : bool
   val lowercase : bool

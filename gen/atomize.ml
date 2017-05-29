@@ -23,12 +23,6 @@ let arch = ref `PPC
  
 let opts = [Util.arch_opt arch]
 
-module type Config = sig
-  val norm : bool
-  val compat : bool
-  val lowercase : bool
-end
-
 module Make (A:Fence.S) =
     struct
       module E = Edge.Make(A)

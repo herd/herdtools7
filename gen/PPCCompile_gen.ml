@@ -516,5 +516,6 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
       else init,cs,st
 
 
+    let get_xstore_results _ = []
         
   end

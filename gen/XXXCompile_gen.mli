@@ -66,4 +66,7 @@ module type S = sig
 
   val postlude : A.st -> Code.proc -> A.init -> A.pseudo list ->
     A.init * A.pseudo list * A.st
+
+  val get_xstore_results : A.pseudo list -> (A.reg * int) list
+
 end

@@ -415,4 +415,5 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
          init,cs@[Label (Label.exit p,Nop)],st
       else init,cs,st
 
+    let get_xstore_results _ = []
   end

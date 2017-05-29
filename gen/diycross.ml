@@ -180,9 +180,10 @@ let () =
       | Some fname -> Config.read_no fname
       let cond = !Config.cond
       let tarfile = !Config.tarfile
+      let sufname = !Config.sufname
       let addnum = !Config.addnum
       let numeric = !Config.numeric
-      let lowercase = !Config.lowercase
+     let lowercase = !Config.lowercase
 (* Specific *)
       let varatom = !Config.varatom
 

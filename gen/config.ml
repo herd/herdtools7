@@ -29,6 +29,7 @@ let prefix = ref None
 let safes = ref None 
 let relaxs = ref None
 let name = ref None
+let sufname = ref None
 let canonical_only = ref true
 let conf = ref None
 let mode = ref Sc
@@ -201,6 +202,8 @@ let common_specs =
      !addnum)::
    ("-name",Arg.String (fun s -> name := Some s),
      "<s> specify base name of tests")::
+   ("-sufname",Arg.String (fun s -> sufname := Some s),
+     "<s> specify test name suffix")::
   ("-lowercase", Arg.Bool (fun b -> lowercase := b),
    sprintf "<bool> generate lowercase family names (default %b)" !lowercase)::
    ("-fmt",Arg.Int (fun i -> fmt := i),

@@ -527,6 +527,11 @@ let min_max xs =
       | [] -> List.rev i,[],(C.EventMap.empty,[]),[]
       | n::ns ->
           let i,c,(m,f),st = compile_proc false loc_writes A.st0 p No i n in
+          let xenv = Comp.get_xstore_results c in
+          let f =
+            List.fold_left
+              (fun f (r,v) -> F.add_final_v p r (IntSet.singleton v) f)
+              f xenv in
           let i,c,st = compile_stores st p i n c in
           let i,c,f,st =
             match O.cond with

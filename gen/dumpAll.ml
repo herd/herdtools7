@@ -23,6 +23,7 @@ module type Config = sig
   val fmt : int
   val no : string list
   val tarfile : string option
+  val sufname : string option
   val addnum : bool
   val numeric : bool
   val lowercase : bool
@@ -77,14 +78,18 @@ module Make(Config:Config)(T:Builder.S)
 
       let mk_fmt base n = sprintf "%s%0*i" base Config.fmt n
 
+      let add_suffix = match  Config.sufname with
+      | None -> fun n -> n
+      | Some s -> fun n -> n ^ s
+
       let global_mk_name =    
         if Config.numeric then
           fun env base _es ->
             let n = try Env.find base env with Not_found -> 0 in
-            mk_fmt base n,Env.add base (n+1) env
+            add_suffix (mk_fmt base n),Env.add base (n+1) env
         else
           let module Namer = Namer.Make(T.A)(T.E) in
-          fun env base es -> Namer.mk_name base es,env
+          fun env base es -> add_suffix (Namer.mk_name base es),env
 
       exception DupName of string 
 
@@ -325,8 +330,8 @@ module Make(Config:Config)(T:Builder.S)
               | None -> false,T.A.ScopeGen.default
               | Some st -> true,(fun _ -> st)) in
             dump_test_st
-                keep_name all_chan check
-                cycle info relaxed env n c mk_st res
+              keep_name all_chan check
+              cycle info relaxed env n c mk_st res
         | Scope.One st ->
             dump_test_st false all_chan check cycle info relaxed env n c
               (fun _ -> st) res

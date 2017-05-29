@@ -347,4 +347,5 @@ let emit_exch_dep _ = assert false
         init,cs@[Label (Label.exit p,Nop)],st
       else init,cs,st
 
+    let get_xstore_results _ = []
   end
