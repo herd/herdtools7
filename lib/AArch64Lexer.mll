@@ -60,6 +60,9 @@ let check_name name = match name with
 | "cmp"|"CMP" -> CMP
 (* Misc *)
 | "csel"|"CSEL" -> CSEL
+| "csinc"|"CSINC" -> CSINC
+| "csinv"|"CSINV" -> CSINV
+| "csneg"|"CSNEG" -> CSNEG
 (* Fences *)
 | "dmb"|"DMB" -> DMB
 | "dsb"|"DSB" -> DSB

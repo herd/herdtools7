@@ -101,11 +101,14 @@ module Make(V:Constant.S)(C:Config) =
             outputs=[rD];
             reg_env=[(rA,voidstar);(rD,word)];}
       | V32,RV (V32,rB) ->
+          let rB,fB = match rB with
+          | ZR -> [],"wzr"
+          | _  -> [rB],"^wi1" in
           { empty_ins with
-            memo=memo^ " ^wo0,[^i0,^wi1,sxtw]";
-            inputs=[rA; rB];
+            memo=memo^ sprintf " ^wo0,[^i0,%s,sxtw]" fB;
+            inputs=[rA]@rB;
             outputs=[rD];
-            reg_env=[(rA,voidstar); (rB,word); (rD,word);]; }
+            reg_env=add_w rB@[(rA,voidstar); (rD,word);]; }
       | V64,K 0 ->
           { empty_ins with
             memo=memo ^ sprintf " ^o0,[^i0]";
@@ -119,18 +122,32 @@ module Make(V:Constant.S)(C:Config) =
             outputs=[rD];
             reg_env=[rA,voidstar; rD,quad;]; }
       | V64,RV (V64,rB) ->
+          let rB,fB = match rB with
+          | ZR -> [],"xzr"
+          | _  -> [rB],"^i1" in
           { empty_ins with
-            memo=memo^ " ^o0,[^i0,^i1]";
-            inputs=[rA; rB];
+            memo=memo^ sprintf " ^o0,[^i0,%s]" fB;
+            inputs=[rA;]@rB;
             outputs=[rD];
-            reg_env=[rA,voidstar;rB,quad;rD,quad]; }
+            reg_env=add_q rB@[rA,voidstar;rD,quad]; }
       | V64,RV (V32,rB) ->
+          let rB,fB = match rB with
+          | ZR -> [],"wzr"
+          | _  -> [rB],"^wi1" in
           { empty_ins with
-            memo=memo^ " ^o0,[^i0,^wi1,sxtw]";
-            inputs=[rA; rB];
+            memo=memo ^ sprintf " ^o0,[^i0,%s,sxtw]" fB;
+            inputs=[rA]@rB;
             outputs=[rD];
-            reg_env=[rA,voidstar;rB,word;rD,quad;]; }
-      | V32,RV (V64,_) -> assert false
+            reg_env=add_w rB@[rA,voidstar;rD,quad;]; }
+      | V32,RV (V64,rB) ->
+          let rB,fB = match rB with
+          | ZR -> [],"xzr"
+          | _  -> [rB],"^i1" in
+          { empty_ins with
+            memo=memo^ sprintf " ^wo0,[^i0,%s]" fB;
+            inputs=[rA;]@rB;
+            outputs=[rD];
+            reg_env=add_q rB@[rA,voidstar;rD,word]; }
 
     let load_pair memo v rD1 rD2 rA kr = match v,kr with
       | V32,K 0 ->
@@ -234,9 +251,12 @@ module Make(V:Constant.S)(C:Config) =
             memo=memo ^ sprintf " ^wi0,[^i1,#%i]" k;
             inputs=[rA;rB]; reg_env=[rB,voidstar;rA,word;]; }
       | V32,RV (V32,rC) ->
+          let rC,fC = match rC with
+          | ZR -> [],"wzr"
+          | _  -> [rC],"^wi2" in
           { empty_ins with
-            memo=memo^ " ^wi0,[^i1,^wi2,sxtw]";
-            inputs=[rA; rB; rC]; reg_env=[rB,voidstar; rA,word; rC,word;]; }
+            memo=memo^ sprintf " ^wi0,[^i1,%s,sxtw]" fC;
+            inputs=[rA; rB;]@rC; reg_env=add_w rC@[rB,voidstar; rA,word;]; }
       | V64,K 0 ->
           { empty_ins with
             memo=memo ^ " ^i0,[^i1]";
@@ -246,13 +266,19 @@ module Make(V:Constant.S)(C:Config) =
             memo=memo ^ sprintf " ^i0,[^i1,#%i]" k;
             inputs=[rA;rB]; reg_env=[rB,voidstar; rA,quad;]; }
       | V64,RV (V64,rC) ->
+          let rC,fC = match rC with
+          | ZR -> [],"xzr"
+          | _  -> [rC],"^i2" in
           { empty_ins with
-            memo=memo^ " ^i0,[^i1,^i2]";
-            inputs=[rA; rB; rC]; reg_env=[rB,voidstar; rA,quad; rC,quad;]; }
+            memo=memo ^ sprintf " ^i0,[^i1,%s]" fC;
+            inputs=[rA; rB;]@rC; reg_env=add_q rC@[rB,voidstar; rA,quad;]; }
       | V64,RV (V32,rC) ->
+          let rC,fC = match rC with
+          | ZR -> [],"wzr"
+          | _  -> [rC],"^wi2" in
           { empty_ins with
-            memo=memo^ " ^i0,[^i1,^wi2,sxtw]";
-            inputs=[rA; rB; rC;]; reg_env=[rB,voidstar; rA,quad; rC,word;]; }
+            memo=memo ^ sprintf " ^i0,[^i1,%s,sxtw]" fC;
+            inputs=[rA; rB;]@rC; reg_env=add_w rC@[rB,voidstar; rA,quad;]; }
       | V32,RV (V64,_) -> assert false
 
     let stxr memo v r1 r2 r3 = match v with
@@ -299,7 +325,7 @@ module Make(V:Constant.S)(C:Config) =
           memo = sprintf "cmp %s,%s" fm1 fm2;
           inputs = rs; reg_env=List.map (fun r -> r,word) rs; }
     | V64 ->
-        let r1,fm1,r2,fm2 = args2 "zr" (fun s -> "^i"^s) r1 r2 in
+        let r1,fm1,r2,fm2 = args2 "xzr" (fun s -> "^i"^s) r1 r2 in
         let rs = r1 @ r2 in
         { empty_ins with
           memo = sprintf "cmp %s,%s" fm1 fm2;
@@ -331,8 +357,8 @@ module Make(V:Constant.S)(C:Config) =
             inputs=inputs;
             outputs=rD; reg_env = add_w (rD@inputs);}
       | V64,K k ->
-          let rD,fD = arg1 "zr" (fun s -> "^o"^s) rD
-          and rA,fA = arg1 "zr" (fun s -> "^i"^s) rA in
+          let rD,fD = arg1 "xzr" (fun s -> "^o"^s) rD
+          and rA,fA = arg1 "xzr" (fun s -> "^i"^s) rA in
           { empty_ins with
             memo=sprintf "%s %s,%s,#%i" memo fD fA k;
             inputs=rA;
@@ -360,7 +386,7 @@ module Make(V:Constant.S)(C:Config) =
     let compile_ins tr_lab ins k = match ins with
 (* Branches *)
     | I_B lbl -> b tr_lab lbl::k
-    | I_BC (c,lbl) -> bcc tr_lab c lbl::k        
+    | I_BC (c,lbl) -> bcc tr_lab c lbl::k
     | I_CBZ (v,r,lbl) -> cbz tr_lab "cbz" v r lbl::k
     | I_CBNZ (v,r,lbl) -> cbz tr_lab "cbnz" v r lbl::k
 (* Load and Store *)
@@ -386,14 +412,19 @@ module Make(V:Constant.S)(C:Config) =
 (* Fence *)
     | I_FENCE f -> fence f::k
 (* Conditional selection *)
-    | I_CSEL (v,r1,r2,r3,c) ->
-        let memo,t = match v with
-        | V32 -> "csel ^wo0,^wi0,^wi1," ^ pp_cond c,word
-        | V64 -> "csel ^o0,^i0,^i1," ^ pp_cond c,quad in
+    | I_CSEL (v,r1,r2,r3,c,op) ->
+        let inputs,memo,t = match v with
+        | V32 ->
+            let r2,f2,r3,f3 = args2 "wzr" (fun s -> "^wi"^s) r2 r3 in
+            r2@r3,sprintf " ^wo0,%s,%s,%s" f2 f3 (pp_cond c),word
+        | V64 ->
+            let r2,f2,r3,f3 = args2 "xzr" (fun s -> "^i"^s) r2 r3 in
+            r2@r3,sprintf " ^o0,%s,%s,%s" f2 f3 (pp_cond c),quad in
+        let memo = String.lowercase_ascii (sel_memo op) ^ memo in
         {
          empty_ins with
-         memo = memo; inputs=[r2;r3;]; outputs=[r1;];
-         reg_env=[r1,t; r2,t; r3,t;]; cond=true;
+         memo = memo; inputs=inputs; outputs=[r1;];
+         reg_env=add_type t (r1::inputs);
         }::k
 
     let no_tr lbl = lbl

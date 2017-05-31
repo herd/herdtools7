@@ -36,7 +36,7 @@ open AArch64Base
 /* Instructions */
 %token B BEQ BNE CBZ CBNZ EQ NE
 %token LDR LDP LDNP STP STNP LDRB LDRH STR STRB STRH LDAR LDAPR LDXR LDAXR STLR STXR STLXR CMP
-%token MOV ADD EOR ORR SUBS AND CSEL
+%token MOV ADD EOR ORR SUBS AND CSEL CSINC CSINV CSNEG
 %token DMB DSB ISB
 %token SY ST LD
 %token OSH OSHST OSHLD
@@ -207,9 +207,22 @@ instr:
   { I_OP3 (V64,SUBS,ZR,$2,$4) }
 /* Misc */
 | CSEL xreg COMMA  xreg COMMA  xreg COMMA cond
-  { I_CSEL (V64,$2,$4,$6,$8) }
+  { I_CSEL (V64,$2,$4,$6,$8,Cpy) }
 | CSEL wreg COMMA  wreg COMMA  wreg COMMA cond
-  { I_CSEL (V32,$2,$4,$6,$8) }
+  { I_CSEL (V32,$2,$4,$6,$8,Cpy) }
+| CSINC xreg COMMA  xreg COMMA  xreg COMMA cond
+  { I_CSEL (V64,$2,$4,$6,$8,Inc) }
+| CSINC wreg COMMA  wreg COMMA  wreg COMMA cond
+  { I_CSEL (V32,$2,$4,$6,$8,Inc) }
+| CSINV xreg COMMA  xreg COMMA  xreg COMMA cond
+  { I_CSEL (V64,$2,$4,$6,$8,Inv) }
+| CSINV wreg COMMA  wreg COMMA  wreg COMMA cond
+  { I_CSEL (V32,$2,$4,$6,$8,Inv) }
+| CSNEG xreg COMMA  xreg COMMA  xreg COMMA cond
+  { I_CSEL (V64,$2,$4,$6,$8,Neg) }
+| CSNEG wreg COMMA  wreg COMMA  wreg COMMA cond
+  { I_CSEL (V32,$2,$4,$6,$8,Neg) }
+
 /* Fences */
 | DMB fenceopt
   { let d,t = $2 in I_FENCE (DMB (d,t)) }

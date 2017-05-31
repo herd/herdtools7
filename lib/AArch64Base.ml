@@ -236,6 +236,14 @@ let pp_bh = function
   | H -> "H"
 
 type temporal = TT | NT
+type opsel = Cpy | Inc | Inv | Neg
+
+let sel_memo = function
+  | Cpy -> "CSEL"
+  | Inc -> "CSINC"
+  | Inv -> "CSINV"
+  | Neg -> "CSNEG"
+
 
 type 'k kinstruction =
 (* Branches *)
@@ -261,7 +269,7 @@ type 'k kinstruction =
 (* Barrier *)
   | I_FENCE of barrier
 (* Conditional select *)
-  | I_CSEL of variant * reg *reg * reg * condition
+  | I_CSEL of variant * reg *reg * reg * condition * opsel
 type instruction = int kinstruction
 type parsedInstruction = MetaConst.k kinstruction
 
@@ -388,8 +396,8 @@ let do_pp_instruction m =
   | I_FENCE b ->
       pp_barrier b
 (* Conditional select *)
-  | I_CSEL (v,r1,r2,r3,c) ->
-      pp_rrr "CSEL" v r1 r2 r3 ^ "," ^ pp_cond c
+  | I_CSEL (v,r1,r2,r3,c,op) ->
+      pp_rrr (sel_memo op) v r1 r2 r3 ^ "," ^ pp_cond c
 
 let pp_instruction m =
   do_pp_instruction
@@ -428,7 +436,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_OP3 (_,_,r1,r2,kr)
   | I_LDRBH (_,r1,r2,kr) | I_STRBH (_,r1,r2,kr)
     -> fold_reg r1 (fold_reg r2 (fold_kr kr c))
-  | I_CSEL (_,r1,r2,r3,_)
+  | I_CSEL (_,r1,r2,r3,_,_)
   | I_STXR (_,_,r1,r2,r3)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_LDP (_,_,r1,r2,r3,kr)
@@ -486,8 +494,8 @@ let map_regs f_reg f_symb =
   | I_OP3 (v,op,r1,r2,kr) ->
       I_OP3 (v,op,map_reg r1,map_reg r2,map_kr kr)
 (* Conditinal select *)
-  | I_CSEL (v,r1,r2,r3,c) ->
-      I_CSEL (v,map_reg r1,map_reg r2,map_reg r3,c)
+  | I_CSEL (v,r1,r2,r3,c,op) ->
+      I_CSEL (v,map_reg r1,map_reg r2,map_reg r3,c,op)
 
 (* No addresses burried in ARM code *)
 let fold_addrs _f c _ins = c

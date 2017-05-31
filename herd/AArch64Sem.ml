@@ -44,7 +44,9 @@ module Make (C:Sem.Config)(V:Value.S)
     let read_loc is_data =
       M.read_loc is_data (mk_read AArch64.N)
 
-    let read_reg is_data r ii =
+    let read_reg is_data r ii = match r with
+    | AArch64Base.ZR -> M.unitT V.zero
+    | _ ->
       M.read_loc is_data (mk_read AArch64.N) (A.Location_reg (ii.A.proc,r)) ii
 
     let read_reg_ord = read_reg false
@@ -220,7 +222,7 @@ module Make (C:Sem.Config)(V:Value.S)
         | I_FENCE b ->
            (create_barrier b ii) >>! B.Next
         (* Conditional selection *)
-        | I_CSEL (_v,r1,r2,r3,c) ->
+        | I_CSEL (_v,r1,r2,r3,c,op) ->
             let cond = match c with
              | NE -> is_not_zero
              | EQ -> is_zero in
@@ -229,8 +231,16 @@ module Make (C:Sem.Config)(V:Value.S)
            >>= fun v ->
              M.choiceT v
                (read_reg_data r2 ii >>= fun v -> write_reg r1 v ii)
-               (read_reg_data r3 ii >>= fun v -> write_reg r1 v ii)
-           >>! B.Next
+               (read_reg_data r3 ii >>=
+                fun v ->
+                  let mop = match op with
+                  | Cpy -> M.unitT v
+                  | Inc -> M.op Op.Add v V.one
+                  | Neg -> M.op Op.Sub V.zero v
+                  | Inv ->
+                      Warn.fatal "size dependent inverse not implemented" in
+                  mop >>= fun v ->  write_reg r1 v ii)
+               >>! B.Next
 
         (*  Cannot handle *)
         | (I_LDP _|I_STP _|I_LDRBH (_, _, _, _)|I_STRBH (_, _, _, _)) as i ->
