@@ -96,8 +96,9 @@ rule main keep same out name = parse
    incr_lineno lexbuf ;
    main keep same out None lexbuf
  }
-| nl as line
+| nl
     {
+     let line = "" in
      let same = match name with
      | Some n ->
           begin try
