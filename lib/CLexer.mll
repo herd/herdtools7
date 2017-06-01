@@ -27,6 +27,7 @@ let tr_name s = match s with
 | "_Atomic" -> ATOMIC
 | "char" -> CHAR
 | "int" -> INT
+| "long" -> LONG
 | "int8_t"
 | "uint8_t"
 | "int16_t"

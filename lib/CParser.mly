@@ -30,7 +30,7 @@ open MemOrderOrAnnot
 %token <string> CODEVAR
 %token <int> PROC
 %token LPAR RPAR COMMA LBRACE RBRACE STAR 
-%token ATOMIC CHAR INT
+%token ATOMIC CHAR INT LONG
 %token MUTEX
 %token TYPEDEF EXTERN STATIC AUTO REGISTER
 %token CONST VOLATILE 
@@ -100,6 +100,7 @@ base0:
 | ty_attr MUTEX { Base ($1 ^ "mutex") }
 | ty_attr CHAR { Base ($1 ^ "char") }
 | ty_attr INT { Base ($1 ^ "int") }
+| ty_attr LONG { Base ($1 ^ "long") }
 
 
 base:

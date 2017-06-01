@@ -52,6 +52,7 @@ type fmt = Direct of string | Macro of string
 
 let fmt10 = function
   | "int"|"char" ->  Some (Direct "i")
+  | "long" -> Some (Direct "li")
   | "int8_t" -> Some (Macro  "PRIi8")
   | "uint8_t" -> Some (Macro  "PRIu8")
   | "int16_t" -> Some (Macro  "PRIi16")
@@ -64,6 +65,7 @@ let fmt10 = function
 
 let fmt16 = function
   | "int"|"char" ->  Some (Direct "x")
+  | "long" ->  Some (Direct "lx")
   | "int8_t" -> Some (Macro  "PRIx8")
   | "uint8_t" -> Some (Macro  "PRIx8")
   | "int16_t" -> Some (Macro  "PRIx16")
