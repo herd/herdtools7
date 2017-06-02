@@ -37,7 +37,9 @@ type 'prop constr =
 
 type  ('loc,'v) cond = ('loc,'v) prop constr
 
-val is_existential : 'prop constr -> bool 
+val constr_true :  ('loc,'v) cond
+val is_true :  ('loc,'v) cond -> bool
+val is_existential : 'prop constr -> bool
 val prop_of : 'prop constr -> 'prop
 
 (* val dnf : ('loc,'v) prop -> ('loc,'v) prop list list *)
@@ -86,13 +88,13 @@ type 'atom pp_arg =
 
 val pp_prop : ('loc,'v) atom pp_arg -> ('loc,'v) prop  -> string
 
-val dump_prop : 
+val dump_prop :
     (('loc, 'v) atom -> string) -> out_channel -> ('loc,'v) prop -> unit
 
 val prop_to_string :
     (('loc, 'v) atom -> string) -> ('loc,'v) prop -> string
 
-val dump_constraints : 
+val dump_constraints :
     out_channel -> (('loc, 'v) atom -> string) -> ('loc,'v) prop constr -> unit
 
 val constraints_to_string :

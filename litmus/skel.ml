@@ -989,7 +989,9 @@ let user2_barrier_def () =
     let fmt ="\"%-6\"PCTR\"%c>" ^ fmt_var ^ "\\n\"" in
     let args =
       String.concat ","
-        ("c"::"show ? '*' : ':'"::
+        ("c"::
+         (if ConstrGen.is_true test.T.condition then "':'"
+         else "show ? '*' : ':'")::
          [A.LocSet.pp_str ","
            (fun loc ->
              let sloc = dump_loc_name loc in

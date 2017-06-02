@@ -33,6 +33,12 @@ type 'prop constr =
 
 type  ('loc,'v) cond = ('loc,'v) prop constr
 
+let constr_true = ForallStates (And [])
+
+let is_true = function
+  |  ForallStates (And []) -> true
+  | _ -> false
+
 let is_existential p = match p with
 | ExistsState _ -> true
 | ForallStates _

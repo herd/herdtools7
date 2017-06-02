@@ -177,7 +177,7 @@ final:
 | constr SEMI { $1 }
 
 constr:
-|  { ForallStates (And []) }
+|  { ConstrGen.constr_true }
 | FORALL prop
     {ForallStates $2}
 | EXISTS prop
