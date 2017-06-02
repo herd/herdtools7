@@ -64,6 +64,8 @@ open MemOrderOrAnnot
 %nonassoc EQ_OP NEQ_OP
 %left ADD SUB
 %left STAR DIV
+%nonassoc CAST
+%nonassoc PREC_BASE
 
 %type <(CBase.pseudo list) CAst.test list> deep_main
 %start deep_main
@@ -105,7 +107,7 @@ base0:
 
 base:
 | base0 { $1 }
-| LPAR typ RPAR { $2 }
+| LPAR typ RPAR %prec PREC_BASE { $2 }
 
 ty_attr:
 | { "" }
@@ -139,6 +141,7 @@ expr:
 | CONSTANT { Const(Constant.Concrete $1) }
 | CONSTVAR { Const(Constant.Symbolic $1) }
 | IDENTIFIER { LoadReg $1 }
+| LPAR typ RPAR expr %prec CAST { $4 }
 | STAR IDENTIFIER { LoadMem (LoadReg $2,AN []) }
 | STAR LPAR expr RPAR { LoadMem ($3,AN []) }
 | LD LPAR expr RPAR { LoadMem($3,MO SC) }
