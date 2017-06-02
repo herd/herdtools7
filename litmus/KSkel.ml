@@ -389,7 +389,10 @@ module Make
           match ty with
           | CType.Base "spinlock_t" -> ()
           | _ ->
-              O.fii "%s = %s;" (dump_a_leftval s) (dump_a_v v))
+              O.fii "%s = (%s)%s;"
+                (dump_a_leftval s)
+                (CType.dump ty)
+                (dump_a_v v))
         test.T.globals ;
       List.iter
         (fun (proc,(_,(outs,_))) ->
