@@ -61,6 +61,8 @@ let fmt10 = function
   | "uint32_t" -> Some (Macro  "PRIu32")
   | "int64_t" -> Some (Macro  "PRIi64")
   | "uint64_t" -> Some (Macro  "PRIu64")
+  | "intprt_t" -> Some (Macro "PRIiPTR")
+  | "uintprt_t" -> Some (Macro "PRIuPTR")
   | _ -> None
 
 let fmt16 = function
@@ -74,6 +76,8 @@ let fmt16 = function
   | "uint32_t" -> Some (Macro  "PRIx32")
   | "int64_t" -> Some (Macro  "PRIx64")
   | "uint64_t" -> Some (Macro  "PRIx64")
+  | "intprt_t" -> Some (Macro "PRIxPTR")
+  | "uintprt_t" -> Some (Macro "PRIxPTR")
   | _ -> None
 
 let get_fmt hexa = if hexa then fmt16 else fmt10
