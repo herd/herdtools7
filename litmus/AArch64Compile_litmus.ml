@@ -420,7 +420,7 @@ module Make(V:Constant.S)(C:Config) =
         | V64 ->
             let r2,f2,r3,f3 = args2 "xzr" (fun s -> "^i"^s) r2 r3 in
             r2@r3,sprintf " ^o0,%s,%s,%s" f2 f3 (pp_cond c),quad in
-        let memo = String.lowercase_ascii (sel_memo op) ^ memo in
+        let memo = String.lowercase (sel_memo op) ^ memo in
         {
          empty_ins with
          memo = memo; inputs=inputs; outputs=[r1;];
