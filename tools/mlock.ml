@@ -82,26 +82,47 @@ module Top(O:Config)(Out:OutTests.S) = struct
 
   let expand_pseudo_code =
 
+    let rec tr_expr e = match e with
+    | Const _|LoadReg _ -> e
+    | ECall("spin_trylock",[e])
+    | TryLock (e,_) ->
+        let e = tr_expr e in
+        Op
+          (Op.Eq,ECall ("xchg_acquire",[e;Const const_one]),Const const_zero)
+    | LoadMem (e,a) -> LoadMem(tr_expr e,a)
+    | Op (op,e1,e2) -> Op (op,tr_expr e1,tr_expr e2)
+    | Exchange (e1,e2,a) ->  Exchange (tr_expr e1,tr_expr e2,a)
+    | Fetch (e1,op,e2,a) -> Fetch (tr_expr e1,op,tr_expr e2,a)
+    | ECall (f,es) -> ECall (f,List.map tr_expr es)
+    | ECas (e1,e2,e3,m1,m2,b) ->
+        ECas (tr_expr e1,tr_expr e2,tr_expr e3,m1,m2,b) in
+
     let rec tr_ins nxt i = match i with
     | Lock (e,_)|PCall ("spin_lock",[e]) ->
+        let e = tr_expr e in
         let v = sprintf "d%i" nxt in
         nxt+1,StringSet.singleton v,
         StoreReg
           (None,v,ECall ("xchg_acquire",[e;Const const_one]))
     | Unlock (e,_)|PCall ("spin_unlock",[e]) ->
+        let e = tr_expr e in
         nxt,StringSet.empty,
         PCall ("smp_store_release",[e;Const const_zero]);
     | Fence _
     | DeclReg _
     | Symb _
-    | StoreReg _
-    | StoreMem _
-    | PCall _
       -> nxt,StringSet.empty,i
+    | StoreReg (t,r,e) ->
+        nxt,StringSet.empty,StoreReg (t,r,tr_expr e)
+    | StoreMem (e1,e2,m) ->
+         nxt,StringSet.empty,StoreMem(tr_expr e1,tr_expr e2,m)
+    | PCall (f,es) ->
+        nxt,StringSet.empty,PCall (f,List.map tr_expr es)
     | Seq (is,b) ->
         let nxt,vs,is = tr_code nxt is in
         nxt,vs,Seq (is,b)
     | If (ec,it,o) ->
+        let ec = tr_expr ec in
         let nxt,vs,it = tr_ins nxt it in
         let nxt,vs,o = match o with
         | None ->  nxt,vs,o

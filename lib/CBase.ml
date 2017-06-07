@@ -149,10 +149,9 @@ let rec do_dump_instruction indent =
   | If(c,t,e) ->
      let els =  match e with
        | None -> ""
-       | Some e -> do_dump_instruction indent e in
+       | Some e -> "else "^do_dump_instruction indent e in
      indent ^ "if("^dump_expr c^") "^
-     do_dump_instruction indent t^
-     "else "^els
+     do_dump_instruction indent t^els
   | StoreReg(None,r,e) ->
      pindent "%s = %s;" r (dump_expr e)
   | StoreReg(Some t,r,e) ->
