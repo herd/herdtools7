@@ -49,6 +49,8 @@ rule token = parse
 | '('  { LPAR }
 | ')' { RPAR }
 | '=' { EQUAL }
+| "==" { EQUALEQUAL }
+| "!="|"<>" { NOTEQUAL }
 | '+' { PLUS_DISJ }
 | "=>" { IMPLIES }
  | "/\\" {AND}

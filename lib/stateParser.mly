@@ -28,13 +28,13 @@ open ConstrGen
 %token <int> NUM
 
 %token TRUE FALSE
-%token EQUAL PLUS_DISJ
+%token EQUAL NOTEQUAL EQUALEQUAL PLUS_DISJ
 %token FINAL FORALL EXISTS OBSERVED TOKAND NOT AND OR IMPLIES CASES WITH FILTER
 %token LOCATIONS STAR
 %token LBRK RBRK LPAR RPAR SEMI COLON AMPER
 %token ATOMIC
 
-%token PTX_REG_DEC 
+%token PTX_REG_DEC
 %token <string> PTX_REG_TYPE
 
 
@@ -76,9 +76,9 @@ location_reg:
 | NUM COLON reg   {Location_reg ($1,$3)}
 | SYMB_REG        {Location_sreg $1 }
 /* PTX registers */
-| NUM COLON PTX_REG_DEC PTX_REG_TYPE reg 
+| NUM COLON PTX_REG_DEC PTX_REG_TYPE reg
                   {Location_reg($1,$5)}
-| PROC COLON PTX_REG_DEC PTX_REG_TYPE reg 
+| PROC COLON PTX_REG_DEC PTX_REG_TYPE reg
                   {Location_reg($1,$5)}
 
 location_deref:
@@ -183,7 +183,7 @@ constr:
 | EXISTS prop
     {ExistsState $2}
 | NOT EXISTS prop
-	{ NotExistsState $3 }
+        { NotExistsState $3 }
 | FINAL prop
         { ExistsState $2 }
 | LPAR prop RPAR
@@ -197,7 +197,7 @@ obs:
 
 obsone:
 |                       { [] }
-| atom_prop SEMI obsone { Atom $1 :: $3 }
+| atom_prop SEMI obsone { $1 :: $3 }
 
 loc_constr:
 | locations constr { $1,$2 }
@@ -207,9 +207,14 @@ skip_loc_constr:
 
 
 atom_prop:
-| loc_deref  EQUAL maybev {LV ($1,$3)}
-| location EQUAL maybev {LV ($1,$3)}
-| location EQUAL location_deref {LL ($1,$3)}
+| loc_deref  EQUAL maybev {Atom (LV ($1,$3))}
+| location EQUAL maybev {Atom (LV ($1,$3))}
+| loc_deref  EQUALEQUAL maybev {Atom (LV ($1,$3))}
+| location EQUALEQUAL maybev {Atom (LV ($1,$3))}
+| loc_deref  NOTEQUAL maybev {Not (Atom (LV ($1,$3)))}
+| location NOTEQUAL maybev {Not (Atom (LV ($1,$3)))}
+| location EQUAL location_deref {Atom (LL ($1,$3))}
+| location EQUALEQUAL location_deref {Atom (LL ($1,$3))}
 
 
 prop:
@@ -218,7 +223,7 @@ prop:
 | FALSE
     {Or []}
 | atom_prop
-    { Atom $1 }
+    { $1 }
 | NOT prop
     {Not $2}
 | prop AND prop
