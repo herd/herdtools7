@@ -389,7 +389,13 @@ module Make
           let v = A.find_in_state loc test.T.init in
           let ty = U.find_type loc env in
           match ty with
-          | CType.Base "spinlock_t" -> ()
+          | CType.Base "spinlock_t"
+              -> ()
+          | CType.Base "atomic_t"
+            ->
+              O.fii "atomic_set(%s,%s)"
+                (dump_a_leftval s)
+                (dump_a_v v)
           | _ ->
               O.fii "%s = (%s)%s;"
                 (dump_a_leftval s)

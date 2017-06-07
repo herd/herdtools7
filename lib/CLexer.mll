@@ -38,6 +38,7 @@ let tr_name s = match s with
 | "uint64_t"
 | "mutex_t"
 | "spinlock_t"
+| "atomic_t"
 | "intptr_t"
 | "uintptr_t"
   ->
