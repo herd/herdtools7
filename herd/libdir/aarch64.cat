@@ -90,7 +90,7 @@ let dob = addr | data
 
 (* Atomic-ordered-before *)
 let aob = rmw
-	| rmw; rfi
+	| [range(rmw)]; rfi; [A | Q]
 
 (* Barrier-ordered-before *)
 let bob = po; [dmb.full]; po
