@@ -20,8 +20,7 @@ type pseudo = CBase.pseudo
 
 let dump_loc = MiscParser.dump_location
 		 
-let dump_state_atom a =
-  MiscParser.dump_state_atom dump_loc SymbConstant.pp_v a
+let dump_state_atom a = MiscParser.dump_state_atom dump_loc SymbConstant.pp_v a
 			     
 type state = MiscParser.state
 	       
@@ -81,7 +80,8 @@ let list_loc prog =
     | Exchange(l,e,_) -> loc (expr s e) l
     | Fetch(l,_,e,_) -> loc (expr s e) l
     | ECall (_,es) -> List.fold_left expr s es
-    | ECas (e1,e2,e3,_,_,_) -> expr (expr (expr s e1) e2) e3        
+    | ECas (e1,e2,e3,_,_,_) -> expr (expr (expr s e1) e2) e3
+    | TryLock (e,_) -> expr s e
   in 
   let rec ins s = function
     | Seq(l,_) -> List.fold_left ins s l

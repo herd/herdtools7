@@ -13,8 +13,8 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
-module Make (Conf:Sem.Config)(V:Value.S)  
-    = 
+module Make (Conf:Sem.Config)(V:Value.S)
+    =
   struct
 
     module C = CArch_herd.Make(Conf.PC)(V)
@@ -23,9 +23,9 @@ module Make (Conf:Sem.Config)(V:Value.S)
     let barriers = []
     let isync = None
 
-(****************************)	  
+(****************************)
 (* Build semantics function *)
-(****************************)	  
+(****************************)
 
     let (>>=) = M.(>>=)
     let (>>*=) = M.(>>*=)
@@ -56,11 +56,12 @@ module Make (Conf:Sem.Config)(V:Value.S)
         (fun loc v -> Act.Access (Dir.R, loc, v, MOorAN.AN a, true))
         (A.Location_global loc)
 
+
     let write_loc mo loc v ii =
       M.mk_singleton_es (Act.Access (Dir.W, loc, v, mo, false)) ii >>! v
 
     let write_reg r v ii = write_loc no_mo (A.Location_reg (ii.A.proc,r)) v ii
-    let write_mem mo a  = write_loc mo (A.Location_global a) 	     
+    let write_mem mo a  = write_loc mo (A.Location_global a)
     let write_mem_atomic a loc v ii =
       M.mk_singleton_es
         (Act.Access (Dir.W, A.Location_global loc, v, MOorAN.AN a, true)) ii >>! v
@@ -82,7 +83,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
       let exch = M.linux_exch rloc re rmem wmem in
       if add_mb then
         M.mk_fence (Act.Fence  (MOorAN.AN a)) ii >>*=
-        fun () -> exch >>*= 
+        fun () -> exch >>*=
           fun v -> M.mk_fence (Act.Fence  (MOorAN.AN a)) ii >>! v
       else exch
 
@@ -107,9 +108,19 @@ module Make (Conf:Sem.Config)(V:Value.S)
               Warn.user_error "Bad __load argument: %s"
                 (C.dump_expr loc) end) >>=
         fun l -> read_mem is_data mo l ii
-	    
+
+    | C.TryLock (_,C.MutexC11) -> assert false
+    | C.TryLock (loc,C.MutexLinux) ->
+        build_semantics_expr is_data loc ii >>=
+        fun l ->
+          M.read_loc is_data
+            (fun loc v -> Act.TryLock (loc,v))
+            (A.Location_global l) ii >>=
+          fun v ->
+            M.choiceT v (M.unitT V.zero) (M.unitT V.one)
+
     | C.Op(op,e1,e2) ->
-        (build_semantics_expr is_data e1 ii >>| 
+        (build_semantics_expr is_data e1 ii >>|
         build_semantics_expr is_data e2 ii) >>= fun (v1,v2) ->
           M.op op v1 v2
 
@@ -121,15 +132,15 @@ module Make (Conf:Sem.Config)(V:Value.S)
 
     | C.Exchange(l,e,MOorAN.MO mo) ->
         (build_semantics_expr true e ii >>|
-	build_semantics_expr false l ii)
-	  >>= (fun (v,l) ->
+        build_semantics_expr false l ii)
+          >>= (fun (v,l) ->
             read_exchange is_data v mo (A.Location_global l) ii)
 
     | C.Fetch(l,op,e,mo) ->
-	(build_semantics_expr true e ii >>|
-	build_semantics_expr false l ii)
-	  >>= (fun (v,l) ->
-	    fetch_op op v mo (A.Location_global l) ii)
+        (build_semantics_expr true e ii >>|
+        build_semantics_expr false l ii)
+          >>= (fun (v,l) ->
+            fetch_op op v mo (A.Location_global l) ii)
 
 
     | C.ECas(obj,exp,des,success,failure,strong) ->
@@ -143,17 +154,17 @@ module Make (Conf:Sem.Config)(V:Value.S)
         M.altT
            (read_mem true (mo_as_anmo failure) loc_obj ii >>*= fun v_obj ->
            (* For "strong" cas: fail only when v_obj != v_exp *)
-           (if strong then M.neqT v_obj v_exp else M.unitT ()) >>= fun () -> 
+           (if strong then M.neqT v_obj v_exp else M.unitT ()) >>= fun () ->
            (* Non-atomically write that value into the "expected" location *)
            write_mem no_mo loc_exp v_obj ii >>!
-           V.intToV 0)
+           V.zero)
           (* Obtain "desired" value *)
-          (build_semantics_expr true des ii >>= fun v_des -> 
+          (build_semantics_expr true des ii >>= fun v_des ->
            (* Do RMW action on "object", to change its value from "expected"
               to "desired", using memory order "success" *)
            M.mk_singleton_es
              (Act.RMW (A.Location_global loc_obj,v_exp,v_des,success)) ii >>!
-           V.intToV 1)
+           V.one)
 
 
     | C.ECall (f,_) -> Warn.fatal "Macro call %s in CSem" f
@@ -167,38 +178,38 @@ module Make (Conf:Sem.Config)(V:Value.S)
       | _ -> C.Op (Ne,e,C.Const zero) in
       build_semantics_expr false e ii
 
-    let rec build_semantics ii : (A.program_order_index * B.t) M.t = 
+    let rec build_semantics ii : (A.program_order_index * B.t) M.t =
       let ii =
         {ii with A.program_order_index = A.next_po_index ii.A.program_order_index;} in
       match ii.A.inst with
       | C.Seq (insts,_) ->
-          build_semantics_list insts ii 
-	    
+          build_semantics_list insts ii
+
       | C.If(c,t,Some e) ->
           build_cond c ii >>>> fun ret ->
-            let ii' = 
-              {ii with A.program_order_index = 
-	       A.next_po_index ii.A.program_order_index;} 
+            let ii' =
+              {ii with A.program_order_index =
+               A.next_po_index ii.A.program_order_index;}
             in
             let then_branch = build_semantics {ii' with A.inst = t} in
             let else_branch = build_semantics {ii' with A.inst = e} in
             M.choiceT ret then_branch else_branch
-              
+
       | C.If(c,t,None) ->
           build_cond c ii >>>> fun ret ->
-            let ii' = 
-              {ii with A.program_order_index = 
-	       A.next_po_index ii.A.program_order_index;} 
+            let ii' =
+              {ii with A.program_order_index =
+               A.next_po_index ii.A.program_order_index;}
             in
             let then_branch = build_semantics {ii' with A.inst = t} in
             M.choiceT ret then_branch (build_semantics_list [] ii)
-      | C.DeclReg _ ->  M.unitT (ii.A.program_order_index, B.Next)	      
-      | C.StoreReg(_,r,e) -> 
+      | C.DeclReg _ ->  M.unitT (ii.A.program_order_index, B.Next)
+      | C.StoreReg(_,r,e) ->
           build_semantics_expr true e ii >>=
           fun v -> write_reg r v ii >>=
             fun _ ->  M.unitT (ii.A.program_order_index, B.Next)
-      | C.StoreMem(loc,e,mo) -> 
-	  (begin
+      | C.StoreMem(loc,e,mo) ->
+          (begin
             let open MemOrderOrAnnot in
             match mo with
             | AN [] | MO _ ->  build_semantics_expr false loc ii
@@ -206,19 +217,19 @@ module Make (Conf:Sem.Config)(V:Value.S)
               | C.LoadMem (loc,AN []) -> build_semantics_expr false loc ii
               | _ ->
                   Warn.user_error "Bad __store argument: %s"
-                    (C.dump_expr loc)                    
+                    (C.dump_expr loc)
           end >>|
           build_semantics_expr true e ii) >>=
           fun (l,v) -> write_mem mo l v ii >>=
             fun _ -> M.unitT (ii.A.program_order_index, B.Next)
 (* C11 mutex, not sure about them... *)
-      | C.Lock (l,k) ->            
-	  build_semantics_expr false l ii >>=
+      | C.Lock (l,k) ->
+          build_semantics_expr false l ii >>=
           fun l -> begin match k with
           | C.MutexC11 ->
-	      M.altT
+              M.altT
                 (* successful attempt to obtain mutex *)
-	        (M.mk_singleton_es
+                (M.mk_singleton_es
                    (Act.Lock (A.Location_global l, true,k)) ii)
                 (* unsuccessful attempt to obtain mutex *)
                 (M.mk_singleton_es
@@ -231,22 +242,21 @@ module Make (Conf:Sem.Config)(V:Value.S)
       | C.Unlock (l,k) ->
           build_semantics_expr false l ii >>=
           fun l ->
-	    M.mk_singleton_es (Act.Unlock (A.Location_global l,k)) ii
-	      >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
-(********************)	  
-      | C.Fence(mo) -> 
-	  M.mk_fence (Act.Fence mo) ii
-	    >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
-	        
+            M.mk_singleton_es (Act.Unlock (A.Location_global l,k)) ii
+              >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
+(********************)
+      | C.Fence(mo) ->
+          M.mk_fence (Act.Fence mo) ii
+            >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
+
       | C.Symb _ -> Warn.fatal "No symbolic instructions allowed."
       | C.PCall (f,_) -> Warn.fatal "Procedure call %s in CSem" f
-            
+
     and build_semantics_list insts ii = match insts with
     | [] -> M.unitT (ii.A.program_order_index, B.Next)
     | inst :: insts ->
-	let ii = {ii with A.inst=inst; } in
-	build_semantics ii >>> fun (prog_order, _branch) -> 
+        let ii = {ii with A.inst=inst; } in
+        build_semantics ii >>> fun (prog_order, _branch) ->
           build_semantics_list insts {ii with  A.program_order_index = prog_order;}
-	    
+
   end
-    

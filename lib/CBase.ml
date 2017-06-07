@@ -38,7 +38,7 @@ let loc_compare l1 l2 = match l1,l2 with
   | Reg _,Mem _ -> -1
   | Mem _,Reg _ -> 1
 *)
-type mem_order = MemOrder.t 
+type mem_order = MemOrder.t
 
 type barrier = MemOrderOrAnnot.t
 
@@ -50,7 +50,9 @@ let pp_barrier m =
 
 let barrier_compare = Pervasives.compare
 
-type expression = 
+type mutex_kind = MutexLinux | MutexC11
+
+type expression =
   | Const of SymbConstant.v
   | LoadReg of reg
   | LoadMem of expression * MemOrderOrAnnot.t
@@ -59,10 +61,9 @@ type expression =
   | Fetch of expression * Op.op * expression * mem_order
   | ECall of string * expression list
   | ECas of expression * expression * expression * mem_order * mem_order * bool
+  | TryLock of expression * mutex_kind
 
-type mutex_kind = MutexLinux | MutexC11
-
-type instruction = 
+type instruction =
   | Fence of barrier
   | Seq of instruction list * bool (* scope ? *)
   | If of expression * instruction * instruction option
@@ -89,7 +90,7 @@ let dump_op =
 let dump_ws = function
   | true  -> "strong"
   | false -> "weak"
-        
+
 let rec dump_expr =
   let open MemOrderOrAnnot in
   function
@@ -101,22 +102,21 @@ let rec dump_expr =
         sprintf "__load{%s}(%s)" (string_of_annot a) (dump_expr l)
     | LoadMem(l,MO mo) ->
         sprintf "atomic_load_explicit(%s,%s)"
-	  (dump_expr l) (MemOrder.pp_mem_order mo)
-    | Op(op,e1,e2) -> 
+          (dump_expr l) (MemOrder.pp_mem_order mo)
+    | Op(op,e1,e2) ->
         sprintf "%s %s %s" (dump_expr e1) (Op.pp_op op) (dump_expr e2)
     | Exchange(l,e,MO mo) ->
         sprintf "atomic_exchange_explicit(%s,%s,%s)"
-	  (dump_expr l) (dump_expr e) (MemOrder.pp_mem_order mo)
+          (dump_expr l) (dump_expr e) (MemOrder.pp_mem_order mo)
     | Exchange(l,e,AN a) ->
         sprintf "__xchg{%s}(%s,%s)"
-	  (string_of_annot a) (dump_expr l) (dump_expr e)
-    | Fetch(l,op,e,mo) -> 
-        sprintf "atomic_fetch_%s_explicit(%s,%s,%s);" 
-	  (dump_op op) (dump_expr l) (dump_expr e) 
-	  (MemOrder.pp_mem_order mo)
+          (string_of_annot a) (dump_expr l) (dump_expr e)
+    | Fetch(l,op,e,mo) ->
+        sprintf "atomic_fetch_%s_explicit(%s,%s,%s);"
+          (dump_op op) (dump_expr l) (dump_expr e)
+          (MemOrder.pp_mem_order mo)
     | ECall(f,es) ->
         sprintf "%s(%s)" f (dump_args es)
-
     | ECas(e1,e2,e3,MemOrder.SC,MemOrder.SC,strong) ->
         sprintf "atomic_compare_exchange_%s(%s,%s,%s)"
           (dump_ws strong)
@@ -126,7 +126,10 @@ let rec dump_expr =
         sprintf "atomic_compare_exchange_%s_explicit(%s,%s,%s,%s,%s)"
           (dump_ws strong)
           (dump_expr e1) (dump_expr e2) (dump_expr e3)
-	  (MemOrder.pp_mem_order mo1) (MemOrder.pp_mem_order mo2)
+          (MemOrder.pp_mem_order mo1) (MemOrder.pp_mem_order mo2)
+    | TryLock (_,MutexC11) -> assert false
+    | TryLock (e,MutexLinux) ->
+          sprintf "spin_trylock(%s)" (dump_expr e)
 
 and dump_args es = String.concat "," (List.map dump_expr es)
 
@@ -150,27 +153,27 @@ let rec do_dump_instruction indent =
      indent ^ "if("^dump_expr c^") "^
      do_dump_instruction indent t^
      "else "^els
-  | StoreReg(None,r,e) -> 
+  | StoreReg(None,r,e) ->
      pindent "%s = %s;" r (dump_expr e)
-  | StoreReg(Some t,r,e) -> 
+  | StoreReg(Some t,r,e) ->
      pindent "%s %s = %s;" (CType.dump t) r (dump_expr e)
-  | DeclReg(t,r) -> 
+  | DeclReg(t,r) ->
      pindent "%s %s;" (CType.dump t) r
-  | StoreMem(LoadReg r,e,AN []) -> 
+  | StoreMem(LoadReg r,e,AN []) ->
      pindent "*%s = %s;" r (dump_expr e)
   | StoreMem(l,e,AN a) ->
       pindent "__store{%s}(%s,%s);"
         (string_of_annot a) (dump_expr l) (dump_expr e)
-  | StoreMem(l,e,MO mo) -> 
+  | StoreMem(l,e,MO mo) ->
      pindent "atomic_store_explicit(%s,%s,%s);"
-	     (dump_expr l) (dump_expr e) (MemOrder.pp_mem_order mo)
-  | Lock (l,MutexC11) -> 
+             (dump_expr l) (dump_expr e) (MemOrder.pp_mem_order mo)
+  | Lock (l,MutexC11) ->
      pindent "lock(%s);" (dump_expr l)
-  | Unlock (l,MutexC11) -> 
+  | Unlock (l,MutexC11) ->
      pindent "unlock(%s);" (dump_expr l)
-  | Lock (l,MutexLinux) -> 
+  | Lock (l,MutexLinux) ->
      pindent "spin_lock(%s);" (dump_expr l)
-  | Unlock (l,MutexLinux) -> 
+  | Unlock (l,MutexLinux) ->
      pindent "spin_unlock(%s);" (dump_expr l)
   | Symb s -> pindent "codevar:%s;" s
   | PCall (f,es) ->
@@ -178,10 +181,10 @@ let rec do_dump_instruction indent =
 
 let dump_instruction = do_dump_instruction ""
 
-let pp_instruction _mode = dump_instruction 
+let pp_instruction _mode = dump_instruction
 
-let allowed_for_symb = List.map (fun x -> "r"^(string_of_int x)) 
-				(Misc.interval 0 64)
+let allowed_for_symb = List.map (fun x -> "r"^(string_of_int x))
+                                (Misc.interval 0 64)
 
 let fold_regs (_fc,_fs) acc _ins = acc
 let map_regs _fc _fs ins = ins
@@ -197,37 +200,38 @@ include Pseudo.Make
       type reg_arg = reg
 
       let rec parsed_expr_tr = function
-	| Const(Constant.Concrete _) as k -> k 
-	| Const(Constant.Symbolic _) -> 
-	    Warn.fatal "No constant variable allowed"
-	| LoadReg _ as l -> l
+        | Const(Constant.Concrete _) as k -> k
+        | Const(Constant.Symbolic _) ->
+            Warn.fatal "No constant variable allowed"
+        | LoadReg _ as l -> l
         | LoadMem (l,mo) ->
             LoadMem (parsed_expr_tr l,mo)
-	| Op(op,e1,e2) -> Op(op,parsed_expr_tr e1,parsed_expr_tr e2)
-	| Exchange(l,e,mo) ->
+        | Op(op,e1,e2) -> Op(op,parsed_expr_tr e1,parsed_expr_tr e2)
+        | Exchange(l,e,mo) ->
             Exchange(parsed_expr_tr l,parsed_expr_tr e,mo)
-	| Fetch(l,op,e,mo) ->
+        | Fetch(l,op,e,mo) ->
             Fetch(parsed_expr_tr l,op,parsed_expr_tr e,mo)
         | ECall (f,es) -> ECall (f,List.map parsed_expr_tr es)
         | ECas (e1,e2,e3,mo1,mo2,strong) ->
             ECas
               (parsed_expr_tr e1,parsed_expr_tr e2,parsed_expr_tr e3,
                mo1,mo2,strong)
+        | TryLock(e,m) -> TryLock(parsed_expr_tr e,m)
 
       and parsed_tr = function
-	| Fence _|DeclReg _ as i -> i
-	| Seq(li,b) -> Seq(List.map parsed_tr li,b)
-	| If(e,it,ie) -> 
-	    let tr_ie = match ie with
-	    | None -> None
-	    | Some ie -> Some(parsed_tr ie) in
-	    If(parsed_expr_tr e,parsed_tr it,tr_ie)
-	| StoreReg(ot,l,e) -> StoreReg(ot,l,parsed_expr_tr e)
-	| StoreMem(l,e,mo) ->
+        | Fence _|DeclReg _ as i -> i
+        | Seq(li,b) -> Seq(List.map parsed_tr li,b)
+        | If(e,it,ie) ->
+            let tr_ie = match ie with
+            | None -> None
+            | Some ie -> Some(parsed_tr ie) in
+            If(parsed_expr_tr e,parsed_tr it,tr_ie)
+        | StoreReg(ot,l,e) -> StoreReg(ot,l,parsed_expr_tr e)
+        | StoreMem(l,e,mo) ->
             StoreMem(parsed_expr_tr l,parsed_expr_tr e,mo)
-	| Lock (e,k) -> Lock (parsed_expr_tr e,k)
+        | Lock (e,k) -> Lock (parsed_expr_tr e,k)
         | Unlock (e,k) -> Unlock  (parsed_expr_tr e,k)
-	| Symb _ -> Warn.fatal "No term variable allowed"
+        | Symb _ -> Warn.fatal "No term variable allowed"
         | PCall (f,es) -> PCall (f,List.map parsed_expr_tr es)
 
       let get_naccesses =
@@ -243,8 +247,9 @@ include Pseudo.Make
           | ECas (e1,e2,e3,_,_,_) ->
               let k = get_exp k e1 in
               let k = get_exp k e2 in
-              get_exp k e3 in
-        
+              get_exp k e3
+          | TryLock(e,_) -> get_exp (k+1) e in
+
         let rec get_rec k = function
           | Fence _|Symb _ | DeclReg _ -> k
           | Seq (seq,_) -> List.fold_left get_rec k seq
@@ -273,7 +278,7 @@ let get_macro _s = assert false
 
 type macro =
   | EDef of string * string list * expression
-  | PDef of string * string list * instruction 
+  | PDef of string * string list * instruction
 
 type env_macro =
   { expr : (string list * expression) StringMap.t ;
@@ -314,14 +319,15 @@ let rec subst_expr env e = match e with
 | Fetch (loc,op,e,mo) -> Fetch (subst_expr env loc,op,subst_expr env e,mo)
 | ECall (f,es) ->
     let xs,e = find_macro f env.expr in
-    let frame = build_frame f (subst_expr env) xs es in 
+    let frame = build_frame f (subst_expr env) xs es in
     subst_expr { env with args = frame; } e
 | ECas (e1,e2,e3,mo1,mo2,strong) ->
     let e1 = subst_expr env e1
     and e2 = subst_expr env e2
     and e3 = subst_expr env e3 in
     ECas (e1,e2,e3,mo1,mo2,strong)
-    
+| TryLock (e,m) -> TryLock(subst_expr env e,m)
+
 let rec subst env i = match i with
 | Fence _|Symb _|DeclReg _ -> i
 | Seq (is,b) -> Seq (List.map (subst env) is,b)
@@ -346,7 +352,7 @@ let rec subst env i = match i with
 | Unlock (loc,k) -> Unlock (subst_expr env loc,k)
 | PCall (f,es) ->
     let xs,body = find_macro f env.proc in
-    let frame = build_frame f (subst_expr env) xs es in 
+    let frame = build_frame f (subst_expr env) xs es in
     subst { env with args = frame; } body
 
 let expand ms = match ms with

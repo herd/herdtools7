@@ -83,6 +83,7 @@ let tr_name s = match s with
 | "__store" -> STORE
 | "__xchg" -> XCHG
 | "__lock" -> SPINLOCK
+| "__trylock" -> SPINTRYLOCK
 | "__unlock" -> SPINUNLOCK
 (* Others *)
 | x -> IDENTIFIER x

@@ -28,3 +28,4 @@ xchg_acquire(X,V) __xchg{acquire}(X,V)
 
 spin_lock(X) { __lock(X) ; }
 spin_unlock(X) { __unlock(X) ; }
+spin_trylock(X) __trylock(X)

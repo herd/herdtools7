@@ -25,7 +25,7 @@ module Make (A : Arch_herd.S) : sig
     | Lock of A.location * bool (* true = success, false = blocked *)
           * CBase.mutex_kind
     | Unlock of A.location * CBase.mutex_kind
-
+    | TryLock of A.location * A.V.v (* location, value 0=sucesss, 1=failure *)
   include Action.S with type action := action and module A = A
 
 end = struct
@@ -40,6 +40,7 @@ end = struct
     | RMW of A.location * V.v * V.v * MemOrder.t
     | Lock of A.location * bool (* true = success, false = blocked *) * CBase.mutex_kind
     | Unlock of A.location  * CBase.mutex_kind
+    | TryLock of A.location * A.V.v
 
 
 
@@ -80,7 +81,9 @@ end = struct
         (A.pp_location l)
     | Unlock (l,CBase.MutexLinux) ->
       sprintf "Unlock(%s)"
-        (A.pp_location l)
+          (A.pp_location l)
+    | TryLock (l,v) ->
+        sprintf "TryLock(%s,%s)" (A.pp_location l) (V.pp_v v)
 
 (* Utility functions to pick out components *)
 
@@ -104,8 +107,9 @@ end = struct
     | Access (_, l, _,_,_) 
     | Lock (l,_,_)
     | Unlock (l,_)
+    | TryLock (l,_)
     | RMW (l,_,_,_) -> Some l
-    | _ -> None
+    | Fence _ -> None
 
 (* relative to memory *)
     let is_mem_store a = match a with
@@ -201,8 +205,9 @@ end = struct
 
 (* Mutex operations *)
    let is_lock a = match a with
-     | Lock _ -> true
-     | _ -> false
+   | Lock _ -> true
+   | TryLock (_,v) when V.is_zero v -> true
+   | _ -> false
 
    let is_successful_lock a = match a with
      | Lock (_,true,CBase.MutexC11) -> true
@@ -243,7 +248,7 @@ end = struct
 
     let undetermined_vars_in_action a =
       match a with
-      | Access (_,l,v,_,_) -> 
+      | Access (_,l,v,_,_)|TryLock(l,v) ->
 	  let undet_loc = match A.undetermined_vars_in_loc l with
 	  | None -> V.ValueSet.empty
 	  | Some v -> V.ValueSet.singleton v in
@@ -284,6 +289,10 @@ end = struct
       | Unlock (l,k)  ->
         let l' = A.simplify_vars_in_loc soln l in
         Unlock (l',k)
+      | TryLock (l,v) ->
+	 let l' = A.simplify_vars_in_loc soln l in
+	 let v' = V.simplify_var soln v in
+	 TryLock (l',v')
       | Fence _ -> a
 
 (*************************************************************)	      
@@ -296,6 +305,6 @@ end = struct
     | Access (_,_,_,AN a,_)
     | Fence (AN a) -> List.exists (fun a -> Misc.string_eq str a) a 
     | Access (_, _, _, MO _,_)|Fence (MO _)|RMW (_, _, _, _)
-    | Lock _|Unlock _ -> false
+    | Lock _|Unlock _|TryLock _ -> false
 end
 

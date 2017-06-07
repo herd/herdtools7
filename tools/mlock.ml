@@ -170,7 +170,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
   | ECall ("READ_ONCE", [LoadMem (LoadReg x,AN [])]) ->
       changed := true ; StringSet.singleton x
   | ECall (_,es) -> exprs_read es
-  | LoadMem (e,_) -> expr_read e
+  | LoadMem (e,_)|TryLock (e,_) -> expr_read e
   | Op (_,e1,e2)
   | Exchange (e1,e2,_)
   | Fetch (e1,_,e2,_)
@@ -270,6 +270,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
     | ECall (f,es) -> ECall (f,tr_exprs es)
     | ECas (e1,e2,e3,a1,a2,b) ->
         ECas (tr_expr e1,tr_expr e2,tr_expr e3,a1,a2,b)
+    | TryLock (e,m) -> TryLock (tr_expr e,m)
 
     and tr_exprs es =  List.map tr_expr es in
 
