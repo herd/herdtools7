@@ -59,11 +59,11 @@ let to_hex32 num =
 
 let to_dec =
   if O.int32 then to_dec32
-  else fun num -> try string_of_int (int_of_string num) with _ -> num
+  else fun num -> try Int64.to_string (Int64.of_string num) with _ -> num
 
 let to_hex =
   if O.int32 then to_hex32
-  else fun num -> try sprintf "0x%x" (int_of_string num) with _ -> num
+  else fun num -> try sprintf "0x%Lx" (Int64.of_string num) with _ -> num
 
 let to_xxx = if O.hexa then to_hex else to_dec
 
