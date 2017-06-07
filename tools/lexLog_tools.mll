@@ -16,6 +16,8 @@
 
 {
 
+let mask = Int64.sub (Int64.shift_left Int64.one 32) Int64.one
+     
 module type Config = sig
   val verbose : int
   val rename : string -> string
@@ -45,7 +47,15 @@ let to_dec32 num =
   try Int32.to_string (Int32.of_string num) with _ -> num
 
 let to_hex32 num =
-  try sprintf "0x%lx" (Int32.of_string num) with _ -> num
+  try
+    sprintf "0x%lx" (Int32.of_string num)
+  with _ -> try (* Big unsigned... *)
+    let n = Int64.of_string num in
+    let n32 = Int64.logand n mask in
+    if Int64.compare n32 n = 0 then
+      sprintf "0x%Lx" n32
+    else num
+  with _ -> num
 
 let to_dec =
   if O.int32 then to_dec32
