@@ -211,6 +211,12 @@ end = struct
 
    let is_successful_lock a = match a with
      | Lock (_,true,CBase.MutexC11) -> true
+     | TryLock (_,v) when V.is_zero v -> true
+     | _ -> false
+
+   let is_failed_lock a = match a with
+     | Lock (_,false,CBase.MutexC11) -> true
+     | TryLock (_,v) when not (V.is_zero v) -> true
      | _ -> false
 
    let is_unlock a = match a with
@@ -227,7 +233,8 @@ end = struct
 
    let arch_sets = [
      "RMW",(fun e -> is_rmw e || is_atomic e);
-     "LK", is_lock; "LS", is_successful_lock;
+     "LK", is_lock;
+     "LS", is_successful_lock;"LF", is_failed_lock;
      "UL", is_unlock;
      "ACQ", mo_matches MemOrder.Acq;
      "SC", mo_matches MemOrder.SC;
