@@ -69,6 +69,7 @@ rule token = parse
 | "filter" { FILTER }
 (* Typing *)
 | "_Atomic" { ATOMIC }
+| "ATOMIC_INIT" { ATOMICINIT }
 (*for GPU*)
 | ".reg" {PTX_REG_DEC}
 | ".s32" as x

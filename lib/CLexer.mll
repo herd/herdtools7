@@ -85,6 +85,7 @@ let tr_name s = match s with
 | "__lock" -> SPINLOCK
 | "__trylock" -> SPINTRYLOCK
 | "__unlock" -> SPINUNLOCK
+| "__atomic_op" -> UNDERATOMICOP
 (* Others *)
 | x -> IDENTIFIER x
 }

@@ -51,6 +51,7 @@ let rec  debug = function
 type fmt = Direct of string | Macro of string
 
 let fmt10 = function
+  | "atomic_t"
   | "int"|"char" ->  Some (Direct "i")
   | "long" -> Some (Direct "li")
   | "int8_t" -> Some (Macro  "PRIi8")
@@ -66,6 +67,7 @@ let fmt10 = function
   | _ -> None
 
 let fmt16 = function
+  | "atomic_t"
   | "int"|"char" ->  Some (Direct "x")
   | "long" ->  Some (Direct "lx")
   | "int8_t" -> Some (Macro  "PRIx8")

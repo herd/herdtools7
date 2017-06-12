@@ -21,11 +21,23 @@ smp_rmb() { __fence{rmb} ; }
 smp_wmb() { __fence{wmb} ; }
 smp_read_barrier_depends() { __fence{rb_dep}; }
 
+//Exchange
 xchg(X,V)  __xchg{mb}(X,V)
 xchg_relaxed(X,V) __xchg{once}(X,V)
 xchg_release(X,V) __xchg{release}(X,V)
 xchg_acquire(X,V) __xchg{acquire}(X,V)
 
+// Spinlocks
 spin_lock(X) { __lock(X) ; }
 spin_unlock(X) { __unlock(X) ; }
 spin_trylock(X) __trylock(X)
+spin_unlock_wait(X) { __lock(X) ; __unlock(X) ; }
+
+
+//Atomic
+atomic_read(X) READ_ONCE(*X)
+atomic_set(X,V) { WRITE_ONCE(*X,V) ; }
+atomic_add(V,X) { __atomic_op(X,+,V) ; }
+atomic_sub(V,X) { __atomic_op(X,-,V) ; }
+atomic_inc(X)   { __atomic_op(X,+,1) ; }
+atomic_dec(X)   { __atomic_op(X,-,1) ; }

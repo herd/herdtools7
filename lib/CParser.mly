@@ -53,7 +53,7 @@ open MemOrderOrAnnot
 %nonassoc ELSE
 %token <MemOrder.t> MEMORDER
 %token LD LD_EXPLICIT ST ST_EXPLICIT EXC EXC_EXPLICIT FENCE LOCK UNLOCK SPINLOCK SPINUNLOCK SPINTRYLOCK SCAS WCAS SCAS_EXPLICIT WCAS_EXPLICIT
-%token LOAD STORE UNDERFENCE XCHG
+%token LOAD STORE UNDERFENCE XCHG UNDERATOMICOP
 %token <Op.op> ATOMIC_FETCH
 %token <Op.op> ATOMIC_FETCH_EXPLICIT
 
@@ -124,10 +124,15 @@ declaration:
 initialisation:
 | typ IDENTIFIER EQ expr { StoreReg (Some $1,$2,$4) ; }
 
+atomic_op:
+| ADD { Op.Add }
+| SUB { Op.Sub }
+
 annot:
 | IDENTIFIER { $1 }
 | LOCK       { "lock" }
 | UNLOCK       { "unlock" }
+
 
 annot_list:
 | annot COMMA annot_list
@@ -220,6 +225,8 @@ instruction:
   { Unlock ($3,MutexLinux) }
 | UNDERFENCE LBRACE annot_list RBRACE SEMI
   { Fence(AN $3) }
+| UNDERATOMICOP LPAR expr COMMA atomic_op COMMA expr RPAR SEMI
+  { AtomicOp($3,$5,$7) }
 | FENCE LPAR MEMORDER RPAR SEMI
   { Fence(MO $3) }
 | CODEVAR SEMI

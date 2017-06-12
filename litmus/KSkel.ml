@@ -99,7 +99,9 @@ module Make
 
     let do_dump_cond_fun env cond =
       let find_type loc =
-        let t = U.find_type loc env in
+        let t = match CType.strip_atomic (U.find_type loc env) with
+        | CType.Base "atomic_t" ->  CType.Base "int"
+        | t -> t in
         CType.dump (CType.strip_atomic t) in
       DC.fundef find_type cond
 
@@ -194,14 +196,20 @@ module Make
       let args =
         String.concat ","
           ("p->c"::
-           (if ConstrGen.is_true test.T.condition then "':'"
-           else"p->show ? '*' : ':'")::
+           (let tst =
+             let open ConstrGen in
+             match test.T.condition with
+             | ForallStates _ -> "!p->show"
+             | ExistsState _|NotExistsState _ -> "p->show" in
+            tst ^ " ? '*' : ':'")::
            [A.LocSet.pp_str ","
               (fun loc ->
                 let sloc = dump_loc_name loc in
                 match U.find_type loc env with
                 | CType.Pointer _ ->
                     sprintf "pretty_addr[(int)o[%s_f]]" sloc
+                | CType.Base "atomic_t" ->
+                     sprintf "(int)o[%s_f]" sloc
                 | CType.Array _ -> assert false
                 | t -> sprintf "(%s)o[%s_f]" (CType.dump t) sloc)
               outs]) in
@@ -393,7 +401,7 @@ module Make
               -> ()
           | CType.Base "atomic_t"
             ->
-              O.fii "atomic_set(%s,%s)"
+              O.fii "atomic_set(&%s,%s);"
                 (dump_a_leftval s)
                 (dump_a_v v)
           | _ ->
@@ -527,7 +535,12 @@ let dump_zyva tname env test =
   O.oii "for (int _ni = 0 ; _ni < ninst ; _ni++) {" ;
   O.oiii "ctx_t *_a = c[_ni];" ;
   O.oiii "for (int _i = 0 ; _i < size ; _i++) {" ;
-  let dump_a_loc loc = sprintf "_a->%s[_i]" (dump_loc_name loc) in
+  let dump_a_loc loc =
+    match U.find_type loc env with
+    | CType.Base "atomic_t" ->
+        sprintf "atomic_read(&_a->%s[_i])"  (dump_loc_name loc)
+    | _ ->
+        sprintf "_a->%s[_i]" (dump_loc_name loc) in
   O.oiv "outcome_t _o;" ;
   O.oiv "int _cond;" ;
   begin match test.T.filter with

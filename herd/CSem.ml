@@ -245,6 +245,16 @@ module Make (Conf:Sem.Config)(V:Value.S)
             M.mk_singleton_es (Act.Unlock (A.Location_global l,k)) ii
               >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
 (********************)
+      | C.AtomicOp  (eloc,op,e) ->
+          build_semantics_expr true e ii >>|
+          ( build_semantics_expr false eloc ii >>=
+            fun loc ->
+              (read_mem_atomic true [] loc ii >>| M.unitT loc)) >>=
+          (fun (v,(vloc,loc)) ->
+            M.op op vloc v >>=
+            fun w -> write_mem_atomic [] loc w ii
+              >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next))
+(********************)
       | C.Fence(mo) ->
           M.mk_fence (Act.Fence mo) ii
             >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
