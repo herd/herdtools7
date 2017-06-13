@@ -26,6 +26,10 @@ xchg(X,V)  __xchg{mb}(X,V)
 xchg_relaxed(X,V) __xchg{once}(X,V)
 xchg_release(X,V) __xchg{release}(X,V)
 xchg_acquire(X,V) __xchg{acquire}(X,V)
+cmpxchg(X,V,W) __cmpxchg{mb}(X,V,W)
+cmpxchg_relaxed(X,V,W) __cmpxchg{once}(X,V,W)
+cmpxchg_acquire(X,V,W) __cmpxchg{acquire}(X,V,W)
+cmpxchg_release(X,V,W) __cmpxchg{release}(X,V,W)
 
 // Spinlocks
 spin_lock(X) { __lock(X) ; }
@@ -41,3 +45,14 @@ atomic_add(V,X) { __atomic_op(X,+,V) ; }
 atomic_sub(V,X) { __atomic_op(X,-,V) ; }
 atomic_inc(X)   { __atomic_op(X,+,1) ; }
 atomic_dec(X)   { __atomic_op(X,-,1) ; }
+// return value
+atomic_add_return(V,X) __atomic_op_return(X,+,V)
+atomic_sub_return(V,X) __atomic_op_return(X,-,V)
+atomic_inc_return(X) __atomic_op_return(X,+,1)
+atomic_dec_return(X) __atomic_op_return(X,-,1)
+atomic_sub_and_test(V,X) __atomic_op_return(X,-,V) == 0
+atomic_dec_and_test(X)  __atomic_op_return(X,-,1) == 0
+atomic_inc_and_test(X)  __atomic_op_return(X,+,1) == 0
+atomic_add_negative(V,X) __atomic_op_return(X,+,V) < 0
+atomic_xchg(X,V) __xchg{mb}(X,V)
+atomic_cmpxchg(X,V,W) __cmpxchg{mb}(X,V,W)

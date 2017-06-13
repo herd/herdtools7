@@ -43,7 +43,7 @@ open MemOrderOrAnnot
 /* For deep parsing */
 %token <int> CONSTANT
 %token NULL
-%token SEMI COLON EQ EQ_OP NEQ_OP DOT
+%token SEMI COLON EQ EQ_OP NEQ_OP LT LE GT GE DOT
 %token XOR PIPE
 %token LAND
 %token ADD SUB
@@ -53,7 +53,7 @@ open MemOrderOrAnnot
 %nonassoc ELSE
 %token <MemOrder.t> MEMORDER
 %token LD LD_EXPLICIT ST ST_EXPLICIT EXC EXC_EXPLICIT FENCE LOCK UNLOCK SPINLOCK SPINUNLOCK SPINTRYLOCK SCAS WCAS SCAS_EXPLICIT WCAS_EXPLICIT
-%token LOAD STORE UNDERFENCE XCHG UNDERATOMICOP
+%token LOAD STORE UNDERFENCE XCHG CMPXCHG UNDERATOMICOP  UNDERATOMICOPRETURN
 %token <Op.op> ATOMIC_FETCH
 %token <Op.op> ATOMIC_FETCH_EXPLICIT
 
@@ -161,12 +161,18 @@ expr:
 | expr XOR expr { Op(Op.Xor,$1,$3) }
 | expr EQ_OP expr { Op(Op.Eq,$1,$3) }
 | expr NEQ_OP expr { Op(Op.Ne,$1,$3) }
+| expr LT expr { Op(Op.Lt,$1,$3) }
+| expr GT expr { Op(Op.Gt,$1,$3) }
+| expr LE expr { Op(Op.Le,$1,$3) }
+| expr GE expr { Op(Op.Ge,$1,$3) }
 | EXC LPAR expr COMMA expr RPAR
   { Exchange($3, $5, MO SC) }
 | EXC_EXPLICIT LPAR expr COMMA expr COMMA MEMORDER RPAR
   { Exchange($3, $5, MO $7) }
 | XCHG LBRACE annot_list RBRACE LPAR expr COMMA expr RPAR
   { Exchange($6,$8,AN $3) }
+| CMPXCHG LBRACE annot_list RBRACE LPAR expr COMMA expr COMMA expr RPAR
+  { CmpExchange($6,$8,$10,$3) }
 | ATOMIC_FETCH LPAR expr COMMA expr RPAR
   { Fetch ($3, $1, $5, SC) }
 | ATOMIC_FETCH_EXPLICIT LPAR expr COMMA expr COMMA MEMORDER RPAR
@@ -183,6 +189,8 @@ expr:
   { ECas ($3,$5,$7,$9,$11,true) }
 | SPINTRYLOCK LPAR expr RPAR
   { TryLock ($3,MutexLinux) }
+| UNDERATOMICOPRETURN LPAR expr COMMA atomic_op COMMA expr RPAR
+  { AtomicOpReturn($3,$5,$7) }
 
 args:
 | { [] }

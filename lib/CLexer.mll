@@ -82,10 +82,12 @@ let tr_name s = match s with
 | "__load" -> LOAD
 | "__store" -> STORE
 | "__xchg" -> XCHG
+| "__cmpxchg" -> CMPXCHG
 | "__lock" -> SPINLOCK
 | "__trylock" -> SPINTRYLOCK
 | "__unlock" -> SPINUNLOCK
 | "__atomic_op" -> UNDERATOMICOP
+| "__atomic_op_return" -> UNDERATOMICOPRETURN
 (* Others *)
 | x -> IDENTIFIER x
 }
@@ -126,8 +128,11 @@ rule token deep = parse
 | '=' {EQ}
 | "==" {EQ_OP}
 | "!=" {NEQ_OP}
+| "<" { LT }
+| ">" { GT }
+| "<=" { LE }
+| ">=" { GE }
 | '.' {DOT}
-
 | "constvar:" (name as s) { CONSTVAR s }
 | "codevar:" (name as s) { CODEVAR s }
 | '%' name as s { IDENTIFIER s }

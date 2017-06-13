@@ -58,10 +58,12 @@ type expression =
   | LoadMem of expression * MemOrderOrAnnot.t
   | Op of Op.op * expression * expression
   | Exchange of expression * expression * MemOrderOrAnnot.t
+  | CmpExchange of expression * expression * expression  * MemOrderOrAnnot.annot
   | Fetch of expression * Op.op * expression * mem_order
   | ECall of string * expression list
   | ECas of expression * expression * expression * mem_order * mem_order * bool
   | TryLock of expression * mutex_kind
+  | AtomicOpReturn of expression * Op.op * expression
 
 type instruction =
   | Fence of barrier
@@ -112,6 +114,9 @@ let rec dump_expr =
     | Exchange(l,e,AN a) ->
         sprintf "__xchg{%s}(%s,%s)"
           (string_of_annot a) (dump_expr l) (dump_expr e)
+    | CmpExchange(e1,e2,e3,a) ->
+         sprintf "__cmpxchg{%s}(%s,%s,%s)"
+          (string_of_annot a) (dump_expr e1) (dump_expr e2) (dump_expr e3)
     | Fetch(l,op,e,mo) ->
         sprintf "atomic_fetch_%s_explicit(%s,%s,%s);"
           (dump_op op) (dump_expr l) (dump_expr e)
@@ -130,7 +135,10 @@ let rec dump_expr =
           (MemOrder.pp_mem_order mo1) (MemOrder.pp_mem_order mo2)
     | TryLock (_,MutexC11) -> assert false
     | TryLock (e,MutexLinux) ->
-          sprintf "spin_trylock(%s)" (dump_expr e)
+        sprintf "spin_trylock(%s)" (dump_expr e)
+    | AtomicOpReturn (loc,op,e) ->
+        sprintf "__atomic_op_return(%s,%s,%s)"
+          (dump_expr loc) (Op.pp_op op) (dump_expr e)
 
 and dump_args es = String.concat "," (List.map dump_expr es)
 
@@ -212,6 +220,8 @@ include Pseudo.Make
         | Op(op,e1,e2) -> Op(op,parsed_expr_tr e1,parsed_expr_tr e2)
         | Exchange(l,e,mo) ->
             Exchange(parsed_expr_tr l,parsed_expr_tr e,mo)
+        | CmpExchange(e1,e2,e3,a) ->
+            CmpExchange(parsed_expr_tr e1,parsed_expr_tr e2,parsed_expr_tr e3,a)
         | Fetch(l,op,e,mo) ->
             Fetch(parsed_expr_tr l,op,parsed_expr_tr e,mo)
         | ECall (f,es) -> ECall (f,List.map parsed_expr_tr es)
@@ -220,6 +230,8 @@ include Pseudo.Make
               (parsed_expr_tr e1,parsed_expr_tr e2,parsed_expr_tr e3,
                mo1,mo2,strong)
         | TryLock(e,m) -> TryLock(parsed_expr_tr e,m)
+        | AtomicOpReturn (loc,op,e) ->
+            AtomicOpReturn(parsed_expr_tr loc,op,parsed_expr_tr e)
 
       and parsed_tr = function
         | Fence _|DeclReg _ as i -> i
@@ -246,8 +258,11 @@ include Pseudo.Make
           | LoadMem (e,_) -> get_exp (k+1) e
           | Op (_,e1,e2) -> get_exp (get_exp k e1) e2
           | Fetch (loc,_,e,_)
-          | Exchange (loc,e,_) -> get_exp (get_exp (k+2) e) loc
+          | Exchange (loc,e,_)
+          | AtomicOpReturn (loc,_,e) ->
+              get_exp (get_exp (k+2) e) loc
           | ECall (_,es) -> List.fold_left get_exp k es
+          | CmpExchange (e1,e2,e3,_)
           | ECas (e1,e2,e3,_,_,_) ->
               let k = get_exp k e1 in
               let k = get_exp k e2 in
@@ -321,6 +336,8 @@ let rec subst_expr env e = match e with
 | Const _ -> e
 | Op (op,e1,e2) -> Op (op,subst_expr env e1,subst_expr env e2)
 | Exchange (loc,e,mo) ->  Exchange (subst_expr env loc,subst_expr env e,mo)
+| CmpExchange (e1,e2,e3,a) ->
+    CmpExchange (subst_expr env e1,subst_expr env e2,subst_expr env e3,a)
 | Fetch (loc,op,e,mo) -> Fetch (subst_expr env loc,op,subst_expr env e,mo)
 | ECall (f,es) ->
     let xs,e = find_macro f env.expr in
@@ -332,6 +349,8 @@ let rec subst_expr env e = match e with
     and e3 = subst_expr env e3 in
     ECas (e1,e2,e3,mo1,mo2,strong)
 | TryLock (e,m) -> TryLock(subst_expr env e,m)
+| AtomicOpReturn (loc,op,e) ->
+    AtomicOpReturn (subst_expr env loc,op,subst_expr env e)
 
 let rec subst env i = match i with
 | Fence _|Symb _|DeclReg _ -> i

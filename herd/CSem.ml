@@ -36,6 +36,8 @@ module Make (Conf:Sem.Config)(V:Value.S)
     let (>>>>) = M.(>>>>)
 
     module MOorAN = MemOrderOrAnnot
+    let a_once = ["once"]
+    let a_mb = ["mb"]
     let no_mo = MOorAN.AN []
     let mo_as_anmo mo = MOorAN.MO mo
 
@@ -69,6 +71,9 @@ module Make (Conf:Sem.Config)(V:Value.S)
     let fetch_op op v mo loc =
       M.fetch op v (fun v vstored -> Act.RMW (loc,v,vstored,mo))
 
+    let mk_fence_a a ii = M.mk_fence (Act.Fence  (MOorAN.AN a)) ii
+    let mk_mb ii =  mk_fence_a a_mb ii
+
     let xchg is_data rloc re a ii =
       let add_mb = match a with
       | ["mb"] -> true | _ -> false in
@@ -82,9 +87,9 @@ module Make (Conf:Sem.Config)(V:Value.S)
       and wmem = fun loc v -> write_mem_atomic aw loc v ii >>! () in
       let exch = M.linux_exch rloc re rmem wmem in
       if add_mb then
-        M.mk_fence (Act.Fence  (MOorAN.AN a)) ii >>*=
+        mk_fence_a a ii >>*=
         fun () -> exch >>*=
-          fun v -> M.mk_fence (Act.Fence  (MOorAN.AN a)) ii >>! v
+          fun v -> mk_fence_a a ii >>! v
       else exch
 
     let atomic_pair_allowed e1 e2 = match e1.E.iiid, e2.E.iiid with
@@ -136,6 +141,31 @@ module Make (Conf:Sem.Config)(V:Value.S)
           >>= (fun (v,l) ->
             read_exchange is_data v mo (A.Location_global l) ii)
 
+    | C.CmpExchange (eloc,eold,enew,a) ->
+        let add_mb r = match a with
+        | ["mb"] ->
+            mk_mb ii >>*= fun () -> r >>*= fun v -> mk_mb ii >>! v
+        | _ -> r in
+        (build_semantics_expr false eloc ii >>|
+        build_semantics_expr true eold ii >>|
+        build_semantics_expr true enew ii) >>=
+        (fun ((vloc,vold),vnew) ->
+          M.altT
+            (let r =
+              read_mem_atomic true
+                (match a with ["acquire"] -> a | _ -> a_once)
+                vloc ii >>*=
+              fun v -> M.assign v vold >>=
+                fun () -> write_mem_atomic
+                    (match a with ["release"] -> a | _ -> a_once)
+                    vloc vnew ii >>! v in
+            add_mb r)
+            (add_mb
+               (read_mem_atomic true a_once vloc ii >>*=
+                fun v ->
+                  M.op Op.Eq v vold >>=
+                  fun v_eq ->
+                    M.assign v_eq V.zero >>= fun () -> M.unitT v)))
     | C.Fetch(l,op,e,mo) ->
         (build_semantics_expr true e ii >>|
         build_semantics_expr false l ii)
@@ -167,7 +197,22 @@ module Make (Conf:Sem.Config)(V:Value.S)
            V.one)
 
 
+    | C.AtomicOpReturn (eloc,op,e) ->
+        let mk_mb ii =   mk_fence_a a_mb ii in
+        mk_mb ii >>*=
+        fun () -> build_atomic_op eloc op e ii >>*=
+        fun v -> mk_mb ii >>! v
+
     | C.ECall (f,_) -> Warn.fatal "Macro call %s in CSem" f
+
+    and build_atomic_op eloc op e ii =
+      build_semantics_expr true e ii >>|
+      (build_semantics_expr false eloc ii >>=
+       fun loc ->
+         (read_mem_atomic true a_once loc ii >>| M.unitT loc)) >>=
+      (fun (v,(vloc,loc)) ->
+        M.op op vloc v >>=
+        fun w -> write_mem_atomic a_once loc w ii)
 
     let zero = SymbConstant.intToV 0
 
@@ -246,14 +291,8 @@ module Make (Conf:Sem.Config)(V:Value.S)
               >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
 (********************)
       | C.AtomicOp  (eloc,op,e) ->
-          build_semantics_expr true e ii >>|
-          ( build_semantics_expr false eloc ii >>=
-            fun loc ->
-              (read_mem_atomic true [] loc ii >>| M.unitT loc)) >>=
-          (fun (v,(vloc,loc)) ->
-            M.op op vloc v >>=
-            fun w -> write_mem_atomic [] loc w ii
-              >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next))
+          build_atomic_op eloc op e ii
+            >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
 (********************)
       | C.Fence(mo) ->
           M.mk_fence (Act.Fence mo) ii
@@ -268,5 +307,4 @@ module Make (Conf:Sem.Config)(V:Value.S)
         let ii = {ii with A.inst=inst; } in
         build_semantics ii >>> fun (prog_order, _branch) ->
           build_semantics_list insts {ii with  A.program_order_index = prog_order;}
-
   end
