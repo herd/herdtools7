@@ -1,3 +1,4 @@
+  * linux: complete (?) implementation of atomic.h
   * tools, add -int32 <bool> command-line option.
   * gen Arch64, for -ua 0, now emit a LDXR/STXR pair and observe result
    register of STXR.

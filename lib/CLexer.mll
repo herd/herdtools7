@@ -88,6 +88,7 @@ let tr_name s = match s with
 | "__unlock" -> SPINUNLOCK
 | "__atomic_op" -> UNDERATOMICOP
 | "__atomic_op_return" -> UNDERATOMICOPRETURN
+| "__atomic_add_unless" -> UNDERATOMICADDUNLESS
 (* Others *)
 | x -> IDENTIFIER x
 }

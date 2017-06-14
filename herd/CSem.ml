@@ -198,12 +198,28 @@ module Make (Conf:Sem.Config)(V:Value.S)
 
 
     | C.AtomicOpReturn (eloc,op,e) ->
-        let mk_mb ii =   mk_fence_a a_mb ii in
         mk_mb ii >>*=
         fun () -> build_atomic_op eloc op e ii >>*=
         fun v -> mk_mb ii >>! v
 
-    | C.ECall (f,_) -> Warn.fatal "Macro call %s in CSem" f
+    | C.AtomicAddUnless (eloc,ea,eu) ->
+        mk_mb ii >>*=
+        begin fun () ->
+          build_semantics_expr true ea ii >>|
+          build_semantics_expr true eu ii >>|
+          (build_semantics_expr false eloc ii >>=
+           fun loc ->
+             (read_mem_atomic true a_once loc ii >>| M.unitT loc)) >>=
+          (fun ((a,u),(v,loc)) ->
+            M.altT
+              (M.assign v u >>= fun () -> mk_mb ii >>! u)
+              (M.op Op.Eq v u >>=
+               fun veq ->  M.assign veq V.zero >>=
+               fun () -> M.op Op.Add v a >>=
+               fun nv -> write_mem_atomic a_once loc nv ii >>=
+               fun _ -> mk_mb ii >>! v))
+        end
+      | C.ECall (f,_) -> Warn.fatal "Macro call %s in CSem" f
 
     and build_atomic_op eloc op e ii =
       build_semantics_expr true e ii >>|

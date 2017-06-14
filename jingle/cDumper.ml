@@ -76,12 +76,16 @@ let list_loc prog =
     | Const _ -> s
     | LoadReg(r) -> LocSet.add r s
     | LoadMem(l,_) -> loc s l
+    | AtomicOpReturn (e1,_,e2)
     | Op(_,e1,e2) -> expr (expr s e1) e2
     | Exchange(l,e,_) -> loc (expr s e) l
     | Fetch(l,_,e,_) -> loc (expr s e) l
     | ECall (_,es) -> List.fold_left expr s es
+    | AtomicAddUnless(e1,e2,e3)
+    | CmpExchange (e1,e2,e3,_)
     | ECas (e1,e2,e3,_,_,_) -> expr (expr (expr s e1) e2) e3
     | TryLock (e,_) -> expr s e
+
   in 
   let rec ins s = function
     | Seq(l,_) -> List.fold_left ins s l
@@ -95,6 +99,7 @@ let list_loc prog =
     | PCall (_,es) ->
         List.fold_left expr s es
     | Fence _|Symb _ -> s
+    | AtomicOp(e1,_,e2) -> expr (expr s e1) e2
   in
   LocSet.elements (List.fold_left ins LocSet.empty prog)
 

@@ -22,11 +22,11 @@ include Arch.MakeArch(struct
   let debug = false
 
 
-  let rec wrap_pseudo = function 
+  let rec wrap_pseudo = function
     | [] -> []
     | i::is -> (Instruction i)::(wrap_pseudo is)
-       
-  let rec unwrap_pseudo = function 
+
+  let rec unwrap_pseudo = function
     | [] -> []
     | (Instruction i)::is -> i::(unwrap_pseudo is)
     | (Label(_,p))::is -> (unwrap_pseudo [p])@(unwrap_pseudo is)
@@ -34,12 +34,12 @@ include Arch.MakeArch(struct
     | _ -> assert false
 
   let rec match_location subs pat instr =  match_expr subs pat instr
-       
+
   and match_expr subs pat instr =
     let r =  match pat,instr with
     | Const(Constant.Symbolic s),Const(Constant.Concrete c) ->
         Some(add_subs [Cst(s, c)] subs)
-    | Const(Constant.Concrete s),Const(Constant.Concrete c) 
+    | Const(Constant.Concrete s),Const(Constant.Concrete c)
       when c=s ->
        Some subs
     | LoadReg(l),LoadReg(l') ->
@@ -54,7 +54,7 @@ include Arch.MakeArch(struct
        begin match match_expr subs ex1 ex1' with
        | None -> None
        | Some subs ->
-	  match_expr subs ex2 ex2'
+          match_expr subs ex2 ex2'
        end
     | Exchange(l,ex,mo),Exchange(l',ex',mo') when mo=mo' ->
        begin match match_location subs l l' with
@@ -90,23 +90,23 @@ include Arch.MakeArch(struct
        Some subs
     | Seq (l,b), Seq (l',b') when b=b' ->
        let rec aux subs ips iis = match subs,ips,iis with
-	 | None,_,_ -> None
-	 | Some _ as subs,[],[] -> subs
-	 | Some subs,ip::ips,ii::iis ->
-	    aux (match_instr subs ip ii) ips iis
-	 | _ -> None
+         | None,_,_ -> None
+         | Some _ as subs,[],[] -> subs
+         | Some subs,ip::ips,ii::iis ->
+            aux (match_instr subs ip ii) ips iis
+         | _ -> None
        in aux (Some subs) l l'
-    | If(c,t,e),If(c',t',e') -> begin 
+    | If(c,t,e),If(c',t',e') -> begin
       match match_expr subs c c' with
       | None -> None
       | Some subs ->
-	 match match_instr subs t t' with
-	 | None -> None
-	 | Some subs ->
-	    match e,e' with
-	    | None,None -> Some subs
-	    | Some e,Some e' -> match_instr subs e e'
-	    | _ -> None
+         match match_instr subs t t' with
+         | None -> None
+         | Some subs ->
+            match e,e' with
+            | None,None -> Some subs
+            | Some e,Some e' -> match_instr subs e e'
+            | _ -> None
     end
     | DeclReg (t,r),DeclReg(t',r') when t = t' ->
         Some (add_subs [Reg (sr_name r,r')] subs)
@@ -126,7 +126,7 @@ include Arch.MakeArch(struct
         match_exprs subs es fs
     | Symb s,Seq (l,_) ->
        Some(add_subs [Code(s,wrap_pseudo l)] subs)
-    | Symb s,ins -> 
+    | Symb s,ins ->
        Some(add_subs [Code(s,wrap_pseudo [ins])] subs)
     | _ -> None in
     if debug then
@@ -140,10 +140,10 @@ include Arch.MakeArch(struct
     let conv_reg = conv_reg subs free in
     let find_code s =
       let rec aux = function
-	| [] -> raise (Error("No conversion found for code "^s))
-	| Code(n,c)::_ when String.compare n s = 0 ->
-	   Seq(unwrap_pseudo c,true)
-	| _::subs -> aux subs
+        | [] -> raise (Error("No conversion found for code "^s))
+        | Code(n,c)::_ when String.compare n s = 0 ->
+           Seq(unwrap_pseudo c,true)
+        | _::subs -> aux subs
       in aux subs
     in
     let find_cst s =
@@ -162,18 +162,21 @@ include Arch.MakeArch(struct
       | LoadMem(l,mo) -> LoadMem(expl_loc l,mo)
       | Op(op,e1,e2) -> Op(op,expl_expr e1,expl_expr e2)
       | Exchange(l,e,mo) -> Exchange(expl_loc l, expl_expr e,mo)
+      | CmpExchange(loc,o,n,a) -> CmpExchange(expl_loc loc,expl_expr o,expl_expr n,a)
       | Fetch(l,op,e,mo) -> Fetch(expl_loc l,op,expl_expr e,mo)
       | ECall (f,es) -> ECall (f,List.map expl_expr es)
       | ECas (e1,e2,e3,mo1,mo2,st) -> ECas (expl_expr e1,expl_expr e2,expl_expr e3,mo1,mo2,st)
       | TryLock(e,m) -> TryLock(expl_expr e,m)
+      | AtomicOpReturn (loc,op,e) -> AtomicOpReturn (expl_expr loc,op,expl_expr e)
+      | AtomicAddUnless (loc,u,a) -> AtomicAddUnless (expl_expr loc,expl_expr u,expl_expr a)
     in
     function
     | Fence _|DeclReg _ as i -> i
     | Seq (l,b) -> Seq(List.map (expl_instr subs free) l,b)
-    | If(c,t,e) -> 
-       let e = match e with 
-	 | None -> None
-	 | Some e -> Some(expl_instr subs free e)
+    | If(c,t,e) ->
+       let e = match e with
+         | None -> None
+         | Some e -> Some(expl_instr subs free e)
        in
        If(expl_expr c,expl_instr subs free t,e)
     | StoreReg(ot,r,e) -> StoreReg(ot, r, expl_expr e)
@@ -182,4 +185,5 @@ include Arch.MakeArch(struct
     | Unlock (l,k) -> Unlock(expl_loc l,k)
     | Symb s -> find_code s
     | PCall (f,es) -> PCall (f,List.map expl_expr es)
+    | AtomicOp(e1,op,e2) -> AtomicOp (expl_expr e1,op,expl_expr e2)
 end)

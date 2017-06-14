@@ -95,9 +95,15 @@ module Top(O:Config)(Out:OutTests.S) = struct
     | Fetch (e1,op,e2,a) -> Fetch (tr_expr e1,op,tr_expr e2,a)
     | ECall (f,es) -> ECall (f,List.map tr_expr es)
     | ECas (e1,e2,e3,m1,m2,b) ->
-        ECas (tr_expr e1,tr_expr e2,tr_expr e3,m1,m2,b) in
+        ECas (tr_expr e1,tr_expr e2,tr_expr e3,m1,m2,b)
+    | CmpExchange (loc,o,n,a) ->
+        CmpExchange (tr_expr loc,tr_expr o,tr_expr n,a)
+    | AtomicOpReturn (loc,op,u) ->
+        AtomicOpReturn (tr_expr loc,op,tr_expr u)
+    | AtomicAddUnless (loc,a,u) ->
+        AtomicAddUnless (tr_expr loc,tr_expr a,tr_expr u) in
 
-    let rec tr_ins nxt i = match i with
+  let rec tr_ins nxt i = match i with
     | Lock (e,_)|PCall ("spin_lock",[e]) ->
         let e = tr_expr e in
         let v = sprintf "d%i" nxt in
@@ -130,8 +136,12 @@ module Top(O:Config)(Out:OutTests.S) = struct
             let nxt,vs,f = tr_ins nxt f in
             nxt,vs,Some f in
         nxt,vs,If (ec,it,o)
+    | AtomicOp (loc,op,e) ->
+        let loc = tr_expr loc
+        and e = tr_expr e in
+        nxt,StringSet.empty,AtomicOp(loc,op,e)
 
-    and tr_code nxt = function
+  and tr_code nxt = function
       | [] -> nxt,StringSet.empty,[]
       | i::is ->
           let nxt,vs,i = tr_ins nxt i in
@@ -195,8 +205,11 @@ module Top(O:Config)(Out:OutTests.S) = struct
   | Op (_,e1,e2)
   | Exchange (e1,e2,_)
   | Fetch (e1,_,e2,_)
+  | AtomicOpReturn (e1,_,e2)
     -> StringSet.union (expr_read e1) (expr_read e2)
-  | ECas (e1,e2,e3,_,_,_) ->
+  | ECas (e1,e2,e3,_,_,_)
+  | CmpExchange(e1,e2,e3,_)
+  | AtomicAddUnless (e1,e2,e3) ->
       StringSet.union
         (StringSet.union (expr_read e1) (expr_read e2))
         (expr_read e2)
@@ -245,6 +258,10 @@ module Top(O:Config)(Out:OutTests.S) = struct
         add_locks (StringSet.add r s) i
     | PCall (_,es) ->
         let s = exprs_read es in
+        add_locks s i
+    | AtomicOp (loc,_,e) ->
+        let s1 = expr_read loc and s2 = expr_read e in
+        let s = StringSet.union s1 s2 in
         add_locks s i in
     tr_ins
 
@@ -292,6 +309,12 @@ module Top(O:Config)(Out:OutTests.S) = struct
     | ECas (e1,e2,e3,a1,a2,b) ->
         ECas (tr_expr e1,tr_expr e2,tr_expr e3,a1,a2,b)
     | TryLock (e,m) -> TryLock (tr_expr e,m)
+    | CmpExchange (loc,o,n,a) ->
+        CmpExchange (tr_expr loc,tr_expr o,tr_expr n,a)
+    | AtomicOpReturn (loc,op,e) ->
+        AtomicOpReturn (tr_expr loc,op,tr_expr e)
+    | AtomicAddUnless (loc,a,u) ->
+        AtomicAddUnless (tr_expr loc,tr_expr a,tr_expr u)
 
     and tr_exprs es =  List.map tr_expr es in
 
@@ -318,7 +341,8 @@ module Top(O:Config)(Out:OutTests.S) = struct
             PCall ("WRITE_ONCE",[LoadMem (e1,AN []);e2])
         | _ -> StoreMem (e1,e2,a)
         end
-    | PCall (f,es) -> PCall (f,tr_exprs es) in
+    | PCall (f,es) -> PCall (f,tr_exprs es)
+    | AtomicOp (loc,op,e) -> AtomicOp(tr_expr loc,op,tr_expr e) in
     tr_ins
 
 (* Parsed *)
@@ -498,9 +522,9 @@ let zyva = match !outputdir with
     let module T =
       OutTar.Make
         (struct
-	  let verbose = !verbose
-	  let outname = d
-	end) in
+          let verbose = !verbose
+          let outname = d
+        end) in
     let module Y = X(T) in
     Y.zyva
 

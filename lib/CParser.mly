@@ -29,15 +29,15 @@ open MemOrderOrAnnot
 %token <string> CONSTVAR
 %token <string> CODEVAR
 %token <int> PROC
-%token LPAR RPAR COMMA LBRACE RBRACE STAR 
+%token LPAR RPAR COMMA LBRACE RBRACE STAR
 %token ATOMIC CHAR INT LONG
 %token MUTEX
 %token TYPEDEF EXTERN STATIC AUTO REGISTER
-%token CONST VOLATILE 
+%token CONST VOLATILE
 
 /* For shallow parsing */
 %token <string> BODY
-%type <string CAst.t list> shallow_main 
+%type <string CAst.t list> shallow_main
 %start shallow_main
 
 /* For deep parsing */
@@ -53,7 +53,8 @@ open MemOrderOrAnnot
 %nonassoc ELSE
 %token <MemOrder.t> MEMORDER
 %token LD LD_EXPLICIT ST ST_EXPLICIT EXC EXC_EXPLICIT FENCE LOCK UNLOCK SPINLOCK SPINUNLOCK SPINTRYLOCK SCAS WCAS SCAS_EXPLICIT WCAS_EXPLICIT
-%token LOAD STORE UNDERFENCE XCHG CMPXCHG UNDERATOMICOP  UNDERATOMICOPRETURN
+%token LOAD STORE UNDERFENCE XCHG CMPXCHG
+%token   UNDERATOMICOP  UNDERATOMICOPRETURN UNDERATOMICADDUNLESS
 %token <Op.op> ATOMIC_FETCH
 %token <Op.op> ATOMIC_FETCH_EXPLICIT
 
@@ -61,7 +62,7 @@ open MemOrderOrAnnot
 %left XOR
 %left LAND
 
-%nonassoc EQ_OP NEQ_OP
+%nonassoc EQ_OP NEQ_OP LT LE GT GE
 %left ADD SUB
 %left STAR DIV
 %nonassoc CAST
@@ -82,7 +83,7 @@ parameter_list:
 | { [] }
 | parameter_declaration { [ $1 ] }
 | parameter_declaration COMMA parameter_list { $1 :: $3 }
- 
+
 parameter_declaration:
 | toptyp IDENTIFIER { {CAst.param_ty = $1; param_name = $2} }
 
@@ -90,8 +91,8 @@ toptyp:
 | typ STAR { Pointer $1 }
 
 typ:
-| typ STAR { Pointer $1 } 
-| typ VOLATILE { Volatile $1 } 
+| typ STAR { Pointer $1 }
+| typ VOLATILE { Volatile $1 }
 | ATOMIC base { Atomic $2 }
 | VOLATILE base0 { Volatile $2 }
 | base { $1 }
@@ -191,6 +192,8 @@ expr:
   { TryLock ($3,MutexLinux) }
 | UNDERATOMICOPRETURN LPAR expr COMMA atomic_op COMMA expr RPAR
   { AtomicOpReturn($3,$5,$7) }
+| UNDERATOMICADDUNLESS LPAR expr COMMA expr COMMA expr RPAR
+  { AtomicAddUnless($3,$5,$7) }
 
 args:
 | { [] }
@@ -206,9 +209,9 @@ location:
 | LPAR expr RPAR { $2 }
 
 instruction:
-| IF LPAR expr RPAR block_ins %prec LOWER_THAN_ELSE 
+| IF LPAR expr RPAR block_ins %prec LOWER_THAN_ELSE
   { If($3,$5,None) }
-| IF LPAR expr RPAR block_ins ELSE block_ins 
+| IF LPAR expr RPAR block_ins ELSE block_ins
   { If($3,$5,Some $7) }
 | initialisation SEMI
   { $1 }
@@ -260,14 +263,14 @@ pseudo_seq:
 
 function_def:
 | PROC LPAR parameter_list RPAR LBRACE pseudo_seq RBRACE
-  { { CAst.proc = $1; 
-      CAst.params = $3; 
+  { { CAst.proc = $1;
+      CAst.params = $3;
       CAst.body = $6 } }
 
 trans_unit:
 | function_def
   { [$1] }
-| trans_unit function_def 
+| trans_unit function_def
   { $1 @ [$2] }
 
 deep_main:
@@ -290,4 +293,3 @@ macro:
 macros:
 | { [] }
 | macro macros { $1 :: $2 }
-
