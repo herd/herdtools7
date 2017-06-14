@@ -56,3 +56,4 @@ atomic_inc_and_test(X)  __atomic_op_return(X,+,1) == 0
 atomic_add_negative(V,X) __atomic_op_return(X,+,V) < 0
 atomic_xchg(X,V) __xchg{mb}(X,V)
 atomic_cmpxchg(X,V,W) __cmpxchg{mb}(X,V,W)
+atomic_add_unless(X,A,U) __atomic_add_unless(X,A,U) != U
