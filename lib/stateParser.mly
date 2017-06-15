@@ -101,6 +101,7 @@ atom_init:
 | atom { let x,v = $1 in x,(TyDef,v) }
 | NAME location { $2,(Ty $1,Concrete 0)}
 | ATOMIC NAME location { $3,(Atomic $2,Concrete 0)}
+| NAME location EQUAL maybev { ($2,(Ty $1,$4))}
 | NAME location EQUAL ATOMICINIT LPAR maybev RPAR { ($2,(Ty $1,$6))}
 | NAME STAR location { ($3,(Pointer $1,Concrete 0))}
 | NAME STAR location EQUAL amperopt maybev { ($3,(Pointer $1,$6))}
