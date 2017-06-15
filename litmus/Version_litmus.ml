@@ -1,3 +1,3 @@
 include Version
 
-let libdir = libdir ^ "litmus"
+let libdir = Filename.concat libdir "litmus"
