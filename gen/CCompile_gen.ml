@@ -1207,7 +1207,8 @@ module Make(O:Config) : Builder.S
         let com = match com with None -> E.pp_edges es | Some com -> com in
         let (prog,final),(prf,coms),env = compile_cycle check c in
         let coms = String.concat " " coms in
-        let info = info@["Prefetch",prf ; "Com",coms; "Orig",com; ] in
+        let myinfo = ["Generator",O.generator;"Prefetch",prf ; "Com",coms; "Orig",com; ] in
+        let info = info@myinfo in
         { name=name ; info=info; com=com ;  edges = es ;
           prog=prog ; final=final ; types=env;}
           

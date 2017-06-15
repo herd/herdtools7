@@ -19,6 +19,7 @@ open Printf
 
 module type Config = sig
   val verbose : int
+  val generator : string
   val debug : Debug_gen.t
   val hout : Hint.out
   val cond : Config.cond
@@ -669,8 +670,6 @@ let fmt_cols =
     let pp = fmt_cols code in
     Misc.pp_prog chan pp
 
- 
-
   let dump_test_channel chan t =
     fprintf chan "%s %s\n" (Archs.pp A.arch) t.name ;
     if t.com <>  "" then fprintf chan "\"%s\"\n" t.com ;
@@ -695,11 +694,13 @@ let test_of_cycle name
   let(init,prog,final,env),(prf,coms) = compile_cycle check c in
   let coms = String.concat " " coms in
   let info =
-    let myinfo = ["Prefetch",prf ; "Com",coms; "Orig",com; ] in
+    let myinfo = ["Prefetch",prf ; "Com",coms; "Orig",com;] in
     let myinfo = match scope with
     | None -> myinfo
     | Some st -> ("Scopes",BellInfo.pp_scopes st)::myinfo in
+    let myinfo = ("Generator",O.generator)::myinfo in
     info@myinfo in
+
   { name=name ; info=info; com=com ;  edges = es ;
     init=init ; prog=prog ; scopes = scope; final=final ; env=env; }
     

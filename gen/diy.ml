@@ -198,6 +198,7 @@ let () =
   let module Co = struct
 (* Dump all *)
     let verbose = !Config.verbose
+    let generator = Config.baseprog
     let debug = !Config.debug
     let hout = match !Config.hout with
     | None -> Hint.none

@@ -257,6 +257,7 @@ let varatomspec =
    "<atom specs> specify atom variations")
 
 let prog = if Array.length Sys.argv > 0 then Sys.argv.(0) else "XXX"
+let baseprog = sprintf "%s (version %s)" (Filename.basename prog) (Version_gen.version)
 
 let usage_msg = "Usage: " ^ prog ^   "[options]*"
                                              
