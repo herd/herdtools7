@@ -39,9 +39,9 @@ module Top
 
     module Make(A:ArchBase.S) = struct
 
-      let zyva _name parsed =
+      let zyva name parsed =
         let prog = parsed.MiscParser.prog in
-        Opt.arch_ok A.arch &&
+        Opt.arch_ok A.arch && Opt.name_ok name.Name.name &&
         Interval.inside Opt.threads (List.length prog) &&
         List.for_all
           (fun (_,code) -> Interval.inside Opt.ins (List.length code))
