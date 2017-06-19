@@ -60,7 +60,7 @@ module Make(Config:Config)(Out:OutTests.S) =
           let echo sec =
             let lexbuf = LU.from_section sec in_chan in
             Echo.echo_fun lexbuf (Buffer.add_char buff)  in
-            echo (start,code_start) ;
+          echo (start,code_start) ;
           let ok = TR.tr buff (LU.from_section code_sec in_chan) in
           if ok then begin
             echo (constr_start,loc_eof) ;
@@ -72,6 +72,20 @@ module Make(Config:Config)(Out:OutTests.S) =
               out ;
             Out.fprintf idx_out "%s\n" base
           end
+        end else if arch = `C then begin
+          let buff = Buffer.create 256 in
+          let  _,_,_,(_,loc_eof) = locs in
+          let echo sec =
+            let lexbuf = LU.from_section sec in_chan in
+            Echo.echo_fun lexbuf (Buffer.add_char buff)  in
+          echo (start,loc_eof) ;
+          let base = Filename.basename fname in
+          let out = Out.open_file base in
+          Misc.output_protect_close Out.close
+            (fun out ->
+                Out.fprintf out "%s" (Buffer.contents buff))
+            out ;
+          Out.fprintf idx_out "%s\n" base
         end
       with LexMisc.Error (msg,pos) ->
         Printf.eprintf

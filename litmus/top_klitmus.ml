@@ -294,6 +294,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
         Out.f "echo Compilation command: \"%s\""
           (String.concat " " (Array.to_list Sys.argv)) ;
         Out.o "echo \"OPT=$OPT\"" ;
+        Out.o "echo \"uname -r=$(uname -r)\"" ;
         Out.o "echo" ;
         Out.o "" ;
         Out.o "zyva () {" ;
@@ -316,11 +317,51 @@ module Top(O:Config)(Tar:Tar.S) = struct
         ())
       fname
 
+  let dump_readme _sources =
+    let fname = Tar.outname "README.txt" in
+    Misc.output_protect
+      (fun chan ->
+        let pl fmt = ksprintf (fun s -> fprintf chan "%s\n" s) fmt in
+        pl "Kernel modules produced by klitmus7" ;
+        pl "" ;
+        pl "REQUIREMEMTS" ;
+        pl "  - kernel headers for compiling modules." ;
+        pl "  - commands insmod and rmmod for installing and removing kernel modules." ;
+        pl "" ;
+        pl "COMPILING" ;
+        pl "  Once kernel headers are installed, just type 'make'" ;
+        pl "" ;
+        pl "RUNNING" ;
+        pl "  Run script 'run.sh' as root, e.g. as 'sudo sh run.sh'" ;
+        pl "  Some parameters can be passed to the script by adding" ;
+        pl "  key=value command line arguments." ;
+        pl "  Main arguments are as follows:" ;
+        pl "    * size=<n>   Tests operate on arrays of size <n>." ;
+        pl "    * nruns=<n>  And are repeated <n> times." ;
+        pl "    * stride=<n> Arrays are scanned with stride <n>." ;
+        pl "    * avail=<n>  Number of cores are devoted to tests." ;
+        pl "" ;
+        pl "  If <avail> is the special value zero or exceeds <a>, the number of actually online cores," ;
+        pl "  then tests will occupy <a> cores." ;
+        pl "" ;
+        pl "  By default the script runs as if called as:" ;
+        pl "    sudo sh run.sh size=%i nruns=%i stride=%s avail=%i\n"
+          O.size O.runs
+          (let open Stride in
+          match O.stride with
+          | No -> "1"
+          | St i -> sprintf "%i" i
+          | Adapt -> "adapt")
+          (match O.avail with None -> 0 | Some i -> i) ;
+        ())
+      fname
+
   let from_files args =
     let sources,_ = Misc.fold_argv from_file args ([],(StringMap.empty,0))in
     let sources = List.rev sources in
     dump_makefile sources ;
     dump_run sources ;
+    dump_readme sources ;
     Tar.tar () ;
     ()
 
