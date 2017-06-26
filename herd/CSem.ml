@@ -162,10 +162,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
             add_mb r)
             (add_mb
                (read_mem_atomic true a_once vloc ii >>*=
-                fun v ->
-                  M.op Op.Eq v vold >>=
-                  fun v_eq ->
-                    M.assign v_eq V.zero >>= fun () -> M.unitT v)))
+                fun v -> M.neqT v vold >>= fun () -> M.unitT v)))
     | C.Fetch(l,op,e,mo) ->
         (build_semantics_expr true e ii >>|
         build_semantics_expr false l ii)
@@ -184,7 +181,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
         M.altT
            (read_mem true (mo_as_anmo failure) loc_obj ii >>*= fun v_obj ->
            (* For "strong" cas: fail only when v_obj != v_exp *)
-           (if strong then M.neqT v_obj v_exp else M.unitT ()) >>= fun () ->
+             (if strong then M.neqT v_obj v_exp else M.unitT ()) >>= fun () ->
            (* Non-atomically write that value into the "expected" location *)
            write_mem no_mo loc_exp v_obj ii >>!
            V.zero)
