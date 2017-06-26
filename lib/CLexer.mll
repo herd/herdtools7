@@ -36,11 +36,14 @@ let tr_name s = match s with
 | "uint32_t"
 | "int64_t"
 | "uint64_t"
-| "mutex_t"
-| "spinlock_t"
-| "atomic_t"
 | "intptr_t"
 | "uintptr_t"
+(* Mutexes *)
+| "mtx_t"        (* c11 *)
+| "spinlock_t"   (* linux *)
+(* Atomics *)
+| "atomic_t"     (* linux *)
+
   ->
   BASE_TYPE s
 | "atomic_int" -> ATOMIC_TYPE "int"
@@ -69,14 +72,14 @@ let tr_name s = match s with
 | "atomic_store_explicit" -> ST_EXPLICIT
 | "atomic_exchange" -> EXC
 | "atomic_exchange_explicit" -> EXC_EXPLICIT
-| "lock" -> LOCK
+| "lock"|"mtx_lock" -> LOCK
 | "WCAS" -> WCAS
 | "SCAS" -> SCAS
 | "atomic_compare_exchange_weak" -> WCAS
 | "atomic_compare_exchange_strong" -> SCAS
 | "atomic_compare_exchange_weak_explicit" -> WCAS_EXPLICIT
 | "atomic_compare_exchange_strong_explicit" -> SCAS_EXPLICIT
-| "unlock"  -> UNLOCK
+| "unlock"|"mtx_unlock"  -> UNLOCK
 (* Internal Linux *)
 | "__fence" -> UNDERFENCE
 | "__load" -> LOAD

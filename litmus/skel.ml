@@ -260,12 +260,12 @@ end = struct
 
 (* Inserted source *)
 
-module Insert =
-  ObjUtil.Insert
-    (struct
-      let sysarch = Cfg.sysarch
-      let word = ws
-    end)
+  module Insert =
+    ObjUtil.Insert
+      (struct
+        let sysarch = Cfg.sysarch
+        let word = ws
+      end)
 
 (* Location utilities *)
   let get_global_names t = List.map fst t.T.globals
@@ -459,41 +459,41 @@ module Insert =
   normal load conditions.
  *)
 
-type fence = No | FenceW | Fence2
+  type fence = No | FenceW | Fence2
 
-let user_barrier_def fence =
-  O.o "/* Barriers macros */" ;
-  O.o "inline static void barrier_wait(unsigned int id, unsigned int k, int volatile *b) {" ;
-  O.oi "if ((k % N) == id) {" ;
-  O.oii "*b = 1 ;" ;
-  begin match fence with
-  | No -> if Cfg.cautious then O.oii "mcautious();"
-  | FenceW|Fence2 -> O.oii "mbar();"
-  end ;
-  O.oi "} else {" ;
-  O.oii "while (*b == 0) ;" ;
-  begin match fence with
-  | No|FenceW -> if Cfg.cautious then O.oii "mcautious();"
-  | Fence2 -> O.oii "mbar();"
-  end ;
-  O.oi "}" ;
-  O.o "}" ;
-  O.o ""
+  let user_barrier_def fence =
+    O.o "/* Barriers macros */" ;
+    O.o "inline static void barrier_wait(unsigned int id, unsigned int k, int volatile *b) {" ;
+    O.oi "if ((k % N) == id) {" ;
+    O.oii "*b = 1 ;" ;
+    begin match fence with
+    | No -> if Cfg.cautious then O.oii "mcautious();"
+    | FenceW|Fence2 -> O.oii "mbar();"
+    end ;
+    O.oi "} else {" ;
+    O.oii "while (*b == 0) ;" ;
+    begin match fence with
+    | No|FenceW -> if Cfg.cautious then O.oii "mcautious();"
+    | Fence2 -> O.oii "mbar();"
+    end ;
+    O.oi "}" ;
+    O.o "}" ;
+    O.o ""
 
-let user2_barrier_def () =
-  O.o "/* Barriers macros, compact version */" ;
-  O.o "inline static void barrier_wait(unsigned int id, unsigned int k, int volatile *b) {" ;
-  O.oi "unsigned int x = k % (2*N);" ;
-  O.oi "int free = x < N;" ;
-  O.oi "unsigned idx =  k % N;" ;
-  O.oi "if (idx == id) {" ;
-  O.oii "b[idx] = free;" ;
-  O.oi "} else {" ;
-  O.oii "while (b[idx] != free);" ;
-  O.oi "}" ;
-  if Cfg.cautious then O.oi "mcautious();" ;
-  O.o "}" ;
-  O.o ""
+  let user2_barrier_def () =
+    O.o "/* Barriers macros, compact version */" ;
+    O.o "inline static void barrier_wait(unsigned int id, unsigned int k, int volatile *b) {" ;
+    O.oi "unsigned int x = k % (2*N);" ;
+    O.oi "int free = x < N;" ;
+    O.oi "unsigned idx =  k % N;" ;
+    O.oi "if (idx == id) {" ;
+    O.oii "b[idx] = free;" ;
+    O.oi "} else {" ;
+    O.oii "while (b[idx] != free);" ;
+    O.oi "}" ;
+    if Cfg.cautious then O.oi "mcautious();" ;
+    O.o "}" ;
+    O.o ""
 
   let dump_read_timebase () =
     if (do_verbose_barrier || do_timebase) && have_timebase then begin
@@ -521,7 +521,7 @@ let user2_barrier_def () =
             | _ -> ()
             end ;
             sprintf "barrier%s.c" lab_ext
-        in
+    in
     Insert.insert O.o (fname Cfg.sysarch)
 
   let dump_user_barrier_vars () = O.oi "int volatile *barrier;"
@@ -679,7 +679,17 @@ let user2_barrier_def () =
     if do_contiguous then O.oi "void *mem;" ;
     List.iter
       (fun (s,t) ->
-        let pp_t = dump_global_type s (CType.strip_volatile t) in
+        let pp_t =
+          let t = CType.strip_volatile t in
+          let t = match t with
+          | Base "mtx_t" ->
+              begin match memory with
+              | Memory.Direct -> Pointer t
+              | Memory.Indirect -> t
+              end
+          | _ -> t in
+          dump_global_type s t in
+
         match memory,t,do_staticalloc with
         | Direct,Array _,false ->
             O.fi "%s *%s;" pp_t (tag_malloc s) ;
@@ -695,35 +705,37 @@ let user2_barrier_def () =
     | Indirect ->
         let r =
           List.fold_right
-            (fun (b,t) k ->
-              let pp_t = dump_global_type b (CType.strip_volatile t) in
-              let a = tag_mem b in
-              begin match t,do_staticalloc with
-              | Array _,false ->
-                  O.fi "%s *%s;" pp_t (tag_malloc a) ;
-                  O.fi "%s *%s;" pp_t a
-              | _,_ ->
-                  if do_noalign test b then 
+            (fun (b,t) k -> match t with
+            | Base "mtx_t" -> k
+            | _ ->
+                let pp_t = dump_global_type b (CType.strip_volatile t) in
+                let a = tag_mem b in
+                begin match t,do_staticalloc with
+                | Array _,false ->
                     O.fi "%s *%s;" pp_t (tag_malloc a) ;
-                  O.fi "%s *%s;" pp_t a
-              end ;
-              if Cfg.cautious then
-                List.fold_right
-                  (fun (loc,v) k -> match loc,v with
-                  | A.Location_reg(p,r),Symbolic s when s = a ->
-                      let cpy = A.Out.addr_cpy_name a p in
-                      O.fi "%s* *%s ;" (CType.dump t) cpy ;
-                      (cpy,a)::k
-                  | _,_ -> k)
-                  test.T.init k
-              else k)
+                    O.fi "%s *%s;" pp_t a
+                | _,_ ->
+                    if do_noalign test b then 
+                      O.fi "%s *%s;" pp_t (tag_malloc a) ;
+                    O.fi "%s *%s;" pp_t a
+                end ;
+                if Cfg.cautious then
+                  List.fold_right
+                    (fun (loc,v) k -> match loc,v with
+                    | A.Location_reg(p,r),Symbolic s when s = a ->
+                        let cpy = A.Out.addr_cpy_name a p in
+                        O.fi "%s* *%s ;" (CType.dump t) cpy ;
+                        (cpy,a)::k
+                    | _,_ -> k)
+                    test.T.init k
+                else k)
             test.T.globals [] in
         O.oi "int *_idx;" ;
         r
     end
 
   let dump_static_vars test =
-     List.iter
+    List.iter
       (fun (s,t) -> match t,memory with
       | Array _,Direct ->
           O.f "static %s%s %s[SIZE_OF_ALLOC];"
@@ -749,8 +761,8 @@ let user2_barrier_def () =
                       (CType.dump t) cpy ;
                     ()
                 | _,_ -> ())
-                  test.T.init)
-            test.T.globals ;
+                test.T.init)
+          test.T.globals ;
         O.o "static int _idx[SIZE_OF_MEM];" ;
         ()
     end ;
@@ -773,13 +785,13 @@ let user2_barrier_def () =
           (A.Out.dump_out_reg proc reg))
       test
 
- let dump_static_out_vars test =
-   iter_all_outs
-     (fun proc (reg,t) ->
-       O.f "static %s %s[SIZE_OF_MEM];"
-         (CType.dump t)
-         (A.Out.dump_out_reg proc reg))
-     test
+  let dump_static_out_vars test =
+    iter_all_outs
+      (fun proc (reg,t) ->
+        O.f "static %s %s[SIZE_OF_MEM];"
+          (CType.dump t)
+          (A.Out.dump_out_reg proc reg))
+      test
 
   let fmt_outcome test locs env =
     U.fmt_outcome test
@@ -834,9 +846,9 @@ let user2_barrier_def () =
   | None -> ()
   | Some f ->
       let find_type loc =
-      let t = U.find_type loc env in
-      CType.dump (CType.strip_atomic t) in
-    DC.fundef_prop "filter_cond" find_type f
+        let t = U.find_type loc env in
+        CType.dump (CType.strip_atomic t) in
+      DC.fundef_prop "filter_cond" find_type f
 
 
   let dump_cond_fun_call test dump_loc dump_val =
@@ -894,10 +906,10 @@ let user2_barrier_def () =
     O.o "" ;
     let _ =
       A.LocSet.fold
-      (fun loc pos ->
-        O.f "static const int %s_f = %i ;" (dump_loc_name loc) pos ;
-        pos+nitems loc)
-      outs 0 in
+        (fun loc pos ->
+          O.f "static const int %s_f = %i ;" (dump_loc_name loc) pos ;
+          pos+nitems loc)
+        outs 0 in
     O.o "" ;
 (* Constant wrappers *)
     O.o DefString.hist_defs ;
@@ -993,17 +1005,17 @@ let user2_barrier_def () =
          (if ConstrGen.is_true test.T.condition then "':'"
          else "show ? '*' : ':'")::
          [A.LocSet.pp_str ","
-           (fun loc ->
-             let sloc = dump_loc_name loc in
-             match U.find_type loc env with
-             | Pointer _ -> sprintf "pretty_addr[o[%s_f]]" sloc
-             | Array (t,sz) ->
-                 let rec pp_rec k =
-                   if k >= sz then []
-                   else sprintf "(%s)o[%s_f+%i]" t sloc k::pp_rec (k+1) in
-                 String.concat "," (pp_rec 0)
-             | t -> sprintf "(%s)o[%s_f]" (CType.dump t) sloc)
-           outs]) in
+            (fun loc ->
+              let sloc = dump_loc_name loc in
+              match U.find_type loc env with
+              | Pointer _ -> sprintf "pretty_addr[o[%s_f]]" sloc
+              | Array (t,sz) ->
+                  let rec pp_rec k =
+                    if k >= sz then []
+                    else sprintf "(%s)o[%s_f+%i]" t sloc k::pp_rec (k+1) in
+                  String.concat "," (pp_rec 0)
+              | t -> sprintf "(%s)o[%s_f]" (CType.dump t) sloc)
+            outs]) in
     O.fi "fprintf(fhist,%s,%s);" fmt args ;
     O.o "}" ;
     O.o "" ;
@@ -1073,16 +1085,19 @@ let user2_barrier_def () =
       List.iter
         (fun (a,t) ->
           let t = CType.strip_volatile t in
-          match memory with
-          | Indirect ->
-              begin match t with
-              | Pointer _ -> ()
-              | _ ->
-                  O.fi "%s *mem_%s = _a->mem_%s;"
-                    (dump_global_type a t) a a
-              end
-          | Direct ->
-              O.fi "%s *%s = _a->%s;" (dump_global_type a t) a a)
+          match t with
+          | Base "mtx_t" -> ()
+          | _ ->
+              match memory with
+              | Indirect ->
+                  begin match t with
+                  | Pointer _ -> ()
+                  | _ ->
+                      O.fi "%s *mem_%s = _a->mem_%s;"
+                        (dump_global_type a t) a a
+                  end
+              | Direct ->
+                  O.fi "%s *%s = _a->%s;" (dump_global_type a t) a a)
         test.T.globals ;
 (* LOOPS *)
       loop_test_prelude indent "_a->_p->" ;
@@ -1103,6 +1118,7 @@ let user2_barrier_def () =
               load (dump_a_v_casted v) in
       List.iter
         (fun (s,t as x) -> match t with
+        | Base "mtx_t" -> ()
         | Array (t,sz) ->
             O.fii "for (int _j = 0 ; _j < %i ; _j++) {" sz ;
             O.fiii "if (%s%s) fatal(\"%s, check_globals failed\");"
@@ -1224,13 +1240,18 @@ let user2_barrier_def () =
     begin match memory with
     | Indirect ->
         O.o "static void shuffle(ctx_t *_a) {" ;
-        begin match test.T.globals with
+        begin match
+          List.filter
+            (fun (_,t) -> match t with
+            | Base "mtx_t" -> false | _ -> true)
+            test.T.globals
+        with
         | [] -> ()
         | globs ->
             O.oi "int size_of_test = _a->_p->size_of_test;" ;
             O.o "" ;
             List.iter
-              (fun (a,_) ->
+              (fun (a,t) ->
                 O.oi "perm_ints(&(_a->seed),_a->_idx,size_of_test);" ;
                 loop_test_prelude indent "" ;
                 if Cfg.cautious then O.oii "mcautious();" ;
@@ -1250,7 +1271,7 @@ let user2_barrier_def () =
         name sz name
 
     and set_mem_gen sz indent name =
-       O.fx indent "_a->%s = &%s[id*%s];" name name sz
+      O.fx indent "_a->%s = &%s[id*%s];" name name sz
 
     and set_mem indent name =
       O.fx indent "_a->%s = &%s[fst];" name name in
@@ -1311,6 +1332,10 @@ let user2_barrier_def () =
     end else begin
       List.iter (fun (a,t) -> match memory,t with
       | Direct,Array _ -> set_or_malloc3 a indent a
+      | (Direct|Indirect),Base "mtx_t" ->
+          set_or_malloc indent a ;
+          O.fx indent
+            "for (int _i=0 ; _i < size_of_test ; _i++) _a->%s[_i] = pm_create();" a
       | Direct,_ ->
           (if do_noalign test a then set_or_malloc3 a else set_or_malloc)
             indent a
@@ -1322,6 +1347,7 @@ let user2_barrier_def () =
           List.iter
             (fun (a,t) -> match t with
             | Array _ -> set_or_malloc3 a indent (sprintf "mem_%s" a)
+            | Base "mtx_t" -> ()
             | _ ->
                 (if do_noalign test a then set_or_malloc3 a else set_or_malloc)
                   indent (sprintf "mem_%s" a))
@@ -1340,7 +1366,9 @@ let user2_barrier_def () =
         O.oi "}" ;
         loop_test_prelude indent "" ;
         List.iter
-          (fun (a,_) -> O.fii "_a->%s[_i] = &(_a->mem_%s[_i]);" a a)
+          (fun (a,t) -> match t with
+          | Base "mtx_t" -> ()
+          | _ -> O.fii "_a->%s[_i] = &(_a->mem_%s[_i]);" a a)
           test.T.globals ;
         loop_test_postlude indent ;
         ()
@@ -1408,14 +1436,22 @@ let user2_barrier_def () =
           let tag = dump_ctx_tag a in
           let tag = match t with
           | Array _ -> tag_malloc tag
-          | _ ->
-              if do_noalign test a then tag_malloc tag else tag in
-          nop_or_free indent tag)
+          | _ -> if do_noalign test a then tag_malloc tag else tag in
+          begin match t with
+          | Base "mtx_t" ->
+              O.fi "for (int _i = 0 ; _i < _a->_p->size_of_test ; _i++) pm_free(_a->%s[_i]);" a ;
+              nop_or_free indent a
+          | _ -> nop_or_free indent tag
+          end)
         test.T.globals ;
     begin match memory with
     | Direct -> ()
     | Indirect ->
-        List.iter (fun (a,_) -> nop_or_free indent a) test.T.globals ;
+        List.iter
+          (fun (a,t) ->match t with
+          | Base "mtx_t" -> ()
+          | _ -> nop_or_free indent a)
+          test.T.globals ;
         if do_dynamicalloc then begin
           O.oi "if (_a->_p->do_shuffle) {" ;
           free indent2 "_idx" ;
@@ -1429,16 +1465,16 @@ let user2_barrier_def () =
       pb_free "fst_barrier" ;
       let locs = U.get_observed_globals test in
       if not (StringSet.is_empty locs) then begin
-          po_free "s_or" ;
-          if do_dynamicalloc  then begin
-            loop_proc_prelude indent ;
-            StringSet.iter
-              (fun loc ->
-                let loc = A.Location_global loc in
-                nop_or_free indent2 (sprintf "cpy_%s[_p]" (dump_loc_name loc)))
-              locs ;
-            loop_proc_postlude indent
-          end
+        po_free "s_or" ;
+        if do_dynamicalloc  then begin
+          loop_proc_prelude indent ;
+          StringSet.iter
+            (fun loc ->
+              let loc = A.Location_global loc in
+              nop_or_free indent2 (sprintf "cpy_%s[_p]" (dump_loc_name loc)))
+            locs ;
+          loop_proc_postlude indent
+        end
       end
     end ;
     begin match barrier with
@@ -1473,30 +1509,33 @@ let user2_barrier_def () =
       (fun (a,t) ->
         let v = A.find_in_state (A.Location_global a) test.T.init in
         if Cfg.cautious then O.oii "mcautious();" ;
-        let ins =
-          let tag = match memory with
-          | Indirect -> sprintf "_a->mem_%s[_i]"
-          | Direct ->  dump_a_leftval in
+        try
+          let ins =
+            let tag = match memory with
+            | Indirect -> sprintf "_a->mem_%s[_i]"
+            | Direct ->  dump_a_leftval in
 (*
-          match CType.is_ptr t,memory with
-          | false,Indirect ->
-              U.do_store t
-                (sprintf "_a->mem_%s[_i]" a) (dump_a_v v)
-          | _,_ ->
-*)
+  match CType.is_ptr t,memory with
+  | false,Indirect ->
+  U.do_store t
+  (sprintf "_a->mem_%s[_i]" a) (dump_a_v v)
+  | _,_ ->
+ *)
             begin match t with
-              | CType.Array (_,sz) ->
-                  let pp_a = tag a
-                  and pp_v = dump_a_v_casted v in
-                  let ins =
-                    U.do_store t
-                      (sprintf "(%s)[_j]" pp_a) pp_v in
-                  sprintf "for (int _j = 0 ; _j < %i; _j++) %s" sz ins
-              | _ ->
+            | Base "mtx_t" -> raise Exit
+            | CType.Array (_,sz) ->
+                let pp_a = tag a
+                and pp_v = dump_a_v_casted v in
+                let ins =
                   U.do_store t
-                    (dump_a_leftval a) (dump_a_v_casted v)
-              end in
-        O.fii "%s;" ins)
+                    (sprintf "(%s)[_j]" pp_a) pp_v in
+                sprintf "for (int _j = 0 ; _j < %i; _j++) %s" sz ins
+            | _ ->
+                U.do_store t
+                  (dump_a_leftval a) (dump_a_v_casted v)
+            end in
+          O.fii "%s;" ins
+        with Exit -> ())
       test.T.globals ;
     begin if do_safer && do_collect_after then
       List.iter
@@ -1777,7 +1816,7 @@ let user2_barrier_def () =
                 | true -> sprintf "idx_addr(_a,_i,%s)" sloc))
             locs ;
           O.ox iloop "add_outcome(hist,1,_o,cond);" ;
-           if do_verbose_barrier_local && proc = 0 then begin
+          if do_verbose_barrier_local && proc = 0 then begin
             O.ox iloop "if (_a->_p->verbose_barrier) {" ;
             O.ox (Indent.tab iloop) "pp_tb_log(_b->p_mutex,_a,_i,cond);" ;
             O.ox iloop "}"
@@ -1792,7 +1831,7 @@ let user2_barrier_def () =
           loop_test_postlude indent2 ;
           loop_test_postlude indent
         end else begin
-            loop_test_postlude indent
+          loop_test_postlude indent
         end ;
         if do_safer && do_collect_after && have_observed_globals test then begin
           O.fi "stabilize_globals(%i,_a);" proc ;
@@ -2050,7 +2089,7 @@ let user2_barrier_def () =
                      (sprintf "ctx.cpy_%s[_p][_i][_j]" (dump_loc_name loc))) ;
                 O.fiv "}"
             | _ ->
-               pp_test indent4
+                pp_test indent4
                   (dump_loc_copy loc)
                   (U.do_load t
                      (sprintf "ctx.cpy_%s[_p][_i]" (dump_loc_name loc)))

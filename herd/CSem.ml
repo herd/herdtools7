@@ -285,13 +285,9 @@ module Make (Conf:Sem.Config)(V:Value.S)
           build_semantics_expr false l ii >>=
           fun l -> begin match k with
           | C.MutexC11 ->
-              M.altT
-                (* successful attempt to obtain mutex *)
-                (M.mk_singleton_es
+              (* C11 Lock always successful, oversimplification?  *)
+              (M.mk_singleton_es
                    (Act.Lock (A.Location_global l, true,k)) ii)
-                (* unsuccessful attempt to obtain mutex *)
-                (M.mk_singleton_es
-                   (Act.Lock (A.Location_global l, false,k)) ii)
           | C.MutexLinux ->
               M.mk_singleton_es
                 (Act.Lock (A.Location_global l,true,k)) ii

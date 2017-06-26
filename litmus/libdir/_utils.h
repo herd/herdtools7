@@ -160,6 +160,14 @@ void pm_free(pm_t *p) ;
 void pm_lock(pm_t *m) ;
 void pm_unlock(pm_t *m) ;
 
+/* C11 locks interface */
+#ifndef mtx_t
+typedef pthread_mutex_t mtx_t ;
+
+inline static void mtx_lock(mtx_t *p) { pm_lock(p); }
+inline static void mtx_unlock(mtx_t *p) { pm_unlock(p); }
+#endif
+
 /* Condition variable */
 
 typedef struct {

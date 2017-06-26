@@ -85,7 +85,8 @@ irreflexive
 
 
 (* data_races *)
-let cnf = ((W * _) | (_ * W)) & loc
+let Mutex = UL|LS
+let cnf = (((W * _) | (_ * W)) & loc) \ ((Mutex * _) | (_ * Mutex))
 let dr = ext & (cnf \ hb \ (hb^-1) \ (A * A))
 
 (* unsequenced_races *)

@@ -84,13 +84,13 @@ module Make(C:Config)(E:Extra) = struct
 
   let dump_fun chan env globEnv envVolatile proc t =
 (*
-    let pp_env =
-      String.concat "; "
-        (List.map
-           (fun (x,ty) -> sprintf "%s -> %s" x (CType.debug ty))
-           globEnv) in
-    eprintf "FUN: [%s]\n%!" pp_env ;
-*)
+  let pp_env =
+  String.concat "; "
+  (List.map
+  (fun (x,ty) -> sprintf "%s -> %s" x (CType.debug ty))
+  globEnv) in
+  eprintf "FUN: [%s]\n%!" pp_env ;
+ *)
     let out fmt = fprintf chan fmt in
     let input_defs =
       List.map (dump_global_def globEnv) t.CTarget.inputs
@@ -132,18 +132,21 @@ module Make(C:Config)(E:Extra) = struct
           let cast = match is_array_of x with
           | Some t -> sprintf "(%s *)" t
           | None -> "" in
-          match C.memory with
-        | Memory.Direct ->
-            sprintf "%s&_a->%s[_i]" cast (CTarget.fmt_reg x)
-        | Memory.Indirect ->
-            sprintf "%s_a->%s[_i]" cast (CTarget.fmt_reg x))
+          let amper = match List.assoc x globEnv with
+          | CType.Base "mtx_t" -> ""
+          | _ -> "&" in
+         match C.memory with
+         | Memory.Direct ->
+             sprintf "%s%s_a->%s[_i]" cast amper (CTarget.fmt_reg x)
+         | Memory.Indirect ->
+             sprintf "%s_a->%s[_i]" cast (CTarget.fmt_reg x))
         t.CTarget.inputs
-    and out_args =
-      List.map
-        (fun x -> sprintf "&%s" (E.out_ctx (CTarget.compile_out_reg proc x)))
-        t.CTarget.finals in
-    let args = String.concat "," (global_args@out_args) in
-    LangUtils.dump_code_call chan indent proc args
+          and out_args =
+            List.map
+              (fun x -> sprintf "&%s" (E.out_ctx (CTarget.compile_out_reg proc x)))
+              t.CTarget.finals in
+          let args = String.concat "," (global_args@out_args) in
+          LangUtils.dump_code_call chan indent proc args
 
 
   let dump chan indent env globEnv envVolatile proc t =
@@ -153,10 +156,13 @@ module Make(C:Config)(E:Extra) = struct
       let indent = "  " ^ indent in
       let dump_input x =
         let ty,x = dump_global_def globEnv x in
+        let amper = match List.assoc x globEnv with
+        | CType.Base "mtx_t" -> ""
+        | _ -> "&" in
         match C.memory with
         | Memory.Direct -> begin match C.mode with
           | Mode.Std ->
-              out "%s%s %s = (%s)&_a->%s[_i];\n" indent ty x ty x
+              out "%s%s %s = (%s)%s_a->%s[_i];\n" indent ty x ty amper x
           |  Mode.PreSi -> ()
         end
         | Memory.Indirect ->
