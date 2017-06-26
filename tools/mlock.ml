@@ -500,7 +500,7 @@ let opts =
 
 let prog =
   if Array.length Sys.argv > 0 then Sys.argv.(0)
-  else "mprog"
+  else "mlock"
 
 let () =
   Arg.parse opts
