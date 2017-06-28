@@ -47,6 +47,7 @@ let tr_name s = match s with
   ->
   BASE_TYPE s
 | "atomic_int" -> ATOMIC_TYPE "int"
+| "void" -> VOID
 | "NULL" -> NULL
 (* C11 primitives, quite a lot! *)
 | "atomic_fetch_add" -> ATOMIC_FETCH Op.Add

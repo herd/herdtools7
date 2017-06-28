@@ -30,7 +30,7 @@ open MemOrderOrAnnot
 %token <string> CODEVAR
 %token <int> PROC
 %token LPAR RPAR COMMA LBRACE RBRACE STAR
-%token ATOMIC CHAR INT LONG
+%token ATOMIC CHAR INT LONG VOID
 %token MUTEX
 %token TYPEDEF EXTERN STATIC AUTO REGISTER
 %token CONST VOLATILE
@@ -116,8 +116,12 @@ ty_attr:
 shallow_main:
 | EOF { [] }
 | BODY shallow_main { CAst.Global $1 :: $2 }
-| PROC LPAR parameter_list RPAR BODY shallow_main
-    { CAst.Test {CAst.proc = $1; params = $3; body = $5} :: $6 }
+| voidopt PROC LPAR parameter_list RPAR BODY shallow_main
+    { CAst.Test {CAst.proc = $2; params = $4; body = $6} :: $7 }
+
+voidopt:
+| VOID { () }
+| { () }
 
 declaration:
 | typ IDENTIFIER SEMI { DeclReg ($1,$2) }
@@ -262,10 +266,10 @@ pseudo_seq:
 | declaration pseudo_seq { $2 }
 
 function_def:
-| PROC LPAR parameter_list RPAR LBRACE pseudo_seq RBRACE
-  { { CAst.proc = $1;
-      CAst.params = $3;
-      CAst.body = $6 } }
+| voidopt PROC LPAR parameter_list RPAR LBRACE pseudo_seq RBRACE
+  { { CAst.proc = $2;
+      CAst.params = $4;
+      CAst.body = $7 } }
 
 trans_unit:
 | function_def
