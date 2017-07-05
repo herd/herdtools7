@@ -1,3 +1,5 @@
+  * tools: Introduce mlisa2c, a tool to produce C11/Linux versions from
+    Linux LISA
 7.46+2
   * New linux locks, simulate load-acquire write release behaviour more
     closely.
