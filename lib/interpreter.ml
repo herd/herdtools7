@@ -1409,6 +1409,7 @@ module Make
 
       and eval_set env e = match eval env e with
       | Set v -> v
+      | Event e -> E.EventSet.singleton e
       | V.Empty -> E.EventSet.empty
       | Unv -> env.EV.ks.evts
       | _ -> error env.EV.silent (get_loc e) "set expected"

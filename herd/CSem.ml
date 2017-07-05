@@ -96,6 +96,11 @@ module Make (Conf:Sem.Config)(V:Value.S)
     | Some i1,Some i2 -> i1 == i2
     | _,_ -> false
 
+    let linux_lock loc ii =
+      M.mk_singleton_es
+        (Act.Lock (A.Location_global loc,Act.LockLinux Dir.R)) ii >>= fun () ->
+          M.mk_singleton_es
+            (Act.Lock (A.Location_global loc,Act.LockLinux Dir.W)) ii
 
     let rec build_semantics_expr is_data e ii : V.v M.t = match e with
     | C.Const v ->
@@ -118,11 +123,9 @@ module Make (Conf:Sem.Config)(V:Value.S)
     | C.TryLock (loc,C.MutexLinux) ->
         build_semantics_expr is_data loc ii >>=
         fun l ->
-          M.read_loc is_data
-            (fun loc v -> Act.TryLock (loc,v))
-            (A.Location_global l) ii >>=
-          fun v ->
-            M.choiceT v (M.unitT V.zero) (M.unitT V.one)
+          M.altT
+            (linux_lock l ii >>! V.one)
+            (M.mk_singleton_es (Act.TryLock (A.Location_global l)) ii >>! V.zero)
 
     | C.Op(op,e1,e2) ->
         (build_semantics_expr is_data e1 ii >>|
@@ -287,12 +290,11 @@ module Make (Conf:Sem.Config)(V:Value.S)
           | C.MutexC11 ->
               (* C11 Lock always successful, oversimplification?  *)
               (M.mk_singleton_es
-                   (Act.Lock (A.Location_global l, true,k)) ii)
+                   (Act.Lock (A.Location_global l, Act.LockC11 true)) ii)
           | C.MutexLinux ->
-              M.mk_singleton_es
-                (Act.Lock (A.Location_global l,true,k)) ii
+              linux_lock l ii
           end
-              >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
+              >>= fun () -> M.unitT (ii.A.program_order_index, B.Next)
       | C.Unlock (l,k) ->
           build_semantics_expr false l ii >>=
           fun l ->

@@ -45,7 +45,7 @@ type barrier = MemOrderOrAnnot.t
 let pp_barrier m =
   let open MemOrderOrAnnot in
   match m with
-  | MO mo -> "Fence("^(MemOrder.pp_mem_order mo)^")"
+  | MO mo -> "atomic_thread_fence("^(MemOrder.pp_mem_order mo)^")"
   | AN a -> "Fence{"^string_of_annot a^"}"
 
 let barrier_compare = Pervasives.compare
@@ -150,7 +150,7 @@ let rec do_dump_instruction indent =
   let pindent fmt = ksprintf (fun msg -> indent ^ msg) fmt in
   let open MemOrderOrAnnot in
   function
-  | Fence b -> indent ^ pp_barrier b^";\n"
+  | Fence b -> indent ^ pp_barrier b^";"
   | Seq (l,false) ->
       String.concat "\n"
         (List.map (do_dump_instruction indent) l)

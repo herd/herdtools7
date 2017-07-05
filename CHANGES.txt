@@ -1,3 +1,6 @@
+7.46+2
+  * New linux locks, simulate load-acquire write release behaviour more
+    closely.
 7.46
   * C better lock integration. NB: POSIX locks used by litmus.
   * herd: correct PR #3 [semantics of C11 CAS]
