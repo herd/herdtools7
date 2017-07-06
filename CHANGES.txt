@@ -1,3 +1,4 @@
+  * litmus: accept void * in argument types.
   * tools: Introduce mlisa2c, a tool to produce C11/Linux versions from
     Linux LISA
 7.46+2

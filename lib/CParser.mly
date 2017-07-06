@@ -100,6 +100,7 @@ typ:
 base0:
 | ATOMIC_TYPE { Atomic (Base $1) }
 | BASE_TYPE { (Base $1) }
+| VOID { (Base "void") }
 | ty_attr MUTEX { Base ($1 ^ "mutex") }
 | ty_attr CHAR { Base ($1 ^ "char") }
 | ty_attr INT { Base ($1 ^ "int") }

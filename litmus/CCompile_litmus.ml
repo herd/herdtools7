@@ -54,6 +54,9 @@ module Make
           s1 = s2 && sz1 = sz2
       | (Volatile t1),_ -> compat t1 t2
       | _,(Volatile t2) -> compat t1 t2
+      | (Pointer (Base "void"),Pointer _)
+      | (Pointer _,Pointer (Base "void"))
+          -> true
       | (Atomic t1,Atomic t2)
       | (Pointer t1,Pointer t2) -> compat t1 t2
       | _,_ -> false
@@ -75,7 +78,7 @@ module Make
         if compat oty ty then StringMap.add param_name oty env
         else begin
           Warn.warn_always
-            "Parameter %s, type mismatch %s vs. %s\n"
+            "Parameter %s, type mismatch %s vs. %s"
             param_name (CType.dump oty) (CType.dump ty) ;
           env
         end
