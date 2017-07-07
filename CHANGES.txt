@@ -1,3 +1,4 @@
+  * herd: uniform handling of indivudual events and relational pairs TODO DOC.
   * litmus: accept void * in argument types.
   * tools: Introduce mlisa2c, a tool to produce C11/Linux versions from
     Linux LISA

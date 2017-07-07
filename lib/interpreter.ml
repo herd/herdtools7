@@ -1032,6 +1032,12 @@ module Make
                         (function Event e -> e | _ -> assert false)
                         vs in
                     Set (E.EventSet.of_list vs)
+                | TPair ->
+                    let vs =
+                      List.rev_map
+                        (function Pair p -> p | _ -> assert false)
+                        vs in
+                    Rel (E.EventRel.of_list vs)
                 | _ -> ValSet (t,ValSet.of_list vs)
                 with CompError msg ->
                   error env.EV.silent loc "%s" msg
@@ -1403,6 +1409,7 @@ module Make
 
       and eval_rel env e =  match eval env e with
       | Rel v -> v
+      | Pair p -> E.EventRel.singleton p
       | V.Empty -> E.EventRel.empty
       | Unv -> Lazy.force env.EV.ks.unv
       | _ -> error env.EV.silent (get_loc e) "relation expected"
@@ -1416,6 +1423,8 @@ module Make
 
       and eval_rel_set env e = match eval env e with
       | Rel _ | Set _ as v ->  v
+      | Event e -> Set (E.EventSet.singleton e)
+      | Pair p -> Rel (E.EventRel.singleton p)
       | V.Empty -> Rel E.EventRel.empty
       | Unv -> Rel (Lazy.force env.EV.ks.unv)
       | _ -> error env.EV.silent (get_loc e) "relation or set expected"

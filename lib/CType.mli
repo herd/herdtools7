@@ -42,8 +42,6 @@ val is_array : t -> bool
 val is_atomic : t -> bool
 val strip_atomic : t -> t
 val strip_volatile : t -> t
-val strip_parameter : t -> t option
 val strip_attributes : t -> t
-
 
 val is_ptr_to_atomic : t -> bool

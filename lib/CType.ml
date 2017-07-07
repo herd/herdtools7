@@ -116,15 +116,9 @@ let rec strip_volatile = function
   | Pointer t -> Pointer (strip_volatile t)
   | t ->  strip_volatile0 t
 
-let rec strip_parameter t = match strip_volatile t with
-| Pointer t -> Some t
-| t -> None
-
 let strip_attributes t = strip_atomic (strip_volatile t)
-
 
 let rec is_ptr_to_atomic = function
   | Volatile t -> is_ptr_to_atomic t
   | Pointer t -> is_atomic t
   | _ -> false
-
