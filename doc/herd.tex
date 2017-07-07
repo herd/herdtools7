@@ -843,10 +843,18 @@ first-class functions, pattern matching, etc.
 However, \cat{} is a domain specific language, with important differences
 from OCaml.
 \begin{enumerate}
-\item Base values are specialised, they are sets of events and relations
+\item
+Base values are specialised, they are sets of events and relations
 over events. There are also tags, akin to C~enumerations or OCaml
-``constant'' constructors and first class functions. 
+``constant'' constructors and first class functions. Moreover, events
+can be extracted from sets and pair of events (element of relations)
+from relations.
+
 There are two structured values: tuples of values and sets of values.
+Once should notice that primitive set of events and structured set of events are not the same
+thing. In fact, the language prevents the construction of structured set of events.
+Similarily, there are no structured sets of elements of relations, there are only relations.
+
 \item There is a distinction between expressions that evaluate
 to some value, and instructions that are executed for their effect.
 \end{enumerate}
@@ -904,7 +912,8 @@ feed reads that read from the initial state\\
 \textrel{PPC} & \textrel{SYNC}, \textrel{LWSYNC}, \textrel{EIEIO}, \textrel{ISYNC}\\
 \textrel{ARM} &  \textrel{DMB}, \textrel{DMB.ST}, \textrel{DSB}, \textrel{DSB.ST}, \textrel{ISB}\\
  \textrel{MIPS} & \textrel{SYNC}\\
-\textrel{AArch64} & \ldots\\
+\textrel{AArch64} &  \textrel{DMB.SY},  \textrel{DMB.ST}, \textrel{DMB.ST}, \ldots
+\textrel{DSB.SY},  \textrel{DSB.ST}, \textrel{DSB.ST}, \ldots\\
 \end{desctable}
 \end{figure}
 Specific fence event sets depends on the test architecture,
@@ -1018,13 +1027,23 @@ Explicit sets are written as the comma separated
 list of their elements between curly braces:
 \synt{\T{\{} \NT{expr}_1 \T{,} \NT{expr}_1 \T{,}\ldots \T{,} \NT{expr}_n\T{\}}},
 with $n \geq 0$.
-As events are not values, one cannot build a set of events using
-explicit set expressions.
-However, by exception, the empty set~\synt{\T{\{}\T{\}}}
-also is the empty set of events and the empty relation.
 Sets are homogenous, in the sense that sets hold elements of the same type.
 
+In case the values \synt{\NT{expr}_k} are events, the result will be a primitive event set
+In case they are elements of relations, the result
+will be a relation (and not a set of event pairs).
+
+The empty set~\synt{\T{\{}\T{\}}} is the empty set of events and the empty relation.
+
+
+
 \subsubsection*{Operator expressions}
+Most operators are overloaded and apply to event sets, relations and explicit sets.
+However, by nature, some operators apply to relations only (as sequence and transitive closure
+below) or to sets only (as the cartesian product). Additionally, an event in a context where
+an event set is expected will be promoted to a singleton event set. The situation of an
+elementary relation in a relation context is similar.
+
 The transitive and reflexive-transitive closure of an expression are performed
 by the postfix operators \T{+} and~\T{*}.
 The  postfix operator \T{\textasciicircum-1} performs relation inversion.
@@ -1039,8 +1058,6 @@ Finally, there is one last unary operator: \synt{\T{[}\NT{expr}\T{]}}
 that evaluate \synt{\NT{expr}} to an event set and returns the identity
 relation over this set.
 
-
-
 Infix operators are
 \T{|} (union), \T{++} (set addition),
 \T{;} (sequence), \T{\&} (intersection), \T{\textbackslash} (set difference),
@@ -1052,11 +1069,16 @@ except set difference which is left-associative, and cartesian product
 which is non-associative.
 
 The union, intersection and difference operators apply to relations
-and all kinds of sets.
+and all kinds of sets. The cartesian product takes two event sets as arguments and returns
+a relation.
+
 The addition operator \synt{\NT{expr}_1 \T{++} \NT{expr}_2} operates on
-sets: the value of \synt{\NT{expr}_2} must be a set of values
+sets: the value of \synt{\NT{expr}_2} must be a set of values (or an event, or
+an element of relation)
 ~$S$ and the operator returns the set~$S$ augmented with the value of
-\synt{\NT{expr}_1}.
+\synt{\NT{expr}_1} (or a new event set, or a new relation).
+By exception, the arguments to the addition operator can also be an elementary relation
+and  realation. It then yields a relation.
 
 For the record, given two relations $r_1$ and~$r_2$,
 the sequence $r_1; r_2$ is defined
@@ -1138,6 +1160,8 @@ if \nt{pat} is a proper tuple pattern
 then \synt{\nt{expr}} must evaluate to a tuple value of size~$n$
 $(v_1,\ldots,v_n)$ and the names $\nt{id}_1,\ldots,\nt{id}_n$ are
 bound to the values  $v_1,\ldots,v_n$.
+By exception, in the case $n=2$, the expression \synt{\nt{expr}} may evaluate to
+an elementary relation. If so, the value behaves as a tuple of arity two.
 
 \aname{letrec}{The} construct
 \begin{center}
@@ -1190,6 +1214,11 @@ The value of the match is the value of \synt{\nt{expr}_2} in a context
 where \synt{\nt{id}_1} is bound to~$v_e$ and \synt{\nt{id}_2} is bound
 to~$v_r$.
 
+The construct also also applies to primitive event sets and relations.
+If the matched expression is non-empty, then the bound element is an event
+and an element of relation, respectively. One easily rebuilds an event set
+(or a relation) for instance by using the singleton construct as
+\synt{\T{\{} \NT{id}_1 \T{\}}}.
 
 \subsubsection*{Parenthesised expressions}
 The expression \synt{\T{(}\NT{expr}\T{)}}
