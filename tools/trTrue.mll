@@ -34,15 +34,19 @@ let num = ['0'-'9']
 let reg = alpha (alpha|num)*
     
 rule main out = parse
-| '(' blank* "xor" blank+ (reg as r1) blank+ (reg as r2) ')' as line
+| '(' blank* "xor" blank+ (reg as r1) blank+ (reg as r2) ')' as lxm
 {
  begin if r1 = r2 then
    Out.put out (Printf.sprintf "(and %s 128)" r1)
  else
-   Out.put out line
+   Out.put out lxm
  end ;
  main out lexbuf
 }
+| '(' blank* "and" blank+ (reg as r1) blank+ "0" ')'
+    {
+     Out.put out (Printf.sprintf "(and %s 128)" r1) ;
+     main out lexbuf }
 | "f[sync]" as token
   { if O.sync then false else begin
        Out.put out token ;
