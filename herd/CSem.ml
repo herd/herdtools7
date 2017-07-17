@@ -163,9 +163,8 @@ module Make (Conf:Sem.Config)(V:Value.S)
                     (match a with ["release"] -> a | _ -> a_once)
                     vloc vnew ii >>! v in
             add_mb r)
-            (add_mb
-               (read_mem_atomic true a_once vloc ii >>*=
-                fun v -> M.neqT v vold >>= fun () -> M.unitT v)))
+            (read_mem_atomic true a_once vloc ii >>*=
+             fun v -> M.neqT v vold >>= fun () -> M.unitT v))
     | C.Fetch(l,op,e,mo) ->
         (build_semantics_expr true e ii >>|
         build_semantics_expr false l ii)
@@ -176,50 +175,50 @@ module Make (Conf:Sem.Config)(V:Value.S)
     | C.ECas(obj,exp,des,success,failure,strong) ->
         (* Obtain location of "expected" value *)
         build_semantics_expr false exp ii >>= fun loc_exp ->
-        (* Obtain location of object *)
-        build_semantics_expr false obj ii >>= fun loc_obj ->
-       (* Non-atomically read the value at "expected" location *)
-        read_mem true no_mo loc_exp ii >>*= fun v_exp ->
- (* Non-deterministic choice *)
-        M.altT
-           (read_mem true (mo_as_anmo failure) loc_obj ii >>*= fun v_obj ->
-           (* For "strong" cas: fail only when v_obj != v_exp *)
-             (if strong then M.neqT v_obj v_exp else M.unitT ()) >>= fun () ->
-           (* Non-atomically write that value into the "expected" location *)
-           write_mem no_mo loc_exp v_obj ii >>!
-           V.zero)
-          (* Obtain "desired" value *)
-          (build_semantics_expr true des ii >>= fun v_des ->
-           (* Do RMW action on "object", to change its value from "expected"
-              to "desired", using memory order "success" *)
-           M.mk_singleton_es
-             (Act.RMW (A.Location_global loc_obj,v_exp,v_des,success)) ii >>!
-           V.one)
+          (* Obtain location of object *)
+          build_semantics_expr false obj ii >>= fun loc_obj ->
+            (* Non-atomically read the value at "expected" location *)
+            read_mem true no_mo loc_exp ii >>*= fun v_exp ->
+              (* Non-deterministic choice *)
+              M.altT
+                (read_mem true (mo_as_anmo failure) loc_obj ii >>*= fun v_obj ->
+                  (* For "strong" cas: fail only when v_obj != v_exp *)
+                  (if strong then M.neqT v_obj v_exp else M.unitT ()) >>= fun () ->
+                    (* Non-atomically write that value into the "expected" location *)
+                    write_mem no_mo loc_exp v_obj ii >>!
+                    V.zero)
+                (* Obtain "desired" value *)
+                (build_semantics_expr true des ii >>= fun v_des ->
+                  (* Do RMW action on "object", to change its value from "expected"
+                     to "desired", using memory order "success" *)
+                  M.mk_singleton_es
+                    (Act.RMW (A.Location_global loc_obj,v_exp,v_des,success)) ii >>!
+                  V.one)
 
 
     | C.AtomicOpReturn (eloc,op,e) ->
         mk_mb ii >>*=
         fun () -> build_atomic_op eloc op e ii >>*=
-        fun v -> mk_mb ii >>! v
+          fun v -> mk_mb ii >>! v
 
     | C.AtomicAddUnless (eloc,ea,eu) ->
-        mk_mb ii >>*=
-        begin fun () ->
+        (* read all arguments *)
+        let common =
           build_semantics_expr true ea ii >>|
           build_semantics_expr true eu ii >>|
           (build_semantics_expr false eloc ii >>=
            fun loc ->
-             (read_mem_atomic true a_once loc ii >>| M.unitT loc)) >>=
-          (fun ((a,u),(v,loc)) ->
-            M.altT
-              (M.assign v u >>= fun () -> mk_mb ii >>! u)
-              (M.op Op.Eq v u >>=
-               fun veq ->  M.assign veq V.zero >>=
-               fun () -> M.op Op.Add v a >>=
-               fun nv -> write_mem_atomic a_once loc nv ii >>=
-               fun _ -> mk_mb ii >>! v))
-        end
-      | C.ECall (f,_) -> Warn.fatal "Macro call %s in CSem" f
+             (read_mem_atomic true a_once loc ii >>| M.unitT loc)) in
+        M.altT
+          (common >>=  fun ((a,u),(v,loc)) ->
+            M.assign v u >>! u)
+          (mk_mb ii >>*= fun () ->common >>=  fun ((a,u),(v,loc)) ->
+            M.op Op.Eq v u >>=
+            fun veq ->  M.assign veq V.zero >>=
+              fun () -> M.op Op.Add v a >>=
+                fun nv -> write_mem_atomic a_once loc nv ii >>=
+                  fun _ -> mk_mb ii >>! v)
+    | C.ECall (f,_) -> Warn.fatal "Macro call %s in CSem" f
 
     and build_atomic_op eloc op e ii =
       build_semantics_expr true e ii >>|
@@ -290,7 +289,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
           | C.MutexC11 ->
               (* C11 Lock always successful, oversimplification?  *)
               (M.mk_singleton_es
-                   (Act.Lock (A.Location_global l, Act.LockC11 true)) ii)
+                 (Act.Lock (A.Location_global l, Act.LockC11 true)) ii)
           | C.MutexLinux ->
               linux_lock l ii
           end
