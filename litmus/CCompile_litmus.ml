@@ -77,7 +77,7 @@ module Make
         | None -> oty in
         if compat oty ty then StringMap.add param_name oty env
         else begin
-          Warn.warn_always
+          Warn.user_error
             "Parameter %s, type mismatch %s vs. %s"
             param_name (CType.dump oty) (CType.dump ty) ;
           env
