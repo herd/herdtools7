@@ -319,7 +319,7 @@ module Make(O:Config)(M:XXXMem.S) =
           if stop_now then raise (Over r) else r
 
 (* Driver *)
-    let run test =
+    let run start_time test =
       let cstr = T.find_our_constraint test in
       let { MC.event_structures=rfms; too_far=loop; } =
         MC.glommed_event_structures test in
@@ -430,6 +430,7 @@ module Make(O:Config)(M:XXXMem.S) =
           else if c.neg = 0 then "Always"
           else "Sometimes") c.pos c.neg ;
         do_show () ;
+        printf "Time %s %0.2f\n" tname (Sys.time () -. start_time) ;
         if O.candidates then
           printf "Candidates %s %i\n" tname (c.cfail+c.cands) ;
 (* Auto info or Hash only*)

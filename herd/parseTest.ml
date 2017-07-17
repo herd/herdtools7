@@ -57,7 +57,7 @@ module Top (Conf:Config) = struct
     struct
       module T = Test_herd.Make(S.A) 
 
-      let run filename chan env splitted =
+      let run start_time filename chan env splitted =
         try
           let parsed = P.parse chan splitted in
 
@@ -73,7 +73,7 @@ module Top (Conf:Config) = struct
               TestHash.check_env env name.Name.name filename hash in
           let test = T.build name parsed in
           let module T = Top_herd.Make(Conf)(M) in
-          T.run test ;
+          T.run start_time test ;
           env
           with TestHash.Seen -> env
     end
@@ -85,7 +85,7 @@ module Top (Conf:Config) = struct
         let check_rename = Conf.check_rename
       end)
 
-  let do_from_file env name chan =
+  let do_from_file start_time env name chan =
 (* First split the input file in sections *)
     let (splitted:Splitter.result) =  SP.split name chan in
     let tname = splitted.Splitter.name.Name.name in
@@ -153,7 +153,7 @@ module Top (Conf:Config) = struct
           let module PPCM = PPCMem.Make(ModelConfig)(PPCS) (PPCBarrier) in
           let module P = GenParser.Make (Conf) (PPC) (PPCLexParse) in
           let module X = Make (PPCS) (P) (NoCheck) (PPCM) in 
-          X.run name chan env splitted
+          X.run start_time name chan env splitted
 
       | `ARM ->
 	  let module ARM = ARMArch_herd.Make(Conf.PC)(SymbValue) in
@@ -179,7 +179,7 @@ module Top (Conf:Config) = struct
           let module ARMM = ARMMem.Make(ModelConfig)(ARMS)(ARMBarrier) in
           let module P = GenParser.Make (Conf) (ARM) (ARMLexParse) in
           let module X = Make (ARMS) (P) (NoCheck) (ARMM) in 
-          X.run name chan env splitted
+          X.run start_time name chan env splitted
 
       | `AArch64 ->
           let module AArch64Conf = struct
@@ -209,7 +209,7 @@ module Top (Conf:Config) = struct
           let module AArch64M = AArch64Mem.Make(ModelConfig)(AArch64S) (AArch64Barrier) in
           let module P = GenParser.Make (Conf) (AArch64) (AArch64LexParse) in
           let module X = Make (AArch64S) (P) (NoCheck) (AArch64M) in 
-          X.run name chan env splitted
+          X.run start_time name chan env splitted
 
       | `X86 ->
           let module X86 = X86Arch_herd.Make(Conf.PC)(SymbValue) in
@@ -232,7 +232,7 @@ module Top (Conf:Config) = struct
           let module X86M = X86Mem.Make(ModelConfig)(X86S) (X86Barrier) in
           let module P = GenParser.Make (Conf) (X86) (X86LexParse) in
           let module X = Make (X86S) (P) (NoCheck) (X86M) in 
-          X.run name chan env splitted
+          X.run start_time name chan env splitted
 
       | `MIPS ->
           let module MIPS = MIPSArch_herd.Make(Conf.PC)(SymbValue) in
@@ -253,7 +253,7 @@ module Top (Conf:Config) = struct
           let module MIPSM = MIPSMem.Make(ModelConfig)(MIPSS)(MIPSBarrier) in
           let module P = GenParser.Make (Conf) (MIPS) (MIPSLexParse) in
           let module X = Make (MIPSS) (P) (NoCheck) (MIPSM) in
-          X.run name chan env splitted
+          X.run start_time name chan env splitted
 
       | `C ->
         let module C = CArch_herd.Make(Conf.PC)(SymbValue) in
@@ -276,7 +276,7 @@ module Top (Conf:Config) = struct
         let module CM = CMem.Make(ModelConfig)(CS) in
         let module P = CGenParser_lib.Make (Conf) (C) (CLexParse) in
         let module X = Make (CS) (P) (NoCheck) (CM) in
-        X.run name chan env splitted
+        X.run start_time name chan env splitted
       | `CPP as arch -> Warn.fatal "no support for arch '%s'" (Archs.pp arch)
       | `LISA ->
         let module Bell = BellArch_herd.Make(Conf.PC)(SymbValue) in
@@ -302,10 +302,11 @@ module Top (Conf:Config) = struct
              end) in
         let module P = GenParser.Make (Conf) (Bell) (BellLexParse) in
         let module X = Make (BellS) (P) (BellC) (BellM) in 
-        X.run name chan env splitted
+        X.run start_time name chan env splitted
     end else env
 
 (* Enter here... *)
   let from_file name env =
-    Misc.input_protect (do_from_file env name) name
+    let start_time = Sys.time () in
+    Misc.input_protect (do_from_file start_time env name) name
 end
