@@ -98,7 +98,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
 
     let linux_lock loc ii =
       M.mk_singleton_es
-        (Act.Lock (A.Location_global loc,Act.LockLinux Dir.R)) ii >>= fun () ->
+        (Act.Lock (A.Location_global loc,Act.LockLinux Dir.R)) ii >>*= fun () ->
           M.mk_singleton_es
             (Act.Lock (A.Location_global loc,Act.LockLinux Dir.W)) ii
 
@@ -216,7 +216,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
             M.op Op.Eq v u >>=
             fun veq ->  M.assign veq V.zero >>=
               fun () -> M.op Op.Add v a >>=
-                fun nv -> write_mem_atomic a_once loc nv ii >>=
+                fun nv -> write_mem_atomic a_once loc nv ii >>*=
                   fun _ -> mk_mb ii >>! v)
     | C.ECall (f,_) -> Warn.fatal "Macro call %s in CSem" f
 
