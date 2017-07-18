@@ -52,3 +52,15 @@ procedure total(r,E) =
   call inclusion((E*E),rt)
 end
 
+
+(***************)
+(* Set library *)
+(***************)
+
+(* Apply function f to each member of a set or relation *)
+let map f =
+  let rec do_map S = match S with
+  || {} -> {}
+  || e ++ S -> f e ++ do_map S
+  end in
+  do_map
