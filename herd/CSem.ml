@@ -149,22 +149,24 @@ module Make (Conf:Sem.Config)(V:Value.S)
         | ["mb"] ->
             mk_mb ii >>*= fun () -> r >>*= fun v -> mk_mb ii >>! v
         | _ -> r in
-        (build_semantics_expr false eloc ii >>|
-        build_semantics_expr true eold ii >>|
-        build_semantics_expr true enew ii) >>=
-        (fun ((vloc,vold),vnew) ->
-          M.altT
-            (let r =
+        let mloc =  build_semantics_expr false eloc ii
+        and mold =  build_semantics_expr true eold ii in
+        M.altT
+          (let r =
+            let mnew = build_semantics_expr true enew ii
+            and rmem vloc =
               read_mem_atomic true
                 (match a with ["acquire"] -> a | _ -> a_once)
-                vloc ii >>*=
-              fun v -> M.assign v vold >>=
-                fun () -> write_mem_atomic
-                    (match a with ["release"] -> a | _ -> a_once)
-                    vloc vnew ii >>! v in
-            add_mb r)
-            (read_mem_atomic true a_once vloc ii >>*=
-             fun v -> M.neqT v vold >>= fun () -> M.unitT v))
+                vloc ii
+            and wmem vloc w =
+              write_mem_atomic
+                (match a with ["release"] -> a | _ -> a_once)
+                vloc w ii >>! () in
+            M.linux_cmpexch_ok mloc mold mnew rmem wmem M.assign in
+          add_mb r)
+          (M.linux_cmpexch_no mloc mold
+             (fun vloc -> read_mem_atomic true a_once vloc ii)
+             M.neqT)
     | C.Fetch(l,op,e,mo) ->
         (build_semantics_expr true e ii >>|
         build_semantics_expr false l ii)

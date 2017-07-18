@@ -35,8 +35,10 @@ module type S = sig
   (* Check for a singleton *)
   val as_singleton : t -> elt option
 
-  (* union of four sets *)
+  (* union of small number of sets *)
+  val union3 : t -> t -> t -> t
   val union4 : t -> t -> t -> t -> t
+  val union5 : t -> t -> t -> t -> t -> t
 
   (* Quite convenient: union of sets given in a list *)
   val unions : t list -> t
@@ -91,7 +93,9 @@ module Make(O:OrderedType) : S with type elt = O.t =
         else None
       with Not_found -> None
 
+    let union3 s1 s2 s3 = union s1 (union s2 s3)
     let union4 s1 s2 s3 s4 = union (union s1 s2) (union s3 s4)
+    let union5 s1 s2 s3 s4 s5 = union4 s1 s2 s3 (union s4 s5)
 
     let rec union2 k sets = match sets with
     | [] -> k

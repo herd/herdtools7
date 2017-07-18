@@ -144,6 +144,45 @@ and type evt_struct = E.event_structure) =
         eiid,
         Evt.singleton (w,vlcloc@vclexp@vclrmem@vclwmem,es)
 
+(* Linux (successfull) compexchange *)
+    let linux_cmpexch_ok :
+        'loc t -> 'v t -> 'v t -> ('loc -> 'v t) ->
+          ('loc -> 'v -> unit t) -> ('v -> 'v -> unit t) -> 'v t =
+      fun rloc rold rnew rmem wmem req eiid ->
+        let eiid,locm = rloc eiid in (* read location *)
+        let eiid,oldm = rold eiid in (* read old value *)
+        let eiid,newm = rnew eiid in (* read new value *)
+        let (loc,vlcloc,esloc) =  Evt.as_singleton locm
+        and (oldv,vlcold,esold) = Evt.as_singleton oldm
+        and (newv,vlcnew,esnew) = Evt.as_singleton newm in
+        let eiid,rmemm = rmem loc eiid in
+        let eiid,wmemm = wmem loc newv eiid in
+        let w,vclrmem,esrmem =  Evt.as_singleton rmemm
+        and (),vclwmem,eswmem = Evt.as_singleton wmemm in
+        let es = E.linux_cmpexch_ok esloc esold esnew esrmem eswmem in
+        let eiid,eqm = req oldv w eiid in
+        let (),vcleq,_ =  Evt.as_singleton eqm in
+        eiid,
+        Evt.singleton
+          (w,vcleq@vlcloc@vlcold@vlcnew@vclrmem@vclwmem,es)
+
+
+    let linux_cmpexch_no :
+        'loc t -> 'v t -> ('loc -> 'v t) ->
+          ('v -> 'v -> unit t) -> 'v t =
+     fun rloc rold rmem rneq eiid ->
+       let eiid,locm = rloc eiid in (* read location *)
+       let eiid,oldm = rold eiid in (* read old value *)
+       let (loc,vlcloc,esloc) =  Evt.as_singleton locm
+       and (oldv,vlcold,esold) = Evt.as_singleton oldm in
+       let eiid,rmemm = rmem loc eiid in
+       let w,vclrmem,esrmem =  Evt.as_singleton rmemm in
+       let es = E.linux_cmpexch_no esloc esold esrmem in   
+       let eiid,eqm = rneq oldv w eiid in
+       let (),vcleq,_ =  Evt.as_singleton eqm in
+       eiid,
+        Evt.singleton
+          (w,vcleq@vlcloc@vlcold@vclrmem,es)
 
 (* stu comninator *)
     let stu : 'a t -> 'b t -> ('a -> unit t) -> (('a * 'b) -> unit t) -> unit t

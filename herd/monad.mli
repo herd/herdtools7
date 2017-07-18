@@ -42,6 +42,13 @@ module type S =
     val exch : 'a t -> 'a t -> ('a -> 'b t) ->  ('a -> 'b t) ->  ('b * 'b) t
     val linux_exch :
         'loc t -> 'v t -> ('loc -> 'w t) -> ('loc -> 'v -> unit t) -> 'w t
+    val linux_cmpexch_ok :
+        'loc t -> 'v t -> 'v t -> ('loc -> 'v t) ->
+          ('loc -> 'v -> unit t) -> ('v -> 'v -> unit t) -> 'v t
+    val linux_cmpexch_no :
+        'loc t -> 'v t -> ('loc -> 'v t) ->
+          ('v -> 'v -> unit t) -> 'v t
+
     val stu : 'a t -> 'a t -> ('a -> unit t) -> (('a * 'a) -> unit t) -> unit t
     val (>>>) : 'a t -> ('a -> 'b t) -> 'b t
     val (>>>>) : 'a t -> ('a -> 'b t) -> 'b t
