@@ -100,8 +100,8 @@ module Top(O:Config)(Out:OutTests.S) = struct
         CmpExchange (tr_expr loc,tr_expr o,tr_expr n,a)
     | AtomicOpReturn (loc,op,u) ->
         AtomicOpReturn (tr_expr loc,op,tr_expr u)
-    | AtomicAddUnless (loc,a,u) ->
-        AtomicAddUnless (tr_expr loc,tr_expr a,tr_expr u) in
+    | AtomicAddUnless (loc,a,u,retbool) ->
+        AtomicAddUnless (tr_expr loc,tr_expr a,tr_expr u,retbool) in
 
   let rec tr_ins nxt i = match i with
     | Lock (e,_)|PCall ("spin_lock",[e]) ->
@@ -209,7 +209,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
     -> StringSet.union (expr_read e1) (expr_read e2)
   | ECas (e1,e2,e3,_,_,_)
   | CmpExchange(e1,e2,e3,_)
-  | AtomicAddUnless (e1,e2,e3) ->
+  | AtomicAddUnless (e1,e2,e3,_) ->
       StringSet.union
         (StringSet.union (expr_read e1) (expr_read e2))
         (expr_read e2)
@@ -313,8 +313,8 @@ module Top(O:Config)(Out:OutTests.S) = struct
         CmpExchange (tr_expr loc,tr_expr o,tr_expr n,a)
     | AtomicOpReturn (loc,op,e) ->
         AtomicOpReturn (tr_expr loc,op,tr_expr e)
-    | AtomicAddUnless (loc,a,u) ->
-        AtomicAddUnless (tr_expr loc,tr_expr a,tr_expr u)
+    | AtomicAddUnless (loc,a,u,retbool) ->
+        AtomicAddUnless (tr_expr loc,tr_expr a,tr_expr u,retbool)
 
     and tr_exprs es =  List.map tr_expr es in
 

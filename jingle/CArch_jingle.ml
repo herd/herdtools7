@@ -168,7 +168,7 @@ include Arch.MakeArch(struct
       | ECas (e1,e2,e3,mo1,mo2,st) -> ECas (expl_expr e1,expl_expr e2,expl_expr e3,mo1,mo2,st)
       | TryLock(e,m) -> TryLock(expl_expr e,m)
       | AtomicOpReturn (loc,op,e) -> AtomicOpReturn (expl_expr loc,op,expl_expr e)
-      | AtomicAddUnless (loc,u,a) -> AtomicAddUnless (expl_expr loc,expl_expr u,expl_expr a)
+      | AtomicAddUnless (loc,u,a,rb) -> AtomicAddUnless (expl_expr loc,expl_expr u,expl_expr a,rb)
     in
     function
     | Fence _|DeclReg _ as i -> i

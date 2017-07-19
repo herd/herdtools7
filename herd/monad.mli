@@ -48,6 +48,12 @@ module type S =
     val linux_cmpexch_no :
         'loc t -> 'v t -> ('loc -> 'v t) ->
           ('v -> 'v -> unit t) -> 'v t
+    val linux_add_unless_ok :
+        'loc t -> 'v t -> 'v t ->
+          ('loc -> 'v t) -> ('loc -> 'v -> unit t) ->
+            ('v -> 'v -> unit t) -> ('v -> 'v -> 'v t) -> 'v t
+    val linux_add_unless_no :
+        'loc t -> 'v t -> ('loc -> 'v t) -> ('v -> 'v -> unit t) -> 'v t
 
     val stu : 'a t -> 'a t -> ('a -> unit t) -> (('a * 'a) -> unit t) -> unit t
     val (>>>) : 'a t -> ('a -> 'b t) -> 'b t

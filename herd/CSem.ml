@@ -203,23 +203,22 @@ module Make (Conf:Sem.Config)(V:Value.S)
         fun () -> build_atomic_op eloc op e ii >>*=
           fun v -> mk_mb ii >>! v
 
-    | C.AtomicAddUnless (eloc,ea,eu) ->
-        (* read all arguments *)
-        let common =
-          build_semantics_expr true ea ii >>|
-          build_semantics_expr true eu ii >>|
-          (build_semantics_expr false eloc ii >>=
-           fun loc ->
-             (read_mem_atomic true a_once loc ii >>| M.unitT loc)) in
+    | C.AtomicAddUnless (eloc,ea,eu,retbool) ->
+        (* read arguments *)
+        let mloc = build_semantics_expr false eloc ii
+        and mu =  build_semantics_expr true eu ii
+        and mrmem loc =
+          read_mem_atomic true a_once loc ii in
         M.altT
-          (common >>=  fun ((a,u),(v,loc)) ->
-            M.assign v u >>! u)
-          (mk_mb ii >>*= fun () ->common >>=  fun ((a,u),(v,loc)) ->
-            M.op Op.Eq v u >>=
-            fun veq ->  M.assign veq V.zero >>=
-              fun () -> M.op Op.Add v a >>=
-                fun nv -> write_mem_atomic a_once loc nv ii >>*=
-                  fun _ -> mk_mb ii >>! v)
+          (let r =
+            M.linux_add_unless_ok mloc (build_semantics_expr true ea ii)
+              mu mrmem
+              (fun loc v -> write_mem_atomic a_once loc v ii >>! ())
+              M.neqT M.add in
+          mk_mb ii >>*= fun () -> r >>*= fun v ->
+            mk_mb ii >>! if retbool then V.one else v)
+          (M.linux_add_unless_no mloc mu mrmem M.assign >>=
+           fun v -> M.unitT (if retbool then V.zero else v))
     | C.ECall (f,_) -> Warn.fatal "Macro call %s in CSem" f
 
     and build_atomic_op eloc op e ii =

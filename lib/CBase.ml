@@ -64,7 +64,7 @@ type expression =
   | ECas of expression * expression * expression * mem_order * mem_order * bool
   | TryLock of expression * mutex_kind
   | AtomicOpReturn of expression * Op.op * expression
-  | AtomicAddUnless of expression * expression * expression
+  | AtomicAddUnless of expression * expression * expression * bool (* ret bool *)
 
 type instruction =
   | Fence of barrier
@@ -140,8 +140,9 @@ let rec dump_expr =
     | AtomicOpReturn (loc,op,e) ->
         sprintf "__atomic_op_return(%s,%s,%s)"
           (dump_expr loc) (Op.pp_op op) (dump_expr e)
-    | AtomicAddUnless (loc,a,u) ->
-        sprintf "__atomic_op_return(%s,%s,%s)"
+    | AtomicAddUnless (loc,a,u,retbool) ->
+        sprintf "%satomic_op_return(%s,%s,%s)"
+          (if retbool then "" else "__")
           (dump_expr loc) (dump_expr a) (dump_expr u)
 
 and dump_args es = String.concat "," (List.map dump_expr es)
@@ -236,9 +237,9 @@ include Pseudo.Make
         | TryLock(e,m) -> TryLock(parsed_expr_tr e,m)
         | AtomicOpReturn (loc,op,e) ->
             AtomicOpReturn(parsed_expr_tr loc,op,parsed_expr_tr e)
-        | AtomicAddUnless(loc,a,u) ->
+        | AtomicAddUnless(loc,a,u,retbool) ->
             AtomicAddUnless
-              (parsed_expr_tr loc,parsed_expr_tr a,parsed_expr_tr u)
+              (parsed_expr_tr loc,parsed_expr_tr a,parsed_expr_tr u,retbool)
 
       and parsed_tr = function
         | Fence _|DeclReg _ as i -> i
@@ -268,7 +269,7 @@ include Pseudo.Make
           | Exchange (loc,e,_)
           | AtomicOpReturn (loc,_,e) ->
               get_exp (get_exp (k+2) e) loc
-          | AtomicAddUnless (loc,a,u) ->
+          | AtomicAddUnless (loc,a,u,_) ->
               get_exp (get_exp (get_exp (k+2) u) a) loc
           | ECall (_,es) -> List.fold_left get_exp k es
           | CmpExchange (e1,e2,e3,_)
@@ -360,8 +361,9 @@ let rec subst_expr env e = match e with
 | TryLock (e,m) -> TryLock(subst_expr env e,m)
 | AtomicOpReturn (loc,op,e) ->
     AtomicOpReturn (subst_expr env loc,op,subst_expr env e)
-| AtomicAddUnless (loc,a,u) ->
-    AtomicAddUnless(subst_expr env loc,subst_expr env a,subst_expr env u)
+| AtomicAddUnless (loc,a,u,retbool) ->
+    AtomicAddUnless
+      (subst_expr env loc,subst_expr env a,subst_expr env u,retbool)
 
 let rec subst env i = match i with
 | Fence _|Symb _|DeclReg _ -> i

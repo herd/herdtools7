@@ -258,6 +258,14 @@ module type S = sig
 
   val linux_cmpexch_no :  event_structure -> event_structure ->
     event_structure -> event_structure
+
+  val linux_add_unless_ok :  event_structure -> event_structure ->
+    event_structure -> event_structure -> event_structure ->
+      event_structure
+
+  val linux_add_unless_no :  event_structure -> event_structure ->
+    event_structure -> event_structure
+
 (* stu computation :
    stu rD rEA wEA wM ->
       rEA -data-> wEA,
@@ -274,6 +282,7 @@ module type S = sig
       event_structure -> event_structure -> event_structure option
 
   val empty_event_structure   : event_structure
+  val is_empty_event_structure : event_structure -> bool
 
 (* Condition at instruction level *)
   val cond_comp :
@@ -514,6 +523,14 @@ struct
         output = None ;
       }
 
+  let is_empty_event_structure es =
+    not (Misc.consp es.procs) &&
+    EventSet.is_empty es.events &&
+    EventRel.is_empty es.intra_causality_data &&
+    EventRel.is_empty es.intra_causality_control &&
+    EventRel.is_empty es.control &&
+    EventSet.is_empty es.data_ports &&
+    Misc.is_none es.output
 
 (****************************)
 (* Projection of event set *)
@@ -836,6 +853,66 @@ let (=|=) = check_disjoint para_comp
       data_ports=
       EventSet.union3 rloc.data_ports rold.data_ports rmem.data_ports;
       output=Some (get_output rmem);
+    }
+
+(**************)
+(* Add unless *)
+(**************)
+
+  let linux_add_unless_ok loc a u rmem wmem =
+    let out_loc = maximals loc
+    and in_rmem = minimals rmem
+    and in_wmem = minimals wmem in
+    { procs = [];
+      events =
+      EventSet.union5 loc.events a.events u.events rmem.events wmem.events;
+      intra_causality_data =
+      EventRel.unions
+        [EventRel.union5
+           loc.intra_causality_data a.intra_causality_data
+           u.intra_causality_data
+           rmem.intra_causality_data wmem.intra_causality_data;
+         EventRel.cartesian out_loc in_wmem;
+         EventRel.cartesian out_loc in_rmem;
+         EventRel.cartesian (maximals a) in_wmem;
+         EventRel.cartesian (maximals rmem) in_wmem;];
+      intra_causality_control =
+      EventRel.unions
+        [EventRel.union5
+           loc.intra_causality_control a.intra_causality_control
+           u.intra_causality_control
+           rmem.intra_causality_control wmem.intra_causality_control;
+         EventRel.cartesian (maximals u) in_wmem;];
+      control =
+      EventRel.union5
+        loc.control a.control u.control rmem.control wmem.control;
+      data_ports =
+      EventSet.union5
+        loc.data_ports a.data_ports u.data_ports
+        rmem.data_ports wmem.data_ports;
+      output = Some (get_output rmem);
+    }
+
+  let linux_add_unless_no loc u rmem =
+    let out_loc = maximals loc
+    and in_rmem = minimals rmem in
+    { procs = [];
+      events =
+      EventSet.union3 loc.events u.events rmem.events;
+      intra_causality_data =
+      EventRel.unions
+        [loc.intra_causality_data; u.intra_causality_data;
+         rmem.intra_causality_data;
+         EventRel.cartesian out_loc in_rmem;];
+      intra_causality_control =
+      EventRel.union3
+        loc.intra_causality_control u.intra_causality_control
+        rmem.intra_causality_control;
+      control =
+      EventRel.union3 loc.control u.control rmem.control;
+      data_ports =
+      EventSet.union3 loc.data_ports u.data_ports rmem.data_ports;
+      output = Some (get_output rmem);
     }
 (* Store update composition, read data, read EA, write EA and  write Mem *)
 
