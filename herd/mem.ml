@@ -571,7 +571,14 @@ let compatible_locs_mem e1 e2 =
 	        let es = E.simplify_vars_in_event_structure sol es
 	        and rfm = S.simplify_vars_in_rfmap sol rfm in
 	        kont es rfm cs res
-          with Contradiction -> res) (* can be raised by add_mem_eqs *)
+          with Contradiction -> res  (* can be raised by add_mem_eqs *)
+          | e -> 
+	      let rfm = add_mem loads stores rfm in
+	      let module PP = Pretty.Make(S) in
+	      prerr_endline "Exception" ;
+	      PP.show_es_rfm test es rfm ;
+              raise e
+        )
         res
 
 
@@ -609,8 +616,7 @@ let compatible_locs_mem e1 e2 =
 (*      eprintf "Stores: %a\n"E.debug_events stores ; *)
       let compat_locs = compatible_locs_mem in
       solve_mem_or_res test es rfm cns kont res
-        loads stores compat_locs add_mem_eqs
-
+          loads stores compat_locs add_mem_eqs
 
 (*************************************)
 (* Final condition invalidation mode *)

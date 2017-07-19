@@ -260,11 +260,11 @@ module type S = sig
     event_structure -> event_structure
 
   val linux_add_unless_ok :  event_structure -> event_structure ->
-    event_structure -> event_structure -> event_structure ->
+    event_structure -> event_structure -> event_structure -> bool ->
       event_structure
 
   val linux_add_unless_no :  event_structure -> event_structure ->
-    event_structure -> event_structure
+    event_structure -> bool -> event_structure
 
 (* stu computation :
    stu rD rEA wEA wM ->
@@ -818,7 +818,7 @@ let (=|=) = check_disjoint para_comp
            rloc.intra_causality_control rold.intra_causality_control
            rnew.intra_causality_control
            rmem.intra_causality_control wmem.intra_causality_control;
-         EventRel.cartesian (maximals rold) input_rmem;
+         EventRel.cartesian (maximals rold) input_wmem;
          EventRel.cartesian (maximals rmem) input_wmem;];
       control=
       EventRel.union5 rloc.control rold.control rnew.control
@@ -829,7 +829,11 @@ let (=|=) = check_disjoint para_comp
       output=Some (get_output rmem);
     }
 
-(* Failure *)
+(* Failure, a phantom write event that would iico_control depens
+   upon rold may be an idea... Without it rold has no impact out evt_struct
+   outcome... As anotthor illustration of something lacking the cmpxchg introduces no
+   new iico_control edge. *)
+
   let linux_cmpexch_no rloc rold rmem =
     let input_rmem = minimals rmem in
     let output_rloc = maximals rloc in
@@ -843,11 +847,9 @@ let (=|=) = check_disjoint para_comp
            rmem.intra_causality_data;
          EventRel.cartesian output_rloc input_rmem;];
       intra_causality_control =
-       EventRel.unions
-        [EventRel.union3
+        EventRel.union3
            rloc.intra_causality_control rold.intra_causality_control
            rmem.intra_causality_control;
-         EventRel.cartesian (maximals rold) input_rmem;];
       control=
       EventRel.union3 rloc.control rold.control rmem.control;
       data_ports=
@@ -859,7 +861,7 @@ let (=|=) = check_disjoint para_comp
 (* Add unless *)
 (**************)
 
-  let linux_add_unless_ok loc a u rmem wmem =
+  let linux_add_unless_ok loc a u rmem wmem retbool =
     let out_loc = maximals loc
     and in_rmem = minimals rmem
     and in_wmem = minimals wmem in
@@ -890,10 +892,12 @@ let (=|=) = check_disjoint para_comp
       EventSet.union5
         loc.data_ports a.data_ports u.data_ports
         rmem.data_ports wmem.data_ports;
-      output = Some (get_output rmem);
+      output =
+      Some
+        (if retbool then EventSet.union (get_output rmem) (get_output u) else get_output rmem);
     }
 
-  let linux_add_unless_no loc u rmem =
+  let linux_add_unless_no loc u rmem retbool =
     let out_loc = maximals loc
     and in_rmem = minimals rmem in
     { procs = [];
@@ -912,7 +916,9 @@ let (=|=) = check_disjoint para_comp
       EventRel.union3 loc.control u.control rmem.control;
       data_ports =
       EventSet.union3 loc.data_ports u.data_ports rmem.data_ports;
-      output = Some (get_output rmem);
+      output =
+      Some
+        (if retbool then EventSet.union (get_output rmem) (get_output u) else get_output rmem);
     }
 (* Store update composition, read data, read EA, write EA and  write Mem *)
 

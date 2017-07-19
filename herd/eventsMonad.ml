@@ -191,7 +191,7 @@ and type evt_struct = E.event_structure) =
 (**************)
 
 (* Success *)
-    let linux_add_unless_ok rloc ra ru rmem wmem neq add eiid =
+    let linux_add_unless_ok rloc ra ru rmem wmem neq add ropt eiid =
       let eiid,locm = rloc eiid in (* read location *)
       let eiid,am = ra eiid in     (* read added value *)
       let eiid,um = ru eiid in     (* limit *)
@@ -208,13 +208,14 @@ and type evt_struct = E.event_structure) =
       let eiid,eqm = neq vv vu eiid in
       let (),cleq,eseq = Evt.as_singleton eqm in
       assert (E.is_empty_event_structure eseq) ;
-      let es = E.linux_add_unless_ok esloc esa esu esrmem eswmem in
+      let es = E.linux_add_unless_ok esloc esa esu esrmem eswmem (Misc.is_some ropt) in
+      let r = match ropt with Some r -> r | None -> vv in
       eiid,
       Evt.singleton
-        (vv,cleq@cladd@clwmem@clrmem@clloc@cla@clu,es)
+        (r,cleq@cladd@clwmem@clrmem@clloc@cla@clu,es)
 
 (* Failure *)
-    let linux_add_unless_no rloc ru rmem eq eiid =
+    let linux_add_unless_no rloc ru rmem eq ropt eiid =
        let eiid,locm = rloc eiid in (* read location *)
        let eiid,um = ru eiid in     (* limit *)
        let vloc,clloc,esloc =  Evt.as_singleton locm
@@ -223,8 +224,9 @@ and type evt_struct = E.event_structure) =
        let vv,clrmem,esrmem = Evt.as_singleton rmem in
        let eiid,eqm = eq vv vu eiid in
        let (),cleq,eseq = Evt.as_singleton eqm in
-       let es = E.linux_add_unless_no esloc esu esrmem in
-       eiid, Evt.singleton (vv,cleq@clrmem@clloc@clu,es)
+       let es = E.linux_add_unless_no esloc esu esrmem (Misc.is_some ropt) in
+       let r = match ropt with Some r -> r | None -> vv in
+       eiid, Evt.singleton (r,cleq@clrmem@clloc@clu,es)
 
 (* stu combinator *)
     let stu : 'a t -> 'b t -> ('a -> unit t) -> (('a * 'b) -> unit t) -> unit t

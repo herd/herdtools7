@@ -94,7 +94,7 @@ exception Undetermined
 let unop op v1 = match v1 with
 | Val (Concrete i1) -> Val (Concrete (op i1))
 | Val (Symbolic s1) ->
-    Warn.user_error "illegal operation on %s" s1
+    Warn.user_error "Illegal operation on %s" s1
 | Var _ -> raise Undetermined
 
 let binop op_op op v1 v2 = match v1,v2 with
@@ -103,7 +103,7 @@ let binop op_op op v1 v2 = match v1,v2 with
 | (Val (Symbolic _),Val (Concrete _))
 | (Val (Symbolic _),Val (Symbolic _)) ->
     Warn.user_error
-      "illegal operation %s on constants %s and %s"
+      "Illegal operation %s on constants %s and %s"
       (Op.pp_op op_op) (pp_v v1) (pp_v v2)
 | _,_ -> raise Undetermined
 

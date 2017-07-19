@@ -214,11 +214,10 @@ module Make (Conf:Sem.Config)(V:Value.S)
             M.linux_add_unless_ok mloc (build_semantics_expr true ea ii)
               mu mrmem
               (fun loc v -> write_mem_atomic a_once loc v ii >>! ())
-              M.neqT M.add in
+              M.neqT M.add (if retbool then Some V.one else None) in
           mk_mb ii >>*= fun () -> r >>*= fun v ->
-            mk_mb ii >>! if retbool then V.one else v)
-          (M.linux_add_unless_no mloc mu mrmem M.assign >>=
-           fun v -> M.unitT (if retbool then V.zero else v))
+            mk_mb ii >>! v)
+          (M.linux_add_unless_no mloc mu mrmem M.assign (if retbool then Some V.zero else None))
     | C.ECall (f,_) -> Warn.fatal "Macro call %s in CSem" f
 
     and build_atomic_op eloc op e ii =
