@@ -130,9 +130,17 @@ end = struct
       -> true
     | _ -> false
 
+    let is_additional_mem_load a = match a with
+    | TryLock _ -> true
+    | _ -> false
+
     let is_mem a = match a with
     | Access (_,A.Location_global _,_,_,_) -> true
     | RMW _ -> true
+    | _ -> false
+
+    let is_additional_mem a = match a with
+    | Lock _|Unlock _|TryLock _ -> true
     | _ -> false
 
     (* The following definition of is_atomic

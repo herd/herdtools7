@@ -77,6 +77,7 @@ module type S = sig
   val seq : event_rel -> event_rel -> event_rel
   val seqs : event_rel list -> event_rel
   val union : event_rel -> event_rel -> event_rel
+  val union3 : event_rel -> event_rel -> event_rel -> event_rel
   val unions : event_rel list -> event_rel
 
   (* relations packed to be shown on graphs *)
@@ -92,7 +93,7 @@ module type S = sig
         rf : event_rel; }
 
 (*********)
-(* RFMap *) 
+(* RFMap *)
 (*********)
 
  type write_to =
@@ -116,8 +117,8 @@ module type S = sig
 (* For pretty print, string arg is like the one of String.concat *)
   val pp_rfmap :
       out_channel -> string ->
-	(out_channel -> write_to -> read_from -> unit) ->
-	  rfmap ->  unit
+        (out_channel -> write_to -> read_from -> unit) ->
+          rfmap ->  unit
 
   val for_all_in_rfmap : (write_to -> read_from -> bool) -> rfmap -> bool
 
@@ -164,7 +165,7 @@ type concrete =
 
 end
 
-module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A) 
+module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
        : (S with module A = A and module E.Act = Act) =
   struct
     module O = C
@@ -217,11 +218,9 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
     let doWW = restrict E.is_mem_store E.is_mem_store
     let doWR = restrict E.is_mem_store E.is_mem_load
     let seq = E.EventRel.sequence
-    let rec seqs = function
-      | [] -> E.EventRel.empty
-      | [r] -> r
-      | r::rs -> seq r (seqs rs)      
+    let seqs =  E.EventRel.sequences
     let union = E.EventRel.union
+    let union3 = E.EventRel.union3
     let unions = E.EventRel.unions
 
         (* relations packed to be shown on graphs *)
@@ -240,7 +239,7 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
     type write_to =
       | Final of location
       | Load of event
-            
+
     type read_from =
       | Init
       | Store of event
@@ -250,7 +249,7 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
     | Final _, Load _ -> -1
     | Load _,Final _  -> 1
     | Load e1, Load e2 -> event_compare e1 e2
-          
+
     let read_from_compare rf1 rf2 =  match rf1,rf2 with
     | Init, Init -> 0
     | Init, Store _ -> -1
@@ -262,7 +261,7 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
     let event_rf_equal e rf = match rf with
     | Init -> false
     | Store e' -> E.event_equal e e'
-          
+
     module RFMap =
       Map.Make
         (struct
@@ -276,9 +275,9 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
       let first = ref true in
       RFMap.iter
         (fun wt rf ->
-	  if not !first then output_string chan delim
-	  else first := false ;	
-	  pp chan wt rf)
+          if not !first then output_string chan delim
+          else first := false ;
+          pp chan wt rf)
         rfm
 
     let for_all_in_rfmap pred rfm =
@@ -297,8 +296,8 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
       if V.Solution.is_empty solns then rfm
       else
         RFMap.fold
-          (fun wt rf k -> 
-	    RFMap.add
+          (fun wt rf k ->
+            RFMap.add
               (simplify_wt solns wt)
               (simplify_rf solns rf)
               k)

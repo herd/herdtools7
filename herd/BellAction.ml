@@ -97,9 +97,13 @@ end = struct
   | Access (R,A.Location_global _,_,_,_) -> true
   | _ -> false
 
+  let is_additional_mem_load _ = false
+
   let is_mem a = match a with
   | Access (_,A.Location_global _,_,_,_)   -> true
   | _ -> false
+
+  let is_additional_mem _ = false
 
   let is_atomic a = match a with
   | Access (_,_,_,true,_) -> 

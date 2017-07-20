@@ -53,7 +53,9 @@ module type S = sig
 (* relative to memory *)
   val is_mem_store : action -> bool
   val is_mem_load : action ->  bool
+  val is_additional_mem_load :  action -> bool (* trylock *)
   val is_mem : action -> bool
+  val is_additional_mem : action -> bool (* abstract memory actions, eg locks *)
   val is_atomic : action -> bool
   val get_mem_dir : action -> Dir.dirn
 

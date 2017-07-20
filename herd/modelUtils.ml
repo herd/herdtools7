@@ -21,7 +21,10 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
 (*******************************************)
 (* Complete re-computation of dependencies *)
 (*******************************************)
-  let evt_relevant x =  E.is_mem x || E.is_commit x || E.is_barrier x
+  let evt_relevant x =
+    E.is_mem x || E.is_commit x || E.is_barrier x || E.is_additional_mem x
+
+  let is_mem_load_total e = E.is_mem_load e || E.is_additional_mem_load e
 
   let make_procrels is_isync conc =
     let is_data_port =
@@ -37,7 +40,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
     let dd_pre =
 (* All dependencies start with a mem load *)
       S.seq 
-        (E.EventRel.restrict_domain E.is_mem_load iico)
+        (E.EventRel.restrict_domain is_mem_load_total iico)
         dd_inside in    
     let data_dep =
 (* Data deps are (1) dd to commits (2) data deps to stores *)
@@ -48,25 +51,29 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
             (E.is_mem_store e2 && is_data_port e1)) iico in
       S.seq dd_pre last_data
     and addr_dep =
-(* Address deps are (1) dd to loads, (2) non-data deps to stores *)
+(* Address deps are (1) dd to loads, (2) non-data deps to stores, (3) extra
+   abstract "memory" events (such as lock, unlock, etc. that have an address
+   port *)
       let last_addr =
         E.EventRel.restrict_rel
           (fun e1 e2 ->
             E.is_mem_load e2 ||
-             (E.is_mem_store e2 && not (is_data_port e1))) iico in
+            (E.is_mem_store e2 && not (is_data_port e1)) ||
+            E.is_additional_mem e2)
+          iico in
       S.seq dd_pre last_addr in
     let ctrl_one = (* For bcc: from commit to event by po *)
       S.restrict E.is_commit_bcc evt_relevant po
     and ctrl_two = (* For predicated instruction from commit to event by iico *)
       S.restrict E.is_commit_pred evt_relevant (U.iico conc.S.str)
     and ctrl_three = (* For structured if from event to event by instruction control *)
-      S.restrict E.is_load evt_relevant conc.S.str.E.control in
+      S.restrict is_mem_load_total evt_relevant conc.S.str.E.control in
     let ctrl =
-      E.EventRel.union ctrl_one (E.EventRel.union ctrl_two ctrl_three) in
+      E.EventRel.union3 ctrl_one ctrl_two ctrl_three in
     let ctrl_dep =
-      (* All dependendicies, including to reg loads *)
-      let dd = S.union dd_pre (S.union addr_dep data_dep) in
-      S.restrict E.is_mem_load evt_relevant
+      (* All dependencies, including to reg loads *)
+      let dd = S.union3 dd_pre addr_dep data_dep in
+      S.restrict is_mem_load_total evt_relevant
         (S.union (S.seq dd ctrl) ctrl_three) in
     let po =
       S.restrict evt_relevant evt_relevant po in
@@ -74,7 +81,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
       E.EventRel.restrict_codomain E.is_commit data_dep in
     let ctrlisync =
       try
-        let r1 = S.restrict E.is_mem_load is_isync ctrl_dep
+        let r1 = S.restrict is_mem_load_total is_isync ctrl_dep
         and r2 = S.restrict is_isync E.is_mem po in
         S.seq r1 r2
       with Misc.NoIsync -> S.E.EventRel.empty in

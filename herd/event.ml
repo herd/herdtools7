@@ -63,7 +63,10 @@ module type S = sig
   val is_mem_store : event -> bool
   val is_mem_store_init : event -> bool
   val is_mem_load : event ->  bool
+  val is_additional_mem_load : event ->  bool (* trylock... *)
   val is_mem : event -> bool
+  (* includes additional memory events,  eg lock, unlocks... *)
+  val is_additional_mem : event -> bool
   val is_atomic : event -> bool
   val get_mem_dir : event -> Dir.dirn
 
@@ -392,7 +395,9 @@ struct
     | Some _ -> false
 
     let is_mem_load e = Act.is_mem_load e.action
+    let is_additional_mem_load e = Act.is_additional_mem_load e.action
     let is_mem e = Act.is_mem e.action
+    let is_additional_mem e = Act.is_additional_mem e.action
     let is_atomic e = Act.is_atomic e.action
     let get_mem_dir e = Act.get_mem_dir e.action
 

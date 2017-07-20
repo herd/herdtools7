@@ -18,7 +18,7 @@ module type S =  sig
   type elt0
 
   module Elts : MySet.S with type elt = elt0
-	
+
   include Rel.S with
   type elt1 = elt0 and type elt2 = elt0
   and module Elts1 = Elts
@@ -88,7 +88,7 @@ module type S =  sig
 (* All toplogical orders, raises Cyclic in case of cycle
   Enhancement: all_topos nodes edges still works
   when edges relates elts not in nodes *)
-  
+
 
   val all_topos : bool (* verbose *)-> Elts.t -> t -> elt0 list list
 
@@ -99,7 +99,7 @@ module type S =  sig
    [LUC: set argument. removed, it is useless, since set = nodes rel is ok]
    remove_transitive_edges [set] rel
       [assumes rel \in set \times set]
-      returns rel' \subset rel such that rel' 
+      returns rel' \subset rel such that rel'
         does not have (e1, e2) if it has both (e1, e3) and (e3, e2),
         but transitive_closure rel' = transitive_closure rel
 *)
@@ -107,6 +107,7 @@ module type S =  sig
 
 (* Sequence composition of relation *)
   val sequence : t-> t -> t
+  val sequences : t list -> t
 
 (* Equivalence classes, applies to equivalence relations only (unchecked) *)
   val classes : t -> Elts.t list
@@ -129,7 +130,7 @@ struct
     let xs =
       fold (fun (x,y) k -> Elts.add x (Elts.add y Elts.empty)::k) t [] in
     Elts.unions xs
-        
+
 
 
 (* Inverse *)
@@ -151,11 +152,11 @@ struct
       if O.compare e e2 = 0 then raise Found
       else if Elts.mem e seen then seen
       else
-	Elts.fold
-	  dfs (succs r e) (Elts.add e seen) in
+        Elts.fold
+          dfs (succs r e) (Elts.add e seen) in
  (* dfs e1 Elts.empty would yield reflexive-transitive closure *)
     Elts.fold dfs (succs r e1) (Elts.singleton e1)
-	  
+
   let mem_transitive (e1, e2) r =
     try ignore (is_reachable r e1 e2) ; false
     with Found -> true
@@ -275,14 +276,14 @@ struct
 
   let get_cycle m =
     let rec dfs path above e seen =
-      if Elts.mem e above then 
+      if Elts.mem e above then
         raise (Cycle (e::mk_cycle e path)) ;
       if Elts.mem e seen then
-	seen
+        seen
       else
-	Elts.fold
-	  (dfs (e::path) (Elts.add e above))
-	  (succs e m) (Elts.add e seen) in
+        Elts.fold
+          (dfs (e::path) (Elts.add e above))
+          (succs e m) (Elts.add e seen) in
     try
       let _ =
         ME.fold
@@ -290,10 +291,10 @@ struct
       None
     with Cycle e -> Some (List.rev e)
 
-    let fold = ME.fold        
+    let fold = ME.fold
   end
 
-     
+
   let transitive_closure r = M.of_map (M.tr (M.to_map r))
 
 
@@ -317,10 +318,10 @@ struct
 
   let rec order_to_pairs k evts = match evts with
   | [] -> k
-  | e1 :: tl ->      
+  | e1 :: tl ->
       let k = List.fold_left (fun k e2 -> (e1,e2)::k) k tl in
       order_to_pairs k tl
-	
+
   let order_to_rel es = of_list (order_to_pairs []  es)
 
   let cycle_to_rel cy =
@@ -364,13 +365,13 @@ struct
       Elts.fold
         (dfs Elts.empty) ns ([],Elts.empty) in
     o
-      
-      
-      
-      
+
+
+
+
 (* calculate all topological orderings of
    an acyclic directed graph, method 2
-   following http://sunburn.stanford.edu/~knuth/fasc2b.ps.gz 
+   following http://sunburn.stanford.edu/~knuth/fasc2b.ps.gz
    (found by Gilles).
    Raises Cyclic when the graph is cyclic *)
 
@@ -380,29 +381,29 @@ struct
       [[]]
     else
       let n = (* Minimal node (no predecessor) *)
-	try Elts.find (fun n -> not (exists_pred edges n)) nodes
-	with Not_found -> raise Cyclic in
+        try Elts.find (fun n -> not (exists_pred edges n)) nodes
+        with Not_found -> raise Cyclic in
       let n_succs, others =
-	partition (fun (n1,_n2) -> O.compare n n1 = 0) edges in
+        partition (fun (n1,_n2) -> O.compare n n1 = 0) edges in
       let mss = do_all_topos (Elts.remove n nodes) others in
       (*
-	find all the legitimate places to insert n in ms,
-	ie all the points before m s.t. there is
-	an (n,m) edge in g *)
+        find all the legitimate places to insert n in ms,
+        ie all the points before m s.t. there is
+        an (n,m) edge in g *)
       let rec insert = function
-	| [] -> [[n]]
-	| m::ms as all ->
-	    (n::all)::
-	    (if not (mem (n,m) n_succs) then
-	      List.rev_map
-		(fun ms -> m::ms)
-		(insert ms)
-	    else
-	      []) in
+        | [] -> [[n]]
+        | m::ms as all ->
+            (n::all)::
+            (if not (mem (n,m) n_succs) then
+              List.rev_map
+                (fun ms -> m::ms)
+                (insert ms)
+            else
+              []) in
       List.fold_left
-	(fun k ms -> ms@k)
-	[]
-	(List.rev_map insert mss)
+        (fun k ms -> ms@k)
+        []
+        (List.rev_map insert mss)
 
 
   let _all_topos1 nodes edges =
@@ -415,17 +416,17 @@ struct
   module EMap =
     Map.Make
       (struct
-	type t = O.t
-	let compare = O.compare
+        type t = O.t
+        let compare = O.compare
       end)
 
   let find_def d k m =
-    try EMap.find k m 
+    try EMap.find k m
     with Not_found -> d
 
   let find_count = find_def 0
   let find_pred = find_def Elts.empty
-      
+
   let make_count nodes edges =
     fold (fun (n1,n2) m ->
       if Elts.mem n1  nodes &&  Elts.mem n2  nodes then
@@ -433,8 +434,8 @@ struct
       else m) edges EMap.empty
 
   let make_preds nodes edges =
-    fold 
-      (fun (n1,n2) m -> 
+    fold
+      (fun (n1,n2) m ->
         if Elts.mem n1  nodes &&  Elts.mem n2  nodes then
           EMap.add n2 (Elts.add n1 (find_pred n2 m)) m
         else m)
@@ -448,33 +449,33 @@ struct
    set_pred is a map elt -> set of its preds
    pref is the prefix vos being constructed
    res is the list of vos already constructed *)
-      if Elts.is_empty ws then 
-	if EMap.is_empty count_succ then kont pref res
-	else raise Cyclic
+      if Elts.is_empty ws then
+        if EMap.is_empty count_succ then kont pref res
+        else raise Cyclic
       else
-	Elts.fold
-	  (fun n res -> (* a maximal node (no successor) *)
-	    let ws = Elts.remove n ws in
-	    let n_preds = find_pred n set_preds in
-	    let count_succ,ws = 
-	      Elts.fold 
-		(fun pred (c,ws) ->  
-		  let p_succ = find_count pred c - 1 in
-		  let _ = assert (p_succ >= 0) in 
-		  if p_succ > 0 then
+        Elts.fold
+          (fun n res -> (* a maximal node (no successor) *)
+            let ws = Elts.remove n ws in
+            let n_preds = find_pred n set_preds in
+            let count_succ,ws =
+              Elts.fold
+                (fun pred (c,ws) ->
+                  let p_succ = find_count pred c - 1 in
+                  let _ = assert (p_succ >= 0) in
+                  if p_succ > 0 then
                     EMap.add pred p_succ c,ws
-		  else 
-		    let c = EMap.remove pred c in
-		    let ws = Elts.add pred ws in
-		    c,ws) 
-		n_preds (count_succ,ws) in
-	    do_aux ws count_succ (n::pref) res) ws res in
+                  else
+                    let c = EMap.remove pred c in
+                    let ws = Elts.add pred ws in
+                    c,ws)
+                n_preds (count_succ,ws) in
+            do_aux ws count_succ (n::pref) res) ws res in
     do_aux
 
   let fold_topos_ext kont res nodes edges =
     let count_succ = make_count nodes edges in
-    let set_preds = make_preds nodes edges in 
-    let ws = 
+    let set_preds = make_preds nodes edges in
+    let ws =
       Elts.filter (fun n -> find_count n count_succ = 0) nodes in
     do_all_mem_topos set_preds kont ws count_succ [] res
 
@@ -497,11 +498,11 @@ struct
   let is_hierarchy nodes edges =
     is_acyclic edges &&
     begin
-      let m = M.to_map edges in    
+      let m = M.to_map edges in
       try
         let zero =
           Elts.fold
-            (fun e k ->            
+            (fun e k ->
               match Elts.cardinal (M.succs e m) with
               | 0 -> e::k
               | 1 -> k
@@ -551,6 +552,15 @@ struct
           (fun e3 -> add (e1,e3))
           (M.succs e2 m2))
       r1 empty
+
+  let rec seq_rec rs = match rs with
+    | []|[_] as rs -> rs
+    | r1::r2::rs -> sequence r1 r2::seq_rec rs
+
+  let rec sequences rs = match rs with
+  | [] -> empty
+  | [r] -> r
+  | _ -> sequences (seq_rec rs)
 
 (* Equivalence classes *)
   let classes r =

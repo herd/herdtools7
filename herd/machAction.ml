@@ -18,21 +18,21 @@
 
 module type A = sig
   include Arch_herd.S
-	    
-  type lannot 
+
+  type lannot
 
   val empty_annot : lannot
   val barrier_sets : (string * (barrier -> bool)) list
   val annot_sets : (string * (lannot -> bool)) list
   val is_atomic : lannot -> bool
-  val is_isync : barrier -> bool 
+  val is_isync : barrier -> bool
   val pp_isync : string
   val pp_annot : lannot -> string
 end
 
 module Make (A : A) : sig
 
-  type action =    
+  type action =
     | Access of Dir.dirn * A.location * A.V.v * A.lannot
     | Barrier of A.barrier
     | Commit of bool (* true = bcc / false = pred *)
@@ -45,20 +45,20 @@ end = struct
   module V = A.V
   open Dir
 
-  type action = 
+  type action =
     | Access of dirn * A.location * V.v * A.lannot
     | Barrier of A.barrier
     | Commit of bool
- 
+
   let mk_init_write l v = Access(W,l,v,A.empty_annot)
 
   let pp_action a = match a with
     | Access (d,l,v,an) ->
-	Printf.sprintf "%s%s%s=%s"
+        Printf.sprintf "%s%s%s=%s"
           (pp_dirn d)
           (A.pp_location l)
-	  (A.pp_annot an)
-	  (V.pp_v v)
+          (A.pp_annot an)
+          (V.pp_v v)
     | Barrier b -> A.pp_barrier b
     | Commit bcc -> if bcc then "Commit" else "Pred"
 
@@ -83,13 +83,17 @@ end = struct
     | Access (R,A.Location_global _,_,_) -> true
     | _ -> false
 
+    let is_additional_mem_load _ = false
+
     let is_mem a = match a with
     | Access (_,A.Location_global _,_,_) -> true
     | _ -> false
 
+    let is_additional_mem _ = false
+
     let is_atomic a = match a with
-      | Access (_,_,_,annot) -> 
-	 is_mem a && A.is_atomic annot
+      | Access (_,_,_,annot) ->
+         is_mem a && A.is_atomic annot
       | _ -> false
 
     let get_mem_dir a = match a with
@@ -155,20 +159,20 @@ end = struct
 (* Architecture-specific sets *)
 
   let arch_sets =
-    let bsets = 
+    let bsets =
       List.map
-	(fun (tag,p) -> 
-	 let p act = match act with
-	   | Barrier b -> p b
-	   | _ -> false
-	 in tag,p) A.barrier_sets
-    and asets = 
+        (fun (tag,p) ->
+         let p act = match act with
+           | Barrier b -> p b
+           | _ -> false
+         in tag,p) A.barrier_sets
+    and asets =
       List.map
-	(fun (tag,p) -> 
-	 let p act = match act with
-	   | Access(_,_,_,annot) -> p annot
-	   | _ -> false
-	 in tag,p) A.annot_sets
+        (fun (tag,p) ->
+         let p act = match act with
+           | Access(_,_,_,annot) -> p annot
+           | _ -> false
+         in tag,p) A.annot_sets
     in
     bsets @ asets
 
@@ -184,25 +188,25 @@ end = struct
 
     let undetermined_vars_in_action a =
       match a with
-      | Access (_,l,v,_) -> 
-	  let undet_loc = match A.undetermined_vars_in_loc l with
-	  | None -> V.ValueSet.empty
-	  | Some v -> V.ValueSet.singleton v in
-	  if V.is_var_determined v then undet_loc
-	  else V.ValueSet.add v undet_loc
+      | Access (_,l,v,_) ->
+          let undet_loc = match A.undetermined_vars_in_loc l with
+          | None -> V.ValueSet.empty
+          | Some v -> V.ValueSet.singleton v in
+          if V.is_var_determined v then undet_loc
+          else V.ValueSet.add v undet_loc
       | Barrier _|Commit _ -> V.ValueSet.empty
 
     let simplify_vars_in_action soln a =
       match a with
-      | Access (d,l,v,an) -> 
-	 let l' = A.simplify_vars_in_loc soln l in
-	 let v' = V.simplify_var soln v in
-	 Access (d,l',v',an)
+      | Access (d,l,v,an) ->
+         let l' = A.simplify_vars_in_loc soln l in
+         let v' = V.simplify_var soln v in
+         Access (d,l',v',an)
       | Barrier _ | Commit _ -> a
 
-(*************************************************************)	      
+(*************************************************************)
 (* Add together event structures from different instructions *)
-(*************************************************************)	 
+(*************************************************************)
 
     let make_action_atomic a = match a with
       | Access (d,l,v,an) -> Access (d,l,v,an)
@@ -211,4 +215,3 @@ end = struct
     let annot_in_list _str _ac = false
 
 end
-
