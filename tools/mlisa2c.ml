@@ -18,6 +18,10 @@
 (* Translate specific LISA to C11/Linux   *)
 (******************************************)
 
+(*
+  Equivalence of constructs as suggested in
+  <http://open-std.org/JTC1/SC22/WG21/docs/papers/2016/p0124r2.html#So%20You%20Want%20Your%20Arch%20To%20Use%20C11%20Atomics>
+*)
 open Printf
 
 module Action = struct
@@ -104,24 +108,50 @@ module Top(O:Config)(Out:OutTests.S) = struct
 
   let tr_load = match O.action with
   | C11 ->
-      fun a -> LoadMem (do_tr_addr a,MO (MemOrder.Rlx))
+      fun an a ->
+        let mo = match an with
+        | "once" -> MemOrder.Rlx
+        | "acquire" -> MemOrder.Acq
+        | _ -> assert false in
+        LoadMem (do_tr_addr a,MO mo)
   | Linux ->
-      fun a -> ECall ("READ_ONCE",[tr_addr a])
+      fun an a -> match an with
+      | "once" ->
+          ECall ("READ_ONCE",[tr_addr a])
+      | "acquire" ->
+          ECall ("smp_load_acquire",[do_tr_addr a])
+      | _ -> assert false
 
   and tr_store = match O.action with
   |  C11 ->
-      fun a k -> StoreMem (do_tr_addr a,tr_reg_or_imm k,MO (MemOrder.Rlx))
+      fun an a k ->
+        let mo = match an with
+        | "once" -> MemOrder.Rlx
+        | "release" -> MemOrder.Rel
+        | _ -> assert false in
+        StoreMem (do_tr_addr a,tr_reg_or_imm k,MO mo)
   | Linux ->
-      fun a k -> PCall ("WRITE_ONCE",[tr_addr a;tr_reg_or_imm k;])
+      fun an a k ->
+        match an with
+        | "once" ->
+            PCall ("WRITE_ONCE",[tr_addr a;tr_reg_or_imm k;])
+        | "release" ->
+            PCall ("smp_store_release",[do_tr_addr a;tr_reg_or_imm k;])
+        | _ -> assert false
+
+  let tr_an = function
+    | [] -> "once"
+    | a::_ -> a
 
   let  tr_ins = function
-    | Pld (r,a,(["once"]|[])) ->
-        StoreReg (Some CType.word,tr_reg r,tr_load a)
-    | Pst (a,k,(["once"]|[])) -> tr_store a k
+    | Pld (r,a,(["once"]|[]|["acquire"] as an)) ->
+        StoreReg (Some CType.word,tr_reg r,tr_load (tr_an an) a)
+    | Pst (a,k,(["once"]|[]|["release"] as an)) -> tr_store (tr_an an) a k
     | Pfence (BellBase.Fence (["mb"|"rmb"|"wmb" as f],_)) -> tr_fence f
     | ins ->
-        eprintf "Instruction inconnue: %s\n" (BellBase.dump_instruction ins) ;
-        assert false
+        Warn.user_error
+          "Instruction inconnue: %s" (BellBase.dump_instruction ins)
+
 
 
   let rec tr_pseudo tr = function
@@ -184,15 +214,15 @@ module Top(O:Config)(Out:OutTests.S) = struct
     | `LISA ->
         let module Bell = BellBase in
         let module BellLexParse = struct
-	  type instruction = Bell.parsedPseudo
-	  type token = LISAParser.token
+          type instruction = Bell.parsedPseudo
+          type token = LISAParser.token
 
           module L = BellLexer.Make(LexConf)
-	  let lexer = L.token
-	  let parser = LISAParser.main
+          let lexer = L.token
+          let parser = LISAParser.main
         end in
         let module P = GenParser.Make(GenParser.DefaultConfig)(Bell)(BellLexParse) in
-        let parsed = P.parse chan splitted in                    
+        let parsed = P.parse chan splitted in
         let name = splitted.Splitter.name in
         tr_test idx_out name parsed
     | _ -> Warn.fatal "not a LISA litmus test"
@@ -214,11 +244,11 @@ module Top(O:Config)(Out:OutTests.S) = struct
           (fun fname ->
             try from_arg idx_out fname with
             | Misc.Exit -> ()
-            | Misc.Fatal msg ->
+            | Misc.Fatal msg|Misc.UserError msg ->
                 Warn.warn_always "%a %s" Pos.pp_pos0 fname msg ;
                 ()
             | e ->
-                Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 fname ;
+                Printf.eprintf "Fatal: %a Adios\n" Pos.pp_pos0 fname ;
                 raise e)
           args) idx_out ;
     Out.tar ()
