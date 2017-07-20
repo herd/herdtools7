@@ -1,3 +1,5 @@
+7.46+3
+  * lock primitive actions take part to dependencies.
   * herd/linux: serious semantical work on compare exchange and add_unless
   * herd/linux: failed fenced atomics do not generate fence events.
   * herd: uniform handling of indivudual events and relational pairs.
