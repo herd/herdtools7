@@ -25,6 +25,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
     E.is_mem x || E.is_commit x || E.is_barrier x || E.is_additional_mem x
 
   let is_mem_load_total e = E.is_mem_load e || E.is_additional_mem_load e
+  let is_load_total e = E.is_load e || E.is_additional_mem_load e
 
   let make_procrels is_isync conc =
     let is_data_port =
@@ -67,7 +68,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
     and ctrl_two = (* For predicated instruction from commit to event by iico *)
       S.restrict E.is_commit_pred evt_relevant (U.iico conc.S.str)
     and ctrl_three = (* For structured if from event to event by instruction control *)
-      S.restrict is_mem_load_total evt_relevant conc.S.str.E.control in
+      S.restrict is_load_total evt_relevant conc.S.str.E.control in
     let ctrl =
       E.EventRel.union3 ctrl_one ctrl_two ctrl_three in
     let ctrl_dep =
