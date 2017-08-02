@@ -178,24 +178,25 @@ and change_info found p buff = parse
     { incr_lineno lexbuf ;
       Buffer.add_char buff '\n' ;
       change_info found p buff lexbuf }
-| '{'
+| '\n'* '{' as lexed
     { incr_lineno lexbuf ;
       if not found then begin
         let k,v = p in
         add_info buff k v
       end ;
-      Buffer.add_char buff '{' ;
+      Buffer.add_string buff lexed ;
       change_info found p buff lexbuf }
 | (name as key) blank* '=' blank* [^'\n']* '\n' as line
   { incr_lineno lexbuf ;
     let k,v = p in
+    if O.debug then Printf.eprintf "Found key: %s\n%!" key ;
     let found = 
       if k = key then begin
-        if not found then add_info  buff k v ;
+        if not found then add_info buff k v ;
         true
       end else begin
         Buffer.add_string buff line ;
-        false
+        found
       end in
     change_info found p buff lexbuf }
 | [^'\n''{']+  as lexed
