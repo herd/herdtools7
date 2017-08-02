@@ -204,9 +204,10 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
               MiscParser.condition =
               ConstrGen.set_kind k parsed.MiscParser.condition; } in
       let parsed =
-        let info = parsed.MiscParser.info in
-        { parsed with
-          MiscParser.info =
-            ("Hash",D.digest init prog all_locs)::info ; } in
+        match MiscParser.get_hash parsed with
+        | None ->
+            MiscParser.set_hash parsed (D.digest init prog all_locs)
+        | Some _ ->
+            parsed in
       parsed
   end
