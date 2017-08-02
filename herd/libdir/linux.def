@@ -35,8 +35,6 @@ cmpxchg_release(X,V,W) __cmpxchg{release}(X,V,W)
 spin_lock(X) { __lock(X) ; }
 spin_unlock(X) { __unlock(X) ; }
 spin_trylock(X) __trylock(X)
-spin_unlock_wait(X) { __lock(X) ; __unlock(X) ; }
-
 
 //Atomic
 atomic_read(X) READ_ONCE(*X)
