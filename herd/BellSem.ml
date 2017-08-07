@@ -118,11 +118,16 @@ module Make (C:Sem.Config)(V:Value.S)
     let build_semantics ii =
       let build_semantics_inner ii =
         match ii.A.inst with
+
+        | BellBase.Pld(r,addr_op,[("deref"|"lderef")]) ->
+            solve_addr_op addr_op ii >>=
+            fun addr -> read_mem addr ["once"] ii >>=
+            fun v -> write_reg r v ii >>*=
+            fun () -> create_barrier ["rb_dep"] None ii >>! B.Next
         | BellBase.Pld(r,addr_op,s) ->
-          solve_addr_op addr_op ii >>=
+            solve_addr_op addr_op ii >>=
             (fun addr -> read_mem addr s ii) >>=
-            (fun v -> write_reg r v ii) >>!
-            B.Next
+            (fun v -> write_reg r v ii) >>! B.Next
 
         | BellBase.Pst(addr_op, roi, s) ->
           (solve_addr_op addr_op ii >>|

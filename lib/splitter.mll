@@ -166,8 +166,9 @@ and change_main buff p = parse
   blank*
   ('(' name ')' blank*) ?
   ( ('\n'? as line) blank*'"'[^'"']* '"' blank*) ? (* '"' *)
-  ';' ? as lexed
+  [^'\n']* '\n' as lexed
   { begin match line with Some _ -> incr_lineno lexbuf | None -> () end ;
+    incr_lineno lexbuf ;
     Buffer.add_string buff lexed ;
     change_info false p buff lexbuf }
 

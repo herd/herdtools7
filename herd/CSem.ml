@@ -37,7 +37,9 @@ module Make (Conf:Sem.Config)(V:Value.S)
 
     module MOorAN = MemOrderOrAnnot
     let a_once = ["once"]
+    let an_once = MOorAN.AN a_once
     let a_mb = ["mb"]
+    let a_rb_dep = ["rb_dep"]
     let no_mo = MOorAN.AN []
     let mo_as_anmo mo = MOorAN.MO mo
 
@@ -73,6 +75,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
 
     let mk_fence_a a ii = M.mk_fence (Act.Fence  (MOorAN.AN a)) ii
     let mk_mb ii =  mk_fence_a a_mb ii
+    let mk_rb_dep ii =   mk_fence_a a_rb_dep ii
 
     let xchg is_data rloc re a ii =
       let add_mb = match a with
@@ -108,8 +111,8 @@ module Make (Conf:Sem.Config)(V:Value.S)
 
     | C.LoadReg r -> read_reg is_data r ii
     | C.LoadMem(loc,mo) ->
-        (let open MemOrderOrAnnot in
-        match mo with
+        let open MemOrderOrAnnot in
+        (match mo with
         | AN [] | MO _ -> build_semantics_expr is_data loc ii
         | AN (_::_) ->  begin match loc with
           | C.LoadMem (loc,AN []) ->
@@ -117,7 +120,14 @@ module Make (Conf:Sem.Config)(V:Value.S)
           | _ ->
               Warn.user_error "Bad __load argument: %s"
                 (C.dump_expr loc) end) >>=
-        fun l -> read_mem is_data mo l ii
+        fun l ->
+          begin match mo with
+          | AN [("deref"|"lderef")]   ->
+              read_mem is_data an_once l ii >>*=
+              fun v -> mk_rb_dep ii >>! v
+          | _ ->
+              read_mem is_data mo l ii
+          end
 
     | C.TryLock (_,C.MutexC11) -> assert false
     | C.TryLock (loc,C.MutexLinux) ->
