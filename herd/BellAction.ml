@@ -58,7 +58,7 @@ end = struct
 
   let pp_action a = match a with    
   | Access (d,l,v,ato,s) ->
-      Printf.sprintf "%s%s %s%s %s"
+      Printf.sprintf "%s%s%s%s=%s"
         (pp_dirn d)
         (pp_annots s)
         (A.pp_location  l)
