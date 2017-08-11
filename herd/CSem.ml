@@ -210,7 +210,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
 
     | C.AtomicOpReturn (eloc,op,e) ->
         mk_mb ii >>*=
-        fun () -> build_atomic_op eloc op e ii >>*=
+        fun () -> build_atomic_op a_once a_once eloc op e ii >>*=
           fun v -> mk_mb ii >>! v
 
     | C.AtomicAddUnless (eloc,ea,eu,retbool) ->
@@ -230,14 +230,14 @@ module Make (Conf:Sem.Config)(V:Value.S)
           (M.linux_add_unless_no mloc mu mrmem M.assign (if retbool then Some V.zero else None))
     | C.ECall (f,_) -> Warn.fatal "Macro call %s in CSem" f
 
-    and build_atomic_op eloc op e ii =
+    and build_atomic_op a_read a_write eloc op e ii =
       build_semantics_expr true e ii >>|
       (build_semantics_expr false eloc ii >>=
        fun loc ->
-         (read_mem_atomic true a_once loc ii >>| M.unitT loc)) >>=
+         (read_mem_atomic true a_read loc ii >>| M.unitT loc)) >>=
       (fun (v,(vloc,loc)) ->
         M.op op vloc v >>=
-        fun w -> write_mem_atomic a_once loc w ii)
+        fun w -> write_mem_atomic a_write loc w ii)
 
     let zero = SymbConstant.intToV 0
 
@@ -311,7 +311,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
               >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
 (********************)
       | C.AtomicOp  (eloc,op,e) ->
-          build_atomic_op eloc op e ii
+          build_atomic_op a_once a_once eloc op e ii
             >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
 (********************)
       | C.Fence(mo) ->
