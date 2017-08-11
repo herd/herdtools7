@@ -154,6 +154,7 @@ expr:
 | IDENTIFIER { LoadReg $1 }
 | LPAR typ RPAR expr %prec CAST { $4 }
 | STAR IDENTIFIER { LoadMem (LoadReg $2,AN []) }
+| STAR LPAR typ RPAR IDENTIFIER { LoadMem (LoadReg $5,AN []) }
 | STAR LPAR expr RPAR { LoadMem ($3,AN []) }
 | LD LPAR expr RPAR { LoadMem($3,MO SC) }
 | LOAD LBRACE annot_list RBRACE LPAR expr RPAR { LoadMem($6,AN $3) }
