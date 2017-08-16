@@ -837,7 +837,7 @@ end = struct
   let do_dump_cond_fun env cond =
     let find_type loc =
       let t = U.find_type loc env in
-      CType.dump (CType.strip_atomic t) in
+      CType.dump (CType.strip_atomic t),CType.is_ptr t in
     DC.fundef find_type cond
 
   let dump_cond_fun env test = do_dump_cond_fun env test.T.condition
@@ -847,7 +847,7 @@ end = struct
   | Some f ->
       let find_type loc =
         let t = U.find_type loc env in
-        CType.dump (CType.strip_atomic t) in
+        CType.dump (CType.strip_atomic t),CType.is_ptr t in
       DC.fundef_prop "filter_cond" find_type f
 
 
