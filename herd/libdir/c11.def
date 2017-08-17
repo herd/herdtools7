@@ -1,0 +1,8 @@
+atomic_load(X) atomic_load_explicit(X,memory_order_seq_cst)
+atomic_store(X,V) { atomic_store_explicit(X,V,memory_order_seq_cst); }
+atomic_exchange(X,V) atomic_exchange_explicit(X,V,memory_order_seq_cst)
+atomic_fetch_add(X,V) atomic_fetch_add_explicit(X,V,memory_order_seq_cst)
+atomic_fetch_sub(X,V) atomic_fetch_sub_explicit(X,V,memory_order_seq_cst)
+atomic_fetch_or(X,V) atomic_fetch_or_explicit(X,V,memory_order_seq_cst)
+atomic_fetch_xor(X,V) atomic_fetch_xor_explicit(X,V,memory_order_seq_cst)
+atomic_fetch_and(X,V) atomic_fetch_and_explicit(X,V,memory_order_seq_cst)

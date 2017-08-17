@@ -98,8 +98,8 @@ module Top(O:Config)(Out:OutTests.S) = struct
         ECas (tr_expr e1,tr_expr e2,tr_expr e3,m1,m2,b)
     | CmpExchange (loc,o,n,a) ->
         CmpExchange (tr_expr loc,tr_expr o,tr_expr n,a)
-    | AtomicOpReturn (loc,op,u) ->
-        AtomicOpReturn (tr_expr loc,op,tr_expr u)
+    | AtomicOpReturn (loc,op,u,ret,a) ->
+        AtomicOpReturn (tr_expr loc,op,tr_expr u,ret,a)
     | AtomicAddUnless (loc,a,u,retbool) ->
         AtomicAddUnless (tr_expr loc,tr_expr a,tr_expr u,retbool) in
 
@@ -205,7 +205,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
   | Op (_,e1,e2)
   | Exchange (e1,e2,_)
   | Fetch (e1,_,e2,_)
-  | AtomicOpReturn (e1,_,e2)
+  | AtomicOpReturn (e1,_,e2,_,_)
     -> StringSet.union (expr_read e1) (expr_read e2)
   | ECas (e1,e2,e3,_,_,_)
   | CmpExchange(e1,e2,e3,_)
@@ -311,8 +311,8 @@ module Top(O:Config)(Out:OutTests.S) = struct
     | TryLock (e,m) -> TryLock (tr_expr e,m)
     | CmpExchange (loc,o,n,a) ->
         CmpExchange (tr_expr loc,tr_expr o,tr_expr n,a)
-    | AtomicOpReturn (loc,op,e) ->
-        AtomicOpReturn (tr_expr loc,op,tr_expr e)
+    | AtomicOpReturn (loc,op,e,ret,a) ->
+        AtomicOpReturn (tr_expr loc,op,tr_expr e,ret,a)
     | AtomicAddUnless (loc,a,u,retbool) ->
         AtomicAddUnless (tr_expr loc,tr_expr a,tr_expr u,retbool)
 

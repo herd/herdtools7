@@ -52,6 +52,8 @@ let barrier_compare = Pervasives.compare
 
 type mutex_kind = MutexLinux | MutexC11
 
+type return = OpReturn | FetchOp
+
 type expression =
   | Const of SymbConstant.v
   | LoadReg of reg
@@ -63,7 +65,7 @@ type expression =
   | ECall of string * expression list
   | ECas of expression * expression * expression * mem_order * mem_order * bool
   | TryLock of expression * mutex_kind
-  | AtomicOpReturn of expression * Op.op * expression
+  | AtomicOpReturn of expression * Op.op * expression * return * MemOrderOrAnnot.annot
   | AtomicAddUnless of expression * expression * expression * bool (* ret bool *)
 
 type instruction =
@@ -137,8 +139,10 @@ let rec dump_expr =
     | TryLock (_,MutexC11) -> assert false
     | TryLock (e,MutexLinux) ->
         sprintf "spin_trylock(%s)" (dump_expr e)
-    | AtomicOpReturn (loc,op,e) ->
-        sprintf "__atomic_op_return(%s,%s,%s)"
+    | AtomicOpReturn (loc,op,e,ret,a) ->
+        sprintf "__atomic_%s{%s}(%s,%s,%s)"
+          (match ret with OpReturn -> "op_return" | FetchOp -> "fetch_op")
+          (string_of_annot a)
           (dump_expr loc) (Op.pp_op op) (dump_expr e)
     | AtomicAddUnless (loc,a,u,retbool) ->
         sprintf "%satomic_op_return(%s,%s,%s)"
@@ -235,8 +239,8 @@ include Pseudo.Make
               (parsed_expr_tr e1,parsed_expr_tr e2,parsed_expr_tr e3,
                mo1,mo2,strong)
         | TryLock(e,m) -> TryLock(parsed_expr_tr e,m)
-        | AtomicOpReturn (loc,op,e) ->
-            AtomicOpReturn(parsed_expr_tr loc,op,parsed_expr_tr e)
+        | AtomicOpReturn (loc,op,e,ret,a) ->
+            AtomicOpReturn(parsed_expr_tr loc,op,parsed_expr_tr e,ret,a)
         | AtomicAddUnless(loc,a,u,retbool) ->
             AtomicAddUnless
               (parsed_expr_tr loc,parsed_expr_tr a,parsed_expr_tr u,retbool)
@@ -267,7 +271,7 @@ include Pseudo.Make
           | Op (_,e1,e2) -> get_exp (get_exp k e1) e2
           | Fetch (loc,_,e,_)
           | Exchange (loc,e,_)
-          | AtomicOpReturn (loc,_,e) ->
+          | AtomicOpReturn (loc,_,e,_,_) ->
               get_exp (get_exp (k+2) e) loc
           | AtomicAddUnless (loc,a,u,_) ->
               get_exp (get_exp (get_exp (k+2) u) a) loc
@@ -359,8 +363,8 @@ let rec subst_expr env e = match e with
     and e3 = subst_expr env e3 in
     ECas (e1,e2,e3,mo1,mo2,strong)
 | TryLock (e,m) -> TryLock(subst_expr env e,m)
-| AtomicOpReturn (loc,op,e) ->
-    AtomicOpReturn (subst_expr env loc,op,subst_expr env e)
+| AtomicOpReturn (loc,op,e,ret,a) ->
+    AtomicOpReturn (subst_expr env loc,op,subst_expr env e,ret,a)
 | AtomicAddUnless (loc,a,u,retbool) ->
     AtomicAddUnless
       (subst_expr env loc,subst_expr env a,subst_expr env u,retbool)

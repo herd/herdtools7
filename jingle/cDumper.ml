@@ -76,7 +76,7 @@ let list_loc prog =
     | Const _ -> s
     | LoadReg(r) -> LocSet.add r s
     | LoadMem(l,_) -> loc s l
-    | AtomicOpReturn (e1,_,e2)
+    | AtomicOpReturn (e1,_,e2,_,_)
     | Op(_,e1,e2) -> expr (expr s e1) e2
     | Exchange(l,e,_) -> loc (expr s e) l
     | Fetch(l,_,e,_) -> loc (expr s e) l
