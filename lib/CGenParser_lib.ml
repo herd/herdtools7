@@ -207,14 +207,17 @@ module Do
     let expand_body = match O.macros with
     | None -> Misc.identity
     | Some fmacros ->
+        let fname =  O.libfind fmacros in
         let ms =
           Misc.input_protect
-            (fun chan -> 
+            (fun chan ->
+              let buff = Lexing.from_channel chan in
+              LexMisc.init_file fname buff ;
               call_parser "macros"
-                (Lexing.from_channel chan)
+                buff
                 L.deep_lexer
                 L.macros_parser)
-            (O.libfind fmacros) in
+            fname in
         List.map (L.macros_expand ms) in
 
     let prog =  List.map (fun p -> p.CAst.proc,expand_body p.CAst.body) prog in

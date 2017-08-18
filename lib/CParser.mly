@@ -52,10 +52,9 @@ open MemOrderOrAnnot
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
 %token <MemOrder.t> MEMORDER
-%token LD LD_EXPLICIT ST ST_EXPLICIT EXC EXC_EXPLICIT FENCE LOCK UNLOCK SPINLOCK SPINUNLOCK SPINTRYLOCK SCAS WCAS SCAS_EXPLICIT WCAS_EXPLICIT
+%token LD_EXPLICIT ST_EXPLICIT EXC_EXPLICIT FENCE LOCK UNLOCK SPINLOCK SPINUNLOCK SPINTRYLOCK SCAS WCAS SCAS_EXPLICIT WCAS_EXPLICIT
 %token LOAD STORE UNDERFENCE XCHG CMPXCHG
-%token   UNDERATOMICOP  UNDERATOMICOPRETURN UNDERATOMICADDUNLESS ATOMICADDUNLESS
-%token <Op.op> ATOMIC_FETCH
+%token   UNDERATOMICOP  UNDERATOMICOPRETURN UNDERATOMICFETCHOP UNDERATOMICADDUNLESS ATOMICADDUNLESS
 %token <Op.op> ATOMIC_FETCH_EXPLICIT
 
 %left PIPE
@@ -156,7 +155,6 @@ expr:
 | STAR IDENTIFIER { LoadMem (LoadReg $2,AN []) }
 | STAR LPAR typ RPAR IDENTIFIER { LoadMem (LoadReg $5,AN []) }
 | STAR LPAR expr RPAR { LoadMem ($3,AN []) }
-| LD LPAR expr RPAR { LoadMem($3,MO SC) }
 | LOAD LBRACE annot_list RBRACE LPAR expr RPAR { LoadMem($6,AN $3) }
 | LD_EXPLICIT LPAR expr COMMA MEMORDER RPAR { LoadMem($3,MO $5) }
 | expr STAR expr { Op(Op.Mul,$1,$3) }
@@ -172,16 +170,12 @@ expr:
 | expr GT expr { Op(Op.Gt,$1,$3) }
 | expr LE expr { Op(Op.Le,$1,$3) }
 | expr GE expr { Op(Op.Ge,$1,$3) }
-| EXC LPAR expr COMMA expr RPAR
-  { Exchange($3, $5, MO SC) }
 | EXC_EXPLICIT LPAR expr COMMA expr COMMA MEMORDER RPAR
   { Exchange($3, $5, MO $7) }
 | XCHG LBRACE annot_list RBRACE LPAR expr COMMA expr RPAR
   { Exchange($6,$8,AN $3) }
 | CMPXCHG LBRACE annot_list RBRACE LPAR expr COMMA expr COMMA expr RPAR
   { CmpExchange($6,$8,$10,$3) }
-| ATOMIC_FETCH LPAR expr COMMA expr RPAR
-  { Fetch ($3, $1, $5, SC) }
 | ATOMIC_FETCH_EXPLICIT LPAR expr COMMA expr COMMA MEMORDER RPAR
   { Fetch($3, $1, $5, $7) }
 | IDENTIFIER LPAR args RPAR
@@ -196,8 +190,10 @@ expr:
   { ECas ($3,$5,$7,$9,$11,true) }
 | SPINTRYLOCK LPAR expr RPAR
   { TryLock ($3,MutexLinux) }
-| UNDERATOMICOPRETURN LPAR expr COMMA atomic_op COMMA expr RPAR
-  { AtomicOpReturn($3,$5,$7) }
+| UNDERATOMICOPRETURN LBRACE annot_list RBRACE LPAR expr COMMA atomic_op COMMA expr RPAR
+  { AtomicOpReturn($6,$8,$10,OpReturn,$3) }
+| UNDERATOMICFETCHOP LBRACE annot_list RBRACE LPAR expr COMMA atomic_op COMMA expr RPAR
+  { AtomicOpReturn($6,$8,$10,FetchOp,$3) }
 | UNDERATOMICADDUNLESS LPAR expr COMMA expr COMMA expr RPAR
   { AtomicAddUnless($3,$5,$7,false) }
 | ATOMICADDUNLESS LPAR expr COMMA expr COMMA expr RPAR
@@ -229,8 +225,6 @@ instruction:
   { StoreMem($2,$4,AN []) }
 | STORE LBRACE annot_list RBRACE LPAR expr COMMA expr RPAR SEMI
   { StoreMem($6,$8,AN $3) }
-| ST LPAR expr COMMA expr RPAR SEMI
-  { StoreMem($3, $5, MO SC) }
 | ST_EXPLICIT LPAR expr COMMA expr COMMA MEMORDER RPAR SEMI
   { StoreMem($3, $5, MO $7) }
 
@@ -298,6 +292,8 @@ body:
 macro:
 | IDENTIFIER LPAR formals RPAR expr { EDef ($1,$3,$5) }
 | IDENTIFIER LPAR formals RPAR body { PDef ($1,$3,$5) }
+
 macros:
 | { [] }
-| macro macros { $1 :: $2 }
+| macro macros
+    { $1 :: $2 }

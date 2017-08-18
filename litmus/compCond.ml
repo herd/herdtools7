@@ -19,11 +19,11 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
 
       val fundef_prop :
           string ->
-            (I.Loc.t -> string) -> (* For types *)
+            (I.Loc.t -> string * bool) -> (* For types *)
               (I.Loc.t,I.V.t) ConstrGen.prop -> unit
 
       val fundef :
-          (I.Loc.t -> string) -> (* For types *)
+          (I.Loc.t -> string * bool) -> (* For types *)
             (I.Loc.t,I.V.t) ConstrGen.cond -> unit
 
       val fundef_onlog_prop : string -> (I.Loc.t,I.V.t) ConstrGen.prop -> unit
@@ -99,14 +99,17 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
         let plocs =
           I.C.LocSet.map_list
             (fun loc ->
-              let t = find_type loc in
-              Printf.sprintf "%s %s" t (I.Loc.dump loc))
+              let t,is_ptr = find_type loc in
+              Printf.sprintf "%s %s" t (I.Loc.dump loc),is_ptr)
             locs in
+        let plocs,is_ptr = List.split plocs in
+        let is_ptr = List.exists (fun b -> b) is_ptr in
         let vals = I.C.location_values_prop p in
         let pvals =
           List.map
             (fun loc -> Printf.sprintf
                 "void *%s" (I.V.dump (Constant.Symbolic loc))) vals in
+        let is_ptr = is_ptr || Misc.consp pvals in
         let formals =
           let p = plocs@pvals in
           match p with
@@ -114,9 +117,10 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
           | _::_ -> String.concat "," p in
         O.f "inline static int %s(%s) {" fname formals ;
         begin try
+          if is_ptr then raise Exit ;
           let switch_tree = S.compile p in
           S.dump Indent.indent switch_tree
-        with Switch.Cannot ->
+        with Switch.Cannot|Exit ->
           O.fprintf "%sreturn " (Indent.as_string Indent.indent) ;
           dump p ;
           O.output ";\n"
