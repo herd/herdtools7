@@ -1,0 +1,16 @@
+C SB+onces
+
+{}
+
+
+P0(volatile int* y,volatile int* x) {
+  WRITE_ONCE(*x,1);
+  int r0 = READ_ONCE(*y);
+}
+
+P1(volatile int* y,volatile int* x) {
+  WRITE_ONCE(*y,1);
+  int r0 = READ_ONCE(*x);
+}
+
+exists (0:r0=0 /\ 1:r0=0)

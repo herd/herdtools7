@@ -246,8 +246,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
         M.op op vloc v >>=
         fun w ->
           match ret with
-          | C.OpReturn -> prerr_endline "coucou" ;
-              write_mem_atomic a_write loc w ii
+          | C.OpReturn -> write_mem_atomic a_write loc w ii
           | C.FetchOp  -> write_mem_atomic a_write loc w ii >>! vloc)
 
     let zero = SymbConstant.intToV 0
