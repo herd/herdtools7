@@ -143,7 +143,9 @@ let () =
         end) in
     let outname =
       if KOption.is_out () then KOption.get_tar ()
-      else MySys.mktmpdir () in
+      else begin
+        Warn.user_error "%s, option -o <name> is mandatory" pgm
+      end in
     let module Tar =
       Tar.Make
         (struct
@@ -184,6 +186,9 @@ let () =
     exit 0
   with
     | LexRename.Error|Misc.Exit -> exit 2
+    | Misc.UserError msg ->
+        eprintf "User error: %s\n%!" msg ;
+        exit 2        
     | Misc.Fatal msg ->
         eprintf "Fatal error: %s\n%!" msg ;
         exit 2
