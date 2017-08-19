@@ -18,7 +18,7 @@ module type Config = sig
   val numeric_labels : bool
   val timeloop : int
   val barrier : Barrier.t
-  val kernel : bool
+   val kernel : bool
   val rcu : bool
 end
 
@@ -79,8 +79,8 @@ module Make
         else begin
           Warn.user_error
             "Parameter %s, type mismatch %s vs. %s"
-            param_name (CType.dump oty) (CType.dump ty) ;
-          env
+            param_name (CType.dump oty) (CType.dump ty)
+(*          env *)
         end
       with Not_found ->
         StringMap.add param_name ty env
