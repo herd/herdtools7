@@ -1,3 +1,5 @@
+7.47
+  * Add many Linux C atomic primitives.
 7.46+3
   * lock primitive actions take part to dependencies.
   * herd/linux: serious semantical work on compare exchange and add_unless
