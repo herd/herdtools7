@@ -44,6 +44,10 @@ do {                                                                    \
 #define xchg_acquire(x,v) xchg(x,v)
 #endif
 
+#ifndef xchg_release
+#define xchg_release(x,v) xchg(x,v)
+#endif
+
 #ifndef lockless_dereference 
 #define lockless_dereference(p)                                         \
 ({                                                                      \
