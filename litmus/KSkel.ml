@@ -656,6 +656,7 @@ let dump_init_exit test =
   O.oi "int err=0;" ;
   O.oi "struct proc_dir_entry *litmus_pde = proc_create(\"litmus\",0,NULL,&litmus_proc_fops);" ;
   O.oi "if (litmus_pde == NULL) { return -ENOMEM; }" ;
+  O.oi "stride = stride == 0 ? 1 : stride;" ;
   O.oi "nonline = num_online_cpus ();" ;
   O.oi "online = kzalloc(sizeof(*online)*nonline,GFP_KERNEL);" ;
   O.oi "if (online == NULL) goto clean_pde;" ;
