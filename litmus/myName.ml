@@ -46,14 +46,14 @@ let open_lib name =
   | None -> raise Exit
   with Exit -> try try_open Version_litmus.libdir name
   with Exit -> Warn.fatal "Cannot find file %s" name
-  
+
 
 let name_lib name =
   let r,chan = open_lib name in
   begin try close_in chan with _ -> () end ;
   r
 
-    
+
 let read_cfg name =
   try
   let name =
