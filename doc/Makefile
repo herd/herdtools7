@@ -150,7 +150,7 @@ DOTS=classic.dot classic-sc.dot ws-sc.dot iriw-small-caps.dot iriw-internal.dot 
  $(GENDOTS)
 
 X86=x86-safe.conf x86-rfi.conf x86-podwr.conf
-TST=ARM-LB.log SB.litmus SB.log SB-PPC.litmus SB-PPC.log  SB-PPC2.log\
+TST=ARM-LB.log SB.litmus SB+onces.litmus SB.log SB-PPC.litmus SB-PPC.log  SB-PPC2.log\
   STFW-PPC.litmus 6.SB.litmus 6.SB+Prefetch.litmus WRC.litmus \
   SB-labelled.litmus classic.conf x86-2+2W.litmus \
   ppc-iriw-lwsync.litmus IRIW+lwsyncs.litmus IRIW+syncs.litmus\

@@ -927,7 +927,7 @@ Allocation then proceeds from this new starting index.
 That way, all the processors in the sequence
 will get allocated to different threads naturally, provided of
 course that less than $A$~threads are scheduled to run.
-See section~\ref{affinity:advanced} for an example with $A=16$ and~$i=4$.
+See Sec.~\ref{affinity:advanced} for an example with $A=16$ and~$i=4$.
 
 \section{Advanced\label{advanced:control} control of test parameters}
 
@@ -1387,7 +1387,7 @@ Observation 6.SB Sometimes 16 999984
 
 \section{Usage of \litmus{}}
 
-\subsection*{Arguments}
+\subsection*{Arguments\label{file:argument}}
 \litmus{} takes file names as command line arguments.
 Those files are either a single litmus test,
 when having extension \file{.litmus},
@@ -1399,7 +1399,7 @@ Of course, the file names in \file{@}files can themselves be
 There are many command line options.
 We describe the more useful ones:
 
-\paragraph*{General behaviour}
+\paragraph*{General \label{general:bahaviour}behaviour}
 \begin{description}
 \item[{\tt -version}] Show version number and exit.
 \item[{\tt -libdir}] Show installation directory and exit.
@@ -1451,6 +1451,7 @@ emulator path before running the \texttt{run.sh} script, as in (\texttt{sh} synt
 
 \item[{\tt -index <@name>}] Save the source names of compiled files in index
 file~\file{@name}.
+\item[{\tt -hexa}] Hexadecimal output, default is decimal.
 \end{description}
 
 \paragraph*{Test conditions\label{litmus:option:sec}}
@@ -1460,14 +1461,14 @@ the options of the executable files produced:
 \item[\aname{avail}{{\tt -a <n>}}]Run maximal number of tests concurrently for $n$~available
 logical processors ---
 set default value for \opt{-a} of Sec.~\ref{exec:control}.
-Default is~$1$ (run one test).
+Default is special and will command running exaclty one test instance.
 When affinity control is enabled, the value~$0$ has the special
 meaning of having executables to set the
 number of available logical processors according to
 how many are actually present.
 \item[{\tt -limit <bool>}] Do not process tests with more than~$n$
 threads, where $n$ is the number of available cores defined above.
-Default is \opt{true}.
+Default is \opt{true}.  Does not apply when option \texttt{-a} is absent.
 \item[{\tt -r <n>}] Perform $n$ runs --- set default value for
 option~\opt{-r} of Sec.~\ref{exec:control}.
 The option accepts generalised syntax for integers and
@@ -1540,7 +1541,7 @@ In mode ``\texttt{all}'', the \texttt{run.sh} script will additionally
 not run the test if invoked once more later.
 \end{description}
 
-\aname{affinity:control}{The} following optiondra commands affinity control:
+\aname{affinity:control}{The} following option commands affinity control:
 \begin{description}
 \item[{\tt -affinity (none|incr<n>|random|custom)}]
 Enable (of disable with tag \opt{none}) affinity control,
@@ -1659,6 +1660,8 @@ The changed item may also contains several lines: in that case it should be
 included in double quotes~``\texttt{"}.''.
 \begin{description}
 \item[{\tt -names <file>}] Run \litmus{} only on tests whose names are
+listed in \texttt{<file>}.
+\item[{\tt -excl <file>}] Do not run \litmus{} on tests whose names are
 listed in \texttt{<file>}.
 \item[{\tt -rename <file>}] Change test names.
 \item[{\tt -kinds <file>}] Change test kinds.
@@ -1783,3 +1786,276 @@ then in any directory specified
 by setting the shell environment variable \texttt{LITMUSDIR};
 and then in litmus installation directory, which is defined
 while compiling~\litmus{}.
+
+\section{\label{klitmus}Running kernel tests with \klitmus}
+
+The tool~\klitmus{} is specialised for running kernel tests as kernel modules.
+Kernel modules are object files that can be loaded dynamically in a
+running kernel. The modules are then launched by reading the
+pseudo-file~\texttt{/proc/litmus}.
+
+\subsection{Compiling and running a kernel litmus test}
+Kernel tests are normally written in C, augmented with specific kernel macros.
+As an example, here is \afile{SB+onces.litmus},
+the kernel version of the \ahrefloc{SB}{store buffering litmus test}:
+\verbatiminput{SB+onces.litmus}
+
+As can be seen above, C litmus tests are formatted differently from assembler
+tests: the code of threads is presented as functions, not as columns of
+instructions. One may also notice that the test uses the kernel macros
+\verb+WRITE_ONCE+ (guaranteed memory write) and \verb+READ_ONCE+
+(guaranteed memory read).
+
+The tool \klitmus{} offers only the cross compilation mode:
+\emph{i.e.}, \klitmus{} translates the tests to some C files, plus
+\texttt{Makefile} and run script (\texttt{run.sh}).
+\begin{verbatim}
+% klitmus7 -o X.tar SB+onces.litmus
+\end{verbatim}
+The above command outputs the archive \verb+X.tar+.
+
+Then, users compile the contents of the archive on the target machine, which
+need not be the machine where \klitmus{} has run.
+\begin{verbatim}
+% mkdir -p X && cd X && tar xmf ../X.tar
+% make make
+make -C /lib/modules/3.13.0-108-generic/build/ M=/tmp/X modules
+make[1]: Entering directory `/usr/src/linux-headers-3.13.0-108-generic'
+  CC [M]  /tmp/X/litmus000.o
+  Building modules, stage 2.
+  MODPOST 1 modules
+  CC      /tmp/X/litmus000.mod.o
+  LD [M]  /tmp/X/litmus000.ko
+make[1]: Leaving directory `/usr/src/linux-headers-3.13.0-108-generic'
+\end{verbatim}
+Notice that the final compilation relies on kernel headers being installed.
+
+One then run the test. This step must be performed with root
+privileges, and requires the \texttt{insmod} and \texttt{rmmod}
+commands to be installed. We get:
+\begin{verbatim}
+% sudo sh run.sh 
+Fri Aug 18 16:37:43 CEST 2017
+Compilation command: klitmus7 -o X.tar SB+onces.litmus
+OPT=
+uname -r=3.13.0-108-generic
+
+Test SB+onces Allowed
+Histogram (4 states)
+184992  *>0:r0=0; 1:r0=0;
+909016  :>0:r0=1; 1:r0=0;
+858961  :>0:r0=0; 1:r0=1;
+47031   :>0:r0=1; 1:r0=1;
+Ok
+
+Witnesses
+Positive: 184992, Negative: 1815008
+Condition exists (0:r0=0 /\ 1:r0=0) is validated
+Hash=2487db0f8d32aeb7ec0eacf5d0e301d7
+Observation SB+onces Sometimes 184992 1815008
+Time SB+onces 0.18
+
+Fri Aug 18 16:37:43 CEST 2017
+\end{verbatim}
+Output is similar to \litmus{} output. One sees that the store buffer idiom
+is also observed in kernel mode.
+
+In this simple example, when compile and run one single test.
+However, the usual practice is, as for \litmus{} to compile and run
+several tests, by supplying their source files as command line arguments,
+or by using index files, see Sec~\ref{file:argument}.
+
+\subsection{Runtime control of kernel modules}
+The value of some test parameters
+(see Sec.\ref{litmus:control}) can be set differently from defaults.
+This change is performed by the means
+of a key value interface.\footnote{This interface is the one provided for
+configuring kernel modules at load time.}
+For instance, one sets the number of threads devoted
+to the test, the size of a run
+and the number of runs by using keywords \texttt{avail},
+\texttt{size} and \texttt{nruns}, respectively:
+\begin{verbatim}
+% sudo sh run.sh avail=2 size=100 nruns=1
+Mon Aug 21 11:04:12 CEST 2017
+Compilation command: klitmus7 -o /tmp/X.tar SB+onces.litmus
+OPT=avail=2 size=100 nruns=1
+uname -r=3.13.0-108-generic
+
+Test SB+onces Allowed
+Histogram (3 states)
+12      *>0:r0=0; 1:r0=0;
+48      :>0:r0=1; 1:r0=0;
+40      :>0:r0=0; 1:r0=1;
+Ok
+
+Witnesses
+Positive: 12, Negative: 88
+Condition exists (0:r0=0 /\ 1:r0=0) is validated
+Hash=2487db0f8d32aeb7ec0eacf5d0e301d7
+Observation SB+onces Sometimes 12 88
+Time SB+onces 0.00
+
+Mon Aug 21 11:04:12 CEST 2017
+\end{verbatim}
+
+\aname{module:parameter}{The kernel modules}
+produced by \klitmus{} can be controlled by
+using the following keys=\texttt{\em{<int>}} settings.
+The default values of those parameters are set at compile time,
+by the means of command line options passed to~\klitmus,
+\ahrefloc{klitmus:parameter:default}{see below}.
+
+\begin{description}
+\item[{\tt size}] Size of a run.
+
+\item[{\tt nruns}] Number of runs.
+
+\item[{\tt ninst}] Number of test instances run.
+When the value of this parameter is zero (usual case)
+it is unused (see \texttt{avail} below).
+
+Otherwise, \texttt{ninst} instance of each test is run.
+However, if the total number of threads used by a given test exceeds
+the number of online logical processors of the machine, the test is not run.
+
+\item[{\tt avail}] Number of threads devoted to testing.
+This parameter is active when \texttt{ninst} is zero.
+
+If this parameter is zero (or exceeds the number of online logical processors)
+then it is changed to the number of online logical processors of the machine.
+Finally, \texttt{avail} divided by the number of threads in test are run.
+Since this is euclidean division the resulting number of instances can be zero.
+In that case, the test is not run.
+
+
+\item[{\tt stride}] Stride for scanning locations arrays ---
+see Sec.~\ref{defstride}. If this parameter is zero, it is silently
+changed to one.
+
+\item[{\tt affincr}] Affinity control. Any value strictly greater
+than zero is an affinity increment (see section~\ref{defi}).
+A value of zero means no affinity control. A strictly negative value commands
+random affinity control.
+\end{description}
+
+It is important to notice that the values of keywords are integers in a
+strict sense.
+Namely, the generalized syntax of integer (such as \texttt{10k}, \texttt{1M}
+etc.) is not accepted.
+Moreover, except in the affinity case, where negative values are accepted,
+only positive (or null) values are accepted.
+
+\subsection{Usage of \klitmus}
+
+Given that \klitmus{} purpose is running kernel litmus tests, \klitmus{}
+accepts tests written (1) in~C or (2) in LISA, an experimental
+generic assembler langage.
+
+As regards options  \klitmus{} accepts a restricted subset of the options
+accepted by \litmus{}, plus a few specific options.
+
+\paragraph*{General behaviour}
+
+\begin{description}
+\item[{\tt -version}] Show version number and exit.
+\item[{\tt -libdir}] Show installation directory and exit.
+\item[{\tt -v}] Be verbose, can be repeated to increase verbosity.
+\item[{\tt -o <dest>}]
+Save C-source of test files into \opt{<dest>}.
+Argument \opt{<dest>} can be an archive (extension \opt{.tar}),
+a compressed archive (extension \opt{.tgz}),
+or an existing directory. This option is mandatory for \klitmus,
+while it is optional for~\litmus.
+\item[{\tt -hexa}] Hexadecimal output, default is decimal.
+\item[{\tt -pad <n>}] Sets the padding for C litmus filenames, default 3.
+Namely, \klitmus{} dumps the code for tests into files that
+are named systematically \texttt{litmus\textit{<i>}.c}, where \textit{i} is
+an index number formated with
+\texttt{"\%0\textit{<n>}i"} (zero left padding,
+with minimal size of  \texttt{\textit{<n>}}).
+As a result, by default, file names are
+\texttt{litmus000.c}, \texttt{litmus001.c}, \texttt{litmus002.c}, \ldots
+\end{description}
+
+\paragraph*{\aname{klitmus:parameter:default}{Test conditions}}
+
+Most of these options set the default values of the parameters
+\ahrefloc{module:parameter}{described above}.
+\begin{description}
+\item[{\tt -a <n>}]Run maximal number of tests concurrently for $n$~available
+logical processors ---
+set default value for parameter~\texttt{avail}.
+Default is~$0$. As a result,
+the runtime parameter~\texttt{avail}
+will default to the number of online logical processors.
+\item[{\tt -limit <bool>}] Do not process tests with more than~$n$
+threads, where $n$ is the number of available logical processors
+specified above. Default is \opt{true}.
+Does not apply  when option \texttt{-a} is absent.
+\item[{\tt -r <n>}] Perform $n$ runs --- set default value
+of the parameter~\opt{nruns}.
+The option accepts generalised syntax for integers and
+default is~$10$.
+\item[{\tt -s <n>}]Size of a run --- set default value for
+parameter \opt{size}.
+The option accepts generalised syntax for integers and
+default is $100000$ (or \opt{100k}).
+\item[{\tt -st (adapt|<n>)}]
+Set stride value, default is~\texttt{1}.
+Set default value of parameter~\texttt{stride}.
+In case the command line argument is \texttt{adapt}, the parameter default
+value will be the number of threads in test.
+
+\item[{\tt -affinity (none|incr<n>|random)}]
+Enable (of disable with tag \opt{none}) affinity control,
+specifying default value of parameter~\opt{affincr};
+with tag \opt{none} yielding a default value of~\texttt{0},
+tag \opt{incr<n>} yielding a default value of~\texttt{<n>},
+and tag \opt{random} yielding a default value of~\opt{-1}.
+Default is none, \emph{i.e.}, modules do not perform affinity control,
+although they include code do do so ---
+this is a significant difference with
+\ahref{affinity:control}{litmus7 default}).
+The various tags are interpreted as follows:
+\begin{enumerate}
+\item \opt{incr<n>}:
+integer \opt{<n>} is the increment  for allocating logical
+processors to threads --- see Sec.~\ref{sec:affinity}.
+Setting \opt{-affinity incr0} is special and defined as
+equivalent to \opt{-affinity none}.
+\item \opt{random} modules perform random allocation of
+test threads to logical processors.
+\end{enumerate}
+\item[{\tt -i <n>}] Alias for \opt{-affinity incr<n>}.
+
+\item[{\tt -barrier (userfence|tb)}]
+Set synchronisation mode. Default is \opt{userfence}.
+One may notice that this option offers less variety than
+the corresponding \litmus{} option (see Sec.~\ref{defsynchronisation},
+experience having proved to us
+that those two setting are the most useful ones.
+\end{description}
+
+\paragraph*{Change input}
+\begin{description}
+\item[{\tt -names <file>}] Run \litmus{} only on tests whose names are
+listed in \texttt{<file>}.
+\item[{\tt -excl <file>}] Do not run \litmus{} on tests whose names are
+listed in \texttt{<file>}.
+\item[{\tt -rename <file>}] Change test names.
+\item[{\tt rcu (yes|no|only)}]
+Accept or not tests that contains RCU (read-copy-update) primitives,
+which can be quite long to run. Default is \texttt{no}.
+The tages have the following meaning:
+\begin{enumerate}
+\item[{\tt yes}] Accept RCU tests.
+\item[{\tt no}] Reject  RCU tests (silently).
+\item[{\tt only}] Accept RCU tests and reject others.
+\end{enumerate}
+\end{description}
+
+\paragraph*{Miscellaneous option}
+\begin{description}
+\item[{\tt -ccopt <string>}]Additional option for the C compiler.
+\end{description}
