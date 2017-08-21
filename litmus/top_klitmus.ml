@@ -29,7 +29,7 @@ module type Config = sig
   val size : int
   val runs : int
   val avail : int option
-  val stride : Stride.t
+  val stride : KStride.t
   val barrier : KBarrier.t
   val affinity : KAffinity.t
   val rcu : Rcu.t
@@ -347,9 +347,8 @@ module Top(O:Config)(Tar:Tar.S) = struct
         pl "  By default the script runs as if called as:" ;
         pl "    sudo sh run.sh size=%i nruns=%i stride=%s avail=%i\n"
           O.size O.runs
-          (let open Stride in
+          (let open KStride in
           match O.stride with
-          | No -> "1"
           | St i -> sprintf "%i" i
           | Adapt -> "adapt")
           (match O.avail with None -> 0 | Some i -> i) ;

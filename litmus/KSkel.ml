@@ -29,7 +29,7 @@ module type Config = sig
   val size : int
   val runs : int
   val avail : int option
-  val stride : Stride.t
+  val stride : KStride.t
   val barrier : KBarrier.t
   val affinity : KAffinity.t
 end
@@ -240,9 +240,8 @@ module Make
       O.f "static unsigned int nruns = %i;" Cfg.runs ;
       O.f "static unsigned int size = %i;" Cfg.size ;
       O.f "static unsigned int stride = %i;"
-        (let open Stride in
+        (let open KStride in
         match Cfg.stride with
-        | No -> 1
         | St i -> i
         | Adapt -> List.length test.T.code) ;
       O.f "static unsigned int avail = %i;"

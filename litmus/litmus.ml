@@ -46,7 +46,7 @@ let opts =
    "-index",  argstringo Option.index ,
    "<@name> save index of compiled tests in file <@name>" ;
    "-hexa", Arg.Set Option.hexa,
-   " output variables in hexadecimal";
+   " hexadecimal output";
    "-no", argstringo Option.no,
    "<name> do not handle tests whose edge cycles are listed in file <name>";
 

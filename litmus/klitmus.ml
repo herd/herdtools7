@@ -43,7 +43,7 @@ module KOption : sig
   val avail : int option ref
   val size : int ref
   val runs : int ref
-  val stride : Stride.t ref
+  val stride : KStride.t ref
   val names : string list ref
   val excl : string list ref
   val rename : string list ref
@@ -55,6 +55,7 @@ module KOption : sig
   val ccopts : string list ref
 end = struct
   include Option
+  let stride = ref (KStride.St 1)
   let rcu = ref Rcu.No
   let expedited = ref true
   let pad = ref 3
@@ -65,7 +66,7 @@ end
 
 open KOption
   
-module PStride = ParseTag.Make(Stride)
+module PStride = ParseTag.Make(KStride)
 
 let opts =
   [
@@ -77,10 +78,8 @@ let opts =
    " show installation directory and exit";
    "-o", Arg.String set_tar,
      "<name> cross compilation to directory or tar file <name>" ;
-   "-mach", Arg.String MyName.read_cfg,
-   "<name> read configuration file name.cfg";
    "-hexa", Arg.Set KOption.hexa,
-   " output variables in hexadecimal";
+   " hexadecimal output";
    argint "-pad" KOption.pad "size of padding for C litmus source names";   
 (* Test parameters *)
    "-a", arginto KOption.avail,
@@ -166,11 +165,11 @@ let () =
       let runs = !runs
       let avail = !avail
       let stride =
-        let open Stride in
+        let open KStride in
         let st = !stride in
         match st with
-        | No|Adapt -> st
-        | St i ->  if i > 0 then st else No
+        | Adapt -> st
+        | St i ->  if i > 0 then st else St 1
       let barrier = !barrier
       let affinity = !affinity
       let rcu = !rcu
