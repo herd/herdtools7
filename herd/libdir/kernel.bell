@@ -1,0 +1,61 @@
+"Linux kernel strong memory model"
+
+(*
+ * Copyright (C) 2017 Alan Stern <stern@rowland.harvard.edu>,
+ *		      Andrea Parri <parri.andrea@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, you can access it online at
+ * http://www.gnu.org/licenses/gpl-2.0.html.
+ *)
+
+enum Accesses = 'once (*READ_ONCE,WRITE_ONCE,ACCESS_ONCE*) || 
+		'release (*smp_store_release*) ||
+		'acquire (*smp_load_acquire*) ||
+		'assign (*rcu_assign_pointer*) || 
+		'deref (*rcu_dereference*) ||
+		'lderef (*lockless_dereference*)
+instructions R[{'once,'acquire,'deref,'lderef}]
+instructions W[{'once,'release,'assign}]
+instructions RMW[{'once,'acquire,'release}]
+
+enum Barriers = 'wmb (*smp_wmb*) ||
+		'rmb (*smp_rmb*) ||
+		'mb (*smp_mb*) ||
+		'rb_dep (*smp_read_barrier_depends*) ||
+		'rcu_read_lock (*rcu_read_lock*)  ||
+		'rcu_read_unlock (*rcu_read_unlock*) ||
+		'sync (*synchronize_rcu*)
+instructions F[Barriers]
+
+(* Treat 'release and 'assign identically *)
+let Release = Release | Assign
+
+(* Compute matching pairs of nested Rcu_read_lock and Rcu_read_unlock *)
+let matched = let rec
+	    unmatched-locks = Rcu_read_lock \ domain(matched)
+	and unmatched-unlocks = Rcu_read_unlock \ range(matched)
+	and unmatched = unmatched-locks | unmatched-unlocks
+	and unmatched-po = (unmatched * unmatched) & po
+	and unmatched-locks-to-unlocks = (unmatched-locks *
+			unmatched-unlocks) & po
+	and matched = matched | (unmatched-locks-to-unlocks \
+		(unmatched-po ; unmatched-po))
+	in matched
+
+(* Validate nesting *)
+flag ~empty Rcu_read_lock \ domain(matched) as unbalanced-rcu-locking
+flag ~empty Rcu_read_unlock \ range(matched) as unbalanced-rcu-locking
+
+(* Outermost level of nesting only *)
+let crit = matched \ (po^-1 ; matched ; po^-1)

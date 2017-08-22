@@ -1,0 +1,75 @@
+"Proposal Linux kernel weak memory model"
+
+(*
+ * Copyright (C) 2017 Alan Stern <stern@rowland.harvard.edu>,
+ *		      Andrea Parri <parri.andrea@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, you can access it online at
+ * http://www.gnu.org/licenses/gpl-2.0.html.
+ *)
+
+include "lock.cat"
+
+let rmb = fencerel(Rmb) & (R*R)
+let wmb = fencerel(Wmb) & (W*W)
+let mb = fencerel(Mb) & (M*M)
+let gp = (po & (_ * Sync)) ; (po?)
+let rb-dep = fencerel(Rb_dep) & (R*R)
+
+let strong-fence = mb | gp
+
+let acq-po = po & (Acquire*M)
+let po-rel = po & (M*Release)
+let rfi-rel-acq = rfi & (Release*Acquire)
+
+let com = rf | co | fr
+acyclic po-loc | com as coherence
+
+empty rmw & (fre ; coe) as atomic
+
+let dep = addr | data
+let rwdep = (dep | ctrl) & (R*W)
+let overwrite = co | fr
+let to-w = rwdep | (overwrite & int)
+let rrdep = addr | (dep ; rfi)
+let strong-rrdep = rrdep+ & rb-dep
+let to-r = strong-rrdep | rfi-rel-acq
+let fence = strong-fence | wmb | po-rel | rmb | acq-po
+let ppo = rrdep* ; (to-r | to-w | fence)
+
+(* strong-fence and release/assign are A-cumulative; wmb is not. *)
+let A-cumul(r) = rfe? ; r
+let cumul-fence = A-cumul(strong-fence | po-rel) | wmb
+let prop = (overwrite & ext)? ; cumul-fence* ; rfe?
+
+let hb = ((prop\id) & int) | ppo | rfe
+acyclic hb as happens-before
+
+let pb = prop ; strong-fence ; hb*
+acyclic pb as propagation
+
+let rscs =  po ; crit^-1 ; po?
+(* Propagation between strong fences *)
+let link = hb* ; pb* ; prop
+
+(* Chains that can prevent the RCU grace-period guarantee *)
+let gp-link = gp ; link
+let rscs-link = rscs ; link
+
+let rec rcu-path = gp-link | (gp-link ; rscs-link) | (rscs-link ; gp-link) |
+	(rcu-path ; rcu-path) |
+	(gp-link ; rcu-path ; rscs-link) |
+	(rscs-link ; rcu-path ; gp-link)
+
+irreflexive rcu-path as rcu
