@@ -20,10 +20,14 @@
  *)
 
 include "lock.cat"
+let zz = [RMW]
 
 let rmb = fencerel(Rmb) & (R*R)
 let wmb = fencerel(Wmb) & (W*W)
-let mb = fencerel(Mb) & (M*M)
+let mb =
+  (fencerel(Mb) & (M*M)) |
+  (fencerel(Before_atomic) & (M*RMW); po? ; [M])|
+  ([M] ; po? ; fencerel(After_atomic) & (RMW*M))
 let gp = (po & (_ * Sync)) ; (po?)
 let rb-dep = fencerel(Rb_dep) & (R*R)
 

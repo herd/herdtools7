@@ -35,7 +35,9 @@ enum Barriers = 'wmb (*smp_wmb*) ||
 		'rb_dep (*smp_read_barrier_depends*) ||
 		'rcu_read_lock (*rcu_read_lock*)  ||
 		'rcu_read_unlock (*rcu_read_unlock*) ||
-		'sync (*synchronize_rcu*)
+		'sync (*synchronize_rcu*) ||
+                'before_atomic ||
+                'after_atomic
 instructions F[Barriers]
 
 (* Treat 'release and 'assign identically *)
