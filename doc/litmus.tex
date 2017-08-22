@@ -1860,9 +1860,11 @@ Fri Aug 18 16:37:43 CEST 2017
 Output is similar to \litmus{} output. One sees that the store buffer idiom
 is also observed in kernel mode.
 
-In this simple example, when compile and run one single test.
-However, the usual practice is, as for \litmus{} to compile and run
-several tests, by supplying their source files as command line arguments,
+In this simple example, we compile and run one single test.
+However, usual practice is, as it is for \litmus{}, to compile and run
+several tests at once.
+One achieve this naturally, by supplying several source files as command
+line arguments to \klitmus,
 or by using index files, see Sec~\ref{file:argument}.
 
 \subsection{Runtime control of kernel modules}
@@ -2044,15 +2046,19 @@ listed in \texttt{<file>}.
 \item[{\tt -excl <file>}] Do not run \litmus{} on tests whose names are
 listed in \texttt{<file>}.
 \item[{\tt -rename <file>}] Change test names.
-\item[{\tt rcu (yes|no|only)}]
+\item[{\tt -rcu (yes|no|only)}]
 Accept or not tests that contains RCU (read-copy-update) primitives,
 which can be quite long to run. Default is \texttt{no}.
-The tages have the following meaning:
-\begin{description}
-\item[{\tt yes}] Accept RCU tests.
-\item[{\tt no}] Reject  RCU tests (silently).
-\item[{\tt only}] Accept RCU tests and reject others.
-\end{description}
+The tags have the following meaning:
+\begin{enumerate}
+\item \opt{yes}: Accept RCU tests.
+\item \opt{no}: Reject  RCU tests (silently).
+\item \opt{only}: Accept RCU tests and reject others.
+\end{enumerate}
+\item[\tt -expedited <bool>]  translate the RCU primitive
+\verb+syncronize_rcu+ to
+\verb+synchronize_expedited+ (which may be much faster).
+Default is \opt{true}.
 \end{description}
 
 \paragraph*{Miscellaneous option}
