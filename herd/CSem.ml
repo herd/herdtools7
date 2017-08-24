@@ -37,6 +37,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
 
     module MOorAN = MemOrderOrAnnot
     let a_once = ["once"]
+    let a_noreturn = ["noreturn"]
     let an_once = MOorAN.AN a_once
     let a_mb = ["mb"]
     let a_rb_dep = ["rb_dep"]
@@ -332,7 +333,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
               >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
 (********************)
       | C.AtomicOp  (eloc,op,e) ->
-          build_atomic_op C.OpReturn a_once a_once eloc op e ii
+          build_atomic_op C.OpReturn a_noreturn a_once eloc op e ii
             >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
 (********************)
       | C.Fence(mo) ->
