@@ -21,7 +21,9 @@
 
 include "lock.cat"
 
-let rmb = fencerel(Rmb) & ((R\Noreturn)*R)
+let rmb =
+  let r_without_noreturn = R \ Noreturn in
+  fencerel(Rmb) & (r_without_noreturn * r_without_noreturn)
 let wmb = fencerel(Wmb) & (W*W)
 let mb =
   (fencerel(Mb) & (M*M)) |
