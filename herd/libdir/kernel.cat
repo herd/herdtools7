@@ -20,9 +20,8 @@
  *)
 
 include "lock.cat"
-let zz = [RMW]
 
-let rmb = fencerel(Rmb) & (R*R)
+let rmb = fencerel(Rmb) & ((R\Noreturn)*R)
 let wmb = fencerel(Wmb) & (W*W)
 let mb =
   (fencerel(Mb) & (M*M)) |

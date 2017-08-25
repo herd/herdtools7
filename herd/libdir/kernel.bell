@@ -24,8 +24,9 @@ enum Accesses = 'once (*READ_ONCE,WRITE_ONCE,ACCESS_ONCE*) ||
 		'acquire (*smp_load_acquire*) ||
 		'assign (*rcu_assign_pointer*) || 
 		'deref (*rcu_dereference*) ||
-		'lderef (*lockless_dereference*)
-instructions R[{'once,'acquire,'deref,'lderef}]
+		'lderef (*lockless_dereference*) ||
+                'noreturn (* R of non-return RMW *)
+instructions R[{'once,'acquire,'deref,'lderef,'noreturn}]
 instructions W[{'once,'release,'assign}]
 instructions RMW[{'once,'acquire,'release}]
 
