@@ -520,7 +520,9 @@ end = struct
         | `PPC
         | `X86
         | `AArch64
-        | `MIPS -> sprintf "barrier%s.c" lab_ext
+        | `MIPS
+        | `RISCV
+          -> sprintf "barrier%s.c" lab_ext
         | `ARM ->
             begin match Cfg.morearch with
             | MoreArch.ARMv6K ->
@@ -1786,7 +1788,7 @@ end = struct
               | `ARM ->
                   O.fx iloop "asm __volatile__ (\"isb\" : : : \"memory\");"
               | `AArch64 -> assert false (* FIXME: ??? *)
-              | `X86|`MIPS -> ()
+              | `X86|`MIPS|`RISCV -> ()
               | `GPU_PTX -> assert false
             in
             aux Cfg.sysarch

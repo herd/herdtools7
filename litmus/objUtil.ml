@@ -81,6 +81,7 @@ module Insert (O:InsertConfig) :
     | `ARM -> "_arm"
     | `MIPS -> "_mips"
     | `AArch64 -> "_aarch64"
+    | `RISCV -> "_riscv"
 
     let sz = match O.word with
     | W32|WXX -> "32" (* our "default" word size, used for PPC only *)
@@ -172,7 +173,7 @@ module Make(O:Config)(Tar:Tar.S) =
               cpy' fnames "showLabel" "show" ".awk"
             else
               cpy' fnames "showC" "show" ".awk"
-        | `X86 | `ARM | `PPC | `MIPS | `AArch64 ->
+        | `X86 | `ARM | `PPC | `MIPS | `AArch64 |` RISCV->
             if O.asmcommentaslabel then
               cpy' fnames "showLabel" "show" ".awk"
             else

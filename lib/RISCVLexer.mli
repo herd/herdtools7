@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2010-present Institut National de Recherche en Informatique et *)
+(* Copyright 2017-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,13 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module type S = sig
-  module A : Arch_litmus.S
+(** Lexing MIPS assembly *)
 
-  val extract_addrs : A.instruction -> StringSet.t
-  val stable_regs : A.instruction -> A.RegSet.t
-  val emit_loop : A.Out.ins list -> A.Out.ins list
-  val compile_ins :
-      (Label.t -> string) ->
-        A.instruction ->  A.Out.ins list -> A.Out.ins list
+module Make : functor(O:LexUtils.Config) -> sig
+  val token : Lexing.lexbuf -> RISCVParser.token
 end

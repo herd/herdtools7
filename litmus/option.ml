@@ -193,7 +193,7 @@ let get_default arch = match arch with
 | `PPC -> ppcopt
 | `AArch64
 | `ARM -> armopt
-| `MIPS -> mipsopt
+| `MIPS|`RISCV -> mipsopt
 | `C -> copt
 | `CPP
 | `LISA

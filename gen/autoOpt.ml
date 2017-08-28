@@ -175,6 +175,7 @@ let get_nprocs a cfg = match cfg.nprocs with
       | `MIPS -> 2
       | `LISA -> 2
       | `AArch64 -> 2
+      | `RISCV -> 2
       | `C | `CPP -> 2
     end
 | Some i -> i

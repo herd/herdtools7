@@ -460,6 +460,7 @@ end = struct
                 X.compile
             | UseArch.Gen ->
                 assert false
+            end
 (*
   let module Arch' = AArch64GenArch.Make(OC)(V) in
   let module LexParse = struct
@@ -473,7 +474,6 @@ end = struct
   let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
   X.compile
  *)
-            end
         | `MIPS ->
             let module Arch' = MIPSArch_litmus.Make(OC)(V) in
             let module LexParse = struct
@@ -484,6 +484,18 @@ end = struct
               let parser = MiscParser.mach2generic MIPSParser.main
             end in
             let module Compile = MIPSCompile_litmus.Make(V)(OC) in
+            let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
+            X.compile
+        | `RISCV ->
+            let module Arch' = RISCVArch_litmus.Make(OC)(V) in
+            let module LexParse = struct
+              type instruction = Arch'.parsedPseudo
+              type token = RISCVParser.token
+              module Lexer = RISCVLexer.Make(LexConfig)
+              let lexer = Lexer.token
+              let parser = MiscParser.mach2generic RISCVParser.main
+            end in
+            let module Compile = RISCVCompile_litmus.Make(V)(OC) in
             let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
             X.compile
         | `C ->
@@ -497,6 +509,7 @@ end = struct
                   | `ARM -> ARMArch_litmus.comment
                   | `AArch64 -> AArch64Arch_litmus.comment
                   | `MIPS -> MIPSArch_litmus.comment
+                  | `RISCV -> RISCVArch_litmus.comment
                   end
             end in
             let module X = Make'(Cfg)(Arch') in
