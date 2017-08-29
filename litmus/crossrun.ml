@@ -21,34 +21,38 @@ type addr ={ host : string ; port : int option ; }
 
 type t =
   | Host of addr
-  | Qemu
+  | Qemu of string
   | Adb
   | No
 
-let tags = ["none";"adb";"qemu";"host[:port]";]
+let tags = ["none";"adb";"qemu[:exec]";"host[:port]";]
 
 let parse tag = match tag with
 | "none" -> Some No
 | "adb"  -> Some Adb
-| "qemu"  -> Some Qemu
+| "qemu"  -> Some (Qemu "qemu")
 | _ ->
     let h =
       try
         let j = try String.index tag ':' with Not_found -> raise Exit in
         let h = String.sub tag 0 j
         and p = String.sub tag (j+1) (String.length tag - (j+1)) in
-        let p = try int_of_string p with _ -> raise Exit in
-        { host=h; port=Some p;}
+        match h with
+        | "qemu" -> Qemu p
+        | _ ->
+            let p = try int_of_string p with _ -> raise Exit in
+            Host { host=h; port=Some p;}
       with
-      | Exit -> { host=tag ; port=None; } in
-    Some (Host h)
+      | Exit -> Host { host=tag ; port=None; } in
+    Some h
 
 open Printf
 
 let pp = function
   | No -> "none"
   | Adb -> "adb"
-  | Qemu -> "qemu"
+  | Qemu "qemu" -> "qemu"
+  | Qemu e -> sprintf "qemu:%s" e
   | Host h ->
       match h.port with
       | None -> h.host

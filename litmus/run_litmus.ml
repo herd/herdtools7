@@ -116,7 +116,7 @@ module Make(O:Config)(Tar:Tar.S)(D:Test) =
           match O.crossrun with
           | Crossrun.No -> sprintf "%s %s" exe opts
           | Crossrun.Adb ->  sprintf "dorun %s %s" exe opts
-          | Crossrun.Qemu ->  sprintf "$QEMU %s %s" exe opts
+          | Crossrun.Qemu _ ->  sprintf "$QEMU %s %s" exe opts
           | Crossrun.Host _h ->
               let scp = sprintf "doscp %s" exe in
               let run = sprintf "%s %s" exe opts in

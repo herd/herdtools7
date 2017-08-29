@@ -216,8 +216,8 @@ let dump_shell names =
       output_line out_chan "LITMUSOPTS=\"${@:-$LITMUSOPTS}\"" ;
       begin match Cfg.crossrun with
       | Crossrun.No -> ()
-      | Crossrun.Qemu ->
-          fprintf out_chan "# Set $QEMU to run under QEMU\n";
+      | Crossrun.Qemu e ->
+          fprintf out_chan "QEMU=\"${QEMU:-%s}\"\n" e
       | Crossrun.Adb  ->
           fprintf out_chan "RDIR=%s\n" Cfg.adbdir ;
           fprintf out_chan "adb shell mkdir $RDIR >/dev/null 2>&1\n" ;

@@ -38,7 +38,7 @@ let opts =
      "<name> cross compilation to directory or tar file <name>" ;
    "-cross",  Arg.String set_cross, "<name> same as -o above, with README and Makefile";
    begin let module P = ParseTag.Make(Crossrun) in
-   P.parse "-crossrun" crossrun "run tests on remote machine" end ;
+   P.parse "-crossrun" crossrun "run tests on remote machine or simulator" end ;
    argstring "-adbdir" Option.adbdir
     "<dir> target directory on device in mode -crossrun adb";
    "-mach", Arg.String MyName.read_cfg,
