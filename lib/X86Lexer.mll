@@ -47,7 +47,11 @@ rule token = parse
 | "add"|"ADD"   { I_ADD }
 | "xor"|"XOR"   { I_XOR }
 | "mov"|"MOV"   { I_MOV }
+| "movb"|"MOVB"   { I_MOVB }
+| "movw"|"MOVW"   { I_MOVW }
+| "movl"|"MOVL"   { I_MOVL }
 | "movq"|"MOVQ"   { I_MOVQ }
+| "movt"|"MOVT"   { I_MOVT }
 | "movsd"|"MOVSD"   { I_MOVSD }
 | "dec"|"DEC"   { I_DEC }
 | "cmp"|"CMP"   { I_CMP }

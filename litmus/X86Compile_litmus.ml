@@ -54,7 +54,11 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
     | I_XOR (ea,op)
     | I_ADD (ea,op)
     | I_MOV (ea,op)
+    | I_MOVB (ea,op)
+    | I_MOVW (ea,op)
+    | I_MOVL (ea,op)
     | I_MOVQ (ea,op)
+    | I_MOVT (ea,op)
     | I_CMP (ea,op)
         ->  StringSet.union (extract_ea ea) (extract_op op)
     | I_XCHG (ea1,ea2)
@@ -154,7 +158,7 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
       let ea2,(_,ins2),(_,outs2) = compile_ea_output i o ea2 in
 (* For exchange, order of operands is irrelevant,
    let us swap them anyway... good idea since operands
-   as asymetric in practice (ea2 must be a reg) *)
+   as asymmetric in practice (ea2 must be a reg) *)
       { empty_ins with
         memo = sprintf "%s %s,%s" memo ea2 ea1;
         inputs = ins1@ins2;
@@ -230,7 +234,11 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
     | I_ADD (ea,op) -> op_ea_output_op "addl" ea op
 (* as usual, move is quite special *)
     | I_MOV (ea,op) ->  move "movl" ea op
+    | I_MOVB (ea,op) ->  move "movb" ea op
+    | I_MOVW (ea,op) ->  move "movw" ea op
+    | I_MOVL (ea,op) ->  move "movl" ea op
     | I_MOVQ (ea,op) ->  move "movq" ea op
+    | I_MOVT (ea,op) ->  move "movt" ea op
 (* Trap!! ea is input only... *)
     | I_CMP (ea,op) -> op_ea_input_op "cmpl" ea op
 (* ea is always output here *)

@@ -151,8 +151,12 @@ type instruction =
   | I_LFENCE
   | I_SFENCE
   | I_MFENCE
-(* 64 bits move *)
+(* various sizes of move: 1, 2, 4, 8, 10 bytes respectively *)
+  | I_MOVB of effaddr * operand
+  | I_MOVW of effaddr * operand
+  | I_MOVL of effaddr * operand
   | I_MOVQ of effaddr * operand
+  | I_MOVT of effaddr * operand
 (* 64 bits mem-mem "string" move (operands in esi and edi) *)
   | I_MOVSD
 
@@ -235,7 +239,11 @@ let rec do_pp_instruction m =
   | I_ADD(ea,op) -> ppi_ea_op "ADD" ea op
   | I_XOR(ea,op) -> ppi_ea_op "XOR" ea op
   | I_MOV(ea,op) -> ppi_ea_op "MOV" ea op
+  | I_MOVB(ea,op) -> ppi_ea_op "MOVB" ea op
+  | I_MOVW(ea,op) -> ppi_ea_op "MOVW" ea op
+  | I_MOVL(ea,op) -> ppi_ea_op "MOVL" ea op
   | I_MOVQ(ea,op) -> ppi_ea_op "MOVQ" ea op
+  | I_MOVT(ea,op) -> ppi_ea_op "MOVT" ea op
   | I_MOVSD   -> "MOVSD"
   | I_DEC(ea) -> ppi_ea "DEC " ea 
   | I_CMP(ea,op) -> ppi_ea_op "CMP " ea op
@@ -296,7 +304,7 @@ let rec fold_regs (f_reg,f_sreg) =
   fun c ins -> match ins with
   | I_XOR (eff,op)
   | I_ADD (eff,op)
-  | I_MOV (eff,op) | I_MOVQ (eff,op)
+  | I_MOV (eff,op) | I_MOVB (eff,op) | I_MOVW (eff,op) | I_MOVL (eff,op) | I_MOVQ (eff,op) | I_MOVT (eff,op)
   | I_CMP (eff,op) ->
       let c = fold_effaddr c eff in
       fold_operand c op 
@@ -349,8 +357,16 @@ let rec map_regs f_reg f_symb =
       I_ADD (map_effaddr eff, map_operand op)
   | I_MOV (eff,op) ->
       I_MOV (map_effaddr eff, map_operand op)
+  | I_MOVB (eff,op) ->
+      I_MOVB (map_effaddr eff, map_operand op)
+  | I_MOVW (eff,op) ->
+      I_MOVW (map_effaddr eff, map_operand op)
+  | I_MOVL (eff,op) ->
+      I_MOVL (map_effaddr eff, map_operand op)
   | I_MOVQ (eff,op) ->
       I_MOVQ (map_effaddr eff, map_operand op)
+  | I_MOVT (eff,op) ->
+      I_MOVT (map_effaddr eff, map_operand op)
   | I_CMP (eff,op) ->
       I_CMP (map_effaddr eff, map_operand op)
   | I_DEC eff ->
@@ -394,7 +410,11 @@ let rec fold_addrs f =
   | I_XOR (eff,op)
   | I_ADD (eff,op)
   | I_MOV (eff,op)
+  | I_MOVB (eff,op)
+  | I_MOVW (eff,op)
+  | I_MOVL (eff,op)
   | I_MOVQ (eff,op)
+  | I_MOVT (eff,op)
   | I_CMP (eff,op) ->
       let c = fold_effaddr c eff in
       fold_operand c op
@@ -438,8 +458,16 @@ let rec map_addrs f =
       I_ADD (map_effaddr eff, map_operand op)
   | I_MOV (eff,op) ->
       I_MOV (map_effaddr eff, map_operand op)
+  | I_MOVB (eff,op) ->
+      I_MOVB (map_effaddr eff, map_operand op)
+  | I_MOVW (eff,op) ->
+      I_MOVW (map_effaddr eff, map_operand op)
+  | I_MOVL (eff,op) ->
+      I_MOVL (map_effaddr eff, map_operand op)
   | I_MOVQ (eff,op) ->
       I_MOVQ (map_effaddr eff, map_operand op)
+  | I_MOVT (eff,op) ->
+      I_MOVT (map_effaddr eff, map_operand op)
   | I_CMP (eff,op) ->
       I_CMP (map_effaddr eff, map_operand op)
   | I_DEC eff ->
@@ -467,7 +495,11 @@ let rec map_addrs f =
 
 
 let norm_ins ins = match ins with
+| I_MOVB (eff,op) -> I_MOV (eff,op)
+| I_MOVW (eff,op) -> I_MOV (eff,op)
+| I_MOVL (eff,op) -> I_MOV (eff,op)
 | I_MOVQ (eff,op) -> I_MOV (eff,op)
+| I_MOVT (eff,op) -> I_MOV (eff,op)
 | _ -> ins
 
 (* PLDI submission, complete later ? *)
@@ -478,7 +510,7 @@ let rec get_next = function
   | I_LOCK ins -> get_next ins
   | I_ADD _
   | I_XOR _
-  | I_MOV _  | I_MOVQ _
+  | I_MOV _ | I_MOVB _ | I_MOVW _ | I_MOVL _ | I_MOVQ _ | I_MOVT _
   | I_MOVSD
   | I_DEC _
   | I_CMP _
@@ -509,7 +541,11 @@ include Pseudo.Make
         | I_XOR (e,o)
         | I_MOV (e,o)
         | I_CMP (e,o)
+        | I_MOVB (e,o)
+        | I_MOVW (e,o)
+        | I_MOVL (e,o)
         | I_MOVQ (e,o)
+        | I_MOVT (e,o)
           -> get_naccs_eff e + get_naccs_op o
         | I_DEC e
         | I_INC e
@@ -539,7 +575,8 @@ include Pseudo.Make
         | I_JCC (_,lbl)
           -> f k lbl
         | I_SETNB _|I_READ _|I_XCHG_UNLOCKED (_, _)|I_XCHG (_, _)|I_INC _
-        | I_CMOVC (_, _)|I_CMP (_, _)|I_DEC _|I_MOV (_, _)|I_MOVQ (_,_)
+        | I_CMOVC (_, _)|I_CMP (_, _)|I_DEC _
+		| I_MOV (_, _)|I_MOVB (_,_)|I_MOVW (_,_)|I_MOVL (_,_)|I_MOVQ (_,_)|I_MOVT (_,_)
         | I_MOVSD
         | I_XOR (_, _)|I_ADD (_, _)
         | I_MFENCE|I_SFENCE|I_LFENCE
@@ -551,7 +588,8 @@ include Pseudo.Make
         | I_JMP lbl -> I_JMP (f lbl)
         | I_JCC (cc,lbl) -> I_JCC (cc,f lbl)
         | I_SETNB _|I_READ _|I_XCHG_UNLOCKED (_, _)|I_XCHG (_, _)|I_INC _
-        | I_CMOVC (_, _)|I_CMP (_, _)|I_DEC _|I_MOV (_, _)|I_MOVQ (_, _)
+        | I_CMOVC (_, _)|I_CMP (_, _)|I_DEC _
+		| I_MOV (_, _)|I_MOVB (_,_)|I_MOVW (_,_)|I_MOVL (_,_)|I_MOVQ (_,_)|I_MOVT (_,_)
         | I_MOVSD
         | I_XOR (_, _)|I_ADD (_, _)
         | I_MFENCE|I_SFENCE|I_LFENCE
