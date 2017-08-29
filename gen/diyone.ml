@@ -262,6 +262,10 @@ let () =
       let module T = Top_gen.Make(Co) in
       let module M = Build(T(MIPSCompile_gen.Make(C))) in
       M.zyva
+  | `RISCV ->
+      let module T = Top_gen.Make(Co) in
+      let module M = Build(T(RISCVCompile_gen.Make(C))) in
+      M.zyva
   | `LISA ->
       let module BellConfig =
         struct

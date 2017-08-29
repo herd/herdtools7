@@ -30,8 +30,8 @@ include AArch64Base
 let tr_endian = Misc.identity
 
 module ScopeGen = ScopeGen.NoGen
-(* Mixed size *)
 
+(* Mixed size *)
 module Mixed =
   MachMixed.Make
     (struct
@@ -58,15 +58,15 @@ let applies_atom_rmw ar aw = match ar,aw with
 | (Some (Acq|AcqPc)|None),(Some Rel|None) -> true
 | _ -> false
 
-let pp_plain = "P"
+   let pp_plain = "P"
 (* Annotation A is taken by load aquire *)
-let pp_as_a = None
+   let pp_as_a = None
 
-let pp_atom_rw = function
-  | PP -> ""
-  | PL -> "L"
-  | AP -> "A"
-  | AL -> "AL"
+   let pp_atom_rw = function
+     | PP -> ""
+     | PL -> "L"
+     | AP -> "A"
+     | AL -> "AL"
 
    let pp_atom = function
      | Atomic rw -> sprintf "X%s" (pp_atom_rw rw)
