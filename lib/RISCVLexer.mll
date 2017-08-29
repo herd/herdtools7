@@ -61,18 +61,32 @@ module LU = LexUtils.Make(O)
     | "bge" -> BCC GE
     | "bgeu" -> BCC GEU
 
-    | "lb" -> LOAD (Byte,Signed)
-    | "lh" -> LOAD (Half,Signed)
-    | "lw" -> LOAD (Word,Signed)
-    | "ld" -> LOAD (Double,Signed)
-    | "lbu" -> LOAD (Byte,Unsigned)
-    | "lhu" -> LOAD (Half,Unsigned)
-    | "lwu" -> LOAD (Word,Unsigned)
-    | "sb" -> STORE Byte
-    | "sh" -> STORE Half
-    | "sw" -> STORE Word
-    | "sd"   -> STORE Double
+    | "lb" -> LOAD (Byte,Signed,Rlx)
+    | "lh" -> LOAD (Half,Signed,Rlx)
+    | "lw" -> LOAD (Word,Signed,Rlx)
+    | "ld" -> LOAD (Double,Signed,Rlx)
+    | "lbu" -> LOAD (Byte,Unsigned,Rlx)
+    | "lhu" -> LOAD (Half,Unsigned,Rlx)
+    | "lwu" -> LOAD (Word,Unsigned,Rlx)
+    | "sb" -> STORE (Byte,Rlx)
+    | "sh" -> STORE (Half,Rlx)
+    | "sw" -> STORE (Word,Rlx)
+    | "sd"   -> STORE (Double,Rlx)
 
+(* Limited memory order on ordinary load and store *)
+    | "lb.aq" -> LOAD (Byte,Signed,Acq)
+    | "lh.aq" -> LOAD (Half,Signed,Acq)
+    | "lw.aq" -> LOAD (Word,Signed,Acq)
+    | "ld.aq" -> LOAD (Double,Signed,Acq)
+    | "lbu.aq" -> LOAD (Byte,Unsigned,Acq)
+    | "lhu.aq" -> LOAD (Half,Unsigned,Acq)
+    | "lwu.aq" -> LOAD (Word,Unsigned,Acq)
+    | "sb.rl" -> STORE (Byte,Rel)
+    | "sh.rl" -> STORE (Half,Rel)
+    | "sw.rl" -> STORE (Word,Rel)
+    | "sd.rl"   -> STORE (Double,Rel)
+
+(* Complete memory ordering... *)
     | "lr.w" -> LR (Word,Rlx)
     | "lr.w.aq" -> LR (Word,Acq)
     | "lr.w.rl" -> LR (Word,Rel)
@@ -138,4 +152,3 @@ let token lexbuf =
    tok
 end
 }
-

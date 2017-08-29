@@ -81,16 +81,16 @@ module Make(V:Constant.S)(C:Arch_litmus.Config) =
         memo = sprintf "%s %s,%s,%s" (A.pp_bcc cond) fmt1 fmt2
           (A.Out.dump_label (tr_lab lbl)) ;
         inputs=r1r2; branch=[Next;Branch lbl;]; }::k
-  | Load (w,s,r1,o,r2) ->
+  | Load (w,s,mo,r1,o,r2) ->
       let fmt1,r1 = tr_1o r1
       and fmt2,r2 = tr_1i r2 in
       { empty_ins with
-        memo = sprintf "%s %s,%i(%s)" (A.pp_load w s) fmt1 o fmt2;
+        memo = sprintf "%s %s,%i(%s)" (A.pp_load w s mo) fmt1 o fmt2;
         inputs=r2; outputs=r1; }::k
-  | Store (w,r1,o,r2) ->
+  | Store (w,mo,r1,o,r2) ->
       let fmt1,fmt2,r1r2 = tr_2i r1 r2 in
       { empty_ins with
-        memo = sprintf "%s %s,%i(%s)" (A.pp_store w) fmt1 o fmt2;
+        memo = sprintf "%s %s,%i(%s)" (A.pp_store w mo) fmt1 o fmt2;
         inputs=r1r2; }::k
   | LoadReserve (w,mo,r1,r2) ->
       let fmt1,r1 = tr_1o r1

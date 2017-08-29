@@ -231,9 +231,6 @@ let pp_signed = function
   | Signed -> ""
   | Unsigned -> "u"
 
-let pp_load w s = sprintf "l%s%s" (pp_width w) (pp_signed s)
-let pp_store w = sprintf "s%s" (pp_width w)
-
 type mo = Rlx | Acq | Rel | AcqRel
 
 let pp_mo = function
@@ -241,6 +238,10 @@ let pp_mo = function
   | Acq -> ".aq"
   | Rel -> ".rl"
   | AcqRel -> ".aqrl"
+
+let pp_load w s mo = sprintf "l%s%s%s" (pp_width w) (pp_signed s) (pp_mo mo)
+let pp_store w mo = sprintf "s%s%s" (pp_width w) (pp_mo mo)
+
 
 let pp_lr w mo = sprintf "lr.%s%s" (pp_width w) (pp_mo mo)
 let pp_sc w mo = sprintf "sc.%s%s" (pp_width w) (pp_mo mo)
@@ -252,8 +253,8 @@ type 'k kinstruction =
   | OpW of opw * reg * reg * reg
   | J of lbl
   | Bcc of cond * reg * reg * lbl
-  | Load of width * signed * reg * int * reg
-  | Store of width * reg * int * reg
+  | Load of width * signed * mo * reg * int * reg
+  | Store of width * mo * reg * int * reg
   | LoadReserve of width * mo * reg * reg
   | StoreConditional of width * mo * reg * reg * reg
   | FenceIns of  barrier
@@ -285,12 +286,12 @@ let do_pp_instruction m = function
   | Bcc (cond,r1,r2,lbl) ->
       sprintf  "%s %s,%s,%s"
         (pp_bcc cond) (pp_reg r1) (pp_reg r2) (pp_label lbl)
-  | Load (w,s,r1,o,r2) ->
+  | Load (w,s,mo,r1,o,r2) ->
       sprintf "%s %s,%i(%s)"
-        (pp_load w s) (pp_reg r1) o (pp_reg r2)
-  | Store (w,r1,o,r2) ->
+        (pp_load w s mo) (pp_reg r1) o (pp_reg r2)
+  | Store (w,mo,r1,o,r2) ->
       sprintf "%s %s,%i(%s)"
-        (pp_store w) (pp_reg r1) o (pp_reg r2)
+        (pp_store w mo) (pp_reg r1) o (pp_reg r2)
   | LoadReserve (w,mo,r1,r2) ->
       sprintf "%s %s,0(%s)"
         (pp_lr w mo) (pp_reg r1) (pp_reg r2)
@@ -331,8 +332,8 @@ let fold_regs (f_reg,f_sreg) =
   | J _ | FenceIns _ -> c
   | OpI (_,r1,r2,_) | OpIW (_,r1,r2,_)
   | Bcc (_,r1,r2,_)
-  | Load (_,_,r1,_,r2)
-  | Store (_,r1,_,r2)
+  | Load (_,_,_,r1,_,r2)
+  | Store (_,_,r1,_,r2)
   | LoadReserve (_,_,r1,r2)
     -> fold_reg r1 (fold_reg r2 c)
   | Op (_,r1,r2,r3)  | OpW (_,r1,r2,r3)
@@ -358,10 +359,10 @@ let map_regs f_reg f_symb =
       OpW (op,map_reg r1,map_reg r2,map_reg r3)
   | Bcc (cc,r1,r2,lbl) ->
       Bcc (cc,map_reg r1,map_reg r2,lbl)
-  | Load (w,s,r1,o,r2) ->
-      Load (w,s,map_reg r1,o,map_reg r2)
-  | Store (w,r1,o,r2) ->
-      Store (w,map_reg r1,o,map_reg r2)
+  | Load (w,s,mo,r1,o,r2) ->
+      Load (w,s,mo,map_reg r1,o,map_reg r2)
+  | Store (w,mo,r1,o,r2) ->
+      Store (w,mo,map_reg r1,o,map_reg r2)
   | LoadReserve (w,mo,r1,r2) ->
       LoadReserve (w,mo,map_reg r1,map_reg r2)
   | StoreConditional (w,mo,r1,r2,r3) ->
@@ -379,7 +380,7 @@ let get_next = function
   | J lbl -> [Label.To lbl;]
   | Bcc (_,_,_,lbl) -> [Label.Next; Label.To lbl;]
   | OpI (_, _, _, _)|OpIW (_, _, _, _)|Op (_, _, _, _)|OpW (_, _, _, _)
-  | Load (_, _, _, _, _)|Store (_, _, _, _)|LoadReserve (_, _, _, _)
+  | Load (_,_, _, _, _, _)|Store (_,_, _, _, _)|LoadReserve (_, _, _, _)
   | StoreConditional (_, _, _, _, _)|FenceIns _
     -> [Label.Next;]
 
@@ -395,7 +396,7 @@ include Pseudo.Make
       | OpI (op,r1,r2,k) -> OpI (op,r1,r2,k_tr k)
       | OpIW (op,r1,r2,k) -> OpIW (op,r1,r2,k_tr k)
       | Op (_, _, _, _)|OpW (_, _, _, _)|J _|Bcc (_, _, _, _)
-      |Load (_, _, _, _, _)|Store (_, _, _, _)
+      |Load (_, _, _, _, _, _)|Store (_, _ ,_ , _, _)
       |LoadReserve (_, _, _, _)|StoreConditional (_, _, _, _, _)|FenceIns _
           as keep
         -> keep
@@ -411,14 +412,14 @@ include Pseudo.Make
         | Bcc (_,_,_,lbl)
           -> f k lbl
         |OpI (_, _, _, _)|OpIW (_, _, _, _)|Op (_, _, _, _)
-        |OpW (_, _, _, _)|Load (_, _, _, _, _)|Store (_, _, _, _)
+        |OpW (_, _, _, _)|Load (_, _, _, _, _, _)|Store (_, _, _, _, _)
         |LoadReserve (_, _, _, _)|StoreConditional (_, _, _, _, _)|FenceIns _
             -> k
       let map_labels f = function
         | J lbl -> J (f lbl)
         | Bcc (cc,r1,r2,lbl) -> Bcc (cc,r1,r2,f lbl)
         |OpI (_, _, _, _)|OpIW (_, _, _, _)|Op (_, _, _, _)
-        |OpW (_, _, _, _)|Load (_, _, _, _, _)|Store (_, _, _, _)
+        |OpW (_, _, _, _)|Load _|Store _
         |LoadReserve (_, _, _, _)|StoreConditional (_, _, _, _, _)|FenceIns _
             as ins
             -> ins

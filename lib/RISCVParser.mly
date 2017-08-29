@@ -40,8 +40,8 @@ let tr_rw = function
 %token <RISCVBase.opw> OPW
 %token J
 %token <RISCVBase.cond> BCC
-%token <RISCVBase.width * RISCVBase.signed> LOAD
-%token <RISCVBase.width> STORE
+%token <RISCVBase.width * RISCVBase.signed * RISCVBase.mo > LOAD
+%token <RISCVBase.width * RISCVBase.mo> STORE
 %token <RISCVBase.width * RISCVBase.mo> LR
 %token <RISCVBase.width * RISCVBase.mo> SC
 %token FENCE FENCEI
@@ -117,12 +117,13 @@ instr:
 | BCC reg COMMA reg COMMA NAME
     { Bcc ($1,$2,$4,$6) }
 | LOAD reg COMMA addr
-    { let w,s = $1 in
+    { let w,s,mo = $1 in
     let off,r = $4 in
-    Load (w,s,$2,off,r) }
+    Load (w,s,mo,$2,off,r) }
 | STORE reg COMMA addr
-    { let off,r = $4 in
-      Store ($1,$2,off,r) }
+    {let w,mo = $1 in
+     let off,r = $4 in
+     Store (w,mo,$2,off,r) }
 | LR reg COMMA addr0
     { let w,mo = $1 in
     LoadReserve (w,mo,$2,$4) }
