@@ -68,7 +68,15 @@ module type Config = sig
   include DumpParams.Config
 end
 
-let sentinel = "-239487" (* Susmit's sentinel *)
+let sentinel   = "-239487" (* Susmit's sentinel *)
+let sentinel16 =   "39487"
+let sentinel8  =      "87"
+
+let sentinel_of t =
+  match t with
+  | CType.Base "uint8_t"  -> sentinel8
+  | CType.Base "uint16_t" -> sentinel16
+  | _ -> sentinel
 
 module Make
     (Cfg:sig include Config val sysarch : Archs.System.t end)
@@ -1142,7 +1150,7 @@ end = struct
                   (sprintf "_a->%s[_i] != %s"
                      (A.Out.dump_out_reg proc reg)
                      (match CType.is_ptr t with
-                     | false -> sentinel
+                     | false -> sentinel_of t
                      | true -> "NULL"))
                   doc.Name.name)
               outs)
@@ -1546,7 +1554,7 @@ end = struct
               O.fii "_a->%s[_i] = %s;"
                 (A.Out.dump_out_reg proc reg)
                 (match CType.is_ptr t with
-                | false -> sentinel
+                | false -> sentinel_of t
                 | true -> "NULL"))
             outs)
         test.T.code ;

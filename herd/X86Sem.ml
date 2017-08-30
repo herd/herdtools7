@@ -159,7 +159,7 @@ module Make (C:Sem.Config)(V : Value.S)
 	  fun v_result ->
 	    (write_loc_gen locked loc v_result ii >>|
 	    write_all_flags v_result V.zero ii) >>! B.Next
-    |  X86.I_MOV (ea,op)|X86.I_MOVQ (ea,op) ->
+    |  X86.I_MOV (ea,op)|X86.I_MOVB (ea,op)|X86.I_MOVW (ea,op)|X86.I_MOVL (ea,op)|X86.I_MOVQ (ea,op)|X86.I_MOVT (ea,op) ->
 	(lval_ea ea ii >>| rval_op locked op ii) >>=
 	fun (loc,v_op) ->
 	  write_loc_gen locked loc v_op ii >>! B.Next
