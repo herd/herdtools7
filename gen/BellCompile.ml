@@ -324,11 +324,13 @@ let emit_exch_dep _ = assert false
     let emit_exch_dep _ = assert false *)
 
 (* Check load *)
-    let check_load p r e =
+    let do_check_load p r e =
       let lab = Label.exit p in
       fun k ->
         Instruction (movne tempo1 r e.v)::
         Instruction (branchcc tempo1 lab)::k
+
+    let check_load  p r e init st = init,do_check_load p r e,st
 
 (* Postlude for adding exit label *)
 

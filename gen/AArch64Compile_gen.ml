@@ -585,12 +585,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | CTRLISYNC -> emit_exch_ctrl true st p init er ew rd
 
 
-    let check_load p r e =
+    let do_check_load p r e =
       let lab = Label.exit p in
       (fun k ->
         Instruction (cmpi r e.v)::
         Instruction (bne lab)::
         k)
+    let check_load  p r e init st = init,do_check_load p r e,st
 
 (* Postlude *)
     let does_jump lab cs =

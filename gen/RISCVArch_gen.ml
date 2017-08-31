@@ -41,9 +41,9 @@ module Make
 
    let bellatom = false
 
-   type atom = MO of mo | RMW of mo * mo | Mixed of MachMixed.t
+   type atom = MO of mo | Atomic of mo * mo | Mixed of MachMixed.t
 
-   let default_atom = RMW (Rlx,Rlx)
+   let default_atom = Atomic (Rlx,Rlx)
 
    let applies_atom _a _d = true
 
@@ -65,7 +65,7 @@ module Make
 
    let pp_atom = function
      | MO mo -> pp_mo mo
-     | RMW (m1,m2) -> "X" ^ pp_mo2 m1 m2
+     | Atomic (m1,m2) -> "X" ^ pp_mo2 m1 m2
      | Mixed m -> Mixed.pp_mixed m
 
    let compare_atom = Pervasives.compare
@@ -81,7 +81,7 @@ module Make
    let fold_rmw f k =
      let fold1 f k = fold_mo f (f Rlx k) in
      fold1
-       (fun m1 k -> fold1 (fun m2 k -> f (RMW (m1,m2)) k) k)
+       (fun m1 k -> fold1 (fun m2 k -> f (Atomic (m1,m2)) k) k)
        k
 
    let fold_atom f k =
@@ -90,14 +90,14 @@ module Make
      fold_rmw f k
 
    let worth_final = function
-     | RMW _ -> true
+     | Atomic _ -> true
      | MO _|Mixed _ -> false
 
    let varatom_dir d f k = f None k
 
 
    let tr_value ao v = match ao with
-   | None| Some (MO _|RMW _) -> v
+   | None| Some (MO _|Atomic _) -> v
    | Some (Mixed (sz,_)) -> Mixed.tr_value sz v
 
    module ValsMixed =
@@ -108,12 +108,12 @@ module Make
        end)
 
    let overwrite_value v ao w = match ao with
-   | None| Some (MO _|RMW _) -> w (* total overwrite *)
+   | None| Some (MO _|Atomic _) -> w (* total overwrite *)
    | Some (Mixed (sz,o)) ->
        ValsMixed.overwrite_value v sz o w
 
    let extract_value v ao = match ao with
-   | None| Some (MO _|RMW _) -> v
+   | None| Some (MO _|Atomic _) -> v
    | Some (Mixed (sz,o)) ->
        ValsMixed.extract_value v sz o
 
@@ -129,7 +129,13 @@ module Make
    let default = Fence (RW,RW)
    let strong = default
 
-   let pp_fence f = pp_barrier_dot f
+   let upper s = match s with
+   | "" -> assert false
+   | _ ->
+       String.make 1 (Char.uppercase_ascii s.[0]) ^
+       String.sub s 1 (String.length s-1)
+
+   let pp_fence f = upper (pp_barrier_dot f)
 
    let fold_cumul_fences f k = do_fold_fence f k
    let fold_all_fences f k = fold_barrier f k

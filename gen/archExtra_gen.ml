@@ -103,4 +103,5 @@ module Make(I:I) : S with type arch_reg = I.arch_reg
     with Not_found ->
       let r,(rs,m) = alloc_reg st in
       r,(rs,StringMap.add k r m)
+
 end

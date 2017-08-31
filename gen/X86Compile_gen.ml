@@ -157,12 +157,15 @@ struct
   let stronger_fence = MFence
 
 (* Check load *)
-  let check_load p r e =
+  let do_check_load p r e =
     let lab = Label.exit p in
     fun k ->
       Instruction (emit_cmp_int_ins r e.C.v)::
       Instruction (emit_jne_ins lab)::
       k
+
+  let check_load  p r e init st = init,do_check_load p r e,st
+
 (* Postlude *)
 
   let does_jump lab cs =

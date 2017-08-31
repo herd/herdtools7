@@ -62,7 +62,8 @@ module type S = sig
 
 (* Code additions *)
   val check_load :
-      Code.proc -> A.reg -> C.event -> A.pseudo list -> A.pseudo list
+      Code.proc -> A.reg -> C.event -> A.init -> A.st ->
+        A.init * (A.pseudo list -> A.pseudo list) * A.st
 
   val postlude : A.st -> Code.proc -> A.init -> A.pseudo list ->
     A.init * A.pseudo list * A.st

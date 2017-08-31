@@ -382,12 +382,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let stronger_fence = DMB SY
 
-    let check_load p r e =
+    let do_check_load p r e =
       let lab = Label.exit p in
       (fun k ->
         Instruction (I_CMPI (r,e.v))::
         Instruction (I_BNE lab)::
         k)
+
+    let check_load  p r e init st = init,do_check_load p r e,st
+
 (* Postlude *)
 
     let does_jump lab cs =

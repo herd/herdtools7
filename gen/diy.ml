@@ -275,6 +275,9 @@ let () =
   | `MIPS ->
       let module M = Make(T(MIPSCompile_gen.Make(C)))(Co) in
       M.go
+  | `RISCV ->
+      let module M = Make(T(RISCVCompile_gen.Make(C)))(Co) in
+      M.go
   | `LISA ->
       let module BellConfig =
         struct

@@ -233,6 +233,9 @@ let () =
     | `MIPS ->
         let module M = Make(C)(T(MIPSCompile_gen.Make(C))) in
         M.zyva
+    | `RISCV ->
+        let module M = Make(C)(T(RISCVCompile_gen.Make(C))) in
+        M.zyva
     | `LISA ->
         let module BellConfig =
         struct

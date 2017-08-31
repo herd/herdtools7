@@ -38,7 +38,7 @@ module type Config = sig
   val hexa : bool
 end
 
-module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S 
+module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S
 = struct
 
 (* Config *)
@@ -119,11 +119,11 @@ module U = TopUtils.Make(O)(Comp)
         Some r,init,cs,st
     | W -> None,init,[],st
 
-    else if 
+    else if
       match e.C.atom with
       | None -> true
       | Some a ->  A.applies_atom a e.C.dir
-    then      
+    then
       Comp.emit_access st p init e
     else
       Warn.user_error "atomicity mismatch on edge %s, annotation '%s' on %s"
@@ -172,7 +172,7 @@ let get_fence n =
   match n.C.edge.E.edge with
   | E.Fenced (fe,_,_,_) ->  Some fe
   | _ -> None
-        
+
 let rec compile_stores st p i ns k = match ns with
 | [] -> i,k,st
 | n::ns ->
@@ -184,6 +184,8 @@ let rec compile_stores st p i ns k = match ns with
       let i,k,st = compile_stores st p i ns k in
       i,(c@k),st
 
+let no_check_load init st = init,Misc.identity,st
+
 let rec compile_proc chk loc_writes st p ro_prev init ns = match ns with
 | [] -> init,[],(C.EventMap.empty,[]),st
 | n::ns ->
@@ -192,14 +194,15 @@ let rec compile_proc chk loc_writes st p ro_prev init ns = match ns with
           match O.docheck,n.C.evt.C.dir,o,ns with
           | true,R,Some r,_::_ ->
               true,Comp.check_load p r n.C.evt
-          | _ -> chk,Misc.identity  in
+          | _ -> chk,no_check_load in
+        let init,mk_c,st = add_check init st in
         let init,is,finals,st =
           compile_proc nchk loc_writes
             st p (edge_to_prev_load o n)
             init ns in
         add_init_check chk p o init,
         i@
-        add_check
+        mk_c
           (match get_fence n with Some fe -> Comp.emit_fence fe::is  | _ -> is),
         (if
           StringSet.mem n.C.evt.C.loc loc_writes && not (U.do_poll n)
@@ -236,7 +239,7 @@ let rec fenced_observer st p i x = function
 
 
 let loop_observer st p i x = function
-  | []|[_] -> i,[],[]        
+  | []|[_] -> i,[],[]
   | v::vs ->
       let r,i,c,st = Comp.emit_load_not_zero st p i x in
       let rec do_loop st i prev_r = function
@@ -253,7 +256,7 @@ let loop_observer st p i x = function
 
 let rec split_last = function
   | [] -> assert false
-  | [v] -> [],v 
+  | [v] -> [],v
   | v::vs ->
       let vs,w = split_last vs in
       v::vs,w
@@ -294,7 +297,7 @@ let min_max xs =
             else x::y::remove_last rem in
       List.map IntSet.singleton (x::remove_last rem)
 
-  
+
 
   exception NoObserver
 
@@ -343,21 +346,21 @@ let min_max xs =
         build_observers p i x vss
     | vs::vss,_ ->
         let i0 = i in
-        try 
+        try
           let i,c,f = build_observer A.st0 p i x vs in
           begin match c,O.do_observers with
           | _::_,Avoid  -> Warn.fatal "Observer"
           | _,_ -> ()
           end ;
           match c with
-          | [] -> 
+          | [] ->
               let i,cs,fs = build_observers p i0 x vss in
               i,cs,f@fs
           | _ ->
               let i,cs,fs = build_observers (p+1) i x vss in
               i,c::cs,f@fs
         with NoObserver -> build_observers p i x vss
-            
+
   let rec check_rec ats p i =
     let add_look_loc loc v k =
       if not (StringSet.mem loc ats) && O.optcond then
@@ -365,7 +368,7 @@ let min_max xs =
     let open Config in
     function
       | [] -> i,[],[]
-      | (x,vs)::xvs ->          
+      | (x,vs)::xvs ->
           let i,c,f = match O.cond with
           | Observe ->
               let vs = List.flatten vs in
@@ -385,7 +388,7 @@ let min_max xs =
                   | Local -> i,[],add_look_loc x v []
                   | Avoid|Accept|Three|Four|Infinity
                     -> i,[],[A.Loc x,IntSet.singleton v]
-                  | Enforce ->  
+                  | Enforce ->
                       let i,c,f = build_observers p i x vs in
                       i,c,add_look_loc x v f
                   end
@@ -399,13 +402,13 @@ let min_max xs =
                   | _x1::_x2::_x3::_x4::_ ->
                       Warn.fatal "More than three writes"
                   | _ -> i,[],[A.Loc x,IntSet.singleton v]
-                  end 
+                  end
               |Four ->
                   begin match vs_flat with
                   | _x1::_x2::_x3::_x4::_x5::_ ->
                       Warn.fatal "More than four writes"
                   | _ -> i,[],[A.Loc x,IntSet.singleton v]
-                  end 
+                  end
               | Infinity ->
                   i,[],[A.Loc x,IntSet.singleton v]
               | _ ->
@@ -419,7 +422,7 @@ let min_max xs =
 
   let check_writes atoms p i cos = check_rec atoms p i cos
 
-  
+
 (* Local check of coherence *)
 
   let do_add_load st p i f x v =
@@ -478,19 +481,19 @@ let min_max xs =
       | Loop ->
           let i,c,f,st = do_add_loop st p i f x prev_v v in
           i,code@c,f,st
-            
+
 
   let build_detour lsts st p i n =
     let open Config in
     let i,c0,f,st = match O.do_observers with
     | Local -> begin match n.C.edge.E.edge with
-      | DetourWs (Dir W) ->          
+      | DetourWs (Dir W) ->
           do_observe_local_before st p i [] [] n.C.evt.C.loc
             n.C.prev.C.prev.C.evt.C.v n.C.prev.C.evt.C.v
-      | DetourWs (Dir R) ->          
+      | DetourWs (Dir R) ->
           do_observe_local_before st p i [] [] n.C.evt.C.loc
             n.C.prev.C.prev.C.evt.C.v n.C.prev.C.evt.C.v
-      | _ -> i,[],[],st 
+      | _ -> i,[],[],st
     end
     | _ -> i,[],[],st in
 
@@ -518,7 +521,7 @@ let min_max xs =
     Label.reset () ;
     let splitted =  C.split_procs n in
     (* Split before, as  proc numbers added by side effet.. *)
-    let cos0 = C.coherence n in    
+    let cos0 = C.coherence n in
     let lsts = U.last_map cos0 in
     let cos = U.compute_cos cos0 in
     if O.verbose > 1 then U.pp_coherence cos0 ;
@@ -536,7 +539,7 @@ let min_max xs =
           let i,c,st = compile_stores st p i n c in
           let i,c,f,st =
             match O.cond with
-            | Unicond -> i,c,f,st                
+            | Unicond -> i,c,f,st
             | Cycle|Observe ->
                 match O.do_observers with
                 | Local -> add_co_local_check lsts n st p i c f
@@ -589,7 +592,7 @@ let min_max xs =
         let f =
           match O.cond with
           | Unicond ->
-              let evts = 
+              let evts =
                 List.map
                   (List.map (fun n -> n.C.evt))
                   splitted in
@@ -703,7 +706,7 @@ let test_of_cycle name
 
   { name=name ; info=info; com=com ;  edges = es ;
     init=init ; prog=prog ; scopes = scope; final=final ; env=env; }
-    
+
 let make_test name ?com ?info ?check ?scope es =
   try
     if O.verbose > 1 then eprintf "**Test %s**\n" name ;
@@ -713,6 +716,6 @@ let make_test name ?com ?info ?check ?scope es =
   with
   | Misc.Fatal msg|Misc.UserError msg ->
       Warn.fatal "Test %s [%s] failed:\n%s" name (pp_edges es) msg
-  
+
 
 end

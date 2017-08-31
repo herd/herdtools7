@@ -481,12 +481,14 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
 
 (* Check load *)
 
-    let check_load p r e =
+    let do_check_load p r e =
       let lab = Label.exit p in
       fun k ->
         PPC.Instruction (PPC.Pcmpwi (0,r,e.v))::
         PPC.Instruction (PPC.Pbcc (PPC.Ne,lab))::
         k
+
+    let check_load  p r e init st = init,do_check_load p r e,st
 
 (* Postlude *)
 
