@@ -1,3 +1,5 @@
+7.47+2
+  * RISCV support for litmus and generators.
 7.47+1
   * Some cleanup in options while documenting klitmus.
 7.47
