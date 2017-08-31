@@ -254,7 +254,7 @@ module Top (Conf:Config) = struct
           let module P = GenParser.Make (Conf) (MIPS) (MIPSLexParse) in
           let module X = Make (MIPSS) (P) (NoCheck) (MIPSM) in
           X.run start_time name chan env splitted
-
+      | `RISCV -> Warn.fatal "herd does not handle RISCV (yet)"
       | `C ->
         let module C = CArch_herd.Make(Conf.PC)(SymbValue) in
         let module CLexParse = struct

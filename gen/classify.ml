@@ -161,6 +161,9 @@ let () =
   | `MIPS ->
       let module M = Build(MIPSArch_gen) in
       M.zyva
+  | `RISCV ->
+      let module M = Build(RISCVArch_gen.Make(RISCVArch_gen.Config)) in
+      M.zyva
   | `LISA ->
       let module BellConfig =
         struct

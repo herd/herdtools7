@@ -106,6 +106,18 @@ end = struct
         end in
         let module X = Make (MIPS) (MIPSLexParse) in
         X.zyva chan splitted
+    | `RISCV ->
+        let module RISCV = RISCVBase in
+        let module RISCVLexParse = struct
+	  type instruction = RISCV.parsedPseudo
+	  type token = RISCVParser.token
+
+          module L = RISCVLexer.Make(LexConf)
+	  let lexer = L.token
+	  let parser = MiscParser.mach2generic RISCVParser.main
+        end in
+        let module X = Make (RISCV) (RISCVLexParse) in
+        X.zyva chan splitted
     | `LISA ->
         let module Bell = BellBase in
         let module BellLexParse = struct

@@ -14,6 +14,9 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+module Config = struct
+  let naturalsize = MachSize.Word
+end
 
 module Make
  (C:sig val naturalsize : MachSize.sz end) = struct
