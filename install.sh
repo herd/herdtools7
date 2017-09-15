@@ -17,6 +17,16 @@ fi
 BINDIR=$PREFIX/bin
 LIBDIR=$PREFIX/share/herdtools7
 
+if ! [ -d $BINDIR ]
+then
+	mkdir -p $BINDIR
+fi
+
+if ! [ -d $LIBDIR ]
+then
+	mkdir -p $LIBDIR
+fi
+
 cpbin () {
   SUB=$1
   EXECS="$2"
