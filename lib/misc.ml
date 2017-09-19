@@ -163,12 +163,19 @@ let char_uppercase = function
   | 'y' -> 'Y'
   | 'z' -> 'Z'
   | c -> c
-  
+
 let lowercase s =
   let r =
     Bytes.init (String.length s)
-      (fun k -> char_lowercase (String.unsafe_get s k)) in      
+      (fun k -> char_lowercase (String.unsafe_get s k)) in
   Bytes.unsafe_to_string r
+
+
+let capitalize s = match s with
+| "" -> assert false
+| _ ->
+    String.make 1 (char_uppercase s.[0]) ^
+    String.sub s 1 (String.length s-1)
 
 (********************)
 (* Position parsing *)
@@ -178,7 +185,7 @@ let pos_of_string s =
   try
     let k = String.index s ',' in
     Some
-      (float_of_string (String.sub s 0 k),    
+      (float_of_string (String.sub s 0 k),
        float_of_string (String.sub s (k + 1) (String.length s-(k+1))))
   with _ -> None
 
@@ -251,7 +258,7 @@ let rev_filter p xs =
   let rec do_rec ys = function
     | [] -> ys
     | x::xs ->
-	do_rec (if p x then x::ys else ys) xs in
+        do_rec (if p x then x::ys else ys) xs in
   do_rec [] xs
 
 let rec map3 f xs ys zs = match xs,ys,zs with
@@ -354,7 +361,7 @@ let transpose rows = match rows with
     let cols = List.rev_map (fun _ -> []) xs in
     let cols =
       try
-	List.fold_right (List.map2 cons) rows cols
+        List.fold_right (List.map2 cons) rows cols
      with Invalid_argument _ -> raise TransposeFailure in
     cols
 
@@ -364,10 +371,10 @@ let rec iter_by_line f prog =
   let heads,prog =
     List.split
       (List.map
-	 (fun xs -> match xs with
-	 | x::xs -> Some x,xs
-	     | [] ->None,[])
-	 prog) in
+         (fun xs -> match xs with
+         | x::xs -> Some x,xs
+             | [] ->None,[])
+         prog) in
   if not (List.for_all is_none heads) then begin
     f heads ;
     iter_by_line f prog
@@ -577,8 +584,8 @@ let fold_cross_gen add start xss kont r =
   | [] -> kont ys r
   | xs::xss ->
       List.fold_left
-	(fun r x -> fold_rec r (add x ys) xss)
-	r xs in
+        (fun r x -> fold_rec r (add x ys) xss)
+        r xs in
  fold_rec r start (List.rev xss)
 
 

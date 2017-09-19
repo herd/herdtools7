@@ -91,21 +91,6 @@ let pp_annot a = match a with
         sprintf "%c%s"
           (Misc.char_uppercase fst)
           (String.sub a 1 (len-1))
-(*
-    let len = String.length a in
-    match len with
-    | 0 -> ""
-    | 1|2|3 ->
-        let fst = a.[0] in
-        sprintf "%c%s"
-          (Char.uppercase fst)
-          (String.sub a 1 (len-1))
-    | _ ->
-        let fst = a.[0] in
-        sprintf "%c%s"
-          (Char.uppercase fst)
-          (String.sub a 1 2)
-*)      
 
 (* No atoms yet *)
 let bellatom = true

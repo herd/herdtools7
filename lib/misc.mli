@@ -63,6 +63,7 @@ val pair_compare :
 
 val char_uppercase : char -> char
 val lowercase : string -> string
+val capitalize : string -> string
 
 (* Float pair (position) parsint *)
 val pos_of_string : string -> (float * float) option

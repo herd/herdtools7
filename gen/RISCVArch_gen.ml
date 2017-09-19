@@ -132,13 +132,7 @@ module Make
    let default = Fence (RW,RW)
    let strong = default
 
-   let upper s = match s with
-   | "" -> assert false
-   | _ ->
-       String.make 1 (Char.uppercase_ascii s.[0]) ^
-       String.sub s 1 (String.length s-1)
-
-   let pp_fence f = upper (pp_barrier_dot f)
+   let pp_fence f = Misc.capitalize (pp_barrier_dot f)
 
    let fold_cumul_fences f k = do_fold_fence f k
    let fold_all_fences f k = fold_barrier f k
