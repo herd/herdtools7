@@ -126,7 +126,7 @@ module U = TopUtils.Make(O)(Comp)
     then
       Comp.emit_access st p init e
     else
-      Warn.user_error "atomicity mismatch on edge %s, annotation '%s' on %s"
+      Warn.fatal "atomicity mismatch on edge %s, annotation '%s' on %s"
         (E.pp_edge n.C.edge)
         (E.pp_atom_option e.C.atom) (pp_dir e.C.dir)
 

@@ -43,13 +43,17 @@ module type S = sig
     | Store (* Insert a store at thread start *)
     | Leave of com (* Leave thread *)
     | Back  of com (* Return to thread *)
+(* Annotation fake edge *)
+    | Id
 (* fancy *)
     | Hat
     | Rmw
 
+  val is_id : tedge -> bool
+
   type edge = { edge: tedge;  a1:atom option; a2: atom option; }
   val plain_edge : tedge -> edge
-  
+
   val fold_atomo : (atom option -> 'a -> 'a) -> 'a -> 'a
   val fold_mixed : (atom option -> 'a -> 'a) -> 'a -> 'a
   val fold_atomo_list : atom list -> (atom option -> 'a -> 'a) -> 'a -> 'a
@@ -79,8 +83,8 @@ module type S = sig
   exception IsStore of string
 
 (* Get source and target event direction,
-   Returning Irr means that a Read OR a Write is acceptable *)  
-  val dir_src : edge -> extr 
+   Returning Irr means that a Read OR a Write is acceptable *)
+  val dir_src : edge -> extr
   val dir_tgt : edge -> extr
 
 (* Return edge with direction resolved *)
@@ -124,7 +128,7 @@ end
 
 module Make(F:Fence.S) : S
 with type fence = F.fence
-and type dp = F.dp 
+and type dp = F.dp
 and type atom = F.atom = struct
 
   open Code
@@ -154,11 +158,17 @@ and type atom = F.atom = struct
     | Store
     | Leave of com
     | Back of com
+    | Id
     | Hat
     | Rmw
 
- type edge = { edge: tedge;  a1:atom option; a2: atom option; }
+  let is_id = function
+    | Id -> true
+    | Store|Hat|Rmw|Rf _|Fr _|Ws _|Detour _|DetourWs _|Po (_, _, _)
+    | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _ -> false
 
+
+  type edge = { edge: tedge;  a1:atom option; a2: atom option; }
 
   open Printf
 
@@ -168,9 +178,13 @@ and type atom = F.atom = struct
     | None -> F.pp_plain
     | Some a -> F.pp_atom a
 
-  let pp_archs a1 a2 = match a1, a2 with
-  | None,None -> ""
-  | _,_ -> sprintf "%s%s" (pp_arch a1) (pp_arch a2)
+  let pp_one_or_two pp_a e a1 a2 = match e with
+  | Id -> pp_a a1
+  | _ -> sprintf "%s%s" (pp_a a1) (pp_a a2)
+
+  let pp_archs e a1 a2 = match a1, a2 with
+  | None,None  when not (is_id e) -> ""
+  | _,_ -> pp_one_or_two pp_arch e a1 a2
 
   let pp_a = function
     | None -> Code.plain
@@ -178,17 +192,17 @@ and type atom = F.atom = struct
 
   let pp_atom_option = pp_a
 
-  let pp_aa a1 a2 = match a1, a2 with
-  | None,None -> ""
-  | _,_ -> sprintf "%s%s" (pp_a a1) (pp_a a2)
+  let pp_aa e a1 a2 = match a1, a2 with
+  | None,None when not (is_id e) -> ""
+  | _,_ ->  pp_one_or_two pp_a e a1 a2
 
   let pp_a_bis = function
     | None -> "P"
     | Some a -> F.pp_atom a
 
-  let pp_aa_bis a1 a2 = match a1,a2 with
-  | None,None -> ""
-  | _,_ -> sprintf "%s%s" (pp_a_bis a1) (pp_a_bis a2)
+  let pp_aa_bis e a1 a2 = match a1,a2 with
+  | None,None  when not (is_id e) -> ""
+  | _,_ -> pp_one_or_two pp_a_bis e a1 a2
 
   let pp_a_ter = function
     | None -> F.pp_plain
@@ -196,9 +210,9 @@ and type atom = F.atom = struct
         if ao = F.pp_as_a then "A"
         else F.pp_atom a
 
-  let pp_aa_ter a1 a2 = match a1,a2 with
-  | None,None -> ""
-  | _,_ -> sprintf "%s%s" (pp_a_ter a1) (pp_a_ter a2)
+  let pp_aa_ter e a1 a2 = match a1,a2 with
+  | None,None  when not (is_id e) -> ""
+  | _,_ -> pp_one_or_two pp_a_ter e a1 a2
 
   let pp_a_qua = function
     | None -> "P"
@@ -206,9 +220,9 @@ and type atom = F.atom = struct
         if ao = F.pp_as_a then "A"
         else F.pp_atom a
 
-  let pp_aa_qua a1 a2 = match a1,a2 with
-  | None,None -> ""
-  | _,_ -> sprintf "%s%s" (pp_a_qua a1) (pp_a_qua a2)
+  let pp_aa_qua e a1 a2 = match a1,a2 with
+  | None,None  when not (is_id e) -> ""
+  | _,_ -> pp_one_or_two pp_a_qua e a1 a2
 
   let pp_tedge = function
     | Rf ie -> sprintf "Rf%s" (pp_ie ie)
@@ -217,7 +231,7 @@ and type atom = F.atom = struct
     | Detour d -> sprintf "Detour%s" (pp_extr d)
     | DetourWs d -> sprintf "Detour%sW" (pp_extr d)
     | Po (sd,e1,e2) -> sprintf "Po%s%s%s" (pp_sd sd) (pp_extr e1) (pp_extr e2)
-    | Fenced (f,sd,e1,e2) -> 
+    | Fenced (f,sd,e1,e2) ->
         sprintf "%s%s%s%s" (F.pp_fence f) (pp_sd sd) (pp_extr e1) (pp_extr e2)
     | Dp (dp,sd,e) -> sprintf "Dp%s%s%s"
           (F.pp_dp dp) (pp_sd sd) (pp_extr e)
@@ -226,13 +240,16 @@ and type atom = F.atom = struct
     | Store -> "Store"
     | Leave c -> sprintf "%sLeave" (pp_com c)
     | Back c -> sprintf "%sBack" (pp_com c)
+    | Id -> "Id"
 
-  let do_pp_edge pp_aa e = pp_tedge e.edge ^ pp_aa e.a1 e.a2
+  let do_pp_edge pp_aa e =
+    (match e.edge with Id -> "" | _ -> pp_tedge e.edge) ^
+    pp_aa e.edge e.a1 e.a2
 
   let pp_edge e = do_pp_edge pp_archs e
 
   let pp_edge_with_xx e = do_pp_edge pp_aa e
-      
+
   let pp_edge_with_p e = do_pp_edge pp_aa_bis e
 
   let pp_edge_with_a e = do_pp_edge pp_aa_ter e
@@ -270,12 +287,17 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
    | CRf|CWs -> Dir W
    | CFr -> Dir R
 
+  exception NotThat of string
+
+  let not_that s = raise (NotThat s)
+
   let do_dir_tgt e = match e with
   | Po(_,_,e)| Fenced(_,_,_,e)|Dp (_,_,e) -> e
   | Rf _| Hat | Detour _ -> Dir R
   | Ws _|Fr _|Rmw|DetourWs _ -> Dir W
   | Store -> Dir W
   | Leave c|Back c -> do_dir_tgt_com c
+  | Id -> not_that "do_dir_tgt"
 
   and do_dir_src e = match e with
   | Po(_,e,_)| Fenced(_,_,e,_) | Detour e | DetourWs e -> e
@@ -283,7 +305,7 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
   | Ws _|Rf _ -> Dir W
   | Store -> Dir W
   | Leave c|Back c -> do_dir_src_com c
-
+  | Id -> not_that "do_dir_src"
 
 
 let fold_tedges f r =
@@ -305,6 +327,7 @@ let fold_tedges f r =
   let r =
     F.fold_dpw
       (fun dp -> fold_sd (fun sd -> f (Dp (dp,sd,Dir W)))) r in
+  let r = f Id r in
   let r = f Hat r in
   let r = f Store r in
   let r = fold_com (fun c r -> f (Leave c) r) r in
@@ -336,6 +359,15 @@ let fold_tedges f r =
                      if F.applies_atom_rmw a1 a2 then
                        f {a1; a2; edge=te;} k
                      else k
+                 | Id -> begin
+                     match a1,a2 with
+                     | Some x1,Some x2 when  F.compare_atom x1 x2=0 ->
+                         f { a1; a2;edge=te; } k
+                     | None,None ->
+                         let e =  { a1; a2;edge=te; } in
+                         f e k
+                     | _,_ -> k
+                 end
                  | _ ->
                      f {a1; a2; edge=te;} k))))
 
@@ -437,7 +469,7 @@ let iter_atom f= F.fold_atom (fun a () -> f a) ()
     | None -> ()
     | Some dp ->
         add_lxm
-          (pp_dp_default tag sd e) 
+          (pp_dp_default tag sd e)
           (plain_edge (Dp (dp,sd,e))) in
     fold_sd
       (fun sd () ->
@@ -469,7 +501,7 @@ let iter_atom f= F.fold_atom (fun a () -> f a) ()
     try List.assoc s fences_pp
     with Not_found -> Warn.fatal "%s is not a fence" s
 
-  let parse_edge s = 
+  let parse_edge s =
     try Hashtbl.find t s
     with Not_found -> Warn.fatal "Bad edge: %s" s
 
@@ -482,9 +514,9 @@ let iter_atom f= F.fold_atom (fun a () -> f a) ()
 let do_set_tgt d e = match e  with
   | Po(sd,src,_) -> Po (sd,src,Dir d)
   | Fenced(f,sd,src,_) -> Fenced(f,sd,src,Dir d)
-  | Dp (dp,sd,_) -> Dp (dp,sd,Dir d) 
+  | Dp (dp,sd,_) -> Dp (dp,sd,Dir d)
   | Rf _ | Hat
-  | Ws _|Fr _|Rmw|Detour _|DetourWs _|Store|Leave _|Back _-> e
+  | Id|Ws _|Fr _|Rmw|Detour _|DetourWs _|Store|Leave _|Back _-> e
 
 and do_set_src d e = match e with
   | Po(sd,_,tgt) -> Po(sd,Dir d,tgt)
@@ -492,7 +524,7 @@ and do_set_src d e = match e with
   | Detour _ -> Detour (Dir d)
   | DetourWs _ -> DetourWs (Dir d)
   | Fr _|Hat|Dp _
-  | Ws _|Rf _|Rmw|Store|Leave _|Back _ -> e
+  | Id|Ws _|Rf _|Rmw|Store|Leave _|Back _ -> e
 
 let set_tgt d e = { e with edge = do_set_tgt d e.edge ; }
 and set_src d e = { e with edge = do_set_src d e.edge ; }
@@ -500,14 +532,15 @@ and set_src d e = { e with edge = do_set_src d e.edge ; }
   let loc_sd e = match e.edge with
   | Fr _|Ws _|Rf _|Hat|Rmw|Detour _|DetourWs _ -> Same
   | Po (sd,_,_) | Fenced (_,sd,_,_) | Dp (_,sd,_) -> sd
-  | Store -> Same
+  | Store|Id -> Same
   | Leave _|Back _ -> Same
 
   let get_ie e = match e.edge with
   | Po _|Dp _|Fenced _|Rmw|Detour _|DetourWs _ -> Int
   | Rf ie|Fr ie|Ws ie -> ie
-  | Store -> Int
+  | Store|Id -> Int
   | Leave _|Back _|Hat -> Ext
+
 
   type full_ie = IE of ie | LeaveBack
 
@@ -517,7 +550,9 @@ and set_src d e = { e with edge = do_set_src d e.edge ; }
 
 
   let can_precede_dirs  x y = match x.edge,y.edge with
+  | (Id,Id) | (Store,Id) | (Id,Store)
   | (Store,Store) -> false
+  | (Id,_)|(_,Id) -> true
   | (Store,_) -> get_ie y = Int
   | (_,Store) -> true
   | _,_ ->
@@ -547,19 +582,19 @@ and set_src d e = { e with edge = do_set_src d e.edge ; }
   let expand_dir d f = match d with
   | Dir _ -> f d
   | Irr -> fun k -> f (Dir W) (f (Dir R) k)
-        
-  let expand_dir2 e1 e2 f = 
+
+  let expand_dir2 e1 e2 f =
     expand_dir e1
       (fun d1 -> expand_dir e2 (fun d2 -> f d1 d2))
 
   let do_expand_edge e f =
     match e.edge with
-    | Rf _ | Fr _ | Ws _ | Hat |Rmw|Dp _|Store|Leave _|Back _
+    | Id|Rf _ | Fr _ | Ws _ | Hat |Rmw|Dp _|Store|Leave _|Back _
       -> f e
     | Detour d ->
         expand_dir d (fun d -> f { e with edge=Detour d;})
     | DetourWs d ->
-        expand_dir d (fun d -> f { e with edge=DetourWs d;})    
+        expand_dir d (fun d -> f { e with edge=DetourWs d;})
     | Po(sd,e1,e2) ->
         expand_dir2 e1 e2 (fun d1 d2 -> f {e with edge=Po(sd,d1,d2);})
     | Fenced(fe,sd,e1,e2) ->
@@ -585,11 +620,13 @@ and set_src d e = { e with edge = do_set_src d e.edge ; }
 (* resolve *)
   let resolve_pair e1 e2 =
     let e1,e2 =
-      let d1 = dir_tgt e1 and d2 = dir_src e2 in
-      match d1,d2 with
-      | Irr,Dir d -> set_tgt d e1,e2
-      | Dir d,Irr -> e1,set_src d e2
-      | _,_ -> e1,e2 in
+      try
+        let d1 = dir_tgt e1 and d2 = dir_src e2 in
+        match d1,d2 with
+        | Irr,Dir d -> set_tgt d e1,e2
+        | Dir d,Irr -> e1,set_src d e2
+        | _,_ -> e1,e2
+      with NotThat _ -> e1,e2 in
     let a1 = e1.a2 and a2 = e2.a1 in
     match a1,a2 with
     | None,Some _ -> { e1 with a2 = a2;},e2
@@ -607,18 +644,22 @@ and set_src d e = { e with edge = do_set_src d e.edge ; }
   | None,None -> None
   | Some a1,Some a2 -> assert (F.compare_atom a1 a2 = 0) ; Some a1
 
-  let merge_pair e1 e2 =
+  let merge_pair e1 e2 = match e1,e2 with
+  | {edge=Id;},{edge=Id;} -> e1
+  | _,_ ->
     let tgt = merge_dir (dir_tgt e1) (dir_tgt e2)
     and src = merge_dir (dir_src e1) (dir_src e2) in
     let e = set_tgt tgt (set_src src e1) in
     { e with a1 = merge_atom e1.a1 e2.a1; a2 = merge_atom e1.a2 e2.a2; }
 
-      
+  let remove_id =
+    List.filter (fun e -> not (is_id e.edge))
+
   let resolve_edges es = match es with
   | []|[_] -> es
   | fst::es ->
       let rec do_rec p = function
-        | [] -> 
+        | [] ->
             let p,fst = resolve_pair p fst in
             fst,p,[]
         | e::es ->
@@ -627,7 +668,7 @@ and set_src d e = { e with edge = do_set_src d e.edge ; }
             fst,p,q::es in
       let fst1,fst2,es = do_rec fst es in
       let fst = merge_pair fst1 fst2 in
-      fst::es
+      remove_id (fst::es)
 
 (* Atomic variation *)
 (* Apply atomic variation to nodes with no atomicity (ie a = None)
@@ -642,7 +683,7 @@ and set_src d e = { e with edge = do_set_src d e.edge ; }
       F.var_fence
         (fun fe r -> f {e with edge = Fenced (fe,sd,ex1,ex2)} r) r
   | _ -> f e r
-            
+
 
   let varatom es f r =
     let rec var_rec ves es r = match es with
@@ -698,7 +739,7 @@ and set_src d e = { e with edge = do_set_src d e.edge ; }
   let fst_fence xs ys e1 e2 k = match e1.edge with
   | Fenced (f,_,_,_) ->
       let ne = plain_edge (Fenced (f, seq_sd e1 e2,dir_src e1,dir_tgt e2)) in
-      [ne]::set_last xs ne::set_fst ne ys::k      
+      [ne]::set_last xs ne::set_fst ne ys::k
   | _ -> k
 
 
@@ -712,11 +753,11 @@ and set_src d e = { e with edge = do_set_src d e.edge ; }
     [plain_edge (Po (seq_sd e1 e2,dir_src e1,dir_tgt e2))]::k
 
   let com e1 e2 k = match e1.edge,e2.edge with
-  | Ws _,Ws _ 
+  | Ws _,Ws _
   | Fr _,Ws _ -> [e1]::k
   | Rf _,Fr _ -> [plain_edge (Ws Int)]::k
   | _,_ -> k
-        
+
   let compact_sequence xs ys e1 e2 =
     let k = com e1 e2 [] in
     let k = po e1 e2 k in

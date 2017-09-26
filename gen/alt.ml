@@ -18,7 +18,7 @@ open Printf
 open Code
 
 
-module type AltConfig = sig 
+module type AltConfig = sig
   include DumpAll.Config
   val upto : bool
   val max_ins : int
@@ -69,7 +69,7 @@ module Make(C:Builder.S)
  *)
 (* Assuming Dp is safe *)
     | Rf Int,Dp _| Dp _,Rf Int -> true
-    | Dp _,Ws Int | Dp _,Fr Int ->        
+    | Dp _,Ws Int | Dp _,Fr Int ->
         not (po_safe (dir_src e1) (dir_tgt e2))
     | Po _, Dp _ ->
         not (po_safe (dir_src e1) (dir_tgt e1)) &&
@@ -94,7 +94,7 @@ module Make(C:Builder.S)
         not (fence_safe (dir_src e1) (dir_tgt e2))
 (* Allow Rmw *)
     | (Rmw,_)|(_,Rmw) -> true
-(* Added *) 
+(* Added *)
     | _,_ ->
         match get_ie e1, get_ie e2 with
         | Int,Int -> false
@@ -102,9 +102,9 @@ module Make(C:Builder.S)
 (*      eprintf "Choice: %s %s -> %b\n" (C.E.pp_edge e1) (C.E.pp_edge e2) r ; *)
       r
 
-(* Check altenance of com/po *)              
+(* Check altenance of com/po *)
     let choice_critical e1 e2 =
-      let r = 
+      let r =
         match e1.edge,e2.edge with
 (* Two cases of allowed com composition *)
         | (Ws _|Leave CWs|Back CWs|Fr _|Leave CFr|Back CFr),
@@ -180,7 +180,7 @@ module Make(C:Builder.S)
             (C.E.pp_edge e1) (C.E.pp_edge e2)
             (String.concat ","
                (List.map (fun es -> C.R.pp_relax (C.R.ERS es)) cs)) ;
-          let r = 
+          let r =
             not
               (List.exists
                  (fun es -> C.R.Set.mem (C.R.ERS es) safes)
@@ -206,12 +206,14 @@ module Make(C:Builder.S)
         (fun safes _po_safe -> choice_transitive safes)
 
 
+    let compat_id ao d = match ao,d with
+    | (None,_)|(_,Irr) -> true
+    | Some a,(Dir d) -> C.A.applies_atom a d
 
     let pair_ok safes po_safe xs ys e1 e2 = match e1.edge,e2.edge with
 (*
   First reject some of hb' ; hb'
  *)
-
     | Hat,Hat   (* Hat *)
 (* Ext Ext Only? *)
     | Ws _,Ws _ (* -> Ws *)
@@ -221,6 +223,9 @@ module Make(C:Builder.S)
       values are observed by outcome itself,
       also useful to add Fre after B-cumulativity *)
       ->  C.E.get_ie e1 <> C.E.get_ie e2 (* Allow alternance *)
+    | Id,Id -> false
+    | Id,_ -> compat_id e1.a2 (dir_src e2)
+    | _,Id -> compat_id e2.a1 (dir_tgt e1)
 (* Fence cumulativity *)
     | Rf _,Fenced (f,_,_,_)
     | Fenced (f,_,_,_),Rf _ ->
@@ -243,11 +248,14 @@ module Make(C:Builder.S)
                (fun e k -> pp_edge e::k)
                es)
            ess [])
-    let edges_ofs rs = 
+
+    let edges_ofs rs =
       List.map (fun r -> (r, edges_of r)) rs
 
 (* Functional for recursive call of generators *)
-    let sz _r = 1
+
+    let sz (_,es) = if List.for_all (fun e -> is_id e.edge) es then 0 else 1
+
 
     let rec c_minprocs_es c = function
       | [] -> c
@@ -263,7 +271,7 @@ module Make(C:Builder.S)
     let rec c_minprocs_suff c = function
       | [] -> c
       | (_,es)::suff -> c_minprocs_suff (c_minprocs_es c es) suff
-            
+
     let minprocs suff =
       let r = c_minprocs_suff 0 suff in
       if O.verbose > 3 then eprintf "MIN [%s] => %i\n" (pp_ess suff) r ;
@@ -272,11 +280,12 @@ module Make(C:Builder.S)
 
     let rec c_minint_es c = function
       | [] -> false,c
+      | {edge=Id}::es ->  c_minint_es c es
       | e::es ->
           match get_ie e with
           | Ext -> true,c
           | Int -> c_minint_es (c+1) es
-                
+
     let rec c_minint c = function
       | [] -> c
       | (_,es)::suff ->
@@ -313,7 +322,7 @@ module Make(C:Builder.S)
       then
         let suff = r::suff
         and n = n-sz r in
-        if O.verbose > 2 then eprintf "CALL: %i %s\n%!" n (pp_ess suff) ;  
+        if O.verbose > 2 then eprintf "CALL: %i %s\n%!" n (pp_ess suff) ;
         let k =
           if
             over &&
@@ -369,7 +378,7 @@ module Make(C:Builder.S)
 
           let call_rec = call_rec prefix (f [fst r0]) aset po_safe  in
 
-(* Add a safe edge to suffix *)        
+(* Add a safe edge to suffix *)
           let rec add_safe over ss n suf k =
             match ss with
             | [] -> k
@@ -378,7 +387,7 @@ module Make(C:Builder.S)
                 add_safe over ss n suf k
 
 (* Add some relax edges r0 to suffix, or nothing *)
-          and add_relaxs over n suf k = 
+          and add_relaxs over n suf k =
             let k = call_rec true n r0 suf (add_relaxs true) k in
             add_safe over safe n suf k in
 
@@ -405,8 +414,8 @@ module Make(C:Builder.S)
               if List.length rs > !Config.max_relax then k
               else f rs po_safe suff k)
             aset po_safe in
-        
-(* Add a one edge to suffix *)        
+
+(* Add a one edge to suffix *)
         let rec add_one over rs ss n suf k = match rs,ss with
         | [],[] -> k
         | [],s::ss ->
@@ -415,7 +424,7 @@ module Make(C:Builder.S)
         | r::rs,_ ->
             let k = call_rec true n r suf (add_one true relax safe) k in
             add_one over rs ss n suf k in
-            
+
 
 (* Force first edge to be a relaxed one *)
         let rec add_first rs k = match rs with
@@ -429,8 +438,8 @@ module Make(C:Builder.S)
             add_first relax k
         | _::_ ->
             add_one false relax safe n [] k in
-            
-(* New relax that does not enforce the first edge to be a relax *)      
+
+(* New relax that does not enforce the first edge to be a relax *)
 
 (* As a safety check, generate cycles with no relaxation *)
       let call_rec = call_rec prefix (f []) aset po_safe in
@@ -459,7 +468,7 @@ module Make(C:Builder.S)
       | e::es -> count_e (if is_int e then ce else ce+1) es
 
 
-    let count_ext es = count_e 0 es 
+    let count_ext es = count_e 0 es
 
     let change_loc e = match loc_sd e with
     | Same -> false
@@ -555,8 +564,8 @@ module Make(C:Builder.S)
     let fold_dir f k = f Irr k (* expand later ! *)
     let fold_dir2 f = fold_dir (fun i1 k -> fold_dir (f i1) k)
     let fold_sd f k = f (Same) (f Diff k)
-    let fold_sd_dir2 f = 
-      fold_sd 
+    let fold_sd_dir2 f =
+      fold_sd
         (fun sd -> fold_dir2 (fun d1 d2 -> f sd d1 d2))
     let fold_all_fences f =
       fold_sd_dir2 (fun sd d1 d2 -> C.A.fold_all_fences (fun fe -> f fe sd d1 d2))
@@ -587,7 +596,7 @@ module Make(C:Builder.S)
       let k = fold_cum (fun fe sd d1 d2 k -> bc_fence fe sd d1 d2::k) k in
       let k = er (Hat)::k in
       k
-        
+
     let gen ?(relax=relax) ?(safe=safe) n =
       try secret_gen relax safe n
       with e ->

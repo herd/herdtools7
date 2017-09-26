@@ -520,7 +520,7 @@ let set_same_loc st n0 =
             | E.Fr _|E.Rf _|E.Ws _|E.Leave _|E.Back _
             | E.Hat|E.Rmw|E.Detour _|E.DetourWs _ -> true
             | E.Po _|E.Dp _|E.Fenced _ -> false
-            | E.Store -> assert false) n in
+            | E.Store|E.Id -> assert false) n in
         split_one_loc m
       with Exit -> Warn.fatal "Cannot set write values" in
     set_all_write_val nss ;
