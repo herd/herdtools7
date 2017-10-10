@@ -1221,17 +1221,22 @@ let one_init = match PC.graph with
     if true then begin
       List.iter
         (fun (label,vbs) ->
-          E.EventRel.pp chan ""
-            (fun chan (e,e') ->
-              do_pp_edge chan (pp_node_eiid e) (pp_node_eiid e') label
+(*          eprintf "Drawing edge %s\n" label; *)
+          match label with
+          | "rf" -> ()
+          | _ ->
+              E.EventRel.pp chan ""
+                (fun chan (e,e') ->
+                  do_pp_edge chan (pp_node_eiid e) (pp_node_eiid e') label
 (* Overides default color... *)                
-                (fun s -> { s with color="brown" ; })
+                    (fun s -> { s with color="brown" ; })
 (* Overides any style given *)
-                (if (try "mo" = String.sub label 0 2 with Invalid_argument _ -> false) && E.is_mem_store e && E.is_mem_store e' then "" (*"penwidth=10.0"*) else "")
+                    (if (try "mo" = String.sub label 0 2 with Invalid_argument _ -> false) && E.is_mem_store e && E.is_mem_store e' then "" (*"penwidth=10.0"*) else "")
 (* Extra attributes, overrides nothing *)
-	        ""
-                (last_thread e e' || is_up e e' || is_back e e') (is_even e e'))
-            vbs)
+	            ""
+                    (last_thread e e' || is_up e e' || is_back e e')
+                    (is_even e e'))
+                vbs)
         vbss
     end ;
     dump_pairs chan ;

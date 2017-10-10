@@ -1,3 +1,4 @@
+  * Correct double labelling of rf edges: -doshow rf is now a no-operation
 7.47+2
   * RISCV support for litmus and generators.
 7.47+1
