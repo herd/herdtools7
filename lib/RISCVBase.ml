@@ -18,7 +18,7 @@ open Printf
 
 let arch = Archs.riscv
 
- 
+
 (*************)
 (* Registers *)
 (*************)
@@ -32,10 +32,11 @@ type gpr =
   | X20 | X21 | X22 | X23
   | X24 | X25 | X26 | X27
   | X28 | X29 | X30 | X31
-      
+
 type reg =
   | Ireg of gpr
   | Symbolic_reg of string
+  | RESADDR
 
 let gprs =
 [
@@ -71,7 +72,7 @@ module RMap =
       type t = gpr
       let compare = Pervasives.compare
     end)
-    
+
 let pp_map =
   List.fold_right
     (fun (r,pps) k -> match pps with
@@ -87,7 +88,7 @@ let parse_map =
         (fun pp k -> StringMap.add pp r k)
         pp k)
     pp_xregs  StringMap.empty
-    
+
 
 let parse_reg s =
   try Some (StringMap.find s parse_map)
@@ -95,6 +96,7 @@ let parse_reg s =
 
 let pp_reg  r = match r with
 | Symbolic_reg r -> "%" ^ r
+| RESADDR -> "res"
 | Ireg r ->
     try RMap.find r pp_map
     with Not_found -> assert false
@@ -125,7 +127,7 @@ let pp_access = function
 
 type barrier =
   | Fence of access * access
-  | FenceI 
+  | FenceI
 
 let do_fold_fence f k =
   let k =
@@ -141,19 +143,19 @@ let fold_barrier f k =
   let k = f FenceI k in
   let k = do_fold_fence f k in
   k
-  
+
 let do_pp_barrier sep1 sep2 = function
   | FenceI -> "fence.i"
   | Fence (a1,a2) ->
       sprintf "fence%s%s%s%s"
         sep1 (pp_access a1) sep2 (pp_access a2)
-        
+
 let pp_barrier f = do_pp_barrier " " ","     f
 let pp_barrier_dot f = do_pp_barrier "." "."     f
-    
+
 let barrier_compare = Pervasives.compare
 
-    
+
 (****************)
 (* Instructions *)
 (****************)
@@ -171,7 +173,7 @@ let pp_opi = function
   | SLLI -> "slli"
   | SRLI -> "srli"
   | SRAI -> "srai"
-        
+
 
 type opiw = ADDIW | SLLIW | SRLIW | SRAIW
 
@@ -180,7 +182,7 @@ let pp_opiw = function
   | SLLIW -> "slliw"
   | SRLIW -> "srliw"
   | SRAIW -> "sraiw"
-        
+
 
 type op =   ADD  | SLT | SLTU | AND | OR | XOR | SLL | SRL | SUB | SRA
 
@@ -205,8 +207,8 @@ let pp_opw = function
 | SRLW -> "srlw"
 | SUBW -> "subw"
 | SRAW -> "sraw"
-      
-  
+
+
 type cond = EQ | NE | LT | LTU | GE | GEU
 
 let pp_bcc = function
@@ -216,7 +218,7 @@ let pp_bcc = function
   | LTU -> "bltu"
   | GE -> "bge"
   | GEU -> "bgeu"
-        
+
 type width = Byte | Half | Word | Double
 
 let pp_width = function
@@ -224,7 +226,7 @@ let pp_width = function
   | Half -> "h"
   | Word -> "w"
   | Double -> "d"
-        
+
 type signed = Signed | Unsigned
 
 let pp_signed = function
@@ -245,7 +247,7 @@ let pp_store w mo = sprintf "s%s%s" (pp_width w) (pp_mo mo)
 
 let pp_lr w mo = sprintf "lr.%s%s" (pp_width w) (pp_mo mo)
 let pp_sc w mo = sprintf "sc.%s%s" (pp_width w) (pp_mo mo)
-    
+
 type 'k kinstruction =
   | OpI of opi * reg * reg * 'k
   | OpIW of opiw * reg * reg * 'k
@@ -260,12 +262,12 @@ type 'k kinstruction =
   | FenceIns of  barrier
 
 type instruction = int kinstruction
-type parsedInstruction = MetaConst.k kinstruction   
+type parsedInstruction = MetaConst.k kinstruction
 
 let pp_label lbl = lbl
-    
+
 let pp_k _m v = sprintf "%i" v
-      
+
 type 'k basic_pp = { pp_k : 'k -> string; }
 
 let do_pp_instruction m = function
@@ -299,7 +301,7 @@ let do_pp_instruction m = function
      sprintf "%s %s,%s,0(%s)"
         (pp_sc w mo) (pp_reg r1) (pp_reg r2) (pp_reg r3)
   | FenceIns f -> pp_barrier f
-      
+
 let pp_instruction m =
   do_pp_instruction
     {pp_k = pp_k m}
@@ -325,9 +327,9 @@ let allowed_for_symb =
 let fold_regs (f_reg,f_sreg) =
 
   let fold_reg reg (y_reg,y_sreg) = match reg with
-  | Ireg _  -> f_reg reg y_reg,y_sreg
+  | Ireg _|RESADDR  -> f_reg reg y_reg,y_sreg
   | Symbolic_reg reg   -> y_reg,f_sreg reg y_sreg in
-  
+
   fun c ins -> match ins with
   | J _ | FenceIns _ -> c
   | OpI (_,r1,r2,_) | OpIW (_,r1,r2,_)
@@ -344,7 +346,7 @@ let fold_regs (f_reg,f_sreg) =
 let map_regs f_reg f_symb =
 
   let map_reg reg = match reg with
-  | Ireg _ -> f_reg reg
+  | Ireg _|RESADDR -> f_reg reg
   | Symbolic_reg reg -> f_symb reg in
 
   function ins -> match ins with
@@ -391,7 +393,7 @@ include Pseudo.Make
       type reg_arg = reg
 
       let k_tr = MetaConst.as_int
-          
+
       let parsed_tr i = match i with
       | OpI (op,r1,r2,k) -> OpI (op,r1,r2,k_tr k)
       | OpIW (op,r1,r2,k) -> OpIW (op,r1,r2,k_tr k)

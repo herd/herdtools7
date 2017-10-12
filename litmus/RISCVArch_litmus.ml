@@ -11,7 +11,7 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
     end
 
   let reg_to_string r = match r with
-  | Symbolic_reg _ -> assert false
+  | Symbolic_reg _|RESADDR -> assert false
   | Ireg _ -> pp_reg r
       
 

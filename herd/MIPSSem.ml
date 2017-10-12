@@ -61,9 +61,6 @@ module Make (C:Sem.Config)(V:Value.S)
     let read_mem_atomic a ii = 
       M.read_loc false (mk_read true) (A.Location_global a) ii
 		 
-    let write_loc loc v ii = 
-      M.mk_singleton_es (Act.Access (Dir.W, loc, v, false)) ii
-
     let write_reg r v ii = match r with
     | MIPS.IReg MIPS.R0 -> M.unitT ()
     | _ ->

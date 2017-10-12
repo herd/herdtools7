@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2013-present Institut National de Recherche en Informatique et *)
+(* Copyright 2017-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,17 +14,15 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Entry to models for PPC  *)
+(** Entry to models for MIPS  *)
 
 module type Config = sig
   val model : Model.t
   include Model.Config
 end
-
 module Make
     (O:Config)
     (S:Sem.Semantics)
-    (B:PPCBarrier.S with type a = S.barrier)
  :
     XXXMem.S with module S = S
     =
@@ -39,7 +37,7 @@ module Make
 
     let check_event_structure test = match O.model with
     | Minimal uni ->
-        let module X = 
+        let module X =
           Minimal.Make
             (struct
               let uniproc = uni
@@ -47,16 +45,6 @@ module Make
             end)
             (S) in
         X.check_event_structure test
-    | CAV12 opt ->
-        let module X = 
-          CAV12.Make
-            (struct
-              let opt = opt
-              include ModelConfig
-            end)
-            (S)
-            (AllBarrier.FromPPC(B)) in
-        X.check_event_structure test        
     | Generic m ->
         let module X =
           MachModelChecker.Make
@@ -66,5 +54,6 @@ module Make
               include ModelConfig
              end)(S) in
         X.check_event_structure test
+    | CAV12 _ -> Warn.user_error "No CAV12 model for RISCV"
     | File _ -> assert false
   end
