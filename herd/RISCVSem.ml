@@ -172,8 +172,8 @@ module Make (C:Sem.Config)(V:Value.S)
             (fun ((resa,v),ea) ->
                 write_reg RISCV.RESADDR V.zero ii >>| (* Cancel reservation... *)
                 M.altT
-                  (write_reg r1 V.zero ii) (* Failure *)
-                  ((write_reg r1 V.one ii >>| write_mem_atomic mo ea v resa ii) >>! ()))
+                  (write_reg r1 V.one ii) (* Failure *)
+                  ((write_reg r1 V.zero ii >>| write_mem_atomic mo ea v resa ii) >>! ()))
               >>! B.Next
         | RISCV.FenceIns b ->
             create_barrier b ii >>! B.Next
