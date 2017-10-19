@@ -39,7 +39,7 @@ module type S = sig
 
   val dump_legend :
       out_channel ->S.test -> string ->
-	S.concrete -> S.rel_pp -> unit
+        S.concrete -> S.rel_pp -> unit
 
 (* Simpler function, just to dump event structures with and without rfmaps *)
   val dump_es :
@@ -58,7 +58,7 @@ module type S = sig
 end
 
 module Make (S:SemExtra.S) : S with module S = S  = struct
-  
+
   module S = S
   module A = S.A
   module E = S.E
@@ -66,9 +66,9 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
 
 (* One init *)
 
-let one_init = match PC.graph with
-| Graph.Columns -> PC.oneinit
-| Graph.Free|Graph.Cluster -> false
+  let one_init = match PC.graph with
+  | Graph.Columns -> PC.oneinit
+  | Graph.Free|Graph.Cluster -> false
 
 (* Attempt *)
 
@@ -81,8 +81,8 @@ let one_init = match PC.graph with
         not
           (E.EventSet.is_empty (preds r2 e1)))
       r1
-      
-      
+
+
   open PrettyConf
   open PPMode
 
@@ -110,7 +110,7 @@ let one_init = match PC.graph with
       | '_' -> Buffer.add_char buff '\\'
       | _ -> ()
       end ;
-      Buffer.add_char buff c 
+      Buffer.add_char buff c
     done ;
     Buffer.contents buff
 
@@ -122,7 +122,7 @@ let one_init = match PC.graph with
       | '\\' -> Buffer.add_char buff '\\'
       | _ -> ()
       end ;
-      Buffer.add_char buff c 
+      Buffer.add_char buff c
     done ;
     Buffer.contents buff
 
@@ -175,10 +175,10 @@ let one_init = match PC.graph with
   let pp_instruction dm m chan iiid = match iiid with
   | None -> fprintf chan "Init"
   | Some iiid ->
-      let instruction = iiid.A.inst in 
+      let instruction = iiid.A.inst in
       fprintf chan "%s" (a_pp_instruction dm m instruction)
 
-  let extra_thick = "setlinewidth(3)" 
+  let extra_thick = "setlinewidth(3)"
 
 (* Scales that depend upon font size *)
   let pt2inch f = f /. 72.0
@@ -198,7 +198,7 @@ let one_init = match PC.graph with
 (*
   let condensednode =
   sprintf "[fixedsize=\"true\"][width=\"%f\"][height=\"%f\"]"
-  (fscale *.0.4) (fscale *. 0.1) 
+  (fscale *.0.4) (fscale *. 0.1)
  *)
 
   let pp_po_edge = PC.showpo
@@ -206,13 +206,13 @@ let one_init = match PC.graph with
   let do_pp_fontsize sep chan = match PC.fontsize with
   | None -> ()
   | Some f -> fprintf chan "%c fontsize=%i" sep f
-        
+
   let pp_fontsize = do_pp_fontsize ','
 
   let do_pp_fontsize_edge sep chan = match PC.fontsize with
   | None -> ()
   | Some f -> fprintf chan "%c fontsize=%i" sep (f+PC.edgedelta)
-        
+
   let pp_fontsize_edge = do_pp_fontsize_edge ','
 
   let pp_penwidth chan = match PC.penwidth with
@@ -261,8 +261,8 @@ let one_init = match PC.graph with
       merge_labels2 "ctrlisb" "ctrlisync"  "ctrlisb/isync";
       ()
     end ;
-(* Colors *)    
-    add_ea "rf" 
+(* Colors *)
+    add_ea "rf"
       {color="red" ; style = "" ; }
       {color="black" ; style="" ; } ;
     add_eas ["vo:" ; "seq"; ]
@@ -285,13 +285,13 @@ let one_init = match PC.graph with
       {color="black" ; style =""; };
     add_eas
       [ "lwfence"; "lwf"; "ffence"; "ff";
-        "implied"; "mfence"; "dmb"; "lwsync"; "eieio" ; "sync" ; "dmb-cumul" ; "dsb"; 
+        "implied"; "mfence"; "dmb"; "lwsync"; "eieio" ; "sync" ; "dmb-cumul" ; "dsb";
         "dmb.st"; "dsb.st" ;
         "dmb.ld"; "dsb.ld" ;
         "dmb.sy"; "dsb.sy";
         "dmbst"; "dsbst" ;
         "dsb-cumul"; "sync-cumul"; "lwsync-cumul";
-	"sync_cumul" ; "lwsync_cumul" ;
+        "sync_cumul" ; "lwsync_cumul" ;
         "syncext";"lwsyncext";"dmbext";"dsbext";]
       {color="darkgreen"; style="";  }
       {color="black"; style="" ;  } ;
@@ -329,17 +329,17 @@ let one_init = match PC.graph with
       let key =
         try let idx = String.index lbl ':' in
         String.sub lbl 0 (idx+1)
-        with Not_found -> lbl in    
-      try Hashtbl.find ea_t key  
+        with Not_found -> lbl in
+      try Hashtbl.find ea_t key
       with Not_found -> def_color def_ea ,def_ea in
     if PC.mono then mono else col
-      
+
 
 
   let pp_attr chan attr value = match value  with
   | "" -> ()
   | _  -> fprintf chan ", %s=\"%s\"" attr value
-        
+
   and pp_extra chan attr_value = match attr_value  with
   | "" -> ()
   | _  -> fprintf chan ", %s" attr_value
@@ -399,7 +399,7 @@ let one_init = match PC.graph with
     let rs = List.mapi (fun k es -> k,es) rs in
     let env = List.fold_left (make_posy max) E.EventMap.empty rs in
     max,env
-      
+
 
 (*******************************)
 (* Build "visible" po relation *)
@@ -463,7 +463,7 @@ let one_init = match PC.graph with
     escape_label dm lbl
 
   let pp_thread chan i =
-    let pp = 
+    let pp =
       if PC.showthread then
         if PC.texmacros then
           sprintf "\\myth{%i}" i
@@ -489,14 +489,14 @@ let one_init = match PC.graph with
   let edges = ref PairMap.empty
   let edges_seen = ref StringMap.empty
 
-  let reset_pairs () =    
+  let reset_pairs () =
     edges := PairMap.empty ;
     edges_seen := StringMap.empty ;
     ()
 
   let find_pair p m =
     try PairMap.find p m with Not_found -> []
-  
+
 
   let add_if_new p i m add =
     let old = find_pair p m in
@@ -514,7 +514,7 @@ let one_init = match PC.graph with
 
   let add_end p i m =
     add_if_new p i m (fun i old -> old@[i])
-      
+
   let handle_symetric m =
     let yes,no =
       PairMap.fold
@@ -553,7 +553,7 @@ let one_init = match PC.graph with
   let compute_colors cs = (* NB keep order *)
     let rec do_rec = function
       | [] -> []
-      | c::cs -> 
+      | c::cs ->
           if List.mem c cs then do_rec cs
           else c::do_rec cs in
     String.concat ":" (do_rec cs)
@@ -569,7 +569,7 @@ let one_init = match PC.graph with
   | i::rem ->
       fmt_merged_label true i::
       List.map (fmt_merged_label false) rem
-    
+
   let dump_pairs chan =
     let new_edges = handle_symetric !edges in
     PairMap.iter
@@ -594,7 +594,7 @@ let one_init = match PC.graph with
   let add_pair p i = edges := do_add_pair p i !edges
 
   let do_merge_edge n1 n2 lbl def_color =
-    let color = 
+    let color =
       try
         DotEdgeAttr.find lbl "color" PC.edgeattrs
       with Not_found ->
@@ -629,7 +629,7 @@ let one_init = match PC.graph with
     let {color=color ; style=style; } = get_ea def_color lbl in
     fprintf chan "%s -> %s [%s=\"%s\""
       (if backwards then n2 else n1)
-      (if backwards then n1 else n2)      
+      (if backwards then n1 else n2)
       (if not (overridden "label") && PC.movelabel && movelbl then "taillabel"
       else checklabel lbl)
       (pp_edge_label movelbl lbl) ;
@@ -640,7 +640,7 @@ let one_init = match PC.graph with
       if not (PC.tikz) then
         pp_attr chan "fontcolor" color
     end ;
-    if PC.tikz then 
+    if PC.tikz then
       pp_attr chan "lblstyle" "auto, midway, inner sep=0.7mm";
     if not PC.tikz && not (overridden "fontsize") then
       pp_fontsize_edge chan;
@@ -664,7 +664,7 @@ let one_init = match PC.graph with
     ()
 
   let get_edge_seen lbl = StringMap.safe_find PairSet.empty lbl !edges_seen
-    
+
   let known_edge n1 n2 lbl =
     let seen = get_edge_seen lbl in
     PairSet.mem (n1,n2) seen ||  PairSet.mem (n2,n1) seen
@@ -701,7 +701,7 @@ let one_init = match PC.graph with
     pp_attr chan "color" color ;
     pp_extra chan pos ;
     fprintf chan "];\n"
-      
+
 
   let pp_none chan n pos =
     fprintf chan "%s [shape=none, height=0.0, width=0.0, label=\"\"" n  ;
@@ -775,12 +775,12 @@ let one_init = match PC.graph with
 (*        eprintf "w1=%f, w2=%f\n" w1 w2 ; *)
         let shift = (w1 -. w2) /. 2.0 +. xinit in
         let _,r = E.EventSet.fold
-          (fun e (k,env) ->
-            k+1,
-            let x =  shift +. (float_of_int k) *. delta in
+            (fun e (k,env) ->
+              k+1,
+              let x =  shift +. (float_of_int k) *. delta in
 (*          eprintf "k=%i, x=%f\n" k x ; *)
-            E.EventMap.add e x env)
-          inits (0,E.EventMap.empty) in
+              E.EventMap.add e x env)
+            inits (0,E.EventMap.empty) in
         r in
 
     let pp_node_eiid =
@@ -821,7 +821,7 @@ let one_init = match PC.graph with
    Or...
  *)
 
-    let is_up e1 e2 = 
+    let is_up e1 e2 =
       let d =  abs (get_posx_int e1 - get_posx_int e2) in
       d >= 2 &&
       not (is_even e1 e2) &&
@@ -832,14 +832,14 @@ let one_init = match PC.graph with
 
 
     let xorigin=1.0 in
-    
+
 (* Size of one step, horizontal *)
     let xstep = 1.0 in
 (*Was
   begin  match max_proc with
-  | 3 -> if PC.condensed then 0.7 else 2.0 
+  | 3 -> if PC.condensed then 0.7 else 2.0
   | 2 -> if PC.condensed then 0.7 (*WAS 1.0*) else 2.5
-  | _ -> if PC.condensed then 0.7 (*WAS 1.0*) else 3.0 
+  | _ -> if PC.condensed then 0.7 (*WAS 1.0*) else 3.0
   end
  *)
 (* size of one step, vertical *)
@@ -857,7 +857,7 @@ let one_init = match PC.graph with
 
 
 
-    (* 
+    (*
        Pick out the vertical edges of the last thread.
        so that the edge label can be put on their rhs,
        to reduce the label overlaps
@@ -865,7 +865,7 @@ let one_init = match PC.graph with
 
     let last_thread e e' =
       let p = get_proc e and p' = get_proc e' in
-      p = p' && p = max_proc in  
+      p = p' && p = max_proc in
 
 
 (* Position of events *)
@@ -874,7 +874,7 @@ let one_init = match PC.graph with
     let xevent e = xfinal (get_posx e) in
     let yevent e = yfinal (get_posy e) in
 
-    
+
     let pp_event_position = match PC.graph with
     | Graph.Columns ->
         fun chan e ->
@@ -885,7 +885,7 @@ let one_init = match PC.graph with
     let pp_init_rf_position = match  PC.graph with
     | Graph.Cluster|Graph.Free -> fun _e -> ""
     | Graph.Columns ->
-        fun e -> 
+        fun e ->
           let x = xevent e
           and y = yevent e in
           let dx,dy = PC.initdotpos in
@@ -925,12 +925,12 @@ let one_init = match PC.graph with
         begin match lbl with
         | None ->
             fprintf chan "%s [label=\"%s%s%s\\l%a%a\""
-	      (pp_node_eiid e) (pp_node_eiid_label e)
-	      (escape_label dm act)
+              (pp_node_eiid e) (pp_node_eiid_label e)
+              (escape_label dm act)
               (if E.EventSet.mem e es.E.data_ports then " (data)" else "")
               pp_node_ii e.E.iiid
-	      (pp_instruction dm m) e.E.iiid
-              
+              (pp_instruction dm m) e.E.iiid
+
         | Some _ ->
             fprintf chan "eiidinit [label=\"Init\""
         end ;
@@ -949,7 +949,7 @@ let one_init = match PC.graph with
                   pp_node_eiid_label e in
               fprintf chan "%s [label=\"%s%s\""
                 (pp_node_eiid e) (eiid_lab)
-	        (escape_label dm act) ;
+                (escape_label dm act) ;
               act
           | Some es ->
               let acts =
@@ -980,8 +980,8 @@ let one_init = match PC.graph with
 (* For neato to route splines... *)
              (if PC.fixedsize then boxwidth
              else
-               (float_of_int (String.length act) +. PC.extrachars) 
-               *. PC.boxscale *. fscale *. dsize)) ;
+               (float_of_int (String.length act) +. PC.extrachars)
+                 *. PC.boxscale *. fscale *. dsize)) ;
         fprintf chan "];\n"
       end in
 
@@ -1005,42 +1005,40 @@ let one_init = match PC.graph with
       end ;
       pl "" ;
       pl "/* the unlocked events */" ;
-      Misc.iteri 
-        (fun n evtss -> 
+      Misc.iteri
+        (fun n evtss ->
 (* Prelude *)
           begin match PC.graph with
           | Graph.Cluster ->
               fprintf chan "subgraph cluster_proc%i" n ;
               fprintf chan
-	        " { rank=sink; label = \"%a\"%a; %sshape=box;\n"
+                " { rank=sink; label = \"%a\"%a; %sshape=box;\n"
                 pp_thread n
                 (fun chan () -> do_pp_fontsize ';' chan)  ()
-	        (if not PC.mono then "color=magenta; " else "")
+                (if not PC.mono then "color=magenta; " else "")
           | Graph.Columns ->
               if PC.showthread then begin
-	        let pos =       
-	          sprintf "%f,%f"
+                let pos =
+                  sprintf "%f,%f"
                     (xfinal (float_of_int n))
                     (yfinal (maxy +. PC.threadposy)) in
-	        fprintf chan
+                fprintf chan
                   "proc%i_label_node [shape=%s%a, label=\"%a\", pos=\"%s!\", fixedsize=true, width=%f, height=%f]\n"
                   n (if PC.verbose > 2 then "box" else "none")
                   (fun chan () -> pp_fontsize chan) ()
                   pp_thread n pos boxwidth boxheight
               end
-          | Graph.Free -> () 
+          | Graph.Free -> ()
           end ;
 (* Now output events *)
-          Misc.iteri 
+          Misc.iteri
             (fun m evts ->
               if
-                PC.withbox &&  
+                PC.withbox &&
                 show_all_events
-                  (* SS: Let there be silently many events per proc without boxing ||
-                     E.EventSet.cardinal evts > 1) *)
               then begin
                 let pp_ins =
-                  if PC.labelbox then 
+                  if PC.labelbox then
                     let e0 =
                       try E.EventSet.choose evts
                       with Not_found -> assert false in
@@ -1052,8 +1050,8 @@ let one_init = match PC.graph with
                   else "" in
                 fprintf chan "subgraph cluster_proc%i_poi%i" n m ;
                 fprintf chan
-	          " { %s label = \"%s\"; labelloc=\"b\"; shape=box;\n"
-	          (if not PC.mono then
+                  " { %s label = \"%s\"; labelloc=\"b\"; shape=box;\n"
+                  (if not PC.mono then
                     "color=green;"
                   else "color=\"grey30\"; style=dashed; ")
                   pp_ins ;
@@ -1078,7 +1076,7 @@ let one_init = match PC.graph with
       pl "/* the intra_causality_data edges */\n" ;
       E.EventRel.pp chan ""
         (fun chan (e,e') ->
-	  pp_edge chan (pp_node_eiid e) (pp_node_eiid e') "iico"
+          pp_edge chan (pp_node_eiid e) (pp_node_eiid e') "iico"
             false false)
         es.E.intra_causality_data ;
 
@@ -1086,9 +1084,9 @@ let one_init = match PC.graph with
       pl "/* the intra_causality_control edges */" ;
       E.EventRel.pp chan ""
         (fun chan (e,e') ->
-	  pp_edge chan
-	    (pp_node_eiid e) (pp_node_eiid e')
-	    "iico_control" false false)
+          pp_edge chan
+            (pp_node_eiid e) (pp_node_eiid e')
+            "iico_control" false false)
         es.E.intra_causality_control ;
 
 
@@ -1103,7 +1101,7 @@ let one_init = match PC.graph with
           | S.Load er,S.Store ew when E.is_mem er ->
               E.EventRel.add (ew,er) k
           | _ -> k)
-          rfmap 
+          rfmap
           E.EventRel.empty in
 
       if pp_po_edge then
@@ -1131,12 +1129,12 @@ let one_init = match PC.graph with
                 else "po"
             | Graph.Columns|Graph.Cluster ->
                 "po" in
-	    pp_edge chan
-	      (pp_node_eiid e) (pp_node_eiid e') lbl
+            pp_edge chan
+              (pp_node_eiid e) (pp_node_eiid e') lbl
               (last_thread e e') (is_even e e'))
           po_edges in
 
-    
+
 
     reset_pairs () ;
     pl "digraph G {" ;
@@ -1191,26 +1189,28 @@ let one_init = match PC.graph with
     pp_event_structure chan vbss es ;
 
     pl "/* the rfmap edges */" ;
+    let show_ref_rel = List.exists (fun (lab,_) -> lab = "rf") vbss in
     S.pp_rfmap chan ""
       (fun chan wt rf -> match wt,rf with
       | S.Load er,S.Store ew ->
-	  pp_edge chan
-            (pp_node_eiid ew)
-	    (pp_node_eiid er)
-	    "rf"
-            (last_thread ew er || is_up ew er || is_back ew er)
-            (is_even ew er)
-      | S.Final _,S.Store ew -> 
-	  if PC.showfinalrf then
+          if not show_ref_rel then
+            pp_edge chan
+              (pp_node_eiid ew)
+              (pp_node_eiid er)
+              "rf"
+              (last_thread ew er || is_up ew er || is_back ew er)
+              (is_even ew er)
+      | S.Final _,S.Store ew ->
+          if PC.showfinalrf then
             let final_id = "final"^pp_node_eiid ew in
-	    pp_none chan final_id (pp_final_rf_position ew);
-	    pp_edge chan  (pp_node_eiid ew) final_id "rf" false false
-	  else ()
+            pp_none chan final_id (pp_final_rf_position ew);
+            pp_edge chan  (pp_node_eiid ew) final_id "rf" false false
+          else ()
       | S.Load er,S.Init ->
-	  if PC.showinitrf then begin
-	    let init_id = "init"^pp_node_eiid er in
-	    pp_point chan init_id "rf" (pp_init_rf_position er);
-	    pp_edge chan init_id (pp_node_eiid er) "rf" false false
+          if PC.showinitrf then begin
+            let init_id = "init"^pp_node_eiid er in
+            pp_point chan init_id "rf" (pp_init_rf_position er);
+            pp_edge chan init_id (pp_node_eiid er) "rf" false false
           end
       | S.Final _,S.Init -> ())
       rfmap ;
@@ -1221,22 +1221,18 @@ let one_init = match PC.graph with
     if true then begin
       List.iter
         (fun (label,vbs) ->
-(*          eprintf "Drawing edge %s\n" label; *)
-          match label with
-          | "rf" -> ()
-          | _ ->
-              E.EventRel.pp chan ""
-                (fun chan (e,e') ->
-                  do_pp_edge chan (pp_node_eiid e) (pp_node_eiid e') label
-(* Overides default color... *)                
-                    (fun s -> { s with color="brown" ; })
+          E.EventRel.pp chan ""
+            (fun chan (e,e') ->
+              do_pp_edge chan (pp_node_eiid e) (pp_node_eiid e') label
+(* Overides default color... *)
+                (fun s -> { s with color="brown" ; })
 (* Overides any style given *)
-                    (if (try "mo" = String.sub label 0 2 with Invalid_argument _ -> false) && E.is_mem_store e && E.is_mem_store e' then "" (*"penwidth=10.0"*) else "")
+                (if (try "mo" = String.sub label 0 2 with Invalid_argument _ -> false) && E.is_mem_store e && E.is_mem_store e' then "" (*"penwidth=10.0"*) else "")
 (* Extra attributes, overrides nothing *)
-	            ""
-                    (last_thread e e' || is_up e e' || is_back e e')
-                    (is_even e e'))
-                vbs)
+                ""
+                (last_thread e e' || is_up e e' || is_back e e')
+                (is_even e e'))
+            vbs)
         vbss
     end ;
     dump_pairs chan ;
@@ -1249,7 +1245,7 @@ let one_init = match PC.graph with
   let select_non_init =
     if PC.showinitwrites then
       fun _ -> true
-    else 
+    else
       fun e -> not (E.is_mem_store_init e)
 
   let select_event = match PC.showevents with
@@ -1286,10 +1282,10 @@ let one_init = match PC.graph with
           end
       | (S.Final _,S.Store e)
       | (S.Load e,S.Init)
-          ->
-            if select_event e then
-              S.RFMap.add wt rf k
-            else k
+        ->
+          if select_event e then
+            S.RFMap.add wt rf k
+          else k
       | S.Final _,S.Init -> k)
       rfm S.RFMap.empty
 
@@ -1311,15 +1307,13 @@ let one_init = match PC.graph with
          (fun (tag,rel) -> tag,select_rel rel)
          vbss)
       obs
-      
+
 
 
   let dump_legend chan test legend conc vbs =
-(* SS: A decision to make. Passing conc clutters up the vo pictures.
-   Should we force it to conc_zero ? doing it for now, but v unconvinced *)
-  pp_dot_event_structure
-    chan test (if PC.showlegend then Some legend else None)
-    conc.S.str conc.S.rfmap vbs S.conc_zero
+    pp_dot_event_structure
+      chan test (if PC.showlegend then Some legend else None)
+      conc.S.str conc.S.rfmap vbs S.conc_zero
 
   let dump_es_rfm_legend chan legend test es rfm =
     pp_dot_event_structure chan test legend es rfm [] S.conc_zero
@@ -1338,7 +1332,7 @@ let one_init = match PC.graph with
     SHOW.show
       (fun chan ->
         let legend = if PC.showlegend then Some legend else None in
-	pp_dot_event_structure
-	  chan test legend conc.S.str conc.S.rfmap vbs conc)
+        pp_dot_event_structure
+          chan test legend conc.S.str conc.S.rfmap vbs conc)
 
 end
