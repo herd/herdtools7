@@ -29,7 +29,8 @@ type op =
 (* Return C-style boolean (zero is false, not zero is true) *)
   | Lt | Gt | Eq | Ne
   | Le | Ge
-
+(* on integers *)
+  | Max | Min
 val pp_op : op -> string
 
 val pp_ptx_cmp_op : op -> string

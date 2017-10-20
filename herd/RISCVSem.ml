@@ -75,6 +75,17 @@ module Make (C:Sem.Config)(V:Value.S)
     | RISCV.SRLW|RISCV.SRAW
          -> unimplemented (RISCV.pp_opw op)
 
+    let tr_opamo op = match op with
+    | RISCV.AMOSWAP -> assert false
+    | RISCV.AMOADD -> Op.Add
+    | RISCV.AMOAND -> Op.And
+    | RISCV.AMOOR -> Op.Or
+    | RISCV.AMOXOR -> Op.Xor
+    | RISCV.AMOMAX -> Op.Max
+    | RISCV.AMOMIN -> Op.Min
+    | RISCV.AMOMAXU|RISCV.AMOMINU ->
+        unimplemented (RISCV.pp_opamo op)
+
     let tr_cond cond = match cond with
     | RISCV.EQ -> Op.Eq
     | RISCV.NE -> Op.Ne
@@ -123,6 +134,12 @@ module Make (C:Sem.Config)(V:Value.S)
 
     let commit ii =
       M.mk_singleton_es (Act.Commit true) ii
+
+    let amo op mo v a ii = match op with
+    | RISCV.AMOSWAP ->
+        M.swap v (fun w -> Act.Amo (A.Location_global a,w,v,RISCV.P mo)) ii
+    | _ ->
+        M.fetch (tr_opamo op) v (fun v vstored -> Act.Amo (A.Location_global a,v,vstored,RISCV.P mo)) ii
 
 (* Entry point *)
     let atomic_pair_allowed _ _ = true
@@ -175,6 +192,10 @@ module Make (C:Sem.Config)(V:Value.S)
                   (write_reg r1 V.one ii) (* Failure *)
                   ((write_reg r1 V.zero ii >>| write_mem_atomic mo ea v resa ii) >>! ()))
               >>! B.Next
+        | RISCV.Amo (op,w,mo,r1,r2,r3) ->
+            (read_reg_data r2 ii >>| read_reg_ord r3 ii) >>=
+            fun (v,loc) -> amo op mo v loc ii >>=
+            fun v -> write_reg r1 v ii >>! B.Next
         | RISCV.FenceIns b ->
             create_barrier b ii >>! B.Next
         | ins -> Warn.fatal "RISCV, instruction '%s' not handled" (RISCV.dump_instruction ins)

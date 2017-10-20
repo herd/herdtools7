@@ -135,8 +135,8 @@ end = struct
     | _ -> false
 
     let is_mem a = match a with
-    | Access (_,A.Location_global _,_,_,_) -> true
-    | RMW _ -> true
+    | Access (_,A.Location_global _,_,_,_)
+    | RMW (A.Location_global _,_,_,_) -> true
     | _ -> false
 
     let is_additional_mem a = match a with

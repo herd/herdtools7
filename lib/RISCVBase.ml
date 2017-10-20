@@ -208,6 +208,27 @@ let pp_opw = function
 | SUBW -> "subw"
 | SRAW -> "sraw"
 
+type opamo =
+  | AMOSWAP
+  | AMOADD
+  | AMOAND
+  | AMOOR
+  | AMOXOR
+  | AMOMAX
+  | AMOMAXU
+  | AMOMIN
+  | AMOMINU
+
+let pp_opamo = function
+  | AMOSWAP -> "amoswap"
+  | AMOADD -> "amoadd"
+  | AMOAND -> "amoand"
+  | AMOOR -> "amoor"
+  | AMOXOR -> "amoxor"
+  | AMOMAX -> "amomax"
+  | AMOMAXU -> "amomaxu"
+  | AMOMIN -> "amomin"
+  | AMOMINU -> "amominu"
 
 type cond = EQ | NE | LT | LTU | GE | GEU
 
@@ -248,6 +269,8 @@ let pp_store w mo = sprintf "s%s%s" (pp_width w) (pp_mo mo)
 let pp_lr w mo = sprintf "lr.%s%s" (pp_width w) (pp_mo mo)
 let pp_sc w mo = sprintf "sc.%s%s" (pp_width w) (pp_mo mo)
 
+let pp_amo op w mo = sprintf "%s.%s%s" (pp_opamo op) (pp_width w) (pp_mo mo)
+
 type 'k kinstruction =
   | OpI of opi * reg * reg * 'k
   | OpIW of opiw * reg * reg * 'k
@@ -259,6 +282,7 @@ type 'k kinstruction =
   | Store of width * mo * reg * int * reg
   | LoadReserve of width * mo * reg * reg
   | StoreConditional of width * mo * reg * reg * reg
+  | Amo of opamo * width * mo * reg * reg * reg
   | FenceIns of  barrier
 
 type instruction = int kinstruction
@@ -300,6 +324,9 @@ let do_pp_instruction m = function
   | StoreConditional (w,mo,r1,r2,r3) ->
      sprintf "%s %s,%s,0(%s)"
         (pp_sc w mo) (pp_reg r1) (pp_reg r2) (pp_reg r3)
+  | Amo (op,w,mo,r1,r2,r3) ->
+      sprintf "%s %s,%s,(%s)"
+        (pp_amo op w mo)  (pp_reg r1) (pp_reg r2) (pp_reg r3)
   | FenceIns f -> pp_barrier f
 
 let pp_instruction m =
@@ -339,7 +366,7 @@ let fold_regs (f_reg,f_sreg) =
   | LoadReserve (_,_,r1,r2)
     -> fold_reg r1 (fold_reg r2 c)
   | Op (_,r1,r2,r3)  | OpW (_,r1,r2,r3)
-  | StoreConditional (_,_,r1,r2,r3)
+  | StoreConditional (_,_,r1,r2,r3)|Amo (_,_,_,r1,r2,r3)
       -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
 
 
@@ -369,7 +396,8 @@ let map_regs f_reg f_symb =
       LoadReserve (w,mo,map_reg r1,map_reg r2)
   | StoreConditional (w,mo,r1,r2,r3) ->
       StoreConditional (w,mo,map_reg r1,map_reg r2,map_reg r3)
-
+  | Amo (op,w,mo,r1,r2,r3) ->
+      Amo (op,w,mo,map_reg r1,map_reg r2,map_reg r3)
 
 (* No addresses burried in ARM code *)
 let fold_addrs _f c _ins = c
@@ -383,7 +411,7 @@ let get_next = function
   | Bcc (_,_,_,lbl) -> [Label.Next; Label.To lbl;]
   | OpI (_, _, _, _)|OpIW (_, _, _, _)|Op (_, _, _, _)|OpW (_, _, _, _)
   | Load (_,_, _, _, _, _)|Store (_,_, _, _, _)|LoadReserve (_, _, _, _)
-  | StoreConditional (_, _, _, _, _)|FenceIns _
+  | StoreConditional (_, _, _, _, _)|FenceIns _|Amo _
     -> [Label.Next;]
 
 include Pseudo.Make
@@ -399,15 +427,16 @@ include Pseudo.Make
       | OpIW (op,r1,r2,k) -> OpIW (op,r1,r2,k_tr k)
       | Op (_, _, _, _)|OpW (_, _, _, _)|J _|Bcc (_, _, _, _)
       |Load (_, _, _, _, _, _)|Store (_, _ ,_ , _, _)
-      |LoadReserve (_, _, _, _)|StoreConditional (_, _, _, _, _)|FenceIns _
+      |LoadReserve (_, _, _, _)|StoreConditional (_, _, _, _, _)|Amo _|FenceIns _
           as keep
         -> keep
 
       let get_naccesses = function
         | Load _ | LoadReserve _ | Store _ | StoreConditional _ -> 1
         | OpI (_, _, _, _)|OpIW (_, _, _, _)|Op (_, _, _, _)
-        |OpW (_, _, _, _)|J _|Bcc (_, _, _, _)|FenceIns _
+        | OpW (_, _, _, _)|J _|Bcc (_, _, _, _)|FenceIns _
           -> 0
+        | Amo _ -> 2
 
       let fold_labels k f = function
         | J lbl
@@ -415,14 +444,14 @@ include Pseudo.Make
           -> f k lbl
         |OpI (_, _, _, _)|OpIW (_, _, _, _)|Op (_, _, _, _)
         |OpW (_, _, _, _)|Load (_, _, _, _, _, _)|Store (_, _, _, _, _)
-        |LoadReserve (_, _, _, _)|StoreConditional (_, _, _, _, _)|FenceIns _
+        |LoadReserve (_, _, _, _)|StoreConditional (_, _, _, _, _)|Amo _|FenceIns _
             -> k
       let map_labels f = function
         | J lbl -> J (f lbl)
         | Bcc (cc,r1,r2,lbl) -> Bcc (cc,r1,r2,f lbl)
         |OpI (_, _, _, _)|OpIW (_, _, _, _)|Op (_, _, _, _)
         |OpW (_, _, _, _)|Load _|Store _
-        |LoadReserve (_, _, _, _)|StoreConditional (_, _, _, _, _)|FenceIns _
+        |LoadReserve (_, _, _, _)|StoreConditional (_, _, _, _, _)|Amo _|FenceIns _
             as ins
             -> ins
 

@@ -509,6 +509,20 @@ and type evt_struct = E.event_structure) =
           op Op.Eq v1 v2 >>= fun v -> assign v V.zero
 
 
+    let swap arg mk_action ii =
+      fun eiid ->
+        V.fold_over_vals
+          (fun v (eiid1,acc_inner) ->
+            let w = V.fresh_var () in
+            (eiid1+1,
+             Evt.add
+               (w, [],
+                trivial_event_structure false
+                  {E.eiid = eiid1 ;
+                   E.iiid = Some ii;
+                   E.action = mk_action w})
+               acc_inner)) (eiid,Evt.empty)
+
     let fetch op arg mk_action ii =
       fun eiid ->
         V.fold_over_vals

@@ -36,6 +36,9 @@ module Make (A : A) : sig
     | Access of Dir.dirn * A.location * A.V.v * A.lannot
     | Barrier of A.barrier
     | Commit of bool (* true = bcc / false = pred *)
+(* Atomic modify, (location,value read, value written, annotation *)
+    | Amo of A.location * A.V.v * A.V.v * A.lannot
+(* NB: Amo used in some arch only (ie RISCV) *)
 
   include Action.S with type action := action and module A = A
 
@@ -49,112 +52,138 @@ end = struct
     | Access of dirn * A.location * V.v * A.lannot
     | Barrier of A.barrier
     | Commit of bool
+    | Amo of A.location * A.V.v * A.V.v * A.lannot
 
   let mk_init_write l v = Access(W,l,v,A.empty_annot)
 
   let pp_action a = match a with
-    | Access (d,l,v,an) ->
-        Printf.sprintf "%s%s%s=%s"
-          (pp_dirn d)
-          (A.pp_location l)
-          (A.pp_annot an)
-          (V.pp_v v)
-    | Barrier b -> A.pp_barrier b
-    | Commit bcc -> if bcc then "Commit" else "Pred"
+  | Access (d,l,v,an) ->
+      Printf.sprintf "%s%s%s=%s"
+        (pp_dirn d)
+        (A.pp_location l)
+        (A.pp_annot an)
+        (V.pp_v v)
+  | Barrier b -> A.pp_barrier b
+  | Commit bcc -> if bcc then "Commit" else "Pred"
+  | Amo (loc,v1,v2,an) ->
+      Printf.sprintf "RMW(%s)%s(%s>%s)"
+        (A.pp_annot an)
+        (A.pp_location loc)
+        (V.pp_v v1) (V.pp_v v2)
 
 (* Utility functions to pick out components *)
-    let value_of a = match a with
-    | Access (_,_ , v,_) -> Some v
-    | _ -> None
+  let value_of a = match a with
+  | Access (_,_ , v,_) -> Some v
+  | _ -> None
 
-    let read_of = value_of
-    and written_of = value_of
+  let read_of a = match a with
+  | Access (R,_,v,_)
+  | Amo (_,v,_,_)
+    -> Some v
+  | Access (W, _, _, _)|Barrier _|Commit _
+    -> None
 
-    let location_of a = match a with
-    | Access (_, l, _,_) -> Some l
-    | _ -> None
+  and written_of a = match a with
+  | Access (W,_,v,_)
+  | Amo (_,_,v,_)
+    -> Some v
+  | Access (R, _, _, _)|Barrier _|Commit _
+    -> None
+
+  let location_of a = match a with
+  | Access (_, l, _,_)
+  | Amo (l,_,_,_)
+    -> Some l
+  | Barrier _|Commit _ -> None
 
 (* relative to memory *)
-    let is_mem_store a = match a with
-    | Access (W,A.Location_global _,_,_) -> true
-    | _ -> false
+  let is_mem_store a = match a with
+  | Access (W,A.Location_global _,_,_)
+  | Amo (A.Location_global _,_,_,_)
+    -> true
+  | _ -> false
 
-    let is_mem_load a = match a with
-    | Access (R,A.Location_global _,_,_) -> true
-    | _ -> false
+  let is_mem_load a = match a with
+  | Access (R,A.Location_global _,_,_)
+  | Amo (A.Location_global _,_,_,_)
+    -> true
+  | _ -> false
 
-    let is_additional_mem_load _ = false
+  let is_additional_mem_load _ = false
 
-    let is_mem a = match a with
-    | Access (_,A.Location_global _,_,_) -> true
-    | _ -> false
+  let is_mem a = match a with
+  | Access (_,A.Location_global _,_,_)
+  | Amo (A.Location_global _,_,_,_)
+    -> true
+  | _ -> false
 
-    let is_additional_mem _ = false
+  let is_additional_mem _ = false
 
-    let is_atomic a = match a with
-      | Access (_,_,_,annot) ->
-         is_mem a && A.is_atomic annot
-      | _ -> false
+  let is_atomic a = match a with
+  | Access (_,_,_,annot) ->
+      is_mem a && A.is_atomic annot
+  | _ -> false
 
-    let get_mem_dir a = match a with
-    | Access (d,A.Location_global _,_,_) -> d
-    | _ -> assert false
+  let get_mem_dir a = match a with
+  | Access (d,A.Location_global _,_,_) -> d
+  | _ -> assert false
 
 (* relative to the registers of the given proc *)
-    let is_reg_store a (p:int) = match a with
-    | Access (W,A.Location_reg (q,_),_,_) -> p = q
-    | _ -> false
+  let is_reg_store a (p:int) = match a with
+  | Access (W,A.Location_reg (q,_),_,_) -> p = q
+  | _ -> false
 
-    let is_reg_load a (p:int) = match a with
-    | Access (R,A.Location_reg (q,_),_,_) -> p = q
-    | _ -> false
+  let is_reg_load a (p:int) = match a with
+  | Access (R,A.Location_reg (q,_),_,_) -> p = q
+  | _ -> false
 
-    let is_reg a (p:int) = match a with
-    | Access (_,A.Location_reg (q,_),_,_) -> p = q
-    | _ -> false
+  let is_reg a (p:int) = match a with
+  | Access (_,A.Location_reg (q,_),_,_) -> p = q
+  | _ -> false
 
 
 (* Store/Load anywhere *)
-    let is_store a = match a with
-    | Access (W,_,_,_) -> true
-    | _ -> false
+  let is_store a = match a with
+  | Access (W,_,_,_)|Amo _ -> true
+  | Access (R,_,_,_)|Barrier _|Commit _ -> false
 
-    let is_load a = match a with
-    | Access (R,_,_,_) -> true
-    | _ -> false
+  let is_load a = match a with
+  | Access (R,_,_,_)|Amo _ -> true
+  | Access (W,_,_,_)|Barrier _|Commit _ -> false
 
-    let is_reg_any a = match a with
-    | Access (_,A.Location_reg _,_,_) -> true
-    | _ -> false
 
-    let is_reg_store_any a = match a with
-    | Access (W,A.Location_reg _,_,_) -> true
-    | _ -> false
+  let is_reg_any a = match a with
+  | Access (_,A.Location_reg _,_,_) -> true
+  | _ -> false
 
-    let is_reg_load_any a = match a with
-    | Access (R,A.Location_reg _,_,_) -> true
-    | _ -> false
+  let is_reg_store_any a = match a with
+  | Access (W,A.Location_reg _,_,_) -> true
+  | _ -> false
+
+  let is_reg_load_any a = match a with
+  | Access (R,A.Location_reg _,_,_) -> true
+  | _ -> false
 
 (* Barriers *)
-    let is_barrier a = match a with
-    | Barrier _ -> true
-    | _ -> false
+  let is_barrier a = match a with
+  | Barrier _ -> true
+  | _ -> false
 
-    let barrier_of a = match a with
-    | Barrier b -> Some b
-    | _ -> None
+  let barrier_of a = match a with
+  | Barrier b -> Some b
+  | _ -> None
 
   let same_barrier_id _ _ = assert false
 
 (* Commits *)
 
-   let is_commit_bcc a = match a with
-   | Commit b -> b
-   | _ -> false
+  let is_commit_bcc a = match a with
+  | Commit b -> b
+  | _ -> false
 
-   let is_commit_pred a = match a with
-   | Commit b -> not b
-   | _ -> false
+  let is_commit_pred a = match a with
+  | Commit b -> not b
+  | _ -> false
 
 (* Architecture-specific sets *)
 
@@ -162,17 +191,17 @@ end = struct
     let bsets =
       List.map
         (fun (tag,p) ->
-         let p act = match act with
-           | Barrier b -> p b
-           | _ -> false
-         in tag,p) A.barrier_sets
+          let p act = match act with
+          | Barrier b -> p b
+          | _ -> false
+          in tag,p) A.barrier_sets
     and asets =
       List.map
         (fun (tag,p) ->
-         let p act = match act with
-           | Access(_,_,_,annot) -> p annot
-           | _ -> false
-         in tag,p) A.annot_sets
+          let p act = match act with
+          | Access(_,_,_,annot)|Amo (_,_,_,annot) -> p annot
+          | _ -> false
+          in tag,p) A.annot_sets
     in
     bsets @ asets
 
@@ -185,33 +214,45 @@ end = struct
   let pp_isync = A.pp_isync
 
 (* Equations *)
+  let add_v_undet v vs =
+    if V.is_var_determined v then vs
+    else  V.ValueSet.add v vs
 
-    let undetermined_vars_in_action a =
-      match a with
-      | Access (_,l,v,_) ->
-          let undet_loc = match A.undetermined_vars_in_loc l with
-          | None -> V.ValueSet.empty
-          | Some v -> V.ValueSet.singleton v in
-          if V.is_var_determined v then undet_loc
-          else V.ValueSet.add v undet_loc
-      | Barrier _|Commit _ -> V.ValueSet.empty
+  let undetermined_vars_in_action a =
+    match a with
+    | Access (_,l,v,_) ->
+        let undet_loc = match A.undetermined_vars_in_loc l with
+        | None -> V.ValueSet.empty
+        | Some v -> V.ValueSet.singleton v in
+        add_v_undet v undet_loc
+    | Amo (loc,v1,v2,_) ->
+        let undet = match A.undetermined_vars_in_loc loc with
+        | None -> V.ValueSet.empty
+        | Some v -> V.ValueSet.singleton v in
+        add_v_undet v1 (add_v_undet v2 undet)
+    | Barrier _|Commit _ -> V.ValueSet.empty
 
-    let simplify_vars_in_action soln a =
-      match a with
-      | Access (d,l,v,an) ->
-         let l' = A.simplify_vars_in_loc soln l in
-         let v' = V.simplify_var soln v in
-         Access (d,l',v',an)
-      | Barrier _ | Commit _ -> a
+  let simplify_vars_in_action soln a =
+    match a with
+    | Access (d,l,v,an) ->
+        let l' = A.simplify_vars_in_loc soln l in
+        let v' = V.simplify_var soln v in
+        Access (d,l',v',an)
+    | Amo (loc,v1,v2,an) ->
+        let loc =  A.simplify_vars_in_loc soln loc in
+        let v1 = V.simplify_var soln v1 in
+        let v2 = V.simplify_var soln v2 in
+        Amo (loc,v1,v2,an)
+    | Barrier _ | Commit _ -> a
 
 (*************************************************************)
 (* Add together event structures from different instructions *)
 (*************************************************************)
 
-    let make_action_atomic a = match a with
-      | Access (d,l,v,an) -> Access (d,l,v,an)
-      | _ -> a
+  let make_action_atomic a = match a with
+  | Access (d,l,v,an) -> Access (d,l,v,an)
+  | _ -> a
 
-    let annot_in_list _str _ac = false
+  let annot_in_list _str _ac = false
 
 end

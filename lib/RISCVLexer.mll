@@ -21,7 +21,7 @@ open LexMisc
 open RISCVBase
 open RISCVParser
 
-module LU = LexUtils.Make(O)
+  module LU = LexUtils.Make(O)
 
   let check_name = function
     | "addi" -> OPI ADDI
@@ -116,12 +116,86 @@ module LU = LexUtils.Make(O)
     | "sc.d.rl" -> SC (Double,Rel)
     | "sc.d.aq.rl" -> SC (Double,AcqRel)
 
-    | "fence" -> FENCE
-    | "fence.i" -> FENCEI
-    | name ->
-        match parse_reg name with
-        | Some r -> ARCH_REG r
-        | None ->NAME name
+    | "amoswap.w" -> AMO (AMOSWAP,Word,Rlx)
+    | "amoadd.w" ->  AMO (AMOADD,Word,Rlx)
+    | "amoand.w" ->  AMO (AMOAND,Word,Rlx)
+    | "amoor.w" ->   AMO (AMOOR,Word,Rlx)
+    | "amoxor.w" ->  AMO (AMOXOR,Word,Rlx)
+    | "amomax.w" ->  AMO (AMOMAX,Word,Rlx)
+    | "amomin.w" ->  AMO (AMOMIN,Word,Rlx)
+    | "amomaxu.w" -> AMO (AMOMAXU,Word,Rlx)
+    | "amominu.w" -> AMO (AMOMINU,Word,Rlx)
+    | "amoswap.d" -> AMO (AMOSWAP,Double,Rlx)
+    | "amoadd.d" ->  AMO (AMOADD,Double,Rlx)
+    | "amoand.d" ->  AMO (AMOAND,Double,Rlx)
+    | "amoor.d" ->   AMO (AMOOR,Double,Rlx)
+    | "amoxor.d" ->  AMO (AMOXOR,Double,Rlx)
+    | "amomax.d" ->  AMO (AMOMAX,Double,Rlx)
+    | "amomin.d" ->  AMO (AMOMIN,Double,Rlx)
+    | "amomaxu.d" -> AMO (AMOMAXU,Double,Rlx)
+    | "amominu.d" -> AMO (AMOMINU,Double,Rlx)
+    | "amoswap.w.aq" -> AMO (AMOSWAP,Word,Acq)
+    | "amoadd.w.aq" ->  AMO (AMOADD,Word,Acq)
+    | "amoand.w.aq" ->  AMO (AMOAND,Word,Acq)
+    | "amoor.w.aq" ->   AMO (AMOOR,Word,Acq)
+    | "amoxor.w.aq" ->  AMO (AMOXOR,Word,Acq)
+    | "amomax.w.aq" ->  AMO (AMOMAX,Word,Acq)
+    | "amomin.w.aq" ->  AMO (AMOMIN,Word,Acq)
+    | "amomaxu.w.aq" -> AMO (AMOMAXU,Word,Acq)
+    | "amominu.w.aq" -> AMO (AMOMINU,Word,Acq)
+    | "amoswap.d.aq" -> AMO (AMOSWAP,Double,Acq)
+    | "amoadd.d.aq" ->  AMO (AMOADD,Double,Acq)
+    | "amoand.d.aq" ->  AMO (AMOAND,Double,Acq)
+    | "amoor.d.aq" ->   AMO (AMOOR,Double,Acq)
+    | "amoxor.d.aq" ->  AMO (AMOXOR,Double,Acq)
+    | "amomax.d.aq" ->  AMO (AMOMAX,Double,Acq)
+    | "amomin.d.aq" ->  AMO (AMOMIN,Double,Acq)
+    | "amomaxu.d.aq" -> AMO (AMOMAXU,Double,Acq)
+    | "amominu.d.aq" -> AMO (AMOMINU,Double,Acq)
+    | "amoswap.w.rl" -> AMO (AMOSWAP,Word,Rel)
+    | "amoadd.w.rl" ->  AMO (AMOADD,Word,Rel)
+    | "amoand.w.rl" ->  AMO (AMOAND,Word,Rel)
+    | "amoor.w.rl" ->   AMO (AMOOR,Word,Rel)
+    | "amoxor.w.rl" ->  AMO (AMOXOR,Word,Rel)
+    | "amomax.w.rl" ->  AMO (AMOMAX,Word,Rel)
+    | "amomin.w.rl" ->  AMO (AMOMIN,Word,Rel)
+    | "amomaxu.w.rl" -> AMO (AMOMAXU,Word,Rel)
+    | "amominu.w.rl" -> AMO (AMOMINU,Word,Rel)
+    | "amoswap.d.rl" -> AMO (AMOSWAP,Double,Rel)
+    | "amoadd.d.rl" ->  AMO (AMOADD,Double,Rel)
+    | "amoand.d.rl" ->  AMO (AMOAND,Double,Rel)
+    | "amoor.d.rl" ->   AMO (AMOOR,Double,Rel)
+    | "amoxor.d.rl" ->  AMO (AMOXOR,Double,Rel)
+    | "amomax.d.rl" ->  AMO (AMOMAX,Double,Rel)
+    | "amomin.d.rl" ->  AMO (AMOMIN,Double,Rel)
+    | "amomaxu.d.rl" -> AMO (AMOMAXU,Double,Rel)
+    | "amominu.d.rl" -> AMO (AMOMINU,Double,Rel)
+    | "amoswap.w.aq.rl" -> AMO (AMOSWAP,Word,AcqRel)
+    | "amoadd.w.aq.rl" ->  AMO (AMOADD,Word,AcqRel)
+    | "amoand.w.aq.rl" ->  AMO (AMOAND,Word,AcqRel)
+    | "amoor.w.aq.rl" ->   AMO (AMOOR,Word,AcqRel)
+    | "amoxor.w.aq.rl" ->  AMO (AMOXOR,Word,AcqRel)
+    | "amomax.w.aq.rl" ->  AMO (AMOMAX,Word,AcqRel)
+    | "amomin.w.aq.rl" ->  AMO (AMOMIN,Word,AcqRel)
+    | "amomaxu.w.aq.rl" -> AMO (AMOMAXU,Word,AcqRel)
+    | "amominu.w.aq.rl" -> AMO (AMOMINU,Word,AcqRel)
+    | "amoswap.d.aq.rl" -> AMO (AMOSWAP,Double,AcqRel)
+    | "amoadd.d.aq.rl" ->  AMO (AMOADD,Double,AcqRel)
+    | "amoand.d.aq.rl" ->  AMO (AMOAND,Double,AcqRel)
+    | "amoor.d.aq.rl" ->   AMO (AMOOR,Double,AcqRel)
+    | "amoxor.d.aq.rl" ->  AMO (AMOXOR,Double,AcqRel)
+    | "amomax.d.aq.rl" ->  AMO (AMOMAX,Double,AcqRel)
+    | "amomin.d.aq.rl" ->  AMO (AMOMIN,Double,AcqRel)
+    | "amomaxu.d.aq.rl" -> AMO (AMOMAXU,Double,AcqRel)
+    | "amominu.d.aq.rl" ->  AMO (AMOMINU,Double,AcqRel)
+
+(* Fences *)
+| "fence" -> FENCE
+| "fence.i" -> FENCEI
+| name ->
+    match parse_reg name with
+    | Some r -> ARCH_REG r
+    | None ->NAME name
 
 }
 let digit = [ '0'-'9' ]

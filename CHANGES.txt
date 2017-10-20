@@ -1,3 +1,4 @@
+  * RISCV amo support.
 7.47+3
   * Correct double labelling of rf edges: -doshow rf is now a no-operation
   * RISCV support for herd

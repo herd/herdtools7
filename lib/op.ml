@@ -24,8 +24,9 @@ type op =
   | ShiftLeft
   | Lt | Gt | Eq | Ne
   | Le | Ge
+  | Max | Min
 
-let pp_op o = 
+let pp_op o =
   match o with
   | Add -> "+"
   | Sub -> "-"
@@ -42,6 +43,8 @@ let pp_op o =
   | Le -> "<="
   | Ge -> ">="
   | Ne -> "!="
+  | Max -> "max"
+  | Min -> "min"
 
 let pp_ptx_cmp_op = function
   | Eq -> ".eq"

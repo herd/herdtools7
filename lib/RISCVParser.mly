@@ -44,6 +44,7 @@ let tr_rw = function
 %token <RISCVBase.width * RISCVBase.mo> STORE
 %token <RISCVBase.width * RISCVBase.mo> LR
 %token <RISCVBase.width * RISCVBase.mo> SC
+%token <RISCVBase.opamo * RISCVBase.width * RISCVBase.mo> AMO
 %token FENCE FENCEI
 %token <string> META
 %type <int list * (RISCVBase.parsedPseudo) list list> main 
@@ -130,6 +131,9 @@ instr:
 | SC reg COMMA reg COMMA addr0
     { let w,mo = $1 in
     StoreConditional (w,mo,$2,$4,$6) }
+| AMO reg COMMA reg COMMA addr0
+    { let op,w,mo = $1 in
+    Amo (op,w,mo,$2,$4,$6) }
 | FENCEI
     { FenceIns FenceI }
 | FENCE
