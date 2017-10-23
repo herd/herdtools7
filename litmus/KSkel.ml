@@ -484,6 +484,7 @@ let dump_threads tname env test =
       O.oii "}" ;
       O.oi "}" ;
       O.oi "atomic_inc(&done);" ;
+      O.oi "smp_mb();" ;
       O.oi "wake_up(wq);" ;
       O.oi "smp_mb();" ;
       O.oi "do_exit(0);" ;
