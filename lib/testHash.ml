@@ -47,7 +47,7 @@ let digest_init debug init =
         match location_compare loc1 loc2 with
         | 0 ->
             if
-              SymbConstant.compare v1 v2 <> 0 &&
+              ParsedConstant.compare v1 v2 <> 0 &&
               compare t1 t2 <> 0
             then begin
               Warn.fatal
@@ -68,9 +68,9 @@ let digest_init debug init =
   let dump_location = function
     | Location_reg (i,r) -> Printf.sprintf "%i:%s" i r
     | Location_sreg s -> s
-    | Location_global v -> SymbConstant.pp_v v
+    | Location_global v -> ParsedConstant.pp_v v
     | Location_deref (v,i) ->
-        Printf.sprintf "%s[%i]" (SymbConstant.pp_v v) i
+        Printf.sprintf "%s[%i]" (ParsedConstant.pp_v v) i
   in
 
   let pp =
@@ -79,19 +79,19 @@ let digest_init debug init =
           (fun (loc,(t,v)) -> match t with
           | TyDef ->
               sprintf "%s=%s"
-                (dump_location loc) (SymbConstant.pp_v v)
+                (dump_location loc) (ParsedConstant.pp_v v)
           | TyDefPointer ->
               sprintf "*%s=%s"
-                (dump_location loc) (SymbConstant.pp_v v)
+                (dump_location loc) (ParsedConstant.pp_v v)
           | Ty t ->
               sprintf "%s %s=%s" t
-                (dump_location loc) (SymbConstant.pp_v v)
+                (dump_location loc) (ParsedConstant.pp_v v)
           | Atomic t ->
               sprintf "_Atomic %s %s=%s" t
-                (dump_location loc) (SymbConstant.pp_v v)
+                (dump_location loc) (ParsedConstant.pp_v v)
           | Pointer t ->
               sprintf "%s *%s=%s" t
-                (dump_location loc) (SymbConstant.pp_v v)
+                (dump_location loc) (ParsedConstant.pp_v v)
           | TyArray (t,sz) ->
               sprintf "%s %s[%i]" t (dump_location loc) sz)
           init)) in

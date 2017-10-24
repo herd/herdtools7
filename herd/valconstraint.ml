@@ -64,7 +64,7 @@ end
 
 module Make (C:Config) (A:Arch_herd.S) : S
 with type  atom = A.V.v
-and type cst = A.V.cst
+and type cst = A.V.Cst.v
 and type solution = A.V.solution
 and type location = A.location
 and type state = A.state =
@@ -74,7 +74,7 @@ and type state = A.state =
     module V = A.V
 
     type atom = V.v
-    type cst = V.cst
+    type cst = V.Cst.v
     type location = A.location
     type state = A.state
 
@@ -326,7 +326,7 @@ and type state = A.state =
 	(fun v i k ->
 	  try
 	    let i' = V.Solution.find v sol2 in
-	    if SymbConstant.compare i i' = 0 then
+	    if V.Cst.compare i i' = 0 then
 	      V.Solution.add v i k
 	    else
 	      raise Contradiction

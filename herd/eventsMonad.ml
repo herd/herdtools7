@@ -628,7 +628,7 @@ and type evt_struct = E.event_structure) =
               (eiid+1,ew::es))
             (eiid,[]) env in
         let es = E.EventSet.of_list es in
-(*          Printf.eprintf "Init writes %a\n" E.debug_events es; *)
+(*        Printf.eprintf "Init writes %a\n" E.debug_events es; *)
         eiid,
         Evt.singleton ((),[],do_trivial es)
 

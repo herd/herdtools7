@@ -33,7 +33,7 @@ module type S = sig
   module Cons : Constraints.S with module A = A
 
 (* A good place to (re)define all these types *)
-  type cst = A.V.cst
+  type cst = A.V.Cst.v
   type v = A.V.v
   type proc = A.proc
   type instruction = A.instruction
@@ -178,7 +178,7 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
     module Cons = Constraints.Make (C.PC)(A)
 
 (* A good place to (re)define all these types *)
-    type cst = A.V.cst
+    type cst = A.V.Cst.v
     type v = A.V.v
     type proc = A.proc
     type instruction = A.instruction

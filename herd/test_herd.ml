@@ -66,6 +66,7 @@ module Make(A:Arch_herd.S) =
     end
         
    module Alloc = SymbReg.Make(ArchAlloc)
+
 (* Code loader is external, since litmus tests need it too *)
     module Load = Loader.Make(A) 
 

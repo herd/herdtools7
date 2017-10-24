@@ -45,7 +45,7 @@ and type start_points = A.start_points =
     | A.Nop -> load_code addr mem code 
     | A.Instruction ins ->
 	let mem,start = load_code (addr+4) mem code in
-	mem,(SymbConstant.intToV addr,ins)::start
+	mem,(addr,ins)::start
     | A.Label (lbl,ins) ->
 	let mem,start = load_ins addr mem ins code in
 	if A.LabelMap.mem lbl mem then

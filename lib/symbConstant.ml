@@ -14,31 +14,38 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type v = Constant.v
-open Constant
-        
-let intToV i = Concrete i
-and nameToV s = Symbolic s
+module Make(Scalar:Scalar.S) = struct
 
-let compare c1 c2 = match c1,c2 with
-| Concrete i1, Concrete i2 -> Pervasives.compare i1 i2
-| Symbolic s1,Symbolic s2 -> String.compare s1 s2
-| Concrete _,Symbolic _ -> -1
-| Symbolic _,Concrete _ -> 1
+  module Scalar = Scalar
 
-open Printf
-let pp hexa = function
-  | Concrete i -> if hexa then sprintf "0x%x" i else sprintf "%i" i
-  | Symbolic s -> s
+  type v = Scalar.t Constant.t
+  open Constant
 
-let pp_v = pp false
+  let intToV i = Concrete (Scalar.of_int i)
+  and nameToV s = Symbolic s
 
-let eq c1 c2 =  match c1,c2 with
-| Concrete i1, Concrete i2 -> i1 = i2
-| Symbolic s1,Symbolic s2 -> Misc.string_eq  s1 s2
-| (Concrete _,Symbolic _)
-| (Symbolic _,Concrete _) -> false
+  let zero = Concrete Scalar.zero
+  and one = Concrete Scalar.one
 
-let vToName = function
-  | Concrete _ -> assert false
-  | Symbolic s -> s
+  let compare c1 c2 = match c1,c2 with
+  | Concrete i1, Concrete i2 -> Scalar.compare i1 i2
+  | Symbolic s1,Symbolic s2 -> String.compare s1 s2
+  | Concrete _,Symbolic _ -> -1
+  | Symbolic _,Concrete _ -> 1
+
+  let pp hexa = function
+    | Concrete i -> Scalar.pp hexa i
+    | Symbolic s -> s
+
+  let pp_v = pp false
+
+  let eq c1 c2 =  match c1,c2 with
+  | Concrete i1, Concrete i2 -> Scalar.compare i1 i2 = 0
+  | Symbolic s1,Symbolic s2 -> Misc.string_eq  s1 s2
+  | (Concrete _,Symbolic _)
+  | (Symbolic _,Concrete _) -> false
+
+  let vToName = function
+    | Concrete _ -> assert false
+    | Symbolic s -> s
+end

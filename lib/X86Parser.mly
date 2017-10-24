@@ -22,8 +22,8 @@ open X86
 %token EOF
 %token <X86Base.reg> ARCH_REG
 %token <string> SYMB_REG
-%token <int> NUM
-%token <int> INTEL_NUM
+%token <string> NUM
+%token <string> INTEL_NUM
 %token <string> NAME
 %token <int> PROC
 
@@ -135,7 +135,7 @@ rm32:
 
 operand:
   | effaddr {Operand_effaddr $1}
-  | k {Operand_immediate $1 }
-  | INTEL_NUM {Operand_immediate $1} /* enough ? */
+  | k {Operand_immediate (Misc.string_as_int $1) }
+  | INTEL_NUM {Operand_immediate (Misc.string_as_int $1)} /* enough ? */
   
 

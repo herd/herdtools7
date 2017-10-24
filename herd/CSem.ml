@@ -263,7 +263,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
           (fun v vstored -> Act.RMW (A.Location_global loc,v,vstored,mo))
           ii
 
-    let zero = SymbConstant.intToV 0
+    let zero = ParsedConstant.zero
 
     let build_cond e ii =
       let open Op in

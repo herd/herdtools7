@@ -25,7 +25,7 @@ open ConstrGen
 %token <string> SYMB_REG
 %token <string> NAME
 %token <string> DOLLARNAME
-%token <int> NUM
+%token <string> NUM
 
 %token TRUE FALSE
 %token EQUAL NOTEQUAL EQUALEQUAL PLUS_DISJ
@@ -76,11 +76,11 @@ maybev:
 
 location_reg:
 | PROC COLON reg  {Location_reg ($1,$3)}
-| NUM COLON reg   {Location_reg ($1,$3)}
+| NUM COLON reg   {Location_reg (Misc.string_as_int $1,$3)}
 | SYMB_REG        {Location_sreg $1 }
 /* PTX registers */
 | NUM COLON PTX_REG_DEC PTX_REG_TYPE reg
-                  {Location_reg($1,$5)}
+                  {Location_reg(Misc.string_as_int $1,$5)}
 | PROC COLON PTX_REG_DEC PTX_REG_TYPE reg
                   {Location_reg($1,$5)}
 
@@ -96,20 +96,20 @@ location:
 | maybev { Location_global $1 }
 
 atom:
-| location {($1,Concrete 0)}
+| location {($1,ParsedConstant.zero)}
 | location EQUAL maybev {($1,$3)}
 
 atom_init:
 | atom { let x,v = $1 in x,(TyDef,v) }
-| NAME location { $2,(Ty $1,Concrete 0)}
-| ATOMIC NAME location { $3,(Atomic $2,Concrete 0)}
+| NAME location { $2,(Ty $1,ParsedConstant.zero)}
+| ATOMIC NAME location { $3,(Atomic $2,ParsedConstant.zero)}
 | NAME location EQUAL maybev { ($2,(Ty $1,$4))}
 | NAME location EQUAL ATOMICINIT LPAR maybev RPAR { ($2,(Ty $1,$6))}
-| NAME STAR location { ($3,(Pointer $1,Concrete 0))}
+| NAME STAR location { ($3,(Pointer $1,ParsedConstant.zero))}
 | NAME STAR location EQUAL amperopt maybev { ($3,(Pointer $1,$6))}
-| STAR location { ($2,(TyDefPointer,Concrete 0))}
+| STAR location { ($2,(TyDefPointer,ParsedConstant.zero))}
 | STAR location EQUAL amperopt maybev { ($2,(TyDefPointer,$5))}
-| NAME NAME LBRK NUM RBRK { (Location_global (Symbolic $2),(TyArray ($1,$4),Concrete 0)) }
+| NAME NAME LBRK NUM RBRK { (Location_global (Symbolic $2),(TyArray ($1,Misc.string_as_int $4),ParsedConstant.zero)) }
 
 amperopt:
 | AMPER { () }
@@ -126,7 +126,7 @@ init_semi_list:
 /* For final state constraints */
 
 loc_deref:
- NAME LBRK NUM RBRK { Location_deref (Symbolic $1, $3) }
+ NAME LBRK NUM RBRK { Location_deref (Symbolic $1, Misc.string_as_int $3) }
 
 loc_typ:
 | loc_deref { ($1,TyDef) }

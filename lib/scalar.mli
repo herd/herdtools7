@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2010-present Institut National de Recherche en Informatique et *)
+(* Copyright 2017-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,25 +14,31 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Constants in code *)
 
-type 'scalar t =
-  | Concrete of 'scalar
-  | Symbolic  of string
+module type S = sig
 
-module type S =  sig
+(* Business as usual *)
+  type  t
+  val zero : t val one : t
 
-  module Scalar : Scalar.S
+  val of_string : string -> t
+  val pp : bool -> t -> string
+  val of_int : int -> t
+  val to_int : t -> int (* Hum *)
 
-  type v = Scalar.t t
-  val intToV  : int -> v
-  val nameToV  : string -> v
+  val compare : t -> t -> int
 
-  val zero : v
-  val one : v
-  val pp : bool -> v -> string (* true -> hexa *)
-  val pp_v  : v -> string
-  val compare : v -> v -> int
-  val eq : v -> v -> bool
-  val vToName : v -> string
+(* Operations *)
+  val add : t -> t -> t
+  val sub : t -> t -> t
+  val mul : t -> t -> t
+  val div : t -> t -> t
+  val logor : t -> t -> t
+  val logand : t -> t -> t
+  val logxor : t -> t -> t
+  val lognot : t -> t
+  val shift_left : t -> int -> t
+  val lt : t -> t -> bool
+  val le : t -> t -> bool
 end
+    

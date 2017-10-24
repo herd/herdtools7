@@ -143,7 +143,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
     let is_back_jump addr_jmp tgt = match tgt with
     | [] -> false
-    | (addr_tgt,_)::_ -> SymbConstant.compare addr_jmp addr_tgt >= 0
+    | (addr_tgt,_)::_ -> Misc.int_compare addr_jmp addr_tgt >= 0
 
     type result =
         {
@@ -207,7 +207,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
       let module ValMap = MyMap.Make
        (struct
-        type t = A.I.V.cst
+        type t = int
         let compare = Pervasives.compare
        end) in
 

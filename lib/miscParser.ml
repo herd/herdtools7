@@ -16,7 +16,7 @@
 
 (* The basic types of architectures and semantics, just parsed *)
 
-type maybev = SymbConstant.v
+type maybev = ParsedConstant.v
 
 type reg = string (* Registers not yet parsed *)
 
@@ -35,9 +35,9 @@ let location_compare loc1 loc2 = match loc1,loc2 with
 | Location_sreg r1,Location_sreg r2 ->
     String.compare r1 r2
 | Location_global v1,Location_global v2 ->
-    SymbConstant.compare v1 v2
+    ParsedConstant.compare v1 v2
 | Location_deref (v1,i1),Location_deref (v2,i2) ->
-    begin match SymbConstant.compare v1 v2 with
+    begin match ParsedConstant.compare v1 v2 with
     | 0 -> Misc.int_compare i1 i2
     | r -> r
     end
@@ -51,14 +51,14 @@ let location_compare loc1 loc2 = match loc1,loc2 with
 let dump_location = function
   | Location_reg (i,r) -> Printf.sprintf "%i:%s" i r
   | Location_sreg s -> Misc.dump_symbolic s
-  | Location_global v -> SymbConstant.pp_v v
+  | Location_global v -> ParsedConstant.pp_v v
   | Location_deref (v,i) ->
-      Printf.sprintf "%s[%i]" (SymbConstant.pp_v v) i
+      Printf.sprintf "%s[%i]" (ParsedConstant.pp_v v) i
 
 let dump_rval loc = match loc with
   | Location_reg (i,r) -> Printf.sprintf "%i:%s" i r
   | Location_sreg s -> Misc.dump_symbolic s
-  | Location_global v -> Printf.sprintf "*%s" (SymbConstant.pp_v v)
+  | Location_global v -> Printf.sprintf "*%s" (ParsedConstant.pp_v v)
   | Location_deref _ -> assert false
 
 let is_global = function
@@ -93,7 +93,7 @@ type outcome = atom list
 open Printf
 
 let pp_atom (loc,v) =
-  sprintf "%s=%s" (dump_location loc) (SymbConstant.pp_v v)
+  sprintf "%s=%s" (dump_location loc) (ParsedConstant.pp_v v)
 
 let pp_outcome o =
   String.concat " "

@@ -28,7 +28,7 @@ module type S =
 
     module VC    : Valconstraint.S
            with type atom = A.V.v
-            and type cst = A.V.cst
+            and type cst = A.V.Cst.v
             and type solution = A.V.solution
             and type location = A.location
             and type state = A.state

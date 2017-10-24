@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2010-present Institut National de Recherche en Informatique et *)
+(* Copyright 2017-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,25 +14,30 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Constants in code *)
+module StringScalar = struct
+  type t = string
+  let zero = "0" and one = "1"
 
-type 'scalar t =
-  | Concrete of 'scalar
-  | Symbolic  of string
+  let of_string s = s
+  let compare = String.compare
+  let to_int k =  Warn.fatal "translate parsed constant '%s' to int" k
+  let of_int i = Printf.sprintf "%i" i
+  let pp _ s = s
 
-module type S =  sig
+  let op1 name  _ = Warn.fatal "unary operation '%s' on parsed constant" name
+  let op2 name _ _ = Warn.fatal "binary operation '%s' on parsed constant" name
 
-  module Scalar : Scalar.S
-
-  type v = Scalar.t t
-  val intToV  : int -> v
-  val nameToV  : string -> v
-
-  val zero : v
-  val one : v
-  val pp : bool -> v -> string (* true -> hexa *)
-  val pp_v  : v -> string
-  val compare : v -> v -> int
-  val eq : v -> v -> bool
-  val vToName : v -> string
+  let add =  op2 "add"
+  let sub =  op2 "sub"
+  let mul =  op2 "mul"
+  let div =  op2 "div"
+  let logor = op2 "logor"
+  let logand = op2 "logand"
+  let logxor = op2 "logxor"
+  let lognot = op1 "lognot"
+  let shift_left _ _ =  Warn.fatal "shift on parsed constant"
+  let lt = op2 "(<)"
+  let le = op2 "(<=)"
 end
+
+include SymbConstant.Make(StringScalar)

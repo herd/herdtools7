@@ -41,7 +41,7 @@ open MemOrderOrAnnot
 %start shallow_main
 
 /* For deep parsing */
-%token <int> CONSTANT
+%token <string> CONSTANT
 %token NULL
 %token SEMI COLON EQ EQ_OP NEQ_OP LT LE GT GE DOT
 %token XOR PIPE

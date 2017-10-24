@@ -20,8 +20,8 @@ module type S =
     sig
 
 (* Constants, notice that they include symbolic "rigid" constants *)
-      type cst = SymbConstant.v
-
+      module Cst : Constant.S
+          
 (* flexible variables *)
       type csym = int (* Opened by Susmit, lose pointless abstraction *)
       val pp_csym : csym -> string
@@ -31,7 +31,7 @@ module type S =
    to constants later *)
       type v = 
         | Var of csym
-        | Val of cst
+        | Val of Cst.v
 
       val pp_v  : v -> string
       val pp : bool (* hexa *) -> v -> string 
@@ -51,7 +51,7 @@ module type S =
 (* Build constant values, either numerical or symbolic *)
       val intToV  : int -> v 
       val nameToV  : string -> v
-      val cstToV : cst -> v
+      val cstToV : Cst.v -> v
       val maybevToV : MiscParser.maybev -> v
 
 (* Convenience for intToV (0|1) *)
@@ -81,7 +81,7 @@ module type S =
       type solution = v Solution.t
 
       val is_var_determined : v -> bool
-      val determined_val : v -> cst option
+      val determined_val : v -> Cst.v option
       val simplify_var : solution -> v -> v
 
     end

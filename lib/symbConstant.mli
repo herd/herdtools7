@@ -16,7 +16,5 @@
 
 (** Symbolic constants *)
 
-type v = Constant.v
-include Constant.S
-val eq : v -> v -> bool
-val vToName : v -> string
+module Make : functor (Scalar:Scalar.S)  -> Constant.S with module Scalar = Scalar
+

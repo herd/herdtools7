@@ -55,7 +55,7 @@ type mutex_kind = MutexLinux | MutexC11
 type return = OpReturn | FetchOp
 
 type expression =
-  | Const of SymbConstant.v
+  | Const of ParsedConstant.v
   | LoadReg of reg
   | LoadMem of expression * MemOrderOrAnnot.t
   | Op of Op.op * expression * expression
@@ -100,7 +100,7 @@ let dump_ws = function
 let rec dump_expr =
   let open MemOrderOrAnnot in
   function
-    | Const c -> SymbConstant.pp_v c
+    | Const c -> ParsedConstant.pp_v c
     | LoadReg(r) -> r
     | LoadMem(LoadReg r,AN []) ->
         sprintf "*%s" r

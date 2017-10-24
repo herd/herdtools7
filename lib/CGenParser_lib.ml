@@ -197,7 +197,7 @@ module Do
 			    let loc = param.param_name in
 			    let ty = MiscParser.TyDef in
 			    (MiscParser.Location_reg (p,loc),
-			     (ty,SymbConstant.nameToV loc))::env)
+			     (ty,ParsedConstant.nameToV loc))::env)
 			   env t.params)
         init prog_litmus in
     let procs = List.map (fun p -> p.CAst.proc) prog in 

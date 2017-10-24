@@ -66,13 +66,13 @@ module type S = sig
   (* Map over all registers *)
     val map_regs :
 	(reg -> reg) -> (string -> reg) -> instruction -> instruction
-
+ 
   (* Apply function to addresses present in  code *)
-  val fold_addrs : (SymbConstant.v -> 'a -> 'a) -> 'a -> instruction -> 'a
+  val fold_addrs : (ParsedConstant.v -> 'a -> 'a) -> 'a -> instruction -> 'a
 
   (* Map over addresses *)
   val map_addrs :
-      (SymbConstant.v -> SymbConstant.v) -> instruction -> instruction
+      (ParsedConstant.v -> ParsedConstant.v) -> instruction -> instruction
 
   (* Normalize instruction (for hashes) *)
   val norm_ins : instruction -> instruction

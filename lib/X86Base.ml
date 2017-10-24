@@ -93,7 +93,7 @@ let barrier_compare = Pervasives.compare
 (* Instructions *)
 (****************)
 
-type abs = SymbConstant.v
+type abs = ParsedConstant.v
 
 type rm32 =
   |  Rm32_reg of reg
@@ -163,11 +163,7 @@ type instruction =
 type parsedInstruction = instruction
 
       
-open Constant
-
-let pp_abs = function
-  | Symbolic s -> s
-  | Concrete i -> string_of_int i
+let pp_abs = ParsedConstant.pp_v
 
 let pp_rm32 rm32 = 
   match rm32 with

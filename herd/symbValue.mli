@@ -16,4 +16,8 @@
 
 (** Operations on symbolic values *)
 
-include Value.S
+module Make :
+  functor (Cst:Constant.S) ->
+  sig
+    include Value.S with module Cst = Cst
+  end

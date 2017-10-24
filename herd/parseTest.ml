@@ -132,7 +132,8 @@ module Top (Conf:Config) = struct
       end in
       match arch with
       | `PPC ->
-          let module PPC = PPCArch_herd.Make(Conf.PC)(SymbValue) in
+          let module PPC =
+            PPCArch_herd.Make(Conf.PC)(Int64Value) in
           let module PPCLexParse = struct
             type instruction = PPC.parsedPseudo
             type token = PPCParser.token
@@ -140,7 +141,7 @@ module Top (Conf:Config) = struct
             let lexer = Lexer.token
             let parser = MiscParser.mach2generic PPCParser.main
           end in
-          let module PPCS = PPCSem.Make(Conf)(SymbValue) in
+          let module PPCS = PPCSem.Make(Conf)(Int64Value) in
           let module PPCBarrier = struct
             type a = PPC.barrier
             type b = SYNC | LWSYNC | ISYNC | EIEIO
@@ -156,7 +157,7 @@ module Top (Conf:Config) = struct
           X.run start_time name chan env splitted
 
       | `ARM ->
-          let module ARM = ARMArch_herd.Make(Conf.PC)(SymbValue) in
+          let module ARM = ARMArch_herd.Make(Conf.PC)(Int32Value) in
           let module ARMLexParse = struct
             type instruction = ARM.parsedPseudo
             type token = ARMParser.token
@@ -164,7 +165,7 @@ module Top (Conf:Config) = struct
             let lexer = Lexer.token
             let parser = MiscParser.mach2generic ARMParser.main
           end in
-          let module ARMS = ARMSem.Make(Conf)(SymbValue) in
+          let module ARMS = ARMSem.Make(Conf)(Int32Value) in
           let module ARMBarrier = struct
             type a = ARM.barrier
             type b =
@@ -186,7 +187,7 @@ module Top (Conf:Config) = struct
             include Conf.PC
             let moreedges = Conf.moreedges
           end in
-          let module AArch64 = AArch64Arch_herd.Make(AArch64Conf)(SymbValue) in
+          let module AArch64 = AArch64Arch_herd.Make(AArch64Conf)(Int64Value) in
           let module AArch64LexParse = struct
             type instruction = AArch64.parsedPseudo
             type token = AArch64Parser.token
@@ -194,7 +195,7 @@ module Top (Conf:Config) = struct
             let lexer = Lexer.token
             let parser = MiscParser.mach2generic AArch64Parser.main
           end in
-          let module AArch64S = AArch64Sem.Make(Conf)(SymbValue) in
+          let module AArch64S = AArch64Sem.Make(Conf)(Int64Value) in
           let module AArch64Barrier = struct
             type a = AArch64.barrier
             type b =
@@ -212,7 +213,7 @@ module Top (Conf:Config) = struct
           X.run start_time name chan env splitted
 
       | `X86 ->
-          let module X86 = X86Arch_herd.Make(Conf.PC)(SymbValue) in
+          let module X86 = X86Arch_herd.Make(Conf.PC)(Int32Value) in
           let module X86LexParse = struct
             type instruction = X86.pseudo
             type token = X86Parser.token
@@ -220,7 +221,7 @@ module Top (Conf:Config) = struct
             let lexer = Lexer.token
             let parser = MiscParser.mach2generic X86Parser.main
           end in
-          let module X86S = X86Sem.Make(Conf)(SymbValue) in
+          let module X86S = X86Sem.Make(Conf)(Int32Value) in
           let module X86Barrier = struct
             type a = X86.barrier
             type b = MFENCE|LFENCE|SFENCE
@@ -235,7 +236,7 @@ module Top (Conf:Config) = struct
           X.run start_time name chan env splitted
 
       | `MIPS ->
-          let module MIPS = MIPSArch_herd.Make(Conf.PC)(SymbValue) in
+          let module MIPS = MIPSArch_herd.Make(Conf.PC)(Int64Value) in
           let module MIPSLexParse = struct
             type instruction = MIPS.pseudo
             type token = MIPSParser.token
@@ -243,7 +244,7 @@ module Top (Conf:Config) = struct
             let lexer = Lexer.token
             let parser = MiscParser.mach2generic MIPSParser.main
           end in
-          let module MIPSS = MIPSSem.Make(Conf)(SymbValue) in
+          let module MIPSS = MIPSSem.Make(Conf)(Int64Value) in
           let module MIPSBarrier = struct
             type a = MIPS.barrier
             type b = SYNC
@@ -255,7 +256,7 @@ module Top (Conf:Config) = struct
           let module X = Make (MIPSS) (P) (NoCheck) (MIPSM) in
           X.run start_time name chan env splitted
       | `RISCV ->
-          let module RISCV = RISCVArch_herd.Make(Conf.PC)(SymbValue) in
+          let module RISCV = RISCVArch_herd.Make(Conf.PC)(Int64Value) in
           let module RISCVLexParse = struct
             type instruction = RISCV.parsedPseudo
             type token = RISCVParser.token
@@ -263,13 +264,13 @@ module Top (Conf:Config) = struct
             let lexer = Lexer.token
             let parser = MiscParser.mach2generic RISCVParser.main
           end in
-          let module RISCVS = RISCVSem.Make(Conf)(SymbValue) in
+          let module RISCVS = RISCVSem.Make(Conf)(Int64Value) in
           let module RISCVM = RISCVMem.Make(ModelConfig)(RISCVS) in
           let module P = GenParser.Make (Conf) (RISCV) (RISCVLexParse) in
           let module X = Make (RISCVS) (P) (NoCheck) (RISCVM) in
           X.run start_time name chan env splitted
       | `C ->
-        let module C = CArch_herd.Make(Conf.PC)(SymbValue) in
+        let module C = CArch_herd.Make(Conf.PC)(Int64Value) in
         let module CLexParse = struct
           (* Parsing *)
           type pseudo = C.pseudo
@@ -285,14 +286,14 @@ module Top (Conf:Config) = struct
           let macros_parser = CParser.macros
           let macros_expand = CBase.expand
         end in
-        let module CS = CSem.Make(Conf)(SymbValue) in
+        let module CS = CSem.Make(Conf)(Int64Value) in
         let module CM = CMem.Make(ModelConfig)(CS) in
         let module P = CGenParser_lib.Make (Conf) (C) (CLexParse) in
         let module X = Make (CS) (P) (NoCheck) (CM) in
         X.run start_time name chan env splitted
       | `CPP as arch -> Warn.fatal "no support for arch '%s'" (Archs.pp arch)
       | `LISA ->
-        let module Bell = BellArch_herd.Make(Conf.PC)(SymbValue) in
+        let module Bell = BellArch_herd.Make(Conf.PC)(Int64Value) in
         let module BellLexParse = struct
           type instruction = Bell.parsedPseudo
           type token = LISAParser.token
@@ -301,7 +302,7 @@ module Top (Conf:Config) = struct
           let parser = LISAParser.main
         end in
 
-        let module BellS = BellSem.Make(Conf)(SymbValue) in
+        let module BellS = BellSem.Make(Conf)(Int64Value) in
         let module BellM = BellMem.Make(ModelConfig)(BellS) in
         let module BellC =
           BellCheck.Make

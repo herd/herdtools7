@@ -101,8 +101,8 @@ rule token deep = parse
 | '\n' { incr_lineno lexbuf ; token deep lexbuf ; }
 | "/*" { LU.skip_c_comment lexbuf ; token deep lexbuf }
 | "//" { LU.skip_c_line_comment lexbuf ; token deep lexbuf }
-| '-' ? num as x { CONSTANT (int_of_string x) }
-| 'P' (num+ as x) { PROC (int_of_string x) }
+| '-' ? num as x { CONSTANT x }
+| 'P' (num as x) { PROC (int_of_string x) }
 | ';' { SEMI }
 | ',' { COMMA }
 | '|' { PIPE }

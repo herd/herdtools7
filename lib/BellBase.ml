@@ -106,11 +106,10 @@ open Constant
 
 type reg_or_addr =
   | Rega of reg  (* address given in register *)
-  | Abs of SymbConstant.v (* address given as a constant *)
+  | Abs of ParsedConstant.v (* address given as a constant *)
 
-let pp_abs = function
-  | Symbolic s -> s
-  | Concrete i -> string_of_int i
+
+let pp_abs = ParsedConstant.pp_v
 
 let string_of_reg_or_addr r = match r with
   | Rega r -> pp_reg r

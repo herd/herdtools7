@@ -117,7 +117,7 @@ module type S = sig
 
   (* Code memory is a mapping from labels to sequences of instructions,
      Too far from actual machine, maybe *)
-  type code = (I.V.cst * I.arch_instruction) list
+  type code = (int * I.arch_instruction) list
 
   module LabelMap : Map.S with type key = string
 
@@ -330,7 +330,7 @@ module Make(C:Config) (I:I) : S with module I = I
   (*********************************)
 
   (* Code memory is a mapping from globals locs, to instructions *)
-  type code = (I.V.cst * I.arch_instruction) list
+  type code = (int * I.arch_instruction) list
 
   module LabelMap =
     Map.Make
