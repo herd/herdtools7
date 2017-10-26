@@ -63,7 +63,7 @@ end = struct
         (A.pp_location l)
         (A.pp_annot an)
         (V.pp_v v)
-  | Barrier b -> A.pp_barrier b
+  | Barrier b -> A.pp_barrier_short b
   | Commit bcc -> if bcc then "Commit" else "Pred"
   | Amo (loc,v1,v2,an) ->
       Printf.sprintf "RMW(%s)%s(%s>%s)"

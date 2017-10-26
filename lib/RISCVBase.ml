@@ -66,8 +66,7 @@ let pp_xregs =
  X30,["x30";"t5";] ; X31,["x31";"t6";] ;
 ]
 
-module RMap =
-  MyMap.Make
+module RMap =  MyMap.Make
     (struct
       type t = gpr
       let compare = Pervasives.compare

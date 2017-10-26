@@ -125,21 +125,38 @@ module Make (C:Sem.Config)(V:Value.S)
 
     let write_mem an = do_write_mem (RISCV.P an)
 
-    let write_mem_atomic an a v resa ii =
+    let write_mem_conditional an a v resa ii =
       let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
-      M.mk_singleton_es_eq (Act.Access (Dir.W, A.Location_global a, v, RISCV.X an)) eq ii
+      M.mk_singleton_es_eq
+        (Act.Access (Dir.W, A.Location_global a, v, RISCV.X an)) eq ii
 
-    let create_barrier b ii =
-      M.mk_singleton_es (Act.Barrier b) ii
+    let write_mem_atomic an  = do_write_mem (RISCV.X an)
 
-    let commit ii =
-      M.mk_singleton_es (Act.Commit true) ii
+    let create_barrier b ii = M.mk_singleton_es (Act.Barrier b) ii
 
-    let amo op mo v a ii = match op with
-    | RISCV.AMOSWAP ->
-        M.swap v (fun w -> Act.Amo (A.Location_global a,w,v,RISCV.P mo)) ii
-    | _ ->
-        M.fetch (tr_opamo op) v (fun v vstored -> Act.Amo (A.Location_global a,v,vstored,RISCV.P mo)) ii
+    let commit ii = M.mk_singleton_es (Act.Commit true) ii
+
+    let read_mo mo =
+      let open RISCV in
+      match mo with
+      | Rlx|Acq|AcqRel -> mo
+      | Rel -> Rlx
+
+    let write_mo mo =
+      let open RISCV in
+      match mo with
+      | Rlx|Rel|AcqRel -> mo
+      | Acq -> Rlx
+
+
+    let amo op an rd rv ra ii =
+      let ra = read_reg_ord ra ii
+      and rv = read_reg_data rv ii
+      and rmem = fun loc -> read_mem_atomic (read_mo an) loc ii
+      and wmem = fun loc v -> write_mem_atomic (write_mo an) loc v ii in
+      (match op with
+      | RISCV.AMOSWAP -> M.linux_exch | _ -> M.amo (tr_opamo op))
+        ra rv rmem wmem >>= fun r -> write_reg rd r ii
 
 (* Entry point *)
     let atomic_pair_allowed _ _ = true
@@ -190,12 +207,18 @@ module Make (C:Sem.Config)(V:Value.S)
                 write_reg RISCV.RESADDR V.zero ii >>| (* Cancel reservation... *)
                 M.altT
                   (write_reg r1 V.one ii) (* Failure *)
-                  ((write_reg r1 V.zero ii >>| write_mem_atomic mo ea v resa ii) >>! ()))
+                  ((write_reg r1 V.zero ii >>| write_mem_conditional mo ea v resa ii) >>! ()))
               >>! B.Next
-        | RISCV.Amo (op,w,mo,r1,r2,r3) ->
+        | RISCV.Amo (RISCV.AMOSWAP,w,mo,RISCV.Ireg RISCV.X0,r2,r3) ->
             (read_reg_data r2 ii >>| read_reg_ord r3 ii) >>=
-            fun (v,loc) -> amo op mo v loc ii >>=
-            fun v -> write_reg r1 v ii >>! B.Next
+            fun (d,a) -> write_mem mo a d ii >>! B.Next
+        | RISCV.Amo
+            ((RISCV.AMOADD|RISCV.AMOOR),w,mo,r1,RISCV.Ireg RISCV.X0,r3) ->
+              read_reg_ord r3 ii >>=
+              fun a -> read_mem mo a ii >>=
+              fun v -> write_reg r1 v ii >>! B.Next
+        | RISCV.Amo (op,w,mo,r1,r2,r3) ->
+            amo op mo r1 r2 r3 ii >>! B.Next
         | RISCV.FenceIns b ->
             create_barrier b ii >>! B.Next
         | ins -> Warn.fatal "RISCV, instruction '%s' not handled" (RISCV.dump_instruction ins)

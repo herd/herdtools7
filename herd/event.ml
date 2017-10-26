@@ -255,6 +255,11 @@ module type S = sig
         event_structure -> event_structure ->
           event_structure
 
+  val amo :
+      event_structure -> event_structure ->
+        event_structure -> event_structure ->
+          event_structure
+
   val linux_cmpexch_ok :  event_structure -> event_structure ->
     event_structure -> event_structure -> event_structure ->
       event_structure
@@ -787,6 +792,33 @@ let (=|=) = check_disjoint para_comp
              re.intra_causality_control rloc.intra_causality_control
              rmem.intra_causality_control wmem.intra_causality_control)
           (EventRel.cartesian (maximals rmem) (minimals wmem));
+     control =
+       EventRel.union4
+         re.control rloc.control rmem.control wmem.control;
+     data_ports =
+       EventSet.union4
+         re.data_ports rloc.data_ports rmem.data_ports wmem.data_ports;
+     output = Some (get_output rmem); }
+
+  let amo re rloc rmem wmem =
+    let input_wmem = minimals wmem in
+    let output_rloc = maximals rloc in
+   { procs = [];
+     events =
+        EventSet.union4 re.events rloc.events rmem.events wmem.events;
+     intra_causality_data =
+        EventRel.unions
+          [EventRel.union4
+              re.intra_causality_data rloc.intra_causality_data
+              rmem.intra_causality_data wmem.intra_causality_data;
+           EventRel.cartesian (maximals rmem) input_wmem;
+           EventRel.cartesian (maximals re) input_wmem;
+           EventRel.cartesian output_rloc input_wmem;
+           EventRel.cartesian output_rloc (minimals rmem);];
+     intra_causality_control =
+     (EventRel.union4
+        re.intra_causality_control rloc.intra_causality_control
+        rmem.intra_causality_control wmem.intra_causality_control);
      control =
        EventRel.union4
          re.control rloc.control rmem.control wmem.control;

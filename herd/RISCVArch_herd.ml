@@ -22,6 +22,10 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
   struct
     include RISCVBase
 
+    let pp_barrier_short = function
+      | FenceI -> "fence.i"
+      | Fence (a1,a2) ->  sprintf "F %s,%s" (pp_access a1) (pp_access a2)
+
     type lannot = P of mo | X of mo
 
     let empty_annot = P Rlx

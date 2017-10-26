@@ -26,6 +26,7 @@ module type S =
   sig
 
     include ArchBase.S
+    val pp_barrier_short : barrier -> string
 
     module V : Value.S
 

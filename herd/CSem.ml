@@ -46,7 +46,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
     let read_loc is_data mo =
       M.read_loc is_data (fun loc v -> Act.Access (Dir.R, loc, v, mo, false))
 
-    let read_exchange is_data vstored mo =
+    let  read_exchange is_data vstored mo =
       M.read_loc is_data (fun loc v -> Act.RMW (loc,v,vstored,mo))
 
     let read_reg is_data r ii =

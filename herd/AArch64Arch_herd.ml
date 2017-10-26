@@ -17,6 +17,8 @@ module Make (C:sig include Arch_herd.Config val moreedges : bool end) (V:Value.S
   struct
     include AArch64Base
 
+    let pp_barrier_short = pp_barrier
+
     type lannot = A | XA | L | XL | X | N | Q
 					 
     let empty_annot = N

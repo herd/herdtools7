@@ -179,6 +179,7 @@ module Make
            "po", lazy  po;
            "addr", lazy (Lazy.force pr).S.addr;
            "data", lazy (Lazy.force pr).S.data;
+           "depend", lazy (Lazy.force pr).S.depend;
            "ctrl", lazy (Lazy.force pr).S.ctrl;
            "rf", lazy (Lazy.force pr).S.rf;
            "control",lazy conc.S.str.E.control ;

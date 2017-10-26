@@ -19,6 +19,7 @@
 module Make (C:Arch_herd.Config)(V:Value.S) =
   struct
     include X86Base
+    let pp_barrier_short = pp_barrier
 
     type lannot = bool (* atomicity *)
 

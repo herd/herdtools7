@@ -18,6 +18,7 @@
 
 module Make (C:Arch_herd.Config) (V:Value.S) = struct
   include BellBase
+  let pp_barrier_short = pp_barrier
 
   module V = V
 

@@ -87,6 +87,7 @@ module type S = sig
   type procrels =
       { addr : event_rel;
         data : event_rel;
+        depend : event_rel;
         data_commit : event_rel;
         ctrl : event_rel;
         ctrlisync : event_rel;
@@ -230,6 +231,7 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
   type procrels =
       { addr : event_rel;
         data : event_rel;
+        depend : event_rel;
         data_commit : event_rel;
         ctrl : event_rel;
         ctrlisync : event_rel;

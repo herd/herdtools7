@@ -87,7 +87,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
         S.seq r1 r2
       with Misc.NoIsync -> S.E.EventRel.empty in
     let rf = U.make_rf conc in
-    { S.addr=addr_dep; data=data_dep; ctrl=ctrl_dep;
+    { S.addr=addr_dep; data=data_dep; ctrl=ctrl_dep; depend=dd_inside;
       ctrlisync;
       data_commit;
       rf; }

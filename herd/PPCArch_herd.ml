@@ -21,6 +21,8 @@ module Make (C:Arch_herd.Config) (V:Value.S)
   struct
     include PPCBase
 
+    let pp_barrier_short = pp_barrier
+
     type lannot = bool (* atomicity *)
 
     let empty_annot = false
