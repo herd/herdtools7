@@ -152,10 +152,10 @@ and type evt_struct = E.event_structure) =
         let (loc,vlcloc,esloc) =  Evt.as_singleton locm
         and (v,vclexp,esexp) = Evt.as_singleton expm in
         let eiid,rmemm = rmem loc eiid in
-        let eiid,wmemm = wmem loc v eiid in
+        let r = V.fresh_var () in
+        let eiid,wmemm = wmem loc r eiid in
         let w,vclrmem,esrmem =  Evt.as_singleton rmemm
         and (),vclwmem,eswmem = Evt.as_singleton wmemm in
-        let r = V.fresh_var () in
         let vlop = VC.Assign (r,VC.Binop (op,w,v)) in
         let es = E.amo esexp esloc esrmem eswmem in
         eiid,
