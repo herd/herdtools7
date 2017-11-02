@@ -274,6 +274,11 @@ module type S = sig
   val linux_add_unless_no :  event_structure -> event_structure ->
     event_structure -> bool -> event_structure
 
+  val riscv_sc :
+      event_structure -> event_structure -> event_structure ->
+        event_structure ->  event_structure ->  event_structure ->
+          event_structure
+
 (* stu computation :
    stu rD rEA wEA wM ->
       rEA -data-> wEA,
@@ -956,6 +961,46 @@ let (=|=) = check_disjoint para_comp
       output =
       Some
         (if retbool then EventSet.union (get_output rmem) (get_output u) else get_output rmem);
+    }
+
+
+(* RISCV Store conditional *)
+  let riscv_sc resa data addr wres wresult wmem =
+    let in_wmem = minimals wmem
+    and in_wres = minimals wres
+    and in_wresult = minimals wresult
+    and out_addr = maximals addr
+    and out_resa = maximals resa in
+    { procs = [];
+      events =
+      EventSet.union
+        (EventSet.union3 resa.events data.events addr.events)
+        (EventSet.union3 wres.events wresult.events wmem.events);
+      intra_causality_data =
+      EventRel.unions
+        [EventRel.union3 resa.intra_causality_data
+           data.intra_causality_data addr.intra_causality_data;
+         EventRel.union3 wres.intra_causality_data
+           wresult.intra_causality_data wmem.intra_causality_data;
+         EventRel.cartesian
+           (EventSet.union out_addr out_resa)
+           (EventSet.union3 in_wmem in_wres in_wresult);
+         EventRel.cartesian (maximals data) in_wmem; ];
+      intra_causality_control =
+      EventRel.union
+        (EventRel.union3 resa.intra_causality_control
+           data.intra_causality_control addr.intra_causality_control)
+        (EventRel.union3 wres.intra_causality_control
+           wresult.intra_causality_control wmem.control);
+      control =
+         EventRel.union
+           (EventRel.union3 resa.control data.control addr.control)
+           (EventRel.union3 wres.control wresult.control wmem.control);
+      data_ports =
+       EventSet.union
+        (EventSet.union3 resa.data_ports data.data_ports addr.data_ports)
+        (EventSet.union3 wres.data_ports wresult.data_ports wmem.data_ports);
+      output = Some (EventSet.union (get_output wresult) (get_output wres));
     }
 (* Store update composition, read data, read EA, write EA and  write Mem *)
 

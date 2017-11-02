@@ -245,6 +245,51 @@ and type evt_struct = E.event_structure) =
        let r = match ropt with Some r -> r | None -> vv in
        eiid, Evt.singleton (r,cleq@clrmem@clloc@clu,es)
 
+(* Store conditional, tricky dependencies *)
+    let riscv_sc read_res read_data read_addr
+        cancel_res write_result write_mem eiid =
+      let eiid,read_res =  read_res eiid in
+      let eiid,read_data = read_data eiid in
+      let eiid,read_addr = read_addr eiid in
+      let resa,cl_resa,es_resa =  Evt.as_singleton read_res
+      and data,cl_data,es_data =  Evt.as_singleton read_data
+      and addr,cl_addr,es_addr =  Evt.as_singleton read_addr in
+      let eiid,cancel_res = cancel_res eiid in
+      let eiid,write_result = write_result eiid in
+      let eiid,write_mem = write_mem addr resa data eiid in
+      let (),cl_wres,es_wres = Evt.as_singleton cancel_res
+      and (),cl_wresult,es_wresult =  Evt.as_singleton write_result
+      and (),cl_wmem,es_wmem =  Evt.as_singleton write_mem in
+      let es =
+        E.riscv_sc es_resa es_data es_addr es_wres es_wresult es_wmem in
+      eiid,
+      Evt.singleton ((),cl_resa@cl_data@cl_addr@cl_wres@cl_wresult@cl_wmem,es)
+
+
+(* Simple alternative *)
+    let altT : 'a t -> 'a t -> 'a t =
+      fun m1 m2 eiid ->
+        let (eiid, act1) = m1 eiid in
+        let (eiid, act2) = m2 eiid in
+        let un =  Evt.union  act1 act2 in
+(*
+  (Evt.map (fun (r,cs,es) -> (r,cs,es))  act1)
+  (Evt.map (fun (r,cs,es) -> (r,cs, es)) act2)
+ *)
+        (eiid, un)
+
+    let riscv_store_conditional read_res read_data read_addr
+        cancel_res write_result write_mem =
+      altT
+        (riscv_sc
+           read_res read_data read_addr cancel_res
+           (write_result A.V.one)
+           (fun _a _resa _v -> unitT ()))
+        (riscv_sc
+           read_res read_data read_addr cancel_res
+           (write_result A.V.zero)
+           write_mem)
+
 (* stu combinator *)
     let stu : 'a t -> 'b t -> ('a -> unit t) -> (('a * 'b) -> unit t) -> unit t
         = fun rD rEA wEA wM  ->
@@ -345,18 +390,6 @@ and type evt_struct = E.event_structure) =
                    (r,(VC.Assign (v,VC.Atom V.zero)) :: cs, es))
                  ract) in
           (eiid, un)
-
-    let altT : 'a t -> 'a t -> 'a t =
-      fun m1 m2 eiid ->
-        let (eiid, act1) = m1 eiid in
-        let (eiid, act2) = m2 eiid in
-        let un =  Evt.union  act1 act2 in
-(*
-  (Evt.map (fun (r,cs,es) -> (r,cs,es))  act1)
-  (Evt.map (fun (r,cs,es) -> (r,cs, es)) act2)
- *)
-        (eiid, un)
-
 
     let (|*|) : unit t -> unit t -> unit t
         = fun s1 s2 ->

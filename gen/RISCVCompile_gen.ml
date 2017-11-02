@@ -86,8 +86,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
     let addi r1 r2 k = AV.OpI (AV.ADDI,r1,r2,k)
     let _subi r1 r2 k = addi r1 r2 (-k)
 
-    let ldr mo r1 r2 =  AV.Load (wloc,AV.Signed,mo,r1,0,r2)
-    and str mo r1 r2 =  AV.Store (wloc,mo,r1,0,r2)
+    let amoor_as_load mo r1 r2 = AV.Amo (AV.AMOOR,wloc,mo,r1,zero,r2)
+    and swap_as_store mo r1 r2 = AV.Amo (AV.AMOSWAP,wloc,mo,zero,r1,r2)
+
+    let ldr mo r1 r2 =  match mo with
+    |AV.Rlx -> AV.Load (wloc,AV.Signed,mo,r1,0,r2)
+    |AV.(Acq|Rel|AcqRel) ->  amoor_as_load mo r1 r2
+    and str mo r1 r2 =  match mo with
+    | AV.Rlx -> AV.Store (wloc,mo,r1,0,r2)
+    |AV.(Acq|Rel|AcqRel) ->  swap_as_store mo r1 r2
     let add r1 r2 r3 = AV.Op (AV.ADD,r1,r2,r3)
     let xor r1 r2 r3 = AV.Op (AV.XOR,r1,r2,r3)
 
