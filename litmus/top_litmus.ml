@@ -254,7 +254,9 @@ end = struct
             R.run name out_chan doc allocated source ;
             Completed (A'.arch,doc,source,cycles,hash_env)
           end else begin
-            W.warn "%s test not compiled" (Pos.str_pos0 doc.Name.file) ;
+            let cause = if limit_ok then "" else " (too many threads)" in
+            W.warn "%s test not compiled%s"
+              (Pos.str_pos0 doc.Name.file) cause ;
             Absent A'.arch
           end
         end with e -> Interrupted (A'.arch,e)
