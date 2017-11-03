@@ -48,7 +48,14 @@ module Make
 
    let default_atom = Atomic (Rlx,Rlx)
 
-   let applies_atom _a _d = true
+   let applies_atom a d = match a with
+   | MO mo ->
+       begin match mo,d with
+       | (Acq,Code.W)|(Rel,Code.R) -> false
+       | (Rel, Code.W)|(Acq, Code.R)
+       | ((Rlx|AcqRel), _) -> true
+       end
+   | Atomic _|Mixed _ -> true
 
    let applies_atom_rmw _ar _aw = true
 
