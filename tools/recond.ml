@@ -103,7 +103,13 @@ module Make(Config:Config)(Out:OutTests.S) =
       | ForallStates (And []) -> ExistsState (And [])
       | ForallStates p -> ExistsState (Not p)
 
+
     let from_chan idx_out fname in_chan =
+
+      let _debug sec =
+        let lexbuf = LU.from_section sec in_chan in
+        Echo.echo_fun lexbuf (Printf.eprintf "%c")  in
+
       try
         let { Splitter.locs = locs; start = start; name=name; info; _} =
           S.split fname in_chan in
@@ -122,54 +128,72 @@ module Make(Config:Config)(Out:OutTests.S) =
           let out = Out.open_file base in
           Misc.output_protect_close Out.close
             (fun out ->
-              let _,_,(constr_start,constr_end),(last_start,loc_eof) = locs in
+              let _,_,(constr_start,constr_end as constr_sec),(last_start,loc_eof) = locs in
+
               let echo sec =
                 let lexbuf = LU.from_section sec in_chan in
                 Echo.echo_fun lexbuf (Out.put_char out)  in
+
+              let module D =
+                LogConstr.Dump
+                  (struct
+                    let hexa = Config.hexa
+                    let tr = match map with
+                    | None -> Misc.identity
+                    | Some m ->
+                        fun loc -> StringMap.safe_find loc loc m
+                  end) in
+
+              let dump_filter sec =
+                match LogConstr.parse_filter (LU.from_section sec in_chan) with
+                | None -> ()
+                | Some p ->
+                    Out.fprintf out "filter " ;
+                    D.dump_prop (Out.chan out) p ;
+                    Out.fprintf out "\n" in
+
               echo (start,constr_start) ;
 
               let echocond =
                 not
                   (Config.asobserved || Config.toexists || Misc.is_some map) in
+
               let cond_checked =  Config.check_cond name.Name.name in
+
               let echo_cond c = match c with
-              | Some f ->  Out.fprintf out "%s\n" f
-              | None -> echo (constr_start,constr_end) in
+              | Some f ->
+                  dump_filter constr_sec ;
+                  Out.fprintf out "%s\n" f
+              | None -> echo constr_sec in
 
               let cond =
                 begin match cond_checked with
                 | Some f ->
-                    if echocond then echo_cond cond_checked ;
+                    if echocond then begin
+                      echo_cond cond_checked
+                    end ;
                     reparse map Lexing.from_string f
                 | None ->
                     if
                       not
                         (Config.asobserved || Config.toexists) then
                       echo_cond None ;
-                    let sec = constr_start,constr_end in
-                    reparse None (LU.from_section sec) in_chan
+                    reparse None (LU.from_section constr_sec) in_chan
                 end in
+
               if Config.asobserved then begin match cond with
-              | Some (locs,cond) ->
-                  dump_locs out (mk_dump_loc map) locs ;
-                  dump_observed out (mk_dump_loc map) cond ;
+                  | Some (locs,cond) ->
+                      dump_filter constr_sec ;
+                      dump_locs out (mk_dump_loc map) locs ;
+                      dump_observed out (mk_dump_loc map) cond ;
               | None -> assert false
-              end else
-                let module D =
-                  LogConstr.Dump
-                    (struct
-                      let hexa = Config.hexa
-                      let tr = match map with
-                      | None -> Misc.identity
-                      | Some m ->
-                          fun loc -> StringMap.safe_find loc loc m
-                    end) in
-                if Config.toexists then begin match cond with
+              end else if Config.toexists then begin match cond with
                 | Some (locs,cond) ->
                     begin match cond,map with
                     | ConstrGen.ExistsState _,None ->
                         echo_cond cond_checked
                     | _ ->
+                        dump_filter constr_sec ;
                         dump_locs out (mk_dump_loc map) locs ;
                         D.dump (Out.chan out) (toexists cond) ;
                         Out.fprintf out "\n"
@@ -177,6 +201,7 @@ module Make(Config:Config)(Out:OutTests.S) =
                 | None -> assert false
               end else begin match cond with
               | Some (locs,cond) ->
+                  dump_filter constr_sec ;
                   dump_locs out (mk_dump_loc map) locs ;
                   D.dump (Out.chan out) cond ;
                   Out.fprintf out "\n"

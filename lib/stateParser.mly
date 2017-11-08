@@ -58,6 +58,8 @@ open ConstrGen
 %start loc_constr
 %type <MiscParser.location list> locs
 %start locs
+%type <MiscParser.prop option> filter
+%start filter
 %%
 
 /* For initial state */

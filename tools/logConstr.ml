@@ -95,6 +95,12 @@ let parse_locs s =
   | Parsing.Parse_error
   | LexMisc.Error _ -> None
 
+let parse_filter lxb =
+   try
+     StateParser.filter SL.token lxb
+  with
+  | Parsing.Parse_error
+  | LexMisc.Error _ -> None
 
 (* Code duplication? (with constraints) oh well! *)
 
