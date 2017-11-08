@@ -431,11 +431,13 @@ include Pseudo.Make
         -> keep
 
       let get_naccesses = function
+        | Amo (AMOSWAP,_,_,Ireg X0,_,_)
+        | Amo ((AMOOR|AMOADD),_,_,_,Ireg X0,_)
         | Load _ | LoadReserve _ | Store _ | StoreConditional _ -> 1
+        | Amo _ -> 2
         | OpI (_, _, _, _)|OpIW (_, _, _, _)|Op (_, _, _, _)
         | OpW (_, _, _, _)|J _|Bcc (_, _, _, _)|FenceIns _
           -> 0
-        | Amo _ -> 2
 
       let fold_labels k f = function
         | J lbl

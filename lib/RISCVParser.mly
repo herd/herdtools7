@@ -36,6 +36,7 @@ let tr_rw = function
 /* Instruction tokens */
 %token <RISCVBase.opi> OPI
 %token <RISCVBase.opiw> OPIW
+%token LI
 %token <RISCVBase.op> OP
 %token <RISCVBase.opw> OPW
 %token J
@@ -105,6 +106,8 @@ addr0:
 
 instr:
 /* OPs */
+| LI reg COMMA k
+  { OpI (ORI,$2,Ireg X0,$4) }
 | OPI reg COMMA reg COMMA k 
   { OpI ($1,$2,$4,$6) }
 | OPIW reg COMMA reg COMMA k 

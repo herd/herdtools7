@@ -29,6 +29,7 @@ open RISCVParser
     | "sltiu" -> OPI SLTIU
     | "andi" -> OPI ANDI
     | "ori" -> OPI ORI
+    | "li"  -> LI
     | "xori" -> OPI XORI
     | "slli" -> OPI SLLI
     | "srli" -> OPI SRLI
