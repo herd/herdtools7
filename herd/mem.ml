@@ -25,6 +25,7 @@ module type Config = sig
   val debug : Debug_herd.t
   val observed_finals_only : bool
   val initwrites : bool
+  val check_filter : bool
 end
 
 module type S = sig
@@ -627,7 +628,7 @@ let compatible_locs_mem e1 e2 =
 (* Internal filter *)
     let check_filter test fsc = match test.Test_herd.filter with
     | None -> true
-    | Some p -> S.Cons.check_prop p fsc
+    | Some p -> not C.check_filter || S.Cons.check_prop p fsc
 (*
   A little optimisation: we check whether the existence/non-existence
   of some vo would help in validation/invalidating the constraint

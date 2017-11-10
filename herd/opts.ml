@@ -39,6 +39,7 @@ let unroll = ref 2
 let speedcheck = ref Speed.False
 let optace = ref None
 let initwrites = ref None
+let check_filter = ref true
 let badexecs = ref true
 let badflag = ref None
 let through = ref Model.ThroughNone

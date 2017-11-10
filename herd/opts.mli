@@ -38,6 +38,7 @@ val unroll : int ref
 val speedcheck : Speed.t ref
 val optace : bool option ref
 val initwrites : bool option ref
+val check_filter : bool ref
 val badexecs : bool ref
 val badflag : string option ref
 val through : Model.through ref

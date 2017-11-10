@@ -243,6 +243,7 @@ let options = [
   "<n> collect at most <n> pictures, default is to collect all (specified) pictures";
   parse_bool "-badexecs" badexecs "give output for tests that have bad executions (see -badflag)" ;
   parse_string_opt "-badflag" badflag "executions with flag <string> are bad" ;
+  parse_bool "-checkfilter" check_filter "discard outcomes that negate filter proposition (if any)" ;
 (* undocumented *)
   "-showone",
   Arg.Bool (fun b -> if b then nshow := Some 1),
@@ -497,6 +498,7 @@ let () =
     let initwrites = match !initwrites with
     | None -> model_opts.ModelOption.init
     | Some b -> b
+    let check_filter = !check_filter
     let debug = !debug
     let debuglexer = debug.Debug_herd.lexer
     let verbose = !verbose
