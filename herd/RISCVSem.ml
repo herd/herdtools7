@@ -150,13 +150,23 @@ module Make (C:Sem.Config)(V:Value.S)
 
 
     let amo op an rd rv ra ii =
-      let ra = read_reg_ord ra ii
-      and rv = read_reg_data rv ii
-      and rmem = fun loc -> read_mem_atomic (read_mo an) loc ii
-      and wmem = fun loc v -> write_mem_atomic (write_mo an) loc v ii in
-      (match op with
-      | RISCV.AMOSWAP -> M.linux_exch | _ -> M.amo (tr_opamo op))
-        ra rv rmem wmem >>= fun r -> write_reg rd r ii
+      let open RISCV in
+      match C.archvariant,op,rd,rv with
+      | false,AMOSWAP,Ireg X0,_ ->
+          (read_reg_data rv ii >>| read_reg_ord ra ii) >>=
+          fun (d,a) -> write_mem (write_mo an) a d ii
+      | false,(AMOOR|AMOADD),_,Ireg X0 ->
+          read_reg_ord ra ii >>=
+          fun a -> read_mem (read_mo an) a ii >>=
+          fun v -> write_reg rd v ii
+      | _ ->
+          let ra = read_reg_ord ra ii
+          and rv = read_reg_data rv ii
+          and rmem = fun loc -> read_mem_atomic (read_mo an) loc ii
+          and wmem = fun loc v -> write_mem_atomic (write_mo an) loc v ii in
+          (match op with
+          | AMOSWAP -> M.linux_exch | _ -> M.amo (tr_opamo op))
+            ra rv rmem wmem >>= fun r -> write_reg rd r ii
 
 (* Entry point *)
     let atomic_pair_allowed _ _ = true
@@ -219,14 +229,6 @@ module Make (C:Sem.Config)(V:Value.S)
                   ((write_reg r1 V.zero ii >>| write_mem_conditional mo ea v resa ii) >>! ()))
               >>! B.Next
 *)
-        | RISCV.Amo (RISCV.AMOSWAP,w,mo,RISCV.Ireg RISCV.X0,r2,r3) ->
-            (read_reg_data r2 ii >>| read_reg_ord r3 ii) >>=
-            fun (d,a) -> write_mem mo a d ii >>! B.Next
-        | RISCV.Amo
-            ((RISCV.AMOADD|RISCV.AMOOR),w,mo,r1,RISCV.Ireg RISCV.X0,r3) ->
-              read_reg_ord r3 ii >>=
-              fun a -> read_mem mo a ii >>=
-              fun v -> write_reg r1 v ii >>! B.Next
         | RISCV.Amo (op,w,mo,r1,r2,r3) ->
             amo op mo r1 r2 r3 ii >>! B.Next
         | RISCV.FenceIns b ->

@@ -217,6 +217,7 @@ let options = [
   parse_stringset "-cycles" cycles  "<name1,...,nameN> show failing checks as cycles, cumulates" ;
 
 (* Model control *)
+  parse_bool "-archvariant" archvariant "select an architecture variation" ;
   "-optace", Arg.Bool (fun b -> optace := Some b),
     "<bool> optimize axiomatic candidate generation, default is true except for the minimal model and all generic models";
   "-initwrites", Arg.Bool (fun b -> initwrites := Some b),
@@ -510,6 +511,7 @@ let () =
       | Some (Model.Minimal b) -> b
       | Some (Model.Generic _|Model.File _) -> false
       | _ -> false
+    let archvariant = !archvariant
     let outputdir = !outputdir
     let suffix = !suffix
     let dumpes = !dumpes
