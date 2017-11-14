@@ -157,8 +157,10 @@ and opt = parse
 *)
 | "skipchecks" arg
    { lex_stringset skipchecks arg }
+(*
 | "strictskip" arg
    { lex_bool strictskip arg }
+*)
 | "unroll" arg
    { lex_int unroll arg }
 | "optace" arg
@@ -171,6 +173,8 @@ and opt = parse
     { lex_bool badexecs arg }
 | "badflag" arg
     { lex_string_opt badflag arg }
+| "archvariant" arg
+    { lex_bool archvariant arg }
 (* Control output *)
 | "auto" arg
    { lex_bool auto arg }
