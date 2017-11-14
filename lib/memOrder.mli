@@ -24,4 +24,5 @@ type t =
 val compare : t -> t -> int
 val pp_mem_order : t -> string
 val pp_mem_order_short : t -> string
-
+val extract_read : t -> t
+val extract_write : t -> t

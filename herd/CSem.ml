@@ -57,7 +57,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
 
     let read_mem_atomic is_data a loc =
       M.read_loc is_data
-        (fun loc v -> Act.Access (Dir.R, loc, v, MOorAN.AN a, true))
+        (fun loc v -> Act.Access (Dir.R, loc, v,  a, true))
         (A.Location_global loc)
 
 
@@ -68,10 +68,8 @@ module Make (Conf:Sem.Config)(V:Value.S)
     let write_mem mo a  = write_loc mo (A.Location_global a)
     let write_mem_atomic a loc v ii =
       M.mk_singleton_es
-        (Act.Access (Dir.W, A.Location_global loc, v, MOorAN.AN a, true)) ii >>! v
+        (Act.Access (Dir.W, A.Location_global loc, v, a, true)) ii >>! v
 
-    let fetch_op op v mo loc =
-      M.fetch op v (fun v vstored -> Act.RMW (loc,v,vstored,mo))
 
     let mk_fence_a a ii = M.mk_fence (Act.Fence  (MOorAN.AN a)) ii
     let mk_mb ii =  mk_fence_a a_mb ii
@@ -81,11 +79,11 @@ module Make (Conf:Sem.Config)(V:Value.S)
       let add_mb = match a with
       | ["mb"] -> true | _ -> false in
       let aw = match a with
-      | ["release"] -> a
-      | _ -> ["once";]
+      | ["release"] -> MOorAN.AN a
+      | _ -> an_once
       and ar = match a with
-      | ["acquire"] -> a
-      | _ -> ["once";] in
+      | ["acquire"] -> MOorAN.AN a
+      | _ -> an_once in
       let rmem = fun loc -> read_mem_atomic is_data ar loc ii
       and wmem = fun loc v -> write_mem_atomic aw loc v ii >>! () in
       let exch = M.linux_exch rloc re rmem wmem in
@@ -166,22 +164,22 @@ module Make (Conf:Sem.Config)(V:Value.S)
             let mnew = build_semantics_expr true enew ii
             and rmem vloc =
               read_mem_atomic true
-                (match a with ["acquire"] -> a | _ -> a_once)
+                (match a with ["acquire"] -> MOorAN.AN a | _ -> an_once)
                 vloc ii
             and wmem vloc w =
               write_mem_atomic
-                (match a with ["release"] -> a | _ -> a_once)
+                (match a with ["release"] ->  MOorAN.AN a | _ -> an_once)
                 vloc w ii >>! () in
             M.linux_cmpexch_ok mloc mold mnew rmem wmem M.assign in
           add_mb r)
           (M.linux_cmpexch_no mloc mold
-             (fun vloc -> read_mem_atomic true a_once vloc ii)
+             (fun vloc -> read_mem_atomic true an_once vloc ii)
              M.neqT)
     | C.Fetch(l,op,e,mo) ->
         (build_semantics_expr true e ii >>|
         build_semantics_expr false l ii)
           >>= (fun (v,l) ->
-            fetch_op op v mo (A.Location_global l) ii)
+            fetch_op op v mo l ii)
 
 
     | C.ECas(obj,exp,des,success,failure,strong) ->
@@ -225,12 +223,12 @@ module Make (Conf:Sem.Config)(V:Value.S)
         let mloc = build_semantics_expr false eloc ii
         and mu =  build_semantics_expr true eu ii
         and mrmem loc =
-          read_mem_atomic true a_once loc ii in
+          read_mem_atomic true an_once loc ii in
         M.altT
           (let r =
             M.linux_add_unless_ok mloc (build_semantics_expr true ea ii)
               mu mrmem
-              (fun loc v -> write_mem_atomic a_once loc v ii >>! ())
+              (fun loc v -> write_mem_atomic an_once loc v ii >>! ())
               M.neqT M.add (if retbool then Some V.one else None) in
           mk_mb ii >>*= fun () -> r >>*= fun v ->
             mk_mb ii >>! v)
@@ -241,13 +239,26 @@ module Make (Conf:Sem.Config)(V:Value.S)
       build_semantics_expr true e ii >>|
       (build_semantics_expr false eloc ii >>=
        fun loc ->
-         (read_mem_atomic true a_read loc ii >>| M.unitT loc)) >>=
+         (read_mem_atomic true (MOorAN.AN a_read) loc ii >>| M.unitT loc)) >>=
       (fun (v,(vloc,loc)) ->
         M.op op vloc v >>=
         fun w ->
+          let a = MOorAN.AN a_write in
           match ret with
-          | C.OpReturn -> write_mem_atomic a_write loc w ii
-          | C.FetchOp  -> write_mem_atomic a_write loc w ii >>! vloc)
+          | C.OpReturn -> write_mem_atomic a loc w ii
+          | C.FetchOp  -> write_mem_atomic a loc w ii >>! vloc)
+
+    and fetch_op op v mo loc ii =
+      if Conf.archvariant then
+        read_mem_atomic true
+          (MOorAN.MO (MemOrder.extract_read mo)) loc ii >>= fun oldv ->
+        M.op op oldv v >>= fun w ->
+          write_mem_atomic
+            (MOorAN.MO (MemOrder.extract_write mo)) loc w ii >>! oldv
+      else
+        M.fetch op v
+          (fun v vstored -> Act.RMW (A.Location_global loc,v,vstored,mo))
+          ii
 
     let zero = SymbConstant.intToV 0
 

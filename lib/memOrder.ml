@@ -39,3 +39,13 @@ let pp_mem_order_short = function
   | SC -> "Sc"
   | Rlx -> "Rlx"
   | Con -> "Con"
+
+let extract_read mo = match mo with
+| Acq|SC|Rlx|Con -> mo
+| Acq_Rel -> Acq
+| Rel -> Rlx
+
+let extract_write mo = match mo with
+| Rel|SC|Rlx -> mo
+| Acq_Rel -> Rel
+| Acq|Con -> Rlx
