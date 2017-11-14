@@ -152,10 +152,10 @@ module Make (C:Sem.Config)(V:Value.S)
     let amo op an rd rv ra ii =
       let open RISCV in
       match C.archvariant,op,rd,rv with
-      | false,AMOSWAP,Ireg X0,_ ->
+      | true,AMOSWAP,Ireg X0,_ ->
           (read_reg_data rv ii >>| read_reg_ord ra ii) >>=
           fun (d,a) -> write_mem (write_mo an) a d ii
-      | false,(AMOOR|AMOADD),_,Ireg X0 ->
+      | true,(AMOOR|AMOADD),_,Ireg X0 ->
           read_reg_ord ra ii >>=
           fun a -> read_mem (read_mo an) a ii >>=
           fun v -> write_reg rd v ii
