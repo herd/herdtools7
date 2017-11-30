@@ -130,7 +130,10 @@ module Make (C:Sem.Config)(V:Value.S)
             (fun v -> write_reg r v ii) >>! B.Next
 
         | BellBase.Pst(addr_op, roi, s) ->
-          (solve_addr_op addr_op ii >>|
+            let s = match s with
+            | ["assign"] -> ["release"]
+            | _ -> s in
+            (solve_addr_op addr_op ii >>|
               read_roi true roi ii) >>=
             (fun (addr,v) -> write_mem addr v s ii) >>!
             B.Next
