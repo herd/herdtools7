@@ -28,6 +28,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
 (****************************)
 
     let (>>=) = M.(>>=)
+    let (>>==) = M.(>>==)
     let (>>*=) = M.(>>*=)
     let (>>|) = M.(>>|)
     let (>>::) = M.(>>::)
@@ -240,7 +241,8 @@ module Make (Conf:Sem.Config)(V:Value.S)
       build_semantics_expr true e ii >>|
       (build_semantics_expr false eloc ii >>=
        fun loc ->
-         (read_mem_atomic true (MOorAN.AN a_read) loc ii >>| M.unitT loc)) >>=
+         (read_mem_atomic true (MOorAN.AN a_read) loc ii >>| M.unitT loc))
+        >>== (* Notice '==' as atomic_op 'ouput' iico depends on R *)
       (fun (v,(vloc,loc)) ->
         M.op op vloc v >>=
         fun w ->

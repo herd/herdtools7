@@ -34,9 +34,10 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
     let iico = conc.S.str.E.intra_causality_data
     and po = U.po_iico conc.S.str
     and rf_regs = U.make_rf_regs conc in
-    let iico_regs =
+    let iico_rmw = E.EventRel.inter conc.S.atomic_load_store iico
+    and iico_regs =
       E.EventRel.restrict_rel
-        (fun  e1 e2  -> not (evt_relevant e1 || evt_relevant e2)) iico in    
+        (fun  e1 e2  -> not (evt_relevant e1 || evt_relevant e2)) iico in
     let dd_inside = S.tr (E.EventRel.union rf_regs iico_regs) in
     let dd_pre =
 (* All dependencies start with a mem load *)
@@ -50,7 +51,9 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
           (fun e1 e2 ->
             E.is_commit e2 ||
             (E.is_mem_store e2 && is_data_port e1)) iico in
-      S.seq dd_pre last_data
+      S.union
+        (S.seq dd_pre last_data)
+        (iico_rmw) (* Internal data dep of RMW's *)
     and addr_dep =
 (* Address deps are (1) dd to loads, (2) non-data deps to stores, (3) extra
    abstract "memory" events (such as lock, unlock, etc. that have an address

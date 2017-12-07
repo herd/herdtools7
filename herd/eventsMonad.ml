@@ -77,25 +77,31 @@ and type evt_struct = E.event_structure) =
 
     let (=**=) = E.(=**=)
     let (=*$=) = E.(=*$=)
+    let (=$$=) = E.(=$$=)
     let (=|=) = E.(=|=)
     let (+|+) = E.(+|+)
 
 (* Bind the result *)
-    let (>>=) : 'a t -> ('a -> 'b t) -> ('b) t
-        = fun s f ->
-          (fun eiid ->
+    let data_comp comp_str s f =
+      (fun eiid ->
             let (eiid_next, sact) = s eiid in
             Evt.fold (fun (v1, vcl1, es1) (eiid1,acc) ->
               let b_set = f v1 in
               let (eiid_b,b_setact) = b_set eiid1 in
               Evt.fold (fun (v2,vcl2,es2) (eiid2,acc_inner) ->
-                match es1 =*$= es2 with
+                match comp_str es1 es2 with
                 | None -> (eiid2, acc_inner)
                 | Some es -> (eiid2,Evt.add (v2,vcl2@vcl1,es) acc_inner)
                        )
                 b_setact (eiid_b,acc)
                      )
               sact (eiid_next,Evt.empty))
+
+    let (>>=) : 'a t -> ('a -> 'b t) -> ('b) t
+        = fun s f -> data_comp (=*$=) s f
+
+    let (>>==) : 'a t -> ('a -> 'b t) -> ('b) t
+        = fun s f -> data_comp (=$$=) s f
 
 (* Bind the result *)
     let (>>*=) : 'a t -> ('a -> 'b t) -> ('b) t

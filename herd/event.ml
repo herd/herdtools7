@@ -236,6 +236,10 @@ module type S = sig
   val (=*$=) :
       event_structure -> event_structure -> event_structure option
 
+(* Identical, keep first event structure output as output... *)
+  val (=$$=) :
+      event_structure -> event_structure -> event_structure option
+
 (* sequential composition, add control dependency *)
   val (=**=) :
       event_structure -> event_structure -> event_structure option
@@ -708,7 +712,7 @@ let para_comp es1 es2 =
 let (=|=) = check_disjoint para_comp
 
 (* Composition with intra_causality_data from first to second *)
-  let data_comp es1 es2 =
+  let data_comp mkOut es1 es2 =
       { procs = [];  events = EventSet.union es1.events es2.events;
         intra_causality_data = EventRel.union
           (EventRel.union es1.intra_causality_data
@@ -718,9 +722,13 @@ let (=|=) = check_disjoint para_comp
           es1.intra_causality_control es2.intra_causality_control ;
         control = EventRel.union es1.control es2.control;
         data_ports = EventSet.union es1.data_ports es2.data_ports;
-        output = es2.output; }
+        output = mkOut es1 es2; }
 
-    let (=*$=) = check_disjoint data_comp
+  let (=*$=) =
+    check_disjoint (data_comp (fun _ es -> es.output))
+
+  let (=$$=) =
+    check_disjoint (data_comp (fun es _ -> Some (get_output es)))
 
 (* Composition with intra_causality_control from first to second *)
     let control_comp es1 es2 =

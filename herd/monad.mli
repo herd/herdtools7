@@ -38,6 +38,7 @@ module type S =
     val zeroT        : 'a t
     val unitT        : 'a -> 'a t
     val (>>=) : 'a t -> ('a -> 'b t) -> ('b) t
+    val (>>==) : 'a t -> ('a -> 'b t) -> ('b) t (* Output event stay in first arg *)
     val (>>*=) : 'a t -> ('a -> 'b t) -> ('b) t
     val exch : 'a t -> 'a t -> ('a -> 'b t) ->  ('a -> 'b t) ->  ('b * 'b) t
     val linux_exch :
