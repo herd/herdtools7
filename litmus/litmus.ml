@@ -79,7 +79,13 @@ let opts =
      "show some additional information on test as a prelude to test output" ;
    begin let module P = ParseTag.Make(Driver) in
    P.parse "-driver" Option.driver "select language of driver" end ;
-   argbool "-detached" Option.detached "used detached POSIX threads" ;
+   argboolfun "-detached"
+     (fun b ->
+       Option.threadstyle :=
+         (if b then ThreadStyle.Detached else ThreadStyle.Std))
+     "used detached POSIX threads" ;
+   begin let module P = ParseTag.Make(ThreadStyle) in
+   P.parse "-thread" Option.threadstyle "set thread nature" end ;
    begin let module P = ParseTag.Make(Launch) in   
    P.parse "-launch" Option.launch "set type of phread lauch" end ;
    begin let module P = ParseTag.Make(Memory) in
@@ -306,7 +312,7 @@ let () =
       let logicalprocs = !logicalprocs
       let linkopt = !linkopt
       let barrier = !barrier
-      let detached = !detached
+      let threadstyle = !threadstyle
       let launch = !launch
       let alloc = !alloc
       let doublealloc = !doublealloc

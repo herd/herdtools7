@@ -43,7 +43,7 @@ module type Config = sig
   val alloc : Alloc.t
   val doublealloc : bool
   val noalign : Align.t option
-  val detached : bool
+  val threadstyle : ThreadStyle.t
   val launch : Launch.t
   val affinity : Affinity.t
   val logicalprocs : int list option
@@ -208,7 +208,6 @@ end = struct
 
   let do_dynamicalloc = not do_staticalloc
 
-  let do_detached = Cfg.detached
   open Launch
   let launch = Cfg.launch
   let affinity = Cfg.affinity
@@ -1880,10 +1879,13 @@ end = struct
     O.oi "zyva_t *_a = (zyva_t *) _va;" ;
     O.oi "param_t *_b = _a->_p;" ;
     O.oi "pb_wait(_a->p_barrier);" ;
-    if do_detached then
-      O.oi "op_t *op[NT];"
-    else
-      O.oi "pthread_t thread[NT];" ;
+    begin let open ThreadStyle in
+    match Cfg.threadstyle with
+    | Detached|Cached ->
+        O.oi "op_t *op[NT];"
+    | Std ->
+      O.oi "pthread_t thread[NT];"
+    end ;
     O.oi "parg_t parg[N];" ;
     O.fi "f_t *fun[] = {%s};"
       (String.concat ","
@@ -1967,17 +1969,26 @@ end = struct
 
     choose_proc_prelude indent2 ;
     if Cfg.cautious then O.oiii "mbar();" ;
-    if do_detached then
-      O.oiii "op[_p] = launch_detached(fun[_p],&parg[_p]);"
-    else
-      O.oiii "launch(&thread[_p],fun[_p],&parg[_p]);" ;
+    begin let open ThreadStyle in
+    match Cfg.threadstyle with
+    | Detached ->
+        O.oiii "op[_p] = launch_detached(fun[_p],&parg[_p]);"
+    | Cached ->
+        O.oiii "op[_p] = launch_cached(fun[_p],&parg[_p]);"
+    | Std ->
+        O.oiii "launch(&thread[_p],fun[_p],&parg[_p]);"
+    end ;
     loop_proc_postlude indent2 ;
     if Cfg.cautious then O.oii "mbar();" ;
 
     begin match launch with
     | Changing ->
-        if not do_detached then
-          O.oii "if (_b->do_change) perm_threads(&ctx.seed,thread,NT);"
+        begin let open ThreadStyle in
+        match Cfg.threadstyle with
+        | Std ->
+            O.oii "if (_b->do_change) perm_threads(&ctx.seed,thread,NT);"
+        | Detached|Cached -> ()
+        end
     | Fixed -> ()
     end ;
 
@@ -1994,10 +2005,13 @@ end = struct
         O.fx i "%s" call in
     choose_proc_prelude indent2 ;
     if Cfg.cautious then O.oiii "mbar();" ;
-    if do_detached then
-      set_result indent3 "_p" "join_detached(op[_p]);"
-    else
-      set_result indent3 "_p" "join(&thread[_p]);" ;
+    begin let open ThreadStyle in
+    match Cfg.threadstyle with
+    | Detached|Cached ->
+        set_result indent3 "_p" "join_detached(op[_p]);"
+    | Std ->
+        set_result indent3 "_p" "join(&thread[_p]);"
+    end ;
     loop_proc_postlude indent2 ;
     if Cfg.cautious then O.oii "mbar();" ;
 
@@ -2470,10 +2484,13 @@ end = struct
 (*********************)
     O.oi "hist_t *hist = NULL;" ; (* Place holder for last zyva call result *)
     O.oi "int n_th = n_exe-1;" ;
-    if do_detached then
-      O.oi "op_t *op[n_th];"
-    else
-      O.oi "pthread_t th[n_th];" ;
+    begin let open ThreadStyle in
+    match Cfg.threadstyle with
+    | Detached|Cached ->
+        O.oi "op_t *op[n_th];"
+    | Std ->
+        O.oi "pthread_t th[n_th];"
+    end ;
     O.oi "zyva_t zarg[n_exe];" ;
     O.oi "pm_t *p_mutex = pm_create();" ;
     O.oi "pb_t *p_barrier = pb_create(n_exe);" ;
@@ -2519,10 +2536,15 @@ end = struct
       O.oii "}"
     end ;
     O.oii "if (k < n_th) {" ;
-    if do_detached then
-      O.oiii "op[k] = launch_detached(zyva,p);"
-    else
-      O.oiii "launch(&th[k],zyva,p);" ;
+    begin let open ThreadStyle in
+    match Cfg.threadstyle with
+    | Detached ->
+        O.oiii "op[k] = launch_detached(zyva,p);"
+    | Cached ->
+        O.oiii "op[k] = launch_cached(zyva,p);"
+    | Std ->
+        O.oiii "launch(&th[k],zyva,p);"
+    end ;
     O.oii "} else {" ;
     O.oiii "hist = (hist_t *)zyva(p);" ;
     O.oii "}" ;
@@ -2536,10 +2558,13 @@ end = struct
     O.oi "count_t n_outs = prm.size_of_test; n_outs *= prm.max_run;" ;
 (* join loop *)
     O.oi "for (int k=0 ; k < n_th ; k++) {" ;
-    if do_detached then
-      O.oii "hist_t *hk = (hist_t *)join_detached(op[k]);"
-    else
-      O.oii "hist_t *hk = (hist_t *)join(&th[k]);" ;
+    begin let open ThreadStyle in
+    match Cfg.threadstyle with
+    | Detached|Cached ->
+        O.oii "hist_t *hk = (hist_t *)join_detached(op[k]);"
+    | Std ->
+        O.oii "hist_t *hk = (hist_t *)join(&th[k]);"
+    end ;
     check_speedcheck_filter test indent2
       (fun i ->
         O.ox i

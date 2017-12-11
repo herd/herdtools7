@@ -242,13 +242,7 @@ void *join_detached(op_t *p) ;
 
 /* Thread cache */
 
-typedef struct {
-  int max_run ;
-  op_t *op_arg,*op_ret ;
-  void *arg ;
-} sarg_t ;
-
-f_t start_thread ;
+op_t *launch_cached(f_t *f,void *a) ;
 
 /*****************/
 /* Random things */

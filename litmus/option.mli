@@ -28,6 +28,7 @@ val argstring : string -> string ref -> string -> arg_triple
 val argstring_withfun :
     string -> (string -> unit) -> string -> arg_triple
 val argint : string -> int ref -> string -> arg_triple
+val argboolfun : string -> (bool -> unit) -> string -> arg_triple
 val argbool : string -> bool ref -> string -> arg_triple
 val argboolo : string -> bool option ref -> string -> arg_triple
 val argfloato : string -> float option ref -> string -> arg_triple
@@ -61,7 +62,7 @@ val barrier : Barrier.t ref
 val verbose_barrier : bool ref
 val verbose_prelude : bool option ref
 val driver : Driver.t ref
-val detached : bool ref
+val threadstyle : ThreadStyle.t ref
 val launch : Launch.t ref
 val memory : Memory.t ref
 val contiguous : bool ref

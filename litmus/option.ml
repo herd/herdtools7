@@ -53,6 +53,9 @@ let argint opt  r msg =
   opt,Arg.Int (fun b -> r := b),
   sprintf "<n> %s, default %i" msg !r
 
+let argboolfun opt f msg =
+  opt,Arg.Bool f,sprintf "<bool> %s" msg
+
 let argbool opt  r msg =
   opt,Arg.Bool (fun b -> r := b),
   sprintf "<bool> %s, default %b" msg !r
@@ -106,7 +109,7 @@ let barrier = ref Barrier.User
 let verbose_barrier = ref false
 let verbose_prelude = ref None
 let driver = ref Driver.Shell
-let detached = ref false
+let threadstyle = ref ThreadStyle.Std
 let launch = ref Launch.Changing
 let memory = ref Memory.Direct
 let contiguous = ref false

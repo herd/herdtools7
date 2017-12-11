@@ -1031,18 +1031,124 @@ void *join_detached(op_t *op) {
   return r ;
 }
 
-/* Thread cache */
+/*********/
+/* Cache */
+/*********/
 
-void *start_thread(void *_a) {
-  sarg_t *_b = (sarg_t *)_a ;
-  for (int _k = _b->max_run ; _k > 0 ; _k--) {
-    void *_c = op_get(_b->op_arg) ;
-    f_t *f = (f_t *)_c ;
-    if (f == NULL) break ;
-    void *ret = f(_b->arg) ;
-    op_set(_b->op_ret,ret) ;
+/* Table of detached arguments */
+
+typedef struct {
+  int sz,next;
+  detarg_t **t;
+} table_t;
+
+static table_t *table_create(void) {
+  table_t *r = malloc_check(sizeof(*r)) ;
+  r->next = 0 ;
+  r->sz = 0 ;
+  r->t = NULL ;
+  return r ;
+}
+
+static void table_push(table_t *t,detarg_t *p) {
+  if (t->next >= t->sz) {
+    t->sz = 2*t->sz+1;
+    t->t = realloc(t->t,t->sz*sizeof(t->t[0]));
   }
-  return NULL ;
+  t->t[t->next++] = p;
+}
+
+static detarg_t *table_pop(table_t *t) {
+  return t->t[--t->next];
+}
+
+/* Task pool */
+
+typedef struct {
+  int n_pool; // waiting in pool
+  pc_t *c_wait;
+  table_t *t;
+} pool_t;
+
+static pool_t *pool;
+
+static pool_t *pool_create(void) {
+  pool_t *r = malloc_check(sizeof(*r));
+  r->n_pool = 0;
+  r->c_wait = pc_create();
+  r->t = table_create();
+  return r;
+}
+
+/* Returns task to run, called by cached threads, see zyva_cache below */
+static detarg_t *pool_get(pool_t *pool) {
+  detarg_t *r;
+  pc_lock(pool->c_wait);
+  pool->n_pool++;
+  while (pool->t->next <= 0) pc_wait(pool->c_wait);
+  r = table_pop(pool->t);
+  pc_unlock(pool->c_wait);
+  return r ;
+}
+
+/* Code for cached threads, a first task is run, then wait on pool for the next task */
+
+typedef struct {
+  pool_t *pool;
+  detarg_t *arg;
+} cachearg_t;
+
+static void *zyva_cache(void *_a) {
+  cachearg_t *a = (cachearg_t *)_a;
+  detarg_t *b = a->arg;
+  pool_t *pool = a->pool;
+  int e;
+  free(a);
+
+  e = pthread_detach(pthread_self());
+  if (e) errexit("pthread_detach",e) ;
+
+  for ( ; ; ) {
+    f_t *f = b->f ;
+    void *a = b->a ;
+    op_t *op = b->op ;
+    free(b) ;
+    void *r = f(a) ;
+    op_set(op,r) ;
+    b = pool_get(pool);
+  }
+  return NULL;
+}
+
+/*
+  Send task to pool, there are two cases
+   1. No thread in pool, then launch a new cached thread.
+   2. Some thread in pool, then signal
+*/
+
+static void pool_put(pool_t *pool,detarg_t *p) {
+  pc_lock(pool->c_wait) ;
+  if (pool->n_pool <= 0) {
+    pc_unlock(pool->c_wait);
+    cachearg_t *a = malloc_check(sizeof(*a));
+    a->pool = pool; a->arg = p;
+    pthread_t th;
+    launch(&th,zyva_cache,a);
+  } else {
+    table_push(pool->t,p);
+    pool->n_pool--; /* reserve one thread */
+    pc_signal(pool->c_wait);
+    pc_unlock(pool->c_wait) ;
+  }
+}
+
+op_t *launch_cached(f_t *f,void *a) {
+  op_t *op = op_create() ;
+  detarg_t *b = malloc_check(sizeof(*b)) ;
+  b->f = f ; b->a = a; b->op = op ;
+  if (pool == NULL) pool = pool_create();
+  pool_put(pool,b);
+  return op ;
 }
 
 /*****************/

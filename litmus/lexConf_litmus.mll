@@ -103,8 +103,14 @@ rule main = parse
     P.lexfun "barrier" barrier arg ; main lexbuf }
 | "delay" arg
     { set_int_withfun set_delay arg ; main lexbuf }
+| "thread" arg
+    { let module P = LexTag(ThreadStyle) in
+    P.lexfun "thread" threadstyle arg ; main lexbuf }
 | "detached" arg
-    { set_bool detached arg ; main lexbuf }
+    { set_bool_withfun
+        (fun b -> threadstyle
+            := (if b then ThreadStyle.Detached else ThreadStyle.Std)) arg ;
+      main lexbuf }
 | "launch" arg
     { let module P = LexTag(Launch) in
     P.lexfun "launch" launch arg ; main lexbuf }
