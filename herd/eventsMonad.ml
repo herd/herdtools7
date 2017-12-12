@@ -489,6 +489,18 @@ and type evt_struct = E.event_structure) =
                E.iiid = Some ii;
                E.action = a }))
 
+    let mk_singleton_es_success a ii =
+      fun eiid ->
+        (eiid+1,
+         Evt.singleton
+           ((), [],
+            let str =
+              trivial_event_structure false
+                {E.eiid = eiid ;
+                 E.iiid = Some ii;
+                 E.action = a } in
+            { str with E.success_ports=str.E.events; }))
+
     let mk_fence a ii =
       fun eiid ->
         (eiid+1,

@@ -54,6 +54,7 @@ module type S = sig
 (* Is e1 before e2 w.r.t. prog order ? Nothing assumed on e1 and a2 *)
   val po_strict : event -> event -> bool
   val before_in_po : event -> event -> bool
+  val po_eq : event -> event -> bool
 
 (************************)
 (* Predicates on events *)
@@ -169,6 +170,8 @@ module type S = sig
       control : EventRel.t ;
       (* Events that lead to the data port of a W *)
       data_ports : EventSet.t ;
+      (* some special output port, i.e. store conditional success as reg write *)
+      success_ports : EventSet.t ;
       (* Result of structure, by default maximal iico *)
       output : EventSet.t option ;
     }
@@ -400,6 +403,8 @@ struct
     let po_strict e1 e2 =
       proc_of e1 = proc_of e2 && progorder_of e1 < progorder_of e2
 
+    let po_eq e1 e2 =
+      proc_of e1 = proc_of e2 && progorder_of e1 = progorder_of e2
 
 (* relative to memory *)
     let is_mem_store e = Act.is_mem_store e.action
@@ -513,7 +518,7 @@ struct
         intra_causality_data : EventRel.t ;   (* really a (partial order) relation *)
         intra_causality_control : EventRel.t ;(* really a (partial order) relation *)
         control : EventRel.t ;
-        data_ports : EventSet.t ;
+        data_ports : EventSet.t ; success_ports : EventSet.t ;
         output : EventSet.t option ;
       }
 
@@ -530,6 +535,7 @@ struct
        intra_causality_control = map_rel es.intra_causality_control ;
        control = map_rel es.control ;
        data_ports = map_set es.data_ports ;
+       success_ports = map_set es.success_ports ;
        output = Misc.app_opt map_set es.output ;
      }
 
@@ -538,7 +544,7 @@ struct
         intra_causality_data = EventRel.empty ;
         intra_causality_control = EventRel.empty ;
         control = EventRel.empty ;
-        data_ports = EventSet.empty ;
+        data_ports = EventSet.empty ; success_ports = EventSet.empty ;
         output = None ;
       }
 
@@ -549,6 +555,7 @@ struct
     EventRel.is_empty es.intra_causality_control &&
     EventRel.is_empty es.control &&
     EventSet.is_empty es.data_ports &&
+    EventSet.is_empty es.success_ports &&
     Misc.is_none es.output
 
 (****************************)
@@ -707,6 +714,7 @@ let para_comp es1 es2 =
       es1.intra_causality_control  es2.intra_causality_control ;
     control = EventRel.union es1.control es2.control;
     data_ports = EventSet.union es1.data_ports es2.data_ports;
+    success_ports = EventSet.union es1.success_ports es2.success_ports;
     output = union_output es1 es2; }
 
 let (=|=) = check_disjoint para_comp
@@ -722,6 +730,7 @@ let (=|=) = check_disjoint para_comp
           es1.intra_causality_control es2.intra_causality_control ;
         control = EventRel.union es1.control es2.control;
         data_ports = EventSet.union es1.data_ports es2.data_ports;
+        success_ports = EventSet.union es1.success_ports es2.success_ports;
         output = mkOut es1 es2; }
 
   let (=*$=) =
@@ -742,6 +751,7 @@ let (=|=) = check_disjoint para_comp
           (EventRel.cartesian (maximals es1) (minimals es2));
         control = EventRel.union es1.control es2.control;
         data_ports = EventSet.union es1.data_ports es2.data_ports;
+        success_ports = EventSet.union es1.success_ports es2.success_ports;
         output = union_output es1 es2; }
 
     let (=**=) = check_disjoint control_comp
@@ -769,6 +779,8 @@ let (=|=) = check_disjoint para_comp
           EventRel.union4 rs1.control rs2.control ws1.control ws2.control;
         data_ports =
           EventSet.union4 rs1.data_ports rs2.data_ports ws1.data_ports ws2.data_ports;
+        success_ports =
+          EventSet.union4 rs1.success_ports rs2.success_ports ws1.success_ports ws2.success_ports;
         output = None; }
 
 (* disjointness is awful *)
@@ -811,6 +823,9 @@ let (=|=) = check_disjoint para_comp
      data_ports =
        EventSet.union4
          re.data_ports rloc.data_ports rmem.data_ports wmem.data_ports;
+     success_ports =
+       EventSet.union4
+         re.success_ports rloc.success_ports rmem.success_ports wmem.success_ports;
      output = Some (get_output rmem); }
 
   let amo re rloc rmem wmem =
@@ -838,6 +853,9 @@ let (=|=) = check_disjoint para_comp
      data_ports =
        EventSet.union4
          re.data_ports rloc.data_ports rmem.data_ports wmem.data_ports;
+     success_ports =
+       EventSet.union4
+         re.success_ports rloc.success_ports rmem.success_ports wmem.success_ports;
      output = Some (get_output rmem); }
 
 (************************************)
@@ -876,6 +894,9 @@ let (=|=) = check_disjoint para_comp
       data_ports=
       EventSet.union5 rloc.data_ports rold.data_ports rnew.data_ports
         rmem.data_ports wmem.data_ports;
+      success_ports=
+      EventSet.union5 rloc.success_ports rold.success_ports rnew.success_ports
+        rmem.success_ports wmem.success_ports;
       output=Some (get_output rmem);
     }
 
@@ -904,6 +925,8 @@ let (=|=) = check_disjoint para_comp
       EventRel.union3 rloc.control rold.control rmem.control;
       data_ports=
       EventSet.union3 rloc.data_ports rold.data_ports rmem.data_ports;
+      success_ports=
+      EventSet.union3 rloc.success_ports rold.success_ports rmem.success_ports;
       output=Some (get_output rmem);
     }
 
@@ -942,6 +965,10 @@ let (=|=) = check_disjoint para_comp
       EventSet.union5
         loc.data_ports a.data_ports u.data_ports
         rmem.data_ports wmem.data_ports;
+      success_ports =
+      EventSet.union5
+        loc.success_ports a.success_ports u.success_ports
+        rmem.success_ports wmem.success_ports;
       output =
       Some
         (if retbool then EventSet.union (get_output rmem) (get_output u) else get_output rmem);
@@ -966,6 +993,8 @@ let (=|=) = check_disjoint para_comp
       EventRel.union3 loc.control u.control rmem.control;
       data_ports =
       EventSet.union3 loc.data_ports u.data_ports rmem.data_ports;
+      success_ports =
+      EventSet.union3 loc.success_ports u.success_ports rmem.success_ports;
       output =
       Some
         (if retbool then EventSet.union (get_output rmem) (get_output u) else get_output rmem);
@@ -1008,6 +1037,10 @@ let (=|=) = check_disjoint para_comp
        EventSet.union
         (EventSet.union3 resa.data_ports data.data_ports addr.data_ports)
         (EventSet.union3 wres.data_ports wresult.data_ports wmem.data_ports);
+      success_ports =
+       EventSet.union
+        (EventSet.union3 resa.success_ports data.success_ports addr.success_ports)
+        (EventSet.union3 wres.success_ports wresult.success_ports wmem.success_ports);
       output = Some (EventSet.union (get_output wresult) (get_output wres));
     }
 (* Store update composition, read data, read EA, write EA and  write Mem *)
@@ -1038,6 +1071,9 @@ let stu rD rEA wEA wM =
     data_ports =
       EventSet.union4
         rD.data_ports rEA.data_ports wEA.data_ports wM.data_ports ;
+    success_ports =
+      EventSet.union4
+        rD.success_ports rEA.success_ports wEA.success_ports wM.success_ports ;
     output = None;
   }
 

@@ -91,6 +91,7 @@ module type S = sig
         data_commit : event_rel;
         ctrl : event_rel;
         ctrlisync : event_rel;
+        success : event_rel;
         rf : event_rel; }
 
 (*********)
@@ -235,6 +236,7 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
         data_commit : event_rel;
         ctrl : event_rel;
         ctrlisync : event_rel;
+        success : event_rel;
         rf : event_rel; }
 
 (* Read-From maps exploitation *)

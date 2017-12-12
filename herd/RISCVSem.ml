@@ -114,11 +114,14 @@ module Make (C:Sem.Config)(V:Value.S)
     let write_loc_annot an loc v ii =
       M.mk_singleton_es (Act.Access (Dir.W, loc, v, an)) ii
 
-    let write_reg r v ii = match r with
+    let do_write_reg mk r v ii = match r with
     | RISCV.Ireg RISCV.X0 -> M.unitT ()
     | _ ->
-        M.mk_singleton_es
+        mk
           (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, plain)) ii
+
+    let write_reg = do_write_reg M.mk_singleton_es
+    let write_reg_success = do_write_reg M.mk_singleton_es_success
 
     let do_write_mem an a v ii  =
       M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v, an)) ii
@@ -217,7 +220,7 @@ module Make (C:Sem.Config)(V:Value.S)
               (read_reg_data r2 ii)
               (read_reg_ord r3 ii)
               (write_reg RISCV.RESADDR V.zero ii)
-              (fun v -> write_reg r1 v ii)
+              (fun v -> write_reg_success r1 v ii)
               (fun ea resa v -> write_mem_conditional mo ea v resa ii) >>!
             B.Next
 

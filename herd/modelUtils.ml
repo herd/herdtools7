@@ -44,6 +44,12 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
       S.seq 
         (E.EventRel.restrict_domain is_mem_load_total iico)
         dd_inside in    
+    let success =
+      S.seq
+        (E.EventRel.restrict_domain
+           (fun e1 -> E.EventSet.mem e1 conc.S.str.E.success_ports)
+           dd_inside)
+        (E.EventRel.restrict_codomain E.is_mem iico) in
     let data_dep =
 (* Data deps are (1) dd to commits (2) data deps to stores *)
       let last_data =
@@ -90,9 +96,10 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
         S.seq r1 r2
       with Misc.NoIsync -> S.E.EventRel.empty in
     let rf = U.make_rf conc in
-    { S.addr=addr_dep; data=data_dep; ctrl=ctrl_dep; depend=dd_inside;
+    { S.addr=addr_dep; data=data_dep; ctrl=ctrl_dep; depend=dd_pre;
       ctrlisync;
       data_commit;
+      success;
       rf; }
 
   let pp_procrels pp_isync pr =

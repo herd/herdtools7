@@ -298,7 +298,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
     add_eas ["A" ; "B"; ]
       {color="blue" ; style = "" ; }
       {color="black" ; style = "" ; } ;
-    add_eas ["LL" ; "LS" ; "PML"; "ll" ; "ls"; "pml"; "isync"; "dep"; "ctrl"; "data"; "addr"; "ctrlisync"; "isync"; "isb"; "ctrlisb";"ppo";]
+    add_eas ["LL" ; "LS" ; "PML"; "ll" ; "ls"; "pml"; "isync"; "dep"; "ctrl"; "data"; "addr"; "ctrlisync"; "isync"; "isb"; "ctrlisb";"ppo";"success";]
       { color="indigo" ; style = "" ; }
       { color="black" ; style = "" ; } ;
     add_ea "iico"
@@ -922,9 +922,13 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
     let pp_event ?lbl isinit color chan e =
       let act = pp_action e in
       let act =
-        if PC.verbose > 0 && E.EventSet.mem e es.E.data_ports then
+        if PC.verbose > 0 then begin
+          if E.EventSet.mem e es.E.data_ports then
           act ^ " (data)"
-        else act in
+          else if E.EventSet.mem e es.E.success_ports then
+            act ^ " (success)"
+          else act
+        end else act in
       if not PC.squished then begin
         begin match lbl with
         | None ->

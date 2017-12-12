@@ -146,7 +146,8 @@ module Make
         else
           lazy [] in
       let relevant e = not (E.is_reg_any e || E.is_commit e) in
-      let evts = E.EventSet.filter relevant conc.S.str.E.events in
+      let all_evts =  conc.S.str.E.events in
+      let evts = E.EventSet.filter relevant all_evts in
       let po =
         E.EventRel.filter
           (fun (e1,e2) -> relevant e1 && relevant e2)
@@ -175,12 +176,20 @@ module Make
               E.EventRel.restrict_rel
                 (fun e1 e2 -> not (E.same_proc e1 e2)) (Lazy.force unv)
             end ;
+            "ext",lazy begin
+              E.EventRel.restrict_rel
+                (fun e1 e2 -> not (E.same_proc e1 e2)) (Lazy.force unv)
+            end ;
+            "instr",lazy begin
+              E.EventRel.of_pred all_evts all_evts E.po_eq
+            end ;
            "rmw",lazy conc.S.atomic_load_store;
            "po", lazy  po;
            "addr", lazy (Lazy.force pr).S.addr;
            "data", lazy (Lazy.force pr).S.data;
            "depend", lazy (Lazy.force pr).S.depend;
            "ctrl", lazy (Lazy.force pr).S.ctrl;
+           "success", lazy (Lazy.force pr).S.success;
            "rf", lazy (Lazy.force pr).S.rf;
            "control",lazy conc.S.str.E.control ;
           ] in
