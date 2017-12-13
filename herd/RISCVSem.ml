@@ -163,13 +163,21 @@ module Make (C:Sem.Config)(V:Value.S)
           fun a -> read_mem (read_mo an) a ii >>=
           fun v -> write_reg rd v ii
       | _ ->
-          let ra = read_reg_ord ra ii
-          and rv = read_reg_data rv ii
-          and rmem = fun loc -> read_mem_atomic (read_mo an) loc ii
-          and wmem = fun loc v -> write_mem_atomic (write_mo an) loc v ii in
-          (match op with
-          | AMOSWAP -> M.linux_exch | _ -> M.amo (tr_opamo op))
-            ra rv rmem wmem >>= fun r -> write_reg rd r ii
+          let amo an =
+            let ra = read_reg_ord ra ii
+            and rv = read_reg_data rv ii
+            and rmem = fun loc -> read_mem_atomic (read_mo an) loc ii
+            and wmem = fun loc v -> write_mem_atomic (write_mo an) loc v ii in
+            (match op with
+            | AMOSWAP -> M.linux_exch | _ -> M.amo (tr_opamo op))
+              ra rv rmem wmem >>= fun r -> write_reg rd r ii in
+          if C.archvariant then amo an
+          else match an with
+          | AcqRel ->
+              create_barrier (Fence (RW,RW)) ii >>*=
+              fun () -> amo Rlx >>*=
+              fun () -> create_barrier (Fence (RW,RW)) ii
+          | Acq|Rel|Rlx ->  amo an
 
 (* Entry point *)
     let atomic_pair_allowed _ _ = true
@@ -200,15 +208,39 @@ module Make (C:Sem.Config)(V:Value.S)
             fun (v1,v2) -> M.op (tr_cond cond) v1 v2 >>=
             fun v -> commit ii >>= fun () -> B.bccT v lbl
         | RISCV.Load ((RISCV.Double|RISCV.Word),_s,mo,r1,k,r2) ->
-            read_reg_ord r2 ii >>=
-            (fun a -> M.add a (V.intToV k)) >>=
-            (fun ea -> read_mem mo ea ii) >>=
-            (fun v -> write_reg r1 v ii) >>! B.Next
+            let mk_load mo =
+              read_reg_ord r2 ii >>=
+              (fun a -> M.add a (V.intToV k)) >>=
+              (fun ea -> read_mem mo ea ii) >>=
+              (fun v -> write_reg r1 v ii) in
+            if C.archvariant then mk_load mo >>! B.Next
+            else
+              let open RISCV in
+              let ld =  mk_load Rlx in
+              let ld = match mo with
+              | Acq|AcqRel ->
+                  ld >>*= fun () -> create_barrier (Fence (R,RW)) ii
+              | Rlx|Rel -> ld in
+              let ld = match mo with
+              | Acq -> create_barrier (Fence (R,R)) ii >>*= fun () -> ld
+              | AcqRel ->  create_barrier (Fence (RW,RW)) ii >>*= fun () -> ld
+              | Rlx|Rel -> ld in
+              ld >>! B.Next
         | RISCV.Store ((RISCV.Double|RISCV.Word),mo,r1,k,r2) ->
-            (read_reg_data r1 ii >>| read_reg_ord r2 ii) >>=
-            (fun (d,a) ->
-              (M.add a (V.intToV k)) >>=
-              (fun ea -> write_mem mo ea d ii)) >>! B.Next
+            let mk_store mo =
+              (read_reg_data r1 ii >>| read_reg_ord r2 ii) >>=
+              (fun (d,a) ->
+                (M.add a (V.intToV k)) >>=
+                (fun ea -> write_mem mo ea d ii)) in
+            if C.archvariant then mk_store mo >>! B.Next
+            else
+               let open RISCV in
+               let sd () =  mk_store Rlx in
+               let sd = match mo with
+               | Rel -> create_barrier (Fence (RW,W)) ii >>*= sd
+               | AcqRel -> create_barrier (Fence (RW,RW)) ii >>*= sd
+               | Acq|Rlx -> sd () in
+               sd >>! B.Next
         | RISCV.LoadReserve  ((RISCV.Double|RISCV.Word),mo,r1,r2) ->
             read_reg_ord r2 ii >>=
             (fun ea ->
