@@ -995,6 +995,19 @@ void *join(pthread_t *th) {
   return r ;
 }
 
+static void do_launch_detached(f_t *f, void *a) {
+  pthread_t th;
+  pthread_attr_t attr;
+  int e = pthread_attr_init(&attr);
+  if (e) errexit("phread_attr",e);
+  e = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+  if (e) errexit("pthread_attr_setdetachstate",e);
+  e = pthread_create(&th,&attr,f,a);
+  if (e) errexit("phread_create",e);
+  e = pthread_attr_destroy(&attr);
+  if (e) errexit("phread_attr_destroy",e);
+}
+
 /* Detached */
 
 typedef struct {
@@ -1009,8 +1022,6 @@ static void *zyva_det(void *_b) {
   void *a = b->a ;
   op_t *op = b->op ;
   free(b) ;
-  int e = pthread_detach(pthread_self());
-  if (e) errexit("pthread_detach",e) ;
   void *r = f(a) ;
   op_set(op,r) ;
   return NULL ;
@@ -1020,8 +1031,7 @@ op_t *launch_detached(f_t *f,void *a) {
   op_t *op = op_create() ;
   detarg_t *b = malloc_check(sizeof(*b)) ;
   b->f = f ; b->a = a; b->op = op ;
-  pthread_t th ;
-  launch(&th,zyva_det,b) ;
+  do_launch_detached(zyva_det,b) ;
   return op ;
 }
 
@@ -1066,8 +1076,11 @@ static detarg_t *table_pop(table_t *t) {
 
 typedef struct {
   int n_pool; // waiting in pool
+  int n_out ; // outside pool
+  int n_thread; // total number of threads
   pc_t *c_wait;
   table_t *t;
+  int nop ;
 } pool_t;
 
 static pool_t *pool;
@@ -1077,16 +1090,37 @@ static pool_t *pool_create(void) {
   r->n_pool = 0;
   r->c_wait = pc_create();
   r->t = table_create();
+  r->nop = 0 ;
   return r;
+}
+#ifdef VERB
+inline static int check_verb(int ok) { return ok; }
+#else
+inline static int check_verb(int ok) { return 0; }
+#endif
+
+static void pool_status(char *msg,pool_t *p,int force) {
+  int sum = p->n_pool+p->n_out+p->t->next;;
+  int ok = sum == p->n_thread;
+  force = force || p->n_pool <= 0 ;
+
+  if (!ok || force || check_verb(++p->nop > 81926)) {
+    p->nop = 0;
+    log_error("%s: npool=%02i, nout=%02i, ntable=%02i, sum=%i\n",msg,p->n_pool,p->n_out,p->t->next,sum);
+  }
+  if (!ok) fatal("Cache pool invariant violation");
+
 }
 
 /* Returns task to run, called by cached threads, see zyva_cache below */
 static detarg_t *pool_get(pool_t *pool) {
   detarg_t *r;
   pc_lock(pool->c_wait);
-  pool->n_pool++;
+  pool->n_pool++; pool->n_out--;
+  pool_status("GET",pool,0);
   while (pool->t->next <= 0) pc_wait(pool->c_wait);
   r = table_pop(pool->t);
+  pool->n_out++;
   pc_unlock(pool->c_wait);
   return r ;
 }
@@ -1102,11 +1136,7 @@ static void *zyva_cache(void *_a) {
   cachearg_t *a = (cachearg_t *)_a;
   detarg_t *b = a->arg;
   pool_t *pool = a->pool;
-  int e;
   free(a);
-
-  e = pthread_detach(pthread_self());
-  if (e) errexit("pthread_detach",e) ;
 
   for ( ; ; ) {
     f_t *f = b->f ;
@@ -1129,12 +1159,14 @@ static void *zyva_cache(void *_a) {
 static void pool_put(pool_t *pool,detarg_t *p) {
   pc_lock(pool->c_wait) ;
   if (pool->n_pool <= 0) {
+    pool->n_out++;  pool->n_thread++;
+    pool_status("CAC",pool,1);
     pc_unlock(pool->c_wait);
     cachearg_t *a = malloc_check(sizeof(*a));
     a->pool = pool; a->arg = p;
-    pthread_t th;
-    launch(&th,zyva_cache,a);
+    do_launch_detached(zyva_cache,a);
   } else {
+    pool_status("PUT",pool,0);
     table_push(pool->t,p);
     pool->n_pool--; /* reserve one thread */
     pc_signal(pool->c_wait);

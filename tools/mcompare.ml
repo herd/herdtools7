@@ -98,8 +98,7 @@ let delayed_options = ref (fun ro -> ro)
 
 let delay_ro f x =
   let prev = !delayed_options in
-  delayed_options :=
-    (fun ro -> prev (f x ro))
+  delayed_options := (fun ro -> f x (prev ro))
 
 let options =
   [
