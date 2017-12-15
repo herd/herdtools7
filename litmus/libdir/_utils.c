@@ -1093,6 +1093,7 @@ static pool_t *pool_create(void) {
   r->nop = 0 ;
   return r;
 }
+
 #ifdef VERB
 inline static int check_verb(int ok) { return ok; }
 #else
@@ -1104,7 +1105,7 @@ static void pool_status(char *msg,pool_t *p,int force) {
   int ok = sum == p->n_thread;
   force = force || p->n_pool <= 0 ;
 
-  if (!ok || force || check_verb(++p->nop > 81926)) {
+  if (!ok || force || check_verb(++p->nop > 8192)) {
     p->nop = 0;
     log_error("%s: npool=%02i, nout=%02i, ntable=%02i, sum=%i\n",msg,p->n_pool,p->n_out,p->t->next,sum);
   }
