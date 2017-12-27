@@ -216,14 +216,13 @@ module Make (C:Sem.Config)(V:Value.S)
             if C.archvariant then mk_load mo >>! B.Next
             else
               let open RISCV in
-              let ld =  mk_load Rlx in
+              let ld =  match mo with
+              | AcqRel ->
+                  create_barrier (Fence (RW,RW)) ii >>*= fun () -> mk_load Rlx
+              | Rel|Acq|Rlx -> mk_load Rlx in
               let ld = match mo with
-              | Acq|AcqRel ->
+              |Acq|AcqRel ->
                   ld >>*= fun () -> create_barrier (Fence (R,RW)) ii
-              | Rlx|Rel -> ld in
-              let ld = match mo with
-              | Acq -> create_barrier (Fence (R,R)) ii >>*= fun () -> ld
-              | AcqRel ->  create_barrier (Fence (RW,RW)) ii >>*= fun () -> ld
               | Rlx|Rel -> ld in
               ld >>! B.Next
         | RISCV.Store ((RISCV.Double|RISCV.Word),mo,r1,k,r2) ->
