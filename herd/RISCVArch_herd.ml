@@ -36,15 +36,23 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
     let is_acquire = function
       | X Acq|P Acq -> true
-      | X (Rlx|AcqRel|Rel)| P (Rlx|AcqRel|Rel) -> false
+      | X (Rlx|AcqRel|Rel|Sc)| P (Rlx|AcqRel|Rel) -> false
+      | P Sc -> assert false
 
     let is_release = function
       | X Rel|P Rel -> true
-      | X (Rlx|AcqRel|Acq)| P (Rlx|AcqRel|Acq) -> false
+      | X (Rlx|AcqRel|Acq|Sc)| P (Rlx|AcqRel|Acq) -> false
+      | P Sc -> assert false
 
     let is_acquire_release = function
       | X AcqRel|P AcqRel -> true
-      | X (Rlx|Rel|Acq)| P (Rlx|Rel|Acq) -> false
+      | X (Rlx|Rel|Acq|Sc)| P (Rlx|Rel|Acq) -> false
+      | P Sc -> assert false
+
+    let is_sc = function
+      | X Sc -> true
+      | P Sc -> assert false
+      | X (Rlx|Rel|Acq|AcqRel)| P (Rlx|Rel|Acq|AcqRel) -> false
 
     let is_barrier b = fun c -> barrier_compare b c = 0
     let barrier_sets =
@@ -56,7 +64,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
         []
 
     let annot_sets =
-      ["X", is_atomic; "Acq", is_acquire; "Rel", is_release; "AcqRel",is_acquire_release;]
+      ["X", is_atomic; "Acq", is_acquire; "Rel", is_release;
+       "AcqRel",is_acquire_release;"Sc",is_sc]
 
     let isync =  FenceI
     let is_isync = is_barrier isync
@@ -67,7 +76,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | Rlx -> ""
       | Acq -> "Acq"
       | Rel -> "Rel"
-      | AcqRel -> "AcqRel" in
+      | AcqRel -> "AcqRel"
+      | Sc -> "Sc" in
       function
       | P a ->  pp_mo a
       | X a -> sprintf "%s*" (pp_mo a)
