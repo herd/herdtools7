@@ -248,5 +248,3 @@ module Make(Cst:Constant.S) = struct
   | Var x ->  try Solution.find  x soln with Not_found -> v
 
 end
-
-module Int64Value = Make(Int64Constant)
