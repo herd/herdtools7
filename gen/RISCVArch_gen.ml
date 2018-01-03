@@ -54,6 +54,7 @@ module Make
        | (Acq,Code.W)|(Rel,Code.R) -> false
        | (Rel, Code.W)|(Acq, Code.R)
        | ((Rlx|AcqRel), _) -> true
+       | Sc,_ -> assert false
        end
    | Atomic _|Mixed _ -> true
 
@@ -68,6 +69,7 @@ module Make
      | Acq -> "Aq"
      | Rel -> "Rl"
      | AcqRel -> "AR"
+     | Sc -> assert false
 
    let pp_mo2 m1 m2 = match m1,m2 with
    | Rlx,Rlx -> ""
