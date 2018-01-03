@@ -57,7 +57,7 @@ val tr_validate : kind -> kind -> validation -> kind option
 type test =
  { tname : string ;      (* name of the test, aka key *)
    states : sts ;        (* final states observed *)
-   condition : LogConstr.constr option ;
+   condition : LogConstr.cond option ;
    (* Plain condition, enables reconstruction of following fields.
       Elle est pas belle la vie? *)
    kind : kind ;       (* Style of test Require/Allow etc. *)
@@ -136,13 +136,13 @@ val normalize : string -> bool ->
    (parsed_st list *
       validation *
       (Int64.t * Int64.t) *
-      LogConstr.constr option * bool *
+      LogConstr.cond option * bool *
       string option * parsed_topologies * float option)) list -> t
 
 (* Conditions for from logs *)
-val revalidate : LogConstr.constr option -> sts -> validation
-val witness_again : LogConstr.constr option -> sts -> Int64.t * Int64.t
-val filter : bool -> LogConstr.constr TblRename.t -> t -> test array
+val revalidate : LogConstr.cond option -> sts -> validation
+val witness_again : LogConstr.cond option -> sts -> Int64.t * Int64.t
+val filter : bool -> LogConstr.cond TblRename.t -> t -> test array
 val count_outcomes : t -> int
 
 (* Union logs *)

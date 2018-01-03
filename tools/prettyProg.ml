@@ -210,7 +210,7 @@ module Make(O:Config)(A:Arch_tools.S) =
       (* Ouf *)
       output_string chan "\\end{tabular}\n"
 
-    let pp_v = SymbConstant.pp O.hexa
+    let pp_v = ParsedConstant.pp O.hexa
 
     let pp_location = A.pp_location
     let pp_rval = A.pp_rval
@@ -248,13 +248,13 @@ module Make(O:Config)(A:Arch_tools.S) =
           | TyArray _|Atomic _ -> Warn.fatal "Array/Atomic type not implemented...")
       ^ "\\hline \\end{tabular}\n"
 
-    let zero = Constant.Concrete 0
+    let zero = Constant.Concrete "0"
 	
     let pp_initial_state_flat sc =
       let non_zero_constraints = 
         Misc.option_map 
 	  (fun (l,(_,v))->
-	    if SymbConstant.compare v zero = 0 then None
+	    if ParsedConstant.compare v zero = 0 then None
 	    else
               let ppv =
                 if O.texmacros then "\\asm{" ^ pp_v v ^"}"
@@ -267,7 +267,7 @@ module Make(O:Config)(A:Arch_tools.S) =
       | _ ->
           let has_zero =
             List.exists
-              (fun (_,(_,v)) -> SymbConstant.compare v zero = 0)
+              (fun (_,(_,v)) -> ParsedConstant.compare v zero = 0)
               sc in
           Some
             begin

@@ -51,7 +51,7 @@ module Top
             let dump_reg r = r
 
             let dump_state_atom dump_loc a =
-              MiscParser.dump_state_atom dump_loc SymbConstant.pp_v a
+              MiscParser.dump_state_atom dump_loc ParsedConstant.pp_v a
 
             type state = MiscParser.state
 
@@ -91,7 +91,7 @@ module Top
                           MiscParser.location_compare loc loc0 = 0)
                         global_st
                     then k
-                    else (loc,(MiscParser.TyDef,SymbConstant.intToV 0))::k)
+                    else (loc,(MiscParser.TyDef,ParsedConstant.intToV 0))::k)
                   gs [] in
               let st = global_st @ zeros in
               String.concat " "
@@ -137,7 +137,7 @@ module Top
               let open ConstrGen in
               match a with
               | LV (loc,v) ->
-                  sprintf "%s=%s" (dump_loc loc)  (SymbConstant.pp_v v)
+                  sprintf "%s=%s" (dump_loc loc)  (ParsedConstant.pp_v v)
               | LL (loc1,loc2) ->
                   sprintf "%s=%s" (dump_loc loc1) (MiscParser.dump_rval loc2)
 

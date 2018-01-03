@@ -90,7 +90,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
   let tr_addr a = LoadMem(do_tr_addr a,AN [])
 
   let tr_reg_or_imm = function
-    | Imm k -> Const (Constant.Concrete k)
+    | Imm k -> Const (ParsedConstant.intToV k)
     | Regi r -> LoadReg (tr_reg r)
 
 

@@ -25,7 +25,7 @@ type 'a t = { name : string ; info : 'a }
 module type Config = sig
   val verbose : int
   val kinds : LogState.kind TblRename.t
-  val conds : LogConstr.constr TblRename.t
+  val conds : LogConstr.cond TblRename.t
  end
 
 (*************************************)
@@ -64,7 +64,7 @@ module Make(Opt:Config) : sig
   module Cond : sig
 
     type info = 
-        { cond : LogConstr.constr option ; unsure : bool ;
+        { cond : LogConstr.cond option ; unsure : bool ;
           kind : LogState.kind; }
 
     val add : LogState.t -> info t array

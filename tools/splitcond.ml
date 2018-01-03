@@ -59,7 +59,7 @@ module Make(Config:Config)(Out:Out) =
                         (fun (loc,v) ->
                           sprintf "%s=%s"              
                             (MiscParser.dump_location loc)
-                            (SymbConstant.pp_v v))
+                            (Int64Constant.pp_v v))
                         bds)))
               fname ;
             k+1)

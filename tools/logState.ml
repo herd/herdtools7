@@ -91,7 +91,7 @@ let tr_validate kref k v = match kref with
 type test =
  { tname : string ;      (* name of the test, aka key *)
    states : sts ;        (* final states observed *)
-   condition : LogConstr.constr option ;
+   condition : LogConstr.cond option ;
    (* Plain condition, enables reconstruction of following fields.
       Elle est pas belle la vie? *)
    kind : kind ;       (* Style of test Require/Allow etc. *)
@@ -345,8 +345,7 @@ let union_states sts1 sts2 =
 module LC =
   LogConstr.Make
     (struct
-
-      type v = SymbConstant.v
+      module V = Int64Constant
 
       type state = st_concrete
 
@@ -365,9 +364,9 @@ module LC =
         let v_bound =
           try
             let i = int_of_string v_bound_pp in
-            SymbConstant.intToV i
-          with Failure _ -> SymbConstant.nameToV v_bound_pp in
-        SymbConstant.eq v v_bound
+            Int64Constant.intToV i
+          with Failure _ -> Int64Constant.nameToV v_bound_pp in
+        Int64Constant.eq v v_bound
 
       let state_eqloc bds loc1 loc2 =
         let v1 = bds_assoc bds (MiscParser.dump_location  loc1)

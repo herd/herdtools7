@@ -77,8 +77,8 @@ module Top(O:Config)(Out:OutTests.S) = struct
 
   let expand_params = List.map expand_param
 
-  let const_one = SymbConstant.intToV 1
-  and const_zero = SymbConstant.intToV 0
+  let const_one = ParsedConstant.intToV 1
+  and const_zero = ParsedConstant.intToV 0
 
   let expand_pseudo_code =
 

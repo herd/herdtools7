@@ -34,7 +34,7 @@ end = struct
         let dump_loc = MiscParser.dump_location
 
         let dump_state_atom a =
-          MiscParser.dump_state_atom dump_loc (SymbConstant.pp Opt.hexa) a
+          MiscParser.dump_state_atom dump_loc (ParsedConstant.pp Opt.hexa) a
 
         type state = MiscParser.state
 

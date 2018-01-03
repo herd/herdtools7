@@ -16,20 +16,31 @@
 
 (* Conditions inside logs, a simplified Constraint module *)
 
-open MiscParser
+
 open ConstrGen
 open Printf
 
-type constr = MiscParser.constr
+type cond = (MiscParser.location,Int64Constant.v) prop constr
 
 let foralltrue =  ForallStates (And [])
 
 module SL = StateLexer.Make(struct let debug = false end)
 
+let tr_atom = function
+  | LV(loc,v) ->
+      let v = match v with
+      | Constant.Concrete i -> Constant.Concrete (Int64.of_string i)
+      | Constant.Symbolic s -> Constant.Symbolic s in
+      LV(loc,v)
+  | LL(loc1,loc2) -> LL(loc1,loc2)
+
+let tr_cond c = ConstrGen.map_constr tr_atom c
+
 let parse s = 
   try
     let lxb = Lexing.from_string s in
-    Some (StateParser.skip_loc_constr SL.token lxb)
+    let c = StateParser.skip_loc_constr SL.token lxb in
+    Some (tr_cond c)
   with
   | Parsing.Parse_error
   | LexMisc.Error _ -> None
@@ -47,7 +58,7 @@ module Dump(O:DumpConfig) = struct
 
   let pp_atom a = match a with
   | LV (l,v) ->
-      sprintf "%s=%s" (pp_loc l) (SymbConstant.pp O.hexa v)
+      sprintf "%s=%s" (pp_loc l) (Int64Constant.pp O.hexa v)
   | LL (l1,l2) ->
       sprintf "%s=%s" (pp_loc l1) (pp_loc l2)
 
@@ -56,6 +67,7 @@ module Dump(O:DumpConfig) = struct
 
 end
 
+module LocSet = MiscParser.LocSet
 
 let get_locs_atom a =
   match a with
@@ -80,7 +92,7 @@ let parse_observed s =
 let parse_locs_cond lxb =
   try
     let locs,c = StateParser.loc_constr SL.token lxb in
-    Some (locs,c)
+    Some (locs,tr_cond c)
   with
   | Parsing.Parse_error
   | LexMisc.Error _ -> None
@@ -97,7 +109,9 @@ let parse_locs s =
 
 let parse_filter lxb =
    try
-     StateParser.filter SL.token lxb
+     match StateParser.filter SL.token lxb with
+     | None -> None
+     | Some p -> Some (ConstrGen.map_prop tr_atom p)
   with
   | Parsing.Parse_error
   | LexMisc.Error _ -> None
@@ -105,18 +119,18 @@ let parse_filter lxb =
 (* Code duplication? (with constraints) oh well! *)
 
 module type I = sig
-  type v
+  module V : Constant.S
 
   type state
 
-  val state_mem : state -> MiscParser.location -> v -> bool
+  val state_mem : state -> MiscParser.location -> V.v -> bool
   val state_eqloc : state -> MiscParser.location -> MiscParser.location -> bool
 end
 
 module Make(I:I) : sig
 
   type state = I.state
-  type prop =  (MiscParser.location, I.v) ConstrGen.prop
+  type prop =  (MiscParser.location, I.V.v) ConstrGen.prop
   type constr = prop ConstrGen.constr
 
 (* check proposition *)
@@ -130,7 +144,7 @@ end  =
   struct
 
     type state = I.state
-    type prop =  (MiscParser.location, I.v) ConstrGen.prop
+    type prop =  (MiscParser.location, I.V.v) ConstrGen.prop
     type constr = prop ConstrGen.constr
 
 

@@ -22,14 +22,14 @@ module type S = sig
   module RegSet : MySet.S with type elt = reg
   module ProcMap : MyMap.S with type key = int
 
-  type v = Constant.v
+  type v = ParsedConstant.v
   val zero : v
   val one : v
   val symbToV : string -> v
-  val maybevToV  : v -> v
+  val maybevToV  : ParsedConstant.v -> v
   val pp_v : v -> string
 
-  type global = Constant.v
+  type global = ParsedConstant.v
   val maybevToGlobal  : global -> v
 
   include Location.S with type loc_reg = reg and type loc_global = global

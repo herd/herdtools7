@@ -23,7 +23,7 @@ module type Config = sig
   val verbose : int
   val show_empty_rows : bool
   val kinds : LogState.kind TblRename.t
-  val conds : LogConstr.constr TblRename.t
+  val conds : LogConstr.cond TblRename.t
   val orders : unit TblRename.t
 end
 

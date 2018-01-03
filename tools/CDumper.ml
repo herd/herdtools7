@@ -31,7 +31,7 @@ end = struct
   let dump_loc = MiscParser.dump_location
 
   let dump_atom_state a =
-    MiscParser.dump_state_atom dump_loc SymbConstant.pp_v a
+    MiscParser.dump_state_atom dump_loc ParsedConstant.pp_v a
 
 
   let dump_state st =
@@ -53,7 +53,7 @@ end = struct
     let open ConstrGen in
     match a with
     | LV (loc,v) ->
-        sprintf "%s=%s" (dump_loc loc)  (SymbConstant.pp_v v)
+        sprintf "%s=%s" (dump_loc loc)  (ParsedConstant.pp_v v)
     | LL (loc1,loc2) ->
         sprintf "%s=%s" (dump_loc loc1) (MiscParser.dump_rval loc2)
 

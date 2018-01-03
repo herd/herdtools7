@@ -24,8 +24,8 @@ module M =
     end)
 
 module V = struct
-  type t = SymbConstant.v
-  let compare = SymbConstant.compare
+  type t = Int64Constant.v
+  let compare = Int64Constant.compare
 end
 
 module VS = MySet.Make(V)
@@ -33,8 +33,8 @@ module VS = MySet.Make(V)
 module X =
   LogConstr.Make
     (struct
-      type v = V.t
-      type state = v M.t
+      module V = Int64Constant
+      type state = V.v M.t
       let state_mem env loc v =
         try
           let w = M.find loc env in

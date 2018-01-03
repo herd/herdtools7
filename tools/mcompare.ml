@@ -270,7 +270,7 @@ module type Config = sig
   val forcekind :  LogState.kind option
   val rename : string -> string
   val kinds : LogState.kind TblRename.t
-  val conds : LogConstr.constr TblRename.t
+  val conds : LogConstr.cond TblRename.t
   val orders : unit TblRename.t
   val show_litmus : bool
   val show_model : bool

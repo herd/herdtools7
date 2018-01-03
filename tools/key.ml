@@ -26,7 +26,7 @@ type 'a t = { name : string ; info : 'a }
 module type Config = sig
   val verbose : int
   val kinds : LogState.kind TblRename.t
-  val conds : LogConstr.constr TblRename.t
+  val conds : LogConstr.cond TblRename.t
 end
 
 module Make(Opt:Config) = struct
@@ -130,7 +130,7 @@ module Make(Opt:Config) = struct
   module Cond = struct
 
     type info =
-     { cond : LogConstr.constr option ; unsure : bool ; kind : LogState.kind;}
+     { cond : LogConstr.cond option ; unsure : bool ; kind : LogState.kind;}
 
 
     let sure k c = { cond = c ; unsure = false; kind=k; }

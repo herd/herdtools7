@@ -32,14 +32,14 @@ module Make (O:sig val hexa : bool end)(A:ArchBase.S) = struct
         let compare = Misc.int_compare
       end)
 
-  type v = SymbConstant.v
-  let zero = SymbConstant.intToV 0
-  let one = SymbConstant.intToV 1
-  let symbToV =  SymbConstant.nameToV   
+  type v = ParsedConstant.v
+  let zero = ParsedConstant.intToV 0
+  let one = ParsedConstant.intToV 1
+  let symbToV =  ParsedConstant.nameToV
   let maybevToV c = c
-  let pp_v = SymbConstant.pp O.hexa
+  let pp_v = ParsedConstant.pp O.hexa
 
-  type global = SymbConstant.v
+  type global = ParsedConstant.v
   let maybevToGlobal c = c
 
   include Location.Make
@@ -50,19 +50,19 @@ module Make (O:sig val hexa : bool end)(A:ArchBase.S) = struct
 
         type arch_global = global
         let pp_global = pp_v
-        let global_compare = SymbConstant.compare
+        let global_compare = ParsedConstant.compare
       end)
 (*
-  type location = 
+  type location =
     | Location_global of global
     | Location_reg of int * A.reg
-          
+
   let pp_location = function
-    | Location_global c -> SymbConstant.pp O.hexa c
+    | Location_global c -> ParsedConstant.pp O.hexa c
     | Location_reg (i,r) -> sprintf "%i:%s" i (pp_reg r)
 
   let pp_rval = function
-    | Location_global c -> sprintf "*%s" (SymbConstant.pp O.hexa c)
+    | Location_global c -> sprintf "*%s" (ParsedConstant.pp O.hexa c)
     | Location_reg (i,r) -> sprintf "%i:%s" i (pp_reg r)
 
 *)
