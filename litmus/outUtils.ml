@@ -27,13 +27,15 @@ let fmt_presi_ptr_index name = sprintf "_log_ptr->%s" name
 (* Value (address) output *)
 module type Config = sig
   val memory : Memory.t
+  val hexa : bool
 end
 
 module DefaultConfig = struct
   let memory = Memory.Direct
+  let hexa = false
 end
 
-module Make(O:Config) = struct
+module Make(O:Config)(V:Constant.S) = struct
   open Memory
   open Constant
 
@@ -42,7 +44,7 @@ module Make(O:Config) = struct
   | Indirect -> sprintf "_a->%s[_i]" a
                 
   let dump_v v = match v with
-  | Concrete i -> sprintf "%i" i
+  | Concrete _ -> V.pp O.hexa v
   | Symbolic a -> dump_addr a
 
   let addr_cpy_name s p = sprintf "_addr_%s_%i" s p

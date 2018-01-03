@@ -36,10 +36,11 @@ end
 module Make
     (O:Config)
     (A:I)
-    (Tmpl:Template.S
-    with type arch_reg = A.arch_reg
-    and module RegSet = A.RegSet
-    and module RegMap = A.RegMap)
+    (Tmpl:Template.S with
+     module V = A.V and
+     type arch_reg = A.arch_reg and
+     module RegSet = A.RegSet and
+     module RegMap = A.RegMap)
     = struct
 
       type arch_reg = Tmpl.arch_reg
@@ -55,7 +56,7 @@ module Make
 
       and compile_val_inline = match O.mode with
       | Mode.Std -> Tmpl.dump_v
-      | Mode.PreSi -> SymbConstant.pp_v
+      | Mode.PreSi -> A.V.pp_v
 
       module RegSet = Tmpl.RegSet
       module RegMap = Tmpl.RegMap
@@ -130,7 +131,7 @@ module Make
         let rem =
           RegSet.fold
             (fun reg k ->
-              let v = Constant.Concrete 0 in
+              let v = A.V.zero in
               dump_pair reg v::k)
             rem [] in
 

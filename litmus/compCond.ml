@@ -20,32 +20,35 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
       val fundef_prop :
           string ->
             (I.Loc.t -> string * bool) -> (* For types *)
-              (I.Loc.t,I.V.t) ConstrGen.prop -> unit
+              I.C.prop -> unit
 
       val fundef :
           (I.Loc.t -> string * bool) -> (* For types *)
-            (I.Loc.t,I.V.t) ConstrGen.cond -> unit
+            I.C.cond -> unit
 
-      val fundef_onlog_prop : string -> (I.Loc.t,I.V.t) ConstrGen.prop -> unit
+      val fundef_onlog_prop : string -> I.C.prop -> unit
 
-      val fundef_onlog : (I.Loc.t,I.V.t) ConstrGen.cond -> unit
+      val fundef_onlog : I.C.cond -> unit
 
       val funcall_prop :
         string -> I.C.prop ->
           (I.Loc.t -> string) -> (string -> string) -> string
 
       val funcall :
-          I.C.constr ->
+          I.C.cond ->
             (I.Loc.t -> string) -> (string -> string) -> string
     end = struct
       open ConstrGen
 
       module S = Switch.Make(O)(I)
+      module V = I.C.V
+
+      let dump_v v = V.pp O.hexa v
 
       let dump  =
         let rec dump_prop p = match p with
         | Atom (LV (loc,v)) ->
-            O.fprintf "%s == %s" (I.Loc.dump loc) (I.V.dump v)
+            O.fprintf "%s == %s" (I.Loc.dump loc) (dump_v v)
         | Atom (LL (loc1,loc2)) ->
             O.fprintf"%s == %s" (I.Loc.dump loc1) (I.Loc.dump loc2)
         | Not p ->
@@ -108,7 +111,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
         let pvals =
           List.map
             (fun loc -> Printf.sprintf
-                "void *%s" (I.V.dump (Constant.Symbolic loc))) vals in
+                "void *%s" (dump_v (Constant.Symbolic loc))) vals in
         let is_ptr = is_ptr || Misc.consp pvals in
         let formals =
           let p = plocs@pvals in

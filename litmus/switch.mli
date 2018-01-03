@@ -21,6 +21,6 @@ exception Cannot
 module Make : functor (O:Indent.S) -> functor (I:CompCondUtils.I) ->
   sig
     type switch
-    val compile :  (I.Loc.t,I.V.t) ConstrGen.prop -> switch
+    val compile :  I.C.prop -> switch
     val dump : Indent.t -> switch -> unit
   end

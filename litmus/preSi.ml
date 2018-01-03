@@ -460,15 +460,6 @@ module Make
               open Constant
               let with_ok = true
               module C = T.C
-              module V = struct
-                type t = Constant.v
-                let compare = A.V.compare
-                let dump = function
-                  | Concrete i ->
-                      if Cfg.hexa then sprintf "0x%x"i
-                      else sprintf "%i" i
-                  | Symbolic s -> dump_addr_idx s
-              end
               module Loc = struct
                 type t = A.location
                 let compare = A.location_compare
@@ -742,7 +733,7 @@ module Make
               let pp_const v =
                 let open Constant in
                 match v with
-                | Concrete i -> sprintf "%i" i
+                | Concrete i -> A.V.Scalar.pp Cfg.hexa i
                 | Symbolic s ->
                     sprintf "(%s)_vars->%s" (CType.dump at) s in
               match at with

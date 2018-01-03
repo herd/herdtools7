@@ -24,7 +24,7 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
 (* Not so nice..., the price of code sharing of
    symbConst.ml with memevents *)
 
-    let abs_to_string abs =  A.vToName abs
+    let abs_to_string abs =  ParsedConstant.vToName abs
 
 
 (***************************************************)
@@ -150,7 +150,7 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
 
     let move_addr a i =
       move "movl"
-        (Effaddr_rm32 (Rm32_abs (SymbConstant.nameToV a)))
+        (Effaddr_rm32 (Rm32_abs (ParsedConstant.nameToV a)))
         (Operand_immediate i)
 
     let op_ea_ea memo ea1 ea2 =

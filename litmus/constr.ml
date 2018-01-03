@@ -15,6 +15,7 @@
 (****************************************************************************)
 
 module type Arch = sig
+  module V : Constant.S
   type location
   module LocSet : MySet.S with type elt = location
 end
@@ -22,31 +23,32 @@ end
 module type S = sig
   include Arch
 
-  type prop = (location,Constant.v) ConstrGen.prop
-  type constr = prop ConstrGen.constr
+  type prop = (location,V.v) ConstrGen.prop
+  type cond = prop ConstrGen.constr
 
 (* List of read locations *)
-  val locations : constr -> LocSet.t
+  val locations : cond -> LocSet.t
   val locations_prop : prop -> LocSet.t
 
 (* List locations that appears as  values *)
-  val location_values : constr -> string list
+  val location_values : cond -> string list
   val location_values_prop : prop -> string list
 end
 
 open ConstrGen
 
-module Make(A : Arch) : S
-with type location = A.location
-and module LocSet = A.LocSet =
+module Make(A : Arch) : S with
+module V = A.V and
+type location = A.location and module LocSet = A.LocSet =
   struct
     open Constant
 
+    module V = A.V
     type location = A.location
     module LocSet = A.LocSet
 
-    type prop = (location,Constant.v) ConstrGen.prop
-    type constr = prop ConstrGen.constr
+    type prop = (location,V.v) ConstrGen.prop
+    type cond = prop ConstrGen.constr
 
     let locations_atom a r =
       let open ConstrGen in
@@ -54,7 +56,7 @@ and module LocSet = A.LocSet =
       | LV (loc,_) -> LocSet.add loc r
       | LL (loc1,loc2) -> LocSet.add loc1 (LocSet.add loc2 r)
 
-    let locations (c:constr) =
+    let locations (c:cond) =
       let locs = fold_constr locations_atom c LocSet.empty in
       locs
 

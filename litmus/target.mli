@@ -16,12 +16,13 @@
 
 (* Abstract signature of target *)
 module type S = sig
+  module V : Constant.S
   type arch_reg
   type t
 
   val get_addrs : t -> string list
   val dump_out_reg : int -> arch_reg -> string
   val addr_cpy_name : string -> int -> string
-  val dump_v : Constant.v -> string
+  val dump_v : V.v -> string
 
 end

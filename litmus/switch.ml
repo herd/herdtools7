@@ -21,22 +21,22 @@ open Printf
 exception Cannot
 
 module Make (O:Indent.S) (I:CompCondUtils.I) :
-  sig
-    type switch
-    val compile :  (I.Loc.t,I.V.t) ConstrGen.prop -> switch
-    val dump : Indent.t -> switch -> unit
-  end = 
+    sig
+      type switch
+      val compile :  I.C.prop -> switch
+      val dump : Indent.t -> switch -> unit
+    end =
   struct
 
 (*******************************)
 (* Hashconsing  infrastructure *)
 (*******************************)
-
+    module Scalar = I.C.V.Scalar
     open Hashcons
 
     type switch = switch_node hash_consed
     and switch_node =
-      | Switch of I.Loc.t * (int * int) list * int * switch list
+      | Switch of I.Loc.t * (Scalar.t * int) list * int * switch list
       | Return of bool
 
     module S = struct
@@ -46,7 +46,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
       | ([],_::_)|(_::_,[]) -> false
       | [],[] -> true
       | (i1,j1)::cs1,(i2,j2)::cs2 ->
-          Misc.int_eq i1 i2 &&
+          Scalar.compare i1 i2 = 0 &&
           Misc.int_eq j1 j2 &&
           equal_cases cs1 cs2
 
@@ -73,7 +73,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
         | Return true -> 1
         | Switch (loc,cs,d,rhs) ->
             let h = Hashtbl.hash loc in
-            let h = hash_list (fun (i,j) -> 17 * i + j) h cs in
+            let h = hash_list (fun (i,j) -> 17 * (Hashtbl.hash i) + j) h cs in
             let h = 19 * d + h in
             let h = hash_list (fun s -> s.hkey) h rhs in
             h
@@ -82,14 +82,14 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
 (* Hashconsing hash table *)
     module H = Hashcons.Make(S)
 (* Hash table on hashconsed switch trees *)
-        module HH =
-          Hashtbl.Make
-            (struct
-              type t = switch
-              let equal s1 s2 = s1 == s2
-              let hash s = s.hkey
-            end)
-                  
+    module HH =
+      Hashtbl.Make
+        (struct
+          type t = switch
+          let equal s1 s2 = s1 == s2
+          let hash s = s.hkey
+        end)
+
 
     let ht = H.create 101
 
@@ -104,21 +104,21 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
           let k = !n in
           incr n ; HH.add ht s k ;
           k in
-    let cs = List.map (fun (i,s) -> i,do_number s) cs in
-    let d = do_number d in
-    let xs = HH.fold (fun s k r -> (k,s)::r) ht [] in
-    let xs =
-      List.sort
-        (fun (k1,_) (k2,_) -> Misc.int_compare k1 k2)
-        xs in
-    let rhs = List.map snd xs in
-    cs,d,rhs
-        
-      
+      let cs = List.map (fun (i,s) -> i,do_number s) cs in
+      let d = do_number d in
+      let xs = HH.fold (fun s k r -> (k,s)::r) ht [] in
+      let xs =
+        List.sort
+          (fun (k1,_) (k2,_) -> Misc.int_compare k1 k2)
+          xs in
+      let rhs = List.map snd xs in
+      cs,d,rhs
+
+
     let switch loc cs d =
       let cs =
         List.sort
-          (fun (i1,_) (i2,_) -> Misc.int_compare i1 i2)
+          (fun (i1,_) (i2,_) -> Scalar.compare i1 i2)
           cs in
       let cs,d,rhs = number cs d in
       H.hashcons ht (Switch (loc,cs,d,rhs))
@@ -130,12 +130,13 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
     open ConstrGen
     open Constant
 
+    module ScalarSet = MySet.Make(Scalar)
     module M = MyMap.Make(I.Loc)
 
     let add loc v m = match v with
-    | Concrete v ->
-        let vs = try M.find loc m with Not_found -> IntSet.empty in
-        M.add loc (IntSet.add v vs) m
+    | Concrete i ->
+        let vs = try M.find loc m with Not_found -> ScalarSet.empty in
+        M.add loc (ScalarSet.add i vs) m
     | Symbolic _ -> raise Cannot
 
     let rec collect m = function
@@ -148,7 +149,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
 
     let choose_loc m =
       let locs =
-        M.fold (fun loc vs k -> ((loc,vs),IntSet.cardinal vs)::k) m [] in
+        M.fold (fun loc vs k -> ((loc,vs),ScalarSet.cardinal vs)::k) m [] in
       match locs with
       | [] -> assert false
       | p0::rem ->
@@ -159,82 +160,82 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
               p0 rem in
           r
     let do_implies p1 p2 = match p1,p2 with
-        | Or [],_ -> And []
-        | And [],_ -> p2
-        | _,Or [] -> Not p1
-        | _,And [] -> p1
-        | _,_ -> Implies (p1,p2)
+    | Or [],_ -> And []
+    | And [],_ -> p2
+    | _,Or [] -> Not p1
+    | _,And [] -> p1
+    | _,_ -> Implies (p1,p2)
 
-        let do_or p1 p2 = match p1,p2 with
-        | Or ps1,Or ps2 -> Or (ps1@ps2)
-        | (p,And []) | (And [],p) -> And []
-        | Or ps,p -> Or (ps@[p])
-        | p,Or ps -> Or (p::ps)
-        | _,_ -> Or [p1;p2]
+    let do_or p1 p2 = match p1,p2 with
+    | Or ps1,Or ps2 -> Or (ps1@ps2)
+    | (p,And []) | (And [],p) -> And []
+    | Or ps,p -> Or (ps@[p])
+    | p,Or ps -> Or (p::ps)
+    | _,_ -> Or [p1;p2]
 
-        let do_and p1 p2 = match p1,p2 with
-        | And ps1,And ps2 -> And (ps1@ps2)
-        | (p,Or []) | (Or [],p) -> Or []
-        | And ps,p -> And (ps@[p])
-        | p,And ps -> And (p::ps)
-        | _,_ -> And [p1;p2]
+    let do_and p1 p2 = match p1,p2 with
+    | And ps1,And ps2 -> And (ps1@ps2)
+    | (p,Or []) | (Or [],p) -> Or []
+    | And ps,p -> And (ps@[p])
+    | p,And ps -> And (p::ps)
+    | _,_ -> And [p1;p2]
 
-        let do_not = function
-          | Or [] -> And []
-          | And [] -> Or []
-          | p -> Not p
+    let do_not = function
+      | Or [] -> And []
+      | And [] -> Or []
+      | p -> Not p
 
-        let atom_pos loc v loc0 v0 =
-          if  I.Loc.compare loc loc0 = 0 then
-            Some (Misc.int_compare v v0 = 0)
-          else None
+    let atom_pos loc v loc0 v0 =
+      if  I.Loc.compare loc loc0 = 0 then
+        Some (Scalar.compare v v0 = 0)
+      else None
 
-        let atom_neg loc vs loc0 v0 =
-          if  I.Loc.compare loc loc0 = 0 then
-            Some (not (IntSet.mem v0 vs))
-          else None
+    let atom_neg loc vs loc0 v0 =
+      if  I.Loc.compare loc loc0 = 0 then
+        Some (not (ScalarSet.mem v0 vs))
+      else None
 
 
-        let eval atom  =
-          let rec eval_rec p = match p with
-          | Atom (LV (loc0,Concrete v0)) ->
-              begin match atom loc0 v0 with
-              | None -> p
-              | Some b -> if b then And [] else Or []
-              end
-          | Atom _ -> assert false (* Caught in collect *)
-          | Not p -> do_not (eval_rec p)
-          | Or []|And [] -> p
-          | Or ps -> eval_recs do_or ps
-          | And ps -> eval_recs do_and ps
-          | Implies (p1,p2) -> do_implies (eval_rec p1) (eval_rec p2)
+    let eval atom  =
+      let rec eval_rec p = match p with
+      | Atom (LV (loc0,Concrete v0)) ->
+          begin match atom loc0 v0 with
+          | None -> p
+          | Some b -> if b then And [] else Or []
+          end
+      | Atom _ -> assert false (* Caught in collect *)
+      | Not p -> do_not (eval_rec p)
+      | Or []|And [] -> p
+      | Or ps -> eval_recs do_or ps
+      | And ps -> eval_recs do_and ps
+      | Implies (p1,p2) -> do_implies (eval_rec p1) (eval_rec p2)
 
-          and eval_recs mk = function
-            | [] -> assert false
-            | [p] -> eval_rec p
-            | p::ps ->
-                let p1 = eval_rec p
-                and p2 = eval_recs mk ps in
-                mk p1 p2 in
-          eval_rec
+      and eval_recs mk = function
+        | [] -> assert false
+        | [p] -> eval_rec p
+        | p::ps ->
+            let p1 = eval_rec p
+            and p2 = eval_recs mk ps in
+            mk p1 p2 in
+      eval_rec
 
-        let eval_pos loc v = eval (atom_pos loc v)
-        let eval_neg loc vs = eval (atom_neg loc vs)
+    let eval_pos loc v = eval (atom_pos loc v)
+    let eval_neg loc vs = eval (atom_neg loc vs)
 
-        let rec comp p =
-          let m = collect M.empty p in
-          if M.is_empty m then match p with
-          | Or [] -> return false
-          | And [] -> return true
-          | _ -> assert false
-          else
-            let loc,vs = choose_loc m in
-            let cls =
-              IntSet.fold
-                (fun v k -> (v,comp (eval_pos loc v p))::k)
-                vs [] in
-            let d = comp (eval_neg loc vs p) in
-            switch loc cls d
+    let rec comp p =
+      let m = collect M.empty p in
+      if M.is_empty m then match p with
+      | Or [] -> return false
+      | And [] -> return true
+      | _ -> assert false
+      else
+        let loc,vs = choose_loc m in
+        let cls =
+          ScalarSet.fold
+            (fun v k -> (v,comp (eval_pos loc v p))::k)
+            vs [] in
+        let d = comp (eval_neg loc vs p) in
+        switch loc cls d
 
     let compile p = comp p
 
@@ -245,15 +246,15 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
     let count s =
       let t = HH.create 101 in
       let rec do_rec s =
-       try
-         let k = HH.find t s in
-         HH.replace t s (k+1)
-       with Not_found ->
-         HH.add t s 1 ;
-         match s.node with
-         | Return _ -> ()
-         | Switch (_,_,_,rhs) ->
-             List.iter do_rec rhs in
+        try
+          let k = HH.find t s in
+          HH.replace t s (k+1)
+        with Not_found ->
+          HH.add t s 1 ;
+          match s.node with
+          | Return _ -> ()
+          | Switch (_,_,_,rhs) ->
+              List.iter do_rec rhs in
       do_rec s ;
       t
 
@@ -271,7 +272,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
           match s.node with
           | Return _ -> k
           | Switch (_,_,_,rhs)  ->
-              let k = 
+              let k =
                 let c = try HH.find cs s with Not_found -> assert false in
                 if c > 1 then s::k else k in
               List.fold_left extract_rec k rhs  in
@@ -302,12 +303,11 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
       let pre = ref (Indent.as_string i) in
       List.iter
         (fun i ->
-          if O.hexa then O.fprintf "%scase 0x%x:" !pre i
-          else O.fprintf "%scase %i:" !pre i ;
+          O.fprintf "%scase %s:" !pre (Scalar.pp O.hexa i) ;
           pre := " ")
         is ;
       O.output "\n"
-        
+
     and dump_goto env i s =
       try
         let name = HH.find env s in

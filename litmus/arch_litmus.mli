@@ -21,11 +21,7 @@ end
 (* Abstract signature of architectures *)
 
 module type Base = sig
-  module V : sig
-    type v = Constant.v
-    include Constant.S
-    val maybevToV  : v -> v
-  end
+  module V : Constant.S
 
   type reg
   type instruction
@@ -47,6 +43,7 @@ module type Base = sig
 
   module Out : Target.S
   with type arch_reg = reg (* Out abstracted *)
+  and module V = V
 
   val arch : Archs.t
 
@@ -56,12 +53,7 @@ end
 
 module type K = sig
   include ArchBase.S
-  module V :
-      sig
-        type v = Constant.v
-        include Constant.S
-        val maybevToV  : v -> v
-      end
+  module V : Constant.S
 
   module RegSet : MySet.S with type elt = reg
 
@@ -84,12 +76,7 @@ end
 module type S =
   sig
     include ArchBase.S
-    module V :
-        sig
-          type v = Constant.v
-          include Constant.S
-          val maybevToV  : v -> v
-        end
+    module V : Constant.S
 
     val reg_to_string : reg -> string
 

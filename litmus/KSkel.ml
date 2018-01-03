@@ -73,23 +73,12 @@ module Make
     | A.Location_global s -> s
     | A.Location_deref (s,i) -> sprintf "%s_%i" s i
 
-    let dump_val_param loc = "_val_" ^ loc
-
     module DC =
       CompCond.Make(O)
         (struct
           open Constant
           let with_ok = false
           module C = T.C
-          module V = struct
-            type t = Constant.v
-            let compare = A.V.compare
-            let dump = function
-              | Concrete i ->
-                  if Cfg.hexa then sprintf "0x%x"i
-                  else sprintf "%i" i
-              | Symbolic s ->  dump_val_param s
-          end
           module Loc = struct
             type t = A.location
             let compare = A.location_compare
@@ -283,8 +272,8 @@ module Make
 (* Right value *)
     let dump_a_addr s = sprintf "&(_a->%s[_i])" s
 
-    let dump_a_v = function
-      | Constant.Concrete i -> sprintf "%i" i
+    let dump_a_v v = match v with
+      | Constant.Concrete i -> A.V.Scalar.pp Cfg.hexa i
       | Constant.Symbolic s -> dump_a_addr s
 
 (* Right value, casted if pointer *)

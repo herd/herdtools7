@@ -15,12 +15,7 @@
 (****************************************************************************)
 
 module type I = sig
-  module V :
-      sig
-        type v = Constant.v
-        include Constant.S
-        val maybevToV : v -> v
-      end
+  module V : Constant.S
 
   type arch_reg
   val arch : Archs.t
@@ -40,7 +35,7 @@ module type S = sig
 
   val comment : string (* ASM comment to use *)
 
-  val vToName : Constant.v -> string
+  val vToName : I.V.v -> string
 
   module RegSet : MySet.S with type elt = I.arch_reg
   module RegMap : MyMap.S with type key = I.arch_reg
@@ -48,18 +43,19 @@ module type S = sig
   include Location.S
   with type loc_reg = I.arch_reg and type loc_global = string
 
-  module Out : Template.S
-  with type arch_reg = I.arch_reg
+  module Out : Template.S with
+  module V = I.V and
+  type arch_reg = I.arch_reg
   and module RegSet = RegSet
   and module RegMap = RegMap
 
-  module MapValue : MyMap.S with type key = Constant.v
+  module MapValue : MyMap.S with type key = I.V.v
 
 (* A bit of state handling *)
-  type state = (location * Constant.v) list
-  type fullstate = (location * (MiscParser.run_type * Constant.v)) list
+  type state = (location * I.V.v) list
+  type fullstate = (location * (MiscParser.run_type * I.V.v)) list
 
-  val find_in_state : location -> state -> Constant.v
+  val find_in_state : location -> state -> I.V.v
 
 end
 
@@ -76,9 +72,8 @@ module Make(O:Config)(I:I) : S with module I = I
   | None -> I.comment
 
   module I = I
-  open Constant
 
-  let vToName v = SymbConstant.vToName v
+  let vToName v = I.V.vToName v
 
   module RegSet =
     MySet.Make
@@ -107,6 +102,7 @@ module Make(O:Config)(I:I) : S with module I = I
     Template.Make
       (O)
       (struct
+        module V = I.V
         type arch_reg = I.arch_reg
         let arch = I.arch
         let reg_compare = I.reg_compare
@@ -115,18 +111,18 @@ module Make(O:Config)(I:I) : S with module I = I
         module RegSet = RegSet
         module RegMap = RegMap
       end)
-      (I.V)
+
 
   module MapValue =
     MyMap.Make
       (struct
-        type t = Constant.v
+        type t = I.V.v
         let compare = I.V.compare
       end)
 
 (* A bit of state handling *)
-  type state = (location * Constant.v) list
-  type fullstate = (location * (MiscParser.run_type * Constant.v)) list
+  type state = (location * I.V.v) list
+  type fullstate = (location * (MiscParser.run_type * I.V.v)) list
 
   let rec find_in_state loc = function
     | [] -> I.V.intToV 0

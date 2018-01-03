@@ -19,8 +19,10 @@
 module type I = sig
   val hexa : bool
   module A : Arch_litmus.Base
-  module C : Constr.S
-  with type location = A.location and module LocSet = A.LocSet
+  module C : Constr.S with
+  module V = A.V and
+  type location = A.location and
+  module LocSet = A.LocSet
   module P : PseudoAbstract.S
 end
 

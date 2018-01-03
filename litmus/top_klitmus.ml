@@ -124,7 +124,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
 
   module MakeLISA =
     struct
-      module V = SymbConstant
+      module V = Int64Constant
       module A = LISAArch_litmus.Make(V)
       module LexParse = struct
         type instruction = A.parsedPseudo
@@ -145,9 +145,13 @@ module Top(O:Config)(Tar:Tar.S) = struct
           (struct
             include A
             type v = V.v
-            let maybevToV = V.maybevToV
+            let maybevToV c =
+              let open  Constant in
+              match c with
+              | Concrete i ->  Concrete (V.Scalar.of_string i)
+              | Symbolic s -> Symbolic s
             type global = string
-            let maybevToGlobal = vToName
+            let maybevToGlobal = ParsedConstant.vToName
           end)
 
       let allocate =

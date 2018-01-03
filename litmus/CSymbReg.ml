@@ -23,8 +23,7 @@ module type S = sig
 
   type ('loc,'v) t = ('loc,'v, string CAst.t) MiscParser.r4
 
-  val allocate_regs :
-      (MiscParser.location, MiscParser.maybev) t -> (location,v) t
+  val allocate_regs : (MiscParser.location, MiscParser.maybev) t -> (location,v) t
 end
 
 module Make (A:Arch_litmus.Base) : S
@@ -34,6 +33,12 @@ with type v = A.V.v and type location = A.location
    type v = A.V.v
    type location = A.location
    type ('loc,'v) t = ('loc,'v, string CAst.t) MiscParser.r4
+
+   let maybevToV mv =
+     let open Constant in
+     match mv with
+     | Symbolic s -> Symbolic s
+     | Concrete s -> Concrete (A.V.Scalar.of_string s)
 
 (******************************************************)
 (* All those to substitute symbolic regs by real ones *)
@@ -46,14 +51,14 @@ with type v = A.V.v and type location = A.location
   let finish_reg = get_reg
 
   let finish_location f_reg loc = match loc with
-  | Location_global m -> A.Location_global (A.vToName m)
-  | Location_deref (m,i) -> A.Location_deref (A.vToName m,i)
+  | Location_global m -> A.Location_global (ParsedConstant.vToName m)
+  | Location_deref (m,i) -> A.Location_deref (ParsedConstant.vToName m,i)
   | Location_reg (i,r) -> A.Location_reg (i,finish_reg r)
   | Location_sreg reg  ->
       let p,r = f_reg reg in A.Location_reg (p,r)
 
   let finish_state_atom f_reg (loc,(t,v)) =
-    finish_location f_reg loc, (t,A.V.maybevToV v)
+    finish_location f_reg loc, (t,maybevToV v)
 
   let finish_state f_reg = List.map (finish_state_atom f_reg)
 
@@ -63,7 +68,7 @@ with type v = A.V.v and type location = A.location
   let finish_atom f_reg a =
     let open ConstrGen in
     match a with
-    | LV (loc,v) -> LV (finish_location f_reg loc, A.V.maybevToV v)
+    | LV (loc,v) -> LV (finish_location f_reg loc, maybevToV v)
     | LL (l1,l2) -> LL (finish_location f_reg l1,finish_location f_reg l2)
 
   let finish_prop f_reg = ConstrGen.map_prop (finish_atom f_reg)

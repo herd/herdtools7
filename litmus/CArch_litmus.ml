@@ -1,3 +1,4 @@
+(****************************************************************************)
 (*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
@@ -13,12 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module Make(O:sig val memory : Memory.t end) = struct
-  module V =
-    struct
-      include SymbConstant
-      let maybevToV c = c
-    end
+module Make(O:sig val memory : Memory.t val hexa : bool end) = struct
+  module V = Int32Constant
 
   type reg = string
   type instruction = unit
@@ -27,7 +24,7 @@ module Make(O:sig val memory : Memory.t end) = struct
   module RegMap = StringMap
 
   let vToName = function
-    | Constant.Concrete i -> "addr_" ^ string_of_int i
+    | Constant.Concrete i -> "addr_" ^ V.Scalar.pp O.hexa i
     | Constant.Symbolic s -> s
 
   module Internal = struct
@@ -51,8 +48,9 @@ module Make(O:sig val memory : Memory.t end) = struct
   type fullstate = (location * (MiscParser.run_type * V.v)) list
 
   module Out = struct
+    module V = V
     include CTarget
-    include OutUtils.Make(O)
+    include OutUtils.Make(O)(V)
   end
 
   let arch = Internal.arch

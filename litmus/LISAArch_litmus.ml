@@ -20,12 +20,7 @@ let comment = "//"
 
 module Make(V:Constant.S) = struct
   include BellBase
-  module V =
-    struct
-      type v = Constant.v
-      include V
-      let maybevToV c = c
-    end
+  module V = V
 
   let reg_to_string r = match r with
   | GPRreg _ -> pp_reg r

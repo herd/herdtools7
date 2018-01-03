@@ -89,7 +89,6 @@ module Make
     and module RegMap = T.A.RegMap) : sig
   val dump : Name.t -> T.t -> unit
 end = struct
-  module A = T.A
   module C = T.C
   open Constant
   open CType
@@ -300,7 +299,6 @@ end = struct
 
   let dump_loc_copy loc = "_" ^ dump_loc_name loc ^ "_i"
   let dump_loc_param loc = "_" ^ dump_loc_name loc
-  let dump_val_param loc =  "_val_" ^ loc
 
   let dump_ctx_loc pref loc = match loc with
   | A.Location_reg (proc,reg) ->
@@ -342,7 +340,7 @@ end = struct
 
 (* Right value, casted if pointer *)
   let dump_a_v_casted = function
-    | Concrete i ->  sprintf "%i" i
+    | Concrete i ->  A.V.Scalar.pp  Cfg.hexa i
     | Symbolic s -> sprintf "((int *)%s)" (dump_a_addr s)
 
 (* Dump left & right values when context is available *)
@@ -827,15 +825,6 @@ end = struct
       (struct
         let with_ok = true
         module C = C
-        module V = struct
-          type t = Constant.v
-          let compare = A.V.compare
-          let dump = function
-            | Concrete i ->
-                if Cfg.hexa then sprintf "0x%x"i
-                else sprintf "%i" i
-            | Symbolic s -> dump_val_param s
-        end
         module Loc = struct
           type t = A.location
           let compare = A.location_compare

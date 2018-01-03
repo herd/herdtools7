@@ -20,12 +20,7 @@ let comment = "#"
 
 module Make (O:Arch_litmus.Config)(V:Constant.S) = struct
   include PPCBase
-  module V =
-    struct
-      type v = Constant.v
-      include V
-      let maybevToV c = c
-    end
+  module V = V
 
   let ireg_to_string r = match r with
   | GPR0 -> "r0"

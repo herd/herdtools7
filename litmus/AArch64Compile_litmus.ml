@@ -19,6 +19,7 @@ module type Config = sig
   val memory : Memory.t
   val cautious : bool
   val asmcomment : string option
+  val hexa : bool
 end
 
 module Make(V:Constant.S)(C:Config) =

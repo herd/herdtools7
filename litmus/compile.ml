@@ -216,6 +216,7 @@ module Make
     (O:Config)
     (A:Arch_litmus.S)
     (T:Test_litmus.S with
+     module A.V = A.V and
      type A.reg = A.reg and
      type A.location = A.location and
      module A.LocSet = A.LocSet and

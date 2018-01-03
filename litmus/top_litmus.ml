@@ -283,9 +283,13 @@ end = struct
       module AllocArch = struct
         include A
         type v = A.V.v
-        let maybevToV = V.maybevToV
+        let maybevToV c =
+          let open Constant in
+          match c with
+          | Symbolic s -> Symbolic s
+          | Concrete i -> Concrete (A.V.Scalar.of_string i)
         type global = string
-        let maybevToGlobal = A.vToName
+        let maybevToGlobal = ParsedConstant.vToName
       end
       let compile =
         let allocate parsed =
@@ -359,7 +363,6 @@ end = struct
     let tname = splitted.Splitter.name.Name.name in
     if OT.check_name tname then begin
 (* Then call appropriate compiler, depending upon arch *)
-      let module V = SymbConstant in
       let opt = OT.mkopt (Option.get_default arch) in
       let word = Option.get_word opt in
       let module ODep = struct
@@ -377,6 +380,7 @@ end = struct
         let morearch = OT.morearch
         let cautious = OT.cautious
         let asmcomment = OT.asmcomment
+        let hexa = OT.hexa
       end in
       let module OX = struct
         include OT
@@ -395,6 +399,7 @@ end = struct
         | `PPC ->
             begin match OT.usearch with
             | UseArch.Trad ->
+                let module V = Int64Constant in
                 let module Arch' = PPCArch_litmus.Make(OC)(V) in
                 let module LexParse = struct
                   type instruction = Arch'.parsedPseudo
@@ -423,6 +428,7 @@ end = struct
  *)
             end
         | `X86 ->
+            let module V = Int32Constant in
             let module Arch' = X86Arch_litmus.Make(OC)(V) in
             let module LexParse = struct
               type instruction = Arch'.pseudo
@@ -435,6 +441,7 @@ end = struct
             let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
             X.compile
         | `ARM ->
+            let module V = Int32Constant in
             let module Arch' = ARMArch_litmus.Make(OC)(V) in
             let module LexParse = struct
               type instruction = Arch'.parsedPseudo
@@ -449,6 +456,7 @@ end = struct
         | `AArch64 ->
             begin match OT.usearch with
             | UseArch.Trad ->
+                let module V = Int64Constant in
                 let module Arch' = AArch64Arch_litmus.Make(OC)(V) in
                 let module LexParse = struct
                   type instruction = Arch'.parsedPseudo
@@ -477,6 +485,7 @@ end = struct
   X.compile
  *)
         | `MIPS ->
+            let module V = Int64Constant in
             let module Arch' = MIPSArch_litmus.Make(OC)(V) in
             let module LexParse = struct
               type instruction = Arch'.pseudo
@@ -489,6 +498,7 @@ end = struct
             let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
             X.compile
         | `RISCV ->
+            let module V = Int64Constant in
             let module Arch' = RISCVArch_litmus.Make(OC)(V) in
             let module LexParse = struct
               type instruction = Arch'.parsedPseudo

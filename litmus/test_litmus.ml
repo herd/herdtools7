@@ -20,12 +20,13 @@ end
 
 module type S = sig
   module A : Arch_litmus.Base
-  module C : Constr.S
-  with type location = A.location and module LocSet = A.LocSet
+  module C : Constr.S with
+  module V = A.V and
+  type location = A.location and module LocSet = A.LocSet
   module P : PseudoAbstract.S
 
   type src =
-    ((A.location * (MiscParser.run_type * Constant.v)) list, P.code list,
+    ((A.location * (MiscParser.run_type * A.V.v)) list, P.code list,
           C.prop, A.location)
          MiscParser.result
 
@@ -36,7 +37,7 @@ module type S = sig
     { init : A.state ;
       info : MiscParser.info ;
       code : (int * (A.Out.t * (A.reg type_env * env_volatile))) list ;
-      condition : C.constr ;
+      condition : C.cond ;
       filter : C.prop option ;
       globals : string type_env ;
       flocs : A.location list ;
@@ -44,7 +45,7 @@ module type S = sig
       src : src ;
       type_env : CType.t A.LocMap.t ;  }
 
-  val find_our_constraint : t -> C.constr
+  val find_our_constraint : t -> C.cond
   val get_nprocs : t -> int
 
   module D :
@@ -69,7 +70,7 @@ struct
 
   type 'a type_env = ('a * CType.t) list
   type src =
-    ((A.location * (MiscParser.run_type * Constant.v)) list, P.code list,
+    ((A.location * (MiscParser.run_type * A.V.v)) list, P.code list,
           C.prop, A.location)
          MiscParser.result
 
@@ -79,7 +80,7 @@ struct
     { init : A.state ;
       info : MiscParser.info ;
       code : (int * (A.Out.t * (A.reg type_env * env_volatile))) list ;
-      condition : C.constr ;
+      condition : C.cond ;
       filter : C.prop option ;
       globals : string type_env ;
       flocs : A.location list ;

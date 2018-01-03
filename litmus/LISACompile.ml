@@ -25,7 +25,7 @@ module Make(V:Constant.S) =
 (***************************************************)
 (* Extract explicit [symbolic] addresses from code *)
 (***************************************************)
-    let abs_to_string abs =  A.vToName abs
+    let abs_to_string abs =  ParsedConstant.vToName abs
 
     let extract_ra = function
       | Rega _ -> StringSet.empty

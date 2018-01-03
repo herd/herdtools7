@@ -18,12 +18,7 @@ let comment = "#"
 
 module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
   include MIPSBase
-  module V =
-    struct
-      type v = Constant.v
-      include V
-      let maybevToV c = c
-    end
+  module V = V
 
   let reg_to_string r =  match r with
   | Symbolic_reg _ -> assert false

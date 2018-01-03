@@ -17,6 +17,7 @@
 let debug = false
 
 module type I = sig
+  module V : Constant.S
   type arch_reg
   module RegSet : MySet.S with type elt = arch_reg
   module RegMap : MyMap.S with type key = arch_reg
@@ -33,16 +34,18 @@ exception Error of string
 module type Config = sig
   val memory : Memory.t
   val cautious : bool
+  val hexa : bool
 end
 
 module DefaultConfig = struct
   let memory = Memory.Direct
   let cautious = false
+  let hexa = false
 end
 
 
 module type S = sig
-
+  module V : Constant.S
   val comment : string
   type arch_reg
 
@@ -60,7 +63,7 @@ module type S = sig
   val get_branch : ins -> flow list
 
   type t = {
-      init : (arch_reg * Constant.v) list ;
+      init : (arch_reg * V.v) list ;
       addrs : string list ; (* addesses in code (eg X86) *)
       stable : arch_reg list; (* stable registers, ie must be self-allocated by gcc *)
       final : arch_reg list ;
@@ -72,7 +75,7 @@ module type S = sig
   val dump_label : string -> string
   val emit_label : (string -> string) -> string -> ins
   val dump_out_reg : int -> arch_reg -> string
-  val dump_v : Constant.v -> string
+  val dump_v : V.v -> string
   val addr_cpy_name : string -> int -> string
 
   val clean_reg : string -> string
@@ -93,8 +96,11 @@ module type S = sig
       (CType.t -> CType.t -> bool) -> t -> CType.t RegMap.t
 end
 
-module Make(O:Config) (A:I) (V:Constant.S) =
+module Make(O:Config)(A:I) =
   struct
+
+    module V = A.V
+
     open Printf
     open Constant
 
@@ -118,7 +124,7 @@ module Make(O:Config) (A:I) (V:Constant.S) =
     let get_branch  ins = ins.branch
 
     type t = {
-        init : (arch_reg * Constant.v) list ;
+        init : (arch_reg * V.v) list ;
         addrs : string list ;
         stable : arch_reg list;
         final : arch_reg list ;
@@ -266,7 +272,7 @@ module Make(O:Config) (A:I) (V:Constant.S) =
       with Internal msg ->
         error (sprintf "memo: %s, error: %s" t.memo msg)
 
-    include OutUtils.Make(O)
+    include OutUtils.Make(O)(V)
 
     module RegSet = A.RegSet
     module RegMap = A.RegMap
