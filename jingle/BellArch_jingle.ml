@@ -35,8 +35,8 @@ include Arch.MakeArch(struct
   let match_reg_or_addr subs ra ra' = match ra,ra' with
     | Rega r,Rega r' -> Some(add_subs [Reg(sr_name r,r')] subs)
     | Abs x,Abs y -> 
-       let s = SymbConstant.pp false x in
-       let regn = SymbConstant.pp false y in
+       let s = ParsedConstant.pp false x in
+       let regn = ParsedConstant.pp false y in
        Some(add_subs [Addr(s,regn)] subs)
     | _,_ -> None
        

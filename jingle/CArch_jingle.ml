@@ -38,6 +38,7 @@ include Arch.MakeArch(struct
   and match_expr subs pat instr =
     let r =  match pat,instr with
     | Const(Constant.Symbolic s),Const(Constant.Concrete c) ->
+        let c = ParsedConstant.Scalar.to_int c in
         Some(add_subs [Cst(s, c)] subs)
     | Const(Constant.Concrete s),Const(Constant.Concrete c)
       when c=s ->
@@ -149,7 +150,8 @@ include Arch.MakeArch(struct
     let find_cst s =
       let rec aux = function
       | [] -> raise (Error("No conversion found for constant "^s))
-      | Cst(n,i)::_ when String.compare n s = 0 -> Constant.Concrete i
+      | Cst(n,i)::_ when String.compare n s = 0 ->
+          ParsedConstant.intToV i
       | _::subs -> aux subs
       in aux subs
     in

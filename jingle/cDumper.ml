@@ -20,7 +20,7 @@ type pseudo = CBase.pseudo
 
 let dump_loc = MiscParser.dump_location
 		 
-let dump_state_atom a = MiscParser.dump_state_atom dump_loc SymbConstant.pp_v a
+let dump_state_atom a = MiscParser.dump_state_atom dump_loc ParsedConstant.pp_v a
 			     
 type state = MiscParser.state
 	       
@@ -120,7 +120,7 @@ let extract_decl init i prog =
     | (MiscParser.Location_reg(n,r),(_,v))::_ 
 	 when String.compare s r = 0 
 	      && n = i ->
-       Some (SymbConstant.pp_v v)
+       Some (ParsedConstant.pp_v v)
     | _::init -> find_v s init in
   let to_decl = function
     | s -> 
