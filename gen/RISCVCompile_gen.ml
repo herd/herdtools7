@@ -91,11 +91,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
 
     let ldr mo r1 r2 =  match mo with
     |AV.Rlx -> AV.Load (wloc,AV.Signed,mo,r1,0,r2)
-    |AV.(Acq|Rel|AcqRel) ->  amoor_as_load mo r1 r2
+    |AV.Acq|AV.Rel|AV.AcqRel ->  amoor_as_load mo r1 r2
     |AV.Sc -> assert false
     and str mo r1 r2 =  match mo with
     |AV.Rlx -> AV.Store (wloc,mo,r1,0,r2)
-    |AV.(Acq|Rel|AcqRel) ->  swap_as_store mo r1 r2
+    |AV.Acq|AV.Rel|AV.AcqRel ->  swap_as_store mo r1 r2
     |AV.Sc -> assert false
     let add r1 r2 r3 = AV.Op (AV.ADD,r1,r2,r3)
     let xor r1 r2 r3 = AV.Op (AV.XOR,r1,r2,r3)
