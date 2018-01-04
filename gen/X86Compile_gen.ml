@@ -33,7 +33,7 @@ struct
 
   let emit_store addr v =
     I_MOV
-      (Effaddr_rm32 (Rm32_abs (SymbConstant.nameToV addr)),
+      (Effaddr_rm32 (Rm32_abs (ParsedConstant.nameToV addr)),
        Operand_immediate v)
 
 
@@ -42,12 +42,12 @@ struct
      I_MOV
       (Effaddr_rm32 (Rm32_reg r), Operand_immediate v) ;
      I_XCHG
-       (Effaddr_rm32 (Rm32_abs (SymbConstant.nameToV addr)),
+       (Effaddr_rm32 (Rm32_abs (ParsedConstant.nameToV addr)),
         Effaddr_rm32 (Rm32_reg r))
    ]
 
   let emit_load_ins addr r =
-    let addr = SymbConstant.nameToV addr in
+    let addr = ParsedConstant.nameToV addr in
     I_MOV
       (Effaddr_rm32 (Rm32_reg r),
        Operand_effaddr (Effaddr_rm32 (Rm32_abs addr)))
