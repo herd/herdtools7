@@ -38,6 +38,7 @@ let parse_tag opt set tags msg =
     | true -> ()),
   sprintf "<%s> %s" (String.concat "|" tags) msg
 
+
 let badarg opt arg ty =
   raise
     (Arg.Bad
@@ -116,6 +117,7 @@ let parse_stringsetfun opt f msg =
 
 let parse_stringset opt v msg =
   parse_stringsetfun opt (fun s -> v := StringSet.union s !v) msg
+
 
 (* Option list *)
 let load_config s =
@@ -217,7 +219,8 @@ let options = [
   parse_stringset "-cycles" cycles  "<name1,...,nameN> show failing checks as cycles, cumulates" ;
 
 (* Model control *)
-  parse_bool "-archvariant" archvariant "select an architecture variation" ;
+  begin let module ParseVariant = ParseTag.MakeS(Variant) in
+  ParseVariant.parse "-variant" variant "select an architecture variation" end ;
   "-optace", Arg.Bool (fun b -> optace := Some b),
     "<bool> optimize axiomatic candidate generation, default is true except for the minimal model and all generic models";
   "-initwrites", Arg.Bool (fun b -> initwrites := Some b),
@@ -511,7 +514,7 @@ let () =
       | Some (Model.Minimal b) -> b
       | Some (Model.Generic _|Model.File _) -> false
       | _ -> false
-    let archvariant = !archvariant
+    let variant = !variant
     let outputdir = !outputdir
     let suffix = !suffix
     let dumpes = !dumpes

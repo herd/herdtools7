@@ -45,11 +45,13 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
         (E.EventRel.restrict_domain is_mem_load_total iico)
         dd_inside in    
     let success =
-      S.seq
-        (E.EventRel.restrict_domain
-           (fun e1 -> E.EventSet.mem e1 conc.S.str.E.success_ports)
-           dd_inside)
-        (E.EventRel.restrict_codomain E.is_mem iico) in
+      if O.variant Variant.Success then
+        S.seq
+          (E.EventRel.restrict_domain
+             (fun e1 -> E.EventSet.mem e1 conc.S.str.E.success_ports)
+             dd_inside)
+          (E.EventRel.restrict_codomain E.is_mem iico)
+      else E.EventRel.empty in
     let data_dep =
 (* Data deps are (1) dd to commits (2) data deps to stores *)
       let last_data =

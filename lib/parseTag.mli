@@ -30,3 +30,11 @@ module Make : functor (O:Opt) -> sig
   val parse_opt : string -> O.t option ref ->  string -> string * Arg.spec * string
   val parse_fun : string -> (O.t -> unit) -> string  -> string * Arg.spec * string
 end
+
+module MakeS : functor
+  (O:sig
+    include Opt
+    val compare : t -> t -> int
+  end) -> sig
+    val parse : string -> (O.t -> bool) ref -> string -> string * Arg.spec * string
+  end

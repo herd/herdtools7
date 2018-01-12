@@ -121,7 +121,9 @@ module Make (C:Sem.Config)(V:Value.S)
           (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, plain)) ii
 
     let write_reg = do_write_reg M.mk_singleton_es
-    let write_reg_success = do_write_reg M.mk_singleton_es_success
+    let write_reg_success =
+      do_write_reg
+        (if O.variant Variant.Success then M.mk_singleton_es_success else M.mk_singleton_es)
 
     let do_write_mem an a v ii  =
       M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v, an)) ii
@@ -141,10 +143,11 @@ module Make (C:Sem.Config)(V:Value.S)
 
 (* Compute amo semantics anotations from syntactic  ones,
    Notice that Sc is exclusively semantics, cf. assert false below *)
+    let archvariant = C.variant Variant.SpecialX0
 
     let read_amo  =
       let open RISCV in
-      if C.archvariant then fun mo -> match mo with
+      if archvariant then fun mo -> match mo with
       | Rlx|Acq|AcqRel -> mo
       | Rel -> Rlx
       | Sc -> assert false
@@ -156,7 +159,7 @@ module Make (C:Sem.Config)(V:Value.S)
 
     and write_amo =
       let open RISCV in
-      if C.archvariant then fun mo -> match mo with
+      if archvariant then fun mo -> match mo with
       | Rlx|Rel|AcqRel -> mo
       | Acq -> Rlx
       | Sc -> assert false
@@ -168,7 +171,7 @@ module Make (C:Sem.Config)(V:Value.S)
 
     let amo op an rd rv ra ii =
       let open RISCV in
-      match C.archvariant,op,rd,rv with
+      match archvariant,op,rd,rv with
       | true,AMOSWAP,Ireg X0,_ ->
           (read_reg_data rv ii >>| read_reg_ord ra ii) >>=
           fun (d,a) -> write_mem (write_amo an) a d ii
@@ -221,7 +224,7 @@ module Make (C:Sem.Config)(V:Value.S)
               (fun a -> M.add a (V.intToV k)) >>=
               (fun ea -> read_mem mo ea ii) >>=
               (fun v -> write_reg r1 v ii) in
-            if C.archvariant then mk_load mo >>! B.Next
+            if archvariant then mk_load mo >>! B.Next
             else
               let open RISCV in
               let ld =  match mo with
@@ -241,7 +244,7 @@ module Make (C:Sem.Config)(V:Value.S)
               (fun (d,a) ->
                 (M.add a (V.intToV k)) >>=
                 (fun ea -> write_mem mo ea d ii)) in
-            if C.archvariant then mk_store mo >>! B.Next
+            if archvariant then mk_store mo >>! B.Next
             else
                let open RISCV in
                let sd () =  mk_store Rlx in

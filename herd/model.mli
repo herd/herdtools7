@@ -52,6 +52,7 @@ module type Config = sig
   val cycles : StringSet.t
   val optace : bool
   val libfind : string -> string
+  val variant : Variant.t -> bool
 end
 
 (* Defaults *)

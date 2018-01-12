@@ -165,6 +165,13 @@ module Make
       let m =
         I.add_rels
           I.init_env_empty
+
+        ((if O.variant Variant.Success then
+          fun k ->
+            ("instr",lazy begin
+              E.EventRel.of_pred all_evts all_evts E.po_eq
+            end)::k
+        else Misc.identity)                   
           ["id",id;
             "loc", lazy begin
               E.EventRel.restrict_rel E.same_location (Lazy.force unv)
@@ -180,9 +187,6 @@ module Make
               E.EventRel.restrict_rel
                 (fun e1 e2 -> not (E.same_proc e1 e2)) (Lazy.force unv)
             end ;
-            "instr",lazy begin
-              E.EventRel.of_pred all_evts all_evts E.po_eq
-            end ;
            "rmw",lazy conc.S.atomic_load_store;
            "po", lazy  po;
            "addr", lazy (Lazy.force pr).S.addr;
@@ -192,7 +196,7 @@ module Make
            "success", lazy (Lazy.force pr).S.success;
            "rf", lazy (Lazy.force pr).S.rf;
            "control",lazy conc.S.str.E.control ;
-          ] in
+          ]) in
       let m =
         I.add_sets m
           (List.map

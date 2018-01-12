@@ -18,7 +18,6 @@
 
 module type Config = sig
   val moreedges : bool
-  val archvariant : bool
   include SemExtra.Config
 end
 

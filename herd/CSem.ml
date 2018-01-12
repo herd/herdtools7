@@ -252,7 +252,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
           | C.FetchOp  -> write_mem_atomic a loc w ii >>! vloc)
 
     and fetch_op op v mo loc ii =
-      if Conf.archvariant then
+      if Conf.variant Variant.NoRMW then
         read_mem_atomic true
           (MOorAN.MO (MemOrder.extract_read mo)) loc ii >>= fun oldv ->
         M.op op oldv v >>= fun w ->

@@ -62,3 +62,33 @@ module Make (O:Opt) =
     let parse_fun opt f msg = parse_withfun opt f msg None
   end
 
+module MakeS
+    (O:sig
+      include Opt
+      val compare : t -> t -> int
+    end) = struct
+
+      let  taglist = String.concat "," O.tags
+
+      let parse opt add msg =
+        let spec tag =
+          let es = Misc.split_comma tag in
+          let es =
+            List.map
+              (fun tag -> match O.parse tag with
+              | Some tag -> tag
+              | None ->
+                  raise
+                    (Arg.Bad
+                       (Printf.sprintf "tag %s for %s is wrong, allowed tags are %s"  tag opt taglist)))
+              es in
+          let oldf = !add in
+          let newf =
+            List.fold_left
+              (fun k check -> fun t ->  O.compare t check = 0 || k t)
+              oldf es in
+          add := newf in
+            
+        opt,Arg.String spec,
+        Printf.sprintf "<tags> where tags in {%s}, %s" taglist msg
+    end

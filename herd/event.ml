@@ -310,7 +310,11 @@ module type S = sig
 
 end
 
-module Make (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
+module type Config = sig
+  val variant : Variant.t -> bool
+end
+
+module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
   (S with module A = AI and module Act = Act) =
 struct
 
@@ -1006,6 +1010,7 @@ let (=|=) = check_disjoint para_comp
     let in_wmem = minimals wmem
     and in_wres = minimals wres
     and in_wresult = minimals wresult
+    and out_data = maximals data
     and out_addr = maximals addr
     and out_resa = maximals resa in
     { procs = [];
@@ -1022,7 +1027,9 @@ let (=|=) = check_disjoint para_comp
          EventRel.cartesian
            (EventSet.union out_addr out_resa)
            (EventSet.union3 in_wmem in_wres in_wresult);
-         EventRel.cartesian (maximals data) in_wmem; ];
+         EventRel.cartesian out_data
+           (if C.variant Variant.Success then in_wmem else
+           EventSet.union in_wresult in_wmem); ];
       intra_causality_control =
       EventRel.union
         (EventRel.union3 resa.intra_causality_control

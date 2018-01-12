@@ -129,6 +129,7 @@ module Top (Conf:Config) = struct
         let cycles = Conf.cycles
         let optace = Conf.optace
         let libfind = Conf.libfind
+        let variant = Conf.variant
       end in
       match arch with
       | `PPC ->

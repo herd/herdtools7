@@ -20,6 +20,7 @@
 module type Config = sig
   val optace : bool
   val debug : Debug_herd.t
+  val variant : Variant.t -> bool
   module PC : PrettyConf.S
 end
 
@@ -173,7 +174,7 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
     module O = C
     module A = A
     module V = A.V
-    module E = Event.Make(A)(Act)
+    module E = Event.Make(C)(A)(Act)
     module M = EventsMonad.Make(C)(A)(E)
     module Cons = Constraints.Make (C.PC)(A)
 
