@@ -8,8 +8,8 @@ atomic_fetch_or(X,V) atomic_fetch_or_explicit(X,V,memory_order_seq_cst)
 atomic_fetch_xor(X,V) atomic_fetch_xor_explicit(X,V,memory_order_seq_cst)
 atomic_fetch_and(X,V) atomic_fetch_and_explicit(X,V,memory_order_seq_cst)
 // RCU
-rcu_read_lock() { __fence{rcu_read_lock}; }
-rcu_read_unlock() { __fence{rcu_read_unlock};}
-synchronize_rcu() { __fence{sync}; }
-synchronize_rcu_expedited() { __fence{sync}; }
+rcu_read_lock() { __fence{rcu-lock}; }
+rcu_read_unlock() { __fence{rcu-unlock};}
+synchronize_rcu() { __fence{rcu-sync}; }
+synchronize_rcu_expedited() { __fence{rcu-sync}; }
 

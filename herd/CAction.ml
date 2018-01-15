@@ -249,6 +249,10 @@ end = struct
      | Fence (MO mo) -> mo=target
      | _ -> false
 
+   let fence_matches target a = match a with
+     | Fence (AN [a]) -> a=target
+     | _ -> false
+
 (* Architecture-specific sets *)
 
    let arch_sets = [
@@ -262,6 +266,9 @@ end = struct
      "ACQ_REL", mo_matches MemOrder.Acq_Rel;
      "RLX", mo_matches MemOrder.Rlx;
      "CON", mo_matches MemOrder.Con;
+     "Rcu-sync", fence_matches "rcu-sync";
+     "Rcu-lock", fence_matches "rcu-lock";
+     "Rcu-unlock", fence_matches "rcu-unlock";
      "A",old_is_atomic;
      "NA",(fun a -> not (old_is_atomic a));
    ]

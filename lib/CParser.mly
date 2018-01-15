@@ -134,9 +134,14 @@ atomic_op:
 | SUB { Op.Sub }
 
 annot:
-| IDENTIFIER { $1 }
+| annot_base  { $1 }
+| annot_base SUB annot { $1 ^ "-" ^ $3 }
+
+annot_base :
 | LOCK       { "lock" }
-| UNLOCK       { "unlock" }
+| UNLOCK     { "unlock" }
+| IDENTIFIER { $1 }
+
 
 
 annot_list:
