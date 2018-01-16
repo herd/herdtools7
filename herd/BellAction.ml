@@ -48,7 +48,7 @@ end = struct
   let tr_annot = function
     | "rcu_read_unlock" -> "rcu-unlock"
     | "rcu_read_lock" -> "rcu-lock"
-    | "sync" -> "rcu-sync"
+    | "sync" -> "sync-rcu"
     | s -> s
 
   let pp_annots = function

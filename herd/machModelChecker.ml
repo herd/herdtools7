@@ -52,7 +52,7 @@ module Make
           | Some (A.Location_global loc) -> A.V.compare loc x = 0
           | None | Some _ -> false)
           es
-              
+
       let check_through = MU.check_through
 
       let pp_failure test conc msg vb_pp =
@@ -78,7 +78,7 @@ module Make
         let before = E.EventSet.filter pbef (E.EventRel.preds po f)
         and after = E.EventSet.filter paft (E.EventRel.succs po f) in
         E.EventRel.cartesian before after
-          
+
 
       let fromto po fs =
         let open S in
@@ -99,9 +99,9 @@ module Make
                       fencerel (keep l1) (keep l2) po f in
                   fr::r)
               fs [] in
-          E.EventRel.unions r  
-          
-            
+          E.EventRel.unions r
+
+
     end
     module I = Interpreter.Make(IConfig)(S)(IUtils)
     module E = S.E
@@ -112,12 +112,20 @@ module Make
         (StringSet.fold
            (fun annot k ->
              let tag = BellName.tag2instrs_var annot in
-             let bd =
-               tag,
-               lazy begin
+             let rel = lazy begin
                  E.EventSet.filter (pred annot) evts
                end in
-             bd::k)
+             let bd = tag,rel in
+             let k = bd::k in
+(* Temporary: forward compatibility, introdude new RCU names  *)
+             let alt_tag = match tag with
+             | "Sync" -> Some "Sync-rcu"
+             | "Rcu_read_lock" -> Some "Rcu-lock"
+             | "Rcu_read_unlock" -> Some "Rcu-unlock"
+             | _ -> None in
+             match alt_tag with
+             | Some tag -> (tag,rel)::k
+             | None -> k)
            annots [])
 
 (* Intepreter call *)
@@ -171,7 +179,7 @@ module Make
             ("instr",lazy begin
               E.EventRel.of_pred all_evts all_evts E.po_eq
             end)::k
-        else Misc.identity)                   
+        else Misc.identity)
           ["id",id;
             "loc", lazy begin
               E.EventRel.restrict_rel E.same_location (Lazy.force unv)
@@ -205,10 +213,10 @@ module Make
            "R", E.is_mem_load;
            "W", E.is_mem_store;
            "M", E.is_mem;
-	   "F", E.is_barrier;
-	   "I", E.is_mem_store_init;
-	   "IW", E.is_mem_store_init;
-	   "FW",
+           "F", E.is_barrier;
+           "I", E.is_mem_store_init;
+           "IW", E.is_mem_store_init;
+           "FW",
            (let ws = lazy (U.make_write_mem_finals conc) in
            fun e -> E.EventSet.mem e (Lazy.force ws));
          ]) in
@@ -217,15 +225,15 @@ module Make
           (List.map
              (fun (k,a) ->
                k,lazy (E.EventSet.filter (fun e -> a e.E.action) evts))
-	  E.Act.arch_sets) in
+          E.Act.arch_sets) in
 (* Define empty fence relation
    (for the few models that apply to several archs) *)
       let m = I.add_rels m
          [
 (* PTX fences *)
-	   "membar.cta",lazy E.EventRel.empty;
-	   "membar.gl", lazy E.EventRel.empty;
-	   "membar.sys",lazy E.EventRel.empty;
+           "membar.cta",lazy E.EventRel.empty;
+           "membar.gl", lazy E.EventRel.empty;
+           "membar.sys",lazy E.EventRel.empty;
         ] in
 (* Override arch specific fences *)
       let m =
@@ -291,7 +299,7 @@ module Make
                          U.int_scope_bell scope scopes (Lazy.force unv)
                        end)
                      (BellModel.get_scope_rels bi))
-            end in *) 
+            end in *)
 (* Now call interpreter, with or without generated co *)
       if withco then
         let process_co co0 res =
@@ -309,7 +317,7 @@ module Make
                "fre", lazy (U.ext fr); "fri", lazy (U.internal fr);
                "co", lazy co;
                "coe", lazy (U.ext co); "coi", lazy (U.internal co);
-	     ] in
+             ] in
           run_interpret test kfail ks m vb_pp kont res in
         U.apply_process_co test  conc process_co res
       else
