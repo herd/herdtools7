@@ -266,7 +266,7 @@ end = struct
      "ACQ_REL", mo_matches MemOrder.Acq_Rel;
      "RLX", mo_matches MemOrder.Rlx;
      "CON", mo_matches MemOrder.Con;
-     "Rcu-sync", fence_matches "rcu-sync";
+     "Sync-rcu", fence_matches "sync-rcu";
      "Rcu-lock", fence_matches "rcu-lock";
      "Rcu-unlock", fence_matches "rcu-unlock";
      "A",old_is_atomic;
