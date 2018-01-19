@@ -49,6 +49,7 @@ let bi = match O.bell with
                let libdir = O.libdir
               end) in
           ML.find
+        let compat = false
         let prog = O.prog
       end) in
   Some (R.read fname)

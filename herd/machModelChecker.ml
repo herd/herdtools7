@@ -34,6 +34,7 @@ module Make
     module IConfig = struct
       let bell = false
       let bell_fname = bell_fname
+      let compat = O.variant Variant.BackCompat
       include O
       let doshow = S.O.PC.doshow
       let showraw = S.O.PC.showraw
@@ -117,15 +118,7 @@ module Make
                end in
              let bd = tag,rel in
              let k = bd::k in
-(* Temporary: forward compatibility, introdude new RCU names  *)
-             let alt_tag = match tag with
-             | "Sync" -> Some "Sync-rcu"
-             | "Rcu_read_lock" -> Some "Rcu-lock"
-             | "Rcu_read_unlock" -> Some "Rcu-unlock"
-             | _ -> None in
-             match alt_tag with
-             | Some tag -> (tag,rel)::k
-             | None -> k)
+             k)
            annots [])
 
 (* Intepreter call *)

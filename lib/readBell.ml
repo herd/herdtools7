@@ -21,6 +21,7 @@ module type Config = sig
   val debug_model : bool
   val verbose : int
   val libfind : string -> string
+  val compat : bool
   val prog : string
 end
 
@@ -39,6 +40,7 @@ module Make(O:Config) =
           let debug = O.debug_model
           let verbose = O.verbose
           let libfind = O.libfind
+          let compat = O.compat
         end)
 
     let parse fname =

@@ -30,6 +30,7 @@ module type Config = sig
   val skipchecks : StringSet.t
   val strictskip : bool
   val cycles : StringSet.t
+  val compat : bool
 (* Show control *)
   val doshow : StringSet.t
   val showraw : StringSet.t
@@ -2016,7 +2017,13 @@ module Make
                 | ValSet(TTag _,elts) ->
                     let tags =
                       ValSet.fold
-                        (fun elt k -> as_tag elt::k)
+                        (fun elt k ->
+                          let tag = as_tag elt in match tag with
+                          | "release" when O.compat ->
+                              "assign"::"release"::k
+                          | "acquire"when O.compat ->
+                              "deref"::"lderef"::"acquire"::k
+                          | _ -> tag::k)
                         elts [] in
                     StringSet.of_list tags
                 | V.Tag (_,tag) -> StringSet.singleton tag

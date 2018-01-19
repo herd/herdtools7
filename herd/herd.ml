@@ -605,6 +605,7 @@ let () =
             let debug_model = Config.debug.Debug_herd.barrier
             let verbose = Config.verbose
             let libfind = libfind
+            let compat = Config.variant Variant.BackCompat
             let prog = prog
           end) in
       let bi = R.read fname in

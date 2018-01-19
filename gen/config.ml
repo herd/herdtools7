@@ -276,6 +276,7 @@ let read_bell libfind fname =
         let debug_model = false
         let verbose = !verbose
         let libfind = libfind
+        let compat = false
         let prog = prog
       end) in
   R.read fname

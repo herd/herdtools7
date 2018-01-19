@@ -24,6 +24,8 @@ module Make (C:Sem.Config)(V:Value.S)
     module Act = BellAction.Make(Bell)
     include SemExtra.Make(C)(Bell)(Act)
 
+    let compat = C.variant Variant.BackCompat
+
 (* Not doing barrier pretty print *)
     let barriers = []
     let isync = None
@@ -119,7 +121,7 @@ module Make (C:Sem.Config)(V:Value.S)
       let build_semantics_inner ii =
         match ii.A.inst with
 
-        | BellBase.Pld(r,addr_op,[("deref"|"lderef")]) ->
+        | BellBase.Pld(r,addr_op,[("deref"|"lderef")]) when compat ->
             solve_addr_op addr_op ii >>=
             fun addr -> read_mem addr ["once"] ii >>=
             fun v -> write_reg r v ii >>*=
@@ -131,7 +133,7 @@ module Make (C:Sem.Config)(V:Value.S)
 
         | BellBase.Pst(addr_op, roi, s) ->
             let s = match s with
-            | ["assign"] -> ["release"]
+            | ["assign"] when compat -> ["release"]
             | _ -> s in
             (solve_addr_op addr_op ii >>|
               read_roi true roi ii) >>=

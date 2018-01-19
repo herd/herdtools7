@@ -123,6 +123,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
         fun l ->
           begin match mo with
           | AN [("deref"|"lderef")]   ->
+(* Cannot do this with a macro, by lack of sequencing expression operator *)
               read_mem is_data an_once l ii >>*=
               fun v -> mk_rb_dep ii >>! v
           | _ ->

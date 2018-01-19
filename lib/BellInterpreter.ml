@@ -19,6 +19,7 @@ module type Config = sig
   val debug : bool
   val verbose : int
   val libfind : string -> string
+  val compat : bool
 end
 
 module Make (C: Config) = struct
@@ -39,6 +40,7 @@ module Make (C: Config) = struct
       let skipchecks = StringSet.empty
       let strictskip = false
       let cycles = StringSet.empty
+      let compat = C.compat
 (* Show control, useless.. *)
       let doshow = StringSet.empty
       let showraw = StringSet.empty
