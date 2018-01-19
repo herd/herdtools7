@@ -307,7 +307,10 @@ module Top (Conf:Config) = struct
         let module BellM = BellMem.Make(ModelConfig)(BellS) in
         let module BellC =
           BellCheck.Make
-            (struct let debug = Conf.debug.Debug_herd.barrier end)
+            (struct
+              let debug = Conf.debug.Debug_herd.barrier
+              let compat = Conf.variant Variant.BackCompat
+            end)
             (Bell)
             (struct
               let info = Misc.app_opt (fun (_,y) -> y) Conf.bell_model_info

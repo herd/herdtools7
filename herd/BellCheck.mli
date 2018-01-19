@@ -17,7 +17,7 @@
 (** Check code w.r.t. bell definitions *)
 
 module Make :
-functor (O:sig val debug : bool end) ->
+functor (O:sig val debug : bool val compat :bool end) ->
   functor (A:Arch_herd.S) ->
       functor
         (C:sig

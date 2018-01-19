@@ -1892,6 +1892,9 @@ module Make
             end
 
         | Include (loc,fname) ->
+            let fname = match fname with
+            | "lock.cat" when O.compat -> "cos-opt.cat"
+            | _ -> fname in
             do_include loc fname st kfail kont res
         | Procedure (_,name,args,body,is_rec) ->
           let p =  { proc_args=args; proc_env=st.env; proc_body=body; } in

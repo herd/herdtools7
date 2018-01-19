@@ -19,7 +19,7 @@
 open Printf
 
 module Make
-    (O:sig val debug : bool end)
+    (O:sig val debug : bool val compat : bool end)
     (A:Arch_herd.S)
     (C:sig
       val info : BellModel.info option
@@ -186,6 +186,17 @@ module Make
                 Not_found -> i,al
             end              
           | _::_ -> i,al in        
+        let i,al =
+          if O.compat then
+            let al =
+              List.map
+                (fun a -> match a with
+                | "rcu_read_lock" -> "rcu-lock" 
+                | "rcu_read_unlock" -> "rcu-unlock" 
+                | "sync" -> "sync-rcu"
+                | _ -> a) al in
+             C.set_list i al,al
+          else i,al in
         let ok = BellModel.check_event id al bi in
         if not ok then error_instruction i id bi ;
         i

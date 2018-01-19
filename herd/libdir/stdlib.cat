@@ -64,3 +64,6 @@ let map f =
   || e ++ S -> f e ++ do_map S
   end in
   do_map
+
+tr5(* Temporary *)
+let LKW = emptyset
