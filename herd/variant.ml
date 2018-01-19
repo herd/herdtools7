@@ -18,17 +18,26 @@ type t =
   | Success     (* Riscv Model with explicit success dependency *)
   | SpecialX0   (* Some events by AMO to or from x0 are not generated *)
   | NoRMW
+(* Riscv: Expand load acquire and store release as fences *)
+  | AcqRelAsFence
+(* Backward compatibility *)
+  | BackCompat
 
-let tags = ["success";"specialx0";"normw"]
+let tags = ["success";"specialx0";"normw";"acqrelasfence";"backcompat"]
+
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
 | "specialx0"|"amox0"|"x0" -> Some SpecialX0
 | "normw" -> Some NoRMW
+| "acqrelasfence" -> Some AcqRelAsFence
+| "backcompat"|"back" -> Some BackCompat
 | _ -> None
 
 let pp = function
   | Success -> "success"
   | SpecialX0 -> "specialx0"
   | NoRMW -> "normw"
+  | AcqRelAsFence -> "acqrelasfence"
+  | BackCompat ->"backcompat"
 
 let compare = Pervasives.compare

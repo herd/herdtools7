@@ -143,11 +143,12 @@ module Make (C:Sem.Config)(V:Value.S)
 
 (* Compute amo semantics anotations from syntactic  ones,
    Notice that Sc is exclusively semantics, cf. assert false below *)
-    let archvariant = C.variant Variant.SpecialX0
+    let specialX0 = C.variant Variant.SpecialX0
+    let asfence =  C.variant Variant.AcqRelAsFence
 
     let read_amo  =
       let open RISCV in
-      if archvariant then fun mo -> match mo with
+      if specialX0 then fun mo -> match mo with
       | Rlx|Acq|AcqRel -> mo
       | Rel -> Rlx
       | Sc -> assert false
@@ -159,7 +160,7 @@ module Make (C:Sem.Config)(V:Value.S)
 
     and write_amo =
       let open RISCV in
-      if archvariant then fun mo -> match mo with
+      if specialX0 then fun mo -> match mo with
       | Rlx|Rel|AcqRel -> mo
       | Acq -> Rlx
       | Sc -> assert false
@@ -171,7 +172,7 @@ module Make (C:Sem.Config)(V:Value.S)
 
     let amo op an rd rv ra ii =
       let open RISCV in
-      match archvariant,op,rd,rv with
+      match specialX0,op,rd,rv with
       | true,AMOSWAP,Ireg X0,_ ->
           (read_reg_data rv ii >>| read_reg_ord ra ii) >>=
           fun (d,a) -> write_mem (write_amo an) a d ii
@@ -224,8 +225,8 @@ module Make (C:Sem.Config)(V:Value.S)
               (fun a -> M.add a (V.intToV k)) >>=
               (fun ea -> read_mem mo ea ii) >>=
               (fun v -> write_reg r1 v ii) in
-            if archvariant then mk_load mo >>! B.Next
-            else
+            if specialX0 then mk_load mo >>! B.Next
+            else if asfence then
               let open RISCV in
               let ld =  match mo with
               | AcqRel ->
@@ -238,14 +239,16 @@ module Make (C:Sem.Config)(V:Value.S)
               | Rlx|Rel -> ld
               | Sc -> assert false in
               ld >>! B.Next
+            else mk_load mo >>! B.Next
+
         | RISCV.Store ((RISCV.Double|RISCV.Word),mo,r1,k,r2) ->
             let mk_store mo =
               (read_reg_data r1 ii >>| read_reg_ord r2 ii) >>=
               (fun (d,a) ->
                 (M.add a (V.intToV k)) >>=
                 (fun ea -> write_mem mo ea d ii)) in
-            if archvariant then mk_store mo >>! B.Next
-            else
+            if specialX0 then mk_store mo >>! B.Next
+            else if asfence then
                let open RISCV in
                let sd () =  mk_store Rlx in
                let sd = match mo with
@@ -254,6 +257,7 @@ module Make (C:Sem.Config)(V:Value.S)
                | Acq|Rlx -> sd ()
                | Sc -> assert false in
                sd >>! B.Next
+            else  mk_store mo >>! B.Next
         | RISCV.LoadReserve  ((RISCV.Double|RISCV.Word),mo,r1,r2) ->
             read_reg_ord r2 ii >>=
             (fun ea ->
