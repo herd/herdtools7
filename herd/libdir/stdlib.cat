@@ -65,5 +65,5 @@ let map f =
   end in
   do_map
 
-tr5(* Temporary *)
+(* Temporary *)
 let LKW = emptyset
