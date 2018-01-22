@@ -22,8 +22,9 @@ type t =
   | AcqRelAsFence
 (* Backward compatibility *)
   | BackCompat
+  | FullScDepend    (* Complete dependencies for Store Conditinal *)
 
-let tags = ["success";"specialx0";"normw";"acqrelasfence";"backcompat"]
+let tags = ["success";"specialx0";"normw";"acqrelasfence";"backcompat";"fullscdepend"]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -31,6 +32,7 @@ let parse s = match Misc.lowercase s with
 | "normw" -> Some NoRMW
 | "acqrelasfence" -> Some AcqRelAsFence
 | "backcompat"|"back" -> Some BackCompat
+| "fullscdepend"|"scdepend" -> Some FullScDepend
 | _ -> None
 
 let pp = function
@@ -39,5 +41,6 @@ let pp = function
   | NoRMW -> "normw"
   | AcqRelAsFence -> "acqrelasfence"
   | BackCompat ->"backcompat"
+  | FullScDepend -> "FullScDepend"
 
 let compare = Pervasives.compare

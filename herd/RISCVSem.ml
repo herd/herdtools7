@@ -272,15 +272,6 @@ module Make (C:Sem.Config)(V:Value.S)
               (fun v -> write_reg_success r1 v ii)
               (fun ea resa v -> write_mem_conditional mo ea v resa ii) >>!
             B.Next
-
-(*              (read_reg_ord RISCV.RESADDR ii >>| read_reg_data r2 ii >>| read_reg_ord r3 ii) >>=
-            (fun ((resa,v),ea) ->
-                write_reg RISCV.RESADDR V.zero ii >>| (* Cancel reservation... *)
-                M.altT
-                  (write_reg r1 V.one ii) (* Failure *)
-                  ((write_reg r1 V.zero ii >>| write_mem_conditional mo ea v resa ii) >>! ()))
-              >>! B.Next
-*)
         | RISCV.Amo (op,w,mo,r1,r2,r3) ->
             amo op mo r1 r2 r3 ii >>! B.Next
         | RISCV.FenceIns b ->

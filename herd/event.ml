@@ -282,9 +282,10 @@ module type S = sig
     event_structure -> bool -> event_structure
 
   val riscv_sc :
-      event_structure -> event_structure -> event_structure ->
-        event_structure ->  event_structure ->  event_structure ->
-          event_structure
+      bool (* success *) ->
+        event_structure -> event_structure -> event_structure ->
+          event_structure ->  event_structure ->  event_structure ->
+            event_structure
 
 (* stu computation :
    stu rD rEA wEA wM ->
@@ -1006,7 +1007,7 @@ let (=|=) = check_disjoint para_comp
 
 
 (* RISCV Store conditional *)
-  let riscv_sc resa data addr wres wresult wmem =
+  let riscv_sc success resa data addr wres wresult wmem =
     let in_wmem = minimals wmem
     and in_wres = minimals wres
     and in_wresult = minimals wresult
@@ -1026,9 +1027,11 @@ let (=|=) = check_disjoint para_comp
            wresult.intra_causality_data wmem.intra_causality_data;
          EventRel.cartesian
            (EventSet.union out_addr out_resa)
-           (EventSet.union3 in_wmem in_wres in_wresult);
+           (EventSet.union3 in_wmem in_wres
+              (if C.variant Variant.FullScDepend || success
+              then in_wresult else EventSet.empty));
          EventRel.cartesian out_data
-           (if C.variant Variant.Success then in_wmem else
+           (if C.variant Variant.Success || not (C.variant Variant.FullScDepend) then in_wmem else
            EventSet.union in_wresult in_wmem); ];
       intra_causality_control =
       EventRel.union

@@ -18,10 +18,9 @@ type t =
   | Success     (* Riscv Model with explicit success dependency *)
   | SpecialX0   (* Some events by AMO to or from x0 are not generated *)
   | NoRMW       (* No RMW event for C *)
-(* Riscv: Expand load acquire and store release as fences *)
-  | AcqRelAsFence
-(* Backward compatibility *)
-  | BackCompat
+  | AcqRelAsFence (* Riscv: Expand load acquire and store release as fences *)
+  | BackCompat (* Linux, Backward compatibility -> LISA *)
+  | FullScDepend    (* Complete dependencies for Store Conditinal *)
 
 val compare : t -> t -> int      
 val tags : string list
