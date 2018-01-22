@@ -34,7 +34,10 @@ module Make
     module IConfig = struct
       let bell = false
       let bell_fname = bell_fname
-      let compat = O.variant Variant.BackCompat
+      let compat =
+        match S.A.arch with
+        | `LISA -> O.variant Variant.BackCompat
+        | _ -> false
       include O
       let doshow = S.O.PC.doshow
       let showraw = S.O.PC.showraw
