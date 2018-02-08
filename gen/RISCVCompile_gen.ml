@@ -86,6 +86,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
     let addi r1 r2 k = AV.OpI (AV.ADDI,r1,r2,k)
     let _subi r1 r2 k = addi r1 r2 (-k)
 
+    let amoswap mo r1 r2 r3 = AV.Amo (AV.AMOSWAP,wloc,mo,r1,r2,r3)
     let amoor_as_load mo r1 r2 = AV.Amo (AV.AMOOR,wloc,mo,r1,zero,r2)
     and swap_as_store mo r1 r2 = AV.Amo (AV.AMOSWAP,wloc,mo,zero,r1,r2)
 
@@ -377,6 +378,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
             "bad atomicity in rmw, %s"
             (E.pp_atom_option at)
 
+(*
     let emit_exch st p init er ew =
       let rA,init,st = next_init st p init er.loc in
       let rR,st = next_reg st in
@@ -384,6 +386,22 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
       let mo1 = tr_a er.C.atom and mo2 = tr_a ew.C.atom in
       let cs,st = emit_pair mo1 mo2  p st rR rW rA in
       rR,init,csv@cs,st
+ *)
+    let tr_swap a1 a2 = match tr_a a1,tr_a a2 with
+    | (AV.Rlx,a)|(a,AV.Rlx) -> a
+    | (AV.Acq,AV.Rel)|(AV.AcqRel,_)|(_,AV.AcqRel) -> AV.AcqRel
+    | (AV.Sc,_)|(_,AV.Sc) -> assert false
+    | (AV.Rel,_)|(_,AV.Acq) ->
+        Warn.fatal
+          "bad atomicity in rmw, acquire on write or release on read"
+
+    let emit_exch st p init er ew =
+      let rA,init,st = next_init st p init er.loc in
+      let rR,st = next_reg st in
+      let rW,init,csv,st = emit_mov st p init ew.v in
+      let mo = tr_swap er.C.atom ew.C.atom in
+      rR,init,csv@[Instruction (amoswap mo rR rW rA)],st
+
 
 (**********)
 (* Fences *)
@@ -431,11 +449,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
       let rA,init,st = next_init st p init er.loc in
       let rW,init,csv,st = emit_mov st p init ew.v in
       let rR,st = next_reg st in
-      let mo1 = tr_a er.C.atom and mo2 = tr_a ew.C.atom in
-      let cs,st = emit_pair mo1 mo2 p st rR rW rA in
+      let mo = tr_swap er.C.atom ew.C.atom in
+      let swap = Instruction (amoswap mo rR rW rA) in
       rR,init,
-      Instruction c::Instruction (add r2 rA r2)::csv@cs,
-      st
+      Instruction c::Instruction (add r2 rA r2)::csv@[swap],st
 
     let emit_access_dep_data st p init e  r1 =
       match e.dir with
