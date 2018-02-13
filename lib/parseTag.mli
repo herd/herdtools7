@@ -36,5 +36,6 @@ module MakeS : functor
     include Opt
     val compare : t -> t -> int
   end) -> sig
+    val parse_tag_set : string -> (O.t -> unit) -> string -> unit
     val parse : string -> (O.t -> bool) ref -> string -> string * Arg.spec * string
   end

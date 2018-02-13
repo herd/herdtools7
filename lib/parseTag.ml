@@ -27,7 +27,7 @@ module Make (O:Opt) =
 
     let argfun opt f =
       (fun tag ->
-        if not (f tag) then 
+        if not (f tag) then
           raise
             (Arg.Bad
                (sprintf "%s is a bad tag for %s, allowed tag are %s"
@@ -70,7 +70,7 @@ module MakeS
 
       let  taglist = String.concat "," O.tags
 
-      let parse opt add msg =
+      let parse_tag_set opt f =
         let spec tag =
           let es = Misc.split_comma tag in
           let es =
@@ -82,13 +82,14 @@ module MakeS
                     (Arg.Bad
                        (Printf.sprintf "tag %s for %s is wrong, allowed tags are %s"  tag opt taglist)))
               es in
-          let oldf = !add in
-          let newf =
-            List.fold_left
-              (fun k check -> fun t ->  O.compare t check = 0 || k t)
-              oldf es in
-          add := newf in
-            
+          List.iter f es in
+        spec
+
+      let parse opt add msg =
+        let add_tag tag =
+          let old = !add in
+          add := (fun t -> O.compare t tag = 0 || old t) in
+        let spec = parse_tag_set opt add_tag in
         opt,Arg.String spec,
         Printf.sprintf "<tags> where tags in {%s}, %s" taglist msg
     end

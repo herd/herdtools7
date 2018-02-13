@@ -149,6 +149,12 @@ and opt = parse
    { bell := Some arg }
 | "macros" arg
    { macros := Some arg }
+| "variant" arg
+    { let module PV = ParseTag.MakeS(Variant) in
+    let add_tag tag =
+      let old = !variant in
+      variant := (fun t -> Variant.compare t tag = 0 || old t) in
+    PV.parse_tag_set "variant"  add_tag arg }
 (*
 | "through" arg
    { lex_tag
