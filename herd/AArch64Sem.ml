@@ -40,48 +40,60 @@ module Make (C:Sem.Config)(V:Value.S)
     let (>>!) = M.(>>!)
     let (>>::) = M.(>>::)
 
-    let mk_read an loc v = Act.Access (Dir.R, loc, v,an)
+    let tr_variant = function
+      | AArch64Base.V32 -> MachSize.Word
+      | AArch64Base.V64 -> MachSize.Quad
 
-    let read_loc is_data =
-      M.read_loc is_data (mk_read AArch64.N)
+    let add_variant v a = (a,tr_variant v)
+
+    let mk_read var an loc v = Act.Access (Dir.R, loc, v, add_variant var an)
+
+    let read_loc v is_data = M.read_loc is_data (mk_read v AArch64.N)
 
     let read_reg is_data r ii = match r with
     | AArch64Base.ZR -> M.unitT V.zero
     | _ ->
-      M.read_loc is_data (mk_read AArch64.N) (A.Location_reg (ii.A.proc,r)) ii
+      M.read_loc is_data (mk_read AArch64.V64 AArch64.N) (A.Location_reg (ii.A.proc,r)) ii
 
     let read_reg_ord = read_reg false
     let read_reg_data = read_reg true
 
-    let read_mem a ii  =
-      M.read_loc false (mk_read AArch64.N) (A.Location_global a) ii
+    let read_mem v a ii  =
+      M.read_loc false (mk_read v AArch64.N) (A.Location_global a) ii
 
-    let read_mem_acquire a ii  =
-      M.read_loc false (mk_read AArch64.A) (A.Location_global a) ii
-    let read_mem_acquire_pc a ii  =
-      M.read_loc false (mk_read AArch64.Q) (A.Location_global a) ii
-    let read_mem_atomic a ii =
-      M.read_loc false (mk_read AArch64.X) (A.Location_global a) ii
+    let read_mem_acquire v a ii  =
+      M.read_loc false (mk_read v AArch64.A) (A.Location_global a) ii
+    let read_mem_acquire_pc v a ii  =
+      M.read_loc false (mk_read v AArch64.Q) (A.Location_global a) ii
+    let read_mem_atomic v a ii =
+      M.read_loc false (mk_read v AArch64.X) (A.Location_global a) ii
 
-    let read_mem_atomic_acquire a ii =
-      M.read_loc false (mk_read AArch64.XA) (A.Location_global a) ii
+    let read_mem_atomic_acquire v a ii =
+      M.read_loc false (mk_read v AArch64.XA) (A.Location_global a) ii
 
-    let write_loc loc v ii =
-      M.mk_singleton_es (Act.Access (Dir.W, loc, v, AArch64.N)) ii
+    let mk_write var an loc v = Act.Access (Dir.W, loc, v, add_variant var an)
+
+
+    let write_loc var an loc v ii =
+      M.mk_singleton_es (mk_write var an loc v) ii
+
     let write_reg r v ii =
-      M.mk_singleton_es (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v,AArch64.N)) ii
-    let write_mem a v ii  =
-      M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v,AArch64.N)) ii
-    let write_mem_release a v ii  =
-      M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v,AArch64.L)) ii
+      write_loc
+        AArch64.V64 AArch64.N (A.Location_reg (ii.A.proc,r)) v ii
 
-    let write_mem_atomic a v resa ii =
-      let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
-      M.mk_singleton_es_eq (Act.Access (Dir.W, A.Location_global a, v,AArch64.X)) eq ii
+    let write_mem var a v ii =
+      write_loc var AArch64.N (A.Location_global a) v ii
 
-    let write_mem_atomic_release a v resa ii =
+    let write_mem_release var a v ii =
+      write_loc var AArch64.L (A.Location_global a) v ii
+
+    let do_write_mem_atomic an var a v resa ii =
       let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
-      M.mk_singleton_es_eq (Act.Access (Dir.W, A.Location_global a, v,AArch64.XL)) eq ii
+      M.mk_singleton_es_eq
+        (Act.Access (Dir.W, A.Location_global a, v,add_variant var an)) eq ii
+
+    let write_mem_atomic = do_write_mem_atomic AArch64.X
+    and write_mem_atomic_release = do_write_mem_atomic AArch64.XL
 
     let create_barrier b ii =
       M.mk_singleton_es (Act.Barrier b) ii
@@ -127,7 +139,7 @@ module Make (C:Sem.Config)(V:Value.S)
            >>= fun () -> B.bccT v l
 
         (* Load and Store *)
-        | I_LDR(_,rd,rs,kr) ->
+        | I_LDR(var,rd,rs,kr) ->
            begin match kr with
            | K k ->
               (read_reg_ord rs ii)
@@ -136,34 +148,34 @@ module Make (C:Sem.Config)(V:Value.S)
               (read_reg_ord rs ii >>| read_reg_ord r ii)
               >>= (fun (v1,v2) -> M.add v1 v2)
            end
-           >>= (fun a -> read_mem a ii)
+           >>= (fun a -> read_mem var a ii)
            >>= (fun v -> write_reg rd v ii)
            >>! B.Next
 
-        | I_LDAR(_,t,rd,rs) ->
+        | I_LDAR(var,t,rd,rs) ->
            (read_reg_ord rs ii)
            >>= fun a -> begin match t with
                  | XX ->
                     (write_reg ResAddr a ii >>|
-                       (read_mem_atomic a ii
+                       (read_mem_atomic var a ii
                         >>= (fun v -> (write_reg rd v ii))))
                     >>! B.Next
                  | AA ->
-                    (read_mem_acquire a ii)
+                    (read_mem_acquire var a ii)
                     >>= (fun v -> (write_reg rd v ii))
                     >>! B.Next
                  | AX ->
                     (write_reg ResAddr a ii
-                    >>| (read_mem_atomic_acquire a ii
+                    >>| (read_mem_atomic_acquire var a ii
                          >>= (fun v -> write_reg rd v ii)))
                     >>! B.Next
                  | AQ ->
-                    (read_mem_acquire_pc a ii)
+                    (read_mem_acquire_pc var a ii)
                     >>= (fun v -> (write_reg rd v ii))
                     >>! B.Next
            end
 
-        | I_STR(_,rs,rd,kr) ->
+        | I_STR(var,rs,rd,kr) ->
            (read_reg_data rs ii >>|
               match kr with
               | K k ->
@@ -172,15 +184,15 @@ module Make (C:Sem.Config)(V:Value.S)
               | RV(_,r) ->
                  (read_reg_ord rd ii >>| read_reg_ord r ii)
                  >>= (fun (v1,v2) -> M.add v1 v2))
-           >>= (fun (v,a) -> write_mem a v ii)
+           >>= (fun (v,a) -> write_mem var a v ii)
            >>! B.Next
 
-        | I_STLR(_,rs,rd) ->
+        | I_STLR(var,rs,rd) ->
            (read_reg_ord rd ii >>| read_reg_data rs ii)
-           >>= (fun (a,v) -> write_mem_release a v ii)
+           >>= (fun (a,v) -> write_mem_release var a v ii)
            >>! B.Next
 
-        | I_STXR(_,t,rr,rs,rd) ->
+        | I_STXR(var,t,rr,rs,rd) ->
            (read_reg_ord rd ii >>| read_reg_data rs ii >>| read_reg_ord ResAddr ii)
            >>= (fun ((a,v),res) ->
                 (write_reg ResAddr V.zero ii
@@ -188,8 +200,8 @@ module Make (C:Sem.Config)(V:Value.S)
                        (write_reg rr V.one ii)
                        ((write_reg rr V.zero ii
                         >>| match t with
-                            | YY -> write_mem_atomic a v res ii
-                            | LY -> write_mem_atomic_release a v res ii)
+                            | YY -> write_mem_atomic var a v res ii
+                            | LY -> write_mem_atomic_release var a v res ii)
                        >>! ())))
            >>! B.Next
 

@@ -899,6 +899,23 @@ let compatible_locs_mem e1 e2 =
         | _ -> true)
         rfm
 
+    let check_sizes es =
+      let loc_mems = U.collect_mem es in
+      U.LocEnv.iter
+        (fun _ evts ->
+          (* hum TODO, init write size should be depend upon declaration and be checked *)
+          let evts =  List.filter (fun e -> not (E.is_mem_store_init e))evts in
+          match evts with
+          | [] -> ()
+          | e0::es ->
+              let sz0 = E.get_mem_size e0 in
+              List.iter
+                (fun e ->
+                  if sz0 <> E.get_mem_size e then
+                    Warn.user_error "Illegal mixed-size test")
+                es)
+        loc_mems
+
     let calculate_rf_with_cnstrnts test es cs kont kont_loop res =
       match solve_regs test es cs with
       | None -> res
@@ -912,6 +929,7 @@ let compatible_locs_mem e1 e2 =
             (fun es rfm cs res ->
               match cs with
               | [] ->
+                  if A.reject_mixed then check_sizes es ;
                   if C.debug.Debug_herd.solver && C.verbose > 0 then begin
                     let module PP = Pretty.Make(S) in
                     prerr_endline "Mem solved" ;

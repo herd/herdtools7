@@ -337,6 +337,7 @@ let get_scope_rels evts sc =
   and collect_reg_stores es = collect_by_loc es E.is_reg_store_any
   and collect_mem_loads es = collect_by_loc es E.is_mem_load
   and collect_mem_stores es = collect_by_loc es E.is_mem_store
+  and collect_mem es = collect_by_loc es E.is_mem
   and collect_loads es = collect_by_loc es E.is_load
   and collect_stores es = collect_by_loc es E.is_store
   and collect_atomics es = collect_by_loc es E.is_atomic

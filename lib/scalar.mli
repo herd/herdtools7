@@ -19,6 +19,8 @@ module type S = sig
 
 (* Business as usual *)
   type  t
+  val machsize : MachSize.sz
+
   val zero : t val one : t
 
   val of_string : string -> t

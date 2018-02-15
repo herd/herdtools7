@@ -16,6 +16,7 @@
 
 module Int64Scalar = struct
   include Int64
+  let machsize = MachSize.Quad
   let pp hexa v =
     Printf.sprintf (if hexa then "0x%Lx" else "%Li") v
   let lt v1 v2 = compare v1 v2 < 0

@@ -161,6 +161,10 @@ end = struct
     | Access (d,A.Location_global _,_,_,_) -> d
     | _ -> assert false
 
+  let get_mem_size a = match a with
+    | Access (_,A.Location_global _,_,_,_) -> MachSize.Word (* No mixed size *)
+    | _ -> assert false
+
 (* relative to the registers of the given proc *)
     let is_reg_store a (p:int) = match a with
     | Access (W,A.Location_reg (q,_),_,_,_) -> p = q

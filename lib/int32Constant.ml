@@ -16,6 +16,7 @@
 
 module Int32Scalar = struct
   include Int32
+  let machsize = MachSize.Word
   let pp hexa v =
     Printf.sprintf (if hexa then "0x%lx" else "%li") v
   let lt v1 v2 = compare v1 v2 < 0

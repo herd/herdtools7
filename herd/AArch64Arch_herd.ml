@@ -16,18 +16,27 @@
 module Make (C:sig include Arch_herd.Config val moreedges : bool end) (V:Value.S) =
   struct
     include AArch64Base
+    open MachSize
 
     let pp_barrier_short = pp_barrier
+    let reject_mixed = true
 
-    type lannot = A | XA | L | XL | X | N | Q
-					 
-    let empty_annot = N
+    type annot = A | XA | L | XL | X | N | Q
+    type lannot = annot * MachSize.sz
+
+    let get_machsize (_,sz) = sz
+
+    let empty_annot = N,Quad
+
+    let wrap_is is_fun ((a,sz):lannot) = is_fun a
 
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
-						     
-    let is_atomic = function
+
+    let _is_atomic = function
       | XA | XL | X -> true
       | _ -> false
+
+    let is_atomic = wrap_is _is_atomic
 
     let is_acquire = function
       | A | XA -> true
@@ -41,7 +50,7 @@ module Make (C:sig include Arch_herd.Config val moreedges : bool end) (V:Value.S
       | L | XL -> true
       | _ -> false
 
-    let barrier_sets = 
+    let barrier_sets =
       do_fold_dmb_dsb C.moreedges
         (fun b k ->
           let tag = pp_barrier_dot b in
@@ -50,15 +59,15 @@ module Make (C:sig include Arch_herd.Config val moreedges : bool end) (V:Value.S
 
     let annot_sets = [
       "X", is_atomic;
-      "A", is_acquire;
-      "Q", is_acquire_pc;
-      "L", is_release
+      "A",  wrap_is is_acquire;
+      "Q",  wrap_is is_acquire_pc;
+      "L",  wrap_is is_release
     ]
 
     let is_isync = is_barrier ISB
     let pp_isync = "isb"
 
-    let pp_annot = function
+    let pp_annot (a,_) = match a with
       | XA -> "Acq*"
       | A -> "Acq"
       | Q -> "AcqPc"
@@ -70,15 +79,15 @@ module Make (C:sig include Arch_herd.Config val moreedges : bool end) (V:Value.S
     module V = V
 
     include ArchExtra_herd.Make(C)
-	(struct
-	  module V = V
+        (struct
+          module V = V
 
-	  type arch_reg = reg
-	  let pp_reg = pp_reg
-	  let reg_compare = reg_compare
+          type arch_reg = reg
+          let pp_reg = pp_reg
+          let reg_compare = reg_compare
 
-	  type arch_instruction = instruction
+          type arch_instruction = instruction
           let fromto_of_instr _ = None
-	end)
-	  
+        end)
+
   end

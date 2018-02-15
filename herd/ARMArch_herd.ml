@@ -20,8 +20,10 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
   struct
     include ARMBase
     let pp_barrier_short = pp_barrier
+    let reject_mixed = false
 
     type lannot = bool (* atomicity *)
+    let get_machsize _ = V.Cst.Scalar.machsize (* No mixed size instruction *)
 
     let empty_annot = false
 

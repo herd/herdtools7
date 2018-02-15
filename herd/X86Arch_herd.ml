@@ -20,9 +20,10 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
   struct
     include X86Base
     let pp_barrier_short = pp_barrier
+    let reject_mixed = false
 
     type lannot = bool (* atomicity *)
-
+    let get_machsize _ = V.Cst.Scalar.machsize
     let empty_annot = false
     let is_atomic annot = annot
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0

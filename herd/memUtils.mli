@@ -84,6 +84,7 @@ module Make : functor (S: SemExtra.S) -> sig
   val collect_reg_stores : S.event_structure -> S.event list LocEnv.t
   val collect_mem_loads : S.event_structure -> S.event list LocEnv.t
   val collect_mem_stores : S.event_structure -> S.event list LocEnv.t
+  val collect_mem : S.event_structure -> S.event list LocEnv.t
   val collect_loads : S.event_structure -> S.event list LocEnv.t
   val collect_stores : S.event_structure -> S.event list LocEnv.t
   val collect_atomics : S.event_structure -> S.event list LocEnv.t

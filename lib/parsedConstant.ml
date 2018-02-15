@@ -16,6 +16,8 @@
 
 module StringScalar = struct
   type t = string
+  let machsize = MachSize.Quad
+
   let zero = "0" and one = "1"
 
   let of_string s = s

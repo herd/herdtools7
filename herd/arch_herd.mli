@@ -27,7 +27,7 @@ module type S =
 
     include ArchBase.S
     val pp_barrier_short : barrier -> string
-
+    val reject_mixed : bool (* perform a check that rejects mixed-size tests *)
     module V : Value.S
 
     include ArchExtra_herd.S with module I.V = V

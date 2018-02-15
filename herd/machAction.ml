@@ -20,6 +20,7 @@ module type A = sig
   include Arch_herd.S
 
   type lannot
+  val get_machsize : lannot -> MachSize.sz
 
   val empty_annot : lannot
   val barrier_sets : (string * (barrier -> bool)) list
@@ -126,6 +127,10 @@ end = struct
 
   let get_mem_dir a = match a with
   | Access (d,A.Location_global _,_,_) -> d
+  | _ -> assert false
+
+  let get_mem_size a = match a with
+  | Access (_,A.Location_global _,_,a) -> A.get_machsize a
   | _ -> assert false
 
 (* relative to the registers of the given proc *)

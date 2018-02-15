@@ -70,6 +70,7 @@ module type S = sig
   val is_additional_mem : event -> bool
   val is_atomic : event -> bool
   val get_mem_dir : event -> Dir.dirn
+  val get_mem_size : event -> MachSize.sz
 
 (* relative to the registers of the given proc *)
   val is_reg_store : event -> A.proc -> bool
@@ -424,6 +425,7 @@ struct
     let is_additional_mem e = Act.is_additional_mem e.action
     let is_atomic e = Act.is_atomic e.action
     let get_mem_dir e = Act.get_mem_dir e.action
+    let get_mem_size e = Act.get_mem_size e.action
 
 (* relative to the registers of the given proc *)
     let is_reg_store e (p:int) = Act.is_reg_store e.action p
