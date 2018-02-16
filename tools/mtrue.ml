@@ -38,6 +38,8 @@ module Make(Config:Config)(Out:OutTests.S) =
       let put b s = Buffer.add_string b s
     end
 
+    module W = Warn.Make(Config)
+
     module TR =
       TrTrue.Make
         (Config)
@@ -47,69 +49,71 @@ module Make(Config:Config)(Out:OutTests.S) =
       try
         let { Splitter.locs = locs; start = start; name=name; info; arch; _} =
           S.split fname in_chan in
-        if
-          arch = `LISA &&
-          Config.check_name name.Name.name
-        then begin
-          let buff = Buffer.create 256 in
-          let
-            (init_start,init_end),
-            (code_start,code_end as code_sec),
-            (constr_start,constr_end),
-            (last_start,loc_eof) = locs in
-          let echo sec =
-            let lexbuf = LU.from_section sec in_chan in
-            Echo.echo_fun lexbuf (Buffer.add_char buff)  in
-          echo (start,code_start) ;
-          let ok = TR.tr buff (LU.from_section code_sec in_chan) in
-          if ok then begin
-            echo (constr_start,loc_eof) ;
-            let base = Filename.basename fname in
-            let out = Out.open_file base in
-            Misc.output_protect_close Out.close
-              (fun out ->
-                Out.fprintf out "%s" (Buffer.contents buff))
-              out ;
-            Out.fprintf idx_out "%s\n" base
-          end
-        end else if arch = `C then begin
-          let buff = Buffer.create 256 in
-          let  _,_,_,(_,loc_eof) = locs in
-          let echo sec =
-            let lexbuf = LU.from_section sec in_chan in
-            Echo.echo_fun lexbuf (Buffer.add_char buff)  in
-          echo (start,loc_eof) ;
-          let base = Filename.basename fname in
-          let out = Out.open_file base in
-          Misc.output_protect_close Out.close
-            (fun out ->
-                Out.fprintf out "%s" (Buffer.contents buff))
-            out ;
-          Out.fprintf idx_out "%s\n" base
+        if Config.check_name name.Name.name then begin
+          match arch with
+          | `LISA ->
+              let buff = Buffer.create 256 in
+              let
+                  (init_start,init_end),
+                (code_start,code_end as code_sec),
+                (constr_start,constr_end),
+                (last_start,loc_eof) = locs in
+              let echo sec =
+                let lexbuf = LU.from_section sec in_chan in
+                Echo.echo_fun lexbuf (Buffer.add_char buff)  in
+              echo (start,code_start) ;
+              let ok = TR.tr buff (LU.from_section code_sec in_chan) in
+              if ok then begin
+                echo (constr_start,loc_eof) ;
+                let base = Filename.basename fname in
+                let out = Out.open_file base in
+                Misc.output_protect_close Out.close
+                  (fun out ->
+                    Out.fprintf out "%s" (Buffer.contents buff))
+                  out ;
+                Out.fprintf idx_out "%s\n" base
+              end
+          | `C ->
+              let buff = Buffer.create 256 in
+              let  _,_,_,(_,loc_eof) = locs in
+              let echo sec =
+                let lexbuf = LU.from_section sec in_chan in
+                Echo.echo_fun lexbuf (Buffer.add_char buff)  in
+              echo (start,loc_eof) ;
+              let base = Filename.basename fname in
+              let out = Out.open_file base in
+              Misc.output_protect_close Out.close
+                (fun out ->
+                  Out.fprintf out "%s" (Buffer.contents buff))
+                out ;
+              Out.fprintf idx_out "%s\n" base
+          | _ -> ()
+        end else begin
+            W.warn "%s: rejected by name" (Pos.str_pos0 fname)
         end
       with LexMisc.Error (msg,pos) ->
         Printf.eprintf
           "%a: Lex error %s (in %s)\n" Pos.pp_pos pos msg fname ;
         raise Misc.Exit
 
-    let from_file idx_chan name =
-      try
-        Misc.input_protect
-          (fun in_chan -> from_chan idx_chan name in_chan)
-          name
-      with Misc.Exit -> ()
-      | Misc.Fatal msg ->
-          eprintf "Fatal error is not fatal, %s\n" msg
+          let from_file idx_chan name =
+            try
+              Misc.input_protect
+                (fun in_chan -> from_chan idx_chan name in_chan)
+                name
+            with Misc.Exit -> ()
+            | Misc.Fatal msg ->
+                eprintf "Fatal error is not fatal, %s\n" msg
 
-    let from_args args =
-      let idx_out = Out.open_all () in
-      Misc.output_protect_close Out.close
-        (fun idx_out ->
-          Misc.iter_argv (from_file idx_out) args)
-        idx_out ;
-      Out.tar ()
+          let from_args args =
+            let idx_out = Out.open_all () in
+            Misc.output_protect_close Out.close
+              (fun idx_out ->
+                Misc.iter_argv (from_file idx_out) args)
+              idx_out ;
+            Out.tar ()
 
-  end
+        end
 
 (**********)
 (* Driver *)
