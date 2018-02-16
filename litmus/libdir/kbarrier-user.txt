@@ -1,11 +1,11 @@
 static inline void barrier_wait(int id,int i,int *b) {
   if ((i % nthreads) == id) {
-    ACCESS_ONCE(*b) = 1;
+    WRITE_ONCE(*b,1);
     smp_mb();
   } else {
     int _spin = 256;
     for  ( ; ; ) {
-      if (ACCESS_ONCE(*b) != 0) return;
+      if (READ_ONCE(*b) != 0) return;
       if (--_spin <= 0) return;
       cpu_relax();
     }
