@@ -34,6 +34,7 @@ module type Config = sig
   val driver : Driver.t
   val cross : bool
   val hexa : bool
+  val threadstyle : ThreadStyle.t
   val asmcommentaslabel : bool
   include RunUtils.CommonConfig
   val mkopt : Option.opt -> Option.opt
@@ -354,6 +355,10 @@ let dump_c xcode names =
       O.o "#include <stdio.h>" ;
       O.o "#include <stdlib.h>" ;
       if Cfg.sleep > 0 then  O.o "#include <unistd.h>" ;
+      begin match Cfg.threadstyle with
+      | ThreadStyle.Cached -> O.o "extern void set_pool(void);"
+      | _ -> ()
+      end ;
       O.o "" ;
       O.o "/* Declarations of tests entry points */" ;
       let arch,docs,srcs,utils = run_tests names out_chan in
@@ -385,31 +390,30 @@ let dump_c xcode names =
       O.o "}" ;
       O.o"" ;
       O.o"/* Run all tests */" ;
+      let runbody () =
+        O.oi "my_date(out);" ;
+        begin match Cfg.threadstyle with
+        | ThreadStyle.Cached -> O.oi "set_pool();"
+        | _ -> ()
+        end ;
+        List.iteri
+          (fun k doc ->
+            if k > 0 && Cfg.sleep > 0 then  O.fi "sleep(%i);" Cfg.sleep ;
+            O.fi "%s(argc,argv,out);" (MyName.as_symbol doc) ;
+            if xcode then O.oi "[tick tick];")
+          (List.rev docs) ;
+        O.oi "end_report(argc,argv,out);" ;
+        O.oi "my_date(out);" in
       if xcode then begin
         O.o "#import \"run.h\"";
         O.o "" ;
         O.o "@implementation Run" ;
         O.o "+ (void) runWithArgc:(int) argc argv: (char **) argv out: (FILE *) out tick: (id <Ticker>)tick {" ;
-        O.oi "my_date(out);" ;
-        List.iteri
-          (fun k doc ->
-            if k > 0 && Cfg.sleep > 0 then  O.fi "sleep(%i);" Cfg.sleep ;
-            O.fi "%s(argc,argv,out);" (MyName.as_symbol doc) ;
-            O.oi "[tick tick];")
-          (List.rev docs) ;
-        O.oi "end_report(argc,argv,out);" ;
-        O.oi "my_date(out);" ;
-        O.o "}" ;
+        runbody() ;
+        O.o "}"
       end else begin
         O.o "static void run(int argc,char **argv,FILE *out) {" ;
-        O.oi "my_date(out);" ;
-        List.iteri
-        (fun k doc ->
-          if k > 0 && Cfg.sleep > 0 then  O.fi "sleep(%i);" Cfg.sleep ;
-          O.fi "%s(argc,argv,out);" (MyName.as_symbol doc))
-          (List.rev docs) ;
-        O.oi "end_report(argc,argv,out);" ;
-        O.oi "my_date(out);" ;
+        runbody();
         O.o "}"
       end ;
       O.o"" ;

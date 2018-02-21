@@ -14,8 +14,6 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-let do_debug = false
-
 module type Config = sig
   val numeric_labels : bool
   val timeloop : int
@@ -164,6 +162,29 @@ module Generic (A : Arch_litmus.Base)
           | _ -> A.LocMap.add loc (misc_to_c t) env)
           env init
 
+      let type_init_values init env =
+        List.fold_left
+          (fun env (loc,(t,v)) -> match loc,v with
+          | _,Constant.Concrete _ -> env
+          | A.Location_global _,Constant.Symbolic s ->
+              let a = A.Location_global s in
+              begin try
+                ignore (A.LocMap.find a env) ;
+                env
+              with Not_found ->
+                let open MiscParser in
+                let tv = match t with
+                | TyDefPointer|TyDef -> TyDef
+                | Pointer s -> Ty s
+                | t ->
+                    Warn.user_error
+                      "variable %s should be of pointer type"
+                      (A.pp_location loc) in
+                A.LocMap.add a (misc_to_c tv) env
+              end
+          | _,_ -> env)
+          env init
+
       let dump_type_env tag env =
         let bds =
           A.LocMap.fold
@@ -193,6 +214,8 @@ module Generic (A : Arch_litmus.Base)
         if debug then dump_type_env "LOCS" env ;
         let env = type_init init env in
         if debug then dump_type_env "INIT" env ;
+        let env = type_init_values init env in
+        if debug then dump_type_env "INIT VALUES" env ;
         env
 
       let find_type loc env =

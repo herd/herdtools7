@@ -1049,7 +1049,7 @@ void *join_detached(op_t *op) {
 
 typedef struct {
   int sz,next;
-  detarg_t **t;
+  detarg_t *t;
 } table_t;
 
 static table_t *table_create(void) {
@@ -1060,7 +1060,7 @@ static table_t *table_create(void) {
   return r ;
 }
 
-static void table_push(table_t *t,detarg_t *p) {
+static void table_push(table_t *t,detarg_t p) {
   if (t->next >= t->sz) {
     t->sz = 2*t->sz+1;
     t->t = realloc(t->t,t->sz*sizeof(t->t[0]));
@@ -1068,7 +1068,7 @@ static void table_push(table_t *t,detarg_t *p) {
   t->t[t->next++] = p;
 }
 
-static detarg_t *table_pop(table_t *t) {
+static detarg_t table_pop(table_t *t) {
   return t->t[--t->next];
 }
 
@@ -1087,11 +1087,15 @@ static pool_t *pool;
 
 static pool_t *pool_create(void) {
   pool_t *r = malloc_check(sizeof(*r));
-  r->n_pool = 0;
+  r->n_pool = r->n_out = r->n_thread = 0;
   r->c_wait = pc_create();
   r->t = table_create();
   r->nop = 0 ;
   return r;
+}
+
+void set_pool(void) {
+  if (pool == NULL) pool = pool_create();
 }
 
 #ifdef VERB
@@ -1114,8 +1118,8 @@ static void pool_status(char *msg,pool_t *p,int force) {
 }
 
 /* Returns task to run, called by cached threads, see zyva_cache below */
-static detarg_t *pool_get(pool_t *pool) {
-  detarg_t *r;
+static detarg_t pool_get(pool_t *pool) {
+  detarg_t r;
   pc_lock(pool->c_wait);
   pool->n_pool++; pool->n_out--;
   pool_status("GET",pool,0);
@@ -1130,20 +1134,19 @@ static detarg_t *pool_get(pool_t *pool) {
 
 typedef struct {
   pool_t *pool;
-  detarg_t *arg;
+  detarg_t arg;
 } cachearg_t;
 
 static void *zyva_cache(void *_a) {
   cachearg_t *a = (cachearg_t *)_a;
-  detarg_t *b = a->arg;
+  detarg_t b = a->arg;
   pool_t *pool = a->pool;
   free(a);
 
   for ( ; ; ) {
-    f_t *f = b->f ;
-    void *a = b->a ;
-    op_t *op = b->op ;
-    free(b) ;
+    f_t *f = b.f ;
+    void *a = b.a ;
+    op_t *op = b.op ;
     void *r = f(a) ;
     op_set(op,r) ;
     b = pool_get(pool);
@@ -1157,7 +1160,7 @@ static void *zyva_cache(void *_a) {
    2. Some thread in pool, then signal
 */
 
-static void pool_put(pool_t *pool,detarg_t *p) {
+static void pool_put(pool_t *pool,detarg_t p) {
   pc_lock(pool->c_wait) ;
   if (pool->n_pool <= 0) {
     pool->n_out++;  pool->n_thread++;
@@ -1177,9 +1180,8 @@ static void pool_put(pool_t *pool,detarg_t *p) {
 
 op_t *launch_cached(f_t *f,void *a) {
   op_t *op = op_create() ;
-  detarg_t *b = malloc_check(sizeof(*b)) ;
-  b->f = f ; b->a = a; b->op = op ;
-  if (pool == NULL) pool = pool_create();
+  detarg_t b ;
+  b.f = f ; b.a = a; b.op = op ;
   pool_put(pool,b);
   return op ;
 }

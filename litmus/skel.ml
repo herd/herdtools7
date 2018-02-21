@@ -722,7 +722,7 @@ end = struct
                     O.fi "%s *%s;" pp_t (tag_malloc a) ;
                     O.fi "%s *%s;" pp_t a
                 | _,_ ->
-                    if do_noalign test b then 
+                    if do_noalign test b then
                       O.fi "%s *%s;" pp_t (tag_malloc a) ;
                     O.fi "%s *%s;" pp_t a
                 end ;
@@ -2073,7 +2073,7 @@ end = struct
                       (dump_loc_copy (A.Location_global s))
                       idx
                 | _ -> dump_ctx_loc "ctx." loc in
-                U.do_load t loc) 
+                U.do_load t loc)
           end ;
           if Cfg.cautious then O.oiii "mcautious();")
         locs ;
@@ -2719,6 +2719,10 @@ end = struct
     O.oi "cmd_t cmd = def;" ;
 (* Parse command line *)
     O.oi "parse_cmd(argc,argv,&def,&cmd);" ;
+    begin match driver,Cfg.threadstyle with
+    | Driver.Shell,ThreadStyle.Cached -> O.oi "set_pool();"
+    | _,_ -> ()
+    end ;
     begin if Cfg.exit_cond then
       O.fi "int cond = run(&cmd,def_all_cpus,%s);" outchan
     else

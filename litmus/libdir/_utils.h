@@ -241,7 +241,7 @@ op_t *launch_detached(f_t *f,void *a) ;
 void *join_detached(op_t *p) ;
 
 /* Thread cache */
-
+void set_pool(void) ;
 op_t *launch_cached(f_t *f,void *a) ;
 
 /*****************/
