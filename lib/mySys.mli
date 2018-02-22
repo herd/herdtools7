@@ -55,7 +55,7 @@ val grep : out_channel -> string -> string -> unit
 
 val cat_chan : in_channel -> (string -> unit) -> unit
 val cat : string -> (string -> unit) -> unit
-val cp : in_channel -> string -> unit
+val cp : ?prf:string -> in_channel -> string -> unit
 
 (* and remove file *)
 val cat_and_remove : string -> (string -> unit) -> unit

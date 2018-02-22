@@ -170,9 +170,12 @@ inline static void mtx_unlock(mtx_t *p) { pm_unlock(p); }
 
 /* Condition variable */
 
-typedef struct {
+typedef struct pc_t {
   pm_t *c_mutex ;
   pthread_cond_t *c_cond ;
+#ifdef CACHE
+  struct pc_t *next;
+#endif
 } pc_t ;
 
 pc_t *pc_create(void) ;

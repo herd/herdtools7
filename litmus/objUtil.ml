@@ -50,12 +50,6 @@ let add_no_header fname out =
   then no_header out
   else out
 
-let cp_lib_file src dst =
-  let _,in_chan = MyName.open_lib src in
-  begin try MySys.cp in_chan dst
-  with e -> close_in in_chan  ; raise e end ;
-  close_in in_chan
-
 let insert_lib_file o src =
   let _,in_chan = MyName.open_lib src in
   let o = add_no_header src o in
@@ -127,6 +121,7 @@ module type Config = sig
   val stdio : bool
   val platform : string
   val asmcommentaslabel : bool
+  val cached : bool
 end
 
 module Make(O:Config)(Tar:Tar.S) =
@@ -135,19 +130,19 @@ module Make(O:Config)(Tar:Tar.S) =
 
     let actual_name name ext = Tar.outname (name ^ ext)
 
-    let do_cpy fnames src tgt ext =
+    let do_cpy ?prf fnames src tgt ext =
       let _,in_chan = MyName.open_lib (src ^ ext) in
       let fnames =
         begin try
           let fname = actual_name tgt ext in
-          MySys.cp in_chan fname ;
+          MySys.cp ?prf in_chan fname ;
           fname::fnames
         with e -> close_in in_chan  ; raise e end in
       close_in in_chan ;
       fnames
 
 (* Copy lib file *)
-    let cpy fnames name ext = do_cpy fnames ("_" ^ name) name ext
+    let cpy ?prf fnames name ext = do_cpy ?prf fnames ("_" ^ name) name ext
 
 (* Copy lib file, changing its name *)
     let cpy' fnames src dst ext = do_cpy fnames ("_" ^ src) dst ext
@@ -193,7 +188,10 @@ module Make(O:Config)(Tar:Tar.S) =
       let fnames = match O.mode with
       | Mode.Std ->
           let fnames = cpy fnames "utils" ".c" in
-          cpy fnames "utils" ".h"
+          if O.cached then
+            cpy ~prf:"#define CACHE 1" fnames "utils" ".h"
+          else
+            cpy fnames "utils" ".h"
       | Mode.PreSi ->
           let fnames = cpy' fnames "presi" "utils" ".c" in
           cpy' fnames "presi" "utils" ".h" in

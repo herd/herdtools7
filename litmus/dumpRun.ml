@@ -190,6 +190,7 @@ let run_tests names out_chan =
   let utils =
     let module O = struct
       include Cfg
+      let cached = match Cfg.threadstyle with ThreadStyle.Cached -> true | _ -> false
       let arch = arch
     end in
     let module Obj = ObjUtil.Make(O)(Tar) in

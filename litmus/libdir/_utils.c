@@ -803,6 +803,8 @@ pm_t *pm_create(void) {
 }
 
 void pm_free(pm_t *p) {
+  int ret = pthread_mutex_destroy(p);
+  if (ret) { errexit("mutex_destroy",ret) ; }
   free(p) ;
 }
 
@@ -818,7 +820,7 @@ void pm_unlock(pm_t *m) {
 
 /* phread condition */
 
-pc_t *pc_create(void) {
+static pc_t *do_pc_create(void) {
   pc_t *p = malloc_check(sizeof(*p)) ;
   p->c_mutex = pm_create() ;
   p->c_cond = malloc_check(sizeof(*(p->c_cond))) ;
@@ -827,11 +829,44 @@ pc_t *pc_create(void) {
   return p ;
 }
 
+#ifndef CACHE
+
+pc_t *pc_create(void) { return do_pc_create(); }
+
 void pc_free(pc_t *p) {
   pm_free(p->c_mutex) ;
+  int ret = pthread_cond_destroy(p->c_cond);
+  if (ret) { errexit("cond_destroy",ret); }
   free(p->c_cond) ;
   free(p) ;
 }
+
+#else
+
+static pm_t pc_list_mutex =  PTHREAD_MUTEX_INITIALIZER;
+static pc_t *pc_list = NULL;
+
+pc_t *pc_create(void) {
+  pm_lock(&pc_list_mutex);
+  if (pc_list == NULL) {
+    pm_unlock(&pc_list_mutex);
+    return do_pc_create();
+  } else {
+    pc_t *r = pc_list;
+    pc_list = r->next;
+    r->next = NULL;
+    pm_unlock(&pc_list_mutex);
+    return r;
+  }
+}
+
+void pc_free(pc_t *p) {
+  pm_lock(&pc_list_mutex);
+  p->next = pc_list ;
+  pc_list = p;
+  pm_unlock(&pc_list_mutex);
+}
+#endif
 
 static void pc_lock(pc_t *p) {
   pm_lock(p->c_mutex) ;

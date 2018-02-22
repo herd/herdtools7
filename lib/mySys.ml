@@ -138,9 +138,14 @@ let cat_and_remove name kont =
   remove name ;
   r
 
-let cp ichan name =
+let cp ?prf ichan name =
   Misc.output_protect
     (fun chan ->
+      begin match prf with
+      | None -> ()
+      | Some line ->
+          output_line chan line
+      end ;
       cat_chan ichan
         (fun line -> output_line chan line))
     name

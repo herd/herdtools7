@@ -247,7 +247,14 @@ end = struct
                   include OT
                   let arch = A'.arch
                 end in
-                let module Obj = ObjUtil.Make(O)(Tar) in
+                let module OO = struct
+                  include O
+                  let cached =
+                    match threadstyle with
+                    | ThreadStyle.Cached -> true
+                    | _ -> false
+                end in
+                let module Obj = ObjUtil.Make(OO)(Tar) in
                 Obj.dump () in
               ()
             end ;
