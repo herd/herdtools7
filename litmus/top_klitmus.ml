@@ -276,7 +276,8 @@ module Top(O:Config)(Tar:Tar.S) = struct
         let module Out =
           Indent.Make(struct let hexa = O.hexa let out = chan end) in
         Out.f "ccflags-y += %s"
-          (String.concat " " ("-std=gnu99"::O.ccopts)) ;
+          (String.concat " "
+             ("-std=gnu99"::"-Wno-declaration-after-statement"::O.ccopts)) ;
         List.iter (fun (src,_) -> Out.f "obj-m += %s.o" src) srcs ;
         Out.o "" ;
         Out.o "all:" ;
