@@ -188,9 +188,10 @@ module Make(O:Config)(Tar:Tar.S) =
       let fnames = match O.mode with
       | Mode.Std ->
           let fnames = cpy fnames "utils" ".c" in
+(* Select cached conditional variables, disabled.
           if O.cached then
             cpy ~prf:"#define CACHE 1" fnames "utils" ".h"
-          else
+          else *)
             cpy fnames "utils" ".h"
       | Mode.PreSi ->
           let fnames = cpy' fnames "presi" "utils" ".c" in
