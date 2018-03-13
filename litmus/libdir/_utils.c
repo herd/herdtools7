@@ -1208,7 +1208,7 @@ static void pool_put(pool_t *pool,detarg_t p) {
     pool_status("PUT",pool,0);
     table_push(pool->t,p);
     pool->n_pool--; /* reserve one thread */
-    pc_signal(pool->c_wait);
+    pc_broadcast(pool->c_wait);
     pc_unlock(pool->c_wait) ;
   }
 }
