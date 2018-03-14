@@ -22,9 +22,17 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
   struct
     include RISCVBase
 
+    let is_amo = function
+      | Amo _ -> true
+      |J _|Bcc _|Load _|Store _|LoadReserve _
+      | OpI _|OpIW _|Op _|OpW _
+      |StoreConditional _|FenceIns _
+           -> false
+
     let pp_barrier_short = function
       | FenceI -> "fence.i"
       | Fence (a1,a2) ->  sprintf "F %s,%s" (pp_access a1) (pp_access a2)
+
     let reject_mixed = false
 
     type lannot = P of mo | X of mo

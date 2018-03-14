@@ -209,6 +209,7 @@ module Make
            "R", E.is_mem_load;
            "W", E.is_mem_store;
            "M", E.is_mem;
+           "AMO",E.is_amo; (* NB: it will fail for C *)
            "F", E.is_barrier;
            "I", E.is_mem_store_init;
            "IW", E.is_mem_store_init;

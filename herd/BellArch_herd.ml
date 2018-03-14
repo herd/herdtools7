@@ -18,6 +18,10 @@
 
 module Make (C:Arch_herd.Config) (V:Value.S) = struct
   include BellBase
+  let is_amo = function
+    | Prmw _ -> true
+    | Pld _|Pst _|Pfence _|Pcall _|Pbranch _|Pmov _ -> false
+
   let pp_barrier_short = pp_barrier
   let reject_mixed = false
 

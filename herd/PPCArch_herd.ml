@@ -21,6 +21,7 @@ module Make (C:Arch_herd.Config) (V:Value.S)
   struct
     include PPCBase
 
+    let is_amo _ = false
     let pp_barrier_short = pp_barrier
     let reject_mixed = false
 
