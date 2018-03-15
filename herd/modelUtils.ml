@@ -40,9 +40,13 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
         (fun  e1 e2  -> not (evt_relevant e1 || evt_relevant e2)) iico in
     let dd_inside = S.tr (E.EventRel.union rf_regs iico_regs) in
     let dd_pre =
-(* All dependencies start with a mem load *)
-      S.seq 
-        (E.EventRel.restrict_domain is_mem_load_total iico)
+(* Most dependencies start with a mem load, a few with a mem store + ctrl
+   RISCV *)
+      S.seq
+        (E.EventRel.union
+           (E.EventRel.restrict_domain E.is_mem_store
+              conc.S.str.E.intra_causality_control)
+           (E.EventRel.restrict_domain is_mem_load_total iico))
         dd_inside in    
     let success =
       if O.variant Variant.Success then
@@ -85,7 +89,9 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
     let ctrl_dep =
       (* All dependencies, including to reg loads *)
       let dd = S.union3 dd_pre addr_dep data_dep in
-      S.restrict is_mem_load_total evt_relevant
+      S.restrict
+        (fun e -> is_mem_load_total e || E.is_mem_store e)
+        evt_relevant
         (S.union (S.seq dd ctrl) ctrl_three) in
     let po =
       S.restrict evt_relevant evt_relevant po in

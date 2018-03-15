@@ -23,8 +23,12 @@ type t =
 (* Backward compatibility *)
   | BackCompat
   | FullScDepend    (* Complete dependencies for Store Conditinal *)
+  | SplittedRMW     (* Splitted RMW events for riscv *)
+  | NoDepScWrite    (* No dependency on sc mem write, riscv *)
 
-let tags = ["success";"specialx0";"normw";"acqrelasfence";"backcompat";"fullscdepend"]
+let tags =
+  ["success";"specialx0";"normw";"acqrelasfence";"backcompat";
+   "fullscdepend";"splittedrmw";"nodepscwrite"]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -33,6 +37,8 @@ let parse s = match Misc.lowercase s with
 | "acqrelasfence" -> Some AcqRelAsFence
 | "backcompat"|"back" -> Some BackCompat
 | "fullscdepend"|"scdepend" -> Some FullScDepend
+| "splittedrmw" -> Some SplittedRMW
+| "nodepscwrite" -> Some  NoDepScWrite
 | _ -> None
 
 let pp = function
@@ -42,5 +48,7 @@ let pp = function
   | AcqRelAsFence -> "acqrelasfence"
   | BackCompat ->"backcompat"
   | FullScDepend -> "FullScDepend"
+  | SplittedRMW -> "SplittedRWM"
+  | NoDepScWrite -> "NoDepScWrite"
 
 let compare = Pervasives.compare

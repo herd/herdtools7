@@ -23,6 +23,9 @@ module Make (C:Sem.Config)(V:Value.S)
     module Act = MachAction.Make(RISCV)
     include SemExtra.Make(C)(RISCV)(Act)
 
+(* *)
+    let dep_on_sc_write = not (C.variant Variant.NoDepScWrite)
+
 (* Barrier pretty print *)
     let barriers =
       RISCV.do_fold_fence
@@ -143,6 +146,8 @@ module Make (C:Sem.Config)(V:Value.S)
 
 (* Compute amo semantics anotations from syntactic  ones,
    Notice that Sc is exclusively semantics, cf. assert false below *)
+(* RMW events *)
+    let rmw_events = not (C.variant Variant.SplittedRMW)
     let specialX0 = C.variant Variant.SpecialX0
     let asfence =  C.variant Variant.AcqRelAsFence
 
@@ -155,7 +160,7 @@ module Make (C:Sem.Config)(V:Value.S)
       else fun mo -> match mo with
       | Rlx|Acq -> mo
       | Rel -> Rlx
-      | AcqRel -> Sc
+      | AcqRel -> Sc (* Compatibility, may disappear in future *)
       | Sc -> assert false
 
     and write_amo =
@@ -167,12 +172,28 @@ module Make (C:Sem.Config)(V:Value.S)
       else fun mo -> match mo with
       | Rlx|Rel -> mo
       | Acq -> Rlx
-      | AcqRel -> Sc
+      | AcqRel -> Sc (* Compatibility, may disappear in future *)
       | Sc -> assert false
 
     let amo op an rd rv ra ii =
       let open RISCV in
-      match specialX0,op,rd,rv with
+      if rmw_events then
+        let ra = read_reg_ord ra ii
+        and rv = read_reg_data rv ii in
+        match op with
+        | AMOSWAP ->
+            (ra >>| rv) >>=
+            (fun (loc,vstore) ->
+              M.read_loc false
+                (fun loc v -> Act.Amo (loc,v,vstore,X an))
+                (A.Location_global loc) ii) >>= fun r -> write_reg rd r ii
+        | _ ->
+            (ra >>| rv) >>=
+            (fun (loc,v) ->
+              M.fetch (tr_opamo op) v
+                (fun v vstored -> Act.Amo (A.Location_global loc,v,vstored,RISCV.X an))
+                ii)  >>=  fun v -> write_reg rd v ii
+      else match specialX0,op,rd,rv with
       | true,AMOSWAP,Ireg X0,_ ->
           (read_reg_data rv ii >>| read_reg_ord ra ii) >>=
           fun (d,a) -> write_mem (write_amo an) a d ii
@@ -265,6 +286,7 @@ module Make (C:Sem.Config)(V:Value.S)
               (read_mem_atomic mo ea ii >>= fun v -> write_reg r1 v ii)) >>! B.Next
         | RISCV.StoreConditional ((RISCV.Double|RISCV.Word),mo,r1,r2,r3) ->
             M.riscv_store_conditional
+              dep_on_sc_write
               (read_reg_ord RISCV.RESADDR ii)
               (read_reg_data r2 ii)
               (read_reg_ord r3 ii)

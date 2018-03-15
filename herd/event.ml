@@ -284,7 +284,7 @@ module type S = sig
     event_structure -> bool -> event_structure
 
   val riscv_sc :
-      bool (* success *) ->
+      bool (* dep_on_write *) -> bool (* success *) ->
         event_structure -> event_structure -> event_structure ->
           event_structure ->  event_structure ->  event_structure ->
             event_structure
@@ -1013,8 +1013,9 @@ let (=|=) = check_disjoint para_comp
 
 
 (* RISCV Store conditional *)
-  let riscv_sc success resa data addr wres wresult wmem =
+  let riscv_sc dep_on_write success resa data addr wres wresult wmem =
     let in_wmem = minimals wmem
+    and out_wmem = maximals wmem
     and in_wres = minimals wres
     and in_wresult = minimals wresult
     and out_data = maximals data
@@ -1040,7 +1041,9 @@ let (=|=) = check_disjoint para_comp
            (if C.variant Variant.Success || not (C.variant Variant.FullScDepend) then in_wmem else
            EventSet.union in_wresult in_wmem); ];
       intra_causality_control =
-      EventRel.union
+      EventRel.union3
+        (if dep_on_write then EventRel.cartesian out_wmem in_wresult
+        else EventRel.empty)
         (EventRel.union3 resa.intra_causality_control
            data.intra_causality_control addr.intra_causality_control)
         (EventRel.union3 wres.intra_causality_control

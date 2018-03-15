@@ -21,8 +21,10 @@ type t =
   | AcqRelAsFence (* Riscv: Expand load acquire and store release as fences *)
   | BackCompat (* Linux, Backward compatibility -> LISA *)
   | FullScDepend    (* Complete dependencies for Store Conditinal *)
+  | SplittedRMW  (* Splitted RMW events for riscv *)
+  | NoDepScWrite    (* No dependency on sc mem write, riscv *)
 
-val compare : t -> t -> int      
+val compare : t -> t -> int
 val tags : string list
 val parse : string -> t option
 val pp : t -> string
