@@ -81,6 +81,7 @@ let tr_name s = match s with
 | "__cmpxchg" -> CMPXCHG
 | "__lock" -> SPINLOCK
 | "__trylock" -> SPINTRYLOCK
+| "__islocked" -> SPINISLOCKED
 | "__unlock" -> SPINUNLOCK
 | "__atomic_op" -> UNDERATOMICOP
 | "__atomic_op_return" -> UNDERATOMICOPRETURN

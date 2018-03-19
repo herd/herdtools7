@@ -84,7 +84,7 @@ let list_loc prog =
     | AtomicAddUnless(e1,e2,e3,_)
     | CmpExchange (e1,e2,e3,_)
     | ECas (e1,e2,e3,_,_,_) -> expr (expr (expr s e1) e2) e3
-    | TryLock (e,_) -> expr s e
+    | TryLock (e,_)|IsLocked (e,_) -> expr s e
 
   in 
   let rec ins s = function

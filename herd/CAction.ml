@@ -29,6 +29,8 @@ module Make (A : Arch_herd.S) : sig
     | Lock of A.location * lock_arg
     | Unlock of A.location * CBase.mutex_kind
     | TryLock of A.location (* Failed trylock, returns 1 *)
+ (* true -> from lock, false -> from unlokk *)
+    | ReadLock of A.location * bool
   include Action.S with type action := action and module A = A
 
 end = struct
@@ -48,7 +50,7 @@ end = struct
     | Lock of A.location * lock_arg
     | Unlock of A.location  * CBase.mutex_kind
     | TryLock of A.location (* Failed trylock *)
-
+    | ReadLock of A.location * bool
 
 
   let mk_init_write l v = Access (W,l,v,AN [],false)
@@ -90,7 +92,10 @@ end = struct
           (A.pp_location l)
     | TryLock (l) ->
         sprintf "TryLock(%s,1)" (A.pp_location l)
-
+    | ReadLock (l,ok) ->
+        sprintf "ReadLock(%s,%c)"
+          (A.pp_location l)
+          (if ok then '1' else '0')
 (* Utility functions to pick out components *)
 
     let value_of a = match a with
@@ -114,6 +119,7 @@ end = struct
     | Lock (l,_)
     | Unlock (l,_)
     | TryLock (l)
+    | ReadLock (l,_)
     | RMW (l,_,_,_) -> Some l
     | Fence _ -> None
 
@@ -131,7 +137,7 @@ end = struct
     | _ -> false
 
     let is_additional_mem_load a = match a with
-    | TryLock _ -> true
+    | TryLock _|ReadLock _ -> true
     | _ -> false
 
     let is_mem a = match a with
@@ -140,7 +146,7 @@ end = struct
     | _ -> false
 
     let is_additional_mem a = match a with
-    | Lock _|Unlock _|TryLock _ -> true
+    | Lock _|Unlock _|TryLock _|ReadLock _ -> true
     | _ -> false
 
     (* The following definition of is_atomic
@@ -243,6 +249,14 @@ end = struct
      | TryLock (_) -> true
      | _ -> false
 
+  let is_read_locked a = match a with
+  | ReadLock (_,b) -> b
+  | _ -> false
+
+  let is_read_unlocked a = match a with
+  | ReadLock (_,b) -> not b
+  | _ -> false
+
    let is_unlock a = match a with
      | Unlock _ -> true
      | _ -> false
@@ -264,6 +278,7 @@ end = struct
      "LK", is_lock; "LKR", is_lock_read; "LKW",is_lock_write;
      "LS", is_successful_lock;"LF", is_failed_lock;
      "UL", is_unlock;
+     "RL",is_read_locked; "RU",is_read_unlocked;
      "ACQ", mo_matches MemOrder.Acq;
      "SC", mo_matches MemOrder.SC;
      "REL", mo_matches MemOrder.Rel;
@@ -305,7 +320,8 @@ end = struct
          undet_loc
       | TryLock (l)
       | Lock(l,_)
-      | Unlock (l,_) ->
+      | Unlock (l,_)
+      | ReadLock (l,_)->
          (match A.undetermined_vars_in_loc l with
           | None -> V.ValueSet.empty
           | Some v -> V.ValueSet.singleton v)
@@ -331,6 +347,9 @@ end = struct
       | TryLock (l) ->
          let l' = A.simplify_vars_in_loc soln l in
          TryLock (l')
+      | ReadLock (l,b) ->
+         let l' = A.simplify_vars_in_loc soln l in
+         ReadLock (l',b)
       | Fence _ -> a
 
 (*************************************************************)
@@ -343,5 +362,5 @@ end = struct
     | Access (_,_,_,AN a,_)
     | Fence (AN a) -> List.exists (fun a -> Misc.string_eq str a) a
     | Access (_, _, _, MO _,_)|Fence (MO _)|RMW (_, _, _, _)
-    | Lock _|Unlock _|TryLock _ -> false
+    | Lock _|Unlock _|TryLock _|ReadLock _ -> false
 end

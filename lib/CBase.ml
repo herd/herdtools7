@@ -65,6 +65,7 @@ type expression =
   | ECall of string * expression list
   | ECas of expression * expression * expression * mem_order * mem_order * bool
   | TryLock of expression * mutex_kind
+  | IsLocked of expression * mutex_kind
   | AtomicOpReturn of expression * Op.op * expression * return * MemOrderOrAnnot.annot
   | AtomicAddUnless of expression * expression * expression * bool (* ret bool *)
 
@@ -139,6 +140,9 @@ let rec dump_expr =
     | TryLock (_,MutexC11) -> assert false
     | TryLock (e,MutexLinux) ->
         sprintf "spin_trylock(%s)" (dump_expr e)
+    | IsLocked (_,MutexC11) -> assert false
+    | IsLocked (e,MutexLinux) ->
+        sprintf "spin_islocked(%s)" (dump_expr e)
     | AtomicOpReturn (loc,op,e,ret,a) ->
         sprintf "__atomic_%s{%s}(%s,%s,%s)"
           (match ret with OpReturn -> "op_return" | FetchOp -> "fetch_op")
@@ -239,6 +243,7 @@ include Pseudo.Make
               (parsed_expr_tr e1,parsed_expr_tr e2,parsed_expr_tr e3,
                mo1,mo2,strong)
         | TryLock(e,m) -> TryLock(parsed_expr_tr e,m)
+        | IsLocked(e,m) -> IsLocked(parsed_expr_tr e,m)
         | AtomicOpReturn (loc,op,e,ret,a) ->
             AtomicOpReturn(parsed_expr_tr loc,op,parsed_expr_tr e,ret,a)
         | AtomicAddUnless(loc,a,u,retbool) ->
@@ -281,7 +286,8 @@ include Pseudo.Make
               let k = get_exp k e1 in
               let k = get_exp k e2 in
               get_exp k e3
-          | TryLock(e,_) -> get_exp (k+1) e in
+          | TryLock(e,_) -> get_exp (k+1) e
+          | IsLocked(e,_) -> get_exp (k+1) e in
 
         let rec get_rec k = function
           | Fence _|Symb _ | DeclReg _ -> k
@@ -363,6 +369,7 @@ let rec subst_expr env e = match e with
     and e3 = subst_expr env e3 in
     ECas (e1,e2,e3,mo1,mo2,strong)
 | TryLock (e,m) -> TryLock(subst_expr env e,m)
+| IsLocked (e,m) -> IsLocked(subst_expr env e,m)
 | AtomicOpReturn (loc,op,e,ret,a) ->
     AtomicOpReturn (subst_expr env loc,op,subst_expr env e,ret,a)
 | AtomicAddUnless (loc,a,u,retbool) ->

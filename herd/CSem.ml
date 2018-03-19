@@ -136,8 +136,17 @@ module Make (Conf:Sem.Config)(V:Value.S)
         fun l ->
           M.altT
             (linux_lock l ii >>! V.one)
-            (M.mk_singleton_es (Act.TryLock (A.Location_global l)) ii >>! V.zero)
-
+            (M.mk_singleton_es
+               (Act.TryLock (A.Location_global l)) ii >>! V.zero)
+    | C.IsLocked (loc,C.MutexC11) -> assert false
+    | C.IsLocked (loc,C.MutexLinux) ->
+        build_semantics_expr is_data loc ii >>=
+        fun l ->
+          M.altT
+            (M.mk_singleton_es (* Read from lock *)
+               (Act.ReadLock (A.Location_global l,true)) ii >>! V.one)
+            (M.mk_singleton_es (* Read from a unlock *)
+               (Act.ReadLock (A.Location_global l,false)) ii >>! V.zero)
     | C.Op(op,e1,e2) ->
         (build_semantics_expr is_data e1 ii >>|
         build_semantics_expr is_data e2 ii) >>= fun (v1,v2) ->

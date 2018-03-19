@@ -89,6 +89,9 @@ module Top(O:Config)(Out:OutTests.S) = struct
         let e = tr_expr e in
         Op
           (Op.Eq,ECall ("xchg_acquire",[e;Const const_one]),Const const_zero)
+    | IsLocked (e,_) ->
+        let e = tr_expr e in
+        LoadMem (e,AN [])        
     | LoadMem (e,a) -> LoadMem(tr_expr e,a)
     | Op (op,e1,e2) -> Op (op,tr_expr e1,tr_expr e2)
     | Exchange (e1,e2,a) ->  Exchange (tr_expr e1,tr_expr e2,a)
@@ -201,7 +204,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
   | ECall ("READ_ONCE", [LoadMem (LoadReg x,AN [])]) ->
       changed := true ; StringSet.singleton x
   | ECall (_,es) -> exprs_read es
-  | LoadMem (e,_)|TryLock (e,_) -> expr_read e
+  | LoadMem (e,_)|TryLock (e,_)|IsLocked (e,_) -> expr_read e
   | Op (_,e1,e2)
   | Exchange (e1,e2,_)
   | Fetch (e1,_,e2,_)
@@ -309,6 +312,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
     | ECas (e1,e2,e3,a1,a2,b) ->
         ECas (tr_expr e1,tr_expr e2,tr_expr e3,a1,a2,b)
     | TryLock (e,m) -> TryLock (tr_expr e,m)
+    | IsLocked (e,m) -> IsLocked (tr_expr e,m)
     | CmpExchange (loc,o,n,a) ->
         CmpExchange (tr_expr loc,tr_expr o,tr_expr n,a)
     | AtomicOpReturn (loc,op,e,ret,a) ->

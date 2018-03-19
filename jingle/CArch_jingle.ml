@@ -169,6 +169,7 @@ include Arch.MakeArch(struct
       | ECall (f,es) -> ECall (f,List.map expl_expr es)
       | ECas (e1,e2,e3,mo1,mo2,st) -> ECas (expl_expr e1,expl_expr e2,expl_expr e3,mo1,mo2,st)
       | TryLock(e,m) -> TryLock(expl_expr e,m)
+      | IsLocked(e,m) -> IsLocked(expl_expr e,m)
       | AtomicOpReturn (loc,op,e,ret,a) ->
           AtomicOpReturn (expl_expr loc,op,expl_expr e,ret,a)
       | AtomicAddUnless (loc,u,a,rb) ->

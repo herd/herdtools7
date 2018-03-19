@@ -65,5 +65,4 @@ let map f =
   end in
   do_map
 
-(* Temporary *)
 let LKW = try LKW with emptyset
