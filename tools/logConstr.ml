@@ -30,7 +30,7 @@ let tr_atom = function
   | LV(loc,v) ->
       let v = match v with
       | Constant.Concrete i -> Constant.Concrete (Int64.of_string i)
-      | Constant.Symbolic s -> Constant.Symbolic s in
+      | Constant.Symbolic _ as sym -> sym in
       LV(loc,v)
   | LL(loc1,loc2) -> LL(loc1,loc2)
 

@@ -734,7 +734,7 @@ module Make
                 let open Constant in
                 match v with
                 | Concrete i -> A.V.Scalar.pp Cfg.hexa i
-                | Symbolic s ->
+                | Symbolic (s,_) ->
                     sprintf "(%s)_vars->%s" (CType.dump at) s in
               match at with
               | Array (t,sz) ->

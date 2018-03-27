@@ -212,7 +212,7 @@ module Make
         | Memory.Indirect ->
             List.iter
               (fun (reg,v) -> match v with
-              | Constant.Symbolic a ->
+              | Constant.Symbolic (a,_) ->
                   let cpy =  copy_name (Tmpl.tag_reg reg) in
                   fprintf chan "%svoid *%s = %s;\n" indent
                     cpy
@@ -225,7 +225,7 @@ module Make
         | Memory.Direct ->
             List.iter
               (fun (reg,v) -> match v with
-              | Constant.Symbolic a ->
+              | Constant.Symbolic (a,_) ->
                   let cpy =  copy_name (Tmpl.tag_reg reg) in
                   fprintf chan "%svoid *%s = %s;\n" indent
                     cpy
@@ -375,11 +375,11 @@ module Make
       let compile_val_fun = match O.memory with
       | Memory.Direct ->
           (fun v -> match v with
-          | Constant.Symbolic s -> sprintf "%s" s
+          | Constant.Symbolic (s,_) -> sprintf "%s" s
           | Constant.Concrete _ -> Tmpl.dump_v v)
       | Memory.Indirect ->
           (fun v -> match v with
-          | Constant.Symbolic s -> sprintf "*%s" s
+          | Constant.Symbolic (s,_) -> sprintf "*%s" s
           | Constant.Concrete _ -> Tmpl.dump_v v)
 
       let compile_cpy_fun proc a = sprintf "*%s" (Tmpl.addr_cpy_name a proc)

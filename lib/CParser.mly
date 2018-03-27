@@ -15,6 +15,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+let mk_sym s = Constant.Symbolic (s,0)
 
 open CBase
 open MemOrder
@@ -154,7 +155,7 @@ annot_list:
 expr:
 | LPAR expr RPAR { $2 }
 | CONSTANT { Const(Constant.Concrete $1) }
-| CONSTVAR { Const(Constant.Symbolic $1) }
+| CONSTVAR { Const(mk_sym $1) }
 | IDENTIFIER { LoadReg $1 }
 | LPAR typ RPAR expr %prec CAST { $4 }
 | STAR IDENTIFIER { LoadMem (LoadReg $2,AN []) }

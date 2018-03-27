@@ -168,11 +168,11 @@ struct
     open Constant
 
     let collect_value f v k = match v with
-    | Symbolic s -> f s k
+    | Symbolic (s,_) -> f s k
     | Concrete _ -> k
 
     let map_value f v = match v with
-    | Symbolic s -> Symbolic (f s)
+    | Symbolic (s,o) -> Symbolic (f s,o)
     | Concrete _ -> v
 
     let collect_pseudo f =

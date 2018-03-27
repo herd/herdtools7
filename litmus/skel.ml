@@ -341,7 +341,7 @@ end = struct
 (* Right value, casted if pointer *)
   let dump_a_v_casted = function
     | Concrete i ->  A.V.Scalar.pp  Cfg.hexa i
-    | Symbolic s -> sprintf "((int *)%s)" (dump_a_addr s)
+    | Symbolic (s,_) -> sprintf "((int *)%s)" (dump_a_addr s)
 
 (* Dump left & right values when context is available *)
 
@@ -729,7 +729,7 @@ end = struct
                 if Cfg.cautious then
                   List.fold_right
                     (fun (loc,v) k -> match loc,v with
-                    | A.Location_reg(p,r),Symbolic s when s = a ->
+                    | A.Location_reg(p,r),Symbolic (s,_) when s = a ->
                         let cpy = A.Out.addr_cpy_name a p in
                         O.fi "%s* *%s ;" (CType.dump t) cpy ;
                         (cpy,a)::k
@@ -762,7 +762,7 @@ end = struct
             if Cfg.cautious then
               List.iter
                 (fun (loc,v) -> match loc,v with
-                | A.Location_reg(p,r),Symbolic s when s = a ->
+                | A.Location_reg(p,r),Symbolic (s,_) when s = a ->
                     let cpy = A.Out.addr_cpy_name a p in
                     O.f "static %s* %s[SIZE_OF_ALLOC];"
                       (CType.dump t) cpy ;

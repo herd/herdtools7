@@ -72,7 +72,7 @@ module Make(Cst:Constant.S) = struct
   and cstToV cst = Val cst
 
   let maybevToV m = match m with
-  | Symbolic s -> Val (Symbolic s)
+  | Symbolic _ as x -> Val x
   | Concrete s -> Val (Concrete (Scalar.of_string s))
 
   let zero = Val Cst.zero
@@ -98,8 +98,8 @@ module Make(Cst:Constant.S) = struct
 
   let unop op v1 = match v1 with
   | Val (Concrete i1) -> Val (Concrete (op i1))
-  | Val (Symbolic s1) ->
-      Warn.user_error "Illegal operation on %s" s1
+  | Val (Symbolic _ as x) ->
+      Warn.user_error "Illegal operation on %s" (Cst.pp_v x)
   | Var _ -> raise Undetermined
 
   let binop op_op op v1 v2 = match v1,v2 with
@@ -143,8 +143,8 @@ module Make(Cst:Constant.S) = struct
 
   let eq v1 v2 = match v1,v2 with
   | Var i1,Var i2 when Misc.int_eq i1 i2 -> one
-  | Val (Symbolic s1),Val (Symbolic s2) ->
-      bool_to_v Misc.string_eq s1 s2
+  | Val (Symbolic _ as s1),Val (Symbolic _ as s2) ->
+      bool_to_v Cst.eq s1 s2
 (* Assume symbolic value not to be zero *)
   | Val (Symbolic _), Val (Concrete _ as cst) when Cst.eq cst Cst.zero -> zero
   | Val (Concrete _ as cst),Val (Symbolic _) when  Cst.eq cst Cst.zero -> zero
@@ -212,8 +212,8 @@ module Make(Cst:Constant.S) = struct
 
   let op3 If v1 v2 v3 = match v1 with
   | Val (Concrete x) -> if scalar_to_bool x then v2 else v3
-  | Val (Symbolic s) ->
-      Warn.user_error "illegal if on symbolic constant %s" s
+  | Val (Symbolic _ as s) ->
+      Warn.user_error "illegal if on symbolic constant %s" (Cst.pp_v s)
   | Var _ -> raise Undetermined
 
   let fold_over_vals f init = (f (fresh_var ()) init)

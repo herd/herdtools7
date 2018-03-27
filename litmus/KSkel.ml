@@ -274,12 +274,12 @@ module Make
 
     let dump_a_v v = match v with
       | Constant.Concrete i -> A.V.Scalar.pp Cfg.hexa i
-      | Constant.Symbolic s -> dump_a_addr s
+      | Constant.Symbolic (s,_) -> dump_a_addr s
 
 (* Right value, casted if pointer *)
     let _dump_a_v_casted = function
       | Constant.Concrete i -> sprintf "%i" i
-      | Constant.Symbolic s -> sprintf "((int *)%s)" (dump_a_addr s)
+      | Constant.Symbolic (s,_) -> sprintf "((int *)%s)" (dump_a_addr s)
 
     let dump_ctx env test =
       O.o "/****************/" ;

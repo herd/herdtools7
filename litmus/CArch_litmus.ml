@@ -25,7 +25,7 @@ module Make(O:sig val memory : Memory.t val hexa : bool end) = struct
 
   let vToName = function
     | Constant.Concrete i -> "addr_" ^ V.Scalar.pp O.hexa i
-    | Constant.Symbolic s -> s
+    | Constant.Symbolic (s,_) -> s
 
   module Internal = struct
     type arch_reg = reg

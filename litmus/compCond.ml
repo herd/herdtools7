@@ -111,7 +111,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
         let pvals =
           List.map
             (fun loc -> Printf.sprintf
-                "void *%s" (dump_v (Constant.Symbolic loc))) vals in
+                "void *%s" (dump_v (Constant.Symbolic (loc,0)))) vals in
         let is_ptr = is_ptr || Misc.consp pvals in
         let formals =
           let p = plocs@pvals in

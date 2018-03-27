@@ -124,7 +124,7 @@ module Generic (A : Arch_litmus.Base)
 
       let add_value v env = match v with
       | Constant.Concrete _ -> env
-      | Constant.Symbolic a -> add_addr_type a base env
+      | Constant.Symbolic (a,_) -> add_addr_type a base env
 
 (********************)
 (* Complete typing  *)
@@ -166,7 +166,7 @@ module Generic (A : Arch_litmus.Base)
         List.fold_left
           (fun env (loc,(t,v)) -> match loc,v with
           | _,Constant.Concrete _ -> env
-          | A.Location_global _,Constant.Symbolic s ->
+          | A.Location_global _,Constant.Symbolic (s,_) ->
               let a = A.Location_global s in
               begin try
                 ignore (A.LocMap.find a env) ;
@@ -513,7 +513,8 @@ module Make
         List.fold_right
           (fun (_,(t,v)) env ->
             match t,v with
-            | (MiscParser.TyDef|MiscParser.TyDefPointer),Constant.Symbolic a ->
+            | (MiscParser.TyDef|MiscParser.TyDefPointer),
+              Constant.Symbolic (a,_) ->
                 begin try
                   let _ = StringMap.find a env in
                   env

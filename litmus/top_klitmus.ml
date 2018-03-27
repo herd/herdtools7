@@ -149,7 +149,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
               let open  Constant in
               match c with
               | Concrete i ->  Concrete (V.Scalar.of_string i)
-              | Symbolic s -> Symbolic s
+              | Symbolic _ as sym -> sym
             type global = string
             let maybevToGlobal = ParsedConstant.vToName
           end)

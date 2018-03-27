@@ -83,7 +83,7 @@ module Make(V:Constant.S) = struct
 (* As a function *)
 (*****************)
   let compile_val_fun v = match v with
-  | Constant.Symbolic s -> sprintf "%s" s
+  | Constant.Symbolic (s,_) -> sprintf "%s" s
   | Constant.Concrete _ -> Tmpl.dump_v v
 
   and compile_addr_fun x = sprintf "*%s" x

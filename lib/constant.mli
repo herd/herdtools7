@@ -18,7 +18,7 @@
 
 type 'scalar t =
   | Concrete of 'scalar
-  | Symbolic  of string
+  | Symbolic  of string * int
 
 module type S =  sig
 

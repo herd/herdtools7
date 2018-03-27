@@ -22,30 +22,38 @@ module Make(Scalar:Scalar.S) = struct
   open Constant
 
   let intToV i = Concrete (Scalar.of_int i)
-  and nameToV s = Symbolic s
+  and nameToV s = Symbolic (s,0)
 
   let zero = Concrete Scalar.zero
   and one = Concrete Scalar.one
 
   let compare c1 c2 = match c1,c2 with
   | Concrete i1, Concrete i2 -> Scalar.compare i1 i2
-  | Symbolic s1,Symbolic s2 -> String.compare s1 s2
+  | Symbolic (s1,o1),Symbolic (s2,o2) ->
+      begin match String.compare s1 s2 with
+      | 0 -> Misc.int_compare o1 o2
+      | r -> r
+      end
   | Concrete _,Symbolic _ -> -1
   | Symbolic _,Concrete _ -> 1
 
   let pp hexa = function
     | Concrete i -> Scalar.pp hexa i
-    | Symbolic s -> s
+    | Symbolic (s,0) -> s
+    | Symbolic (s,o) -> Printf.sprintf "%s+%i" s o
 
   let pp_v = pp false
 
   let eq c1 c2 =  match c1,c2 with
   | Concrete i1, Concrete i2 -> Scalar.compare i1 i2 = 0
-  | Symbolic s1,Symbolic s2 -> Misc.string_eq  s1 s2
+  | Symbolic (s1,o1),Symbolic (s2,o2) ->
+      Misc.string_eq  s1 s2 && Misc.int_eq o1 o2
   | (Concrete _,Symbolic _)
   | (Symbolic _,Concrete _) -> false
 
+ (* For building code symbols, significant for symbols only ? *)
   let vToName = function
     | Concrete _ -> assert false
-    | Symbolic s -> s
+    | Symbolic (s,0) -> s
+    | Symbolic (s,o) -> assert false
 end

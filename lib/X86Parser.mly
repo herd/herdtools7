@@ -27,7 +27,7 @@ open X86
 %token <string> NAME
 %token <int> PROC
 
-%token SEMI COMMA PIPE LBRK RBRK 
+%token SEMI COMMA PIPE LBRK RBRK
 %token LPAR RPAR COLON
 /* Instruction tokens */
 
@@ -36,7 +36,7 @@ open X86
 %token  I_READ I_SETNB I_JE I_JNE
 %token  I_CMPXCHG
 
-%type <int list * (X86Base.pseudo) list list> main 
+%type <int list * (X86Base.pseudo) list list> main
 %start  main
 
 %nonassoc SEMI
@@ -60,7 +60,7 @@ iol_list :
 instr_option_list :
   | instr_option
       {[$1]}
-  | instr_option PIPE instr_option_list 
+  | instr_option PIPE instr_option_list
       {$1::$3}
 
 instr_option :
@@ -132,12 +132,10 @@ rm32:
   |  reg {Rm32_reg $1}
   |  LPAR reg RPAR {Rm32_deref $2}
   |  LBRK reg RBRK {Rm32_deref $2}
-  |  LBRK NAME RBRK {Rm32_abs (Constant.Symbolic $2)} 
-  |  LBRK NUM RBRK {Rm32_abs (Constant.Concrete $2)} 
+  |  LBRK NAME RBRK {Rm32_abs (Constant.Symbolic ($2,0))}
+  |  LBRK NUM RBRK {Rm32_abs (Constant.Concrete $2)}
 
 operand:
   | effaddr {Operand_effaddr $1}
   | k {Operand_immediate (Misc.string_as_int $1) }
   | INTEL_NUM {Operand_immediate (Misc.string_as_int $1)} /* enough ? */
-  
-

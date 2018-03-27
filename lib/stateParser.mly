@@ -18,6 +18,7 @@
 open Constant
 open MiscParser
 open ConstrGen
+let mk_sym s = Symbolic (s,0)
 %}
 
 %token EOF
@@ -72,7 +73,7 @@ reg:
 | DOLLARNAME {  $1 }
 maybev:
 | NUM  { Concrete $1 }
-| NAME { Symbolic $1 }
+| NAME { mk_sym $1 }
 
 location_reg:
 | PROC COLON reg  {Location_reg ($1,$3)}
@@ -87,7 +88,7 @@ location_reg:
 location_deref:
 | location_reg { $1 }
 | STAR location_reg { $2 }
-| STAR NAME { Location_global (Symbolic $2) }
+| STAR NAME { Location_global (mk_sym $2) }
 
 location:
 | location_reg { $1 }
@@ -109,7 +110,7 @@ atom_init:
 | NAME STAR location EQUAL amperopt maybev { ($3,(Pointer $1,$6))}
 | STAR location { ($2,(TyDefPointer,ParsedConstant.zero))}
 | STAR location EQUAL amperopt maybev { ($2,(TyDefPointer,$5))}
-| NAME NAME LBRK NUM RBRK { (Location_global (Symbolic $2),(TyArray ($1,Misc.string_as_int $4),ParsedConstant.zero)) }
+| NAME NAME LBRK NUM RBRK { (Location_global (mk_sym $2),(TyArray ($1,Misc.string_as_int $4),ParsedConstant.zero)) }
 
 amperopt:
 | AMPER { () }
@@ -126,7 +127,7 @@ init_semi_list:
 /* For final state constraints */
 
 loc_deref:
- NAME LBRK NUM RBRK { Location_deref (Symbolic $1, Misc.string_as_int $3) }
+ NAME LBRK NUM RBRK { Location_deref (mk_sym $1, Misc.string_as_int $3) }
 
 loc_typ:
 | loc_deref { ($1,TyDef) }
