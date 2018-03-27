@@ -458,7 +458,7 @@ and type evt_struct = E.event_structure) =
    and no relation *)
 
     let do_trivial es =
-      { E.empty_event_structure with    E.events = es ; }
+      { E.empty_event_structure with E.events = es ; }
 
 
     let trivial_event_structure is_data e =
@@ -468,7 +468,7 @@ and type evt_struct = E.event_structure) =
         { st with E.data_ports = st.E.events; }
       else st
 
-    let read_loc is_data mk_action loc ii =
+    let read_loc is_data mk_action  loc ii =
       fun eiid ->
         V.fold_over_vals
           (fun v (eiid1,acc_inner) ->

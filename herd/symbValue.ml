@@ -216,7 +216,7 @@ module Make(Cst:Constant.S) = struct
       Warn.user_error "illegal if on symbolic constant %s" (Cst.pp_v s)
   | Var _ -> raise Undetermined
 
-  let fold_over_vals f init = (f (fresh_var ()) init)
+  let fold_over_vals f init = f (fresh_var ()) init
 
   module OrderedValue = struct
     type t = v
