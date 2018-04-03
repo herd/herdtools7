@@ -619,6 +619,18 @@ and type evt_struct = E.event_structure) =
     type evt_struct = E.event_structure
     type output = VC.cnstrnts * evt_struct
 
+(* TODO: extract type from env :) *)
+    let def_size = MachSize.Word
+    module Scalar = V.Cst.Scalar
+
+    let v_ff  = Scalar.of_int 0xff
+
+    let extract_step v =
+      let d = Scalar.logand v v_ff
+      and w = Scalar.shift_right_logical v 8 in
+      d,w
+
+
     let initwrites env =
       fun eiid ->
         let eiid,es =
@@ -627,7 +639,7 @@ and type evt_struct = E.event_structure) =
               let ew =
                 {E.eiid = eiid ;
                  E.iiid = None ;
-                 E.action = E.Act.mk_init_write loc v ;} in
+                 E.action = E.Act.mk_init_write loc def_size v ;} in
               (eiid+1,ew::es))
             (eiid,[]) env in
         let es = E.EventSet.of_list es in

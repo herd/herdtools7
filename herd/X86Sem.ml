@@ -29,7 +29,7 @@ module Make (C:Sem.Config)(V : Value.S)
     let lfence = {barrier=X86.Lfence; pp="lfence";}
     let barriers = [mfence; lfence;sfence;]
     let isync = None
-
+    let nat_sz = V.Cst.Scalar.machsize
     let is_global = A.is_global
 
 (* semantics proper *)
@@ -39,52 +39,52 @@ module Make (C:Sem.Config)(V : Value.S)
     let (>>|) = M.(>>|)
     let (>>!) = M.(>>!)
 
-    let mk_read ato loc v = Act.Access (Dir.R, loc, v, ato)
+    let mk_read sz ato loc v = Act.Access (Dir.R, loc, v, ato, sz)
 
-    let read_loc is_d = M.read_loc is_d (mk_read false)
+    let read_loc sz is_d = M.read_loc is_d (mk_read sz false)
 
-    let mk_read_choose_atomic loc = mk_read (is_global loc) loc
+    let mk_read_choose_atomic sz loc = mk_read sz (is_global loc) loc
 
     let read_reg is_data r ii =
-      M.read_loc is_data (mk_read false) (A.Location_reg (ii.A.proc,r)) ii
+      M.read_loc is_data (mk_read nat_sz false) (A.Location_reg (ii.A.proc,r)) ii
 
-    let read_mem a ii  =
-      M.read_loc false (mk_read false) (A.Location_global a) ii
-    let read_mem_atomic a ii =
-      M.read_loc false (mk_read true) (A.Location_global a) ii
+    let read_mem sz a ii  =
+      M.read_loc false (mk_read sz false) (A.Location_global a) ii
+    let read_mem_atomic sz a ii =
+      M.read_loc false (mk_read sz true) (A.Location_global a) ii
 
-    let read_loc_atomic is_d = M.read_loc is_d mk_read_choose_atomic
+    let read_loc_atomic sz is_d = M.read_loc is_d (mk_read_choose_atomic sz)
 
-    let read_loc_gen data locked loc ii = match loc with
+    let read_loc_gen sz data locked loc ii = match loc with
     |  A.Location_global _ ->
-        M.read_loc data (mk_read locked) loc ii
+        M.read_loc data (mk_read sz locked) loc ii
     | _ ->
-        M.read_loc data (mk_read false) loc ii
+        M.read_loc data (mk_read nat_sz false) loc ii
 
 
-    let write_loc_gen locked loc v ii = match loc with
+    let write_loc_gen sz locked loc v ii = match loc with
     |  A.Location_global _ ->
-        M.mk_singleton_es (Act.Access (Dir.W, loc, v, locked)) ii
+        M.mk_singleton_es (Act.Access (Dir.W, loc, v, locked, sz)) ii
     | _ ->
-        M.mk_singleton_es (Act.Access (Dir.W, loc, v, locked)) ii
+        M.mk_singleton_es (Act.Access (Dir.W, loc, v, locked, nat_sz)) ii
 
-    let write_loc loc v ii =
-      M.mk_singleton_es (Act.Access (Dir.W, loc, v, false)) ii
+    let write_loc sz loc v ii =
+      M.mk_singleton_es (Act.Access (Dir.W, loc, v, false, sz)) ii
 
     let write_reg r v ii =
-      M.mk_singleton_es (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false)) ii
-    let write_mem a v ii  =
-      M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v, false)) ii
-    let write_mem_atomic a v ii =
-      M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v, true)) ii
+      M.mk_singleton_es (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false, nat_sz)) ii
+    let write_mem sz a v ii  =
+      M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v, false, sz)) ii
+    let write_mem_atomic sz a v ii =
+      M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v, true, sz)) ii
 
-    let write_loc_atomic loc v ii =
-      M.mk_singleton_es (Act.Access (Dir.W, loc, v, (is_global loc))) ii
+    let write_loc_atomic sz loc v ii =
+      M.mk_singleton_es (Act.Access (Dir.W, loc, v, (is_global loc), sz)) ii
 
     let write_flag r o v1 v2 ii =
         M.addT
           (A.Location_reg (ii.A.proc,r))
-          (M.op o v1 v2) >>= (fun (loc,v) -> write_loc loc v ii)
+          (M.op o v1 v2) >>= (fun (loc,v) -> write_loc nat_sz loc v ii)
 
     let create_barrier b ii =
       M.mk_singleton_es (Act.Barrier b) ii
@@ -98,11 +98,10 @@ module Make (C:Sem.Config)(V : Value.S)
     | X86.Effaddr_rm32 (X86.Rm32_abs v)->
         M.unitT (X86.maybev_to_location v)
 
-    let rval_ea locked ea ii =
-      lval_ea ea ii >>=  fun loc -> read_loc locked loc ii
+    let rval_ea sz locked ea ii = lval_ea ea ii >>=  fun loc -> read_loc sz locked loc ii
 
-    let rval_op locked op ii = match op with
-    | X86.Operand_effaddr ea -> rval_ea locked ea ii
+    let rval_op sz locked op ii = match op with
+    | X86.Operand_effaddr ea -> rval_ea sz locked ea ii
     | X86.Operand_immediate s -> M.unitT (V.intToV s)
 
     let flip_flag v = M.op Op.Xor v V.one
@@ -125,69 +124,76 @@ module Make (C:Sem.Config)(V : Value.S)
           (write_loc l1 v2 ii >>| write_loc l2 v1 ii) >>! B.Next
 *)
 
-    let xchg ea1 ea2 ii =
+    let xchg sz ea1 ea2 ii =
       (lval_ea ea1 ii >>| lval_ea ea2 ii) >>=
       (fun (l1,l2) ->
-        let r1 = read_loc_atomic true l1 ii
-        and r2 = read_loc_atomic true l2 ii
-        and w1 = fun v -> write_loc_atomic l1 v ii
-        and w2 = fun v -> write_loc_atomic l2 v ii in
+        let r1 = read_loc_atomic sz true l1 ii
+        and r2 = read_loc_atomic sz true l2 ii
+        and w1 = fun v -> write_loc_atomic sz l1 v ii
+        and w2 = fun v -> write_loc_atomic sz l2 v ii in
         M.exch r1 r2 w1 w2) >>! B.Next
 
     let atomic_pair_allowed e1 e2 = match e1.E.iiid, e2.E.iiid with
     | Some i1,Some i2 -> i1 == i2
     | _,_ -> false
 
-    let do_op locked o ea op ii =
+    let do_op sz locked o ea op ii =
       (lval_ea ea ii >>=
       fun loc ->
-        M.addT loc (read_loc_gen true locked loc ii) >>| rval_op locked op ii)
+        M.addT loc (read_loc_gen sz true locked loc ii) >>| rval_op sz locked op ii)
           >>=
         fun ((loc,v_ea),v_op) ->
           M.op o v_ea v_op >>=
           fun v_result ->
-            (write_loc_gen locked loc v_result ii >>|
+            (write_loc_gen sz locked loc v_result ii >>|
             write_all_flags v_result V.zero ii) >>! B.Next
 
     let build_semantics ii =
     let rec build_semantics_inner locked ii =
       match ii.A.inst with
-    |  X86.I_XOR (ea,op) -> do_op locked Op.Xor ea op ii
-    |  X86.I_OR (ea,op) -> do_op locked Op.Or ea op ii
-    |  X86.I_ADD (ea,op) -> do_op locked Op.Add ea op ii
-    |  X86.I_MOV (ea,op)|X86.I_MOVB (ea,op)|X86.I_MOVW (ea,op)|X86.I_MOVL (ea,op)|X86.I_MOVQ (ea,op)|X86.I_MOVT (ea,op) ->
-        (lval_ea ea ii >>| rval_op locked op ii) >>=
+    |  X86.I_XOR (ea,op) -> do_op nat_sz locked Op.Xor ea op ii
+    |  X86.I_OR (ea,op) -> do_op nat_sz locked Op.Or ea op ii
+    |  X86.I_ADD (ea,op) -> do_op nat_sz locked Op.Add ea op ii
+    |  X86.I_MOV (ea,op)|X86.I_MOVB (ea,op)|X86.I_MOVW (ea,op)|X86.I_MOVL (ea,op)|X86.I_MOVQ (ea,op)
+    |  X86.I_MOVT (ea,op) as i ->
+        let sz = match i with
+        | X86.I_MOV _|X86.I_MOVL _ -> MachSize.Word
+        | X86.I_MOVB _ ->  MachSize.Byte
+        | X86.I_MOVW _ ->  MachSize.Short
+        | X86.I_MOVQ _ -> MachSize.Quad
+        | _ -> assert false in
+        (lval_ea ea ii >>| rval_op sz locked op ii) >>=
         fun (loc,v_op) ->
-          write_loc_gen locked loc v_op ii >>! B.Next
+          write_loc_gen sz locked loc v_op ii >>! B.Next
     |  X86.I_READ (op) ->
-        rval_op locked op ii >>! B.Next
+        rval_op nat_sz locked op ii >>! B.Next
     |  X86.I_DEC (ea) ->
         lval_ea ea ii >>=
-        fun loc -> read_loc_gen true locked loc ii >>=
+        fun loc -> read_loc_gen nat_sz true locked loc ii >>=
           fun v ->
             M.op Op.Sub v V.one >>=
             fun v ->
-              (write_loc_gen locked loc v ii >>|
+              (write_loc_gen nat_sz locked loc v ii >>|
               write_sf v V.zero ii >>|
               write_zf v V.zero ii) >>! B.Next
     | X86.I_INC (ea) ->
         lval_ea ea ii >>=
-        fun loc -> read_loc_gen true locked loc ii >>=
+        fun loc -> read_loc_gen  nat_sz true locked loc ii >>=
           fun v ->
             M.add v V.one >>=
             fun v ->
-              (write_loc_gen locked loc v ii >>|
+              (write_loc_gen  nat_sz locked loc v ii >>|
               write_sf v V.zero ii >>|
               write_zf v V.zero ii) >>! B.Next
     |  X86.I_CMP (ea,op) ->
-        (rval_ea locked ea ii >>| rval_op locked op ii) >>=
+        (rval_ea nat_sz locked ea ii >>| rval_op nat_sz locked op ii) >>=
         fun (v_ea,v_op) ->
           write_all_flags v_ea v_op ii >>! B.Next
     | X86.I_CMOVC (r,ea) ->
         read_reg false X86.CF ii >>*=
         (fun vcf ->
           M.choiceT vcf
-            (rval_ea locked ea ii >>= fun vea -> write_reg r vea ii >>! B.Next)
+            (rval_ea  nat_sz locked ea ii >>= fun vea -> write_reg r vea ii >>! B.Next)
             (M.unitT B.Next))
     |  X86.I_JMP lbl -> M.unitT (B.Jump lbl)
 
@@ -242,11 +248,11 @@ module Make (C:Sem.Config)(V : Value.S)
         (lval_ea ea ii >>| read_reg false X86.CF ii) >>=
         fun (loc,cf) ->
           flip_flag cf >>=
-          fun v -> write_loc loc v ii >>! B.Next
+          fun v -> write_loc nat_sz loc v ii >>! B.Next
     | X86.I_XCHG (ea1,ea2) ->
-        xchg ea1 ea2 ii
+        xchg  nat_sz  ea1 ea2 ii
     | X86.I_XCHG_UNLOCKED (ea1,ea2) ->
-        xchg ea1 ea2 ii
+        xchg  nat_sz ea1 ea2 ii
     | X86.I_CMPXCHG (_,_) -> Warn.fatal "I_CMPXCHG not implemented"
     | X86.I_LFENCE ->
         create_barrier X86.Lfence ii >>! B.Next

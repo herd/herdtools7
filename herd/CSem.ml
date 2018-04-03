@@ -22,6 +22,8 @@ module Make (Conf:Sem.Config)(V:Value.S)
     include SemExtra.Make(Conf)(C)(Act)
     let barriers = []
     let isync = None
+(* TODO: No real mixed size for C, as access sizes depend upon types... *)
+    let nat_sz = V.Cst.Scalar.machsize
 
 (****************************)
 (* Build semantics function *)
@@ -46,10 +48,10 @@ module Make (Conf:Sem.Config)(V:Value.S)
     let mo_as_anmo mo = MOorAN.MO mo
 
     let read_loc is_data mo =
-      M.read_loc is_data (fun loc v -> Act.Access (Dir.R, loc, v, mo, false))
+      M.read_loc is_data (fun loc v -> Act.Access (Dir.R, loc, v, mo, false, nat_sz))
 
     let  read_exchange is_data vstored mo =
-      M.read_loc is_data (fun loc v -> Act.RMW (loc,v,vstored,mo))
+      M.read_loc is_data (fun loc v -> Act.RMW (loc,v,vstored,mo,nat_sz))
 
     let read_reg is_data r ii =
       read_loc is_data no_mo (A.Location_reg (ii.A.proc,r)) ii
@@ -59,18 +61,18 @@ module Make (Conf:Sem.Config)(V:Value.S)
 
     let read_mem_atomic is_data a loc =
       M.read_loc is_data
-        (fun loc v -> Act.Access (Dir.R, loc, v,  a, true))
+        (fun loc v -> Act.Access (Dir.R, loc, v,  a, true, nat_sz))
         (A.Location_global loc)
 
 
     let write_loc mo loc v ii =
-      M.mk_singleton_es (Act.Access (Dir.W, loc, v, mo, false)) ii >>! v
+      M.mk_singleton_es (Act.Access (Dir.W, loc, v, mo, false, nat_sz)) ii >>! v
 
     let write_reg r v ii = write_loc no_mo (A.Location_reg (ii.A.proc,r)) v ii
     let write_mem mo a  = write_loc mo (A.Location_global a)
     let write_mem_atomic a loc v ii =
       M.mk_singleton_es
-        (Act.Access (Dir.W, A.Location_global loc, v, a, true)) ii >>! v
+        (Act.Access (Dir.W, A.Location_global loc, v, a, true,nat_sz)) ii >>! v
 
 
     let mk_fence_a a ii = M.mk_fence (Act.Fence  (MOorAN.AN a)) ii
@@ -214,7 +216,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
                   (* Do RMW action on "object", to change its value from "expected"
                      to "desired", using memory order "success" *)
                   M.mk_singleton_es
-                    (Act.RMW (A.Location_global loc_obj,v_exp,v_des,success)) ii >>!
+                    (Act.RMW (A.Location_global loc_obj,v_exp,v_des,success,nat_sz)) ii >>!
                   V.one)
 
 
@@ -270,7 +272,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
             (MOorAN.MO (MemOrder.extract_write mo)) loc w ii >>! oldv
       else
         M.fetch op v
-          (fun v vstored -> Act.RMW (A.Location_global loc,v,vstored,mo))
+          (fun v vstored -> Act.RMW (A.Location_global loc,v,vstored,mo,nat_sz))
           ii
 
     let zero = ParsedConstant.zero

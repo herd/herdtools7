@@ -322,6 +322,7 @@ type parsedInstruction = MetaConst.k kinstruction
     | Gt -> "gt" | Le -> "le"
 
 open MachSize
+
 let memo_load = function
   | Byte -> "lbz"
   | Short -> "lhz"

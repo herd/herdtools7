@@ -30,6 +30,10 @@ module Make (C:Sem.Config)(V:Value.S)
     let barriers = []
     let isync = None
 
+(* Simple size *)
+    let reg_sz = V.Cst.Scalar.machsize
+    and nat_sz = V.Cst.Scalar.machsize
+
 (****************************)
 (* Build semantics function *)
 (****************************)
@@ -40,35 +44,35 @@ module Make (C:Sem.Config)(V:Value.S)
     let (>>::) = M.(>>::)
     let (>>!) = M.(>>!)
 
-    let mk_read ato s loc v = Act.Access (Dir.R, loc, v, ato, s)
+    let mk_read sz ato s loc v = Act.Access (Dir.R, loc, v, ato, s, sz)
 
     let read_reg is_data ?(stack=[]) r ii =
       try
         let v = List.assoc r stack in (M.unitT v)
       with Not_found ->
-        M.read_loc is_data (mk_read false []) (A.Location_reg (ii.A.proc,r)) ii
+        M.read_loc is_data (mk_read reg_sz false []) (A.Location_reg (ii.A.proc,r)) ii
 
     let read_reg_ord = read_reg false
     and read_reg_data = read_reg true
 
-    let read_mem a s ii =
-      M.read_loc false (mk_read false s) (A.Location_global a) ii
+    let read_mem sz a s ii =
+      M.read_loc false (mk_read sz false s) (A.Location_global a) ii
 
-    let read_mem_atom a s ii =
-      M.read_loc false (mk_read true s) (A.Location_global a) ii
+    let read_mem_atom sz a s ii =
+      M.read_loc false (mk_read sz true s) (A.Location_global a) ii
 
 
 (*    let read_mem_atom cop a ii =
       M.read_loc (mk_read true cop) (A.Location_global a) ii *)
 
     let write_reg r v ii =
-      M.mk_singleton_es (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false, [])) ii
+      M.mk_singleton_es (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false, [], reg_sz)) ii
 
-    let write_mem a v s ii =
-      M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v, false, s)) ii
+    let write_mem sz a v s ii =
+      M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v, false, s, sz)) ii
 
-    let write_mem_atom a v s ii =
-      M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v, true, s)) ii
+    let write_mem_atom sz a v s ii =
+      M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v, true, s, sz)) ii
 
 
     let commit ii =  M.mk_singleton_es (Act.Commit) ii
@@ -123,12 +127,12 @@ module Make (C:Sem.Config)(V:Value.S)
 
         | BellBase.Pld(r,addr_op,[("deref"|"lderef")]) when compat ->
             solve_addr_op addr_op ii >>=
-            fun addr -> read_mem addr ["once"] ii >>=
+            fun addr -> read_mem nat_sz addr ["once"] ii >>=
             fun v -> write_reg r v ii >>*=
             fun () -> create_barrier ["rb_dep"] None ii >>! B.Next
         | BellBase.Pld(r,addr_op,s) ->
             solve_addr_op addr_op ii >>=
-            (fun addr -> read_mem addr s ii) >>=
+            (fun addr -> read_mem nat_sz addr s ii) >>=
             (fun v -> write_reg r v ii) >>! B.Next
 
         | BellBase.Pst(addr_op, roi, s) ->
@@ -137,7 +141,7 @@ module Make (C:Sem.Config)(V:Value.S)
             | _ -> s in
             (solve_addr_op addr_op ii >>|
               read_roi true roi ii) >>=
-            (fun (addr,v) -> write_mem addr v s ii) >>!
+            (fun (addr,v) -> write_mem nat_sz addr v s ii) >>!
             B.Next
 
         | BellBase.Pfence(BellBase.Fence (s,o)) ->
@@ -150,17 +154,18 @@ module Make (C:Sem.Config)(V:Value.S)
             let rloc = solve_addr_op addr_op ii in
             if BellBase.r_in_op r op then
               rloc >>=
-              (fun x -> (read_mem_atom x s ii) >>=
+              (fun x -> (read_mem_atom nat_sz x s ii) >>=
                 (fun v_read ->
                   (tr_op ~stack:[(r,v_read)] ii op) >>=
-                  (fun v -> write_reg r v_read ii >>| write_mem_atom x v s ii))) >>!
+                  (fun v -> write_reg r v_read ii >>|
+                  write_mem_atom nat_sz x v s ii))) >>!
               B.Next
             else begin
               rloc >>=
               (fun x ->
-                let r1 = read_mem_atom x s ii
+                let r1 = read_mem_atom nat_sz x s ii
                 and r2 = tr_op ii op
-                and w1 = fun v -> write_mem_atom x v s ii
+                and w1 = fun v -> write_mem_atom nat_sz x v s ii
                 and w2 = fun v -> write_reg r v ii in
                 M.exch r1 r2 w1 w2) >>! B.Next
             end

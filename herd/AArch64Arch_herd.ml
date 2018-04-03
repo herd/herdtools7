@@ -23,13 +23,11 @@ module Make (C:sig include Arch_herd.Config val moreedges : bool end) (V:Value.S
     let reject_mixed = true
 
     type annot = A | XA | L | XL | X | N | Q
-    type lannot = annot * MachSize.sz
+    type lannot = annot
 
-    let get_machsize (_,sz) = sz
+    let empty_annot = N
 
-    let empty_annot = N,Quad
-
-    let wrap_is is_fun ((a,sz):lannot) = is_fun a
+    let wrap_is is_fun a = is_fun a
 
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
 
@@ -68,7 +66,7 @@ module Make (C:sig include Arch_herd.Config val moreedges : bool end) (V:Value.S
     let is_isync = is_barrier ISB
     let pp_isync = "isb"
 
-    let pp_annot (a,_) = match a with
+    let pp_annot a = match a with
       | XA -> "Acq*"
       | A -> "Acq"
       | Q -> "AcqPc"

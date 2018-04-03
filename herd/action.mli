@@ -22,7 +22,7 @@ module type S = sig
 
   type action
 
-  val mk_init_write : A.location -> A.V.v -> action
+  val mk_init_write : A.location -> MachSize.sz -> A.V.v -> action
 
   val pp_action : action -> string
 
@@ -92,11 +92,5 @@ module type S = sig
 
   val undetermined_vars_in_action : action -> A.V.ValueSet.t
   val simplify_vars_in_action : A.V.solution -> action -> action
-
-(************************)
-(* Parallel composition *)
-(************************)
-
-  val make_action_atomic : action -> action
 
 end

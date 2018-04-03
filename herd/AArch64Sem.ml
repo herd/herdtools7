@@ -46,7 +46,7 @@ module Make (C:Sem.Config)(V:Value.S)
 
     let add_variant v a = (a,tr_variant v)
 
-    let mk_read var an loc v = Act.Access (Dir.R, loc, v, add_variant var an)
+    let mk_read var an loc v = Act.Access (Dir.R, loc, v, an, tr_variant var)
 
     let read_loc v is_data = M.read_loc is_data (mk_read v AArch64.N)
 
@@ -71,7 +71,7 @@ module Make (C:Sem.Config)(V:Value.S)
     let read_mem_atomic_acquire v a ii =
       M.read_loc false (mk_read v AArch64.XA) (A.Location_global a) ii
 
-    let mk_write var an loc v = Act.Access (Dir.W, loc, v, add_variant var an)
+    let mk_write var an loc v = Act.Access (Dir.W, loc, v, an, tr_variant var)
 
 
     let write_loc var an loc v ii =
@@ -87,10 +87,11 @@ module Make (C:Sem.Config)(V:Value.S)
     let write_mem_release var a v ii =
       write_loc var AArch64.L (A.Location_global a) v ii
 
+
     let do_write_mem_atomic an var a v resa ii =
       let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
       M.mk_singleton_es_eq
-        (Act.Access (Dir.W, A.Location_global a, v,add_variant var an)) eq ii
+        (Act.Access (Dir.W, A.Location_global a, v,an, tr_variant var)) eq ii
 
     let write_mem_atomic = do_write_mem_atomic AArch64.X
     and write_mem_atomic_release = do_write_mem_atomic AArch64.XL

@@ -25,11 +25,11 @@ module Make (C:Sem.Config)(V:Value.S)
 
 (* Barrier pretty print *)
     let sync = {barrier=MIPS.Sync; pp="sync";}
-        
+
     let barriers = [sync;]
     let isync = None
+    let nat_sz =V.Cst.Scalar.machsize
 
- 
 (* Semantics proper *)
     let (>>=) = M.(>>=)
     let (>>*=) = M.(>>*=)
@@ -46,38 +46,37 @@ module Make (C:Sem.Config)(V:Value.S)
       | MIPS.XOR -> Op.Xor
       | MIPS.NOR -> Op.Nor
 
-    let mk_read ato loc v = Act.Access (Dir.R, loc, v, ato)
-					      
-    let _read_reg is_data r ii = match r with
+    let mk_read sz ato loc v = Act.Access (Dir.R, loc, v, ato, sz)
+
+    let read_reg is_data r ii = match r with
     | MIPS.IReg MIPS.R0 -> M.unitT V.zero
-    | _ -> 
-        M.read_loc is_data (mk_read false) (A.Location_reg (ii.A.proc,r)) ii
+    | _ ->
+        M.read_loc is_data (mk_read nat_sz false) (A.Location_reg (ii.A.proc,r)) ii
 
-    let read_reg_ord = _read_reg false
-    let read_reg_data = _read_reg true
+    let read_reg_ord = read_reg false
+    let read_reg_data = read_reg true
 
-    let read_mem a ii  = 
-      M.read_loc false (mk_read false) (A.Location_global a) ii
-    let read_mem_atomic a ii = 
-      M.read_loc false (mk_read true) (A.Location_global a) ii
-		 
+    let do_read_mem sz ato a ii = M.read_loc false (mk_read sz ato) (A.Location_global a) ii
+    let read_mem sz a ii = do_read_mem sz false a ii
+    let read_mem_atomic sz a ii = do_read_mem sz true a ii
+
     let write_reg r v ii = match r with
     | MIPS.IReg MIPS.R0 -> M.unitT ()
     | _ ->
         M.mk_singleton_es
-          (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false)) ii
+          (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false, nat_sz)) ii
 
-    let write_mem a v ii  = 
-      M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v, false)) ii
+    let write_mem sz a v ii  =
+      M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v, false, sz)) ii
 
-    let write_mem_atomic a v resa ii =
+    let write_mem_atomic sz a v resa ii =
       let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
-      M.mk_singleton_es_eq (Act.Access (Dir.W, A.Location_global a, v, true)) eq ii
+      M.mk_singleton_es_eq (Act.Access (Dir.W, A.Location_global a, v, true, sz)) eq ii
 
-  let create_barrier b ii = 
+  let create_barrier b ii =
       M.mk_singleton_es (Act.Barrier b) ii
 
-    let commit ii = 
+    let commit ii =
       M.mk_singleton_es (Act.Commit true) ii
 
 (* Entry point *)
@@ -118,20 +117,20 @@ module Make (C:Sem.Config)(V:Value.S)
         | MIPS.LW (r1,k,r2) ->
             read_reg_ord r2 ii >>=
             (fun a -> M.add a (V.intToV k)) >>=
-            (fun ea -> read_mem ea ii) >>=
+            (fun ea -> read_mem nat_sz ea ii) >>=
             (fun v -> write_reg r1 v ii) >>! B.Next
         | MIPS.SW (r1,k,r2) ->
             (read_reg_data r1 ii >>| read_reg_ord r2 ii) >>=
             (fun (d,a) ->
               (M.add a (V.intToV k)) >>=
-              (fun ea -> write_mem ea d ii)) >>! B.Next
+              (fun ea -> write_mem nat_sz ea d ii)) >>! B.Next
         | MIPS.LL (r1,k,r2) ->
             read_reg_ord r2 ii >>=
             (fun a ->
               (M.add a (V.intToV k) >>=
                (fun ea ->
                  write_reg MIPS.RESADDR ea ii >>|
-                 (read_mem_atomic ea ii >>= fun v -> write_reg r1 v ii))))
+                 (read_mem_atomic nat_sz ea ii >>= fun v -> write_reg r1 v ii))))
                 >>! B.Next
         | MIPS.SC (r1,k,r2) ->
             (read_reg_ord MIPS.RESADDR ii >>|
@@ -144,7 +143,7 @@ module Make (C:Sem.Config)(V:Value.S)
                 M.altT
                   (write_reg r1 V.zero ii) (* Failure *)
                   ((write_reg r1 V.one ii
-                      >>| write_mem_atomic ea v resa ii) >>! ())))
+                      >>| write_mem_atomic nat_sz ea v resa ii) >>! ())))
               >>! B.Next
         | MIPS.SYNC ->
             create_barrier MIPS.Sync ii >>! B.Next

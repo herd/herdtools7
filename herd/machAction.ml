@@ -20,8 +20,6 @@ module type A = sig
   include Arch_herd.S
 
   type lannot
-  val get_machsize : lannot -> MachSize.sz
-
   val empty_annot : lannot
   val barrier_sets : (string * (barrier -> bool)) list
   val annot_sets : (string * (lannot -> bool)) list
@@ -34,11 +32,11 @@ end
 module Make (A : A) : sig
 
   type action =
-    | Access of Dir.dirn * A.location * A.V.v * A.lannot
+    | Access of Dir.dirn * A.location * A.V.v * A.lannot * MachSize.sz
     | Barrier of A.barrier
     | Commit of bool (* true = bcc / false = pred *)
 (* Atomic modify, (location,value read, value written, annotation *)
-    | Amo of A.location * A.V.v * A.V.v * A.lannot
+    | Amo of A.location * A.V.v * A.V.v * A.lannot * MachSize.sz
 (* NB: Amo used in some arch only (ie RISCV) *)
 
   include Action.S with type action := action and module A = A
@@ -50,123 +48,124 @@ end = struct
   open Dir
 
   type action =
-    | Access of dirn * A.location * V.v * A.lannot
+    | Access of dirn * A.location * V.v * A.lannot * MachSize.sz
     | Barrier of A.barrier
     | Commit of bool
-    | Amo of A.location * A.V.v * A.V.v * A.lannot
+    | Amo of A.location * A.V.v * A.V.v * A.lannot * MachSize.sz
 
-  let mk_init_write l v = Access(W,l,v,A.empty_annot)
+  let mk_init_write l sz v = Access(W,l,v,A.empty_annot,sz)
 
   let pp_action a = match a with
-  | Access (d,l,v,an) ->
-      Printf.sprintf "%s%s%s=%s"
+  | Access (d,l,v,an,sz) ->
+      Printf.sprintf "%s%s%s%s=%s"
         (pp_dirn d)
         (A.pp_location l)
         (A.pp_annot an)
+        (MachSize.pp sz)
         (V.pp_v v)
   | Barrier b -> A.pp_barrier_short b
   | Commit bcc -> if bcc then "Commit" else "Pred"
-  | Amo (loc,v1,v2,an) ->
-      Printf.sprintf "RMW(%s)%s(%s>%s)"
+  | Amo (loc,v1,v2,an,sz) ->
+      Printf.sprintf "RMW(%s)%s%s(%s>%s)"
         (A.pp_annot an)
-        (A.pp_location loc)
+        (A.pp_location loc) (MachSize.pp sz)
         (V.pp_v v1) (V.pp_v v2)
 
 (* Utility functions to pick out components *)
   let value_of a = match a with
-  | Access (_,_ , v,_) -> Some v
+  | Access (_,_ , v,_,_) -> Some v
   | _ -> None
 
   let read_of a = match a with
-  | Access (R,_,v,_)
-  | Amo (_,v,_,_)
+  | Access (R,_,v,_,_)
+  | Amo (_,v,_,_,_)
     -> Some v
-  | Access (W, _, _, _)|Barrier _|Commit _
+  | Access (W, _, _, _,_)|Barrier _|Commit _
     -> None
 
   and written_of a = match a with
-  | Access (W,_,v,_)
-  | Amo (_,_,v,_)
+  | Access (W,_,v,_,_)
+  | Amo (_,_,v,_,_)
     -> Some v
-  | Access (R, _, _, _)|Barrier _|Commit _
+  | Access (R, _, _, _,_)|Barrier _|Commit _
     -> None
 
   let location_of a = match a with
-  | Access (_, l, _,_)
-  | Amo (l,_,_,_)
+  | Access (_, l, _,_,_)
+  | Amo (l,_,_,_,_)
     -> Some l
   | Barrier _|Commit _ -> None
 
 (* relative to memory *)
   let is_mem_store a = match a with
-  | Access (W,A.Location_global _,_,_)
-  | Amo (A.Location_global _,_,_,_)
+  | Access (W,A.Location_global _,_,_,_)
+  | Amo (A.Location_global _,_,_,_,_)
     -> true
   | _ -> false
 
   let is_mem_load a = match a with
-  | Access (R,A.Location_global _,_,_)
-  | Amo (A.Location_global _,_,_,_)
+  | Access (R,A.Location_global _,_,_,_)
+  | Amo (A.Location_global _,_,_,_,_)
     -> true
   | _ -> false
 
   let is_additional_mem_load _ = false
 
   let is_mem a = match a with
-  | Access (_,A.Location_global _,_,_)
-  | Amo (A.Location_global _,_,_,_)
+  | Access (_,A.Location_global _,_,_,_)
+  | Amo (A.Location_global _,_,_,_,_)
     -> true
   | _ -> false
 
   let is_additional_mem _ = false
 
   let is_atomic a = match a with
-  | Access (_,_,_,annot) ->
+  | Access (_,_,_,annot,_) ->
       is_mem a && A.is_atomic annot
   | _ -> false
 
   let get_mem_dir a = match a with
-  | Access (d,A.Location_global _,_,_) -> d
+  | Access (d,A.Location_global _,_,_,_) -> d
   | _ -> assert false
 
   let get_mem_size a = match a with
-  | Access (_,A.Location_global _,_,a) -> A.get_machsize a
+  | Access (_,A.Location_global _,_,a,sz) -> sz
   | _ -> assert false
 
 (* relative to the registers of the given proc *)
   let is_reg_store a (p:int) = match a with
-  | Access (W,A.Location_reg (q,_),_,_) -> p = q
+  | Access (W,A.Location_reg (q,_),_,_,_) -> p = q
   | _ -> false
 
   let is_reg_load a (p:int) = match a with
-  | Access (R,A.Location_reg (q,_),_,_) -> p = q
+  | Access (R,A.Location_reg (q,_),_,_,_) -> p = q
   | _ -> false
 
   let is_reg a (p:int) = match a with
-  | Access (_,A.Location_reg (q,_),_,_) -> p = q
+  | Access (_,A.Location_reg (q,_),_,_,_) -> p = q
   | _ -> false
 
 
 (* Store/Load anywhere *)
   let is_store a = match a with
-  | Access (W,_,_,_)|Amo _ -> true
-  | Access (R,_,_,_)|Barrier _|Commit _ -> false
+  | Access (W,_,_,_,_)|Amo _ -> true
+  | Access (R,_,_,_,_)|Barrier _|Commit _ -> false
 
   let is_load a = match a with
-  | Access (R,_,_,_)|Amo _ -> true
-  | Access (W,_,_,_)|Barrier _|Commit _ -> false
+  | Access (R,_,_,_,_)|Amo _ -> true
+  | Access (W,_,_,_,_)|Barrier _|Commit _ -> false
 
 
   let is_reg_any a = match a with
-  | Access (_,A.Location_reg _,_,_) -> true
+  | Access (_,A.Location_reg _,_,_,_) -> true
   | _ -> false
 
   let is_reg_store_any a = match a with
-  | Access (W,A.Location_reg _,_,_) -> true
+  | Access (W,A.Location_reg _,_,_,_) -> true
   | _ -> false
 
   let is_reg_load_any a = match a with
-  | Access (R,A.Location_reg _,_,_) -> true
+  | Access (R,A.Location_reg _,_,_,_) -> true
   | _ -> false
 
 (* Barriers *)
@@ -204,7 +203,7 @@ end = struct
       List.map
         (fun (tag,p) ->
           let p act = match act with
-          | Access(_,_,_,annot)|Amo (_,_,_,annot) -> p annot
+          | Access(_,_,_,annot,_)|Amo (_,_,_,annot,_) -> p annot
           | _ -> false
           in tag,p) A.annot_sets
     in
@@ -225,12 +224,12 @@ end = struct
 
   let undetermined_vars_in_action a =
     match a with
-    | Access (_,l,v,_) ->
+    | Access (_,l,v,_,_) ->
         let undet_loc = match A.undetermined_vars_in_loc l with
         | None -> V.ValueSet.empty
         | Some v -> V.ValueSet.singleton v in
         add_v_undet v undet_loc
-    | Amo (loc,v1,v2,_) ->
+    | Amo (loc,v1,v2,_,_) ->
         let undet = match A.undetermined_vars_in_loc loc with
         | None -> V.ValueSet.empty
         | Some v -> V.ValueSet.singleton v in
@@ -239,24 +238,16 @@ end = struct
 
   let simplify_vars_in_action soln a =
     match a with
-    | Access (d,l,v,an) ->
+    | Access (d,l,v,an,sz) ->
         let l' = A.simplify_vars_in_loc soln l in
         let v' = V.simplify_var soln v in
-        Access (d,l',v',an)
-    | Amo (loc,v1,v2,an) ->
+        Access (d,l',v',an,sz)
+    | Amo (loc,v1,v2,an,sz) ->
         let loc =  A.simplify_vars_in_loc soln loc in
         let v1 = V.simplify_var soln v1 in
         let v2 = V.simplify_var soln v2 in
-        Amo (loc,v1,v2,an)
+        Amo (loc,v1,v2,an,sz)
     | Barrier _ | Commit _ -> a
-
-(*************************************************************)
-(* Add together event structures from different instructions *)
-(*************************************************************)
-
-  let make_action_atomic a = match a with
-  | Access (d,l,v,an) -> Access (d,l,v,an)
-  | _ -> a
 
   let annot_in_list _str _ac = false
 
