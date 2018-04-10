@@ -59,7 +59,6 @@ module type S =
         'loc t -> 'v t -> ('loc -> 'v t) -> ('v -> 'v -> unit t) -> 'v option -> 'v t
 
     val riscv_store_conditional :
-        bool -> (* dependency of result reg on write event (!) *)
         A.V.v t -> A.V.v t -> A.V.v t -> (* read reserve, data, address *)
           (unit t) -> (* write reserve *)
               (A.V.v -> unit t) -> (* write result *)

@@ -23,6 +23,7 @@ type t =
   | FullScDepend    (* Complete dependencies for Store Conditinal *)
   | SplittedRMW  (* Splitted RMW events for riscv *)
   | NoDepScWrite    (* No dependency on sc mem write, riscv *)
+  | LrScDiffOk      (* Lr/Sc paired to <> addresses may succeed (!) *)
 
 val compare : t -> t -> int
 val tags : string list

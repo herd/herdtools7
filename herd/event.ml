@@ -284,7 +284,7 @@ module type S = sig
     event_structure -> bool -> event_structure
 
   val riscv_sc :
-      bool (* dep_on_write *) -> bool (* success *) ->
+      bool (* success *) ->
         event_structure -> event_structure -> event_structure ->
           event_structure ->  event_structure ->  event_structure ->
             event_structure
@@ -1013,7 +1013,8 @@ let (=|=) = check_disjoint para_comp
 
 
 (* RISCV Store conditional *)
-  let riscv_sc dep_on_write success resa data addr wres wresult wmem =
+  let riscv_sc success resa data addr wres wresult wmem =
+    let dep_on_write = not (C.variant Variant.NoDepScWrite) in
     let in_wmem = minimals wmem
     and out_wmem = maximals wmem
     and in_wres = minimals wres

@@ -23,9 +23,6 @@ module Make (C:Sem.Config)(V:Value.S)
     module Act = MachAction.Make(RISCV)
     include SemExtra.Make(C)(RISCV)(Act)
 
-(* *)
-    let dep_on_sc_write = not (C.variant Variant.NoDepScWrite)
-
 (* Barrier pretty print *)
     let barriers =
       RISCV.do_fold_fence
@@ -133,8 +130,15 @@ module Make (C:Sem.Config)(V:Value.S)
 
     let write_mem an = do_write_mem (RISCV.P an)
 
+    let lrscdiffok = C.variant Variant.LrScDiffOk
+
     let write_mem_conditional an a v resa ii =
-      let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
+      if  lrscdiffok then
+        (M.mk_singleton_es_eq
+          (Act.Access (Dir.W, A.Location_global a, v, RISCV.X an)) [] ii >>|
+          M.neqT resa V.zero) >>! () (* resa = zero <-> no matching load reserve *)
+      else
+        let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
       M.mk_singleton_es_eq
         (Act.Access (Dir.W, A.Location_global a, v, RISCV.X an)) eq ii
 
@@ -286,7 +290,6 @@ module Make (C:Sem.Config)(V:Value.S)
               (read_mem_atomic mo ea ii >>= fun v -> write_reg r1 v ii)) >>! B.Next
         | RISCV.StoreConditional ((RISCV.Double|RISCV.Word),mo,r1,r2,r3) ->
             M.riscv_store_conditional
-              dep_on_sc_write
               (read_reg_ord RISCV.RESADDR ii)
               (read_reg_data r2 ii)
               (read_reg_ord r3 ii)

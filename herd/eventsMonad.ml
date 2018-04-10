@@ -18,6 +18,7 @@
 
 module type Config = sig
   val debug : Debug_herd.t
+  val variant : Variant.t -> bool
 end
 
 module Make (C:Config) (A:Arch_herd.S) (E:Event.S with module A = A and module Act.A = A) :
@@ -252,7 +253,7 @@ and type evt_struct = E.event_structure) =
       eiid, Evt.singleton (r,cleq@clrmem@clloc@clu,es)
 
 (* Store conditional, tricky dependencies *)
-    let riscv_sc dep_on_write success read_res read_data read_addr
+    let riscv_sc success read_res read_data read_addr
         cancel_res write_result write_mem eiid =
       let eiid,read_res =  read_res eiid in
       let eiid,read_data = read_data eiid in
@@ -267,7 +268,7 @@ and type evt_struct = E.event_structure) =
       and (),cl_wresult,es_wresult =  Evt.as_singleton write_result
       and (),cl_wmem,es_wmem =  Evt.as_singleton write_mem in
       let es =
-        E.riscv_sc dep_on_write success
+        E.riscv_sc success
           es_resa es_data es_addr es_wres es_wresult es_wmem in
       eiid,
       Evt.singleton ((),cl_resa@cl_data@cl_addr@cl_wres@cl_wresult@cl_wmem,es)
@@ -285,14 +286,14 @@ and type evt_struct = E.event_structure) =
  *)
         (eiid, un)
 
-    let riscv_store_conditional dep_on_write read_res read_data read_addr
+    let riscv_store_conditional read_res read_data read_addr
         cancel_res write_result write_mem =
       altT
-        (riscv_sc  dep_on_write false
+        (riscv_sc false
            read_res read_data read_addr cancel_res
            (write_result A.V.one)
            (fun _a _resa _v -> unitT ()))
-        (riscv_sc dep_on_write true
+        (riscv_sc true
            read_res read_data read_addr cancel_res
            (write_result A.V.zero)
            write_mem)

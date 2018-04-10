@@ -25,10 +25,11 @@ type t =
   | FullScDepend    (* Complete dependencies for Store Conditinal *)
   | SplittedRMW     (* Splitted RMW events for riscv *)
   | NoDepScWrite    (* No dependency on sc mem write, riscv *)
+  | LrScDiffOk      (* Lr/Sc paired to <> addresses may succeed (!) *)
 
 let tags =
   ["success";"specialx0";"normw";"acqrelasfence";"backcompat";
-   "fullscdepend";"splittedrmw";"nodepscwrite"]
+   "fullscdepend";"splittedrmw";"nodepscwrite";"lrscdiffok"]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -39,6 +40,7 @@ let parse s = match Misc.lowercase s with
 | "fullscdepend"|"scdepend" -> Some FullScDepend
 | "splittedrmw" -> Some SplittedRMW
 | "nodepscwrite" -> Some  NoDepScWrite
+| "lrscdiffok" -> Some  LrScDiffOk
 | _ -> None
 
 let pp = function
@@ -50,5 +52,6 @@ let pp = function
   | FullScDepend -> "FullScDepend"
   | SplittedRMW -> "SplittedRWM"
   | NoDepScWrite -> "NoDepScWrite"
+  | LrScDiffOk -> " LrScDiffOk"
 
 let compare = Pervasives.compare
