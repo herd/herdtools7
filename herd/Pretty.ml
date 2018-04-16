@@ -562,7 +562,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
     let pp_label = escape_html i.ikey in
     let pp_label = pp_edge_label false pp_label in
     sprintf "<font color=\"%s\">%s%s</font>" i.icolor
-      (if fst then "" else ",") pp_label
+      (if fst then "" else "") pp_label
 
   let fmt_merged_labels infos = match infos with
   | [] -> []
@@ -978,7 +978,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
         pp_fontsize chan ;
         if PC.verbose > 2 then pp_attr chan "color" color ;
         pp_event_position chan e ;
-        pp_attr chan "fixedsize" "true" ;
+        pp_attr chan "fixedsize" (if PC.fixedsize then "true" else "false") ;
         pp_attr chan "height"
           (sprintf "%f"
              (if PC.fixedsize then boxheight
