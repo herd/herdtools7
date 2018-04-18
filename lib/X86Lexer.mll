@@ -46,6 +46,7 @@ rule token = parse
 | ':' { COLON }
 | "add"|"ADD"   { I_ADD }
 | "xor"|"XOR"   { I_XOR }
+| "or"|"OR"   { I_OR }
 | "mov"|"MOV"   { I_MOV }
 | "movb"|"MOVB"   { I_MOVB }
 | "movw"|"MOVW"   { I_MOVW }

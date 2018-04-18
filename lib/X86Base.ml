@@ -135,6 +135,7 @@ type lbl = Label.t
 type instruction =
   | I_ADD of effaddr * operand
   | I_XOR of effaddr * operand
+  | I_OR of effaddr * operand
   | I_MOV of effaddr * operand
   | I_DEC of effaddr
   | I_CMP of effaddr * operand
@@ -234,6 +235,7 @@ let rec do_pp_instruction m =
   fun i -> match i with
   | I_ADD(ea,op) -> ppi_ea_op "ADD" ea op
   | I_XOR(ea,op) -> ppi_ea_op "XOR" ea op
+  | I_OR(ea,op) -> ppi_ea_op "OR" ea op
   | I_MOV(ea,op) -> ppi_ea_op "MOV" ea op
   | I_MOVB(ea,op) -> ppi_ea_op "MOVB" ea op
   | I_MOVW(ea,op) -> ppi_ea_op "MOVW" ea op
@@ -299,6 +301,7 @@ let rec fold_regs (f_reg,f_sreg) =
 
   fun c ins -> match ins with
   | I_XOR (eff,op)
+  | I_OR (eff,op)
   | I_ADD (eff,op)
   | I_MOV (eff,op) | I_MOVB (eff,op) | I_MOVW (eff,op) | I_MOVL (eff,op) | I_MOVQ (eff,op) | I_MOVT (eff,op)
   | I_CMP (eff,op) ->
@@ -349,6 +352,8 @@ let rec map_regs f_reg f_symb =
   fun ins -> match ins with
   | I_XOR (eff,op) ->
       I_XOR (map_effaddr eff, map_operand op)
+  | I_OR (eff,op) ->
+      I_OR (map_effaddr eff, map_operand op)
   | I_ADD (eff,op) ->
       I_ADD (map_effaddr eff, map_operand op)
   | I_MOV (eff,op) ->
@@ -404,6 +409,7 @@ let rec fold_addrs f =
 
   fun c ins -> match ins with
   | I_XOR (eff,op)
+  | I_OR (eff,op)
   | I_ADD (eff,op)
   | I_MOV (eff,op)
   | I_MOVB (eff,op)
@@ -450,6 +456,8 @@ let rec map_addrs f =
   fun ins -> match ins with
   | I_XOR (eff,op) ->
       I_XOR (map_effaddr eff, map_operand op)
+  | I_OR (eff,op) ->
+      I_OR (map_effaddr eff, map_operand op)
   | I_ADD (eff,op) ->
       I_ADD (map_effaddr eff, map_operand op)
   | I_MOV (eff,op) ->
@@ -505,7 +513,7 @@ let is_data _ _ = assert false
 let rec get_next = function
   | I_LOCK ins -> get_next ins
   | I_ADD _
-  | I_XOR _
+  | I_XOR _ | I_OR _
   | I_MOV _ | I_MOVB _ | I_MOVW _ | I_MOVL _ | I_MOVQ _ | I_MOVT _
   | I_MOVSD
   | I_DEC _
@@ -535,6 +543,7 @@ include Pseudo.Make
         | I_LOCK i -> get_naccesses i
         | I_ADD (e,o)
         | I_XOR (e,o)
+        | I_OR (e,o)
         | I_MOV (e,o)
         | I_CMP (e,o)
         | I_MOVB (e,o)
@@ -574,7 +583,7 @@ include Pseudo.Make
         | I_CMOVC (_, _)|I_CMP (_, _)|I_DEC _
 		| I_MOV (_, _)|I_MOVB (_,_)|I_MOVW (_,_)|I_MOVL (_,_)|I_MOVQ (_,_)|I_MOVT (_,_)
         | I_MOVSD
-        | I_XOR (_, _)|I_ADD (_, _)
+        | I_XOR (_, _)|I_OR _|I_ADD (_, _)
         | I_MFENCE|I_SFENCE|I_LFENCE
         | I_CMPXCHG (_,_)
           -> k
@@ -587,7 +596,7 @@ include Pseudo.Make
         | I_CMOVC (_, _)|I_CMP (_, _)|I_DEC _
 		| I_MOV (_, _)|I_MOVB (_,_)|I_MOVW (_,_)|I_MOVL (_,_)|I_MOVQ (_,_)|I_MOVT (_,_)
         | I_MOVSD
-        | I_XOR (_, _)|I_ADD (_, _)
+        | I_XOR (_, _)|I_OR _|I_ADD (_, _)
         | I_MFENCE|I_SFENCE|I_LFENCE
         | I_CMPXCHG (_,_)
             -> ins

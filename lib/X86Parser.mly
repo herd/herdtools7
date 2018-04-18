@@ -31,7 +31,7 @@ open X86
 %token LPAR RPAR COLON
 /* Instruction tokens */
 
-%token  I_XOR I_ADD  I_MOV  I_MOVB I_MOVW I_MOVL I_MOVQ I_MOVT I_MOVSD I_DEC  I_CMP  I_CMOVC  I_INC  I_JMP
+%token  I_XOR I_OR I_ADD  I_MOV  I_MOVB I_MOVW I_MOVL I_MOVQ I_MOVT I_MOVSD I_DEC  I_CMP  I_CMOVC  I_INC  I_JMP
 %token  I_LOCK  I_XCHG   I_LFENCE  I_SFENCE  I_MFENCE
 %token  I_READ I_SETNB I_JE I_JNE
 %token  I_CMPXCHG
@@ -79,6 +79,8 @@ k:
 instr:
   | I_XOR   effaddr  COMMA  operand
     {I_XOR ($2,$4)}
+  | I_OR   effaddr  COMMA  operand
+    {I_OR ($2,$4)}
   | I_ADD   effaddr  COMMA  operand
     {I_ADD ($2,$4)}
   | I_MOV   effaddr  COMMA  operand

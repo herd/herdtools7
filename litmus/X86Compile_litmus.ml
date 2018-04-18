@@ -52,6 +52,7 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
     let rec extract_addrs ins = match ins with
     | I_LOCK ins -> extract_addrs ins
     | I_XOR (ea,op)
+    | I_OR (ea,op)
     | I_ADD (ea,op)
     | I_MOV (ea,op)
     | I_MOVB (ea,op)
@@ -231,6 +232,7 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
         let r = do_compile_ins tr_lab ins in
         { r with memo = "lock; "^r.memo ; }
     | I_XOR (ea,op) -> op_ea_output_op "xorl" ea op
+    | I_OR (ea,op) -> op_ea_output_op "orl" ea op
     | I_ADD (ea,op) -> op_ea_output_op "addl" ea op
 (* as usual, move is quite special *)
     | I_MOV (ea,op) ->  move "movl" ea op
