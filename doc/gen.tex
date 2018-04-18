@@ -67,7 +67,7 @@ ordering constraints of the SC~memory model.
 \subsection{Introduction\label{candidate:intro} to candidate relaxations}
 Consider again our classical example,
 from a~SC perspective.
-We briefly argued that the outcome 
+We briefly argued that the outcome
 ``\mbox{0:EAX} $\mathord{=}$ \mbox{0} $\wedge$
 \mbox{1:EAX} $\mathord{=}$ \mbox{0}''
 is forbidden by~SC.
@@ -277,7 +277,7 @@ Thus, these events operate on the same memory location.
 Target reads its value from source \\\hline
 \tt Rfe      & W      & R      & Different &
 Target reads its value from source  \\\hline
-\tt Wsi      & W      & W      & Same      & 
+\tt Wsi      & W      & W      & Same      &
 Source precedes target in coherence order
 \\\hline
 \tt Wse      & W      & W      & Different &
@@ -302,7 +302,7 @@ As regards code output,
 \diy{} interprets a program order candidate relaxation by generating
 two memory instructions (load or store) following one another.
 
-Program order candidate relaxations have the following syntax: 
+Program order candidate relaxations have the following syntax:
 \begin{center}
 Po(s\vbar{}d)(R\vbar{}W)(R\vbar{}W)
 \end{center}
@@ -316,7 +316,7 @@ location(s);
 In practice, we have:
 \begin{center}
 \begin{tabular}{c|c|c|c}
-\diy syntax  &  Source & Target  & Location \\ \hline
+\diy{} syntax  &  Source & Target  & Location \\ \hline
 \tt PosRR & R & R & Same \\ \hline
 \tt PodRR & R & R & Diff  \\ \hline
 \tt PosRW & R & W & Same \\ \hline
@@ -344,20 +344,177 @@ or \emph{fences}, to enforce order of memory accesses.
 In \diy{} the presence of a fence instruction is specified with
 fence candidate relaxations, similar to program order candidate relaxations,
 except that a fence instruction is inserted.
-Hence we have FencedsRR, FenceddRR. etc.
+Hence we have FencesRR, FencedRR. etc.
 The inserted fence is the strongest fence provided by
 the architecture --- that is, \texttt{mfence} for x86 and
 \texttt{sync}~for~Power.
 
 Fences can also be specified by using specific names.
-More precisely, we have  MFence for x86;
-while on Power we have Sync, LwSync, Eieio and~Isync.
+For instance, we have  MFence for x86;
+while on PPC we have Sync, LwSync, Eieio and~ISync.
 Hence, to yield two reads to different locations
-and separated by the lightweight Power barrier~\texttt{lwsync},
+and separated by the lightweight PPC barrier~\texttt{lwsync},
 we specify LwSyncdRR.
-On ARM we have DMB, DSB and ISB.
+
+The table in figure~\ref{fence:relax:fig} lists all fence prefixes
+for all supported architectures:
+\begin{figure}[h]
+\caption{\label{fence:relax:fig}Fence prefixes per architecture}
+\begin{center}
+\begin{minipage}{0.9\linewidth}
+\begin{center}
+\begin{tabular}{l>{\tt}p{0.7\linewidth}}
+Arch & \multicolumn{1}{c}{Fence prefixes} \\ \hline
+X86 & MFence \\
+PPC & Sync LwSync Eieio ISync \\
+ARM & DSB DMB DMB.ST DSB.ST ISB \\
+AArch64\footnote{More fences available through command line option \texttt{-moreedges true}}\qquad\qquad & DMB.SY DMB.ST DMB.LD ISB \\
+MIPS & Fence \\
+RISCV & Fence.rw.rw Fence.rw.r Fence.rw.w  Fence.r.rw Fence.r.r Fence.r.w
+Fence.w.rw Fence.w.r Fence.w.w\\
+C & FenceSc FenceAR FenceAcq FenceRel FenceCons FenceRlx\\
+LISA\footnote{Fence annotations~\emph{an} are defined in the bell file as
+\texttt{instructions~F[{\ldots,'\emph{an},\ldots}]}.}
+ & Fence\emph{An}\ldots\\
+\end{tabular}
+\end{center}
+\end{minipage}
+\end{center}
+\end{figure}
+Also notice that, for a given architecture~\emph{A},
+recognized fence prefixes can be listed with the following command:
+``\texttt{diyone7 -arch \emph{A} -show fences}''.
+
+\subsection{Annotations}
+
+Most architectures, and more specifically LISA, support annotations that
+decorate events. The most common such annotation is ``\texttt{X}'' (or ``\texttt{A}'' depending on the architecture)
+for ``atomic'' accesses that will generate atomic accesses, \emph{i.e.}
+load-reserve/store-conditional pairs (lr/sc) or read-modify write instructions.
+
+As annotations apply to events, they are  pseudo-candidates that
+appear in-between actual candidate relaxations. For instance, consider
+the AArch64 architecture that features primitive store release
+(annotation~``\texttt{L}'')
+and load acquire (annotation~``\texttt{A}'') instructions.
+One may specify the well known message-passing
+release-acquire idiom as follows:
+\begin{verbatim}
+% diyone7 -arch AArch64 PodWW L Rfe A PodRR Fre
+AArch64 A
+...
+{
+0:X1=x; 0:X3=y;
+1:X1=y; 1:X3=x;
+}
+ P0           | P1           ;
+ MOV W0,#1    | LDAR W0,[X1] ;
+ STR W0,[X1]  | LDR W2,[X3]  ;
+ MOV W2,#1    |              ;
+ STLR W2,[X3] |              ;
+exists (1:X0=1 /\ 1:X2=0)
+\end{verbatim}
+In the ARMv8 assembler code above, one notices the \texttt{STLR} (store release)
+and \texttt{LDAR} (load acquire) instructions.
+
+In AArch64, the ``atomic'' annotation reads~``\texttt{X}'', as ``\texttt{A}''
+stands for ``acquire''. This applies to both stores and loads and generate
+code snippets that implement ```atomic'' accesses using
+lr/sc pairs.
+\begin{verbatim}
+% diyone7 -arch AArch64 PodWW XL Rfe XA PodRR Fre
+AArch64 A
+...
+{
+0:X1=x; 0:X2=y;
+1:X0=y; 1:X4=x;
+}
+ P0               | P1              ;
+ MOV W0,#1        | Loop01:         ;
+ STR W0,[X1]      | LDAXR W1,[X0]   ;
+ MOV W3,#1        | STXR W2,W1,[X0] ;
+ Loop00:          | CBNZ W2,Loop01  ;
+ LDXR W4,[X2]     | LDR W3,[X4]     ;
+ STLXR W5,W3,[X2] |                 ;
+ CBNZ W5,Loop00   |                 ;
+exists
+(y=1 /\ 0:X4=0 /\ 1:X1=1 /\ 1:X3=0)
+\end{verbatim}
+Observe that the ``\texttt{L}'' and ``\texttt{A}'' annotations can
+be combined, yielding ``atomic release'' store and ``atomic acquire'' load
+operations.
 
 
+\label{unroll:example}Loop unrolling of lr/sc idioms is controlled
+through the \opt{-ua <$n$>} (abbreviation of \opt{-unrollatonic <$n$>}) command line option. Of some interest is the setting \opt{-ua 0} that commands unrolling the loops once and
+testing store conditional  success in the final condition:
+\begin{verbatim}
+% diyone7 -ua 0 -arch AArch64 PodWW XL Rfe XA PodRR Fre
+AArch64 A
+"PodWWPXL RfeXLXA PodRRXAP Fre"
+Generator=diyone7 (version 7.49+01(dev))
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=PodWWPXL RfeXLXA PodRRXAP Fre
+{
+0:X1=x; 0:X2=y;
+1:X0=y; 1:X4=x;
+}
+ P0               | P1              ;
+ MOV W0,#1        | LDAXR W1,[X0]   ;
+ STR W0,[X1]      | STXR W2,W1,[X0] ;
+ MOV W3,#1        | LDR W3,[X4]     ;
+ LDXR W4,[X2]     |                 ;
+ STLXR W5,W3,[X2] |                 ;
+exists
+(y=1 /\ 0:X5=0 /\ 0:X4=0 /\ 1:X2=0 /\ 1:X1=1 /\ 1:X3=0)
+\end{verbatim}
+
+As another example of atomic accesses, the X86 architecture use
+atomic exchange instructions to implement atomic store operations:
+\begin{verbatim}
+% diyone7 -arch X86  A PodWR Fre A PodWR Fre
+X86 A
+...
+{
+}
+ P0           | P1           ;
+ MOV EAX,$1   | MOV EAX,$1   ;
+ XCHG [x],EAX | XCHG [y],EAX ;
+ MOV EBX,[y]  | MOV EBX,[x]  ;
+exists
+(x=1 /\ y=1 /\ 0:EBX=0 /\ 1:EBX=0)
+\end{verbatim}
+
+
+The table in figure~\ref{annot:relax:fig} lists all annotations
+for all supported architectures. Notice that all annotations  do not apply to all accesses. For instance, the \texttt{X86} ``\texttt{A}'' applies to stores only,
+while  the \texttt{PPC} ``\texttt{R}'' (Reserve) applies to loads only,~etc.
+\begin{figure}[h]
+\caption{\label{annot:relax:fig}Annotation pseudo-candidates}
+\begin{center}
+\begin{minipage}{0.9\linewidth}
+\begin{center}
+\begin{tabular}{l>{\tt}p{0.7\linewidth}}
+Arch & \multicolumn{1}{c}{Pseudo-candidates} \\ \hline
+X86 &  A \\
+PPC & R A\\
+ARM & R A\\
+AArch64\footnote{Annotation~``\texttt{A}'' is acquire, annotation~``\texttt{X}'' is atomic}\qquad\qquad &  A Q L X XL XA XAL \\
+MIPS & R A\\
+RISCV\footnote{Some annotations are experimental and are not included in ISA} & XARAR XARRl XARAq XARP XRlAR XRlRl XRlAq XRlP XAqAR XAqRl XAqAq XAqP XPAR XPRl XPAq X AR Rl Aq\\
+C & Con Rlx Sc AR Rel Acq\\
+LISA\footnote{Fence annotations~\emph{An} are defined in the bell file (option \opt{-bell <\emph{bell file}>}) as
+\texttt{instructions~R[{\ldots,'\emph{an},\ldots}]} and
+\texttt{instructions~W[{\ldots,'\emph{an},\ldots}]}.}& \emph{An}\ldots\\
+\end{tabular}
+\end{center}
+\end{minipage}
+\end{center}
+\end{figure}
+Also notice that, for a given architecture~\emph{A},
+recognized annotation pseudo relaxations can be listed with the
+following command: ``\texttt{diyone7 -arch \emph{A} -show annot}.
 
 \section{Testing\label{diy:intro} candidate relaxations with \diy}
 
@@ -459,11 +616,11 @@ Tests are to be generated in specific directories.
 %HEVEA To that aim, we provide a convenient archive~\ahref{x86.tar}{\texttt{x86.tar}}.
 \begin{verbatim}
 % cd rfi
-% diy7 -conf x86-rfi.conf 
+% diy7 -conf x86-rfi.conf
 Generator produced 11 tests
 Relaxations tested: {Rfi}
 % cd ../podwr
-% diy7 -conf x86-podwr.conf 
+% diy7 -conf x86-podwr.conf
 Generator produced 2 tests
 Relaxations tested: {PodWR}
 % cd ..
@@ -494,7 +651,7 @@ A simple tool, \readRelax, does the job:
 {PodWR} With {Fre}
 \end{verbatim}
 The tool \readRelax{} first lists the result of all tests
-(which is omitted above), and then dumps a summary of the 
+(which is omitted above), and then dumps a summary of the
 relaxations it found.
 The sets of the candidate relaxations  that need to be safe for the tests to
 indeed reveal  a relaxed candidate relaxation are also given.
@@ -594,7 +751,7 @@ exists
 (0:r1=1 /\ 1:r1=1)
 \end{verbatim}
 On \P{0}, the value stored by the last (store) instruction
-\verb+stw r3,0(r4)+ is now computed from the 
+\verb+stw r3,0(r4)+ is now computed from the
 value read by the first (load) instruction \verb+lwz r1,0(r2)+.
 Again, this is a ``false'' dependency.
 
@@ -655,7 +812,7 @@ Relaxations tested: {ACLwSyncdRR}
 \end{verbatim}
 where we have for instance:
 \begin{verbatim}
-% cat iriw-lwsync001.litmus 
+% cat iriw-lwsync001.litmus
 PPC iriw-lwsync001
 "Fre Rfe LwSyncdRR Fre Rfe LwSyncdRR Fre Rfe LwSyncdRR"
 Cycle=Fre Rfe LwSyncdRR Fre Rfe LwSyncdRR Fre Rfe LwSyncdRR
@@ -772,7 +929,7 @@ exists (x=2 /\ y=2)
 \end{verbatim}
 Test \ltest{2+2W} is the Power version of the x86 test
 \atest{x86-2+2W} of Sec.~\ref{sec:ws}.
-In that section, we argued that the final condition \verb+exists (x=2 /\ y=2)+ 
+In that section, we argued that the final condition \verb+exists (x=2 /\ y=2)+
 suffices to identify the coherence orders $0$, $1$, $2$
 for locations \texttt{x} and~\texttt{y}.
 As a consequence, a positive final condition reveals the occurrence
@@ -868,7 +1025,7 @@ More concretely, we instruct \diy{} generators to emit such local observers
 with option \opt{-obs local}:
 \begin{verbatim}
 % diyone7 -name 2+2WLocal -obs local -obstype straight -arch PPC PodWW Wse PodWW Wse
-% cat 2+2WLocal.litmus 
+% cat 2+2WLocal.litmus
 PPC 2+2WLocal
 "PodWW Wse PodWW Wse"
 {
@@ -905,7 +1062,7 @@ the fenced local observer version of \ltest{2+2W}
 as follows:
 \begin{verbatim}
 % diyone7 -name 2+2WLocalFenced -obs local -obstype fenced -arch PPC PodWW Wse PodWW Wse
-% cat 2+2WLocalFenced.litmus 
+% cat 2+2WLocalFenced.litmus
 PPC 2+2WLocalFenced
 "PodWW Wse PodWW Wse"
 {
@@ -926,7 +1083,7 @@ While one produces
 \ahref{2+2WLocalLoop.litmus}{\ltest{2+2WLocalLoop}}, the looping local observer version of~\ltest{2+2W} as follows:
 \begin{verbatim}
 % diyone7 -name 2+2WLocalLoop -obs local -obstype loop -arch PPC PodWW Wse PodWW Wse
-% cat 2+2WLocalLoop.litmus 
+% cat 2+2WLocalLoop.litmus
 PPC 2+2WLocalLoop
 "PodWW Wse PodWW Wse"
 {
@@ -1024,7 +1181,7 @@ With command line switch \opt{-obs local} we get three local observations of coh
 which suffice to reconstruct the complete coherence orders:
 \begin{verbatim}
 % diyone7 -obs local -obstype fenced -arch PPC -name W5Local Wse Wse PodWW Wse PodWW
-chi% cat W5Local.litmus 
+chi% cat W5Local.litmus
 PPC W5Local
 "Wse Wse PodWW Wse PodWW"
 {
@@ -1068,7 +1225,7 @@ Cycles (and thus tests) are first grouped by families.
 Family names describe test structure,
 based upon external communication candidates relaxations.
 More specifically, external communication candidates relaxations
-suffice to settle the directions (\texttt{W} or~\texttt{R}) of 
+suffice to settle the directions (\texttt{W} or~\texttt{R}) of
 first and last events of threads,
 considering the case when those two events are the same.
 For instance, consider the cycle ``PodWW Rfe PodRR Fre'':
@@ -1203,7 +1360,9 @@ command-line options:
 \begin{description}
 \item[{\tt -v}] Be verbose, repeat to increase verbosity.
 \item[{\tt -version}]  Show version number and exit.
-\item[{\tt -arch (X86|PPC|ARM|AArch64|LISA|C)}] Set architecture. Default is \texttt{PPC}.
+\item[{\tt -arch (\allarch)}] Set architecture. Default is \texttt{PPC}.
+\item[{\tt -bell <name>}]  Read bell file \opt{<name>},
+implies \opt{-arch LISA}.
 \item[{\tt -o <dest>}]
 Redirect output to \opt{<dest>}.
 This option applies when tools generate a set of tests and
@@ -1219,7 +1378,7 @@ Default is ``\opt{.}'', that is tool output goes into the
 current~directory.
 \item[{\tt -obs (accept|avoid|force|local)}] Management of observers,
 default is \opt{avoid}. See Sec.~\ref{sec:obs}.
-\item[{\tt -obstype (fenced|loop|straight)}] 
+\item[{\tt -obstype (fenced|loop|straight)}]
 Style of observers, default is \opt{fenced}. See Sec.~\ref{sec:obstype}.
 \item[{\tt -cond (cycle|uni|observe)}]
 Control final condition of tests, default is \opt{cycle}.
@@ -1230,6 +1389,10 @@ that are valid w.r.t. the uniproc model (see Sec.~\ref{defuniproc}).
 In mode  \opt{observe} there is no final condition:
 the \litmus{} and \herd{} tools will simply list the final
 values of locations.
+\item[{\tt -unrollatomic <int>}] Unroll atomic pairs (\emph{i.e.} lr/sc idioms)
+according to the given number. Zero has the special meaning to unroll once and
+to test the success of teh store conditional in the test final condition. See~section~\ref{unroll:example} for an example.
+\item[{\tt -ua <int>}] Shorthand for \opt{-unrollatomic <int>}.
 \item[{\tt -oneloc}] Do not reject tests that acts on unique location.
 Notice that conditions on such tests usually are not significant
 and should probaly be edited by hand. See also options
@@ -1255,11 +1418,18 @@ depend on the generator. By default the generator has no name available.
 \item[{\tt -num <bool>}] Use numeric names, \emph{i.e.} from a base name
 <base> the generator will name tests as \texttt{<base>000}, \texttt{<base>001} etc. The default depends upon the generator.
 \item[{\tt -addnum <bool>}] If true, when faced with tests whose name
-\texttt{<name>} has already been given, use names 
+\texttt{<name>} has already been given, use names
 \texttt{<name>001}, \texttt{<name>002}, etc.
 Otherwise fail in the same situation.
 The default depends upon the generator.
 \item[{\tt -fmt <n>}] Size of numerical suffixes, default is 3.
+\end{description}
+
+The following option permits the listing for valid candidate relaxations,
+given the selected architecture.
+\begin{description}
+\item[{\tt -show (edges|fences|annotations)}]
+List all candidate relaxations, all fence prefixes or all annotations, respectively.
 \end{description}
 
 \subsection{Usage\label{diyone:usage} of \diyone}
@@ -1394,7 +1564,7 @@ the safe list. Additionally, the cycle produced contains~$r$ at least once.
 When the relax list is of size~$n$, with~$n > 1$,
 the behaviour of~\diy{} depends on the mix mode:
 \begin{enumerate}
-\item 
+\item
 By default (\opt{-mix false}),
 \diy{} generates~$n$ independent sets of cycles,
 each set being built with one relaxation from the relax list and all
@@ -1591,19 +1761,42 @@ sources produced by \diyone, \diycross{} and~\diy.
 Moreover only one instance of a given cycle will be output.
 
 
-\subsection{Usage of \classify}
+\subsection{Usage\label{classify:usage}of \classify}
 The tool \classify{} reads its standard input, interpreting is as
 a list of cycles in the output format of \mcycles.
 It normalises and classifies those cycles.
 The tool \classify{} accepts the following documented options:
 \begin{description}
-\item[{\tt -arch (X86|PPC|ARM)}] Set architecture. Default is \texttt{PPC}.
-ARM support is experimental.
+\item[{\tt -arch (\allarch)}] Set architecture. Default is \texttt{PPC}.
+\item[{\tt -bell <name>}]  Read bell file \opt{<name>},
+implies  \opt{-arch LISA}.
+\item[{\tt -lowercase <bool>}] Use lowercase familly names, default false.
 \item[{\tt -u}] Instruct \classify{} to fail when two tests have the same
 normalised name. Otherwise \classify{} will output one line per test,
 regardless of duplicate names.
 \item[{\tt -diyone}] Output a normalised list of names and cycles,
 which is legal input for \diyone.
 \end{description}
+
+\subsection{Usage\label{norm:usage} of \norm}
+The tool \norm{} is a simplified \classify{} tool: it takes
+a cycle on the command line and outputs a normalized cycles, with name.
+This output can serve as standard input to \diyone.
+
+\begin{description}
+\item[{\tt -arch (\allarch)}] Set architecture. Default is \texttt{PPC}.
+\item[{\tt -bell <name>}]  Read bell file \opt{<name>}, implies \opt{-arch LISA}.
+\item[{\tt -lowercase <bool>}] Use lowercase familly names, default false.
+\end{description}
+
+For instance, here is hwo one can find the systematic mane of a variation
+on the store-buffer ``\textsf{SB}'' test:
+\begin{verbatim}
+% norm7 -arch AArch64 Rfi DMB.LDdRR Fre Rfi DpAddrdR Fre
+SB+rfi-dmb.ld+rfi-addr: Rfi DMB.LDdRR Fre Rfi DpAddrdR Fre
+\end{verbatim}
+Notice that the option \opt{-arch} is mandatory (or defaults to \texttt{PPC}),
+as  candidate relaxations depends on the selected architecture, as illustrated
+by the fence candidate \texttt{DMB.LD}\ldots{} above.
 
 \endinput
