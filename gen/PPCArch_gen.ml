@@ -32,8 +32,6 @@ module Make(C:Config)  =
     include PPCBase
     let tr_endian x = MachSize.tr_endian C.naturalsize x
 
-    let () = Printf.eprintf "size=%s\n" (MachSize.pp C.naturalsize)
-
     module ScopeGen = ScopeGen.NoGen
 
     include MachAtom.Make

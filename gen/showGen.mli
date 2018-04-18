@@ -14,56 +14,9 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+(* What to show for generators *)
 
-module type Config = sig
-  val verbose : int
-  val show : ShowGen.t option
-  val coherence_decreasing : bool
-  val same_loc : bool
-  val unrollatomic : int option
-  val allow_back : bool
-  val typ : TypBase.t
-  val hexa : bool
-end
+type t = Edges | Annotations | Fences
 
-module type S = sig
-  module A : Arch_gen.S
-
-  module E : Edge.S
-  with type fence = A.fence
-  and type dp = A.dp
-  and type atom = A.atom
-
-  type check = E.edge list list -> bool
-
-  module R : Relax.S
-  with type fence = A.fence
-  and type dp = A.dp
-  and type edge = E.edge
-  
-  module C : Cycle.S with type edge=E.edge and type atom = A.atom
-end
-
-open Printf
-
-module Make(C:Config) (A:Arch_gen.S) =
-struct
-  module A = A 
-
-  module E =  Edge.Make(A)
-  type check = E.edge list list -> bool
-
-  let () = match C.show with
-  | Some s -> begin E.show s ; exit 0 end
-  | None -> ()
-
-  module R = Relax.Make(A) (E)
-  module Conf = struct
-    include C
-    let naturalsize = TypBase.get_size C.typ
-  end
-  module C = Cycle.Make(Conf)(E)
-(* Big constant *)
-  let kbig = 128
-end
-
+(* May raise Failure *)
+val parse : string -> t

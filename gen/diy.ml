@@ -244,7 +244,7 @@ let () =
  end in
   let module C = struct
     let verbose = !Config.verbose
-    let list_edges = !Config.list_edges
+    let show = !Config.show
     let coherence_decreasing = !Config.coherence_decreasing 
     let same_loc =
       !Config.same_loc ||

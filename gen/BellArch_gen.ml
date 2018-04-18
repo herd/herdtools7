@@ -40,7 +40,7 @@ let bi = match O.bell with
       (struct
         let debug_lexer = O.debug.Debug_gen.lexer
         let debug_model = O.debug.Debug_gen.model
-        let verbose = O.verbose        
+        let verbose = O.verbose
         let libfind =
           let module ML =
             MyLib.Make
@@ -59,7 +59,7 @@ let bi = match O.bell with
 module ScopeGen =  (val scopegen : ScopeGen.S)
 in OCaml pre-4.02.1 *)
 
-module ScopeGen = 
+module ScopeGen =
   struct
     let scopegen = match bi with
     | None ->
@@ -74,10 +74,10 @@ module ScopeGen =
             end) in
         (module M : ScopeGen.S)
 
-    let default,gen,all = 
+    let default,gen,all =
       let module M = (val scopegen : ScopeGen.S) in
       M.default,M.gen,M.all
-  end 
+  end
 
 (* Should check non-ambiguity *)
 let pp_annot a = match a with
@@ -130,18 +130,20 @@ let fold_annots eg f r =
     | _  ->
         Misc.fold_cross (List.map StringSet.elements ag) f r)
     r eg
-        
+
 
 let fold_annots_dir bi d f r =
   let eg = BellModel.get_events (tr_dir d) bi in
   fold_annots eg f r
-        
 
-let fold_atom = match bi with
+
+let fold_non_mixed = match bi with
 | None -> fun _f r -> r
 | Some bi ->
     fun f r ->
       fold_annots_dir bi R f (fold_annots_dir bi W f r)
+
+let fold_atom = fold_non_mixed
 
 let worth_final _ = false
 
@@ -155,7 +157,7 @@ let fold_from_gen all f =
   List.fold_right
     (fun al -> Misc.fold_cross (List.map StringSet.elements al) f)
     all
-  
+
 let fold_from all f = fold_from_gen all (fun al -> f (Some al))
 
 
@@ -173,7 +175,7 @@ let varatom = match  O.varatom with
         if O.debug.Debug_gen.generator then
           eprintf "Variations:\n%s\n" (BellModel.pp_event_decs x) ;
         x
-      end 
+      end
 
 let varatom_dir = match varatom with
 | None -> fun _ -> no_varatom

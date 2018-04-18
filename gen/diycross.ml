@@ -197,7 +197,7 @@ let () =
          | Config.Unicond -> true
          | _ -> false)
       let unrollatomic = !Config.unrollatomic
-      let list_edges = !Config.list_edges
+      let show = !Config.show
       let overload = !Config.overload
       let poll = !Config.poll
       let docheck = !Config.docheck

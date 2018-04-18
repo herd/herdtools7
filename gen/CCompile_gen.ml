@@ -27,7 +27,7 @@ module type Config = sig
   val same_loc : bool
   val verbose : int
   val allow_back : bool
-  val list_edges : bool
+  val show : ShowGen.t option
   val typ : TypBase.t
   val cpp : bool
   val docheck : bool
@@ -50,15 +50,10 @@ module Make(O:Config) : Builder.S
         let deftype = O.typ
       end
       module E = Edge.Make(A)
-      let () =
-        if O.list_edges then begin
-          eprintf "Edges:" ;
-          let es = E.fold_edges (fun e k -> E.pp_edge e::k) [] in
-          let es = List.sort String.compare es in
-          List.iter (eprintf " %s") es ;
-          eprintf "\n%!" ;
-          exit 0
-        end
+
+      let () = match O.show with
+      | Some s -> begin E.show s ; exit 0 end
+      | None -> ()
 
       module R = Relax.Make(A)(E)
       module ConfWithSize = struct

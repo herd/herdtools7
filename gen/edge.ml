@@ -123,6 +123,8 @@ module type S = sig
   module Set : MySet.S with type elt = edge
   module Map : MyMap.S with type key = edge
 
+(* Show some elements, for documentation *)
+  val show : ShowGen.t -> unit
 end
 
 
@@ -789,4 +791,23 @@ and set_src d e = { e with edge = do_set_src d e.edge ; }
         let compare = compare
       end)
 
+  let show =
+    let open ShowGen in
+    function
+    | Edges ->
+        let es = fold_pp_edges (fun s k -> s::k) [] in
+        let es = List.sort String.compare es in
+        List.iter (eprintf " %s") es ;
+        eprintf "\n%!"
+    | Annotations ->
+        let es =
+          F.fold_non_mixed
+            (fun a k -> { edge=Id; a1=Some a; a2=Some a;}::k) [] in
+        List.iter
+          (fun e -> eprintf " %s" (pp_edge e))
+          es ;
+        eprintf "\n%!"
+    | Fences ->
+        F.fold_all_fences (fun f () -> eprintf " %s" (F.pp_fence f)) () ;
+        eprintf "\n%!"
 end

@@ -20,13 +20,13 @@ open Code
 let verbose = ref 0
 let nprocs = ref 4
 let size = ref 6
-let one = ref false 
+let one = ref false
 let arch = ref (`PPC: Archs.t)
 let typ = ref TypBase.default
 let hexa = ref false
 let tarfile = ref None
 let prefix = ref None
-let safes = ref None 
+let safes = ref None
 let relaxs = ref None
 let name = ref None
 let sufname = ref None
@@ -72,7 +72,8 @@ let same_loc = ref false
 type cond = Cycle | Unicond | Observe
 let cond = ref Cycle
 let hout = ref None
-let list_edges = ref false
+type show = Edges | Annotations | Fences
+let show = ref (None:ShowGen.t option)
 let debug = ref Debug_gen.none
 let moreedges = ref false
 let realdep = ref false
@@ -84,7 +85,7 @@ let parse_cond tag = match tag with
 | _ -> failwith "Wrong cond, choose cycle, unicond or observe"
 
 let parse_mode s =
-  match s with 
+  match s with
     | "sc" -> Sc
     | "thin" -> Thin
     | "uni" -> Uni
@@ -116,6 +117,7 @@ let parse_cumul = function
   | "false" -> Empty
   | "true" -> All
   | s -> Set s
+
 
 (* Helpers *)
 
@@ -156,7 +158,11 @@ let common_specs =
     "<name.tar> output litmus tests in archive <name.tar> (default, output in curent directory)")::
   ("-c", Arg.Bool (fun b ->  canonical_only := b),
    sprintf "<b> avoid equivalent cycles (default %b)" !canonical_only)::
-  ("-list", Arg.Set list_edges,"list accepted edge syntax and exit")::
+  ("-list",
+   Arg.Unit (fun () -> show := Some ShowGen.Edges),
+   "list accepted edge syntax and exit")::
+  ("-show", Arg.String (fun s -> show := Some (ShowGen.parse s)),
+    "<edges|annotations|fence> list accepted edges, annoations or fencesa and exit")::
   ("-switch", Arg.Set Misc.switch, "switch something")::
   ("-obs",
    Arg.String (fun s -> do_observers := parse_do_observers s),
@@ -170,10 +176,10 @@ let common_specs =
   ("-nooptcoherence", Arg.Clear optcoherence, "do not optimize coherence (default)")::
   ("-moreedges", Arg.Bool (fun b -> moreedges := b),
    Printf.sprintf
-     "consider a very complete set of edges, default %b" !moreedges)::     
+     "consider a very complete set of edges, default %b" !moreedges)::
   ("-realdep", Arg.Bool (fun b -> realdep := b),
    Printf.sprintf
-     "output \"real\" dependencies, default %b" !moreedges)::     
+     "output \"real\" dependencies, default %b" !moreedges)::
   ("-overload", Arg.Int (fun n -> overload := Some n),
    "<n> stress load unit by <n> useless loads")::
   ("-unrollatomic",Arg.Int (fun i -> unrollatomic := Some i),
@@ -191,7 +197,7 @@ let common_specs =
   ("-oneloc", Arg.Set same_loc,
   "Do not fail on tests with one single location (default false)")::
   ("-cond",
-   Arg.String (fun s -> cond := parse_cond s), 
+   Arg.String (fun s -> cond := parse_cond s),
   "<cycle|unicond|observe> style of final condition, default cycle")::
   ("-unicond", Arg.Unit (fun () -> cond := Unicond),
   "alias for -cond unicond (deprecated)")::
@@ -235,10 +241,10 @@ let speclist =
     "produce tests with exactly <n> threads (default disabled)")::
    ("-ins", Arg.Int (fun n -> max_ins := n),
     sprintf "<n> max number of edges per proc (default %i)" !max_ins)::
-   ("-one", Arg.Unit (fun _ -> one := true), 
+   ("-one", Arg.Unit (fun _ -> one := true),
     "<relax-list> specify a sole cycle")::
   ("-prefix", Arg.String (fun s -> prefix := Some s),
-    "<relax-list> specify a prefix for cycles")::  
+    "<relax-list> specify a prefix for cycles")::
    ("-relax", Arg.String (fun s -> relaxs := Some s),
     "<relax-list> specify a relax list")::
    ("-mix", Arg.Bool (fun b -> mix := b),
@@ -260,7 +266,7 @@ let prog = if Array.length Sys.argv > 0 then Sys.argv.(0) else "XXX"
 let baseprog = sprintf "%s (version %s)" (Filename.basename prog) (Version_gen.version)
 
 let usage_msg = "Usage: " ^ prog ^   "[options]*"
-                                             
+
 let read_no fname =
   try
     Misc.input_protect
@@ -290,4 +296,3 @@ let parse_annots lines = match lines with
           let debug = !debug.Debug_gen.lexer
         end) in
     Some (P.parse lines)
-      

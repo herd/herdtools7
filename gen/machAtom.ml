@@ -52,10 +52,11 @@ module Make(C:Config) = struct
   let compare_atom = Pervasives.compare
 
   let fold_mixed f r = Mixed.fold_mixed (fun mix r -> f (Mixed mix) r) r
+  let fold_non_mixed f r =  f Reserve (f Atomic r)
 
   let fold_atom f r =
     let r = fold_mixed f r in
-    f Reserve (f Atomic r)
+    fold_non_mixed f r
 
   let worth_final = function
     | Atomic -> true

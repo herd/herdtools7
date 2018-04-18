@@ -81,9 +81,12 @@ let applies_atom_rmw ar aw = match ar,aw with
 
    let fold_atom_rw f r = f PP (f PL (f AP (f AL r)))
 
-   let fold_atom f r = 
-     let r = fold_mixed f r in
+   let fold_non_mixed f r =
      f Acq (f AcqPc (f Rel (fold_atom_rw (fun rw -> f (Atomic rw)) r)))
+
+   let fold_atom f r =
+     let r = fold_mixed f r in
+     fold_non_mixed f r
 
    let worth_final = function
      | Atomic _ -> true
