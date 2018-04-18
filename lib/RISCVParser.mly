@@ -46,7 +46,7 @@ let tr_rw = function
 %token <RISCVBase.width * RISCVBase.mo> LR
 %token <RISCVBase.width * RISCVBase.mo> SC
 %token <RISCVBase.opamo * RISCVBase.width * RISCVBase.mo> AMO
-%token FENCE FENCEI
+%token FENCE FENCEI FENCETSO
 %token <string> META
 %type <int list * (RISCVBase.parsedPseudo) list list> main 
 %start  main
@@ -139,6 +139,8 @@ instr:
     Amo (op,w,mo,$2,$4,$6) }
 | FENCEI
     { FenceIns FenceI }
+| FENCETSO
+    { FenceIns FenceTSO }
 | FENCE
     { FenceIns (Fence (RW,RW)) }
 | FENCE NAME COMMA NAME

@@ -31,6 +31,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
     let pp_barrier_short = function
       | FenceI -> "fence.i"
+      | FenceTSO -> "fence.tso"
       | Fence (a1,a2) ->  sprintf "F %s,%s" (pp_access a1) (pp_access a2)
 
     let reject_mixed = false

@@ -193,6 +193,7 @@ open RISCVParser
 (* Fences *)
 | "fence" -> FENCE
 | "fence.i" -> FENCEI
+| "fence.tso" -> FENCETSO
 | name ->
     match parse_reg name with
     | Some r -> ARCH_REG r

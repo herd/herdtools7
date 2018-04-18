@@ -127,6 +127,7 @@ let pp_access = function
 type barrier =
   | Fence of access * access
   | FenceI
+  | FenceTSO
 
 let do_fold_fence f k =
   let k =
@@ -136,7 +137,7 @@ let do_fold_fence f k =
           (fun a2 k -> f (Fence (a1,a2)) k)
           k)
       k in
-  k
+  f FenceTSO k
 
 let fold_barrier f k =
   let k = f FenceI k in
@@ -145,6 +146,7 @@ let fold_barrier f k =
 
 let do_pp_barrier sep1 sep2 = function
   | FenceI -> "fence.i"
+  | FenceTSO -> "fence.tso"
   | Fence (a1,a2) ->
       sprintf "fence%s%s%s%s"
         sep1 (pp_access a1) sep2 (pp_access a2)

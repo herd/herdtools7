@@ -161,6 +161,11 @@ module Make
 
    let orders f d1 d2 = match f with
    | FenceI -> false
+   | FenceTSO ->
+       begin match d1,d2 with
+       | Code.W,Code.R -> false
+       | _,_ -> true
+       end
    | Fence (r1,r2) -> applies r1 d1 && applies r2 d2
 
    let var_fence f r = f default r
