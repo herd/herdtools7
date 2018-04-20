@@ -52,11 +52,14 @@ let check_name name = match name with
 (* Operations *)
 | "sxtw"|"SXTW" -> SXTW
 | "mov"|"MOV" -> MOV
-| "add"|"ADD" -> ADD
-| "eor"|"EOR" -> EOR
-| "orr"|"ORR" -> ORR
-| "and"|"AND" -> AND
-| "subs"|"SUBS" -> SUBS
+| "add"|"ADD" -> OP A.ADD
+| "adds"|"ADDS" -> OP A.ADDS
+| "eor"|"EOR" -> OP A.EOR
+| "orr"|"ORR" -> OP A.ORR
+| "and"|"AND" -> OP A.AND
+| "ands"|"ANDS" -> OP A.ANDS
+| "sub"|"SUB" -> OP A.SUB
+| "subs"|"SUBS" -> OP A.SUBS
 | "cmp"|"CMP" -> CMP
 (* Misc *)
 | "csel"|"CSEL" -> CSEL

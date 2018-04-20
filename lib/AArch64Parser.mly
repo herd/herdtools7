@@ -35,8 +35,9 @@ open AArch64Base
 
 /* Instructions */
 %token B BEQ BNE CBZ CBNZ EQ NE
-%token LDR LDP LDNP STP STNP LDRB LDRH STR STRB STRH LDAR LDAPR LDXR LDAXR STLR STXR STLXR CMP
-%token MOV ADD EOR ORR SUBS AND CSEL CSINC CSINV CSNEG
+%token LDR LDP LDNP STP STNP LDRB LDRH STR STRB STRH LDAR LDAPR LDXR LDAXR STLR STXR STLXR CMP MOV
+%token <AArch64Base.op> OP
+%token CSEL CSINC CSINV CSNEG
 %token DMB DSB ISB
 %token SY ST LD
 %token OSH OSHST OSHLD
@@ -176,31 +177,16 @@ instr:
   { let v,r = $4 in I_STXR (v,LY,$2,r,$7) }
 
 /* Operations */
-| MOV reg COMMA k
-  { let v,r = $2 in I_MOV (v,r,$4) }
+| MOV xreg COMMA kr
+  { I_MOV (V64,$2,$4) }
+| MOV wreg COMMA kwr
+  { I_MOV (V32,$2,$4) }
 | SXTW xreg COMMA wreg
   { I_SXTW ($2,$4) }
-| ADD xreg COMMA xreg COMMA kr
-  { I_OP3 (V64,ADD,$2,$4,$6) }
-| ADD wreg COMMA wreg COMMA kwr
-  { I_OP3 (V32,ADD,$2,$4,$6) }
-
-| EOR xreg COMMA xreg COMMA kr
-  { I_OP3 (V64,EOR,$2,$4,$6) }
-| EOR wreg COMMA wreg COMMA kwr
-  { I_OP3 (V32,EOR,$2,$4,$6) }
-| ORR xreg COMMA xreg COMMA kr
-  { I_OP3 (V64,ORR,$2,$4,$6) }
-| ORR wreg COMMA wreg COMMA kwr
-  { I_OP3 (V32,ORR,$2,$4,$6) }
-| AND xreg COMMA xreg COMMA kr
-  { I_OP3 (V64,AND,$2,$4,$6) }
-| AND wreg COMMA wreg COMMA kwr
-  { I_OP3 (V32,AND,$2,$4,$6) }
-| SUBS xreg COMMA xreg COMMA kr
-  { I_OP3 (V64,SUBS,$2,$4,$6) }
-| SUBS wreg COMMA wreg COMMA kwr
-  { I_OP3 (V32,SUBS,$2,$4,$6) }
+| OP xreg COMMA xreg COMMA kr
+  { I_OP3 (V64,$1,$2,$4,$6) }
+| OP wreg COMMA wreg COMMA kwr
+    { I_OP3 (V32,$1,$2,$4,$6) }
 | CMP wreg COMMA kwr
   { I_OP3 (V32,SUBS,ZR,$2,$4) }
 | CMP xreg COMMA kr

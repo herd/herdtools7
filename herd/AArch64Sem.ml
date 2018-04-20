@@ -206,8 +206,11 @@ module Make (C:Sem.Config)(V:Value.S)
            >>! B.Next
 
         (* Operations *)
-        | I_MOV(_,r,k) ->
+        | I_MOV(_,r,K k) ->
            write_reg r (V.intToV k) ii >>! B.Next
+
+        | I_MOV(_,r1,RV (_,r2)) ->
+            read_reg_ord r2 ii >>= fun v -> write_reg r1 v ii >>! B.Next
 
         | I_SXTW(rd,rs) ->
            (read_reg_ord rs ii)
@@ -217,18 +220,18 @@ module Make (C:Sem.Config)(V:Value.S)
         | I_OP3(_,op,rd,rn,kr) ->
            (read_reg_ord rn ii >>|
               match kr with
-              | K k -> M.add V.zero (V.intToV k)
+              | K k -> M.unitT (V.intToV k)
               | RV(_,r) -> read_reg_ord r ii
            ) >>=
              begin match op with
-                   | ADD -> fun (v1,v2) -> M.add v1 v2
+                   | ADD|ADDS -> fun (v1,v2) -> M.add v1 v2
                    | EOR -> fun (v1,v2) -> M.op Op.Xor v1 v2
                    | ORR -> fun (v1,v2) -> M.op Op.Or v1 v2
-                   | SUBS -> fun (v1,v2) -> M.op Op.Sub v1 v2
-                   | AND -> fun (v1,v2) -> M.op Op.And v1 v2
+                   | SUB|SUBS -> fun (v1,v2) -> M.op Op.Sub v1 v2
+                   | AND|ANDS -> fun (v1,v2) -> M.op Op.And v1 v2
              end
            >>= (fun v -> (write_reg rd v ii)
-                         >>| (write_reg NZP v ii))
+                         >>| (match op with ADDS|SUBS|ANDS -> write_reg NZP v ii | ADD|EOR|ORR|AND|SUB -> M.unitT ()))
            >>! B.Next
 
         (* Barrier *)

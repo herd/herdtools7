@@ -211,7 +211,7 @@ let barrier_compare = Pervasives.compare
 type lbl = Label.t
 
 type condition = NE | EQ
-type op = ADD | EOR | SUBS | AND | ORR
+type op = ADD | ADDS | SUB | SUBS | AND | ANDS | ORR | EOR
 type variant = V32 | V64
 type 'k kr = K of 'k | RV of variant * reg
 let k0 = K 0
@@ -263,7 +263,7 @@ type 'k kinstruction =
   | I_LDRBH of bh * reg * reg * 'k kr
   | I_STRBH of bh * reg * reg * 'k kr
 (* Operations *)
-  | I_MOV of variant * reg * 'k
+  | I_MOV of variant * reg * 'k kr
   | I_SXTW of reg * reg
   | I_OP3 of variant * op * reg * reg * 'k kr
 (* Barrier *)
@@ -300,10 +300,13 @@ let pp_vreg v r = match v with
 
 let pp_op = function
   | ADD -> "ADD"
+  | ADDS -> "ADDS"
   | EOR -> "EOR"
   | ORR -> "ORR"
+  | SUB -> "SUBS"
   | SUBS -> "SUBS"
   | AND  -> "AND"
+  | ANDS  -> "ANDS"
 
 let do_pp_instruction m =
   let pp_rrr memo v rt rn rm =
@@ -333,6 +336,14 @@ let do_pp_instruction m =
     pp_vreg v r1 ^ "," ^
     pp_vreg v r2 ^ ",[" ^
     pp_xreg ra ^ pp_kr false kr ^ "]" in
+
+  let pp_rkr memo v r1 kr = match v,kr with
+  | _, K k -> pp_ri memo v r1 k
+  | V32, RV (V32,r2)
+  | V64, RV (V64,r2)  ->
+      pp_rr memo v r1 r2
+  | V32,RV (V64,_)
+  | V64,RV (V32,_) -> assert false in
 
   let pp_rrkr memo v r1 r2 kr = match v,kr with
   | _,K k -> pp_rri memo v r1 r2 k
@@ -380,8 +391,8 @@ let do_pp_instruction m =
   | I_STRBH (bh,r1,r2,k) ->
       pp_mem ("STR"^pp_bh bh) V32 r1 r2 k
 (* Operations *)
-  | I_MOV (v,r,k) ->
-      pp_ri "MOV" v r k
+  | I_MOV (v,r,kr) ->
+      pp_rkr "MOV" v r kr
   | I_SXTW (r1,r2) ->
       sprintf "SXTW %s,%s" (pp_xreg r1) (pp_wreg r2)
   | I_OP3 (v,SUBS,ZR,r,K k) ->
@@ -559,7 +570,7 @@ include Pseudo.Make
         | I_STR (v,r1,r2,kr) -> I_STR (v,r1,r2,kr_tr kr)
         | I_LDRBH (v,r1,r2,kr) -> I_LDRBH (v,r1,r2,kr_tr kr)
         | I_STRBH (v,r1,r2,kr) -> I_STRBH (v,r1,r2,kr_tr kr)
-        | I_MOV (v,r,k) -> I_MOV (v,r,k_tr k)
+        | I_MOV (v,r,k) -> I_MOV (v,r,kr_tr k)
         | I_OP3 (v,op,r1,r2,kr) -> I_OP3 (v,op,r1,r2,kr_tr kr)
 
 

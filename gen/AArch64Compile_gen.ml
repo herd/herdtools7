@@ -78,7 +78,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let cbz r1 lbl = I_CBZ (vloc,r1,lbl)
     let cbnz r1 lbl = I_CBNZ (vloc,r1,lbl)
-    let mov r i = I_MOV (vloc,r,i)
+    let mov r i = I_MOV (vloc,r,K i)
     let mov_mixed sz r i =
       let v =
         let open MachSize in
@@ -258,7 +258,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let emit_mov sz st p init v = match emit_const st p init v with
     | None,init,st ->
         let rA,st = next_reg st in
-        rA,init,[Instruction (mov_mixed sz rA v)],st
+        rA,init,[Instruction (mov_mixed sz rA (K v))],st
     | Some rA,init,st ->
         rA,init,[],st
 

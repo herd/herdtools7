@@ -41,7 +41,7 @@ include Arch.MakeArch(struct
       -> Some(add_subs [Reg(sr_name r,r');
 			Lab(lp,li)] subs)
        
-    | I_MOV(_,r,MetaConst.Meta m),I_MOV(_,r',i)
+    | I_MOV(_,r,K MetaConst.Meta m),I_MOV(_,r',K i)
       -> Some(add_subs [Reg(sr_name r,r');
 			Cst(m,i)] subs)
        
@@ -93,7 +93,7 @@ include Arch.MakeArch(struct
     | I_BC(a,l) -> I_BC(a,find_lab l)
     | I_CBZ(a,r,l) -> I_CBZ(a,conv_reg r,find_lab l)
     | I_CBNZ(a,r,l) -> I_CBNZ(a,conv_reg r,find_lab l)
-    | I_MOV(a,r,MetaConst.Meta v) -> I_MOV(a,conv_reg r,find_cst v)
+    | I_MOV(a,r,K MetaConst.Meta v) -> I_MOV(a,conv_reg r,K (find_cst v))
     | I_MOV(a,r,c) -> I_MOV(a,conv_reg r,c)
     | I_LDAR(a,b,r1,r2) -> I_LDAR(a,b,conv_reg r1,conv_reg r2)
     | I_STLR(a,r1,r2) -> I_STLR(a,conv_reg r1,conv_reg r2)

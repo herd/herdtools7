@@ -301,7 +301,22 @@ module Make(V:Constant.S)(C:Config) =
         sprintf
           (match v with | V32 ->  "mov ^wo0,#%i" | V64 ->  "mov ^o0,#%i")
           k in
-      { empty_ins with memo; outputs=[r;]; }
+      { empty_ins with memo; outputs=[r;]; reg_env = ((match v with V32 -> add_w | V64 -> add_q) [r;])}
+
+    let movr v r1 r2 = match v with
+    | V32 ->
+        let r1,f1 = arg1 "wzr" (fun s -> "^wo"^s) r1
+        and r2,f2 = arg1 "wzr" (fun s -> "^wi"^s) r2 in
+        { empty_ins with
+          memo=sprintf "mov %s,%s" f1 f2;
+          inputs = r2; outputs=r1; reg_env=add_w (r1@r2);}
+    | V64 ->
+        let r1,f1 = arg1 "xzr" (fun s -> "^o"^s) r1
+        and r2,f2 = arg1 "xzr" (fun s -> "^i"^s) r2 in
+        { empty_ins with
+          memo=sprintf "mov %s,%s" f1 f2;
+          inputs = r2; outputs=r1; reg_env=add_q (r1@r2);}
+
 
     let sxtw r1 r2 =
       { empty_ins with
@@ -332,12 +347,7 @@ module Make(V:Constant.S)(C:Config) =
           memo = sprintf "cmp %s,%s" fm1 fm2;
           inputs = rs; reg_env=List.map (fun r -> r,quad) rs; }
 
-    let memo_of_op op = match op with
-    | ADD -> "add"
-    | EOR -> "eor"
-    | ORR -> "orr"
-    | SUBS -> "subs"
-    | AND -> "and"
+    let memo_of_op op = String.lowercase_ascii (pp_op op)
 
     let op3 v op rD rA kr =
       let memo = memo_of_op op in
@@ -365,16 +375,20 @@ module Make(V:Constant.S)(C:Config) =
             inputs=rA;
             outputs=rD; reg_env = add_q (rA@rD);}
       | V64,RV (V64,rB) ->
-
+          let rD,fD = arg1 "xzr" (fun s -> "^o"^s) rD
+          and rA,fA,rB,fB = args2 "xzr"  (fun s -> "^i"^s) rA rB in
+          let inputs = rA@rB in
           { empty_ins with
-            memo=memo^ " ^o0,^i0,^i1";
-            inputs=[rA; rB];
-            outputs=[rD]; reg_env=[rA,quad; rB,quad; rD,quad;];}
+            memo=sprintf "%s %s,%s,%s" memo fD fA fB;
+            inputs=inputs;
+            outputs=rD; reg_env=add_q (inputs@rD);}
       | V64,RV (V32,rB) ->
+          let rD,fD = arg1 "xzr" (fun s -> "^o"^s) rD
+          and rA,fA,rB,fB = args2 "xzr"  (fun s -> "^i"^s) rA rB in
           { empty_ins with
-            memo=memo^ " ^o0,^i0,^wi1,sxtw";
-            inputs=[rA; rB];
-            outputs=[rD]; reg_env=[rA,quad; rD,quad; rB,word;]; }
+            memo=sprintf "%s %s,%s,%s,sxtw" memo fD fA fB;
+            inputs=rA@rB;
+            outputs=rD; reg_env=add_q (rD@rA)@add_w rB; }
       | V32,RV (V64,_) -> assert false
 
 
@@ -405,7 +419,8 @@ module Make(V:Constant.S)(C:Config) =
     | I_STLR (v,r1,r2) -> store "stlr" v r1 r2 k0::k
     | I_STXR (v,t,r1,r2,r3) -> stxr (str_memo t) v r1 r2 r3::k
 (* Arithmetic *)
-    | I_MOV (v,r,i) ->  movk v r i::k
+    | I_MOV (v,r,K i) ->  movk v r i::k
+    | I_MOV (v,r1,RV (_,r2)) ->  movr v r1 r2::k
     | I_SXTW (r1,r2) -> sxtw r1 r2::k
     | I_OP3 (v,SUBS,ZR,r,K i) ->  cmpk v r i::k
     | I_OP3 (v,SUBS,ZR,r2,RV (v3,r3)) when v=v3->  cmp v r2 r3::k
