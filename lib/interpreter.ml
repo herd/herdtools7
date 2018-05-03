@@ -756,16 +756,6 @@ module Make
             (loc,tag2set v)::u_rec xs in
       u_rec
 
-(* Sequence applies to relations *)
-    let seq_args silent ks =
-      let rec seq_rec = function
-        | [] -> []
-        | (_,V.Empty)::_ -> raise Exit
-        | (_,V.Unv)::xs -> Lazy.force ks.unv::seq_rec xs
-        | (_,Rel r)::xs -> r::seq_rec xs
-        | (loc,v)::_ -> error_rel silent loc v in
-      seq_rec
-
 (* Definition of primitives *)
     let arg_mismatch () = raise (PrimError "argument mismatch")
 
@@ -948,6 +938,37 @@ module Make
 
       let rec eval_loc env e = get_loc e,eval env e
 
+      and check_id env e = match e with
+      | Op1 (_,ToId,e) -> Some (eval_events_mem env e)
+      | _ -> None
+
+      and eval_seq_args env es = match es with
+        | [] -> None,[],None
+        | [e1] -> None,[eval_rel env e1],None
+        | e1::rem ->
+            let f1 =  check_id env e1 in
+            let es = match f1 with
+            | None -> es
+            | Some _ -> rem in
+            begin match es with
+            | [] -> f1,[],None
+            | e1::rem ->
+                let rs,f2 = eval_seq_args_end env e1 rem in
+                f1,rs,f2
+            end
+
+      and eval_seq_args_end env e es = match es with
+      | [] ->
+          let f2 = check_id env e in
+          let rs = match f2 with
+          | None -> [eval_seq_arg env e]
+          | Some _ -> [] in
+          rs,f2
+      | e2::rem ->
+          let r = eval_seq_arg env e in
+          let rs,f2 = eval_seq_args_end env e2 rem in
+          r::rs,f2
+
       and eval env = function
         | Konst (_,AST.Empty SET) -> V.Empty (* Polymorphic empty *)
         | Konst (_,AST.Empty RLN) -> empty_rel
@@ -1067,13 +1088,20 @@ module Make
                         "cannot perform union on type '%s'" (pp_typ ty)
             with Exit -> Unv end
         | Op (_,Seq,es) ->
-            let vs = List.map (eval_loc env) es in
             begin try
-              let vs = seq_args env.EV.silent env.EV.ks vs in
+              let f1,rs,f2 = eval_seq_args env es in
               let r =
                 List.fold_right
                   E.EventRel.sequence
-                  vs (Lazy.force env.EV.ks.id) in
+                  rs (Lazy.force env.EV.ks.id) in
+              let r = match f1,f2 with
+              | None,None -> r
+              | Some f1,None ->
+                  E.EventRel.filter (fun (e1,_) -> f1 e1) r
+              | None,Some f2 ->
+                  E.EventRel.filter (fun (_,e2) -> f2 e2) r
+              | Some f1,Some f2 ->
+                  E.EventRel.filter (fun (e1,e2) -> f1 e1 && f2 e2) r in
               Rel r
             with Exit -> empty_rel
             end
@@ -1081,8 +1109,8 @@ module Make
         | Op (_loc1,Inter,[e1;Op (_loc2,Cartesian,[e2;e3])])
         | Op (_loc1,Inter,[Op (_loc2,Cartesian,[e2;e3]);e1]) ->
             let r = eval_rel env e1
-            and f1 = eval_set_mem env e2
-            and f2 = eval_set_mem env e3 in
+            and f1 = eval_events_mem env e2
+            and f2 = eval_events_mem env e3 in
             let r =
               E.EventRel.filter
                 (fun (e1,e2) -> f1 e1 && f2 e2)
@@ -1151,8 +1179,8 @@ module Make
                   loc "mixing event set and set in difference"
             end
         | Op (_,Cartesian,[e1;e2;]) ->
-            let s1 = eval_set env e1
-            and s2 = eval_set env e2 in
+            let s1 = eval_events env e1
+            and s2 = eval_events env e2 in
             Rel (E.EventRel.cartesian s1 s2)
         | Op (loc,Add,[e1;e2;]) ->
             let v1 = eval env e1
@@ -1413,14 +1441,14 @@ module Make
       | Pair p -> E.EventRel.singleton p
       | V.Empty -> E.EventRel.empty
       | Unv -> Lazy.force env.EV.ks.unv
-      | _ -> error env.EV.silent (get_loc e) "relation expected"
+      | v -> error_rel env.EV.silent (get_loc e) v
 
-      and eval_set env e = match eval env e with
+      and eval_events env e = match eval env e with
       | Set v -> v
       | Event e -> E.EventSet.singleton e
       | V.Empty -> E.EventSet.empty
       | Unv -> env.EV.ks.evts
-      | _ -> error env.EV.silent (get_loc e) "set expected"
+      | v -> error_events env.EV.silent (get_loc e) v
 
       and eval_rel_set env e = match eval env e with
       | Rel _ | Set _ as v ->  v
@@ -1430,16 +1458,22 @@ module Make
       | Unv -> Rel (Lazy.force env.EV.ks.unv)
       | _ -> error env.EV.silent (get_loc e) "relation or set expected"
 
-      and eval_set_mem env e = match eval env e with
+      and eval_events_mem env e = match eval env e with
       | Set s -> fun e -> E.EventSet.mem e s
+      | Event e0 -> fun e -> E.event_compare e0 e = 0
       | V.Empty -> fun _ -> false
       | Unv -> fun _ -> true
-      |  _ -> error env.EV.silent (get_loc e) "set expected"
+      | v -> error_events env.EV.silent (get_loc e) v
 
       and eval_proc loc env x = match find_env_loc loc env x with
       | Proc p -> p
-      | _ ->
-          Warn.user_error "procedure expected"
+      | _ -> Warn.user_error "procedure expected"
+
+      and eval_seq_arg env e = match eval env e with
+      | V.Empty -> raise Exit
+      | V.Unv -> Lazy.force env.EV.ks.unv
+      | Rel r -> r
+      | v -> error_rel env.EV.silent (get_loc e) v
 
 (* For let *)
       and eval_bds env_bd  =
