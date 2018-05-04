@@ -130,30 +130,13 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
                     do_rec y ys in
               do_rec x xs ; x in
 
-        let find_next_dir n =
-          let rec f_rec m =
-            if not (E.is_store m.edge) then m.dir
-            else if m.next == n then assert false
-            else f_rec m.next in
-          f_rec n in
-
-        let remove_store_dir n =
-          let rec do_rec m =
-            if E.is_store m.edge then m.dir <- find_next_dir m.next ;
-            if m.next != n then do_rec m.next in
-          do_rec n in
-
         let r = patch ms in
-        remove_store_dir r ;
         set_matches r ;
         if debug then eprintf "CE.cycle returned [%s]\n%!" (_pp r) ;
         r
 
 
 (* Notice, do not halt on stores... *)
-
-      let _same_proc e = try E.get_ie e = Int with E.IsStore _ -> assert false
-      let _diff_proc e = try E.get_ie e = Ext with E.IsStore _ -> assert false
 
       let ext_com e = match e.E.edge with
       | E.Rf Ext|E.Fr Ext|E.Ws Ext|E.Hat -> true

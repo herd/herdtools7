@@ -586,109 +586,9 @@ module Make(O:Config) : Builder.S
         let r,c,st = compile_load_not_value st p mo x v in
         c,F.add_final_v p r (IntSet.singleton w) f,st
 
-
-      let do_observe_local st p code f mo x prev_v v =
-        let mo = match mo with
-        | Some _ -> Some MemOrder.Rlx
-        | None -> None in
-        let open Config in
-        match O.obs_type with
-        | Straight ->
-            let c,f,st = do_add_load st p f mo x v in
-            A.Seq (code,c),f,st
-        | Config.Fenced ->
-            let c,f,st = do_add_load st p f mo x v in
-            A.Seq (code,A.Seq (A.Fence A.strong,c)),f,st
-        | Loop ->
-            let c,f,st = do_add_loop st p f mo x prev_v v in
-            A.Seq (code,c),f,st
-
-      let add_co_local_check lsts ns st p code f =
-        let lst = Misc.last ns in
-        if U.check_here lst then
-          let elst = lst.C.evt in
-          let x = elst.C.loc and v = lst.C.next.C.evt.C.v
-          and prev_v = elst.C.v in
-          let all_lst =
-            try StringMap.find x lsts
-            with Not_found -> C.evt_null in
-          if C.OrderedEvent.compare all_lst lst.C.next.C.evt = 0
-          then
-            code,(A.Loc x,IntSet.singleton v)::f,st
-          else
-            let mo = match elst.C.atom with
-            | Some _ -> Some MemOrder.Rlx
-            | None   -> None in
-            do_observe_local st p code f mo (A.Loc x) prev_v v
-        else
-          code,f,st
-
-(* Detours *)
-
-      let do_observe_local_before st p code f mo x prev_v v =
-        if O.optcoherence && v = 0 then
-          code,[],st
-        else
-          let x = A.Loc x in
-          let open Config in
-          match O.obs_type with
-          | Straight|Config.Fenced ->
-              let c,f,st = do_add_load st p f mo x v in
-              A.Seq (code,c),f,st
-          | Loop ->
-              let c,f,st = do_add_loop st p f mo x prev_v v in
-              A.Seq (code,c),f,st
-
-
-      let build_detour lsts st p n =
-        let open Config in
-        let c0,f,st = match O.do_observers with
-        | Local ->
-            let e = n.C.evt in
-            let mo = e.C.atom in
-            begin match n.C.edge.E.edge with
-            | E.DetourWs (Dir W) ->
-                do_observe_local_before st p A.Nop [] mo n.C.evt.C.loc
-                  n.C.prev.C.prev.C.evt.C.v n.C.prev.C.evt.C.v
-            | E.DetourWs (Dir R) ->
-                do_observe_local_before st p A.Nop [] mo n.C.evt.C.loc
-                  n.C.prev.C.prev.C.evt.C.v n.C.prev.C.evt.C.v
-            | _ -> A.Nop,[],st
-            end
-        | _ -> A.Nop,[],st in
-
-        let _,c,st = compile_access No st p n in
-        let c = A.seq c0 c in
-        match O.do_observers with
-        | Local ->
-            let c,f,_st = add_co_local_check lsts [n] st p c f in
-            c,f
-        | _ -> c,f
-
-      let rec build_detours lsts p ns = match ns with
-      | [] -> [],[]
-      | n::ns ->
-          let c,f = build_detour lsts st0 p n in
-          let cs,fs = build_detours lsts (p+1) ns in
-          c::cs,f@fs
-
-
-(* zyva *)
-      let rec compile_stores ns k = match ns with
-      | [] -> k
-      | n::ns ->
-          let sto = n.C.store in
-          if sto == C.nil then
-            compile_stores ns k
-          else
-            let i = compile_store No sto.C.evt in
-            let k = compile_stores ns k in
-            A.Seq (i,k)
-
       let add_fence n is = match n.C.edge.E.edge with
       | E.Fenced (fe,_,_,_) -> A.Seq (A.Fence fe,is)
       | _ -> is
-
 
       let do_observe_local st p (m,f) mo x pv v =
         let mo = match mo with
@@ -840,7 +740,6 @@ module Make(O:Config) : Builder.S
         let splitted =  C.split_procs n in
         (* Split before, as  proc numbers added by side effet.. *)
         let cos0 = C.coherence n in
-        let lsts = U.last_map cos0 in
         let cos = U.compute_cos cos0 in
         if O.verbose > 1 then U.pp_coherence cos0 ;
         let loc_writes = U.comp_loc_writes n in
@@ -851,13 +750,9 @@ module Make(O:Config) : Builder.S
               let c,(m,f),_st =
                 (if O.docheck then compile_proc_check else  compile_proc_std No)
                   loc_writes st0 p n in
-              let c = compile_stores n c in
-              let ds = C.get_detours_from_list n in
-              let cds,fds = build_detours lsts (p+1) ds in
-              let cs,(ms,fs),ios = do_rec (p+1+List.length cds) ns in
+              let cs,(ms,fs),ios = do_rec (p+1) ns in
               let io = U.io_of_thread n in
-              let iod = List.map U.io_of_detour ds in
-              c::(cds@cs),(C.union_map m ms,f@fds@fs),(io::iod)@ios in
+              c::cs,(C.union_map m ms,f@fs),io::ios in
 
         let obsc,f =
           match O.cond with

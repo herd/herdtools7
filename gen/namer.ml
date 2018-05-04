@@ -57,11 +57,6 @@ module Make
          | Ws Ext -> Some "wse"
          | Fr Ext -> Some "fre"
          | Rmw -> Some "rmw"
-         | Detour e ->
-             Some (sprintf "det%s" (Misc.lowercase (pp_extr e)))
-         | DetourWs e ->
-             Some (sprintf "det%sw" (Misc.lowercase (pp_extr e)))
-         | Store -> Some "sto"
          | Leave c -> Some ("["^pp_com c)
          | Back c -> Some (pp_com c^"]")
          | _ -> None

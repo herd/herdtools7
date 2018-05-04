@@ -36,15 +36,12 @@ module type S = sig
 (* edge proper *)
   type tedge =
     | Rf of ie | Fr of ie | Ws of ie
-    | Detour of extr     (* source direction *)
-    | DetourWs of extr   (* source direction *)
     | Po of sd*extr*extr | Fenced of fence*sd*extr*extr
     | Dp of dp*sd*extr
-    | Store (* Insert a store at thread start *)
     | Leave of com (* Leave thread *)
     | Back  of com (* Return to thread *)
-(* Annotation fake edge *)
-    | Id
+(* Fake edges *)
+    | Id              (* Annotation on access *)
 (* fancy *)
     | Hat
     | Rmw
@@ -79,9 +76,6 @@ module type S = sig
 
   val pp_edges : edge list -> string
 
-(* Raised by get/set function on Store edge *)
-  exception IsStore of string
-
 (* Get source and target event direction,
    Returning Irr means that a Read OR a Write is acceptable *)
   val dir_src : edge -> extr
@@ -114,9 +108,8 @@ module type S = sig
 
 (* Possible interpretation of edge sequence as an edge *)
   val compact_sequence : edge list -> edge list -> edge -> edge -> edge list list
+
 (* Utilities *)
-  val is_detour : edge -> bool
-  val is_store : edge -> bool
   val is_ext : edge -> bool
 
 (* Set/Map *)
@@ -153,11 +146,8 @@ and type atom = F.atom = struct
 (* edge proper *)
   type tedge =
     | Rf of ie | Fr of ie | Ws of ie
-    | Detour of extr
-    | DetourWs of extr
     | Po of sd*extr*extr | Fenced of fence*sd*extr*extr
     | Dp of dp*sd*extr
-    | Store
     | Leave of com
     | Back of com
     | Id
@@ -166,7 +156,7 @@ and type atom = F.atom = struct
 
   let is_id = function
     | Id -> true
-    | Store|Hat|Rmw|Rf _|Fr _|Ws _|Detour _|DetourWs _|Po (_, _, _)
+    | Hat|Rmw|Rf _|Fr _|Ws _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _ -> false
 
 
@@ -230,8 +220,6 @@ and type atom = F.atom = struct
     | Rf ie -> sprintf "Rf%s" (pp_ie ie)
     | Fr ie -> sprintf "Fr%s" (pp_ie ie)
     | Ws ie -> sprintf "Ws%s" (pp_ie ie)
-    | Detour d -> sprintf "Detour%s" (pp_extr d)
-    | DetourWs d -> sprintf "Detour%sW" (pp_extr d)
     | Po (sd,e1,e2) -> sprintf "Po%s%s%s" (pp_sd sd) (pp_extr e1) (pp_extr e2)
     | Fenced (f,sd,e1,e2) ->
         sprintf "%s%s%s%s" (F.pp_fence f) (pp_sd sd) (pp_extr e1) (pp_extr e2)
@@ -239,7 +227,6 @@ and type atom = F.atom = struct
           (F.pp_dp dp) (pp_sd sd) (pp_extr e)
     | Hat -> "Hat"
     | Rmw -> "Rmw"
-    | Store -> "Store"
     | Leave c -> sprintf "%sLeave" (pp_com c)
     | Back c -> sprintf "%sBack" (pp_com c)
     | Id -> "Id"
@@ -279,8 +266,6 @@ and type atom = F.atom = struct
 
 let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
 
-  exception IsStore of string
-
   let do_dir_tgt_com = function
     | CRf -> Dir R
     | CWs|CFr -> Dir W
@@ -295,17 +280,15 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
 
   let do_dir_tgt e = match e with
   | Po(_,_,e)| Fenced(_,_,_,e)|Dp (_,_,e) -> e
-  | Rf _| Hat | Detour _ -> Dir R
-  | Ws _|Fr _|Rmw|DetourWs _ -> Dir W
-  | Store -> Dir W
+  | Rf _| Hat -> Dir R
+  | Ws _|Fr _|Rmw -> Dir W
   | Leave c|Back c -> do_dir_tgt_com c
   | Id -> not_that "do_dir_tgt"
 
   and do_dir_src e = match e with
-  | Po(_,e,_)| Fenced(_,_,e,_) | Detour e | DetourWs e -> e
+  | Po(_,e,_)| Fenced(_,_,e,_) -> e
   | Dp _|Fr _|Hat|Rmw -> Dir R
   | Ws _|Rf _ -> Dir W
-  | Store -> Dir W
   | Leave c|Back c -> do_dir_src_com c
   | Id -> not_that "do_dir_src"
 
@@ -315,8 +298,6 @@ let fold_tedges f r =
   let r = fold_ie (fun ie -> f (Fr ie)) r in
   let r = fold_ie (fun ie -> f (Ws ie)) r in
   let r = f Rmw r in
-  let r = fold_extr (fun e -> f (Detour e)) r in
-  let r = fold_extr (fun e -> f (DetourWs e)) r in
   let r = fold_sd_extr_extr (fun sd e1 e2 r -> f (Po (sd,e1,e2)) r) r in
   let r =
     F.fold_all_fences
@@ -331,7 +312,6 @@ let fold_tedges f r =
       (fun dp -> fold_sd (fun sd -> f (Dp (dp,sd,Dir W)))) r in
   let r = f Id r in
   let r = f Hat r in
-  let r = f Store r in
   let r = fold_com (fun c r -> f (Leave c) r) r in
   let r = fold_com (fun c r -> f (Back c) r) r in
   r
@@ -353,10 +333,6 @@ let fold_tedges f r =
             (fold_tedges
                (fun te k ->
                  match te with
-                 | Store ->
-                     if a1 = None && a2=None then
-                       f {a1; a2; edge=te;} k
-                     else k
                  | Rmw -> (* Allowed source and target atomicity for wrm *)
                      if F.applies_atom_rmw a1 a2 then
                        f {a1; a2; edge=te;} k
@@ -481,8 +457,6 @@ let iter_atom f= F.fold_atom (fun a () -> f a) ()
         fill_opt "Dp" F.ddw_default sd (Dir W) ;
         fill_opt "Ctrl" F.ctrlw_default sd (Dir W) ;
         ()) () ;
-    add_lxm "DetourRR" (plain_edge (Detour (Dir R))) ;
-    add_lxm "DetourWR" (plain_edge (Detour (Dir W))) ;
     ()
 
 
@@ -518,29 +492,24 @@ let do_set_tgt d e = match e  with
   | Fenced(f,sd,src,_) -> Fenced(f,sd,src,Dir d)
   | Dp (dp,sd,_) -> Dp (dp,sd,Dir d)
   | Rf _ | Hat
-  | Id|Ws _|Fr _|Rmw|Detour _|DetourWs _|Store|Leave _|Back _-> e
+  | Id|Ws _|Fr _|Rmw|Leave _|Back _-> e
 
 and do_set_src d e = match e with
   | Po(sd,_,tgt) -> Po(sd,Dir d,tgt)
   | Fenced(f,sd,_,tgt) -> Fenced(f,sd,Dir d,tgt)
-  | Detour _ -> Detour (Dir d)
-  | DetourWs _ -> DetourWs (Dir d)
   | Fr _|Hat|Dp _
-  | Id|Ws _|Rf _|Rmw|Store|Leave _|Back _ -> e
+  | Id|Ws _|Rf _|Rmw|Leave _|Back _ -> e
 
 let set_tgt d e = { e with edge = do_set_tgt d e.edge ; }
 and set_src d e = { e with edge = do_set_src d e.edge ; }
 
   let loc_sd e = match e.edge with
-  | Fr _|Ws _|Rf _|Hat|Rmw|Detour _|DetourWs _ -> Same
   | Po (sd,_,_) | Fenced (_,sd,_,_) | Dp (_,sd,_) -> sd
-  | Store|Id -> Same
-  | Leave _|Back _ -> Same
+  | Fr _|Ws _|Rf _|Hat|Rmw|Id|Leave _|Back _ -> Same
 
   let get_ie e = match e.edge with
-  | Po _|Dp _|Fenced _|Rmw|Detour _|DetourWs _ -> Int
+  | Id |Po _|Dp _|Fenced _|Rmw -> Int
   | Rf ie|Fr ie|Ws ie -> ie
-  | Store|Id -> Int
   | Leave _|Back _|Hat -> Ext
 
 
@@ -552,11 +521,8 @@ and set_src d e = { e with edge = do_set_src d e.edge ; }
 
 
   let can_precede_dirs  x y = match x.edge,y.edge with
-  | (Id,Id) | (Store,Id) | (Id,Store)
-  | (Store,Store) -> false
+  | (Id,Id) -> false
   | (Id,_)|(_,Id) -> true
-  | (Store,_) -> get_ie y = Int
-  | (_,Store) -> true
   | _,_ ->
       begin match dir_tgt x,dir_src y with
       | Irr,Irr -> false
@@ -591,12 +557,8 @@ and set_src d e = { e with edge = do_set_src d e.edge ; }
 
   let do_expand_edge e f =
     match e.edge with
-    | Id|Rf _ | Fr _ | Ws _ | Hat |Rmw|Dp _|Store|Leave _|Back _
+    | Id|Rf _ | Fr _ | Ws _ | Hat |Rmw|Dp _|Leave _|Back _
       -> f e
-    | Detour d ->
-        expand_dir d (fun d -> f { e with edge=Detour d;})
-    | DetourWs d ->
-        expand_dir d (fun d -> f { e with edge=DetourWs d;})
     | Po(sd,e1,e2) ->
         expand_dir2 e1 e2 (fun d1 d2 -> f {e with edge=Po(sd,d1,d2);})
     | Fenced(fe,sd,e1,e2) ->
@@ -768,14 +730,6 @@ and set_src d e = { e with edge = do_set_src d e.edge ; }
     let k = fst_dp e1 e2 k in
     let k = sequence_dp e1 e2 k in
     k
-
-  let is_detour e = match e.edge with
-  | Detour _|DetourWs _ -> true
-  | _ -> false
-
-  let is_store e = match e.edge with
-  | Store -> true
-  | _ -> false
 
   module Set =
     MySet.Make

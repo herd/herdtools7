@@ -173,18 +173,8 @@ let get_fence n =
   | E.Fenced (fe,_,_,_) ->  Some fe
   | _ -> None
 
-let rec compile_stores st p i ns k = match ns with
-| [] -> i,k,st
-| n::ns ->
-    let sto = n.C.store in
-    if sto == C.nil then
-      compile_stores st p i ns k
-    else
-      let _,i,c,st = Comp.emit_access st p i sto.C.evt in
-      let i,k,st = compile_stores st p i ns k in
-      i,(c@k),st
 
-let no_check_load init st = init,Misc.identity,st
+  let no_check_load init st = init,Misc.identity,st
 
 let rec compile_proc chk loc_writes st p ro_prev init ns = match ns with
 | [] -> init,[],(C.EventMap.empty,[]),st
@@ -465,53 +455,6 @@ let min_max xs =
         do_observe_local st p i code f x prev_v v
     else i,code,f,st
 
-(**********)
-(* Detour *)
-(**********)
-
-  let do_observe_local_before st p i code f x prev_v v =
-    if O.optcoherence && v = 0 then
-      i,code,[],st
-    else
-      let open Config in
-      match O.obs_type with
-      | Straight|Config.Fenced ->
-          let i,c,f,st = do_add_load st p i f x v in
-          i,code@c,f,st
-      | Loop ->
-          let i,c,f,st = do_add_loop st p i f x prev_v v in
-          i,code@c,f,st
-
-
-  let build_detour lsts st p i n =
-    let open Config in
-    let i,c0,f,st = match O.do_observers with
-    | Local -> begin match n.C.edge.E.edge with
-      | DetourWs (Dir W) ->
-          do_observe_local_before st p i [] [] n.C.evt.C.loc
-            n.C.prev.C.prev.C.evt.C.v n.C.prev.C.evt.C.v
-      | DetourWs (Dir R) ->
-          do_observe_local_before st p i [] [] n.C.evt.C.loc
-            n.C.prev.C.prev.C.evt.C.v n.C.prev.C.evt.C.v
-      | _ -> i,[],[],st
-    end
-    | _ -> i,[],[],st in
-
-    let _,i,c,st = Comp.emit_access st p i n.C.evt in
-    let c = c0@c in
-    match O.do_observers with
-    | Local ->
-        let i,c,f,_st = add_co_local_check lsts [n] st p i c f in
-        i,c,f
-    | _ -> i,c,f
-
-  let rec build_detours lsts p i ns = match ns with
-  | [] -> i,[],[]
-  | n::ns ->
-      let i,c,f = build_detour lsts A.st0 p i n in
-      let i,cs,fs = build_detours lsts (p+1) i ns in
-      i,c::cs,f@fs
-
 (******************************************)
 (* Compile cycle, ie generate test proper *)
 (******************************************)
@@ -536,7 +479,6 @@ let min_max xs =
             List.fold_left
               (fun f (r,v) -> F.add_final_v p r (IntSet.singleton v) f)
               f xenv in
-          let i,c,st = compile_stores st p i n c in
           let i,c,f,st =
             match O.cond with
             | Unicond -> i,c,f,st
@@ -545,12 +487,9 @@ let min_max xs =
                 | Local -> add_co_local_check lsts n st p i c f
                 | Avoid|Accept|Enforce|Three|Four|Infinity -> i,c,f,st in
           let i,c,_ = Comp.postlude st p i c in
-          let ds = C.get_detours_from_list n in
-          let i,cds,fds = build_detours lsts (p+1) i ds in
-          let i,cs,(ms,fs),ios = do_rec (p+1+List.length cds) i ns in
+          let i,cs,(ms,fs),ios = do_rec (p+1) i ns in
           let io = U.io_of_thread n in
-          let iod = List.map U.io_of_detour ds in
-          i,c::(cds@cs),(C.union_map m ms,f@fds@fs),(io::iod)@ios in
+          i,c::cs,(C.union_map m ms,f@fs),io::ios in
     let i,obsc,f =
       match O.cond with
       | Unicond -> [],[],[]

@@ -52,10 +52,10 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         let valid_edge e =
           let open C.E in
           match e.C.E.edge with
-          | Rf _ | Fr _ | Ws _ | Hat|Detour _|DetourWs _
+          | Rf _ | Fr _ | Ws _ | Hat
           | Back _|Leave _ -> true
           | Po _ | Fenced _ | Dp _|Rmw -> false
-          | Store|Id -> assert false in
+          | Id -> assert false in
         (fun n -> valid_edge n.C.C.prev.C.C.edge || valid_edge n.C.C.edge)
       else
         (fun _ -> true)

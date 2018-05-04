@@ -254,7 +254,8 @@ module Make(C:Builder.S)
 
 (* Functional for recursive call of generators *)
 
-    let sz (_,es) = if List.for_all (fun e -> is_id e.edge) es then 0 else 1
+    let sz (_,es) =
+      if List.for_all (fun e -> is_id e.edge) es then 0 else 1
 
 
     let rec c_minprocs_es c = function

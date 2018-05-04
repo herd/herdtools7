@@ -210,16 +210,11 @@ let io_of_node n = {ploc=n.C.C.evt.C.C.loc; pdir=n.C.C.evt.C.C.dir;}
         let k =
           if n.C.C.next == n0 then StringSet.empty
           else do_rec n.C.C.next in
-        let k =
-          if n.C.C.store != C.C.nil then
-            StringSet.add n.C.C.store.C.C.evt.C.C.loc k
-          else k in
         let k = 
           match n.C.C.evt.C.C.dir with
           | W -> StringSet.add n.C.C.evt.C.C.loc k
           | R -> k in
-        if C.E.is_detour n.C.C.edge  then StringSet.add n.C.C.evt.C.C.loc k
-        else k in
+         k in
       do_rec n0
 
 (* Atomic accesses *)
@@ -244,7 +239,7 @@ let io_of_node n = {ploc=n.C.C.evt.C.C.loc; pdir=n.C.C.evt.C.C.dir;}
       e.C.C.dir = R && e.C.C.v = 0
 
     let check_here n = match n.C.C.edge.C.E.edge with
-    | C.E.Ws Ext | C.E.DetourWs _
+    | C.E.Ws Ext
     | C.E.Fr Ext
     | C.E.Leave (CFr|CWs)
     | C.E.Back(CFr|CWs)  -> not (is_load_init n.C.C.evt)
