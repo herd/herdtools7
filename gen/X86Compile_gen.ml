@@ -104,7 +104,8 @@ struct
 
 
   let emit_access st _p init e = match e.C.dir with
-  |R ->
+  | None -> Warn.fatal "TODO"
+  | Some R ->
       let rA,st = next_reg st in
       begin match e.C.atom with
       | None ->
@@ -112,7 +113,7 @@ struct
       | Some Atomic ->
           Warn.fatal "No atomic load for X86"
       end
-  |W ->
+  | Some W ->
       if
         (match e.C.atom with Some Atomic -> true | None -> false)
       then

@@ -343,31 +343,34 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
 (* Access *)
 (**********)
 
-    let emit_access  st p init e = match e.dir,e.atom with
-    | Code.R,None ->
-        let r,init,cs,st = LOAD.emit_load AV.Rlx st p init e.loc in
-        Some r,init,cs,st
-    | Code.R,Some (MO mo) ->
-        let r,init,cs,st = LOAD.emit_load mo st p init e.loc  in
-        Some r,init,cs,st
-    | Code.R,Some (Atomic (mo1,mo2)) ->
-        let r,init,cs,st = emit_lda mo1 mo2 st p init e.loc  in
-        Some r,init,cs,st
-    | Code.R,Some (Mixed (sz,o)) ->
-        let r,init,cs,st = emit_load_mixed sz o st p init e.loc in
-        Some r,init,cs,st
-    | Code.W,None ->
-        let init,cs,st = STORE.emit_store AV.Rlx st p init e.loc e.v in
-        None,init,cs,st
-    | Code.W,(Some (MO mo)) ->
-        let init,cs,st = STORE.emit_store mo st p init e.loc e.v in
-        None,init,cs,st
-    | Code.W,Some (Atomic (mo1,mo2)) ->
-        let r,init,cs,st = emit_sta mo1 mo2 st p init e.loc e.v in
-        Some r,init,cs,st
-    | Code.W,Some (Mixed (sz,o)) ->
-        let init,cs,st = emit_store_mixed sz o st p init e.loc e.v in
-        None,init,cs,st
+    let emit_access  st p init e = match e.dir with
+    | None -> Warn.fatal "TODO"
+    | Some d ->
+        match d,e.atom with
+        | Code.R,None ->
+            let r,init,cs,st = LOAD.emit_load AV.Rlx st p init e.loc in
+            Some r,init,cs,st
+        | Code.R,Some (MO mo) ->
+            let r,init,cs,st = LOAD.emit_load mo st p init e.loc  in
+            Some r,init,cs,st
+        | Code.R,Some (Atomic (mo1,mo2)) ->
+            let r,init,cs,st = emit_lda mo1 mo2 st p init e.loc  in
+            Some r,init,cs,st
+        | Code.R,Some (Mixed (sz,o)) ->
+            let r,init,cs,st = emit_load_mixed sz o st p init e.loc in
+            Some r,init,cs,st
+        | Code.W,None ->
+            let init,cs,st = STORE.emit_store AV.Rlx st p init e.loc e.v in
+            None,init,cs,st
+        | Code.W,(Some (MO mo)) ->
+            let init,cs,st = STORE.emit_store mo st p init e.loc e.v in
+            None,init,cs,st
+        | Code.W,Some (Atomic (mo1,mo2)) ->
+            let r,init,cs,st = emit_sta mo1 mo2 st p init e.loc e.v in
+            Some r,init,cs,st
+        | Code.W,Some (Mixed (sz,o)) ->
+            let init,cs,st = emit_store_mixed sz o st p init e.loc e.v in
+            None,init,cs,st
 
 
     let tr_a = function
@@ -379,13 +382,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
             (E.pp_atom_option at)
 
 (*
-    let emit_exch st p init er ew =
-      let rA,init,st = next_init st p init er.loc in
-      let rR,st = next_reg st in
-      let rW,init,csv,st = emit_mov st p init ew.v in
-      let mo1 = tr_a er.C.atom and mo2 = tr_a ew.C.atom in
-      let cs,st = emit_pair mo1 mo2  p st rR rW rA in
-      rR,init,csv@cs,st
+  let emit_exch st p init er ew =
+  let rA,init,st = next_init st p init er.loc in
+  let rR,st = next_reg st in
+  let rW,init,csv,st = emit_mov st p init ew.v in
+  let mo1 = tr_a er.C.atom and mo2 = tr_a ew.C.atom in
+  let cs,st = emit_pair mo1 mo2  p st rR rW rA in
+  rR,init,csv@cs,st
  *)
     let tr_swap a1 a2 = match tr_a a1,tr_a a2 with
     | (AV.Rlx,a)|(a,AV.Rlx) -> a
@@ -420,28 +423,31 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
     let emit_access_dep_addr st p init e rd =
       let r2,st = next_reg st in
       let c = calc0 r2 rd in
-      match e.dir,e.atom with
-      | Code.R,None ->
-          let r,init,cs,st = LOAD.emit_load_idx AV.Rlx st p init e.loc r2 in
-          Some r,init, Instruction c::cs,st
-      | Code.R,Some (MO mo) ->
-          let r,init,cs,st = LOAD.emit_load_idx mo st p init e.loc r2 in
-          Some r,init, Instruction c::cs,st
-      | Code.R,Some (Atomic (mo1,mo2)) ->
-          let r,init,cs,st = emit_lda_idx mo1 mo2  st p init e.loc r2 in
-          Some r,init, Instruction c::cs,st
-      | Code.W,None ->
-          let init,cs,st =
-            STORE.emit_store_idx AV.Rlx st p init e.loc r2 e.v in
-          None,init,Instruction c::cs,st
-      | Code.W,Some (MO mo) ->
-          let init,cs,st = STORE.emit_store_idx mo st p init e.loc r2 e.v in
-          None,init,Instruction c::cs,st
-      | Code.W,Some (Atomic (mo1,mo2)) ->
-          let r,init,cs,st = emit_sta_idx mo1 mo2 st p init e.loc r2 e.v in
-          Some r,init,Instruction c::cs,st
-      | _,Some (Mixed _) ->
-          Warn.fatal "addr dep with mixed"
+      match e.dir with
+      | None -> Warn.fatal "TODO"
+      | Some d ->
+          match d,e.atom with
+          | Code.R,None ->
+              let r,init,cs,st = LOAD.emit_load_idx AV.Rlx st p init e.loc r2 in
+              Some r,init, Instruction c::cs,st
+          | Code.R,Some (MO mo) ->
+              let r,init,cs,st = LOAD.emit_load_idx mo st p init e.loc r2 in
+              Some r,init, Instruction c::cs,st
+          | Code.R,Some (Atomic (mo1,mo2)) ->
+              let r,init,cs,st = emit_lda_idx mo1 mo2  st p init e.loc r2 in
+              Some r,init, Instruction c::cs,st
+          | Code.W,None ->
+              let init,cs,st =
+                STORE.emit_store_idx AV.Rlx st p init e.loc r2 e.v in
+              None,init,Instruction c::cs,st
+          | Code.W,Some (MO mo) ->
+              let init,cs,st = STORE.emit_store_idx mo st p init e.loc r2 e.v in
+              None,init,Instruction c::cs,st
+          | Code.W,Some (Atomic (mo1,mo2)) ->
+              let r,init,cs,st = emit_sta_idx mo1 mo2 st p init e.loc r2 e.v in
+              Some r,init,Instruction c::cs,st
+          | _,Some (Mixed _) ->
+              Warn.fatal "addr dep with mixed"
 
 
     let emit_exch_dep_addr st p init er ew rd =
@@ -456,8 +462,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
 
     let emit_access_dep_data st p init e  r1 =
       match e.dir with
-      | Code.R -> Warn.fatal "data dependency to load"
-      | Code.W ->
+      | None -> Warn.fatal "TODO"
+      | Some Code.R -> Warn.fatal "data dependency to load"
+      | Some Code.W ->
           let r2,st = next_reg st in
           let cs2 =
             [Instruction (calc0 r2 r1) ;
@@ -520,7 +527,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
       List.exists
         (fun i -> match i with
         | Instruction (AV.J lab0|Bcc (_,_,_,lab0))
-            when (lab0:string) = lab -> true
+          when (lab0:string) = lab -> true
         | _ -> false)
         cs
 

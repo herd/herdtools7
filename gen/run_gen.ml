@@ -123,7 +123,7 @@ module Make (O:Config) (C:ArchRun.S) :
     let get_possible m =
       LocMap.fold
         (fun _ es k ->
-          let rs,ws = ESet.partition (fun e -> e.C.dir = Code.R) es in
+          let rs,ws = ESet.partition (fun e -> e.C.dir = Some Code.R) es in
           let rs = ESet.elements rs
           and ws = ESet.elements ws in
           List.fold_left (fun k r -> (r,ws)::k) k rs)
@@ -146,7 +146,8 @@ module Make (O:Config) (C:ArchRun.S) :
       let rf = Rel.of_list rf in
       let ws_by_loc =
         by_loc
-          (fun e -> match e.C.dir with Code.W -> true | Code.R -> false)
+          (fun e -> match e.C.dir with
+          | Some Code.W -> true | None|Some Code.R -> false)
           str.evts in
       let wsi_by_loc =
         ESet.fold

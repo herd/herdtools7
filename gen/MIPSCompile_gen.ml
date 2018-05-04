@@ -239,24 +239,27 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 (* Acccesses *)
 (*************)
 
-    let emit_access  st p init e = match e.dir,e.atom with
-    | R,None ->
-        let r,init,cs,st = emit_load st p init e.loc in
-        Some r,init,cs,st
-    | R,Some Reserve ->
-        let r,init,cs,st = emit_ll st p init e.loc  in
-        Some r,init,cs,st
-    | R,Some Atomic ->
-        let r,init,cs,st = emit_fno st p init e.loc  in
-        Some r,init,cs,st
-    | W,None ->
-        let init,cs,st = emit_store st p init e.loc e.v in
-        None,init,cs,st
-    | W,Some Reserve -> Warn.fatal "No store with reservation"
-    | W,Some Atomic ->
-        let ro,init,cs,st = emit_sta st p init e.loc e.v in
-        ro,init,cs,st
-    | _,Some (Mixed _) -> assert false
+    let emit_access  st p init e = match e.dir with
+    | None -> Warn.fatal "MIPSCompile.emit_access"
+    | Some d ->
+        match d,e.atom with
+        | R,None ->
+            let r,init,cs,st = emit_load st p init e.loc in
+            Some r,init,cs,st
+        | R,Some Reserve ->
+            let r,init,cs,st = emit_ll st p init e.loc  in
+            Some r,init,cs,st
+        | R,Some Atomic ->
+            let r,init,cs,st = emit_fno st p init e.loc  in
+            Some r,init,cs,st
+        | W,None ->
+            let init,cs,st = emit_store st p init e.loc e.v in
+            None,init,cs,st
+        | W,Some Reserve -> Warn.fatal "No store with reservation"
+        | W,Some Atomic ->
+            let ro,init,cs,st = emit_sta st p init e.loc e.v in
+            ro,init,cs,st
+        | _,Some (Mixed _) -> assert false
 
     let emit_exch st p init er ew =
       let rA,init,st = next_init st p init er.loc in
@@ -270,24 +273,27 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let emit_access_dep_addr st p init e  r1 =
       let r2,st = next_reg st in
       let c =  OP (XOR,r2,r1,r1) in
-      match e.dir,e.atom with
-      | R,None ->
-          let r,init,cs,st = emit_load_idx st p init e.loc r2 in
-          Some r,init, Instruction c::cs,st
-      | R,Some Reserve ->
-          let r,init,cs,st = emit_ll_idx st p init e.loc r2 in
-          Some r,init, Instruction c::cs,st
-      | R,Some Atomic ->
-          let r,init,cs,st = emit_fno_idx st p init e.loc r2 in
-          Some r,init, Instruction c::cs,st
-      | W,None ->
-          let init,cs,st = emit_store_idx st p init e.loc r2 e.v in
-          None,init,Instruction c::cs,st
-      | W,Some Reserve -> Warn.fatal "No store with reservation"
-      | W,Some Atomic ->
-          let ro,init,cs,st = emit_sta_idx st p init e.loc r2 e.v in
-          ro,init,Instruction c::cs,st
-      | _,Some (Mixed _) -> assert false
+      match e.dir with
+      | None -> Warn.fatal "TODO"
+      | Some d ->
+          match d,e.atom with
+          | R,None ->
+              let r,init,cs,st = emit_load_idx st p init e.loc r2 in
+              Some r,init, Instruction c::cs,st
+          | R,Some Reserve ->
+              let r,init,cs,st = emit_ll_idx st p init e.loc r2 in
+              Some r,init, Instruction c::cs,st
+          | R,Some Atomic ->
+              let r,init,cs,st = emit_fno_idx st p init e.loc r2 in
+              Some r,init, Instruction c::cs,st
+          | W,None ->
+              let init,cs,st = emit_store_idx st p init e.loc r2 e.v in
+              None,init,Instruction c::cs,st
+          | W,Some Reserve -> Warn.fatal "No store with reservation"
+          | W,Some Atomic ->
+              let ro,init,cs,st = emit_sta_idx st p init e.loc r2 e.v in
+              ro,init,Instruction c::cs,st
+          | _,Some (Mixed _) -> assert false
 
     let emit_exch_dep_addr st p init er ew rd =
       let rA,init,st = next_init st p init er.loc in
@@ -303,8 +309,9 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 
     let emit_access_dep_data st p init e  r1 =
       match e.dir with
-      | R -> Warn.fatal "data dependency to load"
-      | W ->
+      | None -> Warn.fatal "TODO"
+      | Some R -> Warn.fatal "data dependency to load"
+      | Some W ->
           let r2,st = next_reg st in
           let cs2 =
             [Instruction (OP (XOR,r2,r1,r1)) ;

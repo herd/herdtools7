@@ -75,6 +75,10 @@ let app_opt f = function
 
 let map_opt = app_opt
 
+let app_opt_def d f = function
+  | None -> d
+  | Some x -> f x
+
 let rec last = function
   | [] -> assert false
   | [x] -> x

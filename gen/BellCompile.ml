@@ -72,7 +72,7 @@ module Make(Cfg:Config)(BO:BellArch_gen.Config) : XXXCompile_gen.S =
 
     let exch_tagged r x v a =
       Prmw2_op (r,Abs (Constant.Symbolic x),Imm v,RMWExch,a) *)
-      
+
 (**********)
 (* Export *)
 (**********)
@@ -126,7 +126,7 @@ module Make(Cfg:Config)(BO:BellArch_gen.Config) : XXXCompile_gen.S =
          bcci Ne rC 0 lab ;
        ]@
       [Label (out,Nop)],
-      st 
+      st
 
 *)
 
@@ -141,7 +141,7 @@ module Make(Cfg:Config)(BO:BellArch_gen.Config) : XXXCompile_gen.S =
 *)
 
 let emit_load_not_eq _ = assert false
-let emit_load_not_value _ = assert false
+    let emit_load_not_value _ = assert false
 
 (* Stores *)
 
@@ -166,19 +166,22 @@ let emit_load_not_value _ = assert false
 (* Access *)
 (**********)
 
-    let emit_access  st p init e = match e.dir,e.atom with
-    | R,None ->
-        let r,init,cs,st = emit_load st p init e.loc in
-        Some r,init,cs,st
-    | R,Some a ->
-        let r,init,cs,st = emit_load_tagged st p init e.loc a in
-        Some r,init,cs,st
-    | W,None ->
-        let init,cs,st = emit_store st p init e.loc e.v in
-        None,init,cs,st
-    | W,Some a ->
-        let init,cs,st = emit_store_tagged st p init e.loc e.v a in
-        None,init,cs,st
+    let emit_access  st p init e = match e.dir with
+    | None -> Warn.fatal "BellCompile.emit_access"
+    | Some d ->
+        match d,e.atom with
+        | R,None ->
+            let r,init,cs,st = emit_load st p init e.loc in
+            Some r,init,cs,st
+        | R,Some a ->
+            let r,init,cs,st = emit_load_tagged st p init e.loc a in
+            Some r,init,cs,st
+        | W,None ->
+            let init,cs,st = emit_store st p init e.loc e.v in
+            None,init,cs,st
+        | W,Some a ->
+            let init,cs,st = emit_store_tagged st p init e.loc e.v a in
+            None,init,cs,st
 
 (* Dubious... *)
     let _tr_a ar aw = match ar,aw with
@@ -186,7 +189,7 @@ let emit_load_not_value _ = assert false
     | (Some a,None)
     | (None,Some a) -> a
     | Some a,Some _ -> a
-        
+
 (*    let emit_exch st _p init er ew =
       let rR,st = next_reg st in
       let arw = tr_a er.C.atom ew.C.atom in
@@ -216,7 +219,7 @@ let emit_exch _ = assert false
     let emit_access_dep_addr st p init e r1 =
       let idx,st = next_reg st in
       let cA = calc_zero idx r1 in
-      begin match e.dir,e.atom with
+      begin match Misc.as_some e.dir,e.atom with
       | R,None ->
           let rC,init,cs,st = emit_load_idx st p init e.loc idx in
           Some rC,init,cA::cs,st
@@ -229,22 +232,23 @@ let emit_exch _ = assert false
       | W,Some a ->
           let init,cs,st = emit_store_idx_tagged st p init e.loc e.v idx a in
           None,init,cA::cs,st
-            
+
       end
 
-let emit_access_dep_data st p init e r1 = match e.dir with
-| R ->  Warn.fatal "data dependency to load"
-| W ->
-    let r2,st = next_reg st in
-    let cs2 =  [calc_zero r2 r1;Instruction (addk r2 r2 e.v);] in
-    begin match e.atom with
-    | None -> 
-        let init,cs,st = emit_store_reg st p init e.loc r2 in
-        None,init,cs2@cs,st
-    | Some a ->
-        let init,cs,st = emit_store_reg_tagged st p init e.loc r2 a in
-        None,init,cs2@cs,st
-    end
+    let emit_access_dep_data st p init e r1 = match e.dir with
+    | None ->   Warn.fatal "BellCompile.emit_access_dep_data"
+    | Some R ->  Warn.fatal "data dependency to load"
+    | Some W ->
+        let r2,st = next_reg st in
+        let cs2 =  [calc_zero r2 r1;Instruction (addk r2 r2 e.v);] in
+        begin match e.atom with
+        | None ->
+            let init,cs,st = emit_store_reg st p init e.loc r2 in
+            None,init,cs2@cs,st
+        | Some a ->
+            let init,cs,st = emit_store_reg_tagged st p init e.loc r2 a in
+            None,init,cs2@cs,st
+        end
 
 let emit_access_ctrl st p init e r1 v1 =
   if Cfg.realdep then

@@ -207,7 +207,7 @@ module Make(C:Builder.S)
 
 
     let compat_id ao d = match ao,d with
-    | (None,_)|(_,Irr) -> true
+    | (None,_)|(_,(Irr|NoDir)) -> true
     | Some a,(Dir d) -> C.A.applies_atom a d
 
     let pair_ok safes po_safe xs ys e1 e2 = match e1.edge,e2.edge with

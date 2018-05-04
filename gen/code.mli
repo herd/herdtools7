@@ -33,7 +33,7 @@ type ie = Int|Ext
 type sd = Same|Diff
 
 (* Direction of related events *)
-type extr = Dir of dir | Irr 
+type extr = Dir of dir | Irr | NoDir
 
 
 

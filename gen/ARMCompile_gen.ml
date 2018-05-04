@@ -94,7 +94,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               I_BEQ (out)::
               do_rec (u-1) in
         pseudo (do_rec u)@[Label (out,Nop)]
-        
+
     let emit_pair = match Cfg.unrollatomic with
     | None -> emit_loop_pair
     | Some u -> emit_unroll_pair u
@@ -249,24 +249,27 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (* Acccesses *)
 (*************)
 
-    let emit_access  st p init e = match e.dir,e.atom with
-    | R,None ->
-        let r,init,cs,st = emit_load st p init e.loc in
-        Some r,init,cs,st
-    | R,Some Reserve ->
-        let r,init,cs,st = emit_ldrex st p init e.loc  in
-        Some r,init,cs,st
-    | R,Some Atomic ->
-        let r,init,cs,st = emit_lda st p init e.loc  in
-        Some r,init,cs,st
-    | W,None ->
-        let init,cs,st = emit_store st p init e.loc e.v in
-        None,init,cs,st
-    | W,Some Reserve -> Warn.fatal "No store with reservation"
-    | W,Some Atomic ->
-        let ro,init,cs,st = emit_sta st p init e.loc e.v in
-        ro,init,cs,st
-    | _,Some (Mixed _) -> assert false
+    let emit_access  st p init e =  match e.dir with
+    | None ->  Warn.fatal "ARMCompile.emit_access"
+    | Some d ->
+        match d,e.atom with
+        | R,None ->
+            let r,init,cs,st = emit_load st p init e.loc in
+            Some r,init,cs,st
+        | R,Some Reserve ->
+            let r,init,cs,st = emit_ldrex st p init e.loc  in
+            Some r,init,cs,st
+        | R,Some Atomic ->
+            let r,init,cs,st = emit_lda st p init e.loc  in
+            Some r,init,cs,st
+        | W,None ->
+            let init,cs,st = emit_store st p init e.loc e.v in
+            None,init,cs,st
+        | W,Some Reserve -> Warn.fatal "No store with reservation"
+        | W,Some Atomic ->
+            let ro,init,cs,st = emit_sta st p init e.loc e.v in
+            ro,init,cs,st
+        | _,Some (Mixed _) -> assert false
 
     let emit_exch st p init er ew =
       let rA,init,st = next_init st p init er.loc in
@@ -286,7 +289,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let emit_access_dep_addr st p init e  r1 =
       let r2,st = next_reg st in
       let c =  calc0 r2 r1 in
-      match e.dir,e.atom with
+      match Misc.as_some e.dir,e.atom with
       | R,None ->
           let r,init,cs,st = emit_load_idx st p init e.loc r2 in
           Some r,init, Instruction c::cs,st
@@ -317,8 +320,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let emit_access_dep_data st p init e  r1 =
       match e.dir with
-      | R -> Warn.fatal "data dependency to load"
-      | W ->
+      | None -> Warn.fatal "TODO"
+      | Some R -> Warn.fatal "data dependency to load"
+      | Some W ->
           let r2,st = next_reg st in
           let cs2 =
             [Instruction (calc0 r2 r1) ;
@@ -331,7 +335,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let ro,init,cs,st = emit_sta_reg st p init e.loc r2 in
               ro,init,cs2@cs,st        
           | Some Reserve ->
-               Warn.fatal "No store with reservation"
+              Warn.fatal "No store with reservation"
           | Some (Mixed _) -> assert false
           end
 
@@ -415,7 +419,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         [Label (Label.exit p,Nop)],
         st
       else if does_exit p cs then
-         init,cs@[Label (Label.exit p,Nop)],st
+        init,cs@[Label (Label.exit p,Nop)],st
       else init,cs,st
 
     let get_xstore_results _ = []

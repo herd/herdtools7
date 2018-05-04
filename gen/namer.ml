@@ -59,6 +59,7 @@ module Make
          | Rmw -> Some "rmw"
          | Leave c -> Some ("["^pp_com c)
          | Back c -> Some (pp_com c^"]")
+         | Insert f -> Some (sprintf "{%s}" (Misc.lowercase (A.pp_fence f)))
          | _ -> None
 
        let plain  = Misc.lowercase (A.pp_plain)
@@ -110,6 +111,10 @@ module Make
          | _ -> []
 
        let isolated_writes es =
+         let es =
+           List.filter
+             (function {edge=Insert _;} -> false | _ -> true)
+             es in
          let x =  init_a es @ count_a es in
          let x =
            if List.for_all (fun s -> s = Code.plain) x then []

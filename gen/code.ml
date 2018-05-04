@@ -33,7 +33,7 @@ type ie = Int|Ext
 type sd = Same|Diff
 
 (* Direction of related events *)
-type extr = Dir of dir | Irr 
+type extr = Dir of dir | Irr | NoDir
 
 (* Associated pretty print & generators *)
 let pp_dir = function
@@ -48,6 +48,7 @@ let pp_ie = function
 let pp_extr = function
   | Dir d -> pp_dir d
   | Irr -> "*"
+  | NoDir -> ""
 
 let pp_sd = function
   | Same -> "s"

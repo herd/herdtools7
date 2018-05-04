@@ -24,10 +24,10 @@ module type S = sig
   type event =
       { loc : loc ;
         v   : v ;
-        dir : dir ;
+        dir : dir option ;
         proc : Code.proc ;
         atom : atom option ;
-        rmw : bool ;        
+        rmw : bool ;
         cell : v ;
         idx : int ; }
 
@@ -46,8 +46,19 @@ module type S = sig
       mutable edge : edge ;
       mutable next : node ;
       mutable prev : node ;
-    } 
+    }
   val nil : node
+  val str_node : node -> string
+
+(* Find, may raise Not_found *)
+  val find_node : (node -> bool) -> node -> node
+  val find_node_prev : (node -> bool) -> node -> node
+
+  val find_edge : (edge -> bool) -> node -> node
+  val find_edge_prev : (edge -> bool) -> node -> node
+
+  val find_non_insert : node -> node
+  val find_non_insert_prev : node -> node
 
 (* Re-extract edges out of cycle *)
   val extract_edges : node -> edge list
@@ -92,19 +103,19 @@ module Make (O:Config) (E:Edge.S) :
   type event =
       { loc : loc ;
         v   : v ;
-        dir : dir ;
+        dir : dir option ;
         proc : Code.proc ;
         atom : atom option ;
         rmw : bool ;
         cell : v ; (* value of cell at node... *)
         idx : int ; }
 
-  let evt_null = 
-    { loc="*" ; v=(-1) ; dir=R; proc=(-1); atom=None; rmw=false;
+  let evt_null =
+    { loc="*" ; v=(-1) ; dir=None; proc=(-1); atom=None; rmw=false;
       cell=(-1); idx=(-1); }
 
-  let make_wsi idx loc =
-    { evt_null with dir=W ; loc=loc; idx=idx; v=0;}
+  let make_wsi idx loc = { evt_null with dir=Some W ; loc=loc; idx=idx; v=0;}
+
   module OrderedEvent = struct
     type t = event
     let compare e1 e2 = Misc.int_compare e1.idx e2.idx
@@ -124,7 +135,7 @@ module Make (O:Config) (E:Edge.S) :
       mutable prev : node ;
     }
 
-  let debug_dir d = match d with W -> "W" | R -> "R"
+  let debug_dir d = match d with Some W -> "W" | Some R -> "R" | None -> "_"
 
   let debug_atom a =
     match a with None -> "" | Some a -> E.pp_atom a
@@ -135,20 +146,22 @@ module Make (O:Config) (E:Edge.S) :
     else
       sprintf "%s%s %s %i" (debug_dir e.dir) (debug_atom e.atom) e.loc e.v
 
-let debug_edge = E.pp_edge
+  let debug_edge = E.pp_edge
 
 
-let rec nil =
-  {
-   evt = evt_null ;
-   edge = E.plain_edge (E.Po (Diff,Irr,Irr)) ;
-   next = nil ;
-   prev = nil ;
-  }
+  let rec nil =
+    {
+     evt = evt_null ;
+     edge = E.plain_edge (E.Po (Diff,Irr,Irr)) ;
+     next = nil ;
+     prev = nil ;
+   }
 
-let debug_node chan n =
-  fprintf chan "%s -%s->"
-    (debug_evt n.evt) (debug_edge n.edge)
+  let debug_node chan n =
+    fprintf chan "%s -%s->"
+      (debug_evt n.evt) (debug_edge n.edge)
+
+  let str_node n = sprintf "%s -%s->" (debug_evt n.evt) (debug_edge n.edge)
 
   let debug_nodes chan ns =
     let rec iter chan = function
@@ -157,21 +170,21 @@ let debug_node chan n =
       | n::ns -> fprintf chan "%a,%a" debug_node n iter ns in
     iter chan ns
 
- let debug_cycle chan n =
-  let rec do_rec m =
-    debug_node chan m ;
-    output_char chan '\n' ;
-    if m.next != n then do_rec m.next in
-  do_rec n ;
-  flush chan
+  let debug_cycle chan n =
+    let rec do_rec m =
+      debug_node chan m ;
+      output_char chan '\n' ;
+      if m.next != n then do_rec m.next in
+    do_rec n ;
+    flush chan
 
 
 
-let do_alloc_node idx e = 
+let do_alloc_node idx e =
   {
    evt = { evt_null with idx= idx ;} ;
    edge = e ;
-   next = nil ; 
+   next = nil ;
    prev = nil ;
   }
 
@@ -188,7 +201,7 @@ let cons_cycle n c =
   c.prev <- n ;
   n
 
-let check_balance = 
+let check_balance =
   let rec do_rec r = function
     | [] -> r = 0
     | e::es ->
@@ -219,23 +232,26 @@ let find_node p n =
     if p m then m
     else
       let m = m.next in
-      if m == n then raise Exit
+      if m == n then raise Not_found
       else do_rec m in
   do_rec n
 
-
-let find_edge p = find_node (fun n -> p n.edge)
 
 let find_node_prev p n =
   let rec do_rec m =
     if p m then m
     else
       let m = m.prev in
-      if m == n then raise Exit
+      if m == n then raise Not_found
       else do_rec m in
   do_rec n
 
+let find_edge p = find_node (fun n -> p n.edge)
 let find_edge_prev p = find_node_prev (fun n -> p n.edge)
+
+let non_insert e = not (E.is_insert e.E.edge)
+let find_non_insert m = find_edge non_insert m
+let find_non_insert_prev m = find_edge_prev non_insert m
 
 (* Add events in nodes *)
 
@@ -252,11 +268,11 @@ let locs =
   t
 
 let locs_len = Array.length locs
-    
+
 let make_loc n =
   if n < locs_len then locs.(n)
   else Printf.sprintf "x%02i" (n-locs_len)
-  
+
 let next_loc (loc0,vs) = make_loc loc0,(loc0+1,vs)
 
 let same_loc e = match E.loc_sd e with
@@ -267,35 +283,40 @@ let diff_loc e = not (same_loc e)
 let same_proc e = E.get_ie e = Int
 let diff_proc e = E.get_ie e = Ext
 
-let find_prec n = n.prev
-
 (* Coherence definition *)
 let rec count_ws = function
   | [] -> 0
   | n::ns -> match n.evt.dir with
-    | W -> 1+count_ws ns
-    | R -> count_ws ns
-      
+    | Some W -> 1+count_ws ns
+    | Some R|None -> count_ws ns
+
 let start_co =
   if O.coherence_decreasing then count_ws
   else (fun _ -> 1)
 
-let next_co = 
+let next_co =
   if O.coherence_decreasing then (fun v -> v-1)
   else (fun v -> v+1)
 
 
-        
-        
+
+
 (****************************)
 (* Add events in edge cycle *)
 (****************************)
 
-(* Put directions into edge component of nodes, for
-   easier access *)
+(* Put directions into edge component of nodes, for easier access *)
+
+let rec next_dir m = match m.next.evt.dir with
+| None -> next_dir m.next
+| Some d -> d
+
 let patch_edges n =
-  let rec do_rec m = 
-    let e = E.set_src m.evt.dir (E.set_tgt m.next.evt.dir m.edge) in
+  let rec do_rec m =
+    let e = match  m.evt.dir with
+    | None -> m.edge
+    | Some d ->
+        E.set_src d (E.set_tgt (next_dir m) m.edge) in
     m.edge <- e ;
     if m.next != n then do_rec m.next in
   do_rec n
@@ -311,30 +332,37 @@ let is_rmw d e = match d with
 | W -> is_rmw_edge e.prev.edge
 
 let set_dir n0 =
-  let rec do_rec p m =
-    let d = match E.dir_tgt p.edge,E.dir_src m.edge with
-    | Irr,Irr ->
-        Warn.fatal "Ambiguous direction %s %s"
-          (E.pp_edge p.edge) (E.pp_edge m.edge)
-    | (Dir d,Irr)|(Irr,Dir d) -> d
-    | Dir d1,Dir d2 ->
-        if d1=d2 then d1
+  let rec do_rec m =
+    if non_insert m.edge then begin
+      let my_d =  E.dir_src m.edge in
+      let p = find_non_insert_prev m.prev in
+(*      eprintf "p=%a, m=%a\n" debug_node p debug_node m  ; *)
+      let prev_d = E.dir_tgt p.edge in
+      let d = match prev_d,my_d with
+      | Irr,Irr ->
+          Warn.fatal "Ambiguous direction %s %s"
+            (E.pp_edge p.edge) (E.pp_edge m.edge)
+      | (Dir d,Irr)|(Irr,Dir d) -> d
+      | Dir d1,Dir d2 ->
+          if d1=d2 then d1
+          else
+            Warn.fatal "Impossible direction %s %s"
+              (E.pp_edge p.edge) (E.pp_edge m.edge)
+      | (NoDir,_)|(_,NoDir) -> assert false in
+      let a =
+        let a2 = p.edge.E.a2 and a1 = m.edge.E.a1 in
+        if E.compare_atomo a1 a2 = 0 then a1
         else
-          Warn.fatal "Impossible direction %s %s"
-            (E.pp_edge p.edge) (E.pp_edge m.edge) in
-    let a =
-      let a2 = p.edge.E.a2 and a1 = m.edge.E.a1 in
-      if E.compare_atomo a1 a2 = 0 then a1
-      else
-        if a1 = None && E.is_ext p.edge then a2
-        else if a2 = None &&  E.is_ext m.edge then a1
-        else
-          Warn.fatal "impossible atomicity %s %s"
-            (E.pp_edge p.edge) (E.pp_edge m.edge) in
-    let rmw = is_rmw d m in
-    m.evt <- { m.evt with dir=d; atom=a; rmw=rmw} ;
-    if m.next != n0 then do_rec p.next m.next in
-  do_rec (find_prec n0) n0 ;
+          if a1 = None && E.is_ext p.edge then a2
+          else if a2 = None &&  E.is_ext m.edge then a1
+          else
+            Warn.fatal "Impossible atomicity %s %s"
+              (E.pp_edge p.edge) (E.pp_edge m.edge) in
+      let rmw = is_rmw d m in
+      m.evt <- { m.evt with dir=Some d; atom=a; rmw=rmw}
+    end ;
+    if m.next != n0 then do_rec m.next in
+  do_rec n0 ;
   patch_edges n0 ;
   if O.verbose > 1 then begin
     eprintf "DIRECTIONS\n" ;
@@ -351,7 +379,7 @@ let set_diff_loc st n0 =
   let rec do_rec st p m =
     let loc,st =
       if same_loc p.edge then p.evt.loc,st
-      else next_loc st in    
+      else next_loc st in
     m.evt <- { m.evt with loc=loc; } ;
 (*    eprintf "LOC SET: %a\n%!" debug_node m ; *)
     if m.next != n0 then do_rec st p.next m.next
@@ -361,7 +389,7 @@ let set_diff_loc st n0 =
           (E.pp_edge m.edge) ;
       st
     end in
-  let p = find_prec n0 in
+  let p = n0.prev in
   assert (not (same_loc p.edge)) ;
   do_rec st p n0
 
@@ -409,11 +437,11 @@ let set_same_loc st n0 =
     | [] -> ()
     | n::ns ->
         begin match n.evt.dir with
-        | W ->
+        | Some W ->
             n.evt <- { n.evt with v = tr_value n.evt next; } ;
             set_cell n old ;
             do_set_write_val n.evt.cell (next_co next) ns
-        | R ->  do_set_write_val old next ns
+        | (Some R)|None ->  do_set_write_val old next ns
         end
 
   let set_all_write_val nss =
@@ -421,29 +449,29 @@ let set_same_loc st n0 =
       (fun ns ->
         do_set_write_val 0 (start_co ns) ns)
       nss
-  
+
   let set_write_v n =
     let nss =
-      try 
+      try
         let m =
           find_node
             (fun m ->
               m.prev.evt.loc <> m.evt.loc &&
               m.next.evt.loc = m.evt.loc) n in
         split_by_loc m
-      with Exit -> try
-        let m = 
+      with Not_found -> try
+        let m =
           find_node
             (fun m -> match m.prev.edge.E.edge with
             | E.Fr _|E.Rf _|E.Ws _|E.Leave _|E.Back _
             | E.Hat|E.Rmw -> true
-            | E.Po _|E.Dp _|E.Fenced _ -> false
+            | E.Po _|E.Dp _|E.Fenced _|E.Insert _ -> false
             | E.Id -> assert false) n in
         split_one_loc m
       with Exit -> Warn.fatal "Cannot set write values" in
     set_all_write_val nss ;
     nss
-  
+
 
 (* TODO: this is wrong for Store CR's: consider Rfi Store PosRR *)
 let set_read_v n cell =
@@ -460,11 +488,13 @@ let do_set_read_v =
     | [] -> cell
     | n::ns ->
         begin match n.evt.dir with
-        | R ->
+        | Some R ->
             set_read_v n cell ;
             do_rec cell ns
-        | W ->
+        | Some W ->
             do_rec n.evt.cell ns
+        | None ->
+            do_rec cell ns
         end in
   do_rec 0
 
@@ -477,7 +507,7 @@ let set_read_v nss =
         (n.evt.loc,vf)::k)
     nss []
 
-(* zyva... *)      
+(* zyva... *)
 
 let finish n =
   let st = 0,Env.empty in
@@ -485,15 +515,15 @@ let finish n =
   let sd,n =
     let no =
       try Some (find_edge_prev diff_loc (find_edge_prev diff_proc n))
-      with Exit -> None in
+      with Not_found -> None in
     match no with
     | Some n ->
         Diff,
         begin try find_edge same_loc n
-        with Exit -> Warn.fatal "This cycle changes location at every step" end
+        with Not_found -> Warn.fatal "This cycle changes location at every step" end
     | None -> Same,n in
 
-  let _nv,_st = 
+  let _nv,_st =
     match sd with
     | Diff -> set_diff_loc st n
     | Same -> set_same_loc st n in
@@ -501,13 +531,13 @@ let finish n =
   if O.verbose > 1 then begin
     eprintf "LOCATIONS\n" ;
     debug_cycle stderr n
-  end ;    
+  end ;
 (* Set write values *)
   let by_loc = set_write_v n in
   if O.verbose > 1 then begin
     eprintf "WRITE VALUES\n" ;
     debug_cycle stderr n
-  end ;    
+  end ;
 (* Set load values *)
   let vs = set_read_v by_loc in
   if O.verbose > 1 then begin
@@ -550,10 +580,10 @@ let find_start_proc n =
   if
     diff_proc n.prev.edge
   then n
-  else    
+  else
     let n = find_edge (fun n -> diff_proc n) n in
     try find_edge same_proc n
-    with Exit -> n
+    with Not_found -> n
 
 
 let cons_not_nil k1 k2 = match k1 with
@@ -561,7 +591,7 @@ let cons_not_nil k1 k2 = match k1 with
 | _::_ -> k1::k2
 
 
-let find_proc t  n = 
+let find_proc t  n =
   let rec array_rec j =
     assert (j < Array.length t) ;
     list_rec j t.(j)
@@ -586,7 +616,7 @@ let find_back n =
     else find_rec k m.next in
   find_rec 0 n
 
-      
+
 let merge_changes n nss =
   let t = Array.of_list nss in
   let rec do_rec m =
@@ -617,10 +647,15 @@ let merge_changes n nss =
       let e1 = fst.evt and e2 = lst.evt in
       e1.loc = e2.loc && value_before e2 e1
 
+  let debug_proc ns =
+    String.concat " " (List.map (fun n -> sprintf "<%s>" (str_node n)) ns)
+
+  let debug_procs nss =  List.iter (fun ns -> eprintf "%s\n" (debug_proc ns)) nss
+
   let split_procs n =
     let n =
       try find_start_proc n
-      with Exit -> Warn.fatal "Cannot split in procs" in
+      with Not_found -> Warn.fatal "Cannot split in procs" in
     let rec do_rec m =
       let k1,k2 =
         if m.next == n then begin
@@ -648,6 +683,9 @@ let merge_changes n nss =
       not O.allow_back &&
       List.exists proc_back nss
     then Warn.fatal "Forbidden po vs. com" ;
+    if O.verbose > 1 then begin
+      eprintf "SPLITTED:\n" ; debug_procs nss
+    end ;
     nss
 
 (****************************)
@@ -674,18 +712,18 @@ let rec group_rec x ns = function
         | _::_ -> (x,ns))
         r in
     group r
-        
-      
-      
+
+
+
 (* find changing location *)
   let find_change n =
     let rec do_rec m =
       if m.evt.loc <> m.next.evt.loc then Some m.next
-      else if m.next == n then 
+      else if m.next == n then
         None
       else do_rec m.next in
     do_rec n
-      
+
 
   let get_writes n =
     let rec do_rec m =
@@ -694,15 +732,15 @@ let rec group_rec x ns = function
         else do_rec m.next in
       let e = m.evt in
       let k =  match e.dir with
-      | W -> (e.loc,m)::k
-      | R -> k in
+      | Some W -> (e.loc,m)::k
+      | None| Some R -> k in
       k in
-      
+
     do_rec n
 
   let get_observers n =
     let e = n.evt in
-    assert (e.dir = W) ;
+    assert (e.dir = Some W) ;
     let k = IntSet.empty in
     let k = if e.proc >= 0 then IntSet.add e.proc k else k in
     let k = match n.edge.E.edge with
@@ -743,14 +781,14 @@ let rec group_rec x ns = function
       (fun (loc,ns) ->
         loc,
         List.map
-          (List.map (fun n -> n,get_observers n))             
+          (List.map (fun n -> n,get_observers n))
           ns)
       r
 
 (* Get all shared locations *)
   let get_globals m =
     let rec do_rec k n =
-      if n.next == m then k          
+      if n.next == m then k
       else
         do_rec (n.evt.loc::k) n.next in
     let locs = do_rec [] m in

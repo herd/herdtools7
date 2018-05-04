@@ -413,38 +413,41 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (* Access *)
 (**********)
 
-    let emit_access  st p init e = match e.dir,e.atom with
-    | R,None ->
-        let r,init,cs,st = LDR.emit_load st p init e.loc in
-        Some r,init,cs,st
-    | R,Some Acq ->
-        let r,init,cs,st = LDAR.emit_load st p init e.loc  in
-        Some r,init,cs,st
-    | R,Some AcqPc ->
-        let r,init,cs,st = LDAPR.emit_load st p init e.loc  in
-        Some r,init,cs,st
-    | R,Some Rel ->
-        Warn.fatal "No load release"
-    | R,Some Atomic rw ->
-        let r,init,cs,st = emit_lda rw st p init e.loc  in
-        Some r,init,cs,st
-    | R,Some (Mixed (sz,o)) ->
-        let r,init,cs,st = emit_load_mixed sz o st p init e.loc in
-        Some r,init,cs,st
-    | W,None ->
-        let init,cs,st = STR.emit_store st p init e.loc e.v in
-        None,init,cs,st
-    | W,Some Rel ->
-        let init,cs,st = STLR.emit_store st p init e.loc e.v in
-        None,init,cs,st
-    | W,Some Acq -> Warn.fatal "No store acquire"
-    | W,Some AcqPc -> Warn.fatal "No store acquirePc"
-    | W,Some Atomic rw ->
-        let r,init,cs,st = emit_sta rw st p init e.loc e.v in
-        Some r,init,cs,st
-    | W,Some (Mixed (sz,o)) ->
-        let init,cs,st = emit_store_mixed sz o st p init e.loc e.v in
-        None,init,cs,st
+    let emit_access  st p init e = match e.dir with
+    | None -> Warn.fatal "AArchCompile.emit_access"
+    | Some d ->
+        match d,e.atom with
+        | R,None ->
+            let r,init,cs,st = LDR.emit_load st p init e.loc in
+            Some r,init,cs,st
+        | R,Some Acq ->
+            let r,init,cs,st = LDAR.emit_load st p init e.loc  in
+            Some r,init,cs,st
+        | R,Some AcqPc ->
+            let r,init,cs,st = LDAPR.emit_load st p init e.loc  in
+            Some r,init,cs,st
+        | R,Some Rel ->
+            Warn.fatal "No load release"
+        | R,Some Atomic rw ->
+            let r,init,cs,st = emit_lda rw st p init e.loc  in
+            Some r,init,cs,st
+        | R,Some (Mixed (sz,o)) ->
+            let r,init,cs,st = emit_load_mixed sz o st p init e.loc in
+            Some r,init,cs,st
+        | W,None ->
+            let init,cs,st = STR.emit_store st p init e.loc e.v in
+            None,init,cs,st
+        | W,Some Rel ->
+            let init,cs,st = STLR.emit_store st p init e.loc e.v in
+            None,init,cs,st
+        | W,Some Acq -> Warn.fatal "No store acquire"
+        | W,Some AcqPc -> Warn.fatal "No store acquirePc"
+        | W,Some Atomic rw ->
+            let r,init,cs,st = emit_sta rw st p init e.loc e.v in
+            Some r,init,cs,st
+        | W,Some (Mixed (sz,o)) ->
+            let init,cs,st = emit_store_mixed sz o st p init e.loc e.v in
+            None,init,cs,st
 
     let tr_a ar aw = match ar,aw with
     | None,None -> PP
@@ -479,37 +482,40 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       else
         fun dst src -> eor dst src src
 
-    let emit_access_dep_addr st p init e  rd =
+    let emit_access_dep_addr st p init e rd =
       let r2,st = next_reg st in
       let c =  calc0 r2 rd in
-      match e.dir,e.atom with
-      | R,None ->
-          let r,init,cs,st = LDR.emit_load_idx st p init e.loc r2 in
-          Some r,init, Instruction c::cs,st
-      | R,Some Acq ->
-          let r,init,cs,st = LDAR.emit_load_idx st p init e.loc r2 in
-          Some r,init, Instruction c::cs,st
-      | R,Some AcqPc ->
-          let r,init,cs,st = LDAPR.emit_load_idx st p init e.loc r2 in
-          Some r,init, Instruction c::cs,st
-      | R,Some Rel ->
-          Warn.fatal "No load release"
-      | R,Some Atomic rw ->
-          let r,init,cs,st = emit_lda_idx rw st p init e.loc r2 in
-          Some r,init, Instruction c::cs,st
-      | W,None ->
-          let init,cs,st = STR.emit_store_idx st p init e.loc r2 e.v in
-          None,init,Instruction c::cs,st
-      | W,Some Rel ->
-          let init,cs,st = STLR.emit_store_idx st p init e.loc r2 e.v in
-          None,init,Instruction c::cs,st
-      | W,Some Acq -> Warn.fatal "No store acquire"
-      | W,Some AcqPc -> Warn.fatal "No store acquirePc"
-      | W,Some Atomic rw ->
-          let r,init,cs,st = emit_sta_idx rw st p init e.loc r2 e.v in
-          Some r,init,Instruction c::cs,st
-      | _,Some (Mixed _) ->
-          Warn.fatal "addr dep with mixed"
+      match e.dir with
+      | None -> Warn.fatal "TODO"
+      | Some d ->
+          match d,e.atom with
+          | R,None ->
+              let r,init,cs,st = LDR.emit_load_idx st p init e.loc r2 in
+              Some r,init, Instruction c::cs,st
+          | R,Some Acq ->
+              let r,init,cs,st = LDAR.emit_load_idx st p init e.loc r2 in
+              Some r,init, Instruction c::cs,st
+          | R,Some AcqPc ->
+              let r,init,cs,st = LDAPR.emit_load_idx st p init e.loc r2 in
+              Some r,init, Instruction c::cs,st
+          | R,Some Rel ->
+              Warn.fatal "No load release"
+          | R,Some Atomic rw ->
+              let r,init,cs,st = emit_lda_idx rw st p init e.loc r2 in
+              Some r,init, Instruction c::cs,st
+          | W,None ->
+              let init,cs,st = STR.emit_store_idx st p init e.loc r2 e.v in
+              None,init,Instruction c::cs,st
+          | W,Some Rel ->
+              let init,cs,st = STLR.emit_store_idx st p init e.loc r2 e.v in
+              None,init,Instruction c::cs,st
+          | W,Some Acq -> Warn.fatal "No store acquire"
+          | W,Some AcqPc -> Warn.fatal "No store acquirePc"
+          | W,Some Atomic rw ->
+              let r,init,cs,st = emit_sta_idx rw st p init e.loc r2 e.v in
+              Some r,init,Instruction c::cs,st
+          | _,Some (Mixed _) ->
+              Warn.fatal "addr dep with mixed"
 
 
     let emit_exch_dep_addr st p init er ew rd =
@@ -527,8 +533,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let emit_access_dep_data st p init e  r1 =
       match e.dir with
-      | R -> Warn.fatal "data dependency to load"
-      | W ->
+      | None -> Warn.fatal "TODO"
+      | Some R -> Warn.fatal "data dependency to load"
+      | Some W ->
           let r2,st = next_reg st in
           let cs2 =
             [Instruction (calc0 r2 r1) ;

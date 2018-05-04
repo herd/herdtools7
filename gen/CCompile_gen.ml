@@ -252,16 +252,16 @@ module Make(O:Config) : Builder.S
       let compile_access pdp st p n =
         let e = n.C.evt in
         if e.C.rmw then match  e.C.dir with
-        | R ->
+        | Some R ->
             let v = n.C.next.C.evt.C.v in
             let loc = A.Loc e.C.loc in
             let mo = e.C.atom in
             let r,i,st =
               compile_excl_assertvalue e.C.v st p mo loc v in
             Some r,i,st
-        | W -> None,A.Nop,st
+        | Some W|None -> None,A.Nop,st
         else match e.C.dir with
-        | R ->
+        | Some R ->
             let loc = A.Loc e.C.loc in
             let mo = e.C.atom in
             let r,i,st =
@@ -269,10 +269,10 @@ module Make(O:Config) : Builder.S
               else compile_load_assertvalue pdp e.C.v)
                 st p mo loc in
             Some r,i,st
-        | W ->
+        | Some W ->
             let i = compile_store pdp e in
             None,i,st
-
+        | None -> None,A.Nop,st
 
 (* Lift definitions *)
       module RegSet =
@@ -663,7 +663,7 @@ module Make(O:Config) : Builder.S
           let e = n.C.evt in
           let o,fi,st =
             if e.C.rmw then match  e.C.dir with
-            | R ->
+            | Some R ->
                 let vw = n.C.next.C.evt.C.v
                 and mo = e.C.atom
                 and loc = A.Loc e.C.loc
@@ -681,9 +681,10 @@ module Make(O:Config) : Builder.S
                     A.Seq
                       (i,A.If (ce,add_fence n ins,load_checked_not))),
                   st
-            | W -> None,add_fence n,st
+            | Some W|None  -> None,add_fence n,st
             else begin match e.C.dir with
-            | R ->
+            | None -> Warn.fatal "TODO"
+            | Some R ->
                 let v = e.C.v
                 and mo = e.C.atom
                 and loc = A.Loc e.C.loc in
@@ -700,7 +701,7 @@ module Make(O:Config) : Builder.S
                     A.Seq
                       (i,A.If (ce,add_fence n ins,load_checked_not))),
                   st
-            | W ->
+            | Some W ->
                 None,
                 (fun ins -> A.Seq (compile_store No e,add_fence n ins)),
                 st

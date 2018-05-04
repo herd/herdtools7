@@ -42,14 +42,34 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
 (* Cycles of edges *)
     module CE = struct
       type t =
-          { edge : E.edge ; mutable dir : dir ;
+          { edge : E.edge ; mutable dir : dir option ;
             mutable next : t ; mutable prev : t;
             mutable matches : t ; }
+
+      exception NotFound
+
+      let find_node p n =
+        let rec do_rec m =
+          if p m then m
+          else
+            let m = m.next in
+            if m == n then raise NotFound
+            else do_rec m in
+        do_rec n
+
+      let find_node_rev p n =
+        let rec do_rec m =
+          if p m then m
+          else
+            let m = m.prev in
+            if m == n then raise NotFound
+            else do_rec m in
+        do_rec n
 
       let e0 = E.parse_edge "Rfi"
 
       let rec nil =
-        { edge = e0; dir=R ;  next = nil ; prev = nil ; matches = nil ; }
+        { edge = e0; dir=None ;  next = nil ; prev = nil ; matches = nil ; }
 
 
       let map f n =
@@ -72,14 +92,15 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
           else m::do_rec m.next in
         do_rec e
 
-          
+
       let _pp_proc c =
         let ns = proc_list c in
         let xs = List.map (fun n -> E.pp_edge n.edge) ns in
         String.concat " " xs
 
       let dir_src e = match E.dir_src e with
-      | Dir d -> d
+      | Dir d -> Some d
+      | NoDir -> None
       | Irr -> Warn.fatal "Unresolved direction"
 
       let find_back n =
@@ -110,7 +131,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
         | _ -> do_next m
         and do_next m = if m.next != n then do_rec m.next in
         do_rec n
-          
+
       let mk_cycle es =
         let ms =
           List.map
@@ -142,17 +163,6 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
       | E.Rf Ext|E.Fr Ext|E.Ws Ext|E.Hat -> true
       | _ -> false
 
-      exception NotFound
-
-      let find_node p n =
-        let rec do_rec m =
-          if p m then m
-          else
-            let m = m.next in
-            if m == n then raise NotFound
-            else do_rec m in
-        do_rec n
-
 (* Find skipping Leave/Back *)
       let find_node_out p n =
         let rec do_rec m =
@@ -166,9 +176,9 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
           | _ -> m.next in
           if m == n then raise NotFound
           else do_rec m in
-        
+
         do_rec n
-        
+
       let _find_edge p = find_node (fun n -> p n.edge)
 
       let find_edge_out p = find_node_out (fun n -> p n.edge)
@@ -187,14 +197,14 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
       let find_out n =
         let rec do_rec (n0,_ as c0) d m =
           if debug then
-            eprintf "OUTER %i [%s]\n%!" n0 (_pp m) ; 
+            eprintf "OUTER %i [%s]\n%!" n0 (_pp m) ;
           match m.edge.E.edge with
           | E.Leave _ -> do_next c0 (d+1) m
           | E.Back _ ->
               let c0 =
                 let d = d-1 in
                 let d0,n0 = c0 in
-                if d < d0 then begin 
+                if d < d0 then begin
                   if debug then
                     eprintf "CHANGE: %s -> %s\n%!"
                       (E.pp_edge n0.edge) (E.pp_edge m.next.edge) ;
@@ -224,8 +234,8 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
       let split_procs n =
         try
           let n = find_start_proc n in   (* n is the entry of a proc *)
-          assert (ext_com n.prev.edge) ; 
-          let rec do_rec m =            
+          assert (ext_com n.prev.edge) ;
+          let rec do_rec m =
             if debug then eprintf "REC: '%s'\n" (_pp m) ;
             let e = m in
             let o = find_edge_out ext_com m in
@@ -250,7 +260,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
         | Dp _,Fenced _
           -> 1
         | (Fenced _|Dp _),(Po _|Rf _)
-        | Fenced _,Dp _ -> -1              
+        | Fenced _,Dp _ -> -1
         | _,_ -> Pervasives.compare e1 e2
 
       let ninternals n =
@@ -319,15 +329,20 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
       let rec nil =
         { points = One R; cycle = CE.nil; prev = nil; next = nil; }
 
+      let has_dir e = match e.CE.dir with
+      | Some _ -> true
+      | None -> false
+
       let mk_cycle cy =
         let es = CE.mk_cycle cy in
         let eos = CE.split_procs es in
         let ms =
           List.map
             (fun (e,o) ->
+              let e = CE.find_node has_dir e and o = CE.find_node_rev has_dir o in
               let p =
-                if e == o then One e.CE.dir
-                else Two (e.CE.dir,o.CE.dir) in
+                if e == o then One (Misc.as_some e.CE.dir)
+                else Two (Misc.as_some e.CE.dir,Misc.as_some o.CE.dir) in
               { points=p; cycle=e;  prev=nil; next=nil; })
             eos in
         let patch = function
@@ -365,7 +380,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
         do_rec n1 n2
 
       let compare n1 n2 = match compare_points_cycle n1 n2 with
-      | 0 -> CE.compare_edges_cycle n1.cycle n2.cycle 
+      | 0 -> CE.compare_edges_cycle n1.cycle n2.cycle
       | r -> r
 
       let norm n =
@@ -401,7 +416,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
       | "W+WR" when allsame -> "CoWR"
       | "W+RR" when allsame -> "CoRR"
       | "WR" when allsame -> "CoWR0"
-      | "WW+RR" -> "MP"          
+      | "WW+RR" -> "MP"
       | "WR+WR" -> "SB"
       | "WR+WR+WR" -> "3.SB"
       | "WR+WR+WR+WR" -> "4.SB"

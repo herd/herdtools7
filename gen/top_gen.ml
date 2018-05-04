@@ -113,31 +113,36 @@ module U = TopUtils.Make(O)(Comp)
 
   let call_emit_access st p init n =
     let e = n.C.evt in
+
     if e.C.rmw then match e.C.dir with
-    | R ->
+    | Some R ->
         let r,init,cs,st = Comp.emit_exch st p init e n.C.next.C.evt in
         Some r,init,cs,st
-    | W -> None,init,[],st
+    | Some W|None -> None,init,[],st
 
     else if
       match e.C.atom with
       | None -> true
-      | Some a ->  A.applies_atom a e.C.dir
+      | Some a ->
+          begin match e.C.dir with
+          | None -> false
+          | Some d ->  A.applies_atom a d
+          end
     then
       Comp.emit_access st p init e
     else
       Warn.fatal "atomicity mismatch on edge %s, annotation '%s' on %s"
         (E.pp_edge n.C.edge)
-        (E.pp_atom_option e.C.atom) (pp_dir e.C.dir)
+        (E.pp_atom_option e.C.atom) (Misc.app_opt_def "_" pp_dir e.C.dir)
 
   let call_emit_access_dep st p init n dp r1 v1 =
     let e = n.C.evt in
      if e.C.rmw then match e.C.dir with
-     | R ->
+     | Some R ->
          let r,init,cs,st =
            Comp.emit_exch_dep st p init e n.C.next.C.evt dp r1 in
          Some r,init,cs,st
-     | W -> None,init,[],st
+     | Some W|None -> None,init,[],st
      else
        Comp.emit_access_dep st p init e dp r1 v1
 
@@ -176,31 +181,43 @@ let get_fence n =
 
   let no_check_load init st = init,Misc.identity,st
 
-let rec compile_proc chk loc_writes st p ro_prev init ns = match ns with
-| [] -> init,[],(C.EventMap.empty,[]),st
-| n::ns ->
-    let o,init,i,st = emit_access ro_prev st p init n in
-        let nchk,add_check =
-          match O.docheck,n.C.evt.C.dir,o,ns with
-          | true,R,Some r,_::_ ->
-              true,Comp.check_load p r n.C.evt
-          | _ -> chk,no_check_load in
-        let init,mk_c,st = add_check init st in
-        let init,is,finals,st =
-          compile_proc nchk loc_writes
-            st p (edge_to_prev_load o n)
-            init ns in
-        add_init_check chk p o init,
-        i@
-        mk_c
-          (match get_fence n with Some fe -> Comp.emit_fence fe::is  | _ -> is),
-        (if
-          StringSet.mem n.C.evt.C.loc loc_writes && not (U.do_poll n)
-        then
-          F.add_final p o n finals
-        else finals),
-        st
-
+  let rec compile_proc pref chk loc_writes st p ro_prev init ns = match ns with
+  | [] -> init,pref [],(C.EventMap.empty,[]),st
+  | n::ns ->
+      if O.verbose > 1 then eprintf "COMPILE PROC: <%s>\n" (C.str_node n);
+      begin match  n.C.edge.E.edge with
+      | E.Insert f ->
+          let nxt = C.find_edge (fun e -> not (E.is_insert e.E.edge)) n.C.next in
+          if E.is_ext nxt.C.edge then
+            compile_proc (fun is -> pref (Comp.emit_fence f::is))
+              chk loc_writes st p ro_prev init ns
+          else
+            let init,is,finals,st =
+              compile_proc pref chk loc_writes st p ro_prev init ns in
+            init,Comp.emit_fence f::is,finals,st
+      |_ ->
+          let o,init,i,st = emit_access ro_prev st p init n in
+          let nchk,add_check =
+            match O.docheck,n.C.evt.C.dir,o,ns with
+            | true,Some R,Some r,_::_ ->
+                true,Comp.check_load p r n.C.evt
+            | _ -> chk,no_check_load in
+          let init,mk_c,st = add_check init st in
+          let init,is,finals,st =
+            compile_proc pref nchk loc_writes
+              st p (edge_to_prev_load o n)
+              init ns in
+          add_init_check chk p o init,
+          i@
+          mk_c
+            (match get_fence n with Some fe -> Comp.emit_fence fe::is  | _ -> is),
+          (if
+            StringSet.mem n.C.evt.C.loc loc_writes && not (U.do_poll n)
+          then
+            F.add_final p o n finals
+          else finals),
+          st
+      end
 
 (*************)
 (* Observers *)
@@ -473,7 +490,7 @@ let min_max xs =
     let rec do_rec p i = function
       | [] -> List.rev i,[],(C.EventMap.empty,[]),[]
       | n::ns ->
-          let i,c,(m,f),st = compile_proc false loc_writes A.st0 p No i n in
+          let i,c,(m,f),st = compile_proc Misc.identity false loc_writes A.st0 p No i n in
           let xenv = Comp.get_xstore_results c in
           let f =
             List.fold_left

@@ -56,6 +56,8 @@ val proj_opt : 'a -> 'a option -> 'a
 val app_opt : ('a -> 'b) -> 'a option -> 'b option
 val map_opt : ('a -> 'b) -> 'a option -> 'b option
 val option_map : ('a -> 'b option) -> 'a list -> 'b list
+val app_opt_def : 'b -> ('a -> 'b) -> 'a option -> 'b
+
 val map_string : (char -> string) -> string -> string
 val opt_compare : ('a -> 'a -> int) -> 'a option -> 'a option -> int
 val pair_compare :
