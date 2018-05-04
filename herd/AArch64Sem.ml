@@ -193,17 +193,16 @@ module Make (C:Sem.Config)(V:Value.S)
            >>! B.Next
 
         | I_STXR(var,t,rr,rs,rd) ->
-           (read_reg_ord rd ii >>| read_reg_data rs ii >>| read_reg_ord ResAddr ii)
-           >>= (fun ((a,v),res) ->
-                (write_reg ResAddr V.zero ii
-                 >>| M.altT
-                       (write_reg rr V.one ii)
-                       ((write_reg rr V.zero ii
-                        >>| match t with
-                            | YY -> write_mem_atomic var a v res ii
-                            | LY -> write_mem_atomic_release var a v res ii)
-                       >>! ())))
-           >>! B.Next
+            M.riscv_store_conditional
+              (read_reg_ord ResAddr ii)
+              (read_reg_data rs ii)
+              (read_reg_ord rd ii)
+              (write_reg ResAddr V.zero ii)
+              (fun v -> write_reg rr v ii)
+              (fun ea resa v -> match t with
+              | YY -> write_mem_atomic var ea v resa ii
+              | LY -> write_mem_atomic_release var ea v resa ii)
+              >>! B.Next
 
         (* Operations *)
         | I_MOV(_,r,K k) ->

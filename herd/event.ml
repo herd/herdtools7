@@ -1014,7 +1014,9 @@ let (=|=) = check_disjoint para_comp
 
 (* RISCV Store conditional *)
   let riscv_sc success resa data addr wres wresult wmem =
-    let dep_on_write = not (C.variant Variant.NoDepScWrite) in
+    let dep_on_write =
+      let d = Variant.get_default A.arch Variant.SwitchDepScWrite in
+      if C.variant Variant.SwitchDepScWrite then not d else d in
     let in_wmem = minimals wmem
     and out_wmem = maximals wmem
     and in_wres = minimals wres

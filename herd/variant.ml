@@ -24,12 +24,12 @@ type t =
   | BackCompat
   | FullScDepend    (* Complete dependencies for Store Conditinal *)
   | SplittedRMW     (* Splitted RMW events for riscv *)
-  | NoDepScWrite    (* No dependency on sc mem write, riscv *)
+  | SwitchDepScWrite  (* Switch dependency on sc mem write, riscv, aarch64 *)
   | LrScDiffOk      (* Lr/Sc paired to <> addresses may succeed (!) *)
 
 let tags =
   ["success";"specialx0";"normw";"acqrelasfence";"backcompat";
-   "fullscdepend";"splittedrmw";"nodepscwrite";"lrscdiffok"]
+   "fullscdepend";"splittedrmw";"switchdepscwrite";"lrscdiffok"]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -39,7 +39,7 @@ let parse s = match Misc.lowercase s with
 | "backcompat"|"back" -> Some BackCompat
 | "fullscdepend"|"scdepend" -> Some FullScDepend
 | "splittedrmw" -> Some SplittedRMW
-| "nodepscwrite" -> Some  NoDepScWrite
+| "switchdepscwrite" -> Some  SwitchDepScWrite
 | "lrscdiffok" -> Some  LrScDiffOk
 | _ -> None
 
@@ -51,7 +51,15 @@ let pp = function
   | BackCompat ->"backcompat"
   | FullScDepend -> "FullScDepend"
   | SplittedRMW -> "SplittedRWM"
-  | NoDepScWrite -> "NoDepScWrite"
+  | SwitchDepScWrite -> "SwitchDepScWrite"
   | LrScDiffOk -> " LrScDiffOk"
 
 let compare = Pervasives.compare
+
+let get_default a = function
+  | SwitchDepScWrite ->
+      begin match a with
+      | `RISCV -> true
+      | _ -> false
+      end
+  | v -> Warn.fatal "No default for variant %s" (pp v)
