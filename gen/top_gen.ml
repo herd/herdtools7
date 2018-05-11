@@ -186,6 +186,8 @@ let get_fence n =
   | n::ns ->
       if O.verbose > 1 then eprintf "COMPILE PROC: <%s>\n" (C.str_node n);
       begin match  n.C.edge.E.edge with
+      | E.Node _ ->
+          compile_proc pref chk loc_writes st p ro_prev init ns
       | E.Insert f ->
           let nxt = C.find_edge (fun e -> not (E.is_insert e.E.edge)) n.C.next in
           if E.is_ext nxt.C.edge then

@@ -60,6 +60,7 @@ module Make
          | Leave c -> Some ("["^pp_com c)
          | Back c -> Some (pp_com c^"]")
          | Insert f -> Some (sprintf "{%s}" (Misc.lowercase (A.pp_fence f)))
+         | Node _ -> assert false
          | _ -> None
 
        let plain  = Misc.lowercase (A.pp_plain)
@@ -157,6 +158,7 @@ module Make
 
 
        let mk_name base ?scope es =
+         let es = List.filter (fun e -> not (is_node e.E.edge)) es in
          let name =
            let xs = new_namer es in
            let ys = match isolated_writes es with

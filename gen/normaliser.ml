@@ -333,13 +333,16 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
       | Some _ -> true
       | None -> false
 
+      let is_actual_edge e = has_dir e && not (E.is_node e.CE.edge.E.edge)
+
       let mk_cycle cy =
         let es = CE.mk_cycle cy in
         let eos = CE.split_procs es in
         let ms =
           List.map
             (fun (e,o) ->
-              let e = CE.find_node has_dir e and o = CE.find_node_rev has_dir o in
+              let e = CE.find_node is_actual_edge e
+              and o = CE.find_node_rev is_actual_edge o in
               let p =
                 if e == o then One (Misc.as_some e.CE.dir)
                 else Two (Misc.as_some e.CE.dir,Misc.as_some o.CE.dir) in

@@ -43,12 +43,15 @@ module type S = sig
 (* Fake edges *)
     | Id              (* Annotation on access *)
     | Insert of fence (* Insert some code     *)
+    | Node of dir     (* Isolated event       *)
 (* fancy *)
     | Hat
     | Rmw
 
   val is_id : tedge -> bool
+  val is_node : tedge -> bool
   val is_insert : tedge -> bool
+  val is_non_pseudo : tedge -> bool
 
   type edge = { edge: tedge;  a1:atom option; a2: atom option; }
   val plain_edge : tedge -> edge
@@ -155,18 +158,29 @@ and type atom = F.atom = struct
     | Back of com
     | Id
     | Insert of fence
+    | Node of dir
     | Hat
     | Rmw
 
   let is_id = function
     | Id -> true
     | Insert _|Hat|Rmw|Rf _|Fr _|Ws _|Po (_, _, _)
-    | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _ -> false
+    | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Node _ -> false
 
   let is_insert = function
     | Insert _ -> true
     | Id|Hat|Rmw|Rf _|Fr _|Ws _|Po (_, _, _)
-    | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _ -> false
+    | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Node _ -> false
+
+  let is_node = function
+    | Node _ -> true
+    | Id|Hat|Rmw|Rf _|Fr _|Ws _|Po (_, _, _)
+    | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Insert _ -> false
+
+  let is_non_pseudo = function
+    | Insert _ |Id|Node _-> false
+    | Hat|Rmw|Rf _|Fr _|Ws _|Po (_, _, _)
+    | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _ -> true
 
 
   type edge = { edge: tedge;  a1:atom option; a2: atom option; }
@@ -240,6 +254,7 @@ and type atom = F.atom = struct
     | Back c -> sprintf "%sBack" (pp_com c)
     | Id -> "Id"
     | Insert f -> F.pp_fence f
+    | Node d -> Code.pp_dir d
 
   let do_pp_edge pp_aa e =
     (match e.edge with Id -> "" | _ -> pp_tedge e.edge) ^
@@ -293,7 +308,9 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
   | Rf _| Hat -> Dir R
   | Ws _|Fr _|Rmw -> Dir W
   | Leave c|Back c -> do_dir_tgt_com c
-  | Id|Insert _ -> not_that e "do_dir_tgt"
+  | Id -> not_that e "do_dir_tgt"
+   |Insert _ -> NoDir
+  | Node d -> Dir d
 
   and do_dir_src e = match e with
   | Po(_,e,_)| Fenced(_,_,e,_) -> e
@@ -302,7 +319,7 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
   | Leave c|Back c -> do_dir_src_com c
   | Id -> not_that e "do_dir_src"
   | Insert _ -> NoDir
-
+  | Node d -> Dir d
 
 let fold_tedges f r =
   let r = fold_ie (fun ie -> f (Rf ie)) r in
@@ -323,6 +340,7 @@ let fold_tedges f r =
     F.fold_dpw
       (fun dp -> fold_sd (fun sd -> f (Dp (dp,sd,Dir W)))) r in
   let r = f Id r in
+  let r = f (Node R) (f (Node W) r) in
   let r = f Hat r in
   let r = fold_com (fun c r -> f (Leave c) r) r in
   let r = fold_com (fun c r -> f (Back c) r) r in
@@ -358,7 +376,7 @@ let fold_tedges f r =
                          f e k
                      | _,_ -> k
                  end
-                 | Insert _ ->
+                 | Insert _|Node _ ->
                      begin match a1,a2 with
                      | None,None ->
                          let e =  { a1; a2;edge=te; } in
@@ -511,26 +529,26 @@ let do_set_tgt d e = match e  with
   | Fenced(f,sd,src,_) -> Fenced(f,sd,src,Dir d)
   | Dp (dp,sd,_) -> Dp (dp,sd,Dir d)
   | Rf _ | Hat
-  | Insert _|Id|Ws _|Fr _|Rmw|Leave _|Back _-> e
+  | Insert _|Id|Node _|Ws _|Fr _|Rmw|Leave _|Back _-> e
 
 and do_set_src d e = match e with
   | Po(sd,_,tgt) -> Po(sd,Dir d,tgt)
   | Fenced(f,sd,_,tgt) -> Fenced(f,sd,Dir d,tgt)
   | Fr _|Hat|Dp _
-  | Insert _|Id|Ws _|Rf _|Rmw|Leave _|Back _ -> e
+  | Insert _|Id|Node _|Ws _|Rf _|Rmw|Leave _|Back _ -> e
 
   let set_tgt d e = { e with edge = do_set_tgt d e.edge ; }
   and set_src d e = { e with edge = do_set_src d e.edge ; }
 
   let loc_sd e = match e.edge with
   | Po (sd,_,_) | Fenced (_,sd,_,_) | Dp (_,sd,_) -> sd
-  | Insert _|Fr _|Ws _|Rf _|Hat|Rmw|Id|Leave _|Back _ -> Same
+  | Insert _|Node _|Fr _|Ws _|Rf _|Hat|Rmw|Id|Leave _|Back _ -> Same
 
   let get_ie e = match e.edge with
   | Id |Po _|Dp _|Fenced _|Rmw -> Int
   | Rf ie|Fr ie|Ws ie -> ie
   | Leave _|Back _|Hat -> Ext
-  | Insert _ -> Int
+  | Insert _|Node _ -> Int
 
 
   type full_ie = IE of ie | LeaveBack
@@ -578,7 +596,7 @@ and do_set_src d e = match e with
 
   let do_expand_edge e f =
     match e.edge with
-    | Insert _|Id|Rf _ | Fr _ | Ws _ | Hat |Rmw|Dp _|Leave _|Back _
+    | Insert _|Id|Node _|Rf _ | Fr _ | Ws _ | Hat |Rmw|Dp _|Leave _|Back _
       -> f e
     | Po(sd,e1,e2) ->
         expand_dir2 e1 e2 (fun d1 d2 -> f {e with edge=Po(sd,d1,d2);})
@@ -613,6 +631,15 @@ and do_set_src d e = match e with
           [],e,es
     end
 
+  let set_a1 e a = match e.edge with
+  | Node _ -> { e with a1=a; a2=a;}
+  | _ -> { e with a1=a;}
+
+  let set_a2 e a = match e.edge with
+  | Node _ -> { e with a1=a; a2=a;}
+  | _ -> { e with a2=a;}
+
+
   let resolve_pair e1 e2 =
 (*    eprintf "Resolve pair <%s,%s> -> " (debug_edge e1)  (debug_edge e2) ; *)
     let e1,e2 =
@@ -626,8 +653,8 @@ and do_set_src d e = match e with
     let a1 = e1.a2 and a2 = e2.a1 in
     let e1,e2 as r =
       match a1,a2 with
-      | None,Some _ -> { e1 with a2 = a2;},e2
-      | Some _,None -> e1, { e2 with a1 = a1}
+      | None,Some _ -> set_a2 e1 a2,e2
+      | Some _,None -> e1, set_a1 e2 a1
       | _,_ -> e1,e2 in
 (*    eprintf "<%s,%s>\n" (debug_edge e1) (debug_edge e2) ; *)
     r

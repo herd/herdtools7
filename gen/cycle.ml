@@ -60,6 +60,9 @@ module type S = sig
   val find_non_insert : node -> node
   val find_non_insert_prev : node -> node
 
+  val find_non_pseudo : node -> node
+  val find_non_pseudo_prev : node -> node
+
 (* Re-extract edges out of cycle *)
   val extract_edges : node -> edge list
 
@@ -253,6 +256,11 @@ let non_insert e = not (E.is_insert e.E.edge)
 let find_non_insert m = find_edge non_insert m
 let find_non_insert_prev m = find_edge_prev non_insert m
 
+let non_pseudo e = E.is_non_pseudo e.E.edge
+
+let find_non_pseudo m = find_edge non_pseudo m
+let find_non_pseudo_prev m = find_edge_prev non_pseudo m
+
 (* Add events in nodes *)
 
 module Env = Map.Make(String)
@@ -336,6 +344,16 @@ let set_dir n0 =
     if non_insert m.edge then begin
       let my_d =  E.dir_src m.edge in
       let p = find_non_insert_prev m.prev in
+      if E.is_node m.edge.E.edge then begin (* perform sanuity checks specific to Node pseudo-edge *)
+        if E.is_node p.edge.E.edge then begin
+          Warn.fatal "Double 'Node' pseudo edge %s %s"
+          (E.pp_edge p.edge) (E.pp_edge m.edge)
+        end ;
+        let n = find_non_insert m.next  in
+        if not (E.is_ext p.edge && E.is_ext n.edge) then
+           Warn.fatal "Node' pseudo edge %s appears in-between  %s..%s"
+           (E.pp_edge m.edge)  (E.pp_edge p.edge)  (E.pp_edge n.edge)
+      end ;
 (*      eprintf "p=%a, m=%a\n" debug_node p debug_node m  ; *)
       let prev_d = E.dir_tgt p.edge in
       let d = match prev_d,my_d with
@@ -440,7 +458,8 @@ let set_same_loc st n0 =
         | Some W ->
             n.evt <- { n.evt with v = tr_value n.evt next; } ;
             set_cell n old ;
-            do_set_write_val n.evt.cell (next_co next) ns
+            do_set_write_val n.evt.cell
+              (if E.is_node n.edge.E.edge then next else next_co next) ns
         | (Some R)|None ->  do_set_write_val old next ns
         end
 
@@ -465,7 +484,7 @@ let set_same_loc st n0 =
             (fun m -> match m.prev.edge.E.edge with
             | E.Fr _|E.Rf _|E.Ws _|E.Leave _|E.Back _
             | E.Hat|E.Rmw -> true
-            | E.Po _|E.Dp _|E.Fenced _|E.Insert _ -> false
+            | E.Po _|E.Dp _|E.Fenced _|E.Insert _|E.Node _ -> false
             | E.Id -> assert false) n in
         split_one_loc m
       with Exit -> Warn.fatal "Cannot set write values" in
@@ -732,7 +751,8 @@ let rec group_rec x ns = function
         else do_rec m.next in
       let e = m.evt in
       let k =  match e.dir with
-      | Some W -> (e.loc,m)::k
+      | Some W ->
+          if E.is_node m.edge.E.edge then k else (e.loc,m)::k
       | None| Some R -> k in
       k in
 
