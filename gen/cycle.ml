@@ -596,9 +596,10 @@ let make es =
 (*************************)
 
 let find_start_proc n =
+  let p = find_non_pseudo_prev n.prev in
   if
-    diff_proc n.prev.edge
-  then n
+    diff_proc p.edge
+  then p.next
   else
     let n = find_edge (fun n -> diff_proc n) n in
     try find_edge same_proc n

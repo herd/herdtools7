@@ -59,7 +59,7 @@ module Make
          | Rmw -> Some "rmw"
          | Leave c -> Some ("["^pp_com c)
          | Back c -> Some (pp_com c^"]")
-         | Insert f -> Some (sprintf "{%s}" (Misc.lowercase (A.pp_fence f)))
+         | Insert f -> Some (sprintf "[%s]" (Misc.lowercase (A.pp_fence f)))
          | Node _ -> assert false
          | _ -> None
 

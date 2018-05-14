@@ -217,13 +217,22 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
           else do_rec c d m.next in
         do_rec (0,n) 0 n
 
+(*
+ * Warning:
+ * split_proc below has to be the same as in cycle.ml
+ * for diy to name tests properly when no familly is given.
+ *)
+
+      let find_non_pseudo_prev n = find_node_rev (fun n -> E.is_non_pseudo n.edge.E.edge) n
+
       let find_start_proc n =
         if debug then eprintf "Start proc [%s]\n%!" (_pp n) ;
         let n = find_out n in
         if debug then eprintf "Found out [%s]\n%!" (_pp n) ;
+        let p = find_non_pseudo_prev n.prev in
         if
-          ext_com n.prev.edge
-        then n
+          ext_com p.edge
+        then p.next
         else
           try
             let n = find_edge_out ext_com n in n.next

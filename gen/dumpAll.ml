@@ -41,7 +41,7 @@ module Make(Config:Config)(T:Builder.S)
         Tar.Make
           (struct
             let verbose = Config.verbose
-            let outname = Config.tarfile
+           let outname = Config.tarfile
           end)
 
       type edge = T.edge
@@ -311,7 +311,8 @@ module Make(Config:Config)(T:Builder.S)
             let fam = mk_base cycle.orig in
             let n,env = global_mk_name res.env fam cycle.orig in
             n,env
-        | Some n -> n,res.env in
+        | Some n ->
+            n,res.env in
         let cy = T.E.pp_edges cycle.norm in
         let info,relaxed = mk_info cycle.norm in
         let info = ("Cycle",cy)::info in

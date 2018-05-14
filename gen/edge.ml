@@ -254,7 +254,8 @@ and type atom = F.atom = struct
     | Back c -> sprintf "%sBack" (pp_com c)
     | Id -> "Id"
     | Insert f -> F.pp_fence f
-    | Node d -> Code.pp_dir d
+    | Node W -> "Write"
+    | Node R -> "Read"
 
   let do_pp_edge pp_aa e =
     (match e.edge with Id -> "" | _ -> pp_tedge e.edge) ^
@@ -494,6 +495,8 @@ let iter_atom f= F.fold_atom (fun a () -> f a) ()
         fill_opt "Dp" F.ddw_default sd (Dir W) ;
         fill_opt "Ctrl" F.ctrlw_default sd (Dir W) ;
         ()) () ;
+    if not (Hashtbl.mem t "R") then add_lxm "R" (plain_edge (Node R)) ;
+    if not (Hashtbl.mem t "W") then add_lxm "W" (plain_edge (Node W)) ;
     ()
 
 
