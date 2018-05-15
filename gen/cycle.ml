@@ -351,7 +351,7 @@ let set_dir n0 =
         end ;
         let n = find_non_insert m.next  in
         if not (E.is_ext p.edge && E.is_ext n.edge) then
-           Warn.fatal "Node' pseudo edge %s appears in-between  %s..%s"
+           Warn.fatal "Node pseudo edge %s appears in-between  %s..%s (both neighbours must be external edges)"
            (E.pp_edge m.edge)  (E.pp_edge p.edge)  (E.pp_edge n.edge)
       end ;
 (*      eprintf "p=%a, m=%a\n" debug_node p debug_node m  ; *)
@@ -378,6 +378,14 @@ let set_dir n0 =
               (E.pp_edge p.edge) (E.pp_edge m.edge) in
       let rmw = is_rmw d m in
       m.evt <- { m.evt with dir=Some d; atom=a; rmw=rmw}
+    end else begin
+      let p = find_non_pseudo_prev m.prev
+      and n = find_non_pseudo m.next in
+(*      eprintf "[%a] in [%a]..[%a]\n" debug_node m debug_node p debug_node n ; *)
+      if not (E.is_ext  p.edge || E.is_ext n.edge) then begin
+        Warn.fatal "Insert pseudo edge %s appears in-between  %s..%s (at least one neighbour must be an external edge)"
+          (E.pp_edge m.edge)  (E.pp_edge p.edge)  (E.pp_edge n.edge)
+      end
     end ;
     if m.next != n0 then do_rec m.next in
   do_rec n0 ;
