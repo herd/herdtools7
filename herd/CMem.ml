@@ -37,6 +37,13 @@ module Make
     module S = S
 
     let check_event_structure test = match O.model with
+      | RC11 ->
+         let module X =
+           Rc11.Make
+           (struct
+             include O
+           end)(S) in
+         X.check_event_structure test
     | Generic m ->
         let module X =
           MachModelChecker.Make
@@ -46,6 +53,6 @@ module Make
              end)(S) in
         X.check_event_structure test
     | File _ -> assert false
-    | m -> 
+    | m ->
         Warn.fatal "Model %s not implemented for C" (Model.pp m)
 end

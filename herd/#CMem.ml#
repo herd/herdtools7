@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2012-present Institut National de Recherche en Informatique et *)
+(* Copyright 2013-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,47 +14,47 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Model identifiers *)
+(** Entry to models for CPP11  *)
 
-type cav12_opt =  { cord : bool ; strongst : bool ; }
-
-type jade_opt = { jstrongst : bool;}
-
-type t =
-  | File of string (* To convey model filename *)
-  | RC11
-  | Minimal of bool    (* true <=> check uniproc *)
-  | CAV12 of cav12_opt 
-  | Generic of AST.t
-
-val tags : string list
-val parse : string -> t option
-val pp : t -> string
-
-(* What to let through *)
-
-type through =
-  | ThroughAll       (* Do not retain anything *)
-  | ThroughInvalid   (* Let invalid go through (ie retain uniproc violations) *)
-  | ThroughNone      (* Standard behaviour *)
-
-val tags_through : string list
-val parse_through : string -> through option
-val pp_through : through -> string
-
-(* Common configuration *)
 module type Config = sig
-  val showsome : bool
-  val through : through
-  val debug : bool
-  val verbose : int
-  val skipchecks : StringSet.t
-  val strictskip : bool
-  val cycles : StringSet.t
-  val optace : bool
-  val libfind : string -> string
-  val variant : Variant.t -> bool
+  val model : Model.t
+  val bell_model_info : (string * BellModel.info) option
+  include Model.Config
 end
 
-(* Defaults *)
-val get_default_model : Archs.t -> t
+module Make
+    (O:Config)
+    (S:Sem.Semantics)
+ :
+    (XXXMem.S with module S = S)
+    =
+  struct
+
+    open Model
+
+    let model = O.model
+
+    module SA = S
+
+    module S = S
+
+    let check_event_structure test = match O.model with
+      | RC11 ->
+         let module X =
+           Rc11.Make
+           (struct
+             include O
+           end)(S) in
+         X.check_event_structure test
+    | Generic m ->
+        let module X =
+          MachModelChecker.Make
+            (struct
+              let m = m
+              include O
+             end)(S) in
+        X.check_event_structure test
+    | File _ -> assert false
+    | m ->
+        Warn.fatal "Model %s not implemented for C" (Model.pp m)
+end

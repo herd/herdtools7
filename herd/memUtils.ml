@@ -24,9 +24,9 @@ module Make(S : SemExtra.S) = struct
   module C = S.Cons
   module PC = S.O.PC
 
-(*************)	    
+(*************)
 (* Utilities *)
-(*************)	    
+(*************)
 
   let iico es =
     E.EventRel.transitive_closure
@@ -121,7 +121,7 @@ let get_scope_classes evts =
 let get_scope_rels evts sc =
   let cls = get_scope_classes evts sc in
   StringMap.fold
-    (fun s cls k -> 
+    (fun s cls k ->
       let r =
         E.EventRel.unions
           (List.map
@@ -130,7 +130,7 @@ let get_scope_rels evts sc =
       (s,r)::k)
     cls []
 
- 
+
 (******************)
 (* View of a proc *)
 (******************)
@@ -177,10 +177,10 @@ let get_scope_rels evts sc =
       | S.Load er,S.Store ew when E.is_mem er ->
           E.EventRel.add (ew,er) k
       | _ -> k)
-      rfmap 
+      rfmap
       E.EventRel.empty
 
-  let make_rf conc = make_rf_from_rfmap conc.S.rfmap 
+  let make_rf conc = make_rf_from_rfmap conc.S.rfmap
 
 
   let find_rf er rfm =
@@ -195,7 +195,7 @@ let get_scope_rels evts sc =
         let erf = find_rf er conc.S.rfmap in
         E.EventSet.fold
           (fun ew k ->
-            if 
+            if
               not (E.event_equal er ew) (* RMW *) &&
               E.same_location ew er
             then match erf with
@@ -223,7 +223,7 @@ let get_scope_rels evts sc =
       | S.Load er,S.Store ew when E.is_reg_any er ->
           E.EventRel.add (ew,er) k
       | _ -> k)
-      conc.S.rfmap 
+      conc.S.rfmap
       E.EventRel.empty
 
   let rext conc e =
@@ -233,7 +233,8 @@ let get_scope_rels evts sc =
     | S.Store ew -> E.proc_of ew <> E.proc_of e)
 
 
-  let same_source conc e1 e2 = 
+  let same_source conc e1 e2 =
+
     match find_rf e1 conc.S.rfmap,find_rf e2 conc.S.rfmap with
     | S.Init,S.Init -> true
     | S.Store w1,S.Store w2 -> E.event_compare w1 w2 = 0
@@ -242,7 +243,7 @@ let get_scope_rels evts sc =
 
   let ext r = E.EventRel.filter (fun (e1,e2) -> not (E.same_proc e1 e2)) r
   let internal r = E.EventRel.filter (fun (e1,e2) -> E.same_proc e1 e2) r
-      
+
 
 (* po-separation *)
   let sep is_sep is_applicable evts =
@@ -293,7 +294,7 @@ let get_scope_rels evts sc =
             | S.Init ->
                 if first_ws  ew ws then
                   E.EventRel.add (er,ew) k
-                else k                
+                else k
             | S.Store erf ->
                 if E.EventRel.mem (erf,ew) ws then
                   E.EventRel.add (er,ew) k
@@ -353,7 +354,7 @@ let get_scope_rels evts sc =
 
     LocEnv.fold (fun _ evts k -> E.EventSet.of_list evts::k) env []
 
-      
+
 (* fr to init stores only *)
   let make_fr_partial conc =
     let ws_by_loc = collect_mem_stores conc.S.str in
@@ -451,7 +452,7 @@ let get_scope_rels evts sc =
 
   let compute_pco rfmap ppoloc =
     try
-      let pco = 
+      let pco =
         E.EventRel.fold
           (fun (e1,e2 as p) k -> match E.get_mem_dir e1, E.get_mem_dir e2 with
           | Dir.W,Dir.W -> E.EventRel.add p k
@@ -501,7 +502,7 @@ let get_scope_rels evts sc =
  *)
 
   module T = Test_herd.Make(S.A)
-      
+
   let final_is_relevant test fsc =
     let open ConstrGen in
     let cnstr = T.find_our_constraint test in

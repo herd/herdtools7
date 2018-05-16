@@ -34,7 +34,7 @@ module type Config = sig
   include Mem.Config
 end
 
-module Make(O:Config)(M:XXXMem.S) = 
+module Make(O:Config)(M:XXXMem.S) =
   struct
     open Printf
     module S = M.S
@@ -116,24 +116,24 @@ module Make(O:Config)(M:XXXMem.S) =
 (* Check condition *)
     open ConstrGen
 
-    let check_cond test c =  
+    let check_cond test c =
       let cstr = T.find_our_constraint test in
       match cstr with
       | ExistsState _ -> c.pos > 0
       | NotExistsState _-> c.pos = 0
       | ForallStates _  -> c.neg = 0
 
-            
-    let check_wit test c =  
+
+    let check_wit test c =
       let cstr = T.find_our_constraint test in
       match cstr with
-      | ForallStates _ 
+      | ForallStates _
       | ExistsState _ -> c.pos,c.neg
       | NotExistsState _-> c.neg,c.pos
 
-            
+
 (* rfmap generation and processing, from pre-candidates *)
-    let iter_rfms test rfms kont kont_loop k =      
+    let iter_rfms test rfms kont kont_loop k =
       let kont =
         if O.verbose > 0 then
           fun conc k ->
@@ -188,7 +188,7 @@ module Make(O:Config)(M:XXXMem.S) =
       try Sys.remove name
       with e ->
         W.warn "remove failed: %s" (Printexc.to_string e)
-          
+
     let erase_dot = match S.O.PC.debug,O.outputdir with
     | false,PrettyConf.NoOutputdir -> (* Erase temp file *)
         (function Some (_,f) -> my_remove f | None -> ())
@@ -238,8 +238,8 @@ module Make(O:Config)(M:XXXMem.S) =
             | ShowFlag f -> Flag.Set.mem (Flag.Flag f) flags in
 
           begin match ochan with
-          | Some (chan,_) when show_exec ->            
-              let legend = 
+          | Some (chan,_) when show_exec ->
+              let legend =
                 let pp_flag = match O.show with
                 | PrettyConf.ShowFlag f -> sprintf ", flag %s" f
                 | _ -> "" in
@@ -247,7 +247,7 @@ module Make(O:Config)(M:XXXMem.S) =
                 let pp_model = match M.model with
                 | Model.Minimal false -> ""
                 | _ -> sprintf "%s" (Model.pp M.model) in
-                if O.shortlegend then name                  
+                if O.shortlegend then name
                 else if O.showkind then
                   if PC.texmacros then
                     sprintf
@@ -298,9 +298,9 @@ module Make(O:Config)(M:XXXMem.S) =
                   let old = Flag.Map.safe_find [] flag k in
                   Flag.Map.add flag (c.cands::old) k in
                 Flag.Set.fold add flags c.flagged;
-              end;              
+              end;
               shown = if show_exec then c.shown+1 else c.shown;
-              reads = 
+              reads =
                 if O.outcomereads then
                   A.LocSet.union (PU.all_regs_that_read conc.S.str) c.reads
                 else c.reads;
@@ -362,13 +362,13 @@ module Make(O:Config)(M:XXXMem.S) =
             raise e in
 (* Close *)
       close_dot ochan ;
-      let do_show () = 
+      let do_show () =
 (* Show if something to show *)
         begin match ochan with
         | Some (_,fname) when c.shown > 0 ->
             let module SH = Show.Make(S.O.PC) in
             if S.O.PC.debug then eprintf "show %s file\n" fname ;
-            SH.show_file fname 
+            SH.show_file fname
         | Some _|None -> ()
         end ;
 (* Erase *)
@@ -377,7 +377,7 @@ module Make(O:Config)(M:XXXMem.S) =
 (* Reduce final states, so as to show relevant locations only *)
       let finals =
         if O.outcomereads then
-          let locs = 
+          let locs =
             A.LocSet.union
               (S.displayed_locations test)
               c.reads in
@@ -397,7 +397,7 @@ module Make(O:Config)(M:XXXMem.S) =
         let tname = test.Test_herd.name.Name.name in
         let is_bad = has_bad_execs c in
         if not O.badexecs &&  is_bad then raise Exit ;
-        printf "Test %s %s\n" tname (C.dump_as_kind cstr) ;        
+        printf "Test %s %s\n" tname (C.dump_as_kind cstr) ;
 (**********)
 (* States *)
 (**********)
@@ -417,10 +417,10 @@ module Make(O:Config)(M:XXXMem.S) =
         begin if O.verbose > 0 then
           Flag.Map.iter
             (fun flag execs ->
-              printf "Flag %s: %s \n" 
-                (Flag.pp flag) 
-                (List.fold_right 
-                   (fun i s -> s ^ (if s="" then "" else ",") ^ sprintf "%i" i) 
+              printf "Flag %s: %s \n"
+                (Flag.pp flag)
+                (List.fold_right
+                   (fun i s -> s ^ (if s="" then "" else ",") ^ sprintf "%i" i)
                    execs ""))
           c.flagged
         else
@@ -448,7 +448,7 @@ module Make(O:Config)(M:XXXMem.S) =
               else if Misc.string_eq k "Cycle" ||  Misc.string_eq k "Safe" then
                 fprintf stdout "%s=%s\n" k v)
             test.Test_herd.info
-        end  else 
+        end  else
           List.iter
             (fun (k,v) ->
               if Misc.string_eq k "Hash" then
