@@ -573,10 +573,12 @@ let compatible_locs_mem e1 e2 =
                 kont es rfm cs res
           with Contradiction -> res  (* can be raised by add_mem_eqs *)
           | e ->
-              let rfm = add_mem loads stores rfm in
-              let module PP = Pretty.Make(S) in
-              prerr_endline "Exception" ;
-              PP.show_es_rfm test es rfm ;
+              if C.debug.Debug_herd.top then begin
+                eprintf "Exception: %s\n%!" (Printexc.to_string e) ;
+                let module PP = Pretty.Make(S) in
+                let rfm = add_mem loads stores rfm in
+                PP.show_es_rfm test es rfm
+              end ;
               raise e
         )
         res
