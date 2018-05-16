@@ -77,13 +77,13 @@ module Make (O:Cfg)(S:Sem.Semantics)
         let eco0 = ER.union3 rf mo rb in
         let eco = ER.transitive_closure eco0 in
 
-        let rs0 = ER.inter sb loc in
-        let rs1 = ER.restrict_domain E.is_mem_store rs0 in
-        let rs2 = ER.sequence rf rmw in
-        let rs3 = ER.transitive_closure rs2 in
-        let rs4 = ER.restrict_domain (fun x -> E.is_mem_store x && (rlx x.action || na x.action)) rs3 in
-        let rs5 = ER.sequence rs1 rs4 in
-        let rs = ER.union rs4 rs5 in
+        let rs0 = ER.sequence rf rmw in
+        let rs1 = ER.transitive_closure rs0 in
+        let rs2 = ER.restrict_domain (fun x -> E.is_mem_store x && (rlx x.action|| na x.action)) rs1 in
+        let rs3 = ER.inter sb loc in
+        let rs4 = ER.restrict_domains E.is_mem_store (fun x -> E.is_mem_store x && (rlx x.action|| na x.action)) rs3 in
+        let rs5 = ER.sequence rs4 rs2 in
+        let rs = ER.union rs2 rs5 in
 
         let sw0 = ER.sequence rs rf in
         let sw1 = ER.restrict_domain f sb in
