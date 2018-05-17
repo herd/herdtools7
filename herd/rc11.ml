@@ -33,8 +33,15 @@ module Make (O:Cfg)(S:Sem.Semantics)
                                 debug_event e1 debug_event e2)
         r
 
+      let is_that_fence b e = match E.barrier_of e with
+        | Some a -> a = b.S.barrier
+        | None -> false
+
     let make_procrels conc =
-      MU.make_procrels (fun x -> false) conc
+      let is_isync = match S.isync with
+        | None -> fun _ -> false
+        | Some b -> is_that_fence b in
+      MU.make_procrels is_isync conc
 
     let pp_failure test conc legend vb_pp =
       if O.debug && O.verbose > 1 then begin
@@ -45,20 +52,15 @@ module Make (O:Cfg)(S:Sem.Semantics)
 
     let check_event_structure test conc _kfail kont res =
       let pr = make_procrels conc in
-      let pp_relns =
-        lazy begin
-            []
-          end in
       let proc_ws ws0 res =
         let ws = ER.transitive_closure ws0 in
         let unv = ER.cartesian conc.S.str.E.events conc.S.str.E.events in
-  (*      let nodes = ER.nodes unv in *)
         let rf = pr.rf in
         let mo = ws in
         let sb = conc.S.po in
         let rb = U.make_fr conc ws in
         let loc = ER.restrict_rel E.same_location unv in
-        let int = ER.restrict_rel E.same_proc_not_init unv in
+    (*    let int = ER.restrict_rel E.same_proc_not_init unv in *)
         let ext = ER.restrict_rel (fun e1 e2 -> not (E.same_proc e1 e2)) unv in
         let rmw = conc.S.atomic_load_store in
 
@@ -71,8 +73,8 @@ module Make (O:Cfg)(S:Sem.Semantics)
         let acq_rel = aux "AQU_REL" in
         let sc = aux "SC" in
         let na = aux "NA" in
-      (*  let rlx = ER.Elts.filter E.Act.is_atomic mo_matches MemOrder.Rlx in *)
         let f = E.is_barrier in
+        let a = aux "A" in
 
         let eco0 = ER.union3 rf mo rb in
         let eco = ER.transitive_closure eco0 in
@@ -93,7 +95,7 @@ module Make (O:Cfg)(S:Sem.Semantics)
         let sw5 = ER.restrict_codomain f sb in
         let sw6 = ER.sequence sw4 sw5 in
         let sw7 = ER.union sw4 sw6 in
-        let sw = ER.restrict_codomain (fun x -> rel x.action || acq_rel x.action || sc x.action) sw7 in
+        let sw = ER.restrict_codomain (fun x -> acq x.action || acq_rel x.action || sc x.action) sw7 in
 
         let hb0 = ER.union sb sw in
         let hb = ER.transitive_closure hb0 in
@@ -133,9 +135,32 @@ module Make (O:Cfg)(S:Sem.Semantics)
         let r2 = ER.union sb rf in
         let nothinair = ER.is_acyclic r2 in
 
+        let cnf0 = ER.restrict_domain E.is_mem_store loc in
+        let cnf1 = ER.restrict_codomain E.is_mem_store loc in
+        let cnf2 = ER.union cnf0 cnf1 in
+        let cnf3 = ER.restrict_domain (fun x -> not (E.is_mem_store_init x)) cnf2 in
+        let cnf = ER.restrict_codomain (fun x -> not (E.is_mem_store_init x)) cnf3 in
+
+        let dr0 = ER.inter cnf ext in
+        let dr1 = ER.diff dr0 (ER.union hb (ER.inverse hb)) in
+        let dr = ER.restrict_rel (fun x y -> not (a x.action) && not (a y.action)) dr1 in
+
+        let pp_relns =
+          lazy begin
+              ("fr", rb)::
+                ("mo", mo)::
+                ("hb", hb)::
+                ("eco", eco)::
+                ("rmw", rmw)::
+                ("psc", psc)::[]
+            end in
+
         let ok = coherence && atomicity && asc && nothinair in
         if ok
         then
+          if not (ER.is_empty dr) then
+            kont conc conc.S.fs pp_relns (Flag.Set.add Flag.Undef Flag.Set.empty) res
+        else
           kont conc conc.S.fs pp_relns Flag.Set.empty res
         else res in
       U.apply_process_co test conc proc_ws res
