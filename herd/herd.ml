@@ -258,6 +258,10 @@ let options = [
   Arg.Bool (fun b -> if b then nshow := Some 1),
   "<bool> alias for -nshow 1";
 
+  "-statelessrc11",
+  Arg.Bool (fun b -> if b then statelessrc11 := true),
+  "<bool> enable stateless RC11 model checking";
+
 (************************)
 (* Control dot pictures *)
 (************************)
@@ -451,6 +455,7 @@ let model,model_opts = match !model with
     | Misc.Exit ->
         eprintf "Failure of generic model parsing\n" ;
         exit 2 end
+| Some r as m when r = RC11 -> m,ModelOption.default
 | Some _ as m -> m,ModelOption.compat
 | None -> None,ModelOption.default
 
@@ -494,6 +499,8 @@ let () =
     let badexecs = !badexecs 
     let badflag = !badflag
     let throughflag = !throughflag
+
+    let statelessrc11 = !statelessrc11
 
     let check_name = Check.ok
     let check_rename = Check.rename_opt

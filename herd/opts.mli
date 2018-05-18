@@ -64,6 +64,8 @@ val dumplem : bool ref
 val dumptex : bool ref
 val moreedges : bool ref
 
+val statelessrc11 : bool ref
+
 (* Pretty printing configuration, deserves its own module *)
 module PP : sig
   open PrettyConf

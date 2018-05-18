@@ -32,6 +32,8 @@ module type Config = sig
   val badflag : string option
   val throughflag : string option
   include Mem.Config
+
+  val statelessrc11 : bool
 end
 
 module Make(O:Config)(M:XXXMem.S) =
@@ -347,6 +349,10 @@ module Make(O:Config)(M:XXXMem.S) =
             erase_dot ochan ;
             Handler.pop ()
       end else
+        if O.statelessrc11
+        then
+          print_string "stateless\n"
+        else
         (* Thanks to the existence of check_test, XXMem modules
            apply their internal functors once *)
         let check_test = M.check_event_structure test  in
