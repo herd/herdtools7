@@ -32,7 +32,7 @@ end
 (** Output signature, functionalities added *)
 module type S = sig
 
-  module I : I
+ module I : I
 
   type global_loc = I.V.v 
  

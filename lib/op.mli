@@ -44,6 +44,8 @@ type op1 =
 (* Low order bit index is zero *)
   | SetBit of int | UnSetBit of int
   | ReadBit of int
+  | LeftShift of int
+  | LogicalRightShift of int
 
 val pp_op1 : op1 -> string
 

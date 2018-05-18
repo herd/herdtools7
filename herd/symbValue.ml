@@ -185,6 +185,12 @@ module Make(Cst:Constant.S) = struct
       unop
         (fun s ->
           bool_to_scalar (Scalar.compare (logand (mask k) s) zero <> 0))
+  | LogicalRightShift 0
+  | LeftShift 0 -> fun s -> s
+  | LeftShift k ->
+      unop  (fun s -> Scalar.shift_left s k)
+  | LogicalRightShift k ->
+      unop  (fun s -> Scalar.shift_right_logical s k)
 
   let op op = match op with
   | Add -> add

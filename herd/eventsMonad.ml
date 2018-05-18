@@ -454,6 +454,8 @@ and type evt_struct = E.event_structure) =
             b_setact (eiid_b,acc))
         sact (eiid_next,Evt.empty)
 
+
+
 (* trivial event_structure with just one event
    and no relation *)
 
@@ -574,6 +576,80 @@ and type evt_struct = E.event_structure) =
           ((), [(VC.Assign (v1,VC.Atom v2))],
            E.empty_event_structure)
 
+
+(**************)
+(* Mixd size  *)
+(**************)
+
+    module Scalar = V.Cst.Scalar
+    let def_size = Scalar.machsize
+
+    let v_ff  = V.intToV 0xff
+    let extract_byte v = VC.Binop (Op.And,v,v_ff)
+
+    let extract_step v =
+      let d = extract_byte v
+      and w = VC.Unop (Op.LogicalRightShift 8,v) in
+      d,w
+
+(* Translate to list of bytes, least significant first *)
+    let explode sz v =
+      let rec do_rec k v =
+        if k <= 1 then [v],[]
+        else
+          let d,w = extract_step v in
+          let vw = V.fresh_var () in
+          let ds,eqs = do_rec (k-1) vw in
+          let vd =  V.fresh_var () in
+          vd::ds,
+          VC.Assign (vw,w)::VC.Assign (vd,d)::eqs in
+      do_rec (MachSize.nbytes sz) v
+
+(* Translate from list of bytes  least significant first *)
+    let rec recompose ds = match ds with
+    | [] -> assert false
+    | [d] -> d,[]
+    | d::ds ->
+        let w,eqs = recompose ds in
+        let vw = V.fresh_var ()
+        and x =  V.fresh_var () in
+        vw,VC.Assign (x,VC.Unop (Op.LeftShift 8,w))::VC.Assign (vw,VC.Binop (Op.Or,x,d))::eqs
+
+(* Bytes addresses, little endian *)
+    let byte_eas sz a =
+      let kmax = MachSize.nbytes sz in
+      let rec do_rec k =
+        if k >= kmax then [],[]
+        else
+          let xa = V.fresh_var() in
+          let xas,eqs = do_rec (k+1) in
+          xa::xas,VC.Assign (xa,VC.Binop (Op.Add,a,V.intToV k))::eqs in
+      let xas,eqs = do_rec 1 in
+      a::xas,eqs
+
+    let read_mixed is_data sz mk_act a ii =
+      fun eiid ->
+        let eas,a_eqs = byte_eas sz a in
+        let eavs = List.map (fun ea -> ea,V.fresh_var ()) eas in
+        let vs = List.map snd eavs in
+        let v,v_eqs = recompose vs in
+        let eiid,es =
+          List.fold_left
+            (fun (eiid,es) (ea,v) ->
+              eiid+1,
+              E.EventSet.add
+                {E.eiid = eiid;
+                 E.iiid = Some ii;
+                 E.action = mk_act sz ea v;} es)
+            (eiid,E.EventSet.empty) eavs  in
+        let st =
+          { E.empty_event_structure with
+            E.events = es;
+            E.data_ports = if is_data then es else E.EventSet.empty;
+            E.sca = E.EventSetSet.singleton es;} in
+        eiid,
+        Evt.singleton (v,a_eqs@v_eqs,st)
+
 (* Add an inequality constraint *)
     let neqT : V.v -> V.v -> unit t
         = fun v1 v2 ->
@@ -620,16 +696,6 @@ and type evt_struct = E.event_structure) =
     type output = VC.cnstrnts * evt_struct
 
 (* TODO: extract type from env :) *)
-    let def_size = MachSize.Word
-    module Scalar = V.Cst.Scalar
-
-    let v_ff  = Scalar.of_int 0xff
-
-    let extract_step v =
-      let d = Scalar.logand v v_ff
-      and w = Scalar.shift_right_logical v 8 in
-      d,w
-
 
     let initwrites env =
       fun eiid ->

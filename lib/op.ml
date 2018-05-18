@@ -61,12 +61,16 @@ type op1 =
   | Not
   | SetBit of int | UnSetBit of int
   | ReadBit of int
+  | LeftShift of int
+  | LogicalRightShift of int
 
 let pp_op1 o = match o with
 | Not -> "!"
 | SetBit i -> sprintf "setbit%i" i
 | UnSetBit i -> sprintf "unsetbit%i" i
 | ReadBit i -> sprintf "readbit%i" i
+| LeftShift i -> sprintf "<<[%i]" i
+| LogicalRightShift i -> sprintf ">>>[%i]" i
 
 (***********)
 
