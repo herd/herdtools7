@@ -40,6 +40,8 @@ module Make (*O:Model.Config*)(S:Sem.Semantics)
               let _ =  E.EventSet.iter
                          (fun z -> debug_event stdout z)
                          y.events in
-              let _ = debug_cnstrnts stdout x in printf "\n") rfms in ()
+              let _ = debug_cnstrnts stdout x in printf "\n") rfms in
+      let simple = List.map (fun (_, _, (x : E.event_structure))
+                               -> E.EventSet.map (fun x -> 
 
   end
