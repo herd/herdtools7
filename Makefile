@@ -1,4 +1,4 @@
-PREFIX=$$HOME
+PREFIX=
 
 all:
 	sh ./build.sh $(PREFIX)
