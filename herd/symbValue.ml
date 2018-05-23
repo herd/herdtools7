@@ -119,8 +119,18 @@ module Make(Cst:Constant.S) = struct
 (* Particular cases are important for symbolic constants *)
     if is_zero v1 then v2
     else if is_zero v2 then v1
-(* General case *)
-    else binop Op.Add Scalar.add v1 v2
+    else match v1,v2 with
+    | (Val (Concrete i1),Val (Symbolic (s,i2)))
+    | (Val (Symbolic (s,i2)),Val (Concrete i1)) ->
+        let i1 = Scalar.to_int i1 in
+        Val (Symbolic (s,i1+i2))
+    | _,_ -> (* General case *)
+    binop Op.Add Scalar.add v1 v2
+
+  and add_konst k v = match v with
+  | Val (Concrete v) -> Val (Concrete (Scalar.addk v k))
+  | Val (Symbolic (s,i)) -> Val (Symbolic (s,i+k))
+  | Var _ -> raise Undetermined
 
   and orop v1 v2 =
     if is_zero v1 then v2
@@ -186,11 +196,14 @@ module Make(Cst:Constant.S) = struct
         (fun s ->
           bool_to_scalar (Scalar.compare (logand (mask k) s) zero <> 0))
   | LogicalRightShift 0
-  | LeftShift 0 -> fun s -> s
+  | LeftShift 0
+  | AddK 0 -> fun s -> s
   | LeftShift k ->
       unop  (fun s -> Scalar.shift_left s k)
   | LogicalRightShift k ->
       unop  (fun s -> Scalar.shift_right_logical s k)
+  | AddK k -> add_konst k
+  | AndK k -> unop (fun s -> Scalar.logand s (Scalar.of_int k))
 
   let op op = match op with
   | Add -> add

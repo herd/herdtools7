@@ -46,6 +46,8 @@ type op1 =
   | ReadBit of int
   | LeftShift of int
   | LogicalRightShift of int
+  | AddK of int
+  | AndK of int
 
 val pp_op1 : op1 -> string
 

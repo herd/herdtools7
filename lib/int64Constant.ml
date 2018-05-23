@@ -16,6 +16,12 @@
 
 module Int64Scalar = struct
   include Int64
+
+  let addk x k = match k with
+  | 0 -> x
+  | 1 -> succ x
+  | _ -> add x (of_int k)
+
   let machsize = MachSize.Quad
   let pp hexa v =
     Printf.sprintf (if hexa then "0x%Lx" else "%Li") v

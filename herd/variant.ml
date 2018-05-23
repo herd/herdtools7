@@ -26,10 +26,11 @@ type t =
   | SplittedRMW     (* Splitted RMW events for riscv *)
   | SwitchDepScWrite  (* Switch dependency on sc mem write, riscv, aarch64 *)
   | LrScDiffOk      (* Lr/Sc paired to <> addresses may succeed (!) *)
-
+  | Mixed
 let tags =
   ["success";"specialx0";"normw";"acqrelasfence";"backcompat";
-   "fullscdepend";"splittedrmw";"switchdepscwrite";"lrscdiffok"]
+   "fullscdepend";"splittedrmw";"switchdepscwrite";"lrscdiffok";
+   "mixed"; ]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -41,6 +42,7 @@ let parse s = match Misc.lowercase s with
 | "splittedrmw" -> Some SplittedRMW
 | "switchdepscwrite" -> Some  SwitchDepScWrite
 | "lrscdiffok" -> Some  LrScDiffOk
+| "mixed" -> Some Mixed
 | _ -> None
 
 let pp = function
@@ -53,6 +55,7 @@ let pp = function
   | SplittedRMW -> "SplittedRWM"
   | SwitchDepScWrite -> "SwitchDepScWrite"
   | LrScDiffOk -> " LrScDiffOk"
+  | Mixed -> "mixed"
 
 let compare = Pervasives.compare
 

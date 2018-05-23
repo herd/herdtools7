@@ -16,6 +16,12 @@
 
 module Int32Scalar = struct
   include Int32
+
+  let addk x k = match k with
+  | 0 -> x
+  | 1 -> succ x
+  | _ -> add x (of_int k)
+
   let machsize = MachSize.Word
   let pp hexa v =
     Printf.sprintf (if hexa then "0x%lx" else "%li") v

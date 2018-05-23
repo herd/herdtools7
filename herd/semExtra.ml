@@ -52,7 +52,7 @@ module type S = sig
 
   type test =
       (program, nice_prog, start_points,
-       state, prop, location, A.LocSet.t) Test_herd.t
+       state, A.size_env, prop, location, A.LocSet.t) Test_herd.t
 
 (* Get list of locations observed in outcomes *)
   type loc_set = A.LocSet.t
@@ -196,7 +196,7 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
 
     type test =
       (program, nice_prog, start_points,
-       state, prop, location, A.LocSet.t) Test_herd.t
+       state, A.size_env, prop, location, A.LocSet.t) Test_herd.t
 
 (* List of relevant location *)
     type loc_set = A.LocSet.t

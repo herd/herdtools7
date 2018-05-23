@@ -280,15 +280,15 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         let evts_proc = jump_start proc code in
         evts_proc |*| evts in
 
-      let add_inits env =
-        if C.initwrites then  EM.initwrites env
+      let add_inits env size_env =
+        if C.initwrites then  EM.initwrites env size_env
         else EM.zeroT in
 
       let set_of_all_instr_events =
         List.fold_right
           add_events_for_a_processor
           starts
-          (add_inits (get_all_mem_locs test)) in
+          (add_inits (get_all_mem_locs test) test.Test_herd.size_env) in
 
       let rec index xs i = match xs with
       | [] ->

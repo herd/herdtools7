@@ -116,4 +116,5 @@ module type S = sig
   val ptscale : float
   val edgemerge : bool
   val labelinit : bool
+  val variant : Variant.t -> bool
 end

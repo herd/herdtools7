@@ -14,15 +14,16 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type ('prog,'nice_prog,'start,'state,'prop,'loc,'locset) t =
+type ('prog,'nice_prog,'start,'state,'size_env, 'prop,'loc,'locset) t =
     {
-     arch : Archs.t ; 
+     arch : Archs.t ;
      name : Name.t ;
      info : MiscParser.info ;
      program : 'prog ;
      nice_prog : 'nice_prog ;
      start_points : 'start ;
      init_state : 'state ;
+     size_env : 'size_env ;
      filter : 'prop option ;
      cond : 'prop ConstrGen.constr ;
      flocs : 'loc list ;
@@ -51,7 +52,7 @@ module Make(A:Arch_herd.S) =
 
     type result =
         (A.program, A.nice_prog, A.start_points,
-         A.state, A.prop, A.location, A.LocSet.t) t
+         A.state, A.size_env, A.prop, A.location, A.LocSet.t) t
 
 (* Symb register allocation is external, since litmus needs it *)
     module ArchAlloc = struct
@@ -62,13 +63,13 @@ module Make(A:Arch_herd.S) =
       type v = A.V.v
       let maybevToV = V.maybevToV
       type global = A.V.v
-      let maybevToGlobal = V.maybevToV 
+      let maybevToGlobal = V.maybevToV
     end
-        
+
    module Alloc = SymbReg.Make(ArchAlloc)
 
 (* Code loader is external, since litmus tests need it too *)
-    module Load = Loader.Make(A) 
+    module Load = Loader.Make(A)
 
     let collect_atom a r = match a with
     | ConstrGen.LV (loc,_v) -> A.LocSet.add loc r
@@ -80,11 +81,11 @@ module Make(A:Arch_herd.S) =
           {MiscParser.init = init ;
            info = info ;
            prog = nice_prog ;
-           filter = filter ; 
-           condition = final ; 
+           filter = filter ;
+           condition = final ;
            locations = locs ;
            extra_data = extra_data ;
-	 } = t in
+         } = t in
 
       let prog,starts = Load.load nice_prog in
       let flocs = List.map fst locs in
@@ -106,23 +107,24 @@ module Make(A:Arch_herd.S) =
        filter = filter ;
        cond = final ;
        flocs = flocs ;
-       observed = observed ;       
+       observed = observed ;
        displayed = displayed ;
-       extra_data = extra_data
+       extra_data = extra_data ;
+       size_env = A.build_size_env init ;
      }
 
     let empty_test =
-      let empty_name = 
-	{
-	  Name.name = "";
-	  Name.file = "";
-	  Name.texname = "";
-	  Name.doc = "";
-	}
+      let empty_name =
+        {
+          Name.name = "";
+          Name.file = "";
+          Name.texname = "";
+          Name.doc = "";
+        }
       in
-    let fake_constr = 
+    let fake_constr =
       ConstrGen.ExistsState (ConstrGen.And [])
-      in      
+      in
       {
        arch = A.arch ;
        name = empty_name ;
@@ -130,14 +132,14 @@ module Make(A:Arch_herd.S) =
        program = A.LabelMap.empty ;
        nice_prog = [] ;
        start_points = [] ;
-       init_state = A.state_empty;
+       init_state = A.state_empty; size_env = A.size_env_empty ;
        filter = None ;
        cond = fake_constr ;
        flocs = [] ;
        observed = A.LocSet.empty; displayed = A.LocSet.empty;
        extra_data = MiscParser.empty_extra;
-      }     
+      }
 
-    let find_our_constraint test = test.cond 
+    let find_our_constraint test = test.cond
 
 end

@@ -23,6 +23,8 @@ module Make (C:Sem.Config)(V:Value.S)
     module Act = MachAction.Make(RISCV)
     include SemExtra.Make(C)(RISCV)(Act)
 
+    let mixed = C.variant Variant.Mixed
+
 (* Barrier pretty print *)
     let barriers =
       RISCV.do_fold_fence
@@ -106,7 +108,11 @@ module Make (C:Sem.Config)(V:Value.S)
     let read_reg_data = read_reg true
 
     let read_mem_annot sz an a ii =
-      M.read_loc false (mk_read sz an) (A.Location_global a) ii
+      if mixed then
+        M.read_mixed false sz (fun sz a v -> mk_read sz an a v)
+          a ii
+      else
+        M.read_loc false (mk_read sz an) (A.Location_global a) ii
 
     let read_mem sz mo = read_mem_annot sz (RISCV.P mo)
     let read_mem_atomic sz mo = read_mem_annot sz (RISCV.X mo)
@@ -121,12 +127,20 @@ module Make (C:Sem.Config)(V:Value.S)
           (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, plain, nat_sz)) ii
 
     let write_reg = do_write_reg M.mk_singleton_es
+
     let write_reg_success =
       do_write_reg
-        (if O.variant Variant.Success then M.mk_singleton_es_success else M.mk_singleton_es)
+        (if O.variant Variant.Success then
+          M.mk_singleton_es_success else M.mk_singleton_es)
 
     let do_write_mem sz an a v ii  =
-      M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v, an, sz)) ii
+      if mixed then
+        M.write_mixed sz
+          (fun sz a v -> Act.Access (Dir.W, a, v, an, sz))
+          a v ii
+      else
+        M.mk_singleton_es
+          (Act.Access (Dir.W, A.Location_global a, v, an, sz)) ii
 
     let write_mem sz an = do_write_mem sz (RISCV.P an)
 

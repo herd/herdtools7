@@ -19,6 +19,7 @@ type endian = Little | Big
 type sz = Byte | Short | Word | Quad
 
 val pp : sz -> string
+val debug : sz -> string
 
 val nbytes : sz -> int
 val nbits : sz -> int

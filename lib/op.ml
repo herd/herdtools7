@@ -63,6 +63,8 @@ type op1 =
   | ReadBit of int
   | LeftShift of int
   | LogicalRightShift of int
+  | AddK of int
+  | AndK of int
 
 let pp_op1 o = match o with
 | Not -> "!"
@@ -71,7 +73,8 @@ let pp_op1 o = match o with
 | ReadBit i -> sprintf "readbit%i" i
 | LeftShift i -> sprintf "<<[%i]" i
 | LogicalRightShift i -> sprintf ">>>[%i]" i
-
+| AddK i  -> sprintf "+[%i]" i
+| AndK i  -> sprintf "&[%i]" i
 (***********)
 
 type op3 = If

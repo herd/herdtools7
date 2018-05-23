@@ -16,15 +16,15 @@
 
 (** Litmus tests *)
 
-type ('prog,'nice_prog,'start,'state,'prop, 'loc, 'locset) t =
+type ('prog,'nice_prog,'start,'state, 'size_env, 'prop, 'loc, 'locset) t =
     {
-     arch : Archs.t ; 
+     arch : Archs.t ;
      name : Name.t ;
      info : MiscParser.info ;
      program : 'prog ;
      nice_prog : 'nice_prog ;
      start_points : 'start ;
-     init_state : 'state ;
+     init_state : 'state ; size_env : 'size_env ;
      filter : 'prop option ;
      cond : 'prop ConstrGen.constr ;
      flocs : 'loc list ;
@@ -34,13 +34,13 @@ type ('prog,'nice_prog,'start,'state,'prop, 'loc, 'locset) t =
    }
 
 val simple_name :
-    ('prog,'nice_prog,'start,'state,'prop, 'loc, 'locset) t -> string
+    ('prog,'nice_prog,'start,'state,'size_env,'prop,'loc,'locset) t -> string
 val readable_name :
-    ('prog,'nice_prog,'start,'state,'prop, 'loc, 'locset) t -> string
+    ('prog,'nice_prog,'start,'state,'size_env,'prop,'loc,'locset) t -> string
 val very_readable_name :
-    ('prog,'nice_prog,'start,'state,'prop, 'loc, 'locset) t -> string
+    ('prog,'nice_prog,'start,'state,'size_env,'prop,'loc,'locset) t -> string
 val basename :
-    ('prog,'nice_prog,'start,'state,'prop, 'loc, 'locset) t -> string
+    ('prog,'nice_prog,'start,'state,'size_env,'prop,'loc,'locset) t -> string
 
 
 module Make(A:Arch_herd.S) : sig
@@ -50,11 +50,12 @@ module Make(A:Arch_herd.S) : sig
        A.nice_prog,
        A.start_points,
        A.state,
-       A.prop, 
+       A.size_env,
+       A.prop,
        A.location,
        A.LocSet.t
       ) t
-       
+
   val build : Name.t -> A.pseudo MiscParser.t -> result
 
   val find_our_constraint : result -> A.constr

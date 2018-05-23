@@ -25,6 +25,12 @@ let pp = function
   | Word -> "w"
   | Quad -> "q"
 
+let debug = function
+  | Byte -> "Byte"
+  | Short -> "Short"
+  | Word -> "Word"
+  | Quad -> "Quad"
+
 let nbytes = function
   | Byte -> 1
   | Short -> 2

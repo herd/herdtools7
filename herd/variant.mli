@@ -24,7 +24,7 @@ type t =
   | SplittedRMW  (* Splitted RMW events for riscv *)
   | SwitchDepScWrite    (* Switch dependency on sc mem write, riscv *)
   | LrScDiffOk      (* Lr/Sc paired to <> addresses may succeed (!) *)
-
+  | Mixed           (* Mixed-Size *)
 val compare : t -> t -> int
 val tags : string list
 val parse : string -> t option

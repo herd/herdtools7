@@ -591,6 +591,7 @@ let () =
       let shift = !PP.shift
       let edgemerge = !PP.edgemerge
       let labelinit = !PP.labelinit
+      let variant = variant
     end
 
   end in

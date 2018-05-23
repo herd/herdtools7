@@ -580,19 +580,45 @@ and type evt_struct = E.event_structure) =
 (**************)
 (* Mixd size  *)
 (**************)
+    let byte = MachSize.Byte
+    let byte_sz =  MachSize.nbytes byte
+    let mask = match byte_sz with
+    | 1 -> 0xff
+    | 2 -> 0xffff
+    | 4 -> 0xffffffff
+    | _ -> assert false
+
+    let nshift = MachSize.nbits byte
+
+    let nsz sz =
+      let n = MachSize.nbytes sz in
+      if n < byte_sz then
+        Warn.fatal "Size mismatch %s bigger then %s\n"
+          (MachSize.debug sz) (MachSize.debug byte) ;
+      assert (n mod byte_sz = 0) ;
+      n / byte_sz
 
     module Scalar = V.Cst.Scalar
     let def_size = Scalar.machsize
 
-    let v_ff  = V.intToV 0xff
-    let extract_byte v = VC.Binop (Op.And,v,v_ff)
+    let extract_byte v = VC.Unop (Op.AndK mask,v)
 
     let extract_step v =
       let d = extract_byte v
-      and w = VC.Unop (Op.LogicalRightShift 8,v) in
+      and w = VC.Unop (Op.LogicalRightShift nshift,v) in
       d,w
 
 (* Translate to list of bytes, least significant first *)
+    let explode_value sz v =
+      let rec do_rec k v =
+        if k <= 1 then [v]
+        else
+          let d = V.op1 (Op.AndK mask) v
+          and w = V.op1 (Op.LogicalRightShift nshift) v in
+          let ds = do_rec (k-1) w in
+          d::ds in
+      do_rec (nsz sz) v
+
     let explode sz v =
       let rec do_rec k v =
         if k <= 1 then [v],[]
@@ -603,7 +629,7 @@ and type evt_struct = E.event_structure) =
           let vd =  V.fresh_var () in
           vd::ds,
           VC.Assign (vw,w)::VC.Assign (vd,d)::eqs in
-      do_rec (MachSize.nbytes sz) v
+      do_rec (nsz sz) v
 
 (* Translate from list of bytes  least significant first *)
     let rec recompose ds = match ds with
@@ -616,14 +642,25 @@ and type evt_struct = E.event_structure) =
         vw,VC.Assign (x,VC.Unop (Op.LeftShift 8,w))::VC.Assign (vw,VC.Binop (Op.Or,x,d))::eqs
 
 (* Bytes addresses, little endian *)
+
+    let byte_eas_value sz a =
+      let kmax = nsz sz in
+      let rec do_rec k =
+        if k >= kmax then []
+        else
+          let ds = do_rec (k+1) in
+          let d = V.op1 (Op.AddK (k*byte_sz)) a in
+          d::ds in
+      a::do_rec 1
+
     let byte_eas sz a =
-      let kmax = MachSize.nbytes sz in
+      let kmax = nsz sz in
       let rec do_rec k =
         if k >= kmax then [],[]
         else
           let xa = V.fresh_var() in
           let xas,eqs = do_rec (k+1) in
-          xa::xas,VC.Assign (xa,VC.Binop (Op.Add,a,V.intToV k))::eqs in
+          xa::xas,VC.Assign (xa,VC.Unop (Op.AddK (k*byte_sz),a))::eqs in
       let xas,eqs = do_rec 1 in
       a::xas,eqs
 
@@ -640,7 +677,7 @@ and type evt_struct = E.event_structure) =
               E.EventSet.add
                 {E.eiid = eiid;
                  E.iiid = Some ii;
-                 E.action = mk_act sz ea v;} es)
+                 E.action = mk_act byte (A.Location_global ea) v;} es)
             (eiid,E.EventSet.empty) eavs  in
         let st =
           { E.empty_event_structure with
@@ -649,6 +686,26 @@ and type evt_struct = E.event_structure) =
             E.sca = E.EventSetSet.singleton es;} in
         eiid,
         Evt.singleton (v,a_eqs@v_eqs,st)
+
+    let write_mixed sz mk_act a v ii =
+      fun eiid ->
+        let eas,a_eqs = byte_eas sz a
+        and vs,v_eqs = explode sz v in
+        let eiid,es =
+          List.fold_left2
+            (fun (eiid,es) ea v ->
+              eiid+1,
+              E.EventSet.add
+                {E.eiid = eiid;
+                 E.iiid = Some ii;
+                 E.action = mk_act byte (A.Location_global ea) v;} es)
+            (eiid,E.EventSet.empty) eas vs in
+         let st =
+          { E.empty_event_structure with
+            E.events = es;
+            E.sca = E.EventSetSet.singleton es;} in
+        eiid,
+         Evt.singleton ((),a_eqs@v_eqs,st)
 
 (* Add an inequality constraint *)
     let neqT : V.v -> V.v -> unit t
@@ -695,9 +752,8 @@ and type evt_struct = E.event_structure) =
     type evt_struct = E.event_structure
     type output = VC.cnstrnts * evt_struct
 
-(* TODO: extract type from env :) *)
 
-    let initwrites env =
+    let initwrites_non_mixed env _ =
       fun eiid ->
         let eiid,es =
           List.fold_left
@@ -713,7 +769,49 @@ and type evt_struct = E.event_structure) =
         eiid,
         Evt.singleton ((),[],do_trivial es)
 
+    let initwrites_mixed env size_env =
+      fun eiid ->
+        try
+          let eiid,es,sca =
+          List.fold_left
+            (fun (eiid,es,sca) (loc,v) ->
+              match loc with
+              | A.Location_global a ->
+                  let sz = A.look_size size_env loc in
+                  let ds = explode_value sz v
+                  and eas = byte_eas_value sz a in
+                  let eiid,ews =
+                    List.fold_left2
+                      (fun (eiid,ews) a d ->
+                        let ew =
+                          { E.eiid = eiid ;
+                            E.iiid = None ;
+                            E.action =
+                            E.Act.mk_init_write (A.Location_global a) byte d ;} in
+                        eiid+1,ew::ews)
+                      (eiid,[]) eas ds in
+                  eiid,ews@es, E.EventSetSet.add (E.EventSet.of_list ews) sca
+              | _ ->
+                  let ew =
+                    {E.eiid = eiid ;
+                     E.iiid = None ;
+                     E.action = E.Act.mk_init_write loc def_size v ;} in
+                  (eiid+1,ew::es,
+                   E.EventSetSet.add (E.EventSet.singleton ew) sca))
+            (eiid,[],E.EventSetSet.empty) env in
+        let es = E.EventSet.of_list es in
+(*        Printf.eprintf "Init writes %a\n" E.debug_events es; *)
 
+        let st = do_trivial es in
+        let st = { st with E.sca; } in
+        eiid,
+        Evt.singleton ((),[],st)
+        with
+        | V.Undetermined -> assert false
+
+    let  mixed = C.variant Variant.Mixed
+    let initwrites =
+      if mixed then initwrites_mixed else initwrites_non_mixed
     let get_output =
       fun et ->
         let (_,es) = et 0 in

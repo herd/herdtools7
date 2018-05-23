@@ -34,8 +34,8 @@ module type S = sig
 
  module I : I
 
-  type global_loc = I.V.v 
- 
+  type global_loc = I.V.v
+
   type proc = int
   val pp_proc : proc -> string
 
@@ -48,7 +48,7 @@ module type S = sig
   type inst_instance_id = {
       proc       : proc;
       program_order_index   : program_order_index;
-      inst : I.arch_instruction; 
+      inst : I.arch_instruction;
       unroll_count : int; (* number of loop unrollings *)
       labels : Label.Set.t;
     }
@@ -75,7 +75,7 @@ module type S = sig
   val dump_state : state -> string
   val pp_nice_state :
       state -> string (* delim, as in String.concat  *)
-	-> (location -> I.V.v -> string) -> string
+        -> (location -> I.V.v -> string) -> string
 
   (* for explict state construction *)
   val build_state : (location * ('t * I.V.v)) list -> state
@@ -105,6 +105,12 @@ module type S = sig
 
   (* Set of states *)
   module StateSet : MySet.S with type elt = state
+
+  (* Typing environment *)
+  type size_env
+  val size_env_empty : size_env
+  val build_size_env : (location * (MiscParser.run_type * 'v)) list -> size_env
+  val look_size : size_env -> location -> MachSize.sz
 
   (*********************************)
   (* Components of test structures *)
@@ -140,6 +146,7 @@ module type Config = sig
   val texmacros : bool
   val hexa : bool
   val brackets : bool
+  val variant : Variant.t -> bool
 end
 
 module Make(C:Config) (I:I) : S with module I = I
@@ -203,9 +210,9 @@ module Make(C:Config) (I:I) : S with module I = I
 
 (* This redefines pp_location from Location.Make ... *)
   let pp_location l = match l with
-  | Location_reg (proc,r) -> 
+  | Location_reg (proc,r) ->
       let bodytext = string_of_int proc ^ ":" ^ I.pp_reg r in
-      if C.texmacros 
+      if C.texmacros
       then "\\asm{Proc " ^ bodytext ^ "}" else bodytext
   | Location_global a -> do_brackets (pp_global a)
   | Location_deref (a,idx) ->  Printf.sprintf "%s[%i]" (pp_global a) idx
@@ -233,9 +240,9 @@ module Make(C:Config) (I:I) : S with module I = I
 (* State operations, implemented with library maps *)
 (***************************************************)
   module State =
-    Map.Make
+    MyMap.Make
       (struct
-	type t = location
+        type t = location
         let compare = location_compare
       end)
 
@@ -246,8 +253,8 @@ module Make(C:Config) (I:I) : S with module I = I
   let pp_nice_state st delim pp_bd =
     let bds =
       State.fold
-	(fun l v k -> (pp_bd l v)::k)
-	st [] in
+        (fun l v k -> (pp_bd l v)::k)
+        st [] in
     String.concat delim  (List.rev bds)
 
   let pp_equal = if C.texmacros then "\\mathord{=}" else "="
@@ -269,7 +276,7 @@ module Make(C:Config) (I:I) : S with module I = I
   let build_concrete_state bds =
     List.fold_left
       (fun st (loc,v) ->
-	State.add loc (I.V.intToV v) st)
+        State.add loc (I.V.intToV v) st)
       State.empty bds
 
   let state_is_empty = State.is_empty
@@ -286,9 +293,9 @@ module Make(C:Config) (I:I) : S with module I = I
   module StateSet =
     MySet.Make
       (struct
-	type t = state
+        type t = state
 
-	let compare st1 st2 = State.compare I.V.compare st1 st2
+        let compare st1 st2 = State.compare I.V.compare st1 st2
       end)
 
 (* To get protection against wandering undetermined locations,
@@ -297,12 +304,12 @@ module Make(C:Config) (I:I) : S with module I = I
 
   let look_in_state st loc =
     match undetermined_vars_in_loc loc with
-    | Some _ -> 
+    | Some _ ->
     (* if loc is not determined, then we cannot get its
        content yet *)
-	raise LocUndetermined
+        raise LocUndetermined
     | None ->
-	try State.find loc st with Not_found -> I.V.zero
+        try State.find loc st with Not_found -> I.V.zero
 
   let state_add st l v = State.add l v st
 
@@ -324,7 +331,44 @@ module Make(C:Config) (I:I) : S with module I = I
     LocSet.fold
       (fun loc r -> state_add r loc (look_in_state st loc))
       locs state_empty
-    
+
+  (* Typing *)
+
+  type size_env = MachSize.sz State.t
+  let size_env_empty = State.empty
+
+  (* Simplified typing, size only, integer types only *)
+
+  let size_of = function
+  | "atomic_t"
+  | "int"|"long"
+  | "int32_t"
+  | "uint32_t" ->  MachSize.Word
+  | "char"|"int8_t" |"uint8_t" -> MachSize.Byte
+  | "short" | "int16_t" | "uint16_t" -> MachSize.Short
+  | "int64_t" | "uint64_t" -> MachSize.Quad
+  | "intprt_t" | "uintprt_t" -> I.V.Cst.Scalar.machsize (* Maximal size = ptr size *)
+  | t ->
+      Warn.fatal "Cannot find the size of type %s" t
+
+
+  let misc_to_size  = function
+    | MiscParser.TyDef -> size_of "int"
+    | MiscParser.Ty t|MiscParser.Atomic t -> (size_of t)
+    | MiscParser.Pointer _
+    | MiscParser.TyArray _
+    | MiscParser.TyDefPointer -> I.V.Cst.Scalar.machsize
+
+  let build_size_env =
+    if C.variant Variant.Mixed then
+    fun bds ->
+      List.fold_left (fun m (loc,(t,_)) -> State.add loc (misc_to_size t) m)
+        State.empty bds
+    else
+      (fun _ -> State.empty)
+
+  let look_size env loc = State.safe_find MachSize.Word loc env
+
   (*********************************)
   (* Components of test structures *)
   (*********************************)
@@ -335,8 +379,8 @@ module Make(C:Config) (I:I) : S with module I = I
   module LabelMap =
     Map.Make
       (struct
-	type t = string
-	let compare = String.compare
+        type t = string
+        let compare = String.compare
       end)
 
 
@@ -352,5 +396,3 @@ module Make(C:Config) (I:I) : S with module I = I
   type constr = prop ConstrGen.constr
 
 end
-
-
