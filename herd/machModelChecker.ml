@@ -27,6 +27,7 @@ module Make
     (S:Sem.Semantics)
     =
   struct
+    let mixed = O.variant Variant.Mixed
 
     let bell_fname =  Misc.app_opt (fun (x,_) -> x) O.bell_model_info
     let bell_info = Misc.app_opt (fun (_,x) -> x) O.bell_model_info
@@ -200,6 +201,10 @@ module Make
            "success", lazy (Lazy.force pr).S.success;
            "rf", lazy (Lazy.force pr).S.rf;
            "control",lazy conc.S.str.E.control ;
+           "sm",lazy begin
+             E.EventRel.unions (E.EventSetSet.map_list (fun sm -> E.EventRel.cartesian sm sm) conc.S.str.E.sca)
+           end
+
           ]) in
       let m =
         I.add_sets m

@@ -131,10 +131,11 @@ module Top (Conf:Config) = struct
         let libfind = Conf.libfind
         let variant = Conf.variant
       end in
+      let module ArchConfig = SemExtra.ConfigToArchConfig(Conf) in
       match arch with
       | `PPC ->
           let module PPC =
-            PPCArch_herd.Make(Conf.PC)(Int64Value) in
+            PPCArch_herd.Make(ArchConfig)(Int64Value) in
           let module PPCLexParse = struct
             type instruction = PPC.parsedPseudo
             type token = PPCParser.token
@@ -158,7 +159,7 @@ module Top (Conf:Config) = struct
           X.run start_time name chan env splitted
 
       | `ARM ->
-          let module ARM = ARMArch_herd.Make(Conf.PC)(Int32Value) in
+          let module ARM = ARMArch_herd.Make(ArchConfig)(Int32Value) in
           let module ARMLexParse = struct
             type instruction = ARM.parsedPseudo
             type token = ARMParser.token
@@ -185,7 +186,7 @@ module Top (Conf:Config) = struct
 
       | `AArch64 ->
           let module AArch64Conf = struct
-            include Conf.PC
+            include ArchConfig
             let moreedges = Conf.moreedges
           end in
           let module AArch64 = AArch64Arch_herd.Make(AArch64Conf)(Int64Value) in
@@ -214,7 +215,7 @@ module Top (Conf:Config) = struct
           X.run start_time name chan env splitted
 
       | `X86 ->
-          let module X86 = X86Arch_herd.Make(Conf.PC)(Int32Value) in
+          let module X86 = X86Arch_herd.Make(ArchConfig)(Int32Value) in
           let module X86LexParse = struct
             type instruction = X86.pseudo
             type token = X86Parser.token
@@ -237,7 +238,7 @@ module Top (Conf:Config) = struct
           X.run start_time name chan env splitted
 
       | `MIPS ->
-          let module MIPS = MIPSArch_herd.Make(Conf.PC)(Int64Value) in
+          let module MIPS = MIPSArch_herd.Make(ArchConfig)(Int64Value) in
           let module MIPSLexParse = struct
             type instruction = MIPS.pseudo
             type token = MIPSParser.token
@@ -257,7 +258,7 @@ module Top (Conf:Config) = struct
           let module X = Make (MIPSS) (P) (NoCheck) (MIPSM) in
           X.run start_time name chan env splitted
       | `RISCV ->
-          let module RISCV = RISCVArch_herd.Make(Conf.PC)(Int64Value) in
+          let module RISCV = RISCVArch_herd.Make(ArchConfig)(Int64Value) in
           let module RISCVLexParse = struct
             type instruction = RISCV.parsedPseudo
             type token = RISCVParser.token
@@ -271,7 +272,7 @@ module Top (Conf:Config) = struct
           let module X = Make (RISCVS) (P) (NoCheck) (RISCVM) in
           X.run start_time name chan env splitted
       | `C ->
-        let module C = CArch_herd.Make(Conf.PC)(Int64Value) in
+        let module C = CArch_herd.Make(ArchConfig)(Int64Value) in
         let module CLexParse = struct
           (* Parsing *)
           type pseudo = C.pseudo
@@ -294,7 +295,7 @@ module Top (Conf:Config) = struct
         X.run start_time name chan env splitted
       | `CPP as arch -> Warn.fatal "no support for arch '%s'" (Archs.pp arch)
       | `LISA ->
-        let module Bell = BellArch_herd.Make(Conf.PC)(Int64Value) in
+        let module Bell = BellArch_herd.Make(ArchConfig)(Int64Value) in
         let module BellLexParse = struct
           type instruction = Bell.parsedPseudo
           type token = LISAParser.token

@@ -19,8 +19,8 @@
 module Make (C:Sem.Config)(V:Value.S)
     =
   struct
-    module RISCV = RISCVArch_herd.Make(C.PC)(V)
-    module Act = MachAction.Make(RISCV)
+    module RISCV = RISCVArch_herd.Make(SemExtra.ConfigToArchConfig(C))(V)
+    module Act = MachAction.Make(C.PC)(RISCV)
     include SemExtra.Make(C)(RISCV)(Act)
 
     let mixed = C.variant Variant.Mixed
@@ -264,7 +264,7 @@ module Make (C:Sem.Config)(V:Value.S)
             (read_reg_ord r1 ii >>| read_reg_ord r2 ii) >>=
             fun (v1,v2) -> M.op (tr_cond cond) v1 v2 >>=
             fun v -> commit ii >>= fun () -> B.bccT v lbl
-        | RISCV.Load ((RISCV.Double|RISCV.Word as sz),_s,mo,r1,k,r2) ->
+        | RISCV.Load (sz,_s,mo,r1,k,r2) ->
             let mk_load mo =
               read_reg_ord r2 ii >>=
               (fun a -> M.add a (V.intToV k)) >>=
@@ -286,7 +286,7 @@ module Make (C:Sem.Config)(V:Value.S)
               ld >>! B.Next
             else mk_load mo >>! B.Next
 
-        | RISCV.Store ((RISCV.Double|RISCV.Word as sz),mo,r1,k,r2) ->
+        | RISCV.Store (sz,mo,r1,k,r2) ->
             let mk_store mo =
               (read_reg_data r1 ii >>| read_reg_ord r2 ii) >>=
               (fun (d,a) ->

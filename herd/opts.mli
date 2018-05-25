@@ -38,6 +38,7 @@ val unroll : int ref
 val speedcheck : Speed.t ref
 val optace : bool option ref
 val variant : (Variant.t -> bool) ref
+val byte : MachSize.sz ref
 val initwrites : bool option ref
 val check_filter : bool ref
 val badexecs : bool ref

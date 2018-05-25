@@ -52,9 +52,11 @@ module type S = sig
   (* Should be obvious *)
   val map : (elt -> elt) -> t -> t
   val map_list : (elt -> 'a) -> t -> 'a list
+  val map_union : (elt -> t) -> t -> t
   val disjoint : t -> t -> bool
+
   (* Decomposition, should be efficient an trivial, given
-     set iplementation as a tree. It is not. *)
+     set implementation as a tree. It is not. *)
   val split3 : t -> t * elt * t
 
   (* second argument is delimiter (as in String.concat) *)  

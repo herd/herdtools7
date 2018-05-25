@@ -17,8 +17,13 @@
 type endian = Little | Big
 
 type sz = Byte | Short | Word | Quad
+type t = sz
 
-val pp : sz -> string
+val tags : string list
+val parse : string -> t option
+val pp : t -> string
+
+val pp_short : sz -> string
 val debug : sz -> string
 
 val nbytes : sz -> int

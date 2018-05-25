@@ -17,8 +17,10 @@
 (** A monad for event structures *)
 
 module type Config = sig
+  val hexa : bool
   val debug : Debug_herd.t
   val variant : Variant.t -> bool
+  val byte : MachSize.sz
 end
 
 module Make (C:Config) (A:Arch_herd.S) (E:Event.S with module A = A and module Act.A = A) :
@@ -31,7 +33,9 @@ and type evt_struct = E.event_structure) =
     module V = A.V
     module VC =
       Valconstraint.Make
-        (struct let debug = C.debug.Debug_herd.solver end)
+        (struct
+          let hexa = C.hexa let debug = C.debug.Debug_herd.solver
+        end)
         (A)
 
 
@@ -580,45 +584,18 @@ and type evt_struct = E.event_structure) =
 (**************)
 (* Mixd size  *)
 (**************)
-    let byte = MachSize.Byte
-    let byte_sz =  MachSize.nbytes byte
-    let mask = match byte_sz with
-    | 1 -> 0xff
-    | 2 -> 0xffff
-    | 4 -> 0xffffffff
-    | _ -> assert false
-
-    let nshift = MachSize.nbits byte
-
-    let nsz sz =
-      let n = MachSize.nbytes sz in
-      if n < byte_sz then
-        Warn.fatal "Size mismatch %s bigger then %s\n"
-          (MachSize.debug sz) (MachSize.debug byte) ;
-      assert (n mod byte_sz = 0) ;
-      n / byte_sz
 
     module Scalar = V.Cst.Scalar
     let def_size = Scalar.machsize
 
-    let extract_byte v = VC.Unop (Op.AndK mask,v)
+    let extract_byte v = VC.Unop (Op.AndK A.mask,v)
 
     let extract_step v =
       let d = extract_byte v
-      and w = VC.Unop (Op.LogicalRightShift nshift,v) in
+      and w = VC.Unop (Op.LogicalRightShift A.nshift,v) in
       d,w
 
 (* Translate to list of bytes, least significant first *)
-    let explode_value sz v =
-      let rec do_rec k v =
-        if k <= 1 then [v]
-        else
-          let d = V.op1 (Op.AndK mask) v
-          and w = V.op1 (Op.LogicalRightShift nshift) v in
-          let ds = do_rec (k-1) w in
-          d::ds in
-      do_rec (nsz sz) v
-
     let explode sz v =
       let rec do_rec k v =
         if k <= 1 then [v],[]
@@ -629,7 +606,7 @@ and type evt_struct = E.event_structure) =
           let vd =  V.fresh_var () in
           vd::ds,
           VC.Assign (vw,w)::VC.Assign (vd,d)::eqs in
-      do_rec (nsz sz) v
+      do_rec (A.nsz sz) v
 
 (* Translate from list of bytes  least significant first *)
     let rec recompose ds = match ds with
@@ -639,28 +616,18 @@ and type evt_struct = E.event_structure) =
         let w,eqs = recompose ds in
         let vw = V.fresh_var ()
         and x =  V.fresh_var () in
-        vw,VC.Assign (x,VC.Unop (Op.LeftShift 8,w))::VC.Assign (vw,VC.Binop (Op.Or,x,d))::eqs
+        vw,VC.Assign (x,VC.Unop (Op.LeftShift A.nshift,w))::VC.Assign (vw,VC.Binop (Op.Or,x,d))::eqs
 
 (* Bytes addresses, little endian *)
 
-    let byte_eas_value sz a =
-      let kmax = nsz sz in
-      let rec do_rec k =
-        if k >= kmax then []
-        else
-          let ds = do_rec (k+1) in
-          let d = V.op1 (Op.AddK (k*byte_sz)) a in
-          d::ds in
-      a::do_rec 1
-
     let byte_eas sz a =
-      let kmax = nsz sz in
+      let kmax = A.nsz sz in
       let rec do_rec k =
         if k >= kmax then [],[]
         else
           let xa = V.fresh_var() in
           let xas,eqs = do_rec (k+1) in
-          xa::xas,VC.Assign (xa,VC.Unop (Op.AddK (k*byte_sz),a))::eqs in
+          xa::xas,VC.Assign (xa,VC.Unop (Op.AddK (k*A.byte_sz),a))::eqs in
       let xas,eqs = do_rec 1 in
       a::xas,eqs
 
@@ -677,7 +644,7 @@ and type evt_struct = E.event_structure) =
               E.EventSet.add
                 {E.eiid = eiid;
                  E.iiid = Some ii;
-                 E.action = mk_act byte (A.Location_global ea) v;} es)
+                 E.action = mk_act A.byte (A.Location_global ea) v;} es)
             (eiid,E.EventSet.empty) eavs  in
         let st =
           { E.empty_event_structure with
@@ -698,7 +665,7 @@ and type evt_struct = E.event_structure) =
               E.EventSet.add
                 {E.eiid = eiid;
                  E.iiid = Some ii;
-                 E.action = mk_act byte (A.Location_global ea) v;} es)
+                 E.action = mk_act A.byte (A.Location_global ea) v;} es)
             (eiid,E.EventSet.empty) eas vs in
          let st =
           { E.empty_event_structure with
@@ -778,8 +745,8 @@ and type evt_struct = E.event_structure) =
               match loc with
               | A.Location_global a ->
                   let sz = A.look_size size_env loc in
-                  let ds = explode_value sz v
-                  and eas = byte_eas_value sz a in
+                  let ds = A.explode sz v
+                  and eas = A.byte_eas sz a in
                   let eiid,ews =
                     List.fold_left2
                       (fun (eiid,ews) a d ->
@@ -787,7 +754,7 @@ and type evt_struct = E.event_structure) =
                           { E.eiid = eiid ;
                             E.iiid = None ;
                             E.action =
-                            E.Act.mk_init_write (A.Location_global a) byte d ;} in
+                            E.Act.mk_init_write (A.Location_global a) A.byte d ;} in
                         eiid+1,ew::ews)
                       (eiid,[]) eas ds in
                   eiid,ews@es, E.EventSetSet.add (E.EventSet.of_list ews) sca

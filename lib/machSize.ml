@@ -17,9 +17,25 @@
 type endian = Little | Big
 
 type sz = Byte | Short | Word | Quad
+type t = sz
 
+let tags = ["byte";"short";"word";"quad";]
+
+let parse tag = match String.lowercase_ascii tag with
+| "byte" -> Some Byte
+| "short" -> Some Short
+| "word" -> Some Word
+| "quad" -> Some Quad
+| _      -> None
 
 let pp = function
+  | Byte -> "byte"
+  | Short -> "short"
+  | Word -> "word"
+  | Quad -> "quad"
+
+
+let pp_short = function
   | Byte -> "b"
   | Short -> "h"
   | Word -> "w"

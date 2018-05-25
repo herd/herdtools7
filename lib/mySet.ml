@@ -50,10 +50,11 @@ module type S = sig
   (* Should be obvious *)
   val map : (elt -> elt) -> t -> t
   val map_list : (elt -> 'a) -> t -> 'a list
+  val map_union : (elt -> t) -> t -> t
   val disjoint : t -> t -> bool
 
   (* Decomposition, should be efficient an trivial, given
-     set iplementation as a tree. It is not. *)
+     set implementation as a tree. It is not. *)
   val split3 : t -> t * elt * t
 
   (* second argument is delimiter (as in String.concat) *)  
@@ -116,10 +117,12 @@ module Make(O:OrderedType) : S with type elt = O.t =
 	s empty
 
 (* Reverse to preserve set ordering *)
-    let map_list f s =
-      List.rev (fold (fun e k -> f e::k) s [])
+    let map_list f s = List.rev (fold (fun e k -> f e::k) s [])
+    let map_union f s = unions (map_list f s)
       
     let disjoint s1 s2 = for_all (fun e -> not (mem e s2)) s1
+
+
 
 (* split3, no gain unfortunately *)
     let split3 t =

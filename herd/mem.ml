@@ -26,6 +26,7 @@ module type Config = sig
   val observed_finals_only : bool
   val initwrites : bool
   val check_filter : bool
+  val variant : Variant.t -> bool
 end
 
 module type S = sig
@@ -93,6 +94,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     module U = MemUtils.Make(S)
     module W = Warn.Make(C)
 
+    let mixed = C.variant Variant.Mixed
 
 (*****************************)
 (* Event structure generator *)
@@ -775,9 +777,21 @@ let compatible_locs_mem e1 e2 =
       let loc_stores = U.collect_mem_stores es in
       let loc_stores =
         if C.observed_finals_only then
-          let observed_locs = S.observed_locations test in
+          let observed_locs =
+            let locs = S.observed_locations test in
+            if mixed then
+              let senv = S.size_env test in
+              A.LocSet.map_union
+                (fun loc -> match loc with
+                | A.Location_global a ->
+                    let eas = A.byte_eas (A.look_size senv loc) a in
+                    A.LocSet.of_list
+                      (List.map (fun a -> A.Location_global a) eas)
+                | _ -> A.LocSet.singleton loc)
+                locs
+            else locs in
 (*          eprintf "Observed locs: {%s}\n"
-            (S.LocSet.pp_str "," A.pp_location   observed_locs) ; *)
+            (A.LocSet.pp_str "," A.pp_location   observed_locs) ; *)
           U.LocEnv.fold
             (fun loc ws k ->
               if A.LocSet.mem loc observed_locs then

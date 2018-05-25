@@ -83,5 +83,4 @@ module type S =
       val is_var_determined : v -> bool
       val determined_val : v -> Cst.v option
       val simplify_var : solution -> v -> v
-
     end

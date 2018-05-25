@@ -21,6 +21,7 @@ module type Config = sig
   val hexa : bool
   val brackets : bool
   val variant : Variant.t -> bool
+  val byte : MachSize.sz
 end
 
 module type S =

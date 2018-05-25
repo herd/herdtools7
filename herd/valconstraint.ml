@@ -59,6 +59,7 @@ module type S = sig
 end
 
 module type Config = sig
+  val hexa : bool
   val debug : bool
 end
 
@@ -100,7 +101,7 @@ and type state = A.state =
 
     type cnstrnts = cnstrnt list
 
-    let pp_atom a = V.pp_v a
+    let pp_atom a = V.pp C.hexa a
 
     let pp_expr e =
       match e with
@@ -116,7 +117,7 @@ and type state = A.state =
 
     let pp_cnstrnt cnstr =  match cnstr  with
       | Assign (v,rval) -> 
-	  (V.pp_v v) ^ ":=" ^(pp_rvalue rval)
+	  (V.pp C.hexa v) ^ ":=" ^(pp_rvalue rval)
       | Unroll msg -> "Unroll "^msg
 
     let pp_cnstrnts lst = 
@@ -148,7 +149,7 @@ and type state = A.state =
 		sol [] in
 	    String.concat ", "
 	      (List.map
-		 (fun (v,i) -> V.pp_csym v ^ "<-" ^ V.pp_v i) bds) in
+		 (fun (v,i) -> V.pp_csym v ^ "<-" ^ V.pp C.hexa i) bds) in
 
 	  sol_pped ^ pp_cns cns
 

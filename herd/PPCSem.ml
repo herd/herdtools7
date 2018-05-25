@@ -20,8 +20,8 @@ module Make (C:Sem.Config)(V:Value.S)
     =
   struct
     open MachSize
-    module PPC = PPCArch_herd.Make(C.PC)(V)
-    module Act = MachAction.Make(PPC)
+    module PPC = PPCArch_herd.Make(SemExtra.ConfigToArchConfig(C))(V)
+    module Act = MachAction.Make(C.PC)(PPC)
     include SemExtra.Make(C)(PPC)(Act)
 
 (* barrier pretty print *)

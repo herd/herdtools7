@@ -32,9 +32,10 @@ end
 (** Output signature, functionalities added *)
 module type S = sig
 
- module I : I
+  module I : I
 
   type global_loc = I.V.v
+  type v = I.V.v
 
   type proc = int
   val pp_proc : proc -> string
@@ -57,16 +58,27 @@ module type S = sig
       inst_instance_id -> inst_instance_id -> int
 
   include Location.S
-  with type loc_reg = I.arch_reg and type loc_global = I.V.v
+  with type loc_reg = I.arch_reg and type loc_global = v
 (* Extra for locations *)
   val maybev_to_location : MiscParser.maybev -> location
   val do_dump_location : (string -> string) -> location -> string
   val dump_location : location -> string
 
-  val undetermined_vars_in_loc : location -> I.V.v option
+  val undetermined_vars_in_loc : location -> v option
   val simplify_vars_in_loc : I.V.solution ->  location -> location
-  val map_loc : (I.V.v -> I.V.v) -> location -> location
+  val map_loc : (v -> v) -> location -> location
 
+(* Mixed size *)
+  val byte : MachSize.sz
+  val byte_sz : int
+  val nshift : int
+  val mask : int
+  val nsz : MachSize.sz -> int
+  val byte_eas :  MachSize.sz -> v -> v list
+  val explode : MachSize.sz -> v ->  v list
+  val recompose : v list -> v
+
+(* State *)
   type state (* Now abstract, suicide ? *)
 
   val state_empty : state
@@ -75,68 +87,68 @@ module type S = sig
   val dump_state : state -> string
   val pp_nice_state :
       state -> string (* delim, as in String.concat  *)
-        -> (location -> I.V.v -> string) -> string
+        -> (location -> v -> string) -> string
 
-  (* for explict state construction *)
-  val build_state : (location * ('t * I.V.v)) list -> state
+(* for explict state construction *)
+  val build_state : (location * ('t * v)) list -> state
   val build_concrete_state : (location * int) list -> state
 
 
-  (* No comment *)
+(* No comment *)
   val state_is_empty : state -> bool
-  val state_to_list : state -> (location * I.V.v) list
+  val state_to_list : state -> (location * v) list
   val state_size : state -> int
   val state_fold :
-      (location -> I.V.v -> 'a -> 'a) -> state -> 'a -> 'a
+      (location -> v -> 'a -> 'a) -> state -> 'a -> 'a
 
-  (* Look for what loc is bound to *)
+(* Look for what loc is bound to *)
   exception LocUndetermined (* raised when location is yet unkown *)
-  val look_in_state : state -> location -> I.V.v
+  val look_in_state : state -> location -> v
 
-  (* Add a binding , shadow previous binding if any *)
-  val state_add : state -> location -> I.V.v -> state
+(* Add a binding , shadow previous binding if any *)
+  val state_add : state -> location -> v -> state
 
-  (* Does loc binds v in state ? *)
-  val state_mem : state -> location -> I.V.v -> bool
+(* Does loc binds v in state ? *)
+  val state_mem : state -> location -> v -> bool
 
-  (* State restriction to some locations *)
+(* State restriction to some locations *)
   val state_restrict : state -> (location -> bool) -> state
-  val state_restrict_locs : LocSet.t -> state -> state
 
-  (* Set of states *)
+(* Set of states *)
   module StateSet : MySet.S with type elt = state
 
-  (* Typing environment *)
+(* Typing environment *)
   type size_env
   val size_env_empty : size_env
   val build_size_env : (location * (MiscParser.run_type * 'v)) list -> size_env
   val look_size : size_env -> location -> MachSize.sz
 
-  (*********************************)
-  (* Components of test structures *)
-  (*********************************)
+  val state_restrict_locs : LocSet.t -> size_env -> state -> state
 
-  (* Test structures represent programmes loaded in memory
-     and ready to start, plus some items that describe
-     the test, such as its name (cf. Test.mli) *)
+(*********************************)
+(* Components of test structures *)
+(*********************************)
+
+(* Test structures represent programmes loaded in memory
+   and ready to start, plus some items that describe
+   the test, such as its name (cf. Test.mli) *)
 
 
-  (* Code memory is a mapping from labels to sequences of instructions,
-     Too far from actual machine, maybe *)
+(* Code memory is a mapping from labels to sequences of instructions, too far from actual machine, maybe *)
   type code = (int * I.arch_instruction) list
 
   module LabelMap : Map.S with type key = string
 
 
-  (* Program loaded in memory *)
+(* Program loaded in memory *)
   type program = code LabelMap.t
 
-  (* A starting address per proc *)
+(* A starting address per proc *)
   type start_points = (proc * code) list
 
 
-  (* Constraints *)
-  type prop =  (location,I.V.v) ConstrGen.prop
+(* Constraints *)
+  type prop =  (location,v) ConstrGen.prop
   type constr = prop ConstrGen.constr
 
 
@@ -147,252 +159,326 @@ module type Config = sig
   val hexa : bool
   val brackets : bool
   val variant : Variant.t -> bool
+  val byte : MachSize.sz
 end
 
 module Make(C:Config) (I:I) : S with module I = I
-= struct
+    = struct
 
-  module I = I
+      module I = I
+      type v = I.V.v
 
-  type global_loc = I.V.v
+      type global_loc = v
 
-  type proc = int
+      type proc = int
 
-  let pp_proc = string_of_int
+      let pp_proc = string_of_int
 
-  type program_order_index = int
-  let pp_prog_order_index = string_of_int
+      type program_order_index = int
+      let pp_prog_order_index = string_of_int
 
-  let zero_po_index = 0
-  let next_po_index po = po + 1
-
-
-  type inst_instance_id = {
-      proc       : proc;
-      program_order_index   : program_order_index;
-      inst : I.arch_instruction ;
-      unroll_count: int; (* number of loop unrollings *)
-      labels : Label.Set.t ;
-    }
+      let zero_po_index = 0
+      let next_po_index po = po + 1
 
 
-  let inst_instance_compare i1 i2 = match Misc.int_compare i1.proc i2.proc with
-  | 0 -> Misc.int_compare i1.program_order_index i2.program_order_index
-  | r -> r
+      type inst_instance_id = {
+          proc       : proc;
+          program_order_index   : program_order_index;
+          inst : I.arch_instruction ;
+          unroll_count: int; (* number of loop unrollings *)
+          labels : Label.Set.t ;
+        }
 
-  let pp_global = I.V.pp C.hexa
 
-  include
-      Location.Make
-      (struct
-        type arch_reg = I.arch_reg
-        let pp_reg = I.pp_reg
-        let reg_compare = I.reg_compare
+      let inst_instance_compare i1 i2 = match Misc.int_compare i1.proc i2.proc with
+      | 0 -> Misc.int_compare i1.program_order_index i2.program_order_index
+      | r -> r
 
-        type arch_global = I.V.v
-        let pp_global = pp_global
-        let global_compare = I.V.compare
-      end)
+      let pp_global = I.V.pp C.hexa
 
-  let maybev_to_location v = Location_global (I.V.maybevToV v)
+      include
+          Location.Make
+          (struct
+            type arch_reg = I.arch_reg
+            let pp_reg = I.pp_reg
+            let reg_compare = I.reg_compare
 
-  let do_brackets =
-    if C.brackets then Printf.sprintf "[%s]"
-    else fun s -> s
+            type arch_global = v
+            let pp_global = pp_global
+            let global_compare = I.V.compare
+          end)
 
-  let do_dump_location tr = function
-    | Location_reg (proc,r) ->
-        tr (string_of_int proc ^ ":" ^ I.pp_reg r)
-    | Location_global a -> do_brackets (pp_global a)
-    | Location_deref (a,idx) -> Printf.sprintf "%s[%i]" (pp_global a) idx
+      let maybev_to_location v = Location_global (I.V.maybevToV v)
 
-  let dump_location = do_dump_location Misc.identity
+      let do_brackets =
+        if C.brackets then Printf.sprintf "[%s]"
+        else fun s -> s
+
+      let do_dump_location tr = function
+        | Location_reg (proc,r) ->
+            tr (string_of_int proc ^ ":" ^ I.pp_reg r)
+        | Location_global a -> do_brackets (pp_global a)
+        | Location_deref (a,idx) -> Printf.sprintf "%s[%i]" (pp_global a) idx
+
+      let dump_location = do_dump_location Misc.identity
 
 (* This redefines pp_location from Location.Make ... *)
-  let pp_location l = match l with
-  | Location_reg (proc,r) ->
-      let bodytext = string_of_int proc ^ ":" ^ I.pp_reg r in
-      if C.texmacros
-      then "\\asm{Proc " ^ bodytext ^ "}" else bodytext
-  | Location_global a -> do_brackets (pp_global a)
-  | Location_deref (a,idx) ->  Printf.sprintf "%s[%i]" (pp_global a) idx
+      let pp_location l = match l with
+      | Location_reg (proc,r) ->
+          let bodytext = string_of_int proc ^ ":" ^ I.pp_reg r in
+          if C.texmacros
+          then "\\asm{Proc " ^ bodytext ^ "}" else bodytext
+      | Location_global a -> do_brackets (pp_global a)
+      | Location_deref (a,idx) ->  Printf.sprintf "%s[%i]" (pp_global a) idx
 
-  let undetermined_vars_in_loc l =  match l with
-  | Location_reg _ -> None
-  | Location_global a|Location_deref (a,_) ->
-      if I.V.is_var_determined a then None
-      else Some a
+      let undetermined_vars_in_loc l =  match l with
+      | Location_reg _ -> None
+      | Location_global a|Location_deref (a,_) ->
+          if I.V.is_var_determined a then None
+          else Some a
 
 
-  let simplify_vars_in_loc soln l = match l with
-  | Location_reg _  -> l
-  | Location_global a ->
-      Location_global (I.V.simplify_var soln a)
-  | Location_deref (a,idx) ->
-      Location_deref (I.V.simplify_var soln a,idx)
+      let simplify_vars_in_loc soln l = match l with
+      | Location_reg _  -> l
+      | Location_global a ->
+          Location_global (I.V.simplify_var soln a)
+      | Location_deref (a,idx) ->
+          Location_deref (I.V.simplify_var soln a,idx)
 
-  let map_loc fv loc = match loc with
-  | Location_reg _ -> loc
-  | Location_global a -> Location_global (fv a)
-  | Location_deref (a,idx) -> Location_deref (fv a,idx)
+      let map_loc fv loc = match loc with
+      | Location_reg _ -> loc
+      | Location_global a -> Location_global (fv a)
+      | Location_deref (a,idx) -> Location_deref (fv a,idx)
+
+(************************)
+(* Mixed size utilities *)
+(************************)
+
+      let byte = C.byte
+      let byte_sz =  MachSize.nbytes byte
+      let mask = match byte_sz with
+      | 1 -> 0xff
+      | 2 -> 0xffff
+      | 4 -> 0xffffffff
+      | _ -> assert false
+      let nshift = MachSize.nbits byte
+
+      let nsz sz =
+        let n = MachSize.nbytes sz in
+        if n < byte_sz then
+          Warn.fatal "Size mismatch %s bigger then %s\n"
+            (MachSize.debug sz) (MachSize.debug byte) ;
+        assert (n mod byte_sz = 0) ;
+        n / byte_sz
+
+      let byte_eas sz a =
+        let kmax = nsz sz in
+        let rec do_rec k =
+          if k >= kmax then []
+          else
+            let ds = do_rec (k+1) in
+            let d = I.V.op1 (Op.AddK (k*byte_sz)) a in
+            d::ds in
+        a::do_rec 1
+
+      let explode sz v =
+        let rec do_rec k v =
+          if k <= 1 then [v]
+          else
+            let d = I.V.op1 (Op.AndK mask) v
+            and w = I.V.op1 (Op.LogicalRightShift nshift) v in
+            let ds = do_rec (k-1) w in
+            d::ds in
+        do_rec (nsz sz) v
+
+      let rec recompose ds = match ds with
+      | [] -> assert false
+      | [d] -> d
+      | d::ds ->
+          let w = recompose ds in
+          I.V.op Op.Or (I.V.op1 (Op.LeftShift nshift) w) d
 
 (***************************************************)
 (* State operations, implemented with library maps *)
 (***************************************************)
-  module State =
-    MyMap.Make
-      (struct
-        type t = location
-        let compare = location_compare
-      end)
+      module State =
+        MyMap.Make
+          (struct
+            type t = location
+            let compare = location_compare
+          end)
 
-  type state = I.V.v State.t
+      type state = v State.t
 
-  let state_empty = State.empty
+      let state_empty = State.empty
 
-  let pp_nice_state st delim pp_bd =
-    let bds =
-      State.fold
-        (fun l v k -> (pp_bd l v)::k)
-        st [] in
-    String.concat delim  (List.rev bds)
+      let pp_nice_state st delim pp_bd =
+        let bds =
+          State.fold
+            (fun l v k -> (pp_bd l v)::k)
+            st [] in
+        String.concat delim  (List.rev bds)
 
-  let pp_equal = if C.texmacros then "\\mathord{=}" else "="
+      let pp_equal = if C.texmacros then "\\mathord{=}" else "="
 
-  let pp_state st =
-    pp_nice_state st " "
-      (fun l v -> pp_location l ^ pp_equal ^ I.V.pp C.hexa v ^";")
+      let pp_state st =
+        pp_nice_state st " "
+          (fun l v -> pp_location l ^ pp_equal ^ I.V.pp C.hexa v ^";")
 
-  let do_dump_state tr st =
-    pp_nice_state st " "
-      (fun l v -> do_dump_location tr l ^ "=" ^ I.V.pp C.hexa v ^";")
+      let do_dump_state tr st =
+        pp_nice_state st " "
+          (fun l v -> do_dump_location tr l ^ "=" ^ I.V.pp C.hexa v ^";")
 
-  let dump_state st = do_dump_state Misc.identity st
+      let dump_state st = do_dump_state Misc.identity st
 
-  let build_state bds =
-    List.fold_left (fun st (loc,(_,v)) -> State.add loc v st)
-      State.empty bds
+      let build_state bds =
+        List.fold_left (fun st (loc,(_,v)) -> State.add loc v st)
+          State.empty bds
 
-  let build_concrete_state bds =
-    List.fold_left
-      (fun st (loc,v) ->
-        State.add loc (I.V.intToV v) st)
-      State.empty bds
+      let build_concrete_state bds =
+        List.fold_left
+          (fun st (loc,v) ->
+            State.add loc (I.V.intToV v) st)
+          State.empty bds
 
-  let state_is_empty = State.is_empty
+      let state_is_empty = State.is_empty
 
-  let state_to_list st =
-    List.rev (State.fold (fun l v k -> (l,v)::k) st [])
+      let state_to_list st =
+        List.rev (State.fold (fun l v k -> (l,v)::k) st [])
 
-  let state_size st = State.fold (fun _ _ k -> 1+k) st 0
+      let state_size st = State.fold (fun _ _ k -> 1+k) st 0
 
-  let state_fold  f st x = State.fold f st x
+      let state_fold  f st x = State.fold f st x
 
 (* State sets *)
 
-  module StateSet =
-    MySet.Make
-      (struct
-        type t = state
+      module StateSet =
+        MySet.Make
+          (struct
+            type t = state
 
-        let compare st1 st2 = State.compare I.V.compare st1 st2
-      end)
+            let compare st1 st2 = State.compare I.V.compare st1 st2
+          end)
 
 (* To get protection against wandering undetermined locations,
    all loads from state are by this function *)
-  exception LocUndetermined
+      exception LocUndetermined
 
-  let look_in_state st loc =
-    match undetermined_vars_in_loc loc with
-    | Some _ ->
-    (* if loc is not determined, then we cannot get its
-       content yet *)
-        raise LocUndetermined
-    | None ->
-        try State.find loc st with Not_found -> I.V.zero
+      let get_in_state loc st = State.safe_find I.V.zero loc st
 
-  let state_add st l v = State.add l v st
+      let look_in_state st loc =
+        match undetermined_vars_in_loc loc with
+        | Some _ ->
+            (* if loc is not determined, then we cannot get its
+            content yet *)
+            raise LocUndetermined
+        | None -> get_in_state loc st
 
-  let state_mem st loc v =
-    try
-      let w = look_in_state st loc in
-      I.V.compare v w = 0
-    with LocUndetermined -> assert false
+      let state_add st l v = State.add l v st
 
-
-  let state_restrict st loc_ok =
-    State.fold
-      (fun loc v k ->
-        if loc_ok loc then State.add loc v k
-        else k)
-      st State.empty
-
-  let state_restrict_locs locs st =
-    LocSet.fold
-      (fun loc r -> state_add r loc (look_in_state st loc))
-      locs state_empty
-
-  (* Typing *)
-
-  type size_env = MachSize.sz State.t
-  let size_env_empty = State.empty
-
-  (* Simplified typing, size only, integer types only *)
-
-  let size_of = function
-  | "atomic_t"
-  | "int"|"long"
-  | "int32_t"
-  | "uint32_t" ->  MachSize.Word
-  | "char"|"int8_t" |"uint8_t" -> MachSize.Byte
-  | "short" | "int16_t" | "uint16_t" -> MachSize.Short
-  | "int64_t" | "uint64_t" -> MachSize.Quad
-  | "intprt_t" | "uintprt_t" -> I.V.Cst.Scalar.machsize (* Maximal size = ptr size *)
-  | t ->
-      Warn.fatal "Cannot find the size of type %s" t
+      let state_mem st loc v =
+        try
+          let w = look_in_state st loc in
+          I.V.compare v w = 0
+        with LocUndetermined -> assert false
 
 
-  let misc_to_size  = function
-    | MiscParser.TyDef -> size_of "int"
-    | MiscParser.Ty t|MiscParser.Atomic t -> (size_of t)
-    | MiscParser.Pointer _
-    | MiscParser.TyArray _
-    | MiscParser.TyDefPointer -> I.V.Cst.Scalar.machsize
+      let state_restrict st loc_ok =
+        State.fold
+          (fun loc v k ->
+            if loc_ok loc then State.add loc v k
+            else k)
+          st State.empty
 
-  let build_size_env =
-    if C.variant Variant.Mixed then
-    fun bds ->
-      List.fold_left (fun m (loc,(t,_)) -> State.add loc (misc_to_size t) m)
-        State.empty bds
-    else
-      (fun _ -> State.empty)
+      let state_restrict_locs_non_mixed locs _ st =
+        LocSet.fold
+          (fun loc r -> state_add r loc (look_in_state st loc))
+          locs state_empty
 
-  let look_size env loc = State.safe_find MachSize.Word loc env
+          (* Typing *)
 
-  (*********************************)
-  (* Components of test structures *)
-  (*********************************)
+      type size_env = MachSize.sz State.t
+      let size_env_empty = State.empty
 
-  (* Code memory is a mapping from globals locs, to instructions *)
-  type code = (int * I.arch_instruction) list
+          (* Simplified typing, size only, integer types only *)
 
-  module LabelMap =
-    Map.Make
-      (struct
-        type t = string
-        let compare = String.compare
-      end)
-
-
-  (* Programm loaded in memory *)
-  type program = code LabelMap.t
-
-  (* A starting address per proc *)
-  type start_points = (proc * code) list
+      let size_of = function
+        | "atomic_t"
+        | "int"|"long"
+        | "int32_t"
+        | "uint32_t" ->  MachSize.Word
+        | "char"|"int8_t" |"uint8_t" -> MachSize.Byte
+        | "short" | "int16_t" | "uint16_t" -> MachSize.Short
+        | "int64_t" | "uint64_t" -> MachSize.Quad
+        | "intprt_t" | "uintprt_t" -> I.V.Cst.Scalar.machsize (* Maximal size = ptr size *)
+        | t ->
+            Warn.fatal "Cannot find the size of type %s" t
 
 
-  (* Constraints *)
-  type prop =  (location,I.V.v) ConstrGen.prop
-  type constr = prop ConstrGen.constr
+      let misc_to_size  = function
+        | MiscParser.TyDef -> size_of "int"
+        | MiscParser.Ty t|MiscParser.Atomic t -> (size_of t)
+        | MiscParser.Pointer _
+        | MiscParser.TyArray _
+        | MiscParser.TyDefPointer -> I.V.Cst.Scalar.machsize
 
-end
+      let build_size_env =
+        if C.variant Variant.Mixed then
+          fun bds ->
+            List.fold_left (fun m (loc,(t,_)) -> State.add loc (misc_to_size t) m)
+              State.empty bds
+        else
+          (fun _ -> State.empty)
+
+      let look_size env loc = State.safe_find MachSize.Word loc env
+
+
+      let state_restrict_locs_mixed locs senv st =
+        let get a = get_in_state (Location_global a) st in
+        LocSet.fold
+          (fun loc r -> match loc with
+          | Location_global a ->
+              let sz = look_size senv loc in
+              let eas = byte_eas sz a in
+              let vs = List.map get eas in
+              let v = recompose vs in
+              Printf.eprintf "Loc=%s, eas=[%s], vs=[%s]\n"
+                (pp_location loc)  (String.concat "," (List.map (I.V.pp C.hexa) eas))
+                (String.concat "," (List.map (I.V.pp C.hexa) vs)) ;
+              state_add r loc v
+          | _ -> state_add r loc (look_in_state st loc))
+          locs state_empty
+
+
+      let state_restrict_locs =
+        if C.variant Variant.Mixed then state_restrict_locs_mixed
+        else  state_restrict_locs_non_mixed
+
+(*********************************)
+(* Components of test structures *)
+(*********************************)
+
+(* Code memory is a mapping from globals locs, to instructions *)
+
+      type code = (int * I.arch_instruction) list
+
+      module LabelMap =
+        Map.Make
+          (struct
+            type t = string
+            let compare = String.compare
+          end)
+
+
+          (* Programm loaded in memory *)
+      type program = code LabelMap.t
+
+            (* A starting address per proc *)
+      type start_points = (proc * code) list
+
+
+            (* Constraints *)
+      type prop =  (location,v) ConstrGen.prop
+      type constr = prop ConstrGen.constr
+
+    end

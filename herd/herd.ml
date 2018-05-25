@@ -221,6 +221,9 @@ let options = [
 (* Model control *)
   begin let module ParseVariant = ParseTag.MakeS(Variant) in
   ParseVariant.parse "-variant" variant "select an architecture variation" end ;
+  begin let module ParseMachSize = ParseTag.Make(MachSize) in
+  ParseMachSize.parse "-machsize" byte "set basic machine sqqize" end ;
+
   "-optace", Arg.Bool (fun b -> optace := Some b),
     "<bool> optimize axiomatic candidate generation, default is true except for the minimal model and all generic models";
   "-initwrites", Arg.Bool (fun b -> initwrites := Some b),
@@ -515,11 +518,11 @@ let () =
       | Some (Model.Generic _|Model.File _) -> false
       | _ -> false
     let variant = !variant
+    let byte = !byte
     let outputdir = !outputdir
     let suffix = !suffix
     let dumpes = !dumpes
     let moreedges = !moreedges
-
     module PC = struct
       let debug = debug.Debug_herd.pretty
       let verbose = verbose

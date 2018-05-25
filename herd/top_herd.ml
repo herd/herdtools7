@@ -281,8 +281,9 @@ module Make(O:Config)(M:XXXMem.S) =
           let fsc =
             if O.outcomereads then fsc
             else begin
-              let dlocs = S.displayed_locations test in
-              A.state_restrict_locs dlocs fsc
+              let dlocs = S.displayed_locations test
+              and senv = S.size_env test in
+              A.state_restrict_locs dlocs senv fsc
             end in
           let r =
             { cands = c.cands+1;
@@ -378,8 +379,9 @@ module Make(O:Config)(M:XXXMem.S) =
             A.LocSet.union
               (S.displayed_locations test)
               c.reads in
+          let senv  = S.size_env test in
           A.StateSet.map
-            (fun st -> A.state_restrict_locs locs st)
+            (fun st -> A.state_restrict_locs locs senv st)
             c.states
         else c.states in
       let nfinals = A.StateSet.cardinal finals in

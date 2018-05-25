@@ -21,6 +21,7 @@ module type Config = sig
   val optace : bool
   val debug : Debug_herd.t
   val variant : Variant.t -> bool
+  val byte : MachSize.sz
   module PC : PrettyConf.S
 end
 
@@ -58,6 +59,7 @@ module type S = sig
   type loc_set = A.LocSet.t
   val observed_locations : test -> loc_set
   val displayed_locations : test -> loc_set
+  val size_env : test -> A.size_env
 
   type event = E.event
   type event_structure = E.event_structure
@@ -175,7 +177,13 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
     module A = A
     module V = A.V
     module E = Event.Make(C)(A)(Act)
-    module M = EventsMonad.Make(C)(A)(E)
+    module CEM = struct (* Configure event monads *)
+      let hexa =  C.PC.hexa
+      let debug = C.debug
+      let variant = C.variant
+      let byte = C.byte
+    end
+    module M = EventsMonad.Make(CEM)(A)(E)
     module Cons = Constraints.Make (C.PC)(A)
 
 (* A good place to (re)define all these types *)
@@ -202,6 +210,7 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
     type loc_set = A.LocSet.t
     let observed_locations t = t.Test_herd.observed
     and displayed_locations t = t.Test_herd.displayed
+    and size_env t =  t.Test_herd.size_env
 
     type event = E.event
 
@@ -353,4 +362,13 @@ type concrete =
 
     type pp_barrier = { barrier:barrier ; pp:string; }
 
+  end
+
+module ConfigToArchConfig(C:Config) : ArchExtra_herd.Config =
+  struct
+    let texmacros = C.PC.texmacros
+    let hexa = C.PC.hexa
+    let brackets = C.PC.brackets
+    let variant = C.variant
+    let byte = C.byte
   end

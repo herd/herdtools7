@@ -19,8 +19,7 @@
 module Make (C:Sem.Config)(V:Value.S)
     =
   struct
-
-    module Bell = BellArch_herd.Make(C.PC)(V)
+    module Bell = BellArch_herd.Make(SemExtra.ConfigToArchConfig(C))(V)
     module Act = BellAction.Make(Bell)
     include SemExtra.Make(C)(Bell)(Act)
 

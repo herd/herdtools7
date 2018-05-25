@@ -548,7 +548,7 @@ struct
     let map_event_structure f es =
       let map_rel = EventRel.map (fun (e1,e2) -> f e1,f e2)
       and map_set = EventSet.map f in
-      { es with
+      { procs = es.procs ;
        events = map_set es.events ;
        intra_causality_data = map_rel  es.intra_causality_data ;
        intra_causality_control = map_rel es.intra_causality_control ;
@@ -556,7 +556,8 @@ struct
        data_ports = map_set es.data_ports ;
        success_ports = map_set es.success_ports ;
        output = Misc.app_opt map_set es.output ;
-     }
+       sca = EventSetSet.map map_set es.sca ;
+      }
 
     let empty =
       { procs = [] ; events = EventSet.empty ;

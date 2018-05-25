@@ -16,14 +16,15 @@
 module Make (C:Sem.Config)(V:Value.S)
 =
   struct
+    module ConfLoc = SemExtra.ConfigToArchConfig(C)
     module AArch64 =
       AArch64Arch_herd.Make
         (struct
-          include C.PC
           let moreedges = C.moreedges
+          include ConfLoc
         end)(V)
 
-    module Act = MachAction.Make(AArch64)
+    module Act = MachAction.Make(ConfLoc)(AArch64)
     include SemExtra.Make(C)(AArch64)(Act)
 
 (* Barrier pretty print *)

@@ -155,6 +155,8 @@ and opt = parse
       let old = !variant in
       variant := (fun t -> Variant.compare t tag = 0 || old t) in
     PV.parse_tag_set "variant"  add_tag arg }
+| "machsize" arg
+    { lex_tag "machsize" MachSize.parse MachSize.tags byte arg }
 (*
 | "through" arg
    { lex_tag

@@ -60,7 +60,6 @@ module Make(A:Arch_herd.S) =
 
       (* Here values and global (addresses) are identical,
          NB: this is not the case for litmus! *)
-      type v = A.V.v
       let maybevToV = V.maybevToV
       type global = A.V.v
       let maybevToGlobal = V.maybevToV

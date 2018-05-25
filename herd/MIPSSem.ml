@@ -19,8 +19,8 @@
 module Make (C:Sem.Config)(V:Value.S)
 =
   struct
-    module MIPS = MIPSArch_herd.Make(C.PC)(V)
-    module Act = MachAction.Make(MIPS)
+    module MIPS = MIPSArch_herd.Make(SemExtra.ConfigToArchConfig(C))(V)
+    module Act = MachAction.Make(C.PC)(MIPS)
     include SemExtra.Make(C)(MIPS)(Act)
 
 (* Barrier pretty print *)

@@ -26,7 +26,7 @@ module Make(C:Config) = struct
 
   open Printf
 
-  let pp_mixed = function (sz,o) -> sprintf "%s%i" (MachSize.pp sz) o
+  let pp_mixed = function (sz,o) -> sprintf "%s%i" (MachSize.pp_short sz) o
 
   let do_fold f sz xs r = List.fold_right (fun o r -> f (sz,o) r) xs r
 

@@ -29,7 +29,10 @@ module type A = sig
   val pp_annot : lannot -> string
 end
 
-module Make (A : A) : sig
+module type Config = sig
+  val hexa : bool
+end
+module Make (C:Config) (A : A) : sig
 
   type action =
     | Access of Dir.dirn * A.location * A.V.v * A.lannot * MachSize.sz
@@ -61,15 +64,15 @@ end = struct
         (pp_dirn d)
         (A.pp_location l)
         (A.pp_annot an)
-        (MachSize.pp sz)
-        (V.pp_v v)
+        (MachSize.pp_short sz)
+        (V.pp C.hexa v)
   | Barrier b -> A.pp_barrier_short b
   | Commit bcc -> if bcc then "Commit" else "Pred"
   | Amo (loc,v1,v2,an,sz) ->
       Printf.sprintf "RMW(%s)%s%s(%s>%s)"
         (A.pp_annot an)
-        (A.pp_location loc) (MachSize.pp sz)
-        (V.pp_v v1) (V.pp_v v2)
+        (A.pp_location loc) (MachSize.pp_short sz)
+        (V.pp C.hexa v1) (V.pp C.hexa v2)
 
 (* Utility functions to pick out components *)
   let value_of a = match a with

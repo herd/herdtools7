@@ -19,8 +19,8 @@
 module Make (C:Sem.Config)(V:Value.S)
 =
   struct
-    module ARM = ARMArch_herd.Make(C.PC)(V)
-    module Act = MachAction.Make(ARM)
+    module ARM = ARMArch_herd.Make(SemExtra.ConfigToArchConfig(C))(V)
+    module Act = MachAction.Make(C.PC)(ARM)
     include SemExtra.Make(C)(ARM)(Act)
 
 (* Barrier pretty print *)

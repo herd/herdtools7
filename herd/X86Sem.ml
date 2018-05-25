@@ -19,8 +19,8 @@
 module Make (C:Sem.Config)(V : Value.S)
     =
   struct
-    module X86 = X86Arch_herd.Make(C.PC)(V)
-    module Act = MachAction.Make(X86)
+    module X86 = X86Arch_herd.Make(SemExtra.ConfigToArchConfig(C))(V)
+    module Act = MachAction.Make(C.PC)(X86)
     include SemExtra.Make(C)(X86)(Act)
 
 (* barrier pretty print *)

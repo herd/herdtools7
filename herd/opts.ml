@@ -39,6 +39,7 @@ let unroll = ref 2
 let speedcheck = ref Speed.False
 let optace = ref None
 let variant = ref (fun (t:Variant.t) -> false)
+let byte = ref MachSize.Byte
 let initwrites = ref None
 let check_filter = ref true
 let badexecs = ref true
