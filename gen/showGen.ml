@@ -20,4 +20,4 @@ let parse = function
   | "edges" ->  Edges
   | "annot"|"annotations" -> Annotations
   | "fences" -> Fences
-  | _ -> failwith "Wrong show, choose edges, fences or fences"
+  | _ -> raise (Arg.Bad "Wrong show, choose edges, annotations or fences")

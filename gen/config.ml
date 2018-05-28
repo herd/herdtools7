@@ -162,7 +162,7 @@ let common_specs =
    Arg.Unit (fun () -> show := Some ShowGen.Edges),
    "list accepted edge syntax and exit")::
   ("-show", Arg.String (fun s -> show := Some (ShowGen.parse s)),
-    "<edges|annotations|fence> list accepted edges, annoations or fencesa and exit")::
+    "<edges|annotations|fences> list accepted edges, annotations or fences, and exit")::
   ("-switch", Arg.Set Misc.switch, "switch something")::
   ("-obs",
    Arg.String (fun s -> do_observers := parse_do_observers s),
