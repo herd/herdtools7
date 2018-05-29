@@ -23,6 +23,7 @@ module Make (C:Sem.Config)(V:Value.S)
     module PPC = PPCArch_herd.Make(SemExtra.ConfigToArchConfig(C))(V)
     module Act = MachAction.Make(C.PC)(PPC)
     include SemExtra.Make(C)(PPC)(Act)
+    let mixed = C.variant Variant.Mixed
 
 (* barrier pretty print *)
     let sync = {barrier=PPC.Sync; pp="sync";}
@@ -50,7 +51,13 @@ module Make (C:Sem.Config)(V:Value.S)
     let read_reg_data = read_reg true
     and read_reg_ord = read_reg false
 
-    let do_read_mem sz ato a ii = M.read_loc false (mk_read sz ato) (A.Location_global a) ii
+    let do_read_mem sz ato a ii =
+      if mixed then
+        M.read_mixed false sz (fun sz -> mk_read sz ato) a ii
+      else
+        M.read_loc false (mk_read sz ato) (A.Location_global a) ii
+
+
     let read_mem sz a ii = do_read_mem sz false a ii
     let read_mem_atomic sz a ii = do_read_mem sz true a ii
 
@@ -61,7 +68,15 @@ module Make (C:Sem.Config)(V:Value.S)
     let write_reg r v ii =
       M.mk_singleton_es (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false, nat_sz)) ii
 
-    let do_write_mem sz ato a v ii =  M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v, ato, sz)) ii
+    let do_write_mem sz ato a v ii =
+      if mixed then
+        M.write_mixed sz
+          (fun sz loc v -> Act.Access (Dir.W, loc , v, ato, sz))
+          a v ii
+      else
+        M.mk_singleton_es
+          (Act.Access (Dir.W, A.Location_global a, v, ato, sz)) ii
+
     let write_mem sz a v ii = do_write_mem sz false a v ii
     let write_mem_atomic sz a v ii = do_write_mem sz true a v ii
 
@@ -241,7 +256,7 @@ module Make (C:Sem.Config)(V:Value.S)
         (read_reg_ord rA ii >>| read_reg_ord rB ii) >>=
         fun (vA,vB) -> flags true cr vA vB ii >>! B.Next
 (* memory loads/stores *)
-    | PPC.Pload((Word|Quad as sz),rD,d,rA) ->
+    | PPC.Pload(sz,rD,d,rA) ->
         read_reg_ord rA ii >>=
         fun aA ->
           M.add aA (V.intToV d) >>=
@@ -259,14 +274,14 @@ module Make (C:Sem.Config)(V:Value.S)
             if rA <> PPC.r0 && rA <> rD then
               (write_reg rA a ii >>| load) >>! B.Next
             else load >>! B.Next)
-    | PPC.Ploadx((Word|Quad as sz),rD,rA,rB) ->
+    | PPC.Ploadx(sz,rD,rA,rB) ->
         (read_reg_or_zero false rA ii >>| read_reg_ord rB ii) >>=
         fun (aA,aB) ->
           M.add aA aB >>=
           fun a ->
             read_addr sz a ii >>=
             fun v -> write_reg rD v ii >>! B.Next
-    | PPC.Pstore((Quad|Word as sz),rS,d,rA) ->
+    | PPC.Pstore(sz,rS,d,rA) ->
         (read_reg_data rS ii >>| read_reg_ord rA ii) >>=
         (fun (vS,aA) ->
           M.add aA (V.intToV d) >>=
@@ -284,7 +299,7 @@ module Make (C:Sem.Config)(V:Value.S)
             M.add aA (V.intToV d) >>=
             fun a -> write_addr Word a vS ii >>! B.Next)
 
-    | PPC.Pstorex((Word|Quad as sz),rS,rA,rB) ->
+    | PPC.Pstorex(sz,rS,rA,rB) ->
         (read_reg_data rS ii
            >>| (* Enforce right associativity of >>| *)
            (read_reg_or_zero false rA ii
@@ -337,10 +352,6 @@ module Make (C:Sem.Config)(V:Value.S)
     | PPC.Pmflr _
     | PPC.Pstmw _
     | PPC.Plmw _
-    | PPC.Pload ((Byte|Short),_,_,_)
-    | PPC.Ploadx ((Byte|Short),_,_,_)
-    | PPC.Pstore ((Byte|Short),_,_,_)
-    | PPC.Pstorex ((Byte|Short),_,_,_)
         ->
           Warn.fatal "Instruction %s not implemented"
             (PPC.dump_instruction ii.A.inst)

@@ -92,7 +92,7 @@ module type S =
     val read_loc : bool -> (A.location -> A.V.v -> E.action) ->
                    A.location -> A.inst_instance_id -> A.V.v t
 
-    val read_mixed : bool -> MachSize.sz ->
+    val read_mixed : bool ->MachSize.sz ->
       (MachSize.sz -> A.location -> A.V.v -> E.action) ->
         A.V.v ->  A.inst_instance_id -> A.V.v t
 

@@ -64,7 +64,7 @@ end = struct
         (pp_dirn d)
         (A.pp_location l)
         (A.pp_annot an)
-        (MachSize.pp_short sz)
+        (if sz = MachSize.Word then "" else MachSize.pp_short sz)
         (V.pp C.hexa v)
   | Barrier b -> A.pp_barrier_short b
   | Commit bcc -> if bcc then "Commit" else "Pred"

@@ -15,6 +15,7 @@
 (****************************************************************************)
 
 open Printf
+open Sign
 
 let arch = Archs.riscv
 
@@ -249,8 +250,6 @@ let pp_width = function
   | Word -> "w"
   | Double -> "d"
 
-type signed = Signed | Unsigned
-
 let pp_signed = function
   | Signed -> ""
   | Unsigned -> "u"
@@ -272,6 +271,8 @@ let pp_lr w mo = sprintf "lr.%s%s" (pp_width w) (pp_mo mo)
 let pp_sc w mo = sprintf "sc.%s%s" (pp_width w) (pp_mo mo)
 
 let pp_amo op w mo = sprintf "%s.%s%s" (pp_opamo op) (pp_width w) (pp_mo mo)
+
+type signed = Sign.t
 
 type 'k kinstruction =
   | OpI of opi * reg * reg * 'k
