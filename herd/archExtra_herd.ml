@@ -80,6 +80,7 @@ module type S = sig
 
 (* State *)
   type state (* Now abstract, suicide ? *)
+  type size_env
 
   val state_empty : state
   val pp_state : state -> string
@@ -101,15 +102,18 @@ module type S = sig
   val state_fold :
       (location -> v -> 'a -> 'a) -> state -> 'a -> 'a
 
-(* Look for what loc is bound to *)
+(* Look for what address loc is bound to *)
   exception LocUndetermined (* raised when location is yet unkown *)
-  val look_in_state : state -> location -> v
+
+  val look_address_in_state : state -> location -> v
+(* Look what memory cell is bound to *)
+  val look_in_state : size_env -> state -> location -> v
 
 (* Add a binding , shadow previous binding if any *)
   val state_add : state -> location -> v -> state
 
 (* Does loc binds v in state ? *)
-  val state_mem : state -> location -> v -> bool
+  val state_mem : size_env -> state -> location -> v -> bool
 
 (* State restriction to some locations *)
   val state_restrict : state -> (location -> bool) -> state
@@ -118,7 +122,6 @@ module type S = sig
   module StateSet : MySet.S with type elt = state
 
 (* Typing environment *)
-  type size_env
   val size_env_empty : size_env
   val build_size_env : (location * (MiscParser.run_type * 'v)) list -> size_env
   val look_size : size_env -> location -> MachSize.sz
@@ -365,8 +368,9 @@ module Make(C:Config) (I:I) : S with module I = I
       exception LocUndetermined
 
       let get_in_state loc st = State.safe_find I.V.zero loc st
+      let get_of_val st a = State.safe_find I.V.zero (Location_global a) st
 
-      let look_in_state st loc =
+      let look_address_in_state st loc =
         match undetermined_vars_in_loc loc with
         | Some _ ->
             (* if loc is not determined, then we cannot get its
@@ -374,11 +378,34 @@ module Make(C:Config) (I:I) : S with module I = I
             raise LocUndetermined
         | None -> get_in_state loc st
 
+      let look_size env loc = State.safe_find MachSize.Word loc env
+
+      let look_in_state_mixed senv st loc =
+        match undetermined_vars_in_loc loc with
+      | Some _ ->
+          (* if loc is not determined, then we cannot get its
+             content yet *)
+          raise LocUndetermined
+      | None ->
+          match loc with
+          | Location_global a ->
+              let sz = look_size senv loc in
+              let eas = byte_eas sz a in
+              let vs = List.map (get_of_val st) eas in
+              let v = recompose vs in
+              v
+          | _ ->  get_in_state loc st
+
+
+      let look_in_state =
+        if C.variant Variant.Mixed then  look_in_state_mixed
+        else fun senv -> look_address_in_state
+
       let state_add st l v = State.add l v st
 
-      let state_mem st loc v =
+      let state_mem senv st loc v =
         try
-          let w = look_in_state st loc in
+          let w = look_in_state senv st loc in
           I.V.compare v w = 0
         with LocUndetermined -> assert false
 
@@ -392,7 +419,7 @@ module Make(C:Config) (I:I) : S with module I = I
 
       let state_restrict_locs_non_mixed locs _ st =
         LocSet.fold
-          (fun loc r -> state_add r loc (look_in_state st loc))
+          (fun loc r -> state_add r loc (look_address_in_state st loc))
           locs state_empty
 
           (* Typing *)
@@ -430,23 +457,10 @@ module Make(C:Config) (I:I) : S with module I = I
         else
           (fun _ -> State.empty)
 
-      let look_size env loc = State.safe_find MachSize.Word loc env
-
 
       let state_restrict_locs_mixed locs senv st =
-        let get a = get_in_state (Location_global a) st in
         LocSet.fold
-          (fun loc r -> match loc with
-          | Location_global a ->
-              let sz = look_size senv loc in
-              let eas = byte_eas sz a in
-              let vs = List.map get eas in
-              let v = recompose vs in
-              Printf.eprintf "Loc=%s, eas=[%s], vs=[%s]\n"
-                (pp_location loc)  (String.concat "," (List.map (I.V.pp C.hexa) eas))
-                (String.concat "," (List.map (I.V.pp C.hexa) vs)) ;
-              state_add r loc v
-          | _ -> state_add r loc (look_in_state st loc))
+          (fun loc r -> state_add r loc (look_in_state_mixed senv st loc))
           locs state_empty
 
 

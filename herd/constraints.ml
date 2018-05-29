@@ -38,8 +38,8 @@ module type S = sig
   val foralltrue : constr
 
 (* Check state *)
-  val check_prop : prop -> A.state -> bool
-  val check_constr : constr -> A.state list -> bool
+  val check_prop : prop -> A.size_env -> A.state -> bool
+  val check_constr : constr -> A.size_env -> A.state list -> bool
 
 (* Build a new constraint thar checks State membership *)
   val constr_of_finals : A.StateSet.t -> constr
@@ -96,25 +96,25 @@ module Make (C:Config) (A : Arch_herd.S) :
         | ExistsState p
         | NotExistsState p -> loc_in_prop loc p
 
-	let rec check_prop p state = match p with
-	| Atom (LV (l,v)) -> A.state_mem state l v
+	let rec check_prop p senv state = match p with
+	| Atom (LV (l,v)) -> A.state_mem senv state l v
         | Atom (LL (l1,l2)) ->
             begin try
-              let v1 = A.look_in_state state l1
-              and v2 = A.look_in_state state l2 in
+              let v1 = A.look_in_state senv state l1
+              and v2 = A.look_in_state senv state l2 in
               A.V.compare v1 v2 = 0
             with A.LocUndetermined -> assert false end
-	| Not p -> not (check_prop p state)
-	| And ps -> List.for_all (fun p -> check_prop p state) ps
-	| Or ps -> List.exists (fun p -> check_prop p state) ps
+	| Not p -> not (check_prop p senv state)
+	| And ps -> List.for_all (fun p -> check_prop p senv state) ps
+	| Or ps -> List.exists (fun p -> check_prop p senv state) ps
 	| Implies (p1, p2) -> 
-	    if check_prop p1 state then check_prop p2 state else true
+	    if check_prop p1 senv state then check_prop p2 senv state else true
 	      
-	let check_constr c states = match c with
-	| ForallStates p -> List.for_all (fun s -> check_prop p s) states
-	| ExistsState p -> List.exists (fun s -> check_prop p s) states
+	let check_constr c senv states = match c with
+	| ForallStates p -> List.for_all (fun s -> check_prop p senv s) states
+	| ExistsState p -> List.exists (fun s -> check_prop p senv s) states
 	| NotExistsState p ->
-            not (List.exists (fun s -> check_prop p s) states)	      
+            not (List.exists (fun s -> check_prop p senv s) states)	      
 
         let matrix_of_states fs =
           A.StateSet.fold

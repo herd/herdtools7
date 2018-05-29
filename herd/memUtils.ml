@@ -505,13 +505,14 @@ let get_scope_rels evts sc =
   let final_is_relevant test fsc =
     let open ConstrGen in
     let cnstr = T.find_our_constraint test in
+    let senv = S.size_env test in
     match cnstr with
       (* Looking for 'Allow' witness *)
-    | ExistsState p ->  C.check_prop p fsc
+    | ExistsState p ->  C.check_prop p senv fsc
           (* Looking for witness that invalidates 'Require' *)
-    | ForallStates p -> not (C.check_prop p fsc)
+    | ForallStates p -> not (C.check_prop p senv fsc)
           (* Looking for witness that invalidates 'Forbid' *)
-    | NotExistsState p -> C.check_prop p fsc
+    | NotExistsState p -> C.check_prop p senv fsc
 
 
 end

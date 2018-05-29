@@ -195,7 +195,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         A.LocSet.fold
           (fun loc env ->
             try
-              let v = A.look_in_state test.Test_herd.init_state loc in
+              let v = A.look_address_in_state test.Test_herd.init_state loc in
               (loc,v)::env
             with A.LocUndetermined -> assert false)
           locs [] in
@@ -391,7 +391,7 @@ let match_reg_events es =
 let get_rf_value test read rf = match rf with
 | S.Init ->
     let loc = get_loc read in
-    begin try A.look_in_state test.Test_herd.init_state loc
+    begin try A.look_address_in_state test.Test_herd.init_state loc
     with A.LocUndetermined -> assert false end
 | S.Store e -> get_written e
 
@@ -472,7 +472,7 @@ let compatible_locs_mem e1 e2 =
           let state = test.Test_herd.init_state
           and loc_load = get_loc load in
           begin try
-            let v_stored = A.look_in_state state loc_load in
+            let v_stored = A.look_address_in_state state loc_load in
             add_eq v_stored  v_loaded eqs
           with A.LocUndetermined ->
             VC.Assign
@@ -632,7 +632,7 @@ let compatible_locs_mem e1 e2 =
 (* Internal filter *)
     let check_filter test fsc = match test.Test_herd.filter with
     | None -> true
-    | Some p -> not C.check_filter || S.Cons.check_prop p fsc
+    | Some p -> not C.check_filter || S.Cons.check_prop p (S.size_env test) fsc
 (*
   A little optimisation: we check whether the existence/non-existence
   of some vo would help in validation/invalidating the constraint

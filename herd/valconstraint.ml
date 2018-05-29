@@ -257,7 +257,7 @@ and type state = A.state =
     let mk_atom_from_expr e =
       try match e with
       | Atom _ -> e
-      | ReadInit (loc,init) -> Atom (A.look_in_state init loc)
+      | ReadInit (loc,init) -> Atom (A.look_address_in_state init loc)
       | Unop (op,v1) -> Atom (V.op1 op v1)
       | Binop (op,v1,v2) -> Atom (V.op op v1 v2)
       | Terop (op,v1,v2,v3) -> Atom (V.op3 op v1 v2 v3)

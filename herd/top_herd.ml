@@ -56,17 +56,19 @@ module Make(O:Config)(M:XXXMem.S) =
     let tr_out test = OutMapping.info_to_tr  test.Test_herd.info
 
 (* Cond checking *)
-    let check_prop test st =
+    let check_prop test =
       let c = T.find_our_constraint test in
       let p = ConstrGen.prop_of c in
-      C.check_prop p st
+      let senv = S.size_env test in
+      fun st -> C.check_prop p senv st
 
     let count_prop test sts =
       let c = T.find_our_constraint test in
       let p = ConstrGen.prop_of c in
+      let senv = S.size_env test in
       A.StateSet.fold
         (fun st n ->
-          if  C.check_prop p st then n+1 else n)
+          if  C.check_prop p senv st then n+1 else n)
         sts
         0
 
