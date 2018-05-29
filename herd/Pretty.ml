@@ -271,7 +271,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
     add_eas ["po"; "po:"]
       def_ea {color="black" ; style="" ; } ;
     add_eas
-      ["ws" ; "co"; "grf" ; "ppo"; "A/B:" ; "ppo-ext:";"ppoext";
+      ["grf" ; "ppo"; "A/B:" ; "ppo-ext:";"ppoext";
        "membar:"; "poloc"; "w*w*"; "ppo-direct"]
       { color="brown" ; style="" ; }
       { color="black" ;  style="" ; } ;
@@ -295,7 +295,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
         "syncext";"lwsyncext";"dmbext";"dsbext";]
       {color="darkgreen"; style="";  }
       {color="black"; style="" ;  } ;
-    add_eas ["A" ; "B"; ]
+    add_eas ["A" ; "B"; "co"; "ws";]
       {color="blue" ; style = "" ; }
       {color="black" ; style = "" ; } ;
     add_eas ["LL" ; "LS" ; "PML"; "ll" ; "ls"; "pml"; "isync"; "dep"; "ctrl"; "data"; "addr"; "ctrlisync"; "isync"; "isb"; "ctrlisb";"ppo";"success";]
