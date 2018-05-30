@@ -347,7 +347,7 @@ module Make(V:Constant.S)(C:Config) =
           memo = sprintf "cmp %s,%s" fm1 fm2;
           inputs = rs; reg_env=List.map (fun r -> r,quad) rs; }
 
-    let memo_of_op op = String.lowercase_ascii (pp_op op)
+    let memo_of_op op = Misc.lowercase (pp_op op)
 
     let op3 v op rD rA kr =
       let memo = memo_of_op op in
