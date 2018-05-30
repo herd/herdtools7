@@ -40,6 +40,7 @@ let speedcheck = ref Speed.False
 let optace = ref None
 let variant = ref (fun (t:Variant.t) -> false)
 let byte = ref MachSize.Byte
+let endian = ref None
 let initwrites = ref None
 let check_filter = ref true
 let badexecs = ref true

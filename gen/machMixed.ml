@@ -19,6 +19,7 @@ module type Config = sig
 end
 
 open MachSize
+open Endian
 type offset = int
 type t = sz * offset
 
@@ -80,10 +81,11 @@ end
 
 module type ValsConfig = sig
   val naturalsize : unit -> MachSize.sz 
-  val endian : MachSize.endian
+  val endian : Endian.t
 end
 
 module Vals(C:ValsConfig) = struct
+
   let correct_offset = match C.endian with
   | Little -> fun _ o -> o
   | Big ->

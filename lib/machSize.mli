@@ -14,8 +14,6 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type endian = Little | Big
-
 type sz = Byte | Short | Word | Quad
 type t = sz
 

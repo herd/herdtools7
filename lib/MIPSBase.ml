@@ -19,7 +19,7 @@
 open Printf
 
 let arch = Archs.mips
-
+let endian = Endian.Big
 (*************)
 (* Registers *)
 (*************)

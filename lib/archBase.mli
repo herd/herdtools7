@@ -20,6 +20,7 @@ module type S = sig
   (* Who am I ? *)
   val arch : Archs.t
 
+
   (***********************************************)
   (* Basic arch types and their basic operations *)
   (***********************************************)
@@ -31,11 +32,11 @@ module type S = sig
   val pp_reg : reg -> string
   val reg_compare : reg -> reg -> int
   val symb_reg_name : reg -> string option
-    
+
 (*
-  type reservation 
+  type reservation
   val pp_res : reservation -> string
-  val res_compare : reservation -> reservation -> int 
+  val res_compare : reservation -> reservation -> int
 *)
 
   type barrier
@@ -60,13 +61,13 @@ module type S = sig
 
   (* Apply fonctions to all registers  either real or symbolic *)
   val fold_regs :
-	(reg -> 'a -> 'a) * (string -> 'b -> 'b) ->
-	  'a * 'b -> instruction -> 'a * 'b
+        (reg -> 'a -> 'a) * (string -> 'b -> 'b) ->
+          'a * 'b -> instruction -> 'a * 'b
 
   (* Map over all registers *)
     val map_regs :
-	(reg -> reg) -> (string -> reg) -> instruction -> instruction
- 
+        (reg -> reg) -> (string -> reg) -> instruction -> instruction
+
   (* Apply function to addresses present in  code *)
   val fold_addrs : (ParsedConstant.v -> 'a -> 'a) -> 'a -> instruction -> 'a
 
@@ -77,7 +78,7 @@ module type S = sig
   (* Normalize instruction (for hashes) *)
   val norm_ins : instruction -> instruction
 
-(* LM: Was not used, delete 
+(* LM: Was not used, delete
   (* Recognise store, data read from register r *)
   val is_data : reg -> instruction -> bool
 *)
@@ -93,7 +94,6 @@ module type S = sig
 
   val get_macro :
       string ->
-        (reg list -> pseudo list -> pseudo list)  
-  
-end
+        (reg list -> pseudo list -> pseudo list)
 
+end

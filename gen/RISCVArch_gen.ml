@@ -119,7 +119,7 @@ module Make
      MachMixed.Vals
        (struct
          let naturalsize () = C.naturalsize
-         let endian = MachSize.Little
+         let endian = endian
        end)
 
    let overwrite_value v ao w = match ao with

@@ -18,6 +18,7 @@
 open Printf
 
 let arch = Archs.aarch64
+let endian = Endian.Little
 
 (*************)
 (* Registers *)

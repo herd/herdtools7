@@ -20,7 +20,7 @@ open Printf
 
 (* Who am i ? *)
 let arch = Archs.arm
-
+let endian = Endian.Little
 (*************)
 (* Registers *)
 (*************)

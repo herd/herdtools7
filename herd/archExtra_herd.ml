@@ -19,6 +19,7 @@
 (** Input signature, a reduced [Arch.ARCH] *)
 module type I = sig
   module V : Value.S
+  val endian : Endian.t
 
   type arch_reg
   val pp_reg : arch_reg -> string
@@ -70,6 +71,7 @@ module type S = sig
 
 (* Mixed size *)
   val byte : MachSize.sz
+  val endian : Endian.t
   val byte_sz : int
   val nshift : int
   val mask : int
@@ -163,6 +165,7 @@ module type Config = sig
   val brackets : bool
   val variant : Variant.t -> bool
   val byte : MachSize.sz
+  val endian : Endian.t option
 end
 
 module Make(C:Config) (I:I) : S with module I = I
@@ -258,12 +261,19 @@ module Make(C:Config) (I:I) : S with module I = I
 (************************)
 
       let byte = C.byte
+
+      let endian = match C.endian with
+      | None -> I.endian
+      | Some e -> e
+
       let byte_sz =  MachSize.nbytes byte
       let mask = match byte_sz with
       | 1 -> 0xff
       | 2 -> 0xffff
       | 4 -> 0xffffffff
-      | _ -> assert false
+      | _ ->
+          Warn.user_error "Size cannot be %s in mixed-size mode"
+            (MachSize.pp C.byte)
       let nshift = MachSize.nbits byte
 
       let nsz sz =
@@ -282,7 +292,11 @@ module Make(C:Config) (I:I) : S with module I = I
             let ds = do_rec (k+1) in
             let d = I.V.op1 (Op.AddK (k*byte_sz)) a in
             d::ds in
-        a::do_rec 1
+        let r = a::do_rec 1 in
+        match endian with
+        | Endian.Little -> r
+        | Endian.Big -> List.rev r
+
 
       let explode sz v =
         let rec do_rec k v =

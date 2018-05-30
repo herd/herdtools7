@@ -18,6 +18,7 @@ open Printf
 let string_of_annot = MemOrderOrAnnot.pp_annot
 
 let arch = Archs.c
+let endian = Endian.Little
 
 type reg = string
 

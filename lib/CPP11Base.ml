@@ -22,6 +22,7 @@ open Constant
 (*Initial CPP11 file*)
 
 let arch = Archs.c
+let endian = Endian.Little
 
 (*************)
 (* Registers *)

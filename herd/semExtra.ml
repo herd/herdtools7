@@ -22,6 +22,7 @@ module type Config = sig
   val debug : Debug_herd.t
   val variant : Variant.t -> bool
   val byte : MachSize.sz
+  val endian : Endian.t option
   module PC : PrettyConf.S
 end
 
@@ -371,4 +372,5 @@ module ConfigToArchConfig(C:Config) : ArchExtra_herd.Config =
     let brackets = C.PC.brackets
     let variant = C.variant
     let byte = C.byte
+    let endian = C.endian
   end

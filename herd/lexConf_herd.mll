@@ -157,6 +157,9 @@ and opt = parse
     PV.parse_tag_set "variant"  add_tag arg }
 | "machsize" arg
     { lex_tag "machsize" MachSize.parse MachSize.tags byte arg }
+| "endian" arg
+    { lex_tag_fun "endian" Endian.parse Endian.tags
+        (fun t -> endian := Some t) arg }
 (*
 | "through" arg
    { lex_tag
@@ -168,9 +171,9 @@ and opt = parse
 (*
 | "strictskip" arg
    { lex_bool strictskip arg }
-*)
 | "unroll" arg
    { lex_int unroll arg }
+*)
 | "optace" arg
    { lex_bool_fun (fun b ->  optace := Some b) arg }
 | "initwrites" arg
@@ -245,7 +248,9 @@ and opt = parse
 | "boxscale" arg { lex_float PP.boxscale arg }
 | "ptscale" arg { lex_float PP.ptscale arg }
 | "squished" arg { lex_bool PP.squished arg }
+(*
 | "showpo" arg { lex_bool PP.showpo arg }
+*)
 | "relabel" arg { lex_bool PP.relabel arg }
 | "withbox" arg { lex_bool PP.withbox arg }
 | "labelbox" arg { lex_bool PP.labelbox arg }

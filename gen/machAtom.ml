@@ -17,7 +17,7 @@
 (* Atomicity of events *)
 module type Config = sig
   val naturalsize : MachSize.sz option
-  val endian : MachSize.endian
+  val endian : Endian.t
 end
 
 module Make(C:Config) = struct

@@ -222,7 +222,9 @@ let options = [
   begin let module ParseVariant = ParseTag.MakeS(Variant) in
   ParseVariant.parse "-variant" variant "select an architecture variation" end ;
   begin let module ParseMachSize = ParseTag.Make(MachSize) in
-  ParseMachSize.parse "-machsize" byte "set basic machine sqqize" end ;
+  ParseMachSize.parse "-machsize" byte "set basic machine size" end ;
+  begin let module ParseEndian = ParseTag.Make(Endian) in
+  ParseEndian.parse_opt "-endian" endian "set endianness" end ;
 
   "-optace", Arg.Bool (fun b -> optace := Some b),
     "<bool> optimize axiomatic candidate generation, default is true except for the minimal model and all generic models";
@@ -519,6 +521,7 @@ let () =
       | _ -> false
     let variant = !variant
     let byte = !byte
+    let endian = !endian
     let outputdir = !outputdir
     let suffix = !suffix
     let dumpes = !dumpes

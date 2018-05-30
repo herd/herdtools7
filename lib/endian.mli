@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2014-present Institut National de Recherche en Informatique et *)
+(* Copyright 2018-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,15 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(* Atomicity of events *)
-module type Config = sig
-  val naturalsize : MachSize.sz option
-  val endian : Endian.t
-end
+type t = Little | Big
 
-
-module Make : functor (C:Config) ->
-  sig
-    type hidden_atom = Atomic | Reserve | Mixed of MachMixed.t
-    include Atom.S with type atom = hidden_atom
-  end
+val tags : string list
+val parse : string -> t option
+val pp : t  -> string

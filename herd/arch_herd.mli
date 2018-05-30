@@ -22,6 +22,7 @@ module type Config = sig
   val brackets : bool
   val variant : Variant.t -> bool
   val byte : MachSize.sz
+  val endian : Endian.t option
 end
 
 module type S =

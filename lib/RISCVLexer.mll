@@ -18,6 +18,7 @@
 module Make(O:LexUtils.Config) = struct
 open Lexing
 open LexMisc
+open Sign
 open RISCVBase
 open RISCVParser
 

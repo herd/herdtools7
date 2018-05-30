@@ -22,6 +22,7 @@ let string_of_labels a = Label.Set.pp_str "," Misc.identity a
 
 (* Who am i ? *)
 let arch = Archs.lisa
+let endian = Endian.Little
 
 type gpr_reg = int
 

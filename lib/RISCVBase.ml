@@ -18,7 +18,7 @@ open Printf
 open Sign
 
 let arch = Archs.riscv
-
+let endian = Endian.Little
 
 (*************)
 (* Registers *)

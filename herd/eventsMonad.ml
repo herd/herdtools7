@@ -629,7 +629,11 @@ and type evt_struct = E.event_structure) =
           let xas,eqs = do_rec (k+1) in
           xa::xas,VC.Assign (xa,VC.Unop (Op.AddK (k*A.byte_sz),a))::eqs in
       let xas,eqs = do_rec 1 in
-      a::xas,eqs
+      let xas = a::xas in
+      let open Endian in
+      match A.endian with
+      | Little -> xas,eqs
+      | Big -> List.rev xas,eqs
 
     let read_mixed is_data sz mk_act a ii =
       fun eiid ->

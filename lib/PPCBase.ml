@@ -18,6 +18,7 @@
 
 (* Who am i ? *)
 let arch = Archs.ppc
+let endian = Endian.Big
 
 (*************)
 (* Registers *)

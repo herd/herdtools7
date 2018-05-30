@@ -37,7 +37,7 @@ module Make(C:Config)  =
     include MachAtom.Make
         (struct
           let naturalsize = Some C.naturalsize
-          let endian = MachSize.Big
+          let endian = endian
         end)
 
 (**********)

@@ -80,6 +80,7 @@ module Make (C:sig include Arch_herd.Config val moreedges : bool end) (V:Value.S
     include ArchExtra_herd.Make(C)
         (struct
           module V = V
+          let endian = endian
 
           type arch_reg = reg
           let pp_reg = pp_reg
