@@ -79,6 +79,16 @@ module type S = sig
         (S.concrete -> 'a -> 'a ) -> (* kont *)
         ('a -> 'a) ->                (* kont_loop *)
             'a -> 'a
+
+  val solve_regs :
+    ((int * S.A.instruction) list S.A.LabelMap.t,
+ (int * S.A.instruction S.A.kpseudo list) list,
+ (int * (int * S.A.instruction) list) list, S.A.state,
+ (S.A.location, S.A.V.v) ConstrGen.prop, S.A.location, S.A.LocSet.t)
+Test_herd.t ->
+S.event_structure ->
+S.M.VC.cnstrnt list -> (S.E.event_structure * S.rfmap * S.M.VC.cnstrnts) option
+
 end
 
 open Printf

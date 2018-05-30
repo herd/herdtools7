@@ -351,7 +351,7 @@ module Make(O:Config)(M:XXXMem.S) =
       end else
         if O.statelessrc11
         then
-          let module SL = Slrc11.Make(S) in
+          let module SL = Slrc11.Make(MC) in
           SL.check_event_structure test rfms
         else
         (* Thanks to the existence of check_test, XXMem modules
