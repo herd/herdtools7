@@ -1,7 +1,7 @@
 # Fields described at https://opam.ocaml.org/doc/Manual.html#opam
 opam-version: "1.2"
 name: "herdtools7"
-version: "7.49+02(dev)"
+version: "7.50"
 maintainer: "Vincent Jacques <vincent@russian-dolls-sunflowers.com>"
 authors: [
   "Luc Maranget <Luc.Maranget@inria.fr>"
