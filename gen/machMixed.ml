@@ -85,12 +85,11 @@ module type ValsConfig = sig
 end
 
 module Vals(C:ValsConfig) = struct
-
   let correct_offset = match C.endian with
   | Little -> fun _ o -> o
   | Big ->
-      let nsz = C.naturalsize () in
       fun sz o ->
+        let nsz = C.naturalsize () in
         let bsz = nbytes sz in
         let bo = o / bsz in
         let no = bsz * ((nbytes nsz/bsz)-bo-1) in
