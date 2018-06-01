@@ -89,6 +89,39 @@ Test_herd.t ->
 S.event_structure ->
 S.M.VC.cnstrnt list -> (S.E.event_structure * S.rfmap * S.M.VC.cnstrnts) option
 
+  val solve_mem :
+    ((int * S.A.instruction) list S.A.LabelMap.t,
+     (int * S.A.instruction S.A.kpseudo list) list,
+     (int * (int * S.A.instruction) list) list, S.A.state,
+     (S.A.location, S.A.V.v) ConstrGen.prop, S.A.location, S.A.LocSet.t)
+      Test_herd.t ->
+    S.E.event_structure ->
+    S.read_from S.RFMap.t ->
+    S.M.VC.cnstrnt list ->
+    (S.E.event_structure ->
+     S.read_from S.RFMap.t -> S.M.VC.cnstrnt list -> 'a -> 'a) ->
+    'a -> 'a
+
+  val check_sizes :
+    S.event_structure -> unit
+
+  val check_rfmap :
+    S.E.event_structure -> S.read_from S.RFMap.t -> bool
+
+  val fold_mem_finals :
+    S.test ->
+    S.E.event_structure ->
+    S.read_from S.RFMap.t -> (S.concrete -> 'a -> 'a) -> 'a -> 'a
+
+    val when_unsolved :
+      ((int * S.A.instruction) list S.A.LabelMap.t,
+       (int * S.A.instruction S.A.kpseudo list) list,
+       (int * (int * S.A.instruction) list) list, S.A.state,
+       (S.A.location, S.A.V.v) ConstrGen.prop, S.A.location, S.A.LocSet.t)
+        Test_herd.t ->
+      S.E.event_structure ->
+      S.read_from S.RFMap.t -> S.M.VC.cnstrnt list -> ('a -> 'a) -> 'a -> 'a
+
 end
 
 open Printf

@@ -349,11 +349,6 @@ module Make(O:Config)(M:XXXMem.S) =
             erase_dot ochan ;
             Handler.pop ()
       end else
-        if O.statelessrc11
-        then
-          let module SL = Slrc11.Make(MC) in
-          SL.check_event_structure test rfms
-        else
         (* Thanks to the existence of check_test, XXMem modules
            apply their internal functors once *)
         let check_test =
@@ -362,6 +357,10 @@ module Make(O:Config)(M:XXXMem.S) =
           check_test
             conc kfail (model_kont ochan test cstr) in
       let c =
+        if O.statelessrc11
+        then let module SL = Slrc11.Make(MC) in
+             SL.check_event_structure test rfms kfail (fun _ c -> c) (model_kont ochan test cstr) start
+        else
         try iter_rfms test rfms call_model (fun c -> c) start
         with
         | Over c -> c
