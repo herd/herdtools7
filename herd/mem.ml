@@ -1052,14 +1052,28 @@ let solve_regs test es csn =
             | _ -> assert false (* Only globals in sca *)
             else k)
           es.E.sca A.LocMap.empty in
-      A.LocMap.fold
-        (fun loc wss k ->
-          let wss = List.sort compare_len (List.map sort_same_base wss)
-          and rs =
-            let senv = S.size_env test in
-            A.byte_indices (A.look_size senv loc) in
-          MatchFinal.find_rfs_sca rs wss::k)
-        loc_wss []
+      let wsss =
+        A.LocMap.fold
+          (fun loc wss k ->
+            let wss = List.sort compare_len (List.map sort_same_base wss)
+            and rs =
+              let senv = S.size_env test in
+              A.byte_indices (A.look_size senv loc) in
+            MatchFinal.find_rfs_sca rs wss::k)
+          loc_wss [] in
+
+      if C.debug.Debug_herd.solver then begin
+        eprintf "+++++++++ possible finals ++++++++++++++\n" ;
+        List.iter
+          (fun (wss) ->
+            List.iter
+              (fun ws ->  eprintf "[%a]\n" debug_events ws)
+              wss ;
+            eprintf "--------------\n")
+          wsss ;
+        flush stderr
+      end ;
+      wsss
 
     let fold_left_left f = List.fold_left (List.fold_left f)
 
