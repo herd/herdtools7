@@ -91,7 +91,7 @@ module Make (C:Sem.Config)(V:Value.S)
 
     let write_mem_release sz a v ii = do_write_mem sz AArch64.L a v ii
 
-    (* TODO MIXED SIZE *)
+        (* TODO MIXED SIZE *)
     let do_write_mem_atomic an sz a v resa ii =
       let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
       M.mk_singleton_es_eq
@@ -112,11 +112,36 @@ module Make (C:Sem.Config)(V:Value.S)
 
     let atomic_pair_allowed _ _ = true
 
+    let ldr sz rd rs kr ii =
+      let open AArch64Base in
+      begin match kr with
+      | K k ->
+          (read_reg_ord rs ii)
+            >>= (fun v -> M.add v (V.intToV k))
+      | RV(_,r) ->
+          (read_reg_ord rs ii >>| read_reg_ord r ii)
+            >>= (fun (v1,v2) -> M.add v1 v2)
+      end
+        >>= (fun a -> read_mem sz a ii)
+        >>= (fun v -> write_reg rd v ii)
+        >>! B.Next
+
+    and str sz rs rd kr ii =
+      let open AArch64Base in
+      begin read_reg_data rs ii >>|
+      match kr with
+      | K k ->
+          read_reg_ord rd ii >>= fun v -> M.add v (V.intToV k)
+      | RV(_,r) ->
+          (read_reg_ord rd ii >>| read_reg_ord r ii)
+          >>= fun (v1,v2) -> M.add v1 v2 end
+        >>= (fun (v,a) -> write_mem sz a v ii)
+        >>! B.Next
+
     let build_semantics ii =
       M.addT (A.next_po_index ii.A.program_order_index)
         AArch64Base.(
       match ii.A.inst with
-
         (* Branches *)
       | I_B l ->
           B.branchT l
@@ -145,19 +170,11 @@ module Make (C:Sem.Config)(V:Value.S)
 
                     (* Load and Store *)
       | I_LDR(var,rd,rs,kr) ->
-          let var = tr_variant var in
-          begin match kr with
-          | K k ->
-              (read_reg_ord rs ii)
-                >>= (fun v -> M.add v (V.intToV k))
-          | RV(_,r) ->
-              (read_reg_ord rs ii >>| read_reg_ord r ii)
-                >>= (fun (v1,v2) -> M.add v1 v2)
-          end
-            >>= (fun a -> read_mem var a ii)
-            >>= (fun v -> write_reg rd v ii)
-            >>! B.Next
-
+          let sz = tr_variant var in
+          ldr sz rd rs kr ii
+      | I_LDRBH (bh, rd, rs, kr) ->
+          let sz = bh_to_sz bh in
+          ldr sz rd rs kr ii
       | I_LDAR(var,t,rd,rs) ->
           let var = tr_variant var in
           (read_reg_ord rs ii)
@@ -183,16 +200,10 @@ module Make (C:Sem.Config)(V:Value.S)
             end
 
       | I_STR(var,rs,rd,kr) ->
-          (read_reg_data rs ii >>|
-          match kr with
-          | K k ->
-              (read_reg_ord rd ii)
-                >>= (fun v -> M.add v (V.intToV k))
-          | RV(_,r) ->
-              (read_reg_ord rd ii >>| read_reg_ord r ii)
-                >>= (fun (v1,v2) -> M.add v1 v2))
-            >>= (fun (v,a) -> write_mem (tr_variant var) a v ii)
-            >>! B.Next
+          str (tr_variant var) rs rd kr ii
+
+      | I_STRBH(bh,rs,rd,kr) ->
+          str (bh_to_sz bh) rs rd kr ii
 
       | I_STLR(var,rs,rd) ->
           (read_reg_ord rd ii >>| read_reg_data rs ii)
@@ -220,9 +231,8 @@ module Make (C:Sem.Config)(V:Value.S)
           read_reg_ord r2 ii >>= fun v -> write_reg r1 v ii >>! B.Next
 
       | I_SXTW(rd,rs) ->
-          (read_reg_ord rs ii)
-            >>= fun v -> (write_reg rd v ii)
-                >>! B.Next
+          (read_reg_ord rs ii)            >>= fun v -> (write_reg rd v ii)
+              >>! B.Next
 
       | I_OP3(_,op,rd,rn,kr) ->
           (read_reg_ord rn ii >>|
@@ -266,7 +276,7 @@ module Make (C:Sem.Config)(V:Value.S)
                 >>! B.Next
 
                 (*  Cannot handle *)
-      | (I_LDP _|I_STP _|I_LDRBH (_, _, _, _)|I_STRBH (_, _, _, _)) as i ->
+      | (I_LDP _|I_STP _) as i ->
           Warn.fatal "illegal instruction: %s\n"
             (AArch64.dump_instruction i)
 

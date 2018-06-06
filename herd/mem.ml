@@ -27,6 +27,7 @@ module type Config = sig
   val initwrites : bool
   val check_filter : bool
   val variant : Variant.t -> bool
+  val byte : MachSize.sz
 end
 
 module type S = sig
@@ -326,8 +327,7 @@ and get_written e = match E.written_of e with
 
 
 
-(* Add final edges in rfm, ie for all location,
-   find the last (po) store to it *)
+(* Add (local) final edges in rfm, ie for all (register) location, find the last (po) store to it *)
 
 let add_finals es =
     U.LocEnv.fold
@@ -443,25 +443,25 @@ let solve_regs test es csn =
 (* Step 2. Generate rfmap for memory  *)
 (**************************************)
 
-let get_loc_as_value e = match  E.global_loc_of e with
-  | None -> eprintf "%a\n" E.debug_event e ; assert false
-  | Some v -> v
+    let get_loc_as_value e = match  E.global_loc_of e with
+    | None -> eprintf "%a\n" E.debug_event e ; assert false
+    | Some v -> v
 
 (* Compatible location are:
    - either both determined and equal,
    - or at least one location is undetermined. *)
-let compatible_locs_mem e1 e2 =
-  E.event_compare e1 e2 <> 0 && (* C RMWs cannot feed themselves *)
-  begin
-    let loc1 = get_loc e1
-    and loc2 = get_loc e2 in
-    let ov1 =  A.undetermined_vars_in_loc loc1
-    and ov2 =  A.undetermined_vars_in_loc loc2 in
-    match ov1,ov2 with
-    | None,None -> E.same_location e1 e2
-    | (Some _,None)|(None,Some _)
-    | (Some _,Some _) -> true
-  end
+    let compatible_locs_mem e1 e2 =
+      E.event_compare e1 e2 <> 0 && (* C RMWs cannot feed themselves *)
+      begin
+        let loc1 = get_loc e1
+        and loc2 = get_loc e2 in
+        let ov1 =  A.undetermined_vars_in_loc loc1
+        and ov2 =  A.undetermined_vars_in_loc loc2 in
+        match ov1,ov2 with
+        | None,None -> E.same_location e1 e2
+        | (Some _,None)|(None,Some _)
+        | (Some _,Some _) -> true
+      end
 
 (* Add a constraint for a store/load match *)
     let add_mem_eqs test rf load eqs =
@@ -524,7 +524,7 @@ let compatible_locs_mem e1 e2 =
 (* Consider all stores that may feed a load
    - Compatible location.
    - Not after in program order (suppressed when uniproc
-     is not optmised early) *)
+   is not optmised early) *)
     let map_load_possible_stores es loads stores compat_locs =
       E.EventSet.fold
         (fun store map_load ->
@@ -547,7 +547,9 @@ let compatible_locs_mem e1 e2 =
         (fun er -> S.RFMap.add (S.Load er))
         loads stores rfm
 
-
+    let add_mems =
+      List.fold_right2
+        (List.fold_right2 (fun r w ->  S.RFMap.add (S.Load r) (S.Store w)))
 
     let solve_mem_or_res test es rfm cns kont res loads stores compat_locs add_eqs =
       let loads,possible_stores =
@@ -585,7 +587,6 @@ let compatible_locs_mem e1 e2 =
         )
         res
 
-
     let when_unsolved test es rfm cs kont_loop res =
       (* This system in fact has no solution.
          In other words, it is not possible to make
@@ -614,16 +615,221 @@ let compatible_locs_mem e1 e2 =
       end
 
 
-    let solve_mem test es rfm cns kont res =
+    let solve_mem_non_mixed test es rfm cns kont res =
       let loads =  E.EventSet.filter E.is_mem_load es.E.events
       and stores = E.EventSet.filter E.is_mem_store es.E.events in
 (*
-      eprintf "Loads : %a\n"E.debug_events loads ;
-      eprintf "Stores: %a\n"E.debug_events stores ;
-*)
+  eprintf "Loads : %a\n"E.debug_events loads ;
+  eprintf "Stores: %a\n"E.debug_events stores ;
+ *)
       let compat_locs = compatible_locs_mem in
       solve_mem_or_res test es rfm cns kont res
-          loads stores compat_locs add_mem_eqs
+        loads stores compat_locs add_mem_eqs
+
+(*************************************)
+(* Mixed-size write-to-load matching *)
+(*************************************)
+
+    exception CannotSca
+
+(* Various utilities on symbolic addresses as locatiosn *)
+    let get_base a =
+      let open Constant in match a with
+      | A.Location_global (V.Val (Symbolic (s,_))) ->
+          A.Location_global (V.Val (Symbolic (s,0)))
+      | _ -> raise CannotSca
+
+(* Sort same_base *)
+    let compare_index e1 e2 =
+      let open Constant in
+      match E.global_loc_of e1, E.global_loc_of e2 with
+      | Some (V.Val (Symbolic (s1,i1))),Some (V.Val (Symbolic (s2,i2))) when  Misc.string_eq s1 s2 ->
+          Misc.int_compare i1 i2
+      | _,_ -> raise CannotSca
+
+    let sort_same_base es = List.sort compare_index es
+
+    let debug_events out es = Misc.pp_list out " " E.debug_event es
+
+    module Match
+        (R:sig
+          type read
+          val compare_index : read -> S.event -> int
+          val debug_read : out_channel -> read -> unit
+        end) = struct
+
+          let _debug_reads out es = Misc.pp_list out " " R.debug_read es
+
+          let rec inter rs0 ws0 = match rs0 with
+          | [] -> [],[]
+          | r::rs -> begin match ws0 with
+            | [] -> rs0,[]
+            | w::ws ->
+                let c = R.compare_index r w in
+                if c < 0 then
+                  let rs,ws = inter rs ws0 in
+                  r::rs,ws
+                else if c > 0 then
+                  let rs,ws = inter rs0 ws in
+                  rs,ws
+                else
+                  let rs,ws = inter rs ws in
+                  rs,w::ws
+          end
+
+          let rec all_ws rs ws wss =
+(*      eprintf "Trying [%a] on [%a]\n" debug_reads rs debug_events ws ; *)
+            let rs_diff,ws_inter = inter rs ws in
+(*      eprintf "Found [%a] (remains [%a])\n" debug_events ws_inter debug_reads rs_diff ; *)
+            match ws_inter with
+            | [] -> next_all_ws rs wss
+            | _  ->
+                List.fold_right
+                  (fun ws k -> (ws_inter@ws)::k)
+                  (next_all_ws rs_diff wss)
+                  (next_all_ws rs wss)
+
+          and next_all_ws rs wss = match rs with
+          | [] -> [[]]
+          | _  ->
+              begin match wss with
+              | [] -> []
+              | ws::wss ->  all_ws rs ws wss
+              end
+
+          let find_rfs_sca rs wss =
+            let wss = next_all_ws rs wss in
+            List.map sort_same_base wss
+        end
+
+    module MatchRf =
+      Match
+        (struct
+          type read = S.event
+          let compare_index = compare_index
+          let debug_read = E.debug_event
+        end)
+
+    let byte_sz = MachSize.nbytes C.byte
+
+    let expose_sca sca =
+      let open Constant in
+      let sca = E.EventSet.elements sca in
+      let sca = sort_same_base sca in
+      let fst = match sca with
+      | e::_ -> e
+      | [] -> assert false in
+      let s,idx= match  E.global_loc_of fst with
+      |  Some (V.Val (Symbolic (s,i))) -> s,i
+      | _ -> raise CannotSca in
+      let sz = List.length sca*byte_sz in
+      E.get_mem_dir fst,s,idx,sz,sca
+
+    let expose_scas scas =
+      let ms =
+        E.EventSetSet.fold
+          (fun sca k -> expose_sca sca::k)
+          scas [] in
+      let rs,ws =
+        List.fold_left
+          (fun (rs,ws) (d,x,idx,sz,es) -> match d with
+          | Dir.W ->
+              let old = StringMap.safe_find [] x ws in
+              rs,StringMap.add x ((idx,sz,es)::old) ws
+          | Dir.R -> (x,idx,sz,es)::rs,ws)
+          ([],StringMap.empty) ms in
+      let ws =
+        StringMap.map
+          (List.sort (fun (_,sz1,_) (_,sz2,_) -> Misc.int_compare sz1 sz2))
+          ws in
+      let ms =
+        List.map
+          (fun (x,i,sz,rs) ->
+            let ws = try StringMap.find x ws with Not_found -> assert false in (* Because of init writes *)
+            let ws =
+              List.filter
+                (fun (i_w,sz_w,_) ->  i+sz >= i_w && i < i_w+sz_w)
+                ws in
+            rs,List.map (fun (_,_,ws) -> ws) ws)
+          rs in
+(*
+        eprintf "+++++++++++++++++++++++\n" ;
+        List.iter
+        (fun (rs,wss) ->
+        List.iter (eprintf "%a " E.debug_event) rs ;
+        eprintf "->\n" ;
+        List.iter
+        (fun ws ->
+        eprintf "    [" ;
+        List.iter (fun w -> eprintf "%a; " E.debug_event w) ws ;
+        eprintf "]\n")
+        wss ;
+        eprintf "\n")
+        ms ; flush stderr ;
+ *)
+      let ms =
+        List.map
+          (fun (rs,wss) ->  rs,MatchRf.find_rfs_sca rs wss)
+          ms in
+      if C.debug.Debug_herd.solver then begin
+        eprintf "+++++++++++++++++++++++\n" ;
+        List.iter
+          (fun (rs,wss) -> eprintf "[%a] ->\n" debug_events rs ;
+            List.iter
+              (fun ws ->  eprintf "    [%a]\n" debug_events ws)
+              wss)
+          ms ;
+        flush stderr
+      end ;
+      ms
+
+
+    let solve_mem_mixed test es rfm cns kont res =
+      let ms = expose_scas es.E.sca in
+      let rss,wsss = List.split ms in
+      (* Cross product fold. Probably an overkill here *)
+      Misc.fold_cross wsss
+        (fun wss res ->
+          try
+            (* Add constraints now *)
+            let cns =
+              List.fold_right2
+                (fun rs ws eqs ->
+                  List.fold_right2
+                    (fun r w eqs ->
+                      assert (E.same_location r w) ;
+                      add_eq (get_read r) (get_written w) eqs)
+                    rs ws eqs)
+                rss wss cns in
+            (* And solve *)
+            match VC.solve cns with
+            | VC.NoSolns -> res
+            | VC.Maybe (sol,cs) ->
+                (* Time to complete rfmap *)
+                let rfm = add_mems rss wss rfm in
+                (* And to make everything concrete *)
+                let es = E.simplify_vars_in_event_structure sol es
+                and rfm = S.simplify_vars_in_rfmap sol rfm in
+                kont es rfm cs res
+          with Contradiction -> res  (* can be raised by add_mem_eqs *)
+          | e ->
+              if C.debug.Debug_herd.top then begin
+                eprintf "Exception: %s\n%!" (Printexc.to_string e) ;
+                let module PP = Pretty.Make(S) in
+                let rfm = add_mems rss wss rfm in
+                PP.show_es_rfm test es rfm
+              end ;
+              raise e
+        )
+        res
+
+    let solve_mem test es rfm cns kont res =
+      try
+        if mixed && not C.debug.Debug_herd.mixed then solve_mem_mixed test es rfm cns kont res
+        else solve_mem_non_mixed  test es rfm cns kont res
+      with
+      | CannotSca -> solve_mem_non_mixed test es rfm cns kont res
+
 
 (*************************************)
 (* Final condition invalidation mode *)
@@ -639,7 +845,7 @@ let compatible_locs_mem e1 e2 =
   of the test.
 
   If no, not need to go on
-*)
+ *)
 
     let worth_going test fsc = match C.speedcheck with
     | Speed.True|Speed.Fast ->
@@ -764,16 +970,7 @@ let compatible_locs_mem e1 e2 =
                 k ws)
         loc_stores E.EventRel.empty
 
-    let fold_mem_finals test es rfm kont res =
-      (* We can build those now *)
-      let evts = es.E.events in
-      let po_iico = U.po_iico es in
-      let ppoloc = make_ppoloc po_iico evts in
-      let store_load_vbf = store_load rfm
-      and init_load_vbf = init_load es rfm in
-(* Atomic load/store pairs *)
-      let atomic_load_store = make_atomic_load_store es in
-(* Now generate final stores *)
+    let all_finals_non_mixed test es =
       let loc_stores = U.collect_mem_stores es in
       let loc_stores =
         if C.observed_finals_only then
@@ -812,6 +1009,80 @@ let compatible_locs_mem e1 e2 =
             loc_stores []
         else
           U.LocEnv.fold (fun _loc ws k -> ws::k) loc_stores [] in
+      List.map (fun ws -> List.map (fun w -> [w]) ws) (possible_finals)
+
+
+    let rec compare_len xs ys = match xs,ys with
+    | [],[] -> 0
+    | [],_::_ -> -1
+    | _::_,[] -> 1
+    | _::xs,_::ys -> compare_len xs ys
+
+    module MatchFinal =
+      Match
+        (struct
+
+          type read = int
+
+          let compare_index idx e =
+            let open Constant in
+            match E.global_loc_of e with
+            | Some (V.Val (Symbolic (_,i))) -> Misc.int_compare idx i
+            | _ -> assert false
+
+          let debug_read out = fprintf out "%i"
+        end)
+
+
+    let all_finals_mixed test es =
+      assert  C.observed_finals_only ;
+      let locs = S.observed_locations test in
+      let locs =  A.LocSet.filter A.is_global locs in
+      let loc_wss =
+        E.EventSetSet.fold
+          (fun sca k ->
+            let e = E.EventSet.choose sca in
+            if E.is_store e then match E.location_of e with
+            | Some a ->
+                let a = get_base a in
+                if A.LocSet.mem a locs then
+                  let old = A.LocMap.safe_find [] a k in
+                  A.LocMap.add a (sort_same_base (E.EventSet.elements sca)::old) k
+                else k
+            | _ -> assert false (* Only globals in sca *)
+            else k)
+          es.E.sca A.LocMap.empty in
+      A.LocMap.fold
+        (fun loc wss k ->
+          let wss = List.sort compare_len (List.map sort_same_base wss)
+          and rs =
+            let senv = S.size_env test in
+            A.byte_indices (A.look_size senv loc) in
+          MatchFinal.find_rfs_sca rs wss::k)
+        loc_wss []
+
+    let fold_left_left f = List.fold_left (List.fold_left f)
+
+    let all_finals test es =
+      try
+        if mixed && not C.debug.Debug_herd.mixed then
+          all_finals_mixed test es
+        else
+          all_finals_non_mixed test es
+      with CannotSca ->
+        all_finals_non_mixed test es
+
+    let fold_mem_finals test es rfm kont res =
+      (* We can build those now *)
+      let evts = es.E.events in
+      let po_iico = U.po_iico es in
+      let ppoloc = make_ppoloc po_iico evts in
+      let store_load_vbf = store_load rfm
+      and init_load_vbf = init_load es rfm in
+(* Atomic load/store pairs *)
+      let atomic_load_store = make_atomic_load_store es in
+(* Now generate final stores *)
+      let possible_finals = all_finals test es in
 (* Add final loads from init for all locations, cleaner *)
       let loc_stores = U.collect_stores es
       and loc_loads = U.collect_loads es in
@@ -846,7 +1117,7 @@ let compatible_locs_mem e1 e2 =
   eprintf "\n";
  *)
             let rfm =
-              List.fold_left
+              fold_left_left
                 (fun k w ->
                   S.RFMap.add (S.Final (get_loc w)) (S.Store w) k)
                 rfm ws in

@@ -232,9 +232,14 @@ let str_memo = function
   | LY -> "STLXR"
 
 type bh = B | H (* Byte or Halfword *)
+
 let pp_bh = function
   | B -> "B"
   | H -> "H"
+
+let bh_to_sz = function
+  | B -> MachSize.Byte
+  | H -> MachSize.Short
 
 type temporal = TT | NT
 type opsel = Cpy | Inc | Inv | Neg

@@ -76,6 +76,9 @@ module type S = sig
   val nshift : int
   val mask : int
   val nsz : MachSize.sz -> int
+  (* decompose effective address increasimg order *)
+  val byte_indices :  MachSize.sz -> int list
+  (* decompose effective address increasimg order, endianess order *)
   val byte_eas :  MachSize.sz -> v -> v list
   val explode : MachSize.sz -> v ->  v list
   val recompose : v list -> v
@@ -284,7 +287,17 @@ module Make(C:Config) (I:I) : S with module I = I
         assert (n mod byte_sz = 0) ;
         n / byte_sz
 
-      let byte_eas sz a =
+      let byte_indices sz =
+        let kmax = nsz sz in
+        let rec do_rec k =
+          if k >= kmax then []
+          else
+            let ds = do_rec (k+1) in
+            let d = k*byte_sz in
+            d::ds in
+        0::do_rec 1
+
+      let byte_eas_incr sz a =
         let kmax = nsz sz in
         let rec do_rec k =
           if k >= kmax then []
@@ -292,7 +305,10 @@ module Make(C:Config) (I:I) : S with module I = I
             let ds = do_rec (k+1) in
             let d = I.V.op1 (Op.AddK (k*byte_sz)) a in
             d::ds in
-        let r = a::do_rec 1 in
+        a::do_rec 1
+
+      let byte_eas sz a =
+        let r = byte_eas_incr sz a in
         match endian with
         | Endian.Little -> r
         | Endian.Big -> List.rev r

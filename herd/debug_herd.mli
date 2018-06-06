@@ -25,6 +25,7 @@ type t = {
   res : bool ;
   rfm : bool  ;
   pretty : bool ;
+  mixed : bool ;
   }
 
 val none : t
