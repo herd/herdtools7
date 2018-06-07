@@ -48,6 +48,7 @@ let lowercase = ref false
 let optcoherence = ref false
 let bell = ref None
 let scope = ref Scope.No
+let variant = ref (fun (_:Variant_gen.t) -> false)
 
 type do_observers =
   | Avoid   (* was false *)
@@ -146,6 +147,7 @@ let common_specs =
     | None -> false
     | Some a -> scope := a; true)
    Scope.tags  "<tag> specifiy scope tree"::
+
   Util.parse_tag
     "-type"
     (fun tag -> match TypBase.parse tag with
@@ -153,7 +155,16 @@ let common_specs =
     | Some a -> typ := a ; true)
     TypBase.tags
     (sprintf "specify base type, default %s" (TypBase.pp !typ))::
-  ("-hexa", Arg.Unit (fun () -> hexa := true),"hexadecimal output")::
+  Util.parse_tag
+    "-variant"
+    (fun tag -> match Variant_gen.parse tag with
+    | None -> false
+    | Some v0 ->
+        let ov = !variant in variant := (fun v -> v = v0 || ov v) ;
+        true)
+    Variant_gen.tags
+    (sprintf "specify variant")::
+   ("-hexa", Arg.Unit (fun () -> hexa := true),"hexadecimal output")::
    ("-o", Arg.String (fun s -> tarfile := Some s),
     "<name.tar> output litmus tests in archive <name.tar> (default, output in curent directory)")::
   ("-c", Arg.Bool (fun b ->  canonical_only := b),

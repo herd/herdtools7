@@ -90,14 +90,21 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
     let amoor_as_load mo r1 r2 = AV.Amo (AV.AMOOR,wloc,mo,r1,zero,r2)
     and swap_as_store mo r1 r2 = AV.Amo (AV.AMOSWAP,wloc,mo,zero,r1,r2)
 
+    let as_amo = Cfg.variant Variant_gen.AsAmo
+
     let ldr mo r1 r2 =  match mo with
     |AV.Rlx -> AV.Load (wloc,AV.Signed,mo,r1,0,r2)
-    |AV.Acq|AV.Rel|AV.AcqRel ->  amoor_as_load mo r1 r2
+    |AV.Acq|AV.Rel|AV.AcqRel ->
+        if as_amo then amoor_as_load mo r1 r2
+        else AV.Load (wloc,AV.Signed,mo,r1,0,r2)
     |AV.Sc -> assert false
     and str mo r1 r2 =  match mo with
     |AV.Rlx -> AV.Store (wloc,mo,r1,0,r2)
-    |AV.Acq|AV.Rel|AV.AcqRel ->  swap_as_store mo r1 r2
+    |AV.Acq|AV.Rel|AV.AcqRel ->
+        if as_amo then swap_as_store mo r1 r2
+        else  AV.Store (wloc,mo,r1,0,r2)
     |AV.Sc -> assert false
+
     let add r1 r2 r3 = AV.Op (AV.ADD,r1,r2,r3)
     let xor r1 r2 r3 = AV.Op (AV.XOR,r1,r2,r3)
 

@@ -257,6 +257,7 @@ let () =
     let hexa = !Config.hexa
     let moreedges = !Config.moreedges
     let realdep = !Config.realdep
+    let variant = !Config.variant
   end in
   let module T = Top_gen.Make(Co) in
   let f = match !Config.arch with

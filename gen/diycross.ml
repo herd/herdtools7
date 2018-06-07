@@ -215,6 +215,7 @@ let () =
       let realdep = !Config.realdep
       let cpp = match !Config.arch with `CPP -> true | _ -> false
       let scope = !Config.scope
+      let variant = !Config.variant
     end in
     let open Archs in
     let module T = Top_gen.Make(C) in

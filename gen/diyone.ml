@@ -240,6 +240,7 @@ let () =
     let hexa = !Config.hexa
     let moreedges = !Config.moreedges
     let realdep = !Config.realdep
+    let variant = !Config.variant
   end in
   (match !Config.arch with
   | `X86 ->
