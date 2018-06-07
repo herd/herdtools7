@@ -31,6 +31,8 @@ module type Config = sig
   include GenParser.Config
   include Top_herd.Config
   include Sem.Config
+
+  val statelessrc11 : bool
 end
 
 (**********************)
@@ -130,6 +132,8 @@ module Top (Conf:Config) = struct
         let optace = Conf.optace
         let libfind = Conf.libfind
         let variant = Conf.variant
+
+        let statelessrc11 = Conf.statelessrc11
       end in
       let module ArchConfig = SemExtra.ConfigToArchConfig(Conf) in
       match arch with

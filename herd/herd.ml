@@ -455,7 +455,7 @@ let model,model_opts = match !model with
     | Misc.Exit ->
         eprintf "Failure of generic model parsing\n" ;
         exit 2 end
-| Some r as m when r = RC11 -> m,ModelOption.default
+| Some r as m when r = Model.RC11 -> m,ModelOption.default
 | Some _ as m -> m,ModelOption.compat
 | None -> None,ModelOption.default
 

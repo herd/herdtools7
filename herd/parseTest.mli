@@ -30,6 +30,8 @@ module type Config = sig
   include GenParser.Config
   include Top_herd.Config
   include Sem.Config
+
+  val statelessrc11 : bool
 end
 
 module Top :
