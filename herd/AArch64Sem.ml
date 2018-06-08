@@ -277,8 +277,7 @@ module Make (C:Sem.Config)(V:Value.S)
 
                 (*  Cannot handle *)
       | (I_LDP _|I_STP _) as i ->
-          Warn.fatal "illegal instruction: %s\n"
+          Warn.fatal "illegal instruction: %s"
             (AArch64.dump_instruction i)
-
      )
   end

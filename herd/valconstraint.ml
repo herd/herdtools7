@@ -107,7 +107,7 @@ and type state = A.state =
       match e with
       | Atom a -> pp_atom a
       | ReadInit(loc,_) -> A.dump_location loc ^ " in init"
-      | Unop (o,a1) -> sprintf "%s(%s)" (Op.pp_op1 o) (pp_atom a1)
+      | Unop (o,a1) -> sprintf "%s(%s)" (Op.pp_op1 C.hexa o) (pp_atom a1)
       | Binop (o,a1,a2) -> pp_atom a1 ^ Op.pp_op o ^ pp_atom a2
       | Terop (op,a1,a2,a3) ->
 	  Op.pp_op3 op

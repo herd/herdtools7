@@ -650,13 +650,16 @@ and type evt_struct = E.event_structure) =
                  E.iiid = Some ii;
                  E.action = mk_act A.byte (A.Location_global ea) v;} es)
             (eiid,E.EventSet.empty) eavs  in
+        let e_full =
+          { E.eiid=eiid; E.iiid = Some ii;
+            E.action = mk_act sz (A.Location_global a) v; } in
         let st =
           { E.empty_event_structure with
             E.events = es;
             E.data_ports = if is_data then es else E.EventSet.empty;
-            E.sca = E.EventSetSet.singleton es;} in
-        eiid,
-        Evt.singleton (v,a_eqs@v_eqs,st)
+            E.sca = E.EventSetSet.singleton es;
+            E.mem_accesses = E.EventSet.singleton e_full;} in
+        eiid+1,Evt.singleton (v,a_eqs@v_eqs,st)
 
     let write_mixed sz mk_act a v ii =
       fun eiid ->
@@ -671,12 +674,15 @@ and type evt_struct = E.event_structure) =
                  E.iiid = Some ii;
                  E.action = mk_act A.byte (A.Location_global ea) v;} es)
             (eiid,E.EventSet.empty) eas vs in
-         let st =
+        let e_full =
+          { E.eiid=eiid; E.iiid = Some ii;
+            E.action = mk_act sz (A.Location_global a) v; } in
+        let st =
           { E.empty_event_structure with
             E.events = es;
-            E.sca = E.EventSetSet.singleton es;} in
-        eiid,
-         Evt.singleton ((),a_eqs@v_eqs,st)
+            E.sca = E.EventSetSet.singleton es;
+            E.mem_accesses = E.EventSet.singleton e_full;} in
+        eiid+1,Evt.singleton ((),a_eqs@v_eqs,st)
 
 (* Add an inequality constraint *)
     let neqT : V.v -> V.v -> unit t
@@ -747,8 +753,8 @@ and type evt_struct = E.event_structure) =
           List.fold_left
             (fun (eiid,es,sca) (loc,v) ->
               match loc with
-              | A.Location_global a ->
-                  let sz = A.look_size size_env loc in
+              | A.Location_global (A.V.Val (Constant.Symbolic (s,0)) as a) ->
+                  let sz = A.look_size size_env s in
                   let ds = A.explode sz v
                   and eas = A.byte_eas sz a in
                   let eiid,ews =

@@ -74,3 +74,39 @@ let tr_endian sz = match sz with
 | Byte -> fun x -> x
 | Short -> swap16
 | Word|Quad -> swap (nbits sz)
+
+
+let l0 = [0;]
+let l01 = [0;1;]
+let l02 = [0;2;]
+let l04 = [0;4;]
+let l0123 = [0;1;2;3;]
+let l0246 = [0;2;4;6;]
+let l01234567 = [0;1;2;3;4;5;6;7;]
+
+let off_byte = function
+  | Byte -> l0
+  | Short|Word|Quad -> []
+
+let off_short = function
+  | Byte -> l01
+  | Short -> l0
+  | Word|Quad -> []
+
+let off_word = function
+  | Byte -> l0123
+  | Short -> l02
+  | Word -> l0
+  | Quad -> []
+
+let off_quad = function
+  | Byte -> l01234567
+  | Short -> l0246
+  | Word ->  l04
+  | Quad -> l0
+
+let get_off sz = match sz with
+| Byte -> off_byte
+| Short -> off_short
+| Word -> off_word
+| Quad -> off_quad

@@ -75,6 +75,10 @@ module Make(Cst:Constant.S) = struct
   | Symbolic _ as x -> Val x
   | Concrete s -> Val (Concrete (Scalar.of_string s))
 
+  let as_symbol = function
+    | Val v -> Cst.vToName v
+    | Var _ -> assert false
+
   let zero = Val Cst.zero
   and one = Val Cst.one
   and two = intToV 2

@@ -129,7 +129,8 @@ module type S = sig
 (* Typing environment *)
   val size_env_empty : size_env
   val build_size_env : (location * (MiscParser.run_type * 'v)) list -> size_env
-  val look_size : size_env -> location -> MachSize.sz
+  val look_size : size_env -> string -> MachSize.sz
+  val look_size_location : size_env -> location -> MachSize.sz
 
   val state_restrict_locs : LocSet.t -> size_env -> state -> state
 
@@ -408,7 +409,11 @@ module Make(C:Config) (I:I) : S with module I = I
             raise LocUndetermined
         | None -> get_in_state loc st
 
-      let look_size env loc = State.safe_find MachSize.Word loc env
+      let look_size env s = StringMap.safe_find MachSize.Word s env
+
+      let look_size_location env loc = match loc with
+      | Location_global (I.V.Val (Constant.Symbolic (s,0))) ->  look_size env s
+      | _ -> assert false
 
       let look_in_state_mixed senv st loc =
         match undetermined_vars_in_loc loc with
@@ -418,13 +423,15 @@ module Make(C:Config) (I:I) : S with module I = I
           raise LocUndetermined
       | None ->
           match loc with
-          | Location_global a ->
-              let sz = look_size senv loc in
+          | Location_global (I.V.Val (Constant.Symbolic (s,0)) as a)   ->
+              let sz = look_size senv s in
               let eas = byte_eas sz a in
               let vs = List.map (get_of_val st) eas in
               let v = recompose vs in
               v
-          | _ ->  get_in_state loc st
+          | _ ->
+              assert (not (is_global loc)) ;
+              get_in_state loc st
 
 
       let look_in_state =
@@ -454,8 +461,8 @@ module Make(C:Config) (I:I) : S with module I = I
 
           (* Typing *)
 
-      type size_env = MachSize.sz State.t
-      let size_env_empty = State.empty
+      type size_env = MachSize.sz StringMap.t
+      let size_env_empty = StringMap.empty
 
           (* Simplified typing, size only, integer types only *)
 
@@ -472,20 +479,25 @@ module Make(C:Config) (I:I) : S with module I = I
             Warn.fatal "Cannot find the size of type %s" t
 
 
-      let misc_to_size  = function
+      let misc_to_size ty  = match ty with
         | MiscParser.TyDef -> size_of "int"
         | MiscParser.Ty t|MiscParser.Atomic t -> (size_of t)
         | MiscParser.Pointer _
-        | MiscParser.TyArray _
-        | MiscParser.TyDefPointer -> I.V.Cst.Scalar.machsize
+        | MiscParser.TyDefPointer
+        | MiscParser.TyArray _ ->
+            Warn.fatal "Type %s is not allowed in mixed size mode"
+              (MiscParser.pp_run_type ty)
 
       let build_size_env =
         if C.variant Variant.Mixed then
           fun bds ->
-            List.fold_left (fun m (loc,(t,_)) -> State.add loc (misc_to_size t) m)
-              State.empty bds
+            List.fold_left
+              (fun m (loc,(t,_)) -> match loc with
+              | Location_global a -> StringMap.add (I.V.as_symbol a) (misc_to_size t) m
+              | _ -> m)
+              StringMap.empty bds
         else
-          (fun _ -> State.empty)
+          (fun _ -> StringMap.empty)
 
 
       let state_restrict_locs_mixed locs senv st =

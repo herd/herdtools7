@@ -40,7 +40,7 @@ module type S =
       val fresh_var : unit -> v
       val from_var : csym -> v
       val as_var : v -> csym option
-
+      val as_symbol : v -> string
        
 (* Equality (for constraint solver) is possible *)	  
       val equalityPossible : v -> v -> bool

@@ -133,7 +133,11 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       let relabel_event e =
         try { e with E.eiid = IMap.find e.E.eiid map }
         with Not_found -> assert false in
-      E.map_event_structure relabel_event es
+      let e_fulls = es.E.mem_accesses in (* Those will not be relabelled *)
+      let es = { es with E.mem_accesses = E.EventSet.empty; } in
+      let es = E.map_event_structure relabel_event es in
+      { es with E.mem_accesses = e_fulls; }
+
 
     let (|*|) = EM.(|*|)
     let (>>>) = EM.(>>>)
@@ -697,9 +701,12 @@ let solve_regs test es csn =
               | ws::wss ->  all_ws rs ws wss
               end
 
-          let find_rfs_sca rs wss =
-            let wss = next_all_ws rs wss in
-            List.map sort_same_base wss
+          let find_rfs_sca s rs wss = match next_all_ws rs wss with
+          | _::_ as wss -> List.map sort_same_base wss
+          | [] -> begin match rs with
+            | [] -> assert false
+            | r::_ -> Warn.user_error "out-of-bound access on %s" s
+          end
         end
 
     module MatchRf =
@@ -750,7 +757,7 @@ let solve_regs test es csn =
               List.filter
                 (fun (i_w,sz_w,_) ->  i+sz >= i_w && i < i_w+sz_w)
                 ws in
-            rs,List.map (fun (_,_,ws) -> ws) ws)
+            x,rs,List.map (fun (_,_,ws) -> ws) ws)
           rs in
 (*
         eprintf "+++++++++++++++++++++++\n" ;
@@ -769,7 +776,7 @@ let solve_regs test es csn =
  *)
       let ms =
         List.map
-          (fun (rs,wss) ->  rs,MatchRf.find_rfs_sca rs wss)
+          (fun (x,rs,wss) -> rs,MatchRf.find_rfs_sca x rs wss)
           ms in
       if C.debug.Debug_herd.solver then begin
         eprintf "+++++++++++++++++++++++\n" ;
@@ -981,7 +988,7 @@ let solve_regs test es csn =
               A.LocSet.map_union
                 (fun loc -> match loc with
                 | A.Location_global a ->
-                    let eas = A.byte_eas (A.look_size senv loc) a in
+                    let eas = A.byte_eas (A.look_size senv (A.V.as_symbol a)) a in
                     A.LocSet.of_list
                       (List.map (fun a -> A.Location_global a) eas)
                 | _ -> A.LocSet.singleton loc)
@@ -1058,11 +1065,11 @@ let solve_regs test es csn =
             let wss = List.sort compare_len (List.map sort_same_base wss)
             and rs =
               let senv = S.size_env test in
-              A.byte_indices (A.look_size senv loc) in
-            MatchFinal.find_rfs_sca rs wss::k)
+              A.byte_indices (A.look_size_location senv loc) in
+            MatchFinal.find_rfs_sca (A.pp_location loc) rs wss::k)
           loc_wss [] in
 
-      if C.debug.Debug_herd.solver then begin
+      if C.debug.Debug_herd.solver && Misc.consp wsss then begin
         eprintf "+++++++++ possible finals ++++++++++++++\n" ;
         List.iter
           (fun (wss) ->
@@ -1217,6 +1224,22 @@ let solve_regs test es csn =
                 es)
         loc_mems
 
+    let check_aligned test es =
+      let open Constant in
+      E.EventSet.iter
+        (fun e ->
+          let a = Misc.as_some (E.global_loc_of e)
+          and sz_e = E.get_mem_size e in
+          match a with
+          | V.Val (Symbolic (s,idx)) ->
+              let sz_s =
+                A.look_size (S.size_env test) s in
+              if not (List.mem idx (MachSize.get_off sz_s sz_e)) then
+                Warn.user_error "Non aligned or out-of-bound access: %s"
+                  (A.V.pp_v a)
+          | _ -> assert false)
+        es.E.mem_accesses
+
     let calculate_rf_with_cnstrnts test es cs kont kont_loop res =
       match solve_regs test es cs with
       | None -> res
@@ -1230,6 +1253,7 @@ let solve_regs test es csn =
             (fun es rfm cs res ->
               match cs with
               | [] ->
+                  if mixed then check_aligned test es ;
                   if A.reject_mixed then check_sizes es ;
                   if C.debug.Debug_herd.solver && C.verbose > 0 then begin
                     let module PP = Pretty.Make(S) in

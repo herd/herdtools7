@@ -53,7 +53,6 @@ module Make(Scalar:Scalar.S) = struct
 
  (* For building code symbols, significant for symbols only ? *)
   let vToName = function
-    | Concrete _ -> assert false
     | Symbolic (s,0) -> s
-    | Symbolic (s,o) -> assert false
+    | Symbolic _|Concrete _ -> assert false
 end

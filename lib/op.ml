@@ -66,7 +66,7 @@ type op1 =
   | AddK of int
   | AndK of int
 
-let pp_op1 o = match o with
+let pp_op1 hexa o = match o with
 | Not -> "!"
 | SetBit i -> sprintf "setbit%i" i
 | UnSetBit i -> sprintf "unsetbit%i" i
@@ -74,7 +74,7 @@ let pp_op1 o = match o with
 | LeftShift i -> sprintf "<<[%i]" i
 | LogicalRightShift i -> sprintf ">>>[%i]" i
 | AddK i  -> sprintf "+[%i]" i
-| AndK i  -> sprintf "&[%i]" i
+| AndK i  -> if hexa then sprintf "&[0x%x]" i else sprintf "&[%i]" i
 (***********)
 
 type op3 = If

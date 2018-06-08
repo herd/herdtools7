@@ -49,7 +49,7 @@ type op1 =
   | AddK of int
   | AndK of int
 
-val pp_op1 : op1 -> string
+val pp_op1 : bool -> op1 -> string
 
 (***********)
 (* Ternary *)

@@ -28,3 +28,6 @@ val nbytes : sz -> int
 val nbits : sz -> int
 
 val tr_endian : sz -> int -> int
+
+(* All valid offsets for sz2 in sz1 *)
+val get_off : sz -> sz -> int list
