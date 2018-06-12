@@ -22,7 +22,7 @@ module StringScalar = struct
 
   let of_string s = s
   let compare = String.compare
-  let to_int k =  Warn.fatal "translate parsed constant '%s' to int" k
+  let to_int k = int_of_string k
   let of_int i = Printf.sprintf "%i" i
   let pp _ s = s
 

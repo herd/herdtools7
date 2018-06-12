@@ -5,42 +5,42 @@ C to AArch64
 				    codevar:t;
 				    else:"
 
-"x = constvar:c;" -> "MOV %x,&c"
+"%x = constvar:c;" -> "MOV %x,&c"
 
-"*x = constvar:c;" -> "MOV %tmp,&c;
+"*%x = constvar:c;" -> "MOV %tmp,&c;
                        STR %tmp,[%x]"
 
-"*x = y;" -> "STR %x,[%y]"
+"*%x = %y;" -> "STR %y,[%x]"
 
-"x = *y;" -> "LDR %x,[%y]"
+"%x = *%y;" -> "LDR %x,[%y]"
 
-"x = atomic_load(y);" -> "LDAR %x,[%y]"
+"%x = atomic_load(%y);" -> "LDAR %x,[%y]"
 
-"x = atomic_load_explicit(y,memory_order_relaxed);"
+"%x = atomic_load_explicit(%y,memory_order_relaxed);"
   -> "LDR %x,[%y]"
 
-"x = atomic_load_explicit(y,memory_order_consume);"
+"%x = atomic_load_explicit(%y,memory_order_consume);"
   -> "LDAR %x,[%y]"
 
-"x = atomic_load_explicit(y,memory_order_acquire);"
+"%x = atomic_load_explicit(%y,memory_order_acquire);"
   -> "LDAR %x,[%y]"
 
-"atomic_store(y,x);" -> "STLR %x,[%y]"
+"atomic_store(%y,%x);" -> "STLR %x,[%y]"
   
-"atomic_store_explicit(y,x,memory_order_relaxed);"
+"atomic_store_explicit(%y,%x,memory_order_relaxed);"
   -> "STR %x,[%y]"
   
-"atomic_store_explicit(y,x,memory_order_release);"
+"atomic_store_explicit(%y,%x,memory_order_release);"
   -> "STLR %x,[%y]"
 
-"atomic_store(y,constvar:c);" -> "MOV %tmp,&c;
+"atomic_store(%y,constvar:c);" -> "MOV %tmp,&c;
 			          STLR %tmp,[%y]"
   
-"atomic_store_explicit(y,constvar:c,memory_order_relaxed);"
+"atomic_store_explicit(%y,constvar:c,memory_order_relaxed);"
   -> "MOV %tmp,&c;
       STR %tmp,[%y]"
   
-"atomic_store_explicit(y,constvar:c,memory_order_release);"
+"atomic_store_explicit(%y,constvar:c,memory_order_release);"
   -> "MOV %tmp,&c;
       STLR %tmp,[%y]"
 
