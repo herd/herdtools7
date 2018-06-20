@@ -59,7 +59,7 @@ module Make
 (*    | Generic m when O.statelessrc11 ->
        let module X = Slrc11.Make
               (O)(S) in
-       X.check_event_structure test *)
+       X.check_event_structure test*)
     | File _ -> assert false
     | m ->
         Warn.fatal "Model %s not implemented for C" (Model.pp m)

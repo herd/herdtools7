@@ -97,6 +97,19 @@ module Make (Conf:Sem.Config)(V:Value.S)
           fun v -> mk_fence_a a ii >>! v
       else exch
 
+    let cxchg is_data rloc re mo ii =
+      let m = match mo with
+        | MemOrder.SC
+        | MemOrder.Rlx -> (mo, mo)
+        | MemOrder.Rel -> (mo, MemOrder.Rlx)
+        | MemOrder.Acq -> (MemOrder.Rlx, mo)
+        | MemOrder.Acq_Rel -> (MemOrder.Rel, MemOrder.Acq)
+        | _ -> assert false in
+      let rmem = fun loc -> read_mem_atomic is_data (MOorAN.MO (fst m)) loc ii
+      and wmem = fun loc v -> write_mem_atomic (MOorAN.MO (snd m)) loc v ii >>! () in
+      let exch = M.linux_exch rloc re rmem wmem in
+      exch
+
     let atomic_pair_allowed e1 e2 = match e1.E.iiid, e2.E.iiid with
     | Some i1,Some i2 -> i1 == i2
     | _,_ -> false
@@ -161,6 +174,11 @@ module Make (Conf:Sem.Config)(V:Value.S)
 
 
     | C.Exchange(l,e,MOorAN.MO mo) ->
+       if Conf.variant Variant.NoRMW then
+         let re = build_semantics_expr true e ii
+         and rloc = build_semantics_expr false l ii in
+         cxchg is_data rloc re mo ii
+       else
         (build_semantics_expr true e ii >>|
         build_semantics_expr false l ii)
           >>= (fun (v,l) ->
@@ -189,6 +207,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
           (M.linux_cmpexch_no mloc mold
              (fun vloc -> read_mem_atomic true an_once vloc ii)
              M.neqT)
+
     | C.Fetch(l,op,e,mo) ->
         (build_semantics_expr true e ii >>|
         build_semantics_expr false l ii)
@@ -213,11 +232,17 @@ module Make (Conf:Sem.Config)(V:Value.S)
                     V.zero)
                 (* Obtain "desired" value *)
                 (build_semantics_expr true des ii >>= fun v_des ->
+                 if Conf.variant Variant.NoRMW then
+                   let re = build_semantics_expr true des ii
+                   and rloc = build_semantics_expr false obj ii in
+                   cxchg is_data rloc re success ii
+                 else
                   (* Do RMW action on "object", to change its value from "expected"
                      to "desired", using memory order "success" *)
                   M.mk_singleton_es
                     (Act.RMW (A.Location_global loc_obj,v_exp,v_des,success,nat_sz)) ii >>!
                   V.one)
+
 
 
     | C.AtomicOpReturn (eloc,op,e,ret,a) ->

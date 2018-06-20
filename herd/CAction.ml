@@ -293,6 +293,9 @@ end = struct
      "Rcu-unlock", fence_matches "rcu-unlock";
      "A",old_is_atomic;
      "NA",(fun a -> not (old_is_atomic a));
+     "annot", (fun a -> match a with
+                        | Access (_,_,_,AN a,_) | Fence (AN a) when a != [] -> true
+                        | _ -> false)
    ]
 
   let arch_fences = []
