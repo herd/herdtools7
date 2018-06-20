@@ -1,0 +1,4 @@
+S lib/
+S herd/
+B _build/lib
+B _build/herd
