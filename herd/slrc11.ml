@@ -339,40 +339,48 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
       else
         true
 
-        let check_exec ex =
-          let c1 = E.EventRel.filter
-                     (fun (x, y) -> not (E.EventSet.mem x ex.added) || not (E.EventSet.mem y ex.added))
-                     (E.EventRel.union ex.rf ex.mo) in
-          if not (E.EventRel.is_empty c1)
-          then
-            let _ = printf "%a\n%a\n" debug_exec ex debug_rel c1 in
-            false
-          else if E.EventSet.cardinal (E.EventSet.filter (fun x -> E.is_mem_load x && not (E.is_mem_store x)) ex.added) != E.EventRel.cardinal ex.rf
-          then
-            let _ = printf "2 : %a\n%a\n" debug_rel ex.rf debug_event_set (E.EventSet.filter (fun x -> E.is_mem_load x && not (E.is_mem_store x)) ex.added) in
-            false
-          else
-            let grp = E.EventSet.filter
-                        (is_exclusive ex.rmws)
-                        (pending ex) in
-            let t1 = E.EventRel.sequences [E.EventRel.set_to_rln grp;
-                                           E.EventRel.inverse ex.rf;
-                                           ex.rf;
-                                           E.EventRel.set_to_rln (E.EventSet.diff
-                                                                    (E.EventSet.filter
-                                                                       (is_exclusive ex.rmws)
-                                                                       ex.added)
-                                                                    grp)] in
-            if not (E.EventRel.is_empty
-                      (E.EventRel.restrict_rel
-                         (fun x y -> not (E.EventSet.mem y ex.revisit)
-                                     || E.EventSet.mem x ex.revisit)
-                         t1))
-            then
-(*              let _ = printf "4.1.2\n" in*)
-              false
-            else
-              true
+    let check_exec ex =
+      let c1 = E.EventRel.filter
+                 (fun (x, y) -> not (E.EventSet.mem x ex.added) || not (E.EventSet.mem y ex.added))
+                 (E.EventRel.union ex.rf ex.mo) in
+      if not (E.EventRel.is_empty c1)
+      then
+        let _ = printf "%a\n%a\n" debug_exec ex debug_rel c1 in
+        false
+      else if (*not (E.EventSet.for_all
+                     (fun x -> E.EventRel.exists (fun (y, z) -> y = x) ex.rf)
+                     (E.EventSet.filter E.is_mem_store ex.added))
+              ||*) E.EventSet.exists
+                   (fun x -> E.EventRel.cardinal
+                           (E.EventRel.restrict_codomain (fun y -> y = x) ex.rf)
+                           != 1)
+                   (E.EventSet.filter E.is_mem_load ex.added)
+                  (*EventSet.cardinal (E.EventSet.filter (fun x -> E.is_mem_load x && not (E.is_mem_store x)) ex.added) != E.EventRel.cardinal ex.rf*)
+      then
+        let _ = printf "2 : %a\n%a\n" debug_rel ex.rf debug_event_set (E.EventSet.filter (fun x -> E.is_mem_load x && not (E.is_mem_store x)) ex.added) in
+        false
+      else
+        let grp = E.EventSet.filter
+                    (is_exclusive ex.rmws)
+                    (pending ex) in
+        let t1 = E.EventRel.sequences [E.EventRel.set_to_rln grp;
+                                       E.EventRel.inverse ex.rf;
+                                       ex.rf;
+                                       E.EventRel.set_to_rln (E.EventSet.diff
+                                                                (E.EventSet.filter
+                                                                   (is_exclusive ex.rmws)
+                                                                   ex.added)
+                                                                grp)] in
+        if not (E.EventRel.is_empty
+                  (E.EventRel.restrict_rel
+                     (fun x y -> not (E.EventSet.mem y ex.revisit)
+                                 || E.EventSet.mem x ex.revisit)
+                     t1))
+        then
+          (*              let _ = printf "4.1.2\n" in*)
+          false
+        else
+          true
 
     let return_events toadd g =
       let insert_event toadd e =
@@ -573,17 +581,24 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
       let kl = List.filter
                  (fun x -> E.EventSet.cardinal
                              (E.EventSet.filter
-                                (fun y -> is_exval ex.rmws ex.rf y)
+                                (fun y -> E.same_location y w
+                                          && is_exclusive ex.rmws y)
+                                (*fun y -> is_exval ex.rmws ex.rf y*)
                                 x) <= 1
                            && not (E.EventRel.exists
                                        (fun (y, z) -> E.EventSet.mem y x
                                                       && E.EventSet.mem z x)
                                        sbr))
                  kl0 in
+(*      let _ = printf "rev : %d\nkl0 : %d\nkl : %d\n" (E.EventSet.cardinal ex.revisit) (List.length kl0) (List.length kl) in*)
       let _  = if E.EventSet.is_empty (E.EventSet.filter E.is_mem_store ex.revisit)
                then ()
                else printf "write in revisit" in
 
+(*      let _ = if List.length kl = 1 && List.mem E.EventSet.empty kl then
+                printf "empty\n"
+              else
+                printf "not empty\n" in*)
       List.fold_left
         (fun res1 k1 ->
           let k00 = E.EventRel.set_to_rln k1 in
@@ -635,20 +650,21 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
       let c0 = E.EventRel.sequences [ex.mo; ex.rf; h] in
       let c1 = E.EventRel.sequence ex.mo h in
       let c2 = E.EventRel.union c0 c1 in
-      let c3 = E.EventRel.restrict_codomain (fun x -> x = r) c2 in
+      let c3 = E.EventRel.sequence c2 (E.EventRel.set_to_rln (E.EventSet.singleton r)) in
+(*      let c3 = E.EventRel.restrict_codomain (fun x -> x = r) c2 in*)
 
       let w1 = E.EventSet.filter (fun x -> not (E.EventSet.mem x (E.EventRel.domain c3))) w0 in
 
-      let a1 = E.EventSet.empty(* E.EventSet.filter (fun x -> false (*E.is_mem_store x && is_exval ex.rmws ex.rf x*)) ex.added*) (*!events*) in
+      let _a1 = E.EventSet.empty(* E.EventSet.filter (fun x -> false (*E.is_mem_store x && is_exval ex.rmws ex.rf x*)) ex.added*) (*!events*) in
 
       let sbr = sbrf ex in
       let a20 = E.EventRel.set_to_rln (E.EventSet.diff (E.EventRel.domain (added ex.added ex.rmws)) ex.revisit) in
       let a21 = E.EventRel.set_to_rln (E.EventSet.inter ex.revisit (E.EventRel.domain (added ex.added ex.rmws))) in
       let a22 = E.EventRel.sequences [a21; sbr; E.EventRel.set_to_rln (E.EventSet.singleton r)] in
       let a23 = E.EventRel.union a20 a22 in
-      let a24 = E.EventRel.sequence sbr a23 in
-      let a2 = E.EventRel.domain a24 in
-      let w = E.EventSet.inter ex.added (E.EventSet.diff w1 (E.EventSet.inter a1 a2)) in
+      let _a24 = E.EventRel.sequence sbr a23 in
+      let a2 = E.EventSet.empty in (* E.EventRel.domain a24 in*)
+      let w = E.EventSet.inter ex.added (E.EventSet.diff w1 (a2 (*E.EventSet.inter a1 a2*))) in
 
       let dsbr = E.EventRel.domain
                    (E.EventRel.restrict_codomain
