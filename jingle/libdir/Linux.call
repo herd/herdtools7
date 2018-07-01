@@ -1,0 +1,37 @@
+C
+
+"%x = smp_load_acquire(%y);" -> "@acquire %x = READ_ONCE(*%y);"
+
+"smp_store_release(%y, %x);" -> "@release WRITE_ONCE(*%y, %x);"
+
+"smp_store_release(%y, constvar:c);" -> "@release WRITE_ONCE(*%y, constvar:c);"
+
+"%x = rcu_dereference(*%y);" -> "@acquire %x = READ_ONCE(*%y);"
+
+"%r = xchg_acquire(%x, %y);" -> "@acquire %r = xchg_relaxed(%x, %y);"
+
+"%r = xchg_release(%x, %y);" -> "@release %r = xchg_relaxed(%x, %y);"
+
+"%r = xchg_acq_rel(%x, %y);" -> "@release %r = xchg_acquire(%x, %y);"
+
+"%r = xchg(%x, %y);" -> "@full_on_acq_rel %r = xchg_acq_rel(%x, %y);"
+
+"%r = xchg_acquire(%x, constvar:c);" -> "@acquire %r = xchg_relaxed(%x, constvar:c);"
+
+"%r = cmpxchg_acquire(%x, constvar:c, constvar:d);" -> "@acquire %r = cmpxchg_relaxed(%x, constvar:c, constvar:d);"
+
+"%r = xchg_release(%x, constvar:c);" -> "@release %r = xchg_relaxed(%x, constvar:c);"
+
+"%r = xchg_acq_rel(%x, constvar:c);" -> "@release %r = xchg_acquire(%x, constvar:c);"
+
+"%r = xchg(%x, constvar:c);" -> "@full_on_acq_rel %r = xchg_acq_rel(%x, constvar:c);"
+
+"temp_spin_lock(%x);" -> "@id %r = cmpxchg_acquire(%x, constvar:c, constvar:d);"
+
+"temp2_spin_lock(%x);" -> "@const_to_0 temp_spin_lock(%x);"
+
+"spin_lock(%x);" -> "@constd_to_1 temp2_spin_lock(%x);"
+
+"temp_spin_unlock(%y);" -> "@id smp_store_release(%y, constvar:c);"
+
+"spin_unlock(%y);" -> "@const_to_0 temp_spin_unlock(%y);"
