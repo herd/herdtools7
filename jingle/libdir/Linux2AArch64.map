@@ -1,0 +1,62 @@
+C to AArch64
+
+"if(constvar:c == x) codevar:t;" -> "CMP %x,&c;
+	       	     		     B.NE else;
+				     codevar:t;
+				     else:"
+
+"%x = constvar:c;" -> "MOV %x,&c"
+
+"*%x = constvar:c;" -> "MOV %tmp,&c;
+                       STR %tmp,[%x]"
+
+"*%x = %y;" -> "STR %y,[%x]"
+
+"%x = *%y;" -> "LDR %x,[%y]"
+
+"%x = READ_ONCE(*%y);" -> "loa:LDR %x,[%y]"
+
+"WRITE_ONCE(*%y, %x);" -> "store:STR %x,[%y]"
+
+"WRITE_ONCE(*%y, constvar:c);" -> "MOV %tmp,&c;
+                                   store:STR %tmp,[%y]"
+
+"%r = xchg_relaxed(%x, %y);" -> "loop:load:LDXR %r,[%x];
+				store:STXR W1, %y,[%x];
+				CBNZ W1, loop"
+
+"%r = cmpxchg_relaxed(%x, constvar:c, constvar:d);" -> "MOV %tmp, &c;
+							loop:load:LDXR %r,[%x];
+							CMP %r, %tmp;
+							B.NE out;
+							MOV %tmp, &d;
+							store:STXR W1, %tmp, [%x];
+							CBNZ W1, loop;
+							out:"
+
+"%r = xchg_relaxed(%x, constvar:c);" -> "MOV %tmp,&c;
+					 loop:load:LDXR %r,[%x];
+					 store:STXR W1, %tmp,[%x];
+					 CBNZ W1, loop"
+
+"smp_mb();" -> "DMB ISH"
+
+"smp_rmb();" -> "DMB ISHLD"
+
+"smp_wmb();" -> "DMB ISHST"
+
+"release" : "store:STR" -> "store:STLR"
+"release" : "store:STXR" -> "store:STLXR"
+"release" : "" -> "DMB ISH;"
+
+"acquire" : "load:LDR" -> "load:LDAR"
+"acquire" : "load:LDXR" -> "load:LDAXR"
+"acquire" : "\(\(.\|\n\)*\)" -> "\1;DMB ISH"
+
+"full_on_acq_rel" : "\([^;]$\)" -> "\1;
+				   DMB ISH"
+
+"id" : "" -> ""
+"const_to_1" : "&c" -> "#1"
+"const_to_0" : "&c" -> "#0"
+"constd_to_1" : "&d" -> "#1"
