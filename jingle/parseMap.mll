@@ -19,6 +19,7 @@
   type t = {
     source : Archs.t;
     target : Archs.t;
+    funcs : (string * string * string) list;
     conversions : (string * string) list
   }
 }
@@ -27,28 +28,34 @@ let space = [' ' '\t' '\r']
 let blank = (space | '\n')
 let archname = ([ '0'-'9' 'a'-'z' 'A'-'Z'])*
 let arrow = ("->" | "maps" space "to")
+let colon = [':']
 
 rule main = parse
 | space* (archname as src) space+ "to" space+ (archname as tgt) space* '\n' blank*
-    { let convs = conv [] lexbuf in
+    { let (l, f) = conv [] [] lexbuf in
       let (src,tgt) = match Archs.parse src,Archs.parse tgt with
 	| Some s,Some t -> s,t
 	| _ -> raise (Error "Source or target architecture unrecognized.")
       in { 
 	source = src;
 	target = tgt;
-	conversions = List.rev convs
+        funcs = List.rev f;
+        conversions = List.rev l
       }
     }
 | "" {raise (Error "Source or target architecture unspecified.")}
 	
-and conv l = parse
-    | eof {l}
+and conv l f = parse
+    | eof {(l,f)}
     | '"' ([^'"']* as left) '"' blank* arrow blank* '"' ([^'"']* as right) '"' blank*
 	{
-	  conv ((String.trim left, String.trim right)::l) lexbuf
+	  conv ((String.trim left, String.trim right)::l) f lexbuf
 	}
-    | ("#"|"//") [^'\n']* '\n' { conv l lexbuf }
+    | '"' ([^'"']* as func) '"' blank* colon blank* '"' ([^'"']* as left) '"' blank* arrow blank* '"' ([^'"']* as right) '"' blank*
+	{
+	  conv l ((String.trim func, String.trim left, String.trim right)::f) lexbuf
+	}
+    | ("#"|"//") [^'\n']* '\n' { conv l f lexbuf }
     | "" {
       let last = match l with
       | [] -> "*start*"
