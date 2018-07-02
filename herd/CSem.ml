@@ -235,7 +235,8 @@ module Make (Conf:Sem.Config)(V:Value.S)
                  if Conf.variant Variant.NoRMW then
                    let re = build_semantics_expr true des ii
                    and rloc = build_semantics_expr false obj ii in
-                   cxchg is_data rloc re success ii
+                   cxchg is_data rloc re success ii >>!
+                     V.one
                  else
                   (* Do RMW action on "object", to change its value from "expected"
                      to "desired", using memory order "success" *)

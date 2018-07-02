@@ -334,7 +334,7 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
       if
         not (E.EventSet.subset t0 ex.revisit)
       then
-        let _ = printf "4.1.1\n" in
+        let _ = if debug then printf "4.1.1\n" else () in
         false
       else
         true
@@ -345,7 +345,7 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
                  (E.EventRel.union ex.rf ex.mo) in
       if not (E.EventRel.is_empty c1)
       then
-        let _ = printf "%a\n%a\n" debug_exec ex debug_rel c1 in
+        let _ = if debug then printf "%a\n%a\n" debug_exec ex debug_rel c1 else () in
         false
       else if (*not (E.EventSet.for_all
                      (fun x -> E.EventRel.exists (fun (y, z) -> y = x) ex.rf)
@@ -357,7 +357,7 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
                    (E.EventSet.filter E.is_mem_load ex.added)
                   (*EventSet.cardinal (E.EventSet.filter (fun x -> E.is_mem_load x && not (E.is_mem_store x)) ex.added) != E.EventRel.cardinal ex.rf*)
       then
-        let _ = printf "2 : %a\n%a\n" debug_rel ex.rf debug_event_set (E.EventSet.filter (fun x -> E.is_mem_load x && not (E.is_mem_store x)) ex.added) in
+        let _ = if debug then printf "2 : %a\n%a\n" debug_rel ex.rf debug_event_set (E.EventSet.filter (fun x -> E.is_mem_load x && not (E.is_mem_store x)) ex.added) else () in
         false
       else
         let grp = E.EventSet.filter
@@ -498,7 +498,7 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
         let s = E.EventSet.filter
                   (fun x -> x != w0
                             && not (E.EventSet.mem x s6)
-                  (*&& w != x*))
+                            && w != x)
                   s7 in
 
         let sbr = sbrf ex in
@@ -662,8 +662,9 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
       let a21 = E.EventRel.set_to_rln (E.EventSet.inter ex.revisit (E.EventRel.domain (added ex.added ex.rmws))) in
       let a22 = E.EventRel.sequences [a21; sbr; E.EventRel.set_to_rln (E.EventSet.singleton r)] in
       let a23 = E.EventRel.union a20 a22 in
-      let _a24 = E.EventRel.sequence sbr a23 in
-      let a2 = E.EventSet.empty in (* E.EventRel.domain a24 in*)
+      let a24 = E.EventRel.sequence sbr a23 in
+      let a2 = (* if is_exclusive ex.rmws r then*) E.EventRel.domain a24 (* else E.EventSet.empty*) in
+(*      let _ = printf "e : [%a]\na2 : %a\n" debug_exec ex debug_event_set a2 in*)
       let w = E.EventSet.inter ex.added (E.EventSet.diff w1 (a2 (*E.EventSet.inter a1 a2*))) in
 
       let dsbr = E.EventRel.domain
@@ -675,7 +676,7 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
           let wp = E.EventSet.choose (E.EventSet.inter w dsbr) in
           wp  with Not_found -> E.EventSet.choose w in
       let _ = assert(E.EventSet.mem wx ex.added) in
-      let _ = if (check_revisit ex) then () else printf "ex_bad" in
+      let _ = if (check_revisit ex) || not debug then () else printf "ex_bad" in
       let _ = assert (check_revisit {ex with revisit = E.EventSet.add r ex.revisit}) in
       let res0 = visit (set_rf {ex with revisit = E.EventSet.add r ex.revisit}
                           wx
@@ -859,7 +860,7 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
       let rmws = M.make_atomic_load_store es in
       let evts = es.E.events in
       let inits = E.EventSet.filter E.is_mem_store_init evts in
-      let po = (U.po_strict es) in
+      let po = (U.po_iico es) in
       let procs = List.map
                     (fun x ->
                       let e = E.EventSet.filter
