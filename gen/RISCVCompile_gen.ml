@@ -94,10 +94,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
     let as_amo = Cfg.variant Variant_gen.AsAmo
 
     let ldr mo r1 r2 =  match mo with
-    |AV.Rlx -> AV.Load (wloc,AV.Signed,mo,r1,0,r2)
+    |AV.Rlx -> AV.Load (wloc,Signed,mo,r1,0,r2)
     |AV.Acq|AV.Rel|AV.AcqRel ->
         if as_amo then amoor_as_load mo r1 r2
-        else AV.Load (wloc,AV.Signed,mo,r1,0,r2)
+        else AV.Load (wloc,Signed,mo,r1,0,r2)
     |AV.Sc -> assert false
     and str mo r1 r2 =  match mo with
     |AV.Rlx -> AV.Store (wloc,mo,r1,0,r2)
