@@ -19,7 +19,7 @@ type t = sz
 
 let tags = ["byte";"short";"word";"quad";]
 
-let parse tag = match String.lowercase_ascii tag with
+let parse tag = match Misc.lowercase tag with
 | "byte" -> Some Byte
 | "short" -> Some Short
 | "word" -> Some Word
