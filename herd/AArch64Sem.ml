@@ -234,7 +234,7 @@ module Make (C:Sem.Config)(V:Value.S)
           (read_reg_ord rs ii)            >>= fun v -> (write_reg rd v ii)
               >>! B.Next
 
-      | I_OP3(_,op,rd,rn,kr) ->
+      | I_OP3(ty,op,rd,rn,kr) ->
           (read_reg_ord rn ii >>|
           match kr with
           | K k -> M.unitT (V.intToV k)
@@ -246,11 +246,16 @@ module Make (C:Sem.Config)(V:Value.S)
           | ORR -> fun (v1,v2) -> M.op Op.Or v1 v2
           | SUB|SUBS -> fun (v1,v2) -> M.op Op.Sub v1 v2
           | AND|ANDS -> fun (v1,v2) -> M.op Op.And v1 v2
-          end
-            >>= (fun v -> (write_reg rd v ii)
-                >>| (match op with ADDS|SUBS|ANDS -> write_reg NZP v ii | ADD|EOR|ORR|AND|SUB -> M.unitT ()))
-            >>! B.Next
-
+          end >>=
+          (let m =  (fun v ->
+            (write_reg rd v ii) >>|
+            (match op with
+            | ADDS|SUBS|ANDS -> write_reg NZP v ii
+            | ADD|EOR|ORR|AND|SUB -> M.unitT ())) in
+          match ty with
+          | V32 -> fun v -> M.op1 Op.Mask32 v >>= m
+          | V64 -> m) >>!
+          B.Next
             (* Barrier *)
       | I_FENCE b ->
           (create_barrier b ii) >>! B.Next

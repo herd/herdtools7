@@ -65,6 +65,7 @@ type op1 =
   | LogicalRightShift of int
   | AddK of int
   | AndK of int
+  | Mask32
 
 let pp_op1 hexa o = match o with
 | Not -> "!"
@@ -75,6 +76,8 @@ let pp_op1 hexa o = match o with
 | LogicalRightShift i -> sprintf ">>>[%i]" i
 | AddK i  -> sprintf "+[%i]" i
 | AndK i  -> if hexa then sprintf "&[0x%x]" i else sprintf "&[%i]" i
+| Mask32  -> "mask32"
+
 (***********)
 
 type op3 = If

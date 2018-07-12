@@ -48,6 +48,7 @@ type op1 =
   | LogicalRightShift of int
   | AddK of int
   | AndK of int
+  | Mask32
 
 val pp_op1 : bool -> op1 -> string
 
