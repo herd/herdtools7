@@ -67,9 +67,9 @@ let rec apply f e map_env func_env = match List.filter (fun (x, _, _) -> String.
                | [] -> raise(Error ("no left rule for " ^ e ^ "."))
                | (_, mr) :: _ ->
                     let re = Str.regexp d in
-                    if Str.string_match re mr 0
-                    then Str.replace_first (Str.regexp d) c mr
-                    else apply f e map_env tl
+                    try let _ = Str.search_forward re mr 0 in
+                        Str.replace_first (Str.regexp d) c mr
+                    with Not_found -> apply f e map_env tl
 
 let expand call_list map_env func_env =
         let try_expand (l, f, a) = 
