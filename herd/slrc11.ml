@@ -162,9 +162,9 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
 
     let hb rf po rmws =
 
-      let mpo = E.EventRel.restrict_domains
+      let mpo = (* E.EventRel.restrict_domains
                   E.is_mem
-                  E.is_mem
+                  E.is_mem*)
                   po in
       let rseq = rseq rf mpo rmws in
 
@@ -750,18 +750,32 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
          let scb = E.EventRel.union5 ex.po scb0 hbl ex.mo scb1 in
 
          let scfence = (fun x -> fence x && sc x.E.action) in
-         let psc0 = E.EventRel.restrict_domain
+         let fences = E.EventSet.filter scfence ex.added in
+         let fencesrel = E.EventRel.set_to_rln fences in
+         let sce = E.EventSet.filter (fun x -> sc x.E.action) ex.added in
+         let psc0 = E.EventRel.union fencesrel (E.EventRel.sequence fencesrel h) in
+         let psc1 = E.EventRel.union psc0 (E.EventRel.set_to_rln sce) in
+         let psc2 = E.EventRel.sequence psc1 scb in
+         let psc3 = E.EventRel.sequence h fencesrel in
+         let psc4 = E.EventRel.union3 psc3 fencesrel (E.EventRel.set_to_rln sce) in
+         let _ = printf "hb = %a\n" debug_rel h in
+         let psc5 = E.EventRel.sequence psc2 psc4 in
+
+
+
+         (*E.EventRel.restrict_domain
                       scfence
-                      h in
-         let psc1 = E.EventRel.sequence psc0 scb in
+                      h in*)
+       (*  let psc1 = E.EventRel.sequence psc0 scb in
          let psc2 = E.EventRel.restrict_domain (fun x -> sc x.E.action) scb in
          let psc3 = E.EventRel.union psc1 psc2 in
          let psc4 = E.EventRel.restrict_codomain (fun x -> sc x.E.action) psc3 in
-         let psc5 = E.EventRel.restrict_codomain
+         let psc5 = E.EventRel.union fencesrel (E.EventRel.sequence h fencesrel) in
+         (*E.EventRel.restrict_codomain
                       scfence
-                      h in
+                      h in*)
          let psc6 = E.EventRel.sequence psc3 psc5 in
-         let psc7 = E.EventRel.union psc4 psc6 in
+         let psc7 = E.EventRel.union psc4 psc6 in*)
 
          let eco0 = E.EventRel.union3 ex.mo
                       ex.rf
@@ -773,13 +787,14 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
                        scfence
                        scfence
                        psc10 in
-         let psc = E.EventRel.union psc7 psc11 in
+         let psc = E.EventRel.union psc5 psc11 in
 
          if
            not (E.EventRel.is_acyclic psc)
          then
            res
          else
+           let _ = printf "psc5 = %a\npsc11 = %a\n" debug_rel psc5 debug_rel psc11 in
            let rs10 = E.EventRel.set_to_rln (E.EventSet.filter
                                                (fun x -> E.is_mem_store x
                                                          && (rlx x.E.action
@@ -788,7 +803,7 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
                                                              || acq x.E.action
                                                              || sc x.E.action))
                                                !events) in
-           let nex = {ex with debug_rels = List.append ex.debug_rels [(*"psc", psc);*) ("eco",eco)(*; ("scb", scb*); ("pscb", psc7); ("pscf", psc11); ("rseq", rseq ex.rf (E.EventRel.restrict_domains E.is_mem E.is_mem ex.mo) ex.rmws); ("rs10", rs10)]} in
+           let nex = {ex with debug_rels = List.append ex.debug_rels [("psc", psc); ("eco",eco)(*; ("scb", scb*); ("pscb", psc5); ("pscf", psc11); ("rseq", rseq ex.rf (E.EventRel.restrict_domains E.is_mem E.is_mem ex.mo) ex.rmws); ("rs10", rs10)]} in
            if E.EventRel.is_empty dr
            then let out = (clean_exec {nex with psc = psc}) in
                 (*                let _ = debug_exec stdout out in*)

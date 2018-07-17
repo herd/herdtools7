@@ -64,6 +64,11 @@ module Make (Conf:Sem.Config)(V:Value.S)
         (fun loc v -> Act.Access (Dir.R, loc, v,  a, true, nat_sz))
         (A.Location_global loc)
 
+    let read_mem_atomic_known is_data a loc v_loc =
+      M.read_loc is_data
+        (fun loc v -> Act.Access (Dir.R, loc, v_loc,  a, true))
+        (A.Location_global loc)
+
 
     let write_loc mo loc v ii =
       M.mk_singleton_es (Act.Access (Dir.W, loc, v, mo, false, nat_sz)) ii >>! v
@@ -97,7 +102,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
           fun v -> mk_fence_a a ii >>! v
       else exch
 
-    let cxchg is_data rloc re mo ii =
+    let cxchg is_data rloc re mo v_loc ii =
       let m = match mo with
         | MemOrder.SC
         | MemOrder.Rlx -> (mo, mo)
@@ -105,7 +110,9 @@ module Make (Conf:Sem.Config)(V:Value.S)
         | MemOrder.Acq -> (MemOrder.Rlx, mo)
         | MemOrder.Acq_Rel -> (MemOrder.Rel, MemOrder.Acq)
         | _ -> assert false in
-      let rmem = fun loc -> read_mem_atomic is_data (MOorAN.MO (fst m)) loc ii
+      let rmem = match v_loc with
+        | None -> fun loc -> read_mem_atomic is_data (MOorAN.MO (fst m)) loc ii
+        | Some x -> fun loc -> read_mem_atomic_known is_data (MOorAN.MO (fst m)) loc x ii
       and wmem = fun loc v -> write_mem_atomic (MOorAN.MO (snd m)) loc v ii >>! () in
       let exch = M.linux_exch rloc re rmem wmem in
       exch
@@ -177,7 +184,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
        if Conf.variant Variant.NoRMW then
          let re = build_semantics_expr true e ii
          and rloc = build_semantics_expr false l ii in
-         cxchg is_data rloc re mo ii
+         cxchg is_data rloc re mo None ii
        else
         (build_semantics_expr true e ii >>|
         build_semantics_expr false l ii)
@@ -235,7 +242,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
                  if Conf.variant Variant.NoRMW then
                    let re = build_semantics_expr true des ii
                    and rloc = build_semantics_expr false obj ii in
-                   cxchg is_data rloc re success ii >>!
+                   cxchg is_data rloc re success (Some v_exp) ii >>!
                      V.one
                  else
                   (* Do RMW action on "object", to change its value from "expected"
