@@ -1,0 +1,21 @@
+C C
+
+{}
+
+P0 (atomic_int* x, int* t0, int* t1) {
+   *t0 = 0;
+   int a = atomic_compare_exchange_strong(x, t0, 1);
+   int b = atomic_load(x);
+   *t0 = 2;
+   int e = atomic_compare_exchange_strong(x, t0, 3);
+   int f = atomic_load(x);
+}
+
+P1 (atomic_int* x, int* t0, int* t1) {
+   *t1 = 1;
+   int c = atomic_compare_exchange_strong(x, t1, 2);
+   int d = atomic_load(x);
+}
+
+exists
+(0:a = 0 /\ 1:c = 1 /\ 0:e = 1)

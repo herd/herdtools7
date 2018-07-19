@@ -1,0 +1,59 @@
+PPC Bakery
+{
+0:r0=c0; 0:r1=c1; 0:r2=n0; 0:r3=n1;
+1:r0=c1; 1:r1=c0; 1:r2=n1; 1:r3=n0;
+}
+ P0		| P1		;
+ li r4,1	| li r4,1	;
+ stw r4,0(r0)	| stw r4,0(r0)	;
+ lwz r7,0(r3)	| lwz r7,0(r3)	;
+ addi r8,r7,1	| addi r8,r7,1	;
+ stw r8,0(r2)	| stw r8,0(r2)	;
+ li r5,0	| li r5,0	;
+ stw r5,0(r0)	| stw r5,0(r0)	;
+ lwz r9,0(r1)	| lwz r9,0(r1)	;
+ cmpw r9,r5     | cmpw r9,r5	;
+ beq LC01	| beq LC11	;
+ lwz r9,0(r1)	| lwz r9,0(r1)	;
+
+ cmpw r9,r5     | cmpw r9,r5	;
+ beq LC01	| beq LC11	;
+ lwz r9,0(r1)	| lwz r9,0(r1)	;
+ LC01:		| LC11:		;
+
+ lwz r7,0(r3)	| lwz r7,0(r3)	;
+ cmpw r7,r5	| cmpw r7,r5	;
+ beq LC02       | beq LC12	;
+ cmpw r7,r8	| cmpw r7,r8	;
+ bge LC02	| bge LC12	;
+ lwz r7,0(r3)	| lwz r7,0(r3)	;
+
+ cmpw r7,r5	| cmpw r7,r5	;
+ beq LC02       | beq LC12	;
+ cmpw r7,r8	| cmpw r7,r8	;
+ bge LC02	| bge LC12	;
+ lwz r7,0(r3)	| lwz r7,0(r3)	;
+ LC02:		| LC12:		;
+
+ li r4,1	| li r4,1	;
+ stw r4,0(r0)	| stw r4,0(r0)	;
+ lwz r7,0(r3)	| lwz r7,0(r3)	;
+ addi r8,r7,1	| addi r8,r7,1	;
+ stw r8,0(r2)	| stw r8,0(r2)	;
+ li r5,0	| li r5,0	;
+ stw r5,0(r0)	| stw r5,0(r0)	;
+ lwz r9,0(r1)	| lwz r9,0(r1)	;
+ cmpw r9,r5     | cmpw r9,r5	;
+ beq LC03	| beq LC13	;
+ lwz r9,0(r1)	| lwz r9,0(r1)	;
+ LC03:		| LC13:		;
+ lwz r7,0(r3)	| lwz r7,0(r3)	;
+ cmpw r7,r5	| cmpw r7,r5	;
+ beq LC04       | beq LC14	;
+ cmpw r7,r8	| cmpw r7,r8	;
+ bge LC04	| bge LC14	;
+ lwz r7,0(r3)	| lwz r7,0(r3)	;
+ LC04:		| LC14:		;
+
+exists (c0=10)
+

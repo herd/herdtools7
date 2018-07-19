@@ -1,0 +1,28 @@
+C 3.2W+poscscs
+"PodWWScSc WseScSc PodWWScSc WseScSc PodWWScSc WseScSc"
+Cycle=WseScSc PodWWScSc WseScSc PodWWScSc WseScSc PodWWScSc
+Relax=
+Safe=PodWW WseScSc
+Prefetch=0:x=F,0:y=W,1:y=F,1:z=W,2:z=F,2:x=W
+Com=Ws Ws Ws
+Orig=PodWWScSc WseScSc PodWWScSc WseScSc PodWWScSc WseScSc
+
+{}
+
+P0 (atomic_int* y,atomic_int* x) {
+  atomic_store(x,2);
+  atomic_store(y,1);
+}
+
+P1 (atomic_int* z,atomic_int* y) {
+  atomic_store(y,2);
+  atomic_store(z,1);
+}
+
+P2 (atomic_int* z,atomic_int* x) {
+  atomic_store(z,2);
+  atomic_store(x,1);
+}
+
+exists
+(x=2 /\ y=2 /\ z=2)

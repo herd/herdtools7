@@ -1,0 +1,15 @@
+C return
+
+{}
+
+P0 (atomic_int* x, atomic_int* y) {
+   int a = atomic_load(x);
+   int b = atomic_compare_exchange_strong(x, y, 2);
+}
+
+P1 (atomic_int* x, atomic_int* y) {
+   atomic_store(y, 1);
+}
+
+exists
+(0:a=0:b /\ x=0 /\ y=1)

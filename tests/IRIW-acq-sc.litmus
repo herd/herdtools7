@@ -1,0 +1,29 @@
+C IRIW-acq-sc
+"FreScSc PodWRScSc FreScSc PodWRScSc"
+Generator=diyone7 (version 7.49)
+Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+Com=Fr Fr
+Orig=FreScSc PodWRScSc FreScSc PodWRScSc
+
+{}
+
+P0 (atomic_int* x, atomic_int* y) {
+   atomic_store(x, 1);
+}
+
+P1 (atomic_int* x, atomic_int* y) {
+   int a = atomic_load(x);
+   int c = atomic_load(y);
+}
+
+P2 (atomic_int* x, atomic_int* y) {
+   int b = atomic_load(y);
+   int d = atomic_load(x);
+}
+
+P3 (atomic_int* x, atomic_int* y) {
+   atomic_store(y, 1);
+}
+
+exists
+(1:a=1 /\ 1:c=0 /\ 2:b=1 /\ 2:d=0)

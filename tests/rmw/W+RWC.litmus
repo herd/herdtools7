@@ -1,0 +1,23 @@
+C W+RWC
+
+{}
+
+P0 (atomic_int* x, atomic_int* y, atomic_int* z) {
+   atomic_store_explicit(x, 1, memory_order_relaxed);
+   atomic_store_explicit(z, 1, memory_order_release);
+}
+
+P1 (atomic_int* x, atomic_int* y, atomic_int* z) {
+   int a = atomic_load_explicit(z, memory_order_acquire);
+   atomic_thread_fence(memory_order_seq_cst);
+   int b = atomic_load_explicit(y, memory_order_relaxed);
+}
+
+P2 (atomic_int* x, atomic_int* y, atomic_int* z) {
+   atomic_store_explicit(y, 1, memory_order_relaxed);
+   atomic_thread_fence(memory_order_seq_cst);
+   int c = atomic_load_explicit(x, memory_order_relaxed);
+}
+
+exists
+(1:a = 1 /\ 1:b = 0 /\ 2:c = 0)

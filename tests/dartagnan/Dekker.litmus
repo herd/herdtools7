@@ -1,0 +1,26 @@
+PPC Dekker
+{
+0:r0=flag0; 0:r1=flag1; 0:r2=turn;
+1:r0=flag1; 1:r1=flag0; 1:r2=turn;
+}
+ P0		| P1		;
+ li r3,1	| li r3,1	;
+ li r4,0	| li r4,0	;
+ stw r3,0(r0)	| stw r3,0(r0)	;
+ lwz r5,0(r1)	| lwz r5,0(r1)	;
+ cmpw r5,r3	| cmpw r5,r3	;
+ bne LC00	| bne LC10	;
+ lwz r6,0(r2)	| lwz r6,0(r2)	;
+ cmpw r6,r4	| cmpw r6,r3	;
+ beq LC01	| beq LC11	;
+ stw r4,0(r0)	| stw r4,0(r0)	;
+ lwz r6,0(r2)	| lwz r6,0(r2)	;
+ cmpw r6,r4	| cmpw r6,r3	;
+ beq LC02	| beq LC12	;
+ lwz r6,0(r2)	| lwz r6,0(r2)	;
+ LC02:		| LC12:		;
+ LC01:		| LC11:		;
+ stw r3,0(r0)	| stw r3,0(r0)	;
+ LC00:		| LC10:		;
+
+exists (turn=10)

@@ -1,0 +1,22 @@
+C RWC+syncs
+
+{}
+
+P0 (atomic_int* x) {
+   atomic_store_explicit(x, 1, memory_order_relaxed);
+}
+
+P1 (atomic_int* x, atomic_int* y) {
+   int a = atomic_load_explicit(x, memory_order_relaxed);
+   atomic_thread_fence(memory_order_seq_cst);
+   int b = atomic_load_explicit(x, memory_order_relaxed);
+}
+
+P2 (atomic_int* x, atomic_int* y) {
+   atomic_store_explicit(y, 1, memory_order_relaxed);
+   atomic_thread_fence(memory_order_seq_cst);
+   int c = atomic_load_explicit(x, memory_order_relaxed);
+}
+
+exists
+(1:a = 1 /\ 1:b = 0 /\ 2:c = 0)

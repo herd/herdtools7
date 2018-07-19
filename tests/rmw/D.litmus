@@ -1,0 +1,24 @@
+C D
+
+{}
+
+P0 (atomic_int* x, int* t0, int* t1, int* t2) {
+   *t0 = 0;
+   int a = atomic_compare_exchange_strong(x, t0, 1);
+   int b = atomic_load(x);
+}
+
+P1 (atomic_int* x, int* t0, int* t1, int* t2) {
+   *t1 = 1;
+   int c = atomic_compare_exchange_strong(x, t1, 2);
+   int d = atomic_load(x);
+}
+
+P2 (atomic_int* x, int* t0, int* t1, int* t2) {
+   *t2 = 2;
+   int e = atomic_compare_exchange_strong(x, t2, 3);
+   int f = 3;
+}
+
+exists
+(0:a = 1 /\ 1:c = 1 /\ 2:e = 1)

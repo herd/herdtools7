@@ -1,0 +1,11 @@
+C B
+
+{}
+
+P0 (atomic_int* x, atomic_int* y) {
+   atomic_store(y, 1);
+   int b = atomic_compare_exchange_strong(x, y, 2);
+}
+
+exists
+(0:b = 0)

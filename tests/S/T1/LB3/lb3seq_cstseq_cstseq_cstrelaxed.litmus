@@ -1,0 +1,17 @@
+C lb3seq_cstseq_cstseq_cstrelaxed
+
+{atomic_int x0 = 0;}
+
+P0 (atomic_int* y,atomic_int* x, atomic_int* x0) {
+  int r0 = atomic_compare_exchange_strong_explicit(x,x0,2,memory_order_seq_cst, memory_order_seq_cst);
+  atomic_store_explicit(y,1,memory_order_relaxed);
+}
+
+P1 (atomic_int* y,atomic_int* x, atomic_int* x0) {
+  int r0 = atomic_load_explicit(y,memory_order_relaxed);
+  int r1 = atomic_compare_exchange_strong_explicit(x,x0,1,memory_order_seq_cst, memory_order_relaxed);
+}
+
+exists
+(x=2 /\ 0:r0=1 /\ 1:r0=1 /\ 1:r1=0)
+

@@ -1,0 +1,10 @@
+sh loop.sh $1 relaxed acquire
+sh loop.sh $1 relaxed release
+sh loop.sh $1 relaxed acq_rel
+sh loop.sh $1 relaxed seq_cst
+sh loop.sh $1 acquire release
+sh loop.sh $1 acquire acq_rel
+sh loop.sh $1 acquire seq_cst
+sh loop.sh $1 release acq_rel
+sh loop.sh $1 release seq_cst
+sh loop.sh $1 acq_rel seq_cst

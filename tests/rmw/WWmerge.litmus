@@ -1,0 +1,21 @@
+C WWmerge
+
+{}
+
+P0 (atomic_int* x, atomic_int* y) {
+   int a = atomic_load_explicit(x, memory_order_acquire);
+   int b = atomic_load(y);
+}
+
+P1 (atomic_int* x, atomic_int* y) {
+   atomic_store(x, 1);
+   atomic_store(x, 2);
+}
+
+P2 (atomic_int* x, atomic_int* y) {
+   atomic_store(y, 1);
+   int c = atomic_load(x);
+}
+
+exists
+(0:a = 2 /\ 0:b = 0 /\ 2:c = 0)

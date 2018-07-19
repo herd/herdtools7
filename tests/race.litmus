@@ -1,0 +1,14 @@
+C race
+
+{}
+
+P0 (atomic_int* x) {
+   *x = 1;
+}
+
+P1 (atomic_int* x) {
+   int a = atomic_load(x);
+}
+
+exists
+(1:a=0)

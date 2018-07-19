@@ -1,0 +1,14 @@
+C final
+
+{}
+
+P0 (atomic_int* x) {
+   int a = atomic_fetch_add(x, 1);
+}
+
+P1 (atomic_int* x) {
+   atomic_store(x, 3);
+}
+
+exists
+(x = 1)

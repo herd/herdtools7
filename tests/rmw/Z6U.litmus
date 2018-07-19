@@ -1,0 +1,27 @@
+C Z6U
+"FreScSc PodWRScSc FreScSc PodWRScSc"
+Generator=diyone7 (version 7.49)
+Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+Com=Fr Fr
+Orig=FreScSc PodWRScSc FreScSc PodWRScSc
+
+{}
+
+P0 (atomic_int* x, atomic_int* y) {
+   atomic_store(x, 1);
+   atomic_store(y, 1);
+}
+
+P1 (atomic_int* x, atomic_int* y) {
+   int b = atomic_fetch_add(y, 1);
+   //int c = *y;
+   int c = atomic_load(y);
+}
+
+P2 (atomic_int* x, atomic_int* y) {
+   atomic_store(y, 3);
+   int a = atomic_load(x);
+}
+
+exists
+(1:b=1 /\ 1:c=3 /\ 2:a=0)

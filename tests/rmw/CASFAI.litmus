@@ -1,0 +1,15 @@
+C CASFAI
+
+{}
+
+P0 (atomic_int* x, atomic_int* one) {
+   atomic_store(one, 1);
+   int a = atomic_compare_exchange_strong(x, one, 2);
+}
+
+P1 (atomic_int* x, atomic_int* one) {
+   int b = atomic_fetch_add(x, 1);
+}
+
+exists
+(0:a=0/\1:b=0)

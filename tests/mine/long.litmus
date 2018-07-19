@@ -1,0 +1,51 @@
+C long
+
+{}
+
+P0 (atomic_int* x, atomic_int* y, atomic_int* z) {
+               atomic_store(x, 1);
+               int a = atomic_load(x);
+               atomic_store(y, 1);
+               int b = atomic_load(y);
+               atomic_store(z, 1);
+               int c = atomic_load(z);
+}
+
+P1 (atomic_int* x, atomic_int* y, atomic_int* z) {
+               atomic_store(x, 2);
+               int a = atomic_load(x);
+               atomic_store(y, 2);
+               int b = atomic_load(y);
+               atomic_store(z, 2);
+               int c = atomic_load(z);
+}
+
+P2 (atomic_int* x, atomic_int* y, atomic_int* z) {
+               atomic_store(x, 3);
+               int a = atomic_load(x);
+               atomic_store(y, 3);
+               int b = atomic_load(y);
+               atomic_store(z, 3);
+               int c = atomic_load(z);
+}
+
+P3 (atomic_int* x, atomic_int* y, atomic_int* z) {
+               atomic_store(x, 4);
+               int a = atomic_load(x);
+               atomic_store(y, 4);
+               int b = atomic_load(y);
+               atomic_store(z, 4);
+               int c = atomic_load(z);
+}
+
+P4 (atomic_int* x, atomic_int* y, atomic_int* z) {
+               atomic_store(x, 5);
+               int a = atomic_load(x);
+               atomic_store(y, 5);
+               int b = atomic_load(y);
+               atomic_store(z, 5);
+               int c = atomic_load(z);
+}
+
+exists
+(0:a=1 /\ 1:b=0 )

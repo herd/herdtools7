@@ -1,0 +1,14 @@
+C exch
+
+{}
+
+P0 (atomic_int* x, atomic_int* y) {
+   atomic_store(x, 1);
+}
+
+P1 (atomic_int* x, atomic_int* y) {
+   int r0 = atomic_exchange(x, 2);
+}
+
+exists
+(x = 0)

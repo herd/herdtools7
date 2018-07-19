@@ -1,0 +1,19 @@
+C if
+
+{}
+
+P0 (atomic_int* x) {
+   int a;
+   if(atomic_load(x) == 1) {
+                     a = 1;
+   }else{
+        a = 2;
+   }
+}
+
+P1 (atomic_int* x) {
+   atomic_store(x, 1);
+}
+
+exists
+(0:a=1)

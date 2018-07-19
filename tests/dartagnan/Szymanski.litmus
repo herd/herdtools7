@@ -1,0 +1,45 @@
+PPC Szymanski
+{
+0:r2=flag1; 0:r4=flag2;
+1:r2=flag2; 1:r4=flag1;
+}
+ P0		| P1		;
+ li r1,1	| li r1,1	;
+ stw r1,0(r2)	| stw r1,0(r2)	;
+ lwz r3,0(r4)	| lwz r3,0(r4)	;
+ li r5,3	| li r5,3	;
+ cmpw r3,r5	| cmpw r3,r5	;
+ blt LC00	| blt LC10	;
+ lwz r3,0(r4)	| lwz r3,0(r4)	;
+ LC00:		| LC10:		;
+ li r1,3        | li r1,3	;
+ stw r1,0(r2)   | stw r1,0(r2)	;
+ lwz r3,0(r4)	| lwz r3,0(r4)	;
+ li r6,1	| li r6,1	;
+ cmpw r3,r6	| cmpw r3,r6	;
+ bne LC01	| bne LC11	;
+ li r1,2        | li r1,2	;
+ stw r1,0(r2)   | stw r1,0(r2)	;
+ lwz r3,0(r4)	| lwz r3,0(r4)	;
+ li r7,4	| li r7,4	;
+ cmpw r3,r7	| cmpw r3,r7	;
+ beq LC01       | beq LC11	;
+ lwz r3,0(r4)	| lwz r3,0(r4)	;
+ LC01:		| LC11:		;
+ li r1,4        | li r1,4	;
+ li r8,2        | li r8,2   ;
+ stw r1,0(r2)   | stw r1,0(r2)	;
+ lwz r3,0(r4)	| lwz r3,0(r4)	;
+ cmpw r3,r8	| cmpw r3,r8	;
+ blt LC02       | blt LC12	;
+ lwz r3,0(r4)	| lwz r3,0(r4)	;
+ LC02:		| LC12:		;
+ lwz r3,0(r4)	| lwz r3,0(r4)	;
+ cmpw r3,r8	| cmpw r3,r8	;
+ blt LC03	| blt LC13	;
+ cmpw r3,r5	| cmpw r3,r5	;
+ bgt LC03	| bgt LC13	;
+ lwz r3,0(r4)	| lwz r3,0(r4)	;
+ LC03:		| LC13:		;
+
+exists (flag1=10)

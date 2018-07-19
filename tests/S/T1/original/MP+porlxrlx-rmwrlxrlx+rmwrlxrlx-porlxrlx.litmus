@@ -1,0 +1,22 @@
+C MP+porlxrlx-rmwrlxrlx+rmwrlxrlx-porlxrlx
+"PodWRRlxRlx RmwRlxRlx RfeRlxRlx RmwRlxRlx PodWRRlxRlx FreRlxRlx"
+Cycle=RmwRlxRlx RfeRlxRlx RmwRlxRlx PodWRRlxRlx FreRlxRlx PodWRRlxRlx
+Generator=diycross7 (version 7.50+1(dev))
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=PodWRRlxRlx RmwRlxRlx RfeRlxRlx RmwRlxRlx PodWRRlxRlx FreRlxRlx
+
+{}
+
+P0 (atomic_int* y,atomic_int* x) {
+  atomic_store_explicit(x,1,memory_order_relaxed);
+  int r0 = atomic_exchange_explicit(y,1,memory_order_relaxed);
+}
+
+P1 (atomic_int* y,atomic_int* x) {
+  int r0 = atomic_exchange_explicit(y,2,memory_order_relaxed);
+  int r1 = atomic_load_explicit(x,memory_order_relaxed);
+}
+
+exists
+(y=2 /\ 0:r0=0 /\ 1:r0=1 /\ 1:r1=0)
