@@ -91,11 +91,15 @@ module Make (C:Sem.Config)(V:Value.S)
 
     let write_mem_release sz a v ii = do_write_mem sz AArch64.L a v ii
 
-        (* TODO MIXED SIZE *)
+    (* TODO MIXED SIZE *)
     let do_write_mem_atomic an sz a v resa ii =
-      let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
-      M.mk_singleton_es_eq
-        (Act.Access (Dir.W, A.Location_global a, v,an, sz)) eq ii
+      if mixed then
+        (M.assign a resa >>|
+        M.write_mixed sz (fun sz -> mk_write sz an)  a v ii) >>! ()
+      else
+        let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
+        M.mk_singleton_es_eq
+          (Act.Access (Dir.W, A.Location_global a, v,an, sz)) eq ii
 
     let write_mem_atomic = do_write_mem_atomic AArch64.X
     and write_mem_atomic_release = do_write_mem_atomic AArch64.XL

@@ -207,7 +207,7 @@ module Make(Cst:Constant.S) = struct
   | LogicalRightShift k ->
       unop  (fun s -> Scalar.shift_right_logical s k)
   | AddK k -> add_konst k
-  | AndK k -> unop (fun s -> Scalar.logand s (Scalar.of_int k))
+  | AndK k -> unop (fun s -> Scalar.logand s (Scalar.of_string k))
   | Mask32 -> unop Scalar.mask32
 
   let op op = match op with

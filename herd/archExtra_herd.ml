@@ -73,8 +73,8 @@ module type S = sig
   val byte : MachSize.sz
   val endian : Endian.t
   val byte_sz : int
+  val mask : string
   val nshift : int
-  val mask : int
   val nsz : MachSize.sz -> int
   (* decompose effective address increasimg order *)
   val byte_indices :  MachSize.sz -> int list
@@ -271,10 +271,11 @@ module Make(C:Config) (I:I) : S with module I = I
       | Some e -> e
 
       let byte_sz =  MachSize.nbytes byte
+
       let mask = match byte_sz with
-      | 1 -> 0xff
-      | 2 -> 0xffff
-      | 4 -> 0xffffffff
+      | 1 -> "0xff"
+      | 2 -> "0xffff"
+      | 4 -> "0xffffffff"
       | _ ->
           Warn.user_error "Size cannot be %s in mixed-size mode"
             (MachSize.pp C.byte)
