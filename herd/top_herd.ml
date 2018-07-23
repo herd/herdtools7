@@ -34,6 +34,7 @@ module type Config = sig
   include Mem.Config
 
   val statelessrc11 : bool
+  val skipchecks : StringSet.t
 end
 
 module Make(O:Config)(M:XXXMem.S) =
@@ -358,7 +359,7 @@ module Make(O:Config)(M:XXXMem.S) =
             conc kfail (model_kont ochan test cstr) in
       let c =
         if O.statelessrc11
-        then let module SL = Slrc11.Make(MC) in
+        then let module SL = Slrc11.Make(struct include MC let skipchecks = O.skipchecks end) in
              SL.check_event_structure test rfms kfail (fun _ c -> c) (model_kont ochan test cstr) start
         else
         try iter_rfms test rfms call_model (fun c -> c) start

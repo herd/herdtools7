@@ -1,10 +1,11 @@
 open Printf
 
 module type Cfg = sig
-  include Model.Config
+  val skipchecks : StringSet.t
+  include Mem.S
 end
 
-module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
+module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Cfg)
   =
   struct
     module S = M.S
@@ -99,13 +100,13 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
     let aux0 f0 f1 a b =
       f1 a b (f0 a b)
 
-    let events = ref E.EventSet.empty
+(*    let events = ref E.EventSet.empty*)
 
-    let all_locations () =
+    let all_locations ex =
       E.EventSet.fold (fun e l ->
           match E.location_of e with
           | Some x -> M.S.A.LocSet.add x l
-          | None -> l) !events M.S.A.LocSet.empty
+          | None -> l) ex.added M.S.A.LocSet.empty
 
     let location_is lo ev = match E.location_of ev with
       | Some x -> x = lo
@@ -139,48 +140,112 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
     let sbrf ex =
       added ex.added (E.EventRel.transitive_closure (E.EventRel.union (added ex.added ex.po) ex.rf))
 
-    let rseq rf po rmws =
+    let rseq ex =
       let rs0 = E.EventRel.restrict_rel
                   E.same_location
-                  po in
-      let rs10 = E.EventRel.set_to_rln (E.EventSet.filter
+                  ex.po in
+      let rs1 = E.EventRel.set_to_rln
+                  (E.EventSet.filter E.is_mem_store ex.added) in
+      let rs2 = E.EventRel.sequence rs1 rs0 in
+      let rs3 = E.EventRel.set_to_rln
+                  (E.EventSet.filter (fun x -> E.is_mem_store x
+                                               && (rlx x.E.action
+                                                   || rel x.E.action
+                                                   || acq x.E.action
+                                                   || acq_rel x.E.action
+                                                   || sc x.E.action))
+                     ex.added) in
+      let rs4 = E.EventRel.sequence rs2 rs3 in
+      let rs5 = E.EventRel.inter rs1 rs3 in
+      let rs6 = E.EventRel.union rs4 rs5 in
+      let rs7 = E.EventRel.transitive_closure (E.EventRel.sequence ex.rf (added ex.added ex.rmws)) in
+      let rs = E.EventRel.union rs6 (E.EventRel.sequence rs6 rs7) in
+      rs
+
+
+    (*  let rs10 = E.EventRel.set_to_rln (E.EventSet.filter
                                          (fun x -> E.is_mem_store x
                                                    && (rlx x.E.action
                                                        || rel x.E.action
                                                        || acq_rel x.E.action
                                                        || acq x.E.action
                                                        || sc x.E.action))
-                                         !events) in
+                                         ex.added) in
       let rs11 = E.EventRel.set_to_rln (E.EventSet.filter
                                          E.is_mem_store
-                                         !events) in
-      let rs12 = E.EventRel.sequences [rs10; rs0; rs11] in
-      let rs13 = E.EventRel.inter rs10 rs11 in
+                                         ex.added) in
+      let rs12 = E.EventRel.sequences [rs11; rs0; rs10] in
+      let rs13 = E.EventRel.inter rs11 rs10 in
       let rs14 = E.EventRel.union rs12 rs13 in
       let rs2 = E.EventRel.transitive_closure
-                  (E.EventRel.sequence rf rmws) in
-      seq_union rs14 rs2
+                  (E.EventRel.sequence ex.rf ex.rmws) in
+      seq_union rs14 rs2*)
 
-    let hb rf po rmws =
-
+      let sw ex =
       let mpo = (* E.EventRel.restrict_domains
                   E.is_mem
                   E.is_mem*)
-                  po in
-      let rseq = rseq rf mpo rmws in
+        ex.po in
+      let rseq = rseq ex in
+      let fences = E.EventSet.filter
+                     fence
+                     ex.added in
 
-      let sw0 = E.EventRel.sequence rseq rf in
-      let sw1 = E.EventRel.restrict_codomain
+      let sw0 = E.EventRel.sequence rseq ex.rf in
+      let sw1 = E.EventRel.set_to_rln (E.EventSet.filter
+                                         (fun x -> rel x.E.action
+                                                   || acq_rel x.E.action
+                                                   || sc x.E.action)
+                                         ex.added) in
+      let sw2 = E.EventRel.sequence (E.EventRel.set_to_rln fences) mpo in
+      let sw3 = E.EventRel.union sw1 (E.EventRel.sequence sw1 sw2) in
+      let sw4 = E.EventRel.sequence sw3 sw0 in
+      let sw5 = E.EventRel.set_to_rln (E.EventSet.filter
+                                         (fun x -> (rlx x.E.action
+                                                    || rel x.E.action
+                                                    || acq x.E.action
+                                                    || acq_rel x.E.action
+                                                    || sc x.E.action)
+                                                   && E.is_mem_load x)
+                                         ex.added) in
+      let sw6 = E.EventRel.sequence sw4 sw5 in
+      let sw7 = E.EventRel.sequence mpo (E.EventRel.set_to_rln fences) in
+      let sw8 = E.EventRel.set_to_rln (E.EventSet.filter
+                                     (fun x -> acq x.E.action
+                                               || acq_rel x.E.action
+                                               || sc x.E.action)
+                                     ex.added) in
+      let sw9 = E.EventRel.union sw8
+              (E.EventRel.sequence sw7 sw8) in
+      let sw = E.EventRel.sequence sw6 sw9 in
+      sw
+
+
+    let hb ex =
+
+      let sw0 = sw ex in
+
+
+   (*   let sw1 = E.EventRel.restrict_codomain
                   (fun x ->
                     E.is_mem_load x
                     && (rlx x.E.action
-                    || rel x.E.action
-                    || acq x.E.action
-                    || acq_rel x.E.action
-                    || sc x.E.action))
+                        || rel x.E.action
+                        (*     || acq x.E.action*)
+                        || acq_rel x.E.action
+                        || sc x.E.action))
+                  sw0 in
+      let sw2 = E.EventRel.restrict_codomain
+                  (fun x ->
+                    E.is_mem_load x
+                    && (rlx x.E.action
+                        (*     || rel x.E.action*)
+                        || acq x.E.action
+                        || acq_rel x.E.action
+                        || sc x.E.action))
                   sw0 in
       let sw2 = E.EventRel.restrict_domain (fun x -> fence x) mpo in
-      let sw3 = E.EventRel.sequence sw2 sw1 in
+      let sw3 = E.EventRel.sequence sw2 sw1b in
       let sw4 = E.EventRel.union sw1 sw3 in
       let sw5 = E.EventRel.restrict_codomain (fun x -> fence x) mpo in
       let sw6 = E.EventRel.sequence sw4 sw5 in
@@ -193,9 +258,9 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
                    && (acq y.E.action
                        || acq_rel x.E.action
                        || sc y.E.action))
-                 sw7 in
+                 sw7 in*)
 
-      let hb0 = E.EventRel.union mpo sw in
+      let hb0 = E.EventRel.union ex.po sw0 in
       E.EventRel.transitive_closure hb0
 
     let is_exval rmws rf e =
@@ -267,10 +332,10 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
                        let last0 = E.EventRel.restrict_domains
                                      iswrite
                                      iswrite
-                                     (hb ex.rf ex.po ex.rmws) in
+                                     (hb ex) in
                        let last = E.EventSet.choose (E.EventRel.leaves last0) in
                        M.S.RFMap.add (M.S.Final l) (M.S.Store last) map
-                     with Not_found -> map) (all_locations ()) m00 in
+                     with Not_found -> map) (all_locations ex) m00 in
       m0
 
     let make_cnstrnts ex =
@@ -481,7 +546,7 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
                      w kont res) in
         (*        with Not_found -> (, None) in*)
 
-        let hb0 = hb ex.rf ex.po ex.rmws in
+        let hb0 = hb ex in
         let s0 = E.EventRel.union ex.mo (E.EventRel.sequence ex.mo ex.rf) in
         let s1 = E.EventRel.sequence s0 hb0 in
         let s3 = E.EventRel.sequence s1 (E.EventRel.singleton (w,w)) in
@@ -551,7 +616,7 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
                  ex.revisit in
 
       let sbr = sbrf ex in
-      let hbf = hb ex.rf mpo ex.rmws in
+      let hbf = hb ex in
 
       let r1 = E.EventRel.sequence sbr (E.EventRel.of_list [(w,w)]) in
       let r2 = E.EventSet.diff r0 (E.EventRel.domain r1) in
@@ -655,7 +720,7 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
           () in
 
       let w0 = E.EventSet.filter (fun x -> E.is_mem_store x && E.same_location r x) ex.added in
-      let h = hb ex.rf ex.po ex.rmws in
+      let h = hb ex in
 
       let c0 = E.EventRel.sequences [ex.mo; ex.rf; h] in
       let c1 = E.EventRel.sequence ex.mo h in
@@ -743,7 +808,7 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
           with Not_found -> visit newex kont res
         end
       | None, _ ->
-         let h = hb ex.rf ex.po ex.rmws in
+         let h = hb ex in
          let r0 = E.EventRel.cartesian ex.added ex.added in
          let r1 = E.EventRel.restrict_rel
                     (fun x y -> E.same_location x y
@@ -821,7 +886,7 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
          let psc = E.EventRel.union psc5 psc11 in
 
          if
-           not (E.EventRel.is_acyclic psc) && false
+           StringSet.mem "SC" M.skipchecks || not (E.EventRel.is_acyclic psc) (* && false*)
          then
            res
          else
@@ -833,7 +898,7 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
                                                              || acq_rel x.E.action
                                                              || acq x.E.action
                                                              || sc x.E.action))
-                                               !events) in
+                                               ex.added) in
 
 
            let cyc = match E.EventRel.get_cycle psc with
@@ -848,7 +913,7 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
                                               ("scb", scb);
                                               ("pscb", psc5);
                                               ("pscf", psc11);
-                                              ("rseq", rseq ex.rf (E.EventRel.restrict_domains E.is_mem E.is_mem ex.mo) ex.rmws);
+                                              ("rseq", rseq ex);
                                               ("rs10", rs10);
                                               ("cycle", cyc);
                                               ("sbl", sbl);
@@ -914,11 +979,14 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
                  let pp_relns =
                    lazy begin
                        ("mo", ne.mo)::
-                       ("hb", E.EventRel.remove_transitive_edges (hb ne.rf ne.po ne.rmws))::
+                       ("hb", E.EventRel.remove_transitive_edges (hb ne))::
                        ("rf", ne.rf)::
                        ("po", ne.po)::
                        ("revisit", E.EventSet.fold (fun ev rels -> E.EventRel.add (ev, ev) rels) ne.revisit E.EventRel.empty)::
-                       ("rmw", ne.rmws)::ne.debug_rels
+                       ("rmw", ne.rmws)::
+                       ("rs", rseq ne)::
+                       ("sw", sw ne)::
+                       ne.debug_rels
                      end in
                  let rfm = List.fold_left
                              (fun k w ->
@@ -964,7 +1032,6 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
                       x, e, E.EventRel.restrict_rel (fun x y -> E.EventSet.mem x e && E.EventSet.mem y e) po)
                     es.E.procs in
       let toadd = List.map (fun (x, y, z) -> x, y) procs in
-      events := (E.EventSet.union evts inits);
       let ex_init = {
           toadd = toadd;
           added = inits;
@@ -982,7 +1049,7 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Mem.S)
         } in
       (visit ex_init (mykont test model_kont es cs) res)
 
-    let check_event_structure test (rfms : (_ * S.M.VC.cnstrnts * S.event_structure) list) kfail kont model_kont  (res : 'a)  =
+    let check_event_structure test (rfms : (_ * S.M.VC.cnstrnts * S.event_structure) list) kfail kont model_kont  (res : 'a) =
       List.fold_left (fun re rf -> check_rfms test rf kfail kont model_kont re) res rfms
 
   end

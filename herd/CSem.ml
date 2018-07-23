@@ -106,9 +106,9 @@ module Make (Conf:Sem.Config)(V:Value.S)
       let m = match mo with
         | MemOrder.SC
         | MemOrder.Rlx -> (mo, mo)
-        | MemOrder.Rel -> (mo, MemOrder.Rlx)
-        | MemOrder.Acq -> (MemOrder.Rlx, mo)
-        | MemOrder.Acq_Rel -> (MemOrder.Rel, MemOrder.Acq)
+        | MemOrder.Rel -> (MemOrder.Rlx, mo)
+        | MemOrder.Acq -> (mo, MemOrder.Rlx)
+        | MemOrder.Acq_Rel -> (MemOrder.Acq, MemOrder.Rel)
         | _ -> assert false in
       let rmem = match v_loc with
         | None -> fun loc -> read_mem_atomic is_data (MOorAN.MO (fst m)) loc ii
