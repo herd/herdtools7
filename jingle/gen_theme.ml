@@ -116,7 +116,7 @@ let () =
   let calls = parsed_call.CallMap.conversions in
 
   let funcs = parsed.ParseMap.funcs in
-
+  Printf.printf "%s to %s\n\n" (Archs.pp parsed.ParseMap.source) (Archs.pp parsed.ParseMap.target);
   List.iter (fun (l, r) -> Printf.printf "\"%s\" -> \"%s\"\n" l r) maps;
   List.iter (fun (l, r) -> Printf.printf "\"%s\" -> \"%s\"\n" l r) (expand calls maps funcs loops)
 
