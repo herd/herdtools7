@@ -1,0 +1,17 @@
+C NlNs
+
+{}
+
+P0 (atomic_int* x) {
+   atomic_store(x, 1);
+   int a = atomic_load(x);
+   atomic_store(x, 2);
+   int b = atomic_load(x);
+   atomic_store(x, 3);
+   int c = atomic_load(x);
+   atomic_store(x, 4);
+   int d = atomic_load(x);
+}
+
+exists
+(x=0)
