@@ -1,0 +1,20 @@
+C 0
+
+{}
+
+P0 (atomic_int* x) {
+   atomic_store(x, 1);
+   atomic_store(x, 2);
+}
+
+P1 (atomic_int* x) {
+   int a = atomic_load(x);
+   int b = atomic_load(x);
+   int c = atomic_load(x);
+   int d = atomic_load(x);
+   int e = atomic_load(x);
+   int f = atomic_load(x);
+}
+
+exists
+(x=0)
