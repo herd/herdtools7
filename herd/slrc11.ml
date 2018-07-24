@@ -787,7 +787,7 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Cfg)
           let nr1 = E.EventRel.domain nr0 in
           let nrevisit =
             E.EventSet.diff nex.revisit nr1 (*E.EventSet.add r nr1*) in
-          let _ = if (check_revisit nex) then () else printf "ex bad\n" in
+(*          let _ = if (check_revisit nex) then () else printf "ex bad\n" in*)
           (*          let _ = if (check_revisit nex) then () else printf "nex bad\n" in*)
           let _ = assert (check_revisit {nex with revisit = nrevisit}) in
           visit {nex with revisit = nrevisit} kont res1)
