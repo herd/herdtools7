@@ -304,7 +304,7 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Cfg)
                 (fun (x, _) -> x = w)
                 ex.mo)
 
-    let make_rfmap ex =
+    let make_rfmap ex = ex.rfm (*
       let m = E.EventRel.fold (fun rel map ->
                   let key =
                     M.S.Load (snd rel) in
@@ -336,7 +336,7 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Cfg)
                        let last = E.EventSet.choose (E.EventRel.leaves last0) in
                        M.S.RFMap.add (M.S.Final l) (M.S.Store last) map
                      with Not_found -> map) (all_locations ex) m00 in
-      m0
+      m0*)
 
     let make_cnstrnts ex =
         E.EventRel.fold
@@ -886,7 +886,7 @@ module Make (*O:Model*)(*S:Sem.Semantics*)(*SU:SlUtils.S*)(M:Cfg)
          let psc = E.EventRel.union psc5 psc11 in
 
          if
-           StringSet.mem "SC" M.skipchecks || not (E.EventRel.is_acyclic psc) (* && false*)
+           not (StringSet.mem "SC" M.skipchecks) && not (E.EventRel.is_acyclic psc) (* && false*)
          then
            res
          else
