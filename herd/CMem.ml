@@ -41,14 +41,7 @@ module Make
     module S = S
 
     let check_event_structure test = match O.model with
-      | RC11 ->
-         let module X =
-           Rc11.Make
-           (struct
-             include O
-           end)(S) in
-         X.check_event_structure test
-    | Generic m (* when not O.statelessrc11 *) ->
+    | Generic m ->
         let module X =
             MachModelChecker.Make
               (struct
@@ -56,10 +49,6 @@ module Make
                 include O
               end)(S) in
         X.check_event_structure test
-(*    | Generic m when O.statelessrc11 ->
-       let module X = Slrc11.Make
-              (O)(S) in
-       X.check_event_structure test*)
     | File _ -> assert false
     | m ->
         Warn.fatal "Model %s not implemented for C" (Model.pp m)

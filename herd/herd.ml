@@ -260,7 +260,7 @@ let options = [
 
   "-statelessrc11",
   Arg.Bool (fun b -> if b then statelessrc11 := true),
-  "<bool> enable stateless RC11 model checking";
+  "<bool> enable stateless RC11 model checking, use with -variant normw, SC check can be skipped";
 
 (************************)
 (* Control dot pictures *)
@@ -455,7 +455,6 @@ let model,model_opts = match !model with
     | Misc.Exit ->
         eprintf "Failure of generic model parsing\n" ;
         exit 2 end
-| Some r as m when r = Model.RC11 -> m,ModelOption.default
 | Some _ as m -> m,ModelOption.compat
 | None -> None,ModelOption.default
 
