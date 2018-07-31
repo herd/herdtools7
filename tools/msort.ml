@@ -27,7 +27,7 @@ let parse_duplicates = function
   | "comment" -> Comment
   | "delete" -> Delete
   | tag ->
-      raise 
+      raise
         (Arg.Bad
            (sprintf
               "wrong tag %s for -dups, allowed tags are <keep|comment|delete>"
@@ -47,6 +47,8 @@ module Top
          val reverse : bool
          val cost : string -> int
          val tnames : bool
+         val keep_bad : bool
+         val name_ok : string -> bool
        end) =
   struct
 
@@ -57,6 +59,8 @@ module Top
           hash : string option; }
     end
 
+    exception NotOk
+
     module Make(A:ArchBase.S) = struct
 
       let default_cost pgm =
@@ -66,8 +70,9 @@ module Top
             (fun k (_,code) -> k+A.get_naccesses code)
             0 pgm in
         nprocs,nins
-          
+
       let zyva name parsed =
+        if not (Opt.name_ok  name.Name.name) then raise NotOk ;
         { T.tname = name.Name.name ;
           cost = default_cost parsed.MiscParser.prog ;
           hash = MiscParser.get_hash  parsed; }
@@ -87,32 +92,7 @@ module Top
         | r -> r
         end
 
-    let do_test name k =
-      try
-        let {T.tname = tname;
-             cost = c ;
-             hash = h; } = Z.from_file name in
-        let cx =
-          try Opt.cost tname 
-          with Not_found ->
-            Warn.fatal "no cost for test %s" tname in
-        let cst = (cx,c),h in
-        ({fname=name; tname=tname;},cst)::k
-      with
-      | Misc.Exit -> k
-      | Misc.Fatal msg ->
-          Warn.warn_always "%a %s" Pos.pp_pos0 name msg ;
-          k
-      | e ->
-          Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
-          raise e
-
-    let zyva tests =
-      let xs = match tests with
-      | [] -> Misc.fold_stdin do_test []
-      | _  -> Misc.fold_argv do_test tests [] in
-
-      let get_base f = Filename.chop_extension (Filename.basename f) in
+      let get_base f = Filename.chop_extension (Filename.basename f)
 
       let bigname f =
         let b = get_base f in
@@ -122,12 +102,10 @@ module Top
           else match b.[i] with
           | 'A'..'Z' -> true
           | _ -> check (i+1) in
-        check 0 in
+        check 0
 
 
-      let fname_compare f1 f2 =
-        let f1 = f1.fname and f2 = f2.fname in
-        match bigname f1,bigname f2 with
+      let fname_compare f1 f2 = match bigname f1,bigname f2 with
         | true,false -> -1
         | false,true -> 1
         | _,_ ->
@@ -135,7 +113,50 @@ module Top
             and x2 =  String.length (get_base f2) in
             match Misc.int_compare x1 x2 with
             | 0 -> Misc.int_compare (String.length f1) (String.length f2)
-            | r -> r in
+            | r -> r
+
+
+    let add_failed name failed = (* Keep smallest name for non-parsable files *)
+      try
+        let d = Digest.file name in
+        try
+          let old = StringMap.find d failed in
+          if fname_compare name old < 0 then
+            StringMap.add d name failed
+          else
+            failed
+        with Not_found -> StringMap.add d name failed
+      with
+      | Sys_error _ ->
+          Printf.eprintf "Cannot open file \"%s\"\n" name ;
+          failed
+
+    let do_test name (k,failed  as st) =
+      try
+        let {T.tname = tname;
+             cost = c ;
+             hash = h; } = Z.from_file name in
+        let cx =
+          try Opt.cost tname
+          with Not_found ->
+            Warn.fatal "no cost for test %s" tname in
+        let cst = (cx,c),h in
+        ({fname=name; tname=tname;},cst)::k,failed
+      with
+      | NotOk -> st
+      | Misc.Exit -> k,add_failed name failed
+      | Misc.Fatal msg ->
+          Warn.warn_always "%a %s" Pos.pp_pos0 name msg ;
+          k,add_failed name failed
+      | e ->
+          Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
+          raise e
+
+    let zyva tests =
+      let empty = [],StringMap.empty in
+      let xs,failed = match tests with
+      | [] -> Misc.fold_stdin do_test empty
+      | _  -> Misc.fold_argv do_test tests empty in
 
       let get_min cmp = function
         | [] -> assert false
@@ -162,16 +183,17 @@ module Top
                 let fs = List.map (fun n -> n.fname) fs in
                 eprintf "%s\n%!"
                   (String.concat " " fs)
-            | _ -> ()) t      
+            | _ -> ()) t
         end ;
+        let fname_struct_compare f1 f2 = fname_compare f1.fname f2.fname in
         begin  match Opt.duplicates with
         | Keep|Comment ->
             Hashtbl.fold (fun _h (sz,fs) k ->
-              (List.sort fname_compare fs,sz)::k)
+              (List.sort fname_struct_compare fs,sz)::k)
               t []
         | Delete ->
             Hashtbl.fold
-              (fun _h (sz,fs) k -> ([get_min fname_compare fs],sz)::k) t []
+              (fun _h (sz,fs) k -> ([get_min fname_struct_compare fs],sz)::k) t []
         end in
 
       let do_pint_compare (i1,j1) (i2,j2) =
@@ -222,10 +244,12 @@ module Top
                     List.iter (fun n -> printf "#%s\n" (pname n)) ns
                 | [] -> assert false
                 end)
-          xs
-        in
-      ()
-   end
+          xs in
+      if Opt.keep_bad && not (StringMap.is_empty failed) then begin
+        printf "#Not parsed\n" ;
+        StringMap.iter (fun _ fname -> printf "%s\n" fname) failed
+      end
+  end
 
 
 let verbose = ref false
@@ -234,6 +258,9 @@ let arg = ref []
 let orders = ref []
 let reverse = ref false
 let tnames = ref false
+let keep_bad = ref true
+let names = ref [] and excl = ref []
+
 let prog =
   if Array.length Sys.argv > 0 then Sys.argv.(0)
   else "msort"
@@ -247,10 +274,13 @@ let () =
        "<keep|comment|delete> what to do with duplicates, default %s"
        (pp_duplicates !duplicates);
      "-r",Arg.Unit (fun () -> reverse := true)," reverse sort";
-     "-t",Arg.Unit (fun () -> tnames := true)," output test names";   
+     "-t",Arg.Unit (fun () -> tnames := true)," output test names";
+     "-keepbad",Arg.Bool (fun b -> keep_bad := b),sprintf "keep non-parsable tests, default %b" !keep_bad;
      "-cost",
      Arg.String (fun s -> orders := !orders @ [s]),
-     "<name> specify order file";]       
+     "<name> specify order file";
+     CheckName.parse_names names ;
+     CheckName.parse_excl excl ;]
     (fun s -> arg := s :: !arg)
     (sprintf "Usage: %s [options]* [test]*" prog)
 
@@ -260,6 +290,16 @@ let parse_int s = try Some (int_of_string s) with _ -> None
 
 module L = LexRename.Make(struct let verbose = if !verbose then 1 else 0 end)
 let costs = L.read_from_files !orders parse_int
+
+module Check =
+  CheckName.Make
+    (struct
+      let verbose = if !verbose then 1 else 0
+      let rename = []
+      let select = []
+      let names = !names
+      let excl = !excl
+    end)
 
 module X =
   Top
@@ -271,6 +311,8 @@ module X =
       | [] -> fun _s -> 0
       | _  -> TblRename.find_value costs
       let tnames = !tnames
+      let keep_bad = !keep_bad
+      let name_ok = Check.ok
     end)
 
 let () = X.zyva tests
