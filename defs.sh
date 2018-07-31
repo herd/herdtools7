@@ -10,7 +10,7 @@ NATIVE="$HERD $LITMUS $TOOLS $GEN $JINGLE"
 cpdir () {
   FROM=$1
   TO=$2
-  rm -rf $TO && mkdir -p $TO && ( cd $FROM && rsync -r . $TO )
+  rm -rf $TO && mkdir -p $TO && ( cd $FROM && cp -r . $TO )
 }
 
 VERSION=$(grep "^version:" opam | cut -d ":" -f 2 | cut -d '"' -f 2)
