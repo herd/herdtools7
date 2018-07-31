@@ -32,10 +32,8 @@ let neg = ref false
 
 let () =
   Arg.parse
-    ["-names", Arg.String (fun n -> names := n :: !names),
-     "<file> list of names (cumulate when repeated)";
-     "-excl", Arg.String (fun n -> excl := n :: !excl),
-     "<file>  names to exclude (cumulate when repeated)";
+    [CheckName.parse_names names ;
+     CheckName.parse_excl excl ;
      "-u", Arg.Set uniq, " one source per matching sources";
      "-neg", Arg.Set neg, " find sources whose names are not given";]
     (fun s -> args := s :: !args)
@@ -46,54 +44,43 @@ let tests = !args
 let uniq = !uniq
 let neg = !neg
 
-let excl =
-  ReadNames.from_files !excl
-    (fun name -> StringSet.add name) StringSet.empty
-
-let names =
-  ReadNames.from_files !names
-    (fun name k ->
-      if StringSet.mem name excl then k
-      else StringMap.add name [] k)
-    StringMap.empty
+(* Read names *)
+module Check =
+  CheckName.Make
+    (struct
+      let verbose = 0
+      let rename = []
+      let select = []
+      let names = !names
+      let excl = !excl
+    end)
 
 let from_file name = name,Names.from_fname name
 
 (* Positive version: find tests with name in k *)
-let do_test_pos src k =
+
+let do_test ok src k =
   try
     let src,name = from_file src in
-    try
-      let old = StringMap.find name k in
+    if ok name then
+      let old = StringMap.safe_find [] name k in
       StringMap.add name (src::old) k
-    with Not_found -> k
-  with
-  | Misc.Exit -> k
-  | Misc.Fatal msg ->
-      Warn.warn_always "%s" msg ; k
-(* Negative version *)
-let do_test_neg names src k =
-  try
-    let src,name = from_file src in
-    let in_names =
-      try ignore (StringMap.find name names) ; true
-      with Not_found -> false in
-    if in_names then k
-    else
-      let old =  try StringMap.find name k with Not_found -> [] in
-      StringMap.add name (src::old) k
+    else k
   with
   | Misc.Exit -> k
   | Misc.Fatal msg ->
       Warn.warn_always "%s" msg ; k
 
+let do_test_pos = do_test Check.ok
+and do_test_neg = do_test (fun name -> not (Check.ok name))
+
 let names =
-  let do_test =
-    if neg then do_test_neg names
-    else do_test_pos in
-  match tests with
-  | [] -> Misc.fold_stdin do_test names
-  | _  -> Misc.fold_argv do_test tests names
+  let fold =
+    let do_test = if neg then do_test_neg else do_test_pos in
+    match tests with
+    | [] -> Misc.fold_stdin do_test
+    | _  -> Misc.fold_argv do_test tests in
+  fold StringMap.empty
 
 
 let () =
