@@ -76,23 +76,25 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | Int |Std (_,MachSize.Word) -> V32
     | t -> Warn.user_error "AArch64, illegal base type: %s" (pp t)
 
+    let sz2v =
+      let open MachSize in
+      function
+        | Byte|Short|Word -> V32
+        | Quad -> V64
+
     let cbz r1 lbl = I_CBZ (vloc,r1,lbl)
     let cbnz r1 lbl = I_CBNZ (vloc,r1,lbl)
     let mov r i = I_MOV (vloc,r,K i)
-    let mov_mixed sz r i =
-      let v =
-        let open MachSize in
-        match sz with
-        | Byte|Short|Word -> V32
-        | Quad -> V64 in
-      I_MOV (v,r,i)
+    let mov_mixed sz r i = let v = sz2v sz in I_MOV (v,r,i)
     let cmpi r i = I_OP3 (vloc,SUBS,ZR,r,K i)
     let cmp r1 r2 = I_OP3 (vloc,SUBS,ZR,r1,RV (vloc,r2))
     let bne lbl = I_BC (NE,lbl)
     let eor r1 r2 r3 = I_OP3 (vloc,EOR,r1,r2,RV (vloc,r3))
     let andi r1 r2 k = I_OP3 (vloc,AND,r1,r2,K k)
     let addi r1 r2 k = I_OP3 (vloc,ADD,r1,r2,K k)
+    let addi_64 r1 r2 k = I_OP3 (V64,ADD,r1,r2,K k)
 (*    let add r1 r2 r3 = I_OP3 (vloc,ADD,r1,r2,r3) *)
+    let add v r1 r2 r3 = I_OP3 (v,ADD,r1,r2,RV (v,r3))
     let add64 r1 r2 r3 = I_OP3 (V64,ADD,r1,r2,RV (vloc,r3))
 
     let ldr_mixed r1 r2 sz o =
@@ -111,6 +113,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let sxtw r1 r2 = I_SXTW (r1,r2)
     let ldr_idx r1 r2 idx = I_LDR (vloc,r1,r2,RV (vloc,idx))
 
+    let ldr_mixed_idx v r1 r2 idx sz  =
+      let open MachSize in
+      match sz with
+      | Byte -> I_LDRBH (B,r1,r2,RV (v,idx))
+      | Short -> I_LDRBH (H,r1,r2,RV (v,idx))
+      | Word -> I_LDR (V32,r1,r2,RV (v,idx))
+      | Quad -> I_LDR (V64,r1,r2,RV (v,idx))
+
     let str_mixed sz o r1 r2 =
       let open MachSize in
       match sz with
@@ -124,6 +134,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let str_idx r1 r2 idx = I_STR (vloc,r1,r2,RV (vloc,idx))
     let stxr r1 r2 r3 = I_STXR (vloc,YY,r1,r2,r3)
     let stlxr r1 r2 r3 = I_STXR (vloc,LY,r1,r2,r3)
+
+    let str_mixed_idx v r1 r2 idx sz  =
+      let open MachSize in
+      match sz with
+      | Byte -> I_STRBH (B,r1,r2,RV (v,idx))
+      | Short -> I_STRBH (H,r1,r2,RV (v,idx))
+      | Word -> I_STR (V32,r1,r2,RV (v,idx))
+      | Quad -> I_STR (V64,r1,r2,RV (v,idx))
 
 (* Compute address in tempo1 *)
     let _sxtw r k = match vloc with
@@ -514,8 +532,35 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | W,Some Atomic rw ->
               let r,init,cs,st = emit_sta_idx rw st p init e.loc r2 e.v in
               Some r,init,Instruction c::cs,st
-          | _,Some (Mixed _) ->
-              Warn.fatal "addr dep with mixed"
+          | R,Some (Mixed (sz,o)) ->
+              let module L =
+                LOAD
+                  (struct
+                    let load r1 r2 = ldr_mixed r1 r2 sz o
+                    let load_idx st r1 r2 idx =
+                      let cs = [ldr_mixed_idx V64 r1 r2 idx sz] in
+                      let cs = match o with
+                      | 0 -> cs
+                      | _ -> addi_64 idx idx o::cs in
+                      cs,st
+                  end) in
+              let r,init,cs,st = L.emit_load_idx st p init e.loc r2 in
+              Some r,init,Instruction c::cs,st
+          | W,Some (Mixed (sz,o)) ->
+              let module S =
+                STORE
+                  (struct
+                    let store r1 r2 = str_mixed sz o r1 r2
+                    let store_idx st r1 r2 idx =
+                      let cs = [str_mixed_idx V64 r1 r2 idx sz] in
+                      let cs = match o with
+                      | 0 -> cs
+                      | _ -> addi_64 idx idx o::cs in
+                      cs,st
+                  end) in
+              let rA,init,cs_mov,st = emit_mov sz st p init e.v in
+              let init,cs,st = S.emit_store_idx_reg st p init e.loc r2 rA in
+              None,init,Instruction c::cs,st
 
 
     let emit_exch_dep_addr st p init er ew rd =
@@ -536,10 +581,20 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | None -> Warn.fatal "TODO"
       | Some R -> Warn.fatal "data dependency to load"
       | Some W ->
-          let r2,st = next_reg st in
-          let cs2 =
-            [Instruction (calc0 r2 r1) ;
-             Instruction (addi r2 r2 e.v) ; ] in
+          let r2,cs2,init,st = match e.atom with
+          | Some (Mixed (sz,o)) ->
+              let rA,init,csA,st = emit_mov sz st p init e.v in
+              let r2,st = next_reg st in
+              let cs2 =
+                [Instruction (calc0 r2 r1) ;
+                 Instruction (add (sz2v sz) r2 r2 rA); ] in
+               r2,cs2,init,st
+          | _ ->
+              let r2,st = next_reg st in
+              let cs2 =
+                [Instruction (calc0 r2 r1) ;
+                 Instruction (addi r2 r2 e.v); ] in
+              r2,cs2,init,st in
           begin match e.atom with
           | None ->
               let init,cs,st = STR.emit_store_reg st p init e.loc r2 in
@@ -554,8 +609,20 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               Warn.fatal "No store acquire"
           | Some AcqPc ->
               Warn.fatal "No store acquirePc"
-          | Some (Mixed _) ->
-              Warn.fatal "data dep with mixed"
+          | Some (Mixed (sz,o)) ->
+              let module S =
+                STORE
+                  (struct
+                    let store r1 r2 = str_mixed sz o r1 r2
+                    let store_idx st r1 r2 idx =
+                      let cs = [str_mixed_idx V64 r1 r2 idx sz] in
+                      let cs = match o with
+                      | 0 -> cs
+                      | _ -> addi_64 idx idx o::cs in
+                      cs,st
+                  end) in
+              let init,cs,st = S.emit_store_reg st p init e.loc r2 in
+              None,init,cs2@cs,st
           end
 
     let insert_isb isb cs1 cs2 =

@@ -241,7 +241,6 @@ module Make(V:Constant.S)(C:Config) =
       | V32,RV (V64,_) -> assert false
 
 
-
     let store memo v rA rB kr = match v,kr with
       | V32,K 0 ->
           { empty_ins with
@@ -280,7 +279,13 @@ module Make(V:Constant.S)(C:Config) =
           { empty_ins with
             memo=memo ^ sprintf " ^i0,[^i1,%s,sxtw]" fC;
             inputs=[rA; rB;]@rC; reg_env=add_w rC@[rB,voidstar; rA,quad;]; }
-      | V32,RV (V64,_) -> assert false
+      | V32,RV (V64,rC) ->
+          let rC,fC = match rC with
+          | ZR -> [],"xzr"
+          | _  -> [rC],"^i2" in
+          { empty_ins with
+            memo=memo ^ sprintf " ^wi0,[^i1,%s]" fC;
+            inputs=[rA; rB;]@rC; reg_env=add_q rC@[rB,voidstar; rA,word;]; }
 
     let stxr memo v r1 r2 r3 = match v with
     | V32 ->
