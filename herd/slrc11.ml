@@ -445,8 +445,8 @@ module Make (M:Cfg)
           (*        let _ = printf "rvr\n" in*)
           let nex = insert_mo ex w0 w in
           let (b, nex0) = (extend_safe nex w) in
-          let rvr = if b && not (check_cns nex0 cs)
-                    then let _ = printf "prune3\n" in res
+          let rvr = if  b && not (check_cns nex0 cs)
+                    then (*let _ = printf "prune3\n" in*) res
                     else (revisit_reads
                             nex0 cs
                             w kont res)
@@ -486,7 +486,7 @@ module Make (M:Cfg)
               let nex = insert_mo {ex with revisit = nrevisit} wp w in
               let (b, nex0) = (extend_safe nex w) in
               if b && not (check_cns nex0 cs)
-              then let _ = printf "prune3\n" in res1
+              then (*let _ = printf "prune3\n" in*) res1
               else (revisit_reads
                       nex0 cs
                       w kont res1)) s rvr
@@ -578,13 +578,14 @@ module Make (M:Cfg)
                 let nsbr = sbrf nex in
                 let nrevisit0 = E.EventRel.set_to_rln k1 in
                 let nrevisit1 = E.EventRel.union nrevisit0 (E.EventRel.sequence nsbr nrevisit0) in
+                let nrevisit2 = E.EventRel.domain nrevisit1 in
                 let nrevisit =E.EventSet.filter
-                                (fun x -> not (E.EventSet.mem x (E.EventRel.domain nrevisit1)))
+                                (fun x -> not (E.EventSet.mem x nrevisit2))
                                 nex.revisit in
                 let nex0 = {nex with revisit = nrevisit;
                                      debug_rels = List.append nex.debug_rels [("kmust", E.EventRel.set_to_rln kmust)];
-                                     safe = E.EventSet.union ex.safe (E.EventRel.domain nrevisit1)} in
-                if not (check_cns nex0 cs) then let _ = printf "prune2\n" in res1 else
+                                     safe = E.EventSet.union ex.safe nrevisit2} in
+                if not (E.EventSet.is_empty nrevisit2) && not (check_cns nex0 cs) then (*let _ = printf "prune2\n" in*) res1 else
                   visit nex0 cs kont res1)
             res kl
 
@@ -642,7 +643,7 @@ module Make (M:Cfg)
                      wx
                      (E.EventSet.of_list [r])) in
         let res0 =  if not (check_cns ex0 cs)
-                    then let _ = printf "prune0\n" in res
+                    then (*let _ = printf "prune0\n" in*) res
                     else visit ex0 cs kont res in
 
         E.EventSet.fold
@@ -654,7 +655,7 @@ module Make (M:Cfg)
             let nrevisit =
               E.EventSet.diff nex.revisit nr1 in
             let nex0 = {nex with revisit = nrevisit; safe = E.EventSet.union3 (E.EventSet.of_list [x;r]) nr1 ex.safe} in
-            if not (check_cns nex0 cs) then let _ = printf "prune1\n" in res1 else
+            if not (check_cns nex0 (List.append cs (make_cnstrnts {nex0 with rf = added nex0.safe nex0.rf}))) then (*let _ = printf "prune1\n" in*) res1 else
               visit nex0 cs kont res1)
           (E.EventSet.remove wx w2) res0
 
@@ -738,7 +739,7 @@ module Make (M:Cfg)
            then
              res
            else
-             let _ = printf "done\n" in
+(*             let _ = printf "done\n" in*)
              let rs10 = E.EventRel.set_to_rln (E.EventSet.filter
                                                  (fun x -> E.is_mem_store x
                                                            && (rlx x.E.action
@@ -897,5 +898,4 @@ module Make (M:Cfg)
 
     let check_event_structure test (rfms : (_ * S.M.VC.cnstrnts * S.event_structure) list) kfail kont model_kont  (res : 'a) =
       List.fold_left (fun re rf -> check_rfms test rf kfail kont model_kont re) res rfms
-
   end
