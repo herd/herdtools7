@@ -83,24 +83,25 @@ module type S = sig
   val solve_regs :
     ((int * S.A.instruction) list S.A.LabelMap.t,
  (int * S.A.instruction S.A.kpseudo list) list,
- (int * (int * S.A.instruction) list) list, S.A.state,
+ (int * (int * S.A.instruction) list) list, S.A.state, S.A.size_env,
  (S.A.location, S.A.V.v) ConstrGen.prop, S.A.location, S.A.LocSet.t)
 Test_herd.t ->
-S.event_structure ->
-S.M.VC.cnstrnt list -> (S.E.event_structure * S.rfmap * S.M.VC.cnstrnts) option
+S.E.event_structure ->
+S.M.VC.cnstrnt list ->
+(S.E.event_structure * S.read_from S.RFMap.t * S.M.VC.cnstrnt list) option
 
   val solve_mem :
     ((int * S.A.instruction) list S.A.LabelMap.t,
-     (int * S.A.instruction S.A.kpseudo list) list,
-     (int * (int * S.A.instruction) list) list, S.A.state,
-     (S.A.location, S.A.V.v) ConstrGen.prop, S.A.location, S.A.LocSet.t)
-      Test_herd.t ->
-    S.E.event_structure ->
-    S.read_from S.RFMap.t ->
-    S.M.VC.cnstrnt list ->
-    (S.E.event_structure ->
-     S.read_from S.RFMap.t -> S.M.VC.cnstrnt list -> 'a -> 'a) ->
-    'a -> 'a
+ (int * S.A.instruction S.A.kpseudo list) list,
+ (int * (int * S.A.instruction) list) list, S.A.state, S.A.size_env,
+ (S.A.location, S.A.V.v) ConstrGen.prop, S.A.location, S.A.LocSet.t)
+Test_herd.t ->
+S.E.event_structure ->
+S.read_from S.RFMap.t ->
+S.M.VC.cnstrnt list ->
+(S.E.event_structure ->
+ S.read_from S.RFMap.t -> S.M.VC.cnstrnt list -> 'a -> 'a) ->
+'a -> 'a
 
   val check_sizes :
     S.event_structure -> unit
@@ -110,19 +111,22 @@ S.M.VC.cnstrnt list -> (S.E.event_structure * S.rfmap * S.M.VC.cnstrnts) option
 
   val when_unsolved :
     ((int * S.A.instruction) list S.A.LabelMap.t,
-     (int * S.A.instruction S.A.kpseudo list) list,
-     (int * (int * S.A.instruction) list) list, S.A.state,
-     (S.A.location, S.A.V.v) ConstrGen.prop, S.A.location, S.A.LocSet.t)
-      Test_herd.t ->
-    S.E.event_structure ->
-    S.read_from S.RFMap.t -> S.M.VC.cnstrnt list -> ('a -> 'a) -> 'a -> 'a
+ (int * S.A.instruction S.A.kpseudo list) list,
+ (int * (int * S.A.instruction) list) list, S.A.state, S.A.size_env,
+ (S.A.location, S.A.V.v) ConstrGen.prop, S.A.location, S.A.LocSet.t)
+Test_herd.t ->
+S.E.event_structure ->
+S.read_from S.RFMap.t -> S.M.VC.cnstrnt list -> ('a -> 'a) -> 'a -> 'a
 
   val compute_final_state :
-    ('a, 'b, 'c, S.A.state, 'd, 'e, 'f) Test_herd.t ->
+    ('a, 'b, 'c, S.A.state, 'd, 'e, 'f, 'g) Test_herd.t ->
     S.read_from S.RFMap.t -> S.A.state
 
   val check_filter :
-    ('a, 'b, 'c, 'd, S.Cons.prop, 'e, 'f) Test_herd.t -> S.Cons.A.state -> bool
+    (S.A.code S.A.LabelMap.t, (int * S.A.pseudo list) list,
+ (S.A.proc * S.A.code) list, S.A.state, S.A.size_env,
+ (S.A.location, S.A.v) ConstrGen.prop, S.A.location, S.A.LocSet.t)
+Test_herd.t -> S.A.state -> bool
 
   val get_loc :
     S.E.event -> S.E.A.location

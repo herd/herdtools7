@@ -6,11 +6,21 @@ let mo = co
 let sb = po
 let myrmw = [RMW] | rmw
 
+acyclic (sb | rf) as no-thin-air
+
 let rb = (rf^-1; mo) \ id
+
+empty (myrmw & (rb; mo)) as atomicity
+
 let eco = (rf | mo | rb)+
+
+irreflexive (myrmw; eco) as coherencermw
+
 let rs = [W]; (sb & loc)?; [W & (RLX | REL | ACQ_REL | ACQ | SC)]; (rf; myrmw)*
 let sw = [(REL | ACQ_REL | SC)]; ([F]; sb)?; rs; rf; [R & (RLX | REL | ACQ | ACQ_REL | SC)]; (sb; [F])?; [(ACQ | ACQ_REL | SC)]
 let hb = (sb | sw)+
+
+irreflexive hb; eco? as coherence1
 
 let sbl = sb \ loc
 let hbl = hb & loc
@@ -18,6 +28,8 @@ let scb = sb | sbl; hb; sbl | hbl | mo | rb
 let pscb = ([SC] | [F & SC]; hb?); scb; ([SC] | hb? ; [F & SC])
 let pscf = [F & SC]; (hb | hb; eco; hb); [F & SC]
 let psc = pscb | pscf
+
+acyclic psc as SC
 
 let cnf = ((W * _) | (_ * W)) & loc \ ((IW * _) | (_ * IW))
 let dr = (cnf & ext) \ (hb | hb^-1 | A * A)
@@ -28,11 +40,5 @@ let sc0 = psc* & [E]
 let th0 = (sb | rf)* & [E]
 
 undefined_unless empty dr as Dr
-
-irreflexive hb; eco? as coherence1
-irreflexive (myrmw; eco) as coherencermw
-empty (myrmw & (rb; mo)) as atomicity
-acyclic psc as SC
-acyclic (sb | rf) as no-thin-air
 
 show hb, eco, psc, rmw

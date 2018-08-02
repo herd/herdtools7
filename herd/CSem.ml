@@ -66,7 +66,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
 
     let read_mem_atomic_known is_data a loc v_loc =
       M.read_loc is_data
-        (fun loc v -> Act.Access (Dir.R, loc, v_loc,  a, true))
+        (fun loc v -> Act.Access (Dir.R, loc, v_loc,  a, true, nat_sz))
         (A.Location_global loc)
 
 
