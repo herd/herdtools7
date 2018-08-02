@@ -148,7 +148,11 @@ let options =
    ("-names",
     Arg.String
       (delay_ro (fun s ro -> { ro with names = s :: ro.names})),
-    "<name> specify  selected name file, can be repeated") ;
+    "<name> specify selected name file, can be repeated") ;
+   ("-excl",
+    Arg.String
+      (delay_ro (fun s ro -> { ro with excl = s :: ro.excl})),
+    "<name> specify excluded name file, can be repeated") ;
    ("-select",
     Arg.String
       (delay_ro (fun s ro -> { ro with select = s :: ro.select})),
