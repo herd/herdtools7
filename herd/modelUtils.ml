@@ -97,6 +97,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
       S.restrict evt_relevant evt_relevant po in
     let data_commit =
       E.EventRel.restrict_codomain E.is_commit data_dep in
+    let data_dep =  E.EventRel.restrict_codomain E.is_mem data_dep in
     let ctrlisync =
       try
         let r1 = S.restrict is_mem_load_total is_isync ctrl_dep
