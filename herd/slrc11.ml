@@ -655,8 +655,7 @@ module Make (M:Cfg)
             let nrevisit =
               E.EventSet.diff nex.revisit nr1 in
             let nex0 = {nex with revisit = nrevisit; safe = E.EventSet.union3 (E.EventSet.of_list [x;r]) nr1 ex.safe} in
-            if not (check_cns nex0 (List.append cs (make_cnstrnts {nex0 with rf = added nex0.safe nex0.rf}))) then (*let _ = printf "prune1\n" in*) res1 else
-              visit nex0 cs kont res1)
+            if not (check_cns nex0 cs) then res1 else visit nex0 cs kont res1)
           (E.EventSet.remove wx w2) res0
 
       and visit (ex : exec) cs kont res =
