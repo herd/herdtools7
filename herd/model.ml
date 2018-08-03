@@ -32,7 +32,7 @@ let tags =
    "cav12";
    "minimal";
    "uniproc";
-   "<filename>.cat";
+   "<filename>.cat"
   ]
 
 let parse tag =

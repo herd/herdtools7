@@ -65,6 +65,8 @@ let dumplem = ref false
 let dumptex = ref false
 let moreedges = ref true
 
+let statelessrc11 = ref false
+
 (* Pretty printing configuration, deserves its own module *)
 module PP = struct
   open PrettyConf

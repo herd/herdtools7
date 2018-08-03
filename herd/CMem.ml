@@ -20,6 +20,8 @@ module type Config = sig
   val model : Model.t
   val bell_model_info : (string * BellModel.info) option
   include Model.Config
+
+  val statelessrc11 : bool
 end
 
 module Make
@@ -34,18 +36,20 @@ module Make
 
     let model = O.model
 
+    let statelessrc11 = O.statelessrc11
+
     module S = S
 
     let check_event_structure test = match O.model with
     | Generic m ->
         let module X =
-          MachModelChecker.Make
-            (struct
-              let m = m
-              include O
-             end)(S) in
+            MachModelChecker.Make
+              (struct
+                let m = m
+                include O
+              end)(S) in
         X.check_event_structure test
     | File _ -> assert false
-    | m -> 
+    | m ->
         Warn.fatal "Model %s not implemented for C" (Model.pp m)
 end

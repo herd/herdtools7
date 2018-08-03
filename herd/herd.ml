@@ -258,6 +258,10 @@ let options = [
   Arg.Bool (fun b -> if b then nshow := Some 1),
   "<bool> alias for -nshow 1";
 
+  "-statelessrc11",
+  Arg.Bool (fun b -> if b then statelessrc11 := true),
+  "<bool> enable stateless RC11 model checking, use with -variant normw, SC check can be skipped";
+
 (************************)
 (* Control dot pictures *)
 (************************)
@@ -494,6 +498,8 @@ let () =
     let badexecs = !badexecs 
     let badflag = !badflag
     let throughflag = !throughflag
+
+    let statelessrc11 = !statelessrc11
 
     let check_name = Check.ok
     let check_rename = Check.rename_opt

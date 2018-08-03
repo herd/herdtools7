@@ -90,7 +90,7 @@ module Make (O:Cfg) (S:Sem.Semantics)
 (****************)
 (* Model proper *)
 (****************)
-        
+
     let pp_failure test conc legend vb_pp =
       if  O.debug && O.verbose > 1 then begin
         let module PP = Pretty.Make(S) in
@@ -138,8 +138,8 @@ module Make (O:Cfg) (S:Sem.Semantics)
             Lazy.force pp_relns
           end in
         (* LM: uniproc check controled by option *)
-        if 
-          not uniproc ||          
+        if
+          not uniproc ||
           check_uniproc test conc pr fr ws
         then
 	  kont conc conc.S.fs pp_relns Flag.Set.empty res
