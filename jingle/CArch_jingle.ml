@@ -137,7 +137,7 @@ include Arch.MakeArch(struct
         (match r with Some _ -> "ok" | None -> "no") ;
     r
 
-  let rec expl_instr subs free =
+  let rec expl_instr subs free _ =
     let conv_reg = conv_reg subs free in
     let find_code s =
       let rec aux = function
@@ -179,13 +179,13 @@ include Arch.MakeArch(struct
     in
     function
     | Fence _|DeclReg _ as i -> i
-    | Seq (l,b) -> Seq(List.map (expl_instr subs free) l,b)
+    | Seq (l,b) -> Seq(List.map (expl_instr subs free (ref [])) l,b)
     | If(c,t,e) ->
        let e = match e with
          | None -> None
-         | Some e -> Some(expl_instr subs free e)
+         | Some e -> Some(expl_instr subs free (ref []) e)
        in
-       If(expl_expr c,expl_instr subs free t,e)
+       If(expl_expr c,expl_instr subs free (ref []) t,e)
     | StoreReg(ot,r,e) -> StoreReg(ot, r, expl_expr e)
     | StoreMem(l,e,mo) -> StoreMem(expl_loc l, expl_expr e,mo)
     | Lock (l,k) -> Lock(expl_loc l,k)

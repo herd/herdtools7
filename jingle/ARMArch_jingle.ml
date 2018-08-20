@@ -77,9 +77,9 @@ let match_instr subs pattern instr = match pattern,instr with
   | _,_ -> None
 
      
-  let expl_instr subs free =
+  let expl_instr subs free label_env =
     let conv_reg = conv_reg subs free in
-    let find_lab = find_lab subs free in
+    let find_lab = find_lab subs free label_env in
     let find_cst = find_cst subs free in
     function
     | I_ADD(f,r1,r2,MetaConst.Meta v) -> 

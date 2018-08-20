@@ -54,7 +54,7 @@ module type Common = sig
   val dump_pseudos : pseudo list -> string
   val conv_reg : substitution list -> reg list ->
                  reg -> reg
-  val find_lab : substitution list -> reg list ->
+  val find_lab : substitution list -> reg list -> (string * string) list ref ->
                  string -> string
   val find_code : substitution list -> reg list ->
                   string -> pseudo list
@@ -152,12 +152,11 @@ module MakeCommon(A:ArchBase.S) = struct
     res
 
 
-  let label_env = ref []
   let fresh_lbl =
     let i = ref 0 in
     fun () -> incr i;"lbl"^(string_of_int !i)
        
-  let find_lab subs _ l =
+  let find_lab subs _ label_env l =
     let get_label = 
       fun s -> try List.assoc s !label_env with
       | Not_found ->
@@ -210,7 +209,7 @@ module MakeArch(I:sig
                     parsedInstruction ->
                     instruction ->
                     substitution list option
-  val expl_instr : substitution list -> reg list ->
+  val expl_instr : substitution list -> reg list -> (string * string) list ref ->
                    parsedInstruction ->
                    parsedInstruction
 end) = struct
@@ -227,8 +226,9 @@ end) = struct
     | _,_ -> assert false
 
   let instanciate_with subs free instrs =
-    let expl_instr = expl_instr subs free in
-    let find_lab = find_lab subs free in
+    let label_env = ref [] in
+    let expl_instr = expl_instr subs free label_env in
+    let find_lab = find_lab subs free label_env in
     let find_code = find_code subs free in
     let rec expl_pseudos = 
       let rec aux = function
