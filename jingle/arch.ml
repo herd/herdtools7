@@ -151,17 +151,18 @@ module MakeCommon(A:ArchBase.S) = struct
         (pp_subs subs) (pp_reg r) (pp_reg res) ;
     res
 
+
+  let label_env = ref []
+  let fresh_lbl =
+    let i = ref 0 in
+    fun () -> incr i;"lbl"^(string_of_int !i)
        
   let find_lab subs _ l =
     let get_label = 
-      let fresh_lbl = 
-	let i = ref 0 in 
-	fun () -> incr i;"lbl"^(string_of_int !i) in
-      let env = ref [] in
-      fun s -> try List.assoc s !env with
+      fun s -> try List.assoc s !label_env with
       | Not_found ->
 	 let l = fresh_lbl () in
-	 env := (s,l)::!env;
+	 label_env := (s,l)::!label_env;
 	 l in
     let rec aux = function
       | [] -> get_label l
