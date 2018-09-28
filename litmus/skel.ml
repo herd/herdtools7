@@ -1002,18 +1002,18 @@ end = struct
         ("c"::
          (if ConstrGen.is_true test.T.condition then "':'"
          else "show ? '*' : ':'")::
-         [A.LocSet.pp_str ","
-            (fun loc ->
-              let sloc = dump_loc_name loc in
-              match U.find_type loc env with
-              | Pointer _ -> sprintf "pretty_addr[o[%s_f]]" sloc
-              | Array (t,sz) ->
-                  let rec pp_rec k =
-                    if k >= sz then []
-                    else sprintf "(%s)o[%s_f+%i]" t sloc k::pp_rec (k+1) in
-                  String.concat "," (pp_rec 0)
-              | t -> sprintf "(%s)o[%s_f]" (CType.dump t) sloc)
-            outs]) in
+         List.map
+           (fun loc ->
+             let sloc = dump_loc_name loc in
+             match U.find_type loc env with
+             | Pointer _ -> sprintf "pretty_addr[o[%s_f]]" sloc
+             | Array (t,sz) ->
+                 let rec pp_rec k =
+                   if k >= sz then []
+                   else sprintf "(%s)o[%s_f+%i]" t sloc k::pp_rec (k+1) in
+                 String.concat "," (pp_rec 0)
+             | t -> sprintf "(%s)o[%s_f]" (CType.dump t) sloc)
+           (A.LocSet.elements outs)) in
     O.fi "fprintf(fhist,%s,%s);" fmt args ;
     O.o "}" ;
     O.o "" ;

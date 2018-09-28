@@ -191,7 +191,7 @@ module Make
              | ForallStates _ -> "!p->show"
              | ExistsState _|NotExistsState _ -> "p->show" in
             tst ^ " ? '*' : ':'")::
-           [A.LocSet.pp_str ","
+           (List.map
               (fun loc ->
                 let sloc = dump_loc_name loc in
                 match U.find_type loc env with
@@ -201,7 +201,7 @@ module Make
                      sprintf "(int)o[%s_f]" sloc
                 | CType.Array _ -> assert false
                 | t -> sprintf "(%s)o[%s_f]" (CType.dump t) sloc)
-              outs]) in
+              (A.LocSet.elements outs))) in
       O.fiii "seq_printf(m,%s,%s);" fmt args ;
       O.oii "} else {" ;
       O.oiii "do_dump_outs(m,p->down,o,sz-1);" ;
