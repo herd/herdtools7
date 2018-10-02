@@ -42,7 +42,7 @@ module StringScalar = struct
   let addk _ k =  Warn.fatal "add constant %i on parsed constant" k
   let lt = op2 "(<)"
   let le = op2 "(<=)"
-  let mask32 = op1 "mask32"
+  let mask sz = op1 (Op.pp_op1 false (Op.Mask sz))
 end
 
 include SymbConstant.Make(StringScalar)

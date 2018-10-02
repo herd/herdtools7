@@ -44,6 +44,6 @@ module type S = sig
   val addk : t -> int -> t
   val lt : t -> t -> bool
   val le : t -> t -> bool
-  val mask32 : t -> t
+  val mask : MachSize.sz -> t -> t
 end
     

@@ -27,7 +27,13 @@ module Int64Scalar = struct
     Printf.sprintf (if hexa then "0x%Lx" else "%Li") v
   let lt v1 v2 = compare v1 v2 < 0
   let le v1 v2 = compare v1 v2 <= 0
-  let mask32 v = logand v 0xffffffffL
+  let mask sz =
+    let open MachSize in
+    match sz with
+    | Byte -> fun v -> logand v 0xffL
+    | Short -> fun v -> logand v 0xffffL
+    | Word -> fun v ->  logand v 0xffffffffL
+    | Quad -> fun v -> v
 end
 
 include SymbConstant.Make(Int64Scalar)

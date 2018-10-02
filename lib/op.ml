@@ -65,7 +65,7 @@ type op1 =
   | LogicalRightShift of int
   | AddK of int
   | AndK of string
-  | Mask32
+  | Mask of MachSize.sz
 
 let pp_op1 hexa o = match o with
 | Not -> "!"
@@ -76,7 +76,7 @@ let pp_op1 hexa o = match o with
 | LogicalRightShift i -> sprintf ">>>[%i]" i
 | AddK i  -> sprintf "+[%i]" i
 | AndK i  -> sprintf "&[%s]" i
-| Mask32  -> "mask32"
+| Mask sz  -> sprintf "mask%02i" (MachSize.nbits sz)
 
 (***********)
 

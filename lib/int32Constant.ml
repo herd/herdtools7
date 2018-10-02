@@ -27,7 +27,14 @@ module Int32Scalar = struct
     Printf.sprintf (if hexa then "0x%lx" else "%li") v
   let lt v1 v2 = compare v1 v2 < 0
   let le v1 v2 = compare v1 v2 <= 0
-  let mask32 v = v
+
+  let mask sz =
+    let open MachSize in
+    match sz with
+    | Byte -> fun v -> logand v 0xffl
+    | Short -> fun v -> logand v 0xffffl
+    | Word -> fun v -> v
+    | Quad -> Warn.fatal "make 32 value with quad mask"
 end
 
 include SymbConstant.Make(Int32Scalar)

@@ -184,21 +184,21 @@ module Make(Cst:Constant.S) = struct
 
   open Op
 
-  let mask k = Scalar.shift_left Scalar.one k
+  let mask_one k = Scalar.shift_left Scalar.one k
 
   let op1 op =
     let open! Scalar in
     match op with
   | Not -> unop (fun v -> bool_to_scalar (not (scalar_to_bool v)))
   | SetBit k ->
-      unop (fun s -> logor (mask k) s)
+      unop (fun s -> logor (mask_one k) s)
   | UnSetBit k ->
       unop
-        (fun s -> logand (lognot (mask k)) s)
+        (fun s -> logand (lognot (mask_one k)) s)
   | ReadBit k ->
       unop
         (fun s ->
-          bool_to_scalar (Scalar.compare (logand (mask k) s) zero <> 0))
+          bool_to_scalar (Scalar.compare (logand (mask_one k) s) zero <> 0))
   | LogicalRightShift 0
   | LeftShift 0
   | AddK 0 -> fun s -> s
@@ -208,7 +208,7 @@ module Make(Cst:Constant.S) = struct
       unop  (fun s -> Scalar.shift_right_logical s k)
   | AddK k -> add_konst k
   | AndK k -> unop (fun s -> Scalar.logand s (Scalar.of_string k))
-  | Mask32 -> unop Scalar.mask32
+  | Mask sz -> unop (Scalar.mask sz)
 
   let op op = match op with
   | Add -> add

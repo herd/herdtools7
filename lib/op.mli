@@ -48,7 +48,7 @@ type op1 =
   | LogicalRightShift of int
   | AddK of int
   | AndK of string
-  | Mask32
+  | Mask of MachSize.sz
 
 val pp_op1 : bool -> op1 -> string
 

@@ -53,7 +53,7 @@ module Make (C:Sem.Config)(V:Value.S)
     let mask32 ty m =
       let open AArch64Base in
        match ty with
-       | V32 -> fun v -> M.op1 Op.Mask32 v >>= m
+       | V32 -> fun v -> M.op1 (Op.Mask MachSize.Word) v >>= m
        | V64 -> m
 
 
@@ -71,7 +71,7 @@ module Make (C:Sem.Config)(V:Value.S)
     let read_reg_sz sz is_data r ii = match sz with
     | MachSize.Quad -> read_reg true r ii
     | MachSize.Word|MachSize.Short|MachSize.Byte ->
-        read_reg is_data r ii >>= fun v -> M.op1 Op.Mask32 v
+        read_reg is_data r ii >>= fun v -> M.op1 (Op.Mask sz) v
 
     let read_reg_ord = read_reg_sz MachSize.Quad false
     let read_reg_ord_sz sz = read_reg_sz sz false
@@ -308,7 +308,7 @@ module Make (C:Sem.Config)(V:Value.S)
                 >>! B.Next
 
                 (*  Cannot handle *)
-      | (I_LDP _|I_STP _) as i ->
+      | (I_LDP _|I_STP _|I_CAS _|I_CASBH _) as i ->
           Warn.fatal "illegal instruction: %s"
             (AArch64.dump_instruction i)
      )
