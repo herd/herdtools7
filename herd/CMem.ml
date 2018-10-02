@@ -36,8 +36,6 @@ module Make
 
     let model = O.model
 
-    let statelessrc11 = O.statelessrc11
-
     module S = S
 
     let check_event_structure test = match O.model with
