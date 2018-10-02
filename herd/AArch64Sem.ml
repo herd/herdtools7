@@ -45,9 +45,17 @@ module Make (C:Sem.Config)(V:Value.S)
     let (>>!) = M.(>>!)
     let (>>::) = M.(>>::)
 
-    let tr_variant = function
-      | AArch64Base.V32 -> MachSize.Word
-      | AArch64Base.V64 -> MachSize.Quad
+     let tr_variant = let open AArch64Base in
+      function
+      | V32 -> MachSize.Word
+      | V64 -> MachSize.Quad
+
+    let mask32 ty m =
+      let open AArch64Base in
+       match ty with
+       | V32 -> fun v -> M.op1 Op.Mask32 v >>= m
+       | V64 -> m
+
 
     let add_variant v a = (a,tr_variant v)
 
@@ -60,8 +68,16 @@ module Make (C:Sem.Config)(V:Value.S)
     | _ ->
         M.read_loc is_data (mk_read MachSize.Quad AArch64.N) (A.Location_reg (ii.A.proc,r)) ii
 
-    let read_reg_ord = read_reg false
-    let read_reg_data = read_reg true
+    let read_reg_sz sz is_data r ii = match sz with
+    | MachSize.Quad -> read_reg true r ii
+    | MachSize.Word|MachSize.Short|MachSize.Byte ->
+        read_reg is_data r ii >>= fun v -> M.op1 Op.Mask32 v
+
+    let read_reg_ord = read_reg_sz MachSize.Quad false
+    let read_reg_ord_sz sz = read_reg_sz sz false
+
+    let read_reg_data sz = read_reg_sz sz true
+
 
     let do_read_mem sz an a ii =
       if mixed then
@@ -114,6 +130,7 @@ module Make (C:Sem.Config)(V:Value.S)
     let is_zero v = M.op Op.Eq v V.zero
     let is_not_zero v = M.op Op.Ne v V.zero
 
+
     let atomic_pair_allowed _ _ = true
 
     let ldr sz rd rs kr ii =
@@ -132,7 +149,7 @@ module Make (C:Sem.Config)(V:Value.S)
 
     and str sz rs rd kr ii =
       let open AArch64Base in
-      begin read_reg_data rs ii >>|
+      begin read_reg_data sz rs ii >>|
       match kr with
       | K k ->
           read_reg_ord rd ii >>= fun v -> M.add v (V.intToV k)
@@ -210,15 +227,16 @@ module Make (C:Sem.Config)(V:Value.S)
           str (bh_to_sz bh) rs rd kr ii
 
       | I_STLR(var,rs,rd) ->
-          (read_reg_ord rd ii >>| read_reg_data rs ii)
-            >>= (fun (a,v) -> write_mem_release (tr_variant var) a v ii)
+          let sz = tr_variant var in
+          (read_reg_ord rd ii >>| read_reg_data sz rs ii)
+            >>= (fun (a,v) -> write_mem_release sz a v ii)
             >>! B.Next
 
       | I_STXR(var,t,rr,rs,rd) ->
           let var = tr_variant var in
           M.riscv_store_conditional
             (read_reg_ord ResAddr ii)
-            (read_reg_data rs ii)
+            (read_reg_data var rs ii)
             (read_reg_ord rd ii)
             (write_reg ResAddr V.zero ii)
             (fun v -> write_reg rr v ii)
@@ -231,18 +249,24 @@ module Make (C:Sem.Config)(V:Value.S)
       | I_MOV(_,r,K k) ->
           write_reg r (V.intToV k) ii >>! B.Next
 
-      | I_MOV(_,r1,RV (_,r2)) ->
-          read_reg_ord r2 ii >>= fun v -> write_reg r1 v ii >>! B.Next
+      | I_MOV(var,r1,RV (_,r2)) ->
+          let sz = tr_variant var in
+          read_reg_ord_sz sz r2 ii >>= fun v -> write_reg r1 v ii >>! B.Next
 
       | I_SXTW(rd,rs) ->
-          (read_reg_ord rs ii)            >>= fun v -> (write_reg rd v ii)
-              >>! B.Next
+          let m = V.op1 (Op.LeftShift 31) V.one in
+          (read_reg_ord_sz MachSize.Word rs ii) >>=
+          fun v -> (* Encode sign extension 32 -> 64 *)
+            M.op Op.Xor v m >>=
+            fun x -> M.op Op.Sub x m >>= 
+            fun v -> write_reg rd v ii >>! B.Next
 
       | I_OP3(ty,op,rd,rn,kr) ->
-          (read_reg_ord rn ii >>|
+          let sz = tr_variant ty in
+          (read_reg_ord_sz sz rn ii >>|
           match kr with
           | K k -> M.unitT (V.intToV k)
-          | RV(_,r) -> read_reg_ord r ii
+          | RV(_,r) -> read_reg_ord_sz sz r ii
      ) >>=
           begin match op with
           | ADD|ADDS -> fun (v1,v2) -> M.add v1 v2
@@ -256,15 +280,14 @@ module Make (C:Sem.Config)(V:Value.S)
             (match op with
             | ADDS|SUBS|ANDS -> write_reg NZP v ii
             | ADD|EOR|ORR|AND|SUB -> M.unitT ())) in
-          match ty with
-          | V32 -> fun v -> M.op1 Op.Mask32 v >>= m
-          | V64 -> m) >>!
+	  mask32 ty m) >>!
           B.Next
             (* Barrier *)
       | I_FENCE b ->
           (create_barrier b ii) >>! B.Next
             (* Conditional selection *)
-      | I_CSEL (_v,r1,r2,r3,c,op) ->
+      | I_CSEL (var,r1,r2,r3,c,op) ->
+          let sz = tr_variant var in
           let cond = match c with
           | NE -> is_not_zero
           | EQ -> is_zero in
@@ -272,8 +295,8 @@ module Make (C:Sem.Config)(V:Value.S)
             >>= cond
             >>= fun v ->
               M.choiceT v
-                (read_reg_data r2 ii >>= fun v -> write_reg r1 v ii)
-                (read_reg_data r3 ii >>=
+                (read_reg_data sz r2 ii >>= fun v -> write_reg r1 v ii)
+                (read_reg_data sz r3 ii >>=
                  fun v ->
                    let mop = match op with
                    | Cpy -> M.unitT v
@@ -281,7 +304,7 @@ module Make (C:Sem.Config)(V:Value.S)
                    | Neg -> M.op Op.Sub V.zero v
                    | Inv ->
                        Warn.fatal "size dependent inverse not implemented" in
-                   mop >>= fun v ->  write_reg r1 v ii)
+                   mop >>= mask32 var (fun v ->  write_reg r1 v ii))
                 >>! B.Next
 
                 (*  Cannot handle *)
