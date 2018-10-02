@@ -299,6 +299,19 @@ module Make(V:Constant.S)(C:Config) =
           inputs = [r2;r3;];
           outputs = [r1;]; reg_env=[r3,voidstar; r2,quad; r1,quad; ]}
 
+(* Compare and swap *)
+
+    let cas_memo rmw = Misc.lowercase (cas_memo rmw)
+    let casbh_memo bh rmw = Misc.lowercase (casbh_memo bh rmw)
+
+    let cas memo v r1 r2 r3 =
+      let t = match v with | V32 -> word | V64 -> quad
+      and w = match v with | V32 -> "w" | V64 -> "" in
+      { empty_ins with
+        memo = sprintf "%s ^%si0,^%si1,[^i2]" memo w w;
+        inputs = [r1; r2; r3; ]; outputs = [r1;];
+        reg_env = [r1,t; r2,t; r3,voidstar; ]; }
+
 (* Arithmetic *)
 
     let movk v r k =
@@ -423,6 +436,8 @@ module Make(V:Constant.S)(C:Config) =
     | I_STRBH (H,r1,r2,kr) -> store "strh" V32 r1 r2 kr::k
     | I_STLR (v,r1,r2) -> store "stlr" v r1 r2 k0::k
     | I_STXR (v,t,r1,r2,r3) -> stxr (str_memo t) v r1 r2 r3::k
+    | I_CAS (v,rmw,r1,r2,r3) -> cas (cas_memo rmw) v r1 r2 r3::k
+    | I_CASBH (bh,rmw,r1,r2,r3) -> cas (casbh_memo bh rmw) V32 r1 r2 r3::k
 (* Arithmetic *)
     | I_MOV (v,r,K i) ->  movk v r i::k
     | I_MOV (v,r1,RV (_,r2)) ->  movr v r1 r2::k

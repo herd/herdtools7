@@ -49,6 +49,19 @@ let check_name name = match name with
 | "stlxr"|"STLXR" -> STLXR
 | "strb"|"STRB" -> STRB
 | "strh"|"STRH" -> STRH
+(* Compare and swap *)
+| "cas"|"CAS" -> CAS
+| "casa"|"CASA" -> CASA
+| "casl"|"CASL" -> CASL
+| "casal"|"CASAL" -> CASAL
+| "cash"|"CASH" -> CASH
+| "casah"|"CASAH" -> CASAH
+| "caslh"|"CASLH" -> CASLH
+| "casalh"|"CASALH" -> CASALH
+| "casb"|"CASB" -> CASB
+| "casab"|"CASAB" -> CASAB
+| "caslb"|"CASLB" -> CASLB
+| "casalb"|"CASALB" -> CASALB
 (* Operations *)
 | "sxtw"|"SXTW" -> SXTW
 | "mov"|"MOV" -> MOV

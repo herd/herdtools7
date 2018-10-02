@@ -43,6 +43,7 @@ open AArch64Base
 %token OSH OSHST OSHLD
 %token ISH ISHST ISHLD
 %token NSH NSHST NSHLD
+%token CAS CASA CASL CASAL CASB CASAB CASLB CASALB CASH CASAH CASLH CASALH
 
 %type <int list * (AArch64Base.parsedPseudo) list list> main
 %type <AArch64Base.parsedPseudo list> instr_option_seq
@@ -117,6 +118,10 @@ kwr:
 | k { K $1 }
 | wreg { RV (V32,$1) }
 
+zeroopt:
+| { () }
+| COMMA NUM { if $2 <> 0 then raise Parsing.Parse_error }
+
 ldp_instr:
 | LDP
   { (fun v r1 r2 r3 kr -> I_LDP (TT,v,r1,r2,r3,kr)) }
@@ -175,7 +180,11 @@ instr:
   { let v,r = $4 in I_STXR (v,YY,$2,r,$7) }
 | STLXR wreg COMMA reg COMMA LBRK xreg RBRK
   { let v,r = $4 in I_STXR (v,LY,$2,r,$7) }
-
+/* Compare and swap */
+| CAS wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+  { I_CAS (V32,RMW_P,$2,$4,$7) }
+| CAS xreg COMMA xreg COMMA  LBRK xreg zeroopt RBRK
+  { I_CAS (V64,RMW_P,$2,$4,$7) }
 /* Operations */
 | MOV xreg COMMA kr
   { I_MOV (V64,$2,$4) }

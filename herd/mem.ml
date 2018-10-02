@@ -668,6 +668,7 @@ let solve_regs test es csn =
           let module PP = Pretty.Make(S) in
           prerr_endline "Unsolvable system" ;
           PP.show_es_rfm test es rfm ;
+          prerr_endline "Unsolvable system"
         end ;
         assert (rfmap_is_cyclic es rfm);
         res
