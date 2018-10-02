@@ -17,12 +17,15 @@
 type t =
  (* RISCV: tagged accesses as amo's with x0 as arg (load) or result (store) *)
   | AsAmo
+  | ConstsInInit
 
-let tags = ["AsAmo";]
+let tags = ["AsAmo";"ConstsInInit";]
 
 let parse tag = match Misc.lowercase tag with
 | "asamo" -> Some AsAmo
+| "constsininit" -> Some ConstsInInit
 | _ -> None
 
 let pp = function
   | AsAmo -> "AsAmo"
+  | ConstsInInit -> "ConstsInInit"

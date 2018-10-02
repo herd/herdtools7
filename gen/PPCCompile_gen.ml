@@ -115,7 +115,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
 
     let next_const st p init v =
       let r,st = next_reg st in
-      r,(PPC.Reg (p,r),sprintf "0x%x" v)::init,st
+      r,(PPC.Reg (p,r),sprintf (if O.hexa then "0x%x" else "%i") v)::init,st
 
     let pseudo = List.map (fun i -> PPC.Instruction i)
 
@@ -155,6 +155,22 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
     | None -> emit_loop_pair
     | Some u -> emit_unroll_pair u
 
+(* Constants *)
+    let allow_const_in_code = not (O.variant Variant_gen.ConstsInInit)
+
+    let emit_const st p init v =
+      if 0 <= v && v < 0xffff && allow_const_in_code then
+        None,init,st
+      else
+        let rA,init,st = next_const st p init v in
+        Some rA,init,st
+
+    let emit_li st p init v = match emit_const st p init v with
+    | None,init,st ->
+        let rA,st = next_reg st in
+        rA,init,[PPC.Instruction (PPC.Pli (rA,v))],st
+    | Some rA,init,st ->
+        rA,init,[],st
 
 (* STA *)
 
@@ -165,16 +181,16 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
       rR,init,cs,st
 
     let emit_sta_idx  st p init x idx  v =
-      let rW,st = next_reg st in
+      let rW,init,csi,st = emit_li st p init v in
       let r,init,cs,st = emit_sta_idx_reg st p init x idx rW in
-      r,init,PPC.Instruction (PPC.Pli (rW,v))::cs,st
+      r,init,csi@cs,st
 
     let emit_sta_reg st p init x rW = emit_sta_idx_reg st p init x r0 rW
 
     let emit_sta  st p init x v =
-      let rA,st = next_reg st in
+      let rA,init,csi,st = emit_li st p init v in
       let r,init,cs,st = emit_sta_reg st p init x rA in
-      r,init,PPC.Instruction (PPC.Pli (rA,v))::cs,st
+      r,init,csi@cs,st
 
 
 (* STORE *)
@@ -191,21 +207,6 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
       let rB,init,st = next_init st p init x in
       init,[PPC.Instruction (PPC.Pstorex (Word,rA,idx,rB))],st
 
-
-    let emit_const st p init v =
-      if 0 <= v && v < 0xffff then
-        None,init,st
-      else
-        let rA,init,st = next_const st p init v in
-        Some rA,init,st
-
-    let emit_li st p init v = match emit_const st p init v with
-    | None,init,st ->
-        let rA,st = next_reg st in
-        rA,init,[PPC.Instruction (PPC.Pli (rA,v))],st
-    | Some rA,init,st ->
-        rA,init,[],st
-
     let emit_store_mixed sz o st p init x v =
       let rA,init,csi,st = emit_li st p init v in
       let init,cs,st = emit_store_reg_mixed sz o st p init x rA in
@@ -215,9 +216,9 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
       emit_store_mixed naturalsize 0 st p init x v
 
     let emit_store_idx st p init x idx v =
-      let rA,st = next_reg st in
+      let rA,init,csi,st = emit_li st p init v in
       let init,cs,st = emit_store_idx_reg st p init x idx rA in
-      init,PPC.Instruction (PPC.Pli (rA,v))::cs,st
+      init,csi@cs,st
 
 (* LDA *)
 
@@ -297,10 +298,11 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
 
     let emit_one_stwcx_idx st p init x idx v =
       let rA,st = next_reg st in
+      let rA,init,csi,st = emit_li st p init v in
       let rB,init,st = next_init st p init x in
       init,
-      pseudo
-        [PPC.Pli (rA,v); PPC.Pstwcx (rA,idx,rB);
+      csi@pseudo
+        [PPC.Pstwcx (rA,idx,rB);
          PPC.Pbcc (PPC.Ne,Label.fail p)],
       st
 
@@ -338,11 +340,9 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
     let emit_exch_idx st p init er ew idx =
       let rA,init,st = next_init st p init er.loc in
       let rR,st = next_reg st in
-      let rW,st = next_reg st in
+      let rW,init,csi,st = emit_li st p init ew.v in
       let cs = emit_pair p rR rW idx rA in
-      rR,init,
-      PPC.Instruction (PPC.Pli (rW,ew.v))::cs,
-      st
+      rR,init,csi@cs,st
 
     let emit_exch st p init er ew  = emit_exch_idx st p init er ew r0
 

@@ -17,6 +17,7 @@
 type t =
  (* RISCV: tagged accesses as amo's with x0 as arg (load) or result (store) *)
   | AsAmo
+  | ConstsInInit
 
 val tags : string list
 
