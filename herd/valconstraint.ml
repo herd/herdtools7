@@ -64,7 +64,7 @@ module type Config = sig
 end
 
 module Make (C:Config) (A:Arch_herd.S) : S
-with type  atom = A.V.v
+with type atom = A.V.v
 and type cst = A.V.Cst.v
 and type solution = A.V.solution
 and type location = A.location

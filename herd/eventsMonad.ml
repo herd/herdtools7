@@ -564,7 +564,10 @@ and type evt_struct = E.event_structure) =
     and op op v1 v2 =
       any_op
         (fun () -> V.op op v1 v2)
-        (fun () -> VC.Binop (op,v1,v2))
+        (fun () ->
+          match op with
+          | Op.Xor when V.compare v1 v2 = 0 -> VC.Atom V.zero
+          | _ -> VC.Binop (op,v1,v2))
 
     and op3 op v1 v2 v3 =
       any_op

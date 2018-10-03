@@ -258,16 +258,25 @@ module Make (C:Sem.Config)(V:Value.S)
           (read_reg_ord_sz MachSize.Word rs ii) >>=
           fun v -> (* Encode sign extension 32 -> 64 *)
             M.op Op.Xor v m >>=
-            fun x -> M.op Op.Sub x m >>= 
+            fun x -> M.op Op.Sub x m >>=
             fun v -> write_reg rd v ii >>! B.Next
 
       | I_OP3(ty,op,rd,rn,kr) ->
           let sz = tr_variant ty in
-          (read_reg_ord_sz sz rn ii >>|
-          match kr with
-          | K k -> M.unitT (V.intToV k)
-          | RV(_,r) -> read_reg_ord_sz sz r ii
-     ) >>=
+          begin match kr with
+          | RV (_,r) when reg_compare r rn = 0 ->
+              (* Keep sharing here, otherwise performance penalty on address
+                 dependency by r^r in mixed size mode *)
+              read_reg_ord_sz sz rn ii >>=
+              fun v -> M.unitT (v,v)
+          |_ ->
+              read_reg_ord_sz sz rn ii >>|
+              begin match kr with
+              | K k -> M.unitT (V.intToV k)
+              | RV(_,r) -> read_reg_ord_sz sz r ii
+              end
+         end
+      >>=
           begin match op with
           | ADD|ADDS -> fun (v1,v2) -> M.add v1 v2
           | EOR -> fun (v1,v2) -> M.op Op.Xor v1 v2
@@ -280,7 +289,7 @@ module Make (C:Sem.Config)(V:Value.S)
             (match op with
             | ADDS|SUBS|ANDS -> write_reg NZP v ii
             | ADD|EOR|ORR|AND|SUB -> M.unitT ())) in
-	  mask32 ty m) >>!
+          mask32 ty m) >>!
           B.Next
             (* Barrier *)
       | I_FENCE b ->
