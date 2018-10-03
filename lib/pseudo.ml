@@ -48,9 +48,11 @@ module type S = sig
 (* Counting (static) memory accesses *)
   val get_naccesses : pseudo list -> int
 
-(* Translare from parsed instructions *)
+(* Translate from parsed instructions *)
   val pseudo_parsed_tr : parsedPseudo -> pseudo
 
+(* Lift to pseudo code *)
+      val lift_code : 'a list -> 'a kpseudo list
 end
 
 (* Input signature *)
@@ -137,4 +139,6 @@ struct
 (* Translate *)
   let pseudo_parsed_tr p = pseudo_map I.parsed_tr p
 
+(* Useful *)
+  let lift_code xs = List.map (fun i -> Instruction i) xs
 end

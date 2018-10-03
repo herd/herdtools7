@@ -59,7 +59,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
         let r,st = next_reg st in
         r,(Reg (p,r),Printf.sprintf "0x%x" v)::init,st
 
-    let pseudo = List.map (fun i -> Instruction i)
 
 (**********************)
 (* Basic instructions *)
@@ -121,15 +120,25 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
     let lr mo r1 r2 = AV.LoadReserve (wloc,mo,r1,r2)
     and sc mo r1 r2 r3 = AV.StoreConditional (wloc,mo,r1,r2,r3)
 
-(************)
-(* Loads    *)
-(************)
+    module Extra = struct
+      let use_symbolic = false
+      type reg = AV.reg
+      type instruction = AV.pseudo
 
+      let mov r v = Instruction (li r v)
+      let mov_mixed sz r v = assert false
+    end
+
+     module U = GenUtils.Make(Cfg)(AV)(Extra)
+
+(*********)
+(* Loads *)
+(*********)
 
     let emit_load_mixed sz o st p init x =
       let rA,st = next_reg st in
       let rB,init,st = next_init st p init x in
-      rA,init,pseudo [ldr_mixed rA rB sz o],st
+      rA,init,lift_code [ldr_mixed rA rB sz o],st
 
     module LOAD =
       struct
@@ -141,7 +150,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
         let emit_load mo st p init x =
           let rA,st = next_reg st in
           let rB,init,st = next_init st p init x in
-          rA,init,pseudo [ldr mo rA rB],st
+          rA,init,lift_code [ldr mo rA rB],st
 
 
         let emit_load_not_zero mo st p init x =
@@ -150,7 +159,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
           let lab = Label.next_label "L" in
           rA,init,
           Label (lab,Nop)::
-          pseudo
+          lift_code
             [ldr mo rA rB; cbz rA lab],
           st
 
@@ -160,7 +169,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
           let lab = Label.next_label "L" in
           rA,init,
           Label (lab,Nop)::
-          pseudo [ldr mo rA rB; subiw rA rA 1; cbnz rA lab; li rA 1;],
+          lift_code [ldr mo rA rB; subiw rA rA 1; cbnz rA lab; li rA 1;],
           st
 
         let emit_load_not mo st p init x bne =
@@ -174,7 +183,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
           Instruction (mv rC r200)::
           (* 200 X about 5 ins looks for a typical memory delay *)
           Label (lab,Nop)::
-          pseudo
+          lift_code
             [
              ldr mo rA rB; bne rA out ;
              subiw rC rC 1 ;
@@ -194,7 +203,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
           let rA,st = next_reg st in
           let rB,init,st = next_init st p init x in
           let ins,st = load_idx mo st rA rB idx in
-          rA,init,pseudo ins ,st
+          rA,init,lift_code ins ,st
       end
 
 (* For export *)
@@ -209,28 +218,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
 (* Stores *)
 (**********)
 
-    let max_k = 1 lsl 12 - 1 and min_k = - (1 lsl 12)
-
-    let emit_const st p init v =
-      if min_k <= v && v <= max_k then
-        None,init,st
-      else
-        let rA,init,st = next_const st p init v in
-        Some rA,init,st
-
-    let emit_mov st p init v = match emit_const st p init v with
-    | None,init,st ->
-        let rA,st = next_reg st in
-        rA,init,[Instruction (li rA v)],st
-    | Some rA,init,st ->
-        rA,init,[],st
-
     let emit_store_reg_mixed sz o st p init x rA =
       let rB,init,st = next_init st p init x in
       init,[Instruction (str_mixed rA rB sz o)],st
 
     let emit_store_mixed sz o st p init x v =
-      let rA,init,csi,st = emit_mov st p init v in
+      let rA,init,csi,st = U.emit_mov st p init v in
       let init,cs,st = emit_store_reg_mixed sz o st p init x rA in
       init,csi@cs,st
 
@@ -245,17 +238,17 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
         init,[Instruction (str mo rA rB)],st
 
       let emit_store mo st p init x v =
-        let rA,init,csi,st = emit_mov st p init v in
+        let rA,init,csi,st = U.emit_mov st p init v in
         let init,cs,st = emit_store_reg mo st p init x rA in
         init,csi@cs,st
 
       let emit_store_idx_reg mo st p init x idx rA =
         let rB,init,st = next_init st p init x in
         let ins,st = store_idx mo st rA rB idx in
-        init,pseudo ins,st
+        init,lift_code ins,st
 
       let emit_store_idx mo st p init x idx v =
-        let rA,init,csi,st = emit_mov st p init v in
+        let rA,init,csi,st = U.emit_mov st p init v in
         let init,cs,st = emit_store_idx_reg mo st p init x idx rA in
         init,csi@cs,st
     end
@@ -285,7 +278,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
     let emit_unroll_pair u mo1 mo2 p st rR rW rA =
       if u <= 0 then
         let r,st = next_reg st in
-        pseudo [lr mo1 rR rA; sc mo2 r rW rA;],st
+        lift_code [lr mo1 rR rA; sc mo2 r rW rA;],st
       else if u = 1 then
         let r,st = tempo1 st in
         emit_one_pair mo1 mo2 p r rR rW rA [],st
@@ -321,7 +314,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
       let rA,init,st = next_init st p init loc in
       let rB,st = next_reg st in
       let r,cs2,st =  emit_lda_reg mo1 mo2 st p rB in
-      r,init,pseudo [add rB rA idx]@cs2,st
+      r,init,lift_code [add rB rA idx]@cs2,st
 
 
     let do_emit_sta mo1 mo2 st p rW rA =
@@ -331,7 +324,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
 
     let emit_sta mo1 mo2 st p init loc v =
       let rA,init,st = next_init st p init loc in
-      let rW,init,csv,st = emit_mov st p init v in
+      let rW,init,csv,st = U.emit_mov st p init v in
       let rR,cs,st = do_emit_sta mo1 mo2 st p rW rA in
       rR,init,csv@cs,st
 
@@ -343,7 +336,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
     let emit_sta_idx mo1 mo2 st p init loc idx v =
       let rA,init,st = next_init st p init loc in
       let rX,st = next_reg st in
-      let rW,init,csv,st = emit_mov st p init v in
+      let rW,init,csv,st = U.emit_mov st p init v in
       let rR,cs2,st = do_emit_sta mo1 mo2 st p rW rX in
       rR,init,csv@Instruction (add rX rA idx)::cs2,st
 
@@ -393,7 +386,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
   let emit_exch st p init er ew =
   let rA,init,st = next_init st p init er.loc in
   let rR,st = next_reg st in
-  let rW,init,csv,st = emit_mov st p init ew.v in
+  let rW,init,csv,st = U.emit_mov st p init ew.v in
   let mo1 = tr_a er.C.atom and mo2 = tr_a ew.C.atom in
   let cs,st = emit_pair mo1 mo2  p st rR rW rA in
   rR,init,csv@cs,st
@@ -409,7 +402,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
     let emit_exch st p init er ew =
       let rA,init,st = next_init st p init er.loc in
       let rR,st = next_reg st in
-      let rW,init,csv,st = emit_mov st p init ew.v in
+      let rW,init,csv,st = U.emit_mov st p init ew.v in
       let mo = tr_swap er.C.atom ew.C.atom in
       rR,init,csv@[Instruction (amoswap mo rR rW rA)],st
 
@@ -461,7 +454,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
     let emit_exch_dep_addr st p init er ew rd =
       let r2,st = next_reg st in let c = calc0 r2 rd in
       let rA,init,st = next_init st p init er.loc in
-      let rW,init,csv,st = emit_mov st p init ew.v in
+      let rW,init,csv,st = U.emit_mov st p init ew.v in
       let rR,st = next_reg st in
       let mo = tr_swap er.C.atom ew.C.atom in
       let swap = Instruction (amoswap mo rR rW rA) in
@@ -527,7 +520,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
 
     let check_load p r e init st =
       let lab = Label.exit p in
-      let rI,init,ci,st = emit_mov st p init e.v in
+      let rI,init,ci,st = U.emit_mov st p init e.v in
       init,(fun k -> ci@(Instruction (bne r rI lab))::k),st
 
 (* Postlude *)

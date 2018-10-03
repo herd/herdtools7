@@ -40,6 +40,8 @@ let symb_reg_name = function
   | Symbolic_reg s -> Some s
   | _ -> None
 
+let symb_reg r = Symbolic_reg r
+
 let parse_reg s =
   let len = String.length s in
   assert (len > 0) ;

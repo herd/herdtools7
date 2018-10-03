@@ -25,6 +25,7 @@ type reg = string
 let parse_reg s = Some s
 let pp_reg r = r
 let reg_compare = String.compare
+
 let symb_reg_name r =
   let len = String.length r in
   assert (len > 0) ;
@@ -32,6 +33,7 @@ let symb_reg_name r =
   | '%' -> Some (String.sub r 1 (len-1))
   | _ -> None
 
+let symb_reg r = sprintf "%%%s" r
 (*
 let loc_compare l1 l2 = match l1,l2 with
   | Reg s1,Reg s2 -> reg_compare s1 s2

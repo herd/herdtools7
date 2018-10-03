@@ -138,6 +138,8 @@ let symb_reg_name = function
   | Symbolic_reg s -> Some s
   | _ -> None
 
+let symb_reg r = Symbolic_reg r
+
 (************)
 (* Barriers *)
 (************)
@@ -216,7 +218,7 @@ let pp_opi = function
   | OR -> "ori"
   | XOR -> "xori"
   | NOR -> "nori"
-        
+
 
 let pp_instruction m =
   let pp_reg = do_pp_reg m in

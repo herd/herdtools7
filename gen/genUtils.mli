@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2010-present Institut National de Recherche en Informatique et *)
+(* Copyright 2018-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -15,55 +15,47 @@
 (****************************************************************************)
 
 module type Config = sig
-  val verbose : int
-  val show : ShowGen.t option
-  val coherence_decreasing : bool
-  val same_loc : bool
-  val unrollatomic : int option
-  val allow_back : bool
-  val typ : TypBase.t
   val hexa : bool
   val variant : Variant_gen.t -> bool
 end
 
-module type S = sig
-  module A : Arch_gen.S
-
-  module E : Edge.S
-  with type fence = A.fence
-  and type dp = A.dp
-  and type atom = A.atom
-
-  type check = E.edge list list -> bool
-
-  module R : Relax.S
-  with type fence = A.fence
-  and type dp = A.dp
-  and type edge = E.edge
-  
-  module C : Cycle.S with type edge=E.edge and type atom = A.atom
+module type Extra = sig
+  val use_symbolic : bool
+  type reg
+  type instruction
+  val mov : reg -> int -> instruction   
+  val mov_mixed : MachSize.sz -> reg -> int -> instruction
 end
 
-open Printf
+module Make :
+functor (Cfg:Config) ->
+  functor (A:Arch_gen.S) ->
+    functor(Extra : Extra with
+            type reg = A.reg
+            and type instruction = A.pseudo) -> 
+  sig
 
-module Make(C:Config) (A:Arch_gen.S) =
-struct
-  module A = A 
+    val next_init :
+        A.st ->
+          Code.proc ->
+            A.init ->
+              string -> A.arch_reg * A.init * A.st
 
-  module E =  Edge.Make(A)
-  type check = E.edge list list -> bool
+    val emit_const :
+        A.st -> Code.proc -> A.init -> int -> A.reg option * A.init * A.st
 
-  let () = match C.show with
-  | Some s -> begin E.show s ; exit 0 end
-  | None -> ()
+    val emit_mov :
+        A.st ->
+          Code.proc ->
+            A.init ->
+              int ->
+                A.arch_reg * A.init * Extra.instruction list * A.st
 
-  module R = Relax.Make(A) (E)
-  module Conf = struct
-    include C
-    let naturalsize = TypBase.get_size C.typ
+    val emit_mov_sz :
+        MachSize.sz ->
+          A.st ->
+            Code.proc ->
+              A.init ->
+                int ->
+                  A.arch_reg * A.init * Extra.instruction list * A.st
   end
-  module C = Cycle.Make(Conf)(E)
-(* Big constant *)
-  let kbig = 128
-end
-

@@ -40,22 +40,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (* Utilities *)
     let next_reg x = ARM.alloc_reg x
 
-    let next_init st p init loc =
-      let rec find_rec = function
-	| (Reg (p0,r0),loc0)::_ when loc0 = loc && p = p0 ->
-	    r0,init,st
-	| _::rem -> find_rec rem
-	| [] ->
-	    let r = Symbolic_reg (sprintf "%s%i" loc p) in
-	    r,(Reg (p,r),loc)::init,st in
-      find_rec init
+   module Extra = struct
+     let use_symbolic = true
+     type reg = ARM.reg
+     type instruction = ARM.pseudo
+     let mov r v = Instruction (I_MOVI (r,v,AL))
+     let mov_mixed sz r v = Warn.fatal "No mixed size for ARM"
+   end
 
-    let next_const st p init v =
-      let r,st = next_reg st in
-      r,(Reg (p,r),Printf.sprintf (if Cfg.hexa then "0x%x" else "%i") v)::init,st
-
-    let pseudo = List.map (fun i -> Instruction i)
-
+    module U = GenUtils.Make(Cfg)(ARM)(Extra)
 
 (* RMW utilities *)
     let tempo1 = ARM.Symbolic_reg "T1" (* May be used for address *)
@@ -65,7 +58,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let emit_loop_pair _p r1 r2 addr =
       let lab = Label.next_label "Loop" in
       Label (lab,Nop)::
-      pseudo
+      lift_code
 	[I_LDREX (r1,addr) ;
 	 I_STREX (tempo2,r2,addr,AL);
 	 I_CMPI (tempo2,0);
@@ -74,11 +67,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let emit_unroll_pair u p r1 r2 addr =
       if u <= 0 then
-	pseudo
+	lift_code
 	  [I_LDREX (r1,addr);
 	   I_STREX (tempo2,r2,addr,AL);]
       else if u = 1 then
-	pseudo
+	lift_code
 	  [I_LDREX (r1,addr);
 	   I_STREX (tempo2,r2,addr,AL);
 	   I_CMPI (tempo2,0);
@@ -97,32 +90,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 	      I_CMPI (tempo2,0)::
 	      I_BEQ (out)::
 	      do_rec (u-1) in
-	pseudo (do_rec u)@[Label (out,Nop)]
+	lift_code (do_rec u)@[Label (out,Nop)]
 
     let emit_pair = match Cfg.unrollatomic with
     | None -> emit_loop_pair
     | Some u -> emit_unroll_pair u
-
-(*************)
-(* Constants *)
-(*************)
-
-    let allow_consts_in_code =
-      not (Cfg.variant Variant_gen.ConstsInInit)
-
-    let emit_const st p init v =
-      if 0 <= v && v < 0xffff && allow_consts_in_code then
-	None,init,st
-      else
-	let rA,init,st = next_const st p init v in
-	Some rA,init,st
-
-    let emit_movi st p init v = match emit_const st p init v with
-    | None,init,st ->
-	let rA,st = next_reg st in
-	rA,init,[Instruction (I_MOVI (rA,v,AL))],st
-    | Some rA,init,st ->
-	rA,init,[],st
 
 (*********)
 (* loads *)
@@ -130,36 +102,36 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let emit_load st p init x =
       let rA,st = next_reg st in
-      let rB,init,st = next_init st p init x in
-      rA,init,pseudo [I_LDR (rA,rB,AL)],st
+      let rB,init,st = U.next_init st p init x in
+      rA,init,lift_code [I_LDR (rA,rB,AL)],st
 
     let emit_load_not_zero st p init x =
       let rA,st = next_reg st in
-      let rB,init,st = next_init st p init x in
+      let rB,init,st = U.next_init st p init x in
       let lab = Label.next_label "L" in
       rA,init,
-      Label (lab,Nop)::pseudo [I_LDR (rA,rB,AL); I_CMPI (rA,0); I_BEQ (lab)],
+      Label (lab,Nop)::lift_code [I_LDR (rA,rB,AL); I_CMPI (rA,0); I_BEQ (lab)],
       st
 
     let emit_load_one st p init x =
       let rA,st = next_reg st in
-      let rB,init,st = next_init st p init x in
+      let rB,init,st = U.next_init st p init x in
       let lab = Label.next_label "L" in
       rA,init,
-      Label (lab,Nop)::pseudo [I_LDR (rA,rB,AL); I_CMPI (rA,1); I_BNE (lab)],
+      Label (lab,Nop)::lift_code [I_LDR (rA,rB,AL); I_CMPI (rA,1); I_BNE (lab)],
       st
 
     let emit_load_not st p init x cmp =
       let rA,st = next_reg st in
       let rC,st = next_reg st in
-      let rB,init,st = next_init st p init x in
+      let rB,init,st = U.next_init st p init x in
       let lab = Label.next_label "L" in
       let out = Label.next_label "L" in
       rA,init,
       Instruction (I_MOVI (rC,200,AL))::
       (* 200 X about 5 ins looks for a typical memory delay *)
       Label (lab,Nop)::
-      pseudo
+      lift_code
 	[
 	 I_LDR (rA,rB,AL); cmp rA ;
 	 I_BNE out; I_ADD (DontSetFlags,rC,rC,-1) ;
@@ -176,35 +148,35 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let emit_load_idx st p init x idx =
       let rA,st = next_reg st in
-      let rB,init,st = next_init st p init x in
-      rA,init,pseudo [I_LDR3 (rA,idx,rB,AL)],st
+      let rB,init,st = U.next_init st p init x in
+      rA,init,lift_code [I_LDR3 (rA,idx,rB,AL)],st
 
 (**********)
 (* Stores *)
 (**********)
 
     let emit_store_reg st p init x rA =
-      let rB,init,st = next_init st p init x in
+      let rB,init,st = U.next_init st p init x in
       init,[Instruction (I_STR (rA,rB,AL))],st
 
     let emit_store_idx_reg st p init x idx rA =
-      let rB,init,st = next_init st p init x in
+      let rB,init,st = U.next_init st p init x in
       init,[Instruction (I_STR3 (rA,idx,rB,AL))],st
 
     let emit_store st p init x v =
-      let rA,init,csi,st = emit_movi st p init v in
+      let rA,init,csi,st = U.emit_mov st p init v in
       let init,cs,st = emit_store_reg st p init x rA in
       init,csi@cs,st
 
     let emit_store_idx st p init x idx v =
-      let rA,init,csi,st = emit_movi st p init v in
+      let rA,init,csi,st = U.emit_mov st p init v in
       let init,cs,st = emit_store_idx_reg st p init x idx rA in
       init,csi@cs,st
 
     let emit_one_strex_reg st p init rA v =
-      let rV,init,csi,st = emit_movi st p init v in
+      let rV,init,csi,st = U.emit_mov st p init v in
       init,
-      csi@pseudo
+      csi@lift_code
 	[I_STREX (tempo2,rV,rA,AL);
 	 I_CMPI (tempo2,0);
 	 I_BNE (Label.fail p);],
@@ -213,28 +185,28 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let emit_ldrex_reg st _p init rB =
       let rA,st = next_reg st in
-      rA,init,pseudo [I_LDREX (rA,rB)],st
+      rA,init,lift_code [I_LDREX (rA,rB)],st
 
     let emit_ldrex st p init x =
-      let rB,init,st = next_init st p init x in
+      let rB,init,st = U.next_init st p init x in
       emit_ldrex_reg st p init rB
 
     let emit_ldrex_idx st p init x idx =
       let rA,st = next_reg st in
-      let rB,init,st = next_init st p init x in
+      let rB,init,st = U.next_init st p init x in
       rA,init,
-      pseudo [I_ADD3 (DontSetFlags,tempo1,idx,rB); I_LDREX (rA,tempo1)],st
+      lift_code [I_ADD3 (DontSetFlags,tempo1,idx,rB); I_LDREX (rA,tempo1)],st
 
 
 (* LDA *)
     let emit_lda st p init x =
-      let rA,init,st = next_init st p init x in
+      let rA,nit,st = U.next_init st p init x in
       let rR,st = next_reg st in
       let cs = emit_pair p rR rR rA in
       rR,init,cs,st
 
     let emit_lda_idx st p init x idx =
-      let rA,init,st = next_init st p init x in
+      let rA,init,st = U.next_init st p init x in
       let rR,st = next_reg st in
       let cs = emit_pair p rR rR tempo1 in
       rR,init,
@@ -244,19 +216,19 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (* STA *)
 
     let emit_sta_reg st p init x rW =
-      let rA,init,st = next_init st p init x in
+      let rA,init,st = U.next_init st p init x in
       let rR,st = next_reg st in
       let cs = emit_pair p rR rW rA in
       Some rR,init,cs,st
 
     let emit_sta st p init x v =
-      let rW,init,csi,st = emit_movi st p init v in
+      let rW,init,csi,st = U.emit_mov st p init v in
       let ro,init,cs,st = emit_sta_reg st p init x rW in
       ro,init,csi@cs,st
 
     let emit_sta_idx st p init x idx v =
-      let rA,init,st = next_init st p init x in
-      let rW,init,csi,st = emit_movi st p init v in
+      let rA,init,st = U.next_init st p init x in
+      let rW,init,csi,st = U.emit_mov st p init v in
       let rR,st = next_reg st in
       let cs = emit_pair p rR rW tempo1 in
       Some rR,
@@ -291,8 +263,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 	| _,Some (Mixed _) -> assert false
 
     let emit_exch st p init er ew =
-      let rA,init,st = next_init st p init er.loc in
-      let rW,init,csi,st = emit_movi st p init ew.v in
+      let rA,init,st = U.next_init st p init er.loc in
+      let rW,init,csi,st = U.emit_mov st p init ew.v in
       let rR,st = next_reg st in
       let cs = emit_pair p rR rW rA in
       rR,init,csi@cs,st
@@ -326,7 +298,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | _,Some (Mixed _) -> assert false
 
     let emit_exch_dep_addr st p init er ew rd =
-      let rA,init,st = next_init st p init er.loc in
+      let rA,init,st = U.next_init st p init er.loc in
       let c =
 	[Instruction (calc0 tempo1 rd);
 	 Instruction (I_ADD3 (DontSetFlags,tempo1,rA,tempo1));] in

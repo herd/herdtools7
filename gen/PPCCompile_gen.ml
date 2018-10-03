@@ -103,37 +103,22 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
 
     let next_reg x = PPC.alloc_reg x
 
-    let next_init st p init loc =
-      let rec find_rec = function
-        | (PPC.Reg (p0,r0),loc0)::_ when loc0 = loc && p = p0 ->
-            r0,init,st
-        | _::rem -> find_rec rem
-        | [] ->
-            let r,st = next_reg st in
-            r,(PPC.Reg (p,r),loc)::init,st in
-      find_rec init
-
-    let next_const st p init v =
-      let r,st = next_reg st in
-      r,(PPC.Reg (p,r),sprintf (if O.hexa then "0x%x" else "%i") v)::init,st
-
-    let pseudo = List.map (fun i -> PPC.Instruction i)
 
     let emit_loop_pair _p r1 r2 idx addr =
       let lab = Label.next_label "Loop" in
       PPC.Label (lab,PPC.Nop)::
-      pseudo
+      PPC.lift_code
         [PPC.Plwarx (r1,idx,addr);
          PPC.Pstwcx (r2,idx,addr);
          PPC.Pbcc (PPC.Ne,lab)]
 
     let emit_unroll_pair u p r1 r2 idx addr =
       if u <= 0 then
-        pseudo
+        PPC.lift_code
           [PPC.Plwarx (r1,idx,addr);
            PPC.Pstwcx (r2,idx,addr)]
       else if u = 1 then
-        pseudo
+        PPC.lift_code
           [PPC.Plwarx (r1,idx,addr);
            PPC.Pstwcx (r2,idx,addr);
            PPC.Pbcc (PPC.Ne,Label.fail p)]
@@ -149,46 +134,40 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
               PPC.Pstwcx (r2,idx,addr)::
               PPC.Pbcc (PPC.Eq,out)::
               do_rec (u-1) in
-        pseudo (do_rec u)@[PPC.Label (out,PPC.Nop)]
+        PPC.lift_code (do_rec u)@[PPC.Label (out,PPC.Nop)]
 
     let emit_pair = match O.unrollatomic with
     | None -> emit_loop_pair
     | Some u -> emit_unroll_pair u
 
-(* Constants *)
-    let allow_const_in_code = not (O.variant Variant_gen.ConstsInInit)
 
-    let emit_const st p init v =
-      if 0 <= v && v < 0xffff && allow_const_in_code then
-        None,init,st
-      else
-        let rA,init,st = next_const st p init v in
-        Some rA,init,st
+    module Extra = struct
+      let use_symbolic = false
+      type reg = PPC.reg
+      type instruction = PPC.pseudo
+      let mov r v = PPC.Instruction (PPC.Pli (r,v))
+      let mov_mixed sz r i = assert false
+    end
 
-    let emit_li st p init v = match emit_const st p init v with
-    | None,init,st ->
-        let rA,st = next_reg st in
-        rA,init,[PPC.Instruction (PPC.Pli (rA,v))],st
-    | Some rA,init,st ->
-        rA,init,[],st
+    module U = GenUtils.Make(O)(PPC)(Extra)
 
 (* STA *)
 
     let emit_sta_idx_reg st p init x idx rW =
-      let rA,init,st = next_init st p init x in
+      let rA,init,st = U.next_init st p init x in
       let rR,st = next_reg st in
       let cs = emit_pair p rR rW idx rA in
       rR,init,cs,st
 
     let emit_sta_idx  st p init x idx  v =
-      let rW,init,csi,st = emit_li st p init v in
+      let rW,init,csi,st = U.emit_mov st p init v in
       let r,init,cs,st = emit_sta_idx_reg st p init x idx rW in
       r,init,csi@cs,st
 
     let emit_sta_reg st p init x rW = emit_sta_idx_reg st p init x r0 rW
 
     let emit_sta  st p init x v =
-      let rA,init,csi,st = emit_li st p init v in
+      let rA,init,csi,st = U.emit_mov st p init v in
       let r,init,cs,st = emit_sta_reg st p init x rA in
       r,init,csi@cs,st
 
@@ -196,7 +175,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
 (* STORE *)
 
     let emit_store_reg_mixed sz o st p init x rA =
-      let rB,init,st = next_init st p init x in
+      let rB,init,st = U.next_init st p init x in
       init,[PPC.Instruction (PPC.Pstore (sz,rA,o,rB))],st
 
     let emit_store_reg st p init x rA =
@@ -204,11 +183,11 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
 
 
     let emit_store_idx_reg  st p init x idx rA =
-      let rB,init,st = next_init st p init x in
+      let rB,init,st = U.next_init st p init x in
       init,[PPC.Instruction (PPC.Pstorex (Word,rA,idx,rB))],st
 
     let emit_store_mixed sz o st p init x v =
-      let rA,init,csi,st = emit_li st p init v in
+      let rA,init,csi,st = U.emit_mov st p init v in
       let init,cs,st = emit_store_reg_mixed sz o st p init x rA in
       init,csi@cs,st
 
@@ -216,14 +195,14 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
       emit_store_mixed naturalsize 0 st p init x v
 
     let emit_store_idx st p init x idx v =
-      let rA,init,csi,st = emit_li st p init v in
+      let rA,init,csi,st = U.emit_mov st p init v in
       let init,cs,st = emit_store_idx_reg st p init x idx rA in
       init,csi@cs,st
 
 (* LDA *)
 
     let emit_lda_idx st p init x idx =
-      let rA,init,st = next_init st p init x in
+      let rA,init,st = U.next_init st p init x in
       let rR,st = next_reg st in
       let cs = emit_pair p rR rR idx rA in
       rR,init,cs,st
@@ -234,42 +213,42 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
 
     let emit_load_mixed sz o st p init x =
       let rA,st = next_reg st in
-      let rB,init,st = next_init st p init x in
-      rA,init,pseudo [PPC.Pload (sz,rA,o,rB)],st
+      let rB,init,st = U.next_init st p init x in
+      rA,init,PPC.lift_code [PPC.Pload (sz,rA,o,rB)],st
 
     let emit_load st p init x = emit_load_mixed naturalsize 0 st p init x
 
     let emit_load_not_zero st p init x =
       let rA,st = next_reg st in
-      let rB,init,st = next_init st p init x in
+      let rB,init,st = U.next_init st p init x in
       let lab = Label.next_label "L" in
       rA,init,
       PPC.Label (lab,PPC.Nop)::
-      pseudo
+      PPC.lift_code
         [PPC.Pload (Word,rA,0,rB) ; PPC.Pcmpwi (0,rA,0) ; PPC.Pbcc (PPC.Eq,lab)],
       st
 
     let emit_load_one st p init x =
       let rA,st = next_reg st in
-      let rB,init,st = next_init st p init x in
+      let rB,init,st = U.next_init st p init x in
       let lab = Label.next_label "L" in
       rA,init,
       PPC.Label (lab,PPC.Nop)::
-      pseudo
+      PPC.lift_code
         [PPC.Pload (Word,rA,0,rB) ; PPC.Pcmpwi (0,rA,1) ; PPC.Pbcc (PPC.Ne,lab)],
       st
 
     let emit_load_not st p init x cmp =
       let rA,st = next_reg st in
       let rC,st = next_reg st in
-      let rB,init,st = next_init st p init x in
+      let rB,init,st = U.next_init st p init x in
       let lab = Label.next_label "L" in
       let out = Label.next_label "L" in
       rA,init,
       PPC.Instruction (PPC.Pli (rC,200))::
       (* 200 X about 5 ins looks for a typical memory delay *)
       PPC.Label (lab,PPC.Nop)::
-      pseudo
+      PPC.lift_code
         [
          PPC.Pload (Word,rA,0,rB) ; cmp rA ;
          PPC.Pbcc (PPC.Ne,out) ; PPC.Paddi (rC,rC,-1) ;
@@ -286,22 +265,22 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
 
     let emit_load_idx st p init x idx =
       let rA,st = next_reg st in
-      let rB,init,st = next_init st p init x in
-      rA,init,pseudo [PPC.Ploadx (naturalsize,rA,idx,rB)],st
+      let rB,init,st = U.next_init st p init x in
+      rA,init,PPC.lift_code [PPC.Ploadx (naturalsize,rA,idx,rB)],st
 
     let emit_lwarx_idx st p init x idx =
       let rA,st = next_reg st in
-      let rB,init,st = next_init st p init x in
-      rA,init,pseudo [PPC.Plwarx (rA,idx,rB)],st
+      let rB,init,st = U.next_init st p init x in
+      rA,init,PPC.lift_code [PPC.Plwarx (rA,idx,rB)],st
 
     let emit_lwarx st p init x =  emit_lwarx_idx st p init x PPC.r0
 
     let emit_one_stwcx_idx st p init x idx v =
       let rA,st = next_reg st in
-      let rA,init,csi,st = emit_li st p init v in
-      let rB,init,st = next_init st p init x in
+      let rA,init,csi,st = U.emit_mov st p init v in
+      let rB,init,st = U.next_init st p init x in
       init,
-      csi@pseudo
+      csi@PPC.lift_code
         [PPC.Pstwcx (rA,idx,rB);
          PPC.Pbcc (PPC.Ne,Label.fail p)],
       st
@@ -338,9 +317,9 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
             None,init,cs,st
 
     let emit_exch_idx st p init er ew idx =
-      let rA,init,st = next_init st p init er.loc in
+      let rA,init,st = U.next_init st p init er.loc in
       let rR,st = next_reg st in
-      let rW,init,csi,st = emit_li st p init ew.v in
+      let rW,init,csi,st = U.emit_mov st p init ew.v in
       let cs = emit_pair p rR rW idx rA in
       rR,init,csi@cs,st
 
@@ -390,7 +369,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
       | Some R ->Warn.fatal "data dependency to load"
       | Some W ->
           let rW,st = next_reg st in
-          let ro,init,st = emit_const st p init e.v in
+          let ro,init,st = U.emit_const st p init e.v in
           let cs2 = match ro with
           | None ->
               [PPC.Instruction (calc_zero rW r1) ;

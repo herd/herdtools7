@@ -32,7 +32,7 @@ module type S = sig
   val pp_reg : reg -> string
   val reg_compare : reg -> reg -> int
   val symb_reg_name : reg -> string option
-
+  val symb_reg : string -> reg
 (*
   type reservation
   val pp_res : reservation -> string
