@@ -621,6 +621,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (**********)
 (* Access *)
 (**********)
+let emit_joker st init = None,init,[],st
 
     let emit_access  st p init e = match e.dir with
     | None -> Warn.fatal "AArchCompile.emit_access"
@@ -696,6 +697,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let init,cs,st = S.emit_store st p init e.loc e.v in
             None,init,cs,st
         | _,Some (Plain,None) -> assert false
+        | J,_ -> emit_joker st init
 
     let emit_exch st p init er ew =
       let rA,init,st = U.next_init st p init er.loc in
@@ -799,7 +801,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
 (* Fences *)
 
-    let emit_fence f =  Instruction (I_FENCE f)
+    let emit_fence f = Instruction (I_FENCE f)
 
     let stronger_fence = strong
 
@@ -911,6 +913,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let rA,init,cs_mov,st = U.emit_mov_sz sz st p init e.v in
               let init,cs,st = S.emit_store_idx_reg st p init e.loc r2 rA in
               None,init,Instruction c::cs_mov@cs,st
+          | J,_ -> emit_joker st init
           | _,Some (Plain,None) -> assert false
 
     let emit_addr_dep  st p init e rd =
@@ -991,6 +994,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               None,init,cs2@cs,st
           | Some (Plain,None) -> assert false
           end
+      | Some J -> emit_joker st init
 
     let is_ctrlisync = function
       | CTRLISYNC -> true

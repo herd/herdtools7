@@ -103,6 +103,7 @@ let default_atom = [] (* Wrong, extract from bell file? *)
 let tr_dir = function
   | R -> BellName.r
   | W -> BellName.w
+  | J -> assert false
 
 let applies_atom = match bi with
 | None -> (fun a _d -> match a with [] -> true | _ -> false)
@@ -212,7 +213,6 @@ let strong = match bi with
 | Some bi ->
     try Fence (BellModel.get_default BellName.f bi,None)
     with Not_found -> Fence ([],None)
-
 
 let pp_fence (Fence (a,_)) = sprintf "Fence%s" (pp_annots a)
 

@@ -77,7 +77,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         let v = match evt.C.C.dir with
         | Some Code.R -> Some evt.C.C.v
         | Some Code.W -> Some (prev_value evt.C.C.v)
-        | None -> None in
+        | None|Some Code.J -> None in
         if show_in_cond n then match v with
         | Some v ->
             C.C.EventMap.add n.C.C.evt (C.A.of_reg p r) m,

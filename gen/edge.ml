@@ -55,6 +55,7 @@ module type S = sig
   val is_non_pseudo : tedge -> bool
 
   type edge = { edge: tedge;  a1:atom option; a2: atom option; }
+
   val plain_edge : tedge -> edge
 
   val fold_atomo : (atom option -> 'a -> 'a) -> 'a -> 'a
@@ -119,6 +120,7 @@ module type S = sig
 
 (* Utilities *)
   val is_ext : edge -> bool
+  val is_po_or_fenced_joker : edge -> bool
 
 (* Set/Map *)
   module Set : MySet.S with type elt = edge
@@ -155,7 +157,6 @@ and type rmw = F.rmw = struct
   let strong = F.strong
   let pp_fence = F.pp_fence
 
-
 (* edge proper *)
   type tedge =
     | Rf of ie | Fr of ie | Ws of ie
@@ -188,7 +189,6 @@ and type rmw = F.rmw = struct
     | Insert _ |Id|Node _-> false
     | Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _ -> true
-
 
   type edge = { edge: tedge;  a1:atom option; a2: atom option; }
 
@@ -266,6 +266,7 @@ and type rmw = F.rmw = struct
     | Insert f -> F.pp_fence f
     | Node W -> "Write"
     | Node R -> "Read"
+    | Node J -> assert false
 
   let debug_edge e =
     sprintf
@@ -597,6 +598,10 @@ and do_set_src d e = match e with
   let compat_atoms a1 a2 = match F.merge_atoms a1 a2 with
   | None -> false
   | Some _ -> true
+
+  let is_po_or_fenced_joker e = match e.edge with
+  | Po(_,Dir J,_) | Po(_,_,Dir J) | Fenced(_,_,Dir J,_) | Fenced(_,_,_,Dir J) -> true
+  | _ -> false
 
   let can_precede_atoms x y = match x.a2,y.a1 with
   | None,_

@@ -348,6 +348,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
 (**********)
 (* Access *)
 (**********)
+let emit_joker st init = None,init,[],st
 
     let emit_access  st p init e = match e.dir with
     | None -> Warn.fatal "TODO"
@@ -377,7 +378,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
         | Code.W,Some (Mixed (sz,o)) ->
             let init,cs,st = emit_store_mixed sz o st p init e.loc e.v in
             None,init,cs,st
-
+        | Code.J, _ -> emit_joker st init
 
     let tr_a = function
       | None -> AV.Rlx
@@ -457,7 +458,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
               Some r,init,Instruction c::cs,st
           | _,Some (Mixed _) ->
               Warn.fatal "addr dep with mixed"
-
+          | Code.J, _ -> emit_joker st init
 
     let emit_exch_dep_addr st p init er ew rd =
       let r2,st = next_reg st in let c = calc0 r2 rd in
@@ -491,6 +492,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
           | Some (Mixed _) ->
               Warn.fatal "data dep with mixed"
           end
+      | Some Code.J -> emit_joker st init
 
     let insert_isb isb cs1 cs2 =
       if isb then cs1@[emit_fence FenceI]@cs2

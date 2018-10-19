@@ -102,6 +102,7 @@ struct
   let emit_load_not_eq  st =  emit_load_not st
   let emit_load_not_value  st = emit_load_not st
 
+let emit_joker st init = None,init,[],st
 
   let emit_access st _p init e = match e.C.dir with
   | None -> Warn.fatal "TODO"
@@ -122,7 +123,7 @@ struct
         st
       else
         None,init,pseudo [emit_store e.C.loc e.C.v],st
-
+  | Some J -> emit_joker st init
 
   let emit_exch st _p init er ew =
     let rA,st = next_reg st in

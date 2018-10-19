@@ -22,7 +22,7 @@ type v = int
 type proc = int
 
 (* Direction of event *)
-type dir = W | R
+type dir = W | R | J 
 
 (* Edges compoments that do not depend on architecture *)
 

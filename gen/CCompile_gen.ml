@@ -260,6 +260,7 @@ module Make(O:Config) : Builder.S
               compile_excl_assertvalue e.C.v st p mo loc v in
             Some r,i,st
         | Some W|None -> None,A.Nop,st
+        | Some J -> assert false
         else match e.C.dir with
         | Some R ->
             let loc = A.Loc e.C.loc in
@@ -272,6 +273,7 @@ module Make(O:Config) : Builder.S
         | Some W ->
             let i = compile_store pdp e in
             None,i,st
+        | Some J -> assert false
         | None -> None,A.Nop,st
 
 (* Lift definitions *)
@@ -682,6 +684,7 @@ module Make(O:Config) : Builder.S
                       (i,A.If (ce,add_fence n ins,load_checked_not))),
                   st
             | Some W|None  -> None,add_fence n,st
+            | Some J -> assert false
             else begin match e.C.dir with
             | None -> Warn.fatal "TODO"
             | Some R ->
@@ -705,6 +708,7 @@ module Make(O:Config) : Builder.S
                 None,
                 (fun ins -> A.Seq (compile_store No e,add_fence n ins)),
                 st
+            | Some J -> assert false
             end in
           let is,fs,st = do_compile_proc_check loc_writes st p ns in
           let obs,fs,st = observe_local_check st p fs n in

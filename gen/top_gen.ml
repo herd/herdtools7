@@ -122,6 +122,8 @@ module U = TopUtils.Make(O)(Comp)
           (as_rmw n) st p init e n.C.next.C.evt
     | Some W|None ->
         None,init,[],st
+    | Some J -> assert false
+
     else if
       match e.C.atom with
       | None -> true
@@ -143,6 +145,7 @@ module U = TopUtils.Make(O)(Comp)
      | Some R ->
          Comp.emit_rmw_dep (as_rmw n) st p init e n.C.next.C.evt dp r1
      | Some W|None -> None,init,[],st
+     | Some J -> assert false
      else
        Comp.emit_access_dep st p init e dp r1 v1
 
@@ -189,7 +192,7 @@ let get_fence n =
       | E.Node _ ->
           compile_proc pref chk loc_writes st p ro_prev init ns
       | E.Insert f ->
-          let nxt = C.find_edge (fun e -> not (E.is_insert e.E.edge)) n.C.next in
+          let nxt = C.find_edge (fun e -> (*not (E.is_insert e.E.edge)*) true) n.C.next in
           if E.is_ext nxt.C.edge then
             compile_proc (fun is -> pref (Comp.emit_fence f::is))
               chk loc_writes st p ro_prev init ns
@@ -212,7 +215,9 @@ let get_fence n =
           add_init_check chk p o init,
           i@
           mk_c
-            (match get_fence n with Some fe -> Comp.emit_fence fe::is  | _ -> is),
+        (match get_fence n with 
+           Some fe -> Comp.emit_fence fe::is  
+           | _ -> is),
           (if
             StringSet.mem n.C.evt.C.loc loc_writes && not (U.do_poll n)
           then

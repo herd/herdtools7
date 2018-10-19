@@ -22,7 +22,7 @@ type v = int
 type proc = int
 
 (* Direction of event *)
-type dir = W | R
+type dir = W | R | J 
 
 (* Edges compoments that do not depend on architecture *)
 
@@ -39,7 +39,7 @@ type extr = Dir of dir | Irr | NoDir
 let pp_dir = function
   | W -> "W"
   | R -> "R"
-
+  | J -> "J"
 
 let pp_ie = function
   | Int -> "i"
@@ -56,7 +56,7 @@ let pp_sd = function
 
 let fold_ie f r = f Ext (f Int r)
 let fold_sd f r = f Diff (f Same r)
-let fold_extr f r = f (Dir W) (f (Dir R) (f Irr r))
+let fold_extr f r = f (Dir J) (f (Dir W) (f (Dir R) (f Irr r)))
 let fold_sd_extr f = fold_sd (fun sd -> fold_extr (fun e -> f sd e))
 let fold_sd_extr_extr f =
   fold_sd_extr (fun sd e1 -> fold_extr (fun e2 -> f sd e1 e2))

@@ -138,7 +138,8 @@ module Make (O:Config) (E:Edge.S) :
       mutable prev : node ;
     }
 
-  let debug_dir d = match d with Some W -> "W" | Some R -> "R" | None -> "_"
+  let debug_dir d = match d with 
+         Some W -> "W" | Some R -> "R" | Some J -> "J" | None -> "_"
 
   let debug_atom a =
     match a with None -> "" | Some a -> E.pp_atom a
@@ -296,7 +297,7 @@ let rec count_ws = function
   | [] -> 0
   | n::ns -> match n.evt.dir with
     | Some W -> 1+count_ws ns
-    | Some R|None -> count_ws ns
+    | Some R|Some J|None -> count_ws ns
 
 let start_co =
   if O.coherence_decreasing then count_ws
@@ -371,6 +372,7 @@ let is_rmw_edge e = match e.E.edge with
 let is_rmw d e = match d with
 | R -> is_rmw_edge e.edge
 | W -> is_rmw_edge e.prev.edge
+| J -> is_rmw_edge e.edge 
 
 let set_dir n0 =
   let rec do_rec m =
@@ -382,7 +384,7 @@ let set_dir n0 =
           Warn.fatal "Double 'Node' pseudo edge %s %s"
           (E.pp_edge p.edge) (E.pp_edge m.edge)
         end ;
-        let n = find_non_insert m.next  in
+        let n = find_non_insert m.next in
         if not (E.is_ext p.edge && E.is_ext n.edge) then
            Warn.fatal "Node pseudo edge %s appears in-between  %s..%s (both neighbours must be external edges)"
            (E.pp_edge m.edge)  (E.pp_edge p.edge)  (E.pp_edge n.edge)
@@ -412,11 +414,12 @@ let set_dir n0 =
               (E.pp_edge p.edge) (E.pp_edge m.edge) in
       let rmw = is_rmw d m in
       m.evt <- { m.evt with dir=Some d; atom=a; rmw=rmw}
-    end else begin
+    end else
+    begin
       let p = find_non_pseudo_prev m.prev
       and n = find_non_pseudo m.next in
 (*      eprintf "[%a] in [%a]..[%a]\n" debug_node m debug_node p debug_node n ; *)
-      if not (E.is_ext  p.edge || E.is_ext n.edge) then begin
+      if not (E.is_ext p.edge || E.is_po_or_fenced_joker p.edge || E.is_ext n.edge || E.is_po_or_fenced_joker n.edge) then begin
         Warn.fatal "Insert pseudo edge %s appears in-between  %s..%s (at least one neighbour must be an external edge)"
           (E.pp_edge m.edge)  (E.pp_edge p.edge)  (E.pp_edge n.edge)
       end
@@ -502,7 +505,7 @@ let set_same_loc st n0 =
             set_cell n old ;
             do_set_write_val n.evt.cell
               (if E.is_node n.edge.E.edge then next else next_co next) ns
-        | (Some R)|None ->  do_set_write_val old next ns
+        | (Some R) | Some J |None ->  do_set_write_val old next ns
         end
 
   let set_all_write_val nss =
@@ -554,7 +557,7 @@ let do_set_read_v =
             do_rec cell ns
         | Some W ->
             do_rec n.evt.cell ns
-        | None ->
+        | None | Some J ->
             do_rec cell ns
         end in
   do_rec 0
@@ -797,7 +800,7 @@ let rec group_rec x ns = function
       let k =  match e.dir with
       | Some W ->
           if E.is_node m.edge.E.edge then k else (e.loc,m)::k
-      | None| Some R -> k in
+      | None| Some R | Some J -> k in
       k in
 
     do_rec n

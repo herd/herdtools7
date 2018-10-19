@@ -81,7 +81,7 @@ module Make (Config:Config) (M:Builder.S) =
     let someR sd d =
       er (Po (sd,Dir R,Dir d))::
       app_def_dp
-        (match d with R -> M.A.ddr_default | W -> M.A.ddw_default)
+        (match d with R|J -> M.A.ddr_default | W -> M.A.ddw_default)
         (fun dp k -> er (Dp (dp,sd,Dir d))::k)
         (some_fences sd R d [])      
 
@@ -93,7 +93,7 @@ module Make (Config:Config) (M:Builder.S) =
 (* ALL *)
     let allR sd d =
       er (Po (sd,Dir R,Dir d))::
-      (match d with R -> M.A.fold_dpr | W -> M.A.fold_dpw)
+	      (match d with R|J -> M.A.fold_dpr | W -> M.A.fold_dpw)
         (fun dp k -> er (Dp (dp,sd,Dir d))::k)
         (all_fences sd R d [])      
 

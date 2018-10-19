@@ -239,6 +239,8 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 (* Acccesses *)
 (*************)
 
+let emit_joker st init = None,init,[],st
+
     let emit_access  st p init e = match e.dir with
     | None -> Warn.fatal "MIPSCompile.emit_access"
     | Some d ->
@@ -260,6 +262,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
             let ro,init,cs,st = emit_sta st p init e.loc e.v in
             ro,init,cs,st
         | _,Some (Mixed _) -> assert false
+        | J, _ -> emit_joker st init
 
     let emit_exch st p init er ew =
       let rA,init,st = U.next_init st p init er.loc in
@@ -296,6 +299,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
               let ro,init,cs,st = emit_sta_idx st p init e.loc r2 e.v in
               ro,init,Instruction c::cs,st
           | _,Some (Mixed _) -> assert false
+          | J,_ -> emit_joker st init
 
     let emit_exch_dep_addr st p init er ew rd =
       let rA,init,st = U.next_init st p init er.loc in
@@ -329,6 +333,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
               Warn.fatal "No store with reservation"
           | Some (Mixed _) -> assert false
           end
+      | Some J -> emit_joker st init
 
     let emit_access_ctrl st p init e r1 =
       let lab = Label.next_label "LC" in

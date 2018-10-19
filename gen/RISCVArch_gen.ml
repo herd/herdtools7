@@ -56,6 +56,7 @@ module Make
        | (Acq,Code.W)|(Rel,Code.R) -> false
        | (Rel, Code.W)|(Acq, Code.R)
        | ((Rlx|AcqRel), _) -> true
+       | _,Code.J -> assert false
        | Sc,_ -> assert false
        end
    | Atomic _|Mixed _ -> true
@@ -159,6 +160,7 @@ module Make
    | W,Code.R
    | R,Code.W
      -> false
+   | _ -> assert false
 
    let orders f d1 d2 = match f with
    | FenceI -> false
