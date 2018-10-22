@@ -415,10 +415,14 @@ let filter inv tbl t =
             let b = LC.check_prop p st.p_st in
             if inv then not b else b)
           x.states.p_sts in
+      let nouts = comp_nouts sts in
       let sts =
-        { p_nouts = comp_nouts sts ;
+        { p_nouts = nouts;
           p_sts = sts; } in
-      let z = { x with states = sts ; condition = Some c; } in
+      let z =
+        { x with states = sts ;
+          witnesses = (nouts,Int64.zero);
+          condition = None; } in
       out z ;
       loop (i_xs+1)
     end in
