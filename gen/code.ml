@@ -17,6 +17,7 @@
 (* Event components *)
 type loc = string
 let ok = "ok"
+let myok p n = Printf.sprintf "ok%i%i" p n
 
 type v = int
 type proc = int

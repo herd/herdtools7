@@ -275,10 +275,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
        ] in
       cs,st
 
-    let emit_one_pair mo1 mo2 p r rR rW rA k =
+    let emit_one_pair mo1 mo2 p st r rR rW rA k =
       Instruction (lr mo1 rR rA)::
       Instruction (sc mo2 r rW rA)::
-      Instruction (cbnz r (Label.fail p))::k
+      Instruction (cbnz r (Label.fail p (current_label st)))::k,
+      next_label_st st
 
     let emit_unroll_pair u mo1 mo2 p st rR rW rA =
       if u <= 0 then
@@ -286,19 +287,20 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
         lift_code [lr mo1 rR rA; sc mo2 r rW rA;],st
       else if u = 1 then
         let r,st = tempo1 st in
-        emit_one_pair mo1 mo2 p r rR rW rA [],st
+        emit_one_pair mo1 mo2 p st r rR rW rA []
       else
         let r,st = tempo1 st in
         let out = Label.next_label "Go" in
         let rec do_rec = function
           | 1 ->
-              emit_one_pair
-                mo1 mo2 p r rR rW rA [Label (out,Nop)]
+              let cs,_ = emit_one_pair
+                mo1 mo2 p st r rR rW rA [Label (out,Nop)] in
+              cs
           | u ->
-              Instruction (lr mo1 rR rA)::
+              (Instruction (lr mo1 rR rA)::
               Instruction (sc mo2 r rW rA)::
               Instruction (cbz r out)::
-              do_rec (u-1) in
+              do_rec (u-1)) in
         do_rec u,st
 
     let emit_pair = match Cfg.unrollatomic with
@@ -532,34 +534,51 @@ let emit_joker st init = None,init,[],st
       Some r,init,cs,st
 
     let check_load p r e init st =
-      let lab = Label.exit p in
+      let lab = Label.exit p (current_label st) in
+      let st = next_label_st st in
       let rI,init,ci,st = U.emit_mov st p init e.v in
       init,(fun k -> ci@(Instruction (bne r rI lab))::k),st
 
 (* Postlude *)
-    let does_jump lab cs =
-      List.exists
-        (fun i -> match i with
-        | Instruction (AV.J lab0|Bcc (_,_,_,lab0))
-          when (lab0:string) = lab -> true
-        | _ -> false)
-        cs
 
-    let does_fail p cs = does_jump (Label.fail p) cs
-    let does_exit p cs = does_jump (Label.exit p) cs
+    let list_of_fail_labels p st =
+      let rec do_rec i k =
+        match i with
+        | 0 -> k
+        | n -> let k' = Instruction (J (Label.exit p n))::
+                        Label (Label.fail p n,Nop)::k
+               in do_rec (i-1) k'
+      in
+    do_rec (current_label st) []
 
-    let postlude st p init cs =
-      if does_fail p cs then
+    let list_of_exit_labels p st =
+      let rec do_rec i k =
+        match i with
+        | 0 -> k
+        | n -> let k' = Label (Label.exit p n,Nop)::k
+               in do_rec (i-1) k'
+      in
+    do_rec (current_label st) []
+
+   let does_fail p st = 
+     let l = list_of_fail_labels p st in 
+     match l with [] -> false | _ -> true
+   
+   let does_exit p st =
+     let l = list_of_exit_labels p st in
+     match l with [] -> false | _ -> true 
+
+   let postlude st p init cs =
+      if does_fail p st then
         let init,okcs,st = STORE.emit_store AV.Rlx st p init Code.ok 0 in
         init,
         cs@
-        Instruction (J (Label.exit p))::
-        Label (Label.fail p,Nop)::
+        (list_of_fail_labels p st)@
         okcs@
-        [Label (Label.exit p,Nop)],
+        (list_of_exit_labels p st),
         st
-      else if does_exit p cs then
-        init,cs@[Label (Label.exit p,Nop)],st
+      else if does_exit p st then
+        init,cs@(list_of_exit_labels p st),st
       else
         init,cs,st
 

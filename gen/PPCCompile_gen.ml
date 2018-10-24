@@ -108,37 +108,41 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
     let next_reg x = PPC.alloc_reg x
 
 
-    let emit_loop_pair _p r1 r2 idx addr =
+    let emit_loop_pair _p st r1 r2 idx addr =
       let lab = Label.next_label "Loop" in
       PPC.Label (lab,PPC.Nop)::
       PPC.lift_code
         [PPC.Plwarx (r1,idx,addr);
          PPC.Pstwcx (r2,idx,addr);
-         PPC.Pbcc (PPC.Ne,lab)]
+         PPC.Pbcc (PPC.Ne,lab)],
+      st
 
-    let emit_unroll_pair u p r1 r2 idx addr =
+    let emit_unroll_pair u p st r1 r2 idx addr =
       if u <= 0 then
         PPC.lift_code
           [PPC.Plwarx (r1,idx,addr);
-           PPC.Pstwcx (r2,idx,addr)]
+           PPC.Pstwcx (r2,idx,addr)],
+        st
       else if u = 1 then
         PPC.lift_code
           [PPC.Plwarx (r1,idx,addr);
            PPC.Pstwcx (r2,idx,addr);
-           PPC.Pbcc (PPC.Ne,Label.fail p)]
+           PPC.Pbcc (PPC.Ne,Label.fail p (PPC.current_label st))],
+          PPC.next_label_st st
       else
         let out = Label.next_label "Go" in
         let rec do_rec = function
           | 1 ->
               PPC.Plwarx (r1,idx,addr)::
               PPC.Pstwcx (r2,idx,addr)::
-              PPC.Pbcc (PPC.Ne,Label.fail p)::[]
+              PPC.Pbcc (PPC.Ne,Label.fail p (PPC.current_label st))::[]
           | u ->
               PPC.Plwarx (r1,idx,addr)::
               PPC.Pstwcx (r2,idx,addr)::
               PPC.Pbcc (PPC.Eq,out)::
               do_rec (u-1) in
-        PPC.lift_code (do_rec u)@[PPC.Label (out,PPC.Nop)]
+        PPC.lift_code (do_rec u)@[PPC.Label (out,PPC.Nop)],
+        PPC.next_label_st st
 
     let emit_pair = match O.unrollatomic with
     | None -> emit_loop_pair
@@ -162,7 +166,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
     let emit_sta_idx_reg st p init x idx rW =
       let rA,init,st = U.next_init st p init x in
       let rR,st = next_reg st in
-      let cs = emit_pair p rR rW idx rA in
+      let cs,st = emit_pair p st rR rW idx rA in
       rR,init,cs,st
 
     let emit_sta_idx  st p init x idx  v =
@@ -210,7 +214,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
     let emit_lda_idx st p init x idx =
       let rA,init,st = U.next_init st p init x in
       let rR,st = next_reg st in
-      let cs = emit_pair p rR rR idx rA in
+      let cs,st = emit_pair p st rR rR idx rA in
       rR,init,cs,st
 
     let emit_lda st p init x = emit_lda_idx st p init x r0
@@ -287,8 +291,8 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
       init,
       csi@PPC.lift_code
         [PPC.Pstwcx (rA,idx,rB);
-         PPC.Pbcc (PPC.Ne,Label.fail p)],
-      st
+         PPC.Pbcc (PPC.Ne,Label.fail p (PPC.current_label st))],
+      PPC.next_label_st st
 
     let emit_one_stwcx st p init x v = emit_one_stwcx_idx st p init x PPC.r0 v
 
@@ -328,7 +332,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
       let rA,init,st = U.next_init st p init er.loc in
       let rR,st = next_reg st in
       let rW,init,csi,st = U.emit_mov st p init ew.v in
-      let cs = emit_pair p rR rW idx rA in
+      let cs,st = emit_pair p st rR rW idx rA in
       rR,init,csi@cs,st
 
     let emit_exch st p init er ew  = emit_exch_idx st p init er ew r0
@@ -410,7 +414,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
     let emit_access_ctrl isync st p init e r1 v1 =
       let c =
         if O.realdep then
-          let lab = Label.exit p in
+          let lab = Label.exit p (PPC.current_label st) in
           [PPC.Instruction (PPC.Pcmpwi (0,r1,v1));
            PPC.Instruction (PPC.Pbcc (PPC.Ne,lab))]
         else
@@ -486,40 +490,58 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
 
 (* Check load *)
 
-    let do_check_load p r e =
-      let lab = Label.exit p in
-      fun k ->
+    let do_check_load p st r e =
+      let lab = Label.exit p (PPC.current_label st) in
+      (fun k ->
         PPC.Instruction (PPC.Pcmpwi (0,r,e.v))::
         PPC.Instruction (PPC.Pbcc (PPC.Ne,lab))::
-        k
+        k),
+      PPC.next_label_st st
 
-    let check_load  p r e init st = init,do_check_load p r e,st
+    let check_load  p r e init st = 
+      let cs,st = do_check_load p st r e in
+      init,cs,st
 
 (* Postlude *)
 
-    let does_jump lab cs =
-      List.exists
-        (fun i -> match i with
-        | PPC.Instruction (PPC.Pb lab0|PPC.Pbcc (_,lab0)) ->
-            (lab0:string) = lab
-        | _ -> false)
-        cs
+    let list_of_fail_labels p st =
+      let rec do_rec i k =
+        match i with
+        | 0 -> k
+        | n -> let k' = PPC.Instruction (PPC.Pb (Label.exit p n))::
+                        PPC.Label (Label.fail p n,PPC.Nop)::k
+               in do_rec (i-1) k'
+      in
+    do_rec (PPC.current_label st) []
 
-    let does_fail p cs = does_jump (Label.fail p) cs
-    let does_exit p cs = does_jump (Label.exit p) cs
+    let list_of_exit_labels p st =
+      let rec do_rec i k =
+        match i with
+        | 0 -> k
+        | n -> let k' = PPC.Label (Label.exit p n,PPC.Nop)::k
+               in do_rec (i-1) k'
+      in
+    do_rec (PPC.current_label st) []
+
+   let does_fail p st = 
+     let l = list_of_fail_labels p st in 
+     match l with [] -> false | _ -> true
+   
+   let does_exit p st =
+     let l = list_of_exit_labels p st in
+     match l with [] -> false | _ -> true
 
     let postlude st p init cs =
-      if does_fail p cs then
+      if does_fail p st then
         let init,okcs,st = emit_store st p init Code.ok 0 in
         init,
         cs@
-        PPC.Instruction (PPC.Pb (Label.exit p))::
-        PPC.Label (Label.fail p,PPC.Nop)::
+        (list_of_fail_labels p st)@
         okcs@
-        [PPC.Label (Label.exit p,PPC.Nop)],
+        (list_of_exit_labels p st),
         st
-      else if does_exit p cs then
-        init,cs@[PPC.Label (Label.exit p,PPC.Nop)],st
+      else if does_exit p st then
+        init,cs@(list_of_exit_labels p st),st
       else init,cs,st
 
 

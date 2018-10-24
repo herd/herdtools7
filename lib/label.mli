@@ -20,8 +20,8 @@ type t = string
 val reset : unit -> unit
 val next_label : string -> t
 
-val fail : int -> t
-val exit : int -> t
+val fail : int -> int -> t
+val exit : int -> int -> t
 
 type next = Next | To of t
 

@@ -466,7 +466,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let  r2,cs2,st = sumi_addr_gen tempo2 st rA o2 in
         r1,r2,cs1@cs2,st
 
-    let emit_loop_pair (ar,aw as arw) _p st rR rW rA =
+    let emit_loop_pair (ar,aw as arw) _p st init rR rW rA =
       let rAR,rAW,cs0,st = get_rmw_addrs arw st rA in
       let lbl = Label.next_label "Loop" in
       let r,st = tempo3 st in
@@ -476,37 +476,68 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
          Instruction (get_xstore aw r rW rAW);
          Instruction (cbnz r lbl);
        ] in
-      pseudo cs0@cs,st
+      init,pseudo cs0@cs,st
 
-    let emit_one_pair (ar,aw) p r rR rW rAR rAW k =
+(*    let emit_one_pair (ar,aw) p st r rR rW rAR rAW k n =
       Instruction (get_xload ar rR rAR)::
       Instruction (get_xstore aw r rW rAW)::
-      Instruction (cbnz r (Label.fail p))::k
+      Instruction (cbnz r (Label.fail p n))::k
 
-    let emit_unroll_pair u (ar,aw as arw) p st rR rW rA =
+    let emit_unroll_pair u (ar,aw as arw) p st init rR rW rA =
+      let n = current_label st in
       let rAR,rAW,cs0,st = get_rmw_addrs arw st rA in
       let cs0 = pseudo cs0 in
       if u <= 0 then
         let r,st = next_reg st in
-        cs0@pseudo
+        init,cs0@pseudo
            [get_xload ar rR rAR;
            get_xstore aw r rW rAW;],st
       else if u = 1 then
         let r,st = tempo3 st in
-        cs0@emit_one_pair arw p r rR rW rAR rAW [],st
+        let cs = (emit_one_pair arw p st r rR rW rAR rAW [] n) in
+        init,cs0@cs,st*)
+
+    let emit_one_pair (ar, aw) p st init r rR rW rA k =
+      let n = current_label st in
+      let init,cs,st = STR.emit_store st p init (Code.myok p n) 0 in
+      (A.Loc (Code.myok p n),"1")::init,
+      Instruction (get_xload ar rR rA)::
+      Instruction (get_xstore aw r rW rA)::
+      Instruction (cbnz r (Label.fail p n))::
+      Instruction (I_B (Label.exit p n))::
+      Label (Label.fail p n,Nop)::
+      cs@(Label (Label.exit p n,Nop))::k,
+      next_label_st st
+
+    let emit_unroll_pair u (ar, aw as arw) p st init rR rW rA =
+      let rAR,rAW,cs0,st = get_rmw_addrs arw st rA in
+      let cs0 = pseudo cs0 in
+      if u <= 0 then
+        let r,st = next_reg st in
+        init,cs0@pseudo
+          [get_xload ar rR rAR;
+           get_xstore aw r rW rAW;],
+        st
+      else if u = 1 then
+        let r,st = tempo3 st in
+        let init,cs,st = emit_one_pair arw p st init r rR rW rA [] in
+        init,cs0@cs,st
       else
         let r,st = tempo3 st in
         let out = Label.next_label "Go" in
         let rec do_rec = function
           | 1 ->
-              emit_one_pair
-                arw p r rR rW rAR rAW [Label (out,Nop)]
+              let init,cs,st = emit_one_pair
+                arw p st init r rR rW rA [Label (out,Nop)] in
+              init,cs0@cs,st
           | u ->
-              Instruction (get_xload ar rR rAR)::
-              Instruction (get_xstore aw r rW rAW)::
+              let init,cs,st = do_rec (u-1) in
+              init,
+              (Instruction (get_xload ar rR rA)::
+              Instruction (get_xstore aw r rW rA)::
               Instruction (cbz r out)::
-              do_rec (u-1) in
-        cs0@do_rec u,st
+              cs0@cs),st in
+        do_rec u
 
     let emit_pair = match Cfg.unrollatomic with
     | None -> emit_loop_pair
@@ -538,84 +569,83 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (* Individual loads and strores *)
 (********************************)
 
-    let emit_lda_reg rw st p rA =
+    let emit_lda_reg rw st init p rA =
       let rR,st = next_reg st in
-      let cs,st = emit_pair rw p st rR rR rA in
+      let _,cs,st = emit_pair rw p st init rR rR rA in
       rR,cs,st
 
     let emit_lda rw st p init loc =
       let rA,init,st = U.next_init st p init loc in
-      let r,cs,st =  emit_lda_reg rw st p rA in
+      let r,cs,st =  emit_lda_reg rw st init p rA in
       r,init,cs,st
 
     let emit_lda_idx rw st p init loc idx =
       let rA,init,st = U.next_init st p init loc in
       let rA,cs1,st = sum_addr st rA idx in
-      let r,cs2,st =  emit_lda_reg rw st p rA in
+      let r,cs2,st =  emit_lda_reg rw st init p rA in
       r,init,pseudo cs1@cs2,st
 
-    let emit_lda_mixed_reg sz o rw st p rA =
+    let emit_lda_mixed_reg sz o rw st p init rA =
       let rR,st = next_reg st in
-      let cs,st = emit_pair_mixed sz o  rw p st rR rR rA in
+      let _,cs,st = emit_pair_mixed sz o  rw p st init rR rR rA in
       rR,cs,st
 
     let emit_lda_mixed sz o rw st p init loc =
       let rA,init,st = U.next_init st p init loc in
-      let r,cs,st =  emit_lda_mixed_reg sz o rw st p rA in
+      let r,cs,st =  emit_lda_mixed_reg sz o rw st p init rA in
       r,init,cs,st
 
     let emit_lda_mixed_idx sz o rw st p init loc idx =
       let rA,init,st = U.next_init st p init loc in
       let rA,cs1,st = sum_addr st rA idx in
-      let r,cs2,st =  emit_lda_mixed_reg sz o rw st p rA in
+      let r,cs2,st =  emit_lda_mixed_reg sz o rw st p init rA in
       r,init,pseudo cs1@cs2,st
 
 
-    let do_emit_sta rw st p rW rA =
+    let do_emit_sta rw st p init rW rA =
       let rR,st = next_reg st in
-      let cs,st = emit_pair rw p st rR rW rA in
+      let _,cs,st = emit_pair rw p st init rR rW rA in
       rR,cs,st
 
     let emit_sta rw st p init loc v =
       let rA,init,st = U.next_init st p init loc in
       let rW,init,csi,st = U.emit_mov st p init v in
-      let rR,cs,st = do_emit_sta rw st p rW rA in
+      let rR,cs,st = do_emit_sta rw st p init rW rA in
       rR,init,csi@cs,st
 
     let emit_sta_reg rw st p init loc rW =
       let rA,init,st = U.next_init st p init loc in
-      let rR,cs,st = do_emit_sta rw st p rW rA in
+      let rR,cs,st = do_emit_sta rw st p init rW rA in
       rR,init,cs,st
 
     let emit_sta_idx rw st p init loc idx v =
       let rA,init,st = U.next_init st p init loc in
       let rA,cs1,st = sum_addr st rA idx in
       let rW,init,csi,st = U.emit_mov st p init v in
-      let rR,cs2,st = do_emit_sta rw st p rW rA in
+      let rR,cs2,st = do_emit_sta rw st p init rW rA in
       rR,init,csi@pseudo cs1@cs2,st
 
-
-    let do_emit_sta_mixed sz o rw st p rW rA =
+    let do_emit_sta_mixed sz o rw st p init rW rA =
       let rR,st = next_reg st in
-      let cs,st = emit_pair_mixed sz o rw p st rR rW rA in
+      let _,cs,st = emit_pair_mixed sz o rw p st init rR rW rA in
       rR,cs,st
 
     let emit_sta_mixed sz o rw st p init loc v =
       let rA,init,st = U.next_init st p init loc in
       let rW,init,csi,st = U.emit_mov st p init v in
-      let rR,cs,st = do_emit_sta_mixed sz o rw st p rW rA in
+      let rR,cs,st = do_emit_sta_mixed sz o rw st p init rW rA in
       rR,init,csi@cs,st
 
     let emit_sta_mixed_reg sz o rw st p init loc rW =
       let rA,init,st = U.next_init st p init loc in
-      let rR,cs,st = do_emit_sta_mixed sz o rw st p rW rA in
+      let rR,cs,st = do_emit_sta_mixed sz o rw st p init rW rA in
       rR,init,cs,st
 
     let emit_sta_mixed_idx sz o rw st p init loc idx v =
       let rA,init,st = U.next_init st p init loc in
       let rA,cs1,st = sum_addr st rA idx in
       let rW,init,csi,st = U.emit_mov st p init v in
-      let rR,cs2,st = do_emit_sta_mixed sz o rw st p rW rA in
+      let rR,cs2,st = do_emit_sta_mixed sz o rw st p init rW rA in
       rR,init,csi@pseudo cs1@cs2,st
 
 (**********)
@@ -703,8 +733,8 @@ let emit_joker st init = None,init,[],st
       let rA,init,st = U.next_init st p init er.loc in
       let rR,st = next_reg st in
       let rW,init,csi,st = U.emit_mov st p init ew.v in
-      let cs,st = emit_pair
-          (tr_none er.C.atom, tr_none ew.C.atom) p st rR rW rA in
+      let arw = (tr_none er.C.atom, tr_none ew.C.atom) in
+      let init,cs,st = emit_pair arw p st init rR rW rA in
       rR,init,csi@cs,st
 
     let do_sz sz1 sz2 = match sz1,sz2 with
@@ -927,8 +957,8 @@ let emit_joker st init = None,init,[],st
       let rA,init,caddr,st =  emit_addr_dep  st p init er rd in
       let rR,st = next_reg st in
       let rW,init,csi,st = U.emit_mov st p init ew.v in
-      let cs,st =
-        emit_pair (tr_none  er.C.atom, tr_none ew.C.atom) p st rR rW rA in
+      let arw = (tr_none  er.C.atom, tr_none ew.C.atom) in
+      let init,cs,st = emit_pair arw p st init rR rW rA in
       rR,init,
       csi@caddr@cs,
       st
@@ -1077,39 +1107,53 @@ let emit_joker st init = None,init,[],st
     | StOp op -> emit_stop_dep op
 
 
-    let do_check_load p r e =
-      let lab = Label.exit p in
+    let do_check_load p st r e =
+      let lab = Label.exit p (current_label st) in
       (fun k ->
         Instruction (cmpi r e.v)::
         Instruction (bne lab)::
-        k)
-    let check_load  p r e init st = init,do_check_load p r e,st
+        k),
+      next_label_st st
+    let check_load  p r e init st = 
+      let cs,st = do_check_load p st r e in
+      init,cs,st
 
 (* Postlude *)
-    let does_jump lab cs =
-      List.exists
-        (fun i -> match i with
-        | Instruction (I_B lab0|I_BC (_,lab0)
-        | I_CBZ (_,_,lab0)|I_CBNZ (_,_,lab0)) ->
-            (lab0:string) = lab
-        | _ -> false)
-        cs
 
-    let does_fail p cs = does_jump (Label.fail p) cs
-    let does_exit p cs = does_jump (Label.exit p) cs
+    let list_of_fail_labels p st =
+      let rec do_rec i k =
+        match i with
+        | 0 -> k
+        | n -> let k' = Instruction (I_B (Label.exit p n))::
+                        Label (Label.fail p n,Nop)::k
+               in do_rec (i-1) k'
+      in
+    do_rec (current_label st) []
 
-    let postlude st p init cs =
-      if does_fail p cs then
-        let init,okcs,st = STR.emit_store st p init Code.ok 0 in
-        init,
-        cs@
-        Instruction (I_B (Label.exit p))::
-        Label (Label.fail p,Nop)::
-        okcs@
-        [Label (Label.exit p,Nop)],
-        st
-      else if does_exit p cs then
-        init,cs@[Label (Label.exit p,Nop)],st
+    let list_of_exit_labels p st =
+      let rec do_rec i k =
+        match i with
+        | 0 -> k
+        | n -> let k' = Label (Label.exit p n,Nop)::k
+               in do_rec (i-1) k'
+      in
+    do_rec (current_label st) []
+
+   let does_fail p st = 
+     let l = list_of_fail_labels p st in 
+     match l with [] -> false | _ -> true
+
+   let does_exit p st = 
+     let l = list_of_exit_labels p st in 
+     match l with [] -> false | _ -> true
+
+   let postlude st p init cs =
+      if does_fail p st then
+       init,
+       cs,
+       st
+      else if does_exit p st then
+        init,cs@(list_of_exit_labels p st),st
       else
         init,cs,st
 

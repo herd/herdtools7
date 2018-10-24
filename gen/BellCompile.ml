@@ -256,7 +256,8 @@ let emit_rmw _ = assert false
 
 let emit_access_ctrl st p init e r1 v1 =
   if Cfg.realdep then
-    let lab =  Label.exit p in
+    let lab =  Label.exit p (current_label st) in
+    let st = next_label_st st in
     let rd,st = next_reg st in
     let c =
        [Instruction (movne rd r1 v1) ;
@@ -332,13 +333,16 @@ let emit_rmw_dep _ = assert false
     let emit_exch_dep _ = assert false *)
 
 (* Check load *)
-    let do_check_load p r e =
-      let lab = Label.exit p in
-      fun k ->
+    let do_check_load p st r e =
+      let lab = Label.exit p (current_label st) in
+      (fun k ->
         Instruction (movne tempo1 r e.v)::
-        Instruction (branchcc tempo1 lab)::k
+        Instruction (branchcc tempo1 lab)::k),
+        next_label_st st
 
-    let check_load  p r e init st = init,do_check_load p r e,st
+    let check_load  p r e init st = 
+      let cs,st = do_check_load p st r e in 
+      init,cs,st
 
 (* Postlude for adding exit label *)
 
@@ -350,11 +354,20 @@ let emit_rmw_dep _ = assert false
         | _ -> false)
         cs
 
-    let does_exit p cs =  does_jump (Label.exit p) cs
+    let does_exit p cs st = does_jump (Label.exit p (current_label st)) cs
 
+    let list_of_exit_labels p st = 
+      let rec do_rec i k =
+        match i with
+        | 0 -> k
+        | n -> let k' = Label (Label.exit p n,Nop)::k 
+               in do_rec (i-1) k'
+      in
+    do_rec (current_label st) []
+ 
     let postlude st p init cs =
-      if does_exit p cs then
-        init,cs@[Label (Label.exit p,Nop)],st
+      if does_exit p cs st then
+       init,cs@(list_of_exit_labels p st),st
       else init,cs,st
 
     let get_xstore_results _ = []

@@ -166,14 +166,17 @@ let emit_joker st init = None,init,[],st
   let stronger_fence = MFence
 
 (* Check load *)
-  let do_check_load p r e =
-    let lab = Label.exit p in
-    fun k ->
+  let do_check_load p st r e =
+    let lab = Label.exit p (current_label st) in
+    (fun k ->
       Instruction (emit_cmp_int_ins r e.C.v)::
       Instruction (emit_jne_ins lab)::
-      k
+      k),
+    next_label_st st
 
-  let check_load  p r e init st = init,do_check_load p r e,st
+  let check_load  p r e init st = 
+    let cs,st = do_check_load p st r e in
+    init,cs,st
 
 (* Postlude *)
 
@@ -185,11 +188,20 @@ let emit_joker st init = None,init,[],st
         | _ -> false)
         cs
 
-  let does_exit p cs =  does_jump (Label.exit p) cs
+  let does_exit p cs st =  does_jump (Label.exit p (current_label st)) cs
+
+    let list_of_exit_labels p st =
+      let rec do_rec i k =
+        match i with
+        | 0 -> k
+        | n -> let k' = Label (Label.exit p n,Nop)::k
+               in do_rec (i-1) k'
+      in
+    do_rec (current_label st) []
 
   let postlude st p init cs =
-    if does_exit p cs then
-      init,cs@[Label (Label.exit p,Nop)],st
+    if does_exit p cs st then
+      init,cs@(list_of_exit_labels p st),st
     else init,cs,st
 
   let get_xstore_results _ = []

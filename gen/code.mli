@@ -17,6 +17,7 @@
 (* Event components *)
 type loc = string
 val ok : loc
+val myok : int -> int -> loc
 
 type v = int
 type proc = int

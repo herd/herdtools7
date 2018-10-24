@@ -41,7 +41,7 @@ module type S = sig
         A.reg * A.init * A.pseudo list * A.st
 
   val emit_access : A.st -> Code.proc -> A.init -> C.event ->
-    A.reg option * A.init * A.pseudo list * A.st
+    A.reg option * A.init * A.pseudo list * A.st  
 
   val emit_rmw : A.rmw -> A.st -> Code.proc -> A.init -> C.event ->  C.event ->
     A.reg option * A.init * A.pseudo list * A.st

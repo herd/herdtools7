@@ -57,42 +57,45 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let tempo2 = ARM.Symbolic_reg "T2" (* utility *)
 
 
-    let emit_loop_pair _p r1 r2 addr =
+    let emit_loop_pair _p st r1 r2 addr =
       let lab = Label.next_label "Loop" in
       Label (lab,Nop)::
       lift_code
-        [I_LDREX (r1,addr) ;
-         I_STREX (tempo2,r2,addr,AL);
-         I_CMPI (tempo2,0);
-         I_BNE (lab);
-       ]
+	[I_LDREX (r1,addr) ;
+	 I_STREX (tempo2,r2,addr,AL);
+	 I_CMPI (tempo2,0);
+	 I_BNE (lab);
+       ],st
 
-    let emit_unroll_pair u p r1 r2 addr =
+    let emit_unroll_pair u p st r1 r2 addr =
       if u <= 0 then
-        lift_code
-          [I_LDREX (r1,addr);
-           I_STREX (tempo2,r2,addr,AL);]
+	lift_code
+	  [I_LDREX (r1,addr);
+	   I_STREX (tempo2,r2,addr,AL);],
+        st
       else if u = 1 then
-        lift_code
-          [I_LDREX (r1,addr);
-           I_STREX (tempo2,r2,addr,AL);
-           I_CMPI (tempo2,0);
-           I_BNE (Label.fail p);]
+	lift_code
+	  [I_LDREX (r1,addr);
+	   I_STREX (tempo2,r2,addr,AL);
+	   I_CMPI (tempo2,0);
+	   I_BNE (Label.fail p (current_label st));],
+        next_label_st st
       else
-        let out = Label.next_label "Go" in
-        let rec do_rec = function
-          | 1 ->
-              [I_LDREX (r1,addr);
-               I_STREX (tempo2,r2,addr,AL);
-               I_CMPI (tempo2,0);
-               I_BNE (Label.fail p);]
-          | u ->
-              I_LDREX (r1,addr)::
-              I_STREX (tempo2,r2,addr,AL)::
-              I_CMPI (tempo2,0)::
-              I_BEQ (out)::
-              do_rec (u-1) in
-        lift_code (do_rec u)@[Label (out,Nop)]
+	let out = Label.next_label "Go" in
+	let rec do_rec = function
+	  | 1 ->
+	      [I_LDREX (r1,addr);
+	       I_STREX (tempo2,r2,addr,AL);
+	       I_CMPI (tempo2,0);
+	       I_BNE (Label.fail p (current_label st));]
+	  | u ->
+	      I_LDREX (r1,addr)::
+	      I_STREX (tempo2,r2,addr,AL)::
+	      I_CMPI (tempo2,0)::
+	      I_BEQ (out)::
+	      do_rec (u-1) in
+	lift_code (do_rec u)@[Label (out,Nop)],
+        next_label_st st
 
     let emit_pair = match Cfg.unrollatomic with
     | None -> emit_loop_pair
@@ -179,11 +182,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let rV,init,csi,st = U.emit_mov st p init v in
       init,
       csi@lift_code
-        [I_STREX (tempo2,rV,rA,AL);
-         I_CMPI (tempo2,0);
-         I_BNE (Label.fail p);],
-      st
-
+	[I_STREX (tempo2,rV,rA,AL);
+	 I_CMPI (tempo2,0);
+	 I_BNE (Label.fail p (current_label st));],
+      next_label_st st
 
     let emit_ldrex_reg st _p init rB =
       let rA,st = next_reg st in
@@ -204,13 +206,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let emit_lda st p init x =
       let rA,init,st = U.next_init st p init x in
       let rR,st = next_reg st in
-      let cs = emit_pair p rR rR rA in
+      let cs,st = emit_pair p st rR rR rA in
       rR,init,cs,st
 
     let emit_lda_idx st p init x idx =
       let rA,init,st = U.next_init st p init x in
       let rR,st = next_reg st in
-      let cs = emit_pair p rR rR tempo1 in
+      let cs,st = emit_pair p st rR rR tempo1 in
       rR,init,
       Instruction (I_ADD3 (DontSetFlags,tempo1,idx,rA))::cs,
       st
@@ -220,7 +222,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let emit_sta_reg st p init x rW =
       let rA,init,st = U.next_init st p init x in
       let rR,st = next_reg st in
-      let cs = emit_pair p rR rW rA in
+      let cs,st = emit_pair p st rR rW rA in
       Some rR,init,cs,st
 
     let emit_sta st p init x v =
@@ -232,7 +234,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let rA,init,st = U.next_init st p init x in
       let rW,init,csi,st = U.emit_mov st p init v in
       let rR,st = next_reg st in
-      let cs = emit_pair p rR rW tempo1 in
+      let cs,st = emit_pair p st rR rW tempo1 in
       Some rR,
       init,
       csi@Instruction (I_ADD3 (DontSetFlags,tempo1,idx,rA))::cs,st
@@ -271,7 +273,7 @@ let emit_joker st init = None,init,[],st
       let rA,init,st = U.next_init st p init er.loc in
       let rW,init,csi,st = U.emit_mov st p init ew.v in
       let rR,st = next_reg st in
-      let cs = emit_pair p rR rW rA in
+      let cs,st = emit_pair p st rR rW rA in
       Some rR,init,csi@cs,st
 
     let emit_rmw () = emit_exch
@@ -387,40 +389,58 @@ let emit_joker st init = None,init,[],st
 
     let stronger_fence = DMB SY
 
-    let do_check_load p r e =
-      let lab = Label.exit p in
+    let do_check_load p st r e =
+      let lab = Label.exit p (current_label st) in
       (fun k ->
         Instruction (I_CMPI (r,e.v))::
         Instruction (I_BNE lab)::
-        k)
+        k),
+      next_label_st st
 
-    let check_load  p r e init st = init,do_check_load p r e,st
+    let check_load  p r e init st = 
+      let cs,st = do_check_load p st r e in
+      init,cs,st
 
 (* Postlude *)
 
-    let does_jump lab cs =
-      List.exists
-        (fun i -> match i with
-        | Instruction (I_B lab0|I_BNE lab0|I_BEQ lab0) ->
-            (lab0:string) = lab
-        | _ -> false)
-        cs
+    let list_of_fail_labels p st =
+      let rec do_rec i k =
+        match i with
+        | 0 -> k
+        | n -> let k' = Instruction (I_B (Label.exit p n))::
+                        Label (Label.fail p n,Nop)::k
+               in do_rec (i-1) k'
+      in
+    do_rec (current_label st) []
 
-    let does_fail p cs = does_jump (Label.fail p) cs
-    let does_exit p cs = does_jump (Label.exit p) cs
+    let list_of_exit_labels p st =
+      let rec do_rec i k =
+        match i with
+        | 0 -> k
+        | n -> let k' = Label (Label.exit p n,Nop)::k
+               in do_rec (i-1) k'
+      in
+    do_rec (current_label st) []
+
+   let does_fail p st = 
+     let l = list_of_fail_labels p st in 
+     match l with [] -> false | _ -> true
+   
+   let does_exit p st =
+     let l = list_of_exit_labels p st in
+     match l with [] -> false | _ -> true
 
     let postlude st p init cs =
-      if does_fail p cs then
+      if does_fail p st then
         let init,okcs,st = emit_store st p init Code.ok 0 in
         init,
         cs@
-        Instruction (I_B (Label.exit p))::
-        Label (Label.fail p,Nop)::
+        (list_of_fail_labels p st)@
         okcs@
-        [Label (Label.exit p,Nop)],
+        (list_of_exit_labels p st),
         st
-      else if does_exit p cs then
-        init,cs@[Label (Label.exit p,Nop)],st
+      else if does_exit p st then
+        init,cs@(list_of_exit_labels p st),st
       else init,cs,st
 
     let get_xstore_results _ = []

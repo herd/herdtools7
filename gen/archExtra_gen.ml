@@ -52,6 +52,11 @@ module type S = sig
   val alloc_reg : st -> arch_reg * st
   val alloc_trashed_reg : string -> st -> arch_reg * st
 
+  val current_label : st -> int
+  val next_label : st -> int
+  
+  val next_label_st : st -> st
+
 end
 
 module Make(I:I) : S with type arch_reg = I.arch_reg
@@ -90,18 +95,21 @@ module Make(I:I) : S with type arch_reg = I.arch_reg
 
   type init = (location * string) list
 
-  type st = arch_reg list * arch_reg StringMap.t
+  type st = arch_reg list * arch_reg StringMap.t * int
 
-  let st0 = I.free_registers,StringMap.empty
+  let st0 = I.free_registers,StringMap.empty,0
 
   let alloc_reg = function
-    | [],_ -> Warn.fatal "No more registers"
-    | r::rs,m -> r,(rs,m)
+    | [],_,_ -> Warn.fatal "No more registers"
+    | r::rs,m,i -> r,(rs,m,i)
 
-  let alloc_trashed_reg k (_,m as st) =
+  let alloc_trashed_reg k (_,m,_ as st) =
     try StringMap.find k m,st
     with Not_found ->
-      let r,(rs,m) = alloc_reg st in
-      r,(rs,StringMap.add k r m)
+      let r,(rs,m,i) = alloc_reg st in
+      r,(rs,StringMap.add k r m,i) 
 
+  let current_label (_,_,i) = i
+  let next_label (_,_,i) = i+1  
+  let next_label_st (r,rs,i) = (r,rs,i+1)
 end
