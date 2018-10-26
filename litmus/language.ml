@@ -30,6 +30,7 @@ module type S = sig
     unit
 
   val dump_call :
+    (CType.t -> string -> string) ->
     out_channel ->
     string ->
     CType.t RegMap.t ->

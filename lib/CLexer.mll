@@ -28,6 +28,7 @@ let tr_name s = match s with
 | "char" -> CHAR
 | "int" -> INT
 | "long" -> LONG
+| "struct" -> STRUCT
 | "int8_t"
 | "uint8_t"
 | "int16_t"
@@ -43,10 +44,10 @@ let tr_name s = match s with
 | "spinlock_t"   (* linux *)
 (* Atomics *)
 | "atomic_t"     (* linux *)
-
   ->
   BASE_TYPE s
 | "atomic_int" -> ATOMIC_TYPE "int"
+| "srcu_struct" -> STRUCT_TYPE s
 | "void" -> VOID
 | "NULL" -> NULL
 (* C11 primitives, quite a lot! *)

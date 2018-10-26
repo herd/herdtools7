@@ -119,27 +119,27 @@ module Make(C:Config)(E:Extra) = struct
     out "}\n\n"
 
 
-  let dump_call chan indent _env globEnv _envVolatile proc t =
+  let dump_call tr_idx chan indent _env globEnv _envVolatile proc t =
     let is_array_of a =
       try  match List.assoc a globEnv with
       | CType.Array (t,_) -> Some t
       | _ -> None
-      with Not_found ->
-        None in
+      with Not_found -> None in
     let global_args =
       List.map
-        (fun (x,_) ->
+        (fun (x,t) ->
+          let idx = tr_idx t "_i" in
           let cast = match is_array_of x with
           | Some t -> sprintf "(%s *)" t
           | None -> "" in
           let amper = match List.assoc x globEnv with
           | CType.Base "mtx_t" -> ""
           | _ -> "&" in
-         match C.memory with
+          match C.memory with
          | Memory.Direct ->
-             sprintf "%s%s_a->%s[_i]" cast amper (CTarget.fmt_reg x)
+             sprintf "%s%s_a->%s[%s]" cast amper (CTarget.fmt_reg x) idx
          | Memory.Indirect ->
-             sprintf "%s_a->%s[_i]" cast (CTarget.fmt_reg x))
+             sprintf "%s_a->%s[%s]" cast (CTarget.fmt_reg x) idx)
         t.CTarget.inputs
           and out_args =
             List.map

@@ -1783,7 +1783,7 @@ end = struct
         | Pthread|NoBarrier -> ()
         end ;
 (* Dump real code now *)
-        (if Cfg.ascall then Lang.dump_call else Lang.dump)
+        (if Cfg.ascall then Lang.dump_call (fun _ s -> s) else Lang.dump)
           O.out (Indent.as_string iloop) myenv global_env envVolatile proc out ;
         if do_verbose_barrier && have_timebase  then begin
           if do_timebase then begin

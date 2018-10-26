@@ -26,6 +26,7 @@ open MemOrderOrAnnot
 %token EOF
 %token <string> IDENTIFIER
 %token <string> BASE_TYPE
+%token <string> STRUCT_TYPE
 %token <string> ATOMIC_TYPE
 %token <string> CONSTVAR
 %token <string> CODEVAR
@@ -35,6 +36,7 @@ open MemOrderOrAnnot
 %token MUTEX
 %token TYPEDEF EXTERN STATIC AUTO REGISTER
 %token CONST VOLATILE
+%token STRUCT
 
 /* For shallow parsing */
 %token <string> BODY
@@ -101,6 +103,7 @@ base0:
 | ATOMIC_TYPE { Atomic (Base $1) }
 | BASE_TYPE { (Base $1) }
 | VOID { (Base "void") }
+| STRUCT STRUCT_TYPE { Base ("struct " ^ $2) }
 | ty_attr MUTEX { Base ($1 ^ "mutex") }
 | ty_attr CHAR { Base ($1 ^ "char") }
 | ty_attr INT { Base ($1 ^ "int") }

@@ -37,6 +37,7 @@ module type Config = sig
   val tarname : string
   val pad : int
   val ccopts : string list
+  val sharelocks : int option
 end
 
 module Top(O:Config)(Tar:Tar.S) = struct

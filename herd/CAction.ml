@@ -28,6 +28,7 @@ module Make (A : Arch_herd.S) : sig
     | Fence of MemOrderOrAnnot.t
 (* LM: ??? RMW (location, read, written, mo) *)
     | RMW of A.location * A.V.v * A.V.v * MemOrder.t  * MachSize.sz
+(* Specific actions for locks *)
     | Lock of A.location * lock_arg
     | Unlock of A.location * CBase.mutex_kind
     | TryLock of A.location (* Failed trylock, returns 1 *)

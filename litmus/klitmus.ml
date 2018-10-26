@@ -53,6 +53,7 @@ module KOption : sig
   val barrier : KBarrier.t ref
   val affinity : KAffinity.t ref
   val ccopts : string list ref
+  val sharelocks : int option ref
 end = struct
   include Option
   let stride = ref (KStride.St 1)
@@ -62,6 +63,7 @@ end = struct
   let barrier = ref KBarrier.User
   let affinity = ref KAffinity.No
   let ccopts = ref []
+  let sharelocks = ref None
 end
 
 open KOption
@@ -93,6 +95,9 @@ let opts =
    PStride.parse "-stride" KOption.stride "stride for scanning memory" ;
    begin let module P = ParseTag.Make(KBarrier)  in
    P.parse "-barrier" KOption.barrier "synchronisation barrier style" end;
+(* number if shared spinlocks and srcu_struct *)
+   "-share_locks", arginto KOption.sharelocks,
+     "<n> number of spinlock_t's and srcu)_structs to share between test instances (default, do not share)";
 (* Affinity *)
    begin let module P = ParseTag.Make(KAffinity) in
    P.parse "-affinity" KOption.affinity
@@ -176,6 +181,7 @@ let () =
       let expedited = !expedited
       let pad = !pad
       let ccopts = !ccopts
+      let sharelocks = !sharelocks
 (* tar stuff *)
       let tarname = KOption.get_tar ()
     end in
