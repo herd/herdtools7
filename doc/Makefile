@@ -139,7 +139,7 @@ W+RW.dot: tst-co/basic/W+RW.litmus
 # WW.dot WR.dot W+RR.dot W+RW.dot
 
 clean::
-	/bin/rm -f SB.dot SB+L.dot SB+OK.dot $(GENDOTS)
+	/bin/rm -f LB.dot SB.dot SB+L.dot SB+OK.dot $(GENDOTS)
 
 %.dot: %.litmus
 	$(HERD) -model minimal -conf doc.cfg -showinitrf true -showlegend true -shortlegend true  -show prop -o . $< > /dev/null
