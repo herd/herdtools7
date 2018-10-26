@@ -106,6 +106,10 @@ val dump_states : out_channel -> sts -> unit
 (* bool true means litmus log, false memevents log *)
 val dump_states_cond : out_channel -> bool -> sts -> unit
 val no_states : sts -> bool
+
+(* No states or one empty line in state *)
+val no_states_or_no_obs : sts -> bool
+
 val card : sts -> int
 
 (* Topologies *)

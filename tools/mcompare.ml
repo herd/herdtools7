@@ -350,7 +350,7 @@ module Config = struct
 
   let names = Check.names
   let ok = Check.ok
-      
+
   let check_hash = runopts.check_hash
   let macro = runopts.texmacro
   let dump_eq = runopts.dump_eq
@@ -382,7 +382,7 @@ let dump_file s name = Misc.output_protect (dump_chan s) name
 
 (* Highlight *)
 
-  let highlight_bad s = 
+  let highlight_bad s =
     let open OutMode in
     match mode with
     | Txt -> s
@@ -615,7 +615,7 @@ let dump_file s name = Misc.output_protect (dump_chan s) name
         if as_kinds then []
         else
           let sum = B.sum keys (List.map (fun _ -> Ok) ts) ts in
-          List.map LS.pp_validation sum in      
+          List.map LS.pp_validation sum in
       dump ts "Validation" true
         (List.map (fun t -> 1,pp_name t.name) ts) sum
         keys
@@ -632,7 +632,7 @@ let dump_file s name = Misc.output_protect (dump_chan s) name
     | Some file ->  dump_file !neg file
     end ;
     ()
-      
+
 
   module FmtValidate = struct
 
@@ -1137,104 +1137,6 @@ let format_int_string s =
         Matrix.Build
           (struct
 
-(*
-            let pp_bd (loc,v) = sprintf "%s=%s" loc v
-
-            let pp_cond_simple bdss =
-              let pp =
-                List.map
-                  (fun bds ->
-                    String.concat " /\\ "
-                      (List.map pp_bd bds))
-                  bdss in
-              let pp = List.map (sprintf "(%s)") pp in
-              let pp = String.concat " \\/ "  pp in
-              pp
-
-            let compare_bd (loc1,v1) (loc2,v2) =
-              match String.compare loc1 loc2 with
-              | 0 -> String.compare v1 v2
-              | r -> r
-
-            module Env =
-              MyMap.Make
-                (struct
-                  type t = string * string
-                  let compare = compare_bd
-                end)
-
-
-            let pp_cond_opt =
-              let build_env =
-                  List.fold_left
-                    (List.fold_left
-                       (fun env bd ->
-                         let old =
-                           try Env.find bd env
-                           with Not_found -> 0 in
-                         Env.add bd (old+1) env))
-                    Env.empty in
-              let find_max env =
-                Env.fold
-                  (fun bd n (_,n_max as max) ->
-                    if n > n_max then (bd,n) else max)
-                  env (("",""),0) in
-
-              let split bd bdss =
-                let rec remove = function
-                  | [] -> raise Not_found
-                  | bd0::rem ->
-                      if compare_bd bd bd0 = 0 then rem
-                      else bd0::remove rem in
-                List.fold_left
-                  (fun (ok,no) bds ->
-                    try
-                      let bds = remove bds in
-                      (bds::ok,no)
-                    with
-                      Not_found -> (ok,bds::no))
-                  ([],[]) bdss in
-              fun bdss ->
-                let rec do_rec bdss = match bdss with
-                | [] -> assert false
-                | [bds] ->
-                    sprintf "(%s)"
-                      (String.concat " /\\ "
-                         (List.map pp_bd bds))
-                | []::_ ->
-                    List.iter
-                      (function
-                        | [] -> ()
-                        | _ -> assert false)
-                      bdss ;
-                    ""
-                | [_]::_ ->
-                    let bds =
-                      List.map
-                        (function
-                          | [bd] -> pp_bd bd
-                          | _ -> assert false)
-                        bdss in
-                    sprintf "(%s)"
-                      (String.concat " \\/ " bds)
-                | _ ->
-                    let (bd_max,_) = find_max (build_env bdss) in
-                    let ok,no = split bd_max bdss in
-                    let pp_ok = do_rec ok in
-                    let pp_no = match no with
-                    | [] -> ""
-                    | _ -> do_rec no in
-                    match pp_ok,pp_no with
-                    | "","" -> pp_bd bd_max
-                    | "",_ -> sprintf "%s \\/ (%s)" (pp_bd bd_max) pp_no
-                    | _,"" -> sprintf "%s /\\ (%s)" (pp_bd bd_max) pp_ok
-                    | _,_  -> sprintf "%s /\\ (%s) \\/ (%s)"
-                          (pp_bd bd_max) pp_ok pp_no in
-                do_rec bdss
-*)
-
-
-
             let pp_cond =
               if Opt.opt_cond then CondPP.pp_opt
               else CondPP.pp_simple
@@ -1248,12 +1150,12 @@ let format_int_string s =
               let name = t.tname in
               let more = LS.diff_states t.states r.states
               and less = LS.diff_states r.states t.states in
-              if not (LS.no_states more) then begin
+              if not (LS.no_states_or_no_obs more) then begin
                 pos := StringSet.add name !pos ;
                 pos_cond :=
                   pp_prop name (LS.get_bindings more) :: !pos_cond
               end ;
-              if not (LS.no_states less) then begin
+              if not (LS.no_states_or_no_obs less) then begin
                 neg := StringSet.add name !neg ;
                 neg_cond :=
                   pp_prop name (LS.get_bindings less) :: !neg_cond

@@ -43,6 +43,10 @@ module HashedList =
     end)
 (* Concrete types for states *)
 
+let is_hashed_nil nh = match nh.Hashcons.node with
+| Nil -> true
+| Cons _ -> false
+
 type st_concrete = st_node Hashcons.hash_consed
 
 type parsed_st =
@@ -215,8 +219,13 @@ let dump_states_cond chan is_litmus t =
 let dump_states chan t = dump_states_cond chan true t
 
 let no_states sts = match sts.p_sts with
-  | [] -> true
-  | _::_ -> false
+| [] -> true
+| _::_ -> false
+
+let no_states_or_no_obs sts = match sts.p_sts with
+| [] -> true
+| [st] -> is_hashed_nil st.p_st
+| _::_::_ -> false
 
 let card sts = List.length  sts.p_sts
 
@@ -296,7 +305,7 @@ let rec do_compare_state st1 st2 =
           mismatch (if r > 0 then p2 else p1)
 
 
-let compare_state st1 st2 = do_compare_state st1.p_st st2.p_st
+ let compare_state st1 st2 = do_compare_state st1.p_st st2.p_st
 
 let rec do_diff_states sts1 sts2 =  match sts1,sts2 with
 | [],_ -> []
@@ -1053,7 +1062,7 @@ let union_litmus_simple name t1 t2 =
   with Error e ->
     begin match e with
     | NoHashLeft|NoHashRight ->
-        assert false (* Same log, hence impossible *)    
+        assert false (* Same log, hence impossible *)
     | DiffHash ->
         Warn.fatal "Hash mismatch for test %s in file %s" t1.s_tname name
     | State loc ->
