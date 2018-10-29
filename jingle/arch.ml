@@ -52,7 +52,7 @@ module type Common = sig
   val sr_name : reg -> string
   val cv_name : MetaConst.k -> string
   val dump_pseudos : pseudo list -> string
-  val conv_reg : substitution list -> reg list ref ->
+  val conv_reg : substitution list -> reg list ref -> (string * reg) list ref ->
                  reg -> reg
   val find_lab : substitution list -> reg list ref -> (string * string) list ref ->
                  string -> string
@@ -128,9 +128,8 @@ module MakeCommon(A:ArchBase.S) = struct
                            (dump_pseudos is)
     | _ -> assert false
 
-  let conv_reg subs free r =
+  let conv_reg subs free env r =
     let get_register =
-      let env = ref [] in
       fun s -> try List.assoc s !env with
       | Not_found ->
 	 let r = List.hd !free in
@@ -210,6 +209,7 @@ module MakeArch(I:sig
                     instruction ->
                     substitution list option
   val expl_instr : substitution list -> reg list ref -> (string * string) list ref ->
+                   (string * reg) list ref ->
                    parsedInstruction ->
                    parsedInstruction
 end) = struct
@@ -227,7 +227,8 @@ end) = struct
 
   let instanciate_with subs free instrs =
     let label_env = ref [] in
-    let expl_instr = expl_instr subs (ref free) label_env in
+    let reg_env = ref [] in
+    let expl_instr = expl_instr subs (ref free) label_env reg_env in
     let find_lab = find_lab subs (ref free) label_env in
     let find_code = find_code subs (ref free) in
     let rec expl_pseudos = 
