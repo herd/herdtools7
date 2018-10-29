@@ -161,8 +161,8 @@ include Arch.MakeArch(struct
     | _,_ -> None
 
 
-  let expl_instr subs free label_env =
-    let conv_reg = conv_reg subs free in
+  let expl_instr subs free label_env reg_env =
+    let conv_reg = conv_reg subs free reg_env in
     let find_lab = find_lab subs free label_env in
     let find_cst = find_cst subs free in
     function
