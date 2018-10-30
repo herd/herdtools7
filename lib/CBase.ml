@@ -70,7 +70,7 @@ type expression =
   | TryLock of expression * mutex_kind
   | IsLocked of expression * mutex_kind
   | AtomicOpReturn of expression * Op.op * expression * return * MemOrderOrAnnot.annot
-  | AtomicAddUnless of expression * expression * expression * bool (* ret bool *)
+  | AtomicAddUnless of expression * expression * expression * bool (* ret bool *) | ExpSRCU of expression * MemOrderOrAnnot.annot
 
 type instruction =
   | Fence of barrier
@@ -82,6 +82,7 @@ type instruction =
   | Lock of expression * mutex_kind
   | Unlock of expression * mutex_kind
   | AtomicOp of expression * Op.op * expression
+  | InstrSRCU of expression * MemOrderOrAnnot.annot
   | Symb of string
   | PCall of string * expression list
 
@@ -155,6 +156,10 @@ let rec dump_expr =
         sprintf "%satomic_op_return(%s,%s,%s)"
           (if retbool then "" else "__")
           (dump_expr loc) (dump_expr a) (dump_expr u)
+    | ExpSRCU(loc,a) ->
+        sprintf "__SRCU{%s}(%s)"
+          (string_of_annot a)
+          (dump_expr loc)
 
 and dump_args es = String.concat "," (List.map dump_expr es)
 
@@ -202,6 +207,10 @@ let rec do_dump_instruction indent =
   | AtomicOp(l,op,e) ->
       pindent "atomic_%s(%s,%s);" (dump_op op)
         (dump_expr l) (dump_expr e)
+  | InstrSRCU(loc,a) ->
+      pindent "__SRCU{%s}(%s)"
+          (string_of_annot a)
+          (dump_expr loc)
   | Symb s -> pindent "codevar:%s;" s
   | PCall (f,es) ->
       pindent "%s(%s);" f (dump_args es)
@@ -252,6 +261,7 @@ include Pseudo.Make
         | AtomicAddUnless(loc,a,u,retbool) ->
             AtomicAddUnless
               (parsed_expr_tr loc,parsed_expr_tr a,parsed_expr_tr u,retbool)
+        | ExpSRCU(e,a) -> ExpSRCU(parsed_expr_tr e,a)
 
       and parsed_tr = function
         | Fence _|DeclReg _ as i -> i
@@ -267,6 +277,7 @@ include Pseudo.Make
         | Lock (e,k) -> Lock (parsed_expr_tr e,k)
         | Unlock (e,k) -> Unlock  (parsed_expr_tr e,k)
         | AtomicOp(l,op,e) -> AtomicOp(parsed_expr_tr l,op,parsed_expr_tr e)
+        | InstrSRCU(e,a) -> InstrSRCU(parsed_expr_tr e,a)
         | Symb _ -> Warn.fatal "No term variable allowed"
         | PCall (f,es) -> PCall (f,List.map parsed_expr_tr es)
 
@@ -290,7 +301,8 @@ include Pseudo.Make
               let k = get_exp k e2 in
               get_exp k e3
           | TryLock(e,_) -> get_exp (k+1) e
-          | IsLocked(e,_) -> get_exp (k+1) e in
+          | IsLocked(e,_) -> get_exp (k+1) e
+          | ExpSRCU(e,_) ->  get_exp (k+1) e in
 
         let rec get_rec k = function
           | Fence _|Symb _ | DeclReg _ -> k
@@ -302,6 +314,7 @@ include Pseudo.Make
           | StoreMem (loc,e,_)
           | AtomicOp(loc,_,e) -> get_exp (get_exp k loc) e
           | Lock (e,_)|Unlock (e,_) -> get_exp (k+1) e
+          | InstrSRCU(e,_) -> get_exp (k+1) e
           | PCall (_,es) ->  List.fold_left get_exp k es
 
         and get_opt k = function
@@ -378,6 +391,7 @@ let rec subst_expr env e = match e with
 | AtomicAddUnless (loc,a,u,retbool) ->
     AtomicAddUnless
       (subst_expr env loc,subst_expr env a,subst_expr env u,retbool)
+| ExpSRCU(e,a) -> ExpSRCU(subst_expr env e,a)
 
 let rec subst env i = match i with
 | Fence _|Symb _|DeclReg _ -> i
@@ -402,6 +416,7 @@ let rec subst env i = match i with
 | Lock (loc,k) -> Lock (subst_expr env loc,k)
 | Unlock (loc,k) -> Unlock (subst_expr env loc,k)
 | AtomicOp (loc,op,e) -> AtomicOp(subst_expr env loc,op,subst_expr env e)
+| InstrSRCU (e,a) -> InstrSRCU(subst_expr env e,a)
 | PCall (f,es) ->
     let xs,body = find_macro f env.proc in
     let frame = build_frame f (subst_expr env) xs es in

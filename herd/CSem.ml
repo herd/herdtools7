@@ -280,6 +280,11 @@ module Make (Conf:Sem.Config)(V:Value.S)
           mk_mb ii >>*= fun () -> r >>*= fun v ->
             mk_mb ii >>! v)
           (M.linux_add_unless_no mloc mu mrmem M.assign (if retbool then Some V.zero else None))
+    | C.ExpSRCU(eloc,a) ->
+          build_semantics_expr false eloc ii >>=
+          fun vloc ->
+            M.mk_singleton_es (Act.SRCU (A.Location_global vloc,a)) ii
+              >>! V.zero
     | C.ECall (f,_) -> Warn.fatal "Macro call %s in CSem" f
 
     and build_atomic_op ret a_read a_write eloc op e ii =
@@ -386,7 +391,13 @@ module Make (Conf:Sem.Config)(V:Value.S)
       | C.Fence(mo) ->
           M.mk_fence (Act.Fence mo) ii
             >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
-
+(********************)
+      | C.InstrSRCU(e,a) ->
+          build_semantics_expr false e ii >>=
+          fun l ->
+            M.mk_singleton_es (Act.SRCU (A.Location_global l,a)) ii
+              >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
+(********************)
       | C.Symb _ -> Warn.fatal "No symbolic instructions allowed."
       | C.PCall (f,_) -> Warn.fatal "Procedure call %s in CSem" f
 

@@ -120,6 +120,9 @@ module Make
              let rel = lazy begin
                  E.EventSet.filter (pred annot) evts
                end in
+             if O.debug then
+               Printf.eprintf "annotation %s recorded as set %s\n"
+                 annot tag ;
              let bd = tag,rel in
              let k = bd::k in
              k)

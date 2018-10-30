@@ -78,6 +78,7 @@ let tr_name s = match s with
 | "__fence" -> UNDERFENCE
 | "__load" -> LOAD
 | "__store" -> STORE
+| "__srcu"  -> SRCU
 | "__xchg" -> XCHG
 | "__cmpxchg" -> CMPXCHG
 | "__lock" -> SPINLOCK
@@ -117,7 +118,7 @@ rule token deep = parse
 | '&' { LAND }
 | '(' { LPAR }
 | ')' { RPAR }
-| '{' { if deep then LBRACE else begin	
+| '{' { if deep then LBRACE else begin
           let buf = Buffer.create 4096 in
           get_body 0 buf lexbuf;
           BODY (Buffer.contents buf)

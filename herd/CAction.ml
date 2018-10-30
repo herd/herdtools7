@@ -32,8 +32,11 @@ module Make (A : Arch_herd.S) : sig
     | Lock of A.location * lock_arg
     | Unlock of A.location * CBase.mutex_kind
     | TryLock of A.location (* Failed trylock, returns 1 *)
- (* true -> from lock, false -> from unlokk *)
+          (* true -> from lock, false -> from unlokk *)
     | ReadLock of A.location * bool
+(* SRCU *)
+    | SRCU of A.location * MemOrderOrAnnot.annot
+
   include Action.S with type action := action and module A = A
 
 end = struct
@@ -55,7 +58,7 @@ end = struct
     | Unlock of A.location  * CBase.mutex_kind
     | TryLock of A.location (* Failed trylock *)
     | ReadLock of A.location * bool
-
+    | SRCU of A.location * annot
 
   let mk_init_write l sz v = Access (W,l,v,AN [],false,sz)
 
@@ -63,155 +66,161 @@ end = struct
   let bra f x = sprintf "[%s]" (f x)
 
   let pp_action a = match a with
-    | Access (d,l,v,mo,at,_) ->
-        sprintf "%s%s%s%s=%s"
-          (pp_dirn d) (if at then "*" else "")
-          (match mo with
-          | MO mo -> par MemOrder.pp_mem_order_short mo
-          | AN [] -> ""
-          | AN a -> bra pp_annot a)
-          (A.pp_location l)
-          (V.pp_v v)
-    | Fence mo ->
-       sprintf "F%s"
-          (match mo with
-          | MO mo -> par MemOrder.pp_mem_order_short mo
-          | AN a ->  bra pp_annot a)
-    | RMW (l,v1,v2,mo,_) ->
-        sprintf "RMW(%s)%s(%s>%s)"
-          (MemOrder.pp_mem_order_short mo)
-          (A.pp_location l)
-          (V.pp_v v1) (V.pp_v v2)
-    | Lock (l,LockC11 o) ->
+  | Access (d,l,v,mo,at,_) ->
+      sprintf "%s%s%s%s=%s"
+        (pp_dirn d) (if at then "*" else "")
+        (match mo with
+        | MO mo -> par MemOrder.pp_mem_order_short mo
+        | AN [] -> ""
+        | AN a -> bra pp_annot a)
+        (A.pp_location l)
+        (V.pp_v v)
+  | Fence mo ->
+      sprintf "F%s"
+        (match mo with
+        | MO mo -> par MemOrder.pp_mem_order_short mo
+        | AN a ->  bra pp_annot a)
+  | RMW (l,v1,v2,mo,_) ->
+      sprintf "RMW(%s)%s(%s>%s)"
+        (MemOrder.pp_mem_order_short mo)
+        (A.pp_location l)
+        (V.pp_v v1) (V.pp_v v2)
+  | Lock (l,LockC11 o) ->
       sprintf "L%s%s"
         (if o then "S" else "B")
         (A.pp_location l)
-    | Unlock (l,CBase.MutexC11) ->
+  | Unlock (l,CBase.MutexC11) ->
       sprintf "U%s"
         (A.pp_location l)
-    | Lock (l,LockLinux d) ->
+  | Lock (l,LockLinux d) ->
       sprintf "Lock(%s,%s)" (A.pp_location l) (pp_dirn d)
-    | Unlock (l,CBase.MutexLinux) ->
+  | Unlock (l,CBase.MutexLinux) ->
       sprintf "Unlock(%s)"
-          (A.pp_location l)
-    | TryLock (l) ->
-        sprintf "TryLock(%s,1)" (A.pp_location l)
-    | ReadLock (l,ok) ->
-        sprintf "ReadLock(%s,%c)"
-          (A.pp_location l)
-          (if ok then '1' else '0')
+        (A.pp_location l)
+  | TryLock (l) ->
+      sprintf "TryLock(%s,1)" (A.pp_location l)
+  | ReadLock (l,ok) ->
+      sprintf "ReadLock(%s,%c)"
+        (A.pp_location l)
+        (if ok then '1' else '0')
+  | SRCU (l,an) ->
+      sprintf "SRCU%s(%s)"
+        (bra pp_annot an)
+        (A.pp_location l)
 (* Utility functions to pick out components *)
 
-    let value_of a = match a with
-    | Access (_,_ ,v,_,_,_) -> Some v
-    | _ -> None
+  let value_of a = match a with
+  | Access (_,_ ,v,_,_,_) -> Some v
+  | _ -> None
 
-    let read_of a = match a with
-    | Access (R,_ , v,_,_,_)
-    | RMW (_,v,_,_,_)
-        -> Some v
-    | _ -> None
+  let read_of a = match a with
+  | Access (R,_ , v,_,_,_)
+  | RMW (_,v,_,_,_)
+    -> Some v
+  | _ -> None
 
-    let written_of a = match a with
-    | Access (W,_ , v,_,_,_)
-    | RMW (_,_,v,_,_)
-        -> Some v
-    | _ -> None
+  let written_of a = match a with
+  | Access (W,_ , v,_,_,_)
+  | RMW (_,_,v,_,_)
+    -> Some v
+  | _ -> None
 
-    let location_of a = match a with
-    | Access (_, l, _,_,_,_)
-    | Lock (l,_)
-    | Unlock (l,_)
-    | TryLock (l)
-    | ReadLock (l,_)
-    | RMW (l,_,_,_,_) -> Some l
-    | Fence _ -> None
+  let location_of a = match a with
+  | Access (_, l, _,_,_,_)
+  | Lock (l,_)
+  | Unlock (l,_)
+  | TryLock (l)
+  | ReadLock (l,_)
+  | RMW (l,_,_,_,_)
+  | SRCU (l,_)
+    -> Some l
+  | Fence _ -> None
 
 (* relative to memory *)
-    let is_mem_store a = match a with
-    | Access (W,A.Location_global _,_,_,_,_)
-    | RMW (A.Location_global _,_,_,_,_)
-      -> true
+  let is_mem_store a = match a with
+  | Access (W,A.Location_global _,_,_,_,_)
+  | RMW (A.Location_global _,_,_,_,_)
+    -> true
+  | _ -> false
+
+  let is_mem_load a = match a with
+  | Access (R,A.Location_global _,_,_,_,_)
+  | RMW (A.Location_global _,_,_,_,_)
+    -> true
+  | _ -> false
+
+  let is_additional_mem_load a = match a with
+  | TryLock _|ReadLock _ -> true
+  | _ -> false
+
+  let is_mem a = match a with
+  | Access (_,A.Location_global _,_,_,_,_)
+  | RMW (A.Location_global _,_,_,_,_) -> true
+  | _ -> false
+
+  let is_additional_mem a = match a with
+  | Lock _|Unlock _|TryLock _|ReadLock _ -> true
+  | _ -> false
+
+        (* The following definition of is_atomic
+           is quite arbitrary. *)
+
+  let old_is_atomic a = match a with
+  | Access (_,A.Location_global _,_,AN _,_,_) -> false
+  | Access (_,A.Location_global _,_,MO _,_,_) -> true
+  | RMW _ -> true
+  | _ -> false
+
+        (* LM: This one is for R and W issued by RWM *)
+  let is_atomic = function
+    | Access (_,A.Location_global _,_,_,at,_) -> at
     | _ -> false
 
-    let is_mem_load a = match a with
-    | Access (R,A.Location_global _,_,_,_,_)
-    | RMW (A.Location_global _,_,_,_,_)
-      -> true
-    | _ -> false
-
-    let is_additional_mem_load a = match a with
-    | TryLock _|ReadLock _ -> true
-    | _ -> false
-
-    let is_mem a = match a with
-    | Access (_,A.Location_global _,_,_,_,_)
-    | RMW (A.Location_global _,_,_,_,_) -> true
-    | _ -> false
-
-    let is_additional_mem a = match a with
-    | Lock _|Unlock _|TryLock _|ReadLock _ -> true
-    | _ -> false
-
-    (* The following definition of is_atomic
-       is quite arbitrary. *)
-
-    let old_is_atomic a = match a with
-    | Access (_,A.Location_global _,_,AN _,_,_) -> false
-    | Access (_,A.Location_global _,_,MO _,_,_) -> true
-    | RMW _ -> true
-    | _ -> false
-
-   (* LM: This one is for R and W issued by RWM *)
-    let is_atomic = function
-      | Access (_,A.Location_global _,_,_,at,_) -> at
-      | _ -> false
-
-    let get_mem_dir a = match a with
-    | Access (d,A.Location_global _,_,_,_,_) -> d
-    | _ -> assert false
+  let get_mem_dir a = match a with
+  | Access (d,A.Location_global _,_,_,_,_) -> d
+  | _ -> assert false
 
   let get_mem_size a = match a with
-    | Access (_,A.Location_global _,_,_,_,sz) -> sz
-    | _ -> assert false
+  | Access (_,A.Location_global _,_,_,_,sz) -> sz
+  | _ -> assert false
 
 (* relative to the registers of the given proc *)
-    let is_reg_store a (p:int) = match a with
-    | Access (W,A.Location_reg (q,_),_,_,_,_) -> p = q
-    | _ -> false
+  let is_reg_store a (p:int) = match a with
+  | Access (W,A.Location_reg (q,_),_,_,_,_) -> p = q
+  | _ -> false
 
-    let is_reg_load a (p:int) = match a with
-    | Access (R,A.Location_reg (q,_),_,_,_,_) -> p = q
-    | _ -> false
+  let is_reg_load a (p:int) = match a with
+  | Access (R,A.Location_reg (q,_),_,_,_,_) -> p = q
+  | _ -> false
 
-    let is_reg a (p:int) = match a with
-    | Access (_,A.Location_reg (q,_),_,_,_,_) -> p = q
-    | _ -> false
+  let is_reg a (p:int) = match a with
+  | Access (_,A.Location_reg (q,_),_,_,_,_) -> p = q
+  | _ -> false
 
 
 (* Store/Load anywhere *)
-    let is_store a = match a with
-    | Access (W,_,_,_,_,_)
-    | RMW _
-      -> true
-    | _ -> false
+  let is_store a = match a with
+  | Access (W,_,_,_,_,_)
+  | RMW _
+    -> true
+  | _ -> false
 
-    let is_load a = match a with
-    | Access (R,_,_,_,_,_)
-    | RMW _ -> true
-    | _ -> false
+  let is_load a = match a with
+  | Access (R,_,_,_,_,_)
+  | RMW _ -> true
+  | _ -> false
 
-    let is_reg_any a = match a with
-    | Access (_,A.Location_reg _,_,_,_,_) -> true
-    | _ -> false
+  let is_reg_any a = match a with
+  | Access (_,A.Location_reg _,_,_,_,_) -> true
+  | _ -> false
 
-    let is_reg_store_any a = match a with
-    | Access (W,A.Location_reg _,_,_,_,_) -> true
-    | _ -> false
+  let is_reg_store_any a = match a with
+  | Access (W,A.Location_reg _,_,_,_,_) -> true
+  | _ -> false
 
-    let is_reg_load_any a = match a with
-    | Access (R,A.Location_reg _,_,_,_,_) -> true
-    | _ -> false
+  let is_reg_load_any a = match a with
+  | Access (R,A.Location_reg _,_,_,_,_) -> true
+  | _ -> false
 
 (* Barriers *)
   let is_barrier = function
@@ -223,35 +232,35 @@ end = struct
   let same_barrier_id _ _ = assert false
 
 (* (No) commits *)
-   let is_commit_bcc _ = false
-   let is_commit_pred _ = false
+  let is_commit_bcc _ = false
+  let is_commit_pred _ = false
 
 (* RMWs *)
-   let is_rmw a = match a with
-     | RMW _ -> true
-     | _ -> false
+  let is_rmw a = match a with
+  | RMW _ -> true
+  | _ -> false
 
 (* Mutex operations *)
-   let is_lock a = match a with
-   | Lock _ -> true
-   | _ -> false
+  let is_lock a = match a with
+  | Lock _ -> true
+  | _ -> false
 
-   let is_lock_read a = match a with
-   | Lock (_,LockLinux R) -> true
-   | _ -> false
+  let is_lock_read a = match a with
+  | Lock (_,LockLinux R) -> true
+  | _ -> false
 
-   let is_lock_write  a = match a with
-   | Lock (_,LockLinux W) -> true
-   | _ -> false
+  let is_lock_write  a = match a with
+  | Lock (_,LockLinux W) -> true
+  | _ -> false
 
-   let is_successful_lock a = match a with
-     | Lock (_,LockC11 true) -> true
-     | _ -> false
+  let is_successful_lock a = match a with
+  | Lock (_,LockC11 true) -> true
+  | _ -> false
 
-   let is_failed_lock a = match a with
-     | Lock (_,LockC11 false)
-     | TryLock (_) -> true
-     | _ -> false
+  let is_failed_lock a = match a with
+  | Lock (_,LockC11 false)
+  | TryLock (_) -> true
+  | _ -> false
 
   let is_read_locked a = match a with
   | ReadLock (_,b) -> b
@@ -261,43 +270,49 @@ end = struct
   | ReadLock (_,b) -> not b
   | _ -> false
 
-   let is_unlock a = match a with
-     | Unlock _ -> true
-     | _ -> false
+  let is_unlock a = match a with
+  | Unlock _ -> true
+  | _ -> false
 
-   let mo_matches target a = match a with
-     | Access(_,_,_,MO mo,_,_)
-     | RMW (_,_,_,mo,_)
-     | Fence (MO mo) -> mo=target
-     | _ -> false
+  let mo_matches target a = match a with
+  | Access(_,_,_,MO mo,_,_)
+  | RMW (_,_,_,mo,_)
+  | Fence (MO mo) -> mo=target
+  | _ -> false
 
-   let fence_matches target a = match a with
-     | Fence (AN [a]) -> a=target
-     | _ -> false
+  let fence_matches target a = match a with
+  | Fence (AN [a]) -> a=target
+  | _ -> false
 
+  let srcu_matches target a = match a with
+  | SRCU (_,[a]) -> a=target
+  | _ -> false
 (* Architecture-specific sets *)
 
-   let arch_sets = [
-     "RMW",(fun e -> is_rmw e || is_atomic e);
-     "LK", is_lock; "LKR", is_lock_read; "LKW",is_lock_write;
-     "LS", is_successful_lock;"LF", is_failed_lock;
-     "UL", is_unlock;
-     "RL",is_read_locked; "RU",is_read_unlocked;
-     "ACQ", mo_matches MemOrder.Acq;
-     "SC", mo_matches MemOrder.SC;
-     "REL", mo_matches MemOrder.Rel;
-     "ACQ_REL", mo_matches MemOrder.Acq_Rel;
-     "RLX", mo_matches MemOrder.Rlx;
-     "CON", mo_matches MemOrder.Con;
-     "Sync-rcu", fence_matches "sync-rcu";
-     "Rcu-lock", fence_matches "rcu-lock";
-     "Rcu-unlock", fence_matches "rcu-unlock";
-     "A",old_is_atomic;
-     "NA",(fun a -> not (old_is_atomic a));
-     "annot", (fun a -> match a with
-                        | Access (_,_,_,AN a,_,_) | Fence (AN a) when a != [] -> true
-                        | _ -> false)
-   ]
+  let arch_sets = [
+    "RMW",(fun e -> is_rmw e || is_atomic e);
+    "LK", is_lock; "LKR", is_lock_read; "LKW",is_lock_write;
+    "LS", is_successful_lock;"LF", is_failed_lock;
+    "UL", is_unlock;
+    "RL",is_read_locked; "RU",is_read_unlocked;
+    "ACQ", mo_matches MemOrder.Acq;
+    "SC", mo_matches MemOrder.SC;
+    "REL", mo_matches MemOrder.Rel;
+    "ACQ_REL", mo_matches MemOrder.Acq_Rel;
+    "RLX", mo_matches MemOrder.Rlx;
+    "CON", mo_matches MemOrder.Con;
+    "Sync-rcu", fence_matches "sync-rcu";
+    "Rcu-lock", fence_matches "rcu-lock";
+    "Rcu-unlock", fence_matches "rcu-unlock";
+    "Srcu-sync", srcu_matches "srcu-sync";
+    "Srcu-lock", srcu_matches "srcu-lock";
+    "Srcu-unlock", srcu_matches "srcu-unlock";
+    "A",old_is_atomic;
+    "NA",(fun a -> not (old_is_atomic a));
+    "annot", (fun a -> match a with
+    | Access (_,_,_,AN a,_,_) | Fence (AN a) when a != [] -> true
+    | _ -> false)
+  ]
 
   let arch_fences = []
 
@@ -306,66 +321,72 @@ end = struct
 
 (* Equations *)
 
-    let undetermined_vars_in_action a =
-      match a with
-      | Access (_,l,v,_,_,_) ->
-          let undet_loc = match A.undetermined_vars_in_loc l with
-          | None -> V.ValueSet.empty
-          | Some v -> V.ValueSet.singleton v in
-          if V.is_var_determined v then undet_loc
-          else V.ValueSet.add v undet_loc
-      | RMW(l,v1,v2,_,_) ->
-         let undet_loc = match A.undetermined_vars_in_loc l with
-           | None -> V.ValueSet.empty
-           | Some v -> V.ValueSet.singleton v in
-         let undet_loc =
-           (if V.is_var_determined v1 then undet_loc
-            else V.ValueSet.add v1 undet_loc) in
-         let undet_loc =
-           (if V.is_var_determined v2 then undet_loc
-            else V.ValueSet.add v2 undet_loc) in
-         undet_loc
-      | TryLock (l)
-      | Lock(l,_)
-      | Unlock (l,_)
-      | ReadLock (l,_)->
-         (match A.undetermined_vars_in_loc l with
-          | None -> V.ValueSet.empty
-          | Some v -> V.ValueSet.singleton v)
-      | Fence _ -> V.ValueSet.empty
+  let undetermined_vars_in_action a =
+    match a with
+    | Access (_,l,v,_,_,_) ->
+        let undet_loc = match A.undetermined_vars_in_loc l with
+        | None -> V.ValueSet.empty
+        | Some v -> V.ValueSet.singleton v in
+        if V.is_var_determined v then undet_loc
+        else V.ValueSet.add v undet_loc
+    | RMW(l,v1,v2,_,_) ->
+        let undet_loc = match A.undetermined_vars_in_loc l with
+        | None -> V.ValueSet.empty
+        | Some v -> V.ValueSet.singleton v in
+        let undet_loc =
+          (if V.is_var_determined v1 then undet_loc
+          else V.ValueSet.add v1 undet_loc) in
+        let undet_loc =
+          (if V.is_var_determined v2 then undet_loc
+          else V.ValueSet.add v2 undet_loc) in
+        undet_loc
+    | TryLock (l)
+    | Lock(l,_)
+    | Unlock (l,_)
+    | ReadLock (l,_)
+    | SRCU(l,_) ->
+        (match A.undetermined_vars_in_loc l with
+        | None -> V.ValueSet.empty
+        | Some v -> V.ValueSet.singleton v)
+    | Fence _ -> V.ValueSet.empty
 
-    let simplify_vars_in_action soln a =
-      match a with
-      | Access (d,l,v,mo,at,sz) ->
-         let l' = A.simplify_vars_in_loc soln l in
-         let v' = V.simplify_var soln v in
-         Access (d,l',v',mo,at,sz)
-      | RMW(l,v1,v2,mo,sz) ->
+  let simplify_vars_in_action soln a =
+    match a with
+    | Access (d,l,v,mo,at,sz) ->
+        let l' = A.simplify_vars_in_loc soln l in
+        let v' = V.simplify_var soln v in
+        Access (d,l',v',mo,at,sz)
+    | RMW(l,v1,v2,mo,sz) ->
         let l' = A.simplify_vars_in_loc soln l in
         let v1' = V.simplify_var soln v1 in
         let v2' = V.simplify_var soln v2 in
         RMW(l',v1',v2',mo,sz)
-      | Lock(l,a) ->
+    | Lock(l,a) ->
         let l' = A.simplify_vars_in_loc soln l in
         Lock(l',a)
-      | Unlock (l,k)  ->
+    | Unlock (l,k)  ->
         let l' = A.simplify_vars_in_loc soln l in
         Unlock (l',k)
-      | TryLock (l) ->
-         let l' = A.simplify_vars_in_loc soln l in
-         TryLock (l')
-      | ReadLock (l,b) ->
-         let l' = A.simplify_vars_in_loc soln l in
-         ReadLock (l',b)
-      | Fence _ -> a
+    | TryLock (l) ->
+        let l' = A.simplify_vars_in_loc soln l in
+        TryLock (l')
+    | ReadLock (l,b) ->
+        let l' = A.simplify_vars_in_loc soln l in
+        ReadLock (l',b)
+    | SRCU(l,a) ->
+        let l' =  A.simplify_vars_in_loc soln l in
+        SRCU(l',a)
+    | Fence _ -> a
 
 (*************************************************************)
 (* Add together event structures from different instructions *)
 (*************************************************************)
 
-    let annot_in_list str ac = match ac with
-    | Access (_,_,_,AN a,_,_)
-    | Fence (AN a) -> List.exists (fun a -> Misc.string_eq str a) a
-    | Access (_, _, _, MO _,_,_)|Fence (MO _)|RMW (_, _, _, _,_)
-    | Lock _|Unlock _|TryLock _|ReadLock _ -> false
+  let annot_in_list str ac = match ac with
+  | Access (_,_,_,AN a,_,_)
+  | Fence (AN a)
+  | SRCU(_,a)
+    -> List.exists (fun a -> Misc.string_eq str a) a
+  | Access (_, _, _, MO _,_,_)|Fence (MO _)|RMW (_, _, _, _,_)
+  | Lock _|Unlock _|TryLock _|ReadLock _ -> false
 end
