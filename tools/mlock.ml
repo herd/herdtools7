@@ -104,7 +104,9 @@ module Top(O:Config)(Out:OutTests.S) = struct
     | AtomicOpReturn (loc,op,u,ret,a) ->
         AtomicOpReturn (tr_expr loc,op,tr_expr u,ret,a)
     | AtomicAddUnless (loc,a,u,retbool) ->
-        AtomicAddUnless (tr_expr loc,tr_expr a,tr_expr u,retbool) in
+        AtomicAddUnless (tr_expr loc,tr_expr a,tr_expr u,retbool)
+    | ExpSRCU(eloc,a) ->
+        ExpSRCU(tr_expr eloc,a) in
 
   let rec tr_ins nxt i = match i with
     | Lock (e,_)|PCall ("spin_lock",[e]) ->
@@ -143,6 +145,9 @@ module Top(O:Config)(Out:OutTests.S) = struct
         let loc = tr_expr loc
         and e = tr_expr e in
         nxt,StringSet.empty,AtomicOp(loc,op,e)
+    | InstrSRCU(eloc,a) ->
+        let eloc = tr_expr eloc in
+        nxt,StringSet.empty,InstrSRCU(eloc,a)
 
   and tr_code nxt = function
       | [] -> nxt,StringSet.empty,[]
@@ -204,7 +209,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
   | ECall ("READ_ONCE", [LoadMem (LoadReg x,AN [])]) ->
       changed := true ; StringSet.singleton x
   | ECall (_,es) -> exprs_read es
-  | LoadMem (e,_)|TryLock (e,_)|IsLocked (e,_) -> expr_read e
+  | LoadMem (e,_)|TryLock (e,_)|IsLocked (e,_)|ExpSRCU(e,_) -> expr_read e
   | Op (_,e1,e2)
   | Exchange (e1,e2,_)
   | Fetch (e1,_,e2,_)
@@ -246,7 +251,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
         let s = expr_read ec in
         let i = If (ec,tr_ins it,Misc.app_opt tr_ins o) in
         add_locks s i
-    | StoreReg (_,_,e) ->
+    | StoreReg (_,_,e)|InstrSRCU(e,_) ->
         let s = expr_read e in
         add_locks s i
     | StoreMem (e1,e2,_) ->
@@ -317,6 +322,8 @@ module Top(O:Config)(Out:OutTests.S) = struct
         AtomicOpReturn (tr_expr loc,op,tr_expr e,ret,a)
     | AtomicAddUnless (loc,a,u,retbool) ->
         AtomicAddUnless (tr_expr loc,tr_expr a,tr_expr u,retbool)
+    | ExpSRCU(e,a) ->
+        ExpSRCU(tr_expr e,a)
 
     and tr_exprs es =  List.map tr_expr es in
 
@@ -344,7 +351,8 @@ module Top(O:Config)(Out:OutTests.S) = struct
         | _ -> StoreMem (e1,e2,a)
         end
     | PCall (f,es) -> PCall (f,tr_exprs es)
-    | AtomicOp (loc,op,e) -> AtomicOp(tr_expr loc,op,tr_expr e) in
+    | AtomicOp (loc,op,e) -> AtomicOp(tr_expr loc,op,tr_expr e)
+    | InstrSRCU(eloc,a) -> InstrSRCU(tr_expr eloc,a) in
     tr_ins
 
 (* Parsed *)
