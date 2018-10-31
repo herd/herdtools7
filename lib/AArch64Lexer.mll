@@ -62,6 +62,19 @@ let check_name name = match name with
 | "casab"|"CASAB" -> CASAB
 | "caslb"|"CASLB" -> CASLB
 | "casalb"|"CASALB" -> CASALB
+(* Swap *)
+| "swp"|"SWP" -> SWP
+| "swpa"|"SWPA" -> SWPA
+| "swpl"|"SWPL" -> SWPL
+| "swpal"|"SWPAL" -> SWPAL
+| "swph"|"SWPH" -> SWPH
+| "swpah"|"SWPAH" -> SWPAH
+| "swplh"|"SWPLH" -> SWPLH
+| "swpalh"|"SWPALH" -> SWPALH
+| "swpb"|"SWPB" -> SWPB
+| "swpab"|"SWPAB" -> SWPAB
+| "swplb"|"SWPLB" -> SWPLB
+| "swpalb"|"SWPALB" -> SWPALB
 (* Operations *)
 | "sxtw"|"SXTW" -> SXTW
 | "mov"|"MOV" -> MOV

@@ -110,5 +110,13 @@ include Arch.MakeArch(struct
     | I_OP3(a,b,r1,r2,kr) -> I_OP3(a,b,conv_reg r1,conv_reg r2,expl_kr kr)
     | I_CSEL(v,r1,r2,r3,c,op) ->
         I_CSEL(v,conv_reg r1,conv_reg r2,conv_reg r3,c,op)
+    | I_CAS (v,a,r1,r2,r3) ->
+        I_CAS(v,a,conv_reg r1,conv_reg r2,conv_reg r3)
+    | I_CASBH (v,a,r1,r2,r3) ->
+        I_CASBH(v,a,conv_reg r1,conv_reg r2,conv_reg r3)
+    | I_SWP (v,a,r1,r2,r3) ->
+        I_SWP(v,a,conv_reg r1,conv_reg r2,conv_reg r3)
+    | I_SWPBH (v,a,r1,r2,r3) ->
+        I_SWPBH(v,a,conv_reg r1,conv_reg r2,conv_reg r3)
 end)
 

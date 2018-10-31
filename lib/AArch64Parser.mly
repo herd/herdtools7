@@ -44,6 +44,7 @@ open AArch64Base
 %token ISH ISHST ISHLD
 %token NSH NSHST NSHLD
 %token CAS CASA CASL CASAL CASB CASAB CASLB CASALB CASH CASAH CASLH CASALH
+%token SWP SWPA SWPL SWPAL SWPB SWPAB SWPLB SWPALB SWPH SWPAH SWPLH SWPALH
 
 %type <int list * (AArch64Base.parsedPseudo) list list> main
 %type <AArch64Base.parsedPseudo list> instr_option_seq
@@ -185,6 +186,68 @@ instr:
   { I_CAS (V32,RMW_P,$2,$4,$7) }
 | CAS xreg COMMA xreg COMMA  LBRK xreg zeroopt RBRK
   { I_CAS (V64,RMW_P,$2,$4,$7) }
+| CASA wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+  { I_CAS (V32,RMW_A,$2,$4,$7) }
+| CASA xreg COMMA xreg COMMA  LBRK xreg zeroopt RBRK
+  { I_CAS (V64,RMW_A,$2,$4,$7) }
+| CASL wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+  { I_CAS (V32,RMW_L,$2,$4,$7) }
+| CASL xreg COMMA xreg COMMA  LBRK xreg zeroopt RBRK
+  { I_CAS (V64,RMW_L,$2,$4,$7) }
+| CASAL wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+  { I_CAS (V32,RMW_AL,$2,$4,$7) }
+| CASAL xreg COMMA xreg COMMA  LBRK xreg zeroopt RBRK
+  { I_CAS (V64,RMW_AL,$2,$4,$7) }
+| CASB wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+  { I_CASBH (B,RMW_P,$2,$4,$7) }
+| CASAB wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+  { I_CASBH (B,RMW_A,$2,$4,$7) }
+| CASLB wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+  { I_CASBH (B,RMW_L,$2,$4,$7) }
+| CASALB wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+  { I_CASBH (B,RMW_AL,$2,$4,$7) }
+| CASH wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+  { I_CASBH (H,RMW_P,$2,$4,$7) }
+| CASAH wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+  { I_CASBH (H,RMW_A,$2,$4,$7) }
+| CASLH wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+  { I_CASBH (H,RMW_L,$2,$4,$7) }
+| CASALH wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+  { I_CASBH (H,RMW_AL,$2,$4,$7) }
+/* Swap */
+| SWP wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+  { I_SWP (V32,RMW_P,$2,$4,$7) }
+| SWP xreg COMMA xreg COMMA  LBRK xreg zeroopt RBRK
+  { I_SWP (V64,RMW_P,$2,$4,$7) }
+| SWPA wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+  { I_SWP (V32,RMW_A,$2,$4,$7) }
+| SWPA xreg COMMA xreg COMMA  LBRK xreg zeroopt RBRK
+  { I_SWP (V64,RMW_A,$2,$4,$7) }
+| SWPL wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+  { I_SWP (V32,RMW_L,$2,$4,$7) }
+| SWPL xreg COMMA xreg COMMA  LBRK xreg zeroopt RBRK
+  { I_SWP (V64,RMW_L,$2,$4,$7) }
+| SWPAL wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+  { I_SWP (V32,RMW_AL,$2,$4,$7) }
+| SWPAL xreg COMMA xreg COMMA  LBRK xreg zeroopt RBRK
+  { I_SWP (V64,RMW_AL,$2,$4,$7) }
+| SWPB wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+  { I_SWPBH (B,RMW_P,$2,$4,$7) }
+| SWPAB wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+  { I_SWPBH (B,RMW_A,$2,$4,$7) }
+| SWPLB wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+  { I_SWPBH (B,RMW_L,$2,$4,$7) }
+| SWPALB wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+  { I_SWPBH (B,RMW_AL,$2,$4,$7) }
+| SWPH wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+  { I_SWPBH (H,RMW_P,$2,$4,$7) }
+| SWPAH wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+  { I_SWPBH (H,RMW_A,$2,$4,$7) }
+| SWPLH wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+  { I_SWPBH (H,RMW_L,$2,$4,$7) }
+| SWPALH wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+  { I_SWPBH (H,RMW_AL,$2,$4,$7) }
+
 /* Operations */
 | MOV xreg COMMA kr
   { I_MOV (V64,$2,$4) }

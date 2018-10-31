@@ -24,7 +24,7 @@ end
 
 module Make(V:Constant.S)(C:Config) =
   struct
-    module A = AArch64Arch_litmus.Make(C)(V)
+    module  A = AArch64Arch_litmus.Make(C)(V)
     open A
     open A.Out
     open CType
@@ -305,15 +305,40 @@ module Make(V:Constant.S)(C:Config) =
     let casbh_memo bh rmw = Misc.lowercase (casbh_memo bh rmw)
 
     let cas memo v r1 r2 r3 =
-      let t = match v with | V32 -> word | V64 -> quad
-      and w = match v with | V32 -> "w" | V64 -> "" in
+      let t = match v with | V32 -> word | V64 -> quad in
+      let r1,f1,r2,f2 = match v with
+      | V32 -> args2 "wzr" (fun s -> "^wi"^s) r1 r2
+      | V64 -> args2 "xzr" (fun s -> "^i"^s) r1 r2 in
+      let idx = match r1,r2 with
+      | [],[] -> "0"
+      | (_::_,[])|([],_::_) -> "1"
+      | _::_,_::_ -> "2" in
       { empty_ins with
-        memo = sprintf "%s ^%si0,^%si1,[^i2]" memo w w;
-        inputs = [r1; r2; r3; ]; outputs = [r1;];
-        reg_env = [r1,t; r2,t; r3,voidstar; ]; }
+        memo = sprintf "%s %s,%s,[^i%s]" memo f1 f2 idx;
+        inputs = r1@r2@[r3]; outputs = r1;
+        reg_env = (r3,voidstar)::add_type t (r1@r2); }
+
+(* Swap *)
+    let swp_memo rmw = Misc.lowercase (swp_memo rmw)
+    let swpbh_memo bh rmw = Misc.lowercase (swpbh_memo bh rmw)
+
+    let swp memo v r1 r2 r3 =
+      let t = match v with | V32 -> word | V64 -> quad in
+      let r1,f1 =
+        match v with
+        |  V32 -> arg1 "wzr" (fun s -> "wi"^s) r1
+        |  V64 -> arg1 "xzr" (fun s -> "i"^s) r1 in
+      let idx = match r1 with | [] -> "0" | _::_ -> "1" in
+      let r2,f2 =
+        match v with
+        |  V32 -> arg1 "wzr" (fun s -> "wo"^s) r2
+        |  V64 -> arg1 "xzr" (fun s -> "o"^s) r2 in
+      { empty_ins with
+        memo = sprintf "%s %s,^%s,[^i%s]" memo f1 f2 idx;
+        inputs = r1@[r3;]; outputs =r2;
+        reg_env = (r3,voidstar)::add_type t (r1@r2); }
 
 (* Arithmetic *)
-
     let movk v r k =
       let memo =
         sprintf
@@ -438,6 +463,8 @@ module Make(V:Constant.S)(C:Config) =
     | I_STXR (v,t,r1,r2,r3) -> stxr (str_memo t) v r1 r2 r3::k
     | I_CAS (v,rmw,r1,r2,r3) -> cas (cas_memo rmw) v r1 r2 r3::k
     | I_CASBH (bh,rmw,r1,r2,r3) -> cas (casbh_memo bh rmw) V32 r1 r2 r3::k
+    | I_SWP (v,rmw,r1,r2,r3) -> swp (swp_memo rmw) v r1 r2 r3::k
+    | I_SWPBH (bh,rmw,r1,r2,r3) -> swp (swpbh_memo bh rmw) V32 r1 r2 r3::k
 (* Arithmetic *)
     | I_MOV (v,r,K i) ->  movk v r i::k
     | I_MOV (v,r1,RV (_,r2)) ->  movr v r1 r2::k

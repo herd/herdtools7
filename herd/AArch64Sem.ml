@@ -45,16 +45,16 @@ module Make (C:Sem.Config)(V:Value.S)
     let (>>!) = M.(>>!)
     let (>>::) = M.(>>::)
 
-     let tr_variant = let open AArch64Base in
-      function
+    let tr_variant = let open AArch64Base in
+    function
       | V32 -> MachSize.Word
       | V64 -> MachSize.Quad
 
     let mask32 ty m =
       let open AArch64Base in
-       match ty with
-       | V32 -> fun v -> M.op1 (Op.Mask MachSize.Word) v >>= m
-       | V64 -> m
+      match ty with
+      | V32 -> fun v -> M.op1 (Op.Mask MachSize.Word) v >>= m
+      | V64 -> m
 
 
     let add_variant v a = (a,tr_variant v)
@@ -77,7 +77,6 @@ module Make (C:Sem.Config)(V:Value.S)
     let read_reg_ord_sz sz = read_reg_sz sz false
 
     let read_reg_data sz = read_reg_sz sz true
-
 
     let do_read_mem sz an a ii =
       if mixed then
@@ -104,10 +103,12 @@ module Make (C:Sem.Config)(V:Value.S)
       else  write_loc sz an (A.Location_global a) v ii
 
     let write_mem sz a v ii = do_write_mem sz AArch64.N a v ii
-
     let write_mem_release sz a v ii = do_write_mem sz AArch64.L a v ii
 
-    (* TODO MIXED SIZE *)
+    let write_mem_amo sz a v ii = do_write_mem sz AArch64.X a v ii
+    let write_mem_amo_release sz a v ii = do_write_mem sz AArch64.XL a v ii
+
+        (* TODO MIXED SIZE *)
     let do_write_mem_atomic an sz a v resa ii =
       if mixed then
         (M.assign a resa >>|
@@ -155,9 +156,34 @@ module Make (C:Sem.Config)(V:Value.S)
           read_reg_ord rd ii >>= fun v -> M.add v (V.intToV k)
       | RV(_,r) ->
           (read_reg_ord rd ii >>| read_reg_ord r ii)
-          >>= fun (v1,v2) -> M.add v1 v2 end
+            >>= fun (v1,v2) -> M.add v1 v2 end
         >>= (fun (v,a) -> write_mem sz a v ii)
         >>! B.Next
+
+    let swp sz rmw r1 r2 r3 ii =
+      let open AArch64Base in
+      match r2 with
+      | ZR ->
+          let write_mem = match rmw with
+          | RMW_L|RMW_AL -> write_mem_release
+          | RMW_P|RMW_A  -> write_mem in
+          (read_reg_data sz r1 ii >>| read_reg_ord r3 ii) >>=
+          fun (v,a) -> write_mem sz a v ii
+      |  _ ->
+          let read_mem = match rmw with
+          | RMW_A|RMW_AL -> read_mem_atomic_acquire
+          | RMW_L|RMW_P  -> read_mem_atomic
+          and write_mem =  match rmw with
+          | RMW_L|RMW_AL -> write_mem_amo_release
+          | RMW_P|RMW_A  -> write_mem_amo in
+          read_reg_ord r3 ii >>=
+          fun a ->
+            let r1 = read_reg_data sz r1 ii
+            and w1 = fun v -> write_reg r2 v ii
+            and r2 = read_mem sz a ii
+            and w2 = fun v -> write_mem sz a v ii in
+            M.exch r1 r2 w1 w2 >>! ()
+
 
     let build_semantics ii =
       M.addT (A.next_po_index ii.A.program_order_index)
@@ -259,7 +285,7 @@ module Make (C:Sem.Config)(V:Value.S)
           fun v -> (* Encode sign extension 32 -> 64 *)
             M.op Op.Xor v m >>=
             fun x -> M.op Op.Sub x m >>=
-            fun v -> write_reg rd v ii >>! B.Next
+              fun v -> write_reg rd v ii >>! B.Next
 
       | I_OP3(ty,op,rd,rn,kr) ->
           let sz = tr_variant ty in
@@ -275,8 +301,8 @@ module Make (C:Sem.Config)(V:Value.S)
               | K k -> M.unitT (V.intToV k)
               | RV(_,r) -> read_reg_ord_sz sz r ii
               end
-         end
-      >>=
+          end
+            >>=
           begin match op with
           | ADD|ADDS -> fun (v1,v2) -> M.add v1 v2
           | EOR -> fun (v1,v2) -> M.op Op.Xor v1 v2
@@ -315,10 +341,13 @@ module Make (C:Sem.Config)(V:Value.S)
                        Warn.fatal "size dependent inverse not implemented" in
                    mop >>= mask32 var (fun v ->  write_reg r1 v ii))
                 >>! B.Next
-
-                (*  Cannot handle *)
+(* Swap *)
+      | I_SWP (v,rmw,r1,r2,r3) -> swp (tr_variant v) rmw r1 r2 r3 ii >>! B.Next
+      | I_SWPBH (v,rmw,r1,r2,r3) -> swp (bh_to_sz v) rmw r1 r2 r3 ii >>! B.Next
+(*  Cannot handle *)
       | (I_LDP _|I_STP _|I_CAS _|I_CASBH _) as i ->
           Warn.fatal "illegal instruction: %s"
             (AArch64.dump_instruction i)
+
      )
   end

@@ -235,11 +235,14 @@ let str_memo = function
 
 type rmw_type = RMW_P | RMW_A | RMW_L | RMW_AL
 
-let cas_memo = function
-  | RMW_P -> "CAS"
-  | RMW_A -> "CASA"
-  | RMW_L -> "CASL"
-  | RMW_AL -> "CASAL"
+let rmw_memo = function
+  | RMW_P -> ""
+  | RMW_A -> "A"
+  | RMW_L -> "L"
+  | RMW_AL -> "AL"
+
+let cas_memo rmw = sprintf "CAS%s" (rmw_memo rmw)
+and swp_memo rmw = sprintf "SWP%s" (rmw_memo rmw)
 
 type bh = B | H (* Byte or Halfword *)
 
@@ -252,6 +255,7 @@ let bh_to_sz = function
   | H -> MachSize.Short
 
 let casbh_memo bh rmw = sprintf "%s%s" (cas_memo rmw) (pp_bh bh)
+and swpbh_memo bh rmw = sprintf "%s%s" (swp_memo rmw) (pp_bh bh)
 
 type temporal = TT | NT
 type opsel = Cpy | Inc | Inv | Neg
@@ -283,6 +287,9 @@ type 'k kinstruction =
 (* CAS *)
   | I_CAS of variant * rmw_type * reg * reg * reg
   | I_CASBH of bh * rmw_type  * reg * reg * reg
+(* SWP *)
+  | I_SWP of variant * rmw_type * reg * reg * reg
+  | I_SWPBH of bh * rmw_type  * reg * reg * reg
 (* Operations *)
   | I_MOV of variant * reg * 'k kr
   | I_SXTW of reg * reg
@@ -416,6 +423,11 @@ let do_pp_instruction m =
       sprintf "%s %s,%s,[%s]" (cas_memo rmw) (pp_vreg v r1) (pp_vreg v r2) (pp_xreg r3)
   | I_CASBH (bh,rmw,r1,r2,r3) ->
       sprintf "%s %s,%s,[%s]" (casbh_memo bh rmw) (pp_wreg r1) (pp_wreg r2) (pp_xreg r3)
+(* SWP *)
+  | I_SWP (v,rmw,r1,r2,r3) ->
+      sprintf "%s %s,%s,[%s]" (swp_memo rmw) (pp_vreg v r1) (pp_vreg v r2) (pp_xreg r3)
+  | I_SWPBH (bh,rmw,r1,r2,r3) ->
+      sprintf "%s %s,%s,[%s]" (swpbh_memo bh rmw) (pp_wreg r1) (pp_wreg r2) (pp_xreg r3)
 (* Operations *)
   | I_MOV (v,r,kr) ->
       pp_rkr "MOV" v r kr
@@ -481,6 +493,8 @@ let fold_regs (f_regs,f_sregs) =
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 (fold_kr kr c)))
   | I_CAS (_,_,r1,r2,r3)
   | I_CASBH (_,_,r1,r2,r3)
+  | I_SWP (_,_,r1,r2,r3)
+  | I_SWPBH (_,_,r1,r2,r3)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
 
 
@@ -530,6 +544,11 @@ let map_regs f_reg f_symb =
       I_CAS (v,rmw,map_reg r1,map_reg r2,map_reg r3)
   | I_CASBH (bh,rmw,r1,r2,r3) ->
       I_CASBH (bh,rmw,map_reg r1,map_reg r2,map_reg r3)
+(* SWP *)
+  | I_SWP (v,rmw,r1,r2,r3) ->
+      I_SWP (v,rmw,map_reg r1,map_reg r2,map_reg r3)
+  | I_SWPBH (bh,rmw,r1,r2,r3) ->
+      I_SWPBH (bh,rmw,map_reg r1,map_reg r2,map_reg r3)
 (* Operations *)
   | I_MOV (v,r,k) ->
       I_MOV (v,map_reg r,k)
@@ -574,6 +593,8 @@ let get_next = function
   | I_CSEL _
   | I_CAS _
   | I_CASBH _
+  | I_SWP _
+  | I_SWPBH _
     -> [Label.Next;]
 
 include Pseudo.Make
@@ -600,6 +621,8 @@ include Pseudo.Make
         | I_CSEL _
         | I_CAS _
         | I_CASBH _
+        | I_SWP _
+        | I_SWPBH _
             as keep -> keep
         | I_LDR (v,r1,r2,kr) -> I_LDR (v,r1,r2,kr_tr kr)
         | I_LDP (t,v,r1,r2,r3,kr) -> I_LDP (t,v,r1,r2,r3,kr_tr kr)
@@ -616,7 +639,10 @@ include Pseudo.Make
         | I_STR _ | I_STLR _ | I_STXR _
         | I_LDRBH _ | I_STRBH _
           -> 1
-        | I_LDP _|I_STP _ | I_CAS _ | I_CASBH _ -> 2
+        | I_LDP _|I_STP _
+        | I_CAS _ | I_CASBH _
+        | I_SWP _ | I_SWPBH _
+          -> 2
         | I_B _
         | I_BC _
         | I_CBZ _
