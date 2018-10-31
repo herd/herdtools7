@@ -938,7 +938,11 @@ the second event is in a branch controled by the value loaded by the
 commfirst (read) event\\
 $\rmwr$ & read-exclusive write-exclusive pair &
 relate the read and write events emitted
-by matching successful load-reserve store conditional instructions.
+by matching successful load-reserve store conditional instructions,
+or atomic rmw instructions.\\
+$\amo$ & atomic modify &
+relate the read and write events emitted
+by atomic rmw instructions.
 \end{idtable}
 
 
