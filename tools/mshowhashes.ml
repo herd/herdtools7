@@ -24,6 +24,8 @@ module Top
          val verbose : int
        end) =
   struct
+    let () = ignore Opt.verbose
+
     let do_test name =
       let open TestInfo in
       try

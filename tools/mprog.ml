@@ -34,6 +34,8 @@ module Top
        end) =
   struct
 
+    let () = ignore O.verbose
+
     module T = struct
       type t = unit
     end
