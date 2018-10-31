@@ -174,6 +174,8 @@ include Arch.MakeArch(struct
           AtomicOpReturn (expl_expr loc,op,expl_expr e,ret,a)
       | AtomicAddUnless (loc,u,a,rb) ->
           AtomicAddUnless (expl_expr loc,expl_expr u,expl_expr a,rb)
+      | ExpSRCU (e,a) ->
+          ExpSRCU (expl_expr e,a)
     in
     function
     | Fence _|DeclReg _ as i -> i
@@ -191,4 +193,5 @@ include Arch.MakeArch(struct
     | Symb s -> find_code s
     | PCall (f,es) -> PCall (f,List.map expl_expr es)
     | AtomicOp(e1,op,e2) -> AtomicOp (expl_expr e1,op,expl_expr e2)
+    | InstrSRCU (e,a) -> InstrSRCU (expl_expr e,a)
 end)
