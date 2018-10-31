@@ -84,9 +84,8 @@ let list_loc prog =
     | AtomicAddUnless(e1,e2,e3,_)
     | CmpExchange (e1,e2,e3,_)
     | ECas (e1,e2,e3,_,_,_) -> expr (expr (expr s e1) e2) e3
-    | TryLock (e,_)|IsLocked (e,_) -> expr s e
+    | TryLock (e,_)|IsLocked (e,_)|ExpSRCU(e,_) -> expr s e in
 
-  in 
   let rec ins s = function
     | Seq(l,_) -> List.fold_left ins s l
     | If(c,t,Some e) -> expr (ins (ins s e) t) c
@@ -100,6 +99,7 @@ let list_loc prog =
         List.fold_left expr s es
     | Fence _|Symb _ -> s
     | AtomicOp(e1,_,e2) -> expr (expr s e1) e2
+    | InstrSRCU(e,_) -> expr s e
   in
   LocSet.elements (List.fold_left ins LocSet.empty prog)
 
