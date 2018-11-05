@@ -45,9 +45,11 @@ module type S =
         'loc t -> 'v t -> ('loc -> 'w t) -> ('loc -> 'v -> unit t) -> 'w t
     val amo : Op.op ->
         'loc t -> A.V.v t -> ('loc -> A.V.v t) -> ('loc -> A.V.v -> unit t) -> A.V.v t
+
     val linux_cmpexch_ok :
         'loc t -> 'v t -> 'v t -> ('loc -> 'v t) ->
           ('loc -> 'v -> unit t) -> ('v -> 'v -> unit t) -> 'v t
+
     val linux_cmpexch_no :
         'loc t -> 'v t -> ('loc -> 'v t) ->
           ('v -> 'v -> unit t) -> 'v t
@@ -65,6 +67,10 @@ module type S =
                   (A.V.v -> A.V.v -> A.V.v -> unit t) -> (* write mem *)
                     unit t
 
+    val aarch64_cas_ok :
+        'loc t -> 'v t -> 'v t ->
+          ('v -> unit t) -> ('loc -> 'v t) -> ('loc -> 'v -> unit t) ->
+            ('v -> 'v -> unit t) -> unit t
     val stu : 'a t -> 'a t -> ('a -> unit t) -> (('a * 'a) -> unit t) -> unit t
     val (>>>) : 'a t -> ('a -> 'b t) -> 'b t
     val (>>>>) : 'a t -> ('a -> 'b t) -> 'b t
@@ -117,6 +123,7 @@ module type S =
 
 (* Acts as an inequality equation *)
     val neqT : A.V.v -> A.V.v -> unit t
+    val eqT : A.V.v -> A.V.v -> unit t
 
 (* Buid evt structure for swap *)
     val swap :

@@ -297,6 +297,11 @@ module type S = sig
           event_structure ->  event_structure ->  event_structure ->
             event_structure
 
+  val aarch64_cas_ok :
+        event_structure -> event_structure -> event_structure ->
+          event_structure ->  event_structure ->  event_structure ->
+            event_structure
+
 (* stu computation :
    stu rD rEA wEA wM ->
       rEA -data-> wEA,
@@ -747,23 +752,23 @@ let para_comp es1 es2 =
     sca = EventSetSet.union es1.sca es2.sca;
     mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; }
 
-let (=|=) = check_disjoint para_comp
+  let (=|=) = check_disjoint para_comp
 
 (* Composition with intra_causality_data from first to second *)
   let data_comp mkOut es1 es2 =
-      { procs = [];  events = EventSet.union es1.events es2.events;
-        intra_causality_data = EventRel.union
-          (EventRel.union es1.intra_causality_data
-             es2.intra_causality_data)
-          (EventRel.cartesian (get_output es1) (minimals_data es2)) ;
-        intra_causality_control = EventRel.union
-          es1.intra_causality_control es2.intra_causality_control ;
-        control = EventRel.union es1.control es2.control;
-        data_ports = EventSet.union es1.data_ports es2.data_ports;
-        success_ports = EventSet.union es1.success_ports es2.success_ports;
-        output = mkOut es1 es2;
-        sca = EventSetSet.union es1.sca es2.sca;
-        mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; }
+    { procs = [];  events = EventSet.union es1.events es2.events;
+      intra_causality_data = EventRel.union
+        (EventRel.union es1.intra_causality_data
+           es2.intra_causality_data)
+        (EventRel.cartesian (get_output es1) (minimals_data es2)) ;
+      intra_causality_control = EventRel.union
+        es1.intra_causality_control es2.intra_causality_control ;
+      control = EventRel.union es1.control es2.control;
+      data_ports = EventSet.union es1.data_ports es2.data_ports;
+      success_ports = EventSet.union es1.success_ports es2.success_ports;
+      output = mkOut es1 es2;
+      sca = EventSetSet.union es1.sca es2.sca;
+      mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; }
 
   let (=*$=) =
     check_disjoint (data_comp (fun _ es -> es.output))
@@ -772,55 +777,55 @@ let (=|=) = check_disjoint para_comp
     check_disjoint (data_comp (fun es _ -> Some (get_output es)))
 
 (* Composition with intra_causality_control from first to second *)
-    let control_comp es1 es2 =
-      { procs = [] ;
-        events =  EventSet.union es1.events es2.events;
-        intra_causality_data = EventRel.union
-          es1.intra_causality_data es2.intra_causality_data ;
-        intra_causality_control = EventRel.union
-          (EventRel.union es1.intra_causality_control
-             es2.intra_causality_control)
-          (EventRel.cartesian (maximals es1) (minimals es2));
-        control = EventRel.union es1.control es2.control;
-        data_ports = EventSet.union es1.data_ports es2.data_ports;
-        success_ports = EventSet.union es1.success_ports es2.success_ports;
-        output = union_output es1 es2;
-        sca = EventSetSet.union es1.sca es2.sca;
-        mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; }
+  let control_comp es1 es2 =
+    { procs = [] ;
+      events =  EventSet.union es1.events es2.events;
+      intra_causality_data = EventRel.union
+        es1.intra_causality_data es2.intra_causality_data ;
+      intra_causality_control = EventRel.union
+        (EventRel.union es1.intra_causality_control
+           es2.intra_causality_control)
+        (EventRel.cartesian (maximals es1) (minimals es2));
+      control = EventRel.union es1.control es2.control;
+      data_ports = EventSet.union es1.data_ports es2.data_ports;
+      success_ports = EventSet.union es1.success_ports es2.success_ports;
+      output = union_output es1 es2;
+      sca = EventSetSet.union es1.sca es2.sca;
+      mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; }
 
   let (=**=) = check_disjoint control_comp
 
 (* Multi composition for exchange *)
 (* rsX/wsX are from/to the same location *)
-    let exch_comp rs1 rs2 ws1 ws2 =
-      { procs = [] ;
-        events = EventSet.union4 rs1.events rs2.events ws1.events ws2.events;
-        intra_causality_data =
-        EventRel.unions
-          [EventRel.unions
-             [rs1.intra_causality_data;rs2.intra_causality_data;
-              ws1.intra_causality_data;ws2.intra_causality_data;];
-           EventRel.cartesian (maximals rs1) (minimals ws2);
-           EventRel.cartesian (maximals rs2) (minimals ws1);];
-        intra_causality_control =
-        EventRel.unions
-          [EventRel.unions
-             [rs1.intra_causality_control;rs2.intra_causality_control;
-              ws1.intra_causality_control;ws2.intra_causality_control;];
-           EventRel.cartesian (maximals rs1) (minimals ws1);
-           EventRel.cartesian (maximals rs2) (minimals ws2);];
-        control =
-          EventRel.union4 rs1.control rs2.control ws1.control ws2.control;
-        data_ports =
-          EventSet.union4 rs1.data_ports rs2.data_ports ws1.data_ports ws2.data_ports;
-        success_ports =
-          EventSet.union4 rs1.success_ports rs2.success_ports ws1.success_ports ws2.success_ports;
-        output = None;
-        sca = EventSetSet.union4 rs1.sca rs2.sca ws1.sca ws2.sca;
-        mem_accesses =
-        EventSet.union4
-          rs1.mem_accesses rs2.mem_accesses
-          ws1.mem_accesses ws2.mem_accesses ; }
+  let exch_comp rs1 rs2 ws1 ws2 =
+    { procs = [] ;
+      events = EventSet.union4 rs1.events rs2.events ws1.events ws2.events;
+      intra_causality_data =
+      EventRel.unions
+        [EventRel.unions
+           [rs1.intra_causality_data;rs2.intra_causality_data;
+            ws1.intra_causality_data;ws2.intra_causality_data;];
+         EventRel.cartesian (maximals rs1) (minimals ws2);
+         EventRel.cartesian (maximals rs2) (minimals ws1);];
+      intra_causality_control =
+      EventRel.unions
+        [EventRel.unions
+           [rs1.intra_causality_control;rs2.intra_causality_control;
+            ws1.intra_causality_control;ws2.intra_causality_control;];
+         EventRel.cartesian (maximals rs1) (minimals ws1);
+         EventRel.cartesian (maximals rs2) (minimals ws2);];
+      control =
+      EventRel.union4 rs1.control rs2.control ws1.control ws2.control;
+      data_ports =
+      EventSet.union4 rs1.data_ports rs2.data_ports ws1.data_ports ws2.data_ports;
+      success_ports =
+      EventSet.union4 rs1.success_ports rs2.success_ports ws1.success_ports ws2.success_ports;
+      output = None;
+      sca = EventSetSet.union4 rs1.sca rs2.sca ws1.sca ws2.sca;
+      mem_accesses =
+      EventSet.union4
+        rs1.mem_accesses rs2.mem_accesses
+        ws1.mem_accesses ws2.mem_accesses ; }
 
 (* disjointness is awful *)
   let exch rx ry wx wy =
@@ -839,72 +844,72 @@ let (=|=) = check_disjoint para_comp
   let linux_exch re rloc rmem wmem =
     let input_wmem = minimals wmem in
     let output_rloc = maximals rloc in
-   { procs = [];
-     events =
-        EventSet.union4 re.events rloc.events rmem.events wmem.events;
-     intra_causality_data =
-        EventRel.unions
-          [EventRel.union4
-              re.intra_causality_data rloc.intra_causality_data
-              rmem.intra_causality_data wmem.intra_causality_data;
-           EventRel.cartesian (maximals re) input_wmem;
-           EventRel.cartesian output_rloc input_wmem;
-           EventRel.cartesian output_rloc (minimals rmem);];
-     intra_causality_control =
-        EventRel.union
-          (EventRel.union4
-             re.intra_causality_control rloc.intra_causality_control
-             rmem.intra_causality_control wmem.intra_causality_control)
-          (EventRel.cartesian (maximals rmem) (minimals wmem));
-     control =
-       EventRel.union4
-         re.control rloc.control rmem.control wmem.control;
-     data_ports =
-       EventSet.union4
-         re.data_ports rloc.data_ports rmem.data_ports wmem.data_ports;
-     success_ports =
-       EventSet.union4
-         re.success_ports rloc.success_ports rmem.success_ports wmem.success_ports;
-     output = Some (get_output rmem);
-     sca = EventSetSet.union4 re.sca rloc.sca rmem.sca wmem.sca;
-     mem_accesses =
-       EventSet.union4
-       re.mem_accesses rloc.mem_accesses rmem.mem_accesses wmem.mem_accesses;
-   }
+    { procs = [];
+      events =
+      EventSet.union4 re.events rloc.events rmem.events wmem.events;
+      intra_causality_data =
+      EventRel.unions
+        [EventRel.union4
+           re.intra_causality_data rloc.intra_causality_data
+           rmem.intra_causality_data wmem.intra_causality_data;
+         EventRel.cartesian (maximals re) input_wmem;
+         EventRel.cartesian output_rloc input_wmem;
+         EventRel.cartesian output_rloc (minimals rmem);];
+      intra_causality_control =
+      EventRel.union
+        (EventRel.union4
+           re.intra_causality_control rloc.intra_causality_control
+           rmem.intra_causality_control wmem.intra_causality_control)
+        (EventRel.cartesian (maximals rmem) (minimals wmem));
+      control =
+      EventRel.union4
+        re.control rloc.control rmem.control wmem.control;
+      data_ports =
+      EventSet.union4
+        re.data_ports rloc.data_ports rmem.data_ports wmem.data_ports;
+      success_ports =
+      EventSet.union4
+        re.success_ports rloc.success_ports rmem.success_ports wmem.success_ports;
+      output = Some (get_output rmem);
+      sca = EventSetSet.union4 re.sca rloc.sca rmem.sca wmem.sca;
+      mem_accesses =
+      EventSet.union4
+        re.mem_accesses rloc.mem_accesses rmem.mem_accesses wmem.mem_accesses;
+    }
 
   let amo re rloc rmem wmem =
     let input_wmem = minimals wmem in
     let output_rloc = maximals rloc in
-   { procs = [];
-     events =
-        EventSet.union4 re.events rloc.events rmem.events wmem.events;
-     intra_causality_data =
-        EventRel.unions
-          [EventRel.union4
-              re.intra_causality_data rloc.intra_causality_data
-              rmem.intra_causality_data wmem.intra_causality_data;
-           EventRel.cartesian (maximals rmem) input_wmem;
-           EventRel.cartesian (maximals re) input_wmem;
-           EventRel.cartesian output_rloc input_wmem;
-           EventRel.cartesian output_rloc (minimals rmem);];
-     intra_causality_control =
-     (EventRel.union4
-        re.intra_causality_control rloc.intra_causality_control
-        rmem.intra_causality_control wmem.intra_causality_control);
-     control =
-       EventRel.union4
-         re.control rloc.control rmem.control wmem.control;
-     data_ports =
-       EventSet.union4
-         re.data_ports rloc.data_ports rmem.data_ports wmem.data_ports;
-     success_ports =
-       EventSet.union4
-         re.success_ports rloc.success_ports rmem.success_ports wmem.success_ports;
-     output = Some (get_output rmem);
-     sca = EventSetSet.union4 re.sca rloc.sca rmem.sca wmem.sca;
-     mem_accesses =
-       EventSet.union4
-         re.mem_accesses rloc.mem_accesses rmem.mem_accesses wmem.mem_accesses; }
+    { procs = [];
+      events =
+      EventSet.union4 re.events rloc.events rmem.events wmem.events;
+      intra_causality_data =
+      EventRel.unions
+        [EventRel.union4
+           re.intra_causality_data rloc.intra_causality_data
+           rmem.intra_causality_data wmem.intra_causality_data;
+         EventRel.cartesian (maximals rmem) input_wmem;
+         EventRel.cartesian (maximals re) input_wmem;
+         EventRel.cartesian output_rloc input_wmem;
+         EventRel.cartesian output_rloc (minimals rmem);];
+      intra_causality_control =
+      (EventRel.union4
+         re.intra_causality_control rloc.intra_causality_control
+         rmem.intra_causality_control wmem.intra_causality_control);
+      control =
+      EventRel.union4
+        re.control rloc.control rmem.control wmem.control;
+      data_ports =
+      EventSet.union4
+        re.data_ports rloc.data_ports rmem.data_ports wmem.data_ports;
+      success_ports =
+      EventSet.union4
+        re.success_ports rloc.success_ports rmem.success_ports wmem.success_ports;
+      output = Some (get_output rmem);
+      sca = EventSetSet.union4 re.sca rloc.sca rmem.sca wmem.sca;
+      mem_accesses =
+      EventSet.union4
+        re.mem_accesses rloc.mem_accesses rmem.mem_accesses wmem.mem_accesses; }
 
 (************************************)
 (* Compare exchange, really complex *)
@@ -929,7 +934,7 @@ let (=|=) = check_disjoint para_comp
          EventRel.cartesian output_rloc input_wmem;
          EventRel.cartesian output_rloc input_rmem;];
       intra_causality_control =
-       EventRel.unions
+      EventRel.unions
         [EventRel.union5
            rloc.intra_causality_control rold.intra_causality_control
            rnew.intra_causality_control
@@ -970,9 +975,9 @@ let (=|=) = check_disjoint para_comp
            rmem.intra_causality_data;
          EventRel.cartesian output_rloc input_rmem;];
       intra_causality_control =
-        EventRel.union3
-           rloc.intra_causality_control rold.intra_causality_control
-           rmem.intra_causality_control;
+      EventRel.union3
+        rloc.intra_causality_control rold.intra_causality_control
+        rmem.intra_causality_control;
       control=
       EventRel.union3 rloc.control rold.control rmem.control;
       data_ports=
@@ -1103,15 +1108,15 @@ let (=|=) = check_disjoint para_comp
         (EventRel.union3 wres.intra_causality_control
            wresult.intra_causality_control wmem.control);
       control =
-         EventRel.union
-           (EventRel.union3 resa.control data.control addr.control)
-           (EventRel.union3 wres.control wresult.control wmem.control);
+      EventRel.union
+        (EventRel.union3 resa.control data.control addr.control)
+        (EventRel.union3 wres.control wresult.control wmem.control);
       data_ports =
-       EventSet.union
+      EventSet.union
         (EventSet.union3 resa.data_ports data.data_ports addr.data_ports)
         (EventSet.union3 wres.data_ports wresult.data_ports wmem.data_ports);
       success_ports =
-       EventSet.union
+      EventSet.union
         (EventSet.union3 resa.success_ports data.success_ports addr.success_ports)
         (EventSet.union3 wres.success_ports wresult.success_ports wmem.success_ports);
       output = Some (EventSet.union (get_output wresult) (get_output wres));
@@ -1120,9 +1125,71 @@ let (=|=) = check_disjoint para_comp
         (EventSetSet.union3 resa.sca data.sca addr.sca)
         (EventSetSet.union3 wres.sca wresult.sca wmem.sca);
       mem_accesses =
-       EventSet.union
+      EventSet.union
         (EventSet.union3 resa.mem_accesses data.mem_accesses addr.mem_accesses)
         (EventSet.union3 wres.mem_accesses wresult.mem_accesses wmem.mem_accesses);
+    }
+
+(* AArch64 CAS, success *)
+  let aarch64_cas_ok rn rs rt wrs rm wm =
+    let output_rn = maximals rn
+    and output_rs = maximals rs
+    and output_rm = maximals rm
+    and input_wrs = minimals wrs
+    and input_rm = minimals rm
+    and input_wm = minimals wm in
+    { procs = [] ;
+      events =
+      EventSet.union6
+        rn.events rs.events rt.events
+        wrs.events rm.events wm.events ;
+      intra_causality_data =
+      EventRel.union
+        (EventRel.union6
+           rn.intra_causality_data
+           rs.intra_causality_data
+           rt.intra_causality_data
+           wrs.intra_causality_data
+           rm.intra_causality_data
+           wm.intra_causality_data)
+        (EventRel.union4
+           (EventRel.cartesian output_rn input_rm)
+           (EventRel.cartesian output_rn input_wm)
+           (EventRel.cartesian (maximals rt) input_wm)
+           (EventRel.cartesian output_rm input_wrs));
+      intra_causality_control =
+      EventRel.union
+        (EventRel.union6
+           rn.intra_causality_control
+           rs.intra_causality_control
+           rt.intra_causality_control
+           wrs.intra_causality_control
+           rm.intra_causality_control
+           wm.intra_causality_control)
+        (EventRel.union
+           (EventRel.cartesian output_rs input_wm)
+           (EventRel.cartesian output_rm input_wm));
+      control =
+       (EventRel.union6
+         rn.control rs.control rt.control
+         wrs.control rm.control wm.control);
+      data_ports =
+      (EventSet.union6
+          rn.data_ports rs.data_ports rt.data_ports
+          wrs.data_ports rm.data_ports wm.data_ports);
+      success_ports =
+       (EventSet.union6
+          rn.success_ports rs.success_ports rt.success_ports
+          wrs.success_ports rm.success_ports wm.success_ports);
+      sca =
+      (EventSetSet.union6
+         rn.sca rs.sca rt.sca
+         wrs.sca rm.sca wm.sca);
+      mem_accesses =
+       (EventSet.union6
+         rn.mem_accesses rs.mem_accesses rt.mem_accesses
+         wrs.mem_accesses rm.mem_accesses wm.mem_accesses);
+      output = Some (maximals wrs);
     }
 (* Store update composition, read data, read EA, write EA and  write Mem *)
 

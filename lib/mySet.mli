@@ -41,6 +41,7 @@ module type S = sig
   val union3 : t -> t -> t -> t
   val union4 : t -> t -> t -> t -> t
   val union5 : t -> t -> t -> t -> t -> t
+  val union6 : t -> t -> t -> t -> t -> t -> t
 
   (* Quite convenient: union of sets given in a list *)
   val unions : t list -> t

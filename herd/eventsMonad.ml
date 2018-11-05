@@ -277,6 +277,32 @@ and type evt_struct = E.event_structure) =
       eiid,
       Evt.singleton ((),cl_resa@cl_data@cl_addr@cl_wres@cl_wresult@cl_wmem,es)
 
+(* AArch64 successful cas *)
+    let aarch64_cas_ok
+        (read_rn:'loc t) (read_rs:'v t) (read_rt: 'v t)
+        (write_rs:'v-> unit t)
+        (read_mem: 'loc -> 'v t) (write_mem: 'loc -> 'v -> unit t)
+        (req: 'v -> 'v -> unit t)
+        eiid =
+      let eiid,read_rn = read_rn eiid in
+      let eiid,read_rs = read_rs eiid in
+      let eiid,read_rt = read_rt eiid in
+      let a,cl_a,es_rn = Evt.as_singleton read_rn
+      and cv,cl_cv,es_rs = Evt.as_singleton read_rs
+      and nv,cl_nv,es_rt = Evt.as_singleton read_rt in
+      let eiid,read_mem = read_mem a eiid in
+      let eiid,write_mem = write_mem a nv eiid in
+      let ov,cl_rm,es_rm = Evt.as_singleton read_mem
+      and (),cl_wm,es_wm= Evt.as_singleton write_mem in
+      let eiid,write_rs = write_rs ov eiid in
+      let (),cl_wrs,es_wrs = Evt.as_singleton write_rs in
+      let eiid,eqm = req ov cv eiid in
+      let (),cl_eq,eseq =  Evt.as_singleton eqm in
+      assert (E.is_empty_event_structure eseq) ;
+      let es =
+        E.aarch64_cas_ok es_rn es_rs es_rt es_wrs es_rm es_wm in
+      let cls = cl_a@cl_cv@cl_nv@cl_rm@cl_wm@cl_wrs@cl_eq  in
+      eiid,Evt.singleton ((),cls,es)
 
 (* Simple alternative *)
     let altT : 'a t -> 'a t -> 'a t =
@@ -691,6 +717,10 @@ and type evt_struct = E.event_structure) =
     let neqT : V.v -> V.v -> unit t
         = fun v1 v2 ->
           op Op.Eq v1 v2 >>= fun v -> assign v V.zero
+
+    let eqT : V.v -> V.v -> unit t
+        = fun v1 v2 ->
+          op Op.Eq v1 v2 >>= fun v -> assign v V.one
 
 
     let swap arg mk_action ii =

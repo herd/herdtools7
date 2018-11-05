@@ -160,6 +160,14 @@ module Make (C:Sem.Config)(V:Value.S)
         >>= (fun (v,a) -> write_mem sz a v ii)
         >>! B.Next
 
+
+    let rmw_amo_read rmw = let open AArch64Base in match rmw with
+    | RMW_A|RMW_AL -> read_mem_atomic_acquire
+    | RMW_L|RMW_P  -> read_mem_atomic
+    and rmw_amo_write rmw = let open AArch64Base in match rmw with
+    | RMW_L|RMW_AL -> write_mem_amo_release
+    | RMW_P|RMW_A  -> write_mem_amo
+
     let swp sz rmw r1 r2 r3 ii =
       let open AArch64Base in
       match r2 with
@@ -170,12 +178,8 @@ module Make (C:Sem.Config)(V:Value.S)
           (read_reg_data sz r1 ii >>| read_reg_ord r3 ii) >>=
           fun (v,a) -> write_mem sz a v ii
       |  _ ->
-          let read_mem = match rmw with
-          | RMW_A|RMW_AL -> read_mem_atomic_acquire
-          | RMW_L|RMW_P  -> read_mem_atomic
-          and write_mem =  match rmw with
-          | RMW_L|RMW_AL -> write_mem_amo_release
-          | RMW_P|RMW_A  -> write_mem_amo in
+          let read_mem = rmw_amo_read rmw
+          and write_mem =  rmw_amo_write rmw in
           read_reg_ord r3 ii >>=
           fun a ->
             let r1 = read_reg_data sz r1 ii
@@ -344,10 +348,31 @@ module Make (C:Sem.Config)(V:Value.S)
 (* Swap *)
       | I_SWP (v,rmw,r1,r2,r3) -> swp (tr_variant v) rmw r1 r2 r3 ii >>! B.Next
       | I_SWPBH (v,rmw,r1,r2,r3) -> swp (bh_to_sz v) rmw r1 r2 r3 ii >>! B.Next
+(* Compare & Swap *)
+      | I_CAS (v,rmw,rs,rt,rn) ->
+          let sz = tr_variant v in
+          let read_rn = read_reg_ord rn ii
+          and read_rs = read_reg_ord_sz sz rs ii in
+            M.altT
+            (read_rn >>= fun a ->
+             (read_rs >>|
+               begin let read_mem = match rmw with
+               | RMW_A|RMW_AL -> read_mem_acquire
+               | RMW_L|RMW_P  -> read_mem in
+               read_mem sz a ii >>=
+               fun v -> write_reg rs v ii >>! v end) >>=
+               fun (cv,v) -> M.neqT cv v >>! ())
+            (let read_rt =  read_reg_data sz rt ii
+            and read_mem a = rmw_amo_read rmw sz  a ii
+            and write_mem a v = rmw_amo_write rmw sz a v ii
+            and write_rs v =  write_reg rs v ii in
+            M.aarch64_cas_ok
+              read_rn read_rs read_rt write_rs read_mem write_mem
+              (fun v1 v2 -> M.eqT v1 v2))
+            >>! B.Next
 (*  Cannot handle *)
-      | (I_LDP _|I_STP _|I_CAS _|I_CASBH _) as i ->
+      | (I_LDP _|I_STP _|I_CASBH _) as i ->
           Warn.fatal "illegal instruction: %s"
             (AArch64.dump_instruction i)
-
      )
   end
