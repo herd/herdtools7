@@ -75,6 +75,44 @@ let check_name name = match name with
 | "swpab"|"SWPAB" -> SWPAB
 | "swplb"|"SWPLB" -> SWPLB
 | "swpalb"|"SWPALB" -> SWPALB
+(* Fetch and ADD *)
+| "ldadd"|"LDADD" -> LDADD
+| "ldadda"|"LDADDA" -> LDADDA
+| "ldaddl"|"LDADDL" -> LDADDL
+| "ldaddal"|"LDADDAL" -> LDADDAL
+| "ldaddh"|"LDADDH" -> LDADDH
+| "ldaddah"|"LDADDAH" -> LDADDAH
+| "ldaddlh"|"LDADDLH" -> LDADDLH
+| "ldaddalh"|"LDADDALH" -> LDADDALH
+| "ldaddb"|"LDADDB" -> LDADDB
+| "ldaddab"|"LDADDAB" -> LDADDAB
+| "ldaddlb"|"LDADDLB" -> LDADDLB
+| "ldaddalb"|"LDADDALB" -> LDADDALB
+| "stadd"|"STADD" -> STADD
+| "staddl"|"STADDL" -> STADDL
+| "staddh"|"STADDH" -> STADDH
+| "staddlh"|"STADDLH" -> STADDLH
+| "staddb"|"STADDB" -> STADDB
+| "staddlb"|"STADDLB" -> STADDLB
+(* Fetch and Xor *)
+| "ldeor"|"LDEOR" -> LDEOR
+| "ldeora"|"LDEORA" -> LDEORA
+| "ldeorl"|"LDEORL" -> LDEORL
+| "ldeoral"|"LDEORAL" -> LDEORAL
+| "ldeorh"|"LDEORH" -> LDEORH
+| "ldeorah"|"LDEORAH" -> LDEORAH
+| "ldeorlh"|"LDEORLH" -> LDEORLH
+| "ldeoralh"|"LDEORALH" -> LDEORALH
+| "ldeorb"|"LDEORB" -> LDEORB
+| "ldeorab"|"LDEORAB" -> LDEORAB
+| "ldeorlb"|"LDEORLB" -> LDEORLB
+| "ldeoralb"|"LDEORALB" -> LDEORALB
+| "steor"|"STEOR" -> STEOR
+| "steorl"|"STEORL" -> STEORL
+| "steorh"|"STEORH" -> STEORH
+| "steorlh"|"STEORLH" -> STEORLH
+| "steorb"|"STEORB" -> STEORB
+| "steorlb"|"STEORLB" -> STEORLB
 (* Operations *)
 | "sxtw"|"SXTW" -> SXTW
 | "mov"|"MOV" -> MOV

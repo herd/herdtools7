@@ -489,6 +489,7 @@ module Make(V:Constant.S)(C:Config) =
          memo = memo; inputs=inputs; outputs=[r1;];
          reg_env=add_type t (r1::inputs);
         }::k
+    |(I_LDOP _|I_LDOPBH _|I_STOP _|I_STOPBH _) -> assert false
 
     let no_tr lbl = lbl
     let branch_neq r i lab k = cmpk V32 r i::bcc no_tr NE lab::k

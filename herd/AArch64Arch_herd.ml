@@ -22,7 +22,7 @@ module Make (C:sig include Arch_herd.Config val moreedges : bool end) (V:Value.S
     let pp_barrier_short = pp_barrier
     let reject_mixed = true
 
-    type annot = A | XA | L | XL | X | N | Q
+    type annot = A | XA | L | XL | X | N | Q | NoRet
     type lannot = annot
 
     let empty_annot = N
@@ -32,10 +32,14 @@ module Make (C:sig include Arch_herd.Config val moreedges : bool end) (V:Value.S
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
 
     let _is_atomic = function
-      | XA | XL | X -> true
+      | XA | XL | X | NoRet -> true
       | _ -> false
 
     let is_atomic = wrap_is _is_atomic
+
+    let is_noreturn = function
+      | NoRet -> true
+      | _ -> false
 
     let is_acquire = function
       | A | XA -> true
@@ -60,7 +64,8 @@ module Make (C:sig include Arch_herd.Config val moreedges : bool end) (V:Value.S
       "X", is_atomic;
       "A",  wrap_is is_acquire;
       "Q",  wrap_is is_acquire_pc;
-      "L",  wrap_is is_release
+      "L",  wrap_is is_release;
+      "NoRet", wrap_is is_noreturn;
     ]
 
     let is_isync = is_barrier ISB
@@ -74,6 +79,7 @@ module Make (C:sig include Arch_herd.Config val moreedges : bool end) (V:Value.S
       | L -> "Rel"
       | X -> "*"
       | N -> ""
+      | NoRet -> "NoRet"
 
     module V = V
 

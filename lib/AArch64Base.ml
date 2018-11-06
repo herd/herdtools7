@@ -234,6 +234,10 @@ let str_memo = function
   | LY -> "STLXR"
 
 type rmw_type = RMW_P | RMW_A | RMW_L | RMW_AL
+type w_type = W_P | W_L
+let w_to_rmw = function
+  | W_P -> RMW_P
+  | W_L -> RMW_L
 
 let rmw_memo = function
   | RMW_P -> ""
@@ -241,8 +245,20 @@ let rmw_memo = function
   | RMW_L -> "L"
   | RMW_AL -> "AL"
 
+let w_memo = function
+  | W_P -> ""
+  | W_L -> "L"
+
 let cas_memo rmw = sprintf "CAS%s" (rmw_memo rmw)
 and swp_memo rmw = sprintf "SWP%s" (rmw_memo rmw)
+
+type atomic_op = A_ADD | A_EOR
+let pp_aop = function
+  | A_ADD -> "ADD"
+  | A_EOR -> "EOR"
+
+let ldop_memo op rmw = sprintf "LD%s%s" (pp_aop op) (rmw_memo rmw)
+and stop_memo op w = sprintf "ST%s%s" (pp_aop op) (w_memo w)
 
 type bh = B | H (* Byte or Halfword *)
 
@@ -256,6 +272,8 @@ let bh_to_sz = function
 
 let casbh_memo bh rmw = sprintf "%s%s" (cas_memo rmw) (pp_bh bh)
 and swpbh_memo bh rmw = sprintf "%s%s" (swp_memo rmw) (pp_bh bh)
+and ldopbh_memo op bh rmw = sprintf "%s%s" (ldop_memo op rmw) (pp_bh bh)
+and stopbh_memo op bh  rmw = sprintf "%s%s" (stop_memo op rmw) (pp_bh bh)
 
 type temporal = TT | NT
 type opsel = Cpy | Inc | Inv | Neg
@@ -290,6 +308,11 @@ type 'k kinstruction =
 (* SWP *)
   | I_SWP of variant * rmw_type * reg * reg * reg
   | I_SWPBH of bh * rmw_type  * reg * reg * reg
+(* Fetch and op *)
+  | I_LDOP of  atomic_op * variant * rmw_type  * reg * reg * reg
+  | I_LDOPBH of atomic_op * bh * rmw_type  * reg * reg * reg
+  | I_STOP of  atomic_op * variant * w_type * reg * reg
+  | I_STOPBH of  atomic_op * bh * w_type  * reg * reg
 (* Operations *)
   | I_MOV of variant * reg * 'k kr
   | I_SXTW of reg * reg
@@ -428,6 +451,19 @@ let do_pp_instruction m =
       sprintf "%s %s,%s,[%s]" (swp_memo rmw) (pp_vreg v r1) (pp_vreg v r2) (pp_xreg r3)
   | I_SWPBH (bh,rmw,r1,r2,r3) ->
       sprintf "%s %s,%s,[%s]" (swpbh_memo bh rmw) (pp_wreg r1) (pp_wreg r2) (pp_xreg r3)
+(* Fecth and Op *)
+  | I_LDOP (op,v,rmw,r1,r2,r3) ->
+      sprintf "%s %s,%s,[%s]"
+        (ldop_memo op rmw) (pp_vreg v r1) (pp_vreg v r2) (pp_xreg r3)
+  | I_LDOPBH (op,v,rmw,r1,r2,r3) ->
+      sprintf "%s %s,%s,[%s]"
+        (ldopbh_memo op v rmw) (pp_wreg r1) (pp_wreg r2) (pp_xreg r3)
+  | I_STOP (op,v,rmw,r1,r2) ->
+      sprintf "%s %s,[%s]"
+        (stop_memo op rmw) (pp_vreg v r1) (pp_xreg r2)
+  | I_STOPBH (op,v,rmw,r1,r2) ->
+      sprintf "%s %s,[%s]"
+        (stopbh_memo op v rmw) (pp_wreg r1) (pp_xreg r2)
 (* Operations *)
   | I_MOV (v,r,kr) ->
       pp_rkr "MOV" v r kr
@@ -480,6 +516,7 @@ let fold_regs (f_regs,f_sregs) =
     -> fold_reg r c
   | I_LDAR (_,_,r1,r2) | I_STLR (_,r1,r2)
   | I_SXTW (r1,r2)
+  |I_STOP (_,_,_,r1,r2) | I_STOPBH (_,_,_,r1,r2)
     -> fold_reg r1 (fold_reg r2 c)
   | I_LDR (_,r1,r2,kr) | I_STR (_,r1,r2,kr)
   | I_OP3 (_,_,r1,r2,kr)
@@ -495,6 +532,8 @@ let fold_regs (f_regs,f_sregs) =
   | I_CASBH (_,_,r1,r2,r3)
   | I_SWP (_,_,r1,r2,r3)
   | I_SWPBH (_,_,r1,r2,r3)
+  | I_LDOP (_,_,_,r1,r2,r3)
+  | I_LDOPBH (_,_,_,r1,r2,r3)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
 
 
@@ -549,6 +588,15 @@ let map_regs f_reg f_symb =
       I_SWP (v,rmw,map_reg r1,map_reg r2,map_reg r3)
   | I_SWPBH (bh,rmw,r1,r2,r3) ->
       I_SWPBH (bh,rmw,map_reg r1,map_reg r2,map_reg r3)
+(* Fetch and Op *)
+  | I_LDOP (op,v,rmw,r1,r2,r3) ->
+      I_LDOP (op,v,rmw,map_reg r1,map_reg r2,map_reg r3)
+  | I_LDOPBH (op,v,rmw,r1,r2,r3) ->
+      I_LDOPBH (op,v,rmw,map_reg r1,map_reg r2,map_reg r3)
+  | I_STOP (op,v,rmw,r1,r2) ->
+      I_STOP (op,v,rmw,map_reg r1,map_reg r2)
+  | I_STOPBH (op,v,rmw,r1,r2) ->
+      I_STOPBH (op,v,rmw,map_reg r1,map_reg r2)
 (* Operations *)
   | I_MOV (v,r,k) ->
       I_MOV (v,map_reg r,k)
@@ -595,6 +643,10 @@ let get_next = function
   | I_CASBH _
   | I_SWP _
   | I_SWPBH _
+  | I_LDOP _
+  | I_LDOPBH _
+  | I_STOP _
+  | I_STOPBH _
     -> [Label.Next;]
 
 include Pseudo.Make
@@ -623,6 +675,10 @@ include Pseudo.Make
         | I_CASBH _
         | I_SWP _
         | I_SWPBH _
+        | I_LDOP _
+        | I_LDOPBH _
+        | I_STOP _
+        | I_STOPBH _
             as keep -> keep
         | I_LDR (v,r1,r2,kr) -> I_LDR (v,r1,r2,kr_tr kr)
         | I_LDP (t,v,r1,r2,r3,kr) -> I_LDP (t,v,r1,r2,r3,kr_tr kr)
@@ -642,6 +698,8 @@ include Pseudo.Make
         | I_LDP _|I_STP _
         | I_CAS _ | I_CASBH _
         | I_SWP _ | I_SWPBH _
+        | I_LDOP _ | I_LDOPBH _
+        | I_STOP _ | I_STOPBH _
           -> 2
         | I_B _
         | I_BC _

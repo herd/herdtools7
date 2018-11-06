@@ -45,6 +45,13 @@ open AArch64Base
 %token NSH NSHST NSHLD
 %token CAS CASA CASL CASAL CASB CASAB CASLB CASALB CASH CASAH CASLH CASALH
 %token SWP SWPA SWPL SWPAL SWPB SWPAB SWPLB SWPALB SWPH SWPAH SWPLH SWPALH
+%token LDADD LDADDA LDADDL LDADDAL LDADDH LDADDAH LDADDLH LDADDALH
+%token LDADDB LDADDAB LDADDLB LDADDALB
+%token STADD STADDL STADDH STADDLH STADDB STADDLB
+%token LDEOR LDEORA LDEORL LDEORAL LDEORH LDEORAH LDEORLH LDEORALH
+%token LDEORB LDEORAB LDEORLB LDEORALB
+%token STEOR STEORL STEORH STEORLH STEORB STEORLB
+
 
 %type <int list * (AArch64Base.parsedPseudo) list list> main
 %type <AArch64Base.parsedPseudo list> instr_option_seq
@@ -248,6 +255,104 @@ instr:
 | SWPALH wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
   { I_SWPBH (H,RMW_AL,$2,$4,$7) }
 
+/* Fetch and ADD */
+| LDADD wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOP (A_ADD,V32,RMW_P,$2,$4,$7) }
+| LDADD xreg COMMA xreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOP (A_ADD,V64,RMW_P,$2,$4,$7) }
+| LDADDA wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOP (A_ADD,V32,RMW_A,$2,$4,$7) }
+| LDADDA xreg COMMA xreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOP (A_ADD,V64,RMW_A,$2,$4,$7) }
+| LDADDL wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOP (A_ADD,V32,RMW_L,$2,$4,$7) }
+| LDADDL xreg COMMA xreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOP (A_ADD,V64,RMW_L,$2,$4,$7) }
+| LDADDAL wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOP (A_ADD,V32,RMW_AL,$2,$4,$7) }
+| LDADDAL xreg COMMA xreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOP (A_ADD,V64,RMW_AL,$2,$4,$7) }
+| LDADDH wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOPBH (A_ADD,H,RMW_P,$2,$4,$7) }
+| LDADDAH wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOPBH (A_ADD,H,RMW_A,$2,$4,$7) }
+| LDADDLH wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOPBH (A_ADD,H,RMW_L,$2,$4,$7) }
+| LDADDALH wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOPBH (A_ADD,H,RMW_AL,$2,$4,$7) }
+| LDADDB wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOPBH (A_ADD,B,RMW_P,$2,$4,$7) }
+| LDADDAB wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOPBH (A_ADD,B,RMW_A,$2,$4,$7) }
+| LDADDLB wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOPBH (A_ADD,B,RMW_L,$2,$4,$7) }
+| LDADDALB wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOPBH (A_ADD,B,RMW_AL,$2,$4,$7) }
+| STADD wreg COMMA LBRK xreg zeroopt RBRK
+   { I_STOP (A_ADD,V32,W_P,$2,$5) }
+| STADD xreg COMMA LBRK xreg zeroopt RBRK
+   { I_STOP (A_ADD,V64,W_P,$2,$5) }
+| STADDL wreg COMMA LBRK xreg zeroopt RBRK
+   { I_STOP (A_ADD,V32,W_L,$2,$5) }
+| STADDL xreg COMMA LBRK xreg zeroopt RBRK
+   { I_STOP (A_ADD,V64,W_L,$2,$5) }
+| STADDH wreg COMMA LBRK xreg zeroopt RBRK
+   { I_STOPBH (A_ADD,H,W_P,$2,$5) }
+| STADDLH wreg COMMA LBRK xreg zeroopt RBRK
+   { I_STOPBH (A_ADD,H,W_L,$2,$5) }
+| STADDB wreg COMMA LBRK xreg zeroopt RBRK
+   { I_STOPBH (A_ADD,B,W_P,$2,$5) }
+| STADDLB wreg COMMA LBRK xreg zeroopt RBRK
+   { I_STOPBH (A_ADD,B,W_L,$2,$5) }
+/* Fetch and Xor */
+| LDEOR wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOP (A_EOR,V32,RMW_P,$2,$4,$7) }
+| LDEOR xreg COMMA xreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOP (A_EOR,V64,RMW_P,$2,$4,$7) }
+| LDEORA wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOP (A_EOR,V32,RMW_A,$2,$4,$7) }
+| LDEORA xreg COMMA xreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOP (A_EOR,V64,RMW_A,$2,$4,$7) }
+| LDEORL wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOP (A_EOR,V32,RMW_L,$2,$4,$7) }
+| LDEORL xreg COMMA xreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOP (A_EOR,V64,RMW_L,$2,$4,$7) }
+| LDEORAL wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOP (A_EOR,V32,RMW_AL,$2,$4,$7) }
+| LDEORAL xreg COMMA xreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOP (A_EOR,V64,RMW_AL,$2,$4,$7) }
+| LDEORH wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOPBH (A_EOR,H,RMW_P,$2,$4,$7) }
+| LDEORAH wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOPBH (A_EOR,H,RMW_A,$2,$4,$7) }
+| LDEORLH wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOPBH (A_EOR,H,RMW_L,$2,$4,$7) }
+| LDEORALH wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOPBH (A_EOR,H,RMW_AL,$2,$4,$7) }
+| LDEORB wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOPBH (A_EOR,B,RMW_P,$2,$4,$7) }
+| LDEORAB wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOPBH (A_EOR,B,RMW_A,$2,$4,$7) }
+| LDEORLB wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOPBH (A_EOR,B,RMW_L,$2,$4,$7) }
+| LDEORALB wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
+   { I_LDOPBH (A_EOR,B,RMW_AL,$2,$4,$7) }
+| STEOR wreg COMMA LBRK xreg zeroopt RBRK
+   { I_STOP (A_EOR,V32,W_P,$2,$5) }
+| STEOR xreg COMMA LBRK xreg zeroopt RBRK
+   { I_STOP (A_EOR,V64,W_P,$2,$5) }
+| STEORL wreg COMMA LBRK xreg zeroopt RBRK
+   { I_STOP (A_EOR,V32,W_L,$2,$5) }
+| STEORL xreg COMMA LBRK xreg zeroopt RBRK
+   { I_STOP (A_EOR,V64,W_L,$2,$5) }
+| STEORH wreg COMMA LBRK xreg zeroopt RBRK
+   { I_STOPBH (A_EOR,H,W_P,$2,$5) }
+| STEORLH wreg COMMA LBRK xreg zeroopt RBRK
+   { I_STOPBH (A_EOR,H,W_L,$2,$5) }
+| STEORB wreg COMMA LBRK xreg zeroopt RBRK
+   { I_STOPBH (A_EOR,B,W_P,$2,$5) }
+| STEORLB wreg COMMA LBRK xreg zeroopt RBRK
+   { I_STOPBH (A_EOR,B,W_L,$2,$5) }
 /* Operations */
 | MOV xreg COMMA kr
   { I_MOV (V64,$2,$4) }

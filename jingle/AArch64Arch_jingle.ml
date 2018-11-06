@@ -118,5 +118,13 @@ include Arch.MakeArch(struct
         I_SWP(v,a,conv_reg r1,conv_reg r2,conv_reg r3)
     | I_SWPBH (v,a,r1,r2,r3) ->
         I_SWPBH(v,a,conv_reg r1,conv_reg r2,conv_reg r3)
+    | I_LDOP (op,v,rmw,r1,r2,r3) ->
+        I_LDOP (op,v,rmw,conv_reg r1,conv_reg r2,conv_reg r3)
+    | I_LDOPBH (op,v,rmw,r1,r2,r3) ->
+        I_LDOPBH (op,v,rmw,conv_reg r1,conv_reg r2,conv_reg r3)
+    | I_STOP (op,v,rmw,r1,r2) ->
+        I_STOP (op,v,rmw,conv_reg r1,conv_reg r2)
+    | I_STOPBH (op,v,rmw,r1,r2) ->
+        I_STOPBH (op,v,rmw,conv_reg r1,conv_reg r2)
 end)
 

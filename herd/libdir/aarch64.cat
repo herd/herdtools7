@@ -93,9 +93,9 @@ let aob = rmw
 	| [range(rmw)]; rfi; [A | Q]
 
 (* Barrier-ordered-before *)
-let bob = po; [dmb.full]; po
+let bob = po; ([dmb.full]|([A];amo;[L])); po
 	| [L]; po; [A]
-	| [R]; po; [dmb.ld]; po
+	| [R\NoRet]; po; [dmb.ld]; po
 	| [A | Q]; po
 	| [W]; po; [dmb.st]; po; [W]
 	| po; [L]

@@ -40,6 +40,7 @@ module Make (C:Sem.Config)(V:Value.S)
 
 (* Semantics proper *)
     let (>>=) = M.(>>=)
+    let (>>==) = M.(>>==)
     let (>>*=) = M.(>>*=)
     let (>>|) = M.(>>|)
     let (>>!) = M.(>>!)
@@ -90,6 +91,7 @@ module Make (C:Sem.Config)(V:Value.S)
     let read_mem_acquire_pc sz a ii = do_read_mem sz AArch64.Q a ii
     let read_mem_atomic sz a ii = do_read_mem sz AArch64.X a ii
     let read_mem_atomic_acquire sz a ii = do_read_mem sz AArch64.XA a ii
+    let read_mem_noreturn sz a ii = do_read_mem sz AArch64.NoRet a ii
 
 
     let mk_write sz an loc v = Act.Access (Dir.W, loc, v, an, sz)
@@ -188,6 +190,38 @@ module Make (C:Sem.Config)(V:Value.S)
             and w2 = fun v -> write_mem sz a v ii in
             M.exch r1 r2 w1 w2 >>! ()
 
+          let cas sz rmw rs rt rn ii =
+            let open AArch64Base in
+            let read_rn = read_reg_ord rn ii
+            and read_rs = read_reg_ord_sz sz rs ii in
+            M.altT
+              (read_rn >>= fun a ->
+                (read_rs >>|
+                begin let read_mem = match rmw with
+                | RMW_A|RMW_AL -> read_mem_acquire
+                | RMW_L|RMW_P  -> read_mem in
+                read_mem sz a ii >>=
+                fun v -> write_reg rs v ii >>! v end) >>=
+                fun (cv,v) -> M.neqT cv v >>! ())
+              (let read_rt =  read_reg_data sz rt ii
+              and read_mem a = rmw_amo_read rmw sz  a ii
+              and write_mem a v = rmw_amo_write rmw sz a v ii
+              and write_rs v =  write_reg rs v ii in
+              M.aarch64_cas_ok
+                read_rn read_rs read_rt write_rs read_mem write_mem M.eqT)
+
+    let ldop op sz rmw rs rt rn ii =
+      let open AArch64Base in
+      let noret = match rt with | ZR -> true | _ -> false in
+      let op = match op with
+      | A_ADD -> Op.Add
+      | A_EOR -> Op.Xor in
+      let read_mem = if noret then read_mem_noreturn else rmw_amo_read rmw
+      and write_mem = rmw_amo_write rmw in
+      M.amo op
+        (read_reg_ord rn ii) (read_reg_data sz rs ii)
+        (fun a -> read_mem sz a ii) (fun a v -> write_mem sz a v ii)
+        >>= fun w ->if noret then M.unitT () else write_reg rt w ii
 
     let build_semantics ii =
       M.addT (A.next_po_index ii.A.program_order_index)
@@ -350,28 +384,20 @@ module Make (C:Sem.Config)(V:Value.S)
       | I_SWPBH (v,rmw,r1,r2,r3) -> swp (bh_to_sz v) rmw r1 r2 r3 ii >>! B.Next
 (* Compare & Swap *)
       | I_CAS (v,rmw,rs,rt,rn) ->
-          let sz = tr_variant v in
-          let read_rn = read_reg_ord rn ii
-          and read_rs = read_reg_ord_sz sz rs ii in
-            M.altT
-            (read_rn >>= fun a ->
-             (read_rs >>|
-               begin let read_mem = match rmw with
-               | RMW_A|RMW_AL -> read_mem_acquire
-               | RMW_L|RMW_P  -> read_mem in
-               read_mem sz a ii >>=
-               fun v -> write_reg rs v ii >>! v end) >>=
-               fun (cv,v) -> M.neqT cv v >>! ())
-            (let read_rt =  read_reg_data sz rt ii
-            and read_mem a = rmw_amo_read rmw sz  a ii
-            and write_mem a v = rmw_amo_write rmw sz a v ii
-            and write_rs v =  write_reg rs v ii in
-            M.aarch64_cas_ok
-              read_rn read_rs read_rt write_rs read_mem write_mem
-              (fun v1 v2 -> M.eqT v1 v2))
-            >>! B.Next
+          cas (tr_variant v) rmw rs rt rn ii >>! B.Next
+      | I_CASBH (v,rmw,rs,rt,rn) ->
+          cas (bh_to_sz v) rmw rs rt rn ii >>! B.Next
+(* Fetch and Op *)
+      | I_STOP (op,v,w,rs,rn) ->
+          ldop op (tr_variant v) (w_to_rmw w) rs ZR rn ii >>! B.Next
+      | I_LDOP (op,v,rmw,rs,rt,rn) ->
+          ldop op (tr_variant v) rmw rs rt rn ii >>! B.Next
+      | I_STOPBH (op,v,w,rs,rn) ->
+          ldop op (bh_to_sz v) (w_to_rmw w) rs ZR rn ii >>! B.Next
+      | I_LDOPBH (op,v,rmw,rs,rt,rn) ->
+          ldop op (bh_to_sz v) rmw rs rt rn ii >>! B.Next
 (*  Cannot handle *)
-      | (I_LDP _|I_STP _|I_CASBH _) as i ->
+      | (I_LDP _|I_STP _) as i ->
           Warn.fatal "illegal instruction: %s"
             (AArch64.dump_instruction i)
      )
