@@ -300,12 +300,14 @@ module Make(V:Constant.S)(C:Config) =
           outputs = [r1;]; reg_env=[r3,voidstar; r2,quad; r1,quad; ]}
 
 (* Compare and swap *)
+    let type_of_variant = function
+      | V32 -> word | V64 -> quad
 
     let cas_memo rmw = Misc.lowercase (cas_memo rmw)
     let casbh_memo bh rmw = Misc.lowercase (casbh_memo bh rmw)
 
     let cas memo v r1 r2 r3 =
-      let t = match v with | V32 -> word | V64 -> quad in
+      let t = type_of_variant v in
       let r1,f1,r2,f2 = match v with
       | V32 -> args2 "wzr" (fun s -> "^wi"^s) r1 r2
       | V64 -> args2 "xzr" (fun s -> "^i"^s) r1 r2 in
@@ -323,20 +325,51 @@ module Make(V:Constant.S)(C:Config) =
     let swpbh_memo bh rmw = Misc.lowercase (swpbh_memo bh rmw)
 
     let swp memo v r1 r2 r3 =
-      let t = match v with | V32 -> word | V64 -> quad in
+      let t = type_of_variant v in
       let r1,f1 =
         match v with
-        |  V32 -> arg1 "wzr" (fun s -> "wi"^s) r1
-        |  V64 -> arg1 "xzr" (fun s -> "i"^s) r1 in
+        |  V32 -> arg1 "wzr" (fun s -> "^wi"^s) r1
+        |  V64 -> arg1 "xzr" (fun s -> "^i"^s) r1 in
       let idx = match r1 with | [] -> "0" | _::_ -> "1" in
       let r2,f2 =
         match v with
-        |  V32 -> arg1 "wzr" (fun s -> "wo"^s) r2
-        |  V64 -> arg1 "xzr" (fun s -> "o"^s) r2 in
+        |  V32 -> arg1 "wzr" (fun s -> "^wo"^s) r2
+        |  V64 -> arg1 "xzr" (fun s -> "^o"^s) r2 in
       { empty_ins with
-        memo = sprintf "%s %s,^%s,[^i%s]" memo f1 f2 idx;
+        memo = sprintf "%s %s,%s,[^i%s]" memo f1 f2 idx;
         inputs = r1@[r3;]; outputs =r2;
         reg_env = (r3,voidstar)::add_type t (r1@r2); }
+
+(* Fetch and Op *)
+    let ldop_memo op rmw = Misc.lowercase (ldop_memo op rmw)
+    let stop_memo op w = Misc.lowercase (stop_memo op w)
+    let ldopbh_memo op bh rmw =  Misc.lowercase (ldopbh_memo op bh rmw)
+    let stopbh_memo op bh w =  Misc.lowercase (stopbh_memo op bh w)
+
+    let ldop memo v rs rt rn =
+      let t = match v with | V32 -> word | V64 -> quad in
+      let rs,fs = match v with
+        |  V32 -> arg1 "wzr" (fun s -> "^wi"^s) rs
+        |  V64 -> arg1 "xzr" (fun s -> "^i"^s) rs in
+      let idx = match rs with | [] -> "0" | _::_ -> "1" in
+      let rt,ft =  match v with
+        |  V32 -> arg1 "wzr" (fun s -> "^wo"^s) rt
+        |  V64 -> arg1 "xzr" (fun s -> "^o"^s) rt in
+      { empty_ins with
+        memo = sprintf "%s %s,%s,[^i%s]" memo fs ft idx;
+        inputs = rs@[rn]; outputs = rt;
+        reg_env = (rn,voidstar)::add_type t (rs@rt);}
+
+    let stop memo v rs rn =
+      let t = match v with | V32 -> word | V64 -> quad in
+      let rs,fs = match v with
+        |  V32 -> arg1 "wzr" (fun s -> "^wi"^s) rs
+        |  V64 -> arg1 "xzr" (fun s -> "^i"^s) rs in
+      let idx = match rs with | [] -> "0" | _::_ -> "1" in
+      { empty_ins with
+        memo = sprintf "%s %s,[^i%s]" memo fs idx;
+        inputs = rs@[rn]; outputs = [];
+        reg_env = (rn,voidstar)::add_type t rs;}
 
 (* Arithmetic *)
     let movk v r k =
@@ -489,7 +522,15 @@ module Make(V:Constant.S)(C:Config) =
          memo = memo; inputs=inputs; outputs=[r1;];
          reg_env=add_type t (r1::inputs);
         }::k
-    |(I_LDOP _|I_LDOPBH _|I_STOP _|I_STOPBH _) -> assert false
+(* Fetch and Op *)
+    |I_LDOP (op,v,rmw,rs,rt,rn) ->
+        ldop (ldop_memo op rmw) v rs rt rn::k
+    |I_LDOPBH  (op,v,rmw,rs,rt,rn) ->
+        ldop (ldopbh_memo op v rmw) V32 rs rt rn::k
+    | I_STOP (op,v,w,rs,rn) ->
+        stop (stop_memo op w) v rs rn::k
+    | I_STOPBH (op,v,w,rs,rn) ->
+        stop (stopbh_memo op v w) V32 rs rn::k
 
     let no_tr lbl = lbl
     let branch_neq r i lab k = cmpk V32 r i::bcc no_tr NE lab::k
