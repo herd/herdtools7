@@ -132,7 +132,7 @@ end = struct
   | _ -> assert false
 
   let get_mem_size a = match a with
-  | Access (_,A.Location_global _,_,a,sz) -> sz
+  | Access (_,A.Location_global _,_,_,sz) -> sz
   | _ -> assert false
 
 (* relative to the registers of the given proc *)

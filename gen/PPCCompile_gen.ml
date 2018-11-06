@@ -146,7 +146,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
       type reg = PPC.reg
       type instruction = PPC.pseudo
       let mov r v = PPC.Instruction (PPC.Pli (r,v))
-      let mov_mixed sz r i = assert false
+      let mov_mixed _sz _r _i = assert false
     end
 
     module U = GenUtils.Make(O)(PPC)(Extra)
@@ -276,7 +276,6 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
     let emit_lwarx st p init x =  emit_lwarx_idx st p init x PPC.r0
 
     let emit_one_stwcx_idx st p init x idx v =
-      let rA,st = next_reg st in
       let rA,init,csi,st = U.emit_mov st p init v in
       let rB,init,st = U.next_init st p init x in
       init,

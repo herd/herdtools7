@@ -166,7 +166,7 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
         outputs = outs1@outs2; }
 
     let cmpxchg memo ea r =
-      let ea1, (i,ins1),(o,outs1) = compile_ea_output 0 0 ea in
+      let ea1, (i,ins1),(_,outs1) = compile_ea_output 0 0 ea in
       let ea2, ins2 = sprintf "^i%i" i,[r] in
       { empty_ins with
         memo = sprintf "%s %s,%s" memo ea2 ea1;

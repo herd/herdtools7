@@ -168,14 +168,14 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
 
     let do_or p1 p2 = match p1,p2 with
     | Or ps1,Or ps2 -> Or (ps1@ps2)
-    | (p,And []) | (And [],p) -> And []
+    | (_,And []) | (And [],_) -> And []
     | Or ps,p -> Or (ps@[p])
     | p,Or ps -> Or (p::ps)
     | _,_ -> Or [p1;p2]
 
     let do_and p1 p2 = match p1,p2 with
     | And ps1,And ps2 -> And (ps1@ps2)
-    | (p,Or []) | (Or [],p) -> Or []
+    | (_,Or []) | (Or [],_) -> Or []
     | And ps,p -> And (ps@[p])
     | p,And ps -> And (p::ps)
     | _,_ -> And [p1;p2]

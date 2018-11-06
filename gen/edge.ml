@@ -654,7 +654,7 @@ and do_set_src d e = match e with
         | _,_ -> e1,e2
       with NotThat _ -> e1,e2 in
     let a1 = e1.a2 and a2 = e2.a1 in
-    let e1,e2 as r =
+    let r =
       match a1,a2 with
       | None,Some _ -> set_a2 e1 a2,e2
       | Some _,None -> e1, set_a1 e2 a1

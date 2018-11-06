@@ -539,7 +539,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let rA,init,cs_mov,st = U.emit_mov_sz sz st p init e.v in
               let init,cs,st = S.emit_store_idx_reg st p init e.loc r2 rA in
-              None,init,Instruction c::cs,st
+              None,init,Instruction c::cs_mov@cs,st
 
 
     let emit_exch_dep_addr st p init er ew rd =
@@ -561,13 +561,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Some R -> Warn.fatal "data dependency to load"
       | Some W ->
           let r2,cs2,init,st = match e.atom with
-          | Some (Mixed (sz,o)) ->
+          | Some (Mixed (sz,_)) ->
               let rA,init,csA,st = U.emit_mov_sz sz st p init e.v in
               let r2,st = next_reg st in
               let cs2 =
                 [Instruction (calc0 r2 r1) ;
                  Instruction (add (sz2v sz) r2 r2 rA); ] in
-              r2,cs2,init,st
+              r2,csA@cs2,init,st
           | _ ->
               let r2,st = next_reg st in
               let cs2 =

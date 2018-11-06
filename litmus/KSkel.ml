@@ -336,7 +336,7 @@ module Make
       let free tag = O.fi "if (p->%s) kfree(p->%s);" tag tag in
       List.iter (fun (s,_) ->  free s) test.T.globals ;
       iter_all_outs
-        (fun proc (reg,t) ->
+        (fun proc (reg,_) ->
           let tag = A.Out.dump_out_reg proc reg in
           free tag) test ;
       begin
@@ -364,7 +364,7 @@ module Make
           | _ -> ())
         test.T.globals ;
       iter_all_outs
-        (fun proc (reg,t) ->
+        (fun proc (reg,_) ->
           let tag = A.Out.dump_out_reg proc reg in
           alloc tag) test ;
       begin let open KBarrier in
@@ -380,7 +380,7 @@ module Make
       O.o "static void init_ctx(ctx_t *_a,size_t sz) {" ;
       O.oi "for (int _i = 0 ; _i < sz ; _i++) {" ;
       List.iter
-        (fun (s,t) ->
+        (fun (s,_) ->
           let loc = A.Location_global s in
           let v = A.find_in_state loc test.T.init in
           let ty = U.find_type loc env in
@@ -441,7 +441,7 @@ let dump_barrier_def () =
   O.o ""
 
 
-let dump_threads tname env test =
+let dump_threads _tname env test =
   O.o "/***************/" ;
   O.o "/* Litmus code */" ;
   O.o "/***************/" ;
@@ -452,7 +452,7 @@ let dump_threads tname env test =
       (fun (x,ty) -> x,CType.strip_volatile ty)
       global_env in
   List.iter
-    (fun (proc,(out,(outregs,envVolatile))) ->
+    (fun (proc,(out,(_outregs,envVolatile))) ->
       let myenv = U.select_proc proc env in
       Lang.dump_fun O.out myenv global_env envVolatile proc out ;
       O.f "static int thread%i(void *_p) {" proc ;
@@ -610,7 +610,7 @@ let dump_zyva tname env test =
 (**********)
 (* ProcFs *)
 (**********)
-let dump_proc tname test =
+let dump_proc tname _test =
   let tname = String.escaped tname in
   O.o "static int\nlitmus_proc_show(struct seq_file *m,void *v) {" ;
   O.oi "if (ninst == 0 || ninst * nthreads > nonline) {" ;
@@ -639,7 +639,7 @@ let dump_proc tname test =
 (* Init, Exit and friends *)
 (**************************)
 
-let dump_init_exit test =
+let dump_init_exit _test =
   O.o "static int __init" ;
   O.o "litmus_init(void) {" ;
   O.oi "int err=0;" ;

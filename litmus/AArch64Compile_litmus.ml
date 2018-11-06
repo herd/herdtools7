@@ -439,7 +439,7 @@ module Make(V:Constant.S)(C:Config) =
       { empty_ins with memo = Misc.lowercase (A.pp_barrier f); }
 
 (* Not that useful *)
-    let emit_loop k = assert false
+    let emit_loop _k = assert false
 
     let compile_ins tr_lab ins k = match ins with
 (* Branches *)

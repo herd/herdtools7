@@ -225,7 +225,7 @@ module Make
         | Memory.Direct ->
             List.iter
               (fun (reg,v) -> match v with
-              | Constant.Symbolic (a,_) ->
+              | Constant.Symbolic _ ->
                   let cpy =  copy_name (Tmpl.tag_reg reg) in
                   fprintf chan "%svoid *%s = %s;\n" indent
                     cpy
@@ -257,7 +257,7 @@ module Make
               (compile_out_reg proc reg) (dump_stable_reg reg))
           (RegSet.inter stable finals)
 
-      let get_reg_env name t = Tmpl.get_reg_env A.error t
+      let get_reg_env _name t = Tmpl.get_reg_env A.error t
 
       let before_dump compile_out_reg compile_val compile_cpy
           chan indent env proc t trashed =
@@ -351,7 +351,7 @@ module Make
           (String.concat " " pp)
 
 
-      let dump chan indent env globEnv volatileEnv proc t =
+      let dump chan indent env globEnv _volatileEnv proc t =
 
         if debug then debug_globEnv globEnv ;
 
@@ -384,7 +384,7 @@ module Make
 
       let compile_cpy_fun proc a = sprintf "*%s" (Tmpl.addr_cpy_name a proc)
 
-      let dump_fun chan env globEnv volatileEnv proc t =
+      let dump_fun chan env globEnv _volatileEnv proc t =
         if debug then debug_globEnv globEnv ;
         let addrs_proc = Tmpl.get_addrs t in
         let addrs =
@@ -437,7 +437,7 @@ module Make
       let compile_out_reg_call proc reg =
         sprintf "&%s" (Tmpl.compile_out_reg proc reg)
 
-      let dump_call chan indent env globEnv volatileEnv proc t =
+      let dump_call chan indent _env _globEnv _volatileEnv proc t =
         let addrs_proc = Tmpl.get_addrs t in
         let addrs = List.map compile_addr_call addrs_proc
         and addrs_cpy =

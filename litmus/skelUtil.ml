@@ -132,7 +132,7 @@ module Make
         with Not_found -> Compile.base
 
       let find_type loc env = match loc with
-      | A.Location_deref (s,i) ->
+      | A.Location_deref (s,_) ->
           begin match do_find_type (A.Location_global s) env with
           | CType.Array (t,_) -> CType.Base t
           | _ -> Warn.user_error "Non array %s refered as array" s

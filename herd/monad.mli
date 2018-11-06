@@ -121,21 +121,17 @@ module type S =
     val op3 : Op.op3 -> A.V.v -> A.V.v -> A.V.v -> A.V.v t
     val add : A.V.v -> A.V.v -> A.V.v t
 
+(* Equality *)
+    val assign : A.V.v -> A.V.v -> unit t
+    val eqT : A.V.v -> A.V.v -> unit t
 (* Acts as an inequality equation *)
     val neqT : A.V.v -> A.V.v -> unit t
-    val eqT : A.V.v -> A.V.v -> unit t
-
-(* Buid evt structure for swap *)
-    val swap :
-        A.V.v -> (A.V.v -> E.action) ->
-          A.inst_instance_id -> A.V.v t
 
 (* Buid evt structure for fetch_and_op *)
     val fetch :
         Op.op -> A.V.v -> (A.V.v -> A.V.v -> E.action) ->
           A.inst_instance_id -> A.V.v t
 
-    val assign : A.V.v -> A.V.v -> unit t
 
     val initwrites : (A.location * A.V.v) list -> A.size_env -> unit t
 

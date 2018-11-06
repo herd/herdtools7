@@ -64,7 +64,7 @@ module Make (M:Cfg)
       List.iter
         (fun (x, y) ->
           let _ = printf "proc %d \t:" x in
-          debug_event_set stdout y) procs
+          debug_event_set chan y) procs
 
     let debug_rf chan wt rf =
       let _ = match wt with
@@ -95,13 +95,10 @@ module Make (M:Cfg)
 
       (* relations and events *)
 
-    let aux0 f0 f1 a b =
-      f1 a b (f0 a b)
-
     let aux = fun x ->
       try List.assoc x S.E.Act.arch_sets
       with Not_found ->
-        let _ = fprintf stderr "not found %s\n" x in fun x -> true
+        Warn.fatal "annotation %s not found" x
 
     let rmw = aux "RMW"
     let rlx = aux "RLX"
@@ -115,9 +112,7 @@ module Make (M:Cfg)
 
 
     (* a; b? *)
-    let seq_union a b =
-      aux0 E.EventRel.sequence (fun x y z -> E.EventRel.union x z) a b
-
+    let seq_union a b = E.EventRel.union a  (E.EventRel.sequence a b)
 
     let added a r = E.EventRel.restrict_domains
                       (fun x -> E.EventSet.mem x a)
@@ -283,7 +278,7 @@ module Make (M:Cfg)
       E.EventRel.codomain
         (E.EventRel.restrict_domains
            (fun x -> not (E.EventRel.exists
-                            (fun (y, z) -> y = x)
+                            (fun (y,_) -> E.event_compare y x = 0)
                             cpo))
            (fun x -> not (E.EventSet.mem x ex.added))
         crmw)
@@ -859,7 +854,7 @@ module Make (M:Cfg)
 
     let real e = fence e || E.is_mem e
 
-    let check_rfms test rfms kfail kont model_kont res =
+    let check_rfms test rfms _kfail _kont model_kont res =
       let (_, cs0, es0) = rfms in
       let (es, rfm, cs) = solve test es0 cs0 in
       let rmws = M.make_atomic_load_store es in
@@ -876,7 +871,7 @@ module Make (M:Cfg)
                                 evts in
                       x, e, E.EventRel.restrict_rel (fun x y -> E.EventSet.mem x e && E.EventSet.mem y e) po)
                     es.E.procs in
-      let toadd = List.map (fun (x, y, z) -> x, y) procs in
+      let toadd = List.map (fun (x, y, _) -> x, y) procs in
       let ex_init = {
           toadd = toadd;
           added = inits;
@@ -886,7 +881,7 @@ module Make (M:Cfg)
           rf = E.EventRel.empty;
           revisit = E.EventSet.empty;
           safe = inits;
-          exvals = (fun x -> false);
+          exvals = (fun _ -> false);
           rmws = rmws;
           rfm = rfm;
           flags = Flag.Set.empty;

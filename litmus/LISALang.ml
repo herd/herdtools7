@@ -30,7 +30,7 @@ module Make(V:Constant.S) = struct
 
   let debug = false
 
-  let do_dump compile_val compile_addr compile_out_reg
+  let do_dump compile_val _compile_addr compile_out_reg
       chan indent env proc t =
     let rec dump_ins k ts = match ts with
     | [] -> ()
@@ -90,7 +90,7 @@ module Make(V:Constant.S) = struct
 
   and compile_out_reg_fun p r = sprintf "*%s" (Tmpl.dump_out_reg p r)
 
-  let dump_fun chan env globEnv volatileEnv proc t =
+  let dump_fun chan env globEnv _volatileEnv proc t =
     let addrs_proc = A.Out.get_addrs t in
     let addrs =
       List.map
@@ -129,7 +129,7 @@ module Make(V:Constant.S) = struct
   let compile_out_reg_call proc reg =
     sprintf "&_a->%s" (Tmpl.compile_out_reg proc reg)
 
-  let dump_call chan indent env globEnv volatileEnv proc t =
+  let dump_call chan indent _env _globEnv _volatileEnv proc t =
     let addrs_proc = Tmpl.get_addrs t in
     let addrs = List.map compile_addr_call addrs_proc
     and outs = List.map (compile_out_reg_call proc) t.Tmpl.final in
@@ -137,6 +137,6 @@ module Make(V:Constant.S) = struct
     LangUtils.dump_code_call chan indent proc args
 
 
-  let dump chan indent env globEnv volatileEnv proc t = ()
+  let dump _chan _indent _env _globEnv _volatileEnv _proc _t = ()
 
 end

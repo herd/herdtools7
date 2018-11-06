@@ -128,7 +128,7 @@ module Make(Config:Config)(Out:OutTests.S) =
           let out = Out.open_file base in
           Misc.output_protect_close Out.close
             (fun out ->
-              let _,_,(constr_start,constr_end as constr_sec),(last_start,loc_eof) = locs in
+              let _,_,(constr_start,_constr_end as constr_sec),(last_start,loc_eof) = locs in
 
               let echo sec =
                 let lexbuf = LU.from_section sec in_chan in

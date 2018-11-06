@@ -68,7 +68,7 @@ module Make(C:Config)(E:Extra) = struct
           indent (LangUtils.end_comment C.comment proc)
     end
 
-  let dump_global_def env (x,ty) =
+  let dump_global_def _env (x,ty) =
     let x = CTarget.fmt_reg x in
     let pp_ty =  CType.dump ty in
     pp_ty ^ "*",x
@@ -82,7 +82,7 @@ module Make(C:Config)(E:Extra) = struct
     and ty = out_type env x in
     sprintf "%s*" (CType.dump ty),outname
 
-  let dump_fun chan env globEnv envVolatile proc t =
+  let dump_fun chan env globEnv _envVolatile proc t =
 (*
   let pp_env =
   String.concat "; "
@@ -119,7 +119,7 @@ module Make(C:Config)(E:Extra) = struct
     out "}\n\n"
 
 
-  let dump_call chan indent env globEnv envVolatile proc t =
+  let dump_call chan indent _env globEnv _envVolatile proc t =
     let is_array_of a =
       try  match List.assoc a globEnv with
       | CType.Array (t,_) -> Some t
@@ -149,7 +149,7 @@ module Make(C:Config)(E:Extra) = struct
           LangUtils.dump_code_call chan indent proc args
 
 
-  let dump chan indent env globEnv envVolatile proc t =
+  let dump chan indent env globEnv _envVolatile proc t =
     let out x = fprintf chan x in
     out "%sdo {\n" indent;
     begin

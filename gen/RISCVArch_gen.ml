@@ -108,7 +108,7 @@ module Make
      | Atomic _ -> true
      | MO _|Mixed _ -> false
 
-   let varatom_dir d f k = f None k
+   let varatom_dir _ f k = f None k
 
 
    let tr_value ao v = match ao with

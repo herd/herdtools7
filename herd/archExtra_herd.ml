@@ -437,7 +437,7 @@ module Make(C:Config) (I:I) : S with module I = I
 
       let look_in_state =
         if C.variant Variant.Mixed then  look_in_state_mixed
-        else fun senv -> look_address_in_state
+        else fun _senv -> look_address_in_state (* No need for size-env when sizes are ignored *)
 
       let state_add st l v = State.add l v st
 

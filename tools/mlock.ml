@@ -60,7 +60,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
 
   let not_changed name =
     if O.verbose > 0 then
-      Warn.fatal "test unchanged, no output"
+      Warn.fatal "test %s unchanged, no output" name.Name.name
     else
       raise Misc.Exit
 
@@ -213,9 +213,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
   | ECas (e1,e2,e3,_,_,_)
   | CmpExchange(e1,e2,e3,_)
   | AtomicAddUnless (e1,e2,e3,_) ->
-      StringSet.union
-        (StringSet.union (expr_read e1) (expr_read e2))
-        (expr_read e2)
+      StringSet.union3 (expr_read e1) (expr_read e2) (expr_read e3)
 
   and exprs_read es = StringSet.unions (List.map expr_read es)
 

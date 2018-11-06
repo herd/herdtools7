@@ -64,9 +64,9 @@ module Make (Conf:Sem.Config)(V:Value.S)
         (fun loc v -> Act.Access (Dir.R, loc, v,  a, true, nat_sz))
         (A.Location_global loc)
 
-    let read_mem_atomic_known is_data a loc v_loc =
+    let read_mem_atomic_known is_data a loc v =
       M.read_loc is_data
-        (fun loc v -> Act.Access (Dir.R, loc, v_loc,  a, true, nat_sz))
+        (fun loc _v -> Act.Access (Dir.R, loc, v,  a, true, nat_sz))
         (A.Location_global loc)
 
 
@@ -160,7 +160,7 @@ module Make (Conf:Sem.Config)(V:Value.S)
             (linux_lock l ii >>! V.one)
             (M.mk_singleton_es
                (Act.TryLock (A.Location_global l)) ii >>! V.zero)
-    | C.IsLocked (loc,C.MutexC11) -> assert false
+    | C.IsLocked (_,C.MutexC11) -> assert false
     | C.IsLocked (loc,C.MutexLinux) ->
         build_semantics_expr is_data loc ii >>=
         fun l ->

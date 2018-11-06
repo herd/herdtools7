@@ -47,17 +47,17 @@ module Make(Config:Config)(Out:OutTests.S) =
 
     let from_chan idx_out fname in_chan =
       try
-        let { Splitter.locs = locs; start = start; name=name; info; arch; _} =
+        let { Splitter.locs = locs; start = start; name; arch; _} =
           S.split fname in_chan in
         if Config.check_name name.Name.name then begin
           match arch with
           | `LISA ->
               let buff = Buffer.create 256 in
               let
-                  (init_start,init_end),
-                (code_start,code_end as code_sec),
-                (constr_start,constr_end),
-                (last_start,loc_eof) = locs in
+                  (_init_start,_init_end),
+                (code_start,_code_end as code_sec),
+                (constr_start,_constr_end),
+                (_last_start,loc_eof) = locs in
               let echo sec =
                 let lexbuf = LU.from_section sec in_chan in
                 Echo.echo_fun lexbuf (Buffer.add_char buff)  in

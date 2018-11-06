@@ -729,7 +729,7 @@ end = struct
                 if Cfg.cautious then
                   List.fold_right
                     (fun (loc,v) k -> match loc,v with
-                    | A.Location_reg(p,r),Symbolic (s,_) when s = a ->
+                    | A.Location_reg(p,_),Symbolic (s,_) when s = a ->
                         let cpy = A.Out.addr_cpy_name a p in
                         O.fi "%s* *%s ;" (CType.dump t) cpy ;
                         (cpy,a)::k
@@ -762,7 +762,7 @@ end = struct
             if Cfg.cautious then
               List.iter
                 (fun (loc,v) -> match loc,v with
-                | A.Location_reg(p,r),Symbolic (s,_) when s = a ->
+                | A.Location_reg(p,_),Symbolic (s,_) when s = a ->
                     let cpy = A.Out.addr_cpy_name a p in
                     O.f "static %s* %s[SIZE_OF_ALLOC];"
                       (CType.dump t) cpy ;
@@ -1230,7 +1230,7 @@ end = struct
       end
     end
 
-  let dump_reinit env test cpys =
+  let dump_reinit _env test cpys =
     O.o "/*******************************************************/" ;
     O.o "/* Context allocation, freeing and reinitialization    */" ;
     O.o "/*******************************************************/" ;
@@ -1249,7 +1249,7 @@ end = struct
             O.oi "int size_of_test = _a->_p->size_of_test;" ;
             O.o "" ;
             List.iter
-              (fun (a,t) ->
+              (fun (a,_) ->
                 O.oi "perm_ints(&(_a->seed),_a->_idx,size_of_test);" ;
                 loop_test_prelude indent "" ;
                 if Cfg.cautious then O.oii "mcautious();" ;
@@ -1675,7 +1675,7 @@ end = struct
           let vars = get_global_names test in
           let iter pp =
             List.iter
-              (fun (xproc,loc,t) ->
+              (fun (_xproc,loc,t) ->
                 if List.mem loc vars then begin
                   try
                     let f = match t with

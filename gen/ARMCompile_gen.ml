@@ -45,7 +45,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
      type reg = ARM.reg
      type instruction = ARM.pseudo
      let mov r v = Instruction (I_MOVI (r,v,AL))
-     let mov_mixed sz r v = Warn.fatal "No mixed size for ARM"
+     let mov_mixed _sz _r _v = Warn.fatal "No mixed size for ARM"
    end
 
     module U = GenUtils.Make(Cfg)(ARM)(Extra)
@@ -200,7 +200,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
 (* LDA *)
     let emit_lda st p init x =
-      let rA,nit,st = U.next_init st p init x in
+      let rA,init,st = U.next_init st p init x in
       let rR,st = next_reg st in
       let cs = emit_pair p rR rR rA in
       rR,init,cs,st

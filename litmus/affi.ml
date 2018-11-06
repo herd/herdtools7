@@ -98,7 +98,7 @@ let find_ws =
 
 let rec to2 xs k = match xs with
 | [] -> k
-| [x] -> xs::k
+| [_] -> xs::k
 | x::y::xs -> [x;y]::to2 xs k
 
 let add xs ys = match xs with
@@ -112,7 +112,7 @@ let collect m =
     let xs,ys =
       if n.next == m then [],[]
       else do_rec n.next in
-    let ep,e = n.prev.edge,n.edge in
+    let _,e = n.prev.edge,n.edge in
     let n = n.p in
     match e with
 (* Ws *)

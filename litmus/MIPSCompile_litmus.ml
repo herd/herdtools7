@@ -100,11 +100,11 @@ module Make(V:Constant.S)(C:Arch_litmus.Config) =
         memo=sprintf "%s:" (A.Out.dump_label lbl) ;
         label = Some lbl ; branch=[Next] ; }
 
-    let decr r i = assert false
+    let decr _r _i = assert false
 
     let no_tr lbl = lbl
 
-    let emit_loop k = assert false
+    let emit_loop _k = assert false
 
     let compile_ins tr_lab ins k = match ins with
     | LI (r,i) -> li r i::k

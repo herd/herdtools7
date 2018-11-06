@@ -177,7 +177,7 @@ module Make(V:Constant.S) =
 
     let stable_regs _ins = A.RegSet.empty
 
-    let emit_loop k =  Warn.fatal "no time loop for LISA"
+    let emit_loop _k =  Warn.fatal "no time loop for LISA"
 
     let signaling_write _i _k = Warn.fatal "no signaling write for LISA"
 

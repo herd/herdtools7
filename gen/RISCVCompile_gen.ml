@@ -126,7 +126,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
       type instruction = AV.pseudo
 
       let mov r v = Instruction (li r v)
-      let mov_mixed sz r v = assert false
+      let mov_mixed _sz _r _v = assert false
     end
 
      module U = GenUtils.Make(Cfg)(AV)(Extra)

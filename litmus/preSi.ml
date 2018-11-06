@@ -499,9 +499,9 @@ module Make
         if have_timebase then fun test -> Misc.interval 1 (T.get_nprocs test)
         else fun _ -> []
 
-      let mk_get_param_pos env test = match test.T.globals with
+      let mk_get_param_pos _env test = match test.T.globals with
       | [] -> fun _ -> assert false
-      | (x,t0)::xs ->
+      | (_,t0)::xs ->
           let sum,m =
             List.fold_left
               (fun (i,m) (a,t) ->
@@ -554,7 +554,7 @@ module Make
             name = "dirs"; max="cmax"; tag="Cache";
             process=(fun s -> s);};] end
 
-      let dump_parameters env test =
+      let dump_parameters _env test =
         let v_tags = List.map (fun (s,_) -> pvtag s) (get_param_vars test)
         and d_tags = List.map pdtag (get_param_delays test)
         and c_tags = List.map pctag (get_param_caches test) in
@@ -648,7 +648,7 @@ module Make
             else c_rec (n-1) k in
         c_rec n 2
 
-      let dump_hash_def tname env test =
+      let dump_hash_def tname _env test =
         let locs = U.get_displayed_locs test in
         let hashsz = match Cfg.check_nstates tname with
         | Some sz -> 3*sz
@@ -674,7 +674,7 @@ module Make
 (* Test instance *)
 (*****************)
 
-      let dump_instance_def env test =
+      let dump_instance_def _env _test =
         O.o "/***************/" ;
         O.o "/* Memory size */" ;
         O.o "/***************/" ;
@@ -713,8 +713,8 @@ module Make
 
 
       let dump_run_thread
-          env test some_ptr stats global_env
-          (vars,inits) (proc,(out,(outregs,envVolatile)))  =
+          env test _some_ptr stats global_env
+          (_vars,inits) (proc,(out,(_outregs,envVolatile)))  =
         let my_regs = U.select_proc proc env in
         let addrs = A.Out.get_addrs out in (* accessed in code *)
         O.fi "case %i: {" proc ;
@@ -812,7 +812,7 @@ module Make
           (* condition *)
           let id = match test.T.filter with
           | None -> Indent.indent2
-          | Some f ->
+          | Some _f ->
               O.oii "if (filter_cond(_log)) {" ;
               Indent.indent3 in
           O.ox id "int _cond = final_ok(final_cond(_log));" ;
@@ -955,7 +955,7 @@ module Make
 (* Cache parameters, locations must be allocated *)
             if has_globals then O.oiii "barrier_wait(&ctx->b);" ;
             List.iter
-              (fun (proc,v as p) ->
+              (fun (_proc,v as p) ->
                 let more_test =
                   try
                     let prx = get_param_prefix v in
@@ -1012,7 +1012,7 @@ module Make
         O.o ""
 
 
-      let _dump_scan_def env test =
+      let _dump_scan_def _env test =
         O.o "static void scan(int id,global_t *g) {" ;
         O.oi "param_t p,*q = g->param;" ;
         O.oi "thread_ctx_t c; c.id = id;" ;
@@ -1113,7 +1113,7 @@ module Make
 (* Main *)
 (********)
 
-let dump_main_def doc env test stats =
+let dump_main_def doc _env test stats =
   begin match Cfg.driver with
   | Driver.Shell ->
       O.o "#define RUN run" ;

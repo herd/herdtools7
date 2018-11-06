@@ -176,7 +176,7 @@ module Generic (A : Arch_litmus.Base)
                 let tv = match t with
                 | TyDefPointer|TyDef -> TyDef
                 | Pointer s -> Ty s
-                | t ->
+                | _ ->
                     Warn.user_error
                       "variable %s should be of pointer type"
                       (A.pp_location loc) in
@@ -452,7 +452,7 @@ module Make
           reg,v)
         inputs
 
-    let compile_final proc observed = RegSet.elements observed
+    let compile_final _proc observed = RegSet.elements observed
 
     let mk_templates name init code observed =
       let outs =

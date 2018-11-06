@@ -44,7 +44,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       type reg = MIPS.reg
       type instruction = MIPS.pseudo
       let mov r v = Instruction (li r v)
-      let mov_mixed sz r v = assert false
+      let mov_mixed _sz _r _v = assert false
     end
 
     module U = GenUtils.Make(Cfg)(MIPS)(Extra)

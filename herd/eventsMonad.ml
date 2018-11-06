@@ -252,6 +252,7 @@ and type evt_struct = E.event_structure) =
       let vv,clrmem,esrmem = Evt.as_singleton rmem in
       let eiid,eqm = eq vv vu eiid in
       let (),cleq,eseq = Evt.as_singleton eqm in
+      assert (E.is_empty_event_structure eseq) ;
       let es = E.linux_add_unless_no esloc esu esrmem (Misc.is_some ropt) in
       let r = match ropt with Some r -> r | None -> vv in
       eiid, Evt.singleton (r,cleq@clrmem@clloc@clu,es)
@@ -718,24 +719,8 @@ and type evt_struct = E.event_structure) =
         = fun v1 v2 ->
           op Op.Eq v1 v2 >>= fun v -> assign v V.zero
 
-    let eqT : V.v -> V.v -> unit t
-        = fun v1 v2 ->
-          op Op.Eq v1 v2 >>= fun v -> assign v V.one
+    let eqT : V.v -> V.v -> unit t = assign
 
-
-    let swap arg mk_action ii =
-      fun eiid ->
-        V.fold_over_vals
-          (fun v (eiid1,acc_inner) ->
-            let w = V.fresh_var () in
-            (eiid1+1,
-             Evt.add
-               (w, [],
-                trivial_event_structure false
-                  {E.eiid = eiid1 ;
-                   E.iiid = Some ii;
-                   E.action = mk_action w})
-               acc_inner)) (eiid,Evt.empty)
 
     let fetch op arg mk_action ii =
       fun eiid ->

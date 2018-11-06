@@ -761,7 +761,7 @@ let solve_regs test es csn =
           | _::_ as wss -> List.map sort_same_base wss
           | [] -> begin match rs with
             | [] -> assert false
-            | r::_ -> Warn.user_error "out-of-bound access on %s" s
+            | _::_ -> Warn.user_error "out-of-bound access on %s" s
           end
         end
 
