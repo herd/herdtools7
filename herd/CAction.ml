@@ -284,9 +284,7 @@ end = struct
   | Fence (AN [a]) -> a=target
   | _ -> false
 
-  let srcu_matches target a = match a with
-  | SRCU (_,[a]) -> a=target
-  | _ -> false
+
 (* Architecture-specific sets *)
 
   let arch_sets = [
@@ -301,12 +299,10 @@ end = struct
     "ACQ_REL", mo_matches MemOrder.Acq_Rel;
     "RLX", mo_matches MemOrder.Rlx;
     "CON", mo_matches MemOrder.Con;
+ (* For C11 RCU, Linux RCU implemented with bell file !! *)
     "Sync-rcu", fence_matches "sync-rcu";
     "Rcu-lock", fence_matches "rcu-lock";
     "Rcu-unlock", fence_matches "rcu-unlock";
-    "Srcu-sync", srcu_matches "srcu-sync";
-    "Srcu-lock", srcu_matches "srcu-lock";
-    "Srcu-unlock", srcu_matches "srcu-unlock";
     "A",old_is_atomic;
     "NA",(fun a -> not (old_is_atomic a));
     "annot", (fun a -> match a with
