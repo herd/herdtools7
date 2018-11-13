@@ -36,6 +36,7 @@ end
 
 module type Config = sig
   val verbose : int
+  val hexa : bool
 end
 
 module Make(Config:Config)(Out:Out) =
@@ -59,7 +60,7 @@ module Make(Config:Config)(Out:Out) =
                         (fun (loc,v) ->
                           sprintf "%s=%s"              
                             (MiscParser.dump_location loc)
-                            (Int64Constant.pp_v v))
+                            (Int64Constant.pp Config.hexa v))
                         bds)))
               fname ;
             k+1)
@@ -100,6 +101,7 @@ module Make(Config:Config)(Out:Out) =
 
 let tar = ref Filename.current_dir_name
 and verbose = ref 0
+and hexa = ref false
 
 let set_tar x = tar := x
 let arg = ref None
@@ -108,6 +110,8 @@ let opts =
   [ "-v",
     Arg.Unit (fun () -> incr verbose),
     " be verbose";
+    "-hexa",Arg.Bool (fun b -> hexa := b),
+    " <bool> print numbers in hexadecimal";
    "-o", Arg.String set_tar,
     sprintf
       "<name> output to directory or tar file <name>, default %s" !tar;
@@ -130,6 +134,7 @@ let from_file =
     Make
       (struct
         let verbose = !verbose
+        let hexa = !hexa
       end) in
   let module T =
     OutTar
