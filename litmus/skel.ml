@@ -247,8 +247,10 @@ end = struct
 
 (* Check if scanning affinity is possible *)
   let mk_dsa test =
+    let n =  T.get_nprocs test in
+    n < 5 &&
     do_cores &&
-    (match Cfg.avail with Some a -> a >= T.get_nprocs test | None -> false)
+    (match Cfg.avail with Some a -> a >= n | None -> false)
 
   let do_force_affinity = Cfg.force_affinity
   let do_numeric_labels = Cfg.numeric_labels
