@@ -52,7 +52,7 @@ end = struct
               (match smtmode with
               | Smt.Seq ->  fun j -> cores_in_sock * smt * s + smt*i + j
               | Smt.End ->  fun j -> i + cores_in_sock * s + ncores * j
-              | Smt.No -> assert false)))
+              | Smt.No -> Warn.fatal "smtmode must be specified")))
 
       
   let pp_ints = pp_t (sprintf "%i")
