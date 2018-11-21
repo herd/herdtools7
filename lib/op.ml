@@ -20,7 +20,7 @@ open Printf
 
 type op =
   | Add | Sub | Mul | Div
-  | And | Or | Xor | Nor
+  | And | Or | Xor | Nor | AndNot2
   | ShiftLeft
   | Lt | Gt | Eq | Ne
   | Le | Ge
@@ -36,6 +36,7 @@ let pp_op o =
   | Or -> "|"
   | Xor -> "^" (* in C ?? *)
   | Nor -> "(nor)"
+  | AndNot2 -> "(andnot2)"
   | ShiftLeft -> "<<<" (* In Java ?? *)
   | Eq -> "=="
   | Lt -> "<"

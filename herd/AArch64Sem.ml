@@ -215,7 +215,9 @@ module Make (C:Sem.Config)(V:Value.S)
       let noret = match rt with | ZR -> true | _ -> false in
       let op = match op with
       | A_ADD -> Op.Add
-      | A_EOR -> Op.Xor in
+      | A_EOR -> Op.Xor
+      | A_SET -> Op.Or
+      | A_CLR -> Op.AndNot2 in
       let read_mem = if noret then read_mem_noreturn else rmw_amo_read rmw
       and write_mem = rmw_amo_write rmw in
       M.amo op

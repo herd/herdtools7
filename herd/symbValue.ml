@@ -219,6 +219,7 @@ module Make(Cst:Constant.S) = struct
   | Or -> orop
   | Xor -> xor
   | Nor -> binop op (fun x1 x2 -> Scalar.lognot (Scalar.logor x1 x2))
+  | AndNot2 -> binop op (fun x1 x2 -> Scalar.logand x1 (Scalar.lognot x2))
   | ShiftLeft ->
       binop op (fun x y -> Scalar.shift_left x (Scalar.to_int y))
   | Lt -> lt

@@ -113,6 +113,44 @@ let check_name name = match name with
 | "steorlh"|"STEORLH" -> STEORLH
 | "steorb"|"STEORB" -> STEORB
 | "steorlb"|"STEORLB" -> STEORLB
+(* Fetch and Or *)
+| "ldset"|"LDSET" -> LDSET
+| "ldseta"|"LDSETA" -> LDSETA
+| "ldsetl"|"LDSETL" -> LDSETL
+| "ldsetal"|"LDSETAL" -> LDSETAL
+| "ldseth"|"LDSETH" -> LDSETH
+| "ldsetah"|"LDSETAH" -> LDSETA
+| "ldsetlh"|"LDSETLH" -> LDSETLH
+| "ldsetalh"|"LDSETALH" -> LDSETALH
+| "ldsetb"|"LDSETB" -> LDSETB
+| "ldsetab"|"LDSETAB" -> LDSETAB
+| "ldsetlb"|"LDSETLB" -> LDSETLB
+| "ldsetalb"|"LDSETALB" -> LDSETALB
+| "stset"|"STSET" -> STSET
+| "stsetl"|"STSETL" -> STSETL
+| "stseth"|"STSETH" -> STSETH
+| "stsetlh"|"STSETLH" -> STSETLH
+| "stsetb"|"STSETB" -> STSETB
+| "stsetlb"|"STSETLB" -> STSETLB
+(* Fetch and b1.b2. b1 & ~b2 *)
+| "ldclr"|"LDCLR" -> LDCLR
+| "ldclra"|"LDCLRA" -> LDCLRA
+| "ldclrl"|"LDCLRL" -> LDCLRL
+| "ldclral"|"LDCLRAL" -> LDCLRAL
+| "ldclrh"|"LDCLRH" -> LDCLRH
+| "ldclrah"|"LDCLRAH" -> LDCLRAH
+| "ldclrlh"|"LDCLRLH" -> LDCLRLH
+| "ldclralh"|"LDCLRALH" -> LDCLRALH
+| "ldclrb"|"LDCLRB" -> LDCLRB
+| "ldclrab"|"LDCLRAB" -> LDCLRAB
+| "ldclrlb"|"LDCLRLB" -> LDCLRLB
+| "ldclralb"|"LDCLRALB" -> LDCLRALB
+| "stclr"|"STCLR" -> STCLR
+| "stclrl"|"STCLRL" -> STCLRL
+| "stclrh"|"STCLRH" -> STCLRH
+| "stclrlh"|"STCLRLH" -> STCLRLH
+| "stclrb"|"STCLRB" -> STCLRB
+| "stclrlb"|"STCLRLB" -> STCLRLB
 (* Operations *)
 | "sxtw"|"SXTW" -> SXTW
 | "mov"|"MOV" -> MOV

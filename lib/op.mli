@@ -23,6 +23,7 @@
 type op =
   | Add | Sub | Mul | Div
   | And | Or | Xor | Nor
+  | AndNot2
 
 (* Logical shift left *)
   | ShiftLeft
