@@ -36,7 +36,7 @@ let gen_makefile () =
   let numruns    = sprintf "NUMRUNS       ?= %i\n" default_numruns in
   let cpuinfo =
     match O.targetos with
-    | TargetOS.Linux -> "\tcat /proc/cpuinfo > $(LOGDIR)/log_cpuinfo\n"
+    | TargetOS.Linux|TargetOS.Android8 -> "\tcat /proc/cpuinfo > $(LOGDIR)/log_cpuinfo\n"
     | TargetOS.AIX|TargetOS.FreeBsd ->
         "\techo 'CPUINFO unsupported for this OS' > $(LOGDIR)/log_cpuinfo\n"
     | TargetOS.Mac -> Warn.fatal "generateCrossDoc.ml does not support Mac"  in
@@ -52,11 +52,14 @@ let gen_makefile () =
   cpuinfo
 
 
-let pp_os = function
-  | TargetOS.Linux -> "linux"
-  | TargetOS.AIX   -> "AIX"
-  | TargetOS.Mac   -> "MacOs"
-  | TargetOS.FreeBsd -> "FreeBsd"
+let pp_os os =
+  let open TargetOS in
+  match os with
+  | Linux -> "linux"
+  | AIX   -> "AIX"
+  | Mac   -> "MacOs"
+  | FreeBsd -> "FreeBsd"
+  | Android8 -> "android8"
 
 let gen_readme chan  =
   let pl fmt = ksprintf (fun s -> fprintf chan "%s\n" s) fmt in

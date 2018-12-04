@@ -88,18 +88,19 @@ let get_gcc_opts =
     | _,_ -> sprintf "-std=%s "std in
   let std_opts = sprintf "-Wall %s" std_opt ^  O.gccopts in
   let opts =
+    let open TargetOS in
     match target_os with
-    | TargetOS.Mac -> begin match O.word with
+    | Mac|Android8 -> begin match O.word with
       | Word.W64 -> std_opts ^ " -m64"
       | Word.W32 -> std_opts ^ " -m32"
       | Word.WXX -> std_opts
     end
-    | TargetOS.Linux|TargetOS.FreeBsd -> begin match O.word with
+    | Linux|FreeBsd -> begin match O.word with
       | Word.W64 -> std_opts ^ " -m64 -pthread"
       | Word.W32 -> std_opts ^ " -m32 -pthread"
       | Word.WXX -> std_opts ^ " -pthread"
     end
-    | TargetOS.AIX -> begin match O.word with
+    | AIX -> begin match O.word with
       | Word.W64 -> std_opts ^ " -maix64 -pthread"
       | Word.W32 -> std_opts ^ " -maix32 -pthread"
       | Word.WXX -> std_opts ^ " -pthread"
@@ -173,7 +174,7 @@ let report_machine chan =
     output_string chan "Machine:"  ;
     exec "hostname" (output_line chan) ;
     begin match target_os with
-    | TargetOS.Linux -> cat "/proc/cpuinfo" (output_line chan)
+    | TargetOS.Linux|TargetOS.Android8 -> cat "/proc/cpuinfo" (output_line chan)
     | TargetOS.FreeBsd -> exec "sysctl -a | grep dev.cpu" (output_line chan)
     | TargetOS.Mac ->
         exec "system_profiler SPHardwareDataType" (output_line chan)

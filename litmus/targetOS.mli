@@ -15,7 +15,7 @@
 (****************************************************************************)
 
 
-type t = Linux | Mac | AIX | FreeBsd
+type t = Linux | Mac | AIX | FreeBsd | Android8
 
 val tags : string list
 val parse : string -> t option

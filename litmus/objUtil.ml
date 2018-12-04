@@ -154,6 +154,7 @@ module Make(O:Config)(Tar:Tar.S) =
     let affinity_base () = match O.targetos with
     | Linux|FreeBsd -> "_linux_affinity"
     | AIX -> "_aix_affinity"
+    | Android8 -> "_android8_affinity"
     | Mac as os ->
         Warn.fatal "Affinity not implemented for %s" (TargetOS.pp os)
 

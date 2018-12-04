@@ -141,9 +141,10 @@ let asmcommentaslabel = ref false
 let get_numeric_labels () = match !gas with
 | Some b -> b
 | None ->
+    let open TargetOS in
     begin match !targetos with
-    | TargetOS.AIX -> false
-    | TargetOS.Linux|TargetOS.Mac|TargetOS.FreeBsd -> true
+    | AIX -> false
+    | Linux|Mac|FreeBsd|Android8 -> true
     end
 let timeloop = ref (-1)
 let set_timeloop i = timeloop :=  i
