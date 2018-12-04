@@ -84,7 +84,7 @@ cpus_t *read_force_affinity(int n_avail, int verbose) {
     cpus_free(r) ;
   }
 }
-#endifg
+#endif
 #endif
 
 #ifdef CPUS_DEFINED

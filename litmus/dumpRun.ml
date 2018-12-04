@@ -332,7 +332,9 @@ let dump_shell_cont arch sources utils =
    and because #comments makes the preprocessor crash ! *)
       let src_ext = match Cfg.targetos with
       | TargetOS.Mac -> 'c'
-      | TargetOS.Linux|TargetOS.AIX|TargetOS.FreeBsd -> 's' in
+      | TargetOS.Linux|TargetOS.AIX
+      | TargetOS.FreeBsd|TargetOS.Android8
+        -> 's' in
       fprintf chan "%%.exe:%%.%c $(UTILS)\n" src_ext ;
       fprintf chan
         "\t$(GCC) $(GCCOPTS) $(LINKOPTS) -o $@ $(UTILS) $<\n" ;

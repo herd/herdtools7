@@ -101,6 +101,9 @@ rule main = parse
 | "barrier" arg
     { let module P = LexTag(Barrier) in
     P.lexfun "barrier" barrier arg ; main lexbuf }
+| "targetos" arg
+    { let module P = LexTag(TargetOS) in
+    P.lexfun "targetos" targetos arg ; main lexbuf }
 | "delay" arg
     { set_int_withfun set_delay arg ; main lexbuf }
 | "thread" arg
