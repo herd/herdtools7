@@ -97,7 +97,7 @@ end = struct
 
 (* Makefile utilities *)
 
-  let makefile_vars chan arch sources =
+  let makefile_vars chan infile arch sources =
     let module O = struct
       include Cfg
       include (val (get_arch arch) : ArchConf)
@@ -108,11 +108,15 @@ end = struct
     fprintf chan "GCCOPTS=%s\n" gcc_opts ;
     let link_opts = RU.get_link_opts in
     fprintf chan "LINKOPTS=%s\n" link_opts ;
-    fprintf chan "SRC=\\\n" ;
-    List.iter
-      (fun src -> fprintf chan " %s\\\n" src)
-      (List.rev sources) ;
-    fprintf chan "\n" ;
+    if infile then
+      fprintf chan "SRC := $(shell cat src)\n"
+    else begin
+      fprintf chan "SRC=\\\n" ;
+      List.iter
+        (fun src -> fprintf chan " %s\\\n" src)
+        (List.rev sources) ;
+      fprintf chan "\n"
+    end ;
     ()
 
   let makefile_clean chan extra =
@@ -176,7 +180,7 @@ let run_tests names out_chan =
             | Misc.UserError msg ->
                 eprintf "%a %s\n%!" Pos.pp_pos0 name msg ;
                 msg
-            | e -> 
+            | e ->
                 let msg = sprintf "exception %s"  (Printexc.to_string e) in
                 eprintf "%a %s\n%!" Pos.pp_pos0 name msg ;
                 msg in
@@ -319,7 +323,7 @@ let dump_shell_cont arch sources utils =
   Misc.output_protect
     (fun chan ->
 (* Variables *)
-      makefile_vars chan arch sources ;
+      makefile_vars chan false arch sources ;
       fprintf chan "EXE=$(SRC:.c=.exe)\n" ;
       fprintf chan "T=$(SRC:.c=.t)\n" ;
       fprintf chan "\n" ;
@@ -439,9 +443,10 @@ let dump_c xcode names =
 let dump_c_cont xcode arch sources utils =
   let sources = List.map Filename.basename  sources in
 (* Makefile *)
+  let infile = not xcode in
   Misc.output_protect
     (fun chan ->
-      makefile_vars chan arch sources ;
+      makefile_vars chan infile arch sources ;
 (* Various intermediate targets *)
       fprintf chan "T=$(SRC:.c=.t)\n" ;
       fprintf chan "H=$(SRC:.c=.h)\n" ;
@@ -457,13 +462,22 @@ let dump_c_cont xcode arch sources utils =
         fprintf chan "all: $(EXE)\n" ;
       end ;
       fprintf chan "\n" ;
-      makefile_clean chan " $(H)";
+      makefile_clean chan ((if infile then " obj " else " ")^"$(H)");
       if not xcode then makefile_utils chan utils ;
 (* Rules *)
       if not xcode then begin
-        let objs = "$(UTILS) $(OBJ) run.o" in
-        fprintf chan "$(EXE): %s\n" objs ;
-        fprintf chan "\t$(GCC)  $(GCCOPTS) $(LINKOPTS) -o $@ %s\n" objs ;
+        if infile then begin
+          fprintf chan "obj: $(OBJ) src\n" ;
+          fprintf chan "\tsed -e 's|.c$$|.o|g' < src > obj\n\n"
+        end ;
+        let o1 =
+          if infile then "$(UTILS) obj run.o"
+          else "$(UTILS) $(OBJ) run.o" in
+        let o2 =
+          if infile then "$(UTILS) @obj run.o"
+          else o1 in
+        fprintf chan "$(EXE): %s\n" o1 ;
+        fprintf chan "\t$(GCC)  $(GCCOPTS) $(LINKOPTS) -o $@ %s\n" o2 ;
         fprintf chan "\n" ;
 (* .o pattern rule *)
         fprintf chan "%%.o:%%.c\n" ;
@@ -494,6 +508,12 @@ let dump_c_cont xcode arch sources utils =
       end ;
       ())
     (Tar.outname (MyName.outname "Makefile" "")) ;
+(* Source list in file  *)
+  if infile then begin
+    Misc.output_protect
+      (fun chan -> List.iter (fprintf chan "%s\n") sources)
+      (Tar.outname (MyName.outname "src" ""))
+  end ;
 (* XCode interface file *)
   if xcode then begin
     Misc.output_protect
