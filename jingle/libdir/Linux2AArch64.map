@@ -5,6 +5,11 @@ C to AArch64
 				     codevar:t;
 				     else:"
 
+"if(%x) codevar:t;" -> "CMP %x,#0;
+			B.EQ else;
+		        codevar:t;
+		        else:"
+
 "%x = constvar:c;" -> "MOV %x,&c"
 
 "*%x = constvar:c;" -> "MOV %tmp,&c;
@@ -14,7 +19,7 @@ C to AArch64
 
 "%x = *%y;" -> "LDR %x,[%y]"
 
-"%x = READ_ONCE(*%y);" -> "loa:LDR %x,[%y]"
+"%x = READ_ONCE(*%y);" -> "load:LDR %x,[%y]"
 
 "WRITE_ONCE(*%y, %x);" -> "store:STR %x,[%y]"
 
