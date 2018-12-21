@@ -82,7 +82,7 @@ type instruction =
   | Lock of expression * mutex_kind
   | Unlock of expression * mutex_kind
   | AtomicOp of expression * Op.op * expression
-  | InstrSRCU of expression * MemOrderOrAnnot.annot
+  | InstrSRCU of expression * MemOrderOrAnnot.annot * expression option
   | Symb of string
   | PCall of string * expression list
 
@@ -207,10 +207,11 @@ let rec do_dump_instruction indent =
   | AtomicOp(l,op,e) ->
       pindent "atomic_%s(%s,%s);" (dump_op op)
         (dump_expr l) (dump_expr e)
-  | InstrSRCU(loc,a) ->
-      pindent "__SRCU{%s}(%s)"
-          (string_of_annot a)
-          (dump_expr loc)
+  | InstrSRCU(loc,a,oe) ->
+      pindent "__SRCU{%s}(%s%s)"
+        (string_of_annot a)
+        (dump_expr loc)
+        (match oe with None -> "," | Some e -> "," ^ dump_expr e)
   | Symb s -> pindent "codevar:%s;" s
   | PCall (f,es) ->
       pindent "%s(%s);" f (dump_args es)
@@ -277,7 +278,7 @@ include Pseudo.Make
         | Lock (e,k) -> Lock (parsed_expr_tr e,k)
         | Unlock (e,k) -> Unlock  (parsed_expr_tr e,k)
         | AtomicOp(l,op,e) -> AtomicOp(parsed_expr_tr l,op,parsed_expr_tr e)
-        | InstrSRCU(e,a) -> InstrSRCU(parsed_expr_tr e,a)
+        | InstrSRCU(e,a,oe) -> InstrSRCU(parsed_expr_tr e,a,Misc.app_opt parsed_expr_tr oe)
         | Symb _ -> Warn.fatal "No term variable allowed"
         | PCall (f,es) -> PCall (f,List.map parsed_expr_tr es)
 
@@ -314,7 +315,7 @@ include Pseudo.Make
           | StoreMem (loc,e,_)
           | AtomicOp(loc,_,e) -> get_exp (get_exp k loc) e
           | Lock (e,_)|Unlock (e,_) -> get_exp (k+1) e
-          | InstrSRCU(e,_) -> get_exp (k+1) e
+          | InstrSRCU(e,_,oe) -> get_exp (match oe with None -> k+1 | Some e -> get_exp (k+1) e) e
           | PCall (_,es) ->  List.fold_left get_exp k es
 
         and get_opt k = function
@@ -416,7 +417,7 @@ let rec subst env i = match i with
 | Lock (loc,k) -> Lock (subst_expr env loc,k)
 | Unlock (loc,k) -> Unlock (subst_expr env loc,k)
 | AtomicOp (loc,op,e) -> AtomicOp(subst_expr env loc,op,subst_expr env e)
-| InstrSRCU (e,a) -> InstrSRCU(subst_expr env e,a)
+| InstrSRCU (e,a,oe) -> InstrSRCU(subst_expr env e,a,Misc.app_opt (subst_expr env) oe)
 | PCall (f,es) ->
     let xs,body = find_macro f env.proc in
     let frame = build_frame f (subst_expr env) xs es in

@@ -34,8 +34,8 @@ module Make (A : Arch_herd.S) : sig
     | TryLock of A.location (* Failed trylock, returns 1 *)
           (* true -> from lock, false -> from unlokk *)
     | ReadLock of A.location * bool
-(* SRCU *)
-    | SRCU of A.location * MemOrderOrAnnot.annot
+(* SRCU : location, nature, and optional value (for lock/unlock) *)
+    | SRCU of A.location * MemOrderOrAnnot.annot * A.V.v option
 
   include Action.S with type action := action and module A = A
 
@@ -58,7 +58,7 @@ end = struct
     | Unlock of A.location  * CBase.mutex_kind
     | TryLock of A.location (* Failed trylock *)
     | ReadLock of A.location * bool
-    | SRCU of A.location * annot
+    | SRCU of A.location * annot * V.v option
 
   let mk_init_write l sz v = Access (W,l,v,AN [],false,sz)
 
@@ -103,10 +103,15 @@ end = struct
       sprintf "ReadLock(%s,%c)"
         (A.pp_location l)
         (if ok then '1' else '0')
-  | SRCU (l,an) ->
+  | SRCU (l,an,None) ->
       sprintf "SRCU%s(%s)"
         (bra pp_annot an)
         (A.pp_location l)
+  | SRCU (l,an,Some v) ->
+      sprintf "SRCU%s(%s,%s)"
+        (bra pp_annot an)
+        (A.pp_location l)
+        (V.pp_v v)
 (* Utility functions to pick out components *)
 
   let value_of a = match a with
@@ -132,7 +137,7 @@ end = struct
   | TryLock (l)
   | ReadLock (l,_)
   | RMW (l,_,_,_,_)
-  | SRCU (l,_)
+  | SRCU (l,_,_)
     -> Some l
   | Fence _ -> None
 
@@ -319,7 +324,8 @@ end = struct
 
   let undetermined_vars_in_action a =
     match a with
-    | Access (_,l,v,_,_,_) ->
+    | Access (_,l,v,_,_,_)
+    | SRCU (l,_,Some v) ->
         let undet_loc = match A.undetermined_vars_in_loc l with
         | None -> V.ValueSet.empty
         | Some v -> V.ValueSet.singleton v in
@@ -340,7 +346,7 @@ end = struct
     | Lock(l,_)
     | Unlock (l,_)
     | ReadLock (l,_)
-    | SRCU(l,_) ->
+    | SRCU(l,_,None) ->
         (match A.undetermined_vars_in_loc l with
         | None -> V.ValueSet.empty
         | Some v -> V.ValueSet.singleton v)
@@ -369,9 +375,9 @@ end = struct
     | ReadLock (l,b) ->
         let l' = A.simplify_vars_in_loc soln l in
         ReadLock (l',b)
-    | SRCU(l,a) ->
+    | SRCU(l,a,vo) ->
         let l' =  A.simplify_vars_in_loc soln l in
-        SRCU(l',a)
+        SRCU(l',a,Misc.app_opt (V.simplify_var soln) vo)
     | Fence _ -> a
 
 (*************************************************************)
@@ -381,7 +387,7 @@ end = struct
   let annot_in_list str ac = match ac with
   | Access (_,_,_,AN a,_,_)
   | Fence (AN a)
-  | SRCU(_,a)
+  | SRCU(_,a,_)
     -> List.exists (fun a -> Misc.string_eq str a) a
   | Access (_, _, _, MO _,_,_)|Fence (MO _)|RMW (_, _, _, _,_)
   | Lock _|Unlock _|TryLock _|ReadLock _ -> false

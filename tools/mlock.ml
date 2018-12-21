@@ -145,9 +145,10 @@ module Top(O:Config)(Out:OutTests.S) = struct
         let loc = tr_expr loc
         and e = tr_expr e in
         nxt,StringSet.empty,AtomicOp(loc,op,e)
-    | InstrSRCU(eloc,a) ->
+    | InstrSRCU(eloc,a,oe) ->
         let eloc = tr_expr eloc in
-        nxt,StringSet.empty,InstrSRCU(eloc,a)
+        let oe = Misc.app_opt tr_expr oe in
+        nxt,StringSet.empty,InstrSRCU(eloc,a,oe)
 
   and tr_code nxt = function
       | [] -> nxt,StringSet.empty,[]
@@ -251,8 +252,13 @@ module Top(O:Config)(Out:OutTests.S) = struct
         let s = expr_read ec in
         let i = If (ec,tr_ins it,Misc.app_opt tr_ins o) in
         add_locks s i
-    | StoreReg (_,_,e)|InstrSRCU(e,_) ->
+    | StoreReg (_,_,e) ->
         let s = expr_read e in
+        add_locks s i
+    |InstrSRCU(eloc,_,oe) ->
+        let s1 = expr_read eloc
+        and s2 = Misc.app_opt_def StringSet.empty expr_read oe in
+        let s = StringSet.union s1 s2 in
         add_locks s i
     | StoreMem (e1,e2,_) ->
         let s1 = expr_read e1 and s2 = expr_read e2 in
@@ -352,7 +358,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
         end
     | PCall (f,es) -> PCall (f,tr_exprs es)
     | AtomicOp (loc,op,e) -> AtomicOp(tr_expr loc,op,tr_expr e)
-    | InstrSRCU(eloc,a) -> InstrSRCU(tr_expr eloc,a) in
+    | InstrSRCU(eloc,a,oe) -> InstrSRCU(tr_expr eloc,a,Misc.app_opt tr_expr oe) in
     tr_ins
 
 (* Parsed *)

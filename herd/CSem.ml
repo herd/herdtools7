@@ -281,10 +281,14 @@ module Make (Conf:Sem.Config)(V:Value.S)
             mk_mb ii >>! v)
           (M.linux_add_unless_no mloc mu mrmem M.assign (if retbool then Some V.zero else None))
     | C.ExpSRCU(eloc,a) ->
-          build_semantics_expr false eloc ii >>=
-          fun vloc ->
-            M.mk_singleton_es (Act.SRCU (A.Location_global vloc,a)) ii
-              >>! V.zero
+        let r = match a with
+        |  ["srcu-lock"] ->
+            Some (A.V.intToV ((ii.A.proc +1)* 307 + ii.A.program_order_index * 599))
+        | _ -> None in
+        build_semantics_expr false eloc ii >>=
+          fun (vloc) ->
+            M.mk_singleton_es (Act.SRCU (A.Location_global vloc,a,r)) ii
+              >>! (match r with None -> V.zero | Some v -> v)
     | C.ECall (f,_) -> Warn.fatal "Macro call %s in CSem" f
 
     and build_atomic_op ret a_read a_write eloc op e ii =
@@ -392,10 +396,14 @@ module Make (Conf:Sem.Config)(V:Value.S)
           M.mk_fence (Act.Fence mo) ii
             >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
 (********************)
-      | C.InstrSRCU(e,a) ->
-          build_semantics_expr false e ii >>=
-          fun l ->
-            M.mk_singleton_es (Act.SRCU (A.Location_global l,a)) ii
+      | C.InstrSRCU(e,a,oe) ->
+          build_semantics_expr false e ii >>|
+          (match oe with
+          | None -> M.unitT None
+          | Some e -> build_semantics_expr true e ii >>= fun v -> M.unitT (Some v))
+            >>=
+          fun (l,v) ->
+            M.mk_singleton_es (Act.SRCU (A.Location_global l,a,v)) ii
               >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
 (********************)
       | C.Symb _ -> Warn.fatal "No symbolic instructions allowed."

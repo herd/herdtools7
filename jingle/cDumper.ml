@@ -99,7 +99,8 @@ let list_loc prog =
         List.fold_left expr s es
     | Fence _|Symb _ -> s
     | AtomicOp(e1,_,e2) -> expr (expr s e1) e2
-    | InstrSRCU(e,_) -> expr s e
+    | InstrSRCU(e,_,None) -> expr s e
+    | InstrSRCU(e,_,Some f) -> expr (expr s f) e
   in
   LocSet.elements (List.fold_left ins LocSet.empty prog)
 

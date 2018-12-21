@@ -193,5 +193,5 @@ include Arch.MakeArch(struct
     | Symb s -> find_code s
     | PCall (f,es) -> PCall (f,List.map expl_expr es)
     | AtomicOp(e1,op,e2) -> AtomicOp (expl_expr e1,op,expl_expr e2)
-    | InstrSRCU (e,a) -> InstrSRCU (expl_expr e,a)
+    | InstrSRCU (e,a,oe) -> InstrSRCU (expl_expr e,a,Misc.app_opt expl_expr oe)
 end)

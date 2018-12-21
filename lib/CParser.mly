@@ -239,7 +239,9 @@ instruction:
 | STORE LBRACE annot_list RBRACE LPAR expr COMMA expr RPAR SEMI
   { StoreMem($6,$8,AN $3) }
 | SRCU LBRACE annot_list RBRACE LPAR expr RPAR SEMI
-  { InstrSRCU($6,$3) }
+  { InstrSRCU($6,$3,None) }
+| SRCU LBRACE annot_list RBRACE LPAR expr COMMA expr RPAR SEMI
+  { InstrSRCU($6,$3,Some $8) }
 | ST_EXPLICIT LPAR expr COMMA expr COMMA MEMORDER RPAR SEMI
   { StoreMem($3, $5, MO $7) }
 | LOCK LPAR expr RPAR SEMI
