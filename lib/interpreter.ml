@@ -81,6 +81,7 @@ module Make
           S.event_rel -> (* po *)
             S.event_set (* labelled fence(s) *) ->
               S.event_rel (* localised fence relation *)
+      val same_value : S.event -> S.event -> bool
     end)
     :
     sig
@@ -912,9 +913,16 @@ module Make
       let msg = sprintf "fail on %s" pp in
       raise (PrimError msg)
 
+    and same_value arg = match arg with
+    | V.Rel r ->
+        let r = E.EventRel.filter (fun (e1,e2) -> not (U.same_value e1 e2)) r in
+        V.Rel r
+    | _ -> arg_mismatch ()
+
     let add_primitives ks m =
       add_prims m
         [
+         "same-value",same_value;
          "fromto",fromto ks;
          "classes-loc",partition;
          "classes",classes;

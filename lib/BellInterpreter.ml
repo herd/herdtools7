@@ -88,6 +88,7 @@ module Make (C: Config) = struct
             if C.debug then eprintf "%s\n" msg
           let pp _ _ _ _ = ()
           let fromto _ _ = assert false
+          let same_value _ _ = assert false
         end) in
 
     let empty_test = () in

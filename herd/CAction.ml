@@ -115,7 +115,8 @@ end = struct
 (* Utility functions to pick out components *)
 
   let value_of a = match a with
-  | Access (_,_ ,v,_,_,_) -> Some v
+  | Access (_,_ ,v,_,_,_)
+  | SRCU (_,_,Some v)   -> Some v
   | _ -> None
 
   let read_of a = match a with

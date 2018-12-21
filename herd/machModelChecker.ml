@@ -106,8 +106,11 @@ module Make
               fs [] in
           E.EventRel.unions r
 
-
+      let same_value e1 e2 = match S.E.value_of e1,S.E.value_of e2 with
+      | Some v1,Some v2 -> S.A.V.compare v1 v2 = 0
+      | _ -> false
     end
+
     module I = Interpreter.Make(IConfig)(S)(IUtils)
     module E = S.E
 
