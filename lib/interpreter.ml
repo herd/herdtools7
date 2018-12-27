@@ -913,7 +913,7 @@ module Make
       let msg = sprintf "fail on %s" pp in
       raise (PrimError msg)
 
-    and same_value arg = match arg with
+    and different_values arg = match arg with
     | V.Rel r ->
         let r = E.EventRel.filter (fun (e1,e2) -> not (U.same_value e1 e2)) r in
         V.Rel r
@@ -922,7 +922,7 @@ module Make
     let add_primitives ks m =
       add_prims m
         [
-         "same-value",same_value;
+         "different-values",different_values;
          "fromto",fromto ks;
          "classes-loc",partition;
          "classes",classes;
