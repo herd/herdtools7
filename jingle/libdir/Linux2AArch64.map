@@ -27,22 +27,22 @@ C to AArch64
                                    store:STR %tmp,[%y]"
 
 "%r = xchg_relaxed(%x, %y);" -> "loop:load:LDXR %r,[%x];
-				store:STXR W1, %y,[%x];
-				CBNZ W1, loop"
+				store:STXR w%wmp, %y,[%x];
+				CBNZ w%wmp, loop"
 
-"%r = cmpxchg_relaxed(%x, constvar:c, constvar:d);" -> "MOV %tmp, &c;
-							loop:load:LDXR %r,[%x];
+"%r = cmpxchg_relaxed(%x, constvar:c, constvar:d);" -> "loop:MOV %tmp, &c;
+							load:LDXR %r,[%x];
 							CMP %r, %tmp;
 							B.NE out;
 							MOV %tmp, &d;
-							store:STXR W1, %tmp, [%x];
-							CBNZ W1, loop;
+							store:STXR w%wmp, %tmp, [%x];
+							CBNZ w%wmp, loop;
 							out:"
 
 "%r = xchg_relaxed(%x, constvar:c);" -> "MOV %tmp,&c;
 					 loop:load:LDXR %r,[%x];
-					 store:STXR W1, %tmp,[%x];
-					 CBNZ W1, loop"
+					 store:STXR w%wmp, %tmp,[%x];
+					 CBNZ w%wmp, loop"
 
 "smp_mb();" -> "DMB ISH"
 
@@ -65,3 +65,13 @@ C to AArch64
 "const_to_1" : "&c" -> "#1"
 "const_to_0" : "&c" -> "#0"
 "constd_to_1" : "&d" -> "#1"
+
+"my_lock(%x);"
+->
+"loop:MOV %tmp, #0;
+LDAXR %r,[%x];
+CMP %r, %tmp;
+B.NE loop;
+MOV %tmp, #1;
+store:STXR w%wmp, %tmp, [%x];
+CBNZ w%wmp, loop;"
