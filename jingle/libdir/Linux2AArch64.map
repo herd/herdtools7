@@ -66,12 +66,4 @@ C to AArch64
 "const_to_0" : "&c" -> "#0"
 "constd_to_1" : "&d" -> "#1"
 
-"my_lock(%x);"
-->
-"loop:MOV %tmp, #0;
-LDAXR %r,[%x];
-CMP %r, %tmp;
-B.NE loop;
-MOV %tmp, #1;
-store:STXR w%wmp, %tmp, [%x];
-CBNZ w%wmp, loop;"
+"out_to_loop" : "B.NE out" -> "B.NE loop"

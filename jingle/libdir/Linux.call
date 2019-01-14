@@ -30,7 +30,9 @@ C
 
 "temp2_spin_lock(%x);" -> "@const_to_0 temp_spin_lock(%x);"
 
-"spin_lock(%x);" -> "@id my_lock(%x);"
+"temp3_spin_lock(%x);" -> "@out_to_loop temp2_spin_lock(%x);"
+
+"spin_lock(%x);" -> "@constd_to_1 temp3_spin_lock(%x);"
 
 "temp_spin_unlock(%y);" -> "@id smp_store_release(%y, constvar:c);"
 
