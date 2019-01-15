@@ -66,11 +66,11 @@ let parsed_call = match call with
         exit 1
 
 
-let filter_func f func_env = List.filter (fun (x, _, _) -> String.equal x f) func_env
+let filter_func f func_env = List.filter (fun (x, _, _) -> Misc.string_eq x f) func_env
 
-let filter_map e map_env = List.filter (fun (x, _) -> String.equal x e) map_env
+let filter_map e map_env = List.filter (fun (x, _) -> Misc.string_eq x e) map_env
 
-let filter_unmap e map_env = List.filter (fun (x, _) -> not (String.equal x e)) map_env
+let filter_unmap e map_env = List.filter (fun (x, _) -> not (Misc.string_eq x e)) map_env
 
 let rec apply f e map_env func_env = match filter_func f func_env with
 | [] -> raise(Error ("no func for " ^ f ^ "."))
