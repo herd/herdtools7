@@ -23,6 +23,7 @@ val call_parser :
 (* Configuration, to change kind, condition and rename *)
 module type Config = sig
   val debuglexer : bool
+  val verbose : int
   val check_kind : string -> ConstrGen.kind option
   val check_cond : string -> string option
 end

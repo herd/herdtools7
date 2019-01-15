@@ -46,12 +46,13 @@ let call_parser name lexbuf lex parse =
 (* Configuration, to change kinds and condition *)
 module type Config = sig
   val debuglexer : bool
+  val verbose : int
   val check_kind : string -> ConstrGen.kind option
   val check_cond : string -> string option
 end
 
 module DefaultConfig = struct
-  let debuglexer = false
+  let debuglexer = false let verbose = 0
   let check_kind _ = None
   let check_cond _ = None
 end
@@ -193,6 +194,7 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
                    src -> Pos.pos2 ->
                      'a -> ('a -> Lexing.lexbuf -> 'b) -> 'b
            end) = struct
+
     let parse chan
         {
          Splitter.locs = (init_loc, prog_loc,constr_loc,_) ;
@@ -236,18 +238,19 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
                 let map = List.assoc OutMapping.key info in
                 let map = try LexOutMapping.parse map with _ -> assert false in
                 let map = OutMapping.locmap_inverse map in
-                MiscParser.LocMap.iter
-                  (fun k v ->
-                    Printf.eprintf "Loc %s -> %s\n"
-                      (MiscParser.dump_location k)
-                      (MiscParser.dump_location v))
-                      map ;
+                if O.verbose > 0 then
+                  MiscParser.LocMap.iter
+                    (fun k v ->
+                      Printf.eprintf "Loc %s -> %s\n"
+                        (MiscParser.dump_location k)
+                        (MiscParser.dump_location v))
+                    map ;
                 let map_loc loc = MiscParser.LocMap.safe_find loc loc map in
                 let open ConstrGen in
                 let map_atom = function
                   | LV (loc,v) -> LV (map_loc loc,v)
                   | LL (loc1,loc2) ->  LL (map_loc loc1,map_loc loc2) in
-                prerr_endline "Bingo" ;
+                if O.verbose > 0 then prerr_endline "Bingo" ;
                 ConstrGen.map_constr map_atom cond
               with Not_found -> cond in
             { parsed with
