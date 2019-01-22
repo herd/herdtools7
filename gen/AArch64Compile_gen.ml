@@ -128,7 +128,29 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let stxr r1 r2 r3 = I_STXR (vloc,YY,r1,r2,r3)
     let stlxr r1 r2 r3 = I_STXR (vloc,LY,r1,r2,r3)
 
-    let str_mixed_idx v r1 r2 idx sz  =
+    let stxr_sz t sz r1 r2 r3 =
+      let open MachSize in
+      match sz with
+      | Byte -> I_STXRBH (B,t,r1,r2,r3)
+      | Short -> I_STXRBH (H,t,r1,r2,r3)
+      | Word -> I_STXR (V32,t,r1,r2,r3)
+      | Quad -> I_STXR (V64,t,r1,r2,r3)
+
+    let ldxr_sz t sz r1 r2 =
+      let open MachSize in
+      match sz with
+      | Byte -> I_LDARBH (B,t,r1,r2)
+      | Short -> I_LDARBH (H,t,r1,r2)
+      | Word -> I_LDAR (V32,t,r1,r2)
+      | Quad -> I_LDAR (V64,t,r1,r2)
+
+    let sumi_addr st rA o = match o with
+    | 0 -> rA,[],st
+    | _ ->
+        let r,st = tempo1 st in
+        r,[addi_64 r rA o],st
+
+    let str_mixed_idx sz v r1 r2 idx  =
       let open MachSize in
       match sz with
       | Byte -> I_STRBH (B,r1,r2,RV (v,idx))
@@ -145,12 +167,53 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let r,st = tempo1 st in
       r,[add64 r rA idx],st
 
+    let stlr_mixed sz o st r1 r2 =
+      let open MachSize in
+      let rA,cs_sum,st = sumi_addr st r2 o in
+      let str = match sz with
+      | Byte  -> I_STLRBH (B,r1,rA)
+      | Short -> I_STLRBH (H,r1,rA)
+      | Word -> I_STLR (V32,r1,rA)
+      | Quad -> I_STLR (V64,r1,rA) in
+      cs_sum@[str],st
+
+    let stlr_mixed_idx sz r1 r2 idx  =
+      let open MachSize in
+      match sz with
+      | Byte -> I_STRBH (B,r1,r2,RV (V64,idx))
+      | Short -> I_STRBH (H,r1,r2,RV (V64,idx))
+      | Word -> I_STR (V32,r1,r2,RV (V64,idx))
+      | Quad -> I_STR (V64,r1,r2,RV (V64,idx))
+
+    let ldar_mixed t sz o st r1 r2 =
+      let rA,cs,st = sumi_addr st r2 o in
+      let ld =
+        let open MachSize in
+        match sz  with
+        | Byte -> I_LDARBH (B,t,r1,rA)
+        | Short -> I_LDARBH (H,t,r1,rA)
+        | Word -> I_LDAR (V32,t,r1,rA)
+        | Quad -> I_LDAR (V64,t,r1,rA) in
+      cs@[ld],st
+
+    let ldar_mixed_idx t sz o st r1 r2 idx =
+      let rA,cs1,st = sumi_addr st r2 o in
+      let rA,cs2,st = sum_addr st rA idx in
+      let ld =
+        let open MachSize in
+        match sz  with
+        | Byte -> I_LDARBH (B,t,r1,rA)
+        | Short -> I_LDARBH (H,t,r1,rA)
+        | Word -> I_LDAR (V32,t,r1,rA)
+        | Quad -> I_LDAR (V64,t,r1,rA) in
+      cs1@cs2@[ld],st
+
 (*********)
 (* loads *)
 (*********)
 
     module type L = sig
-      val load : reg -> reg -> instruction
+      val load : A.st -> reg -> reg -> instruction list * A.st
       val load_idx : A.st -> reg -> reg -> reg -> instruction list * A.st
     end
 
@@ -165,32 +228,35 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let emit_load st p init x =
           let rA,st = next_reg st in
           let rB,init,st = U.next_init st p init x in
-          rA,init,lift_code [L.load rA rB],st
+          let ld,st = L.load st rA rB in
+          rA,init,lift_code ld,st
 
 
         let emit_load_not_zero st p init x =
           let rA,st = next_reg st in
           let rB,init,st = U.next_init st p init x in
+          let ld,st = L.load st rA rB in
           let lab = Label.next_label "L" in
           rA,init,
           Label (lab,Nop)::
-          lift_code
-            [L.load rA rB; cbz rA lab],
+          lift_code (ld@[cbz rA lab]),
           st
 
         let emit_load_one st p init x =
           let rA,st = next_reg st in
           let rB,init,st = U.next_init st p init x in
+          let ld,st = L.load st rA rB in
           let lab = Label.next_label "L" in
           rA,init,
           Label (lab,Nop)::
-          pseudo [L.load rA rB; cmpi rA 1; bne lab],
+          pseudo (ld@[cmpi rA 1; bne lab]),
           st
 
         let emit_load_not st p init x cmp =
           let rA,st = next_reg st in
           let rC,st = next_reg st in
           let rB,init,st = U.next_init st p init x in
+          let ld,st = L.load st rA rB in
           let lab = Label.next_label "L" in
           let out = Label.next_label "L" in
           rA,init,
@@ -198,13 +264,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           (* 200 X about 5 ins looks for a typical memory delay *)
           Label (lab,Nop)::
           pseudo
-            [
-             L.load rA rB; cmp rA ;
-             bne out; I_OP3 (vloc,SUBS,rC,rC,K 1) ;
-             cbnz rC lab ;
-           ]@
-          [Label (out,Nop)],
-          st
+            (ld@
+             [cmp rA;
+              bne out; I_OP3 (vloc,SUBS,rC,rC,K 1) ;
+              cbnz rC lab ;
+            ])@
+          [Label (out,Nop)],st
 
         let emit_load_not_eq st p init x rP =
           emit_load_not st p init x (fun r -> cmp r rP)
@@ -220,10 +285,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
       end
 
+    let wrap_st emit st r1 r2 =
+      let c = emit r1 r2 in
+      [c],st
+
     module LDR =
       LOAD
         (struct
-          let load = ldr
+          let load = wrap_st ldr
           let load_idx st rA rB idx = [ldr_idx rA rB idx],st
         end)
 
@@ -236,7 +305,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     module LDAR = LOAD
         (struct
-          let load = ldar
+          let load = wrap_st ldar
           let load_idx st rA rB idx =
             let r,ins,st = sum_addr st rB idx in
             ins@[ldar rA r],st
@@ -244,7 +313,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     module LDAPR = LOAD
         (struct
-          let load = ldapr
+          let load = wrap_st ldapr
           let load_idx st rA rB idx =
             let r,ins,st = sum_addr st rB idx in
             ins@[ldapr rA r],st
@@ -255,7 +324,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (**********)
 
     module type S = sig
-      val store : reg -> reg -> instruction
+      val store : A.st -> reg -> reg -> instruction list * A.st
       val store_idx : A.st -> reg -> reg -> reg -> instruction list * A.st
     end
 
@@ -273,7 +342,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
         let emit_store_reg st p init x rA =
           let rB,init,st = U.next_init st p init x in
-          init,[Instruction (S.store rA rB)],st
+          let cs,st = S.store st rA rB in
+          init,pseudo cs,st
 
         let emit_store st p init x v =
           let rA,init,csi,st = U.emit_mov st p init v in
@@ -295,14 +365,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     module STR =
       STORE
         (struct
-          let store = str
+          let store = wrap_st str
           let store_idx st rA rB idx = [str_idx rA rB idx],st
         end)
 
     module STLR =
       STORE
         (struct
-          let store = stlr
+          let store = wrap_st stlr
           let store_idx  st rA rB idx =
             let r,ins,st = sum_addr st rB idx in
             ins@[stlr rA r],st
@@ -365,6 +435,63 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | None -> emit_loop_pair
     | Some u -> emit_unroll_pair u
 
+
+(********************)
+(* Mixed size pairs *)
+(********************)
+    let get_xload_mixed rw = match rw with
+    | PP|PL -> ldxr_sz XX
+    | AP|AL -> ldxr_sz AX
+
+    let get_xstore_mixed rw = match rw with
+    | PP|AP -> stxr_sz YY
+    | PL|AL -> stxr_sz LY
+
+    let emit_loop_pair_mixed sz o rw _p st rR rW rA =
+      let rA,ci,st = sumi_addr st rA o in
+      let lbl = Label.next_label "Loop" in
+      let r,st = tempo3 st in
+      let cs =
+        [
+         Label (lbl,Instruction (get_xload_mixed rw sz rR rA));
+         Instruction (get_xstore_mixed rw sz r rW rA);
+         Instruction (cbnz r lbl);
+       ] in
+      pseudo ci@cs,st
+
+    let emit_one_pair_mixed sz rw p r rR rW rA k =
+      Instruction (get_xload_mixed rw sz rR rA)::
+      Instruction (get_xstore_mixed rw sz r rW rA)::
+      Instruction (cbnz r (Label.fail p))::k
+
+    let emit_unroll_pair_mixed sz o u rw p st rR rW rA =
+      let rA,ci,st = sumi_addr st rA o in
+      if u <= 0 then
+        let r,st = next_reg st in
+        pseudo
+          (ci@
+           [get_xload_mixed rw sz rR rA;
+            get_xstore_mixed rw sz r rW rA;]),st
+      else if u = 1 then
+        let r,st = tempo3 st in
+        pseudo ci@emit_one_pair_mixed sz rw p r rR rW rA [],st
+      else
+        let r,st = tempo3 st in
+        let out = Label.next_label "Go" in
+        let rec do_rec = function
+          | 1 ->
+              emit_one_pair_mixed sz rw p r rR rW rA [Label (out,Nop)]
+          | u ->
+              Instruction (get_xload_mixed rw sz rR rA)::
+              Instruction (get_xstore_mixed rw sz r rW rA)::
+              Instruction (cbz r out)::
+              do_rec (u-1) in
+        pseudo ci@do_rec u,st
+
+    let emit_pair_mixed sz o = match Cfg.unrollatomic with
+    | None -> emit_loop_pair_mixed sz o
+    | Some u -> emit_unroll_pair_mixed sz o u
+
     let emit_lda_reg rw st p rA =
       let rR,st = next_reg st in
       let cs,st = emit_pair rw p st rR rR rA in
@@ -379,6 +506,22 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let rA,init,st = U.next_init st p init loc in
       let rA,cs1,st = sum_addr st rA idx in
       let r,cs2,st =  emit_lda_reg rw st p rA in
+      r,init,pseudo cs1@cs2,st
+
+    let emit_lda_mixed_reg sz o rw st p rA =
+      let rR,st = next_reg st in
+      let cs,st = emit_pair_mixed sz o  rw p st rR rR rA in
+      rR,cs,st
+
+    let emit_lda_mixed sz o rw st p init loc =
+      let rA,init,st = U.next_init st p init loc in
+      let r,cs,st =  emit_lda_mixed_reg sz o rw st p rA in
+      r,init,cs,st
+
+    let emit_lda_mixed_idx sz o rw st p init loc idx =
+      let rA,init,st = U.next_init st p init loc in
+      let rA,cs1,st = sum_addr st rA idx in
+      let r,cs2,st =  emit_lda_mixed_reg sz o rw st p rA in
       r,init,pseudo cs1@cs2,st
 
 
@@ -406,6 +549,30 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       rR,init,csi@pseudo cs1@cs2,st
 
 
+    let do_emit_sta_mixed sz o rw st p rW rA =
+      let rR,st = next_reg st in
+      let cs,st = emit_pair_mixed sz o rw p st rR rW rA in
+      rR,cs,st
+
+    let emit_sta_mixed sz o rw st p init loc v =
+      let rA,init,st = U.next_init st p init loc in
+      let rW,init,csi,st = U.emit_mov st p init v in
+      let rR,cs,st = do_emit_sta_mixed sz o rw st p rW rA in
+      rR,init,csi@cs,st
+
+    let emit_sta_mixed_reg sz o rw st p init loc rW =
+      let rA,init,st = U.next_init st p init loc in
+      let rR,cs,st = do_emit_sta_mixed sz o rw st p rW rA in
+      rR,init,cs,st
+
+    let emit_sta_mixed_idx sz o rw st p init loc idx v =
+      let rA,init,st = U.next_init st p init loc in
+      let rA,cs1,st = sum_addr st rA idx in
+      let rW,init,csi,st = U.emit_mov st p init v in
+      let rR,cs2,st = do_emit_sta_mixed sz o rw st p rW rA in
+      rR,init,csi@pseudo cs1@cs2,st
+
+
 (**********)
 (* Access *)
 (**********)
@@ -417,40 +584,80 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,None ->
             let r,init,cs,st = LDR.emit_load st p init e.loc in
             Some r,init,cs,st
-        | R,Some Acq ->
+        | R,Some (Acq,None) ->
             let r,init,cs,st = LDAR.emit_load st p init e.loc  in
             Some r,init,cs,st
-        | R,Some AcqPc ->
+        | R,Some (Acq,Some (sz,o)) ->
+            let module L =
+              LOAD
+                (struct
+                  let load = ldar_mixed AA sz o
+                  let load_idx = ldar_mixed_idx AQ sz o
+                end) in
+            let r,init,cs,st = L.emit_load st p init e.loc in
+            Some r,init,cs,st
+        | R,Some (AcqPc,None) ->
             let r,init,cs,st = LDAPR.emit_load st p init e.loc  in
             Some r,init,cs,st
-        | R,Some Rel ->
+        | R,Some (AcqPc,Some (sz,o)) ->
+            let module L =
+              LOAD
+                (struct
+                  let load = ldar_mixed AQ sz o
+                  let load_idx = ldar_mixed_idx AQ sz o
+                end) in
+            let r,init,cs,st = L.emit_load st p init e.loc in
+            Some r,init,cs,st
+        | R,Some (Rel,_) ->
             Warn.fatal "No load release"
-        | R,Some Atomic rw ->
+        | R,Some (Atomic rw,None) ->
             let r,init,cs,st = emit_lda rw st p init e.loc  in
             Some r,init,cs,st
-        | R,Some (Mixed (sz,o)) ->
+        | R,Some (Atomic rw,Some (sz,o)) ->
+            let r,init,cs,st = emit_lda_mixed sz o rw st p init e.loc  in
+            Some r,init,cs,st
+        | R,Some (Plain,Some (sz,o)) ->
             let r,init,cs,st = emit_load_mixed sz o st p init e.loc in
             Some r,init,cs,st
         | W,None ->
             let init,cs,st = STR.emit_store st p init e.loc e.v in
             None,init,cs,st
-        | W,Some Rel ->
+        | W,Some (Rel,None) ->
             let init,cs,st = STLR.emit_store st p init e.loc e.v in
             None,init,cs,st
-        | W,Some Acq -> Warn.fatal "No store acquire"
-        | W,Some AcqPc -> Warn.fatal "No store acquirePc"
-        | W,Some Atomic rw ->
+        | W,Some (Acq,_) -> Warn.fatal "No store acquire"
+        | W,Some (AcqPc,_) -> Warn.fatal "No store acquirePc"
+        | W,Some (Atomic rw,None) ->
             let r,init,cs,st = emit_sta rw st p init e.loc e.v in
             Some r,init,cs,st
-        | W,Some (Mixed (sz,o)) ->
+        | W,Some (Atomic rw,Some (sz,o)) ->
+            let r,init,cs,st = emit_sta_mixed sz o rw st p init e.loc e.v in
+            Some r,init,cs,st
+        | W,Some (Plain,Some (sz,o)) ->
             let init,cs,st = emit_store_mixed sz o st p init e.loc e.v in
             None,init,cs,st
+        | W,Some (Rel,Some (sz,o)) ->
+            let module S =
+              STORE
+                (struct
+                  let store = stlr_mixed sz o
+                  let store_idx st r1 r2 idx =
+                    let cs = [stlr_mixed_idx sz r1 r2 idx] in
+                    let cs = match o with
+                    | 0 -> cs
+                    | _ -> addi_64 idx idx o::cs in
+                    cs,st
+                end) in
+            let init,cs,st = S.emit_store st p init e.loc e.v in
+            None,init,cs,st
+        | _,Some (Plain,None) -> assert false
+
 
     let tr_a ar aw = match ar,aw with
     | None,None -> PP
-    | Some Acq,None -> AP
-    | None,Some Rel -> PL
-    | Some Acq,Some Rel -> AL
+    | Some (Acq,None),None -> AP
+    | None,Some (Rel,None) -> PL
+    | Some (Acq,None),Some (Rel,None) -> AL
     | _,_ ->
         Warn.fatal
           "bad atomicity in rmw, %s%s"
@@ -489,33 +696,71 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | R,None ->
               let r,init,cs,st = LDR.emit_load_idx st p init e.loc r2 in
               Some r,init, Instruction c::cs,st
-          | R,Some Acq ->
+          | R,Some (Acq,None) ->
               let r,init,cs,st = LDAR.emit_load_idx st p init e.loc r2 in
               Some r,init, Instruction c::cs,st
-          | R,Some AcqPc ->
+          | R,Some (Acq,Some (sz,o)) ->
+              let module L =
+                LOAD
+                  (struct
+                    let load = ldar_mixed AA sz o
+                    let load_idx = ldar_mixed_idx AA sz o
+                  end) in
+              let r,init,cs,st = L.emit_load_idx st p init e.loc r2 in
+              Some r,init,Instruction c::cs,st
+          | R,Some (AcqPc,None) ->
               let r,init,cs,st = LDAPR.emit_load_idx st p init e.loc r2 in
               Some r,init, Instruction c::cs,st
-          | R,Some Rel ->
+          | R,Some (AcqPc,Some (sz,o)) ->
+              let module L =
+                LOAD
+                  (struct
+                    let load = ldar_mixed AQ sz o
+                    let load_idx = ldar_mixed_idx AQ sz o
+                  end) in
+              let r,init,cs,st = L.emit_load_idx st p init e.loc r2 in
+              Some r,init,Instruction c::cs,st
+          | R,Some (Rel,_) ->
               Warn.fatal "No load release"
-          | R,Some Atomic rw ->
+          | R,Some (Atomic rw,None) ->
               let r,init,cs,st = emit_lda_idx rw st p init e.loc r2 in
+              Some r,init, Instruction c::cs,st
+          | R,Some (Atomic rw,Some (sz,o)) ->
+              let r,init,cs,st = emit_lda_mixed_idx sz o rw st p init e.loc r2 in
               Some r,init, Instruction c::cs,st
           | W,None ->
               let init,cs,st = STR.emit_store_idx st p init e.loc r2 e.v in
               None,init,Instruction c::cs,st
-          | W,Some Rel ->
+          | W,Some (Rel,None) ->
               let init,cs,st = STLR.emit_store_idx st p init e.loc r2 e.v in
               None,init,Instruction c::cs,st
-          | W,Some Acq -> Warn.fatal "No store acquire"
-          | W,Some AcqPc -> Warn.fatal "No store acquirePc"
-          | W,Some Atomic rw ->
+          | W,Some (Rel,Some (sz,o)) ->
+              let module S =
+                STORE
+                  (struct
+                    let store = stlr_mixed sz o
+                    let store_idx st r1 r2 idx =
+                      let cs = [stlr_mixed_idx sz r1 r2 idx] in
+                      let cs = match o with
+                      | 0 -> cs
+                      | _ -> addi_64 idx idx o::cs in
+                      cs,st
+                  end) in
+              let init,cs,st = S.emit_store_idx st p init e.loc r2 e.v in
+              None,init,Instruction c::cs,st
+          | W,Some (Acq,_) -> Warn.fatal "No store acquire"
+          | W,Some (AcqPc,_) -> Warn.fatal "No store acquirePc"
+          | W,Some (Atomic rw,None) ->
               let r,init,cs,st = emit_sta_idx rw st p init e.loc r2 e.v in
               Some r,init,Instruction c::cs,st
-          | R,Some (Mixed (sz,o)) ->
+          | W,Some (Atomic rw,Some (sz,o)) ->
+              let r,init,cs,st = emit_sta_mixed_idx sz o rw st p init e.loc r2 e.v in
+              Some r,init,Instruction c::cs,st
+          | R,Some (Plain,Some (sz,o)) ->
               let module L =
                 LOAD
                   (struct
-                    let load r1 r2 = ldr_mixed r1 r2 sz o
+                    let load st r1 r2 = [ldr_mixed r1 r2 sz o],st
                     let load_idx st r1 r2 idx =
                       let cs = [ldr_mixed_idx V64 r1 r2 idx sz] in
                       let cs = match o with
@@ -525,13 +770,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let r,init,cs,st = L.emit_load_idx st p init e.loc r2 in
               Some r,init,Instruction c::cs,st
-          | W,Some (Mixed (sz,o)) ->
+          | W,Some (Plain,Some (sz,o)) ->
               let module S =
                 STORE
                   (struct
-                    let store r1 r2 = str_mixed sz o r1 r2
+                    let store = wrap_st (str_mixed sz o)
                     let store_idx st r1 r2 idx =
-                      let cs = [str_mixed_idx V64 r1 r2 idx sz] in
+                      let cs = [str_mixed_idx sz V64 r1 r2 idx] in
                       let cs = match o with
                       | 0 -> cs
                       | _ -> addi_64 idx idx o::cs in
@@ -540,6 +785,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let rA,init,cs_mov,st = U.emit_mov_sz sz st p init e.v in
               let init,cs,st = S.emit_store_idx_reg st p init e.loc r2 rA in
               None,init,Instruction c::cs_mov@cs,st
+          | _,Some (Plain,None) -> assert false
 
 
     let emit_exch_dep_addr st p init er ew rd =
@@ -561,7 +807,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Some R -> Warn.fatal "data dependency to load"
       | Some W ->
           let r2,cs2,init,st = match e.atom with
-          | Some (Mixed (sz,_)) ->
+          | Some (_,Some (sz,_)) ->
               let rA,init,csA,st = U.emit_mov_sz sz st p init e.v in
               let r2,st = next_reg st in
               let cs2 =
@@ -578,23 +824,35 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | None ->
               let init,cs,st = STR.emit_store_reg st p init e.loc r2 in
               None,init,cs2@cs,st
-          | Some Rel ->
+          | Some (Rel,None) ->
               let init,cs,st = STLR.emit_store_reg st p init e.loc r2 in
               None,init,cs2@cs,st
-          | Some Atomic rw ->
-              let r,init,cs,st = emit_sta_reg rw st p init e.loc r2 in
-              Some r,init,cs2@cs,st
-          | Some Acq ->
-              Warn.fatal "No store acquire"
-          | Some AcqPc ->
-              Warn.fatal "No store acquirePc"
-          | Some (Mixed (sz,o)) ->
+          | Some (Rel,Some (sz,o)) ->
               let module S =
                 STORE
                   (struct
-                    let store r1 r2 = str_mixed sz o r1 r2
+                    let store = stlr_mixed sz o
+                    let store_idx _st _r1 _r2 _idx = assert false
+                  end) in
+              let init,cs,st = S.emit_store_reg st p init e.loc r2 in
+              None,init,cs2@cs,st
+          | Some (Atomic rw,None) ->
+              let r,init,cs,st = emit_sta_reg rw st p init e.loc r2 in
+              Some r,init,cs2@cs,st
+          | Some (Atomic rw,Some (sz,o)) ->
+              let r,init,cs,st = emit_sta_mixed_reg sz o rw st p init e.loc r2 in
+              Some r,init,cs2@cs,st
+          | Some (Acq,_) ->
+              Warn.fatal "No store acquire"
+          | Some (AcqPc,_) ->
+              Warn.fatal "No store acquirePc"
+          | Some (Plain,Some (sz,o)) ->
+              let module S =
+                STORE
+                  (struct
+                    let store  = wrap_st (str_mixed sz o)
                     let store_idx st r1 r2 idx =
-                      let cs = [str_mixed_idx V64 r1 r2 idx sz] in
+                      let cs = [str_mixed_idx sz V64 r1 r2 idx] in
                       let cs = match o with
                       | 0 -> cs
                       | _ -> addi_64 idx idx o::cs in
@@ -602,6 +860,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = S.emit_store_reg st p init e.loc r2 in
               None,init,cs2@cs,st
+          | Some (Plain,None) -> assert false
           end
 
     let insert_isb isb cs1 cs2 =

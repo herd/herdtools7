@@ -329,6 +329,39 @@ let patch_edges n =
     if m.next != n then do_rec m.next in
   do_rec n
 
+(*  Merge annotations *)
+  exception FailMerge
+
+  let merge2 a1 a2 = match a1,a2 with
+  | (None,a)|(a,None) -> a
+  | Some a1,Some a2 ->
+      match E.merge_atoms a1 a2 with
+      | None -> raise FailMerge
+      | Some _ as r -> r
+
+
+  let merge_annotations m =
+      let rec do_rec n =
+        let e = n.edge in
+        if non_insert e then begin
+          let p = find_non_insert_prev n.prev in
+          if O.verbose > 0 then Printf.eprintf "Merge p=%a, n=%a\n"
+            debug_node p debug_node n ;
+          let pe = p.edge in
+          let a2 = pe.E.a2 and a1 = e.E.a1 in
+          try
+            let a = merge2 a2 a1 in
+            p.edge <- { pe with E.a2=a ; } ;
+            n.edge <- { e  with E.a1=a ; } ;
+            if O.verbose > 1 then Printf.eprintf "    => p=%a, n=%a\n"
+              debug_node p debug_node n
+          with FailMerge ->
+            Warn.fatal "Impossible annotations: %s %s"
+              (E.pp_edge pe) (E.pp_edge e)
+        end ;
+        if n.next != m then do_rec  n.next in
+    do_rec m
+
 (* Set directions of events *)
 
 let is_rmw_edge e = match e.E.edge with
@@ -344,7 +377,7 @@ let set_dir n0 =
     if non_insert m.edge then begin
       let my_d =  E.dir_src m.edge in
       let p = find_non_insert_prev m.prev in
-      if E.is_node m.edge.E.edge then begin (* perform sanuity checks specific to Node pseudo-edge *)
+      if E.is_node m.edge.E.edge then begin (* perform sanity checks specific to Node pseudo-edge *)
         if E.is_node p.edge.E.edge then begin
           Warn.fatal "Double 'Node' pseudo edge %s %s"
           (E.pp_edge p.edge) (E.pp_edge m.edge)
@@ -591,6 +624,7 @@ let resolve_edges = function
   | [] -> Warn.fatal "No edges at all!"
   | es ->
       let c = build_cycle es in
+      merge_annotations c ;
       set_dir c ;
       extract_edges c,c
 

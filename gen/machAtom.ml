@@ -65,6 +65,8 @@ module Make(C:Config) = struct
 
   let varatom_dir _d f = f None
 
+  let merge_atoms a1 a2 = if a1 = a2 then Some a1 else None
+
   let tr_value ao v = match ao with
   | None| Some (Atomic|Reserve) -> v
   | Some (Mixed (sz,_)) -> Mixed.tr_value sz v

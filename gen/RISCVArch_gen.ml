@@ -110,6 +110,7 @@ module Make
 
    let varatom_dir _ f k = f None k
 
+   let merge_atoms a1 a2 = if a1=a2 then Some a1 else None
 
    let tr_value ao v = match ao with
    | None| Some (MO _|Atomic _) -> v

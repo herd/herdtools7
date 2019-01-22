@@ -21,7 +21,9 @@ let tr_endian = Misc.identity
 module ScopeGen = ScopeGen.NoGen
 
 let bellatom = false
+
 type atom = Atomic
+
 let default_atom = Atomic
 
 let applies_atom a d = match a,d with
@@ -34,7 +36,7 @@ let applies_atom_rmw ar aw = match ar,aw with
 | None,None -> true
 | _ -> false
 
-
+let merge_atoms Atomic Atomic = Some Atomic
 
 let pp_plain = Code.plain
 

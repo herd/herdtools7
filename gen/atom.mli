@@ -29,6 +29,7 @@ module type S = sig
   val fold_atom : (atom -> 'a -> 'a) -> 'a -> 'a
   val worth_final : atom -> bool
   val varatom_dir : Code.dir -> (atom option -> 'a -> 'a) -> 'a -> 'a
+  val merge_atoms : atom -> atom -> atom option
 (* Value computation, for mixed size *)
   val tr_value : atom option -> Code.v -> Code.v
   val overwrite_value : Code. v -> atom option -> Code.v -> Code.v

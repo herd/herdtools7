@@ -29,7 +29,7 @@ module type S = sig
   val tr_value : atom option -> Code.v -> Code.v
   val overwrite_value : Code.v -> atom option -> Code.v -> Code.v
   val extract_value : Code.v -> atom option -> Code.v
-
+  val merge_atoms : atom -> atom -> atom option
   val strong : fence
   val pp_fence : fence -> string
 
@@ -131,7 +131,7 @@ module Make(F:Fence.S) : S
 with type fence = F.fence
 and type dp = F.dp
 and type atom = F.atom = struct
-
+  let debug = false
   open Code
 
   type fence = F.fence
@@ -142,8 +142,11 @@ and type atom = F.atom = struct
   let tr_value = F.tr_value
   let overwrite_value = F.overwrite_value
   let extract_value = F.extract_value
+  let applies_atom ao d = match ao,d with
+  | (None,_)|(_,(Irr|NoDir)) -> true
+  | Some a,Dir d -> F.applies_atom a d
 
-
+  let merge_atoms = F.merge_atoms
 
   let strong = F.strong
   let pp_fence = F.pp_fence
@@ -257,6 +260,11 @@ and type atom = F.atom = struct
     | Node W -> "Write"
     | Node R -> "Read"
 
+  let debug_edge e =
+    sprintf
+      "{edge=%s, a1=%s, a2=%s}"
+      (pp_tedge e.edge) (pp_a e.a1) (pp_a e.a2)
+
   let do_pp_edge pp_aa e =
     (match e.edge with Id -> "" | _ -> pp_tedge e.edge) ^
     pp_aa e.edge e.a1 e.a2
@@ -352,10 +360,6 @@ let fold_tedges f r =
   let fold_atomo_list aos f k =
     List.fold_right (fun a k -> f (Some a) k) aos k
 
-  let _applies_atom a d = match a with
-  | None -> true
-  | Some a -> F.applies_atom a d
-
   let fold_edges f =
    fold_atomo
       (fun a1 ->
@@ -385,7 +389,16 @@ let fold_tedges f r =
                      | _,_ -> k
                      end
                  | _ ->
-                     f {a1; a2; edge=te;} k))))
+                     let d1 = do_dir_src te
+                     and d2 = do_dir_tgt te in
+                     if applies_atom a1 d1 && applies_atom a2 d2 then
+                       f {a1; a2; edge=te;} k
+                     else begin
+                       if debug then
+                         eprintf "Not %s\n" (debug_edge  {a1; a2; edge=te;}) ;
+                       k
+                     end ))))
+
 
 (* checked later... because rmw accepts all atomicity
                      let d1 = do_dir_src te
@@ -432,10 +445,6 @@ let iter_atom f= F.fold_atom (fun a () -> f a) ()
 (**********)
 (* Lexing *)
 (**********)
-  let debug_edge e =
-    sprintf
-      "{edge=%s, a1=%s, a2=%s}"
-      (pp_tedge e.edge) (pp_a e.a1) (pp_a e.a2)
 
   let iter_edges f = fold_edges (fun e () -> f e) ()
 
@@ -656,9 +665,17 @@ and do_set_src d e = match e with
     let a1 = e1.a2 and a2 = e2.a1 in
     let r =
       match a1,a2 with
+      | None,None -> e1,e2
       | None,Some _ -> set_a2 e1 a2,e2
       | Some _,None -> e1, set_a1 e2 a1
-      | _,_ -> e1,e2 in
+      | Some a1,Some a2 ->
+          begin match F.merge_atoms a1 a2 with
+          | None ->
+              Warn.fatal "Cannot merge atoms: %s %s"
+                (debug_edge e1)  (debug_edge e2)
+          | Some _ as a ->
+              set_a2 e1 a,set_a1 e2 a
+          end in
 (*    eprintf "<%s,%s>\n" (debug_edge e1) (debug_edge e2) ; *)
     r
 
@@ -671,7 +688,11 @@ and do_set_src d e = match e with
   | None,Some _ -> a2
   | Some _,None -> a1
   | None,None -> None
-  | Some a1,Some a2 -> assert (F.compare_atom a1 a2 = 0) ; Some a1
+  | Some a1,Some a2 ->
+      begin match F.merge_atoms a1 a2 with
+      | None -> assert false
+      | Some _ as a -> a
+      end
 
   let merge_pair e1 e2 = match e1.edge,e2.edge with
   | (Id,Id) -> e1
@@ -711,7 +732,11 @@ and do_set_src d e = match e with
       let e =
         match e.edge with
         | Insert _ -> e
-        | _ -> merge_pair fst e in
+        | _ ->
+            try merge_pair fst e
+            with exn ->
+              eprintf "Failure <%s,%s>\n" (debug_edge fst) (debug_edge e) ;
+              raise exn in
       remove_id (e::es)
 
 (********************)
@@ -838,7 +863,7 @@ and do_set_src d e = match e with
           eprintf "\n%!"
       | Annotations ->
           let es =
-            F.fold_non_mixed
+            F.fold_atom
               (fun a k -> { edge=Id; a1=Some a; a2=Some a;}::k) [] in
           List.iter
             (fun e -> eprintf " %s" (pp_edge e))

@@ -61,6 +61,8 @@ let worth_final _ = false
 
 let varatom_dir _d f = f None
 
+let merge_atoms a1 a2 = if a1=a2 then Some a1 else None
+
 include NoMixed
 
 (* Fences, to be completed *)

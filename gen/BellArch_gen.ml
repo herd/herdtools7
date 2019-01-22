@@ -186,6 +186,8 @@ let varatom_dir = match varatom with
         fold_from at
       with Not_found -> no_varatom
 
+let merge_atoms a1 a2 = if a2 = a1 then Some a1 else None
+
 let varatom_rmw = match varatom with
 | None -> no_varatom
 | Some _va -> fun _ -> assert false
