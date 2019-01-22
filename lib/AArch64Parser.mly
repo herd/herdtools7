@@ -35,7 +35,9 @@ open AArch64Base
 
 /* Instructions */
 %token B BEQ BNE CBZ CBNZ EQ NE
-%token LDR LDP LDNP STP STNP LDRB LDRH STR STRB STRH LDAR LDAPR LDXR LDAXR STLR STXR STLXR CMP MOV
+%token LDR LDP LDNP STP STNP LDRB LDRH STR STRB STRH STLR STLRB STLRH CMP MOV
+%token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH
+%token STXR STXRB STXRH STLXR STLXRB STLXRH
 %token <AArch64Base.op> OP
 %token CSEL CSINC CSINV CSNEG
 %token DMB DSB ISB
@@ -176,12 +178,28 @@ instr:
   { I_LDRBH (H,$2,$5,$6) }
 | LDAR reg COMMA LBRK xreg RBRK
   { let v,r = $2 in I_LDAR (v,AA,r,$5) }
+| LDARB wreg COMMA LBRK xreg RBRK
+  { I_LDARBH (B,AA,$2,$5) }
+| LDARH wreg COMMA LBRK xreg RBRK
+  { I_LDARBH (H,AA,$2,$5) }
 | LDXR reg COMMA LBRK xreg RBRK
-  { let v,r = $2 in I_LDAR (v,XX,r,$5) }
+    { let v,r = $2 in I_LDAR (v,XX,r,$5) }
+| LDXRB wreg COMMA LBRK xreg RBRK
+  { I_LDARBH (B,XX,$2,$5) }
+| LDXRH wreg COMMA LBRK xreg RBRK
+  { I_LDARBH (H,XX,$2,$5) }
 | LDAXR reg COMMA LBRK xreg RBRK
   { let v,r = $2 in I_LDAR (v,AX,r,$5) }
+| LDAXRB wreg COMMA LBRK xreg RBRK
+  { I_LDARBH (B,AX,$2,$5) }
+| LDAXRH wreg COMMA LBRK xreg RBRK
+  { I_LDARBH (H,AX,$2,$5) }
 | LDAPR reg COMMA LBRK xreg RBRK
   { let v,r = $2 in I_LDAR (v,AQ,r,$5) }
+| LDAPRB wreg COMMA LBRK xreg RBRK
+  { I_LDARBH (B,AQ,$2,$5) }
+| LDAPRH wreg COMMA LBRK xreg RBRK
+  { I_LDARBH (H,AQ,$2,$5) }
 | STR reg COMMA LBRK xreg kr0 RBRK
   { let v,r = $2 in I_STR (v,r,$5,$6) }
 | STRB wreg COMMA LBRK xreg kr0 RBRK
@@ -190,11 +208,23 @@ instr:
   { I_STRBH (H,$2,$5,$6) }
 | STLR reg COMMA LBRK xreg RBRK
   { let v,r = $2 in I_STLR (v,r,$5) }
+| STLRB wreg COMMA LBRK xreg RBRK
+  { I_STLRBH (B,$2,$5) }
+| STLRH wreg COMMA LBRK xreg RBRK
+  { I_STLRBH (H,$2,$5) }
 | STXR wreg COMMA reg COMMA LBRK xreg RBRK
   { let v,r = $4 in I_STXR (v,YY,$2,r,$7) }
+| STXRB wreg COMMA wreg COMMA LBRK xreg RBRK
+  { I_STXRBH (B,YY,$2,$4,$7) }
+| STXRH wreg COMMA wreg COMMA LBRK xreg RBRK
+  { I_STXRBH (H,YY,$2,$4,$7) }
 | STLXR wreg COMMA reg COMMA LBRK xreg RBRK
   { let v,r = $4 in I_STXR (v,LY,$2,r,$7) }
-/* Compare and swap */
+| STLXRB wreg COMMA wreg COMMA LBRK xreg RBRK
+  { I_STXRBH (B,LY,$2,$4,$7) }
+| STLXRH wreg COMMA wreg COMMA LBRK xreg RBRK
+  { I_STXRBH (H,LY,$2,$4,$7) }
+    /* Compare and swap */
 | CAS wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
   { I_CAS (V32,RMW_P,$2,$4,$7) }
 | CAS xreg COMMA xreg COMMA  LBRK xreg zeroopt RBRK

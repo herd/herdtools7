@@ -96,9 +96,12 @@ include Arch.MakeArch(struct
     | I_MOV(a,r,K MetaConst.Meta v) -> I_MOV(a,conv_reg r,K (find_cst v))
     | I_MOV(a,r,c) -> I_MOV(a,conv_reg r,c)
     | I_LDAR(a,b,r1,r2) -> I_LDAR(a,b,conv_reg r1,conv_reg r2)
+    | I_LDARBH(a,b,r1,r2) -> I_LDARBH(a,b,conv_reg r1,conv_reg r2)
     | I_STLR(a,r1,r2) -> I_STLR(a,conv_reg r1,conv_reg r2)
+    | I_STLRBH(a,r1,r2) -> I_STLRBH(a,conv_reg r1,conv_reg r2)
     | I_SXTW(r1,r2) -> I_SXTW(conv_reg r1,conv_reg r2)
     | I_STXR(a,b,r1,r2,r3) -> I_STXR(a,b,conv_reg r1,conv_reg r2,conv_reg r3)
+    | I_STXRBH(a,b,r1,r2,r3) -> I_STXRBH(a,b,conv_reg r1,conv_reg r2,conv_reg r3)
     | I_LDR(a,r1,r2,kr) -> I_LDR(a,conv_reg r1,conv_reg r2,expl_kr kr)
     | I_LDP(t,a,r1,r2,r3,kr) ->
         I_LDP(t,a,conv_reg r1,conv_reg r2,conv_reg r3,expl_kr kr)

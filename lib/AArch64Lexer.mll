@@ -40,15 +40,29 @@ let check_name name = match name with
 | "ldrb"|"LDRB" -> LDRB
 | "ldrh"|"LDRH" -> LDRH
 | "ldar"|"LDAR" -> LDAR
+| "ldarb"|"LDARB" -> LDARB
+| "ldarh"|"LDARH" -> LDARH
 | "ldapr"|"LDAPR" -> LDAPR
+| "ldaprb"|"LDAPRB" -> LDAPRB
+| "ldaprh"|"LDAPRH" -> LDAPRH
 | "ldxr"|"LDXR" -> LDXR
+| "ldxrb"|"LDXRB" -> LDXRB
+| "ldxrh"|"LDXRH" -> LDXRH
 | "ldaxr"|"LDAXR" -> LDAXR
+| "ldaxrb"|"LDAXRB" -> LDAXRB
+| "ldaxrh"|"LDAXRH" -> LDAXRH
 | "str"|"STR" -> STR
 | "stlr"|"STLR" -> STLR
 | "stxr"|"STXR" -> STXR
 | "stlxr"|"STLXR" -> STLXR
 | "strb"|"STRB" -> STRB
 | "strh"|"STRH" -> STRH
+| "stlrb"|"SRTLB" -> STLRB
+| "stlrh"|"STLRH" -> STLRH
+| "stxrb"|"STXRB" -> STXRB
+| "stlxrb"|"STLXRB" -> STLXRB
+| "stxrh"|"STXRH" -> STXRH
+| "stlxrh"|"STLXRH" -> STLXRH
 (* Compare and swap *)
 | "cas"|"CAS" -> CAS
 | "casa"|"CASA" -> CASA
@@ -234,4 +248,3 @@ let token lexbuf =
    tok
 end
 }
-

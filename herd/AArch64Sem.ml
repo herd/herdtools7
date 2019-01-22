@@ -28,6 +28,7 @@ module Make (C:Sem.Config)(V:Value.S)
     include SemExtra.Make(C)(AArch64)(Act)
     let mixed = C.variant Variant.Mixed
 
+    let _ = B.Next
 (* Barrier pretty print *)
     let barriers =
       let bs = AArch64Base.do_fold_dmb_dsb C.moreedges (fun h t -> h::t) []
@@ -162,6 +163,43 @@ module Make (C:Sem.Config)(V:Value.S)
         >>= (fun (v,a) -> write_mem sz a v ii)
         >>! B.Next
 
+    and ldar sz t rd rs ii =
+      let open AArch64 in
+      (read_reg_ord rs ii)
+        >>= fun a -> begin match t with
+        | XX ->
+            (write_reg ResAddr a ii >>|
+            (read_mem_atomic sz a ii
+               >>= (fun v -> (write_reg rd v ii))))
+              >>! B.Next
+        | AA ->
+            (read_mem_acquire sz a ii)
+              >>= (fun v -> (write_reg rd v ii))
+              >>! B.Next
+        | AX ->
+            (write_reg ResAddr a ii
+               >>| (read_mem_atomic_acquire sz a ii
+                      >>= (fun v -> write_reg rd v ii)))
+              >>! B.Next
+        | AQ ->
+            (read_mem_acquire_pc sz a ii)
+              >>= (fun v -> (write_reg rd v ii))
+              >>! B.Next
+        end
+
+    and stxr sz t rr rs rd ii =
+      let open AArch64Base in
+      M.riscv_store_conditional
+        (read_reg_ord ResAddr ii)
+        (read_reg_data sz rs ii)
+        (read_reg_ord rd ii)
+        (write_reg ResAddr V.zero ii)
+        (fun v -> write_reg rr v ii)
+        (fun ea resa v -> match t with
+        | YY -> write_mem_atomic sz ea v resa ii
+        | LY -> write_mem_atomic_release sz ea v resa ii)
+        >>! B.Next
+
 
     let rmw_amo_read rmw = let open AArch64Base in match rmw with
     | RMW_A|RMW_AL -> read_mem_atomic_acquire
@@ -190,25 +228,25 @@ module Make (C:Sem.Config)(V:Value.S)
             and w2 = fun v -> write_mem sz a v ii in
             M.exch r1 r2 w1 w2 >>! ()
 
-          let cas sz rmw rs rt rn ii =
-            let open AArch64Base in
-            let read_rn = read_reg_ord rn ii
-            and read_rs = read_reg_ord_sz sz rs ii in
-            M.altT
-              (read_rn >>= fun a ->
-                (read_rs >>|
-                begin let read_mem = match rmw with
-                | RMW_A|RMW_AL -> read_mem_acquire
-                | RMW_L|RMW_P  -> read_mem in
-                read_mem sz a ii >>=
-                fun v -> write_reg rs v ii >>! v end) >>=
-                fun (cv,v) -> M.neqT cv v >>! ())
-              (let read_rt =  read_reg_data sz rt ii
-              and read_mem a = rmw_amo_read rmw sz  a ii
-              and write_mem a v = rmw_amo_write rmw sz a v ii
-              and write_rs v =  write_reg rs v ii in
-              M.aarch64_cas_ok
-                read_rn read_rs read_rt write_rs read_mem write_mem M.eqT)
+    let cas sz rmw rs rt rn ii =
+      let open AArch64Base in
+      let read_rn = read_reg_ord rn ii
+      and read_rs = read_reg_ord_sz sz rs ii in
+      M.altT
+        (read_rn >>= fun a ->
+          (read_rs >>|
+          begin let read_mem = match rmw with
+          | RMW_A|RMW_AL -> read_mem_acquire
+          | RMW_L|RMW_P  -> read_mem in
+          read_mem sz a ii >>=
+          fun v -> write_reg rs v ii >>! v end) >>=
+          fun (cv,v) -> M.neqT cv v >>! ())
+        (let read_rt =  read_reg_data sz rt ii
+        and read_mem a = rmw_amo_read rmw sz  a ii
+        and write_mem a v = rmw_amo_write rmw sz a v ii
+        and write_rs v =  write_reg rs v ii in
+        M.aarch64_cas_ok
+          read_rn read_rs read_rt write_rs read_mem write_mem M.eqT)
 
     let ldop op sz rmw rs rt rn ii =
       let open AArch64Base in
@@ -262,29 +300,13 @@ module Make (C:Sem.Config)(V:Value.S)
       | I_LDRBH (bh, rd, rs, kr) ->
           let sz = bh_to_sz bh in
           ldr sz rd rs kr ii
+
       | I_LDAR(var,t,rd,rs) ->
-          let var = tr_variant var in
-          (read_reg_ord rs ii)
-            >>= fun a -> begin match t with
-            | XX ->
-                (write_reg ResAddr a ii >>|
-                (read_mem_atomic var a ii
-                   >>= (fun v -> (write_reg rd v ii))))
-                  >>! B.Next
-            | AA ->
-                (read_mem_acquire var a ii)
-                  >>= (fun v -> (write_reg rd v ii))
-                  >>! B.Next
-            | AX ->
-                (write_reg ResAddr a ii
-                   >>| (read_mem_atomic_acquire var a ii
-                          >>= (fun v -> write_reg rd v ii)))
-                  >>! B.Next
-            | AQ ->
-                (read_mem_acquire_pc var a ii)
-                  >>= (fun v -> (write_reg rd v ii))
-                  >>! B.Next
-            end
+          let sz = tr_variant var in
+          ldar sz t rd rs ii
+      | I_LDARBH(bh,t,rd,rs) ->
+          let sz = bh_to_sz bh in
+          ldar sz t rd rs ii
 
       | I_STR(var,rs,rd,kr) ->
           str (tr_variant var) rs rd kr ii
@@ -297,19 +319,16 @@ module Make (C:Sem.Config)(V:Value.S)
           (read_reg_ord rd ii >>| read_reg_data sz rs ii)
             >>= (fun (a,v) -> write_mem_release sz a v ii)
             >>! B.Next
+      | I_STLRBH(bh,rs,rd) ->
+          let sz = bh_to_sz bh in
+          (read_reg_ord rd ii >>| read_reg_data sz rs ii)
+            >>= (fun (a,v) -> write_mem_release sz a v ii)
+            >>! B.Next
 
       | I_STXR(var,t,rr,rs,rd) ->
-          let var = tr_variant var in
-          M.riscv_store_conditional
-            (read_reg_ord ResAddr ii)
-            (read_reg_data var rs ii)
-            (read_reg_ord rd ii)
-            (write_reg ResAddr V.zero ii)
-            (fun v -> write_reg rr v ii)
-            (fun ea resa v -> match t with
-            | YY -> write_mem_atomic var ea v resa ii
-            | LY -> write_mem_atomic_release var ea v resa ii)
-            >>! B.Next
+          stxr (tr_variant var) t rr rs rd ii
+      | I_STXRBH(bh,t,rr,rs,rd) ->
+          stxr (bh_to_sz bh) t rr rs rd ii
 
             (* Operations *)
       | I_MOV(_,r,K k) ->

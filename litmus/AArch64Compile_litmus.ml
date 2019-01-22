@@ -489,11 +489,15 @@ module Make(V:Constant.S)(C:Config) =
     | I_LDRBH (B,r1,r2,kr) -> load "ldrb" V32 r1 r2 kr::k
     | I_LDRBH (H,r1,r2,kr) -> load "ldrh" V32 r1 r2 kr::k
     | I_LDAR (v,t,r1,r2) -> load (ldr_memo t) v r1 r2 k0::k
+    | I_LDARBH (bh,t,r1,r2) -> load (ldrbh_memo bh t) V32 r1 r2 k0::k
     | I_STR (v,r1,r2,kr) -> store "str" v r1 r2 kr::k
     | I_STRBH (B,r1,r2,kr) -> store "strb" V32 r1 r2 kr::k
     | I_STRBH (H,r1,r2,kr) -> store "strh" V32 r1 r2 kr::k
     | I_STLR (v,r1,r2) -> store "stlr" v r1 r2 k0::k
+    | I_STLRBH (B,r1,r2) -> store "stlrb" V32 r1 r2 k0::k
+    | I_STLRBH (H,r1,r2) -> store "stlrh" V32 r1 r2 k0::k
     | I_STXR (v,t,r1,r2,r3) -> stxr (str_memo t) v r1 r2 r3::k
+    | I_STXRBH (bh,t,r1,r2,r3) -> stxr (strbh_memo bh t) V32 r1 r2 r3::k
     | I_CAS (v,rmw,r1,r2,r3) -> cas (cas_memo rmw) v r1 r2 r3::k
     | I_CASBH (bh,rmw,r1,r2,r3) -> cas (casbh_memo bh rmw) V32 r1 r2 r3::k
     | I_SWP (v,rmw,r1,r2,r3) -> swp (swp_memo rmw) v r1 r2 r3::k

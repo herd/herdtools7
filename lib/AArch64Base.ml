@@ -276,6 +276,8 @@ let casbh_memo bh rmw = sprintf "%s%s" (cas_memo rmw) (pp_bh bh)
 and swpbh_memo bh rmw = sprintf "%s%s" (swp_memo rmw) (pp_bh bh)
 and ldopbh_memo op bh rmw = sprintf "%s%s" (ldop_memo op rmw) (pp_bh bh)
 and stopbh_memo op bh  rmw = sprintf "%s%s" (stop_memo op rmw) (pp_bh bh)
+and ldrbh_memo bh t =  sprintf "%s%s" (ldr_memo t) (pp_bh bh)
+and strbh_memo bh t =  sprintf "%s%s" (str_memo t) (pp_bh bh)
 
 type temporal = TT | NT
 type opsel = Cpy | Inc | Inv | Neg
@@ -303,7 +305,10 @@ type 'k kinstruction =
   | I_STXR of variant * st_type * reg * reg * reg
 (* Idem for bytes and half words *)
   | I_LDRBH of bh * reg * reg * 'k kr
+  | I_LDARBH of bh * ld_type * reg * reg
   | I_STRBH of bh * reg * reg * 'k kr
+  | I_STLRBH of bh * reg * reg
+  | I_STXRBH of bh * st_type * reg * reg * reg
 (* CAS *)
   | I_CAS of variant * rmw_type * reg * reg * reg
   | I_CASBH of bh * rmw_type  * reg * reg * reg
@@ -433,6 +438,8 @@ let do_pp_instruction m =
       pp_memp (match t with TT -> "STP" | NT -> "STNP") v r1 r2 r3 k
   | I_LDAR (v,t,r1,r2) ->
       pp_mem (ldr_memo t) v r1 r2 k0
+  | I_LDARBH (bh,t,r1,r2) ->
+      pp_mem (ldrbh_memo bh t)  V32 r1 r2 k0
   | I_STR (v,r1,r2,k) ->
       pp_mem "STR" v r1 r2 k
   | I_STLR (v,r1,r2) ->
@@ -443,6 +450,10 @@ let do_pp_instruction m =
       pp_mem ("LDR"^pp_bh bh) V32 r1 r2 k
   | I_STRBH (bh,r1,r2,k) ->
       pp_mem ("STR"^pp_bh bh) V32 r1 r2 k
+  | I_STLRBH (bh,r1,r2) ->
+      pp_mem ("STLR"^pp_bh bh) V32 r1 r2 k0
+  | I_STXRBH (bh,t,r1,r2,r3) ->
+      pp_stxr (strbh_memo bh t) V32 r1 r2 r3
 (* CAS *)
   | I_CAS (v,rmw,r1,r2,r3) ->
       sprintf "%s %s,%s,[%s]" (cas_memo rmw) (pp_vreg v r1) (pp_vreg v r2) (pp_xreg r3)
@@ -516,16 +527,16 @@ let fold_regs (f_regs,f_sregs) =
     -> c
   | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_MOV (_,r,_)
     -> fold_reg r c
-  | I_LDAR (_,_,r1,r2) | I_STLR (_,r1,r2)
-  | I_SXTW (r1,r2)
-  |I_STOP (_,_,_,r1,r2) | I_STOPBH (_,_,_,r1,r2)
+  | I_LDAR (_,_,r1,r2) | I_STLR (_,r1,r2) | I_STLRBH (_,r1,r2)
+  | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2)
+  | I_STOP (_,_,_,r1,r2) | I_STOPBH (_,_,_,r1,r2)
     -> fold_reg r1 (fold_reg r2 c)
   | I_LDR (_,r1,r2,kr) | I_STR (_,r1,r2,kr)
   | I_OP3 (_,_,r1,r2,kr)
   | I_LDRBH (_,r1,r2,kr) | I_STRBH (_,r1,r2,kr)
     -> fold_reg r1 (fold_reg r2 (fold_kr kr c))
   | I_CSEL (_,r1,r2,r3,_,_)
-  | I_STXR (_,_,r1,r2,r3)
+  | I_STXR (_,_,r1,r2,r3) | I_STXRBH (_,_,r1,r2,r3)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_LDP (_,_,r1,r2,r3,kr)
   | I_STP (_,_,r1,r2,r3,kr)
@@ -567,14 +578,20 @@ let map_regs f_reg f_symb =
      I_LDP (t,v,map_reg r1,map_reg r2,map_reg r3,map_kr kr)
   | I_STP (t,v,r1,r2,r3,kr) ->
      I_STP (t,v,map_reg r1,map_reg r2,map_reg r3,map_kr kr)
-  | I_LDAR (t,v,r1,r2) ->
-     I_LDAR (t,v,map_reg r1,map_reg r2)
+  | I_LDAR (v,t,r1,r2) ->
+     I_LDAR (v,t,map_reg r1,map_reg r2)
+  | I_LDARBH (bh,t,r1,r2) ->
+     I_LDARBH (bh,t,map_reg r1,map_reg r2)
   | I_STR (v,r1,r2,k) ->
       I_STR (v,map_reg r1,map_reg r2,k)
   | I_STLR (v,r1,r2) ->
       I_STLR (v,map_reg r1,map_reg r2)
+  | I_STLRBH (v,r1,r2) ->
+      I_STLRBH (v,map_reg r1,map_reg r2)
   | I_STXR (v,t,r1,r2,r3) ->
       I_STXR (v,t,map_reg r1,map_reg r2,map_reg r3)
+  | I_STXRBH (bh,t,r1,r2,r3) ->
+      I_STXRBH (bh,t,map_reg r1,map_reg r2,map_reg r3)
 (* Byte and Half loads and stores *)
   | I_LDRBH (v,r1,r2,kr) ->
      I_LDRBH (v,map_reg r1,map_reg r2,map_kr kr)
@@ -632,8 +649,11 @@ let get_next = function
   | I_STP _
   | I_STR _
   | I_LDAR _
+  | I_LDARBH _
   | I_STLR _
+  | I_STLRBH _
   | I_STXR _
+  | I_STXRBH _
   | I_LDRBH _
   | I_STRBH _
   | I_MOV _
@@ -668,8 +688,11 @@ include Pseudo.Make
         | I_CBZ _
         | I_CBNZ _
         | I_LDAR _
+        | I_LDARBH _
         | I_STLR _
+        | I_STLRBH _
         | I_STXR _
+        | I_STXRBH _
         | I_SXTW _
         | I_FENCE _
         | I_CSEL _
@@ -693,9 +716,9 @@ include Pseudo.Make
 
 
       let get_naccesses = function
-        | I_LDR _ | I_LDAR _
-        | I_STR _ | I_STLR _ | I_STXR _
-        | I_LDRBH _ | I_STRBH _
+        | I_LDR _ | I_LDAR _ | I_LDARBH _
+        | I_STR _ | I_STLR _ | I_STLRBH _ | I_STXR _
+        | I_LDRBH _ | I_STRBH _ | I_STXRBH _
           -> 1
         | I_LDP _|I_STP _
         | I_CAS _ | I_CASBH _
