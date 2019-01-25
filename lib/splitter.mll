@@ -110,6 +110,7 @@ and main start = parse
 
 and find_init info = parse
 | '\n'  { incr_lineno lexbuf ;  find_init info lexbuf }
+| "(*" { skip_comment lexbuf ;  find_init info lexbuf }
 | '{'
     { let loc1 = lexeme_end_p lexbuf in
       let loc2 = inside_init lexbuf in
