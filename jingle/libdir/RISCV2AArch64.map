@@ -1,0 +1,14 @@
+RISCV to AArch64
+
+"li %r,&c" -> "MOV %r,&c"
+"sw %r,0(%t)"  -> "STR w%r,[%t]"
+"sw.rl %r,0(%t)"  -> "STLR w%r,[%t]"
+"sd %r,0(%t)"  -> "STR %r,[%t]"
+"sd.rl %r,0(%t)"  -> "STLR %r,[%t]"
+"lw %r,0(%a)"  -> "LDR w%r,[%t]"
+"lw.aq %r,0(%a)"  -> "LDAR w%r,[%t]"
+"ld %r,0(%a)"  -> "LDR %r,[%t]"
+"ld.aq %r,0(%a)"  -> "LDAR %r,[%t]"
+"fence rw,rw"  -> "DMB SY"
+"add %r,%t,%s" -> "ADD %r,%t,%s"
+"xor %r,%t,%s" -> "EOR %r,%t,%s"

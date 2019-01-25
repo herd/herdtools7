@@ -20,7 +20,7 @@ let map = ref None
 let outdir = ref None
 let args = ref []
 let prog =
-  if Array.length Sys.argv > 0 
+  if Array.length Sys.argv > 0
   then Sys.argv.(0)
   else "jingle"
 
@@ -38,23 +38,23 @@ let get_arch =
        let parser = MiscParser.mach2generic AArch64Parser.main
        let instr_parser = AArch64Parser.instr_option_seq
      end in (module struct
-	       include AArch64Arch_jingle
-	       module Parser = MakeParser(AArch64Arch_jingle)(AArch64LexParse)
-	       module Dumper = DefaultDumper(AArch64Arch_jingle)
-	     end : Arch.S)
+               include AArch64Arch_jingle
+               module Parser = MakeParser(AArch64Arch_jingle)(AArch64LexParse)
+               module Dumper = DefaultDumper(AArch64Arch_jingle)
+             end : Arch.S)
    | `ARM ->
       let module ARMLexParse = struct
-	type instruction = ARMArch_jingle.parsedPseudo
-	type token = ARMParser.token
+        type instruction = ARMArch_jingle.parsedPseudo
+        type token = ARMParser.token
         module Lexer = ARMLexer.Make(struct let debug = false end)
-	let lexer = Lexer.token
-	let parser = MiscParser.mach2generic ARMParser.main
+        let lexer = Lexer.token
+        let parser = MiscParser.mach2generic ARMParser.main
        let instr_parser = ARMParser.instr_option_seq
       end in (module struct
-		include ARMArch_jingle
-		module Parser = MakeParser(ARMArch_jingle)(ARMLexParse)
-		module Dumper = DefaultDumper(ARMArch_jingle)
-	      end : S)
+                include ARMArch_jingle
+                module Parser = MakeParser(ARMArch_jingle)(ARMLexParse)
+                module Dumper = DefaultDumper(ARMArch_jingle)
+              end : S)
   | `LISA ->
      let module BellLexParse = struct
        type instruction = BellArch_jingle.parsedPseudo
@@ -63,11 +63,11 @@ let get_arch =
        let lexer = Lexer.token
        let parser = LISAParser.main
        let instr_parser = LISAParser.instr_option_seq
-     end in (module struct 
-	       include BellArch_jingle
-	       module Parser = MakeParser(BellArch_jingle)(BellLexParse)
-	       module Dumper = DefaultDumper(BellArch_jingle)
-	     end : S)
+     end in (module struct
+               include BellArch_jingle
+               module Parser = MakeParser(BellArch_jingle)(BellLexParse)
+               module Dumper = DefaultDumper(BellArch_jingle)
+             end : S)
   | `C ->
      let module CLexParse = struct
        type pseudo = CArch_jingle.parsedPseudo
@@ -82,20 +82,20 @@ let get_arch =
        type macro = unit
        let macros_parser _ _ = assert false
        let macros_expand _ i = i
-     end in (module struct 
-	       include CArch_jingle
-	       module Parser = struct
-		 include CGenParser_lib.Make(CGenParser_lib.DefaultConfig)
-					(CArch_jingle)(CLexParse)
-		 type parsedPseudo = CArch_jingle.parsedPseudo
-		 let instr_from_string s =
-		   CGenParser_lib.call_parser "themes" (Lexing.from_string s) 
-					 CLexParse.deep_lexer 
-					 CLexParse.instr_parser
-	       end
-	       module Dumper = CDumper
-	     end : S)
-	      
+     end in (module struct
+               include CArch_jingle
+               module Parser = struct
+                 include CGenParser_lib.Make(CGenParser_lib.DefaultConfig)
+                                        (CArch_jingle)(CLexParse)
+                 type parsedPseudo = CArch_jingle.parsedPseudo
+                 let instr_from_string s =
+                   CGenParser_lib.call_parser "themes" (Lexing.from_string s)
+                                         CLexParse.deep_lexer
+                                         CLexParse.instr_parser
+               end
+               module Dumper = CDumper
+             end : S)
+
   | `PPC ->
      let module PPCLexParse = struct
        type instruction = PPCArch_jingle.parsedPseudo
@@ -104,13 +104,27 @@ let get_arch =
        let lexer = Lexer.token
        let parser = MiscParser.mach2generic PPCParser.main
        let instr_parser = PPCParser.instr_option_seq
-     end in (module struct 
-	       include PPCArch_jingle
-	       module Parser = MakeParser(PPCArch_jingle)(PPCLexParse)
-	       module Dumper = DefaultDumper(PPCArch_jingle)
-	     end : S)
+     end in (module struct
+               include PPCArch_jingle
+               module Parser = MakeParser(PPCArch_jingle)(PPCLexParse)
+               module Dumper = DefaultDumper(PPCArch_jingle)
+             end : S)
+  | `RISCV ->
+      let module RISCVLexParse = struct
+       type instruction = RISCVArch_jingle.parsedPseudo
+       type token = RISCVParser.token
+       module Lexer = RISCVLexer.Make(struct let debug = false end)
+       let lexer = Lexer.token
+       let parser = MiscParser.mach2generic RISCVParser.main
+       let instr_parser = RISCVParser.instr_option_seq
+     end in (module struct
+               include RISCVArch_jingle
+               module Parser = MakeParser(RISCVArch_jingle)(RISCVLexParse)
+               module Dumper = DefaultDumper(RISCVArch_jingle)
+             end : Arch.S)
 
-  | _ -> assert false
+
+  | a -> Warn.fatal "Arch %s is not implemented" (Archs.pp a)
 
 let () =
   Arg.parse
@@ -158,11 +172,11 @@ module Trad =
     end)
 
 
-module Top(Out:OutTests.S) = struct			    
+module Top(Out:OutTests.S) = struct
 
   let idx_out = Out.open_all ()
 
-  let do_trans file k = 
+  let do_trans file k =
 
     let fin chin =
       let sres =
@@ -171,18 +185,18 @@ module Top(Out:OutTests.S) = struct
       let tgt_test =
         try Trad.translate chin sres
         with  Mapping.Error msg -> Warn.fatal "File \"%s\":%s" file msg in
-        
+
       let dump out =
         let out = Out.chan out in
         Target.Dumper.dump_info out sres.Splitter.name tgt_test in
-      
+
 
       let base = Filename.basename file in
       let out = Out.open_file base in
       Misc.output_protect_close Out.close dump out ;
       Out.fprintf idx_out "%s\n" base in
-      
-        
+
+
 
     try Misc.input_protect fin file ; k+1
     with
@@ -192,7 +206,7 @@ module Top(Out:OutTests.S) = struct
         k
 
 
-  let zyva () = 
+  let zyva () =
     let nout =
       match args with
       | [] -> Misc.fold_stdin do_trans 0
@@ -214,4 +228,3 @@ let () = match outdir with
         end) in
     let module X = Top(Out) in
     X.zyva ()
-

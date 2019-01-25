@@ -49,7 +49,8 @@ let tr_rw = function
 %token FENCE FENCEI FENCETSO
 %token <string> META
 %type <int list * (RISCVBase.parsedPseudo) list list> main 
-%start  main
+%type <RISCVBase.parsedPseudo list> instr_option_seq
+%start main instr_option_seq
 
 %nonassoc SEMI
 %%
@@ -76,6 +77,13 @@ instr_option_list :
   | instr_option
       {[$1]}
   | instr_option PIPE instr_option_list 
+      {$1::$3}
+
+
+instr_option_seq :
+  | instr_option
+      {[$1]}
+  | instr_option SEMI instr_option_seq
       {$1::$3}
 
 instr_option :

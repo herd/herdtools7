@@ -17,25 +17,25 @@ open Printf
 
 module type Parser = sig
   include GenParser.S
-	    
+
   type parsedPseudo
   val instr_from_string : string -> parsedPseudo list
   end
 
 module type Dumper = sig
     type pseudo
-    val dump_info : 
+    val dump_info :
       out_channel -> Name.t ->
       (MiscParser.state, (int * pseudo list) list,
        MiscParser.prop, MiscParser.location)
         MiscParser.result
       -> unit
 end
-  
+
 module type Common = sig
-    
+
   include ArchBase.S
-    
+
   exception Error of string
 
   type substitution =
@@ -60,22 +60,22 @@ module type Common = sig
                   string -> pseudo list
   val find_cst : substitution list -> reg list ref ->
                  string -> MetaConst.k
-    
+
 end
-  
+
 module type S = sig
     include Common
 
-    val match_instruction : substitution list -> 
-			    parsedPseudo -> pseudo ->
-			    substitution list option
+    val match_instruction : substitution list ->
+                            parsedPseudo -> pseudo ->
+                            substitution list option
 
     val instanciate_with : substitution list -> reg list ->
-			   parsedPseudo list ->
-			   pseudo list
-   
+                           parsedPseudo list ->
+                           pseudo list
+
     module Parser : Parser with type parsedPseudo = parsedPseudo
-			   and type pseudo = pseudo
+                           and type pseudo = pseudo
 
     module Dumper : Dumper with type pseudo = pseudo
   end
@@ -85,7 +85,7 @@ module MakeCommon(A:ArchBase.S) = struct
   let debug = false
 
   include A
-    
+
   exception Error of string
 
   type substitution =
@@ -107,15 +107,25 @@ module MakeCommon(A:ArchBase.S) = struct
 
   let rec add_subs s s' = match s with
     | [] -> s'
-    | s::ss -> 
+    | s::ss ->
        if List.mem s s'
        then add_subs ss s'
        else add_subs ss (s::s')
-	 
+
   let sr_name r = match symb_reg_name r with
     | Some s -> s
     | None -> raise (Error "Not a symbolic register.")
-     
+
+  let match_reg r r' =  match symb_reg_name r with
+  | Some s -> Some [Reg (s,r')]
+  | None -> if r = r' then Some [] else None
+
+  let combine f x y g z t = match f x y with
+  | None -> None
+  | Some b -> match g z t with
+    | None ->  None
+    | Some c -> Some (b@c)
+
   let cv_name = function
     | MetaConst.Meta s -> s
     | _ -> raise (Error "Not a constant variable.")
@@ -132,17 +142,18 @@ module MakeCommon(A:ArchBase.S) = struct
     let get_register =
       fun s -> try List.assoc s !env with
       | Not_found ->
-	 let r = List.hd !free in
-	 env := (s,r)::!env;
-	 free := List.tl !free;
-	 r in
+         let r = List.hd !free in
+         env := (s,r)::!env;
+         free := List.tl !free;
+         r in
+
     let res = match symb_reg_name r with
     | Some s ->
         let rec aux = function
-	  | [] -> get_register s
-	  | Reg(n,r)::_ when String.compare n s = 0 -> r
-	  | Addr(n,r)::_ when String.compare n s = 0 -> get_register r
-	  | _::subs -> aux subs
+          | [] -> get_register s
+          | Reg(n,r)::_ when String.compare n s = 0 -> r
+          | Addr(n,r)::_ when String.compare n s = 0 -> get_register r
+          | _::subs -> aux subs
         in aux subs
     | None -> r in
     if debug then
@@ -154,14 +165,14 @@ module MakeCommon(A:ArchBase.S) = struct
   let fresh_lbl =
     let i = ref 0 in
     fun () -> incr i;"lbl"^(string_of_int !i)
-       
+
   let find_lab subs _ label_env l =
-    let get_label = 
+    let get_label =
       fun s -> try List.assoc s !label_env with
       | Not_found ->
-	 let l = fresh_lbl () in
-	 label_env := (s,l)::!label_env;
-	 l in
+         let l = fresh_lbl () in
+         label_env := (s,l)::!label_env;
+         l in
     let rec aux = function
       | [] -> get_label l
       | Lab(n,lbl)::_ when String.compare n l = 0 -> lbl
@@ -173,7 +184,7 @@ module MakeCommon(A:ArchBase.S) = struct
       | [] -> raise (Error("No conversion found for code "^s))
       | Code(n,c)::_ when String.compare n s = 0 -> c
       | _::subs -> aux subs
-    in aux subs 
+    in aux subs
 
   let find_cst subs _ s =
     let rec aux = function
@@ -181,25 +192,25 @@ module MakeCommon(A:ArchBase.S) = struct
       | Cst(n,i)::_ when String.compare n s = 0 -> MetaConst.Int i
       | _::subs -> aux subs
     in aux subs
-    
+
 end
-  
+
 module MakeParser
-	 (A:ArchBase.S)
-	 (P:sig
-	      include GenParser.LexParse
-		      with type instruction = A.parsedPseudo
-	      val instr_parser : 
-		(Lexing.lexbuf -> token) -> Lexing.lexbuf ->
-		A.parsedPseudo list
-	    end) = struct
+         (A:ArchBase.S)
+         (P:sig
+              include GenParser.LexParse
+                      with type instruction = A.parsedPseudo
+              val instr_parser :
+                (Lexing.lexbuf -> token) -> Lexing.lexbuf ->
+                A.parsedPseudo list
+            end) = struct
   include GenParser.Make(GenParser.DefaultConfig)(A)(P)
-			       
+
   type parsedPseudo = A.parsedPseudo
   let instr_from_string s =
-    GenParser.call_parser "themes" (Lexing.from_string s) 
-			  P.lexer P.instr_parser
-		
+    GenParser.call_parser "themes" (Lexing.from_string s)
+                          P.lexer P.instr_parser
+
 end
 
 module MakeArch(I:sig
@@ -214,14 +225,14 @@ module MakeArch(I:sig
                    parsedInstruction
 end) = struct
   include I
-    
+
   let rec match_instruction subs pattern instr = match pattern,instr with
-    | Label(lp,insp),Label(li,insi) 
+    | Label(lp,insp),Label(li,insi)
       -> match_instruction (add_subs [Lab(lp,li)] subs) insp insi
     | Label _, _ -> None
     | pattern, Label(_,instr)
       -> match_instruction subs pattern instr
-    | Instruction ip, Instruction ii 
+    | Instruction ip, Instruction ii
       -> match_instr subs ip ii
     | _,_ -> assert false
 
@@ -231,30 +242,30 @@ end) = struct
     let expl_instr = expl_instr subs (ref free) label_env reg_env in
     let find_lab = find_lab subs (ref free) label_env in
     let find_code = find_code subs (ref free) in
-    let rec expl_pseudos = 
+    let rec expl_pseudos =
       let rec aux = function
-	| Nop -> []
-	| Instruction ins ->
-	   [pseudo_parsed_tr (Instruction (expl_instr ins))]
-	| Label (lbl,ins) ->  begin
-	  match aux ins with
-	  | [] -> [pseudo_parsed_tr (Label (find_lab lbl, Nop))]
-	  | h::t -> Label(find_lab lbl,h)::t
-	end
-	| Symbolic s -> find_code s
-	| Macro (_,_) -> assert false
+        | Nop -> []
+        | Instruction ins ->
+           [pseudo_parsed_tr (Instruction (expl_instr ins))]
+        | Label (lbl,ins) ->  begin
+          match aux ins with
+          | [] -> [pseudo_parsed_tr (Label (find_lab lbl, Nop))]
+          | h::t -> Label(find_lab lbl,h)::t
+        end
+        | Symbolic s -> find_code s
+        | Macro (_,_) -> assert false
       in function
       | [] -> []
       | i::is -> (aux i)@(expl_pseudos is)
     in expl_pseudos instrs
-    
-end 
-  
-module DefaultDumper(A:ArchBase.S) = struct 
+
+end
+
+module DefaultDumper(A:ArchBase.S) = struct
   type pseudo = A.pseudo
   include SimpleDumper.Make(SimpleDumper.OutChannel)
       (struct
-	module A = A
+        module A = A
 
         let dump_loc = MiscParser.dump_location
 
@@ -269,7 +280,7 @@ module DefaultDumper(A:ArchBase.S) = struct
                (fun a -> sprintf "%s;" (dump_state_atom a))
                st)
 
-            
+
         type prop = MiscParser.prop
 
         let dump_atom a =
