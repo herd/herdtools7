@@ -18,14 +18,18 @@ type t =
  (* RISCV: tagged accesses as amo's with x0 as arg (load) or result (store) *)
   | AsAmo
   | ConstsInInit
+(* Mixed size (diy only, see alt.ml) *)
+  | Mixed
 
-let tags = ["AsAmo";"ConstsInInit";]
+let tags = ["AsAmo";"ConstsInInit";"mixed"]
 
 let parse tag = match Misc.lowercase tag with
 | "asamo" -> Some AsAmo
 | "constsininit" -> Some ConstsInInit
+| "mixed" -> Some Mixed
 | _ -> None
 
 let pp = function
   | AsAmo -> "AsAmo"
   | ConstsInInit -> "ConstsInInit"
+  | Mixed -> "Mixed"

@@ -22,6 +22,7 @@ open Archs
 module type DiyConfig = sig
   include DumpAll.Config
   val choice : Code.check
+  val variant : Variant_gen.t -> bool
   val prefix : LexUtil.t list option
   val cumul :   LexUtil.t list Config.cumul
   val max_ins : int
@@ -55,6 +56,8 @@ let parse_fences fs = List.fold_right parse_fence fs []
     let prefix = match O.prefix with
     | None -> []
     | Some ps -> parse_relaxs ps
+
+    let variant = O.variant
 
     type fence = C.A.fence
 
@@ -219,6 +222,7 @@ let () =
     open Config
     let choice = !Config.mode
     let prefix =  split !Config.prefix
+    let variant = !Config.variant
     let cumul = match !Config.cumul with
     | Empty -> Empty
     | All -> All

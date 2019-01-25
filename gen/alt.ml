@@ -25,7 +25,7 @@ module type AltConfig = sig
   val choice : check
   type relax
   val prefix : relax list
-
+  val variant : Variant_gen.t -> bool
   type fence
   val cumul : fence list Config.cumul
 end
@@ -38,7 +38,7 @@ module Make(C:Builder.S)
 
     =
   struct
-
+    let mixed = O.variant Variant_gen.Mixed
     module D = DumpAll.Make(O) (C)
     open C.E
     open C.R
@@ -232,9 +232,17 @@ module Make(C:Builder.S)
         is_cumul f && choose O.choice safes po_safe xs ys e1 e2
     | _,_ -> choose O.choice safes po_safe xs ys e1 e2
 
+    let check_mixed =
+      if mixed then
+        fun e1 e2 -> match  e1.edge,e2.edge with
+        | Id,Id -> false
+        | (_,Id)|(Id,_) -> true
+        | _,_ -> false
+      else fun _ _ -> true
+
     let do_compat safes po_safe xs ys =
       let x = Misc.last xs and y = List.hd ys in
-      C.E.can_precede x y && pair_ok safes po_safe xs ys x y
+      C.E.can_precede x y && check_mixed x y && pair_ok safes po_safe xs ys x y
 
     let can_precede safes po_safe (_,xs) k = match k with
     | [] -> true

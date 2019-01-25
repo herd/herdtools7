@@ -18,7 +18,8 @@ type t =
  (* RISCV: tagged accesses as amo's with x0 as arg (load) or result (store) *)
   | AsAmo
   | ConstsInInit
-
+(* Mixed size -> diy specific *)
+  | Mixed
 val tags : string list
 
 val parse : string -> t option

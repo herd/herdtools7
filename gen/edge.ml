@@ -68,6 +68,7 @@ module type S = sig
 
   val pp_tedge : tedge -> string
   val pp_atom_option : atom option -> string
+  val debug_edge : edge -> string
   val pp_edge : edge -> string
   val compare_atomo : atom option -> atom option -> int
   val compare : edge -> edge -> int
@@ -586,10 +587,14 @@ and do_set_src d e = match e with
   | Leave _|Back _ -> true
   | _ -> false
 
+  let compat_atoms a1 a2 = match F.merge_atoms a1 a2 with
+  | None -> false
+  | Some _ -> true
+
   let can_precede_atoms x y = match x.a2,y.a1 with
   | None,_
   | _,None -> true
-  | Some a1,Some a2 -> F.compare_atom a1 a2 = 0
+  | Some a1,Some a2 -> compat_atoms a1 a2
 
   let can_precede x y = can_precede_dirs  x y && can_precede_atoms x y
 
@@ -651,7 +656,7 @@ and do_set_src d e = match e with
   | Node _ -> { e with a1=a; a2=a;}
   | _ -> { e with a2=a;}
 
-
+(* Warning: resolve_pair cannot fail, instead it must leave things as they are... *)
   let resolve_pair e1 e2 =
 (*    eprintf "Resolve pair <%s,%s> -> " (debug_edge e1)  (debug_edge e2) ; *)
     let e1,e2 =
@@ -670,9 +675,7 @@ and do_set_src d e = match e with
       | Some _,None -> e1, set_a1 e2 a1
       | Some a1,Some a2 ->
           begin match F.merge_atoms a1 a2 with
-          | None ->
-              Warn.fatal "Cannot merge atoms: %s %s"
-                (debug_edge e1)  (debug_edge e2)
+          | None -> e1,e2
           | Some _ as a ->
               set_a2 e1 a,set_a1 e2 a
           end in
