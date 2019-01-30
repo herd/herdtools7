@@ -552,10 +552,12 @@ let dump_zyva tname env test =
   O.oi "ctx_t **c = ctx;" ;
   O.oi "outs_t *outs = NULL;" ;
   O.oi "const int nth = ninst * nthreads;" ;
+  O.oi "struct task_struct **th;" ;
   O.o "" ;
+  O.oi "th = kzalloc(sizeof(struct task_struct *) * nth, GFP_KERNEL);" ;
+  O.oi "if (!th) return NULL;" ;
   O.oi "for (int _k = 0 ; _k < nruns ; _k++) {" ;
   O.oii "int _nth = 0;" ;
-  O.oii "struct task_struct *th[nth];" ;
   O.o "" ;
   O.oii "for (int _ni = 0 ; _ni < ninst ; _ni++) init_ctx(c[_ni],size);" ;
   O.oii "atomic_set(&done,0);" ;
@@ -564,7 +566,7 @@ let dump_zyva tname env test =
   for i = 0 to T.get_nprocs test-1 do
     O.fiii "th[_nth] = kthread_create(thread%i,c[_ni],\"thread%i\");"
       i i ;
-    O.oiii "if (IS_ERR(th[_nth])) return NULL;" ;
+    O.oiii "if (IS_ERR(th[_nth])) {kfree(th); return NULL;}" ;
     O.oiii "_nth++;"
   done ;
   O.oii "}" ;
@@ -614,6 +616,7 @@ let dump_zyva tname env test =
   O.oii "}" ;
   O.oii "cond_resched();" ;
   O.oi "}" ;
+  O.oi "kfree(th);" ;
   O.oi "return outs;" ;
   O.o "}" ;
   O.o "" ;
