@@ -566,7 +566,7 @@ let dump_zyva tname env test =
   for i = 0 to T.get_nprocs test-1 do
     O.fiii "th[_nth] = kthread_create(thread%i,c[_ni],\"thread%i\");"
       i i ;
-    O.oiii "if (IS_ERR(th[_nth])) {kfree(th); return NULL;}" ;
+    O.oiii "if (IS_ERR(th[_nth])) {kfree(th); return outs;}" ;
     O.oiii "_nth++;"
   done ;
   O.oii "}" ;
