@@ -25,7 +25,7 @@ end
 module Make(Cfg:Config) : XXXCompile_gen.S =
   struct
 
-    module ARM = ARMArch_gen
+    module ARM = ARMArch_gen.Make(Cfg)
 
     include CompileCommon.Make(Cfg)(ARM)
 

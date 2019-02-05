@@ -32,6 +32,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         (struct
           let naturalsize = naturalsize
           let moreedges = Cfg.moreedges
+          let fullmixed = Cfg.variant Variant_gen.FullMixed
         end)
     include CompileCommon.Make(Cfg)(A64)
 
@@ -46,6 +47,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let pseudo = List.map (fun i -> Instruction i)
 
     let tempo1 st = A.alloc_trashed_reg "T1" st (* May be used for address *)
+    let tempo2 st = A.alloc_trashed_reg "T2" st (* May be used for second address *)
     let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
 
 (******************)
@@ -144,11 +146,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Word -> I_LDAR (V32,t,r1,r2)
       | Quad -> I_LDAR (V64,t,r1,r2)
 
-    let sumi_addr st rA o = match o with
+    let sumi_addr_gen tempo st rA o = match o with
     | 0 -> rA,[],st
     | _ ->
-        let r,st = tempo1 st in
+        let r,st = tempo st in
         r,[addi_64 r rA o],st
+
+    let sumi_addr st rA o = sumi_addr_gen tempo1 st rA o
 
     let str_mixed_idx sz v r1 r2 idx  =
       let open MachSize in
@@ -385,112 +389,107 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (***************************)
 
     let get_xload = function
-      | PP|PL -> ldxr
-      | AP|AL -> ldaxr
+      | (Plain,None) ->ldxr
+      | (Plain,Some (sz,_)) -> ldxr_sz XX sz
+      | (Acq,None)   -> ldaxr
+      | (Acq,Some (sz,_))  -> ldxr_sz AX sz
+      | _ -> assert false
 
     and get_xstore = function
-      | PP|AP -> stxr
-      | PL|AL -> stlxr
+      | (Plain,None) -> stxr
+      | (Plain,Some (sz,_)) -> stxr_sz YY sz
+      | (Rel,None) -> stlxr
+      | (Rel,Some (sz,_)) -> stxr_sz LY sz
+      | _ -> assert false
 
-    let emit_loop_pair rw _p st rR rW rA =
+    let get_rmw_addrs arw st rA = match arw with
+    | (_,(None|Some (_,0))),(_,(None|Some (_,0)))
+        -> rA,rA,[],st
+    | (_,Some (_,o1)),(_,Some (_,o2)) when o1=o2 ->
+        let r,cs,st = sumi_addr st rA o1 in
+        r,r,cs,st
+    |  (_,(None|Some (_,0))),(_,Some (_,o)) ->
+        let  r,cs,st = sumi_addr st rA o in
+        rA,r,cs,st
+    |  (_,Some (_,o)),(_,(None|Some (_,0))) ->
+        let  r,cs,st = sumi_addr st rA o in
+        r,rA,cs,st
+    | (_,Some (_,o1)),(_,Some (_,o2)) ->
+        let  r1,cs1,st = sumi_addr_gen tempo1 st rA o1 in
+        let  r2,cs2,st = sumi_addr_gen tempo2 st rA o2 in
+        r1,r2,cs1@cs2,st
+
+    let emit_loop_pair (ar,aw as arw) _p st rR rW rA =
+      let rAR,rAW,cs0,st = get_rmw_addrs arw st rA in
       let lbl = Label.next_label "Loop" in
       let r,st = tempo3 st in
       let cs =
         [
-         Label (lbl,Instruction (get_xload rw rR rA));
-         Instruction (get_xstore rw r rW rA);
+         Label (lbl,Instruction (get_xload ar rR rAR));
+         Instruction (get_xstore aw r rW rAW);
          Instruction (cbnz r lbl);
        ] in
-      cs,st
+      pseudo cs0@cs,st
 
-    let emit_one_pair rw p r rR rW rA k =
-      Instruction (get_xload rw rR rA)::
-      Instruction (get_xstore rw r rW rA)::
+    let emit_one_pair (ar,aw) p r rR rW rAR rAW k =
+      Instruction (get_xload ar rR rAR)::
+      Instruction (get_xstore aw r rW rAW)::
       Instruction (cbnz r (Label.fail p))::k
 
-    let emit_unroll_pair u rw p st rR rW rA =
+    let emit_unroll_pair u (ar,aw as arw) p st rR rW rA =
+      let rAR,rAW,cs0,st = get_rmw_addrs arw st rA in
+      let cs0 = pseudo cs0 in
       if u <= 0 then
         let r,st = next_reg st in
-        pseudo
-          [get_xload rw rR rA;
-           get_xstore rw r rW rA;],st
+        cs0@pseudo
+           [get_xload ar rR rAR;
+           get_xstore aw r rW rAW;],st
       else if u = 1 then
         let r,st = tempo3 st in
-        emit_one_pair rw p r rR rW rA [],st
+        cs0@emit_one_pair arw p r rR rW rAR rAW [],st
       else
         let r,st = tempo3 st in
         let out = Label.next_label "Go" in
         let rec do_rec = function
           | 1 ->
               emit_one_pair
-                rw p r rR rW rA [Label (out,Nop)]
+                arw p r rR rW rAR rAW [Label (out,Nop)]
           | u ->
-              Instruction (get_xload rw rR rA)::
-              Instruction (get_xstore rw r rW rA)::
+              Instruction (get_xload ar rR rAR)::
+              Instruction (get_xstore aw r rW rAW)::
               Instruction (cbz r out)::
               do_rec (u-1) in
-        do_rec u,st
+        cs0@do_rec u,st
 
     let emit_pair = match Cfg.unrollatomic with
     | None -> emit_loop_pair
     | Some u -> emit_unroll_pair u
 
+(* Translate annotations *)
+
+    let tr_rw = function
+      | PP -> (Plain,None),(Plain,None)
+      | PL -> (Plain,None),(Rel,None)
+      | AP -> (Acq,None),(Plain,None)
+      | AL -> (Acq,None),(Rel,None)
+
+    let tr_none = function
+      | None -> Plain,None
+      | Some p -> p
+
 
 (********************)
 (* Mixed size pairs *)
 (********************)
-    let get_xload_mixed rw = match rw with
-    | PP|PL -> ldxr_sz XX
-    | AP|AL -> ldxr_sz AX
 
-    let get_xstore_mixed rw = match rw with
-    | PP|AP -> stxr_sz YY
-    | PL|AL -> stxr_sz LY
+    let emit_pair_mixed sz o rw =
+      let arw = match tr_rw rw with
+      | (a1,_),(a2,_) -> (a1,Some (sz,o)),(a2,Some (sz,o)) in
+      emit_pair arw
 
-    let emit_loop_pair_mixed sz o rw _p st rR rW rA =
-      let rA,ci,st = sumi_addr st rA o in
-      let lbl = Label.next_label "Loop" in
-      let r,st = tempo3 st in
-      let cs =
-        [
-         Label (lbl,Instruction (get_xload_mixed rw sz rR rA));
-         Instruction (get_xstore_mixed rw sz r rW rA);
-         Instruction (cbnz r lbl);
-       ] in
-      pseudo ci@cs,st
-
-    let emit_one_pair_mixed sz rw p r rR rW rA k =
-      Instruction (get_xload_mixed rw sz rR rA)::
-      Instruction (get_xstore_mixed rw sz r rW rA)::
-      Instruction (cbnz r (Label.fail p))::k
-
-    let emit_unroll_pair_mixed sz o u rw p st rR rW rA =
-      let rA,ci,st = sumi_addr st rA o in
-      if u <= 0 then
-        let r,st = next_reg st in
-        pseudo
-          (ci@
-           [get_xload_mixed rw sz rR rA;
-            get_xstore_mixed rw sz r rW rA;]),st
-      else if u = 1 then
-        let r,st = tempo3 st in
-        pseudo ci@emit_one_pair_mixed sz rw p r rR rW rA [],st
-      else
-        let r,st = tempo3 st in
-        let out = Label.next_label "Go" in
-        let rec do_rec = function
-          | 1 ->
-              emit_one_pair_mixed sz rw p r rR rW rA [Label (out,Nop)]
-          | u ->
-              Instruction (get_xload_mixed rw sz rR rA)::
-              Instruction (get_xstore_mixed rw sz r rW rA)::
-              Instruction (cbz r out)::
-              do_rec (u-1) in
-        pseudo ci@do_rec u,st
-
-    let emit_pair_mixed sz o = match Cfg.unrollatomic with
-    | None -> emit_loop_pair_mixed sz o
-    | Some u -> emit_unroll_pair_mixed sz o u
+(********************************)
+(* Individual loads and strores *)
+(********************************)
 
     let emit_lda_reg rw st p rA =
       let rR,st = next_reg st in
@@ -572,7 +571,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let rR,cs2,st = do_emit_sta_mixed sz o rw st p rW rA in
       rR,init,csi@pseudo cs1@cs2,st
 
-
 (**********)
 (* Access *)
 (**********)
@@ -611,7 +609,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,Some (Rel,_) ->
             Warn.fatal "No load release"
         | R,Some (Atomic rw,None) ->
-            let r,init,cs,st = emit_lda rw st p init e.loc  in
+            let r,init,cs,st = emit_lda (tr_rw rw) st p init e.loc  in
             Some r,init,cs,st
         | R,Some (Atomic rw,Some (sz,o)) ->
             let r,init,cs,st = emit_lda_mixed sz o rw st p init e.loc  in
@@ -628,7 +626,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | W,Some (Acq,_) -> Warn.fatal "No store acquire"
         | W,Some (AcqPc,_) -> Warn.fatal "No store acquirePc"
         | W,Some (Atomic rw,None) ->
-            let r,init,cs,st = emit_sta rw st p init e.loc e.v in
+            let r,init,cs,st = emit_sta (tr_rw rw) st p init e.loc e.v in
             Some r,init,cs,st
         | W,Some (Atomic rw,Some (sz,o)) ->
             let r,init,cs,st = emit_sta_mixed sz o rw st p init e.loc e.v in
@@ -652,24 +650,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             None,init,cs,st
         | _,Some (Plain,None) -> assert false
 
-
-    let tr_a ar aw = match ar,aw with
-    | None,None -> PP
-    | Some (Acq,None),None -> AP
-    | None,Some (Rel,None) -> PL
-    | Some (Acq,None),Some (Rel,None) -> AL
-    | _,_ ->
-        Warn.fatal
-          "bad atomicity in rmw, %s%s"
-          (E.pp_atom_option ar)
-          (E.pp_atom_option aw)
-
     let emit_exch st p init er ew =
       let rA,init,st = U.next_init st p init er.loc in
       let rR,st = next_reg st in
       let rW,init,csi,st = U.emit_mov st p init ew.v in
-      let arw = tr_a er.C.atom ew.C.atom in
-      let cs,st = emit_pair arw p st rR rW rA in
+      let cs,st = emit_pair
+          (tr_none er.C.atom, tr_none ew.C.atom) p st rR rW rA in
       rR,init,csi@cs,st
 
 (* Fences *)
@@ -723,7 +709,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | R,Some (Rel,_) ->
               Warn.fatal "No load release"
           | R,Some (Atomic rw,None) ->
-              let r,init,cs,st = emit_lda_idx rw st p init e.loc r2 in
+              let r,init,cs,st = emit_lda_idx (tr_rw rw) st p init e.loc r2 in
               Some r,init, Instruction c::cs,st
           | R,Some (Atomic rw,Some (sz,o)) ->
               let r,init,cs,st = emit_lda_mixed_idx sz o rw st p init e.loc r2 in
@@ -751,7 +737,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | W,Some (Acq,_) -> Warn.fatal "No store acquire"
           | W,Some (AcqPc,_) -> Warn.fatal "No store acquirePc"
           | W,Some (Atomic rw,None) ->
-              let r,init,cs,st = emit_sta_idx rw st p init e.loc r2 e.v in
+              let r,init,cs,st =
+                emit_sta_idx (tr_rw rw) st p init e.loc r2 e.v in
               Some r,init,Instruction c::cs,st
           | W,Some (Atomic rw,Some (sz,o)) ->
               let r,init,cs,st = emit_sta_mixed_idx sz o rw st p init e.loc r2 e.v in
@@ -795,8 +782,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let rA,csum,st = sum_addr st rA r2 in
       let rR,st = next_reg st in
       let rW,init,csi,st = U.emit_mov st p init ew.v in
-      let arw = tr_a er.C.atom ew.C.atom in
-      let cs,st = emit_pair arw p st rR rW rA in
+      let cs,st =
+        emit_pair (tr_none  er.C.atom, tr_none ew.C.atom) p st rR rW rA in
       rR,init,
       csi@pseudo (c::csum)@cs,
       st
@@ -837,7 +824,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let init,cs,st = S.emit_store_reg st p init e.loc r2 in
               None,init,cs2@cs,st
           | Some (Atomic rw,None) ->
-              let r,init,cs,st = emit_sta_reg rw st p init e.loc r2 in
+              let r,init,cs,st = emit_sta_reg (tr_rw rw) st p init e.loc r2 in
               Some r,init,cs2@cs,st
           | Some (Atomic rw,Some (sz,o)) ->
               let r,init,cs,st = emit_sta_mixed_reg sz o rw st p init e.loc r2 in

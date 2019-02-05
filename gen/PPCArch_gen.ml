@@ -17,6 +17,7 @@
 module type Config = sig
   val eieio : bool
   val naturalsize : MachSize.sz
+  val moreedges : bool
 end
 
 (* Default: know about eieio and word size *)
@@ -25,6 +26,7 @@ module Config =
   struct
     let eieio = true
     let naturalsize = MachSize.Word
+    let moreedges = false
   end
 
 module Make(C:Config)  =
@@ -38,6 +40,7 @@ module Make(C:Config)  =
         (struct
           let naturalsize = Some C.naturalsize
           let endian = endian
+          let fullmixed = C.moreedges
         end)
 
 (**********)

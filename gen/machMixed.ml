@@ -16,6 +16,7 @@
 
 module type Config = sig
   val naturalsize : MachSize.sz option
+  val fullmixed : bool
 end
 
 open MachSize
@@ -33,7 +34,9 @@ module Make(C:Config) = struct
 
   let get_off = match  C.naturalsize with
   | None -> fun _ -> []
-  | Some sz -> MachSize.get_off sz
+  | Some sz ->
+      (if C.fullmixed then MachSize.get_off else  MachSize.get_off_reduced)
+        sz
 
   let fold_mixed f r =
     let r = do_fold f Byte (get_off Byte) r in

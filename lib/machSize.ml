@@ -110,3 +110,17 @@ let get_off sz = match sz with
 | Short -> off_short
 | Word -> off_word
 | Quad -> off_quad
+
+let get_off_reduced sz = match sz with
+| Byte -> off_byte
+| Short -> off_short
+| Word ->
+    begin fun sz -> match sz with
+    | Byte -> []
+    | _ -> off_word sz
+    end
+| Quad ->
+    begin fun sz -> match sz with
+    | Byte|Short -> []
+    | _ -> off_quad sz
+    end

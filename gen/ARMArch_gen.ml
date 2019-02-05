@@ -15,11 +15,15 @@
 (****************************************************************************)
 
 open Printf
+module Config = struct
+  let moreedges = false
+end
 
+module Make(C:sig val moreedges : bool end) = struct
 include ARMBase
 
 module ScopeGen = ScopeGen.NoGen
-include MachAtom
+
 
 let tr_endian = Misc.identity
 
@@ -27,6 +31,7 @@ include MachAtom.Make
     (struct
       let naturalsize=None
       let endian = endian
+      let fullmixed = C.moreedges
     end)
 
 let x = default_atom
@@ -90,3 +95,4 @@ include
       let free_registers = allowed_for_symb
     end)
 
+end

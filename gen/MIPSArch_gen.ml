@@ -14,7 +14,11 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+module Config = struct
+  let moreedges = false
+end
 
+module Make(C:sig val moreedges : bool end) = struct
 include MIPSBase
 module ScopeGen = ScopeGen.NoGen
 
@@ -23,6 +27,7 @@ include MachAtom.Make
     (struct
       let naturalsize=None
       let endian = endian
+      let fullmixed = C.moreedges
     end)
 
 
@@ -90,3 +95,4 @@ include
       let pp_reg = pp_reg
       let free_registers = allowed_for_symb
     end)
+end

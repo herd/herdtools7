@@ -89,13 +89,13 @@ let () =
       let module M = Make(PPCArch_gen.Make(PPCArch_gen.Config)) in
       M.zyva
   | `ARM ->
-      let module M = Make(ARMArch_gen) in
+      let module M = Make(ARMArch_gen.Make(ARMArch_gen.Config)) in
       M.zyva
   | `AArch64 ->
       let module M = Make(AArch64Arch_gen.Make(AArch64Arch_gen.Config)) in
       M.zyva
   | `MIPS ->
-      let module M = Make(MIPSArch_gen) in
+      let module M = Make(MIPSArch_gen.Make(MIPSArch_gen.Config)) in
       M.zyva 
  | `RISCV ->
       let module M = Make(RISCVArch_gen.Make(RISCVArch_gen.Config)) in

@@ -44,7 +44,7 @@ module X86 = struct
 end
 
 module MIPS = struct
-  module X = MIPSArch_gen
+  module X = MIPSArch_gen.Make(MIPSArch_gen.Config)
   module A = AutoArch.Make(X)
   let testing = "Rfe,Pod**,Syncd**,[Rfi,SyncdR*],[Rfi,PodR*]"
   let safe = "Fre,Wse"
@@ -52,7 +52,7 @@ module MIPS = struct
 end
 
 module ARM = struct
-  module P = ARMArch_gen
+  module P = ARMArch_gen.Make(ARMArch_gen.Config)
   module A = AutoArch.Make(P)
   let testing =
     "Pod**, DpAddrdR,DpAddrdW, DpDatadW,\

@@ -153,13 +153,19 @@ let () =
       let module M = Build(PPCArch_gen.Make(PPCArch_gen.Config)) in
       M.zyva
   | `ARM ->
-      let module M = Build(ARMArch_gen) in
+      let module M = Build(ARMArch_gen.Make(ARMArch_gen.Config)) in
       M.zyva
   | `AArch64 ->
-      let module M = Build(AArch64Arch_gen.Make(AArch64Arch_gen.Config)) in
+      let module A =
+        AArch64Arch_gen.Make
+          (struct
+            include AArch64Arch_gen.Config
+            let moreedges = !Config.moreedges
+          end) in
+      let module M = Build(A) in
       M.zyva
   | `MIPS ->
-      let module M = Build(MIPSArch_gen) in
+      let module M = Build(MIPSArch_gen.Make(MIPSArch_gen.Config)) in
       M.zyva
   | `RISCV ->
       let module M = Build(RISCVArch_gen.Make(RISCVArch_gen.Config)) in

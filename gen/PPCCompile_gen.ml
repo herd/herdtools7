@@ -28,7 +28,11 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
     let naturalsize = TypBase.get_size O.typ
     module PPC =
       PPCArch_gen.Make
-        (struct include C let naturalsize = naturalsize end)
+        (struct
+          include C
+          let naturalsize = naturalsize
+          let moreedges = O.moreedges
+        end)
 
     include CompileCommon.Make(O)(PPC)
 

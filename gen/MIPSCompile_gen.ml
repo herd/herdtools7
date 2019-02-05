@@ -20,7 +20,7 @@ open Code
 module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
   struct
 
-    module MIPS = MIPSArch_gen
+    module MIPS = MIPSArch_gen.Make(Cfg)
     include CompileCommon.Make(Cfg)(MIPS)
 
 

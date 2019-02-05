@@ -17,10 +17,16 @@
 module Config = struct
   let naturalsize = MachSize.Word
   let moreedges = false
+  let fullmixed = false
 end
 
 module Make
- (C:sig val naturalsize : MachSize.sz val moreedges : bool end) = struct
+    (C:sig
+      val naturalsize : MachSize.sz
+      val moreedges : bool
+      val fullmixed : bool
+    end) = struct
+
 open Code
 open Printf
 
@@ -36,6 +42,7 @@ module Mixed =
   MachMixed.Make
     (struct
       let naturalsize = Some C.naturalsize
+      let fullmixed = C.fullmixed
     end)
 
 (* AArch64 has more atoms that others *)

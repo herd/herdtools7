@@ -16,10 +16,11 @@
 
 module Config = struct
   let naturalsize = MachSize.Word
+  let moreedges = false
 end
 
 module Make
- (C:sig val naturalsize : MachSize.sz end) = struct
+ (C:sig val naturalsize : MachSize.sz val moreedges : bool end) = struct
    open Code
    open Printf
 
@@ -36,6 +37,7 @@ module Make
      MachMixed.Make
        (struct
          let naturalsize = Some C.naturalsize
+         let fullmixed = C.moreedges
        end)
 
 (*********)

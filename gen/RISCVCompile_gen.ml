@@ -29,7 +29,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
 
     module RISCV =
       RISCVArch_gen.Make
-        (struct let naturalsize = naturalsize end)
+        (struct
+          let naturalsize = naturalsize
+          let  moreedges = Cfg.moreedges
+        end)
     include CompileCommon.Make(Cfg)(RISCV)
 
     let ppo _f k = k

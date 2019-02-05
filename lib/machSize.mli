@@ -31,3 +31,6 @@ val tr_endian : sz -> int -> int
 
 (* All valid offsets for sz2 in sz1 *)
 val get_off : sz -> sz -> int list
+
+(* All valid offsets for sz2 in sz1, reduced list *)
+val get_off_reduced : sz -> sz -> int list

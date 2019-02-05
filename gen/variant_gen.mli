@@ -20,6 +20,9 @@ type t =
   | ConstsInInit
 (* Mixed size -> diy specific *)
   | Mixed
+(* Lift the default restriction of mixed-size annotation to depth one *)
+  | FullMixed
+
 val tags : string list
 
 val parse : string -> t option

@@ -20,16 +20,20 @@ type t =
   | ConstsInInit
 (* Mixed size (diy only, see alt.ml) *)
   | Mixed
+(* Lift the default restriction of mixed-size annotation to depth one *)
+  | FullMixed
 
-let tags = ["AsAmo";"ConstsInInit";"mixed"]
+let tags = ["AsAmo";"ConstsInInit";"Mixed";"FullMixed"]
 
 let parse tag = match Misc.lowercase tag with
 | "asamo" -> Some AsAmo
 | "constsininit" -> Some ConstsInInit
 | "mixed" -> Some Mixed
+| "fullmixed" -> Some FullMixed
 | _ -> None
 
 let pp = function
   | AsAmo -> "AsAmo"
   | ConstsInInit -> "ConstsInInit"
   | Mixed -> "Mixed"
+  | FullMixed -> "FullMixed"
