@@ -16,6 +16,7 @@
 open Printf
 
 let verbose = ref false
+let includes = ref []
 let map = ref None
 let outdir = ref None
 let args = ref []
@@ -128,20 +129,41 @@ let get_arch =
 
 let () =
   Arg.parse
-    ["-v",Arg.Unit (fun () -> verbose := true),
-     "- be verbose";
+    ["-version",
+     Arg.Unit
+       (fun () ->
+         printf "%s, Rev: %s\n" Version_jingle.version Version_jingle.rev ;
+         exit 0),
+     " show version number and exit" ;
+     "-libdir",
+     Arg.Unit (fun () -> print_endline Version_jingle.libdir; exit 0),
+     " show installation directory and exit";
+     "-v",Arg.Unit (fun () -> verbose := true),
+     " be verbose";
+     "-I", Arg.String (fun s -> includes := !includes @ [s]),
+     "<dir> add <dir> to search path";
      "-theme",Arg.String (fun s -> map := Some s),
-     "<name> - give the theme file <name>";
+     "<name>  give the theme file <name>";
      "-o",Arg.String (fun s -> outdir := Some s),
-     "<name> - directory for output files"]
+     "<name>  directory for output files"]
     (fun s -> args := s :: !args)
     (sprintf "Usage: %s [option]* -theme <file> [test]*" prog)
 
 
 let map = !map
+let includes = !includes
 let verbose = !verbose
 let outdir = !outdir
 let args = !args
+
+let libfind =
+  let module ML =
+    MyLib.Make
+      (struct
+        let includes = includes
+        let libdir = Version_jingle.libdir
+      end) in
+  ML.find
 
 let parsed = match map with
 | None -> raise (Error "No map file provided.")
