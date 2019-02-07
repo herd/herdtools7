@@ -36,6 +36,13 @@ module type Common = sig
 
   include ArchBase.S
 
+  type st =
+      {
+       free : reg list;
+       reg_env : (string * reg) list;
+       label_env : (string * string) list;
+      }
+
   exception Error of string
 
   type substitution =
@@ -52,14 +59,11 @@ module type Common = sig
   val sr_name : reg -> string
   val cv_name : MetaConst.k -> string
   val dump_pseudos : pseudo list -> string
-  val conv_reg : substitution list -> reg list ref -> (string * reg) list ref ->
-                 reg -> reg
-  val find_lab : substitution list -> reg list ref -> (string * string) list ref ->
-                 string -> string
-  val find_code : substitution list -> reg list ref ->
-                  string -> pseudo list
-  val find_cst : substitution list -> reg list ref ->
-                 string -> MetaConst.k
+
+  val conv_reg : substitution list -> reg -> st -> reg * st
+  val find_lab : substitution list -> string -> st -> string * st
+  val find_code : substitution list -> string -> st -> pseudo list * st
+  val find_cst : substitution list -> MetaConst.k -> st ->  MetaConst.k * st
 
 end
 
@@ -86,6 +90,37 @@ module MakeCommon(A:ArchBase.S) = struct
 
   include A
 
+  type st =
+      {
+       free : reg list;
+       reg_env : (string * reg) list;
+       label_env : (string * string) list;
+     }
+
+(* State monad *)
+  let (>>) f g = fun st ->
+    let r,st = f st in
+    g r st
+
+  let unitT r st = r,st
+
+  let (>!) f g = fun st ->
+    let r,st = f st in
+    g r,st
+
+  let mapT f =
+    let rec map_rec = function
+      | [] -> unitT []
+      | x::xs ->
+          f x >> fun y -> map_rec xs >! fun ys -> y::ys in
+    map_rec
+
+  let optT f = function
+    | None -> unitT None
+    | Some x -> f x >! fun y -> Some y
+
+
+(* Substitutions *)
   exception Error of string
 
   type substitution =
@@ -138,27 +173,31 @@ module MakeCommon(A:ArchBase.S) = struct
                            (dump_pseudos is)
     | _ -> assert false
 
-  let conv_reg subs free env r =
+  let alloc_reg st = match st.free with
+  | r::free -> r,{ st with free=free; }
+  | [] -> raise (Error "register free list exhausted")
+
+  let conv_reg subs r st =
     let get_register =
-      fun s -> try List.assoc s !env with
+      fun s -> try List.assoc s st.reg_env,st with
       | Not_found ->
-         let r = List.hd !free in
-         env := (s,r)::!env;
-         free := List.tl !free;
-         r in
+          let r,st = alloc_reg st in
+          r,{ st with reg_env = (s,r)::st.reg_env; } in
 
     let res = match symb_reg_name r with
     | Some s ->
         let rec aux = function
           | [] -> get_register s
-          | Reg(n,r)::_ when String.compare n s = 0 -> r
-          | Addr(n,r)::_ when String.compare n s = 0 -> get_register r
+          | Reg(n,r)::_ when Misc.string_eq n s -> r,st
+          | Addr(n,r)::_ when Misc.string_eq n s -> get_register r
           | _::subs -> aux subs
         in aux subs
-    | None -> r in
-    if debug then
+    | None -> r,st in
+    if debug then begin
+      let res,_ = res in
       eprintf "conv_reg subs=<%s> %s -> %s\n"
-        (pp_subs subs) (pp_reg r) (pp_reg res) ;
+        (pp_subs subs) (pp_reg r) (pp_reg res)
+    end ;
     res
 
 
@@ -166,32 +205,35 @@ module MakeCommon(A:ArchBase.S) = struct
     let i = ref 0 in
     fun () -> incr i;"lbl"^(string_of_int !i)
 
-  let find_lab subs _ label_env l =
+  let find_lab subs lab st =
+
     let get_label =
-      fun s -> try List.assoc s !label_env with
+      fun s -> try List.assoc s st.label_env,st with
       | Not_found ->
-         let l = fresh_lbl () in
-         label_env := (s,l)::!label_env;
-         l in
+         let lab = fresh_lbl () in
+         lab,{ st with label_env=(s,lab)::st.label_env; }  in
+
     let rec aux = function
-      | [] -> get_label l
-      | Lab(n,lbl)::_ when String.compare n l = 0 -> lbl
+      | [] -> get_label lab
+      | Lab(n,lbl)::_ when Misc.string_eq n lab -> lbl,st
       | _::subs -> aux subs
     in aux subs
 
-  let find_code subs _ s =
+  let find_code subs s st =
     let rec aux = function
       | [] -> raise (Error("No conversion found for code "^s))
-      | Code(n,c)::_ when String.compare n s = 0 -> c
+      | Code(n,c)::_ when Misc.string_eq n s -> c
       | _::subs -> aux subs
-    in aux subs
+    in aux subs,st
 
-  let find_cst subs _ s =
-    let rec aux = function
-      | [] -> raise (Error("No conversion found for constant "^s))
-      | Cst(n,i)::_ when String.compare n s = 0 -> MetaConst.Int i
-      | _::subs -> aux subs
-    in aux subs
+  let find_cst subs k st = match k with
+  | MetaConst.Meta s ->
+      let rec aux = function
+        | [] -> raise (Error("No conversion found for constant "^s))
+        | Cst(n,i)::_ when  Misc.string_eq n s -> MetaConst.Int i
+        | _::subs -> aux subs
+      in aux subs,st
+  | _ -> k,st
 
 end
 
@@ -219,10 +261,8 @@ module MakeArch(I:sig
                     parsedInstruction ->
                     instruction ->
                     substitution list option
-  val expl_instr : substitution list -> reg list ref -> (string * string) list ref ->
-                   (string * reg) list ref ->
-                   parsedInstruction ->
-                   parsedInstruction
+  val expl_instr :
+      substitution list -> parsedInstruction -> st -> parsedInstruction * st
 end) = struct
   include I
 
@@ -237,27 +277,36 @@ end) = struct
     | _,_ -> assert false
 
   let instanciate_with subs free instrs =
-    let label_env = ref [] in
-    let reg_env = ref [] in
-    let expl_instr = expl_instr subs (ref free) label_env reg_env in
-    let find_lab = find_lab subs (ref free) label_env in
-    let find_code = find_code subs (ref free) in
+    let expl_instr = expl_instr subs in
+    let find_lab = find_lab subs in
+    let find_code = find_code subs in
+
     let rec expl_pseudos =
-      let rec aux = function
-        | Nop -> []
+
+      let rec aux p st = match p with
+        | Nop -> [],st
         | Instruction ins ->
-           [pseudo_parsed_tr (Instruction (expl_instr ins))]
-        | Label (lbl,ins) ->  begin
-          match aux ins with
-          | [] -> [pseudo_parsed_tr (Label (find_lab lbl, Nop))]
-          | h::t -> Label(find_lab lbl,h)::t
-        end
-        | Symbolic s -> find_code s
+            let ins,st = expl_instr ins st in
+            [pseudo_parsed_tr (Instruction ins)],st
+        | Label (lbl,ins) ->
+            begin
+              let lbl,st = find_lab lbl st in
+              let inss,st = aux ins st in
+              let inss = match inss with
+              | [] ->  [pseudo_parsed_tr (Label (lbl, Nop))]
+              | ins::inss ->  Label(lbl,ins)::inss in
+              inss,st
+            end
+        | Symbolic s -> find_code s st
         | Macro (_,_) -> assert false
-      in function
+      in fun is st -> match is with
       | [] -> []
-      | i::is -> (aux i)@(expl_pseudos is)
-    in expl_pseudos instrs
+      | i::is ->
+          let i,st = aux i st in
+          let is = expl_pseudos is st in
+          i@is in
+    let st = { free; reg_env=[]; label_env=[];} in
+    expl_pseudos instrs st
 
 end
 

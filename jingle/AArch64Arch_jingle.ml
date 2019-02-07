@@ -1,4 +1,4 @@
-(****************************************************************************)
+ (****************************************************************************)
 (*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
@@ -79,54 +79,141 @@ include Arch.MakeArch(struct
 
     | _,_ -> None
 
-  let expl_instr subs free label_env reg_env =
-    let conv_reg = conv_reg subs free reg_env in
-    let find_lab = find_lab subs free label_env in
-    let find_cst = find_cst subs free in
+  let expl_instr subs =
+    let conv_reg = conv_reg subs in
+    let find_lab = find_lab subs in
+    let find_cst = find_cst subs in
     let expl_kr = function
-      | RV(a,r) -> RV(a,conv_reg r)
-      | K(MetaConst.Meta v) -> K(find_cst v)
-      | kr -> kr in
+      | RV(a,r) ->
+          conv_reg r >! fun r -> RV(a,r)
+      | K k ->
+          find_cst k >! fun k -> K k in
     function
-    | I_FENCE b -> I_FENCE b
-    | I_B l -> I_B(find_lab l)
-    | I_BC(a,l) -> I_BC(a,find_lab l)
-    | I_CBZ(a,r,l) -> I_CBZ(a,conv_reg r,find_lab l)
-    | I_CBNZ(a,r,l) -> I_CBNZ(a,conv_reg r,find_lab l)
-    | I_MOV(a,r,K MetaConst.Meta v) -> I_MOV(a,conv_reg r,K (find_cst v))
-    | I_MOV(a,r,c) -> I_MOV(a,conv_reg r,c)
-    | I_LDAR(a,b,r1,r2) -> I_LDAR(a,b,conv_reg r1,conv_reg r2)
-    | I_LDARBH(a,b,r1,r2) -> I_LDARBH(a,b,conv_reg r1,conv_reg r2)
-    | I_STLR(a,r1,r2) -> I_STLR(a,conv_reg r1,conv_reg r2)
-    | I_STLRBH(a,r1,r2) -> I_STLRBH(a,conv_reg r1,conv_reg r2)
-    | I_SXTW(r1,r2) -> I_SXTW(conv_reg r1,conv_reg r2)
-    | I_STXR(a,b,r1,r2,r3) -> I_STXR(a,b,conv_reg r1,conv_reg r2,conv_reg r3)
-    | I_STXRBH(a,b,r1,r2,r3) -> I_STXRBH(a,b,conv_reg r1,conv_reg r2,conv_reg r3)
-    | I_LDR(a,r1,r2,kr) -> I_LDR(a,conv_reg r1,conv_reg r2,expl_kr kr)
+    | I_FENCE _ as i -> unitT i
+    | I_B l ->
+        find_lab l >! fun l -> I_B l
+    | I_BC(a,l) ->
+        find_lab l >! fun l -> I_BC (a,l)
+    | I_CBZ(a,r,l) ->
+        conv_reg r >> fun r ->
+        find_lab l >! fun l ->
+        I_CBZ (a,r,l)
+    | I_CBNZ(a,r,l) ->
+        conv_reg r >> fun r ->
+        find_lab l >! fun l ->
+        I_CBNZ (a,r,l)
+    | I_MOV(a,r,kr) ->
+        conv_reg r >> fun r ->
+        expl_kr kr >! fun kr ->
+        I_MOV(a,r,kr)
+    | I_LDAR(a,b,r1,r2) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >! fun r2 ->
+        I_LDAR(a,b,r1,r2)
+    | I_LDARBH(a,b,r1,r2) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >! fun r2 ->
+        I_LDARBH(a,b,r1,r2)
+    | I_STLR(a,r1,r2) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >! fun r2 ->
+        I_STLR(a,r1,r2)
+    | I_STLRBH(a,r1,r2) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >! fun r2 ->
+        I_STLRBH(a,r1,r2)
+    | I_SXTW(r1,r2) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >! fun r2 ->
+        I_SXTW(r1,r2)
+    | I_STXR(a,b,r1,r2,r3) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        conv_reg r3 >! fun r3 ->
+        I_STXR(a,b,r1,r2,r3)
+    | I_STXRBH(a,b,r1,r2,r3) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        conv_reg r3 >! fun r3 ->
+        I_STXRBH(a,b,r1,r2,r3)
+    | I_LDR(a,r1,r2,kr) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        expl_kr kr >! fun kr ->
+        I_LDR(a,r1,r2,kr)
     | I_LDP(t,a,r1,r2,r3,kr) ->
-        I_LDP(t,a,conv_reg r1,conv_reg r2,conv_reg r3,expl_kr kr)
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        conv_reg r3 >> fun r3 ->
+        expl_kr kr  >! fun kr ->
+        I_LDP(t,a,r1,r2,r3,kr)
     | I_STP(t,a,r1,r2,r3,kr) ->
-        I_STP(t,a,conv_reg r1,conv_reg r2,conv_reg r3,expl_kr kr)
-    | I_LDRBH(a,r1,r2,kr) -> I_LDRBH(a,conv_reg r1,conv_reg r2,expl_kr kr)
-    | I_STR(a,r1,r2,kr) -> I_STR(a,conv_reg r1,conv_reg r2,expl_kr kr)
-    | I_STRBH(a,r1,r2,kr) -> I_STRBH(a,conv_reg r1,conv_reg r2,expl_kr kr)
-    | I_OP3(a,b,r1,r2,kr) -> I_OP3(a,b,conv_reg r1,conv_reg r2,expl_kr kr)
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        conv_reg r3 >> fun r3 ->
+        expl_kr kr >! fun kr ->
+        I_STP(t,a,r1,r2,r3,kr)
+    | I_LDRBH(a,r1,r2,kr) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        expl_kr kr >! fun kr ->
+        I_LDRBH(a,r1,r2,kr)
+    | I_STR(a,r1,r2,kr) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        expl_kr kr >! fun kr ->
+        I_STR(a,r1,r2,kr)
+    | I_STRBH(a,r1,r2,kr) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        expl_kr kr >! fun kr ->
+        I_STRBH(a,r1,r2,kr)
+    | I_OP3(a,b,r1,r2,kr) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        expl_kr kr >! fun kr ->
+        I_OP3(a,b,r1,r2,kr)
     | I_CSEL(v,r1,r2,r3,c,op) ->
-        I_CSEL(v,conv_reg r1,conv_reg r2,conv_reg r3,c,op)
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        conv_reg r3 >! fun r3 ->
+        I_CSEL(v,r1,r2,r3,c,op)
     | I_CAS (v,a,r1,r2,r3) ->
-        I_CAS(v,a,conv_reg r1,conv_reg r2,conv_reg r3)
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        conv_reg r3 >! fun r3 ->
+        I_CAS(v,a,r1,r2,r3)
     | I_CASBH (v,a,r1,r2,r3) ->
-        I_CASBH(v,a,conv_reg r1,conv_reg r2,conv_reg r3)
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        conv_reg r3 >! fun r3 ->
+        I_CASBH(v,a,r1,r2,r3)
     | I_SWP (v,a,r1,r2,r3) ->
-        I_SWP(v,a,conv_reg r1,conv_reg r2,conv_reg r3)
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        conv_reg r3 >! fun r3 ->
+        I_SWP(v,a,r1,r2,r3)
     | I_SWPBH (v,a,r1,r2,r3) ->
-        I_SWPBH(v,a,conv_reg r1,conv_reg r2,conv_reg r3)
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        conv_reg r3 >! fun r3 ->
+        I_SWPBH(v,a,r1,r2,r3)
     | I_LDOP (op,v,rmw,r1,r2,r3) ->
-        I_LDOP (op,v,rmw,conv_reg r1,conv_reg r2,conv_reg r3)
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        conv_reg r3 >! fun r3 ->
+        I_LDOP (op,v,rmw,r1,r2,r3)
     | I_LDOPBH (op,v,rmw,r1,r2,r3) ->
-        I_LDOPBH (op,v,rmw,conv_reg r1,conv_reg r2,conv_reg r3)
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        conv_reg r3 >! fun r3 ->
+        I_LDOPBH (op,v,rmw,r1,r2,r3)
     | I_STOP (op,v,rmw,r1,r2) ->
-        I_STOP (op,v,rmw,conv_reg r1,conv_reg r2)
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >! fun r2 ->
+        I_STOP (op,v,rmw,r1,r2)
     | I_STOPBH (op,v,rmw,r1,r2) ->
-        I_STOPBH (op,v,rmw,conv_reg r1,conv_reg r2)
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >! fun r2 ->
+        I_STOPBH (op,v,rmw,r1,r2)
 end)

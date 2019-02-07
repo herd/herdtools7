@@ -94,25 +94,59 @@ include Arch.MakeArch(struct
     when b=b'  -> Some subs
   | _,_ -> None
 
-  let expl_instr subs free label_env reg_env =
-    let conv_reg = conv_reg subs free reg_env in
-    let find_lab = find_lab subs free label_env in
-    let find_cst = function
-      | MetaConst.Meta k -> find_cst subs free k
-      | MetaConst.Int _ as k -> k in
+  let expl_instr subs =
+    let conv_reg = conv_reg subs
+    and find_lab = find_lab subs
+    and find_cst = find_cst subs in
     function
-      | OpI (op,r1,r2,k) -> OpI (op,conv_reg r1,conv_reg r2,find_cst k)
-      | OpIW (op,r1,r2,k) -> OpIW (op,conv_reg r1,conv_reg r2,find_cst k)
-      | Op (op,r1,r2,r3) -> Op (op,conv_reg r1,conv_reg r2,conv_reg r3)
-      | OpW (op,r1,r2,r3) -> OpW (op,conv_reg r1,conv_reg r2,conv_reg r3)
-      | J lbl-> J (find_lab lbl)
-      | Bcc (c,r1,r2,lbl) -> Bcc (c,conv_reg r1,conv_reg r2,find_lab lbl)
-      | Load (w,s,m,r1,i,r2) -> Load (w,s,m,conv_reg r1,i,conv_reg r2)
-      | Store (w,m,r1,i,r2) -> Store (w,m,conv_reg r1,i,conv_reg r2)
-      | LoadReserve (w,m,r1,r2) -> LoadReserve (w,m,conv_reg r1,conv_reg r2)
+      | OpI (op,r1,r2,k) ->
+          conv_reg r1 >> fun r1 ->
+          conv_reg r2 >> fun r2 ->
+          find_cst k  >! fun k ->
+          OpI (op,r1,r2,k)
+      | OpIW (op,r1,r2,k) ->
+          conv_reg r1 >> fun r1 ->
+          conv_reg r2 >> fun r2 ->
+          find_cst k  >! fun k ->
+          OpIW (op,r1,r2,k)
+      | Op (op,r1,r2,r3) ->
+          conv_reg r1 >> fun r1 ->
+          conv_reg r2 >> fun r2 ->
+          conv_reg r3 >! fun r3 ->
+          Op (op,r1,r2,r3)
+      | OpW (op,r1,r2,r3) ->
+          conv_reg r1 >> fun r1 ->
+          conv_reg r2 >> fun r2 ->
+          conv_reg r3 >! fun r3 ->
+          OpW (op,r1,r2,r3)
+      | J lbl->
+          find_lab lbl >! fun lbl -> J lbl
+      | Bcc (c,r1,r2,lbl) ->
+          conv_reg r1 >> fun r1 ->
+          conv_reg r2 >> fun r2 ->
+          find_lab lbl >! fun lbl ->
+          Bcc (c,r1,r2,lbl)
+      | Load (w,s,m,r1,i,r2) ->
+          conv_reg r1 >> fun r1 ->
+          conv_reg r2 >! fun r2 ->
+          Load (w,s,m,r1,i,r2)
+      | Store (w,m,r1,i,r2) ->
+          conv_reg r1 >> fun r1 ->
+          conv_reg r2 >! fun r2 ->
+          Store (w,m,r1,i,r2)
+      | LoadReserve (w,m,r1,r2) ->
+          conv_reg r1 >> fun r1 ->
+          conv_reg r2 >! fun r2 ->
+          LoadReserve (w,m,r1,r2)
       | StoreConditional (w,m,r1,r2,r3) ->
-          StoreConditional (w,m,conv_reg r1,conv_reg r2,conv_reg r3)
+          conv_reg r1 >> fun r1 ->
+          conv_reg r2 >> fun r2 ->
+          conv_reg r3 >! fun r3 ->
+          StoreConditional (w,m,r1,r2,r3)
       | Amo (op,w,m,r1,r2,r3) ->
-          Amo (op,w,m,conv_reg r1,conv_reg r2,conv_reg r3)
-      | FenceIns _ as i -> i
+          conv_reg r1 >> fun r1 ->
+          conv_reg r2 >> fun r2 ->
+          conv_reg r3 >! fun r3 ->
+          Amo (op,w,m,r1,r2,r3)
+      | FenceIns _ as i -> unitT i
 end)

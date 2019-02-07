@@ -137,61 +137,98 @@ include Arch.MakeArch(struct
         (match r with Some _ -> "ok" | None -> "no") ;
     r
 
-  let rec expl_instr subs free _ reg_env =
-    let conv_reg = conv_reg subs free reg_env in
-    let find_code s =
+  let expl_instr subs =
+    let conv_reg = conv_reg subs in
+
+    let find_code s st =
       let rec aux = function
         | [] -> raise (Error("No conversion found for code "^s))
-        | Code(n,c)::_ when String.compare n s = 0 ->
-           Seq(unwrap_pseudo c,true)
+        | Code(n,c)::_ when Misc.string_eq n s ->
+           Seq (unwrap_pseudo c,true)
         | _::subs -> aux subs
-      in aux subs
+      in aux subs,st
     in
-    let find_cst s =
+
+    let find_cst s st =
       let rec aux = function
       | [] -> raise (Error("No conversion found for constant "^s))
-      | Cst(n,i)::_ when String.compare n s = 0 ->
+      | Cst(n,i)::_ when Misc.string_eq n s ->
           ParsedConstant.intToV i
       | _::subs -> aux subs
-      in aux subs
+      in aux subs,st
     in
-    let rec expl_loc loc = expl_expr loc
 
-    and expl_expr = function
-      | Const(Constant.Symbolic (s,_)) -> Const(find_cst s)
-      | Const(Constant.Concrete _) as e -> e
-      | LoadReg r -> LoadReg(conv_reg r)
-      | LoadMem(l,mo) -> LoadMem(expl_loc l,mo)
-      | Op(op,e1,e2) -> Op(op,expl_expr e1,expl_expr e2)
-      | Exchange(l,e,mo) -> Exchange(expl_loc l, expl_expr e,mo)
-      | CmpExchange(loc,o,n,a) -> CmpExchange(expl_loc loc,expl_expr o,expl_expr n,a)
-      | Fetch(l,op,e,mo) -> Fetch(expl_loc l,op,expl_expr e,mo)
-      | ECall (f,es) -> ECall (f,List.map expl_expr es)
-      | ECas (e1,e2,e3,mo1,mo2,st) -> ECas (expl_expr e1,expl_expr e2,expl_expr e3,mo1,mo2,st)
-      | TryLock(e,m) -> TryLock(expl_expr e,m)
-      | IsLocked(e,m) -> IsLocked(expl_expr e,m)
+    let rec expl_expr = function
+      | Const(Constant.Symbolic (s,_)) -> find_cst s >! fun k -> Const k
+      | Const(Constant.Concrete _) as e -> unitT e
+      | LoadReg r -> conv_reg r >! fun r -> LoadReg r
+      | LoadMem (loc,mo) -> expl_expr loc >! fun loc -> LoadMem (loc,mo)
+      | Op (op,e1,e2) ->
+          expl_expr e1 >> fun e1 ->
+          expl_expr e2 >! fun e2 ->
+          Op (op,e1,e2)
+      | Exchange(loc,e,mo) ->
+          expl_expr loc >> fun loc ->
+          expl_expr e >! fun e ->
+          Exchange (loc,e,mo)
+      | CmpExchange (loc,o,n,a) ->
+          expl_expr loc >> fun loc ->
+          expl_expr o >> fun o ->
+          expl_expr n >! fun n ->
+          CmpExchange(loc,o,n,a)
+      | Fetch(loc,op,e,mo) ->
+          expl_expr loc >> fun loc ->
+          expl_expr e >! fun e ->
+          Fetch(loc,op,e,mo)
+      | ECall (f,es) ->
+          mapT expl_expr es >! fun es -> ECall (f,es)
+      | ECas (e1,e2,e3,mo1,mo2,st) ->
+          expl_expr e1 >> fun e1 ->
+          expl_expr e2 >> fun e2 ->
+          expl_expr e3 >! fun e3 ->
+          ECas (e1,e2,e3,mo1,mo2,st)
+      | TryLock(e,m) -> expl_expr e >! fun e -> TryLock(e,m)
+      | IsLocked(e,m) -> expl_expr e >! fun e -> IsLocked(e,m)
       | AtomicOpReturn (loc,op,e,ret,a) ->
-          AtomicOpReturn (expl_expr loc,op,expl_expr e,ret,a)
+          expl_expr loc >> fun loc ->
+          expl_expr e   >! fun e ->
+          AtomicOpReturn (loc,op,e,ret,a)
       | AtomicAddUnless (loc,u,a,rb) ->
-          AtomicAddUnless (expl_expr loc,expl_expr u,expl_expr a,rb)
-      | ExpSRCU (e,a) ->
-          ExpSRCU (expl_expr e,a)
-    in
-    function
-    | Fence _|DeclReg _ as i -> i
-    | Seq (l,b) -> Seq(List.map (expl_instr subs free (ref []) (ref [])) l,b)
-    | If(c,t,e) ->
-       let e = match e with
-         | None -> None
-         | Some e -> Some(expl_instr subs free (ref []) (ref []) e)
-       in
-       If(expl_expr c,expl_instr subs free (ref []) (ref []) t,e)
-    | StoreReg(ot,r,e) -> StoreReg(ot, r, expl_expr e)
-    | StoreMem(l,e,mo) -> StoreMem(expl_loc l, expl_expr e,mo)
-    | Lock (l,k) -> Lock(expl_loc l,k)
-    | Unlock (l,k) -> Unlock(expl_loc l,k)
+          expl_expr loc >> fun loc ->
+          expl_expr u >> fun u ->
+          expl_expr a >! fun a ->
+          AtomicAddUnless (loc,u,a,rb)
+      | ExpSRCU (e,a) -> expl_expr e >! fun e -> ExpSRCU (e,a)
+    in let rec expl_instr =  function
+      | Fence _|DeclReg _ as i -> unitT i
+      | Seq (is,b) ->
+          mapT expl_instr is >! fun is -> Seq (is,b)
+      | If(c,t,e) ->
+          expl_expr c >> fun c ->
+          expl_instr t >> fun t ->
+          optT expl_instr e >! fun e ->
+          If (c,t,e)
+      | StoreReg(ot,r,e) ->
+          conv_reg r >> fun r ->
+          expl_expr e >! fun e ->
+          StoreReg (ot,r,e)
+      | StoreMem(loc,e,mo) ->
+          expl_expr loc >> fun loc ->
+          expl_expr e >! fun e ->
+          StoreMem(loc,e,mo)
+    | Lock (l,k) -> expl_expr l >! fun  l -> Lock(l,k)
+    | Unlock (l,k) -> expl_expr l >! fun l -> Unlock(l,k)
     | Symb s -> find_code s
-    | PCall (f,es) -> PCall (f,List.map expl_expr es)
-    | AtomicOp(e1,op,e2) -> AtomicOp (expl_expr e1,op,expl_expr e2)
-    | InstrSRCU (e,a,oe) -> InstrSRCU (expl_expr e,a,Misc.app_opt expl_expr oe)
+    | PCall (f,es) ->
+        mapT expl_expr es >! fun es ->
+        PCall (f,es)
+    | AtomicOp(e1,op,e2) ->
+        expl_expr e1 >> fun e1 ->
+        expl_expr e2 >! fun e2 ->
+        AtomicOp (e1,op,e2)
+    | InstrSRCU (e,a,oe) ->
+        expl_expr e >> fun e ->
+        optT expl_expr oe >! fun oe ->
+        InstrSRCU (e,a,oe) in
+    expl_instr
 end)
