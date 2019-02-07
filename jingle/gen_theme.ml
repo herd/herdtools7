@@ -16,6 +16,7 @@ open Printf
 open Str
 
 let verbose = ref false
+let includes = ref []
 let map = ref None
 let call = ref None
 let outdir = ref None
@@ -29,8 +30,19 @@ exception Error of string
 
 let () =
   Arg.parse
-    ["-v",Arg.Unit (fun () -> verbose := true),
+    ["-version",
+     Arg.Unit
+       (fun () ->
+         printf "%s, Rev: %s\n" Version_jingle.version Version_jingle.rev ;
+         exit 0),
+     " - show version number and exit" ;
+     "-libdir",
+     Arg.Unit (fun () -> print_endline Version_jingle.libdir; exit 0),
+     " - show installation directory and exit";
+     "-v",Arg.Unit (fun () -> verbose := true),
      "- be verbose";
+     "-I", Arg.String (fun s -> includes := !includes @ [s]),
+     "<dir> - add <dir> to search path";
      "-map",Arg.String (fun s -> map := Some s),
      "<name> - give the map file <name>";
      "-call",Arg.String (fun s -> call := Some s),
@@ -43,27 +55,39 @@ let () =
     (sprintf "Usage: %s [option]* -map <file> -call <file> -n <loops>" prog)
 
 
+let includes = !includes
 let map = !map
 let call = !call
 let verbose = !verbose
 let outdir = !outdir
 let loops = !loops
 
+let libfind =
+  let module ML =
+    MyLib.Make
+      (struct
+        let includes = includes
+        let libdir = Version_jingle.libdir
+      end) in
+  ML.find
+
 let parsed = match map with
 | None -> raise (Error "No map file provided.")
 | Some s ->
-      try Misc.input_protect ParseMap.parse s
-      with ParseMap.Error msg ->
-        eprintf "File \"%s\": %s\n" s msg ;
-        exit 1
+    let s = libfind s in
+    try Misc.input_protect ParseMap.parse s
+    with ParseMap.Error msg ->
+      eprintf "File \"%s\": %s\n" s msg ;
+      exit 1
 
 let parsed_call = match call with
 | None -> raise (Error "No call file provided.")
 | Some s ->
-      try Misc.input_protect CallMap.parse s
-      with CallMap.Error msg ->
-        eprintf "File \"%s\": %s\n" s msg ;
-        exit 1
+    let s = libfind s in
+    try Misc.input_protect CallMap.parse s
+    with CallMap.Error msg ->
+      eprintf "File \"%s\": %s\n" s msg ;
+      exit 1
 
 
 let filter_func f func_env = List.filter (fun (x, _, _) -> Misc.string_eq x f) func_env
