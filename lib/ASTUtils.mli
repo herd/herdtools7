@@ -15,4 +15,4 @@
 (****************************************************************************)
 
 
-val free_body : AST.var list -> AST.exp -> AST.varset
+val free_body : AST.var option list -> AST.exp -> AST.varset

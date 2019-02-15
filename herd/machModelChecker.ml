@@ -156,7 +156,7 @@ module Make
           lazy (MU.pp_procrels None (Lazy.force pr))
         else
           lazy [] in
-      let relevant e = not (E.is_reg_any e || E.is_commit e) in
+      let relevant e = not (E.is_reg_any e) in
       let all_evts =  conc.S.str.E.events in
       let evts = E.EventSet.filter relevant all_evts in
       let po =
@@ -177,7 +177,7 @@ module Make
         I.add_rels
           I.init_env_empty
 
-        ((if O.variant Variant.Success then
+        ((if O.variant Variant.Success || O.variant Variant.Instr then
           fun k ->
             ("instr",lazy begin
               E.EventRel.of_pred all_evts all_evts E.po_eq
@@ -218,6 +218,7 @@ module Make
           (List.map
              (fun (k,p) -> k,lazy (E.EventSet.filter p evts))
           [
+           "C", E.is_commit;
            "R", E.is_mem_load;
            "W", E.is_mem_store;
            "M", E.is_mem;

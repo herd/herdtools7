@@ -16,22 +16,22 @@
 
 (** Syntax tree of model definitions *)
 
-type loc =  { pos:int; len:int;} 
+type loc =  { pos:int; len:int;}
 type pos =  Pos of loc | Txt of string
 
 type set_or_rln = SET | RLN
 
-type op2 = 
+type op2 =
   | Union (** applies to sets or relations *)
-  | Inter (** applies to sets or relations *) 
+  | Inter (** applies to sets or relations *)
   | Diff  (** applies to sets or relations *)
-  | Seq   (** sequential composition of relations *) 
+  | Seq   (** sequential composition of relations *)
   | Cartesian (** build a relation from two sets *)
   | Add   (** add element to a set *)
   | Tuple (** Build a tuple *)
 
 type op1 =
-  | Plus | Star | Opt 
+  | Plus | Star | Opt
   | Comp (** Set or relation complement *)
   | Inv  (** Relation inverse *)
   | ToId (** Lift set to id relation (ie toido(S) = (S * S) & id *)
@@ -61,20 +61,22 @@ type exp =
   | If of TxtLoc.t * cond * exp * exp
 
 and set_clause =
-  | EltRem of string * string * exp
-  | PreEltPost of string * string * string * exp
+  | EltRem of pat0 * pat0 * exp
+  | PreEltPost of pat0 * pat0 * pat0 * exp
 
 
-and pat = Pvar of var | Ptuple of var list
+and pat = Pvar of pat0 | Ptuple of pat0 list
 
-and cond = Eq of exp * exp | Subset of exp * exp
+and pat0 = var option
+
+and cond = Eq of exp * exp | Subset of exp * exp | In of exp * exp
 
 and clause = string * exp
 
 and binding = TxtLoc.t * pat * exp
 
 type do_test = Acyclic | Irreflexive | TestEmpty
-type test = Yes of do_test | No of do_test 
+type test = Yes of do_test | No of do_test
 type test_type = Flagged | UndefinedUnless | Check
 type app_test = TxtLoc.t * pos * test * exp * string option
 type is_rec = IsRec | IsNotRec
@@ -101,6 +103,6 @@ type ins =
 and insclause = string * ins list
 
 
- 
+
 (** Name X model definition *)
 type t = ModelOption.t * string * ins list

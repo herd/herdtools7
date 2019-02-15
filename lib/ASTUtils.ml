@@ -17,9 +17,13 @@
 open AST
 
 (* Free variables *)
+let bound_var = function
+  | None -> StringSet.empty
+  | Some x ->  StringSet.singleton x
+
 let bound_pat = function
-  | Pvar x -> StringSet.singleton x
-  | Ptuple xs -> StringSet.of_list xs
+  | Pvar x -> bound_var x
+  | Ptuple xs -> StringSet.unions (List.map bound_var xs)
 
 let bound_bds bds =
   StringSet.unions
@@ -62,15 +66,21 @@ let rec free = function
       StringSet.union (free_cond cond)
         (StringSet.union (free ifso) (free ifnot))
 
+and remove_pat0 x = match x with
+| None -> Misc.identity
+| Some x ->  StringSet.remove x
+
 and free_cl = function
   | EltRem (x,xs,e) ->
-      StringSet.remove x (StringSet.remove xs (free e))
+      remove_pat0 x (remove_pat0 xs (free e))
   | PreEltPost (xs1,x,xs2,e) ->
-      StringSet.diff (free e) (StringSet.of_list [xs1;x;xs2])
+      remove_pat0 xs1 (remove_pat0 x (remove_pat0 xs2 (free e)))
 
 and free_cond c = match c with
-| Eq (e1,e2) -> StringSet.union (free e1) (free e2)
-| Subset (e1,e2) -> StringSet.union (free e1) (free e2)
+| Eq (e1,e2)
+| Subset (e1,e2)
+| In (e1,e2)
+  -> StringSet.union (free e1) (free e2)
 
 and frees es = StringSet.unions (List.map free es)
 
@@ -79,4 +89,7 @@ and bindings bds = StringSet.unions (List.map (fun (_,_,e) -> free e) bds)
 and clauses bds = StringSet.unions (List.map (fun (_,e) -> free e) bds)
 
 let free_body xs e =
-  StringSet.diff (free e) (StringSet.of_list xs)
+  List.fold_left
+    (fun r p0 -> remove_pat0 p0 r)
+    (free e)
+    xs

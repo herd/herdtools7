@@ -1,4 +1,3 @@
-
 %{
 (****************************************************************************)
 (*                           the diy toolsuite                              *)
@@ -42,7 +41,11 @@ let pp () =
   let len = fin - pos in
   Pos {pos;len}
 
+let tuple_pat = function
+  | [p] -> Pvar p
+  | ps  -> Ptuple ps
 %}
+
 %token EOF
 %token <string> VAR
 %token <string> TAG
@@ -122,6 +125,9 @@ topins:
 | ENUM VAR EQUAL altopt alttags { Enum (mk_loc (),$2,$5) }
 | ins { $1 }
 
+pat0:
+| UNDERSCORE { None }
+| VAR        { Some $1 }
 
 ins:
 | LET pat_bind_list in_opt { Let (mk_loc (),$2) }
@@ -133,19 +139,18 @@ ins:
      InsMatch (mk_loc(),$2,cls,d)
     }
 | deftest { $1 }
-| SHOW exp AS VAR { ShowAs (mk_loc(),$2, $4) }
+| SHOW base AS VAR { ShowAs (mk_loc(),$2, $4) }
 | SHOW var_list { Show (mk_loc(),$2) }
 | UNSHOW var_list { UnShow (mk_loc(),$2) }
 | LATEX { Latex (mk_loc(),$1) }
 | INCLUDE STRING { Include (mk_loc(),$2) }
 | PROCEDURE VAR LPAR formals RPAR EQUAL ins_list END
-   { Procedure (mk_loc (),$2,Ptuple $4,$7,IsNotRec) }
-| PROCEDURE VAR VAR EQUAL ins_list END
+   { Procedure (mk_loc (),$2,tuple_pat $4,$7,IsNotRec) }
+| PROCEDURE VAR pat0 EQUAL ins_list END
    { Procedure (mk_loc (),$2,Pvar $3,$5,IsNotRec) }
-
 | PROCEDURE REC VAR LPAR formals RPAR EQUAL ins_list END
-   { Procedure (mk_loc (),$3,Ptuple $5,$8,IsRec) }
-| PROCEDURE REC VAR VAR EQUAL ins_list END
+   { Procedure (mk_loc (),$3,tuple_pat $5,$8,IsRec) }
+| PROCEDURE REC VAR pat0 EQUAL ins_list END
    { Procedure (mk_loc (),$3,Pvar $4,$6,IsRec) }
 
 | CALL VAR simple optional_name { Call (mk_loc (),$2,$3,$4) }
@@ -157,8 +162,8 @@ ins:
 
 
 //Bell file declarations
-| INSTRUCTIONS VAR LBRAC exp_list RBRAC  {Events(mk_loc(),$2,$4,false)}
-| DEFAULT VAR LBRAC exp_list RBRAC  {Events(mk_loc(),$2,$4,true)}
+| INSTRUCTIONS VAR LBRAC args RBRAC  {Events(mk_loc(),$2,$4,false)}
+| DEFAULT VAR LBRAC args RBRAC  {Events(mk_loc(),$2,$4,true)}
 
 
 altopt:
@@ -196,21 +201,18 @@ test:
 
 var_list:
 | VAR { [$1] }
-| VAR comma_opt var_list { $1 :: $3 }
-
-comma_opt:
-/* |       { () } */
-| COMMA { () }
+| VAR COMMA var_list { $1 :: $3 }
 
 bind:
-| VAR EQUAL exp { (mk_loc (),Pvar $1,$3) }
-| LPAR formals RPAR EQUAL exp { (mk_loc (),Ptuple $2,$5) }
+| LPAR formals RPAR EQUAL exp { (mk_loc (),tuple_pat $2,$5) }
+| formalsN EQUAL exp { (mk_loc (),tuple_pat $1,$3) }
+
 pat_bind:
 | bind { $1 }
-| VAR VAR EQUAL exp
-   { (mk_loc (),Pvar $1,Fun (mk_loc(),Pvar $2,$4,$1,ASTUtils.free_body [$2] $4)) }
+| VAR pat0 EQUAL exp
+   { (mk_loc (),Pvar (Some $1),Fun (mk_loc(),Pvar $2,$4,$1,ASTUtils.free_body [$2] $4)) }
 | VAR LPAR formals RPAR EQUAL exp
-   { (mk_loc(),Pvar $1,Fun (mk_loc(),Ptuple $3,$6,$1,ASTUtils.free_body $3 $6)) }
+   { (mk_loc(),Pvar (Some $1),Fun (mk_loc(),tuple_pat $3,$6,$1,ASTUtils.free_body $3 $6)) }
 
 pat_bind_list:
 | pat_bind { [$1] }
@@ -222,24 +224,16 @@ formals:
 | formalsN { $1 }
 
 formalsN:
-| VAR                { [$1] }
-| VAR COMMA formalsN { $1 :: $3 }
-
-exp_list:
-| { [] }
-| exp_listN { $1 }
-
-exp_listN:
-| exp {[$1]}
-| exp COMMA exp_listN { $1 :: $3}
+| pat0                { [$1] }
+| pat0 COMMA formalsN { $1 :: $3 }
 
 exp:
 | LET pat_bind_list IN exp { Bind (mk_loc(),$2,$4) }
 | LET REC pat_bind_list IN exp { BindRec (mk_loc(),$3,$5) }
-| FUN VAR ARROW exp
+| FUN pat0 ARROW exp
     { Fun (mk_loc(),Pvar $2,$4,"*fun*",ASTUtils.free_body [$2] $4) }
 | FUN LPAR formals RPAR ARROW exp
-    { Fun (mk_loc(),Ptuple $3,$6,"*fun*",ASTUtils.free_body $3 $6) }
+    { Fun (mk_loc(),tuple_pat $3,$6,"*fun*",ASTUtils.free_body $3 $6) }
 | TRY exp WITH exp
     { Try (mk_loc(),$2,$4) }
 | IF cond THEN exp ELSE exp
@@ -254,11 +248,12 @@ exp:
      let e,f = $5 in
      MatchSet (mk_loc (),$2,e,f)
    }
-| base { $1 }
+| baseortuple { $1 }
 
 cond:
 | exp EQUAL exp  { Eq ($1,$3) }
 | exp SUBSET exp { Subset ($1,$3) }
+| exp IN exp     { In ($1,$3) }
 
 simple:
 | EMPTY { Konst (mk_loc(),Empty RLN) }
@@ -266,17 +261,16 @@ simple:
 | LACC args RACC { ExplicitSet (mk_loc (),$2) }
 | UNDERSCORE  { Konst (mk_loc(),Universe SET) }
 | LPAR RPAR { Op (mk_loc (),Tuple,[]) }
-| LPAR tupleargs RPAR { Op (mk_loc (),Tuple,$2) }
 | LPAR exp RPAR { $2 }
 | BEGIN exp END { $2 }
 | LBRAC exp RBRAC { Op1 (mk_loc(),ToId,$2) }
- 
+
 tupleargs:
-| exp COMMA tupleend { $1 :: $3 }
+| base COMMA tupleend { $1 :: $3 }
 
 tupleend:
-| exp { [$1] }
-| exp COMMA tupleend { $1 :: $3 }
+| base { [$1] }
+| base COMMA tupleend { $1 :: $3 }
 
 base:
 | simple { $1 }
@@ -293,14 +287,18 @@ base:
 | base INTER base {  Op (mk_loc (),Inter, [$1; $3;]) }
 | COMP base { Op1 (mk_loc(),Comp, $2) }
 
+baseortuple:
+| base { $1 }
+| tupleargs { Op (mk_loc (),Tuple,$1) }
+
 empty_clause:
 | LACC RACC ARROW exp { $4 }
 
 element_clause2:
-| VAR PLUSPLUS VAR ARROW exp { EltRem ($1, $3, $5) }
+| pat0 PLUSPLUS pat0 ARROW exp { EltRem ($1, $3, $5) }
 
 element_clause3:
-| VAR UNION VAR PLUSPLUS VAR ARROW exp { PreEltPost ($1,$3,$5,$7) }
+| pat0 UNION pat0 PLUSPLUS pat0 ARROW exp { PreEltPost ($1,$3,$5,$7) }
 
 element_clause:
 | element_clause2 { $1 }
@@ -337,7 +335,5 @@ args:
 | argsN { $1 }
 
 argsN:
-| exp            { [ $1 ] }
-| exp COMMA argsN { $1 :: $3 }
-
-
+| base            { [ $1 ] }
+| base COMMA argsN { $1 :: $3 }

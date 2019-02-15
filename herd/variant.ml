@@ -16,6 +16,7 @@
 
 type t =
   | Success     (* Riscv Model with explicit success dependency *)
+  | Instr
   | SpecialX0   (* Some events by AMO to or from x0 are not generated *)
   | NoRMW
 (* Riscv: Expand load acquire and store release as fences *)
@@ -28,12 +29,13 @@ type t =
   | LrScDiffOk      (* Lr/Sc paired to <> addresses may succeed (!) *)
   | Mixed
 let tags =
-  ["success";"specialx0";"normw";"acqrelasfence";"backcompat";
+  ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
    "fullscdepend";"splittedrmw";"switchdepscwrite";"lrscdiffok";
    "mixed"; ]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
+| "instr" -> Some Instr
 | "specialx0"|"amox0"|"x0" -> Some SpecialX0
 | "normw" -> Some NoRMW
 | "acqrelasfence" -> Some AcqRelAsFence
@@ -47,6 +49,7 @@ let parse s = match Misc.lowercase s with
 
 let pp = function
   | Success -> "success"
+  | Instr -> "instr"
   | SpecialX0 -> "specialx0"
   | NoRMW -> "normw"
   | AcqRelAsFence -> "acqrelasfence"

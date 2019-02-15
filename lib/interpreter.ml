@@ -438,15 +438,22 @@ module Make
       | Pvar _ -> V.Empty
       | Ptuple xs -> V.Tuple (List.map (fun _ -> V.Empty) xs)
 
+    let bdvar = function
+      | None -> StringSet.empty
+      | Some x -> StringSet.singleton x
+
     let bdvars (_,pat,_) = match pat with
-    | Pvar x -> StringSet.singleton x
-    | Ptuple xs -> StringSet.of_list xs
+    | Pvar x -> bdvar x
+    | Ptuple xs -> StringSet.unions (List.map bdvar xs)
 
 
 (* Add values to env *)
-    let add_val k v env =
+    let do_add_val k v env =
       { env with vals = StringMap.add k v env.vals; }
 
+    let add_val k v env = match k with
+    | None -> env
+    | Some k -> do_add_val k v env
 
     let add_pat_val silent loc pat v env = match pat with
     | Pvar k -> add_val k v env
@@ -659,8 +666,8 @@ module Make
         | ValSet (_,v),ValSet (_,w) ->
             ValSet.subset w v && stabilised vs ws
         | _,_ ->
+            eprintf "Problem %s vs. %s\n" (pp_val v) (pp_val w) ;
             raise (Stabilised (type_val w))
-
       end
       | _,_ -> assert false in
       stabilised
@@ -1366,11 +1373,34 @@ module Make
                 if O.debug then warn loc "caught failure" ;
                 eval env e2
             end
-        | If (_loc,cond,ifso,ifnot) ->
-            if eval_cond _loc env cond then eval env ifso
+        | If (loc,cond,ifso,ifnot) ->
+            if eval_cond loc env cond then eval env ifso
             else eval env ifnot
 
       and eval_cond loc env c = match c with
+      | In (e1,e2) ->
+          let loc1,v1 = eval_loc env e1 in
+          begin match v1 with
+          | Event e ->
+              let v2 = eval_events env e2 in
+              E.EventSet.mem e v2
+          | Pair p ->
+              let v2 = eval_rel env e2 in
+              E.EventRel.mem p v2
+          | Tuple [Event ev1;Event ev2;] ->
+              let v2 = eval_rel env e2 in
+              E.EventRel.mem (ev1,ev2) v2
+          | _ ->
+              begin match eval_loc env e2 with
+              | _,ValSet (t2,vs) ->
+                  let t1 = V.type_val v1 in
+                  if type_equal t1 t2 then ValSet.mem v1 vs
+                  else
+                    error_typ env.EV.silent loc1 t2 t1
+              | loc2,v2 ->
+                  error env.EV.silent loc2 "set expected, found %s" (pp_typ (type_val v2))
+              end
+          end
       | Eq (e1,e2) ->
           let v1 = eval env e1
           and v2 = eval env e2 in
@@ -1534,7 +1564,11 @@ module Make
         List.iter
           (fun (_,clo,fvs) ->
             clo.clo_env <-
-              add_funs (fun x -> StringSet.mem x fvs) clo.clo_env)
+              add_funs
+                (fun x -> match x with
+                | None -> false
+                | Some x -> StringSet.mem x fvs)
+                clo.clo_env)
           clos ;
         add_funs (fun _ -> true) env
 
@@ -1553,6 +1587,9 @@ module Make
                   | Unv -> Lazy.force env_bd.EV.ks.unv
                   | Rel r -> r
                   | _ -> raise Exit in
+                  let x = match x with
+                  | Some x -> x
+                  | None -> "_" in
                   (x, rt_loc x v)::k
                 with Exit -> k in
               let rec pp_ids xs vs k = match xs,vs with
@@ -1742,7 +1779,7 @@ module Make
           fun bds st ->
             List.fold_left
               (fun st (_,pat,e) -> match pat with
-              | Pvar v ->
+              | Pvar (Some v) ->
                   if v = BellName.wider then
                     let loc = get_loc e in
                     fun_as_rel Misc.identity loc st BellName.scopes v
@@ -1750,6 +1787,7 @@ module Make
                     let loc = get_loc e in
                     fun_as_rel StringRel.inverse loc st BellName.scopes v
                   else st
+              | Pvar None -> st
               | Ptuple _ -> st)
               st bds
         else fun _bds st -> st in
@@ -1941,7 +1979,7 @@ module Make
         | Procedure (_,name,args,body,is_rec) ->
           let p =  { proc_args=args; proc_env=st.env; proc_body=body; } in
           let proc = Proc p in
-          let env_plus_p = add_val name (lazy proc) st.env in
+          let env_plus_p = do_add_val name (lazy proc) st.env in
           begin match is_rec with
           | IsRec -> p.proc_env <- env_plus_p
           | IsNotRec -> () end ;
@@ -2003,7 +2041,7 @@ module Make
                     ValSet.empty xs in
                 V.ValSet (TTag name,vs)
               end in
-            let env = add_val name alltags env in
+            let env = do_add_val name alltags env in
             if O.debug && O.verbose > 1 then
               warn loc "adding set of all tags for %s" name ;
             let env = { env with tags; enums; } in
@@ -2024,7 +2062,7 @@ module Make
                     let v =
                       try ValSet.choose vs
                       with Not_found -> assert false in
-                    let env = add_val x (lazy v) env0 in
+                    let env = do_add_val x (lazy v) env0 in
                     run { st with env;} body kfail
                       (fun st res ->
                         run_set { st with env=env0;} (ValSet.remove v vs) res)
@@ -2043,7 +2081,7 @@ module Make
             | ValSet (_,vs) ->
                 ValSet.fold
                   (fun v res ->
-                    let env = add_val x (lazy v) env0 in
+                    let env = do_add_val x (lazy v) env0 in
                     kont (doshowone x {st with env;}) res)
                   vs res
             | _ -> error st.silent (get_loc e) "set expected"
