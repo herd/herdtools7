@@ -44,6 +44,7 @@ rule token = parse
 | ':' { COLON }
 | '(' { LPAR }
 | ')' { RPAR }
+| "codevar:" (name as x) { CODEVAR x }
 | "addi" { ADDI }
 | "subi" { SUBI }
 | "add"  { ADD }
