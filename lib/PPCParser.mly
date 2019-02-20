@@ -23,6 +23,7 @@ open MachSize
 %token EOF
 %token <PPCBase.reg> ARCH_REG
 %token <string> SYMB_REG
+%token <string> CODEVAR
 %token <int> NUM
 %token <string> NAME
 %token <string> CSTVAR
@@ -89,6 +90,7 @@ instr_option_seq :
 instr_option :
 |            { Nop }
 | NAME COLON instr_option { Label ($1,$3) }
+| CODEVAR    { Symbolic $1 }
 | NAME LPAR reg_list RPAR
              { Macro ($1,$3) }
 | instr      { Instruction $1}
