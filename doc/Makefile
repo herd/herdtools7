@@ -238,7 +238,7 @@ clean::
 	/bin/rm -f tst-ppc.tar tst-x86.tar tst-arm.tar tst-co.tar
 
 #version
-version.tex: ../opam
+version.tex: ../herdtools7.opam
 	/bin/echo '\def\version{'`grep "^version:" ../opam | cut -d ":" -f 2 | cut -d '"' -f 2`'}' > $@
 
 clean::
