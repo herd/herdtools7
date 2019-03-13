@@ -27,6 +27,8 @@ type t =
   | SwitchDepScWrite    (* Switch dependency on sc mem write, riscv *)
   | LrScDiffOk      (* Lr/Sc paired to <> addresses may succeed (!) *)
   | Mixed           (* Mixed-Size *)
+  | WeakPredicated (* "Weak" predicated instructions, not performing non-selected events, aarch64 *)
+
 val compare : t -> t -> int
 val tags : string list
 val parse : string -> t option

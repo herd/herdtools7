@@ -134,6 +134,13 @@ module Make (C:Sem.Config)(V:Value.S)
     let is_zero v = M.op Op.Eq v V.zero
     let is_not_zero v = M.op Op.Ne v V.zero
 
+    let csel_op op v =
+      let open AArch64Base in  match op with
+      | Cpy -> M.unitT v
+      | Inc -> M.op Op.Add v V.one
+      | Neg -> M.op Op.Sub V.zero v
+      | Inv ->
+          Warn.fatal "size dependent inverse not implemented"
 
     let atomic_pair_allowed _ _ = true
 
@@ -385,20 +392,20 @@ module Make (C:Sem.Config)(V:Value.S)
           let cond = match c with
           | NE -> is_not_zero
           | EQ -> is_zero in
-          (read_reg_ord NZP ii)
-            >>= cond
-            >>= fun v ->
+          if C.variant Variant.WeakPredicated then
+            read_reg_ord NZP ii >>= cond >>= fun v ->
               M.choiceT v
                 (read_reg_data sz r2 ii >>= fun v -> write_reg r1 v ii)
                 (read_reg_data sz r3 ii >>=
-                 fun v ->
-                   let mop = match op with
-                   | Cpy -> M.unitT v
-                   | Inc -> M.op Op.Add v V.one
-                   | Neg -> M.op Op.Sub V.zero v
-                   | Inv ->
-                       Warn.fatal "size dependent inverse not implemented" in
-                   mop >>= mask32 var (fun v ->  write_reg r1 v ii))
+                csel_op op >>= mask32 var (fun v ->  write_reg r1 v ii))
+                >>! B.Next
+          else
+            begin
+             (read_reg_ord NZP ii >>= cond) >>|  read_reg_data sz r2 ii >>| read_reg_data sz r3 ii
+            end >>= fun ((v,v2),v3) ->
+              M.choiceT v
+                (write_reg r1 v2 ii)
+                (csel_op op v3 >>= mask32 var (fun v ->  write_reg r1 v ii))
                 >>! B.Next
 (* Swap *)
       | I_SWP (v,rmw,r1,r2,r3) -> swp (tr_variant v) rmw r1 r2 r3 ii >>! B.Next

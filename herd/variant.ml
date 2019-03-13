@@ -28,10 +28,11 @@ type t =
   | SwitchDepScWrite  (* Switch dependency on sc mem write, riscv, aarch64 *)
   | LrScDiffOk      (* Lr/Sc paired to <> addresses may succeed (!) *)
   | Mixed
+  | WeakPredicated (* "Weak" predicated instructions, not performing non-selected events, aarch64 *)
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
    "fullscdepend";"splittedrmw";"switchdepscwrite";"lrscdiffok";
-   "mixed"; ]
+   "mixed";"weakpredicated" ]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -45,6 +46,7 @@ let parse s = match Misc.lowercase s with
 | "switchdepscwrite" -> Some  SwitchDepScWrite
 | "lrscdiffok" -> Some  LrScDiffOk
 | "mixed" -> Some Mixed
+| "weakpredicated"|"weakpred" -> Some WeakPredicated
 | _ -> None
 
 let pp = function
@@ -59,6 +61,7 @@ let pp = function
   | SwitchDepScWrite -> "SwitchDepScWrite"
   | LrScDiffOk -> " LrScDiffOk"
   | Mixed -> "mixed"
+  | WeakPredicated -> "WeakPredicated"
 
 let compare = Pervasives.compare
 
