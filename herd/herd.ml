@@ -129,6 +129,8 @@ let load_config s =
       end) in
   LexConf_herd.lex (ML.find s)
 
+let pp_default_model a = sprintf "%s=%s" (Archs.pp a) (Model.pp (Model.get_default_model a))
+
 let gen_model_opt s =
   parse_tag
     s
@@ -136,10 +138,12 @@ let gen_model_opt s =
     | None -> false
     | Some _ as m -> model :=  m ; true)
     Model.tags
-    (sprintf " select model, defaults X86=%s, PPC=%s, ARM=%s"
-       (Model.pp (Model.get_default_model x86))
-       (Model.pp (Model.get_default_model ppc))
-       (Model.pp (Model.get_default_model arm)))
+    (sprintf " select model, defaults %s, %s, %s, %s, %s"
+       (pp_default_model x86)
+       (pp_default_model ppc)
+       (pp_default_model arm)
+       (pp_default_model aarch64)
+       (pp_default_model Archs.c))
 
 let options = [
 (* Basic *)
