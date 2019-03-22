@@ -37,7 +37,9 @@ let try_open dir name =
   try rname,open_in rname
   with _ -> raise Exit
 
-let envlib = try Some (Sys.getenv "LITMUSDIR") with Not_found -> None
+let envlib =
+  try Some (Sys.getenv "LITMUSDIR") with Not_found ->
+  try Some (Sys.getenv "LITMUSLIB") with Not_found -> None
 
 let open_lib name =
   try try_open "." name

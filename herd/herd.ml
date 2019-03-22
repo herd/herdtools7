@@ -60,7 +60,7 @@ let parse_int_opt opt v msg =
   Arg.String
     (fun tag -> match tag with
     | "none" -> v := None
-    | _ -> 
+    | _ ->
         try v := Some (int_of_string tag)
         with _ -> badarg opt tag "integer"),
   sprintf "<int|none> %s" msg
@@ -77,7 +77,7 @@ let parse_float_opt opt v msg =
     | "none" -> v := None
     | _ ->
         try v := Some (float_of_string tag)
-        with _ -> badarg tag opt "float"   ),                
+        with _ -> badarg tag opt "float"   ),
   sprintf "<float|none> %s" msg
 
 let parse_pos opt v msg =
@@ -120,14 +120,8 @@ let parse_stringset opt v msg =
 
 
 (* Option list *)
-let load_config s =
-  let module ML =
-    MyLib.Make
-      (struct
-        let includes = !includes
-        let libdir = Version_herd.libdir
-      end) in
-  LexConf_herd.lex (ML.find s)
+
+let load_config s = LexConf_herd.lex (Opts.libfind !includes s)
 
 let pp_default_model a = sprintf "%s=%s" (Archs.pp a) (Model.pp (Model.get_default_model a))
 
@@ -149,7 +143,7 @@ let options = [
 (* Basic *)
   ("-version", Arg.Unit
      (fun () -> printf "%s, Rev: %s\n" Version_herd.version Version_herd.rev ; exit 0),
-   " show version number and exit") ;   
+   " show version number and exit") ;
   ("-libdir", Arg.Unit (fun () -> print_endline Version_herd.libdir; exit 0),
     " show installation directory and exit");
   ("-v", Arg.Unit (fun _ -> incr verbose),
@@ -240,7 +234,7 @@ let options = [
     | Some t -> show := t ; true)
     PrettyConf.tags_show
     (sprintf "executions shown in figure, default %s"
-       (PrettyConf.pp_show !show)) ;  
+       (PrettyConf.pp_show !show)) ;
   "-showflag",
   Arg.String  (fun flag -> show := PrettyConf.ShowFlag flag),
   "<string>  show executions flagged by string in figure" ;
@@ -400,7 +394,7 @@ let options = [
     Arg.String  (fun s -> conds := !conds @ [s]),
     "<name> specify conditoins of tests (can be repeated)");
 (* Undocumented *)
-  parse_bool "-auto" auto 
+  parse_bool "-auto" auto
   "produce output suitable for the dont tool";
   parse_bool "-candidates" candidates
   "show complete candidate count in output" ;
@@ -434,14 +428,8 @@ let () =
   | Misc.Fatal msg -> eprintf "%s: %s\n" prog msg ; exit 2
 
 (* Read generic model, if any *)
-let libfind =
-  let module ML =
-    MyLib.Make
-      (struct
-        let includes = !includes
-        let libdir = Version_herd.libdir
-      end) in
-  ML.find
+
+let libfind = libfind !includes
 
 module ParserConfig = struct
   let debug = !debug.Debug_herd.lexer
@@ -479,7 +467,7 @@ module Check =
 (* Read kinds/conds files *)
 module LR = LexRename.Make(Verbose)
 
-let kinds = LR.read_from_files !kinds ConstrGen.parse_kind 
+let kinds = LR.read_from_files !kinds ConstrGen.parse_kind
 
 let conds = LR.read_from_files !conds (fun s -> Some s)
 
@@ -499,7 +487,7 @@ let () =
     let cycles = !cycles
     let outcomereads = !outcomereads
     let show = !show
-    let badexecs = !badexecs 
+    let badexecs = !badexecs
     let badflag = !badflag
     let throughflag = !throughflag
 
@@ -653,7 +641,7 @@ let () =
             Warn.warn_always "%a: %s (User error)" Pos.pp_pos0 name msg ;
              check_exit seen
         | e ->
-	    Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
-	    raise e)
+            Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
+            raise e)
       tests StringMap.empty in
   exit 0

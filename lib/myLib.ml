@@ -18,6 +18,7 @@
 
 module type Config = sig
   val includes : string list
+  val env : string option
   val libdir : string
 end
 
@@ -35,7 +36,10 @@ module Make =
         try try_open dir name
         with Exit -> try_opens dirs name
 
-    let envlib = try Some (Sys.getenv "HERDLIB") with Not_found -> None
+    let envlib = match C.env with
+    | None -> None
+    | Some v ->
+        try Some (Sys.getenv v) with Not_found -> None
 
 
     let open_lib name =

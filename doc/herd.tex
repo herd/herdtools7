@@ -1655,6 +1655,8 @@ We describe the more useful ones:
 \begin{description}
 \item[{\tt -version}] Show version number and exit.
 \item[{\tt -libdir}] Show installation directory and exit.
+\item[{\tt -I <name>}] Add directory~\opt{name} at the end of
+\prog{herd} \ahrefloc{herd:searchpath}{search path}.
 \item[{\tt -v}] Be verbose, can be repeated to increase verbosity.
 \item[{\tt -q}] Be quiet, suppress any diagnostic message.
 \item[{\tt -conf <name>}] Read configuration file~\opt{name}.
@@ -1714,16 +1716,17 @@ In fact, \herd{} accepts potentially infinitely many models,
 as models can given in text files in an adhoc language described in
 Sec.~\ref{herd:language}.
 The \herd{} distribution includes several such models:
-\afile{herd.cat}, \afile{minimal.cat}, \afile{uniproc.cat}
-and \afile{x86tso.cat} are
-text file versions of the homonymous internal models, but may
+\afile{minimal.cat} and \afile{uniproc.cat}
+are the text file versions of the homonymous internal models, but may
 produce pictures that show different relations.
+The \herd{} distribution also includes models for a variety of architectures
+and several models for the C~language.
 Model files are searched according to  the same
 \ahrefloc{herd:searchpath}{rules}
 as configuration files.
 Some architectures have a default model:
 \opt{arm.cat} model for ARM, \opt{ppc.cat} model for PPC,
-\opt{x86tso.cat} for X86, and \opt{mips-pso.cat} for MIPS.
+\opt{x86tso.cat} for X86, and \opt{aarch64.cat} for AArch64 (ARMv8).
 
 \item[{\tt -through (all|invalid|none)}]
 Let additional executions reach the final stage of \herd{} engine.
@@ -2055,8 +2058,9 @@ of \ltest{IRIW+syncs} as we would otherwise have no image.
 
 \subsection{\label{herd:searchpath}File searching}
 Configuration and model files are searched first in the current directory;
+then in the search path;
 then in any directory specified
-by setting the shell environment variable \texttt{HERDDIR};
+by setting the shell environment variable \texttt{HERDLIB};
 and then in herd installation directory, which is defined
 while compiling~\herd.
 

@@ -17,6 +17,7 @@
 (** Open my files *)
 module type Config = sig
   val includes : string list
+  val env : string option
   val libdir : string
 end
 

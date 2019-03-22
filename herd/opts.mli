@@ -129,3 +129,4 @@ module PP : sig
   val labelinit : bool ref
 end
 
+val libfind : string list -> string -> string

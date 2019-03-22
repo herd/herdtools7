@@ -121,6 +121,7 @@ and opt = parse
       MyLib.Make
         (struct
           let includes = !includes
+          let env = Some "HERDLIB"
           let libdir = Version_herd.libdir
         end) in
       dolex main (ML.find arg) }

@@ -161,6 +161,7 @@ let libfind =
     MyLib.Make
       (struct
         let includes = includes
+        let env = None
         let libdir = Version_jingle.libdir
       end) in
   ML.find

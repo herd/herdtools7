@@ -45,8 +45,9 @@ let bi = match O.bell with
           let module ML =
             MyLib.Make
               (struct
-               let includes = []
-               let libdir = O.libdir
+                let includes = []
+                let env = None
+                let libdir = O.libdir
               end) in
           ML.find
         let compat = false

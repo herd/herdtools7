@@ -139,3 +139,14 @@ module PP = struct
   let labelinit = ref true
 end
 
+(* Load file from library, list of includes to add to search paths given *)
+
+let libfind includes =
+  let module ML =
+    MyLib.Make
+      (struct
+        let includes = includes
+        let env = Some "HERDLIB"
+        let libdir = Version_herd.libdir
+      end) in
+  ML.find
