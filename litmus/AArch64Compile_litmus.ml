@@ -50,6 +50,7 @@ module Make(V:Constant.S)(C:Config) =
     let add_type t rs = List.map (fun r -> r,t) rs
     let add_w = add_type word
     let add_q = add_type quad
+
 (************************)
 (* Template compilation *)
 (************************)
@@ -377,7 +378,14 @@ module Make(V:Constant.S)(C:Config) =
         sprintf
           (match v with | V32 ->  "mov ^wo0,#%i" | V64 ->  "mov ^o0,#%i")
           k in
-      { empty_ins with memo; outputs=[r;]; reg_env = ((match v with V32 -> add_w | V64 -> add_q) [r;])}
+      { empty_ins with memo; outputs=[r;];
+        reg_env = ((match v with V32 -> add_w | V64 -> add_q) [r;])}
+
+    let adr tr_lab r lbl =
+      let r,f = arg1 "xzr" (fun s -> "^o"^s) r in
+      { empty_ins with
+        memo = sprintf "adr %s,%s" f (A.Out.dump_label (tr_lab lbl));
+        outputs=r; reg_env=add_type voidstar r; }
 
     let movr v r1 r2 = match v with
     | V32 ->
@@ -505,6 +513,7 @@ module Make(V:Constant.S)(C:Config) =
 (* Arithmetic *)
     | I_MOV (v,r,K i) ->  movk v r i::k
     | I_MOV (v,r1,RV (_,r2)) ->  movr v r1 r2::k
+    | I_ADDR (r,lbl) -> adr tr_lab r lbl::k
     | I_SXTW (r1,r2) -> sxtw r1 r2::k
     | I_OP3 (v,SUBS,ZR,r,K i) ->  cmpk v r i::k
     | I_OP3 (v,SUBS,ZR,r2,RV (v3,r3)) when v=v3->  cmp v r2 r3::k

@@ -345,6 +345,8 @@ module Make (C:Sem.Config)(V:Value.S)
           let sz = tr_variant var in
           read_reg_ord_sz sz r2 ii >>= fun v -> write_reg r1 v ii >>! B.Next
 
+      | I_ADDR (r,lbl) ->
+          write_reg r (V.nameToV lbl) ii >>! B.Next
       | I_SXTW(rd,rs) ->
           let m = V.op1 (Op.LeftShift 31) V.one in
           (read_reg_ord_sz MachSize.Word rs ii) >>=
@@ -383,7 +385,7 @@ module Make (C:Sem.Config)(V:Value.S)
             | ADD|EOR|ORR|AND|SUB -> M.unitT ())) in
           mask32 ty m) >>!
           B.Next
-            (* Barrier *)
+      (* Barrier *)
       | I_FENCE b ->
           (create_barrier b ii) >>! B.Next
             (* Conditional selection *)

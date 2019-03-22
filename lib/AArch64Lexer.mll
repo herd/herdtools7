@@ -168,6 +168,7 @@ let check_name name = match name with
 (* Operations *)
 | "sxtw"|"SXTW" -> SXTW
 | "mov"|"MOV" -> MOV
+| "adr"|"ADR" -> ADR
 | "add"|"ADD" -> OP A.ADD
 | "adds"|"ADDS" -> OP A.ADDS
 | "eor"|"EOR" -> OP A.EOR

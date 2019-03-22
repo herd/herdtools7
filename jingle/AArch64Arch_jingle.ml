@@ -106,6 +106,10 @@ include Arch.MakeArch(struct
         conv_reg r >> fun r ->
         expl_kr kr >! fun kr ->
         I_MOV(a,r,kr)
+    | I_ADDR (r,lbl) ->
+        conv_reg r >> fun r ->
+        find_lab lbl >! fun lbl ->
+        I_ADDR (r,lbl)
     | I_LDAR(a,b,r1,r2) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >! fun r2 ->

@@ -324,6 +324,7 @@ type 'k kinstruction =
   | I_MOV of variant * reg * 'k kr
   | I_SXTW of reg * reg
   | I_OP3 of variant * op * reg * reg * 'k kr
+  | I_ADDR of reg * lbl
 (* Barrier *)
   | I_FENCE of barrier
 (* Conditional select *)
@@ -490,6 +491,8 @@ let do_pp_instruction m =
       pp_rri (pp_op op) v r1 r2 k
   | I_OP3 (v,op,r1,r2,kr) ->
       pp_rrkr (pp_op op) v r1 r2 kr
+  | I_ADDR (r,lbl) ->
+      sprintf "ADDR %s,%s" (pp_xreg r) (pp_label lbl)
 (* Barrier *)
   | I_FENCE b ->
       pp_barrier b
@@ -525,7 +528,7 @@ let fold_regs (f_regs,f_sregs) =
   fun c ins -> match ins with
   | I_B _ | I_BC _ | I_FENCE _
     -> c
-  | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_MOV (_,r,_)
+  | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_MOV (_,r,_) | I_ADDR (r,_)
     -> fold_reg r c
   | I_LDAR (_,_,r1,r2) | I_STLR (_,r1,r2) | I_STLRBH (_,r1,r2)
   | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2)
@@ -623,6 +626,8 @@ let map_regs f_reg f_symb =
       I_SXTW (map_reg r1,map_reg r2)
   | I_OP3 (v,op,r1,r2,kr) ->
       I_OP3 (v,op,map_reg r1,map_reg r2,map_kr kr)
+  | I_ADDR (r,lbl) ->
+      I_ADDR (map_reg r,lbl)
 (* Conditinal select *)
   | I_CSEL (v,r1,r2,r3,c,op) ->
       I_CSEL (v,map_reg r1,map_reg r2,map_reg r3,c,op)
@@ -669,6 +674,7 @@ let get_next = function
   | I_LDOPBH _
   | I_STOP _
   | I_STOPBH _
+  | I_ADDR _
     -> [Label.Next;]
 
 include Pseudo.Make
@@ -704,6 +710,7 @@ include Pseudo.Make
         | I_LDOPBH _
         | I_STOP _
         | I_STOPBH _
+        | I_ADDR _
             as keep -> keep
         | I_LDR (v,r1,r2,kr) -> I_LDR (v,r1,r2,kr_tr kr)
         | I_LDP (t,v,r1,r2,r3,kr) -> I_LDP (t,v,r1,r2,r3,kr_tr kr)
@@ -735,6 +742,7 @@ include Pseudo.Make
         | I_OP3 _
         | I_FENCE _
         | I_CSEL _
+        | I_ADDR _
           -> 0
 
       let fold_labels k f = function
@@ -750,6 +758,7 @@ include Pseudo.Make
         | I_BC (c,lbl) -> I_BC (c,f lbl)
         | I_CBZ (v,r,lbl) -> I_CBZ (v,r,f lbl)
         | I_CBNZ (v,r,lbl) -> I_CBNZ (v,r,f lbl)
+        | I_ADDR (r,lbl) -> I_ADDR (r, f lbl)
         | ins -> ins
     end)
 
