@@ -1,4 +1,4 @@
-(****************************************************************************)
+  (****************************************************************************)
 (*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
@@ -207,6 +207,52 @@ let pp_barrier_dot b = do_pp_barrier "." b
 
 let barrier_compare = Pervasives.compare
 
+(*********************)
+(* Cache maintenance *)
+(*********************)
+
+module IC = struct
+  type funct = I
+  let pp_funct = function I -> "I"
+
+  type typ = ALL | VA
+  let pp_typ = function | ALL -> "ALL" | VA -> "VA"
+
+  type point = U
+  let pp_point = function U -> "U"
+
+  type domain = IS | NO
+  let pp_domain = function IS -> "IS" | NO -> ""
+
+  type op = { funct:funct; typ:typ; point:point; domain:domain; }
+  let pp_op op =
+    pp_funct op.funct ^
+    pp_typ op.typ ^
+    pp_point op.point ^
+    pp_domain op.domain
+end
+
+module DC = struct
+  type funct = I | C | CI | Z
+  let pp_funct = function
+    | I -> "I"
+    | C -> "C"
+    | CI -> "CI"
+    | Z -> "Z"
+
+  type typ = VA | SW
+  let pp_typ = function VA -> "VA" | SW -> "SW"
+
+  type point = CO | U
+  let pp_point = function CO -> "C" | U -> "U"
+
+  type op = { funct:funct; typ:typ; point:point; }
+  let pp_op op =
+    pp_funct op.funct ^
+    pp_typ op.typ ^
+    pp_point op.point
+end
+
 (****************)
 (* Instructions *)
 (****************)
@@ -290,6 +336,7 @@ let sel_memo = function
 
 
 type 'k kinstruction =
+  | I_NOP
 (* Branches *)
   | I_B of lbl
   | I_BC of condition * lbl
@@ -329,6 +376,10 @@ type 'k kinstruction =
   | I_FENCE of barrier
 (* Conditional select *)
   | I_CSEL of variant * reg *reg * reg * condition * opsel
+(* Cache maintenance *)
+  | I_IC of IC.op * reg
+  | I_DC of DC.op * reg
+
 type instruction = int kinstruction
 type parsedInstruction = MetaConst.k kinstruction
 
@@ -421,6 +472,7 @@ let do_pp_instruction m =
     pp_xreg r3 ^ "]" in
 
   fun i -> match i with
+  | I_NOP -> "NOP"
 (* Branches *)
   | I_B lbl ->
       sprintf "B %s" (pp_label lbl)
@@ -499,7 +551,11 @@ let do_pp_instruction m =
 (* Conditional select *)
   | I_CSEL (v,r1,r2,r3,c,op) ->
       pp_rrr (sel_memo op) v r1 r2 r3 ^ "," ^ pp_cond c
-
+(* Cache maintenance *)
+  | I_IC (op,r) ->
+      sprintf "IC %s,%s" (IC.pp_op op) (pp_xreg r)
+  | I_DC (op,r) ->
+      sprintf "IC %s,%s" (DC.pp_op op) (pp_xreg r)
 let pp_instruction m =
   do_pp_instruction
     {pp_k = pp_k m}
@@ -526,9 +582,9 @@ let fold_regs (f_regs,f_sregs) =
   | RV (_,r) -> fold_reg r y in
 
   fun c ins -> match ins with
-  | I_B _ | I_BC _ | I_FENCE _
+  | I_NOP | I_B _ | I_BC _ | I_FENCE _
     -> c
-  | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_MOV (_,r,_) | I_ADDR (r,_)
+  | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_MOV (_,r,_) | I_ADDR (r,_) | I_IC (_,r) | I_DC (_,r)
     -> fold_reg r c
   | I_LDAR (_,_,r1,r2) | I_STLR (_,r1,r2) | I_STLRBH (_,r1,r2)
   | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2)
@@ -565,6 +621,7 @@ let map_regs f_reg f_symb =
   | RV (v,r) -> RV (v,map_reg r) in
 
   fun ins -> match ins with
+  | I_NOP
 (* Branches *)
   | I_B _
   | I_BC _
@@ -631,6 +688,11 @@ let map_regs f_reg f_symb =
 (* Conditinal select *)
   | I_CSEL (v,r1,r2,r3,c,op) ->
       I_CSEL (v,map_reg r1,map_reg r2,map_reg r3,c,op)
+(* Cache maintenance *)
+  | I_IC (op,r) ->
+      I_IC (op,map_reg r)
+  | I_DC (op,r) ->
+      I_DC (op,map_reg r)
 
 (* No addresses burried in ARM code *)
 let fold_addrs _f c _ins = c
@@ -649,6 +711,7 @@ let get_next = function
   | I_CBZ (_,_,lbl)
   | I_CBNZ (_,_,lbl)
       -> [Label.Next; Label.To lbl;]
+  | I_NOP
   | I_LDR _
   | I_LDP _
   | I_STP _
@@ -675,6 +738,8 @@ let get_next = function
   | I_STOP _
   | I_STOPBH _
   | I_ADDR _
+  | I_IC _
+  | I_DC _
     -> [Label.Next;]
 
 include Pseudo.Make
@@ -689,6 +754,7 @@ include Pseudo.Make
         | RV _ as kr -> kr
 
       let parsed_tr i = match i with
+        | I_NOP
         | I_B _
         | I_BC _
         | I_CBZ _
@@ -711,6 +777,8 @@ include Pseudo.Make
         | I_STOP _
         | I_STOPBH _
         | I_ADDR _
+        | I_IC _
+        | I_DC _
             as keep -> keep
         | I_LDR (v,r1,r2,kr) -> I_LDR (v,r1,r2,kr_tr kr)
         | I_LDP (t,v,r1,r2,r3,kr) -> I_LDP (t,v,r1,r2,r3,kr_tr kr)
@@ -725,7 +793,7 @@ include Pseudo.Make
       let get_naccesses = function
         | I_LDR _ | I_LDAR _ | I_LDARBH _
         | I_STR _ | I_STLR _ | I_STLRBH _ | I_STXR _
-        | I_LDRBH _ | I_STRBH _ | I_STXRBH _
+        | I_LDRBH _ | I_STRBH _ | I_STXRBH _ | I_IC _ | I_DC _
           -> 1
         | I_LDP _|I_STP _
         | I_CAS _ | I_CASBH _
@@ -733,6 +801,7 @@ include Pseudo.Make
         | I_LDOP _ | I_LDOPBH _
         | I_STOP _ | I_STOPBH _
           -> 2
+        | I_NOP
         | I_B _
         | I_BC _
         | I_CBZ _

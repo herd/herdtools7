@@ -34,6 +34,7 @@ open AArch64Base
 %token SXTW
 
 /* Instructions */
+%token NOP
 %token B BEQ BNE CBZ CBNZ EQ NE
 %token LDR LDP LDNP STP STNP LDRB LDRH STR STRB STRH STLR STLRB STLRH
 %token CMP MOV ADR
@@ -60,6 +61,9 @@ open AArch64Base
 %token LDCLR LDCLRA LDCLRL LDCLRAL LDCLRH LDCLRAH LDCLRLH LDCLRALH
 %token LDCLRB LDCLRAB LDCLRLB LDCLRALB
 %token STCLR STCLRL STCLRH STCLRLH STCLRB STCLRLB
+%token IC DC IVAU
+%token <AArch64Base.IC.op> IC_OP
+%token <AArch64Base.DC.op> DC_OP
 
 
 %type <int list * (AArch64Base.parsedPseudo) list list> main
@@ -156,6 +160,7 @@ cond:
 | NE { NE }
 
 instr:
+| NOP { I_NOP }
 /* Branch */
 | B NAME { I_B $2 }
 | BEQ NAME { I_BC (EQ,$2) }
@@ -530,6 +535,15 @@ instr:
   { let d,t = $2 in I_FENCE (DSB (d,t)) }
 | ISB
   { I_FENCE ISB }
+/* Cache Maintenance */
+| IC IC_OP COMMA xreg
+  { I_IC ($2,$4) }
+| IC IVAU COMMA xreg
+  { I_IC (IC.({ funct=I; typ=VA; point=U; domain=NO; }),$4) }
+| DC IVAU COMMA xreg
+  { I_DC (DC.({ funct=I; typ=VA; point=U; }),$4) }
+| DC DC_OP COMMA xreg
+  { I_DC ($2,$4) }
 
 fenceopt:
 | SY

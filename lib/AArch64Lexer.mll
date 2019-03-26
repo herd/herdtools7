@@ -23,6 +23,7 @@ module A = AArch64Base
 module LU = LexUtils.Make(O)
 
 let check_name name = match name with
+| "nop"|"NOP" -> NOP
 (* Branch *)
 | "b"  | "B"  -> B
 | "ne"  | "NE"  -> NE
@@ -200,6 +201,28 @@ let check_name name = match name with
 | "nsh"|"NSH" -> NSH
 | "nshst"|"NSHST" -> NSHST
 | "nshld"|"NSHLD" -> NSHLD
+(* Cache maintenance *)
+| "ic"|"IC" -> IC
+| "dc"|"DC" -> DC
+| "ialluis"|"IALLUIS" -> A.IC.(IC_OP { funct=I; typ=ALL; point=U; domain=IS; })
+| "ivauis"|"IVAUIS" -> A.IC.(IC_OP { funct=I; typ=VA; point=U; domain=IS; })
+| "iallu"|"IALLU" -> A.IC.(IC_OP { funct=I; typ=ALL; point=U; domain=NO; })
+| "ivau"|"IVAU" -> IVAU
+| "ivac"|"IVAC" -> A.DC.(DC_OP { funct=I; typ=VA; point=CO; })
+| "cvac"|"CVAC" -> A.DC.(DC_OP { funct=C; typ=VA; point=CO; })
+| "civac"|"CIVAC" -> A.DC.(DC_OP { funct=CI; typ=VA; point=CO; })
+| "zvac"|"ZVAC" -> A.DC.(DC_OP { funct=Z; typ=VA; point=CO; })
+| "iswc"|"ISWC" -> A.DC.(DC_OP { funct=I; typ=SW; point=CO; })
+| "cswc"|"CSWC" -> A.DC.(DC_OP { funct=C; typ=SW; point=CO; })
+| "ciswc"|"CISWC" -> A.DC.(DC_OP { funct=CI; typ=SW; point=CO; })
+| "zswc"|"ZSWC" -> A.DC.(DC_OP { funct=Z; typ=SW; point=CO; })
+| "cvau"|"CVAU" -> A.DC.(DC_OP { funct=C; typ=VA; point=U; })
+| "civau"|"CIVAU" -> A.DC.(DC_OP { funct=CI; typ=VA; point=U; })
+| "zvau"|"ZVAU" -> A.DC.(DC_OP { funct=Z; typ=VA; point=U; })
+| "iswu"|"ISWU" -> A.DC.(DC_OP { funct=I; typ=SW; point=U; })
+| "cswu"|"CSWU" -> A.DC.(DC_OP { funct=C; typ=SW; point=U; })
+| "ciswu"|"CISWU" -> A.DC.(DC_OP { funct=CI; typ=SW; point=U; })
+| "zswu"|"ZSWU" -> A.DC.(DC_OP { funct=Z; typ=SW; point=U; })
 | _ ->
     begin match A.parse_wreg name with
     | Some r -> ARCH_WREG r

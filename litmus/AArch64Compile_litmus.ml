@@ -50,6 +50,7 @@ module Make(V:Constant.S)(C:Config) =
     let add_type t rs = List.map (fun r -> r,t) rs
     let add_w = add_type word
     let add_q = add_type quad
+    let add_v = add_type voidstar
 
 (************************)
 (* Template compilation *)
@@ -385,7 +386,7 @@ module Make(V:Constant.S)(C:Config) =
       let r,f = arg1 "xzr" (fun s -> "^o"^s) r in
       { empty_ins with
         memo = sprintf "adr %s,%s" f (A.Out.dump_label (tr_lab lbl));
-        outputs=r; reg_env=add_type voidstar r; }
+        outputs=r; reg_env=add_v r; }
 
     let movr v r1 r2 = match v with
     | V32 ->
@@ -479,10 +480,15 @@ module Make(V:Constant.S)(C:Config) =
     let fence f =
       { empty_ins with memo = Misc.lowercase (A.pp_barrier f); }
 
+    let cache memo r =
+      let r,f = arg1 "xzr" (fun s -> "^i"^s) r in
+      { empty_ins with memo = memo ^ "," ^ f; inputs=r; reg_env=add_v r; }
+
 (* Not that useful *)
     let emit_loop _k = assert false
 
     let compile_ins tr_lab ins k = match ins with
+    | I_NOP -> { empty_ins with memo = "nop"; }::k
 (* Branches *)
     | I_B lbl -> b tr_lab lbl::k
     | I_BC (c,lbl) -> bcc tr_lab c lbl::k
@@ -520,21 +526,6 @@ module Make(V:Constant.S)(C:Config) =
     | I_OP3 (v,op,r1,r2,kr) ->  op3 v op r1 r2 kr::k
 (* Fence *)
     | I_FENCE f -> fence f::k
-(* Conditional selection *)
-    | I_CSEL (v,r1,r2,r3,c,op) ->
-        let inputs,memo,t = match v with
-        | V32 ->
-            let r2,f2,r3,f3 = args2 "wzr" (fun s -> "^wi"^s) r2 r3 in
-            r2@r3,sprintf " ^wo0,%s,%s,%s" f2 f3 (pp_cond c),word
-        | V64 ->
-            let r2,f2,r3,f3 = args2 "xzr" (fun s -> "^i"^s) r2 r3 in
-            r2@r3,sprintf " ^o0,%s,%s,%s" f2 f3 (pp_cond c),quad in
-        let memo = String.lowercase (sel_memo op) ^ memo in
-        {
-         empty_ins with
-         memo = memo; inputs=inputs; outputs=[r1;];
-         reg_env=add_type t (r1::inputs);
-        }::k
 (* Fetch and Op *)
     |I_LDOP (op,v,rmw,rs,rt,rn) ->
         ldop (ldop_memo op rmw) v rs rt rn::k
@@ -544,6 +535,25 @@ module Make(V:Constant.S)(C:Config) =
         stop (stop_memo op w) v rs rn::k
     | I_STOPBH (op,v,w,rs,rn) ->
         stop (stopbh_memo op v w) V32 rs rn::k
+(* Conditional selection *)
+    | I_CSEL (v,r1,r2,r3,c,op) ->
+        let inputs,memo,t = match v with
+        | V32 ->
+            let r2,f2,r3,f3 = args2 "wzr" (fun s -> "^wi"^s) r2 r3 in
+            r2@r3,sprintf " ^wo0,%s,%s,%s" f2 f3 (pp_cond c),word
+        | V64 ->
+            let r2,f2,r3,f3 = args2 "xzr" (fun s -> "^i"^s) r2 r3 in
+            r2@r3,sprintf " ^o0,%s,%s,%s" f2 f3 (pp_cond c),quad in
+        let memo = Misc.lowercase (sel_memo op) ^ memo in
+        {
+         empty_ins with
+         memo = memo; inputs=inputs; outputs=[r1;];
+         reg_env=add_type t (r1::inputs);
+        }::k
+    | I_IC (op,r) ->
+        cache (sprintf "ic %s" (Misc.lowercase (IC.pp_op op))) r::k
+    | I_DC (op,r) ->
+        cache (sprintf "dc %s" (Misc.lowercase (DC.pp_op op))) r::k
 
     let no_tr lbl = lbl
     let branch_neq r i lab k = cmpk V32 r i::bcc no_tr NE lab::k

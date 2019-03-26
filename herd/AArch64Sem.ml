@@ -274,6 +274,8 @@ module Make (C:Sem.Config)(V:Value.S)
       M.addT (A.next_po_index ii.A.program_order_index)
         AArch64Base.(
       match ii.A.inst with
+      | I_NOP ->
+          M.unitT B.Next
         (* Branches *)
       | I_B l ->
           B.branchT l
@@ -427,7 +429,7 @@ module Make (C:Sem.Config)(V:Value.S)
       | I_LDOPBH (op,v,rmw,rs,rt,rn) ->
           ldop op (bh_to_sz v) rmw rs rt rn ii >>! B.Next
 (*  Cannot handle *)
-      | (I_LDP _|I_STP _) as i ->
+      | (I_LDP _|I_STP _|I_IC _|I_DC _) as i ->
           Warn.fatal "illegal instruction: %s"
             (AArch64.dump_instruction i)
      )

@@ -89,7 +89,7 @@ include Arch.MakeArch(struct
       | K k ->
           find_cst k >! fun k -> K k in
     function
-    | I_FENCE _ as i -> unitT i
+    | (I_FENCE _|I_NOP) as i -> unitT i
     | I_B l ->
         find_lab l >! fun l -> I_B l
     | I_BC(a,l) ->
@@ -219,5 +219,9 @@ include Arch.MakeArch(struct
     | I_STOPBH (op,v,rmw,r1,r2) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >! fun r2 ->
-        I_STOPBH (op,v,rmw,r1,r2)
+          I_STOPBH (op,v,rmw,r1,r2)
+    | I_IC (op,r) ->
+        conv_reg r >! fun r -> I_IC (op,r)
+    | I_DC (op,r) ->
+        conv_reg r >! fun r -> I_DC (op,r)
 end)
