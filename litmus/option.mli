@@ -116,6 +116,7 @@ val cacheflush : bool ref
 val carch : Archs.System.t option ref
 val mode : Mode.t ref
 val usearch : UseArch.t ref
+val variant : (Variant_litmus.t -> bool) ref
 
 (* Arch dependent option *)
 type opt

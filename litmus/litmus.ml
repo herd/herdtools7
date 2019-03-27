@@ -61,7 +61,10 @@ let opts =
    argkm "-number_of_run" Option.runs "alias for -r" ;
    argkm "-noccs" Option.noccs "upper bound on numbers of target outcomes (presi only)" ;
    argfloato "-timelimit" Option.timelimit "bound on runtime (presi only)" ;
+
 (* Modes *)
+   begin let module P = ParseTag.MakeS(Variant_litmus) in
+   P.parse "-variant" Option.variant "select a variation" end ;
    begin let module P = ParseTag.Make(Barrier) in
    P.parse "-barrier" Option.barrier "set type of barriers" end ;
    "-delay", Arg.Int set_delay,
@@ -298,6 +301,7 @@ let () =
           end
       | Some b -> b
       let ascall = !ascall
+      let variant = !variant
       let crossrun = !crossrun
       let adbdir = !adbdir
       let driver = !driver

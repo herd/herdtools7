@@ -62,6 +62,7 @@ module type Config = sig
   val c11 : bool
   val c11_fence : bool
   val ascall : bool
+  val variant : Variant_litmus.t -> bool
   val stdio : bool
   val limit : bool
   val exit_cond : bool
@@ -94,8 +95,10 @@ end = struct
   open CType
 
 (* Options *)
-  open Speedcheck
+  let do_self = Cfg.variant Variant_litmus.Self
+  let do_ascall = Cfg.ascall || do_self
 
+  open Speedcheck
   let do_vp = Cfg.verbose_prelude
   let driver = Cfg.driver
   let do_speedcheck = match Cfg.speedcheck  with
@@ -393,6 +396,7 @@ end = struct
     O.o "#include <assert.h>" ;
     O.o "#include <time.h>" ;
     O.o "#include <limits.h>" ;
+    if do_self then O.o "#include <sys/mman.h>" ;
     O.o "#include \"utils.h\"" ;
     if Cfg.c11 then O.o "#include <stdatomic.h>";
     O.o "#include \"outs.h\"" ;
@@ -640,8 +644,10 @@ end = struct
       O.o "" ;
       O.o "inline static void mcautious(void) { mbar(); }" ;
       O.o ""
+    end ;
+    if do_self then begin
+      Insert.insert O.o "self.c"
     end
-
 (* All of them *)
 
   let dump_threads test =
@@ -1264,8 +1270,8 @@ end = struct
         O.o ""
     | Direct -> ()
     end ;
-(* Initialization, called once *)
 
+(* Initialization, called once *)
     let malloc_gen sz indent name =
       O.fx  indent "_a->%s = malloc_check(%s*sizeof(*(_a->%s)));"
         name sz name
@@ -1296,6 +1302,15 @@ end = struct
         O.fx indent "_a->%s = _a->%s;" (tag_malloc a) a ;
         O.fx indent "_a->%s = %s(_a->%s,sizeof(*_a->%s));" a alg a a
     in
+    if do_self then begin
+      O.o "static size_t code_size(ins_t *p) {" ;
+      O.oi "ins_t retcode = getret();" ;
+      O.oi "ins_t *q = p;" ;
+      O.o "" ;
+      O.oi "for  ( ; *q != retcode ; q++);" ;
+      O.oi "return q-p+1;" ;
+      O.o "}"
+    end ;
     O.f "static void init(ctx_t *_a%s) {"
       (if do_staticalloc then ",int id" else "") ;
     O.oi "int size_of_test = _a->_p->size_of_test;" ;
@@ -1416,6 +1431,18 @@ end = struct
     if do_sync_macro then begin
       O.oi "_a->_scratch = malloc_check(_a->_p->max_idx*sizeof(*(_a->_scratch)));"
     end ;
+    if do_self then begin
+      O.oi "int pagesize = getpagesize();" ;
+      O.oi "size_t _sz;"; O.oi "int _err;" ;
+      for n = 0 to List.length test.T.code-1 do
+        O.fi "_a->code%i_sz = code_size((ins_t *)code%i);" n n ;
+        O.fi "_sz = _a->code%i_sz * size_of_test * sizeof(ins_t);" n ;
+        O.fi "_a->code%i_mem = malloc_check(_sz+pagesize-sizeof(ins_t));" n ;
+        O.fi "_a->code%i = do_align(_a->code%i_mem,pagesize);" n n ;
+        O.fi "_err = mprotect(_a->code%i,_sz,PROT_READ|PROT_EXEC|PROT_WRITE);" n ;
+        O.oi "if (_err) errexit(\"mprotect\",_err);"
+      done
+    end ;
     O.o "}" ;
     O.o "" ;
 
@@ -1494,6 +1521,11 @@ end = struct
       loop_proc_postlude indent
     end ;
     if do_sync_macro then free indent "_scratch" ;
+    if do_self then begin
+      for n=0 to List.length test.T.code-1 do
+        O.fi "free((void *)_a->code%i_mem);" n
+      done
+    end ;
     O.o "}" ;
     O.o "" ;
 
@@ -1556,6 +1588,13 @@ end = struct
         O.oii "_a->barrier[_i] = 0;"
     | Pthread|NoBarrier|User2|TimeBase -> ()
     end ;
+    if do_self then begin
+      List.iteri
+        (fun n _ ->
+          O.fii "ins_t *_dst%i = &_a->code%i[_i*_a->code%i_sz], *_src%i=(ins_t *)code%i;" n n n n n ;
+          O.fii "for (int _k = _a->code%i_sz-1 ; _k >= 0 ; _k--) _dst%i[_k] = _src%i[_k];" n n n)
+        test.T.code
+    end ;
     O.oi "}" ;
     if Cfg.cautious then O.oi "mcautious();" ;
     begin match barrier with
@@ -1589,7 +1628,7 @@ end = struct
       (fun (proc,(out,(outregs,envVolatile))) ->
         let myenv = U.select_proc proc env
         and global_env = U.select_global env in
-        if Cfg.ascall then
+        if do_ascall then
           Lang.dump_fun
             O.out myenv global_env envVolatile proc out ;
         let  do_collect =  do_collect_local && (do_safer || proc=0) in
@@ -1657,6 +1696,12 @@ end = struct
             indent3 end else begin
               loop_test_prelude indent "_" ;
               indent2 end in
+        if do_self then begin
+          let id = LangUtils.code_fun_cpy proc
+          and ty = LangUtils.code_fun_type proc in
+          O.fx iloop "%s %s = (%s)&_a->code%i[_a->code%i_sz*_i];"
+            ty id ty proc proc
+        end ;
         if do_custom then begin
           let i = iloop in
           begin match addrs with
@@ -1785,7 +1830,11 @@ end = struct
         | Pthread|NoBarrier -> ()
         end ;
 (* Dump real code now *)
-        (if Cfg.ascall then Lang.dump_call (fun _ s -> s) else Lang.dump)
+        (if do_ascall then
+          let f_id =
+            if do_self then LangUtils.code_fun_cpy proc else
+            LangUtils.code_fun proc in
+          Lang.dump_call f_id (fun _ s -> s) else Lang.dump)
           O.out (Indent.as_string iloop) myenv global_env envVolatile proc out ;
         if do_verbose_barrier && have_timebase  then begin
           if do_timebase then begin
@@ -2248,6 +2297,14 @@ end = struct
     if do_sync_macro then O.oi "char *_scratch;" ;
     O.o "/* Parameters */" ;
     O.oi "param_t *_p;" ;
+    if do_self then begin
+      let nprocs = List.length test.T.code in
+      O.o "/* Code memory */" ;
+      for n = 0 to nprocs-1 do
+        O.fi "size_t code%i_sz;" n ;
+        O.fi "ins_t *code%i_mem,*code%i;" n n
+      done
+    end ;
     O.o "} ctx_t;" ;
     O.o "" ;
     if do_staticalloc then begin
@@ -2753,9 +2810,9 @@ end = struct
     dump_filter env test ;
     dump_cond_fun env test ;
     dump_defs_outs doc env test ;
-    dump_reinit env test cpys ;
     dump_check_globals env doc test ;
     dump_templates env doc.Name.name test ;
+    dump_reinit env test cpys ;
     dump_zyva doc cpys env test ;
     if do_vp then UD.prelude doc test ;
     dump_run doc env test ;
