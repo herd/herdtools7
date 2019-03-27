@@ -527,7 +527,8 @@ let dump_threads _tname env test =
       | Some _ when is_srcu_struct t || is_spinlock_t t ->
           sprintf "%s %% %s" idx spinsize
       | Some _|None -> idx in
-      Lang.dump_call tr_idx O.out (Indent.as_string indent3)
+      Lang.dump_call (LangUtils.code_fun proc)
+        tr_idx O.out (Indent.as_string indent3)
         myenv global_env envVolatile proc out ;
       O.oii "}" ;
       O.oi "}" ;

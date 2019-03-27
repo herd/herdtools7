@@ -129,12 +129,12 @@ module Make(V:Constant.S) = struct
   let compile_out_reg_call proc reg =
     sprintf "&_a->%s" (Tmpl.compile_out_reg proc reg)
 
-  let dump_call _tr_idx chan indent _env _globEnv _volatileEnv proc t =
+  let dump_call f_id _tr_idx chan indent _env _globEnv _volatileEnv proc t =
     let addrs_proc = Tmpl.get_addrs t in
     let addrs = List.map compile_addr_call addrs_proc
     and outs = List.map (compile_out_reg_call proc) t.Tmpl.final in
     let args = String.concat "," (addrs@outs) in
-    LangUtils.dump_code_call chan indent proc args
+    LangUtils.dump_code_call chan indent f_id args
 
 
   let dump _chan _indent _env _globEnv _volatileEnv _proc _t = ()

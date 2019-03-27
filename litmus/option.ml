@@ -168,6 +168,7 @@ let morearch = ref MoreArch.No
 let carch = ref None
 let mode = ref Mode.Std
 let usearch = ref UseArch.Trad
+let variant = ref (fun _ -> false)
 
 (* Arch dependent options *)
 type opt =

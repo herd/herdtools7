@@ -23,12 +23,15 @@ let end_label proc = sprintf "LEND_litmus_P%i" proc
 let end_comment com proc = sprintf "%sEND _litmus_P%i" com proc
 
 let code_fun proc = sprintf "code%i" proc
+let code_fun_cpy proc = sprintf "_code%i" proc
+let code_fun_type proc =  code_fun proc ^ "_t"
 
 let dump_code_def chan noinline proc params =
+  fprintf chan "typedef void (*%s)(%s);\n\n" (code_fun_type proc) params ;
   fprintf chan "%sstatic void %s(%s) {\n"
     (if noinline then "__attribute__ ((noinline))"
     else "")
     (code_fun proc) params
 
-let dump_code_call chan indent proc args =
-  fprintf chan "%s%s(%s);\n" indent (code_fun proc) args
+let dump_code_call chan indent f_id args =
+  fprintf chan "%s%s(%s);\n" indent f_id args
