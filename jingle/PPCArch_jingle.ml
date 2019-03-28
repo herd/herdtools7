@@ -233,7 +233,7 @@ include Arch.MakeArch(struct
     | Psraw(s,r1,r2,r3) ->
         par3 conv_reg r1 r2 r3
           (fun r1 r2 r3 ->  Psraw (s,r1,r2,r3))
-    | Pbl _ | Pblr as i -> unitT i
+    | Pnop | Pbl _ | Pblr as i -> unitT i
     | Pmtlr r ->
         conv_reg r >! fun r -> Pmtlr r
     | Pmflr r ->

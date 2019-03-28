@@ -24,7 +24,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
     let is_amo = function
       | Amo _ -> true
-      |J _|Bcc _|Load _|Store _|LoadReserve _
+      | INop|J _|Bcc _|Load _|Store _|LoadReserve _
       | OpI _|OpIW _|Op _|OpW _
       |StoreConditional _|FenceIns _
            -> false

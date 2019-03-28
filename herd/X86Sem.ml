@@ -151,6 +151,7 @@ module Make (C:Sem.Config)(V : Value.S)
     let build_semantics ii =
     let rec build_semantics_inner locked ii =
       match ii.A.inst with
+    |  X86.I_NOP -> M.unitT B.Next
     |  X86.I_XOR (ea,op) -> do_op nat_sz locked Op.Xor ea op ii
     |  X86.I_OR (ea,op) -> do_op nat_sz locked Op.Or ea op ii
     |  X86.I_ADD (ea,op) -> do_op nat_sz locked Op.Add ea op ii

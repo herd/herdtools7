@@ -136,6 +136,7 @@ type condition =
 type lbl = Label.t
 
 type instruction =
+  | I_NOP
   | I_ADD of effaddr * operand
   | I_XOR of effaddr * operand
   | I_OR of effaddr * operand
@@ -236,6 +237,7 @@ let rec do_pp_instruction m =
 
 
   fun i -> match i with
+  | I_NOP -> "NOP"
   | I_ADD(ea,op) -> ppi_ea_op "ADD" ea op
   | I_XOR(ea,op) -> ppi_ea_op "XOR" ea op
   | I_OR(ea,op) -> ppi_ea_op "OR" ea op
@@ -326,6 +328,7 @@ let rec fold_regs (f_reg,f_sreg) =
       let c = fold_effaddr c ea in
       fold_reg c r
   | I_LOCK ins -> fold_regs (f_reg,f_sreg) c ins
+  | I_NOP
   | I_JCC _
   | I_JMP _
   | I_MFENCE|I_SFENCE|I_LFENCE
@@ -391,6 +394,7 @@ let rec map_regs f_reg f_symb =
       I_CMPXCHG (map_effaddr ea,map_reg r)
   | I_LOCK ins ->
       I_LOCK (map_regs f_reg f_symb ins)
+  | I_NOP
   | I_JCC _| I_JMP _
   | I_MFENCE|I_SFENCE|I_LFENCE
   | I_MOVSD
@@ -437,6 +441,7 @@ let rec fold_addrs f =
   | I_CMPXCHG (ea,_) ->
       fold_effaddr c ea
   | I_LOCK ins -> fold_addrs f c ins
+  | I_NOP
   | I_JCC _
   | I_JMP _
   | I_MFENCE|I_SFENCE|I_LFENCE
@@ -495,6 +500,7 @@ let rec map_addrs f =
       I_CMPXCHG (map_effaddr ea,r)
   | I_LOCK ins ->
       I_LOCK (map_addrs f ins)
+  | I_NOP
   | I_JCC _| I_JMP _
   | I_MFENCE|I_SFENCE|I_LFENCE
   | I_MOVSD
@@ -515,6 +521,7 @@ let is_data _ _ = assert false
 (* Instruction continuation *)
 let rec get_next = function
   | I_LOCK ins -> get_next ins
+  | I_NOP
   | I_ADD _
   | I_XOR _ | I_OR _
   | I_MOV _ | I_MOVB _ | I_MOVW _ | I_MOVL _ | I_MOVQ _ | I_MOVT _
@@ -562,6 +569,7 @@ include Pseudo.Make
 
         | I_CMOVC (_,e)
               -> get_naccs_eff e
+        | I_NOP
         | I_LFENCE
         | I_SFENCE
         | I_MFENCE
@@ -582,6 +590,7 @@ include Pseudo.Make
         | I_JMP lbl
         | I_JCC (_,lbl)
           -> f k lbl
+        | I_NOP
         | I_SETNB _|I_READ _|I_XCHG_UNLOCKED (_, _)|I_XCHG (_, _)|I_INC _
         | I_CMOVC (_, _)|I_CMP (_, _)|I_DEC _
         | I_MOV (_, _)|I_MOVB (_,_)|I_MOVW (_,_)
@@ -596,6 +605,7 @@ include Pseudo.Make
         | I_LOCK ins -> I_LOCK (map_labels f ins)
         | I_JMP lbl -> I_JMP (f lbl)
         | I_JCC (cc,lbl) -> I_JCC (cc,f lbl)
+        | I_NOP
         | I_SETNB _|I_READ _|I_XCHG_UNLOCKED (_, _)|I_XCHG (_, _)|I_INC _
         | I_CMOVC (_, _)|I_CMP (_, _)|I_DEC _
         | I_MOV (_, _)|I_MOVB (_,_)|I_MOVW (_,_)|I_MOVL (_,_)

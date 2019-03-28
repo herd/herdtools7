@@ -191,6 +191,7 @@ module Make (C:Sem.Config)(V:Value.S)
     let build_semantics ii =
       M.addT (A.next_po_index ii.A.program_order_index)
         begin match ii.A.inst with
+    | PPC.Pnop -> M.unitT B.Next
 (* 3 regs ops *)
     |  PPC.Padd (set,rD,rA,rB) ->
         op3regs ii Op.Add set rD rA rB

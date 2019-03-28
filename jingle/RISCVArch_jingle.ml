@@ -120,5 +120,5 @@ include Arch.MakeArch(struct
           conv_reg r2 >> fun r2 ->
           conv_reg r3 >! fun r3 ->
           Amo (op,w,m,r1,r2,r3)
-      | FenceIns _ as i -> unitT i
+      | INop|FenceIns _ as i -> unitT i
 end)

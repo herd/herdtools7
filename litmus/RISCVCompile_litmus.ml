@@ -63,6 +63,7 @@ module Make(V:Constant.S)(C:Arch_litmus.Config) =
     let emit_loop _ins = assert false
 
     let compile_ins tr_lab ins k = match ins with
+    | A.INop -> { empty_ins with memo="nop"; }::k
     | A.OpI (op,r1,r2,i) ->
         op2regsI (A.pp_opi op) r1 r2 i::k
     | OpIW (op,r1,r2,i) ->

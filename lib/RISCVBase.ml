@@ -277,6 +277,7 @@ let pp_amo op w mo = sprintf "%s.%s%s" (pp_opamo op) (pp_width w) (pp_mo mo)
 type signed = Sign.t
 
 type 'k kinstruction =
+  | INop
   | OpI of opi * reg * reg * 'k
   | OpIW of opiw * reg * reg * 'k
   | Op of op * reg * reg * reg
@@ -300,6 +301,7 @@ let pp_k _m v = sprintf "%i" v
 type 'k basic_pp = { pp_k : 'k -> string; }
 
 let do_pp_instruction m = function
+  | INop -> "nop"
   | OpI (op,r1,r2,k) ->
       sprintf "%s %s,%s,%s"
         (pp_opi op) (pp_reg r1) (pp_reg r2) (m.pp_k k)
@@ -362,7 +364,7 @@ let fold_regs (f_reg,f_sreg) =
   | Symbolic_reg reg   -> y_reg,f_sreg reg y_sreg in
 
   fun c ins -> match ins with
-  | J _ | FenceIns _ -> c
+  | INop|J _ | FenceIns _ -> c
   | OpI (_,r1,r2,_) | OpIW (_,r1,r2,_)
   | Bcc (_,r1,r2,_)
   | Load (_,_,_,r1,_,r2)
@@ -381,7 +383,7 @@ let map_regs f_reg f_symb =
   | Symbolic_reg reg -> f_symb reg in
 
   function ins -> match ins with
-  | J _ | FenceIns _ -> ins
+  | INop|J _ | FenceIns _ -> ins
   | OpI (op,r1,r2,k) ->
       OpI (op,map_reg r1,map_reg r2,k)
   | OpIW (op,r1,r2,k) ->
@@ -413,7 +415,7 @@ let norm_ins ins = ins
 let get_next = function
   | J lbl -> [Label.To lbl;]
   | Bcc (_,_,_,lbl) -> [Label.Next; Label.To lbl;]
-  | OpI (_, _, _, _)|OpIW (_, _, _, _)|Op (_, _, _, _)|OpW (_, _, _, _)
+  | INop|OpI (_, _, _, _)|OpIW (_, _, _, _)|Op (_, _, _, _)|OpW (_, _, _, _)
   | Load (_,_, _, _, _, _)|Store (_,_, _, _, _)|LoadReserve (_, _, _, _)
   | StoreConditional (_, _, _, _, _)|FenceIns _|Amo _
     -> [Label.Next;]
@@ -430,6 +432,7 @@ include Pseudo.Make
       | OpI (op,r1,r2,k) -> OpI (op,r1,r2,k_tr k)
       | OpIW (op,r1,r2,k) -> OpIW (op,r1,r2,k_tr k)
       | Op (_, _, _, _)|OpW (_, _, _, _)|J _|Bcc (_, _, _, _)
+      |INop
       |Load (_, _, _, _, _, _)|Store (_, _ ,_ , _, _)
       |LoadReserve (_, _, _, _)|StoreConditional (_, _, _, _, _)|Amo _|FenceIns _
           as keep
@@ -440,6 +443,7 @@ include Pseudo.Make
         | Amo ((AMOOR|AMOADD),_,_,_,Ireg X0,_)
         | Load _ | LoadReserve _ | Store _ | StoreConditional _ -> 1
         | Amo _ -> 2
+        | INop
         | OpI (_, _, _, _)|OpIW (_, _, _, _)|Op (_, _, _, _)
         | OpW (_, _, _, _)|J _|Bcc (_, _, _, _)|FenceIns _
           -> 0
@@ -448,6 +452,7 @@ include Pseudo.Make
         | J lbl
         | Bcc (_,_,_,lbl)
           -> f k lbl
+        | INop
         |OpI (_, _, _, _)|OpIW (_, _, _, _)|Op (_, _, _, _)
         |OpW (_, _, _, _)|Load (_, _, _, _, _, _)|Store (_, _, _, _, _)
         |LoadReserve (_, _, _, _)|StoreConditional (_, _, _, _, _)|Amo _|FenceIns _
@@ -455,6 +460,7 @@ include Pseudo.Make
       let map_labels f = function
         | J lbl -> J (f lbl)
         | Bcc (cc,r1,r2,lbl) -> Bcc (cc,r1,r2,f lbl)
+        |INop
         |OpI (_, _, _, _)|OpIW (_, _, _, _)|Op (_, _, _, _)
         |OpW (_, _, _, _)|Load _|Store _
         |LoadReserve (_, _, _, _)|StoreConditional (_, _, _, _, _)|Amo _|FenceIns _

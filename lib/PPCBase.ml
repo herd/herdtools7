@@ -226,6 +226,7 @@ type setcr0 = SetCR0 | DontSetCR0
 (* j: for arithm at least, should be ireg *)
 
 type 'k kinstruction =
+  | Pnop
 (* Two forms of ins: set cr0 or not *)
   | Padd of setcr0*reg*reg*reg
   | Psub of setcr0*reg*reg*reg
@@ -342,6 +343,7 @@ let memo_store = function
 let memo_storex sz = memo_store sz ^ "x"
 
 let do_pp_instruction pp_k i = match i with
+| Pnop -> "nop"
 | Padd(set,rD,rA,rB) -> pp_op3 "add" set rD rA rB
 | Psub(set,rD,rA,rB) -> pp_op3 "sub" set rD rA rB
 | Psubf(set,rD,rA,rB) -> pp_op3 "subf" set rD rA rB
@@ -465,6 +467,7 @@ let fold_regs (f_reg,f_sreg) =
   | Pmflr r1
     ->  fold_reg r1 (y_reg,y_sreg)
 	(* None *)
+  | Pnop
   | Pb _
   | Pbcc _
   | Psync
@@ -569,6 +572,7 @@ let map_regs f_reg f_symb =
       Pmflr (map_reg r)
 
 	(* None *)
+  | Pnop
   | Pb _
   | Pbcc _
   | Psync
@@ -593,6 +597,7 @@ let norm_ins ins = match ins with
   | Ploadx(Quad,r1,r2,r3) -> Ploadx(Word,r1,r2,r3)
   | Pstore(Quad,r1,cst,r2) -> Pstore(Word,r1,cst,r2)
   | Pstorex(Quad,r1,r2,r3) -> Pstorex(Word,r1,r2,r3)
+  | Pnop
   | Pload ((Byte|Short|Word),_,_,_)
   | Ploadx ((Byte|Short|Word),_,_,_)
   | Pstore ((Byte|Short|Word),_,_,_)
@@ -624,6 +629,7 @@ let is_data r1 i = match i with
 | _ -> false
 
 let get_next = function
+  | Pnop
   | Padd _ | Psub (_, _, _, _)|Psubf (_, _, _, _)
   | Por (_, _, _, _)|Pand (_, _, _, _)|Pxor (_, _, _, _)
   |Pmull (_, _, _, _)|Pdiv (_, _, _, _)|Paddi (_, _, _)
@@ -670,6 +676,7 @@ include Pseudo.Make
 	| Plmw(r1,k,r2) -> Plmw(r1,MetaConst.as_int k,r2)
 	| Pstmw (r1,k,r2) -> Pstmw(r1,MetaConst.as_int k,r2)
 	    
+        | Pnop
 	| Ploadx (_,_,_,_)
 	| Pstorex (_,_,_,_)
 	| Pb _ | Pbcc (_,_)
@@ -688,6 +695,7 @@ include Pseudo.Make
 
 (* Number if memory accesses per instruction (for estimating test complexity) *)
       let get_naccesses = function
+        | Pnop
 (* Two forms of ins: set cr0 or not *)
         | Padd _
         | Psub _
@@ -738,6 +746,7 @@ include Pseudo.Make
       let fold_labels k f = function
         | Pb lab
         | Pbcc (_,lab) -> f k lab
+        | Pnop
         | Pdcbf (_, _)
         | Pstwcx (_, _, _)|Plwarx (_, _, _)
         | Pstwu(_,_,_)|Pmr (_, _)
@@ -763,6 +772,7 @@ include Pseudo.Make
       let map_labels f = function
         | Pb lab -> Pb (f lab)
         | Pbcc (cc,lab) -> Pbcc (cc,f lab)
+        | Pnop
         | Pdcbf (_, _)
         | Pstwcx (_, _, _)|Plwarx (_, _, _)
         | Pstwu(_,_,_)|Pmr (_, _)
