@@ -165,6 +165,7 @@ let match_instr subs pattern instr = match pattern,instr with
           conv_reg r >> fun r ->
           find_cst v >! fun v ->
           I_MOVI(r,v,c)
+      | I_NOP
       | I_DMB _
       | I_DSB _
       | I_ISB as i

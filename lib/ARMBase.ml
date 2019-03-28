@@ -170,6 +170,7 @@ type setflags = SetFlags | DontSetFlags
 type condition = NE | EQ | AL (* ALWAYS *)
 
 type 'k kinstruction =
+  | I_NOP
   | I_ADD of setflags * reg * reg * 'k
   | I_ADD3 of setflags * reg * reg * reg
   | I_SUB of setflags * reg * reg * 'k
@@ -251,6 +252,7 @@ let do_pp_instruction m =
     pp_memoc opcode c^" "^pp_reg r ^ "," ^ m.pp_k i in
 
   fun i -> match i with
+  | I_NOP -> "NOP"
   | I_ADD(s,rt,rn,v) -> ppi_rri "ADD" s rt rn v
   | I_ADD3 (s,r1,r2,r3) -> ppi_rrr "ADD" s r1 r2 r3 
   | I_SUB(s,rt,rn,v) -> ppi_rri "SUB" s rt rn v
@@ -327,6 +329,7 @@ let fold_regs (f_reg,f_sreg) =
   | I_MOVI (r, _, _)
   | I_CB (_,r,_)
       -> fold_reg r c
+  | I_NOP
   | I_B _
   | I_BEQ _
   | I_BNE _
@@ -350,6 +353,7 @@ let map_regs f_reg f_symb =
   | I_SUB (s,r1, r2, k) -> I_SUB (s,map_reg r1, map_reg r2, k)
   | I_SUB3 (s,r1, r2, r3) -> I_SUB3 (s,map_reg r1, map_reg r2, map_reg r3)
   | I_AND (s,r1, r2, k) -> I_AND (s,map_reg r1, map_reg r2, k)
+  | I_NOP
   | I_B _
   | I_BEQ _ 
   | I_BNE _ -> ins
@@ -383,6 +387,7 @@ let is_data _ _ = assert false
 
 (* Instruction continuation *)
 let get_next = function
+  | I_NOP
   | I_ADD _
   | I_ADD3 _
   | I_SUB _
@@ -420,6 +425,7 @@ include Pseudo.Make
         | I_AND (c,r1,r2,k) ->  I_AND (c,r1,r2,MetaConst.as_int k)
         | I_CMPI (r,k) -> I_CMPI (r,MetaConst.as_int k)
         | I_MOVI (r,k,c) -> I_MOVI (r,MetaConst.as_int k,c)
+        | I_NOP
         | I_ADD3 _
         | I_SUB3 _
         | I_B _
@@ -444,6 +450,7 @@ include Pseudo.Make
 
 
       let get_naccesses = function
+        | I_NOP
         | I_ADD _
         | I_ADD3 _
         | I_SUB _

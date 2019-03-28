@@ -203,6 +203,7 @@ module Make(V:Constant.S)(C:Config) =
       { empty_ins with memo =memo; }
 
     let compile_ins tr_lab ins k = match ins with
+    | I_NOP -> { empty_ins with memo = "nop"; }::k
 (* Arithmetic *)
     | I_ADD (s,r1, r2, i) ->  op2regsI "add" s AL r1 r2 i::k
     | I_SUB (s,r1, r2, i) ->  op2regsI "sub" s AL r1 r2 i::k

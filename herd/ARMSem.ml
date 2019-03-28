@@ -156,7 +156,8 @@ module Make (C:Sem.Config)(V:Value.S)
     let build_semantics ii =
       M.addT (A.next_po_index ii.A.program_order_index)
         begin match ii.A.inst with
-          | ARM.I_ADD (set,rd,rs,v) ->
+           | ARM.I_NOP -> M.unitT B.Next
+           | ARM.I_ADD (set,rd,rs,v) ->
               ((read_reg_ord rs ii)
                  >>=
                (fun vs ->

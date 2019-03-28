@@ -85,6 +85,7 @@ module Make (C:Sem.Config)(V:Value.S)
     let build_semantics ii =
       M.addT (A.next_po_index ii.A.program_order_index)
         begin match ii.A.inst with
+        | MIPS.NOP -> M.unitT B.Next
         | MIPS.LI (r,k) ->
             write_reg r (V.intToV k) ii >>! B.Next
         | MIPS.OP (op,r1,r2,r3) ->

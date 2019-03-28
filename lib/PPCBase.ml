@@ -225,6 +225,7 @@ type setcr0 = SetCR0 | DontSetCR0
 
 (* j: for arithm at least, should be ireg *)
 type 'k kinstruction =
+  | Pnop
 (* Two forms of ins: set cr0 or not *)
   | Padd of setcr0*reg*reg*reg
   | Psub of setcr0*reg*reg*reg
@@ -342,66 +343,67 @@ let memo_store = function
 
 let memo_storex sz = memo_store sz ^ "x"
 
-    let do_pp_instruction i = match i with
-      | Padd(set,rD,rA,rB) -> pp_op3 "add" set rD rA rB
-      | Psub(set,rD,rA,rB) -> pp_op3 "sub" set rD rA rB
-      | Psubf(set,rD,rA,rB) -> pp_op3 "subf" set rD rA rB
-      | Por(set,rD,rA,rB) -> pp_op3 "or" set rD rA rB
-      | Pxor(set,rD,rA,rB) -> pp_op3 "xor" set rD rA rB
-      | Pand(set,rD,rA,rB) -> pp_op3 "and" set rD rA rB
-      | Pmull(set,rD,rA,rB) -> pp_op3 "mullw" set rD rA rB
-      | Pdiv(set,rD,rA,rB) -> pp_op3 "divw" set rD rA rB
+let do_pp_instruction i = match i with
+| Pnop -> "nop"
+| Padd(set,rD,rA,rB) -> pp_op3 "add" set rD rA rB
+| Psub(set,rD,rA,rB) -> pp_op3 "sub" set rD rA rB
+| Psubf(set,rD,rA,rB) -> pp_op3 "subf" set rD rA rB
+| Por(set,rD,rA,rB) -> pp_op3 "or" set rD rA rB
+| Pxor(set,rD,rA,rB) -> pp_op3 "xor" set rD rA rB
+| Pand(set,rD,rA,rB) -> pp_op3 "and" set rD rA rB
+| Pmull(set,rD,rA,rB) -> pp_op3 "mullw" set rD rA rB
+| Pdiv(set,rD,rA,rB) -> pp_op3 "divw" set rD rA rB
 
-      | Paddi(rD,rA,simm) -> ppi_imm_instr "addi" rD rA simm
-      | Pori(rD,rA,simm) -> ppi_imm_instr "ori" rD rA simm
-      | Pxori(rD,rA,simm) -> ppi_imm_instr "xori" rD rA simm
-      | Pandi(rD,rA,simm) -> ppi_imm_instr "andi." rD rA simm
-      | Pmulli(rD,rA,simm) -> ppi_imm_instr "mulli" rD rA simm
+| Paddi(rD,rA,simm) -> ppi_imm_instr "addi" rD rA simm
+| Pori(rD,rA,simm) -> ppi_imm_instr "ori" rD rA simm
+| Pxori(rD,rA,simm) -> ppi_imm_instr "xori" rD rA simm
+| Pandi(rD,rA,simm) -> ppi_imm_instr "andi." rD rA simm
+| Pmulli(rD,rA,simm) -> ppi_imm_instr "mulli" rD rA simm
 
-      | Pli(rD,v) -> ppi_ri "li" rD v
-      | Pcmpwi (0,rS,v) -> ppi_ri "cmpwi" rS v
-      | Pcmpwi (crf,rS,v) ->
-          "cmpwi" ^ " " ^pp_crf crf ^ "," ^ pp_reg rS  ^ "," ^ pp_k v
-      | Pb lbl -> "b   " ^ lbl
-      | Pbcc(cond, lbl) -> "b"^pp_cond cond ^ "  " ^ lbl
-      | Pcmpw(0,rA,rB) -> ppi_rr "cmpw" rA rB
-      | Pcmpw(crf,rA,rB) ->
-          "cmpw" ^ " " ^pp_crf crf ^ "," ^ pp_reg rA  ^ "," ^ pp_reg rB
-      | Plwzu(rD,d,rA) -> ppi_imm_index_mode "lwzu" rD d rA
-      | Pmr (rD,rS) -> ppi_rr "mr" rD rS
-      | Pstwu(rS,d,rA) -> ppi_imm_index_mode "stwu" rS d rA
-      | Plwarx(rD,rA,rB) -> ppi_index_mode "lwarx" rD rA rB
-      | Pstwcx(rS,rA,rB) -> ppi_index_mode "stwcx." rS rA rB
+| Pli(rD,v) -> ppi_ri "li" rD v
+| Pcmpwi (0,rS,v) -> ppi_ri "cmpwi" rS v
+| Pcmpwi (crf,rS,v) ->
+    "cmpwi" ^ " " ^pp_crf crf ^ "," ^ pp_reg rS  ^ "," ^ pp_k v
+| Pb lbl -> "b   " ^ lbl
+| Pbcc(cond, lbl) -> "b"^pp_cond cond ^ "  " ^ lbl
+| Pcmpw(0,rA,rB) -> ppi_rr "cmpw" rA rB
+| Pcmpw(crf,rA,rB) ->
+    "cmpw" ^ " " ^pp_crf crf ^ "," ^ pp_reg rA  ^ "," ^ pp_reg rB
+| Plwzu(rD,d,rA) -> ppi_imm_index_mode "lwzu" rD d rA
+| Pmr (rD,rS) -> ppi_rr "mr" rD rS
+| Pstwu(rS,d,rA) -> ppi_imm_index_mode "stwu" rS d rA
+| Plwarx(rD,rA,rB) -> ppi_index_mode "lwarx" rD rA rB
+| Pstwcx(rS,rA,rB) -> ppi_index_mode "stwcx." rS rA rB
 
 
-      | Plmw (rD,d,rA) -> ppi_imm_index_mode "lmw" rD d rA
-      | Pstmw (rS,d,rA) -> ppi_imm_index_mode "stmw" rS d rA
+| Plmw (rD,d,rA) -> ppi_imm_index_mode "lmw" rD d rA
+| Pstmw (rS,d,rA) -> ppi_imm_index_mode "stmw" rS d rA
 
-      | Pload (sz,rD,d,rA) ->  ppi_imm_index_mode (memo_load sz) rD d rA
-      | Ploadx (sz,rD,rA,rB) ->  ppi_index_mode (memo_loadx sz) rD rA rB
-      | Pstore (sz,rS,d,rA) ->  ppi_imm_index_mode (memo_store sz) rS d rA
-      | Pstorex (sz,rS,rA,rB) ->  ppi_index_mode (memo_storex sz) rS rA rB
+| Pload (sz,rD,d,rA) ->  ppi_imm_index_mode (memo_load sz) rD d rA
+| Ploadx (sz,rD,rA,rB) ->  ppi_index_mode (memo_loadx sz) rD rA rB
+| Pstore (sz,rS,d,rA) ->  ppi_imm_index_mode (memo_store sz) rS d rA
+| Pstorex (sz,rS,rA,rB) ->  ppi_index_mode (memo_storex sz) rS rA rB
 
-      | Psync -> "sync"
-      | Plwsync -> "lwsync"
-      | Pisync -> "isync"
-      | Peieio -> "eieio"
-      | Pdcbf (r1,r2) -> ppi_rr "dcbf" r1 r2
+| Psync -> "sync"
+| Plwsync -> "lwsync"
+| Pisync -> "isync"
+| Peieio -> "eieio"
+| Pdcbf (r1,r2) -> ppi_rr "dcbf" r1 r2
 
-      | Pnor(set,rD,rA,rB) -> pp_op3 "nor" set rD rA rB
-      | Pneg(set,rD,rA) -> pp_op2 "neg" set rD rA
-      | Pslw(set,rD,rA,rB) -> pp_op3 "slw" set rD rA rB
-      | Psrawi(set,rD,rA,k) -> ppi_imm_instr_memo "srawi" set rD rA k
-      | Psraw(set,rD,rA,rB) -> pp_op3 "sraw" set rD rA rB
-      | Pbl lbl -> "bl   " ^ lbl
-      | Pblr -> "blr"
-      | Pmtlr reg -> "mtlr " ^ pp_reg reg
-      | Pmflr reg -> "mflr " ^ pp_reg reg
-      | Pcomment s -> "com \"" ^ s ^ "\""
+| Pnor(set,rD,rA,rB) -> pp_op3 "nor" set rD rA rB
+| Pneg(set,rD,rA) -> pp_op2 "neg" set rD rA
+| Pslw(set,rD,rA,rB) -> pp_op3 "slw" set rD rA rB
+| Psrawi(set,rD,rA,k) -> ppi_imm_instr_memo "srawi" set rD rA k
+| Psraw(set,rD,rA,rB) -> pp_op3 "sraw" set rD rA rB
+| Pbl lbl -> "bl   " ^ lbl
+| Pblr -> "blr"
+| Pmtlr reg -> "mtlr " ^ pp_reg reg
+| Pmflr reg -> "mflr " ^ pp_reg reg
+| Pcomment s -> "com \"" ^ s ^ "\""
 
-    let pp_instruction _m ins = do_pp_instruction ins
+let pp_instruction _m ins = do_pp_instruction ins
 
-    let dump_instruction = do_pp_instruction
+let dump_instruction = do_pp_instruction
 
 (**********************)
 (* Symbolic reg stuff *)
@@ -465,6 +467,7 @@ let fold_regs (f_reg,f_sreg) =
   | Pmflr r1
     ->  fold_reg r1 (y_reg,y_sreg)
 	(* None *)
+  | Pnop
   | Pb _
   | Pbcc _
   | Psync
@@ -569,6 +572,7 @@ let map_regs f_reg f_symb =
       Pmflr (map_reg r)
 
 	(* None *)
+  | Pnop
   | Pb _
   | Pbcc _
   | Psync
@@ -593,6 +597,7 @@ let norm_ins ins = match ins with
   | Ploadx(Quad,r1,r2,r3) -> Ploadx(Word,r1,r2,r3)
   | Pstore(Quad,r1,cst,r2) -> Pstore(Word,r1,cst,r2)
   | Pstorex(Quad,r1,r2,r3) -> Pstorex(Word,r1,r2,r3)
+  | Pnop
   | Pload ((Byte|Short|Word),_,_,_)
   | Ploadx ((Byte|Short|Word),_,_,_)
   | Pstore ((Byte|Short|Word),_,_,_)
@@ -624,6 +629,7 @@ let is_data r1 i = match i with
 | _ -> false
 
 let get_next = function
+  | Pnop
   | Padd _ | Psub (_, _, _, _)|Psubf (_, _, _, _)
   | Por (_, _, _, _)|Pand (_, _, _, _)|Pxor (_, _, _, _)
   |Pmull (_, _, _, _)|Pdiv (_, _, _, _)|Paddi (_, _, _)
@@ -670,6 +676,7 @@ include Pseudo.Make
 	| Plmw(r1,k,r2) -> Plmw(r1,MetaConst.as_int k,r2)
 	| Pstmw (r1,k,r2) -> Pstmw(r1,MetaConst.as_int k,r2)
 	    
+        | Pnop
 	| Ploadx (_,_,_,_)
 	| Pstorex (_,_,_,_)
 	| Pb _ | Pbcc (_,_)
@@ -688,6 +695,7 @@ include Pseudo.Make
 
 (* Number if memory accesses per instruction (for estimating test complexity) *)
       let get_naccesses = function
+        | Pnop
 (* Two forms of ins: set cr0 or not *)
         | Padd _
         | Psub _
@@ -738,6 +746,7 @@ include Pseudo.Make
       let fold_labels k f = function
         | Pb lab
         | Pbcc (_,lab) -> f k lab
+        | Pnop
         | Pdcbf (_, _)
         | Pstwcx (_, _, _)|Plwarx (_, _, _)
         | Pstwu(_,_,_)|Pmr (_, _)
@@ -763,6 +772,7 @@ include Pseudo.Make
       let map_labels f = function
         | Pb lab -> Pb (f lab)
         | Pbcc (cc,lab) -> Pbcc (cc,f lab)
+        | Pnop
         | Pdcbf (_, _)
         | Pstwcx (_, _, _)|Plwarx (_, _, _)
         | Pstwu(_,_,_)|Pmr (_, _)

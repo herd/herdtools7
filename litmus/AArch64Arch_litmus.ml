@@ -61,4 +61,5 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
           | _ -> false
       end)
 
+      let nop = I_NOP
 end

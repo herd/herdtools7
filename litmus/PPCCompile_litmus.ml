@@ -215,8 +215,8 @@ module Make(V:Constant.S)(C:Config) =
           bcc tr_nolab Gt lbl1; ]
 
     let do_compile_ins tr_lab ins k = match tr_ins ins with
+    | Pnop -> { empty_ins with memo="nop"; }::k
     | Pmr (rD,rS) -> mr rD rS::k
-
     | Padd(set,rD,rA,rB) -> op3regs  "add" set rD rA rB::k
     | Psub(set,rD,rA,rB) -> op3regs  "sub" set rD rA rB::k
     | Psubf(set,rD,rA,rB)  -> op3regs  "subf" set rD rA rB::k

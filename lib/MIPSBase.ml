@@ -167,6 +167,7 @@ type cond = EQ | NE
 type condz = LEZ | GTZ | LTZ | GEZ
 
 type instruction =
+  | NOP
   | LI of reg * k
   | OP of op * reg * reg * reg
   | OPI of op * reg * reg * k
@@ -256,6 +257,7 @@ let pp_instruction m =
   | SW (r1,k,r2) -> pp_rkr "sw" r1 k r2
   | LL (r1,k,r2) -> pp_rkr "ll" r1 k r2
   | SC (r1,k,r2) -> pp_rkr "sc" r1 k r2
+  | NOP -> "nop"
   | SYNC -> "sync"
 
 let dump_instruction = pp_instruction Ascii
@@ -292,7 +294,7 @@ let fold_regs (f_reg,f_sreg) =
   | SC (r1,_,r2)
   | BC (_,r1,r2,_) ->
       fold_reg r1 (fold_reg r2 c)
-  | B _|SYNC -> c
+  | NOP|B _|SYNC -> c
 
 let map_regs f_reg f_symb =
   let map_reg reg = match reg with
@@ -318,7 +320,7 @@ let map_regs f_reg f_symb =
       BC (c,map_reg r1,map_reg r2,lbl)
   | BCZ (c,r,lbl) ->
       BCZ (c,map_reg r,lbl)
-  | B _| SYNC -> ins
+  | NOP|B _| SYNC -> ins
 
 (* No addresses burried in MIPS code *)
 let fold_addrs _f c _ins = c
@@ -330,6 +332,7 @@ let norm_ins ins = ins
 
 (* Instruction continuation *)
 let get_next = function
+  | NOP
   | LI _
   | OP _
   | OPI _
@@ -350,6 +353,7 @@ include Pseudo.Make
       let parsed_tr i = i
 
       let get_naccesses = function
+        | NOP
         | LI _
         | OP _
         | OPI _

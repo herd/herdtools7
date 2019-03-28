@@ -71,6 +71,7 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
     | I_SETNB ea
     | I_CMOVC (_,ea)
         -> extract_ea ea
+    | I_NOP
     | I_READ _
     | I_JMP _
     | I_JCC _
@@ -228,6 +229,8 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
        jcc no_tr C_GT lbl1;]
 
     let rec do_compile_ins tr_lab ins = match ins with
+    | I_NOP ->
+        { empty_ins with memo = "nop"; }
     | I_LOCK ins ->
         let r = do_compile_ins tr_lab ins in
         { r with memo = "lock; "^r.memo ; }
