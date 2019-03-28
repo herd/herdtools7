@@ -52,5 +52,5 @@ module Make(V:Constant.S) = struct
               true
           | _ -> false
       end)
-
+  let nop = Pnop
 end

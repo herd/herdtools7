@@ -33,7 +33,7 @@ module type S = sig
   type parsedPseudo = pins kpseudo
 
 
-(* Lifting of fold/map *)
+(* Lifting of Oufold/map *)
   val pseudo_map : ('a -> 'b) -> 'a kpseudo -> 'b kpseudo
   val pseudo_fold : ('a -> 'b -> 'a) -> 'a -> 'b kpseudo -> 'a
   val pseudo_iter : ('a -> unit) -> 'a kpseudo -> unit
@@ -52,7 +52,10 @@ module type S = sig
   val pseudo_parsed_tr : parsedPseudo -> pseudo
 
 (* Lift to pseudo code *)
-      val lift_code : 'a list -> 'a kpseudo list
+  val lift_code : 'a list -> 'a kpseudo list
+
+(* Find offest of label (may raise Not_found) *)
+  val find_offset : string -> 'a kpseudo list -> int
 end
 
 (* Input signature *)
@@ -141,4 +144,12 @@ struct
 
 (* Useful *)
   let lift_code xs = List.map (fun i -> Instruction i) xs
+
+  let find_offset lbl0 =
+    let rec find_rec k = function
+      | [] -> raise Not_found
+      | Label (lbl,_)::_ when Misc.string_eq lbl lbl0 -> k
+      | (Nop|Label (_,Nop))::is -> find_rec k is
+      | _::is -> find_rec (k+1) is in
+    find_rec 0
 end

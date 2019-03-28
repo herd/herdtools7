@@ -26,6 +26,7 @@ module Make(O:sig val memory : Memory.t val hexa : bool end) = struct
   let vToName = function
     | Constant.Concrete i -> "addr_" ^ V.Scalar.pp O.hexa i
     | Constant.Symbolic (s,_) -> s
+    | Constant.Label _ -> assert false
 
   module Internal = struct
     type arch_reg = reg
@@ -51,12 +52,14 @@ module Make(O:sig val memory : Memory.t val hexa : bool end) = struct
     module V = V
     include CTarget
     include OutUtils.Make(O)(V)
+
+    let dump_init_val = dump_v
   end
 
   let arch = Internal.arch
 
   let rec find_in_state loc = function
-    | [] -> V.intToV 0
+    | [] -> V.zero
     | (loc2,v)::rem ->
         if location_compare loc loc2 = 0 then v
         else find_in_state loc rem

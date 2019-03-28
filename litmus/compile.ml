@@ -18,12 +18,14 @@ module type Config = sig
   val numeric_labels : bool
   val timeloop : int
   val barrier : Barrier.t
+  val variant : Variant_litmus.t -> bool
 end
 
 module Default = struct
   let numeric_labels = false
   let timeloop = 0
   let barrier = Barrier.UserFence
+  let variant _ = false
 end
 
 let get_fmt hexa base = match CType.get_fmt hexa base with
@@ -41,10 +43,12 @@ module Generic (A : Arch_litmus.Base)
 
       let base =  base
       let pointer = pointer
+      let code_pointer = Pointer (Base "ins_t")
 
       let typeof = function
         | Constant.Concrete _ -> base
         | Constant.Symbolic _ -> pointer
+        | Constant.Label _ -> code_pointer
 
       let misc_to_c  = function
         | MiscParser.TyDef -> base
@@ -122,8 +126,8 @@ module Generic (A : Arch_litmus.Base)
         with
           Not_found -> StringMap.add a ty env
 
-      let add_value v env = match v with
-      | Constant.Concrete _ -> env
+      let _add_value v env = match v with
+      | Constant.Concrete _|Constant.Label _ -> env
       | Constant.Symbolic (a,_) -> add_addr_type a base env
 
 (********************)
@@ -281,12 +285,17 @@ module Make
         code
         A.RegSet.empty
 
+(**********************************)
+(* Label compilation as an offset *)
+(**********************************)
+
+    let find_offset prog p lbl =
+      let is = List.assoc p prog in
+      A.find_offset lbl is
 
 (*******************************)
 (* Assoc label -> small number *)
 (*******************************)
-
-
 
     let rec lblmap_pseudo c m i = match i with
     | A.Nop|A.Instruction _ -> c,m
@@ -327,7 +336,7 @@ module Make
 
     let as_int = function
       | Concrete i -> i
-      | Symbolic _ -> raise CannotIntern
+      | Symbolic _|Label _ -> raise CannotIntern
 
 
     let compile_pseudo_code code k =
@@ -360,8 +369,6 @@ module Make
             let k = do_rec seen code in
             ins @ k in
       do_rec StringSet.empty code
-
-
 
     let compile_code code =
       let code = compile_pseudo_code code [] in
@@ -466,7 +473,7 @@ module Make
       let pecs = outs in
       List.map
         (fun (proc,addrs,stable,code) ->
-          let observed_proc = 
+          let observed_proc =
             A.LocSet.fold
               (fun loc k -> match A.of_proc proc loc with
               | Some r -> RegSet.add r k
@@ -536,19 +543,8 @@ module Make
       List.map
         (fun (p,t) -> p,(t, (type_out env p t, [])))
         code
-(*
-  let pp_out (p,(_,(env,_))) =
-  let pp =
-  List.map
-  (fun (reg,t) -> sprintf "<%i:%s,%s>"
-  p (A.pp_reg reg) (CType.dump t))
-  env in
-  String.concat " " pp
+    let do_self = O.variant Variant_litmus.Self
 
-  let pp_outs outs =
-  let pp = List.map pp_out outs in
-  String.concat " " pp
- *)
     let compile name t =
       let
           { MiscParser.init = init ;
@@ -561,18 +557,21 @@ module Make
       let initenv = List.map (fun (loc,(_,v)) -> loc,v) init in
       let observed = Generic.all_observed final filter locs in
       let ty_env = Generic.build_type_env init final filter locs in
-      let code = mk_templates name initenv code observed in
-      let code_typed = type_outs ty_env code in
-      { T.init = initenv ;
-        info = info;
-        code = code_typed;
-        condition = final;
-        filter = filter;
-        globals = comp_globals ty_env init code;
-        flocs = List.map fst locs ;
-        global_code = [];
-        src = t;
-        type_env = ty_env;
-      }
+      let code =
+        if do_self then
+          List.map (fun (p,c) -> p,A.Instruction A.nop::c) code
+        else code in      let code = mk_templates name initenv code observed in
+        let code_typed = type_outs ty_env code in
+        { T.init = initenv ;
+          info = info;
+          code = code_typed;
+          condition = final;
+          filter = filter;
+          globals = comp_globals ty_env init code;
+          flocs = List.map fst locs ;
+          global_code = [];
+          src = t;
+          type_env = ty_env;
+        }
 
   end

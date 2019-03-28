@@ -19,6 +19,7 @@ open Constant
 open MiscParser
 open ConstrGen
 let mk_sym s = Symbolic (s,0)
+let mk_lab p s = Label (p,s)
 %}
 
 %token EOF
@@ -71,9 +72,14 @@ init:
 reg:
 | NAME       {  $1 }
 | DOLLARNAME {  $1 }
+
 maybev:
 | NUM  { Concrete $1 }
 | NAME { mk_sym $1 }
+
+maybev_label:
+| maybev { $1 }
+| PROC COLON NAME { mk_lab $1 $3 }
 
 location_reg:
 | PROC COLON reg  {Location_reg ($1,$3)}
@@ -98,7 +104,7 @@ location:
 
 atom:
 | location {($1,ParsedConstant.zero)}
-| location EQUAL maybev {($1,$3)}
+| location EQUAL maybev_label {($1,$3)}
 
 atom_init:
 | atom { let x,v = $1 in x,(TyDef,v) }

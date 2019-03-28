@@ -123,7 +123,7 @@ module Make (C:Sem.Config)(V:Value.S)
     let build_semantics ii =
       let build_semantics_inner ii =
         match ii.A.inst with
-
+        | BellBase.Pnop -> M.unitT B.Next
         | BellBase.Pld(r,addr_op,[("deref"|"lderef")]) when compat ->
             solve_addr_op addr_op ii >>=
             fun addr -> read_mem nat_sz addr ["once"] ii >>=

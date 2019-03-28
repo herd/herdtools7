@@ -175,6 +175,7 @@ let pp_op = function
   | OP(Neq,x,y) -> sprintf "(neq %s %s)" (pp_iar x) (pp_iar y)
 
 type 'k kinstruction =
+| Pnop
 | Pld of reg * 'k addr_op * string list
 | Pst of 'k addr_op * 'k reg_or_imm * string list
 | Pfence of barrier
@@ -185,6 +186,7 @@ type 'k kinstruction =
 
 
 let instruction_tr f = function
+  | Pnop -> Pnop
   | Pld (r,x,s) -> Pld (r,addr_op_tr f x,s)
   | Pst (x,ri,s) -> Pst (addr_op_tr f x,reg_or_imm_tr f ri,s)
   | Pfence _ as i -> i
@@ -222,6 +224,8 @@ include Pseudo.Make
      end)
 
 let dump_instruction i = match i with
+| Pnop -> "nop"
+
 | Pld(r, addr_op, s) -> sprintf "r[%s] %s %s"
       (string_of_annot_list s)
       (pp_reg r)
@@ -282,6 +286,7 @@ let fold_regs (f_reg,f_sreg) =
   in
   let fold_ins (_y_reg,_y_sreg as c) ins =
     begin match ins with
+    | Pnop -> c
     | Pld(r, addr_op, _) -> fold_reg r (fold_addr_op addr_op c)
     | Pst(addr_op,roi,_) -> fold_addr_op addr_op (fold_roi roi c)
     | Pfence _|Pcall _|Pbranch (None,_,_) -> c
@@ -318,6 +323,7 @@ let map_regs f_reg f_symb =
     | OP(op,x,i) -> OP(op,map_iar x, map_iar i)
   in
   let map_ins ins = begin match ins with
+    | Pnop -> Pnop
     | Pld(r,addr_op,s) -> Pld(map_reg r, map_addr_op addr_op, s)
     | Pst(addr_op,roi,s) -> Pst(map_addr_op addr_op, map_roi roi, s)
     | Prmw(r,op,x,s) -> Prmw(map_reg r,map_op op, map_addr_op x, s)
@@ -351,7 +357,7 @@ let fold_addrs f =
     | OP(_,x,i) -> fold_iar x (fold_iar i c)
   in
   fun c ins -> match ins with
-  | Pbranch _ | Pfence _|Pcall _ -> c
+  | Pnop|Pbranch _ | Pfence _|Pcall _ -> c
   | Pld (_,ao,_) | Pst (ao,_,_) -> fold_ao ao c
   | Prmw (_,op,x,_) -> fold_op op (fold_ao x c)
   | Pmov (_,op) -> fold_op op c
@@ -388,7 +394,7 @@ let get_id_and_list i = match i with
 | Prmw(_,_,_,s) -> (BellName.rmw,s)
 | Pbranch(_,_,s) -> (BellName.b,s)
 | Pcall s -> (BellName.call,[s])
-| Pmov _ -> raise Not_found
+| Pnop|Pmov _ -> raise Not_found
 
 let get_from_and_to_labels b = match b with
 | Fence (_, a) -> a
@@ -404,7 +410,7 @@ let set_list i al = match i with
     | [] -> i
     | s::_ -> Pcall s
     end
-| Pmov _ as i -> i
+| Pnop|Pmov _ as i -> i
 
 let tr_compat = function
   | Pcall "sync" -> Pfence (Fence (["sync";],None))

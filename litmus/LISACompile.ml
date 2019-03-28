@@ -52,7 +52,7 @@ module Make(V:Constant.S) =
       | Prmw (_,op,ao,_) ->
           StringSet.union (extract_op op) (extract_ao ao)
       | Pmov  (_,op) -> extract_op op
-      | Pfence _|Pcall _|Pbranch _ -> StringSet.empty
+      | Pnop|Pfence _|Pcall _|Pbranch _ -> StringSet.empty
 
 (*****************************)
 (* Compilation (to kernel C) *)
@@ -61,7 +61,7 @@ module Make(V:Constant.S) =
       | IAR_imm i -> sprintf "%i" i,[]
       | IAR_roa (Rega r) -> reg_to_string r,[r]
       | IAR_roa (Abs (Constant.Symbolic (s,_))) -> s,[]
-      | IAR_roa (Abs (Constant.Concrete _)) -> assert false
+      | IAR_roa (Abs (Constant.Concrete _|Constant.Label _)) -> assert false
 
     let compile_roi = function
       | Imm i -> sprintf "%i" i,[]
@@ -82,8 +82,8 @@ module Make(V:Constant.S) =
       | Addr_op_add (Rega r,roi) ->
           let m,i = compile_roi roi in
           add_par (reg_to_string r ^ "+" ^ m),r::i,[r,type_vo vo]
-      | Addr_op_atom (Abs (Constant.Concrete _))
-      | Addr_op_add (Abs (Constant.Concrete _),_)
+      | Addr_op_atom (Abs (Constant.Concrete _|Constant.Label _))
+      | Addr_op_add (Abs (Constant.Concrete _|Constant.Label _),_)
         ->
           assert false
 

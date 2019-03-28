@@ -42,8 +42,10 @@ end = struct
 
         module P = I.P
 
+        let dump_init_val = A.V.pp I.hexa
+
         let dump_state_atom =
-          MiscParser.dump_state_atom A.pp_location (A.V.pp I.hexa)
+          MiscParser.dump_state_atom A.pp_location dump_init_val
 
         type state = A.fullstate
 

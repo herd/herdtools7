@@ -46,6 +46,7 @@ end
 
 module type S = sig
   module V : Constant.S
+
   val comment : string
   type arch_reg
 
@@ -71,11 +72,13 @@ module type S = sig
       name : Name.t ;
     }
   val get_addrs : t -> string list
+  val get_labels : t -> (int * string) list
   val fmt_reg : arch_reg -> string
   val dump_label : string -> string
   val emit_label : (string -> string) -> string -> ins
   val dump_out_reg : int -> arch_reg -> string
   val dump_v : V.v -> string
+  val dump_init_val : V.v -> string
   val addr_cpy_name : string -> int -> string
 
   val clean_reg : string -> string
@@ -142,9 +145,17 @@ module Make(O:Config)(A:I) =
                 (fun k (_,v) ->
                   match v with
                   | Symbolic (s,_) -> s::k
-                  | Concrete _ -> k)
+                  | Concrete _|Label _ -> k)
                 [] init)) in
       StringSet.elements set
+
+    let get_labels { init; } =
+      List.fold_left
+        (fun k (_,v) ->
+          match v with
+          | Label (p,s) -> (p,s)::k
+          | Concrete _|Symbolic _ -> k)
+        [] init
 
     let get_stable { stable; _} = stable
 
@@ -274,6 +285,8 @@ module Make(O:Config)(A:I) =
         error (sprintf "memo: %s, error: %s" t.memo msg)
 
     include OutUtils.Make(O)(V)
+
+    let dump_init_val = dump_v
 
     module RegSet = A.RegSet
     module RegMap = A.RegMap

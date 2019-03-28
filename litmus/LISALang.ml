@@ -25,6 +25,8 @@ module Make(V:Constant.S) = struct
 
   module Tmpl = A.Out
 
+  let checkVal f v = f v
+
   module RegSet = A.Out.RegSet
   module RegMap = A.Out.RegMap
 
@@ -82,9 +84,12 @@ module Make(V:Constant.S) = struct
 (*****************)
 (* As a function *)
 (*****************)
+
   let compile_val_fun v = match v with
   | Constant.Symbolic (s,_) -> sprintf "%s" s
   | Constant.Concrete _ -> Tmpl.dump_v v
+  | Constant.Label _ ->
+      Warn.user_error "No label value in LISA"
 
   and compile_addr_fun x = sprintf "*%s" x
 
@@ -117,7 +122,7 @@ module Make(V:Constant.S) = struct
       | _::_ -> String.concat "," p in
     LangUtils.dump_code_def chan false proc params ;
     do_dump
-      compile_val_fun
+      (checkVal compile_val_fun)
       compile_addr_fun
       (fun p r  -> sprintf "*%s" (Tmpl.dump_out_reg p r))
       chan "  "  env proc t ;

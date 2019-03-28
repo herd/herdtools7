@@ -24,5 +24,5 @@ module type S = sig
   val dump_out_reg : int -> arch_reg -> string
   val addr_cpy_name : string -> int -> string
   val dump_v : V.v -> string
-
+  val dump_init_val : V.v -> string
 end

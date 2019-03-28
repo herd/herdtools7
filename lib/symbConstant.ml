@@ -34,13 +34,23 @@ module Make(Scalar:Scalar.S) = struct
       | 0 -> Misc.int_compare o1 o2
       | r -> r
       end
-  | Concrete _,Symbolic _ -> -1
-  | Symbolic _,Concrete _ -> 1
+  | Label (p1,s1),Label (p2,s2) ->
+      begin match String.compare s1 s2 with
+      | 0 -> Misc.int_compare p1 p2
+      | r -> r
+      end
+  | (Concrete _,(Symbolic _|Label _))
+  | (Symbolic _,Label _)
+      -> -1
+  | (Symbolic _|Label _),Concrete _
+  | (Label _,Symbolic _)
+      -> 1
 
   let pp hexa = function
     | Concrete i -> Scalar.pp hexa i
     | Symbolic (s,0) -> s
     | Symbolic (s,o) -> Printf.sprintf "%s+%i" s o
+    | Label (p,lbl)  -> Printf.sprintf "%i:%s" p lbl
 
   let pp_v = pp false
 
@@ -48,11 +58,18 @@ module Make(Scalar:Scalar.S) = struct
   | Concrete i1, Concrete i2 -> Scalar.compare i1 i2 = 0
   | Symbolic (s1,o1),Symbolic (s2,o2) ->
       Misc.string_eq  s1 s2 && Misc.int_eq o1 o2
+  | Label (p1,s1),Label (p2,s2) ->
+      Misc.string_eq  s1 s2 && Misc.int_eq p1 p2
   | (Concrete _,Symbolic _)
-  | (Symbolic _,Concrete _) -> false
+  | (Concrete _,Label _)
+  | (Symbolic _,Concrete _)
+  | (Label _,Concrete _)
+  | (Label _,Symbolic _)
+  | (Symbolic _,Label _)
+    -> false
 
  (* For building code symbols, significant for symbols only ? *)
   let vToName = function
     | Symbolic (s,0) -> s
-    | Symbolic _|Concrete _ -> assert false
+    | Symbolic _|Concrete _|Label _ -> assert false
 end

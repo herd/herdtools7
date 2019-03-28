@@ -83,4 +83,5 @@ module type S =
     include ArchExtra_litmus.S with module I.V = V
     and type I.arch_reg = reg
 
+    val nop : instruction
   end

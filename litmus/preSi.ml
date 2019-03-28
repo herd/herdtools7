@@ -735,7 +735,8 @@ module Make
                 match v with
                 | Concrete i -> A.V.Scalar.pp Cfg.hexa i
                 | Symbolic (s,_) ->
-                    sprintf "(%s)_vars->%s" (CType.dump at) s in
+                    sprintf "(%s)_vars->%s" (CType.dump at) s
+                | Label _ -> Warn.fatal "No code label in -mode presi" in
               match at with
               | Array (t,sz) ->
                   sprintf "for (int _j = 0 ; _j < %i ; _j++) %s"
