@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2010-present Institut National de Recherche en Informatique et *)
+(* Copyright 2019-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,25 +14,11 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Constants in code *)
+type t =
+  | Self (* Self modifying code *)
 
-type 'scalar t =
-  | Concrete of 'scalar
-  | Symbolic  of string * int (* Memory cell *)
-  | Label of int * string     (* In code *)
-
-module type S =  sig
-
-  module Scalar : Scalar.S
-
-  type v = Scalar.t t
-  val intToV  : int -> v
-  val nameToV  : string -> v
-  val zero : v
-  val one : v
-  val pp : bool -> v -> string (* true -> hexa *)
-  val pp_v  : v -> string
-  val compare : v -> v -> int
-  val eq : v -> v -> bool
-  val vToName : v -> string
-end
+val compare : t -> t -> int
+val tags : string list
+val parse : string -> t option
+val pp : t -> string
+val ok : t -> Archs.t -> bool

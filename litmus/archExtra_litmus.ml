@@ -125,7 +125,7 @@ module Make(O:Config)(I:I) : S with module I = I
   type fullstate = (location * (MiscParser.run_type * I.V.v)) list
 
   let rec find_in_state loc = function
-    | [] -> I.V.intToV 0
+    | [] -> I.V.zero
     | (loc2,v)::rem ->
         if location_compare loc loc2 = 0 then v
         else find_in_state loc rem

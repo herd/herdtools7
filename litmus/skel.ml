@@ -229,7 +229,7 @@ end = struct
           let coms =
             try LexAffinity.coms res
             with _ -> assert false in
-          let nprocs = List.length test.T.code in
+          let nprocs = T.get_nprocs test in
           if nprocs <> List.length coms then None
           else if smt > 1 then match smtmode with
           | Smt.No -> None
@@ -347,6 +347,7 @@ end = struct
   let dump_a_v_casted = function
     | Concrete i ->  A.V.Scalar.pp  Cfg.hexa i
     | Symbolic (s,_) -> sprintf "((int *)%s)" (dump_a_addr s)
+    | Label _ -> assert false
 
 (* Dump left & right values when context is available *)
 
@@ -1303,13 +1304,15 @@ end = struct
         O.fx indent "_a->%s = %s(_a->%s,sizeof(*_a->%s));" a alg a a
     in
     if do_self then begin
-      O.o "static size_t code_size(ins_t *p) {" ;
-      O.oi "ins_t retcode = getret();" ;
+      O.o "static size_t find_ins(ins_t opcode,ins_t *p) {" ;
       O.oi "ins_t *q = p;" ;
       O.o "" ;
-      O.oi "for  ( ; *q != retcode ; q++);" ;
+      O.oi "for  ( ; *q != opcode ; q++);" ;
       O.oi "return q-p+1;" ;
-      O.o "}"
+      O.o "}" ;
+      O.o "" ;
+      O.o "static size_t code_size(ins_t *p) { return find_ins(getret(),p); }" ;
+      O.o "static size_t prelude_size(ins_t *p) { return find_ins(getnop(),p); }" ;
     end ;
     O.f "static void init(ctx_t *_a%s) {"
       (if do_staticalloc then ",int id" else "") ;
@@ -1433,14 +1436,18 @@ end = struct
     end ;
     if do_self then begin
       O.oi "int pagesize = getpagesize();" ;
-      O.oi "size_t _sz;"; O.oi "int _err;" ;
+      O.oi "size_t _sz;";
       for n = 0 to List.length test.T.code-1 do
-        O.fi "_a->code%i_sz = code_size((ins_t *)code%i);" n n ;
-        O.fi "_sz = _a->code%i_sz * size_of_test * sizeof(ins_t);" n ;
+        let open OutUtils in
+        O.fi "_a->%s = code_size((ins_t *)code%i);"
+          (fmt_code_size n) n ;
+        O.fi "_a->%s = prelude_size((ins_t *)code%i);"
+          (fmt_prelude n) n ;
+        O.fi "_sz = _a->%s * size_of_test * sizeof(ins_t);"
+          (fmt_code_size n) ;
         O.fi "_a->code%i_mem = malloc_check(_sz+pagesize-sizeof(ins_t));" n ;
         O.fi "_a->code%i = do_align(_a->code%i_mem,pagesize);" n n ;
-        O.fi "_err = mprotect(_a->code%i,_sz,PROT_READ|PROT_EXEC|PROT_WRITE);" n ;
-        O.oi "if (_err) errexit(\"mprotect\",_err);"
+        O.fi "if (mprotect(_a->code%i,_sz,PROT_READ|PROT_EXEC|PROT_WRITE)) errexit(\"mprotect\",errno);" n
       done
     end ;
     O.o "}" ;
@@ -1522,7 +1529,7 @@ end = struct
     end ;
     if do_sync_macro then free indent "_scratch" ;
     if do_self then begin
-      for n=0 to List.length test.T.code-1 do
+      for n=0 to T.get_nprocs test-1 do
         O.fi "free((void *)_a->code%i_mem);" n
       done
     end ;
@@ -1623,7 +1630,36 @@ end = struct
     if do_verbose_barrier_local then O.fi "pm_t *p_mutex;" ;
     O.fi "ctx_t *_a;   /* In this context */" ;
     O.f "} parg_t;" ;
-    O.f "\n\n%s\n\n" (String.concat "\n" test.T.global_code);
+    O.o "" ;
+    begin match test.T.global_code with
+    | [] -> ()
+    | _::_ as cs -> O.f "%s\n\n" (String.concat "\n" cs)
+    end ;
+    if do_self then begin
+      let src = test.T.src in
+      let find v p lbl =
+        try
+          T.find_offset src.MiscParser.prog p lbl
+        with Not_found ->
+          Warn.user_error "Non-existant label %s" (A.V.pp_v v) in
+      let some =
+        List.fold_left
+          (fun k (_,(_,v)) -> match v with
+        | Constant.Label (p,lbl) ->
+            let off = find v p lbl in
+            O.f "static const int %s = %i;"
+              (OutUtils.fmt_lbl_offset p lbl) off ;
+            true
+        | _ -> k)
+          false src.MiscParser.init in
+      if some then O.o ""
+    end else begin
+      List.iter
+        (fun  (_,(_,v)) -> match v with
+        |  Constant.Label _ -> Warn.user_error "label values require \"-variant self\" mode"
+        | _ ->  ())
+         test.T.src.MiscParser.init
+    end ;
     List.iter
       (fun (proc,(out,(outregs,envVolatile))) ->
         let myenv = U.select_proc proc env
@@ -2298,10 +2334,10 @@ end = struct
     O.o "/* Parameters */" ;
     O.oi "param_t *_p;" ;
     if do_self then begin
-      let nprocs = List.length test.T.code in
+      let nprocs = T.get_nprocs test in
       O.o "/* Code memory */" ;
       for n = 0 to nprocs-1 do
-        O.fi "size_t code%i_sz;" n ;
+        O.fi "size_t code%i_sz,%s;" n (OutUtils.fmt_prelude n) ;
         O.fi "ins_t *code%i_mem,*code%i;" n n
       done
     end ;
@@ -2707,7 +2743,7 @@ end = struct
       O.oi "ints_t delta_tb = { N, delta_t };" ;
     end ;
     let vars = get_global_names test
-    and nprocs = List.length test.T.code in
+    and nprocs = T.get_nprocs test in
     if do_custom then begin
       List.iter
         (fun (i,(out,_)) ->

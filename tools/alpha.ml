@@ -139,7 +139,7 @@ struct
               (fun _sr -> assert false)))
         c in
     c,env
-      
+
   let rec alpha_prog ma mt apcs pcs = match apcs,pcs with
   | _,[] -> [],ProcRegMap.empty
   | [],(p,c)::pcs ->
@@ -149,7 +149,7 @@ struct
           (A.ProcMap.safe_find A.RegSet.empty p mt)
           [] c in
       let pcs,m = alpha_prog ma mt [] pcs in
-      (p,c)::pcs,add_reg_map p cm m      
+      (p,c)::pcs,add_reg_map p cm m
   | (_,ac)::apcs,(p,c)::pcs ->
       let c,cm =
         alpha_code
@@ -157,23 +157,28 @@ struct
           (A.ProcMap.safe_find A.RegSet.empty p mt)
           ac c in
       let pcs,m = alpha_prog ma mt apcs pcs in
-      (p,c)::pcs,add_reg_map p cm m      
+      (p,c)::pcs,add_reg_map p cm m
 
 
 (*********************************)
 (* Again for global locations... *)
 (*********************************)
 
-  module Addr = struct 
+  module Addr = struct
     open Constant
+
+    let nolabel_value () =
+      Warn.user_error "No label value for %s" Sys.argv.(0)
 
     let collect_value f v k = match v with
     | Symbolic (s,_) -> f s k
     | Concrete _ -> k
+    | Label _ -> nolabel_value ()
 
     let map_value f v = match v with
     | Symbolic (s,o) -> Symbolic (f s,o)
     | Concrete _ -> v
+    | Label _ -> nolabel_value ()
 
     let collect_pseudo f =
       A.pseudo_fold
@@ -229,7 +234,7 @@ struct
 
     let map_constr f = ConstrGen.map_constr (map_atom f)
 
-    let collect_locs f = 
+    let collect_locs f =
       List.fold_right (fun (loc,_) -> collect_location f loc)
 
     let map_locs f =
@@ -276,7 +281,7 @@ struct
               StringMap.add s f env,free)
           tss (StringMap.empty,free) in
       alpha_test env test
-        
+
   end
   module T = TestHash.Make(A)
 
@@ -298,7 +303,7 @@ struct
     and final = alpha_constr alpha_preg test.condition
     and locs = alpha_locations alpha_preg test.locations in
     let prog = T.refresh_labels "X" prog in
-    let r = 
+    let r =
       { test with
         prog = prog; init = initial;
         condition = final; locations = locs; } in
@@ -316,5 +321,5 @@ struct
       D.dump stderr doc r
     end ;
     r
-    
+
 end

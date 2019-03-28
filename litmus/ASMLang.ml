@@ -38,15 +38,17 @@ module Make
     (A:I)
     (Tmpl:Template.S with
      module V = A.V and
-     type arch_reg = A.arch_reg and
-     module RegSet = A.RegSet and
-     module RegMap = A.RegMap)
+type arch_reg = A.arch_reg and
+module RegSet = A.RegSet and
+module RegMap = A.RegMap)
     = struct
 
       type arch_reg = Tmpl.arch_reg
       type t = Tmpl.t
 
       open Printf
+
+      let checkVal f v = f v
 
       let compile_addr_inline = match O.mode with
       | Mode.Std -> sprintf "_a->%s[_i]"
@@ -55,8 +57,8 @@ module Make
       and compile_addr_fun x = sprintf "*%s" x
 
       and compile_val_inline = match O.mode with
-      | Mode.Std -> Tmpl.dump_v
-      | Mode.PreSi -> A.V.pp_v
+      | Mode.Std -> checkVal Tmpl.dump_v
+      | Mode.PreSi -> checkVal A.V.pp_v
 
       module RegSet = Tmpl.RegSet
       module RegMap = Tmpl.RegMap
@@ -97,14 +99,14 @@ module Make
   eprintf "Outputs in In: %a\n"
   (fun chan rs -> RegSet.pp chan "," pp_reg rs)
   in_outputs ;
-*)
+ *)
         let dump_pair reg v =
           let dump_v = compile_val in
           let dump_v = (* catch those addresses that are saved in a variable *)
             if O.cautious then
               (fun v -> match v with
               | Constant.Symbolic _ -> copy_name (Tmpl.tag_reg reg)
-              | Constant.Concrete _ -> dump_v v)
+              | _ -> dump_v v)
             else dump_v  in
           if RegSet.mem reg in_outputs then begin
             match A.internal_init reg with
@@ -153,37 +155,37 @@ module Make
                        (compile_addr a)::k))
                t.Tmpl.addrs
              @@RegSet.fold
-                 (fun reg k ->
-                   (if O.cautious then
-                     sprintf "%s \"%s\" (%s)"
-                       (tag_reg_def reg)
-                       (A.reg_class reg)
-                       (copy_name (Tmpl.dump_out_reg proc reg))
-                   else if RegSet.mem reg stable then
-                     sprintf "%s \"%s\" (%s)"
-                       (tag_reg_def reg)
-                       (A.reg_class reg)
-                       (dump_stable_reg reg)
-                   else
-                     sprintf "%s \"%s\" (%s)"
-                       (tag_reg_def reg)
-                       (A.reg_class reg)
-                       (compile_out_reg proc reg))::k)
-                 final
+                  (fun reg k ->
+                    (if O.cautious then
+                      sprintf "%s \"%s\" (%s)"
+                        (tag_reg_def reg)
+                        (A.reg_class reg)
+                        (copy_name (Tmpl.dump_out_reg proc reg))
+                    else if RegSet.mem reg stable then
+                      sprintf "%s \"%s\" (%s)"
+                        (tag_reg_def reg)
+                        (A.reg_class reg)
+                        (dump_stable_reg reg)
+                    else
+                      sprintf "%s \"%s\" (%s)"
+                        (tag_reg_def reg)
+                        (A.reg_class reg)
+                        (compile_out_reg proc reg))::k)
+                  final
              @@RegSet.fold
-                 (fun reg k ->
-                   sprintf "%s \"%s\" (%s)"
-                     (tag_reg_def reg)
-                     (A.reg_class reg)
-                     (dump_trashed_reg reg)::k)
-                 trashed
+                  (fun reg k ->
+                    sprintf "%s \"%s\" (%s)"
+                      (tag_reg_def reg)
+                      (A.reg_class reg)
+                      (dump_trashed_reg reg)::k)
+                  trashed
              @@RegSet.fold
-                 (fun reg k ->
-                   sprintf "%s \"%s\" (%s)"
-                     (tag_reg_def reg)
-                     (A.reg_class reg)
-                     (dump_stable_reg reg)::k)
-                 (RegSet.diff stable final) []) in
+                  (fun reg k ->
+                    sprintf "%s \"%s\" (%s)"
+                      (tag_reg_def reg)
+                      (A.reg_class reg)
+                      (dump_stable_reg reg)::k)
+                  (RegSet.diff stable final) []) in
         fprintf chan ":%s\n" outs
 
       let dump_copies
@@ -220,7 +222,7 @@ module Make
                   fprintf chan "%s%s = %s;\n" indent
                     (compile_cpy a)  cpy ;
                   fprintf chan "%smcautious();\n" indent
-              | Constant.Concrete _ -> ())
+              | _ -> ())
               t.Tmpl.init
         | Memory.Direct ->
             List.iter
@@ -230,7 +232,7 @@ module Make
                   fprintf chan "%svoid *%s = %s;\n" indent
                     cpy
                     (compile_val v) ;
-              | Constant.Concrete _ -> ())
+              |  _ -> ())
               t.Tmpl.init
         end ;
         ()
@@ -313,10 +315,10 @@ module Make
         before_dump
           compile_out_reg compile_val compile_cpy chan indent env proc t trashed;
         fprintf chan "asm __volatile__ (\n" ;
-        fprintf chan "\"\\n\"\n" ;        
+        fprintf chan "\"\\n\"\n" ;
         begin if O.asmcommentaslabel then
           fprintf chan "\"%s:\\n\"\n"
-             (LangUtils.start_label proc)
+            (LangUtils.start_label proc)
         else
           fprintf chan "\"%s\\n\"\n"
             (LangUtils.start_comment Tmpl.comment proc)
@@ -346,7 +348,7 @@ module Make
           List.map
             (fun (a,ty) ->
               sprintf "%s -> %s" a (SkelUtil.dump_global_type a ty))
-        e in
+            e in
         eprintf "ENV: [%s]\n"
           (String.concat " " pp)
 
@@ -372,20 +374,28 @@ module Make
           compile_out_reg
           chan indent env proc t
 
-      let compile_val_fun = match O.memory with
-      | Memory.Direct ->
-          (fun v -> match v with
-          | Constant.Symbolic (s,_) -> sprintf "%s" s
-          | Constant.Concrete _ -> Tmpl.dump_v v)
-      | Memory.Indirect ->
-          (fun v -> match v with
-          | Constant.Symbolic (s,_) -> sprintf "*%s" s
-          | Constant.Concrete _ -> Tmpl.dump_v v)
+
+      let compile_val_fun =
+        let open Constant in
+        fun v -> match v with
+        | Symbolic (s,_) ->
+            sprintf "%s%s"
+              (match O.memory with Memory.Direct -> "" | Memory.Indirect -> "*")
+              s
+        | Concrete _ -> Tmpl.dump_v v
+        | Label (p,lbl) -> OutUtils.fmt_lbl_var p lbl
+
+      let compile_init_val_fun = compile_val_fun
 
       let compile_cpy_fun proc a = sprintf "*%s" (Tmpl.addr_cpy_name a proc)
 
       let dump_fun chan env globEnv _volatileEnv proc t =
         if debug then debug_globEnv globEnv ;
+        let labels = Tmpl.get_labels t in
+        let labels =
+          List.map
+            (fun (p,lbl) -> sprintf "ins_t *%s" (OutUtils.fmt_lbl_var p lbl))
+            labels in
         let addrs_proc = Tmpl.get_addrs t in
         let addrs =
           List.map
@@ -420,16 +430,22 @@ module Make
                 with Not_found -> assert false in
               let x = Tmpl.dump_out_reg proc x in
               sprintf "%s *%s" (CType.dump ty) x) t.Tmpl.final in
-        let params =  String.concat "," (addrs@cpys@outs) in
+        let params =  String.concat "," (labels@addrs@cpys@outs) in
         LangUtils.dump_code_def chan true proc params ;
         do_dump
-          compile_val_fun
+          compile_init_val_fun
           compile_addr_fun
           (compile_cpy_fun proc)
           (fun p r  -> sprintf "*%s" (Tmpl.dump_out_reg p r))
           chan "  " env proc t ;
         fprintf chan "}\n\n" ;
         ()
+
+      let compile_label_call (p,lbl) =
+        OutUtils.(
+        sprintf "&_a->%s[_i*_a->%s+_a->%s+%s]"
+          (fmt_code p) (fmt_code_size p)
+          (fmt_prelude p) (fmt_lbl_offset p lbl))
 
       let compile_addr_call x = sprintf "&_a->%s[_i]" x
       let compile_cpy_addr_call proc x =
@@ -438,6 +454,7 @@ module Make
         sprintf "&%s" (Tmpl.compile_out_reg proc reg)
 
       let dump_call f_id _tr_idx chan indent _env _globEnv _volatileEnv proc t =
+        let labels = List.map compile_label_call (Tmpl.get_labels t) in
         let addrs_proc = Tmpl.get_addrs t in
         let addrs = List.map compile_addr_call addrs_proc
         and addrs_cpy =
@@ -445,7 +462,7 @@ module Make
             List.map (compile_cpy_addr_call proc) addrs_proc
           else []
         and outs = List.map (compile_out_reg_call proc) t.Tmpl.final in
-        let args = String.concat "," (addrs@addrs_cpy@outs) in
+        let args = String.concat "," (labels@addrs@addrs_cpy@outs) in
         LangUtils.dump_code_call chan indent f_id args
 
     end

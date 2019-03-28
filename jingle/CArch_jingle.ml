@@ -146,9 +146,9 @@ include Arch.MakeArch(struct
       in aux subs,st
     in
 
-    let rec expl_expr = function
-      | Const(Constant.Symbolic (s,_)) -> find_cst s >! fun k -> Const k
-      | Const(Constant.Concrete _) as e -> unitT e
+    let rec expl_expr = let open Constant in function
+      | Const(Symbolic (s,_)) -> find_cst s >! fun k -> Const k
+      | Const(Concrete _|Label _) as e -> unitT e
       | LoadReg r -> conv_reg r >! fun r -> LoadReg r
       | LoadMem (loc,mo) -> expl_expr loc >! fun loc -> LoadMem (loc,mo)
       | Op (op,e1,e2) ->

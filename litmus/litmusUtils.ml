@@ -51,25 +51,30 @@ module Hash(O:Warn.Config) =
 module Pseudo(A:Arch_litmus.S) = struct
   
   type code = int * A.pseudo list
+
   let rec fmt_io io = match io with
-        | A.Nop -> ""
-        | A.Instruction ins -> A.dump_instruction ins
-        | A.Label (lbl,io) -> lbl ^ ": " ^ fmt_io io
-	| A.Symbolic _ -> assert false (*no symbolic in litmus *)
-        | A.Macro (f,regs) ->
-            Printf.sprintf
-              "%s(%s)"
-              f
-              (String.concat "," (List.map A.pp_reg regs))
+  | A.Nop -> ""
+  | A.Instruction ins -> A.dump_instruction ins
+  | A.Label (lbl,io) -> lbl ^ ": " ^ fmt_io io
+  | A.Symbolic _ -> assert false (*no symbolic in litmus *)
+  | A.Macro (f,regs) ->
+      Printf.sprintf
+        "%s(%s)"
+        f
+        (String.concat "," (List.map A.pp_reg regs))
 
-        let dump_prog (p,is) = Printf.sprintf "P%i" p::List.map fmt_io is
+  let dump_prog (p,is) = Printf.sprintf "P%i" p::List.map fmt_io is
 
-        let dump_prog_lines prog =
-          let pp = List.map dump_prog prog in
-          let pp = Misc.lines_of_prog pp in
-          List.map (Printf.sprintf "%s;") pp
+  let dump_prog_lines prog =
+    let pp = List.map dump_prog prog in
+    let pp = Misc.lines_of_prog pp in
+    List.map (Printf.sprintf "%s;") pp
 
-        let print_prog chan prog =
-          let pp = List.map dump_prog prog in
-          Misc.pp_prog chan pp
+  let print_prog chan prog =
+    let pp = List.map dump_prog prog in
+    Misc.pp_prog chan pp
+
+  let find_offset code p lbl =
+    let is = List.assoc p code in
+    A.find_offset lbl is
 end

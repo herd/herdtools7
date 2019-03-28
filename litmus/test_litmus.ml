@@ -57,6 +57,8 @@ module type S = sig
         module C=C
         module P=P
       end)
+
+  val find_offset : P.code list -> int -> string -> int
 end
 
 
@@ -100,4 +102,5 @@ struct
         module C = C
         module P = P
       end)
+  let find_offset code p lbl = P.find_offset code p lbl
 end

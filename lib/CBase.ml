@@ -239,7 +239,7 @@ include Pseudo.Make
 
       let rec parsed_expr_tr = function
         | Const(Constant.Concrete _) as k -> k
-        | Const(Constant.Symbolic _) ->
+        | Const(Constant.Symbolic _|Constant.Label _) ->
             Warn.fatal "No constant variable allowed"
         | LoadReg _ as l -> l
         | LoadMem (l,mo) ->

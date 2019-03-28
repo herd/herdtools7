@@ -150,12 +150,13 @@ module Top(O:Config)(Tar:Tar.S) = struct
               let open  Constant in
               match c with
               | Concrete i ->  Concrete (V.Scalar.of_string i)
-              | Symbolic _ as sym -> sym
+              | Symbolic _|Label _ as sym -> sym
             type global = string
             let maybevToGlobal = ParsedConstant.vToName
           end)
 
-      let allocate =
+      let allocate fname src =
+        let open MiscParser in
         let have_rcu p =
           List.exists
             (fun (_,code) ->
@@ -171,8 +172,8 @@ module Top(O:Config)(Tar:Tar.S) = struct
                     false p)
                 code)
             p in
+        wrap_allocate have_rcu Alloc.allocate_regs fname src
 
-        wrap_allocate have_rcu Alloc.allocate_regs
 
       module Comp = Compile.Make (Compile.Default)(A)(T)(LISAComp)
 
@@ -192,7 +193,11 @@ module Top(O:Config)(Tar:Tar.S) = struct
       let lexer = CL.token false
       let parser = CParser.shallow_main
     end
-    module Pseudo = DumpCAst
+    module Pseudo =
+      struct
+        include DumpCAst
+        let find_offset _ _ _ =  Warn.user_error "No label value in C"
+      end
     module Lang = CLang.Make(CLang.DefaultConfig)
         (struct
           let verbose = O.verbose
@@ -224,7 +229,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
           | CAst.Global body -> LexHaveRcu.search body)
           p
 
-    let allocate =  wrap_allocate have_rcu Alloc.allocate_regs
+    let allocate = wrap_allocate have_rcu Alloc.allocate_regs
 
     let compile fname =
       Utils.compile P.parse A.count_procs CComp.compile (allocate fname)

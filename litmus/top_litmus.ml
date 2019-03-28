@@ -123,6 +123,14 @@ module Top (OT:TopConfig) (Tar:Tar.S) : sig
   val from_files : string list -> unit
 end = struct
 
+  let check_variant v a =
+    if OT.variant v && not (Variant_litmus.ok v a) then
+      Warn.user_error
+        "variant %s does not apply to arch %s"
+        (Variant_litmus.pp v)
+        (Archs.pp a)
+
+
 (************************************************************)
 (* Some configuration dependent stuff, to be performed once *)
 (************************************************************)
@@ -223,6 +231,7 @@ end = struct
           cycles hash_env
           name in_chan out_chan splitted =
         try begin
+          check_variant Variant_litmus.Self splitted.Splitter.arch ;
           let parsed = parse in_chan splitted in
           let doc = splitted.Splitter.name in
           let tname = doc.Name.name in
@@ -294,16 +303,16 @@ end = struct
         let maybevToV c =
           let open Constant in
           match c with
-          | Symbolic _ as sym -> sym
+          | Symbolic _|Label _ as sym -> sym
           | Concrete i -> Concrete (A.V.Scalar.of_string i)
         type global = string
         let maybevToGlobal = ParsedConstant.vToName
       end
+
       let compile =
         let allocate parsed =
           let module Alloc = SymbReg.Make(AllocArch) in
-          Alloc.allocate_regs parsed
-        in
+          Alloc.allocate_regs parsed in
         Utils.compile P.parse List.length Comp.compile allocate
     end
 
@@ -321,7 +330,11 @@ end = struct
 
       module A' = CArch_litmus.Make(O)
 
-      module Pseudo = DumpCAst
+      module Pseudo =
+        struct
+          include DumpCAst
+          let find_offset _ _ _ = Warn.user_error "No label value in C"
+        end
 
       module Lang =
         CLang.Make
@@ -346,12 +359,9 @@ end = struct
       let compile =
         let allocate parsed =
           let module Alloc = CSymbReg.Make(A') in
-          let allocated = Alloc.allocate_regs parsed in
-          { allocated with MiscParser.prog = allocated.MiscParser.prog; }
-        in
+          Alloc.allocate_regs parsed in
         Utils.compile P.parse A'.count_procs Comp.compile allocate
     end
-
 
   let debuglexer =  OT.verbose > 2
 
