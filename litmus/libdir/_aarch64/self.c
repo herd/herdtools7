@@ -18,12 +18,18 @@
 /* Support for self-modifying code */
 /***********************************/
 
+static const int cache_line_size = 64;
+
 typedef uint32_t ins_t ;
 
 inline static void selfbar(void *p) {
   asm __volatile__
     ("dc cvau,%[p]\n\t" "dsb sy\n\t" "ic ivau,%[p]\n\t" "dsb sy\n\t" "isb"
      ::[p]"r"(p): "memory");
+}
+
+inline static void isync(void) {
+  asm __volatile__ ("isb" ::: "memory");
 }
 
 static ins_t getret(void) {
