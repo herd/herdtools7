@@ -21,6 +21,7 @@
 #include <errno.h>
 #include <stdint.h>
 #include <stdarg.h>
+#include <sys/mman.h>
 #include "utils.h"
 
 /********/
@@ -69,6 +70,18 @@ void *malloc_check(size_t sz) {
     errexit("malloc",errno) ;
   }
   return p ;
+}
+
+void *mmap_exec(size_t sz) {
+  void * p = mmap(NULL, sz, PROT_READ|PROT_EXEC|PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+  if (p == MAP_FAILED) {
+    errexit("mmap",errno) ;
+  }
+  return p ;
+}
+
+void munmap_exec(void *p,size_t sz) {
+  if (munmap(p,sz)) errexit("munmap",errno);
 }
 
 int max(int n, int m) { return n < m ? m : n ; }
