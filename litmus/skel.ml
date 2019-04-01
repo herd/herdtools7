@@ -397,7 +397,6 @@ module Make
         O.o "#include <assert.h>" ;
         O.o "#include <time.h>" ;
         O.o "#include <limits.h>" ;
-        if do_self then O.o "#include <sys/mman.h>" ;
         O.o "#include \"utils.h\"" ;
         if Cfg.c11 then O.o "#include <stdatomic.h>";
         O.o "#include \"outs.h\"" ;
@@ -1435,7 +1434,6 @@ module Make
           O.oi "_a->_scratch = malloc_check(_a->_p->max_idx*sizeof(*(_a->_scratch)));"
         end ;
         if do_self then begin
-          O.oi "int pagesize = getpagesize();" ;
           O.oi "size_t _sz;";
           for n = 0 to List.length test.T.code-1 do
             let open OutUtils in
@@ -1445,9 +1443,7 @@ module Make
               (fmt_prelude n) n ;
             O.fi "_sz = _a->%s * size_of_test * sizeof(ins_t);"
               (fmt_code_size n) ;
-            O.fi "_a->code%i_mem = malloc_check(_sz+pagesize-sizeof(ins_t));" n ;
-            O.fi "_a->code%i = do_align(_a->code%i_mem,pagesize);" n n ;
-            O.fi "if (mprotect(_a->code%i,_sz,PROT_READ|PROT_EXEC|PROT_WRITE)) errexit(\"mprotect\",errno);" n
+            O.fi "_a->code%i = mmap_exec(_sz);" n
           done
         end ;
         O.o "}" ;
@@ -1529,8 +1525,12 @@ module Make
         end ;
         if do_sync_macro then free indent "_scratch" ;
         if do_self then begin
+          O.oi "size_t  _sz;" ;
+          O.oi "int size_of_test = _a->_p->size_of_test;" ;
           for n=0 to T.get_nprocs test-1 do
-            O.fi "free((void *)_a->code%i_mem);" n
+            O.fi "_sz = _a->%s * size_of_test * sizeof(ins_t);"
+              (OutUtils.fmt_code_size n) ;
+            O.fi "munmap_exec((void *)_a->code%i,_sz);" n
           done
         end ;
         O.o "}" ;
@@ -2356,7 +2356,7 @@ module Make
           O.o "/* Code memory */" ;
           for n = 0 to nprocs-1 do
             O.fi "size_t code%i_sz,%s;" n (OutUtils.fmt_prelude n) ;
-            O.fi "ins_t *code%i_mem,*code%i;" n n
+            O.fi "ins_t *code%i;" n
           done
         end ;
         O.o "} ctx_t;" ;

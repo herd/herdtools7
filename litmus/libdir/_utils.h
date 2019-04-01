@@ -36,6 +36,8 @@ void errexit(char *msg,int e) ;
 
 void *malloc_check(size_t sz) ;
 
+void *mmap_exec(size_t sz) ;
+void munmap_exec(void *p,size_t sz) ;
 int max(int n,int m) ;
 
 void pp_ints (FILE *fp,int *p,int n) ;
