@@ -447,12 +447,25 @@ module Make
         else do_rec env in
       do_rec LabEnv.empty
 
-    let comp_initset code inputs_final =
-      RegSet.elements (comp_fix code inputs_final)
+    let do_self = O.variant Variant_litmus.Self
+
+    let comp_initset proc initenv code inputs_final =
+      let reg_set  = comp_fix code inputs_final in
+      let reg_set =
+        if do_self then
+          RegSet.union
+            reg_set
+            (RegSet.of_list
+               (List.fold_left
+                  (fun k (r,_) -> match A.of_proc proc r with
+                  | Some r -> r::k
+                  | None -> k) [] initenv))
+        else reg_set in
+      RegSet.elements reg_set
 
     let compile_init proc initenv observed code  =
       let inputs_final = observed in
-      let inputs = comp_initset code inputs_final in
+      let inputs = comp_initset proc initenv code inputs_final in
       List.map
         (fun reg ->
           let v = A.find_in_state (A.Location_reg (proc,reg)) initenv in
