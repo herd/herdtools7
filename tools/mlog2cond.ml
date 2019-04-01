@@ -81,6 +81,7 @@ module LL =
       let ok = select_name
       let hexa = hexa
       let int32 = int32
+      let acceptBig = false
     end)
 
 let acceptempty = !acceptempty

@@ -30,9 +30,9 @@ let int32 = ref true
 
 let options =
   let open CheckName in
-  [  
+  [
   ("-q", Arg.Unit (fun _ -> verbose := -1),
-   "<non-default> be silent");  
+   "<non-default> be silent");
   ("-v", Arg.Unit (fun _ -> incr verbose),
    "<non-default> show various diagnostics, repeat to increase verbosity");
   ("-j", Arg.Int (fun i -> npar := i),
@@ -54,7 +54,10 @@ let () =
 log names are taken from standard input.
 Options are:" prog)
 
-let npar = !npar
+let npar =
+  let nlogs = List.length !logs in
+  if 2* !npar > nlogs then max 1 (nlogs/2)
+  else max !npar 1
 let select = !select
 let rename = !rename
 let names = !names
@@ -103,7 +106,7 @@ let fnames = match !logs with
       | Some x -> read_rec (x::k)
       | None -> k in
     read_rec []
-| xs ->  xs 
+| xs ->  xs
 
 
 module LS = LogState.Make(Verbose)
@@ -115,6 +118,7 @@ module LL =
       include Check
       let hexa = hexa
       let int32 = int32
+      let acceptBig = false
     end)
 
 module D =
@@ -126,13 +130,11 @@ module D =
 
 let zyva fnames  =
   let tests = LL.read_names fnames in
-  
 (* Dumping of log files *)
 
-
   let dump_hash chan = function
-  | None -> ()
-  | Some h -> fprintf chan "Hash=%s\n" h in
+    | None -> ()
+    | Some h -> fprintf chan "Hash=%s\n" h in
 
   let dump_condition chan v c = match c,v with
   | Some c,(Ok|No) ->
@@ -159,16 +161,16 @@ let zyva fnames  =
       let p,n = t.witnesses in
       fprintf chan "Positive: %s Negative: %s\n"
         (Int64.to_string p) (Int64.to_string n) ;
-      dump_condition chan t.validation t.condition 
+      dump_condition chan t.validation t.condition
     end else begin
       fprintf chan "??\n" ;
-      dump_prop chan t.condition       
+      dump_prop chan t.condition
     end ;
-    dump_hash chan t.hash ;    
+    dump_hash chan t.hash ;
     LS.dump_topologies chan t.topologies ;
     begin match t.time with
     | None -> ()
-    | Some time -> 
+    | Some time ->
         fprintf chan "Time %s %0.2f\n" t.tname time
     end ;
     output_char chan '\n';
@@ -219,7 +221,7 @@ module Task(O:Opt) = struct
     rm d ;
     Unix.closedir d ;
     Unix.rmdir dir
-          
+
 (* Protection *)
   let () =
     Sys.set_signal
@@ -229,8 +231,8 @@ module Task(O:Opt) = struct
 
   let popen idx args =
     let oname = Filename.concat dir
-        (sprintf "sum-%02i.txt" idx) in 
-    let com = 
+        (sprintf "sum-%02i.txt" idx) in
+    let com =
       let args = String.concat " " (opts@args)  in
       sprintf "%s %s >%s" prog args oname in
     if O.verbose > 0 then eprintf "Starting '%s'\n%!" com ;
@@ -259,7 +261,7 @@ module Task(O:Opt) = struct
         try while true do ignore (input_char chan) done
         with End_of_file -> ignore (Unix.close_process_in chan))
       outs ;
-    
+
     let onames =  List.map fst (Array.to_list outs) in
     zyva onames ;
     clean ()
@@ -280,4 +282,3 @@ let () =
       zyva fnames
   with Misc.Fatal msg ->
     eprintf "Fatal error: %s\n%!" msg
-

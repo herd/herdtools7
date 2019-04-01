@@ -94,6 +94,7 @@ module LL =
          end)
       let hexa = hexa
       let int32 = int32
+      let acceptBig = true
     end)
 
 module D =

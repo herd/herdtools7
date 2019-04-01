@@ -296,6 +296,7 @@ module type Config = sig
   val opt_cond : bool
   val hexa : bool
   val int32 : bool
+  val acceptBig : bool
 end
 
 module Verbose = struct let verbose = !verb end
@@ -361,6 +362,7 @@ module Config = struct
   let opt_cond = runopts.opt_cond
   let hexa = runopts.hexa
   let int32 = runopts.int32
+  let acceptBig = false
 end
 
 (************)

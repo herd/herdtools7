@@ -24,6 +24,7 @@ module type Config = sig
   val ok : string -> bool
   val hexa : bool
   val int32 : bool
+  val acceptBig : bool
 end
 
 module Make(O:Config) = struct
@@ -99,11 +100,13 @@ rule main  mk islitmus rem = parse
       | None -> Warn.fatal "Lexing kind: %s" kind in
       begin match  pstate lexbuf with
       | None -> main  mk islitmus rem lexbuf
-      | Some (islitmusst,st) ->
+      | Some (islitmusst,(nk,st)) ->
           let t = O.rename t in
-          if O.ok t then
+          if O.ok t && (O.acceptBig || nk < 1024) then
             main  mk (islitmusst || islitmus) (mk (t,kind,st)::rem) lexbuf
           else begin
+            if O.verbose > 0 && O.ok t && nk >= 1024 then
+              eprintf "Test %s ignored for size\n%!" t ;
             main mk islitmus rem lexbuf
           end
       end }
@@ -120,15 +123,15 @@ and pstate = parse
 | ("States" as key) (blank+ (digit+ as _x))?  nl
 | ("Histogram" as key)
      (blank+  '(' (digit+ as _x) blank+ "states" blank* ')')?  nl
-    { incr_lineno lexbuf ; Some (key="Histogram",plines [] lexbuf ) }
+    { incr_lineno lexbuf ; Some (key="Histogram",plines 0 [] lexbuf ) }
 | "Fatal" [':'' ']  [^'\r''\n']*  nl
     { incr_lineno lexbuf ; None }
 | [^'\r''\n']*  nl  { incr_lineno lexbuf ; pstate  lexbuf }
-| eof { Some (false,([],Run,no_wits,no_cond,no_loop,no_hash,no_topos,no_time)) }
+| eof { Some (false,(0,([],Run,no_wits,no_cond,no_loop,no_hash,no_topos,no_time))) }
 | "" { error "pstate" lexbuf }
 
 
-and plines k = parse
+and plines nk k = parse
 | ((num as c) blank* (":>"|"*>"))?
     { let line = pline [] lexbuf in
       let st =
@@ -138,7 +141,7 @@ and plines k = parse
           | Some s -> Int64.of_string s
           end ;
           p_st = LS.as_st_concrete line } in
-      plines (st::k) lexbuf }
+      plines (nk+1) (st::k) lexbuf }
 |  ("Loop" blank+ as loop)?
    (((validation as ok) ([^'\r''\n']*))
 |("" as ok))  nl  (* missing validation result, from some litmus logs *)
@@ -153,8 +156,8 @@ and plines k = parse
       let cond = pcond lexbuf in
       skip_empty_lines lexbuf ;
       let hash,topos,time = phash (no_hash,no_topos,no_time) lexbuf in
-      (k,ok,wits,cond,loop,hash,topos,time) }
-| eof { (k,Run,no_wits,no_cond,no_loop,no_hash,no_topos,no_time) }
+      (nk,(k,ok,wits,cond,loop,hash,topos,time)) }
+| eof { nk,(k,Run,no_wits,no_cond,no_loop,no_hash,no_topos,no_time) }
 
 and skip_empty_lines = parse
 | blank*  nl  { incr_lineno lexbuf ; skip_empty_lines lexbuf }
@@ -328,7 +331,7 @@ let full_log log = log
 
 let read_chan name chan =
   let normalize = LS.normalize and mk = full_log in
-  let (is_litmus,r) =  do_read_chan main mk name chan in
+  let is_litmus,r =  do_read_chan main mk name chan in
   if O.verbose > 0 then
     eprintf
       "Found %i tests in log (which is of type %s)\n%!"

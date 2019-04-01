@@ -41,6 +41,7 @@ module Make(O:Opt) = struct
         let ok = O.ok
         let hexa = false
         let int32 = true
+        let acceptBig = true
       end)
 
   module LS = LogState.Make(O)

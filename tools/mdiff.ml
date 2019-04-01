@@ -93,6 +93,7 @@ module LL =
           end)
       let hexa = hexa
       let int32 = int32
+      let acceptBig = false
     end)
 
 let readlog log = match log with

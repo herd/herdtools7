@@ -623,7 +623,8 @@ let union_logs ns ms xs ys =
 
 let rec do_unions = function
 | ([]|[_]) as r -> r
-| (ns,xs)::(ms,ys)::rem -> (ns@ms,union_logs ns ms xs ys)::do_unions rem
+| (ns,xs)::(ms,ys)::rem ->
+    let rs = ns@ms in (rs,union_logs ns ms xs ys)::do_unions rem
 
 let rec unions a = match a with
   | [] -> [| |]
@@ -631,7 +632,7 @@ let rec unions a = match a with
   | xss -> unions (do_unions xss)
 
 
-let unions0 =
+let unions0 ts =
   List.map
     (fun t ->
       if not t.is_litmus then
@@ -641,7 +642,7 @@ let unions0 =
         (fun t1 t2 -> String.compare t1.tname t2.tname)
         tsts ;
       [t.name],tsts)
-
+    ts
 
 
 let union_logs all = unions (unions0 all)
