@@ -68,6 +68,7 @@ let to_hex =
 
 let to_xxx = if O.hexa then to_hex else to_dec
 
+let nstates_limit = 1024
 }
 
 let digit = [ '0'-'9' ]
@@ -102,10 +103,10 @@ rule main  mk islitmus rem = parse
       | None -> main  mk islitmus rem lexbuf
       | Some (islitmusst,(nk,st)) ->
           let t = O.rename t in
-          if O.ok t && (O.acceptBig || nk < 1024) then
+          if O.ok t && (O.acceptBig || nk < nstates_limit) then
             main  mk (islitmusst || islitmus) (mk (t,kind,st)::rem) lexbuf
           else begin
-            if O.verbose > 0 && O.ok t && nk >= 1024 then
+            if O.verbose > 0 && O.ok t && nk >= nstates_limit then
               eprintf "Test %s ignored for size\n%!" t ;
             main mk islitmus rem lexbuf
           end
@@ -133,15 +134,20 @@ and pstate = parse
 
 and plines nk k = parse
 | ((num as c) blank* (":>"|"*>"))?
-    { let line = pline [] lexbuf in
-      let st =
-        { p_noccs =
-          begin match c with
-          | None -> Int64.one
-          | Some s -> Int64.of_string s
-          end ;
-          p_st = LS.as_st_concrete line } in
-      plines (nk+1) (st::k) lexbuf }
+    { if O.acceptBig || nk <= nstates_limit then
+        let line = pline [] lexbuf in
+        let st =
+          { p_noccs =
+            begin match c with
+            | None -> Int64.one
+            | Some s -> Int64.of_string s
+            end ;
+            p_st = LS.as_st_concrete line } in
+        plines (nk+1) (st::k) lexbuf
+    else begin
+      skip_pline lexbuf ;
+      plines (nk+1) k lexbuf
+    end }
 |  ("Loop" blank+ as loop)?
    (((validation as ok) ([^'\r''\n']*))
 |("" as ok))  nl  (* missing validation result, from some litmus logs *)
@@ -174,6 +180,15 @@ and pline k = parse
      pline (p::k) lexbuf }
 | blank* ('#' [^'\n']*)?  nl  { incr_lineno lexbuf ; k }
 | "" { error "pline" lexbuf }
+
+and skip_pline = parse
+| blank*
+ ((num ':' loc)|(('['?) (loc) ( ']'?))|(loc '[' num ']'))
+    blank* '=' blank* (('-' ? (num|hexanum))|name|set)
+    blank* ';'
+    { skip_pline lexbuf }
+| blank* ('#' [^'\n']*)?  nl  { incr_lineno lexbuf }
+| "" { error "skip_pline" lexbuf }
 
 and pwitnesses = parse
  blank*  nl  { incr_lineno lexbuf ; pwitnesses lexbuf }
