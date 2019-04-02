@@ -109,9 +109,9 @@ include Arch.MakeArch(struct
             | Some e,Some e' -> match_instr subs e e'
             | _ -> None
     end
-    | DeclReg (t,r),DeclReg(t',r') when t = t' ->
+    | DeclReg (_t,r),DeclReg(_t',r') (* when t = t' *) ->
         Some (add_subs [Reg (sr_name r,r')] subs)
-    | StoreReg (ot,r,ex),StoreReg(ot',r',ex') when ot = ot' ->
+    | StoreReg (_ot,r,ex),StoreReg(_ot',r',ex') (* when ot = ot' *) ->
         match_expr (add_subs [Reg (sr_name r,r')] subs) ex ex'
     | StoreMem(l,ex,mo),StoreMem(l',ex',mo') when mo=mo' ->
         begin match match_location subs l l' with
