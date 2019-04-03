@@ -23,7 +23,7 @@ val next_label : string -> t
 val fail : int -> int -> t
 val exit : int -> int -> t
 
-type next = Next | To of t
+type next = Any | Next | To of t
 
 module Set : MySet.S with type elt = string
 module Map : MyMap.S with type key = string

@@ -1,4 +1,4 @@
-  (****************************************************************************)
+(****************************************************************************)
 (*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
@@ -53,6 +53,8 @@ let gprs =
   R24; R25; R26; R27 ;
   R28; R29; R30 ;
 ]
+
+let linkreg = Ireg R30
 
 let xgprs =
 [
@@ -341,10 +343,12 @@ let sel_memo = function
 type 'k kinstruction =
   | I_NOP
 (* Branches *)
-  | I_B of lbl
+  | I_B of lbl | I_BR of reg
   | I_BC of condition * lbl
   | I_CBZ of variant * reg * lbl
   | I_CBNZ of variant * reg * lbl
+  | I_BL of lbl | I_BLR of reg
+  | I_RET of reg option
 (* Load and Store *)
   | I_LDR of variant * reg * reg * 'k kr
   | I_LDP of temporal * variant * reg * reg * reg * 'k kr
@@ -479,12 +483,23 @@ let do_pp_instruction m =
 (* Branches *)
   | I_B lbl ->
       sprintf "B %s" (pp_label lbl)
+  | I_BR r ->
+      sprintf "BR %s" (pp_xreg r)
   | I_BC (cond,lbl) ->
       sprintf "B.%s %s" (pp_cond cond) (pp_label lbl)
   | I_CBZ (v,r,lbl) ->
       sprintf "CBZ %s,%s" (pp_vreg v r) (pp_label lbl)
   | I_CBNZ (v,r,lbl) ->
       sprintf "CBNZ %s,%s" (pp_vreg v r) (pp_label lbl)
+  | I_BL lbl ->
+      sprintf "BL %s" (pp_label lbl)
+  | I_BLR r ->
+      sprintf "BLR %s" (pp_xreg r)
+  | I_RET None->
+      "RET"
+  | I_RET (Some r) ->
+      sprintf "RET %s" (pp_xreg r)
+
 (* Load and Store *)
   | I_LDR (v,r1,r2,k) ->
       pp_mem "LDR" v r1 r2 k
@@ -581,7 +596,9 @@ let dump_parsedInstruction =
 (* Symbolic registers stuff *)
 (****************************)
 
-let allowed_for_symb = List.map (fun r -> Ireg r) gprs
+let all_gprs =  List.map (fun r -> Ireg r) gprs
+
+let allowed_for_symb = List.filter (fun r -> r <> linkreg) all_gprs
 
 let fold_regs (f_regs,f_sregs) =
 
@@ -595,9 +612,10 @@ let fold_regs (f_regs,f_sregs) =
   | RV (_,r) -> fold_reg r y in
 
   fun c ins -> match ins with
-  | I_NOP | I_B _ | I_BC _ | I_FENCE _
+  | I_NOP | I_B _ | I_BC _ | I_BL _ | I_FENCE _ | I_RET None
     -> c
-  | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_MOV (_,r,_) | I_ADDR (r,_) | I_IC (_,r) | I_DC (_,r)
+  | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_BLR r | I_BR r | I_RET (Some r)
+  | I_MOV (_,r,_) | I_ADDR (r,_) | I_IC (_,r) | I_DC (_,r)
     -> fold_reg r c
   | I_LDAR (_,_,r1,r2) | I_STLR (_,r1,r2) | I_STLRBH (_,r1,r2)
   | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2)
@@ -639,11 +657,19 @@ let map_regs f_reg f_symb =
   | I_B _
   | I_BC _
   | I_FENCE _
+  | I_BL _
+  | I_RET None
     -> ins
   | I_CBZ (v,r,lbl) ->
       I_CBZ (v,map_reg r,lbl)
   | I_CBNZ (v,r,lbl) ->
       I_CBNZ (v,map_reg r,lbl)
+  | I_BR r ->
+      I_BR (map_reg r)
+  | I_BLR r ->
+      I_BLR (map_reg r)
+  | I_RET (Some r) ->
+      I_RET (Some (map_reg r))
 (* Load and Store *)
   | I_LDR (v,r1,r2,kr) ->
      I_LDR (v,map_reg r1,map_reg r2,map_kr kr)
@@ -723,7 +749,9 @@ let get_next = function
   | I_BC (_,lbl)
   | I_CBZ (_,_,lbl)
   | I_CBNZ (_,_,lbl)
-      -> [Label.Next; Label.To lbl;]
+  | I_BL lbl
+    -> [Label.Next; Label.To lbl;]
+  | I_BLR _|I_BR _|I_RET _ -> [Label.Any]
   | I_NOP
   | I_LDR _
   | I_LDP _
@@ -769,9 +797,13 @@ include Pseudo.Make
       let parsed_tr i = match i with
         | I_NOP
         | I_B _
+        | I_BR _
         | I_BC _
         | I_CBZ _
         | I_CBNZ _
+        | I_BL _
+        | I_BLR _
+        | I_RET _
         | I_LDAR _
         | I_LDARBH _
         | I_STLR _
@@ -815,7 +847,9 @@ include Pseudo.Make
         | I_STOP _ | I_STOPBH _
           -> 2
         | I_NOP
-        | I_B _
+        | I_B _ | I_BR _
+        | I_BL _ | I_BLR _
+        | I_RET _
         | I_BC _
         | I_CBZ _
         | I_CBNZ _
@@ -832,11 +866,14 @@ include Pseudo.Make
         | I_BC (_,lbl)
         | I_CBZ (_,_,lbl)
         | I_CBNZ (_,_,lbl)
+        | I_BL lbl
+        | I_ADDR (_,lbl)
           -> f k lbl
         | _ -> k
 
       let map_labels f = function
         | I_B lbl -> I_B (f lbl)
+        | I_BL lbl -> I_BL (f lbl)
         | I_BC (c,lbl) -> I_BC (c,f lbl)
         | I_CBZ (v,r,lbl) -> I_CBZ (v,r,f lbl)
         | I_CBNZ (v,r,lbl) -> I_CBNZ (v,r,f lbl)

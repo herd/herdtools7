@@ -30,7 +30,7 @@ let next_label s =
 let fail p i = sprintf "Fail%i%i" p i
 and exit p i = sprintf "Exit%i%i" p i
 
-type next = Next | To of t
+type next = Any | Next | To of t
 
 module Set = StringSet
 module Map = StringMap

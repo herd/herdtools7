@@ -26,6 +26,10 @@ let check_name name = match name with
 | "nop"|"NOP" -> NOP
 (* Branch *)
 | "b"  | "B"  -> B
+| "br"  | "BR"  -> BR
+| "bl"  | "BL"  -> BL
+| "blr"  | "BLR"  -> BLR
+| "ret"  | "RET" -> RET
 | "ne"  | "NE"  -> NE
 | "eq"  | "EQ"  -> EQ
 | "b.eq" | "B.EQ" -> BEQ

@@ -63,12 +63,13 @@ module RegMap = A.RegMap)
       module RegSet = Tmpl.RegSet
       module RegMap = Tmpl.RegMap
 
-      let dump_clobbers chan _t =
+      let dump_clobbers chan t =
         fprintf chan ":%s\n"
           (String.concat ","
              (List.map (fun s -> sprintf "\"%s\"" s)
                 ("cc"::"memory"::
-                 List.map A.reg_to_string A.forbidden_regs)))
+                 List.map A.reg_to_string
+                   (t.Tmpl.all_clobbers@A.forbidden_regs))))
 
       let copy_name s = sprintf "_tmp_%s" s
 
@@ -141,9 +142,16 @@ module RegMap = A.RegMap)
 
       let (@@) f k  = f k
 
+      let debug = false
+
+      let pp_regs rs = String.concat "," (List.map A.reg_to_string (RegSet.elements rs))
+
       let dump_outputs compile_addr compile_out_reg chan proc t trashed =
         let stable = RegSet.of_list t.Tmpl.stable in
         let final = RegSet.of_list t.Tmpl.final in
+        if debug then
+          eprintf "P%i: stable={%s}, final={%s}, all={%s}\n"
+            proc (pp_regs stable) (pp_regs final) (pp_regs (Tmpl.all_regs t));
         let outs =
           String.concat ","
             (List.fold_right
@@ -340,8 +348,6 @@ module RegMap = A.RegMap)
         fprintf chan ");\n" ;
         after_dump compile_out_reg chan indent proc t;
         ()
-
-      let debug = false
 
       let debug_globEnv e =
         let pp =

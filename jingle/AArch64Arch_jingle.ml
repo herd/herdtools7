@@ -79,9 +79,18 @@ include Arch.MakeArch(struct
       | K k ->
           find_cst k >! fun k -> K k in
     function
-    | (I_FENCE _|I_NOP) as i -> unitT i
+    | (I_FENCE _|I_NOP|I_RET None) as i -> unitT i
     | I_B l ->
         find_lab l >! fun l -> I_B l
+    | I_BR r ->
+        conv_reg r >! fun r -> I_BR r
+    | I_RET (Some r) ->
+        conv_reg r >! fun r -> I_RET (Some r)
+    | I_BL l ->
+        find_lab l >! fun l -> I_BL l
+    | I_BLR r ->
+        conv_reg r >! fun r -> I_BLR r
+
     | I_BC(a,l) ->
         find_lab l >! fun l -> I_BC (a,l)
     | I_CBZ(a,r,l) ->
