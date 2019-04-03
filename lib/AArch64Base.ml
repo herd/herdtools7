@@ -300,12 +300,14 @@ let w_memo = function
 let cas_memo rmw = sprintf "CAS%s" (rmw_memo rmw)
 and swp_memo rmw = sprintf "SWP%s" (rmw_memo rmw)
 
-type atomic_op = A_ADD | A_EOR | A_SET | A_CLR
+type atomic_op = A_ADD | A_EOR | A_SET | A_CLR | A_SMAX | A_SMIN
 let pp_aop = function
   | A_ADD -> "ADD"
   | A_EOR -> "EOR"
   | A_SET -> "SET"
   | A_CLR -> "CLR"
+  | A_SMAX -> "SMAX"
+  | A_SMIN -> "SMIN"
 
 let ldop_memo op rmw = sprintf "LD%s%s" (pp_aop op) (rmw_memo rmw)
 and stop_memo op w = sprintf "ST%s%s" (pp_aop op) (w_memo w)

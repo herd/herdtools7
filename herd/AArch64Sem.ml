@@ -262,7 +262,9 @@ module Make (C:Sem.Config)(V:Value.S)
       | A_ADD -> Op.Add
       | A_EOR -> Op.Xor
       | A_SET -> Op.Or
-      | A_CLR -> Op.AndNot2 in
+      | A_CLR -> Op.AndNot2
+      | A_SMAX -> Op.Max
+      | A_SMIN -> Op.Min in
       let read_mem = if noret then read_mem_noreturn else rmw_amo_read rmw
       and write_mem = rmw_amo_write rmw in
       M.amo op
