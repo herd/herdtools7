@@ -32,5 +32,6 @@ val dump_out_reg : int -> arch_reg -> string
 val compile_out_reg : int -> arch_reg -> string
 val compile_presi_out_reg : int -> arch_reg -> string
 val compile_presi_out_ptr_reg : int -> arch_reg -> string
+val get_nrets : t -> int
 val get_addrs : t -> string list
 val out_code : out_channel -> code -> unit

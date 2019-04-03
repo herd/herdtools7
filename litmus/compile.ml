@@ -255,6 +255,8 @@ type P.code = int * A.pseudo list)
     open Printf
     open Constant
 
+    let do_self = O.variant Variant_litmus.Self
+
     module A = A
     module V = A.V
     module Constr = T.C
@@ -315,6 +317,17 @@ type P.code = int * A.pseudo list)
             do_rec c m code in
       do_rec 0 StringMap.empty
 
+(*******************************)
+(* Count specific instructions *)
+(*******************************)
+
+let count_ins p code =
+  List.fold_left
+    (A.pseudo_fold (fun k i  -> if p i then k+1 else k))
+    0 code
+
+let count_ret =
+  if do_self then fun code -> count_ins C.is_ret code else fun _ -> 0
 
 
 (****************)
@@ -450,8 +463,6 @@ type P.code = int * A.pseudo list)
         else do_rec env in
       do_rec LabEnv.empty
 
-    let do_self = O.variant Variant_litmus.Self
-
     let comp_initset proc initenv code inputs_final =
       let reg_set  = comp_fix code inputs_final in
       let reg_set =
@@ -481,14 +492,15 @@ type P.code = int * A.pseudo list)
       let outs =
         List.map
           (fun (proc,code) ->
+            let nrets = count_ret code in
             let addrs = extract_addrs code in
             let stable = stable_regs code in
             let code = compile_code code in
-            proc,addrs,stable,code)
+            proc,addrs,stable,code,nrets)
           code in
       let pecs = outs in
       List.map
-        (fun (proc,addrs,stable,code) ->
+        (fun (proc,addrs,stable,code,nrets) ->
           let all_clobbers =
             List.fold_left
               (fun k i -> match i.A.Out.clobbers with
@@ -509,7 +521,7 @@ type P.code = int * A.pseudo list)
               stable = [];
               final = compile_final proc observed_proc;
               all_clobbers;
-              code = code; name=name;} in
+              code = code; name=name; nrets; } in
           { t with stable = A.RegSet.elements (A.RegSet.inter (A.RegSet.union stable stable_info) (A.Out.all_regs t)) ; })
         pecs
 
@@ -569,7 +581,6 @@ type P.code = int * A.pseudo list)
       List.map
         (fun (p,t) -> p,(t, (type_out env p t, [])))
         code
-    let do_self = O.variant Variant_litmus.Self
 
     let compile name t =
       let

@@ -30,6 +30,11 @@ module Make(V:Constant.S)(C:Config) =
     open CType
     open Printf
 
+(* Return instruction *)
+    let is_ret = function
+      | A.I_RET None -> true
+      | _ -> false
+
 (* No addresses in code *)
     let extract_addrs _ins = StringSet.empty
 
