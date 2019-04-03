@@ -50,7 +50,7 @@ module type S = sig
   val comment : string
   type arch_reg
 
-  type flow = Next | Branch of string
+  type flow = Any | Next | Branch of string
   type ins =
       { memo:string ; inputs:arch_reg list ;  outputs:arch_reg list;
         reg_env: (arch_reg * CType.t) list; (* Register typing [ARMv8] *)
@@ -58,7 +58,8 @@ module type S = sig
         label:string option ;  branch : flow list ;
         (* A la ARM conditional execution *)
         cond: bool ;
-        comment: bool; }
+        comment: bool;
+        clobbers: arch_reg list; }
 
   val empty_ins : ins
   val get_branch : ins -> flow list
@@ -70,7 +71,9 @@ module type S = sig
       final : arch_reg list ;
       code : ins list;
       name : Name.t ;
+      all_clobbers : arch_reg list;
     }
+
   val get_addrs : t -> string list
   val get_labels : t -> (int * string) list
   val fmt_reg : arch_reg -> string
@@ -111,18 +114,20 @@ module Make(O:Config)(A:I) =
 
     type arch_reg = A.arch_reg
 
-    type flow = Next | Branch of string
+    type flow = Any | Next | Branch of string
     type ins =
         { memo:string ; inputs:arch_reg list ;  outputs:arch_reg list;
           reg_env: (arch_reg * CType.t) list; (* Register typing [ARMv8] *)
           (* Jumps *)
           label:string option ;  branch : flow list ;
           cond:bool ;
-          comment:bool;}
+          comment:bool;
+          clobbers: arch_reg list; }
 
     let empty_ins =
       { memo="" ; inputs=[]; outputs=[]; reg_env=[];
-        label=None; branch=[Next]; cond=false; comment=false;}
+        label=None; branch=[Next]; cond=false; comment=false;
+        clobbers=[];}
 
     let get_branch  ins = ins.branch
 
@@ -133,6 +138,7 @@ module Make(O:Config)(A:I) =
         final : arch_reg list ;
         code : ins list;
         name : Name.t ;
+        all_clobbers : arch_reg list;
       }
 
 

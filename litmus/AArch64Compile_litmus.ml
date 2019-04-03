@@ -35,7 +35,6 @@ module Make(V:Constant.S)(C:Config) =
 
     let stable_regs _ins = A.RegSet.empty
 
-
 (* Handle zero reg *)
     let arg1 ppz fmt r = match r with
       | ZR -> [],ppz
@@ -67,6 +66,31 @@ module Make(V:Constant.S)(C:Config) =
       { empty_ins with
         memo = sprintf "b %s" (A.Out.dump_label (tr_lab lbl)) ;
         branch=[Branch lbl] ; }
+
+    let br r =
+      { empty_ins with
+        memo = "br ^i0";
+        inputs = [r;]; reg_env = [r,voidstar];
+        branch=[Any] ; }
+
+    let ret r =
+      { empty_ins with
+        memo = "ret ^i0";
+        inputs = [r;]; reg_env = [r,voidstar];
+        branch=[Any] ; }
+
+    let bl tr_lab lbl =
+      { empty_ins with
+        memo = sprintf "bl %s" (A.Out.dump_label (tr_lab lbl)) ;
+        inputs=[]; outputs=[];
+        branch=[Next;Branch lbl] ; clobbers=[linkreg;]; }
+
+    let blr r =
+      { empty_ins with
+        memo = "blr ^i0";
+        inputs=[r;]; outputs=[];
+        reg_env = [r,voidstar;];
+        branch=[Any] ;  clobbers=[linkreg;]; }
 
     let bcc tr_lab cond lbl =
       { empty_ins with
@@ -491,6 +515,11 @@ module Make(V:Constant.S)(C:Config) =
     | I_NOP -> { empty_ins with memo = "nop"; }::k
 (* Branches *)
     | I_B lbl -> b tr_lab lbl::k
+    | I_BR r -> br r::k
+    | I_BL lbl -> bl tr_lab lbl::k
+    | I_BLR r -> blr r::k
+    | I_RET None -> { empty_ins with memo="ret"; }::k
+    | I_RET (Some r) -> ret r::k
     | I_BC (c,lbl) -> bcc tr_lab c lbl::k
     | I_CBZ (v,r,lbl) -> cbz tr_lab "cbz" v r lbl::k
     | I_CBNZ (v,r,lbl) -> cbz tr_lab "cbnz" v r lbl::k

@@ -244,12 +244,12 @@ module Make
     (A:Arch_litmus.S)
     (T:Test_litmus.S with
      module A.V = A.V and
-     type A.reg = A.reg and
-     type A.location = A.location and
-     module A.LocSet = A.LocSet and
-     module A.LocMap = A.LocMap and
-     type A.Out.t = A.Out.t and
-     type P.code = int * A.pseudo list)
+type A.reg = A.reg and
+type A.location = A.location and
+module A.LocSet = A.LocSet and
+module A.LocMap = A.LocMap and
+type A.Out.t = A.Out.t and
+type P.code = int * A.pseudo list)
     (C:XXXCompile_litmus.S with module A = A) =
   struct
     open Printf
@@ -284,6 +284,8 @@ module Make
             (do_extract_pseudo A.RegSet.empty C.stable_regs ins) env)
         code
         A.RegSet.empty
+
+
 
 (**********************************)
 (* Label compilation as an offset *)
@@ -382,12 +384,7 @@ module Make
       code
 
 
-    module RegSet =
-      MySet.Make
-        (struct
-          type t = A.reg
-          let compare = A.reg_compare
-        end)
+    module RegSet = A.RegSet
 
     let pp_reg_set chan rs =
       RegSet.pp chan ","
@@ -411,6 +408,12 @@ module Make
           (fun k flow ->
             let rs =  match flow with
             | Next -> live_in_next
+            | Any ->
+                let rss =
+                  LabEnv.fold
+                    (fun _ rs k -> rs::k)
+                    env [live_in_next;] in
+                RegSet.unions rss
             | Branch lbl ->
                 try LabEnv.find lbl env
                 with Not_found -> RegSet.empty in
@@ -434,7 +437,7 @@ module Make
 
     let debug = false
 (* Fixpoint *)
-    let comp_fix code live_in_final =
+    let comp_fix  code live_in_final =
       if debug then
         eprintf "FINAL: {%a}\n" pp_reg_set live_in_final ;
       let rec do_rec env0 =
@@ -474,7 +477,7 @@ module Make
 
     let compile_final _proc observed = RegSet.elements observed
 
-    let mk_templates name init code observed =
+    let mk_templates name stable_info init code observed =
       let outs =
         List.map
           (fun (proc,code) ->
@@ -486,6 +489,13 @@ module Make
       let pecs = outs in
       List.map
         (fun (proc,addrs,stable,code) ->
+          let all_clobbers =
+            List.fold_left
+              (fun k i -> match i.A.Out.clobbers with
+              | [] -> k
+              | _::_ as rs -> RegSet.of_list rs::k)
+              [] code in
+          let all_clobbers = RegSet.elements (RegSet.unions all_clobbers) in
           let observed_proc =
             A.LocSet.fold
               (fun loc k -> match A.of_proc proc loc with
@@ -493,11 +503,14 @@ module Make
               | _ -> k)
               observed RegSet.empty in
           proc,
-          { init = compile_init proc init observed_proc code ;
-            addrs = StringSet.elements addrs ;
-            stable = A.RegSet.elements stable;
-            final = compile_final proc observed_proc;
-            code = code; name=name;})
+          let t =
+            { init = compile_init proc init observed_proc code ;
+              addrs = StringSet.elements addrs ;
+              stable = [];
+              final = compile_final proc observed_proc;
+              all_clobbers;
+              code = code; name=name;} in
+          { t with stable = A.RegSet.elements (A.RegSet.inter (A.RegSet.union stable stable_info) (A.Out.all_regs t)) ; })
         pecs
 
     let _pp_env env =
@@ -573,8 +586,20 @@ module Make
       let code =
         if do_self then
           List.map (fun (p,c) -> p,A.Instruction A.nop::c) code
-        else code in      let code = mk_templates name initenv code observed in
-        let code_typed = type_outs ty_env code in
+        else code in
+      let stable_info = match MiscParser.get_info  t MiscParser.stable_key with
+      | None -> A.RegSet.empty
+      | Some s ->
+          let rs = Misc.split_comma s in
+          let rs =
+            List.fold_left
+              (fun k r -> match A.parse_reg r with
+              | None -> Warn.warn_always "'%s' i snot a register" r ; k
+              | Some r -> r::k)
+              [] rs in
+          A.RegSet.of_list rs in
+      let code = mk_templates name stable_info  initenv code observed in
+      let code_typed = type_outs ty_env code in
         { T.init = initenv ;
           info = info;
           code = code_typed;

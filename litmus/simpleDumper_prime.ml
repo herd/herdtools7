@@ -81,6 +81,11 @@ end = struct
       List.iter
         (fun (k,i) -> fprintf chan "%s=%s\n" k i)
         t.info
+    end else begin
+      List.iter
+        (fun (k,i) ->
+          if k = MiscParser.stable_key then fprintf chan "%s=%s\n" k i)
+        t.info
     end ;
     begin match doc.Name.doc with
     | "" -> ()

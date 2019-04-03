@@ -35,7 +35,8 @@ open AArch64Base
 
 /* Instructions */
 %token NOP
-%token B BEQ BNE CBZ CBNZ EQ NE
+%token B BR BEQ BNE CBZ CBNZ EQ NE
+%token BL BLR RET
 %token LDR LDP LDNP STP STNP LDRB LDRH STR STRB STRH STLR STLRB STLRH
 %token CMP MOV ADR
 %token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH
@@ -163,6 +164,11 @@ instr:
 | NOP { I_NOP }
 /* Branch */
 | B NAME { I_B $2 }
+| BR xreg { I_BR $2 }
+| BL NAME { I_BL $2 }
+| BLR xreg { I_BLR $2 }
+| RET  { I_RET None }
+| RET xreg { I_RET (Some $2) }
 | BEQ NAME { I_BC (EQ,$2) }
 | BNE NAME { I_BC (NE,$2) }
 | CBZ reg COMMA NAME   { let v,r = $2 in I_CBZ (v,r,$4) }
