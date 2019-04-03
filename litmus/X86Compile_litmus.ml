@@ -21,6 +21,8 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
     open A.Out
     open Printf
 
+    let is_ret _ = assert false
+
 (* Not so nice..., the price of code sharing of
    symbConst.ml with memevents *)
 

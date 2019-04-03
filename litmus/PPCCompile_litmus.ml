@@ -29,6 +29,8 @@ module Make(V:Constant.S)(C:Config) =
     open A.Out
     open Printf
 
+    let is_ret _ = assert false
+
 (* Ready for template compilation *)
     let op3regs memo set rD rA rB =
       let memo = match set with

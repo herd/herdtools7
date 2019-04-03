@@ -72,8 +72,10 @@ module type S = sig
       code : ins list;
       name : Name.t ;
       all_clobbers : arch_reg list;
+      nrets : int ; (* number of return instruction in code *)
     }
 
+  val get_nrets : t -> int
   val get_addrs : t -> string list
   val get_labels : t -> (int * string) list
   val fmt_reg : arch_reg -> string
@@ -122,12 +124,13 @@ module Make(O:Config)(A:I) =
           label:string option ;  branch : flow list ;
           cond:bool ;
           comment:bool;
-          clobbers: arch_reg list; }
+          clobbers: arch_reg list;
+        }
 
     let empty_ins =
       { memo="" ; inputs=[]; outputs=[]; reg_env=[];
         label=None; branch=[Next]; cond=false; comment=false;
-        clobbers=[];}
+        clobbers=[]; }
 
     let get_branch  ins = ins.branch
 
@@ -139,8 +142,11 @@ module Make(O:Config)(A:I) =
         code : ins list;
         name : Name.t ;
         all_clobbers : arch_reg list;
+        nrets : int ;
       }
 
+
+    let get_nrets t = t.nrets
 
     let get_addrs { init=init; addrs=addrs; _ } =
       let set =

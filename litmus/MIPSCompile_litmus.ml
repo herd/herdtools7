@@ -21,6 +21,7 @@ module Make(V:Constant.S)(C:Arch_litmus.Config) =
     open A.Out
     open Printf
 
+    let is_ret _ = assert false
 (* No addresses in code *)
     let extract_addrs _ins = StringSet.empty
     let stable_regs _ins = A.RegSet.empty

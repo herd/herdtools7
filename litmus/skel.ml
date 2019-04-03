@@ -1303,15 +1303,17 @@ module Make
             O.fx indent "_a->%s = %s(_a->%s,sizeof(*_a->%s));" a alg a a
         in
         if do_self then begin
-          O.o "static size_t find_ins(ins_t opcode,ins_t *p) {" ;
+          O.o "static size_t find_ins(ins_t opcode,ins_t *p,int skip) {" ;
           O.oi "ins_t *q = p;" ;
           O.o "" ;
-          O.oi "for  ( ; *q != opcode ; q++);" ;
+          O.oi "for  ( ; *q != opcode || (skip-- > 0); q++);" ;
           O.oi "return q-p+1;" ;
           O.o "}" ;
           O.o "" ;
-          O.o "static size_t code_size(ins_t *p,ins_t *next) { return next-p; }" ;
-          O.o "static size_t prelude_size(ins_t *p) { return find_ins(getnop(),p); }" ;
+          O.o "static size_t code_size(ins_t *p,int skip) { return find_ins(getret(),p,skip); }" ;
+          O.o "" ;
+          O.o "static size_t prelude_size(ins_t *p) { return find_ins(getnop(),p,0); }" ;
+          O.o ""
         end ;
         O.f "static void init(ctx_t *_a%s) {"
           (if do_staticalloc then ",int id" else "") ;
@@ -1435,16 +1437,17 @@ module Make
         end ;
         if do_self then begin
           O.oi "size_t _sz;";
-          for n = 0 to List.length test.T.code-1 do
-            let open OutUtils in
-            O.fi "_a->%s = code_size((ins_t *)code%i,(ins_t *)code%iend);"
-              (fmt_code_size n) n n ;
-            O.fi "_a->%s = prelude_size((ins_t *)code%i);"
+          List.iter
+            (fun (n,(t,_)) ->
+              let open OutUtils in
+              O.fi "_a->%s = code_size((ins_t *)code%i,%i);"
+                (fmt_code_size n) n (A.Out.get_nrets t) ;
+              O.fi "_a->%s = prelude_size((ins_t *)code%i);"
               (fmt_prelude n) n ;
-            O.fi "_sz = _a->%s * size_of_test * sizeof(ins_t);"
-              (fmt_code_size n) ;
-            O.fi "_a->code%i = mmap_exec(_sz);" n
-          done
+              O.fi "_sz = _a->%s * size_of_test * sizeof(ins_t);"
+                (fmt_code_size n) ;
+              O.fi "_a->code%i = mmap_exec(_sz);" n)
+            test.T.code
         end ;
         O.o "}" ;
         O.o "" ;
@@ -1683,10 +1686,7 @@ module Make
             let myenv = U.select_proc proc env
             and global_env = U.select_global env in
             if do_ascall then begin
-              Lang.dump_fun
-                O.out myenv global_env envVolatile proc out ;
-              if do_self then
-                O.f "__attribute__ ((noinline)) __attribute__ ((noclone)) static void *code%iend(void *p) { return p; }" proc
+              Lang.dump_fun O.out myenv global_env envVolatile proc out
             end ;
             let  do_collect =  do_collect_local && (do_safer || proc=0) in
             O.f "static void *P%i(void *_vb) {" proc ;
@@ -1943,10 +1943,7 @@ module Make
               O.fi "stabilize_globals(%i,_a);" proc ;
             end ;
             O.oi "mbar();" ;
-            let pp_ret r =
-              if do_self then sprintf "code%iend(%s)"  proc r
-              else r in
-            let r = pp_ret (if do_collect then "hist" else "NULL") in
+            let r = if do_collect then "hist" else "NULL" in
             O.fi "return %s;" r ;
             O.o "}" ;
             O.o "")

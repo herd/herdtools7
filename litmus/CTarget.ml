@@ -25,7 +25,7 @@ type t =
     finals : arch_reg list ;
     code : code ; }
 
-   
+
 let fmt_reg x = x
 
 let dump_out_reg p x =  OutUtils.fmt_out_reg p x
@@ -37,6 +37,8 @@ let compile_presi_out_reg proc reg =
 
 let compile_presi_out_ptr_reg proc reg =
   OutUtils.fmt_presi_ptr_index (dump_out_reg proc reg)
+
+let get_nrets _ = 0
 
 let get_addrs t = List.map fst t.inputs
 
