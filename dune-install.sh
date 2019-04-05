@@ -1,10 +1,10 @@
 #!/bin/bash
 
-. ./defs.sh
+. ./dune-defs.sh
 
 if [ "x$1" = "x" ]
 then
-  echo "Usage: ./dinstall.sh prefix"
+  echo "Usage: ./dune-install.sh prefix"
   echo
   echo "For example './install.sh /home/john/.local' will copy:"
   echo "  * executables into    /home/john/.local/bin"
@@ -28,21 +28,14 @@ then
 fi
 
 cpbin () {
-  SUB=$1
-  EXECS="$2"
-  for exec in $EXECS
+  for exec
   do
-    exec=$(basename $exec .native).exe
-    cp _build/default/$SUB/$exec $BINDIR/$(basename $exec .exe)7
+    cp _build/default/$exec $BINDIR/$(basename $exec .exe)7
   done
 }
 
 # Copy binaries
-cpbin herd "$HERD"
-cpbin litmus "$LITMUS"
-cpbin tools "$TOOLS"
-cpbin gen "$GEN"
-cpbin jingle "$JINGLE"
+cpbin $EXE
 
 # Copy libfiles
 cpdir herd/libdir $LIBDIR/herd

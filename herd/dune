@@ -1,6 +1,8 @@
 (rule (copy ../Version.ml Version.ml))
 (ocamllex lexConf_herd)
 (executables
-   (names herd)
+   (names
+   herd
+   )
    (libraries herdtools)
    (modules_without_implementation AArch64Barrier ARMBarrier action arch_herd BellBarrier  MIPSBarrier monad PPCBarrier sem X86Barrier XXXMem))

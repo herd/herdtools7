@@ -1,6 +1,8 @@
 (ocamllex lexUtil lexLog_gen lexConf_gen autoLex)
 (rule (copy ../Version.ml Version.ml))
 (executables
-  (names readRelax atoms dont diycross mexpand atomize diyone nexts classify diy norm)
+  (names
+    readRelax atoms dont diycross mexpand atomize diyone nexts classify diy norm
+  )
   (libraries herdtools unix)
   (modules_without_implementation archLoc archRun arch_gen atom autoInterpret builder fence XXXCompile_gen))

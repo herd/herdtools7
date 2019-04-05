@@ -8,7 +8,7 @@ then
   echo
   echo "For example './install.sh /home/john/.local' will remove:"
   echo "  * executables from      /home/john/.local/bin"
-  echo "  * delete teh directory  /home/john/.local/share/herdtools7"
+  echo "  * delete the directory  /home/john/.local/share/herdtools7"
   exit 1
 else
   PREFIX=$1

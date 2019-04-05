@@ -1,30 +1,23 @@
 PREFIX=$$HOME
-D=dune-
+D=dune
+#For building with ocamlbuild set
+#D=ocb
 
-all: $(D)build
+all:
+	sh ./$(D)-build.sh $(PREFIX)
 
-install: $(D)install
+
+install:
+	sh ./$(D)-install.sh $(PREFIX)
 
 uninstall:
-	sh ./uninstall.sh $(PREFIX)
+	sh ./$(D)-uninstall.sh $(PREFIX)
 
-clean: $(D)clean
+clean: $(D)-clean
 	rm -f Version.ml
-
-ocb-build:
-	sh ./build.sh $(PREFIX)
-
-ocb-install:
-	sh ./install.sh $(PREFIX)
 
 ocb-clean:
 	ocamlbuild -clean
-
-dune-build:
-	sh ./dune-build.sh $(PREFIX)
-
-dune-install:
-	sh ./dune-install.sh $(PREFIX)
 
 dune-clean:
 	dune clean

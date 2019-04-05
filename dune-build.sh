@@ -1,4 +1,4 @@
-. ./defs.sh
+. ./dune-defs.sh
 
 LIBDIR=$1/share/herdtools7
 cat > Version.ml <<EOD
