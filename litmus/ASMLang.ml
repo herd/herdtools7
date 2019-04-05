@@ -267,12 +267,10 @@ module RegMap = A.RegMap)
               (compile_out_reg proc reg) (dump_stable_reg reg))
           (RegSet.inter stable finals)
 
-      let get_reg_env _name t = Tmpl.get_reg_env A.error t
-
       let before_dump compile_out_reg compile_val compile_cpy
           chan indent env proc t trashed =
 
-        let reg_env = get_reg_env A.error t in
+        let reg_env = Tmpl.get_reg_env A.error t in
         RegSet.iter
           (fun reg ->
             let ty = match A.internal_init reg with
