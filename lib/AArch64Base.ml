@@ -570,7 +570,7 @@ let do_pp_instruction m =
   | I_IC (op,r) ->
       sprintf "IC %s,%s" (IC.pp_op op) (pp_xreg r)
   | I_DC (op,r) ->
-      sprintf "IC %s,%s" (DC.pp_op op) (pp_xreg r)
+      sprintf "DC %s,%s" (DC.pp_op op) (pp_xreg r)
 let pp_instruction m =
   do_pp_instruction
     {pp_k = pp_k m}
