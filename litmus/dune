@@ -1,0 +1,8 @@
+(rule (copy ../Version.ml Version.ml))
+(ocamllex lexAffinity lexConf_litmus lexFmt lexHaveRcu prefetch showcode)
+(executables
+   (names litmus klitmus)
+   (libraries herdtools)
+   (modules_without_implementation answer arch_litmus compCondUtils emitPrintf fmt LISATarget pseudoAbstract target XXXCompile_litmus)
+
+)

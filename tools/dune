@@ -1,0 +1,8 @@
+(ocamllex lexHashLog lexInterval lexLog_tools lexName mflags mheader splitdot trTrue)
+
+(executables
+  (names
+    mfind moutcomes splitcond mshowhashes mlog2cond mflags mdiag recond mcycles mmixer knames mdiff mcmp madd mtopos mfilter mapply mcompare mhash mrcu mprog mnames ksort mobserved msort msum mselect mcond mproj rehash splitdot mlock mtrue mlisa2c)
+  (libraries herdtools unix str)
+  (modules_without_implementation arch_tools)
+)

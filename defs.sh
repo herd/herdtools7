@@ -7,6 +7,17 @@ GEN="readRelax.native atoms.native dont.native diycross.native mexpand.native at
 JINGLE="jingle.native gen_theme.native"
 NATIVE="$HERD $LITMUS $TOOLS $GEN $JINGLE"
 
+mk_exe () {
+  D=$1
+  shift
+  for n
+  do
+    echo $n | sed -e "s|\(.*\).native|$D/\1.exe|g"
+  done
+}
+
+EXE="$(mk_exe herd $HERD) $(mk_exe litmus $LITMUS) $(mk_exe gen $GEN) $(mk_exe jingle $JINGLE) $(mk_exe tools $TOOLS)"
+
 cpdir () {
   FROM=$1
   TO=$2

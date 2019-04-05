@@ -1,0 +1,7 @@
+(rule (copy ../Version.ml Version.ml))
+(ocamllex callMap parseMap)
+(executables
+   (names jingle gen_theme)
+   (libraries herdtools str)
+   (modules_without_implementation )
+)
