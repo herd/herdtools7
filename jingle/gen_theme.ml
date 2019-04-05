@@ -13,7 +13,6 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 open Printf
-open Str
 
 let verbose = ref false
 let includes = ref []

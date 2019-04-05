@@ -457,7 +457,7 @@ module Make
         let module DC =
           CompCond.Make(O)
             (struct
-              open Constant
+
               let with_ok = true
               module C = T.C
               module Loc = struct

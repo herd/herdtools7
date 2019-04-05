@@ -14,8 +14,6 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-open Printf
-
 let comment = "//"
 
 module Make(V:Constant.S) = struct

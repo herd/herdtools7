@@ -93,25 +93,25 @@ module Make
          | [] -> None
 
        let rec count_a = function
-         | {edge=(Rf Ext|Fr Ext|Ws Ext); a2=Some a}::
-           ({edge=(Rf Ext|Fr Ext|Ws Ext);a1=Some _}::_ as es) ->
+         | {edge=(Rf Ext|Fr Ext|Ws Ext); a2=Some a; _}::
+           ({edge=(Rf Ext|Fr Ext|Ws Ext);a1=Some _; _}::_ as es) ->
              A.pp_atom a::count_a es
-         | {edge=(Rf Ext|Fr Ext|Ws Ext); a2=None}::
-           ({edge=(Rf Ext|Fr Ext|Ws Ext);a1=None}::_ as es) ->
+         | {edge=(Rf Ext|Fr Ext|Ws Ext); a2=None; _}::
+           ({edge=(Rf Ext|Fr Ext|Ws Ext);a1=None; _}::_ as es) ->
              Code.plain::count_a es
          | _::es -> count_a es
          | [] -> []
 
        let init_a = function
-         | {edge=(Rf Ext|Fr Ext|Ws Ext);a1=Some a}::_ as es ->
+         | {edge=(Rf Ext|Fr Ext|Ws Ext);a1=Some a; _}::_ as es ->
              begin match Misc.last es with
-             | {edge=(Rf Ext|Fr Ext|Ws Ext);a2=Some _} ->
+             | {edge=(Rf Ext|Fr Ext|Ws Ext);a2=Some _; _} ->
                  [A.pp_atom a]
              | _ -> []
              end
-         | {edge=(Rf Ext|Fr Ext|Ws Ext);a1=None}::_ as es ->
+         | {edge=(Rf Ext|Fr Ext|Ws Ext);a1=None; _}::_ as es ->
              begin match Misc.last es with
-             | {edge=(Rf Ext|Fr Ext|Ws Ext);a2=None} -> [Code.plain]
+             | {edge=(Rf Ext|Fr Ext|Ws Ext);a2=None; _} -> [Code.plain]
              | _ -> []
              end
          | _ -> []
@@ -119,7 +119,7 @@ module Make
        let isolated_writes es =
          let es =
            List.filter
-             (function {edge=Insert _;} -> false | _ -> true)
+             (function {edge=Insert _; _} -> false | _ -> true)
              es in
          let x =  init_a es @ count_a es in
          let x =

@@ -16,7 +16,6 @@
 
 open Misc
 open Printf
-open Archs
 
 (* Configuration *)
 let norm = ref false

@@ -16,7 +16,6 @@
 module Make (C:sig include Arch_herd.Config val moreedges : bool end) (V:Value.S) =
   struct
     include AArch64Base
-    open MachSize
 
     let is_amo _ = false
     let pp_barrier_short = pp_barrier

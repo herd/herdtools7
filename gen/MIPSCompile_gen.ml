@@ -14,7 +14,6 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-open Printf
 open Code
 
 module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =

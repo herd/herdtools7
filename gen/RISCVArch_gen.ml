@@ -21,8 +21,6 @@ end
 
 module Make
  (C:sig val naturalsize : MachSize.sz val moreedges : bool end) = struct
-   open Code
-   open Printf
 
    include RISCVBase
 

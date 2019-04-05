@@ -48,7 +48,6 @@ module Top(O:Config)(Out:OutTests.S) = struct
   open Action
   open MiscParser
   open MemOrderOrAnnot
-  open CBase
 
   module D = CDumper.Make(Out)
 

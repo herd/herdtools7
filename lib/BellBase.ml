@@ -105,8 +105,6 @@ let string_of_reg_or_imm pk r = match r with
   | Regi r -> pp_reg r
   | Imm r -> pk r
 
-open Constant
-
 type reg_or_addr =
   | Rega of reg  (* address given in register *)
   | Abs of ParsedConstant.v (* address given as a constant *)

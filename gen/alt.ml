@@ -289,7 +289,7 @@ module Make(C:Builder.S)
 
     let rec c_minint_es c = function
       | [] -> false,c
-      | {edge=Id}::es ->  c_minint_es c es
+      | {edge=Id; _}::es ->  c_minint_es c es
       | e::es ->
           match get_ie e with
           | Ext -> true,c
@@ -358,7 +358,7 @@ module Make(C:Builder.S)
       let d2 =
         List.fold_right
           (fun (r,_) k -> match r with
-          | ERS [{edge=Po (_,e1,e2);}] -> Dir2Set.add (e1,e2) k
+          | ERS [{edge=Po (_,e1,e2); _}] -> Dir2Set.add (e1,e2) k
           | _ -> k)
           rs Dir2Set.empty in
       fun e1 e2 -> Dir2Set.mem (e1,e2) d2
@@ -367,7 +367,7 @@ module Make(C:Builder.S)
       let d2 =
         List.fold_right
           (fun (r,_) k -> match r with
-          | ERS [{edge=Fenced (_,_,e1,e2)}] -> Dir2Set.add (e1,e2) k
+          | ERS [{edge=Fenced (_,_,e1,e2); _}] -> Dir2Set.add (e1,e2) k
           | _ -> k)
           rs Dir2Set.empty in
       fun e1 e2 -> Dir2Set.mem (e1,e2) d2

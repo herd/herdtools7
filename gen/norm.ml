@@ -15,7 +15,6 @@
 (****************************************************************************)
 
 (* Normalise cycles and name them *)
-open Archs
 open Printf
 
 let arch = ref `PPC

@@ -16,7 +16,6 @@
 
 (* Filter cycles list by number of accesses *)
 open Code
-open Archs
 open Printf
 
 let arch = ref `PPC

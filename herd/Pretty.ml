@@ -502,7 +502,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
     let old = find_pair p m in
     if
       List.exists
-        (fun {ikey=k} -> k = i.ikey)
+        (fun {ikey=k; _} -> k = i.ikey)
         old
     then m
     else

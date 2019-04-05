@@ -172,7 +172,7 @@ module Make(Config:Config)(Out:OutTests.S) =
                     if echocond then begin
                       echo_cond cond_checked
                     end ;
-                    reparse map Lexing.from_string f
+                    reparse map (fun s -> Lexing.from_string s) f
                 | None ->
                     if
                       not

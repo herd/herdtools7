@@ -15,7 +15,6 @@
 (****************************************************************************)
 
 open Printf
-open Archs
 
 let arch = ref (`PPC: Archs.t)
 let names = ref []

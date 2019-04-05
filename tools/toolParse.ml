@@ -18,8 +18,6 @@
 (* Apply a function (zyva) to one test *)
 (***************************************)
 
-open Archs
-
 module Top
     (T:sig type t end) (* Return type, must be abstracted *)
     (B: functor(A:ArchBase.S)->

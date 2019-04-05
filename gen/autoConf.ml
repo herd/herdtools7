@@ -82,7 +82,6 @@ module type ArchConf = sig
 end
 
 let get_arch a =
-  let open Archs in
   match a with
   | `X86 -> (module X86 : ArchConf)
   | `PPC -> (module PPC : ArchConf)

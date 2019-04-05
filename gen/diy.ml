@@ -17,7 +17,6 @@
 open Printf
 open Code
 open LexUtil
-open Archs
 
 module type DiyConfig = sig
   include DumpAll.Config

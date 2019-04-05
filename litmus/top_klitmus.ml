@@ -156,7 +156,6 @@ module Top(O:Config)(Tar:Tar.S) = struct
           end)
 
       let allocate =
-        let open MiscParser in
         let have_rcu p =
           List.exists
             (fun (_,code) ->
@@ -218,11 +217,10 @@ module Top(O:Config)(Tar:Tar.S) = struct
     module Alloc = CSymbReg.Make(A)
 
     let have_rcu =
-      let open MiscParser in
       fun p ->
         List.exists
           (fun code -> match code with
-          | CAst.Test {CAst.body=body}
+          | CAst.Test {CAst.body=body; _}
           | CAst.Global body -> LexHaveRcu.search body)
           p
 

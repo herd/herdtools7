@@ -15,7 +15,6 @@
 (****************************************************************************)
 
 open Printf
-open Archs
 open Code
 let verbose = ref 0
 let nprocs = ref 4

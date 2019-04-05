@@ -17,7 +17,7 @@
 (* Rewrite of mixer from offence, by Luc Maranget and Jade Alglave *)
 
 open Printf
-open MixOption
+
 
 module Top (Opt:MixOption.S) = struct
 
@@ -33,11 +33,11 @@ module Top (Opt:MixOption.S) = struct
         module Alloc = SymbReg.Make(Arch)
 
         let merge =
-          let open Action in
+          let open MixOption.Action in
           match Opt.action with
           | Append -> M.append 
           | Mix -> M.merge
-          | Action.Cat -> M.cat
+          | Cat -> M.cat
 
         open Name
 
@@ -87,9 +87,9 @@ module Top (Opt:MixOption.S) = struct
 
 (* Parse command line *)
 let verbose = ref 0
-let what = ref Action.Mix
-let permut = ref Permut.Random
-let cond = ref Cond.Auto
+let what = ref MixOption.Action.Mix
+let permut = ref MixOption.Permut.Random
+let cond = ref MixOption.Cond.Auto
 let name = ref None
 let arg = ref []
 
@@ -102,11 +102,11 @@ let () =
     [
      ("-v", Arg.Unit (fun () -> incr verbose), "be verbose");
      ("-name",Arg.String (fun s -> name := Some s), "name of output test");
-     begin let module P = ParseTag.Make(Action) in
+     begin let module P = ParseTag.Make(MixOption.Action) in
      P.parse "-a" what "action performed" end ;
-     begin let module P = ParseTag.Make(Permut) in
+     begin let module P = ParseTag.Make(MixOption.Permut) in
      P.parse "-p" permut "specify permutation" end ;
-     begin let module P = ParseTag.Make(Cond) in
+     begin let module P = ParseTag.Make(MixOption.Cond) in
      P.parse "-c" cond "specify condition merge" end ;
    ]
     (fun s -> arg := !arg @ [s])

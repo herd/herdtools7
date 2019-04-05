@@ -167,7 +167,6 @@ let set_nprocs i cfg = { cfg with nprocs = Some i; }
 let get_nprocs a cfg = match cfg.nprocs with
 | None ->
     begin
-      let open Archs in
       match a with
       | `PPC -> 4
       | `X86 -> 2

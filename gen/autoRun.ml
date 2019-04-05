@@ -17,7 +17,6 @@
 open Printf
 open Code
 open AutoPhase
-open AutoUtils
 
 module Answers =
   Map.Make
@@ -41,7 +40,7 @@ let pp_answers chan m =
     m
 
 type ckpt = 
-    { logs_ck : Strings.t ;
+    { logs_ck : StringSet.t ;
       base_ck : base_ck ;
       lastrun_ck : int ;
       answers_ck : answers ; }
@@ -50,13 +49,13 @@ let pp_ckpt chan c =
   fprintf chan "Last Run = %i\n" c.lastrun_ck ;
   fprintf chan "Base = %a\n" pp_base c.base_ck ;
   fprintf chan  "Logs = %a\n"
-    (fun chan s -> Strings.pp chan "," output_string s)
+    (fun chan s -> StringSet.pp chan "," output_string s)
     c.logs_ck ;
   fprintf chan "Answers = %a\n" pp_answers c.answers_ck ;
   flush chan 
 
 let empty_ckpt =
-  { logs_ck = Strings.empty ; base_ck = StringMap.empty ;
+  { logs_ck = StringSet.empty ; base_ck = StringMap.empty ;
     lastrun_ck = -1 ; answers_ck = Answers.empty ; }
 
 module Make(C:AutoConf.S) = struct
@@ -165,11 +164,11 @@ module Make(C:AutoConf.S) = struct
        bases : Base.t ;
        (* Checkpoint data *)    
        lastrun : int ;
-       logs : Strings.t ; 
+       logs : StringSet.t ; 
        base_ntests : base_ck ;
        answers : answers ;
        (* List of tests not run again (as edge cycles) *)
-       dontrun : Strings.t ;
+       dontrun : StringSet.t ;
        (* List of ok tests (as relaxations sets *)
        ok : Outs.outs ; no : Outs.outs ;
        (* interactive mode is forced and the checkpointed
@@ -248,9 +247,9 @@ module Make(C:AutoConf.S) = struct
     R.Set.filter
       (fun r ->
         match r with
-        | ERS [{edge=Rf Int;}; {edge=Po (Diff,_,d);}] ->
+        | ERS [{edge=Rf Int; _}; {edge=Po (Diff,_,d); _}] ->
             not (R.Set.mem (powd d) safe)
-        | ERS [{edge=Rf Int;}; {edge=Fenced (f,Diff,_,d);}] ->
+        | ERS [{edge=Rf Int; _}; {edge=Fenced (f,Diff,_,d); _}] ->
             not (R.Set.mem (fencedwd f d) safe)
         | _ -> true)
       safe
@@ -259,10 +258,10 @@ module Make(C:AutoConf.S) = struct
     let open R in
     let open E in
     match r with
-    | ERS [{edge=Fenced _;} as e;]
-    | ERS [{edge=Rf Code.Ext;};{edge=Fenced _;} as e;]
-    | ERS [{edge=Fenced _;} as e; {edge=Rf Code.Ext;};]
-    | ERS [{edge=Rf Code.Ext;}; {edge=Fenced _;} as e; {edge=Rf Code.Ext;};]
+    | ERS [{edge=Fenced _; _} as e;]
+    | ERS [{edge=Rf Code.Ext; _};{edge=Fenced _; _} as e;]
+    | ERS [{edge=Fenced _; _} as e; {edge=Rf Code.Ext; _};]
+    | ERS [{edge=Rf Code.Ext; _}; {edge=Fenced _; _} as e; {edge=Rf Code.Ext; _};]
       -> Some e
     | _ -> None
 
@@ -284,7 +283,7 @@ module Make(C:AutoConf.S) = struct
     let fname = Filename.concat dir "no" in
     Misc.output_protect
       (fun chan ->
-        Strings.iter (fprintf chan "%s\n") dontrun)
+        StringSet.iter (fprintf chan "%s\n") dontrun)
       fname
 
   let mk_conf cumul dir base sz maxrelax relax safe =
@@ -534,14 +533,14 @@ module Make(C:AutoConf.S) = struct
     | opts::rem ->
         let fname,base = alloc_log base in
         let st =
-          if Strings.mem fname st.logs then st
+          if StringSet.mem fname st.logs then st
           else begin
             let com = sprintf "cd %s && %s %s" dname com opts in
             begin try  Run.dist_sh_save com fname
             with e ->
               if dname <> dir then run_cleans [dname] ;
               raise e end ;
-            let logs = Strings.add fname st.logs in
+            let logs = StringSet.add fname st.logs in
             let st = { st with logs = logs ; } in
             checkpoint st ;
             st
@@ -603,8 +602,8 @@ module Make(C:AutoConf.S) = struct
     let yes,no =
       List.partition (fun o -> o.L.validates) logs in
     let dontrun =
-      Strings.union
-        (Strings.of_list
+      StringSet.union
+        (StringSet.of_list
            (List.map (fun o -> o.L.cycle) yes))
         st.dontrun in
     
@@ -1000,7 +999,7 @@ module Make(C:AutoConf.S) = struct
         relaxed_r = R.Set.empty ;
         cur = R.Set.empty ; all = safe_check ; safe0 = safe_check ;
         ok = Outs.empty ;
-        dontrun = Strings.empty ;
+        dontrun = StringSet.empty ;
       } in    
     let ok = conform_safe st_conform opt.AutoOpt.stabilise in
     fprintf stdout "Observed relaxed: %a\n" R.pp_set nice_relaxed;
@@ -1073,9 +1072,9 @@ let as_fences rs =
       safe_r = R.Set.empty ; relaxed_r = R.Set.empty ; 
       bases = Base.empty ;
       base_ntests = StringMap.empty ;
-      logs = Strings.empty ;
+      logs = StringSet.empty ;
       answers = Answers.empty ;
-      dontrun = Strings.empty ;
+      dontrun = StringSet.empty ;
       ok = Outs.empty;  no = Outs.empty;
       interactive_forced = false ;
     }

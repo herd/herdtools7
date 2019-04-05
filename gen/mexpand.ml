@@ -15,7 +15,6 @@
 (****************************************************************************)
 
 (* Expand candidate relaxation macros in cycle list *)
-open Archs
 open Printf
 
 let arch = ref `PPC

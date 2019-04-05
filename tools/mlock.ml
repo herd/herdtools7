@@ -19,7 +19,6 @@
 (***********************************************)
 
 open Printf
-open Archs
 
 module Action = struct
   type t = Lock | Expand | Once

@@ -603,14 +603,14 @@ module Make
       try V.ValSet (t,op s1 s2)
       with CompError msg -> error env.EV.silent loc "%s" msg
 
-    let tags_universe {enums=env} t =
+    let tags_universe {enums=env; _} t =
       let tags =
         try StringMap.find t env
         with Not_found -> assert false in
       let tags = ValSet.of_list (List.map (fun s -> V.Tag (t,s)) tags) in
       tags
 
-    let find_env {vals=env} k =
+    let find_env {vals=env; _} k =
       Lazy.force begin
         try StringMap.find k env
         with

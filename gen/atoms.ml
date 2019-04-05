@@ -16,7 +16,6 @@
 
 (** select  cycles with at least one atomic specification *)
 
-open Archs
 open Printf
 
 (* Configuration *)
@@ -37,8 +36,8 @@ module Make (A:Fence.S) =
           es &&
         List.for_all
           (fun e -> match e with
-          | {E.edge=E.Po _; a1=None; a2=None;} -> false
-          | {E.edge=E.Fenced (f,_,_,_) } -> not (A.is_isync f)
+          | {E.edge=E.Po _; a1=None; a2=None; _} -> false
+          | {E.edge=E.Fenced (f,_,_,_); _ } -> not (A.is_isync f)
           | _ -> true)
           es
 

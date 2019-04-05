@@ -278,8 +278,6 @@ module Top
           raise Misc.Exit
     end
 
-open Archs
-
 let from_chan chan splitted =  match splitted.Splitter.arch with
 | `LISA ->
     let name = splitted.Splitter.name in

@@ -46,8 +46,6 @@ module type S = sig
   module C : Cycle.S with type edge=E.edge and type atom = A.atom
 end
 
-open Printf
-
 module Make(C:Config) (A:Arch_gen.S) =
 struct
   module A = A 

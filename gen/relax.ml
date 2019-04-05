@@ -465,12 +465,12 @@ and type edge = E.edge
                 let open E in
                 match r with
                 | ERS 
-                    ([{edge=Rf Ext;}; {edge=Fenced _;};] as rs)
+                    ([{edge=Rf Ext; _}; {edge=Fenced _; _};] as rs)
                 | ERS
-                    ([{edge=Fenced _;}; {edge=Rf Ext;};] as rs)
+                    ([{edge=Fenced _; _}; {edge=Rf Ext; _};] as rs)
                 | ERS
-                    ([{edge=Rf Ext;}; {edge=Fenced _;};
-                      {edge=Rf Ext;};] as rs)
+                    ([{edge=Rf Ext; _}; {edge=Fenced _; _};
+                      {edge=Rf Ext; _};] as rs)
                   ->
                     RSet.of_list (List.map er rs)::k
                 | _ -> RSet.singleton r::k)
