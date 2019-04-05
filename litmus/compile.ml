@@ -488,7 +488,7 @@ let count_ret =
 
     let compile_final _proc observed = RegSet.elements observed
 
-    let mk_templates name stable_info init code observed =
+    let mk_templates ty_env name stable_info init code observed =
       let outs =
         List.map
           (fun (proc,code) ->
@@ -514,6 +514,13 @@ let count_ret =
               | Some r -> RegSet.add r k
               | _ -> k)
               observed RegSet.empty in
+          let my_ty_env =
+            A.LocMap.fold
+              (fun loc t k -> match loc with
+              | A.Location_reg (p,r) when Misc.int_eq p proc ->
+                  (r,t)::k
+              | _ -> k)
+              ty_env [] in
           proc,
           let t =
             { init = compile_init proc init observed_proc code ;
@@ -521,7 +528,9 @@ let count_ret =
               stable = [];
               final = compile_final proc observed_proc;
               all_clobbers;
-              code = code; name=name; nrets; } in
+              code = code; name=name; nrets;
+              ty_env = my_ty_env;
+            } in
           { t with stable = A.RegSet.elements (A.RegSet.inter (A.RegSet.union stable stable_info) (A.Out.all_regs t)) ; })
         pecs
 
@@ -609,7 +618,7 @@ let count_ret =
               | Some r -> r::k)
               [] rs in
           A.RegSet.of_list rs in
-      let code = mk_templates name stable_info  initenv code observed in
+      let code = mk_templates ty_env name stable_info initenv code observed in
       let code_typed = type_outs ty_env code in
         { T.init = initenv ;
           info = info;

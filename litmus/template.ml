@@ -73,6 +73,7 @@ module type S = sig
       name : Name.t ;
       all_clobbers : arch_reg list;
       nrets : int ; (* number of return instruction in code *)
+      ty_env :  (arch_reg * CType.t) list ;
     }
 
   val get_nrets : t -> int
@@ -143,6 +144,7 @@ module Make(O:Config)(A:I) =
         name : Name.t ;
         all_clobbers : arch_reg list;
         nrets : int ;
+        ty_env :  (arch_reg * CType.t) list ;
       }
 
 
@@ -320,17 +322,20 @@ module Make(O:Config)(A:I) =
 
     let get_reg_env error tst =
       let m =
+        List.fold_left (fun m (r,t) -> RegMap.add r t m)
+          RegMap.empty tst.ty_env in
+      let m =
         List.fold_left
           (fun m t ->
             List.fold_left
               (fun m (r,t) ->
                 let t0 = RegMap.safe_find t r m in
                 if (t <> t0) then begin
-                  if error t t0 then begin
+                  if error t0 t then begin
                     Warn.user_error
                       "Register %s has different types: <%s> and <%s>"
                       (A.reg_to_string r) (CType.dump t0) (CType.dump t)
-                  end else
+                  end else if not (CType.is_ptr t0 && CType.is_ptr t) then
                     Warn.warn_always
                       "File \"%s\" Register %s has different types: <%s> and <%s>"
                       tst.name.Name.file
@@ -338,7 +343,7 @@ module Make(O:Config)(A:I) =
                 end ;
                 RegMap.add r t m)
               m  t.reg_env)
-          RegMap.empty tst.code in
+          m tst.code in
       m
 
   end
