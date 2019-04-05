@@ -15,6 +15,10 @@ C to AArch64
 "*%x = constvar:c;" -> "MOV %tmp,&c;
                        STR %tmp,[%x]"
 
+"%x = %y;"  -> "MOV %x,%y"
+"%x = %y == %z;"  -> "CMP %y,%z; CSINC %x,XZR,XZR,NE"
+"%x = %y != %z;"  -> "CMP %y,%z; CSINC %x,XZR,XZR,EQ"
+
 "*%x = %y;" -> "STR %y,[%x]"
 
 "%x = *%y;" -> "LDR %x,[%y]"
