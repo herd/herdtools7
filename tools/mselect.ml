@@ -66,7 +66,11 @@ module Top
           Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
           raise e
 
-    let zyva tests = Misc.iter_argv do_test tests
+    let zyva = function
+      | [] ->
+          Misc.iter_stdin do_test
+      | _::_ as tests ->
+          Misc.iter_argv do_test tests
 
   end
 
