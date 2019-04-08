@@ -104,6 +104,7 @@ match a with
 | `ARM -> File "arm.cat"
 | `AArch64 -> File "aarch64.cat"
 | `C -> File "c11_partialSC.cat"
+| `RISCV -> File "riscv.cat"
 | _ ->
     Warn.user_error 
     "There is no default model for architecture %s.\nSpecify a model explicitly using the -model flag." (Archs.pp a)

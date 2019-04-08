@@ -1,0 +1,28 @@
+"Risc V partial order model"
+
+(*****************************************)
+(* The RISCV Instruction set manual v2.3 *)
+(*****************************************)
+
+(***************)
+(* Definitions *)
+(***************)
+
+(* Define ppo *)
+include "riscv-defs.cat"
+
+(* Compute coherence relation *)
+include "cos-opt.cat"
+
+(**********)
+(* Axioms *)
+(**********)
+
+(* Sc per location *)
+acyclic co|rf|fr|po-loc as Coherence
+
+(* Main model axiom *)
+acyclic co|rfe|fr|ppo as Model
+
+(* Atomicity axiom *)
+empty rmw & (fre;coe) as Atomic

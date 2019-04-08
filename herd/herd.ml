@@ -132,11 +132,12 @@ let gen_model_opt s =
     | None -> false
     | Some _ as m -> model :=  m ; true)
     Model.tags
-    (sprintf " select model, defaults %s, %s, %s, %s, %s"
+    (sprintf " select model, defaults %s, %s, %s, %s, %s, %s"
        (pp_default_model x86)
        (pp_default_model ppc)
        (pp_default_model arm)
        (pp_default_model aarch64)
+       (pp_default_model riscv)
        (pp_default_model Archs.c))
 
 let options = [
