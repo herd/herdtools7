@@ -266,12 +266,13 @@ module Make(C:Config) = struct
           try
             let asc = List.assoc i map in
 	    List.assoc r asc
-          with Not_found -> 
-	    raise (Error("Register "^r^" does not appear."))
+          with Not_found ->
+            let msg = sprintf "register %i:%s does not appear in code." i r in
+	    raise (Error msg)
         in Location_reg(i,r')
     | l -> l)
 
-  let translate chin sres =
+  let translate name chin sres =
     let src = Source.Parser.parse chin sres in
     let open MiscParser in
     let prog = List.map (fun (i,p) ->
@@ -282,8 +283,16 @@ module Make(C:Config) = struct
     let prog,convs = List.split prog in
     let map = reg_mapping convs in
     let init = 
-      addr_init convs @ 
-      List.map (fun (l,r) -> (conv_loc map l,r)) src.init in
+      addr_init convs @
+      List.fold_right
+        (fun (l,r) k ->
+          try
+            let loc = conv_loc map l in
+            (loc,r)::k
+          with Error msg ->
+            Warn.warn_always "File \"%s\": %s" name msg ;
+            k)
+        src.init [] in
     let condition =
       ConstrGen.(map_constr
 		   (function

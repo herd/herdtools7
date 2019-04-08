@@ -207,8 +207,8 @@ module Top(Out:OutTests.S) = struct
         let module SP = Splitter.Make(Splitter.Default) in
         SP.split (Filename.basename file) chin in
       let tgt_test =
-        try Trad.translate chin sres
-        with  Mapping.Error msg -> Warn.fatal "File \"%s\":%s" file msg in
+        try Trad.translate file chin sres
+        with  Mapping.Error msg -> Warn.fatal "File \"%s\": %s" file msg in
 
       let dump out =
         let out = Out.chan out in
