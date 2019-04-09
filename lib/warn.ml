@@ -33,6 +33,7 @@ let warn1 fmt = ksprintf  (prerr_ifverb 1) fmt
 
 end
 let warn_always fmt =
+  eprintf "Warning: " ;
   kfprintf
     (fun chan -> output_char chan '\n' ; flush chan)
     stderr fmt

@@ -293,21 +293,18 @@ module Make(C:Config) = struct
             Warn.warn_always "File \"%s\": %s" name msg ;
             k)
         src.init [] in
-    let condition =
-      ConstrGen.(map_constr
-		   (function
-		     | LV(l,v) -> LV(conv_loc map l,v)
-		     | LL(l1,l2) -> LL(conv_loc map l1,conv_loc map l2))
-		   src.condition) in
+    let map_lv_ll =
+      ConstrGen.(function
+	| LV(l,v) -> LV(conv_loc map l,v)
+	| LL(l1,l2) -> LL(conv_loc map l1,conv_loc map l2)) in
+    let condition = ConstrGen.map_constr map_lv_ll src.condition
+    and filter = Misc.app_opt (ConstrGen.map_prop map_lv_ll) src.filter in
     let locations =
       List.map (fun (loc,ty) -> conv_loc map loc,ty) src.locations in
     { info = (OutMapping.key,dump_map map)::src.info;
       init = init;
       prog = prog;
-      filter = begin match src.filter with
-      | None -> None
-      | Some _ -> Warn.fatal "Non empy filter in jingle"
-      end ;
+      filter = filter;
       condition = condition;
       locations = locations;
       extra_data = src.extra_data;
