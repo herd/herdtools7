@@ -102,7 +102,7 @@ end = struct
     if locs <> "" then Out.fprintf chan "%s\n" locs ;
     begin match t.filter with
     | None -> ()
-    | Some p -> Out.fprintf chan "filter %s" (I.dump_prop p)
+    | Some p -> Out.fprintf chan "filter %s\n" (I.dump_prop p)
     end ;
     begin match t.extra_data with
     | NoExtra|CExtra _ -> ()

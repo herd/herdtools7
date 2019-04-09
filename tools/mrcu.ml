@@ -336,7 +336,7 @@ module X =
 
 
 let () =
-  Misc.iter_argv
+  Misc.iter_argv_or_stdin
     (fun fname ->
       try X.from_file fname with
       | Misc.Exit -> ()

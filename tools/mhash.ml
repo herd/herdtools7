@@ -93,7 +93,9 @@ module Top
           raise e
 
     let zyva tests logs =
-      let env,map = Misc.fold_argv do_test tests (StringMap.empty,StringMap.empty) in
+      let env,map =
+        Misc.fold_argv_or_stdin
+          do_test tests (StringMap.empty,StringMap.empty) in
       let module Lex =
         LexHashLog.Make
           (struct

@@ -47,7 +47,9 @@ module Top
       StringMap.add k (TSet.add v old) m
 
     let zyva tests =
-      let tests = Misc.fold_argv do_test tests [] in
+      let tests = match tests with
+      | [] -> Misc.fold_stdin do_test []
+      | _::_ -> Misc.fold_argv do_test tests [] in
       let tests = TSet.of_list tests in
       let byName,byHash =
         TSet.fold

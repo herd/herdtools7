@@ -83,7 +83,7 @@ let ppo = function
   | Some s -> " " ^ s
 
 let () =
-  Misc.iter_argv
+  Misc.iter_argv_or_stdin
     (fun name ->
       try
         let tname,cycle,st = from_file name in

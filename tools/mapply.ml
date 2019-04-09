@@ -212,6 +212,9 @@ module Task(A:TArg) = struct
     end
 
   let run j names =
+    let names = match names with
+    | [] -> Misc.fold_stdin Misc.cons []
+    | _::_ -> names in
     let names = Misc.mk_iter names in
     begin match A.mode with
     | File -> mkdir dir 0o700
@@ -269,12 +272,11 @@ let names = !args
 
 let () =
   if !j <= 1 then
-    Misc.iter_argv
-      (fun name ->
-        let comargs = String.concat " " !comargs in
-        let com = sprintf "%s %s %s" !com comargs name in
-        ignore (Sys.command com))
-      names
+    let do_test name =
+      let comargs = String.concat " " !comargs in
+      let com = sprintf "%s %s %s" !com comargs name in
+      ignore (Sys.command com) in
+    Misc.iter_argv_or_stdin do_test names
   else
     let module T =
       Task

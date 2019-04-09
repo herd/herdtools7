@@ -109,7 +109,7 @@ module Make(Config:Config)(Out:OutTests.S) =
             let idx_out = Out.open_all () in
             Misc.output_protect_close Out.close
               (fun idx_out ->
-                Misc.iter_argv (from_file idx_out) args)
+                Misc.iter_argv_or_stdin (from_file idx_out) args)
               idx_out ;
             Out.tar ()
 

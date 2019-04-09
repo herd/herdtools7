@@ -362,7 +362,8 @@ module Top(O:Config)(Tar:Tar.S) = struct
       fname
 
   let from_files args =
-    let sources,_ = Misc.fold_argv from_file args ([],(StringMap.empty,0))in
+    let sources,_ =
+      Misc.fold_argv_or_stdin from_file args ([],(StringMap.empty,0))in
     let sources = List.rev sources in
     dump_makefile sources ;
     dump_run sources ;

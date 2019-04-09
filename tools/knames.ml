@@ -69,6 +69,4 @@ let do_test fname =
       Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 fname ;
       raise e
 
-let () = match tests with
-| [] -> Misc.iter_stdin do_test
-| _ ->  Misc.iter_argv do_test tests
+let () =  Misc.iter_argv_or_stdin do_test tests

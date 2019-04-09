@@ -61,7 +61,7 @@ struct
     | Misc.Fatal msg ->
         eprintf "Fatal error is not fatal, %s\n" msg
 
-  let from_args args = Misc.iter_argv (from_file stdout) args
+  let from_args args = Misc.iter_argv_or_stdin (from_file stdout) args
 end
 
 (**********)

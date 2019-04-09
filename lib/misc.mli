@@ -176,6 +176,10 @@ val next_iter : iter -> (string * iter) option
 val fold_stdin : (string -> 'a -> 'a) -> 'a -> 'a
 val iter_stdin :  (string -> unit) -> unit
 
+(* Choose late *)
+val fold_argv_or_stdin : (string -> 'a -> 'a) -> string list -> 'a -> 'a
+val iter_argv_or_stdin : (string -> unit) -> string list -> unit
+
 (****************************)
 (* Cross product generators *)
 (****************************)

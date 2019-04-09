@@ -244,7 +244,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
     let idx_out = Out.open_all () in
     Misc.output_protect_close Out.close
       (fun idx_out ->
-        Misc.iter_argv
+        Misc.iter_argv_or_stdin
           (fun fname ->
             try from_arg idx_out fname with
             | Misc.Exit -> ()

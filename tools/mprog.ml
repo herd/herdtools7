@@ -289,7 +289,7 @@ module X =
     end)
 
 let () =
-  Misc.iter_argv
+  Misc.iter_argv_or_stdin
     (fun fname ->
       try X.zyva fname with
       | Misc.Exit -> ()

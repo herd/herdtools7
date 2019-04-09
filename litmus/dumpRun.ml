@@ -162,7 +162,7 @@ let run_tests names out_chan =
   | None -> None
   | Some exp -> Some (open_out exp) in
   let  arch,docs,sources,_,_ =
-    Misc.fold_argv
+    Misc.fold_argv_or_stdin
       (fun name (_,docs,srcs,cycles,hash_env) ->
         match CT.from_file cycles hash_env
             name out_chan with

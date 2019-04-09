@@ -154,9 +154,7 @@ module Top
 
     let zyva tests =
       let empty = [],StringMap.empty in
-      let xs,failed = match tests with
-      | [] -> Misc.fold_stdin do_test empty
-      | _  -> Misc.fold_argv do_test tests empty in
+      let xs,failed = Misc.fold_argv_or_stdin do_test tests empty in
 
       let get_min cmp = function
         | [] -> assert false

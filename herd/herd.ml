@@ -630,7 +630,7 @@ let () =
     let b = !Opts.exit_if_failed in
     fun seen -> if b then exit 1 else seen in
   let _seen =
-    Misc.fold_argv
+    Misc.fold_argv_or_stdin
       (fun name seen ->
         try from_file name seen
         with

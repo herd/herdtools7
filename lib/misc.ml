@@ -493,7 +493,7 @@ let ignore_line line =
   String.length line = 0 ||
   (String.length line > 0 && line.[0] = '#')
 
-let rec input_lines f dir k chan =
+let rec input_lines  f dir k chan =
   let rec do_rec k =
     match input_line chan with
     | Some base ->
@@ -525,10 +525,21 @@ let iter_stdin f =
  let f x () = f x in
  input_lines f "." () stdin
 
+(* Defaults to stdin when no argument *)
+let fold_argv_or_stdin f tests k = match tests with
+| [] -> fold_stdin f k
+| _::_ -> fold_argv f tests k
+
+let iter_argv_or_stdin f tests  = match tests with
+| [] -> iter_stdin f
+| _::_ -> iter_argv f tests
+
+
+(* Continue *)
 let expand_argv names =
   let fs = fold_argv (fun x xs -> x::xs) names [] in
   List.rev fs
-
+    
 (* With iterator *)
 type dir_name = string
 
