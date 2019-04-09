@@ -231,10 +231,7 @@ module Top(Out:OutTests.S) = struct
 
 
   let zyva () =
-    let nout =
-      match args with
-      | [] -> Misc.fold_stdin do_trans 0
-      | tests -> Misc.fold_argv do_trans tests 0 in
+    let nout = Misc.fold_argv_or_stdin do_trans args 0 in
     Out.tar() ;
     eprintf "Generated %i tests\n" nout
 end
