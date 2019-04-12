@@ -217,6 +217,7 @@ let rec do_dump_instruction indent =
       pindent "%s(%s);" f (dump_args es)
 
 let dump_instruction = do_dump_instruction ""
+let dump_parsedInstruction = dump_instruction
 
 let pp_instruction _mode = dump_instruction
 

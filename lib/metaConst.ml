@@ -26,14 +26,16 @@ let pp = function
   | Int i -> sprintf "%i" i
   | Meta v -> sprintf "&%s" v
 
+let pp_prefix prf = function
+  | Int i -> sprintf "%s%i" prf i
+  | Meta v -> sprintf "&%s" v
+
 let fatal_meta v =
   Warn.fatal "Unexpected meta variable %s" (pp v)
+
 let as_int = function
   | Int i -> i
   | Meta _ as v -> fatal_meta v
-      
-
-
 
 let compare k1 k2 = match k1,k2 with
 | Int i1,Int i2 -> Pervasives.compare i1 i2

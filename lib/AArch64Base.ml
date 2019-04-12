@@ -394,7 +394,7 @@ let pp_hash m = match m with
 
 let pp_k m v = pp_hash m ^ string_of_int v
 
-type 'k basic_pp = { pp_k : 'k -> string; }
+type 'k basic_pp = { pp_k : 'k -> string; zerop : 'k -> bool; k0 : 'k kr }
 
 
 let pp_memo memo = memo
@@ -431,7 +431,7 @@ let do_pp_instruction m =
     pp_memo memo ^ " " ^ pp_vreg v r1 ^ "," ^  pp_vreg v r2 in
 
   let pp_kr showzero kr = match kr with
-  | K 0 when not showzero -> ""
+  | K k when m.zerop k && not showzero -> ""
   | K k -> "," ^ m.pp_k k
   | RV (v,r) ->
       "," ^ pp_vreg v r ^
@@ -490,13 +490,13 @@ let do_pp_instruction m =
   | I_STP (t,v,r1,r2,r3,k) ->
       pp_memp (match t with TT -> "STP" | NT -> "STNP") v r1 r2 r3 k
   | I_LDAR (v,t,r1,r2) ->
-      pp_mem (ldr_memo t) v r1 r2 k0
+      pp_mem (ldr_memo t) v r1 r2 m.k0
   | I_LDARBH (bh,t,r1,r2) ->
-      pp_mem (ldrbh_memo bh t)  V32 r1 r2 k0
+      pp_mem (ldrbh_memo bh t)  V32 r1 r2 m.k0
   | I_STR (v,r1,r2,k) ->
       pp_mem "STR" v r1 r2 k
   | I_STLR (v,r1,r2) ->
-      pp_mem "STLR" v r1 r2 k0
+      pp_mem "STLR" v r1 r2 m.k0
   | I_STXR (v,t,r1,r2,r3) ->
       pp_stxr (str_memo t) v r1 r2 r3
   | I_LDRBH (bh,r1,r2,k) ->
@@ -504,7 +504,7 @@ let do_pp_instruction m =
   | I_STRBH (bh,r1,r2,k) ->
       pp_mem ("STR"^pp_bh bh) V32 r1 r2 k
   | I_STLRBH (bh,r1,r2) ->
-      pp_mem ("STLR"^pp_bh bh) V32 r1 r2 k0
+      pp_mem ("STLR"^pp_bh bh) V32 r1 r2 m.k0
   | I_STXRBH (bh,t,r1,r2,r3) ->
       pp_stxr (strbh_memo bh t) V32 r1 r2 r3
 (* CAS *)
@@ -556,13 +556,23 @@ let do_pp_instruction m =
       sprintf "IC %s,%s" (IC.pp_op op) (pp_xreg r)
   | I_DC (op,r) ->
       sprintf "IC %s,%s" (DC.pp_op op) (pp_xreg r)
+
+let m_int = { pp_k = string_of_int ;
+              zerop = (function 0 -> true | _ -> false);
+              k0 = k0; }
+
 let pp_instruction m =
-  do_pp_instruction
-    {pp_k = pp_k m}
+  do_pp_instruction {m_int with pp_k = pp_k m; }
 
 let dump_instruction =
   do_pp_instruction
-    {pp_k = (fun v -> "#" ^ string_of_int v)}
+    {m_int with pp_k = (fun v -> "#" ^ string_of_int v); }
+
+let dump_parsedInstruction =
+  do_pp_instruction
+    {  pp_k = MetaConst.pp_prefix "#";
+       zerop = (fun k -> MetaConst.compare MetaConst.zero k = 0);
+       k0 = K MetaConst.zero; }
 
 (****************************)
 (* Symbolic registers stuff *)

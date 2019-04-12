@@ -23,6 +23,7 @@ val fatal_meta : k -> 'a
 val as_int : k -> int
 
 val pp : k -> string
+val pp_prefix : string -> k -> string
 
 val compare : k -> k -> int
 

@@ -310,7 +310,7 @@ and type evt_struct = E.event_structure) =
       fun m1 m2 eiid ->
         let (eiid, act1) = m1 eiid in
         let (eiid, act2) = m2 eiid in
-        let un =  Evt.union  act1 act2 in
+        let un =  Evt.union act1 act2 in
 (*
   (Evt.map (fun (r,cs,es) -> (r,cs,es))  act1)
   (Evt.map (fun (r,cs,es) -> (r,cs, es)) act2)

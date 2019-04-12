@@ -285,8 +285,10 @@ let pp_instruction m =
     {pp_k = pp_k m}
 
 let dump_instruction =
-  do_pp_instruction 
-    {pp_k = (fun v -> "#" ^ string_of_int v)}
+  do_pp_instruction {pp_k = (fun v -> "#" ^ string_of_int v)}
+
+and dump_parsedInstruction =
+  do_pp_instruction  {pp_k = MetaConst.pp_prefix "#"; }
 
 (****************************)
 (* Symbolic registers stuff *)

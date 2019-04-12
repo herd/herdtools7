@@ -224,6 +224,7 @@ type crfindex = int (* in fact [0..7] *)
 type setcr0 = SetCR0 | DontSetCR0
 
 (* j: for arithm at least, should be ireg *)
+
 type 'k kinstruction =
 (* Two forms of ins: set cr0 or not *)
   | Padd of setcr0*reg*reg*reg
@@ -280,49 +281,47 @@ type 'k kinstruction =
   | Pcomment of string
 
 type instruction = int kinstruction
+
 type parsedInstruction = MetaConst.k kinstruction
 
-    let pp_k = string_of_int
-    let pp_idx = string_of_int
+let ppi_index_mode opcode r1 r2 r3 =
+  opcode^" "^pp_reg r1 ^ ","^pp_reg r2 ^ ","^pp_reg r3
 
-    let ppi_index_mode opcode r1 r2 r3 =
-      opcode^" "^pp_reg r1 ^ ","^pp_reg r2 ^ ","^pp_reg r3
+let ppi_index_mode2 opcode r1 r2 =
+  opcode^" "^pp_reg r1 ^ ","^pp_reg r2
 
-    let ppi_index_mode2 opcode r1 r2 =
-      opcode^" "^pp_reg r1 ^ ","^pp_reg r2
+let ppi_imm_index_mode pp_idx opcode r1 d r2 =
+  opcode^" "^pp_reg r1 ^ ","^pp_idx d ^ "("^pp_reg r2^")"
 
-    let ppi_imm_index_mode opcode r1 d r2 =
-      opcode^" "^pp_reg r1 ^ ","^pp_idx d ^ "("^pp_reg r2^")"
+let ppi_imm_instr pp_k opcode r1 r2 v =
+  opcode^" "^pp_reg r1 ^ ","^pp_reg r2 ^ ","^pp_k v
 
-    let ppi_imm_instr opcode r1 r2 v =
-      opcode^" "^pp_reg r1 ^ ","^pp_reg r2 ^ ","^pp_k v
+let ppi_imm_instr_memo pp_k opcode set r1 r2 v =
+  let memo = match set with
+  | SetCR0 -> opcode ^ "."
+  | DontSetCR0 -> opcode in
+  ppi_imm_instr pp_k memo r1 r2 v
 
-    let ppi_imm_instr_memo opcode set r1 r2 v =
-      let memo = match set with
-      | SetCR0 -> opcode ^ "."
-      | DontSetCR0 -> opcode in
-      ppi_imm_instr memo r1 r2 v
+let ppi_ri pp_k opcode rD v = opcode^" "^pp_reg rD ^ ","^pp_k v
 
-    let ppi_ri opcode rD v = opcode^" "^pp_reg rD ^ ","^pp_k v
+let ppi_rr opcode rD rS = opcode^" "^pp_reg rD^","^pp_reg rS
 
-    let ppi_rr opcode rD rS = opcode^" "^pp_reg rD^","^pp_reg rS
+let pp_op3 memo set rD rA rB =
+  let memo = match set with
+  | SetCR0 -> memo ^ "."
+  | DontSetCR0 -> memo in
+  ppi_index_mode memo rD rA rB
 
-    let pp_op3 memo set rD rA rB =
-      let memo = match set with
-      | SetCR0 -> memo ^ "."
-      | DontSetCR0 -> memo in
-      ppi_index_mode memo rD rA rB
+let pp_op2 memo set rD rA =
+  let memo = match set with
+  | SetCR0 -> memo ^ "."
+  | DontSetCR0 -> memo in
+  ppi_index_mode2 memo rD rA
 
-    let pp_op2 memo set rD rA =
-      let memo = match set with
-      | SetCR0 -> memo ^ "."
-      | DontSetCR0 -> memo in
-      ppi_index_mode2 memo rD rA
-
-    let pp_cond cond = match cond with
-    | Eq -> "eq" | Ne -> "ne"
-    | Lt -> "lt" | Ge -> "ge"
-    | Gt -> "gt" | Le -> "le"
+let pp_cond cond = match cond with
+| Eq -> "eq" | Ne -> "ne"
+| Lt -> "lt" | Ge -> "ge"
+| Gt -> "gt" | Le -> "le"
 
 open MachSize
 
@@ -342,66 +341,67 @@ let memo_store = function
 
 let memo_storex sz = memo_store sz ^ "x"
 
-    let do_pp_instruction i = match i with
-      | Padd(set,rD,rA,rB) -> pp_op3 "add" set rD rA rB
-      | Psub(set,rD,rA,rB) -> pp_op3 "sub" set rD rA rB
-      | Psubf(set,rD,rA,rB) -> pp_op3 "subf" set rD rA rB
-      | Por(set,rD,rA,rB) -> pp_op3 "or" set rD rA rB
-      | Pxor(set,rD,rA,rB) -> pp_op3 "xor" set rD rA rB
-      | Pand(set,rD,rA,rB) -> pp_op3 "and" set rD rA rB
-      | Pmull(set,rD,rA,rB) -> pp_op3 "mullw" set rD rA rB
-      | Pdiv(set,rD,rA,rB) -> pp_op3 "divw" set rD rA rB
+let do_pp_instruction pp_k i = match i with
+| Padd(set,rD,rA,rB) -> pp_op3 "add" set rD rA rB
+| Psub(set,rD,rA,rB) -> pp_op3 "sub" set rD rA rB
+| Psubf(set,rD,rA,rB) -> pp_op3 "subf" set rD rA rB
+| Por(set,rD,rA,rB) -> pp_op3 "or" set rD rA rB
+| Pxor(set,rD,rA,rB) -> pp_op3 "xor" set rD rA rB
+| Pand(set,rD,rA,rB) -> pp_op3 "and" set rD rA rB
+| Pmull(set,rD,rA,rB) -> pp_op3 "mullw" set rD rA rB
+| Pdiv(set,rD,rA,rB) -> pp_op3 "divw" set rD rA rB
 
-      | Paddi(rD,rA,simm) -> ppi_imm_instr "addi" rD rA simm
-      | Pori(rD,rA,simm) -> ppi_imm_instr "ori" rD rA simm
-      | Pxori(rD,rA,simm) -> ppi_imm_instr "xori" rD rA simm
-      | Pandi(rD,rA,simm) -> ppi_imm_instr "andi." rD rA simm
-      | Pmulli(rD,rA,simm) -> ppi_imm_instr "mulli" rD rA simm
+| Paddi(rD,rA,simm) -> ppi_imm_instr pp_k "addi" rD rA simm
+| Pori(rD,rA,simm) -> ppi_imm_instr pp_k "ori" rD rA simm
+| Pxori(rD,rA,simm) -> ppi_imm_instr pp_k "xori" rD rA simm
+| Pandi(rD,rA,simm) -> ppi_imm_instr pp_k "andi." rD rA simm
+| Pmulli(rD,rA,simm) -> ppi_imm_instr pp_k "mulli" rD rA simm
 
-      | Pli(rD,v) -> ppi_ri "li" rD v
-      | Pcmpwi (0,rS,v) -> ppi_ri "cmpwi" rS v
-      | Pcmpwi (crf,rS,v) ->
-          "cmpwi" ^ " " ^pp_crf crf ^ "," ^ pp_reg rS  ^ "," ^ pp_k v
-      | Pb lbl -> "b   " ^ lbl
-      | Pbcc(cond, lbl) -> "b"^pp_cond cond ^ "  " ^ lbl
-      | Pcmpw(0,rA,rB) -> ppi_rr "cmpw" rA rB
-      | Pcmpw(crf,rA,rB) ->
-          "cmpw" ^ " " ^pp_crf crf ^ "," ^ pp_reg rA  ^ "," ^ pp_reg rB
-      | Plwzu(rD,d,rA) -> ppi_imm_index_mode "lwzu" rD d rA
-      | Pmr (rD,rS) -> ppi_rr "mr" rD rS
-      | Pstwu(rS,d,rA) -> ppi_imm_index_mode "stwu" rS d rA
-      | Plwarx(rD,rA,rB) -> ppi_index_mode "lwarx" rD rA rB
-      | Pstwcx(rS,rA,rB) -> ppi_index_mode "stwcx." rS rA rB
+| Pli(rD,v) -> ppi_ri pp_k "li" rD v
+| Pcmpwi (0,rS,v) -> ppi_ri pp_k "cmpwi" rS v
+| Pcmpwi (crf,rS,v) ->
+    "cmpwi" ^ " " ^pp_crf crf ^ "," ^ pp_reg rS  ^ "," ^ pp_k v
+| Pb lbl -> "b   " ^ lbl
+| Pbcc(cond, lbl) -> "b"^pp_cond cond ^ "  " ^ lbl
+| Pcmpw(0,rA,rB) -> ppi_rr "cmpw" rA rB
+| Pcmpw(crf,rA,rB) ->
+    "cmpw" ^ " " ^pp_crf crf ^ "," ^ pp_reg rA  ^ "," ^ pp_reg rB
+| Plwzu(rD,d,rA) -> ppi_imm_index_mode pp_k "lwzu" rD d rA
+| Pmr (rD,rS) -> ppi_rr "mr" rD rS
+| Pstwu(rS,d,rA) -> ppi_imm_index_mode pp_k "stwu" rS d rA
+| Plwarx(rD,rA,rB) -> ppi_index_mode "lwarx" rD rA rB
+| Pstwcx(rS,rA,rB) -> ppi_index_mode "stwcx." rS rA rB
 
 
-      | Plmw (rD,d,rA) -> ppi_imm_index_mode "lmw" rD d rA
-      | Pstmw (rS,d,rA) -> ppi_imm_index_mode "stmw" rS d rA
+| Plmw (rD,d,rA) -> ppi_imm_index_mode pp_k "lmw" rD d rA
+| Pstmw (rS,d,rA) -> ppi_imm_index_mode pp_k "stmw" rS d rA
 
-      | Pload (sz,rD,d,rA) ->  ppi_imm_index_mode (memo_load sz) rD d rA
-      | Ploadx (sz,rD,rA,rB) ->  ppi_index_mode (memo_loadx sz) rD rA rB
-      | Pstore (sz,rS,d,rA) ->  ppi_imm_index_mode (memo_store sz) rS d rA
-      | Pstorex (sz,rS,rA,rB) ->  ppi_index_mode (memo_storex sz) rS rA rB
+| Pload (sz,rD,d,rA) ->  ppi_imm_index_mode pp_k (memo_load sz) rD d rA
+| Ploadx (sz,rD,rA,rB) ->  ppi_index_mode (memo_loadx sz) rD rA rB
+| Pstore (sz,rS,d,rA) ->  ppi_imm_index_mode pp_k (memo_store sz) rS d rA
+| Pstorex (sz,rS,rA,rB) ->  ppi_index_mode (memo_storex sz) rS rA rB
 
-      | Psync -> "sync"
-      | Plwsync -> "lwsync"
-      | Pisync -> "isync"
-      | Peieio -> "eieio"
-      | Pdcbf (r1,r2) -> ppi_rr "dcbf" r1 r2
+| Psync -> "sync"
+| Plwsync -> "lwsync"
+| Pisync -> "isync"
+| Peieio -> "eieio"
+| Pdcbf (r1,r2) -> ppi_rr "dcbf" r1 r2
 
-      | Pnor(set,rD,rA,rB) -> pp_op3 "nor" set rD rA rB
-      | Pneg(set,rD,rA) -> pp_op2 "neg" set rD rA
-      | Pslw(set,rD,rA,rB) -> pp_op3 "slw" set rD rA rB
-      | Psrawi(set,rD,rA,k) -> ppi_imm_instr_memo "srawi" set rD rA k
-      | Psraw(set,rD,rA,rB) -> pp_op3 "sraw" set rD rA rB
-      | Pbl lbl -> "bl   " ^ lbl
-      | Pblr -> "blr"
-      | Pmtlr reg -> "mtlr " ^ pp_reg reg
-      | Pmflr reg -> "mflr " ^ pp_reg reg
-      | Pcomment s -> "com \"" ^ s ^ "\""
+| Pnor(set,rD,rA,rB) -> pp_op3 "nor" set rD rA rB
+| Pneg(set,rD,rA) -> pp_op2 "neg" set rD rA
+| Pslw(set,rD,rA,rB) -> pp_op3 "slw" set rD rA rB
+| Psrawi(set,rD,rA,k) -> ppi_imm_instr_memo pp_k "srawi" set rD rA k
+| Psraw(set,rD,rA,rB) -> pp_op3 "sraw" set rD rA rB
+| Pbl lbl -> "bl   " ^ lbl
+| Pblr -> "blr"
+| Pmtlr reg -> "mtlr " ^ pp_reg reg
+| Pmflr reg -> "mflr " ^ pp_reg reg
+| Pcomment s -> "com \"" ^ s ^ "\""
 
-    let pp_instruction _m ins = do_pp_instruction ins
+let pp_instruction _m ins = do_pp_instruction string_of_int ins
 
-    let dump_instruction = do_pp_instruction
+let dump_instruction ins = do_pp_instruction string_of_int ins
+and dump_parsedInstruction ins = do_pp_instruction MetaConst.pp  ins
 
 (**********************)
 (* Symbolic reg stuff *)

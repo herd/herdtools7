@@ -101,9 +101,9 @@ let reg_or_imm_tr f = function
   | Imm k -> Imm (f k)
   | Regi _ as keep -> keep
 
-let string_of_reg_or_imm r = match r with
+let string_of_reg_or_imm pk r = match r with
   | Regi r -> pp_reg r
-  | Imm r -> sprintf "%d" r
+  | Imm r -> pk r
 
 open Constant
 
@@ -126,9 +126,9 @@ let imm_or_addr_or_reg_tr f = function
   | IAR_roa _ as keep -> keep
   | IAR_imm k -> IAR_imm (f k)
 
-let pp_iar iar = match iar with
+let pp_iar pk iar = match iar with
   | IAR_roa roa -> string_of_reg_or_addr roa
-  | IAR_imm i -> sprintf "%d" i
+  | IAR_imm i -> pk i
 
 type 'k addr_op =
 | Addr_op_atom of reg_or_addr
@@ -138,10 +138,10 @@ let addr_op_tr f = function
   | Addr_op_add (r,k) -> Addr_op_add (r,reg_or_imm_tr f k)
   | Addr_op_atom _ as keep -> keep
 
-let pp_addr_op a = match a with
+let pp_addr_op pk a = match a with
   | Addr_op_atom roa -> string_of_reg_or_addr roa
   | Addr_op_add(roa,roi) -> sprintf "%s+%s" (string_of_reg_or_addr roa)
-    (string_of_reg_or_imm roi)
+    (string_of_reg_or_imm pk roi)
 
 type op_t =
   | Add | Xor | And | Eq | Neq
@@ -166,13 +166,13 @@ let op_tr f = function
   | OP (op,iar1,iar2) ->
       OP (op,imm_or_addr_or_reg_tr f iar1,imm_or_addr_or_reg_tr f iar2)
 
-let pp_op = function
-  | RAI(iar) -> sprintf "%s" (pp_iar iar)
-  | OP(Add,x,i) -> sprintf "(add %s %s)" (pp_iar x) (pp_iar i)
-  | OP(Xor,x,i) -> sprintf "(xor %s %s)" (pp_iar x) (pp_iar i)
-  | OP(And,x,i) -> sprintf "(and %s %s)" (pp_iar x) (pp_iar i)
-  | OP(Eq,x,y) -> sprintf "(eq %s %s)" (pp_iar x) (pp_iar y)
-  | OP(Neq,x,y) -> sprintf "(neq %s %s)" (pp_iar x) (pp_iar y)
+let pp_op pk = function
+  | RAI(iar) -> sprintf "%s" (pp_iar pk iar)
+  | OP(Add,x,i) -> sprintf "(add %s %s)" (pp_iar pk x) (pp_iar pk i)
+  | OP(Xor,x,i) -> sprintf "(xor %s %s)" (pp_iar pk x) (pp_iar pk i)
+  | OP(And,x,i) -> sprintf "(and %s %s)" (pp_iar pk x) (pp_iar pk i)
+  | OP(Eq,x,y) -> sprintf "(eq %s %s)" (pp_iar pk x) (pp_iar pk y)
+  | OP(Neq,x,y) -> sprintf "(neq %s %s)" (pp_iar pk x) (pp_iar pk y)
 
 type 'k kinstruction =
 | Pld of reg * 'k addr_op * string list
@@ -221,22 +221,22 @@ include Pseudo.Make
 
      end)
 
-let dump_instruction i = match i with
+let do_dump_instruction pk i = match i with
 | Pld(r, addr_op, s) -> sprintf "r[%s] %s %s"
       (string_of_annot_list s)
       (pp_reg r)
-      (pp_addr_op addr_op)
+      (pp_addr_op pk addr_op)
 
 | Pst(addr_op,roi,s) -> sprintf "w[%s] %s %s"
       (string_of_annot_list s)
-      (pp_addr_op addr_op)
-      (string_of_reg_or_imm roi)
+      (pp_addr_op pk addr_op)
+      (string_of_reg_or_imm pk roi)
 
 | Prmw(r,op,x,s) -> sprintf "rmw[%s] %s %s %s"
       (string_of_annot_list s)
       (pp_reg r)
-      (pp_op op)
-      (pp_addr_op x)
+      (pp_op pk op)
+      (pp_addr_op pk x)
 
 | Pfence f -> pp_fence_ins f
 
@@ -253,7 +253,8 @@ let dump_instruction i = match i with
 
 | Pmov(r,op) -> sprintf "mov %s %s"
       (pp_reg r)
-      (pp_op op)
+      (pp_op pk op)
+
 
 let fold_regs (f_reg,f_sreg) =
   let fold_reg reg (y_reg,y_sreg) = match reg with
@@ -356,7 +357,10 @@ let fold_addrs f =
   | Prmw (_,op,x,_) -> fold_op op (fold_ao x c)
   | Pmov (_,op) -> fold_op op c
 
-let pp_instruction _m ins = dump_instruction ins
+let dump_instruction i = do_dump_instruction (sprintf "%i") i
+let dump_parsedInstruction i = do_dump_instruction MetaConst.pp i
+
+let pp_instruction _m = dump_instruction
 
 (* 100 registers are probably enough *)
 let allowed_for_symb = List.map (fun r ->  GPRreg r) (Misc.interval 0 100)

@@ -27,6 +27,7 @@ include Arch.MakeArch(struct
     | _ -> None
 
   let match_instr subs pattern instr = match pattern,instr with
+    | I_NOP,I_NOP -> Some subs
     | I_FENCE fp,I_FENCE fi when fp = fi
                             -> Some subs
 

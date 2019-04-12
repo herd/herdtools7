@@ -32,9 +32,14 @@ module type Dumper = sig
       -> unit
 end
 
+module type Base = sig
+  include ArchBase.S
+  val dump_parsedInstruction : parsedInstruction -> string
+end
+
 module type Common = sig
 
-  include ArchBase.S
+  include Base
 
   type st =
       {
@@ -59,6 +64,8 @@ module type Common = sig
   val sr_name : reg -> string
   val cv_name : MetaConst.k -> string
   val dump_pseudos : pseudo list -> string
+  val debug_pseudos : pseudo list -> string
+  val debug_pats : parsedInstruction kpseudo list -> string
 
   val conv_reg : substitution list -> reg -> st -> reg * st
   val find_lab : substitution list -> string -> st -> string * st
@@ -84,7 +91,7 @@ module type S = sig
     module Dumper : Dumper with type pseudo = pseudo
   end
 
-module MakeCommon(A:ArchBase.S) = struct
+module MakeCommon(A:Base) = struct
 
   let debug = false
 
@@ -165,13 +172,28 @@ module MakeCommon(A:ArchBase.S) = struct
     | MetaConst.Meta s -> s
     | _ -> raise (Error "Not a constant variable.")
 
+  let rec dump_pseudo di = function
+    | Nop -> "*Nop*"
+    | Label (lab,p) -> sprintf "%s: %s" lab (dump_pseudo di p)
+    | Instruction i -> di i
+    | Symbolic v -> "codevar:"^v
+    | Macro _ -> assert false
+
   let rec dump_pseudos = function
     | [] -> ""
-    | Nop::is -> "*Nop*\n" ^dump_pseudos is
-    | Label(s,i)::is -> s^": "^(dump_pseudos (i::is))
-    | Instruction i::is -> dump_instruction i ^" ;\n"^
-                           (dump_pseudos is)
-    | _ -> assert false
+    | p::is -> dump_pseudo dump_instruction p ^";\n"^dump_pseudos is
+
+  let rec do_debug_pseudos di k ps = match ps with
+  | [] -> []
+  | p::ps ->
+      if k <= 0 then ["..."]
+      else dump_pseudo di p::do_debug_pseudos di (k-1) ps
+
+  let debug_pseudos ps =
+    String.concat "; " (do_debug_pseudos dump_instruction  3 ps)
+
+  let debug_pats ps =
+    String.concat "; " (do_debug_pseudos dump_parsedInstruction 3 ps)
 
   let alloc_reg st = match st.free with
   | r::free -> r,{ st with free=free; }
@@ -238,7 +260,7 @@ module MakeCommon(A:ArchBase.S) = struct
 end
 
 module MakeParser
-         (A:ArchBase.S)
+         (A:Base)
          (P:sig
               include GenParser.LexParse
                       with type instruction = A.parsedPseudo
@@ -274,6 +296,7 @@ end) = struct
       -> match_instruction subs pattern instr
     | Instruction ip, Instruction ii
       -> match_instr subs ip ii
+    | Nop,Nop -> Some subs
     | _,_ -> assert false
 
   let instanciate_with subs free instrs =
