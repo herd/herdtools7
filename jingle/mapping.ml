@@ -25,7 +25,8 @@ module type Config = sig
 end
 
 module Make(C:Config) = struct
-  let debug = false
+
+  let debug = 1
 
   module Source = C.Source
   module Target = C.Target
@@ -61,7 +62,7 @@ module Make(C:Config) = struct
           match free with
           | [] -> raise (Error "No fresh register available.")
           | r::fs ->
-              if debug then
+              if debug > 1 then
                 eprintf "Allocating %s->%s\n"
                   (Source.pp_reg reg) (Target.pp_reg r) ;
               r,({binds with reg=(reg,r)::binds.reg},fs)
@@ -130,34 +131,38 @@ module Make(C:Config) = struct
           ()
       | _ -> ()
 
-  let rec find_pattern tag pat instrs subs =
-    eprintf "%s: " tag ; pp_pat_instr pat instrs ;
+  let rec find_pattern d tag pat instrs subs =
+    if debug > 0 then begin
+      eprintf "%s<%i>: " tag d ; pp_pat_instr pat instrs
+    end ;
     let open Source in
     pp_lab (tag ^ "FIND") instrs ;
     match pat,instrs with
     | pat,Nop::instrs
     | Nop::pat,instrs ->
-        find_pattern tag pat instrs subs
-    | pat,Label(l,Nop)::i::is ->
-        find_pattern tag pat (Label(l,i)::is) subs
+        find_pattern d tag pat instrs subs
+    | Label (lp,p)::ps,Label(li,i)::is ->
+        add_subs  [Lab (lp,li)] subs >>> fun subs ->
+        match_instruction subs p i >>>
+        find_pattern (d+1) tag ps is
     | [],Label(_,Nop)::[] ->
         Some ([],instrs,subs)
     | pat,Label(_,Nop)::[] ->
-        find_pattern tag pat [] subs
+        find_pattern (d+1) tag pat [] subs
 
     | Symbolic s::pat,instrs ->
         begin
           match dig subs pat instrs with
           | None -> None
           | Some(stash,rem) ->
-              find_pattern "SYMB" pat rem (Code(s,stash)::subs)
+              find_pattern (d+1) "SYMB" pat rem (Code(s,stash)::subs)
         end
     | p::ps,i::is ->
         begin
           match match_instruction subs p i with
           | None -> None
           | Some subs ->
-              match find_pattern (sprintf "REC<%i>" (List.length ps))
+              match find_pattern (d+1) "REC"
                   ps is subs with
               | None -> None
               | Some(is,rs,subs) -> Some(i::is,rs,subs)
@@ -173,7 +178,7 @@ module Make(C:Config) = struct
       let rec find = function
         | [] ->
             begin
-              match find_pattern "EMPTY" [] instrs [] with
+              match find_pattern 0 "EMPTY" [] instrs [] with
               | Some(is,[],[]) -> Some((is,[],[]),[])
               | Some([],[Source.Label (lab,Source.Nop)],[]) ->
                   Some ((instrs,[Target.Label(lab,Target.Nop)],[]),[])
@@ -184,7 +189,7 @@ module Make(C:Config) = struct
                   None
             end
         | (p,conv)::ps ->
-            match find_pattern "LOC" p instrs [] with
+            match find_pattern 0 "LOC" p instrs [] with
             | None -> find ps
             | Some(is,rs,subs) ->
                 match is,conv with
@@ -207,7 +212,7 @@ module Make(C:Config) = struct
             (fun (cv,env) -> function
               | Source.Reg(s,c) ->
                   let r,env = Env.get_register_from_reg env c in
-                  if debug then
+                  if debug > 1 then
                     eprintf "From %s->%s we get %s->%s\n"
                       s (Source.pp_reg c) s (Target.pp_reg r) ;
                   (Target.Reg(s,r)::cv,env)
@@ -283,7 +288,7 @@ module Make(C:Config) = struct
     let open MiscParser in
     let prog = List.map (fun (i,p) ->
       let p,e = convert Env.init p in
-      if debug then
+      if debug > 1 then
         eprintf "Sub %s\n" (Env.pp_sub (fst e)) ;
       ((i,p),(i,e))) src.prog in
     let prog,convs = List.split prog in

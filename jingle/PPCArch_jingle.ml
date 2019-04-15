@@ -18,6 +18,13 @@ include Arch.MakeArch(struct
 
   include Arch.MakeCommon(PPCBase)
 
+  let match_const subs k k' =
+    let open MetaConst in
+    match k with
+    | Int i ->
+        if Misc.int_eq i k' then Some subs else None
+    | Meta k -> add_subs [Cst(k,k');] subs
+
   let match_instr subs pattern instr = match pattern,instr with
     | Padd(s,r1,r2,r3),Padd(s',r1',r2',r3')
     | Psub(s,r1,r2,r3),Psub(s',r1',r2',r3')
@@ -27,73 +34,57 @@ include Arch.MakeArch(struct
     | Pxor(s,r1,r2,r3),Pxor(s',r1',r2',r3')
     | Pmull(s,r1,r2,r3),Pmull(s',r1',r2',r3')
     | Pdiv(s,r1,r2,r3),Pdiv(s',r1',r2',r3')
-      when s = s' -> Some(add_subs
-			    [Reg(sr_name r1,r1');
-			     Reg(sr_name r2,r2');
-			     Reg(sr_name r3,r3')]
-			    subs)
+      when s = s' ->
+        add_subs
+	  [Reg(sr_name r1,r1');
+	   Reg(sr_name r2,r2');
+	   Reg(sr_name r3,r3')]
+	  subs
        
-    | Paddi(r1,r2,MetaConst.Meta k),Paddi(r1',r2',k')
-    | Pandi(r1,r2,MetaConst.Meta k),Pandi(r1',r2',k')
-    | Pori(r1,r2,MetaConst.Meta k),Pori(r1',r2',k')
-    | Pxori(r1,r2,MetaConst.Meta k),Pxori(r1',r2',k')
-    | Pmulli(r1,r2,MetaConst.Meta k),Pmulli(r1',r2',k')
-    | Plwzu(r1,MetaConst.Meta k,r2),Plwzu(r1',k',r2')
-    | Pstwu(r1,MetaConst.Meta k,r2),Pstwu(r1',k',r2')
-    | Plmw(r1,MetaConst.Meta k,r2),Plmw(r1',k',r2')
-    | Pstmw(r1,MetaConst.Meta k,r2),Pstmw(r1',k',r2')
-      -> Some(add_subs [Cst(k,k');
-			Reg(sr_name r1,r1');
-			Reg(sr_name r2,r2')]
-		subs)
-
-    | Paddi(r1,r2,MetaConst.Int k),Paddi(r1',r2',k')
-    | Pandi(r1,r2,MetaConst.Int k),Pandi(r1',r2',k')
-    | Pori(r1,r2,MetaConst.Int k),Pori(r1',r2',k')
-    | Pxori(r1,r2,MetaConst.Int k),Pxori(r1',r2',k')
-    | Pmulli(r1,r2,MetaConst.Int k),Pmulli(r1',r2',k')
-    | Plwzu(r1,MetaConst.Int k,r2),Plwzu(r1',k',r2')
-    | Pstwu(r1,MetaConst.Int k,r2),Pstwu(r1',k',r2')
-    | Plmw(r1,MetaConst.Int k,r2),Plmw(r1',k',r2')
-    | Pstmw(r1,MetaConst.Int k,r2),Pstmw(r1',k',r2')
-      when k = k'-> Some(add_subs [Reg(sr_name r1,r1');
-				   Reg(sr_name r2,r2')]
-			   subs)
+    | Paddi(r1,r2,k),Paddi(r1',r2',k')
+    | Pandi(r1,r2,k),Pandi(r1',r2',k')
+    | Pori(r1,r2,k),Pori(r1',r2',k')
+    | Pxori(r1,r2,k),Pxori(r1',r2',k')
+    | Pmulli(r1,r2,k),Pmulli(r1',r2',k')
+    | Plwzu(r1,k,r2),Plwzu(r1',k',r2')
+    | Pstwu(r1,k,r2),Pstwu(r1',k',r2')
+    | Plmw(r1,k,r2),Plmw(r1',k',r2')
+    | Pstmw(r1,k,r2),Pstmw(r1',k',r2')
+      ->
+        match_const subs k k' >>>
+        add_subs [Reg(sr_name r1,r1');Reg(sr_name r2,r2')]
 
     | Pmr(r1,r2),Pmr(r1',r2')
     | Pdcbf(r1,r2),Pdcbf(r1',r2')
-      -> Some(add_subs [Reg(sr_name r1,r1');
-			Reg(sr_name r2,r2')] subs)
+      ->
+        add_subs
+          [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
+          subs
        
     | Plwarx(r1,r2,r3),Plwarx(r1',r2',r3')
     | Pstwcx(r1,r2,r3),Pstwcx(r1',r2',r3')
-      -> Some(add_subs [Reg(sr_name r1,r1');
-			Reg(sr_name r2,r2');
-			Reg(sr_name r3,r3')]
-		subs)
+      ->
+        add_subs
+          [Reg(sr_name r1,r1');	Reg(sr_name r2,r2'); Reg(sr_name r3,r3')]
+	  subs
 
     | Pmtlr r,Pmtlr r'
     | Pmflr r,Pmflr r'
-      -> Some(add_subs [Reg(sr_name r,r')] subs)
+      ->
+        add_subs [Reg(sr_name r,r')] subs
 
     | Pcmpwi(i,r,k),Pcmpwi(i',r',k')
-      when i = i' -> (match k with
-      | MetaConst.Int k
-	  when k = k'
-	  -> Some(add_subs [Reg(sr_name r,r')] subs)
-      | MetaConst.Meta s
-	-> Some(add_subs [Reg(sr_name r,r');
-			  Cst(s,k')] subs)
-      | _ -> None)
+      when i = i' ->
+        match_const subs k k'  >>> add_subs [Reg(sr_name r,r')]
     | Pcmpw(i,r1,r2),Pcmpw(i',r1',r2')
-      when i = i' -> Some(add_subs [Reg(sr_name r1,r1');
-				    Reg(sr_name r2,r2')]
-			    subs)
+      when i = i' ->
+        add_subs
+          [Reg(sr_name r1,r1'); Reg(sr_name r2,r2');]
+	  subs
 
-    | Pli(r,MetaConst.Meta k),Pli(r',k')
-      -> Some(add_subs [Reg(sr_name r,r');Cst(k,k')] subs)
-    | Pli(r,MetaConst.Int k),Pli(r',k')
-      when k = k' -> Some(add_subs [Reg(sr_name r,r')] subs)
+    | Pli(r,k),Pli(r',k')
+      ->
+        match_const subs k k' >>> add_subs [Reg(sr_name r,r')]
 
     | Psync,Psync
     | Peieio,Peieio
@@ -105,59 +96,44 @@ include Arch.MakeArch(struct
 
     | Pb l,Pb l'
     | Pbl l,Pbl l'
-      -> Some(add_subs [Lab(l,l')] subs)
+      ->
+        add_subs [Lab(l,l')] subs
 
     | Pbcc(c,l),Pbcc(c',l')
-      when c = c' -> Some(add_subs [Lab(l,l')] subs)
+      when c = c' ->
+        add_subs [Lab(l,l')] subs
 
-    | Pload(s,r1,MetaConst.Int k,r2),Pload(s',r1',k',r2')
-    | Pstore(s,r1,MetaConst.Int k,r2),Pstore(s',r1',k',r2')
-      when s = s' && k = k' ->
-       Some(add_subs [Reg(sr_name r1,r1');
-		      Reg(sr_name r2,r2')]
-	      subs)
-	 
-    | Pload(s,r1,MetaConst.Meta k,r2),Pload(s',r1',k',r2')
-    | Pstore(s,r1,MetaConst.Meta k,r2),Pstore(s',r1',k',r2')
+    | Pload(s,r1,k,r2),Pload(s',r1',k',r2')
+    | Pstore(s,r1,k,r2),Pstore(s',r1',k',r2')
       when s = s' ->
-       Some(add_subs [Reg(sr_name r1,r1');
-		      Reg(sr_name r2,r2');
-		      Cst(k,k')]
-	      subs)
+        match_const subs k k' >>> 
+        add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
 	 
     | Ploadx(s,r1,r2,r3),Ploadx(s',r1',r2',r3')
     | Pstorex(s,r1,r2,r3),Pstorex(s',r1',r2',r3')
       when s = s' ->
-       Some(add_subs [Reg(sr_name r1,r1');
-		      Reg(sr_name r2,r2');
-		      Reg(sr_name r3,r3')]
-	      subs)
+        add_subs
+          [Reg(sr_name r1,r1'); Reg(sr_name r2,r2'); Reg(sr_name r3,r3')]
+	  subs
 
     | Pneg(s,r1,r2),Pneg(s',r1',r2')
-      when s = s' -> Some(add_subs [Reg(sr_name r1,r1');
-				    Reg(sr_name r2,r2')]
-			    subs)
+      when s = s' ->
+        add_subs
+          [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
+	  subs
        
     | Pnor(s,r1,r2,r3),Pnor(s',r1',r2',r3')
     | Pslw(s,r1,r2,r3),Pslw(s',r1',r2',r3')
     | Psraw(s,r1,r2,r3),Psraw(s',r1',r2',r3')
-      when s = s' -> Some(add_subs [Reg(sr_name r1,r1');
-				    Reg(sr_name r2,r2');
-				    Reg(sr_name r3,r3')]
-			    subs)
+      when s = s' ->
+        add_subs
+          [Reg(sr_name r1,r1'); Reg(sr_name r2,r2'); Reg(sr_name r3,r3')]
+	  subs
        
     | Psrawi(s,r1,r2,k),Psrawi(s',r1',r2',k')
-      when s = s' -> (match k with
-      | MetaConst.Int k
-	  when k = k'
-	  -> Some(add_subs [Reg(sr_name r1,r1');
-			    Reg(sr_name r2,r2')]
-		    subs)
-      | MetaConst.Meta s
-	-> Some(add_subs [Reg(sr_name r1,r1');
-			  Reg(sr_name r2,r2');
-			  Cst(s,k')] subs)
-      | _ -> None)
+      when s = s' ->
+        match_const subs k k' >>>
+        add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
     | _,_ -> None
 
 

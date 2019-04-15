@@ -39,7 +39,7 @@ include Arch.MakeArch(struct
     let r =  match pat,instr with
     | Const(Constant.Symbolic (s,_)),Const(Constant.Concrete c) ->
         let c = ParsedConstant.Scalar.to_int c in
-        Some(add_subs [Cst(s, c)] subs)
+        add_subs [Cst(s, c)] subs
     | Const(Constant.Concrete s),Const(Constant.Concrete c)
       when c=s ->
        Some subs
@@ -48,25 +48,15 @@ include Arch.MakeArch(struct
         let to_add = match symb_reg_name l with
         | None -> Reg (l,l')
         | Some s -> Reg (s,l') in
-        Some (add_subs [to_add] subs)
+        add_subs [to_add] subs
     | LoadMem(l,mo),LoadMem(l',mo') when mo=mo' ->
        match_location subs l l'
     | Op(op,ex1,ex2),Op(op',ex1',ex2') when op=op' ->
-       begin match match_expr subs ex1 ex1' with
-       | None -> None
-       | Some subs ->
-          match_expr subs ex2 ex2'
-       end
+       match_expr subs ex1 ex1' >>> fun subs -> match_expr subs ex2 ex2'
     | Exchange(l,ex,mo),Exchange(l',ex',mo') when mo=mo' ->
-       begin match match_location subs l l' with
-       | None -> None
-       | Some subs -> match_expr subs ex ex'
-       end
+       match_location subs l l' >>> fun subs -> match_expr subs ex ex'
     | Fetch(l,op,ex,mo),Fetch(l',op',ex',mo') when mo=mo' && op=op' ->
-       begin match match_location subs l l' with
-       | None -> None
-       | Some subs -> match_expr subs ex ex'
-       end
+       match_location subs l l' >>> fun subs -> match_expr subs ex ex'
     | ECall (f,es),ECall (g,fs) when f=g ->
         match_exprs subs es fs
     | _ -> None in
@@ -110,15 +100,13 @@ include Arch.MakeArch(struct
             | _ -> None
     end
     | DeclReg (_t,r),DeclReg(_t',r') (* when t = t' *) ->
-        Some (add_subs [Reg (sr_name r,r')] subs)
+        add_subs [Reg (sr_name r,r')] subs
     | StoreReg (_ot,r,ex),StoreReg(_ot',r',ex') (* when ot = ot' *) ->
-        match_expr (add_subs [Reg (sr_name r,r')] subs) ex ex'
+        add_subs [Reg (sr_name r,r')] subs >>> fun subs ->
+        match_expr subs ex ex'
     | StoreMem(l,ex,mo),StoreMem(l',ex',mo') when mo=mo' ->
-        begin match match_location subs l l' with
-       | None -> None
-       | Some subs ->
-           match_expr subs ex ex'
-       end
+        match_location subs l l' >>> fun subs ->
+        match_expr subs ex ex'
     | Lock (l,MutexC11),Lock (l',MutexC11) -> match_location subs l l'
     | Lock (l,MutexLinux),Lock (l',MutexLinux) -> match_location subs l l'
     | Unlock (l,MutexC11),Unlock (l',MutexC11) -> match_location subs l l'
@@ -126,9 +114,9 @@ include Arch.MakeArch(struct
     | PCall (f,es),PCall (g,fs) when f = g ->
         match_exprs subs es fs
     | Symb s,Seq (l,_) ->
-       Some(add_subs [Code(s,wrap_pseudo l)] subs)
+       add_subs [Code(s,wrap_pseudo l)] subs
     | Symb s,ins ->
-       Some(add_subs [Code(s,wrap_pseudo [ins])] subs)
+       add_subs [Code(s,wrap_pseudo [ins])] subs
     | _ -> None in
     if debug then
       eprintf "Match Instr <%s> <%s> -> %s\n"

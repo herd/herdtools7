@@ -60,7 +60,7 @@ module type Common = sig
   val pp_subs :  substitution list -> string
 
   val add_subs : substitution list -> substitution list ->
-                 substitution list
+                 substitution list option
   val sr_name : reg -> string
   val cv_name : MetaConst.k -> string
   val dump_pseudos : pseudo list -> string
@@ -71,7 +71,7 @@ module type Common = sig
   val find_lab : substitution list -> string -> st -> string * st
   val find_code : substitution list -> string -> st -> pseudo list * st
   val find_cst : substitution list -> MetaConst.k -> st ->  MetaConst.k * st
-
+  val (>>>) : 'a option -> ('a -> 'b option) -> 'b option
 end
 
 module type S = sig
@@ -147,20 +147,51 @@ module MakeCommon(A:Base) = struct
 
   let pp_subs subs = String.concat ";" (List.map pp_sub subs)
 
-  let rec add_subs s s' = match s with
-    | [] -> s'
-    | s::ss ->
-       if List.mem s s'
-       then add_subs ss s'
-       else add_subs ss (s::s')
+  let same_key b1 b2 = match b1,b2 with
+  | (Reg (s1,_),Reg (s2,_))
+  | (Cst (s1,_),Cst (s2,_))
+  | (Lab (s1,_),Lab (s2,_))
+  | (Addr (s1,_),Addr (s2,_))
+  | (Code (s1,_),Code (s2,_))
+    -> Misc.string_eq s1 s2
+  | _ -> false
+
+  let same_val b1 b2 = match b1,b2 with
+  | (Reg (_,r1),Reg (_,r2)) -> A.reg_compare r1 r2 = 0
+  | (Cst (_,i1),Cst (_,i2)) -> Misc.int_eq i1 i2
+  | (Lab (_,s1),Lab (_,s2))
+  | (Addr (_,s1),Addr (_,s2))
+       -> Misc.string_eq s1 s2
+  | (Code (s,_),Code (_,_)) ->
+      Warn.user_error "Code variable %s used non-linearily" s
+  | _ -> false
+
+  let rec find_prev b1 subs = match subs with
+  | [] -> None
+  | b2::subs ->
+      if same_key b1 b2 then Some b2
+      else find_prev b1 subs
+
+  let add_subs subs1 subs2 =
+    try
+      let k =
+        List.fold_right
+          (fun b1 k -> match find_prev b1 k with
+          | None -> b1::k
+          | Some b2 ->
+              if same_val b1 b2 then k
+              else raise Exit)
+          subs1 subs2 in
+      Some k
+    with Exit -> None
 
   let sr_name r = match symb_reg_name r with
     | Some s -> s
     | None -> raise (Error "Not a symbolic register.")
 
-  let match_reg r r' =  match symb_reg_name r with
-  | Some s -> Some [Reg (s,r')]
-  | None -> if r = r' then Some [] else None
+  let match_reg r r' subs =  match symb_reg_name r with
+  | Some s -> add_subs [Reg (s,r')] subs
+  | None -> if r = r' then Some subs else None
 
   let combine f x y g z t = match f x y with
   | None -> None
@@ -257,6 +288,10 @@ module MakeCommon(A:Base) = struct
       in aux subs,st
   | _ -> k,st
 
+  let (>>>) v f = match v with
+  | None -> None
+  | Some v -> f v
+
 end
 
 module MakeParser
@@ -290,7 +325,9 @@ end) = struct
 
   let rec match_instruction subs pattern instr = match pattern,instr with
     | Label(lp,insp),Label(li,insi)
-      -> match_instruction (add_subs [Lab(lp,li)] subs) insp insi
+      ->
+        add_subs [Lab(lp,li)] subs >>> fun subs ->
+        match_instruction subs insp insi
     | Label _, _ -> None
     | pattern, Label(_,instr)
       -> match_instruction subs pattern instr

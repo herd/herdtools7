@@ -29,6 +29,7 @@ type t =
   | LrScDiffOk      (* Lr/Sc paired to <> addresses may succeed (!) *)
   | Mixed
   | WeakPredicated (* "Weak" predicated instructions, not performing non-selected events, aarch64 *)
+
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
    "fullscdepend";"splittedrmw";"switchdepscwrite";"lrscdiffok";

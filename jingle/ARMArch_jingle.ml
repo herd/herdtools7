@@ -24,56 +24,63 @@ let match_instr subs pattern instr = match pattern,instr with
   | I_ADD(_,r1,r2,MetaConst.Meta m),I_ADD(_,r1',r2',i)
   | I_SUB(_,r1,r2,MetaConst.Meta m),I_SUB(_,r1',r2',i)
   | I_AND(_,r1,r2,MetaConst.Meta m),I_AND(_,r1',r2',i) ->
-     Some (add_subs [Cst(m,i);
-                     Reg(sr_name r1,r1');
-                     Reg(sr_name r2,r2')] subs)
+      add_subs
+        [Cst(m,i); Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
+        subs
   | I_ADD(_,r1,r2,MetaConst.Int i),I_ADD(_,r1',r2',i')
   | I_SUB(_,r1,r2,MetaConst.Int i),I_SUB(_,r1',r2',i')
   | I_AND(_,r1,r2,MetaConst.Int i),I_AND(_,r1',r2',i') when i=i'->
-     Some (add_subs [Reg(sr_name r1,r1');
-                     Reg(sr_name r2,r2')] subs)
+      add_subs
+        [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
+        subs
   | I_ADD3(_,r1,r2,r3),I_ADD3(_,r1',r2',r3')
   | I_SUB3(_,r1,r2,r3),I_SUB3(_,r1',r2',r3')
   | I_XOR(_,r1,r2,r3),I_XOR(_,r1',r2',r3') ->
-     Some (add_subs [Reg(sr_name r1,r1');
-                     Reg(sr_name r2,r2');
-                     Reg(sr_name r3,r3')] subs)
+      add_subs
+        [Reg(sr_name r1,r1'); Reg(sr_name r2,r2'); Reg(sr_name r3,r3')]
+        subs
   | I_B l,I_B l'
   | I_BEQ l,I_BEQ l'
   | I_BNE l,I_BNE l' ->
-     Some (add_subs [Lab(l,l')] subs)
+      add_subs [Lab(l,l')] subs
   | I_CB(b,r,l),I_CB(b',r',l') when b=b' ->
-     Some (add_subs [Lab(l,l');Reg(sr_name r,r')] subs)
+     add_subs [Lab(l,l');Reg(sr_name r,r')] subs
   | I_CMPI(r,MetaConst.Meta m),I_CMPI(r',i) ->
-     Some (add_subs [Reg(sr_name r,r');Cst(m,i)] subs)
+     add_subs [Reg(sr_name r,r');Cst(m,i)] subs
   | I_CMPI(r,MetaConst.Int i),I_CMPI(r',i') when i=i' ->
-     Some (add_subs [Reg(sr_name r,r')] subs)
+     add_subs [Reg(sr_name r,r')] subs
   | I_CMP(r1,r2),I_CMP(r1',r2')
   | I_LDREX(r1,r2),I_LDREX(r1',r2') ->
-     Some(add_subs [Reg(sr_name r1,r1');Reg(sr_name r2,r2')] subs)
+      add_subs
+        [Reg(sr_name r1,r1');Reg(sr_name r2,r2')]
+        subs
   | I_LDR(r1,r2,c),I_LDR(r1',r2',c')
   | I_STR(r1,r2,c),I_STR(r1',r2',c')
   | I_MOV(r1,r2,c),I_MOV(r1',r2',c') when c=c' ->
-     Some (add_subs [Reg(sr_name r1,r1');Reg(sr_name r2,r2')] subs)
+      add_subs
+        [Reg(sr_name r1,r1');Reg(sr_name r2,r2')]
+        subs
   | I_LDR3(r1,r2,r3,c),I_LDR3(r1',r2',r3',c')
   | I_STR3(r1,r2,r3,c),I_STR3(r1',r2',r3',c')
   | I_STREX(r1,r2,r3,c),I_STREX(r1',r2',r3',c') when c=c' ->
-     Some (add_subs [Reg(sr_name r1,r1');
-                     Reg(sr_name r2,r2');
-                     Reg(sr_name r3,r3')] subs)
+      add_subs
+        [Reg(sr_name r1,r1'); Reg(sr_name r2,r2'); Reg(sr_name r3,r3')]
+        subs
   | I_MOVI(r,MetaConst.Meta m,c),I_MOVI(r',i,c') when c=c' ->
-     Some (add_subs [Reg(sr_name r,r');Cst(m,i)] subs)
+      add_subs
+        [Reg(sr_name r,r');Cst(m,i)]
+        subs
   | I_MOVI(r,MetaConst.Int i,c),I_MOVI(r',i',c') when i=i' && c=c' ->
-     Some (add_subs [Reg(sr_name r,r')] subs)
+      add_subs [Reg(sr_name r,r')] subs
   | I_DMB b,I_DMB b'
   | I_DSB b,I_DSB b' when b = b' ->
      Some subs
   | I_ISB,I_ISB -> Some subs
   | I_SADD16(r1,r2,r3),I_SADD16(r1',r2',r3')
   | I_SEL(r1,r2,r3),I_SEL(r1',r2',r3') ->
-     Some (add_subs [Reg(sr_name r1,r1');
-                     Reg(sr_name r2,r2');
-                     Reg(sr_name r3,r3')] subs)
+      add_subs
+        [Reg(sr_name r1,r1'); Reg(sr_name r2,r2'); Reg(sr_name r3,r3')]
+        subs
   | _,_ -> None
 
 

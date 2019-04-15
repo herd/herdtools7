@@ -26,25 +26,25 @@ include Arch.MakeArch(struct
 
   let match_reg_or_imm subs ri ri' = match ri,ri' with
     | Regi r,Regi r'
-      -> Some(add_subs [Reg(sr_name r,r')] subs)
+      -> add_subs [Reg(sr_name r,r')] subs
     | Imm (MetaConst.Meta m),Imm i
-      -> Some(add_subs [Cst(m,i)] subs)
-    | Imm (MetaConst.Int m),Imm i when m=i -> Some(subs)
+      -> add_subs [Cst(m,i)] subs
+    | Imm (MetaConst.Int m),Imm i when m=i -> Some subs
     | _ -> None
 
   let match_reg_or_addr subs ra ra' = match ra,ra' with
-    | Rega r,Rega r' -> Some(add_subs [Reg(sr_name r,r')] subs)
+    | Rega r,Rega r' -> add_subs [Reg(sr_name r,r')] subs
     | Abs x,Abs y ->
        let s = ParsedConstant.pp false x in
        let regn = ParsedConstant.pp false y in
-       Some(add_subs [Addr(s,regn)] subs)
+       add_subs [Addr(s,regn)] subs
     | _,_ -> None
 
   let match_iar subs iar iar' = match iar,iar' with
     | IAR_roa ra,IAR_roa ra'
       -> match_reg_or_addr subs ra ra'
     | IAR_imm (MetaConst.Meta m), IAR_imm i
-      -> Some(add_subs [Cst(m,i)] subs)
+      -> add_subs [Cst(m,i)] subs
     | IAR_imm (MetaConst.Int v), IAR_imm i
       when v = i -> Some subs
     | _,_ -> None
@@ -62,59 +62,46 @@ include Arch.MakeArch(struct
     | Addr_op_atom ra,Addr_op_atom ra'
       -> match_reg_or_addr subs ra ra'
     | Addr_op_add(ra,ri),Addr_op_add(ra',ri') ->
-       begin
-         match match_reg_or_addr subs ra ra' with
-         | Some subs -> match_reg_or_imm subs ri ri'
-         | None -> None
-       end
+        match_reg_or_addr subs ra ra' >>> fun subs ->
+        match_reg_or_imm subs ri ri'
     | _,_ -> None
 
   let match_instr subs pattern instr = match pattern,instr with
     | Pld(r,ao,s),Pld(r',ao',s') ->
        if annots_compare s s'
-       then match match_addr_op subs ao ao' with
-       | Some subs -> Some (add_subs [Reg(sr_name r,r')] subs)
-       | None -> None
+       then
+         match_addr_op subs ao ao' >>> add_subs [Reg(sr_name r,r')]
        else None
 
     | Pst(ao,ri,s),Pst(ao',ri',s') ->
-       if annots_compare s s'
-       then match match_addr_op subs ao ao' with
-       | Some subs -> match_reg_or_imm subs ri ri'
-       | None -> None
+       if annots_compare s s' then
+         match_addr_op subs ao ao' >>> fun subs ->
+         match_reg_or_imm subs ri ri'
        else None
 
     | Prmw(r,op,ao,s),Prmw(r',op',ao',s') ->
-       if annots_compare s s'
-       then match match_op subs op op' with
-       | None -> None
-       | Some subs ->
-          match match_addr_op subs ao ao' with
-          | Some subs -> Some (add_subs [Reg(sr_name r,r')] subs)
-          | None -> None
+       if annots_compare s s' then
+        match_op subs op op' >>> fun subs ->
+        match_addr_op subs ao ao' >>>
+        add_subs [Reg(sr_name r,r')]
        else None
 
     | Pfence Fence(s,_), Pfence Fence(s',_) ->
-       if annots_compare s s'
-       then Some subs
-       else None
+       if annots_compare s s' then Some subs else None
 
     | Pbranch(None,lp,s), Pbranch(None,li,s') ->
-       if annots_compare s s'
-       then Some(add_subs [Lab(lp,li)] subs)
+        if annots_compare s s' then
+          add_subs [Lab(lp,li)] subs
        else None
 
     | Pbranch(Some r,lp,s), Pbranch(Some r',li,s') ->
        if annots_compare s s'
-       then begin
-         Some(add_subs [Reg(sr_name r,r');Lab(lp,li)] subs)
-       end else None
+       then
+         add_subs [Reg(sr_name r,r');Lab(lp,li)] subs
+       else None
 
     | Pmov(r,op),Pmov(r',op') ->
-       begin match match_op subs op op' with
-       | None -> None
-       | Some subs -> Some (add_subs [Reg(sr_name r,r')] subs)
-       end
+       match_op subs op op' >>> add_subs [Reg(sr_name r,r')]
 
     | _,_ -> None
 

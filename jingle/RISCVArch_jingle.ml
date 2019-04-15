@@ -19,43 +19,18 @@ include Arch.MakeArch(struct
 
   include Arch.MakeCommon(RISCVBase)
 
-  let match_const k k' = match  k with
-  | MetaConst.Meta k -> Some [Cst (k,k')]
-  | MetaConst.Int k -> if k=k' then Some [] else None
+  let match_const k k' subs = match k with
+  | MetaConst.Meta k -> add_subs [Cst (k,k')] subs
+  | MetaConst.Int k -> if k=k' then Some subs else None
 
   let match_2r subs r1 r2 r1' r2' =
-    match
-      combine
-        match_reg r1 r1'
-        match_reg r2 r2'
-    with
-    | None -> None
-    | Some bds -> Some (add_subs bds subs)
-
+    match_reg r1 r1' subs >>> match_reg r2 r2'
 
   let match_const_2r subs k r1 r2 k' r1' r2' =
-    match
-      combine
-        match_const k k'
-        (combine
-           match_reg r1 r1'
-           match_reg)
-        r2 r2'
-    with
-    | None -> None
-    | Some bds -> Some (add_subs bds subs)
+    match_const k k' subs >>> fun subs -> match_2r subs r1 r2 r1' r2'
 
   let match_3r subs r1 r2 r3 r1' r2' r3' =
-    match
-      combine
-        match_reg r1 r1'
-        (combine
-           match_reg r2 r2'
-           match_reg)
-        r3 r3'
-    with
-    | None -> None
-    | Some bds -> Some (add_subs bds subs)
+    match_2r subs r1 r2 r1' r2' >>> match_reg r3 r3'
 
   let match_instr subs pattern instr = match pattern,instr with
   | OpI (op,r1,r2,k),OpI(op',r1',r2',k') when op=op' ->
@@ -67,14 +42,11 @@ include Arch.MakeArch(struct
   | OpW (op,r1,r2,r3),OpW(op',r1',r2',r3') when op=op' ->
       match_3r subs r1 r2 r3 r1' r2' r3'
   | J lbl,J lbl' ->
-      Some (add_subs [Lab (lbl,lbl')] subs)
+      add_subs [Lab (lbl,lbl')] subs
   | Bcc (c,r1,r2,lbl),Bcc (c',r1',r2',lbl') when c=c' ->
-      Some
-        (add_subs
-           [Lab (lbl,lbl');
-            Reg (sr_name r1,r1');
-            Reg (sr_name r2,r2');]
-           subs)
+      add_subs
+           [Lab (lbl,lbl'); Reg (sr_name r1,r1'); Reg (sr_name r2,r2');]
+           subs
   | Load (w,s,m,r1,i,r2),Load (w',s',m',r1',i',r2')
     when w=w' && s=s' && m=m' && i=i' ->
       match_2r subs r1 r2 r1' r2'
