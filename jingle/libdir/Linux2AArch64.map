@@ -62,6 +62,9 @@ C to AArch64
 
 "smp_wmb();" -> "DMB ISHST"
 
+"atomic_inc(%x);" -> "MOV %tmp,#1;
+                      stadd %tmp, [%x]"
+
 "release" : "store:STR" -> "store:STLR"
 "release" : "store:STXR" -> "store:STLXR"
 "release" : "" -> "DMB ISH;"
