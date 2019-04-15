@@ -5,6 +5,10 @@ C to AArch64
 				     codevar:t;
 				     else:"
 
+"if(x == constvar:c) codevar:t;" -> "CMP %x,&c;
+                                     B.NE else;
+				     codevar:t;
+				     else:"
 "if(%x) codevar:t;" -> "CMP %x,#0;
 			B.EQ else;
 		        codevar:t;
@@ -29,6 +33,10 @@ C to AArch64
 
 "WRITE_ONCE(*%y, constvar:c);" -> "MOV %tmp,&c;
                                    store:STR %tmp,[%y]"
+
+"WRITE_ONCE(*%y, %x + constvar:c);" -> "MOV %tmp,&c;
+                                        ADD %tmp, %tmp, %x;
+                                        store:STR %tmp,[%y]"
 
 "%r = xchg_relaxed(%x, %y);" -> "loop:load:LDXR %r,[%x];
 				store:STXR w%wmp, %y,[%x];
