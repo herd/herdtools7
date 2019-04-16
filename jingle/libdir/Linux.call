@@ -18,9 +18,15 @@ C
 
 "%r = xchg_acquire(%x, constvar:c);" -> "@acquire %r = xchg_relaxed(%x, constvar:c);"
 
+"%r = atomic_xchg_acquire(%x, constvar:c);" -> "@id %r = xchg_acquire(%x, constvar:c);"
+
 "%r = cmpxchg_acquire(%x, constvar:c, constvar:d);" -> "@acquire %r = cmpxchg_relaxed(%x, constvar:c, constvar:d);"
 
+"%r = atomic_cmpxchg_acquire(%x, constvar:c, constvar:d);" -> "@id %r = cmpxchg_acquire(%x, constvar:c, constvar:d);"
+
 "%r = xchg_release(%x, constvar:c);" -> "@release %r = xchg_relaxed(%x, constvar:c);"
+
+"%r = atomic_xchg_release(%x, constvar:c);" -> "@id %r = xchg_release(%x, constvar:c);"
 
 "%r = xchg_acq_rel(%x, constvar:c);" -> "@release %r = xchg_acquire(%x, constvar:c);"
 
