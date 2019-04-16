@@ -168,12 +168,14 @@ let char_uppercase = function
   | 'z' -> 'Z'
   | c -> c
 
-let lowercase s =
-  let r =
+let xcase c s =
+   let r =
     Bytes.init (String.length s)
-      (fun k -> char_lowercase (String.unsafe_get s k)) in
-  Bytes.unsafe_to_string r
+      (fun k -> c (String.unsafe_get s k)) in
+   Bytes.unsafe_to_string r
 
+let lowercase s = xcase char_lowercase s
+let uppercase s = xcase char_uppercase s
 
 let capitalize s = match s with
 | "" -> assert false
