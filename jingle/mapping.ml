@@ -26,7 +26,7 @@ end
 
 module Make(C:Config) = struct
 
-  let debug = 1
+  let debug = 0
 
   module Source = C.Source
   module Target = C.Target
@@ -138,13 +138,9 @@ module Make(C:Config) = struct
     let open Source in
     pp_lab (tag ^ "FIND") instrs ;
     match pat,instrs with
-    | pat,Nop::instrs
-    | Nop::pat,instrs ->
+    | (pat,Nop::instrs)
+    | (Nop::pat,instrs) ->
         find_pattern d tag pat instrs subs
-    | Label (lp,p)::ps,Label(li,i)::is ->
-        add_subs  [Lab (lp,li)] subs >>> fun subs ->
-        match_instruction subs p i >>>
-        find_pattern (d+1) tag ps is
     | [],Label(_,Nop)::[] ->
         Some ([],instrs,subs)
     | pat,Label(_,Nop)::[] ->
@@ -157,16 +153,11 @@ module Make(C:Config) = struct
           | Some(stash,rem) ->
               find_pattern (d+1) "SYMB" pat rem (Code(s,stash)::subs)
         end
+
     | p::ps,i::is ->
-        begin
-          match match_instruction subs p i with
-          | None -> None
-          | Some subs ->
-              match find_pattern (d+1) "REC"
-                  ps is subs with
-              | None -> None
-              | Some(is,rs,subs) -> Some(i::is,rs,subs)
-        end
+        match_instruction subs p i >>>
+        find_pattern (d+1) "REC" ps is  >>>
+        fun (is,rs,subs) -> Some (i::is,rs,subs)
     | [],rs ->
         Some([],rs,subs)
 
