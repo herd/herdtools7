@@ -1,5 +1,20 @@
 C to AArch64
 
+"if(%x != constvar:c) codevar:t; else codevar:f;" -> "CMP %x,&c;
+                                     B.EQ else;
+                                     codevar:t;
+                                     B end;
+                                     else:
+                                     codevar:f;
+                                     end:"
+"if(%x) codevar:t; else codevar:f;" -> "CMP %x,#0;
+                                     B.EQ else;
+                                     codevar:t;
+                                     B end;
+                                     else:
+                                     codevar:f;
+                                     end:"
+
 "if(constvar:c == x) codevar:t;" -> "CMP %x,&c;
 	       	     		     B.NE else;
 				     codevar:t;
@@ -22,6 +37,8 @@ C to AArch64
 "%x = %y;"  -> "MOV %x,%y"
 "%x = %y == %z;"  -> "CMP %y,%z; CSINC %x,XZR,XZR,NE"
 "%x = %y != %z;"  -> "CMP %y,%z; CSINC %x,XZR,XZR,EQ"
+"%x = %y == constvar:c;"  -> "CMP %y,&c; CSINC %x,XZR,XZR,NE"
+"%x = %y != constvar:c;"  -> "CMP %y,&c; CSINC %x,XZR,XZR,EQ"
 
 "*%x = %y;" -> "STR %y,[%x]"
 
@@ -37,6 +54,28 @@ C to AArch64
 "WRITE_ONCE(*%y, %x + constvar:c);" -> "MOV %tmp,&c;
                                         ADD %tmp, %tmp, %x;
                                         store:STR %tmp,[%y]"
+
+"%x = %t & constvar:c; %x = %x + constvar:d; WRITE_ONCE(*%y,%x);" ->
+"AND %x,%t,&c;
+ADD %x,%x,&d;
+store: STR %x,[%y]"
+
+"%t0 = %r & constvar:c; %t1 = %x + %t0; WRITE_ONCE(*%t1,constvar:d);" ->
+"AND %t0,%r,&c;
+ADD %t1,%x,%t0;
+MOV %t2,&d;
+store: STR %t2,[%t1]"
+
+"%x = %t & constvar:c; %x = %x + constvar:d; smp_store_release(%y,%x);" ->
+"AND %x,%t,&c;
+ADD %x,%x,&d;
+store: STLR %x,[%y]"
+
+"%t0 = %r & constvar:c; %t1 = %x + %t0; smp_store_release(%t1,constvar:d);" ->
+"AND %t0,%r,&c;
+ADD %t1,%x,%t0;
+MOV %t2,&d;
+store: STLR %t2,[%t1]"
 
 "%r = xchg_relaxed(%x, %y);" -> "loop:load:LDXR %r,[%x];
 				store:STXR w%wmp, %y,[%x];
