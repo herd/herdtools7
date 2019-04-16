@@ -42,7 +42,7 @@ open AArch64Base
 %token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH
 %token STXR STXRB STXRH STLXR STLXRB STLXRH
 %token <AArch64Base.op> OP
-%token CSEL CSINC CSINV CSNEG
+%token CSEL CSINC CSINV CSNEG CSET
 %token DMB DSB ISB
 %token SY ST LD
 %token OSH OSHST OSHLD
@@ -65,7 +65,8 @@ open AArch64Base
 %token IC DC IVAU
 %token <AArch64Base.IC.op> IC_OP
 %token <AArch64Base.DC.op> DC_OP
-
+%token <AArch64Base.sysreg> SYSREG
+%token MRS TST RBIT
 
 %type <int list * (AArch64Base.parsedPseudo) list list> main
 %type <AArch64Base.parsedPseudo list> instr_option_seq
@@ -516,6 +517,14 @@ instr:
   { I_OP3 (V32,SUBS,ZR,$2,$4) }
 | CMP xreg COMMA kr
   { I_OP3 (V64,SUBS,ZR,$2,$4) }
+| TST wreg COMMA k
+  { I_OP3 (V32,ANDS,ZR,$2,K $4) }
+| TST xreg COMMA k
+  { I_OP3 (V64,ANDS,ZR,$2,K $4) }
+| RBIT wreg COMMA wreg
+  { I_RBIT (V32,$2,$4) }
+| RBIT xreg COMMA xreg
+  { I_RBIT (V64,$2,$4) }
 /* Misc */
 | CSEL xreg COMMA  xreg COMMA  xreg COMMA cond
   { I_CSEL (V64,$2,$4,$6,$8,Cpy) }
@@ -533,7 +542,10 @@ instr:
   { I_CSEL (V64,$2,$4,$6,$8,Neg) }
 | CSNEG wreg COMMA  wreg COMMA  wreg COMMA cond
   { I_CSEL (V32,$2,$4,$6,$8,Neg) }
-
+| CSET wreg COMMA cond
+  { I_CSEL (V32,$2,ZR,ZR,inverse_cond $4,Inc) }
+| CSET xreg COMMA cond
+  { I_CSEL (V64,$2,ZR,ZR,inverse_cond $4,Inc) }
 /* Fences */
 | DMB fenceopt
   { let d,t = $2 in I_FENCE (DMB (d,t)) }
@@ -550,6 +562,9 @@ instr:
   { I_DC (DC.({ funct=I; typ=VA; point=U; }),$4) }
 | DC DC_OP COMMA xreg
   { I_DC ($2,$4) }
+/* System register */
+| MRS xreg COMMA SYSREG
+  { I_MRS ($2,$4) }
 
 fenceopt:
 | SY

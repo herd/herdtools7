@@ -95,13 +95,13 @@ let parse_wlist =
   List.map (fun (r,s) -> s,r) wregs
 
 let parse_xreg s =
-  try Some (List.assoc s parse_list)
+  try Some (List.assoc (Misc.uppercase s) parse_list)
   with Not_found -> None
 
 let parse_reg s = parse_xreg s
 
 let parse_wreg s =
-  try Some (List.assoc s parse_wlist)
+  try Some (List.assoc (Misc.uppercase s) parse_wlist)
   with Not_found -> None
 
 let pp_xreg r = match r with
@@ -255,6 +255,24 @@ module DC = struct
     pp_point op.point
 end
 
+(********************)
+(* System registers *)
+(*  (Some of...)    *)
+(********************)
+
+type sysreg =
+    CTR_EL0 | DCIZ_EL0 |
+    MDCCSR_EL0 | DBGDTR_EL0 |
+    DBGDTRRX_EL0 | DBGDTRTX_EL0
+
+let pp_sysreg = function
+  | CTR_EL0 -> "CTR_EL0"
+  | DCIZ_EL0 -> "DCIZ_EL0"
+  | MDCCSR_EL0 -> "MDCCSR_EL0"
+  | DBGDTR_EL0 -> "DBGDTR_EL0"
+  | DBGDTRRX_EL0 -> "DBGDTRRX_EL0"
+  | DBGDTRTX_EL0 -> "DBGDTRTX_EL0"
+
 (****************)
 (* Instructions *)
 (****************)
@@ -262,6 +280,11 @@ end
 type lbl = Label.t
 
 type condition = NE | EQ
+
+let inverse_cond = function
+  | NE -> EQ
+  | EQ -> NE
+
 type op = ADD | ADDS | SUB | SUBS | AND | ANDS | ORR | EOR
 type variant = V32 | V64
 type 'k kr = K of 'k | RV of variant * reg
@@ -376,6 +399,7 @@ type 'k kinstruction =
   | I_SXTW of reg * reg
   | I_OP3 of variant * op * reg * reg * 'k kr
   | I_ADDR of reg * lbl
+  | I_RBIT of variant * reg * reg
 (* Barrier *)
   | I_FENCE of barrier
 (* Conditional select *)
@@ -383,6 +407,8 @@ type 'k kinstruction =
 (* Cache maintenance *)
   | I_IC of IC.op * reg
   | I_DC of DC.op * reg
+(* Read system register *)
+  | I_MRS of reg * sysreg
 
 type instruction = int kinstruction
 type parsedInstruction = MetaConst.k kinstruction
@@ -554,16 +580,22 @@ let do_pp_instruction m =
       pp_ri "CMP" v r k
   | I_OP3 (v,SUBS,ZR,r2,RV (v3,r3)) when v=v3->
       pp_rr "CMP" v r2 r3
+  | I_OP3 (v,ANDS,ZR,r,(K _ as kr)) ->
+      pp_rkr "TST" v r kr
   | I_OP3 (v,op,r1,r2,K k) ->
       pp_rri (pp_op op) v r1 r2 k
   | I_OP3 (v,op,r1,r2,kr) ->
       pp_rrkr (pp_op op) v r1 r2 kr
   | I_ADDR (r,lbl) ->
       sprintf "ADDR %s,%s" (pp_xreg r) (pp_label lbl)
+  | I_RBIT (v,rd,rs) ->
+      sprintf "RBIT %s,%s" (pp_vreg v rd) (pp_vreg v rs)
 (* Barrier *)
   | I_FENCE b ->
       pp_barrier b
 (* Conditional select *)
+  | I_CSEL (v,r1,ZR,ZR,c,Inc) ->
+      sprintf "CSET %s,%s" (pp_vreg v r1)  (pp_cond (inverse_cond c))
   | I_CSEL (v,r1,r2,r3,c,op) ->
       pp_rrr (sel_memo op) v r1 r2 r3 ^ "," ^ pp_cond c
 (* Cache maintenance *)
@@ -571,6 +603,10 @@ let do_pp_instruction m =
       sprintf "IC %s,%s" (IC.pp_op op) (pp_xreg r)
   | I_DC (op,r) ->
       sprintf "DC %s,%s" (DC.pp_op op) (pp_xreg r)
+(* Read System register *)
+  | I_MRS (r,sr) ->
+      sprintf "MRS %s,%s" (pp_xreg r) (pp_sysreg sr)
+
 let pp_instruction m =
   do_pp_instruction
     {pp_k = pp_k m}
@@ -602,11 +638,12 @@ let fold_regs (f_regs,f_sregs) =
   | I_NOP | I_B _ | I_BC _ | I_BL _ | I_FENCE _ | I_RET None
     -> c
   | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_BLR r | I_BR r | I_RET (Some r)
-  | I_MOV (_,r,_) | I_ADDR (r,_) | I_IC (_,r) | I_DC (_,r)
+  | I_MOV (_,r,_) | I_ADDR (r,_) | I_IC (_,r) | I_DC (_,r) | I_MRS (r,_)
     -> fold_reg r c
   | I_LDAR (_,_,r1,r2) | I_STLR (_,r1,r2) | I_STLRBH (_,r1,r2)
   | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2)
   | I_STOP (_,_,_,r1,r2) | I_STOPBH (_,_,_,r1,r2)
+  | I_RBIT (_,r1,r2)
     -> fold_reg r1 (fold_reg r2 c)
   | I_LDR (_,r1,r2,kr) | I_STR (_,r1,r2,kr)
   | I_OP3 (_,_,r1,r2,kr)
@@ -711,6 +748,8 @@ let map_regs f_reg f_symb =
       I_OP3 (v,op,map_reg r1,map_reg r2,map_kr kr)
   | I_ADDR (r,lbl) ->
       I_ADDR (map_reg r,lbl)
+  | I_RBIT (v,r1,r2) ->
+      I_RBIT (v,map_reg r1,map_reg r2)
 (* Conditinal select *)
   | I_CSEL (v,r1,r2,r3,c,op) ->
       I_CSEL (v,map_reg r1,map_reg r2,map_reg r3,c,op)
@@ -719,6 +758,9 @@ let map_regs f_reg f_symb =
       I_IC (op,map_reg r)
   | I_DC (op,r) ->
       I_DC (op,map_reg r)
+(* Read system register *)
+  | I_MRS (r,sr) ->
+      I_MRS (map_reg r,sr)
 
 (* No addresses burried in ARM code *)
 let fold_addrs _f c _ins = c
@@ -766,8 +808,10 @@ let get_next = function
   | I_STOP _
   | I_STOPBH _
   | I_ADDR _
+  | I_RBIT _
   | I_IC _
   | I_DC _
+  | I_MRS _
     -> [Label.Next;]
 
 include Pseudo.Make
@@ -809,8 +853,10 @@ include Pseudo.Make
         | I_STOP _
         | I_STOPBH _
         | I_ADDR _
+        | I_RBIT _
         | I_IC _
         | I_DC _
+        | I_MRS _
             as keep -> keep
         | I_LDR (v,r1,r2,kr) -> I_LDR (v,r1,r2,kr_tr kr)
         | I_LDP (t,v,r1,r2,r3,kr) -> I_LDP (t,v,r1,r2,r3,kr_tr kr)
@@ -846,6 +892,8 @@ include Pseudo.Make
         | I_FENCE _
         | I_CSEL _
         | I_ADDR _
+        | I_RBIT _
+        | I_MRS _
           -> 0
 
       let fold_labels k f = function

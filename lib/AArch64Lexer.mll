@@ -22,7 +22,9 @@ open AArch64Parser
 module A = AArch64Base
 module LU = LexUtils.Make(O)
 
-let check_name name = match name with
+let check_name name =
+if O.debug then Printf.eprintf "Check: '%s'\n"  name ;
+match name with
 | "nop"|"NOP" -> NOP
 (* Branch *)
 | "b"  | "B"  -> B
@@ -174,6 +176,7 @@ let check_name name = match name with
 | "sxtw"|"SXTW" -> SXTW
 | "mov"|"MOV" -> MOV
 | "adr"|"ADR" -> ADR
+| "rbit"|"RBIT" -> RBIT
 | "add"|"ADD" -> OP A.ADD
 | "adds"|"ADDS" -> OP A.ADDS
 | "eor"|"EOR" -> OP A.EOR
@@ -183,11 +186,13 @@ let check_name name = match name with
 | "sub"|"SUB" -> OP A.SUB
 | "subs"|"SUBS" -> OP A.SUBS
 | "cmp"|"CMP" -> CMP
+| "tst"|"TST" -> TST
 (* Misc *)
 | "csel"|"CSEL" -> CSEL
 | "csinc"|"CSINC" -> CSINC
 | "csinv"|"CSINV" -> CSINV
 | "csneg"|"CSNEG" -> CSNEG
+| "cset"|"CSET" -> CSET
 (* Fences *)
 | "dmb"|"DMB" -> DMB
 | "dsb"|"DSB" -> DSB
@@ -227,6 +232,14 @@ let check_name name = match name with
 | "cswu"|"CSWU" -> A.DC.(DC_OP { funct=C; typ=SW; point=U; })
 | "ciswu"|"CISWU" -> A.DC.(DC_OP { funct=CI; typ=SW; point=U; })
 | "zswu"|"ZSWU" -> A.DC.(DC_OP { funct=Z; typ=SW; point=U; })
+(* System registers *)
+| "mrs"|"MRS" -> MRS
+| "ctr_el0"|"CTR_EL0" -> SYSREG A.CTR_EL0
+| "dciz_el0"|"DCIZ_EL0" -> SYSREG A.DCIZ_EL0
+| "mdccsr_el0"|"MDCCSR_EL0" -> SYSREG A.MDCCSR_EL0
+| "dbgdtr_el0"|"DBGDTR_EL0" -> SYSREG A.DBGDTR_EL0
+| "dbgdtrrx_el0"|"DBGDTRRX_EL0" -> SYSREG A.DBGDTRRX_EL0
+| "Dbgdtrtx_el0"|"DBGDTRTX_EL0" -> SYSREG A.DBGDTRTX_EL0
 | _ ->
     begin match A.parse_wreg name with
     | Some r -> ARCH_WREG r
