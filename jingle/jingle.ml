@@ -15,7 +15,7 @@
 (****************************************************************************)
 open Printf
 
-let verbose = ref false
+let verbose = ref 0
 let includes = ref []
 let map = ref None
 let outdir = ref None
@@ -138,8 +138,8 @@ let () =
      "-libdir",
      Arg.Unit (fun () -> print_endline Version_jingle.libdir; exit 0),
      " show installation directory and exit";
-     "-v",Arg.Unit (fun () -> verbose := true),
-     " be verbose";
+     "-v",Arg.Unit (fun () -> incr verbose),
+     " be verbose, repeat to increase verbosity";
      "-I", Arg.String (fun s -> includes := !includes @ [s]),
      "<dir> add <dir> to search path";
      "-theme",Arg.String (fun s -> map := Some s),
@@ -176,7 +176,7 @@ let parsed = match map with
       exit 1
 
 let () =
-  if verbose then begin
+  if verbose > 1 then begin
    eprintf "Reading theme file :\n";
     List.iter (fun (s,t) ->
       eprintf "\"%s\" -> \"%s\"\n" s t)
@@ -189,7 +189,7 @@ module Target = (val get_arch parsed.ParseMap.target)
 module Trad =
   Mapping.Make
     (struct
-      let verbose = verbose
+      let verbose = verbose > 0
       module Source = Source
       module Target = Target
       let conversions = parsed.ParseMap.conversions
@@ -226,7 +226,7 @@ module Top(Out:OutTests.S) = struct
     with
     | Misc.Exit -> k
     | Misc.Fatal msg ->
-        if verbose then eprintf "%s\n" msg ;
+        if verbose > 0 then eprintf "%s\n" msg ;
         k
 
 
