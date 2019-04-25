@@ -23,6 +23,7 @@ open Printf
 
 let logs = ref []
 let verb = ref 0
+let acceptBig = ref true
 
 type runopts =
     {mode:OutMode.t;
@@ -104,7 +105,10 @@ let options =
   [
   ("-v", Arg.Unit (fun _ -> incr verb),
    "<non-default> show various diagnostics, repeat to increase verbosity");
-  ("-show", Arg.String
+   ("-big", Arg.Bool (fun b -> acceptBig := b),
+    sprintf
+      " <bool> do not discard test with many states, default %b" !acceptBig);
+   ("-show", Arg.String
      (delay_ro
         (fun s ro -> {ro with do_show = ro.do_show ^ s})),
    "<"^ runopts.do_show ^
@@ -362,7 +366,7 @@ module Config = struct
   let opt_cond = runopts.opt_cond
   let hexa = runopts.hexa
   let int32 = runopts.int32
-  let acceptBig = false
+  let acceptBig = !acceptBig
 end
 
 (************)
