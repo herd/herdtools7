@@ -469,7 +469,13 @@ module Make(V:Constant.S)(C:Config) =
             outputs=rD; reg_env=add_q (inputs@rD);}
       | V64,RV (V32,rB) ->
           let rD,fD = arg1 "xzr" (fun s -> "^o"^s) rD
-          and rA,fA,rB,fB = args2 "xzr"  (fun s -> "^i"^s) rA rB in
+          and rA,fA = arg1 "xzr"  (fun s -> "^i"^s) rA in
+          let rB,fB = match rB with
+          | ZR -> [],"wzr"
+          | _ -> begin match rA with
+            | [] -> [rB],"^wi0"
+            | _ -> [rB],"^wi1"
+          end in
           { empty_ins with
             memo=sprintf "%s %s,%s,%s,sxtw" memo fD fA fB;
             inputs=rA@rB;
