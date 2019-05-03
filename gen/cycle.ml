@@ -365,7 +365,7 @@ let patch_edges n =
 (* Set directions of events *)
 
 let is_rmw_edge e = match e.E.edge with
-| E.Rmw ->true
+| E.Rmw _ ->true
 | _ -> false
 
 let is_rmw d e = match d with
@@ -387,18 +387,19 @@ let set_dir n0 =
            Warn.fatal "Node pseudo edge %s appears in-between  %s..%s (both neighbours must be external edges)"
            (E.pp_edge m.edge)  (E.pp_edge p.edge)  (E.pp_edge n.edge)
       end ;
-(*      eprintf "p=%a, m=%a\n" debug_node p debug_node m  ; *)
+(*    eprintf "p=%a, m=%a\n" debug_node p debug_node m  ; *)
       let prev_d = E.dir_tgt p.edge in
       let d = match prev_d,my_d with
       | Irr,Irr ->
           Warn.fatal "Ambiguous direction %s %s"
             (E.pp_edge p.edge) (E.pp_edge m.edge)
       | (Dir d,Irr)|(Irr,Dir d) -> d
+(*      | Dir W,Dir R when is_rmw W m -> R  *)
       | Dir d1,Dir d2 ->
           if d1=d2 then d1
           else
-            Warn.fatal "Impossible direction %s %s"
-              (E.pp_edge p.edge) (E.pp_edge m.edge)
+            Warn.fatal "Impossible direction %s[%s] %s[%s]"
+              (str_node p) (pp_extr prev_d) (str_node m) (pp_extr my_d)
       | (NoDir,_)|(_,NoDir) -> assert false in
       let a =
         let a2 = p.edge.E.a2 and a1 = m.edge.E.a1 in
@@ -524,7 +525,7 @@ let set_same_loc st n0 =
           find_node
             (fun m -> match m.prev.edge.E.edge with
             | E.Fr _|E.Rf _|E.Ws _|E.Leave _|E.Back _
-            | E.Hat|E.Rmw -> true
+            | E.Hat|E.Rmw _ -> true
             | E.Po _|E.Dp _|E.Fenced _|E.Insert _|E.Node _ -> false
             | E.Id -> assert false) n in
         split_one_loc m

@@ -61,10 +61,6 @@ let applies_atom (a,_) d = match a,d with
   -> true
 | _ -> false
 
-let applies_atom_rmw ar aw = match ar,aw with
-| (Some ((Acq|AcqPc),_)|None),(Some (Rel,_)|None) -> true
-| _ -> false
-
    let pp_plain = "P"
 (* Annotation A is taken by load aquire *)
    let pp_as_a = None
@@ -207,6 +203,44 @@ let pp_dp = function
   | DATA -> "Data"
   | CTRL -> "Ctrl"
   | CTRLISYNC -> "CtrlIsb"
+
+(* Read-Modify-Write *)
+type rmw =  LrSc | LdOp of atomic_op | StOp of atomic_op | Swp | Cas
+
+let pp_aop op =  Misc.capitalize (Misc.lowercase (pp_aop op))
+
+let pp_rmw = function
+  | LrSc -> ""
+  | Swp -> "Swp"
+  | Cas -> "Cas"
+  | LdOp op -> sprintf "Ld%s" (pp_aop op)
+  | StOp op -> sprintf "St%s" (pp_aop op)
+
+let fold_aop f r =
+  let r = f A_ADD r in
+  let r = f A_EOR r in
+  let r = f A_SET r in
+  let r = f A_CLR r in
+  r
+
+let fold_rmw f r =
+  let r = f LrSc r in
+  let r = f Swp r in
+  let r = f Cas r in
+  let r = fold_aop (fun op r -> f (LdOp op) r) r in
+  let r = fold_aop (fun op r -> f (StOp op) r) r in
+  r
+
+let applies_atom_rmw rmw ar aw = match rmw,ar,aw with
+| LrSc,(Some ((Acq|AcqPc),_)|None),(Some (Rel,_)|None)
+| (Swp|Cas|LdOp _),(Some ((Acq|AcqPc),_)|None),(Some (Rel,_)|None)
+| (StOp _),None,(Some (Rel,_)|None)
+  -> true
+| _ -> false
+
+let show_rmw_reg = function
+| StOp _ -> false
+| LdOp _|Cas|Swp|LrSc -> true
 
 include
     ArchExtra_gen.Make

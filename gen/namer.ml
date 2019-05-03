@@ -35,7 +35,7 @@ end
 module Make
     (A:Fence.S)
     (E:Edge.S with
-     type dp = A.dp and type fence=A.fence and type atom = A.atom) : S with type edge = E.edge = struct
+     type dp = A.dp and type fence=A.fence and type atom = A.atom and type rmw = A.rmw) : S with type edge = E.edge = struct
 
        type edge = E.edge
 
@@ -56,7 +56,12 @@ module Make
          | Rf Ext -> Some "rfe"
          | Ws Ext -> Some "wse"
          | Fr Ext -> Some "fre"
-         | Rmw -> Some "rmw"
+         | Rmw rmw ->
+             let pp =
+               match Misc.lowercase (A.pp_rmw rmw) with
+               | "" -> "rmw"
+               | s -> sprintf "amo.%s" s in
+             Some pp
          | Leave c -> Some ("["^pp_com c)
          | Back c -> Some (pp_com c^"]")
          | Insert f -> Some (sprintf "[%s]" (Misc.lowercase (A.pp_fence f)))
@@ -171,7 +176,7 @@ module Make
            | Some x,_::_::_ -> (x ^ "s")::ys
            | None, _ -> xs@ys
            | Some _,[] -> assert false in
-           String.concat "+" (base::xs) in         
+           String.concat "+" (base::xs) in
          let scope = match scope with
          | None -> ""
          | Some st -> "+" ^ of_scope st in

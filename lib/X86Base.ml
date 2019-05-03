@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Define registers, barriers, and instructions for X86 *) 
+(** Define registers, barriers, and instructions for X86 *)
 
 open Printf
 
@@ -27,7 +27,7 @@ let endian = Endian.Little
 (* Registers *)
 (*************)
 
-type reg = 
+type reg =
   | EAX | EBX | ECX | EDX | ESI | EDI | EBP | ESP | EIP
 (* we do 32-bit protected mode for now*)
   | ZF | SF | CF
@@ -62,7 +62,7 @@ let parse_reg s =
   try Some (List.assoc s parse_list)
   with Not_found -> None
 
-let pp_reg r = match r with 
+let pp_reg r = match r with
 | Symbolic_reg r -> "%"^r
 | Internal i -> sprintf "i%i" i
 | _ -> try List.assoc r regs with Not_found -> assert false
@@ -80,7 +80,7 @@ let symb_reg r = Symbolic_reg r
 (************)
 
 type barrier =
-  | Lfence | Sfence | Mfence 
+  | Lfence | Sfence | Mfence
 
 let all_kinds_of_barriers = [ Lfence ; Sfence ; Mfence ; ]
 
@@ -91,6 +91,7 @@ let pp_barrier b = match b with
 
 let barrier_compare = Pervasives.compare
 
+
 (****************)
 (* Instructions *)
 (****************)
@@ -99,13 +100,13 @@ type abs = ParsedConstant.v
 
 type rm32 =
   |  Rm32_reg of reg
-  |  Rm32_deref of reg 
+  |  Rm32_deref of reg
   |  Rm32_abs of abs
 (* Absolute memory location, we should later combine with Rm32_deref to have proper base-displacement (and later, scale-index) addressing *)
-	
+
 type effaddr =
   | Effaddr_rm32 of rm32
-	
+
 type operand =
   | Operand_effaddr of effaddr
   | Operand_immediate of int
@@ -131,7 +132,7 @@ type condition =
   | C_GE
   | C_S          (* Sign *)
   | C_NS         (* Not sign *)
-      
+
 type lbl = Label.t
 
 type instruction =
@@ -165,17 +166,17 @@ type instruction =
 
 type parsedInstruction = instruction
 
-      
+
 let pp_abs = ParsedConstant.pp_v
 
-let pp_rm32 rm32 = 
+let pp_rm32 rm32 =
   match rm32 with
   | Rm32_reg r -> pp_reg r
   | Rm32_deref r -> "[" ^ pp_reg r ^ "]"
   | Rm32_abs v -> "[" ^ pp_abs v ^ "]"
 
 
-let pp_effaddr ea =  match ea with 
+let pp_effaddr ea =  match ea with
 | Effaddr_rm32 rm32 -> pp_rm32 rm32
 
       (* Those may change *)
@@ -196,11 +197,11 @@ let pp_dollar m = match m with
 let pp_immediate _m v = (* pp_dollar m ^ *) string_of_int v
 
     (* Old, mode dependant,  printing of a comma *)
-let x86_comma m= match m with 
+let x86_comma m= match m with
 | Ascii|Dot -> ","
 | Latex -> "\\m "
-| DotFig -> "\\\\m "    
-      
+| DotFig -> "\\\\m "
+
 let pp_condition c =  match c with
 | C_EQ  -> "E"
 | C_NE  -> "NE"
@@ -208,12 +209,12 @@ let pp_condition c =  match c with
 | C_LT  -> "L"
 | C_GT  -> "G"
 | C_GE  -> "GE"
-| C_S   -> "S" 
+| C_S   -> "S"
 | C_NS  -> "NS"
-      
 
-      
-      
+
+
+
 let rec do_pp_instruction m =
 
   let pp_operand  op = match op with
@@ -245,10 +246,10 @@ let rec do_pp_instruction m =
   | I_MOVQ(ea,op) -> ppi_ea_op "MOVQ" ea op
   | I_MOVT(ea,op) -> ppi_ea_op "MOVT" ea op
   | I_MOVSD   -> "MOVSD"
-  | I_DEC(ea) -> ppi_ea "DEC " ea 
+  | I_DEC(ea) -> ppi_ea "DEC " ea
   | I_CMP(ea,op) -> ppi_ea_op "CMP " ea op
   | I_CMOVC(r,ea) -> "CMOVC " ^pp_reg r ^ m.comma ^pp_effaddr ea
-  | I_INC(ea) -> ppi_ea "INC " ea 
+  | I_INC(ea) -> ppi_ea "INC " ea
   | I_JMP(lbl) -> ppi_lbl "JMP" lbl
   | I_JCC(c,lbl) -> ppi_c_lbl "J" c lbl
   | I_LOCK(i) -> "LOCK; " ^ do_pp_instruction m i
@@ -261,7 +262,7 @@ let rec do_pp_instruction m =
   | I_SFENCE  -> "SFENCE"
   | I_MFENCE  -> "MFENCE"
 
-	
+
 let pp_instruction m i =
   do_pp_instruction
     {immediate = pp_immediate m ;
@@ -277,7 +278,7 @@ let dump_instruction =
 (****************************)
 
 let allowed_for_symb =
-  [ EAX ; EBX ;  ECX ; 
+  [ EAX ; EBX ;  ECX ;
     EDX ;  ESI ;  EDI ; ]
 
 
@@ -285,7 +286,7 @@ let allowed_for_symb =
 let rec fold_regs (f_reg,f_sreg) =
 
   let fold_reg (y_reg,y_sreg) reg = match reg with
-  | EAX | EBX | ECX | EDX | ESI | EDI | EBP | ESP | EIP 
+  | EAX | EBX | ECX | EDX | ESI | EDI | EBP | ESP | EIP
   | ZF | SF | CF ->  f_reg reg y_reg,y_sreg
   | Symbolic_reg reg -> y_reg,f_sreg reg y_sreg
   | Internal _ -> y_reg,y_sreg in
@@ -308,7 +309,7 @@ let rec fold_regs (f_reg,f_sreg) =
   | I_MOV (eff,op) | I_MOVB (eff,op) | I_MOVW (eff,op) | I_MOVL (eff,op) | I_MOVQ (eff,op) | I_MOVT (eff,op)
   | I_CMP (eff,op) ->
       let c = fold_effaddr c eff in
-      fold_operand c op 
+      fold_operand c op
   | I_DEC eff
   | I_INC eff
   | I_SETNB eff ->
@@ -330,12 +331,12 @@ let rec fold_regs (f_reg,f_sreg) =
   | I_MFENCE|I_SFENCE|I_LFENCE
   | I_MOVSD
     -> c
-	
+
 
 let rec map_regs f_reg f_symb =
 
   let map_reg  reg = match reg with
-  | EAX | EBX | ECX | EDX | ESI | EDI | EBP | ESP | EIP 
+  | EAX | EBX | ECX | EDX | ESI | EDI | EBP | ESP | EIP
   | ZF | SF | CF | Internal _ ->  f_reg reg
   | Symbolic_reg reg -> f_symb reg in
 
@@ -441,7 +442,7 @@ let rec fold_addrs f =
   | I_MFENCE|I_SFENCE|I_LFENCE
   | I_MOVSD
     -> c
-	
+
 let rec map_addrs f =
 
   let map_rm32 x = match x with
@@ -583,7 +584,8 @@ include Pseudo.Make
           -> f k lbl
         | I_SETNB _|I_READ _|I_XCHG_UNLOCKED (_, _)|I_XCHG (_, _)|I_INC _
         | I_CMOVC (_, _)|I_CMP (_, _)|I_DEC _
-		| I_MOV (_, _)|I_MOVB (_,_)|I_MOVW (_,_)|I_MOVL (_,_)|I_MOVQ (_,_)|I_MOVT (_,_)
+        | I_MOV (_, _)|I_MOVB (_,_)|I_MOVW (_,_)
+        |I_MOVL (_,_)|I_MOVQ (_,_)|I_MOVT (_,_)
         | I_MOVSD
         | I_XOR (_, _)|I_OR _|I_ADD (_, _)
         | I_MFENCE|I_SFENCE|I_LFENCE
@@ -596,7 +598,8 @@ include Pseudo.Make
         | I_JCC (cc,lbl) -> I_JCC (cc,f lbl)
         | I_SETNB _|I_READ _|I_XCHG_UNLOCKED (_, _)|I_XCHG (_, _)|I_INC _
         | I_CMOVC (_, _)|I_CMP (_, _)|I_DEC _
-		| I_MOV (_, _)|I_MOVB (_,_)|I_MOVW (_,_)|I_MOVL (_,_)|I_MOVQ (_,_)|I_MOVT (_,_)
+        | I_MOV (_, _)|I_MOVB (_,_)|I_MOVW (_,_)|I_MOVL (_,_)
+        |I_MOVQ (_,_)|I_MOVT (_,_)
         | I_MOVSD
         | I_XOR (_, _)|I_OR _|I_ADD (_, _)
         | I_MFENCE|I_SFENCE|I_LFENCE

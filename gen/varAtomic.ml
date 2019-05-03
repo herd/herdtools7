@@ -38,7 +38,7 @@ with type edge = E.edge = struct
 
 (* Notice, var_src si applied second, hence RMW check *)
   let can_set_src e a = match e.E.edge with
-  | E.Rmw -> E.compare_atomo e.E.a2 a = 0
+  | E.Rmw _ -> E.compare_atomo e.E.a2 a = 0
   | _ -> true
 
   let var_src e es = match e.E.a1 with

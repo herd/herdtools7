@@ -94,6 +94,10 @@ module Make(C:Config)  =
       | DATA -> "Data"
       | CTRL -> "Ctrl"
       | CTRLISYNC -> "CtrlIsync"
+(*******)
+(* RWM *)
+(*******)
+    include OneRMW
 
     include
         ArchExtra_gen.Make

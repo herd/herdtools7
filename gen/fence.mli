@@ -17,6 +17,7 @@
 module type S = sig
 (* Atoms *)
   include Atom.S
+
 (* Fences *)
   type fence
 
@@ -56,4 +57,11 @@ module type S = sig
 (* Sequence dependencies *)
   val fst_dp : dp -> dp list
   val sequence_dp : dp -> dp -> dp list
+
+(* Read-Modify-Write *)
+  type rmw
+  val pp_rmw : rmw -> string
+  val fold_rmw : (rmw -> 'a -> 'a) -> 'a -> 'a
+  val applies_atom_rmw : rmw -> atom option -> atom option -> bool
+  val show_rmw_reg : rmw -> bool
 end

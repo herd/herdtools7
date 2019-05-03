@@ -60,8 +60,6 @@ module Make
        end
    | Atomic _|Mixed _ -> true
 
-   let applies_atom_rmw _ar _aw = true
-
    let pp_plain = "P"
 
    let pp_as_a = None
@@ -183,6 +181,8 @@ let pp_dp = function
   | DATA -> "Data"
   | CTRL -> "Ctrl"
   | CTRLISYNC -> "CtrlFenceI"
+
+include OneRMW
 
 include
     ArchExtra_gen.Make

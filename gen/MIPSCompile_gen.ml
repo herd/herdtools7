@@ -39,12 +39,17 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
         Warn.fatal "MIPS generator cannot handle constant %i\n" v ;
       OPI (OR,r,MIPS.r0,v)
 
+    let mv r1 r2 = OP (OR,r1,MIPS.r0,r2)
+
+
     module Extra = struct
       let use_symbolic = true
       type reg = MIPS.reg
       type instruction = MIPS.pseudo
       let mov r v = Instruction (li r v)
       let mov_mixed _sz _r _v = assert false
+      let mov_reg r1 r2 = Instruction (mv r1 r2)
+      let mov_reg_mixed _sz _r _v = assert false
     end
 
     module U = GenUtils.Make(Cfg)(MIPS)(Extra)
@@ -263,6 +268,10 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       let cs = emit_pair p rR rW rA in
       rR,init,csv@cs,st
 
+    let emit_rmw () st p init er ew  =
+      let rR,init,cs,st = emit_exch st p init er ew in
+      Some rR,init,cs,st
+
     let emit_access_dep_addr st p init e  r1 =
       let r2,st = _next_reg st in
       let c =  OP (XOR,r2,r1,r1) in
@@ -347,6 +356,9 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     | DATA -> Warn.fatal "no data depency to RMW"
     | CTRL -> emit_exch_ctrl st p init er ew r1
 
+    let emit_rmw_dep () st p init er ew dp rd =
+      let r,init,cs,st = emit_exch_dep  st p init er ew dp rd in
+      Some r,init,cs,st
 
 (* Fences *)
 

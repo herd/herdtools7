@@ -108,8 +108,6 @@ let applies_atom = match bi with
 | None -> (fun a _d -> match a with [] -> true | _ -> false)
 | Some bi -> (fun a d -> BellModel.check_event (tr_dir d) a bi)
 
-let applies_atom_rmw _ar _aw = true (* Wrong, extract from bell file? *)
-
 let pp_plain = "P"
 let pp_as_a = None
 
@@ -247,7 +245,7 @@ let var_fence f = match varatom with
 (********)
 
 include ClassicDep
-
+include OneRMW
 include
     ArchExtra_gen.Make
     (struct

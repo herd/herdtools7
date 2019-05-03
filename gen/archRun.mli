@@ -21,6 +21,7 @@ module type S = sig
   with type fence = A.fence
   and type dp = A.dp
   and type atom = A.atom
+  and type rmw = A.rmw
   module R : Relax.S
   with type fence = A.fence
   and type dp = A.dp

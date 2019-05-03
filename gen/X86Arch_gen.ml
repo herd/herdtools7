@@ -32,10 +32,6 @@ let applies_atom a d = match a,d with
 
 let compare_atom = Pervasives.compare
 
-let applies_atom_rmw ar aw = match ar,aw with
-| None,None -> true
-| _ -> false
-
 let merge_atoms Atomic Atomic = Some Atomic
 
 let pp_plain = Code.plain
@@ -99,6 +95,12 @@ let ctrlw_default = None
 let is_ctrlr _ = assert false
 let fst_dp _ = assert false
 let sequence_dp _ _ = assert false
+
+(*******)
+(* RWM *)
+(*******)
+
+include OneRMW
 
 include
     ArchExtra_gen.Make

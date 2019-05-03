@@ -110,16 +110,18 @@ module U = TopUtils.Make(O)(Comp)
     | Yes of E.dp * A.arch_reg * Code.v
 
 (* Catch exchanges at the very last moment... *)
+  let as_rmw n = match n.C.edge.E.edge with
+  | Rmw rmw -> rmw
+  | _ -> assert false
 
   let call_emit_access st p init n =
     let e = n.C.evt in
-
     if e.C.rmw then match e.C.dir with
     | Some R ->
-        let r,init,cs,st = Comp.emit_exch st p init e n.C.next.C.evt in
-        Some r,init,cs,st
-    | Some W|None -> None,init,[],st
-
+        Comp.emit_rmw
+          (as_rmw n) st p init e n.C.next.C.evt
+    | Some W|None ->
+        None,init,[],st
     else if
       match e.C.atom with
       | None -> true
@@ -139,9 +141,7 @@ module U = TopUtils.Make(O)(Comp)
     let e = n.C.evt in
      if e.C.rmw then match e.C.dir with
      | Some R ->
-         let r,init,cs,st =
-           Comp.emit_exch_dep st p init e n.C.next.C.evt dp r1 in
-         Some r,init,cs,st
+         Comp.emit_rmw_dep (as_rmw n) st p init e n.C.next.C.evt dp r1
      | Some W|None -> None,init,[],st
      else
        Comp.emit_access_dep st p init e dp r1 v1

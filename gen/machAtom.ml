@@ -38,10 +38,6 @@ module Make(C:Config) = struct
   | Reserve,W -> false
   | _,_ -> true
 
-  let applies_atom_rmw ar aw = match ar,aw with
-  | None,None -> true
-  | _,_ -> false
-
   let pp_plain = Code.plain
   let pp_as_a = None
 

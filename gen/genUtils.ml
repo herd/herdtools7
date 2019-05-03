@@ -24,8 +24,10 @@ module type Extra = sig
   val use_symbolic : bool
   type reg
   type instruction
-  val mov : reg -> int -> instruction   
+  val mov : reg -> int -> instruction
   val mov_mixed : MachSize.sz -> reg -> int -> instruction
+  val mov_reg : reg -> reg -> instruction
+  val mov_reg_mixed : MachSize.sz -> reg -> reg -> instruction
 end
 
 module Make(Cfg:Config)(A:Arch_gen.S)
@@ -36,22 +38,22 @@ module Make(Cfg:Config)(A:Arch_gen.S)
        let next_init st p init loc =
          let rec find_rec = function
            | (Reg (p0,r0),loc0)::_ when loc0 = loc && p = p0 ->
-	       r0,init,st
+               r0,init,st
            | _::rem -> find_rec rem
            | [] ->
-	       let r,st =
+               let r,st =
                  if Extra.use_symbolic then
                    A.symb_reg (Printf.sprintf "%s%i" loc p),st
                  else A.alloc_reg st in
-	       r,(Reg (p,r),loc)::init,st in
+               r,(Reg (p,r),loc)::init,st in
          find_rec init
 
        let next_const st p init v =
          let k = Printf.sprintf (if Cfg.hexa then "0x%x" else "%i") v in
          let rec find_rec = function
            | (Reg (p0,r0),k0)::_ when k0 = k && p = p0 ->
-	       r0,init,st
-           | _::rem -> find_rec rem 
+               r0,init,st
+           | _::rem -> find_rec rem
            | [] ->
                let r,st = A.alloc_reg st in
                r,(Reg (p,r),k)::init,st in
@@ -65,23 +67,39 @@ module Make(Cfg:Config)(A:Arch_gen.S)
 
        let emit_const st p init v =
          if min_k <= v && v < max_k && allow_consts_in_code then
-	   None,init,st
+           None,init,st
          else
-	   let rA,init,st = next_const st p init v in
-	   Some rA,init,st
+           let rA,init,st = next_const st p init v in
+           Some rA,init,st
 
        let emit_mov st p init v = match emit_const st p init v with
        | None,init,st ->
-	   let rA,st = A.alloc_reg st in
-	   rA,init,[Extra.mov rA v],st
+           let rA,st = A.alloc_reg st in
+           rA,init,[Extra.mov rA v],st
        | Some rA,init,st ->
-	   rA,init,[],st
+           rA,init,[],st
 
        let emit_mov_sz sz st p init v = match emit_const st p init v with
        | None,init,st ->
-	   let rA,st = A.alloc_reg st in
-	   rA,init,[Extra.mov_mixed sz rA v],st
+           let rA,st = A.alloc_reg st in
+           rA,init,[Extra.mov_mixed sz rA v],st
        | Some rA,init,st ->
-	   rA,init,[],st
+           rA,init,[],st
+
+       let emit_mov_fresh st p init v = match emit_const st p init v with
+       | None,init,st ->
+           let rA,st = A.alloc_reg st in
+           rA,init,[Extra.mov rA v],st
+       | Some rA,init,st ->
+           let rB,st = A.alloc_reg st in
+           rB,init,[Extra.mov_reg rB rA],st
+
+       let emit_mov_sz_fresh sz st p init v = match emit_const st p init v with
+       | None,init,st ->
+           let rA,st = A.alloc_reg st in
+           rA,init,[Extra.mov_mixed sz rA v],st
+       | Some rA,init,st ->
+           let rB,st = A.alloc_reg st in
+           rB,init,[Extra.mov_reg_mixed sz rB rA],st
 
      end

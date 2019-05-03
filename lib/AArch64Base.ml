@@ -280,7 +280,9 @@ let str_memo = function
   | LY -> "STLXR"
 
 type rmw_type = RMW_P | RMW_A | RMW_L | RMW_AL
+  
 type w_type = W_P | W_L
+
 let w_to_rmw = function
   | W_P -> RMW_P
   | W_L -> RMW_L
@@ -333,7 +335,6 @@ let sel_memo = function
   | Inc -> "CSINC"
   | Inv -> "CSINV"
   | Neg -> "CSNEG"
-
 
 type 'k kinstruction =
   | I_NOP

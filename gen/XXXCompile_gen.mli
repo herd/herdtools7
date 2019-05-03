@@ -43,17 +43,17 @@ module type S = sig
   val emit_access : A.st -> Code.proc -> A.init -> C.event ->
     A.reg option * A.init * A.pseudo list * A.st
 
-  val emit_exch : A.st -> Code.proc -> A.init -> C.event ->  C.event ->
-    A.reg * A.init * A.pseudo list * A.st
+  val emit_rmw : A.rmw -> A.st -> Code.proc -> A.init -> C.event ->  C.event ->
+    A.reg option * A.init * A.pseudo list * A.st
 
   val emit_access_dep :
       A.st -> Code.proc -> A.init -> C.event -> A.dp ->
         A.reg -> Code.v -> A.reg option * A.init * A.pseudo list * A.st
 
-  val emit_exch_dep :
-      A.st -> Code.proc -> A.init -> C.event ->  C.event ->
+  val emit_rmw_dep :
+      A.rmw -> A.st -> Code.proc -> A.init -> C.event ->  C.event ->
         A.dp -> A.reg ->
-          A.reg * A.init * A.pseudo list * A.st
+          A.reg option * A.init * A.pseudo list * A.st
 
 (* Fences *)
   val emit_fence : A.fence -> A.pseudo

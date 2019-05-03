@@ -24,6 +24,7 @@ module type S = sig
   type fence
   type dp
   type atom
+  type rmw
 
   val pp_atom : atom -> string
   val tr_value : atom option -> Code.v -> Code.v
@@ -46,7 +47,7 @@ module type S = sig
     | Node of dir     (* Isolated event       *)
 (* fancy *)
     | Hat
-    | Rmw
+    | Rmw of rmw      (* Various sorts of read-modify-write *)
 
   val is_id : tedge -> bool
   val is_node : tedge -> bool
@@ -131,13 +132,15 @@ end
 module Make(F:Fence.S) : S
 with type fence = F.fence
 and type dp = F.dp
-and type atom = F.atom = struct
+and type atom = F.atom
+and type rmw = F.rmw = struct
   let debug = false
   open Code
 
   type fence = F.fence
   type dp = F.dp
   type atom = F.atom
+  type rmw = F.rmw
 
   let pp_atom = F.pp_atom
   let tr_value = F.tr_value
@@ -164,26 +167,26 @@ and type atom = F.atom = struct
     | Insert of fence
     | Node of dir
     | Hat
-    | Rmw
+    | Rmw of rmw
 
   let is_id = function
     | Id -> true
-    | Insert _|Hat|Rmw|Rf _|Fr _|Ws _|Po (_, _, _)
+    | Insert _|Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Node _ -> false
 
   let is_insert = function
     | Insert _ -> true
-    | Id|Hat|Rmw|Rf _|Fr _|Ws _|Po (_, _, _)
+    | Id|Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Node _ -> false
 
   let is_node = function
     | Node _ -> true
-    | Id|Hat|Rmw|Rf _|Fr _|Ws _|Po (_, _, _)
+    | Id|Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Insert _ -> false
 
   let is_non_pseudo = function
     | Insert _ |Id|Node _-> false
-    | Hat|Rmw|Rf _|Fr _|Ws _|Po (_, _, _)
+    | Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _ -> true
 
 
@@ -253,7 +256,10 @@ and type atom = F.atom = struct
     | Dp (dp,sd,e) -> sprintf "Dp%s%s%s"
           (F.pp_dp dp) (pp_sd sd) (pp_extr e)
     | Hat -> "Hat"
-    | Rmw -> "Rmw"
+    | Rmw rmw-> begin match F.pp_rmw rmw with
+      | "" -> "Rmw" (* Backward compatibility *)
+      | s -> sprintf "Amo.%s" s
+    end
     | Leave c -> sprintf "%sLeave" (pp_com c)
     | Back c -> sprintf "%sBack" (pp_com c)
     | Id -> "Id"
@@ -316,7 +322,7 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
   let do_dir_tgt e = match e with
   | Po(_,_,e)| Fenced(_,_,_,e)|Dp (_,_,e) -> e
   | Rf _| Hat -> Dir R
-  | Ws _|Fr _|Rmw -> Dir W
+  | Ws _|Fr _|Rmw _ -> Dir W
   | Leave c|Back c -> do_dir_tgt_com c
   | Id -> not_that e "do_dir_tgt"
    |Insert _ -> NoDir
@@ -324,7 +330,7 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
 
   and do_dir_src e = match e with
   | Po(_,e,_)| Fenced(_,_,e,_) -> e
-  | Dp _|Fr _|Hat|Rmw -> Dir R
+  | Dp _|Fr _|Hat|Rmw _ -> Dir R
   | Ws _|Rf _ -> Dir W
   | Leave c|Back c -> do_dir_src_com c
   | Id -> not_that e "do_dir_src"
@@ -335,7 +341,7 @@ let fold_tedges f r =
   let r = fold_ie (fun ie -> f (Rf ie)) r in
   let r = fold_ie (fun ie -> f (Fr ie)) r in
   let r = fold_ie (fun ie -> f (Ws ie)) r in
-  let r = f Rmw r in
+  let r = F.fold_rmw (fun rmw -> f (Rmw rmw)) r in
   let r = fold_sd_extr_extr (fun sd e1 e2 r -> f (Po (sd,e1,e2)) r) r in
   let r = F.fold_all_fences (fun fe -> f (Insert fe)) r in
   let r =
@@ -369,10 +375,11 @@ let fold_tedges f r =
             (fold_tedges
                (fun te k ->
                  match te with
-                 | Rmw -> (* Allowed source and target atomicity for wrm *)
-                     if F.applies_atom_rmw a1 a2 then
-                       f {a1; a2; edge=te;} k
-                     else k
+                 | Rmw rmw -> (* Allowed source and target atomicity for rmw *)
+                     if F.applies_atom_rmw rmw a1 a2 then begin
+                       let e =  {a1; a2; edge=te;} in
+                       f e k
+                     end else k
                  | Id -> begin
                      match a1,a2 with
                      | Some x1,Some x2 when  F.compare_atom x1 x2=0 ->
@@ -542,23 +549,23 @@ let do_set_tgt d e = match e  with
   | Fenced(f,sd,src,_) -> Fenced(f,sd,src,Dir d)
   | Dp (dp,sd,_) -> Dp (dp,sd,Dir d)
   | Rf _ | Hat
-  | Insert _|Id|Node _|Ws _|Fr _|Rmw|Leave _|Back _-> e
+  | Insert _|Id|Node _|Ws _|Fr _|Rmw _|Leave _|Back _-> e
 
 and do_set_src d e = match e with
   | Po(sd,_,tgt) -> Po(sd,Dir d,tgt)
   | Fenced(f,sd,_,tgt) -> Fenced(f,sd,Dir d,tgt)
   | Fr _|Hat|Dp _
-  | Insert _|Id|Node _|Ws _|Rf _|Rmw|Leave _|Back _ -> e
+  | Insert _|Id|Node _|Ws _|Rf _|Rmw _|Leave _|Back _ -> e
 
   let set_tgt d e = { e with edge = do_set_tgt d e.edge ; }
   and set_src d e = { e with edge = do_set_src d e.edge ; }
 
   let loc_sd e = match e.edge with
   | Po (sd,_,_) | Fenced (_,sd,_,_) | Dp (_,sd,_) -> sd
-  | Insert _|Node _|Fr _|Ws _|Rf _|Hat|Rmw|Id|Leave _|Back _ -> Same
+  | Insert _|Node _|Fr _|Ws _|Rf _|Hat|Rmw _|Id|Leave _|Back _ -> Same
 
   let get_ie e = match e.edge with
-  | Id |Po _|Dp _|Fenced _|Rmw -> Int
+  | Id |Po _|Dp _|Fenced _|Rmw _ -> Int
   | Rf ie|Fr ie|Ws ie -> ie
   | Leave _|Back _|Hat -> Ext
   | Insert _|Node _ -> Int
@@ -613,7 +620,7 @@ and do_set_src d e = match e with
 
   let do_expand_edge e f =
     match e.edge with
-    | Insert _|Id|Node _|Rf _ | Fr _ | Ws _ | Hat |Rmw|Dp _|Leave _|Back _
+    | Insert _|Id|Node _|Rf _ | Fr _ | Ws _ | Hat |Rmw _|Dp _|Leave _|Back _
       -> f e
     | Po(sd,e1,e2) ->
         expand_dir2 e1 e2 (fun d1 d2 -> f {e with edge=Po(sd,d1,d2);})

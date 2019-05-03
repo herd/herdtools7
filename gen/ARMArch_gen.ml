@@ -82,7 +82,12 @@ let pp_dp = function
   | CTRL -> "Ctrl"
   | CTRLISYNC -> "CtrlIsb"
 
-include
+(*******)
+(* RWM *)
+(*******)
+include OneRMW
+
+  include
     ArchExtra_gen.Make
     (struct
       type arch_reg = reg

@@ -195,7 +195,7 @@ let emit_load_not_eq _ = assert false
       let arw = tr_a er.C.atom ew.C.atom in
       rR,init,[Instruction (exch_tagged rR er.loc ew.v arw)],st *)
 
-let emit_exch _ = assert false
+let emit_rmw _ = assert false
 
 (**********)
 (* Fences *)
@@ -274,7 +274,7 @@ let emit_access_dep  st p init e dp r1 v1 = match dp with
 | DATA -> emit_access_dep_data st p init e r1
 | CTRL -> emit_access_ctrl st p init e r1 v1
 
-let emit_exch_dep _ = assert false
+let emit_rmw_dep _ = assert false
 
 (*jade: ca me parait un peu fort d'avoir ca required non?*)
 

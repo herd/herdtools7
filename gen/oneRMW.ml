@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2014-present Institut National de Recherche en Informatique et *)
+(* Copyright 2019-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,23 +14,15 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module type S = sig
-  val bellatom : bool (* true if bell style atoms *)
-  type atom
-  val default_atom : atom
-  val applies_atom : atom -> Code.dir -> bool
-  val compare_atom : atom -> atom -> int
-  val pp_plain : string
-  val pp_as_a : atom option
-  val pp_atom : atom -> string
-  val fold_non_mixed : (atom -> 'a -> 'a) -> 'a -> 'a
-  val fold_mixed : (atom -> 'a -> 'a) -> 'a -> 'a
-  val fold_atom : (atom -> 'a -> 'a) -> 'a -> 'a
-  val worth_final : atom -> bool
-  val varatom_dir : Code.dir -> (atom option -> 'a -> 'a) -> 'a -> 'a
-  val merge_atoms : atom -> atom -> atom option
-(* Value computation, for mixed size *)
-  val tr_value : atom option -> Code.v -> Code.v
-  val overwrite_value : Code. v -> atom option -> Code.v -> Code.v
-  val extract_value : Code. v -> atom option -> Code.v
-end
+(** Use one one kind of RMW is avaiable *)
+type rmw = unit
+
+let pp_rmw () = ""
+
+let fold_rmw f r = f () r
+
+let applies_atom_rmw () ar aw = match ar,aw with
+| None,None -> true
+| _,_ -> false
+
+let show_rmw_reg () = false

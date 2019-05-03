@@ -69,12 +69,19 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let mov r i = I_MOV (vloc,r,K i)
     let mov_mixed sz r i = let v = sz2v sz in I_MOV (v,r,i)
 
+    let mov_reg r1 r2 = I_MOV (vloc,r1,RV (vloc,r2))
+    let mov_reg_mixed sz r1 r2 = let v = sz2v sz in I_MOV (v,r1,RV (v,r2))
+
     module Extra = struct
       let use_symbolic = false
       type reg = A64.reg
       type instruction = A64.pseudo
+
       let mov r i = Instruction (mov r i)
       let mov_mixed sz r i = Instruction (mov_mixed sz r (K i))
+      let mov_reg r1 r2 = Instruction (mov_reg r1 r2)
+      let mov_reg_mixed sz r1 r2 = Instruction (mov_reg_mixed sz r1 r2)
+
     end
 
     module U = GenUtils.Make(Cfg)(A)(Extra)
@@ -161,6 +168,46 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Short -> I_STRBH (H,r1,r2,RV (v,idx))
       | Word -> I_STR (V32,r1,r2,RV (v,idx))
       | Quad -> I_STR (V64,r1,r2,RV (v,idx))
+
+    let swp_mixed sz a rS rT rN =
+      let open MachSize in
+      match sz with
+      | Byte -> I_SWPBH (B,a,rS,rT,rN)
+      | Short ->  I_SWPBH (H,a,rS,rT,rN)
+      | Word ->  I_SWP (V32,a,rS,rT,rN)
+      | Quad ->  I_SWP (V64,a,rS,rT,rN)
+
+    let swp a rS rT rN =  I_SWP (vloc,a,rS,rT,rN)
+
+    let cas_mixed sz a rS rT rN =
+      let open MachSize in
+      match sz with
+      | Byte -> I_CASBH (B,a,rS,rT,rN)
+      | Short ->  I_CASBH (H,a,rS,rT,rN)
+      | Word ->  I_CAS (V32,a,rS,rT,rN)
+      | Quad ->  I_CAS (V64,a,rS,rT,rN)
+
+    let cas a rS rT rN =  I_CAS (vloc,a,rS,rT,rN)
+
+    let ldop_mixed op sz a rS rT rN =
+      let open MachSize in
+      match sz with
+      | Byte -> I_LDOPBH (op,B,a,rS,rT,rN)
+      | Short ->  I_LDOPBH (op,H,a,rS,rT,rN)
+      | Word ->  I_LDOP (op,V32,a,rS,rT,rN)
+      | Quad ->  I_LDOP (op,V64,a,rS,rT,rN)
+
+    let ldop op a rS rT rN =  I_LDOP (op,vloc,a,rS,rT,rN)
+
+    let stop_mixed op sz a rS rN =
+      let open MachSize in
+      match sz with
+      | Byte -> I_STOPBH (op,B,a,rS,rN)
+      | Short ->  I_STOPBH (op,H,a,rS,rN)
+      | Word ->  I_STOP (op,V32,a,rS,rN)
+      | Quad ->  I_STOP (op,V64,a,rS,rN)
+
+    let stop op a rS rN =  I_STOP (op,vloc,a,rS,rN)
 
 (* Compute address in tempo1 *)
     let _sxtw r k = match vloc with
@@ -658,6 +705,98 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           (tr_none er.C.atom, tr_none ew.C.atom) p st rR rW rA in
       rR,init,csi@cs,st
 
+    let do_sz sz1 sz2 = match sz1,sz2 with
+    | None,None -> None
+    | Some s1,Some s2 when s1 = s2 -> sz1
+    | _,_ ->
+        Warn.fatal "Amo instructions with difference sizes"
+
+    let do_rmw_type a1 a2 = match a1,a2 with
+    | Plain,Plain -> RMW_P
+    | Acq,Plain   -> RMW_A
+    | Plain,Rel   -> RMW_L
+    | Acq,Rel   -> RMW_AL
+    | _,_ ->
+        Warn.fatal "Bad annotation for Amo: R=%s, W=%s"
+          (pp_atom_acc a1) (pp_atom_acc a2)
+
+    let do_rmw_annot (ar,szr) (aw,szw) =
+      let sz =  do_sz szr szw in
+      let a = do_rmw_type ar aw in
+      sz,a
+
+    let mk_emit_mov sz = match sz with
+    | None ->  U.emit_mov
+    | Some (sz,_) ->  U.emit_mov_sz sz
+
+    let mk_emit_mov_fresh sz = match sz with
+    | None ->  U.emit_mov_fresh
+    | Some (sz,_) ->  U.emit_mov_sz_fresh sz
+
+    let do_emit_ldop_rA  ins ins_mixed st p init er ew rA =
+      let sz,a = do_rmw_annot (tr_none er.C.atom) (tr_none ew.C.atom) in
+      let rR,st = next_reg st in
+      let rW,init,csi,st = mk_emit_mov sz st p init ew.v in
+      let cs,st = match sz with
+      | None -> [ins a rW rR rA],st
+      | Some (sz,o) ->
+          let rA,cs,st = sumi_addr st rA o in
+          cs@[ins_mixed sz a rW rR rA],st in
+      rR,init,csi@pseudo cs,st
+
+    let do_emit_ldop ins ins_mixed st p init er ew =
+      let rA,init,st = U.next_init st p init er.loc in
+      do_emit_ldop_rA ins ins_mixed st p init er ew rA
+
+    let emit_swp =  do_emit_ldop swp swp_mixed
+    and emit_ldop op = do_emit_ldop (ldop op) (ldop_mixed op)
+
+    let emit_cas_rA st p init er ew rA =
+      let sz,a = do_rmw_annot (tr_none er.C.atom) (tr_none ew.C.atom) in
+      let rS,init,csS,st = mk_emit_mov_fresh sz st p init er.v in
+      let rT,init,csT,st = mk_emit_mov sz st p init ew.v in
+      let cs,st = match sz with
+      | None -> [cas a rS rT rA],st
+      | Some (sz,o) ->
+          let rA,cs,st = sumi_addr st rA o in
+          cs@[cas_mixed sz a rS rT rA],st in
+      rS,init,csS@csT@pseudo cs,st
+
+    let emit_cas  st p init er ew =
+      let rA,init,st = U.next_init st p init er.loc in
+      emit_cas_rA st p init er ew rA
+
+    let emit_stop_rA op st p init _er ew rA =
+      let a,sz = tr_none ew.C.atom in
+      let a = match a with
+      | Plain -> W_P
+      | Rel -> W_L
+      | _ ->
+          Warn.fatal "Unexpected atom in STOP instruction: %s"
+            (pp_atom_acc a) in
+      let rW,init,csi,st = mk_emit_mov sz st p init ew.v in
+      let cs,st = match sz with
+      | None -> [stop op a rW rA],st
+      | Some (sz,o) ->
+          let rA,cs,st = sumi_addr st rA o in
+          cs@[stop_mixed op sz a rW rA],st in
+      None,init,csi@pseudo cs,st
+
+    let emit_stop  op st p init er ew =
+      let rA,init,st = U.next_init st p init er.loc in
+      emit_stop_rA op st p init er ew rA
+
+    let map_some f st p init er ew =
+      let r,init,cs,st = f  st p init er ew in
+      Some r,init,cs,st
+
+    let emit_rmw rmw = match rmw with
+    | LrSc -> map_some emit_exch
+    | Swp -> map_some emit_swp
+    | Cas -> map_some emit_cas
+    | LdOp op -> map_some (emit_ldop op)
+    | StOp op -> emit_stop op
+
 (* Fences *)
 
     let emit_fence f =  Instruction (I_FENCE f)
@@ -774,18 +913,21 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               None,init,Instruction c::cs_mov@cs,st
           | _,Some (Plain,None) -> assert false
 
-
-    let emit_exch_dep_addr st p init er ew rd =
+    let emit_addr_dep  st p init e rd =
       let r2,st = next_reg st in
       let c = calc0 r2 rd in
-      let rA,init,st = U.next_init st p init er.loc in
+      let rA,init,st = U.next_init st p init e.loc in
       let rA,csum,st = sum_addr st rA r2 in
+      rA,init,pseudo (c::csum),st
+
+    let emit_exch_dep_addr st p init er ew rd =
+      let rA,init,caddr,st =  emit_addr_dep  st p init er rd in
       let rR,st = next_reg st in
       let rW,init,csi,st = U.emit_mov st p init ew.v in
       let cs,st =
         emit_pair (tr_none  er.C.atom, tr_none ew.C.atom) p st rR rW rA in
       rR,init,
-      csi@pseudo (c::csum)@cs,
+      csi@caddr@cs,
       st
 
     let emit_access_dep_data st p init e  r1 =
@@ -850,23 +992,25 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | Some (Plain,None) -> assert false
           end
 
+    let is_ctrlisync = function
+      | CTRLISYNC -> true
+      | _ -> false
+
     let insert_isb isb cs1 cs2 =
       if isb then cs1@[emit_fence ISB]@cs2
       else cs1@cs2
 
-    let emit_access_ctrl isb st p init e r1 =
+    let emit_ctrl r =
       let lab = Label.next_label "LC" in
-      let c =
-        [Instruction (cbnz r1 lab);
-         Label (lab,Nop);] in
+      let c = [Instruction (cbnz r lab); Label (lab,Nop);] in c
+
+    let emit_access_ctrl isb st p init e r1 =
+      let c = emit_ctrl r1 in
       let ropt,init,cs,st = emit_access st p init e in
       ropt,init,insert_isb isb c cs,st
 
     let emit_exch_ctrl isb st p init er ew r1 =
-      let lab = Label.next_label "LC" in
-      let c =
-        [Instruction (cbnz r1 lab);
-         Label (lab,Nop);] in
+      let c = emit_ctrl r1 in
       let ropt,init,cs,st = emit_exch st p init er ew in
       ropt,init,insert_isb isb c cs,st
 
@@ -882,6 +1026,51 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | DATA -> Warn.fatal "not data dependency to RMW"
     | CTRL -> emit_exch_ctrl false st p init er ew rd
     | CTRLISYNC -> emit_exch_ctrl true st p init er ew rd
+
+    let emit_ldop_dep ins ins_mixed  st p init er ew dp rd = match dp with
+    | ADDR ->
+        let rA,init,caddr,st = emit_addr_dep st p init er rd in
+        let rR,init,cs,st = do_emit_ldop_rA ins ins_mixed st p init er ew rA in
+        rR,init,caddr@cs,st
+    | CTRL|CTRLISYNC ->
+        let c = emit_ctrl rd in
+        let rR,init,cs,st = do_emit_ldop ins ins_mixed st p init er ew in
+        rR,init,insert_isb (is_ctrlisync dp) c cs,st
+    | DATA -> Warn.fatal "Data dependency to LDOP"
+
+    let emit_cas_dep  st p init er ew dp rd = match dp with
+    | ADDR ->
+        let rA,init,caddr,st = emit_addr_dep st p init er rd in
+        let rR,init,cs,st = emit_cas_rA st p init er ew rA in
+        rR,init,caddr@cs,st
+    | CTRL|CTRLISYNC ->
+        let c = emit_ctrl rd in
+        let rR,init,cs,st = emit_cas st p init er ew in
+        rR,init,insert_isb (is_ctrlisync dp) c cs,st
+    | DATA -> Warn.fatal "Data dependency to CAS"
+
+    let emit_stop_dep  op st p init er ew dp rd = match dp with
+    | ADDR ->
+        let rA,init,caddr,st = emit_addr_dep st p init er rd in
+        let rR,init,cs,st = emit_stop_rA op st p init er ew rA in
+        rR,init,caddr@cs,st
+    | CTRL|CTRLISYNC ->
+        let c = emit_ctrl rd in
+        let rR,init,cs,st = emit_stop op st p init er ew in
+        rR,init,insert_isb (is_ctrlisync dp) c cs,st
+    | DATA -> Warn.fatal "Data dependency to STOP"
+
+
+    let map_some_dp f st p init er ew dp rd =
+      let r,init,cs,st = f  st p init er ew dp rd in
+      Some r,init,cs,st
+
+    let emit_rmw_dep rmw = match rmw with
+    | LrSc -> map_some_dp emit_exch_dep
+    | LdOp op -> map_some_dp (emit_ldop_dep (ldop op) (ldop_mixed op))
+    | Swp ->  map_some_dp (emit_ldop_dep swp swp_mixed)
+    | Cas -> map_some_dp emit_cas_dep
+    | StOp op -> emit_stop_dep op
 
 
     let do_check_load p r e =

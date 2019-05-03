@@ -46,6 +46,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
      type instruction = ARM.pseudo
      let mov r v = Instruction (I_MOVI (r,v,AL))
      let mov_mixed _sz _r _v = Warn.fatal "No mixed size for ARM"
+     let mov_reg r1 r2 = Instruction (I_MOV (r1,r2,AL))
+     let mov_reg_mixed _sz _r _v = Warn.fatal "No mixed size for ARM"
    end
 
     module U = GenUtils.Make(Cfg)(ARM)(Extra)
@@ -267,7 +269,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let rW,init,csi,st = U.emit_mov st p init ew.v in
       let rR,st = next_reg st in
       let cs = emit_pair p rR rW rA in
-      rR,init,csi@cs,st
+      Some rR,init,csi@cs,st
+
+    let emit_rmw () = emit_exch
 
     let calc0 =
       if Cfg.realdep then
@@ -348,7 +352,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
          Instruction (I_BNE lab);
          Label (lab,Nop);] in
       let ropt,init,cs,st = emit_exch st p init er ew in
-      ropt,init,insert_isb isb c cs,st
+      Misc.as_some ropt,init,insert_isb isb c cs,st
 
 
     let emit_access_dep st p init e dp r1 _v1 = match dp with
@@ -357,12 +361,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | CTRL -> emit_access_ctrl false st p init e r1
     | CTRLISYNC -> emit_access_ctrl true st p init e r1
 
-    let emit_exch_dep  st p init er ew dp rd = match dp with
+    let emit_exch_dep st p init er ew dp rd = match dp with
     | ADDR -> emit_exch_dep_addr   st p init er ew rd
     | DATA -> Warn.fatal "not data dependency to RMW"
     | CTRL -> emit_exch_ctrl false st p init er ew rd
     | CTRLISYNC -> emit_exch_ctrl true st p init er ew rd
 
+    let emit_rmw_dep () st p init er ew dp rd =
+      let r,init,cs,st = emit_exch_dep  st p init er ew dp rd in
+      Some r,init,cs,st
 
 (* Fences *)
 

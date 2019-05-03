@@ -34,14 +34,6 @@ let applies_atom a d = match a,d with
 
 let compare_atom = Pervasives.compare
 
-let applies_atom_rmw ar aw = match ar,aw with
-  | (Some Con,_)
-  | (None,_)
-  | (_,Some Con)
-  | (_,None)
-    -> false
-  | Some a1,Some a2 -> compare_atom a1 a2 = 0
-
 let pp_plain = Code.plain
 let pp_as_a = Some SC
 let pp_atom = pp_mem_order_short
@@ -206,4 +198,14 @@ let pp_dp = function
   | ADDR -> "Addr"
   | DATA -> "Data"
   | CTRL -> "Ctrl"
+
+include OneRMW
+
+let applies_atom_rmw () ar aw = match ar,aw with
+  | (Some Con,_)
+  | (None,_)
+  | (_,Some Con)
+  | (_,None)
+    -> false
+  | Some a1,Some a2 -> compare_atom a1 a2 = 0
 

@@ -129,6 +129,11 @@ struct
     rA,init,
     pseudo  (emit_sta er.C.loc rA ew.C.v),
     st
+
+  let emit_rmw () st p init er ew  =
+    let rR,init,cs,st = emit_exch st p init er ew in
+    Some rR,init,cs,st
+
 (*
   let emit_access_dep st p init e r1 =
     let r2,st = next_reg st in
@@ -151,6 +156,8 @@ struct
 
   let emit_exch_dep _st =
     Warn.fatal "Dependent access is irrelevant for X86"
+
+  let emit_rmw_dep () =  emit_exch_dep
 
   let emit_fence = function
     | MFence -> X86.Instruction I_MFENCE

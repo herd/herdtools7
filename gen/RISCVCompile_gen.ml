@@ -130,6 +130,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
 
       let mov r v = Instruction (li r v)
       let mov_mixed _sz _r _v = assert false
+      let mov_reg r1 r2 = Instruction (mv r1 r2)
+      let mov_reg_mixed _sz _r1 _r2 = assert false
     end
 
      module U = GenUtils.Make(Cfg)(AV)(Extra)
@@ -409,6 +411,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
       let mo = tr_swap er.C.atom ew.C.atom in
       rR,init,csv@[Instruction (amoswap mo rR rW rA)],st
 
+    let emit_rmw () st p init er ew  =
+      let rR,init,cs,st = emit_exch st p init er ew in
+      Some rR,init,cs,st
 
 (**********)
 (* Fences *)
@@ -520,6 +525,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
     | CTRL -> emit_exch_ctrl false st p init er ew rd
     | CTRLISYNC -> emit_exch_ctrl true st p init er ew rd
 
+    let emit_rmw_dep () st p init er ew dp rd =
+      let r,init,cs,st = emit_exch_dep  st p init er ew dp rd in
+      Some r,init,cs,st
 
     let check_load p r e init st =
       let lab = Label.exit p in

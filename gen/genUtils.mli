@@ -25,6 +25,8 @@ module type Extra = sig
   type instruction
   val mov : reg -> int -> instruction   
   val mov_mixed : MachSize.sz -> reg -> int -> instruction
+  val mov_reg : reg -> reg -> instruction
+  val mov_reg_mixed : MachSize.sz -> reg -> reg -> instruction
 end
 
 module Make :
@@ -52,6 +54,21 @@ functor (Cfg:Config) ->
                 A.arch_reg * A.init * Extra.instruction list * A.st
 
     val emit_mov_sz :
+        MachSize.sz ->
+          A.st ->
+            Code.proc ->
+              A.init ->
+                int ->
+                  A.arch_reg * A.init * Extra.instruction list * A.st
+
+    val emit_mov_fresh :
+        A.st ->
+          Code.proc ->
+            A.init ->
+              int ->
+                A.arch_reg * A.init * Extra.instruction list * A.st
+
+    val emit_mov_sz_fresh :
         MachSize.sz ->
           A.st ->
             Code.proc ->

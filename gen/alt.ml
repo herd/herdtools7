@@ -93,7 +93,7 @@ module Make(C:Builder.S)
     | Dp (_,_,Dir R),Fenced (_,Same,Dir R,_) ->
         not (fence_safe (dir_src e1) (dir_tgt e2))
 (* Allow Rmw *)
-    | (Rmw,_)|(_,Rmw) -> true
+    | (Rmw _,_)|(_,Rmw _) -> true
 (* Added *)
     | _,_ ->
         match get_ie e1, get_ie e2 with
@@ -110,7 +110,7 @@ module Make(C:Builder.S)
         | (Ws _|Leave CWs|Back CWs|Fr _|Leave CFr|Back CFr),
           (Rf _|Leave CRf|Back CRf) -> true
 (* Rmw allowed to compose arbitrarily *)
-        | (Rmw,_)|(_,Rmw) -> true
+        | (Rmw _,_)|(_,Rmw _) -> true
 (* Otherwise require alternance *)
         | _,_ ->  C.E.get_ie e1 <> C.E.get_ie e2 in
 (*      eprintf "Choice: %s %s -> %b\n" (C.E.pp_edge e1) (C.E.pp_edge e2) r ; *)
@@ -122,7 +122,7 @@ module Make(C:Builder.S)
         | (Ws _|Leave CWs|Back CWs|Fr _|Leave CFr|Back CFr),
           (Rf _|Leave CRf|Back CRf) -> true
 (* Rmw allowed to compose arbitrarily *)
-        | (Rmw,_)|(_,Rmw) -> true
+        | (Rmw _,_)|(_,Rmw _) -> true
 (* Otherwise accept composition *)
         | _,_ ->
             let ie1 = C.E.get_ie e1 and ie2 =  C.E.get_ie e2 in
