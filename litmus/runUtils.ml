@@ -65,12 +65,15 @@ let open_quote chan =
 and close_quote chan =
   if O.is_out then output_line chan "EOF"
 
+let is_darwin () : bool =
+  Sys.unix && Sys.command "sh -c 'test \"$(uname -s)\" = Darwin'" = 0
+
 module W = Warn.Make(O)
 let target_os =
   if O.is_out then
     O.targetos
   else begin
-    if Sys.file_exists "/mach_kernel"
+    if is_darwin ()
     then begin
       W.warn "OS: Darwin" ;
       TargetOS.Mac
