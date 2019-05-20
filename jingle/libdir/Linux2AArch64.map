@@ -114,10 +114,13 @@ store: STLR %t2,[%t1]"
 
 "full_on_acq_rel" : "\([^;]$\)" -> "\1;
 				   DMB ISH"
+"full" : "acquire | release | full_on_acq_rel"
 
 "id" : "" -> ""
-"const_to_1" : "&c" -> "#1"
-"const_to_0" : "&c" -> "#0"
-"constd_to_1" : "&d" -> "#1"
+"const_c_to_1" : "&c" -> "#1"
+"const_c_to_0" : "&c" -> "#0"
+"const_d_to_1" : "&d" -> "#1"
 
 "out_to_loop" : "B.NE out" -> "B.NE loop"
+
+"lock" : "const_c_to_0 | const_d_to_1 | out_to_loop"

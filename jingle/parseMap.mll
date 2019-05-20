@@ -16,10 +16,14 @@
 {  
   exception Error of string
 
+  type func =
+    | Appliable of string * string
+    | Sequence of string list
+
   type t = {
     source : Archs.t;
     target : Archs.t;
-    funcs : (string * string * string) list;
+    funcs : (string * func) list;
     conversions : (string * string) list
   }
 }
@@ -53,7 +57,11 @@ and conv l f = parse
 	}
     | '"' ([^'"']* as func) '"' blank* colon blank* '"' ([^'"']* as left) '"' blank* arrow blank* '"' ([^'"']* as right) '"' blank*
 	{
-	  conv l ((String.trim func, String.trim left, String.trim right)::f) lexbuf
+	  conv l ((String.trim func, Appliable(String.trim left, String.trim right))::f) lexbuf
+	}
+    | '"' ([^'"']* as func) '"' blank* colon blank* '"' (([^'"']* blank* '|' blank*)* [^'"']* as seq) '"' blank*
+	{
+	  conv l ((String.trim func, Sequence(List.map (fun s -> String.trim s) (String.split_on_char '|' seq)))::f) lexbuf
 	}
     | ("#"|"//") [^'\n']* '\n' { conv l f lexbuf }
     | "" {

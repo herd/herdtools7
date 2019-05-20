@@ -91,30 +91,35 @@ let parsed_call = match call with
       exit 1
 
 
-let filter_func f func_env = List.filter (fun (x, _, _) -> Misc.string_eq x f) func_env
+let pick_func f func_env = List.find_opt (fun (x, _) -> Misc.string_eq x f) func_env
 
-let filter_map e map_env = List.filter (fun (x, _) -> Misc.string_eq x e) map_env
+let remove_func f func_env = List.remove_assoc f func_env
 
-let filter_unmap e map_env = List.filter (fun (x, _) -> not (Misc.string_eq x e)) map_env
+let pick_mapping e map_env = List.find_opt (fun (x, _) -> Misc.string_eq x e) map_env
 
-let rec apply f e map_env func_env = match filter_func f func_env with
-| [] -> raise(Error ("no func for " ^ f ^ "."))
-| (_, d, c) :: tl -> match map_env with
-               | [] -> raise(Error ("no left rule for " ^ e ^ "."))
-               | (_, mr) :: _ ->
-                    let re = Str.regexp d in
-                    try let _ = Str.search_forward re mr 0 in
-                        Str.replace_first (Str.regexp d) c mr
-                    with Not_found -> apply f e map_env tl
+let rec apply f arg func_env = match pick_func f func_env with
+| None -> raise(Error ("no func for " ^ f ^ " for arg: " ^ arg ^ "."))
+| Some(_, ParseMap.Appliable(d, c)) -> begin
+        let re = Str.regexp d in
+        try let _ = Str.search_forward re arg 0 in
+                Str.replace_first re c arg
+        with Not_found ->  apply f arg (remove_func f func_env)
+        end
+| Some(_, ParseMap.Sequence(fs)) -> begin
+        (* If all functions in the sequence exist in 'func_env' *)
+        if fs |> List.for_all (fun g -> Misc.is_some (pick_func g func_env)) then
+                List.fold_left (fun a g -> apply g a func_env) arg fs
+        else apply f arg (remove_func f func_env)
+        end
 
 let rec expand call_list map_env func_env times =
         let callable = List.filter (fun (_, _, e) -> List.mem_assoc e map_env) call_list in
         let uncallable = List.filter (fun (_, _, e) -> not (List.mem_assoc e map_env)) call_list in
         let try_expand (l, f, a) = 
-                let r = apply f a (filter_map a map_env) (filter_func f func_env)
-                in (l, r)
-        in
-        let res = List.map try_expand callable in
+                (pick_mapping a map_env) |> Misc.map_opt (fun (_, arg) -> let r = apply f arg func_env in (l, r)) in
+        let res = callable |> List.map try_expand
+                           |> List.filter (fun x -> Misc.is_some x)
+                           |> List.map Misc.as_some in
         if times <= 1 then res
         else match uncallable with
                 | [] -> res
@@ -126,8 +131,9 @@ let () =
     List.iter (fun (s,t) ->
       eprintf "\"%s\" -> \"%s\"\n" s t)
       parsed.ParseMap.conversions;
-    List.iter (fun (n, f, a) ->
-      eprintf "\"%s\" -> \"@%s %s\"\n" n f a)
+    List.iter (fun (n, func) -> match func with
+      | ParseMap.Appliable(f, a) -> eprintf "\"%s\" : \"@%s %s\"\n" n f a
+      | ParseMap.Sequence(fs) -> eprintf "\"%s\" : %s\n" n (String.concat " | " fs))
       parsed.ParseMap.funcs;
    eprintf "Reading call file :\n";
     List.iter (fun (n, l, r) ->
