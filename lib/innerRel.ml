@@ -292,6 +292,24 @@ struct
     with Cycle e -> Some (List.rev e)
 
     let fold = ME.fold
+
+    let reachable e e_succs m =
+      let rec dfs e seen =
+        if Elts.mem e seen then seen
+        else
+          Elts.fold dfs (succs e m) (Elts.add e seen) in
+      Elts.fold dfs e_succs (Elts.singleton e)
+
+    let cc m =
+      let _,ccs =
+        ME.fold
+          (fun e succs (seen,ccs as r) ->
+            if Elts.mem e seen then r
+            else
+              let cc = reachable e succs m in
+              Elts.union cc seen,cc::ccs)
+          m (Elts.empty,[]) in
+      ccs
   end
 
 
@@ -563,11 +581,6 @@ struct
   | _ -> sequences (seq_rec rs)
 
 (* Equivalence classes *)
-  let classes r =
-    let m = M.to_map r in
-    M.fold
-      (fun e succs k ->
-        if List.exists (fun es -> Elts.mem e es) k then k
-        else succs::k)
-      m []
+  let classes r = M.cc (M.to_map r)
+
 end

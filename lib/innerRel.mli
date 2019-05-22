@@ -106,7 +106,7 @@ module type S =  sig
   val sequence : t-> t -> t
   val sequences : t list -> t
 
-(* Equivalence classes, applies to equivalence relations only (unchecked) *)
+(* Equivalence classes, applies to symetric relations only (unchecked) *)
   val classes : t -> Elts.t list
 
 end

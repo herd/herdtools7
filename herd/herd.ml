@@ -355,6 +355,7 @@ let options = [
  parse_stringsetfun "-doshow" PP.add_doshow "show those edges";
  parse_stringsetfun "-unshow" PP.add_unshow "do not show those edges" ;
  parse_stringset "-symetric" PP.symetric "declare those edges as symetric" ;
+ parse_string_opt "-classes" PP.classes "show classes of this equivalence (no not cumulate)" ;
  parse_stringset "-showraw" PP.showraw
     "do not perform transitivity removal on those edges" ;
 
@@ -577,6 +578,7 @@ let () =
       let doshow = !PP.doshow
       let unshow = !PP.unshow
       let symetric = !PP.symetric
+      let classes = !PP.classes
       let showraw = !PP.showraw
 
       let dotheader = match !PP.dotheader with

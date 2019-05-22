@@ -122,6 +122,7 @@ module PP : sig
   val add_doshow : StringSet.t -> unit
   val add_unshow : StringSet.t -> unit
   val symetric : StringSet.t ref
+  val classes : string option ref
   val showraw : StringSet.t ref
   val extrachars : float ref
   val shift : float array ref      

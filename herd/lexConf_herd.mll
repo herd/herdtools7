@@ -127,7 +127,6 @@ and opt = parse
       dolex main (ML.find arg) }
 | "verbose" arg { lex_int verbose arg }
 | "suffix" arg { suffix := arg }
-| "dumpes" arg { lex_bool dumpes arg }
 | "include" arg
   { includes := !includes @ [arg] }
 (* Change input *)
@@ -281,6 +280,8 @@ and opt = parse
     { lex_stringsetfun PP.add_unshow arg }
 | "symetric" arg
     { lex_stringset PP.symetric arg }
+| "classes" arg
+    { lex_string_opt PP.classes arg }
 | "showraw" arg
     { lex_stringset PP.showraw arg }
 | "edgeattr" arg

@@ -132,6 +132,7 @@ module PP = struct
     doshow := StringSet.diff !doshow u
 
   let symetric = ref StringSet.empty
+  let classes = ref None
   let showraw = ref StringSet.empty
   let extrachars = ref 0.0
   let shift = ref [| |]

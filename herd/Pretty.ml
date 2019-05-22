@@ -323,7 +323,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
 
   let () = init_pretty ()
 
-      (* Get complexified *)
+  (* Get complexified *)
   let get_ea def_color lbl =
     let col,mono =
       let key =
@@ -858,9 +858,9 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
 
 
     (*
-       Pick out the vertical edges of the last thread.
-       so that the edge label can be put on their rhs,
-       to reduce the label overlaps
+      Pick out the vertical edges of the last thread.
+      so that the edge label can be put on their rhs,
+      to reduce the label overlaps
      *)
 
     let last_thread e e' =
@@ -924,7 +924,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
       let act =
         if PC.verbose > 0 then begin
           if E.EventSet.mem e es.E.data_ports then
-          act ^ " (data)"
+            act ^ " (data)"
           else if E.EventSet.mem e es.E.success_ports then
             act ^ " (success)"
           else act
@@ -998,6 +998,29 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
       pp_event ~lbl:inits false color chan e in
 
     let pp_event_structure chan vbss es =
+(* Extract relation to represent as classes, if any *)
+      let asclass = match PC.classes with
+      | Some n ->
+          begin try
+            eprintf "classes=\"%s\"\n" n ;
+            let equiv = List.assoc n vbss in
+            let cls = E.EventRel.classes equiv in
+            eprintf
+              "%s\n"
+              (E.EventRel.pp_str " "
+                 (fun (e1,e2) ->
+                   sprintf "%s-%s" (E.pp_eiid e1) (E.pp_eiid e2))
+                 equiv) ;
+            List.iter
+              (fun es ->
+                eprintf " {%s}" (E.EventSet.pp_str "," E.pp_eiid es))
+              cls ;
+            eprintf "\n" ;
+            Some (n,cls)
+          with Not_found -> None
+          end
+      | None -> None in
+
       let pl = fprintf chan "%s\n" in
 
 (* Init events, if any *)
@@ -1039,8 +1062,42 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
           | Graph.Free -> ()
           end ;
 (* Now output events *)
+          let pp_events = match asclass with
+          | None ->
+              fun _m pp_evt evts ->
+                E.EventSet.pp chan "" pp_evt evts
+          | Some (name,cls) ->
+              let color =
+                lazy begin
+                  try DotEdgeAttr.find name "color" PC.edgeattrs
+                  with Not_found ->
+                    let {color;_} =
+                      get_ea (fun r -> { r with color="blue";}) name in
+                    color end in
+              fun m pp_evt evts ->
+                let cls,evts =
+                  List.fold_left
+                    (fun (cls,k) cl ->
+                      let cl = E.EventSet.inter cl evts in
+                      if E.EventSet.is_empty cl then (cls,k)
+                      else (cl::cls, E.EventSet.diff k cl))
+                    ([],evts) cls in
+                E.EventSet.pp chan "" pp_evt evts ;
+                Misc.iteri
+                  (fun j cl ->
+                    let color = Lazy.force color in
+                    fprintf chan "subgraph cluster_class_%02i_%02i_%02i" n m j ;
+                    fprintf chan
+                      " { %s label=\"%s\"; shape=box;\n"
+                      (if not PC.mono then
+                        sprintf "color=%s;" color
+                      else "color=\"grey30\"; style=dashed; ")
+                      "" ;
+                    E.EventSet.pp chan "" pp_evt cl ;
+                    fprintf chan "}\n")
+                  cls in
           Misc.iteri
-            (fun m evts ->
+            (fun m evts -> (* evts = all events from one instruction.. *)
               if
                 PC.withbox &&
                 show_all_events
@@ -1064,13 +1121,10 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
                   else "color=\"grey30\"; style=dashed; ")
                   pp_ins ;
                 (* assuming atomicity sets are always full instructions *)
-                E.EventSet.pp chan ""
-                  (pp_event false "blue") evts ;
+                pp_events m (pp_event false "blue") evts ;
                 fprintf chan "}\n"
               end else begin (* no green box around one event only *)
-                E.EventSet.pp chan ""
-                  (pp_event false "blue")
-                  evts
+                pp_events m (pp_event false "blue") evts
               end)
             evtss;
 (* Postlude *)
@@ -1112,7 +1166,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
           rfmap
           E.EventRel.empty in
 
-      if pp_po_edge then
+      if pp_po_edge then begin
         let replaces_po =
           match PC.graph with
           | Graph.Columns|Graph.Cluster ->
@@ -1140,7 +1194,9 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
             pp_edge chan
               (pp_node_eiid e) (pp_node_eiid e') lbl
               (last_thread e e') (is_even e e'))
-          po_edges in
+          po_edges
+      end ;
+      vbss in
 
 
 
@@ -1194,7 +1250,8 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
         ()
     | None -> ()
     end ;
-    pp_event_structure chan vbss es ;
+
+    let vbss = pp_event_structure chan vbss es in
 
     pl "/* the rfmap edges */" ;
     let show_ref_rel = List.exists (fun (lab,_) -> lab = "rf") vbss in
@@ -1227,6 +1284,8 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
     pl "" ;
     pl "/* The viewed-before edges */" ;
     if true then begin
+      let ns = List.map fst vbss in
+      eprintf "Names: {%s}\n" (String.concat "," ns) ;
       List.iter
         (fun (label,vbs) ->
           E.EventRel.pp chan ""
