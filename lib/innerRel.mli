@@ -84,10 +84,20 @@ module type S =  sig
   
   exception Cyclic
   val topo : Elts.t -> t -> elt0 list
+(****************************************************)
 (* Continuation based all_topos (see next function) *)
+(****************************************************)
+
+(* Orders as a lists *)
   val all_topos_kont :  Elts.t -> t -> (elt0 list -> 'a -> 'a) -> 'a -> 'a
-(* All toplogical orders, as a list of lists *)
-  val all_topos : bool (* verbose *) -> Elts.t -> t -> elt0 list list
+(* Orders as relations *)
+  val all_topos_kont_rel :
+      Elts.t -> t -> (t -> 'a) -> (t -> 'a -> 'a) -> 'a -> 'a
+
+(* All toplogical orders, raises Cyclic in case of cycle
+  Enhancement: all_topos nodes edges still works
+  when edges relates elts not in nodes *)
+  val all_topos : bool (* verbose *)-> Elts.t -> t -> elt0 list list
 
 (* Is the parent relation of a hierarchy *)
   val is_hierarchy : Elts.t -> t -> bool

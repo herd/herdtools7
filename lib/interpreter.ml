@@ -161,22 +161,6 @@ module Make
     | UndefinedUnless|Flagged -> ok
 
 
-(* Generic toplogical order generator *)
-    let apply_orders es vb kfail kont res =
-      try
-        E.EventRel.all_topos_kont es vb
-          (fun k res ->
-            kont (E.EventRel.order_to_rel k) res) res
-      with E.EventRel.Cyclic -> kfail vb
-
-
-    let apply_orders_class es vb kfail kont res =
-      try
-        ClassRel.all_topos_kont es vb
-          (fun k res ->
-            kont (ClassRel.order_to_rel k) res) res
-      with ClassRel.Cyclic -> kfail vb
-
 (*  Model interpret *)
     let (_,_,mprog) = O.m
 
@@ -437,11 +421,13 @@ module Make
           sprintf "(%s)" (String.concat "," (List.map pp_val vs))
       | v -> sprintf "<%s>" (pp_type_val v)
 
-    let rec debug_val chan = function
-      | ValSet (_,s) ->
-          output_char chan '{' ;
-          ValSet.pp chan "," debug_val s ;
-          output_char chan '}'
+    let rec debug_val_set chan s =
+      output_char chan '{' ;
+      ValSet.pp chan "," debug_val s ;
+      output_char chan '}'
+
+    and debug_val chan = function
+      | ValSet (_,s) -> debug_val_set chan s
       | Set es ->  debug_set chan es
       | Rel r  -> debug_rel chan r
       | ClassRel r -> debug_class_rel chan r
@@ -849,42 +835,87 @@ module Make
         V.ClassRel clsr
     | _ -> arg_mismatch ()
 
-    and linearisations arg = match arg with
-    | V.Tuple [Set es;Rel r;] ->
-        if O.debug && O.verbose > 1 then begin
-          eprintf "Linearisations:\n" ;
-          eprintf "  %a\n" debug_set es ;
-          eprintf "  {%a}\n"
-            debug_rel
-            (E.EventRel.filter
-               (fun (e1,e2) ->
-                 E.EventSet.mem e1 es && E.EventSet.mem e2 es)
-               r)
-        end ;
-        if O.debug && O.verbose > 1 then begin
-          let n = apply_orders es r (fun _ -> 0) (fun _ k -> k+1) 0 in
-          eprintf "number of orders: %i\n" n
-        end ;
-        let rs =
-          apply_orders es r
-            (fun o ->
-              let o =
-                E.EventRel.filter
-                  (fun (e1,e2) ->
-                    E.EventSet.mem e1 es && E.EventSet.mem e2 es)
-                  o in
-              if O.debug then begin
-                eprintf
-                  "Linearisation failed {%a}\n%!" debug_rel o ;
-                ValSet.singleton (V.Rel o)
-              end else
-                ValSet.empty)
-            (fun o os ->
-              if O.debug && O.verbose > 1 then
-                eprintf "  -> {%a}\n%!" debug_rel o ;
-              ValSet.add (Rel o) os)
-            ValSet.empty in
-        ValSet (TRel,rs)
+    and linearisations =
+      let module
+          Make =
+        functor
+          (In : sig
+            type base
+            module Rel : InnerRel.S with type elt0=base
+            val debug_set : out_channel -> Rel.Elts.t -> unit
+            val debug_rel : out_channel -> Rel.t -> unit
+            val mk_val : Rel.t -> V.v
+            val typ : typ
+          end) -> struct
+            let mem = In.Rel.Elts.mem
+            let zyva es r =
+              if O.debug && O.verbose > 1 then begin
+                eprintf "Linearisations:\n" ;
+                eprintf "  %a\n" In.debug_set es ;
+                eprintf "  {%a}\n"
+                  In.debug_rel
+                  (In.Rel.filter
+                     (fun (e1,e2) ->
+                       mem e1 es && mem e2 es)
+                     r)
+              end ;
+              let nodes = es in
+              if O.debug && O.verbose > 1 then begin
+                let n = In.Rel.all_topos_kont_rel  nodes r (fun _ -> 0) (fun _ k -> k+1) 0 in
+                eprintf "number of orders: %i\n" n
+              end ;
+              let rs =
+                In.Rel.all_topos_kont_rel nodes r
+                  (fun o ->
+                    let o =
+                      In.Rel.filter
+                        (fun (e1,e2) ->
+                          mem e1 es && mem e2 es)
+                        o in
+                    if O.debug then begin
+                      eprintf
+                        "Linearisation failed {%a}\n%!" In.debug_rel o ;
+                      ValSet.singleton (In.mk_val o)
+                    end else
+                      ValSet.empty)
+                  (fun o os ->
+                    if O.debug && O.verbose > 1 then
+                      eprintf "  -> {%a}\n%!" In.debug_rel o ;
+                    ValSet.add (In.mk_val o) os)
+                  ValSet.empty in
+              ValSet (In.typ,rs)
+          end in
+      fun ks arg -> match arg with
+      | V.Tuple [Set es;Rel r;] ->
+          let module L =
+            Make
+              (struct
+                type base = E.event
+                module Rel = E.EventRel
+                let debug_set = debug_set
+                let debug_rel = debug_rel
+                let mk_val r = Rel r
+                let typ = TRel
+              end) in
+          L.zyva es r
+    | V.Tuple [ValSet (TEvents,es);ClassRel r;] ->
+        let module L =
+          Make
+            (struct
+              type base = E.EventSet.t
+              module Rel = ClassRel
+              let debug_set chan ss =
+                fprintf chan "{%a}"
+                  (fun chan ss -> ClassRel.Elts.pp chan "," debug_set ss)
+                  ss
+              let debug_rel = debug_class_rel
+              let mk_val r = ClassRel r
+              let typ = TClassRel
+            end) in
+        let es =
+          let sets = ValSet.fold (fun v k -> as_set ks v::k) es [] in
+          ClassRel.Elts.of_list sets in
+        L.zyva es r
     | _ -> arg_mismatch ()
 
     and tag2scope env arg = match arg with
@@ -1002,7 +1033,7 @@ module Make
          "classes-loc",partition;
          "classes",classes;
          "lift",lift;
-         "linearisations",linearisations;
+         "linearisations",linearisations ks;
          "tag2scope",tag2scope m;
          "tag2events",tag2events m;
          "tag2fenced",tag2fenced m;
