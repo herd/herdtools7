@@ -232,8 +232,7 @@ let show r =
     pp_loc loc_constr
     pp_loc loc_cfgs
 
-let split name chan =
-  let lexbuf = from_channel chan in
+let split_lexbuf name lexbuf =
   lexbuf.lex_curr_p <-
     {pos_fname = name; pos_lnum = 1;
      pos_bol = 0; pos_cnum = 0};
@@ -241,25 +240,27 @@ let split name chan =
     try main_pos lexbuf
     with
     | LexMisc.Error (msg,loc) ->
-	Printf.eprintf "%a: splitter error in sublexer %s\n"
-	  Pos.pp_pos loc msg ;
-	raise Misc.Exit (* silent, message printed above *)
+       failwith (Printf.sprintf "%s: splitter error in sublexer %s" (Pos.str_pos loc) msg)
     | Assert_failure _ as e ->  raise e
     | e ->
-	Printf.eprintf
-	  "%a: Uncaught exception in splitter %s\n"
-	  Pos.pp_pos lexbuf.lex_curr_p
-	  (Printexc.to_string e) ;
-	assert false in
+       failwith (Printf.sprintf "%s: Uncaught exception in splitter %s" (Pos.str_pos lexbuf.lex_curr_p) (Printexc.to_string e))
+  in
   if O.debug then show r ;
   r
 
-  let reinfo p lexbuf =
-    let buff = Buffer.create 32 in
-    change_main buff p lexbuf ;
-    Buffer.contents buff
+let reinfo p lexbuf =
+  let buff = Buffer.create 32 in
+  change_main buff p lexbuf ;
+  Buffer.contents buff
 
-   let rehash v lexbuf = reinfo (MiscParser.hash_key,v) lexbuf
+let rehash v lexbuf = reinfo (MiscParser.hash_key,v) lexbuf
 
+let split name chan =
+  let lexbuf = from_channel chan in
+  split_lexbuf name lexbuf
+
+let split_string name s =
+  let lexbuf = from_string s in
+  split_lexbuf name lexbuf
 end
 }
