@@ -33,4 +33,5 @@ val pp_pos : out_channel -> position -> unit  (* one *)
 val pp_lnum : out_channel -> position -> unit  (* one, line number only *)
 val pp_pos2 : out_channel -> (position * position) -> unit (* two *)
 
-
+val str_pos  : position -> string
+val str_pos2 : (position * position) -> string
