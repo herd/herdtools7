@@ -23,12 +23,12 @@ let call_parser name lexbuf lex parse =
   try parse lex lexbuf
   with
   | LexMisc.Error (msg,pos) ->
-      raise  (Misc.Fatal (Printf.sprintf "%s: Lex error %s (in %s)" (Pos.str_pos pos) msg name))
+      Warn.user_error "%s: Lex error %s (in %s)\n" (Pos.str_pos pos) msg name
   | Parsing.Parse_error ->
       let lxm = lexeme lexbuf
       and start_loc = lexeme_start_p lexbuf
       and end_loc = lexeme_end_p lexbuf in
-      raise (Misc.Fatal (Printf.sprintf "%s: unexpected '%s' (in %s)" (Pos.str_pos2 (start_loc, end_loc)) lxm name))
+      Warn.user_error "%s: unexpected '%s' (in %s)\n" (Pos.str_pos2 (start_loc, end_loc)) lxm name
   | e ->
       Printf.eprintf
 	"%a: Uncaught exception %s (in %s)\n"
