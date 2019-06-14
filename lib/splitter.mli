@@ -57,6 +57,7 @@ module Default : Config
 
 module Make : functor (O:Config) -> sig
   val split : string -> in_channel -> result
+  val split_string : string -> string -> result
 
   (* Init section with info changed or added *)
   val reinfo : info -> Lexing.lexbuf -> string

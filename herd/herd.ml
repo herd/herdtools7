@@ -628,9 +628,18 @@ let () =
 (* Just go *)
 
   let tests = !args in
+
   let check_exit =
     let b = !Opts.exit_if_failed in
     fun seen -> if b then exit 1 else seen in
+
+  let check_pos0 s =
+    String.length s > 5 &&
+    begin match s.[0],s.[1],s.[2],s.[3],s.[4] with
+    | 'F','i','l','e',' ' -> true
+    | _ -> false
+    end  in
+
   let _seen =
     Misc.fold_argv_or_stdin
       (fun name seen ->
@@ -641,8 +650,12 @@ let () =
             Warn.warn_always "%a: %s" Pos.pp_pos0 name msg ;
              check_exit seen
         | Misc.UserError msg ->
-            Warn.warn_always "%a: %s (User error)" Pos.pp_pos0 name msg ;
-             check_exit seen
+            begin if check_pos0 msg then
+              Warn.warn_always "%s (User error)" msg
+            else
+              Warn.warn_always "%a: %s (User error)" Pos.pp_pos0 name msg
+            end ;
+            check_exit seen
         | e ->
             Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
             raise e)
