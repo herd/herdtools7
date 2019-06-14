@@ -12,9 +12,7 @@ C
 
 "%r = xchg_release(%x, %y);" -> "@release %r = xchg_relaxed(%x, %y);"
 
-"%r = xchg_acq_rel(%x, %y);" -> "@release %r = xchg_acquire(%x, %y);"
-
-"%r = xchg(%x, %y);" -> "@full_on_acq_rel %r = xchg_acq_rel(%x, %y);"
+"%r = xchg(%x, %y);" -> "@full %r = xchg_relaxed(%x, %y);"
 
 "%r = xchg_acquire(%x, constvar:c);" -> "@acquire %r = xchg_relaxed(%x, constvar:c);"
 
@@ -28,18 +26,8 @@ C
 
 "%r = atomic_xchg_release(%x, constvar:c);" -> "@id %r = xchg_release(%x, constvar:c);"
 
-"%r = xchg_acq_rel(%x, constvar:c);" -> "@release %r = xchg_acquire(%x, constvar:c);"
+"%r = xchg(%x, constvar:c);" -> "@full %r = xchg(%x, constvar:c);"
 
-"%r = xchg(%x, constvar:c);" -> "@full_on_acq_rel %r = xchg_acq_rel(%x, constvar:c);"
+"spin_lock(%x);" -> "@lock %r = cmpxchg_acquire(%x, constvar:c, constvar:d);"
 
-"temp_spin_lock(%x);" -> "@id %r = cmpxchg_acquire(%x, constvar:c, constvar:d);"
-
-"temp2_spin_lock(%x);" -> "@const_to_0 temp_spin_lock(%x);"
-
-"temp3_spin_lock(%x);" -> "@out_to_loop temp2_spin_lock(%x);"
-
-"spin_lock(%x);" -> "@constd_to_1 temp3_spin_lock(%x);"
-
-"temp_spin_unlock(%y);" -> "@id smp_store_release(%y, constvar:c);"
-
-"spin_unlock(%y);" -> "@const_to_0 temp_spin_unlock(%y);"
+"spin_unlock(%y);" -> "@const_c_to_0 smp_store_release(%y, constvar:c);"
