@@ -21,7 +21,9 @@ Requirements
 ------------
 
 - OCaml (version >= 4.02.0)
-- ocamlbuild
+- dune*
+
+* Compilation with ocamlbuild is possible, by setting D=ocb in Makefile.
 
 Build
 -----
