@@ -64,6 +64,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
   module E = S.E
   module PC = S.O.PC
 
+  let dbg = false
 (* One init *)
 
   let one_init = match PC.graph with
@@ -1284,8 +1285,10 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
     pl "" ;
     pl "/* The viewed-before edges */" ;
     if true then begin
-      let ns = List.map fst vbss in
-      eprintf "Names: {%s}\n" (String.concat "," ns) ;
+      if dbg then begin
+        let ns = List.map fst vbss in
+        eprintf "Names: {%s}\n" (String.concat "," ns)
+      end ;
       List.iter
         (fun (label,vbs) ->
           E.EventRel.pp chan ""
