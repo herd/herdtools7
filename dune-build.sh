@@ -9,5 +9,5 @@ let rev = "$REV"
 let libdir = "$LIBDIR/"
 EOD
 
-dune build $EXE
+dune build --profile release $EXE
 
