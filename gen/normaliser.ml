@@ -17,7 +17,7 @@ open Code
 open Printf
 
 
-exception CannotNormalise
+exception CannotNormalise of string
 
 module type Config = sig
   val lowercase : bool
@@ -115,7 +115,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
 
         and find_next k m =
           (* Cycle is not well formed anyway *)
-          if m.next == n then raise CannotNormalise
+          if m.next == n then raise (CannotNormalise "find_back")
           else find_rec k m.next in
         find_rec 0 n
 
@@ -238,7 +238,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
             let n = find_edge_out ext_com n in n.next
           with NotFound ->
             (* "No external communication in cycle" *)
-               raise CannotNormalise
+               raise (CannotNormalise "find_start")
 
       let split_procs n =
         try
@@ -467,7 +467,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
         let cy = CE.map (fun e -> e.CE.edge) ps.CP.cycle in
         cy
       with CE.NotFound ->
-        raise CannotNormalise
+        raise (CannotNormalise "normalise")
 
     let allsame cy =
       List.for_all
@@ -493,5 +493,5 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
         let cy = CE.map (fun e -> e.CE.edge) ps.CP.cycle in
         pp_key (allsame cy) key,cy,CP.size ps
       with CE.NotFound ->
-        raise CannotNormalise
+        raise (CannotNormalise "normalise_family")
   end
