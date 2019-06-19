@@ -523,7 +523,7 @@ module Make(C:Builder.S)
                   info,C.R.Set.of_list rs in
                 f le mk_info D.no_name D.no_scope k
               end
-            with Normaliser.CannotNormalise -> k
+            with (Normaliser.CannotNormalise _) -> k
           else k
 
     let last_minute ess =
