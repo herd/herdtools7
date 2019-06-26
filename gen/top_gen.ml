@@ -162,11 +162,11 @@ module U = TopUtils.Make(O)(Comp)
         if U.do_poll n then
           let r,init,i,st =
             Comp.emit_load_one st p init n.C.evt.C.loc in
-          Some r,init,i,st 
+          Some r,init,i,st
         else
           call_emit_access st p init n
     | Yes (dp,r1,v1) -> call_emit_access_dep st p init n dp r1 v1 in
-    o,init,ip@i,st 
+    o,init,ip@i,st
 
 let edge_to_prev_load o n = match o with
 | None -> No
@@ -184,23 +184,33 @@ let get_fence n =
 
   let no_check_load init st = init,Misc.identity,st
 
+  let rec collect_inserts = function
+    | [] -> [],[]
+    | n::ns as all ->  match  n.C.edge.E.edge with
+      | E.Insert f ->
+          let fs,ns = collect_inserts ns in
+          f::fs,ns
+      | _ -> [],all
+
   let rec compile_proc pref chk loc_writes st p ro_prev init ns = match ns with
   | [] -> init,pref [],(C.EventMap.empty,[]),st
   | n::ns ->
       if O.verbose > 1 then eprintf "COMPILE PROC: <%s>\n" (C.str_node n);
       begin match  n.C.edge.E.edge with
       | E.Node _ ->
-          compile_proc pref chk loc_writes st p ro_prev init ns
+          let fs,ns =  collect_inserts ns in
+          compile_proc
+            (fun is ->
+              pref
+                (List.fold_right
+                   (fun f is -> Comp.emit_fence f::is)
+                   fs is))
+            chk loc_writes st p ro_prev init ns
       | E.Insert f ->
-          let nxt = C.find_edge (fun e -> (*not (E.is_insert e.E.edge)*) e=e) n.C.next in
-          if E.is_ext nxt.C.edge then
-            compile_proc (fun is -> pref (Comp.emit_fence f::is))
-              chk loc_writes st p ro_prev init ns
-          else
-            let init,is,finals,st =
-              compile_proc pref chk loc_writes st p ro_prev init ns in
-            init,Comp.emit_fence f::is,finals,st
-      |_ ->
+          let init,is,finals,st =
+            compile_proc pref chk loc_writes st p ro_prev init ns in
+          init,Comp.emit_fence f::is,finals,st
+      | _ ->
           let o,init,i,st = emit_access ro_prev st p init n in
           let nchk,add_check =
             match O.docheck,n.C.evt.C.dir,o,ns with
@@ -215,8 +225,8 @@ let get_fence n =
           add_init_check chk p o init,
           i@
           mk_c
-        (match get_fence n with 
-           Some fe -> Comp.emit_fence fe::is  
+        (match get_fence n with
+           Some fe -> Comp.emit_fence fe::is
            | _ -> is),
           (if
             StringSet.mem n.C.evt.C.loc loc_writes && not (U.do_poll n)
@@ -491,7 +501,7 @@ let min_max xs =
       in
       do_rec lab []
 
-  let gather_final_oks p lab = 
+  let gather_final_oks p lab =
     let oks = list_of_init_ok_locs p lab in
     let rec do_rec oks k =
       match oks with
@@ -528,7 +538,7 @@ let min_max xs =
                 | Local -> add_co_local_check lsts n st p i c f
                 | Avoid|Accept|Enforce|Three|Four|Infinity -> i,c,f,st in
           let i,c,st = Comp.postlude st p i c in
-          let foks = gather_final_oks p (A.current_label st) in 
+          let foks = gather_final_oks p (A.current_label st) in
           let i,cs,(ms,fs),ios = do_rec (p+1) i ns in
           let io = U.io_of_thread n in
           i,c::cs,(C.union_map m ms,f@foks@fs),io::ios in

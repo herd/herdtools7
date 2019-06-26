@@ -43,7 +43,7 @@ module type S = sig
   and type dp = A.dp
   and type edge = E.edge
   
-  module C : Cycle.S with type edge=E.edge and type atom = A.atom
+  module C : Cycle.S with type fence = A.fence and type edge=E.edge and type atom = A.atom
 end
 
 module Make(C:Config) (A:Arch_gen.S) =

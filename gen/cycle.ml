@@ -18,6 +18,7 @@ open Printf
 open Code
 
 module type S = sig
+  type fence
   type edge
   type atom
 
@@ -97,9 +98,9 @@ module type Config = sig
 end
 
 module Make (O:Config) (E:Edge.S) :
-    S with type edge = E.edge and type atom = E.atom
+    S with type fence = E.fence and type edge = E.edge and type atom = E.atom
 = struct
-
+  type fence = E.fence
   type edge = E.edge
   type atom = E.atom
 
@@ -138,7 +139,7 @@ module Make (O:Config) (E:Edge.S) :
       mutable prev : node ;
     }
 
-  let debug_dir d = match d with 
+  let debug_dir d = match d with
          Some W -> "W" | Some R -> "R" | Some J -> "J" | None -> "_"
 
   let debug_atom a =
@@ -258,7 +259,6 @@ let find_non_insert m = find_edge non_insert m
 let find_non_insert_prev m = find_edge_prev non_insert m
 
 let non_pseudo e = E.is_non_pseudo e.E.edge
-
 let find_non_pseudo m = find_edge non_pseudo m
 let find_non_pseudo_prev m = find_edge_prev non_pseudo m
 
@@ -372,7 +372,7 @@ let is_rmw_edge e = match e.E.edge with
 let is_rmw d e = match d with
 | R -> is_rmw_edge e.edge
 | W -> is_rmw_edge e.prev.edge
-| J -> is_rmw_edge e.edge 
+| J -> is_rmw_edge e.edge
 
 let set_dir n0 =
   let rec do_rec m =
@@ -386,7 +386,7 @@ let set_dir n0 =
         end ;
         let n = find_non_insert m.next in
         if not (E.is_ext p.edge && E.is_ext n.edge) then
-           Warn.fatal "Node pseudo edge %s appears in-between  %s..%s (both neighbours must be external edges)"
+           Warn.fatal "Node pseudo edge %s appears in-between  %s..%s (one neighbour at least must be an external edge)"
            (E.pp_edge m.edge)  (E.pp_edge p.edge)  (E.pp_edge n.edge)
       end ;
 (*    eprintf "p=%a, m=%a\n" debug_node p debug_node m  ; *)
