@@ -19,7 +19,7 @@ include Arch.MakeArch(struct
 
   include Arch.MakeCommon(AArch64Base)
 
-  let match_kr subs kr kr' = match kr,kr' with
+  let match_kr subs kr kr' =  match kr,kr' with
     | K(MetaConst.Meta m),K i ->  add_subs [Cst(m, i)] subs
     | RV(_,r),RV(_,r') -> add_subs [Reg(sr_name r,r')] subs
     | K(MetaConst.Int i),K(j) when i=j -> Some subs
@@ -109,6 +109,8 @@ include Arch.MakeArch(struct
         conv_reg r >> fun r ->
         find_lab lbl >! fun lbl ->
         I_ADDR (r,lbl)
+    | I_RBIT (v,r1,r2) ->
+        conv_reg r1 >> fun r1 -> conv_reg r2 >! fun r2 -> I_RBIT (v,r1,r2)
     | I_LDAR(a,b,r1,r2) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >! fun r2 ->
@@ -223,4 +225,5 @@ include Arch.MakeArch(struct
         conv_reg r >! fun r -> I_IC (op,r)
     | I_DC (op,r) ->
         conv_reg r >! fun r -> I_DC (op,r)
+    | I_MRS (r,sr) -> conv_reg r >! fun r -> I_MRS (r,sr)
 end)
