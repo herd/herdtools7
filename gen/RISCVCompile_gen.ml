@@ -38,6 +38,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
     module AV=RISCV
     open RISCV
     open C
+    open Code
 
 (* Utilities *)
     let zero = AV.Ireg AV.X0
@@ -348,37 +349,39 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
 (**********)
 (* Access *)
 (**********)
-let emit_joker st init = None,init,[],st
+    let emit_joker st init = None,init,[],st
 
-    let emit_access  st p init e = match e.dir with
-    | None -> Warn.fatal "TODO"
-    | Some d ->
-        match d,e.atom with
+    let emit_access  st p init e = match e.dir,e.loc with
+    | None,_ -> Warn.fatal "TODO"
+    | Some d,Data loc ->
+        begin match d,e.atom with
         | Code.R,None ->
-            let r,init,cs,st = LOAD.emit_load AV.Rlx st p init e.loc in
+            let r,init,cs,st = LOAD.emit_load AV.Rlx st p init loc in
             Some r,init,cs,st
         | Code.R,Some (MO mo) ->
-            let r,init,cs,st = LOAD.emit_load mo st p init e.loc  in
+            let r,init,cs,st = LOAD.emit_load mo st p init loc  in
             Some r,init,cs,st
         | Code.R,Some (Atomic (mo1,mo2)) ->
-            let r,init,cs,st = emit_lda mo1 mo2 st p init e.loc  in
+            let r,init,cs,st = emit_lda mo1 mo2 st p init loc  in
             Some r,init,cs,st
         | Code.R,Some (Mixed (sz,o)) ->
-            let r,init,cs,st = emit_load_mixed sz o st p init e.loc in
+            let r,init,cs,st = emit_load_mixed sz o st p init loc in
             Some r,init,cs,st
         | Code.W,None ->
-            let init,cs,st = STORE.emit_store AV.Rlx st p init e.loc e.v in
+            let init,cs,st = STORE.emit_store AV.Rlx st p init loc e.v in
             None,init,cs,st
         | Code.W,(Some (MO mo)) ->
-            let init,cs,st = STORE.emit_store mo st p init e.loc e.v in
+            let init,cs,st = STORE.emit_store mo st p init loc e.v in
             None,init,cs,st
         | Code.W,Some (Atomic (mo1,mo2)) ->
-            let r,init,cs,st = emit_sta mo1 mo2 st p init e.loc e.v in
+            let r,init,cs,st = emit_sta mo1 mo2 st p init loc e.v in
             Some r,init,cs,st
         | Code.W,Some (Mixed (sz,o)) ->
-            let init,cs,st = emit_store_mixed sz o st p init e.loc e.v in
+            let init,cs,st = emit_store_mixed sz o st p init loc e.v in
             None,init,cs,st
         | Code.J, _ -> emit_joker st init
+        end
+    | _,Code _ -> Warn.fatal "No code location for RISCV"
 
     let tr_a = function
       | None -> AV.Rlx
@@ -406,7 +409,7 @@ let emit_joker st init = None,init,[],st
           "bad atomicity in rmw, acquire on write or release on read"
 
     let emit_exch st p init er ew =
-      let rA,init,st = next_init st p init er.loc in
+      let rA,init,st = next_init st p init (Code.as_data er.loc) in
       let rR,st = next_reg st in
       let rW,init,csv,st = U.emit_mov st p init ew.v in
       let mo = tr_swap er.C.atom ew.C.atom in
@@ -420,7 +423,7 @@ let emit_joker st init = None,init,[],st
 (* Fences *)
 (**********)
 
-    let emit_fence f = Instruction (AV.FenceIns f)
+    let emit_fence _ _ _ f = [Instruction (AV.FenceIns f)]
     let stronger_fence = strong
 
         (* Dependencies *)
@@ -433,36 +436,39 @@ let emit_joker st init = None,init,[],st
     let emit_access_dep_addr st p init e rd =
       let r2,st = next_reg st in
       let c = calc0 r2 rd in
-      match e.dir with
-      | None -> Warn.fatal "TODO"
-      | Some d ->
-          match d,e.atom with
+      match e.dir,e.loc with
+      | None,_ -> Warn.fatal "TODO"
+      | Some d,Data loc ->
+          begin match d,e.atom with
           | Code.R,None ->
-              let r,init,cs,st = LOAD.emit_load_idx AV.Rlx st p init e.loc r2 in
+              let r,init,cs,st = LOAD.emit_load_idx AV.Rlx st p init loc r2 in
               Some r,init, Instruction c::cs,st
           | Code.R,Some (MO mo) ->
-              let r,init,cs,st = LOAD.emit_load_idx mo st p init e.loc r2 in
+              let r,init,cs,st = LOAD.emit_load_idx mo st p init loc r2 in
               Some r,init, Instruction c::cs,st
           | Code.R,Some (Atomic (mo1,mo2)) ->
-              let r,init,cs,st = emit_lda_idx mo1 mo2  st p init e.loc r2 in
+              let r,init,cs,st = emit_lda_idx mo1 mo2  st p init loc r2 in
               Some r,init, Instruction c::cs,st
           | Code.W,None ->
               let init,cs,st =
-                STORE.emit_store_idx AV.Rlx st p init e.loc r2 e.v in
+                STORE.emit_store_idx AV.Rlx st p init loc r2 e.v in
               None,init,Instruction c::cs,st
           | Code.W,Some (MO mo) ->
-              let init,cs,st = STORE.emit_store_idx mo st p init e.loc r2 e.v in
+              let init,cs,st = STORE.emit_store_idx mo st p init loc r2 e.v in
               None,init,Instruction c::cs,st
           | Code.W,Some (Atomic (mo1,mo2)) ->
-              let r,init,cs,st = emit_sta_idx mo1 mo2 st p init e.loc r2 e.v in
+              let r,init,cs,st = emit_sta_idx mo1 mo2 st p init loc r2 e.v in
               Some r,init,Instruction c::cs,st
           | _,Some (Mixed _) ->
               Warn.fatal "addr dep with mixed"
           | Code.J, _ -> emit_joker st init
+          end
+      | _,Code _ -> Warn.fatal "No code location for RISCV"
 
     let emit_exch_dep_addr st p init er ew rd =
       let r2,st = next_reg st in let c = calc0 r2 rd in
-      let rA,init,st = next_init st p init er.loc in
+      let loc = Code.as_data er.loc in
+      let rA,init,st = next_init st p init loc in
       let rW,init,csv,st = U.emit_mov st p init ew.v in
       let rR,st = next_reg st in
       let mo = tr_swap er.C.atom ew.C.atom in
@@ -471,31 +477,32 @@ let emit_joker st init = None,init,[],st
       Instruction c::Instruction (add r2 rA r2)::csv@[swap],st
 
     let emit_access_dep_data st p init e  r1 =
-      match e.dir with
-      | None -> Warn.fatal "TODO"
-      | Some Code.R -> Warn.fatal "data dependency to load"
-      | Some Code.W ->
+      match e.dir,e.loc with
+      | None,_ -> Warn.fatal "TODO"
+      | Some Code.R,_ -> Warn.fatal "data dependency to load"
+      | Some Code.W,Data loc ->
           let r2,st = next_reg st in
           let cs2 =
             [Instruction (calc0 r2 r1) ;
              Instruction (ori r2 r2 e.v) ; ] in
           begin match e.atom with
           | None ->
-              let init,cs,st = STORE.emit_store_reg AV.Rlx st p init e.loc r2 in
+              let init,cs,st = STORE.emit_store_reg AV.Rlx st p init loc r2 in
               None,init,cs2@cs,st
           | Some (MO mo) ->
-              let init,cs,st = STORE.emit_store_reg mo st p init e.loc r2 in
+              let init,cs,st = STORE.emit_store_reg mo st p init loc r2 in
               None,init,cs2@cs,st
           | Some (Atomic (mo1,mo2)) ->
-              let r,init,cs,st = emit_sta_reg mo1 mo2 st p init e.loc r2 in
+              let r,init,cs,st = emit_sta_reg mo1 mo2 st p init loc r2 in
               Some r,init,cs2@cs,st
           | Some (Mixed _) ->
               Warn.fatal "data dep with mixed"
           end
-      | Some Code.J -> emit_joker st init
+      | Some Code.J,_ -> emit_joker st init
+      | _,Code _ -> Warn.fatal "No code location for RISCV"
 
     let insert_isb isb cs1 cs2 =
-      if isb then cs1@[emit_fence FenceI]@cs2
+      if isb then cs1@emit_fence 0 [] C.nil FenceI@cs2
       else cs1@cs2
 
     let emit_access_ctrl isb st p init e r1 =
@@ -543,7 +550,7 @@ let emit_joker st init = None,init,[],st
       let rec do_rec i k =
         match i with
         | 0 -> k
-        | n -> let k' = Instruction (J (Label.exit p n))::
+        | n -> let k' = Instruction (RISCV.J (Label.exit p n))::
                         Label (Label.fail p n,Nop)::k
                in do_rec (i-1) k'
       in
@@ -568,7 +575,7 @@ let emit_joker st init = None,init,[],st
 
    let postlude st p init cs =
       if does_fail p st then
-        let init,okcs,st = STORE.emit_store AV.Rlx st p init Code.ok 0 in
+        let init,okcs,st = STORE.emit_store AV.Rlx st p init Code.ok_str 0 in
         init,
         cs@
         (list_of_fail_labels p st)@

@@ -43,8 +43,13 @@ functor (Cfg:Config) ->
             A.init ->
               string -> A.arch_reg * A.init * A.st
 
+    val find_init : Code.proc -> A.init -> string -> A.arch_reg
+
     val emit_const :
         A.st -> Code.proc -> A.init -> int -> A.reg option * A.init * A.st
+
+    val emit_nop :
+        A.st -> Code.proc -> A.init -> string -> A.reg * A.init * A.st
 
     val emit_mov :
         A.st ->

@@ -25,8 +25,8 @@ end
 module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
   sig
 (* Coherence utilities *)
-    type cos0 =  (Code.loc * (C.C.node * IntSet.t) list list) list
-    type cos = (Code.loc * (Code.v * IntSet.t) list list) list
+    type cos0 =  (string * (C.C.node * IntSet.t) list list) list
+    type cos = (string * (Code.v * IntSet.t) list list) list
     val pp_coherence : cos0 -> unit
     val last_map : cos0 -> C.C.event StringMap.t
     val compute_cos : cos0 ->  cos
@@ -42,12 +42,13 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     val comp_atoms : C.C.node -> StringSet.t
     val check_here : C.C.node -> bool
     val do_poll : C.C.node -> bool
+    val fetch_val : C.C.node -> Code.v
   end =
   functor (O:Config) -> functor (C:ArchRun.S) ->
   struct
 
-    type cos0 =  (Code.loc * (C.C.node * IntSet.t) list list) list
-    type cos = (Code.loc * (Code.v * IntSet.t) list list) list
+    type cos0 =  (string * (C.C.node * IntSet.t) list list) list
+    type cos = (string * (Code.v * IntSet.t) list list) list
 
     open Printf
     open Code
@@ -126,6 +127,8 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 
     let io_of_detour _n = None
 
+    let add_data f loc k = if Code.is_data loc then f loc::k else k
+
     let compile_prefetch_ios =
 
       let rec do_rec p = function
@@ -135,9 +138,16 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
             let k = do_rec (p+1) rem in
             if i.ploc = o.ploc then k
             else
-              sprintf "%i:%s=F" p i.ploc::
-              sprintf "%i:%s=%s" p o.ploc
-                (match o.pdir with W -> "W" | R -> "R" | J -> "J")::k in
+              add_data
+                (fun loc -> sprintf "%i:%s=F" p (Code.pp_loc loc))
+                i.ploc
+                (add_data
+                   (fun loc ->
+                     sprintf "%i:%s=%s" p
+                       (Code.pp_loc loc)
+                       (match o.pdir with W -> "W" | R -> "R" | J -> "J"))
+                   o.ploc k) in
+
       fun fst ios -> String.concat "," (do_rec fst ios)
 
 (******************)
@@ -200,6 +210,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           | Fr _|Leave CFr|Back CFr -> "Fr"
           | Rf _|Leave CRf|Back CRf -> "Rf"
           | Ws _|Leave CWs|Back CWs -> "Ws"
+          | Iff _ -> "Iff" | Fif _ -> "Fif"
           | _ -> assert false)
         nss
 
@@ -216,9 +227,10 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           if n.C.C.next == n0 then StringSet.empty
           else do_rec n.C.C.next in
         let k =
-          match n.C.C.evt.C.C.dir with
-          | Some W -> StringSet.add n.C.C.evt.C.C.loc k
-          | Some R|None|Some J -> k in
+          let e =  n.C.C.evt in
+          match e.C.C.dir,e.C.C.loc with
+          | Some W,Data loc -> StringSet.add loc k
+          | ((Some R|None|Some J),_)|(Some W,Code _) -> k in
          k in
       do_rec n0
 
@@ -229,11 +241,12 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           if n.C.C.next == n0 then StringSet.empty
           else do_rec n.C.C.next in
         let k =
-          match n.C.C.evt.C.C.atom with
-          | None -> k
-          | Some a ->
+          let e =  n.C.C.evt in
+          match e.C.C.atom,e.C.C.loc with
+          | (None,_)|(_,Code _) -> k
+          | Some a,Data loc ->
               if C.A.worth_final a then
-                StringSet.add n.C.C.evt.C.C.loc k
+                StringSet.add loc k
               else k in
         k in
       do_rec n0
@@ -255,4 +268,10 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       | true,
         (C.E.Rf Ext|C.E.Leave CRf|C.E.Back CRf),1 -> true
       | _,_,_ -> false
+
+    let fetch_val n =
+      match n.C.C.prev.C.C.edge.C.E.edge, n.C.C.edge.C.E.edge with
+      | C.E.Iff _,_ -> 2
+      | _,C.E.Fif _ -> 1
+      | _,_ -> 0
   end

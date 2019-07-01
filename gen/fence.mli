@@ -13,6 +13,16 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
+module type Edge = sig
+  type arch_edge
+
+  val pp_arch_edge : arch_edge -> string
+  val dir_tgt : arch_edge -> Code.dir
+  val dir_src : arch_edge -> Code.dir
+  val loc_sd : arch_edge -> Code.sd
+  val get_ie : arch_edge -> Code.ie
+  val fold_edge : (arch_edge -> 'a -> 'a) -> 'a -> 'a
+end
 
 module type S = sig
 (* Atoms *)

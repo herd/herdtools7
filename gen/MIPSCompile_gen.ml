@@ -246,28 +246,29 @@ let emit_joker st init = None,init,[],st
     let emit_access  st p init e = match e.dir with
     | None -> Warn.fatal "MIPSCompile.emit_access"
     | Some d ->
-        match d,e.atom with
-        | R,None ->
-            let r,init,cs,st = emit_load st p init e.loc in
+        match d,e.atom,e.loc with
+        | R,None,Data loc ->
+            let r,init,cs,st = emit_load st p init loc in
             Some r,init,cs,st
-        | R,Some Reserve ->
-            let r,init,cs,st = emit_ll st p init e.loc  in
+        | R,Some Reserve,Data loc ->
+            let r,init,cs,st = emit_ll st p init loc  in
             Some r,init,cs,st
-        | R,Some Atomic ->
-            let r,init,cs,st = emit_fno st p init e.loc  in
+        | R,Some Atomic,Data loc ->
+            let r,init,cs,st = emit_fno st p init loc  in
             Some r,init,cs,st
-        | W,None ->
-            let init,cs,st = emit_store st p init e.loc e.v in
+        | W,None,Data loc ->
+            let init,cs,st = emit_store st p init loc e.v in
             None,init,cs,st
-        | W,Some Reserve -> Warn.fatal "No store with reservation"
-        | W,Some Atomic ->
-            let ro,init,cs,st = emit_sta st p init e.loc e.v in
+        | W,Some Reserve,Data _ -> Warn.fatal "No store with reservation"
+        | W,Some Atomic,Data loc ->
+            let ro,init,cs,st = emit_sta st p init loc e.v in
             ro,init,cs,st
-        | _,Some (Mixed _) -> assert false
-        | J, _ -> emit_joker st init
+        | _,Some (Mixed _),Data _ -> assert false
+        | J, _,Data _ -> emit_joker st init
+        | _,_,Code _ -> Warn.fatal "No code location for arch MIPS"
 
     let emit_exch st p init er ew =
-      let rA,init,st = U.next_init st p init er.loc in
+      let rA,init,st = U.next_init st p init (Code.as_data er.loc) in
       let rR,st = _next_reg st in
       let rW,init,csv,st = U.emit_mov st p init ew.v in
       let cs,st = emit_pair p st rR rW rA in
@@ -280,31 +281,33 @@ let emit_joker st init = None,init,[],st
     let emit_access_dep_addr st p init e  r1 =
       let r2,st = _next_reg st in
       let c =  OP (XOR,r2,r1,r1) in
-      match e.dir with
-      | None -> Warn.fatal "TODO"
-      | Some d ->
-          match d,e.atom with
+      match e.dir,e.loc  with
+      | None,_ -> Warn.fatal "TODO"
+      | Some d,Data loc ->
+          begin match d,e.atom with
           | R,None ->
-              let r,init,cs,st = emit_load_idx st p init e.loc r2 in
+              let r,init,cs,st = emit_load_idx st p init loc r2 in
               Some r,init, Instruction c::cs,st
           | R,Some Reserve ->
-              let r,init,cs,st = emit_ll_idx st p init e.loc r2 in
+              let r,init,cs,st = emit_ll_idx st p init loc r2 in
               Some r,init, Instruction c::cs,st
           | R,Some Atomic ->
-              let r,init,cs,st = emit_fno_idx st p init e.loc r2 in
+              let r,init,cs,st = emit_fno_idx st p init loc r2 in
               Some r,init, Instruction c::cs,st
           | W,None ->
-              let init,cs,st = emit_store_idx st p init e.loc r2 e.v in
+              let init,cs,st = emit_store_idx st p init loc r2 e.v in
               None,init,Instruction c::cs,st
           | W,Some Reserve -> Warn.fatal "No store with reservation"
           | W,Some Atomic ->
-              let ro,init,cs,st = emit_sta_idx st p init e.loc r2 e.v in
+              let ro,init,cs,st = emit_sta_idx st p init loc r2 e.v in
               ro,init,Instruction c::cs,st
           | _,Some (Mixed _) -> assert false
           | J,_ -> emit_joker st init
+          end
+      | _,Code _ -> Warn.fatal "No code location for MIPS"
 
     let emit_exch_dep_addr st p init er ew rd =
-      let rA,init,st = U.next_init st p init er.loc in
+      let rA,init,st = U.next_init st p init (as_data er.loc) in
       let rR,st = _next_reg st in
       let rW,init,csv,st = U.emit_mov st p init ew.v in
       let cs,st = emit_pair p st rR rW tmp1 in
@@ -316,26 +319,27 @@ let emit_joker st init = None,init,[],st
       st
 
     let emit_access_dep_data st p init e  r1 =
-      match e.dir with
-      | None -> Warn.fatal "TODO"
-      | Some R -> Warn.fatal "data dependency to load"
-      | Some W ->
+      match e.dir,e.loc with
+      | None,_ -> Warn.fatal "TODO"
+      | Some R,_ -> Warn.fatal "data dependency to load"
+      | Some W,Data loc ->
           let r2,st = _next_reg st in
           let cs2 =
             [Instruction (OP (XOR,r2,r1,r1)) ;
              Instruction (OPI (ADDU,r2,r2,e.v)) ; ] in
           begin match e.atom with
           | None ->
-              let init,cs,st = emit_store_reg st p init e.loc r2 in
+              let init,cs,st = emit_store_reg st p init loc r2 in
               None,init,cs2@cs,st
           | Some Atomic ->
-              let ro,init,cs,st = emit_sta_reg st p init e.loc r2 in
+              let ro,init,cs,st = emit_sta_reg st p init loc r2 in
               ro,init,cs2@cs,st
           | Some Reserve ->
               Warn.fatal "No store with reservation"
           | Some (Mixed _) -> assert false
           end
-      | Some J -> emit_joker st init
+      | Some J,_ -> emit_joker st init
+      | _,Code _ -> Warn.fatal "No code location for MIPS"
 
     let emit_access_ctrl st p init e r1 =
       let lab = Label.next_label "LC" in
@@ -369,10 +373,7 @@ let emit_joker st init = None,init,[],st
 
 (* Fences *)
 
-    let emit_fence f =
-      Instruction
-        (match f with
-        | Sync -> SYNC)
+    let emit_fence _ _ _ f = [Instruction (match f with Sync -> SYNC)]
 
     let stronger_fence = Sync
 
@@ -417,7 +418,7 @@ let emit_joker st init = None,init,[],st
 
     let postlude st p init cs =
       if does_fail p st then
-        let init,okcs,st = emit_store st p init Code.ok 0 in
+        let init,okcs,st = emit_store st p init (as_data Code.ok) 0 in
         init,
         cs@
         (list_of_fail_labels p st)@

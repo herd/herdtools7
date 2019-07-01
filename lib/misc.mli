@@ -110,6 +110,9 @@ val rem_dups : ('a -> 'a -> bool) -> 'a list -> 'a list
 val (|||) : ('a -> bool) -> ('a -> bool) -> 'a -> bool
 val (&&&) : ('a -> bool) -> ('a -> bool) -> 'a -> bool
 
+(* Fold on booleans *)
+val fold_bool : (bool -> 'a -> 'a) -> 'a -> 'a
+
 (* Array helpers *)
 val array_map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
 

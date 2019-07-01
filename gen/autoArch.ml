@@ -23,7 +23,7 @@ end
 module Make(A:Arch_gen.S) : S
 = struct
   module A = A
-  module E = Edge.Make(A)
+  module E = Edge.Make(Edge.Config)(A)
   module R = Relax.Make(A) (E)
 
   module LogInput = struct

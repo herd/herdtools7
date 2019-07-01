@@ -18,6 +18,7 @@ module Config = struct
   let naturalsize = MachSize.Word
   let moreedges = false
   let fullmixed = false
+  let variant _ = false
 end
 
 module Make
@@ -25,8 +26,9 @@ module Make
       val naturalsize : MachSize.sz
       val moreedges : bool
       val fullmixed : bool
+      val variant : Variant_gen.t -> bool
     end) = struct
-
+let do_self = C.variant Variant_gen.Self
 open Code
 open Printf
 
@@ -158,24 +160,35 @@ let overwrite_value v ao w = match ao with
 (* Fences *)
 (**********)
 
-type fence = barrier
+type fence = | Barrier of barrier | CacheSync of bool
 
 let is_isync = function
-  | ISB -> true
+  | Barrier ISB -> true
   | _ -> false
 
-let compare_fence = barrier_compare
+let compare_fence b1 b2 = match b1,b2 with
+| Barrier _,CacheSync _ -> -1
+| CacheSync b1 ,CacheSync b2-> compare b1 b2
+| Barrier b1,Barrier b2 -> barrier_compare b1 b2
+| CacheSync _,Barrier _ -> +1
 
-let default = DMB (SY,FULL)
+
+let default = Barrier (DMB (SY,FULL))
 let strong = default
 
-let pp_fence f = do_pp_barrier "." f
+let pp_fence f = match f with
+| Barrier f -> do_pp_barrier "." f
+| CacheSync isb -> sprintf "CacheSync%s" (if isb then "Isb" else "")
 
-let fold_cumul_fences f k = do_fold_dmb_dsb C.moreedges f k
+let fold_cumul_fences f k =
+   do_fold_dmb_dsb C.moreedges (fun b k -> f (Barrier b) k) k
 
-let fold_all_fences f k = fold_barrier  C.moreedges f k
+let fold_all_fences f k =
+  fold_barrier  C.moreedges (fun b k -> f (Barrier b) k)
+    (if do_self then Misc.fold_bool (fun b k -> f  (CacheSync b) k) k else k)
 
 let fold_some_fences f k =
+  let f = fun b k -> f (Barrier b) k in
   let k = f ISB k  in
   let k = f (DMB (SY,FULL)) k in
   let k = f (DMB (SY,ST)) k in
@@ -183,13 +196,13 @@ let fold_some_fences f k =
   k
 
 let orders f d1 d2 = match f,d1,d2 with
-| ISB,_,_ -> false
-| (DSB (_,FULL)|DMB (_,FULL)),_,_ -> true
-| (DSB (_,ST)|DMB (_,ST)),W,W -> true
-| (DSB (_,ST)|DMB (_,ST)),_,_ -> false
-| (DSB (_,LD)|DMB (_,LD)),Code.R,(W|Code.R) -> true
-| (DSB (_,LD)|DMB (_,LD)),_,_ -> false
-
+| Barrier ISB,_,_ -> false
+| Barrier (DSB (_,FULL)|DMB (_,FULL)),_,_ -> true
+| Barrier (DSB (_,ST)|DMB (_,ST)),W,W -> true
+| Barrier (DSB (_,ST)|DMB (_,ST)),_,_ -> false
+| Barrier (DSB (_,LD)|DMB (_,LD)),Code.R,(W|Code.R) -> true
+| Barrier (DSB (_,LD)|DMB (_,LD)),_,_ -> false
+| CacheSync _,_,_ -> true
 
 let var_fence f r = f default r
 
@@ -241,6 +254,28 @@ let applies_atom_rmw rmw ar aw = match rmw,ar,aw with
 let show_rmw_reg = function
 | StOp _ -> false
 | LdOp _|Cas|Swp|LrSc -> true
+
+type arch_edge = IFF of ie | FIF of ie
+
+let pp_arch_edge = function
+  | IFF ie -> sprintf "Iff%s" (pp_ie ie)
+  | FIF ie -> sprintf "Fif%s" (pp_ie ie)
+
+
+let dir_tgt = function
+| IFF _ -> R
+| FIF _ -> W
+
+let dir_src = function
+| IFF _ -> W
+| FIF _ -> R
+
+let loc_sd (IFF _|FIF _) = Code.Same
+
+let get_ie e = match e with
+| IFF ie|FIF ie -> ie
+
+let fold_edge f r = Code.fold_ie (fun ie r -> f (IFF ie) (f (FIF ie) r)) r
 
 include
     ArchExtra_gen.Make

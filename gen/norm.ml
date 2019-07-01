@@ -20,6 +20,7 @@ open Printf
 let arch = ref `PPC
 let lowercase = ref false
 let bell = ref None
+let variant = ref (fun (_:Variant_gen.t) -> false)
 let args = ref []
 
 let opts =
@@ -33,6 +34,15 @@ let opts =
     | None -> false
     | Some a -> arch := a ; true)
     Archs.tags "specify architecture"::
+    Util.parse_tag
+    "-variant"
+    (fun tag -> match Variant_gen.parse tag with
+    | None -> false
+    | Some v0 ->
+        let ov = !variant in variant := (fun v -> v = v0 || ov v) ;
+        true)
+    Variant_gen.tags
+    (sprintf "specify variant")::
   []
 
 
@@ -40,10 +50,11 @@ let opts =
 module type Config = sig
   val lowercase : bool
   val sufname : string option
+  val variant : Variant_gen.t -> bool
 end
 
 module Make(Co:Config) (A:Fence.S) = struct
-  module E = Edge.Make(A)
+  module E = Edge.Make(Co)(A)
   module N = Namer.Make(A)(E)
   module Norm = Normaliser.Make(Co)(E)
 
@@ -71,6 +82,7 @@ let () =
   let module Co = struct
     let lowercase = !lowercase
     let sufname = None
+    let variant = !variant
   end in
   let module Build = Make(Co) in
   (match !arch with

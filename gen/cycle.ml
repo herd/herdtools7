@@ -54,6 +54,7 @@ module type S = sig
 (* Find, may raise Not_found *)
   val find_node : (node -> bool) -> node -> node
   val find_node_prev : (node -> bool) -> node -> node
+  val find_prev_code : node -> string
 
   val find_edge : (edge -> bool) -> node -> node
   val find_edge_prev : (edge -> bool) -> node -> node
@@ -81,9 +82,11 @@ module type S = sig
 
 
 (* Return coherence orders *)
-  val coherence : node -> (loc * (node * IntSet.t) list list) list
+  val coherence : node -> (string * (node * IntSet.t) list list) list
 (* All locations *)
-  val get_globals : node -> loc list
+  val get_globals : node -> string list
+(* All (modified) code labels *)
+  val get_labels : node -> string list
 
 end
 
@@ -115,7 +118,7 @@ module Make (O:Config) (E:Edge.S) :
         idx : int ; }
 
   let evt_null =
-    { loc="*" ; v=(-1) ; dir=None; proc=(-1); atom=None; rmw=false;
+    { loc=Code.loc_none ; v=(-1) ; dir=None; proc=(-1); atom=None; rmw=false;
       cell=(-1); idx=(-1); }
 
   let make_wsi idx loc = { evt_null with dir=Some W ; loc=loc; idx=idx; v=0;}
@@ -147,9 +150,16 @@ module Make (O:Config) (E:Edge.S) :
 
   let debug_evt e =
     if O.hexa then
-      sprintf "%s%s %s 0x%x" (debug_dir e.dir) (debug_atom e.atom) e.loc e.v
+      sprintf "%s%s %s 0x%x"
+        (debug_dir e.dir)
+        (debug_atom e.atom)
+        (Code.pp_loc e.loc)
+        e.v
     else
-      sprintf "%s%s %s %i" (debug_dir e.dir) (debug_atom e.atom) e.loc e.v
+      sprintf "%s%s %s %i"
+        (debug_dir e.dir)
+        (debug_atom e.atom)
+        (Code.pp_loc e.loc) e.v
 
   let debug_edge = E.pp_edge
 
@@ -251,6 +261,18 @@ let find_node_prev p n =
       else do_rec m in
   do_rec n
 
+let find_prev_code n =
+  let rec do_rec m =
+(*    eprintf "find_prev_code, node %a\n%!" debug_node m ; *)
+    match m.evt.loc with
+    | Code c -> c
+    | Data _  ->
+        let m = m.prev in
+        if m == n then raise Not_found
+        else do_rec m in
+  do_rec n
+
+
 let find_edge p = find_node (fun n -> p n.edge)
 let find_edge_prev p = find_node_prev (fun n -> p n.edge)
 
@@ -282,7 +304,9 @@ let make_loc n =
   if n < locs_len then locs.(n)
   else Printf.sprintf "x%02i" (n-locs_len)
 
-let next_loc (loc0,vs) = make_loc loc0,(loc0+1,vs)
+let next_loc e (loc0,vs) = match e.E.edge with
+| E.Iff _|E.Fif _ -> Code (Label.next_label "Lself"),(loc0,vs)
+| _ -> Code.Data (make_loc loc0),(loc0+1,vs)
 
 let same_loc e = match E.loc_sd e with
     | Same -> true
@@ -442,9 +466,9 @@ let set_diff_loc st n0 =
   let rec do_rec st p m =
     let loc,st =
       if same_loc p.edge then p.evt.loc,st
-      else next_loc st in
+      else next_loc m.edge st in
     m.evt <- { m.evt with loc=loc; } ;
-(*    eprintf "LOC SET: %a\n%!" debug_node m ; *)
+(*    eprintf "LOC SET: %a [p=%a]\n%!" debug_node m debug_node p; *)
     if m.next != n0 then do_rec st p.next m.next
     else begin
       if m.evt.loc = n0.evt.loc then
@@ -458,7 +482,10 @@ let set_diff_loc st n0 =
 
 (* Loc is not changing *)
 let set_same_loc st n0 =
-  let loc,st = next_loc st in
+  let n1 =
+    try find_node (fun n -> E.is_com n.edge) n0
+    with Not_found -> n0 in
+  let loc,st = next_loc n1 .edge st in
   let rec do_rec m =
     m.evt <- { m.evt with loc=loc; } ;
     if m.next != n0 then do_rec m.next in
@@ -501,10 +528,15 @@ let set_same_loc st n0 =
     | n::ns ->
         begin match n.evt.dir with
         | Some W ->
-            n.evt <- { n.evt with v = tr_value n.evt next; } ;
-            set_cell n old ;
-            do_set_write_val n.evt.cell
-              (if E.is_node n.edge.E.edge then next else next_co next) ns
+            begin match n.evt.loc with
+            | Data _ ->
+                n.evt <- { n.evt with v = tr_value n.evt next; } ;
+                set_cell n old ;
+                do_set_write_val n.evt.cell
+                  (if E.is_node n.edge.E.edge then next else next_co next) ns
+            | Code _ ->
+                do_set_write_val old next ns
+            end
         | (Some R) | Some J |None ->  do_set_write_val old next ns
         end
 
@@ -528,7 +560,7 @@ let set_same_loc st n0 =
           find_node
             (fun m -> match m.prev.edge.E.edge with
             | E.Fr _|E.Rf _|E.Ws _|E.Leave _|E.Back _
-            | E.Hat|E.Rmw _ -> true
+            | E.Hat|E.Rmw _|E.Iff _|E.Fif _ -> true
             | E.Po _|E.Dp _|E.Fenced _|E.Insert _|E.Node _ -> false
             | E.Id -> assert false) n in
         split_one_loc m
@@ -609,7 +641,9 @@ let finish n =
     debug_cycle stderr n ;
     eprintf "FINAL VALUES [%s]\n"
       (String.concat ","
-         (List.map (fun (loc,v) -> sprintf "%s -> 0x%x" loc v) vs))
+         (List.map
+            (fun (loc,v) -> sprintf "%s -> 0x%x"
+                (Code.pp_loc loc) v) vs))
   end ;
   ()
 
@@ -761,7 +795,7 @@ let merge_changes n nss =
 let rec group_rec x ns = function
   | [] -> [x,List.rev ns]
   | (y,n)::rem ->
-      if String.compare x y = 0 then group_rec x (n::ns) rem
+      if Code.loc_compare x y = 0 then group_rec x (n::ns) rem
       else (x,List.rev ns)::group_rec  y [n] rem
 
   let group = function
@@ -770,7 +804,7 @@ let rec group_rec x ns = function
 
   let by_loc xvs =
     let r = group xvs in
-    let r =  List.stable_sort (fun (x,_) (y,_) -> String.compare x y) r in
+    let r =  List.stable_sort (fun (x,_) (y,_) -> Code.loc_compare x y) r in
     let r =
       List.map
         (fun (x,ns) -> match ns with
@@ -844,22 +878,38 @@ let rec group_rec x ns = function
               [loc,[List.map snd xs]]
         else
           Warn.fatal "Unique location" in
-    List.map
-      (fun (loc,ns) ->
-        loc,
-        List.map
-          (List.map (fun n -> n,get_observers n))
-          ns)
-      r
+    List.fold_right
+      (fun (loc,ns) k ->
+        match loc with
+        | Data loc ->
+            (loc,
+            List.map
+              (List.map (fun n -> n,get_observers n))
+              ns)::k
+        | Code _ ->  k)
+      r []
 
-(* Get all shared locations *)
-  let get_globals m =
+(* Get all shared locations/labels *)
+
+  let get_rec get m =
     let rec do_rec k n =
       if n.next == m then k
       else
-        do_rec (n.evt.loc::k) n.next in
+        let k = get n.evt.loc k in
+        do_rec k n.next in
     let locs = do_rec [] m in
     StringSet.elements (StringSet.of_list locs)
+
+
+  let get_globals m =
+    get_rec
+      (fun loc k -> match loc with Data loc -> loc::k | Code _ -> k)
+      m
+
+  let get_labels m =
+    get_rec
+      (fun loc k -> match loc with Code loc -> loc::k | Data _ -> k)
+      m
 
 
 end

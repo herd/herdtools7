@@ -22,14 +22,17 @@ type t =
   | Mixed
 (* Lift the default restriction of mixed-size annotation to depth one *)
   | FullMixed
+(* Self-modifying code *)
+  | Self
 
-let tags = ["AsAmo";"ConstsInInit";"Mixed";"FullMixed"]
+let tags = ["AsAmo";"ConstsInInit";"Mixed";"FullMixed";"Self"]
 
 let parse tag = match Misc.lowercase tag with
 | "asamo" -> Some AsAmo
 | "constsininit" -> Some ConstsInInit
 | "mixed" -> Some Mixed
 | "fullmixed" -> Some FullMixed
+| "self" -> Some Self
 | _ -> None
 
 let pp = function
@@ -37,3 +40,4 @@ let pp = function
   | ConstsInInit -> "ConstsInInit"
   | Mixed -> "Mixed"
   | FullMixed -> "FullMixed"
+  | Self -> "Self"

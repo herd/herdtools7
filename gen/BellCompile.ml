@@ -84,7 +84,7 @@ let emit_joker st init = None,init,[],st
       let rA,st = next_reg st in
       rA,init,pseudo [ld_tagged rA x a],st
 
-    let emit_load st p init x = emit_load_tagged st p init x []
+    let emit_load st p init x = emit_load_tagged st p init x  []
 
     let emit_load_idx_tagged st _p init x idx a =
       let rA,st = next_reg st in
@@ -171,20 +171,21 @@ let emit_load_not_eq _ = assert false
     let emit_access  st p init e = match e.dir with
     | None -> Warn.fatal "BellCompile.emit_access"
     | Some d ->
-        match d,e.atom with
-        | R,None ->
-            let r,init,cs,st = emit_load st p init e.loc in
+        match d,e.atom,e.loc with
+        | R,None,Data loc ->
+            let r,init,cs,st = emit_load st p init loc in
             Some r,init,cs,st
-        | R,Some a ->
-            let r,init,cs,st = emit_load_tagged st p init e.loc a in
+        | R,Some a,Data loc ->
+            let r,init,cs,st = emit_load_tagged st p init loc a in
             Some r,init,cs,st
-        | W,None ->
-            let init,cs,st = emit_store st p init e.loc e.v in
+        | W,None,Data loc ->
+            let init,cs,st = emit_store st p init loc e.v in
             None,init,cs,st
-        | W,Some a ->
-            let init,cs,st = emit_store_tagged st p init e.loc e.v a in
+        | W,Some a,Data loc ->
+            let init,cs,st = emit_store_tagged st p init loc e.v a in
             None,init,cs,st
-        | J,_ -> emit_joker st init 
+        | J,_,_ -> emit_joker st init
+        | _,_,Code _ -> Warn.fatal "No code location in Bell"
 
 (* Dubious... *)
     let _tr_a ar aw = match ar,aw with
@@ -204,7 +205,7 @@ let emit_rmw _ = assert false
 (* Fences *)
 (**********)
 
-    let emit_fence f =  Instruction (Pfence f)
+    let emit_fence _ _ _ f =  [Instruction (Pfence f)]
     let _emit_fence_tagged o a = Instruction (Pfence(Fence(a,o)))
 
     let stronger_fence = strong
@@ -222,37 +223,39 @@ let emit_rmw _ = assert false
     let emit_access_dep_addr st p init e r1 =
       let idx,st = next_reg st in
       let cA = calc_zero idx r1 in
-      begin match Misc.as_some e.dir,e.atom with
-      | R,None ->
-          let rC,init,cs,st = emit_load_idx st p init e.loc idx in
+      begin match Misc.as_some e.dir,e.atom,e.loc with
+      | R,None,Data loc ->
+          let rC,init,cs,st = emit_load_idx st p init loc idx in
           Some rC,init,cA::cs,st
-      | R,Some a ->
-          let rC,init,cs,st = emit_load_idx_tagged st p init e.loc idx a in
+      | R,Some a,Data loc ->
+          let rC,init,cs,st = emit_load_idx_tagged st p init loc idx a in
           Some rC,init,cA::cs,st
-      | W,None ->
-          let init,cs,st = emit_store_idx st p init e.loc e.v idx in
+      | W,None,Data loc ->
+          let init,cs,st = emit_store_idx st p init loc e.v idx in
           None,init,cA::cs,st
-      | W,Some a ->
-          let init,cs,st = emit_store_idx_tagged st p init e.loc e.v idx a in
+      | W,Some a,Data loc ->
+          let init,cs,st = emit_store_idx_tagged st p init loc e.v idx a in
           None,init,cA::cs,st
-      | J,_ -> emit_joker st init
+      | J,_,Data _ -> emit_joker st init
+      | _,_,Code _ -> Warn.fatal "No code location for Bell"
       end
 
-    let emit_access_dep_data st p init e r1 = match e.dir with
-    | None ->   Warn.fatal "BellCompile.emit_access_dep_data"
-    | Some R ->  Warn.fatal "data dependency to load"
-    | Some W ->
+    let emit_access_dep_data st p init e r1 = match e.dir,e.loc with
+    | None,_ ->   Warn.fatal "BellCompile.emit_access_dep_data"
+    | Some R,_ ->  Warn.fatal "data dependency to load"
+    | Some W,Data loc ->
         let r2,st = next_reg st in
         let cs2 =  [calc_zero r2 r1;Instruction (addk r2 r2 e.v);] in
         begin match e.atom with
         | None ->
-            let init,cs,st = emit_store_reg st p init e.loc r2 in
+            let init,cs,st = emit_store_reg st p init loc r2 in
             None,init,cs2@cs,st
         | Some a ->
-            let init,cs,st = emit_store_reg_tagged st p init e.loc r2 a in
+            let init,cs,st = emit_store_reg_tagged st p init loc r2 a in
             None,init,cs2@cs,st
         end
-    | Some J -> emit_joker st init
+    | Some J,Data _ -> emit_joker st init
+    | _,Code _ -> Warn.fatal "No code location for Bell"
 
 let emit_access_ctrl st p init e r1 v1 =
   if Cfg.realdep then
@@ -340,8 +343,8 @@ let emit_rmw_dep _ = assert false
         Instruction (branchcc tempo1 lab)::k),
         next_label_st st
 
-    let check_load  p r e init st = 
-      let cs,st = do_check_load p st r e in 
+    let check_load  p r e init st =
+      let cs,st = do_check_load p st r e in
       init,cs,st
 
 (* Postlude for adding exit label *)
@@ -356,15 +359,15 @@ let emit_rmw_dep _ = assert false
 
     let does_exit p cs st = does_jump (Label.exit p (current_label st)) cs
 
-    let list_of_exit_labels p st = 
+    let list_of_exit_labels p st =
       let rec do_rec i k =
         match i with
         | 0 -> k
-        | n -> let k' = Label (Label.exit p n,Nop)::k 
+        | n -> let k' = Label (Label.exit p n,Nop)::k
                in do_rec (i-1) k'
       in
     do_rec (current_label st) []
- 
+
     let postlude st p init cs =
       if does_exit p cs st then
        init,cs@(list_of_exit_labels p st),st

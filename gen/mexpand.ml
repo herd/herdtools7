@@ -22,11 +22,10 @@ let opts =  [Util.arch_opt arch]
 
 
 module type Config = sig
-
 end
 
 module Make(Co:Config) (A:Arch_gen.S) = struct
-  module E = Edge.Make(A)
+  module E = Edge.Make(Edge.Config)(A)
 
   let parse_line s =
     try

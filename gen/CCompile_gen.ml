@@ -49,7 +49,7 @@ module Make(O:Config) : Builder.S
         include CArch_gen
         let deftype = O.typ
       end
-      module E = Edge.Make(A)
+      module E = Edge.Make(Edge.Config)(A)
 
       let () = match O.show with
       | Some s -> begin E.show s ; exit 0 end
@@ -79,7 +79,7 @@ module Make(O:Config) : Builder.S
 
 (* Typing *)
       let type_event env e =
-        let loc = e.C.loc in
+        let loc = as_data e.C.loc in
         let ty = match e.C.atom with
         | Some _ -> A.Atomic A.deftype
         | None  -> A.Plain A.deftype in
@@ -121,7 +121,7 @@ module Make(O:Config) : Builder.S
       | _ -> A.Load loc
 
       let compile_store pdp e =
-        let loc = A.Loc e.C.loc in
+        let loc = A.Loc (as_data e.C.loc) in
         let eloc =  mk_eloc pdp loc in
         let v = e.C.v in
         let ev = match  pdp with
@@ -251,30 +251,30 @@ module Make(O:Config) : Builder.S
 
       let compile_access pdp st p n =
         let e = n.C.evt in
-        if e.C.rmw then match  e.C.dir with
-        | Some R ->
+        if e.C.rmw then match e.C.dir,e.C.loc with
+        | Some R,Data loc ->
             let v = n.C.next.C.evt.C.v in
-            let loc = A.Loc e.C.loc in
+            let loc = A.Loc loc in
             let mo = e.C.atom in
             let r,i,st =
               compile_excl_assertvalue e.C.v st p mo loc v in
             Some r,i,st
-        | Some W|None -> None,A.Nop,st
-        | Some J -> assert false
-        else match e.C.dir with
-        | Some R ->
-            let loc = A.Loc e.C.loc in
+        | (Some W|None),_ -> None,A.Nop,st
+        | (Some J,_)|(_,Code _) -> assert false
+        else match e.C.dir,e.C.loc with
+        | Some R,Data loc ->
+            let loc = A.Loc loc in
             let mo = e.C.atom in
             let r,i,st =
               (if U.do_poll n then compile_load_one
               else compile_load_assertvalue pdp e.C.v)
                 st p mo loc in
             Some r,i,st
-        | Some W ->
+        | Some W,Data _ ->
             let i = compile_store pdp e in
             None,i,st
-        | Some J -> assert false
-        | None -> None,A.Nop,st
+        | (None,Data _) -> None,A.Nop,st
+        | (Some J,_)|(_,Code _) -> assert false
 
 (* Lift definitions *)
       module RegSet =
@@ -514,8 +514,10 @@ module Make(O:Config) : Builder.S
             with NoObserver -> build_observers p mo x vss
 
       let rec check_rec env p =
+
         let add_look_loc loc v k =
           if O.optcond then k else (A.Loc loc,IntSet.singleton v)::k in
+
         let open Config in
         function
           | [] -> [],[]
@@ -613,7 +615,7 @@ module Make(O:Config) : Builder.S
         match O.do_observers with
         | Local when U.check_here n ->
             let e = n.C.evt in
-            do_observe_local st p f e.C.atom (A.Loc e.C.loc) e.C.v
+            do_observe_local st p f e.C.atom (A.Loc (as_data e.C.loc)) e.C.v
               n.C.next.C.evt.C.v
         | _ -> A.Nop,f,st
 
@@ -664,11 +666,11 @@ module Make(O:Config) : Builder.S
       | n::ns ->
           let e = n.C.evt in
           let o,fi,st =
-            if e.C.rmw then match  e.C.dir with
-            | Some R ->
+            if e.C.rmw then match  e.C.dir,e.C.loc with
+            | Some R,Data x ->
                 let vw = n.C.next.C.evt.C.v
                 and mo = e.C.atom
-                and loc = A.Loc e.C.loc
+                and loc = A.Loc x
                 and v = e.C.v in
                 if O.cpp then
                   let ce = A.Const v,A.Eq,assert_excl vw mo loc v in
@@ -683,14 +685,14 @@ module Make(O:Config) : Builder.S
                     A.Seq
                       (i,A.If (ce,add_fence n ins,load_checked_not))),
                   st
-            | Some W|None  -> None,add_fence n,st
-            | Some J -> assert false
-            else begin match e.C.dir with
-            | None -> Warn.fatal "TODO"
-            | Some R ->
+            | (Some W|None),_  -> None,add_fence n,st
+            | (Some J,_)|(_,Code _) -> assert false
+            else begin match e.C.dir,e.C.loc with
+            | None,_ -> Warn.fatal "TODO"
+            | Some R,Data x ->
                 let v = e.C.v
                 and mo = e.C.atom
-                and loc = A.Loc e.C.loc in
+                and loc = A.Loc x in
                 if O.cpp then
                   let ce = A.Const v,A.Eq,assertval No mo loc v in
                   None,
@@ -704,11 +706,11 @@ module Make(O:Config) : Builder.S
                     A.Seq
                       (i,A.If (ce,add_fence n ins,load_checked_not))),
                   st
-            | Some W ->
+            | Some W,_ ->
                 None,
                 (fun ins -> A.Seq (compile_store No e,add_fence n ins)),
                 st
-            | Some J -> assert false
+            | (Some J,_)|(_,Code _) -> assert false
             end in
           let is,fs,st = do_compile_proc_check loc_writes st p ns in
           let obs,fs,st = observe_local_check st p fs n in
@@ -799,7 +801,7 @@ module Make(O:Config) : Builder.S
 (* Dump *)
 (********)
 
-      type args = (A.typ * Code.loc) list
+      type args = (A.typ * string) list
 
       let dump_args args =
         let pp =
@@ -905,7 +907,7 @@ module Make(O:Config) : Builder.S
 
 
       let dump_proc_code chan p (a,i) =
-        fprintf chan "P%i (%s) {\n" p (dump_args a) ;
+        fprintf chan "%s (%s) {\n" (pp_proc p) (dump_args a) ;
         dump_ins chan indent1 i ;
         fprintf chan "}\n" ;
         ()

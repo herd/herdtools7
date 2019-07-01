@@ -21,23 +21,23 @@ module type S = sig
 
 (* Accesses *)
   val emit_load :
-      A.st -> Code.proc -> A.init -> Code.loc ->
+      A.st -> Code.proc -> A.init -> string ->
         A.reg * A.init * A.pseudo list * A.st
 
   val emit_load_not_zero :
-      A.st -> Code.proc -> A.init -> Code.loc ->
+      A.st -> Code.proc -> A.init -> string ->
         A.reg * A.init * A.pseudo list * A.st
 
   val emit_load_one :
-      A.st -> Code.proc -> A.init -> Code.loc ->
+      A.st -> Code.proc -> A.init -> string ->
         A.reg * A.init * A.pseudo list * A.st
 
   val emit_load_not_eq :
-      A.st -> Code.proc -> A.init -> Code.loc -> A.reg ->
+      A.st -> Code.proc -> A.init -> string -> A.reg ->
         A.reg * A.init * A.pseudo list * A.st
 
   val emit_load_not_value :
-      A.st -> Code.proc -> A.init -> Code.loc -> int ->
+      A.st -> Code.proc -> A.init -> string -> int ->
         A.reg * A.init * A.pseudo list * A.st
 
   val emit_access : A.st -> Code.proc -> A.init -> C.event ->
@@ -56,7 +56,7 @@ module type S = sig
           A.reg option * A.init * A.pseudo list * A.st
 
 (* Fences *)
-  val emit_fence : A.fence -> A.pseudo
+  val emit_fence : Code.proc -> A.init -> C.node -> A.fence -> A.pseudo list
 
   val stronger_fence : A.fence
 

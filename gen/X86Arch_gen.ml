@@ -101,6 +101,7 @@ let sequence_dp _ _ = assert false
 (*******)
 
 include OneRMW
+include NoEdge
 
 include
     ArchExtra_gen.Make

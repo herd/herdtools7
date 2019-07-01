@@ -326,11 +326,13 @@ let nsplit n xs =
   let yss = do_rec xs (replicate n []) in
   List.map List.rev yss
 
-(* Connectors for predicates *)
+(* Bool's *)
 
 let (|||) p1 p2 = fun e -> p1 e || p2 e
 
 let (&&&) p1 p2 = fun e -> p1 e && p2 e
+
+let fold_bool f k =  f true (f false k)
 
 (* Array *)
 

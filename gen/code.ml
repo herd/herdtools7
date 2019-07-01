@@ -15,15 +15,53 @@
 (****************************************************************************)
 
 (* Event components *)
-type loc = string
-let ok = "ok"
-let myok p n = Printf.sprintf "ok%i%i" p n
+type loc = Data of string | Code of Label.t
+
+let as_data = function
+  | Data loc -> loc
+  | Code _ -> assert false
+
+let is_data = function
+  | Data _ -> true
+  | Code _ -> false
+
+let pp_loc = function Data s | Code s -> s
+
+let loc_eq loc1 loc2 = match loc1,loc2 with
+| (Data s1,Data s2)
+| (Code s1,Code s2)
+  -> Misc.string_eq s1 s2
+| (Data _,Code _)
+| (Code _,Data _)
+  -> false
+
+let loc_compare loc1 loc2 = match loc1,loc2 with
+| Data _,Code _ -> -1
+| Code _,Data _ -> 1
+| (Data s1,Data s2)
+| (Code s1,Code s2)
+    -> compare s1 s2
+
+module LocOrd = struct
+  type t = loc
+  let compare = loc_compare
+end
+
+module LocSet = MySet.Make(LocOrd)
+module LocMap = MyMap.Make(LocOrd)
+
+let loc_none = Data "*"
+let ok_str = "ok"
+let ok = Data ok_str
+
+let myok p n = Data (Printf.sprintf "ok%i%i" p n)
 
 type v = int
 type proc = int
+let pp_proc p = Printf.sprintf "P%i" p
 
 (* Direction of event *)
-type dir = W | R | J 
+type dir = W | R | J
 
 (* Edges compoments that do not depend on architecture *)
 

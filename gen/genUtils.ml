@@ -48,8 +48,16 @@ module Make(Cfg:Config)(A:Arch_gen.S)
                r,(Reg (p,r),loc)::init,st in
          find_rec init
 
-       let next_const st p init v =
-         let k = Printf.sprintf (if Cfg.hexa then "0x%x" else "%i") v in
+       let find_init p init loc =
+         let rec find_rec = function
+           | (Reg (p0,r0),loc0)::_ when loc0 = loc && p = p0 ->
+               r0
+           | _::rem -> find_rec rem
+           | [] -> raise Not_found in
+         find_rec init
+
+       let next_const st p init k =
+
          let rec find_rec = function
            | (Reg (p0,r0),k0)::_ when k0 = k && p = p0 ->
                r0,init,st
@@ -69,8 +77,13 @@ module Make(Cfg:Config)(A:Arch_gen.S)
          if min_k <= v && v < max_k && allow_consts_in_code then
            None,init,st
          else
-           let rA,init,st = next_const st p init v in
+           let k = Printf.sprintf (if Cfg.hexa then "0x%x" else "%i") v in
+           let rA,init,st = next_const st p init k in
            Some rA,init,st
+
+       let emit_nop st p init nop =
+         let rA,init,st = next_const st p init nop in
+         rA,init,st
 
        let emit_mov st p init v = match emit_const st p init v with
        | None,init,st ->

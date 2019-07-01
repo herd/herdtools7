@@ -128,7 +128,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
           [PPC.Plwarx (r1,idx,addr);
            PPC.Pstwcx (r2,idx,addr);
            PPC.Pbcc (PPC.Ne,Label.fail p (PPC.current_label st))],
-          PPC.next_label_st st
+        PPC.next_label_st st
       else
         let out = Label.next_label "Go" in
         let rec do_rec = function
@@ -290,8 +290,8 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
       let rB,init,st = U.next_init st p init x in
       init,
       csi@PPC.lift_code
-        [PPC.Pstwcx (rA,idx,rB);
-         PPC.Pbcc (PPC.Ne,Label.fail p (PPC.current_label st))],
+             [PPC.Pstwcx (rA,idx,rB);
+              PPC.Pbcc (PPC.Ne,Label.fail p (PPC.current_label st))],
       PPC.next_label_st st
 
     let emit_one_stwcx st p init x v = emit_one_stwcx_idx st p init x PPC.r0 v
@@ -301,35 +301,40 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
     let emit_access st p init e = match e.dir with
     | None -> Warn.fatal "TODO"
     | Some d ->
-        match d,e.atom with
-        | R,None ->
-            let emit = if e.rmw then emit_lwarx else emit_load in
-            let r,init,cs,st = emit st p init e.loc  in
-            Some r,init,cs,st
-        | W,None ->
-            let init,cs,st = emit_store st p init e.loc e.v in
-            None,init,cs,st
-        | R,Some PPC.Atomic ->
-            let r,init,cs,st = emit_lda st p init e.loc in
-            Some r,init,cs,st
-        | W,Some PPC.Atomic ->
-            let r,init,cs,st = emit_sta st p init e.loc e.v in
-            Some r,init,cs,st
-        | R,Some PPC.Reserve ->
-            let r,init,cs,st = emit_lwarx st p init e.loc  in
-            Some r,init,cs,st
-        | W,Some PPC.Reserve ->
-            Warn.fatal "No store with reservation"
-        | R,Some (PPC.Mixed (sz,o)) ->
-            let r,init,cs,st = emit_load_mixed sz o st p init e.loc  in
-            Some r,init,cs,st
-        | W,Some (PPC.Mixed (sz,o)) ->
-            let init,cs,st = emit_store_mixed sz o st p init e.loc e.v in
-            None,init,cs,st
-        | J,_ -> emit_joker st init
+        begin match e.loc with
+        | Code _ -> Warn.fatal "No code location for PPC"
+        | Data loc ->
+            begin match d,e.atom with
+            | R,None ->
+                let emit = if e.rmw then emit_lwarx else emit_load in
+                let r,init,cs,st = emit st p init loc  in
+                Some r,init,cs,st
+            | W,None ->
+                let init,cs,st = emit_store st p init loc e.v in
+                None,init,cs,st
+            | R,Some PPC.Atomic ->
+                let r,init,cs,st = emit_lda st p init loc in
+                Some r,init,cs,st
+            | W,Some PPC.Atomic ->
+                let r,init,cs,st = emit_sta st p init loc e.v in
+                Some r,init,cs,st
+            | R,Some PPC.Reserve ->
+                let r,init,cs,st = emit_lwarx st p init loc  in
+                Some r,init,cs,st
+            | W,Some PPC.Reserve ->
+                Warn.fatal "No store with reservation"
+            | R,Some (PPC.Mixed (sz,o)) ->
+                let r,init,cs,st = emit_load_mixed sz o st p init loc  in
+                Some r,init,cs,st
+            | W,Some (PPC.Mixed (sz,o)) ->
+                let init,cs,st = emit_store_mixed sz o st p init loc e.v in
+                None,init,cs,st
+            | J,_ -> emit_joker st init
+            end
+        end
 
     let emit_exch_idx st p init er ew idx =
-      let rA,init,st = U.next_init st p init er.loc in
+      let rA,init,st = U.next_init st p init (as_data er.loc) in
       let rR,st = next_reg st in
       let rW,init,csi,st = U.emit_mov st p init ew.v in
       let cs,st = emit_pair p st rR rW idx rA in
@@ -348,30 +353,32 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
     let emit_access_dep_addr st p init e  r1 =
       let r2,st = next_reg st in
       let c = calc_zero r2 r1 in
-      match e.dir with
-      | None -> Warn.fatal "TODO"
-      | Some d ->
-          match d,e.atom with
+      match e.dir,e.loc with
+      | None,_ -> Warn.fatal "TODO"
+      | _,Code _ -> Warn.fatal "No code location for PPC"
+      | Some d,Data loc ->
+          begin match d,e.atom with
           | R,None ->
-              let r,init,cs,st = emit_load_idx st p init e.loc r2 in
+              let r,init,cs,st = emit_load_idx st p init loc r2 in
               Some r,init, PPC.Instruction c::cs,st
           | R,Some PPC.Reserve ->
-              let r,init,cs,st = emit_lwarx_idx st p init e.loc r2 in
+              let r,init,cs,st = emit_lwarx_idx st p init loc r2 in
               Some r,init, PPC.Instruction c::cs,st
           | W,None ->
-              let init,cs,st = emit_store_idx st p init e.loc r2 e.v in
+              let init,cs,st = emit_store_idx st p init loc r2 e.v in
               None,init,PPC.Instruction c::cs,st
           | R,Some PPC.Atomic ->
-              let r,init,cs,st = emit_lda_idx st p init e.loc r2 in
+              let r,init,cs,st = emit_lda_idx st p init loc r2 in
               Some r,init, PPC.Instruction c::cs,st
           | W,Some PPC.Atomic ->
-              let r,init,cs,st = emit_sta_idx st p init e.loc r2 e.v in
+              let r,init,cs,st = emit_sta_idx st p init loc r2 e.v in
               Some r,init,PPC.Instruction c::cs,st
           | W,Some PPC.Reserve ->
               Warn.fatal "No store with reservation"
           | _,Some (PPC.Mixed _) ->
               Warn.fatal "addr dep with mixed"
           | J,_ -> emit_joker st init
+          end
 
     let emit_exch_dep_addr st  p init er ew rd =
       let idx,st = next_reg st in
@@ -381,10 +388,11 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
 
 
     let emit_access_dep_data st p init e  r1 =
-      match e.dir with
-      | None -> Warn.fatal "TODO"
-      | Some R ->Warn.fatal "data dependency to load"
-      | Some W ->
+      match e.dir,e.loc with
+      | None,_ -> Warn.fatal "TODO"
+      | Some R,_ ->Warn.fatal "data dependency to load"
+      | _,Code _ -> Warn.fatal "No code location for PPC"
+      | Some W,Data loc ->
           let rW,st = next_reg st in
           let ro,init,st = U.emit_const st p init e.v in
           let cs2 = match ro with
@@ -397,17 +405,17 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
           let ro,init,cs,st =
             match e.atom with
             | None ->
-                let init,cs,st = emit_store_reg st p init e.loc rW in
+                let init,cs,st = emit_store_reg st p init loc rW in
                 None,init,cs,st
             | Some PPC.Atomic ->
-                let r,init,cs,st = emit_sta_reg st p init e.loc rW in
+                let r,init,cs,st = emit_sta_reg st p init loc rW in
                 Some r,init,cs,st
             | Some (PPC.Mixed (sz,o)) ->
-                let init,cs,st = emit_store_reg_mixed sz o st p init e.loc rW in
+                let init,cs,st = emit_store_reg_mixed sz o st p init loc rW in
                 None,init,cs,st
             | Some PPC.Reserve -> Warn.fatal "No store with reservation" in
           ro,init,cs2@cs,st
-      | Some J -> emit_joker st init
+      | Some J,_ -> emit_joker st init
 
     let insert_isync cs1 cs2 = cs1@[PPC.Instruction PPC.Pisync]@cs2
 
@@ -422,31 +430,32 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
           [PPC.Instruction (PPC.Pcmpw (0,r1,r1));
            PPC.Instruction (PPC.Pbcc (PPC.Eq,lab));
            PPC.Label (lab,PPC.Nop);] in
-      match e.dir with
-      | None -> Warn.fatal "TODO"
-      | Some R ->
+      match e.dir,e.loc with
+      | None,_ -> Warn.fatal "TODO"
+      | Some R,Data loc ->
           let emit = match e.atom with
           | None -> emit_load
           | Some (PPC.Mixed (sz,o)) -> emit_load_mixed sz o
           | Some PPC.Reserve ->emit_lwarx
           | Some PPC.Atomic -> emit_lda in
-          let r,init,cs,st = emit st p init e.loc in
+          let r,init,cs,st = emit st p init loc in
           Some r,init,(if isync then insert_isync c cs else c@cs),st
-      | Some W ->
+      | Some W,Data loc ->
           let ro,init,cs,st =
             match e.atom with
             | None ->
-                let init,cs,st = emit_store st p init e.loc e.v in
+                let init,cs,st = emit_store st p init loc e.v in
                 None,init,cs,st
             | Some (PPC.Mixed (sz,o)) ->
-                let init,cs,st = emit_store_mixed sz o st p init e.loc e.v in
+                let init,cs,st = emit_store_mixed sz o st p init loc e.v in
                 None,init,cs,st
             | Some PPC.Reserve -> Warn.fatal "No store with reservation"
             | Some PPC.Atomic ->
-                let r,init,cs,st = emit_sta st p init e.loc e.v in
+                let r,init,cs,st = emit_sta st p init loc e.v in
                 Some r,init,cs,st in
           ro,init,(if isync then insert_isync c cs else c@cs),st
-     | Some J -> emit_joker st init
+      | Some J,_ -> emit_joker st init
+      | _,Code _ -> Warn.fatal "No code location for PPC"
 
     let emit_exch_ctrl isync st p init er ew rd =
       let lab = Label.next_label "LC" in
@@ -454,8 +463,8 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
         [PPC.Instruction (PPC.Pcmpw (0,rd,rd));
          PPC.Instruction (PPC.Pbcc (PPC.Eq,lab));
          PPC.Label (lab,PPC.Nop);] in
-      let r,init,csr,st = emit_lwarx st p init er.loc  in
-      let init,csw,st = emit_one_stwcx st p init ew.loc ew.v in
+      let r,init,csr,st = emit_lwarx st p init (as_data er.loc)  in
+      let init,csw,st = emit_one_stwcx st p init (as_data ew.loc) ew.v in
       let cs = csr@csw in
       let cs = if isync then insert_isync c cs else c@cs in
       r,init,cs,st
@@ -478,13 +487,13 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
 
 (* Fences *)
 
-    let emit_fence f =
-      PPC.Instruction
+    let emit_fence _ _ _ f =
+      [PPC.Instruction
         (match f with
         | PPC.Sync -> PPC.Psync
         | PPC.LwSync -> PPC.Plwsync
         | PPC.ISync -> PPC.Pisync
-        | PPC.Eieio -> PPC.Peieio)
+        | PPC.Eieio -> PPC.Peieio)]
 
     let stronger_fence = PPC.Sync
 
@@ -498,7 +507,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
         k),
       PPC.next_label_st st
 
-    let check_load  p r e init st = 
+    let check_load  p r e init st =
       let cs,st = do_check_load p st r e in
       init,cs,st
 
@@ -509,31 +518,31 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
         match i with
         | 0 -> k
         | n -> let k' = PPC.Instruction (PPC.Pb (Label.exit p n))::
-                        PPC.Label (Label.fail p n,PPC.Nop)::k
-               in do_rec (i-1) k'
+            PPC.Label (Label.fail p n,PPC.Nop)::k
+        in do_rec (i-1) k'
       in
-    do_rec (PPC.current_label st) []
+      do_rec (PPC.current_label st) []
 
     let list_of_exit_labels p st =
       let rec do_rec i k =
         match i with
         | 0 -> k
         | n -> let k' = PPC.Label (Label.exit p n,PPC.Nop)::k
-               in do_rec (i-1) k'
+        in do_rec (i-1) k'
       in
-    do_rec (PPC.current_label st) []
+      do_rec (PPC.current_label st) []
 
-   let does_fail p st = 
-     let l = list_of_fail_labels p st in 
-     match l with [] -> false | _ -> true
-   
-   let does_exit p st =
-     let l = list_of_exit_labels p st in
-     match l with [] -> false | _ -> true
+    let does_fail p st =
+      let l = list_of_fail_labels p st in
+      match l with [] -> false | _ -> true
+
+    let does_exit p st =
+      let l = list_of_exit_labels p st in
+      match l with [] -> false | _ -> true
 
     let postlude st p init cs =
       if does_fail p st then
-        let init,okcs,st = emit_store st p init Code.ok 0 in
+        let init,okcs,st = emit_store st p init Code.ok_str 0 in
         init,
         cs@
         (list_of_fail_labels p st)@

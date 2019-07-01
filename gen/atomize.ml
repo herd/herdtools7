@@ -24,7 +24,7 @@ let opts = [Util.arch_opt arch]
 
 module Make (A:Fence.S) =
     struct
-      module E = Edge.Make(A)
+      module E = Edge.Make(Edge.Config)(A)
       module Namer = Namer.Make(A)(E)
       module Normer =
         Normaliser.Make(struct let lowercase = false end)(E)

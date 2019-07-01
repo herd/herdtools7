@@ -22,6 +22,8 @@ type t =
   | Mixed
 (* Lift the default restriction of mixed-size annotation to depth one *)
   | FullMixed
+(* Self-modifying code *)
+  | Self
 
 val tags : string list
 

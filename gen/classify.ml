@@ -50,7 +50,7 @@ module type Config = sig
 end
 
 module Make(Co:Config) (A:Fence.S) = struct
-  module E = Edge.Make(A)
+  module E = Edge.Make(Edge.Config)(A)
   module N = Namer.Make(A)(E)
   module Norm = Normaliser.Make(Co)(E)
   module P = LineUtils.Make(E)

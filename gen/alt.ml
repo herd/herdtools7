@@ -339,7 +339,8 @@ module Make(C:Builder.S)
             can_prefix prefix (can_precede safes po_safe) suff
           then begin
             try f0 po_safe (prefix@suff) k
-            with e ->
+            with  Misc.Exit|Misc.Fatal _|Misc.UserError _ -> k
+            | e ->
               eprintf "Exc in F0: '%s'\n" (Printexc.to_string e) ;
               raise e
           end else k in

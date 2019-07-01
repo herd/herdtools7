@@ -183,6 +183,7 @@ let pp_dp = function
   | CTRLISYNC -> "CtrlFenceI"
 
 include OneRMW
+include NoEdge
 
 include
     ArchExtra_gen.Make

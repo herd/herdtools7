@@ -98,6 +98,7 @@ module Make(C:Config)  =
 (* RWM *)
 (*******)
     include OneRMW
+    include NoEdge
 
     include
         ArchExtra_gen.Make

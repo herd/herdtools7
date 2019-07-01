@@ -246,6 +246,7 @@ let var_fence f = match varatom with
 
 include ClassicDep
 include OneRMW
+include NoEdge
 include
     ArchExtra_gen.Make
     (struct

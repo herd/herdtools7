@@ -15,12 +15,26 @@
 (****************************************************************************)
 
 (* Event components *)
-type loc = string
+type loc = Data of string | Code of Label.t
+val as_data : loc -> string
+val is_data : loc -> bool
+val pp_loc : loc -> string
+val loc_eq : loc -> loc -> bool
+val loc_compare : loc -> loc -> int
+
+module LocSet : MySet.S with type elt = loc
+module LocMap : MyMap.S with type key = loc
+
+val loc_none : loc
+val ok_str : string
 val ok : loc
 val myok : int -> int -> loc
 
+
+
 type v = int
 type proc = int
+val pp_proc : proc -> string
 
 (* Direction of event *)
 type dir = W | R | J 

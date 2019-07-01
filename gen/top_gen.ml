@@ -1,5 +1,5 @@
 (****************************************************************************)
-(*                           the diy toolsuite                              *)
+(*                           The diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
@@ -36,6 +36,7 @@ module type Config = sig
   val docheck : bool
   val typ : TypBase.t
   val hexa : bool
+  val variant : Variant_gen.t -> bool
 end
 
 module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S
@@ -82,7 +83,9 @@ module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S
   let set_scope t sc =
     let pp = BellInfo.pp_scopes sc in
     { t with scopes = Some sc; info = ("Scopes",pp)::t.info; }
-  let add_info t k i =  { t with info = (k,i)::t.info; }
+
+  let do_add_info key v k = match v with "" -> k | _ -> (key,v)::k
+  let add_info t k i =  { t with info = do_add_info k i t.info; }
   let extract_edges {edges=es; _} = es
 
 (* Utilities *)
@@ -123,7 +126,6 @@ module U = TopUtils.Make(O)(Comp)
     | Some W|None ->
         None,init,[],st
     | Some J -> assert false
-
     else if
       match e.C.atom with
       | None -> true
@@ -153,19 +155,21 @@ module U = TopUtils.Make(O)(Comp)
    can poll on value in place of checking it *)
 
   let emit_access ro_prev st p init n =
-    let init,ip,st  = match O.overload with
-    | Some ov  when insert_overload n ->
-        emit_overload st p init ov n.C.evt.C.loc
+    let init,ip,st  = match O.overload,n.C.evt.C.loc with
+    | Some ov,Data loc  when insert_overload n ->
+        emit_overload st p init ov loc
     | _ -> init,[],st in
-    let o,init,i,st = match ro_prev with
-    | No ->
+    let o,init,i,st = match ro_prev,n.C.evt.C.loc with
+    | No,Data loc ->
         if U.do_poll n then
           let r,init,i,st =
-            Comp.emit_load_one st p init n.C.evt.C.loc in
+            Comp.emit_load_one st p init loc in
           Some r,init,i,st
         else
           call_emit_access st p init n
-    | Yes (dp,r1,v1) -> call_emit_access_dep st p init n dp r1 v1 in
+    | No,Code _ -> call_emit_access st p init n
+    | (Yes (dp,r1,v1),_)
+      -> call_emit_access_dep st p init n dp r1 v1 in
     o,init,ip@i,st
 
 let edge_to_prev_load o n = match o with
@@ -203,13 +207,13 @@ let get_fence n =
             (fun is ->
               pref
                 (List.fold_right
-                   (fun f is -> Comp.emit_fence f::is)
+                   (fun f is -> Comp.emit_fence p init n f@is)
                    fs is))
             chk loc_writes st p ro_prev init ns
       | E.Insert f ->
           let init,is,finals,st =
             compile_proc pref chk loc_writes st p ro_prev init ns in
-          init,Comp.emit_fence f::is,finals,st
+          init,Comp.emit_fence p init n f@is,finals,st
       | _ ->
           let o,init,i,st = emit_access ro_prev st p init n in
           let nchk,add_check =
@@ -225,14 +229,22 @@ let get_fence n =
           add_init_check chk p o init,
           i@
           mk_c
-        (match get_fence n with
-           Some fe -> Comp.emit_fence fe::is
-           | _ -> is),
-          (if
-            StringSet.mem n.C.evt.C.loc loc_writes && not (U.do_poll n)
-          then
-            F.add_final p o n finals
-          else finals),
+            (match get_fence n with
+              Some fe -> Comp.emit_fence p init n fe@is
+            | _ -> is),
+          (match n.C.evt.C.loc with
+          | Data loc ->
+              if StringSet.mem loc loc_writes  && not (U.do_poll n) then
+                F.add_final p o n finals
+              else finals
+          | Code _ ->
+              begin match o with
+              | None   -> finals (* Code write *)
+              | Some r -> (* fetch! *)
+                  let m,fenv =  finals in
+                  m,F.add_final_v p r (IntSet.singleton (U.fetch_val n))
+                    fenv
+              end),
           st
       end
 
@@ -257,7 +269,7 @@ let rec fenced_observer st p i x = function
   | [v] -> last_observation st p i x v
   | v::vs ->
       let r,i,c,st = Comp.emit_load st p i x in
-      let f = [Comp.emit_fence Comp.stronger_fence] in
+      let f = Comp.emit_fence p i C.nil Comp.stronger_fence in
       let i,cs,fs = fenced_observer st p i x vs in
       i,c@f@cs,F.add_final_v p r v fs
 
@@ -342,8 +354,8 @@ let min_max xs =
         | _ ->
             if
               List.for_all
-                (fun x ->
-                  match IntSet.as_singleton x with
+                (fun is ->
+                  match IntSet.as_singleton is with
                   | Some _ -> true | None -> false)
                 vs then
               let ws,w = split_last vs in
@@ -387,8 +399,8 @@ let min_max xs =
 
   let rec check_rec ats p i =
     let add_look_loc loc v k =
-      if not (StringSet.mem loc ats) && O.optcond then
-        k else (A.Loc loc,IntSet.singleton v)::k in
+        if (not (StringSet.mem loc ats) && O.optcond) then k
+        else (A.Loc loc,IntSet.singleton v)::k in
     let open Config in
     function
       | [] -> i,[],[]
@@ -468,7 +480,7 @@ let min_max xs =
         i,code@c,f,st
     | Config.Fenced ->
         let i,c,f,st = do_add_load st p i f x v in
-        let c = Comp.emit_fence Comp.stronger_fence::c in
+        let c = Comp.emit_fence p i C.nil Comp.stronger_fence@c in
         i,code@c,f,st
     | Loop ->
         let i,c,f,st = do_add_loop st p i f x prev_v v in
@@ -477,16 +489,19 @@ let min_max xs =
   let add_co_local_check lsts ns st p i code f =
     let lst = Misc.last ns in
     if U.check_here lst then
-      let x = lst.C.evt.C.loc and v = lst.C.next.C.evt.C.v
-      and prev_v = lst.C.evt.C.v in
-      let all_lst =
-        try StringMap.find x lsts
-        with Not_found -> C.evt_null in
-      if C.OrderedEvent.compare all_lst lst.C.next.C.evt = 0
-      then
-        i,code,(A.Loc x,IntSet.singleton v)::f,st
-      else
-        do_observe_local st p i code f x prev_v v
+      match lst.C.evt.C.loc with
+      | Data x ->
+          let v = lst.C.next.C.evt.C.v
+          and prev_v = lst.C.evt.C.v in
+          let all_lst =
+            try StringMap.find x lsts
+            with Not_found -> C.evt_null in
+          if C.OrderedEvent.compare all_lst lst.C.next.C.evt = 0
+          then
+            i,code,(A.Loc x,IntSet.singleton v)::f,st
+          else
+            do_observe_local st p i code f x prev_v v
+      | Code _ -> i,code,f,st
     else i,code,f,st
 
 (******************************************)
@@ -496,7 +511,7 @@ let min_max xs =
       let rec do_rec i k =
         match i with
         | 0 -> k
-        | n -> let k' = (A.Loc (Code.myok p (n-1)))::k
+        | n -> let k' = (A.Loc (as_data (Code.myok p (n-1))))::k
                in do_rec (i-1) k'
       in
       do_rec lab []
@@ -524,7 +539,8 @@ let min_max xs =
     let rec do_rec p i = function
       | [] -> List.rev i,[],(C.EventMap.empty,[]),[]
       | n::ns ->
-          let i,c,(m,f),st = compile_proc Misc.identity false loc_writes A.st0 p No i n in
+          let i,c,(m,f),st =
+            compile_proc Misc.identity false loc_writes A.st0 p No i n in
           let xenv = Comp.get_xstore_results c in
           let f =
             List.fold_left
@@ -563,11 +579,11 @@ let min_max xs =
               let i,cs,(m,fs),ios = do_rec (List.length obsc) i splitted in
               if
                 List.exists
-                  (fun (_,loc) -> (loc:string) = Code.ok)
+                  (fun (_,loc) -> (loc:string) = Code.ok_str)
                   i
               then
-                (A.Loc Code.ok,"1")::i,obsc@cs,
-                (m,(A.Loc Code.ok,IntSet.singleton 1)::f@fs),ios
+                (A.Loc Code.ok_str,"1")::i,obsc@cs,
+                (m,(A.Loc Code.ok_str,IntSet.singleton 1)::f@fs),ios
               else
                 i,obsc@cs,(m,f@fs),ios
             else Warn.fatal "Last minute check"
@@ -656,7 +672,7 @@ let fmt_cols =
   let rec fmt_col p k = function
     | [] -> k
     | cs::prog ->
-        (sprintf "P%i" p::dump_pseudo cs)::
+        (pp_proc p::dump_pseudo cs)::
         fmt_col (p+1) k prog in
   fmt_col 0 []
 
@@ -681,14 +697,42 @@ let fmt_cols =
     F.dump_final chan t.final ;
     ()
 
+  let num_labels =
+
+    let rec num_ins p m = function
+      | A.Label (lab,i) -> num_ins p (StringMap.add lab p m) i
+      | _ -> m in
+
+    let num_code p  = List.fold_left (num_ins p) in
+
+    let rec num_rec p m = function
+      | [] -> m
+      | c::cs -> num_rec (p+1) (num_code p m c) cs in
+    num_rec 0 StringMap.empty
+
+let tr_labs m env =
+  List.map
+    (fun (loc,v) ->
+      let v =
+        try
+          let p = StringMap.find v m in
+          sprintf "%s:%s" (pp_proc p) v
+        with Not_found -> v in
+      (loc,v))
+    env
+let do_self =  O.variant Variant_gen.Self
 
 let test_of_cycle name
   ?com ?(info=[]) ?(check=(fun _ -> true)) ?scope es c =
   let com = match com with None -> pp_edges es | Some com -> com in
-  let(init,prog,final,env),(prf,coms) = compile_cycle check c in
+  let (init,prog,final,env),(prf,coms) = compile_cycle check c in
+  let m_labs = num_labels prog in
+  let init = tr_labs m_labs init in
   let coms = String.concat " " coms in
   let info =
-    let myinfo = ["Prefetch",prf ; "Com",coms; "Orig",com;] in
+    let myinfo =
+      (if do_self then fun k -> k else do_add_info "Prefetch" prf)
+        (do_add_info "Com" coms (do_add_info "Orig" com [])) in
     let myinfo = match scope with
     | None -> myinfo
     | Some st -> ("Scopes",BellInfo.pp_scopes st)::myinfo in

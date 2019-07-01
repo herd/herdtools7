@@ -86,6 +86,7 @@ let sequence_dp d1 d2 = match d1 with
 | DATA|CTRL -> []
 
 include OneRMW
+include NoEdge
 
 include
     ArchExtra_gen.Make

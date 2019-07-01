@@ -60,40 +60,40 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let lab = Label.next_label "Loop" in
       Label (lab,Nop)::
       lift_code
-	[I_LDREX (r1,addr) ;
-	 I_STREX (tempo2,r2,addr,AL);
-	 I_CMPI (tempo2,0);
-	 I_BNE (lab);
+        [I_LDREX (r1,addr) ;
+         I_STREX (tempo2,r2,addr,AL);
+         I_CMPI (tempo2,0);
+         I_BNE (lab);
        ],st
 
     let emit_unroll_pair u p st r1 r2 addr =
       if u <= 0 then
-	lift_code
-	  [I_LDREX (r1,addr);
-	   I_STREX (tempo2,r2,addr,AL);],
+        lift_code
+          [I_LDREX (r1,addr);
+           I_STREX (tempo2,r2,addr,AL);],
         st
       else if u = 1 then
-	lift_code
-	  [I_LDREX (r1,addr);
-	   I_STREX (tempo2,r2,addr,AL);
-	   I_CMPI (tempo2,0);
-	   I_BNE (Label.fail p (current_label st));],
+        lift_code
+          [I_LDREX (r1,addr);
+           I_STREX (tempo2,r2,addr,AL);
+           I_CMPI (tempo2,0);
+           I_BNE (Label.fail p (current_label st));],
         next_label_st st
       else
-	let out = Label.next_label "Go" in
-	let rec do_rec = function
-	  | 1 ->
-	      [I_LDREX (r1,addr);
-	       I_STREX (tempo2,r2,addr,AL);
-	       I_CMPI (tempo2,0);
-	       I_BNE (Label.fail p (current_label st));]
-	  | u ->
-	      I_LDREX (r1,addr)::
-	      I_STREX (tempo2,r2,addr,AL)::
-	      I_CMPI (tempo2,0)::
-	      I_BEQ (out)::
-	      do_rec (u-1) in
-	lift_code (do_rec u)@[Label (out,Nop)],
+        let out = Label.next_label "Go" in
+        let rec do_rec = function
+          | 1 ->
+              [I_LDREX (r1,addr);
+               I_STREX (tempo2,r2,addr,AL);
+               I_CMPI (tempo2,0);
+               I_BNE (Label.fail p (current_label st));]
+          | u ->
+              I_LDREX (r1,addr)::
+              I_STREX (tempo2,r2,addr,AL)::
+              I_CMPI (tempo2,0)::
+              I_BEQ (out)::
+              do_rec (u-1) in
+        lift_code (do_rec u)@[Label (out,Nop)],
         next_label_st st
 
     let emit_pair = match Cfg.unrollatomic with
@@ -181,9 +181,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let rV,init,csi,st = U.emit_mov st p init v in
       init,
       csi@lift_code
-	[I_STREX (tempo2,rV,rA,AL);
-	 I_CMPI (tempo2,0);
-	 I_BNE (Label.fail p (current_label st));],
+        [I_STREX (tempo2,rV,rA,AL);
+         I_CMPI (tempo2,0);
+         I_BNE (Label.fail p (current_label st));],
       next_label_st st
 
     let emit_ldrex_reg st _p init rB =
@@ -243,33 +243,34 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (* Acccesses *)
 (*************)
 
-let emit_joker st init = None,init,[],st
+    let emit_joker st init = None,init,[],st
 
     let emit_access  st p init e =  match e.dir with
     | None ->  Warn.fatal "ARMCompile.emit_access"
     | Some d ->
-	match d,e.atom with
-	| R,None ->
-	    let r,init,cs,st = emit_load st p init e.loc in
-	    Some r,init,cs,st
-	| R,Some Reserve ->
-	    let r,init,cs,st = emit_ldrex st p init e.loc  in
-	    Some r,init,cs,st
-	| R,Some Atomic ->
-	    let r,init,cs,st = emit_lda st p init e.loc  in
-	    Some r,init,cs,st
-	| W,None ->
-	    let init,cs,st = emit_store st p init e.loc e.v in
-	    None,init,cs,st
-	| W,Some Reserve -> Warn.fatal "No store with reservation"
-	| W,Some Atomic ->
-	    let ro,init,cs,st = emit_sta st p init e.loc e.v in
-	    ro,init,cs,st
-	| _,Some (Mixed _) -> assert false
-        | Code.J,_ -> emit_joker st init
+        match d,e.atom,e.loc with
+        | R,None,Data loc ->
+            let r,init,cs,st = emit_load st p init loc in
+            Some r,init,cs,st
+        | R,Some Reserve,Data loc ->
+            let r,init,cs,st = emit_ldrex st p init loc  in
+            Some r,init,cs,st
+        | R,Some Atomic,Data loc ->
+            let r,init,cs,st = emit_lda st p init loc  in
+            Some r,init,cs,st
+        | W,None,Data loc ->
+            let init,cs,st = emit_store st p init loc e.v in
+            None,init,cs,st
+        | W,Some Reserve,Data _ -> Warn.fatal "No store with reservation"
+        | W,Some Atomic,Data loc ->
+            let ro,init,cs,st = emit_sta st p init loc e.v in
+            ro,init,cs,st
+        | _,Some (Mixed _),Data _ -> assert false
+        | Code.J,_,Data _ -> emit_joker st init
+        | _,_,Code _ -> Warn.fatal "No code location in ARM"
 
     let emit_exch st p init er ew =
-      let rA,init,st = U.next_init st p init er.loc in
+      let rA,init,st = U.next_init st p init (as_data er.loc) in
       let rW,init,csi,st = U.emit_mov st p init ew.v in
       let rR,st = next_reg st in
       let cs,st = emit_pair p st rR rW rA in
@@ -286,28 +287,29 @@ let emit_joker st init = None,init,[],st
     let emit_access_dep_addr st p init e  r1 =
       let r2,st = next_reg st in
       let c =  calc0 r2 r1 in
-      match Misc.as_some e.dir,e.atom with
-      | R,None ->
-          let r,init,cs,st = emit_load_idx st p init e.loc r2 in
+      match Misc.as_some e.dir,e.atom,e.loc with
+      | R,None,Data loc ->
+          let r,init,cs,st = emit_load_idx st p init loc r2 in
           Some r,init, Instruction c::cs,st
-      | R,Some Reserve ->
-          let r,init,cs,st = emit_ldrex_idx st p init e.loc r2 in
+      | R,Some Reserve,Data loc ->
+          let r,init,cs,st = emit_ldrex_idx st p init loc r2 in
           Some r,init, Instruction c::cs,st
-      | R,Some Atomic ->
-          let r,init,cs,st = emit_lda_idx st p init e.loc r2 in
+      | R,Some Atomic,Data loc ->
+          let r,init,cs,st = emit_lda_idx st p init loc r2 in
           Some r,init, Instruction c::cs,st
-      | W,None ->
-          let init,cs,st = emit_store_idx st p init e.loc r2 e.v in
+      | W,None,Data loc ->
+          let init,cs,st = emit_store_idx st p init loc r2 e.v in
           None,init,Instruction c::cs,st
-      | W,Some Reserve -> Warn.fatal "No store with reservation"
-      | W,Some Atomic ->
-          let ro,init,cs,st = emit_sta_idx st p init e.loc r2 e.v in
+      | W,Some Reserve,Data _ -> Warn.fatal "No store with reservation"
+      | W,Some Atomic,Data loc ->
+          let ro,init,cs,st = emit_sta_idx st p init loc r2 e.v in
           ro,init,Instruction c::cs,st
-      | _,Some (Mixed _) -> assert false
-      | Code.J,_ -> emit_joker st init
+      | _,Some (Mixed _),Data _ -> assert false
+      | Code.J,_,Data _ -> emit_joker st init
+      | _,_,Code _ -> Warn.fatal "No code location for arch ARM"
 
     let emit_exch_dep_addr st p init er ew rd =
-      let rA,init,st = U.next_init st p init er.loc in
+      let rA,init,st = U.next_init st p init (as_data er.loc) in
       let c =
         [Instruction (calc0 tempo1 rd);
          Instruction (I_ADD3 (DontSetFlags,tempo1,rA,tempo1));] in
@@ -321,21 +323,22 @@ let emit_joker st init = None,init,[],st
       | None -> Warn.fatal "TODO"
       | Some R -> Warn.fatal "data dependency to load"
       | Some W ->
-	  let r2,st = next_reg st in
-	  let cs2 =
-	    [Instruction (calc0 r2 r1) ;
-	     Instruction (I_ADD (DontSetFlags,r2,r2,e.v)) ; ] in
-	  begin match e.atom with
-	  | None ->
-	      let init,cs,st = emit_store_reg st p init e.loc r2 in
-	      None,init,cs2@cs,st
-	  | Some Atomic ->
-	      let ro,init,cs,st = emit_sta_reg st p init e.loc r2 in
-	      ro,init,cs2@cs,st
-	  | Some Reserve ->
-	      Warn.fatal "No store with reservation"
-	  | Some (Mixed _) -> assert false
-	  end
+          let r2,st = next_reg st in
+          let cs2 =
+            [Instruction (calc0 r2 r1) ;
+             Instruction (I_ADD (DontSetFlags,r2,r2,e.v)) ; ] in
+          begin match e.atom,e.loc with
+          | None,Data loc ->
+              let init,cs,st = emit_store_reg st p init loc r2 in
+              None,init,cs2@cs,st
+          | Some Atomic,Data loc ->
+              let ro,init,cs,st = emit_sta_reg st p init loc r2 in
+              ro,init,cs2@cs,st
+          | Some Reserve,Data _ ->
+              Warn.fatal "No store with reservation"
+          | Some (Mixed _),Data _ -> assert false
+          | _,Code _ -> Warn.fatal "No code location for arch ARM"
+          end
      | Some Code.J -> assert false
 
     let insert_isb isb cs1 cs2 =
@@ -379,12 +382,12 @@ let emit_joker st init = None,init,[],st
 
 (* Fences *)
 
-    let emit_fence f =
-      Instruction
+    let emit_fence _ _ _ f =
+      [Instruction
         (match f with
         | DMB o -> I_DMB o
         | DSB o -> I_DSB o
-        | ISB -> I_ISB)
+        | ISB -> I_ISB)]
 
     let stronger_fence = DMB SY
 
@@ -396,7 +399,7 @@ let emit_joker st init = None,init,[],st
         k),
       next_label_st st
 
-    let check_load  p r e init st = 
+    let check_load  p r e init st =
       let cs,st = do_check_load p st r e in
       init,cs,st
 
@@ -421,17 +424,17 @@ let emit_joker st init = None,init,[],st
       in
     do_rec (current_label st) []
 
-   let does_fail p st = 
-     let l = list_of_fail_labels p st in 
+   let does_fail p st =
+     let l = list_of_fail_labels p st in
      match l with [] -> false | _ -> true
-   
+
    let does_exit p st =
      let l = list_of_exit_labels p st in
      match l with [] -> false | _ -> true
 
     let postlude st p init cs =
       if does_fail p st then
-        let init,okcs,st = emit_store st p init Code.ok 0 in
+        let init,okcs,st = emit_store st p init (as_data Code.ok) 0 in
         init,
         cs@
         (list_of_fail_labels p st)@

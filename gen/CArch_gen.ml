@@ -93,7 +93,7 @@ type arch_reg = { id:int }
 let dump_reg r = sprintf "r%i" r.id
 
 type location =
-  | Loc of Code.loc
+  | Loc of string
   | Reg of Code.proc * arch_reg
 
 let dump_loc = function
@@ -105,7 +105,7 @@ let pp_location = dump_loc
 let location_compare = Pervasives.compare
 
 let of_reg p r = Reg (p,r)
-let of_loc loc = Loc loc
+let of_loc loc = Loc (as_data loc)
 
 type tbase = TypBase.t
 
@@ -134,6 +134,7 @@ type exp =
 let addrs_of_location = function
   | Reg _ -> StringSet.empty
   | Loc loc -> StringSet.singleton loc
+
 
 let rec addrs_of_exp = function
   | Const _ -> StringSet.empty
@@ -208,4 +209,6 @@ let applies_atom_rmw () ar aw = match ar,aw with
   | (_,None)
     -> false
   | Some a1,Some a2 -> compare_atom a1 a2 = 0
+
+include NoEdge
 

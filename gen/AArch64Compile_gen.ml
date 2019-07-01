@@ -33,6 +33,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let naturalsize = naturalsize
           let moreedges = Cfg.moreedges
           let fullmixed = Cfg.variant Variant_gen.FullMixed
+          let variant = Cfg.variant
         end)
     include CompileCommon.Make(Cfg)(A64)
 
@@ -41,6 +42,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     open A64
     open C
 
+(* Nop instr code *)
+    let nop = "0x14000001"
 
 (* Utilities *)
     let next_reg x = A64.alloc_reg x
@@ -282,6 +285,20 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let ld,st = L.load st rA rB in
           rA,init,lift_code ld,st
 
+        let emit_fetch st _p init lab =
+          let rA,st = next_reg st in
+          let lab0 = Label.next_label "L" in
+          let lab1 = Label.next_label "L" in
+          let cs =
+            Label (lab,Instruction (I_B lab0))::
+            Instruction (mov rA 2)::
+            Instruction (I_B lab1)::
+            Label (lab0,Instruction (mov rA 1))::
+            Label (lab1,Nop)::
+            [] in
+          rA,init,cs,st
+
+
 
         let emit_load_not_zero st p init x =
           let rA,st = next_reg st in
@@ -411,6 +428,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let init,cs,st = emit_store_idx_reg st p init x idx rA in
           init,csi@cs,st
 
+        let emit_store_nop st p init lab =
+          let rA,init,st = U.emit_nop st p init nop in
+          let rB,init,st = U.next_init st p init lab in
+          let cs,st = S.store st rA rB in
+          init,pseudo cs,st
       end
 
     module STR =
@@ -499,8 +521,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let emit_one_pair (ar, aw) p st init r rR rW rA k =
       let n = current_label st in
-      let init,cs,st = STR.emit_store st p init (Code.myok p n) 0 in
-      (A.Loc (Code.myok p n),"1")::init,
+      let loc_ok = Code.as_data (Code.myok p n) in
+      let init,cs,st =
+        STR.emit_store st p init loc_ok 0 in
+      (A.Loc loc_ok,"1")::init,
       Instruction (get_xload ar rR rA)::
       Instruction (get_xstore aw r rW rA)::
       Instruction (cbnz r (Label.fail p n))::
@@ -651,17 +675,28 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (**********)
 (* Access *)
 (**********)
-let emit_joker st init = None,init,[],st
+    let emit_joker st init = None,init,[],st
 
-    let emit_access  st p init e = match e.dir with
-    | None -> Warn.fatal "AArchCompile.emit_access"
-    | Some d ->
-        match d,e.atom with
+    let emit_access  st p init e = match e.dir,e.loc with
+    | None,_ -> Warn.fatal "AArchCompile.emit_access"
+    | Some d,Code lab ->
+        begin match d,e.atom with
         | R,None ->
-            let r,init,cs,st = LDR.emit_load st p init e.loc in
+            let r,init,cs,st = LDR.emit_fetch st p init lab in
+            Some r,init,cs,st
+        | W,None ->
+            let init,cs,st = STR.emit_store_nop st p init lab in
+            None,init,cs,st
+        | _,_ -> Warn.fatal "Not Yet (%s,%s)!!!"
+              (pp_dir d) (C.debug_evt e)
+        end
+    | Some d,Data loc ->
+        begin match d,e.atom with
+        | R,None ->
+            let r,init,cs,st = LDR.emit_load st p init loc in
             Some r,init,cs,st
         | R,Some (Acq,None) ->
-            let r,init,cs,st = LDAR.emit_load st p init e.loc  in
+            let r,init,cs,st = LDAR.emit_load st p init loc  in
             Some r,init,cs,st
         | R,Some (Acq,Some (sz,o)) ->
             let module L =
@@ -670,10 +705,10 @@ let emit_joker st init = None,init,[],st
                   let load = ldar_mixed AA sz o
                   let load_idx = ldar_mixed_idx AQ sz o
                 end) in
-            let r,init,cs,st = L.emit_load st p init e.loc in
+            let r,init,cs,st = L.emit_load st p init loc in
             Some r,init,cs,st
         | R,Some (AcqPc,None) ->
-            let r,init,cs,st = LDAPR.emit_load st p init e.loc  in
+            let r,init,cs,st = LDAPR.emit_load st p init loc  in
             Some r,init,cs,st
         | R,Some (AcqPc,Some (sz,o)) ->
             let module L =
@@ -682,35 +717,35 @@ let emit_joker st init = None,init,[],st
                   let load = ldar_mixed AQ sz o
                   let load_idx = ldar_mixed_idx AQ sz o
                 end) in
-            let r,init,cs,st = L.emit_load st p init e.loc in
+            let r,init,cs,st = L.emit_load st p init loc in
             Some r,init,cs,st
         | R,Some (Rel,_) ->
             Warn.fatal "No load release"
         | R,Some (Atomic rw,None) ->
-            let r,init,cs,st = emit_lda (tr_rw rw) st p init e.loc  in
+            let r,init,cs,st = emit_lda (tr_rw rw) st p init loc  in
             Some r,init,cs,st
         | R,Some (Atomic rw,Some (sz,o)) ->
-            let r,init,cs,st = emit_lda_mixed sz o rw st p init e.loc  in
+            let r,init,cs,st = emit_lda_mixed sz o rw st p init loc  in
             Some r,init,cs,st
         | R,Some (Plain,Some (sz,o)) ->
-            let r,init,cs,st = emit_load_mixed sz o st p init e.loc in
+            let r,init,cs,st = emit_load_mixed sz o st p init loc in
             Some r,init,cs,st
         | W,None ->
-            let init,cs,st = STR.emit_store st p init e.loc e.v in
+            let init,cs,st = STR.emit_store st p init loc e.v in
             None,init,cs,st
         | W,Some (Rel,None) ->
-            let init,cs,st = STLR.emit_store st p init e.loc e.v in
+            let init,cs,st = STLR.emit_store st p init loc e.v in
             None,init,cs,st
         | W,Some (Acq,_) -> Warn.fatal "No store acquire"
         | W,Some (AcqPc,_) -> Warn.fatal "No store acquirePc"
         | W,Some (Atomic rw,None) ->
-            let r,init,cs,st = emit_sta (tr_rw rw) st p init e.loc e.v in
+            let r,init,cs,st = emit_sta (tr_rw rw) st p init loc e.v in
             Some r,init,cs,st
         | W,Some (Atomic rw,Some (sz,o)) ->
-            let r,init,cs,st = emit_sta_mixed sz o rw st p init e.loc e.v in
+            let r,init,cs,st = emit_sta_mixed sz o rw st p init loc e.v in
             Some r,init,cs,st
         | W,Some (Plain,Some (sz,o)) ->
-            let init,cs,st = emit_store_mixed sz o st p init e.loc e.v in
+            let init,cs,st = emit_store_mixed sz o st p init loc e.v in
             None,init,cs,st
         | W,Some (Rel,Some (sz,o)) ->
             let module S =
@@ -724,13 +759,14 @@ let emit_joker st init = None,init,[],st
                     | _ -> addi_64 idx idx o::cs in
                     cs,st
                 end) in
-            let init,cs,st = S.emit_store st p init e.loc e.v in
+            let init,cs,st = S.emit_store st p init loc e.v in
             None,init,cs,st
         | _,Some (Plain,None) -> assert false
         | J,_ -> emit_joker st init
+        end
 
     let emit_exch st p init er ew =
-      let rA,init,st = U.next_init st p init er.loc in
+      let rA,init,st = U.next_init st p init (as_data er.loc) in
       let rR,st = next_reg st in
       let rW,init,csi,st = U.emit_mov st p init ew.v in
       let arw = (tr_none er.C.atom, tr_none ew.C.atom) in
@@ -777,7 +813,7 @@ let emit_joker st init = None,init,[],st
       rR,init,csi@pseudo cs,st
 
     let do_emit_ldop ins ins_mixed st p init er ew =
-      let rA,init,st = U.next_init st p init er.loc in
+      let rA,init,st = U.next_init st p init (as_data er.loc) in
       do_emit_ldop_rA ins ins_mixed st p init er ew rA
 
     let emit_swp =  do_emit_ldop swp swp_mixed
@@ -795,7 +831,7 @@ let emit_joker st init = None,init,[],st
       rS,init,csS@csT@pseudo cs,st
 
     let emit_cas  st p init er ew =
-      let rA,init,st = U.next_init st p init er.loc in
+      let rA,init,st = U.next_init st p init (as_data er.loc) in
       emit_cas_rA st p init er ew rA
 
     let emit_stop_rA op st p init _er ew rA =
@@ -815,7 +851,7 @@ let emit_joker st init = None,init,[],st
       None,init,csi@pseudo cs,st
 
     let emit_stop  op st p init er ew =
-      let rA,init,st = U.next_init st p init er.loc in
+      let rA,init,st = U.next_init st p init (as_data er.loc) in
       emit_stop_rA op st p init er ew rA
 
     let map_some f st p init er ew =
@@ -831,7 +867,20 @@ let emit_joker st init = None,init,[],st
 
 (* Fences *)
 
-    let emit_fence f = Instruction (I_FENCE f)
+    let emit_fence p init n f = match f with
+    | Barrier f -> [Instruction (I_FENCE f)]
+    | CacheSync isb ->
+        try
+          let lab = C.find_prev_code n in
+          let r = U.find_init p init lab in
+          pseudo
+            (I_DC (DC.cvau,r)::
+             I_FENCE (DSB (ISH,FULL))::
+             I_IC (IC.ivau,r)::
+             I_FENCE (DSB (ISH,FULL))::
+             (if isb then [I_FENCE ISB] else []))
+        with Not_found -> Warn.user_error "No code write before CacheSync"
+
 
     let stronger_fence = strong
 
@@ -846,15 +895,15 @@ let emit_joker st init = None,init,[],st
     let emit_access_dep_addr st p init e rd =
       let r2,st = next_reg st in
       let c =  calc0 r2 rd in
-      match e.dir with
-      | None -> Warn.fatal "TODO"
-      | Some d ->
-          match d,e.atom with
+      match e.dir,e.loc with
+      | None,_ -> Warn.fatal "TODO"
+      | Some d,Data loc ->
+          begin match d,e.atom with
           | R,None ->
-              let r,init,cs,st = LDR.emit_load_idx st p init e.loc r2 in
+              let r,init,cs,st = LDR.emit_load_idx st p init loc r2 in
               Some r,init, Instruction c::cs,st
           | R,Some (Acq,None) ->
-              let r,init,cs,st = LDAR.emit_load_idx st p init e.loc r2 in
+              let r,init,cs,st = LDAR.emit_load_idx st p init loc r2 in
               Some r,init, Instruction c::cs,st
           | R,Some (Acq,Some (sz,o)) ->
               let module L =
@@ -863,10 +912,10 @@ let emit_joker st init = None,init,[],st
                     let load = ldar_mixed AA sz o
                     let load_idx = ldar_mixed_idx AA sz o
                   end) in
-              let r,init,cs,st = L.emit_load_idx st p init e.loc r2 in
+              let r,init,cs,st = L.emit_load_idx st p init loc r2 in
               Some r,init,Instruction c::cs,st
           | R,Some (AcqPc,None) ->
-              let r,init,cs,st = LDAPR.emit_load_idx st p init e.loc r2 in
+              let r,init,cs,st = LDAPR.emit_load_idx st p init loc r2 in
               Some r,init, Instruction c::cs,st
           | R,Some (AcqPc,Some (sz,o)) ->
               let module L =
@@ -875,21 +924,21 @@ let emit_joker st init = None,init,[],st
                     let load = ldar_mixed AQ sz o
                     let load_idx = ldar_mixed_idx AQ sz o
                   end) in
-              let r,init,cs,st = L.emit_load_idx st p init e.loc r2 in
+              let r,init,cs,st = L.emit_load_idx st p init loc r2 in
               Some r,init,Instruction c::cs,st
           | R,Some (Rel,_) ->
               Warn.fatal "No load release"
           | R,Some (Atomic rw,None) ->
-              let r,init,cs,st = emit_lda_idx (tr_rw rw) st p init e.loc r2 in
+              let r,init,cs,st = emit_lda_idx (tr_rw rw) st p init loc r2 in
               Some r,init, Instruction c::cs,st
           | R,Some (Atomic rw,Some (sz,o)) ->
-              let r,init,cs,st = emit_lda_mixed_idx sz o rw st p init e.loc r2 in
+              let r,init,cs,st = emit_lda_mixed_idx sz o rw st p init loc r2 in
               Some r,init, Instruction c::cs,st
           | W,None ->
-              let init,cs,st = STR.emit_store_idx st p init e.loc r2 e.v in
+              let init,cs,st = STR.emit_store_idx st p init loc r2 e.v in
               None,init,Instruction c::cs,st
           | W,Some (Rel,None) ->
-              let init,cs,st = STLR.emit_store_idx st p init e.loc r2 e.v in
+              let init,cs,st = STLR.emit_store_idx st p init loc r2 e.v in
               None,init,Instruction c::cs,st
           | W,Some (Rel,Some (sz,o)) ->
               let module S =
@@ -903,16 +952,16 @@ let emit_joker st init = None,init,[],st
                       | _ -> addi_64 idx idx o::cs in
                       cs,st
                   end) in
-              let init,cs,st = S.emit_store_idx st p init e.loc r2 e.v in
+              let init,cs,st = S.emit_store_idx st p init loc r2 e.v in
               None,init,Instruction c::cs,st
           | W,Some (Acq,_) -> Warn.fatal "No store acquire"
           | W,Some (AcqPc,_) -> Warn.fatal "No store acquirePc"
           | W,Some (Atomic rw,None) ->
               let r,init,cs,st =
-                emit_sta_idx (tr_rw rw) st p init e.loc r2 e.v in
+                emit_sta_idx (tr_rw rw) st p init loc r2 e.v in
               Some r,init,Instruction c::cs,st
           | W,Some (Atomic rw,Some (sz,o)) ->
-              let r,init,cs,st = emit_sta_mixed_idx sz o rw st p init e.loc r2 e.v in
+              let r,init,cs,st = emit_sta_mixed_idx sz o rw st p init loc r2 e.v in
               Some r,init,Instruction c::cs,st
           | R,Some (Plain,Some (sz,o)) ->
               let module L =
@@ -926,7 +975,7 @@ let emit_joker st init = None,init,[],st
                       | _ -> addi_64 idx idx o::cs in
                       cs,st
                   end) in
-              let r,init,cs,st = L.emit_load_idx st p init e.loc r2 in
+              let r,init,cs,st = L.emit_load_idx st p init loc r2 in
               Some r,init,Instruction c::cs,st
           | W,Some (Plain,Some (sz,o)) ->
               let module S =
@@ -941,20 +990,22 @@ let emit_joker st init = None,init,[],st
                       cs,st
                   end) in
               let rA,init,cs_mov,st = U.emit_mov_sz sz st p init e.v in
-              let init,cs,st = S.emit_store_idx_reg st p init e.loc r2 rA in
+              let init,cs,st = S.emit_store_idx_reg st p init loc r2 rA in
               None,init,Instruction c::cs_mov@cs,st
           | J,_ -> emit_joker st init
           | _,Some (Plain,None) -> assert false
+          end
+      | _,Code _ -> Warn.fatal "No dependency to code location"
 
-    let emit_addr_dep  st p init e rd =
+    let emit_addr_dep  st p init loc rd =
       let r2,st = next_reg st in
       let c = calc0 r2 rd in
-      let rA,init,st = U.next_init st p init e.loc in
+      let rA,init,st = U.next_init st p init loc in
       let rA,csum,st = sum_addr st rA r2 in
       rA,init,pseudo (c::csum),st
 
     let emit_exch_dep_addr st p init er ew rd =
-      let rA,init,caddr,st =  emit_addr_dep  st p init er rd in
+      let rA,init,caddr,st =  emit_addr_dep  st p init (as_data er.loc) rd in
       let rR,st = next_reg st in
       let rW,init,csi,st = U.emit_mov st p init ew.v in
       let arw = (tr_none  er.C.atom, tr_none ew.C.atom) in
@@ -964,10 +1015,10 @@ let emit_joker st init = None,init,[],st
       st
 
     let emit_access_dep_data st p init e  r1 =
-      match e.dir with
-      | None -> Warn.fatal "TODO"
-      | Some R -> Warn.fatal "data dependency to load"
-      | Some W ->
+      match e.dir,e.loc with
+      | None,_ -> Warn.fatal "TODO"
+      | Some R,_ -> Warn.fatal "data dependency to load"
+      | Some W,Data loc ->
           let r2,cs2,init,st = match e.atom with
           | Some (_,Some (sz,_)) ->
               let rA,init,csA,st = U.emit_mov_sz sz st p init e.v in
@@ -984,10 +1035,10 @@ let emit_joker st init = None,init,[],st
               r2,cs2,init,st in
           begin match e.atom with
           | None ->
-              let init,cs,st = STR.emit_store_reg st p init e.loc r2 in
+              let init,cs,st = STR.emit_store_reg st p init loc r2 in
               None,init,cs2@cs,st
           | Some (Rel,None) ->
-              let init,cs,st = STLR.emit_store_reg st p init e.loc r2 in
+              let init,cs,st = STLR.emit_store_reg st p init loc r2 in
               None,init,cs2@cs,st
           | Some (Rel,Some (sz,o)) ->
               let module S =
@@ -996,13 +1047,13 @@ let emit_joker st init = None,init,[],st
                     let store = stlr_mixed sz o
                     let store_idx _st _r1 _r2 _idx = assert false
                   end) in
-              let init,cs,st = S.emit_store_reg st p init e.loc r2 in
+              let init,cs,st = S.emit_store_reg st p init loc r2 in
               None,init,cs2@cs,st
           | Some (Atomic rw,None) ->
-              let r,init,cs,st = emit_sta_reg (tr_rw rw) st p init e.loc r2 in
+              let r,init,cs,st = emit_sta_reg (tr_rw rw) st p init loc r2 in
               Some r,init,cs2@cs,st
           | Some (Atomic rw,Some (sz,o)) ->
-              let r,init,cs,st = emit_sta_mixed_reg sz o rw st p init e.loc r2 in
+              let r,init,cs,st = emit_sta_mixed_reg sz o rw st p init loc r2 in
               Some r,init,cs2@cs,st
           | Some (Acq,_) ->
               Warn.fatal "No store acquire"
@@ -1020,18 +1071,19 @@ let emit_joker st init = None,init,[],st
                       | _ -> addi_64 idx idx o::cs in
                       cs,st
                   end) in
-              let init,cs,st = S.emit_store_reg st p init e.loc r2 in
+              let init,cs,st = S.emit_store_reg st p init loc r2 in
               None,init,cs2@cs,st
           | Some (Plain,None) -> assert false
           end
-      | Some J -> emit_joker st init
+      | Some J,_ -> emit_joker st init
+      | _,Code _ -> Warn.fatal "Not Yet (%s,dep_data)" (C.debug_evt e)
 
     let is_ctrlisync = function
       | CTRLISYNC -> true
       | _ -> false
 
     let insert_isb isb cs1 cs2 =
-      if isb then cs1@[emit_fence ISB]@cs2
+      if isb then cs1@[Instruction (I_FENCE ISB)]@cs2
       else cs1@cs2
 
     let emit_ctrl r =
@@ -1063,7 +1115,7 @@ let emit_joker st init = None,init,[],st
 
     let emit_ldop_dep ins ins_mixed  st p init er ew dp rd = match dp with
     | ADDR ->
-        let rA,init,caddr,st = emit_addr_dep st p init er rd in
+        let rA,init,caddr,st = emit_addr_dep st p init (as_data er.loc) rd in
         let rR,init,cs,st = do_emit_ldop_rA ins ins_mixed st p init er ew rA in
         rR,init,caddr@cs,st
     | CTRL|CTRLISYNC ->
@@ -1074,7 +1126,7 @@ let emit_joker st init = None,init,[],st
 
     let emit_cas_dep  st p init er ew dp rd = match dp with
     | ADDR ->
-        let rA,init,caddr,st = emit_addr_dep st p init er rd in
+        let rA,init,caddr,st = emit_addr_dep st p init (as_data er.loc) rd in
         let rR,init,cs,st = emit_cas_rA st p init er ew rA in
         rR,init,caddr@cs,st
     | CTRL|CTRLISYNC ->
@@ -1085,7 +1137,7 @@ let emit_joker st init = None,init,[],st
 
     let emit_stop_dep  op st p init er ew dp rd = match dp with
     | ADDR ->
-        let rA,init,caddr,st = emit_addr_dep st p init er rd in
+        let rA,init,caddr,st = emit_addr_dep st p init (as_data er.loc) rd in
         let rR,init,cs,st = emit_stop_rA op st p init er ew rA in
         rR,init,caddr@cs,st
     | CTRL|CTRLISYNC ->
@@ -1114,7 +1166,7 @@ let emit_joker st init = None,init,[],st
         Instruction (bne lab)::
         k),
       next_label_st st
-    let check_load  p r e init st = 
+    let check_load  p r e init st =
       let cs,st = do_check_load p st r e in
       init,cs,st
 
@@ -1139,12 +1191,12 @@ let emit_joker st init = None,init,[],st
       in
     do_rec (current_label st) []
 
-   let does_fail p st = 
-     let l = list_of_fail_labels p st in 
+   let does_fail p st =
+     let l = list_of_fail_labels p st in
      match l with [] -> false | _ -> true
 
-   let does_exit p st = 
-     let l = list_of_exit_labels p st in 
+   let does_exit p st =
+     let l = list_of_exit_labels p st in
      match l with [] -> false | _ -> true
 
    let postlude st p init cs =

@@ -104,31 +104,32 @@ struct
 
 let emit_joker st init = None,init,[],st
 
-  let emit_access st _p init e = match e.C.dir with
-  | None -> Warn.fatal "TODO"
-  | Some R ->
+  let emit_access st _p init e = match e.C.dir,e.C.loc with
+  | None,_ -> Warn.fatal "TODO"
+  | Some R,Data loc ->
       let rA,st = next_reg st in
       begin match e.C.atom with
       | None ->
-          Some rA,init,pseudo [emit_load_ins e.C.loc rA],st
+          Some rA,init,pseudo [emit_load_ins loc rA],st
       | Some Atomic ->
           Warn.fatal "No atomic load for X86"
       end
-  | Some W ->
+  | Some W,Data loc ->
       if
         (match e.C.atom with Some Atomic -> true | None -> false)
       then
         let rX,st = next_reg st in
-        None,init,pseudo (emit_sta e.C.loc rX e.C.v),
+        None,init,pseudo (emit_sta loc rX e.C.v),
         st
       else
-        None,init,pseudo [emit_store e.C.loc e.C.v],st
-  | Some J -> emit_joker st init
+        None,init,pseudo [emit_store loc e.C.v],st
+  | Some J,_ -> emit_joker st init
+  | _,Code _ -> Warn.fatal "No code location for X86"
 
   let emit_exch st _p init er ew =
     let rA,st = next_reg st in
     rA,init,
-    pseudo  (emit_sta er.C.loc rA ew.C.v),
+    pseudo  (emit_sta (Code.as_data er.C.loc) rA ew.C.v),
     st
 
   let emit_rmw () st p init er ew  =
@@ -160,8 +161,8 @@ let emit_joker st init = None,init,[],st
 
   let emit_rmw_dep () =  emit_exch_dep
 
-  let emit_fence = function
-    | MFence -> X86.Instruction I_MFENCE
+  let emit_fence _ _ _ = function
+    | MFence -> [X86.Instruction I_MFENCE]
 
   let stronger_fence = MFence
 

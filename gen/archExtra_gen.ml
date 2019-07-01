@@ -30,7 +30,7 @@ module type S = sig
 (* Locations *)
   type location =
     | Reg of Code.proc * arch_reg
-    | Loc of Code.loc
+    | Loc of string
 
   val of_loc : Code.loc -> location
   val of_reg : Code.proc -> arch_reg -> location
@@ -81,7 +81,7 @@ module Make(I:I) : S with type arch_reg = I.arch_reg
       | 0 -> Pervasives.compare r1 r2
       | r -> r
       end
-  | Loc loc1,Loc loc2 -> String.compare loc1 loc2
+  | Loc loc1,Loc loc2 -> compare loc1 loc2
 
   module LocMap =
     MyMap.Make
@@ -90,7 +90,7 @@ module Make(I:I) : S with type arch_reg = I.arch_reg
         let compare = location_compare
       end)
 
-  let of_loc loc = Loc loc
+  let of_loc loc = Loc (Code.as_data loc)
   let of_reg p r = Reg (p,r)
 
   type init = (location * string) list

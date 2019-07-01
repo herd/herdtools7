@@ -50,7 +50,7 @@ module Make(C:Config) (A:Arch_gen.S) =
 struct
   module A = A 
 
-  module E =  Edge.Make(A)
+  module E =  Edge.Make(C)(A)
   type check = E.edge list list -> bool
 
   let () = match C.show with

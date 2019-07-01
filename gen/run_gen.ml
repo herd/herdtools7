@@ -57,7 +57,7 @@ module Make (O:Config) (C:ArchRun.S) :
             let k = 
               List.fold_left
                 (fun k f ->
-                  if Misc.string_eq e.C.loc f.C.loc then
+                  if Code.loc_eq e.C.loc f.C.loc then
                     (e,f)::k
                   else k)
                 k es in
@@ -65,7 +65,7 @@ module Make (O:Config) (C:ArchRun.S) :
       let xs =  List.fold_left do_one [] evts in
       Rel.of_list xs
 
-    module Locs = MySet.Make(String)
+    module Locs = Code.LocSet
 
     let make_evts ess =
       let es = List.map ESet.of_list ess in
@@ -93,9 +93,8 @@ module Make (O:Config) (C:ArchRun.S) :
       { pox; evts=ESet.union evts wsi; wsi; }
 
 (* Communication edges *)
+    module LocMap = Code.LocMap
 
-
-    module LocMap = MyMap.Make(String)
     module State =
       MyMap.Make
         (struct

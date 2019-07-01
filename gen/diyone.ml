@@ -221,6 +221,7 @@ let () =
     let scope = !Config.scope
     let docheck = !Config.docheck
     let prog = Config.prog
+    let variant = !Config.variant
   end in
   let module Build = Make(Co) in
   let module C = struct

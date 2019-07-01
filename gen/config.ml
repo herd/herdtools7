@@ -146,7 +146,6 @@ let common_specs =
     | None -> false
     | Some a -> scope := a; true)
    Scope.tags  "<tag> specifiy scope tree"::
-
   Util.parse_tag
     "-type"
     (fun tag -> match TypBase.parse tag with

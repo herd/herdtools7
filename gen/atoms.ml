@@ -25,7 +25,7 @@ let opts = [Util.arch_opt arch]
 
 module Make (A:Fence.S) =
     struct
-      module E = Edge.Make(A)
+      module E = Edge.Make(Edge.Config)(A)
 
       let is_atom es =
         List.exists

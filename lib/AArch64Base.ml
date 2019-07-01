@@ -227,6 +227,8 @@ module IC = struct
   let pp_domain = function IS -> "IS" | NO -> ""
 
   type op = { funct:funct; typ:typ; point:point; domain:domain; }
+  let ivau = { funct=I; typ=VA; point=U; domain=NO; }
+
   let pp_op op =
     pp_funct op.funct ^
     pp_typ op.typ ^
@@ -249,6 +251,9 @@ module DC = struct
   let pp_point = function CO -> "C" | U -> "U"
 
   type op = { funct:funct; typ:typ; point:point; }
+
+  let cvau = { funct=C; typ=VA; point=U; }
+
   let pp_op op =
     pp_funct op.funct ^
     pp_typ op.typ ^
