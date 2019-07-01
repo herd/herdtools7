@@ -159,9 +159,9 @@ module Make(Cst:Constant.S) = struct
   | Var i1,Var i2 when Misc.int_eq i1 i2 -> one
   | Val (Symbolic _ as s1),Val (Symbolic _ as s2) ->
       bool_to_v Cst.eq s1 s2
-(* Assume symbolic value not to be zero *)
-  | Val (Symbolic _), Val (Concrete _ as cst) when Cst.eq cst Cst.zero -> zero
-  | Val (Concrete _ as cst),Val (Symbolic _) when  Cst.eq cst Cst.zero -> zero
+(* Assume symbolic and concrete always o differ *)
+  | (Val (Symbolic _), Val (Concrete _))
+  | (Val (Concrete _), Val (Symbolic _)) -> zero
   | _,_ ->
       binop
         Op.Eq

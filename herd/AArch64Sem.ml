@@ -379,7 +379,12 @@ module Make (C:Sem.Config)(V:Value.S)
           | ADD|ADDS -> fun (v1,v2) -> M.add v1 v2
           | EOR -> fun (v1,v2) -> M.op Op.Xor v1 v2
           | ORR -> fun (v1,v2) -> M.op Op.Or v1 v2
-          | SUB|SUBS -> fun (v1,v2) -> M.op Op.Sub v1 v2
+          | SUB -> fun (v1,v2) -> M.op Op.Sub v1 v2
+          | SUBS -> fun (v1,v2) ->
+              begin match rd with
+              | ZR -> M.op Op.Eq v1 v2
+              | _  -> M.op Op.Sub v1 v2
+              end
           | AND|ANDS -> fun (v1,v2) -> M.op Op.And v1 v2
           end >>=
           (let m =  (fun v ->
