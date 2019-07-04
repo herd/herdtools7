@@ -124,6 +124,7 @@ module type S = sig
 (* Utilities *)
   val is_ext : edge -> bool
   val is_com : edge -> bool
+  val is_fetch : edge -> bool
   val is_po_or_fenced_joker : edge -> bool
 
 (* Set/Map *)
@@ -616,9 +617,15 @@ and do_set_src d e = match e with
   | Rf Ext|Fr Ext|Ws Ext|Iff Ext|Fif Ext
   | Leave _|Back _ -> true
   | _ -> false
+
   let is_com e = match e.edge with
   | Rf _|Fr _|Ws _|Iff _|Fif _|Leave _|Back _| Hat -> true
   | _ -> false
+
+  let is_fetch e = match e.edge with
+  | Iff _|Fif _ -> true
+  | _ -> false
+
   let compat_atoms a1 a2 = match F.merge_atoms a1 a2 with
   | None -> false
   | Some _ -> true

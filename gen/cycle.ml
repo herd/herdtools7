@@ -98,6 +98,7 @@ module type Config = sig
   val allow_back : bool
   val naturalsize : MachSize.sz
   val hexa : bool
+  val variant : Variant_gen.t -> bool
 end
 
 module Make (O:Config) (E:Edge.S) :
@@ -284,6 +285,10 @@ let non_pseudo e = E.is_non_pseudo e.E.edge
 let find_non_pseudo m = find_edge non_pseudo m
 let find_non_pseudo_prev m = find_edge_prev non_pseudo m
 
+let is_real_edge e =  non_pseudo e && non_insert e
+
+let find_real_edge_prev = find_edge_prev is_real_edge
+
 (* Add events in nodes *)
 
 module Env = Map.Make(String)
@@ -311,6 +316,7 @@ let next_loc e (loc0,vs) = match e.E.edge with
 let same_loc e = match E.loc_sd e with
     | Same -> true
     | Diff -> false
+
 let diff_loc e = not (same_loc e)
 
 let same_proc e = E.get_ie e = Int
@@ -461,12 +467,34 @@ let set_dir n0 =
 (* Set locations of events *)
 (***************************)
 
+  let is_non_fetch_and_same e =
+    is_real_edge e && same_loc e && not (E.is_fetch e)
+
+  let check_fetch n0 =
+    let rec do_rec m =
+      let p = find_real_edge_prev m.prev in
+      if E.is_fetch m.edge then begin
+        if E.is_fetch p.edge && find_real_edge_prev p.prev != m then
+          Warn.user_error "Bad consecutive fetches [%s] => [%s]"
+            (str_node p) (str_node m)
+      end ;
+      if
+        E.is_fetch p.edge && is_non_fetch_and_same m.edge ||
+        E.is_fetch m.edge && is_non_fetch_and_same p.edge
+      then begin
+        Warn.user_error "Ambiguous Data/Code location es [%s] => [%s]"
+          (str_node p) (str_node m)
+      end ;
+      if m.next != n0 then do_rec m.next in
+  do_rec n0
+
 (* Loc is changing *)
 let set_diff_loc st n0 =
   let rec do_rec st p m =
     let loc,st =
-      if same_loc p.edge then p.evt.loc,st
-      else next_loc m.edge st in
+      if same_loc p.edge then begin
+        p.evt.loc,st
+      end else next_loc m.edge st in
     m.evt <- { m.evt with loc=loc; } ;
 (*    eprintf "LOC SET: %a [p=%a]\n%!" debug_node m debug_node p; *)
     if m.next != n0 then do_rec st p.next m.next
@@ -645,6 +673,7 @@ let finish n =
             (fun (loc,v) -> sprintf "%s -> 0x%x"
                 (Code.pp_loc loc) v) vs))
   end ;
+  if O.variant Variant_gen.Self then check_fetch n ;
   ()
 
 
