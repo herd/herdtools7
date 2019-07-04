@@ -298,21 +298,59 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
         | r -> r
     end
 (* In/Out *)
-    type points = One of dir | Two of dir * dir
+    module Dir = struct
+      type t = R | W | F | J
+      let pp = function
+        | R -> "R"
+        | W -> "W"
+        | F -> "F"
+        | J -> "J"
+
+      let tr e =
+        let d = Misc.as_some e.CE.dir in
+        let r =
+          match d with
+          | Code.W -> W
+          | Code.R ->
+              begin match e.CE.edge.E.edge with
+              | E.Fif _ -> F
+              | _ ->
+                  begin match e.CE.prev.CE.edge.E.edge with
+                  | E.Iff _ -> F
+                  | _ -> R
+                  end
+              end
+          | Code.J -> J in
+        if debug then
+          eprintf "%s[%s] -> %s\n"
+            (E.pp_edge e.CE.edge) (Code.pp_dir d)
+            (pp r) ;
+        r
+
+    end
+
+    type points = One of Dir.t | Two of Dir.t * Dir.t
 
     let order =
+      let open Dir in
       [|
         One W;
         Two (W,W);
         Two (R,R);
+        Two (R,F);
+        Two (F,R);
+        Two (F,F);
         Two (R,W);
+        Two (F,W);
         Two (W,R);
+        Two (W,F);
         One R;
+        One F;
       |]
 
     let pp_points = function
-      | One d -> pp_dir d
-      | Two (d1,d2) -> pp_dir d1 ^ pp_dir d2
+      | One d -> Dir.pp d
+      | Two (d1,d2) -> Dir.pp d1 ^ Dir.pp d2
 
     let t_id = Hashtbl.create 17
 
@@ -352,8 +390,8 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
               let e = CE.find_node is_actual_edge e
               and o = CE.find_node_rev is_actual_edge o in
               let p =
-                if e == o then One (Misc.as_some e.CE.dir)
-                else Two (Misc.as_some e.CE.dir,Misc.as_some o.CE.dir) in
+                if e == o then One (Dir.tr e)
+                else Two (Dir.tr e,Dir.tr o) in
               { points=p; cycle=e;  prev=nil; next=nil; })
             eos in
         let patch = function
@@ -428,13 +466,33 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
       | "W+RR" when allsame -> "CoRR"
       | "WR" when allsame -> "CoWR0"
       | "WW+RR" -> "MP"
+      | "WW+FF" -> "MP.FF"
+      | "WW+RF" -> "MP.RF"
+      | "WW+FR" -> "MP.FR"
       | "WR+WR" -> "SB"
+      | "WF+WR" -> "SB.FR"
+      | "WR+WF" -> "SB.RF"
+      | "WF+WF" -> "SB.FF"
       | "WR+WR+WR" -> "3.SB"
+      | "WF+WF+WF" -> "3.SB.FFF"
       | "WR+WR+WR+WR" -> "4.SB"
       | "W+RW+RR" -> "WRC"
+      | "W+FW+RR" -> "WRC+F+RR"
+      | "W+FW+FF" -> "WRC+F+FF"
+      | "W+FW+FR" -> "WRC+F+FR"
+      | "W+FW+RF" -> "WRC+F+RF"
+      | "W+RW+FF" -> "WRC+R+FF"
+      | "W+RW+FR" -> "WRC+R+FR"
+      | "W+RW+RF" -> "WRC+R+RF"
       | "W+RR+WR" -> "RWC"
+      | "W+FF+WF" -> "RWC.FF.F"
+      | "W+RF+WF" -> "RWC.RF.F"
       | "RW+RW" -> "LB"
+      | "FW+RW" -> "LB.FR"
+      | "RW+FW" -> "LB.RF"
+      | "FW+FW" -> "LB.FF"
       | "RW+RW+RW" -> "3.LB"
+      | "FW+FW+FW" -> "3.LB.FFF"
       | "RW+RW+RW+RW" -> "4.LB"
       | "WW+WR" -> "R"
       | "W+RW+WR" -> "WRW+WR"
@@ -446,7 +504,9 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
       | "WW+WW+WW+WW" -> "4.2W"
       | "W+RW+WW" -> "WRW+2W"
       | "WW+RR+WR" -> "W+RWC"
+      | "WW+FF+WF" -> "W+RWC.F.FF"
       | "WW+RW+RR" -> "ISA2"
+      | "WW+FW+FF" -> "ISA2.F.FF"
       | "W+RR+W+RR" -> "IRIW"
       | "W+RR+W+RW"|"W+RW+W+RR" -> "IRRWIW"
       | "W+RW+W+RW" -> "IRWIW"
