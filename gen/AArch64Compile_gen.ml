@@ -869,12 +869,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let emit_fence p init n f = match f with
     | Barrier f -> [Instruction (I_FENCE f)]
-    | CacheSync isb ->
+    | CacheSync (s,isb) ->
         try
           let lab = C.find_prev_code n in
           let r = U.find_init p init lab in
           pseudo
-            (I_DC (DC.cvau,r)::
+            (I_DC ((match s with Strong -> DC.civac | Weak -> DC.cvau),r)::
              I_FENCE (DSB (ISH,FULL))::
              I_IC (IC.ivau,r)::
              I_FENCE (DSB (ISH,FULL))::

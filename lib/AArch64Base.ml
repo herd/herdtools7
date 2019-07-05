@@ -253,6 +253,7 @@ module DC = struct
   type op = { funct:funct; typ:typ; point:point; }
 
   let cvau = { funct=C; typ=VA; point=U; }
+  let civac = { funct=CI; typ=VA; point=CO; }
 
   let pp_op op =
     pp_funct op.funct ^

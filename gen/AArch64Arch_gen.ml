@@ -159,8 +159,10 @@ let overwrite_value v ao w = match ao with
 (**********)
 (* Fences *)
 (**********)
+type strength = Strong | Weak
+let fold_strength f r = f Strong (f Weak r)
 
-type fence = | Barrier of barrier | CacheSync of bool
+type fence = | Barrier of barrier | CacheSync of strength * bool
 
 let is_isync = function
   | Barrier ISB -> true
@@ -168,7 +170,11 @@ let is_isync = function
 
 let compare_fence b1 b2 = match b1,b2 with
 | Barrier _,CacheSync _ -> -1
-| CacheSync b1 ,CacheSync b2-> compare b1 b2
+| CacheSync (s1,b1) ,CacheSync (s2,b2)->
+    begin match compare b1 b2 with
+   | 0 -> compare s1 s2
+   | r -> r
+    end
 | Barrier b1,Barrier b2 -> barrier_compare b1 b2
 | CacheSync _,Barrier _ -> +1
 
@@ -178,14 +184,23 @@ let strong = default
 
 let pp_fence f = match f with
 | Barrier f -> do_pp_barrier "." f
-| CacheSync isb -> sprintf "CacheSync%s" (if isb then "Isb" else "")
+| CacheSync (s,isb) -> sprintf "CacheSync%s%s"
+      (match s with Strong -> "Strong" | Weak -> "")
+      (if isb then "Isb" else "")
 
 let fold_cumul_fences f k =
    do_fold_dmb_dsb C.moreedges (fun b k -> f (Barrier b) k) k
 
 let fold_all_fences f k =
   fold_barrier  C.moreedges (fun b k -> f (Barrier b) k)
-    (if do_self then Misc.fold_bool (fun b k -> f  (CacheSync b) k) k else k)
+    (if do_self then
+      Misc.fold_bool
+        (fun b k ->
+          fold_strength
+            (fun s k -> f (CacheSync (s,b)) k)
+            k)
+        k
+    else k)
 
 let fold_some_fences f k =
   let f = fun b k -> f (Barrier b) k in
