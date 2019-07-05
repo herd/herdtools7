@@ -309,9 +309,9 @@ let make_loc n =
   if n < locs_len then locs.(n)
   else Printf.sprintf "x%02i" (n-locs_len)
 
-let next_loc e (loc0,vs) = match e.E.edge with
-| E.Iff _|E.Fif _ -> Code (Label.next_label "Lself"),(loc0,vs)
-| _ -> Code.Data (make_loc loc0),(loc0+1,vs)
+let next_loc e ((loc0,lab0),vs) = match e.E.edge with
+| E.Iff _|E.Fif _ -> Code (sprintf "Lself%02i" lab0),((loc0,lab0+1),vs)
+| _ -> Code.Data (make_loc loc0),((loc0+1,lab0),vs)
 
 let same_loc e = match E.loc_sd e with
     | Same -> true
@@ -634,7 +634,7 @@ let set_read_v nss =
 (* zyva... *)
 
 let finish n =
-  let st = 0,Env.empty in
+  let st = (0,0),Env.empty in
 (* Set locations *)
   let sd,n =
     let no =
