@@ -129,7 +129,7 @@ let parse_fences fs = List.fold_right parse_fence fs []
     | None -> None
     | Some xs -> Some (parse_edges xs)
 
-  let go n (*size*) olr ols (*relax and safe lists*) _olc (*one + arg*) =
+  let go n (*size*) olr ols (*relax and safe lists*)  =
     match O.choice with
     | Sc|Critical|Free|Ppo|Transitive|Total|MixedCheck ->
         begin match olr,ols with
@@ -155,10 +155,8 @@ let split s = match s with
   let splitted = LexUtil.split s in
   Some splitted
 
-let lc = ref []
-
 let get_arg s =
-  lc := (!lc)@[s]
+  raise (Arg.Bad (Printf.sprintf "%s takes no argument, argument %s is present" Config.prog s))
 
 let norm_cmd cmd = 
   match cmd with
@@ -192,8 +190,7 @@ let () =
   | Some s -> exec_conf s
   end;
   let relax_list = split !Config.relaxs
-  and safe_list = split !Config.safes 
-  and one_list = if !Config.one then Some !lc else None in
+  and safe_list = split !Config.safes  in
 
   let cpp = match !Config.arch with `CPP -> true  |  _ -> false in
 
@@ -303,7 +300,7 @@ let () =
       let module M = Make(CCompile_gen.Make(CoC))(Co) in
       M.go in
   try
-    f !Config.size relax_list safe_list one_list ;
+    f !Config.size relax_list safe_list ;
     exit 0
   with
   | Misc.Fatal msg | Misc.UserError msg->
