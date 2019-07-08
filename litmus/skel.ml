@@ -2743,6 +2743,9 @@ module Make
             O.oi "cpus_t *def_all_cpus = NULL;" ;
             false
           end in
+        if do_self then begin
+          O.oi "cache_line_size = getcachelinesize();"
+        end ;
         if alloc_def_all_cpus then begin
           O.oi "if (def_all_cpus->sz < N) {" ;
           if Cfg.limit then begin

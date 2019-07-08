@@ -18,13 +18,11 @@
 /* Support for self-modifying code */
 /***********************************/
 
-static const int cache_line_size = 64;
-
 typedef uint32_t ins_t ;
 
 inline static void selfbar(void *p) {
   asm __volatile__
-    ("dc cvau,%[p]\n\t" "dsb sy\n\t" "ic ivau,%[p]\n\t" "dsb sy\n\t" "isb"
+    ("dc civac,%[p]\n\t" "dsb sy\n\t" "ic ivau,%[p]\n\t" "dsb sy\n\t" "isb"
      ::[p]"r"(p): "memory");
 }
 
@@ -62,4 +60,20 @@ static ins_t getret(void) {
 : "cc","memory"
 );
   return r;
+}
+
+static uint32_t cache_line_size;
+
+static uint32_t getcachelinesize(void) {
+  uint64_t csz;
+  asm __volatile__ (
+  "mrs %[r],CTR_EL0"
+:[r] "=&r" (csz)
+:
+:"cc","memory"
+    );
+  uint64_t sz1 = csz & 0xf;
+  uint64_t sz2 = (csz >> 16 ) & 0xf;
+  uint32_t x = (uint32_t) (sz1 >= sz2 ? sz1 : sz2);
+  return (1 << x) * 4 ;
 }
