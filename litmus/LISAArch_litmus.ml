@@ -41,6 +41,7 @@ module Make(V:Constant.S) = struct
         let reg_to_string = reg_to_string
         let internal_init _r = None
         let reg_class _ = ""
+        let reg_class_stable _ = ""
         let comment = comment
         let error t1 t2 =
           let open CType in

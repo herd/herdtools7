@@ -83,6 +83,7 @@ module Make (O:Arch_litmus.Config)(V:Constant.S) = struct
           else if reg_compare r tb_addr1 = 0 then Some ("&_tb1","tb_t *")
           else None
         let reg_class _ = "=&r"
+        let reg_class_stable _ = "=&r"
         let comment = comment
         let error _ _ = false
       end)

@@ -29,6 +29,7 @@ module type I = sig
   val internal_init : arch_reg -> (string * string) option
 (* gcc assembly template register class *)
   val reg_class : arch_reg -> string
+  val reg_class_stable : arch_reg -> string
 (* type errors *)
   val error : CType.t -> CType.t  -> bool
 end
@@ -123,12 +124,14 @@ module RegMap = A.RegMap)
         let ins =
           List.map
             (fun (reg,v) ->  dump_pair reg v)
-            t.Tmpl.init in
+            (List.filter
+               (fun (r,_) -> not (RegSet.mem r stable))
+               t.Tmpl.init) in
         (* All other inputs, apparently needed to get gcc to
            allocate registers avoiding all registers in template *)
         let rem =
           RegSet.diff
-            all
+            (RegSet.diff all stable)
             (List.fold_right
                (fun (reg,_) -> RegSet.add reg) t.Tmpl.init in_outputs) in
         let rem =
@@ -137,8 +140,9 @@ module RegMap = A.RegMap)
               let v = A.V.zero in
               dump_pair reg v::k)
             rem [] in
-
-        fprintf chan ":%s\n" (String.concat "," (ins@rem))
+        let out =  (String.concat "," (ins@rem)) in
+(*        eprintf "IN: {%s}\n" out ; *)
+        fprintf chan ":%s\n" out
 
       let (@@) f k  = f k
 
@@ -172,7 +176,7 @@ module RegMap = A.RegMap)
                     else if RegSet.mem reg stable then
                       sprintf "%s \"%s\" (%s)"
                         (tag_reg_def reg)
-                        (A.reg_class reg)
+                        (A.reg_class_stable reg)
                         (dump_stable_reg reg)
                     else
                       sprintf "%s \"%s\" (%s)"
@@ -191,7 +195,7 @@ module RegMap = A.RegMap)
                   (fun reg k ->
                     sprintf "%s \"%s\" (%s)"
                       (tag_reg_def reg)
-                      (A.reg_class reg)
+                      (A.reg_class_stable reg)
                       (dump_stable_reg reg)::k)
                   (RegSet.diff stable final) []) in
         fprintf chan ":%s\n" outs

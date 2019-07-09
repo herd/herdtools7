@@ -44,6 +44,7 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
           else if reg_compare r loop_idx = 0 then some "max_loop"
 *)
         let reg_class _ = "=&r"
+        let reg_class_stable _ = "=&r"
         let comment = comment
         let error _ _ = false
       end)

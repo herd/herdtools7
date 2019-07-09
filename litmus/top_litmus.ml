@@ -282,7 +282,7 @@ end = struct
 
   module Make
       (O:Config)
-      (A:Arch_litmus.S)
+     (A:Arch_litmus.S)
       (L:GenParser.LexParse with type instruction = A.parsedPseudo)
       (XXXComp : XXXCompile_litmus.S with module A = A) =
     struct

@@ -25,6 +25,7 @@ module type I = sig
   val reg_to_string  : arch_reg -> string
   val internal_init : arch_reg -> (string * string) option
   val reg_class : arch_reg -> string
+  val reg_class_stable : arch_reg -> string
   val comment : string
   val error : CType.t -> CType.t -> bool
 end
