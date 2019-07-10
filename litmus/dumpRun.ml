@@ -163,9 +163,11 @@ let run_tests names out_chan =
   | Some exp -> Some (open_out exp) in
   let  arch,docs,sources,_,_ =
     Misc.fold_argv_or_stdin
-      (fun name (_,docs,srcs,cycles,hash_env) ->
-        match CT.from_file cycles hash_env
-            name out_chan with
+      (fun name (a0,docs,srcs,cycles,hash_env) ->
+        let ans =
+          try CT.from_file cycles hash_env name out_chan
+          with e ->  Interrupted (a0,e) in
+        match ans with
         | Completed (a,doc,src,cycles,hash_env) ->
             begin match exp with
             | None -> ()
