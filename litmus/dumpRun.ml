@@ -38,6 +38,7 @@ module type Config = sig
   val asmcommentaslabel : bool
   include RunUtils.CommonConfig
   val mkopt : Option.opt -> Option.opt
+  val variant : Variant_litmus.t -> bool
 end
 
 module type OneTest = sig
@@ -96,6 +97,7 @@ end = struct
     (module M : ArchConf)
 
 (* Makefile utilities *)
+  let do_self = Cfg.variant Variant_litmus.Self
 
   let makefile_vars chan infile arch sources =
     let module O = struct
@@ -103,7 +105,9 @@ end = struct
       include (val (get_arch arch) : ArchConf)
     end in
     let module RU = RunUtils.Make(O) in
-    let gcc_opts = RU.get_gcc_opts in
+    let gcc_opts =
+      if do_self then LexO.tr RU.get_gcc_opts
+      else RU.get_gcc_opts in
     fprintf chan "GCC=%s\n" Cfg.gcc ;
     fprintf chan "GCCOPTS=%s\n" gcc_opts ;
     let link_opts = RU.get_link_opts in

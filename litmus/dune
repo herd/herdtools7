@@ -1,5 +1,5 @@
 (rule (copy ../Version.ml Version.ml))
-(ocamllex lexAffinity lexConf_litmus lexFmt lexHaveRcu prefetch showcode)
+(ocamllex lexAffinity lexConf_litmus lexFmt lexHaveRcu prefetch showcode lexO)
 (executables
    (names
       litmus klitmus

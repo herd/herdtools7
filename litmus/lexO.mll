@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2012-present Institut National de Recherche en Informatique et *)
+(* Copyright 2019-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,38 +14,17 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(*********************************)
-(* Dump or run a series of tests *)
-(*********************************)
+(* Replace -O... by -O0 *)
 
-open Answer
+{
 
-module type Config = sig
-  val carch : Archs.System.t option
-  val platform : string
-  val gcc : string
-  val stdio : bool
-  val index : string option
-  val crossrun : Crossrun.t
-  val adbdir : string
-  val sleep : int
-  val tarname : string
-  val driver : Driver.t
-  val cross : bool
-  val hexa : bool
-  val threadstyle : ThreadStyle.t
-  val asmcommentaslabel : bool
-  include RunUtils.CommonConfig
-  val mkopt : Option.opt -> Option.opt
-  val variant : Variant_litmus.t -> bool
-end
+}
 
+rule zyva buf = parse
+| "-O" ['0'-'9']+ { Buffer.add_string buf "-O0" ; zyva buf lexbuf }
+| _ as c         { Buffer.add_char buf c ; zyva buf lexbuf }
+| eof            { Buffer.contents buf }
 
-module type OneTest = sig
-  val from_file :
-      StringSet.t -> hash_env-> string -> out_channel -> answer
-end
-
-module Make :
-  functor (O:Config) -> functor(Tar : Tar.S) -> functor (CT : OneTest) ->
-  sig val from_files : string list -> unit end   
+{
+ let tr s = zyva (Buffer.create 16) (Lexing.from_string s)      
+}
