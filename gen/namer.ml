@@ -65,10 +65,10 @@ module Make
          | Leave c -> Some ("["^pp_com c)
          | Back c -> Some (pp_com c^"]")
          | Insert f -> Some (sprintf "[%s]" (Misc.lowercase (A.pp_fence f)))
-         | Iff Ext -> Some "iffe"
-         | Iff Int -> Some "iffi"
-         | Fif Ext -> Some "fife"
-         | Fif Int -> Some "fifi"
+         | Irf Ext -> Some "irfe"
+         | Irf Int -> Some "irfi"
+         | Ifr Ext -> Some "ifre"
+         | Ifr Int -> Some "ifri"
          | Node _ -> assert false
          | _ -> None
 

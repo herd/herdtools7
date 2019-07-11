@@ -159,7 +159,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
 
 (* Notice, do not halt on stores... *)
       let ext_com e = match e.E.edge with
-      | E.Rf Ext|E.Fr Ext|E.Ws Ext|E.Hat|E.Iff Ext|E.Fif Ext -> true
+      | E.Rf Ext|E.Fr Ext|E.Ws Ext|E.Hat|E.Irf Ext|E.Ifr Ext -> true
       | _ -> false
 
 (* Find skipping Leave/Back *)
@@ -313,10 +313,10 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
           | Code.W -> W
           | Code.R ->
               begin match e.CE.edge.E.edge with
-              | E.Fif _ -> F
+              | E.Ifr _ -> F
               | _ ->
                   begin match e.CE.prev.CE.edge.E.edge with
-                  | E.Iff _ -> F
+                  | E.Irf _ -> F
                   | _ -> R
                   end
               end

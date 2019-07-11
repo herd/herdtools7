@@ -210,7 +210,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           | Fr _|Leave CFr|Back CFr -> "Fr"
           | Rf _|Leave CRf|Back CRf -> "Rf"
           | Ws _|Leave CWs|Back CWs -> "Ws"
-          | Iff _ -> "Iff" | Fif _ -> "Fif"
+          | Irf _ -> "Irf" | Ifr _ -> "Ifr"
           | _ -> assert false)
         nss
 
@@ -271,7 +271,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 
     let fetch_val n =
       match n.C.C.prev.C.C.edge.C.E.edge, n.C.C.edge.C.E.edge with
-      | C.E.Iff _,_ -> 2
-      | _,C.E.Fif _ -> 1
+      | C.E.Irf _,_ -> 2
+      | _,C.E.Ifr _ -> 1
       | _,_ -> 0
   end

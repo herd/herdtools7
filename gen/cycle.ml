@@ -310,7 +310,7 @@ let make_loc n =
   else Printf.sprintf "x%02i" (n-locs_len)
 
 let next_loc e ((loc0,lab0),vs) = match e.E.edge with
-| E.Iff _|E.Fif _ -> Code (sprintf "Lself%02i" lab0),((loc0,lab0+1),vs)
+| E.Irf _|E.Ifr _ -> Code (sprintf "Lself%02i" lab0),((loc0,lab0+1),vs)
 | _ -> Code.Data (make_loc loc0),((loc0+1,lab0),vs)
 
 let same_loc e = match E.loc_sd e with
@@ -588,7 +588,7 @@ let set_same_loc st n0 =
           find_node
             (fun m -> match m.prev.edge.E.edge with
             | E.Fr _|E.Rf _|E.Ws _|E.Leave _|E.Back _
-            | E.Hat|E.Rmw _|E.Iff _|E.Fif _ -> true
+            | E.Hat|E.Rmw _|E.Irf _|E.Ifr _ -> true
             | E.Po _|E.Dp _|E.Fenced _|E.Insert _|E.Node _ -> false
             | E.Id -> assert false) n in
         split_one_loc m

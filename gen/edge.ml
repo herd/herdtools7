@@ -50,7 +50,7 @@ module type S = sig
     | Hat
     | Rmw of rmw      (* Various sorts of read-modify-write *)
 (* Instruction fetch *)
-    | Iff of ie| Fif of ie
+    | Irf of ie| Ifr of ie
 
   val is_id : tedge -> bool
   val is_node : tedge -> bool
@@ -176,32 +176,32 @@ and type rmw = F.rmw = struct
     | Node of dir
     | Hat
     | Rmw of rmw
-    | Iff of ie| Fif of ie
+    | Irf of ie| Ifr of ie
 
 
   let is_id = function
     | Id -> true
     | Insert _|Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Node _
-    | Iff _|Fif _ -> false
+    | Irf _|Ifr _ -> false
 
   let is_insert = function
     | Insert _ -> true
     | Id|Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Node _
-    | Iff _|Fif _ -> false
+    | Irf _|Ifr _ -> false
 
   let is_node = function
     | Node _ -> true
     | Id|Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Insert _
-     | Iff _|Fif _ -> false
+     | Irf _|Ifr _ -> false
 
   let is_non_pseudo = function
     | Insert _ |Id|Node _-> false
     | Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _
-    | Iff _|Fif _ -> true
+    | Irf _|Ifr _ -> true
 
   type edge = { edge: tedge;  a1:atom option; a2: atom option; }
 
@@ -280,8 +280,8 @@ and type rmw = F.rmw = struct
     | Node W -> "Write"
     | Node R -> "Read"
     | Node J -> assert false
-    | Iff ie -> sprintf "Iff%s" (pp_ie ie)
-    | Fif ie -> sprintf "Fif%s" (pp_ie ie)
+    | Irf ie -> sprintf "Irf%s" (pp_ie ie)
+    | Ifr ie -> sprintf "Ifr%s" (pp_ie ie)
 
   let debug_edge e =
     sprintf
@@ -337,8 +337,8 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
 
   let do_dir_tgt e = match e with
   | Po(_,_,e)| Fenced(_,_,_,e)|Dp (_,_,e) -> e
-  | Rf _| Hat|Iff _ -> Dir R
-  | Ws _|Fr _|Rmw _|Fif _ -> Dir W
+  | Rf _| Hat|Irf _ -> Dir R
+  | Ws _|Fr _|Rmw _|Ifr _ -> Dir W
   | Leave c|Back c -> do_dir_tgt_com c
   | Id -> not_that e "do_dir_tgt"
    |Insert _ -> NoDir
@@ -347,8 +347,8 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
 
   and do_dir_src e = match e with
   | Po(_,e,_)| Fenced(_,_,e,_) -> e
-  | Dp _|Fr _|Fif _|Hat|Rmw _ -> Dir R
-  | Ws _|Rf _|Iff _ -> Dir W
+  | Dp _|Fr _|Ifr _|Hat|Rmw _ -> Dir R
+  | Ws _|Rf _|Irf _ -> Dir W
   | Leave c|Back c -> do_dir_src_com c
   | Id -> not_that e "do_dir_src"
   | Insert _ -> NoDir
@@ -357,8 +357,8 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
 let fold_tedges f r =
   let r =
     if do_self then
-      let r = fold_ie (fun ie -> f (Iff ie)) r in
-      let r = fold_ie (fun ie -> f (Fif ie)) r in
+      let r = fold_ie (fun ie -> f (Irf ie)) r in
+      let r = fold_ie (fun ie -> f (Ifr ie)) r in
       r
     else r in
   let r = fold_ie (fun ie -> f (Rf ie)) r in
@@ -495,6 +495,7 @@ let iter_atom f= F.fold_atom (fun a () -> f a) ()
       Hashtbl.add t lxm e
 
 (* Fill lexeme table *)
+  let iter_ie f = fold_ie (fun ie () -> f ie) ()
 
   let () =
     iter_edges  (fun e -> add_lxm (pp_edge_with_xx e) e) ;
@@ -537,6 +538,12 @@ let iter_atom f= F.fold_atom (fun a () -> f a) ()
         ()) () ;
     if not (Hashtbl.mem t "R") then add_lxm "R" (plain_edge (Node R)) ;
     if not (Hashtbl.mem t "W") then add_lxm "W" (plain_edge (Node W)) ;
+(* Backward compatibility *)
+    if do_self then
+      iter_ie
+        (fun ie ->
+          add_lxm (sprintf "Iff%s" (pp_ie ie)) (plain_edge (Irf ie)) ;
+          add_lxm (sprintf "Fif%s" (pp_ie ie)) (plain_edge (Ifr ie))) ;
     ()
 
 
@@ -571,13 +578,13 @@ let do_set_tgt d e = match e  with
   | Po(sd,src,_) -> Po (sd,src,Dir d)
   | Fenced(f,sd,src,_) -> Fenced(f,sd,src,Dir d)
   | Dp (dp,sd,_) -> Dp (dp,sd,Dir d)
-  | Rf _ | Hat|Iff _|Fif _
+  | Rf _ | Hat|Irf _|Ifr _
   | Insert _|Id|Node _|Ws _|Fr _|Rmw _|Leave _|Back _-> e
 
 and do_set_src d e = match e with
   | Po(sd,_,tgt) -> Po(sd,Dir d,tgt)
   | Fenced(f,sd,_,tgt) -> Fenced(f,sd,Dir d,tgt)
-  | Fr _|Hat|Dp _|Fif _|Iff _
+  | Fr _|Hat|Dp _|Ifr _|Irf _
   | Insert _|Id|Node _|Ws _|Rf _|Rmw _|Leave _|Back _ -> e
 
   let set_tgt d e = { e with edge = do_set_tgt d e.edge ; }
@@ -586,12 +593,12 @@ and do_set_src d e = match e with
   let loc_sd e = match e.edge with
   | Po (sd,_,_) | Fenced (_,sd,_,_) | Dp (_,sd,_) -> sd
   | Insert _|Node _|Fr _|Ws _|Rf _|Hat|Rmw _|Id|Leave _|Back _
-  | Fif _| Iff _ -> Same
+  | Ifr _| Irf _ -> Same
 
 
   let get_ie e = match e.edge with
   | Id |Po _|Dp _|Fenced _|Rmw _ -> Int
-  | Rf ie|Fr ie|Ws ie|Iff ie|Fif ie -> ie
+  | Rf ie|Fr ie|Ws ie|Irf ie|Ifr ie -> ie
   | Leave _|Back _|Hat -> Ext
   | Insert _|Node _ -> Int
 
@@ -614,16 +621,16 @@ and do_set_src d e = match e with
       end
 
   let is_ext e = match e.edge with
-  | Rf Ext|Fr Ext|Ws Ext|Iff Ext|Fif Ext
+  | Rf Ext|Fr Ext|Ws Ext|Irf Ext|Ifr Ext
   | Leave _|Back _ -> true
   | _ -> false
 
   let is_com e = match e.edge with
-  | Rf _|Fr _|Ws _|Iff _|Fif _|Leave _|Back _| Hat -> true
+  | Rf _|Fr _|Ws _|Irf _|Ifr _|Leave _|Back _| Hat -> true
   | _ -> false
 
   let is_fetch e = match e.edge with
-  | Iff _|Fif _ -> true
+  | Irf _|Ifr _ -> true
   | _ -> false
 
   let compat_atoms a1 a2 = match F.merge_atoms a1 a2 with
@@ -657,7 +664,7 @@ and do_set_src d e = match e with
   let do_expand_edge e f =
     match e.edge with
     | Insert _|Id|Node _|Rf _ | Fr _ | Ws _
-    | Hat |Rmw _|Dp _|Leave _|Back _|Fif _|Iff _
+    | Hat |Rmw _|Dp _|Leave _|Back _|Ifr _|Irf _
       -> f e
     | Po(sd,e1,e2) ->
         expand_dir2 e1 e2 (fun d1 d2 -> f {e with edge=Po(sd,d1,d2);})
