@@ -164,6 +164,8 @@ let emit_joker st init = None,init,[],st
   let emit_fence _ _ _ = function
     | MFence -> [X86.Instruction I_MFENCE]
 
+  let full_emit_fence = GenUtils.to_full emit_fence
+
   let stronger_fence = MFence
 
 (* Check load *)

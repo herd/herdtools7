@@ -226,12 +226,13 @@ let get_fence n =
             compile_proc pref nchk loc_writes
               st p (edge_to_prev_load o n)
               init ns in
+          let init,cf,st =
+            match get_fence n with
+            | Some fe -> Comp.full_emit_fence st p init n fe
+            | None -> init,[],st in
           add_init_check chk p o init,
           i@
-          mk_c
-            (match get_fence n with
-              Some fe -> Comp.emit_fence p init n fe@is
-            | _ -> is),
+          mk_c (cf@is),
           (match n.C.evt.C.loc with
           | Data loc ->
               if StringSet.mem loc loc_writes  && not (U.do_poll n) then

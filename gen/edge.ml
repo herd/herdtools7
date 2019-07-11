@@ -92,7 +92,7 @@ module type S = sig
    Returning No means that the direction is not applicable (pseudo edge *)
   val dir_src : edge -> extr
   val dir_tgt : edge -> extr
-
+  val safe_dir : edge -> dir option
 (* Return edge with direction resolved *)
   val set_src : dir ->  edge -> edge
   val set_tgt : dir ->  edge -> edge
@@ -440,6 +440,13 @@ let fold_tedges f r =
 
   let dir_tgt e = do_dir_tgt e.edge
   and dir_src e = do_dir_src e.edge
+  and safe_dir e =
+    try
+      begin match do_dir_src e.edge with
+      | Dir d -> Some d
+      | NoDir|Irr -> None
+      end
+    with NotThat _ -> None
 
 (***************)
 (* Atom lexing *)

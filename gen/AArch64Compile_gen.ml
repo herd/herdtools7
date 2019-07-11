@@ -866,21 +866,33 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | StOp op -> emit_stop op
 
 (* Fences *)
-
-    let emit_fence p init n f = match f with
-    | Barrier f -> [Instruction (I_FENCE f)]
-    | CacheSync (s,isb) ->
-        try
-          let lab = C.find_prev_code n in
-          let r = U.find_init p init lab in
-          pseudo
+    let emit_cachesync s isb r =
+      pseudo
             (I_DC ((match s with Strong -> DC.civac | Weak -> DC.cvau),r)::
              I_FENCE (DSB (ISH,FULL))::
              I_IC (IC.ivau,r)::
              I_FENCE (DSB (ISH,FULL))::
              (if isb then [I_FENCE ISB] else []))
+
+    let emit_fence p init n f = match f with
+    | Barrier f -> [Instruction (I_FENCE f)]
+    | CacheSync (s,isb) ->
+        try
+          let lab = C.find_prev_code_write n in
+          let r = U.find_init p init lab in
+          emit_cachesync s isb r
         with Not_found -> Warn.user_error "No code write before CacheSync"
 
+
+    let full_emit_fence st p init n f = match f with
+    | Barrier f -> init,[Instruction (I_FENCE f)],st
+    | CacheSync (s,isb) ->
+        try
+          let lab = C.find_prev_code_write n in
+          let r,init,st = U.next_init st p init lab in
+          init,emit_cachesync s isb r,st
+        with Not_found ->
+          Warn.user_error "No code write before CacheSync"
 
     let stronger_fence = strong
 

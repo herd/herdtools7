@@ -206,6 +206,7 @@ let emit_rmw _ = assert false
 (**********)
 
     let emit_fence _ _ _ f =  [Instruction (Pfence f)]
+    let full_emit_fence = GenUtils.to_full emit_fence
     let _emit_fence_tagged o a = Instruction (Pfence(Fence(a,o)))
 
     let stronger_fence = strong

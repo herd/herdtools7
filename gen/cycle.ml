@@ -54,7 +54,7 @@ module type S = sig
 (* Find, may raise Not_found *)
   val find_node : (node -> bool) -> node -> node
   val find_node_prev : (node -> bool) -> node -> node
-  val find_prev_code : node -> string
+  val find_prev_code_write : node -> string
 
   val find_edge : (edge -> bool) -> node -> node
   val find_edge_prev : (edge -> bool) -> node -> node
@@ -104,6 +104,8 @@ end
 module Make (O:Config) (E:Edge.S) :
     S with type fence = E.fence and type edge = E.edge and type atom = E.atom
 = struct
+  let dbg = false
+
   type fence = E.fence
   type edge = E.edge
   type atom = E.atom
@@ -262,12 +264,28 @@ let find_node_prev p n =
       else do_rec m in
   do_rec n
 
-let find_prev_code n =
+(*  n and m are on the same thread, n beging before me *)
+  let po_pred n m =
+    if dbg then
+      eprintf "po_pred: n=[%a], m=[%a]\n%!" debug_node n debug_node m ;
+  let rec do_rec p =
+    eprintf "  pred_rec, node %a\n%!" debug_node p ;
+    if p == m then true
+    else if E.is_ext p.edge || p.next == n then false
+    else do_rec p.next in
+  do_rec n
+
+let find_prev_code_write n =
   let rec do_rec m =
-(*    eprintf "find_prev_code, node %a\n%!" debug_node m ; *)
-    match m.evt.loc with
-    | Code c -> c
-    | Data _  ->
+    if dbg then
+      eprintf "find_prev_code_write, node %a\n%!" debug_node m ;
+    let e = m.evt in
+    match e.loc,E.safe_dir m.edge with
+    | Code c,Some W ->
+        (* Avoid the case where the cachesync is po-before the code write... *)
+        begin if po_pred n m then raise Not_found end ;
+        c
+    | _,_ ->
         let m = m.prev in
         if m == n then raise Not_found
         else do_rec m in

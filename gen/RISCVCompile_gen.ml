@@ -424,6 +424,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
 (**********)
 
     let emit_fence _ _ _ f = [Instruction (AV.FenceIns f)]
+    let full_emit_fence = GenUtils.to_full emit_fence
     let stronger_fence = strong
 
         (* Dependencies *)

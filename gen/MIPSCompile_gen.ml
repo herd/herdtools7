@@ -374,7 +374,7 @@ let emit_joker st init = None,init,[],st
 (* Fences *)
 
     let emit_fence _ _ _ f = [Instruction (match f with Sync -> SYNC)]
-
+    let full_emit_fence = GenUtils.to_full emit_fence
     let stronger_fence = Sync
 
 (* Check load *)
