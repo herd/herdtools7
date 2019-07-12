@@ -192,7 +192,7 @@ and type edge = E.edge
           let k = f PPO k in
           k
 
-        let iter_relax f = fold_relax (fun r () -> f r) ()
+        let iter_relax = Misc.fold_to_iter fold_relax
 
 
 (***********)

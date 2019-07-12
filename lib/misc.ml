@@ -225,6 +225,10 @@ let explode s =
   done ;
   !r
 
+(* Fold utilities *)
+
+let fold_to_iter fold  f = fold (fun x () -> f x) ()
+let fold_bool f k =  f true (f false k)
 
 (******************)
 (* List utilities *)
@@ -331,8 +335,6 @@ let nsplit n xs =
 let (|||) p1 p2 = fun e -> p1 e || p2 e
 
 let (&&&) p1 p2 = fun e -> p1 e && p2 e
-
-let fold_bool f k =  f true (f false k)
 
 (* Array *)
 
@@ -543,7 +545,7 @@ let iter_argv_or_stdin f tests  = match tests with
 let expand_argv names =
   let fs = fold_argv (fun x xs -> x::xs) names [] in
   List.rev fs
-    
+
 (* With iterator *)
 type dir_name = string
 

@@ -452,7 +452,8 @@ let fold_tedges f r =
 (* Atom lexing *)
 (***************)
 
-let iter_atom f= F.fold_atom (fun a () -> f a) ()
+  let iter_atom = Misc.fold_to_iter F.fold_atom
+
   let ta = Hashtbl.create  37
 
   let add_lxm lxm a =
@@ -484,7 +485,8 @@ let iter_atom f= F.fold_atom (fun a () -> f a) ()
 (* Lexing *)
 (**********)
 
-  let iter_edges f = fold_edges (fun e () -> f e) ()
+  let iter_edges = Misc.fold_to_iter fold_edges
+
 
   let t = Hashtbl.create 101
 
@@ -502,7 +504,7 @@ let iter_atom f= F.fold_atom (fun a () -> f a) ()
       Hashtbl.add t lxm e
 
 (* Fill lexeme table *)
-  let iter_ie f = fold_ie (fun ie () -> f ie) ()
+  let iter_ie = Misc.fold_to_iter fold_ie
 
   let () =
     iter_edges  (fun e -> add_lxm (pp_edge_with_xx e) e) ;

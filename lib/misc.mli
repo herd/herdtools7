@@ -43,6 +43,7 @@ val filebase : string -> string
 (****************)
 (* basic misc   *)
 (****************)
+
 external int_compare : int -> int -> int = "caml_int_compare"
 val int_eq : int -> int -> bool
 val string_eq : string -> string -> bool
@@ -75,6 +76,13 @@ val pos_of_string : string -> (float * float) option
 val string_as_int : string -> int
 val string_of_intkm : string -> int option
 val explode : string -> char list
+
+
+(* Fold utilities *)
+val fold_to_iter :
+    (('a -> unit -> unit) -> unit -> unit) -> ('a -> unit) -> unit
+val fold_bool : (bool -> 'a -> 'a) -> 'a -> 'a
+
 
 (* Some useful function on lists *)
 val consp : 'a list -> bool
@@ -109,9 +117,6 @@ val rem_dups : ('a -> 'a -> bool) -> 'a list -> 'a list
 (* Lift boolean connectors to predicates *)
 val (|||) : ('a -> bool) -> ('a -> bool) -> 'a -> bool
 val (&&&) : ('a -> bool) -> ('a -> bool) -> 'a -> bool
-
-(* Fold on booleans *)
-val fold_bool : (bool -> 'a -> 'a) -> 'a -> 'a
 
 (* Array helpers *)
 val array_map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
