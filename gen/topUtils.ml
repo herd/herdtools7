@@ -145,7 +145,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
                    (fun loc ->
                      sprintf "%i:%s=%s" p
                        (Code.pp_loc loc)
-                       (match o.pdir with W -> "W" | R -> "R" | J -> "J"))
+                       (match o.pdir with W -> "W" | R -> "T" | J -> "I"))
                    o.ploc k) in
 
       fun fst ios -> String.concat "," (do_rec fst ios)
