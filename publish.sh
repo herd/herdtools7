@@ -30,13 +30,13 @@ then
   exit 1
 fi
 
-./build.sh
+make all
 
 git commit --allow-empty --message "Publish version $VERSION"
 git tag $VERSION
 git push origin master --tags
 
-opam-publish prepare >/dev/null
+opam publish prepare >/dev/null
 trap "rm -r herdtools7.$VERSION" EXIT
 
 echo "Please check and fix files in herdtools7.$VERSION/. Press 'Enter' if correct, 'Ctrl+C' to interrupt publication."
