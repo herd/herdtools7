@@ -93,7 +93,7 @@ let applies_atom (a,_) d = match a,d with
      | None -> pp_acc
      | Some m -> sprintf "%s.%s" pp_acc  (Mixed.pp_mixed m)
 
-   let compare_atom = Pervasives.compare
+   let compare_atom = compare
    let equal_atom a1 a2 = a1 = a2
 
    let fold_mixed f r =

@@ -70,7 +70,7 @@ let pp_xregs =
 module RMap =  MyMap.Make
     (struct
       type t = gpr
-      let compare = Pervasives.compare
+      let compare = compare
     end)
 
 let pp_map =
@@ -102,7 +102,7 @@ let pp_reg  r = match r with
     with Not_found -> assert false
 
 
-let reg_compare = Pervasives.compare
+let reg_compare = compare
 
 let symb_reg_name = function
   | Symbolic_reg r -> Some r
@@ -157,7 +157,7 @@ let do_pp_barrier sep1 sep2 = function
 let pp_barrier f = do_pp_barrier " " ","     f
 let pp_barrier_dot f = do_pp_barrier "." "."     f
 
-let barrier_compare = Pervasives.compare
+let barrier_compare = compare
 
 
 (****************)

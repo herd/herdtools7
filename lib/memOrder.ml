@@ -22,7 +22,7 @@ type t =
   | Rlx
   | Con
 
-let compare = Pervasives.compare
+let compare = compare
 
 let pp_mem_order = function
   | Acq -> "memory_order_acquire"

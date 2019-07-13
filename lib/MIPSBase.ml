@@ -132,7 +132,7 @@ let r0 = IReg R0
 
 let pp_reg = do_pp_reg Ascii
 
-let reg_compare = Pervasives.compare
+let reg_compare = compare
 
 let symb_reg_name = function
   | Symbolic_reg s -> Some s
@@ -152,7 +152,7 @@ let pp_barrier = function
   | Sync -> "Sync"
 
 
-let barrier_compare = Pervasives.compare
+let barrier_compare = compare
 
 
 (****************)

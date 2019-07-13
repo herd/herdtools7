@@ -43,7 +43,7 @@ val filebase : string -> string
 (****************)
 (* basic misc   *)
 (****************)
-
+val polymorphic_compare : 'a -> 'a -> int
 external int_compare : int -> int -> int = "caml_int_compare"
 val int_eq : int -> int -> bool
 val string_eq : string -> string -> bool

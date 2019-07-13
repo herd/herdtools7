@@ -34,7 +34,7 @@ let pp_reg r = match r with
 | GPRreg ir -> sprintf "r%i" ir
 | Symbolic_reg s -> sprintf "%%%s" s
 
-let reg_compare = Pervasives.compare
+let reg_compare = compare
 
 let symb_reg_name = function
   | Symbolic_reg s -> Some s
@@ -74,7 +74,7 @@ let pp_barrier b = match b with
         (string_of_labels s2)
 
 
-let barrier_compare = Pervasives.compare
+let barrier_compare = compare
 
 (* For barrier instructions, MUST be the same as parsed *)
 let pp_fence_ins = function

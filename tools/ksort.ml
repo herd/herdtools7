@@ -125,7 +125,7 @@ let compare_names (n1,e1) (n2,e2) =
     let c = String.compare n1 n2 in
     match c with
     | 0 ->
-        Pervasives.compare e1 e2
+        compare e1 e2
     | _ -> c
 
 let compare (k1,_) (k2,_) = compare_names k1 k2

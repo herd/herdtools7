@@ -32,7 +32,7 @@ let applies_atom a d = match a,d with
 | (Rel|Acq_Rel),R -> false
 | _,_ -> true
 
-let compare_atom = Pervasives.compare
+let compare_atom = compare
 
 let pp_plain = Code.plain
 let pp_as_a = Some SC
@@ -90,6 +90,8 @@ let var_fence f r = f default r
 (* Basic C arch *)
 type arch_reg = { id:int }
 
+let reg_compare {id=id1} {id=id2} = Misc.int_compare id1 id2
+
 let dump_reg r = sprintf "r%i" r.id
 
 type location =
@@ -102,7 +104,14 @@ let dump_loc = function
 
 let pp_location = dump_loc
 
-let location_compare = Pervasives.compare
+let location_compare loc1 loc2 = match loc1,loc2 with
+| Loc _,Reg _ -> -1
+| Reg _,Loc _ -> 1
+| Loc loc1,Loc loc2 -> String.compare loc1 loc2
+| Reg (p1,r1),Reg (p2,r2) -> begin match Misc.int_compare p1 p2 with
+  | 0 -> reg_compare r1 r2
+  | r -> r
+end
 
 let of_reg p r = Reg (p,r)
 let of_loc loc = Loc (as_data loc)

@@ -105,4 +105,4 @@ let c = `C
 let cpp = `CPP
 let lisa = `LISA
 
-let compare = Pervasives.compare
+let compare = compare

@@ -78,7 +78,7 @@ module Make(I:I) : S with type arch_reg = I.arch_reg
   | Loc _,Reg _ -> 1
   | Reg (p1,r1),Reg (p2,r2) ->
       begin match Misc.int_compare p1 p2 with
-      | 0 -> Pervasives.compare r1 r2
+      | 0 -> compare r1 r2
       | r -> r
       end
   | Loc loc1,Loc loc2 -> compare loc1 loc2

@@ -311,7 +311,7 @@ and type rmw = F.rmw = struct
   let compare e1 e2 = match compare_atomo e1.a1 e2.a1 with
   | 0 ->
       begin match  compare_atomo e1.a2 e2.a2 with
-      | 0 -> Pervasives.compare e1.edge e2.edge
+      | 0 -> compare e1.edge e2.edge
       | r -> r
       end
   | r -> r

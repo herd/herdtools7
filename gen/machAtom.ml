@@ -46,7 +46,7 @@ module Make(C:Config) = struct
     | Reserve -> "R"
     | Mixed mix -> Mixed.pp_mixed mix
 
-  let compare_atom = Pervasives.compare
+  let compare_atom = compare
 
   let fold_mixed f r = Mixed.fold_mixed (fun mix r -> f (Mixed mix) r) r
   let fold_non_mixed f r =  f Reserve (f Atomic r)

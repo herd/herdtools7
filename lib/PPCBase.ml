@@ -123,7 +123,7 @@ let tb_addr1 = Internal 9
 
 let pc = PC
 
-let reg_compare = Pervasives.compare
+let reg_compare = compare
 
 let symb_reg_name = function
   | Symbolic_reg s -> Some s
@@ -204,7 +204,7 @@ let pp_barrier b =
   | Lwsync -> "Lwsync"
   | Eieio -> "Eioio"
 
-let barrier_compare = Pervasives.compare
+let barrier_compare = compare
 
 
 (****************)

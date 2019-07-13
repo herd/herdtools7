@@ -67,7 +67,7 @@ let pp_reg r = match r with
 | Internal i -> sprintf "i%i" i
 | _ -> try List.assoc r regs with Not_found -> assert false
 
-let reg_compare = Pervasives.compare (* Will do, no doubt *)
+let reg_compare = compare (* Will do, no doubt *)
 
 let symb_reg_name = function
   | Symbolic_reg s -> Some s
@@ -89,7 +89,7 @@ let pp_barrier b = match b with
 | Sfence -> "SFENCE"
 | Mfence -> "MFENCE"
 
-let barrier_compare = Pervasives.compare
+let barrier_compare = compare
 
 
 (****************)

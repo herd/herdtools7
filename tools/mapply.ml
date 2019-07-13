@@ -26,6 +26,7 @@ module type TArg = sig
 end
 
 module Task(A:TArg) = struct
+  let stdout_chan = stdout
   open Unix
   module W = Warn.Make(A)
 
@@ -118,11 +119,11 @@ module Task(A:TArg) = struct
           while true do
             match input chan buff 0 sz with
             | 0 -> raise Exit
-            | n -> output Pervasives.stdout buff 0 n
+            | n -> output stdout_chan buff 0 n
           done
         with Exit ->())
       oname ;
-    flush Pervasives.stdout ;
+    flush stdout_chan ;
     Sys.remove oname
 
   let task_file (nrun,files) fd =
@@ -167,8 +168,8 @@ module Task(A:TArg) = struct
       Hashtbl.remove table fd ;
       begin match close_process_in task.chan with
       | WEXITED 0 ->
-          Buffer.output_buffer Pervasives.stdout task.buff ;
-          flush Pervasives.stdout
+          Buffer.output_buffer stdout_chan task.buff ;
+          flush stdout_chan
       | st ->
           warn_status st
       end ;

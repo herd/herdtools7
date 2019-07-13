@@ -291,7 +291,6 @@ module Make
 
     end = struct
 
-
       type v =
         | Empty | Unv
         | Pair of (S.event * S.event)
@@ -361,7 +360,7 @@ module Make
       | ClassRel r1,ClassRel r2 -> ClassRel.compare r1 r2
       | Set s1,Set s2 -> E.EventSet.compare s1 s2
       | (Clo {clo_name = (_,i1);_},Clo {clo_name=(_,i2);_})
-      | (Prim (_,i1,_),Prim (_,i2,_)) -> Pervasives.compare i1 i2
+      | (Prim (_,i1,_),Prim (_,i2,_)) -> Misc.int_compare i1 i2
       | Clo _,Prim _ -> 1
       | Prim _,Clo _ -> -1
       | Tuple vs,Tuple ws ->  compares vs ws

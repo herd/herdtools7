@@ -18,7 +18,7 @@
 
 
 let input_line chan =
-  try Some (Pervasives.input_line chan)
+  try Some (input_line chan)
   with End_of_file -> None
 
 let get_fst s =

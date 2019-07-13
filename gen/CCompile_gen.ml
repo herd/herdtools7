@@ -281,7 +281,7 @@ module Make(O:Config) : Builder.S
         MySet.Make
           (struct
             type t = A.arch_reg
-            let compare = Pervasives.compare
+            let compare = compare
           end)
 
       let insert_now d i =

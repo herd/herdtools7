@@ -1006,8 +1006,7 @@ let normalize name is_litmus ts =
     tests = ts ; }
 
 
-let compare_simple_st st1 st2 =
-  Pervasives.compare st1.Hashcons.tag st2.Hashcons.tag
+let compare_simple_st st1 st2 = compare st1.Hashcons.tag st2.Hashcons.tag
 
 let norm_states = List.sort  compare_simple_st
 

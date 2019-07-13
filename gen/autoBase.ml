@@ -64,7 +64,7 @@ module Make(A:AutoArch.S) =
       type t = { phase : AutoPhase.t ; key : K.t }
 
       let compare a b = 
-        match Pervasives.compare a.phase b.phase with
+        match compare a.phase b.phase with
         | 0 -> K.compare a.key b.key
         | r -> r
 

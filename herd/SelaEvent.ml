@@ -117,7 +117,7 @@ and type concrete = S.concrete
       | Com -> "c"            
       | Prop i -> sprintf "t%i" i
 
-    let nature_compare n1 n2 = Pervasives.compare n1 n2
+    let nature_compare n1 n2 = compare n1 n2
 
     type splitted =
       { nature:nature ; event:event; }
@@ -186,7 +186,7 @@ and type concrete = S.concrete
       Map.Make
         (struct
           type t = nature * nature
-          let compare = Pervasives.compare
+          let compare = compare
         end)
 
     let add_pair k (x,y as v) m =

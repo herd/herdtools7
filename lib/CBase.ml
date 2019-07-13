@@ -51,7 +51,7 @@ let pp_barrier m =
   | MO mo -> "atomic_thread_fence("^(MemOrder.pp_mem_order mo)^")"
   | AN a -> "Fence{"^string_of_annot a^"}"
 
-let barrier_compare = Pervasives.compare
+let barrier_compare = compare
 
 type mutex_kind = MutexLinux | MutexC11
 

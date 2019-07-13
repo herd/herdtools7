@@ -270,7 +270,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       let module ValMap = MyMap.Make
        (struct
         type t = int
-        let compare = Pervasives.compare
+        let compare = compare
        end) in
 
       let instr2labels =

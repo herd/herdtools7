@@ -269,7 +269,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
           -> 1
         | (Fenced _|Dp _),(Po _|Rf _)
         | Fenced _,Dp _ -> -1
-        | _,_ -> Pervasives.compare e1 e2
+        | _,_ -> compare e1 e2
 
       let ninternals n =
         let rec do_rec r m =
@@ -293,7 +293,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
           | r -> r in
         let i1 = ninternals n1
         and i2 = ninternals n2 in
-        match Pervasives.compare i1 i2 with
+        match compare i1 i2 with
         | 0 ->  do_rec n1 n2
         | r -> r
     end

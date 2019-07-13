@@ -64,7 +64,7 @@ let pp = function
   | Mixed -> "mixed"
   | WeakPredicated -> "WeakPredicated"
 
-let compare = Pervasives.compare
+let compare = compare
 
 let get_default a = function
   | SwitchDepScWrite ->

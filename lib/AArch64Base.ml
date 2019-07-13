@@ -121,7 +121,7 @@ let pp_wreg r = match r with
 | _ -> try List.assoc r wregs with Not_found -> assert false
 
 
-let reg_compare = Pervasives.compare
+let reg_compare = compare
 
 let symb_reg_name = function
   | Symbolic_reg r -> Some r
@@ -207,7 +207,7 @@ let do_pp_barrier tag b = match b with
 let pp_barrier b = do_pp_barrier " " b
 let pp_barrier_dot b = do_pp_barrier "." b
 
-let barrier_compare = Pervasives.compare
+let barrier_compare = compare
 
 (*********************)
 (* Cache maintenance *)

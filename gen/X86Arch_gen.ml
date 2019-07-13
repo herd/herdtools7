@@ -30,7 +30,7 @@ let applies_atom a d = match a,d with
 | Atomic,W -> true
 | _,_ -> false
 
-let compare_atom = Pervasives.compare
+let compare_atom = compare
 
 let merge_atoms Atomic Atomic = Some Atomic
 

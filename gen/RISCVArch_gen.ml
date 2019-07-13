@@ -79,7 +79,7 @@ module Make
      | Atomic (m1,m2) -> "X" ^ pp_mo2 m1 m2
      | Mixed m -> Mixed.pp_mixed m
 
-   let compare_atom = Pervasives.compare
+   let compare_atom = compare
 
    let fold_mixed f k = Mixed.fold_mixed (fun  mix r -> f (Mixed mix) r) k
 

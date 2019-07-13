@@ -352,7 +352,7 @@ module Make(C:Builder.S)
       MySet.Make
         (struct
           type t = extr * extr
-          let compare = Pervasives.compare
+          let compare = Misc.polymorphic_compare
         end)
 
     let extract_po rs =
