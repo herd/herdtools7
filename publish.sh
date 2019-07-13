@@ -35,11 +35,8 @@ make all
 git commit --allow-empty --message "Publish version $VERSION"
 git tag $VERSION
 git push origin master --tags
+exit 0
 
 opam publish herdtools7.opam
 trap "rm -r herdtools7.$VERSION" EXIT
-exit 0
-echo "Please check and fix files in herdtools7.$VERSION/. Press 'Enter' if correct, 'Ctrl+C' to interrupt publication."
-read
 
-opam-publish submit herdtools7.opam 
