@@ -197,7 +197,7 @@ let split_on_char c s =
   let rec do_rec k0 k =
     if k >= len then [String.sub s k0 (k-k0) ]
     else if c = String.unsafe_get s k then
-      String.sub s k0 (k-k0)::do_rec k (k+1)
+      String.sub s k0 (k-k0)::do_rec (k+1) (k+1)
     else do_rec k0 (k+1) in
   do_rec 0 0
 
