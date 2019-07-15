@@ -59,7 +59,7 @@ module Make(Config:Config) =
           (fun in_chan -> from_chan chan name in_chan)
           name
       with Misc.Exit -> ()
-      | Misc.Fatal msg ->
+      | Misc.Fatal msg|Misc.UserError msg ->
           eprintf "Fatal error is not fatal, %s\n" msg
 
     let from_args args = Misc.iter_argv_or_stdin (from_file stdout) args

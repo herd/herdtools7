@@ -487,7 +487,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
           (fun fname ->
             try from_arg idx_out fname with
             | Misc.Exit -> ()
-            | Misc.Fatal msg ->
+            | Misc.Fatal msg|Misc.UserError msg ->
                 Warn.warn_always "%a %s" Pos.pp_pos0 fname msg ;
                 ()
             | e ->

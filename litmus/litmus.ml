@@ -356,6 +356,9 @@ let () =
     exit 0
   with
     | LexRename.Error|Misc.Exit -> exit 2
+    | Misc.UserError msg ->
+        eprintf "User error: %s\n%!" msg ;
+        exit 2
     | Misc.Fatal msg ->
         eprintf "Fatal error: %s\n%!" msg ;
         exit 2

@@ -145,7 +145,7 @@ module Top
       with
       | NotOk -> st
       | Misc.Exit -> k,add_failed name failed
-      | Misc.Fatal msg ->
+      | Misc.Fatal msg|Misc.UserError msg ->
           Warn.warn_always "%a %s" Pos.pp_pos0 name msg ;
           k,add_failed name failed
       | e ->

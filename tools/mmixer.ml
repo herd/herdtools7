@@ -126,4 +126,4 @@ module X =
 
 let () = 
   try X.zyva !arg
-  with Misc.Fatal msg -> eprintf "%s: %s\n" prog msg ; exit 2
+  with Misc.Fatal msg|Misc.UserError msg -> eprintf "%s: %s\n" prog msg ; exit 2

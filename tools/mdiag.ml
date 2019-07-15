@@ -29,7 +29,7 @@ module Top
       try Z.from_file name::k
       with
       | Misc.Exit -> k
-      | Misc.Fatal msg ->
+      | Misc.Fatal msg|Misc.UserError msg ->
           Warn.warn_always "%a %s" Pos.pp_pos0 name msg ;
           k
       | e ->

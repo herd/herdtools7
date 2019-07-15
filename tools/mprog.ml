@@ -293,7 +293,7 @@ let () =
     (fun fname ->
       try X.zyva fname with
       | Misc.Exit -> ()
-      | Misc.Fatal msg ->
+      | Misc.Fatal msg|Misc.UserError msg ->
           Warn.warn_always "%a %s" Pos.pp_pos0 fname msg ;
           ()
       | e ->

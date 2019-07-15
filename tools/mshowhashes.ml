@@ -33,7 +33,7 @@ module Top
         printf "%s %s\n" t.T.tname t.T.hash
       with
       | Misc.Exit -> ()
-      | Misc.Fatal msg ->
+      | Misc.Fatal msg|Misc.UserError msg ->
           Warn.warn_always "%a %s" Pos.pp_pos0 name msg ;
           ()
       | e ->

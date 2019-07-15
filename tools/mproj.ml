@@ -101,7 +101,7 @@ struct
         (fun in_chan -> from_chan chan name in_chan)
         name
     with Misc.Exit -> ()
-    | Misc.Fatal msg ->
+    | Misc.Fatal msg|Misc.UserError msg ->
         eprintf "Fatal error is not fatal, %s\n" msg
 
   let from_args args = Misc.iter_argv (from_file stdout) args

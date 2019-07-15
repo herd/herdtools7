@@ -45,7 +45,7 @@ let rec do_rec k chan =
           else
             let k =
               try ((read_name line,line)::k)
-              with Misc.Fatal msg ->
+              with Misc.Fatal msg|Misc.UserError msg ->
                 Warn.warn_always "%s" msg ;
                 k in
             do_rec k chan

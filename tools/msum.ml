@@ -280,5 +280,5 @@ let () =
       M.run fnames
     else
       zyva fnames
-  with Misc.Fatal msg ->
+  with Misc.Fatal msg|Misc.UserError msg ->
     eprintf "Fatal error: %s\n%!" msg

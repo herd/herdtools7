@@ -1238,7 +1238,7 @@ let format_int_string s =
               valids :: witnesses :: k
             else
               valids :: k
-          with Misc.Fatal msg ->
+          with Misc.Fatal msg|Misc.UserError msg ->
             Warn.fatal "Summary %s: %s" t.name msg
         )
         tests [] in
@@ -1291,5 +1291,5 @@ let () =
 try
   let module S = Make(Config) in
     S.show runopts.do_show (List.rev !logs) ; exit 0
-  with Misc.Fatal msg ->
+  with Misc.Fatal msg|Misc.UserError msg ->
     eprintf "Fatal error: %s\n%!" msg ; exit 2

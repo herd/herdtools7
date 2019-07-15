@@ -68,7 +68,7 @@ let do_test ok src k =
     else k
   with
   | Misc.Exit -> k
-  | Misc.Fatal msg ->
+  | Misc.Fatal msg|Misc.UserError msg ->
       Warn.warn_always "%s" msg ; k
 
 let do_test_pos = do_test Check.ok

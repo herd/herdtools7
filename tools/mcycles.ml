@@ -99,7 +99,7 @@ let () =
       with
       | Not_found -> Warn.warn_always "%s: no cycle" name
       | Misc.Exit -> ()
-      | Misc.Fatal msg ->
+      | Misc.Fatal msg|Misc.UserError msg ->
           Warn.warn_always "%a %s" Pos.pp_pos0 name msg
       | e ->
 	  Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;

@@ -89,7 +89,7 @@ module Make(Config:Config)(Out:Out) =
           (fun in_chan -> from_chan name in_chan)
           name
       with Misc.Exit -> ()
-      | Misc.Fatal msg ->
+      | Misc.Fatal msg|Misc.UserError msg ->
           eprintf "Fatal error, %s\n" msg ;
           raise Misc.Exit
 

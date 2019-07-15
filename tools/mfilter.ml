@@ -169,6 +169,6 @@ let zyva log =
 
 let () =
   try zyva log
-  with Misc.Fatal msg ->
+  with Misc.Fatal msg|Misc.UserError msg ->
     eprintf "Fatal error: %s\n%!" msg
 

@@ -231,7 +231,7 @@ module Make(Config:Config)(Out:OutTests.S) =
           (fun in_chan -> from_chan idx_chan name in_chan)
           name
       with Misc.Exit -> ()
-      | Misc.Fatal msg ->
+      | Misc.Fatal msg|Misc.UserError msg ->
           eprintf "Fatal error is not fatal, %s\n" msg
 
     let from_args args =
