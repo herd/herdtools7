@@ -5,7 +5,7 @@ for d
 do
   awk \
     '/names/ { ok = 1 ; getline ;  }\
-    /)/ { ok = 0 ; }\
+    /[)]/ { ok = 0 ; }\
         { if (ok) print $0; }' $d/dune |\
    while read line
    do
