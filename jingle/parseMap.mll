@@ -61,7 +61,7 @@ and conv l f = parse
 	}
     | '"' ([^'"']* as func) '"' blank* colon blank* '"' (([^'"']* blank* '|' blank*)* [^'"']* as seq) '"' blank*
 	{
-	  conv l ((String.trim func, Sequence(List.map (fun s -> String.trim s) (String.split_on_char '|' seq)))::f) lexbuf
+	  conv l ((String.trim func, Sequence(List.map (fun s -> String.trim s) (Misc.split_on_char '|' seq)))::f) lexbuf
 	}
     | ("#"|"//") [^'\n']* '\n' { conv l f lexbuf }
     | "" {

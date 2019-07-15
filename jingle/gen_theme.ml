@@ -90,11 +90,11 @@ let parsed_call = match call with
       exit 1
 
 
-let pick_func f func_env = List.find_opt (fun (x, _) -> Misc.string_eq x f) func_env
+let pick_func f func_env = Misc.find_opt (fun (x, _) -> Misc.string_eq x f) func_env
 
 let remove_func f func_env = List.remove_assoc f func_env
 
-let pick_mapping e map_env = List.find_opt (fun (x, _) -> Misc.string_eq x e) map_env
+let pick_mapping e map_env = Misc.find_opt (fun (x, _) -> Misc.string_eq x e) map_env
 
 let rec apply f arg func_env = match pick_func f func_env with
 | None -> raise(Error ("no func for " ^ f ^ " for arg: " ^ arg ^ "."))

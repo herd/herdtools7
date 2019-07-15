@@ -185,6 +185,22 @@ let capitalize s = match s with
     String.make 1 (char_uppercase s.[0]) ^
     String.sub s 1 (String.length s-1)
 
+(* Compatibility *)
+let rec find_opt p = function
+  | [] -> None
+  | x::xs ->
+      if p x then Some x
+      else find_opt p xs
+
+let split_on_char c s =
+  let len = String.length s in
+  let rec do_rec k0 k =
+    if k >= len then [String.sub s k0 (k-k0) ]
+    else if c = String.unsafe_get s k then
+      String.sub s k0 (k-k0)::do_rec k (k+1)
+    else do_rec k0 (k+1) in
+  do_rec 0 0
+
 (********************)
 (* Position parsing *)
 (********************)

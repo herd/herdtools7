@@ -69,6 +69,9 @@ val lowercase : string -> string
 val uppercase : string -> string
 val capitalize : string -> string
 
+(* Backward compatibility *)
+val find_opt : ('a -> bool) -> 'a list -> 'a option
+val split_on_char : char -> string -> string list
 (* Float pair (position) parsint *)
 val pos_of_string : string -> (float * float) option
 
