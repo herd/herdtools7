@@ -269,7 +269,7 @@ let find_node_prev p n =
     if dbg then
       eprintf "po_pred: n=[%a], m=[%a]\n%!" debug_node n debug_node m ;
   let rec do_rec p =
-    eprintf "  pred_rec, node %a\n%!" debug_node p ;
+    if dbg then eprintf "  pred_rec, node %a\n%!" debug_node p ;
     if p == m then true
     else if E.is_ext p.edge || p.next == n then false
     else do_rec p.next in
