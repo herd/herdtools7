@@ -2,3 +2,4 @@
 /_build/
 .merlin
 dune-project
+herdtools7.install

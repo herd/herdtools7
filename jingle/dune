@@ -4,6 +4,7 @@
    (names
      jingle gen_theme
    )
+   (public_names jingle7 gen_theme7)
    (libraries herdtools str)
    (modules_without_implementation )
 )

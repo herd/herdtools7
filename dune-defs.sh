@@ -18,7 +18,7 @@ done
 }
         
 
-EXE="$(mk_exe  herd litmus gen tools jingle)"
+#EXE="$(mk_exe  herd litmus gen tools jingle)"
 
 cpdir () {
   FROM=$1

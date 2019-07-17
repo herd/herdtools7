@@ -35,8 +35,8 @@ cpbin () {
 }
 
 # Copy binaries
-cpbin $EXE
-
+#cpbin $EXE
+dune install --prefix $PREFIX
 # Copy libfiles
 cpdir herd/libdir $LIBDIR/herd
 cpdir litmus/libdir $LIBDIR/litmus
