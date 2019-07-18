@@ -1,0 +1,13 @@
+LISA ISA2+rl-o-o-rul+rl-o-o-rul+o-srcu-o
+{
+a = 1;
+x = 2;
+c = 0;
+}
+ P0           | P1            | P2            ;
+ f[lock]      | f[lock]       |               ;
+ w[once] a 3  | r[once] r1 x  | r[once] r3 c  ;
+              |               | f[sync]       ;
+ w[once] x 4  | w[once] c 1   | r[once] r2 a  ;
+ f[unlock]    | f[unlock]     |               ;
+exists (1:r1 = 4 /\ 2:r3 = 1 /\ 2:r2 = 1)

@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" >
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="favicon.ico">
+
+    <title>let's herd cats</title>
+
+    <link rel="stylesheet" href="bootstrap.min.css">
+    <link rel="stylesheet" href="bootstrap-theme.min.css">
+    <link rel="stylesheet" href="whhg-font/css/whhg.css">
+    <link rel="stylesheet" href="screen.css">
+
+    <script src="jquery.min.js"></script>
+    <script src="bootstrap.min.js"></script>
+  </head>
+
+  <body>
+    <div class="container">
+
+      <div class="page-header jumbotron">
+	<div class="row">
+	  <div class="col-md-7">
+            <h1>let's herd cats</h1>
+	  </div>
+	  <div class="col-md-5">
+	  </div>
+	</div>
+      </div>
+
+      <div id="unsavedModal" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal">&times;</button>
+              <h4 class="modal-title">you may lose work</h4>
+            </div>
+            <div class="modal-body">
+              <p id="unsavedModalText">no text</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal">cancel</button>
+              <button id="unsavedModalProceed" type="button" class="btn btn-primary" data-dismiss="modal">proceed</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="panel-group" id="record-accordion">
+        <div class="panel panel-default">
+	  <div class="panel-heading">
+	    <h4 class="panel-title">
+              <div class="text-center">
+	        <a data-toggle="collapse" data-parent="#record-accordion" class="btn pull-left" href="#record-collapse" title="show record">
+                  <span style="vertical-align:middle;">
+		    <span class="glyphicon glyphicon-cd" style="font-size:1.5em; vertical-align:middle;" aria-hidden="true"></span>
+		    <span class="glyphicon glyphicon-cd" style="font-size:1.5em; vertical-align:middle;" aria-hidden="true"></span>
+		    <span class="glyphicon glyphicon-cd" style="font-size:1.5em; vertical-align:middle;" aria-hidden="true"></span>
+                  </span>
+	        </a>
+                <div class="btn dropdown">
+	          <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown" title="select record">
+                    <span id="record-select">select record</span>
+	            <span class="caret"></span>
+                  </button>
+	          <ul class="dropdown-menu">
+	            <li><a href="#" onclick="readRecord('tutorial');">tutorial</a></li>
+	            <li><a href="#" onclick="readRecord('demi');">demi</a></li>
+	            <li><a href="#" onclick="readRecord('demo');">demo</a></li>
+	            <li><a href="#" onclick="readRecord('armed-cats', 'armed cats');">armed cats</a></li>
+	            <li><a href="#" onclick="readRecord('herding-cats', 'herding cats');">herding cats</a></li>
+	            <li><a href="#" onclick="readRecord('ptx');">ptx</a></li>
+	            <li><a href="#" onclick="readRecord('v8-proposal', 'v8');">v8</a></li>
+	            <li><a href="#" onclick="readRecord('c11popl15', 'c11');">c11</a></li>
+	            <li><a href="#" onclick="readRecord('java');">java</a></li>
+	            <li><a href="#" onclick="readRecord('linux');">linux</a></li>
+	            <li><a href="#" onclick="readRecord('hsa');">hsa</a></li>
+	          </ul>
+                </div>
+                <div class="btn pull-right">
+                  <a href="https://s-media-cache-ak0.pinimg.com/236x/61/44/fd/6144fd6b0ada498bbcf8bbc2779bd40a.jpg" target="_blank" title="show record">
+	            <span style="vertical-align:middle;">
+		      <span class="glyphicon glyphicon-cd" style="font-size:1.5em; vertical-align:middle;" aria-hidden="true"></span>
+                    </span>
+                  </a>
+	          <a data-toggle="collapse" data-parent="#record-accordion" href="#record-collapse" title="show record">
+	            <span style="vertical-align:middle;">
+		      <span class="glyphicon glyphicon-cd" style="font-size:1.5em; vertical-align:middle;" aria-hidden="true"></span>
+		      <span class="glyphicon glyphicon-cd" style="font-size:1.5em; vertical-align:middle;" aria-hidden="true"></span>
+	            </span>
+                  </a>
+                </div>
+              </div>
+	    </h4>
+	  </div>
+	  <div id="record-collapse" class="panel-collapse collapse">
+	    <div class="panel-body">
+	      <div id="record-editor" class="input-editor"></div>
+	    </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+	<div class="col-md-6">
+	  <div class="panel panel-default">
+	    <div class="panel-heading">
+	      <span style="vertical-align:middle;">
+		<span class="icon-flaskfull" aria-hidden="true"></span>
+	      </span>
+              <div class="btn-group pull-right">
+		<div class="btn-group">
+		  <button class="btn btn-default btn-xs dropdown-toggle" type="button" data-toggle="dropdown" title="select litmus test">
+                    <span id="litmus-select">select litmus</span>
+		    <span class="caret"></span>
+                  </button>
+		  <ul id="litmus-file-list" class="dropdown-menu" role="menu">
+		  </ul>
+		</div>
+		<div class="btn-group">
+		  <button id="litmus-campaign" type="button" class="btn btn-default btn-xs glyphicon glyphicon-list" data-toggle="button" onclick="toggleLitmusCampaign()" title="run campaign"></button>
+                </div>
+		<div class="btn-group">
+                  <button type="button" id="linkify" class="btn btn-xs btn-default glyphicon glyphicon-link" data-toggle="popover" data-trigger="focus" data-placement="top" title="Link to this set of inputs" data-content="" data-html="true"></button>
+                </div>
+              </div>
+	    </div>
+	    <div id="litmus-panel-body" class="panel-body">
+	      <div id="litmus-editor" class="input-editor"></div>
+	      <div id="litmus-editor-buttons" class="btn-group pull-right">
+	        <button id="litmus-undo" title="undo last step" type="button" class="btn btn-default btn-xs">
+		  <span class="glyphicon glyphicon-backward" aria-hidden="true"></span>
+	        </button>
+	        <button id="litmus-reset" title="reload" type="button" class="btn btn-default btn-xs">
+		  <span class="glyphicon glyphicon-repeat" aria-hidden="true"></span>
+	        </button>
+	        <button id="litmus-erase" title="erase" type="button" class="btn btn-default btn-xs">
+		  <span class="glyphicon glyphicon-erase" aria-hidden="true"></span>
+	        </button>
+              </div>
+	    </div>
+            <table id="campaign-table" class="table" style="display:none;">
+            </table>
+	  </div>
+	</div>
+
+	<div class="col-md-6">
+	  <div class="panel-group" id="accordion">
+	    <div class="panel panel-default" id="bell-panel">
+	      <div class="panel-heading">
+		<h4 class="panel-title">
+		  <a data-toggle="collapse" data-parent="#accordion" href="#bell-collapse" title="show bell">
+		    <span style="vertical-align:middle;">
+		      <span class="glyphicon glyphicon-bell" aria-hidden="true"></span>
+		    </span>
+		  </a>
+                  <div class="dropdown pull-right">
+		    <button class="btn btn-default btn-xs dropdown-toggle" type="button" data-toggle="dropdown" title="select bell">
+                      <span id="bell-select">select bell</span>
+		      <span class="caret"></span></button>
+		    <ul id="bell-file-list" class="dropdown-menu">
+		    </ul>
+	          </div>
+		</h4>
+	      </div>
+	      <div id="bell-collapse" class="panel-collapse collapse">
+		<div class="panel-body">
+		  <div id="bell-editor" class="input-editor"></div>
+                  <div id="bell-editor-buttons" class="btn-group pull-right">
+	            <button id="bell-undo" title="undo last step" type="button" class="btn btn-default btn-xs">
+		      <span class="glyphicon glyphicon-backward" aria-hidden="true"></span>
+	            </button>
+	            <button id="bell-reset" title="reload" type="button" class="btn btn-default btn-xs">
+		      <span class="glyphicon glyphicon-repeat" aria-hidden="true"></span>
+	            </button>
+		    <button id="bell-erase" title="erase" type="button" class="btn btn-default btn-xs">
+		      <span class="glyphicon glyphicon-erase" aria-hidden="true"></span>
+		    </button>
+                  </div>
+		</div>
+	      </div>
+	    </div>
+
+	    <div class="panel panel-default">
+	      <div id="cat-heading" class="panel-heading">
+		<h4 class="panel-title">
+		  <a data-toggle="collapse" data-parent="#accordion" href="#cat-collapse" title="show cat">
+		    <span style="vertical-align:middle;">
+		      <span class="icon-catface" aria-hidden="true"></span>
+		    </span>
+		  </a>
+		  <div class="btn-group pull-right">
+		    <div class="btn-group" id="cat-select-menu">
+		      <button class="btn btn-default btn-xs dropdown-toggle" type="button" data-toggle="dropdown" title="select cat">
+                        <span id="cat-select">select cat</span>
+		        <span class="caret"></span>
+                      </button>
+		      <ul id="cat-file-list" class="dropdown-menu" role="menu">
+		      </ul>
+		    </div>
+		    <div class="btn-group" id="cfg-select-menu">
+		      <button class="btn btn-default btn-xs dropdown-toggle" type="button" data-toggle="dropdown" title="select cfg">
+                        <span id="cfg-select">select cfg</span>
+		        <span class="caret"></span>
+                      </button>
+		      <ul id="cfg-file-list" class="dropdown-menu" role="menu">
+		      </ul>
+		    </div>
+		    <button id="cat-settings" type="button" class="btn btn-default btn-xs" data-toggle="button" onclick="toggleCfg()" title="show dot config">
+		      <span class="glyphicon glyphicon-cog" aria-hidden="true"></span>
+		    </button>
+		  </div>
+		</h4>
+	      </div>
+	      <div id="cat-collapse" class="panel-collapse collapse in">
+		<div class="panel-body">
+		  <div id="cat-editor" class="input-editor"></div>
+		  <div id="cfg-editor" class="input-editor"></div>
+                  <div id="cat-editor-buttons" class="btn-group pull-right">
+	            <button id="cat-undo" title="undo last step" type="button" class="btn btn-default btn-xs">
+		      <span class="glyphicon glyphicon-backward" aria-hidden="true"></span>
+	            </button>
+	            <button id="cat-reset" title="reload" type="button" class="btn btn-default btn-xs">
+		      <span class="glyphicon glyphicon-repeat" aria-hidden="true"></span>
+	            </button>
+		    <button id="cat-erase" title="erase" type="button" class="btn btn-default btn-xs pull-right">
+		      <span class="glyphicon glyphicon-erase" aria-hidden="true"></span>
+		    </button>
+                  </div>
+                  <div id="cfg-editor-buttons" class="btn-group pull-right">
+	            <button id="cfg-undo" title="undo last step" type="button" class="btn btn-default btn-xs">
+		      <span class="glyphicon glyphicon-backward" aria-hidden="true"></span>
+	            </button>
+	            <button id="cfg-reset" title="reload" type="button" class="btn btn-default btn-xs">
+		      <span class="glyphicon glyphicon-repeat" aria-hidden="true"></span>
+	            </button>
+		    <button id="cfg-erase" title="erase" type="button" class="btn btn-default btn-xs pull-right">
+		      <span class="glyphicon glyphicon-erase" aria-hidden="true"></span>
+		    </button>
+                  </div>
+		</div>
+	      </div>
+	    </div>
+
+	  </div>
+	</div>
+      </div>
+
+      <p>
+        <button type="button" id="jerdit-button" class="btn btn-lg btn-block btn-default glyphicon glyphicon-play" title="run herd" onclick="jerdIt()"></button>
+        <button type="button" id="jerdall-button" class="btn btn-lg btn-block btn-primary glyphicon glyphicon-forward" title="run campaign" onclick="jerdAll()" style="color:#fff;display:none;"></button>
+      </p>
+
+      <div id="herd-outputs" style="display: none;">
+	<div class="row">
+          <div class="col-md-6">
+	    <div class="panel panel-default">
+	      <div class="panel-heading">herd output</div>
+	      <div class="panel-body">
+		<div id="herdoutput-editor"></div>
+	      </div>
+	    </div>
+	  </div>
+          <div class="col-md-6">
+	    <div class="panel panel-default">
+	      <div class="panel-heading">
+                event structures
+              </div>
+	      <div class="panel-body">
+		<div id="dotCarousel" class="carousel slide" data-ride="carousel" data-interval="false">
+		  <div class="carousel-inner" role="listbox" id="dotInner">
+		  </div>
+                  <div class="pull-right">
+                    <button type="button" id="save-es" class="btn btn-default btn-xs" onclick="saveCurrentES()">
+		      <span class="glyphicon glyphicon-floppy-save" aria-hidden="true"></span>
+		    </button>
+                  </div>
+
+                  <ol class="carousel-indicators pull-right" id="dotIndicators">
+		  </ol>
+	      
+		  <div id="carouselControls" style="display: none;">
+		    <a class="left carousel-control" href="#dotCarousel" role="button" data-slide="prev">
+		      <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
+		      <span class="sr-only">Previous</span>
+		    </a>
+		    <a class="right carousel-control" href="#dotCarousel" role="button" data-slide="next">
+		      <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
+		      <span class="sr-only">Next</span>
+		    </a>
+		  </div>
+		</div>
+	      </div>
+	    </div>
+	  </div>
+	</div>
+      </div>
+
+
+    </div> <!-- /container -->
+
+
+    <script src="ace/ace.js" type="text/javascript" charset="utf-8"></script>
+    <script src="jerd_driver.js"></script>
+    <script src="jerd.js"></script>
+    <script src="viz.js"></script>
+    <script src="FileSaver.min.js"></script>
+    <script src="Blob.min.js"></script>
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <!-- <script src="bootstrap/assets/js/ie10-viewport-bug-workaround.js"></script> -->
+  </body>
+</html>

@@ -1,0 +1,47 @@
+"Relaxed ARM llh model"
+
+include "filters.cat"
+(* co with load-load hazards *)
+
+include "cosllh.cat"
+
+(* Uniproc *)
+let poi = WW(po-loc) | RW(po-loc) | WR(po-loc)
+let complus = fr|rf|co|(co;rf)|(fr;rf)
+irreflexive poi;complus as uniproc
+
+(* Utilities *)
+let dd = addr | data
+let rdw = po-loc & (fre;rfe)
+let detour = po-loc & (coe ; rfe)
+let addrpo = addr;po
+
+(*******)
+(* ppo *)
+(*******)
+
+include "armfences.cat"
+
+(* Initial value *)
+let ci0 = ctrlisb | detour
+let ii0 = dd | rfi | rdw
+let cc0 = dd | ctrl | addrpo (* po-loc removed *)
+let ic0 = 0
+
+include "ppo.cat"
+
+(**********)
+(* fences *)
+(**********)
+
+(* ARM *)
+let dmb.st=WW(dmb.st)
+let dsb.st=WW(dsb.st)
+
+(* Common, all arm barriers are strong *)
+let strong = dmb|dsb|dmb.st|dsb.st
+let light = 0
+
+include "ppc-checks.cat"
+
+

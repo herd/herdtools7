@@ -1,0 +1,10 @@
+LISA HSA10
+{ }
+ P0                | P1                ;
+ r[] r0 x          | r[] r0 y          ;
+ mov r3 (neq r0 1) | mov r3 (neq r0 1) ;
+ b r3 Exit0        | b r3 Exit1        ;
+ w[] y 1           | w[] x 1           ;
+ Exit0:            | Exit1:            ;
+scopes: (wg 0 1)
+~exists (0:r0=1 /\ 1:r0=1)

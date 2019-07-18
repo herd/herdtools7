@@ -1,0 +1,13 @@
+LISA 3.LB+o-addr-rb_dep-o+o-addr-rb_dep-o+o-addr-rb_dep-o 
+{
+x = 0;
+y = 0;
+z = 0;
+}
+P0                  | P1                  | P2                 ;
+r[once] r1 x        | r[once] r3 y        | r[once] r4 z       ;
+mov r9 (xor r1 r1)  | mov r9 (xor r3 r3)  | mov r9 (xor r4 r4) ;
+mov r6 (add y r9)   | mov r7 (add z r9)   | mov r5 (add x r9)  ;
+f[rb_dep]           | f[rb_dep]           | f[rb_dep]          ;
+w[once] r6 1        | w[once] r7 1       | w[once] r5 1       ;
+exists(0:r1=1 /\ 1:r3=1 /\ 2:r4=1)

@@ -1,0 +1,18 @@
+AArch64 ARMARM03
+"PodWWPL RfeLP DpAddrdR Fre"
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=PodWWPL RfeLP DpAddrdR Fre
+{
+y=z; z=-1;
+0:X1=x; 0:X3=y;
+1:X3=y; 1:X9=-1;
+}
+ P0           | P1                  ;
+ MOV W0,#1    | LDR X0,[X3]         ;
+ STR W0,[X1]  | LDR W9,[X0]         ;
+ STLR X1,[X3] |                     ;
+
+~exists
+(1:X0=x /\ 1:X9=0)
+(* ARM ARM, F.2.2 basically MP+popl+realaddr *)

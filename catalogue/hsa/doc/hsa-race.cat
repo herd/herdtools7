@@ -1,0 +1,19 @@
+"HSA races"
+
+let at-least-one a = (a*_| _*a)
+
+let ordinary-conflicts =
+  loc & at-least-one(W) & at-least-one(Ordinary)
+
+let matches = union-scopes same-instance
+
+let special-conflicts =
+  (loc & (Atomic * Atomic) & at-least-one(W)) \ matches
+
+let conflicts =
+  ((ordinary-conflicts|special-conflicts) & ext) \ at-least-one(IW)
+
+let hsa-race = conflicts \ (hhb | hhb^-1)
+
+flag ~empty hsa-race as undefined
+

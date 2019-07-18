@@ -1,0 +1,55 @@
+"ARM reformulation with additional SC check"
+
+include "arm-common.cat"
+
+let com = rf | co | fr
+acyclic po-loc | com as sc-per-location
+
+let dp = addr | data
+let rdw = po-loc & (fre;rfe)
+let detour = po-loc & (coe ; rfe)
+
+let ii0 = dp | rfi | rdw
+let ic0 = 0
+let ci0 = ctrlisb | detour
+let cc0 = dp | ctrl | (addr;po)
+
+let rec ii = ii0 | ci | (ic;ci) | (ii;ii)
+and ic = ic0 | ii | cc | (ic;cc) | (ii;ic)
+and ci = ci0 | (ci;ii) | (cc;ci)
+and cc = cc0 | ci | (ci;ic) | (cc;cc)
+
+let ppo = ii & R*R | ic & R*W
+
+enum attribute = 'none || 'st || 'ld
+let dmb(t) = match t with
+  || 'none -> dmb
+  || 'st -> dmb & W*W
+  || 'ld -> dmb & (R*R | R*W)
+  end
+let all-dmb = dmb('none) | dmb('st) | dmb('ld)
+let all-dsb = all-dmb
+
+let acq = A 
+let rel = L 
+let acq-po = po & (acq * M)
+let po-rel = po & (M * rel)
+let rel-acq = acq-po;po-rel
+let fence = all-dmb | all-dsb | acq-po | po-rel
+let strong-fence = all-dmb | all-dsb
+let weak-fence = po-rel
+let cumul-fence = strong-fence | weak-fence 
+let A-cumul = rfe;cumul-fence
+
+let hb = ppo | fence | rfe
+acyclic hb as no-thin-air
+
+let prop = ((cumul-fence | A-cumul);hb*) & W*W
+
+irreflexive fre;prop;hb* as observation
+
+let xx = (W*W) & (X *X) & po
+acyclic co | prop | xx as propagation
+empty rmw & (fre;coe) as atomic
+
+acyclic com | strong-fence | rel-acq as restoring-sc

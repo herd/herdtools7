@@ -1,0 +1,23 @@
+ARM CO-RSDWI+CTRL+ADDR
+"Another variation on CO-RSDWI, looks more productive"
+Prefetch=1:x=W
+Com=Ws Fr
+Orig=Wse Rfi PosRR Fre
+{
+%x0=x;
+%x1=x;
+%y=y;
+}
+ P0           | P1             ;
+ MOV R0,#1    | MOV R1,#123    ;
+ STR R0,[%x0] | MOV R0,#2      ;
+              | STR R0,[%x1]   ;
+              | LDR R3,[%y]    ;              
+              | CMP R3,#0      ;            
+              | BNE L0         ;
+              | LDR R1,[R3,%x1];
+              | LDR R2,[%x1]   ;
+              | L0:            ;
+locations [x;1:R3;]
+exists (1:R1=1 /\ 1:R2=2)
+

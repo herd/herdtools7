@@ -1,0 +1,16 @@
+LISA 4.SB+poascaragentascarwg+poascarsystemascarsystem+poascarsystemascarsystem+poascarsystemascaragent+2-wg-01-wg-3-wg-agent
+"PodWRAScarAgentAScarWg FreAScarWgAScarSystem PodWRAScarSystemAScarSystem FreAScarSystemAScarSystem PodWRAScarSystemAScarSystem FreAScarSystemAScarSystem PodWRAScarSystemAScarAgent FreAScarAgentAScarAgent"
+Scopes=(wg 2) (agent (wg 0 1) (wg 3))
+Cycle=FreAScarAgentAScarAgent PodWRAScarAgentAScarWg FreAScarWgAScarSystem PodWRAScarSystemAScarSystem FreAScarSystemAScarSystem PodWRAScarSystemAScarSystem FreAScarSystemAScarSystem PodWRAScarSystemAScarAgent
+Relax=
+Safe=Fre PodWR
+Prefetch=0:x=F,0:y=T,1:y=F,1:z=T,2:z=F,2:a=T,3:a=F,3:x=T
+Com=Fr Fr Fr Fr
+Orig=PodWRAScarAgentAScarWg FreAScarWgAScarSystem PodWRAScarSystemAScarSystem FreAScarSystemAScarSystem PodWRAScarSystemAScarSystem FreAScarSystemAScarSystem PodWRAScarSystemAScarAgent FreAScarAgentAScarAgent
+{
+}
+ P0                       | P1                         | P2                         | P3                        ;
+ w[atomic,scar,agent] x 1 | w[atomic,scar,system] y 1  | w[atomic,scar,system] z 1  | w[atomic,scar,system] a 1 ;
+ r[atomic,scar,wg] r0 y   | r[atomic,scar,system] r0 z | r[atomic,scar,system] r0 a | r[atomic,scar,agent] r0 x ;
+scopes: (wg 2) (agent (wg 0 1) (wg 3))
+exists (0:r0=0 /\ 1:r0=0 /\ 2:r0=0 /\ 3:r0=0)

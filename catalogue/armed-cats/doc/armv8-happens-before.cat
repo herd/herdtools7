@@ -1,0 +1,7 @@
+"ARM happens-before"
+
+let hb = ppo | (R * M) & fence | rfe
+
+procedure no-thin-air() =
+  acyclic hb
+end

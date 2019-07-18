@@ -1,0 +1,10 @@
+"Pour Patrick"
+
+enum fences = 'ww || 'wr || 'rw || 'rr || 'prop
+let local-fences = {'ww, 'wr, 'rw, 'rr}
+
+instructions F[fences]
+
+let in-between(t,r) =
+  let T = tag2instrs(t) 
+  in r & (_ * T);r

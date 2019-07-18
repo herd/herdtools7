@@ -1,0 +1,36 @@
+shelf number for:
+"hsa"
+
+cat(s):
+cats/doc/hsa-lib.cat
+cats/doc/hsa.cat
+cats/doc/hsa-race.cat
+
+cfg(s):
+cats/hsa.cfg
+
+tests:
+
+tests/ex[1-14].litmus
+-------------------------------------------------------------------------------
+
+source:
+HSA Platform System Architecture Specification 1.0
+
+by:
+HSA Foundation
+
+downloaded from:
+http://www.hsafoundation.com/html/HSA_Library.htm
+
+on:
+Wednesday 18 March 2015
+
+-------------------------------------------------------------------------------
+
+model(s) as appear in the paper can be found on:
+
+pages 62-89, Chapter 3
+
+notes:
+

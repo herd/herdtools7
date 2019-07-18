@@ -1,0 +1,199 @@
+\usepackage{xspace}
+%same notation policy for each instance of figure, thm, etc
+\newcommand{\myfig}{Fig.~}
+\newcommand{\mytab}{Tab.~}
+\newcommand{\mysec}{Sec.~}
+\newcommand{\mychap}{Chap.~}
+\newcommand{\myapp}{App.~}
+\newcommand{\etal}{et~al.\xspace}
+\newcommand{\wrt}{w.r.t.\xspace}
+\newcommand{\eg}{e.g.\xspace}
+\newcommand{\ie}{i.e.\xspace}
+\newcommand{\etc}{etc.\xspace}
+\newcommand{\cf}{see\xspace}
+
+%les maths comme au lycee
+\let\eset\emptyset
+\newcommand{\rplus}[1]{\mathop{{#1}^{+}}}
+\newcommand{\rstar}[1]{\mathop{{#1}^{*}}}
+\newcommand{\transc}[1]{\mathop{{#1}^{+}}}
+\newcommand{\maybe}[1]{\mathop{{#1}^{?}}}
+
+%def
+  \newcommand{\dfnshort}[2]{{#1}\triangleq{#2}}
+  \newcommand{\dfn}[2]{{#1}~\triangleq~{#2}}
+
+%sets
+\newcommand{\setcal}[1]{\mathcal{#1} }
+\newcommand{\setbf}[1]{\mathbb{#1} }
+\newcommand{\setfrak}[1]{\mathfrak{#1} }
+
+
+  %writes, reads, barriers
+  \let\setset\setbf
+  \newcommand{\evts}{\setset{E}}
+
+  \newcommand{\lwf}{\textsf{fence}}
+  \newcommand{\mfence}{\ensuremath{\mathsf{mfence}}}
+  \newcommand{\lwfence}{\ensuremath{\mathsf{fence}}}
+  \newcommand{\ff}{\textsf{fence.sc}}
+  \newcommand{\ffence}{\ensuremath{\mathsf{f{\kern-0.1em}fence}}}
+  \newcommand{\fences}{\ensuremath{\mathsf{fence}}}
+  \newcommand{\relw}{\ensuremath{\mathsf{rel}}}
+  \newcommand{\acqr}{\ensuremath{\mathsf{acq}}}
+  \newcommand{\cumul}{\ensuremath{\mathsf{cumul}}}
+  \newcommand{\Acumul}{\ensuremath{\mathsf{A{\kern-0.3em}-{\kern-0.3em}cumul}}}
+
+  %procs
+  \newcommand{\pr}{\operatorname{proc}}
+
+  %locs
+  \newcommand{\lo}{\ell}
+  \newcommand{\loc}{\operatorname{addr}}
+
+  %vals 
+  \newcommand{\val}{\operatorname{val}}
+
+%relations
+\newcommand{\stacklabel}[1]
+%{\stackrel{\smash{\scriptscriptstyle\#1}}}
+{\stackrel{\smash{\scriptstyle\textnormal{#1}}}}
+  %any
+  \newcommand{\rln}[1]{\ensuremath{\xrightarrow{#1}}}
+
+  %po
+  \newcommand{\iico}{\ensuremath{\mathsf{ii}}}
+  \newcommand{\ctrlcfence}{\ensuremath{\mathsf{ctrlcfence}}}
+  \newcommand{\ctrl}{\ensuremath{\mathsf{ctrl}}}
+  \newcommand{\data}{\ensuremath{\mathsf{data}}}
+  \newcommand{\addr}{\ensuremath{\mathsf{addr}}}
+  \newcommand{\ddreg}{\ensuremath{\mathsf{dd}}}
+  \newcommand{\rfreg}{{\mathsf{rfreg}}}
+  \newcommand{\isb}{\ensuremath{\mathsf{isb}}}
+  \newcommand{\isync}{\ensuremath{\mathsf{isync}}}
+  \newcommand{\po}{\ensuremath{\mathsf{po}}}
+  \newcommand{\ppo}{\ensuremath{\mathsf{ppo}}}
+  %rf
+  \newcommand{\rf}{\ensuremath{\mathsf{rf}}}
+  %rfe
+  \newcommand{\rfe}{\ensuremath{\mathsf{rfe}}}
+  %rfi
+  \newcommand{\rfi}{\ensuremath{\mathsf{rfi}}}
+  %co
+  \newcommand{\co}{\ensuremath{\mathsf{co}}}
+  \newcommand{\coi}{\ensuremath{\mathsf{coi}}}
+  \newcommand{\ews}{\ensuremath{\mathsf{coe}}}
+  %fr
+  \newcommand{\fr}{\ensuremath{\mathsf{fr}}}
+  \newcommand{\ifr}{\ensuremath{\mathsf{fri}}}
+  \newcommand{\efr}{\ensuremath{\mathsf{fre}}}
+  %hb
+  \newcommand{\com}{\ensuremath{\mathsf{com}}}
+  \newcommand{\cause}{\ensuremath{\mathsf{cause}}}
+  \newcommand{\hb}{\ensuremath{\mathsf{hb}}}
+\newcommand{\propbase}{\operatorname{\ensuremath{\mathsf{prop{\kern-0.00em}-{\kern-0.1em}base}}}}
+\newcommand{\prop}{\operatorname{\ensuremath{\mathsf{prop}}}}
+  %poloc
+  \newcommand{\polocllh}{\operatorname{\ensuremath{\mathsf{po{\kern-0.00em}-{\kern-0.1em}loc{\kern-0.00em}-{\kern-0.05em}llh}}}}
+  \newcommand{\poloc}{\operatorname{\ensuremath{\mathsf{po{\kern-0.00em}-{\kern-0.05em}loc}}}}
+  %criteria
+  \newcommand{\acyclic}{\operatorname{acyclic}}
+  \newcommand{\reflexive}{\operatorname{reflexive}}
+  \newcommand{\irrefl}{\operatorname{irreflexive}}
+  %po restricted to some events
+  \newcommand{\WW}{\operatorname{\ensuremath{\mathsf{{WW}}}}}
+  \newcommand{\RM}{\operatorname{\ensuremath{\mathsf{RM}}}}
+  \newcommand{\RW}{\operatorname{\ensuremath{\mathsf{RW}}}}
+  \newcommand{\RR}{\operatorname{\ensuremath{\mathsf{RR}}}}
+  \newcommand{\RB}{\operatorname{\ensuremath{\mathsf{RB}}}}
+  \newcommand{\MW}{\operatorname{MW}}
+  \newcommand{\WM}{\operatorname{WM}}
+  \newcommand{\WR}{\operatorname{\ensuremath{\mathsf{WR}}}}
+
+\newcommand{\wide}{wide}
+\newcommand{\wider}{wider}
+\newcommand{\widest}{widest}
+\newcommand{\narrow}{narrow}
+\renewcommand{\narrower}{narrower}
+\newcommand{\narrowest}{narrowest}
+\newcommand{\narrowerop}{\operatorname{narrower}}
+
+%%%Litmus
+%%basic format
+\let\prog\textsf
+\let\as\texttt
+\let\ltest\textbf
+
+%% Conventional processor
+\newcommand{\proc}[1]{\ensuremath{P_{#1}}}
+%% Format graphs in columns
+\makeatletter
+\@ifundefined{useepstrue}{\newif\ifuseeps\useepsfalse}{}
+\makeatother
+\newlength{\fmtlength}
+\ifuseeps
+\newcommand{\fmtgraphcol}[3]
+{\setlength{\fmtlength}{\linewidth}%
+\addtolength{\fmtlength}{-#2}%
+\framebox{\resizebox{\fmtlength}{#3}{\includegraphics{#1.eps}}}}
+\else
+\newcommand{\fmtgraphcol}[3]
+{\setlength{\fmtlength}{\linewidth}%
+\addtolength{\fmtlength}{-#2}%
+\framebox{\resizebox{\fmtlength}{#3}{\input{#1.pstex_t}}}}
+\fi
+%%Format graph explicit width
+\ifuseeps
+\newcommand{\fmtgraph}[3]
+{\resizebox{#2}{#3}{\includegraphics{#1.eps}}}
+\newcommand{\tfmtgraph}[1]{\framebox{\includegraphics{#1.eps}}}
+\else
+\newcommand{\fmtgraph}[3]
+{\resizebox{#2}{#3}{\input{#1.pstex_t}}}
+\newcommand{\tfmtgraph}[1]{\framebox{\input{#1.pstex_t}}}
+\fi
+%%%%Test for figures as in the tutorial
+% fix up fig2dev fonts to make actions in \sf
+\iftrue
+\makeatletter
+% for the fig2dev version on P laptop
+\gdef\SetFigFontNFSS#1#2#3#4#5{%
+  \reset@font\fontsize{#1}{#2pt}%
+%  \fontfamily{#3}\fontseries{#4}\fontshape{#5}%
+  \fontfamily{\sfdefault}\fontseries{#4}\fontshape{#5}%
+  \selectfont}%
+% for the fig2dev version on P desktop
+\gdef\SetFigFont#1#2#3#4#5{%
+  \reset@font\fontsize{#1}{#2pt}%
+%  \fontfamily{#3}\fontseries{#4}\fontshape{#5}%
+  \fontfamily{\sfdefault}\fontseries{#4}\fontshape{#5}%
+  \selectfont}
+\makeatother
+\newcommand{\asm}[1]{\texttt{#1}}
+\newcommand{\myth}[1]{\ensuremath{\mathsf{T}_#1}}
+\newcommand{\mylegend}[2]{#1}
+\ifbw\newcommand{\bw}{-bw}\else\newcommand{\bw}{}\fi
+\ifuseeps
+\newcommand{\locfmt}[1]{\includegraphics{#1.eps}}
+\newcommand{\newfmt}[1]{\includegraphics{img/#1.eps}}
+\newcommand{\insfmt}[1]{\scalebox{0.28}{\includegraphics{ins/#1.eps}}}
+\else
+\newcommand{\locfmt}[1]{\input{#1.pstex_t}}
+\newcommand{\newfmt}[1]{\input{img/#1\bw.pstex_t}}
+\newcommand{\insfmt}[1]{\scalebox{0.28}{\input{ins/#1\bw.pstex_t}}}
+\fi
+\fi
+
+\newcommand{\NEW}[1]{\textcolor{blue}{#1}}
+
+\newcolumntype{Y}{@{}r@{\,}X}
+%%Decorate instruction with a label
+\newcommand{\instab}[2]{\ \(#2\)  & \as{#1}}
+%%Pseudo-code load & store
+\newcommand{\pset}[2]{\(\as{#1} \leftarrow \as{#2}\)}
+\newcommand{\pstore}[2]{\pset{#2}{#1}}
+\newcommand{\pload}[2]{\pset{#1}{#2}}
+%%trick to add vertical space somewhere
+\newcommand{\haut}{\rule{0ex}{2ex}}
+\newcommand{\bas}{\rule[-1ex]{0.5ex}{0ex}}
+

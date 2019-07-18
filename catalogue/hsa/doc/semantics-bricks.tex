@@ -1,0 +1,644 @@
+\section{Instructions and events}
+
+Instructions can be reads, writes, read-modify-writes, fences and branches.
+Instructions can bear \emph{tags}, for example relative to their \emph{kind},
+\emph{memory order}, (i.e. the ordering constraints they induce), or
+\emph{scope}.
+
+Events give a semantics to instructions; they can be accesses (reads or writes,
+fences or branches. We model read-modify-write instructions with two events: a
+read and a write. Events bear the same tags as the instructions they come
+from.
+
+\subsection{Tags}
+
+\subsubsection{Kind}
+
+An event can be \emph{ordinary}, or \emph{atomic}, and bear the eponymous tag:
+\begin{verbatim}
+enum kind = 'ordinary || 'atomic
+\end{verbatim}
+
+%\subsubsection{Size}
+%
+%An event can be single-copy atomic, in which case it is tagged with {\tt
+%single} or not, in which case it is tagged with {\tt double}:
+%\begin{verbatim}
+%enum size = 'single || 'double
+%\end{verbatim}
+%
+%Having the same size simply corresponds to bearing the same size tag:
+%\begin{verbatim}
+%let same-size = (Single*Single) | (Double*Double)
+%\end{verbatim}
+
+\subsubsection{Memory order}
+
+Memory orders are tags that induce certain ordering properties to the
+events which bear them. Events can be \emph{relax} (tag {\tt rlx}),
+\emph{acquire} (tag {\tt scacq}), \emph{release} (tag {\tt screl}), or both
+release and acquire (tag {\tt scar}):
+\begin{verbatim}
+enum memory-order = 'rlx || 'scacq || 'screl || 'scar
+\end{verbatim}
+
+%{\color{blue} We have several questions on the subject of memory order tags:
+%\begin{itemize}
+%\item there seems to be little difference (if any) between a read operation
+%annotated with scacq and a read operation annotated with scar (the same remark
+%applies to a write operation annotated with screl vs. scar). What is the
+%purpose of scacq and screl? For now we find they seem to act the same as scar
+%for reads and writes, respectively.
+%\item We model RMWs with a read and a write. Therefore we wonder what the
+%meaning of the tag scacq can be a RMW, as it is illegal for a write. The same
+%remark applies to tagging an RMW with screl, as screl is illegal for a read.
+%\end{itemize}
+%}
+
+\subsubsection{Scopes}
+
+Scope tags reflect the concurrency hierarchy; work-item events are tagged {\tt
+wi}, and work-group events {\tt wg}, the other tags being eponymous of the
+scope level: 
+\begin{verbatim}
+enum scopes = 'wi || 'wave || 'wg || 'agent || 'system
+\end{verbatim}
+
+We go back to scopes in Section~\ref{sec:scopes}
+
+\subsection{Accesses}
+
+Accesses can be reads, writes or read-modify-writes, and bear various
+combinatinons of the tags defined above.
+
+\subsubsection{Reads}
+
+Reads can be either ordinary or atomic, and this influences what memory order
+and scope tags they bear:
+\begin{verbatim}
+default R[{'ordinary},{'rlx},{'wi}]
+instructions R[{'atomic},{'rlx,'scacq,'scar},scopes]
+\end{verbatim}
+
+Thus reads can be ordinary, in which case they have to be relaxed and at scope
+work-item. %; ordinary reads can be single-copy atomic or not. {\color{blue} Or
+%do they have to be single-copy atomic?}
+
+Atomic reads can be relaxed, acquire, or release-acquire, and live at any scope
+level. %, with any size.
+
+\subsubsection{Writes}
+
+Writes can be either ordinary or atomic, and this influences what memory order
+and scope tags they bear:
+\begin{verbatim}
+default W[{'ordinary},{'rlx},{'wi}]
+instructions W[{'atomic},{'rlx,'screl,'scar},scopes]
+\end{verbatim}
+
+Thus writes can be ordinary, in which case they have to be relaxed and at scope
+work-item. %; ordinary writes can be single-copy atomic or not. {\color{blue} Or
+%do they have to be single-copy atomic?}
+
+Atomic writes can be relaxed, acquire, or release-acquire, and live at any scope
+level. %, with any size.
+
+\subsubsection{Read-modify-writes}
+
+Read-modify-writes have to be atomic, and can bear any memory order, scope
+tags:
+%or size tags:
+\begin{verbatim}
+instructions RMW[{'atomic},memory-order,scopes]
+\end{verbatim}
+
+\subsubsection{Fences}
+
+Fence events can bear memory order or scope tags:
+\begin{verbatim}
+instructions F[{'scacq,'screl,'scar},scopes]
+\end{verbatim}
+
+%\section{\label{segment}Segments}
+%
+%{\color{blue} We have several questions on the subject of memory segments:
+%\begin{itemize}
+%\item In the documentation, example ``Race­free transitive synchronization
+%through multiple scopes'': we are a bit surprised by the fact that variable Z
+%is defined in the group segment, as it is used for synchronisation between
+%units B and C, which belong to different groups. Is that intentional?
+%\item In the documentation, example ``Separate Segment synchronisation'': the
+%program declares X as global and Y as group. Essentially, the test seems to be
+%a release-acquire idiom using Y as flag and X as data. Hence we're not too sure
+%how to understand the final comment: ``This example shows that synchronization
+%can cross segments. Even though the atomic store  and load specify a location
+%in global memory, they still synchronize the group location Y.'' Are the atomic
+%store and load the ones over X, or Y?
+%\item Moreover, about the same example, the group variable Y is initialised to
+%$0$, whereas the HSAIL documentation seems to say that one cannot initialise
+%group variable; is that ok?
+%\end{itemize} }
+
+%We summarise the possible annotations of events in \mytab\ref{fig:annotations}.
+%
+%\begin{table}[!h]
+%  \centering
+%\scalebox{.81}{
+%\begin{tabular}{c|c|c}
+%         & accesses                   & fences              \\\hline
+%kind     & {\tt }      & {\tt }         \\
+%scope    & {\tt }        & {\tt }  
+%\end{tabular}}
+%\caption{Possible annotations of events \label{fig:annotations}}
+%\end{table}
+
+\section{Concurrency hierarchy \label{sec:scopes}}
+
+%\begin{figure}[!h]
+%\vspace*{-4mm}
+%\begin{center}
+%%\scalebox{.6}{\includegraphics{hierarchy}}
+%\end{center}
+%\vspace*{-2mm}
+%\caption{Concurrency hierarchy\label{fig:hierarchy}}
+%\vspace*{-6mm}
+%\end{figure}
+
+An HSA system is hierarchical; here are the scopes that we consider, each
+\narrower{} than the following one (resp. \wider{} than the previous one):
+\begin{itemize}
+\item {\tt work item};
+\item {\tt wave};
+\item {\tt work group};
+\item {\tt agent};
+\item {\tt system}. 
+\end{itemize} 
+
+Our \prog{herd} tool handles scopes by the means of various objects: scope
+tags, scope trees, scope instances and sets of tagged events. These objects are
+all defined by reading a prelude {\tt bell} file, supplied to \herd{} with the
+\texttt{-bell} option. Section~\ref{sec:bell} details the {\tt bell} file for
+HSA.
+
+\subsection{Scope tags}
+HSA defines a hierarchy of five scope levels: system, agent, work-group, wave
+and work-item here listed from wider to narrower.
+
+Scope tags reflect these levels; work-item events are tagged {\tt wi}, and
+work-group events {\tt wg}, the other tags being eponymous of the scope level:
+\begin{verbatim}
+enum scopes = 'wi || 'wave || 'wg || 'agent || 'system
+\end{verbatim}
+
+\subsubsection{Concurrency hierarchy}
+
+The functions {\tt narrower} and {\tt wider} implement the concurrency
+hierarchy, making for example the scope level {\tt agent} narrower than {\tt
+system}, and the scope level {\tt wave} wider than work-item {\tt wi}:
+\begin{verbatim}
+let narrower(s) = match s with
+  || 'system -> 'agent
+  || 'agent -> 'wg
+  || 'wg -> 'wave
+  || 'wave -> 'wi
+end
+
+let wider(s) = match s with
+  || 'agent -> 'system
+  || 'wg -> 'agent
+  || 'wave -> 'wg
+  || 'wi -> 'wave
+end
+\end{verbatim}
+
+In these two functions we use the {\tt cat} construct {\tt match}; one can use
+{\tt match} to match a tag value (here the argument {\tt s}) against a set of
+\emph{patterns} (here the enum type of scope levels), and for each pattern
+return a result.
+
+\subsubsection{Sets of tagged events}
+
+Scope tags can annotate events. For each tag {\tt 't}, our \prog{herd} tool
+builds the set {\tt T} of all events that bear the tag {\tt 't}. For instance,
+in Figure~\ref{isa2scopes}, we have
+$\texttt{Wg} = \{ b \}$,
+$\texttt{Agent} = \{ c \}$,
+$\texttt{System} = \{ d,e \}$.
+Sets of tagged events can be accessed from the scope tag
+by a primitive, \verb+tag2set+.  For instance, in our \ltst{isa2} example, the
+expression \verb+tag2set('system)+ will evaluate to the set of events
+$\{d,e\}$.
+
+\subsection{Scope trees}
+
+Each test features a ``scope tree'' definition that specifies how the test
+units are organised according to the scope hierarchy (defined by the fuctions
+{\tt wider} and {\tt narrower}). Consider for instance the test \ltst{isa2} (or experiment with it at \url{virginia.cs.ucl.ac.uk/?record=hsa&cat=hsa&bell=hsa&litmus=isa2}):
+
+\pagebreak
+
+{\footnotesize
+\verbatiminput{img/isa2+scopes.litmus}
+}
+This test has three units, \myth{0}, \myth{1} and~\myth{2}.
+According to the scope tree \verb+(agent (wg 0 1) (wg 2))+,
+the first two units \myth{0} and \myth{1} are in the same work-group,
+while the last unit~\myth{2} is in a different work-group.
+Then, all units are in the same agent.
+Our notation for scope trees is abbreviated by omitting
+the scope tree levels that contain exactly one sub-instance.
+Here, the complete scope tree specification is:
+\begin{verbatim}
+(system (agent (wg (wave (wi 0)) (wave (wi 1))) (wg (wave (wi 2)))))
+\end{verbatim}
+Observe that, in the complete scope tree above,
+the system scope contains exactly one agent, each work-group contain
+exactly one wave, etc.
+
+\subsection{Scope instances}
+Hence, at runtime, there will be two ``scope instances'' of the work-group
+level. We model these scope instances in \cat{} as relations eponymous of the
+corresponding scope levels. Thus a scope instance is an equivalence relation
+that relates events whose units are in the same scope instance of the given
+level.
+
+\subsubsection{Scope instances}
+Given a tag \texttt{'t}, \texttt{tag2scope('t)} returns the eponymous scope
+instance relation {\tt t}.
+
+As an example, Figure~\ref{isa2scopes} pictures the \wg{} scope instance (or
+{\tt tag2scope('wg)}) for the \ltst{isa2} test.
+We have omitted the reflexivity edges (\emph{i.e.} $a \wg a$, $b \wg b$ etc.) for clarity.
+\begin{figure}[!h]
+\begin{center}\moveback
+\fmt{isa2+scopes}
+\end{center}
+\caption{\label{isa2scopes} The \wg{} scope instance of the \ltst{isa2} test \color{green}{(Allowed)}}
+\end{figure}
+
+We could also have pictured the \agent{} scope instance. We refrain from doing
+so, as there is a single agent scope instance that contains all units.  Thus,
+the \agent{} scope instance in this case is the total relation over events, and
+picturing it would clobber the diagram.
+
+%{\color{blue} Is that right? More precisely, does our notion of scope instance
+%match the intent?}
+
+\subsubsection{Same instance}
+
+Section 3.9 ```Scoped synchronization order'' of the HSA document states that
+two operations may ''\emph{both specify (directly or indirectly through scope
+inclusion) scope instance~$S$}''. We believe that this means for example that a
+memory operation with tag agent also specifies work-group. More generally, the
+scope tag~\text{tag} takes effect on all scopes at levels {\tt narrower}
+than~\text{tag}. %{\color{blue} Is that right?}
+
+To handle this bit of the model, we define equivalence relations
+\texttt{same-\text{tag}}, where \text{tag} is a scope tag. Two operations
+are related by \texttt{same-\text{tag}} when
+\begin{itemize}
+\item the two operations are related by the scope instance \text{tag}, but
+also
+\item they are tagged by scope~\text{tag} or {\tt wider}.
+\end{itemize}
+
+Hence, we first define a function \texttt{all-instrs} that takes
+a (scope) tag as argument and returns all the events annotated by
+this scope or {\tt wider}:
+
+\begin{verbatim}
+let rec all-instrs(tag) = match tag with
+|| 'system -> tag2instrs(tag)
+|| _ -> tag2instrs(tag) | all-instrs(wider(tag))
+end
+\end{verbatim}
+
+Here we use {\tt let rec} because the function {\tt all-instrs} is
+\emph{recursive} (see how {\tt all-instrs} is called within itself).
+
+Now we can define the function~\texttt{do-same-instance} that takes a scope
+tag~\texttt{'\text{tag}} as argument and returns the
+relation~\texttt{same-\text{tag}}:
+\begin{verbatim}
+let do-same-instance(tag) =
+ let instrs = all-instrs(tag) in
+ tag2scope(tag) & (instrs * instrs)
+\end{verbatim}
+The function {\tt same-instance} simply computes the intersection of the scope
+instance {\tt tag2scope(tag)} and of the cartesian product {\tt (instrs *
+instrs)} on events tagged with scope level~\text{tag} or {\tt wider}.
+
+\begin{figure}[!h]
+\begin{center}\moveback
+\fmt{isa2+instances}
+\end{center}
+\caption{\label{isa2same}The \same{wg} and~\same{agent} relations of the \ltst{isa2} test \color{green}{(Allowed)}}
+\end{figure}
+Figure~\ref{isa2same} shows two {\tt same-\text{tag}} relations (once again
+we omitted reflexivity edges for clarity; in particular $e \same{wg} e$ is
+omitted).  Also note that we both have $c \same{agent} d$ and~$c \same{wg} d$.
+This comes from scope inclusion: events $c$ and~$d$ are from the same
+unit~\myth{1}.  Hence, they belong to the same agent and work-group scope
+instances.  Moreover, given event scope annotations (\texttt{agent} and
+\texttt{system} respectively) the events both act up to the agent level.
+
+%\subsubsection{A final question}
+%
+%{\color{blue} Consider the following excerpt, in the assembly given in the HSA
+%documentation, where A and B are in different work groups:
+%\begin{verbatim}
+%group_u32 &X ;
+%
+%A:
+%atomic_st_scar_wg_u32 [&X],1 ;
+%
+%B:
+%atomic_st_scar_wg_u32 [&X],2 ;
+%\end{verbatim}
+
+%We wonder if we should consider that there is one variable $X$, or rather two,
+%one for each scope instance. Another way of seeing this question is to
+%determine whether the program is racy or not: with one variable $X$ it is racy,
+%otherwise it isn't.}
+
+%\subsection{Conventions} 
+%
+%We use several notations that rely on \emph{relations} and \emph{orders}. We
+%write {\tt 0} for the empty relation.  We denote the transitive
+%(resp.~reflexive-transitive) closure of a relation $\textsf{r}$ as
+%$\transc{\textsf{r}}$ (resp.~$\rstar{\textsf{r}}$).  We write
+%$\textsf{r}_1;\textsf{r}_2$ for the sequential composition of two relations
+%$\textsf{r}_1$ and $\textsf{r}_2$, \ie $\dfn{(x,y) \in
+%(\textsf{r}_1;\textsf{r}_2)}{\exists z.  (x,z) \in \textsf{r}_1 \:\:\wedge}$
+%$(z,y) \in \textsf{r}_2$. We write $\irrefl(\textsf{r})$ to express the
+%irreflexivity of $\textsf{r}$, \ie $\neg(\exists x. (x,x) \in \textsf{r})$. We
+%write $\acyclic(\textsf{r})$ to express its acyclicity, \ie the irreflexivity
+%of its transitive closure: $\neg(\exists x.  (x,x) \in \transc{\textsf{r}})$.
+%
+%A \emph{partial order} is a relation $\textsf{r}$ that is \emph{transitive}
+%(\ie $\textsf{r} = \transc{\textsf{r}}$), and irreflexive. Note that this
+%entails that $\textsf{r}$ is also acyclic. A \emph{total order} is a partial
+%order $\textsf{r}$ defined over a set $\mathbb{S}$ that enjoys the
+%\emph{totality property}: $\forall x \neq y \in \mathbb{S}. (x,y) \in
+%\textsf{r} \vee (y,x) \in \textsf{r}$.
+%
+%We refer to orderings of events \wrt several relations.  To avoid ambiguity,
+%given a relation \textsf{r}, we say that an event $e_1$ is
+%\emph{\textsf{r}-before} another event $e_2$ (or $e_1$ is an
+%\emph{\textsf{r}-predecessor} of $e_1$, or $e_2$ is \emph{\textsf{r}-after}
+%$e_1$, or $e_2$ is \emph{\textsf{r}-subsequent}, \etc) when $(e_1,e_2) \in
+%\textsf{r}$.
+%
+%\subsection{Executions} Executions are tuples $(\evts,\po,\rf,\co)$, which
+%consist of a set of \emph{events} $\evts$, giving a semantics to the
+%instructions, and three relations over events: $\po,\rf$ and $\co$ (see below).
+%Note that our executions are post-mortem.
+
+
+%\paragraph{Auxiliaries over events}
+%Given a set of events, we write {\tt W*R, W*W, R*R, R*W} for the set of
+%write-read, write-write, read-read and read-write pairs respectively. We write
+%{\tt po \& W*R} for the write-read pairs in program order, and {\tt po
+%$\setminus$ W*R} for all the pairs in program order except the write-read
+%pairs. We write {\tt R*M} for the set of read-read and read-write pairs ({\tt
+%M} designates the set of all memory actions, i.e. the union of {\tt R} and {\tt
+%W}).
+
+\section{Relations over events} 
+
+\subsection{Program order} 
+The \emph{program order} $\po$ lifts the order in which instructions have been
+written in the program to the level of events. The program order is a total
+order over the memory events of a given thread, but does not order events from
+different threads. Note that program order unrolls loops and determines the
+branches taken. 
+
+\subsection{Read-from}
+The \emph{read-from} $\rf$ links a read from a register or a memory location to
+a unique write to the same register or location. The value of the read must be
+equal to the one of the write. We write $\rfe$ (external read-from) when the
+events related by $\rf$ belong to distinct threads, \ie $\dfn{(w,r) \in
+\rfe}{(w,r) \in \rf \wedge \pr(w) \neq \pr(r)}$. We write $\rfi$ for internal
+read-from, when the events belong to the same thread.
+
+%\subsection{Coherence \label{sec:co}}
+%The \emph{coherence} order $\co$ totally orders writes to the same memory
+%location. We write $\coi$ (resp.~$\coe$) for internal (resp.~external)
+%coherence.
+
+%\subsection{From-read}
+%We derive the \emph{from-read} $\fr$ from the read-from $\rf$ and the coherence
+%$\co$, as follows:
+%\begin{center}
+%%\newfmt{fr}\vspace*{-2ex}
+%\end{center}
+%That is, a read $r$ is in $\fr$ with a write $w_1$ (resp.~$w_2$) if $r$ reads
+%from a write $w_0$ such that $w_0$ is in the coherence order before $w_1$
+%(resp.~$w_2$).  We write $\fri$ (resp.~$\fre$) for the internal
+%(resp.~external) from-read.
+
+%\subsection{Communications}
+%We gather all \emph{communications} in $\dfn{\com}{\co \cup \rf \cup \fr}$. 
+
+%\subsection{Glossary}
+%We give a glossary of all the relations that we describe in this section
+%in~\mytab\ref{fig:gloss-rlns}. For each relation we give its notation, its name
+%in English, the directions (\ie write W or read R) of the source and target of
+%the relation (column ``dirns''), where to find it in the text (column
+%``reference''), and an informal prose description.  Additionally in the column
+%``nature'', we give a taxonomy of our relations: are they fundamental execution
+%relations (\eg $\po, \rf$), architectural relations (\eg $\ppo$), or derived
+%(\eg $\fr$)?
+
+%\begin{table}[!h]
+%  \centering
+%\scalebox{.81}{
+%\begin{tabular}{c|p{.2\linewidth}|c|l|p{.17\linewidth}|p{.3\linewidth}}
+%notation & name          & nature & dirns & reference & description \\\midrule
+%$\po$    & program order & execution & any, any & \S Relations over events & instruction order lifted to events \\[.3em]
+%$\rf$    & read-from     & execution & WR & \S Relations over events & links a write $w$ to a read $r$ taking its value from $w$ \\[.3em]
+%$\co$    & coherence     & execution & WW & \S Relations over events & total order over writes to the same memory location \\\midrule
+%%$\ppo$   & preserved program order & architecture & any, any & \S Architectures & program order maintained by the architecture \\[.3em]
+%%$\ffence, \ff$ & full fence & architecture & any, any & \S Architectures        & \eg  \\[.3em]
+%%$\lwfence, \lwf$ & lightweight fence & architecture & any, any & \S Architectures & \eg  \\[.3em]
+%%$\fences$ & fences & architecture & any, any & \S Architectures & architecture-dependent subset of the fence relations, \eg $\ffence, \lwfence$ \\[.3em]
+%%$\prop$ & propagation & architecture & & \S Architectures
+%%  & order in which writes propagate, typically enforced by fences
+%%  \\\midrule
+%$\poloc$ & program order restricted to the same memory location & derived & any, any & \S \textsc{sc per location} & $\{(x,y) \mid (x,y) \in \po \wedge \loc(x)=\loc(y)\}$\\[.3em]
+%$\com$ & communications & derived & any, any &  \S Relations over events            & $\co \cup \rf \cup \fr$ \\[.3em]
+%$\fr$    & from-read   & derived  & RW & \S Relations over events & links a read $r$ to a write $w'$ $\co$-after the write $w$ from which $r$ takes its value \\[.3em]
+%%$\cause(ssc)$ & causality & derived & any, any & \S \textsc{no thin air} & $\ppo \cup \fences \cup \rfe \cup \cause(\narrowerop(ssc))$ \\[.3em]
+%\end{tabular}}
+%\caption{Glossary of relations\label{fig:gloss-rlns}}
+%\end{table}
+
+%\pagebreak
+%
+%\subsection{A first litmus test}
+%
+%In the following we present several examples of executions. We depict the
+%events of a given thread vertically to represent the program order, and the
+%communications by arrows labelled with the corresponding relation.
+%
+%\subsubsection{Message passing}
+%\myfig\ref{fig:mp-naked} shows a classic \emph{message passing} (\textsf{mp})
+%example. This example is a communication pattern involving two memory locations
+%$x$ and $y$: $x$ is a message, and $y$ a flag to signal to the other thread
+%that it can access the message. 
+%\begin{figure}[!h]
+%\begin{center}
+%%\newfmt{mp}
+%\end{center}
+%\vspace*{-10mm}
+%\caption{Message passing pattern\label{fig:mp-naked}}
+%\end{figure}
+%
+%\myth{0} writes the value~$1$ to memory at location~$x$ (see the event~$a$).
+%In program order after~$a$ (hence the~$\po$ arrow between~$a$ and~$b$), we have
+%a write of value~$1$ to memory at location~$y$. \myth{1} reads from~$y$ (see
+%the event~$c$). In the particular execution shown here, this read takes its
+%value from the write~$b$ by~\myth{0}, hence the~$\rf$ arrow between~$b$
+%and~$c$. In program order after~$c$, we have a read from location~$x$. In this
+%execution, we suppose that this event~$d$ reads from the initial state (not
+%depicted), which by convention sets the values in all memory locations and
+%registers to~$0$.  This is the reason why the read~$d$ has the value~$0$. This
+%initial write to~$x$ is, by convention, $\co$-before the write~$a$ of~$x$
+%by~\myth{0}, hence we have an~$\fr$ arrow between~$d$ and~$a$.
+%
+%Note that, in the following, even if we do not always depict all of the program
+%order, a program order edge is always implied between each pair of events
+%ordered vertically below a thread id, \eg $\textsf{T}_0$.
+%
+%\subsubsection{Convention for naming tests} We refer to tests as follows; we
+%roughly have two flavours of names: classical names, which are abbreviations of
+%classical litmus test names appearing in the literature; and systematic names,
+%which describe the accesses occurring on each thread of a test.
+%
+%Classical patterns, such as the message passing pattern above, have an
+%abbreviated name: \textsf{mp} stands for ``message passing'', \textsf{sb} for
+%``store buffering'', \textsf{lb} for ``load buffering'', \textsf{wrc} for
+%``write-to-read causality'', \textsf{rwc} for ``read-to-write causality''.
+%
+%\begin{table}[!h]
+%\begin{tabular}{c|c|c|p{.55\linewidth}}
+%classic & systematic & diagram & description \\\midrule
+%\textsf{coXY} & & \myfig\ref{fig:co} and \ref{fig:corr} & coherence test
+%involving an access of kind X and an access of kind Y; X and Y can be either R
+%(read) or W (write)\\[.3em]
+%\textsf{lb} & \textsf{rw+rw} & \myfig\ref{fig:lb} & load buffering \ie two threads each holding a read then a write \\[.3em]
+%\textsf{mp} & \textsf{ww+rr}& \myfig\ref{fig:mp} & message passing \ie two threads; first thread holds two writes, second thread holds two reads \\[.3em]
+%\textsf{wrc} & \textsf{w+rw+rr} & \myfig\ref{fig:wrc} & write to read causality \ie three threads; first thread holds a write, second thread holds a read then a write, third thread holds two reads \\[.3em]
+%\textsf{isa2} & \textsf{ww+rw+rr} & \myfig\ref{fig:isa2} & one of the tests appearing in the Power ISA documentation \ie write to read causality prefixed by a write, meaning that the first thread holds two writes instead of just one as in the \textsf{wrc} case \\[.3em]
+%\textsf{2+2w} & \textsf{ww+ww} & \myfig\ref{fig:2+2w} & two threads holding two writes each \\[.3em]
+%& \textsf{w+rw+2w} & \myfig\ref{fig:w+rw+2w} & three threads; first thread
+%holds a write, second thread holds a read then a write, third thread holds two
+%writes \\[.3em]
+%\textsf{sb} & \textsf{wr+wr} & \myfig\ref{fig:sb} & store buffering \ie two threads each holding a write then a read \\[.3em]
+%\textsf{iriw} & \textsf{w+rr+w+rr} & \myfig\ref{fig:iriw} & independent reads of independent writes \ie four threads; first thread holds a write, second holds two reads, third holds a write, fourth holds two reads  \\[.3em] 
+%\textsf{rwc} & \textsf{w+rr+wr} & \myfig\ref{fig:rwc} & read to write causality over three threads; first thread holds a write, second thread holds two reads, third thread holds a write then a read \\[.3em]
+%\textsf{r} & \textsf{ww+wr} & \myfig\ref{fig:r} & two threads; first thread
+%holds two writes, second thread holds a read and a write
+%\end{tabular}
+%\caption{Glossary of litmus tests names\label{fig:gloss-litmus}}
+%\end{table}
+
+%When a pattern does not have a classical name from the literature, we give it a
+%name that simply describes which accesses occur: for example \textsf{2+2w}
+%means that the test is made of two threads holding two writes each;
+%\textsf{w+rw+2w} means that we have three threads: a write on a first thread, a
+%read followed by a write on a second thread, and then two writes on another
+%thread.
+
+%We give a glossary of the test names presented in this paper in
+%\mytab\ref{fig:gloss-litmus}, in the order in which they appear; for each test
+%we give its systematic name, and its classic name (\ie borrowed from previous
+%works) when there is one.
+
+%Given a pattern such as \textsf{mp} above, we write \textsf{mp+fence+ppo} for
+%the same underlying pattern where in addition the first thread has a
+%lightweight fence \lwfence{} between the two writes and the second thread
+%maintains its two accesses in order thanks to some \emph{preserved program
+%order} mechanism (\ppo, see below). We write \textsf{mp+fences} for the
+%\textsf{mp} pattern with two lightweight fences, one on each thread. 
+%
+
+\pagebreak
+
+%\subsection{Architectures} Architectures are instances of our model.  An
+%architecture is a triple of functions $(\ppo,\fences,\prop)$, which specifies
+%the \emph{preserved program order} $\ppo$, the \emph{fences} $\fences$ and the
+%\emph{propagation order} $\prop$.
+
+%\smallskip
+%
+%\subsubsection{Preserved program order\label{sec:preamble:ppo}}
+%The preserved program order gathers the set of pairs of events which are
+%guaranteed not to be reordered \wrt the order in which the corresponding
+%instructions occur in the program text. Thus two events $e_1$ and $e_2$ being
+%in program order (i.e. $(e_1,e_2) \in \po$) does not necessarily entail their
+%being in preserved program order. 
+%
+%For example on TSO, only write-read pairs can be reordered, so that the
+%preserved program order for TSO is $\po \setminus W*R$. On weaker models such
+%as Volta, the preserved program order merely includes \emph{dependencies}, for
+%example address dependencies, when the address of a memory access is determined
+%by the value read by a preceding load.  We detail these notions, and the
+%preserved program order for Volta, in \mysec\ref{sec:ppo}.
+%
+%The function $\ppo$, given an execution $(\evts,\po,\co,\rf)$, returns the
+%preserved program order. For example, consider the execution of the message
+%passing example given in \myfig\ref{fig:mp}.  Assume that there is an address
+%dependency between the two reads on \myth{1}. As such a dependency constitutes
+%a preserved program order relation on Volta, the $\ppo$ function would return
+%the pair $(c,d)$ for this particular execution.
+%
+%\smallskip
+%
+%\subsubsection{Fences}
+%Fences (or \emph{memory barriers}) are special instructions which prevent
+%certain behaviours.  
+% 
+%In this document, we use the same names for the fence instructions and the
+%relations that they induce over events. For example, consider the execution of
+%the message passing example given in \myfig\ref{fig:mp}.  Assume that there is
+%a lightweight fence \lwfence{} between the two writes $a$ and $b$ on \myth{0}.
+%In this case, we would have $(a,b) \in \lwfence{}$. Note however, that just
+%like program order does not entail preserved program order (see
+%\mysec\ref{sec:preamble:ppo}), two events $e_1$ and $e_2$ being separated (in
+%program order) by a fence does not necessarily entail that $e_1$ and $e_2$ will
+%benefit from ordering properties due to the fence. Formally, the pair
+%$(e_1,e_2)$ might not be included in the \emph{propagation order}, which we
+%expose below in \mysec\ref{sec:preamble:prop}.
+%
+%The function $\fences$ returns the pairs of events in program order which are
+%separated by a fence, when given an execution. For example, consider the
+%execution of the message passing example given in \myfig\ref{fig:mp}.  Assume
+%that there is a lightweight Volta fence \lwfence{}  between the two writes on
+%\myth{0}. On Volta, the $\fences$ function would thus return the pair $(a,b)$
+%for this particular execution.
+%
+%\smallskip
+%
+%\subsubsection{Propagation order\label{sec:preamble:prop}}
+%The propagation order constrains the order in which writes are propagated to
+%the memory system. This order is a partial order between writes (not
+%necessarily to the same location), which can be enforced by using fences. For
+%example on Volta, two writes in program order separated by an \lwfence{}
+%barrier (see \myfig\ref{fig:mp}) will be ordered the same way in the
+%propagation order.
+
+%We note that the propagation order is distinct from the coherence order $\co$:
+%indeed $\co$ only orders writes to the same location, whereas the propagation
+%order can relate writes with different locations through the use of fences.
+%However, both orders have to be compatible, as expressed by our
+%\textsc{propagation} axiom, which we explain next (see
+%\myfig\ref{fig:model-axioms} and \myfig\ref{fig:2+2w}). 
+
+%The function $\prop$ returns the pairs of writes ordered by the propagation
+%order, given an execution. For example, consider the execution of the message
+%passing example given in \myfig\ref{fig:mp}.  Assume that there is a
+%lightweight Volta fence \lwfence{}  between the two writes on \myth{0}. On
+%Volta, the presence of this fence forces the two writes to propagate in the
+%order in which they are written on \myth{0}. The function $\prop$ would thus
+%return the pair $(a,b)$ for this particular execution.

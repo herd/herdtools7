@@ -1,0 +1,13 @@
+LISA HSA13 (*wr race*)
+{
+x = 0;
+}
+ P0                             | P1                      ;
+ w[ordinary,rlx,wi,single] x 1  | r[ordinary,rlx,wi,single] r1 x ;
+
+scopes:
+(system (agent (wg (wave (wi P0)) (wave (wi P1)))))
+
+regions: x:global
+
+~exists(1:r1=0)

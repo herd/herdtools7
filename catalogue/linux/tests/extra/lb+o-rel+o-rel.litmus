@@ -1,0 +1,20 @@
+LISA LB+o-rel+o-rel (*Paul says allowed*)
+{
+x = 0;
+y = 0;
+}
+P0              | P1              ;
+r[once] r1 x    | r[once] r3 y    ;
+w[release] y 1  | w[release] x 1  ;
+exists(0:r1=1 /\ 1:r3=1)
+
+(*More precisely, Paul says, about the dual LB+acq-o+acq-o:
+
+        The reason for saying "OK" is because C11 and C++11 would allow
+        this cycle -- no "synchronizes-with" relationship.  The reason
+        I might care is that it would be good to be able to map at least
+        some of the Linux kernel primitives into C11.  ;-)
+        This would mean that lb+o-rel+o-rel would also be allowed, in
+        contrast to our discussions last week.
+
+*)

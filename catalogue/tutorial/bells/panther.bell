@@ -1,0 +1,6 @@
+"I can't dance"
+
+enum Flavours = 'plain || 'special
+
+instructions R[Flavours]
+instructions W[Flavours]

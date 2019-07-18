@@ -1,0 +1,12 @@
+LISA dist-2+2w+rel+lderef-addr-o+o-wmb-o
+{
+x = 0;
+y = 0;
+}
+ P0             | P1                  | P2           ;
+ w[release] x 1 | r[lderef] r1 x      | w[once] y 1  ;
+                | mov r9 (xor r1 r1)  | f[wmb]       ;
+                | mov r4 (add y r9)   |              ;
+                | w[once] r4 2        | w[once] x 2  ;
+exists (1:r1=1 /\ x=1 /\ y=1)
+

@@ -1,0 +1,12 @@
+LISA s+o-assign+rl-deref-rul (*variant of 7-light, without dep after deref*)
+{
+x = 0;
+y = 0;
+}
+ P0            | P1            ;
+               | f[lock]       ;
+ w[once] y 2   | r[deref] r1 x ;
+ w[assign] x 1 | w[once] y 1   ;
+               | f[unlock]     ;
+exists (y=2 /\ 1:r1=1)
+

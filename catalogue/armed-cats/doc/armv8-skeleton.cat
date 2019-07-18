@@ -1,0 +1,13 @@
+"ARMv8 skeleton"
+
+procedure atomic() =
+  empty rmw & (fre;coe)
+end
+
+procedure armv8() =
+  call sc-per-location()
+  call no-thin-air()
+  call observation()
+  call propagation()
+  call atomic()
+end

@@ -1,0 +1,8 @@
+LISA coWR
+{
+x = 0;
+}
+ P0       | P1      ;
+ w[] x 1  | w[] x 2 ;
+ r[] r1 x |         ;
+exists (0:r1=2 /\ x=1)

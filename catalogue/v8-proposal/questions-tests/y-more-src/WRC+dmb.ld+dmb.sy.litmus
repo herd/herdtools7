@@ -1,0 +1,17 @@
+AArch64 WRC+dmb.ld+dmb.sy (Y)
+"Rfe DMB.LDdRW Rfe DMB.SYdRR Fre"
+Prefetch=1:x=F,1:y=W,2:y=F,2:x=T
+Com=Rf Rf Fr
+Orig=Rfe DMB.LDdRW Rfe DMB.SYdRR Fre
+{
+0:X1=x;
+1:X1=x; 1:X3=y;
+2:X1=y; 2:X3=x;
+}
+ P0          | P1          | P2          ;
+ MOV W0,#1   | LDR W0,[X1] | LDR W0,[X1] ;
+ STR W0,[X1] | DMB LD      | DMB SY      ;
+             | MOV W2,#1   | LDR W2,[X3] ;
+             | STR W2,[X3] |             ;
+Observed
+    1:X0=1; 2:X0=1; 2:X2=0;

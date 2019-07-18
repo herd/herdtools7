@@ -1,0 +1,11 @@
+LISA MP-special+branch
+{
+x = 0;
+y = 0;
+}
+ P0              | P1                ;
+ w[plain] x 1    | r[special] r1 y   ;
+                 | b[eq] r1, 0 END   ;
+ w[special] y 1  | r[plain] r2 x     ;
+                 | END:              ;
+exists (1:r1 = 1 /\ 1:r2 = 0)

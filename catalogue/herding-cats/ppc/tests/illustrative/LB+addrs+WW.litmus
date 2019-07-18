@@ -1,0 +1,18 @@
+PPC LB+addrs+WW
+"DpAddrdW PodWW Rfe DpAddrdW PodWW Rfe"
+Prefetch=
+Com=Rf Rf
+Orig=DpAddrdW PodWW Rfe DpAddrdW PodWW Rfe
+{
+0:r2=x; 0:r5=y; 0:r7=z;
+1:r2=z; 1:r5=a; 1:r7=x;
+}
+ P0            | P1            ;
+ lwz r1,0(r2)  | lwz r1,0(r2)  ;
+ xor r3,r1,r1  | xor r3,r1,r1  ;
+ li r4,1       | li r4,1       ;
+ stwx r4,r3,r5 | stwx r4,r3,r5 ;
+ li r6,1       | li r6,1       ;
+ stw r6,0(r7)  | stw r6,0(r7)  ;
+exists
+(0:r1=1 /\ 1:r1=1)

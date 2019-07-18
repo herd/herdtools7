@@ -1,0 +1,18 @@
+AArch64 ARMARM04+TER
+"RfeLA PodRWAP Rfe PodRRPA FreAL"
+Prefetch=1:x=F,1:y=W,2:y=F,2:x=T
+Com=Rf Rf Fr
+Orig=RfeLA PodRWAP Rfe PodRRPA FreAL
+{
+0:X1=x;
+1:X1=x; 1:X3=y;
+2:X1=y; 2:X3=x;
+}
+ P0           | P1           | P2           ;
+ MOV W0,#1    | LDAR W0,[X1] | LDR W0,[X1]  ;
+ STLR W0,[X1] | MOV W2,#1    | LDAR W2,[X3] ;
+              | STR W2,[X3]  |              ;
+exists
+(1:X0=1 /\ 2:X0=1 /\ 2:X2=0)
+(* Yet another variation of ARMARM04.
+   Was forbidden by some intermediate model *)

@@ -1,0 +1,11 @@
+LISA MP+o-wb-o+loc-rb-loc
+{
+a = 0;
+x = 9;
+}
+ P0           | P1           ;
+ w[once] a 1  | r[once] r1 x ;
+ f[wmb]       | r[once] r2 a ;
+ w[once] x 2  | f[rmb]       ;
+              | r[once] r3 a ;
+exists (1:r1 = 2 /\ 1:r3=0)

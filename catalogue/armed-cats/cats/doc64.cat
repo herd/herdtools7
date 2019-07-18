@@ -1,0 +1,92 @@
+"AArch64, follow documentation"
+
+include "cos.cat"
+
+(* Uniproc *)
+acyclic po-loc | rf | fr | co as uniproc
+
+(* Utilities *)
+let dd = addr | data
+let rdw = po-loc & (fre;rfe)
+let detour = po-loc & (coe ; rfe)
+let addrpo = addr;po
+let com = fr | co | rf
+
+empty rmw & (fre;coe) as atomic
+
+include "aarch64fences.cat"
+
+let ci0 = ctrlisb | detour
+let ii0 = dd | rfi | rdw
+let cc0 = dd | ctrl | addrpo
+let ic0 = 0
+
+include "ppo.cat"
+
+let acq = (A * M) & po
+let rel = (M * L) & po
+
+let ppo = ppo | acq
+
+let strongf = dmb.sy & (M * M)
+	    | dsb.sy & (M * M)
+	    | dmb.st & (W * W)
+	    | dsb.st & (W * W)
+	    | dmb.ld & (R * M)
+	    | dsb.ld & (R * M)
+
+let weakf = rel
+
+let fence = strongf | weakf
+
+let hb = (R * M) & fence | rfe | ppo
+
+acyclic hb as thin_air
+
+(* Now we take "observed" as defined in the doc *)
+
+let hbstar = hb*
+let comstar = (fr|rf|co)*
+
+(* prop is (almost) as before, basically fence effect *)
+
+(* coe? added, given the definition of observed writes:
+   A write is said to be observed by an observer..
+   - when a subsequent read by the
+   same observer return the values written by the observed write, or
+   written by a write [to that location by any observer] that is sequenced
+   in the Coherence order of the location after the observed write.
+      -> rfe
+   - A subsequent write of the location by the same observer is sequenced 
+     in the Coherence order of the location after the observed write
+      -> coe
+*)
+
+(* Observation of external accesses *)
+let observe-write = rfe|coe
+let observe-read = fre
+let observe-access = observe-write|observe-read
+
+let prop_base = observe-access?;fence;hbstar
+
+let prop = prop_base & (W * W) 
+	 | (comstar; prop_base*; strongf; hbstar)
+
+(* Observer: a thread that performs two observations,
+   the second one is relatively new we assume:
+      fre|coe ---> the target write is observed after the source event *)
+
+let observer =
+  observe-write; ppo; (fre|coe)
+| observe-access; fence ; (fre|coe)
+| observe-access;(L * A) & po;fre
+
+irreflexive prop+;observer as observation
+
+(* As before *)
+let prop_al = (L * A) & (rf | po)
+	    | (A * L) & fr
+
+let xx = (W * W) & (X * X) & po
+
+acyclic co | prop | xx | prop_al;hbstar as propagation

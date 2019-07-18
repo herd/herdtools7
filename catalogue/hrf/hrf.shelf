@@ -1,0 +1,60 @@
+shelf number for:
+"HRF"
+
+cat(s):
+cats/hrfd.cat
+cats/hrfi.cat
+cats/hrfdr.cat
+cats/hrfir.cat
+
+cfg(s):
+cats/template1.cfg
+cats/template2.cfg
+
+tests:
+
+tests/template1.observed
+tests/template1.allowed
+tests/template2.observed
+tests/template2.allowed
+
+illustrative tests: (ls tests/illustrative/* > template.illus)
+tests/template.illus
+
+(list their names and the figures where they appear in the paper)
+
+experimental campaign:
+tests/campaign/template1-tests.tar
+tests/campaign/template2-tests.tar
+
+source: 
+Heterogeneous-race-free memory models 
+
+and:
+HRF-Relaxed: Adapting HRF to the complexities of industrial heterogeneous
+memory models
+
+by:
+Derek R. Hower, Blake A. Hechtman, Bradford M. Beckmann, Benedict R. Gaster,
+Mark D. Hill, Steven K. Reinhardt and David A. Wood
+
+and:
+Benedict R. Gaster, Derek Hower, and Lee Howes
+
+downloaded from:
+http://research.cs.wisc.edu/multifacet/papers/asplos14_hrf_updated.pdf 
+
+and:
+http://benedictgaster.org/wp-content/uploads/2014/10/hrf-relaxed-technical-report.pdf
+
+on: 
+Monday 19 January 2015 
+
+-------------------------------------------------------------------------------
+
+model(s) as appear in the paper can be found on:
+page 4, column 2 for hrfd.cat and hrfi.cat
+page 12 and page 13, top for hrfdr.cat and hrfir.cat
+  
+notes:
+

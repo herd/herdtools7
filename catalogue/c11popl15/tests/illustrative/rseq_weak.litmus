@@ -1,0 +1,21 @@
+C rseq_weak
+{ [x] = 0; [y] = 0 }
+
+P0 (atomic_int* x) {
+  atomic_store_explicit(x, 2, memory_order_relaxed);
+}
+
+P1 (atomic_int* x, volatile int* y) {
+  *y = 1;
+  atomic_store_explicit(x, 1, memory_order_release);
+  atomic_store_explicit(x, 3, memory_order_relaxed);
+}
+
+P2 (atomic_int* x, volatile int* y) {
+  int r0 = atomic_load_explicit(x, memory_order_acquire);
+  if (r0 == 3) {
+    int r1 = *y;
+  }
+}
+
+exists (x=3 /\ y=1)

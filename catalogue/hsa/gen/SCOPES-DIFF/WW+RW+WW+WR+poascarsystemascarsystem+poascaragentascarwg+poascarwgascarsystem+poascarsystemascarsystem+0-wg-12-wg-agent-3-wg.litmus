@@ -1,0 +1,19 @@
+LISA WW+RW+WW+WR+poascarsystemascarsystem+poascaragentascarwg+poascarwgascarsystem+poascarsystemascarsystem+0-wg-12-wg-agent-3-wg
+"PodWWAScarSystemAScarSystem RfeAScarSystemAScarAgent PodRWAScarAgentAScarWg WseAScarWgAScarWg PodWWAScarWgAScarSystem WseAScarSystemAScarSystem PodWRAScarSystemAScarSystem FreAScarSystemAScarSystem"
+Scopes=(agent (wg 0) (wg 1 2)) (wg 3)
+Cycle=PodRWAScarAgentAScarWg WseAScarWgAScarWg PodWWAScarWgAScarSystem WseAScarSystemAScarSystem PodWRAScarSystemAScarSystem FreAScarSystemAScarSystem PodWWAScarSystemAScarSystem RfeAScarSystemAScarAgent
+Relax=
+Safe=Rfe Fre Wse PodWW PodWR PodRW
+Prefetch=0:x=F,0:y=W,1:y=F,1:z=W,2:z=F,2:a=W,3:a=F,3:x=T
+Com=Rf Ws Ws Fr
+Orig=PodWWAScarSystemAScarSystem RfeAScarSystemAScarAgent PodRWAScarAgentAScarWg WseAScarWgAScarWg PodWWAScarWgAScarSystem WseAScarSystemAScarSystem PodWRAScarSystemAScarSystem FreAScarSystemAScarSystem
+{
+}
+ P0                        | P1                        | P2                        | P3                         ;
+ w[atomic,scar,system] x 1 | r[atomic,scar,agent] r0 y | w[atomic,scar,wg] z 2     | w[atomic,scar,system] a 2  ;
+ w[atomic,scar,system] y 1 | mov %T1 (neq r0 1)        | w[atomic,scar,system] a 1 | r[atomic,scar,system] r0 x ;
+                           | b[] %T1 Exit1             |                           |                            ;
+                           | w[atomic,scar,wg] z 1     |                           |                            ;
+                           | Exit1:                    |                           |                            ;
+scopes: (agent (wg 0) (wg 1 2)) (wg 3)
+exists (1:r0=1 /\ 3:r0=0 /\ a=2 /\ z=2)

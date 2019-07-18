@@ -1,0 +1,15 @@
+C a8
+{ [x] = 0; [y] = 0; }
+
+P0 (atomic_int* x, volatile int* y) {
+  *y = 1;
+  atomic_thread_fence(memory_order_release);
+  atomic_store_explicit(x, 1, memory_order_relaxed);
+}
+
+P1 (atomic_int* x, volatile int* y) {
+  int r = atomic_load_explicit(x, memory_order_acquire);
+  if (r) {
+    *y = 2;
+  }
+}

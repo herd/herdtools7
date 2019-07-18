@@ -1,0 +1,18 @@
+AArch64 LB
+"PodRW Rfe PodRW Rfe"
+Cycle=Rfe PodRW Rfe PodRW
+Relax=
+Safe=Rfe PodRW
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Rf
+Orig=PodRW Rfe PodRW Rfe
+{
+0:X1=x; 0:X3=y;
+1:X1=y; 1:X3=x;
+}
+ P0          | P1          ;
+ LDR W0,[X1] | LDR W0,[X1] ;
+ MOV W2,#1   | MOV W2,#1   ;
+ STR W2,[X3] | STR W2,[X3] ;
+exists
+(0:X0=1 /\ 1:X0=1)

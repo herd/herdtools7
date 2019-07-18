@@ -1,0 +1,17 @@
+AArch64 3.LB+fri+dmb.ld+dmb.sy
+"Fri Rfe DMB.LDdRW Rfe DMB.SYdRW Rfe"
+Prefetch=1:x=F,1:y=W,2:y=F,2:x=W
+Com=Rf Rf Rf
+Orig=Fri Rfe DMB.LDdRW Rfe DMB.SYdRW Rfe
+{
+0:X1=x;
+1:X1=x; 1:X3=y;
+2:X1=y; 2:X3=x;
+}
+ P0          | P1          | P2          ;
+ LDR W0,[X1] | LDR W0,[X1] | LDR W0,[X1] ;
+ MOV W2,#2   | DMB LD      | DMB SY      ;
+ STR W2,[X1] | MOV W2,#1   | MOV W2,#1   ;
+             | STR W2,[X3] | STR W2,[X3] ;
+exists
+(x=2 /\ 0:X0=1 /\ 1:X0=2 /\ 2:X0=1)

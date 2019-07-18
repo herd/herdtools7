@@ -1,0 +1,18 @@
+C cyc_na
+{ [x] = 0; [y] = 0; }
+
+P0 (volatile int* x, volatile int* y) {
+  int r0 = *x;
+  if (r0) {
+    *y = 1;
+  }
+}
+
+P1 (volatile int* x, volatile int* y) {
+  int r1 = *y;
+  if (r1) {
+    *x = 1;
+  }
+}
+
+exists (0:r0=1 /\ 1:r1=1)

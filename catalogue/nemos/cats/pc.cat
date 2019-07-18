@@ -1,0 +1,8 @@
+"Processor Consistency"
+
+procedure pc() =
+  let order1 = co
+  let order2 = order1 & restrictProc
+  call requireProgramOrder(restrictProc,order2)
+  call requireSerialization(restrictProc,order2)
+end

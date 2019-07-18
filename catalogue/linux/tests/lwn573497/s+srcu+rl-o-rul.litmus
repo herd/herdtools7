@@ -1,0 +1,13 @@
+LISA s+srcu+rl-o-rul (*7-RCU*)
+{
+x = 0;
+y = 0;
+}
+ P0          | P1           ;
+             | f[lock]      ;
+ w[once] y 2 | r[once] r1 x ;
+ f[sync]     |              ;
+ w[once] x 1 | w[once] y 1  ;
+             | f[unlock]    ;
+exists (y=2 /\ 1:r1=1)
+

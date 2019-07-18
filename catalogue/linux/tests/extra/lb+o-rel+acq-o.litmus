@@ -1,0 +1,9 @@
+LISA LB+o-rel+acq-o (*Paul says forbid*)
+{
+x = 0;
+y = 0;
+}
+P0              | P1              ;
+r[once] r1 x    | r[acquire] r3 y ;
+w[release] y 1  | w[once] x 1     ;
+exists(0:r1=1 /\ 1:r3=1)

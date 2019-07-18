@@ -1,0 +1,165 @@
+"C11"
+
+(* Translation of C11 memory model from "Common Compiler Optimisations are *)
+(* Invalid in the C11 Memory Model and what we can do about it" (POPL '15) *)
+
+include "cos.cat"
+
+(* Simple aliases *)
+let sb = singlestep(po) (* except po is a total per-thread order *)
+let mo = co
+let C = RMW
+let imm = singlestep
+let asw = I * (M \ I)
+
+(* --------------------------------------------------------------------------*)
+(* Figure 2: Auxiliary definitions                                           *)
+(* --------------------------------------------------------------------------*)
+(* In the paper isX is a predicate; here it is the set satisfying X *)
+let isread = R | C
+let iswrite = W | C
+let isfence = F & (ACQ | REL) (* herd allows fences of other memory orders *)
+#if ST == STorig
+let sameThread = int (* built-in relation *)
+#elif ST == STnew
+(* 4.4 Allowing intra-thread synchronisation *)
+let sameThread = sb+
+(* NB: is this vacuously the same as our original sameThread because of po? *)
+#endif
+let isaccess = isread | iswrite
+let isrmw = isread & iswrite (* i.e., equal to C *)
+let isNA = NA
+let isSC = SC
+let isAcq = ACQ | ACQ_REL | SC
+let isRel = REL | ACQ_REL | SC
+
+#if RS == RSorig
+(* rsElem gives possible candidates for the release sequence *)
+let rsElem = sameThread | ( _ * isrmw )
+(* capture when a pair of sequenced mo steps are not matched with rsElem *)
+let intermediateMOStepNotInRSElem = (~rsElem & mo); mo
+let rseq = (rsElem & mo & ~( intermediateMOStepNotInRSElem ))?
+#elif RS == RSnew
+(* 4.3 Strengthening the Release Sequence definition *)
+let rec rseq = id
+             | (sameThread & mo)
+             | (( _ * isrmw ) & (rseq;rf))
+#endif
+
+(* Synchronises with case-split (not used) *)
+(* a = c and b = d *)
+let swCase1 = rseq; rf
+(* a = Fence and b = d *)
+let swCase2 = (( isfence * _ ) & sb+); rseq; rf
+(* a = c and b = Fence *)
+let swCase3 = rseq; rf; (sb+ & ( _ * isfence ))
+(* a = Fence and b = Fence *)
+let swCase4 = (( isfence * _ ) & sb+); rseq; rf; (sb+ & ( _ * isfence ))
+
+(* Instead we use a generalised relation equivalent to *)
+(* (swCase1 | swCase2 | swCase3 | swCase4 )            *)
+let fenceSB = ( isfence * _ ) & sb+
+let sbFence = sb+ & ( _ * isfence )
+(* The ?s capture the disjunctions of the original case split *)
+let swDisj = (fenceSB)?; rseq; rf; (sbFence)?
+(* NB: The Coq formalisation of the paper has additional constraints on the *)
+(* writes in the release sequence being non-atomic                          *)
+
+let sw = ~sameThread
+       & ( isRel * _     )
+       & ( _     * isAcq )
+       & swDisj
+
+let hb = (sb | sw | asw)+
+
+let racy = ( isaccess * _ )
+         & ( _ * isaccess )
+         & loc (* loc(a) = loc(b) *)
+         & ~id (* a != b *)
+         & (( iswrite * _ ) | ( _ * iswrite ))
+         & (( isNA * _ ) | ( _ * isNA ))
+         & ~hb & ~(hb^-1)
+         & ~sameThread (*< NB: this restriction is not included in the *)
+                       (*<     paper's model; raise this with Viktor.  *)
+
+(* --------------------------------------------------------------------------*)
+(* Figure 5: Axioms                                                          *)
+(* --------------------------------------------------------------------------*)
+
+(* 1. ConsSB satisfied due to construction of po (aliased to sb) *)
+
+(* 2. ConsMO satisfied due to construction of co (aliased to mo) *)
+
+(* 3. ConsSC *)
+(* S is a total order over SC actions is satisfied by construction *)
+with S from linearisations(SC,hb|mo)
+(* this effectively implements ConsSC *)
+
+(* 4. ConsRFdom satisfied due to how herd builds rf for C11 *)
+(* herd does not build rf for uninitialised reads (NB: double-check this) *)
+
+(* 5. ConsRF satisfied due to construction of rf *)
+
+(* 6. ConsRFna *)
+#if RF == ConsRFna
+let lhsConsRFna = rf & (( isNA * _ ) | ( _ * isNA ))
+procedure ConsRFna() =
+  call subseteq(lhsConsRFna, hb)
+end
+call ConsRFna()
+(* NB: Tyler conjectures that empty racy and ConsRFhb implies ConsRFna *)
+#elif RF == Naive
+(* drop ConsRFna axiom *)
+#elif RF == Arf
+acyclic (hb | rf) as Arf
+#elif RF == Arfna
+let rfNA = rf & (( isNA * _ ) | ( _ * isNA ))
+acyclic (hb | rfNA) as Arfna
+#endif
+
+(* 7. SCReads *)
+let scr = S & ( iswrite * _ ) & loc
+let lhsSCReads = rf & ( _ * isSC )
+#if SC == SCorig
+let rhsSCReads = imm(scr)
+               | (( (~isSC) * _ ) & nodetour(rf, hb, imm(scr)))
+#elif SC == SCnew
+let rhsSCReads = imm(scr)
+               | (( (~isSC) * _ ) & nodetour(rf, hb, scr))
+#endif
+procedure SCReads() =
+  call subseteq(lhsSCReads, rhsSCReads)
+end
+call SCReads()
+(* Implication turned into subseteq *)
+
+(* 8. IrrHB *)
+irreflexive hb as IrrHB
+
+(* 9. ConsRFhb *)
+irreflexive (rf;hb) as ConsRFhb
+
+(* 10-13. Coherence *)
+irreflexive (hb;mo) as CohWW
+irreflexive (fr;rf;hb) as CohRR (* fr == rf^-1; mo *)
+irreflexive (fr;hb) as CohWR
+irreflexive (rf;hb;mo) as CohRW
+
+(* 14. AtRMW *)
+let lhsAtRMW = (_ * isrmw) & rf
+let rhsAtRMW = imm(mo)
+procedure AtRMW() =
+  call subseteq(lhsAtRMW, rhsAtRMW)
+end
+call AtRMW()
+
+(* 15. ConsAlloc not modelled because we cannot express malloc *)
+
+flag ~empty racy as Racy
+
+show sb,scr
+show mo
+show sw
+show hb
+show racy
+show lhsSCReads, rhsSCReads

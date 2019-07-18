@@ -1,0 +1,26 @@
+C c_reorder
+{ [x] = 0; [y] = 0; [p] = 0; [q] = 0; }
+
+P0 (atomic_int *x, atomic_int *y, volatile int* p, volatile int* q) {
+  int r0 = atomic_load_explicit(x, memory_order_relaxed);
+  if (r0) {
+    *q = 1;
+    int t = *p;
+    if (t) {
+      atomic_store_explicit(y, 1, memory_order_relaxed);
+    }
+  }
+}
+
+P1 (atomic_int *x, atomic_int *y, volatile int* p, volatile int* q) {
+  int r1 = atomic_load_explicit(y, memory_order_relaxed);
+  if (r1) {
+    int r2 = *q;
+    if (r2) {
+      *p = 1;
+      atomic_store_explicit(x, 1, memory_order_relaxed);
+    }
+  }
+}
+
+exists (p=1 /\ q=1)

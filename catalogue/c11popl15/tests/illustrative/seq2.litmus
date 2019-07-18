@@ -1,0 +1,22 @@
+C seq2
+{ [a] = 0; [x] = 0; [y] = 0; }
+
+P0 (volatile int* a, atomic_int* x, atomic_int* y) {
+  *a = 1;
+  int r0 = atomic_load_explicit(x, memory_order_relaxed);
+  if (r0) {
+    int r1 = *a;
+    if (r1) {
+      atomic_store_explicit(y, 1, memory_order_relaxed);
+    }
+  }
+}
+
+P1 (atomic_int* x, atomic_int* y) {
+  int r2 = atomic_load_explicit(y, memory_order_relaxed);
+  if (r2) {
+    atomic_store_explicit(x, 1, memory_order_relaxed);
+  }
+}
+
+exists (a=1 /\ x=1 /\ y=1)

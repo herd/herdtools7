@@ -1,0 +1,10 @@
+LISA Tony3
+{ x = 0; y = 0; z = 0; }
+ P0                         | P1                          | P2                         ;
+ w[atomic,screl,wg] x 1     | w[atomic,screl,agent] y 1   | w[atomic,screl,agent] z 1  ;
+ r[atomic,scacq,agent] r0 y | r[atomic,scacq,agent] r0 z  | r[atomic,scacq,wg] r0 x    ;
+
+scopes: (agent (wg 0 2) (wg 1))
+
+exists (0:r0 = 0 /\ 1:r0=0 /\ 2:r0 = 0)
+

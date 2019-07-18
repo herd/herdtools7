@@ -1,0 +1,35 @@
+- ARM:
+  v7 from paper
+  v7 + ldrex/strex
+  v8
+
+- C11:
+  POPL 15 
+
+- HSA:
+  n modeles 
+
+- Java:
+  . well-formed def from Aspinall et Sevcik
+  . memsat? cooking the books?
+
+- MIPS:
+  PSO? demander a Luc
+
+- Nemos:
+  finir pour de bon
+
+- Nvidia:
+  verifier si on peut le mentionner
+
+- poetics:
+  finir pour de bon
+
+- Power:
+  version from paper
+  + lwarx/stwcx
+
+- ptx: 
+  ASPLOS 15
+
+- Release Consistency: RCpc, RCsc

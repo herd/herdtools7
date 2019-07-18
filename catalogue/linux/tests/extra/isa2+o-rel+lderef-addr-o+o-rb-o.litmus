@@ -1,0 +1,11 @@
+LISA ISA2+o-rel+lderef-addr-o+o-rb-o
+{
+a = 1;
+x = 2;
+}
+ P0             | P1                  | P2            ;
+ w[once] a 3    | r[lderef] r1 x      | r[once] r3 c  ;
+                | mov r9 (xor r1 r1)  | f[rmb]        ;
+                | mov r3 (add c r9)   |               ;
+ w[release] x 4 | w[once] r3 1        | r[once] r2 a  ;
+exists (1:r1 = 4 /\ 2:r3 = 1 /\ 2:r2 = 1)

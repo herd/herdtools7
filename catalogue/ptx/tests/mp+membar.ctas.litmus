@@ -1,0 +1,26 @@
+GPU_PTX MP+membar.ctas
+"membar.ctadWW Rfe membar.ctadRR Fre"
+{
+0:.reg .s32 r0;
+0:.reg .s32 r2;
+0:.reg .b64 r1 = x;
+0:.reg .b64 r3 = y;
+1:.reg .s32 r0;
+1:.reg .s32 r2;
+1:.reg .b64 r1 = y;
+1:.reg .b64 r3 = x;
+}
+ P0                | P1                ;
+ mov.s32 r0,1      | ld.cg.s32 r0,[r1] ;
+ st.cg.s32 [r1],r0 | membar.cta        ;
+ membar.cta        | ld.cg.s32 r2,[r3] ;
+ mov.s32 r2,1      |                   ;
+ st.cg.s32 [r3],r2 |                   ;
+
+scopeTree
+(device (kernel (cta (warp P0)) (cta (warp P1))))
+
+y: global, x: global
+
+exists
+(1:r0=1 /\ 1:r2=0)

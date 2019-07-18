@@ -1,0 +1,11 @@
+LISA R+o-mb-o+o-mb-o
+{
+x = 0;
+y = 0;
+}
+ P0           | P1           ;
+ w[once] x 2  | w[once] y 1  ;
+ f[mb]        | f[mb]        ;
+ r[once] r2 y | w[once] x 1  ;
+exists (x=2 /\ 0:r2=0)
+

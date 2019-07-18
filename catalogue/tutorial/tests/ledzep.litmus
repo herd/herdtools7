@@ -1,0 +1,9 @@
+LISA LedZep
+{
+x = 0;
+y = 0;
+}
+P0        | P1        ;
+w[z] x 1  | r[p] r2 x ;
+r[e] r1 y |           ;
+exists(0:r1=0 /\ 1:r2=1)

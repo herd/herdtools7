@@ -1,0 +1,62 @@
+"Model pretty print"
+(* Same as model, shows only basic relations *)
+include "filters.cat"
+include "cross.cat"
+
+with co from generate_cos(co0)
+let fr = rf^-1;co
+let fre = fr & ext
+let coe = co & ext
+show fr,co
+
+(* Uniproc *)
+acyclic po-loc | rf | fr | co as uniproc
+
+(* Utilities *)
+let dd = addr | data
+let rdw = po-loc & (fre;rfe)
+let detour = po-loc & (coe ; rfe)
+let addrpo = addr;po
+
+
+(* Define fence relations, and correct isync/isb show *)
+include "armfences.cat"
+include "ppcfences.cat"
+let ctrlcfence = ctrlisync|ctrlisb
+show isync \ ctrlcfence as isync
+show isb \ ctrlcfence as isb
+show ctrl \ ctrlcfence as ctrl
+
+
+(*******)
+(* ppo *)
+(*******)
+
+(* Initial value *)
+let ci0 = ctrlisync| ctrlisb | detour
+let ii0 = dd | rfi | rdw
+let cc0 = dd | po-loc | ctrl | addrpo
+let ic0 = 0
+
+include "ppo.cat"
+
+
+(**********)
+(* fences *)
+(**********)
+
+(* Power *)
+let lwsync_eff = RM(lwsync)|WW(lwsync)
+let eieio_eff = WW(eieio)
+show sync, lwsync, eieio
+
+(* ARM *)
+let dmb.st_eff=WW(dmb.st)
+let dsb.st_eff=WW(dsb.st)
+show dmb, dsb, dmb.st, dsb.st
+
+(* Common, all arm barriers are strong *)
+let strong = sync|dmb|dsb|dmb.st_eff|dsb.st_eff
+let light = lwsync_eff|eieio_eff
+
+include "ppc-checks.cat"

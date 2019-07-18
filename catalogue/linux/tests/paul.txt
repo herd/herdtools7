@@ -1,0 +1,122 @@
+test                                                               | Paul                                                                    | stitching
+2+2w+o-mb-o+o-mb-o.litmus                                          | No                                                                      | No
+2+2w+o-mb-o+o-wb-o.litmus                                          | No                                                                      | No
+2+2w+o-wb-o+o-mb-o.litmus                                          | No                                                                      | No 
+2+2w+o-wb-o+o-wb-o.litmus                                          | No                                                                      | No
+2+2w+rl-o-o-rul+o-srcu-o.litmus                                    | No                                                                      | No
+Weak-RCU-Readers-With-Grace.litmus                                 | Ok                                                                      | No
+Weak-RCU-Readers-With-More-Grace.litmus                            | No                                                                      | No
+Weak-RCU-Readers.litmus                                            | Ok                                                                      | Ok
+alt-ww-rw+rel+acq-o+o-rel+acq-o+o-rel+acq-o.litmus                 | No                                                                      | No
+alt-ww-rw+rel+acq-o+o-rel+acq-o+o-wb-rel+acq-o.litmus              | No (*pending discussions on R/Scenario 11*)                             | No
+alt-ww-rw+rel+acq-rel+acq-o+o-wb-rel+acq-o+o-wb-o.litmus           | No                                                                      | No
+alt-ww-rw+rel+acq-rel+acq-o+o-wb-rel+acq-o+o-o.litmus              | No                                                                      |
+coRR+o-o+o.litmus                                                  | No                                                                      | No
+coRW1+o+o.litmus                                                   | No                                                                      | No
+coRW2+o+o.litmus                                                   | No                                                                      | No
+coWR+o+o.litmus                                                    | No                                                                      | No 
+coWW+o+o.litmus                                                    | No                                                                      | No 
+dist-2+2w+o-o+o-o.litmus                                           | Ok                                                                      | Ok
+dist-2+2w+rel+acq-o+o-wmb-o.litmus                                 | No                                                                      | No
+dist-2+2w+rel+acq-o+o-rel.litmus                                   | No                                                                      | No
+dist-2+2w+rel+lderef-addr-o+o-wmb-o.litmus                         | No                                                                      | No 
+dist-r+o+rl-o-o-rul+o-srcu-o.litmus                                | No                                                                      | 
+dist-r+o+rl-o-o-rul+o-mb-o.litmus                                  | Ok
+iriw+o-mb-o+o-mb-o.litmus                                          | No 
+iriw+o-o+o-o.litmus                                                | Ok
+iriw+rl-o-o-rul+o-srcu-o.litmus                                    | No
+isa2+o-assign+deref-addr-o+o-rb-o.litmus                           | No
+isa2+o-assign+deref-o+o-rb-o.litmus                                | Ok
+isa2+o-o+o-o+o-o.litmus                                            | Ok 
+isa2+o-rel+acq-assign+deref-addr-o.litmus                          | No
+isa2+o-rel+acq-o+o-rb-o.litmus                                     | No
+isa2+o-rel+acq-rel+acq-o.litmus                                    | Ok
+isa2+o-rel+acq-rel+lderef-o.litmus                                 | Ok
+isa2+o-rel+lderef-addr-o+o-rb-o.litmus                             | No
+isa2+o-rel+lderef-o+o-rb-o.litmus                                  | Ok
+isa2+o-wb-o+o-mb-o+o-rb-o.litmus                                   | No
+isa2+rl-o-o-rul+o-srcu-o+o-srcu-o.litmus                           | No (*careful fix to grace: let grace = (sync;com+)+;sandwich;com+ *)
+isa2+rl-o-o-rul+rl-o-o-rul+o-srcu-o.litmus                         | Ok!! (*change mid June second fix to grace: let grace = (sync;com+)+;(sandwich;com+)+*)  
+mp+o-assign+deref-addr-o.litmus                                    | No                                                                      | No
+mp+o-assign+deref-o.litmus                                         | Ok                                                                      | Ok
+mp+o-assign+rl-deref-addr-ul.litmus                                | No                                                                      | No
+mp+o-mb-o+o-addr-o.litmus                                          | Ok                                                                      | Ok
+mp+o-mb-o+o-mb-o.litmus                                            | No                                                                      | No 
+mp+o-mb-o+o-mb-o2.litmus                                           | No                                                                      | No
+mp+o-mb-o+o-rb-o.litmus                                            | No                                                                      | No
+mp+o-mb-o+o-rb-o2.litmus                                           | No                                                                      | No
+mp+o-o+o-o.litmus                                                  | Ok                                                                      | Ok
+mp+o-o-mb-o-o+o-o-rb-o-o.litmus                                    | No                                                                      | No 
+mp+o-o-wb-o-o+o-o-rb-o-o.litmus                                    | No                                                                      | No   
+mp+o-rel+acq-o.litmus                                              | No                                                                      | No
+mp+o-rel+deref-addr-o.litmus                                       | No! (*jade: should be lderef to be forbidden, shouldn't it?*)           | Ok
+mp+o-rel+lderef-addr-o.litmus                                      | No                                                                      | No
+mp+o-srcu-o+rl-o-o+rul.litmus                                      | No                                                                      | No
+mp+o-wb-o+loc-rb-loc.litmus                                        | No                                                                      | No
+mp+o-wb-o+o-data+rb_dep-o.litmus                                   | No                                                                      | No
+mp+o-wb-o+o-data-o.litmus                                          | Ok                                                                      | Ok
+mp+o-wb-o+o-mb-o.litmus                                            | No                                                                      | No
+mp+o-wb-o+o-mb-o2.litmus                                           | No                                                                      | No 
+mp+o-wb-o+o-rb_dep+data-o.litmus                                   | No                                                                      | No
+mp+o-wb-o+o-rb_dep-o.litmus                                        | Ok                                                                      | Ok
+mp+o-wb-o+o-rb-o.litmus                                            | No                                                                      | No
+mp+o-wb-o+o-rb-o2.litmus                                           | No                                                                      | No   
+mp+rl-o-o-rul+o-srcu-o.litmus                                      | No                                                                      | No
+r+o-mb-o+o-mb-o2.litmus                                            | No
+r+o-mb-o+o-mb-o.litmus                                             | No
+r+o-mb-o+o-wb-o2.litmus                                            | Ok
+r+o-mb-o+o-wb-o.litmus                                             | Ok
+r+o-o+o-o.litmus                                                   | Ok
+r+rl-rul+srcu.litmus                                               | Ok
+r+srcu+rl-rul.litmus                                               | No 
+sb+o-mb-o+o-mb-o.litmus                                            | No
+sb+o-o+o-o.litmus                                                  | Ok
+sb+rel-acq+rel-acq.litmus                                          | Ok
+sb+rel-o+rel-o.litmus                                              | Ok
+sb+rl-rul+srcu.litmus                                              | No
+s+o-assign+rl-deref-rul.litmus                                     | Ok
+s+o-assign+rl-deref-addr-rul.litmus                                | No 
+s+o-mb-o+o-mb-o2.litmus                                            | No
+s+o-mb-o+o-mb-o.litmus                                             | No
+s+o-wb-o+o-mb-o2.litmus                                            | No
+s+o-wb-o+o-mb-o.litmus                                             | No
+s+rl-o-rul+srcu.litmus                                             | No
+s+srcu+rl-o-rul.litmus                                             | No
+super-dist-2+2w+rel+acq-assign+deref-addr-o+o-wmb-o+o-wmb-o.litmus | No 
+super-dist-2+2w+rel+acq-rel+acq-o+o-wmb-o+o-wmb-o.litmus           | No 
+swap-mp+o-srcu-o+rl-o-o+rul.litmus                                 | No 
+swap-mp+rl-o-o-rul+o-srcu-o.litmus                                 | No
+wo+ro-mb-ro+wo-mb-ro.litmus                                        | No
+wo+ro-mb-wo+wo-mb-ro2.litmus                                       | No
+wo+ro-mb-wo+wo-mb-ro.litmus                                        | No
+wo+ro-rb-ro+wo-mb-ro.litmus                                        | No
+w+o+ro-srcu-wo+rl-o-o-rul.litmus                                   | No
+wrc+assign+deref-addr-o+o-rb-o.litmus                              | Ok
+wrc+assign+deref-addr-assign+o-rb-o.litmus                         | Ok
+wrc+assign+deref-assign+deref-o.litmus                             | Ok
+wrc+assign+deref-o+o-rb-o.litmus                                   | Ok
+wrc+o-mb-o+o-mb-o2.litmus                                          | No
+wrc+o-mb-o+o-mb-o.litmus                                           | No
+wrc+o-mb-o+o-rb-o2.litmus                                          | No
+wrc+o-mb-o+o-rb-o.litmus                                           | No
+wrc+o+o-assign+deref-addr-o.litmus                                 | Ok
+wrc+o+o-mb-assign+rl-deref-addr-rul.litmus                         | No 
+wrc+o-o+o-o.litmus                                                 | Ok
+wrc+o+o-o+o-o.litmus                                               | Ok
+wrc+o+o-rel+acq-o.litmus                                           | Ok
+wrc+o+o-rel+lderef-addr-o.litmus                                   | Ok
+wrc+o+o-srcu-o+rl-o-o-rul.litmus                                   | No
+wrc+o+rl-o-o-rul+o-srcu-o.litmus                                   | No
+wrc+rel+acq-o+o-rb-o.litmus                                        | Ok
+wrc+rel+acq-rel+acq-o.litmus                                       | No 
+w+rl-ro-ro-rul+wo-srcu-ro.litmus                                   | No
+w+ro-ro+wo-ro.litmus                                               | Ok
+w+ro-srcu-wo+rl-wo-ro-rul.litmus                                   | No
+wwc+o-branch-o+o-branch-o+o.litmus                                 | Ok
+Weak-RCU-Readers-With-More-But-Weaker-Grace.litmus                 | No
+	The tentative rule that I am entertaining is that if the chain
+	of events leading from the end one f[sync] to the beginning of
+	the next would be sufficient to separate an f[mb], then it is
+	sufficient to separate the f[sync] pair.  Thoughts?
+Weak-RCU-Readers-With-More-But-Not-Enough-Grace.litmus             | No
+

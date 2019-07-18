@@ -1,0 +1,11 @@
+LISA WRC+o-mb-o+o-mb-o2
+{
+x = 0;
+y = 0;
+}
+ P0           | P1           | P2           ;
+ w[once] x 1  | r[once] r3 x | r[once] r1 y ;
+              | f[mb]        | f[mb]        ;
+              | w[once] y 1  | r[once] r2 x ;
+exists (1:r3=1 /\ 2:r1=1 /\ 2:r2=0)
+

@@ -1,0 +1,64 @@
+"I can't dance"
+
+include "tutorial.cat"
+
+let fr = rf^-1;co
+show fr
+
+let fre = fr & ext
+
+let rfe = rf & ext
+
+let com = rf | co | fr
+
+(* Flag non-SC executions *)
+
+procedure sc-flag() =
+  let sc-order = (po | com)+
+  flag ~acyclic sc-order as non-sc
+end
+
+call sc-flag()
+
+(* SC per location *)
+
+let po-loc = po & loc
+
+procedure sc-per-location() =
+  acyclic po-loc | com
+end
+
+call sc-per-location()
+
+(* No thin air *)
+
+let hb = (deps | fences | rfe)+
+
+procedure no-thin-air() =
+  acyclic hb
+end
+
+call no-thin-air()
+
+(* Propagation *)
+
+let A-cumul = rfe;fences
+let prop = (fences | A-cumul);hb*
+
+procedure propagation() =
+  acyclic prop | co
+end
+
+call propagation()
+
+procedure observation() =
+  irreflexive fre;prop
+end
+
+call observation()
+
+procedure restoring-sc() =
+  acyclic fhw | com
+end
+
+call restoring-sc()

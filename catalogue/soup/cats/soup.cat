@@ -1,0 +1,36 @@
+"Pour Patrick"
+
+let rfi = rf & int
+
+let scpv1 = rfi
+
+let scpv2(avant) = (avant & rfi);avant^-1
+
+let rfe = rf & ext
+
+let observation(avant) = avant;rfe;avant
+
+let dep = addr | data | ctrl
+
+let no-thin-air = dep;rf
+
+let lf(t) = in-between(t,po)
+
+let a-cumul(t,avant) = rf;in-between(t,avant)
+
+let b-cumul(t,avant) = in-between(t,avant);rf
+
+let all-lf = lf('ww) | lf('wr) | lf('rw) | lf('rr)
+
+let phi(avant) = 
+  avant | scpv1 | scpv2(avant) |
+  observation(avant) | no-thin-air |
+  all-lf | a-cumul('prop,avant) | b-cumul('prop,avant)
+
+let avant0 = (po | rf)+
+let rec lfp(a) = 
+  let p = phi(a) in
+  if p subset a then a else lfp(p)
+
+let avant = lfp(avant0)
+acyclic(avant)

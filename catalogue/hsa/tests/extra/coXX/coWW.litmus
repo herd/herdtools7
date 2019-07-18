@@ -1,0 +1,15 @@
+LISA coWW 
+
+{
+x = 0;
+}
+ P0                     ;
+ w[ordinary,rlx,wi] x 1 ;
+ w[ordinary,rlx,wi] x 2 ;
+
+scopes:
+(system (agent (wg (wave (wi P0)) (wave (wi P1)))))
+
+regions: x:global
+
+exists (x=1)

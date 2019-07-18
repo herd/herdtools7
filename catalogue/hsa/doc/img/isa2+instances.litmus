@@ -1,0 +1,12 @@
+LISA isa2+instances
+{
+2:r1=-1;
+}
+ P0                     | P1                                 | P2                          ;
+ w[] x 53               | r[atomic,scacq,agent] r0 y         | r[atomic,scacq,system] r0 z ;
+ w[atomic,screl,wg] y 1 | mov r3 (neq r0 1)                  | mov r3 (neq r0 1)           ;
+                        | b r3 Exit1                         | b r3 Exit2                  ;
+                        | w[atomic,screl,system] z 1         | r[] r1 x                    ;
+                        | Exit1:                             | Exit2:                      ;
+scopes: (agent (wg 0 1) (wg 2))
+exists (1:r0=1 /\ 2:r0=1 /\ 2:r1=0)

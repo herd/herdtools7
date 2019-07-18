@@ -1,0 +1,10 @@
+LISA HSA07
+{ 1:r1=-1; }
+ P0                         | P1                          ;
+ w[] x 52                   | r[atomic,scacq,system] r0 y ;
+ w[] x 53                   | mov r3 (neq r0 1)           ;
+                            | b r3 Exit1                  ;
+ w[atomic,screl,system] y 1 | r[] r1 x                    ;
+                            | Exit1:                      ;
+scopes: (wg 0 1)
+~exists (1:r0=1 /\ 1:r1=52)

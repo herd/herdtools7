@@ -1,0 +1,17 @@
+"ARM"
+
+include "cross.cat"
+include "filters.cat"
+
+with co from generate_cos(co0)
+let coe = co & ext
+let fr = rf^-1;co
+let fre = fr & ext
+show co, fr
+
+let ctrlisb = ctrlcfence(ISB)
+let dmb.st = fencerel(DMB.ST) & W*W
+let dsb.st = fencerel(DSB.ST) & W*W
+let dmb = fencerel(DMB)
+let dsb = fencerel(DSB)
+show ctrlisb, dmb, dsb, dmb.st, dsb.st

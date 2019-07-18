@@ -1,0 +1,68 @@
+"Linux kernel memory model"
+
+(* Alan Stern, 31 May 2016 *)
+
+(* Until the RMW/Atomic/X event set is implemented properly... *)
+let RMW = domain(rmw) | range(rmw)
+
+enum Accesses = 'once || 
+		'release || 'acquire ||
+		'assign (*rcu_assign_pointer*) || 
+		'deref (*rcu_dereference*) ||
+		'lderef (*lockless_dereference*)
+instructions R[{'once,'acquire,'deref,'lderef}]
+instructions W[{'once,'release,'assign}]
+instructions RMW[{'once,'acquire,'release}]
+
+enum Barriers = 'wmb || 'rmb || 'mb
+		|| 'rb_dep (*smp_read_barrier_depends*)
+		|| 'lock (*rcu_read_lock*) 
+		|| 'unlock (*rcu_read_unlock*)
+instructions F[Barriers]
+
+enum Calls = 'sync
+instructions CALL[Calls]
+
+let rmb = fencerel(Rmb) & (R*R)
+let wmb = fencerel(Wmb) & (W*W)
+let mb = fencerel(Mb)
+let sync = (po & (_ * Sync)) ; (po?)
+
+let acq-po = po & (Acquire*_)
+let po-rel = po & (_*Release)
+let po-assign = po & (_*Assign)
+
+let rb-dep = fencerel(Rb_dep) & (R*R)
+let deref-po = po & (Deref*M)
+let lderef-po = po & (Lderef*M)
+
+let rd-dep-fence = rb-dep | deref-po | lderef-po
+let exec-order-fence = rmb | acq-po
+
+let transitive-weak-fence = po-rel | po-assign
+let weak-fence = transitive-weak-fence | wmb
+
+let strong-fence = mb | sync
+let transitive-fence = transitive-weak-fence | strong-fence
+let barrier = weak-fence | strong-fence
+
+let fence = exec-order-fence | weak-fence | strong-fence
+
+(* Compute matching pairs of nested Locks and Unlocks *)
+let matched = let rec
+	    unmatched-locks = Lock \ domain(matched)
+	and unmatched-unlocks = Unlock \ range(matched)
+	and unmatched = unmatched-locks | unmatched-unlocks
+	and unmatched-po = (unmatched * unmatched) & po
+	and unmatched-locks-to-unlocks = (unmatched-locks *
+			unmatched-unlocks) & po
+	and matched = matched | (unmatched-locks-to-unlocks \
+		(unmatched-po ; unmatched-po))
+	in matched
+
+(* Validate nesting *)
+empty toid(Lock \ domain(matched)) as unbalanced-lock
+empty toid(Unlock \ range(matched)) as unbalanced-unlock
+
+(* Outermost level of nesting only *)
+let crit = matched \ (po^-1 ; matched ; po^-1)

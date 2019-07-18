@@ -1,0 +1,25 @@
+"SC, no co generated"
+
+(* Include uniproc, for its U pre-order *)
+include "uniproccat.cat"
+
+let S0 = po | U
+
+let rec S =
+  S0
+| WW(Sloc;invrf)\id  (* WR observation of co *)
+| RW(invrf;Sloc)\id  (* RW observation of co *)
+| S;S
+and Sloc = S & loc
+when acyclic S as sc
+
+let co = WW(Sloc)
+and fr = RW(Sloc)
+show fr,co
+
+(* Also check atomic pairs *)
+let coe = co & ext
+and fre = fr & ext
+empty rmw & (fre; coe) as atom
+
+

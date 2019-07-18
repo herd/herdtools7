@@ -1,0 +1,11 @@
+LISA LB+o-assign+deref-addr-o (*Paul says forbid*)
+{
+x = 0;
+y = 0;
+}
+P0              | P1                  ;
+r[once] r1 x    | r[deref] r3 y       ;
+                | mov r9 (xor r3 r3)  ;
+                | mov r4 (add x r9)   ; 
+w[assign] y 1   | w[once] r4 1        ;
+exists(0:r1=1 /\ 1:r3=1)

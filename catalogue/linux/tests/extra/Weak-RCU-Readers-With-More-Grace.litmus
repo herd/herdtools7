@@ -1,0 +1,12 @@
+LISA Weak-RCU-Readers-With-More-Grace (*Paul says forbid*)
+{
+a = 0; x = 0; c = 0;
+}
+ P0           | P1           | P2           | P3           ;
+ f[lock]      |              |              | f[lock]      ;
+ r[once] r1 x | r[once] r2 a | r[once] r3 c | r[once] r4 d ;
+              | f[sync]      | f[sync]      |              ;
+ w[once] a 1  | w[once] c 1  | w[once] d 1  | w[once] x 1  ;
+ f[unlock]    |              |              | f[unlock]    ;
+exists (0:r1=1 /\ 1:r2=1 /\ 2:r3=1 /\ 3:r4=1)
+

@@ -1,0 +1,21 @@
+LISA super-dist-2+2w+rel+acq-assign+deref-addr-o+o-wmb-o+o-wmb-o (*Paul says allowed*)
+{
+x = 0;
+y = 0;
+z = 0;
+}
+ P0             | P1              | P2                  | P3          | P4           ;
+ w[release] x 1 | r[acquire] r1 x | r[deref] r2 y       | w[once] z 2 | w[once] a 2  ;
+                |                 | mov r9 (xor r2 r2)  | f[wmb]      | f[wmb]       ;
+                |                 | mov r3 (add z r9)   |             |              ;
+                | w[assign] y 1   | w[once] r3 1        | w[once] a 1 | w[once] x 2  ;
+exists (1:r1=1 /\ 2:r2=1 /\ z=2 /\ a=2 /\ x=1)
+
+(*More precisely, Paul says:
+
+There is definitely ordering from P0's write through P2's write.  The
+transition to the pairs of writes is an open question for me.  The presence of
+any uncertainty would cause me to want to allow the cycle, that is, forbid
+snapping multiple write pairs onto the end of this sequence.
+
+*)

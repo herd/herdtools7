@@ -1,0 +1,11 @@
+LISA dist-2+2w+rel+acq-o+o-wmb-o
+{
+x = 0;
+y = 0;
+}
+ P0             | P1              | P2           ;
+ w[release] x 1 | r[acquire] r1 x | w[once] y 1  ;
+                |                 | f[wmb]       ;
+                | w[once] y 2     | w[once] x 2  ;
+exists (1:r1=1 /\ x=1 /\ y=1)
+

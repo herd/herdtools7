@@ -1,0 +1,39 @@
+"Power"
+
+include "cross.cat"
+with co from generate_cos(co0)
+let coe = co & ext
+let fr = rf^-1;co
+let fre = fr & ext
+let com = rf | co | fr
+acyclic po-loc | com as sc-per-location
+
+let dp = addr | data
+let rdw = po-loc & (fre;rfe)
+let detour = po-loc & (coe;rfe)
+
+let ii0 = dp | rdw | rfi
+let ic0 = 0
+let ci0 = ctrlcfence(ISYNC) | detour
+let cc0 = dp | po-loc | ctrl | (addr;po)
+
+let rec ii = ii0 | ci | (ic;ci) | (ii;ii)
+and ic = ic0 | ii | cc | (ic;cc) | (ii;ic)
+and ci = ci0 | (ci;ii) | (cc;ci)
+and cc = cc0 | ci | (ci;ic) | (cc;cc)
+
+let ppo = ii & R*R | ic & R*W
+
+let ffence = fencerel(SYNC)
+let lwfence = fencerel(LWSYNC) & (W*W | R*M) | fencerel(EIEIO) & W*W
+let fences = lwfence | ffence
+
+let hb = ppo | fences | rfe
+acyclic hb as no-thin-air
+
+let prop f = (f | rfe;f);hb*
+acyclic co;prop(lwfence | ffence) as prop-order
+irreflexive co;prop(lwfence | ffence);rfe^-1 as observation
+acyclic co;prop(ffence);(rfe^-1)* as sc
+show co, fr
+show lwfence, ffence

@@ -1,0 +1,16 @@
+PPC co1 (PPCCoOne)
+"Coherence tests, final state and observation"
+{
+P0:r5=x ; P0:r1=1 ;
+P1:r5=x ; P1:r2=2 ;
+P2:r5=x ;
+}
+P0          |P1          |P2           ;
+stw r1,0(r5)|stw r2,0(r5)|lwz r1,0(r5) ;
+            |            |lwz r2,0(r5) ;
+~exists
+(
+ (2:r1=1 /\ 2:r2=2 /\ x=1) \/
+ (2:r1=2 /\ 2:r2=1 /\ x=2) \/
+ ((2:r1=1 \/ 2:r1=2) /\ 2:r2=0)
+)

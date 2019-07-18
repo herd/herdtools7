@@ -1,0 +1,17 @@
+ARM CO-W+RR+fri-dmb
+"Fri DMBsWR Fre Rfe"
+Prefetch=
+Com=Fr Rf
+Orig=Fri DMBsWR Fre Rfe
+{
+%x0=x;
+%x1=x;
+}
+ P0           | P1           ;
+ LDR R0,[%x0] | MOV R0,#2    ;
+ MOV R1,#1    | STR R0,[%x1] ;
+ STR R1,[%x0] |              ;
+ DMB          |              ;
+ LDR R2,[%x0] |              ;
+forall
+((x=2 /\ (0:R0=0 /\ (0:R2=2 \/ 0:R2=1))) \/ (x=1 /\ (0:R2=1 /\ (0:R0=2 \/ 0:R0=0))))

@@ -1,0 +1,13 @@
+ARM CoRW
+"PosRW Rfe"
+Prefetch=
+Com=Rf
+Orig=PosRW Rfe
+{
+%x0=x;
+}
+ P0           ;
+ LDR R0,[%x0] ;
+ MOV R1,#1    ;
+ STR R1,[%x0] ;
+exists (0:R0=1 /\ x=1)

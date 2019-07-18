@@ -1,0 +1,19 @@
+"TSO"
+
+(*******************)
+(* Coherence check *)
+(*******************)
+
+let com = rf|fr|co
+acyclic po-loc | com as sc-per-location
+
+(**************)
+(* TSO  check *)
+(**************)
+
+(* Communication relations that order events*)
+let com-tso = rfe | co | fr
+(* Program order that orders events *)
+let po-tso = po \ (W*R) | fence
+
+acyclic po-tso|com-tso as tso

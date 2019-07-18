@@ -1,0 +1,23 @@
+ARM MP+dmb+fri-rfi-ctrlisb+BIS
+"DMBdWW Rfe Fri Rfi DpCtrlIsbdR Fre + Some write
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=DMBdWW Rfe Fri DetourW DpCtrlIsbdR Fre
+{
+%x0=x; %y0=y;
+%y1=y; %x1=x;
+%y2=y;
+}
+ P0           | P1           | P2           ;
+ MOV R0,#1    | LDR R0,[%y1] | MOV R0,#3    ;
+ STR R0,[%x0] | MOV R1,#2    | STR R0,[%y2] ;
+ DMB          | STR R1,[%y1] |              ;
+ MOV R1,#1    | LDR R2,[%y1] |              ;
+ STR R1,[%y0] | CMP R2,R2    |              ;
+              | BNE LC00     |              ;
+              | LC00:        |              ;
+              | ISB          |              ;
+              | LDR R3,[%x1] |              ;
+locations [y;]
+exists
+(1:R0=1 /\ 1:R2=2 /\ 1:R3=0)

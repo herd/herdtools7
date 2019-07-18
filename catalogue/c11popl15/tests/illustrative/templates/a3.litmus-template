@@ -1,0 +1,15 @@
+{ [x] = 0; [y] = 0; [zero] = 0; }
+
+P0 (atomic_int* x, volatile int* y) {
+  *y = 1;
+  atomic_store_explicit(x, 1, memory_order_release);
+}
+
+P1 (atomic_int* x, atomic_int* y, atomic_int* zero) {
+  int r1 = atomic_load_explicit(x, MO_CHOICE(memory_order_acquire, memory_order_seq_cst));
+  if (r1) {
+    ACCESS_CHOICE(y,1,2);
+  }
+}
+
+exists(1:r1=1)

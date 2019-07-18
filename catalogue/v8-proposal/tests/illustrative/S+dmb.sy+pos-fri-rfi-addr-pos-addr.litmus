@@ -1,0 +1,23 @@
+AArch64 S+dmb.sy+pos-fri-rfi-addr-pos-addr
+"DMB.SYdWW Rfe PosRR Fri Rfi DpAddrdR PosRR DpAddrdW Wse"
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Ws
+Orig=DMB.SYdWW Rfe PosRR Fri Rfi DpAddrdR PosRR DpAddrdW Wse
+{
+0:X1=x; 0:X3=y;
+1:X1=y; 1:X7=z; 1:X11=x;
+}
+ P0          | P1                    ;
+ MOV W0,#2   | LDR W0,[X1]           ;
+ STR W0,[X1] | LDR W2,[X1]           ;
+ DMB SY      | MOV W3,#2             ;
+ MOV W2,#1   | STR W3,[X1]           ;
+ STR W2,[X3] | LDR W4,[X1]           ;
+             | EOR W5,W4,W4          ;
+             | LDR W6,[X7,W5,SXTW]   ;
+             | LDR W8,[X7]           ;
+             | EOR W9,W8,W8          ;
+             | MOV W10,#1            ;
+             | STR W10,[X11,W9,SXTW] ;
+exists
+(x=2 /\ y=2 /\ 1:X0=1 /\ 1:X2=1 /\ 1:X4=2)

@@ -1,0 +1,19 @@
+LISA HSA15 (*variant of mp*)
+(*
+twice HSA9 in different work groups
+*)
+{
+x = 0;
+y = 0;
+z = 0;
+t = 0;
+}
+ P0                             | P1                             | P2                             | P3                             ;
+ w[ordinary,rlx,wi] x 53 | r[atomic,rlx,wg] r1 y   | w[ordinary,rlx,wi] z 53 | r[atomic,rlx,wg] r1 t   ;
+ f[screl,wg]                    | f[scacq,wg]                    | f[screl,wg]                    | f[scacq,wg]                    ;
+ w[atomic,rlx,wg] y 1    | r[ordinary,rlx,wi] r2 x | w[atomic,rlx,wg] t 1    | r[ordinary,rlx,wi] r2 z ;
+
+scopes:
+(system (agent (wg (wave (wi P0)) (wave (wi P1))) (wg (wave (wi P2)) (wave (wi P3)))))
+
+exists (1:r1=1 /\ 1:r2=53 /\ 3:r1=1 /\ 3:r2=53)

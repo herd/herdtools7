@@ -1,0 +1,27 @@
+C linearisation2
+{ [x] = 0; [y] = 0; [w] = 0; [z] = 0 }
+
+P0 (atomic_int* w, atomic_int* x, volatile int* y) {
+  int t = atomic_load_explicit(x, memory_order_acquire);
+  t = t + *y;
+  if (t == 2) {
+    atomic_store_explicit(w, 1, memory_order_release);
+  }
+}
+
+P1 (atomic_int* w, atomic_int* z) {
+  int r0 = atomic_load_explicit(w, memory_order_relaxed);
+  if (r0) {
+    atomic_store_explicit(z, 1, memory_order_relaxed);
+  }
+}
+
+P2 (atomic_int* x, volatile int* y, atomic_int* z) {
+  int r1 = atomic_load_explicit(z, memory_order_relaxed);
+  if (r1) {
+    *y = 1;
+    atomic_store_explicit(x, 1, memory_order_release);
+  }
+}
+
+exists (0:t=2 /\ w=1 /\ x=1 /\ y=1 /\ z=1)

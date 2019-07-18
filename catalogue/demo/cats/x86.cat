@@ -1,0 +1,10 @@
+"x86"
+
+include "basic.cat"
+include "x86fences.cat"
+
+let com = rf | co | fr
+acyclic po-loc | com as sc-per-location
+
+let ppo = po \ W*R
+acyclic ppo | mfence | rfe | co | fr as tso

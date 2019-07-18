@@ -1,0 +1,6 @@
+Show
+include "uniproc.cat"
+let coh = (fr|rf|co)+
+show wg \ id as wg
+unshow rf,coh
+

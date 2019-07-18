@@ -1,0 +1,118 @@
+record = "armed-cats"
+
+cats = [
+    "cats/arm-redux.cat",
+    "cats/arm-with-ldrex-and-strex1.cat",
+    "cats/arm-with-ldrex-and-strex2.cat",
+    "cats/arm-with-v8.cat",
+]
+
+cfgs = [
+    "cfgs/web.cfg",
+]
+
+tests = [
+]
+
+illustrative_tests = [
+    "tests/illustrative/2+2W+dmb+dmb.st.litmus",
+    "tests/illustrative/2+2W+dmb+dsb.litmus",
+    "tests/illustrative/2+2W+dmb.sts.litmus",
+    "tests/illustrative/2+2W.litmus",
+    "tests/illustrative/CO-2+2W.litmus",
+    "tests/illustrative/CO-IRIW.litmus",
+    "tests/illustrative/CO-LB+fri+pos-fri.litmus",
+    "tests/illustrative/CO-LB.litmus",
+    "tests/illustrative/CO-MP+dmb+po.litmus",
+    "tests/illustrative/CO-MP+dmbs.litmus",
+    "tests/illustrative/CO-MP.litmus",
+    "tests/illustrative/CO-R+dmb+po.litmus",
+    "tests/illustrative/CO-R.litmus",
+    "tests/illustrative/coRR.litmus",
+    "tests/illustrative/CO-RSDWI+CTRL+ADDR.litmus",
+    "tests/illustrative/CO-RSDWI.litmus",
+    "tests/illustrative/coRW1.litmus",
+    "tests/illustrative/coRW2.litmus",
+    "tests/illustrative/CO-SBI.litmus",
+    "tests/illustrative/CO-SB.litmus",
+    "tests/illustrative/CO-S+dmb+po.litmus",
+    "tests/illustrative/CO-S.litmus",
+    "tests/illustrative/CO-S+wsi+pos-fri.litmus",
+    "tests/illustrative/coWR.litmus",
+    "tests/illustrative/CO-W+RR+fri-dmb.litmus",
+    "tests/illustrative/CO-W+RW+fri.litmus",
+    "tests/illustrative/coWW.litmus",
+    "tests/illustrative/CO-W+W+RR+fri-dmb.litmus",
+    "tests/illustrative/CO-W+W+RW+fri.litmus",
+    "tests/illustrative/IRIW+addr+ctrlisb.litmus",
+    "tests/illustrative/IRIW+dmbs.litmus",
+    "tests/illustrative/IRIW.litmus",
+    "tests/illustrative/ISA2+dmb+addr+addr.litmus",
+    "tests/illustrative/ISA2+dsb+addr+addr.litmus",
+    "tests/illustrative/ISA2+dsb+data+addr.litmus",
+    "tests/illustrative/ISA2.litmus",
+    "tests/illustrative/LB+addrs.litmus",
+    "tests/illustrative/LB+addrs+WW.litmus",
+    "tests/illustrative/LB+ctrls.litmus",
+    "tests/illustrative/LB+data+data-wsi-rfi-addr.litmus",
+    "tests/illustrative/LB+data+data-wsi-rfi-ctrl+BIS.litmus",
+    "tests/illustrative/LB+data+data-wsi-rfi-ctrl.litmus",
+    "tests/illustrative/LB+data+fri-rfi-addr.litmus",
+    "tests/illustrative/LB+data+fri-rfi-ctrl.litmus",
+    "tests/illustrative/LB+data+fri-rfi-data.litmus",
+    "tests/illustrative/LB+datas.litmus",
+    "tests/illustrative/LB+datas+WW.litmus",
+    "tests/illustrative/LB+dmb+addr.litmus",
+    "tests/illustrative/LB+dmbs.litmus",
+    "tests/illustrative/LB+dsb+addr.litmus",
+    "tests/illustrative/LB+dsbs.litmus",
+    "tests/illustrative/LB.litmus",
+    "tests/illustrative/MOREDETOUR0052.litmus",
+    "tests/illustrative/MP+dmb+addr.litmus",
+    "tests/illustrative/MP+dmb+ctrlisb.litmus",
+    "tests/illustrative/MP+dmb+fri-rfi-ctrlisb+BIS.litmus",
+    "tests/illustrative/MP+dmb+fri-rfi-ctrlisb.litmus",
+    "tests/illustrative/MP+dmb+pos-ctrlisb+BIS.litmus",
+    "tests/illustrative/MP+dmbs.litmus",
+    "tests/illustrative/MP+dmb.st+addr.litmus",
+    "tests/illustrative/MP+dsb+addr.litmus",
+    "tests/illustrative/MP+dsbs.litmus",
+    "tests/illustrative/MP.litmus",
+    "tests/illustrative/R+dmb+dmb.st.litmus",
+    "tests/illustrative/R+dmb+dsb.litmus",
+    "tests/illustrative/R+dmbs.litmus",
+    "tests/illustrative/R.litmus",
+    "tests/illustrative/RWC+dmb+dmb.st.litmus",
+    "tests/illustrative/RWC+dmb+dsb.litmus",
+    "tests/illustrative/RWC.litmus",
+    "tests/illustrative/SB+dmb+dmb.st.litmus",
+    "tests/illustrative/SB+dmb+dsb.litmus",
+    "tests/illustrative/SB.litmus",
+    "tests/illustrative/S+dmb+addr.litmus",
+    "tests/illustrative/S+dmb+fri-rfi-addr.litmus",
+    "tests/illustrative/S+dmb+fri-rfi-ctrl.litmus",
+    "tests/illustrative/S+dmb+fri-rfi-data.litmus",
+    "tests/illustrative/S+dsb.st+addr.litmus",
+    "tests/illustrative/S.litmus",
+    "tests/illustrative/WRC+dmb+addr.litmus",
+    "tests/illustrative/WRC+dsb+addr.litmus",
+    "tests/illustrative/WRC.litmus",
+    "tests/illustrative/W+RWC+dmb.st+addr+dmb.litmus",
+    "tests/illustrative/W+RWC.litmus",
+]
+
+campaign = [
+]
+
+references = [
+]
+
+notes = '\n'.join([
+    "model(s) as appear in the paper can be found on:",
+    "",
+    "page 3, Figure 2 for arm.cat",
+    "pages 15, Figures 19 for arm-redux.cat",
+    "page 18, Figure 20 for arm-with-ldrex-and-strex1.cat",
+    "page 19, Figure 21 for arm-with-ldrex-and-strex2.cat",
+    "page 20, Figure 22 for arm-with-v8.cat",
+])

@@ -1,0 +1,87 @@
+"HSA bell"
+(* Working version *)
+enum scopes =
+   'wi
+|| 'wave
+|| 'wg
+|| 'agent
+|| 'system
+
+let narrower(s) = match s with
+  || 'system -> 'agent
+  || 'agent -> 'wg
+  || 'wg -> 'wave
+  || 'wave -> 'wi
+end
+
+let wider(s) = match s with
+  || 'agent -> 'system
+  || 'wg -> 'agent
+  || 'wave -> 'wg
+  || 'wi -> 'wave
+end
+
+enum operation-kind = 'ordinary
+                   || 'atomic
+
+enum memory-order = 'rlx
+                  || 'scacq
+                  || 'screl
+                  || 'scar
+
+
+
+default R[{'ordinary},{'rlx},{'wi}]
+instructions R[{'atomic},{'rlx,'scacq,'scar},scopes]
+default W[{'ordinary},{'rlx},{'wi}]
+instructions W[{'atomic},{'rlx,'screl,'scar},scopes]
+instructions RMW[{'atomic},memory-order,scopes]
+instructions F[{'scacq,'screl,'scar},scopes]
+
+enum memory-segments = 'global
+                    || 'group
+                    || 'private
+                    || 'kernarg
+                    || 'readonly
+
+enum regions = 'group || 'global
+
+(*events regions[regions]*)
+
+let rec all-instrs(tag) = match tag with
+|| 'system -> tag2instrs(tag)
+|| _ -> tag2instrs(tag) | all-instrs(wider(tag))
+end
+
+(* Cache for efficiency *)
+let do-same-instance(tag) =
+ let instrs = all-instrs(tag) in
+ tag2scope(tag) & (instrs * instrs)
+
+let same-system = do-same-instance('system)
+let same-agent = do-same-instance('agent)
+let same-wg = do-same-instance('wg)
+let same-wave = do-same-instance('wave)
+let same-wi = do-same-instance('wi)
+
+let same-instance(s) = match s with
+|| 'system -> same-system
+|| 'agent -> same-agent
+|| 'wg -> same-wg
+|| 'wave -> same-wave
+|| 'wi -> same-wi
+end
+
+let union-scopes f =
+  let rec u_rec sis = match sis with
+  || {} -> 0
+  || si ++ sis -> f si | u_rec sis
+  end in
+  u_rec scopes
+
+let Match =  union-scopes same-instance
+
+let Release = Screl | Scar
+let Acquire = Scacq | Scar
+let Synchronizing = Acquire | Release
+let Special = Atomic | F

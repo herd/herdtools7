@@ -1,0 +1,11 @@
+LISA MP+o-rel+deref-addr-o
+{
+a = 1;
+x = 2;
+}
+ P0              | P1             ;
+ w[once] a 3     | r[deref] r1 x  ;
+                 | xor r9, r1, r1 ;
+                 | add r3, a, r9  ;
+ w[release] x 4  | r[once] r2 r3  ;
+exists (1:r1 = 4 /\ 1:r2 = 1)

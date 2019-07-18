@@ -1,0 +1,17 @@
+"Power"
+
+include "sc-per-location.cat"
+
+let dd = addr | data
+let dp = ctrl | ctrlisync | ((dd | po-loc & W*R)+ & R*M)
+
+acyclic dp | rf as no-thin-air
+
+let ppo = dp
+let rec ab-sync = sync | rf;sync | sync;rf
+let rec ab-lwsync = lwsync & (W*W | R*M) | 
+                    rf;(lwsync & M*W)    |
+                    (lwsync & R*M); rf
+let ab = ab-sync | ab-lwsync
+
+acyclic ppo | co | fr | ab as power

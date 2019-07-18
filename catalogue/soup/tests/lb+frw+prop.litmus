@@ -1,0 +1,10 @@
+Bell LB+frw+prop
+{
+x = 0;
+y = 0;
+}
+ P0       | P1       ;
+ r[] r1 x | r[] r2 y ;
+ f[rw]    | f[prop]  ;
+ w[] y 1  | w[] x 1  ;
+exists (0:r1 = 1 /\ 1:r2 = 1)

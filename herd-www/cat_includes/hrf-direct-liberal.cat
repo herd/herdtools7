@@ -1,0 +1,100 @@
+"hrf-direct"
+
+(*This is not completely expressable in herd. We need total
+order and require style constraints.*)
+
+(*Looking at figure Figure 5, it seems that what they call
+occurs before in the formal HRF direct definition is some 
+kind of "happens before"*)
+
+(*It might as well be an interleaving over all of po*)
+(*let occurs_before = (po | rf)+
+acyclic occurs_before*)
+
+(* New discussion, This model seems to be cheating...
+it is an SC drf model where the caluculations of races
+are done in terms of a hb style model. This surprises us,
+normally the relationship to the SC model is a hypothesis
+for us to prove. Here they assume it, but it's not clear
+that's what they mean.
+
+We would have to phrase this as:
+(This might be what they mean by "ordered_before")
+*)
+
+(*This is SC*)
+let sc_rln = po | rf | fr | co
+
+(*This really isn't what they are saying because
+sc_rln is not total right now. so_base is a subset of 
+what it might be..*)
+let occurs_before = sc_rln
+acyclic occurs_before
+
+(*Do they really mean (acq | rel) in the range?*)
+(*In all cases do rel and acq actually mean sc?*)
+let so_base = 
+  [rel * (acq | rel)] & loc & occurs_before
+
+(*We want to be able to say 
+so_base & [dev * dev] & int-device
+*)
+let so_workgroup = 
+  so_base & [wg * wg] & int-work_group
+
+let so_device = 
+  so_base & [dev * dev] & int-device 
+
+(*Maybe so_base should be a function?
+let so d r =
+  so_base & [d * r]
+
+e.g.
+so_workgroup = so wg wg
+*)
+    
+(*This is for hrf-direct*)
+let hhbd = (po | so_workgroup)+ | (po | so_device)+
+
+(*This is for hrf-indirect*)
+(*let hhbi = (po | so_workgroup | so_device)+*)
+
+(*We need a function that says:
+let one_of_them_is s = 
+ [s * _] | [_ * s]  
+*)
+let w_or_rel = W | rel
+
+(*We want to implement w_rel_rln with "one_of_them_is" function
+described above*)
+let w_rel_rln = [w_or_rel * _] | [_ * w_or_rel]
+let conf_op = loc & w_rel_rln
+
+(*We want another function:
+let unrelated_by r = ~r & ~(r^-1)*)
+let hr = conf_op & (~hhbd & ~(hhbd^-1))
+
+(*Then state:
+require empty hr
+*)
+
+(*This is not quite what we want to say...
+We would rather provide a new feature using
+a keyword (maybe "provide" and "require") to
+express constraints for users of the model
+when they introduce undefined behavior. 
+
+e.g.
+provide acyclic
+let hre =  ~empty hr 
+require 
+
+require empty hr as heterogeneous_race_free
+check that axiom holds (i.e. hr is empty) and collect set
+of executions that violate the axiom.
+
+provide acyclic r = acyclic r
+check that the axiom holds (i.e. r is acyclic)
+*)
+show hr 
+empty hr as heterogeneous_race_free_execution

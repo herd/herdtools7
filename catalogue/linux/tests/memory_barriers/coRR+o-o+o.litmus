@@ -1,0 +1,8 @@
+LISA coRR+o-o+o
+{
+x = 0;
+}
+ P0           | P1          ;
+ r[once] r1 x | w[once] x 1 ;
+ r[once] r2 x |             ;
+exists (0:r1=1 /\ 0:r2=0)

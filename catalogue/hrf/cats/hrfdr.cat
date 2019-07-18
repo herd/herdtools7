@@ -1,0 +1,237 @@
+"HRF direct relaxed"
+
+(*note:
+  page 5, top:
+  "OpenCL 2.0 defines five scopes that correspond to the execution hierarchy
+   shown in Figure 2a:
+   (1) memory_scope_work_item
+   (2) memory_scope_sub_group
+   (3) memory_scope_work_group
+   (4) memory_scope_device
+   (5) memory_scope_all_svm_devices
+  "
+*)
+(*jade: do we use these tags?*)
+enum scope =
+  'workitem
+  'subgroup ||
+  'workgroup ||
+  'device ||
+  'system
+
+(*jade: perhaps worth not having these indirections below, and use e.g.
+  memory_scope_sub_group always, instead of renaming it to subgroup?*)
+let workitem = memory_scope_work_item
+let subgroup = memory_scope_sub_group (*jade: Tyler, i changed the syntax to follow the paper*)
+let workgroup = memory_scope_work_group 
+let device = memory_scope_device
+let system = memory_scope_all_svm_devices (*jade: Tyler, i changed the syntax to follow the paper*)
+
+(*note:
+  page 12:
+  "I. Inclusion and Consistent Orders"
+*)
+
+(*note: 
+  page 12:
+  "Scope Inclusion: We say two atomic operations Os[l] and Os[l'] are inclusive
+   iff Os ~incl O's'. For now, assume the operation from Definition 3.1:
+   
+     Os ~incl O's' =def (S included in S') \/ (S' included in S)"
+
+jade: are scopes sets or relations?
+*)
+
+procedure inclusion(r1, r2) =
+  empty r1 & ~r2
+end
+(*HERE: using equality for now, sort out how to use procedure inclusion above*)
+let scope-inclusion(s, s') = s = s '
+
+(*note:
+  page 12:
+  "Consistent Orders: We say two orders, a and b are consistent if there does
+   not exist any pair of operations O and O' such that O a O' and O' b O. In
+   other words, (a U b)+ is irreflexive."
+
+jade: can we use checks inside let as below? also note that consistent-orders
+presupposes that a and b are orders (at least partial i guess?)
+*)
+let consistent-orders a b = irreflexive (a | b)+
+
+(*note:
+  page 12:
+  "Conflict Definitions"
+*)
+let at-least-one a = a*M | M*a
+
+let ordinary = R (*for Tyler to erase*)
+
+(*note:
+  page 12:
+  "Ordinary Conflict: Memory actions O[l] and O'[l'] conflict iff l=l', at
+   least one is a store, and at least one is ordinary (non-atomic)."
+
+  it is suprising that this notion of conflict does not require the two
+  operations to be on different threads.
+*)
+let ordinary-conflict =
+  loc & at-least-one W & at-least-one ordinary
+
+let rmw = W (*for Tyler to erase*)
+
+let atomic = W (*jade: for Tyler to erase;
+it was: memory_order_seq_cst, but i don't think that is correct, it should
+include release and acquire at least i would say. see:
+
+page 2: 
+"all synchronization operations (e.g., C++ atomics)"
+
+and:
+
+page 22:
+"Bridging Synchronization Order (bso): A release fence, Rso..."
+*)
+ 
+(*jade: not sure if ~(workitem*workitem) should appear in there*)
+let different-scopes =
+  ~(subgroup*subgroup) &
+  ~(workgroup*workgroup) &
+  ~(device*device) &
+  ~(system*system) 
+
+(*jade: it'd be better to use the scope-inclusion def instead of this ad hoc
+different-scopes def*)
+let atomic-conflict =
+  atomic*atomic &
+  loc & at-least-one (W | rmw) & different-scopes 
+
+(*note:
+  page 12:
+  "III. Executions"
+*)
+
+(*note:
+  page 12:
+  "Plausible Execution: An execution E of program P is plausible iff:
+   (1) In E, the value of any load L[l] is either the initial value of l or the
+       value produced by some other store, S[l], to the same location in E
+   (2) as long as S[l] is not control, address, or data dependent on L[l] (this 
+       prevents an operation S[l] from providing a value before it is known
+       whether or not S[l] can exists in E)."
+
+   (1) is given by the way we build rf; 
+   (2) seems to be a no-out-of-thin-air check. *)
+
+let dependent = addr | data | ctrl
+let plausible = irreflexive dependent;rf
+
+(*note:
+  page 12:
+  "IV. Consistent Apparent Orders And Load Values in a Candidate Execution"*)
+
+(*note:
+  page 12:
+  "Sequentially Consistent Atomic Order (sc): There is an apparent total order,
+   sc of all the memory_order_seq_cst atomic operations. sc must be consistent
+   with po."*)
+
+let com = rf | co | fr
+let sc = (po | com)+ (*jade: i'm guessing from the name*)
+procedure total(r, E) =
+  let rt = (r | r^-1)
+  inclusion ((E*E), rt)
+end
+call total(sc, memory_order_seq_cst)  
+
+(*note:
+  page 12:
+  "Coherent Order (coh_l): There is an apparent total order, coh_l, of all
+   accesses by all actors to any single location l. coh_l must be consistent
+   with sc and po for all l. The read and write components of an atomic
+   read-modify-write must be adjacent in coh_l. When referenced without a
+   subscript, coh refers to U_{l in L} coh_l for all locations L."*)
+
+let coh = (po-loc | com)+
+call total(coh,M)
+empty rmw & ~(coh; [_]; coh) as atomic-read-modify-write
+(*jade: possibly use nodetour or singlestep a la C++*)
+
+(*note:
+  page 12:
+  "Scoped Synchronization Order (so_a): Given a release memory action,
+   Rel_S[l], and an acquire memory action, Acq_S'[l], Rel_S[l] so_a Acq_S'[l]
+   iff Rel_S[l] ~incl Acq_S'[l], Rel_S[l] coh_l Acq_S[l], and S and S' both
+   include agent a."*)
+
+let performed-wrt(s) = s (*jade: for now; work out scope-inclusion in there*)
+let so(s) = ([rel & performed-wrt(s)];coh;[acq & (s)]) & loc 
+(*note:
+  jade: no mention of agent a in our definition;
+        also i believe we should be able to use a notion of "performed wrt s"
+	as in hrfd.cat, s.t.t performed wrt s means in s or in s' s.t. s'
+        includes s*) 
+
+(*note:
+  page 12:
+  "Heterogeneous-Happens-Before-Direct-Relaxed (hhbd.dr): The union of the
+   irreflexive transitive closures of all scope synchronization orders with
+   program order: 
+     \[ U_{a in A} (po U so_a)+ \]
+   Further, hhb.dr cannot contain a cycle and is consistent with coh." 
+
+  note:
+  jade: it's not clear to me why po and not po_a above*)
+
+let hhbdr =  
+  (po | so subgroup)+ |
+  (po | so workgroup)+ |
+  (po | so device)+ |
+  (po | so system)+
+
+acyclic hhbdr
+irreflexive (hhbd | coh)+
+
+(*note:
+  page 12:
+  "Value of a Load: A load L[l] observes the value produced by the most recent
+   store S[l] in coh_l: 
+     valueof(L[l]) = valueof(S[l]): (S[l] coh_l L[l] /\ 
+       (not exists S'[l]: S[l] coh_l S'[l] coh_l L[l]))"
+  jade: the first clause S[l] coh_l L[l] comes from rf being included in coh_l
+        the second one comes from fr being included in coh_l and coh_l acyclic*)
+
+(*note:
+  page 13:
+  "V. Races and Actual Executions"*)
+
+(*note:
+  page 13:
+  "Heterogeneous Race: A candidate execution contains a heterogeneous race
+   iff two conflicting (ordinary or atomic) actions O and O' are unordered in
+   hhb.dr:
+   ~(O hhb.dr O' \/ O' hhb.dr O)"*)
+
+let heterogeneous-race =
+  (ordinary-conflict | synchronization-conflict) &
+  ~(hhbdr | hhbdr^-1)
+
+(*note:
+  page 13:
+  "Heterogeneous-race-free Program: A program is heterogeneous-race-free iff
+   all of its candidate executions are heterogeneous-race-free.
+   
+   Racey Program: Any program containing a heterogeneous race is considered
+   racey.
+
+   Result of a Heterogeneous-race-free Program: The result of any
+   heterogeneous-race-free program will be one of its candidate executions.
+
+   Result of a Racey Program: The outcome of a racey program is undefined on a
+   conforming implementation. Notably, this means that the orders defined in
+   Section IV above do not have to exist or be consistent in any real execution
+   of a racey program."
+*)
+undefined_unless empty heterogeneous-race
+
+

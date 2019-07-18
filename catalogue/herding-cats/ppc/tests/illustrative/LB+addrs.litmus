@@ -1,0 +1,14 @@
+PPC LB+addrs
+"DpAddrdW Rfe DpAddrdW Rfe"
+Cycle=Rfe DpAddrdW Rfe DpAddrdW
+{
+0:r2=x; 0:r5=y;
+1:r2=y; 1:r5=x;
+}
+ P0            | P1            ;
+ lwz r1,0(r2)  | lwz r1,0(r2)  ;
+ xor r3,r1,r1  | xor r3,r1,r1  ;
+ li r4,1       | li r4,1       ;
+ stwx r4,r3,r5 | stwx r4,r3,r5 ;
+exists
+(0:r1=1 /\ 1:r1=1)

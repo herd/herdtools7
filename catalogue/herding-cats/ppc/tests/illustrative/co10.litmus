@@ -1,0 +1,9 @@
+PPC CoWW (CoTen)
+"PPC basic reject (ws + po)"
+{
+0:r5=x; 0:r1=1; 0:r2=2;
+}
+P0           ;
+stw r1,0(r5) ;
+stw r2,0(r5) ;
+~exists (x=1)

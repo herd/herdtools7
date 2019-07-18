@@ -1,0 +1,15 @@
+ARM WRC+dmb+addr
+"Rfe DMBdRW Rfe DpAddrdR Fre"
+Cycle=Rfe DMBdRW Rfe DpAddrdR Fre
+{
+%x0=x;
+%x1=x; %y1=y;
+%y2=y; %x2=x;
+}
+ P0            | P1            | P2               ;
+ MOV R0, #1    | LDR R0, [%x1] | LDR R0, [%y2]    ;
+ STR R0, [%x0] | DMB           | EOR R1,R0,R0     ;
+               | MOV R1, #1    | LDR R2, [R1,%x2] ;
+               | STR R1, [%y1] |                  ;
+exists
+(1:R0=1 /\ 2:R0=1 /\ 2:R2=0)

@@ -1,0 +1,10 @@
+LISA ISA2+lwf+dep+dep
+{
+x = 0;
+y = 0;
+}
+ P0       | P1       | P2       ;
+ w[] x 1  | r[] r1 y | r[] r2 z ;
+ f[lw]    | f[dep]   | f[dep]   ;
+ w[] y 1  | w[] z 1  | r[] r3 x ;
+exists (1:r1 = 1 /\ 2:r2 = 1 /\ 2:r3=0)

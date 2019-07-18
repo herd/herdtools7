@@ -1,0 +1,10 @@
+Bell w+rw+ww+props
+{
+x = 0;
+y = 0;
+}
+ P0       | P1       | P2       ;
+ w[] x 2  | r[] r1 x | w[] y 2  ;
+          | f[prop]  | f[prop]  ;
+          | w[] y 1  | w[] x 1  ;
+exists (x=2 /\ y=2)

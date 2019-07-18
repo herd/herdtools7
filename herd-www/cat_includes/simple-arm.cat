@@ -1,0 +1,54 @@
+"Simple ARM arch model"
+
+include "armfences.cat"
+show isb,ctrlisb
+
+include "cos.cat"
+
+(* Memory is coherent *)
+acyclic po-loc | fr | rf | co as uniproc
+
+(**************)
+(* Simple ppo *)
+(**************)
+
+let RW = R * W
+and WW = W * W
+and RR = R * R
+
+
+let ppo =
+(*  True or False Address Dependency from Load to Store create
+    externally visible order *)
+  addr & RW | 
+(*  True Data Dependency from Load to Store creates externally visible
+order  [derives from  no visible write speculation rule] *)
+  data & RW | (* NB 'false dependcies included... *)
+(* Address dependency from load tio load, forgotten by Richarch in its mail *)
+  addr & RR | (*  NB 'false dependcies included... *)
+(* True Control Dependency from Load to Store creates externally
+   visible order [derives no visible write speculation rule] *)
+  ctrl & RW |  (* NB 'false dependcies included... *)
+(* CTRL + ISB will create externally visible order (derives from ISB
+   cannot happen speculatively] *)
+  ctrlisb  
+
+(**********)
+(* Fences *)
+(**********)
+let dmb.st=dmb.st & WW
+let dsb.st=dsb.st & WW
+show dmb, dsb, dmb.st, dsb.st
+let fence = dsb.st | dmb.st | dsb | dmb
+
+(************)
+(* ordering *)
+(************)
+
+(* Non-fence 'visible order' *)
+let visible = ppo | fence | rfe
+
+(* Fence effect, with A-cumulativity *)
+let F = ((fr|rf|co)*;fence)
+
+acyclic (F | visible) as order

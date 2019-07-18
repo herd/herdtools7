@@ -1,0 +1,19 @@
+cat(s):
+cats/anarchy.bell
+cats/anarchy.cat
+cats/arm.cat
+cats/c11.cat
+cats/ptx.cat
+cats/x86.cat
+
+illustrative tests:
+tests/mp-arm+dsb+addr.litmus
+tests/mp-arm.litmus
+tests/mp-bell.litmus
+tests/mp-c11-race.litmus
+tests/mp-c11-rel-acq.litmus
+tests/mp-c11-relaxed.litmus
+tests/mp-mit-fences.litmus
+tests/mp-ptx.litmus
+tests/mp-ptx+membar.gls.litmus
+tests/mp-x86.litmus

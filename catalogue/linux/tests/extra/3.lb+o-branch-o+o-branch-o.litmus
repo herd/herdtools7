@@ -1,0 +1,22 @@
+LISA 3.LB+o-branch-o+o-branch-o+o-branch-o (*Paul says forbid*)
+{
+x = 0;
+y = 0;
+z = 0;
+}
+P0               | P1               | P2               ;
+r[once] r1  x    | r[once] r2 y     | r[once] r3 z     ;
+mov r4 (eq r1 0) | mov r5 (eq r2 0) | mov r6 (eq r3 0) ;
+b[] r4 END1      | b[] r5 END2      | b[] r6 END3      ;
+w[once] y 1      | w[once] z 1      | w[once] x 1      ;
+END1:            | END2:            | END3:            ;
+exists(0:r1=1 /\ 1:r2=1 /\ 2:r3=1)
+
+(*More precisely:
+
+        But I expect that there will be eventually need to be a    
+        r[ctrl] or some such.  Until then, forbidden.
+        But herd disagrees, probably because it does not yet know
+        about control dependencies.
+
+*)

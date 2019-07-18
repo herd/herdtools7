@@ -1,0 +1,44 @@
+"CLR Cat"
+
+(*from https://msdn.microsoft.com/en-us/magazine/cc163715.aspx*)
+
+include "tutorial.cat"
+
+let com = rf | co | fr
+let po-loc = po & loc
+
+procedure sc-per-location() =
+  acyclic po-loc | com
+end
+
+procedure locking() =
+  let ppo = po & (Lock * R) | po & (W * Unlock) 
+  acyclic ppo | com
+end
+
+procedure fundamental-rules() =
+  call sc-per-location()
+  call locking()
+end
+
+procedure volatile() =
+  let ppo = po & ((Volatile & R) * M) | po & (M * (Volatile & W))
+  acyclic ppo | com
+end
+
+procedure ecma() =
+  call fundamental-rules() 
+  call volatile()
+end
+
+procedure tso() =
+  let ppo = po & (W*W) 
+  acyclic ppo | rfe | co | fr
+end
+
+procedure dot-net-2() =
+  call ecma()
+  call tso()
+end
+
+call dot-net-2()

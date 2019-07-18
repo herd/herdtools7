@@ -1,0 +1,19 @@
+AArch64 PPOAA
+"DMB.SYdWW Rfe DpAddrdW Rfi DpAddrdR Fre"
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=DMB.SYdWW Rfe DpAddrdW Rfi DpAddrdR Fre
+{
+0:X1=x; 0:X3=y;
+1:X1=y; 1:X4=z; 1:X8=x;
+}
+ P0          | P1                  ;
+ MOV W0,#1   | LDR W0,[X1]         ;
+ STR W0,[X1] | EOR W2,W0,W0        ;
+ DMB SY      | MOV W3,#1           ;
+ MOV W2,#1   | STR W3,[X4,W2,SXTW] ;
+ STR W2,[X3] | LDR W5,[X4]         ;
+             | EOR W6,W5,W5        ;
+             | LDR W7,[X8,W6,SXTW] ;
+exists
+(1:X0=1 /\ 1:X5=1 /\ 1:X7=0)

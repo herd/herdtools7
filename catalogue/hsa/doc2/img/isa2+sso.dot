@@ -1,0 +1,35 @@
+digraph G {
+
+splines=spline;
+pad="0.100000";
+
+/* legend */
+fontsize=8;
+label="isa2+sso";
+
+
+/* the unlocked events */
+eiid0 [label="a: W(ordinary,rlx,wi) x=53", shape="none", fontsize=8, pos="1.000000,0.937688!", fixedsize="true", height="0.111111", width="1.277778"];
+eiid1 [label="b: W(atomic,screl,wg) y=1", shape="none", fontsize=8, pos="1.000000,0.000000!", fixedsize="true", height="0.111111", width="1.222222"];
+eiid2 [label="c: R(atomic,scacq,agent) y=1", shape="none", fontsize=8, pos="2.425000,1.247124!", fixedsize="true", height="0.111111", width="1.388889"];
+eiid3 [label="d: W(atomic,screl,system) z=1", shape="none", fontsize=8, pos="2.425000,0.309437!", fixedsize="true", height="0.111111", width="1.444444"];
+eiid4 [label="e: R(atomic,scacq,system) z=1", shape="none", fontsize=8, pos="3.850000,0.937688!", fixedsize="true", height="0.111111", width="1.444444"];
+eiid5 [label="f: R(ordinary,rlx,wi) x=0", shape="none", fontsize=8, pos="3.850000,0.000000!", fixedsize="true", height="0.111111", width="1.222222"];
+
+/* the intra_causality_data edges */
+
+
+/* the intra_causality_control edges */
+
+/* the poi edges */
+/* the rfmap edges */
+
+
+/* The viewed-before edges */
+eiid0 -> eiid1 [label=<<font color="indigo">hhb</font>>, color="indigo", fontsize=8, penwidth="3.000000", arrowsize="0.666700"];
+eiid1 -> eiid2 [label=<<font color="orange3">coh</font><font color="indigo">,hhb</font><font color="yellow4">,sso-wg</font>>, color="orange3:indigo:yellow4", fontsize=8, penwidth="3.000000", arrowsize="0.666700"];
+eiid2 -> eiid3 [label=<<font color="indigo">hhb</font>>, color="indigo", fontsize=8, penwidth="3.000000", arrowsize="0.666700"];
+eiid3 -> eiid4 [label=<<font color="orange3">coh</font><font color="indigo">,hhb</font><font color="seagreen4">,sso-agent</font>>, color="orange3:indigo:seagreen4", fontsize=8, penwidth="3.000000", arrowsize="0.666700"];
+eiid4 -> eiid5 [label=<<font color="indigo">hhb</font>>, color="indigo", fontsize=8, penwidth="3.000000", arrowsize="0.666700"];
+eiid5 -> eiid0 [label=<<font color="orange3">coh</font>>, color="orange3", fontsize=8, penwidth="3.000000", arrowsize="0.666700"];
+}

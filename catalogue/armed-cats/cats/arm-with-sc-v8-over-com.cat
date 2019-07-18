@@ -1,0 +1,58 @@
+"ARM v8"
+
+include "arm-common-v8.cat"
+
+let com = rf | co | fr
+acyclic po-loc | com as sc-per-location
+empty rmw & (fre;coe) as atomic
+
+let dp = addr | data
+let rdw = po-loc & (fre;rfe)
+let detour = po-loc & (coe ; rfe)
+
+let ii0 = dp | rfi | rdw
+let ic0 = 0
+let ci0 = ctrlisb | detour
+let cc0 = dp | ctrl | (addr;po)
+
+let rec ii = ii0 | ci | (ic;ci) | (ii;ii)
+and ic = ic0 | ii | cc | (ic;cc) | (ii;ic)
+and ci = ci0 | (ci;ii) | (cc;ci)
+and cc = cc0 | ci | (ci;ic) | (cc;cc)
+
+(* Acquire release *)
+let acq = A 
+let rel = L 
+
+let acq-po = (acq * M) & po
+let po-rel = (M * rel) & po
+
+let ppo = ii & R*R | ic & R*W | acq-po
+
+let all-dmb = dmb.sy|dmb.st|dmb.ld
+let all-dsb = dsb.sy|dsb.st|dsb.ld
+
+let strong-fence = all-dmb | all-dsb 
+let weak-fence = po-rel
+let fence = strong-fence | weak-fence
+let A-cumul = rfe;fence
+
+let hb = ppo | (R * M) & fence | rfe
+let car = com & (acq|rel) * (acq|rel)
+let poar = po & (acq|rel) * (acq|rel)
+
+acyclic hb as no-thin-air
+
+let prop = ((fence | A-cumul);hb*) & W*W
+
+irreflexive fre;prop;hb* as observation
+acyclic co | prop  as propagation
+
+let xx = (W*W) & (X *X) & po (* NB: W only *)
+
+procedure restoring-sc() =
+  acyclic co | xx (* or acyclic com | xx *) as ScXX
+  acyclic ((com*;strong-fence)|car|(rfe?;weak-fence));hb* | poar
+end
+
+call restoring-sc()

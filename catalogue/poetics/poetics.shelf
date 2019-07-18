@@ -1,0 +1,63 @@
+shelf number for:
+"poetics"
+
+cat(s):
+cats/sc.cat
+cats/tso.cat
+cats/pso.cat
+cats/rmo.cat 
+cats/alpha.cat
+cats/power.cat
+
+cfg(s):
+cats/template1.cfg
+cats/template2.cfg
+
+tests:
+
+tests/template1.observed
+tests/template1.allowed
+tests/template2.observed
+tests/template2.allowed
+
+illustrative tests: (ls tests/illustrative/* > template.illus)
+tests/template.illus
+
+(list their names and the figures where they appear in the paper)
+
+experimental campaign:
+tests/campaign/template1-tests.tar
+tests/campaign/template2-tests.tar
+
+-------------------------------------------------------------------------------
+
+source:
+A Shared Memory Poetics
+
+by:
+Jade Alglave
+
+downloaded from:
+http://www0.cs.ucl.ac.uk/staff/j.alglave/these.pdf
+
+on:
+Wednesday 21 January 2015 
+
+-------------------------------------------------------------------------------
+
+model(s) as appear in the paper can be found on:
+page 60, definition 38 for SC
+page 62, definition 40 for TSO
+page 63, definition 42 for PSO
+page 64, definition 44 for RMO
+page 66, definition 46 for Alpha
+page 112, Figure 8.8 for Power
+
+notes:
+
+jade: it'd be great to have something like "include bla.cat" with dp = ...
+where bla.cat expects a dp definition
+
+jade: also in fact to be faithful to the letter of the thesis, we should have
+that template, to implement "ghb-style" models
+ 

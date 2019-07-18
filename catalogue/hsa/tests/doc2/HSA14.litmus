@@ -1,0 +1,10 @@
+LISA HSA14
+{ 1:r1=-1; }
+ P0                     | P1                      ;
+ w[] x 1                | r[atomic,scacq,wg] r0 y ;
+ w[atomic,screl,wg] y 1 | mov r3 (neq r0 1)       ;
+                        | b r3 Exit1              ;
+                        | r[] r1 x                ;
+                        | Exit1:                  ;
+scopes: (agent 0 1)
+exists (1:r0=1 /\ 1:r1=1)

@@ -1,0 +1,10 @@
+PPC CoRW (CoFive)
+"PPC uniproc, basic reject (ws + rf)"
+{
+0:r5=x; 1:r5=x;
+}
+P0           | P1          ;
+lwz r2,0(r5) |             ;
+li r1,1      |li r1,2      ;
+stw r1,0(r5) |stw r1,0(r5) ;
+~exists (x=2 /\ 0:r2=2)

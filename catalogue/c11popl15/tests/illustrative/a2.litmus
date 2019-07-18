@@ -1,0 +1,14 @@
+C a2
+{ [x] = 0; [y] = 0; [z] = 0; }
+
+P0 (atomic_int* x, atomic_int* y, atomic_int *z) {
+  int r0 = atomic_load_explicit(y, memory_order_relaxed);
+  int r1 = atomic_compare_exchange_strong_explicit(x, z, 1, memory_order_release, memory_order_relaxed);
+}
+
+P1 (atomic_int* x, volatile int* y) {
+  int r2 = atomic_load_explicit(x, memory_order_acquire);
+  if (r2) {
+    *y = 1;
+  }
+}

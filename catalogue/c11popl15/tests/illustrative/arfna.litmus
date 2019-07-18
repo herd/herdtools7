@@ -1,0 +1,25 @@
+C arfna
+{ [a] = 0; [b] = 0; [x] = 0; [y] = 0; }
+
+P0 (volatile int* a, volatile int* b, atomic_int* x, atomic_int* y) {
+  int r0 = atomic_load_explicit(x, memory_order_relaxed);
+  if (r0) {
+    int t = *a;
+    *b = 1;
+    if (t) {
+      atomic_store_explicit(y, 1, memory_order_relaxed);
+    }
+  }
+}
+
+P1 (volatile int* a, volatile int* b, atomic_int* x, atomic_int* y) {
+  int r1 = atomic_load_explicit(y, memory_order_relaxed);
+  if (r1) {
+    if (*b) {
+      *a = 1;
+      atomic_store_explicit(x, 1, memory_order_relaxed);
+    }
+  }
+}
+
+exists (x=1 /\ y=1)

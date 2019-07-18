@@ -1,0 +1,134 @@
+"HSA cat"
+
+include "util.cat"
+
+(***************)
+(* Consistency *)
+(***************)
+
+procedure consistent(a, b) =
+  irreflexive a;b
+end
+
+(*************)
+(* Coherence *)
+(*************)
+
+let makeCohL(s) = linearisations(s,co0)
+with coh from cross (map makeCohL (partition M))
+
+
+call consistent(coh,po) as CohCons
+
+let cohWR = coh & (W * R)
+let cohWW = coh & (W * W)
+let mincohWR = cohWR \ (cohWW; cohWR)
+
+(* Relation a includes relation b, ie b(x,y) => a(x,y) *)
+procedure includes(a,b) = empty b \ a end
+procedure equals(a,b) =
+  call includes(a,b)
+  call includes(b,a)
+end
+
+call equals(rf,mincohWR) as LoadCons
+
+
+let cohRW = coh & (R * W)
+empty rmw & (cohRW;cohWW) as RmwCons
+
+(*****************************)
+(* No values out of thin air *)
+(*****************************)
+
+(* gdo aka no value out of thin-air *)
+let ldo = addr | data | ctrl
+let gdo = rfe | ldo
+//let gdo = coh | ldo
+
+acyclic gdo as GdoCons
+
+(*******************************)
+(* Heterogenous happens before *)
+(*******************************)
+
+let acq-rel =
+  ((W & Release) * (R & Acquire)) & coh
+| ((F & Release) * Acquire) &
+  ((po & (_ * W)); coh; (po? & (R * _)))
+| (Release * (F & Acquire)) &
+  ((po? & (_ * W)); coh; (po & (R * _)))
+
+let sso s = same-instance(s) & acq-rel
+  
+let hhb = (po | union-scopes sso)+
+
+irreflexive hhb as HhbCons
+call consistent (hhb,coh) as HhbCohCons
+
+(* Generate actual total SC orders for each dynamic scope instance.
+   In practice we generate one set of relations per scope level,
+   using the cross function. Each relation in such a set is the union
+   of orders on all dynamic scope instances at this level.
+   The dynamic scope instances are the equivalence classes of their level,
+   as computed by the new primitive classes, which takes an equivalence
+   relation as argument and returns the set of its equivalence classes *)
+
+(* SC orders operate on synchronizing operations in scope instances *)
+let sync-instances(lvl) =
+  classes ((Synchronizing * Synchronizing) & tag2scope(lvl))
+
+(* For any scope instance S, X -po-> Y = X -SC_S-> Y *)
+let preSC = po
+let makeSCinstance(S) = linearisations(S,preSC)
+
+(* All combinations of all orders for a given scope level *)
+let makeSCscope(lvl) = cross (map makeSCinstance (sync-instances(lvl)))
+
+(* Generate and check for all scope levels, unrolled  *)
+with SWI from makeSCscope('wi)
+call consistent(SWI,coh) as ScCohCons
+call consistent(SWI,hhb) as ScHhbCons
+with SWAVE from makeSCscope('wave)
+call consistent(SWAVE,coh) as ScCohCons
+call consistent(SWAVE,hhb) as ScHhbCons
+with SWG from makeSCscope('wg)
+call consistent(SWG,coh) as ScCohCons
+call consistent(SWG,hhb) as ScHhbCons
+with SAGENT from makeSCscope('agent)
+call consistent(SAGENT,coh) as ScCohCons
+call consistent(SAGENT,hhb) as ScHhbCons
+with SSYSTEM from makeSCscope('system)
+call consistent(SSYSTEM,coh) as ScCohCons
+call consistent(SSYSTEM,hhb) as ScHhbCons
+
+(* Check consistency of SC orders (useless ??) *)
+call consistent(SWI,SWAVE) as ScSc
+call consistent(SWI,SWG) as ScSc
+call consistent(SWI,SAGENT) as ScSc
+call consistent(SWI,SSYSTEM) as ScSc
+call consistent(SWAVE,SWG) as ScSc
+call consistent(SWAVE,SAGENT) as ScSc
+call consistent(SWAVE,SSYSTEM) as ScSc
+call consistent(SWG,SAGENT) as ScSc
+call consistent(SWG,SSYSTEM) as ScSc
+call consistent(SAGENT,SSYSTEM) as ScSc
+
+(* Races *)
+let at-least-one a = (a*_| _*a)
+
+let ordinary-conflicts =
+  loc & at-least-one(W) & at-least-one(Ordinary)
+
+let matches = union-scopes same-instance
+
+let special-conflicts =
+  (loc & (Atomic * Atomic) & at-least-one(W)) \ matches
+
+let conflicts =
+  ((ordinary-conflicts|special-conflicts) & ext) \ at-least-one(IW)
+
+let hsa-race = conflicts \ (hhb | hhb^-1)
+
+flag ~empty hsa-race as undefined
+

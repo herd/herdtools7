@@ -1,0 +1,10 @@
+LISA SB+o-o+o-o
+{
+x = 0;
+y = 0;
+}
+ P0           | P1           ;
+ w[once] x 1  | w[once] y 1  ;
+ r[once] r2 y | r[once] r4 x ;
+exists (0:r2=0 /\ 1:r4=0)
+

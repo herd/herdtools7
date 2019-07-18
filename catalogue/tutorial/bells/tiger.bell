@@ -1,0 +1,15 @@
+"I can't dance"
+
+enum Fences = 'dep || 'lw || 'hw
+instructions F[Fences]
+
+let deps = fencerel(F & Dep) & (R * _)
+show deps
+
+let flw = fencerel(F & Lw)
+show flw
+
+let fhw = fencerel(F & Hw)
+show fhw
+
+let fences = flw | fhw

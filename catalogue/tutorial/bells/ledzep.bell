@@ -1,0 +1,10 @@
+"hey hey mama"
+
+enum Led = 'z || 'e || 'p 
+instructions W[{'z}]
+instructions R[{'e,'p}]
+
+let ze = Z*E
+let ep = E*P
+let zep = ze;ep
+show ze, ep, zep

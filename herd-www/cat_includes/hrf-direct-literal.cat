@@ -1,0 +1,39 @@
+"hrf-direct"
+
+(*From lack of definition*)
+let occurs_before = unv
+
+(*Do they really mean (acq | rel) in the range?*)
+(*In all cases does rel actually mean sc?*)
+let so_base = 
+  [rel * (acq | rel)] & loc
+
+let so_workgroup = 
+  so_base & [wg * wg]
+
+let so_device = 
+  so_base & [dev * dev]
+
+(*Maybe so_base should be a function?
+let so d r =
+  so_base & [d * r]
+
+e.g.
+so_workgroup = so wg wg
+*)
+
+let hhbd = (po | so_workgroup)+ | (po | so_device)+
+let hhbi = (po | so_workgroup | so_device)+
+
+(*We need a function that says:
+let one_of_them_is s = 
+ [s * _] | [_ * s]  
+*)
+let w_or_rel = W | rel
+
+(*We want to implement w_rel_rln with "one_of_them_is" function
+described above*)
+let w_rel_rln = [w_or_rel * _] | [_ * w_or_rel]
+let conf_op = loc & w_rel_rln
+
+

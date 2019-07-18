@@ -3,3 +3,5 @@
 .merlin
 dune-project
 herdtools7.install
+/herd-www/www/catalogue
+/herd-www/www/herd.js

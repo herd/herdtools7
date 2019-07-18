@@ -1,0 +1,6 @@
+"Coherence"
+
+procedure coherence() =
+  let order = po & loc
+  call requireSerialization(loc,order)
+end

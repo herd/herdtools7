@@ -1,0 +1,10 @@
+ARM CO-2+2W
+
+{0:R2=x; 1:R2=x;}
+
+ P0          | P1          ;
+ MOV R0,#2   | MOV R0,#2   ;
+ STR R0,[R2] | STR R0,[R2] ;
+ MOV R1,#1   | MOV R1,#1   ;
+ STR R1,[R2] | STR R1,[R2] ;
+exists (x=2)

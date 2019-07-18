@@ -1,0 +1,74 @@
+== overview ==
+
+The idea is to piggyback on top of herd while being minimally
+intrusive, using js_of_ocaml magic.
+
+The main challenge is that herd operates on input and output
+files. Inside the browser, we don't such luxuries as disk
+access. js_of_ocaml lets us redirect stdout and stderr, but not writes
+to files (here, dot files). The idea is to output the content that
+would have been written into dot files on stdout instead when called
+from the web.
+
+Another challenge is that herd keeps some internal state based on the
+assumption that herd is called in a one-off fashion, as from the
+command line. The remedy will be a healthy dose of hacks for now.
+
+
+== dependencies to build the website ==
+
+# ocaml
+# js_of_ocaml
+
+== how to add a book ==
+
+1. add your book to ../catalogue/[book]
+
+2. write a shelf.py there
+
+3. add an entry in the "Books" dropdown menu from www/index.html:
+   <li><a href="#" onclick="readRecord('[book]', '[some book name]');">[some book name]</a></li>
+
+4. add book to Makefile
+
+5. run make
+
+== how to add cat includes ==
+
+1. create or make a symbolic link to your cat file in cat_includes/
+
+2. run make
+
+== TODO ==
+ 
+- changer le display des evts e.g. W() x 1 -> W[] x 1
+- les show et le co sont tous les deux en marron par defaut; il faudrait peut
+  etre changer la couleur par defaut du co (bleu) et garder marron pour les
+  show, ou l'inverse
+- dire a jerd ou herd est builde en local
+- display funky a regler
+- support loading cfgs from shelf
+- read includes from shelf
+- cache downloads
+- books with bookblock js animations
+  http://tympanus.net/codrops/2012/09/03/bookblock-a-content-flip-plugin/
+- book id + litmus id ... in GET params
+- make private e.g. if we have a secret nvidia book, it deploys the book at a secret url with username/pwd
+- size of dot figures might be an issue (1-col possible when herd output becomes optional)
+- upload files to server (get in back w/ GET params only)
+- parse herd output and make shiny histograms (text output as option only)
+- have header of litmus tests in panel title and change syntax highlighting (eg, "C MP1" -> C syntax, title=MP1)
+- similarly for other files where relevant
+- input user file as cat/bell/litmus
+- replace includes by checkboxes + links to read-only code of each possible include
+- resize input boxes?
+- CI test for collections of litmuses (in the form Allowed/Forbidden)
+- possiblity to upload/write several litmus tests for a single cat/bell/include combo
+- shinify website
+- add spinner when herd is running
+- add progress bars for large js modules download
+- add some herd-specific keywords to Ace themes
+- tutorial
+- splash-screen to redirect either to tutorial or experiments
+- look how it looks without JavaScript on
+- test other browsers

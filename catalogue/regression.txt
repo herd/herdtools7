@@ -1,0 +1,35 @@
+notes sur la regression
+
+(on pourrait appeller l'outil grey)
+
+- point de depart:
+
+  . etant donne un jeu de tests, on a d'un cote un modele de reference
+(bell+cat) et de l'autre un nouveau modele. on veut comparer ce que dit le
+nouveau modele avec la reference, sur les memes tests.
+
+- ce qu'on voudrait: un outil qui etant donne un jeu de tests et deux modeles,
+  nous dit si les modele sont compatibles. je peux voir plusieurs modes de
+compatibilite:
+
+    . new-model is sound w.r.t. reference (executions rather than Answer) 
+
+    . perfect fit: memes executions sur tous les tests
+
+- comment faire: 
+
+  . une test base, par exemple: catalogue/herding-cats/ppc/tests
+  . un run du modele de reference, par exemple:
+catalogue/herding-cats/ppc/tests/ppc-hardware.spec
+  . un run du nouveau modele, par exemple:
+catalogue/herding-cats/ppc/Power-Model.txt
+  . si on utilise mcompare, par exemple:
+    mcompare7 REF LOG | grep Warning  
+    (je pense mcmp7 marche aussi, a essayer)
+
+    . il faudrait analyser les sorties de mcompare (les Warning trouves par
+grep) pour decider si les modeles coincident
+
+    . dans l'interface, ca serait bien de signaler les tests qui ne coincident
+pas, par exemple en rouge; on peut peut etre reutiliser le generateur de pages
+html de Luc pour ce faire

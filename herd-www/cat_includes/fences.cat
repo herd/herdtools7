@@ -1,0 +1,11 @@
+AllFences
+
+include "x86fences.cat"
+include "armfences.cat"
+include "ppcfences.cat"
+
+(* Correct isb/isync show *)
+let ctrlcfence = ctrlisb|ctrlisync
+show isync \ ctrlcfence as isync
+show isb \ ctrlcfence as isb
+show ctrl \ ctrlcfence as ctrl

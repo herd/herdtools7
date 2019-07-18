@@ -1,0 +1,59 @@
+"Experimental model, with atomics"
+
+include "cos.cat"
+
+(* Uniproc *)
+acyclic po-loc | rf | fr | co
+
+(* Atomic *)
+empty rmw & (fre;coe) as atomic
+
+(* Utilities *)
+let dd = addr | data
+let rdw = po-loc & (fre;rfe)
+let detour = po-loc & (coe ; rfe)
+let addrpo = addr;po
+let aa = po & (A * A)
+
+(*******)
+(* ppo *)
+(*******)
+
+include "ppcfences.cat"
+show isync,ctrlisync
+show lwsync as lwsync
+show eieio as eieio
+show sync
+
+
+let WW = W * W
+let RM = R * M
+let RR = R * R
+let WR = W * R
+
+
+(* Initial value *)
+let ci0 = ctrlisync | detour | aa & RR | aa & WR
+let ii0 = dd | rfi | rdw
+let cc0 = dd | po-loc | ctrl | addrpo | aa
+let ic0 = 0
+
+(* Fixpoint from i -> c in instructions and transitivity *)
+include "ppo.cat"
+
+
+(**********)
+(* fences *)
+(**********)
+
+(* Power *)
+let lwsync = lwsync & RM | lwsync & WW
+let eieio = eieio & WW
+
+
+(* Common, all arm barriers are strong *)
+
+let strong = sync
+let light = lwsync|eieio
+
+include "ppc-checks.cat"

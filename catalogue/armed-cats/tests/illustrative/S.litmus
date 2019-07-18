@@ -1,0 +1,14 @@
+ARM S
+"PodWW Rfe PodRW Wse"
+Cycle=Rfe PodRW Wse PodWW
+{
+%x0=x; %y0=y;
+%y1=y; %x1=x;
+}
+ P0            | P1            ;
+ MOV R0, #2    | LDR R0, [%y1] ;
+ STR R0, [%x0] | MOV R1, #1    ;
+ MOV R1, #1    | STR R1, [%x1] ;
+ STR R1, [%y0] |               ;
+exists
+(x=2 /\ 1:R0=1)

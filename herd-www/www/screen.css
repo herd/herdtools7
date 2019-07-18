@@ -1,0 +1,65 @@
+.input-editor {
+  position: relative;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 500px;
+}
+
+#litmus-editor {
+  height: 550px;
+}
+
+#record-editor {
+  height: 500px;
+}
+
+#herdoutput-editor {
+  position: relative;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 300px;
+}
+
+.carousel-indicators {
+  bottom:-50px;
+}
+
+.carousel-indicators li {
+  border-color:#999;
+  background-color:#ccc;
+}
+.carousel-inner {
+   margin-bottom:50px;
+}
+
+.dropdown-menu li a {
+  display: block;
+  padding: 3px 20px;
+  clear: both;
+  font-weight: 400;
+  line-height: 1.42857;
+  color: #333;
+  white-space: nowrap;
+}
+
+.glyphicon {
+    color: #333;
+}
+
+.dropdown-menu li a:focus, .dropdown-menu li a:hover {
+  color: #262626;
+  text-decoration: none;
+  background-color: #E8E8E8;
+  background-image: linear-gradient(to bottom, #F5F5F5 0px, #E8E8E8 100%);
+  background-repeat: repeat-x;
+}
+
+#campaign-table {
+    width: 100%;
+    max-height: 550px;
+    overflow-y: scroll;
+}

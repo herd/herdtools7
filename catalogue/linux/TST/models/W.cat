@@ -1,0 +1,137 @@
+"Linux kernel memory model, weakned"
+
+(* Alan Stern, 28 April 2016 *)
+
+include "cos.cat"
+
+let com = rf | co | fr
+
+acyclic (po-loc | com) as sc-per-location
+
+empty rmw & (fre;coe) as atomic
+
+
+let rdep = addr & (_*R) & rd-dep-fence
+let dep = addr | data
+let dep-rfi = dep ; rfi
+let rdw = po-loc & (fre ; rfe)
+let detour = po-loc & (coe ; rfe)
+let atomicpo = (RMW*RMW) & po
+let addrpo = addr ; po
+
+(********************************************)
+(* Shall we keep hb, because of no-thin-air *)
+(********************************************)
+
+let fence = exec-order-fence | weak-fence | medium-fence | strong-fence
+let barrier = weak-fence | medium-fence | strong-fence
+(* Analyze instruction order in terms of execution, not init and complete *)
+let ppo =
+	rdep | dep-rfi | rdw |				(* ii0 *)
+	detour | atomicpo |				(* ci0 *)
+							(* ic0 *)
+	((dep | po-loc | ctrl | addrpo) & (_*W))	(* cc0 *)
+
+
+let strongly-hb = ppo | fence | rfe
+
+let hb = strongly-hb | (strongly-hb ; addr ; strongly-hb)
+
+acyclic hb as causality
+
+let AllDeref = Lderef|Deref
+let RelAssign = Release | Assign (* Assign implemented with release *)
+
+let assign-deref = po-assign; (rfe & (RelAssign * AllDeref))
+
+let head =
+    rfe? ;
+    (po-rel | assign-deref | (strong-fence ; (rfe ? | (rfe; po-rel))?))
+
+let deref-addr(E) = addr & (AllDeref * E)
+
+let ValidW = W&(RelAssign|range(strong-fence))
+let ValidR = R&(Acquire|AllDeref|domain(strong-fence))
+
+let po-step(E) =
+    po  & (Acquire * E)
+  | deref-addr(E)
+  | strong-fence
+
+let tail-step =
+    po-step(RelAssign)
+  | rfe & (ValidW * ValidR)
+
+let tail = tail-step*
+show tail\id as tail
+
+let transitive-propbase = head;tail
+
+
+
+(**************************************)
+(* Add observation, as in herd-models *)
+(**************************************)
+
+(* Specific cycles for wmb/rmb *)
+
+let specific-hb = ( ppo | fence ) & ((M*M) \ (W * R))
+let lastcom = coe|fre
+
+irreflexive specific-hb; (rfe|coe);specific-hb; lastcom as specific
+
+
+
+
+(*****************)
+(* We now weaken *)
+(*****************)
+
+
+(* Traditional observation, with weakened hb *)
+
+let obs = (po-step(M)?;rfe)? ; (ppo|fence) ; lastcom
+
+let obshead = obs;head
+
+irreflexive transitive-propbase;obs as obs
+
+(* From now weaken hb *)
+let propbase = propagation-fence | transitive-propbase
+let strong-prop = fre? ; propbase* ; rfe? ; strong-fence ; tail
+let prop = (transitive-propbase & (W*W)) | strong-prop
+let atomic-hb = (tail & ((RMW&W) * _))\id
+let cpord = co | prop | atomic-hb
+
+acyclic cpord as propagation
+
+
+(* Propagation between strong fences *)
+let basic = tail ; cpord* ; fre? ; propbase* ; rfe?
+
+(* Chains that can prevent the RCU guarantee *)
+let after-lock = po ; crit^-1 ; po
+let in-rs = after-lock & id
+let rs-to-rs = in-rs; after-lock; in-rs
+
+let crit-contains = po & (crit ; po^-1)
+let same-crit = crit-contains^-1 ; crit-contains
+
+let s-link = sync ; basic
+let c-link = rs-to-rs ; basic
+let rcu-path0 = s-link |
+	(s-link ; c-link) |
+	(c-link ; s-link)
+let rec rcu-path = rcu-path0 | rcu-path |
+	(rcu-path ; rcu-path) |
+	(s-link ; rcu-path ; c-link) |
+	(c-link ; rcu-path ; s-link)
+
+irreflexive rcu-path as rcu
+
+
+let xbasic = (basic & (M*M)) \ id \ po
+
+(*
+show xbasic
+*)

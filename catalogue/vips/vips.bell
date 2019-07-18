@@ -1,0 +1,7 @@
+"VIPS"
+
+enum fences = 'si
+           || 'sd
+
+instructions F[{'si, 'sd}]
+

@@ -1,0 +1,9 @@
+"ARM propagation order"
+
+let po-xx = po & (W * W) & (X * X)
+let prop-ar = ((com | po) & ((Acq | Rel) * (Acq | Rel))); hb*
+let prop = prop-obs | po-xx | prop-ar
+
+procedure propagation() =
+  acyclic co | prop
+end

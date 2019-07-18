@@ -1,0 +1,19 @@
+LISA HSA6 (*variant of isa2*)
+(* At the conclusion of this example, $s2 and $s4 must both get the value 53. *)
+{
+x = 0;
+y = 0;
+z = 0;
+}
+ P0                         | P1                            | P2                             ;
+ w[ordinary,rlx,wi] x 53 | r[atomic,scacq,agent] r1 y | r[atomic,scacq,system] r3 z ;
+                            | r[ordinary,rlx,wi] r2 x    |                                ;
+ w[atomic,screl,wg] y 1  | w[atomic,screl,system] z 1 | r[ordinary,rlx,wi] r4 x     ;
+
+scopes:
+(system (agent (wg (wave (wi P0)) (wave (wi P1))) (wg (wave (wi P2)))))
+
+regions: x:global, y:global, z:global
+
+exists (1:r1=1 /\ 1:r2=53 /\ 2:r3=1 /\ 2:r4=53)
+

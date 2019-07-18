@@ -1,0 +1,26 @@
+"Cat utilities"
+
+let map f  =
+  let rec do_map es = match es with
+  || {} -> {}
+  || e ++ es -> f e ++ do_map es
+  end in
+  do_map
+
+let fold f =
+  let rec fold_rec (es,y) = match es with
+  || {} -> y
+  || e ++ es -> fold_rec (es,f (e,y))
+  end in
+  fold_rec
+
+let union-scopes f = fold (fun (s,y) -> f s | y) (scopes,{})
+
+let rec cross ess = match ess with
+  || {} -> { 0 }
+  || es ++ ess ->
+      let yss = cross ess in
+      fold
+        (fun (e,r) -> map (fun ys -> e | ys) yss | r)
+        (es,{})           
+   end      

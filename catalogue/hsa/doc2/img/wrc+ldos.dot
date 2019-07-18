@@ -1,0 +1,45 @@
+digraph G {
+
+splines=spline;
+pad="0.100000";
+
+/* legend */
+fontsize=8;
+label="wrc+ldos";
+
+
+/* init events */
+eiidinit [label="W() x=0,W() y=0", shape="none", fontsize=8, pos="1.637500,1.462502!", fixedsize="true", height="0.111111", width="0.388889"];
+
+/* the unlocked events */
+proc0_label_node [shape=none, fontsize=8, label="\\myth{0}", pos="1.000000,1.732502!", fixedsize=true, width=0.414375, height=0.168750]
+eiid0 [label="a: W(atomic,rlx,wg) x=1", shape="none", fontsize=8, pos="1.000000,0.675000!", fixedsize="true", height="0.111111", width="1.111111"];
+proc1_label_node [shape=none, fontsize=8, label="\\myth{1}", pos="2.275000,1.732502!", fixedsize=true, width=0.414375, height=0.168750]
+eiid1 [label="b: R(atomic,rlx,wg) x=1", shape="none", fontsize=8, pos="2.275000,0.843750!", fixedsize="true", height="0.111111", width="1.111111"];
+eiid2 [label="c: W(atomic,rlx,wg) y=1", shape="none", fontsize=8, pos="2.275000,0.168750!", fixedsize="true", height="0.111111", width="1.111111"];
+proc2_label_node [shape=none, fontsize=8, label="\\myth{2}", pos="3.550000,1.732502!", fixedsize=true, width=0.414375, height=0.168750]
+eiid3 [label="d: R(atomic,rlx,wg) y=1", shape="none", fontsize=8, pos="3.550000,1.012500!", fixedsize="true", height="0.111111", width="1.111111"];
+eiid4 [label="e: R(atomic,rlx,wg) x=0", shape="none", fontsize=8, pos="3.550000,0.337500!", fixedsize="true", height="0.111111", width="1.111111"];
+
+/* the intra_causality_data edges */
+
+
+/* the intra_causality_control edges */
+
+/* the poi edges */
+/* the rfmap edges */
+
+
+/* The viewed-before edges */
+eiid0 -> eiid1 [label=<<font color="orange3">coh</font><font color="red">,rf</font>>, color="orange3:red", fontsize=8, penwidth="3.000000", arrowsize="0.666700"];
+eiid1 -> eiid2 [label=<<font color="indigo">ldo</font>>, color="indigo", fontsize=8, penwidth="3.000000", arrowsize="0.666700"];
+eiid2 -> eiid3 [label=<<font color="orange3">coh</font><font color="red">,rf</font>>, color="orange3:red", fontsize=8, penwidth="3.000000", arrowsize="0.666700"];
+eiid3 -> eiid4 [label=<<font color="indigo">ldo</font>>, color="indigo", fontsize=8, penwidth="3.000000", arrowsize="0.666700"];
+eiid4 -> eiid0 [label=<<font color="orange3">coh</font>>, color="orange3", fontsize=8, penwidth="3.000000", arrowsize="0.666700"];
+eiid4 -> eiid1 [label=<<font color="orange3">coh</font>>, color="orange3", fontsize=8, penwidth="3.000000", arrowsize="0.666700"];
+eiidinit -> eiid0 [label=<<font color="orange3">coh</font>>, color="orange3", fontsize=8, penwidth="3.000000", arrowsize="0.666700"];
+eiidinit -> eiid1 [label=<<font color="orange3">coh</font>>, color="orange3", fontsize=8, penwidth="3.000000", arrowsize="0.666700"];
+eiidinit -> eiid2 [label=<<font color="orange3">coh</font>>, color="orange3", fontsize=8, penwidth="3.000000", arrowsize="0.666700"];
+eiidinit -> eiid3 [label=<<font color="orange3">coh</font>>, color="orange3", fontsize=8, penwidth="3.000000", arrowsize="0.666700"];
+eiidinit -> eiid4 [label=<<font color="orange3">coh</font><font color="red">,rf</font>>, color="orange3:red", fontsize=8, penwidth="3.000000", arrowsize="0.666700"];
+}

@@ -1,0 +1,17 @@
+LISA wrc+ldos
+"RfeARlxWgARlxWg PodRWARlxWgARlxWg RfeARlxWgARlxWg PodRRARlxWgARlxWg FreARlxWgARlxWg"
+Prefetch=1:x=F,1:y=W,2:y=F,2:x=T
+Com=Rf Rf Fr
+Orig=RfeARlxWgARlxWg PodRWARlxWgARlxWg RfeARlxWgARlxWg PodRRARlxWgARlxWg FreARlxWgARlxWg
+{
+2:r1=-1;
+}
+ P0                   | P1                    | P2                    ;
+ w[atomic,rlx,wg] x 1 | r[atomic,rlx,wg] r0 x | r[atomic,rlx,wg] r0 y ;
+                      | mov r3 (neq r0 1)     | mov r3 (neq r0 1)     ;
+                      | b r3 Exit1            | b r3 Exit2            ;
+                      | w[atomic,rlx,wg] y 1  | r[atomic,rlx,wg] r1 x ;
+                      | Exit1:                | Exit2:                ;
+scopes: (wg 0 1 2)
+exists
+(1:r0=1 /\ 2:r0=1 /\ 2:r1=0)

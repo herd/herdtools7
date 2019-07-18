@@ -1,0 +1,17 @@
+PPC ISA2+lwsync+addr+ctrlisync
+"LwSyncdWW Rfe DpAddrdW Rfe DpCtrlIsyncdR Fre"
+Cycle=Rfe DpAddrdW Rfe DpCtrlIsyncdR Fre LwSyncdWW
+{
+0:r2=x; 0:r4=y;
+1:r2=y; 1:r5=z;
+2:r2=z; 2:r4=x;
+}
+ P0           | P1            | P2           ;
+ li r1,1      | lwz r1,0(r2)  | lwz r1,0(r2) ;
+ stw r1,0(r2) | xor r3,r1,r1  | cmpw r1,r1   ;
+ lwsync       | li r4,1       | beq  LC00    ;
+ li r3,1      | stwx r4,r3,r5 | LC00:        ;
+ stw r3,0(r4) |               | isync        ;
+              |               | lwz r3,0(r4) ;
+exists
+(1:r1=1 /\ 2:r1=1 /\ 2:r3=0)

@@ -1,0 +1,7 @@
+LISA HSA01
+{ }
+ P0                     | P1                      | P2                      | P3                      ;
+ w[atomic,screl,wg] x 1 | w[atomic,screl,wg] y 1  | r[atomic,scacq,wg] r0 x | r[atomic,scacq,wg] r0 y ;
+                        |                         | r[atomic,scacq,wg] r1 y | r[atomic,scacq,wg] r1 x ;
+scopes: (wg 0 1 2 3)
+~exists (2:r0=1 /\ 2:r1=0 /\ 3:r0=1 /\ 3:r1=0)

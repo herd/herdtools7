@@ -1,0 +1,15 @@
+"ARM obs"
+
+let com = rf | co | fr
+let com-ext = com & ext
+
+let hb = ppo | (R * M) & fence | rfe
+
+let prop-base = com-ext?;fence;hb*
+let prop-strong = com*; prop-base*; strong-fence; hb*
+let obs = prop-base & (W * W) 
+	 | prop-strong
+
+let observer =
+  com-ext; (ppo | fence | po & (Rel * Acq))
+

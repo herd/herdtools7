@@ -1,0 +1,14 @@
+ARM 2+2W
+"PodWW Wse PodWW Wse"
+Prefetch=0:y=W,1:x=W
+{
+%x0=x; %y0=y;
+%y1=y; %x1=x;
+}
+ P0            | P1            ;
+ MOV R0, #2    | MOV R0, #2    ;
+ STR R0, [%x0] | STR R0, [%y1] ;
+ MOV R1, #1    | MOV R1, #1    ;
+ STR R1, [%y0] | STR R1, [%x1] ;
+exists
+(x=2 /\ y=2)

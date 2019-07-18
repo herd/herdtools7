@@ -1,0 +1,20 @@
+AArch64 Z6.2
+"PodWW Rfe PodRW Rfe PodRW Wse"
+Cycle=Rfe PodRW Rfe PodRW Wse PodWW
+Relax=
+Safe=Rfe Wse PodWW PodRW
+Prefetch=0:x=F,0:y=W,1:y=F,1:z=W,2:z=F,2:x=W
+Com=Rf Rf Ws
+Orig=PodWW Rfe PodRW Rfe PodRW Wse
+{
+0:X1=x; 0:X3=y;
+1:X1=y; 1:X3=z;
+2:X1=z; 2:X3=x;
+}
+ P0          | P1          | P2          ;
+ MOV W0,#2   | LDR W0,[X1] | LDR W0,[X1] ;
+ STR W0,[X1] | MOV W2,#1   | MOV W2,#1   ;
+ MOV W2,#1   | STR W2,[X3] | STR W2,[X3] ;
+ STR W2,[X3] |             |             ;
+exists
+(x=2 /\ 1:X0=1 /\ 2:X0=1)

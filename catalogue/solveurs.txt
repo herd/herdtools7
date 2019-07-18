@@ -1,0 +1,34 @@
+notes sur les solveurs.
+
+(on pourrait appeler l'outil grey, comme ca ca fait 'all cats are grey' =))
+
+- point de depart: on a deux cat files (en fait deux paires (bell,cat)), et on
+  voudrait savoir si ces deux fichiers definissent le meme modele; par exemple
+  on a le modele ARM du papier des chats d'une part, et d'autre part une
+  reformulation que l'on pense meilleure, et on aimerait savoir assez vite si la
+  reformulation est differente ou non. 
+
+- ce qu'on voudrait: un outil qui etant donne deux modeles (c'est a dire deux
+  paires (bell,cat)) nous donne des litmus tests qui ont des executions
+  differentes sous les deux modeles.
+
+  idealement l'outil commencerait par nous donner des litmus tests pas trop
+  gros ni trop compliques, par exemple en suivant la methode de Luc pour les
+  pages web, quand il ordonne les tests du plus facile a comprendre vers les
+  plus compliques.
+
+- c'est completement assume que l'outil ne fournisse pas de preuve
+  d'equivalence (sauf peut etre dans des cas a decouvrir); on veut juste un
+  outil tres pragmatique d'aide au developpement de modele, qui nous donne vite
+  des contre-exemples s'il y en a.
+
+- idee: utiliser des outils modernes du genre SAT/SMT solvers. ici ya plein de
+  gens qui utilisent Z3 ca pourrait etre une idee, et/ou Sylvain Conchon.
+  idealement l'outil permettrait de brancher un solver different facilement, par
+  exemple si on vit outre-Manche et qu'on bosse pour la World Company on branche
+  Z3 et si on est de l'INRIA on branche MiniSAT, mais sans qu'il faille reecrire
+  tout l'outil pour ce faire.
+
+- comment: il nous faut trouver une traduction des fichiers bell+cat vers une
+  logique idoine comprise par le solver de notre choix. premier probleme:
+  est-ce qu'il faut une traduction par solver? 

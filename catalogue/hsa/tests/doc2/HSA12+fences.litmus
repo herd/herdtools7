@@ -1,0 +1,9 @@
+LISA HSA12+fences
+{ }
+ P0                        | P1                        ;
+ w[atomic,rlx,system] y 1  | w[atomic,rlx,system] x 1  ;
+ f[scar,system]            | f[scar,system]            ;
+ r[atomic,rlx,system] r0 x | r[atomic,rlx,system] r0 y ;
+
+scopes: (wg 0 1)
+exists (0:r0 = 0 /\ 1:r0 = 0)

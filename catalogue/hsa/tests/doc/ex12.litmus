@@ -1,0 +1,15 @@
+LISA HSA12 (*variant of sb*)
+{
+x = 0;
+y = 0;
+}
+ P0                                | P1                               ;
+ w[atomic,rlx,system,single] x 1   | w[atomic,rlx,system,single] y 1  ;
+ r[atomic,rlx,system,single] r1 y  | r[atomic,rlx,system,single] r2 x ;
+
+scopes:
+(system (agent (wg (wave (wi P0)) (wave (wi P1)))))
+
+regions: x:global, y:global
+
+exists(0:r1=0 /\ 1:r2=0)

@@ -1,0 +1,31 @@
+"HRF direct"
+
+let at-least-one a = a*M | M*a
+let conflict k =
+  let r = loc & (at-least-one (W(*|RMW)*)) & (at-least-one k) & ext 
+  in r \ (M * I) \ (I * M) \ different-scopes
+(*jade: herd's not happy with the 'in' here; not sure why?*)
+
+let performed-wrt s = s
+let complete-before = (po | rf)+
+
+let so s = 
+  (_* (rel & performed-wrt(s)));complete-before;((acq & performed-wrt(s)) * _)
+
+let bla s = (po | so(s))+
+
+let hhbd = bla(SUBGROUP) | bla(WORKGROUP) | bla(DEVICE) | bla(SYSTEM)
+(*jade: herd's not happy with me if i do:
+
+  let hhbd = (po | so(SUBGROUP))+ | (po | so(WORKGROUP))+ | (po | so(DEVICE))+ | (po | so(SYSTEM))+
+
+*)
+
+
+acyclic hhbd
+
+let heterogeneous-race = 
+  conflict(ORDINARY|synchronization) & ~(hhbd | hhbd^-1)
+  (*jade: hhbd^-1 added by me*)
+
+undefined_unless empty heterogeneous-race

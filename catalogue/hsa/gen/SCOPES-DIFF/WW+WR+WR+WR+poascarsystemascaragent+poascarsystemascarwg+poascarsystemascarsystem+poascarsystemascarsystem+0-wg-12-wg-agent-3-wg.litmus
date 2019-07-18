@@ -1,0 +1,16 @@
+LISA WW+WR+WR+WR+poascarsystemascaragent+poascarsystemascarwg+poascarsystemascarsystem+poascarsystemascarsystem+0-wg-12-wg-agent-3-wg
+"PodWWAScarSystemAScarAgent WseAScarAgentAScarSystem PodWRAScarSystemAScarWg FreAScarWgAScarSystem PodWRAScarSystemAScarSystem FreAScarSystemAScarSystem PodWRAScarSystemAScarSystem FreAScarSystemAScarSystem"
+Scopes=(agent (wg 0) (wg 1 2)) (wg 3)
+Cycle=WseAScarAgentAScarSystem PodWRAScarSystemAScarWg FreAScarWgAScarSystem PodWRAScarSystemAScarSystem FreAScarSystemAScarSystem PodWRAScarSystemAScarSystem FreAScarSystemAScarSystem PodWWAScarSystemAScarAgent
+Relax=
+Safe=Fre Wse PodWW PodWR
+Prefetch=0:x=F,0:y=W,1:y=F,1:z=T,2:z=F,2:a=T,3:a=F,3:x=T
+Com=Ws Fr Fr Fr
+Orig=PodWWAScarSystemAScarAgent WseAScarAgentAScarSystem PodWRAScarSystemAScarWg FreAScarWgAScarSystem PodWRAScarSystemAScarSystem FreAScarSystemAScarSystem PodWRAScarSystemAScarSystem FreAScarSystemAScarSystem
+{
+}
+ P0                        | P1                        | P2                         | P3                         ;
+ w[atomic,scar,system] x 1 | w[atomic,scar,system] y 2 | w[atomic,scar,system] z 1  | w[atomic,scar,system] a 1  ;
+ w[atomic,scar,agent] y 1  | r[atomic,scar,wg] r0 z    | r[atomic,scar,system] r0 a | r[atomic,scar,system] r0 x ;
+scopes: (agent (wg 0) (wg 1 2)) (wg 3)
+exists (1:r0=0 /\ 2:r0=0 /\ 3:r0=0 /\ y=2)

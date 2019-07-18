@@ -1,0 +1,8 @@
+"Bell"
+
+let fence = po & (_ * F) ; po
+let poWR = po & (W * R)
+show poWR
+show po \ poWR as po
+
+include "cos.cat"

@@ -1,0 +1,15 @@
+PPC RWC+syncs
+"Rfe SyncdRR Fre SyncdWR Fre"
+Cycle=Rfe SyncdRR Fre SyncdWR Fre
+{
+0:r2=x;
+1:r2=x; 1:r4=y;
+2:r2=y; 2:r4=x;
+}
+ P0           | P1           | P2           ;
+ li r1,1      | lwz r1,0(r2) | li r1,1      ;
+ stw r1,0(r2) | sync         | stw r1,0(r2) ;
+              | lwz r3,0(r4) | sync         ;
+              |              | lwz r3,0(r4) ;
+exists
+(1:r1=1 /\ 1:r3=0 /\ 2:r3=0)

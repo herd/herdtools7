@@ -1,0 +1,13 @@
+LISA w+o+ro-srcu-wo+rl-o-o-rul (*8-RCU*)
+{
+x = 0;
+y = 0;
+}
+ P0           | P1           | P2           ;
+              |              | f[lock]      ;
+ w[once] x 1  | r[once] r1 x | w[once] y 2  ;
+              | f[sync]      |              ;
+              | w[once] y 1  | r[once] r4 x ;
+              |              | f[unlock]    ;
+exists (y=2 /\ 1:r1=1 /\ 2:r4=0)
+

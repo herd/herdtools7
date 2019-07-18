@@ -1,0 +1,54 @@
+"Experimental model, with atomics and ARM ppo"
+
+include "cos.cat"
+
+(* Uniproc *)
+acyclic po-loc | rf | fr | co
+
+(* Atomic *)
+empty rmw & (fre;coe) as atomic
+
+(* Utilities *)
+let dd = addr | data
+let rdw = po-loc & (fre;rfe)
+let detour = po-loc & (coe ; rfe)
+let addrpo = addr;po
+let aa = po & (A * A)
+
+(*******)
+(* ppo *)
+(*******)
+
+include "armfences.cat"
+show isb,ctrlisb
+
+let WW = W * W
+let RM = R * M
+let RR = R * R
+let WR = W * R
+
+
+(* Initial value *)
+let ci0 = ctrlisb | detour | aa & RR | aa & WR
+let ii0 = dd | rfi | rdw
+let cc0 = dd |ctrl | addrpo | aa (* po-loc deleted *)
+let ic0 = 0
+
+(* Fixpoint from i -> c in instructions and transitivity *)
+include "ppo.cat"
+
+
+(**********)
+(* fences *)
+(**********)
+
+
+(* ARM *)
+let dmb.st=dmb.st & WW
+let dsb.st=dsb.st & WW
+
+(* Common, all arm barriers are strong *)
+let strong = dmb|dsb|dmb.st|dsb.st
+let light = 0
+
+include "ppc-checks.cat"

@@ -1,0 +1,14 @@
+ARM IRIW
+"Rfe PodRR Fre Rfe PodRR Fre"
+Cycle=Rfe PodRR Fre Rfe PodRR Fre
+{
+%x0=x;
+%x1=x; %y1=y;
+%y2=y;
+%y3=y; %x3=x;
+}
+ P0            | P1            | P2            | P3            ;
+ MOV R0, #1    | LDR R0, [%x1] | MOV R0, #1    | LDR R0, [%y3] ;
+ STR R0, [%x0] | LDR R1, [%y1] | STR R0, [%y2] | LDR R1, [%x3] ;
+exists
+(1:R0=1 /\ 1:R1=0 /\ 3:R0=1 /\ 3:R1=0)

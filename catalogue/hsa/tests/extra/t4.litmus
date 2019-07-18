@@ -1,0 +1,14 @@
+LISA Tony4
+{ x = 0; y = 0; z = 0; }
+ P0                         | P1                          | P2                         | P3                          ;
+ w[atomic,screl,system] x 1 | w[atomic,screl,wg] y 1      | w[atomic,screl,agent] z 1  | w[atomic,screl,system] t 1  ;
+ r[atomic,scacq,wg] r0 y    | r[atomic,scacq,agent] r0 z  | r[atomic,scacq,system] r0 t| r[atomic,scacq,system] r0 x ;
+
+scopes: (system (agent (wg 0 1) (wg 2)) (agent 3))
+
+exists (0:r0 = 0 /\ 1:r0=0 /\ 2:r0=0 /\ 3:r0=0)
+
+(*
+  Tony3 with three levels.
+  Does reveal a difference doc/doc-bis-co <-> doc/doc-bis-co-opt
+*)

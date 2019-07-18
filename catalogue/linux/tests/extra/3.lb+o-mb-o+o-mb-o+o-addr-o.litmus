@@ -1,0 +1,12 @@
+LISA 3.LB+o-mb-o+o-mb-o+o-addr-o (*Paul says allowed*)
+{
+x = 0;
+y = 0;
+z = 0;
+}
+P0              | P1              | P2                 ;
+r[once] r1 x    | r[once] r3 y    | r[once] r4 z       ;
+f[mb]           | f[mb]           | mov r9 (xor r4 r4) ;
+w[once] y 1     | w[once] z 1     | mov r5 (add x r9)  ;
+                |                 | w[once] r5 1       ;
+exists(0:r1=1 /\ 1:r3=1 /\ 2:r4=1)

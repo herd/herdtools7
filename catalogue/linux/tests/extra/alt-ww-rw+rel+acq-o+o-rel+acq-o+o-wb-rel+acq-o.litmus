@@ -1,0 +1,11 @@
+LISA alt-ww-rw+rel+acq-o+o-rel+acq-o+o-wb-rel+acq-o 
+{
+x = 0;
+y = 0;
+}
+ P0             | P1              | P2             | P3              | P4             | P5              ;
+ w[release] x 1 | r[acquire] r1 x | w[once] y 2    | r[acquire] r2 z | w[once] a 2    | r[acquire] r3 c ;
+                |                 |                |                 | f[wmb]         |                 ;
+                | w[once] y 1     | w[release] z 1 | w[once] a 1     | w[release] c 1 | w[once] x 2     ;
+exists (1:r1=1 /\ y=2 /\ 3:r2=1 /\ a=2 /\ 5:r3=c /\ x=1)
+

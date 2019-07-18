@@ -1,0 +1,27 @@
+C roachmotel2
+{ [a] = 0; [x] = 0; [y] = 0; [z] = 0 }
+
+P0 (volatile int* a, atomic_int* z) {
+  *a = 1;
+  atomic_store_explicit(z, 1, memory_order_release);
+}
+
+P1 (volatile int* a, atomic_int* x, atomic_int* y, atomic_int* z) {
+  int r0 = atomic_load_explicit(x, memory_order_relaxed);
+  if (r0) {
+    int r1 = atomic_load_explicit(z, memory_order_acquire);
+    int r2 = *a;
+    if (r2) {
+      atomic_store_explicit(y, 1, memory_order_relaxed);
+    }
+  }
+}
+
+P2 (atomic_int* x, atomic_int* y) {
+  int r3 = atomic_load_explicit(y, memory_order_relaxed);
+  if (r3) {
+    atomic_store_explicit(x, 1, memory_order_relaxed);
+  }
+}
+
+exists (a=1 /\ z=1 /\ x=1 /\ y=1)

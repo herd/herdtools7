@@ -1,0 +1,15 @@
+{ [x] = 0; [y] = 0; [zero] = 0; }
+
+P0 (atomic_int* x, atomic_int* y, atomic_int* zero) {
+  ACCESS_CHOICE(y,0,2);
+  atomic_store_explicit(x, 1, MO_CHOICE(memory_order_release, memory_order_seq_cst));
+}
+
+P1 (atomic_int* x, volatile int* y) {
+  int r1 = atomic_load_explicit(x, memory_order_acquire);
+  if (r1) {
+    *y = 1;
+  }
+}
+
+exists(x=1 /\ y=1)

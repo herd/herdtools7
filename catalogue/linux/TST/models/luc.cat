@@ -1,0 +1,148 @@
+"Linux model"
+
+include "cos.cat"
+
+let po-loc = po & loc
+let com = rf | co | fr
+
+procedure sc-per-location() =
+  let order = (po-loc | com)
+  acyclic order
+end
+
+let deps = addr | data
+let deref-po-deps = (deref-po & deps)
+let lderef-po-deps = (lderef-po & deps)
+let rb-fence = (fencerel(F & Rb_dep) & deps)
+let ctrl-po-deps = (ctrl-po & ctrl)
+let proper-deps =   rb-fence (*| deref-po-deps 
+                  | lderef-po-deps*) | ctrl-po-deps
+let local = proper-deps | fences 
+let non-transitive = rfe?;local
+
+let pairs = ((po?;(rfe & (Release * Acquire));po?) |
+            (po?;(rfe & (Assign * Deref));deref-po-deps) |
+            (po?;(rfe & (Release * Lderef));lderef-po-deps) |
+            (po?;(rfe & (Ctrl * M)); ctrl-po-deps))+
+
+let transitive-fences(extra) = (mb | sync | extra)
+let transitive(extra) = (rfe?;transitive-fences(extra) | rfe?;pairs)+
+
+let hb = (non-transitive | transitive(0));non-transitive?
+
+procedure causality() =  
+  irreflexive hb as causality
+end
+
+procedure observation() =
+  irreflexive fre;hb as observation
+end
+
+let prop(extra) = transitive(extra);non-transitive?
+let propA = (*need mb to forbid both 2+2W and R*)
+            prop(0)
+let propB = (*need wmb to forbid 2+2W and mb to forbid R*)
+            prop(wmb)
+(*let propC = need wmb to forbid both 2+2W and R, i.e. decrete Power broken*) 
+procedure propagation(prop) =
+  acyclic co | prop as progation
+end
+
+(* Relates every lock to its matching unlock, *)
+(*  Warning: assumes non-nested read-side critical sections *)
+let crit =
+  (Lock * Unlock) & po \  (Lock * (Unlock|Lock) & po ; po)
+
+(* Read-side critical sections as an equivalence relation *)
+let op = po^-1
+
+(* Covenient *)
+let LU = Lock|Unlock
+
+(* From closest lock to mem *)
+let lm =
+  (Lock * M) & po \
+  ((Lock * LU) & po ; (LU * M)  & po)
+let ml = lm^-1
+
+(* From mem to unlock *)
+
+let mu =
+  (M * Unlock) & po \
+  ((M * LU) & po ; (LU * Unlock)  & po)
+let um = mu^-1
+
+let same-rs-cs =
+  let r1 = ((M * Lock) & op) ; crit ; ((Unlock * M) & op) in
+  let r2 = r1^-1 in
+  r1 & r2
+
+(* Start is before End *)
+let Start-Sync = Start & Sync
+let End-Sync = End & Sync
+let F-Sync = F & Sync
+
+let po-succ = po \ (po;po)
+
+let se = (Start-Sync * End-Sync) & po-succ
+
+(* From end of rs-cs to end of grace period *)
+let ue0  = um ; com+ ; (_ * End-Sync) & po
+(* Bonus: unlock that are po-before also ordered *)
+(* ---> implied fence for those unlock *)
+
+let ue = (po & (Unlock * _)) ? ; ue0
+
+(* From start of grace period to start of rs-cs *)
+let sl0 = (Start-Sync * _) & po ; com+  ; ml
+
+let sl = sl0 ; (po & (_ * Lock)) ?
+
+(*LUC 
+(* From end of grace period to end of rs-cs *)
+let eu = (End-Sync * _) & po ; com+  ; mu
+*)
+
+(* Ordered grace period *)
+let es = (End-Sync * Start-Sync) & (po | (po;com+;po))
+
+(*
+let grace = (crit | se | es | sl | ue)+
+*)
+
+let ms = (M * Start-Sync) & po
+let em = (End-Sync * M) & po
+let grace = (crit | se | es | sl | ue | mu | lm | ms | em)+
+
+(*
+let SL = grace & (Start-Sync * Lock)
+and UE = grace & (Unlock * End-Sync)
+
+let ImpliedSL = range SL
+let ImpliedUE = domain UE
+
+let MoreMB = ImpliedSL | ImpliedUE | Start-Sync
+let more-mb = M*M & fencerel(MoreMB)
+let mb = mb | more-mb
+show mb
+*)
+
+(*
+let grace-hb = (mu|po & (M * Sync));grace;(lm|po & (Sync*M))
+*)
+
+procedure restoring-sc() =
+(*  acyclic mb | com as sc *)
+(*  irreflexive grace as grace *)
+  acyclic hb|mb|grace|com as sc (* too strong ??? *)
+end
+
+procedure memory_barriers() =
+  call sc-per-location()
+  call causality()
+  call observation()
+  call propagation(propA)
+  call restoring-sc()
+end
+
+call memory_barriers()

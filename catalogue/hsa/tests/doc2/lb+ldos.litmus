@@ -1,0 +1,10 @@
+LISA lb+ldos
+{ }
+ P0                    | P1                    ;
+ r[atomic,rlx,wg] r0 x | r[atomic,rlx,wg] r0 y ;
+ mov r3 (neq r0 1)     | mov r3 (neq r0 1)     ;
+ b r3 Exit0            | b r3 Exit1            ;
+ w[atomic,rlx,wg] y 1  | w[atomic,rlx,wg] x 1  ;
+ Exit0:                | Exit1:                ;
+scopes: (wg 0 1)
+exists (0:r0=1 /\ 1:r0=1)

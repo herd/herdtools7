@@ -1,0 +1,17 @@
+C a3v2
+{ [x] = 0; [y] = 0; [one] = 1; }
+
+P0 (atomic_int* x, volatile int* y) {
+  *y = 1;
+  atomic_store_explicit(x, 1, memory_order_release);
+}
+
+P1 (atomic_int* x, volatile int* y, atomic_int* one) {
+  int r0 = atomic_compare_exchange_strong_explicit(x, one, 2, memory_order_acquire, memory_order_relaxed);
+  int r1 = -1;
+  if (r0) { // cas must have returned true to exit elided while loop
+    r1 = *y;
+  }
+}
+
+exists (1:r1=1)

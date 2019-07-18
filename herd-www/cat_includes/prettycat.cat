@@ -1,0 +1,78 @@
+"Model pretty print"
+
+include "filters.cat"
+(* Same as model, shows only basic relations *)
+
+(* Uniproc *)
+
+(**********************)
+(* Computes co and fr *)
+(**********************)
+let invrf=(rf) ^ -1
+
+(* co observations in test *)
+let obsco =
+    (WW(po-loc)
+    |rf;RW(po-loc)
+    |noid(WR(po-loc);invrf)
+    |noid(rf;RR(po-loc);invrf))
+
+let cobase = obsco|co0
+acyclic cobase as uniproc
+let co = cobase+
+let fr = noid(invrf;co)
+show fr
+show co
+
+let coi = co & int
+and fri = fr & int
+
+let coe = co \ coi
+and fre = fr \ fri
+
+
+
+
+(* Utilities *)
+let dd = addr | data
+let rdw = po-loc & (fre;rfe)
+let detour = po-loc & (coe ; rfe)
+let addrpo = addr;po
+
+(*******)
+(* ppo *)
+(*******)
+
+include "armfences.cat"
+include "ppcfences.cat"
+show isb,ctrlisb,isync,ctrlisync
+
+(* Initial value *)
+let ci0 = ctrlisync | ctrlisb | detour
+let ii0 = dd | rfi | rdw
+let cc0 = dd | po-loc | ctrl | addrpo
+let ic0 = 0
+
+include "ppo.cat"
+
+(**********)
+(* fences *)
+(**********)
+
+(* Power *)
+let lwsync = RM(lwsync)|WW(lwsync)
+let eieio = WW(eieio)
+show sync, lwsync, eieio
+
+(* ARM *)
+let dmb.st=WW(dmb.st)
+let dsb.st=WW(dsb.st)
+show dmb, dsb, dmb.st, dsb.st
+
+(* Common, all arm barriers are strong *)
+let strong = sync|dmb|dsb|dmb.st|dsb.st
+let light = lwsync|eieio
+
+include "ppc-checks.cat"
+
+

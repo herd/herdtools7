@@ -1,0 +1,7 @@
+LISA HSA13
+{ }
+ P0      | P1       ;
+ w[] x 1 | r[] r0 x ;
+
+scopes: (wg 0 1)
+exists (1:r0=1)

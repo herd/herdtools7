@@ -1,0 +1,11 @@
+Bell S+rel+acq 
+{
+x = 0;
+y = 0;
+}
+ P0         | P1          ;
+            | f(si)       ;
+ w() [x], 2 | r() r1, [y] ;
+ w() [y], 1 | w() [x], 1  ;
+ f(sd)      |             ;
+exists (1:r1=1 /\ x=2)

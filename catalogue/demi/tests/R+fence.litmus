@@ -1,0 +1,13 @@
+LISA R+fence
+"PodWW Wse FencedWR Fre"
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Ws Fr
+Orig=PodWW Wse FencedWR Fre
+{
+}
+ P0      | P1       ;
+ w[] x 1 | w[] y 2  ;
+ w[] y 1 | f[]      ;
+         | r[] r0 x ;
+exists
+(y=2 /\ 1:r0=0)

@@ -1,0 +1,132 @@
+"Linux model, experimental"
+(* L01 with transitive HB *)
+(* Should be weaker than Alan's *)
+include "cos.cat"
+
+let po-loc = po & loc
+let com = rf | co | fr
+
+procedure sc-per-location() =
+  let order = (po-loc | com)
+  acyclic order
+end
+
+include "basic-rels.cat"
+
+let propbase = transitive(0)
+let hb = (non-transitive | propbase)+
+
+procedure causality() =  
+  irreflexive hb as cau
+end
+
+
+(* Weak A and B cumuativity *)
+let comStar = com*
+and pairsStar = pairs*
+
+let A(r) = comStar;r
+let B(r) = r;pairsStar
+
+
+let really-local = (local | rmb | wmb) & ((M * M) \ (W * R))
+
+procedure observation() =
+  let lastcom = coe|fre
+  irreflexive really-local;(rfe|coe);really-local;lastcom as loc
+  irreflexive B(trans);lastcom as obs
+end
+
+
+(* Relates every lock to its matching unlock, *)
+
+(* Convenient *)
+let LU = Lock|Unlock
+
+(*  Warning: assumes non-nested read-side critical sections *)
+let crit =
+  (Lock * Unlock) & po \  ((Lock * LU) & po ; po)
+
+(* Read-side critical sections as an equivalence relation *)
+let op = po^-1
+
+
+(* From closest lock to mem *)
+let lm =
+  (Lock * M) & po \
+  ((Lock * LU) & po ; (LU * M)  & po)
+let ml = lm^-1
+
+(* From mem to unlock *)
+
+let mu =
+  (M * Unlock) & po \
+  ((M * LU) & po ; (LU * Unlock)  & po)
+let um = mu^-1
+
+let same-rs-cs =
+  let r1 = ((M * Lock) & op) ; crit ; ((Unlock * M) & op) in
+  let r2 = r1^-1 in
+  r1 & r2
+
+(* Start is before End *)
+let Start-Sync = Start & Sync
+let End-Sync = End & Sync
+let F-Sync = F & Sync
+
+let po-succ = po \ (po;po)
+
+let se = (Start-Sync * End-Sync) & po-succ
+
+(* From end of rs-cs to end of grace period *)
+let ue0  = um ; com+ ; (_ * End-Sync) & po
+
+(* Bonus: unlock that are po-before also ordered *)
+(* ---> implied fence for those unlock *)
+let ue = (po & (Unlock * _)) ? ; ue0
+
+(* From start of grace period to start of rs-cs *)
+let sl0 = (Start-Sync * _) & po ; com+  ; ml
+
+let sl = sl0 ; (po & (_ * Lock)) ?
+
+
+
+(* Ordered grace period *)
+let es = (End-Sync * Start-Sync) & (po | (po;(com+;(mb;com+)*);po))
+
+(*
+let grace = (crit | se | es | sl | ue)+
+*)
+
+let ms = (M * Start-Sync) & po
+let em = (End-Sync * M) & po
+let grace0 = (crit |se | es | sl | ue | mu | lm | ms | em)+
+
+(* A-cumulativity *)
+let plusA(r) = (um ; com+ ; (_ * Start-Sync) & r ; se)
+
+(* B-cumulativity should see with OTA *)
+let plusB(r) = se ; (End-Sync * _) & r ; ((com+;mb;com+)|pairs+) ; ml
+
+let rec grace =
+  mb | grace0 | grace
+  | plusB(grace) | B(grace)
+  | plusA(grace) | A(grace)
+
+procedure restoring-sc() =
+(*  acyclic mb | com as sc *)
+(*  irreflexive grace as grace *)
+(*  acyclic mb|grace|com as sc (* too strong ??? *) *)
+(* with more A-cumulativity *)
+    acyclic grace as sc
+end
+
+procedure memory_barriers() =
+  call sc-per-location()
+  call causality()
+  call observation()
+  call restoring-sc()
+end
+
+call memory_barriers()

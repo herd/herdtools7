@@ -1,0 +1,12 @@
+"Causal Consistency"
+
+include "common.cat"
+
+procedure cc() =
+  let order = (po | rf)+
+  call requireReadValue(restrictProp,order)
+  call requireWeakTotalOrder(restrictProp,order)
+  call requireAsymmetricOrder(restrictProp,order) 
+end
+
+call cc()

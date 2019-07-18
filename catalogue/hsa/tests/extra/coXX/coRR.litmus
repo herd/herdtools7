@@ -1,0 +1,15 @@
+LISA coRR 
+
+{
+x = 0;
+}
+ P0                         | P1                         ;
+ w[ordinary,rlx,wi] x 1     | r[ordinary,rlx,wi] r1 x ;
+                            | r[ordinary,rlx,wi] r2 x ;
+
+scopes:
+(system (agent (wg (wave (wi P0)) (wave (wi P1)))))
+
+regions: x:global
+
+exists (1:r1=1 /\ 1:r2=0)

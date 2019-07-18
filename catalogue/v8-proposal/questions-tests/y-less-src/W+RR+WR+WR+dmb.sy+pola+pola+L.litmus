@@ -1,0 +1,20 @@
+AArch64 W+RR+WR+WR+dmb.sy+pola+pola+L
+"RfeLP DMB.SYdRR FrePL PodWRLA FreAL PodWRLA FreAL"
+Cycle=DMB.SYdRR FrePL PodWRLA FreAL PodWRLA FreAL RfeLP
+Relax=PodWRLA
+Safe=Fre DMB.SYdRR [FrePL,RfeLP]
+Prefetch=1:x=F,1:y=T,2:y=F,2:z=T,3:z=F,3:x=T
+Com=Rf Fr Fr Fr
+Orig=RfeLP DMB.SYdRR FrePL PodWRLA FreAL PodWRLA FreAL
+{
+0:X1=x;
+1:X1=x; 1:X3=y;
+2:X1=y; 2:X3=z;
+3:X1=z; 3:X3=x;
+}
+ P0           | P1          | P2           | P3           ;
+ MOV W0,#1    | LDR W0,[X1] | MOV W0,#1    | MOV W0,#1    ;
+ STLR W0,[X1] | DMB SY      | STLR W0,[X1] | STLR W0,[X1] ;
+              | LDR W2,[X3] | LDAR W2,[X3] | LDAR W2,[X3] ;
+Observed
+    1:X0=1; 1:X2=0; 2:X2=0; 3:X2=0;

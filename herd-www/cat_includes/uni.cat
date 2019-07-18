@@ -1,0 +1,4 @@
+"Uniproc model, minimal"
+
+include "cos.cat"
+acyclic po-loc | fr | rf | co as uniproc

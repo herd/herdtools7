@@ -1,0 +1,8 @@
+Bell coWW
+{
+x = 0;
+}
+ P0       ;
+ w[] x 1  ;
+ w[] x 2  ;
+exists (x=1)

@@ -1,0 +1,14 @@
+C a4
+{ [x] = 0; [y] = 0; }
+
+P0 (atomic_int* x, atomic_int* y) {
+  atomic_store_explicit(x, 1, memory_order_seq_cst);
+  int r1 = atomic_load_explicit(y, memory_order_seq_cst);
+}
+
+P1 (atomic_int* x, atomic_int* y) {
+  atomic_store_explicit(y, 1, memory_order_seq_cst);
+  int r2 = atomic_load_explicit(x, memory_order_seq_cst);
+}
+
+exists (0:r1=0 /\ 1:r2=0)

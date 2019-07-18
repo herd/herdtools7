@@ -1,0 +1,15 @@
+PPC WRC+lwsync+addr
+"Rfe LwSyncdRW Rfe DpAddrdR Fre"
+Cycle=Rfe LwSyncdRW Rfe DpAddrdR Fre
+{
+0:r2=x;
+1:r2=x; 1:r4=y;
+2:r2=y; 2:r5=x;
+}
+ P0           | P1           | P2            ;
+ li r1,1      | lwz r1,0(r2) | lwz r1,0(r2)  ;
+ stw r1,0(r2) | lwsync       | xor r3,r1,r1  ;
+              | li r3,1      | lwzx r4,r3,r5 ;
+              | stw r3,0(r4) |               ;
+~exists
+(1:r1=1 /\ 2:r1=1 /\ 2:r4=0)

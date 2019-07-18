@@ -1,0 +1,190 @@
+"HRF indirect"
+
+(*note: 
+  page 7, top of column 1:
+  "The structure of HRF-indirect is identical to the HRF-direct definition but
+    with a different happens-before relation"
+
+jade: use file inclusion syntax instead and include hrfd.cat
+*)
+
+(*
+page 1, bottom of column 1:
+  "Figure 1 shows the OpenCL execution model, in which a work-item (like a CPU
+   thread) belongs to four different groups (which we call scopes): sub-group,
+   work-group, device, and system."
+*)
+(*jade: do we use these tags?*)
+enum scope =
+  'subgroup ||
+  'workgroup ||
+  'device ||
+  'system
+ 
+(*jade: perhaps worth not having these indirections below, and use e.g. 
+  memory_order_sub_group always, instead of renaming it to subgroup?*)
+let subgroup = memory_order_sub_group (*jade: Tyler, i changed the syntax to
+follow the paper*)
+let workgroup = memory_order_work_group
+let device = memory_order_device
+let system = memory_order_system 
+
+(*
+page 2, middle of column 2:
+  "HRF-direct requires communicating work-items to synchronize using the exact
+   same scope."
+*)
+
+let different-scopes =
+  ~(subgroup*subgroup) &
+  ~(workgroup*workgroup) &
+  ~(device*device) &
+  ~(system*system) 
+
+let at-least-one a = a*M | M*a
+
+(*note:
+  page 4, column 2:
+  "Ordinary Conflict: Two operations op1 and op2 conflict iff both are to the
+  same address, at least one is a write, and at least one is an ordinary data
+  operation."
+
+  it is suprising that this notion of conflict does not require the two
+  operations to be on different threads.
+*)
+let ordinary = R (*for Tyler to erase*)
+
+let ordinary-conflict =
+  loc & at-least-one W & at-least-one ordinary
+
+let rmw = W (*for Tyler to erase*)
+
+let synchronization = W (*jade: for Tyler to erase;
+it was: memory_order_seq_cst, but i don't think that is correct, it should
+include release and acquire at least i would say. see:
+
+page 8, bottom of column 1:
+  "Like HRF-direct, in HRF-indirect synchronization release and acquire
+   operations are only paired if they are from the same scope."
+
+page 9, bottom of column 1:
+  "HSAIL is particularly well-suited for the HRF models in this paper because
+   it uses a variant of scoped acquire/release synchronization."
+*)
+
+(*note:
+  page 4, column 2:
+  "Synchronization Conflict: Two synchronization operations op1 and op2
+  conflict iff both are to the same location, at least one is a write (or a
+  read-modify-write), and are performed with respect to different scopes."
+
+  it is suprising that this notion of conflict does not require the two
+  operations to be on different threads.
+
+  jade: it'd be best if this def would use "performed-wrt" defined below,
+  rather than a ad-hoc "different-scopes" notion
+*)
+let synchronization-conflict =
+  synchronization*synchronization &
+  loc & at-least-one (W | rmw) & different-scopes 
+
+let rel = W & synchronization
+
+let acq = R & synchronization
+
+(*note: both "performed-wrt" and "complete-before" are guesses, as we were
+  unable to find definitions in the paper*)
+let performed-wrt s = s
+let complete-before = (po | rf)+
+
+(*note:
+  page 4, column 2:
+  "Scoped Synchronization Order (so_s): Release rel1 appears before acquire
+   acq2 in so_s iff both are performed with respect to scope S, and rel1
+   completes before acq2."
+*)
+let so s = [rel & performed-wrt s];complete-before;[acq & performed-wrt s]
+
+(*note:
+  page 7, top of column 1:
+  "Heterogeneous-happens-before-indirect (hhd.i): The irreflexive
+   transitive closure of all scope synchronization orders and program order:
+
+    \[(po \cup \bigcup_{\forall S \in \mathbb{S}} so_{S})^{+}\]
+
+  where $\mathbb{S}$ is the set of all scopes in an execution."
+
+it's unclear what the remark "the set of all scopes in an execution" is, so for
+now we simply took all scopes.
+
+jade: i think "so s" will simply be empty for a given execution if s does not
+appear in that execution
+
+jade: Luc, do you have an idea how to code what's below in a better way?*)
+let big-union-so =
+  so subgroup |
+  so workgroup |
+  so device |
+  so system
+ 
+let hhbi =
+  (po | big-union-so)+
+ 
+(*note:
+  page 4, column 2:
+  "Heterogeneous Race: A heterogeneous race occurs iff a pair of operations op1
+   and op2 that are either an ordinary or a synchronization conflict are
+   unordered in hhb.d."
+
+  we take "unordered in hhb.d" to mean in hhbd or its inverse hhdb^-1
+*) 
+
+let heterogeneous-race =
+  (ordinary-conflict | synchronization-conflict) &
+  ~(hhbi | hhbi^-1)
+ 
+(*note:
+  page 4, column 2:
+  "Heterogeneous-Race-Free Program: A program is heterogeneous-race-free iff
+   all possible sequentially consistent executions of the program are
+   heterogeneous-race-free."
+*)
+let com = rf | fr | co
+acyclic po | com as sc
+undefined_unless empty heterogeneous-race
+
+(*note:
+  page 4, column 2:
+  "Sequential Consistency for Heterogeneous-race-free-direct (HRF-direct): A
+   system obeys the HRF direct memory model iff all actual executions of a
+   heterogeneous-race-free program are sequentially consistent."
+
+we're not sure if this should be a theorem to prove on top of the model, or
+part of the definition of the model. Moreover there is no definition of "actual
+execution" in the paper.
+
+jade: for Tyler to prove
+*)
+
+(*note:
+  page 4, column 2:
+  "Corollary
+
+  Other Total Orders: Because any heterogeneous-race-free program is
+  sequentially consistent in HRF-direct, implementations must ensure an
+  apparent total order of all heterogeneous-race-free operations, including
+  these notable subset:
+
+  - A total order of all synchronization operations with respect to the same
+    scope.
+
+  - A total order of all the heterogeneous-race-free synchronization operations
+    that could be observed by any single work-item or thread."
+
+the mention of a Corollary seems to indicate that "Sequential Consistency for
+Heterogeneous-race-free-direct (HRF-direct)" is a theorem; moreover there is no
+definition of "apparent" order nor "observed" in the paper.
+
+jade: for Tyler to prove
+*)
+

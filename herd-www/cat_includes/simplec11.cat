@@ -1,0 +1,139 @@
+"Simple C11"
+(* Model from POPL'15 article
+   "Common Compiler Optimisations etc." by V. Vafeidis et al.
+*)
+
+(* Some sets *)
+let CACQ = ACQ | (SC & R) | ACQ_REL
+let CREL = REL | (SC & W) | ACQ_REL
+let Access = R | W
+
+
+(* And some id relations *)
+let a_id = toid(A)
+let rmw_id = toid(RMW)
+let crel_id = toid(CREL)
+let cacq_id = toid(CACQ)
+let sc_id = toid(SC)
+
+let asw = I * (M \ I)
+
+include "filters.cat"
+include "cos.cat"
+
+(********************)
+(* Release Sequence *)
+(********************)
+
+(* optimized; rsElem applies to co only.. *)
+let rsElem = coi | (co;rmw_id)
+(* Cannot be a compound release sequence *)
+let breakRseq = (co \ rsElem)
+let rseq = id | (rsElem \ (breakRseq;co))
+
+(* Alternatives
+let rseq = rsElem \ (coe;[noRMW];co)
+let rseq = rsElem \ ((co \ rsElem); co)
+*)
+
+(***************)
+(* Synchronize *)
+(***************)
+let fence_id = toid(F)
+let fid = (fence_id;po)?
+let idf = (po;fence_id)?
+
+let sw =
+  ext &
+  (crel_id ; fid ; rseq ;
+   rf ;
+   a_id ; idf ; cacq_id)
+
+show sw
+
+let hb = (po | asw | sw)+
+let hb-loc = hb & loc
+
+(**********)
+(* Checks *)
+(**********)
+
+(* ConsSC *)
+(* empty ((hb | co) & (sc * sc)) \ S as ConsSC *)
+with S from linearisations(SC,hb|co)
+
+
+(* Consistent rf for non-atomic accesses *)
+let rfNA = rf \ AA(rf)
+empty rfNA \ hb-loc as ConsRFna 
+
+(* SC Reads *)
+
+let S-loc = MM(S) & loc
+
+let minWRSC = 
+  let aux = WR(S-loc) in
+  aux \ (WW(S-loc);aux)
+
+let rfSCSC = sc_id ; rf ; sc_id
+let rfXSC = (rf;sc_id) \  rfSCSC
+let X = hb ; minWRSC
+let badRFSC= (rfSCSC \ minWRSC) | (rfXSC & (hb ; minWRSC))
+
+empty  badRFSC as SCReads
+
+(* Acyclic happens-before *)
+irreflexive hb as IrrHB
+
+(*************)
+(* Coherence *)
+(*************)
+
+(*
+let invrf= rf^-1
+
+irreflexive rf;hb-loc as ConsRFhb
+
+let coww = co;hb-loc
+let corr = co;rf;hb-loc;invrf
+let cowr = co;hb-loc;invrf
+let corw = co;rf;hb-loc
+irreflexive coww as CohWW
+irreflexive corr as CohRR
+irreflexive cowr as CohWR
+irreflexive corw as CohRW
+
+We rather consider the alternative:
+   Consider fr = rf^-1 ; co
+   corf = hb;rf
+   coww = hb;co
+   corr = hb;fr;rf
+   cowr = hb;fr
+   corw = hb;co;rf
+*)
+let chapo = rf|fr|co|(co;rf)|(fr;rf)
+acyclic hb-loc | chapo as Coh
+
+(* Atomicity *)
+empty (rf;rmw_id) \ (co;co) as AtRMW
+
+(* Races *)
+
+
+let locSomeW = loc \ RR(loc) (* same location, at least a W *)
+
+let dr =
+  let r1 = locSomeW & ext in (* By different threads *)
+  let r2 = r1 \ AA(r1)  in   (* At least one non-atomic *)  
+  r2 \ (hb | hb^-1)          (* unrelated by hb *)
+show dr
+
+undefined_unless empty dr as dataRace
+
+let ur =
+  let r1 = locSomeW & int in    (* By the same thread *)
+  let r2 = noid(r1) in    (* Different *)
+  r2 \ (po | po^-1)       (* unrelated by po *)
+show ur
+
+undefined_unless empty ur as unsequencedRace

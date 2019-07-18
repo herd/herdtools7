@@ -1,0 +1,22 @@
+LISA 3.LB+o-mb-o+o-mb-o+ctrl-branch-o (*Paul says forbid*)
+{
+x = 0;
+y = 0;
+z = 0;
+}
+P0              | P1              | P2               ;
+r[once] r1 x    | r[once] r3 y    | r[ctrl] r4 z     ;
+                |                 | mov r5 (eq r4 0) ;
+f[mb]           | f[mb]           | b[] r5 END       ;
+w[once] y 1     | w[once] z 1     | w[once] x 1      ;
+                |                 | END:             ;
+exists(0:r1=1 /\ 1:r3=1 /\ 2:r4=1)
+(*Paul also says:
+At some point in the future, there will likely need to be a special marking for
+heads of control dependencies.  The reason is that if there are many places in
+the Linux kernel that rely on control dependencies, the situation will be
+unmaintainable if they are not marked.
+[...]
+But unless and until that conversation gets started and converges, the above
+cycle is forbidden.
+*)

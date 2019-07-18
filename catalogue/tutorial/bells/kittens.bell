@@ -1,0 +1,7 @@
+"I can't dance"
+
+enum Fences = 'wr 
+instructions F[{'wr}]
+
+let fwr = fencerel(F & Wr)
+show fwr

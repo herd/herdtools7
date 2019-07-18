@@ -1,0 +1,156 @@
+on web interface:
+
+- need distinction between illustrative and campaign
+
+list of models to catalogue + pending todos for each:
+
+- adve and hill DRF 90:
+  . missing:
+    everything
+
+- adve and boehm CACM 2010:
+  . missing:
+    everything
+
+- ahmed et al POPL 15 (interval orders)?
+  . missing:
+    everything
+
+- alexey POPL 14:
+  . missing:
+    everything
+
+- armed-cats (5):
+  . missing:
+    cfg(s)
+    observed/allowed
+    litmus tests, campaign (need v8 chips, v8 front end or bell)
+
+  . to complete:
+    shelf   
+
+  . to revisit entirely with std lib and new syntax and bell (v8, ldrex/strex)
+
+- boehm and adve C++ PLDI 08:
+  . missing:
+    everything
+
+- c11popl15 (32):
+  . missing:
+    cat(s)
+    cfg(s)
+    observed/allowed
+    litmus tests, both illustrative and campaign
+    shelf
+
+  . to revisit entirely with std lib and new syntax and bell
+
+- cienciarelli et al:
+  . missing:
+    everything
+
+- herding-cats (2 arm+1 ppc):
+  . missing:
+    cfg(s)
+    figures in illus files
+    
+  . to complete:
+    shelf
+
+  . to revisit entirely with std lib and new syntax and bell (lwarx/stwcx)
+
+- hrf (4):
+  . missing:
+    tests (need bell)
+    observed/allowed
+
+  . to revisit entirely with std lib and new syntax and bell
+
+- itanium:
+  . missing:
+    everything
+
+- lace (1):
+  . missing:
+    cfg(s)
+    observed/allowed
+    litmus tests 
+    
+  . to complete:
+    shelf
+
+  . to revisit entirely with std lib and new syntax and bell
+
+- linux:
+  . missing:
+    everything
+
+- memsat (2):
+  . missing:
+    cfg(s)
+    observed/allowed
+    litmus tests, both illustrative and campaign (need bell)
+
+  . to complete:
+    shelf
+
+  . to revisit entirely with std lib and new syntax and bell
+
+- mike POPL 15 (linearisability, serialisability, stack, queue):
+  . missing:
+    everything
+
+- mips:
+  . missing:
+    everything
+
+- nemos (9):
+  . missing:
+    cfg(s)
+    observed/allowed
+    litmus tests, both illustrative and campaign (need bell)
+
+  . to complete:
+    shelf
+
+  . to revisit entirely with std lib and new syntax and bell
+
+- petri et all:
+  . missing:
+    everything
+
+- poetics (7):
+  . missing:
+    cfg(s)
+    observed/allowed
+    litmus tests, both illustrative and campaign
+
+  . to complete:
+    shelf
+
+  . to revisit entirely with std lib and new syntax and bell
+
+- ptx (1):
+  . missing:
+    cfg(s)
+    observed/allowed
+    litmus tests, both illustrative and campaign
+    illus files
+
+  . to complete:
+    shelf
+
+  . to revisit entirely with std lib and new syntax and bell
+
+- release consistency (RCpc, RCsc, also lazy RC):
+  . missing:
+    everything
+
+- rmc (1):
+  . missing:
+    everything
+
+- sevcik et al:
+  . missing:
+    everything
+

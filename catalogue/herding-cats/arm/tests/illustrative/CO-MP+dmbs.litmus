@@ -1,0 +1,17 @@
+ARM CO-MP+dmbs
+"DMBsWW Rfe DMBsRR Fre"
+Prefetch=0:x=F,0:x=W,1:x=F,1:x=T
+Com=Rf Fr
+Orig=DMBsWW Rfe DMBsRR Fre
+{
+%x0=x;
+%x1=x;
+}
+ P0           | P1           ;
+ MOV R0,#1    | LDR R0,[%x1] ;
+ STR R0,[%x0] | DMB          ;
+ DMB          | LDR R1,[%x1] ;
+ MOV R1,#2    |              ;
+ STR R1,[%x0] |              ;
+forall
+(x=2 /\ ((1:R1=2 /\ (1:R0=2 \/ 1:R0=1 \/ 1:R0=0)) \/ (1:R1=1 /\ (1:R0=1 \/ 1:R0=0)) \/ (1:R1=0 /\ 1:R0=0)))

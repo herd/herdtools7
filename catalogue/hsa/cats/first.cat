@@ -1,0 +1,103 @@
+"first reading of the HSA documentation"
+
+include "cross.cat"
+
+procedure consistent(a, b) =
+  irreflexive a;b
+end
+
+with coh from generate_orders(M,co0)
+
+procedure coh_consistent(s) =
+  call consistent(coh,po)
+end
+(*jade: j'ai enleve acyclic coh, redondant avec with coh from ...*)
+
+let ldo = addr | data | ctrl
+let gdo = (coh | ldo)+
+procedure gdo_consistent() = 
+  acyclic gdo
+end 
+
+with SC from linearisations(Synchronizing, po) 
+let sc(s) = SC & same-instance(s)
+
+procedure sc_consistent(s) =
+  call consistent(sc(s),po)
+  call consistent(sc(s),coh)
+  forall s' in scopes do 
+    call consistent(sc(s),sc(s'))
+  end
+end
+(*j'ai enleve acyclic sc(s) redondant avec with SC from ...*)
+   
+let sso s =
+  (Atomic * Atomic) &
+  ((Atomic & (W | RMW) & Release) * (Atomic & (R | RMW) & Acquire)) &
+  loc &
+  same-instance(s) &
+  coh
+| (F * Synchronizing) &
+  ((F & Release) * (Synchronizing & Acquire)) &
+  same-instance(s) &
+  (po & (_ * (W | RMW));(coh & loc); po? & ((R | RMW) * _))
+| (Synchronizing * F) &
+  ((Atomic & (W | RMW) & Release) * (F & Acquire)) &
+  same-instance(s) &
+  (po? & (_ * (W | RMW));(coh & loc); po & ((R | RMW) * _))
+
+let hhb = (po | union-scopes sso)+
+
+procedure hhb_consistent(s) =
+  call consistent(hhb,coh)
+  forall s in scopes do
+    call consistent(hhb,sc(s))
+  end
+  acyclic hhb
+end
+
+procedure equal(r1,r2) =
+  empty (r1 \ r2) | (r2 \ r1)
+end
+
+procedure value-of-a-load() =
+  let coh-loc = coh & loc 
+  let coh-locWR = coh-loc & (W * R)
+  let coh-locWW = coh-loc & (W * W)
+  let min-coh-locWR = coh-locWR \ (coh-locWW; coh-locWR) 
+  call equal(rf, min-coh-locWR) 
+end
+
+procedure valid(s) =
+  call gdo_consistent() 
+  call sc_consistent(s)
+  call coh_consistent(s)
+  call hhb_consistent(s)
+  call value-of-a-load()
+  empty rmwid & (coh;coh) as atom 
+end
+
+let at-least-one a = (a*_| _*a)
+
+let ordinary-conflict =
+  loc & (at-least-one W) & (at-least-one Ordinary)
+
+let special-conflict =
+  let r = (Special * Special) & loc & (at-least-one (W|RMW)) in
+  r \ Match
+
+let hsa-race =
+   ((ordinary-conflict | special-conflict) & ~hhb)      
+
+procedure race-free() =
+  flag ~empty hsa-race as undefined
+end
+
+procedure hsa-execution() =
+  forall s in scopes do
+    call valid(s)
+  end
+  call race-free()
+end
+
+call hsa-execution()

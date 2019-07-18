@@ -1,0 +1,18 @@
+ARM W+RWC
+"PodWW Rfe PodRR Fre PodWR Fre"
+Cycle=Rfe PodRR Fre PodWR Fre PodWW
+Prefetch=0:x=F,0:y=W,1:y=F,1:z=T,2:z=F,2:x=T
+Com=Rf Fr Fr
+Orig=PodWW Rfe PodRR Fre PodWR Fre
+{
+%x0=x; %y0=y;
+%y1=y; %z1=z;
+%z2=z; %x2=x;
+}
+ P0           | P1           | P2           ;
+ MOV R0,#1    | LDR R0,[%y1] | MOV R0,#1    ;
+ STR R0,[%x0] | LDR R1,[%z1] | STR R0,[%z2] ;
+ MOV R1,#1    |              | LDR R1,[%x2] ;
+ STR R1,[%y0] |              |              ;
+exists
+(1:R0=1 /\ 1:R1=0 /\ 2:R1=0)

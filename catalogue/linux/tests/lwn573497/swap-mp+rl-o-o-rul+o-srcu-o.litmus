@@ -1,0 +1,12 @@
+LISA swap-MP+rl-o-o-rul+o-srcu-o 
+{
+a = 1;
+x = 2;
+}
+ P0           | P1            ;
+ f[lock]      |               ;
+ w[once] x 4  | r[once] r1 x  ;
+              | f[sync]       ;
+ w[once] a 3  | r[once] r2 a  ;
+ f[unlock]    |               ;
+exists (1:r1 = 4 /\ 1:r2 = 1)

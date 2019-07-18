@@ -1,0 +1,50 @@
+"ARM reformulation with additional SC check (bis)"
+
+include "arm-common-v8.cat"
+
+let com = rf | co | fr
+acyclic po-loc | com as sc-per-location
+
+let dp = addr | data
+let rdw = po-loc & (fre;rfe)
+let detour = po-loc & (coe ; rfe)
+
+let ii0 = dp | rfi | rdw
+let ic0 = 0
+let ci0 = ctrlisb | detour
+let cc0 = dp | ctrl | (addr;po)
+
+let rec ii = ii0 | ci | (ic;ci) | (ii;ii)
+and ic = ic0 | ii | cc | (ic;cc) | (ii;ic)
+and ci = ci0 | (ci;ii) | (cc;ci)
+and cc = cc0 | ci | (ci;ic) | (cc;cc)
+
+let ppo = ii & R*R | ic & R*W
+
+let all-dmb = dmb.sy|dmb.st|dmb.ld
+let all-dsb = dsb.sy|dsb.st|dsb.ld
+
+let acq = A 
+let rel = L 
+let acq-po = po & (acq * M)
+let po-rel = po & (M * rel) (*jade: est ce que M contient acq?*)
+let fence = all-dmb | all-dsb | acq-po | po-rel
+let strong-fence = all-dmb | all-dsb
+let weak-fence = po-rel
+let cumul-fence = strong-fence | weak-fence 
+let A-cumul = rfe;cumul-fence
+
+let hb = ppo | fence | rfe
+acyclic hb as no-thin-air
+
+let prop = ((cumul-fence | A-cumul);hb*) & W*W
+
+irreflexive fre;prop;hb* as observation
+
+let xx = (W*W) & (X *X) & po (*jade: ce serait pas mal de mettre xx dans prop
+si on peut*)
+acyclic co | prop | xx as propagation
+empty rmw & (fre;coe) as atomic
+
+let all-acq-rel = acq-po | po-rel | po & (rel * acq) 
+acyclic com | strong-fence | all-acq-rel as restoring-sc

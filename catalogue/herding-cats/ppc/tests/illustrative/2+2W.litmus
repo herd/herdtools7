@@ -1,0 +1,11 @@
+PPC 2+2W (EOne)
+{
+0:r5=x ; 0:r6=y; 0:r1=1 ; 0:r2=2;
+1:r5=x ; 1:r6=y; 1:r1=1 ; 1:r2=2;
+}
+P0          |P1           ;
+stw r1,0(r5)|stw r1,0(r6) ;
+stw r2,0(r6)|stw r2,0(r5) ;
+
+locations [x;y;]
+exists (x=1 /\ y=1)

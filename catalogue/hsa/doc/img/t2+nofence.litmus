@@ -1,0 +1,18 @@
+LISA Tony2+NoFence
+{
+x = 0;
+y = 0;
+z = 0;
+a = 0;
+1:r1=-1;
+2:r2=-1; 2:r3=-1;
+}
+ P0                        | P1                         | P2                         ;
+ w[ordinary,rlx,wi] x 1    | r[atomic,scacq,agent] r1 z | r[atomic,scacq,agent] r1 a ;
+ w[atomic,screl,wg] y 1    | b[ne]  r1, 1, L1             | b[ne]  r1, 1, L2             ;
+                           | w[atomic,screl,agent] a 1  | r[atomic,scacq,wg] r2 y    ;
+ w[atomic,screl,agent] z 1 |L1:                         | r[ordinary,rlx,wi] r3 x    ;
+                           |                            |L2:                         ;
+scopes: (agent (wg 0 2) (wg 1))
+
+exists (2:r2=0 \/ 2:r3=0)

@@ -1,0 +1,46 @@
+"Common"
+
+include "~/svn/herd/catalogue/stdlib/std.cat"
+
+procedure requireWeakTotalOrder rln order = 
+  call total(rln, order)
+end
+
+let requireTransitiveOrder rln order = 
+  order+ & rln
+
+procedure requireAsymmetricOrder rln order = 
+  irreflexive(order & rln)
+end
+
+procedure requireReadValue rln order = 
+  let o = order & rln 
+  irreflexive rf;o
+  call no-intervening(rf,o,o & (_*W))
+(*  irreflexive o;(o & (_*W) & loc);rf^-1 *)
+end
+
+procedure requireSerialization rln order =
+  (*requireWeakTotalOrder
+    requireTransitiveOrder
+    requireAsymmetricOrder*)
+  let orders = linearisations(order) 
+  with o from orders
+  call requireReadValue(rln,o)
+end 
+
+procedure requireProgramOrder ops order =
+  let from-init = I*~I
+  call inclusion(po|from-init,order)
+end
+
+procedure WriteIntoOrder ops order =
+  call inclusion(rf,order)
+end
+
+let restrictProp = int | (_*~R) | (~R*_)
+
+procedure mapConstraints rln1 order1 rln2 order2 = 
+  let r = rln1 & rln2 
+  call equality(order1 & r, order2)
+end

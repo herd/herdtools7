@@ -1,0 +1,32 @@
+digraph G {
+
+splines=spline;
+
+/* legend */
+fontsize=10;
+label="mp (data flow 4)";
+
+
+/* the unlocked events */
+proc0_label_node [shape=none, fontsize=10, label="\\myth{0}", pos="1.000000,0.588000!", fixedsize=true, width=0.455000, height=0.091875]
+eiid0 [label="a: Wx=1", shape="none", fontsize=10, pos="1.000000,0.367500!", fixedsize="true", height="0.138889", width="0.486111"];
+eiid1 [label="b: Wy=1", shape="none", fontsize=10, pos="1.000000,0.000000!", fixedsize="true", height="0.138889", width="0.486111"];
+proc1_label_node [shape=none, fontsize=10, label="\\myth{1}", pos="1.700000,0.588000!", fixedsize=true, width=0.455000, height=0.091875]
+eiid2 [label="c: Ry=1", shape="none", fontsize=10, pos="1.700000,0.367500!", fixedsize="true", height="0.138889", width="0.486111"];
+eiid3 [label="d: Rx=1", shape="none", fontsize=10, pos="1.700000,0.000000!", fixedsize="true", height="0.138889", width="0.486111"];
+
+/* the intra_causality_data edges */
+
+
+/* the intra_causality_control edges */
+
+/* the poi edges */
+eiid0 -> eiid1 [label="po", fontsize=8, arrowsize="0.300000"];
+eiid2 -> eiid3 [label="po", fontsize=8, arrowsize="0.300000"];
+/* the rfmap edges */
+eiid1 -> eiid2 [label="rf", color="red", fontcolor="red", fontsize=8, arrowsize="0.300000"];
+
+
+/* The viewed-before edges */
+eiid0 -> eiid3 [label="rf", color="red", fontcolor="red", fontsize=8, arrowsize="0.300000"];
+}

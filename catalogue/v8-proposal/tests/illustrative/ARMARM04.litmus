@@ -1,0 +1,20 @@
+AArch64 ARMARM04
+"RfeLA PodRWAP Rfe DpAddrdRPA FreAL"
+Prefetch=1:x=F,1:y=W,2:y=F,2:x=T
+Com=Rf Rf Fr
+Orig=RfeLA PodRWAP Rfe DpAddrdRPA FreAL
+{
+0:X1=x;
+1:X1=x; 1:X3=y;
+2:X1=y; 2:X4=x; 2:X3=-1;
+}
+ P0           | P1           | P2                ;
+ MOV W0,#1    | LDAR W0,[X1] | LDR W0,[X1]       ;
+ STLR W0,[X1] | CMP W0,#1    | CMP W0,#1         ;
+              | B.NE Exit1   | B.NE Exit2        ;
+              | MOV W2,#1    | EOR W2,W0,W0      ;
+              | STR W2,[X3]  | ADD X5,X4,W2,SXTW ;
+              | Exit1:       | LDAR W3,[X5]      ;
+              |              | Exit2:            ;
+~exists (1:X0=1 /\ 2:X0=1 /\ 2:X3=0)
+(* ARM ARM F.2.3, basically WRC+ctrl+addrpa+L *)

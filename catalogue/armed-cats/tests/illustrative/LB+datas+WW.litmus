@@ -1,0 +1,17 @@
+ARM LB+datas+WW
+"DpDatadW PodWW Rfe DpDatadW PodWW Rfe"
+Prefetch=
+Orig=DpDatadW PodWW Rfe DpDatadW PodWW Rfe
+{
+%x0=x; %y0=y; %z0=z;
+%z1=z; %a1=a; %x1=x;
+}
+ P0             | P1             ;
+ LDR R0, [%x0]  | LDR R0, [%z1]  ;
+ EOR R1,R0,R0   | EOR R1,R0,R0   ;
+ ADD R1, R1, #1 | ADD R1, R1, #1 ;
+ STR R1, [%y0]  | STR R1, [%a1]  ;
+ MOV R2, #1     | MOV R2, #1     ;
+ STR R2, [%z0]  | STR R2, [%x1]  ;
+exists
+(0:R0=1 /\ 1:R0=1)

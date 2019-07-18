@@ -1,0 +1,12 @@
+LISA Weak-RCU-Readers-With-Grace (*Paul says allowed since mid June*)
+{
+x = 0; y = 0; z = 0;
+}
+ P0           | P1           | P2           ;
+ f[lock]      |              | f[lock]      ;
+ r[once] r1 y | r[once] r2 x | r[once] r3 z ;
+              | f[sync]      |              ;
+ w[once] x 1  | w[once] z 1  | w[once] y 1  ;
+ f[unlock]    |              | f[unlock]    ;
+exists (0:r1=1 /\ 1:r2=1 /\ 2:r3=1)
+

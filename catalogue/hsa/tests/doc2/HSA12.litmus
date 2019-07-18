@@ -1,0 +1,8 @@
+LISA HSA12
+{ }
+ P0                        | P1                        ;
+ w[atomic,rlx,system] y 1  | w[atomic,rlx,system] x 1  ;
+ r[atomic,rlx,system] r0 x | r[atomic,rlx,system] r0 y ;
+
+scopes: (wg 0 1)
+exists (0:r0 = 0 /\ 1:r0 = 0)

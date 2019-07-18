@@ -1,0 +1,49 @@
+"ARM relaxing ppo to accomodate qualcomm behaviors"
+
+include "cos.cat"
+
+(* Uniproc *)
+let poi = po-loc
+let complus = fr|rf|co|(co;rf)|(fr;rf)
+irreflexive poi;complus as scperlocation
+
+(* Utilities *)
+let dd = addr | data
+let rdw = po-loc & (fre;rfe)
+let detour = po-loc & (coe ; rfe)
+let addrpo = addr;po
+
+(*******)
+(* ppo *)
+(*******)
+
+include "armfences.cat"
+show isb,ctrlisb
+
+(* Initial value *)
+let ci0 = ctrlisb | detour
+let ii0 = dd | rfi | rdw
+let cc0 = dd | ctrl | addrpo |
+  ( po-loc \ ( rfi | (po-loc;rfi)))   (* po-loc replaced *)
+let ic0 = 0
+
+include "ppo.cat"
+
+(**********)
+(* fences *)
+(**********)
+
+let WW = W * W
+
+(* ARM *)
+let dmb.st=dmb.st & WW
+let dsb.st=dsb.st & WW
+show dmb, dsb, dmb.st, dsb.st
+
+(* Common, all arm barriers are strong *)
+let strong = dmb|dsb|dmb.st|dsb.st
+let light = 0
+
+include "ppc-checks.cat"
+
+

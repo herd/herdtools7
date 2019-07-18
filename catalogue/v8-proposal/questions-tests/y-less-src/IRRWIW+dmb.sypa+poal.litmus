@@ -1,0 +1,20 @@
+AArch64 IRRWIW+dmb.sypa+poal
+"Rfe DMB.SYdRRPA FreAP RfePA PodRWAL WseLP"
+Cycle=Rfe DMB.SYdRRPA FreAP RfePA PodRWAL WseLP
+Relax=DMB.SYdRRPA PodRWAL
+Safe=Rfe Fre Wse
+Prefetch=1:x=F,1:y=T,3:y=F,3:x=W
+Com=Rf Fr Rf Ws
+Orig=Rfe DMB.SYdRRPA FreAP RfePA PodRWAL WseLP
+{
+0:X1=x;
+1:X1=x; 1:X3=y;
+2:X1=y;
+3:X1=y; 3:X3=x;
+}
+ P0          | P1           | P2          | P3           ;
+ MOV W0,#2   | LDR W0,[X1]  | MOV W0,#1   | LDAR W0,[X1] ;
+ STR W0,[X1] | DMB SY       | STR W0,[X1] | MOV W2,#1    ;
+             | LDAR W2,[X3] |             | STLR W2,[X3] ;
+Observed
+    1:X0=2; 1:X2=0; 3:X0=1; x=2;

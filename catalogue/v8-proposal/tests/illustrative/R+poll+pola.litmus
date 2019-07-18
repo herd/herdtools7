@@ -1,0 +1,19 @@
+AArch64 R+poll+pola
+"PodWWLL WseLL PodWRLA FreAL"
+Cycle=FreAL PodWWLL WseLL PodWRLA
+Relax=
+Safe=PodWW PodWR FreAL WseLL
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Ws Fr
+Orig=PodWWLL WseLL PodWRLA FreAL
+{
+0:X1=x; 0:X3=y;
+1:X1=y; 1:X3=x;
+}
+ P0           | P1           ;
+ MOV W0,#1    | MOV W0,#2    ;
+ STLR W0,[X1] | STLR W0,[X1] ;
+ MOV W2,#1    | LDAR W2,[X3] ;
+ STLR W2,[X3] |              ;
+exists
+(y=2 /\ 1:X2=0)

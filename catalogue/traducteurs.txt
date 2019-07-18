@@ -1,0 +1,88 @@
+notes sur les traducteurs. 
+
+(on pourrait appeller l'outil jingle! comme ca ca fait 'jingle bells' =))
+
+- point de depart: 
+
+    . on a d'un cote des instructions abstraites, par la j'entends des
+instructions LISA annotees comme dans un bell file
+ 
+    . de l'autre des instructions concretes, par la j'entends un vrai langage
+de programmation, ou l'ISA d'un assembleur
+
+    . il faudrait aussi le cas LISA1 -> LISA2, c'est a dire deux bell files 
+
+    . il faudrait aussi le cas natif1 -> natif2, par exemple C++ vers Power:
+      http://open-std.org/jtc1/sc22/wg21/docs/papers/2008/n2745.html
+      a faire soit:
+        - via LISA+bell file idoine: natif1 -> LISA -> natif2
+	- directement (pour un utilisateur qui ne veut/peut pas utiliser LISA
+	  et des bell files)
+
+- ce qu'on voudrait:
+
+    . un outil de traduction de concret a abstrait; ca c'est pour brancher en
+amont de herd-pour-LISA et obtenir un simulateur pour le langage concret a
+partir du simulateur pour LISA
+
+    . un outil de traduction de abstrait a concret; ca c'est pour brancher au
+bout de diy-pour-LISA et obtenir des jeux de tests dans le langage concret a
+partir des tests LISA automatiquement produits par diy-pour-LISA
+
+    . un outil de traduction de abstrait a abstrait, pour etudier des
+transformations de programmes avec herd 
+
+- point commun: dans tous les cas il nous faut un mapping qui dit comment l'on
+  passe d'un monde a l'autre, par exemple:
+
+    . [instruction concrete - ici PowerPC] maps to [instruction abstraite]:
+      [lwz r4,0,r3] maps to [r[] r4 x]
+
+    . [instruction concrete - ici Linux C] maps to [sequence d'instructions
+      abstraites]: 
+      [set_mb(a, 1);] maps to [w[once] a 1; f[mb]]
+
+    . [sequence concrete - ici Linux C] maps to [sequence abstraite]:
+      [r1 = ACCESS_ONCE(a); 
+       if (r1) {
+        WRITE_ONCE(b, 1);
+       }] 
+
+      maps to 
+ 
+      [r[once] r1 a; beq r1, 0, END1; w[once] b 1; END1:]
+
+    . [instruction abstraite] maps to [sequence d'instructions concretes - ici
+      PowerPC]:
+      [rmw[fno] x] maps to [loop: lwarx r4,0,r3; stwcx. r4,0,r3; bne- loop] 
+
+    . j'imagine que [sequence abstraite] maps to [instruction concrete]
+                ou  [sequence abstraite] maps to [sequence concrete]
+      sont possibles
+
+    . a noter que Luc avait des idees a propos de reecriture de programmes/de
+      termes quand on en avait discute en avril a Rocq
+
+- donc le cas general semble etre le suivant: 
+
+  . version (de concret a abstrait): un fichier version.map qui traduit les
+    instructions concretes vers les instructions abstraites, au format suivant
+    par exemple:
+
+    "Version"
+    [sequence concrete] maps to [sequence abstraite]
+    [sequence concrete] maps to [sequence abstraite]
+    [sequence concrete] maps to [sequence abstraite]
+
+  . theme (de abstrait a concret): un fichier theme.map qui traduit les
+    instructions abstraites vers les instructions concretes, au format suivant
+    par exemple:
+
+    "Theme"
+    [sequence abstraite] maps to [sequence concrete]
+    [sequence abstraite] maps to [sequence concrete]
+    [sequence abstraite] maps to [sequence concrete]
+
+    voir par exemple herd/catalogue/linux/maps/theme.map
+
+  . de LISA1 a LISA2: meme idee

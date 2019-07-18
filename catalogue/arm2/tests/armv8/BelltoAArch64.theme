@@ -1,0 +1,37 @@
+Bell to AArch64
+
+"r[] %x %y" -> "LDR %x,[%y]"
+
+"r[] %x y" -> "LDR %x,[%y]"
+
+"r[] %x y+%z" -> "LDR %x,[%y,%z]"
+
+"w[] %x &c" -> "MOV %tmp,&c;
+                STR %tmp,[%x]"
+
+"w[] x &c" -> "MOV %tmp,&c;
+               STR %tmp,[%x]"
+
+"w[] x+%y &c" -> "MOV %tmp,&c;
+                  STR %tmp,[%x,%y]"
+
+"w[] %x %y" -> "STR %x,[%y]"
+
+"w[] x %y" -> "STR %x,[%y]"
+
+"f[DMB,SY]" -> "DMB SY"
+
+"f[DMB,ST]" -> "DMB ST"
+
+"f[DSB,SY]" -> "DSB SY"
+
+"f[DSB,ST]" -> "DSB ST"
+
+"f[ISB]" -> "ISB"
+
+"mov %test (eq %r 0);
+ b[] %test label"      -> "CBZ %r,label"
+
+"mov %d (xor %r1 %r2)" -> "EOR %d,%r1,%r2"
+
+"mov %d (add %r1 &c)" -> "ADD %d,%r1,&c"

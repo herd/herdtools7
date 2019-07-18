@@ -1,0 +1,46 @@
+stdlib
+(*************************)
+(* Herd standard library *)
+(*************************)
+
+(* Basic relations *)
+let po-loc = po & loc
+let rfe = rf & ext
+let rfi = rf & int
+
+(* co0 *)
+let co0 = loc & ((IW * (W\IW)) | ((W\FW) * FW))
+
+(* Id relation on set *)
+let toid(s) = id & (s * s)
+
+(* Turn a fence set into a fence relation *)
+let fencerel(B) = (po & (_ * B)) ;  po
+
+(* Control+cfence *)
+let ctrlcfence(CFENCE) = (ctrl & (_ * CFENCE)) ; po
+
+(* Some utilities (cpp11) *)
+
+let imply (A, B) = ~A | B
+(* nodetour eliminates the triangle: *)
+(*    .--R2--> c --R3--.             *)
+(*   /                  v            *)
+(*  a --------R1-------> b           *)
+
+let nodetour (R1, R2, R3) = R1 \ ( R2; R3 )
+
+let singlestep (R) = nodetour(R, R, R)
+procedure subseteq(A, B) =
+ empty (A \ B)
+end
+
+procedure inclusion(r1, r2) =
+  empty r1 \ r2
+end
+
+procedure total(r,E) =
+  let rt = (r | r^-1)
+  call inclusion((E*E),rt)
+end
+

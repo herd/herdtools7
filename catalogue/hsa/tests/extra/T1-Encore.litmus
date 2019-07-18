@@ -1,0 +1,54 @@
+LISA Tony1-Encore
+{
+x = 0;
+y = 0;
+c = 0;
+d1 = 0;
+d2 = 0;
+s = 0;
+}
+P0                            | P1                                 | P2                                | P3                         ;
+w[atomic,screl,wg] x 1        | r[atomic,scacq,wg] r1 x            | r[atomic,scacq,wg] r1 y           | r[atomic,rlx,system] r3 s  ;
+w[atomic,screl,wg] y 1        | b[eq] r1,0,L1                        | b[eq] r1,0,L2                       | b[ne] r3,1,L3                ;
+                              | add r1,r1,1                        | add r1,r1,2                       |                            ;
+r[atomic,scacq,agent] r5 c    | w[atomic,screl,agent] x r1         | w[atomic,screl,agent] y r1        | f[scacq,system]            ;
+b[ne] r5, 2, L                  | rmw[add,atomic,scar,agent] r9,c, 1 | rmw[add,atomic,scar,agent] r9,c,1 | r[atomic,rlx,system] r1 d1 ;
+r[atomic,scacq,agent] r1 x    |L1:                                 |L2:                                | r[atomic,rlx,system] r2 d2 ;
+r[atomic,scacq,agent] r2 y    |                                    |                                   |L3:                         ;
+w[atomic,rlx,system] d1 r1    |                                    |                                   |                            ;
+w[atomic,rlx,system] d2 r2    |                                    |                                   |                            ;
+f[screl,system]               |                                    |                                   |                            ;
+w[atomic,rlx,system] s 1      |                                    |                                   |                            ;
+L:                            |                                    |                                   |                            ;
+
+scopes: (wg 0 1 2 3)
+locations [3:r1;3:r2;]
+exists(3:r3=1)
+
+(*
+
+o   Assuming work-items release to agent scope when complete:
+
+§  dispatch work items could do an atomic_st_screl_agent to hidden variable
+provided by packet processor
+
+·         probably do a rmw to a single counter
+
+§  packet processor does atomic_ld_acq_agent on that variable so gets all data
+written by dispatch
+
+·         probably spin until counter to wait for whole dispatch to complete
+
+§  packet processor would do memfence_screl_system if indicated by packet release fence
+
+§  packet processor then does an atomic_st_rlx_system to completion signal
+
+§  host (or other) thread does atomic_ld_rlx_system on completion signal
+
+§  host (or other) thread can do a memfence_scacq_system if want to access generated data of dispatch
+
+o   Does this model result in correct semantics given current memory model?
+
+*)
+
+

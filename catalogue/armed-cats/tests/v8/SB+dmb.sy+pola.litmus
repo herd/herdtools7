@@ -1,0 +1,19 @@
+AArch64 SB+dmb.sy+pola
+"DMB.SYdWR FrePL PodWRLA FreAP"
+Cycle=FrePL PodWRLA FreAP DMB.SYdWR
+Relax=
+Safe=PodWR DMB.SYdWR FrePL FreAP
+Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+Com=Fr Fr
+Orig=DMB.SYdWR FrePL PodWRLA FreAP
+{
+0:X1=x; 0:X3=y;
+1:X1=y; 1:X3=x;
+}
+ P0          | P1           ;
+ MOV W0,#1   | MOV W0,#1    ;
+ STR W0,[X1] | STLR W0,[X1] ;
+ DMB SY      | LDAR W2,[X3] ;
+ LDR W2,[X3] |              ;
+exists
+(0:X2=0 /\ 1:X2=0)

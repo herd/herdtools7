@@ -1,0 +1,13 @@
+LISA MP+o-assign+rl-deref-addr-ul (*3-light*)
+{
+a = 1;
+x = 2;
+}
+ P0            | P1                 ;
+               | f[lock]            ;
+ w[once] a 3   | r[deref] r1 x      ;
+               | mov r9 (xor r1 r1) ;
+               | mov r4 (add a r9)  ;
+ w[assign] x 4 | r[once] r2 r4      ;
+               | f[unlock]          ;
+exists (1:r1 = 4 /\ 1:r2 = 1)

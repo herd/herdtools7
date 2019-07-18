@@ -1,0 +1,18 @@
+AArch64 ISA2+dmb.st+addr+addr (X)
+"DMB.STdWW Rfe DpAddrdW Rfe DpAddrdR Fre"
+Prefetch=0:x=F,0:y=W,1:y=F,1:z=W,2:z=F,2:x=T
+Com=Rf Rf Fr
+Orig=DMB.STdWW Rfe DpAddrdW Rfe DpAddrdR Fre
+{
+0:X1=x; 0:X3=y;
+1:X1=y; 1:X4=z;
+2:X1=z; 2:X4=x;
+}
+ P0          | P1                  | P2                  ;
+ MOV W0,#1   | LDR W0,[X1]         | LDR W0,[X1]         ;
+ STR W0,[X1] | EOR W2,W0,W0        | EOR W2,W0,W0        ;
+ DMB ST      | MOV W3,#1           | LDR W3,[X4,W2,SXTW] ;
+ MOV W2,#1   | STR W3,[X4,W2,SXTW] |                     ;
+ STR W2,[X3] |                     |                     ;
+Observed
+    1:X0=1; 2:X0=1; 2:X3=0;

@@ -1,0 +1,46 @@
+"ARM llh"
+
+include "cross.cat"
+with co from generate_cos(co0)
+let coe = co & ext
+let fr = rf^-1;co
+let fre = fr & ext
+let po-loc-llh = po-loc \ R*R
+let com = rf | co | fr
+acyclic po-loc-llh | com as sc-per-location-llh
+
+let dp = addr | data
+let rdw = po-loc & (fre;rfe)
+let detour = po-loc & (coe ; rfe)
+
+let ii0 = dp | rfi | rdw
+let ic0 = 0
+let ci0 = ctrlcfence(ISB) | detour
+let cc0 = dp | ctrl | (addr;po)
+
+let rec ii = ii0 | ci | (ic;ci) | (ii;ii)
+and ic = ic0 | ii | cc | (ic;cc) | (ii;ic)
+and ci = ci0 | (ci;ii) | (cc;ci)
+and cc = cc0 | ci | (ci;ic) | (cc;cc)
+
+let ppo = ii & R*R | ic & R*W
+
+let dmb.st = fencerel(DMB.ST) & W*W
+let dsb.st = fencerel(DSB.ST) & W*W
+let dmb = fencerel(DMB)
+let dsb = fencerel(DSB)
+let dmb.st= dmb.st & W*W
+let dsb.st= dsb.st & W*W
+let ffence = dmb|dsb|dmb.st|dsb.st
+let lwfence = 0
+let fences = ffence|lwfence
+let A-cumul = rfe;fences
+
+let hb = ppo | fences | rfe
+acyclic hb as no-thin-air
+
+let prop-base = (fences | A-cumul);hb*
+let prop = (prop-base & W*W)| (com*; prop-base*; ffence; hb*)
+
+irreflexive fre;prop;hb* as observation
+acyclic co | prop as propagation

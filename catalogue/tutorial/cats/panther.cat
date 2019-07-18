@@ -1,0 +1,63 @@
+"I can't dance"
+
+include "tutorial.cat"
+
+(* SC per location *)
+
+let po-loc = po & loc
+
+let fr = rf^-1;co
+let fre = fr & ext
+show fr
+
+let com = rf | co | fr
+
+procedure sc-per-location() =
+  acyclic po-loc | com
+end
+
+(* No thin air *)
+
+let special-rf = rfe & (Special * Special)
+
+let hb = (po | special-rf)+
+
+procedure no-thin-air() =
+  acyclic hb
+end
+
+(* Observation *)
+
+procedure observation() =
+  irreflexive fre;hb
+end
+
+(* Valid executions *)
+
+procedure valid() =
+  call sc-per-location()
+  call no-thin-air()
+  call observation()
+end
+
+(* call valid() *)
+
+(* Races *)
+
+let at-least-one k = (k * _ | _ * k)
+let conflict = at-least-one(W) & loc & ext
+let race = 
+  let r = conflict & ~(hb | hb^-1) 
+  in r \ (id | (I * M) | (M * I) | (Special * Special))
+show race
+
+procedure race-free() =
+  flag ~empty race as undefined
+end
+
+procedure execution() =
+  call valid()
+  call race-free()
+end
+
+call execution()

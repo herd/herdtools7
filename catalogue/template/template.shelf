@@ -1,0 +1,54 @@
+shelf number for:
+"template"
+
+cat(s):
+cats/template1.cat
+cats/template2.cat
+
+cfg(s):
+cats/template1.cfg
+cats/template2.cfg
+
+tests:
+
+tests/template1.observed
+tests/template1.allowed
+tests/template2.observed
+tests/template2.allowed
+
+illustrative tests: (ls tests/illustrative/* > template.illus)
+tests/template.illus
+
+(list their names and the figures where they appear in the paper) 
+
+experimental campaign:
+tests/campaign/template1-tests.tar 
+tests/campaign/template2-tests.tar
+
+-------------------------------------------------------------------------------
+
+source:
+(title)
+
+by:
+(authors)
+
+downloaded from:
+(website)
+
+on:
+(date, example: format Wednesday 21 January 2015)
+
+-------------------------------------------------------------------------------
+
+model(s) as appear in the paper can be found on:
+
+page 16, Figure 5 for the template
+pages 23-24, Figures 17-18 for Power and ARM's fences and propagation orders
+page 34, Figure 25 for Power's preserved program order
+page 54, Table VII for ARM's preserved program order
+page 54, Table VII for ARM-llh's preserved program order
+
+notes:
+
+(jade: i'd like the notes to be collected from the comments in the cat files)

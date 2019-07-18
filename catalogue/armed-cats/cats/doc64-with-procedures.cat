@@ -1,0 +1,83 @@
+"AArch64, follow documentation"
+
+let Acq = A
+let Rel = L
+
+include "aarch64fences.cat"
+include "cos.cat"
+
+let com = rf | co | fr
+
+let dp = addr | data
+let rdw = po-loc & (fre;rfe)
+let detour = po-loc & (coe ; rfe)
+
+let ii0 = dp | rfi | rdw
+let ic0 = 0
+let ci0 = ctrlisb | detour
+let cc0 = dp | ctrl | (addr;po)
+
+(* Fixpoint from i -> c in instructions and transitivity *)
+let rec ci = ci0 | (ci;ii) | (cc;ci)
+and ii = ii0 | ci | (ic;ci) | (ii;ii)
+and cc = cc0 | ci | (ci;ic) | (cc;cc)
+and ic = ic0 | ii | cc | (ic;cc) | (ii ; ic) (* | ci inclus dans ii et cc *)
+
+let acq-po = (Acq * M) & po
+let po-rel = (M * Rel) & po
+
+let ppo = ii & (R*R) | ic & (R*W) | acq-po
+
+let all-dmb = dmb.sy & (M * M) | dmb.st & (W * W) | dmb.ld & (R * M)
+let all-dsb = dsb.sy & (M * M) | dsb.st & (W * W) | dsb.ld & (R * M)
+let strong-fence = all-dmb | all-dsb
+let weak-fence = po-rel
+let fence = strong-fence | weak-fence
+
+let hb = ppo | (R * M) & fence | rfe
+
+let com-ext = rfe | coe | fre 
+
+//let observer = com-ext; (ppo | fence | po & (Rel * Acq));(fre | coe)
+let observer = com-ext; (ppo | fence | po & (Rel * Acq))
+
+let obs-base = com-ext?;fence;hb*
+let obs-strong = obs-base & (W * W) 
+         	 | (com*; obs-base*; strong-fence; hb*)
+let obs = obs-strong+;observer
+
+let po-xx = po & (W * W) & (X * X)
+let prop-ar = 
+  (com-ext & ((Acq | Rel) * (Acq | Rel)) 
+   | po & (Rel * Acq)); hb*
+let prop = obs | po-xx | prop-ar
+
+procedure sc-per-location() =
+  acyclic po-loc | com
+end
+
+procedure no-thin-air() = 
+  acyclic hb
+end
+
+procedure observation() =
+  irreflexive obs;fre
+end
+
+procedure propagation() =
+  acyclic co | prop
+end
+
+procedure atomic() =
+  empty rmw & (fre;coe)
+end
+
+procedure armv8() =
+  call sc-per-location()
+  call no-thin-air()
+  call observation()
+  call propagation()
+  call atomic()
+end
+
+call armv8()

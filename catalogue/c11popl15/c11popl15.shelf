@@ -1,0 +1,156 @@
+shelf number for:
+"c11popl15"
+
+cat(s):
+<Generated automatically by genmodel.py>
+ConsRFna_SCorig_RSorig_STorig.cat
+ConsRFna_SCorig_RSorig_STnew.cat
+ConsRFna_SCorig_RSnew_STorig.cat
+ConsRFna_SCorig_RSnew_STnew.cat
+ConsRFna_SCnew_RSorig_STorig.cat
+ConsRFna_SCnew_RSorig_STnew.cat
+ConsRFna_SCnew_RSnew_STorig.cat
+ConsRFna_SCnew_RSnew_STnew.cat
+Naive_SCorig_RSorig_STorig.cat
+Naive_SCorig_RSorig_STnew.cat
+Naive_SCorig_RSnew_STorig.cat
+Naive_SCorig_RSnew_STnew.cat
+Naive_SCnew_RSorig_STorig.cat
+Naive_SCnew_RSorig_STnew.cat
+Naive_SCnew_RSnew_STorig.cat
+Naive_SCnew_RSnew_STnew.cat
+Arf_SCorig_RSorig_STorig.cat
+Arf_SCorig_RSorig_STnew.cat
+Arf_SCorig_RSnew_STorig.cat
+Arf_SCorig_RSnew_STnew.cat
+Arf_SCnew_RSorig_STorig.cat
+Arf_SCnew_RSorig_STnew.cat
+Arf_SCnew_RSnew_STorig.cat
+Arf_SCnew_RSnew_STnew.cat
+Arfna_SCorig_RSorig_STorig.cat
+Arfna_SCorig_RSorig_STnew.cat
+Arfna_SCorig_RSnew_STorig.cat
+Arfna_SCorig_RSnew_STnew.cat
+Arfna_SCnew_RSorig_STorig.cat
+Arfna_SCnew_RSorig_STnew.cat
+Arfna_SCnew_RSnew_STorig.cat
+Arfna_SCnew_RSnew_STnew.cat
+
+cfg(s):
+<generated automatically by genmodel.py>
+ConsRFna_SCorig_RSorig_STorig.cfg
+ConsRFna_SCorig_RSorig_STnew.cfg
+ConsRFna_SCorig_RSnew_STorig.cfg
+ConsRFna_SCorig_RSnew_STnew.cfg
+ConsRFna_SCnew_RSorig_STorig.cfg
+ConsRFna_SCnew_RSorig_STnew.cfg
+ConsRFna_SCnew_RSnew_STorig.cfg
+ConsRFna_SCnew_RSnew_STnew.cfg
+Naive_SCorig_RSorig_STorig.cfg
+Naive_SCorig_RSorig_STnew.cfg
+Naive_SCorig_RSnew_STorig.cfg
+Naive_SCorig_RSnew_STnew.cfg
+Naive_SCnew_RSorig_STorig.cfg
+Naive_SCnew_RSorig_STnew.cfg
+Naive_SCnew_RSnew_STorig.cfg
+Naive_SCnew_RSnew_STnew.cfg
+Arf_SCorig_RSorig_STorig.cfg
+Arf_SCorig_RSorig_STnew.cfg
+Arf_SCorig_RSnew_STorig.cfg
+Arf_SCorig_RSnew_STnew.cfg
+Arf_SCnew_RSorig_STorig.cfg
+Arf_SCnew_RSorig_STnew.cfg
+Arf_SCnew_RSnew_STorig.cfg
+Arf_SCnew_RSnew_STnew.cfg
+Arfna_SCorig_RSorig_STorig.cfg
+Arfna_SCorig_RSorig_STnew.cfg
+Arfna_SCorig_RSnew_STorig.cfg
+Arfna_SCorig_RSnew_STnew.cfg
+Arfna_SCnew_RSorig_STorig.cfg
+Arfna_SCnew_RSorig_STnew.cfg
+Arfna_SCnew_RSnew_STorig.cfg
+Arfna_SCnew_RSnew_STnew.cfg
+
+tests:
+
+illustrative tests:
+
+experimental campaign:
+<none>
+
+-------------------------------------------------------------------------------
+
+source:
+Common Compiler Optimisations are Invalid in the C11 Memory Model and what we
+can do about it
+
+by:
+Viktor Vafeiadis, Thibaut Balabonski, Soham Chakraborty, Robin Morisset, and
+Francesco Zappa Nardelli
+
+downloaded from:
+http://plv.mpi-sws.org/c11comp/
+
+on:
+Thursday 12 March 2015
+
+-------------------------------------------------------------------------------
+
+Model(s) as appear in the paper can be found on:
+
+page 4, Figure 3 for basic definitions
+page 5, Figure 5 for standard model axioms
+page 6, Section 4 for variant models
+
+
+Notes:
+
+The English text definition of sb is ambiguous in the paper as it is not clear
+whether it is transitive implicitly or not, however, the paper uses the relation
+sb+ so we assume that sb is not transitive by default. Hence in the model we use
+'let sb = singlestep(po)' where po is the (built-in) program order.
+
+Fixes / Clarifications:
+
+NB: all of the following confirmed with Viktor
+
+* Definition of sw
+Definition of sw in Figure 2. should read isfence(b) rather than isfence(d) in
+the last conjunct. This then matches the diagrams in Figure 3.
+
+* a3v2
+
+The test [a3v2.litmus] as found in the paper (in Appendix A.3) is incorrect as
+it is racy. The paper lists this test as:
+
+y = 1;          | while (!x.CAS(0,1,ACQ));
+x.store(1,REL); | access(y);
+
+which can be rephrased to elide the while loop as:
+
+y = 1;          | r0 = x.CAS(0,1,ACQ);
+x.store(1,REL); | if (r0) access(y);
+
+however, this program is racy (on y) because there is no sw edge between the
+write-release and read-acquire of x.
+
+Since the intention of this test is to be race-free it should instead be:
+
+y = 1;          | while (!x.CAS(1,2,ACQ)); //< changed
+x.store(1,REL); | access(y);
+
+* Appendix C
+
+The expected result of this litmus test after reordering is a race.
+The test, after reordering, is:
+
+if (x.load(RLX)) {       | if (y.load(RLX))
+  q.store(1,Y);          |   if (q) {
+  t = p.load(X);         |     p = 1;
+  if (t) y.store(1,RLX); |     x.store(1,RLX);
+}                        |   }
+
+where X and Y are any atomic or non-atomic access.
+
+There is a race between W_Y(q,1) and R_NA(q,1). This is also the case with the
+variants using CAS to replace q.store(1,Y) and p.load(X).

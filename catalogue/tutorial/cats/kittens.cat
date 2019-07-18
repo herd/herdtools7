@@ -1,0 +1,29 @@
+"I can't dance"
+
+include "tutorial.cat"
+
+let fr = rf^-1;co
+show fr
+
+let rfe = rf & ext
+
+let com = rf | co | fr
+
+(* SC *)
+
+procedure sc() =
+  let sc-order = (po | com)+
+  acyclic sc-order
+end
+
+(* call sc() *)
+
+(* Almost TSO *)
+
+procedure almost-tso() =
+  let ppo = po \ W*R 
+  let tso-order = ppo | fwr | rfe | co | fr
+  acyclic tso-order
+end
+
+call almost-tso() 

@@ -1,0 +1,14 @@
+LISA SB+rl-rul+srcu (*10-RCU*)
+{
+x = 0;
+y = 0;
+}
+ P0           | P1           ;
+ f[lock]      |              ;
+ w[once] x 1  | w[once] y 1  ;
+              | f[sync]      ;
+ r[once] r2 y | r[once] r4 x ;
+ f[unlock]    |              ;
+ 
+exists (0:r2=0 /\ 1:r4=0)
+

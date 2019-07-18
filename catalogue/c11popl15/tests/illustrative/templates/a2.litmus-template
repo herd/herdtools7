@@ -1,0 +1,13 @@
+{ [x] = 0; [y] = 0; [zero] = 0; }
+
+P0 (atomic_int* x, atomic_int* y, atomic_int *zero) {
+  ACCESS_CHOICE(y,0,2);
+  int r1 = atomic_compare_exchange_strong_explicit(x, zero, 1, MO_CHOICE(memory_order_release, memory_order_acq_rel, memory_order_seq_cst), memory_order_relaxed);
+}
+
+P1 (atomic_int* x, volatile int* y) {
+  int r2 = atomic_load_explicit(x, memory_order_acquire);
+  if (r2) {
+    *y = 1;
+  }
+}

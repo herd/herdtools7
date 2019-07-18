@@ -1,0 +1,17 @@
+C mp-c11-relaxed
+{ [x] = 0; [y] = 0; }
+
+P0 (atomic_int * x, atomic_int* y) {
+   atomic_store_explicit(x, 1, memory_order_relaxed);
+   atomic_store_explicit(y, 1, memory_order_relaxed);
+}
+
+P1 (atomic_int* x, atomic_int* y) {
+   int r2 = 0;
+   int r1 = atomic_load_explicit(y, memory_order_relaxed);
+   if (r1) {
+      r2 = atomic_load_explicit(x, memory_order_relaxed);
+   }
+}
+
+exists (1:r1=1 /\ 1:r2=0)

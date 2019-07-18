@@ -1,0 +1,13 @@
+{ [x] = 0; [y] = 0; }
+
+P0 (volatile int* x, volatile int* y) {
+  atomic_store_explicit(y, 1, MO_CHOICE(memory_order_relaxed, memory_order_release, memory_order_seq_cst));
+  int r0 = atomic_load_explicit(x, MO_CHOICE(memory_order_relaxed, memory_order_acquire, memory_order_seq_cst));
+}
+
+P1 (volatile int* x, volatile int* y) {
+  int r1 = atomic_load_explicit(y, memory_order_relaxed);
+  atomic_store_explicit(x, 1, memory_order_relaxed);
+}
+
+exists (0:r0=1 /\ 1:r1=1)

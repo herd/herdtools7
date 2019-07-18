@@ -1,0 +1,12 @@
+LISA MP+o-wb-o+o-data+rb_dep-o
+{
+x = 2;
+p = 0;
+}
+ P0           | P1                 ;
+ w[once] x 4  | r[once] r1 p       ;
+              | mov r9 (xor r1 r1) ;
+              | mov r3 (add x r9)  ;
+ f[wmb]       | f[rb_dep]          ;
+ w[once] p 1  | r[once] r2 r3      ;
+exists (1:r1 = 1 /\ 1:r2 = 2)

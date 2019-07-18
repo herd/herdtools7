@@ -1,0 +1,16 @@
+C a1
+{ [x] = 0; [y] = 0; }
+
+P0 (atomic_int* x, atomic_int* y) {
+  int r0 = atomic_load_explicit(y, memory_order_relaxed);
+  atomic_store_explicit(x, 1, memory_order_release);
+}
+
+P1 (atomic_int* x, volatile int* y) {
+  int r1 = atomic_load_explicit(x, memory_order_acquire);
+  if (r1) {
+    *y = 1;
+  }
+}
+
+exists(x=1 /\ y=1)

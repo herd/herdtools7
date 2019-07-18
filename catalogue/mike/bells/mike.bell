@@ -1,0 +1,6 @@
+"Mike"
+
+enum kinds = 'push || 'pop
+
+instructions W[{'push}]
+instructions R[{'pop}]

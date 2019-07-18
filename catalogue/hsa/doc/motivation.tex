@@ -1,0 +1,38 @@
+We think this formalisation effort is worth pursuing, for several reasons:
+\begin{enumerate}
+\item documentation and pedagogical purposes;
+\item test generation and conformance testing;
+\item simulation purposes.
+\end{enumerate}
+
+\subsection*{Documentation and pedagogical purposes}
+
+First, the formal model itself can act as a documentation, especially in tandem
+with the {\sf herd} simulation tool that we are developing. For example, the
+following link gives access to our simulator for the current state of the HSA
+model:
+
+\centerline{\url{virginia.cs.ucl.ac.uk/herd/?record=hsa}}
+
+This should allow developers or compiler writers to get a sense of how HSA
+programs can behave.
+
+\subsection*{Test generation and conformance testing}
+
+Second, once we have a formal model, we can automatically generate conformance
+tests. Our {\sf diy} tool (see \url{diy.inria.fr}) generates systematic
+families of litmus tests that can be used to test the conformance of a chip to
+a model, or the compatibility of two different implementations of the same
+model.
+
+This modelling effort, and this document, are a first step towards automating
+the generation of conformance tests for HSA.
+
+\subsection*{Simulation purposes}
+Our model is written in our {\tt cat} language (see~\cite{amt14} and
+\url{diy.inria.fr/tst7/doc/herd.html}). This language is a domain specific
+language for writing consistency models such as the ones implemented by
+multiprocessors. Writing our models in this language allows us to use them as
+input to our {\sf herd} tool (see~\cite{amt14}, \url{diy.inria.fr/herd} and
+\url{virginia.cs.ucl.ac.uk/herd}), which thus becomes a simulator for the input
+model.

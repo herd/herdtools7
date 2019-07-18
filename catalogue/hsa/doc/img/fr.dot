@@ -1,0 +1,32 @@
+digraph G {
+
+splines=true;
+overlap=scale;
+margin="0.0";
+pad="0.1";
+fontname="Arial";
+
+/* legend */
+
+
+/* the unlocked events */
+eiid1 [shape=plaintext ,fontsize=10 ] [color=blue] [rank=sink] [label="$r$" pos="0.000000,1.050000!"][fixedsize="true"][width=0.45][height=0.1];
+eiid2 [shape=plaintext ,fontsize=10 ] [color=blue] [rank=sink] [label="$w_0$" pos="0.500000,1.400000!"][fixedsize="true"][width=0.45][height=0.1];
+eiid4 [shape=plaintext ,fontsize=10 ] [color=blue] [rank=sink] [label="$w_1$" pos="0.500000,0.700000!"][fixedsize="true"][width=0.45][height=0.1];
+eiid6 [shape=plaintext ,fontsize=10 ] [color=blue] [rank=sink] [label="$w_2$" pos="0.500000,0.000000!"][fixedsize="true"][width=0.45][height=0.1];
+
+/* the intra_causality_data edges */
+
+
+/* the intra_causality_control edges */
+
+/* the rfmap edges */
+eiid2 -> eiid1 [label="rf", color="red", fontcolor="red",fontsize=10][arrowsize="0.3"];
+
+
+/* The viewed-before edges */
+eiid1 -> eiid4 [label="fr", color="#ffa040", fontcolor="#ffa040",fontsize=8][arrowsize="0.3"];
+eiid1 -> eiid6 [label="fr", color="#ffa040", fontcolor="#ffa040",fontsize=8][arrowsize="0.3"];
+eiid4 -> eiid2 [label="co", color="blue", fontcolor="blue",fontsize=8, dir="back"][arrowsize="0.3"];
+eiid6 -> eiid4 [label="co", color="blue", fontcolor="blue",fontsize=8, dir="back"][arrowsize="0.3"];
+}

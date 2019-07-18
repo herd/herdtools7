@@ -1,0 +1,11 @@
+"ARM v8 model"
+
+include "armv8-utils.cat"
+include "armv8-sc-per-location.cat"
+include "armv8-fences.cat"
+include "armv8-ppo.cat"
+include "armv8-happens-before.cat"
+include "armv8-observation.cat"
+include "armv8-propagation.cat"
+include "armv8-skeleton.cat"
+call armv8()

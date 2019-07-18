@@ -1,0 +1,28 @@
+GPU_PTX IRIW
+
+{
+0:.reg .s32 r0;
+0:.reg .b64 r1 = x;
+1:.reg .s32 r0;
+1:.reg .s32 r2;
+1:.reg .b64 r1 = x;
+1:.reg .b64 r3 = y;
+2:.reg .s32 r0;
+2:.reg .b64 r1 = y;
+3:.reg .s32 r0;
+3:.reg .s32 r2;
+3:.reg .b64 r1 = y;
+3:.reg .b64 r3 = x;
+}
+ P0                | P1                | P2                | P3                ;
+ mov.s32 r0,1      | ld.cg.s32 r0,[r1] | mov.s32 r0,1      | ld.cg.s32 r0,[r1] ;
+ st.cg.s32 [r1],r0 | ld.cg.s32 r2,[r3] | st.cg.s32 [r1],r0 | ld.cg.s32 r2,[r3] ;
+
+scopeTree
+(device (kernel (cta (warp P0)) (cta (warp P1)) (cta (warp P2)) (cta (warp P3))))
+
+y: global, x: global
+
+exists
+(1:r0=1 /\ 1:r2=0 /\ 3:r0=1 /\ 3:r2=0)
+

@@ -1,0 +1,81 @@
+notes sur les oracles.
+
+(on pourrait appeller l'outil pythia)
+
+- point de depart:
+
+  . etant donne un jeu de tests, on a d'un cote un modele (bell+cat) et de
+    l'autre un fichier d'oracle, rempli par un utilisateur erudit. on veut
+    comparer ce que dit le fichier d'oracle avec le modele, sur les memes tests.
+
+  . dans l'ideal un fichier d'oracle doit avoir le format:
+
+    nom du test | oracle
+
+    par exemple:
+  
+    mp          | Ok
+    mp+dmb+addr | No
+
+    les reponses donnees par l'oracle doivent range over les reponses donnees par herd, c'est a dire:
+
+    Ok, No 
+    + des noms donnes aux checks prefixes par 'flag' dans le cat file; par
+    exemple:
+
+    flag ~empty data-race as Racy
+
+    dans ce cas on veut que l'oracle puisse dire:
+
+    mp          | Racy
+    mp+dmb+addr | Racy
+
+- ce qu'on voudrait: un outil qui etant donne un jeu de tests, un fichier
+  d'oracle et un modele, nous dit si le modele est compatible avec l'oracle. je
+  peux voir plusieurs modes de compatibilite:
+
+    . model is sound w.r.t. Answer: oracle says Answer => model says Answer
+      (e.g. model sounds w.r.t. hardware means: oracle = hw and Answer = Ok)
+
+    . model fits oracles w.r.t. Answer: le modele et l'oracle coincident sur
+toutes les reponses de type Answer. par exemple: sound w.r.t. Ok ca veut dire
+que le modele et l'oracle sont d'accord sur tous les tests autorises mais pas
+forcement sur tous les tests interdits (No) ou tous les tests autres (e.g.
+Racy)
+
+    . perfect fit: memes reponses sur tous les tests, i.e. sound w.r.t.
+Answer1, Answer2 etc
+
+- comment faire: 
+
+  . une test base, par exemple: catalogue/herding-cats/ppc/tests
+  . un oracle file, par exemple: catalogue/herding-cats/ppc/tests/ppc-hardware.spec
+  . un run du modele, par exemple: catalogue/herding-cats/ppc/Power-Model.txt
+  . si on utilise mcompare, par exemple:
+    %mcompare7 -show r -kinds ppc-hardware.txt Power-Model.txt
+    on obtient une table:
+
+                                                       |Kind   | Power-Model.txt
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+2+2W                                                   |Allow  | =
+
+...
+
+
+--------------------------------------------------------------------------------LB                                                     |Forbid | Allow
+--------------------------------------------------------------------------------
+
+....
+
+--------------------------------------------------------------------------------SB+syncs                                               |Forbid | =
+--------------------------------------------------------------------------------
+
+....
+
+    . il faudrait analyser les sorties de mcompare (les tables ci-dessus) pour
+decider si le modele et l'oracle coincident
+
+    . dans l'interface, ca serait bien de signaler les tests qui ne coincident
+pas, par exemple en rouge; on peut peut etre reutiliser le generateur de pages
+html de Luc pour ce faire

@@ -1,0 +1,16 @@
+"I can't dance"
+
+include "tutorial.cat"
+
+let fr = rf^-1;co
+let rfe = rf & ext
+
+procedure rmo() =
+  let fence(t) = fencerel(F & tag2instrs(t))
+  let rmo-order(t) = (fence(t) | rfe | co | fr) & tag2scope(t)
+  forall t in {'cta, 'gpu, 'system} do
+    acyclic rmo-order(t)
+  end
+end
+
+call rmo()

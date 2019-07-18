@@ -1,0 +1,51 @@
+"ARM with ldrex and strex (experimental 1) and v8"
+
+include "arm-common.cat"
+
+let com = rf | co | fr
+acyclic po-loc | com as sc-per-location
+
+let dp = addr | data
+let rdw = po-loc & (fre;rfe)
+let detour = po-loc & (coe ; rfe)
+
+let ii0 = dp | rfi | rdw
+let ic0 = 0
+let ci0 = ctrlisb | detour
+let cc0 = dp | ctrl | (addr;po)
+
+let rec ii = ii0 | ci | (ic;ci) | (ii;ii)
+and ic = ic0 | ii | cc | (ic;cc) | (ii;ic)
+and ci = ci0 | (ci;ii) | (cc;ci)
+and cc = cc0 | ci | (ci;ic) | (cc;cc)
+
+let ppo = ii & R*R | ic & R*W
+
+enum attribute = 'none || 'st || 'ld
+let dmb(t) = match t with
+  || 'none -> dmb
+  || 'st -> dmb & W*W
+  || 'ld -> dmb & (R*R | R*W)
+  end
+let all-dmb = dmb('none) | dmb('st) | dmb('ld)
+let all-dsb = all-dmb
+
+let acq = R (*placeholder, to bellify*)
+let rel = W (*placeholder, to bellify*)
+let acq-po = po & (acq * (W|R))
+let po-rel = ((W|R) * rel)
+let fence = all-dmb | all-dsb | acq-po | po-rel
+let cumul-fence = all-dmb | all-dsb | po-rel 
+let A-cumul = rfe;cumul-fence
+
+let hb = ppo | fence | rfe
+acyclic hb as no-thin-air
+
+let prop-base = (fence | A-cumul);hb*
+let prop = (prop-base & W*W)| (com*; prop-base*; fence; hb*)
+
+irreflexive fre;prop;hb* as observation
+
+let aa = WW(AA(po))
+acyclic co | prop | aa as propagation
+empty atom & (fre;coe) as atomic

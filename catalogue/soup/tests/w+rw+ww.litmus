@@ -1,0 +1,9 @@
+Bell w+rw+ww
+{
+x = 0;
+y = 0;
+}
+ P0       | P1       | P2       ;
+ w[] x 2  | r[] r1 x | w[] y 2  ;
+          | w[] y 1  | w[] x 1  ;
+exists (1:r1=2 /\ x=2 /\ y=2)

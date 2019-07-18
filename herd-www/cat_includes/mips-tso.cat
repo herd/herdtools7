@@ -1,0 +1,22 @@
+MIPS-TSO
+
+include "filters.cat"
+include "cos.cat"
+
+(* Uniproc check *)
+let com = rf | fr | co
+acyclic po-loc | com as uniproc
+
+(* Atomic *)
+empty rmw & (fre;coe) as atomic
+
+(* ppo, choosing pso at the moment *)
+include "mipsfences.cat"
+
+let ppo = (po \ (W*R)) | sync
+
+let ghb = ppo | rfe | fr | co
+
+acyclic ghb as tso
+
+

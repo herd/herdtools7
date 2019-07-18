@@ -1,0 +1,12 @@
+(* --------------------------------------------------------------------------*)
+(* Section 5                                                                 *)
+(* --------------------------------------------------------------------------*)
+
+(* Redundant axiom equivalent to CohWW *)
+checkcall subseteq(hb & ( iswrite * iswrite ) & loc, mo) as ConsMOhb
+
+(* Alternative presentation of Coherence *)
+let rb =  fr (* fr == rf^-1; mo *)
+       & ~id (* a != b *)
+let com = mo | rf | rb
+acyclic ((hb & loc) | com) as Coh

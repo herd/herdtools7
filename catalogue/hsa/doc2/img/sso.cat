@@ -1,0 +1,18 @@
+SSO
+include "uniproc.cat"
+let coh = fr|rf|co
+
+let acq-rel =
+  ((Atomic & W & Release) * (Atomic & R & Acquire)) & coh
+| ((F & Release) * (Synchronizing & Acquire)) &
+  ((po & (_ * W)); coh; (po? & (R * _)))
+| ((Synchronizing & Release) * (F & Acquire)) &
+  ((po? & (_ * W)); coh; (po & (R * _)))
+
+let sso s = same-instance(s) & acq-rel
+
+let sso-agent = sso 'agent
+and sso-wg = sso 'wg
+let hhb = (po | union-scopes sso)+
+
+show sso-wg,sso-agent

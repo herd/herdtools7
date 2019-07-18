@@ -1,0 +1,12 @@
+LISA WRC+assign+deref-addr-assign+o-rb-o
+{
+x = 0;
+y = 0;
+}
+ P0              | P1                 | P2            ;
+ w[assign] y 1   | r[deref] r3 y      | r[once] r1 x  ;
+                 | mov r9 (xor r3 r3) | f[rmb]        ;
+                 | mov r4 (add x r9)  |               ;
+                 | w[assign] r4 1     | r[once] r2 y  ;
+exists (1:r3=1 /\ 2:r1=1 /\ 2:r2=0)
+

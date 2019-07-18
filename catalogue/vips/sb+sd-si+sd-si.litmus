@@ -1,0 +1,11 @@
+Bell SB+sd-si+sd-si
+{
+x = 0;
+y = 0;
+}
+ P0          | P1           ;
+ w() [x], 1  | w() [y], 1   ;
+ f(sd)       | f(sd)        ;
+ f(si)       | f(si)        ;
+ r() r1, [y] | r() r2, [x]  ;
+exists (0:r1=0 /\ 1:r2=0)

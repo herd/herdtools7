@@ -1,0 +1,26 @@
+C c_p
+{ [x] = 0; [y] = 0; [p] = 0; [q] = 0; [zero] = 0; [one] = 1; }
+
+P0 (atomic_int *x, atomic_int *y, volatile int* p, volatile int* q, atomic_int* zero, atomic_int* one) {
+  int r0 = atomic_load_explicit(x, memory_order_relaxed);
+  if (r0) {
+    int t = atomic_compare_exchange_strong_explicit(p, one, 2, memory_order_acquire, memory_order_relaxed);
+    *q = 1;
+    if (t) {
+      atomic_store_explicit(y, 1, memory_order_relaxed);
+    }
+  }
+}
+
+P1 (atomic_int *x, atomic_int *y, volatile int* p, volatile int* q) {
+  int r1 = atomic_load_explicit(y, memory_order_relaxed);
+  if (r1) {
+    int r2 = *q;
+    if (r2) {
+      *p = 1;
+      atomic_store_explicit(x, 1, memory_order_relaxed);
+    }
+  }
+}
+
+exists (p=1 /\ q=1)

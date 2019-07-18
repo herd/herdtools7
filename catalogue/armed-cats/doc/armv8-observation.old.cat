@@ -1,0 +1,9 @@
+"ARMv8 observation order"
+
+let cumulativity = rfe?;fence;hb*
+let obs = cumulativity & (W * W)
+          | com*; cumulativity*; strong-fence; hb*
+
+procedure observation() =
+  irreflexive fre;obs+
+end

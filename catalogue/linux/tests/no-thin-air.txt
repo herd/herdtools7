@@ -1,0 +1,31 @@
+test                                                               | Paul                                                                    | stitching
+3.lb+acq-o+acq-o.litmus                                            | Ok  (See lb+acq-o+acq-o.litmus.)                                        | Ok
+3.lb+acq-rel+acq-rel.litmus                                        | No                                                                      | No 
+3.lb+deref-addr-assign+deref-addr-assign.litmus                    | No                                                                      | No
+3.lb+o-addr-rb_dep-o+o-addr-rb_dep-o+o-addr-rb_dep-o.litmus        | Ok                                                                      | Ok
+3.lb+o-assign+deref-addr-o.litmus                                  | No                                                                      | No
+3.lb+o-branch-o+o-branch-o.litmus                                  | No! (*jade: i'd argue this should be allowed if 3.lb+o-addr-rb_dep-o+o-addr-rb_dep-o+o-addr-rb_dep-o.litmus is *) | Ok 
+3.lb+o-mb-o+o-mb-o+o-addr-o.litmus                                 | Ok                                                                      | Ok
+3.lb+o-mb-o+o-mb-o+o-addr-rb_dep-o.litmus                          | No                                                                      | No
+3.lb+o-mb-o+o-mb-o+o-branch-o.litmus                               | No                                                                      | No
+3.lb+o-mb-o+o-mb-o+o-rb_dep-addr-o.litmus                          | No                                                                      | No
+3.lb+o-mb-o+o-mb-o.litmus                                          | No                                                                      | No
+3.lb+o-o+o-o.litmus                                                | Ok (No ordering at all.)                                                | Ok
+3.lb+o-rel+acq-rel+acq-o.litmus                                    | No                                                                      | No 
+lb+acq-o+acq-o.litmus                                              | Ok                                                                      | Ok
+lb+acq-rel+acq-rel.litmus                                          | No                                                                      | No  
+lb+deref-addr-assign+deref-addr-assign.litmus                      | No                                                                      | No
+lb+deref-addr-o+deref-addr-o.litmus                                | No                                                                      | No
+lb+deref-addr-o+lderef-addr-o.litmus                               | No                                                                      | No
+lb+deref-assign+deref-assign.litmus                                | No! (*jade: i'd argue this should be allowed if lb+deref-o+deref-o.litmus and lb+o-assign+o-assign.litmus are *) | Ok
+lb+deref-o+deref-o.litmus                                          | Ok                                                                      | Ok
+lb+o-assign+deref-addr-o.litmus                                    | No                                                                      | No
+lb+o-assign+deref-o.litmus                                         | Ok                                                                      | Ok
+lb+o-assign+o-assign.litmus                                        | Ok                                                                      | Ok
+lb+o-branch-o+o-branch-o.litmus                                    | No                                                                      | No
+lb+o-mb-o+o-mb-o.litmus                                            | No                                                                      | No
+lb+o-o+o-o.litmus                                                  | Ok                                                                      | Ok
+lb+o-rel+acq-o.litmus                                              | No                                                                      | No
+lb+o-rel+o-rel.litmus                                              | Ok                                                                      | Ok
+lb+rl-deref-addr-rul+o-mb-o.litmus                                 | No                                                                      | No
+lb+rl-o-o-rul+o-srcu-o.litmus                                      | No                                                                      | No

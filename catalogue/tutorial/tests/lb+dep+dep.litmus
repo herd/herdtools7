@@ -1,0 +1,11 @@
+LISA LB+dep+dep
+{
+x = 0;
+y = 0;
+}
+ P0       | P1       ;
+ r[] r1 y | r[] r2 x ;
+ f[dep]   | f[dep]   ;
+ w[] x 1  | w[] y 1  ;
+
+exists (0:r1 = 1 /\ 1:r2 = 1)

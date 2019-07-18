@@ -1,0 +1,43 @@
+"Model with full eieio"
+
+include "filters.cat"
+include "cos.cat"
+(* Uniproc *)
+acyclic po-loc | rf | fr | co as uniproc
+
+(* Utilities *)
+let dd = addr | data
+let rdw = po-loc & (fre;rfe)
+let detour = po-loc & (coe ; rfe)
+let addrpo = addr;po
+
+(*******)
+(* ppo *)
+(*******)
+
+include "ppcfences.cat"
+
+(* Initial value *)
+let ci0 = ctrlisync | detour
+let ii0 = dd | rfi | rdw
+let cc0 = dd | po-loc | ctrl | addrpo
+let ic0 = 0
+
+include "ppo.cat"
+
+
+(**********)
+(* fences *)
+(**********)
+
+(* Power *)
+let lwsync = RM(lwsync)|WW(lwsync)
+let eieio = WW(eieio)
+
+
+(* Common, all arm barriers are strong *)
+let strong = sync|eieio
+let light = lwsync
+
+show propbase
+include "ppc-checks.cat"

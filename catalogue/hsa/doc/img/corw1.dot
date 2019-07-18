@@ -1,0 +1,28 @@
+/* Generated, do not edit, edit img/corw1.litmus instead */
+digraph G {
+
+splines=line;
+
+/* legend */
+fontsize=10;
+label="coRW1";
+
+
+/* the unlocked events */
+proc0_label_node [shape=none, fontsize=10, label="\\myth{0}", pos="1.000000,0.588000!", fixedsize=true, width=0.455000, height=0.091875]
+eiid0 [label="a: Rx=1", shape="none", fontsize=10, pos="1.000000,0.367500!", fixedsize="true", height="0.138889", width="0.486111"];
+eiid1 [label="b: Wx=1", shape="none", fontsize=10, pos="1.000000,0.000000!", fixedsize="true", height="0.138889", width="0.486111"];
+
+/* the intra_causality_data edges */
+
+
+/* the intra_causality_control edges */
+
+/* the poi edges */
+/* the rfmap edges */
+eiid0 -> eiid1 [label="rf", color="red", fontcolor="red", fontsize=8, arrowsize="0.300000", dir="back"];
+
+
+/* The viewed-before edges */
+eiid0 -> eiid1 [label="po", fontsize=8, arrowsize="0.300000"];
+}

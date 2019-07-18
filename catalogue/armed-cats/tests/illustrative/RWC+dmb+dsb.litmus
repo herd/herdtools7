@@ -1,0 +1,15 @@
+ARM RWC+dmb+dsb
+"Rfe DMBdRR Fre DSBdWR Fre"
+Cycle=Rfe DMBdRR Fre DSBdWR Fre
+{
+%x0=x;
+%x1=x; %y1=y;
+%y2=y; %x2=x;
+}
+ P0            | P1            | P2            ;
+ MOV R0, #1    | LDR R0, [%x1] | MOV R0, #1    ;
+ STR R0, [%x0] | DMB           | STR R0, [%y2] ;
+               | LDR R1, [%y1] | DSB           ;
+               |               | LDR R1, [%x2] ;
+exists
+(1:R0=1 /\ 1:R1=0 /\ 2:R1=0)

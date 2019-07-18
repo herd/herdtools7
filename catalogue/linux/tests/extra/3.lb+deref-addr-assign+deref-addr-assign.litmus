@@ -1,0 +1,21 @@
+LISA 3.LB+deref-addr-assign+deref-addr-assign (*Paul says forbid*) 
+{
+x = 0;
+y = 0;
+z = 0;
+}
+P0                 | P1                 | P2                 ;
+r[deref] r1 x      | r[deref] r3 y      | r[deref] r5 z      ;
+mov r9 (xor r1 r1) | mov r9 (xor r3 r3) | mov r9 (xor r5 r5) ;
+mov r2 (add y r9)  | mov r4 (add z r9)  | mov r6 (add x r9)  ;
+w[assign] r2 1     | w[assign] r4 1     | w[assign] r6 1     ;
+exists(0:r1=1 /\ 1:r3=1 /\ 2:r5=1)
+
+(*More precisely, Paul says:
+
+        All w[assign] paired with same-variable r[deref] and proper
+        dependencies.  P0's r[deref] could be r[once] and P2's w[assign]
+        could be w[once] and still forbid this cycle.
+        But herd seems to disagree.
+
+*)

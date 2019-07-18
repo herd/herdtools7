@@ -1,0 +1,17 @@
+AArch64 3.2W+popls (S)
+"PodWWPL WseLP PodWWPL WseLP PodWWPL WseLP"
+Prefetch=0:x=F,0:y=W,1:y=F,1:z=W,2:z=F,2:x=W
+Com=Ws Ws Ws
+Orig=PodWWPL WseLP PodWWPL WseLP PodWWPL WseLP
+{
+0:X1=x; 0:X3=y;
+1:X1=y; 1:X3=z;
+2:X1=z; 2:X3=x;
+}
+ P0           | P1           | P2           ;
+ MOV W0,#2    | MOV W0,#2    | MOV W0,#2    ;
+ STR W0,[X1]  | STR W0,[X1]  | STR W0,[X1]  ;
+ MOV W2,#1    | MOV W2,#1    | MOV W2,#1    ;
+ STLR W2,[X3] | STLR W2,[X3] | STLR W2,[X3] ;
+exists
+(x=2 /\ y=2 /\ z=2)
