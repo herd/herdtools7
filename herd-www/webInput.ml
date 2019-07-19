@@ -16,6 +16,7 @@
 
 open Printf
 
+let webpath = "/jherd"
 let bell_fname = ref "error"
 let cat_fname = ref "error"
 let cfg_fname = ref "error"
@@ -35,7 +36,9 @@ let hash str =
    !hash
 
 let set_str suffix str_ref _contents hash =
-  str_ref := sprintf "web-%d%s" hash suffix
+  let name =  sprintf "web-%x%s"  hash suffix in
+  eprintf "STR: %s\n" name ;
+  str_ref := name
 
 let set_bell_str contents hash =
   set_str ".bell" bell_fname contents hash;
@@ -54,16 +57,25 @@ let set_litmus_str contents hash =
   litmus_str := contents
 
 let autoloader ~prefix ~path =
+  eprintf "Autoload: prefix=%s, path=%s\n%!" prefix path ;
   let fname_to_str = [
     (!bell_fname, !bell_str) ;
     (!cat_fname, !cat_str) ;
     (!cfg_fname, !cfg_str) ;
     (!litmus_fname, !litmus_str)] in
-
-  try Some (List.assoc path fname_to_str)
-  with Not_found ->
-    try CatIncludes.autoloader ~prefix:prefix ~path:path
+  let r =
+    try Some (List.assoc path fname_to_str)
     with Not_found ->
-      None
+      try CatIncludes.autoloader ~prefix:prefix ~path:path
+      with Not_found ->
+        None in
+  match r with
+  | None -> r
+  | Some ct ->
+      Printf.eprintf "Contents of %s:\n" path ;
+      Printf.eprintf "%s" ct ;
+      r
 
-let register_autoloader () = Js_of_ocaml.Sys_js.mount ~path:"." autoloader;
+let register_autoloader () =
+  Js_of_ocaml.Sys_js.unmount ~path:webpath ;
+  Js_of_ocaml.Sys_js.mount ~path:webpath autoloader

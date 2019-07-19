@@ -20,6 +20,8 @@ open Printf
 open Opts
 
 (* Option list *)
+let _ = includes := WebInput.webpath :: !includes
+
 let load_config s =
   let module ML =
     MyLib.Make
@@ -28,10 +30,22 @@ let load_config s =
         let env = None
         let libdir = Version.libdir
       end) in
-  LexConf_herd.lex (ML.find s)
+  let found = ML.find s in
+  LexConf_herd.lex found
+
 
 (* Configure parser/models/etc. *)
 let run_herd bell bell_hash cat cat_hash litmus litmus_hash cfg cfg_hash =
+
+  let bell = Js.to_string bell
+  and cat = Js.to_string cat
+  and litmus = Js.to_string litmus
+  and cfg = Js.to_string cfg in
+
+  eprintf "bell_hash='%x'\n%!" bell_hash ;
+  eprintf "cat_hash='%x'\n%!"  cat_hash ;
+  eprintf "cfg_hash='%x'\n%!"  cfg_hash ;
+  eprintf "bell: '%s'\n" bell ;
   let insert_in_web_output s =
     Js.Unsafe.fun_call (Js.Unsafe.variable "herd_output") [|Js.Unsafe.inject (Js.string s)|] in
   Sys_js.set_channel_flusher stdout insert_in_web_output ;
@@ -40,23 +54,41 @@ let run_herd bell bell_hash cat cat_hash litmus litmus_hash cfg cfg_hash =
   WebInput.set_cat_str cat cat_hash;
   WebInput.set_cfg_str cfg cfg_hash;
   WebInput.set_litmus_str litmus litmus_hash;
-  WebInput.register_autoloader ();
+  eprintf "JHERD: str set\n%!" ;
 
+  eprintf "JHERD: mount points=[%s]\n%!"
+    (String.concat "; " (Js_of_ocaml.Sys_js.mount_point ()));
+  WebInput.register_autoloader ();
+  eprintf "JHERD: autoloaded loaded\n%!" ;
+  eprintf "JHERD: mount points=[%s]\n%!"
+    (String.concat "; " (Js_of_ocaml.Sys_js.mount_point ()));
   (* web options *)
   outputdir := PrettyConf.StdoutOutput;
+  eprintf "JHERD: output set\n%!" ;
   dumpes := false;
   load_config !WebInput.cfg_fname;
+  eprintf "JHERD: config loaded\n%!" ;
   show := PrettyConf.ShowAll;
   model := Some (Model.File (!WebInput.cat_fname));
   Opts.bell := Some !WebInput.bell_fname;
-  let args = ref [!WebInput.litmus_fname] in
+  eprintf "JHERD: arg set bell=%s\n%!" !WebInput.bell_fname ;
+  let args = ref [Filename.concat WebInput.webpath !WebInput.litmus_fname] in
+  eprintf "JHERD: args set litmus=%s\n%!" !WebInput.litmus_fname ;
 
   (* Read generic model, if any *)
-  let libfind a = a in
+ let module ML =
+    MyLib.Make
+      (struct
+        let includes = !includes
+        let env = None
+        let libdir = Version.libdir
+      end) in
 
-  let module ParserConfig = struct
-    let debug = !debug.Debug_herd.lexer
-    let libfind =  libfind
+ let libfind = ML.find in
+
+ let module ParserConfig = struct
+   let debug = !debug.Debug_herd.lexer
+   let libfind =  libfind
   end in
 
   let model,model_opts = match !model with
@@ -108,7 +140,7 @@ let run_herd bell bell_hash cat cat_hash litmus litmus_hash cfg cfg_hash =
     let cycles = !cycles
     let outcomereads = !outcomereads
     let show = !show
-    let badexecs = !badexecs 
+    let badexecs = !badexecs
     let badflag = !badflag
     let throughflag = !throughflag
 
@@ -264,8 +296,8 @@ let run_herd bell bell_hash cat cat_hash litmus litmus_hash cfg cfg_hash =
             Warn.warn_always "%a: %s (User error)" Pos.pp_pos0 name msg ;
              check_exit seen
         | e ->
-	    Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
-	    raise e)
+            Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
+            raise e)
       tests StringMap.empty in
   ()
 
