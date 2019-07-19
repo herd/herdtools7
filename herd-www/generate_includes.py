@@ -3,7 +3,7 @@
 import os
 import sys
 
-CAT_INCLUDES = 'cat_includes'
+CAT_INCLUDES = 'herd/libdir'
 MAPPING_VAR = 'fname_to_str'
 
 def var_name_of_file_name(fname):

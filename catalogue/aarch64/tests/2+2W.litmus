@@ -1,0 +1,18 @@
+AArch64 2+2W
+"PodWW Wse PodWW Wse"
+Cycle=Wse PodWW Wse PodWW
+Generator=diycross7 (version 7.54+01(dev))
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Ws Ws
+Orig=PodWW Wse PodWW Wse
+{
+0:X1=x; 0:X3=y;
+1:X1=y; 1:X3=x;
+}
+ P0          | P1          ;
+ MOV W0,#2   | MOV W0,#2   ;
+ STR W0,[X1] | STR W0,[X1] ;
+ MOV W2,#1   | MOV W2,#1   ;
+ STR W2,[X3] | STR W2,[X3] ;
+exists
+(x=2 /\ y=2)

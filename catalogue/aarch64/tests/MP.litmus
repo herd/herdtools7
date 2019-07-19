@@ -1,0 +1,18 @@
+AArch64 MP
+"PodWW Rfe PodRR Fre"
+Cycle=Rfe PodRR Fre PodWW
+Generator=diycross7 (version 7.54+01(dev))
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=PodWW Rfe PodRR Fre
+{
+0:X1=x; 0:X3=y;
+1:X1=y; 1:X3=x;
+}
+ P0          | P1          ;
+ MOV W0,#1   | LDR W0,[X1] ;
+ STR W0,[X1] | LDR W2,[X3] ;
+ MOV W2,#1   |             ;
+ STR W2,[X3] |             ;
+exists
+(1:X0=1 /\ 1:X2=0)

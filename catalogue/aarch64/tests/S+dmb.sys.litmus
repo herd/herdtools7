@@ -1,0 +1,19 @@
+AArch64 S+dmb.sys
+"DMB.SYdWW Rfe DMB.SYdRW Wse"
+Cycle=Rfe DMB.SYdRW Wse DMB.SYdWW
+Generator=diycross7 (version 7.54+01(dev))
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Ws
+Orig=DMB.SYdWW Rfe DMB.SYdRW Wse
+{
+0:X1=x; 0:X3=y;
+1:X1=y; 1:X3=x;
+}
+ P0          | P1          ;
+ MOV W0,#2   | LDR W0,[X1] ;
+ STR W0,[X1] | DMB SY      ;
+ DMB SY      | MOV W2,#1   ;
+ MOV W2,#1   | STR W2,[X3] ;
+ STR W2,[X3] |             ;
+exists
+(x=2 /\ 1:X0=1)
