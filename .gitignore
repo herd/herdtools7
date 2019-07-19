@@ -1,7 +1,9 @@
 /Version.ml
-/_build/
+_build/
 .merlin
 dune-project
 herdtools7.install
 /herd-www/www/catalogue
-/herd-www/www/herd.js
+jerd.js
+jerd.byte
+catIncludes.ml
