@@ -15,10 +15,14 @@ assumption that herd is called in a one-off fashion, as from the
 command line. The remedy will be a healthy dose of hacks for now.
 
 
-== dependencies to build the website ==
+== dependencies to build the website (opam) ==
 
 # ocaml
-# js_of_ocaml
+# ocamlbuild
+# js_of_ocaml and js_of_ocaml_ppx
+
+That is:
+opam install ocamlbuild js_of_ocaml js_of_ocaml_ppx
 
 == how to add a book ==
 

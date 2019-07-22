@@ -726,7 +726,7 @@ function loadCampaign(testArray, campaignCode) {
 
     var headerRow = $('<tr/>')
         .append($('<th/>', {
-            text: 'forbidden',
+            text: '_forbidden_',
         }))
         .append($('<th/>', {
             text: 'litmus test',

@@ -302,4 +302,4 @@ let run_herd bell bell_hash cat cat_hash litmus litmus_hash cfg cfg_hash =
   ()
 
 let () =
-  Js.Unsafe.global##runHerd <- Js.wrap_callback run_herd;
+  Js.Unsafe.global##.runHerd := Js.wrap_callback run_herd;

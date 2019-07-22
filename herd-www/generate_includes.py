@@ -14,7 +14,6 @@ def escape_for_ocaml_string(s):
 
 def generate_header():
     print('(* Warning: file generate by ./generate_includes.py DO NOT EDIT *)')
-    print('open Printf')
 
 def generate_string_var(root,fname):
     var_name = var_name_of_file_name(fname)
