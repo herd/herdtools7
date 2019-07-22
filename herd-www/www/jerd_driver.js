@@ -204,8 +204,7 @@ function clearCfgEditor() {
             + 'xscale 1.0\n'
             + 'yscale 0.6667\n'
             + 'arrowsize 0.5\n'
-            + 'showfr true\n'
-            + 'showpoloc false\n'
+            + 'doshow fr\n'
             + 'showinitrf false\n'
             + 'showfinalrf false\n'
             + 'splines spline\n'
@@ -944,18 +943,14 @@ function jerdIt() {
     resetOutputs();
     showOutputs();
     var bellStr = editors['bell'].getValue();
-    var bellHash = bellStr.hashCode();
     var catStr = editors['cat'].getValue();
-    var catHash = catStr.hashCode();
     var cfgStr = editors['cfg'].getValue();
-    var cfgHash = cfgStr.hashCode();
     var litmusStr = editors['litmus'].getValue();
-    var litmusHash = litmusStr.hashCode();
     runHerd(
-        bellStr, bellHash,
-        catStr, catHash,
-        litmusStr, litmusHash,
-        cfgStr, cfgHash
+        bellStr,
+        catStr,
+        litmusStr,
+        cfgStr,
     );
     displayDotOutputs();
 }
@@ -968,20 +963,15 @@ function jerdAll() {
                 resetOutputs();
 
                 var bellStr = editors['bell'].getValue();
-                var bellHash = bellStr.hashCode();
                 var cfgStr = editors['cfg'].getValue();
-                var cfgHash = cfgStr.hashCode();
                 var catStr = editors['cat'].getValue();
-                var catHash = catStr.hashCode();
-
                 var litmusStr = data;
-                var litmusHash = litmusStr.hashCode();
 
                 runHerd(
-                    bellStr, bellHash,
-                    catStr, catHash,
-                    litmusStr, litmusHash,
-                    cfgStr, cfgHash
+                    bellStr,
+                    catStr,
+                    litmusStr,
+                    cfgStr,
                 );
 
                 var herdOutput = editors['herdoutput'].getValue();

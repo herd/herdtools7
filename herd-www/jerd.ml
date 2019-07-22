@@ -19,7 +19,10 @@ open Js_of_ocaml
 open Printf
 open Opts
 
-(* Option list *)
+let dbg = true
+
+(* Add webpath in front of include list, all pseudo-files will be there *)
+
 let _ = includes := WebInput.webpath :: !includes
 
 let load_config s =
@@ -35,45 +38,38 @@ let load_config s =
 
 
 (* Configure parser/models/etc. *)
-let run_herd bell bell_hash cat cat_hash litmus litmus_hash cfg cfg_hash =
+let run_herd bell cat litmus cfg =
 
   let bell = Js.to_string bell
   and cat = Js.to_string cat
   and litmus = Js.to_string litmus
   and cfg = Js.to_string cfg in
 
-  eprintf "bell_hash='%x'\n%!" bell_hash ;
-  eprintf "cat_hash='%x'\n%!"  cat_hash ;
-  eprintf "cfg_hash='%x'\n%!"  cfg_hash ;
-  eprintf "bell: '%s'\n" bell ;
+  if dbg then begin
+    eprintf "** bell **\n%s" bell ;
+    eprintf "** cat  **\n%s" cat ;
+    eprintf "** cfg  **\n%s" cfg ;
+    eprintf "** lit  **\n%s" litmus ;
+    ()
+  end ;
+
   let insert_in_web_output s =
     Js.Unsafe.fun_call (Js.Unsafe.variable "herd_output") [|Js.Unsafe.inject (Js.string s)|] in
   Sys_js.set_channel_flusher stdout insert_in_web_output ;
 
-  WebInput.set_bell_str bell bell_hash;
-  WebInput.set_cat_str cat cat_hash;
-  WebInput.set_cfg_str cfg cfg_hash;
-  WebInput.set_litmus_str litmus litmus_hash;
-  eprintf "JHERD: str set\n%!" ;
-
-  eprintf "JHERD: mount points=[%s]\n%!"
-    (String.concat "; " (Js_of_ocaml.Sys_js.mount_point ()));
+  let bell_fname = WebInput.set_bell_str bell
+  and cat_fname  = WebInput.set_cat_str cat
+  and cfg_fname = WebInput.set_cfg_str cfg
+  and litmus_fname = WebInput.set_litmus_str litmus in
   WebInput.register_autoloader ();
-  eprintf "JHERD: autoloaded loaded\n%!" ;
-  eprintf "JHERD: mount points=[%s]\n%!"
-    (String.concat "; " (Js_of_ocaml.Sys_js.mount_point ()));
   (* web options *)
   outputdir := PrettyConf.StdoutOutput;
-  eprintf "JHERD: output set\n%!" ;
   dumpes := false;
-  load_config !WebInput.cfg_fname;
-  eprintf "JHERD: config loaded\n%!" ;
+  load_config cfg_fname;
   show := PrettyConf.ShowAll;
-  model := Some (Model.File (!WebInput.cat_fname));
-  Opts.bell := Some !WebInput.bell_fname;
-  eprintf "JHERD: arg set bell=%s\n%!" !WebInput.bell_fname ;
-  let args = ref [Filename.concat WebInput.webpath !WebInput.litmus_fname] in
-  eprintf "JHERD: args set litmus=%s\n%!" !WebInput.litmus_fname ;
+  model := Some (Model.File (cat_fname));
+  Opts.bell := Some bell_fname;
+  let args = ref [Filename.concat WebInput.webpath litmus_fname] in
 
   (* Read generic model, if any *)
  let module ML =
@@ -301,5 +297,4 @@ let run_herd bell bell_hash cat cat_hash litmus litmus_hash cfg cfg_hash =
       tests StringMap.empty in
   ()
 
-let () =
-  Js.Unsafe.global##.runHerd := Js.wrap_callback run_herd;
+let () = Js.Unsafe.global##.runHerd := Js.wrap_callback run_herd;

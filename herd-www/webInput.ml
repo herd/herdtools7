@@ -27,54 +27,44 @@ let cat_str = ref "error"
 let cfg_str = ref "error"
 let litmus_str = ref "error"
 
-(* TODO: doesn't work... passing hash from JavaScript instead for now *)
-let hash str =
-   let hash = ref 5381 in
-   let each_char c =
-     hash := ((!hash lsl 5) + !hash) + (Char.code c); (* hash * 33 + c *) in
-   String.iter each_char str;
-   !hash
+let dbg = true
 
-let set_str suffix str_ref _contents hash =
-  let name =  sprintf "web-%x%s"  hash suffix in
-  eprintf "STR: %s\n" name ;
-  str_ref := name
+let hash contents = Digest.to_hex (Digest.string contents)
 
-let set_bell_str contents hash =
-  set_str ".bell" bell_fname contents hash;
-  bell_str := contents
+let set_str suffix str_ref contents  =
+  let h = hash contents in
+  let name =  sprintf "web-%s%s" h suffix in
+  if dbg then eprintf "JHERD: set_str name=%s\n%!" name ;
+  str_ref := name ;
+  name
 
-let set_cat_str contents hash =
-  set_str ".cat" cat_fname contents hash;
-  cat_str := contents
+let set_bell_str contents =
+  bell_str := contents ;
+  set_str ".bell" bell_fname contents
 
-let set_cfg_str contents hash =
-  set_str ".cfg" cfg_fname contents hash;
-  cfg_str := contents
 
-let set_litmus_str contents hash =
-  set_str ".litmus" litmus_fname contents hash;
-  litmus_str := contents
+let set_cat_str contents =
+  cat_str := contents ;
+  set_str ".cat" cat_fname contents
+
+let set_cfg_str contents =
+  cfg_str := contents ;
+  set_str ".cfg" cfg_fname contents
+
+let set_litmus_str contents =
+  litmus_str := contents ;
+  set_str ".litmus" litmus_fname contents
 
 let autoloader ~prefix ~path =
-  eprintf "Autoload: prefix=%s, path=%s\n%!" prefix path ;
   let fname_to_str = [
     (!bell_fname, !bell_str) ;
     (!cat_fname, !cat_str) ;
     (!cfg_fname, !cfg_str) ;
     (!litmus_fname, !litmus_str)] in
-  let r =
-    try Some (List.assoc path fname_to_str)
-    with Not_found ->
-      try CatIncludes.autoloader ~prefix:prefix ~path:path
-      with Not_found ->
-        None in
-  match r with
-  | None -> r
-  | Some ct ->
-      Printf.eprintf "Contents of %s:\n" path ;
-      Printf.eprintf "%s" ct ;
-      r
+  try Some (List.assoc path fname_to_str)
+  with Not_found ->
+    try CatIncludes.autoloader ~prefix:prefix ~path:path
+    with Not_found ->  None
 
 let register_autoloader () =
   Js_of_ocaml.Sys_js.unmount ~path:webpath ;
