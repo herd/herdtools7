@@ -3,7 +3,7 @@ BINDIR=$(PREFIX)/bin
 LIBDIR=$(PREFIX)/lib/herd7
 J=-j 8
 JERD_OPT=-use-ocamlfind
-BOOKS=aarch64
+BOOKS=aarch64 linux
 WWW_CATALOGUE=www/catalogue
 HERD_CATALOGUE=../catalogue
 OCB=ocamlbuild $(OCBOPT) $(JERD_OPT) -cflags -bin-annot,-w,A-4-9-29-45,-g -classic-display $(J)
@@ -11,7 +11,7 @@ PROG=jerd.js
 BYTE=jerd.byte
 WWW_PROG=www/$(PROG)
 JSON_SPINES=$(foreach book,$(BOOKS),$(WWW_CATALOGUE)/$(book)/shelf.json)
-CATINCLUDES=$(wildcard cat_includes/*.cat)
+CATINCLUDES=herd/libdir cat_includes
 
 all: web
 
@@ -37,8 +37,8 @@ web: $(JSON_SPINES) $(PROG)
 $(PROG): byte
 	js_of_ocaml $(BYTE)
 
-catIncludes.ml: $(CATINCLUDES)
-	./generate_includes.py > $@
+catIncludes.ml: $(CATINCLUDES) generate_includes.ml
+	ocaml ./generate_includes.ml $(CATINCLUDES) > $@
 
 byte native d.byte: catIncludes.ml
 #	sh lib/handle402.sh

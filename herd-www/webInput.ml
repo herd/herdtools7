@@ -16,6 +16,7 @@
 
 open Printf
 
+let dbg = true
 let webpath = "/jherd"
 let bell_fname = ref "error"
 let cat_fname = ref "error"
@@ -27,7 +28,7 @@ let cat_str = ref "error"
 let cfg_str = ref "error"
 let litmus_str = ref "error"
 
-let dbg = true
+let dbg = false
 
 let hash contents = Digest.to_hex (Digest.string contents)
 
@@ -55,6 +56,15 @@ let set_litmus_str contents =
   litmus_str := contents ;
   set_str ".litmus" litmus_fname contents
 
+let pp path cts =
+  if dbg then begin match cts with
+  | Some cts ->
+      Printf.eprintf "** Found %s in pseudo file system\n" path ;
+      Printf.eprintf "%s\n"  cts
+  | None -> ()
+  end ;
+  cts
+
 let autoloader ~prefix ~path =
   let fname_to_str = [
     (!bell_fname, !bell_str) ;
@@ -63,7 +73,7 @@ let autoloader ~prefix ~path =
     (!litmus_fname, !litmus_str)] in
   try Some (List.assoc path fname_to_str)
   with Not_found ->
-    try CatIncludes.autoloader ~prefix:prefix ~path:path
+    try pp path (CatIncludes.autoloader ~prefix:prefix ~path:path)
     with Not_found ->  None
 
 let register_autoloader () =

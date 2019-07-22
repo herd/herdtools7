@@ -19,7 +19,7 @@ open Js_of_ocaml
 open Printf
 open Opts
 
-let dbg = true
+let dbg = false
 
 (* Add webpath in front of include list, all pseudo-files will be there *)
 
@@ -67,8 +67,15 @@ let run_herd bell cat litmus cfg =
   dumpes := false;
   load_config cfg_fname;
   show := PrettyConf.ShowAll;
-  model := Some (Model.File (cat_fname));
-  Opts.bell := Some bell_fname;
+  (* Do not overide default or config settings by default arguments *)
+  begin match cat with
+  | "" -> ()
+  | _ ->  model := Some (Model.File (cat_fname));
+  end ;
+  begin match bell with
+  | "" -> () (* Default bell will not overwrite config setting *)
+  | _ ->  Opts.bell := Some bell_fname
+  end ;
   let args = ref [Filename.concat WebInput.webpath litmus_fname] in
 
   (* Read generic model, if any *)

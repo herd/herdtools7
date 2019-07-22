@@ -185,7 +185,7 @@ function clearCatEditor() {
 }
 
 function clearBellEditor() {
-    editors['bell'].setValue('"I can\'t dance"\n\n',-1);
+    editors['bell'].setValue('',-1);
 }
 
 function clearLitmusEditor() {
