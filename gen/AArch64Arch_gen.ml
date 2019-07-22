@@ -260,8 +260,7 @@ let fold_rmw f r =
   r
 
 let applies_atom_rmw rmw ar aw = match rmw,ar,aw with
-| LrSc,(Some ((Acq|AcqPc),_)|None),(Some (Rel,_)|None)
-| (Swp|Cas|LdOp _),(Some ((Acq|AcqPc),_)|None),(Some (Rel,_)|None)
+| (LrSc|Swp|Cas|LdOp _),(Some (Acq,_)|None),(Some (Rel,_)|None)
 | (StOp _),None,(Some (Rel,_)|None)
   -> true
 | _ -> false

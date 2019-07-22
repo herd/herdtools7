@@ -461,7 +461,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | (Plain,None) ->ldxr
       | (Plain,Some (sz,_)) -> ldxr_sz XX sz
       | (Acq,None)   -> ldaxr
-      | (Acq,Some (sz,_))  -> ldxr_sz AX sz
+      | (Acq,Some (sz,_)) -> ldxr_sz AX sz
+      | (AcqPc,_) -> Warn.fatal "AcqPC annotation on xload"
       | _ -> assert false
 
     and get_xstore = function
