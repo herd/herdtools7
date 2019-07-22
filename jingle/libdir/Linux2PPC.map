@@ -1,0 +1,127 @@
+C to PPC
+
+"if(%x != constvar:c) codevar:t; else codevar:f;" -> "cmpwi %x,&c;
+                                     beq else;
+                                     codevar:t;
+                                     b end;
+                                     else:
+                                     codevar:f;
+                                     end:"
+"if(%x) codevar:t; else codevar:f;" -> "cmpwi %x,0;
+                                     beq else;
+                                     codevar:t;
+                                     b end;
+                                     else:
+                                     codevar:f;
+                                     end:"
+
+"if(constvar:c == x) codevar:t;" -> "cmpwi %x,&c;
+                                     bne else;
+				     codevar:t;
+				     else:"
+
+"if(x == constvar:c) codevar:t;" -> "cmpwi %x,&c;
+                                     bne else;
+				     codevar:t;
+				     else:"
+"if(%x) codevar:t;" -> "cmpwi %x,0;
+			beq else;
+		        codevar:t;
+		        else:"
+
+"%x = constvar:c;" -> "li %x,&c"
+
+"*%x = constvar:c;" -> "li %tmp,&c;
+                       stw %tmp,0(%x)"
+
+"%x = %y;"  -> "mr %x,%y"
+"%x = %y == %z;"  -> "li %x,1; cmpw %y,%z; beq else; xor %x,%x,%x; else:"
+"%x = %y != %z;"  -> "li %x,1; cmpw %y,%z; bne else; xor %x,%x,%x; else:"
+"%x = %y == constvar:c;"  -> "li %x,1; cmpwi %y,&c; beq else; xor %x,%x,%x; else:"
+"%x = %y != constvar:c;"  -> "li %x,1; cmpwi %y,&c; bne else; xor %x,%x,%x; else:"
+
+"*%x = %y;" -> "stw %y,0(%x)"
+
+"%x = *%y;" -> "lwz %x,0(%y)"
+
+"%x = READ_ONCE(*%y);" -> "load:lwz %x,0(%y)"
+
+"WRITE_ONCE(*%y, %x);" -> "store:stw %x,0(%y)"
+
+"WRITE_ONCE(*%y, constvar:c);" -> "li %tmp,&c;
+                                   store:stw %tmp,0(%y)"
+
+"WRITE_ONCE(*%y, %x + constvar:c);" -> "li %tmp,&c;
+                                        add %tmp, %tmp, %x;
+                                        store:stw %tmp,0(%y)"
+
+"%x = %t & constvar:c; %x = %x + constvar:d; WRITE_ONCE(*%y,%x);" ->
+"andi. %x,%t,&c;
+addi %x,%x,&d;
+store: stw %x,0(%y)"
+
+"%t0 = %r & constvar:c; %t1 = %x + %t0; WRITE_ONCE(*%t1,constvar:d);" ->
+"andi. %t0,%r,&c;
+add %t1,%x,%t0;
+li %t2,&d;
+store: stw %t2,0(%t1)"
+
+"%x = %t & constvar:c; %x = %x + constvar:d; smp_store_release(%y,%x);" ->
+"andi. %x,%t,&c;
+addi %x,%x,&d;
+lwsync;
+store: stw %x,0(%y)"
+
+"%t0 = %r & constvar:c; %t1 = %x + %t0; smp_store_release(%t1,constvar:d);" ->
+"andi. %t0,%r,&c;
+add %t1,%x,%t0;
+li %t2,&d;
+lwsync;
+store: stw %t2,0(%t1)"
+
+"%r = xchg_relaxed(%x, %y);" -> "loop:load:lwarx %r,r0,%x;
+				store:stwcx. %y,r0,%x;
+				bne loop"
+
+"%r = cmpxchg_relaxed(%x, constvar:c, constvar:d);" -> "loop:li %tmp,&c;
+							load:lwarx %r,r0,%x;
+							cmpw %r,%tmp;
+							bne out;
+							li %tmp,&d;
+							store:stwcx. %tmp,r0,%x;
+							bne loop;
+							out:"
+
+"%r = xchg_relaxed(%x, constvar:c);" -> "li %tmp,&c;
+					 loop:load:lwarx %r,r0,%x;
+					 store:stwcx. %tmp,r0,%x;
+					 bne loop"
+
+"smp_mb();" -> "sync"
+
+"smp_rmb();" -> "lwsync"
+
+"smp_wmb();" -> "lwsync"
+
+"release" : "" -> "lwsync;"
+
+"acquire" : "^\([^;]+\)$" -> "\1;lwsync"
+
+// this func will convert lwsync to stronger sync in the translation
+"harden_lwsync" : "lwsync" -> "sync"
+
+// On PPC, to convert a acq_rel into a fully-ordered primitive,
+// we need to harden lwsync twice: one for the release lwsync and
+// the other for the acquire lwsync
+"full_on_acq_rel" : "harden_lwsync | harden_lwsync"
+
+"full" : "acquire | release | full_on_acq_rel"
+
+"id" : "" -> ""
+"const_c_to_1" : "&c" -> "1"
+"const_c_to_0" : "&c" -> "0"
+"const_d_to_1" : "&d" -> "1"
+
+"out_to_loop" : "bne out" -> "bne loop"
+
+"lock" : "const_c_to_0 | const_d_to_1 | out_to_loop"
