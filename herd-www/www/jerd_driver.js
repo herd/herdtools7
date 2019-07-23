@@ -1117,6 +1117,7 @@ $(function () {
     initEditor("cat", "ace/theme/chrome", "ace/mode/ocaml", false, true, selectMenuIdOfEditorName("cat"));
     initEditor("cfg", "ace/theme/chrome", "ace/mode/plain_text", false, true, selectMenuIdOfEditorName("cfg"));
     initEditor("herdoutput", "ace/theme/chrome", "ace/mode/plain_text", true, false);
+    editors['herdoutput'].setOptions({readOnly: true, highlightActiveLine: false, highlightGutterLine: false});
     initEditor("litmus", "ace/theme/chrome", "ace/mode/c_cpp", false, true, selectMenuIdOfEditorName("litmus"));
     initEditor("record", "ace/theme/chrome", "ace/mode/python", true, true);
     hideEditor('cfg');
