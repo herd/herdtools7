@@ -889,6 +889,10 @@ function push_current_dot() {
     dot_outputs.push(dot);
 }
 
+function herd_stderr(s) {
+    window.alert(s);
+}
+
 function herd_output(s) {
     log(s);
     var end_dot = s.match(/^DOTEND /);
