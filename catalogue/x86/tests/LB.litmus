@@ -1,0 +1,14 @@
+X86 LB
+"PodRW Rfe PodRW Rfe"
+Cycle=Rfe PodRW Rfe PodRW
+Generator=diycross7 (version 7.54+01(dev))
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Rf
+Orig=PodRW Rfe PodRW Rfe
+{
+}
+ P0          | P1          ;
+ MOV EAX,[x] | MOV EAX,[y] ;
+ MOV [y],$1  | MOV [x],$1  ;
+exists
+(0:EAX=1 /\ 1:EAX=1)

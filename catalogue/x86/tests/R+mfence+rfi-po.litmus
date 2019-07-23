@@ -1,0 +1,14 @@
+X86 R+mfence+rfi-po
+"MFencedWW Wse Rfi PodRR Fre"
+Generator=diyone7 (version 7.54+01(dev))
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Ws Fr
+Orig=MFencedWW Wse Rfi PodRR Fre
+{
+}
+ P0         | P1          ;
+ MOV [x],$1 | MOV [y],$2  ;
+ MFENCE     | MOV EAX,[y] ;
+ MOV [y],$1 | MOV EBX,[x] ;
+exists
+(y=2 /\ 1:EAX=2 /\ 1:EBX=0)

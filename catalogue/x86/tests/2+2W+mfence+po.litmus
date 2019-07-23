@@ -1,0 +1,15 @@
+X86 2+2W+mfence+po
+"MFencedWW Wse PodWW Wse"
+Cycle=Wse PodWW Wse MFencedWW
+Generator=diycross7 (version 7.54+01(dev))
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Ws Ws
+Orig=MFencedWW Wse PodWW Wse
+{
+}
+ P0         | P1         ;
+ MOV [x],$2 | MOV [y],$2 ;
+ MFENCE     | MOV [x],$1 ;
+ MOV [y],$1 |            ;
+exists
+(x=2 /\ y=2)

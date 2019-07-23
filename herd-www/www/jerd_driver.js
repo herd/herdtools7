@@ -208,7 +208,8 @@ function clearCfgEditor() {
             + 'showinitrf false\n'
             + 'showfinalrf false\n'
             + 'splines spline\n'
-            + 'pad 0.1',
+            + 'pad 0.1\n'
+            + 'showlegend false\n',
             -1);
 }
 

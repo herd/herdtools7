@@ -1,0 +1,23 @@
+# diycross7 -arch X86 Pod**,Fenced** Rfe,Fre,Wse Pod**,Fenced** Rfe,Fre,Wse
+# Version 7.54+01(dev), Revision: 69ba14324f16239482b7fa98e69ba6eb0335d5a2
+MP.litmus
+MP+po+mfence.litmus
+S.litmus
+S+po+mfence.litmus
+LB.litmus
+LB+mfence+po.litmus
+MP+mfence+po.litmus
+MP+mfences.litmus
+S+mfence+po.litmus
+S+mfences.litmus
+LB+mfences.litmus
+SB.litmus
+SB+mfence+po.litmus
+R.litmus
+R+mfence+po.litmus
+SB+mfences.litmus
+R+po+mfence.litmus
+R+mfences.litmus
+2+2W.litmus
+2+2W+mfence+po.litmus
+2+2W+mfences.litmus

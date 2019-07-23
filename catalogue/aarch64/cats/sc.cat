@@ -1,0 +1,10 @@
+SC
+
+include "fences.cat"
+include "cos.cat"
+
+(* Atomic *)
+empty rmw & (fre;coe) as atom
+
+(* Sequential consistency *)
+acyclic po | fr | rf | co as sc

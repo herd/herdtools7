@@ -22,7 +22,7 @@ command line. The remedy will be a healthy dose of hacks for now.
 # js_of_ocaml and js_of_ocaml_ppx
 
 That is:
-opam install ocamlbuild js_of_ocaml js_of_ocaml_ppx
+opam install ocamlbuild js_of_ocaml js_of_ocaml-ppx
 
 == how to add a book ==
 

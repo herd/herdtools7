@@ -1,0 +1,14 @@
+X86 SB+rfi-pos
+"Rfi PodRR Fre Rfi PodRR Fre"
+Generator=diyone7 (version 7.54+01(dev))
+Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+Com=Fr Fr
+Orig=Rfi PodRR Fre Rfi PodRR Fre
+{
+}
+ P0          | P1          ;
+ MOV [x],$1  | MOV [y],$1  ;
+ MOV EAX,[x] | MOV EAX,[y] ;
+ MOV EBX,[y] | MOV EBX,[x] ;
+exists
+(0:EAX=1 /\ 0:EBX=0 /\ 1:EAX=1 /\ 1:EBX=0)
