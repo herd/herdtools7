@@ -16,19 +16,18 @@
 
 open Printf
 
-let dbg = true
+let dbg = false
+
 let webpath = "/jherd"
 let bell_fname = ref "error"
 let cat_fname = ref "error"
 let cfg_fname = ref "error"
 let litmus_fname = ref "error"
-
 let bell_str = ref "error"
 let cat_str = ref "error"
 let cfg_str = ref "error"
 let litmus_str = ref "error"
 
-let dbg = false
 
 let hash contents = Digest.to_hex (Digest.string contents)
 
