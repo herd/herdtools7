@@ -1,4 +1,4 @@
-record = "aarch64"
+record = "AArch64"
 
 cats = [
     "cats/aarch64.cat",

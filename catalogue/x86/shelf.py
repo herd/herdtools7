@@ -1,4 +1,4 @@
-record = "aarch64"
+record = "X86"
 
 cats = [
     "cats/x86tso.cat",
