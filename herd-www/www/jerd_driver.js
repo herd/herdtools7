@@ -1115,6 +1115,15 @@ $(function () {
     // ace initialisation
     initEditor("bell", "ace/theme/chrome", "ace/mode/ocaml", false, true, selectMenuIdOfEditorName("bell"));
     initEditor("cat", "ace/theme/chrome", "ace/mode/ocaml", false, true, selectMenuIdOfEditorName("cat"));
+    editors['cat'].setOptions({
+        enableLinking: true
+    });
+    editors['cat'].on("linkClick",function(data){
+        if (debug) console.log("CLICK", data); // Just for testing so you can see what classes things are...
+  if(data && data.token && data.token.type == "string"){
+      window.open("weblib/" + data.token.value.replace(/^"/,'').replace(/"$/,''), "_blank");
+  }
+ });
     initEditor("cfg", "ace/theme/chrome", "ace/mode/plain_text", false, true, selectMenuIdOfEditorName("cfg"));
     initEditor("herdoutput", "ace/theme/chrome", "ace/mode/plain_text", true, false);
     editors['herdoutput'].setOptions({readOnly: true, highlightActiveLine: false, highlightGutterLine: false});
@@ -1161,7 +1170,7 @@ $(function () {
     }
 
     if (typeof record === 'undefined') {
-        record = 'tutorial';
+        record = 'aarch64';
     }
     readRecord(record, displayName, compatNum, bellString, catString, cfgString, litmusString, campaignCode);
     current_dot_name = null;
