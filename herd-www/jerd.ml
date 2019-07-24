@@ -57,10 +57,11 @@ let run_herd bell cat litmus cfg =
     Js.Unsafe.fun_call (Js.Unsafe.variable "herd_output") [|Js.Unsafe.inject (Js.string s)|] in
   Sys_js.set_channel_flusher stdout insert_in_web_output ;
 
-  let insert_in_web_stderr s =
-    Js.Unsafe.fun_call (Js.Unsafe.variable "herd_stderr") [|Js.Unsafe.inject (Js.string s)|] in
-  Sys_js.set_channel_flusher stderr insert_in_web_stderr ;
-
+  if not dbg then begin
+    let insert_in_web_stderr s =
+      Js.Unsafe.fun_call (Js.Unsafe.variable "herd_stderr") [|Js.Unsafe.inject (Js.string s)|] in
+    Sys_js.set_channel_flusher stderr insert_in_web_stderr
+  end ;
   let bell_fname = WebInput.set_bell_str bell
   and cat_fname  = WebInput.set_cat_str cat
   and cfg_fname = WebInput.set_cfg_str cfg
