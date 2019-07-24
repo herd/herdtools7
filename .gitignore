@@ -4,6 +4,7 @@ _build/
 dune-project
 herdtools7.install
 /herd-www/www/catalogue
+/herd-www/www/weblib
 jerd.js
 jerd.byte
 catIncludes.ml

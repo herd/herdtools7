@@ -1,3 +1,5 @@
+let prog = Sys.argv.(0)
+
 module StringMap = Map.Make(String)
 
 let output_header () =
@@ -56,11 +58,23 @@ let _ =
   for k = 1 to Array.length Sys.argv-1 do
     mr := all_files !mr Sys.argv.(k)
   done ;
-  let files =
-    StringMap.fold
-    (fun f d k -> bind d f::k)
-      !mr [] in
-  output_header () ;
-  output_env files ;
-  output_postlude () ;
+  begin match Filename.basename prog with
+  | "generate_includes.ml" ->
+      let files =
+        StringMap.fold
+          (fun f d k -> bind d f::k)
+          !mr [] in
+      output_header () ;
+      output_env files ;
+      output_postlude ()
+  | "generate_names.ml" ->
+      let files =
+        StringMap.fold
+          (fun f d k -> Filename.concat d f::k)
+          !mr [] in
+      List.iter
+        (fun f -> Printf.printf "%s\n" f)
+        files
+  | _ -> assert false
+  end ;
   ()
