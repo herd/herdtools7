@@ -80,21 +80,12 @@ let tuple_pat = function
 %%
 
 main:
-| identity options topins_list EOF { $2, $1,$3 }
+| identity topins_list EOF { ModelOption.default, $1, $2 }
 
 identity:
 | VAR { $1 }
 | STRING { $1 }
 |  { "Unknown" }
-
-options:
-| WITHCO options { ModelOption.set_enumco true $2 }
-| WITHOUTCO options { ModelOption.set_enumco false $2 }
-| WITHINIT options { ModelOption.set_init true $2 }
-| WITHOUTINIT options { ModelOption.set_init false $2 }
-| WITHSC options { ModelOption.set_enumsc true $2 }
-| WITHOUTSC options { ModelOption.set_enumsc false $2 }
-|    { ModelOption.default }
 
 topins_list:
 | { [] }

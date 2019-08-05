@@ -40,12 +40,6 @@ module LU = LexUtils.Make(O)
     | "in" -> IN
     | "undefined_unless" -> REQUIRES (* jade: deprecated?, indeed but still here ! *)
     | "flag" -> FLAG
-    | "withco" -> WITHCO (*jade: a virer*) 
-    | "withoutco" ->  WITHOUTCO (*jade: a virer*)
-    | "withinit" -> WITHINIT  (*jade: a virer*) 
-    | "withoutinit" ->  WITHOUTINIT (*jade: a virer*)    
-    | "withsc" -> WITHSC  (*jade: a virer*)    
-    | "withoutsc" -> WITHOUTSC (*jade: a virer*)
     | "include" -> INCLUDE
     | "begin" -> BEGIN
     | "end" -> END
