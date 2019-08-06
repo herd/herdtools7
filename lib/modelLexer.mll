@@ -24,7 +24,7 @@ module LU = LexUtils.Make(O)
 
 (* Efficient from ocaml 4.02 *)
 
-  let check_keyword = function
+  let do_check_keyword = function
     | "let" -> LET
     | "rec" -> REC
     | "and" -> AND
@@ -63,72 +63,70 @@ module LU = LexUtils.Make(O)
     | "compat" -> COMPAT
     | x -> VAR x
 
+
+  open LexItem
+
+  let check_keyword f lxm =
+    let r = do_check_keyword lxm in
+    begin match r with
+    | VAR x -> f Ord lxm
+    | _ -> f Keyword lxm
+    end ;
+    r
+
+  let wrap_comment f =
+    let buff = Buffer.create 16 in
+    let add_c c = Buffer.add_char buff c
+    and over () = f Comment (Buffer.contents buff) in
+    add_c '(' ; add_c '*' ;
+    add_c,over
 }
 
 let digit = [ '0'-'9' ]
 let alpha = [ 'a'-'z' 'A'-'Z']
 let name  = '_' ? alpha (alpha|digit|'_' | '.' | '-')* '\''?
 
-rule token = parse
-| [' ''\t''\r'] { token lexbuf }
-| '\n'      { incr_lineno lexbuf; token lexbuf }
-| "//" [^'\n']* { token lexbuf }
-| "(*"      { LU.skip_comment lexbuf ; token lexbuf }
-| '#' [^'\n']* '\n' { incr_lineno lexbuf ; token lexbuf }
-| '('   { LPAR }
-| ')'   { RPAR }
-| '{'   { LACC }
-| '}'   { RACC }
-| '['   { LBRAC }
-| ']'   { RBRAC }
-| '_'   { UNDERSCORE }
-| '0'   { EMPTY }
-| '|'   { UNION }
-| "||"  { ALT }
-| '&'   { INTER }
-| '*'   { STAR }
-| '~'   { COMP }
-| '+'   { PLUS }
-| "++"  { PLUSPLUS }
-| '^'   { HAT }
-| "-1"  { INV }
-| '\\'  { DIFF }
-| '?'   { OPT }
-| '='   { EQUAL }
-| ';'   { SEMI }
-| ','   { COMMA }
-| "->"  { ARROW }
-| '{'   { let buf = Buffer.create 4096 in
-          get_body 0 buf lexbuf;
-          LATEX (Buffer.contents buf)
-        }
-| '"' ([^'"']* as s) '"' { STRING s } (* '"' *)
-| '\'' (name as x) { TAG x }
-| name as x { check_keyword x }
-| eof { EOF }
+rule token f = parse
+| [' ''\t''\r']+ as lxm { f Blank lxm ; token f lexbuf }
+| '\n'      { incr_lineno lexbuf; f Blank "\n" ; token f lexbuf }
+| ("//"|"#") [^'\n']* as lxm { f Comment lxm ; token f lexbuf }
+| "(*"
+    { let add,over = wrap_comment f in
+      LU.skip_comment_fun add lexbuf ;
+      over () ;
+      token f lexbuf }
+| '('   { f Delim "(" ; LPAR }
+| ')'   { f Delim ")" ; RPAR }
+| '{'   { f Delim "{" ; LACC }
+| '}'   { f Delim "}" ; RACC }
+| '['   { f Delim "[" ; LBRAC }
+| ']'   { f Delim "]" ; RBRAC }
+| '_'   { f Keyword "_" ; UNDERSCORE }
+| '0'   { f Keyword "0" ; EMPTY }
+| '|'   { f Operator "|" ; UNION }
+| "||"  { f Operator "||" ; ALT }
+| '&'   { f Operator "&" ; INTER }
+| '*'   { f Operator "*" ; STAR }
+| '~'   { f Operator "~" ; COMP }
+| '+'   { f Operator "+" ; PLUS }
+| "++"  { f Operator "++" ; PLUSPLUS }
+| '^'   { f Operator "^" ; HAT }
+| "-1"  { f Operator "-1" ; INV }
+| '\\'  { f Operator "\\" ; DIFF }
+| '?'   { f Operator "?" ; OPT }
+| '='   { f Operator "=" ; EQUAL }
+| ';'   { f Operator ";" ; SEMI }
+| ','   { f Operator "," ; COMMA }
+| "->"  { f Operator "->" ; ARROW }
+| '"' ([^'"']* as s) '"' as lxm { f String lxm ; STRING s } (* '"' *)
+| '\'' (name as x) as lxm { f Ord lxm ; TAG x }
+| name as x { check_keyword f x }
+| eof { f Eof "" ; EOF }
 | ""  { error "Model lexer" lexbuf }
 
-and get_body i buf = parse
-| '\n' as lxm
-    { Lexing.new_line lexbuf ;
-      Buffer.add_char buf lxm ;
-      get_body i buf lexbuf ; }
-| '{' as lxm
-    { Buffer.add_char buf lxm;
-      get_body (succ i) buf lexbuf
-    }
-| '}' as lxm
-    { if i > 0 then begin
-       Buffer.add_char buf lxm;
-       get_body (pred i) buf lexbuf
-     end
-    }
-| eof { LexMisc.error "missing a closing brace" lexbuf }
-| _ as lxm { Buffer.add_char buf lxm; get_body i buf lexbuf }
-
 {
-let token lexbuf =
-   let tok = token lexbuf in
+let do_token f lexbuf =
+   let tok = token f lexbuf in
    if O.debug then begin
      Printf.eprintf
        "%a: Lexed '%s'\n"
@@ -137,5 +135,10 @@ let token lexbuf =
        (lexeme lexbuf)
    end ;
    tok
+
+let token lexbuf = do_token Misc.ing2 lexbuf
+
+let token_fun f lexbuf = ignore (do_token f lexbuf)
+
 end
 }

@@ -42,21 +42,21 @@ module Make(O:Config) = struct
     let lexbuf =
       from_function
         (fun buf n -> (* refill function *)
-	  if !next_pos >= end_pos.pos_cnum then 0 (* pretend eof *)
-	  else
-	    let n_read = input ic buf 0 n in
+          if !next_pos >= end_pos.pos_cnum then 0 (* pretend eof *)
+          else
+            let n_read = input ic buf 0 n in
             if O.debug then begin
               Printf.eprintf "** Refill: %i**\n%!" n_read ;
               Printf.eprintf
                 "<<%s>>\n"
                 (String.escaped (Bytes.sub_string buf 0 n_read))
             end ;
-	    next_pos := !next_pos + n_read ;
-	    (* will trigger refill as soon as end_pos is reached by lexer *)
-	    if !next_pos > end_pos.pos_cnum then
-	      n_read - (!next_pos - end_pos.pos_cnum)
-	    else
-	      n_read) in
+            next_pos := !next_pos + n_read ;
+            (* will trigger refill as soon as end_pos is reached by lexer *)
+            if !next_pos > end_pos.pos_cnum then
+              n_read - (!next_pos - end_pos.pos_cnum)
+            else
+              n_read) in
     if O.debug then begin
       Printf.eprintf "start_pos=%a\n" Pos.debug_pos start_pos
     end ;
@@ -99,33 +99,35 @@ module Make(O:Config) = struct
 let digit = ['0'-'9']
 let num = digit+
 let blank = ['\t'' ']
-rule skip_comment i = parse 
-  | '\n' { incr_lineno lexbuf; skip_comment i lexbuf }   
-  | "(*" { skip_comment (i+1) lexbuf }
-  | "*)" 
-      { if i > 1 then skip_comment (i-1) lexbuf}
+
+rule skip_comment f i = parse
+  | '\n' { incr_lineno lexbuf; f '\n' ; skip_comment f i lexbuf }
+  | "(*" { f '(' ; f '*' ; skip_comment f (i+1) lexbuf }
+  | "*)"
+      { f '*' ; f ')' ; if i > 1 then skip_comment f (i-1) lexbuf}
   | eof { error "eof in skip_comment" lexbuf }
-  | _ { skip_comment i lexbuf}
+  | _ as c { f c ; skip_comment f i lexbuf}
 
 and skip_c_comment = parse
-  | '\n' { incr_lineno lexbuf; skip_c_comment lexbuf }   
+  | '\n' { incr_lineno lexbuf; skip_c_comment lexbuf }
   | "*/" { () }
   | eof { error "eof in skip_c_comment" lexbuf }
   | _ { skip_c_comment lexbuf}
 
 and skip_c_line_comment = parse
-  | '\n' { incr_lineno lexbuf }   
+  | '\n' { incr_lineno lexbuf }
   | eof { () }
   | _ { skip_c_line_comment lexbuf}
 
-and skip_string = parse 
-  | '\n' 	{ error "newline in skip_string" lexbuf }   
+and skip_string = parse
+  | '\n'        { error "newline in skip_string" lexbuf }
   | "\""	{ () }
-  | eof 	{ error "eof in skip_string" lexbuf }
-  | _ 		{ skip_string lexbuf}
+  | eof         { error "eof in skip_string" lexbuf }
+  | _           { skip_string lexbuf}
 
 {
 
-let skip_comment = skip_comment 1
+let skip_comment_fun f = skip_comment f 1
+let skip_comment = skip_comment Misc.ing 1
 end
 }

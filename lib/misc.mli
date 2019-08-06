@@ -49,6 +49,9 @@ val int_eq : int -> int -> bool
 val string_eq : string -> string -> bool
 
 external identity : 'a -> 'a = "%identity"
+(* ignore argument(s) *)
+val ing : 'a -> unit
+val ing2 : 'a -> 'b -> unit
 
 val is_none : 'a option -> bool
 val is_some : 'a option -> bool

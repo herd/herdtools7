@@ -2211,7 +2211,6 @@ module Make
                   vs res
             | _ -> error st.silent (get_loc e) "set expected"
             end
-        | Latex _ -> kont st res
         | Events (loc,x,es,def) when O.bell ->
             let x = BellName.tr_compat x in
             if not (StringSet.mem x BellName.all_sets) then

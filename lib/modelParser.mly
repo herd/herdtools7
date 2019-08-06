@@ -133,7 +133,6 @@ ins:
 | SHOW base AS VAR { ShowAs (mk_loc(),$2, $4) }
 | SHOW var_list { Show (mk_loc(),$2) }
 | UNSHOW var_list { UnShow (mk_loc(),$2) }
-| LATEX { Latex (mk_loc(),$1) }
 | INCLUDE STRING { Include (mk_loc(),$2) }
 | PROCEDURE VAR LPAR formals RPAR EQUAL ins_list END
    { Procedure (mk_loc (),$2,tuple_pat $4,$7,IsNotRec) }

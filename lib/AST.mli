@@ -89,7 +89,6 @@ type ins =
   | UnShow of  TxtLoc.t * string list
   | Show of  TxtLoc.t * string list
   | ShowAs of  TxtLoc.t * exp * string
-  | Latex of  TxtLoc.t * string
   | Include of  TxtLoc.t * string (* file name, interpreter will read/parse file... *)
   | Procedure of  TxtLoc.t * var * pat * ins list * is_rec
   | Call of  TxtLoc.t * var * exp * string option (* optional name, for skip *)

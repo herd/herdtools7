@@ -55,6 +55,9 @@ let string_eq (s1:string) (s2:string) = (=) s1 s2
 
 external identity : 'a -> 'a = "%identity"
 
+let ing _ = ()
+let ing2 _ _ = ()
+
 let is_none = function
   | None -> true
   | Some _ -> false

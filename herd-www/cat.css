@@ -1,0 +1,13 @@
+.show {
+    font-family:monospace;
+    white-space:pre;
+    margin-right:auto;
+    margin-left:0pt;
+    text-align:left;
+}
+
+.kwd {font-weight:bold}
+.comment {color:magenta;font-style:italic;}
+.string {color:green;}
+a:link {text-decoration:none;}
+a:hover {text-decoration:none;background-color:#40FF40}
