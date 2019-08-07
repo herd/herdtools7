@@ -338,6 +338,10 @@ function doDownloadAndSetEditorValue(url, name, pos) {
                 if (name === 'litmus') {
                     setLitmusSyntaxHighlighting();
                 }
+                if (name == 'cat') {
+                    var nhref = 'weblib/' + basename(url) + '.html' ;
+                    document.getElementById('show-cat').href = nhref ;
+                }
             }
         })(url, name, pos)
     });
@@ -718,7 +722,7 @@ function loadCampaign(testArray, campaignCode) {
         campaignCode = [];
         for (var index = 0; index < (testArray.length  / 4) | 0; index++) {
             campaignCode.push(0);
-        } 
+        }
     }
 
     var campaignTable = $('#campaign-table');
@@ -1109,7 +1113,7 @@ $(function () {
     initCurrentState();
 
     // bootstrap initialisation
-    $('[data-toggle="popover"]').popover(); 
+    $('[data-toggle="popover"]').popover();
     $('[data-toggle="tooltip"]').tooltip();
 
     // ace initialisation
@@ -1225,8 +1229,8 @@ function updateLinkToExample() {
 }
 
 ;(function ($) {
-    $.extend({      
-        getQueryString: function (name) {           
+    $.extend({
+        getQueryString: function (name) {
             function parseParams() {
                 var params = {},
                     e,
@@ -1245,7 +1249,7 @@ function updateLinkToExample() {
             }
 
             if (!this.queryStringParams)
-                this.queryStringParams = parseParams(); 
+                this.queryStringParams = parseParams();
 
             return this.queryStringParams[name];
         }

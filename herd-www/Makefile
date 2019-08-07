@@ -12,7 +12,7 @@ BYTE=jerd.byte
 WWW_PROG=www/$(PROG)
 WWW_LIB=www/weblib
 JSON_SPINES=$(foreach book,$(BOOKS),$(WWW_CATALOGUE)/$(book)/shelf.json)
-CATINCLUDES=herd/libdir cat_includes $(foreach b,$(BOOKS),$(HERD_CATALOGUE)/$(b))
+CATINCLUDES=herd/libdir cat_includes $(foreach b,$(BOOKS),$(HERD_CATALOGUE)/$(b)/cats)
 CATINCLUDESDEP=$(foreach d,$(CATINCLUDES),$(wildcard $(d)/*.*))
 all: web
 
@@ -30,7 +30,8 @@ $(WWW_CATALOGUE)/$1/:
 
 .PHONY:: $(WWW_CATALOGUE)/$1/
 endef
-
+tst:
+	ocaml generate_names.ml $(CATINCLUDES)
 weblib:
 	@echo '** INSTALL ' $(WWW_LIB) && mkdir -p $(WWW_LIB) && cp ./cat.css $(WWW_LIB)
 	@ocaml generate_names.ml $(CATINCLUDES) | while read f; do cp $$f $(WWW_LIB) && cat2html7 $(WWW_LIB)/$$(basename $$f) ; done
