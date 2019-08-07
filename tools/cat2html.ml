@@ -114,21 +114,23 @@ let tr_name name =
       let oname = match !outname with
       | None -> sprintf "%s.html" name
       | Some name ->  name in
-      Misc.output_protect
-        (fun out ->
-          let module Lex = ModelLexer.Make(struct let debug = false end) in
-          let module M =
-            Make
-              (struct
-                let verbose = !verbose
-                let name = name
-                let inp = inp
-                let out = out
-                let css = "cat.css"
-                let lexer = Lex.token_fun
-              end) in
-          M.zyva ())
-        oname)
+      try
+        Misc.output_protect
+          (fun out ->
+            let module Lex = ModelLexer.Make(struct let debug = false end) in
+            let module M =
+              Make
+                (struct
+                  let verbose = !verbose
+                  let name = name
+                  let inp = inp
+                  let out = out
+                  let css = "cat.css"
+                  let lexer = Lex.token_fun
+                end) in
+            M.zyva ())
+          oname
+      with e -> MySys.remove oname ; raise e)
     name
 
 let tr_name name =
