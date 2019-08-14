@@ -46,15 +46,19 @@ module type S = sig
   module C : Cycle.S with type fence = A.fence and type edge=E.edge and type atom = A.atom
 end
 
-module Make(C:Config) (A:Arch_gen.S) =
-struct
+module Make(C:Config) (A:Arch_gen.S) = struct
   module A = A 
 
   module E =  Edge.Make(C)(A)
+
   type check = E.edge list list -> bool
 
   let () = match C.show with
-  | Some s -> begin E.show s ; exit 0 end
+  | Some s -> begin
+      try E.show s ; exit 0
+      with e -> Printexc.print_backtrace stderr ;
+        flush stderr ; raise e
+  end
   | None -> ()
 
   module R = Relax.Make(A) (E)

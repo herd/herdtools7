@@ -31,6 +31,7 @@ let tag2rel_var s = s
 
 let r = "R"
 and w = "W"
+and j = "J"
 and f = "F"
 and rmw = "RMW"
 and b = "B"

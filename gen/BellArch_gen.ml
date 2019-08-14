@@ -103,7 +103,7 @@ let default_atom = [] (* Wrong, extract from bell file? *)
 let tr_dir = function
   | R -> BellName.r
   | W -> BellName.w
-  | J -> assert false
+  | J -> BellName.j
 
 let applies_atom = match bi with
 | None -> (fun a _d -> match a with [] -> true | _ -> false)

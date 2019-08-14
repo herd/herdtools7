@@ -95,7 +95,11 @@ let pp_sd = function
 
 let fold_ie f r = f Ext (f Int r)
 let fold_sd f r = f Diff (f Same r)
-let fold_extr f r = f (Dir J) (f (Dir W) (f (Dir R) (f Irr r)))
+let do_fold_extr withj f r =
+  let r = f (Dir W) (f (Dir R) (f Irr r)) in
+  if withj then f (Dir J) r
+  else r
+let fold_extr f r = do_fold_extr false f r
 let fold_sd_extr f = fold_sd (fun sd -> fold_extr (fun e -> f sd e))
 let fold_sd_extr_extr f =
   fold_sd_extr (fun sd e1 -> fold_extr (fun e2 -> f sd e1 e2))

@@ -59,6 +59,7 @@ val pp_extr : extr -> string
 val pp_sd : sd -> string
 
 val fold_ie : (ie -> 'a -> 'a) -> 'a -> 'a
+val do_fold_extr : bool -> (extr -> 'a -> 'a) -> 'a -> 'a
 val fold_extr : (extr -> 'a -> 'a) -> 'a -> 'a
 val fold_sd : (sd -> 'a -> 'a) -> 'a -> 'a
 val fold_sd_extr : (sd -> extr -> 'a -> 'a) -> 'a -> 'a

@@ -30,6 +30,7 @@ val tag2rel_var : string -> string
 (* Valid names of various categories *)
 val r : string
 val w : string
+val j : string
 val f : string
 val rmw : string
 val b : string
