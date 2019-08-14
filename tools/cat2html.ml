@@ -15,6 +15,7 @@ module Make
       val lexer : LexItem.collect -> Lexing.lexbuf -> unit
     end) =
   struct
+    let () = ignore O.verbose
     let p fmt = fprintf O.out fmt
     let pl = p "%s\n"
 

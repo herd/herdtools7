@@ -163,7 +163,7 @@ module Make(O:Config)(A:I) =
                 [] init)) in
       StringSet.elements set
 
-    let get_labels { init; } =
+    let get_labels { init; _} =
       List.fold_left
         (fun k (_,v) ->
           match v with

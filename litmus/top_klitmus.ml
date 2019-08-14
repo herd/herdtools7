@@ -156,7 +156,6 @@ module Top(O:Config)(Tar:Tar.S) = struct
           end)
 
       let allocate fname src =
-        let open MiscParser in
         let have_rcu p =
           List.exists
             (fun (_,code) ->

@@ -16,11 +16,11 @@
 
 open Printf
 (* Memory order *)
-open MemOrder  
+
 module ScopeGen = ScopeGen.NoGen
 (* Atoms *)
 open Code
-
+open MemOrder
 let bellatom = false
 
 type atom = MemOrder.t
@@ -32,7 +32,7 @@ let applies_atom a d = match a,d with
 | (Rel|Acq_Rel),R -> false
 | _,_ -> true
 
-let compare_atom = compare
+let compare_atom = Misc.polymorphic_compare
 
 let pp_plain = Code.plain
 let pp_as_a = Some SC

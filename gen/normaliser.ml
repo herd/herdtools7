@@ -269,7 +269,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
           -> 1
         | (Fenced _|Dp _),(Po _|Rf _)
         | Fenced _,Dp _ -> -1
-        | _,_ -> compare e1 e2
+        | _,_ -> Misc.polymorphic_compare e1 e2
 
       let ninternals n =
         let rec do_rec r m =
@@ -373,7 +373,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
             mutable next : t ; mutable prev : t ; }
 
       let rec nil =
-        { points = One R; cycle = CE.nil; prev = nil; next = nil; }
+        { points = One Dir.R; cycle = CE.nil; prev = nil; next = nil; }
 
       let has_dir e = match e.CE.dir with
       | Some _ -> true

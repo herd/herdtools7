@@ -69,7 +69,7 @@ module LU = LexUtils.Make(O)
   let check_keyword f lxm =
     let r = do_check_keyword lxm in
     begin match r with
-    | VAR x -> f Ord lxm
+    | VAR _ -> f Ord lxm
     | _ -> f Keyword lxm
     end ;
     r
