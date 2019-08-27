@@ -284,8 +284,8 @@ module Make (C:Sem.Config)(V:Value.S)
 
       | I_BC(c,l)->
           let cond = match c with
-          | NE -> is_not_zero
-          | EQ -> is_zero
+          | NE -> is_zero
+          | EQ -> is_not_zero
           in
           (read_reg_ord NZP ii)
             >>= cond
@@ -379,18 +379,13 @@ module Make (C:Sem.Config)(V:Value.S)
           | ADD|ADDS -> fun (v1,v2) -> M.add v1 v2
           | EOR -> fun (v1,v2) -> M.op Op.Xor v1 v2
           | ORR -> fun (v1,v2) -> M.op Op.Or v1 v2
-          | SUB -> fun (v1,v2) -> M.op Op.Sub v1 v2
-          | SUBS -> fun (v1,v2) ->
-              begin match rd with
-              | ZR -> M.op Op.Eq v1 v2
-              | _  -> M.op Op.Sub v1 v2
-              end
+          | SUB|SUBS -> fun (v1,v2) -> M.op Op.Sub v1 v2
           | AND|ANDS -> fun (v1,v2) -> M.op Op.And v1 v2
           end >>=
           (let m =  (fun v ->
             (write_reg rd v ii) >>|
             (match op with
-            | ADDS|SUBS|ANDS -> write_reg NZP v ii
+            | ADDS|SUBS|ANDS -> is_zero v >>= fun v -> write_reg NZP v ii
             | ADD|EOR|ORR|AND|SUB -> M.unitT ())) in
           mask32 ty m) >>!
           B.Next
