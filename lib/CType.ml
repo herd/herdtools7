@@ -122,3 +122,15 @@ let rec is_ptr_to_atomic = function
   | Volatile t -> is_ptr_to_atomic t
   | Pointer t -> is_atomic t
   | _ -> false
+
+let same_base t0 t1 = match t0,t1 with
+| Base s0,Base s1 ->
+    begin match s0,s1 with
+    | ("int8_t","uint8_t")|("uint8_t","int8_t")
+    | ("int16_t","uint16_t")|("uint16_t","int16_t")
+    | ("int32_t","uint32_t")|("uint32_t","int32_t")
+    | ("int64_t","uint64_t")|("uint64_t","int64_t")
+      -> true
+    | _,_ -> false
+    end
+| _,_ -> false

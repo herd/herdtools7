@@ -335,8 +335,12 @@ module Make(O:Config)(A:I) =
                     Warn.user_error
                       "Register %s has different types: <%s> and <%s>"
                       (A.reg_to_string r) (CType.dump t0) (CType.dump t)
-                  end else if not (CType.is_ptr t0 && CType.is_ptr t) then
-                    Warn.warn_always
+                  end else
+                    if not
+                        ((CType.is_ptr t0 && CType.is_ptr t) ||
+                        CType.same_base t0 t)
+                    then
+                        Warn.warn_always
                       "File \"%s\" Register %s has different types: <%s> and <%s>"
                       tst.name.Name.file
                       (A.reg_to_string r) (CType.dump t0) (CType.dump t)
