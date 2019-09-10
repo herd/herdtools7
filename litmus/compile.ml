@@ -82,7 +82,8 @@ module Generic (A : Arch_litmus.Base)
                | LV (A.Location_reg (q,r),v) when p=q && A.reg_compare reg r = 0 ->
                    begin match typeof v,t with
                    | (Base _, Some (Base _)) ->
-                   t (* location takes precedence *)
+                      Some (A.typeof r)
+                   (*Some t (* location takes precedence *)*)
                    | (Pointer (Base s1), Some (Pointer (Base s2)))
                      when Misc.string_eq s1 s2 ->
                        t
@@ -140,8 +141,18 @@ module Generic (A : Arch_litmus.Base)
           A.LocMap.add loc (typeof v) env
         | LL _|FF _ -> env
 
+      let type_atom_final a env = match a with
+        | ConstrGen.LV (loc,v) ->
+           if A.arch = `X86_64 then
+             match loc with
+             | A.Location_reg (proc,r) -> A.LocMap.add loc (A.typeof r) env
+             | _ -> A.LocMap.add loc (typeof v) env
+           else
+             A.LocMap.add loc (typeof v) env
+        | ConstrGen.LL _ -> env
+
       let type_final final env =
-        ConstrGen.fold_constr type_atom final env
+        ConstrGen.fold_constr type_atom_final final env
 
       let type_prop prop env = ConstrGen.fold_prop type_atom prop env
 
@@ -206,7 +217,7 @@ module Generic (A : Arch_litmus.Base)
             bds in
         eprintf "%s: %s\n" tag (String.concat " " pp)
 
-      let debug = false
+      let debug = true
 
       let build_type_env init final filter flocs =
         let env = type_final final A.LocMap.empty in
@@ -462,7 +473,7 @@ type P.code = MiscParser.proc * A.pseudo list)
     let live_in_code code env live_in_final =
       List.fold_right live_in_ins code (env,live_in_final)
 
-    let debug = false
+    let debug = true
 (* Fixpoint *)
     let comp_fix  code live_in_final =
       if debug then
