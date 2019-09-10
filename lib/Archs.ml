@@ -26,6 +26,7 @@ module System = struct
     | `PPC
     | `X86
     | `RISCV
+    | `X86_64
   ]
 
   let tags = [
@@ -35,6 +36,7 @@ module System = struct
     "PPC";
     "X86";
     "RISCV";
+    "X86_64";
   ]
 
   let parse = function
@@ -44,6 +46,7 @@ module System = struct
     | "PPC" -> Some `PPC
     | "X86" -> Some `X86
     | "RISCV"|"RISC-V" -> Some `RISCV
+    | "X86_64" -> Some `X86_64
     | _ -> None
 
   let lex s = match parse s with
@@ -57,6 +60,7 @@ module System = struct
     | `PPC -> "PPC"
     | `X86 -> "X86"
     | `RISCV -> "RISCV"
+    | `X86_64 -> "X86_64"
 end
 
 type t = [
@@ -104,5 +108,6 @@ let riscv = `RISCV
 let c = `C
 let cpp = `CPP
 let lisa = `LISA
+let x86_64 = `X86_64
 
 let compare = compare
