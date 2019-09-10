@@ -217,6 +217,9 @@ let () =
     | `X86 ->
         let module M = Make(C)(T(X86Compile_gen.Make(C))) in
         M.zyva
+    | `X86_64 ->
+        let module M = Make(C)(T(X86_64Compile_gen.Make(C))) in
+        M.zyva
     | `PPC -> 
         let module PPCConf = struct let eieio = !use_eieio end in
         let module M = Make(C)(T(PPCCompile_gen.Make(C)(PPCConf))) in

@@ -265,6 +265,7 @@ let () =
   | `X86 ->
     let module M = Make(T(X86Compile_gen.Make(C)))(Co) in
     M.go
+  | `X86_64 -> assert false
   | `ARM ->
       let module M = Make(T(ARMCompile_gen.Make(C)))(Co) in
       M.go
