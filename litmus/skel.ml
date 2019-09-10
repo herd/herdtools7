@@ -136,7 +136,7 @@ module Make
       let have_timebase = function
         | `AArch64 -> false (* FIXME: ??? *)
         | `ARM|`MIPS -> false
-        | `PPC|`X86 -> true
+        | `PPC|`X86 | `X86_64-> true
         | _ -> false
 
       let have_timebase = have_timebase Cfg.sysarch
@@ -522,6 +522,7 @@ module Make
             | `PPCGen
             | `PPC
             | `X86
+            | `X86_64
             | `AArch64
             | `MIPS
             | `RISCV
@@ -1881,7 +1882,7 @@ module Make
                   | `ARM ->
                       O.fx iloop "asm __volatile__ (\"isb\" : : : \"memory\");"
                   | `AArch64 -> assert false (* FIXME: ??? *)
-                  | `X86|`MIPS|`RISCV -> ()
+                  | `X86_64 | `X86|`MIPS|`RISCV -> ()
                   | `GPU_PTX -> assert false
                 in
                 aux Cfg.sysarch

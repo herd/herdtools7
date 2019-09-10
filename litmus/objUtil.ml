@@ -71,6 +71,7 @@ module Insert (O:InsertConfig) :
 
     let dir = match O.sysarch with
     | `X86 -> "_x86"
+    | `X86_64 -> "_x86"
     | `PPC -> "_ppc"
     | `ARM -> "_arm"
     | `MIPS -> "_mips"
@@ -169,7 +170,7 @@ module Make(O:Config)(Tar:Tar.S) =
               cpy' fnames "showLabel" "show" ".awk"
             else
               cpy' fnames "showC" "show" ".awk"
-        | `X86 | `ARM | `PPC | `MIPS | `AArch64 |` RISCV->
+        | `X86 |`X86_64 | `ARM | `PPC | `MIPS | `AArch64 |` RISCV->
             if O.asmcommentaslabel then
               cpy' fnames "showLabel" "show" ".awk"
             else

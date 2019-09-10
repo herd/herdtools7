@@ -92,13 +92,13 @@ module type TopConfig = sig
   val platform : string
   val check_name : string -> bool
   val check_rename : string -> string option
-(* Arch dependent options *)
+  (* Arch dependent options *)
   val mkopt : Option.opt -> Option.opt
-(* Mode *)
+  (* Mode *)
   val mode : Mode.t
-(* usearch *)
+  (* usearch *)
   val usearch : UseArch.t
-(* Hum *)
+  (* Hum *)
   val asmcomment : string option
   val asmcommentaslabel : bool
 end
@@ -107,12 +107,12 @@ module type Config = sig
   include GenParser.Config
   include Compile.Config
   val asmcommentaslabel : bool
-(* Additions for Presi *)
+  (* Additions for Presi *)
   val line : int
   val noccs : int
   val timelimit : float option
   val check_nstates : string -> int option
-(* End of additions *)
+  (* End of additions *)
   include Skel.Config
   include Run_litmus.Config
   val limit : bool
@@ -131,11 +131,11 @@ end = struct
         (Archs.pp a)
 
 
-(************************************************************)
-(* Some configuration dependent stuff, to be performed once *)
-(************************************************************)
+  (************************************************************)
+  (* Some configuration dependent stuff, to be performed once *)
+  (************************************************************)
 
-(* Avoid cycles *)
+  (* Avoid cycles *)
   let read_no fname =
     Misc.input_protect
       (fun chan -> MySys.read_list chan (fun s -> Some s))
@@ -143,25 +143,25 @@ end = struct
 
   let avoid_cycle =
     let xs = match OT.no with
-    | None -> []
-    | Some fname -> read_no fname in
+      | None -> []
+      | Some fname -> read_no fname in
     let set = StringSet.of_list xs in
     fun cy -> StringSet.mem cy set
 
-(* hints *)
+  (* hints *)
   let hint = match OT.hint with
-  | None -> Hint.empty
-  | Some fname -> Hint.read fname
+    | None -> Hint.empty
+    | Some fname -> Hint.read fname
 
   module W = Warn.Make(OT)
 
 
   module Utils (O:Config) (A':Arch_litmus.Base)
-      (Lang:Language.S
-      with type arch_reg = A'.Out.arch_reg
-      and type t = A'.Out.t
-      and module RegMap = A'.RegMap)
-      (Pseudo:PseudoAbstract.S) =
+           (Lang:Language.S
+            with type arch_reg = A'.Out.arch_reg
+             and type t = A'.Out.t
+             and module RegMap = A'.RegMap)
+           (Pseudo:PseudoAbstract.S) =
     struct
       module T = Test_litmus.Make(O)(A')(Pseudo)
       module R = Run_litmus.Make(O)(Tar)(T.D)
@@ -183,13 +183,13 @@ end = struct
           let more_info = Hint.get hint name in
           let info =
             more_info @
-            List.filter
-              (fun (k,_) ->
-                try
-                  let _ = List.assoc k more_info in
-                  false
-                with Not_found -> true)
-              t.MiscParser.info in
+              List.filter
+                (fun (k,_) ->
+                  try
+                    let _ = List.assoc k more_info in
+                    false
+                  with Not_found -> true)
+                t.MiscParser.info in
           { t with MiscParser.info = info; }
         with Not_found -> t
 
@@ -203,11 +203,11 @@ end = struct
               let dump =
                 match OT.mode with
                 | Mode.Std ->
-                    let module S = Skel.Make(O)(Pseudo)(A')(T)(Out)(Lang) in
-                    S.dump
+                   let module S = Skel.Make(O)(Pseudo)(A')(T)(Out)(Lang) in
+                   S.dump
                 | Mode.PreSi ->
-                    let module S = PreSi.Make(O)(Pseudo)(A')(T)(Out)(Lang) in
-                    S.dump in
+                   let module S = PreSi.Make(O)(Pseudo)(A')(T)(Out)(Lang) in
+                   S.dump in
               dump doc compiled)
             outname
         with e ->
@@ -215,76 +215,76 @@ end = struct
           raise e
 
       let limit_ok nprocs = match O.avail with
-      | None|Some 0 -> true
-      | Some navail -> not O.limit || nprocs <= navail
+        | None|Some 0 -> true
+        | Some navail -> not O.limit || nprocs <= navail
 
       let warn_limit name nprocs = match O.avail with
-      | None|Some 0 -> ()
-      | Some navail ->
-          if nprocs > navail then
-            Warn.warn_always
-              "%stest with more threads (%i) than available (%i) is compiled"
-              (Pos.str_pos0 name.Name.file) nprocs navail
+        | None|Some 0 -> ()
+        | Some navail ->
+           if nprocs > navail then
+             Warn.warn_always
+               "%stest with more threads (%i) than available (%i) is compiled"
+               (Pos.str_pos0 name.Name.file) nprocs navail
 
       let compile
-          parse count_procs compile allocate
-          cycles hash_env
-          name in_chan out_chan splitted =
+            parse count_procs compile allocate
+            cycles hash_env
+            name in_chan out_chan splitted =
         try begin
-          check_variant Variant_litmus.Self splitted.Splitter.arch ;
-          let parsed = parse in_chan splitted in
-          let doc = splitted.Splitter.name in
-          let tname = doc.Name.name in
-          close_in in_chan ;
-          let nprocs = count_procs parsed.MiscParser.prog in
-          let hash =  H.mk_hash_info name parsed.MiscParser.info in
-          let cycle_ok = cycle_ok avoid_cycle parsed
-          and hash_ok = H.hash_ok hash_env tname hash
-          and limit_ok = limit_ok nprocs in
-          if
-            cycle_ok && hash_ok && limit_ok
-          then begin
-            warn_limit doc nprocs ;
-            let hash_env = StringMap.add tname hash hash_env in
-            let parsed = change_hint hint doc.Name.name parsed in
-            let allocated = allocate parsed in
-            let compiled = compile doc allocated in
-            let source = MyName.outname name ".c" in
-            dump source doc compiled;
-            if not OT.is_out then begin
-              let _utils =
-                let module O = struct
-                  include OT
-                  let arch = A'.arch
-                end in
-                let module OO = struct
-                  include O
-                  let cached =
-                    match threadstyle with
-                    | ThreadStyle.Cached -> true
-                    | _ -> false
-                end in
-                let module Obj = ObjUtil.Make(OO)(Tar) in
-                Obj.dump () in
-              ()
-            end ;
-            R.run name out_chan doc allocated source ;
-            Completed (A'.arch,doc,source,cycles,hash_env)
-          end else begin
-            let cause = if limit_ok then "" else " (too many threads)" in
-            W.warn "%s test not compiled%s"
-              (Pos.str_pos0 doc.Name.file) cause ;
-            Absent A'.arch
-          end
-        end with e -> Interrupted (A'.arch,e)
+            check_variant Variant_litmus.Self splitted.Splitter.arch ;
+            let parsed = parse in_chan splitted in
+            let doc = splitted.Splitter.name in
+            let tname = doc.Name.name in
+            close_in in_chan ;
+            let nprocs = count_procs parsed.MiscParser.prog in
+            let hash =  H.mk_hash_info name parsed.MiscParser.info in
+            let cycle_ok = cycle_ok avoid_cycle parsed
+            and hash_ok = H.hash_ok hash_env tname hash
+            and limit_ok = limit_ok nprocs in
+            if
+              cycle_ok && hash_ok && limit_ok
+            then begin
+                warn_limit doc nprocs ;
+                let hash_env = StringMap.add tname hash hash_env in
+                let parsed = change_hint hint doc.Name.name parsed in
+                let allocated = allocate parsed in
+                let compiled = compile doc allocated in
+                let source = MyName.outname name ".c" in
+                dump source doc compiled;
+                if not OT.is_out then begin
+                    let _utils =
+                      let module O = struct
+                          include OT
+                          let arch = A'.arch
+                        end in
+                      let module OO = struct
+                          include O
+                          let cached =
+                            match threadstyle with
+                            | ThreadStyle.Cached -> true
+                            | _ -> false
+                        end in
+                      let module Obj = ObjUtil.Make(OO)(Tar) in
+                      Obj.dump () in
+                    ()
+                  end ;
+                R.run name out_chan doc allocated source ;
+                Completed (A'.arch,doc,source,cycles,hash_env)
+              end else begin
+                let cause = if limit_ok then "" else " (too many threads)" in
+                W.warn "%s test not compiled%s"
+                  (Pos.str_pos0 doc.Name.file) cause ;
+                Absent A'.arch
+              end
+          end with e -> Interrupted (A'.arch,e)
     end
 
 
   module Make
-      (O:Config)
-     (A:Arch_litmus.S)
-      (L:GenParser.LexParse with type instruction = A.parsedPseudo)
-      (XXXComp : XXXCompile_litmus.S with module A = A) =
+           (O:Config)
+           (A:Arch_litmus.S)
+           (L:GenParser.LexParse with type instruction = A.parsedPseudo)
+           (XXXComp : XXXCompile_litmus.S with module A = A) =
     struct
       module Pseudo = LitmusUtils.Pseudo(A)
       module ALang = struct
@@ -318,8 +318,8 @@ end = struct
 
 
   module Make'
-      (O:Config)
-      (A:sig val comment : string end) =
+           (O:Config)
+           (A:sig val comment : string end) =
     struct
       module L = struct
         type token = CParser.token
@@ -375,63 +375,63 @@ end = struct
   module SP = Splitter.Make(LexConfig)
 
   let from_chan cycles hash_env name in_chan out_chan =
-(* First split the input file in sections *)
+    (* First split the input file in sections *)
     let { Splitter.arch=arch ; _ } as splitted =
       SP.split name in_chan in
     let tname = splitted.Splitter.name.Name.name in
     if OT.check_name tname then begin
-(* Then call appropriate compiler, depending upon arch *)
-      let opt = OT.mkopt (Option.get_default arch) in
-      let word = Option.get_word opt in
-      let module ODep = struct
-        let word = word
-        let line = Option.get_line opt
-        let delay = Option.get_delay opt
-        let gccopts = Option.get_gccopts opt
-      end in
-(* Compile configuration, must also be used to configure arch modules *)
-      let module OC = struct
-        let word = word
-        let syncmacro =OT.syncmacro
-        let syncconst = OT.syncconst
-        let memory = OT.memory
-        let morearch = OT.morearch
-        let cautious = OT.cautious
-        let asmcomment = OT.asmcomment
-        let hexa = OT.hexa
-      end in
-      let module OX = struct
-        include OT
-        include ODep
-        let debuglexer = debuglexer
-        let sysarch = match arch with
-        | #Archs.System.t as a -> a
-        | (`CPP|`LISA) -> Warn.fatal "no support for arch '%s'" (Archs.pp arch)
-        | `C -> begin match OT.carch with
-          | Some a -> a
-          | None  -> Warn.fatal "Test %s not performed because -carch is not given but required while using C arch" tname
-        end
-      end in
-      let module Cfg = OX in
-      let aux = function
-        | `PPC ->
-            begin match OT.usearch with
-            | UseArch.Trad ->
+        (* Then call appropriate compiler, depending upon arch *)
+        let opt = OT.mkopt (Option.get_default arch) in
+        let word = Option.get_word opt in
+        let module ODep = struct
+            let word = word
+            let line = Option.get_line opt
+            let delay = Option.get_delay opt
+            let gccopts = Option.get_gccopts opt
+          end in
+        (* Compile configuration, must also be used to configure arch modules *)
+        let module OC = struct
+            let word = word
+            let syncmacro =OT.syncmacro
+            let syncconst = OT.syncconst
+            let memory = OT.memory
+            let morearch = OT.morearch
+            let cautious = OT.cautious
+            let asmcomment = OT.asmcomment
+            let hexa = OT.hexa
+          end in
+        let module OX = struct
+            include OT
+            include ODep
+            let debuglexer = debuglexer
+            let sysarch = match arch with
+              | #Archs.System.t as a -> a
+              | (`CPP|`LISA) -> Warn.fatal "no support for arch '%s'" (Archs.pp arch)
+              | `C -> begin match OT.carch with
+                      | Some a -> a
+                      | None  -> Warn.fatal "Test %s not performed because -carch is not given but required while using C arch" tname
+                      end
+          end in
+        let module Cfg = OX in
+        let aux = function
+          | `PPC ->
+             begin match OT.usearch with
+             | UseArch.Trad ->
                 let module V = Int64Constant in
                 let module Arch' = PPCArch_litmus.Make(OC)(V) in
                 let module LexParse = struct
-                  type instruction = Arch'.parsedPseudo
-                  type token = PPCParser.token
-                  module Lexer = PPCLexer.Make(LexConfig)
-                  let lexer = Lexer.token
-                  let parser = MiscParser.mach2generic PPCParser.main
-                end in
+                    type instruction = Arch'.parsedPseudo
+                    type token = PPCParser.token
+                    module Lexer = PPCLexer.Make(LexConfig)
+                    let lexer = Lexer.token
+                    let parser = MiscParser.mach2generic PPCParser.main
+                  end in
                 let module Compile = PPCCompile_litmus.Make(V)(OC) in
                 let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
                 X.compile
-            | UseArch.Gen ->
+             | UseArch.Gen ->
                 assert false
-(*
+             (*
   let module Arch' = PPCGenArch.Make(OC)(V) in
   let module LexParse = struct
   type instruction = Arch'.pseudo
@@ -443,37 +443,50 @@ end = struct
   let module Compile = PPCGenCompile.Make(V)(OC) in
   let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
   X.compile
- *)
-            end
-        | `X86 ->
-            let module V = Int32Constant in
-            let module Arch' = X86Arch_litmus.Make(OC)(V) in
-            let module LexParse = struct
-              type instruction = Arch'.pseudo
-              type token = X86Parser.token
-              module Lexer = X86Lexer.Make(LexConfig)
-              let lexer = Lexer.token
-              let parser = MiscParser.mach2generic X86Parser.main
-            end in
-            let module Compile = X86Compile_litmus.Make(V)(OC) in
-            let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
-            X.compile
-        | `ARM ->
-            let module V = Int32Constant in
-            let module Arch' = ARMArch_litmus.Make(OC)(V) in
-            let module LexParse = struct
-              type instruction = Arch'.parsedPseudo
-              type token = ARMParser.token
-              module Lexer = ARMLexer.Make(LexConfig)
-              let lexer = Lexer.token
-              let parser = MiscParser.mach2generic ARMParser.main
-            end in
-            let module Compile = ARMCompile_litmus.Make(V)(OC) in
-            let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
-            X.compile
-        | `AArch64 ->
-            begin match OT.usearch with
-            | UseArch.Trad ->
+              *)
+             end
+          | `X86 ->
+             let module V = Int32Constant in
+             let module Arch' = X86Arch_litmus.Make(OC)(V) in
+             let module LexParse = struct
+                 type instruction = Arch'.pseudo
+                 type token = X86Parser.token
+                 module Lexer = X86Lexer.Make(LexConfig)
+                 let lexer = Lexer.token
+                 let parser = MiscParser.mach2generic X86Parser.main
+               end in
+             let module Compile = X86Compile_litmus.Make(V)(OC) in
+             let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
+             X.compile
+          | `X86_64 ->
+             let module V = Int64Constant in
+             let module Arch' = X86_64Arch_litmus.Make(OC)(V) in
+             let module LexParse = struct
+                 type instruction = Arch'.pseudo
+                 type token = X86_64Parser.token
+                 module Lexer = X86_64Lexer.Make(LexConfig)
+                 let lexer = Lexer.token
+                 let parser = MiscParser.mach2generic X86_64Parser.main
+               end in
+             let module Compile = X86_64Compile_litmus.Make(V)(OC) in
+             let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
+             X.compile
+          | `ARM ->
+             let module V = Int32Constant in
+             let module Arch' = ARMArch_litmus.Make(OC)(V) in
+             let module LexParse = struct
+                 type instruction = Arch'.parsedPseudo
+                 type token = ARMParser.token
+                 module Lexer = ARMLexer.Make(LexConfig)
+                 let lexer = Lexer.token
+                 let parser = MiscParser.mach2generic ARMParser.main
+               end in
+             let module Compile = ARMCompile_litmus.Make(V)(OC) in
+             let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
+             X.compile
+          | `AArch64 ->
+             begin match OT.usearch with
+             | UseArch.Trad ->
                 let module V = Int64Constant in
                 let module Arch' = AArch64Arch_litmus.Make(OC)(V) in
                 let module LexParse = struct
@@ -486,10 +499,10 @@ end = struct
                 let module Compile = AArch64Compile_litmus.Make(V)(OC) in
                 let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
                 X.compile
-            | UseArch.Gen ->
+             | UseArch.Gen ->
                 assert false
-            end
-(*
+             end
+          (*
   let module Arch' = AArch64GenArch.Make(OC)(V) in
   let module LexParse = struct
   type instruction = Arch'.pseudo
@@ -501,62 +514,63 @@ end = struct
   let module Compile = AArch64GenCompile.Make(V)(OC) in
   let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
   X.compile
- *)
-        | `MIPS ->
-            let module V = Int64Constant in
-            let module Arch' = MIPSArch_litmus.Make(OC)(V) in
-            let module LexParse = struct
-              type instruction = Arch'.pseudo
-              type token = MIPSParser.token
-              module Lexer = MIPSLexer.Make(LexConfig)
-              let lexer = Lexer.token
-              let parser = MiscParser.mach2generic MIPSParser.main
-            end in
-            let module Compile = MIPSCompile_litmus.Make(V)(OC) in
-            let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
-            X.compile
-        | `RISCV ->
-            let module V = Int64Constant in
-            let module Arch' = RISCVArch_litmus.Make(OC)(V) in
-            let module LexParse = struct
-              type instruction = Arch'.parsedPseudo
-              type token = RISCVParser.token
-              module Lexer = RISCVLexer.Make(LexConfig)
-              let lexer = Lexer.token
-              let parser = MiscParser.mach2generic RISCVParser.main
-            end in
-            let module Compile = RISCVCompile_litmus.Make(V)(OC) in
-            let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
-            X.compile
-        | `C ->
-            let module Arch' = struct
-              let comment =  match OT.asmcomment with
-              | Some c -> c
-              | None ->
-                  begin match OX.sysarch with
-                  | `PPC -> PPCArch_litmus.comment
-                  | `X86 -> X86Arch_litmus.comment
-                  | `ARM -> ARMArch_litmus.comment
-                  | `AArch64 -> AArch64Arch_litmus.comment
-                  | `MIPS -> MIPSArch_litmus.comment
-                  | `RISCV -> RISCVArch_litmus.comment
-                  end
-            end in
-            let module X = Make'(Cfg)(Arch') in
-            X.compile
-        | `CPP | `LISA -> assert false
-      in
-      aux arch cycles hash_env name in_chan out_chan splitted
-    end else begin (* Excluded explicitely, (check_tname), do not warn *)
-      Absent arch
-    end
+           *)
+          | `MIPS ->
+             let module V = Int64Constant in
+             let module Arch' = MIPSArch_litmus.Make(OC)(V) in
+             let module LexParse = struct
+                 type instruction = Arch'.pseudo
+                 type token = MIPSParser.token
+                 module Lexer = MIPSLexer.Make(LexConfig)
+                 let lexer = Lexer.token
+                 let parser = MiscParser.mach2generic MIPSParser.main
+               end in
+             let module Compile = MIPSCompile_litmus.Make(V)(OC) in
+             let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
+             X.compile
+          | `RISCV ->
+             let module V = Int64Constant in
+             let module Arch' = RISCVArch_litmus.Make(OC)(V) in
+             let module LexParse = struct
+                 type instruction = Arch'.parsedPseudo
+                 type token = RISCVParser.token
+                 module Lexer = RISCVLexer.Make(LexConfig)
+                 let lexer = Lexer.token
+                 let parser = MiscParser.mach2generic RISCVParser.main
+               end in
+             let module Compile = RISCVCompile_litmus.Make(V)(OC) in
+             let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
+             X.compile
+          | `C ->
+             let module Arch' = struct
+                 let comment =  match OT.asmcomment with
+                   | Some c -> c
+                   | None ->
+                      begin match OX.sysarch with
+                      | `PPC -> PPCArch_litmus.comment
+                      | `X86 -> X86Arch_litmus.comment
+                      | `X86_64 -> X86_64Arch_litmus.comment
+                      | `ARM -> ARMArch_litmus.comment
+                      | `AArch64 -> AArch64Arch_litmus.comment
+                      | `MIPS -> MIPSArch_litmus.comment
+                      | `RISCV -> RISCVArch_litmus.comment
+                      end
+               end in
+             let module X = Make'(Cfg)(Arch') in
+             X.compile
+          | `CPP | `LISA -> assert false
+        in
+        aux arch cycles hash_env name in_chan out_chan splitted
+      end else begin (* Excluded explicitely, (check_tname), do not warn *)
+        Absent arch
+      end
 
   let from_file cycles hash_env name out_chan =
     Misc.input_protect
       (fun in_chan -> from_chan cycles hash_env name in_chan out_chan)
       name
 
-(* Call generic tar builder/runner *)
+  (* Call generic tar builder/runner *)
   module DF = DumpRun.Make (OT)(Tar) (struct let from_file = from_file end)
 
   let from_files = DF.from_files

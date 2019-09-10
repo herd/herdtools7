@@ -193,7 +193,7 @@ let mipsopt =
 let copt =
   { delay = 2048; gccopts = ""; word = Word.WXX; line = 1024} (* maximal *)
 let get_default arch = match arch with
-| `X86 -> x86opt
+| `X86 |`X86_64 -> x86opt
 | `PPCGen
 | `PPC -> ppcopt
 | `AArch64
