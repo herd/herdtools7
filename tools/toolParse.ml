@@ -68,6 +68,18 @@ end = struct
         end in
         let module X = Make (X86) (X86LexParse) in
         X.zyva chan splitted
+    | `X86_64 ->
+        let module X86_64 = X86_64Base in
+        let module X86_64LexParse = struct
+	  type instruction = X86_64.parsedPseudo
+	  type token = X86_64Parser.token
+
+          module L = X86_64Lexer.Make(LexConf)
+	  let lexer = L.token
+	  let parser = MiscParser.mach2generic X86_64Parser.main
+        end in
+        let module X = Make (X86_64) (X86_64LexParse) in
+        X.zyva chan splitted
     | `ARM ->
         let module ARM = ARMBase in
         let module ARMLexParse = struct
