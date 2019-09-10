@@ -49,6 +49,8 @@ module type Base = sig
 
   val find_in_state : location -> state -> V.v
   val pp_reg : reg -> string
+
+  val typeof : reg -> CType.t
 end
 
 module type K = sig

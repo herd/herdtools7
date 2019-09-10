@@ -17,6 +17,7 @@
 (** Basic arch definitions made abstract *)
 
 module type S = sig
+
   (* Who am I ? *)
   val arch : Archs.t
 
@@ -33,6 +34,8 @@ module type S = sig
   val reg_compare : reg -> reg -> int
   val symb_reg_name : reg -> string option
   val symb_reg : string -> reg
+    (* Use if you want to implicitly type a final register *)
+  val typeof : reg -> CType.t
 (*
   type reservation
   val pp_res : reservation -> string

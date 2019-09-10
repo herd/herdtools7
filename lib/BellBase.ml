@@ -52,6 +52,7 @@ let parse_reg s =
         Some (GPRreg (int_of_string rem))
       with _ -> None end
   | _ -> None
+let typeof c = assert false
 
 (****************)
 (* Barriers     *)

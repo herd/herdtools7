@@ -73,4 +73,5 @@ module Make(O:sig val memory : Memory.t val hexa : bool end) = struct
     | CAst.Global _::xs -> count_procs xs
     | [] -> 0
 
+  let typeof c = assert false
 end
