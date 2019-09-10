@@ -206,7 +206,7 @@ module Generic (A : Arch_litmus.Base)
             bds in
         eprintf "%s: %s\n" tag (String.concat " " pp)
 
-      let debug = false
+      let debug = true
 
       let build_type_env init final filter flocs =
         let env = type_final final A.LocMap.empty in
@@ -243,7 +243,6 @@ module Generic (A : Arch_litmus.Base)
     end
 
 module Make
-<<<<<<< variant A
     (O:Config)
     (A:Arch_litmus.S)
     (T:Test_litmus.S with
@@ -255,7 +254,6 @@ module A.LocMap = A.LocMap and
 type A.Out.t = A.Out.t and
 type P.code = MiscParser.proc * A.pseudo list)
     (C:XXXCompile_litmus.S with module A = A) =
->>>>>>> variant B
          (O:Config)
          (A:Arch_litmus.S)
          (T:Test_litmus.S with
@@ -267,7 +265,6 @@ type P.code = MiscParser.proc * A.pseudo list)
             type A.Out.t = A.Out.t and
             type P.code = int * A.pseudo list)
          (C:XXXCompile_litmus.S with module A = A) =
-======= end
   struct
     open Printf
     open Constant
@@ -465,7 +462,7 @@ type P.code = MiscParser.proc * A.pseudo list)
     let live_in_code code env live_in_final =
       List.fold_right live_in_ins code (env,live_in_final)
 
-    let debug = false
+    let debug = true
 (* Fixpoint *)
     let comp_fix  code live_in_final =
       if debug then
