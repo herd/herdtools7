@@ -44,15 +44,17 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
           if reg_compare r loop_idx = 0 then Some ("max_loop","int")
           else None
 
-        let reg_class = function
+        let reg_class r=
+          Printf.printf "reg_class : %s\n" (pp_reg r);
+          match r with
           (* as some instructions have eax as implicit argument,
              we must allocate our EAX to machine %eax
           | Ireg RAX -> "=&a"
           (* esi and edi implicit for MOVSD *)
           | Ireg RSI -> "=&S"
           | Ireg RDI -> "=&D" *)
-          | Ireg (_, H) -> "=&Q"
-          | _ -> "=&r"
+          | Ireg (AX, _) -> "=&a"
+          | _ -> "=&Q"
         let reg_class_stable r = reg_class r
         let comment = comment
         let error _ _ = false
