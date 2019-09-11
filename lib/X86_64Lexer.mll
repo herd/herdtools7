@@ -49,29 +49,67 @@ rule token = parse
 | "addw"|"ADDW"   { I_ADDW }
 | "addl"|"ADDL"   { I_ADDL }
 | "addq"|"ADDQ"   { I_ADDQ }
-| "xor"|"XOR"   { I_XOR }
-| "or"|"OR"   { I_OR }
+| "xor"|"XOR"    { I_XOR}
+| "xorb"|"XORB"    { I_XORB}
+| "xorw"|"XORW"    { I_XORW}
+| "xorl"|"XORL"    { I_XORL}
+| "xorq"|"XORQ"    { I_XORQ}
+| "or"|"OR"    { I_OR}
+| "orb"|"ORB"    { I_ORB}
+| "orw"|"ORW"    { I_ORW}
+| "orl"|"ORL"    { I_ORL}
+| "orq"|"ORQ"    { I_ORQ}
 | "mov"|"MOV"   { I_MOV }
 | "movb"|"MOVB"   { I_MOVB }
 | "movw"|"MOVW"   { I_MOVW }
 | "movl"|"MOVL"   { I_MOVL }
 | "movq"|"MOVQ"   { I_MOVQ }
-| "movt"|"MOVT"   { I_MOVT }
-| "movsd"|"MOVSD"   { I_MOVSD }
-| "dec"|"DEC"   { I_DEC }
-| "cmp"|"CMP"   { I_CMP }
-| "cmovc"|"CMOVC"   { I_CMOVC }
-| "inc"|"INC"   { I_INC }
+| "dec"|"DEC"    { I_DEC}
+| "decb"|"DECB"    { I_DECB}
+| "decw"|"DECW"    { I_DECW}
+| "decl"|"DECL"    { I_DECL}
+| "decq"|"DECQ"    { I_DECQ}
+| "inc"|"INC"    { I_INC}
+| "incb"|"INCB"    { I_INCB}
+| "incw"|"INCW"    { I_INCW}
+| "incl"|"INCL"    { I_INCL}
+| "incq"|"INCQ"    { I_INCQ}
+| "cmp"|"CMP"    { I_CMP}
+| "cmpb"|"CMPB"    { I_CMPB}
+| "cmpw"|"CMPW"    { I_CMPW}
+| "cmpl"|"CMPL"    { I_CMPL}
+| "cmpq"|"CMPQ"    { I_CMPQ}
+| "cmovc"|"CMOVC"    { I_CMOVC}
+| "cmovcb"|"CMOVCB"    { I_CMOVCB}
+| "cmovcw"|"CMOVCW"    { I_CMOVCW}
+| "cmovcl"|"CMOVCL"    { I_CMOVCL}
+| "cmovcq"|"CMOVCQ"    { I_CMOVCQ}
 | "jmp"|"JMP"   { I_JMP }
-| "je"|"JE"    { I_JE }
-| "jne"|"JNE"    { I_JNE }
+| "je"|"JE"    { I_JE}
+| "jne"|"JNE"    { I_JNE}
+| "jle"|"JLE"    { I_JLE}
+| "jlt"|"JLT"    { I_JLT}
+| "jgt"|"JGT"    { I_JGT}
+| "jge"|"JGE"    { I_JGE}
+| "js"|"JS"    { I_JS}
+| "jns"|"JNS"    { I_JNS}
 | "lock"|"LOCK"   { I_LOCK }
-| "xchg"|"XCHG"   { I_XCHG }
-| "cmpxchg"|"CMPXCHG"   { I_CMPXCHG }
-| "lfence"|"LFENCE"   { I_LFENCE }
-| "sfence"|"SFENCE"   { I_SFENCE }
+| "xchg"|"XCHG"    { I_XCHG}
+| "xchgb"|"XCHGB"    { I_XCHGB}
+| "xchgw"|"XCHGW"    { I_XCHGW}
+| "xchgl"|"XCHGL"    { I_XCHGL}
+| "xchgq"|"XCHGQ"    { I_XCHGQ}
+| "uxch"|"UXCH"    { I_UXCH}
+| "uxchb"|"UXCHB"    { I_UXCHB}
+| "uxchw"|"UXCHW"    { I_UXCHW}
+| "uxchl"|"UXCHL"    { I_UXCHL}
+| "uxchq"|"UXCHQ"    { I_UXCHQ}
+| "cmpxchg"|"CMPXCHG"    { I_CMPXCHG}
+| "cmpxchgb"|"CMPXCHGB"    { I_CMPXCHGB}
+| "cmpxchgw"|"CMPXCHGW"    { I_CMPXCHGW}
+| "cmpxchgl"|"CMPXCHGL"    { I_CMPXCHGL}
+| "cmpxchgq"|"CMPXCHGQ"    { I_CMPXCHGQ}
 | "mfence"|"MFENCE"   { I_MFENCE }
-| "read"|"READ"       { I_READ }
 | "setnb"|"SETNB"       { I_SETNB }
 | name as x
   { match X86_64.parse_reg x with

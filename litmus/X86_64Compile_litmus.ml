@@ -51,10 +51,17 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
     | Operand_immediate _ -> StringSet.empty
 
     let rec extract_addrs ins = match ins with
+      | I_LOCK ins -> extract_addrs ins
       | I_EFF_OP (_, _, ea, op)
         ->  StringSet.union (extract_ea ea) (extract_op op)
       | I_NOP | I_JMP _ | I_MFENCE | I_JCC _
         -> StringSet.empty
+      | I_CMPXCHG (_, ea,_)
+        | I_EFF (_, _, ea)
+        | I_CMOVC (_, _, ea)
+        -> extract_ea ea
+      | I_EFF_EFF (_, _, ea1, ea2)
+        ->  StringSet.union (extract_ea ea1) (extract_ea ea2)
 
     let stable_regs _ins = A.RegSet.empty
 
@@ -64,15 +71,15 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
 
 
 
-    let compile_reg_move = function
+    let compile_reg = function
       | RIP -> sprintf "%%[rip]"
       | Ireg (r, t) -> sprintf "%%%s[%s]" (reg_size_to_string t) (reg64_string r)
       | Symbolic_reg s -> s
       | Internal i -> sprintf "%i" i
 
     let compile_rm64_move i o r =  match r with
-    |  Rm64_reg reg -> compile_reg_move reg,(i,[]),(o+1,[reg])
-    |  Rm64_deref reg -> "(" ^ compile_reg_move reg ^ ")",(i+1,[reg]),(o,[])
+    |  Rm64_reg reg -> compile_reg reg,(i,[]),(o+1,[reg])
+    |  Rm64_deref reg -> "(" ^ compile_reg reg ^ ")",(i+1,[reg]),(o,[])
     |  Rm64_abs abs ->
         (let name = abs_to_string abs in
         if internal_addr name then name
@@ -84,8 +91,8 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
 
 
     let compile_rm64_output i o r =  match r with
-    |  Rm64_reg reg -> compile_reg_move reg,(i,[]),(o+1,[reg])
-    |  Rm64_deref reg -> "(" ^ compile_reg_move reg ^ ")",(i+1,[reg]),(o,[])
+    |  Rm64_reg reg -> compile_reg reg,(i,[]),(o+1,[reg])
+    |  Rm64_deref reg -> "(" ^ compile_reg reg ^ ")",(i+1,[reg]),(o,[])
     |  Rm64_abs abs ->
         let name = abs_to_string abs in
         sprintf "%%[%s]" name,(i,[]),(o,[])
@@ -95,8 +102,8 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
 
 
     let compile_rm64_input i r = match r with
-    |  Rm64_reg reg -> "" ^ compile_reg_move reg,(i+1,[reg])
-    |  Rm64_deref reg -> "(" ^ compile_reg_move reg ^ ")",(i+1,[reg])
+    |  Rm64_reg reg -> "" ^ compile_reg reg,(i+1,[reg])
+    |  Rm64_deref reg -> "(" ^ compile_reg reg ^ ")",(i+1,[reg])
     |  Rm64_abs abs ->
         let name = abs_to_string abs in
         sprintf "%%[%s]" name,(i,[])
@@ -138,6 +145,17 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
       move "movl"
         (Effaddr_rm64 (Rm64_abs (ParsedConstant.nameToV a)))
         (Operand_immediate i)
+
+    let cmpxchg memo ea r =
+      let ea1, (i,ins1),(_,outs1) = compile_ea_output 0 0 ea in
+      let ea2, ins2 = compile_reg r, [r] in
+      let reg_ax = match r with
+        | Ireg (_, t) -> Ireg (AX, t)
+        | _ -> Ireg (AX, L) (* default size EAX *) in
+      { empty_ins with
+        memo = sprintf "%s %s,%s" memo ea2 ea1;
+        inputs = ins1@ins2@[reg_ax] ;
+        outputs = outs1@[reg_ax] ; }
 
     let op_ea_ea memo ea1 ea2 =
       let ea1,(i,ins1),(o,outs1) = compile_ea_output 0 0 ea1 in
@@ -191,25 +209,43 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
 
     let emit_loop _k = assert false
 
-    let inst_string inst size = String.lowercase_ascii (pp_inst_eff_op inst size)
+    let inst_string inst =
+      let inst_str =
+        match inst with
+        | I_EFF_OP (inst, size, _, _) -> pp_inst_eff_op inst size
+        | I_EFF_EFF (inst, size, _, _) -> pp_inst_eff_eff inst size
+        | I_EFF (inst, size, _) -> pp_inst_eff inst size
+        | I_CMPXCHG (size, _, _) -> "CMPXCHG" ^ pp_inst_size size
+        | _ -> assert false
+      in
+           String.lowercase_ascii inst_str
 
     let rec do_compile_ins tr_lab ins = match ins with
    | I_NOP ->
         { empty_ins with memo = "nop"; }
-    | I_EFF_OP (inst, size, ea, op) ->
+    | I_EFF_OP (inst, _, ea, op) as i ->
        begin
          match inst with
          | I_OR | I_ADD | I_XOR
-           -> op_ea_output_op (inst_string inst size) ea op
+           -> op_ea_output_op (inst_string i) ea op
          (* as usual, move is quite special *)
-         | I_MOV -> move (inst_string inst size) ea op
+         | I_MOV -> move (inst_string i) ea op
          (* Trap!! ea is input only... *)
          | I_CMP
-           -> op_ea_input_op (inst_string inst size) ea op
+           -> op_ea_input_op (inst_string i) ea op
        end
     | I_JMP lbl -> jmp tr_lab lbl
     | I_JCC (cond, lbl) -> jcc tr_lab cond lbl
     | I_MFENCE -> op_none "mfence"
+    | I_LOCK ins ->
+        let r = do_compile_ins tr_lab ins in
+        { r with memo = "lock; " ^ r.memo ; }
+    | I_EFF (_, _, ea) as i -> op_ea (inst_string i) ea
+    | I_EFF_EFF (_, _, ea1, ea2) as i
+      -> op_ea_ea (inst_string i) ea1 ea2
+    | I_CMPXCHG (_, ea, r) as i-> cmpxchg (inst_string i) ea r
+(* here I fail to know *)
+    | I_CMOVC _ -> Warn.user_error "CMOVC ??"
 
     let debug_regs chan rs =
       fprintf chan "%s"

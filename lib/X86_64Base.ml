@@ -225,6 +225,15 @@ type inst_eff_op =
   | I_MOV
   | I_CMP
 
+type inst_eff =
+  | I_DEC
+  | I_INC
+  | I_SETNB
+
+type inst_eff_eff =
+  | I_XCHG
+  | I_XCHG_UNLOCKED
+
 type condition =
   | C_EQ
   | C_NE
@@ -251,11 +260,29 @@ let pp_inst_eff_op inst size =
     | I_CMP -> "CMP" in
   inst_string ^ pp_inst_size size
 
+let pp_inst_eff inst size =
+  let inst_string = match inst with
+    | I_DEC -> "DEC"
+    | I_INC -> "INC"
+    | I_SETNB -> "SETNB" in
+  inst_string ^ pp_inst_size size
+
+let pp_inst_eff_eff inst size =
+  let inst_string = match inst with
+    | I_XCHG -> "XCHG"
+    | I_XCHG_UNLOCKED -> "UXCH" in
+  inst_string ^ pp_inst_size size
+
 type instruction =
   | I_NOP
   | I_EFF_OP of inst_eff_op * inst_size * effaddr * operand
+  | I_EFF of inst_eff * inst_size * effaddr
+  | I_EFF_EFF of inst_eff_eff * inst_size * effaddr * effaddr
+  | I_CMPXCHG of inst_size * effaddr * reg
   | I_JMP of lbl
   | I_JCC of condition * lbl
+  | I_CMOVC of inst_size * reg * effaddr
+  | I_LOCK of instruction
   | I_MFENCE
 
 type parsedInstruction = instruction
@@ -302,9 +329,27 @@ let rec do_pp_instruction (m : mm) =
 
   let ppi_lbl opcode lbl = opcode ^ " " ^ lbl in
 
+  let ppi_ea inst s ea =
+    pp_inst_eff inst s ^ " " ^ pp_effaddr ea in
+
+  let ppi_ea_ea inst s ea1 ea2 =
+    pp_inst_eff_eff inst s ^ " " ^ pp_effaddr ea1 ^ m.comma ^ pp_effaddr ea2 in
+
+  let ppi_ea_r opcode s ea r =
+    opcode ^ pp_inst_size s ^ " " ^ pp_effaddr ea ^ m.comma ^ pp_reg r in
+
+  let ppi_r_ea opcode s r ea =
+    opcode ^ pp_inst_size s ^ " " ^ pp_reg r ^ m.comma ^ pp_effaddr ea in
+
+
   fun i -> match i with
            | I_NOP -> "NOP"
            | I_EFF_OP(inst, s, ea, op) -> ppi_inst_ea_op inst s ea op
+           | I_EFF(inst, s, ea) -> ppi_ea inst s ea
+           | I_EFF_EFF(inst, s, ea1, ea2) -> ppi_ea_ea inst s ea1 ea2
+           | I_CMPXCHG (s, ea, r) -> ppi_ea_r "CMPXCHG" s ea r
+           | I_CMOVC (s, r, ea) ->  ppi_r_ea "CMOVC" s r ea
+           | I_LOCK inst -> "LOCK; " ^ do_pp_instruction m i
            | I_JMP(lbl) -> ppi_lbl "JMP" lbl
            | I_JCC(cond, lbl) -> ppi_lbl ("J" ^ pp_condition cond) lbl
            | I_MFENCE  -> "MFENCE"
@@ -348,6 +393,17 @@ let rec fold_regs (f_reg,f_sreg) =
                   let c = fold_effaddr c ea in
                   fold_operand c op
                | I_NOP | I_JMP _ | I_JCC _ | I_MFENCE -> c
+               | I_EFF (_, _, eff) -> fold_effaddr c eff
+               | I_EFF_EFF (_, _, ea1, ea2) ->
+                  let c = fold_effaddr c ea1 in
+                  fold_effaddr c ea2
+               | I_CMPXCHG (_, ea,r) ->
+                  let c = fold_effaddr c ea in
+                  fold_reg c r
+               | I_CMOVC (_, reg,eff) ->
+                  let c = fold_reg c reg in
+                  fold_effaddr c eff
+               | I_LOCK ins -> fold_regs (f_reg,f_sreg) c ins
 
 let rec map_regs f_reg f_symb =
 
@@ -371,6 +427,16 @@ let rec map_regs f_reg f_symb =
              | I_EFF_OP(inst, s, ea, op) ->
                 I_EFF_OP (inst, s, map_effaddr ea, map_operand op)
              | I_NOP | I_JMP _ | I_JCC _| I_MFENCE -> ins
+             | I_EFF (inst, s, ea) ->
+                I_EFF (inst, s, map_effaddr ea)
+             | I_EFF_EFF (inst, s, ea1, ea2) ->
+                I_EFF_EFF (inst, s, map_effaddr ea1, map_effaddr ea2)
+             | I_CMPXCHG (s, ea,r) ->
+                I_CMPXCHG (s, map_effaddr ea,map_reg r)
+             | I_CMOVC (s, reg,eff) ->
+                I_CMOVC (s, map_reg reg, map_effaddr eff)
+             | I_LOCK ins ->
+                I_LOCK (map_regs f_reg f_symb ins)
 
 let rec fold_addrs f =
 
@@ -390,6 +456,15 @@ let rec fold_addrs f =
                   let c = fold_effaddr c ea in
                   fold_operand c op
                | I_NOP | I_JMP _ | I_JCC _ | I_MFENCE -> c
+               | I_EFF (_, _, eff) -> fold_effaddr c eff
+               | I_EFF_EFF (_, _, ea1, ea2) ->
+                  let c = fold_effaddr c ea1 in
+                  fold_effaddr c ea2
+               | I_CMPXCHG (_, ea,_) ->
+                  fold_effaddr c ea
+               | I_CMOVC (_, _,eff) ->
+                  fold_effaddr c eff
+               | I_LOCK ins -> fold_addrs f c ins
 
 let rec map_addrs f =
 
@@ -407,14 +482,27 @@ let rec map_addrs f =
   fun ins -> match ins with
              | I_EFF_OP(inst, s, ea, op) ->
                 I_EFF_OP (inst, s, map_effaddr ea, map_operand op)
-             | I_NOP | I_JMP _ | I_JCC _ | I_MFENCE -> ins
+             | I_NOP | I_JMP _ | I_JCC _| I_MFENCE -> ins
+             | I_EFF (inst, s, ea) ->
+                I_EFF (inst, s, map_effaddr ea)
+             | I_EFF_EFF (inst, s, ea1, ea2) ->
+                I_EFF_EFF (inst, s, map_effaddr ea1, map_effaddr ea2)
+             | I_CMPXCHG (s, ea,r) ->
+                I_CMPXCHG (s, map_effaddr ea,r)
+             | I_CMOVC (s, reg,eff) ->
+                I_CMOVC (s, reg, map_effaddr eff)
+             | I_LOCK ins ->
+                I_LOCK (map_addrs f ins)
 
 let norm_ins ins = ins
 
 let rec get_next = function
-  | I_NOP | I_EFF_OP _ | I_MFENCE -> [Label.Next]
+  | I_NOP | I_EFF_OP _ | I_MFENCE
+    | I_EFF_EFF _ | I_EFF _ | I_CMPXCHG _
+    | I_CMOVC _ -> [Label.Next]
   | I_JMP lbl-> [Label.To lbl]
   | I_JCC (_,lbl) -> [Label.Next; Label.To lbl]
+  | I_LOCK ins -> get_next ins
 
 include Pseudo.Make
           (struct
@@ -428,14 +516,27 @@ include Pseudo.Make
               | I_EFF_OP (_, _, ea, op)
                 -> get_naccs_eff ea + get_naccs_op op
               | I_NOP | I_MFENCE | I_JMP _ | I_JCC _ -> 0
+              | I_EFF (I_SETNB, _, e) -> get_naccs_eff e
+              | I_EFF (_, _, e) | I_CMPXCHG (_, e, _) -> 2 * get_naccs_eff e
+              | I_EFF_EFF (_, _, e1, e2) ->
+                 2 * (get_naccs_eff e1 + get_naccs_eff e2)
+              | I_CMOVC (_, _, e)
+                -> get_naccs_eff e
+              | I_LOCK i -> get_naccesses i
 
             let rec fold_labels k f = function
+              | I_LOCK ins -> fold_labels k f ins
               | I_JMP lbl | I_JCC (_, lbl)-> f k lbl
-              | I_NOP | I_EFF_OP _ | I_MFENCE -> k
+              | I_NOP | I_EFF_OP _ | I_MFENCE
+                | I_EFF_EFF _ | I_EFF _ | I_CMPXCHG _
+                | I_CMOVC _ -> k
 
             let rec map_labels f ins = match ins with
+              | I_LOCK ins -> I_LOCK (map_labels f ins)
               | I_JMP lbl | I_JCC (_, lbl) -> I_JMP (f lbl)
-              | I_NOP | I_EFF_OP _ | I_MFENCE -> ins
+              | I_NOP | I_EFF_OP _ | I_MFENCE
+                | I_EFF_EFF _ | I_EFF _ | I_CMPXCHG _
+                | I_CMOVC _ -> ins
 
           end)
 
