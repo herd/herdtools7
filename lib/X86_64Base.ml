@@ -143,7 +143,7 @@ let reg64_string r =
   reg_string r Q
 
 let parse_reg s =
-  try Some (List.assoc s parse_list)
+  try Some (List.assoc (String.uppercase_ascii s) parse_list)
   with Not_found -> None
 
 let pp_reg r = match r with
