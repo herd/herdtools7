@@ -60,13 +60,25 @@ module Generic (A : Arch_litmus.Base)
         | MiscParser.Pointer t -> Pointer (Base t)
         | MiscParser.TyArray (t,sz) -> Array (t,sz)
 
+      let specialize_misc_to_c loc t = match A.arch with
+          |`X86_64 -> begin
+            match t with
+            | MiscParser.TyDef -> begin
+                match loc with
+                | A.Location_reg (proc,r) -> A.typeof r
+                | _ -> base
+              end
+            | _ -> misc_to_c t
+          end
+         |_ -> misc_to_c t
+
       let type_in_init p reg =
         let rec find_rec = function
           | [] -> None
           | (loc,(t,_))::rem ->
               begin match loc with
               | A.Location_reg (q,r) when q = p &&  A.reg_compare reg r = 0
-                -> Some (misc_to_c t)
+                -> Some (specialize_misc_to_c loc t)
               | _ -> find_rec rem
               end in
         find_rec
@@ -148,7 +160,7 @@ module Generic (A : Arch_litmus.Base)
 (* locations, default and explicit types *)
       let type_locations flocs env =
         List.fold_left
-          (fun env (loc,t) -> A.LocMap.add loc (misc_to_c t) env)
+          (fun env (loc,t) -> A.LocMap.add loc (specialize_misc_to_c loc t) env)
           env flocs
 
 (* init, default and explicit types *)
@@ -162,9 +174,11 @@ module Generic (A : Arch_litmus.Base)
                 ignore (A.LocMap.find loc env) ;
                 env
               with Not_found ->
-                A.LocMap.add loc (typeof v) env
+                type_atom (ConstrGen.LV (loc, v)) env
+                  (*
+                A.LocMap.add loc (typeof v) env*)
               end
-          | _ -> A.LocMap.add loc (misc_to_c t) env)
+          | _ -> A.LocMap.add loc (specialize_misc_to_c loc t) env)
           env init
 
       let type_init_values init env =
@@ -185,7 +199,7 @@ module Generic (A : Arch_litmus.Base)
                     Warn.user_error
                       "variable %s should be of pointer type"
                       (A.pp_location loc) in
-                A.LocMap.add a (misc_to_c tv) env
+                A.LocMap.add a (specialize_misc_to_c a tv) env
               end
           | _,_ -> env)
           env init
