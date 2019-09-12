@@ -189,6 +189,13 @@ module Make
   | CType.Macro fmt ->
   (if Cfg.hexa then "0x%\"" else "%\"") ^ fmt ^ "\"" in
  *)
+        let register_type loc t =
+          if A.arch = `X86_64 then
+            match loc with
+            | A.Location_reg (proc,r) -> A.typeof r
+            | _ -> find_type loc env
+          else find_type loc env in
+
         let rec pp_fmt t = match t with
         | CType.Pointer _ -> "%s"
         | CType.Base t -> pp_fmt_base t
@@ -203,7 +210,7 @@ module Make
           (fun loc ->
             sprintf "%s=%s;"
               (pp_loc tr_out loc)
-              (pp_fmt (find_type loc env)))
+              (pp_fmt (register_type loc env)))
           locs
 
 (* Locations *)

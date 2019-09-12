@@ -862,6 +862,13 @@ module Make
       let dump_cond_fun_call test dump_loc dump_val =
         DC.funcall test.T.condition dump_loc dump_val
 
+      let register_type loc t =
+          if A.arch = `X86_64 then
+             match loc with
+             | A.Location_reg (proc,r) -> A.typeof r
+             | _ -> t
+          else t
+
       let dump_defs_outs doc env test =
         (* If some of the output registers is of pointer type,
            we need a special function to print addresses *)
@@ -1020,9 +1027,11 @@ module Make
                  | Array (t,sz) ->
                      let rec pp_rec k =
                        if k >= sz then []
-                       else sprintf "(%s)o[%s_f+%i]" t sloc k::pp_rec (k+1) in
+                       else sprintf "(%s)o[%s_f+%i]"
+                              (CType.dump (register_type loc (CType.Base t)))
+                              sloc k::pp_rec (k+1) in
                      String.concat "," (pp_rec 0)
-                 | t -> sprintf "(%s)o[%s_f]" (CType.dump t) sloc)
+                 | t -> sprintf "(%s)o[%s_f]" (CType.dump (register_type loc t)) sloc)
                (A.LocSet.elements outs)) in
         O.fi "fprintf(fhist,%s,%s);" fmt args ;
         O.o "}" ;
