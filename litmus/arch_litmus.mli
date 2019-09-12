@@ -23,6 +23,8 @@ end
 module type Base = sig
   module V : Constant.S
 
+  val base_type : CType.t
+
   type reg
   type instruction
 

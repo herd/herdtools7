@@ -19,6 +19,7 @@ let string_of_annot = MemOrderOrAnnot.pp_annot
 
 let arch = Archs.c
 let endian = Endian.Little
+let base_type = CType.Base "int"
 
 type reg = string
 

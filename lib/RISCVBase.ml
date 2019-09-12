@@ -19,6 +19,7 @@ open Sign
 
 let arch = Archs.riscv
 let endian = Endian.Little
+let base_type = CType.Base "int"
 
 (*************)
 (* Registers *)

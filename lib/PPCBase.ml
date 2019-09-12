@@ -19,6 +19,7 @@
 (* Who am i ? *)
 let arch = Archs.ppc
 let endian = Endian.Big
+let base_type = CType.Base "int"
 
 (*************)
 (* Registers *)

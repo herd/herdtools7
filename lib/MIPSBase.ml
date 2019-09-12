@@ -20,6 +20,8 @@ open Printf
 
 let arch = Archs.mips
 let endian = Endian.Big
+let base_type = CType.Base "int"
+
 (*************)
 (* Registers *)
 (*************)

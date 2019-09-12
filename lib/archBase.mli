@@ -20,6 +20,7 @@ module type S = sig
 
   (* Who am I ? *)
   val arch : Archs.t
+  val base_type : CType.t
 
 
   (***********************************************)

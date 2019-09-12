@@ -22,6 +22,7 @@ open Printf
 (* Who am I ? *)
 let arch = Archs.x86
 let endian = Endian.Little
+let base_type = CType.Base "int"
 
 (*************)
 (* Registers *)
