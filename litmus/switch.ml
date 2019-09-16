@@ -24,7 +24,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
     sig
       type switch
       val compile :  I.C.prop -> switch
-      val dump : Indent.t -> switch -> unit
+      val dump : Indent.t -> switch -> (I.Loc.t -> string) -> unit
     end =
   struct
 
@@ -278,17 +278,17 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
               List.fold_left extract_rec k rhs  in
       extract_rec []
 
-    let rec dump_rec env i s = match s.node with
+    let rec dump_rec env i s cast_type = match s.node with
     | Return b -> O.fx i "return %c;" (if b then '1' else '0')
     | Switch (loc,cs,d,rhs) ->
         let rhs = Array.of_list rhs in
         let t = Array.make (Array.length rhs) [] in
         List.iter (fun (i,j) -> t.(j) <- i :: t.(j)) cs ;
-        O.fx i "switch (%s) {" (I.Loc.dump loc) ;
+        O.fx i "switch (%s%s) {" (cast_type loc) (I.Loc.dump loc) ;
         for k = 0 to Array.length t-1 do
           if k <> d then begin
             dump_cases i t.(k) ;
-            dump_goto env (Indent.tab i) rhs.(k)
+            dump_goto env (Indent.tab i) rhs.(k) cast_type
           end
         done ;
         begin match t.(d) with
@@ -296,7 +296,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
         | cs -> dump_cases i cs
         end ;
         O.fx i "default:" ;
-        dump_goto env (Indent.tab i) rhs.(d) ;
+        dump_goto env (Indent.tab i) rhs.(d) cast_type;
         O.fx i "}"
 
     and dump_cases i is =
@@ -308,13 +308,13 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
         is ;
       O.output "\n"
 
-    and dump_goto env i s =
+    and dump_goto env i s cast_type =
       try
         let name = HH.find env s in
         O.fx i "goto %s;" name
-      with Not_found -> dump_rec env i s
+      with Not_found -> dump_rec env i s cast_type
 
-    let dump i s =
+    let dump i s cast_type =
       let cs = count s in
       let defs = extract_defs cs s in
       let env,_ =
@@ -323,11 +323,11 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
           defs ([],0) in
       let tenv = HH.create 17 in
       List.iter (fun (name,s) -> HH.add tenv s name) env ;
-      dump_rec tenv i s ;
+      dump_rec tenv i s cast_type;
       List.iter
         (fun (name,s) ->
           O.fx i "%s: /* occs=%i */ " name (HH.find cs s) ;
-          dump_rec tenv (Indent.tab i) s)
+          dump_rec tenv (Indent.tab i) s cast_type)
         env ;
       ()
   end

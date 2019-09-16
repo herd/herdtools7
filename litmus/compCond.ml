@@ -20,15 +20,15 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
       val fundef_prop :
           string ->
             (I.Loc.t -> string * bool) -> (* For types *)
-              I.C.prop -> unit
+              I.C.prop -> (I.Loc.t -> string) -> unit
 
       val fundef :
           (I.Loc.t -> string * bool) -> (* For types *)
-            I.C.cond -> unit
+            I.C.cond -> (I.Loc.t -> string) -> unit
 
-      val fundef_onlog_prop : string -> I.C.prop -> unit
+      val fundef_onlog_prop : string -> I.C.prop -> (I.Loc.t -> string) -> unit
 
-      val fundef_onlog : I.C.cond -> unit
+      val fundef_onlog : I.C.cond -> (I.Loc.t -> string) -> unit
 
       val funcall_prop :
         string -> I.C.prop ->
@@ -100,7 +100,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
         O.o "" ;
         ()
 
-      let fundef_prop fname find_type p =
+      let fundef_prop fname find_type p cast_type =
         let locs = I.C.locations_prop p in
         let plocs =
           I.C.LocSet.map_list
@@ -126,7 +126,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
         begin try
           if is_ptr then raise Exit ;
           let switch_tree = S.compile p in
-          S.dump Indent.indent switch_tree
+          S.dump Indent.indent switch_tree cast_type
         with Switch.Cannot|Exit ->
           O.fprintf "%sreturn " (Indent.as_string Indent.indent) ;
           dump p ;
@@ -136,16 +136,16 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
         O.o "" ;
         ()
 
-      let fundef find_type cond =
-        fundef_prop funname find_type (ConstrGen.prop_of cond) ;
+      let fundef find_type cond cast_type =
+        fundef_prop funname find_type (ConstrGen.prop_of cond) cast_type;
         if I.with_ok then dump_ok cond ;
         ()
 
-      let fundef_onlog_prop fname p =
+      let fundef_onlog_prop fname p cast_type =
         O.f "inline static int %s(log_t *p) {" fname ;
         begin try
           let switch_tree = S.compile p in
-          S.dump Indent.indent switch_tree
+          S.dump Indent.indent switch_tree cast_type
         with Switch.Cannot ->
           O.fprintf "%sreturn " (Indent.as_string Indent.indent) ;
           dump p ;
@@ -155,8 +155,8 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
         O.o "" ;
         ()
 
-      let fundef_onlog cond =
-        fundef_onlog_prop funname (ConstrGen.prop_of cond) ;
+      let fundef_onlog cond cast_type =
+        fundef_onlog_prop funname (ConstrGen.prop_of cond) cast_type;
         dump_ok cond ;
         ()
 

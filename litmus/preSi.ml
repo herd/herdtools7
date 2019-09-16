@@ -467,15 +467,16 @@ module Make
               end
             end) in
 
+        let cast_type = assert false in (* Not iplemented yet *)
         begin match test.T.filter with
         | None -> ()
         | Some f ->
-            DC.fundef_onlog_prop "filter_cond" f ;
+            DC.fundef_onlog_prop "filter_cond" f cast_type ;
             O.o "" ;
             ()
         end ;
         let cond = test.T.condition in
-        DC.fundef_onlog cond ;
+        DC.fundef_onlog cond cast_type ;
         ()
 
       let dump_cond_def env test =

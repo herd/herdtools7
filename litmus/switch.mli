@@ -22,5 +22,5 @@ module Make : functor (O:Indent.S) -> functor (I:CompCondUtils.I) ->
   sig
     type switch
     val compile :  I.C.prop -> switch
-    val dump : Indent.t -> switch -> unit
+    val dump : Indent.t -> switch -> (I.Loc.t -> string) -> unit
   end

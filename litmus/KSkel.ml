@@ -93,13 +93,20 @@ module Make
           end
         end)
 
+    let cast_type loc =
+      if A.arch = `X86_64 then
+        match loc with
+        | A.Location_reg (proc,r) -> "(" ^ CType.dump (A.typeof r) ^ ")"
+        | _ -> ""
+      else ""
+
     let do_dump_cond_fun env cond =
       let find_type loc =
         let t = match CType.strip_atomic (U.find_type loc env) with
         | CType.Base "atomic_t" ->  CType.Base "int"
         | t -> t in
         CType.dump (CType.strip_atomic t),CType.is_ptr t in
-      DC.fundef find_type cond
+      DC.fundef find_type cond cast_type
 
     let dump_cond_fun env test = do_dump_cond_fun env test.T.condition
 
@@ -112,7 +119,7 @@ module Make
         let find_type loc =
           let t = U.find_type loc env in
           CType.dump (CType.strip_atomic t),CType.is_ptr t in
-        DC.fundef_prop "filter_cond" find_type f
+        DC.fundef_prop "filter_cond" find_type f cast_type
 
 
     let is_srcu_struct t = match t with
