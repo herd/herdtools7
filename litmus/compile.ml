@@ -483,7 +483,7 @@ type P.code = MiscParser.proc * A.pseudo list)
     let comp_initset proc initenv code inputs_final =
       let reg_set  = comp_fix code inputs_final in
       let reg_set =
-        if do_self then
+        if do_self || A.arch = `X86_64 then (* Bypass livein analysis for X64 arch *)
           RegSet.union
             reg_set
             (RegSet.of_list
