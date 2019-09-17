@@ -40,12 +40,9 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
         let pp_reg = pp_reg
         let reg_compare = reg_compare
         let reg_to_string = reg_to_string
-        let internal_init r =
-          if reg_compare r loop_idx = 0 then Some ("max_loop","int")
-          else None
+        let internal_init r = None
 
         let reg_class r=
-          Printf.printf "reg_class : %s\n" (pp_reg r);
           match r with
           (* as some instructions have eax as implicit argument,
              we must allocate our EAX to machine %eax

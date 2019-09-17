@@ -259,7 +259,9 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
 
     let compile_ins tr_lab ins k =
       let r = do_compile_ins tr_lab ins in
-      debug stderr r ; 
+      (*
+      debug stderr r ;
+       *)
       r::k
 
     let branch_neq r i lab k = Warn.fatal "Not implemented"
