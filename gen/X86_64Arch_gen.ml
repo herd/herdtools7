@@ -14,100 +14,120 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-open Code
-include X86_64Base
-let tr_endian = Misc.identity
+module Make
+         (C:sig
+              val naturalsize : MachSize.sz
+              val moreedges : bool
+              val fullmixed : bool
+              val variant : Variant_gen.t -> bool
+            end) = struct
+  open Code
+  include X86_64Base
+  let tr_endian = Misc.identity
 
-module ScopeGen = ScopeGen.NoGen
+  module ScopeGen = ScopeGen.NoGen
+  module Mixed =
+    MachMixed.Make
+      (struct
+        let naturalsize = Some C.naturalsize
+        let fullmixed = C.fullmixed
+      end)
 
-let bellatom = false
+  let bellatom = false
 
-type atom = Atomic
+  type atom = Atomic | Mixed of MachMixed.t
 
-let default_atom = Atomic
+  let default_atom = Atomic
 
-let applies_atom a d = assert false
+  let applies_atom a d = match a,d with
+    | Atomic, Code.W | Mixed _, Code.W -> true
+    | _,_ -> false
 
-let compare_atom = compare
+  let compare_atom = compare
 
-let merge_atoms Atomic Atomic = Some Atomic
+  let merge_atoms a1 a2 = if a1 = a2 then Some a1 else None
 
-let pp_plain = Code.plain
+  let pp_plain = Code.plain
 
-let pp_as_a = None
+  let pp_as_a = None
 
-let pp_atom = function
-  | Atomic -> "A"
+  let pp_atom = function
+    | Atomic -> "A"
+    | Mixed mix -> Mixed.pp_mixed mix
 
-let fold_non_mixed f k = f Atomic k
+  let fold_mixed f r = Mixed.fold_mixed (fun mix r -> f (Mixed mix) r) r
+  let fold_non_mixed f k = f Atomic k
 
-let fold_atom f k =  fold_non_mixed f k
+  let fold_atom f r =
+    let r = fold_mixed f r in
+    fold_non_mixed f r
 
-let worth_final _ = true
+  let worth_final _ = true
 
-let varatom_dir _d f = f None
+  let varatom_dir _d f = f None
 
-include NoMixed
+  include NoMixed
 
-(**********)
-(* Fences *)
-(**********)
+  (**********)
+  (* Fences *)
+  (**********)
 
-type fence = MFence
+  type fence = MFence
 
-let is_isync _ = false
+  let is_isync _ = false
 
-let compare_fence = compare
+  let compare_fence = compare
 
-let default = MFence
-let strong = default
+  let default = MFence
+  let strong = default
 
-let pp_fence = function
-  | MFence -> "MFence"
+  let pp_fence = function
+    | MFence -> "MFence"
 
-let fold_all_fences f r = f MFence r
-let fold_cumul_fences f r = f MFence r
-let fold_some_fences f r =  f MFence r
+  let fold_all_fences f r = f MFence r
+  let fold_cumul_fences f r = f MFence r
+  let fold_some_fences f r =  f MFence r
 
-let orders f d1 d2 = match f,d1,d2 with
-| MFence,_,_ -> true
+  let orders f d1 d2 = match f,d1,d2 with
+    | MFence,_,_ -> true
 
-let var_fence f r = f default r
+  let var_fence f r = f default r
 
-(********)
-(* Deps *)
-(********)
+  (********)
+  (* Deps *)
+  (********)
 
-type dp
+  type dp
 
-let pp_dp _ = assert false
+  let pp_dp _ = assert false
 
-let fold_dpr _f r =  r
-let fold_dpw _f r =  r
+  let fold_dpr _f r =  r
+  let fold_dpw _f r =  r
 
-let ddr_default = None
-let ddw_default = None
-let ctrlr_default = None
-let ctrlw_default = None
+  let ddr_default = None
+  let ddw_default = None
+  let ctrlr_default = None
+  let ctrlw_default = None
 
-let is_ctrlr _ = assert false
-let fst_dp _ = assert false
-let sequence_dp _ _ = assert false
+  let is_ctrlr _ = assert false
+  let fst_dp _ = assert false
+  let sequence_dp _ _ = assert false
 
-(*******)
-(* RWM *)
-(*******)
+  (*******)
+  (* RWM *)
+  (*******)
 
-include OneRMW
-include NoEdge
+  include OneRMW
+  include NoEdge
 
-include
+  include
     ArchExtra_gen.Make
-    (struct
-      type arch_reg = reg
-      let is_symbolic = function
-        | Symbolic_reg _ -> true
-        | _ -> false
-      let pp_reg = pp_reg
-      let free_registers = allowed_for_symb
-    end)
+      (struct
+        type arch_reg = reg
+        let is_symbolic = function
+          | Symbolic_reg _ -> true
+          | _ -> false
+        let pp_reg = pp_reg
+        let free_registers = allowed_for_symb
+      end)
+end

@@ -245,7 +245,10 @@ let () =
       let module T = Top_gen.Make(Co) in
       let module M = Build(T(X86Compile_gen.Make(C))) in
       M.zyva
-  | `X86_64 -> assert false
+  | `X86_64 ->
+      let module T = Top_gen.Make(Co) in
+      let module M = Build(T(X86_64Compile_gen.Make(C))) in
+      M.zyva
   | `PPC ->
       let module T = Top_gen.Make(Co) in
       let module M = Build(T(PPCCompile_gen.Make(C)(PPCArch_gen.Config))) in

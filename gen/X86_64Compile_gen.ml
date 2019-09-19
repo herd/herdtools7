@@ -16,106 +16,206 @@
 
 open Code
 
-module Make(C:CompileCommon.Config) : XXXCompile_gen.S =
+module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
+  struct
 
-struct
+    let naturalsize = TypBase.get_size Cfg.typ
+    module X86_64 = X86_64Arch_gen.Make
+        (struct
+          let naturalsize = naturalsize
+          let moreedges = Cfg.moreedges
+          let fullmixed = Cfg.variant Variant_gen.FullMixed
+          let variant = Cfg.variant
+        end)
+    include CompileCommon.Make(Cfg)(X86_64)
+    open X86_64
 
-  module X86_64 = X86_64Arch_gen
-  include CompileCommon.Make(C)(X86_64)
+    (******)
+    let ppo _f k = k
+    (******)
 
-(******)
-  let ppo _f k = k
-(******)
+    let size =
+      let open TypBase in
+      match Cfg.typ with
+      | Int | Std (_,MachSize.Quad) -> X86_64.Q
+      | Std (_,MachSize.Word) -> X86_64.L
+      | Std (_,MachSize.Short) -> X86_64.W
+      | Std (_,MachSize.Byte) -> X86_64.B
 
-  open X86_64
+    let next_reg x = alloc_reg x
 
-  let next_reg x = alloc_reg x
+    let emit_store addr v =
+      I_EFF_OP (I_MOV, size,
+                Effaddr_rm64 (Rm64_abs (ParsedConstant.nameToV addr)),
+                Operand_immediate v)
 
-  let emit_store addr v = assert false
+    let emit_sta addr r v =
+      [
+        I_EFF_OP
+          (I_MOV, size,
+           Effaddr_rm64 (Rm64_reg r), Operand_immediate v);
+        I_EFF_EFF
+          (I_XCHG, size,
+           Effaddr_rm64 (Rm64_abs (ParsedConstant.nameToV addr)),
+           Effaddr_rm64 (Rm64_reg r))
+      ]
 
-  let emit_sta addr r v = assert false
+    let emit_load_ins addr r =
+      let addr = ParsedConstant.nameToV addr in
+      I_EFF_OP
+        (I_MOV, size,
+         Effaddr_rm64 (Rm64_reg r),
+         Operand_effaddr (Effaddr_rm64 (Rm64_abs addr)))
 
-  let emit_load_ins addr r = Warn.fatal "Loop observers not implemented for X86_64"
+    and emit_cmp_zero_ins r =
+      I_EFF_OP
+        (I_CMP, size, Effaddr_rm64 (Rm64_reg r), Operand_immediate 0)
 
-  and emit_cmp_zero_ins r =
-    Warn.fatal "Loop observers not implemented for X86_64"
+    and emit_cmp_one_ins r =
+      I_EFF_OP
+        (I_CMP, size, Effaddr_rm64 (Rm64_reg r), Operand_immediate 1)
 
-  and emit_cmp_one_ins r =
-    Warn.fatal "Loop observers not implemented for X86_64"
+    and emit_cmp_int_ins r i =
+      I_EFF_OP
+        (I_CMP, size, Effaddr_rm64 (Rm64_reg r), Operand_immediate i)
 
-  and emit_cmp_int_ins r i =
-    Warn.fatal "Loop observers not implemented for X86_64"
+    and emit_je_ins lab =
+      I_JCC (C_EQ,lab)
 
-  and emit_je_ins lab =
-    Warn.fatal "Loop observers not implemented for X86_64"
+    and emit_jne_ins lab =
+      I_JCC (C_NE,lab)
 
-  and emit_jne_ins lab =
-    Warn.fatal "Loop observers not implemented for X86_64"
+    let pseudo = List.map (fun i -> X86_64.Instruction i)
 
-  let pseudo = List.map (fun i -> X86_64.Instruction i)
+    let emit_load st _p init x =
+      let rA,st = next_reg st in
+      rA,init,pseudo [emit_load_ins x rA],st
 
-  let emit_load st _p init x =
-    Warn.fatal "Loop observers not implemented for X86_64"
+    let emit_load_not_zero st _p init x =
+      let rA,st = next_reg st in
+      let lab = Label.next_label "L" in
+      rA,init,
+      Label (lab,Nop)::
+        pseudo
+          [emit_load_ins x rA ;
+           emit_cmp_zero_ins rA ;
+           emit_je_ins lab],
+      st
 
-  let emit_load_not_zero st _p init x =
-    Warn.fatal "Loop observers not implemented for X86_64"
+    let emit_load_one st _p init x =
+      let rA,st = next_reg st in
+      let lab = Label.next_label "L" in
+      rA,init,
+      Label (lab,Nop)::
+        pseudo
+          [emit_load_ins x rA ;
+           emit_cmp_one_ins rA ;
+           emit_jne_ins lab],
+      st
 
-  let emit_load_one st _p init x =
-    Warn.fatal "Loop observers not implemented for X86_64"
+    let emit_load_not  _st _p _init _x _cmp =
+      Warn.fatal "Loop observers not implemented for X86_64"
 
-  let emit_load_not  _st _p _init _x _cmp =
-    Warn.fatal "Loop observers not implemented for X86_64"
+    let emit_load_not_eq  st =  emit_load_not st
+    let emit_load_not_value  st = emit_load_not st
 
-  let emit_load_not_eq  st =  emit_load_not st
-  let emit_load_not_value  st = emit_load_not st
+    let emit_joker st init = None,init,[],st
 
-let emit_joker st init =
-    Warn.fatal "Loop observers not implemented for X86_64"
+    let emit_access st _p init e = match e.C.dir with
+      | None -> Warn.fatal "TODO"
+      | Some d ->
+         begin match e.loc with
+         | Data loc ->
+            begin match d with
+            | R ->
+               let rA,st = next_reg st in
+               begin match e.C.atom with
+               | None -> Some rA,init,pseudo [emit_load_ins loc rA],st
+               | Some Atomic ->
+                  Warn.fatal "No atomic load for X86_64"
+               | Some (Mixed (sz, o)) ->
+(*TODO*)
+                  Some rA,init,pseudo [emit_load_ins loc rA],st
+               end
+            | W ->
+               begin match e.C.atom with
+               | None -> None,init,pseudo [emit_store loc e.C.v],st
+               | Some Atomic ->
+                  let rX,st = next_reg st in
+                  None,init,pseudo (emit_sta loc rX e.C.v), st
+               | Some (Mixed (sz, o)) ->
+(*TODO*)
+                  None,init,pseudo [emit_store loc e.C.v],st
+               end
+            | J -> emit_joker st init
+            end
+         | Code _ -> Warn.fatal "No code location for X86_64"
+         end
 
-  let emit_access st _p init e =
-    Warn.fatal "Loop observers not implemented for X86_64"
+    let emit_exch st _p init er ew =
+      let rA,st = next_reg st in
+      rA,init,
+      pseudo  (emit_sta (Code.as_data er.C.loc) rA ew.C.v),
+      st
 
-  let emit_access_dep _st _p _init _e _r1 =
-    Warn.fatal "Dependent access is irrelevant for X86_64"
+    let emit_rmw () st p init er ew  =
+      let rR,init,cs,st = emit_exch st p init er ew in
+      Some rR,init,cs,st
 
-  let emit_exch_dep _st =
-    Warn.fatal "Dependent access is irrelevant for X86_64"
+    let emit_access_dep _st _p _init _e _r1 =
+      Warn.fatal "Dependent access is irrelevant for X86_64"
 
-  let emit_rmw () st p init er ew  =
-    Warn.fatal "Loop observers not implemented for X86_64"
+    let emit_exch_dep _st =
+      Warn.fatal "Dependent access is irrelevant for X86_64"
 
-  let emit_rmw_dep () =
-    Warn.fatal "Loop observers not implemented for X86_64"
+    let emit_rmw_dep () =  emit_exch_dep
 
-  let emit_fence _ _ _ =
-    Warn.fatal "Loop observers not implemented for X86_64"
+    let emit_fence _ _ _ = function
+      | MFence -> [X86_64.Instruction I_MFENCE]
 
-  let full_emit_fence = GenUtils.to_full emit_fence
+    let full_emit_fence = GenUtils.to_full emit_fence
 
-  let stronger_fence = MFence
+    let stronger_fence = MFence
 
-(* Check load *)
-  let do_check_load p st r e =
-    Warn.fatal "Loop observers not implemented for X86_64"
+    (* Check load *)
+    let do_check_load p st r e =
+      let lab = Label.exit p (current_label st) in
+      (fun k ->
+        Instruction (emit_cmp_int_ins r e.C.v)::
+          Instruction (emit_jne_ins lab)::
+            k),
+      next_label_st st
 
-  let check_load  p r e init st =
-    Warn.fatal "Loop observers not implemented for X86_64"
+    let check_load  p r e init st = 
+      let cs,st = do_check_load p st r e in
+      init,cs,st
 
-(* Postlude *)
+    (* Postlude *)
 
-  let does_jump lab cs =
-    Warn.fatal "Loop observers not implemented for X86_64"
+    let does_jump lab cs =
+      List.exists
+        (fun i -> match i with
+                  | Instruction (I_JMP lab0|I_JCC (_,lab0)) ->
+                     (lab0:string) = lab
+                  | _ -> false)
+        cs
 
-  let does_exit p cs st =
-    Warn.fatal "Loop observers not implemented for X86_64"
+    let does_exit p cs st =  does_jump (Label.exit p (current_label st)) cs
 
     let list_of_exit_labels p st =
-    Warn.fatal "Loop observers not implemented for X86_64"
+      let rec do_rec i k =
+        match i with
+        | 0 -> k
+        | n -> let k' = Label (Label.exit p n,Nop)::k
+               in do_rec (i-1) k'
+      in
+      do_rec (current_label st) []
 
-  let postlude st p init cs =
-    Warn.fatal "Loop observers not implemented for X86_64"
+    let postlude st p init cs =
+      if does_exit p cs st then
+        init,cs@(list_of_exit_labels p st),st
+      else init,cs,st
 
-  let get_xstore_results _ =
-    Warn.fatal "Loop observers not implemented for X86_64"
+    let get_xstore_results _ = []
 
-end
+  end
