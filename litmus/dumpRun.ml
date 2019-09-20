@@ -24,6 +24,7 @@ open Printf
 module type Config = sig
   val carch : Archs.System.t option
   val platform : string
+  val makevar : string list
   val gcc : string
   val stdio : bool
   val index : string option
@@ -73,6 +74,7 @@ end = struct
 
 
   module type ArchConf = sig
+    val sysarch : Archs.System.t
     val word : Word.t
     val delay : int
     val gccopts :  string
@@ -90,6 +92,7 @@ end = struct
     let opt = Option.get_default arch in
     let opt = Cfg.mkopt opt in
     let module M = struct
+      let sysarch = arch
       let word = Option.get_word opt
       let gccopts = Option.get_gccopts opt
       let delay = Option.get_delay opt
@@ -105,6 +108,9 @@ end = struct
       include (val (get_arch arch) : ArchConf)
     end in
     let module RU = RunUtils.Make(O) in
+    List.iter
+      (fun line -> fprintf chan "%s\n" line)
+      Cfg.makevar ;
     let gcc_opts =
       if do_self then LexO.tr RU.get_gcc_opts
       else RU.get_gcc_opts in
@@ -125,7 +131,8 @@ end = struct
 
   let makefile_clean chan extra =
     fprintf chan "clean:\n" ;
-    fprintf chan "\t/bin/rm -f *.o *.s *.t *.exe *~%s\n" extra ;
+    fprintf chan "\t/bin/rm -f *.o *.s *.t *%s *~%s\n"
+      (Mode.exe Cfg.mode) extra ;
     fprintf chan "\n" ;
     fprintf chan "cleansource:\n" ;
     fprintf chan "\t/bin/rm -f *.o *.c *.h *.s *~\n" ;
@@ -230,6 +237,19 @@ let dump_shell names =
       | Crossrun.No -> ()
       | Crossrun.Qemu e ->
           fprintf out_chan "QEMU=\"${QEMU:-%s}\"\n" e
+      | Crossrun.Kvm e ->
+          fprintf out_chan "TDIR=$(dirname $0)\n" ;
+          fprintf out_chan "QEMU=\"${QEMU:-%s}\"\n" e ;
+          fprintf out_chan "dorun () {\n" ;
+          fprintf out_chan "  EXE=$1\n" ;
+          fprintf out_chan "  shift\n" ;
+          fprintf out_chan "  OPTS=\"$@\"\n" ;
+          fprintf out_chan "  ${QEMU} ${TDIR}/${EXE} -smp %i -append \"${OPTS}\"\n"
+            (match Cfg.avail with
+            | Some e -> e
+            | None ->
+                Warn.user_error "Available threads must be set in kvm mode") ;
+          fprintf out_chan "}\n"
       | Crossrun.Adb  ->
           fprintf out_chan "RDIR=%s\n" Cfg.adbdir ;
           fprintf out_chan "adb shell mkdir $RDIR >/dev/null 2>&1\n" ;
@@ -270,12 +290,15 @@ let dump_shell names =
       end in
       let module RU = RunUtils.Make(O) in
       RU.report_machine out_chan ;
-      output_line out_chan "head -1 comp.sh" ;
+      begin match Cfg.mode with
+      | Mode.Std|Mode.PreSi ->
+          output_line out_chan "head -1 comp.sh"
+      | Mode.Kvm -> ()
+      end ;
       output_line out_chan "echo \"LITMUSOPTS=$LITMUSOPTS\"" ;
       output_line out_chan "date" ;
       arch,sources,utils)
     (Tar.outname (MyName.outname "run" ".sh"))
-
 
 let dump_shell_cont arch sources utils =
   let sources = List.map Filename.basename  sources in
@@ -284,42 +307,46 @@ let dump_shell_cont arch sources utils =
     include Cfg
     include (val (get_arch arch) : ArchConf)
   end in
-  let module RU = RunUtils.Make(O) in
-  Misc.output_protect
-    (fun chan ->
-      let gcc_opts = RU.get_gcc_opts in
-      fprintf chan "GCC=%s\n" Cfg.gcc ;
-      fprintf chan "GCCOPTS=\"%s\"\n" gcc_opts ;
-      let link_opts = RU.get_link_opts  in
-      fprintf chan "LINKOPTS=\"%s\"\n" link_opts ;
-      fprintf chan "/bin/rm -f *.exe *.s\n" ;
-      List.iter
-        (fun s ->
-          if Filename.check_suffix s ".c" then
-            fprintf chan "$GCC $GCCOPTS -O2 -c %s\n"
-              (Filename.basename s))
-        utils ;
-      let utils_objs =
-        List.fold_right
-          (fun s k ->
-            if Filename.check_suffix s ".c" then
-              let b = Filename.chop_suffix (Filename.basename s) ".c" in
-              (b ^ ".o") :: k
-            else k) utils [] in
-      let utils_objs = String.concat " " utils_objs in
-      List.iter
-        (fun src ->
-          let exe = Filename.chop_extension src ^ ".exe" in
+  begin match Cfg.mode with
+  | Mode.Std|Mode.PreSi ->
+      let module RU = RunUtils.Make(O) in
+      Misc.output_protect
+        (fun chan ->
+          let gcc_opts = RU.get_gcc_opts in
+          fprintf chan "GCC=%s\n" Cfg.gcc ;
+          fprintf chan "GCCOPTS=\"%s\"\n" gcc_opts ;
+          let link_opts = RU.get_link_opts  in
+          fprintf chan "LINKOPTS=\"%s\"\n" link_opts ;
+          fprintf chan "/bin/rm -f *%s *.s\n" (Mode.exe Cfg.mode) ;
+          List.iter
+            (fun s ->
+              if Filename.check_suffix s ".c" then
+                fprintf chan "$GCC $GCCOPTS -O2 -c %s\n"
+                  (Filename.basename s))
+            utils ;
+          let utils_objs =
+            List.fold_right
+              (fun s k ->
+                if Filename.check_suffix s ".c" then
+                  let b = Filename.chop_suffix (Filename.basename s) ".c" in
+                  (b ^ ".o") :: k
+                else k) utils [] in
+          let utils_objs = String.concat " " utils_objs in
+          List.iter
+            (fun src ->
+              let exe = Filename.chop_extension src ^ (Mode.exe Cfg.mode) in
 (* No more moderate parallelism [blocks on abducens, sh bug ?] *)
-          fprintf chan
-            "$GCC $GCCOPTS $LINKOPTS -o %s %s %s\n" exe utils_objs src ;
-          let srcS = Filename.chop_extension src ^ ".s" in
-          let srcT = Filename.chop_extension src ^ ".t" in
-          fprintf chan "$GCC $GCCOPTS -S %s && awk -f show.awk %s > %s && /bin/rm %s\n"
-            src srcS srcT srcS ;
-          ())
-        (List.rev sources))
-    (Tar.outname (MyName.outname "comp" ".sh")) ;
+              fprintf chan
+                "$GCC $GCCOPTS $LINKOPTS -o %s %s %s\n" exe utils_objs src ;
+              let srcS = Filename.chop_extension src ^ ".s" in
+              let srcT = Filename.chop_extension src ^ ".t" in
+              fprintf chan "$GCC $GCCOPTS -S %s && awk -f show.awk %s > %s && /bin/rm %s\n"
+                src srcS srcT srcS ;
+              ())
+            (List.rev sources))
+        (Tar.outname (MyName.outname "comp" ".sh")) ;
+  | Mode.Kvm -> ()
+  end ;
 (* Add a small README file *)
   Misc.output_protect
     (fun chan ->
@@ -330,33 +357,48 @@ let dump_shell_cont arch sources utils =
     (fun chan ->
 (* Variables *)
       makefile_vars chan false arch sources ;
-      fprintf chan "EXE=$(SRC:.c=.exe)\n" ;
+      fprintf chan "EXE=$(SRC:.c=%s)\n"
+        (match Cfg.mode with
+        | Mode.Std|Mode.PreSi -> ".exe"
+        | Mode.Kvm -> ".flat") ;
       fprintf chan "T=$(SRC:.c=.t)\n" ;
       fprintf chan "\n" ;
 (* Entry points *)
       fprintf chan "all: $(EXE) $(T)\n" ;
       fprintf chan "\n" ;
-      makefile_clean chan "";
-      makefile_utils chan utils ;
+      begin match Cfg.mode with
+      | Mode.Std|Mode.PreSi ->
+          makefile_clean chan "";
+          makefile_utils chan utils ;
+          ()
+      | Mode.Kvm -> ()
+      end ;
+      begin match  Cfg.mode with
+      | Mode.Std|Mode.PreSi ->
 (* Cannot use %.s here for Mac that preprocesses assembly files,
    and because #comments makes the preprocessor crash ! *)
-      let src_ext = match Cfg.targetos with
-      | TargetOS.Mac -> 'c'
-      | TargetOS.Linux|TargetOS.AIX
-      | TargetOS.FreeBsd|TargetOS.Android8
-        -> 's' in
-      fprintf chan "%%.exe:%%.%c $(UTILS)\n" src_ext ;
-      fprintf chan
-        "\t$(GCC) $(GCCOPTS) $(LINKOPTS) -o $@ $(UTILS) $<\n" ;
-      fprintf chan "\n" ;
+          let src_ext = match Cfg.targetos with
+          | TargetOS.Mac -> 'c'
+          | TargetOS.Linux|TargetOS.AIX
+          | TargetOS.FreeBsd|TargetOS.Android8
+            -> 's' in
+          fprintf chan "%%.exe:%%.%c $(UTILS)\n" src_ext ;
+          fprintf chan
+            "\t$(GCC) $(GCCOPTS) $(LINKOPTS) -o $@ $(UTILS) $<\n" ;
+          fprintf chan "\n" ;
 (* .s pattern rule *)
-      fprintf chan "%%.s:%%.c\n" ;
-      fprintf chan "\t$(GCC) $(GCCOPTS) -S $<\n" ;
-      fprintf chan "\n" ;
+          fprintf chan "%%.s:%%.c\n" ;
+          fprintf chan "\t$(GCC) $(GCCOPTS) -S $<\n" ;
+          fprintf chan "\n" ;
 (* .t pattern rule *)
-      fprintf chan "%%.t:%%.s\n" ;
-      fprintf chan "\tawk -f show.awk $< > $@\n" ;
-      fprintf chan "\n")
+          fprintf chan "%%.t:%%.s\n" ;
+          fprintf chan "\tawk -f show.awk $< > $@\n" ;
+          fprintf chan "\n"
+      | Mode.Kvm ->
+          let module A = (val (get_arch arch) : ArchConf) in
+          let module Insert =  ObjUtil.Insert(A) in
+          Insert.insert (fprintf chan "%s\n") "kvm.rules"
+      end)
     (Tar.outname (MyName.outname "Makefile" "")) ;
   Tar.tar  () ;
   ()

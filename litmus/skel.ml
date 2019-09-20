@@ -268,6 +268,7 @@ module Make
           (struct
             let emitprintf = Cfg.stdio
             let ctr = Fmt.I64
+            let no_file = false
           end)(O)
       module UD = U.Dump(O)(EPF)
 
@@ -680,6 +681,7 @@ module Make
               let nsockets = Cfg.nsockets
               let smtmode = Cfg.smtmode
               let mode = Mode.Std
+              let is_active = true
             end) (O) in
         Topo.dump_alloc []
 
