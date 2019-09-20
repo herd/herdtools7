@@ -23,6 +23,7 @@ open Answer
 module type Config = sig
   val carch : Archs.System.t option
   val platform : string
+  val makevar : string list
   val gcc : string
   val stdio : bool
   val index : string option
