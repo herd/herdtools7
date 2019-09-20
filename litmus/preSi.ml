@@ -44,7 +44,7 @@ module type Config = sig
 end
 
 module Make
-    (Cfg:sig include Config val sysarch : Archs.System.t end)
+    (Cfg:sig include Config val sysarch : Archs.System.t val is_kvm : bool val is_tb : bool end)
     (P:sig type code end)
     (A:Arch_litmus.Base)
     (T:Test_litmus.S with type P.code = P.code and module A = A)
@@ -54,7 +54,7 @@ module Make
     and module RegMap = T.A.RegMap) : sig
       val dump : Name.t -> T.t -> unit
     end = struct
-
+      let k_nkvm x = if Cfg.is_kvm then "" else x
       open CType
 
 (*******************************************)
@@ -72,9 +72,19 @@ module Make
           (struct
             let emitprintf = Cfg.stdio
             let ctr = Fmt.I32
+            let no_file = Cfg.is_kvm
           end)(O)
 
-      let have_timebase = Insert.exists "timebase.c"
+      let timebase_possible =
+        Insert.exists "timebase.c" ||
+        (Cfg.is_kvm && Insert.exists "kvm_timebase.c")
+
+      let have_timebase =
+        Cfg.is_tb &&
+          (timebase_possible ||
+          (Warn.user_error
+             "No timebase for arch %s" (Archs.pp  Cfg.sysarch)))
+
       let have_cache = Insert.exists "cache.c"
 
 (*************)
@@ -118,21 +128,30 @@ module Make
           if have_timebase then O.f "#define DELTA_TB %s" delta
         end ;
         O.o "/* Includes */" ;
-        O.o "#include <stdlib.h>" ;
-        O.o "#include <inttypes.h>" ;
-        O.o "#include <unistd.h>" ;
-        O.o "#include <errno.h>" ;
-        O.o "#include <assert.h>" ;
-        O.o "#include <time.h>" ;
-        O.o "#include <limits.h>" ;
-        O.o
-          (if Cfg.stdio then "#include <stdio.h>"
-          else "#include \"litmus_io.h\"") ;
-        O.o "#include \"litmus_rand.h\"" ;
-        O.o "#include \"utils.h\"" ;
-        if Cfg.c11 then O.o "#include <stdatomic.h>";
-        if true then begin (* Affinity always used *)
-          O.o "#include \"affinity.h\""
+        if Cfg.is_kvm then begin
+          O.o "#define KVM 1" ;
+          O.o "#include <libcflat.h>" ;
+          O.o "#include <asm-generic/atomic.h>" ;
+          O.o "#include <asm/smp.h>" ;
+          O.o "#include <asm/delay.h>" ;
+          O.o "#include <litmus.h>"
+        end else begin
+          O.o "#include <stdlib.h>" ;
+          O.o "#include <inttypes.h>" ;
+          O.o "#include <unistd.h>" ;
+          O.o "#include <errno.h>" ;
+          O.o "#include <assert.h>" ;
+          O.o "#include <time.h>" ;
+          O.o "#include <limits.h>" ;
+          O.o
+            (if Cfg.stdio then "#include <stdio.h>"
+            else "#include \"litmus_io.h\"") ;
+          O.o "#include \"litmus_rand.h\"" ;
+          O.o "#include \"utils.h\"" ;
+          if Cfg.c11 then O.o "#include <stdatomic.h>";
+          if true then begin (* Affinity always used *)
+            O.o "#include \"affinity.h\""
+          end
         end ;
         O.o "" ;
         O.o "typedef uint32_t count_t;" ;
@@ -153,10 +172,12 @@ module Make
       let nsteps = 5
 
       let dump_delay_def () =
-        O.f "#define NSTEPS %i" nsteps ;
-        O.f "#define NSTEPS2 ((NSTEPS-1)/2)" ;
-        O.o "#define STEP (DELTA_TB/(2*(NSTEPS-1)))" ;
-        ()
+        if have_timebase then begin
+          O.f "#define NSTEPS %i" nsteps ;
+          O.f "#define NSTEPS2 ((NSTEPS-1)/2)" ;
+          O.o "#define STEP (DELTA_TB/(NSTEPS-1))"
+        end
+
 
 (***************************************)
 (* Various inclusions from C utilities *)
@@ -169,7 +190,10 @@ module Make
           O.o "#define HAVE_TIMEBASE 1" ;
           O.o "typedef uint64_t tb_t ;" ;
           O.o "#define PTB PRIu64" ;
-          Insert.insert O.o "timebase.c"
+          Insert.insert O.o
+            (if Cfg.is_kvm && Insert.exists "kvm_timebase.c" then
+              "kvm_timebase.c"
+            else "timebase.c")
         end
 
 (* Memory barrier *)
@@ -217,6 +241,8 @@ module Make
 (**************)
 (* Topologies *)
 (**************)
+      let is_active = not Cfg.is_kvm
+
       let get_all_vars test =
         let all = List.map fst test.T.globals in
         let vs =
@@ -239,7 +265,8 @@ module Make
               let smt = Cfg.smt
               let nsockets = Cfg.nsockets
               let smtmode = Cfg.smtmode
-              let mode = Mode.PreSi
+              let mode = if Cfg.is_kvm then Mode.Kvm else Mode.PreSi
+              let is_active = is_active
             end) (O) in
         O.o "/************/" ;
         O.o "/* Topology */" ;
@@ -369,7 +396,7 @@ module Make
         end ;
 
         O.o "/* Dump of outcome */" ;
-        O.o "static void pp_log(FILE *chan,log_t *p) {" ;
+        O.f "static void pp_log(%slog_t *p) {" (k_nkvm  "FILE *chan,") ;
         let fmt = fmt_outcome test env locs
         and args =
           A.LocSet.map_list
@@ -611,13 +638,19 @@ module Make
         O.o "#define PARSESZ (sizeof(parse)/sizeof(parse[0]))" ;
         O.o "";
 (* Print *)
-        O.o "static void pp_param(FILE *out,param_t *p) {" ;
+        let is_delay tag = List.exists (fun x -> Misc.string_eq x tag) d_tags in
+        O.f "static void pp_param(%sparam_t *p) {" (k_nkvm "FILE *out,") ;
         let fmt =
           "{" ^
           String.concat ", "
             (List.map (fun tag -> sprintf "%s=%%i" tag) all_tags) ^
           "}"
-        and params = List.map (sprintf "p->%s") all_tags  in
+        and params = List.map
+            (fun tag ->
+              sprintf
+                (if is_delay tag then "p->%s-NSTEPS2" else "p->%s")
+                tag)
+            all_tags  in
         EPF.fi fmt params ;
         O.o "}" ;
         O.o "" ;
@@ -658,13 +691,15 @@ module Make
         O.o "" ;
         ObjUtil.insert_lib_file O.o "_hash.c" ;
         O.o "" ;
-        O.o "static void pp_entry(FILE *out,entry_t *p, int verbose, char **group) {" ;
+        O.f "static void pp_entry(%sentry_t *p, int verbose, char **group) {"
+          (k_nkvm "FILE *out,") ;
         let fmt = "%-6PCTR%c>" in
         EPF.fi fmt ["p->c";"p->ok ? '*' : ':'";] ;
-        O.oi "pp_log(out,&p->key);" ;
+        let out = k_nkvm "out," in
+        O.fi "pp_log(%s&p->key);" out ;
         O.oi "if (verbose) {" ;
         EPF.fii " # " [] ;
-        O.oii "pp_param(out,&p->p);" ;
+        O.fii "pp_param(%s&p->p);" out ;
         EPF.fii " %s" ["group[p->p.part]"];
         O.oi "}" ;
         EPF.fi "%c" ["'\\n'"] ;
@@ -680,8 +715,15 @@ module Make
         O.o "/* Memory size */" ;
         O.o "/***************/" ;
         O.o "" ;
-        O.o "/* Cache line */" ;
-        O.f "#define LINE %i" Cfg.line ;
+        O.f "/* %s line */"
+          (if Cfg.is_kvm then "Page size" else "Cache line") ;
+        if Cfg.is_kvm then begin
+          O.o "#define LINE PAGE_SIZE" ;
+          O.f "#define VOFF %i" Cfg.line
+        end else begin
+          O.f "#define LINE %i" Cfg.line ;
+          O.o "#define VOFF 1"
+        end ;
         O.o "" ;
         ObjUtil.insert_lib_file O.o "_instance.c" ;
         O.o "" ;
@@ -954,7 +996,7 @@ module Make
                     O.fiii
                       "ctx->p.%s = comp_param(&c->seed,&q->%s,NVARS,0);"
                       tag tag ;
-                    O.fiii "_vars->%s = _mem + LINESZ*ctx->p.%s + %i;"
+                    O.fiii "_vars->%s = _mem + LINESZ*ctx->p.%s + %i*VOFF;"
                       a tag pos
                   with Not_found ->
                     O.fiii "_vars->%s = _mem;" a)
@@ -972,8 +1014,9 @@ module Make
             if has_globals then O.oiii "barrier_wait(&ctx->b);" ;
             List.iter
               (fun (_proc,v as p) ->
-                let more_test =
-                  try
+                if is_active then begin
+                  let more_test =
+                    try
                     let prx = get_param_prefix v in
                     let tsts =
                       sprintf " && ctx->p.%s != 0" (pvtag v)::
@@ -984,14 +1027,19 @@ module Make
                         prx in
                     String.concat "" tsts
                   with Not_found -> "" in
-                O.fiii "if (c->act->%s%s) {"
-                  (Topology.active_tag p) more_test ;
-                let tag = pctag p in
-                O.fiv "ctx->p.%s = comp_param(&c->seed,&q->%s,cmax,1);"
-                  tag tag ;
-                O.oiii "} else {" ;
-                O.fiv "ctx->p.%s = cignore;" tag ;
-                O.oiii "}" ;)
+                  O.fiii "if (c->act->%s%s) {"
+                    (Topology.active_tag p) more_test ;
+                  let tag = pctag p in
+                  O.fiv "ctx->p.%s = comp_param(&c->seed,&q->%s,cmax,1);"
+                    tag tag ;
+                  O.oiii "} else {" ;
+                  O.fiv "ctx->p.%s = cignore;" tag ;
+                  O.oiii "}"
+                end else begin
+                  let tag = pctag p in
+                  O.fiii "ctx->p.%s = comp_param(&c->seed,&q->%s,cmax,1);"
+                    tag tag
+                end)
               cs ;
             O.oiii "break;")
           (List.combine vss (List.combine pss css)) ;
@@ -1010,15 +1058,19 @@ module Make
         O.oi "if (q->part >=0) {" ;
         O.oii "set_role(g,&c,q->part);";
         O.oii "for (int nrun = 0; nrun < g->nruns ; nrun++) {" ;
-        O.oiii
-          "if (g->verbose>1) fprintf(stderr, \"Run %i of %i\\r\", nrun, g->nruns);" ;
+        if not Cfg.is_kvm then begin
+          O.oiii
+            "if (g->verbose>1) fprintf(stderr, \"Run %i of %i\\r\", nrun, g->nruns);"
+        end ;
         O.oiii "choose_params(g,&c,q->part);" ;
         O.oii "}" ;
         O.oi "} else {" ;
         O.oii "st_t seed = 0;" ;
         O.oii "for (int nrun = 0; nrun < g->nruns ; nrun++) {" ;
-        O.oiii
-          "if (g->verbose>1) fprintf(stderr, \"Run %i of %i\\r\", nrun, g->nruns);" ;
+        if not Cfg.is_kvm then begin
+          O.oiii
+            "if (g->verbose>1) fprintf(stderr, \"Run %i of %i\\r\", nrun, g->nruns);"
+        end ;
         O.oiii "int part = rand_k(&seed,SCANSZ);" ;
         O.oiii "set_role(g,&c,part);";
         O.oiii "choose_params(g,&c,part);" ;
@@ -1102,21 +1154,28 @@ module Make
         O.oi "global_t *g;" ;
         O.o "} zyva_t;" ;
         O.o "" ;
-        O.o "static void *zyva(void *_a) {" ;
+        O.f "static void %szyva(void *_a) {" (k_nkvm "*") ;
         O.oi "zyva_t *a = (zyva_t*)_a;" ;
         O.oi "int id = a->id;" ;
         O.oi "global_t *g = a->g;" ;
-        O.oi
-          (if Cfg.force_affinity then
-            sprintf
-              "force_one_affinity(id,AVAIL,g->verbose,\"%s\");"
-              tname
-          else
-            "write_one_affinity(id);") ;
+        if not Cfg.is_kvm then begin
+          O.oi
+            (if Cfg.force_affinity then
+              sprintf
+                "force_one_affinity(id,AVAIL,g->verbose,\"%s\");"
+                tname
+            else
+              "write_one_affinity(id);")
+        end ;
         O.oi "init_global(g,id);" ;
 (*        O.oi "if (g->do_scan) scan(id,g); else choose(id,g);" ; *)
         O.oi "choose(id,g);" ;
-        O.oi "return NULL;" ;
+        if Cfg.is_kvm then begin
+          O.oi "mbar();" ;
+          O.oi "atomic_inc_fetch(&g->over);"
+        end else begin
+          O.oi "return NULL;"
+        end ;
         O.o "}" ;
         O.o ""
 

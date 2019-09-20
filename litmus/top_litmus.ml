@@ -52,6 +52,7 @@ module type CommonConfig = sig
   val driver : Driver.t
   val crossrun : Crossrun.t
   val adbdir : string
+  val makevar : string list
   val gcc : string
   val c11 : bool
   val c11_fence : bool
@@ -203,11 +204,22 @@ end = struct
               let dump =
                 match OT.mode with
                 | Mode.Std ->
-                   let module S = Skel.Make(O)(Pseudo)(A')(T)(Out)(Lang) in
-                   S.dump
-                | Mode.PreSi ->
-                   let module S = PreSi.Make(O)(Pseudo)(A')(T)(Out)(Lang) in
-                   S.dump in
+                    let module S = Skel.Make(O)(Pseudo)(A')(T)(Out)(Lang) in
+                    S.dump
+                | Mode.PreSi|Mode.Kvm ->
+                    let module O =
+                      struct
+                        include O
+                        let is_kvm = match OT.mode with
+                        | Mode.Kvm -> true
+                        | Mode.PreSi -> false
+                        | Mode.Std -> assert false
+                        let is_tb = match OT.barrier with
+                        | Barrier.TimeBase  -> true
+                        | _ -> false
+                      end  in
+                    let module S = PreSi.Make(O)(Pseudo)(A')(T)(Out)(Lang) in
+                    S.dump in
               dump doc compiled)
             outname
         with e ->

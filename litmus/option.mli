@@ -80,6 +80,7 @@ val alloc : Alloc.t ref
 val doublealloc : bool ref
 val noalign : Align.t option ref
 val speedcheck : Speedcheck.t ref
+val makevar : string list ref
 val gcc : string ref
 val c11 : bool ref
 val c11_fence : bool ref

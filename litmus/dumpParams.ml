@@ -45,7 +45,7 @@ module Make (O:Config) =
           end ;
           dump_def "MAX_LOOP"
             (let x = O.timeloop in if x > 0 then sprintf "%i" x else "0")
-      | Mode.PreSi -> ()
+      | Mode.PreSi|Mode.Kvm -> ()
       end ;
       ()
   end

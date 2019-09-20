@@ -382,6 +382,9 @@ module Make
           | Mode.PreSi ->
               O.f "static %s postlude(FILE *out,global_t *g,count_t p_true,count_t p_false,tsc_t total) {" t ;
               O.oi "hash_t *hash = &g->hash ;"
+          | Mode.Kvm ->
+              O.f "static %s postlude(global_t *g,count_t p_true,count_t p_false,tsc_t total) {" t ;
+              O.oi "hash_t *hash = &g->hash ;"
           end ;
 (* Print header *)
           let c = test.T.condition in
@@ -401,6 +404,9 @@ module Make
           | Mode.PreSi ->
               pp_nstates "hash->nhash" ;
               O.oi "pp_hash(out,hash,g->verbose > 1,g->group);"
+          | Mode.Kvm ->
+              pp_nstates "hash->nhash" ;
+              O.oi "pp_hash(hash,g->verbose > 1,g->group);"
           end ;
 (* Print condition and witnesses *)
           let pp_cond = sprintf "\"%s\"" (String.escaped (pp_cond test)) in
@@ -453,7 +459,7 @@ module Make
                   O.fi "fprintf(out,\"%s\",\"%s\",\"%s\");" fmt "Prefetch" prf
               | NoPL|RandomPL -> ()
               end
-          | Mode.PreSi -> ()
+          | Mode.Kvm|Mode.PreSi -> ()
           end ;
 (* Affinity info, as computed *)
           begin match Cfg.mode with
@@ -466,7 +472,7 @@ module Make
                   O.oi "}"
               | None -> ()
               end
-          | Mode.PreSi -> ()
+          | Mode.Kvm|Mode.PreSi -> ()
           end ;
 (* Observation summary *)
           O.fi
@@ -504,7 +510,7 @@ module Make
                 O.oiii "printf(\"Topology %-6\" PCTR \":> %s\\n\",ngroups[0],cmd->aff_topo);" ;
                 O.oii "}"
               end
-          | Mode.PreSi ->
+          | Mode.Kvm|Mode.PreSi ->
               O.oii "count_t *ngroups = &g->stats.groups[0];" ;
               O.oii "for (int k = 0 ; k < SCANSZ ; k++) {" ;
               O.oiii "count_t c = ngroups[k];" ;
@@ -547,9 +553,17 @@ module Make
             stats ;
           O.oi "}" ;
 (* Show running time *)
-          let fmt = sprintf "Time %s %%f\n"  doc.Name.name in
-          EPF.fi fmt ["total / 1000000.0"] ;
-          O.oi "fflush(out);" ;
+          begin match Cfg.mode with
+          | Mode.Std|Mode.PreSi ->
+              let fmt = sprintf "Time %s %%f\n"  doc.Name.name in
+              EPF.fi fmt ["total / 1000000.0"] ;
+              O.oi "fflush(out);"
+          | Mode.Kvm ->
+              let s = sprintf "Time %s "  doc.Name.name in
+              O.fi "puts(%S);" s ;
+              O.oi "emit_double(((double)total) / 1000000.0);" ;
+              O.oi "puts(\"\\n\");"
+          end ;
           if Cfg.exit_cond then O.oi "return cond;" ;
           O.o "}" ;
           O.o "" ;

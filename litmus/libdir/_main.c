@@ -13,14 +13,24 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
+
 /***************/
 /* Entry point */
 /***************/
+#ifndef EXIT_SUCCESS
+#define EXIT_SUCCESS 0
+#endif
 
 static zyva_t arg[AVAIL];
+#ifndef KVM
 static pthread_t th[AVAIL];
+#endif
 
+#ifdef KVM
+int RUN(int argc,char **argv) {
+#else
 int RUN(int argc,char **argv,FILE *out) {
+#endif
 #ifdef OUT
   opt_t def = { 0, NUMBER_OF_RUN, SIZE_OF_TEST, AVAIL, NEXE, mode_random, };
   opt_t d = def ;
@@ -36,11 +46,17 @@ int RUN(int argc,char **argv,FILE *out) {
   global.size = d.size_of_test;
   global.do_scan = d.mode == mode_scan ;
   if (global.verbose) {
+#ifdef KVM
+    printf("%s: n=%d, r=%d, s=%d, %s\n",prog,global.nexe,global.nruns,global.size,global.do_scan ? "+sp" : "+rp");
+#else
     fprintf(stderr,"%s: n=%i, r=%i, s=%i, %s\n",prog,global.nexe,global.nruns,global.size,global.do_scan ? "+sp" : "+rp");
+#endif
   }
   parse_param(prog,global.parse,PARSESZ,p) ;
 #ifdef PRELUDE
+#ifndef KVM
   prelude(out) ;
+#endif
 #endif
   tsc_t start = timeofday();
 #else
@@ -55,9 +71,15 @@ int RUN(int argc,char **argv,FILE *out) {
     arg[id].id = id;
     arg[id].g = &global;
   }
+#ifdef KVM
+  /* "spawn" downwards as id 0 is not asynchornous */
+  global.over = 0 ;
+  for (int id = AVAIL-1 ; id >= 0 ; id--) on_cpu_async(id,zyva,&arg[id]);
+  while (global.over < AVAIL) mdelay(500);
+#else
   for (int id=0; id < AVAIL ; id++) launch(&th[id],zyva,&arg[id]);
   for (int id=0; id < AVAIL ; id++) join(&th[id]);
-
+#endif
   int nexe = global.nexe ;
   hash_init(&global.hash) ;  
   for (int k=0 ; k < nexe ; k++) {
@@ -74,13 +96,21 @@ int RUN(int argc,char **argv,FILE *out) {
       p_false += e->c;
     }
   }
+#ifdef KVM
+  postlude(&global,p_true,p_false,total);
+#else
   postlude(out,&global,p_true,p_false,total);
+#endif
 #endif
   return EXIT_SUCCESS;
 }
 
 #ifdef MAIN
 int main (int argc,char **argv) {
+#ifdef KVM
+  return RUN(argc,argv) ;
+#else
   return RUN(argc,argv,stdout) ;
+#endif
 }
 #endif

@@ -204,7 +204,7 @@ static void do_parse(char *prog,parse_param_t *p,int sz, char *arg) {
     if (rem != NULL) {
       long i = strtol(rem,NULL,0) ;
       *p->dst = p->f(i) ;
-      if (i >= p->max) {
+      if (*p->dst >= p->max) {
         fprintf(stderr,"%s: parameter %s is out of range\n",prog,p->tag) ;
         exit(2) ;
       }

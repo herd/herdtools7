@@ -45,6 +45,7 @@ module type CommonConfig = sig
   val driver : Driver.t
   val crossrun : Crossrun.t
   val adbdir : string
+  val makevar : string list
   val gcc : string
   val c11 : bool
   val c11_fence : bool
