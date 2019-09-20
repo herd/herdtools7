@@ -70,7 +70,8 @@ let read_cfg name =
   with
   | Arg.Bad msg
   | LexConf_litmus.Error msg ->
-     Warn.fatal "Bad configuration file: %s" msg
+      Printf.eprintf "Bad configuration file: %s" msg ;
+      exit 2
 
 
 (* Legal C symbol *)

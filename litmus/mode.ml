@@ -14,15 +14,21 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type t = Std | PreSi
+type t = Std | PreSi | Kvm
 
-let tags = ["std";"presi";]
+let tags = ["std"; "presi"; "kvm";]
 
 let parse tag = match Misc.lowercase tag with
 | "std" -> Some Std
 | "presi" -> Some PreSi
+| "kvm" -> Some Kvm
 | _ -> None
 
 let pp = function
   | Std -> "std"
   | PreSi -> "presi"
+  | Kvm -> "kvm"
+
+let exe = function
+  | Std|PreSi -> ".exe"
+  | Kvm -> ".flat"

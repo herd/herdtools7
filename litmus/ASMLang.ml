@@ -64,13 +64,13 @@ module RegMap = A.RegMap)
 
       let compile_addr_inline = match O.mode with
       | Mode.Std -> sprintf "_a->%s[_i]"
-      | Mode.PreSi -> sprintf "*%s"
+      | Mode.PreSi|Mode.Kvm -> sprintf "*%s"
 
       and compile_addr_fun x = sprintf "*%s" x
 
       and compile_val_inline = match O.mode with
       | Mode.Std -> checkVal Tmpl.dump_v
-      | Mode.PreSi -> checkVal A.V.pp_v
+      | Mode.PreSi|Mode.Kvm -> checkVal A.V.pp_v
 
       let dump_clobbers chan t =
         fprintf chan ":%s\n"
@@ -400,7 +400,7 @@ module RegMap = A.RegMap)
 
         let compile_out_reg = match O.mode with
         | Mode.Std -> Tmpl.compile_out_reg
-        | Mode.PreSi ->
+        | Mode.Kvm|Mode.PreSi ->
             fun proc reg ->
               let ty =
                 try RegMap.find reg env with Not_found -> assert false in

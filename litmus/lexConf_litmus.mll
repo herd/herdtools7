@@ -84,6 +84,8 @@ rule main = parse
 | '#' [^'\n']* '\n'
 | blank* '\n'
     { main lexbuf }
+| "makevar" arg
+    { makevar := !makevar @ [arg] ; main lexbuf }
 | ("gcc_opts"|"ccopts") arg
     { set_gccopts arg ; main lexbuf }
 | "gcc" arg

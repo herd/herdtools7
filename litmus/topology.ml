@@ -25,6 +25,7 @@ module type Config = sig
   val nsockets : int
   val smtmode : Smt.t
   val mode : Mode.t
+  val is_active : bool
 end
 
 let active_tag (proc,a) = Printf.sprintf "act_%i_%s"  proc a
@@ -290,7 +291,7 @@ let part pp_part maxelt maxpart k r =
     | Mode.Std ->
         O.o "" ;
         O.o "static count_t ngroups[SCANSZ];"
-    | Mode.PreSi -> ()
+    | Mode.PreSi|Mode.Kvm -> ()
     end ;
     O.o "" ;
     ()
@@ -341,7 +342,7 @@ let part pp_part maxelt maxpart k r =
         vss ;
       !r in
 
-    if List.exists (fun vs -> vs <> []) vss then begin
+    if Cfg.is_active && List.exists (fun vs -> vs <> []) vss then begin
       O.o "#define ACTIVE 1" ;
       O.o "typedef struct {" ;
       O.fi "int %s;"
@@ -425,6 +426,6 @@ let part pp_part maxelt maxpart k r =
 
   let dump_alloc vss = match Cfg.mode with
   | Mode.Std -> dump_alloc_gen std_kont std_handle
-  | Mode.PreSi -> dump_alloc_gen presi_kont (presi_handle vss)
+  | Mode.PreSi|Mode.Kvm -> dump_alloc_gen presi_kont (presi_handle vss)
     
 end 

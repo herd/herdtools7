@@ -171,7 +171,7 @@ module Make(C:Config)(E:Extra) = struct
         | Memory.Direct -> begin match C.mode with
           | Mode.Std ->
               out "%s%s %s = (%s)%s_a->%s[_i];\n" indent ty x ty amper x
-          |  Mode.PreSi -> ()
+          |  Mode.PreSi|Mode.Kvm -> ()
         end
         | Memory.Indirect ->
             out "%s%s %s = (%s)_a->%s[_i];\n" indent ty x ty x
@@ -183,7 +183,7 @@ module Make(C:Config)(E:Extra) = struct
             let outname = CTarget.compile_out_reg proc x in
             out "%s%s = (%s)%s;\n"
               indent outname (CType.dump ty) (CTarget.fmt_reg x)
-        | Mode.PreSi ->
+        | Mode.PreSi|Mode.Kvm ->
             let outname =
               if CType.is_ptr ty then
                 CTarget.compile_presi_out_ptr_reg proc x

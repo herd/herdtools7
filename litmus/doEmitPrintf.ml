@@ -19,6 +19,7 @@
 module type Config = sig
   val emitprintf : bool
   val ctr : Fmt.int_ty
+  val no_file : bool
 end
 module Make(Cfg:Config)(O:Indent.S) : EmitPrintf.S = struct
 
@@ -75,7 +76,12 @@ module Make(Cfg:Config)(O:Indent.S) : EmitPrintf.S = struct
 
               
   let emit_printf out i fmt args =
-    O.fx i "fprintf(%s,%s%s);" out (pp_fmt (LexFmt.lex fmt))
+    begin
+      if Cfg.no_file then
+        O.fx i "printf(%s%s);" (pp_fmt (LexFmt.lex fmt))
+      else
+        O.fx i "fprintf(%s,%s%s);" out (pp_fmt (LexFmt.lex fmt))
+    end
       (String.concat ""
          (List.fold_right
             (fun a k -> ","::a::k)

@@ -70,7 +70,6 @@ asm __volatile (
 "ldr %w[r1],%[s]\n\t"
 "cmp %w[r1],%w[ms]\n\t"
 "beq 1b\n\t"
-"dmb st\n\t"
 "b 3f\n"
 "2:\n\t"
 "dmb sy\n\t"
@@ -80,8 +79,8 @@ asm __volatile (
 "dmb sy\n\t"
 "sub %w[ms],%w[r3],%w[ms]\n\t"
 "str %w[ms],%[s]\n"
-"dsb sy\n\t"
 "3:\n\t"
+"dsb sy\n\t"
 : [r1] "=&r" (r1), [r3] "=&r" (r3)
 : [c] "m" (p->c), [s] "m" (p->sense), [ms] "r" (sense), [n] "m" (p->n)
 : "memory") ;

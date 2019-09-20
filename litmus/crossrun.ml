@@ -22,6 +22,7 @@ type addr ={ host : string ; port : int option ; }
 type t =
   | Host of addr
   | Qemu of string
+  | Kvm of string
   | Adb
   | No
 
@@ -53,6 +54,8 @@ let pp = function
   | Adb -> "adb"
   | Qemu "qemu" -> "qemu"
   | Qemu e -> sprintf "qemu:%s" e
+  | Kvm "./arm-run" -> "kvm"
+  | Kvm e -> sprintf "qemu:%s" e
   | Host h ->
       match h.port with
       | None -> h.host

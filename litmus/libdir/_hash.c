@@ -23,18 +23,31 @@ typedef struct {
   int ok ;
 } entry_t ;
 
+#ifdef KVM
+static void pp_entry(entry_t *p, int verbose, char **group) ;
+#else
 static void pp_entry(FILE *out,entry_t *p, int verbose, char **group) ;
-
+#endif
 
 typedef struct {
   int nhash ;
   entry_t t[HASHSZ] ;
 } hash_t ;
 
+#ifdef KVM
+static void pp_hash(hash_t *t,int verbose,char **group) {
+#else
 static void pp_hash(FILE *fp,hash_t *t,int verbose,char **group) {
+#endif
   for (int k = 0 ; k < HASHSZ ; k++) {
     entry_t *p = t->t+k ;
-    if (p->c > 0) pp_entry(fp,p,verbose,group) ;
+    if (p->c > 0) {
+#ifdef KVM
+      pp_entry(p,verbose,group) ;
+#else
+      pp_entry(fp,p,verbose,group) ;
+#endif
+    }
   }
 }
 
@@ -138,7 +151,11 @@ static void hash_add(hash_t *t,log_t *key, param_t *v,count_t c,int ok) {
     h++ ;
     h %= HASHSZ ;
   }
+#ifdef KVM
+  printf("Hash table is full\n") ;
+#else
   fprintf(stderr,"Hash table is full\n") ;
+#endif
   exit(2) ;
 }
 
