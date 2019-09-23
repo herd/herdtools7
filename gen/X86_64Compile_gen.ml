@@ -34,20 +34,66 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let ppo _f k = k
     (******)
 
-    let size =
+    let mach_size =
       let open TypBase in
       match Cfg.typ with
-      | Int | Std (_,MachSize.Quad) -> X86_64.Q
-      | Std (_,MachSize.Word) -> X86_64.L
-      | Std (_,MachSize.Short) -> X86_64.W
-      | Std (_,MachSize.Byte) -> X86_64.B
+      | Int | Std (_,MachSize.Quad) -> MachSize.Quad
+      | Std (_,MachSize.Word) -> MachSize.Word
+      | Std (_,MachSize.Short) -> MachSize.Short
+      | Std (_,MachSize.Byte) -> MachSize.Byte
+
+    let size_to_inst_size =
+      let open MachSize in
+      function
+      | Byte -> B
+      | Short -> W
+      | Word -> L
+      | Quad -> Q
+
+    let size = size_to_inst_size mach_size
 
     let next_reg x = alloc_reg x
 
-    let emit_store addr v =
-      I_EFF_OP (I_MOV, size,
-                Effaddr_rm64 (Rm64_abs (ParsedConstant.nameToV addr)),
+    let mov r i =
+      I_EFF_OP (I_MOV, size, Effaddr_rm64 (Rm64_reg r), Operand_immediate i)
+    let mov_mixed sz r i =
+      I_EFF_OP (I_MOV, size_to_inst_size sz,
+                Effaddr_rm64 (Rm64_reg r), Operand_immediate i)
+
+    let mov_reg r1 r2 =
+      I_EFF_OP (I_MOV, size, Effaddr_rm64 (Rm64_reg r1),
+                Operand_effaddr (Effaddr_rm64 (Rm64_reg r2)))
+    let mov_reg_mixed sz r1 r2 =
+      I_EFF_OP (I_MOV, size_to_inst_size sz,
+                Effaddr_rm64 (Rm64_reg r1),
+                Operand_effaddr (Effaddr_rm64 (Rm64_reg r2)))
+
+    module Extra = struct
+      let use_symbolic = false
+      type reg = X86_64.reg
+      type instruction = X86_64.pseudo
+
+      let mov r i = Instruction (mov r i)
+      let mov_mixed sz r i = Instruction (mov_mixed sz r i)
+      let mov_reg r1 r2 = Instruction (mov_reg r1 r2)
+      let mov_reg_mixed sz r1 r2 = Instruction (mov_reg_mixed sz r1 r2)
+    end
+
+    module U = GenUtils.Make(Cfg)(A)(Extra)
+
+    let pseudo = List.map (fun i -> X86_64.Instruction i)
+
+    let emit_store_ins sz o rB v =
+      I_EFF_OP (I_MOV, size_to_inst_size sz,
+                Effaddr_rm64 (Rm64_deref (rB,o)),
                 Operand_immediate v)
+
+    let emit_store_mixed sz o st p init addr v =
+      let rB,init,st = U.next_init st p init addr in
+      init,pseudo [emit_store_ins sz o rB v],st
+
+    let emit_store st p init addr v =
+      emit_store_mixed mach_size 0 st p init addr v
 
     let emit_sta addr r v =
       [
@@ -59,13 +105,6 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
            Effaddr_rm64 (Rm64_abs (ParsedConstant.nameToV addr)),
            Effaddr_rm64 (Rm64_reg r))
       ]
-
-    let emit_load_ins addr r =
-      let addr = ParsedConstant.nameToV addr in
-      I_EFF_OP
-        (I_MOV, size,
-         Effaddr_rm64 (Rm64_reg r),
-         Operand_effaddr (Effaddr_rm64 (Rm64_abs addr)))
 
     and emit_cmp_zero_ins r =
       I_EFF_OP
@@ -85,30 +124,40 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     and emit_jne_ins lab =
       I_JCC (C_NE,lab)
 
-    let pseudo = List.map (fun i -> X86_64.Instruction i)
+    let emit_load_ins sz o r1 r2 =
+      I_EFF_OP
+        (I_MOV, size_to_inst_size  sz,
+         Effaddr_rm64 (Rm64_deref (r2, o)),
+         Operand_effaddr (Effaddr_rm64 (Rm64_reg r1)))
 
-    let emit_load st _p init x =
+    let emit_load_mixed sz o st p init x =
       let rA,st = next_reg st in
-      rA,init,pseudo [emit_load_ins x rA],st
+      let rB,init,st = U.next_init st p init x in
+      rA,init,pseudo [emit_load_ins sz o rB rA],st
+
+    let emit_load st p init x =
+      emit_load_mixed mach_size 0 st p init x
 
     let emit_load_not_zero st _p init x =
       let rA,st = next_reg st in
+      let rB,init,st = U.next_init st _p init x in
       let lab = Label.next_label "L" in
       rA,init,
       Label (lab,Nop)::
         pseudo
-          [emit_load_ins x rA ;
+          [emit_load_ins mach_size 0 rB rA ;
            emit_cmp_zero_ins rA ;
            emit_je_ins lab],
       st
 
     let emit_load_one st _p init x =
       let rA,st = next_reg st in
+      let rB,init,st = U.next_init st _p init x in
       let lab = Label.next_label "L" in
       rA,init,
       Label (lab,Nop)::
         pseudo
-          [emit_load_ins x rA ;
+          [emit_load_ins mach_size 0 rB rA ;
            emit_cmp_one_ins rA ;
            emit_jne_ins lab],
       st
@@ -128,24 +177,27 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
          | Data loc ->
             begin match d with
             | R ->
-               let rA,st = next_reg st in
                begin match e.C.atom with
-               | None -> Some rA,init,pseudo [emit_load_ins loc rA],st
+               | None ->
+                  let r,init,cs,st = emit_load st _p init loc  in
+                  Some r,init, cs,st
                | Some Atomic ->
                   Warn.fatal "No atomic load for X86_64"
                | Some (Mixed (sz, o)) ->
-(*TODO*)
-                  Some rA,init,pseudo [emit_load_ins loc rA],st
+                  let r,init,cs,st = emit_load_mixed sz o st _p init loc  in
+                  Some r,init,cs,st
                end
             | W ->
                begin match e.C.atom with
-               | None -> None,init,pseudo [emit_store loc e.C.v],st
+               | None ->
+                  let init,cs,st = emit_store st _p init loc e.C.v in
+                  None,init,cs,st
                | Some Atomic ->
                   let rX,st = next_reg st in
                   None,init,pseudo (emit_sta loc rX e.C.v), st
                | Some (Mixed (sz, o)) ->
-(*TODO*)
-                  None,init,pseudo [emit_store loc e.C.v],st
+                  let init,cs,st = emit_store_mixed sz o st _p init loc e.C.v in
+                  None,init,cs,st
                end
             | J -> emit_joker st init
             end
