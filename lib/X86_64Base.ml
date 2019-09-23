@@ -374,7 +374,11 @@ let dump_instruction =
 (* Symbolic registers stuff *)
 (****************************)
 
-let allowed_for_symb = List.filter (fun (Ireg (r,t)) -> t = Q)
+let reg64_p = function
+  | Ireg (r,t) -> t = Q
+  | _ -> false
+
+let allowed_for_symb = List.filter reg64_p
                          (List.map (fun ((r, t),s) -> Ireg (r, t)) gen_regs)
 
 let rec fold_regs (f_reg,f_sreg) =
