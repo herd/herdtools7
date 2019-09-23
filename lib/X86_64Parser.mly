@@ -241,8 +241,10 @@ effaddr:
 
 rm64:
   |  reg {Rm64_reg $1}
-  |  LPAR reg RPAR {Rm64_deref $2}
-  |  LBRK reg RBRK {Rm64_deref $2}
+  |  LPAR reg RPAR {Rm64_deref ($2, 0)}
+  |  LBRK reg RBRK {Rm64_deref ($2, 0)}
+  |  k LPAR reg RPAR {Rm64_deref ($3, Misc.string_as_int $1)}
+  |  k LBRK reg RBRK {Rm64_deref ($3, Misc.string_as_int $1)}
   |  LBRK NAME RBRK {Rm64_abs (Constant.Symbolic ($2,0))}
   |  LBRK NUM RBRK {Rm64_abs (Constant.Concrete $2)}
 

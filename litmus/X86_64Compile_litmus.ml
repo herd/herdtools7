@@ -79,7 +79,7 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
 
     let compile_rm64_move i o r =  match r with
     |  Rm64_reg reg -> compile_reg reg,(i,[]),(o+1,[reg])
-    |  Rm64_deref reg -> "(" ^ compile_reg reg ^ ")",(i+1,[reg]),(o,[])
+    |  Rm64_deref (reg,o) -> pp_offset o ^ "(" ^ compile_reg reg ^ ")",(i+1,[reg]),(o,[])
     |  Rm64_abs abs ->
         (let name = abs_to_string abs in
         if internal_addr name then name
@@ -92,7 +92,7 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
 
     let compile_rm64_output i o r =  match r with
     |  Rm64_reg reg -> compile_reg reg,(i,[]),(o+1,[reg])
-    |  Rm64_deref reg -> "(" ^ compile_reg reg ^ ")",(i+1,[reg]),(o,[])
+    |  Rm64_deref (reg,o) -> pp_offset o ^ "(" ^ compile_reg reg ^ ")",(i+1,[reg]),(o,[])
     |  Rm64_abs abs ->
         let name = abs_to_string abs in
         sprintf "%%[%s]" name,(i,[]),(o,[])
@@ -103,7 +103,7 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
 
     let compile_rm64_input i r = match r with
     |  Rm64_reg reg -> "" ^ compile_reg reg,(i+1,[reg])
-    |  Rm64_deref reg -> "(" ^ compile_reg reg ^ ")",(i+1,[reg])
+    |  Rm64_deref (reg,o) -> pp_offset o ^ "(" ^ compile_reg reg ^ ")",(i+1,[reg])
     |  Rm64_abs abs ->
         let name = abs_to_string abs in
         sprintf "%%[%s]" name,(i,[])

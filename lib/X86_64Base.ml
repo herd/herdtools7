@@ -190,10 +190,11 @@ let barrier_compare = compare
 
 type lbl = Label.t
 type abs = ParsedConstant.v
+type offset = int
 
 type rm64 =
   |  Rm64_reg of reg
-  |  Rm64_deref of reg
+  |  Rm64_deref of reg * offset
   |  Rm64_abs of abs
 (* Absolute memory location, we should later combine with Rm32_deref to have proper base-displacement (and later, scale-index) addressing *)
 
@@ -206,8 +207,7 @@ type operand =
 
 let get_naccs_rm64 = function
   |  Rm64_reg _ -> 0
-  |  Rm64_deref _
-     |  Rm64_abs _ -> 1
+  |  Rm64_deref _ |  Rm64_abs _ -> 1
 
 let get_naccs_eff  = function
   | Effaddr_rm64 rm -> get_naccs_rm64 rm
@@ -311,11 +311,16 @@ type mm =
     | C_S   -> "S"
     | C_NS  -> "NS"
 
+  let pp_offset = function
+    | 0 -> ""
+    | a -> string_of_int a
+
+
 let rec do_pp_instruction (m : mm) =
   let pp_rm64 rm64 =
     match rm64 with
     | Rm64_reg r -> pp_reg r
-    | Rm64_deref r -> "[" ^ pp_reg r ^ "]"
+    | Rm64_deref (r,o) -> pp_offset o ^ "[" ^ pp_reg r ^ "]"
     | Rm64_abs v -> "[" ^ pp_abs v ^ "]" in
 
   let pp_effaddr ea =  match ea with
@@ -369,7 +374,8 @@ let dump_instruction =
 (* Symbolic registers stuff *)
 (****************************)
 
-let allowed_for_symb = []
+let allowed_for_symb = List.filter (fun (Ireg (r,t)) -> t = Q)
+                         (List.map (fun ((r, t),s) -> Ireg (r, t)) gen_regs)
 
 let rec fold_regs (f_reg,f_sreg) =
 
@@ -379,7 +385,7 @@ let rec fold_regs (f_reg,f_sreg) =
     | Internal _ -> y_reg,y_sreg in
 
   let fold_rm64 c = function
-    | Rm64_reg reg | Rm64_deref reg -> fold_reg c reg
+    | Rm64_reg reg | Rm64_deref (reg, _) -> fold_reg c reg
     | Rm64_abs _ -> c in
 
   let fold_effaddr c = function
@@ -414,7 +420,7 @@ let rec map_regs f_reg f_symb =
 
   let map_rm64 = function
     | Rm64_reg reg -> Rm64_reg (map_reg reg)
-    | Rm64_deref reg -> Rm64_deref (map_reg reg)
+    | Rm64_deref (reg, o) -> Rm64_deref (map_reg reg,o)
     | Rm64_abs _ as rm -> rm in
 
   let map_effaddr = function
