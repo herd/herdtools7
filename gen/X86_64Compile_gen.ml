@@ -85,11 +85,16 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 
     let emit_store_ins sz o rB v =
       I_EFF_OP (I_MOV, size_to_inst_size sz,
-                Effaddr_rm64 (Rm64_deref (rB,o)),
+                Effaddr_rm64 rB,
                 Operand_immediate v)
 
     let emit_store_mixed sz o st p init addr v =
-      let rB,init,st = U.next_init st p init addr in
+      let rB,init,st =
+        if Cfg.variant Mixed then
+          let r,i,s = U.next_init st p init addr in
+          Rm64_deref (r,o),i,s
+        else
+          Rm64_abs (ParsedConstant.nameToV addr),init,st in
       init,pseudo [emit_store_ins sz o rB v],st
 
     let emit_store st p init addr v =
@@ -127,12 +132,17 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let emit_load_ins sz o r1 r2 =
       I_EFF_OP
         (I_MOV, size_to_inst_size  sz,
-         Effaddr_rm64 (Rm64_deref (r2, o)),
-         Operand_effaddr (Effaddr_rm64 (Rm64_reg r1)))
+         Effaddr_rm64 (Rm64_reg r2),
+         Operand_effaddr (Effaddr_rm64 r1))
 
     let emit_load_mixed sz o st p init x =
       let rA,st = next_reg st in
-      let rB,init,st = U.next_init st p init x in
+      let rB,init,st =
+        if Cfg.variant Mixed then
+          let r,i,s = U.next_init st p init x in
+          Rm64_deref (r,o),i,s
+        else
+          Rm64_abs (ParsedConstant.nameToV x),init,st in
       rA,init,pseudo [emit_load_ins sz o rB rA],st
 
     let emit_load st p init x =
@@ -140,7 +150,12 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 
     let emit_load_not_zero st _p init x =
       let rA,st = next_reg st in
-      let rB,init,st = U.next_init st _p init x in
+      let rB,init,st =
+        if Cfg.variant Mixed then
+          let r,i,s = U.next_init st _p init x in
+          Rm64_deref (r,0),i,s
+        else
+          Rm64_abs (ParsedConstant.nameToV x),init,st in
       let lab = Label.next_label "L" in
       rA,init,
       Label (lab,Nop)::
@@ -152,7 +167,12 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 
     let emit_load_one st _p init x =
       let rA,st = next_reg st in
-      let rB,init,st = U.next_init st _p init x in
+      let rB,init,st =
+        if Cfg.variant Mixed then
+          let r,i,s = U.next_init st _p init x in
+          Rm64_deref (r,0),i,s
+        else
+          Rm64_abs (ParsedConstant.nameToV x),init,st in
       let lab = Label.next_label "L" in
       rA,init,
       Label (lab,Nop)::
