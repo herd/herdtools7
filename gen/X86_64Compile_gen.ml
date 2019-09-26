@@ -59,6 +59,12 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     include CompileCommon.Make(Cfg)(X86_64)
     open X86_64
 
+    let inst_to_reg_size = function
+      | B -> (B : reg_part)
+      | W -> W
+      | L | NO_SIZE -> L
+      | Q -> Q
+
     (******)
     let ppo _f k = k
     (******)
@@ -66,16 +72,24 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let next_reg x = alloc_reg x
 
     let mov r i =
+      let r = change_size_reg r size_reg_part in
       I_EFF_OP (I_MOV, size, Effaddr_rm64 (Rm64_reg r), Operand_immediate i)
     let mov_mixed sz r i =
-      I_EFF_OP (I_MOV, size_to_inst_size sz,
+      let sz = size_to_inst_size sz in
+      let r = change_size_reg r (inst_to_reg_size sz) in
+      I_EFF_OP (I_MOV, sz,
                 Effaddr_rm64 (Rm64_reg r), Operand_immediate i)
 
     let mov_reg r1 r2 =
+      let r1 = change_size_reg r1 size_reg_part
+      and r2 = change_size_reg r2 size_reg_part in
       I_EFF_OP (I_MOV, size, Effaddr_rm64 (Rm64_reg r1),
                 Operand_effaddr (Effaddr_rm64 (Rm64_reg r2)))
     let mov_reg_mixed sz r1 r2 =
-      I_EFF_OP (I_MOV, size_to_inst_size sz,
+      let sz = size_to_inst_size sz in
+      let r1 = change_size_reg r1 (inst_to_reg_size sz)
+      and r2 = change_size_reg r2 (inst_to_reg_size sz) in
+      I_EFF_OP (I_MOV, sz,
                 Effaddr_rm64 (Rm64_reg r1),
                 Operand_effaddr (Effaddr_rm64 (Rm64_reg r2)))
 
@@ -95,14 +109,16 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let pseudo = List.map (fun i -> X86_64.Instruction i)
 
     let emit_store_ins sz o rB v =
-      I_EFF_OP (I_MOV, size_to_inst_size sz,
+      I_EFF_OP (I_MOV, sz,
                 Effaddr_rm64 rB,
                 Operand_immediate v)
 
     let emit_store_mixed sz o st p init addr v =
+      let sz = size_to_inst_size sz in
       let rB,init,st =
         if Cfg.variant Mixed then
           let r,i,s = U.next_init st p init addr in
+          let r = change_size_reg r (inst_to_reg_size sz) in
           Rm64_deref (r,o),i,s
         else
           Rm64_abs (ParsedConstant.nameToV addr),init,st in
@@ -112,6 +128,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       emit_store_mixed mach_size 0 st p init addr v
 
     let emit_sta addr r v =
+      let r = change_size_reg r size_reg_part in
       [
         I_EFF_OP
           (I_MOV, size,
@@ -123,14 +140,17 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       ]
 
     and emit_cmp_zero_ins r =
+      let r = change_size_reg r size_reg_part in
       I_EFF_OP
         (I_CMP, size, Effaddr_rm64 (Rm64_reg r), Operand_immediate 0)
 
     and emit_cmp_one_ins r =
+      let r = change_size_reg r size_reg_part in
       I_EFF_OP
         (I_CMP, size, Effaddr_rm64 (Rm64_reg r), Operand_immediate 1)
 
     and emit_cmp_int_ins r i =
+      let r = change_size_reg r size_reg_part in
       I_EFF_OP
         (I_CMP, size, Effaddr_rm64 (Rm64_reg r), Operand_immediate i)
 
@@ -140,11 +160,12 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     and emit_jne_ins lab =
       I_JCC (C_NE,lab)
 
-    let emit_load_ins sz o r1 r2 =
+    let emit_load_ins sz o rm r =
+      let r = change_size_reg r (inst_to_reg_size (size_to_inst_size sz)) in
       I_EFF_OP
         (I_MOV, size_to_inst_size  sz,
-         Effaddr_rm64 (Rm64_reg r2),
-         Operand_effaddr (Effaddr_rm64 r1))
+         Effaddr_rm64 (Rm64_reg r),
+         Operand_effaddr (Effaddr_rm64 rm))
 
     let emit_load_mixed sz o st p init x =
       let rA,st = next_reg st in
