@@ -20,6 +20,7 @@ module Make
               val moreedges : bool
               val fullmixed : bool
               val variant : Variant_gen.t -> bool
+              val mach_size : X86_64Base.reg_part
             end) = struct
   open Code
   include X86_64Base
@@ -128,6 +129,6 @@ module Make
           | Symbolic_reg _ -> true
           | _ -> false
         let pp_reg = pp_reg
-        let free_registers = allowed_for_symb
+        let free_registers = allowed_for_symb_size C.mach_size
       end)
 end

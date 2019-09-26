@@ -19,6 +19,34 @@ open Code
 module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
   struct
 
+    open MachSize
+
+    let mach_size =
+      let open TypBase in
+      match Cfg.typ with
+      | Std (_,Quad) -> Quad
+      | Int | Std (_,Word) -> Word
+      | Std (_,Short) -> Short
+      | Std (_,Byte) -> Byte
+
+    let size_to_inst_size =
+      let open X86_64Base in
+      function
+      | Byte -> B
+      | Short -> W
+      | Word -> L
+      | Quad -> Q
+
+    let size_reg_part =
+      let open X86_64Base in
+      match mach_size with
+      | Byte -> (B : reg_part)
+      | Short -> W
+      | Word -> L
+      | Quad -> Q
+
+    let size = size_to_inst_size mach_size
+
     let naturalsize = TypBase.get_size Cfg.typ
     module X86_64 = X86_64Arch_gen.Make
         (struct
@@ -26,6 +54,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
           let moreedges = Cfg.moreedges
           let fullmixed = Cfg.variant Variant_gen.FullMixed
           let variant = Cfg.variant
+          let mach_size = size_reg_part
         end)
     include CompileCommon.Make(Cfg)(X86_64)
     open X86_64
@@ -33,24 +62,6 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     (******)
     let ppo _f k = k
     (******)
-
-    let mach_size =
-      let open TypBase in
-      match Cfg.typ with
-      | Int | Std (_,MachSize.Quad) -> MachSize.Quad
-      | Std (_,MachSize.Word) -> MachSize.Word
-      | Std (_,MachSize.Short) -> MachSize.Short
-      | Std (_,MachSize.Byte) -> MachSize.Byte
-
-    let size_to_inst_size =
-      let open MachSize in
-      function
-      | Byte -> B
-      | Short -> W
-      | Word -> L
-      | Quad -> Q
-
-    let size = size_to_inst_size mach_size
 
     let next_reg x = alloc_reg x
 

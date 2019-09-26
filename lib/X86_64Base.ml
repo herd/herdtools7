@@ -316,13 +316,13 @@ type mm =
     | a -> string_of_int a
 
 
-let rec do_pp_instruction (m : mm) =
   let pp_rm64 rm64 =
     match rm64 with
     | Rm64_reg r -> pp_reg r
     | Rm64_deref (r,o) -> pp_offset o ^ "[" ^ pp_reg r ^ "]"
-    | Rm64_abs v -> "[" ^ pp_abs v ^ "]" in
+    | Rm64_abs v -> "[" ^ pp_abs v ^ "]"
 
+let rec do_pp_instruction (m : mm) =
   let pp_effaddr ea =  match ea with
     | Effaddr_rm64 rm64 -> pp_rm64 rm64 in
 
@@ -374,12 +374,14 @@ let dump_instruction =
 (* Symbolic registers stuff *)
 (****************************)
 
-let reg64_p = function
-  | Ireg (r,t) -> t = Q
+let reg_size_p size = function
+  | Ireg (r,t) -> t = size
   | _ -> false
 
-let allowed_for_symb = List.filter reg64_p
+let allowed_for_symb_size size = List.filter (reg_size_p size)
                          (List.map (fun ((r, t),s) -> Ireg (r, t)) gen_regs)
+
+let allowed_for_symb = allowed_for_symb_size Q
 
 let rec fold_regs (f_reg,f_sreg) =
 
