@@ -41,7 +41,7 @@ module Make
   let default_atom = Atomic
 
   let applies_atom a d = match a,d with
-    | Atomic, Code.W | Mixed _, Code.W -> true
+    | Atomic, Code.W | Mixed _, (Code.W|Code.R) -> true
     | _,_ -> false
 
   let compare_atom = compare
