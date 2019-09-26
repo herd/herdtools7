@@ -402,6 +402,8 @@ let allowed_for_symb_size size = List.filter (reg_size_p size)
 
 let allowed_for_symb = allowed_for_symb_size R64b
 
+let allowed_for_symb = allowed_for_symb_size Q
+
 let rec fold_regs (f_reg,f_sreg) =
 
   let fold_reg (y_reg,y_sreg) reg = match reg with
