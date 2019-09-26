@@ -1704,8 +1704,8 @@ module Make
             let myenv = U.select_proc proc env
             and global_env = U.select_global env in
             if do_ascall then begin
-              Lang.dump_fun O.out myenv global_env envVolatile proc out
-            end ;
+                Lang.dump_fun O.out myenv global_env envVolatile proc out
+              end ;
             let  do_collect =  do_collect_local && (do_safer || proc=0) in
             O.f "static void *P%i(void *_vb) {" proc ;
             O.fi "mbar();" ;
@@ -1713,26 +1713,26 @@ module Make
             O.fi "parg_t *_b = (parg_t *)_vb;" ;
             O.fi "ctx_t *_a = _b->_a;" ;
             if do_affinity then begin
-              O.fi "int _ecpu = _b->cpu[_b->th_id];" ;
-              if do_verbose_barrier then O.fi "_a->ecpu[%i] = _ecpu;" proc ;
-              let fun_name,arg =
-                if do_force_affinity then
-                  "force_one_affinity",sprintf ",AVAIL,_a->_p->verbose,\"%s\"" tname
-                else
-                  "write_one_affinity","" in
-              O.fi "%s(_ecpu%s);" fun_name arg
-            end ;
+                O.fi "int _ecpu = _b->cpu[_b->th_id];" ;
+                if do_verbose_barrier then O.fi "_a->ecpu[%i] = _ecpu;" proc ;
+                let fun_name,arg =
+                  if do_force_affinity then
+                    "force_one_affinity",sprintf ",AVAIL,_a->_p->verbose,\"%s\"" tname
+                  else
+                    "write_one_affinity","" in
+                O.fi "%s(_ecpu%s);" fun_name arg
+              end ;
             if do_check_globals then begin
-              O.fi "check_globals(_a);"
-            end ;
+                O.fi "check_globals(_a);"
+              end ;
             begin match barrier with
             | User|User2|UserFence|UserFence2 ->
-                O.fi "int _th_id = _b->th_id;" ;
-                O.fi "int volatile *barrier = _a->barrier;"
+               O.fi "int _th_id = _b->th_id;" ;
+               O.fi "int volatile *barrier = _a->barrier;"
             | TimeBase ->
-                O.fi "sense_t *barrier = &_a->barrier;"
+               O.fi "sense_t *barrier = &_a->barrier;"
             | Pthread ->
-                O.fi "barrier_t *barrier = _a->barrier;"
+               O.fi "barrier_t *barrier = _a->barrier;"
             | NoBarrier -> ()
             end ;
             O.fi "int _size_of_test = _a->_p->size_of_test;" ;
@@ -1743,21 +1743,21 @@ module Make
             if do_custom then
               O.fi "prfone_t *_prft = _a->_p->prefetch->t[%i].t;" proc ;
             if do_staticpl then begin match prf with
-            | [] -> ()
-            | _::_ ->
-                O.oi "unsigned int _static_prefetch = _a->_p->static_prefetch;"
-            end ;
+                                | [] -> ()
+                                | _::_ ->
+                                   O.oi "unsigned int _static_prefetch = _a->_p->static_prefetch;"
+                                end ;
             begin if Stride.some stride then
-              O.oi "int _stride = _a->_p->stride;"
+                    O.oi "int _stride = _a->_p->stride;"
             end ;
             let addrs = A.Out.get_addrs out in
-(*
+            (*
   List.iter
   (fun a ->
   let t = find_global_type a env in
   O.fi "%s *%s = _a->%s;" (dump_global_type t) a a)
   addrs ;
- *)
+             *)
             List.iter
               (fun (r,t) ->
                 let name = A.Out.dump_out_reg  proc r in
@@ -1766,200 +1766,200 @@ module Make
 
             let iloop =
               if Stride.some stride then begin
-                O.fi "for (int _j = _stride ; _j > 0 ; _j--) {" ;
-                O.fii "for (int _i = _size_of_test-_j ; _i >= 0 ; _i -= _stride) {" ;
-                indent3 end else begin
+                  O.fi "for (int _j = _stride ; _j > 0 ; _j--) {" ;
+                  O.fii "for (int _i = _size_of_test-_j ; _i >= 0 ; _i -= _stride) {" ;
+                  indent3 end else begin
                   loop_test_prelude indent "_" ;
                   indent2 end in
             if do_self then begin
-              let id = LangUtils.code_fun_cpy proc
-              and ty = LangUtils.code_fun_type proc in
-              O.fx iloop "%s %s = (%s)&_a->code%i[_a->code%i_sz*_i];"
-                ty id ty proc proc
-            end ;
+                let id = LangUtils.code_fun_cpy proc
+                and ty = LangUtils.code_fun_type proc in
+                O.fx iloop "%s %s = (%s)&_a->code%i[_a->code%i_sz*_i];"
+                  ty id ty proc proc
+              end ;
             if do_custom then begin
-              let i = iloop in
-              begin match addrs with
-              | [] -> ()
-              | _::_ ->
-                  O.fx i "prfdir_t _dir;" ;
-                  Misc.iteri
-                    (fun k loc ->
-                      let addr = dump_a_addr loc in
-                      O.fx i "_dir = _prft[%i].dir;" k ;
-                      O.fx i "if (_dir == flush) cache_flush(%s);" addr ;
-                      O.fx i "else if (_dir == touch) cache_touch(%s);" addr ;
-                      O.fx i "else if (_dir == touch_store) cache_touch_store(%s);" addr ;
-                      ())
-                    addrs
-              end
-            end else begin
-              let vars = get_global_names test in
-              let iter pp =
-                List.iter
-                  (fun (_xproc,loc,t) ->
-                    if List.mem loc vars then begin
-                      try
-                        let f = match t with
-                        | Prefetch.Ignore -> raise Exit
-                        | Prefetch.Flush -> "cache_flush"
-                        | Prefetch.Touch -> "cache_touch"
-                        | Prefetch.TouchStore -> "cache_touch_store" in
-                        pp f (dump_a_addr loc)
-                      with Exit -> ()
-                    end else
-                      Warn.warn_always
-                        "Variable %s from prefetch is absent in test" loc)
-                  prf in
-              if do_staticNpl then begin
-                match Cfg.preload with
-                | Preload.StaticNPL Preload.One ->
-                    iter
-                      (fun f loc ->
-                        O.fx iloop "%s(%s);" f loc)
-                | Preload.StaticNPL Preload.Two ->
-                    iter
-                      (fun f loc ->
-                        O.fx iloop "if (rand_bit(&(_a->seed))) %s(%s);" f loc)
-                | _ -> assert false
-              end else if do_staticpl then begin match prf with
-              | [] -> ()
-              | _::_ ->
-                  O.fx iloop "switch (_static_prefetch) {" ;
-                  let i = iloop in
-                  let j = Indent.tab i in
-                  O.fx i "case 0:" ;
-                  O.fx j "break;" ;
-                  O.o "" ;
-                  O.fx i "case 1:" ;
-                  iter
-                    (fun f loc -> O.fx j "%s(%s);" f loc) ;
-                  O.fx j "break;" ;
-                  O.o "" ;
-                  O.fx i "case 2:" ;
-                  iter
-                    (fun f loc -> O.fx j "if (rand_bit(&(_a->seed))) %s(%s);" f loc) ;
-                  O.fx j "break;" ;
-                  O.o "" ;
-                  O.fx i "default:" ;
-                  iter
-                    (fun f loc ->
-                      O.fx j "if (rand_k(&(_a->seed),_static_prefetch) == 0) %s(%s);"
-                        f loc) ;
-                  O.fx j "break;" ;
-                  O.fx iloop "}" ;
-              end
-            end ;
+                let i = iloop in
+                begin match addrs with
+                | [] -> ()
+                | _::_ ->
+                   O.fx i "prfdir_t _dir;" ;
+                   Misc.iteri
+                     (fun k loc ->
+                       let addr = dump_a_addr loc in
+                       O.fx i "_dir = _prft[%i].dir;" k ;
+                       O.fx i "if (_dir == flush) cache_flush(%s);" addr ;
+                       O.fx i "else if (_dir == touch) cache_touch(%s);" addr ;
+                       O.fx i "else if (_dir == touch_store) cache_touch_store(%s);" addr ;
+                       ())
+                     addrs
+                end
+              end else begin
+                let vars = get_global_names test in
+                let iter pp =
+                  List.iter
+                    (fun (_xproc,loc,t) ->
+                      if List.mem loc vars then begin
+                          try
+                            let f = match t with
+                              | Prefetch.Ignore -> raise Exit
+                              | Prefetch.Flush -> "cache_flush"
+                              | Prefetch.Touch -> "cache_touch"
+                              | Prefetch.TouchStore -> "cache_touch_store" in
+                            pp f (dump_a_addr loc)
+                          with Exit -> ()
+                        end else
+                        Warn.warn_always
+                          "Variable %s from prefetch is absent in test" loc)
+                    prf in
+                if do_staticNpl then begin
+                    match Cfg.preload with
+                    | Preload.StaticNPL Preload.One ->
+                       iter
+                         (fun f loc ->
+                           O.fx iloop "%s(%s);" f loc)
+                    | Preload.StaticNPL Preload.Two ->
+                       iter
+                         (fun f loc ->
+                           O.fx iloop "if (rand_bit(&(_a->seed))) %s(%s);" f loc)
+                    | _ -> assert false
+                  end else if do_staticpl then begin match prf with
+                                               | [] -> ()
+                                               | _::_ ->
+                                                  O.fx iloop "switch (_static_prefetch) {" ;
+                                                  let i = iloop in
+                                                  let j = Indent.tab i in
+                                                  O.fx i "case 0:" ;
+                                                  O.fx j "break;" ;
+                                                  O.o "" ;
+                                                  O.fx i "case 1:" ;
+                                                  iter
+                                                    (fun f loc -> O.fx j "%s(%s);" f loc) ;
+                                                  O.fx j "break;" ;
+                                                  O.o "" ;
+                                                  O.fx i "case 2:" ;
+                                                  iter
+                                                    (fun f loc -> O.fx j "if (rand_bit(&(_a->seed))) %s(%s);" f loc) ;
+                                                  O.fx j "break;" ;
+                                                  O.o "" ;
+                                                  O.fx i "default:" ;
+                                                  iter
+                                                    (fun f loc ->
+                                                      O.fx j "if (rand_k(&(_a->seed),_static_prefetch) == 0) %s(%s);"
+                                                        f loc) ;
+                                                  O.fx j "break;" ;
+                                                  O.fx iloop "}" ;
+                                               end
+              end ;
             begin match barrier with
             | User|UserFence|UserFence2 ->
-                O.fx iloop "barrier_wait(_th_id,_i,&barrier[_i]);" ;
-                ()
+               O.fx iloop "barrier_wait(_th_id,_i,&barrier[_i]);" ;
+               ()
             | User2 ->
-                O.fx iloop "barrier_wait(_th_id,_i,barrier);"  ;
-                ()
+               O.fx iloop "barrier_wait(_th_id,_i,barrier);"  ;
+               ()
             | TimeBase ->
-                if have_timebase then begin
-                  O.fx iloop "_a->next_tb = read_timebase();" ;
-                  O.fx iloop "barrier_wait(barrier);" ;
-                  O.fx iloop "tb_t _tb0 = _a->next_tb;"
-                end else begin
-                  O.fx iloop "barrier_wait(barrier);" ;
-                end
+               if have_timebase then begin
+                   O.fx iloop "_a->next_tb = read_timebase();" ;
+                   O.fx iloop "barrier_wait(barrier);" ;
+                   O.fx iloop "tb_t _tb0 = _a->next_tb;"
+                 end else begin
+                   O.fx iloop "barrier_wait(barrier);" ;
+                 end
             | Pthread ->
-                O.fx iloop "barrier_wait(%i,barrier);" proc ;
-                if Cfg.cautious then O.fx iloop "mcautious();"
+               O.fx iloop "barrier_wait(%i,barrier);" proc ;
+               if Cfg.cautious then O.fx iloop "mcautious();"
             | NoBarrier ->
-                if Cfg.cautious then O.fx iloop "mcautious();"
+               if Cfg.cautious then O.fx iloop "mcautious();"
             end ;
 
             begin match barrier with
             | TimeBase ->
-                if have_timebase then begin
-                  if do_verbose_barrier then begin
-                    O.fx iloop "int _delta, _count=0;" ;
-                    O.fx iloop "do { _delta =  read_timebase() - _tb0; _count++; } while (_delta < _b->delay);"
-                  end else begin
-                    O.fx iloop "int _delta;" ;
-                    O.fx iloop "do { _delta =  read_timebase() - _tb0; } while (_delta < _b->delay);"
-                  end
-                end ;
-                if Cfg.cautious then O.fx iloop "mcautious();"
+               if have_timebase then begin
+                   if do_verbose_barrier then begin
+                       O.fx iloop "int _delta, _count=0;" ;
+                       O.fx iloop "do { _delta =  read_timebase() - _tb0; _count++; } while (_delta < _b->delay);"
+                     end else begin
+                       O.fx iloop "int _delta;" ;
+                       O.fx iloop "do { _delta =  read_timebase() - _tb0; } while (_delta < _b->delay);"
+                     end
+                 end ;
+               if Cfg.cautious then O.fx iloop "mcautious();"
             | _ ->
-                if do_verbose_barrier && have_timebase then begin
-                  O.fx iloop "tb_t _start = read_timebase();"
-                end
+               if do_verbose_barrier && have_timebase then begin
+                   O.fx iloop "tb_t _start = read_timebase();"
+                 end
             end ;
             if do_isync then begin match barrier with
-            | User | User2 | UserFence | UserFence2 | TimeBase ->
-                let aux = function
-                  | `PPCGen
-                  | `PPC ->
-                      O.fx iloop "asm __volatile__ (\"isync\" : : : \"memory\");"
-                  | `ARM ->
-                      O.fx iloop "asm __volatile__ (\"isb\" : : : \"memory\");"
-                  | `AArch64 -> assert false (* FIXME: ??? *)
-                  | `X86_64 | `X86|`MIPS|`RISCV -> ()
-                  | `GPU_PTX -> assert false
-                in
-                aux Cfg.sysarch
-            | Pthread|NoBarrier -> ()
-            end ;
-(* Dump real code now *)
+                             | User | User2 | UserFence | UserFence2 | TimeBase ->
+                                let aux = function
+                                  | `PPCGen
+                                    | `PPC ->
+                                     O.fx iloop "asm __volatile__ (\"isync\" : : : \"memory\");"
+                                  | `ARM ->
+                                     O.fx iloop "asm __volatile__ (\"isb\" : : : \"memory\");"
+                                  | `AArch64 -> assert false (* FIXME: ??? *)
+                                  | `X86_64 | `X86|`MIPS|`RISCV -> ()
+                                  | `GPU_PTX -> assert false
+                                in
+                                aux Cfg.sysarch
+                             | Pthread|NoBarrier -> ()
+                             end ;
+            (* Dump real code now *)
             (if do_ascall then
-              let f_id =
-                if do_self then LangUtils.code_fun_cpy proc else
-                LangUtils.code_fun proc in
-              Lang.dump_call f_id (fun _ s -> s) else Lang.dump)
+               let f_id =
+                 if do_self then LangUtils.code_fun_cpy proc else
+                   LangUtils.code_fun proc in
+               Lang.dump_call f_id (fun _ s -> s) else Lang.dump)
               O.out (Indent.as_string iloop) myenv global_env envVolatile proc out ;
             if do_verbose_barrier && have_timebase  then begin
-              if do_timebase then begin
-                O.fx iloop "_a->tb_delta[%i][_i] = _delta;" proc ;
-                O.fx iloop "_a->tb_count[%i][_i] = _count;" proc
-              end else begin
-                O.fx iloop "_a->tb_start[%i][_i] = _start;" proc
-              end
-            end ;
+                if do_timebase then begin
+                    O.fx iloop "_a->tb_delta[%i][_i] = _delta;" proc ;
+                    O.fx iloop "_a->tb_count[%i][_i] = _count;" proc
+                  end else begin
+                    O.fx iloop "_a->tb_start[%i][_i] = _start;" proc
+                  end
+              end ;
 
             if do_collect then begin
-              let locs = U.get_displayed_locs test in
-              O.fx iloop "barrier_wait(barrier);" ;
-              O.fx iloop "int cond = final_ok(%s);"
-                (dump_cond_fun_call test
-                   (dump_ctx_loc "_a->") dump_a_addr) ;
-              O.ox iloop "if (cond) { hist->n_pos++; } else { hist->n_neg++; }" ;
+                let locs = U.get_displayed_locs test in
+                O.fx iloop "barrier_wait(barrier);" ;
+                O.fx iloop "int cond = final_ok(%s);"
+                  (dump_cond_fun_call test
+                     (dump_ctx_loc "_a->") dump_a_addr) ;
+                O.ox iloop "if (cond) { hist->n_pos++; } else { hist->n_neg++; }" ;
 
-(* My own private outcome collection *)
-              O.fx iloop "outcome_t _o;" ;
-              A.LocSet.iter
-                (fun loc ->
-                  O.fx iloop "_o[%s_f] = %s;"
-                    (dump_loc_name loc)
-                    (let sloc =  dump_ctx_loc "_a->" loc in
-                    match U.is_ptr loc env with
-                    | false -> sloc
-                    | true -> sprintf "idx_addr(_a,_i,%s)" sloc))
-                locs ;
-              O.ox iloop "add_outcome(hist,1,_o,cond);" ;
-              if do_verbose_barrier_local && proc = 0 then begin
-                O.ox iloop "if (_a->_p->verbose_barrier) {" ;
-                O.ox (Indent.tab iloop) "pp_tb_log(_b->p_mutex,_a,_i,cond);" ;
-                O.ox iloop "}"
-              end
-            end else if do_collect_local then begin
-              O.fx iloop "barrier_wait(barrier);"
-            end else if do_timebase && have_timebase then begin
-(*          O.fx iloop "barrier_wait(barrier);"
+                (* My own private outcome collection *)
+                O.fx iloop "outcome_t _o;" ;
+                A.LocSet.iter
+                  (fun loc ->
+                    O.fx iloop "_o[%s_f] = %s;"
+                      (dump_loc_name loc)
+                      (let sloc =  dump_ctx_loc "_a->" loc in
+                       match U.is_ptr loc env with
+                       | false -> sloc
+                       | true -> sprintf "idx_addr(_a,_i,%s)" sloc))
+                  locs ;
+                O.ox iloop "add_outcome(hist,1,_o,cond);" ;
+                if do_verbose_barrier_local && proc = 0 then begin
+                    O.ox iloop "if (_a->_p->verbose_barrier) {" ;
+                    O.ox (Indent.tab iloop) "pp_tb_log(_b->p_mutex,_a,_i,cond);" ;
+                    O.ox iloop "}"
+                  end
+              end else if do_collect_local then begin
+                O.fx iloop "barrier_wait(barrier);"
+              end else if do_timebase && have_timebase then begin
+              (*          O.fx iloop "barrier_wait(barrier);"
             Problematic 4.2W on squale *)
-            end  ;
+              end  ;
             if Stride.some stride then begin
-              loop_test_postlude indent2 ;
-              loop_test_postlude indent
-            end else begin
-              loop_test_postlude indent
-            end ;
+                loop_test_postlude indent2 ;
+                loop_test_postlude indent
+              end else begin
+                loop_test_postlude indent
+              end ;
             if do_safer && do_collect_after && have_observed_globals test then begin
-              O.fi "stabilize_globals(%i,_a);" proc ;
-            end ;
+                O.fi "stabilize_globals(%i,_a);" proc ;
+              end ;
             O.oi "mbar();" ;
             let r = if do_collect then "hist" else "NULL" in
             O.fi "return %s;" r ;

@@ -42,6 +42,7 @@ module Make
 type arch_reg = A.arch_reg and
 module RegSet = A.RegSet and
 module RegMap = A.RegMap)
+    (AL:Arch_litmus.S)
     = struct
 
       type arch_reg = Tmpl.arch_reg
@@ -91,8 +92,11 @@ module RegMap = A.RegMap)
       let dump_inputs compile_val chan t trashed =
         let stable = RegSet.of_list t.Tmpl.stable in
         let all = Tmpl.all_regs t in
+        let init_set =
+            (List.fold_right
+               (fun (reg,_) -> RegSet.add reg) t.Tmpl.init RegSet.empty) in
         let in_outputs =
-          RegSet.unions [trashed;stable;RegSet.of_list t.Tmpl.final;] in
+          RegSet.unions [trashed;stable;RegSet.of_list t.Tmpl.final] in
 (*
   let pp_reg chan r = fprintf chan "%s" (A.reg_to_string r) in
   eprintf "Trashed in In: %a\n"
@@ -132,8 +136,11 @@ module RegMap = A.RegMap)
         let rem =
           RegSet.diff
             (RegSet.diff all stable)
-            (List.fold_right
-               (fun (reg,_) -> RegSet.add reg) t.Tmpl.init in_outputs) in
+            (RegSet.unions [in_outputs;init_set]) in
+        let rem =
+          if AL.arch = `X86_64 then
+            RegSet.unions [rem;(RegSet.diff all init_set)]
+          else rem in
         let rem =
           RegSet.fold
             (fun reg k ->

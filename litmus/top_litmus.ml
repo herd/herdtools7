@@ -292,7 +292,7 @@ end = struct
         module RegSet = A.Out.RegSet
         module RegMap = A.Out.RegMap
       end
-      module Lang = ASMLang.Make(O)(ALang)(A.Out)
+      module Lang = ASMLang.Make(O)(ALang)(A.Out)(A)
       module Utils = Utils(O)(A)(Lang)(Pseudo)
       module P = GenParser.Make(O)(A) (L)
       module Comp = Compile.Make (O)(A)(Utils.T)(XXXComp)
