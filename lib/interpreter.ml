@@ -1,4 +1,4 @@
-(****************************************************************************)
+`(****************************************************************************)
 (*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
@@ -352,7 +352,9 @@ module Make
       | Rel r,V.Empty -> E.EventRel.compare r E.EventRel.empty
       | V.Empty,Set s -> E.EventSet.compare E.EventSet.empty s
       | Set s,V.Empty -> E.EventSet.compare s E.EventSet.empty
-(* Legitimate cmp *)
+      | V.Empty,ClassRel r -> ClassRel.compare ClassRel.empty r
+      | ClassRel r,V.Empty -> ClassRel.compare r ClassRel.empty
+ (* Legitimate cmp *)
       | Tag (_,s1), Tag (_,s2) -> String.compare s1 s2
       | Event e1,Event e2 -> E.event_compare e1 e2
       | ValSet (_,s1),ValSet (_,s2) -> ValSet.compare s1 s2
@@ -834,6 +836,27 @@ module Make
         V.ClassRel clsr
     | _ -> arg_mismatch ()
 
+(* Delift a relation from event classes to events *)
+  and delift arg = match arg with
+  | V.Tuple[Rel m;ClassRel clsr] ->
+        let make_rel_from_classpair (cl1,cl2) =
+          E.EventRel.filter (fun (e1,e2) ->
+                           E.EventSet.mem e1 cl1 &&
+                           E.EventSet.mem e2 cl2) m in
+       let rec do_rec clsr k =
+         let cp = ClassRel.choose_opt clsr in
+         match cp with
+         | None -> k
+         | Some (cl1,cl2) ->
+             let r = make_rel_from_classpair (cl1,cl2) in
+             let k = E.EventRel.union r k in
+             let clsr = ClassRel.remove (cl1,cl2) clsr in
+             E.EventRel.union r (do_rec clsr k)
+       in
+       let r = do_rec clsr E.EventRel.empty in
+       Rel r
+  | _ -> arg_mismatch ()
+
     and linearisations =
       let module
           Make =
@@ -1032,6 +1055,7 @@ module Make
          "classes-loc",partition;
          "classes",classes;
          "lift",lift;
+         "delift",delift;
          "linearisations",linearisations ks;
          "tag2scope",tag2scope m;
          "tag2events",tag2events m;
@@ -1121,6 +1145,7 @@ module Make
             | V.Empty -> V.Empty
             | Unv -> Unv
             | Rel r -> Rel (E.EventRel.inverse r)
+            | ClassRel r -> ClassRel (ClassRel.inverse r)
             | v -> error_rel env.EV.silent (get_loc e) v
             end
         | Op1 (_,ToId,e) ->
