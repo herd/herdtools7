@@ -262,6 +262,52 @@ module DC = struct
     pp_point op.point
 end
 
+module TLBI = struct
+
+  type typ =
+    | ALL (*all translations at level *)
+    | VMALL (*all stage 1 translations, current VMID *)
+    | VMALLS12 (*all stage 1 & 2 translations, current VMID *)
+    | ASID (*translations matching ASID *)
+    | VA (*translations matching VA and ASID *)
+    | VAL (*last-level translations matching VA and ASID *)
+    | VAA (*translations matching VA, all ASIDs *)
+    | VAAL (*last-level translations matching VA, all ASIDs *)
+    | IPAS2 (*stage 2 translations matching IPA, current VMID *)
+    | IPAS2L (*last-level stage 2 translations matching IPA, current VMID *)
+
+  let pp_typ = function
+    | ALL -> "ALL"
+    | VMALL -> "VMALL"
+    | VMALLS12 -> "VMALLS12"
+    | ASID -> "ASID"
+    | VA -> "VA"
+    | VAL -> "VAL"
+    | VAA -> "VAA"
+    | VAAL -> "VAAL"
+    | IPAS2 -> "IPAS2"
+    | IPAS2L -> "IPAS2L"
+
+  type level = |E0 |E1 |E2 |E3
+
+  let pp_level = function
+    | E0 -> "E0"
+    | E1 -> "E1"
+    | E2 -> "E2"
+    | E3 -> "E3"
+
+  type domain = | IS | No
+
+  let pp_domain = function
+    | IS -> "IS"
+    | No -> ""
+
+  type op = { typ:typ; level:level; domain:domain; }
+
+  let pp_op { typ; level; domain; } =
+    sprintf "%s%s%s" (pp_typ typ) (pp_level level) (pp_domain domain)
+end
+
 (********************)
 (* System registers *)
 (*  (Some of...)    *)
@@ -427,6 +473,7 @@ type 'k kinstruction =
 (* Cache maintenance *)
   | I_IC of IC.op * reg
   | I_DC of DC.op * reg
+  | I_TLBI of TLBI.op * reg
 (* Read system register *)
   | I_MRS of reg * sysreg
 (* Memory Tagging *)
@@ -630,6 +677,10 @@ let do_pp_instruction m =
       sprintf "IC %s,%s" (IC.pp_op op) (pp_xreg r)
   | I_DC (op,r) ->
       sprintf "DC %s,%s" (DC.pp_op op) (pp_xreg r)
+  | I_TLBI (op,ZR)->
+      sprintf "TLBI %s" (TLBI.pp_op op)
+  | I_TLBI (op,r)->
+      sprintf "TLBI %s,%s" (TLBI.pp_op op) (pp_xreg r)
 (* Read System register *)
   | I_MRS (r,sr) ->
       sprintf "MRS %s,%s" (pp_xreg r) (pp_sysreg sr)
@@ -680,6 +731,7 @@ let fold_regs (f_regs,f_sregs) =
     -> c
   | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_BLR r | I_BR r | I_RET (Some r)
   | I_MOV (_,r,_) | I_ADDR (r,_) | I_IC (_,r) | I_DC (_,r) | I_MRS (r,_)
+  | I_TLBI (_,r)
     -> fold_reg r c
   | I_LDAR (_,_,r1,r2) | I_STLR (_,r1,r2) | I_STLRBH (_,r1,r2)
   | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2)
@@ -800,6 +852,8 @@ let map_regs f_reg f_symb =
       I_IC (op,map_reg r)
   | I_DC (op,r) ->
       I_DC (op,map_reg r)
+  | I_TLBI (op,r) ->
+      I_TLBI (op,map_reg r)
 (* Read system register *)
   | I_MRS (r,sr) ->
       I_MRS (map_reg r,sr)
@@ -858,6 +912,7 @@ let get_next = function
   | I_RBIT _
   | I_IC _
   | I_DC _
+  | I_TLBI _
   | I_MRS _
   | I_STG _|I_LDG _
     -> [Label.Next;]
@@ -904,6 +959,7 @@ include Pseudo.Make
         | I_RBIT _
         | I_IC _
         | I_DC _
+        | I_TLBI _
         | I_MRS _
             as keep -> keep
         | I_LDR (v,r1,r2,kr) -> I_LDR (v,r1,r2,kr_tr kr)
@@ -944,8 +1000,20 @@ include Pseudo.Make
         | I_CSEL _
         | I_ADDR _
         | I_RBIT _
+        | I_TLBI (_,ZR)
         | I_MRS _
           -> 0
+        | I_LDR _ | I_LDAR _ | I_LDARBH _
+        | I_STR _ | I_STLR _ | I_STLRBH _ | I_STXR _
+        | I_LDRBH _ | I_STRBH _ | I_STXRBH _ | I_IC _ | I_DC _
+        | I_TLBI _
+          -> 1
+        | I_LDP _|I_STP _
+        | I_CAS _ | I_CASBH _
+        | I_SWP _ | I_SWPBH _
+        | I_LDOP _ | I_LDOPBH _
+        | I_STOP _ | I_STOPBH _
+          -> 2
 
       let fold_labels k f = function
         | I_B lbl

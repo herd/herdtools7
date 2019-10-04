@@ -321,6 +321,46 @@ match name with
 | "cswu"|"CSWU" -> A.DC.(DC_OP { funct=C; typ=SW; point=U; })
 | "ciswu"|"CISWU" -> A.DC.(DC_OP { funct=CI; typ=SW; point=U; })
 | "zswu"|"ZSWU" -> A.DC.(DC_OP { funct=Z; typ=SW; point=U; })
+(* Idem, tlb *)
+| "tlbi"|"TLBI"-> TLBI
+(* Arguments, and there are many... *)
+| "ipas2e1is"|"IPAS2E1IS" -> A.TLBI.(TLBI_OP {typ=IPAS2; level=E1; domain=IS; })
+| "ipas2le1is"|"IPAS2LE1IS" ->
+    A.TLBI.(TLBI_OP {typ=IPAS2L; level=E1; domain=IS; })
+| "ipas2e1"|"IPAS2E1" -> A.TLBI.(TLBI_OP {typ=IPAS2; level=E1; domain=No; })
+| "ipas2le1"|"IPAS2LE1" -> A.TLBI.(TLBI_OP {typ=IPAS2L; level=E1; domain=No; })
+|  "vmalle1is"|"VMALLE1IS" ->
+    A.TLBI.(TLBI_OP {typ=VMALL; level=E1; domain=IS; })
+|  "vmalle1"|"VMALLE1" ->
+    A.TLBI.(TLBI_OP {typ=VMALL; level=E1; domain=No; })
+| "alle1is"|"ALLE1IS" -> A.TLBI.(TLBI_OP {typ=ALL; level=E1; domain=IS; })
+| "alle2is"|"ALLE2IS" -> A.TLBI.(TLBI_OP {typ=ALL; level=E2; domain=IS; })
+| "alle3is"|"ALLE3IS" -> A.TLBI.(TLBI_OP {typ=ALL; level=E3; domain=IS; })
+| "alle1"|"ALLE1" -> A.TLBI.(TLBI_OP {typ=ALL; level=E1; domain=No; })
+| "alle2"|"ALLE2" -> A.TLBI.(TLBI_OP {typ=ALL; level=E2; domain=No; })
+| "alle3"|"ALLE3" -> A.TLBI.(TLBI_OP {typ=ALL; level=E3; domain=No; })
+| "vae1is"|"VAE1IS" -> A.TLBI.(TLBI_OP {typ=VA; level=E1; domain=IS; })
+| "vae2is"|"VAE2IS" -> A.TLBI.(TLBI_OP {typ=VA; level=E2; domain=IS; })
+| "vae3is"|"VAE3IS" -> A.TLBI.(TLBI_OP {typ=VA; level=E3; domain=IS; })
+| "vae1"|"VAE1" -> A.TLBI.(TLBI_OP {typ=VA; level=E1; domain=No; })
+| "vae2"|"VAE2" -> A.TLBI.(TLBI_OP {typ=VA; level=E2; domain=No; })
+| "vae3"|"VAE3" -> A.TLBI.(TLBI_OP {typ=VA; level=E3; domain=No; })
+| "aside1is"|"ASIDE1IS" -> A.TLBI.(TLBI_OP {typ=ASID; level=E1; domain=IS; })
+| "aside1"|"ASIDE1" -> A.TLBI.(TLBI_OP {typ=ASID; level=E1; domain=No; })
+| "vaae1is"|"VAAE1IS" -> A.TLBI.(TLBI_OP {typ=VAA; level=E1; domain=IS; })
+| "vaae1"|"VAAE1" -> A.TLBI.(TLBI_OP {typ=VAA; level=E1; domain=No; })
+| "vale1is"|"VALE1IS" -> A.TLBI.(TLBI_OP {typ=VAL; level=E1; domain=IS; })
+| "vale2is"|"VALE2IS" -> A.TLBI.(TLBI_OP {typ=VAL; level=E2; domain=IS; })
+| "vale3is"|"VALE3IS" -> A.TLBI.(TLBI_OP {typ=VAL; level=E3; domain=IS; })
+| "vale1"|"VALE1" -> A.TLBI.(TLBI_OP {typ=VAL; level=E1; domain=No; })
+| "vale2"|"VALE2" -> A.TLBI.(TLBI_OP {typ=VAL; level=E2; domain=No; })
+| "vale3"|"VALE3" -> A.TLBI.(TLBI_OP {typ=VAL; level=E3; domain=No; })
+| "vaale1is"|"VAALE1IS" -> A.TLBI.(TLBI_OP {typ=VAAL; level=E1; domain=IS; })
+| "vaale1"|"VAALE1" -> A.TLBI.(TLBI_OP {typ=VAAL; level=E1; domain=No; })
+| "vmalls12e1is"|"VMALLS12E1IS" ->
+    A.TLBI.(TLBI_OP {typ=VMALLS12; level=E1; domain=IS; })
+| "vmalls12e1"|"VMALLS12E1" ->
+    A.TLBI.(TLBI_OP {typ=VMALLS12; level=E1; domain=No; })
 (* System registers *)
 | "mrs"|"MRS" -> MRS
 | "ctr_el0"|"CTR_EL0" -> SYSREG A.CTR_EL0

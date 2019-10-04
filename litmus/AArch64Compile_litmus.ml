@@ -532,6 +532,14 @@ module Make(V:Constant.S)(C:Config) =
       let r,f = arg1 "xzr" (fun s -> "^i"^s) r in
       { empty_ins with memo = memo ^ "," ^ f; inputs=r; reg_env=add_v r; }
 
+    let tlbi op r =
+      let op = Misc.lowercase  (TLBI.pp_op op) in
+      match r with
+      | ZR ->
+          { empty_ins with memo = sprintf "tlbi %s" op; inputs=[]; reg_env=[]; }
+      | r ->
+          { empty_ins with memo = sprintf "tlbi %s,^i0" op; inputs=[r]; reg_env=add_v [r]; }
+
 (* Not that useful *)
     let emit_loop _k = assert false
 
@@ -620,6 +628,8 @@ module Make(V:Constant.S)(C:Config) =
         cache (sprintf "ic %s" (Misc.lowercase (IC.pp_op op))) r::k
     | I_DC (op,r) ->
         cache (sprintf "dc %s" (Misc.lowercase (DC.pp_op op))) r::k
+    | I_TLBI (op,r) ->
+        tlbi op r::k
     | I_MRS (r,sr) ->
         let r,f = arg1 "xzr" (fun s -> "^o"^s) r in
         let memo =
