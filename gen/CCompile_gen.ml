@@ -206,7 +206,7 @@ module Make(O:Config) : Builder.S
         let decls = A.Decl (A.Plain A.deftype,r,None)
         and body =
           A.Seq
-            (A.SetReg (r,load_from No mo x),breakcond A.Eq p r 0) in
+            (A.SetReg (r,load_from No mo x),breakcond A.Ne p r 0) in
         r,A.Seq (decls,A.Loop body),st
 
       let compile_load_one st p mo x =
