@@ -42,6 +42,9 @@ type reg_part =
 type flag =
   | ZF | SF | CF
 
+type flag =
+  | ZF | SF | CF
+
 type reg =
   | RIP
   | Ireg of base_reg * reg_part
@@ -129,6 +132,13 @@ let gen_regs =
     (BX, R8bH), "BH";
     (CX, R8bH), "CH";
     (DX, R8bH), "DH";
+  ]
+
+let flag_string =
+  [
+    Flag ZF, "ZF";
+    Flag SF, "SF";
+    Flag CF, "CF";
   ]
 
 let flag_string =

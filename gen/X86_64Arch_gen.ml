@@ -148,6 +148,6 @@ module Make
           | Symbolic_reg _ -> true
           | _ -> false
         let pp_reg = pp_reg
-        let free_registers = allowed_for_symb_size C.mach_size
+        let free_registers = allowed_for_symb
       end)
 end
