@@ -67,7 +67,26 @@ module Make
 
   let varatom_dir _d f = f None
 
-  include NoMixed
+  module ValsMixed =
+    MachMixed.Vals
+      (struct
+        let naturalsize () = C.naturalsize
+        let endian = endian
+      end)
+
+  let tr_value ao v = match ao with
+    | None | Some (Atomic) -> v
+    | Some (Mixed (sz, _)) -> Mixed.tr_value sz v
+
+  let overwrite_value v ao w = match ao with
+    | None | Some (Atomic) -> w
+    | Some (Mixed (sz, o)) ->
+       ValsMixed.overwrite_value v sz o w
+
+  let extract_value v ao = match ao with
+    | None | Some (Atomic) -> v
+    | Some (Mixed (sz, o)) ->
+       ValsMixed.extract_value v sz o
 
   (**********)
   (* Fences *)
@@ -129,6 +148,6 @@ module Make
           | Symbolic_reg _ -> true
           | _ -> false
         let pp_reg = pp_reg
-        let free_registers = allowed_for_symb_size C.mach_size
+        let free_registers = allowed_for_symb
       end)
 end

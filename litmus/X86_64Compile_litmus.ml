@@ -76,6 +76,7 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
       | Ireg (r, t) -> sprintf "%%%s[%s]" (reg_size_to_string t) (reg64_string r)
       | Symbolic_reg s -> s
       | Internal i -> sprintf "%i" i
+      | Flag _ as f-> pp_reg f
 
     let compile_rm64_move i o r =  match r with
     |  Rm64_reg reg -> compile_reg reg,(i,[]),(o+1,[reg])

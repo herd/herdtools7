@@ -116,9 +116,9 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let emit_store_mixed sz o st p init addr v =
       let sz = size_to_inst_size sz in
       let rB,init,st =
-        if Cfg.variant Mixed then
+        if o <> 0 then
           let r,i,s = U.next_init st p init addr in
-          let r = change_size_reg r (inst_to_reg_size sz) in
+          let r = change_size_reg r Q in
           Rm64_deref (r,o),i,s
         else
           Rm64_abs (ParsedConstant.nameToV addr),init,st in
@@ -170,8 +170,9 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let emit_load_mixed sz o st p init x =
       let rA,st = next_reg st in
       let rB,init,st =
-        if Cfg.variant Mixed then
+        if o <> 0 then
           let r,i,s = U.next_init st p init x in
+          let r = change_size_reg r Q in
           Rm64_deref (r,o),i,s
         else
           Rm64_abs (ParsedConstant.nameToV x),init,st in
@@ -182,12 +183,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 
     let emit_load_not_zero st _p init x =
       let rA,st = next_reg st in
-      let rB,init,st =
-        if Cfg.variant Mixed then
-          let r,i,s = U.next_init st _p init x in
-          Rm64_deref (r,0),i,s
-        else
-          Rm64_abs (ParsedConstant.nameToV x),init,st in
+      let rB = Rm64_abs (ParsedConstant.nameToV x) in
       let lab = Label.next_label "L" in
       rA,init,
       Label (lab,Nop)::
@@ -199,12 +195,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 
     let emit_load_one st _p init x =
       let rA,st = next_reg st in
-      let rB,init,st =
-        if Cfg.variant Mixed then
-          let r,i,s = U.next_init st _p init x in
-          Rm64_deref (r,0),i,s
-        else
-          Rm64_abs (ParsedConstant.nameToV x),init,st in
+      let rB = Rm64_abs (ParsedConstant.nameToV x) in
       let lab = Label.next_label "L" in
       rA,init,
       Label (lab,Nop)::

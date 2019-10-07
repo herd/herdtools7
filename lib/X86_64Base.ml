@@ -39,11 +39,15 @@ type base_reg =
 type reg_part =
   | B | H | W | L | Q
 
+type flag =
+  | ZF | SF | CF
+
 type reg =
   | RIP
   | Ireg of base_reg * reg_part
   | Symbolic_reg of string
   | Internal of int
+  | Flag of flag
 
 let loop_idx = Internal 0
 let sig_cell = "sig_cell"
@@ -127,6 +131,13 @@ let gen_regs =
     (DX, H), "DH";
   ]
 
+let flag_string =
+  [
+    Flag ZF, "ZF";
+    Flag SF, "SF";
+    Flag CF, "CF";
+  ]
+
 (* Match reg size with its nae in GCC asm inline *)
 let reg_size_to_string = function
   | B -> "b"
@@ -150,6 +161,7 @@ let parse_reg s =
 let pp_reg r = match r with
   | Symbolic_reg r -> "%"^r
   | Internal i -> sprintf "i%i" i
+  | Flag f -> (try List.assoc r flag_string with Not_found -> assert false)
   | _ -> try List.assoc r regs with Not_found -> assert false
 
 let reg_compare r1 r2 = match r1, r2 with
@@ -175,6 +187,10 @@ let typeof = function
 let change_size_reg r sz = match r with
   | Ireg (b, t) -> Ireg (b, sz)
   | _ -> r
+
+let get_reg_size = function
+  | Ireg (b, t) -> t
+  | _ -> Q
 
 (************)
 (* Barriers *)
@@ -390,7 +406,7 @@ let allowed_for_symb = allowed_for_symb_size Q
 let rec fold_regs (f_reg,f_sreg) =
 
   let fold_reg (y_reg,y_sreg) reg = match reg with
-    | RIP | Ireg _ -> f_reg reg y_reg,y_sreg
+    | RIP | Ireg _ | Flag _ -> f_reg reg y_reg,y_sreg
     | Symbolic_reg reg -> y_reg,f_sreg reg y_sreg
     | Internal _ -> y_reg,y_sreg in
 
@@ -425,7 +441,7 @@ let rec fold_regs (f_reg,f_sreg) =
 let rec map_regs f_reg f_symb =
 
   let map_reg reg = match reg with
-    | RIP | Ireg _ | Internal _ -> f_reg reg
+    | RIP | Ireg _ | Flag _ | Internal _ -> f_reg reg
     | Symbolic_reg reg -> f_symb reg in
 
   let map_rm64 = function

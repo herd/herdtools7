@@ -206,6 +206,7 @@ module Make
           function
             | `PPC
             | `X86
+            | `X86_64
             | `ARM
             | `MIPS
             | `AArch64 ->
