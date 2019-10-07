@@ -283,6 +283,27 @@ module Top (Conf:Config) = struct
           let module X = Make (X86S) (P) (NoCheck) (X86M) in
           X.run start_time name chan env splitted
 
+      | `X86_64 ->
+          let module X86_64 = X86_64Arch_herd.Make(ArchConfig)(Int64Value) in
+          let module X86_64LexParse = struct
+            type instruction = X86_64.pseudo
+            type token = X86_64Parser.token
+            module Lexer = X86_64Lexer.Make(LexConfig)
+            let lexer = Lexer.token
+            let parser = MiscParser.mach2generic X86_64Parser.main
+          end in
+          let module X86_64S = X86_64Sem.Make(Conf)(Int64Value) in
+          let module X86_64Barrier = struct
+            type a = X86_64.barrier
+            type b = MFENCE
+            let a_to_b a = match a with
+            | X86_64.Mfence -> MFENCE
+          end in
+          let module X86_64M = X86_64Mem.Make(ModelConfig)(X86_64S)(X86_64Barrier) in
+          let module P = GenParser.Make(Conf)(X86_64)(X86_64LexParse) in
+          let module X = Make(X86_64S)(P)(NoCheck)(X86_64M) in
+          X.run start_time name chan env splitted
+
       | `MIPS ->
           let module MIPS = MIPSArch_herd.Make(ArchConfig)(Int64Value) in
           let module MIPSLexParse = struct

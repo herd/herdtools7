@@ -6,4 +6,4 @@
    )
    (public_names herd7)
    (libraries herdtools)
-   (modules_without_implementation AArch64Barrier ARMBarrier action arch_herd BellBarrier  MIPSBarrier monad PPCBarrier sem X86Barrier XXXMem))
+   (modules_without_implementation AArch64Barrier ARMBarrier action arch_herd BellBarrier  MIPSBarrier monad PPCBarrier sem X86Barrier X86_64Barrier XXXMem))

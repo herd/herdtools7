@@ -32,7 +32,7 @@ module type S =
 module FromPPC(B:PPCBarrier.S) = struct
   type a = B.a
 
-  type b = 
+  type b =
       | SYNC | LWSYNC | ISYNC | EIEIO (* PPC memory model barrier *)
       | DSB | DMB | ISB               (* ARM barrier *)
       | DSBST | DMBST
@@ -51,7 +51,7 @@ end
 module FromARM(AB:ARMBarrier.S) = struct
   type a = AB.a
 
-  type b = 
+  type b =
       | SYNC | LWSYNC | ISYNC | EIEIO (* PPC memory model barrier *)
       | DSB | DMB | ISB               (* ARM barrier *)
       | DSBST | DMBST
@@ -73,7 +73,7 @@ module FromX86(XB:X86Barrier.S) = struct
 
   type a = XB.a
 
-  type b = 
+  type b =
       | SYNC | LWSYNC | ISYNC | EIEIO (* PPC memory model barrier *)
       | DSB | DMB | ISB               (* ARM barrier *)
       | DSBST | DMBST
@@ -82,12 +82,28 @@ module FromX86(XB:X86Barrier.S) = struct
 
   let a_to_b a = match XB.a_to_b a with
   | XB.MFENCE -> MFENCE
-  | XB.SFENCE -> SFENCE 
+  | XB.SFENCE -> SFENCE
   | XB.LFENCE -> LFENCE
 
   let pp_isync = "???"
 end
 
+module FromX86_64(XB:X86_64Barrier.S) = struct
+
+  type a = XB.a
+
+  type b =
+      | SYNC | LWSYNC | ISYNC | EIEIO (* PPC memory model barrier *)
+      | DSB | DMB | ISB               (* ARM barrier *)
+      | DSBST | DMBST
+      | MFENCE | SFENCE | LFENCE      (* X86 *)
+      | MEMBAR_CTA | MEMBAR_GL | MEMBAR_SYS (*PTX barriers*)
+
+  let a_to_b a = match XB.a_to_b a with
+  | XB.MFENCE -> MFENCE
+
+  let pp_isync = "???"
+end
 
 module FromMIPS(MB:MIPSBarrier.S) = struct
   type a = MB.a
@@ -108,8 +124,8 @@ end
 module FromBell(BB:BellBarrier.S) = struct
 
   type a = BB.a
-    
-  type b =       
+
+  type b =
       |SYNC | LWSYNC | ISYNC | EIEIO (* PPC memory model barrier *)
       | DSB | DMB | ISB               (* ARM barrier *)
       | DSBST | DMBST
@@ -121,4 +137,3 @@ module FromBell(BB:BellBarrier.S) = struct
 
   let pp_isync = "???"
 end
-
