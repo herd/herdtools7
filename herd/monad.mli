@@ -98,9 +98,28 @@ module type S =
     val read_loc : bool -> (A.location -> A.V.v -> E.action) ->
                    A.location -> A.inst_instance_id -> A.V.v t
 
-    val read_mixed : bool ->MachSize.sz ->
+    val read_mixed : bool -> MachSize.sz ->
       (MachSize.sz -> A.location -> A.V.v -> E.action) ->
         A.V.v ->  A.inst_instance_id -> A.V.v t
+
+    val write_PA_tag :
+      (MachSize.sz -> A.location -> A.V.v -> E.action) ->
+        A.V.v -> A.V.v ->  A.inst_instance_id -> unit t
+
+    val get_alloc_tag : A.V.v -> A.V.v t
+(*    val get_pa_tag : A.location -> A.V.v t *)
+
+    val get_alloc_tag_val :
+      (MachSize.sz -> A.location -> A.V.v -> E.action) ->
+        A.V.v -> A.inst_instance_id -> A.V.v t
+
+(*    val get_pa_tag_val :
+      (MachSize.sz -> A.location -> A.V.v -> E.action) ->
+        A.location -> A.inst_instance_id -> A.V.v t *)
+
+    val set_tag :
+      (MachSize.sz -> A.location -> A.V.v -> E.action) ->
+        A.V.v -> A.V.v ->  A.inst_instance_id -> unit t
 
     val write_mixed : MachSize.sz ->
       (MachSize.sz -> A.location -> A.V.v -> E.action) ->

@@ -62,7 +62,7 @@ val dump_state_atom :
 (* Packed result *)
 type info = (string * string) list
 
-(* Some source files contain addditionnal information *)
+(* Some source files contain additional information *)
 
 type extra_data =
   | NoExtra

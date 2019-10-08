@@ -216,6 +216,7 @@ let () =
       let cpp = match !Config.arch with `CPP -> true | _ -> false
       let scope = !Config.scope
       let variant = !Config.variant
+      let mtags = !Config.mtags
     end in
     let module T = Top_gen.Make(C) in
     begin match !Config.arch with

@@ -63,7 +63,7 @@ with type loc_reg = A.arch_reg and type loc_global = A.arch_global =
 
     let is_global = function
       | Location_global _ -> true
-      | Location_reg _|Location_deref _ -> false
+      | Location_reg _ |Location_deref _ -> false
 
     let global = function
       | Location_global s  -> Some s

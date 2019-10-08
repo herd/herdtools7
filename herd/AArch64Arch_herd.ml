@@ -21,7 +21,7 @@ module Make (C:sig include Arch_herd.Config val moreedges : bool end) (V:Value.S
     let pp_barrier_short = pp_barrier
     let reject_mixed = true
 
-    type annot = A | XA | L | XL | X | N | Q | NoRet
+    type annot = A | XA | L | XL | X | N | Q | NoRet | T
     type lannot = annot
 
     let empty_annot = N
@@ -52,6 +52,10 @@ module Make (C:sig include Arch_herd.Config val moreedges : bool end) (V:Value.S
       | L | XL -> true
       | _ -> false
 
+    let is_tag = function
+      | T -> true
+      | _ -> false
+
     let barrier_sets =
       do_fold_dmb_dsb C.moreedges
         (fun b k ->
@@ -65,6 +69,7 @@ module Make (C:sig include Arch_herd.Config val moreedges : bool end) (V:Value.S
       "Q",  wrap_is is_acquire_pc;
       "L",  wrap_is is_release;
       "NoRet", wrap_is is_noreturn;
+      "T", wrap_is is_tag
     ]
 
     let is_isync = is_barrier ISB
@@ -79,6 +84,7 @@ module Make (C:sig include Arch_herd.Config val moreedges : bool end) (V:Value.S
       | X -> "*"
       | N -> ""
       | NoRet -> "NoRet"
+      | T -> "Tag"
 
     module V = V
 

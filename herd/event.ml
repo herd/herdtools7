@@ -51,7 +51,7 @@ module type S = sig
   val same_proc_not_init : event -> event -> bool
   val progorder_of  : event -> A.program_order_index option
 
-(* Is e1 before e2 w.r.t. prog order ? Nothing assumed on e1 and a2 *)
+(* Is e1 before e2 w.r.t. prog order ? Nothing assumed on e1 and e2 *)
   val po_strict : event -> event -> bool
   val before_in_po : event -> event -> bool
   val po_eq : event -> event -> bool

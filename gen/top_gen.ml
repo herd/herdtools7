@@ -37,6 +37,7 @@ module type Config = sig
   val typ : TypBase.t
   val hexa : bool
   val variant : Variant_gen.t -> bool
+  val mtags : bool
 end
 
 module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S
@@ -526,7 +527,7 @@ let min_max xs =
                    in do_rec oks k'
     in do_rec oks []
 
-  let compile_cycle ok n =
+ let compile_cycle ok n =
     let open Config in
     Label.reset () ;
     let splitted =  C.split_procs n in
@@ -651,6 +652,9 @@ let dump_init chan inits env =
         let p = get_proc left in
         if p <> q then fprintf chan "\n" else fprintf chan " " ;
         fprintf chan "%s=%s;" (A.pp_location left) loc ;
+        if !Config.mtags then
+          if not(List.exists (fun (a,b) -> b=loc) rem)
+          then fprintf chan " %s.atag;" loc ;
         p_rec p rem in
   p_rec (-1) inits
 

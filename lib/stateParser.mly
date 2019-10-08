@@ -40,6 +40,7 @@ let mk_lab p s = Label (p,s)
 %token PTX_REG_DEC
 %token <string> PTX_REG_TYPE
 
+%token PATAG
 
 %left PLUS_DISJ OR
 %left AND
@@ -90,7 +91,10 @@ location_reg:
                   {Location_reg(Misc.string_as_int $1,$5)}
 | PROC COLON PTX_REG_DEC PTX_REG_TYPE reg
                   {Location_reg($1,$5)}
-
+/* memory tags
+| PROC COLON reg PATAG {Location_reg ($1,$3)}
+| NUM COLON reg PATAG {Location_reg (Misc.string_as_int $1,$3)}
+*/
 location_deref:
 | location_reg { $1 }
 | STAR location_reg { $2 }

@@ -50,7 +50,7 @@ module Mixed =
 (* AArch64 has more atoms that others *)
 let bellatom = false
 type atom_rw =  PP | PL | AP | AL
-type atom_acc = Plain | Acq | AcqPc | Rel | Atomic of atom_rw
+type atom_acc = Plain | Acq | AcqPc | Rel | Atomic of atom_rw | Tag
 type atom = atom_acc * MachMixed.t option
 
 let default_atom = Atomic PP,None
@@ -59,7 +59,7 @@ let applies_atom (a,_) d = match a,d with
 | Acq,R
 | AcqPc,R
 | Rel,W
-| (Plain|Atomic _),(R|W)
+| (Plain|Atomic _|Tag),(R|W)
   -> true
 | _ -> false
 
@@ -79,6 +79,7 @@ let applies_atom (a,_) d = match a,d with
      | Acq -> "A"
      | AcqPc -> "Q"
      | Plain -> "P"
+     | Tag -> "T"
 
    let pp_atom (a,m) = match a with
    | Plain ->
@@ -104,7 +105,7 @@ let applies_atom (a,_) d = match a,d with
    let fold_atom_rw f r = f PP (f PL (f AP (f AL r)))
 
    let fold_acc f r =
-     f Acq (f AcqPc (f Rel (fold_atom_rw (fun rw -> f (Atomic rw)) r)))
+     f Tag (f Acq (f AcqPc (f Rel (fold_atom_rw (fun rw -> f (Atomic rw)) r))))
 
    let fold_non_mixed f r = fold_acc (fun acc r -> f (acc,None) r) r
 
@@ -118,7 +119,7 @@ let applies_atom (a,_) d = match a,d with
 
    let worth_final (a,_) = match a with
      | Atomic _ -> true
-     | Acq|AcqPc|Rel|Plain -> false
+     | Acq|AcqPc|Rel|Plain|Tag -> false
 
 
    let varatom_dir _d f r = f None r
@@ -145,13 +146,14 @@ let applies_atom (a,_) d = match a,d with
        end)
 
 let overwrite_value v ao w = match ao with
-  | None| Some ((Atomic _|Acq|AcqPc|Rel|Plain),None) -> w (* total overwrite *)
-  | Some ((Atomic _|Acq|AcqPc|Rel|Plain),Some (sz,o)) ->
-      ValsMixed.overwrite_value v sz o w
+| None| Some ((Atomic _|Acq|AcqPc|Rel|Plain|Tag),None)
+  -> w (* total overwrite *)
+| Some ((Atomic _|Acq|AcqPc|Rel|Plain|Tag),Some (sz,o)) ->
+    ValsMixed.overwrite_value v sz o w
 
  let extract_value v ao = match ao with
-  | None| Some ((Atomic _|Acq|AcqPc|Rel|Plain),None) -> v
-  | Some ((Atomic _|Acq|AcqPc|Rel|Plain),Some (sz,o)) ->
+  | None| Some ((Atomic _|Acq|AcqPc|Rel|Plain|Tag),None) -> v
+  | Some ((Atomic _|Acq|AcqPc|Rel|Plain|Tag),Some (sz,o)) ->
       ValsMixed.extract_value v sz o
 
 (* End of atoms *)

@@ -37,6 +37,7 @@ type gpr =
 type reg =
   | ZR
   | Ireg of gpr
+  | Tag of gpr
   | Symbolic_reg of string
   | Internal of int
   | NZP
@@ -70,8 +71,8 @@ let xgprs =
 
 let xregs =
   (ZR,"XZR")::List.map (fun (r,s) -> Ireg r,s) xgprs
-
-let regs = xregs
+let txregs = List.map (fun (r,pp) -> Tag r,sprintf "%s.patag" pp) xgprs
+let regs = xregs @ txregs
 
 let wgprs =
 [
@@ -311,7 +312,7 @@ let str_memo = function
   | LY -> "STLXR"
 
 type rmw_type = RMW_P | RMW_A | RMW_L | RMW_AL
-  
+
 type w_type = W_P | W_L
 
 let w_to_rmw = function
@@ -418,6 +419,9 @@ type 'k kinstruction =
   | I_DC of DC.op * reg
 (* Read system register *)
   | I_MRS of reg * sysreg
+(* Memory Tagging *)
+  | I_STG of reg * reg * 'k kr
+  | I_LDG of reg * reg * 'k kr
 
 type instruction = int kinstruction
 type parsedInstruction = MetaConst.k kinstruction
@@ -503,6 +507,14 @@ let do_pp_instruction m =
       pp_xreg r1  ^ "," ^
       pp_xreg r2 ^ pp_kr true kr
   | V32,RV (V64,_) -> assert false in
+
+  let pp_stg memo rt rn k =
+    pp_memo memo ^ " " ^ pp_xreg rt ^
+    ",[" ^ pp_xreg rn ^ pp_kr true k ^ "]" in
+
+  let pp_ldg memo rt rn k =
+    pp_memo memo ^ " " ^ pp_xreg rt ^
+    ",[" ^ pp_xreg rn ^ pp_kr true k ^ "]" in
 
   let pp_stxr memo v r1 r2 r3 =
     pp_memo memo ^ " " ^
@@ -615,6 +627,11 @@ let do_pp_instruction m =
 (* Read System register *)
   | I_MRS (r,sr) ->
       sprintf "MRS %s,%s" (pp_xreg r) (pp_sysreg sr)
+(* Memory Tagging *)
+  | I_STG (rt,rn,kr) ->
+      pp_stg "STG" rt rn kr
+  | I_LDG (rt,rn,kr) ->
+      pp_ldg "LDG" rt rn kr
 
 let m_int = { pp_k = string_of_int ;
               zerop = (function 0 -> true | _ -> false);
@@ -646,7 +663,7 @@ let fold_regs (f_regs,f_sregs) =
   let fold_reg reg (y_reg,y_sreg) = match reg with
   | Ireg _ -> f_regs reg y_reg,y_sreg
   | Symbolic_reg reg ->  y_reg,f_sregs reg y_sreg
-  | Internal _ | NZP | ZR | ResAddr -> y_reg,y_sreg in
+  | Internal _ | NZP | ZR | ResAddr | Tag _ -> y_reg,y_sreg in
 
   let fold_kr kr y = match kr with
   | K _ -> y
@@ -662,6 +679,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2)
   | I_STOP (_,_,_,r1,r2) | I_STOPBH (_,_,_,r1,r2)
   | I_RBIT (_,r1,r2)
+  | I_LDG (r1,r2,_) | I_STG (r1,r2,_)
     -> fold_reg r1 (fold_reg r2 c)
   | I_LDR (_,r1,r2,kr) | I_STR (_,r1,r2,kr)
   | I_OP3 (_,_,r1,r2,kr)
@@ -687,7 +705,7 @@ let map_regs f_reg f_symb =
   let map_reg reg = match reg with
   | Ireg _ -> f_reg reg
   | Symbolic_reg reg -> f_symb reg
-  | Internal _ | ZR | NZP | ResAddr -> reg in
+  | Internal _ | ZR | NZP | ResAddr | Tag _-> reg in
 
   let map_kr kr = match kr with
   | K _ -> kr
@@ -779,6 +797,11 @@ let map_regs f_reg f_symb =
 (* Read system register *)
   | I_MRS (r,sr) ->
       I_MRS (map_reg r,sr)
+(* Memory Tagging *)
+  | I_STG (r1,r2,k) ->
+      I_STG (map_reg r1,map_reg r2,k)
+  | I_LDG (r1,r2,k) ->
+      I_LDG (map_reg r1,map_reg r2,k)
 
 (* No addresses burried in ARM code *)
 let fold_addrs _f c _ins = c
@@ -830,6 +853,7 @@ let get_next = function
   | I_IC _
   | I_DC _
   | I_MRS _
+  | I_STG _|I_LDG _
     -> [Label.Next;]
 
 include Pseudo.Make
@@ -880,6 +904,8 @@ include Pseudo.Make
         | I_LDP (t,v,r1,r2,r3,kr) -> I_LDP (t,v,r1,r2,r3,kr_tr kr)
         | I_STP (t,v,r1,r2,r3,kr) -> I_STP (t,v,r1,r2,r3,kr_tr kr)
         | I_STR (v,r1,r2,kr) -> I_STR (v,r1,r2,kr_tr kr)
+        | I_STG (r1,r2,kr) -> I_STG (r1,r2,kr_tr kr)
+        | I_LDG (r1,r2,kr) -> I_LDG (r1,r2,kr_tr kr)
         | I_LDRBH (v,r1,r2,kr) -> I_LDRBH (v,r1,r2,kr_tr kr)
         | I_STRBH (v,r1,r2,kr) -> I_STRBH (v,r1,r2,kr_tr kr)
         | I_MOV (v,r,k) -> I_MOV (v,r,kr_tr k)
@@ -890,6 +916,7 @@ include Pseudo.Make
         | I_LDR _ | I_LDAR _ | I_LDARBH _
         | I_STR _ | I_STLR _ | I_STLRBH _ | I_STXR _
         | I_LDRBH _ | I_STRBH _ | I_STXRBH _ | I_IC _ | I_DC _
+        | I_STG _ | I_LDG _
           -> 1
         | I_LDP _|I_STP _
         | I_CAS _ | I_CASBH _

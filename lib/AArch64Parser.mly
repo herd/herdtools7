@@ -79,6 +79,7 @@ open AArch64Base
 %token <AArch64Base.DC.op> DC_OP
 %token <AArch64Base.sysreg> SYSREG
 %token MRS TST RBIT
+%token STG LDG
 
 %type <int list * (AArch64Base.parsedPseudo) list list> main
 %type <AArch64Base.parsedPseudo list> instr_option_seq
@@ -315,6 +316,11 @@ instr:
   { I_SWPBH (H,RMW_L,$2,$4,$7) }
 | SWPALH wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
   { I_SWPBH (H,RMW_AL,$2,$4,$7) }
+/* Memory Tagging */
+| STG xreg COMMA LBRK xreg kr0 RBRK
+  { I_STG ($2,$5,$6) }
+| LDG xreg COMMA LBRK xreg kr0 RBRK
+  { I_LDG ($2,$5,$6) }
 
 /* Fetch and ADD */
 | LDADD wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK

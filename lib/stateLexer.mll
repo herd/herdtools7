@@ -77,6 +77,8 @@ rule token = parse
 | ".u64" as x
 | ".u32" as x
 | ".pred" as x {PTX_REG_TYPE x}
+(* Memory Tagging *)
+| ".patag" {PATAG}
 
 | "*" { STAR }
 | '$' (digit+|alpha+) as name { DOLLARNAME name }

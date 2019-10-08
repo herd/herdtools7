@@ -99,6 +99,10 @@ module Make(Cst:Constant.S) = struct
   | Val cst ->  Cst.eq cst Cst.one
   | Var _ -> raise  Undetermined
 
+  let atagop v1 = match v1 with
+  | Val (Symbolic (s,i)) -> Val (Symbolic (s ^ ".atag",i))
+  | Val (Concrete _) -> Warn.user_error "Illegal operation on tags"
+  | Var _ | Val (Label (_,_)) -> raise Undetermined
 
   let unop op v1 = match v1 with
   | Val (Concrete i1) -> Val (Concrete (op i1))
@@ -211,6 +215,7 @@ module Make(Cst:Constant.S) = struct
   | AddK k -> add_konst k
   | AndK k -> unop (fun s -> Scalar.logand s (Scalar.of_string k))
   | Mask sz -> unop (Scalar.mask sz)
+  | AddAllocTag -> atagop
 
   let op op = match op with
   | Add -> add

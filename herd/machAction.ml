@@ -156,7 +156,6 @@ end = struct
   | Access (_,A.Location_reg (q,_),_,_,_) -> p = q
   | _ -> false
 
-
 (* Store/Load anywhere *)
   let is_store a = match a with
   | Access (W,_,_,_,_)|Amo _ -> true

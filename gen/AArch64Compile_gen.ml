@@ -111,12 +111,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Quad -> I_LDR (V64,r1,r2,K o)
 
     let ldr r1 r2 = I_LDR (vloc,r1,r2,K 0)
+    let ldg r1 r2 = I_LDG (r1,r2,K 0)
     let ldar r1 r2 = I_LDAR (vloc,AA,r1,r2)
     let ldapr r1 r2 = I_LDAR (vloc,AQ,r1,r2)
     let ldxr r1 r2 = I_LDAR (vloc,XX,r1,r2)
     let ldaxr r1 r2 = I_LDAR (vloc,AX,r1,r2)
     let sxtw r1 r2 = I_SXTW (r1,r2)
     let ldr_idx r1 r2 idx = I_LDR (vloc,r1,r2,RV (vloc,idx))
+    let ldg_idx r1 r2 idx = I_LDG (r1,r2,RV (vloc,idx))
 
     let ldr_mixed_idx v r1 r2 idx sz  =
       let open MachSize in
@@ -135,8 +137,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Quad -> I_STR (V64,r1,r2,K o)
 
     let str r1 r2 = I_STR (vloc,r1,r2,K 0)
+    let stg r1 r2 = I_STG (r1,r2,K 0)
     let stlr r1 r2 = I_STLR (vloc,r1,r2)
     let str_idx r1 r2 idx = I_STR (vloc,r1,r2,RV (vloc,idx))
+    let stg_idx r1 r2 idx = I_STG (r1,r2,RV (vloc,idx))
     let stxr r1 r2 r3 = I_STXR (vloc,YY,r1,r2,r3)
     let stlxr r1 r2 r3 = I_STXR (vloc,LY,r1,r2,r3)
 
@@ -298,8 +302,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             [] in
           rA,init,cs,st
 
-
-
         let emit_load_not_zero st p init x =
           let rA,st = next_reg st in
           let rB,init,st = U.next_init st p init x in
@@ -363,6 +365,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let load = wrap_st ldr
           let load_idx st rA rB idx = [ldr_idx rA rB idx],st
         end)
+
+    module LDG =
+      LOAD
+        (struct
+          let load = wrap_st ldg
+          let load_idx st rA rB idx = [ldg_idx rA rB idx],st
+        end)
+
 
 (* For export *)
     let emit_load_one = LDR.emit_load_one
@@ -442,6 +452,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let store_idx st rA rB idx = [str_idx rA rB idx],st
         end)
 
+    module STG =
+      STORE
+        (struct
+          let store = wrap_st stg
+          let store_idx st rA rB idx = [stg_idx rA rB idx],st
+        end)
+
     module STLR =
       STORE
         (struct
@@ -450,8 +467,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let r,ins,st = sum_addr st rB idx in
             ins@[stlr rA r],st
         end)
-
-
 
 (***************************)
 (* Atomic loads and stores *)
@@ -731,6 +746,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,Some (Plain,Some (sz,o)) ->
             let r,init,cs,st = emit_load_mixed sz o st p init loc in
             Some r,init,cs,st
+        | R,Some (Tag,Some (sz,o)) ->
+            let r,init,cs,st = LDG.emit_load st p init loc  in
+            Some r,init,cs,st
         | W,None ->
             let init,cs,st = STR.emit_store st p init loc e.v in
             None,init,cs,st
@@ -762,7 +780,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 end) in
             let init,cs,st = S.emit_store st p init loc e.v in
             None,init,cs,st
+        | W,Some (Tag,Some (sz,o)) ->
+            let init,cs,st = STG.emit_store st p init loc e.v in
+            None,init,cs,st
         | _,Some (Plain,None) -> assert false
+        | _,Some (Tag,None) -> assert false
         | J,_ -> emit_joker st init
         end
 
@@ -947,6 +969,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | R,Some (Atomic rw,Some (sz,o)) ->
               let r,init,cs,st = emit_lda_mixed_idx sz o rw st p init loc r2 in
               Some r,init, Instruction c::cs,st
+          | R,Some (Tag,(Some (sz,o))) ->
+              let r,init,cs,st = LDG.emit_load_idx st p init loc r2 in
+              Some r,init, Instruction c::cs,st
           | W,None ->
               let init,cs,st = STR.emit_store_idx st p init loc r2 e.v in
               None,init,Instruction c::cs,st
@@ -1005,8 +1030,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let rA,init,cs_mov,st = U.emit_mov_sz sz st p init e.v in
               let init,cs,st = S.emit_store_idx_reg st p init loc r2 rA in
               None,init,Instruction c::cs_mov@cs,st
+          | W,Some (Tag, Some (sz,o)) ->
+              let init,cs,st = STG.emit_store_idx st p init loc r2 e.v in
+              None,init,Instruction c::cs,st
           | J,_ -> emit_joker st init
           | _,Some (Plain,None) -> assert false
+          | _,Some (Tag,None) -> assert false
           end
       | _,Code _ -> Warn.fatal "No dependency to code location"
 
@@ -1086,7 +1115,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = S.emit_store_reg st p init loc r2 in
               None,init,cs2@cs,st
+          | Some (Tag, Some (sz,o)) ->
+              let init,cs,st = STG.emit_store_reg st p init loc r2 in
+              None,init,cs2@cs,st
           | Some (Plain,None) -> assert false
+          | Some (Tag,None) -> assert false
           end
       | Some J,_ -> emit_joker st init
       | _,Code _ -> Warn.fatal "Not Yet (%s,dep_data)" (C.debug_evt e)

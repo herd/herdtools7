@@ -248,6 +248,9 @@ match name with
 | "stuminlh"|"STUMINLH" -> STUMINLH
 | "stuminb"|"STUMINB" -> STUMINB
 | "stuminlb"|"STUMINLB" -> STUMINLB
+(* Memory Tagging *)
+| "stg"|"STG" -> STG
+| "ldg"|"LDG" -> LDG
 (* Operations *)
 | "sxtw"|"SXTW" -> SXTW
 | "mov"|"MOV" -> MOV

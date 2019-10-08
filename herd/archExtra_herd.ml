@@ -249,7 +249,7 @@ module Make(C:Config) (I:I) : S with module I = I
 
 
       let simplify_vars_in_loc soln l = match l with
-      | Location_reg _  -> l
+      | Location_reg _ -> l
       | Location_global a ->
           Location_global (I.V.simplify_var soln a)
       | Location_deref (a,idx) ->
@@ -284,7 +284,7 @@ module Make(C:Config) (I:I) : S with module I = I
       let nsz sz =
         let n = MachSize.nbytes sz in
         if n < byte_sz then
-          Warn.fatal "Size mismatch %s bigger then %s\n"
+          Warn.fatal "Size mismatch %s bigger than %s\n"
             (MachSize.debug sz) (MachSize.debug byte) ;
         assert (n mod byte_sz = 0) ;
         n / byte_sz
@@ -325,6 +325,21 @@ module Make(C:Config) (I:I) : S with module I = I
             let ds = do_rec (k-1) w in
             d::ds in
         do_rec (nsz sz) v
+
+(*      let extract_bit sz v i =
+        let l = explode sz v in
+        List.nth l (i-1)
+
+      let extract_interval l i j =
+        let rec do_rec acc k =
+          match (k-i) with
+          | 0 -> acc
+          | _ -> do_rec ((List.nth l (k-1))::acc) (k-1)
+        in do_rec [] j
+
+      let extract_bit_interval sz v i j =
+        let l = explode sz v in
+        extract_interval l i j *)
 
       let rec recompose ds = match ds with
       | [] -> assert false

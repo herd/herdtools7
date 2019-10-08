@@ -50,6 +50,7 @@ type op1 =
   | AddK of int
   | AndK of string
   | Mask of MachSize.sz
+  | AddAllocTag
 
 val pp_op1 : bool -> op1 -> string
 

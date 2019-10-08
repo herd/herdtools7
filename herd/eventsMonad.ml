@@ -172,7 +172,7 @@ and type evt_struct = E.event_structure) =
         eiid,
         Evt.singleton (w,vlop::vlcloc@vclexp@vclrmem@vclwmem,es)
 
-(* Linux (successfull) compexchange *)
+(* Linux (successful) compexchange *)
     let linux_cmpexch_ok :
         'loc t -> 'v t -> 'v t -> ('loc -> 'v t) ->
           ('loc -> 'v -> unit t) -> ('v -> 'v -> unit t) -> 'v t =
@@ -501,7 +501,7 @@ and type evt_struct = E.event_structure) =
         { st with E.data_ports = st.E.events; }
       else st
 
-    let read_loc is_data mk_action  loc ii =
+    let read_loc is_data mk_action loc ii =
       fun eiid ->
         V.fold_over_vals
           (fun v (eiid1,acc_inner) ->
@@ -612,7 +612,7 @@ and type evt_struct = E.event_structure) =
 
 
 (**************)
-(* Mixd size  *)
+(* Mixed size *)
 (**************)
 
     module Scalar = V.Cst.Scalar
@@ -704,15 +704,45 @@ and type evt_struct = E.event_structure) =
                  E.iiid = Some ii;
                  E.action = mk_act A.byte (A.Location_global ea) v;} es)
             (eiid,E.EventSet.empty) eas vs in
-        let e_full =
-          { E.eiid=eiid; E.iiid = Some ii;
-            E.action = mk_act sz (A.Location_global a) v; } in
-        let st =
+         let st =
           { E.empty_event_structure with
             E.events = es;
-            E.sca = E.EventSetSet.singleton es;
-            E.mem_accesses = E.EventSet.singleton e_full;} in
-        eiid+1,Evt.singleton ((),a_eqs@v_eqs,st)
+            E.sca = E.EventSetSet.singleton es;} in
+        eiid,
+         Evt.singleton ((),a_eqs@v_eqs,st)
+
+(* Memory tagging *)
+
+   let last_byte = (8/A.byte_sz)-1 (* dernier octet, 7 pour A.byte = Byte *)
+
+   let write_PA_tag mk_act a v ii =
+     fun eiid ->
+        let a7 = V.fresh_var() in (* Pour l'addresse du dernier byte de a *)
+        let a7_eq = VC.Assign (a7,VC.Unop (Op.AddK (last_byte *A.byte_sz),a)) in
+          let eas,a_eqs = byte_eas A.byte a7
+          and vs,v_eqs = explode A.byte v in
+          let eiid,es =
+            List.fold_left2
+              (fun (eiid,es) ea v ->
+                eiid+1,
+                E.EventSet.add
+                  {E.eiid = eiid;
+                   E.iiid = Some ii;
+                   E.action = mk_act A.byte (A.Location_global ea) v;} es)
+              (eiid,E.EventSet.empty) eas vs in
+           let st =
+            { E.empty_event_structure with
+              E.events = es;
+              E.sca = E.EventSetSet.singleton es;} in
+          eiid,
+          Evt.singleton ((),a7_eq::a_eqs@v_eqs,st)
+
+   let get_alloc_tag a = op1 Op.AddAllocTag a
+   let get_alloc_tag_val mk_act a ii =
+            read_mixed false A.byte mk_act a ii
+
+   let set_tag mk_act a v ii =
+       write_mixed A.byte mk_act a v ii
 
 (* Add an inequality constraint *)
     let neqT : V.v -> V.v -> unit t
@@ -804,9 +834,10 @@ and type evt_struct = E.event_structure) =
         with
         | V.Undetermined -> assert false
 
-    let  mixed = C.variant Variant.Mixed
+    let mixed = C.variant Variant.Mixed
+    let memtag = C.variant Variant.MemTag
     let initwrites =
-      if mixed then initwrites_mixed else initwrites_non_mixed
+      if mixed || memtag then initwrites_mixed else initwrites_non_mixed
     let get_output =
       fun et ->
         let (_,es) = et 0 in

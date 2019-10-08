@@ -1310,7 +1310,7 @@ let solve_regs test es csn =
               match cs with
               | [] ->
                   if mixed then check_aligned test es ;
-                  if A.reject_mixed then check_sizes es ;
+                  (*if A.reject_mixed then check_sizes es ;*)
                   if C.debug.Debug_herd.solver && C.verbose > 0 then begin
                     let module PP = Pretty.Make(S) in
                     prerr_endline "Mem solved" ;

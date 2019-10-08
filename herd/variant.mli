@@ -28,7 +28,7 @@ type t =
   | LrScDiffOk      (* Lr/Sc paired to <> addresses may succeed (!) *)
   | Mixed           (* Mixed-Size *)
   | WeakPredicated (* "Weak" predicated instructions, not performing non-selected events, aarch64 *)
-
+  | MemTag           (* Memory Tagging *)
 val compare : t -> t -> int
 val tags : string list
 val parse : string -> t option

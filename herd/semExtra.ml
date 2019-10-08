@@ -28,7 +28,7 @@ end
 
 
 module type S = sig
-  module O : Config (* Options, for Sem consummer *)
+  module O : Config (* Options, for Sem consumer *)
   module A   : Arch_herd.S
   module E : Event.S with module A = A and module Act.A = A
   module M  : Monad.S
