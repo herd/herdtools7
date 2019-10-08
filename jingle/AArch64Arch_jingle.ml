@@ -226,4 +226,14 @@ include Arch.MakeArch(struct
     | I_DC (op,r) ->
         conv_reg r >! fun r -> I_DC (op,r)
     | I_MRS (r,sr) -> conv_reg r >! fun r -> I_MRS (r,sr)
+    | I_STG (r1,r2,kr) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        expl_kr kr >! fun kr ->
+        I_STG (r1,r2,kr)
+    | I_LDG (r1,r2,kr) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        expl_kr kr >! fun kr ->
+        I_LDG (r1,r2,kr)
 end)

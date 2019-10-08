@@ -623,6 +623,9 @@ module Make(V:Constant.S)(C:Config) =
           sprintf "mrs %s,%s" f (Misc.lowercase (pp_sysreg sr)) in
         {empty_ins with
          memo; outputs=r; reg_env=add_type quad r;}::k
+    | I_STG _|I_LDG _ ->
+        Warn.fatal "No litmus output for instruction %s"
+          (dump_instruction ins)
 
     let no_tr lbl = lbl
     let branch_neq r i lab k = cmpk V32 r i::bcc no_tr NE lab::k
