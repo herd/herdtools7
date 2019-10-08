@@ -41,6 +41,7 @@ module Make (C:Config) (A : A) : sig
 (* Atomic modify, (location,value read, value written, annotation *)
     | Amo of A.location * A.V.v * A.V.v * A.lannot * MachSize.sz
 (* NB: Amo used in some arch only (ie RISCV) *)
+    | Fault of A.inst_instance_id * A.location
 
   include Action.S with type action := action and module A = A
 
@@ -55,6 +56,7 @@ end = struct
     | Barrier of A.barrier
     | Commit of bool
     | Amo of A.location * A.V.v * A.V.v * A.lannot * MachSize.sz
+    | Fault of A.inst_instance_id * A.location
 
   let mk_init_write l sz v = Access(W,l,v,A.empty_annot,sz)
 
@@ -73,6 +75,11 @@ end = struct
         (A.pp_annot an)
         (A.pp_location loc) (MachSize.pp_short sz)
         (V.pp C.hexa v1) (V.pp C.hexa v2)
+  | Fault (ii,loc) ->
+      Printf.sprintf "Fault(proc:%s,poi:%s,loc:%s)"
+        (A.pp_proc ii.proc)
+        (A.pp_prog_order_index ii.program_order_index)
+        (A.pp_location loc)
 
 (* Utility functions to pick out components *)
   let value_of a = match a with
@@ -83,19 +90,20 @@ end = struct
   | Access (R,_,v,_,_)
   | Amo (_,v,_,_,_)
     -> Some v
-  | Access (W, _, _, _,_)|Barrier _|Commit _
+  | Access (W, _, _, _,_)|Barrier _|Commit _|Fault _
     -> None
 
   and written_of a = match a with
   | Access (W,_,v,_,_)
   | Amo (_,_,v,_,_)
     -> Some v
-  | Access (R, _, _, _,_)|Barrier _|Commit _
+  | Access (R, _, _, _,_)|Barrier _|Commit _|Fault _
     -> None
 
   let location_of a = match a with
   | Access (_, l, _,_,_)
   | Amo (l,_,_,_,_)
+  | Fault (_,l)
     -> Some l
   | Barrier _|Commit _ -> None
 
@@ -152,11 +160,11 @@ end = struct
 (* Store/Load anywhere *)
   let is_store a = match a with
   | Access (W,_,_,_,_)|Amo _ -> true
-  | Access (R,_,_,_,_)|Barrier _|Commit _ -> false
+  | Access (R,_,_,_,_)|Barrier _|Commit _|Fault _ -> false
 
   let is_load a = match a with
   | Access (R,_,_,_,_)|Amo _ -> true
-  | Access (W,_,_,_,_)|Barrier _|Commit _ -> false
+  | Access (W,_,_,_,_)|Barrier _|Commit _|Fault _ -> false
 
 
   let is_reg_any a = match a with
@@ -237,7 +245,7 @@ end = struct
         | None -> V.ValueSet.empty
         | Some v -> V.ValueSet.singleton v in
         add_v_undet v1 (add_v_undet v2 undet)
-    | Barrier _|Commit _ -> V.ValueSet.empty
+   | Barrier _|Commit _|Fault _ -> V.ValueSet.empty
 
   let simplify_vars_in_action soln a =
     match a with
@@ -250,6 +258,9 @@ end = struct
         let v1 = V.simplify_var soln v1 in
         let v2 = V.simplify_var soln v2 in
         Amo (loc,v1,v2,an,sz)
+    | Fault (ii,loc) ->
+        let loc = A.simplify_vars_in_loc soln loc in
+        Fault(ii,loc)
     | Barrier _ | Commit _ -> a
 
   let annot_in_list _str _ac = false
