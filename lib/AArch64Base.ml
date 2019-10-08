@@ -38,6 +38,7 @@ type gpr =
 type reg =
   | ZR
   | Ireg of gpr
+  | Tag of gpr
   | Symbolic_reg of string
   | Internal of int
   | NZP
@@ -514,6 +515,14 @@ let do_pp_instruction m =
       pp_xreg r2 ^ pp_kr true kr
   | V32,RV (V64,_) -> assert false in
 
+  let pp_stg memo rt rn k =
+    pp_memo memo ^ " " ^ pp_xreg rt ^
+    ",[" ^ pp_xreg rn ^ pp_kr true k ^ "]" in
+
+  let pp_ldg memo rt rn k =
+    pp_memo memo ^ " " ^ pp_xreg rt ^
+    ",[" ^ pp_xreg rn ^ pp_kr true k ^ "]" in
+
   let pp_stxr memo v r1 r2 r3 =
     pp_memo memo ^ " " ^
     pp_wreg r1 ^"," ^
@@ -661,7 +670,7 @@ let fold_regs (f_regs,f_sregs) =
   let fold_reg reg (y_reg,y_sreg) = match reg with
   | Ireg _ -> f_regs reg y_reg,y_sreg
   | Symbolic_reg reg ->  y_reg,f_sregs reg y_sreg
-  | Internal _ | NZP | ZR | ResAddr -> y_reg,y_sreg in
+  | Internal _ | NZP | ZR | ResAddr | Tag _ -> y_reg,y_sreg in
 
   let fold_kr kr y = match kr with
   | K _ -> y
@@ -703,7 +712,7 @@ let map_regs f_reg f_symb =
   let map_reg reg = match reg with
   | Ireg _ -> f_reg reg
   | Symbolic_reg reg -> f_symb reg
-  | Internal _ | ZR | NZP | ResAddr -> reg in
+  | Internal _ | ZR | NZP | ResAddr | Tag _-> reg in
 
   let map_kr kr = match kr with
   | K _ -> kr

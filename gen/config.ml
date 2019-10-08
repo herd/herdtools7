@@ -48,6 +48,7 @@ let optcoherence = ref false
 let bell = ref None
 let scope = ref Scope.No
 let variant = ref (fun (_:Variant_gen.t) -> false)
+let mtags = ref false
 
 type do_observers =
   | Avoid   (* was false *)
