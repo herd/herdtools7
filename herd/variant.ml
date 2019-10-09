@@ -33,7 +33,7 @@ type t =
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
    "fullscdepend";"splittedrmw";"switchdepscwrite";"lrscdiffok";
-   "mixed";"weakpredicated";  ]
+   "mixed";"weakpredicated"; "memtag"; ]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
