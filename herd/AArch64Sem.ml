@@ -63,6 +63,7 @@ module Make (C:Sem.Config)(V:Value.S)
     let add_variant v a = (a,tr_variant v)
 
     let mk_read sz an loc v = Act.Access (Dir.R, loc, v, an, sz)
+    let mk_fault ii loc = Act.Fault (ii,loc)
 
     let read_loc v is_data = M.read_loc is_data (mk_read v AArch64.N)
 
@@ -99,39 +100,49 @@ module Make (C:Sem.Config)(V:Value.S)
 
     let write_reg r v ii = write_loc MachSize.Quad AArch64.N (A.Location_reg (ii.A.proc,r)) v ii
 
-    let get_pa_tag_val rs ii =
-      let open AArch64Base in
-      match rs with
-      | ZR -> M.unitT V.zero
-      | Ireg rs ->
-          let patag = AArch64Base.Tag rs in
-          M.read_loc true
-            (mk_read MachSize.Byte AArch64.T)
-            (A.Location_reg (ii.A.proc,patag))
-            ii
-      | _ ->
-          Warn.fatal
-            "Attempt to extract tag from register: %s" (pp_reg rs)
+     let read_pa_tag rs ii =
+       match rs with
+       | AArch64Base.ZR -> M.unitT V.zero
+       | AArch64Base.Ireg rs ->
+         let patag = AArch64Base.Tag rs in
+         M.read_loc true (mk_read MachSize.Byte AArch64.T) (A.Location_reg (ii.A.proc,patag)) ii
+       | _ -> assert false
 
-    let do_check sz a rs ii =
-      (get_pa_tag_val rs ii)
-        >>|
-        (M.get_alloc_tag_val (fun sz -> mk_read sz AArch64.T) a ii)
-          >>= fun (v1,v2) -> M.op Op.Eq v1 v2
+     let read_alloc_tag a ii =
+       (M.get_alloc_tag a) >>=
+       (fun atag -> M.get_alloc_tag_val (fun sz -> mk_read sz AArch64.T) atag ii)
 
-    let do_checked_read sz an rd rs a ii =
-      do_check sz a rs ii
-        >>= fun cond -> commit ii
-            >>= fun () -> M.choiceT cond
-                (M.read_mixed false sz (fun sz -> mk_read sz an) a ii
-                   >>= (fun v -> write_reg rd v ii))
-                (M.unitT ())
+     let get_both_tags a rs ii =
+       (read_pa_tag rs ii)
+       >>|
+       (read_alloc_tag a ii)
+
+     let do_check atag patag =
+       M.op Op.Eq patag atag
+
+     let mixed_read sz an rd a ii =
+       M.read_mixed false sz (fun sz -> mk_read sz an) a ii
+              >>= (fun v -> write_reg rd v ii)
+
+     let continuation_read sz an rd a ii cond =
+        M.choiceT cond
+               (mixed_read sz an rd a ii)
+               (M.mk_singleton_es (mk_fault ii (A.Location_global a)) ii)
+(*old:     let continuation_read sz an rd a ii cond =
+        M.choiceT cond
+               (mixed_read sz an rd a ii)
+               (M.unitT ())
+*)
+     let do_checked_read sz an rd rs a ii =
+       get_both_tags a rs ii >>= fun (atag,patag) ->
+       do_check atag patag >>= fun cond -> commit ii
+       >>= fun _ ->
+       continuation_read sz an rd a ii cond
 
     let do_read_mem sz an a ii =
       if mixed then
         M.read_mixed false sz (fun sz -> mk_read sz an) a ii
       else
-        (*let a = A.Location_global a in*)
         M.read_loc false (mk_read sz an) (A.Location_global a) ii
 
     let read_mem sz a ii = do_read_mem sz AArch64.N a ii
@@ -148,11 +159,21 @@ module Make (C:Sem.Config)(V:Value.S)
     let checked_read_mem_atomic_acquire sz a ii = do_checked_read sz AArch64.XA a ii
 
     let do_checked_write sz an a rd v ii =
-      do_check sz a rd ii
-        >>= fun cond -> commit ii
-            >>= fun () -> M.choiceT cond
-                (M.write_mixed sz (fun sz -> mk_write sz an) a v ii)
-                (M.unitT ())
+      get_both_tags a rd ii >>= fun (atag,patag) ->
+      do_check atag patag >>= fun cond -> commit ii
+      >>= fun _ -> M.choiceT cond
+           (M.write_mixed sz (fun sz -> mk_write sz an) a v ii
+            >>= fun _ -> M.unitT ())
+               (M.mk_singleton_es (mk_fault ii (A.Location_global a)) ii)
+
+(*old:    let do_checked_write sz an a rd v ii =
+      get_both_tags a rd ii >>= fun (atag,patag) ->
+      do_check atag patag >>= fun cond -> commit ii
+      >>= fun _ -> M.choiceT cond
+           (M.write_mixed sz (fun sz -> mk_write sz an) a v ii
+            >>= fun _ -> M.unitT ())
+           (M.unitT ())
+*)
 
     let do_write_mem sz an a v ii =
       if mixed then M.write_mixed sz (fun sz -> mk_write sz an) a v ii
