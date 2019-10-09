@@ -46,12 +46,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
 
     let next_init st p init loc =
       let rec find_rec = function
-        | (Reg (p0,r0),loc0)::_ when loc0 = loc && p = p0 ->
+        | (Reg (p0,r0),Some loc0)::_ when loc0 = loc && p = p0 ->
             r0,init,st
         | _::rem -> find_rec rem
         | [] ->
             let r,st = next_reg st in
-            r,(Reg (p,r),loc)::init,st in
+            r,(Reg (p,r),Some loc)::init,st in
       find_rec init
 
 
@@ -59,7 +59,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
     | 0 -> zero,init,st
     | _ ->
         let r,st = next_reg st in
-        r,(Reg (p,r),Printf.sprintf "0x%x" v)::init,st
+        r,(Reg (p,r),Some (Printf.sprintf "0x%x" v))::init,st
 
 
 (**********************)

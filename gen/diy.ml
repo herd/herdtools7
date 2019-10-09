@@ -241,7 +241,6 @@ let () =
     let docheck = !Config.docheck
     let typ = !Config.typ
     let hexa = !Config.hexa
-    let mtags = !Config.mtags
  end in
   let module C = struct
     let verbose = !Config.verbose

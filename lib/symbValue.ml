@@ -100,7 +100,7 @@ module Make(Cst:Constant.S) = struct
   | Var _ -> raise  Undetermined
 
   let atagop v1 = match v1 with
-  | Val (Symbolic (s,i)) -> Val (Symbolic (s ^ ".atag",i))
+  | Val (Symbolic (s,i)) -> Val (Symbolic (Misc.add_atag s,i))
   | Val (Concrete _) -> Warn.user_error "Illegal operation on tags"
   | Var _ | Val (Label (_,_)) -> raise Undetermined
 

@@ -40,7 +40,7 @@ module type S = sig
 
   module LocMap : MyMap.S with type key = location
 (* Initial states *)
-  type init = (location * string) list
+  type init = (location * string option) list
 
 (***********************)
 (* Register allocation *)
@@ -93,7 +93,7 @@ module Make(I:I) : S with type arch_reg = I.arch_reg
   let of_loc loc = Loc (Code.as_data loc)
   let of_reg p r = Reg (p,r)
 
-  type init = (location * string) list
+  type init = (location * string option) list
 
   type st = arch_reg list * arch_reg StringMap.t * int
 

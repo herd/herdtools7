@@ -24,6 +24,8 @@ type t =
   | FullMixed
 (* Self-modifying code *)
   | Self
+(* MTE = Memory tagging *)
+  | MemTag
 
 val tags : string list
 

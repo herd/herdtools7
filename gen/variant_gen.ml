@@ -24,8 +24,10 @@ type t =
   | FullMixed
 (* Self-modifying code *)
   | Self
+(* MTE = Memory tagging *)
+  | MemTag
 
-let tags = ["AsAmo";"ConstsInInit";"Mixed";"FullMixed";"Self"]
+let tags = ["AsAmo";"ConstsInInit";"Mixed";"FullMixed";"Self"; "MemTag"; ]
 
 let parse tag = match Misc.lowercase tag with
 | "asamo" -> Some AsAmo
@@ -33,6 +35,7 @@ let parse tag = match Misc.lowercase tag with
 | "mixed" -> Some Mixed
 | "fullmixed" -> Some FullMixed
 | "self" -> Some Self
+| "memtag" -> Some MemTag
 | _ -> None
 
 let pp = function
@@ -41,3 +44,4 @@ let pp = function
   | Mixed -> "Mixed"
   | FullMixed -> "FullMixed"
   | Self -> "Self"
+  | MemTag -> "MemTag"

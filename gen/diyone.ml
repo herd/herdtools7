@@ -215,7 +215,6 @@ let () =
     let neg = !Config.neg
     let typ = !Config.typ
     let hexa = !Config.hexa
-    let mtags = !Config.mtags
 (* Specific *)
     let norm = !norm
     let cpp = cpp

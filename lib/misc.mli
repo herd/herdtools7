@@ -236,3 +236,9 @@ end
 (*************)
 
 val clean_name : string -> string
+
+(******************)
+(* Building names *)
+(******************)
+
+val add_atag : string -> string

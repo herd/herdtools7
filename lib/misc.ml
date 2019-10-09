@@ -660,7 +660,7 @@ module Simple = struct
 
 end
 
-    (*************)
+(*************)
 (* Test name *)
 (*************)
 
@@ -669,3 +669,9 @@ let clean_name n =
     Filename.chop_suffix n ".litmus"
   else
     n
+
+(*************)
+(* Test name *)
+(*************)
+
+let add_atag = sprintf "%s.atag"

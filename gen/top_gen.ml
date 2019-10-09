@@ -37,7 +37,6 @@ module type Config = sig
   val typ : TypBase.t
   val hexa : bool
   val variant : Variant_gen.t -> bool
-  val mtags : bool
 end
 
 module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S
@@ -62,7 +61,7 @@ module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S
 
   let add_init_check chk p o init =
     match chk,o with
-    | true,Some r -> (A.Reg (p,r),"-1")::init
+    | true,Some r -> (A.Reg (p,r),Some "-1")::init
     | _,_ -> init
 
   type test =
@@ -322,18 +321,18 @@ let max_set =
   if O.coherence_decreasing then IntSet.min_elt
   else IntSet.max_elt
 
-let min_max xs =
-  let ps = List.map (fun x -> min_set x, max_set x) xs in
-  match ps with
-  | []|[_] -> []
-  | (_,x)::rem ->
-      let rec remove_last = function
-        | [] -> assert false
-        | [x,_] -> [x]
-        | (x,y)::rem ->
-            if x=y then x::remove_last rem
-            else x::y::remove_last rem in
-      List.map IntSet.singleton (x::remove_last rem)
+  let min_max xs =
+    let ps = List.map (fun x -> min_set x, max_set x) xs in
+    match ps with
+    | []|[_] -> []
+    | (_,x)::rem ->
+        let rec remove_last = function
+          | [] -> assert false
+          | [x,_] -> [x]
+          | (x,y)::rem ->
+              if x=y then x::remove_last rem
+              else x::y::remove_last rem in
+        List.map IntSet.singleton (x::remove_last rem)
 
 
 
@@ -401,8 +400,8 @@ let min_max xs =
 
   let rec check_rec ats p i =
     let add_look_loc loc v k =
-        if (not (StringSet.mem loc ats) && O.optcond) then k
-        else (A.Loc loc,IntSet.singleton v)::k in
+      if (not (StringSet.mem loc ats) && O.optcond) then k
+      else (A.Loc loc,IntSet.singleton v)::k in
     let open Config in
     function
       | [] -> i,[],[]
@@ -433,26 +432,26 @@ let min_max xs =
               | _ ->
                   let vs_flat = List.flatten vs in
                   let v,_ = Misc.last vs_flat in
-              begin match O.do_observers with
-              | Local -> i,[],add_look_loc x v []
-              | Three ->
-                  begin match vs_flat with
-                  | _x1::_x2::_x3::_x4::_ ->
-                      Warn.fatal "More than three writes"
-                  | _ -> i,[],[A.Loc x,IntSet.singleton v]
+                  begin match O.do_observers with
+                  | Local -> i,[],add_look_loc x v []
+                  | Three ->
+                      begin match vs_flat with
+                      | _x1::_x2::_x3::_x4::_ ->
+                          Warn.fatal "More than three writes"
+                      | _ -> i,[],[A.Loc x,IntSet.singleton v]
+                      end
+                  |Four ->
+                      begin match vs_flat with
+                      | _x1::_x2::_x3::_x4::_x5::_ ->
+                          Warn.fatal "More than four writes"
+                      | _ -> i,[],[A.Loc x,IntSet.singleton v]
+                      end
+                  | Infinity ->
+                      i,[],[A.Loc x,IntSet.singleton v]
+                  | _ ->
+                      let i,c,f = build_observers p i x vs in
+                      i,c,add_look_loc x v f
                   end
-              |Four ->
-                  begin match vs_flat with
-                  | _x1::_x2::_x3::_x4::_x5::_ ->
-                      Warn.fatal "More than four writes"
-                  | _ -> i,[],[A.Loc x,IntSet.singleton v]
-                  end
-              | Infinity ->
-                  i,[],[A.Loc x,IntSet.singleton v]
-              | _ ->
-                  let i,c,f = build_observers p i x vs in
-                  i,c,add_look_loc x v f
-              end
           end in
           let i,cs,fs =
             check_rec ats (p+List.length c) i xvs in
@@ -510,13 +509,13 @@ let min_max xs =
 (* Compile cycle, ie generate test proper *)
 (******************************************)
   let list_of_init_ok_locs p lab =
-      let rec do_rec i k =
-        match i with
-        | 0 -> k
-        | n -> let k' = (A.Loc (as_data (Code.myok p (n-1))))::k
-               in do_rec (i-1) k'
-      in
-      do_rec lab []
+    let rec do_rec i k =
+      match i with
+      | 0 -> k
+      | n -> let k' = (A.Loc (as_data (Code.myok p (n-1))))::k
+      in do_rec (i-1) k'
+    in
+    do_rec lab []
 
   let gather_final_oks p lab =
     let oks = list_of_init_ok_locs p lab in
@@ -524,10 +523,12 @@ let min_max xs =
       match oks with
       | [] -> k
       | ok::oks -> let k' = (ok,IntSet.singleton 1)::k
-                   in do_rec oks k'
+      in do_rec oks k'
     in do_rec oks []
 
- let compile_cycle ok n =
+  let do_memtag = O.variant Variant_gen.MemTag
+
+  let compile_cycle ok n =
     let open Config in
     Label.reset () ;
     let splitted =  C.split_procs n in
@@ -581,10 +582,12 @@ let min_max xs =
               let i,cs,(m,fs),ios = do_rec (List.length obsc) i splitted in
               if
                 List.exists
-                  (fun (_,loc) -> (loc:string) = Code.ok_str)
+                  (function
+                    | (_,Some loc) -> (loc:string) = Code.ok_str
+                    | (_,None) -> false)
                   i
               then
-                (A.Loc Code.ok_str,"1")::i,obsc@cs,
+                (A.Loc Code.ok_str,Some "1")::i,obsc@cs,
                 (m,(A.Loc Code.ok_str,IntSet.singleton 1)::f@fs),ios
               else
                 i,obsc@cs,(m,f@fs),ios
@@ -594,10 +597,17 @@ let min_max xs =
           List.fold_left
             (fun m (loc,_) -> A.LocMap.add loc O.typ m)
             A.LocMap.empty f in
+        let globals = C.get_globals n in
         let env =
           List.fold_left
             (fun m loc -> A.LocMap.add (A.Loc loc) O.typ m)
-            env (C.get_globals n) in
+            env globals in
+        let i =
+          if do_memtag then
+            List.fold_right
+              (fun  x i -> (A.Loc (Misc.add_atag x),None)::i)
+              globals i
+          else i in
         let f =
           match O.cond with
           | Unicond ->
@@ -651,10 +661,10 @@ let dump_init chan inits env =
     | (left,loc)::rem ->
         let p = get_proc left in
         if p <> q then fprintf chan "\n" else fprintf chan " " ;
-        fprintf chan "%s=%s;" (A.pp_location left) loc ;
-        if !Config.mtags then
-          if not(List.exists (fun (a,b) -> b=loc) rem)
-          then fprintf chan " %s.atag;" loc ;
+        fprintf chan "%s%s;" (A.pp_location left)
+          (match loc with
+          | Some loc -> sprintf "=%s" loc
+          | None -> "") ;
         p_rec p rem in
   p_rec (-1) inits
 
@@ -717,14 +727,18 @@ let fmt_cols =
 
 let tr_labs m env =
   List.map
-    (fun (loc,v) ->
-      let v =
-        try
-          let p = StringMap.find v m in
-          sprintf "%s:%s" (pp_proc p) v
-        with Not_found -> v in
-      (loc,v))
+    (fun bd -> match bd with
+      | (loc,Some v) ->
+          begin try
+            let v =
+              let p = StringMap.find v m in
+              sprintf "%s:%s" (pp_proc p) v in
+            loc,Some v
+          with Not_found -> bd
+          end
+      | (_,None) as bd -> bd)
     env
+
 let do_self =  O.variant Variant_gen.Self
 
 let test_of_cycle name

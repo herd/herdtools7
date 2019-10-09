@@ -48,7 +48,6 @@ let optcoherence = ref false
 let bell = ref None
 let scope = ref Scope.No
 let variant = ref (fun (_:Variant_gen.t) -> false)
-let mtags = ref false
 
 type do_observers =
   | Avoid   (* was false *)
@@ -166,8 +165,6 @@ let common_specs =
    ("-hexa", Arg.Unit (fun () -> hexa := true),"hexadecimal output")::
    ("-o", Arg.String (fun s -> tarfile := Some s),
     "<name.tar> output litmus tests in archive <name.tar> (default, output in curent directory)")::
-  ("-mtags", Arg.Bool (fun b ->  mtags := b),
-   sprintf "<bool> initialise tags (default %b)" !mtags)::
    ("-c", Arg.Bool (fun b ->  canonical_only := b),
    sprintf "<b> avoid equivalent cycles (default %b)" !canonical_only)::
   ("-list",

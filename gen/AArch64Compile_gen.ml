@@ -540,7 +540,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let loc_ok = Code.as_data (Code.myok p n) in
       let init,cs,st =
         STR.emit_store st p init loc_ok 0 in
-      (A.Loc loc_ok,"1")::init,
+      (A.Loc loc_ok,Some "1")::init,
       Instruction (get_xload ar rR rA)::
       Instruction (get_xstore aw r rW rA)::
       Instruction (cbnz r (Label.fail p n))::

@@ -39,7 +39,7 @@ module Make(Cfg:Config)(A:Arch_gen.S)
 
        let next_init st p init loc =
          let rec find_rec = function
-           | (Reg (p0,r0),loc0)::_ when loc0 = loc && p = p0 ->
+           | (Reg (p0,r0),Some loc0)::_ when loc0 = loc && p = p0 ->
                r0,init,st
            | _::rem -> find_rec rem
            | [] ->
@@ -47,12 +47,12 @@ module Make(Cfg:Config)(A:Arch_gen.S)
                  if Extra.use_symbolic then
                    A.symb_reg (Printf.sprintf "%s%i" loc p),st
                  else A.alloc_reg st in
-               r,(Reg (p,r),loc)::init,st in
+               r,(Reg (p,r),Some loc)::init,st in
          find_rec init
 
        let find_init p init loc =
          let rec find_rec = function
-           | (Reg (p0,r0),loc0)::_ when loc0 = loc && p = p0 ->
+           | (Reg (p0,r0),Some loc0)::_ when loc0 = loc && p = p0 ->
                r0
            | _::rem -> find_rec rem
            | [] -> raise Not_found in
@@ -61,12 +61,12 @@ module Make(Cfg:Config)(A:Arch_gen.S)
        let next_const st p init k =
 
          let rec find_rec = function
-           | (Reg (p0,r0),k0)::_ when k0 = k && p = p0 ->
+           | (Reg (p0,r0),Some k0)::_ when k0 = k && p = p0 ->
                r0,init,st
            | _::rem -> find_rec rem
            | [] ->
                let r,st = A.alloc_reg st in
-               r,(Reg (p,r),k)::init,st in
+               r,(Reg (p,r),Some k)::init,st in
          find_rec init
 
        let allow_consts_in_code =
