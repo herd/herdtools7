@@ -36,7 +36,6 @@ module type Config = sig
   val typ : TypBase.t
   val hexa : bool
   val variant : Variant_gen.t -> bool
-  val mtags : bool
 end
 
 module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S
