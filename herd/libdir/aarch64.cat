@@ -5,7 +5,7 @@
  * the latest stable version of the Armv8 memory model.
  * If you have comments on the content of this file, please send an email to
  * jade.alglave@arm.com, referring to version number:
- * 09aed6e817fe911d1c93ed0390f59e1037fc7dda 
+ * 01605f9fad63242400f8e49391eafc7470da40bf
  *
  * For a textual version of the model, see section B2.3 of the Armv8 ARM:
  *   https://developer.arm.com/docs/ddi0487/latest/arm-architecture-reference-manual-armv8-for-armv8-a-architecture-profile
@@ -83,6 +83,12 @@ flag ~empty (dmb.full | dmb.ld | dmb.st) \
 
 (* Coherence-after *)
 let ca = fr | co
+
+(* Properties of single-copy atomic accesses *)
+let si = sm 
+show (sm \ id) \ (I * I) as si
+irreflexive co;si;co;si as sca1
+irreflexive rf;si;fr;si as sca2
 
 (* Observed-by *)
 let obs = rfe | fre | coe
