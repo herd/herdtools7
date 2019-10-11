@@ -134,6 +134,10 @@ module Make (C:Sem.Config)(V:Value.S)
     let is_zero v = M.op Op.Eq v V.zero
     let is_not_zero v = M.op Op.Ne v V.zero
 
+    let tr_cond = function
+      | AArch64.NE -> is_zero
+      | AArch64.EQ -> is_not_zero
+
     let csel_op op v =
       let open AArch64Base in  match op with
       | Cpy -> M.unitT v
@@ -283,12 +287,8 @@ module Make (C:Sem.Config)(V:Value.S)
           B.branchT l
 
       | I_BC(c,l)->
-          let cond = match c with
-          | NE -> is_zero
-          | EQ -> is_not_zero
-          in
           (read_reg_ord NZP ii)
-            >>= cond
+            >>= tr_cond c
             >>= fun v -> commit ii
                 >>= fun () -> B.bccT v l
 
@@ -395,11 +395,8 @@ module Make (C:Sem.Config)(V:Value.S)
             (* Conditional selection *)
       | I_CSEL (var,r1,r2,r3,c,op) ->
           let sz = tr_variant var in
-          let cond = match c with
-          | NE -> is_not_zero
-          | EQ -> is_zero in
           if C.variant Variant.WeakPredicated then
-            read_reg_ord NZP ii >>= cond >>= fun v ->
+            read_reg_ord NZP ii >>= tr_cond c >>= fun v ->
               M.choiceT v
                 (read_reg_data sz r2 ii >>= fun v -> write_reg r1 v ii)
                 (read_reg_data sz r3 ii >>=
@@ -407,7 +404,7 @@ module Make (C:Sem.Config)(V:Value.S)
                 >>! B.Next
           else
             begin
-             (read_reg_ord NZP ii >>= cond) >>|  read_reg_data sz r2 ii >>| read_reg_data sz r3 ii
+             (read_reg_ord NZP ii >>= tr_cond c) >>|  read_reg_data sz r2 ii >>| read_reg_data sz r3 ii
             end >>= fun ((v,v2),v3) ->
               M.choiceT v
                 (write_reg r1 v2 ii)
