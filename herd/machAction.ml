@@ -77,8 +77,8 @@ end = struct
         (V.pp C.hexa v1) (V.pp C.hexa v2)
   | Fault (ii,loc) ->
       Printf.sprintf "Fault(proc:%s,poi:%s,loc:%s)"
-        (A.pp_proc ii.proc)
-        (A.pp_prog_order_index ii.program_order_index)
+        (A.pp_proc ii.A.proc)
+        (A.pp_prog_order_index ii.A.program_order_index)
         (A.pp_location loc)
 
 (* Utility functions to pick out components *)
