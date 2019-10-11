@@ -85,7 +85,7 @@ flag ~empty (dmb.full | dmb.ld | dmb.st) \
 let ca = fr | co
 
 (* Local read successor *)
-let lrs = [W]; po-loc \ intervening-write(po-loc); [R]
+let lrs = [W]; (po-loc \ (po-loc;[W];po-loc)) ; [R]
 
 (* Local write successor *)
 let lws = po-loc; [W]
