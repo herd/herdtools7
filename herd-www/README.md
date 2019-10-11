@@ -29,7 +29,7 @@ Will install a working system in sub-directory www. It remains to
 copy www to its final destination, e.g.
 
 ```
-% rsync -av www $HOME/diy/public_html
+% rsync -av www $HOME/public_html/diy
 ```
 
 Credits
