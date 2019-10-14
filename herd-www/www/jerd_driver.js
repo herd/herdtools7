@@ -1,6 +1,7 @@
 var debug;
 var editors;
 var currentState;
+var dotcom = 'neato';
 
 function initCurrentState() {
     debug = false;
@@ -849,7 +850,7 @@ function display_dot(i, dot) {
             // TODO: the quiet, it does nothing!
             options.push('-q');
         }
-        svg_elem = Viz(dot, "svg", "neato", options);
+        svg_elem = Viz(dot, "svg", dotcom, options);
     } catch(e) {
         log('failed to load dot' + i.toString() + ': ' + dot);
     }
@@ -902,6 +903,7 @@ function herd_output(s) {
     var end_dot = s.match(/^DOTEND /);
     var digraph = s.match(/^digraph /);
     var start_dot = s.match(/^DOTBEGIN /);
+    var com_dot = s.match(/^DOTCOM /);
 
     if (end_dot !== null) {
         log('end of dot processing')
@@ -911,6 +913,10 @@ function herd_output(s) {
         log('start of dot processing')
         push_current_dot();
         current_dot = '';
+    } else if (com_dot != null) {
+        dotcom =  s.split(' ').pop().split('\n').shift();
+        console.log('dotcom is <' + dotcom + '>')
+        
     } else if (digraph !== null) {
         log('new digraph')
         push_current_dot()
@@ -1104,7 +1110,7 @@ function saveCurrentES() {
     var carouselData = $('#dotCarousel').data('bs.carousel');
     var currentIndex = carouselData.getItemIndex(carouselData.$element.find('.item.active'));
     var currentDot = dot_outputs[currentIndex];
-    var svg = Viz(currentDot, "svg", "neato", options);
+    var svg = Viz(currentDot, "svg", dotcom, options);
     var blob = new Blob([svg], {type: "text/plain;charset=utf-8"});
     saveAs(blob, "es" + currentIndex.toString() + ".svg");
 }

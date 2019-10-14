@@ -20,6 +20,16 @@
 
 open Printf
 
+module Generator(O:PrettyConf.S) = struct
+  let generator = match O.dotcom with
+  | None ->
+      begin match O.graph with
+      | Graph.Columns -> "neato"
+      | Graph.Free|Graph.Cluster -> "dot"
+      end
+  | Some com -> PrettyConf.pp_dotcom com
+end
+
 module Make(O:PrettyConf.S) = struct
 
   module W = Warn.Make(O)
@@ -36,14 +46,8 @@ module Make(O:PrettyConf.S) = struct
       with Invalid_argument _ -> name_dot in
     base ^ ".ps"
              
-
-  let generator = match O.dotcom with
-  | None ->
-      begin match O.graph with
-      | Graph.Columns -> "neato"
-      | Graph.Free|Graph.Cluster -> "dot"
-      end
-  | Some com -> PrettyConf.pp_dotcom com
+  module G = Generator(O)
+  let generator = G.generator
 
   let do_show_file name_dot prog =    
     let name_ps = psfile name_dot in

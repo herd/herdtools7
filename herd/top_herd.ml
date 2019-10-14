@@ -167,6 +167,9 @@ module Make(O:Config)(M:XXXMem.S) =
       | PrettyConf.StdoutOutput ->
 	 let fname = Test_herd.basename test in
 	 fprintf stdout "\nDOTBEGIN %s\n" fname;
+	 fprintf stdout "DOTCOM %s\n"
+           (let module G = Show.Generator(PC) in
+           G.generator) ;
 	 Some (stdout, fname)
       | PrettyConf.Outputdir d ->
           let base = Test_herd.basename test in
