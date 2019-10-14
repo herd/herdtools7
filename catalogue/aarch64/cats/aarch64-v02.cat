@@ -84,11 +84,15 @@ flag ~empty (dmb.full | dmb.ld | dmb.st) \
 (* Coherence-after *)
 let ca = fr | co
 
+(* Local read successor *)
+let lrs = [W]; (po-loc \ (po-loc;[W];po-loc)) ; [R]
+
+(* Local write successor *)
+let lws = po-loc; [W]
+
 (* Properties of single-copy atomic accesses *)
 let si = sm 
 show (sm \ id) \ (I * I) as si
-irreflexive co;si;co;si as sca1
-irreflexive rf;si;fr;si as sca2
 
 (* Observed-by *)
 let obs = rfe | fre | coe
@@ -98,12 +102,11 @@ let dob = addr | data
 	| ctrl; [W]
 	| (ctrl | (addr; po)); [ISB]; po; [R]
 	| addr; po; [W]
-	| (ctrl | data); coi
-	| (addr | data); rfi
+	| (addr | data); lrs
 
 (* Atomic-ordered-before *)
 let aob = rmw
-	| [range(rmw)]; rfi; [A | Q]
+	| [range(rmw)]; lrs; [A | Q]
 
 (* Barrier-ordered-before *)
 let bob = po; ([dmb.full]|([A];amo;[L])); po
@@ -112,16 +115,16 @@ let bob = po; ([dmb.full]|([A];amo;[L])); po
 	| [A | Q]; po
 	| [W]; po; [dmb.st]; po; [W]
 	| po; [L]
-	| po; [L]; coi
 
 (* Locally-ordered-before *)
-let rec lob = dob
+let rec lob = lws; si
+            | dob
             | aob
             | bob
             | lob; lob
 
 (* Ordered-before *)
-let rec ob = obs
+let rec ob = obs; si
         | lob
 	| ob; ob
 
