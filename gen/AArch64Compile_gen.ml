@@ -61,7 +61,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     match Cfg.typ with
     | Std (_,MachSize.Quad) -> V64
     | Int |Std (_,MachSize.Word) -> V32
-    | t -> Warn.user_error "AArch64, illegal base type: %s" (pp t)
+    | Std (_,MachSize.(Short|Byte)) -> V32
+
 
     let sz2v =
       let open MachSize in
