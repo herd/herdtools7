@@ -1,0 +1,19 @@
+AArch64 MP+popl.w0-posl.w0q0+poa.w4p
+"PodWWPL.w0 PosWWL.w0q0 Rfeq0A.w4 PodRRA.w4P Fre"
+Generator=diyone7 (version 7.54+02(dev))
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=PodWWPL.w0 PosWWL.w0q0 Rfeq0A.w4 PodRRA.w4P Fre
+{
+uint64_t y; uint64_t x; uint64_t 1:X3; uint64_t 1:X0;
+
+0:X1=x; 0:X2=0x1010101; 0:X3=y; 0:X4=0x202020202020202;
+1:X1=y; 1:X4=x;
+}
+ P0           | P1           ;
+ MOV X0,#1    | ADD X2,X1,#4 ;
+ STR X0,[X1]  | LDAR W0,[X2] ;
+ STLR W2,[X3] | LDR X3,[X4]  ;
+ STR X4,[X3]  |              ;
+exists
+(y=0x202020202020202 /\ 1:X0=0x2020202 /\ 1:X3=0x0)

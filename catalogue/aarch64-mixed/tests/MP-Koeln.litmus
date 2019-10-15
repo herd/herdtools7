@@ -1,0 +1,18 @@
+AArch64 MP-Koeln
+"PodWWh0L.b0 PosWWL.b0h0 Rfeh0A.b1 PodRRA.b1h0 Freh0h0"
+Generator=diyone7 (version 7.54+02(dev))
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=PodWWh0L.b0 PosWWL.b0h0 Rfeh0A.b1 PodRRA.b1h0 Freh0h0
+{
+uint16_t y; uint16_t x; uint16_t 1:X3; uint16_t 1:X0;
+
+0:X0=0x101; 0:X1=x; 0:X2=0x1; 0:X3=y; 0:X4=0x202;
+1:X1=y; 1:X4=x;
+}
+ P0            | P1            ;
+ STRH W0,[X1]  | ADD X2,X1,#1  ;
+ STLRB W2,[X3] | LDARB W0,[X2] ;
+ STRH W4,[X3]  | LDRH W3,[X4]  ;
+exists
+(y=0x202 /\ 1:X0=0x2 /\ 1:X3=0x0)

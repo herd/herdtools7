@@ -1,0 +1,13 @@
+AArch64 MP+HAmo+BAcqAmo
+{
+uint16_t x; uint16_t 1:X2; uint16_t 1:X0;
+
+0:X0=0x0101; 0:X1=x;
+1:X1=x; 1:X4=0x0202;
+}
+ P0              | P1               ;
+ SWPH W0,W4,[X1] | SWPAB W4,W0,[X1] ;
+                 | LDRB W2,[X1,#1]  ;
+
+locations [x;]
+exists (1:X0=0x1 /\ 1:X2=0x0)
