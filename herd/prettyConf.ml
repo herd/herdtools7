@@ -125,6 +125,8 @@ module type S = sig
   val scale : float
   val xscale : float
   val yscale : float
+  val dsiy : float
+  val siwidth : float
   val boxscale : float
   val squished : bool
   val graph : Graph.t

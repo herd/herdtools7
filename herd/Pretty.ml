@@ -399,8 +399,82 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
     let max = max +. shift_max in
     let rs = List.mapi (fun k es -> k,es) rs in
     let env = List.fold_left (make_posy max) E.EventMap.empty rs in
-    max,env
+    max,env,E.EventMap.empty
 
+  let debug_event_set chan s =
+    output_char chan '{' ;
+    E.EventSet.pp chan ","  (fun chan e -> fprintf chan "%s" (E.pp_eiid e)) s;
+    output_char chan '}'
+
+
+  let pp_by_proc_and_poi chan s =
+    List.iteri
+      (fun i ess ->
+        fprintf chan "P%i:" i ;
+        List.iter (fun es -> fprintf stderr " %a" debug_event_set es) ess ;
+        eprintf "\n")
+      s ;
+    flush stderr
+      
+  let make_posy_mult y env (p,ess) =
+    let s = get_shift p in
+    let rec do_make_posy y env = function
+      | [] -> env
+      | es::ess ->
+          let env =
+            E.EventSet.fold
+              (fun e env -> E.EventMap.add e y env)
+               es env in
+          do_make_posy (y -. 1.0) env ess in
+    do_make_posy (y -. s) env ess
+
+  let dsiy = PC.dsiy
+  let siwidth = PC.siwidth
+
+  let order_events_mult _es by_proc_and_poi =
+    if dbg then
+      pp_by_proc_and_poi stderr by_proc_and_poi ;
+    let max =
+      List.fold_left
+        (fun n es -> max n (List.length es)) 0 by_proc_and_poi in
+    let max = max-1 in
+    let max = float_of_int max in
+    let max = max +. shift_max in
+    if dbg then eprintf "max=%.02f\n%!" max ;
+    let ps = List.mapi (fun k es -> k,es) by_proc_and_poi in
+    let envy = List.fold_left (make_posy_mult max) E.EventMap.empty ps in
+    let envx,envy =
+      List.fold_left
+        (fun envp (k,ess) ->
+          let kf = float_of_int k in
+          List.fold_left
+            (fun (envx,envy as envp) es ->
+              let n = E.EventSet.cardinal es in
+              match n with
+              | 1 ->
+                  E.EventSet.fold
+                    (fun e env -> E.EventMap.add e kf env)
+                    es envx,envy
+              | n ->
+                  assert (n > 1) ;
+                  let nf = float_of_int n in
+                  let delta = siwidth /. (nf -. 1.0) in
+                  let _,envp =
+                    E.EventSet.fold
+                      (fun e ((dx,dy),(envx,envy)) ->
+                        let envx = E.EventMap.add e dx envx
+                        and envy =
+                          try
+                            let old = E.EventMap.find e envy in
+                            E.EventMap.add e (old +. dy) envy
+                          with Not_found -> envy in
+                      (dx +. delta,0.0 -. dy),(envx,envy))
+                      es ((kf -.0.5 +. (1.0 -. siwidth) *. 0.5,if k mod 2 = 0 then dsiy else -. dsiy),envp) in
+                  envp)
+            envp ess)
+        (E.EventMap.empty,envy) ps in
+    max,envy,envx
+            
 
 (*******************************)
 (* Build "visible" po relation *)
@@ -680,7 +754,8 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
       =
     try
       if StringSet.mem lbl PC.unshow then raise Exit ;
-      if StringSet.mem lbl PC.symetric then begin
+      let is_symetric = StringSet.mem lbl PC.symetric in
+      if is_symetric then begin
         if known_edge n1 n2 lbl then raise Exit ;
         record_edge_seen n1 n2 lbl
       end ;
@@ -688,7 +763,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
         do_merge_edge n1 n2 lbl def_color
       else
         real_do_pp_edge
-          chan n1 n2 lbl def_color override_style extra_attr backwards
+          chan n1 n2 lbl def_color override_style extra_attr (backwards && not is_symetric)
           movelbl
     with Exit -> ()
 
@@ -751,7 +826,10 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
     let max_proc = Misc.last (E.procs_of es) in
     (* Collect events (1) by proc, then (2) by poi *)
     let events_by_proc_and_poi = PU.make_by_proc_and_poi es in
-    let maxy,envy =  order_events es events_by_proc_and_poi in
+    let maxy,envy,envx =
+      let mult = true in
+      if mult then order_events_mult es events_by_proc_and_poi
+      else order_events es events_by_proc_and_poi in
     let inits = E.mem_stores_init_of es.E.events in
     let n_inits = E.EventSet.cardinal inits in
     let init_envx =
@@ -793,6 +871,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
     let maxy =
       if E.EventSet.is_empty inits then maxy
       else maxy +. yinit in
+
     let get_proc e = match E.proc_of e with
     | Some p -> p
     | None -> (-1) in
@@ -803,8 +882,8 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
       if E.is_mem_store_init e then
         try E.EventMap.find e init_envx
         with Not_found -> assert false
-      else
-        float_of_int (get_posx_int e) in
+      else try E.EventMap.find e envx
+      with Not_found -> float_of_int (get_posx_int e) in
 
     let get_posy e =
       if E.is_mem_store_init e then maxy

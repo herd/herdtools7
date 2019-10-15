@@ -223,6 +223,8 @@ let handle_key main key arg = match key with
 | "scale" ->  lex_float PP.scale arg
 | "xscale" ->  lex_float PP.xscale arg
 | "yscale" ->  lex_float PP.yscale arg
+| "dsiy" -> lex_float PP.dsiy arg
+| "siwidth" -> lex_float PP.siwidth arg
 | "boxscale" ->  lex_float PP.boxscale arg
 | "ptscale" ->  lex_float PP.ptscale arg
 | "squished" ->  lex_bool PP.squished arg
