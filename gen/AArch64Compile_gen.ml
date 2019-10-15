@@ -109,7 +109,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let ldr_mixed r1 r2 sz o =
       let open MachSize in
       match sz with
-      | Byte -> I_LDRBH (B,r1,r2,K o)
+      | Byte -> I_LDRBH (B,r-1,r2,K o)
       | Short -> I_LDRBH (H,r1,r2,K o)
       | Word -> I_LDR (V32,r1,r2,K o)
       | Quad -> I_LDR (V64,r1,r2,K o)
