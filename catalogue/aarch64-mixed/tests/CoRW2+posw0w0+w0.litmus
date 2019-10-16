@@ -1,0 +1,20 @@
+AArch64 CoRW2+posw0w0+w0
+"Rfew0w0 PosRWw0w0 Wsew0w0"
+Cycle=Rfew0w0 PosRWw0w0 Wsew0w0
+Relax=
+Safe=Rfew0P Wsew0P PosRWw0P
+Prefetch=
+Com=Rf Ws
+Orig=Rfew0w0 PosRWw0w0 Wsew0w0
+{
+uint64_t x; uint64_t 1:X3; uint64_t 1:X0;
+
+0:X0=0x1010101; 0:X1=x;
+1:X1=x; 1:X2=0x2020202;
+}
+ P0          | P1          ;
+ STR W0,[X1] | LDR W0,[X1] ;
+             | STR W2,[X1] ;
+             | LDR X3,[X1] ;
+exists(1:X0=0 /\ 1:X3=16843009 /\ x=16843009)
+(*locations [x;1:X3;1:X0;]*)

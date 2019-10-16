@@ -1,0 +1,20 @@
+AArch64 MP+dmb.syb0b1+datab1b1-rfib1h0
+"DMB.SYdWWb0b1 Rfeb1b1 DpDatadWb1b1 Rfib1h0 Freh0b0"
+Cycle=DMB.SYdWWb0b1 Rfeb1b1 DpDatadWb1b1 Rfib1h0 Freh0b0
+Relax=
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=DMB.SYdWWw0b1 Rfeb1b1 DpDatadWb1b1 Rfib1h0 Freh0w0
+{
+uint16_t y; uint16_t x; uint16_t 1:X5; uint16_t 1:X0;
+
+0:X0=0x02; 0:X1=x; 0:X2=0x01; 0:X3=y;
+1:X1=y; 1:X2=0x01; 1:X4=x;
+}
+ P0             | P1             ;
+ STRB W0,[X1]   | LDRB W0,[X1,#1];
+ DMB SY         | EOR W3,W0,W0   ;
+ STRB W2,[X3,#1]| ADD W3,W3,W2   ;
+                | STRB W3,[X4,#1];
+                | LDRH W5,[X4]   ;
+exists(x=0x0102 /\ 1:X5=0x0100 /\ 1:X0=0x01)
