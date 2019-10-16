@@ -1,0 +1,17 @@
+AArch64 CoRW2+posb1b0+h0
+"Rfeh0b1 PosRWb1b0 Wseb0h0"
+Cycle=Wseb0h0 Rfeh0b1 PosRWb1b0
+Generator=diycross7 (version 7.54+02(dev))
+Com=Rf Ws
+Orig=Rfeh0b1 PosRWb1b0 Wseb0h0
+{
+uint16_t x; uint16_t 1:X3; uint16_t 1:X0;
+
+0:X0=0x101; 0:X1=x;
+1:X1=x; 1:X2=0x2;
+}
+ P0           | P1              ;
+ STRH W0,[X1] | LDRB W0,[X1,#1] ;
+              | STRB W2,[X1]    ;
+              | LDRH W3,[X1]    ;
+exists (1:X0=0x0 \/ 1:X0=0x1) /\ 1:X3=0x102 /\ x=0x101
