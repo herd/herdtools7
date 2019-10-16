@@ -118,6 +118,9 @@ module type S =  sig
 
 (* Equivalence classes, applies to equivalence relations only (unchecked) *)
   val classes : t -> Elts.t list
+
+(* strata ie sets of nodes by increasing distance *)
+  val strata : Elts.t -> t -> Elts.t list
 end
 
 module Make(O:MySet.OrderedType) : S
@@ -244,10 +247,12 @@ and module Elts = MySet.Make(O) =
 
       let adds x ys m = ME.add x (Elts.union ys (succs x m)) m
 
-      let to_map r =
+      let to_map_ok p r =
         fold
-          (fun (e1,e2) m -> add e1 e2 m)
+          (fun (e1,e2) m -> if p e1 e2 then add e1 e2 m else m)
           r ME.empty
+
+      let to_map r = to_map_ok (fun _ _ -> true) r
 
       let of_map m =
         let xs =
@@ -317,6 +322,23 @@ and module Elts = MySet.Make(O) =
                 Elts.union cc seen,cc::ccs)
             m (Elts.empty,[]) in
         ccs
+
+      let strata es r =
+        let m =
+          to_map_ok
+            (fun e1 e2 -> Elts.mem e1 es && Elts.mem e2 es) r in
+        let nss = ME.fold (fun _ ns k -> ns::k) m [] in
+        let st0 = Elts.diff es (Elts.unions nss) in
+        if Elts.is_empty st0 then [es]
+        else
+          let rec do_rec seen st =
+            let stplus =
+              Elts.diff
+                (Elts.unions (Elts.fold (fun e k -> succs e m::k) st []))
+                seen in
+            if Elts.is_empty stplus then []
+            else stplus::do_rec (Elts.union seen stplus) stplus in
+          st0::do_rec st0 st0
     end
 
 
@@ -593,5 +615,10 @@ and module Elts = MySet.Make(O) =
 
 (* Equivalence classes *)
     let classes r = M.cc (M.to_map r)
+
+(**********)
+(* Strata *)
+(**********)
+    let strata es r = M.strata es r
 
   end

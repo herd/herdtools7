@@ -415,7 +415,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
         eprintf "\n")
       s ;
     flush stderr
-      
+
   let make_posy_mult y env (p,ess) =
     let s = get_shift p in
     let rec do_make_posy y env = function
@@ -431,12 +431,21 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
   let dsiy = PC.dsiy
   let siwidth = PC.siwidth
 
-  let order_events_mult _es by_proc_and_poi =
+  let order_events_mult es by_proc_and_poi =
+    let iico =
+      S.union es.E.intra_causality_data es.E.intra_causality_control in
+    let  by_proc_and_poi =
+      List.map
+        (fun ess ->
+          List.fold_right
+            (fun es k -> E.EventRel.strata es iico @ k)
+            ess [])
+         by_proc_and_poi in
     if dbg then
       pp_by_proc_and_poi stderr by_proc_and_poi ;
     let max =
       List.fold_left
-        (fun n es -> max n (List.length es)) 0 by_proc_and_poi in
+        (fun n ess -> max n (List.length ess)) 0 by_proc_and_poi in
     let max = max-1 in
     let max = float_of_int max in
     let max = max +. shift_max in
@@ -474,7 +483,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
             envp ess)
         (E.EventMap.empty,envy) ps in
     max,envy,envx
-            
+
 
 (*******************************)
 (* Build "visible" po relation *)
