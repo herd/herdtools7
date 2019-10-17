@@ -301,79 +301,6 @@ module Make(C:Config) (I:I) : S with module I = I
 (************************)
 (* Mixed size utilities *)
 (************************)
-
-      let byte = C.byte
-
-      let endian = match C.endian with
-      | None -> I.endian
-      | Some e -> e
-
-      let byte_sz =  MachSize.nbytes byte
-
-      let mask = match byte_sz with
-      | 1 -> "0xff"
-      | 2 -> "0xffff"
-      | 4 -> "0xffffffff"
-      | _ ->
-          Warn.user_error "Size cannot be %s in mixed-size mode"
-            (MachSize.pp C.byte)
-      let nshift = MachSize.nbits byte
-
-      let nsz sz =
-        let n = MachSize.nbytes sz in
-        if n < byte_sz then
-          Warn.fatal "Size mismatch %s bigger than %s\n"
-            (MachSize.debug sz) (MachSize.debug byte) ;
-        assert (n mod byte_sz = 0) ;
-        n / byte_sz
-
-      let byte_indices sz =
-        let kmax = nsz sz in
-        let rec do_rec k =
-          if k >= kmax then []
-          else
-            let ds = do_rec (k+1) in
-            let d = k*byte_sz in
-            d::ds in
-        0::do_rec 1
-
-      let byte_eas_incr sz a =
-        let kmax = nsz sz in
-        let rec do_rec k =
-          if k >= kmax then []
-          else
-            let ds = do_rec (k+1) in
-            let d = I.V.op1 (Op.AddK (k*byte_sz)) a in
-            d::ds in
-        a::do_rec 1
-
-      let byte_eas sz a =
-        let r = byte_eas_incr sz a in
-        match endian with
-        | Endian.Little -> r
-        | Endian.Big -> List.rev r
-
-
-      let explode sz v =
-        let rec do_rec k v =
-          if k <= 1 then [v]
-          else
-            let d = I.V.op1 (Op.AndK mask) v
-            and w = I.V.op1 (Op.LogicalRightShift nshift) v in
-            let ds = do_rec (k-1) w in
-            d::ds in
-        do_rec (nsz sz) v
-
-      let rec recompose ds = match ds with
-      | [] -> assert false
-      | [d] -> d
-      | d::ds ->
-          let w = recompose ds in
-          I.V.op Op.Or (I.V.op1 (Op.LeftShift nshift) w) d
-
-(***************************************************)
-(* State operations, implemented with library maps *)
-(***************************************************)
       module State =
         MyMap.Make
           (struct
@@ -471,53 +398,6 @@ module Make(C:Config) (I:I) : S with module I = I
       | _ -> assert false
             (* Typing *)
 
-      let look_in_state_mixed senv st loc =
-        match undetermined_vars_in_loc loc with
-      | Some _ ->
-          (* if loc is not determined, then we cannot get its
-             content yet *)
-          raise LocUndetermined
-      | None ->
-          match loc with
-          | Location_global (I.V.Val (Constant.Symbolic ((s,_),0)) as a)   ->
-              let sz = look_size senv s in
-              let eas = byte_eas sz a in
-              let vs = List.map (get_of_val st) eas in
-              let v = recompose vs in
-              v
-          | _ ->
-              assert (not (is_global loc)) ;
-              get_in_state loc st
-
-
-      let look_in_state =
-        if C.variant Variant.Mixed then  look_in_state_mixed
-        else fun _senv -> look_address_in_state (* No need for size-env when sizes are ignored *)
-
-      let state_add st l v = State.add l v st
-
-      let state_mem senv st loc v =
-        try
-          let w = look_in_state senv st loc in
-          I.V.compare v w = 0
-        with LocUndetermined -> assert false
-
-
-      let state_restrict st loc_ok =
-        State.fold
-          (fun loc v k ->
-            if loc_ok loc then State.add loc v k
-            else k)
-          st State.empty
-
-      let state_restrict_locs_non_mixed locs _ st =
-        LocSet.fold
-          (fun loc r -> state_add r loc (look_address_in_state st loc))
-          locs state_empty
-
-          (* Typing *)
-
-      type size_env = MachSize.sz StringMap.t
       let size_env_empty = StringMap.empty
 
           (* Simplified typing, size only, integer types only *)

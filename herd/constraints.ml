@@ -188,8 +188,8 @@ module Make (C:Config) (A : Arch_herd.S) :
               let pss =
                 try A.VMap.find v m
                 with Not_found -> [] in
-              A.VMap.add v (ps::pss) m)
-            A.VMap.empty ps
+              VMap.add v (ps::pss) m)
+            VMap.empty ps
 
         let rec compile_cond m =
           let k = best_col m in
@@ -199,7 +199,7 @@ module Make (C:Config) (A : Arch_herd.S) :
           | [] -> assert false
           | (_,[])::_ ->
               Or
-                (A.VMap.fold
+                (VMap.fold
                    (fun v _ k -> Atom (LV (loc,v))::k)
                    m [])
           | _ ->

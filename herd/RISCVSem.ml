@@ -23,7 +23,7 @@ module Make (C:Sem.Config)(V:Value.S)
     module Act = MachAction.Make(C.PC)(RISCV)
     include SemExtra.Make(C)(RISCV)(Act)
 
-    let mixed = C.variant Variant.Mixed
+    let mixed = RISCV.is_mixed
 
 (* Barrier pretty print *)
     let barriers =

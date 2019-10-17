@@ -223,10 +223,8 @@ let options = [
   parse_stringset "-cycles" cycles  "<name1,...,nameN> show failing checks as cycles, cumulates" ;
 
 (* Model control *)
-  begin
-    let module ParseVariant = ParseTag.MakeS(Opts.OptS) in
-    ParseVariant.parse "-variant" variant
-      "select an architecture variation" end ;
+  begin let module ParseVariant = ParseTag.MakeS(Variant) in
+  ParseVariant.parse "-variant" variant "select an architecture variation" end ;
   begin let module ParseMachSize = ParseTag.Make(MachSize.Tag) in
   ParseMachSize.parse "-machsize" byte "set basic machine size" end ;
   begin let module ParseEndian = ParseTag.Make(Endian) in
