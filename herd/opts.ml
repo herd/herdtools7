@@ -40,19 +40,6 @@ let speedcheck = ref Speed.False
 let archcheck = ref true
 let optace = ref None
 let variant = ref (fun _ -> false)
-let precision = ref false
-module OptS = struct
-  include Variant
-  let setnow tag =
-    try
-      precision :=
-        (match tag with
-        | TagCheckPrecise -> true
-        | TagCheckUnprecise -> false
-        | _ -> raise Exit) ;
-      true
-    with Exit -> false
-end
 let byte = ref MachSize.Tag.Auto
 let endian = ref None
 let initwrites = ref None

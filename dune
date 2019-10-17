@@ -1,4 +1,2 @@
-(ignored_subdirs (herd-www))
-(env
- (release
-  (flags (:standard -w +a-3-4-9-29-33-41-45))))
+(data_only_dirs herd-www)
+
