@@ -29,7 +29,8 @@ type ('prog,'nice_prog,'start,'state,'size_env, 'prop,'loc,'locset) t =
      flocs : 'loc list ;
      observed : 'locset ;
      displayed : 'locset ;
-     extra_data : MiscParser.extra_data
+     extra_data : MiscParser.extra_data ;
+     access_size : MachSize.sz list ;
    }
 
 (* Name and nothing else *)
@@ -74,6 +75,23 @@ module Make(A:Arch_herd.S) =
     | ConstrGen.LV (loc,_v) -> A.LocSet.add loc r
     | ConstrGen.LL (l1,l2) -> A.LocSet.add l1 (A.LocSet.add l2 r)
 
+(* Mem size access *)
+    let mem_access_size_of_code sz code =
+      List.fold_left
+        (A.pseudo_fold
+           (fun sz0 ins -> match A.mem_access_size ins with
+           | Some sz -> MachSize.Set.add sz sz0
+           | None -> sz0))
+        sz
+        code
+
+    let mem_access_size_prog p =
+      let s =
+        List.fold_left
+          (fun sz (_,code) -> mem_access_size_of_code sz code)
+          MachSize.Set.empty p in
+      MachSize.Set.elements s
+
     let build name t =
       let t = Alloc.allocate_regs t in
       let
@@ -110,6 +128,11 @@ module Make(A:Arch_herd.S) =
        displayed = displayed ;
        extra_data = extra_data ;
        size_env = A.build_size_env init ;
+       access_size =
+       begin
+         if A.is_mixed then mem_access_size_prog nice_prog
+         else []
+       end ;
      }
 
     let empty_test =
@@ -137,6 +160,7 @@ module Make(A:Arch_herd.S) =
        flocs = [] ;
        observed = A.LocSet.empty; displayed = A.LocSet.empty;
        extra_data = MiscParser.empty_extra;
+       access_size = [];
       }
 
     let find_our_constraint test = test.cond

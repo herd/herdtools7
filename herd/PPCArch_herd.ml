@@ -28,7 +28,7 @@ module Make (C:Arch_herd.Config) (V:Value.S)
     type lannot = bool (* atomicity *)
     let get_machsize _ = V.Cst.Scalar.machsize
     let empty_annot = false
-    let is_atomic annot = annot 
+    let is_atomic annot = annot
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
 
     let barrier_sets =
@@ -44,24 +44,39 @@ module Make (C:Arch_herd.Config) (V:Value.S)
     let is_isync = is_barrier Isync
     let pp_isync = "isync"
 
-    let pp_annot annot = 
+    let pp_annot annot =
       if annot then "*" else ""
 
 (* Now global locations, that include reservations *)
     module V = V
 
-    include ArchExtra_herd.Make(C)        
-	(struct
-	  module V = V 
+    let mem_access_size = function
+      | Pnop
+      | Padd _ | Psub _ | Psubf _ | Por _
+      | Pand _ | Pxor _ | Pmull _ | Pdiv _
+      | Paddi _ | Pori _ | Pandi _ | Pxori _ | Pmulli _
+      | Pli _ | Pb _ | Pbcc _ | Pcmpwi _ | Pcmpw _
+      | Pmr _ | Psync | Peieio | Pisync | Plwsync
+      | Pdcbf _ | Pblr | Pnor _ | Pneg _ | Pslw _ 
+      | Psrawi _| Psraw _ | Pbl _ | Pmtlr _ | Pmflr _
+      | Plmw  _ | Pstmw _ | Pcomment _
+        -> None
+      | Plwzu _ | Pstwu _ | Plwarx _ | Pstwcx _
+        -> Some MachSize.Word
+      | Pload (sz,_,_,_) | Ploadx (sz,_,_,_)
+      | Pstore (sz,_,_,_) | Pstorex (sz,_,_,_)
+        -> Some sz
+    include ArchExtra_herd.Make(C)
+        (struct
+          module V = V
           let endian = endian
 
-	  type arch_reg = reg
-	  let pp_reg = pp_reg
-	  let reg_compare = reg_compare
+          type arch_reg = reg
+          let pp_reg = pp_reg
+          let reg_compare = reg_compare
 
-	  type arch_instruction = instruction
+          type arch_instruction = instruction
           let fromto_of_instr _ = None
 
-	end)
+        end)
   end
-    

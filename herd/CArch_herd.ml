@@ -20,6 +20,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) = struct
 
   let pp_barrier_short = pp_barrier
   let reject_mixed = false
+  let mem_access_size _ = None
 
   module V = V
 
@@ -34,5 +35,6 @@ module Make (C:Arch_herd.Config) (V:Value.S) = struct
 
         type arch_instruction = instruction
         let fromto_of_instr _ = None
+
       end)
 end

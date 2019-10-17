@@ -21,7 +21,6 @@ module type Config = sig
   val hexa : bool
   val brackets : bool
   val variant : Variant.t -> bool
-  val byte : MachSize.sz
   val endian : Endian.t option
 end
 
@@ -32,8 +31,9 @@ module type S =
     val is_amo : instruction -> bool
     val pp_barrier_short : barrier -> string
     val reject_mixed : bool (* perform a check that rejects mixed-size tests *)
-    module V : Value.S
+    val mem_access_size : instruction -> MachSize.sz option
 
+    module V : Value.S
     include ArchExtra_herd.S with module I.V = V
     and type I.arch_reg = reg
     and type I.arch_instruction = instruction

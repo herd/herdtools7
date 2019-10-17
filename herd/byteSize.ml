@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2015-present Institut National de Recherche en Informatique et *)
+(* Copyright 2019-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,34 +14,6 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type sz = Byte | Short | Word | Quad
-
-val pp : sz -> string
-val pp_short : sz -> string
-val debug : sz -> string
-
-val nbytes : sz -> int
-val nbits : sz -> int
-
-val tr_endian : sz -> int -> int
-
-(* All valid offsets for sz2 in sz1 *)
-val get_off : sz -> sz -> int list
-
-(* All valid offsets for sz2 in sz1, reduced list *)
-val get_off_reduced : sz -> sz -> int list
-
-(* Smaller of two *)
-val compare : sz -> sz -> int
-module Set : MySet.S with type elt = sz
-
-val min : sz -> sz -> sz
-
-val pred : sz -> sz
-
-module Tag : sig
-  type t = Auto | Size of sz
-  val tags : string list
-  val parse : string -> t option
-  val pp : t -> string
+module type S = sig
+  val byte : MachSize.sz
 end

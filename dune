@@ -1,2 +1,2 @@
-(ignored_subdirs (herd-www))
+(data_only_dirs herd-www)
 

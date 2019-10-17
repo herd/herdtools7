@@ -15,16 +15,6 @@
 (****************************************************************************)
 
 type sz = Byte | Short | Word | Quad
-type t = sz
-
-let tags = ["byte";"short";"word";"quad";]
-
-let parse tag = match Misc.lowercase tag with
-| "byte" -> Some Byte
-| "short" -> Some Short
-| "word" -> Some Word
-| "quad" -> Some Quad
-| _      -> None
 
 let pp = function
   | Byte -> "byte"
@@ -124,3 +114,52 @@ let get_off_reduced sz = match sz with
     | Byte|Short -> []
     | _ -> off_quad sz
     end
+
+let compare sz1 sz2 = match sz1,sz2 with
+| (Byte,(Short|Word|Quad))
+| (Short,(Word|Quad))
+| (Word,Quad)
+  -> -1
+| (Byte,Byte)
+| (Short,Short)
+| (Word,Word)
+| (Quad,Quad)
+  -> 0
+| ((Short|Word|Quad),Byte)
+| ((Word|Quad),Short)
+| (Quad,Word)
+    -> 1
+
+module Set =
+  MySet.Make
+    (struct
+      type t = sz
+      let compare = compare
+    end)
+
+let min sz1 sz2 = if compare sz1 sz2 <= 0 then sz1 else sz2
+
+let pred = function
+  | Byte|Short -> Byte
+  | Word -> Short
+  | Quad -> Word
+
+module Tag = struct
+
+  type t = Auto | Size of sz
+
+  let tags = ["auto";"byte";"short";"word";"quad";]
+
+  let parse tag = match Misc.lowercase tag with
+  | "byte" -> Some (Size Byte)
+  | "short" -> Some (Size Short)
+  | "word" -> Some (Size Word)
+  | "quad" -> Some (Size Quad)
+  | "auto" -> Some Auto
+  | _      -> None
+
+  let pp = function
+    | Size sz -> pp sz
+    | Auto -> "auto"
+
+end

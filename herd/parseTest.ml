@@ -28,10 +28,11 @@ module type Config = sig
   val check_rename : string -> string option
   val libfind : string -> string
   include GenParser.Config
-  include Top_herd.Config
+  include Top_herd.CommonConfig
   include Sem.Config
 
   val statelessrc11 : bool
+  val byte : MachSize.Tag.t
 end
 
 (**********************)
@@ -73,7 +74,21 @@ module Top (Conf:Config) = struct
           | Some hash ->
               TestHash.check_env env name.Name.name filename hash in
           let test = T.build name parsed in
-          let module T = Top_herd.Make(Conf)(M) in
+          let sz =
+            if S.A.is_mixed then begin match Conf.byte with
+            | MachSize.Tag.Size sz -> sz
+            | MachSize.Tag.Auto ->
+              let szs = test.Test_herd.access_size in
+              let sz = match szs with
+              | [] -> MachSize.Quad
+              | [sz] -> MachSize.pred sz
+              | sz::_ -> sz in
+              Printf.eprintf " sz=%s\n" (MachSize.pp sz) ;
+              sz
+            end else S.A.V.Cst.Scalar.machsize in
+
+          let module T =
+            Top_herd.Make(struct include Conf let byte = sz end)(M) in
           T.run start_time test ;
           env
           with TestHash.Seen -> env
@@ -212,7 +227,8 @@ module Top (Conf:Config) = struct
             | AArch64.DSB(d,t) -> DSB(d,t)
             | AArch64.ISB -> ISB
           end in
-          let module AArch64M = AArch64Mem.Make(ModelConfig)(AArch64S) (AArch64Barrier) in
+          let module AArch64M =
+            AArch64Mem.Make(ModelConfig)(AArch64S) (AArch64Barrier) in
           let module P = GenParser.Make (Conf) (AArch64) (AArch64LexParse) in
           let module X = Make (AArch64S) (P) (NoCheck) (AArch64M) in
           X.run start_time name chan env splitted
@@ -260,6 +276,7 @@ module Top (Conf:Config) = struct
           let module P = GenParser.Make (Conf) (MIPS) (MIPSLexParse) in
           let module X = Make (MIPSS) (P) (NoCheck) (MIPSM) in
           X.run start_time name chan env splitted
+
       | `RISCV ->
           let module RISCV = RISCVArch_herd.Make(ArchConfig)(Int64Value) in
           let module RISCVLexParse = struct
@@ -325,6 +342,7 @@ module Top (Conf:Config) = struct
         let module P = GenParser.Make (Conf) (Bell) (BellLexParse) in
         let module X = Make (BellS) (P) (BellC) (BellM) in
         X.run start_time name chan env splitted
+
     end else env
 
 (* Enter here... *)

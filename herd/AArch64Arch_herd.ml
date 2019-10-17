@@ -82,6 +82,25 @@ module Make (C:sig include Arch_herd.Config val moreedges : bool end) (V:Value.S
 
     module V = V
 
+    let mem_access_size = function
+      | I_LDR (v,_,_,_) | I_LDP (_,v,_,_,_,_)
+      | I_STR (v,_,_,_) | I_STLR (v,_,_) | I_STXR (v,_,_,_,_)
+      | I_STP (_,v,_,_,_,_)
+      | I_CAS (v,_,_,_,_) | I_SWP (v,_,_,_,_)
+      | I_LDOP (_,v,_,_,_,_) | I_STOP (_,v,_,_,_) ->
+          Some (tr_variant v)
+      | I_LDRBH (v,_,_,_) | I_LDARBH (v,_,_,_)
+      | I_STRBH (v,_,_,_) | I_STLRBH (v,_,_) | I_STXRBH (v,_,_,_,_)
+      | I_CASBH (v,_,_,_,_) | I_SWPBH (v,_,_,_,_)
+      | I_LDOPBH (_,v,_,_,_,_) | I_STOPBH (_,v,_,_,_) ->
+          Some (bh_to_sz v)
+      | I_NOP|I_B _|I_BR _|I_BC (_, _)|I_CBZ (_, _, _)
+      | I_CBNZ (_, _, _)|I_BL _|I_BLR _|I_RET _|I_LDAR (_, _, _, _)
+      | I_MOV (_, _, _)|I_SXTW (_, _)|I_OP3 (_, _, _, _, _)
+      | I_ADDR (_, _)|I_RBIT (_, _, _)|I_FENCE _
+      | I_CSEL (_, _, _, _, _, _)|I_IC (_, _)|I_DC (_, _)|I_MRS (_, _)
+          -> None
+
     include ArchExtra_herd.Make(C)
         (struct
           module V = V
@@ -93,6 +112,7 @@ module Make (C:sig include Arch_herd.Config val moreedges : bool end) (V:Value.S
 
           type arch_instruction = instruction
           let fromto_of_instr _ = None
+
         end)
 
   end

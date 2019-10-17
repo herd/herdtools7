@@ -293,6 +293,12 @@ let inverse_cond = function
 
 type op = ADD | ADDS | SUB | SUBS | AND | ANDS | ORR | EOR
 type variant = V32 | V64
+
+let tr_variant = function
+  | V32 -> MachSize.Word
+  | V64 -> MachSize.Quad
+
+
 type 'k kr = K of 'k | RV of variant * reg
 let k0 = K 0
 

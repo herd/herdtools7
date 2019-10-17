@@ -24,14 +24,14 @@ module type S =
     module A : Arch_herd.S
 
     module E : Event.S
-           with module Act.A = A
+    with module Act.A = A
 
     module VC    : Valconstraint.S
-           with type atom = A.V.v
-            and type cst = A.V.Cst.v
-            and type solution = A.V.solution
-            and type location = A.location
-            and type state = A.state
+    with type atom = A.V.v
+    and type cst = A.V.Cst.v
+    and type solution = A.V.solution
+    and type location = A.location
+    and type state = A.state
 
     type 'a t
 
@@ -44,7 +44,7 @@ module type S =
     val linux_exch :
         'loc t -> 'v t -> ('loc -> 'w t) -> ('loc -> 'v -> unit t) -> 'w t
     val amo : Op.op ->
-        'loc t -> A.V.v t -> ('loc -> A.V.v t) -> ('loc -> A.V.v -> unit t) -> A.V.v t
+      'loc t -> A.V.v t -> ('loc -> A.V.v t) -> ('loc -> A.V.v -> unit t) -> A.V.v t
 
     val linux_cmpexch_ok :
         'loc t -> 'v t -> 'v t -> ('loc -> 'v t) ->
@@ -63,9 +63,9 @@ module type S =
     val riscv_store_conditional :
         A.V.v t -> A.V.v t -> A.V.v t -> (* read reserve, data, address *)
           (unit t) -> (* write reserve *)
-              (A.V.v -> unit t) -> (* write result *)
-                  (A.V.v -> A.V.v -> A.V.v -> unit t) -> (* write mem *)
-                    unit t
+            (A.V.v -> unit t) -> (* write result *)
+              (A.V.v -> A.V.v -> A.V.v -> unit t) -> (* write mem *)
+                unit t
 
     val aarch64_cas_ok :
         'loc t -> 'v t -> 'v t ->
@@ -89,30 +89,35 @@ module type S =
 
     val tooFar : string -> 'a t
 
-    (* read_loc is_data mk_action loc ii:
-       for each value v that could be read,
-       make an event structure comprising a single event with
-       instruction id "ii", and action "mk_action v loc".
-       is_data charaterizes the data port of a store *)
+        (* read_loc is_data mk_action loc ii:
+           for each value v that could be read,
+           make an event structure comprising a single event with
+           instruction id "ii", and action "mk_action v loc".
+           is_data charaterizes the data port of a store *)
 
     val read_loc : bool -> (A.location -> A.V.v -> E.action) ->
-                   A.location -> A.inst_instance_id -> A.V.v t
+      A.location -> A.inst_instance_id -> A.V.v t
 
-    val read_mixed : bool ->MachSize.sz ->
-      (MachSize.sz -> A.location -> A.V.v -> E.action) ->
-        A.V.v ->  A.inst_instance_id -> A.V.v t
+    module Mixed :
+    functor (SZ : ByteSize.S) -> sig
+      val read_mixed : bool ->MachSize.sz ->
+        (MachSize.sz -> A.location -> A.V.v -> E.action) ->
+          A.V.v ->  A.inst_instance_id -> A.V.v t
 
-    val write_mixed : MachSize.sz ->
-      (MachSize.sz -> A.location -> A.V.v -> E.action) ->
-        A.V.v -> A.V.v ->  A.inst_instance_id -> unit t
+      val write_mixed : MachSize.sz ->
+        (MachSize.sz -> A.location -> A.V.v -> E.action) ->
+          A.V.v -> A.V.v ->  A.inst_instance_id -> unit t
 
-    (* mk_singleton_es a ii:
-       make an event structure comprising a single event with
-       instruction id "ii", and action "a". *)
+      val initwrites : (A.location * A.V.v) list -> A.size_env -> unit t
+    end
+
+   (* mk_singleton_es a ii:
+      make an event structure comprising a single event with
+           instruction id "ii", and action "a". *)
     val mk_singleton_es : E.action -> A.inst_instance_id -> unit t
     val mk_singleton_es_success : E.action -> A.inst_instance_id -> unit t
     val mk_singleton_es_eq : E.action -> VC.cnstrnts -> A.inst_instance_id -> unit t
-    (* Similar, explicit empty output *)
+        (* Similar, explicit empty output *)
     val mk_fence : E.action -> A.inst_instance_id -> unit t
 
 
@@ -131,9 +136,6 @@ module type S =
     val fetch :
         Op.op -> A.V.v -> (A.V.v -> A.V.v -> E.action) ->
           A.inst_instance_id -> A.V.v t
-
-
-    val initwrites : (A.location * A.V.v) list -> A.size_env -> unit t
 
 (* Read out monad *)
     type evt_struct

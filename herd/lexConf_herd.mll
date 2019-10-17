@@ -140,7 +140,7 @@ let handle_key main key arg = match key with
       variant := (fun t -> Variant.compare t tag = 0 || old t) in
     PV.parse_tag_set "variant"  add_tag arg
 | "machsize" ->
-     lex_tag "machsize" MachSize.parse MachSize.tags byte arg
+     lex_tag "machsize" MachSize.Tag.parse MachSize.Tag.tags byte arg
 | "endian" ->
      lex_tag_fun "endian" Endian.parse Endian.tags
         (fun t -> endian := Some t) arg

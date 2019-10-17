@@ -33,6 +33,8 @@ end
 (** Output signature, functionalities added *)
 module type S = sig
 
+  val is_mixed : bool
+
   module I : I
 
   type global_loc = I.V.v
@@ -69,23 +71,10 @@ module type S = sig
   val simplify_vars_in_loc : I.V.solution ->  location -> location
   val map_loc : (v -> v) -> location -> location
 
-(* Mixed size *)
-  val byte : MachSize.sz
-  val endian : Endian.t
-  val byte_sz : int
-  val mask : string
-  val nshift : int
-  val nsz : MachSize.sz -> int
-  (* decompose effective address increasimg order *)
-  val byte_indices :  MachSize.sz -> int list
-  (* decompose effective address increasimg order, endianess order *)
-  val byte_eas :  MachSize.sz -> v -> v list
-  val explode : MachSize.sz -> v ->  v list
-  val recompose : v list -> v
-
+(*********)
 (* State *)
-  type state (* Now abstract, suicide ? *)
-  type size_env
+(*********)
+  type state
 
   val state_empty : state
   val pp_state : state -> string
@@ -95,44 +84,61 @@ module type S = sig
       state -> string (* delim, as in String.concat  *)
         -> (location -> v -> string) -> string
 
-(* for explict state construction *)
   val build_state : (location * ('t * v)) list -> state
   val build_concrete_state : (location * int) list -> state
 
-
-(* No comment *)
   val state_is_empty : state -> bool
+  val state_add : state -> location -> v -> state
   val state_to_list : state -> (location * v) list
   val state_size : state -> int
   val state_fold :
       (location -> v -> 'a -> 'a) -> state -> 'a -> 'a
 
-(* Look for what address loc is bound to *)
-  exception LocUndetermined (* raised when location is yet unkown *)
-
+ (* Exception raised when location is yet unkown *)
+  exception LocUndetermined
   val look_address_in_state : state -> location -> v
-(* Look what memory cell is bound to *)
-  val look_in_state : size_env -> state -> location -> v
 
-(* Add a binding , shadow previous binding if any *)
-  val state_add : state -> location -> v -> state
-
-(* Does loc binds v in state ? *)
-  val state_mem : size_env -> state -> location -> v -> bool
-
-(* State restriction to some locations *)
-  val state_restrict : state -> (location -> bool) -> state
-
-(* Set of states *)
-  module StateSet : MySet.S with type elt = state
-
+(**********************)
 (* Typing environment *)
+(**********************)
+
+  type size_env
+
   val size_env_empty : size_env
   val build_size_env : (location * (MiscParser.run_type * 'v)) list -> size_env
   val look_size : size_env -> string -> MachSize.sz
   val look_size_location : size_env -> location -> MachSize.sz
 
-  val state_restrict_locs : LocSet.t -> size_env -> state -> state
+
+(* Set of states *)
+  module StateSet : MySet.S with type elt = state
+
+(*****************************************)
+(* Size dependent items (for mixed-size) *)
+(*****************************************)
+  module Mixed : functor (SZ : ByteSize.S) -> sig
+    val endian : Endian.t
+    val byte_sz : int
+    val mask : string
+    val nshift : int
+    val nsz : MachSize.sz -> int
+        (* decompose effective address increasimg order *)
+    val byte_indices :  MachSize.sz -> int list
+        (* decompose effective address increasimg order, endianess order *)
+    val byte_eas :  MachSize.sz -> v -> v list
+    val explode : MachSize.sz -> v ->  v list
+    val recompose : v list -> v
+
+(* Look what memory cell is bound to *)
+    val look_in_state : size_env -> state -> location -> v
+
+(* Does loc binds v in state ? *)
+    val state_mem : size_env -> state -> location -> v -> bool
+
+(* State restriction to some locations *)
+    val state_restrict : state -> (location -> bool) -> state
+    val state_restrict_locs : LocSet.t -> size_env -> state -> state
+  end
 
 (*********************************)
 (* Components of test structures *)
@@ -168,12 +174,13 @@ module type Config = sig
   val hexa : bool
   val brackets : bool
   val variant : Variant.t -> bool
-  val byte : MachSize.sz
   val endian : Endian.t option
 end
 
 module Make(C:Config) (I:I) : S with module I = I
     = struct
+
+      let is_mixed = C.variant Variant.Mixed
 
       module I = I
       type v = I.V.v
@@ -263,8 +270,129 @@ module Make(C:Config) (I:I) : S with module I = I
 (************************)
 (* Mixed size utilities *)
 (************************)
+      module State =
+        MyMap.Make
+          (struct
+            type t = location
+            let compare = location_compare
+          end)
 
-      let byte = C.byte
+      type state = v State.t
+
+      let state_empty = State.empty
+
+      let state_add st l v = State.add l v st
+
+      let state_is_empty = State.is_empty
+
+      let state_to_list st =
+        List.rev (State.fold (fun l v k -> (l,v)::k) st [])
+
+      let state_size st = State.fold (fun _ _ k -> 1+k) st 0
+
+      let state_fold  f st x = State.fold f st x
+
+      let pp_nice_state st delim pp_bd =
+        let bds =
+          State.fold
+            (fun l v k -> (pp_bd l v)::k)
+            st [] in
+        String.concat delim  (List.rev bds)
+
+      let pp_equal = if C.texmacros then "\\mathord{=}" else "="
+
+      let pp_state st =
+        pp_nice_state st " "
+          (fun l v -> pp_location l ^ pp_equal ^ I.V.pp C.hexa v ^";")
+
+      let do_dump_state tr st =
+        pp_nice_state st " "
+          (fun l v -> do_dump_location tr l ^ "=" ^ I.V.pp C.hexa v ^";")
+
+      let dump_state st = do_dump_state Misc.identity st
+
+      let build_state bds =
+        List.fold_left (fun st (loc,(_,v)) -> State.add loc v st)
+          State.empty bds
+
+      let build_concrete_state bds =
+        List.fold_left
+          (fun st (loc,v) ->
+            State.add loc (I.V.intToV v) st)
+          State.empty bds
+
+(* To get protection against wandering undetermined locations,
+   all loads from state are by this function *)
+      exception LocUndetermined
+
+      let get_in_state loc st = State.safe_find I.V.zero loc st
+      let get_of_val st a = State.safe_find I.V.zero (Location_global a) st
+
+      let look_address_in_state st loc =
+        match undetermined_vars_in_loc loc with
+        | Some _ ->
+            (* if loc is not determined, then we cannot get its
+            content yet *)
+            raise LocUndetermined
+        | None -> get_in_state loc st
+
+      type size_env = MachSize.sz StringMap.t
+
+      let look_size env s = StringMap.safe_find MachSize.Word s env
+
+      let look_size_location env loc = match loc with
+      | Location_global (I.V.Val (Constant.Symbolic (s,0))) ->  look_size env s
+      | _ -> assert false
+      (* Typing *)
+
+      let size_env_empty = StringMap.empty
+
+       (* Simplified typing, size only, integer types only *)
+
+      let size_of = function
+        | "atomic_t"
+        | "int"|"long"
+        | "int32_t"
+        | "uint32_t" ->  MachSize.Word
+        | "char"|"int8_t" |"uint8_t" -> MachSize.Byte
+        | "short" | "int16_t" | "uint16_t" -> MachSize.Short
+        | "int64_t" | "uint64_t" -> MachSize.Quad
+        | "intprt_t" | "uintprt_t" -> I.V.Cst.Scalar.machsize (* Maximal size = ptr size *)
+        | t ->
+            Warn.fatal "Cannot find the size of type %s" t
+
+
+      let misc_to_size ty  = match ty with
+        | MiscParser.TyDef -> size_of "int"
+        | MiscParser.Ty t|MiscParser.Atomic t -> (size_of t)
+        | MiscParser.Pointer _
+        | MiscParser.TyDefPointer
+        | MiscParser.TyArray _ ->
+            Warn.fatal "Type %s is not allowed in mixed size mode"
+              (MiscParser.pp_run_type ty)
+
+      let build_size_env =
+        if is_mixed then
+          fun bds ->
+            List.fold_left
+              (fun m (loc,(t,_)) -> match loc with
+              | Location_global a -> StringMap.add (I.V.as_symbol a) (misc_to_size t) m
+              | _ -> m)
+              StringMap.empty bds
+        else
+          (fun _ -> StringMap.empty)
+
+      module StateSet =
+        MySet.Make
+          (struct
+            type t = state
+
+            let compare st1 st2 = State.compare I.V.compare st1 st2
+          end)
+
+      module Mixed (SZ : ByteSize.S) = struct
+
+        let byte = SZ.byte
 
       let endian = match C.endian with
       | None -> I.endian
@@ -278,7 +406,7 @@ module Make(C:Config) (I:I) : S with module I = I
       | 4 -> "0xffffffff"
       | _ ->
           Warn.user_error "Size cannot be %s in mixed-size mode"
-            (MachSize.pp C.byte)
+            (MachSize.pp byte)
       let nshift = MachSize.nbits byte
 
       let nsz sz =
@@ -336,85 +464,6 @@ module Make(C:Config) (I:I) : S with module I = I
 (***************************************************)
 (* State operations, implemented with library maps *)
 (***************************************************)
-      module State =
-        MyMap.Make
-          (struct
-            type t = location
-            let compare = location_compare
-          end)
-
-      type state = v State.t
-
-      let state_empty = State.empty
-
-      let pp_nice_state st delim pp_bd =
-        let bds =
-          State.fold
-            (fun l v k -> (pp_bd l v)::k)
-            st [] in
-        String.concat delim  (List.rev bds)
-
-      let pp_equal = if C.texmacros then "\\mathord{=}" else "="
-
-      let pp_state st =
-        pp_nice_state st " "
-          (fun l v -> pp_location l ^ pp_equal ^ I.V.pp C.hexa v ^";")
-
-      let do_dump_state tr st =
-        pp_nice_state st " "
-          (fun l v -> do_dump_location tr l ^ "=" ^ I.V.pp C.hexa v ^";")
-
-      let dump_state st = do_dump_state Misc.identity st
-
-      let build_state bds =
-        List.fold_left (fun st (loc,(_,v)) -> State.add loc v st)
-          State.empty bds
-
-      let build_concrete_state bds =
-        List.fold_left
-          (fun st (loc,v) ->
-            State.add loc (I.V.intToV v) st)
-          State.empty bds
-
-      let state_is_empty = State.is_empty
-
-      let state_to_list st =
-        List.rev (State.fold (fun l v k -> (l,v)::k) st [])
-
-      let state_size st = State.fold (fun _ _ k -> 1+k) st 0
-
-      let state_fold  f st x = State.fold f st x
-
-(* State sets *)
-
-      module StateSet =
-        MySet.Make
-          (struct
-            type t = state
-
-            let compare st1 st2 = State.compare I.V.compare st1 st2
-          end)
-
-(* To get protection against wandering undetermined locations,
-   all loads from state are by this function *)
-      exception LocUndetermined
-
-      let get_in_state loc st = State.safe_find I.V.zero loc st
-      let get_of_val st a = State.safe_find I.V.zero (Location_global a) st
-
-      let look_address_in_state st loc =
-        match undetermined_vars_in_loc loc with
-        | Some _ ->
-            (* if loc is not determined, then we cannot get its
-            content yet *)
-            raise LocUndetermined
-        | None -> get_in_state loc st
-
-      let look_size env s = StringMap.safe_find MachSize.Word s env
-
-      let look_size_location env loc = match loc with
-      | Location_global (I.V.Val (Constant.Symbolic (s,0))) ->  look_size env s
-      | _ -> assert false
 
       let look_in_state_mixed senv st loc =
         match undetermined_vars_in_loc loc with
@@ -436,10 +485,8 @@ module Make(C:Config) (I:I) : S with module I = I
 
 
       let look_in_state =
-        if C.variant Variant.Mixed then  look_in_state_mixed
+        if is_mixed then  look_in_state_mixed
         else fun _senv -> look_address_in_state (* No need for size-env when sizes are ignored *)
-
-      let state_add st l v = State.add l v st
 
       let state_mem senv st loc v =
         try
@@ -460,45 +507,6 @@ module Make(C:Config) (I:I) : S with module I = I
           (fun loc r -> state_add r loc (look_address_in_state st loc))
           locs state_empty
 
-          (* Typing *)
-
-      type size_env = MachSize.sz StringMap.t
-      let size_env_empty = StringMap.empty
-
-          (* Simplified typing, size only, integer types only *)
-
-      let size_of = function
-        | "atomic_t"
-        | "int"|"long"
-        | "int32_t"
-        | "uint32_t" ->  MachSize.Word
-        | "char"|"int8_t" |"uint8_t" -> MachSize.Byte
-        | "short" | "int16_t" | "uint16_t" -> MachSize.Short
-        | "int64_t" | "uint64_t" -> MachSize.Quad
-        | "intprt_t" | "uintprt_t" -> I.V.Cst.Scalar.machsize (* Maximal size = ptr size *)
-        | t ->
-            Warn.fatal "Cannot find the size of type %s" t
-
-
-      let misc_to_size ty  = match ty with
-        | MiscParser.TyDef -> size_of "int"
-        | MiscParser.Ty t|MiscParser.Atomic t -> (size_of t)
-        | MiscParser.Pointer _
-        | MiscParser.TyDefPointer
-        | MiscParser.TyArray _ ->
-            Warn.fatal "Type %s is not allowed in mixed size mode"
-              (MiscParser.pp_run_type ty)
-
-      let build_size_env =
-        if C.variant Variant.Mixed then
-          fun bds ->
-            List.fold_left
-              (fun m (loc,(t,_)) -> match loc with
-              | Location_global a -> StringMap.add (I.V.as_symbol a) (misc_to_size t) m
-              | _ -> m)
-              StringMap.empty bds
-        else
-          (fun _ -> StringMap.empty)
 
 
       let state_restrict_locs_mixed locs senv st =
@@ -510,7 +518,7 @@ module Make(C:Config) (I:I) : S with module I = I
       let state_restrict_locs =
         if C.variant Variant.Mixed then state_restrict_locs_mixed
         else  state_restrict_locs_non_mixed
-
+      end
 (*********************************)
 (* Components of test structures *)
 (*********************************)

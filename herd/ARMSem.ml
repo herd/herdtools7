@@ -17,7 +17,7 @@
 (** Semantics of ARM instructions *)
 
 module Make (C:Sem.Config)(V:Value.S)
-=
+    =
   struct
     module ARM = ARMArch_herd.Make(SemExtra.ConfigToArchConfig(C))(V)
     module Act = MachAction.Make(C.PC)(ARM)
@@ -43,121 +43,126 @@ module Make (C:Sem.Config)(V:Value.S)
     let barriers = dsb
     let isync = Some { barrier = ARMBase.ISB;pp = "isb";}
 
+    let atomic_pair_allowed _ _ = true
+
+(********************)
 (* Semantics proper *)
-    let (>>=) = M.(>>=)
-    let (>>*=) = M.(>>*=)
-    let (>>|) = M.(>>|)
-    let (>>!) = M.(>>!)
-    let (>>::) = M.(>>::)
+(********************)
 
-    let reg_sz = V.Cst.Scalar.machsize
-    and nat_sz = V.Cst.Scalar.machsize
+    module Mixed(SZ:ByteSize.S) = struct
 
-    let mk_read ato sz loc v = Act.Access (Dir.R, loc, v, ato, sz)
+      let (>>=) = M.(>>=)
+      let (>>*=) = M.(>>*=)
+      let (>>|) = M.(>>|)
+      let (>>!) = M.(>>!)
+      let (>>::) = M.(>>::)
 
-    let read_reg is_data r ii =
-      M.read_loc is_data
-        (mk_read false reg_sz)
-        (A.Location_reg (ii.A.proc,r)) ii
+      let reg_sz = V.Cst.Scalar.machsize
+      and nat_sz = V.Cst.Scalar.machsize
 
-    let read_reg_ord = read_reg false
-    let read_reg_data = read_reg true
+      let mk_read ato sz loc v = Act.Access (Dir.R, loc, v, ato, sz)
 
-    let read_mem sz a ii  =
-      M.read_loc false (mk_read false sz) (A.Location_global a) ii
-    let read_mem_atomic sz a ii =
-      M.read_loc false (mk_read true sz) (A.Location_global a) ii
+      let read_reg is_data r ii =
+        M.read_loc is_data
+          (mk_read false reg_sz)
+          (A.Location_reg (ii.A.proc,r)) ii
 
-    let write_loc sz loc v ii =
-      M.mk_singleton_es (Act.Access (Dir.W, loc, v, false,sz)) ii
+      let read_reg_ord = read_reg false
+      let read_reg_data = read_reg true
 
-    let write_reg r v ii =
-      M.mk_singleton_es (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false,reg_sz)) ii
+      let read_mem sz a ii  =
+        M.read_loc false (mk_read false sz) (A.Location_global a) ii
+      let read_mem_atomic sz a ii =
+        M.read_loc false (mk_read true sz) (A.Location_global a) ii
 
-    let write_mem sz a v ii  =
-      M.mk_singleton_es
-        (Act.Access (Dir.W, A.Location_global a, v, false, sz)) ii
+      let write_loc sz loc v ii =
+        M.mk_singleton_es (Act.Access (Dir.W, loc, v, false,sz)) ii
 
-    let write_mem_atomic sz a v resa ii =
-      let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
-      M.mk_singleton_es_eq
-        (Act.Access (Dir.W, A.Location_global a, v, true, sz)) eq ii
+      let write_reg r v ii =
+        M.mk_singleton_es (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false,reg_sz)) ii
 
-    let write_flag r o v1 v2 ii =
+      let write_mem sz a v ii  =
+        M.mk_singleton_es
+          (Act.Access (Dir.W, A.Location_global a, v, false, sz)) ii
+
+      let write_mem_atomic sz a v resa ii =
+        let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
+        M.mk_singleton_es_eq
+          (Act.Access (Dir.W, A.Location_global a, v, true, sz)) eq ii
+
+      let write_flag r o v1 v2 ii =
         M.addT
           (A.Location_reg (ii.A.proc,r))
           (M.op o v1 v2) >>= (fun (loc,v) -> write_loc reg_sz loc v ii)
 
-    let create_barrier b ii =
-      M.mk_singleton_es (Act.Barrier b) ii
+      let create_barrier b ii =
+        M.mk_singleton_es (Act.Barrier b) ii
 
-    let commit bcc ii =
-      M.mk_singleton_es (Act.Commit bcc) ii
+      let commit bcc ii =
+        M.mk_singleton_es (Act.Commit bcc) ii
 
-    let flip_flag v = M.op Op.Xor v V.one
-    let is_zero v = M.op Op.Eq v V.zero
-    let is_not_zero v = M.op Op.Ne v V.zero
-    let check_flag = function
-      |ARM.AL -> assert false
-      |ARM.NE -> flip_flag
-      |ARM.EQ -> M.unitT
+      let flip_flag v = M.op Op.Xor v V.one
+      let is_zero v = M.op Op.Eq v V.zero
+      let is_not_zero v = M.op Op.Ne v V.zero
+      let check_flag = function
+        |ARM.AL -> assert false
+        |ARM.NE -> flip_flag
+        |ARM.EQ -> M.unitT
 
-    let checkZ op c ii = match c with
-    | ARM.AL -> op ii >>! B.Next
-    | ARM.NE ->
-        ((read_reg_ord  ARM.Z ii)
-           >>=
-         (fun veq ->
-           flip_flag veq >>=
-           fun veqneg ->
-             M.choiceT veqneg
-               (op ii)
-               (M.unitT ())))
-          >>! B.Next
-    | ARM.EQ ->
-        ((read_reg_ord  ARM.Z ii)
-           >>=
-         (fun veq ->
-           M.choiceT veq
-             (op ii)
-             (M.unitT ())))
-          >>! B.Next
-
-    let checkCZ op c ii = match c with
-    | ARM.AL -> op ii >>! B.Next
-    | ARM.NE ->
-        ((read_reg_ord  ARM.Z ii)
-           >>=
-         (fun veq ->
-           flip_flag veq >>=
-           fun veqneg ->
-             commit false ii >>*=
-             fun () ->
+      let checkZ op c ii = match c with
+      | ARM.AL -> op ii >>! B.Next
+      | ARM.NE ->
+          ((read_reg_ord  ARM.Z ii)
+             >>=
+           (fun veq ->
+             flip_flag veq >>=
+             fun veqneg ->
                M.choiceT veqneg
                  (op ii)
                  (M.unitT ())))
-          >>! B.Next
-    | ARM.EQ ->
-        ((read_reg_ord  ARM.Z ii)
-           >>=
-         (fun veq ->
-           commit false ii >>*=
-           fun () -> M.choiceT veq
-             (op ii)
-             (M.unitT ())))
-          >>! B.Next
+            >>! B.Next
+      | ARM.EQ ->
+          ((read_reg_ord  ARM.Z ii)
+             >>=
+           (fun veq ->
+             M.choiceT veq
+               (op ii)
+               (M.unitT ())))
+            >>! B.Next
 
-    let write_flags set v1 v2 ii = match set with
-    | ARM.SetFlags -> write_flag ARM.Z Op.Eq v1 v2 ii
-    | ARM.DontSetFlags -> M.unitT ()
+      let checkCZ op c ii = match c with
+      | ARM.AL -> op ii >>! B.Next
+      | ARM.NE ->
+          ((read_reg_ord  ARM.Z ii)
+             >>=
+           (fun veq ->
+             flip_flag veq >>=
+             fun veqneg ->
+               commit false ii >>*=
+               fun () ->
+                 M.choiceT veqneg
+                   (op ii)
+                   (M.unitT ())))
+            >>! B.Next
+      | ARM.EQ ->
+          ((read_reg_ord  ARM.Z ii)
+             >>=
+           (fun veq ->
+             commit false ii >>*=
+             fun () -> M.choiceT veq
+                 (op ii)
+                 (M.unitT ())))
+            >>! B.Next
 
-    let atomic_pair_allowed _ _ = true
+      let write_flags set v1 v2 ii = match set with
+      | ARM.SetFlags -> write_flag ARM.Z Op.Eq v1 v2 ii
+      | ARM.DontSetFlags -> M.unitT ()
 
-    let build_semantics ii =
-      M.addT (A.next_po_index ii.A.program_order_index)
-        begin match ii.A.inst with
-           | ARM.I_NOP -> M.unitT B.Next
-           | ARM.I_ADD (set,rd,rs,v) ->
+      let build_semantics ii =
+        M.addT (A.next_po_index ii.A.program_order_index)
+          begin match ii.A.inst with
+          | ARM.I_NOP -> M.unitT B.Next
+          | ARM.I_ADD (set,rd,rs,v) ->
               ((read_reg_ord rs ii)
                  >>=
                (fun vs ->
@@ -184,22 +189,22 @@ module Make (C:Sem.Config)(V:Value.S)
                  >>=
                (fun (vn,vm) ->
                  M.op Op.Add vn vm
-                 >>=
-               (fun vd ->
-                 write_reg rd vd ii
-                   >>|
-                 write_flags set vd (V.intToV 0) ii)))
+                   >>=
+                 (fun vd ->
+                   write_reg rd vd ii
+                     >>|
+                     write_flags set vd (V.intToV 0) ii)))
                 >>! B.Next
           | ARM.I_SUB3 (set,rd,rn,rm) ->
               (((read_reg_ord  rn ii) >>| (read_reg_ord rm ii))
                  >>=
                (fun (vn,vm) ->
                  M.op Op.Sub vn vm
-                 >>=
-               (fun vd ->
-                 write_reg rd vd ii
-                   >>|
-                 write_flags set vd (V.intToV 0) ii)))
+                   >>=
+                 (fun vd ->
+                   write_reg rd vd ii
+                     >>|
+                     write_flags set vd (V.intToV 0) ii)))
                 >>! B.Next
           | ARM.I_AND (set,rd,rs,v) ->
               ((read_reg_ord  rs ii)
@@ -210,7 +215,7 @@ module Make (C:Sem.Config)(V:Value.S)
                (fun vres ->
                  write_reg  rd vres ii
                    >>|
-                 write_flags set vres (V.intToV 0) ii))
+                   write_flags set vres (V.intToV 0) ii))
                 >>! B.Next
           | ARM.I_B lbl -> B.branchT lbl
           | ARM.I_BEQ (lbl) ->
@@ -223,7 +228,7 @@ module Make (C:Sem.Config)(V:Value.S)
           | ARM.I_CB (n,r,lbl) ->
               let cond = if n then is_not_zero else is_zero in
               read_reg_ord r ii >>= cond >>=
-                fun v -> commit true ii >>= fun () -> B.bccT v lbl
+              fun v -> commit true ii >>= fun () -> B.bccT v lbl
           | ARM.I_CMPI (r,v) ->
               ((read_reg_ord  r ii)
                  >>=
@@ -239,29 +244,29 @@ module Make (C:Sem.Config)(V:Value.S)
           |  ARM.I_LDR (rt,rn,c) ->
               let ldr ii =
                 (read_reg_ord  rn ii)
-                   >>=
-                 (fun vn ->
-                   (read_mem nat_sz vn ii) >>=
-                   (fun v -> write_reg  rt v ii)) in
+                  >>=
+                (fun vn ->
+                  (read_mem nat_sz vn ii) >>=
+                  (fun v -> write_reg  rt v ii)) in
               checkCZ ldr c ii
           |  ARM.I_LDREX (rt,rn) ->
               let ldr ii =
                 (read_reg_ord  rn ii)
-                   >>=
-                 (fun vn ->
-                   write_reg ARM.RESADDR vn ii >>|
-                   (read_mem_atomic nat_sz vn ii >>=
-                    fun v -> write_reg  rt v ii)) in
+                  >>=
+                (fun vn ->
+                  write_reg ARM.RESADDR vn ii >>|
+                  (read_mem_atomic nat_sz vn ii >>=
+                   fun v -> write_reg  rt v ii)) in
               ldr ii >>! B.Next
           |  ARM.I_LDR3 (rt,rn,rm,c) ->
               let ldr3 ii =
                 ((read_reg_ord  rn ii) >>| (read_reg_ord  rm ii))
-                   >>=
-                 (fun (vn,vm) ->
-                   (M.add vn vm) >>=
-                   (fun vaddr ->
-                     (read_mem nat_sz vaddr ii) >>=
-                     (fun v -> write_reg  rt v ii))) in
+                  >>=
+                (fun (vn,vm) ->
+                  (M.add vn vm) >>=
+                  (fun vaddr ->
+                    (read_mem nat_sz vaddr ii) >>=
+                    (fun v -> write_reg  rt v ii))) in
               checkZ ldr3 c ii
           |  ARM.I_STR (rt,rn,c) ->
               let str ii =
@@ -305,11 +310,11 @@ module Make (C:Sem.Config)(V:Value.S)
                  >>=
                (fun (v1,v2) ->
                  M.op Op.Xor v1 v2
-                 >>=
-               (fun v3 ->
-                 write_reg  r3 v3 ii
-                   >>|
-                write_flags set v3 (V.intToV 0) ii)))
+                   >>=
+                 (fun v3 ->
+                   write_reg  r3 v3 ii
+                     >>|
+                     write_flags set v3 (V.intToV 0) ii)))
                 >>! B.Next
           | ARM.I_DMB o ->
               (create_barrier (ARM.DMB o) ii)
@@ -324,5 +329,6 @@ module Make (C:Sem.Config)(V:Value.S)
               Warn.user_error "SADD16 not implemented"
           | ARM.I_SEL _ ->
               Warn.user_error "SEL not implemented"
-        end
+          end
+    end
   end

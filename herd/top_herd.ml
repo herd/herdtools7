@@ -16,7 +16,7 @@
 
 (** Top level loop : execute test according to model *)
 
-module type Config = sig
+module type CommonConfig = sig
   val auto : bool
   val candidates : bool
   val show : PrettyConf.show
@@ -31,10 +31,15 @@ module type Config = sig
   val badexecs : bool
   val badflag : string option
   val throughflag : string option
-  include Mem.Config
+  include Mem.CommonConfig
 
   val statelessrc11 : bool
   val skipchecks : StringSet.t
+end
+
+module type Config = sig
+  include CommonConfig
+  val byte : MachSize.sz
 end
 
 module Make(O:Config)(M:XXXMem.S) =
@@ -45,6 +50,7 @@ module Make(O:Config)(M:XXXMem.S) =
     module MC = Mem.Make(O)(S)
     module C = S.Cons
     module A = S.A
+    module AM = A.Mixed(O)
     module T = Test_herd.Make(A)
     module W = Warn.Make(O)
 
@@ -59,11 +65,13 @@ module Make(O:Config)(M:XXXMem.S) =
     let tr_out test = OutMapping.info_to_tr  test.Test_herd.info
 
 (* Cond checking *)
+    module CM = C.Mixed(O)
+
     let check_prop test =
       let c = T.find_our_constraint test in
       let p = ConstrGen.prop_of c in
       let senv = S.size_env test in
-      fun st -> C.check_prop p senv st
+      fun st -> CM.check_prop p senv st
 
     let count_prop test sts =
       let c = T.find_our_constraint test in
@@ -71,7 +79,7 @@ module Make(O:Config)(M:XXXMem.S) =
       let senv = S.size_env test in
       A.StateSet.fold
         (fun st n ->
-          if  C.check_prop p senv st then n+1 else n)
+          if  CM.check_prop p senv st then n+1 else n)
         sts
         0
 
@@ -291,7 +299,7 @@ module Make(O:Config)(M:XXXMem.S) =
             else begin
               let dlocs = S.displayed_locations test
               and senv = S.size_env test in
-              A.state_restrict_locs dlocs senv fsc
+              AM.state_restrict_locs dlocs senv fsc
             end in
           let r =
             { cands = c.cands+1;
@@ -395,7 +403,7 @@ module Make(O:Config)(M:XXXMem.S) =
               c.reads in
           let senv  = S.size_env test in
           A.StateSet.map
-            (fun st -> A.state_restrict_locs locs senv st)
+            (fun st -> AM.state_restrict_locs locs senv st)
             c.states
         else c.states in
       let nfinals = A.StateSet.cardinal finals in

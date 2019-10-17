@@ -223,7 +223,7 @@ let options = [
 (* Model control *)
   begin let module ParseVariant = ParseTag.MakeS(Variant) in
   ParseVariant.parse "-variant" variant "select an architecture variation" end ;
-  begin let module ParseMachSize = ParseTag.Make(MachSize) in
+  begin let module ParseMachSize = ParseTag.Make(MachSize.Tag) in
   ParseMachSize.parse "-machsize" byte "set basic machine size" end ;
   begin let module ParseEndian = ParseTag.Make(Endian) in
   ParseEndian.parse_opt "-endian" endian "set endianness" end ;

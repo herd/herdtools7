@@ -20,10 +20,11 @@ module type Config = sig
   val hexa : bool
   val debug : Debug_herd.t
   val variant : Variant.t -> bool
-  val byte : MachSize.sz
 end
 
-module Make (C:Config) (A:Arch_herd.S) (E:Event.S with module A = A and module Act.A = A) :
+module Make (C:Config)
+    (A:Arch_herd.S)
+    (E:Event.S with module A = A and module Act.A = A) :
     (Monad.S with module A = A and module E = E
 and type evt_struct = E.event_structure) =
   struct
@@ -611,109 +612,173 @@ and type evt_struct = E.event_structure) =
            E.empty_event_structure)
 
 
-(**************)
-(* Mixd size  *)
-(**************)
+(***************)
+(* Mixed size  *)
+(***************)
+    module Mixed(SZ:ByteSize.S) = struct
+      module AM = A.Mixed(SZ)
 
-    module Scalar = V.Cst.Scalar
-    let def_size = Scalar.machsize
+      module Scalar = V.Cst.Scalar
+      let def_size = Scalar.machsize
 
-    let extract_byte v = VC.Unop (Op.AndK A.mask,v)
+      let extract_byte v = VC.Unop (Op.AndK AM.mask,v)
 
-    let extract_step v =
-      let d = extract_byte v
-      and w = VC.Unop (Op.LogicalRightShift A.nshift,v) in
-      d,w
+      let extract_step v =
+        let d = extract_byte v
+        and w = VC.Unop (Op.LogicalRightShift AM.nshift,v) in
+        d,w
 
 (* Translate to list of bytes, least significant first *)
-    let explode sz v =
-      let rec do_rec k v =
-        if k <= 1 then [v],[]
-        else
-          let d,w = extract_step v in
-          let vw = V.fresh_var () in
-          let ds,eqs = do_rec (k-1) vw in
-          let vd =  V.fresh_var () in
-          vd::ds,
-          VC.Assign (vw,w)::VC.Assign (vd,d)::eqs in
-      do_rec (A.nsz sz) v
+      let explode sz v =
+        let rec do_rec k v =
+          if k <= 1 then [v],[]
+          else
+            let d,w = extract_step v in
+            let vw = V.fresh_var () in
+            let ds,eqs = do_rec (k-1) vw in
+            let vd =  V.fresh_var () in
+            vd::ds,
+            VC.Assign (vw,w)::VC.Assign (vd,d)::eqs in
+        do_rec (AM.nsz sz) v
 
 (* Translate from list of bytes  least significant first *)
-    let rec recompose ds = match ds with
-    | [] -> assert false
-    | [d] -> d,[]
-    | d::ds ->
-        let w,eqs = recompose ds in
-        let vw = V.fresh_var ()
-        and x =  V.fresh_var () in
-        vw,VC.Assign (x,VC.Unop (Op.LeftShift A.nshift,w))::VC.Assign (vw,VC.Binop (Op.Or,x,d))::eqs
+      let rec recompose ds = match ds with
+      | [] -> assert false
+      | [d] -> d,[]
+      | d::ds ->
+          let w,eqs = recompose ds in
+          let vw = V.fresh_var ()
+          and x =  V.fresh_var () in
+          vw,VC.Assign (x,VC.Unop (Op.LeftShift AM.nshift,w))::VC.Assign (vw,VC.Binop (Op.Or,x,d))::eqs
 
 (* Bytes addresses, little endian *)
 
-    let byte_eas sz a =
-      let kmax = A.nsz sz in
-      let rec do_rec k =
-        if k >= kmax then [],[]
-        else
-          let xa = V.fresh_var() in
-          let xas,eqs = do_rec (k+1) in
-          xa::xas,VC.Assign (xa,VC.Unop (Op.AddK (k*A.byte_sz),a))::eqs in
-      let xas,eqs = do_rec 1 in
-      let xas = a::xas in
-      let open Endian in
-      match A.endian with
-      | Little -> xas,eqs
-      | Big -> List.rev xas,eqs
+      let byte_eas sz a =
+        let kmax = AM.nsz sz in
+        let rec do_rec k =
+          if k >= kmax then [],[]
+          else
+            let xa = V.fresh_var() in
+            let xas,eqs = do_rec (k+1) in
+            xa::xas,VC.Assign (xa,VC.Unop (Op.AddK (k*AM.byte_sz),a))::eqs in
+        let xas,eqs = do_rec 1 in
+        let xas = a::xas in
+        let open Endian in
+        match AM.endian with
+        | Little -> xas,eqs
+        | Big -> List.rev xas,eqs
 
-    let read_mixed is_data sz mk_act a ii =
-      fun eiid ->
-        let eas,a_eqs = byte_eas sz a in
-        let eavs = List.map (fun ea -> ea,V.fresh_var ()) eas in
-        let vs = List.map snd eavs in
-        let v,v_eqs = recompose vs in
-        let eiid,es =
-          List.fold_left
-            (fun (eiid,es) (ea,v) ->
-              eiid+1,
-              E.EventSet.add
-                {E.eiid = eiid;
-                 E.iiid = Some ii;
-                 E.action = mk_act A.byte (A.Location_global ea) v;} es)
-            (eiid,E.EventSet.empty) eavs  in
-        let e_full =
-          { E.eiid=eiid; E.iiid = Some ii;
-            E.action = mk_act sz (A.Location_global a) v; } in
-        let st =
-          { E.empty_event_structure with
-            E.events = es;
-            E.data_ports = if is_data then es else E.EventSet.empty;
-            E.sca = E.EventSetSet.singleton es;
-            E.mem_accesses = E.EventSet.singleton e_full;} in
-        eiid+1,Evt.singleton (v,a_eqs@v_eqs,st)
+      let read_mixed is_data sz mk_act a ii =
+        fun eiid ->
+          let eas,a_eqs = byte_eas sz a in
+          let eavs = List.map (fun ea -> ea,V.fresh_var ()) eas in
+          let vs = List.map snd eavs in
+          let v,v_eqs = recompose vs in
+          let eiid,es =
+            List.fold_left
+              (fun (eiid,es) (ea,v) ->
+                eiid+1,
+                E.EventSet.add
+                  {E.eiid = eiid;
+                   E.iiid = Some ii;
+                   E.action = mk_act SZ.byte (A.Location_global ea) v;} es)
+              (eiid,E.EventSet.empty) eavs  in
+          let e_full =
+            { E.eiid=eiid; E.iiid = Some ii;
+              E.action = mk_act sz (A.Location_global a) v; } in
+          let st =
+            { E.empty_event_structure with
+              E.events = es;
+              E.data_ports = if is_data then es else E.EventSet.empty;
+              E.sca = E.EventSetSet.singleton es;
+              E.mem_accesses = E.EventSet.singleton e_full;} in
+          eiid+1,Evt.singleton (v,a_eqs@v_eqs,st)
 
-    let write_mixed sz mk_act a v ii =
-      fun eiid ->
-        let eas,a_eqs = byte_eas sz a
-        and vs,v_eqs = explode sz v in
-        let eiid,es =
-          List.fold_left2
-            (fun (eiid,es) ea v ->
-              eiid+1,
-              E.EventSet.add
-                {E.eiid = eiid;
-                 E.iiid = Some ii;
-                 E.action = mk_act A.byte (A.Location_global ea) v;} es)
-            (eiid,E.EventSet.empty) eas vs in
-        let e_full =
-          { E.eiid=eiid; E.iiid = Some ii;
-            E.action = mk_act sz (A.Location_global a) v; } in
-        let st =
-          { E.empty_event_structure with
-            E.events = es;
-            E.sca = E.EventSetSet.singleton es;
-            E.mem_accesses = E.EventSet.singleton e_full;} in
-        eiid+1,Evt.singleton ((),a_eqs@v_eqs,st)
+      let write_mixed sz mk_act a v ii =
+        fun eiid ->
+          let eas,a_eqs = byte_eas sz a
+          and vs,v_eqs = explode sz v in
+          let eiid,es =
+            List.fold_left2
+              (fun (eiid,es) ea v ->
+                eiid+1,
+                E.EventSet.add
+                  {E.eiid = eiid;
+                   E.iiid = Some ii;
+                   E.action = mk_act SZ.byte (A.Location_global ea) v;} es)
+              (eiid,E.EventSet.empty) eas vs in
+          let e_full =
+            { E.eiid=eiid; E.iiid = Some ii;
+              E.action = mk_act sz (A.Location_global a) v; } in
+          let st =
+            { E.empty_event_structure with
+              E.events = es;
+              E.sca = E.EventSetSet.singleton es;
+              E.mem_accesses = E.EventSet.singleton e_full;} in
+          eiid+1,Evt.singleton ((),a_eqs@v_eqs,st)
 
+
+      let initwrites_non_mixed env _ =
+        fun eiid ->
+          let eiid,es =
+            List.fold_left
+              (fun (eiid,es) (loc,v) ->
+                let ew =
+                  {E.eiid = eiid ;
+                   E.iiid = None ;
+                   E.action = E.Act.mk_init_write loc def_size v ;} in
+                (eiid+1,ew::es))
+              (eiid,[]) env in
+          let es = E.EventSet.of_list es in
+(*        Printf.eprintf "Init writes %a\n" E.debug_events es; *)
+          eiid,
+          Evt.singleton ((),[],do_trivial es)
+
+      let initwrites_mixed env size_env =
+        fun eiid ->
+          try
+            let eiid,es,sca =
+              List.fold_left
+                (fun (eiid,es,sca) (loc,v) ->
+                  match loc with
+                  | A.Location_global
+                      (A.V.Val (Constant.Symbolic (s,0)) as a) ->
+                        let sz = A.look_size size_env s in
+                        let ds = AM.explode sz v
+                        and eas = AM.byte_eas sz a in
+                        let eiid,ews =
+                          List.fold_left2
+                            (fun (eiid,ews) a d ->
+                              let ew =
+                                { E.eiid = eiid ;
+                                  E.iiid = None ;
+                                  E.action =
+                                  E.Act.mk_init_write
+                                    (A.Location_global a) SZ.byte d ;} in
+                              eiid+1,ew::ews)
+                            (eiid,[]) eas ds in
+                        eiid,ews@es, E.EventSetSet.add (E.EventSet.of_list ews) sca
+                  | _ ->
+                      let ew =
+                        {E.eiid = eiid ;
+                         E.iiid = None ;
+                         E.action = E.Act.mk_init_write loc def_size v ;} in
+                      (eiid+1,ew::es,
+                       E.EventSetSet.add (E.EventSet.singleton ew) sca))
+                (eiid,[],E.EventSetSet.empty) env in
+            let es = E.EventSet.of_list es in
+(*        Printf.eprintf "Init writes %a\n" E.debug_events es; *)
+
+            let st = do_trivial es in
+            let st = { st with E.sca; } in
+            eiid,
+            Evt.singleton ((),[],st)
+          with
+          | V.Undetermined -> assert false
+
+      let initwrites =
+        if A.is_mixed then initwrites_mixed else initwrites_non_mixed
+    end
 (* Add an inequality constraint *)
     let neqT : V.v -> V.v -> unit t
         = fun v1 v2 ->
@@ -747,66 +812,6 @@ and type evt_struct = E.event_structure) =
     type evt_struct = E.event_structure
     type output = VC.cnstrnts * evt_struct
 
-
-    let initwrites_non_mixed env _ =
-      fun eiid ->
-        let eiid,es =
-          List.fold_left
-            (fun (eiid,es) (loc,v) ->
-              let ew =
-                {E.eiid = eiid ;
-                 E.iiid = None ;
-                 E.action = E.Act.mk_init_write loc def_size v ;} in
-              (eiid+1,ew::es))
-            (eiid,[]) env in
-        let es = E.EventSet.of_list es in
-(*        Printf.eprintf "Init writes %a\n" E.debug_events es; *)
-        eiid,
-        Evt.singleton ((),[],do_trivial es)
-
-    let initwrites_mixed env size_env =
-      fun eiid ->
-        try
-          let eiid,es,sca =
-          List.fold_left
-            (fun (eiid,es,sca) (loc,v) ->
-              match loc with
-              | A.Location_global (A.V.Val (Constant.Symbolic (s,0)) as a) ->
-                  let sz = A.look_size size_env s in
-                  let ds = A.explode sz v
-                  and eas = A.byte_eas sz a in
-                  let eiid,ews =
-                    List.fold_left2
-                      (fun (eiid,ews) a d ->
-                        let ew =
-                          { E.eiid = eiid ;
-                            E.iiid = None ;
-                            E.action =
-                            E.Act.mk_init_write (A.Location_global a) A.byte d ;} in
-                        eiid+1,ew::ews)
-                      (eiid,[]) eas ds in
-                  eiid,ews@es, E.EventSetSet.add (E.EventSet.of_list ews) sca
-              | _ ->
-                  let ew =
-                    {E.eiid = eiid ;
-                     E.iiid = None ;
-                     E.action = E.Act.mk_init_write loc def_size v ;} in
-                  (eiid+1,ew::es,
-                   E.EventSetSet.add (E.EventSet.singleton ew) sca))
-            (eiid,[],E.EventSetSet.empty) env in
-        let es = E.EventSet.of_list es in
-(*        Printf.eprintf "Init writes %a\n" E.debug_events es; *)
-
-        let st = do_trivial es in
-        let st = { st with E.sca; } in
-        eiid,
-        Evt.singleton ((),[],st)
-        with
-        | V.Undetermined -> assert false
-
-    let  mixed = C.variant Variant.Mixed
-    let initwrites =
-      if mixed then initwrites_mixed else initwrites_non_mixed
     let get_output =
       fun et ->
         let (_,es) = et 0 in

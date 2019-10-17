@@ -40,6 +40,9 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
     module V = V
 
+(* Technically wrong, but it does not matter as there is no mixed-size *)
+    let mem_access_size _ = None
+
     include ArchExtra_herd.Make(C)
 	(struct
 	  module V = V 
@@ -51,6 +54,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
 	  type arch_instruction = instruction
           let fromto_of_instr _ = None
+
 	end)
 	  
   end
