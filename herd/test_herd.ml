@@ -113,6 +113,23 @@ module Make(A:Arch_herd.S) =
           MachSize.Set.empty p in
       MachSize.Set.elements s
 
+(* Mem size access *)
+    let mem_access_size_of_code sz code =
+      List.fold_left
+        (A.pseudo_fold
+           (fun sz0 ins -> match A.mem_access_size ins with
+           | Some sz -> MachSize.Set.add sz sz0
+           | None -> sz0))
+        sz
+        code
+
+    let mem_access_size_prog p =
+      let s =
+        List.fold_left
+          (fun sz (_,code) -> mem_access_size_of_code sz code)
+          MachSize.Set.empty p in
+      MachSize.Set.elements s
+
     let build name t =
       let t = Alloc.allocate_regs t in
       let
