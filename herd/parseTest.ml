@@ -74,19 +74,18 @@ module Top (Conf:Config) = struct
           | Some hash ->
               TestHash.check_env env name.Name.name filename hash in
           let test = T.build name parsed in
+(* Compute basic machine size *)
           let sz =
             if S.A.is_mixed then begin match Conf.byte with
             | MachSize.Tag.Size sz -> sz
             | MachSize.Tag.Auto ->
               let szs = test.Test_herd.access_size in
-              let sz = match szs with
-              | [] -> MachSize.Quad
+              match szs with
+              | [] -> MachSize.Byte
               | [sz] -> MachSize.pred sz
-              | sz::_ -> sz in
-              Printf.eprintf " sz=%s\n" (MachSize.pp sz) ;
-              sz
-            end else S.A.V.Cst.Scalar.machsize in
-
+              | sz::_ -> sz
+            end else MachSize.Byte in
+(* And run test *)
           let module T =
             Top_herd.Make(struct include Conf let byte = sz end)(M) in
           T.run start_time test ;
