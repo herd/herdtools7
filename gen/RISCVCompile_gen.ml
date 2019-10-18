@@ -23,6 +23,7 @@ end
 
 module Make(Cfg:Config) : XXXCompile_gen.S  =
   struct
+
     let naturalsize = TypBase.get_size Cfg.typ
 
     module RISCV =
@@ -70,8 +71,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
       let open TypBase in
       match Cfg.typ with
       | Std (_,MachSize.Quad) -> AV.Double
-      | Int |Std (_,MachSize.Word) -> AV.Word
-      | t -> Warn.user_error "RISCV, illegal base type: %s" (pp t)
+      | Int |Std (_,MachSize.(Word|Short|Byte)) -> AV.Word
 
 
     let bne r1 r2 lab =  AV.Bcc (AV.NE,r1,r2,lab)
@@ -144,36 +144,39 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
       let rB,init,st = next_init st p init x in
       rA,init,lift_code [ldr_mixed rA rB sz o],st
 
-    module LOAD =
+    module type L = sig
+      val load : AV.mo -> reg -> reg -> instruction
+    end
+
+    module MKLOAD(L:L) =
       struct
 
         let load_idx mo st rA rB idx =
           let rD,st = next_reg st in
-          [add rD rB idx;ldr mo rA rD],st
+          [add rD rB idx;L.load mo rA rD],st
 
         let emit_load mo st p init x =
           let rA,st = next_reg st in
           let rB,init,st = next_init st p init x in
-          rA,init,lift_code [ldr mo rA rB],st
+          let ld = L.load mo rA rB in
+          rA,init,lift_code [ld],st
 
 
         let emit_load_not_zero mo st p init x =
           let rA,st = next_reg st in
           let rB,init,st = next_init st p init x in
+          let ld = L.load mo rA rB in
           let lab = Label.next_label "L" in
-          rA,init,
-          Label (lab,Nop)::
-          lift_code
-            [ldr mo rA rB; cbz rA lab],
-          st
+          rA,init,Label (lab,Nop)::lift_code (ld::[cbz rA lab]),st
 
         let emit_load_one mo st p init x =
           let rA,st = next_reg st in
           let rB,init,st = next_init st p init x in
           let lab = Label.next_label "L" in
+          let ld = L.load mo rA rB in
           rA,init,
           Label (lab,Nop)::
-          lift_code [ldr mo rA rB; subiw rA rA 1; cbnz rA lab; li rA 1;],
+          lift_code [ld; subiw rA rA 1; cbnz rA lab; li rA 1;],
           st
 
         let emit_load_not mo st p init x bne =
@@ -189,7 +192,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
           Label (lab,Nop)::
           lift_code
             [
-             ldr mo rA rB; bne rA out ;
+             L.load mo rA rB; bne rA out ;
              subiw rC rC 1 ;
              cbnz rC lab ;
            ]@
@@ -210,12 +213,25 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
           rA,init,lift_code ins ,st
       end
 
+    module LOAD =
+      MKLOAD
+        (struct let load = ldr  end)
+
+    module OBS =
+      MKLOAD
+        (struct
+          let load mo rA rB =
+            assert (mo = AV.Rlx) ;
+            ldr_mixed rA rB naturalsize 0
+        end)
+
 (* For export *)
     let emit_load_one = LOAD.emit_load_one AV.Rlx
     let emit_load = LOAD.emit_load  AV.Rlx
-    let emit_load_not_value = LOAD.emit_load_not_value AV.Rlx
-    let emit_load_not_eq = LOAD.emit_load_not_eq AV.Rlx
-    let emit_load_not_zero = LOAD.emit_load_not_zero AV.Rlx
+    let emit_obs = OBS.emit_load AV.Rlx
+    let emit_obs_not_value = OBS.emit_load_not_value AV.Rlx
+    let emit_obs_not_eq = OBS.emit_load_not_eq AV.Rlx
+    let emit_obs_not_zero = OBS.emit_load_not_zero AV.Rlx
 
 
 (**********)
@@ -566,13 +582,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
       in
     do_rec (current_label st) []
 
-   let does_fail p st = 
-     let l = list_of_fail_labels p st in 
+   let does_fail p st =
+     let l = list_of_fail_labels p st in
      match l with [] -> false | _ -> true
-   
+
    let does_exit p st =
      let l = list_of_exit_labels p st in
-     match l with [] -> false | _ -> true 
+     match l with [] -> false | _ -> true
 
    let postlude st p init cs =
       if does_fail p st then

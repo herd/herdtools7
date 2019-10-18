@@ -228,14 +228,16 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
 
     let emit_load st p init x = emit_load_mixed naturalsize 0 st p init x
 
-    let emit_load_not_zero st p init x =
+    let emit_obs = emit_load_mixed naturalsize 0
+
+    let emit_obs_not_zero st p init x =
       let rA,st = next_reg st in
       let rB,init,st = U.next_init st p init x in
       let lab = Label.next_label "L" in
       rA,init,
       PPC.Label (lab,PPC.Nop)::
       PPC.lift_code
-        [PPC.Pload (Word,rA,0,rB) ; PPC.Pcmpwi (0,rA,0) ; PPC.Pbcc (PPC.Eq,lab)],
+        [PPC.Pload (naturalsize,rA,0,rB) ; PPC.Pcmpwi (0,rA,0) ; PPC.Pbcc (PPC.Eq,lab)],
       st
 
     let emit_load_one st p init x =
@@ -248,7 +250,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
         [PPC.Pload (Word,rA,0,rB) ; PPC.Pcmpwi (0,rA,1) ; PPC.Pbcc (PPC.Ne,lab)],
       st
 
-    let emit_load_not st p init x cmp =
+    let emit_obs_not st p init x cmp =
       let rA,st = next_reg st in
       let rC,st = next_reg st in
       let rB,init,st = U.next_init st p init x in
@@ -260,18 +262,18 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
       PPC.Label (lab,PPC.Nop)::
       PPC.lift_code
         [
-         PPC.Pload (Word,rA,0,rB) ; cmp rA ;
+         PPC.Pload (naturalsize,rA,0,rB) ; cmp rA ;
          PPC.Pbcc (PPC.Ne,out) ; PPC.Paddi (rC,rC,-1) ;
          PPC.Pcmpwi (0,rC,0) ; PPC.Pbcc (PPC.Ne,lab) ;
        ]@
       [PPC.Label (out,PPC.Nop)],
       st
 
-    let emit_load_not_eq st p init x rP =
-      emit_load_not st p init x (fun r -> PPC.Pcmpw (0,r,rP))
+    let emit_obs_not_eq st p init x rP =
+      emit_obs_not st p init x (fun r -> PPC.Pcmpw (0,r,rP))
 
-    let emit_load_not_value st p init x v =
-      emit_load_not st p init x (fun r -> PPC.Pcmpwi (0,r,v))
+    let emit_obs_not_value st p init x v =
+      emit_obs_not st p init x (fun r -> PPC.Pcmpwi (0,r,v))
 
     let emit_load_idx st p init x idx =
       let rA,st = next_reg st in

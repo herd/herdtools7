@@ -75,7 +75,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       else
         let out = Label.next_label "Go" in
         let rec do_rec = function
-          | 1 -> 
+          | 1 ->
             atom r1 r2 addr [BC (EQ,tmp2,r0,Label.fail p (current_label st));]
           | u ->
               atom r1 r2 addr
@@ -107,7 +107,9 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       let rB,init,st = U.next_init st p init x in
       rA,init,lift_code [LW (rA,0,rB)],st
 
-    let emit_load_not_zero st p init x =
+    let emit_obs = emit_load
+
+    let emit_obs_not_zero st p init x =
       let rA,st = _next_reg st in
       let rB,init,st = U.next_init st p init x in
       let lab = Label.next_label "L" in
@@ -143,10 +145,10 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       [Label (out,Nop)],
       st
 
-    let emit_load_not_eq st p init x rP =
+    let emit_obs_not_eq st p init x rP =
       emit_load_not st p init x (fun r lab k -> BC (NE,r,rP,lab)::k)
 
-    let emit_load_not_value st p init x v =
+    let emit_obs_not_value st p init x v =
       emit_load_not st p init x
         (fun r lab k -> branch_neq r v lab k)
 
@@ -383,7 +385,7 @@ let emit_joker st init = None,init,[],st
       (fun k -> lift_code (branch_neq r e.v lab [])@k),
       next_label_st st
 
-    let check_load  p r e init st = 
+    let check_load  p r e init st =
       let cs,st = do_check_load p st r e in
       init,cs,st
 
@@ -408,10 +410,10 @@ let emit_joker st init = None,init,[],st
       in
     do_rec (current_label st) []
 
-   let does_fail p st = 
-     let l = list_of_fail_labels p st in 
+   let does_fail p st =
+     let l = list_of_fail_labels p st in
      match l with [] -> false | _ -> true
-   
+
    let does_exit p st =
      let l = list_of_exit_labels p st in
      match l with [] -> false | _ -> true
