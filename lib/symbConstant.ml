@@ -46,7 +46,7 @@ module Make(Scalar:Scalar.S) = struct
       | 0 -> Proc.compare p1 p2
       | r -> r
       end
-  | Tag t1,Tag t2 -> String.compare t1 t2
+  | Tag t1,Tag t2 -> tag_compare t1 t2
   | (Concrete _,(Symbolic _|Label _|Tag _))
   | (Symbolic _,(Label _|Tag _))
   | (Label _,Tag _)
@@ -65,7 +65,8 @@ module Make(Scalar:Scalar.S) = struct
     | Symbolic (s,0) -> pp_location s
     | Symbolic (s,o) -> sprintf "%s+%i" (pp_location s) o
     | Label (p,lbl)  -> sprintf "%i:%s" p lbl
-    | Tag s -> sprintf ":%s" s
+    | Tag None -> "NoTag"
+    | Tag (Some s) -> sprintf "'%s" s
 
   let pp_v = pp false
 
@@ -79,7 +80,7 @@ module Make(Scalar:Scalar.S) = struct
       location_eq  s1 s2 && Misc.int_eq o1 o2
   | Label (p1,s1),Label (p2,s2) ->
       Misc.string_eq  s1 s2 && Misc.int_eq p1 p2
-  | Tag t1,Tag t2 -> Misc.string_eq t1 t2
+  | Tag t1,Tag t2 -> tag_eq t1 t2
   | (Concrete _,(Symbolic _|Label _|Tag _))
   | (Symbolic _,(Concrete _|Label _|Tag _))
   | (Label _,(Concrete _|Symbolic _|Tag _))
