@@ -66,17 +66,15 @@ module Make
       let mk_fault a ii =
         M.mk_singleton_es (Act.Fault (ii,A.Location_global a)) ii
 
-      let read_loc v is_data = M.read_loc is_data (mk_read v AArch64.N)
+    let mk_read sz an loc v = Act.Access (Dir.R, loc, v, an, sz)
+    let mk_read_std = mk_read MachSize.Quad AArch64.N
+    let mk_fault ii loc = Act.Fault (ii,loc)
 
-      let read_reg is_data r ii = match r with
-      | AArch64Base.ZR -> M.unitT V.zero
-      | _ ->
-          M.read_loc is_data (mk_read MachSize.Quad AArch64.N) (A.Location_reg (ii.A.proc,r)) ii
+    let read_loc sz is_data = M.read_loc is_data (mk_read sz AArch64.N)
 
-      let read_reg_sz sz is_data r ii = match sz with
-      | MachSize.Quad -> read_reg is_data r ii
-      | MachSize.Word|MachSize.Short|MachSize.Byte ->
-          read_reg is_data r ii >>= fun v -> M.op1 (Op.Mask sz) v
+    let read_reg is_data r ii = match r with
+    | AArch64Base.ZR -> M.unitT V.zero
+    | _ -> M.read_loc is_data mk_read_std (A.Location_reg (ii.A.proc,r)) ii
 
       let read_reg_ord = read_reg_sz MachSize.Quad false
       let read_reg_ord_sz sz = read_reg_sz sz false

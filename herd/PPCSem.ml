@@ -23,8 +23,7 @@ module Make (C:Sem.Config)(V:Value.S)
     module PPC = PPCArch_herd.Make(SemExtra.ConfigToArchConfig(C))(V)
     module Act = MachAction.Make(C.PC)(PPC)
     include SemExtra.Make(C)(PPC)(Act)
-
-    let mixed = PPC.is_mixed
+    let mixed = C.variant Variant.Mixed
 
 (* barrier pretty print *)
     let sync = {barrier=PPC.Sync; pp="sync";}
