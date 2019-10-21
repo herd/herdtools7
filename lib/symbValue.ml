@@ -102,8 +102,7 @@ module Make(Cst:Constant.S) = struct
   let unop op_op op v1 = match v1 with
   | Val (Concrete i1) -> Val (Concrete (op i1))
   | Val (Symbolic _|Label _|Tag _ as x) ->
-      Warn.user_error "Illegal operation %s on %s"
-        (Op.pp_op1 true op_op) (Cst.pp_v x)
+      Warn.user_error "Illegal operation %s on %s" (Op.pp_op1 true op_op) (Cst.pp_v x)
   | Var _ -> raise Undetermined
 
   let binop op_op op v1 v2 = match v1,v2 with
@@ -206,18 +205,10 @@ module Make(Cst:Constant.S) = struct
   let mask_one k = Scalar.shift_left Scalar.one k
 
 (* Ops on tagged locations *)
-  let settag v1 v2 = match v1,v2 with
-  | Val (Symbolic ((a,_),o)),Val (Tag t) -> Val (Symbolic((a,Some t),o))
-  | Val cst1,Val cst2 ->
-      Warn.user_error "Illegal settag on %s and %s"
-        (Cst.pp_v cst1)  (Cst.pp_v cst2)
-  | (Var _,_)|(_,Var _) ->
-      raise Undetermined
-
   let op_tagged op_op op v = match v with
   |  Val (Symbolic (a,o)) -> Val (op a o)
   |  Val (Concrete _|Label _|Tag _) ->
-      Warn.user_error "Illegal %s on %s" op_op (pp_v v)
+      Warn.user_error "Illegal %s" op_op
   | Var _ -> raise Undetermined
 
   (*  Returns the location of the tag associated to a location *)
@@ -235,10 +226,7 @@ module Make(Cst:Constant.S) = struct
         Warn.fatal "Illegal check_atag" (* NB: not an user error *)
 
   (* Decompose tagged locations *)
-  let op_tagextract (_,t) _ = match t with
-  | Some t -> Tag t
-  | None -> Constant.default_tag
-
+  let op_tagextract (_,t) _ = Tag t
   let tagextract v = op_tagged "tagextract" op_tagextract v
   let op_locextract (a,_) o = Symbolic ((a,None),o)
   let locextract v = op_tagged "locextract" op_locextract v
@@ -265,7 +253,7 @@ module Make(Cst:Constant.S) = struct
       unop op (fun s -> Scalar.shift_right_logical s k)
   | AddK k -> add_konst k
   | AndK k -> unop op (fun s -> Scalar.logand s (Scalar.of_string k))
-  | Mask sz -> maskop op sz
+  | Mask sz -> unop op (Scalar.mask sz)
   | TagLoc -> tagloc
   | TagExtract -> tagextract
   | LocExtract -> locextract

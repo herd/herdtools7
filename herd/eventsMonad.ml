@@ -851,12 +851,10 @@ and type evt_struct = E.event_structure) =
             let es = E.EventSet.of_list es in
 (*        Printf.eprintf "Init writes %a\n" E.debug_events es; *)
 
-            let st = do_trivial es in
-            let st = { st with E.sca; } in
-            eiid,
-            Evt.singleton ((),[],st)
-          with
-          | V.Undetermined -> assert false
+   let get_alloc_tag a = op1 Op.TagLoc a
+
+    let get_alloc_tag_val mk_act a ii =
+      read_mixed false A.byte mk_act a ii
 
       let initwrites =
         if A.is_mixed then initwrites_mixed else initwrites_non_mixed
@@ -895,6 +893,66 @@ and type evt_struct = E.event_structure) =
 
     type evt_struct = E.event_structure
     type output = VC.cnstrnts * evt_struct
+
+    let initwrites_non_mixed env _ =
+      fun eiid ->
+        let eiid,es =
+          List.fold_left
+            (fun (eiid,es) (loc,v) ->
+              let ew =
+                {E.eiid = eiid ;
+                 E.iiid = None ;
+                 E.action = E.Act.mk_init_write loc def_size v ;} in
+              (eiid+1,ew::es))
+            (eiid,[]) env in
+        let es = E.EventSet.of_list es in
+(*        Printf.eprintf "Init writes %a\n" E.debug_events es; *)
+        eiid,
+        Evt.singleton ((),[],do_trivial es)
+
+    let initwrites_mixed env size_env =
+      fun eiid ->
+        try
+          let eiid,es,sca =
+          List.fold_left
+            (fun (eiid,es,sca) (loc,v) ->
+              match loc with
+              | A.Location_global (A.V.Val (Constant.Symbolic ((s,_),0)) as a) ->
+                  let sz = A.look_size size_env s in
+                  let ds = A.explode sz v
+                  and eas = A.byte_eas sz a in
+                  let eiid,ews =
+                    List.fold_left2
+                      (fun (eiid,ews) a d ->
+                        let ew =
+                          { E.eiid = eiid ;
+                            E.iiid = None ;
+                            E.action =
+                            E.Act.mk_init_write (A.Location_global a) A.byte d ;} in
+                        eiid+1,ew::ews)
+                      (eiid,[]) eas ds in
+                  eiid,ews@es, E.EventSetSet.add (E.EventSet.of_list ews) sca
+              | _ ->
+                  let ew =
+                    {E.eiid = eiid ;
+                     E.iiid = None ;
+                     E.action = E.Act.mk_init_write loc def_size v ;} in
+                  (eiid+1,ew::es,
+                   E.EventSetSet.add (E.EventSet.singleton ew) sca))
+            (eiid,[],E.EventSetSet.empty) env in
+        let es = E.EventSet.of_list es in
+(*        Printf.eprintf "Init writes %a\n" E.debug_events es; *)
+
+        let st = do_trivial es in
+        let st = { st with E.sca; } in
+        eiid,
+        Evt.singleton ((),[],st)
+        with
+        | V.Undetermined -> assert false
+
+    let mixed = C.variant Variant.Mixed
+
+    let initwrites =  if mixed then initwrites_mixed else initwrites_non_mixed
 
     let get_output =
       fun et ->
