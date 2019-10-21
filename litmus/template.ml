@@ -158,8 +158,8 @@ module Make(O:Config)(A:I) =
              (List.fold_left
                 (fun k (_,v) ->
                   match v with
-                  | Symbolic (s,_) -> s::k
-                  | Concrete _|Label _ -> k)
+                  | Symbolic ((s,_),_) -> s::k
+                  | Concrete _|Label _|Tag _ -> k)
                 [] init)) in
       StringSet.elements set
 
@@ -168,7 +168,7 @@ module Make(O:Config)(A:I) =
         (fun k (_,v) ->
           match v with
           | Label (p,s) -> (p,s)::k
-          | Concrete _|Symbolic _ -> k)
+          | Concrete _|Symbolic _|Tag _ -> k)
         [] init
 
     let get_stable { stable; _} = stable

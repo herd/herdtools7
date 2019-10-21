@@ -30,14 +30,15 @@ module type S = sig
     | Jump of lbl
     (* if v is one, jump to address, otherwise continue in sequence *)
     | CondJump of v * lbl
-
+    (* Stop now *)
+    | Exit
 
 (* Next instruction in sequence *)
   val nextT : t monad
-(* Non-conditional branch *)  
+(* Non-conditional branch *)
   val branchT : lbl ->  t monad
 (* Conditional branch *)
-  val bccT : v -> lbl -> t monad  
+  val bccT : v -> lbl -> t monad
 end
 
 module Make(M:Monad.S) = struct
@@ -53,6 +54,8 @@ module Make(M:Monad.S) = struct
     | Jump of lbl
     (* if v is one, jump to address, otherwise continue in sequence *)
     | CondJump of v * lbl
+    (* Stop now *)
+    | Exit
 
 (* Utilities *)
 
@@ -61,4 +64,3 @@ module Make(M:Monad.S) = struct
   let branchT lbl = M.unitT (Jump lbl)
   let bccT v lbl = M.unitT (CondJump (v,lbl))
 end
-

@@ -67,7 +67,9 @@ type op1 =
   | AddK of int
   | AndK of string
   | Mask of MachSize.sz
-  | AddAllocTag
+  | TagLoc       (* Get tag memory location from location *)
+  | TagExtract   (* Extract tag from tagged location *)
+  | LocExtract   (* Extract actual location from location *)
 
 let pp_op1 hexa o = match o with
 | Not -> "!"
@@ -79,7 +81,9 @@ let pp_op1 hexa o = match o with
 | AddK i  -> (if hexa then sprintf "+[0x%x]" else sprintf "+[%i]") i
 | AndK i  -> sprintf "&[%s]" i
 | Mask sz  -> sprintf "mask%02i" (MachSize.nbits sz)
-| AddAllocTag -> sprintf ".tag"
+| TagLoc ->  "tagloc"
+| TagExtract -> "tagextract"
+| LocExtract -> "locextract"
 (***********)
 
 type op3 = If

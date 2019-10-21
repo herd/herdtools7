@@ -290,18 +290,15 @@ module Make
 (* Right value *)
     let dump_a_addr s = sprintf "&(_a->%s[_i])" s
 
-    let dump_a_v v = match v with
-      | Constant.Concrete i -> A.V.Scalar.pp Cfg.hexa i
-      | Constant.Symbolic (s,_) -> dump_a_addr s
-      | Constant.Label _ ->
+    let dump_a_v v =
+      let open Constant in
+      match v with
+      | Concrete i -> A.V.Scalar.pp Cfg.hexa i
+      | Symbolic ((s,None),0) -> dump_a_addr s
+      | Label _ ->
           Warn.user_error "No label value for klitmus"
-
-(* Right value, casted if pointer *)
-    let _dump_a_v_casted = function
-      | Constant.Concrete i -> sprintf "%i" i
-      | Constant.Symbolic (s,_) -> sprintf "((int *)%s)" (dump_a_addr s)
-      | Constant.Label _ ->
-          Warn.user_error "No label value for klitmus"
+      | Symbolic _|Tag _ ->
+          Warn.user_error "No tag nor indexed access for klitmus"
 
     let dump_ctx env test =
       O.o "/****************/" ;

@@ -74,6 +74,9 @@ module type S = sig
   val is_store : action -> bool
   val is_load : action -> bool
 
+(* Compatible accesses *)
+  val compatible_accesses : action -> action -> bool
+
 (* for bell annotations *)
   val annot_in_list : string -> action -> bool
 

@@ -167,18 +167,20 @@ struct
   module Addr = struct
     open Constant
 
-    let nolabel_value () =
-      Warn.user_error "No label value for %s" Sys.argv.(0)
+    let nolabel_value () = Warn.user_error "No label value for %s" Sys.argv.(0)
+    let notag_value () = Warn.user_error "No tag value for %s" Sys.argv.(0)
 
     let collect_value f v k = match v with
-    | Symbolic (s,_) -> f s k
+    | Symbolic ((s,_),_) -> f s k
     | Concrete _ -> k
     | Label _ -> nolabel_value ()
+    | Tag _ -> notag_value ()
 
     let map_value f v = match v with
-    | Symbolic (s,o) -> Symbolic (f s,o)
+    | Symbolic ((s,t),o) -> Symbolic ((f s,t),o)
     | Concrete _ -> v
     | Label _ -> nolabel_value ()
+    | Tag _ -> notag_value ()
 
     let collect_pseudo f =
       A.pseudo_fold

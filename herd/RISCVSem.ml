@@ -24,7 +24,6 @@ module Make (C:Sem.Config)(V:Value.S)
     include SemExtra.Make(C)(RISCV)(Act)
 
     let mixed = C.variant Variant.Mixed
-    let memtag = C.variant Variant.MemTag
 
 (* Barrier pretty print *)
     let barriers =

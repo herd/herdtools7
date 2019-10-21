@@ -226,7 +226,7 @@ module RegMap = A.RegMap)
         | Memory.Indirect ->
             List.iter
               (fun (reg,v) -> match v with
-              | Constant.Symbolic (a,_) ->
+              | Constant.Symbolic ((a,None),_) ->
                   let cpy =  copy_name (Tmpl.tag_reg reg) in
                   fprintf chan "%svoid *%s = %s;\n" indent
                     cpy
@@ -386,12 +386,13 @@ module RegMap = A.RegMap)
       let compile_val_fun =
         let open Constant in
         fun v -> match v with
-        | Symbolic (s,_) ->
+        | Symbolic ((s,None),_) ->
             sprintf "%s%s"
               (match O.memory with Memory.Direct -> "" | Memory.Indirect -> "*")
               s
         | Concrete _ -> Tmpl.dump_v v
         | Label (p,lbl) -> OutUtils.fmt_lbl_var p lbl
+        | Symbolic _|Tag _ -> assert false
 
       let compile_init_val_fun = compile_val_fun
 

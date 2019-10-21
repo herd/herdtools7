@@ -37,7 +37,7 @@ with type v = A.V.v and type location = A.location
    let maybevToV mv =
      let open Constant in
      match mv with
-     | Symbolic _|Label _ as sym -> sym
+     | Symbolic _|Label _|Tag _ as sym -> sym
      | Concrete s -> Concrete (A.V.Scalar.of_string s)
 
 (******************************************************)

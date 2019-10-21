@@ -40,6 +40,7 @@ rule token = parse
 | 'P' (decimal as x)
     { PROC (int_of_string x) }
 | '%' (name as name) { SYMB_REG name }
+| '\'' { QUOTE }
 | '&' { AMPER }
 | ';' { SEMI }
 | ':' { COLON }

@@ -24,7 +24,6 @@ module Make (C:Sem.Config)(V:Value.S)
     module Act = MachAction.Make(C.PC)(PPC)
     include SemExtra.Make(C)(PPC)(Act)
     let mixed = C.variant Variant.Mixed
-    let memtag = C.variant Variant.MemTag
 
 (* barrier pretty print *)
     let sync = {barrier=PPC.Sync; pp="sync";}

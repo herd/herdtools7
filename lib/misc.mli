@@ -64,6 +64,7 @@ val app_opt_def : 'b -> ('a -> 'b) -> 'a option -> 'b
 
 val map_string : (char -> string) -> string -> string
 val opt_compare : ('a -> 'a -> int) -> 'a option -> 'a option -> int
+val opt_eq : ('a -> 'a -> bool) -> 'a option -> 'a option -> bool
 val pair_compare :
     ('a -> 'a -> int) -> ('b -> 'b -> int) -> 'a * 'b -> 'a * 'b -> int
 

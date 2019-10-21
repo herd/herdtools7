@@ -66,7 +66,7 @@ module type S = sig
   val is_mem_load : event ->  bool
   val is_additional_mem_load : event ->  bool (* trylock... *)
   val is_mem : event -> bool
-  (* includes additional memory events,  eg lock, unlocks... *)
+(* includes additional memory events,  eg lock, unlocks... *)
   val is_additional_mem : event -> bool
   val is_atomic : event -> bool
   val is_amo : event -> bool
@@ -86,6 +86,9 @@ module type S = sig
 (* Store/Load to memory or register *)
   val is_store : event -> bool
   val is_load : event -> bool
+
+(* Access events of the same category *)
+  val compatible_accesses : event -> event -> bool
 
 (* Barriers *)
   val is_barrier : event -> bool
@@ -455,6 +458,10 @@ struct
     let is_reg_any e = Act.is_reg_any e.action
     let is_reg_store_any e = Act.is_reg_store_any e.action
     let is_reg_load_any e = Act.is_reg_load_any e.action
+
+(* Compatible events ie accesses of the same category *)
+  let compatible_accesses e1 e2 =
+    Act.compatible_accesses e1.action e2.action
 
 (* Barriers *)
     let is_barrier e = Act.is_barrier e.action

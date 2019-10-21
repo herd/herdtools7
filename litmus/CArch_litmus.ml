@@ -23,10 +23,12 @@ module Make(O:sig val memory : Memory.t val hexa : bool end) = struct
   module RegSet = StringSet
   module RegMap = StringMap
 
-  let vToName = function
-    | Constant.Concrete i -> "addr_" ^ V.Scalar.pp O.hexa i
-    | Constant.Symbolic (s,_) -> s
-    | Constant.Label _ -> assert false
+  let vToName =
+    let open Constant in
+    function
+      | Concrete i -> "addr_" ^ V.Scalar.pp O.hexa i
+      | Symbolic ((s,None),_) -> s
+      | Label _|Symbolic _|Tag _ -> assert false
 
   module Internal = struct
     type arch_reg = reg

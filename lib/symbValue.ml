@@ -72,7 +72,7 @@ module Make(Cst:Constant.S) = struct
   and cstToV cst = Val cst
 
   let maybevToV m = match m with
-  | Symbolic _ | Label _  as _m -> Val _m
+  | Symbolic _ | Label _ | Tag _ as _m -> Val _m
   | Concrete s -> Val (Concrete (Scalar.of_string s))
 
   let as_symbol = function
@@ -99,26 +99,22 @@ module Make(Cst:Constant.S) = struct
   | Val cst ->  Cst.eq cst Cst.one
   | Var _ -> raise  Undetermined
 
-  let atagop v1 = match v1 with
-  | Val (Symbolic (s,i)) -> Val (Symbolic (Misc.add_atag s,i))
-  | Val (Concrete _) -> Warn.user_error "Illegal operation on tags"
-  | Var _ | Val (Label (_,_)) -> raise Undetermined
-
-  let unop op v1 = match v1 with
+  let unop op_op op v1 = match v1 with
   | Val (Concrete i1) -> Val (Concrete (op i1))
-  | Val (Symbolic _|Label _ as x) ->
-      Warn.user_error "Illegal operation on %s" (Cst.pp_v x)
+  | Val (Symbolic _|Label _|Tag _ as x) ->
+      Warn.user_error "Illegal operation %s on %s" (Op.pp_op1 true op_op) (Cst.pp_v x)
   | Var _ -> raise Undetermined
 
   let binop op_op op v1 v2 = match v1,v2 with
   | (Val (Concrete i1),Val (Concrete i2)) -> Val (Concrete (op i1 i2))
-  | (Val (Concrete _),Val (Symbolic _|Label _))
-  | (Val (Symbolic _|Label _),Val (Concrete _))
-  | (Val (Symbolic _|Label _),Val (Symbolic _|Label _)) ->
+  | (Val (Concrete _),Val (Symbolic _|Label _|Tag _))
+  | (Val (Symbolic _|Label _|Tag _),Val (Concrete _))
+  | (Val (Symbolic _|Label _|Tag _),Val (Symbolic _|Label _|Tag _)) ->
       Warn.user_error
         "Illegal operation %s on constants %s and %s"
         (Op.pp_op op_op) (pp_v v1) (pp_v v2)
-  | _,_ -> raise Undetermined
+  | (Var _,_)|(_,Var _)
+    -> raise Undetermined
 
 
 (* specific binops, with some specific cases for symbolic constants *)
@@ -138,7 +134,7 @@ module Make(Cst:Constant.S) = struct
   and add_konst k v = match v with
   | Val (Concrete v) -> Val (Concrete (Scalar.addk v k))
   | Val (Symbolic (s,i)) -> Val (Symbolic (s,i+k))
-  | Val (Label _) ->
+  | Val (Label _|Tag _) ->
       Warn.user_error "Illegal addition on constants %s" (pp_v v)
   | Var _ -> raise Undetermined
 
@@ -163,11 +159,11 @@ module Make(Cst:Constant.S) = struct
 
   let eq v1 v2 = match v1,v2 with
   | Var i1,Var i2 when Misc.int_eq i1 i2 -> one
-  | Val (Symbolic _|Label _ as s1),Val (Symbolic _|Label _ as s2) ->
+  | Val (Symbolic _|Label _|Tag _ as s1),Val (Symbolic _|Label _|Tag _ as s2) ->
       bool_to_v Cst.eq s1 s2
-(* Assume symbolic and concrete always to differ *)
-  | (Val (Symbolic _|Label _), Val (Concrete _))
-  | (Val (Concrete _), Val (Symbolic _|Label _)) -> zero
+(* Assume concrete and others always to differ *)
+  | (Val (Symbolic _|Label _|Tag _), Val (Concrete _))
+  | (Val (Concrete _), Val (Symbolic _|Label _|Tag _)) -> zero
   | _,_ ->
       binop
         Op.Eq
@@ -192,30 +188,49 @@ module Make(Cst:Constant.S) = struct
 
   let mask_one k = Scalar.shift_left Scalar.one k
 
+(* Ops on tagged locations *)
+  let op_tagged op_op op v = match v with
+  |  Val (Symbolic (a,o)) -> Val (op a o)
+  |  Val (Concrete _|Label _|Tag _) ->
+      Warn.user_error "Illegal %s" op_op
+  | Var _ -> raise Undetermined
+
+  (*  Returns the location of the tag associated to a location *)
+  let op_tagloc (a,_) _ =  Symbolic ((Misc.add_atag a,None),0)
+  let tagloc = op_tagged "tagloc" op_tagloc
+
+  (* Decompose tagged locations *)
+  let op_tagextract (_,t) _ = Tag t
+  let tagextract v = op_tagged "tagextract" op_tagextract v
+  let op_locextract (a,_) o = Symbolic ((a,None),o)
+  let locextract v = op_tagged "locextract" op_locextract v
+
   let op1 op =
     let open! Scalar in
     match op with
-  | Not -> unop (fun v -> bool_to_scalar (not (scalar_to_bool v)))
+  | Not -> unop op (fun v -> bool_to_scalar (not (scalar_to_bool v)))
   | SetBit k ->
-      unop (fun s -> logor (mask_one k) s)
+      unop op (fun s -> logor (mask_one k) s)
   | UnSetBit k ->
-      unop
+      unop op
         (fun s -> logand (lognot (mask_one k)) s)
   | ReadBit k ->
-      unop
+      unop op
         (fun s ->
           bool_to_scalar (Scalar.compare (logand (mask_one k) s) zero <> 0))
   | LogicalRightShift 0
   | LeftShift 0
   | AddK 0 -> fun s -> s
   | LeftShift k ->
-      unop  (fun s -> Scalar.shift_left s k)
+      unop  op (fun s -> Scalar.shift_left s k)
   | LogicalRightShift k ->
-      unop  (fun s -> Scalar.shift_right_logical s k)
+      unop op (fun s -> Scalar.shift_right_logical s k)
   | AddK k -> add_konst k
-  | AndK k -> unop (fun s -> Scalar.logand s (Scalar.of_string k))
-  | Mask sz -> unop (Scalar.mask sz)
-  | AddAllocTag -> atagop
+  | AndK k -> unop op (fun s -> Scalar.logand s (Scalar.of_string k))
+  | Mask sz -> unop op (Scalar.mask sz)
+  | TagLoc -> tagloc
+  | TagExtract -> tagextract
+  | LocExtract -> locextract
 
   let op op = match op with
   | Add -> add
@@ -244,7 +259,7 @@ module Make(Cst:Constant.S) = struct
 
   let op3 If v1 v2 v3 = match v1 with
   | Val (Concrete x) -> if scalar_to_bool x then v2 else v3
-  | Val (Symbolic _ |Label _ as s) ->
+  | Val (Symbolic _ |Label _|Tag _ as s) ->
       Warn.user_error "illegal if on symbolic constant %s" (Cst.pp_v s)
   | Var _ -> raise Undetermined
 

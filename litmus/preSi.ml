@@ -734,9 +734,12 @@ module Make
                 let open Constant in
                 match v with
                 | Concrete i -> A.V.Scalar.pp Cfg.hexa i
-                | Symbolic (s,_) ->
+                | Symbolic ((s,None),_) ->
                     sprintf "(%s)_vars->%s" (CType.dump at) s
-                | Label _ -> Warn.fatal "No code label in -mode presi" in
+                | Label _ ->
+                    Warn.fatal "PreSi mode cannot handle code labels (yet)"
+                | Symbolic _|Tag _ ->
+                    Warn.user_error "Litmus cannot handle tags" in
               match at with
               | Array (t,sz) ->
                   sprintf "for (int _j = 0 ; _j < %i ; _j++) %s"

@@ -303,7 +303,7 @@ end = struct
         let maybevToV c =
           let open Constant in
           match c with
-          | Symbolic _|Label _ as sym -> sym
+          | Tag _|Symbolic _|Label _ as sym -> sym
           | Concrete i -> Concrete (A.V.Scalar.of_string i)
         type global = string
         let maybevToGlobal = ParsedConstant.vToName

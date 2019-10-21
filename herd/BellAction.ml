@@ -143,6 +143,8 @@ end = struct
   | Access (R,_,_,_,_,_) -> true
   | _ -> false
 
+
+
   let is_reg_any a = match a with
   | Access (_,A.Location_reg _,_,_,_,_) -> true
   | _ -> false
@@ -155,7 +157,10 @@ end = struct
   | Access (R,A.Location_reg _,_,_,_,_) -> true
   | _ -> false
 
-(* Barriers *)
+  let compatible_accesses a1 a2 =
+    (is_mem a1 && is_mem a2) || (is_reg_any a1 && is_reg_any a2)
+
+  (* Barriers *)
   let is_barrier a = match a with
   | Barrier _ -> true
   | _ -> false

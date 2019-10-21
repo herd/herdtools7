@@ -25,6 +25,7 @@ module Make (C:sig include Arch_herd.Config val moreedges : bool end) (V:Value.S
     type lannot = annot
 
     let empty_annot = N
+    let tag_annot = T
 
     let wrap_is is_fun a = is_fun a
 

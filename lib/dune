@@ -5,5 +5,5 @@
 (library
    (name herdtools)
    (wrapped false)
-   (modules_without_implementation sign outTests AST CAst Scalar archBase constant PPMode name value)
+   (modules_without_implementation sign outTests AST CAst Scalar archBase PPMode name value)
 )

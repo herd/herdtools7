@@ -38,6 +38,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
           I.C.cond ->
             (I.Loc.t -> string) -> (string -> string) -> string
     end = struct
+      open Printf
       open ConstrGen
 
       module S = Switch.Make(O)(I)
@@ -103,15 +104,16 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
           I.C.LocSet.map_list
             (fun loc ->
               let t,is_ptr = find_type loc in
-              Printf.sprintf "%s %s" t (I.Loc.dump loc),is_ptr)
+              sprintf "%s %s" t (I.Loc.dump loc),is_ptr)
             locs in
         let plocs,is_ptr = List.split plocs in
         let is_ptr = List.exists (fun b -> b) is_ptr in
         let vals = I.C.location_values_prop p in
         let pvals =
           List.map
-            (fun loc -> Printf.sprintf
-                "void *%s" (dump_v (Constant.Symbolic (loc,0)))) vals in
+            (fun loc -> sprintf
+                "void *%s" (dump_v (Constant.mk_sym loc)))
+            vals in
         let is_ptr = is_ptr || Misc.consp pvals in
         let formals =
           let p = plocs@pvals in
@@ -161,7 +163,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
         let plocs = I.C.LocSet.map_list dump_loc locs in
         let vals = I.C.location_values_prop prop in
         let pvals = List.map dump_val vals in
-        Printf.sprintf "%s(%s)" fname (String.concat "," (plocs@pvals))
+        sprintf "%s(%s)" fname (String.concat "," (plocs@pvals))
 
       let funcall cond dump_loc dump_val =
         funcall_prop funname  (ConstrGen.prop_of cond) dump_loc dump_val

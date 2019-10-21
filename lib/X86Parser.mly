@@ -132,8 +132,8 @@ rm32:
   |  reg {Rm32_reg $1}
   |  LPAR reg RPAR {Rm32_deref $2}
   |  LBRK reg RBRK {Rm32_deref $2}
-  |  LBRK NAME RBRK {Rm32_abs (Constant.Symbolic ($2,0))}
-  |  LBRK NUM RBRK {Rm32_abs (Constant.Concrete $2)}
+  |  LBRK NAME RBRK {Rm32_abs (Constant.mk_sym $2) }
+  |  LBRK NUM RBRK {Rm32_abs (Constant.Concrete $2) }
 
 operand:
   | effaddr {Operand_effaddr $1}

@@ -137,7 +137,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
     | Concrete i ->
         let vs = try M.find loc m with Not_found -> ScalarSet.empty in
         M.add loc (ScalarSet.add i vs) m
-    | Symbolic _|Label _ -> raise Cannot
+    | Symbolic _|Label _|Tag _ -> raise Cannot
 
     let rec collect m = function
       | Atom (LV (loc,v)) -> add loc v m

@@ -326,21 +326,6 @@ module Make(C:Config) (I:I) : S with module I = I
             d::ds in
         do_rec (nsz sz) v
 
-(*      let extract_bit sz v i =
-        let l = explode sz v in
-        List.nth l (i-1)
-
-      let extract_interval l i j =
-        let rec do_rec acc k =
-          match (k-i) with
-          | 0 -> acc
-          | _ -> do_rec ((List.nth l (k-1))::acc) (k-1)
-        in do_rec [] j
-
-      let extract_bit_interval sz v i j =
-        let l = explode sz v in
-        extract_interval l i j *)
-
       let rec recompose ds = match ds with
       | [] -> assert false
       | [d] -> d
@@ -428,7 +413,7 @@ module Make(C:Config) (I:I) : S with module I = I
       let look_size env s = StringMap.safe_find MachSize.Word s env
 
       let look_size_location env loc = match loc with
-      | Location_global (I.V.Val (Constant.Symbolic (s,0))) ->  look_size env s
+      | Location_global (I.V.Val (Constant.Symbolic ((s,_),0))) ->  look_size env s
       | _ -> assert false
 
       let look_in_state_mixed senv st loc =
@@ -439,7 +424,7 @@ module Make(C:Config) (I:I) : S with module I = I
           raise LocUndetermined
       | None ->
           match loc with
-          | Location_global (I.V.Val (Constant.Symbolic (s,0)) as a)   ->
+          | Location_global (I.V.Val (Constant.Symbolic ((s,_),0)) as a)   ->
               let sz = look_size senv s in
               let eas = byte_eas sz a in
               let vs = List.map (get_of_val st) eas in

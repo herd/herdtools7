@@ -58,7 +58,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
 
 (* Collect locations *)
   let collect_ra xs = function
-    | Abs (Constant.Symbolic (s,_)) -> StringSet.add s xs
+    | Abs (Constant.Symbolic ((s,_),_)) -> StringSet.add s xs
     | _ -> xs
 
   let collect_addr xs = function
@@ -79,7 +79,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
 
   let tr_ra = function
     | Rega r -> LoadReg (tr_reg r)
-    | Abs (Constant.Symbolic (s,_)) -> LoadReg s
+    | Abs (Constant.Symbolic ((s,_),_)) -> LoadReg s
     | _ -> assert false
 
   let do_tr_addr = function

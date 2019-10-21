@@ -28,9 +28,10 @@ module SL = StateLexer.Make(struct let debug = false end)
 
 let tr_atom = function
   | LV(loc,v) ->
+      let open Constant in
       let v = match v with
-      | Constant.Concrete i -> Constant.Concrete (Int64.of_string i)
-      | Constant.Symbolic _|Constant.Label _ as sym -> sym in
+      | Concrete i -> Concrete (Int64.of_string i)
+      | Symbolic _|Label _|Tag _ as sym -> sym in
       LV(loc,v)
   | LL(loc1,loc2) -> LL(loc1,loc2)
 

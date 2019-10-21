@@ -63,14 +63,14 @@ module Make (C:Sem.Config)(V:Value.S)
     let add_variant v a = (a,tr_variant v)
 
     let mk_read sz an loc v = Act.Access (Dir.R, loc, v, an, sz)
+    let mk_read_std = mk_read MachSize.Quad AArch64.N
     let mk_fault ii loc = Act.Fault (ii,loc)
 
-    let read_loc v is_data = M.read_loc is_data (mk_read v AArch64.N)
+    let read_loc sz is_data = M.read_loc is_data (mk_read sz AArch64.N)
 
     let read_reg is_data r ii = match r with
     | AArch64Base.ZR -> M.unitT V.zero
-    | _ ->
-        M.read_loc is_data (mk_read MachSize.Quad AArch64.N) (A.Location_reg (ii.A.proc,r)) ii
+    | _ -> M.read_loc is_data mk_read_std (A.Location_reg (ii.A.proc,r)) ii
 
     let read_reg_sz sz is_data r ii = match sz with
     | MachSize.Quad -> read_reg is_data r ii
@@ -91,8 +91,7 @@ module Make (C:Sem.Config)(V:Value.S)
   read_loc x
 
  *)
-    let commit ii =
-      M.mk_singleton_es (Act.Commit true) ii
+    let commit ii = M.mk_singleton_es (Act.Commit true) ii
 
     let mk_write sz an loc v = Act.Access (Dir.W, loc, v, an, sz)
 
@@ -100,44 +99,21 @@ module Make (C:Sem.Config)(V:Value.S)
 
     let write_reg r v ii = write_loc MachSize.Quad AArch64.N (A.Location_reg (ii.A.proc,r)) v ii
 
-     let read_pa_tag rs ii =
-       match rs with
-       | AArch64Base.ZR -> M.unitT V.zero
-       | AArch64Base.Ireg rs ->
-         let patag = AArch64Base.Tag rs in
-         M.read_loc true (mk_read MachSize.Byte AArch64.T) (A.Location_reg (ii.A.proc,patag)) ii
-       | _ -> assert false
+    let tag_extract a = M.op1 Op.TagExtract a
+    let loc_extract a = M.op1 Op.LocExtract a
 
-     let read_alloc_tag a ii =
-       (M.get_alloc_tag a) >>=
-       (fun atag -> M.get_alloc_tag_val (fun sz -> mk_read sz AArch64.T) atag ii)
+    let read_tag_mem a ii =
+      M.op1 Op.TagLoc a >>= fun atag ->
+        M.read_loc false (fun loc v -> Act.TagAccess (Dir.R,loc,v))
+          (A.Location_global atag) ii
 
-     let get_both_tags a rs ii =
-       (read_pa_tag rs ii)
-       >>|
-       (read_alloc_tag a ii)
+     let get_both_tags a ii = tag_extract a >>| read_tag_mem a ii
 
-     let do_check atag patag =
-       M.op Op.Eq patag atag
+     let do_check atag patag = M.op Op.Eq patag atag
 
      let mixed_read sz an rd a ii =
        M.read_mixed false sz (fun sz -> mk_read sz an) a ii
               >>= (fun v -> write_reg rd v ii)
-
-     let continuation_read sz an rd a ii cond =
-        M.choiceT cond
-               (mixed_read sz an rd a ii)
-               (M.mk_singleton_es (mk_fault ii (A.Location_global a)) ii)
-(*old:     let continuation_read sz an rd a ii cond =
-        M.choiceT cond
-               (mixed_read sz an rd a ii)
-               (M.unitT ())
-*)
-     let do_checked_read sz an rd rs a ii =
-       get_both_tags a rs ii >>= fun (atag,patag) ->
-       do_check atag patag >>= fun cond -> commit ii
-       >>= fun _ ->
-       continuation_read sz an rd a ii cond
 
     let do_read_mem sz an a ii =
       if mixed then
@@ -145,9 +121,20 @@ module Make (C:Sem.Config)(V:Value.S)
       else
         M.read_loc false (mk_read sz an) (A.Location_global a) ii
 
+    let do_checked_read sz an rd a ii =
+      get_both_tags a ii >>= fun (atag,patag) ->
+        do_check atag patag >>= fun cond -> commit ii
+            >>*=
+          fun _ ->
+            M.choiceT cond
+              (loc_extract a >>= fun a ->
+               do_read_mem sz an a ii >>= fun v -> write_reg rd v ii >>! B.Next)
+              (M.mk_singleton_es (mk_fault ii (A.Location_global a)) ii >>! B.Exit)
+
+
+
     let read_mem sz a ii = do_read_mem sz AArch64.N a ii
-    let checked_read_mem sz rd rs a ii =
-      do_checked_read sz AArch64.N rd rs a ii
+    let checked_read_mem sz rd a ii = do_checked_read sz AArch64.N rd a ii
     let read_mem_acquire sz a ii = do_read_mem sz AArch64.A a ii
     let checked_read_mem_acquire sz a ii = do_checked_read sz AArch64.A a ii
     let read_mem_acquire_pc sz a ii = do_read_mem sz AArch64.Q a ii
@@ -158,26 +145,16 @@ module Make (C:Sem.Config)(V:Value.S)
     let read_mem_noreturn sz a ii = do_read_mem sz AArch64.NoRet a ii
     let checked_read_mem_atomic_acquire sz a ii = do_checked_read sz AArch64.XA a ii
 
-    let do_checked_write sz an a rd v ii =
-      get_both_tags a rd ii >>= fun (atag,patag) ->
-      do_check atag patag >>= fun cond -> commit ii
-      >>= fun _ -> M.choiceT cond
-           (M.write_mixed sz (fun sz -> mk_write sz an) a v ii
-            >>= fun _ -> M.unitT ())
-               (M.mk_singleton_es (mk_fault ii (A.Location_global a)) ii)
-
-(*old:    let do_checked_write sz an a rd v ii =
-      get_both_tags a rd ii >>= fun (atag,patag) ->
-      do_check atag patag >>= fun cond -> commit ii
-      >>= fun _ -> M.choiceT cond
-           (M.write_mixed sz (fun sz -> mk_write sz an) a v ii
-            >>= fun _ -> M.unitT ())
-           (M.unitT ())
-*)
-
     let do_write_mem sz an a v ii =
       if mixed then M.write_mixed sz (fun sz -> mk_write sz an) a v ii
       else write_loc sz an (A.Location_global a) v ii
+
+    let do_checked_write sz an a rd v ii =
+      get_both_tags a ii >>= fun (atag,patag) ->
+      do_check atag patag >>= fun cond -> commit ii >>= fun _ ->
+      M.choiceT cond
+        (loc_extract a >>= fun a -> do_write_mem sz an a v ii >>= fun _ -> M.unitT () >>! B.Next)
+        (M.mk_singleton_es (mk_fault ii (A.Location_global a)) ii >>! B.Exit)
 
     let write_mem sz a v ii = do_write_mem sz AArch64.N a v ii
     let checked_write_mem sz a rd ii = do_checked_write sz AArch64.N rd a ii
@@ -216,24 +193,21 @@ module Make (C:Sem.Config)(V:Value.S)
 
     let atomic_pair_allowed _ _ = true
 
-    let load_sem sz rd rs a ii =
+    let load_sem sz rd a ii =
       begin
         if memtag then
-          checked_read_mem sz rd rs a ii
+          checked_read_mem sz rd a ii
         else
-          read_mem sz a ii
-            >>= (fun v -> write_reg rd v ii)
+          read_mem sz a ii >>= fun v -> write_reg rd v ii >>! B.Next
       end
-        >>! B.Next
 
     let store_sem sz rd a v ii =
       begin
         if memtag then
           checked_write_mem sz rd a v ii
         else
-          write_mem sz a v ii
+          write_mem sz a v ii >>! B.Next
       end
-        >>! B.Next
 
     let ldr sz rd rs kr ii =
       let open AArch64Base in
@@ -245,7 +219,7 @@ module Make (C:Sem.Config)(V:Value.S)
           (read_reg_ord rs ii >>| read_reg_ord r ii)
             >>= (fun (v1,v2) -> M.add v1 v2)
       end
-        >>= (fun a -> load_sem sz rd rs a ii)
+        >>= fun a -> load_sem sz rd a ii
 
     and str sz rs rd kr ii =
       let open AArch64Base in
@@ -255,8 +229,8 @@ module Make (C:Sem.Config)(V:Value.S)
           read_reg_ord rd ii >>= fun v -> M.add v (V.intToV k)
       | RV(_,r) ->
           (read_reg_ord rd ii >>| read_reg_ord r ii)
-            >>= fun (v1,v2) -> M.add v1 v2 end
-        >>= (fun (v,a) -> store_sem sz rd a v ii)
+            >>= fun (v1,v2) -> M.add v1 v2
+      end >>= fun (v,a) -> store_sem sz rd a v ii
 
     and ldar sz t rd rs ii =
       let open AArch64 in

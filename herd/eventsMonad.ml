@@ -737,9 +737,10 @@ and type evt_struct = E.event_structure) =
           eiid,
           Evt.singleton ((),a7_eq::a_eqs@v_eqs,st)
 
-   let get_alloc_tag a = op1 Op.AddAllocTag a
-   let get_alloc_tag_val mk_act a ii =
-            read_mixed false A.byte mk_act a ii
+   let get_alloc_tag a = op1 Op.TagLoc a
+
+    let get_alloc_tag_val mk_act a ii =
+      read_mixed false A.byte mk_act a ii
 
    let set_tag mk_act a v ii =
        write_mixed A.byte mk_act a v ii
@@ -777,7 +778,6 @@ and type evt_struct = E.event_structure) =
     type evt_struct = E.event_structure
     type output = VC.cnstrnts * evt_struct
 
-
     let initwrites_non_mixed env _ =
       fun eiid ->
         let eiid,es =
@@ -801,7 +801,7 @@ and type evt_struct = E.event_structure) =
           List.fold_left
             (fun (eiid,es,sca) (loc,v) ->
               match loc with
-              | A.Location_global (A.V.Val (Constant.Symbolic (s,0)) as a) ->
+              | A.Location_global (A.V.Val (Constant.Symbolic ((s,_),0)) as a) ->
                   let sz = A.look_size size_env s in
                   let ds = A.explode sz v
                   and eas = A.byte_eas sz a in
@@ -835,9 +835,9 @@ and type evt_struct = E.event_structure) =
         | V.Undetermined -> assert false
 
     let mixed = C.variant Variant.Mixed
-    let memtag = C.variant Variant.MemTag
-    let initwrites =
-      if mixed || memtag then initwrites_mixed else initwrites_non_mixed
+
+    let initwrites =  if mixed then initwrites_mixed else initwrites_non_mixed
+
     let get_output =
       fun et ->
         let (_,es) = et 0 in

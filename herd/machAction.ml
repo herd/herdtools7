@@ -36,6 +36,7 @@ module Make (C:Config) (A : A) : sig
 
   type action =
     | Access of Dir.dirn * A.location * A.V.v * A.lannot * MachSize.sz
+    | TagAccess of Dir.dirn * A.location * A.V.v
     | Barrier of A.barrier
     | Commit of bool (* true = bcc / false = pred *)
 (* Atomic modify, (location,value read, value written, annotation *)
@@ -53,12 +54,15 @@ end = struct
 
   type action =
     | Access of dirn * A.location * V.v * A.lannot * MachSize.sz
+    | TagAccess of Dir.dirn * A.location * A.V.v
     | Barrier of A.barrier
     | Commit of bool
     | Amo of A.location * A.V.v * A.V.v * A.lannot * MachSize.sz
     | Fault of A.inst_instance_id * A.location
 
-  let mk_init_write l sz v = Access(W,l,v,A.empty_annot,sz)
+  let mk_init_write l sz v = match v with
+  | A.V.Val (Constant.Tag _) -> TagAccess (W,l,v)
+  | _ ->  Access(W,l,v,A.empty_annot,sz)
 
   let pp_action a = match a with
   | Access (d,l,v,an,sz) ->
@@ -67,6 +71,11 @@ end = struct
         (A.pp_location l)
         (A.pp_annot an)
         (if sz = MachSize.Word then "" else MachSize.pp_short sz)
+        (V.pp C.hexa v)
+  | TagAccess (d,l,v) ->
+      Printf.sprintf "%s%s=%s"
+        (pp_dirn d)
+        (A.pp_location l)
         (V.pp C.hexa v)
   | Barrier b -> A.pp_barrier_short b
   | Commit bcc -> if bcc then "Commit" else "Pred"
@@ -77,30 +86,35 @@ end = struct
         (V.pp C.hexa v1) (V.pp C.hexa v2)
   | Fault (ii,loc) ->
       Printf.sprintf "Fault(proc:%s,poi:%s,loc:%s)"
-        (A.pp_proc ii.proc)
-        (A.pp_prog_order_index ii.program_order_index)
+        (A.pp_proc ii.A.proc)
+        (A.pp_prog_order_index ii.A.program_order_index)
         (A.pp_location loc)
 
 (* Utility functions to pick out components *)
   let value_of a = match a with
-  | Access (_,_ , v,_,_) -> Some v
-  | _ -> None
+  | TagAccess (_,_,v)|Access (_,_ , v,_,_)
+    -> Some v
+  | Barrier _|Commit _|Amo _|Fault _
+    -> None
 
   let read_of a = match a with
+  | TagAccess (R,_,v)
   | Access (R,_,v,_,_)
   | Amo (_,v,_,_,_)
     -> Some v
-  | Access (W, _, _, _,_)|Barrier _|Commit _|Fault _
+  | TagAccess (W,_,_)|Access (W, _, _, _,_)|Barrier _|Commit _|Fault _
     -> None
 
   and written_of a = match a with
+  | TagAccess (W,_,v)
   | Access (W,_,v,_,_)
   | Amo (_,_,v,_,_)
     -> Some v
-  | Access (R, _, _, _,_)|Barrier _|Commit _|Fault _
+  | TagAccess(R,_,_)|Access (R, _, _, _,_)|Barrier _|Commit _|Fault _
     -> None
 
   let location_of a = match a with
+  | TagAccess (_,l,_)
   | Access (_, l, _,_,_)
   | Amo (l,_,_,_,_)
   | Fault (_,l)
@@ -109,12 +123,14 @@ end = struct
 
 (* relative to memory *)
   let is_mem_store a = match a with
+  | TagAccess (W,A.Location_global _,_)
   | Access (W,A.Location_global _,_,_,_)
   | Amo (A.Location_global _,_,_,_,_)
     -> true
   | _ -> false
 
   let is_mem_load a = match a with
+  | TagAccess (R,A.Location_global _,_)
   | Access (R,A.Location_global _,_,_,_)
   | Amo (A.Location_global _,_,_,_,_)
     -> true
@@ -123,6 +139,7 @@ end = struct
   let is_additional_mem_load _ = false
 
   let is_mem a = match a with
+  | TagAccess (_,A.Location_global _,_)
   | Access (_,A.Location_global _,_,_,_)
   | Amo (A.Location_global _,_,_,_,_)
     -> true
@@ -136,6 +153,7 @@ end = struct
   | _ -> false
 
   let get_mem_dir a = match a with
+  | TagAccess (d,A.Location_global _,_)
   | Access (d,A.Location_global _,_,_,_) -> d
   | _ -> assert false
 
@@ -158,13 +176,33 @@ end = struct
 
 (* Store/Load anywhere *)
   let is_store a = match a with
-  | Access (W,_,_,_,_)|Amo _ -> true
-  | Access (R,_,_,_,_)|Barrier _|Commit _|Fault _ -> false
+  | TagAccess (W,_,_)|Access (W,_,_,_,_)|Amo _ -> true
+  | TagAccess (R,_,_)|Access (R,_,_,_,_)|Barrier _|Commit _|Fault _ -> false
 
   let is_load a = match a with
-  | Access (R,_,_,_,_)|Amo _ -> true
-  | Access (W,_,_,_,_)|Barrier _|Commit _|Fault _ -> false
+  | TagAccess(R,_,_)|Access (R,_,_,_,_)|Amo _ -> true
+  | TagAccess(W,_,_)|Access (W,_,_,_,_)|Barrier _|Commit _|Fault _ -> false
 
+  let compatible_categories loc1 loc2 = match loc1,loc2 with
+  | (A.Location_global _,A.Location_global _)
+  | (A.Location_reg _,A.Location_reg _)
+  | (A.Location_deref _,A.Location_deref _)
+    -> true
+  | (A.Location_global _,(A.Location_deref _|A.Location_reg _))
+  | (A.Location_deref _,(A.Location_global _|A.Location_reg _))
+  | (A.Location_reg _,(A.Location_global _|A.Location_deref _))
+    -> false
+
+  let compatible_accesses a1 a2 = match a1,a2 with
+  | (TagAccess _,TagAccess _) -> true
+  | (Access (_,loc1,_,_,_)|Amo (loc1,_,_,_,_)),
+     (Access (_,loc2,_,_,_)|Amo (loc2,_,_,_,_))
+    ->
+      compatible_categories loc1 loc2
+  | (TagAccess _,(Access _|Amo _))
+  | ((Access _|Amo _),TagAccess _)
+    -> false
+  | _,_ -> assert false
 
   let is_reg_any a = match a with
   | Access (_,A.Location_reg _,_,_,_) -> true
@@ -234,6 +272,7 @@ end = struct
 
   let undetermined_vars_in_action a =
     match a with
+    | TagAccess (_,l,v)
     | Access (_,l,v,_,_) ->
         let undet_loc = match A.undetermined_vars_in_loc l with
         | None -> V.ValueSet.empty
@@ -248,10 +287,14 @@ end = struct
 
   let simplify_vars_in_action soln a =
     match a with
+    | TagAccess (d,l,v) ->
+        let l = A.simplify_vars_in_loc soln l in
+        let v = V.simplify_var soln v in
+        TagAccess (d,l,v)
     | Access (d,l,v,an,sz) ->
-        let l' = A.simplify_vars_in_loc soln l in
-        let v' = V.simplify_var soln v in
-        Access (d,l',v',an,sz)
+        let l = A.simplify_vars_in_loc soln l in
+        let v = V.simplify_var soln v in
+        Access (d,l,v,an,sz)
     | Amo (loc,v1,v2,an,sz) ->
         let loc =  A.simplify_vars_in_loc soln loc in
         let v1 = V.simplify_var soln v1 in

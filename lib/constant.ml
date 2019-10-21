@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2010-present Institut National de Recherche en Informatique et *)
+(* Copyright 2019-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -23,7 +23,7 @@ type 'scalar t =
   | Label of int * string     (* In code *)
   | Tag of string option
 
-val mk_sym : string -> 'scalar t
+let mk_sym s = Symbolic ((s,None),0) 
 
 module type S =  sig
 

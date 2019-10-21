@@ -50,7 +50,9 @@ module Make(O:Config)(V:Constant.S) = struct
 
   let dump_v v = match v with
   | Concrete _ -> V.pp O.hexa v
-  | Symbolic (a,_) -> dump_addr a
+  | Symbolic ((a,None),0) -> dump_addr a
+  | Tag _
+  | Symbolic _
   | Label _ -> assert false 
 
   let addr_cpy_name s p = sprintf "_addr_%s_%i" s p

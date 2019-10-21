@@ -223,7 +223,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
               | A.Location_global _|A.Location_deref _ -> loc::locs
               | A.Location_reg _ -> locs in
             let locs = match v with
-            | A.V.Val (Constant.Symbolic _) -> A.Location_global v::locs
+            | A.V.Val (Constant.Symbolic ((s,_),_)) ->
+                A.Location_global (A.V.Val (Constant.mk_sym s))::locs
             | _ -> locs in
             locs)
           [] (A.state_to_list init) in
@@ -333,7 +334,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       | S.B.CondJump (v,lbl) ->
           EM.choiceT v
             (add_lbl proc prog_order seen addr lbl)
-            (add_code proc prog_order seen nexts) in
+            (add_code proc prog_order seen nexts)
+      | S.B.Exit ->  EM.unitT () in
 
       let jump_start proc code =
         add_code proc  A.zero_po_index Imap.empty code in
@@ -511,6 +513,7 @@ let solve_regs test es csn =
    - or at least one location is undetermined. *)
     let compatible_locs_mem e1 e2 =
       E.event_compare e1 e2 <> 0 && (* C RMWs cannot feed themselves *)
+      E.compatible_accesses e1 e2 &&
       begin
         let loc1 = get_loc e1
         and loc2 = get_loc e2 in
@@ -681,7 +684,7 @@ let solve_regs test es csn =
 (*
   eprintf "Loads : %a\n"E.debug_events loads ;
   eprintf "Stores: %a\n"E.debug_events stores ;
- *)
+*)
       let compat_locs = compatible_locs_mem in
       solve_mem_or_res test es rfm cns kont res
         loads stores compat_locs add_mem_eqs
@@ -703,7 +706,8 @@ let solve_regs test es csn =
     let compare_index e1 e2 =
       let open Constant in
       match E.global_loc_of e1, E.global_loc_of e2 with
-      | Some (V.Val (Symbolic (s1,i1))),Some (V.Val (Symbolic (s2,i2))) when  Misc.string_eq s1 s2 ->
+      | Some (V.Val (Symbolic ((s1,_),i1))),
+        Some (V.Val (Symbolic ((s2,_),i2))) when  Misc.string_eq s1 s2 ->
           Misc.int_compare i1 i2
       | _,_ -> raise CannotSca
 
@@ -783,7 +787,7 @@ let solve_regs test es csn =
       | e::_ -> e
       | [] -> assert false in
       let s,idx= match  E.global_loc_of fst with
-      |  Some (V.Val (Symbolic (s,i))) -> s,i
+      |  Some (V.Val (Symbolic ((s,_),i))) -> s,i
       | _ -> raise CannotSca in
       let sz = List.length sca*byte_sz in
       E.get_mem_dir fst,s,idx,sz,sca
@@ -1287,7 +1291,7 @@ let solve_regs test es csn =
           let a = Misc.as_some (E.global_loc_of e)
           and sz_e = E.get_mem_size e in
           match a with
-          | V.Val (Symbolic (s,idx)) ->
+          | V.Val (Symbolic ((s,_),idx)) ->
               let sz_s =
                 A.look_size (S.size_env test) s in
               if not (List.mem idx (MachSize.get_off sz_s sz_e)) then

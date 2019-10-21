@@ -61,8 +61,10 @@ module Make(V:Constant.S) =
     let compile_iar = function
       | IAR_imm i -> sprintf "%i" i,[]
       | IAR_roa (Rega r) -> reg_to_string r,[r]
-      | IAR_roa (Abs (Constant.Symbolic (s,_))) -> s,[]
-      | IAR_roa (Abs (Constant.Concrete _|Constant.Label _)) -> assert false
+      | IAR_roa (Abs (Constant.Symbolic ((s,None),0))) -> s,[]
+      | IAR_roa
+          (Abs Constant.(Symbolic _|Concrete _|Label _|Tag _))
+        -> assert false
 
     let compile_roi = function
       | Imm i -> sprintf "%i" i,[]
@@ -75,16 +77,16 @@ module Make(V:Constant.S) =
       | Some (Regi _)|None  -> voidstar
 
     let compile_addr_op vo = function
-      | Addr_op_atom (Abs (Constant.Symbolic (s,_))) -> s,[],[]
+      | Addr_op_atom (Abs (Constant.Symbolic ((s,None),0))) -> s,[],[]
       | Addr_op_atom (Rega r) -> reg_to_string r,[r;],[r,type_vo vo]
-      | Addr_op_add (Abs (Constant.Symbolic (s,_)),roi) ->
+      | Addr_op_add (Abs (Constant.Symbolic ((s,None),0)),roi) ->
           let m,i = compile_roi roi in
           add_par (s ^ "+" ^ m),i,[]
       | Addr_op_add (Rega r,roi) ->
           let m,i = compile_roi roi in
           add_par (reg_to_string r ^ "+" ^ m),r::i,[r,type_vo vo]
-      | Addr_op_atom (Abs (Constant.Concrete _|Constant.Label _))
-      | Addr_op_add (Abs (Constant.Concrete _|Constant.Label _),_)
+      | Constant.(Addr_op_atom (Abs (Concrete _|Label _|Tag _|Symbolic _))
+      | Addr_op_add (Abs  (Concrete _|Label _|Tag _|Symbolic _),_))
         ->
           assert false
 
@@ -142,7 +144,7 @@ module Make(V:Constant.S) =
         { empty_ins with
           memo = sprintf "%s = %s;" (reg_to_string r) (reg_to_string r0);
           outputs=[r;]; inputs=[r0;]}::k
-    | Pmov (r,RAI (IAR_roa (Abs (Constant.Symbolic (x,_))))) ->
+    | Pmov (r,RAI (IAR_roa (Abs (Constant.Symbolic ((x,None),0))))) ->
         { empty_ins with
           memo = sprintf "%s = %s;" (reg_to_string r) x;
           outputs=[r;] }::k

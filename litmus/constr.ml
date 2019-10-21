@@ -70,9 +70,9 @@ type location = A.location and module LocSet = A.LocSet =
       | LV (_,v) ->
           begin
             match v with
-            | Symbolic (s,_) -> Strings.add s k
+            | Symbolic ((s,None),_) -> Strings.add s k
             | Concrete _ -> k
-            | Label _ -> assert false
+            | Label _|Symbolic _|Tag _ -> assert false
           end
       | LL _ -> k
 

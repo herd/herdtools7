@@ -18,7 +18,7 @@
 open Constant
 open MiscParser
 open ConstrGen
-let mk_sym s = Symbolic (s,0)
+let mk_sym_tag s t = Symbolic ((s,Some t),0)
 let mk_lab p s = Label (p,s)
 %}
 
@@ -33,7 +33,7 @@ let mk_lab p s = Label (p,s)
 %token EQUAL NOTEQUAL EQUALEQUAL PLUS_DISJ
 %token FINAL FORALL EXISTS OBSERVED TOKAND NOT AND OR IMPLIES CASES WITH FILTER
 %token LOCATIONS STAR
-%token LBRK RBRK LPAR RPAR SEMI COLON AMPER
+%token LBRK RBRK LPAR RPAR SEMI COLON AMPER QUOTE
 %token ATOMIC
 %token ATOMICINIT
 
@@ -75,8 +75,10 @@ reg:
 | DOLLARNAME {  $1 }
 
 maybev:
-| NUM  { Concrete $1 }
-| NAME { mk_sym $1 }
+| NUM  { Concrete $1 }|
+| NAME { mk_sym $1  }
+| NAME COLON NAME { mk_sym_tag $1 $3 }
+| QUOTE NAME  { Tag (Some $2) }
 
 maybev_label:
 | maybev { $1 }
@@ -98,7 +100,7 @@ location_reg:
 location_deref:
 | location_reg { $1 }
 | STAR location_reg { $2 }
-| STAR NAME { Location_global (mk_sym $2) }
+| STAR NAME { Location_global (Constant.mk_sym $2) }
 
 location:
 | location_reg { $1 }
@@ -120,7 +122,9 @@ atom_init:
 | NAME STAR location EQUAL amperopt maybev { ($3,(Pointer $1,$6))}
 | STAR location { ($2,(TyDefPointer,ParsedConstant.zero))}
 | STAR location EQUAL amperopt maybev { ($2,(TyDefPointer,$5))}
-| NAME NAME LBRK NUM RBRK { (Location_global (mk_sym $2),(TyArray ($1,Misc.string_as_int $4),ParsedConstant.zero)) }
+| NAME NAME LBRK NUM RBRK
+    { (Location_global (Constant.mk_sym $2),
+       (TyArray ($1,Misc.string_as_int $4),ParsedConstant.zero)) }
 
 amperopt:
 | AMPER { () }
@@ -137,7 +141,8 @@ init_semi_list:
 /* For final state constraints */
 
 loc_deref:
- NAME LBRK NUM RBRK { Location_deref (mk_sym $1, Misc.string_as_int $3) }
+NAME LBRK NUM RBRK
+  { Location_deref (Constant.mk_sym $1, Misc.string_as_int $3) }
 
 loc_typ:
 | loc_deref { ($1,TyDef) }

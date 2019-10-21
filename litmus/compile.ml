@@ -44,11 +44,13 @@ module Generic (A : Arch_litmus.Base)
       let base =  base
       let pointer = pointer
       let code_pointer = Pointer (Base "ins_t")
+      let tag = Base "tag_t"
 
       let typeof = function
         | Constant.Concrete _ -> base
         | Constant.Symbolic _ -> pointer
         | Constant.Label _ -> code_pointer
+        | Constant.Tag _ -> tag
 
       let misc_to_c  = function
         | MiscParser.TyDef -> base
@@ -126,10 +128,6 @@ module Generic (A : Arch_litmus.Base)
         with
           Not_found -> StringMap.add a ty env
 
-      let _add_value v env = match v with
-      | Constant.Concrete _|Constant.Label _ -> env
-      | Constant.Symbolic (a,_) -> add_addr_type a base env
-
 (********************)
 (* Complete typing  *)
 (********************)
@@ -170,7 +168,7 @@ module Generic (A : Arch_litmus.Base)
         List.fold_left
           (fun env (loc,(t,v)) -> match loc,v with
           | _,Constant.Concrete _ -> env
-          | A.Location_global _,Constant.Symbolic (s,_) ->
+          | A.Location_global _,Constant.Symbolic ((s,_),_) ->
               let a = A.Location_global s in
               begin try
                 ignore (A.LocMap.find a env) ;
@@ -351,7 +349,7 @@ let count_ret =
 
     let as_int = function
       | Concrete i -> i
-      | Symbolic _|Label _ -> raise CannotIntern
+      | Symbolic _|Label _|Tag _ -> raise CannotIntern
 
 
     let compile_pseudo_code code k =
@@ -568,7 +566,7 @@ let count_ret =
           (fun (_,(t,v)) env ->
             match t,v with
             | (MiscParser.TyDef|MiscParser.TyDefPointer),
-              Constant.Symbolic (a,_) ->
+              Constant.Symbolic ((a,_),_) ->
                 begin try
                   let _ = StringMap.find a env in
                   env

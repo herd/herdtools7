@@ -50,7 +50,9 @@ type op1 =
   | AddK of int
   | AndK of string
   | Mask of MachSize.sz
-  | AddAllocTag
+  | TagLoc       (* Get tag memory location from location *)
+  | TagExtract   (* Extract tag from tagged location *)
+  | LocExtract   (* Extract actual location from location *)
 
 val pp_op1 : bool -> op1 -> string
 

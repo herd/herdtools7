@@ -85,11 +85,14 @@ module Make(V:Constant.S) = struct
 (* As a function *)
 (*****************)
 
-  let compile_val_fun v = match v with
-  | Constant.Symbolic (s,_) -> sprintf "%s" s
-  | Constant.Concrete _ -> Tmpl.dump_v v
-  | Constant.Label _ ->
-      Warn.user_error "No label value in LISA"
+  let compile_val_fun v =
+    let open Constant in
+    match v with
+    | Symbolic ((s,None),0) -> sprintf "%s" s
+    | Concrete _ -> Tmpl.dump_v v
+    | Label _ -> Warn.user_error "No label value in LISA"
+    | Symbolic _|Tag _ ->
+        Warn.user_error "No tag nor indexed accesses in LISA"
 
   and compile_addr_fun x = sprintf "*%s" x
 

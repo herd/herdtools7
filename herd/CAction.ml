@@ -177,7 +177,7 @@ end = struct
   | RMW _ -> true
   | _ -> false
 
-        (* LM: This one is for R and W issued by RWM *)
+  (* LM: This one is for R and W issued by RWM *)
   let is_atomic = function
     | Access (_,A.Location_global _,_,_,at,_) -> at
     | _ -> false
@@ -227,6 +227,9 @@ end = struct
   let is_reg_load_any a = match a with
   | Access (R,A.Location_reg _,_,_,_,_) -> true
   | _ -> false
+
+  let compatible_accesses a1 a2 =
+    (is_mem a1 && is_mem a2) || (is_reg_any a1 && is_reg_any a2)
 
 (* Barriers *)
   let is_barrier = function
