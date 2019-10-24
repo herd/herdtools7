@@ -2,10 +2,10 @@
 
 (executables
   (names
-    mfind moutcomes splitcond mshowhashes mlog2cond mflags mdiag recond mcycles mmixer knames mdiff mcmp madd mtopos mfilter mapply mcompare mhash mrcu mprog mnames ksort mobserved msort msum mselect mcond mproj rehash splitdot mlock mtrue mlisa2c cat2html
+    mfind moutcomes splitcond mshowhashes mlog2cond mflags mdiag recond mcycles mmixer knames mdiff mcmp madd mtopos mfilter mapply mcompare mhash mrcu mprog mnames ksort mobserved msort msum mselect mcond mproj rehash splitdot mlock mtrue mlisa2c cat2html mlog2name
    )
   (public_names
-  mfind7 moutcomes7 splitcond7 mshowhashes7 mlog2cond7 mflags7 mdiag7 recond7 mcycles7 mmixer7 knames7 mdiff7 mcmp7 madd7 mtopos7 mfilter7 mapply7 mcompare7 mhash7 mrcu7 mprog7 mnames7 ksort7 mobserved7 msort7 msum7 mselect7 mcond7 mproj7 rehash7 splitdot7 mlock7 mtrue7 mlisa2c7 cat2html7
+  mfind7 moutcomes7 splitcond7 mshowhashes7 mlog2cond7 mflags7 mdiag7 recond7 mcycles7 mmixer7 knames7 mdiff7 mcmp7 madd7 mtopos7 mfilter7 mapply7 mcompare7 mhash7 mrcu7 mprog7 mnames7 ksort7 mobserved7 msort7 msum7 mselect7 mcond7 mproj7 rehash7 splitdot7 mlock7 mtrue7 mlisa2c7 cat2html7 mlog2name7
   )
   (libraries herdtools unix str)
   (modules_without_implementation arch_tools)

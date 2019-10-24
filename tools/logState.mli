@@ -84,13 +84,14 @@ type simple_test =
     s_states : simple_sts ;
     s_hash : string ; }
 
-type simple_t =   { s_name : string ; s_tests : simple_test list; }
+type simple_t = { s_name : string ; s_tests : simple_test list; }
 
 
 module Make(O:sig val verbose : int end) : sig
 
 val as_st_concrete :  HashedPair.key Hashcons.hash_consed list -> st_concrete
 
+val is_empty_simple : simple_test -> bool
 val empty_sts : sts
 val get_nouts : sts -> Int64.t
 val millions : Int64.t -> float
