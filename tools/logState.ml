@@ -125,7 +125,7 @@ type simple_test =
     s_states : simple_sts ;
     s_hash : string ; }
 
-type simple_t =   { s_name : string ; s_tests : simple_test list; }
+type simple_t =  { s_name : string ; s_tests : simple_test list; }
 
 
 
@@ -164,7 +164,10 @@ let rec hashconsed_map f xs = match xs.Hashcons.node with
 
 let st_as_string st = hashconsed_map HashedPair.as_t st
 
-
+let is_empty_simple st = match st.s_states with
+| [] -> true
+| _::_ -> false
+  
 let get_nouts st = st.p_nouts
 let get_bindings st = List.map (fun st -> st_as_string st.p_st) st.p_sts
 

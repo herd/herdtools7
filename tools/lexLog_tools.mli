@@ -25,6 +25,7 @@ end
 
 module Make(O:Config) : sig
   val read_chan : string -> in_channel ->  LogState.t
+  val read_chan_simple : string -> in_channel ->  LogState.simple_t
   val read_name : string ->  LogState.t
   val read_names : string list -> LogState.t list
   val read_names_simple : string list -> LogState.simple_t list

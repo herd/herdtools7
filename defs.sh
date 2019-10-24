@@ -2,7 +2,7 @@ set -o errexit
 
 HERD="herd.native"
 LITMUS="litmus.native klitmus.native"
-TOOLS="mfind.native moutcomes.native splitcond.native mshowhashes.native mlog2cond.native mflags.native mdiag.native recond.native mcycles.native mmixer.native knames.native mdiff.native mcmp.native madd.native mtopos.native mfilter.native mapply.native mcompare.native mhash.native mrcu.native mprog.native mnames.native ksort.native mobserved.native msort.native msum.native mselect.native mcond.native mproj.native rehash.native splitdot.native mlock.native mtrue.native mlisa2c.native"
+TOOLS="mfind.native moutcomes.native splitcond.native mshowhashes.native mlog2cond.native mflags.native mdiag.native recond.native mcycles.native mmixer.native knames.native mdiff.native mcmp.native madd.native mtopos.native mfilter.native mapply.native mcompare.native mhash.native mrcu.native mprog.native mnames.native ksort.native mobserved.native msort.native msum.native mselect.native mcond.native mproj.native rehash.native splitdot.native mlock.native mtrue.native mlisa2c.native cat2html.native mlog2name.native"
 GEN="readRelax.native atoms.native dont.native diycross.native mexpand.native atomize.native diyone.native nexts.native classify.native diy.native norm.native"
 JINGLE="jingle.native gen_theme.native"
 NATIVE="$HERD $LITMUS $TOOLS $GEN $JINGLE"

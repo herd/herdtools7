@@ -354,11 +354,21 @@ let read_chan name chan =
       (if is_litmus then "litmus log" else "memevents log");
   normalize name is_litmus r
 
+let simplify (t,(sts,hash)) = (t,sts,hash)
+
+let read_chan_simple name chan =
+  let normalize = LS.normalize_simple and mk = simplify in
+  let is_litmus,r =  do_read_chan main_simple mk name chan in
+  if O.verbose > 0 then
+    eprintf
+      "Found %i tests in log (which is of type %s)\n%!"
+      (List.length r)
+      (if is_litmus then "litmus log" else "memevents log");
+  normalize name is_litmus r
+    
 let read_name name = Misc.input_protect (read_chan name) name
 
 let read_names names =  do_read_names main LS.normalize full_log names
-
-let simplify (t,(sts,hash)) = (t,sts,hash)
 
 let read_names_simple names =
   do_read_names main_simple LS.normalize_simple simplify names
