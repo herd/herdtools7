@@ -21,7 +21,6 @@ module type Config = sig
   val optace : bool
   val debug : Debug_herd.t
   val variant : Variant.t -> bool
-  val byte : MachSize.sz
   val endian : Endian.t option
   module PC : PrettyConf.S
 end
@@ -179,12 +178,13 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
     module A = A
     module V = A.V
     module E = Event.Make(C)(A)(Act)
+
     module CEM = struct (* Configure event monads *)
       let hexa =  C.PC.hexa
       let debug = C.debug
       let variant = C.variant
-      let byte = C.byte
     end
+
     module M = EventsMonad.Make(CEM)(A)(E)
     module Cons = Constraints.Make (C.PC)(A)
 
@@ -373,6 +373,5 @@ module ConfigToArchConfig(C:Config) : ArchExtra_herd.Config =
     let hexa = C.PC.hexa
     let brackets = C.PC.brackets
     let variant = C.variant
-    let byte = C.byte
     let endian = C.endian
   end

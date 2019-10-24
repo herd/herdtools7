@@ -24,7 +24,12 @@ module type S = sig
       A.st -> Code.proc -> A.init -> string ->
         A.reg * A.init * A.pseudo list * A.st
 
-  val emit_load_not_zero :
+(* Load for observation *)
+  val emit_obs :
+       A.st -> Code.proc -> A.init -> string ->
+        A.reg * A.init * A.pseudo list * A.st
+
+  val emit_obs_not_zero :
       A.st -> Code.proc -> A.init -> string ->
         A.reg * A.init * A.pseudo list * A.st
 
@@ -32,16 +37,16 @@ module type S = sig
       A.st -> Code.proc -> A.init -> string ->
         A.reg * A.init * A.pseudo list * A.st
 
-  val emit_load_not_eq :
+  val emit_obs_not_eq :
       A.st -> Code.proc -> A.init -> string -> A.reg ->
         A.reg * A.init * A.pseudo list * A.st
 
-  val emit_load_not_value :
+  val emit_obs_not_value :
       A.st -> Code.proc -> A.init -> string -> int ->
         A.reg * A.init * A.pseudo list * A.st
 
   val emit_access : A.st -> Code.proc -> A.init -> C.event ->
-    A.reg option * A.init * A.pseudo list * A.st  
+    A.reg option * A.init * A.pseudo list * A.st
 
   val emit_rmw : A.rmw -> A.st -> Code.proc -> A.init -> C.event ->  C.event ->
     A.reg option * A.init * A.pseudo list * A.st

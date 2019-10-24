@@ -15,12 +15,8 @@
 (****************************************************************************)
 
 type sz = Byte | Short | Word | Quad
-type t = sz
 
-val tags : string list
-val parse : string -> t option
-val pp : t -> string
-
+val pp : sz -> string
 val pp_short : sz -> string
 val debug : sz -> string
 
@@ -34,3 +30,18 @@ val get_off : sz -> sz -> int list
 
 (* All valid offsets for sz2 in sz1, reduced list *)
 val get_off_reduced : sz -> sz -> int list
+
+(* Smaller of two *)
+val compare : sz -> sz -> int
+module Set : MySet.S with type elt = sz
+
+val min : sz -> sz -> sz
+
+val pred : sz -> sz
+
+module Tag : sig
+  type t = Auto | Size of sz
+  val tags : string list
+  val parse : string -> t option
+  val pp : t -> string
+end

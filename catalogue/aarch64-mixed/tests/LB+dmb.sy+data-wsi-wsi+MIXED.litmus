@@ -1,0 +1,16 @@
+AArch64 LB+dmb.sy+data-wsi-wsi+MIXED
+{
+uint64_t y; uint64_t x; uint64_t 1:X0; uint64_t 0:X0;
+0:X1=x; 0:X3=y;
+1:X1=y; 1:X3=x;
+}
+ P0          | P1           ;
+ LDR W0,[X1] | LDR X0,[X1]  ;
+ DMB SY      | EOR X2,X0,X0 ;
+ MOV X2,#1   | ADD X2,X2,#1 ;
+ STR X2,[X3] | STR W2,[X3,#4]  ;
+             | MOV X4,#2    ;
+             | STR X4,[X3]  ;
+             | MOV W5,#3    ;
+             | STR W5,[X3]  ;
+exists (0:X0=0x2 /\ 1:X0=0x1 /\ x=0x3)

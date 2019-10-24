@@ -1,0 +1,19 @@
+AArch64 2+2W+posb0b0+posb1b1
+"PosWWb0b0 Wseb0b1 PosWWb1b1 Wseb1b0"
+Generator=diyone7 (version 7.54+02(dev))
+Com=Ws Ws
+Orig=PosWWb0b0 Wseb0b1 PosWWb1b1 Wseb1b0
+{
+uint16_t x; uint16_t 1:X3; uint16_t 0:X3;
+
+0:X1=x;
+1:X1=x;
+}
+ P0           | P1              ;
+ MOV W0,#1    | MOV W0,#3       ;
+ STRB W0,[X1] | STRB W0,[X1,#1] ;
+ MOV W2,#2    | MOV W2,#4       ;
+ STRB W2,[X1] | STRB W2,[X1,#1] ;
+ LDRH W3,[X1] | LDRH W3,[X1]    ;
+exists
+(0:X3=0x0402 /\ 1:X3=0x0402 /\ x=0x0402)

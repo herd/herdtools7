@@ -38,7 +38,7 @@ val unroll : int ref
 val speedcheck : Speed.t ref
 val optace : bool option ref
 val variant : (Variant.t -> bool) ref
-val byte : MachSize.sz ref
+val byte : MachSize.Tag.t ref
 val endian : Endian.t option ref
 val initwrites : bool option ref
 val check_filter : bool ref
@@ -88,9 +88,11 @@ module PP : sig
   val sep : string option ref
   val pad : float option ref
   val margin : float option ref
-  val scale : float ref
+  val scale : float ref      
   val xscale : float ref
   val yscale : float ref
+  val dsiy : float ref
+  val siwidth : float ref
   val boxscale : float ref
   val ptscale : float ref
   val squished : bool ref

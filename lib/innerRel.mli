@@ -119,6 +119,9 @@ module type S =  sig
 (* Equivalence classes, applies to symetric relations only (unchecked) *)
   val classes : t -> Elts.t list
 
+(* strata ie sets of nodes by increasing distance *)
+  val strata : Elts.t -> t -> Elts.t list
+
 end
 
 module Make:

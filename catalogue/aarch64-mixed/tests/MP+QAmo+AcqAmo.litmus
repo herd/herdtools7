@@ -1,0 +1,14 @@
+AArch64 MP+QAmo+AcqAmo
+{
+uint64_t x; uint64_t 1:X2; uint64_t 1:X0;
+
+0:X0=0x101010101010101; 0:X1=x;
+1:X1=x; 1:X4=0x02020202
+}
+ P0             | P1              ;
+ SWP X0,X4,[X1] | SWPA W4,W0,[X1] ;
+                | LDR W2,[X1,#4]  ;
+
+locations [x;]
+exists
+(1:X0=0x1010101 /\ 1:X2=0x0)

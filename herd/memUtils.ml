@@ -489,31 +489,4 @@ let get_scope_rels evts sc =
     with Exit -> None
 
 
-(*************************************)
-(* Final condition invalidation mode *)
-(*************************************)
-
-(*
-  A little optimisation: we check whether the existence/non-existence
-  of some vo would help in validation/invalidating the constraint
-  of the test.
-
-  If no, not need to go on
- *)
-
-  module T = Test_herd.Make(S.A)
-
-  let final_is_relevant test fsc =
-    let open ConstrGen in
-    let cnstr = T.find_our_constraint test in
-    let senv = S.size_env test in
-    match cnstr with
-      (* Looking for 'Allow' witness *)
-    | ExistsState p ->  C.check_prop p senv fsc
-          (* Looking for witness that invalidates 'Require' *)
-    | ForallStates p -> not (C.check_prop p senv fsc)
-          (* Looking for witness that invalidates 'Forbid' *)
-    | NotExistsState p -> C.check_prop p senv fsc
-
-
 end

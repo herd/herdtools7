@@ -31,6 +31,7 @@ type ('prog,'nice_prog,'start,'state, 'size_env, 'prop, 'loc, 'locset) t =
      observed : 'locset ;
      displayed : 'locset ;
      extra_data : MiscParser.extra_data ;
+     access_size : MachSize.sz list ;
    }
 
 val simple_name :

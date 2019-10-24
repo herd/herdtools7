@@ -94,6 +94,15 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
     module V = V
 
+    let mem_access_size = function
+      | INop | OpI _ | OpIW _ | Op _ | OpW _
+      | J _ | Bcc _ | FenceIns _
+        -> None
+      | Load (w,_,_,_,_,_) | Store (w,_,_,_,_)
+      | LoadReserve (w,_,_,_) | StoreConditional (w,_,_,_,_)
+      | Amo (_,w,_,_,_,_)
+        -> Some (tr_width w)
+
     include ArchExtra_herd.Make(C)
         (struct
           module V = V
@@ -105,6 +114,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
           type arch_instruction = instruction
           let fromto_of_instr _ = None
+
         end)
 
   end

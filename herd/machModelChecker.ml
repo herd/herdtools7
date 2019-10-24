@@ -160,6 +160,7 @@ module Make
       let relevant e = not (E.is_reg_any e) in
       let all_evts =  conc.S.str.E.events in
       let evts = E.EventSet.filter relevant all_evts in
+      let mem_evts = lazy (E.EventSet.filter E.is_mem evts) in
       let po =
         E.EventRel.filter
           (fun (e1,e2) -> relevant e1 && relevant e2)
@@ -177,12 +178,11 @@ module Make
       let m =
         I.add_rels
           I.init_env_empty
-
-        ((if O.variant Variant.Success || O.variant Variant.Instr then
-          fun k ->
-            ("instr",lazy begin
-              E.EventRel.of_pred all_evts all_evts E.po_eq
-            end)::k
+          ((if O.variant Variant.Success || O.variant Variant.Instr then
+            fun k ->
+              ("instr",lazy begin
+                E.EventRel.of_pred all_evts all_evts E.po_eq
+              end)::k
         else Misc.identity)
           ["id",id;
             "loc", lazy begin
@@ -209,30 +209,35 @@ module Make
            "success", lazy (Lazy.force pr).S.success;
            "rf", lazy (Lazy.force pr).S.rf;
            "control",lazy conc.S.str.E.control ;
-           "sm",lazy 
-           begin
-                   E.EventRel.unions (E.EventSetSet.map_list (fun sm -> E.EventRel.cartesian sm sm) conc.S.str.E.sca);
-
+           "sm",lazy begin
+             if mixed then
+               E.EventRel.unions
+                 (E.EventSetSet.map_list
+                    (fun sm -> E.EventRel.cartesian sm sm)
+                    conc.S.str.E.sca)
+             else
+               E.EventRel.set_to_rln (Lazy.force mem_evts)
            end;
           "iico", lazy conc.S.str.E.intra_causality_data
           ]) in
       let m =
         I.add_sets m
-          (List.map
-             (fun (k,p) -> k,lazy (E.EventSet.filter p evts))
-          [
-           "C", E.is_commit;
-           "R", E.is_mem_load;
-           "W", E.is_mem_store;
-           "M", E.is_mem;
-           "AMO",E.is_amo; (* NB: it will fail for C *)
-           "F", E.is_barrier;
-           "I", E.is_mem_store_init;
-           "IW", E.is_mem_store_init;
-           "FW",
-           (let ws = lazy (U.make_write_mem_finals conc) in
-           fun e -> E.EventSet.mem e (Lazy.force ws));
-         ]) in
+          (("M",mem_evts)::
+           List.fold_right
+             (fun (k,p) ps ->
+               (k,lazy (E.EventSet.filter p (Lazy.force mem_evts)))::ps)
+             ["R", E.is_mem_load;
+              "W", E.is_mem_store;
+              "AMO",E.is_amo;
+              "I", E.is_mem_store_init;
+              "IW", E.is_mem_store_init;
+              "FW",
+              (let ws = lazy (U.make_write_mem_finals conc) in
+              fun e -> E.EventSet.mem e (Lazy.force ws)); ]
+             (List.map
+                (fun (k,p) -> k,lazy (E.EventSet.filter p evts))
+                ["C", E.is_commit;
+                 "F", E.is_barrier; ])) in
       let m =
         I.add_sets m
           (List.map

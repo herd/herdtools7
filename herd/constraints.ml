@@ -24,6 +24,7 @@ module type Config = sig
 end
 
 module type S = sig
+
   module A : Arch_herd.S
 
   type prop = (A.location,A.V.v) ConstrGen.prop
@@ -37,9 +38,11 @@ module type S = sig
 
   val foralltrue : constr
 
+  module Mixed : functor (SZ: ByteSize.S) -> sig
 (* Check state *)
-  val check_prop : prop -> A.size_env -> A.state -> bool
-  val check_constr : constr -> A.size_env -> A.state list -> bool
+    val check_prop : prop -> A.size_env -> A.state -> bool
+    val check_constr : constr -> A.size_env -> A.state list -> bool
+  end
 
 (* Build a new constraint thar checks State membership *)
   val constr_of_finals : A.StateSet.t -> constr
@@ -61,26 +64,26 @@ open ConstrGen
 
 module Make (C:Config) (A : Arch_herd.S) :
     S with module A = A
-	=
+        =
       struct
-	module A = A
+        module A = A
 (************ Constraints **************************)
-	module V = A.V
+        module V = A.V
 
-	type prop = (A.location,V.v) ConstrGen.prop
+        type prop = (A.location,V.v) ConstrGen.prop
 
-	let ptrue : prop = And []
+        let ptrue : prop = And []
 
-	type constr = prop ConstrGen.constr
+        type constr = prop ConstrGen.constr
 
-	let foralltrue = ForallStates ptrue
+        let foralltrue = ForallStates ptrue
 
         let loc_in_atom loc = function
           | LL (l1,l2) ->
               A.location_compare l1 loc = 0 ||
               A.location_compare l2 loc = 0
-          | LV (l,_) ->
-              A.location_compare l loc = 0
+            | LV (l,_) ->
+                A.location_compare l loc = 0
 
         let rec loc_in_prop loc p = match p with
         | Atom a -> loc_in_atom loc a
@@ -96,25 +99,30 @@ module Make (C:Config) (A : Arch_herd.S) :
         | ExistsState p
         | NotExistsState p -> loc_in_prop loc p
 
-	let rec check_prop p senv state = match p with
-	| Atom (LV (l,v)) -> A.state_mem senv state l v
-        | Atom (LL (l1,l2)) ->
-            begin try
-              let v1 = A.look_in_state senv state l1
-              and v2 = A.look_in_state senv state l2 in
-              A.V.compare v1 v2 = 0
-            with A.LocUndetermined -> assert false end
-	| Not p -> not (check_prop p senv state)
-	| And ps -> List.for_all (fun p -> check_prop p senv state) ps
-	| Or ps -> List.exists (fun p -> check_prop p senv state) ps
-	| Implies (p1, p2) -> 
-	    if check_prop p1 senv state then check_prop p2 senv state else true
-	      
-	let check_constr c senv states = match c with
-	| ForallStates p -> List.for_all (fun s -> check_prop p senv s) states
-	| ExistsState p -> List.exists (fun s -> check_prop p senv s) states
-	| NotExistsState p ->
-            not (List.exists (fun s -> check_prop p senv s) states)	      
+        module Mixed (SZ : ByteSize.S) = struct
+          module AM = A.Mixed(SZ)
+
+          let rec check_prop p senv state = match p with
+          | Atom (LV (l,v)) -> AM.state_mem senv state l v
+          | Atom (LL (l1,l2)) ->
+              begin try
+                let v1 = AM.look_in_state senv state l1
+                and v2 = AM.look_in_state senv state l2 in
+                A.V.compare v1 v2 = 0
+              with A.LocUndetermined -> assert false end
+          | Not p -> not (check_prop p senv state)
+          | And ps -> List.for_all (fun p -> check_prop p senv state) ps
+          | Or ps -> List.exists (fun p -> check_prop p senv state) ps
+          | Implies (p1, p2) ->
+              if check_prop p1 senv state then check_prop p2 senv state
+              else true
+
+          let check_constr c senv states = match c with
+          | ForallStates p -> List.for_all (fun s -> check_prop p senv s) states
+          | ExistsState p -> List.exists (fun s -> check_prop p senv s) states
+          | NotExistsState p ->
+              not (List.exists (fun s -> check_prop p senv s) states)
+        end
 
         let matrix_of_states fs =
           A.StateSet.fold
@@ -154,12 +162,12 @@ module Make (C:Config) (A : Arch_herd.S) :
                 swap_list (k-1) (x::prev) xs in
           fun k xs -> swap_list k [] xs
 
-                  
+
         let swap_col k m =
           let mt = Misc.transpose m in
           let mt = swap_list k mt in
           Misc.transpose mt
-          
+
         let extract_column xss = match xss with
         | []|[]::_ -> assert false
         | ((loc0,_)::_)::_ ->
@@ -180,15 +188,15 @@ module Make (C:Config) (A : Arch_herd.S) :
                 with Not_found -> [] in
               VMap.add v (ps::pss) m)
             VMap.empty ps
-          
-        let rec compile_cond m = 
+
+        let rec compile_cond m =
           let k = best_col m in
           let loc,ps = extract_column (swap_col k m) in
           let m = group_rows ps in
           match ps with
           | [] -> assert false
           | (_,[])::_ ->
-              Or 
+              Or
                 (VMap.fold
                    (fun v _ k -> Atom (LV (loc,v))::k)
                    m [])
@@ -199,7 +207,7 @@ module Make (C:Config) (A : Arch_herd.S) :
                    m [])
 
         let cond_of_finals fs = compile_cond (matrix_of_states fs)
-            
+
         let constr_of_finals fs = ForallStates (cond_of_finals fs)
 
 (* Pretty print *)
@@ -245,22 +253,22 @@ module Make (C:Config) (A : Arch_herd.S) :
         | Ascii|Dot -> s
         | Latex -> "\\mbox{" ^ s ^ "}"
         | DotFig -> "\\\\mbox{" ^ s ^ "}"
-                                        
+
 
         let pp_loc tr m loc = match m with
         | Ascii|Dot -> A.do_dump_location tr loc
         | Latex|DotFig -> A.pp_location loc
 
         let pp_rvalue tr m loc = match loc with
-          | A.Location_global _ -> sprintf "*%s" (A.pp_location loc)
-          | _ -> pp_loc tr m loc
+        | A.Location_global _ -> sprintf "*%s" (A.pp_location loc)
+        | _ -> pp_loc tr m loc
 
-          
+
         let pp_atom tr m a =
           match a with
           | LV (loc,v) ->
               mbox m (pp_loc tr m loc) ^
-              pp_equal m ^          
+              pp_equal m ^
               mbox m
                 (let v = V.pp C.hexa v in
                 let add_asm = C.texmacros in
@@ -271,18 +279,18 @@ module Make (C:Config) (A : Arch_herd.S) :
                 | DotFig,true -> sprintf "\\\\asm{%s}" v)
           | LL (l1,l2) ->
               mbox m (pp_loc tr m l1) ^
-              pp_equal m ^ 
+              pp_equal m ^
               mbox m (pp_rvalue tr m l2)
-            
+
 (* ascii, parsable dump *)
-        let dump_as_kind c = pp_kind (kind_of c)          
+        let dump_as_kind c = pp_kind (kind_of c)
 
         let do_dump_constraints tr chan =
           ConstrGen.dump_constraints chan (pp_atom tr Ascii)
 
         let dump_constraints chan =
           ConstrGen.dump_constraints chan (pp_atom Misc.identity Ascii)
-          
+
         let constraints_to_string =
           ConstrGen.constraints_to_string  (pp_atom Misc.identity Ascii)
 (* pretty_print *)
@@ -297,7 +305,7 @@ module Make (C:Config) (A : Arch_herd.S) :
             pp_mbox = mbox m;
             pp_atom = pp_atom Misc.identity m; }
 
-        let pp_as_kind c = 
+        let pp_as_kind c =
           let bodytext = pp_kind (kind_of c) in
           if C.texmacros then
             bodytext ^ " Final State" else bodytext

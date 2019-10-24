@@ -61,7 +61,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     match Cfg.typ with
     | Std (_,MachSize.Quad) -> V64
     | Int |Std (_,MachSize.Word) -> V32
-    | t -> Warn.user_error "AArch64, illegal base type: %s" (pp t)
+    | Std (_,MachSize.(Short|Byte)) -> V32
+
 
     let sz2v =
       let open MachSize in
@@ -373,13 +374,22 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let load_idx st rA rB idx = [ldg_idx rA rB idx],st
         end)
 
+    module OBS =
+      LOAD
+        (struct
+          let load st rA rB = [ldr_mixed rA rB naturalsize 0],st
+          let load_idx st rA rB idx =
+            [ldr_mixed_idx vloc rA rB idx naturalsize],st
+        end)
 
 (* For export *)
     let emit_load_one = LDR.emit_load_one
     let emit_load = LDR.emit_load
-    let emit_load_not_value = LDR.emit_load_not_value
-    let emit_load_not_eq = LDR.emit_load_not_eq
-    let emit_load_not_zero = LDR.emit_load_not_zero
+
+    let emit_obs = emit_load_mixed naturalsize 0
+    let emit_obs_not_value = OBS.emit_load_not_value
+    let emit_obs_not_eq = OBS.emit_load_not_eq
+    let emit_obs_not_zero = OBS.emit_load_not_zero
 
     module LDAR = LOAD
         (struct

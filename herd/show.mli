@@ -15,6 +15,9 @@
 (****************************************************************************)
 
 (** Show dot files as Postscript, controlled by '-gv' option *)
+module Generator : functor (O:PrettyConf.S) -> sig
+  val generator : string
+end
 
 module Make : functor (O:PrettyConf.S)  -> sig
 (* Fork a gv window to show that file *)

@@ -109,7 +109,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let rB,init,st = U.next_init st p init x in
       rA,init,lift_code [I_LDR (rA,rB,AL)],st
 
-    let emit_load_not_zero st p init x =
+    let emit_obs = emit_load
+
+    let emit_obs_not_zero st p init x =
       let rA,st = next_reg st in
       let rB,init,st = U.next_init st p init x in
       let lab = Label.next_label "L" in
@@ -144,10 +146,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       [Label (out,Nop)],
       st
 
-    let emit_load_not_eq st p init x rP =
+    let emit_obs_not_eq st p init x rP =
       emit_load_not st p init x (fun r -> I_CMP (r,rP))
 
-    let emit_load_not_value st p init x v =
+    let emit_obs_not_value st p init x v =
       emit_load_not st p init x (fun r -> I_CMPI (r,v))
 
     let emit_load_idx st p init x idx =

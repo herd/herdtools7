@@ -17,7 +17,7 @@
 (** Produce event structures (which include variables) + constraints,
    using instruction semantics *)
 
-module type Config = sig
+module type CommonConfig = sig
   val verbose : int
   val optace : bool
   val unroll : int
@@ -27,13 +27,16 @@ module type Config = sig
   val initwrites : bool
   val check_filter : bool
   val variant : Variant.t -> bool
+end
+
+module type Config = sig
+  include CommonConfig
   val byte : MachSize.sz
 end
 
 module type S = sig
 
   module S : Sem.Semantics
-
 
   type result =
      {
@@ -143,6 +146,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     module S = S
 
     module A = S.A
+    module AM = A.Mixed(C)
     module V = A.V
     module E = S.E
     module EM = S.M
@@ -262,6 +266,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           locs [] in
       env
 
+    module SM = S.Mixed(C)
+
     let glommed_event_structures (test:S.test) =
       let p = test.Test_herd.program in
       let starts = test.Test_herd.start_points in
@@ -307,14 +313,13 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         else
           Some (tgt,seen) in
 
-
       let rec add_next_instr proc prog_order seen addr inst nexts =
         let ii =
           { A.program_order_index = prog_order;
             proc = proc; inst = inst; unroll_count = 0;
             labels = labels_of_instr addr; }
         in
-        S.build_semantics ii >>> fun (prog_order, branch) ->
+        SM.build_semantics ii >>> fun (prog_order, branch) ->
           next_instr proc prog_order seen addr nexts branch
 
       and add_code proc prog_order seen nexts = match nexts with
@@ -344,9 +349,11 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         let evts_proc = jump_start proc code in
         evts_proc |*| evts in
 
-      let add_inits env size_env =
-        if C.initwrites then  EM.initwrites env size_env
-        else EM.zeroT in
+    let add_inits env size_env =
+      if C.initwrites then
+        let module MI = EM.Mixed(C) in
+        MI.initwrites env size_env
+      else EM.zeroT in
 
       let set_of_all_instr_events =
         List.fold_right
@@ -902,10 +909,17 @@ let solve_regs test es csn =
 (* Final condition invalidation mode *)
 (*************************************)
 
+    module CM = S.Cons.Mixed(C)
+
 (* Internal filter *)
     let check_filter test fsc = match test.Test_herd.filter with
     | None -> true
-    | Some p -> not C.check_filter || S.Cons.check_prop p (S.size_env test) fsc
+    | Some p -> not C.check_filter || CM.check_prop p (S.size_env test) fsc
+
+(*************************************)
+(* Final condition invalidation mode *)
+(*************************************)
+
 (*
   A little optimisation: we check whether the existence/non-existence
   of some vo would help in validation/invalidating the constraint
@@ -914,11 +928,23 @@ let solve_regs test es csn =
   If no, not need to go on
  *)
 
-    let worth_going test fsc = match C.speedcheck with
-    | Speed.True|Speed.Fast ->
-        U.final_is_relevant test fsc
-    | Speed.False -> true
+  module T = Test_herd.Make(S.A)
 
+  let final_is_relevant test fsc =
+    let open ConstrGen in
+    let cnstr = T.find_our_constraint test in
+    let senv = S.size_env test in
+    match cnstr with
+      (* Looking for 'Allow' witness *)
+    | ExistsState p ->  CM.check_prop p senv fsc
+          (* Looking for witness that invalidates 'Require' *)
+    | ForallStates p -> not (CM.check_prop p senv fsc)
+          (* Looking for witness that invalidates 'Forbid' *)
+    | NotExistsState p -> CM.check_prop p senv fsc
+
+    let worth_going test fsc = match C.speedcheck with
+    | Speed.True|Speed.Fast -> final_is_relevant test fsc
+    | Speed.False -> true
 
 (***************************)
 (* Rfmap full exploitation *)
@@ -1048,7 +1074,7 @@ let solve_regs test es csn =
               A.LocSet.map_union
                 (fun loc -> match loc with
                 | A.Location_global a ->
-                    let eas = A.byte_eas (A.look_size senv (A.V.as_symbol a)) a in
+                    let eas = AM.byte_eas (A.look_size senv (A.V.as_symbol a)) a in
                     A.LocSet.of_list
                       (List.map (fun a -> A.Location_global a) eas)
                 | _ -> A.LocSet.singleton loc)
@@ -1125,7 +1151,7 @@ let solve_regs test es csn =
             let wss = List.sort compare_len (List.map sort_same_base wss)
             and rs =
               let senv = S.size_env test in
-              A.byte_indices (A.look_size_location senv loc) in
+              AM.byte_indices (A.look_size_location senv loc) in
             MatchFinal.find_rfs_sca (A.pp_location loc) rs wss::k)
           loc_wss [] in
 

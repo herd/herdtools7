@@ -74,7 +74,9 @@ struct
     let rA,st = next_reg st in
     rA,init,pseudo [emit_load_ins x rA],st
 
-  let emit_load_not_zero st _p init x =
+  let emit_obs = emit_load
+
+  let emit_obs_not_zero st _p init x =
     let rA,st = next_reg st in
     let lab = Label.next_label "L" in
     rA,init,
@@ -99,10 +101,10 @@ struct
   let emit_load_not  _st _p _init _x _cmp =
     Warn.fatal "Loop observers not implemented for X86"
 
-  let emit_load_not_eq  st =  emit_load_not st
-  let emit_load_not_value  st = emit_load_not st
+  let emit_obs_not_eq  st =  emit_load_not st
+  let emit_obs_not_value  st = emit_load_not st
 
-let emit_joker st init = None,init,[],st
+  let emit_joker st init = None,init,[],st
 
   let emit_access st _p init e = match e.C.dir,e.C.loc with
   | None,_ -> Warn.fatal "TODO"

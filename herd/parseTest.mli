@@ -27,10 +27,11 @@ module type Config = sig
   val check_rename : string -> string option
   val libfind : string -> string
   include GenParser.Config
-  include Top_herd.Config
+  include Top_herd.CommonConfig
   include Sem.Config
 
   val statelessrc11 : bool
+  val byte : MachSize.Tag.t
 end
 
 module Top :

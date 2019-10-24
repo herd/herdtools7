@@ -1,0 +1,18 @@
+AArch64 CoRW2+posb0b0+b0
+"Rfeb0b0 PosRWb0b0 Wseb0b0"
+Generator=diyone7 (version 7.54+02(dev))
+Com=Rf Ws
+Orig=Rfeb0b0 PosRWb0b0 Wseb0b0
+{
+uint16_t x; uint16_t 1:X3; uint16_t 1:X0;
+
+0:X1=x;
+1:X1=x;
+}
+ P0           | P1           ;
+ MOV W0,#1    | LDRB W0,[X1] ;
+ STRB W0,[X1] | MOV W2,#2    ;
+              | STRB W2,[X1] ;
+              | LDRH W3,[X1] ;
+exists
+(1:X0=0x0 /\ 1:X3=0x1 /\ x=0x1)

@@ -86,6 +86,8 @@ let emit_joker st init = None,init,[],st
 
     let emit_load st p init x = emit_load_tagged st p init x  []
 
+    let emit_obs = emit_load
+
     let emit_load_idx_tagged st _p init x idx a =
       let rA,st = next_reg st in
       rA,init,pseudo [ld_idx_tagged rA x idx a],st
@@ -93,7 +95,7 @@ let emit_joker st init = None,init,[],st
     let emit_load_idx st p init x idx =
       emit_load_idx_tagged st p init x idx []
 
-    let emit_load_not_zero st _p init x =
+    let emit_obs_not_zero st _p init x =
       let rA,st = next_reg st in
       let rB,st = next_reg st in
       let lab = Label.next_label "L" in
@@ -135,15 +137,15 @@ let emit_joker st init = None,init,[],st
 (*
     let emit_load_not_eq st p init x rP =
       emit_load_not st p init x
-        (fun r lab -> bcc Ne r rP lab)
+zz        (fun r lab -> bcc Ne r rP lab)
 
     let emit_load_not_value st p init x v =
       emit_load_not st p init x
         (fun r lab -> bcci Ne r v lab)
 *)
 
-let emit_load_not_eq _ = assert false
-    let emit_load_not_value _ = assert false
+    let emit_obs_not_eq _ = assert false
+    let emit_obs_not_value _ = assert false
 
 (* Stores *)
 

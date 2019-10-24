@@ -254,14 +254,14 @@ let get_fence n =
 (*************)
 
 let last_observation st p i x v =
-  let r,i,c,_st = Comp.emit_load st p i x in
+  let r,i,c,_st = Comp.emit_obs st p i x in
   i,c,F.add_final_v p r v []
 
 let rec straight_observer st p i x = function
   | [] -> i,[],[]
   | [v] -> last_observation st p i x v
   | v::vs ->
-      let r,i,c,st = Comp.emit_load st p i x in
+      let r,i,c,st = Comp.emit_obs st p i x in
       let i,cs,fs = straight_observer st p i x vs in
       i,c@cs,F.add_final_v p r v fs
 
@@ -269,7 +269,7 @@ let rec fenced_observer st p i x = function
   | [] -> i,[],[]
   | [v] -> last_observation st p i x v
   | v::vs ->
-      let r,i,c,st = Comp.emit_load st p i x in
+      let r,i,c,st = Comp.emit_obs st p i x in
       let f = Comp.emit_fence p i C.nil Comp.stronger_fence in
       let i,cs,fs = fenced_observer st p i x vs in
       i,c@f@cs,F.add_final_v p r v fs
@@ -278,14 +278,14 @@ let rec fenced_observer st p i x = function
 let loop_observer st p i x = function
   | []|[_] -> i,[],[]
   | v::vs ->
-      let r,i,c,st = Comp.emit_load_not_zero st p i x in
+      let r,i,c,st = Comp.emit_obs_not_zero st p i x in
       let rec do_loop st i prev_r = function
         | [] ->  assert false
         | [v] ->
-            let r,i,c,_st = Comp.emit_load_not_eq st p i x prev_r in
+            let r,i,c,_st = Comp.emit_obs_not_eq st p i x prev_r in
             i,c,F.add_final_v p r v []
         | v::vs ->
-            let r,i,c,st = Comp.emit_load_not_eq st p i x prev_r in
+            let r,i,c,st = Comp.emit_obs_not_eq st p i x prev_r in
             let i,cs,fs = do_loop st i r vs in
             i,c@cs,F.add_final_v p r v fs in
       let i,cs,fs = do_loop st i r vs in
@@ -463,11 +463,11 @@ let max_set =
 (* Local check of coherence *)
 
   let do_add_load st p i f x v =
-    let r,i,c,st = Comp.emit_load st p i x in
+    let r,i,c,st = Comp.emit_obs st p i x in
     i,c,F.add_final_v p r (IntSet.singleton v) f,st
 
   let do_add_loop st p i f x v w =
-    let r,i,c,st = Comp.emit_load_not_value st p i x v in
+    let r,i,c,st = Comp.emit_obs_not_value st p i x v in
     i,c,F.add_final_v p r (IntSet.singleton w) f,st
 
 

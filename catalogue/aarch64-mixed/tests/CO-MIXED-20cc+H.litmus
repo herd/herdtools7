@@ -1,0 +1,17 @@
+AArch64 CO-MIXED-20cc+H
+"Coherence test, mixed-size accesses, 16bits version"
+
+{
+uint16_t x = 0;
+uint16_t 0:X2 = 0;
+0:X5 = x;
+1:X5 = x;
+0:X1 = 0x01;
+uint16_t 1:X1 = 0x0202;
+}
+
+ P0                          | P1                          ;
+STRB  W1,[X5] (* Wx=(_,1) *) | STRH W1,[X5] (* Wx=(2,2) *) ;
+LDRH  W2,[X5] (* Rx=(2,1) *) |                             ;
+
+exists (x=0x0202 /\ 0:X2=0x0201)

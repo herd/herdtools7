@@ -246,6 +246,12 @@ let pp_bcc = function
 
 type width = Byte | Half | Word | Double
 
+let tr_width = function
+  | Byte -> MachSize.Byte
+  | Half -> MachSize.Short
+  | Word -> MachSize.Word
+  | Double -> MachSize.Quad
+
 let pp_width = function
   | Byte -> "b"
   | Half -> "h"
