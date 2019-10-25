@@ -58,10 +58,11 @@ module type S =
       val zero : v
       val one : v
       val two : v
-
+      val default_tag : v
 
       val is_zero : v -> bool
       val is_one : v -> bool
+      val check_atag : v -> bool
 
       (* The following operations may raise
          exception "Undetermined", if their arguments of

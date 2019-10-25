@@ -21,9 +21,10 @@ type 'scalar t =
 (* Memory cell, with optional tag and offet *)
   | Symbolic  of (string * string option) * int
   | Label of int * string     (* In code *)
-  | Tag of string option
+  | Tag of string
 
 val mk_sym : string -> 'scalar t
+val default_tag : 'scalar t
 
 module type S =  sig
 

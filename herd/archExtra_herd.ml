@@ -40,6 +40,9 @@ module type S = sig
   type global_loc = I.V.v
   type v = I.V.v
 
+  module VSet : MySet.S with type elt = v
+  module VMap : MyMap.S with type key = v
+
   type proc = int
   val pp_proc : proc -> string
 
@@ -62,6 +65,7 @@ module type S = sig
 
   include Location.S
   with type loc_reg = I.arch_reg and type loc_global = v
+
 (* Extra for locations *)
   val maybev_to_location : MiscParser.maybev -> location
   val do_dump_location : (string -> string) -> location -> string
@@ -184,6 +188,15 @@ module Make(C:Config) (I:I) : S with module I = I
 
       module I = I
       type v = I.V.v
+
+      module OV =
+        struct
+          type t = v
+          let compare = I.V.compare
+        end
+
+      module VSet = MySet.Make(OV)
+      module VMap = MyMap.Make(OV)
 
       type global_loc = v
 

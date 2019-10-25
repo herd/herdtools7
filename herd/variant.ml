@@ -29,11 +29,14 @@ type t =
   | LrScDiffOk      (* Lr/Sc paired to <> addresses may succeed (!) *)
   | Mixed
   | WeakPredicated (* "Weak" predicated instructions, not performing non-selected events, aarch64 *)
+(* Tags *)
   | MemTag
+  | HardFault
+
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
    "fullscdepend";"splittedrmw";"switchdepscwrite";"lrscdiffok";
-   "mixed";"weakpredicated"; "memtag"; ]
+   "mixed";"weakpredicated"; "memtag"; "hardfault"; ]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -48,7 +51,8 @@ let parse s = match Misc.lowercase s with
 | "lrscdiffok" -> Some  LrScDiffOk
 | "mixed" -> Some Mixed
 | "weakpredicated"|"weakpred" -> Some WeakPredicated
-| "memtag" -> Some MemTag
+| "tagmem"|"memtag" -> Some MemTag
+| "hardfault" -> Some HardFault
 | _ -> None
 
 let pp = function
@@ -65,6 +69,7 @@ let pp = function
   | Mixed -> "mixed"
   | WeakPredicated -> "WeakPredicated"
   | MemTag -> "memtag"
+  | HardFault -> "hardfault"
 
 let compare = compare
 

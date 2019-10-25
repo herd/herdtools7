@@ -680,3 +680,4 @@ let clean_name n =
 (*************)
 
 let add_atag = sprintf "%s.atag"
+and check_atag s = Filename.check_suffix s ".atag"

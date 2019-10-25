@@ -238,8 +238,12 @@ end
 
 val clean_name : string -> string
 
-(******************)
-(* Building names *)
-(******************)
+(*************)
+(* Tag names *)
+(*************)
+
+(* Tag names abstract tags locations in memory.
+   For location x, tag location is x.atag *)
 
 val add_atag : string -> string
+val check_atag : string -> bool

@@ -82,7 +82,7 @@ module Make(Cst:Constant.S) = struct
   let zero = Val Cst.zero
   and one = Val Cst.one
   and two = intToV 2
-
+  and default_tag = Val Constant.default_tag
 
 (************************************)
 (* Constraint compatible operations *)
@@ -199,8 +199,16 @@ module Make(Cst:Constant.S) = struct
   let op_tagloc (a,_) _ =  Symbolic ((Misc.add_atag a,None),0)
   let tagloc = op_tagged "tagloc" op_tagloc
 
+  let check_atag = function
+    | Val (Symbolic ((s,_),_)) -> Misc.check_atag s
+    | Var _|Val (Concrete _|Label _|Tag _) ->
+        Warn.fatal "Illegal check_atag" (* NB: not an user error *)
+
   (* Decompose tagged locations *)
-  let op_tagextract (_,t) _ = Tag t
+  let op_tagextract (_,t) _ = match t with
+  | Some t -> Tag t
+  | None -> Constant.default_tag
+
   let tagextract v = op_tagged "tagextract" op_tagextract v
   let op_locextract (a,_) o = Symbolic ((a,None),o)
   let locextract v = op_tagged "locextract" op_locextract v

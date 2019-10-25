@@ -155,6 +155,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     module W = Warn.Make(C)
 
     let mixed = C.variant Variant.Mixed
+    let hardfault = C.variant Variant.HardFault
 
 (*****************************)
 (* Event structure generator *)
@@ -274,23 +275,17 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       let procs = List.map fst starts in
       let tooFar = ref false in
 
-      let module ValMap = MyMap.Make
-       (struct
-        type t = int
-        let compare = compare
-       end) in
-
       let instr2labels =
         let one_label lbl code res = match code with
           | [] -> res (* Luc, it is legal to have nothing after label *)
 (*            assert false (*jade: case where there's nothing after the label*) *)
           | (addr,_)::_ ->
-              let ins_lbls = ValMap.safe_find Label.Set.empty addr res in
-              ValMap.add addr (Label.Set.add lbl ins_lbls) res in
-        A.LabelMap.fold one_label p ValMap.empty in
+              let ins_lbls = IntMap.safe_find Label.Set.empty addr res in
+              IntMap.add addr (Label.Set.add lbl ins_lbls) res in
+        A.LabelMap.fold one_label p IntMap.empty in
 
-      let labels_of_instr i = ValMap.safe_find Label.Set.empty i instr2labels in
-
+      let labels_of_instr i =
+        IntMap.safe_find Label.Set.empty i instr2labels in
 
       let see seen lbl =
         let x = try Imap.find lbl seen with Not_found -> 0 in
@@ -333,15 +328,14 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         | Some (code,seen) -> add_code proc prog_order seen code
 
       and next_instr proc prog_order seen addr nexts b = match b with
-      | S.B.Next -> add_code proc prog_order seen nexts
+      | S.B.Exit when hardfault ->  EM.unitT ()
+      | S.B.Next|S.B.Exit -> add_code proc prog_order seen nexts
       | S.B.Jump lbl ->
           add_lbl proc prog_order seen addr lbl
       | S.B.CondJump (v,lbl) ->
           EM.choiceT v
             (add_lbl proc prog_order seen addr lbl)
-            (add_code proc prog_order seen nexts)
-      | S.B.Exit ->  EM.unitT () in
-
+            (add_code proc prog_order seen nexts) in
       let jump_start proc code =
         add_code proc  A.zero_po_index Imap.empty code in
 

@@ -129,21 +129,13 @@ module Make (C:Config) (A : Arch_herd.S) :
             (fun f k -> A.state_to_list f::k)
             fs []
 
-        module OV = struct
-          type t = A.V.v
-          let compare = A.V.compare
-        end
-
-        module VSet = MySet.Make(OV)
-        module VMap = Map.Make(OV)
-
         let best_col m =
           let mt = Misc.transpose m in
           let cs =
             List.map
               (fun col ->
                 let vs = List.map (fun (_,v) -> v) col in
-                VSet.cardinal (VSet.of_list vs))
+                A.VSet.cardinal (A.VSet.of_list vs))
               mt in
           let rec best_rec k (kb,b as p) = function
             | [] -> kb
@@ -184,10 +176,10 @@ module Make (C:Config) (A : Arch_herd.S) :
           List.fold_left
             (fun m (v,ps) ->
               let pss =
-                try VMap.find v m
+                try A.VMap.find v m
                 with Not_found -> [] in
-              VMap.add v (ps::pss) m)
-            VMap.empty ps
+              A.VMap.add v (ps::pss) m)
+            A.VMap.empty ps
 
         let rec compile_cond m =
           let k = best_col m in
@@ -197,12 +189,12 @@ module Make (C:Config) (A : Arch_herd.S) :
           | [] -> assert false
           | (_,[])::_ ->
               Or
-                (VMap.fold
+                (A.VMap.fold
                    (fun v _ k -> Atom (LV (loc,v))::k)
                    m [])
           | _ ->
               Or
-                (VMap.fold
+                (A.VMap.fold
                    (fun v m k -> And [Atom (LV (loc,v));compile_cond m]::k)
                    m [])
 

@@ -81,7 +81,7 @@ maybev_notag:
 
 maybev:
 | maybev_notag { $1 }
-| COLON NAME  { Tag (Some $2) }
+| COLON NAME  { Tag $2 }
 
 maybev_label:
 | maybev { $1 }
