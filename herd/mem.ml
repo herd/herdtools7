@@ -311,9 +311,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       | S.B.CondJump (v,lbl) ->
           EM.choiceT v
             (add_lbl proc prog_order seen addr lbl)
-            (add_code proc prog_order seen nexts)
-      | S.B.Exit ->  EM.unitT () in
-
+            (add_code proc prog_order seen nexts) in
       let jump_start proc code =
         add_code proc  A.zero_po_index Imap.empty code in
 

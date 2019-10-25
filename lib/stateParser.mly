@@ -78,10 +78,8 @@ maybev_notag:
 | NAME COLON NAME { mk_sym_tag $1 $3 }
 
 maybev:
-| NUM  { Concrete $1 }|
-| NAME { mk_sym $1  }
-| NAME COLON NAME { mk_sym_tag $1 $3 }
-| QUOTE NAME  { Tag (Some $2) }
+| maybev_notag { $1 }
+| COLON NAME  { Tag $2 }
 
 maybev_label:
 | maybev { $1 }
