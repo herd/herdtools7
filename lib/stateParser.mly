@@ -74,11 +74,14 @@ reg:
 | NAME       {  $1 }
 | DOLLARNAME {  $1 }
 
-maybev:
+maybev_notag:
 | NUM  { Concrete $1 }|
 | NAME { mk_sym $1  }
 | NAME COLON NAME { mk_sym_tag $1 $3 }
-| QUOTE NAME  { Tag (Some $2) }
+
+maybev:
+| maybev_notag { $1 }
+| COLON NAME  { Tag (Some $2) }
 
 maybev_label:
 | maybev { $1 }
@@ -104,9 +107,9 @@ location_deref:
 
 location:
 | location_reg { $1 }
-| LBRK maybev RBRK {Location_global $2}
+| LBRK maybev_notag RBRK {Location_global $2}
 /* Hum, for backward compatibility, and compatibility with printer */
-| maybev { Location_global $1 }
+| maybev_notag { Location_global $1 }
 
 atom:
 | location {($1,ParsedConstant.zero)}

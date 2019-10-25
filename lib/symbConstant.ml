@@ -66,7 +66,7 @@ module Make(Scalar:Scalar.S) = struct
     | Symbolic (s,o) -> sprintf "%s+%i" (pp_location s) o
     | Label (p,lbl)  -> sprintf "%i:%s" p lbl
     | Tag None -> "NoTag"
-    | Tag (Some s) -> sprintf "'%s" s
+    | Tag (Some s) -> sprintf ":%s" s
 
   let pp_v = pp false
 
