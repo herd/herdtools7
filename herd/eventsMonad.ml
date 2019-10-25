@@ -668,6 +668,9 @@ and type evt_struct = E.event_structure) =
 (* Mixed size  *)
 (***************)
     module Mixed(SZ:ByteSize.S) = struct
+
+      let memtag = C.variant Variant.MemTag
+
       module AM = A.Mixed(SZ)
 
     module Mixed(SZ:ByteSize.S) = struct
