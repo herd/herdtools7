@@ -668,6 +668,9 @@ and type evt_struct = E.event_structure) =
 (* Mixed size  *)
 (***************)
     module Mixed(SZ:ByteSize.S) = struct
+
+      let memtag = C.variant Variant.MemTag
+
       module AM = A.Mixed(SZ)
 
     module Mixed(SZ:ByteSize.S) = struct
@@ -775,8 +778,29 @@ and type evt_struct = E.event_structure) =
               E.mem_accesses = E.EventSet.singleton e_full;} in
           eiid+1,Evt.singleton ((),a_eqs@v_eqs,st)
 
+      let is_tagloc a = A.V.check_atag a
+
+      let add_inittags env =
+        let glob,tag =
+          List.fold_left
+            (fun (glob,tag as p) (loc,v) -> match loc with
+            | A.Location_global a ->
+                if is_tagloc a then glob,a::tag
+                else a::glob,tag
+            | A.Location_deref _|A.Location_reg _ -> p)
+            ([],[]) env in
+        let tag_set = A.VSet.of_list tag in
+        let env =
+          List.fold_left
+            (fun env a ->
+              let atag =  V.op1 Op.TagLoc a in
+              if A.VSet.mem atag tag_set then env
+              else (A.Location_global atag,A.V.Val (Constant.default_tag))::env)
+            env glob in
+        env
 
       let initwrites_non_mixed env _ =
+        let env = if memtag then add_inittags env else env in
         fun eiid ->
           let eiid,es =
             List.fold_left

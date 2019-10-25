@@ -226,7 +226,10 @@ module Make(Cst:Constant.S) = struct
         Warn.fatal "Illegal check_atag" (* NB: not an user error *)
 
   (* Decompose tagged locations *)
-  let op_tagextract (_,t) _ = Tag t
+  let op_tagextract (_,t) _ = match t with
+  | Some t -> Tag t
+  | None -> Constant.default_tag
+
   let tagextract v = op_tagged "tagextract" op_tagextract v
   let op_locextract (a,_) o = Symbolic ((a,None),o)
   let locextract v = op_tagged "locextract" op_locextract v
