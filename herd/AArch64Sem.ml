@@ -80,6 +80,7 @@ module Make
       let read_reg_ord = read_reg_sz MachSize.Quad false
       let read_reg_ord_sz sz = read_reg_sz sz false
       let read_reg_data sz = read_reg_sz sz true
+      let read_reg_tag is_data =  read_reg is_data
 
 (* Basic write, to register  *)
       let mk_write sz an loc v = Act.Access (Dir.W, loc, v, an, sz)
@@ -498,10 +499,18 @@ module Make
               >>= (fun (a,v) -> write_mem_release sz a v ii)
               >>! B.Next
         | I_STLRBH(bh,rs,rd) ->
-            let sz = bh_to_sz bh in
-            (read_reg_ord rd ii >>| read_reg_data sz rs ii)
-              >>= (fun (a,v) -> write_mem_release sz a v ii)
-              >>! B.Next
+            stlr (bh_to_sz bh) rs rd ii
+
+        | I_STG(rt,rn,kr) ->
+            (read_reg_tag true rt ii >>| get_ea rn kr ii) >>= fun (v,a) ->
+            M.op1 Op.TagLoc a  >>= fun a ->
+            do_write_tag a v ii >>! B.Next
+
+        | I_LDG (rt,rn,kr) ->
+            get_ea rn kr ii  >>= fun a ->
+              M.op1 Op.TagLoc a  >>= fun a ->
+                do_read_tag a ii >>= fun v ->
+                  write_reg rt v ii >>! B.Next
 
         | I_STXR(var,t,rr,rs,rd) ->
             stxr (tr_variant var) t rr rs rd ii

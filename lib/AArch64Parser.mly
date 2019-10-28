@@ -139,6 +139,10 @@ wreg:
 | SYMB_WREG { A.Symbolic_reg $1 }
 | ARCH_WREG { $1 }
 
+wxreg:
+| wreg { $1 }
+| xreg { $1 }
+
 k:
 | NUM  { MetaConst.Int $1 }
 | META { MetaConst.Meta $1 }
