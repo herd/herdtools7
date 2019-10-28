@@ -131,6 +131,18 @@ module Make(Cst:Constant.S) = struct
     | _,_ -> (* General case *)
     binop Op.Add Scalar.add v1 v2
 
+  and sub v1 v2 = (* Used for comparison for by some arch, so let us compare *)
+    match v1,v2 with
+    | (Val (Tag _),Val (Tag _))
+    | (Val (Symbolic _),Val (Symbolic _))
+    | (Val (Label _),Val (Label _))
+      ->
+        Val (Concrete (Scalar.of_int (compare  v1 v2)))
+    | _,_
+      ->
+        binop Op.Sub Scalar.sub v1 v2
+
+
   and add_konst k v = match v with
   | Val (Concrete v) -> Val (Concrete (Scalar.addk v k))
   | Val (Symbolic (s,i)) -> Val (Symbolic (s,i+k))
@@ -146,6 +158,10 @@ module Make(Cst:Constant.S) = struct
   and xor v1 v2 =
     if compare v1 v2 = 0 then zero else
     binop Op.Xor (Scalar.logxor) v1 v2
+
+  and maskop op sz v = match v with
+  | Val (Tag _) -> v (* tags are small enough for any mask be idempotent *)
+  | _ ->  unop op (Scalar.mask sz) v
 
   let bool_to_v f v1 v2 = match f v1 v2 with
   | false -> zero
@@ -235,14 +251,14 @@ module Make(Cst:Constant.S) = struct
       unop op (fun s -> Scalar.shift_right_logical s k)
   | AddK k -> add_konst k
   | AndK k -> unop op (fun s -> Scalar.logand s (Scalar.of_string k))
-  | Mask sz -> unop op (Scalar.mask sz)
+  | Mask sz -> maskop op sz
   | TagLoc -> tagloc
   | TagExtract -> tagextract
   | LocExtract -> locextract
 
   let op op = match op with
   | Add -> add
-  | Sub -> binop op (Scalar.sub)
+  | Sub -> sub
   | Mul -> binop op (Scalar.mul)
   | Div -> binop op (Scalar.div)
   | And -> binop op (Scalar.logand)
