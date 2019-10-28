@@ -137,6 +137,10 @@ wreg:
 | SYMB_WREG { Symbolic_reg $1 }
 | ARCH_WREG { $1 }
 
+wxreg:
+| wreg { $1 }
+| xreg { $1 }
+
 k:
 | NUM  { MetaConst.Int $1 }
 | META { MetaConst.Meta $1 }
@@ -317,9 +321,9 @@ instr:
 | SWPALH wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
   { I_SWPBH (H,RMW_AL,$2,$4,$7) }
 /* Memory Tagging */
-| STG xreg COMMA LBRK xreg kr0 RBRK
+| STG wxreg COMMA LBRK xreg kr0 RBRK
   { I_STG ($2,$5,$6) }
-| LDG xreg COMMA LBRK xreg kr0 RBRK
+| LDG wxreg COMMA LBRK xreg kr0 RBRK
   { I_LDG ($2,$5,$6) }
 
 /* Fetch and ADD */
