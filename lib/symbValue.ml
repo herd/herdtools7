@@ -271,7 +271,7 @@ module Make(Cst:Constant.S) = struct
       unop op (fun s -> Scalar.shift_right_logical s k)
   | AddK k -> add_konst k
   | AndK k -> unop op (fun s -> Scalar.logand s (Scalar.of_string k))
-  | Mask sz -> unop op (Scalar.mask sz)
+  | Mask sz -> maskop op sz
   | TagLoc -> tagloc
   | TagExtract -> tagextract
   | LocExtract -> locextract
