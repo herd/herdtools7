@@ -915,8 +915,7 @@ function herd_output(s) {
         current_dot = '';
     } else if (com_dot != null) {
         dotcom =  s.split(' ').pop().split('\n').shift();
-        console.log('dotcom is <' + dotcom + '>')
-        
+        log('from <' + s + '> dotcom is <' + dotcom + '>')
     } else if (digraph !== null) {
         log('new digraph')
         push_current_dot()
