@@ -311,6 +311,9 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
     add_ea "iico_control"
       { def_ea with color="grey" ; }
       { def_ea with color="grey" ; } ;
+    add_ea "iico_ctrl"
+      { def_ea with color="grey" ; }
+      { def_ea with color="grey" ; } ;
     add_eas ["After";]
       {color="orange" ; style = extra_thick ; }
       {color="black" ; style= extra_thick ; } ;
@@ -1237,7 +1240,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
         (fun chan (e,e') ->
           pp_edge chan
             (pp_node_eiid e) (pp_node_eiid e')
-            "iico_control" false false)
+            "iico_ctrl" false false)
         es.E.intra_causality_control ;
 
 

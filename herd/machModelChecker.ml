@@ -218,8 +218,9 @@ module Make
              else
                E.EventRel.set_to_rln (Lazy.force mem_evts)
            end;
-          "iico", lazy conc.S.str.E.intra_causality_data
-          ]) in
+           "iico", lazy conc.S.str.E.intra_causality_data;
+           "iico_ctrl", lazy conc.S.str.E.intra_causality_control;
+         ]) in
       let m =
         I.add_sets m
           (("M",mem_evts)::
