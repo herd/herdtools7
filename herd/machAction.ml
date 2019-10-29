@@ -152,6 +152,10 @@ end = struct
       is_mem a && A.is_atomic annot
   | _ -> false
 
+  let is_tag = function
+    | TagAccess _ -> true
+    | Access _ | Barrier _ | Commit _ | Amo _ | Fault _ -> false
+
   let get_mem_dir a = match a with
   | TagAccess (d,A.Location_global _,_)
   | Access (d,A.Location_global _,_,_,_) -> d
@@ -255,7 +259,7 @@ end = struct
           | _ -> false
           in tag,p) A.annot_sets
     in
-    bsets @ asets
+    ("T",is_tag) :: bsets @ asets
 
   let arch_fences = []
 
