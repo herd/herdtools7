@@ -736,6 +736,15 @@ let minimals_data es =
         (fun (_,e2) -> e.eiid <> e2.eiid) intra_causality)
     es.events
 
+let minimals_control es =
+  let intra_causality = es.intra_causality_control in
+  EventSet.filter
+    (fun e ->
+      is_commit e &&
+      EventRel.for_all
+        (fun (_,e2) -> e.eiid <> e2.eiid) intra_causality)
+    es.events
+
 let maximals es =
   let intra_causality =
     EventRel.union es.intra_causality_data es.intra_causality_control in
