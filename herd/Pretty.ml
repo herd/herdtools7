@@ -1230,7 +1230,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
       pl "/* the intra_causality_data edges */\n" ;
       E.EventRel.pp chan ""
         (fun chan (e,e') ->
-          pp_edge chan (pp_node_eiid e) (pp_node_eiid e') "iico"
+          pp_edge chan (pp_node_eiid e) (pp_node_eiid e') "iico_data"
             false false)
         es.E.intra_causality_data ;
 
