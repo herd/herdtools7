@@ -736,6 +736,15 @@ let minimals_data es =
         (fun (_,e2) -> e.eiid <> e2.eiid) intra_causality)
     es.events
 
+let minimals_control es =
+  let intra_causality = es.intra_causality_control in
+  EventSet.filter
+    (fun e ->
+      is_commit e &&
+      EventRel.for_all
+        (fun (_,e2) -> e.eiid <> e2.eiid) intra_causality)
+    es.events
+
 let maximals es =
   let intra_causality =
     EventRel.union es.intra_causality_data es.intra_causality_control in
@@ -819,6 +828,9 @@ let do_para_comp es1 es2 =
 
   let (=$$=) =
     check_disjoint (data_comp minimals_data (fun es _ -> Some (get_output es)))
+
+  let comp_data_commit es1 es2 =
+    check_disjoint (data_comp minimals_control (fun _ es -> es.output)) es1 es2
 
 (* Composition with intra_causality_control from first to second *)
   let control_comp mini_loc es1 es2 =

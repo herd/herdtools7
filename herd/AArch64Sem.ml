@@ -87,6 +87,102 @@ module Make
       let write_loc sz an loc v ii = M.mk_singleton_es (mk_write sz an loc v) ii
       let write_reg r v ii = write_loc MachSize.Quad AArch64.N (A.Location_reg (ii.A.proc,r)) v ii
 
+(* Emit commit event *)
+      let commit ii = M.mk_singleton_es (Act.Commit true) ii
+
+(* Fence *)
+      let create_barrier b ii = M.mk_singleton_es (Act.Barrier b) ii
+
+(******************)
+(* Memory Tagging *)
+(******************)
+
+(* Decompose tagged location *)
+      let tag_extract a = M.op1 Op.TagExtract a
+      let loc_extract a = M.op1 Op.LocExtract a
+
+
+(*  Low level tag access *)
+      let do_read_tag a ii =
+        M.read_loc false (fun loc v -> Act.TagAccess (Dir.R,loc,v))
+          (A.Location_global a) ii
+      and do_write_tag a v ii =
+        let loc = A.Location_global a in
+        M.mk_singleton_es (Act.TagAccess (Dir.W,loc,v)) ii
+          
+(* Read tag from memory *)
+      let read_tag_mem a ii =
+        M.op1 Op.TagLoc a >>= fun atag ->
+          M.read_loc false (fun loc v -> Act.TagAccess (Dir.R,loc,v))
+            (A.Location_global atag) ii
+
+
+(* For checking tags *)
+      let get_both_tags a ii = tag_extract a >>| read_tag_mem a ii
+      let do_check atag patag = M.op Op.Eq patag atag
+
+(*******************)
+(* Memory accesses *)
+(*******************)
+
+
+(*
+  Implementation of accesses depends upon the appropriate variants,
+  NB: for now, mixed and memtag do not combine.
+ *)
+
+(* Read *)
+      let check_tags a ii m1 m2 =
+        get_both_tags a ii >>= fun (atag,patag) ->
+        do_check atag patag  >>= fun cond ->
+        commit ii >>*= fun () ->
+        M.choiceT cond m1 m2
+
+      let delayed_check_tags ma ii m1 m2 =
+        let (++) = M.bind_ctrl_avoid ma in
+        M.check_tags
+          ma (fun a -> read_tag_mem a ii)
+          (fun a tag1 -> tag_extract a  >>= fun tag2 -> M.op Op.Eq tag1 tag2)
+          (commit ii)  ++ fun cond ->  M.choiceT cond m1 m2
+
+      let do_checked_read sz an rd a ii =
+        check_tags a ii
+          (loc_extract a >>= fun a ->
+           M.read_loc false (mk_read sz an) (A.Location_global a) ii >>= fun v ->
+           write_reg rd v ii >>! B.Next)
+          (mk_fault a ii >>! B.Exit)
+
+
+(* Old read_mem that returns value read *)              
+      let old_do_read_mem sz an a ii =
+        if mixed then begin
+          assert (not memtag) ;
+          Mixed.read_mixed false sz (fun sz -> mk_read sz an) a ii
+        end else
+          M.read_loc false (mk_read sz an) (A.Location_global a) ii
+
+      let do_read_mem sz an rd a ii =
+        if memtag then do_checked_read sz an rd a ii
+        else old_do_read_mem sz an a ii >>= fun v ->  write_reg rd v ii >>! B.Next
+
+      let read_mem sz = do_read_mem sz AArch64.N
+      let read_mem_acquire sz = do_read_mem sz AArch64.A
+      let read_mem_acquire_pc sz = do_read_mem sz AArch64.Q
+      let read_mem_noreturn sz = do_read_mem sz AArch64.NoRet
+
+      let read_mem_reserve sz an rd a ii =
+        if memtag then
+          check_tags a ii
+            (loc_extract a >>= fun a ->
+             (write_reg AArch64.ResAddr a ii >>|
+              (M.read_loc false (mk_read sz an) (A.Location_global a) ii >>= fun v ->
+              write_reg rd v ii)) >>! B.Next)
+            ((write_reg AArch64.ResAddr V.zero ii >>| mk_fault a ii) >>! B.Exit)
+        else
+          (write_reg AArch64.ResAddr a ii >>| do_read_mem sz an rd a ii) >>! B.Next
+            
+            
+(* Write *)
       let do_write_mem sz an a v ii =
         if mixed then begin
           assert (not memtag) ;
@@ -552,9 +648,17 @@ module Make
 
       and stxr sz t rr rs rd ii =
         let open AArch64Base in
-        M.riscv_store_conditional
-          (read_reg_ord ResAddr ii)
-          (read_reg_data sz rs ii)
+        lift_memop
+         (fun ma ->
+           M.riscv_store_conditional
+             (read_reg_ord ResAddr ii)
+             (read_reg_data sz rs ii)
+             ma
+             (write_reg ResAddr V.zero ii)
+             (fun v -> write_reg rr v ii)
+             (fun ea resa v -> match t with
+             | YY -> write_mem_atomic AArch64.X sz ea v resa ii
+             | LY -> write_mem_atomic AArch64.XL sz ea v resa ii))
           (read_reg_ord rd ii)
           (write_reg ResAddr V.zero ii)
           (fun v -> write_reg rr v ii)
@@ -583,13 +687,15 @@ module Make
         |  _ ->
             let read_mem = rmw_amo_read rmw
             and write_mem =  rmw_amo_write rmw in
-            read_reg_ord r3 ii >>=
-            fun a ->
-              let r1 = read_reg_data sz r1 ii
-              and w1 = fun v -> write_reg r2 v ii
-              and r2 = read_mem sz a ii
-              and w2 = fun v -> write_mem sz a v ii in
-              M.exch r1 r2 w1 w2 >>! ()
+            lift_memop
+              (fun ma ->
+                let r2 = read_reg_data sz r1 ii
+                and w2 v = write_reg r2 v ii
+                and r1 a = read_mem sz a ii
+                and w1 a v = write_mem sz a v ii in
+                M.swp ma r1 r2 w1 w2)
+              (read_reg_ord r3 ii)
+              ii
 
       let cas sz rmw rs rt rn ii =
         let open AArch64Base in
