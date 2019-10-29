@@ -110,7 +110,7 @@ module Make
       and do_write_tag a v ii =
         let loc = A.Location_global a in
         M.mk_singleton_es (Act.TagAccess (Dir.W,loc,v)) ii
-          
+
 (* Read tag from memory *)
       let read_tag_mem a ii =
         M.op1 Op.TagLoc a >>= fun atag ->
@@ -154,7 +154,7 @@ module Make
           (mk_fault a ii >>! B.Exit)
 
 
-(* Old read_mem that returns value read *)              
+(* Old read_mem that returns value read *)
       let old_do_read_mem sz an a ii =
         if mixed then begin
           assert (not memtag) ;
@@ -163,8 +163,7 @@ module Make
           M.read_loc false (mk_read sz an) (A.Location_global a) ii
 
       let do_read_mem sz an rd a ii =
-        if memtag then do_checked_read sz an rd a ii
-        else old_do_read_mem sz an a ii >>= fun v ->  write_reg rd v ii >>! B.Next
+        old_do_read_mem sz an a ii >>= fun v ->  write_reg rd v ii
 
       let read_mem sz = do_read_mem sz AArch64.N
       let read_mem_acquire sz = do_read_mem sz AArch64.A
@@ -172,17 +171,9 @@ module Make
       let read_mem_noreturn sz = do_read_mem sz AArch64.NoRet
 
       let read_mem_reserve sz an rd a ii =
-        if memtag then
-          check_tags a ii
-            (loc_extract a >>= fun a ->
-             (write_reg AArch64.ResAddr a ii >>|
-              (M.read_loc false (mk_read sz an) (A.Location_global a) ii >>= fun v ->
-              write_reg rd v ii)) >>! B.Next)
-            ((write_reg AArch64.ResAddr V.zero ii >>| mk_fault a ii) >>! B.Exit)
-        else
-          (write_reg AArch64.ResAddr a ii >>| do_read_mem sz an rd a ii) >>! B.Next
-            
-            
+        (write_reg AArch64.ResAddr a ii >>| do_read_mem sz an rd a ii) >>! ()
+
+
 (* Write *)
       let do_write_mem sz an a v ii =
         if mixed then begin
@@ -623,29 +614,23 @@ module Make
           >>= (fun (v,a) -> write_mem sz a v ii)
           >>! B.Next
 
+      and stlr sz rs rd ii = do_str sz AArch64.L rs (read_reg_ord rd ii) ii
+
       and ldar sz t rd rs ii =
         let open AArch64 in
-        (read_reg_ord rs ii)
-          >>= fun a -> begin match t with
-          | XX ->
-              (write_reg ResAddr a ii >>|
-              (read_mem_atomic sz a ii
-                 >>= (fun v -> (write_reg rd v ii))))
-                >>! B.Next
-          | AA ->
-              (read_mem_acquire sz a ii)
-                >>= (fun v -> (write_reg rd v ii))
-                >>! B.Next
-          | AX ->
-              (write_reg ResAddr a ii
-                 >>| (read_mem_atomic_acquire sz a ii
-                        >>= (fun v -> write_reg rd v ii)))
-                >>! B.Next
-          | AQ ->
-              (read_mem_acquire_pc sz a ii)
-                >>= (fun v -> (write_reg rd v ii))
-                >>! B.Next
-          end
+        lift_memop
+          (fun ma ->
+            ma >>= fun a ->
+              match t with
+              | XX ->
+                  read_mem_reserve sz AArch64.X rd a ii
+              | AA ->
+                  read_mem_acquire sz rd a ii
+              | AX ->
+                  read_mem_reserve sz AArch64.XA rd a ii
+              | AQ ->
+                  read_mem_acquire_pc sz rd a ii)
+          (read_reg_ord rs ii) ii
 
       and stxr sz t rr rs rd ii =
         let open AArch64Base in
@@ -791,15 +776,24 @@ module Make
             stlr (bh_to_sz bh) rs rd ii
 
         | I_STG(rt,rn,kr) ->
-            (read_reg_tag true rt ii >>| get_ea rn kr ii) >>= fun (v,a) ->
+            if not memtag then Warn.user_error "STG without -variant memtag" ;
+            begin
+              (read_reg_data MachSize.Quad rt ii >>= tag_extract) >>|
+              get_ea rn kr ii
+            end >>= fun (v,a) ->
             M.op1 Op.TagLoc a  >>= fun a ->
             do_write_tag a v ii >>! B.Next
 
         | I_LDG (rt,rn,kr) ->
-            get_ea rn kr ii  >>= fun a ->
-              M.op1 Op.TagLoc a  >>= fun a ->
-                do_read_tag a ii >>= fun v ->
-                  write_reg rt v ii >>! B.Next
+            if not memtag then Warn.user_error "LDG without -variant memtag" ;
+            begin
+              read_reg_ord rt ii >>|
+              (get_ea rn kr ii  >>= fun a ->
+               M.op1 Op.TagLoc a  >>= fun a ->
+               do_read_tag a ii)
+            end >>= fun (old,tag) ->
+            M.op Op.SetTag old tag >>= fun v ->
+            write_reg rt v ii >>! B.Next
 
         | I_STXR(var,t,rr,rs,rd) ->
             stxr (tr_variant var) t rr rs rd ii
