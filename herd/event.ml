@@ -260,6 +260,13 @@ module type S = sig
   val (=**=) :
       event_structure -> event_structure -> event_structure option
 
+(* similar, additionally avoid some evts in target links *)
+  val bind_ctrl_avoid : event_set ->  event_structure -> event_structure -> event_structure option
+
+(* check memory tags *)
+  val check_tags :
+      event_structure -> event_structure -> event_structure -> event_structure
+
 (* exchange composition :
    xch rx ry wx wy ->
       rx -data-> wy, ry -data-> wx
@@ -269,6 +276,11 @@ module type S = sig
      event_structure -> event_structure ->
      event_structure -> event_structure ->
      event_structure
+
+  val swp :
+     event_structure -> event_structure ->
+     event_structure -> event_structure ->
+     event_structure -> event_structure
 
   val linux_exch :
       event_structure -> event_structure ->
@@ -696,10 +708,31 @@ let minimals es =
         (fun (_,e2) -> e.eiid <> e2.eiid) intra_causality)
     es.events
 
+let minimals_avoid aset es =
+  let intra_causality =
+    let r =
+      EventRel.union
+        es.intra_causality_data es.intra_causality_control in
+    EventRel.filter (fun (e,_) -> not (EventSet.mem e aset)) r in
+  EventSet.filter
+    (fun e ->
+      EventRel.for_all
+        (fun (_,e2) -> e.eiid <> e2.eiid) intra_causality)
+    (EventSet.diff es.events aset)
+
 let minimals_data es =
   let intra_causality = es.intra_causality_data in
   EventSet.filter
     (fun e ->
+      EventRel.for_all
+        (fun (_,e2) -> e.eiid <> e2.eiid) intra_causality)
+    es.events
+
+let minimals_control es =
+  let intra_causality = es.intra_causality_control in
+  EventSet.filter
+    (fun e ->
+      is_commit e &&
       EventRel.for_all
         (fun (_,e2) -> e.eiid <> e2.eiid) intra_causality)
     es.events
@@ -733,8 +766,8 @@ let get_output es = match es.output with
 (* Checking events sets are disjoint *)
 
 let check_disjoint do_it es1 es2 =
-  if not (EventSet.disjoint es1.events es2.events) then None
-  else Some (do_it es1 es2)
+  assert (EventSet.disjoint es1.events es2.events) ;
+  Some (do_it es1 es2)
 
 (* Parallel composition *)
     let union_output es1 es2 = match es1.output,es2.output with
@@ -762,12 +795,15 @@ let para_comp es1 es2 =
   let (=|=) = check_disjoint para_comp
 
 (* Composition with intra_causality_data from first to second *)
-  let data_comp mkOut es1 es2 =
+  let data_comp mini_loc mkOut es1 es2 =
     { procs = [];  events = EventSet.union es1.events es2.events;
-      intra_causality_data = EventRel.union
-        (EventRel.union es1.intra_causality_data
-           es2.intra_causality_data)
-        (EventRel.cartesian (get_output es1) (minimals_data es2)) ;
+      intra_causality_data =
+      EventRel.filter
+        (fun (e1,e2) -> e1 != e2)
+          (EventRel.union
+            (EventRel.union es1.intra_causality_data
+               es2.intra_causality_data)
+            (EventRel.cartesian (get_output es1) (mini_loc es2))) ;
       intra_causality_control = EventRel.union
         es1.intra_causality_control es2.intra_causality_control ;
       control = EventRel.union es1.control es2.control;
@@ -778,13 +814,16 @@ let para_comp es1 es2 =
       mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; }
 
   let (=*$=) =
-    check_disjoint (data_comp (fun _ es -> es.output))
+    check_disjoint (data_comp minimals_data (fun _ es -> es.output))
 
   let (=$$=) =
-    check_disjoint (data_comp (fun es _ -> Some (get_output es)))
+    check_disjoint (data_comp minimals_data (fun es _ -> Some (get_output es)))
+
+  let comp_data_commit es1 es2 =
+    check_disjoint (data_comp minimals_control (fun _ es -> es.output)) es1 es2
 
 (* Composition with intra_causality_control from first to second *)
-  let control_comp es1 es2 =
+  let control_comp mini_loc es1 es2 =
     { procs = [] ;
       events =  EventSet.union es1.events es2.events;
       intra_causality_data = EventRel.union
@@ -792,7 +831,7 @@ let para_comp es1 es2 =
       intra_causality_control = EventRel.union
         (EventRel.union es1.intra_causality_control
            es2.intra_causality_control)
-        (EventRel.cartesian (maximals es1) (minimals es2));
+        (EventRel.cartesian (maximals es1) (mini_loc es2));
       control = EventRel.union es1.control es2.control;
       data_ports = EventSet.union es1.data_ports es2.data_ports;
       success_ports = EventSet.union es1.success_ports es2.success_ports;
@@ -800,9 +839,42 @@ let para_comp es1 es2 =
       sca = EventSetSet.union es1.sca es2.sca;
       mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; }
 
-  let (=**=) = check_disjoint control_comp
+  let (=**=) = check_disjoint (control_comp minimals)
 
+  let bind_ctrl_avoid aset es1 es2 =
+    Some (control_comp (minimals_avoid aset) es1 es2)
+
+(* Specific composition for checkint tags *)
+      let check_tags a rtag commit =
+        { procs= [];
+          events = EventSet.union3 a.events rtag.events commit.events;
+          intra_causality_data =
+          EventRel.union3
+            (EventRel.union3
+               a.intra_causality_data rtag.intra_causality_data commit.intra_causality_data)
+            (EventRel.cartesian (maximals a)
+               (EventSet.union (minimals rtag) (minimals commit)))
+            (EventRel.cartesian (maximals rtag) (minimals commit));
+          intra_causality_control =
+            EventRel.union3
+            a.intra_causality_control rtag.intra_causality_control
+            commit.intra_causality_control;
+          control =
+          EventRel.union3
+            a.control rtag.control commit.control;
+          data_ports =
+          EventSet.union3
+            a.data_ports rtag.data_ports commit.data_ports;
+          success_ports =
+          EventSet.union3
+            a.success_ports rtag.success_ports commit.success_ports;
+          output = Some (get_output commit);
+          sca = EventSetSet.union3  a.sca rtag.sca commit.sca;
+          mem_accesses =
+          EventSet.union3  a.mem_accesses rtag.mem_accesses commit.mem_accesses;
+        }
 (* Multi composition for exchange *)
+
 (* rsX/wsX are from/to the same location *)
   let exch_comp rs1 rs2 ws1 ws2 =
     { procs = [] ;
@@ -834,7 +906,49 @@ let para_comp es1 es2 =
         rs1.mem_accesses rs2.mem_accesses
         ws1.mem_accesses ws2.mem_accesses ; }
 
+  let swp_comp rloc rmem rreg wmem wreg =
+    { procs = [] ;
+      events = EventSet.union5
+        rloc.events rmem.events rreg.events wmem.events wreg.events;
+      intra_causality_data =
+      EventRel.unions
+        [EventRel.union5
+           rloc.intra_causality_data
+           rmem.intra_causality_data rreg.intra_causality_data
+           wmem.intra_causality_data wreg.intra_causality_data ;
+         EventRel.cartesian (maximals rmem) (minimals wreg);
+         EventRel.cartesian (maximals rreg) (minimals wmem);
+         EventRel.cartesian (maximals rloc)
+           (EventSet.union (minimals rmem) (minimals wmem))];
+      intra_causality_control =
+      EventRel.unions
+        [EventRel.unions
+           [rloc.intra_causality_control;
+            rmem.intra_causality_control;rreg.intra_causality_control;
+            wmem.intra_causality_control;wreg.intra_causality_control;];
+         EventRel.cartesian (maximals rmem) (minimals wmem);
+         EventRel.cartesian (maximals rreg) (minimals wreg);];
+      control =
+      EventRel.union5 rloc.control rmem.control rreg.control wmem.control wreg.control;
+      data_ports =
+      EventSet.union5
+        rloc.data_ports
+        rmem.data_ports rreg.data_ports wmem.data_ports wreg.data_ports;
+      success_ports =
+      EventSet.union5
+        rloc.success_ports
+        rmem.success_ports rreg.success_ports wmem.success_ports wreg.success_ports;
+      output = None;
+      sca = EventSetSet.union5 rloc.sca rmem.sca rreg.sca wmem.sca wreg.sca;
+      mem_accesses =
+      EventSet.union5
+        rloc.mem_accesses
+        rmem.mem_accesses rreg.mem_accesses
+        wmem.mem_accesses wreg.mem_accesses ; }
+
+
 (* disjointness is awful *)
+
   let exch rx ry wx wy =
     if
       EventSet.disjoint rx.events ry.events &&
@@ -847,6 +961,8 @@ let para_comp es1 es2 =
       exch_comp rx ry wx wy
     else
       assert false
+
+  let swp = swp_comp
 
   let linux_exch re rloc rmem wmem =
     let input_wmem = minimals wmem in

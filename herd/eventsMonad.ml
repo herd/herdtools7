@@ -81,6 +81,13 @@ and type evt_struct = E.event_structure) =
       fun eiid_next ->
         eiid_next,Evt.singleton (v, [], E.empty_event_structure)
 
+    let delay
+        = fun (m:'a t) (eiid:int) ->
+          let eiid,mact = m eiid in
+          let v,cl,es = Evt.as_singleton mact in
+          let delayed : 'a t = fun eiid -> eiid,Evt.singleton (v,[],es) in
+          eiid,Evt.singleton ((v,delayed),cl,E.empty_event_structure)
+
     let (=**=) = E.(=**=)
     let (=*$=) = E.(=*$=)
     let (=$$=) = E.(=$$=)
@@ -111,7 +118,8 @@ and type evt_struct = E.event_structure) =
 
 (* Bind the result *)
     let (>>*=) : 'a t -> ('a -> 'b t) -> ('b) t
-        = fun s f ->
+        = fun s f -> data_comp (=**=) s f
+(*
           (fun eiid ->
             let (eiid_next, sact) = s eiid in
             Evt.fold (fun (v1, vcl1, es1) (eiid1,acc) ->
@@ -125,6 +133,27 @@ and type evt_struct = E.event_structure) =
                 b_setact (eiid_b,acc)
                      )
               sact (eiid_next,Evt.empty))
+*)
+    let bind_ctrl_avoid ma s f = fun eiid ->
+      let eiid,mact = ma eiid in
+      let _,cl,es = Evt.as_singleton mact in
+      assert (cl=[]) ;
+      data_comp (E.bind_ctrl_avoid es.E.events) s f eiid
+
+(* Tag check combinator *)
+    let check_tags : 'v t -> ('v -> 'v t) -> ('v -> 'v -> 'v t) -> 'x t -> 'v t
+      = fun ma rtag comp commit ->
+        fun (eiid:int) ->
+          let eiid,aact = ma eiid in
+          let a,acl,aes = Evt.as_singleton aact in
+          let eiid,rtagact = rtag a eiid in
+          let eiid,commitact = commit eiid in
+          let tag,rtagcl,rtages = Evt.as_singleton rtagact
+          and _,commitcl,commites = Evt.as_singleton commitact in
+          let eiid,compact = comp a tag eiid in
+          let vcomp,compcl,_ = Evt.as_singleton compact in
+          let es = E.check_tags aes rtages commites in
+          eiid,Evt.singleton (vcomp,acl@rtagcl@commitcl@compcl,es)
 
 (* Exchange combination *)
     let exch : 'a t -> 'a t -> ('a -> 'b t) ->  ('a -> 'c t) ->  ('b * 'c) t
@@ -141,6 +170,27 @@ and type evt_struct = E.event_structure) =
             let es =
               E.exch esrx esry eswx eswy in
             eiid,Evt.singleton((vwx,vwy),vclrx@vclry@vclwx@vclwy,es)
+
+(* Exchange combination *)
+    let swp : ('loc t) ->
+        ('loc -> 'v t) -> 'w t -> ('loc -> 'w -> unit t) -> ('v -> unit t)
+          -> unit t  = fun rloc rmem rreg wmem wreg ->
+          fun eiid ->
+            let eiid,rlocact = rloc eiid in
+            let vloc,vclloc,esloc = Evt.as_singleton rlocact in
+            let eiid,rmemact = rmem vloc eiid in
+            let eiid,rregact = rreg eiid in
+            let vrmem,vclrmem,esrmem = Evt.as_singleton rmemact
+            and vrreg,vclrreg,esrreg = Evt.as_singleton rregact in
+            let eiid,wmemact = wmem vloc vrreg eiid in
+            let eiid,wregact = wreg vrmem eiid in
+            let (),vclwmem,eswmem = Evt.as_singleton wmemact
+            and (),vclwreg,eswreg = Evt.as_singleton wregact in
+            let es =
+              E.swp esloc esrmem esrreg eswmem eswreg in
+            eiid,Evt.singleton((),vclloc@vclrmem@vclrreg@vclwmem@vclwreg,es)
+
+
 (* linux exchange *)
     let linux_exch : 'loc t -> 'v t -> ('loc -> 'w t) -> ('loc -> 'v -> unit t) -> 'w t = fun rloc rexpr rmem wmem ->
       fun eiid ->
@@ -726,7 +776,7 @@ and type evt_struct = E.event_structure) =
       let add_inittags env =
         let glob,tag =
           List.fold_left
-            (fun (glob,tag as p) (loc,v) -> match loc with
+            (fun (glob,tag as p) (loc,_) -> match loc with
             | A.Location_global a ->
                 if is_tagloc a then glob,a::tag
                 else a::glob,tag

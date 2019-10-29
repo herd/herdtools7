@@ -21,7 +21,6 @@ module Make(S : SemExtra.S) = struct
   module S = S
   module E = S.E
   module A = S.A
-  module C = S.Cons
   module PC = S.O.PC
 
 (*************)

@@ -142,6 +142,13 @@ module Make (C:Sem.Config)(V:Value.S)
         commit ii >>*= fun () ->
         M.choiceT cond m1 m2
 
+      let delayed_check_tags ma ii m1 m2 =
+        let (++) = M.bind_ctrl_avoid ma in
+        M.check_tags
+          ma (fun a -> read_tag_mem a ii)
+          (fun a tag1 -> tag_extract a  >>= fun tag2 -> M.op Op.Eq tag1 tag2)
+          (commit ii)  ++ fun cond ->  M.choiceT cond m1 m2
+
       let do_checked_read sz an rd a ii =
         check_tags a ii
           (loc_extract a >>= fun a ->
@@ -223,7 +230,10 @@ module Make (C:Sem.Config)(V:Value.S)
 
       let lift_memop mop ma ii =
         if memtag then
-          ma >>= fun a -> check_tags a ii (mop (loc_extract a) >>! B.Next) (mk_fault a ii >>! B.Exit)
+          M.delay ma >>= fun (_a,ma) ->
+           delayed_check_tags ma ii
+              (mop (ma >>= fun a -> loc_extract a) >>! B.Next)
+              (ma >>= fun a -> mk_fault a ii >>! B.Exit)
         else
           mop ma >>! B.Next
 
@@ -269,8 +279,8 @@ module Make (C:Sem.Config)(V:Value.S)
              (write_reg ResAddr V.zero ii)
              (fun v -> write_reg rr v ii)
              (fun ea resa v -> match t with
-             | YY -> write_mem_atomic X sz ea v resa ii
-             | LY -> write_mem_atomic XL sz ea v resa ii))
+             | YY -> write_mem_atomic AArch64.X sz ea v resa ii
+             | LY -> write_mem_atomic AArch64.XL sz ea v resa ii))
           (read_reg_ord rd ii)
           ii
 
@@ -307,12 +317,11 @@ module Make (C:Sem.Config)(V:Value.S)
             and write_mem =  rmw_amo_write rmw in
             lift_memop
               (fun ma ->
-                ma >>= fun a ->
-               let r1 = read_reg_data sz r1 ii
-                and w1 v= write_reg r2 v ii
-                and r2 = read_mem sz a ii
-                and w2 = fun v -> write_mem sz a v ii in
-                M.exch r1 r2 w1 w2)
+                let r2 = read_reg_data sz r1 ii
+                and w2 v = write_reg r2 v ii
+                and r1 a = read_mem sz a ii
+                and w1 a v = write_mem sz a v ii in
+                M.swp ma r1 r2 w1 w2)
               (read_reg_ord r3 ii)
               ii
 

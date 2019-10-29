@@ -37,10 +37,16 @@ module type S =
 
     val zeroT        : 'a t
     val unitT        : 'a -> 'a t
+    val delay : 'a t -> ('a * 'a t) t
     val (>>=) : 'a t -> ('a -> 'b t) -> ('b) t
     val (>>==) : 'a t -> ('a -> 'b t) -> ('b) t (* Output event stay in first arg *)
     val (>>*=) : 'a t -> ('a -> 'b t) -> ('b) t
+    val bind_ctrl_avoid : 'c t -> 'a t -> ('a -> 'b t) -> 'b t
+    val check_tags : 'v t -> ('v -> 'v t) -> ('v -> 'v -> 'v t) -> 'x t -> 'v t
     val exch : 'a t -> 'a t -> ('a -> 'b t) ->  ('a -> 'c t) ->  ('b * 'c) t
+    val swp : ('loc t) ->
+        ('loc -> 'v t) -> 'w t -> ('loc -> 'w -> unit t) -> ('v -> unit t)
+          -> unit t
     val linux_exch :
         'loc t -> 'v t -> ('loc -> 'w t) -> ('loc -> 'v -> unit t) -> 'w t
     val amo : Op.op ->
