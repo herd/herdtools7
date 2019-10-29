@@ -5,8 +5,7 @@
  * the latest stable version of the Armv8 memory model.
  * If you have comments on the content of this file, please send an email to
  * jade.alglave@arm.com, referring to version number:
- * 01605f9fad63242400f8e49391eafc7470da40bf
- *
+ * 9470edab1356b1d824422808bf681d59529e8b91 
  * For a textual version of the model, see section B2.3 of the Armv8 ARM:
  *   https://developer.arm.com/docs/ddi0487/latest/arm-architecture-reference-manual-armv8-for-armv8-a-architecture-profile
  *
@@ -81,6 +80,9 @@ flag ~empty (dmb.full | dmb.ld | dmb.st) \
 	    (DMB.SY | DMB.LD | DMB.ST | DSB.SY | DSB.LD | DSB.ST)
 	    as Assuming-common-inner-shareable-domain
 
+(* Intrinsic order *)
+let intrinsic = (iico_data|iico_ctrl)+
+
 (* Coherence-after *)
 let ca = fr | co
 
@@ -116,11 +118,15 @@ let bob = po; ([dmb.full]|([A];amo;[L])); po
 	| [W]; po; [dmb.st]; po; [W]
 	| po; [L]
 
+(* Tag-ordered-before *)
+let tob = [R & T]; intrinsic; [M \ T]
+
 (* Locally-ordered-before *)
 let rec lob = lws; si
             | dob
             | aob
             | bob
+            | tob
             | lob; lob
 
 (* Ordered-before *)
