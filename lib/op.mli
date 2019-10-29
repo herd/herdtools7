@@ -24,7 +24,6 @@ type op =
   | Add | Sub | Mul | Div
   | And | Or | Xor | Nor
   | AndNot2
-
 (* Logical shift left *)
   | ShiftLeft
 (* Return C-style boolean (zero is false, not zero is true) *)
@@ -32,6 +31,9 @@ type op =
   | Le | Ge
 (* on integers *)
   | Max | Min
+(* Build tagged location from location and tag *)
+  | SetTag
+
 val pp_op : op -> string
 
 val pp_ptx_cmp_op : op -> string

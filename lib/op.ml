@@ -25,6 +25,7 @@ type op =
   | Lt | Gt | Eq | Ne
   | Le | Ge
   | Max | Min
+  | SetTag
 
 let pp_op o =
   match o with
@@ -46,6 +47,7 @@ let pp_op o =
   | Ne -> "!="
   | Max -> "max"
   | Min -> "min"
+  | SetTag -> "settag"
 
 let pp_ptx_cmp_op = function
   | Eq -> ".eq"

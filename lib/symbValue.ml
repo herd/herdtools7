@@ -102,7 +102,8 @@ module Make(Cst:Constant.S) = struct
   let unop op_op op v1 = match v1 with
   | Val (Concrete i1) -> Val (Concrete (op i1))
   | Val (Symbolic _|Label _|Tag _ as x) ->
-      Warn.user_error "Illegal operation %s on %s" (Op.pp_op1 true op_op) (Cst.pp_v x)
+      Warn.user_error "Illegal operation %s on %s"
+        (Op.pp_op1 true op_op) (Cst.pp_v x)
   | Var _ -> raise Undetermined
 
   let binop op_op op v1 v2 = match v1,v2 with
@@ -205,10 +206,18 @@ module Make(Cst:Constant.S) = struct
   let mask_one k = Scalar.shift_left Scalar.one k
 
 (* Ops on tagged locations *)
+  let settag v1 v2 = match v1,v2 with
+  | Val (Symbolic ((a,_),o)),Val (Tag t) -> Val (Symbolic((a,Some t),o))
+  | Val cst1,Val cst2 ->
+      Warn.user_error "Illegal settag on %s and %s"
+        (Cst.pp_v cst1)  (Cst.pp_v cst2)
+  | (Var _,_)|(_,Var _) ->
+      raise Undetermined
+
   let op_tagged op_op op v = match v with
   |  Val (Symbolic (a,o)) -> Val (op a o)
   |  Val (Concrete _|Label _|Tag _) ->
-      Warn.user_error "Illegal %s" op_op
+      Warn.user_error "Illegal %s on %s" op_op (pp_v v)
   | Var _ -> raise Undetermined
 
   (*  Returns the location of the tag associated to a location *)
@@ -280,6 +289,7 @@ module Make(Cst:Constant.S) = struct
   | Min ->
       binop op
         (fun x y -> if Scalar.lt x y then x else y)
+  | SetTag -> settag
 
   let op3 If v1 v2 v3 = match v1 with
   | Val (Concrete x) -> if scalar_to_bool x then v2 else v3
