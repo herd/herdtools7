@@ -1,0 +1,144 @@
+(*
+ * The Armv8 Application Level Memory Model.
+ *
+ * This is a machine-readable, executable and formal artefact, which aims to be
+ * the latest stable version of the Armv8 memory model.
+ * If you have comments on the content of this file, please send an email to
+ * jade.alglave@arm.com, referring to version number:
+ * 9470edab1356b1d824422808bf681d59529e8b91 
+ * For a textual version of the model, see section B2.3 of the Armv8 ARM:
+ *   https://developer.arm.com/docs/ddi0487/latest/arm-architecture-reference-manual-armv8-for-armv8-a-architecture-profile
+ *
+ * Author: Will Deacon <will.deacon@arm.com>
+ * Author: Jade Alglave <jade.alglave@arm.com>
+ *
+ * Copyright (C) 2016-2019, Arm Ltd.
+ * All rights reserved. 
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in
+ *       the documentation and/or other materials provided with the
+ *       distribution.
+ *     * Neither the name of ARM nor the names of its contributors may be
+ *       used to endorse or promote products derived from this software
+ *       without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+ * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+ * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+ * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *)
+
+"ARMv8 AArch64"
+
+(*
+ * Include the cos.cat file shipped with herd.
+ * This builds the co relation as a total order over writes to the same
+ * location and then consequently defines the fr relation using co and
+ * rf.
+ *)
+include "cos.cat"
+
+(*
+ * Include aarch64fences.cat so that barriers show up in generated diagrams.
+ *)
+include "aarch64fences.cat"
+
+(*
+ * As a restriction of the model, all observers are limited to the same
+ * inner-shareable domain. Consequently, the ISH, OSH and SY barrier
+ * options are all equivalent to each other.
+ *)
+let dsb.full = DSB.ISH | DSB.OSH | DSB.SY
+let dsb.ld = DSB.ISHLD | DSB.OSHLD | DSB.LD
+let dsb.st = DSB.ISHST | DSB.OSHST | DSB.ST
+
+(*
+ * A further restriction is that standard litmus tests are unable to
+ * distinguish between DMB and DSB instructions, so the model treats
+ * them as equivalent to each other.
+ *)
+let dmb.full = DMB.ISH | DMB.OSH | DMB.SY | dsb.full
+let dmb.ld = DMB.ISHLD | DMB.OSHLD | DMB.LD | dsb.ld
+let dmb.st = DMB.ISHST | DMB.OSHST | DMB.ST | dsb.st
+
+(* Flag any use of shareability options, due to the restrictions above. *)
+flag ~empty (dmb.full | dmb.ld | dmb.st) \
+	    (DMB.SY | DMB.LD | DMB.ST | DSB.SY | DSB.LD | DSB.ST)
+	    as Assuming-common-inner-shareable-domain
+
+(* Intrinsic order *)
+let intrinsic = (iico_data|iico_ctrl)+
+
+(* Coherence-after *)
+let ca = fr | co
+
+(* Local read successor *)
+let lrs = [W]; (po-loc \ (po-loc;[W];po-loc)) ; [R]
+
+(* Local write successor *)
+let lws = po-loc; [W]
+
+(* Properties of single-copy atomic accesses *)
+let si = sm 
+show (sm \ id) \ (I * I) as si
+
+(* Observed-by *)
+let obs = rfe | fre | coe
+
+(* Dependency-ordered-before *)
+let dob = addr | data
+	| ctrl; [W]
+	| (ctrl | (addr; po)); [ISB]; po; [R]
+	| addr; po; [W]
+	| (addr | data); lrs
+
+(* Atomic-ordered-before *)
+let aob = rmw
+	| [range(rmw)]; lrs; [A | Q]
+
+(* Barrier-ordered-before *)
+let bob = po; ([dmb.full]|([A];amo;[L])); po
+	| [L]; po; [A]
+	| [R\NoRet]; po; [dmb.ld]; po
+	| [A | Q]; po
+	| [W]; po; [dmb.st]; po; [W]
+	| po; [L]
+
+(* Tag-ordered-before *)
+let tob = [R & T]; intrinsic; [M \ T]
+
+(* Locally-ordered-before *)
+let rec lob = lws; si
+            | dob
+            | aob
+            | bob
+            | tob
+            | lob; lob
+
+(* Ordered-before *)
+let rec ob = obs; si
+        | lob
+	| ob; ob
+
+(* Internal visibility requirement *)
+acyclic po-loc | ca | rf as internal
+
+(* External visibility requirement *)
+irreflexive ob as external
+
+(* Atomic: Basic LDXR/STXR constraint to forbid intervening writes. *)
+empty rmw & (fre; coe) as atomic
