@@ -125,9 +125,9 @@ let handle_key main key arg = match key with
 | "conds" ->
     conds := !conds @ [arg]
 (* Behaviour control *)
-| "model" ->
+| "model"|"cat"  ->
     lex_tag_fun
-       "model" Model.parse Model.tags
+       key Model.parse Model.tags
        (fun x -> model := Some x) arg
 | "bell" ->
     bell := Some arg
