@@ -245,6 +245,8 @@ module Make
 
       and stlr sz rs rd ii = do_str sz AArch64.L rs (read_reg_ord rd ii) ii
 
+      and stlr sz rs rd ii = do_str sz AArch64.L rs (read_reg_ord rd ii) ii
+
       and ldar sz t rd rs ii =
         let open AArch64 in
         lift_memop
