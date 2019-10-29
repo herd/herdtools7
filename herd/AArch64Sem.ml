@@ -88,7 +88,8 @@ module Make
       let write_reg r v ii = write_loc MachSize.Quad AArch64.N (A.Location_reg (ii.A.proc,r)) v ii
 
 (* Emit commit event *)
-      let commit ii = M.mk_singleton_es (Act.Commit true) ii
+      let commit_bcc ii = M.mk_singleton_es (Act.Commit true) ii
+      let commit_pred ii = M.mk_singleton_es (Act.Commit false) ii
 
 (* Fence *)
       let create_barrier b ii = M.mk_singleton_es (Act.Barrier b) ii
@@ -135,7 +136,7 @@ module Make
       let check_tags a ii m1 m2 =
         get_both_tags a ii >>= fun (atag,patag) ->
         do_check atag patag  >>= fun cond ->
-        commit ii >>*= fun () ->
+        commit_pred ii >>*= fun () ->
         M.choiceT cond m1 m2
 
       let delayed_check_tags ma ii m1 m2 =
@@ -143,7 +144,7 @@ module Make
         M.check_tags
           ma (fun a -> read_tag_mem a ii)
           (fun a tag1 -> tag_extract a  >>= fun tag2 -> M.op Op.Eq tag1 tag2)
-          (commit ii)  ++ fun cond ->  M.choiceT cond m1 m2
+          (commit_pred ii)  ++ fun cond ->  M.choiceT cond m1 m2
 
       let do_checked_read sz an rd a ii =
         check_tags a ii
@@ -561,21 +562,19 @@ module Make
             B.branchT l
 
         | I_BC(c,l)->
-            (read_reg_ord NZP ii)
-              >>= tr_cond c
-              >>= fun v -> commit ii
-                  >>= fun () -> B.bccT v l
+            read_reg_ord NZP ii  >>= tr_cond c >>= fun v ->
+              commit_bcc ii >>= fun () -> B.bccT v l
 
         | I_CBZ(_,r,l) ->
             (read_reg_ord r ii)
               >>= is_zero
-              >>= fun v -> commit ii
+              >>= fun v -> commit_bcc ii
                   >>= fun () -> B.bccT v l
 
         | I_CBNZ(_,r,l) ->
             (read_reg_ord r ii)
               >>= is_not_zero
-              >>= fun v -> commit ii
+              >>= fun v -> commit_bcc ii
                   >>= fun () -> B.bccT v l
 
                       (* Load and Store *)
