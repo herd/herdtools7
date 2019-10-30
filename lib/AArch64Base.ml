@@ -512,14 +512,6 @@ let do_pp_instruction m =
       pp_xreg r2 ^ pp_kr true kr
   | V32,RV (V64,_) -> assert false in
 
-  let pp_stg memo rt rn k =
-    pp_memo memo ^ " " ^ pp_xreg rt ^
-    ",[" ^ pp_xreg rn ^ pp_kr true k ^ "]" in
-
-  let pp_ldg memo rt rn k =
-    pp_memo memo ^ " " ^ pp_xreg rt ^
-    ",[" ^ pp_xreg rn ^ pp_kr true k ^ "]" in
-
   let pp_stxr memo v r1 r2 r3 =
     pp_memo memo ^ " " ^
     pp_wreg r1 ^"," ^
@@ -633,9 +625,9 @@ let do_pp_instruction m =
       sprintf "MRS %s,%s" (pp_xreg r) (pp_sysreg sr)
 (* Memory Tagging *)
   | I_STG (rt,rn,kr) ->
-      pp_stg "STG" rt rn kr
+      pp_mem "STG" V64 rt rn kr
   | I_LDG (rt,rn,kr) ->
-      pp_ldg "LDG" rt rn kr
+      pp_mem "LDG" V64 rt rn kr
 
 let m_int = { pp_k = string_of_int ;
               zerop = (function 0 -> true | _ -> false);
