@@ -515,14 +515,6 @@ let do_pp_instruction m =
       pp_xreg r2 ^ pp_kr true kr
   | V32,RV (V64,_) -> assert false in
 
-  let pp_stg memo rt rn k =
-    pp_memo memo ^ " " ^ pp_xreg rt ^
-    ",[" ^ pp_xreg rn ^ pp_kr true k ^ "]" in
-
-  let pp_ldg memo rt rn k =
-    pp_memo memo ^ " " ^ pp_xreg rt ^
-    ",[" ^ pp_xreg rn ^ pp_kr true k ^ "]" in
-
   let pp_stxr memo v r1 r2 r3 =
     pp_memo memo ^ " " ^
     pp_wreg r1 ^"," ^
