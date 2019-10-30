@@ -34,6 +34,7 @@ module type Config = sig
 
   val statelessrc11 : bool
   val byte : MachSize.Tag.t
+  val precision : bool
 end
 
 (**********************)
