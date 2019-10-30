@@ -120,20 +120,20 @@ and type evt_struct = E.event_structure) =
     let (>>*=) : 'a t -> ('a -> 'b t) -> ('b) t
         = fun s f -> data_comp (=**=) s f
 (*
-          (fun eiid ->
-            let (eiid_next, sact) = s eiid in
-            Evt.fold (fun (v1, vcl1, es1) (eiid1,acc) ->
-              let b_set = f v1 in
-              let (eiid_b,b_setact) = b_set eiid1 in
-              Evt.fold (fun (v2,vcl2,es2) (eiid2,acc_inner) ->
-                match es1 =**= es2 with
-                | None -> (eiid2, acc_inner)
-                | Some es -> (eiid2,Evt.add (v2,vcl2@vcl1,es) acc_inner)
-                       )
-                b_setact (eiid_b,acc)
-                     )
-              sact (eiid_next,Evt.empty))
-*)
+  (fun eiid ->
+  let (eiid_next, sact) = s eiid in
+  Evt.fold (fun (v1, vcl1, es1) (eiid1,acc) ->
+  let b_set = f v1 in
+  let (eiid_b,b_setact) = b_set eiid1 in
+  Evt.fold (fun (v2,vcl2,es2) (eiid2,acc_inner) ->
+  match es1 =**= es2 with
+  | None -> (eiid2, acc_inner)
+  | Some es -> (eiid2,Evt.add (v2,vcl2@vcl1,es) acc_inner)
+  )
+  b_setact (eiid_b,acc)
+  )
+  sact (eiid_next,Evt.empty))
+ *)
     let bind_ctrl_avoid ma s f = fun eiid ->
       let eiid,mact = ma eiid in
       let _,cl,es = Evt.as_singleton mact in
@@ -142,18 +142,18 @@ and type evt_struct = E.event_structure) =
 
 (* Tag check combinator *)
     let check_tags : 'v t -> ('v -> 'v t) -> ('v -> 'v -> 'v t) -> 'x t -> 'v t
-      = fun ma rtag comp commit ->
-        fun (eiid:int) ->
-          let eiid,aact = ma eiid in
-          let a,acl,aes = Evt.as_singleton aact in
-          let eiid,rtagact = rtag a eiid in
-          let eiid,commitact = commit eiid in
-          let tag,rtagcl,rtages = Evt.as_singleton rtagact
-          and _,commitcl,commites = Evt.as_singleton commitact in
-          let eiid,compact = comp a tag eiid in
-          let vcomp,compcl,_ = Evt.as_singleton compact in
-          let es = E.check_tags aes rtages commites in
-          eiid,Evt.singleton (vcomp,acl@rtagcl@commitcl@compcl,es)
+        = fun ma rtag comp commit ->
+          fun (eiid:int) ->
+            let eiid,aact = ma eiid in
+            let a,acl,aes = Evt.as_singleton aact in
+            let eiid,rtagact = rtag a eiid in
+            let eiid,commitact = commit eiid in
+            let tag,rtagcl,rtages = Evt.as_singleton rtagact
+            and _,commitcl,commites = Evt.as_singleton commitact in
+            let eiid,compact = comp a tag eiid in
+            let vcomp,compcl,_ = Evt.as_singleton compact in
+            let es = E.check_tags aes rtages commites in
+            eiid,Evt.singleton (vcomp,acl@rtagcl@commitcl@compcl,es)
 
 (* Exchange combination *)
     let exch : 'a t -> 'a t -> ('a -> 'b t) ->  ('a -> 'c t) ->  ('b * 'c) t
@@ -173,8 +173,8 @@ and type evt_struct = E.event_structure) =
 
 (* Exchange combination *)
     let swp : ('loc t) ->
-        ('loc -> 'v t) -> 'w t -> ('loc -> 'w -> unit t) -> ('v -> unit t)
-          -> unit t  = fun rloc rmem rreg wmem wreg ->
+      ('loc -> 'v t) -> 'w t -> ('loc -> 'w -> unit t) -> ('v -> unit t)
+        -> unit t  = fun rloc rmem rreg wmem wreg ->
           fun eiid ->
             let eiid,rlocact = rloc eiid in
             let vloc,vclloc,esloc = Evt.as_singleton rlocact in

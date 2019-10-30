@@ -32,7 +32,6 @@ module type CommonConfig = sig
   val badflag : string option
   val throughflag : string option
   include Mem.CommonConfig
-
   val statelessrc11 : bool
   val skipchecks : StringSet.t
 end
