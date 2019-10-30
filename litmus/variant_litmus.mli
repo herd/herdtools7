@@ -17,8 +17,9 @@
 type t =
   | Self (* Self modifying code *)
 
-val compare : t -> t -> int
 val tags : string list
 val parse : string -> t option
 val pp : t -> string
 val ok : t -> Archs.t -> bool
+val compare : t -> t -> int
+val setnow : t -> bool

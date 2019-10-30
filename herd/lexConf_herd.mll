@@ -134,11 +134,8 @@ let handle_key main key arg = match key with
 | "macros" ->
     macros := Some arg
 | "variant" ->
-     let module PV = ParseTag.MakeS(Variant) in
-    let add_tag tag =
-      let old = !variant in
-      variant := (fun t -> Variant.compare t tag = 0 || old t) in
-    PV.parse_tag_set "variant"  add_tag arg
+    let module PV = ParseTag.MakeS(Opts.OptS) in
+    PV.parse_tag_set "variant" variant arg
 | "machsize" ->
      lex_tag "machsize" MachSize.Tag.parse MachSize.Tag.tags byte arg
 | "endian" ->

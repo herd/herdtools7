@@ -18,6 +18,8 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
   module E = S.E
   module U = MemUtils.Make(S)
 
+  let memtag = O.variant Variant.MemTag
+
 (*******************************************)
 (* Complete re-computation of dependencies *)
 (*******************************************)
@@ -76,7 +78,8 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
             E.is_mem_load e2 ||
             (E.is_mem_store e2 && not (is_data_port e1)) ||
             E.is_additional_mem e2)
-          iico in
+           (* Patch: a better solution would be a direct iico from read address register to access *)
+          (if memtag then E.EventRel.transitive_closure iico else iico) in
       S.seq dd_pre last_addr in
     let ctrl_one = (* For bcc: from commit to event by po *)
       S.restrict E.is_commit_bcc evt_relevant po

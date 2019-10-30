@@ -29,7 +29,9 @@ type t =
   | Mixed           (* Mixed-Size *)
   | WeakPredicated (* "Weak" predicated instructions, not performing non-selected events, aarch64 *)
   | MemTag           (* Memory Tagging *)
-  | HardFault        (* Fault events terminate (thread) execution *)
+  | TagCheckPrecise
+  | TagCheckUnprecise
+
 
 val compare : t -> t -> int
 val tags : string list

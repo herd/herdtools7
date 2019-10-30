@@ -38,6 +38,8 @@ val unroll : int ref
 val speedcheck : Speed.t ref
 val optace : bool option ref
 val variant : (Variant.t -> bool) ref
+val precision : bool ref
+module OptS : ParseTag.OptS with type t = Variant.t
 val byte : MachSize.Tag.t ref
 val endian : Endian.t option ref
 val initwrites : bool option ref

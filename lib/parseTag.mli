@@ -31,11 +31,13 @@ module Make : functor (O:Opt) -> sig
   val parse_fun : string -> (O.t -> unit) -> string  -> string * Arg.spec * string
 end
 
-module MakeS : functor
-  (O:sig
-    include Opt
-    val compare : t -> t -> int
-  end) -> sig
-    val parse_tag_set : string -> (O.t -> unit) -> string -> unit
+module type OptS = sig
+  include Opt
+  val compare : t -> t -> int
+  val setnow : t -> bool (* examine tag for immediate action *)
+end
+
+module MakeS : functor (O:OptS) -> sig
+    val parse_tag_set : string -> (O.t -> bool) ref -> string -> unit
     val parse : string -> (O.t -> bool) ref -> string -> string * Arg.spec * string
   end

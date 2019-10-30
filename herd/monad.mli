@@ -80,7 +80,11 @@ module type S =
     val stu : 'a t -> 'a t -> ('a -> unit t) -> (('a * 'a) -> unit t) -> unit t
     val (>>>) : 'a t -> ('a -> 'b t) -> 'b t
     val (>>>>) : 'a t -> ('a -> 'b t) -> 'b t
+
+(* Parallel composition *)
     val (>>|) : 'a t -> 'b t -> ('a * 'b)  t
+    val (>>||) : 'a t -> 'b t -> ('a * 'b)  t (* Do not check disjointness *)
+
     val (>>::) : 'a t -> 'a list t -> 'a list t
     val (|*|)   : unit t -> unit t -> unit t   (* Cross product *)
 (*    val lockT : 'a t -> 'a t *)

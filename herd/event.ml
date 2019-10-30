@@ -245,8 +245,8 @@ module type S = sig
 (************************)
 (* Parallel composition *)
 (************************)
-  val (=|=) :
-      event_structure -> event_structure -> event_structure option
+  val para_comp : bool (* check disjointness *)
+    -> event_structure -> event_structure -> event_structure option
 
 (* sequential composition, add data dependency *)
   val (=*$=) :
@@ -728,15 +728,6 @@ let minimals_data es =
         (fun (_,e2) -> e.eiid <> e2.eiid) intra_causality)
     es.events
 
-let minimals_control es =
-  let intra_causality = es.intra_causality_control in
-  EventSet.filter
-    (fun e ->
-      is_commit e &&
-      EventRel.for_all
-        (fun (_,e2) -> e.eiid <> e2.eiid) intra_causality)
-    es.events
-
 let maximals es =
   let intra_causality =
     EventRel.union es.intra_causality_data es.intra_causality_control in
@@ -778,7 +769,7 @@ let check_disjoint do_it es1 es2 =
     | Some o1,None ->
         Some (EventSet.union o1 (maximals_data es2))
 
-let para_comp es1 es2 =
+let do_para_comp es1 es2 =
   { procs = [] ;
     events = EventSet.union es1.events es2.events;
     intra_causality_data = EventRel.union
@@ -792,7 +783,9 @@ let para_comp es1 es2 =
     sca = EventSetSet.union es1.sca es2.sca;
     mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; }
 
-  let (=|=) = check_disjoint para_comp
+  let para_comp check =
+    if check then check_disjoint do_para_comp
+    else fun es1 es2 -> Some (do_para_comp es1 es2)
 
 (* Composition with intra_causality_data from first to second *)
   let data_comp mini_loc mkOut es1 es2 =
@@ -818,9 +811,6 @@ let para_comp es1 es2 =
 
   let (=$$=) =
     check_disjoint (data_comp minimals_data (fun es _ -> Some (get_output es)))
-
-  let comp_data_commit es1 es2 =
-    check_disjoint (data_comp minimals_control (fun _ es -> es.output)) es1 es2
 
 (* Composition with intra_causality_control from first to second *)
   let control_comp mini_loc es1 es2 =
@@ -1379,7 +1369,7 @@ let stu rD rEA wEA wM =
       else Some (do_it es1 es2)
 
 (* Parallel composition *)
-    let (+|+) = check_both para_comp
+    let (+|+) = check_both do_para_comp
 
 
   let empty_event_structure = empty
@@ -1387,7 +1377,7 @@ let stu rD rEA wEA wM =
 (* Instruction control *)
 
   let cond_comp es1 es2 =
-    let r = para_comp es1 es2 in
+    let r = do_para_comp es1 es2 in
     let control = EventRel.cartesian es1.events es2.events in
     { r with control =  EventRel.union control r.control; }
 end

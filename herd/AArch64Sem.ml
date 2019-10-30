@@ -13,7 +13,10 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
-module Make (C:Sem.Config)(V:Value.S)
+
+module Make
+    (C:sig include Sem.Config val precision : bool end)
+    (V:Value.S)
     =
   struct
     module ConfLoc = SemExtra.ConfigToArchConfig(C)
@@ -51,10 +54,9 @@ module Make (C:Sem.Config)(V:Value.S)
       let (>>==) = M.(>>==)
       let (>>*=) = M.(>>*=)
       let (>>|) = M.(>>|)
+      let (>>||) = M.(>>||)
       let (>>!) = M.(>>!)
       let (>>::) = M.(>>::)
-
-      let tag_size = MachSize.Word (* ? *)
 
       let mask32 ty m =
         let open AArch64Base in
@@ -222,10 +224,13 @@ module Make (C:Sem.Config)(V:Value.S)
 
       let lift_memop mop ma ii =
         if memtag then
-          M.delay ma >>= fun (_a,ma) ->
-           delayed_check_tags ma ii
-              (mop (ma >>= fun a -> loc_extract a) >>! B.Next)
-              (ma >>= fun a -> mk_fault a ii >>! B.Exit)
+          M.delay ma >>= fun (_,ma) ->
+          let  mm = mop (ma >>= fun a -> loc_extract a) in
+          delayed_check_tags ma ii
+            (mm  >>! B.Next)
+            (let mfault = ma >>= fun a -> mk_fault a ii in
+            if C.precision then  mfault >>! B.Exit
+            else (mfault >>|| mm) >>! B.Next)
         else
           mop ma >>! B.Next
 

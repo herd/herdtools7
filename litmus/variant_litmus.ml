@@ -31,3 +31,5 @@ let pp = function
 let ok v a = match v,a with
 | Self,`AArch64 -> true
 | _,_ -> false
+
+let setnow _ = false
