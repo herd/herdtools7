@@ -216,7 +216,7 @@ type rm64 =
   |  Rm64_reg of reg
   |  Rm64_deref of reg * offset
   |  Rm64_abs of abs
-(* Absolute memory location, we should later combine with Rm32_deref to have proper base-displacement (and later, scale-index) addressing *)
+(* Absolute memory location, we should later combine with Rm64_deref to have proper base-displacement (and later, scale-index) addressing *)
 
 type effaddr =
   | Effaddr_rm64 of rm64
