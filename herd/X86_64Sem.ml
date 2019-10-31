@@ -56,17 +56,37 @@ module Make (C:Sem.Config)(V : Value.S)
     let mk_read_choose_atomic sz loc = mk_read sz (is_global loc) loc
 
     let read_reg is_data r ii =
-      M.read_loc is_data (mk_read nat_sz false) (A.Location_reg (ii.A.proc,r)) ii
+      let mask_from_reg_part = function
+        | X86_64.H -> fun w -> M.op1 (Op.LogicalRightShift 8) w >>=
+                                 fun v -> M.op1 (Op.Mask MachSize.Byte) v
+        | X86_64.B -> fun v -> M.op1 (Op.Mask MachSize.Byte) v
+        | X86_64.W -> fun v -> M.op1 (Op.Mask MachSize.Short) v
+        | X86_64.L -> fun v -> M.op1 (Op.Mask MachSize.Word) v
+        | X86_64.Q -> fun v -> M.op1 (Op.Mask MachSize.Quad) v
+      in
+      if not is_data then
+        match r with
+        | X86_64.Ireg (_, p) ->
+           let sz = reg_size_to_mach_size p in
+           read_loc sz is_data (A.Location_reg (ii.A.proc,r)) ii >>= mask_from_reg_part p
+        | _ -> read_loc nat_sz is_data (A.Location_reg (ii.A.proc,r)) ii
+      else
+        read_loc nat_sz is_data (A.Location_reg (ii.A.proc,r)) ii
 
-    let read_mem sz a ii  =
-      M.read_loc false (mk_read sz false) (A.Location_global a) ii
-    let read_mem_atomic sz a ii =
-      M.read_loc false (mk_read sz true) (A.Location_global a) ii
+    let read_mem sz data an a ii =
+      if mixed then
+        M.read_mixed data sz (fun sz -> mk_read sz an) a ii
+      else
+        let a = A.Location_global a in
+        M.read_loc data (mk_read sz an) a ii
+
+    let read_mem_atomic sz a ii = read_mem sz false true a ii
 
     let read_loc_atomic sz is_d = M.read_loc is_d (mk_read_choose_atomic sz)
 
     let read_loc_gen sz data locked loc ii = match loc with
       | A.Location_global l -> read_mem sz data locked l ii
+      | A.Location_reg (proc, reg) -> read_reg data reg ii
       | _ -> M.read_loc data (mk_read sz false) loc ii
 
     let mk_write sz an loc v = Act.Access (Dir.W, loc, v, an, sz)
@@ -78,13 +98,32 @@ module Make (C:Sem.Config)(V : Value.S)
       if mixed then M.write_mixed sz (fun sz -> mk_write sz an) a v ii
       else write_loc sz an (A.Location_global a) v ii
 
+    let write_reg r v ii =
+      let zero_right_bits nb_bit =
+        fun v -> M.op1 (Op.LogicalRightShift nb_bit) v >>=
+                   fun v -> M.op1 (Op.LeftShift nb_bit) v in
+      let mask_from_reg_part = function
+        | X86_64.H -> fun v -> M.op1 (Op.LogicalRightShift 16) v >>=
+                                 fun w -> M.op1 (Op.LeftShift 16) w >>=
+                                 fun x -> M.op1 (Op.Mask MachSize.Byte) v >>=
+                                 fun y -> M.op Op.Or x y
+        | X86_64.B -> zero_right_bits 8
+        | X86_64.W -> zero_right_bits 16
+        | X86_64.L -> fun _ -> M.unitT v (* Put register to 0 because 32-bit operands generate a 32-bit result, zero-extended to a 64-bit result in the destination general-purpose register (cf intel manual)*)
+        | X86_64.Q -> fun _ -> M.unitT v
+      in
+      match r with
+      | X86_64.Ireg (_, p) ->
+         let sz = reg_size_to_mach_size p in
+         read_loc sz false (A.Location_reg (ii.A.proc,r)) ii >>=
+           mask_from_reg_part p >>= fun b -> M.op Op.Or b v >>=
+           fun w -> write_loc sz false (A.Location_reg (ii.A.proc,r)) w ii
+      | _ -> write_loc nat_sz false (A.Location_reg (ii.A.proc,r)) v ii
+
     let write_loc_gen sz locked loc v ii = match loc with
       | A.Location_global l -> write_mem sz locked l v ii
+      | A.Location_reg (proc, reg) -> write_reg reg v ii
       | _ -> write_loc sz locked loc v ii
-
-    let write_reg r v ii =
-      M.mk_singleton_es
-        (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false, nat_sz)) ii
 
     let write_mem_atomic sz a v ii = write_mem sz true a v ii
 
