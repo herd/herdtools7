@@ -120,9 +120,9 @@ module RegMap = A.RegMap)
             | Some (s,_) -> sprintf "\"%s\" (%s)" (tag_reg_def reg) s
           end else match A.internal_init reg with
           | None ->
-              sprintf "%s \"r\" (%s)" (tag_reg_def reg) (dump_v v)
+              sprintf "%s \"Q\" (%s)" (tag_reg_def reg) (dump_v v)
           | Some (s,_) ->
-              sprintf "%s \"r\" (%s)" (tag_reg_def reg) s in
+              sprintf "%s \"Q\" (%s)" (tag_reg_def reg) s in
 
         (* Input from state *)
         let ins =
