@@ -47,6 +47,17 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
     let pp_annot annot =
       if annot then "*" else ""
 
+    let inst_size_to_mach_size = function
+      | B -> MachSize.Byte
+      | W -> MachSize.Short
+      | L | NO_SIZE -> MachSize.Word
+      | Q -> MachSize.Quad
+
+    let mem_access_size = function
+      | I_NOP | I_JMP _ | I_JCC _ | I_LOCK _ | I_MFENCE -> None
+      | I_EFF_OP (_, sz, _, _) | I_EFF (_, sz, _) | I_EFF_EFF (_, sz, _, _)
+        | I_CMPXCHG (sz, _, _) | I_CMOVC (sz, _, _) -> Some (inst_size_to_mach_size sz)
+
     (********************)
     (* global locations *)
     (********************)

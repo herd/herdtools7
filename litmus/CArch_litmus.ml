@@ -16,6 +16,7 @@
 
 module Make(O:sig val memory : Memory.t val hexa : bool end) = struct
   module V = Int32Constant
+  include CBase
 
   type reg = string
   type instruction = unit
@@ -73,5 +74,5 @@ module Make(O:sig val memory : Memory.t val hexa : bool end) = struct
     | CAst.Global _::xs -> count_procs xs
     | [] -> 0
 
-  let typeof c = assert false
+  let typeof _ = assert false
 end

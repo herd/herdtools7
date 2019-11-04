@@ -38,7 +38,7 @@ let symb_reg r = sprintf "%%%s" r
 type 's t_reg =
   | T of 's Constant.t
   | Reg of reg
-let typeof c = assert false
+let typeof _ = assert false
 
 (*
 let loc_compare l1 l2 = match l1,l2 with

@@ -211,6 +211,11 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let emit_load_not_eq  st =  emit_load_not st
     let emit_load_not_value  st = emit_load_not st
 
+    let emit_obs = emit_load_mixed naturalsize 0
+    let emit_obs_not_value = emit_load_not_value
+    let emit_obs_not_eq = emit_load_not_eq
+    let emit_obs_not_zero = emit_load_not_zero
+
     let emit_joker st init = None,init,[],st
 
     let emit_access st _p init e = match e.C.dir with

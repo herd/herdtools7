@@ -463,20 +463,22 @@ module Make
              | YY -> write_mem_atomic AArch64.X sz ea v resa ii
              | LY -> write_mem_atomic AArch64.XL sz ea v resa ii))
           (read_reg_ord rd ii)
-          (write_reg ResAddr V.zero ii)
-          (fun v -> write_reg rr v ii)
-          (fun ea resa v -> match t with
-          | YY -> write_mem_atomic sz ea v resa ii
-          | LY -> write_mem_atomic_release sz ea v resa ii)
-          >>! B.Next
+          ii
 
+      let csel_op op v =
+        let open AArch64Base in  match op with
+        | Cpy -> M.unitT v
+        | Inc -> M.op Op.Add v V.one
+        | Neg -> M.op Op.Sub V.zero v
+        | Inv -> Warn.fatal "size dependent inverse not implemented"
 
-      let rmw_amo_read rmw = let open AArch64Base in match rmw with
-      | RMW_A|RMW_AL -> read_mem_atomic_acquire
-      | RMW_L|RMW_P  -> read_mem_atomic
-      and rmw_amo_write rmw = let open AArch64Base in match rmw with
-      | RMW_L|RMW_AL -> write_mem_amo_release
-      | RMW_P|RMW_A  -> write_mem_amo
+      let rmw_amo_read rmw sz = let open AArch64 in match rmw with
+      | RMW_A|RMW_AL -> old_do_read_mem sz XA
+      | RMW_L|RMW_P  -> old_do_read_mem sz X
+
+      and rmw_amo_write rmw sz = let open AArch64 in match rmw with
+      | RMW_L|RMW_AL -> do_write_mem sz XL
+      | RMW_P|RMW_A  -> do_write_mem sz X
 
       let swp sz rmw r1 r2 r3 ii =
         let open AArch64Base in
@@ -485,8 +487,12 @@ module Make
             let write_mem = match rmw with
             | RMW_L|RMW_AL -> write_mem_release
             | RMW_P|RMW_A  -> write_mem in
-            (read_reg_data sz r1 ii >>| read_reg_ord r3 ii) >>=
-            fun (v,a) -> write_mem sz a v ii
+            lift_memop
+              (fun ma ->
+                (read_reg_data sz r1 ii >>| ma) >>= fun (v,a) ->
+                 write_mem sz a v ii)
+              (read_reg_ord r3 ii)
+              ii
         |  _ ->
             let read_mem = rmw_amo_read rmw
             and write_mem =  rmw_amo_write rmw in
@@ -501,41 +507,48 @@ module Make
               ii
 
       let cas sz rmw rs rt rn ii =
-        let open AArch64Base in
-        let read_rn = read_reg_ord rn ii
-        and read_rs = read_reg_ord_sz sz rs ii in
-        M.altT
-          (read_rn >>= fun a ->
-            (read_rs >>|
-            begin let read_mem = match rmw with
-            | RMW_A|RMW_AL -> read_mem_acquire
-            | RMW_L|RMW_P  -> read_mem in
-            read_mem sz a ii >>=
-            fun v -> write_reg rs v ii >>! v end) >>=
-            fun (cv,v) -> M.neqT cv v >>! ())
-          (let read_rt =  read_reg_data sz rt ii
-          and read_mem a = rmw_amo_read rmw sz  a ii
-          and write_mem a v = rmw_amo_write rmw sz a v ii
-          and write_rs v =  write_reg rs v ii in
-          M.aarch64_cas_ok
-            read_rn read_rs read_rt write_rs read_mem write_mem M.eqT)
+        lift_memop
+          (fun ma ->
+            let open AArch64 in
+            let read_rs = read_reg_ord_sz sz rs ii in
+            M.altT
+              (ma >>= fun a ->
+               (read_rs >>|
+               begin let read_mem sz = match rmw with
+               | RMW_A|RMW_AL -> old_do_read_mem sz A
+               | RMW_L|RMW_P  -> old_do_read_mem sz N in
+               read_mem sz a ii >>=
+               fun v -> write_reg rs v ii >>! v end) >>=
+               fun (cv,v) -> M.neqT cv v >>! ())
+              (let read_rt =  read_reg_data sz rt ii
+              and read_mem a = rmw_amo_read rmw sz  a ii
+              and write_mem a v = rmw_amo_write rmw sz a v ii
+              and write_rs v =  write_reg rs v ii in
+              M.aarch64_cas_ok
+                ma read_rs read_rt write_rs read_mem write_mem M.eqT))
+          (read_reg_ord rn ii)
+          ii
 
       let ldop op sz rmw rs rt rn ii =
-        let open AArch64Base in
-        let noret = match rt with | ZR -> true | _ -> false in
-        let op = match op with
-        | A_ADD -> Op.Add
-        | A_EOR -> Op.Xor
-        | A_SET -> Op.Or
-        | A_CLR -> Op.AndNot2
-        | A_SMAX -> Op.Max
-        | A_SMIN -> Op.Min in
-        let read_mem = if noret then read_mem_noreturn else rmw_amo_read rmw
-        and write_mem = rmw_amo_write rmw in
-        M.amo op
-          (read_reg_ord rn ii) (read_reg_data sz rs ii)
-          (fun a -> read_mem sz a ii) (fun a v -> write_mem sz a v ii)
-          >>= fun w ->if noret then M.unitT () else write_reg rt w ii
+        lift_memop
+          (fun ma ->
+            let open AArch64 in
+            let noret = match rt with | ZR -> true | _ -> false in
+            let op = match op with
+            | A_ADD -> Op.Add
+            | A_EOR -> Op.Xor
+            | A_SET -> Op.Or
+            | A_CLR -> Op.AndNot2
+            | A_SMAX -> Op.Max
+            | A_SMIN -> Op.Min in
+            let read_mem = if noret then fun sz -> old_do_read_mem sz NoRet else rmw_amo_read rmw
+            and write_mem = rmw_amo_write rmw in
+            M.amo op
+              ma (read_reg_data sz rs ii)
+              (fun a -> read_mem sz a ii) (fun a v -> write_mem sz a v ii)
+            >>= fun w ->if noret then M.unitT () else write_reg rt w ii)
+          (read_reg_ord rn ii)
+          ii
 
       let build_semantics ii =
         M.addT (A.next_po_index ii.A.program_order_index)
@@ -585,10 +598,8 @@ module Make
             str (bh_to_sz bh) rs rd kr ii
 
         | I_STLR(var,rs,rd) ->
-            let sz = tr_variant var in
-            (read_reg_ord rd ii >>| read_reg_data sz rs ii)
-              >>= (fun (a,v) -> write_mem_release sz a v ii)
-              >>! B.Next
+            stlr (tr_variant var) rs rd ii
+
         | I_STLRBH(bh,rs,rd) ->
             stlr (bh_to_sz bh) rs rd ii
 

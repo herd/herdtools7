@@ -664,9 +664,10 @@ and type evt_struct = E.event_structure) =
            E.empty_event_structure)
 
 
-(***************)
-(* Mixed size  *)
-(***************)
+(**************)
+(* Mixed size *)
+(**************)
+
     module Mixed(SZ:ByteSize.S) = struct
 
       let memtag = C.variant Variant.MemTag
@@ -860,7 +861,9 @@ and type evt_struct = E.event_structure) =
 
       let initwrites =
         if A.is_mixed then initwrites_mixed else initwrites_non_mixed
+
     end
+
 (* Add an inequality constraint *)
     let neqT : V.v -> V.v -> unit t
         = fun v1 v2 ->
