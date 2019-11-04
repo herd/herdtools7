@@ -236,7 +236,7 @@ let get_naccs_op = function
   | Operand_effaddr e -> get_naccs_eff e
 
 type inst_size =
-  | B | W | L | Q | NO_SIZE
+  | I8b | I16b | I32b | I64b | INSb
 
 type inst_eff_op =
   | I_ADD
@@ -265,11 +265,11 @@ type condition =
   | C_NS         (* Not sign *)
 
 let pp_inst_size = function
-  | B -> "B"
-  | W -> "W"
-  | L -> "L"
-  | Q -> "Q"
-  | NO_SIZE-> ""
+  | I8b -> "B"
+  | I16b -> "W"
+  | I32b -> "L"
+  | I64b -> "Q"
+  | INSb -> ""
 
 let pp_inst_eff_op inst size =
   let inst_string = match inst with

@@ -87,59 +87,59 @@ k:
 
 instr:
   | I_OR  effaddr  COMMA  operand
-    {I_EFF_OP (I_OR, NO_SIZE, $2,$4)}
+    {I_EFF_OP (I_OR, INSb , $2,$4)}
   | I_ORB  effaddr  COMMA  operand
-    {I_EFF_OP (I_OR, B, $2,$4)}
+    {I_EFF_OP (I_OR, I8b, $2,$4)}
   | I_ORW  effaddr  COMMA  operand
-    {I_EFF_OP (I_OR, W, $2,$4)}
+    {I_EFF_OP (I_OR, I16b, $2,$4)}
   | I_ORL  effaddr  COMMA  operand
-    {I_EFF_OP (I_OR, L, $2,$4)}
+    {I_EFF_OP (I_OR, I32b, $2,$4)}
   | I_ORQ  effaddr  COMMA  operand
-    {I_EFF_OP (I_OR, Q, $2,$4)}
+    {I_EFF_OP (I_OR, I64b, $2,$4)}
 
   | I_XOR  effaddr  COMMA  operand
-    {I_EFF_OP (I_XOR, NO_SIZE, $2,$4)}
+    {I_EFF_OP (I_XOR, INSb, $2,$4)}
   | I_XORB  effaddr  COMMA  operand
-    {I_EFF_OP (I_XOR, B, $2,$4)}
+    {I_EFF_OP (I_XOR, I8b, $2,$4)}
   | I_XORW  effaddr  COMMA  operand
-    {I_EFF_OP (I_XOR, W, $2,$4)}
+    {I_EFF_OP (I_XOR, I16b, $2,$4)}
   | I_XORL  effaddr  COMMA  operand
-    {I_EFF_OP (I_XOR, L, $2,$4)}
+    {I_EFF_OP (I_XOR, I32b, $2,$4)}
   | I_XORQ  effaddr  COMMA  operand
-    {I_EFF_OP (I_XOR, Q, $2,$4)}
+    {I_EFF_OP (I_XOR, I64b, $2,$4)}
 
   | I_ADD   effaddr  COMMA  operand
-    {I_EFF_OP (I_ADD, NO_SIZE, $2,$4)}
+    {I_EFF_OP (I_ADD, INSb, $2,$4)}
   | I_ADDB   effaddr  COMMA  operand
-    {I_EFF_OP (I_ADD, B, $2,$4)}
+    {I_EFF_OP (I_ADD, I8b, $2,$4)}
   | I_ADDW   effaddr  COMMA  operand
-    {I_EFF_OP (I_ADD, W, $2,$4)}
+    {I_EFF_OP (I_ADD, I16b, $2,$4)}
   | I_ADDL   effaddr  COMMA  operand
-    {I_EFF_OP (I_ADD, L, $2,$4)}
+    {I_EFF_OP (I_ADD, I32b, $2,$4)}
   | I_ADDQ   effaddr  COMMA  operand
-    {I_EFF_OP (I_ADD, Q, $2,$4)}
+    {I_EFF_OP (I_ADD, I64b, $2,$4)}
 
   | I_MOV   effaddr  COMMA  operand
-    {I_EFF_OP (I_MOV, NO_SIZE, $2,$4)}
+    {I_EFF_OP (I_MOV, INSb, $2,$4)}
   | I_MOVB   effaddr  COMMA  operand
-    {I_EFF_OP (I_MOV, B, $2,$4)}
+    {I_EFF_OP (I_MOV, I8b, $2,$4)}
   | I_MOVW   effaddr  COMMA  operand
-    {I_EFF_OP (I_MOV, W, $2,$4)}
+    {I_EFF_OP (I_MOV, I16b, $2,$4)}
   | I_MOVL   effaddr  COMMA  operand
-    {I_EFF_OP (I_MOV, L, $2,$4)}
+    {I_EFF_OP (I_MOV, I32b, $2,$4)}
   | I_MOVQ   effaddr  COMMA  operand
-    {I_EFF_OP (I_MOV, Q, $2,$4)}
+    {I_EFF_OP (I_MOV, I64b, $2,$4)}
 
   | I_CMP  effaddr  COMMA  operand
-    {I_EFF_OP (I_CMP, NO_SIZE, $2,$4)}
+    {I_EFF_OP (I_CMP, INSb, $2,$4)}
   | I_CMPB  effaddr  COMMA  operand
-    {I_EFF_OP (I_CMP, B, $2,$4)}
+    {I_EFF_OP (I_CMP, I8b, $2,$4)}
   | I_CMPW  effaddr  COMMA  operand
-    {I_EFF_OP (I_CMP, W, $2,$4)}
+    {I_EFF_OP (I_CMP, I16b, $2,$4)}
   | I_CMPL  effaddr  COMMA  operand
-    {I_EFF_OP (I_CMP, L, $2,$4)}
+    {I_EFF_OP (I_CMP, I32b, $2,$4)}
   | I_CMPQ  effaddr  COMMA  operand
-    {I_EFF_OP (I_CMP, Q, $2,$4)}
+    {I_EFF_OP (I_CMP, I64b, $2,$4)}
 
   | I_JMP  NAME
     {I_JMP $2}
@@ -165,73 +165,73 @@ instr:
       { I_MFENCE}
 
   | I_DEC  effaddr
-    {I_EFF (I_DEC, NO_SIZE, $2)}
+    {I_EFF (I_DEC, INSb, $2)}
   | I_DECB  effaddr
-    {I_EFF (I_DEC, B, $2)}
+    {I_EFF (I_DEC, I8b, $2)}
   | I_DECW  effaddr
-    {I_EFF (I_DEC, W, $2)}
+    {I_EFF (I_DEC, I16b, $2)}
   | I_DECL  effaddr
-    {I_EFF (I_DEC, L, $2)}
+    {I_EFF (I_DEC, I32b, $2)}
   | I_DECQ  effaddr
-    {I_EFF (I_DEC, Q, $2)}
+    {I_EFF (I_DEC, I64b, $2)}
 
   | I_INC  effaddr
-    {I_EFF (I_INC, NO_SIZE, $2)}
+    {I_EFF (I_INC, INSb, $2)}
   | I_INCB  effaddr
-    {I_EFF (I_INC, B, $2)}
+    {I_EFF (I_INC, I8b, $2)}
   | I_INCW  effaddr
-    {I_EFF (I_INC, W, $2)}
+    {I_EFF (I_INC, I16b, $2)}
   | I_INCL  effaddr
-    {I_EFF (I_INC, L, $2)}
+    {I_EFF (I_INC, I32b, $2)}
   | I_INCQ  effaddr
-    {I_EFF (I_INC, Q, $2)}
+    {I_EFF (I_INC, I64b, $2)}
 
   | I_SETNB  effaddr
-    {I_EFF (I_SETNB, NO_SIZE, $2)}
+    {I_EFF (I_SETNB, INSb, $2)}
 
   | I_XCHG  effaddr  COMMA  effaddr
-    {I_EFF_EFF (I_XCHG, NO_SIZE, $2, $4)}
+    {I_EFF_EFF (I_XCHG, INSb, $2, $4)}
   | I_XCHGB  effaddr  COMMA  effaddr
-    {I_EFF_EFF (I_XCHG, B, $2, $4)}
+    {I_EFF_EFF (I_XCHG, I8b, $2, $4)}
   | I_XCHGW  effaddr  COMMA  effaddr
-    {I_EFF_EFF (I_XCHG, W, $2, $4)}
+    {I_EFF_EFF (I_XCHG, I16b, $2, $4)}
   | I_XCHGL  effaddr  COMMA  effaddr
-    {I_EFF_EFF (I_XCHG, L, $2, $4)}
+    {I_EFF_EFF (I_XCHG, I32b, $2, $4)}
   | I_XCHGQ  effaddr  COMMA  effaddr
-    {I_EFF_EFF (I_XCHG, Q, $2, $4)}
+    {I_EFF_EFF (I_XCHG, I64b, $2, $4)}
 
   | I_UXCH  effaddr  COMMA  effaddr
-    {I_EFF_EFF (I_XCHG_UNLOCKED, NO_SIZE, $2, $4)}
+    {I_EFF_EFF (I_XCHG_UNLOCKED, INSb, $2, $4)}
   | I_UXCHB  effaddr  COMMA  effaddr
-    {I_EFF_EFF (I_XCHG_UNLOCKED, B, $2, $4)}
+    {I_EFF_EFF (I_XCHG_UNLOCKED, I8b, $2, $4)}
   | I_UXCHW  effaddr  COMMA  effaddr
-    {I_EFF_EFF (I_XCHG_UNLOCKED, W, $2, $4)}
+    {I_EFF_EFF (I_XCHG_UNLOCKED, I16b, $2, $4)}
   | I_UXCHL  effaddr  COMMA  effaddr
-    {I_EFF_EFF (I_XCHG_UNLOCKED, L, $2, $4)}
+    {I_EFF_EFF (I_XCHG_UNLOCKED, I32b, $2, $4)}
   | I_UXCHQ  effaddr  COMMA  effaddr
-    {I_EFF_EFF (I_XCHG_UNLOCKED, Q, $2, $4)}
+    {I_EFF_EFF (I_XCHG_UNLOCKED, I64b, $2, $4)}
 
   | I_CMPXCHG  effaddr  COMMA  reg
-    {I_CMPXCHG (NO_SIZE, $2, $4)}
+    {I_CMPXCHG (INSb, $2, $4)}
   | I_CMPXCHGB  effaddr  COMMA  reg
-    {I_CMPXCHG (B, $2, $4)}
+    {I_CMPXCHG (I8b, $2, $4)}
   | I_CMPXCHGW  effaddr  COMMA  reg
-    {I_CMPXCHG (W, $2, $4)}
+    {I_CMPXCHG (I16b, $2, $4)}
   | I_CMPXCHGL  effaddr  COMMA  reg
-    {I_CMPXCHG (L, $2, $4)}
+    {I_CMPXCHG (I32b, $2, $4)}
   | I_CMPXCHGQ  effaddr  COMMA  reg
-    {I_CMPXCHG (Q, $2, $4)}
+    {I_CMPXCHG (I64b, $2, $4)}
 
   | I_CMOVC  reg COMMA effaddr
-    {I_CMOVC (NO_SIZE, $2, $4)}
+    {I_CMOVC (INSb, $2, $4)}
   | I_CMOVCB  reg COMMA effaddr
-    {I_CMOVC (B, $2, $4)}
+    {I_CMOVC (I8b, $2, $4)}
   | I_CMOVCW  reg COMMA effaddr
-    {I_CMOVC (W, $2, $4)}
+    {I_CMOVC (I16b, $2, $4)}
   | I_CMOVCL  reg COMMA effaddr
-    {I_CMOVC (L, $2, $4)}
+    {I_CMOVC (I32b, $2, $4)}
   | I_CMOVCQ  reg COMMA effaddr
-    {I_CMOVC (Q, $2, $4)}
+    {I_CMOVC (I64b, $2, $4)}
 
   | I_LOCK semi_opt instr
     {I_LOCK $3 }

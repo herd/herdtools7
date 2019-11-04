@@ -48,10 +48,10 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
       if annot then "*" else ""
 
     let inst_size_to_mach_size = function
-      | B -> MachSize.Byte
-      | W -> MachSize.Short
-      | L | NO_SIZE -> MachSize.Word
-      | Q -> MachSize.Quad
+      | I8b -> MachSize.Byte
+      | I16b -> MachSize.Short
+      | I32b | INSb -> MachSize.Word
+      | I64b -> MachSize.Quad
 
     let mem_access_size = function
       | I_NOP | I_JMP _ | I_JCC _ | I_LOCK _ | I_MFENCE -> None

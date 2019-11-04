@@ -32,10 +32,10 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let size_to_inst_size =
       let open X86_64Base in
       function
-      | Byte -> B
-      | Short -> W
-      | Word -> L
-      | Quad -> Q
+      | Byte -> I8b
+      | Short -> I16b
+      | Word -> I32b
+      | Quad -> I64b
 
     let size_reg_part =
       let open X86_64Base in
@@ -60,10 +60,10 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     open X86_64
 
     let inst_to_reg_size = function
-      | B -> R8bL
-      | W -> R16b
-      | L | NO_SIZE -> R32b
-      | Q -> R64b
+      | I8b -> R8bL
+      | I16b -> R16b
+      | I32b | INSb -> R32b
+      | I64b -> R64b
 
     (******)
     let ppo _f k = k

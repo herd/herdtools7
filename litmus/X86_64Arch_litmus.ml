@@ -25,7 +25,7 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
   let reg_to_string r = match r with
     | RIP -> "%rip"
 (* We always want the 64 bits version of the register because the smaller version are created by GCC*)
-    | Ireg (r, t) -> "%" ^ X86_64Base.reg64_string r
+    | Ireg (r, _) -> "%" ^ X86_64Base.reg64_string r
     | Internal i -> sprintf "i%i" i
     | _ -> assert false
 
@@ -40,7 +40,7 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
         let pp_reg = pp_reg
         let reg_compare = reg_compare
         let reg_to_string = reg_to_string
-        let internal_init r = None
+        let internal_init _ = None
 
         let reg_class r=
           match r with
