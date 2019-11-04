@@ -206,7 +206,7 @@ module Generic (A : Arch_litmus.Base)
             bds in
         eprintf "%s: %s\n" tag (String.concat " " pp)
 
-      let debug = true
+      let debug = false
 
       let build_type_env init final filter flocs =
         let env = type_final final A.LocMap.empty in
@@ -465,7 +465,7 @@ type P.code = MiscParser.proc * A.pseudo list)
     let live_in_code code env live_in_final =
       List.fold_right live_in_ins code (env,live_in_final)
 
-    let debug = true
+    let debug = false
 (* Fixpoint *)
     let comp_fix  code live_in_final =
       if debug then
