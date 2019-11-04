@@ -148,11 +148,11 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
         (Operand_immediate i)
 
     let cmpxchg memo ea r =
-      let ea1, (i,ins1),(_,outs1) = compile_ea_output 0 0 ea in
+      let ea1, (_,ins1),(_,outs1) = compile_ea_output 0 0 ea in
       let ea2, ins2 = compile_reg r, [r] in
       let reg_ax = match r with
         | Ireg (_, t) -> Ireg (AX, t)
-        | _ -> Ireg (AX, L) (* default size EAX *) in
+        | _ -> Ireg (AX, R32b) (* default size EAX *) in
       { empty_ins with
         memo = sprintf "%s %s,%s" memo ea2 ea1;
         inputs = ins1@ins2@[reg_ax] ;
@@ -265,8 +265,8 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
        *)
       r::k
 
-    let branch_neq r i lab k = Warn.fatal "Not implemented"
-    let branch_eq r i lab k = Warn.fatal "Not implemented"
+    let branch_neq _ _ _ _= Warn.fatal "Not implemented"
+    let branch_eq _ _ _ _ = Warn.fatal "Not implemented"
 
     let signaling_write i k = move_addr sig_cell i::k
 

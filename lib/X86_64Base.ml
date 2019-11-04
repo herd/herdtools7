@@ -37,7 +37,7 @@ type base_reg =
    L -> 32b
    Q -> 64b *)
 type reg_part =
-  | B | H | W | L | Q
+  | R8bL | R8bH | R16b | R32b | R64b
 
 type flag =
   | ZF | SF | CF
@@ -57,78 +57,78 @@ let pc = RIP
 let gen_regs =
   [
 (* 64b registers *)
-    (AX, Q), "RAX";
-    (BX, Q), "RBX";
-    (CX, Q), "RCX";
-    (DX, Q), "RDX";
-    (SI, Q), "RSI";
-    (DI, Q), "RDI";
-    (BP, Q), "RBP";
-    (SP, Q), "RSP";
-    (R8, Q), "R8";
-    (R9, Q), "R9";
-    (R10, Q), "R10";
-    (R11, Q), "R11";
-    (R12, Q), "R12";
-    (R13, Q), "R13";
-    (R14, Q), "R14";
-    (R15, Q), "R15";
+    (AX, R64b), "RAX";
+    (BX, R64b), "RBX";
+    (CX, R64b), "RCX";
+    (DX, R64b), "RDX";
+    (SI, R64b), "RSI";
+    (DI, R64b), "RDI";
+    (BP, R64b), "RBP";
+    (SP, R64b), "RSP";
+    (R8, R64b), "R8";
+    (R9, R64b), "R9";
+    (R10, R64b), "R10";
+    (R11, R64b), "R11";
+    (R12, R64b), "R12";
+    (R13, R64b), "R13";
+    (R14, R64b), "R14";
+    (R15, R64b), "R15";
 (* 32b registers *)
-    (AX, L), "EAX";
-    (BX, L), "EBX";
-    (CX, L), "ECX";
-    (DX, L), "EDX";
-    (SI, L), "ESI";
-    (DI, L), "EDI";
-    (BP, L), "EBP";
-    (SP, L), "ESP";
-    (R8, L), "R8D";
-    (R9, L), "R9D";
-    (R10, L), "R10D";
-    (R11, L), "R11D";
-    (R12, L), "R12D";
-    (R13, L), "R13D";
-    (R14, L), "R14D";
-    (R15, L), "R15D";
+    (AX, R32b), "EAX";
+    (BX, R32b), "EBX";
+    (CX, R32b), "ECX";
+    (DX, R32b), "EDX";
+    (SI, R32b), "ESI";
+    (DI, R32b), "EDI";
+    (BP, R32b), "EBP";
+    (SP, R32b), "ESP";
+    (R8, R32b), "R8D";
+    (R9, R32b), "R9D";
+    (R10, R32b), "R10D";
+    (R11, R32b), "R11D";
+    (R12, R32b), "R12D";
+    (R13, R32b), "R13D";
+    (R14, R32b), "R14D";
+    (R15, R32b), "R15D";
 (* 16b registers *)
-    (AX, W), "AX";
-    (BX, W), "BX";
-    (CX, W), "CX";
-    (DX, W), "DX";
-    (SI, W), "SI";
-    (DI, W), "DI";
-    (BP, W), "BP";
-    (SP, W), "SP";
-    (R8, W), "R8W";
-    (R9, W), "R9W";
-    (R10, W), "R10W";
-    (R11, W), "R11W";
-    (R12, W), "R12W";
-    (R13, W), "R13W";
-    (R14, W), "R14W";
-    (R15, W), "R15W";
+    (AX, R16b), "AX";
+    (BX, R16b), "BX";
+    (CX, R16b), "CX";
+    (DX, R16b), "DX";
+    (SI, R16b), "SI";
+    (DI, R16b), "DI";
+    (BP, R16b), "BP";
+    (SP, R16b), "SP";
+    (R8, R16b), "R8W";
+    (R9, R16b), "R9W";
+    (R10, R16b), "R10W";
+    (R11, R16b), "R11W";
+    (R12, R16b), "R12W";
+    (R13, R16b), "R13W";
+    (R14, R16b), "R14W";
+    (R15, R16b), "R15W";
 (* 8 low bits registers *)
-    (AX, B), "AL";
-    (BX, B), "BL";
-    (CX, B), "CL";
-    (DX, B), "DL";
-    (SI, B), "SIL";
-    (DI, B), "DIL";
-    (BP, B), "BPL";
-    (SP, B), "SPL";
-    (R8, B), "R8B";
-    (R9, B), "R9B";
-    (R10, B), "R10B";
-    (R11, B), "R11B";
-    (R12, B), "R12B";
-    (R13, B), "R13B";
-    (R14, B), "R14B";
-    (R15, B), "R15B";
+    (AX, R8bL), "AR32b";
+    (BX, R8bL), "BR32b";
+    (CX, R8bL), "CR32b";
+    (DX, R8bL), "DR32b";
+    (SI, R8bL), "SIR32b";
+    (DI, R8bL), "DIR32b";
+    (BP, R8bL), "BPR32b";
+    (SP, R8bL), "SPR32b";
+    (R8, R8bL), "R8B";
+    (R9, R8bL), "R9B";
+    (R10, R8bL), "R10B";
+    (R11, R8bL), "R11B";
+    (R12, R8bL), "R12B";
+    (R13, R8bL), "R13B";
+    (R14, R8bL), "R14B";
+    (R15, R8bL), "R15B";
 (* 8 high bits registers *)
-    (AX, H), "AH";
-    (BX, H), "BH";
-    (CX, H), "CH";
-    (DX, H), "DH";
+    (AX, R8bH), "AH";
+    (BX, R8bH), "BH";
+    (CX, R8bH), "CH";
+    (DX, R8bH), "DH";
   ]
 
 let flag_string =
@@ -140,19 +140,18 @@ let flag_string =
 
 (* Match reg size with its nae in GCC asm inline *)
 let reg_size_to_string = function
-  | B -> "b"
-  | H -> "h"
-  | W -> "w"
-  | L -> "k"
-  | Q -> "q"
+  | R8bL -> "b"
+  | R8bH -> "h"
+  | R16b -> "w"
+  | R32b -> "k"
+  | R64b -> "q"
 
 let parse_list = List.map (fun ((r, t),s) -> s, Ireg (r, t)) gen_regs
 let regs = List.map (fun ((r, t),s) -> Ireg (r, t), s) gen_regs
 
 let reg_string r t =
   String.lowercase_ascii (List.assoc (Ireg (r, t)) regs)
-let reg64_string r =
-  reg_string r Q
+let reg64_string r = reg_string r R64b
 
 let parse_reg s =
   try Some (List.assoc (String.uppercase_ascii s) parse_list)
@@ -161,11 +160,11 @@ let parse_reg s =
 let pp_reg r = match r with
   | Symbolic_reg r -> "%"^r
   | Internal i -> sprintf "i%i" i
-  | Flag f -> (try List.assoc r flag_string with Not_found -> assert false)
+  | Flag _ -> (try List.assoc r flag_string with Not_found -> assert false)
   | _ -> try List.assoc r regs with Not_found -> assert false
 
 let reg_compare r1 r2 = match r1, r2 with
-  | Ireg (b1, t1), Ireg (b2, t2) -> compare b1 b2
+  | Ireg (b1, _), Ireg (b2, _) -> compare b1 b2
   | _ -> compare r1 r2
 
 let symb_reg_name = function
@@ -175,22 +174,22 @@ let symb_reg_name = function
 let symb_reg r = Symbolic_reg r
 
 let reg_size_to_uint = function
-  | B | H -> "uint8_t"
-  | W -> "uint16_t"
-  | L -> "uint32_t"
-  | Q -> "uint64_t"
+  | R8bL | R8bH -> "uint8_t"
+  | R16b -> "uint16_t"
+  | R32b -> "uint32_t"
+  | R64b -> "uint64_t"
 
 let typeof = function
   | Ireg (_, t) -> CType.Base (reg_size_to_uint t)
   | _ -> CType.Base "int"
 
 let change_size_reg r sz = match r with
-  | Ireg (b, t) -> Ireg (b, sz)
+  | Ireg (b, _) -> Ireg (b, sz)
   | _ -> r
 
 let get_reg_size = function
-  | Ireg (b, t) -> t
-  | _ -> Q
+  | Ireg (_, t) -> t
+  | _ -> R64b
 
 (************)
 (* Barriers *)
@@ -375,7 +374,7 @@ let rec do_pp_instruction (m : mm) =
            | I_EFF_EFF(inst, s, ea1, ea2) -> ppi_ea_ea inst s ea1 ea2
            | I_CMPXCHG (s, ea, r) -> ppi_ea_r "CMPXCHG" s ea r
            | I_CMOVC (s, r, ea) ->  ppi_r_ea "CMOVC" s r ea
-           | I_LOCK inst -> "LOCK; " ^ do_pp_instruction m i
+           | I_LOCK inst -> "LOCK; " ^ do_pp_instruction m inst
            | I_JMP(lbl) -> ppi_lbl "JMP" lbl
            | I_JCC(cond, lbl) -> ppi_lbl ("J" ^ pp_condition cond) lbl
            | I_MFENCE  -> "MFENCE"
@@ -395,13 +394,13 @@ let dump_instruction =
 (****************************)
 
 let reg_size_p size = function
-  | Ireg (r,t) -> t = size
+  | Ireg (_,t) -> t = size
   | _ -> false
 
 let allowed_for_symb_size size = List.filter (reg_size_p size)
-                         (List.map (fun ((r, t),s) -> Ireg (r, t)) gen_regs)
+                         (List.map (fun ((r, t),_) -> Ireg (r, t)) gen_regs)
 
-let allowed_for_symb = allowed_for_symb_size Q
+let allowed_for_symb = allowed_for_symb_size R64b
 
 let rec fold_regs (f_reg,f_sreg) =
 

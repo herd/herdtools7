@@ -46,11 +46,11 @@ module Make (C:Sem.Config)(V : Value.S)
 
       let inst_size_to_mach_size = X86_64.inst_size_to_mach_size
 
-      let reg_size_to_mach_size (sz : X86_64.reg_part) = match sz with
-        | X86_64.B | X86_64.H -> MachSize.Byte
-        | X86_64.W -> MachSize.Short
-        | X86_64.L -> MachSize.Word
-        | X86_64.Q -> MachSize.Quad
+      let reg_size_to_mach_size sz = match sz with
+        | X86_64.R8bL | X86_64.R8bH -> MachSize.Byte
+        | X86_64.R16b -> MachSize.Short
+        | X86_64.R32b -> MachSize.Word
+        | X86_64.R64b -> MachSize.Quad
       let mk_read sz ato loc v = Act.Access (Dir.R, loc, v, ato, sz)
 
       let read_loc sz is_d = M.read_loc is_d (mk_read sz false)
@@ -59,12 +59,12 @@ module Make (C:Sem.Config)(V : Value.S)
 
       let read_reg is_data r ii =
         let mask_from_reg_part = function
-          | X86_64.H -> fun w -> M.op1 (Op.LogicalRightShift 8) w >>=
-                                   fun v -> M.op1 (Op.Mask MachSize.Byte) v
-          | X86_64.B -> fun v -> M.op1 (Op.Mask MachSize.Byte) v
-          | X86_64.W -> fun v -> M.op1 (Op.Mask MachSize.Short) v
-          | X86_64.L -> fun v -> M.op1 (Op.Mask MachSize.Word) v
-          | X86_64.Q -> fun v -> M.op1 (Op.Mask MachSize.Quad) v
+          | X86_64.R8bH -> fun w -> M.op1 (Op.LogicalRightShift 8) w >>=
+                                      fun v -> M.op1 (Op.Mask MachSize.Byte) v
+          | X86_64.R8bL -> fun v -> M.op1 (Op.Mask MachSize.Byte) v
+          | X86_64.R16b -> fun v -> M.op1 (Op.Mask MachSize.Short) v
+          | X86_64.R32b -> fun v -> M.op1 (Op.Mask MachSize.Word) v
+          | X86_64.R64b -> fun v -> M.op1 (Op.Mask MachSize.Quad) v
         in
         if not is_data then
           match r with
@@ -105,14 +105,14 @@ module Make (C:Sem.Config)(V : Value.S)
           fun v -> M.op1 (Op.LogicalRightShift nb_bit) v >>=
                      fun v -> M.op1 (Op.LeftShift nb_bit) v in
         let mask_from_reg_part = function
-          | X86_64.H -> fun v -> M.op1 (Op.LogicalRightShift 16) v >>=
+          | X86_64.R8bH -> fun v -> M.op1 (Op.LogicalRightShift 16) v >>=
                                    fun w -> M.op1 (Op.LeftShift 16) w >>=
                                    fun x -> M.op1 (Op.Mask MachSize.Byte) v >>=
                                    fun y -> M.op Op.Or x y
-          | X86_64.B -> zero_right_bits 8
-          | X86_64.W -> zero_right_bits 16
-          | X86_64.L -> fun _ -> M.unitT v (* Put register to 0 because 32-bit operands generate a 32-bit result, zero-extended to a 64-bit result in the destination general-purpose register (cf intel manual)*)
-          | X86_64.Q -> fun _ -> M.unitT v
+          | X86_64.R8bL -> zero_right_bits 8
+          | X86_64.R16b -> zero_right_bits 16
+          | X86_64.R32b -> fun _ -> M.unitT v (* Put register to 0 because 32-bit operands generate a 32-bit result, zero-extended to a 64-bit result in the destination general-purpose register (cf intel manual)*)
+          | X86_64.R64b -> fun _ -> M.unitT v
         in
         match r with
         | X86_64.Ireg (_, p) ->

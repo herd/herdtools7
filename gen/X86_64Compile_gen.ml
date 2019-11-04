@@ -40,10 +40,10 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let size_reg_part =
       let open X86_64Base in
       match mach_size with
-      | Byte -> (B : reg_part)
-      | Short -> W
-      | Word -> L
-      | Quad -> Q
+      | Byte -> R8bL
+      | Short -> R16b
+      | Word -> R32b
+      | Quad -> R64b
 
     let size = size_to_inst_size mach_size
 
@@ -60,10 +60,10 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     open X86_64
 
     let inst_to_reg_size = function
-      | B -> (B : reg_part)
-      | W -> W
-      | L | NO_SIZE -> L
-      | Q -> Q
+      | B -> R8bL
+      | W -> R16b
+      | L | NO_SIZE -> R32b
+      | Q -> R64b
 
     (******)
     let ppo _f k = k
@@ -108,7 +108,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 
     let pseudo = List.map (fun i -> X86_64.Instruction i)
 
-    let emit_store_ins sz o rB v =
+    let emit_store_ins sz _ rB v =
       I_EFF_OP (I_MOV, sz,
                 Effaddr_rm64 rB,
                 Operand_immediate v)
@@ -118,7 +118,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       let rB,init,st =
         if o <> 0 then
           let r,i,s = U.next_init st p init addr in
-          let r = change_size_reg r Q in
+          let r = change_size_reg r R64b in
           Rm64_deref (r,o),i,s
         else
           Rm64_abs (ParsedConstant.nameToV addr),init,st in
@@ -160,7 +160,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     and emit_jne_ins lab =
       I_JCC (C_NE,lab)
 
-    let emit_load_ins sz o rm r =
+    let emit_load_ins sz _ rm r =
       let r = change_size_reg r (inst_to_reg_size (size_to_inst_size sz)) in
       I_EFF_OP
         (I_MOV, size_to_inst_size  sz,
@@ -172,7 +172,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       let rB,init,st =
         if o <> 0 then
           let r,i,s = U.next_init st p init x in
-          let r = change_size_reg r Q in
+          let r = change_size_reg r R64b in
           Rm64_deref (r,o),i,s
         else
           Rm64_abs (ParsedConstant.nameToV x),init,st in
