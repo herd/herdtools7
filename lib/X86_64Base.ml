@@ -108,14 +108,14 @@ let gen_regs =
     (R14, R16b), "R14W";
     (R15, R16b), "R15W";
 (* 8 low bits registers *)
-    (AX, R8bL), "AR32b";
-    (BX, R8bL), "BR32b";
-    (CX, R8bL), "CR32b";
-    (DX, R8bL), "DR32b";
-    (SI, R8bL), "SIR32b";
-    (DI, R8bL), "DIR32b";
-    (BP, R8bL), "BPR32b";
-    (SP, R8bL), "SPR32b";
+    (AX, R8bL), "AL";
+    (BX, R8bL), "BL";
+    (CX, R8bL), "CL";
+    (DX, R8bL), "DL";
+    (SI, R8bL), "SIL";
+    (DI, R8bL), "DIL";
+    (BP, R8bL), "BPL";
+    (SP, R8bL), "SPL";
     (R8, R8bL), "R8B";
     (R9, R8bL), "R9B";
     (R10, R8bL), "R10B";
