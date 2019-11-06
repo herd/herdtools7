@@ -1,5 +1,4 @@
-(****************************************************************************)
-(*                           the diy toolsuite                              *)
+(****************************************************************************)(*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
@@ -100,8 +99,10 @@ module Make(Cst:Constant.S) = struct
   | Var _ -> raise  Undetermined
 
   let unop op_op op v1 = match v1 with
-  | Val (Concrete i1) -> Val (Concrete (op i1))
+    | Val (Concrete i1 as x) -> Printf.printf "Je suis valide : %s on %s\n" (Op.pp_op1 true op_op) (Cst.pp true x);
+                             Val (Concrete (op i1))
   | Val (Symbolic _|Label _|Tag _ as x) ->
+     Printf.printf "This is a test\n";
       Warn.user_error "Illegal operation %s on %s"
         (Op.pp_op1 true op_op) (Cst.pp_v x)
   | Var _ -> raise Undetermined
@@ -204,6 +205,13 @@ module Make(Cst:Constant.S) = struct
   open Op
 
   let mask_one k = Scalar.shift_left Scalar.one k
+  let mask_many nbBits k =
+    let rec pow a = function (* Why Ocaml hasn't pow function in it's standard library ??? *)
+      | 0 -> 1 | 1 -> a
+      | n ->
+         let b = pow a (n / 2) in
+         b * b * (if n mod 2 = 0 then 1 else a) in
+    Scalar.shift_left (Scalar.of_int ((pow 2 nbBits) - 1)) k
 
 (* Ops on tagged locations *)
   let settag v1 v2 = match v1,v2 with
@@ -269,6 +277,9 @@ module Make(Cst:Constant.S) = struct
   | TagLoc -> tagloc
   | TagExtract -> tagextract
   | LocExtract -> locextract
+  | UnSetXBits (nb, k) ->
+      unop op
+        (fun s -> logand (lognot (mask_many nb k)) s)
 
   let op op = match op with
   | Add -> add

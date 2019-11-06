@@ -72,6 +72,7 @@ type op1 =
   | TagLoc       (* Get tag memory location from location *)
   | TagExtract   (* Extract tag from tagged location *)
   | LocExtract   (* Extract actual location from location *)
+  | UnSetXBits of int * int (* Unset x bits to the left from y*)
 
 let pp_op1 hexa o = match o with
 | Not -> "!"
@@ -86,6 +87,7 @@ let pp_op1 hexa o = match o with
 | TagLoc ->  "tagloc"
 | TagExtract -> "tagextract"
 | LocExtract -> "locextract"
+| UnSetXBits (nbBits, from) -> sprintf "unset %i bits to the left from %ith bit" nbBits from
 (***********)
 
 type op3 = If
