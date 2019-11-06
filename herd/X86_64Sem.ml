@@ -51,22 +51,37 @@ module Make (C:Sem.Config)(V : Value.S)
         | X86_64.R16b -> MachSize.Short
         | X86_64.R32b -> MachSize.Word
         | X86_64.R64b -> MachSize.Quad
+
       let mk_read sz ato loc v = Act.Access (Dir.R, loc, v, ato, sz)
 
       let read_loc sz is_d = M.read_loc is_d (mk_read sz false)
 
       let mk_read_choose_atomic sz loc = mk_read sz (is_global loc) loc
 
+      let mask_from_reg_part = function
+        | X86_64.R8bH -> Printf.printf "8H\n";fun w -> M.op1 (Op.LogicalRightShift 8) w >>=
+                                                         fun v -> M.op1 (Op.UnSetXBits (56, 8)) v
+        | X86_64.R8bL -> Printf.printf "8L\n"; fun v -> M.op1 (Op.UnSetXBits (56, 8)) v
+        | X86_64.R16b -> Printf.printf "16\n"; fun v -> M.op1 (Op.UnSetXBits (48, 16)) v
+        | X86_64.R32b -> Printf.printf "32\n"; fun v -> M.op1 (Op.UnSetXBits (32, 32)) v
+        | X86_64.R64b -> Printf.printf "64\n"; fun v -> M.op1 (Op.UnSetXBits (0, 0)) v
+
+      let inst_size_to_reg_size = function
+        | X86_64.I8b  -> X86_64.R8bL
+        | X86_64.I16b -> X86_64.R16b
+        | X86_64.I32b -> X86_64.R32b
+        | X86_64.I64b |X86_64.INSb -> X86_64.R64b
+
+      let get_inst_size inst =
+        let open X86_64 in
+           match inst with
+           | I_NOP | I_MFENCE | I_LOCK _ | I_JMP _ | I_JCC _ -> INSb
+           | I_EFF_OP (_, sz, _, _) | I_EFF (_, sz, _) | I_EFF_EFF (_, sz, _, _)
+             | I_CMPXCHG (sz, _, _) | I_CMOVC (sz, _, _) -> sz
+
       let read_reg is_data r ii =
-        let mask_from_reg_part = function
-          | X86_64.R8bH -> fun w -> M.op1 (Op.LogicalRightShift 8) w >>=
-                                      fun v -> M.op1 (Op.Mask MachSize.Byte) v
-          | X86_64.R8bL -> fun v -> M.op1 (Op.Mask MachSize.Byte) v
-          | X86_64.R16b -> fun v -> M.op1 (Op.Mask MachSize.Short) v
-          | X86_64.R32b -> fun v -> M.op1 (Op.Mask MachSize.Word) v
-          | X86_64.R64b -> fun v -> M.op1 (Op.Mask MachSize.Quad) v
-        in
-        if not is_data then
+        Printf.printf "READ_REG\n";
+        if is_data then
           match r with
           | X86_64.Ireg (_, p) ->
              let sz = reg_size_to_mach_size p in
@@ -86,10 +101,14 @@ module Make (C:Sem.Config)(V : Value.S)
 
       let read_loc_atomic sz is_d = M.read_loc is_d (mk_read_choose_atomic sz)
 
-      let read_loc_gen sz data locked loc ii = match loc with
+      let read_loc_gen sz data locked loc ii = begin
+        match loc with
         | A.Location_global l -> read_mem sz data locked l ii
         | A.Location_reg (_, reg) -> read_reg data reg ii
         | _ -> M.read_loc data (mk_read sz false) loc ii
+        end >>= mask_from_reg_part (if data
+                                    then (inst_size_to_reg_size (get_inst_size ii.X86_64.inst))
+                                    else X86_64.R64b)
 
       let mk_write sz an loc v = Act.Access (Dir.W, loc, v, an, sz)
 
@@ -101,24 +120,29 @@ module Make (C:Sem.Config)(V : Value.S)
         else write_loc sz an (A.Location_global a) v ii
 
       let write_reg r v ii =
-        let zero_right_bits nb_bit =
-          fun v -> M.op1 (Op.LogicalRightShift nb_bit) v >>=
-                     fun v -> M.op1 (Op.LeftShift nb_bit) v in
-        let mask_from_reg_part = function
-          | X86_64.R8bH -> fun v -> M.op1 (Op.LogicalRightShift 16) v >>=
-                                   fun w -> M.op1 (Op.LeftShift 16) w >>=
-                                   fun x -> M.op1 (Op.Mask MachSize.Byte) v >>=
-                                   fun y -> M.op Op.Or x y
-          | X86_64.R8bL -> zero_right_bits 8
-          | X86_64.R16b -> zero_right_bits 16
-          | X86_64.R32b -> fun _ -> M.unitT v (* Put register to 0 because 32-bit operands generate a 32-bit result, zero-extended to a 64-bit result in the destination general-purpose register (cf intel manual)*)
-          | X86_64.R64b -> fun _ -> M.unitT v
+        (* Spec from intel manual :
+           - 64-bit operands generate a 64-bit result in the destination
+             general-purpose register.
+           - 32-bit operands generate a 32-bit result, zero-extended to a 64-bit
+             result in the destination general-purpose register.
+           - 8-bit and 16-bit operands generate an 8-bit or 16-bit result.
+             The upper 56 bits or 48 bits (respectively) of the destination
+             general-purpose register are not be modified by the operation.
+         *)
+        let normalize_register_and_value = function
+          | X86_64.R8bH -> fun a -> M.op1 (Op.UnSetXBits (8, 8)) a
+          | X86_64.R8bL -> fun a -> M.op1 (Op.UnSetXBits (8, 0)) a
+          | X86_64.R16b -> fun a -> M.op1 (Op.UnSetXBits (16, 0)) a
+          | X86_64.R32b -> fun a -> M.op1 (Op.UnSetXBits (64, 0)) a
+          | X86_64.R64b -> fun a -> M.op1 (Op.UnSetXBits (64, 0)) a
         in
         match r with
         | X86_64.Ireg (_, p) ->
            let sz = reg_size_to_mach_size p in
-           read_loc sz false (A.Location_reg (ii.A.proc,r)) ii >>=
-             mask_from_reg_part p >>= fun b -> M.op Op.Or b v >>=
+           read_reg false r ii >>=
+             normalize_register_and_value p >>=
+             fun nr -> M.op1 (Op.LeftShift (if p = X86_64.R8bH then 8 else 0)) v >>=
+             fun nv -> M.op Op.Or nr nv >>=
              fun w -> write_loc sz false (A.Location_reg (ii.A.proc,r)) w ii
         | _ -> write_loc nat_sz false (A.Location_reg (ii.A.proc,r)) v ii
 
@@ -150,7 +174,7 @@ module Make (C:Sem.Config)(V : Value.S)
         | X86_64.Effaddr_rm64 (X86_64.Rm64_abs v)->
            M.unitT (X86_64.maybev_to_location v)
 
-      let rval_ea sz locked ea ii = lval_ea ea ii >>= fun loc -> read_loc_gen sz false locked loc ii
+      let rval_ea sz locked ea ii = lval_ea ea ii >>= fun loc -> read_loc_gen sz true locked loc ii
 
       let rval_op sz locked op ii = match op with
         | X86_64.Operand_effaddr ea  -> rval_ea sz locked ea ii
