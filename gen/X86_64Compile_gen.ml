@@ -221,7 +221,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let emit_access st _p init e = match e.C.dir with
       | None -> Warn.fatal "TODO"
       | Some d ->
-         begin match e.loc with
+         begin match e.C.loc with
          | Data loc ->
             begin match d with
             | R ->
