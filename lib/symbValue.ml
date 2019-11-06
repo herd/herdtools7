@@ -101,6 +101,7 @@ module Make(Cst:Constant.S) = struct
   let unop op_op op v1 = match v1 with
     | Val (Concrete i1) -> Val (Concrete (op i1))
   | Val (Symbolic _|Label _|Tag _ as x) ->
+     Printf.printf "This is a test\n";
       Warn.user_error "Illegal operation %s on %s"
         (Op.pp_op1 true op_op) (Cst.pp_v x)
   | Var _ -> raise Undetermined
