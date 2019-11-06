@@ -59,12 +59,12 @@ module Make (C:Sem.Config)(V : Value.S)
       let mk_read_choose_atomic sz loc = mk_read sz (is_global loc) loc
 
       let mask_from_reg_part = function
-        | X86_64.R8bH -> Printf.printf "8H\n";fun w -> M.op1 (Op.LogicalRightShift 8) w >>=
-                                                         fun v -> M.op1 (Op.UnSetXBits (56, 8)) v
-        | X86_64.R8bL -> Printf.printf "8L\n"; fun v -> M.op1 (Op.UnSetXBits (56, 8)) v
-        | X86_64.R16b -> Printf.printf "16\n"; fun v -> M.op1 (Op.UnSetXBits (48, 16)) v
-        | X86_64.R32b -> Printf.printf "32\n"; fun v -> M.op1 (Op.UnSetXBits (32, 32)) v
-        | X86_64.R64b -> Printf.printf "64\n"; fun v -> M.op1 (Op.UnSetXBits (0, 0)) v
+        | X86_64.R8bH -> fun w -> M.op1 (Op.LogicalRightShift 8) w >>=
+                                    fun v -> M.op1 (Op.UnSetXBits (56, 8)) v
+        | X86_64.R8bL -> fun v -> M.op1 (Op.UnSetXBits (56, 8)) v
+        | X86_64.R16b -> fun v -> M.op1 (Op.UnSetXBits (48, 16)) v
+        | X86_64.R32b -> fun v -> M.op1 (Op.UnSetXBits (32, 32)) v
+        | X86_64.R64b -> fun v -> M.op1 (Op.UnSetXBits (0, 0)) v
 
       let inst_size_to_reg_size = function
         | X86_64.I8b  -> X86_64.R8bL
@@ -80,7 +80,6 @@ module Make (C:Sem.Config)(V : Value.S)
              | I_CMPXCHG (sz, _, _) | I_CMOVC (sz, _, _) -> sz
 
       let read_reg is_data r ii =
-        Printf.printf "READ_REG\n";
         if is_data then
           match r with
           | X86_64.Ireg (_, p) ->
