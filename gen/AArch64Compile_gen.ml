@@ -756,7 +756,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,Some (Plain,Some (sz,o)) ->
             let r,init,cs,st = emit_load_mixed sz o st p init loc in
             Some r,init,cs,st
-        | R,Some (Tag,Some (sz,o)) ->
+        | R,Some (Tag,None) ->
             let r,init,cs,st = LDG.emit_load st p init loc  in
             Some r,init,cs,st
         | W,None ->
@@ -790,11 +790,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 end) in
             let init,cs,st = S.emit_store st p init loc e.v in
             None,init,cs,st
-        | W,Some (Tag,Some (sz,o)) ->
+        | W,Some (Tag,None) ->
             let init,cs,st = STG.emit_store st p init loc e.v in
             None,init,cs,st
         | _,Some (Plain,None) -> assert false
-        | _,Some (Tag,None) -> assert false
+        | _,Some (Tag,_) -> assert false
         | J,_ -> emit_joker st init
         end
 
@@ -979,9 +979,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | R,Some (Atomic rw,Some (sz,o)) ->
               let r,init,cs,st = emit_lda_mixed_idx sz o rw st p init loc r2 in
               Some r,init, Instruction c::cs,st
-          | R,Some (Tag,(Some (sz,o))) ->
+          | R,Some (Tag,None) ->
               let r,init,cs,st = LDG.emit_load_idx st p init loc r2 in
               Some r,init, Instruction c::cs,st
+          | R,Some (Tag,Some _) -> assert false
           | W,None ->
               let init,cs,st = STR.emit_store_idx st p init loc r2 e.v in
               None,init,Instruction c::cs,st
@@ -1040,12 +1041,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let rA,init,cs_mov,st = U.emit_mov_sz sz st p init e.v in
               let init,cs,st = S.emit_store_idx_reg st p init loc r2 rA in
               None,init,Instruction c::cs_mov@cs,st
-          | W,Some (Tag, Some (sz,o)) ->
+          | W,Some (Tag, None) ->
               let init,cs,st = STG.emit_store_idx st p init loc r2 e.v in
               None,init,Instruction c::cs,st
+          | W,Some (Tag,Some _) -> assert false
           | J,_ -> emit_joker st init
           | _,Some (Plain,None) -> assert false
-          | _,Some (Tag,None) -> assert false
           end
       | _,Code _ -> Warn.fatal "No dependency to code location"
 
@@ -1125,11 +1126,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = S.emit_store_reg st p init loc r2 in
               None,init,cs2@cs,st
-          | Some (Tag, Some (sz,o)) ->
+          | Some (Tag, None) ->
               let init,cs,st = STG.emit_store_reg st p init loc r2 in
               None,init,cs2@cs,st
           | Some (Plain,None) -> assert false
-          | Some (Tag,None) -> assert false
+          | Some (Tag,Some _) -> assert false
           end
       | Some J,_ -> emit_joker st init
       | _,Code _ -> Warn.fatal "Not Yet (%s,dep_data)" (C.debug_evt e)

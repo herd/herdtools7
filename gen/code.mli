@@ -33,7 +33,7 @@ val myok : int -> int -> loc
 
 
 type v = int
-type proc = int
+type proc = Proc.t
 val pp_proc : proc -> string
 
 (* Direction of event *)

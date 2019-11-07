@@ -57,8 +57,8 @@ let ok = Data ok_str
 let myok p n = Data (Printf.sprintf "ok%i%i" p n)
 
 type v = int
-type proc = int
-let pp_proc p = Printf.sprintf "P%i" p
+type proc = Proc.t
+let pp_proc p = Proc.pp p
 
 (* Direction of event *)
 type dir = W | R | J

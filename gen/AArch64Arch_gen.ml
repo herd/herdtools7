@@ -28,7 +28,9 @@ module Make
       val fullmixed : bool
       val variant : Variant_gen.t -> bool
     end) = struct
+
 let do_self = C.variant Variant_gen.Self
+let do_tag = C.variant Variant_gen.MemTag
 open Code
 open Printf
 
@@ -104,8 +106,12 @@ let applies_atom (a,_) d = match a,d with
 
    let fold_atom_rw f r = f PP (f PL (f AP (f AL r)))
 
+   let fold_tag =
+     if do_tag then fun f r -> f Tag r
+     else fun _f r -> r
+
    let fold_acc f r =
-     f Tag (f Acq (f AcqPc (f Rel (fold_atom_rw (fun rw -> f (Atomic rw)) r))))
+     fold_tag f (f Acq (f AcqPc (f Rel (fold_atom_rw (fun rw -> f (Atomic rw)) r))))
 
    let fold_non_mixed f r = fold_acc (fun acc r -> f (acc,None) r) r
 
