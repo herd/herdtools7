@@ -37,13 +37,15 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       | Word -> I32b
       | Quad -> I64b
 
-    let size_reg_part =
+    let size_to_reg_size =
       let open X86_64Base in
-      match mach_size with
+      function
       | Byte -> R8bL
       | Short -> R16b
       | Word -> R32b
       | Quad -> R64b
+
+    let size_reg_part = size_to_reg_size mach_size
 
     let size = size_to_inst_size mach_size
 
@@ -113,8 +115,13 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
                 Effaddr_rm64 rB,
                 Operand_immediate v)
 
+    let emit_store_ins_reg sz _ rB rC =
+      I_EFF_OP (I_MOV, sz,
+                Effaddr_rm64 rB,
+                Operand_effaddr (Effaddr_rm64 (Rm64_reg rC)))
+
     let emit_store_mixed sz o st p init addr v =
-      let sz = size_to_inst_size sz in
+      let isz = size_to_inst_size sz in
       let rB,init,st =
         if o <> 0 then
           let r,i,s = U.next_init st p init addr in
@@ -122,7 +129,13 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
           Rm64_deref (r,o),i,s
         else
           Rm64_abs (ParsedConstant.nameToV addr),init,st in
-      init,pseudo [emit_store_ins sz o rB v],st
+      let r_opt,init,st = U.emit_const st p init v in
+      match r_opt with
+      | None ->
+          init,pseudo [emit_store_ins isz o rB v],st
+      | Some rC ->
+          let rC = change_size_reg rC (size_to_reg_size sz) in
+          init,pseudo [emit_store_ins_reg isz o rB rC],st
 
     let emit_store st p init addr v =
       emit_store_mixed mach_size 0 st p init addr v
@@ -286,7 +299,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
             k),
       next_label_st st
 
-    let check_load  p r e init st = 
+    let check_load  p r e init st =
       let cs,st = do_check_load p st r e in
       init,cs,st
 
