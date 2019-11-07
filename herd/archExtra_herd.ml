@@ -43,7 +43,7 @@ module type S = sig
   module VSet : MySet.S with type elt = v
   module VMap : MyMap.S with type key = v
 
-  type proc = int
+  type proc = Proc.t
   val pp_proc : proc -> string
 
   type program_order_index = int
@@ -200,9 +200,9 @@ module Make(C:Config) (I:I) : S with module I = I
 
       type global_loc = v
 
-      type proc = int
+      type proc = Proc.t
 
-      let pp_proc = string_of_int
+      let pp_proc = Proc.dump
 
       type program_order_index = int
       let pp_prog_order_index = string_of_int

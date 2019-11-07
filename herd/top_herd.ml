@@ -220,7 +220,7 @@ module Make(O:Config)(M:XXXMem.S) =
 (* Called by model simulator in case of success *)
     let model_kont ochan test cstr =
       let check = check_prop test in
-      fun conc fsc vbpp flags c ->
+      fun conc fsc (set_pp,vbpp) flags c ->
         if do_observed && not (all_observed test conc) then c
         else if
           match O.throughflag with
@@ -290,7 +290,8 @@ module Make(O:Config)(M:XXXMem.S) =
                       pp_flag
                 end in
               let module PP = Pretty.Make(S) in
-              PP.dump_legend chan test legend conc (Lazy.force vbpp)
+              PP.dump_legend chan test legend conc
+                ~sets:(Lazy.force set_pp) (Lazy.force vbpp)
           | _ -> ()
           end ;
           let fsc =

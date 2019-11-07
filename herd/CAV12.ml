@@ -505,7 +505,8 @@ module Make
                       vb_pp ;
                     res
                 end else begin           
-                  kont conc conc.S.fs vb_pp Flag.Set.empty res
+                  kont conc conc.S.fs
+                    (lazy StringMap.empty,vb_pp) Flag.Set.empty res
                 end
           end in
         U.apply_process_co test conc process_co res

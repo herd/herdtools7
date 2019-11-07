@@ -156,6 +156,10 @@ end = struct
     | TagAccess _ -> true
     | Access _ | Barrier _ | Commit _ | Amo _ | Fault _ -> false
 
+  let is_fault = function
+    | Fault _ -> true
+    | TagAccess _|Access _|Amo _|Commit _|Barrier _ -> false
+
   let get_mem_dir a = match a with
   | TagAccess (d,A.Location_global _,_)
   | Access (d,A.Location_global _,_,_,_) -> d
@@ -259,7 +263,7 @@ end = struct
           | _ -> false
           in tag,p) A.annot_sets
     in
-    ("T",is_tag) :: bsets @ asets
+    ("T",is_tag)::("FAULT",is_fault):: bsets @ asets
 
   let arch_fences = []
 

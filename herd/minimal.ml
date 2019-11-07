@@ -142,7 +142,7 @@ module Make (O:Cfg) (S:Sem.Semantics)
           not uniproc ||
           check_uniproc test conc pr fr ws
         then
-	  kont conc conc.S.fs pp_relns Flag.Set.empty res
+	  kont conc conc.S.fs (lazy StringMap.empty,pp_relns) Flag.Set.empty res
         else res in
       U.apply_process_co test conc proc_ws res
   end

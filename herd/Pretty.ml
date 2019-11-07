@@ -39,7 +39,7 @@ module type S = sig
 
   val dump_legend :
       out_channel ->S.test -> string ->
-        S.concrete -> S.rel_pp -> unit
+        S.concrete -> ?sets : S.set_pp -> S.rel_pp -> unit
 
 (* Simpler function, just to dump event structures with and without rfmaps *)
   val dump_es :
@@ -53,7 +53,9 @@ module type S = sig
 
   val show_es_rfm : test -> event_structure -> rfmap -> unit
 
-  val show_legend : S.test -> string -> S.concrete -> S.rel_pp -> unit
+  val show_legend :
+      S.test -> string -> S.concrete ->
+        ?sets : S.set_pp -> S.rel_pp -> unit
 
 end
 
@@ -65,8 +67,8 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
   module PC = S.O.PC
 
   let dbg = false
-(* One init *)
 
+(* One init *)
   let one_init = match PC.graph with
   | Graph.Columns -> PC.oneinit
   | Graph.Free|Graph.Cluster -> false
@@ -825,8 +827,29 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
 
  *)
 
-  let do_pp_dot_event_structure chan _test legend es rfmap vbss mark =
-
+  let do_pp_dot_event_structure chan _test legend es rfmap sets vbss mark =
+    if dbg then begin
+      prerr_endline "SETS:" ;
+      StringMap.iter
+        (fun tag evts -> eprintf "%s: %a\n" tag debug_event_set evts)
+        sets
+    end ;
+    let stes =
+      StringMap.fold
+        (fun tag es m ->
+          E.EventSet.fold
+            (fun e m ->
+              let tags = S.E.EventMap.safe_find StringSet.empty e m in
+              S.E.EventMap.add e (StringSet.add tag tags) m)
+            es m)
+        sets S.E.EventMap.empty in
+    let stes =
+      S.E.EventMap.map
+        (fun tags ->
+          StringSet.map
+            (fun tag -> (get_ea Misc.identity tag).color)
+            tags)
+        stes in
     let vbss =
       List.filter (fun (tag,_) -> not (StringSet.mem tag PC.unshow)) vbss in
     let pl = fprintf chan "%s\n"
@@ -1066,9 +1089,18 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
               fprintf chan "eiidinit [label=\"%s\""
                 (escape_label dm acts) ;
               acts in
-        pp_attr chan "shape" (if PC.verbose > 2 then "box" else "none") ;
-        pp_fontsize chan ;
-        if PC.verbose > 2 then pp_attr chan "color" color ;
+        let cl =
+          try
+            let cl = StringSet.choose (S.E.EventMap.find e stes) in
+            Some cl
+          with Not_found -> None in
+        let is_shape,color =
+          (PC.verbose > 2 || cl <> None),
+          (match cl with| None -> color | Some cl -> cl) in
+        pp_attr chan "shape"
+          (if is_shape then "box" else "none") ;
+        pp_fontsize chan ;       
+        if is_shape then pp_attr chan "color" color ;
         pp_event_position chan e ;
         pp_attr chan "fixedsize" (if PC.fixedsize then "true" else "false") ;
         pp_attr chan "height"
@@ -1450,20 +1482,20 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
       | S.Final _,S.Init -> k)
       rfm S.RFMap.empty
 
-  let pp_dot_event_structure chan
-      test
-      legend es rfmap vbss _conc =
+  let pp_dot_event_structure chan test legend es rfmap sets vbss _conc =
 
     let obs =
       if PC.showobserved then
         PU.observed test es
       else
         E.EventSet.empty in
+
     do_pp_dot_event_structure chan
       test
       legend
       (select_es es)
       (select_rfmap rfmap)
+      (StringMap.map (fun s -> select_events s) sets)
       (List.map
          (fun (tag,rel) -> tag,select_rel rel)
          vbss)
@@ -1471,13 +1503,14 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
 
 
 
-  let dump_legend chan test legend conc vbs =
+  let dump_legend chan test legend conc ?(sets=StringMap.empty) vbs =
     pp_dot_event_structure
       chan test (if PC.showlegend then Some legend else None)
-      conc.S.str conc.S.rfmap vbs S.conc_zero
+      conc.S.str conc.S.rfmap sets vbs S.conc_zero
 
   let dump_es_rfm_legend chan legend test es rfm =
-    pp_dot_event_structure chan test legend es rfm [] S.conc_zero
+    pp_dot_event_structure chan test legend es rfm
+      StringMap.empty [] S.conc_zero
 
   let dump_es chan test es =  dump_es_rfm_legend chan None test es S.RFMap.empty
   let dump_es_rfm chan =  dump_es_rfm_legend chan None
@@ -1489,11 +1522,11 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
   let show_es_rfm test es rfm =
     SHOW.show (fun chan -> dump_es_rfm chan test es rfm)
 
-  let show_legend test legend conc vbs  =
+  let show_legend test legend conc ?(sets = StringMap.empty) vbs  =
     SHOW.show
       (fun chan ->
         let legend = if PC.showlegend then Some legend else None in
         pp_dot_event_structure
-          chan test legend conc.S.str conc.S.rfmap vbs conc)
+          chan test legend conc.S.str conc.S.rfmap sets vbs conc)
 
 end

@@ -85,6 +85,7 @@ module type S = sig
 
   (* relations packed to be shown on graphs *)
   type rel_pp = (string * event_rel) list
+  type set_pp = event_set StringMap.t
 
   (* Dependencies : ie complement for ace *)
   type procrels =
@@ -237,8 +238,9 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
     let union3 = E.EventRel.union3
     let unions = E.EventRel.unions
 
-        (* relations packed to be shown on graphs *)
+ (* relations packed to be shown on graphs *)
     type rel_pp = (string * event_rel) list
+    type set_pp = event_set StringMap.t
 
   (* Dependencies : ie complement for ace *)
   type procrels =

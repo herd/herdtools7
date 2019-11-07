@@ -126,7 +126,7 @@ module type S = sig
 (* Event map *)
 (*************)
 
-  module EventMap : Map.S with type key = event
+  module EventMap : MyMap.S with type key = event
 
 (************************)
 (* Event set restricted *)
@@ -540,7 +540,7 @@ struct
 (* Commits *)
     let commits_of es =  EventSet.filter is_commit es
 
-    module EventMap = Map.Make(OrderedEvent)
+    module EventMap = MyMap.Make(OrderedEvent)
 
 (*************)
 (* Relations *)

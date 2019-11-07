@@ -56,7 +56,7 @@ module type SimplifiedSem = sig
     with type elt0 = event
     and module Elts = EventSet
 
-    module EventMap : Map.S
+    module EventMap : MyMap.S
     with type key = event
   end
 
@@ -67,7 +67,7 @@ module type SimplifiedSem = sig
   type event_set = E.EventSet.t
   type event_rel = E.EventRel.t
   type rel_pp = (string * event_rel) list
-
+  type set_pp = event_set StringMap.t
 end
 
 module Make
@@ -105,6 +105,7 @@ module Make
 (* Subset of interpreter state used by the caller *)
       type st_out = {
           out_show : S.rel_pp Lazy.t ;
+          out_sets : S.set_pp Lazy.t ;
           out_skipped : StringSet.t ;
           out_flags : Flag.Set.t ;
           out_bell_info :  BellModel.info ;
@@ -530,9 +531,17 @@ module Make
 
     type loc = (TxtLoc.t * string option) list
 
+    module Shown = struct
+      type t = Rel of S.event_rel | Set of S.event_set
+
+      let apply_rel f = function
+        | Rel r -> Rel (f r)
+        | Set _ as sr -> sr
+    end
+
     type st = {
         env : V.env ;
-        show : S.event_rel StringMap.t Lazy.t ;
+        show : Shown.t StringMap.t Lazy.t ;
         skipped : StringSet.t ;
         silent : bool ; flags : Flag.Set.t ;
         ks : ks ;
@@ -544,6 +553,7 @@ module Make
 
     type st_out = {
         out_show : S.event_rel Misc.Simple.bds Lazy.t ;
+        out_sets : S.event_set StringMap.t Lazy.t ;
         out_skipped : StringSet.t ;
         out_flags : Flag.Set.t ;
         out_bell_info :  BellModel.info ;
@@ -558,10 +568,22 @@ module Make
       then E.EventRel.remove_transitive_edges else (fun x -> x)
 
     let show_to_vbpp st =
-      StringMap.fold (fun tag v k -> (tag,v)::k)   (Lazy.force st.show) []
+      StringMap.fold
+        (fun tag v k -> match v with
+        | Shown.Rel v -> (tag,v)::k
+        | Shown.Set _ -> k)
+        (Lazy.force st.show) []
+
+    let show_to_sets st =
+      StringMap.fold
+        (fun tag v k -> match v with
+        | Shown.Rel _ -> k
+        | Shown.Set v -> StringMap.add tag v k)
+        (Lazy.force st.show) StringMap.empty
 
     let st2out st =
       {out_show = lazy (show_to_vbpp st) ;
+       out_sets = lazy (show_to_sets st) ;
        out_skipped = st.skipped ;
        out_flags = st.flags ;
        out_bell_info = st.bell_info ; }
@@ -1644,13 +1666,19 @@ module Make
       | Unv -> env.EV.ks.evts
       | v -> error_events env.EV.silent (get_loc e) v
 
-      and eval_rels_set env e = match eval env e with
+      and eval_rel_set env e = match eval env e with
       | Rel _ | Set _ |ClassRel _ as v ->  v
       | Event e -> Set (E.EventSet.singleton e)
       | Pair p -> Rel (E.EventRel.singleton p)
       | V.Empty -> Rel E.EventRel.empty
       | Unv -> Rel (Lazy.force env.EV.ks.unv)
       | _ -> error env.EV.silent (get_loc e) "relation or set expected"
+
+      and eval_shown env e = match eval_rel_set env e with
+      | Set v -> Shown.Set v
+      | Rel v -> Shown.Rel v
+      | ClassRel _ ->  Shown.Rel E.EventRel.empty (* Show nothing *)
+      | _ -> assert false
 
       and eval_events_mem env e = match eval env e with
       | Set s -> fun e -> E.EventSet.mem e s
@@ -1798,45 +1826,50 @@ module Make
           env,(v::vs) in
 
 (* Showing bound variables, (-doshow option) *)
-    let find_show_rel ks env x =
+    let find_show_shown ks env x =
 
         let loc_asrel v = match v with
-        | Rel r -> r
-        | V.Empty -> E.EventRel.empty
-        | Unv -> Lazy.force ks.unv
+        | Rel r -> Shown.Rel (rt_loc x r)
+        | Set r ->
+            if _dbg then eprintf "Found set %s: %a\n%!" x debug_set r;
+            Shown.Set r
+        | V.Empty -> Shown.Rel E.EventRel.empty
+        | Unv -> Shown.Rel (rt_loc x (Lazy.force ks.unv))
         | v ->
             Warn.warn_always
               "Warning show: %s is not a relation: '%s'" x (pp_val v) ;
             raise Not_found in
         try
-          rt_loc x (loc_asrel (Lazy.force (StringMap.find x env.vals)))
-        with Not_found -> E.EventRel.empty in
+          loc_asrel (Lazy.force (StringMap.find x env.vals))
+        with Not_found -> Shown.Rel E.EventRel.empty in
 
       let doshowone x st =
-        if O.showsome && StringSet.mem x  O.doshow then
+        if O.showsome && StringSet.mem x O.doshow then
           let show =
             lazy begin
               StringMap.add x
-                (find_show_rel st.ks st.env x) (Lazy.force st.show)
+                (find_show_shown st.ks st.env x) (Lazy.force st.show)
             end in
           { st with show;}
         else st in
 
       let doshow bds st =
-        let to_show =
-          StringSet.inter O.doshow
-            (StringSet.unions (List.map bdvars bds)) in
-        if StringSet.is_empty to_show then st
-        else
-          let show = lazy begin
-            StringSet.fold
-              (fun x show  ->
-                let r = find_show_rel st.ks st.env x in
-                StringMap.add x r show)
-              to_show
-              (Lazy.force st.show)
-          end in
-          { st with show;} in
+        if O.showsome then begin
+          let to_show =
+            StringSet.inter O.doshow
+              (StringSet.unions (List.map bdvars bds)) in
+          if StringSet.is_empty to_show then st
+          else
+            let show = lazy begin
+              StringSet.fold
+                (fun x show  ->
+                  let r = find_show_shown st.ks st.env x in
+                  StringMap.add x r show)
+                to_show
+                (Lazy.force st.show)
+            end in
+            { st with show;}
+        end else st in
 
       let check_bell_enum =
         if O.bell then
@@ -1945,7 +1978,7 @@ module Make
 (* Evaluate test -> bool *)
 
       let eval_test check env t e =
-        check (test2pred env t e (eval_rels_set env e)) in
+        check (test2pred env t e (eval_rel_set env e)) in
 
       let make_eval_test = function
         | None -> fun _env -> true
@@ -2026,7 +2059,7 @@ module Make
               let show = lazy begin
                 List.fold_left
                   (fun show x ->
-                    StringMap.add x (find_show_rel st.ks st.env x) show)
+                    StringMap.add x (find_show_shown st.ks st.env x) show)
                   (Lazy.force st.show) xs
               end in
               kont { st with show;} res
@@ -2044,8 +2077,10 @@ module Make
         | ShowAs (_,e,id) when not O.bell  ->
             if O.showsome then
               let show = lazy begin
-                StringMap.add id
-                  (rt_loc id (eval_rel (from_st st) e)) (Lazy.force st.show)
+                let v =
+                  Shown.apply_rel
+                    (rt_loc id) (eval_shown (from_st st) e) in
+                StringMap.add id v (Lazy.force st.show)
               end in
               kont { st with show; } res
             else kont st res
@@ -2377,15 +2412,21 @@ module Make
 (* Primitives *)
               let m = add_primitives ks (env_from_ienv m) in
 (* Initial show's *)
+              if _dbg then begin
+                eprintf "showsome=%b, doshow={%s}\n" O.showsome
+                  (StringSet.pp_str ", " Misc.identity O.doshow)
+              end ;
               let show =
                 if O.showsome then
                   lazy begin
                     let show =
                       List.fold_left
-                        (fun show (tag,v) -> StringMap.add tag v show)
+                        (fun show (tag,v) ->
+                          StringMap.add tag (Shown.Rel v) show)
                         StringMap.empty (Lazy.force vb_pp) in
                     StringSet.fold
-                      (fun tag show -> StringMap.add tag (find_show_rel ks m tag) show)
+                      (fun tag show ->
+                        StringMap.add tag (find_show_shown ks m tag) show)
                       O.doshow show
                   end else lazy StringMap.empty in
 

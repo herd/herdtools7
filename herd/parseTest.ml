@@ -135,8 +135,10 @@ module Top (Conf:Config) = struct
               Model.Generic r
           | _ -> m
         let showsome =
-          begin match Conf.outputdir with PrettyConf.StdoutOutput | PrettyConf.Outputdir _ -> true | _ -> false end
-        || Conf.PC.gv || Conf.PC.evince
+          begin match Conf.outputdir with
+          | PrettyConf.StdoutOutput | PrettyConf.Outputdir _ -> true
+          | _ -> false
+          end || Conf.PC.gv || Conf.PC.evince || Conf.variant Variant.MemTag
         let through = Conf.through
         let debug = Conf.debug.Debug_herd.barrier
         let verbose = Conf.verbose

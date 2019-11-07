@@ -846,7 +846,8 @@ module Make (M:Cfg)
                      last_store_vbf = E.EventRel.empty;
                      atomic_load_store = E.EventRel.empty
                    } in
-                 model_kont conc conc.S.fs pp_relns e.flags res0
+                 model_kont conc conc.S.fs
+                   (lazy StringMap.empty,pp_relns) e.flags res0
                else begin
                    res0
                  end

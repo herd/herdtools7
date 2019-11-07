@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2010-present Institut National de Recherche en Informatique et *)
+(* Copyright 2019-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,17 +14,10 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Common signature of PPCMem, X86Mem, ARMMem, for abstract usage *)
+(** Processor or thread identifier *)
 
-module type S = sig
-  val model : Model.t
-  module S : Sem.Semantics
+type t = int
 
-  val check_event_structure :
-      S.test -> S.concrete ->
-        ('a -> 'a) ->
-	(S.concrete ->  S.state -> (S.set_pp Lazy.t * S.rel_pp Lazy.t) ->
-          Flag.Set.t (* Flags set during that execution *) -> 'a -> 'a) ->
-              'a -> 'a
+let dump = Printf.sprintf "%i"
 
-end
+let pp = Printf.sprintf "P%i"

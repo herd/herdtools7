@@ -64,7 +64,7 @@ module Make (C: Config) = struct
 
         module EventSet = MySet.Make(Ordered)
         module EventRel = InnerRel.Make(Ordered)
-        module EventMap = Map.Make(Ordered)
+        module EventMap = MyMap.Make(Ordered)
       end
 
       type test = unit
@@ -74,7 +74,7 @@ module Make (C: Config) = struct
       type event_set = E.EventSet.t
       type event_rel = E.EventRel.t
       type rel_pp = (string * event_rel) list
-
+      type set_pp = event_set StringMap.t
     end in
 
     let module I = Interpreter.Make
