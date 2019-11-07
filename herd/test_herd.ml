@@ -74,7 +74,7 @@ module Make(A:Arch_herd.S) =
     let collect_atom a r = match a with
     | ConstrGen.LV (loc,_v) -> A.LocSet.add loc r
     | ConstrGen.LL (l1,l2) -> A.LocSet.add l1 (A.LocSet.add l2 r)
-    | ConstrGen.FF (_,x) -> A.LocSet.add (A.Location_global x) r
+    | ConstrGen.FF _ ->  r
 
 (* Mem size access *)
     let mem_access_size_of_code sz code =

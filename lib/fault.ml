@@ -45,7 +45,7 @@ module type S = sig
   module FaultSet : MySet.S with type elt = fault
 
   type fatom = loc_global atom
-
+  val check_one_fatom : fault -> fatom -> bool
   val check_fatom : FaultSet.t -> fatom -> bool
 end
 
@@ -82,14 +82,16 @@ module Make(A:I) : S with type loc_global = A.arch_global =
 
     type fatom = loc_global atom
 
-    let check_fatom flts ((p,lblo),x) =
+    let check_one_fatom ((p0,lbls0),x0)  ((p,lblo),x) =
+      Proc.compare p p0 = 0 &&
+      A.same_base x x0 &&
+      begin match lblo with
+      | None -> true
+      | Some lbl -> Label.Set.mem lbl lbls0
+      end
+
+    let check_fatom flts a =
       FaultSet.exists
-        (fun ((p0,lbls0),x0) ->
-          Proc.compare p p0 = 0 &&
-          A.same_base x x0 &&
-          begin match lblo with
-          | None -> true
-          | Some lbl -> Label.Set.mem lbl lbls0
-          end)
+        (fun flt -> check_one_fatom flt a)
         flts
   end

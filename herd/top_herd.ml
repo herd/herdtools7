@@ -50,10 +50,11 @@ module Make(O:Config)(M:XXXMem.S) =
     module C = S.Cons
     module A = S.A
     module AM = A.Mixed(O)
-    let final_state_restrict_locs locs senv (fsc,flts) =
-      AM.state_restrict_locs locs senv fsc,flts
+
     module T = Test_herd.Make(A)
     module W = Warn.Make(O)
+
+    let memtag = O.variant Variant.MemTag
 
 (* Utilities *)
     open Restrict
@@ -219,9 +220,15 @@ module Make(O:Config)(M:XXXMem.S) =
       and loads = S.E.mem_loads_of es.S.E.events in
       S.E.EventSet.subset loads obs
 
+    let collect_atom_fault a r = match a with
+    | ConstrGen.(LV _|LL _) -> r
+    | ConstrGen.FF f -> f::r
+
 (* Called by model simulator in case of success *)
-    let model_kont ochan test cstr =
+    let model_kont ochan test do_restrict cstr =
+
       let check = check_prop test in
+
       fun conc fsc (set_pp,vbpp) flags c ->
         if do_observed && not (all_observed test conc) then c
         else if
@@ -301,7 +308,7 @@ module Make(O:Config)(M:XXXMem.S) =
             else begin
               let dlocs = S.displayed_locations test
               and senv = S.size_env test in
-              final_state_restrict_locs dlocs senv fsc
+              do_restrict dlocs senv fsc
             end in
           let r =
             { cands = c.cands+1;
@@ -341,6 +348,22 @@ module Make(O:Config)(M:XXXMem.S) =
 (* Driver *)
     let run start_time test =
       let cstr = T.find_our_constraint test in
+
+      let restrict_faults =
+        if memtag then
+          let faults_in_cond =
+            ConstrGen.fold_constr collect_atom_fault cstr [] in
+          A.FaultSet.filter
+            (fun flt ->
+              List.exists
+                (fun f -> A.check_one_fatom flt f) faults_in_cond)
+        else fun _ -> A.FaultSet.empty in
+
+      let final_state_restrict_locs dlocs senv fsc =
+        let fsc,flts = fsc in
+        AM.state_restrict_locs dlocs senv fsc,
+        restrict_faults flts in
+
       let { MC.event_structures=rfms; too_far=loop; } =
         MC.glommed_event_structures test in
 (* Open *)
@@ -370,11 +393,13 @@ module Make(O:Config)(M:XXXMem.S) =
             M.check_event_structure test in
         let call_model conc =
           check_test
-            conc kfail (model_kont ochan test cstr) in
+            conc kfail
+            (model_kont ochan test final_state_restrict_locs cstr) in
       let c =
         if O.statelessrc11
         then let module SL = Slrc11.Make(struct include MC let skipchecks = O.skipchecks end) in
-             SL.check_event_structure test rfms kfail (fun _ c -> c) (model_kont ochan test cstr) start
+             SL.check_event_structure test rfms kfail (fun _ c -> c)
+          (model_kont ochan test final_state_restrict_locs cstr) start
         else
         try iter_rfms test rfms call_model (fun c -> c) start
         with

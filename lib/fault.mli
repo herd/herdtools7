@@ -40,6 +40,7 @@ module type S = sig
   module FaultSet : MySet.S with type elt = fault
 
   type fatom = loc_global atom
+  val check_one_fatom : fault -> fatom -> bool
   val check_fatom : FaultSet.t -> fatom -> bool
 
 end
