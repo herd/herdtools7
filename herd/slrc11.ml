@@ -830,7 +830,7 @@ module Make (M:Cfg)
                  let rfm = List.fold_left
                              (fun k w ->
                                M.S.RFMap.add (M.S.Final (M.get_loc w)) (M.S.Store w) k) rfm0 (finals ne) in
-                 let fsc = M.compute_final_state test rfm in
+                 let fsc = M.compute_final_state test rfm es.E.events in
                  let conc =
                    {
                      S.str = es0;

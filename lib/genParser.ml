@@ -122,6 +122,7 @@ let check_atom procs a =
   match a with
   | LV (loc,_) -> check_loc procs loc
   | LL (l1,l2) -> check_loc procs l1 ; check_loc procs l2
+  | FF _       -> () (* Checks does no apply to global location *)
 
 let check_regs procs init locs final =
   List.iter (fun (loc,_) -> check_loc procs  loc) init ;
@@ -163,6 +164,7 @@ let get_locs_atom a =
   | LV (loc,_) -> LocSet.add loc
   | LL (loc1,loc2) ->
       (fun k -> LocSet.add loc1 (LocSet.add loc2 k))
+  | FF (_,x) -> LocSet.add (MiscParser.Location_global x)
 
 let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
 
@@ -241,9 +243,16 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
                     map ;
                 let map_loc loc = MiscParser.LocMap.safe_find loc loc map in
                 let open ConstrGen in
+                let open MiscParser in
                 let map_atom = function
                   | LV (loc,v) -> LV (map_loc loc,v)
-                  | LL (loc1,loc2) ->  LL (map_loc loc1,map_loc loc2) in
+                  | LL (loc1,loc2) ->  LL (map_loc loc1,map_loc loc2)
+                  | FF (p,x) ->
+                      begin match map_loc (Location_global x) with
+                      | Location_global x -> FF (p,x)
+                      | _ -> assert false
+                      end
+                in
                 if O.verbose > 0 then prerr_endline "Bingo" ;
                 ConstrGen.map_constr map_atom cond
               with Not_found -> cond in

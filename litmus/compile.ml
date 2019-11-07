@@ -136,7 +136,7 @@ module Generic (A : Arch_litmus.Base)
       let type_atom a env = match a with
       | ConstrGen.LV (loc,v) ->
           A.LocMap.add loc (typeof v) env
-      | ConstrGen.LL _ -> env
+      | ConstrGen.(LL _|FF _) -> env
 
       let type_final final env = ConstrGen.fold_constr type_atom final env
 

@@ -17,6 +17,8 @@
 (** Labels in code *)
 
 type t = string
+
+val pp : t -> string
 val reset : unit -> unit
 val next_label : string -> t
 

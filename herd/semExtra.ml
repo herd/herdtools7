@@ -42,6 +42,7 @@ module type S = sig
   type global_loc = A.global_loc
   type location = A.location
   type state = A.state
+  type final_state = A.final_state
   type program = A.program
 
   type prop = A.prop
@@ -140,7 +141,7 @@ type concrete =
     {
      str   : event_structure ; (* event structure proper *)
      rfmap : rfmap ;           (* rfmap *)
-     fs    : state ;           (* final state *)
+     fs    : final_state ;           (* final state *)
      po  : event_rel ;         (* program order (in fact po + iico) *)
      pos : event_rel ;         (* Same location same processor accesses *)
 (* Write serialization precursor ie uniproc induced constraints over writes *)
@@ -197,6 +198,7 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
     type global_loc = A.global_loc
     type location = A.location
     type state = A.state
+    type final_state = A.final_state
 
     type prop = A.prop
     type constr = A.constr
@@ -329,7 +331,7 @@ type concrete =
     {
      str   : event_structure ; (* event structure proper *)
      rfmap : rfmap ;           (* rfmap *)
-     fs    : state ;           (* final state *)
+     fs    : final_state ;           (* final state *)
      po : event_rel ;
      pos : event_rel ;      (* Same location same processor accesses *)
      pco : event_rel ;
@@ -344,7 +346,7 @@ type concrete =
       {
        str = E.empty_event_structure ;
        rfmap = RFMap.empty ;
-       fs = A.state_empty ;
+       fs = A.state_empty,A.FaultSet.empty;
        po = E.EventRel.empty ;
        pos = E.EventRel.empty ;
        pco = E.EventRel.empty ;

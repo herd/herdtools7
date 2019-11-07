@@ -22,6 +22,11 @@
 type ('loc,'v) atom =
   | LV of 'loc * 'v
   | LL of 'loc * 'loc
+  | FF of 'v Fault.atom
+
+val dump_atom :
+    ('loc -> string) ->  ('loc -> string) -> ('v -> string) ->
+      ('loc,'v) atom -> string
 
 type ('loc,'v) prop =
   | Atom of ('loc, 'v) atom

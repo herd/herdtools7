@@ -26,14 +26,16 @@ let foralltrue =  ForallStates (And [])
 
 module SL = StateLexer.Make(struct let debug = false end)
 
+let tr_v v =
+  let open Constant in
+  match v with
+  | Concrete i -> Concrete (Int64.of_string i)
+  | Symbolic _|Label _|Tag _ as sym -> sym
+
 let tr_atom = function
-  | LV(loc,v) ->
-      let open Constant in
-      let v = match v with
-      | Concrete i -> Concrete (Int64.of_string i)
-      | Symbolic _|Label _|Tag _ as sym -> sym in
-      LV(loc,v)
-  | LL(loc1,loc2) -> LL(loc1,loc2)
+  | LV(loc,v) ->  LV(loc,tr_v v)
+  | LL (loc1,loc2) -> LL(loc1,loc2)
+  | FF (p,x) -> FF (p,tr_v x)
 
 let tr_cond c = ConstrGen.map_constr tr_atom c
 
@@ -62,6 +64,8 @@ module Dump(O:DumpConfig) = struct
       sprintf "%s=%s" (pp_loc l) (Int64Constant.pp O.hexa v)
   | LL (l1,l2) ->
       sprintf "%s=%s" (pp_loc l1) (pp_loc l2)
+  | FF f ->
+      Fault.pp_fatom Int64Constant.pp_v f
 
   let dump_prop chan = ConstrGen.dump_prop pp_atom chan
   let dump chan = ConstrGen.dump_constraints chan pp_atom
@@ -75,6 +79,7 @@ let get_locs_atom a =
   | LV (loc,_) -> LocSet.add loc
   | LL (loc1,loc2) ->
       (fun k -> LocSet.add loc1 (LocSet.add loc2 k))
+  | FF (_,x) -> LocSet.add (MiscParser.Location_global x)
 
 let get_locs c = fold_constr get_locs_atom c LocSet.empty
 
@@ -152,6 +157,7 @@ end  =
     let rec check_prop p state = match p with
     | Atom (LV (l,v)) -> I.state_mem state l v
     | Atom (LL (l1,l2)) -> I.state_eqloc state l1 l2
+    | Atom (FF _) -> Warn.fatal "No fault in LogConstr proposition"
     | Not p -> not (check_prop p state)
     | And ps -> List.for_all (fun p -> check_prop p state) ps
     | Or ps -> List.exists (fun p -> check_prop p state) ps

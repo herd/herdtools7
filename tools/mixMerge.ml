@@ -157,6 +157,7 @@ end =
     let shift_atom k a = match a with
     | LV (l,v) ->  LV (shift_location k l,v)
     | LL (a,b) -> LL (shift_location k a,shift_location k b)
+    | FF ((i,lbls),x) -> FF ((i+k,lbls),x)
 
     let shift_constr k = ConstrGen.map_constr (shift_atom k)
 

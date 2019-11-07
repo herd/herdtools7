@@ -50,6 +50,8 @@ module Make(O:Config)(M:XXXMem.S) =
     module C = S.Cons
     module A = S.A
     module AM = A.Mixed(O)
+    let final_state_restrict_locs locs senv (fsc,flts) =
+      AM.state_restrict_locs locs senv fsc,flts
     module T = Test_herd.Make(A)
     module W = Warn.Make(O)
 
@@ -299,7 +301,7 @@ module Make(O:Config)(M:XXXMem.S) =
             else begin
               let dlocs = S.displayed_locations test
               and senv = S.size_env test in
-              AM.state_restrict_locs dlocs senv fsc
+              final_state_restrict_locs dlocs senv fsc
             end in
           let r =
             { cands = c.cands+1;
@@ -403,7 +405,7 @@ module Make(O:Config)(M:XXXMem.S) =
               c.reads in
           let senv  = S.size_env test in
           A.StateSet.map
-            (fun st -> AM.state_restrict_locs locs senv st)
+            (fun st -> final_state_restrict_locs locs senv st)
             c.states
         else c.states in
       let nfinals = A.StateSet.cardinal finals in
@@ -424,7 +426,9 @@ module Make(O:Config)(M:XXXMem.S) =
         let tr_out = tr_out test in
         printf "States %i\n" nfinals ;
         A.StateSet.pp stdout ""
-          (fun chan st ->  fprintf chan "%s\n" (A.do_dump_state tr_out st))
+          (fun chan st ->
+            fprintf chan "%s\n"
+              (A.do_dump_final_state tr_out st))
           finals ;
 (* Condition result *)
         let ok = check_cond test c in

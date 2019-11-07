@@ -67,6 +67,7 @@ struct
     match a with
     | LV (loc,_) -> collect_location loc regs
     | LL (loc1,loc2) ->  collect_location loc1 (collect_location loc2 regs)
+    | FF (_,x) -> collect_location (A.Location_global x) regs
 
   let collect_state st = List.fold_right collect_state_atom st
 
@@ -104,6 +105,7 @@ struct
     match a with
     | LV (loc,v) -> LV (alpha_location f loc,v)
     | LL (loc1,loc2) -> LL (alpha_location f loc1,alpha_location f loc2)
+    | FF (_,x) -> ignore (Constant.check_sym x) ; a
 
   let alpha_state_atom f (loc,x) = alpha_location f loc,x
 
@@ -217,8 +219,14 @@ struct
           collect_location f loc (collect_value f v k)
       | LL (loc1,loc2) ->
           collect_location f loc1 (collect_location f loc2 k)
+      | FF (_,x) ->
+          collect_location f (A.Location_global x) k
 
     let map_state_atom f (loc,(t,v)) = map_location f loc,(t,map_value f v)
+
+    let map_global f x = match map_location f (A.Location_global x) with
+    | A.Location_global x -> x
+    | _ -> assert false
 
     let map_atom f a =
       let open ConstrGen in
@@ -227,6 +235,7 @@ struct
           LV (map_location f loc,map_value f v)
       | LL (loc1,loc2) ->
           LL (map_location f loc1,map_location f loc2)
+      | FF(p,x) -> FF (p,map_global f x)
 
     let collect_state f = List.fold_right (collect_state_atom f)
 

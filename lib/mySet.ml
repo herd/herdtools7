@@ -35,7 +35,10 @@ module type S = sig
   (* Check for a singleton *)
   val as_singleton : t -> elt option
 
-  (* union of small number of sets *)
+  (* Returns list of elements when cardinal <= some bound *)
+  val as_small : int -> t -> elt list option
+
+ (* union of small number of sets *)
   val union3 : t -> t -> t -> t
   val union4 : t -> t -> t -> t -> t
   val union5 : t -> t -> t -> t -> t -> t
@@ -58,7 +61,7 @@ module type S = sig
      set implementation as a tree. It is not. *)
   val split3 : t -> t * elt * t
 
-  (* second argument is delimiter (as in String.concat) *)  
+  (* second argument is delimiter (as in String.concat) *)
   val pp : out_channel -> string -> (out_channel -> elt -> unit) -> t -> unit
 
  (* As above, but sprintf style instead of fprintf style *)
@@ -81,10 +84,10 @@ module Make(O:OrderedType) : S with type elt = O.t =
 
     let find pred set =
       try
-	iter
-	  (fun e -> if pred e then raise (Found e))
-	  set ;
-	raise Not_found
+        iter
+          (fun e -> if pred e then raise (Found e))
+          set ;
+        raise Not_found
       with Found e -> e
 
     let as_singleton rs =
@@ -94,6 +97,15 @@ module Make(O:OrderedType) : S with type elt = O.t =
           Some r
         else None
       with Not_found -> None
+
+    let as_small n rs =
+      let rec do_rec n rs =
+        if is_empty rs then []
+        else if n <= 0 then raise Exit
+        else
+          let r = try choose rs with Not_found -> assert false in
+          r::do_rec (n-1) (remove r rs) in
+      try Some (do_rec n rs) with Exit -> None
 
     let union3 s1 s2 s3 = union s1 (union s2 s3)
     let union4 s1 s2 s3 s4 = union (union s1 s2) (union s3 s4)
@@ -112,16 +124,16 @@ module Make(O:OrderedType) : S with type elt = O.t =
 
     (* Why not do it that way! *)
     let of_list xs = unions (List.rev_map singleton xs)
-      
+
     let map f s =
       fold
-	(fun e k -> add (f e) k)
-	s empty
+        (fun e k -> add (f e) k)
+        s empty
 
 (* Reverse to preserve set ordering *)
     let map_list f s = List.rev (fold (fun e k -> f e::k) s [])
     let map_union f s = unions (map_list f s)
-      
+
     let disjoint s1 s2 = for_all (fun e -> not (mem e s2)) s1
 
 
@@ -134,23 +146,23 @@ module Make(O:OrderedType) : S with type elt = O.t =
 
     let pp chan delim pp_elt s =
       try
-	let fst = min_elt s in
-	pp_elt chan fst ;
-	let s = remove fst s in
-	iter
-	  (fun elt ->
-	    Printf.fprintf chan "%s%a" delim pp_elt elt)
-	  s
+        let fst = min_elt s in
+        pp_elt chan fst ;
+        let s = remove fst s in
+        iter
+          (fun elt ->
+            Printf.fprintf chan "%s%a" delim pp_elt elt)
+          s
       with Not_found -> ()
 
     let pp_str delim pp_elt s =
       try
-	let fst = min_elt s in
-	let fst_str = pp_elt fst in
-	let s = remove fst s in
-	fold
-	  (fun elt k ->
-	    k ^ (Printf.sprintf "%s%s" delim (pp_elt elt)))
-	  s fst_str
+        let fst = min_elt s in
+        let fst_str = pp_elt fst in
+        let s = remove fst s in
+        fold
+          (fun elt k ->
+            k ^ (Printf.sprintf "%s%s" delim (pp_elt elt)))
+          s fst_str
       with Not_found -> ""
   end

@@ -123,13 +123,13 @@ S.read_from S.RFMap.t -> S.M.VC.cnstrnt list -> ('a -> 'a) -> 'a -> 'a
 
   val compute_final_state :
     ('a, 'b, 'c, S.A.state, 'd, 'e, 'f, 'g) Test_herd.t ->
-    S.read_from S.RFMap.t -> S.A.state
+    S.read_from S.RFMap.t -> S.event_set -> S.A.final_state
 
   val check_filter :
     (S.A.code S.A.LabelMap.t, (int * S.A.pseudo list) list,
  (S.A.proc * S.A.code) list, S.A.state, S.A.size_env,
  (S.A.location, S.A.v) ConstrGen.prop, S.A.location, S.A.LocSet.t)
-Test_herd.t -> S.A.state -> bool
+Test_herd.t -> S.A.final_state -> bool
 
   val get_loc :
     S.E.event -> S.E.A.location
@@ -155,6 +155,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     module W = Warn.Make(C)
 
     let mixed = C.variant Variant.Mixed
+    let memtag = C.variant Variant.MemTag
 
 (*****************************)
 (* Event structure generator *)
@@ -944,13 +945,22 @@ let solve_regs test es csn =
 (***************************)
 
 (* final state *)
-    let compute_final_state test rfm =
-      S.RFMap.fold
-        (fun wt rf k -> match wt,rf with
-        | S.Final loc,S.Store ew ->
-            A.state_add k loc (get_written ew)
-        | _,_ -> k)
-        rfm test.Test_herd.init_state
+    let compute_final_state test rfm es =
+      let st =
+        S.RFMap.fold
+          (fun wt rf k -> match wt,rf with
+          | S.Final loc,S.Store ew ->
+              A.state_add k loc (get_written ew)
+          | _,_ -> k)
+          rfm test.Test_herd.init_state in
+      st,
+      if memtag then
+        E.EventSet.fold
+          (fun e k -> match E.to_fault e with
+          | Some f -> A.FaultSet.add f k
+          | None -> k)
+          es A.FaultSet.empty
+      else A.FaultSet.empty
 
 
 (* View before relations easily available, from po_iico and rfmap *)
@@ -1221,7 +1231,7 @@ let solve_regs test es csn =
                 (fun k w ->
                   S.RFMap.add (S.Final (get_loc w)) (S.Store w) k)
                 rfm ws in
-            let fsc = compute_final_state test rfm  in
+            let fsc = compute_final_state test rfm es.E.events in
             if check_filter test fsc && worth_going test fsc then begin
               if C.debug.Debug_herd.solver then begin
                 let module PP = Pretty.Make(S) in

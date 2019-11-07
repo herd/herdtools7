@@ -63,6 +63,7 @@ module type S = sig
   val inst_instance_compare :
       inst_instance_id -> inst_instance_id -> int
 
+  val pp_global : global_loc -> string
   include Location.S
   with type loc_reg = I.arch_reg and type loc_global = v
 
@@ -74,6 +75,11 @@ module type S = sig
   val undetermined_vars_in_loc : location -> v option
   val simplify_vars_in_loc : I.V.solution ->  location -> location
   val map_loc : (v -> v) -> location -> location
+
+(**********)
+(* Faults *)
+(**********)
+  include Fault.S with type loc_global = v
 
 (*********)
 (* State *)
@@ -115,7 +121,9 @@ module type S = sig
 
 
 (* Set of states *)
-  module StateSet : MySet.S with type elt = state
+  type final_state = state * FaultSet.t
+  val do_dump_final_state : (string -> string) -> final_state -> string
+  module StateSet : MySet.S with type elt = final_state
 
 (*****************************************)
 (* Size dependent items (for mixed-size) *)
@@ -226,17 +234,22 @@ module Make(C:Config) (I:I) : S with module I = I
 
       let pp_global = I.V.pp C.hexa
 
-      include
-          Location.Make
-          (struct
-            type arch_reg = I.arch_reg
-            let pp_reg = I.pp_reg
-            let reg_compare = I.reg_compare
+      module LocArg =
+        struct
+          type arch_reg = I.arch_reg
+          let pp_reg = I.pp_reg
+          let reg_compare = I.reg_compare
 
-            type arch_global = v
-            let pp_global = pp_global
-            let global_compare = I.V.compare
-          end)
+          type arch_global = v
+          let pp_global = pp_global
+          let global_compare = I.V.compare
+          let same_base g1 g2 =
+            let b1 = I.V.get_sym g1
+            and b2 = I.V.get_sym g2 in
+            Misc.string_eq b1 b2
+        end
+
+      include Location.Make (LocArg)
 
       let maybev_to_location v = Location_global (I.V.maybevToV v)
 
@@ -279,6 +292,11 @@ module Make(C:Config) (I:I) : S with module I = I
       | Location_reg _ -> loc
       | Location_global a -> Location_global (fv a)
       | Location_deref (a,idx) -> Location_deref (fv a,idx)
+
+(*********)
+(* Fault *)
+(*********)
+      include Fault.Make(LocArg)
 
 (************************)
 (* Mixed size utilities *)
@@ -396,12 +414,23 @@ module Make(C:Config) (I:I) : S with module I = I
         else
           (fun _ -> StringMap.empty)
 
+      type final_state = state * FaultSet.t
+
+      let do_dump_final_state tr (st,flts) =
+        let pp_st = do_dump_state tr st in
+        if FaultSet.is_empty flts then pp_st
+        else
+          pp_st ^ " " ^ FaultSet.pp_str " " (fun f -> pp_fault f ^ ";") flts
+
       module StateSet =
         MySet.Make
           (struct
-            type t = state
+            type t = final_state
 
-            let compare st1 st2 = State.compare I.V.compare st1 st2
+            let compare (st1,flt1) (st2,flt2) =
+              match State.compare I.V.compare st1 st2 with
+              | 0 -> FaultSet.compare flt1 flt2
+              | r -> r
           end)
 
       module Mixed (SZ : ByteSize.S) = struct

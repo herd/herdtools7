@@ -115,10 +115,11 @@ let check_procs procs =
         Warn.fatal "Processes must be P0, P1, ...")
     procs
 
+let check_one_proc procs p =
+  if not (List.mem p procs) then
+    Warn.fatal "Bad process P%i" p
 let check_loc procs loc = match loc with
-| MiscParser.Location_reg (p,_) ->
-    if not (List.mem p procs) then
-      Warn.fatal "Bad process P%i" p
+| MiscParser.Location_reg (p,_) -> check_one_proc procs p
 | _ -> ()
 
 let check_atom procs a =
@@ -126,6 +127,7 @@ let check_atom procs a =
   match a with
   | LV (loc,_) -> check_loc procs loc
   | LL (l1,l2) -> check_loc procs l1 ; check_loc procs l2
+  | FF ((p,_),_) -> check_one_proc procs p
 
 let check_regs procs init locs final =
   List.iter (fun (loc,_) -> check_loc procs  loc) init ;
@@ -146,6 +148,7 @@ let get_locs_atom a =
   | LV (loc,_) -> LocSet.add loc
   | LL (loc1,loc2) ->
       (fun k -> LocSet.add loc1 (LocSet.add loc2 k))
+  | FF (_,x) -> LocSet.add (Location_global (x))
 
 let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
 
@@ -155,8 +158,7 @@ module LU = LexUtils.Make (LexConfig)
 module SL = StateLexer.Make (LexConfig)
 			    
 let parse_cond lexbuf =
-  let cond =  call_parser "cond" lexbuf
-			  SL.token StateParser.constr in
+  let cond =  call_parser "cond" lexbuf SL.token StateParser.constr in
   cond
     
 (* Compute hash as litmus does *)

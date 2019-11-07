@@ -24,22 +24,22 @@ let call_parser name lexbuf lex parse =
   with
   | LexMisc.Error (msg,pos) ->
       Printf.eprintf
-	"%a: Lex error %s (in %s)\n" Pos.pp_pos pos msg name ;
+        "%a: Lex error %s (in %s)\n" Pos.pp_pos pos msg name ;
       raise Misc.Exit
   | Parsing.Parse_error ->
       let lxm = lexeme lexbuf
       and start_loc = lexeme_start_p lexbuf
       and end_loc = lexeme_end_p lexbuf in
       Printf.eprintf
-	"%a: unexpected '%s' (in %s)\n"
-	Pos.pp_pos2 (start_loc,end_loc)
-	lxm name ;
+        "%a: unexpected '%s' (in %s)\n"
+        Pos.pp_pos2 (start_loc,end_loc)
+        lxm name ;
       raise Misc.Exit
   | e ->
       Printf.eprintf
-	"%a: Uncaught exception %s (in %s)\n"
-	Pos.pp_pos lexbuf.lex_curr_p
-	(Printexc.to_string e) name ;
+        "%a: Uncaught exception %s (in %s)\n"
+        Pos.pp_pos lexbuf.lex_curr_p
+        (Printexc.to_string e) name ;
       assert false
 
 
@@ -85,11 +85,11 @@ module Make
   for a given processor
     let transpose procs prog =
       try
-	let prog = Misc.transpose prog in
-	List.combine procs prog
+        let prog = Misc.transpose prog in
+        List.combine procs prog
       with
       |  Misc.TransposeFailure | Invalid_argument "List.combine" ->
-	  Warn.fatal "mismatch in instruction lines"
+          Warn.fatal "mismatch in instruction lines"
 *)
 
 (************************)
@@ -121,6 +121,7 @@ let check_atom procs a =
   match a with
   | LV (loc,_) -> check_loc procs loc
   | LL (l1,l2) -> check_loc procs l1 ; check_loc procs l2
+  | FF _ -> ()
 
 let check_regs procs init locs final =
   List.iter (fun (loc,_) -> check_loc procs  loc) init ;
@@ -140,6 +141,7 @@ let get_locs_atom a =
   | LV (loc,_) -> LocSet.add loc
   | LL (loc1,loc2) ->
       (fun k -> LocSet.add loc1 (LocSet.add loc2 k))
+  | FF (_,x) -> LocSet.add (MiscParser.Location_global x)
 
 let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
 
@@ -166,15 +168,15 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
          info = info ; _
        }  =
       let init =
-	call_parser_loc "init"
-	  chan init_loc SL.token StateParser.init in
+        call_parser_loc "init"
+          chan init_loc SL.token StateParser.init in
       let prog =
-	call_parser_loc "prog" chan prog_loc L.lexer L.parser in
+        call_parser_loc "prog" chan prog_loc L.lexer L.parser in
       let prog = List.map CAstUtils.strip_pointers prog in
       let procs = check_procs prog in
       let (locs,filter,final,_quantifiers) =
-	call_parser_loc "final"
-	  chan constr_loc SL.token StateParser.constraints in
+        call_parser_loc "final"
+          chan constr_loc SL.token StateParser.constraints in
       check_regs procs init locs final ;
       let all_locs =
         MiscParser.LocSet.union

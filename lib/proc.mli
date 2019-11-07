@@ -20,3 +20,4 @@ type t = int
 
 val dump : t -> string
 val pp : t -> string
+val compare : t -> t -> int

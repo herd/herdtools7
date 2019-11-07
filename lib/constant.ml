@@ -20,11 +20,19 @@ type 'scalar t =
   | Concrete of 'scalar
 (* Memory cell, with optional tag and offet *)
   | Symbolic  of (string * string option) * int
-  | Label of int * string     (* In code *)
+  | Label of Proc.t * string     (* In code *)
   | Tag of string
 
 let mk_sym s = Symbolic ((s,None),0)
+and get_sym = function
+  | Symbolic ((s,_),_) -> s
+  | Concrete _|Label _| Tag _ -> assert false
+
 let default_tag = Tag "green"
+
+let check_sym v =  match v with
+| Concrete _ ->  assert false
+| Symbolic _|Label _|Tag _ as sym -> sym
 
 module type S =  sig
 

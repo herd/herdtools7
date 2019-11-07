@@ -55,6 +55,10 @@ type location = A.location and module LocSet = A.LocSet =
       match a with
       | LV (loc,_) -> LocSet.add loc r
       | LL (loc1,loc2) -> LocSet.add loc1 (LocSet.add loc2 r)
+      | FF f ->
+          Warn.warn_always "Ignoring fault %s"
+            (Fault.pp_fatom V.pp_v f) ;
+          r
 
     let locations (c:cond) =
       let locs = fold_constr locations_atom c LocSet.empty in
@@ -74,7 +78,7 @@ type location = A.location and module LocSet = A.LocSet =
             | Concrete _ -> k
             | Label _|Symbolic _|Tag _ -> assert false
           end
-      | LL _ -> k
+      | LL _|FF _ -> k
 
     let location_values c =
       let locs =  fold_constr atom_values c Strings.empty in

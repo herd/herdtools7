@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2010-present Institut National de Recherche en Informatique et *)
+(* Copyright 2019-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,34 +14,34 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Constants in code *)
+(** External view of faults, which are part of final state *)
 
-type 'scalar t =
-  | Concrete of 'scalar
-(* Memory cell, with optional tag and offet *)
-  | Symbolic  of (string * string option) * int
-  | Label of Proc.t * string     (* In code *)
-  | Tag of string
 
-val mk_sym : string -> 'scalar t
-val get_sym : 'scalar t -> string
-val default_tag : 'scalar t
-
-(* Check  non-concrete constant (and change type!) *)
-val check_sym : 'a t -> 'b t
-
-module type S =  sig
-
-  module Scalar : Scalar.S
-
-  type v = Scalar.t t
-  val intToV  : int -> v
-  val nameToV  : string -> v
-  val zero : v
-  val one : v
-  val pp : bool -> v -> string (* true -> hexa *)
-  val pp_v  : v -> string
-  val compare : v -> v -> int
-  val eq : v -> v -> bool
-  val vToName : v -> string
+module type I = sig
+  type arch_global
+  val pp_global : arch_global -> string
+  val global_compare : arch_global -> arch_global -> int
+  val same_base : arch_global -> arch_global -> bool
 end
+
+type 'loc atom =  (Proc.t * Label.t option) * 'loc
+
+val pp_fatom : ('loc -> string) -> 'loc atom -> string
+
+
+
+module type S = sig
+
+  type loc_global
+
+  type fault = (Proc.t * Label.Set.t) * loc_global
+  val pp_fault : fault -> string
+
+  module FaultSet : MySet.S with type elt = fault
+
+  type fatom = loc_global atom
+  val check_fatom : FaultSet.t -> fatom -> bool
+
+end
+
+module Make : functor (A:I) -> S with type loc_global = A.arch_global

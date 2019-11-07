@@ -43,7 +43,7 @@ module Make(Scalar:Scalar.S) = struct
       end
   | Label (p1,s1),Label (p2,s2) ->
       begin match String.compare s1 s2 with
-      | 0 -> Misc.int_compare p1 p2
+      | 0 -> Proc.compare p1 p2
       | r -> r
       end
   | Tag t1,Tag t2 -> String.compare t1 t2

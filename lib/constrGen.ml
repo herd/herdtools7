@@ -14,10 +14,17 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open Printf
 
 type ('loc,'v) atom =
   | LV of 'loc * 'v
   | LL of 'loc * 'loc
+  | FF of 'v Fault.atom
+
+let dump_atom pp_loc pp_rval pp_v = function
+  | LV (loc,v) ->  sprintf "%s=%s" (pp_loc loc)  (pp_v v)
+  | LL (loc1,loc2) -> sprintf "%s=%s" (pp_loc loc1) (pp_rval loc2)
+  | FF f -> Fault.pp_fatom pp_v f
 
 type ('l,'v) prop =
   | Atom of ('l, 'v) atom
@@ -213,8 +220,6 @@ let dump_prop pp_atom =
   fun chan p -> output_string chan (pp_prop (mk_arg pp_atom) p)
 
 let prop_to_string pp_atom = pp_prop (mk_arg pp_atom)
-
-open Printf
 
 let dump_constraints chan pp_atom c = match c with
 | ForallStates p ->

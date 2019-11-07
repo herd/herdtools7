@@ -40,6 +40,7 @@ rule token = parse
 | 'P' (decimal as x)
     { PROC (int_of_string x) }
 | '%' (name as name) { SYMB_REG name }
+| ',' { COMMA }
 | '\'' { QUOTE }
 | '&' { AMPER }
 | ';' { SEMI }
@@ -67,6 +68,7 @@ rule token = parse
 | "with"     { WITH }
 | "locations" { LOCATIONS }
 | "filter" { FILTER }
+| "fault"|"Fault" { FAULT }
 (* Typing *)
 | "_Atomic" { ATOMIC }
 | "ATOMIC_INIT" { ATOMICINIT }

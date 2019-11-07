@@ -37,6 +37,9 @@ module type S = sig
   (* Check for a singleton *)
   val as_singleton : t -> elt option
 
+  (* Returns list of elements when cardinal <= some bound *)
+  val as_small : int -> t -> elt list option
+
  (* union of some sets *)
   val union3 : t -> t -> t -> t
   val union4 : t -> t -> t -> t -> t
@@ -60,7 +63,7 @@ module type S = sig
      set implementation as a tree. It is not. *)
   val split3 : t -> t * elt * t
 
-  (* second argument is delimiter (as in String.concat) *)  
+  (* second argument is delimiter (as in String.concat) *)
   val pp : out_channel -> string -> (out_channel -> elt -> unit) -> t -> unit
 
  (* As above, but sprintf style instead of fprintf style *)

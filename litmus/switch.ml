@@ -141,7 +141,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
 
     let rec collect m = function
       | Atom (LV (loc,v)) -> add loc v m
-      | Atom (LL (_,_)) -> raise Cannot
+      | Atom (LL _|FF _) -> raise Cannot
       | Not p -> collect m p
       | And ps|Or ps -> List.fold_left collect m ps
       | Implies (p1,p2) -> collect (collect m p1) p2

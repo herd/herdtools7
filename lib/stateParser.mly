@@ -32,8 +32,8 @@ let mk_lab p s = Label (p,s)
 %token TRUE FALSE
 %token EQUAL NOTEQUAL EQUALEQUAL PLUS_DISJ
 %token FINAL FORALL EXISTS OBSERVED TOKAND NOT AND OR IMPLIES CASES WITH FILTER
-%token LOCATIONS STAR
-%token LBRK RBRK LPAR RPAR SEMI COLON AMPER QUOTE
+%token LOCATIONS FAULT STAR
+%token LBRK RBRK LPAR RPAR SEMI COLON AMPER QUOTE COMMA
 %token ATOMIC
 %token ATOMICINIT
 
@@ -228,6 +228,9 @@ loc_constr:
 skip_loc_constr:
 | locations constr { $2 }
 
+lbl:
+| PROC { ($1,None) }
+| PROC COLON NAME { ($1,Some $3) }
 
 atom_prop:
 | loc_deref  EQUAL maybev {Atom (LV ($1,$3))}
@@ -238,7 +241,7 @@ atom_prop:
 | location NOTEQUAL maybev {Not (Atom (LV ($1,$3)))}
 | location EQUAL location_deref {Atom (LL ($1,$3))}
 | location EQUALEQUAL location_deref {Atom (LL ($1,$3))}
-
+| FAULT LPAR lbl COMMA NAME RPAR { Atom (FF ($3,mk_sym $5)) }
 
 prop:
 | TRUE

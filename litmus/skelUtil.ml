@@ -78,9 +78,9 @@ module Make
       val get_info : string -> T.t -> string option
       val get_prefetch_info : T.t -> string
 
-(* Condition *)          
+(* Condition *)
       val pp_cond : T.t -> string
-          
+
 (* Dump stuff *)
       module Dump : functor (O:Indent.S) -> functor(EPF:EmitPrintf.S) -> sig
         (* Some small dump functions common std/presi *)
@@ -111,7 +111,7 @@ module Make
 (*              eprintf "BUILD %s <%s>\n" s (CType.dump t) ; *)
               A.LocMap.add (A.Location_global s) t e)
             e test.T.globals in
-        let e = 
+        let e =
           List.fold_left
             (fun e (proc,(_,(outs, _))) ->
               List.fold_left
@@ -184,7 +184,7 @@ module Make
         let tr_out = tr_out test in
 (*
   let pp_fmt_base t = match Compile.get_fmt Cfg.hexa t with
-  | CType.Direct fmt -> 
+  | CType.Direct fmt ->
   if Cfg.hexa then "0x%" ^ fmt else fmt
   | CType.Macro fmt ->
   (if Cfg.hexa then "0x%\"" else "%\"") ^ fmt ^ "\"" in
@@ -268,6 +268,7 @@ module Make
         | LL (loc1,loc2) ->
             sprintf "%s=%s" (tr_out (A.pp_location loc1))
               (tr_out (A.pp_rval loc2))
+        | FF f -> Fault.pp_fatom A.V.pp_v f
 
       let pp_cond test =
         let tr_out = tr_out test in
@@ -318,7 +319,7 @@ module Make
           EPF.fi "Histogram (%i states)\n" [nstates]
 
         let cstring s = sprintf "%S" s
-            
+
         let postlude doc test affi show_topos stats =
           let t = if Cfg.exit_cond then "int" else "void" in
           O.o "#define ENOUGH 10" ;
@@ -429,7 +430,7 @@ module Make
             sprintf
               "Observation %s %%s %%PCTR %%PCTR\n"
               doc.Name.name  in
-          let obs = 
+          let obs =
             "!cond_true ? \"Never\" : !cond_false ? \"Always\" : \"Sometimes\""
           in
           EPF.fi fmt [obs;"cond_true";"cond_false";] ;

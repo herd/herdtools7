@@ -56,13 +56,9 @@ end = struct
                st)
 
         type prop = I.C.prop
+
         let dump_atom a =
-          let open ConstrGen in
-          match a with
-          | LV (loc,v) ->
-              sprintf "%s=%s" (A.pp_location loc) (A.V.pp I.hexa v)
-          | LL (loc1,loc2) ->
-              sprintf "%s=%s" (A.pp_location loc1) (A.pp_rval loc2)
+          ConstrGen.dump_atom A.pp_location A.pp_rval (A.V.pp I.hexa) a
 
         let dump_prop = ConstrGen.prop_to_string dump_atom
         let dump_constr = ConstrGen.constraints_to_string dump_atom

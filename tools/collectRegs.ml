@@ -45,6 +45,7 @@ module Make(A:Arch_tools.S) = struct
     match a with
     | LV (loc,_) -> collect_location loc regs
     | LL (loc1,loc2) ->  collect_location loc1 (collect_location loc2 regs)
+    | FF _ -> regs
 
   let collect_state st = List.fold_right collect_state_atom st
 

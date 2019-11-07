@@ -87,8 +87,9 @@ and type pseudo = A.pseudo
     match a with
     | LV (loc,v) -> LV (finish_location f_reg loc, A.maybevToV v)
     | LL (l1,l2) -> LL (finish_location f_reg l1,finish_location f_reg l2)
+    | FF (p,v) -> FF (p,A.maybevToV v)
 
-  let finish_prop f_reg = ConstrGen.map_prop (finish_atom f_reg)
+   let finish_prop f_reg = ConstrGen.map_prop (finish_atom f_reg)
 
   let finish_filter f_reg = function
     | None -> None
@@ -151,8 +152,9 @@ and type pseudo = A.pseudo
     | LV (loc,_) -> collect_location loc
     | LL (loc1,loc2) ->
         fun c -> collect_location loc1 (collect_location loc2 c)
+    | FF _ -> Misc.identity
 
-  let collect_prop = ConstrGen.fold_prop collect_atom
+   let collect_prop = ConstrGen.fold_prop collect_atom
 
   let collect_filter = function
     | None -> Misc.identity

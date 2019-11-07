@@ -23,7 +23,7 @@ module type S = sig
   val check_event_structure :
       S.test -> S.concrete ->
         ('a -> 'a) ->
-	(S.concrete ->  S.state -> (S.set_pp Lazy.t * S.rel_pp Lazy.t) ->
+	(S.concrete ->  S.final_state -> (S.set_pp Lazy.t * S.rel_pp Lazy.t) ->
           Flag.Set.t (* Flags set during that execution *) -> 'a -> 'a) ->
               'a -> 'a
 

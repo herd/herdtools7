@@ -70,8 +70,9 @@ with type v = A.V.v and type location = A.location
     match a with
     | LV (loc,v) -> LV (finish_location f_reg loc, maybevToV v)
     | LL (l1,l2) -> LL (finish_location f_reg l1,finish_location f_reg l2)
+    | FF (p,x) -> FF (p,maybevToV x)
 
-  let finish_prop f_reg = ConstrGen.map_prop (finish_atom f_reg)
+   let finish_prop f_reg = ConstrGen.map_prop (finish_atom f_reg)
   let finish_constr f_reg = ConstrGen.map_constr (finish_atom f_reg)
 
 
@@ -114,8 +115,9 @@ with type v = A.V.v and type location = A.location
     | LV (loc,_) -> collect_location loc
     | LL (loc1,loc2) ->
         fun c -> collect_location loc1 (collect_location loc2 c)
+    | FF (_,x) -> collect_location (MiscParser.Location_global x)
 
-  let collect_constr = ConstrGen.fold_constr collect_atom
+ let collect_constr = ConstrGen.fold_constr collect_atom
 
   let collect_locs = List.fold_right (fun (loc,_) -> collect_location loc)
 

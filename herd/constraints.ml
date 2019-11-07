@@ -27,6 +27,8 @@ module type S = sig
 
   module A : Arch_herd.S
 
+  type final_state = A.state * A.FaultSet.t
+
   type prop = (A.location,A.V.v) ConstrGen.prop
 
   val ptrue : prop
@@ -40,8 +42,8 @@ module type S = sig
 
   module Mixed : functor (SZ: ByteSize.S) -> sig
 (* Check state *)
-    val check_prop : prop -> A.size_env -> A.state -> bool
-    val check_constr : constr -> A.size_env -> A.state list -> bool
+    val check_prop : prop -> A.size_env -> final_state -> bool
+    val check_constr : constr -> A.size_env -> final_state list -> bool
   end
 
 (* Build a new constraint thar checks State membership *)
@@ -67,7 +69,10 @@ module Make (C:Config) (A : Arch_herd.S) :
         =
       struct
         module A = A
-(************ Constraints **************************)
+        type final_state = A.state * A.FaultSet.t
+
+(************ Constraints ********************)
+
         module V = A.V
 
         type prop = (A.location,V.v) ConstrGen.prop
@@ -82,8 +87,12 @@ module Make (C:Config) (A : Arch_herd.S) :
           | LL (l1,l2) ->
               A.location_compare l1 loc = 0 ||
               A.location_compare l2 loc = 0
-            | LV (l,_) ->
-                A.location_compare l loc = 0
+          | LV (l,_) ->
+              A.location_compare l loc = 0
+          | FF (_,x) ->
+              A.location_compare
+                (A.Location_global x)
+                loc = 0
 
         let rec loc_in_prop loc p = match p with
         | Atom a -> loc_in_atom loc a
@@ -102,7 +111,7 @@ module Make (C:Config) (A : Arch_herd.S) :
         module Mixed (SZ : ByteSize.S) = struct
           module AM = A.Mixed(SZ)
 
-          let rec check_prop p senv state = match p with
+          let rec check_prop p senv (state,flts as st) = match p with
           | Atom (LV (l,v)) -> AM.state_mem senv state l v
           | Atom (LL (l1,l2)) ->
               begin try
@@ -110,11 +119,12 @@ module Make (C:Config) (A : Arch_herd.S) :
                 and v2 = AM.look_in_state senv state l2 in
                 A.V.compare v1 v2 = 0
               with A.LocUndetermined -> assert false end
-          | Not p -> not (check_prop p senv state)
-          | And ps -> List.for_all (fun p -> check_prop p senv state) ps
-          | Or ps -> List.exists (fun p -> check_prop p senv state) ps
+          | Atom (FF f) -> A.check_fatom flts f
+          | Not p -> not (check_prop p senv st)
+          | And ps -> List.for_all (fun p -> check_prop p senv st) ps
+          | Or ps -> List.exists (fun p -> check_prop p senv st) ps
           | Implies (p1, p2) ->
-              if check_prop p1 senv state then check_prop p2 senv state
+              if check_prop p1 senv st then check_prop p2 senv st
               else true
 
           let check_constr c senv states = match c with
@@ -126,7 +136,7 @@ module Make (C:Config) (A : Arch_herd.S) :
 
         let matrix_of_states fs =
           A.StateSet.fold
-            (fun f k -> A.state_to_list f::k)
+            (fun (f,_) k -> A.state_to_list f::k)
             fs []
 
         let best_col m =
@@ -255,24 +265,24 @@ module Make (C:Config) (A : Arch_herd.S) :
         | A.Location_global _ -> sprintf "*%s" (A.pp_location loc)
         | _ -> pp_loc tr m loc
 
+        let do_add_asm m = match m with
+        | Ascii|Dot -> Misc.identity
+        | Latex|DotFig when not C.texmacros -> Misc.identity
+        | Latex ->  sprintf "\\asm{%s}"
+        | DotFig ->  sprintf "\\\\asm{%s}"
 
         let pp_atom tr m a =
           match a with
           | LV (loc,v) ->
               mbox m (pp_loc tr m loc) ^
               pp_equal m ^
-              mbox m
-                (let v = V.pp C.hexa v in
-                let add_asm = C.texmacros in
-                match m,add_asm with
-                | ((Ascii|Dot),_)
-                | ((Latex|DotFig),false) -> v
-                | Latex,true -> sprintf "\\asm{%s}" v
-                | DotFig,true -> sprintf "\\\\asm{%s}" v)
+              mbox m (do_add_asm m (V.pp C.hexa v))
           | LL (l1,l2) ->
               mbox m (pp_loc tr m l1) ^
               pp_equal m ^
               mbox m (pp_rvalue tr m l2)
+          | FF f ->
+              mbox m (Fault.pp_fatom (fun v -> do_add_asm m (V.pp_v v)) f)
 
 (* ascii, parsable dump *)
         let dump_as_kind c = pp_kind (kind_of c)

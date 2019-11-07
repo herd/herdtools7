@@ -224,6 +224,11 @@ module Make(Cst:Constant.S) = struct
   let op_tagloc (a,_) _ =  Symbolic ((Misc.add_atag a,None),0)
   let tagloc = op_tagged "tagloc" op_tagloc
 
+  let get_sym = function
+    | Val (Symbolic ((s,_),_)) -> s
+    | Var _|Val (Concrete _|Label _|Tag _) ->
+        Warn.fatal "Illegal get_sym" (* NB: not an user error *)
+
   let check_atag = function
     | Val (Symbolic ((s,_),_)) -> Misc.check_atag s
     | Var _|Val (Concrete _|Label _|Tag _) ->

@@ -211,7 +211,6 @@ module Make(O:Config)(A:Arch_tools.S) =
       output_string chan "\\end{tabular}\n"
 
     let pp_v = ParsedConstant.pp O.hexa
-
     let pp_location = A.pp_location
     let pp_rval = A.pp_rval
 
@@ -225,7 +224,7 @@ module Make(O:Config)(A:Arch_tools.S) =
     let pp_asm =
       if O.texmacros then sprintf "\\asm{%s}"
       else fun s -> s
-
+    let pp_asm_v v = pp_asm (pp_v v)
 
     let pp_initial_state sc =
       let open MiscParser in
@@ -309,11 +308,13 @@ module Make(O:Config)(A:Arch_tools.S) =
           | LV (loc,v) ->
               pp_mbox (pp_location loc) ^
               pp_equal ^          
-              pp_mbox (pp_asm (pp_v v))
+              pp_mbox (pp_asm_v v)
           | LL (l1,l2) ->
               pp_mbox (pp_location l1) ^
               pp_equal ^ 
               pp_mbox (pp_rval l2) ;
+          | FF f ->
+              pp_mbox (Fault.pp_fatom pp_asm_v f)
         }
 
       let enddollar = sprintf "$%s$"

@@ -50,14 +50,14 @@ let rec collect p m = match p with
 | And ps|Or ps ->
     List.fold_right collect ps m
 | Implies _
-|  Atom (LL _)|Not _ -> raise Exit
+|  Atom ((LL _|FF _))|Not _ -> raise Exit
 
 let rec as_outcome p = match p with
 | Atom (LV (loc,v)) -> [loc,v]
 | Or [p] -> as_outcome p
 | And ps ->
     List.fold_left (fun k p -> as_outcome p@k) [] ps
-| Atom (LL (_, _))|Or (_::_::_|[])|Not _|Implies (_, _)
+| Atom (LL _|FF _)|Or (_::_::_|[])|Not _|Implies (_, _)
     -> raise Exit
 
 let rec as_outcomes p = match p with

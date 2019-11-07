@@ -160,6 +160,10 @@ end = struct
     | Fault _ -> true
     | TagAccess _|Access _|Amo _|Commit _|Barrier _ -> false
 
+  let to_fault = function
+    | Fault (i,A.Location_global x) -> Some ((i.A.proc,i.A.labels),x)
+    | Fault _|TagAccess _|Access _|Amo _|Commit _|Barrier _ -> None
+
   let get_mem_dir a = match a with
   | TagAccess (d,A.Location_global _,_)
   | Access (d,A.Location_global _,_,_,_) -> d

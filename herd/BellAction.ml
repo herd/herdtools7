@@ -111,6 +111,8 @@ end = struct
       assert (is_mem a); true
   | _ -> false
 
+  let to_fault _ = None
+
   let get_mem_dir a = match a with
   | Access (d,A.Location_global _,_,_,_,_) -> d
   | _ -> assert false

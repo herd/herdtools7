@@ -53,6 +53,9 @@ struct
     | Implies _ -> Warn.fatal "Bad condition in mproj"
     | Atom (LL (loc,_)|LV (loc,_)) as p ->
         if MiscParser.LocSet.mem loc locs then p else And []
+    | Atom (FF (_,x)) ->
+        let loc = MiscParser.Location_global (Constant.check_sym x) in
+        if MiscParser.LocSet.mem loc locs then p else And []
     | Or ps ->
         Or (List.map (proj_p locs)  ps)
     | And ps ->

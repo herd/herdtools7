@@ -21,3 +21,5 @@ type t = int
 let dump = Printf.sprintf "%i"
 
 let pp = Printf.sprintf "P%i"
+
+let compare = Misc.int_compare
