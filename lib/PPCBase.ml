@@ -185,7 +185,7 @@ let regs_interval =
   | Ireg _ -> from_reg r iregs
   | _ -> Warn.fatal "illegal regs_interval from %s" (pp_reg r)
 
-let typeof c = assert false
+let typeof _ = assert false
 
 (************)
 (* Barriers *)
