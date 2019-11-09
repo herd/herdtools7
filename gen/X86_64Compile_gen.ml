@@ -53,10 +53,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     module X86_64 = X86_64Arch_gen.Make
         (struct
           let naturalsize = naturalsize
-          let moreedges = Cfg.moreedges
           let fullmixed = Cfg.variant Variant_gen.FullMixed
-          let variant = Cfg.variant
-          let mach_size = size_reg_part
         end)
     include CompileCommon.Make(Cfg)(X86_64)
     open X86_64

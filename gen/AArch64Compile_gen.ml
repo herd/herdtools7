@@ -1090,7 +1090,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | W,Some (Tag,Some _) -> assert false
           | J,_ -> emit_joker st init
           | _,Some (Plain,None) -> assert false
-          | _,Some (Tag,None) -> assert false
           end
       | _,Code _ -> Warn.fatal "No dependency to code location"
 

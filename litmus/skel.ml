@@ -845,7 +845,7 @@ module Make
       let cast_type loc =
         if A.arch = `X86_64 then
           match loc with
-          | A.Location_reg (proc,r) -> "(" ^ CType.dump (A.typeof r) ^ ")"
+          | A.Location_reg (_,r) -> "(" ^ CType.dump (A.typeof r) ^ ")"
           | _ -> ""
         else ""
 
@@ -872,7 +872,7 @@ module Make
       let register_type loc t =
           if A.arch = `X86_64 then
              match loc with
-             | A.Location_reg (proc,r) -> A.typeof r
+             | A.Location_reg (_,r) -> A.typeof r
              | _ -> t
           else t
 

@@ -47,7 +47,7 @@ module Generic (A : Arch_litmus.Base)
       let tag = Base "tag_t"
 
       let typeof = function
-        | Constant.Concrete c -> base
+        | Constant.Concrete _ -> base
         | Constant.Symbolic _ -> pointer
         | Constant.Label _ -> code_pointer
         | Constant.Tag _ -> tag

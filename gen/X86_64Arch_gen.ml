@@ -17,10 +17,7 @@
 module Make
          (C:sig
               val naturalsize : MachSize.sz
-              val moreedges : bool
               val fullmixed : bool
-              val variant : Variant_gen.t -> bool
-              val mach_size : X86_64Base.reg_part
             end) = struct
   open Code
   include X86_64Base
