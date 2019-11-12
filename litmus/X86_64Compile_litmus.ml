@@ -193,7 +193,7 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
       op_ea_input_op "cmpl"
         (Effaddr_rm64 (Rm64_reg r)) (Operand_immediate i)
 
-    let jcc tr_lab cond lbl = 
+    let jcc tr_lab cond lbl =
       {empty_ins with
        memo =
        sprintf "j%s %s"

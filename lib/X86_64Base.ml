@@ -360,7 +360,7 @@ let rec do_pp_instruction (m : mm) =
     | Operand_immediate(v) -> m.immediate v in
 
   let ppi_inst_ea_op inst s ea op =
-    pp_inst_eff_op inst s ^ " " ^ pp_effaddr ea ^ m.comma ^ pp_operand op in
+    pp_inst_eff_op inst s ^ " " ^  pp_operand op ^ m.comma ^ pp_effaddr ea in
 
   let ppi_lbl opcode lbl = opcode ^ " " ^ lbl in
 

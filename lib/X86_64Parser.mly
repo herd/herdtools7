@@ -86,60 +86,60 @@ k:
 | NUM { $1 }
 
 instr:
-  | I_OR  effaddr  COMMA  operand
-    {I_EFF_OP (I_OR, INSb , $2,$4)}
-  | I_ORB  effaddr  COMMA  operand
-    {I_EFF_OP (I_OR, I8b, $2,$4)}
-  | I_ORW  effaddr  COMMA  operand
-    {I_EFF_OP (I_OR, I16b, $2,$4)}
-  | I_ORL  effaddr  COMMA  operand
-    {I_EFF_OP (I_OR, I32b, $2,$4)}
-  | I_ORQ  effaddr  COMMA  operand
-    {I_EFF_OP (I_OR, I64b, $2,$4)}
+  | I_OR  operand  COMMA  effaddr
+    {I_EFF_OP (I_OR, INSb , $4,$2)}
+  | I_ORB  operand  COMMA  effaddr
+    {I_EFF_OP (I_OR, I8b, $4,$2)}
+  | I_ORW  operand  COMMA  effaddr
+    {I_EFF_OP (I_OR, I16b, $4,$2)}
+  | I_ORL  operand  COMMA  effaddr
+    {I_EFF_OP (I_OR, I32b, $4,$2)}
+  | I_ORQ  operand  COMMA  effaddr
+    {I_EFF_OP (I_OR, I64b, $4,$2)}
 
-  | I_XOR  effaddr  COMMA  operand
-    {I_EFF_OP (I_XOR, INSb, $2,$4)}
-  | I_XORB  effaddr  COMMA  operand
-    {I_EFF_OP (I_XOR, I8b, $2,$4)}
-  | I_XORW  effaddr  COMMA  operand
-    {I_EFF_OP (I_XOR, I16b, $2,$4)}
-  | I_XORL  effaddr  COMMA  operand
-    {I_EFF_OP (I_XOR, I32b, $2,$4)}
-  | I_XORQ  effaddr  COMMA  operand
-    {I_EFF_OP (I_XOR, I64b, $2,$4)}
+  | I_XOR  operand  COMMA  effaddr
+    {I_EFF_OP (I_XOR, INSb, $4,$2)}
+  | I_XORB  operand  COMMA  effaddr
+    {I_EFF_OP (I_XOR, I8b, $4,$2)}
+  | I_XORW  operand  COMMA  effaddr
+    {I_EFF_OP (I_XOR, I16b, $4,$2)}
+  | I_XORL  operand  COMMA  effaddr
+    {I_EFF_OP (I_XOR, I32b, $4,$2)}
+  | I_XORQ  operand  COMMA  effaddr
+    {I_EFF_OP (I_XOR, I64b, $4,$2)}
 
-  | I_ADD   effaddr  COMMA  operand
-    {I_EFF_OP (I_ADD, INSb, $2,$4)}
-  | I_ADDB   effaddr  COMMA  operand
-    {I_EFF_OP (I_ADD, I8b, $2,$4)}
-  | I_ADDW   effaddr  COMMA  operand
-    {I_EFF_OP (I_ADD, I16b, $2,$4)}
-  | I_ADDL   effaddr  COMMA  operand
-    {I_EFF_OP (I_ADD, I32b, $2,$4)}
-  | I_ADDQ   effaddr  COMMA  operand
-    {I_EFF_OP (I_ADD, I64b, $2,$4)}
+  | I_ADD   operand  COMMA  effaddr
+    {I_EFF_OP (I_ADD, INSb, $4,$2)}
+  | I_ADDB   operand  COMMA  effaddr
+    {I_EFF_OP (I_ADD, I8b, $4,$2)}
+  | I_ADDW   operand  COMMA  effaddr
+    {I_EFF_OP (I_ADD, I16b, $4,$2)}
+  | I_ADDL   operand  COMMA  effaddr
+    {I_EFF_OP (I_ADD, I32b, $4,$2)}
+  | I_ADDQ   operand  COMMA  effaddr
+    {I_EFF_OP (I_ADD, I64b, $4,$2)}
 
-  | I_MOV   effaddr  COMMA  operand
-    {I_EFF_OP (I_MOV, INSb, $2,$4)}
-  | I_MOVB   effaddr  COMMA  operand
-    {I_EFF_OP (I_MOV, I8b, $2,$4)}
-  | I_MOVW   effaddr  COMMA  operand
-    {I_EFF_OP (I_MOV, I16b, $2,$4)}
-  | I_MOVL   effaddr  COMMA  operand
-    {I_EFF_OP (I_MOV, I32b, $2,$4)}
-  | I_MOVQ   effaddr  COMMA  operand
-    {I_EFF_OP (I_MOV, I64b, $2,$4)}
+  | I_MOV   operand  COMMA  effaddr
+    {I_EFF_OP (I_MOV, INSb, $4,$2)}
+  | I_MOVB   operand  COMMA  effaddr
+    {I_EFF_OP (I_MOV, I8b, $4,$2)}
+  | I_MOVW   operand  COMMA  effaddr
+    {I_EFF_OP (I_MOV, I16b, $4,$2)}
+  | I_MOVL   operand  COMMA  effaddr
+    {I_EFF_OP (I_MOV, I32b, $4,$2)}
+  | I_MOVQ   operand  COMMA  effaddr
+    {I_EFF_OP (I_MOV, I64b, $4,$2)}
 
-  | I_CMP  effaddr  COMMA  operand
-    {I_EFF_OP (I_CMP, INSb, $2,$4)}
-  | I_CMPB  effaddr  COMMA  operand
-    {I_EFF_OP (I_CMP, I8b, $2,$4)}
-  | I_CMPW  effaddr  COMMA  operand
-    {I_EFF_OP (I_CMP, I16b, $2,$4)}
-  | I_CMPL  effaddr  COMMA  operand
-    {I_EFF_OP (I_CMP, I32b, $2,$4)}
-  | I_CMPQ  effaddr  COMMA  operand
-    {I_EFF_OP (I_CMP, I64b, $2,$4)}
+  | I_CMP  operand  COMMA  effaddr
+    {I_EFF_OP (I_CMP, INSb, $4,$2)}
+  | I_CMPB  operand  COMMA  effaddr
+    {I_EFF_OP (I_CMP, I8b, $4,$2)}
+  | I_CMPW  operand  COMMA  effaddr
+    {I_EFF_OP (I_CMP, I16b, $4,$2)}
+  | I_CMPL  operand  COMMA  effaddr
+    {I_EFF_OP (I_CMP, I32b, $4,$2)}
+  | I_CMPQ  operand  COMMA  effaddr
+    {I_EFF_OP (I_CMP, I64b, $4,$2)}
 
   | I_JMP  NAME
     {I_JMP $2}
