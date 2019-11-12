@@ -203,7 +203,6 @@ let () =
     let addnum = !Config.addnum
     let numeric = !Config.numeric
     let lowercase = !Config.lowercase
-    let coherence_decreasing = !Config.coherence_decreasing
     let optcoherence = !Config.optcoherence
     let optcond = !Config.optcond
     let poll = !Config.poll
@@ -228,7 +227,6 @@ let () =
     let verbose = !Config.verbose
     let debug = !Config.debug
     let show = !Config.show
-    let coherence_decreasing = !Config.coherence_decreasing
     let same_loc =
       !Config.same_loc ||
       (match Co.cond with

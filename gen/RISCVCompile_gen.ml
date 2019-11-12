@@ -228,7 +228,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
 (* For export *)
     let emit_load_one = LOAD.emit_load_one AV.Rlx
     let emit_load = LOAD.emit_load  AV.Rlx
-    let emit_obs = OBS.emit_load AV.Rlx
+    let emit_obs _ = OBS.emit_load AV.Rlx
     let emit_obs_not_value = OBS.emit_load_not_value AV.Rlx
     let emit_obs_not_eq = OBS.emit_load_not_eq AV.Rlx
     let emit_obs_not_zero = OBS.emit_load_not_zero AV.Rlx

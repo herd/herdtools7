@@ -140,6 +140,15 @@ let applies_atom (a,_) d = match a,d with
    | _,_ ->
        if equal_atom a1 a2 then Some a1 else None
 
+   let atom_to_bank = function
+   | Tag,None -> Code.Tag
+   | Tag,Some _ -> assert false
+   | (Plain|Acq|AcqPc|Rel|Atomic (PP|PL|AP|AL)),_
+      -> Code.Ord
+
+(**************)
+(* Mixed size *)
+(**************)
    let tr_value ao v = match ao with
    | None| Some (_,None) -> v
    | Some (_,Some (sz,_)) -> Mixed.tr_value sz v

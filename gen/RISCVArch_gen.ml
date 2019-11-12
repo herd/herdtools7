@@ -111,6 +111,8 @@ module Make
 
    let merge_atoms a1 a2 = if a1=a2 then Some a1 else None
 
+   let atom_to_bank _ = Code.Ord
+
    let tr_value ao v = match ao with
    | None| Some (MO _|Atomic _) -> v
    | Some (Mixed (sz,_)) -> Mixed.tr_value sz v

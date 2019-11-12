@@ -32,6 +32,7 @@ module type S = sig
   val overwrite_value : Code.v -> atom option -> Code.v -> Code.v
   val extract_value : Code.v -> atom option -> Code.v
   val merge_atoms : atom -> atom -> atom option
+  val atom_to_bank : atom option -> Code.bank
   val strong : fence
   val pp_fence : fence -> string
 
@@ -160,6 +161,10 @@ and type rmw = F.rmw = struct
   | Some a,Dir d -> F.applies_atom a d
 
   let merge_atoms = F.merge_atoms
+
+  let atom_to_bank = function
+    | None -> Ord
+    | Some a -> F.atom_to_bank a
 
   let strong = F.strong
   let pp_fence = F.pp_fence

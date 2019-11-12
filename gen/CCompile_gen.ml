@@ -23,7 +23,6 @@ open Code
 
 module type Config = sig
   include Top_gen.Config
-  val coherence_decreasing : bool
   val same_loc : bool
   val verbose : int
   val allow_back : bool
@@ -428,13 +427,9 @@ module Make(O:Config) : Builder.S
         | (v,obs)::co ->
             do_opt_coherence (IntSet.singleton v) obs co
 
-      let min_set =
-        if O.coherence_decreasing then IntSet.max_elt
-        else IntSet.min_elt
+      let min_set = IntSet.min_elt
 
-      let max_set =
-        if O.coherence_decreasing then IntSet.min_elt
-        else IntSet.max_elt
+      let max_set = IntSet.max_elt
 
       let min_max xs =
         let ps = List.map (fun x -> min_set x, max_set x) xs in
@@ -488,7 +483,7 @@ module Make(O:Config) : Builder.S
           | Straight ->  straight_observer st p  mo x vs
           | Config.Fenced -> fenced_observer st p  mo x vs
           | Loop -> loop_observer st p mo x vs in
-        cs,fs@f
+        cs,F.add_int_sets fs f
 
       let rec build_observers p mo x arg =
         let open Config in
@@ -513,10 +508,12 @@ module Make(O:Config) : Builder.S
                 c::cs,f@fs
             with NoObserver -> build_observers p mo x vss
 
+      let cons_one x i fs =  F.cons_int (A.Loc x) i fs
+
       let rec check_rec env p =
 
         let add_look_loc loc v k =
-          if O.optcond then k else (A.Loc loc,IntSet.singleton v)::k in
+          if O.optcond then k else cons_one loc v k in
 
         let open Config in
         function
@@ -535,7 +532,7 @@ module Make(O:Config) : Builder.S
                   | [] -> [],[]
                   | _::_ ->
                       let v,_ = Misc.last vs in
-                      [],[A.Loc x,IntSet.singleton v]
+                      [],cons_one x v []
                   end
               | Unicond -> assert false
               | Cycle -> begin
@@ -545,7 +542,7 @@ module Make(O:Config) : Builder.S
                       begin match O.do_observers with
                       | Local -> [],add_look_loc x v []
                       | Avoid|Accept|Three|Four|Infinity ->
-                          [],[A.Loc x,IntSet.singleton v]
+                          [],cons_one x v []
                       | Enforce ->
                           let c,f = build_observers p mo x vs in
                           c,add_look_loc x v f
@@ -560,15 +557,15 @@ module Make(O:Config) : Builder.S
                       | Three -> begin match vs_flat with
                         | _x1::_x2::_x3::_x4::_ ->
                             Warn.fatal "More than three writes"
-                        | _ -> [],[A.Loc x,IntSet.singleton v]
+                        | _ -> [],cons_one x v []
                       end
                       | Four -> begin match vs_flat with
                         | _x1::_x2::_x3::_x4::_x5::__ ->
                             Warn.fatal "More than four writes"
-                        | _ -> [],[A.Loc x,IntSet.singleton v]
+                        | _ -> [],cons_one x v []
                       end
                       | Infinity ->
-                          [],[A.Loc x,IntSet.singleton v]
+                          [],cons_one x v []
                       | _ ->
                           let c,f = build_observers p mo x vs in
                           c,add_look_loc x v f
@@ -791,7 +788,7 @@ module Make(O:Config) : Builder.S
                   F.run evts m
               | Cycle -> F.check f
               | Observe -> F.observe f in
-            (add_args env c,f),
+            (add_args env c,f []),
             (U.compile_prefetch_ios (List.length obsc) ios,
              U.compile_coms splitted),
             env
@@ -998,7 +995,7 @@ module Make(O:Config) : Builder.S
         match e with
         | Load loc -> dump_loc_exp loc
         | AddZero _ ->
-            Warn.fatal "AddZero in cpp mode"            
+            Warn.fatal "AddZero in cpp mode"
         | AtomicLoad (mo,loc) ->
             sprintf "%s.load(%s)"
               (dump_exp loc) (dump_mem_order mo)
@@ -1108,7 +1105,7 @@ module Make(O:Config) : Builder.S
         let info = info@myinfo in
         { name=name ; info=info; com=com ;  edges = es ;
           prog=prog ; final=final ; types=env;}
-          
+
       let make_test name ?com ?info ?check ?scope es =
         ignore (scope) ;
         try

@@ -1,5 +1,5 @@
 (****************************************************************************)
-(*                           the diy toolsuite                              *)
+(*                           The diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
@@ -24,6 +24,8 @@ end
 
 module Make(Cfg:Config) : XXXCompile_gen.S =
   struct
+
+    let do_memtag = Cfg.variant Variant_gen.MemTag
 
 (* Common *)
     let naturalsize = TypBase.get_size Cfg.typ
@@ -72,7 +74,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let mov r i = I_MOV (vloc,r,K i)
     let mov_mixed sz r i = let v = sz2v sz in I_MOV (v,r,i)
-
+    let mov_reg_addr r1 r2 =  I_MOV (V64,r1,RV (V64,r2))
     let mov_reg r1 r2 = I_MOV (vloc,r1,RV (vloc,r2))
     let mov_reg_mixed sz r1 r2 = let v = sz2v sz in I_MOV (v,r1,RV (v,r2))
 
@@ -119,7 +121,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let ldaxr r1 r2 = I_LDAR (vloc,AX,r1,r2)
     let sxtw r1 r2 = I_SXTW (r1,r2)
     let ldr_idx r1 r2 idx = I_LDR (vloc,r1,r2,RV (vloc,idx))
-    let ldg_idx r1 r2 idx = I_LDG (r1,r2,RV (vloc,idx))
 
     let ldr_mixed_idx v r1 r2 idx sz  =
       let open MachSize in
@@ -141,7 +142,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let stg r1 r2 = I_STG (r1,r2,K 0)
     let stlr r1 r2 = I_STLR (vloc,r1,r2)
     let str_idx r1 r2 idx = I_STR (vloc,r1,r2,RV (vloc,idx))
-    let stg_idx r1 r2 idx = I_STG (r1,r2,RV (vloc,idx))
     let stxr r1 r2 r3 = I_STXR (vloc,YY,r1,r2,r3)
     let stlxr r1 r2 r3 = I_STXR (vloc,LY,r1,r2,r3)
 
@@ -367,12 +367,26 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let load_idx st rA rB idx = [ldr_idx rA rB idx],st
         end)
 
-    module LDG =
-      LOAD
-        (struct
-          let load = wrap_st ldg
-          let load_idx st rA rB idx = [ldg_idx rA rB idx],st
-        end)
+    module LDG = struct
+
+      let emit_load st p init x =
+        let rA,st = next_reg st in
+        let rB,init,st = U.next_init st p init x in
+        rA,init,lift_code [mov_reg_addr rA rB;ldg rA rB],st
+
+      let emit_load_idx st p init x idx =
+        let rA,st = next_reg st in
+        let rB,init,st = U.next_init st p init x in
+        let rC,c,st = sum_addr st rB idx in
+        rA,init,lift_code (mov_reg_addr rA rB::c@[ldg rA rC]),st
+
+(*
+      let rA,st = next_reg st in
+          let rB,init,st = U.next_init st p init x in
+          let ins,st = L.load_idx st rA rB idx in
+          rA,init,pseudo ins ,st
+*)
+    end
 
     module OBS =
       LOAD
@@ -386,7 +400,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let emit_load_one = LDR.emit_load_one
     let emit_load = LDR.emit_load
 
-    let emit_obs = emit_load_mixed naturalsize 0
+
+    let emit_obs t = match t with
+    | Code.Ord -> emit_load_mixed naturalsize 0
+    | Code.Tag -> LDG.emit_load
     let emit_obs_not_value = OBS.emit_load_not_value
     let emit_obs_not_eq = OBS.emit_load_not_eq
     let emit_obs_not_zero = OBS.emit_load_not_zero
@@ -462,12 +479,29 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let store_idx st rA rB idx = [str_idx rA rB idx],st
         end)
 
-    module STG =
-      STORE
-        (struct
-          let store = wrap_st stg
-          let store_idx st rA rB idx = [stg_idx rA rB idx],st
-        end)
+    module STG = struct
+
+      let emit_store_reg st p init x rA =
+        let rB,init,st = U.next_init st p init x in
+        init,pseudo [stg rA rB],st
+
+      let emit_store st p init e =
+        let loc = Code.as_data e.loc in
+        let x = add_tag loc e.tag
+        and v = add_tag loc e.v in
+        let rA,init,st = U.next_init st p init v in
+        emit_store_reg st p init x rA
+
+      let emit_store_idx st p init e idx =
+        let loc = Code.as_data e.loc in
+        let x = add_tag loc e.tag
+        and v = add_tag loc e.v in
+        let rA,init,st = U.next_init st p init v in
+        let rB,init,st = U.next_init st p init x in
+        let rC,c,st = sum_addr st rB idx in
+        init,pseudo (c@[stg rA rC]),st
+
+    end
 
     module STLR =
       STORE
@@ -499,7 +533,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let get_rmw_addrs arw st rA = match arw with
     | (_,(None|Some (_,0))),(_,(None|Some (_,0)))
-        -> rA,rA,[],st
+      -> rA,rA,[],st
     | (_,Some (_,o1)),(_,Some (_,o2)) when o1=o2 ->
         let r,cs,st = sumi_addr st rA o1 in
         r,r,cs,st
@@ -531,19 +565,19 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       Instruction (get_xstore aw r rW rAW)::
       Instruction (cbnz r (Label.fail p n))::k
 
-    let emit_unroll_pair u (ar,aw as arw) p st init rR rW rA =
+      let emit_unroll_pair u (ar,aw as arw) p st init rR rW rA =
       let n = current_label st in
       let rAR,rAW,cs0,st = get_rmw_addrs arw st rA in
       let cs0 = pseudo cs0 in
       if u <= 0 then
-        let r,st = next_reg st in
-        init,cs0@pseudo
-           [get_xload ar rR rAR;
-           get_xstore aw r rW rAW;],st
+      let r,st = next_reg st in
+      init,cs0@pseudo
+      [get_xload ar rR rAR;
+      get_xstore aw r rW rAW;],st
       else if u = 1 then
-        let r,st = tempo3 st in
-        let cs = (emit_one_pair arw p st r rR rW rAR rAW [] n) in
-        init,cs0@cs,st*)
+      let r,st = tempo3 st in
+      let cs = (emit_one_pair arw p st r rR rW rAR rAW [] n) in
+      init,cs0@cs,st*)
 
     let emit_one_pair (ar, aw) p st init r rR rW rA k =
       let n = current_label st in
@@ -565,8 +599,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       if u <= 0 then
         let r,st = next_reg st in
         init,cs0@pseudo
-          [get_xload ar rR rAR;
-           get_xstore aw r rW rAW;],
+                    [get_xload ar rR rAR;
+                     get_xstore aw r rW rAW;],
         st
       else if u = 1 then
         let r,st = tempo3 st in
@@ -578,15 +612,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let rec do_rec = function
           | 1 ->
               let init,cs,st = emit_one_pair
-                arw p st init r rR rW rA [Label (out,Nop)] in
+                  arw p st init r rR rW rA [Label (out,Nop)] in
               init,cs0@cs,st
           | u ->
               let init,cs,st = do_rec (u-1) in
               init,
               (Instruction (get_xload ar rR rA)::
-              Instruction (get_xstore aw r rW rA)::
-              Instruction (cbz r out)::
-              cs0@cs),st in
+               Instruction (get_xstore aw r rW rA)::
+               Instruction (cbz r out)::
+               cs0@cs),st in
         do_rec u
 
     let emit_pair = match Cfg.unrollatomic with
@@ -703,6 +737,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (**********)
     let emit_joker st init = None,init,[],st
 
+    let add_tag =
+      if do_memtag then
+        fun loc tag -> Code.add_tag loc tag
+      else fun loc _ -> loc
+
     let emit_access  st p init e = match e.dir,e.loc with
     | None,_ -> Warn.fatal "AArchCompile.emit_access"
     | Some d,Code lab ->
@@ -717,6 +756,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               (pp_dir d) (C.debug_evt e)
         end
     | Some d,Data loc ->
+        let loc = add_tag loc e.tag in
         begin match d,e.atom with
         | R,None ->
             let r,init,cs,st = LDR.emit_load st p init loc in
@@ -791,7 +831,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let init,cs,st = S.emit_store st p init loc e.v in
             None,init,cs,st
         | W,Some (Tag,None) ->
-            let init,cs,st = STG.emit_store st p init loc e.v in
+            let init,cs,st = STG.emit_store st p init e in
             None,init,cs,st
         | _,Some (Plain,None) -> assert false
         | _,Some (Tag,_) -> assert false
@@ -901,11 +941,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (* Fences *)
     let emit_cachesync s isb r =
       pseudo
-            (I_DC ((match s with Strong -> DC.civac | Weak -> DC.cvau),r)::
-             I_FENCE (DSB (ISH,FULL))::
-             I_IC (IC.ivau,r)::
-             I_FENCE (DSB (ISH,FULL))::
-             (if isb then [I_FENCE ISB] else []))
+        (I_DC ((match s with Strong -> DC.civac | Weak -> DC.cvau),r)::
+         I_FENCE (DSB (ISH,FULL))::
+         I_IC (IC.ivau,r)::
+         I_FENCE (DSB (ISH,FULL))::
+         (if isb then [I_FENCE ISB] else []))
 
     let emit_fence p init n f = match f with
     | Barrier f -> [Instruction (I_FENCE f)]
@@ -1042,7 +1082,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let init,cs,st = S.emit_store_idx_reg st p init loc r2 rA in
               None,init,Instruction c::cs_mov@cs,st
           | W,Some (Tag, None) ->
-              let init,cs,st = STG.emit_store_idx st p init loc r2 e.v in
+              let init,cs,st = STG.emit_store_idx st p init e r2 in
               None,init,Instruction c::cs,st
           | W,Some (Tag,Some _) -> assert false
           | J,_ -> emit_joker st init
@@ -1072,20 +1112,24 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | None,_ -> Warn.fatal "TODO"
       | Some R,_ -> Warn.fatal "data dependency to load"
       | Some W,Data loc ->
-          let r2,cs2,init,st = match e.atom with
-          | Some (_,Some (sz,_)) ->
-              let rA,init,csA,st = U.emit_mov_sz sz st p init e.v in
-              let r2,st = next_reg st in
-              let cs2 =
-                [Instruction (calc0 r2 r1) ;
-                 Instruction (add (sz2v sz) r2 r2 rA); ] in
+          let r2,cs2,init,st =
+            let r2,st = next_reg st in
+            match e.atom with
+            | Some (Tag,None) ->
+                let rA,init,st = U.next_init st p init (add_tag loc e.v) in
+                let rB,cB,st = sum_addr st rA r2 in
+                rB,pseudo (calc0 r2 r1::cB),init,st
+            | Some (_,Some (sz,_)) ->
+                let rA,init,csA,st = U.emit_mov_sz sz st p init e.v in
+                let cs2 =
+                  [Instruction (calc0 r2 r1) ;
+                   Instruction (add (sz2v sz) r2 r2 rA); ] in
               r2,csA@cs2,init,st
-          | _ ->
-              let r2,st = next_reg st in
-              let cs2 =
-                [Instruction (calc0 r2 r1) ;
-                 Instruction (addi r2 r2 e.v); ] in
-              r2,cs2,init,st in
+            | _ ->
+                let cs2 =
+                  [Instruction (calc0 r2 r1) ;
+                   Instruction (addi r2 r2 e.v); ] in
+                r2,cs2,init,st in
           begin match e.atom with
           | None ->
               let init,cs,st = STR.emit_store_reg st p init loc r2 in
@@ -1234,33 +1278,33 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         match i with
         | 0 -> k
         | n -> let k' = Instruction (I_B (Label.exit p n))::
-                        Label (Label.fail p n,Nop)::k
-               in do_rec (i-1) k'
+            Label (Label.fail p n,Nop)::k
+        in do_rec (i-1) k'
       in
-    do_rec (current_label st) []
+      do_rec (current_label st) []
 
     let list_of_exit_labels p st =
       let rec do_rec i k =
         match i with
         | 0 -> k
         | n -> let k' = Label (Label.exit p n,Nop)::k
-               in do_rec (i-1) k'
+        in do_rec (i-1) k'
       in
-    do_rec (current_label st) []
+      do_rec (current_label st) []
 
-   let does_fail p st =
-     let l = list_of_fail_labels p st in
-     match l with [] -> false | _ -> true
+    let does_fail p st =
+      let l = list_of_fail_labels p st in
+      match l with [] -> false | _ -> true
 
-   let does_exit p st =
-     let l = list_of_exit_labels p st in
-     match l with [] -> false | _ -> true
+    let does_exit p st =
+      let l = list_of_exit_labels p st in
+      match l with [] -> false | _ -> true
 
-   let postlude st p init cs =
+    let postlude st p init cs =
       if does_fail p st then
-       init,
-       cs,
-       st
+        init,
+        cs,
+        st
       else if does_exit p st then
         init,cs@(list_of_exit_labels p st),st
       else

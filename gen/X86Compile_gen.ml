@@ -74,7 +74,7 @@ struct
     let rA,st = next_reg st in
     rA,init,pseudo [emit_load_ins x rA],st
 
-  let emit_obs = emit_load
+  let emit_obs _ = emit_load
 
   let emit_obs_not_zero st _p init x =
     let rA,st = next_reg st in

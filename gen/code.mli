@@ -37,7 +37,7 @@ type proc = Proc.t
 val pp_proc : proc -> string
 
 (* Direction of event *)
-type dir = W | R | J 
+type dir = W | R | J
 
 (* Edges compoments that do not depend on architecture *)
 
@@ -80,3 +80,10 @@ type info = (string * string) list
 
 (* Name of plain accesses *)
 val plain : string
+
+(* Memory bank (for MTE)  *)
+type bank = Ord | Tag
+
+val pp_bank : bank -> string
+
+val add_tag : string -> v -> string

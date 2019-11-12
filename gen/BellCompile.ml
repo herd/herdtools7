@@ -86,7 +86,7 @@ let emit_joker st init = None,init,[],st
 
     let emit_load st p init x = emit_load_tagged st p init x  []
 
-    let emit_obs = emit_load
+    let emit_obs _ = emit_load
 
     let emit_load_idx_tagged st _p init x idx a =
       let rA,st = next_reg st in

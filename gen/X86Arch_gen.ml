@@ -49,6 +49,8 @@ let worth_final _ = true
 
 let varatom_dir _d f = f None
 
+let atom_to_bank _ = Code.Ord
+
 include NoMixed
 
 (**********)

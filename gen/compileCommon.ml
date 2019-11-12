@@ -17,7 +17,6 @@
 module type Config = sig
   val verbose : int
   val show : ShowGen.t option
-  val coherence_decreasing : bool
   val same_loc : bool
   val unrollatomic : int option
   val allow_back : bool

@@ -228,7 +228,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
 
     let emit_load st p init x = emit_load_mixed naturalsize 0 st p init x
 
-    let emit_obs = emit_load_mixed naturalsize 0
+    let emit_obs _ = emit_load_mixed naturalsize 0
 
     let emit_obs_not_zero st p init x =
       let rA,st = next_reg st in

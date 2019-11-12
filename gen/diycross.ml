@@ -189,8 +189,6 @@ let () =
      let lowercase = !Config.lowercase
 (* Specific *)
       let varatom = !Config.varatom
-
-      let coherence_decreasing = !Config.coherence_decreasing
       let same_loc =
          !Config.same_loc ||
          (match cond with

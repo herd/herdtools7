@@ -33,6 +33,7 @@ module type S = sig
   val find : (elt -> bool) -> t -> elt
 
   (* Check for a singleton *)
+  val is_singleton : t -> bool
   val as_singleton : t -> elt option
 
   (* Returns list of elements when cardinal <= some bound *)
@@ -89,6 +90,12 @@ module Make(O:OrderedType) : S with type elt = O.t =
           set ;
         raise Not_found
       with Found e -> e
+
+    let is_singleton rs =
+      try
+        let r = choose rs in
+        is_empty (remove r rs)
+      with Not_found -> false
 
     let as_singleton rs =
       try

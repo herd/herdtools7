@@ -35,6 +35,7 @@ module type S = sig
   val find : (elt -> bool) -> t -> elt
 
   (* Check for a singleton *)
+  val is_singleton : t -> bool
   val as_singleton : t -> elt option
 
   (* Returns list of elements when cardinal <= some bound *)

@@ -223,7 +223,6 @@ let () =
     | Empty -> Empty
     | All -> All
     | Set s -> Set (LexUtil.split s)
-    let coherence_decreasing = !Config.coherence_decreasing
     let upto = !Config.upto
     let varatom = !varatom
     let max_ins = !Config.max_ins
@@ -245,7 +244,6 @@ let () =
   let module C = struct
     let verbose = !Config.verbose
     let show = !Config.show
-    let coherence_decreasing = !Config.coherence_decreasing 
     let same_loc =
       !Config.same_loc ||
       (match Co.choice  with Uni -> true | _ -> false)

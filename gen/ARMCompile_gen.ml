@@ -109,7 +109,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let rB,init,st = U.next_init st p init x in
       rA,init,lift_code [I_LDR (rA,rB,AL)],st
 
-    let emit_obs = emit_load
+    let emit_obs _ = emit_load
 
     let emit_obs_not_zero st p init x =
       let rA,st = next_reg st in

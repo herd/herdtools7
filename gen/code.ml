@@ -123,3 +123,23 @@ let fold_com f r = f CRf (f CFr (f CWs r))
 type info = (string * string) list
 
 let plain = "Na"
+
+(* Memory Space *)
+type bank = Ord | Tag
+
+let pp_bank = function
+  | Ord -> "Ord"
+  | Tag -> "Tag"
+
+let tag_of_int  = function
+  | 0 -> "green"
+  | 1 -> "red"
+  | 2 -> "blue"
+  | 3 -> "black"
+  | 4 -> "white"
+  | 5 -> "cyan"
+  | 6 -> "yellow"
+  | 7 -> "magenta"
+  | n -> Warn.fatal "Sorry, not pretty tag for number %i" n
+
+let add_tag s t = Printf.sprintf "%s:%s" s (tag_of_int t)

@@ -23,7 +23,6 @@ module type Config = sig
   val debug : Debug_gen.t
   val hout : Hint.out
   val cond : Config.cond
-  val coherence_decreasing : bool
   val neg : bool
   val nprocs : int
   val eprocs : bool
@@ -254,14 +253,14 @@ let get_fence n =
 (*************)
 
 let last_observation st p i x v =
-  let r,i,c,_st = Comp.emit_obs st p i x in
+  let r,i,c,_st = Comp.emit_obs Ord st p i x in
   i,c,F.add_final_v p r v []
 
 let rec straight_observer st p i x = function
   | [] -> i,[],[]
   | [v] -> last_observation st p i x v
   | v::vs ->
-      let r,i,c,st = Comp.emit_obs st p i x in
+      let r,i,c,st = Comp.emit_obs Ord st p i x in
       let i,cs,fs = straight_observer st p i x vs in
       i,c@cs,F.add_final_v p r v fs
 
@@ -269,7 +268,7 @@ let rec fenced_observer st p i x = function
   | [] -> i,[],[]
   | [v] -> last_observation st p i x v
   | v::vs ->
-      let r,i,c,st = Comp.emit_obs st p i x in
+      let r,i,c,st = Comp.emit_obs Ord st p i x in
       let f = Comp.emit_fence p i C.nil Comp.stronger_fence in
       let i,cs,fs = fenced_observer st p i x vs in
       i,c@f@cs,F.add_final_v p r v fs
@@ -313,13 +312,9 @@ let opt_coherence = function
   | (v,obs)::co ->
       do_opt_coherence (IntSet.singleton v) obs co
 
-let min_set =
-  if O.coherence_decreasing then IntSet.max_elt
-  else IntSet.min_elt
+let min_set = IntSet.min_elt
 
-let max_set =
-  if O.coherence_decreasing then IntSet.min_elt
-  else IntSet.max_elt
+let max_set = IntSet.max_elt
 
   let min_max xs =
     let ps = List.map (fun x -> min_set x, max_set x) xs in
@@ -372,7 +367,7 @@ let max_set =
       | Straight ->  straight_observer st p i x vs
       | Config.Fenced -> fenced_observer st p i x vs
       | Loop -> loop_observer st p i x vs in
-    i,cs,fs@f
+    i,cs,F.add_int_sets fs f
 
   let rec build_observers p i x arg =
     let open Config in
@@ -398,10 +393,12 @@ let max_set =
               i,c::cs,f@fs
         with NoObserver -> build_observers p i x vss
 
+  let cons_one x v fs = F.cons_int (A.Loc x) v fs
+
   let rec check_rec ats p i =
     let add_look_loc loc v k =
       if (not (StringSet.mem loc ats) && O.optcond) then k
-      else (A.Loc loc,IntSet.singleton v)::k in
+      else cons_one loc v k in
     let open Config in
     function
       | [] -> i,[],[]
@@ -413,7 +410,7 @@ let max_set =
               | [] -> i,[],[]
               | _::_ ->
                   let v,_ = Misc.last vs in
-                  i,[],[A.Loc x,IntSet.singleton v]
+                  i,[],cons_one x v []
               end
           | Unicond -> assert false
           | Cycle -> begin
@@ -424,7 +421,7 @@ let max_set =
                   begin match O.do_observers with
                   | Local -> i,[],add_look_loc x v []
                   | Avoid|Accept|Three|Four|Infinity
-                    -> i,[],[A.Loc x,IntSet.singleton v]
+                    -> i,[],cons_one x v []
                   | Enforce ->
                       let i,c,f = build_observers p i x vs in
                       i,c,add_look_loc x v f
@@ -438,16 +435,16 @@ let max_set =
                       begin match vs_flat with
                       | _x1::_x2::_x3::_x4::_ ->
                           Warn.fatal "More than three writes"
-                      | _ -> i,[],[A.Loc x,IntSet.singleton v]
+                      | _ -> i,[],cons_one x v []
                       end
                   |Four ->
                       begin match vs_flat with
                       | _x1::_x2::_x3::_x4::_x5::_ ->
                           Warn.fatal "More than four writes"
-                      | _ -> i,[],[A.Loc x,IntSet.singleton v]
+                      | _ -> i,[],cons_one x v []
                       end
                   | Infinity ->
-                      i,[],[A.Loc x,IntSet.singleton v]
+                      i,[],cons_one x v []
                   | _ ->
                       let i,c,f = build_observers p i x vs in
                       i,c,add_look_loc x v f
@@ -463,7 +460,7 @@ let max_set =
 (* Local check of coherence *)
 
   let do_add_load st p i f x v =
-    let r,i,c,st = Comp.emit_obs st p i x in
+    let r,i,c,st = Comp.emit_obs Ord st p i x in
     i,c,F.add_final_v p r (IntSet.singleton v) f,st
 
   let do_add_loop st p i f x v w =
@@ -490,8 +487,8 @@ let max_set =
   let add_co_local_check lsts ns st p i code f =
     let lst = Misc.last ns in
     if U.check_here lst then
-      match lst.C.evt.C.loc with
-      | Data x ->
+      match lst.C.evt.C.loc,lst.C.evt.C.bank with
+      | Data x,Ord ->
           let v = lst.C.next.C.evt.C.v
           and prev_v = lst.C.evt.C.v in
           let all_lst =
@@ -499,10 +496,14 @@ let max_set =
             with Not_found -> C.evt_null in
           if C.OrderedEvent.compare all_lst lst.C.next.C.evt = 0
           then
-            i,code,(A.Loc x,IntSet.singleton v)::f,st
+            i,code,F.cons_int_set (A.Loc x,IntSet.singleton v) f,st
           else
             do_observe_local st p i code f x prev_v v
-      | Code _ -> i,code,f,st
+      | Data x,Tag ->
+          let v = lst.C.next.C.evt.C.v in
+          let r,i,c,st = Comp.emit_obs Tag st p i x in
+          i,code@c,F.add_final_loc p r (Code.add_tag x v) f,st
+      | Code _,_ -> i,code,f,st
     else i,code,f,st
 
 (******************************************)
@@ -560,7 +561,7 @@ let max_set =
           let foks = gather_final_oks p (A.current_label st) in
           let i,cs,(ms,fs),ios = do_rec (p+1) i ns in
           let io = U.io_of_thread n in
-          i,c::cs,(C.union_map m ms,f@foks@fs),io::ios in
+          i,c::cs,(C.union_map m ms,F.add_int_sets (f@fs) foks),io::ios in
     let i,obsc,f =
       match O.cond with
       | Unicond -> [],[],[]
@@ -588,7 +589,8 @@ let max_set =
                   i
               then
                 (A.Loc Code.ok_str,Some "1")::i,obsc@cs,
-                (m,(A.Loc Code.ok_str,IntSet.singleton 1)::f@fs),ios
+                (m,F.cons_int_set
+                   (A.Loc Code.ok_str,IntSet.singleton 1) f@fs),ios
               else
                 i,obsc@cs,(m,f@fs),ios
             else Warn.fatal "Last minute check"
@@ -602,12 +604,30 @@ let max_set =
           List.fold_left
             (fun m loc -> A.LocMap.add (A.Loc loc) O.typ m)
             env globals in
-        let i =
+        let flts =
           if do_memtag then
-            List.fold_right
-              (fun  x i -> (A.Loc (Misc.add_atag x),None)::i)
-              globals i
-          else i in
+            let tagchange =
+              let ts =
+                List.fold_left
+                  (fun k ns ->
+                    List.fold_left
+                      (fun k n -> match n.C.evt.C.dir,n.C.evt.C.loc,n.C.evt.C.bank with
+                      | Some W,Data x,Tag -> x::k
+                      | _ -> k)
+                      k ns) []
+                  splitted in
+              StringSet.of_list ts in
+            let get_locs ns =
+              let xs =
+                List.fold_left
+                  (fun k n -> match n.C.evt.C.loc,n.C.evt.C.bank with
+                  | Data x,Ord when StringSet.mem x tagchange -> x::k
+                  | _ -> k)
+                  [] ns in
+              StringSet.of_list xs in
+            let flts = List.mapi (fun i ns -> i,get_locs ns) splitted in
+            List.filter (fun (_,xs) -> not (StringSet.is_empty xs)) flts
+          else [] in
         let f =
           match O.cond with
           | Unicond ->
@@ -618,7 +638,7 @@ let max_set =
               F.run evts m
           | Cycle -> F.check f
           | Observe -> F.observe f in
-        (i,c,f,env),
+        (i,c,f flts,env),
         (U.compile_prefetch_ios (List.length obsc) ios,
          U.compile_coms splitted)
 

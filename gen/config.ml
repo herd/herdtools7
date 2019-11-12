@@ -67,7 +67,6 @@ let optcond = ref true
 let overload = ref None
 let neg = ref false
 let unrollatomic : int option ref = ref None
-let coherence_decreasing = ref false
 let same_loc = ref false
 type cond = Cycle | Unicond | Observe
 let cond = ref Cycle
@@ -201,8 +200,8 @@ let common_specs =
      "<bool> check loaded values in test code")::
   ("-neg", Arg.Bool (fun b -> neg := b),
     "<bool> negate final condition (default false)")::
-  ("-coherence_decreasing", Arg.Set coherence_decreasing,
-  " Change value order in coherence orders, for backward compatibility")::
+  ("-coherence_decreasing", Arg.Unit (fun () -> ()),
+  " does nothing, deprecated")::
   ("-oneloc", Arg.Set same_loc,
   "Do not fail on tests with one single location (default false)")::
   ("-cond",

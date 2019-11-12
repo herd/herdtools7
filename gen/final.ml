@@ -18,33 +18,52 @@ module type Config = sig
   val verbose : int
   val cond : Config.cond
   val optcond : bool
-  val coherence_decreasing : bool
   val hexa : bool
 end
 
 module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
   sig
-    type fenv = (C.A.location * IntSet.t) list
+    type vset
+    type fenv = (C.A.location * vset) list
     type eventmap = C.A.location C.C.EventMap.t
 
 (* Add an observation to fenv *)
     val add_final_v :
         Code.proc -> C.A.arch_reg -> IntSet.t -> fenv -> fenv
+    val add_final_loc :
+        Code.proc -> C.A.arch_reg -> string -> fenv -> fenv
+    val cons_int :   C.A.location -> int -> fenv -> fenv
+    val cons_int_set :  (C.A.location * IntSet.t) -> fenv -> fenv
+    val add_int_sets : fenv -> (C.A.location * IntSet.t) list -> fenv
     val add_final :
         Code.proc -> C.A.arch_reg option -> C.C.node ->
           eventmap * fenv -> eventmap * fenv
 
+    type faults = (Proc.t * StringSet.t) list
     type final
 
-    val check : fenv -> final
-    val observe : fenv -> final
-    val run : C.C.event list list -> C.A.location C.C.EventMap.t -> final
+    val check : fenv -> faults -> final
+    val observe : fenv -> faults -> final
+    val run : C.C.event list list -> C.A.location C.C.EventMap.t -> faults -> final
 
     val dump_final : out_channel ->  final -> unit
 
   end = functor (O:Config) -> functor (C:ArchRun.S) ->
   struct
-    type fenv = (C.A.location * IntSet.t) list
+    type v = I of int | S of string
+    module VSet =
+      MySet.Make
+        (struct
+          type t = v
+
+          let compare v1 v2 = match v1,v2 with
+          | I i1,I i2 -> compare i1 i2
+          | S s1,S s2 -> String.compare s1 s2
+          | S _,I _ -> -1
+          | I _,S _ -> +1
+        end)
+    type vset = VSet.t
+    type fenv = (C.A.location * vset) list
     type eventmap = C.A.location C.C.EventMap.t
 
     let show_in_cond =
@@ -64,75 +83,120 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       else
         (fun _ -> true)
 
-    let add_final_v p r v finals = (C.A.of_reg p r,v)::finals
+    let intset2vset is =
+      IntSet.fold (fun v k -> VSet.add (I v) k) is VSet.empty
 
-    let prev_value =
-      if O.coherence_decreasing then fun v -> v+1
-      else fun v -> v-1
+    let add_final_v p r v finals = (C.A.of_reg p r,intset2vset v)::finals
+
+    let add_final_loc p r v finals =
+      (C.A.of_reg p r,VSet.singleton (S v))::finals
+
+    let cons_int loc i fs= (loc,VSet.singleton (I i))::fs
+
+    let cons_int_set (l,is) fs = (l,intset2vset is)::fs
+
+    let add_int_sets fs f =
+      fs@List.map (fun (l,is) -> l,intset2vset is) f
+
+    let prev_value = fun v -> v-1
 
     let add_final p o n finals = match o with
     | Some r ->
         let m,fs = finals in
         let evt = n.C.C.evt in
         let v = match evt.C.C.dir with
-        | Some Code.R -> Some evt.C.C.v
-        | Some Code.W -> Some (prev_value evt.C.C.v)
+        | Some Code.R ->
+            begin match evt.C.C.bank with
+            | Code.Ord ->
+                Some (I evt.C.C.v)
+            | Code.Tag ->
+                Some (S (Code.add_tag (Code.as_data evt.C.C.loc) evt.C.C.v))
+            end
+        | Some Code.W -> assert (evt.C.C.bank = Code.Ord) ; Some (I (prev_value evt.C.C.v))
         | None|Some Code.J -> None in
         if show_in_cond n then match v with
         | Some v ->
             C.C.EventMap.add n.C.C.evt (C.A.of_reg p r) m,
-            add_final_v p r (IntSet.singleton v) fs
+             (C.A.of_reg p r,VSet.singleton v)::fs
         | None -> finals
         else finals
     | None -> finals
 
+    type faults = (Proc.t * StringSet.t) list
 
-    type final =
-      | Exists of fenv 
+    type cond_final =
+      | Exists of fenv
       | Forall of (C.A.location * Code.v) list list
       | Locations of C.A.location list
 
+    type final = cond_final * faults
+
     module Run = Run_gen.Make(O)(C)
 
-    let check f = Exists f
-    let observe f = Locations (List.map fst f)
-    let run evts m = Forall (Run.run evts m)
+    let check f flts = Exists f,flts
+    let observe f flts = Locations (List.map fst f),flts
+    let run evts m flts = Forall (Run.run evts m),flts
 
 (* Dumping *)
     open Printf
 
-    let dump_atom =
-      if O.hexa then
-        fun r v -> sprintf "%s=0x%x" (C.A.pp_location r) v
-      else
-        fun r v -> sprintf "%s=%i" (C.A.pp_location r) v
+    let dump_val = function
+      | I i ->
+          if O.hexa then sprintf "0x%x" i
+          else sprintf "%i" i
+      | S s -> s
+
+    let dump_atom r v = sprintf "%s=%s" (C.A.pp_location r) (dump_val v)
 
     let dump_state fs =
       String.concat " /\\ "
         (List.map
            (fun (r,vs) ->
-             match IntSet.as_singleton vs with
+             match VSet.as_singleton vs with
              | Some v ->
                  dump_atom r v
              | None ->
                  let pp =
-                   IntSet.pp_str " \\/ "
+                   VSet.pp_str " \\/ "
                      (fun v -> dump_atom r v)
                      vs in
                  sprintf "(%s)" pp)
            fs)
 
-    let dump_final chan f = match f with
+    let dump_flts flts =
+      let pp =
+        List.map
+          (fun (p,xs) ->
+            StringSet.pp_str " \\/ " (fun x -> sprintf "fault(%s,%s)" (Proc.pp p) x) xs)
+          flts in
+      let pp = String.concat " \\/ " pp in
+      match flts with
+      | [] -> ""
+      | [_,xs] when StringSet.is_singleton xs -> "~" ^ pp
+      | _ -> sprintf "~(%s)" pp
+
+    let dump_final chan (f,flts) = match f with
     | Exists fs ->
-        fprintf chan "%sexists\n" (if !Config.neg then "~" else "") ;
-        fprintf chan "(%s)\n" (dump_state fs)
+        let ppfs = dump_state fs
+        and ppflts = dump_flts flts in
+        let cc = match ppfs,ppflts with
+        | "","" -> ""
+        | "",_ -> ppflts
+        | _,"" -> sprintf "(%s)" ppfs
+        | _,_ -> sprintf "(%s) /\\ %s" ppfs ppflts in
+        fprintf chan "%sexists %s\n" (if !Config.neg then "~" else "") cc
     | Forall ffs ->
         fprintf chan "forall\n" ;
-        fprintf chan "%s\n" (Run.dump_cond ffs)
+        fprintf chan "%s%s\n" (Run.dump_cond ffs)
+          (match dump_flts flts with
+          | "" -> ""
+          | pp -> " /\\ "^pp)
     | Locations locs ->
         fprintf chan "locations [%s]\n"
           (String.concat ""
-             (List.map (fun loc -> sprintf "%s;" (C.A.pp_location loc)) locs))
-
+             (List.map (fun loc -> sprintf "%s;" (C.A.pp_location loc)) locs)) ;
+        begin match dump_flts flts with
+        | "" -> ()
+        | pp -> fprintf chan "forall %s\n" pp
+        end
   end
-

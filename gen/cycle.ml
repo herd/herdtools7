@@ -23,13 +23,14 @@ module type S = sig
   type atom
 
   type event =
-      { loc : loc ;
+      { loc : loc ; tag : int;
         v   : v ;
         dir : dir option ;
         proc : Code.proc ;
         atom : atom option ;
         rmw : bool ;
         cell : v ;
+        bank : Code.bank ;
         idx : int ; }
 
   val evt_null : event
@@ -91,7 +92,6 @@ module type S = sig
 end
 
 module type Config = sig
-  val coherence_decreasing : bool
   val same_loc : bool
   val verbose : int
 (* allow threads s.t start -> end is against com+ *)
@@ -105,24 +105,26 @@ module Make (O:Config) (E:Edge.S) :
     S with type fence = E.fence and type edge = E.edge and type atom = E.atom
 = struct
   let dbg = false
-
+  let do_memtag = O.variant Variant_gen.MemTag
   type fence = E.fence
   type edge = E.edge
   type atom = E.atom
 
   type event =
-      { loc : loc ;
+      { loc : loc ; tag : int;
         v   : v ;
         dir : dir option ;
         proc : Code.proc ;
         atom : atom option ;
         rmw : bool ;
         cell : v ; (* value of cell at node... *)
+        bank : Code.bank ;
         idx : int ; }
 
   let evt_null =
-    { loc=Code.loc_none ; v=(-1) ; dir=None; proc=(-1); atom=None; rmw=false;
-      cell=(-1); idx=(-1); }
+    { loc=Code.loc_none ; tag=0;
+      v=(-1) ; dir=None; proc=(-1); atom=None; rmw=false;
+      cell=(-1); bank=Code.Ord; idx=(-1); }
 
   let make_wsi idx loc = { evt_null with dir=Some W ; loc=loc; idx=idx; v=0;}
 
@@ -151,18 +153,23 @@ module Make (O:Config) (E:Edge.S) :
   let debug_atom a =
     match a with None -> "" | Some a -> E.pp_atom a
 
+  let debug_tag =
+    if do_memtag then fun e -> sprintf " (tag=%i)" e.tag
+    else fun _ -> ""
+
   let debug_evt e =
     if O.hexa then
-      sprintf "%s%s %s 0x%x"
+      sprintf "%s%s %s 0x%x%s"
         (debug_dir e.dir)
         (debug_atom e.atom)
         (Code.pp_loc e.loc)
-        e.v
+        e.v (debug_tag e)
     else
-      sprintf "%s%s %s %i"
+      sprintf "%s%s %s %i%s"
         (debug_dir e.dir)
         (debug_atom e.atom)
         (Code.pp_loc e.loc) e.v
+        ( debug_tag e)
 
   let debug_edge = E.pp_edge
 
@@ -200,7 +207,7 @@ module Make (O:Config) (E:Edge.S) :
 
 let do_alloc_node idx e =
   {
-   evt = { evt_null with idx= idx ;} ;
+   evt = { evt_null with idx = idx ;} ;
    edge = e ;
    next = nil ;
    prev = nil ;
@@ -347,15 +354,22 @@ let rec count_ws = function
     | Some W -> 1+count_ws ns
     | Some R|Some J|None -> count_ws ns
 
-let start_co =
-  if O.coherence_decreasing then count_ws
-  else (fun _ -> 1)
+let () = ignore (count_ws)
 
-let next_co =
-  if O.coherence_decreasing then (fun v -> v-1)
-  else (fun v -> v+1)
+module CoSt = MyMap.Make(struct type t = Code.bank let compare = compare end)
 
+let co_st_0  = CoSt.add Ord 0 (CoSt.add Tag 0 CoSt.empty)
+let co_st_1  = CoSt.add Ord 1 (CoSt.add Tag 1 CoSt.empty)
+let start_co _ = co_st_1
 
+let get_co st bank =
+  try CoSt.find bank st with Not_found -> assert false
+
+let set_co st bank v = CoSt.add bank v st
+
+let next_co st bank =
+  let v = get_co st bank in
+  CoSt.add bank (v+1) st
 
 
 (****************************)
@@ -513,7 +527,7 @@ let set_diff_loc st n0 =
       if same_loc p.edge then begin
         p.evt.loc,st
       end else next_loc m.edge st in
-    m.evt <- { m.evt with loc=loc; } ;
+    m.evt <- { m.evt with loc=loc ; bank=E.atom_to_bank m.evt.atom; } ;
 (*    eprintf "LOC SET: %a [p=%a]\n%!" debug_node m debug_node p; *)
     if m.next != n0 then do_rec st p.next m.next
     else begin
@@ -531,9 +545,9 @@ let set_same_loc st n0 =
   let n1 =
     try find_node (fun n -> E.is_com n.edge) n0
     with Not_found -> n0 in
-  let loc,st = next_loc n1 .edge st in
+  let loc,st = next_loc n1.edge st in
   let rec do_rec m =
-    m.evt <- { m.evt with loc=loc; } ;
+    m.evt <- { m.evt with loc=loc; bank=E.atom_to_bank m.evt.atom; } ;
     if m.next != n0 then do_rec m.next in
   do_rec n0 ;
   st
@@ -572,14 +586,28 @@ let set_same_loc st n0 =
   let rec do_set_write_val old next = function
     | [] -> ()
     | n::ns ->
+        begin if do_memtag && Code.is_data n.evt.loc then
+          let tag = get_co old Tag in
+          n.evt <- { n.evt with tag=tag; }
+        end ;
         begin match n.evt.dir with
         | Some W ->
             begin match n.evt.loc with
             | Data _ ->
-                n.evt <- { n.evt with v = tr_value n.evt next; } ;
-                set_cell n old ;
-                do_set_write_val n.evt.cell
-                  (if E.is_node n.edge.E.edge then next else next_co next) ns
+                let bank = n.evt.bank in
+                begin match bank with
+                | Ord ->
+                    n.evt <- { n.evt with v =  tr_value n.evt (get_co next Ord); } ;
+                    set_cell n (get_co old Ord) ;
+                    do_set_write_val
+                      (set_co old bank n.evt.cell)
+                      (if E.is_node n.edge.E.edge then next else next_co next Ord) ns
+                | Tag ->
+                    let v =  get_co next Tag in
+                    n.evt <- { n.evt with v = v; } ;
+                    do_set_write_val (set_co old Tag v)
+                      (next_co next Tag) ns
+                end
             | Code _ ->
                 do_set_write_val old next ns
             end
@@ -589,7 +617,7 @@ let set_same_loc st n0 =
   let set_all_write_val nss =
     List.iter
       (fun ns ->
-        do_set_write_val 0 (start_co ns) ns)
+        do_set_write_val co_st_0 (start_co ns) ns)
       nss
 
   let set_write_v n =
@@ -619,26 +647,34 @@ let set_same_loc st n0 =
 let set_read_v n cell =
   let e = n.evt in
   let v = E.extract_value cell e.atom in
-(*  eprintf "SET READ: cell=0x%x, v=0x%x\n" cell v ; *)
+(* eprintf "SET READ: cell=0x%x, v=0x%x\n" cell v ; *)
   let e = { e with v=v; } in
   n.evt <- e
 (*  eprintf "AFTER %a\n" debug_node n *)
 
 let do_set_read_v =
 
-  let rec do_rec cell  = function
+  let rec do_rec st cell  = function
     | [] -> cell
     | n::ns ->
         begin match n.evt.dir with
         | Some R ->
-            set_read_v n cell ;
-            do_rec cell ns
+            begin match  n.evt.bank with
+            | Ord ->
+                set_read_v n cell
+            | b ->
+                n.evt <- { n.evt with v = get_co st b; }
+            end ;
+            do_rec st cell ns
         | Some W ->
-            do_rec n.evt.cell ns
+            let st = set_co st n.evt.bank n.evt.v in
+            do_rec st
+              (match n.evt.bank with | Ord -> n.evt.cell | Tag -> cell)
+              ns
         | None | Some J ->
-            do_rec cell ns
+            do_rec st cell ns
         end in
-  do_rec 0
+  do_rec co_st_0 0
 
 let set_read_v nss =
   List.fold_right
@@ -783,8 +819,7 @@ let merge_changes n nss =
   do_rec n ;
   List.filter Misc.consp (Array.to_list t)
 
-  let value_before v1 v2 =
-    if O.coherence_decreasing then v1 > v2 else v1 < v2
+  let value_before v1 v2 = v1 < v2
 
 
   let proc_back ns = match ns with
@@ -872,7 +907,7 @@ let rec group_rec x ns = function
     do_rec n
 
 
-  let get_writes n =
+  let get_ord_writes n =
     let rec do_rec m =
       let k =
         if m.next == n then []
@@ -880,7 +915,10 @@ let rec group_rec x ns = function
       let e = m.evt in
       let k =  match e.dir with
       | Some W ->
-          if E.is_node m.edge.E.edge then k else (e.loc,m)::k
+          if
+            E.is_node m.edge.E.edge ||
+            m.evt.bank <> Code.Ord
+          then k else (e.loc,m)::k
       | None| Some R | Some J -> k in
       k in
 
@@ -899,7 +937,7 @@ let rec group_rec x ns = function
   let coherence n =
     let r = match find_change n with
     | Some n ->
-        let ws = get_writes n in
+        let ws = get_ord_writes n in
 (*
         List.iter
           (fun (loc,n) ->
@@ -919,7 +957,7 @@ let rec group_rec x ns = function
           r []
     | None ->
         if O.same_loc then
-          match get_writes n with
+          match get_ord_writes n with
           | [] -> []
           | (loc,_)::_ as xs ->
               [loc,[List.map snd xs]]

@@ -29,6 +29,8 @@ module type S = sig
   val worth_final : atom -> bool
   val varatom_dir : Code.dir -> (atom option -> 'a -> 'a) -> 'a -> 'a
   val merge_atoms : atom -> atom -> atom option
+(* Memory bank *)
+  val atom_to_bank : atom -> Code.bank
 (* Value computation, for mixed size *)
   val tr_value : atom option -> Code.v -> Code.v
   val overwrite_value : Code. v -> atom option -> Code.v -> Code.v
