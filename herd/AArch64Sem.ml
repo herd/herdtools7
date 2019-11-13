@@ -109,6 +109,10 @@ module Make
 (* Fence *)
       let create_barrier b ii = M.mk_singleton_es (Act.Barrier b) ii
 
+(* Page tables and TLBs *)
+      let mk_inv loc = Act.Inv loc
+      let inv_loc loc ii = M.mk_singleton_es (mk_inv loc) ii
+
 (******************)
 (* Memory Tagging *)
 (******************)
@@ -224,6 +228,9 @@ module Make
         | AArch64.GT -> is_le
         | AArch64.LE -> is_gt
         | AArch64.LT -> is_ge
+
+(* Page tables and TLBs *)
+    let do_inv a ii = inv_loc (A.Location_global a) ii
 
 (***********************)
 (* Memory instructions *)
@@ -556,6 +563,11 @@ module Make
             ldop op (bh_to_sz v) (w_to_rmw w) rs ZR rn ii >>! B.Next
         | I_LDOPBH (op,v,rmw,rs,rt,rn) ->
             ldop op (bh_to_sz v) rmw rs rt rn ii >>! B.Next
+(* Page tables and TLBs *)
+        | I_TLBI (op, rd) ->
+          read_reg_ord rd ii >>= fun a ->
+          M.op1 Op.TLBLoc a >>= fun tlb_a ->
+          do_inv tlb_a ii >>! B.Next
 (*  Cannot handle *)
         | (I_RBIT _|I_MRS _|I_LDP _|I_STP _|I_IC _|I_DC _|I_BL _|I_BLR _|I_BR _|I_RET _) as i ->
             Warn.fatal "illegal instruction: %s"

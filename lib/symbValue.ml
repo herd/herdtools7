@@ -251,6 +251,18 @@ module Make(Cst:Constant.S) = struct
   let op_locextract (a,_) o = Symbolic ((a,None),o)
   let locextract v = op_tagged "locextract" op_locextract v
 
+  let op_pte_tlb op_op op v = match v with
+  |  Val (Symbolic (a,_)) -> Val (op a)
+  |  Val (Concrete _|Label _|Tag _) ->
+      Warn.user_error "Illegal %s on %s" op_op (pp_v v)
+  | Var _ -> raise Undetermined
+
+  let op_pteloc (a,_) = Symbolic ((Misc.add_pte a,None), 0)   
+  let pteloc = op_pte_tlb "pteloc" op_pteloc
+   
+  let op_tlbloc (a,_) = Symbolic ((Misc.add_tlb a,None), 0)  
+  let tlbloc = op_pte_tlb "tlbloc" op_tlbloc
+
   let op1 op =
     let open! Scalar in
     match op with
@@ -280,6 +292,8 @@ module Make(Cst:Constant.S) = struct
   | UnSetXBits (nb, k) ->
       unop op
         (fun s -> logand (lognot (mask_many nb k)) s)
+  | TLBLoc -> tlbloc
+  | PTELoc -> pteloc
 
   let op op = match op with
   | Add -> add

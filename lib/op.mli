@@ -56,6 +56,8 @@ type op1 =
   | TagExtract   (* Extract tag from tagged location *)
   | LocExtract   (* Extract actual location from location *)
   | UnSetXBits of int * int
+  | TLBLoc (* get TLB entry from location *)
+  | PTELoc (* get PTE entry from location *)
 
 val pp_op1 : bool -> op1 -> string
 

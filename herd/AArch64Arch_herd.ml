@@ -113,6 +113,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | I_ADDR (_, _)|I_RBIT (_, _, _)|I_FENCE _
       | I_CSEL (_, _, _, _, _, _)|I_IC (_, _)|I_DC (_, _)|I_MRS (_, _)
       | I_STG _ | I_LDG _
+      | I_TLBI (_,_)
           -> None
 
     include ArchExtra_herd.Make(C)

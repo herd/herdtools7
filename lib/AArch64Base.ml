@@ -979,6 +979,7 @@ include Pseudo.Make
         | I_STR _ | I_STLR _ | I_STLRBH _ | I_STXR _
         | I_LDRBH _ | I_STRBH _ | I_STXRBH _ | I_IC _ | I_DC _
         | I_STG _ | I_LDG _
+        | I_TLBI (_,_)
           -> 1
         | I_LDP _|I_STP _
         | I_CAS _ | I_CASBH _
@@ -1000,20 +1001,9 @@ include Pseudo.Make
         | I_CSEL _
         | I_ADDR _
         | I_RBIT _
-        | I_TLBI (_,ZR)
+(*        | I_TLBI (_,ZR) *)
         | I_MRS _
           -> 0
-        | I_LDR _ | I_LDAR _ | I_LDARBH _
-        | I_STR _ | I_STLR _ | I_STLRBH _ | I_STXR _
-        | I_LDRBH _ | I_STRBH _ | I_STXRBH _ | I_IC _ | I_DC _
-        | I_TLBI _
-          -> 1
-        | I_LDP _|I_STP _
-        | I_CAS _ | I_CASBH _
-        | I_SWP _ | I_SWPBH _
-        | I_LDOP _ | I_LDOPBH _
-        | I_STOP _ | I_STOPBH _
-          -> 2
 
       let fold_labels k f = function
         | I_B lbl
