@@ -704,3 +704,6 @@ let clean_name n =
 
 let add_atag = sprintf "%s.atag"
 and check_atag s = Filename.check_suffix s ".atag"
+
+let add_pte = sprintf "pte_%s"
+let add_tlb = sprintf "tlb_%s"
