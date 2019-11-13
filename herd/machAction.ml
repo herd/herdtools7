@@ -45,6 +45,9 @@ module Make (C:Config) (A : A) : sig
     | Fault of A.inst_instance_id * A.location * string option
 (* Unrolling control *)
     | TooFar
+(* Invalidate event *)
+   | Inv of (*A.TLBI.op **) A.location
+
   include Action.S with type action := action and module A = A
 
 end = struct
@@ -61,6 +64,7 @@ end = struct
     | Amo of A.location * A.V.v * A.V.v * A.lannot * MachSize.sz
     | Fault of A.inst_instance_id * A.location * string option
     | TooFar
+    | Inv of (*A.TLBI.op **) A.location
 
   let mk_init_write l sz v = match v with
   | A.V.Val (Constant.Tag _) -> TagAccess (W,l,v)
@@ -93,12 +97,14 @@ end = struct
         (A.pp_location loc)
         (Misc.proj_opt "None" msg)
   | TooFar -> "TooFar"
+  | Inv loc ->
+      Printf.sprintf "Inv(%s)" (A.pp_location loc)
 
 (* Utility functions to pick out components *)
   let value_of a = match a with
   | TagAccess (_,_,v)|Access (_,_ , v,_,_)
     -> Some v
-  | Barrier _|Commit _|Amo _|Fault _|TooFar
+  | Barrier _|Commit _|Amo _|Fault _|TooFar|Inv _
     -> None
 
   let read_of a = match a with
@@ -107,7 +113,7 @@ end = struct
   | Amo (_,v,_,_,_)
     -> Some v
   | TagAccess (W,_,_)|Access (W, _, _, _,_)|Barrier _|Commit _|Fault _
-  | TooFar
+  | TooFar|Inv _
     -> None
 
   and written_of a = match a with
@@ -116,7 +122,7 @@ end = struct
   | Amo (_,_,v,_,_)
     -> Some v
   | TagAccess(R,_,_)|Access (R, _, _, _,_)|Barrier _|Commit _|Fault _
-  | TooFar
+  | TooFar|Inv _
     -> None
 
   let location_of a = match a with
@@ -124,6 +130,7 @@ end = struct
   | Access (_, l, _,_,_)
   | Amo (l,_,_,_,_)
   | Fault (_,l,_)
+  | Inv l
     -> Some l
   | Barrier _|Commit _ | TooFar -> None
 
@@ -160,15 +167,18 @@ end = struct
 
   let is_tag = function
     | TagAccess _ -> true
-    | Access _ | Barrier _ | Commit _ | Amo _ | Fault _ | TooFar -> false
+    | Access _ | Barrier _ | Commit _ | Amo _ | Fault _ | TooFar | Inv _ -> false
 
   let is_fault = function
     | Fault _ -> true
-    | TagAccess _|Access _|Amo _|Commit _|Barrier _ | TooFar -> false
+    | TagAccess _|Access _|Amo _|Commit _|Barrier _ | TooFar | Inv _ -> false
 
   let to_fault = function
     | Fault (i,A.Location_global x,msg) -> Some ((i.A.proc,i.A.labels),x,msg)
-    | Fault _|TagAccess _|Access _|Amo _|Commit _|Barrier _ | TooFar -> None
+    | Fault _|TagAccess _|Access _|Amo _|Commit _
+    | Barrier _ | TooFar | Inv _
+      -> None
+
 
   let get_mem_dir a = match a with
   | TagAccess (d,A.Location_global _,_)
@@ -195,11 +205,11 @@ end = struct
 (* Store/Load anywhere *)
   let is_store a = match a with
   | TagAccess (W,_,_)|Access (W,_,_,_,_)|Amo _ -> true
-  | TagAccess (R,_,_)|Access (R,_,_,_,_)|Barrier _|Commit _|Fault _|TooFar -> false
+  | TagAccess (R,_,_)|Access (R,_,_,_,_)|Barrier _|Commit _|Fault _|TooFar| Inv _ -> false
 
   let is_load a = match a with
   | TagAccess(R,_,_)|Access (R,_,_,_,_)|Amo _ -> true
-  | TagAccess(W,_,_)|Access (W,_,_,_,_)|Barrier _|Commit _|Fault _|TooFar -> false
+  | TagAccess(W,_,_)|Access (W,_,_,_,_)|Barrier _|Commit _|Fault _|TooFar|Inv _ -> false
 
   let compatible_categories loc1 loc2 = match loc1,loc2 with
   | (A.Location_global _,A.Location_global _)
@@ -312,7 +322,7 @@ end = struct
         | None -> V.ValueSet.empty
         | Some v -> V.ValueSet.singleton v in
         add_v_undet v1 (add_v_undet v2 undet)
-   | Barrier _|Commit _|Fault _|TooFar -> V.ValueSet.empty
+   | Barrier _|Commit _|Fault _|TooFar|Inv _ -> V.ValueSet.empty
 
   let simplify_vars_in_action soln a =
     match a with
@@ -332,6 +342,9 @@ end = struct
     | Fault (ii,loc,msg) ->
         let loc = A.simplify_vars_in_loc soln loc in
         Fault(ii,loc,msg)
+    | Inv loc ->
+        let loc = A.simplify_vars_in_loc soln loc in
+        Inv loc
     | Barrier _ | Commit _|TooFar -> a
 
   let annot_in_list _str _ac = false
