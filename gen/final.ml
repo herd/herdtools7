@@ -184,7 +184,8 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         | "",_ -> ppflts
         | _,"" -> sprintf "(%s)" ppfs
         | _,_ -> sprintf "(%s) /\\ %s" ppfs ppflts in
-        fprintf chan "%sexists %s\n" (if !Config.neg then "~" else "") cc
+        if cc <> "" then
+          fprintf chan "%sexists %s\n" (if !Config.neg then "~" else "") cc
     | Forall ffs ->
         fprintf chan "forall\n" ;
         fprintf chan "%s%s\n" (Run.dump_cond ffs)
