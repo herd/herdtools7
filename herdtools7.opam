@@ -1,6 +1,6 @@
 opam-version: "2.0"
 name: "herdtools7"
-version: "7.54+02(dev)"
+version: "7.54+03(dev)"
 synopsis: "The herdtools suite for simulating and studying weak memory models"
 description: ""
 maintainer: "Luc Maranget <Luc.Maranget@inria.fr>"
