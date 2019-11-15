@@ -65,7 +65,7 @@ module type S = sig
 
   val pp_global : global_loc -> string
   include Location.S
-  with type loc_reg = I.arch_reg and type loc_global = v
+  with type loc_reg := I.arch_reg and type loc_global := v
 
 (* Extra for locations *)
   val maybev_to_location : MiscParser.maybev -> location
@@ -79,7 +79,7 @@ module type S = sig
 (**********)
 (* Faults *)
 (**********)
-  include Fault.S with type loc_global = v
+  include Fault.S with type loc_global := v
 
 (*********)
 (* State *)

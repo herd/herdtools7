@@ -45,4 +45,4 @@ module type S = sig
 
 end
 
-module Make : functor (A:I) -> S with type loc_global = A.arch_global
+module Make : functor (A:I) -> S with type loc_global := A.arch_global

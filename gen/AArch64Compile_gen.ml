@@ -63,7 +63,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     match Cfg.typ with
     | Std (_,MachSize.Quad) -> V64
     | Int |Std (_,MachSize.Word) -> V32
-    | Std (_,MachSize.(Short|Byte)) -> V32
+    | Std (_,(MachSize.Short|MachSize.Byte)) -> V32
 
 
     let sz2v =

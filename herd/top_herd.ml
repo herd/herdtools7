@@ -220,9 +220,11 @@ module Make(O:Config)(M:XXXMem.S) =
       and loads = S.E.mem_loads_of es.S.E.events in
       S.E.EventSet.subset loads obs
 
-    let collect_atom_fault a r = match a with
-    | ConstrGen.(LV _|LL _) -> r
-    | ConstrGen.FF f -> f::r
+    let collect_atom_fault a r =
+      let open ConstrGen in
+      match a with
+      | (LV _|LL _) -> r
+      | FF f -> f::r
 
 (* Called by model simulator in case of success *)
     let model_kont ochan test do_restrict cstr =

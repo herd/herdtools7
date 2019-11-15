@@ -69,9 +69,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
 
     let  wloc =
       let open TypBase in
+      let open MachSize in
       match Cfg.typ with
       | Std (_,MachSize.Quad) -> AV.Double
-      | Int |Std (_,MachSize.(Word|Short|Byte)) -> AV.Word
+      | Int |Std (_,(Word|Short|Byte)) -> AV.Word
 
 
     let bne r1 r2 lab =  AV.Bcc (AV.NE,r1,r2,lab)

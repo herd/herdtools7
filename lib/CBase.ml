@@ -237,33 +237,35 @@ include Pseudo.Make
       type pins = parsedInstruction
       type reg_arg = reg
 
-      let rec parsed_expr_tr = function
-        | Const(Constant.Concrete _) as k -> k
-        | Const Constant.(Symbolic _|Label _|Tag _) ->
-            Warn.fatal "No constant variable allowed"
-        | LoadReg _ as l -> l
-        | LoadMem (l,mo) ->
-            LoadMem (parsed_expr_tr l,mo)
-        | Op(op,e1,e2) -> Op(op,parsed_expr_tr e1,parsed_expr_tr e2)
-        | Exchange(l,e,mo) ->
-            Exchange(parsed_expr_tr l,parsed_expr_tr e,mo)
-        | CmpExchange(e1,e2,e3,a) ->
-            CmpExchange(parsed_expr_tr e1,parsed_expr_tr e2,parsed_expr_tr e3,a)
-        | Fetch(l,op,e,mo) ->
-            Fetch(parsed_expr_tr l,op,parsed_expr_tr e,mo)
-        | ECall (f,es) -> ECall (f,List.map parsed_expr_tr es)
-        | ECas (e1,e2,e3,mo1,mo2,strong) ->
-            ECas
-              (parsed_expr_tr e1,parsed_expr_tr e2,parsed_expr_tr e3,
-               mo1,mo2,strong)
-        | TryLock(e,m) -> TryLock(parsed_expr_tr e,m)
-        | IsLocked(e,m) -> IsLocked(parsed_expr_tr e,m)
-        | AtomicOpReturn (loc,op,e,ret,a) ->
-            AtomicOpReturn(parsed_expr_tr loc,op,parsed_expr_tr e,ret,a)
-        | AtomicAddUnless(loc,a,u,retbool) ->
-            AtomicAddUnless
-              (parsed_expr_tr loc,parsed_expr_tr a,parsed_expr_tr u,retbool)
-        | ExpSRCU(e,a) -> ExpSRCU(parsed_expr_tr e,a)
+      let rec parsed_expr_tr =
+        let open Constant in
+        function
+          | Const(Concrete _) as k -> k
+          | Const (Symbolic _|Label _|Tag _) ->
+              Warn.fatal "No constant variable allowed"
+          | LoadReg _ as l -> l
+          | LoadMem (l,mo) ->
+              LoadMem (parsed_expr_tr l,mo)
+          | Op(op,e1,e2) -> Op(op,parsed_expr_tr e1,parsed_expr_tr e2)
+          | Exchange(l,e,mo) ->
+              Exchange(parsed_expr_tr l,parsed_expr_tr e,mo)
+          | CmpExchange(e1,e2,e3,a) ->
+              CmpExchange(parsed_expr_tr e1,parsed_expr_tr e2,parsed_expr_tr e3,a)
+          | Fetch(l,op,e,mo) ->
+              Fetch(parsed_expr_tr l,op,parsed_expr_tr e,mo)
+          | ECall (f,es) -> ECall (f,List.map parsed_expr_tr es)
+          | ECas (e1,e2,e3,mo1,mo2,strong) ->
+              ECas
+                (parsed_expr_tr e1,parsed_expr_tr e2,parsed_expr_tr e3,
+                 mo1,mo2,strong)
+          | TryLock(e,m) -> TryLock(parsed_expr_tr e,m)
+          | IsLocked(e,m) -> IsLocked(parsed_expr_tr e,m)
+          | AtomicOpReturn (loc,op,e,ret,a) ->
+              AtomicOpReturn(parsed_expr_tr loc,op,parsed_expr_tr e,ret,a)
+          | AtomicAddUnless(loc,a,u,retbool) ->
+              AtomicAddUnless
+                (parsed_expr_tr loc,parsed_expr_tr a,parsed_expr_tr u,retbool)
+          | ExpSRCU(e,a) -> ExpSRCU(parsed_expr_tr e,a)
 
       and parsed_tr = function
         | Fence _|DeclReg _ as i -> i

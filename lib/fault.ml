@@ -49,7 +49,7 @@ module type S = sig
   val check_fatom : FaultSet.t -> fatom -> bool
 end
 
-module Make(A:I) : S with type loc_global = A.arch_global =
+module Make(A:I) =
   struct
 
     type loc_global = A.arch_global

@@ -44,7 +44,7 @@ module Make(V:Constant.S) =
     let extract_op = function
       | RAI iar -> extract_iar iar
       | OP (_,iar1,iar2)
-          ->  StringSet.union (extract_iar iar1) (extract_iar iar2)
+        ->  StringSet.union (extract_iar iar1) (extract_iar iar2)
 
     let extract_addrs = function
       | Pld (_,ao,_)
@@ -58,13 +58,15 @@ module Make(V:Constant.S) =
 (*****************************)
 (* Compilation (to kernel C) *)
 (*****************************)
-    let compile_iar = function
-      | IAR_imm i -> sprintf "%i" i,[]
-      | IAR_roa (Rega r) -> reg_to_string r,[r]
-      | IAR_roa (Abs (Constant.Symbolic ((s,None),0))) -> s,[]
-      | IAR_roa
-          (Abs Constant.(Symbolic _|Concrete _|Label _|Tag _))
-        -> assert false
+    let compile_iar = 
+      let open Constant in
+      function
+        | IAR_imm i -> sprintf "%i" i,[]
+        | IAR_roa (Rega r) -> reg_to_string r,[r]
+        | IAR_roa (Abs (Symbolic ((s,None),0))) -> s,[]
+        | IAR_roa
+            (Abs (Symbolic _|Concrete _|Label _|Tag _))
+          -> assert false
 
     let compile_roi = function
       | Imm i -> sprintf "%i" i,[]
@@ -76,19 +78,21 @@ module Make(V:Constant.S) =
       | Some (Imm _) -> Compile.pointer
       | Some (Regi _)|None  -> voidstar
 
-    let compile_addr_op vo = function
-      | Addr_op_atom (Abs (Constant.Symbolic ((s,None),0))) -> s,[],[]
-      | Addr_op_atom (Rega r) -> reg_to_string r,[r;],[r,type_vo vo]
-      | Addr_op_add (Abs (Constant.Symbolic ((s,None),0)),roi) ->
-          let m,i = compile_roi roi in
-          add_par (s ^ "+" ^ m),i,[]
-      | Addr_op_add (Rega r,roi) ->
-          let m,i = compile_roi roi in
-          add_par (reg_to_string r ^ "+" ^ m),r::i,[r,type_vo vo]
-      | Constant.(Addr_op_atom (Abs (Concrete _|Label _|Tag _|Symbolic _))
-      | Addr_op_add (Abs  (Concrete _|Label _|Tag _|Symbolic _),_))
-        ->
-          assert false
+    let compile_addr_op vo =
+      let open Constant in
+      function
+        | Addr_op_atom (Abs (Constant.Symbolic ((s,None),0))) -> s,[],[]
+        | Addr_op_atom (Rega r) -> reg_to_string r,[r;],[r,type_vo vo]
+        | Addr_op_add (Abs (Constant.Symbolic ((s,None),0)),roi) ->
+            let m,i = compile_roi roi in
+            add_par (s ^ "+" ^ m),i,[]
+        | Addr_op_add (Rega r,roi) ->
+            let m,i = compile_roi roi in
+            add_par (reg_to_string r ^ "+" ^ m),r::i,[r,type_vo vo]
+        | Addr_op_atom (Abs (Concrete _|Label _|Tag _|Symbolic _))
+        | Addr_op_add (Abs  (Concrete _|Label _|Tag _|Symbolic _),_)
+          ->
+            assert false
 
     let compile_ins tr_lab ins k = match ins with
     | Pld (r,a,["once"]) ->
