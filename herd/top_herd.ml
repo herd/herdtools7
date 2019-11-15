@@ -56,6 +56,7 @@ module Make(O:Config)(M:XXXMem.S) =
 
     let memtag = O.variant Variant.MemTag
     let showtoofar = O.variant Variant.TooFar
+    let kvm = O.variant Variant.Kvm
 
 (* Utilities *)
     open Restrict
@@ -357,7 +358,7 @@ module Make(O:Config)(M:XXXMem.S) =
       let cstr = T.find_our_constraint test in
 
       let restrict_faults =
-        if memtag then
+        if memtag || kvm then
           let faults_in_cond =
             ConstrGen.fold_constr collect_atom_fault cstr [] in
           A.FaultSet.filter

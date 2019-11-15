@@ -28,6 +28,7 @@ module Make
     let mixed = AArch64.is_mixed
     let memtag = C.variant Variant.MemTag
     let is_deps = C.variant Variant.Deps
+    let kvm = C.variant Variant.Kvm
 
 (* Barrier pretty print *)
     let barriers =
@@ -63,6 +64,8 @@ module Make
 (* Basic read, from register *)
       let mk_read sz an loc v = Act.Access (Dir.R, loc, v, an, sz)
       let mk_read_std = mk_read MachSize.Quad AArch64.N
+      let mk_miss a ii =
+        M.mk_singleton_es (Act.Miss (ii,A.Location_global a)) ii
       let mk_fault a ii =
         M.mk_singleton_es (Act.Fault (ii,A.Location_global a)) ii
 
@@ -262,14 +265,38 @@ module Make
             do_write_mem sz an a v ii)
           ma ii
 
-      let ldr sz rd rs kr ii =
-        lift_memop
-          (fun ma -> ma >>= fun a ->
-           old_do_read_mem sz AArch64.N a ii >>= fun v ->
-           write_reg_sz_non_mixed sz rd v ii )
-          (get_ea rs kr ii) ii
+      let ptw a sz ii f = 
+        M.op1 Op.PTELoc a >>= fun pte_a -> 
+        old_do_read_mem sz AArch64.NExp pte_a ii >>= 
+        fun pte_v ->
+          is_zero pte_v (*INV*) >>= fun pte_inv ->
+          M.choiceT pte_inv 
+            (mk_fault pte_a ii >>! B.Next)           
+            (f pte_v >>! B.Next)
 
-      and str sz rs rd kr ii = do_str sz AArch64.N rs (get_ea rd kr ii) ii
+     let do_str_ptw sz rs ma ii =
+        (ma >>| read_reg_data sz rs ii) >>= fun (a,v) -> 
+        ptw a sz ii (fun pte_v -> write_mem sz pte_v v ii)
+
+      let do_ldr_ptw sz rd ma ii =
+        ma >>= fun a -> 
+        ptw a sz ii (fun pte_v -> write_reg rd pte_v ii)
+
+      let ldr sz rd rs kr ii =
+        if kvm then 
+          do_ldr_ptw sz rd (get_ea rs kr ii) ii
+        else
+          lift_memop
+            (fun ma -> ma >>= fun a ->
+             old_do_read_mem sz AArch64.N a ii >>= fun v ->
+             write_reg rd v ii )
+             (get_ea rs kr ii) ii
+
+      and str sz rs rd kr ii = 
+        (*if kvm then
+          do_str_ptw sz rs (get_ea rd kr ii) ii
+        else *)
+          do_str sz AArch64.N rs (get_ea rd kr ii) ii
 
       and stlr sz rs rd ii = do_str sz AArch64.L rs (read_reg_ord rd ii) ii
 

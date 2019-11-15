@@ -286,6 +286,8 @@ module Make
                  "F", E.is_barrier;
                  "DATA", is_data_port;
                  "NDATA", (fun e -> not (is_data_port e)); ])) in
+                 "FAULT", E.is_fault;
+                 "INV",E.is_inv;])) in
       let m =
         I.add_sets m
           (List.map

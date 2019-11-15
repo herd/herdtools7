@@ -188,6 +188,10 @@ end = struct
   let is_atomic = function
     | Access (_,A.Location_global _,_,_,at,_) -> at
     | _ -> false
+  
+  let is_inv _ = false
+  
+  let is_fault _ = false
 
   let to_fault _ = None
 
