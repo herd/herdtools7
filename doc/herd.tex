@@ -41,7 +41,7 @@ and~\verb+fr+ are pre-defined.
 and their binding to a name with the \verb+let+ construct.
 Here, a new relation \verb+com+ is the union ``\texttt{|}'' of
 the three pre-defined communication relations.
-\item The peformance of some checks. Here the relation ``\verb+po | com+''
+\item The performance of some checks. Here the relation ``\verb+po | com+''
 (\emph{i.e.} the union of program order \textrel{po} and of  communication
 relations) is required to be acyclic.
 Checks can be given names by suffixing them with
@@ -164,7 +164,7 @@ reads the value $1$~from the location~$x$ (possibly by store forwarding) and
 then reads the value~$0$ from the location~$y$;
 while Thread~$1$ writes~$1$ into~$y$,
 reads~$1$ from~$y$ and then reads~$0$ from~$x$.
-Hence, this test derives from the previour~\atest{SB}
+Hence, this test derives from the previous~\atest{SB}
 by adding loads in the middle, those loads
 being  satisfied from local stores.
 As can be seen by running the test on top of the \afile{tso-00.cat}
@@ -204,7 +204,7 @@ Condition exists (0:EAX=1 /\ 0:EBX=0 /\ 1:EAX=1 /\ 1:EBX=0) is validated
 As a conclusion, our tentative TSO model is too strong.
 The following diagram pictures its \textrel{ghb} relation:
 \begin{center}\img{SB+rfi-pos+TER}\end{center}
-One easily sees that \textrel{ghb} is cyclic, wheras it should not.
+One easily sees that \textrel{ghb} is cyclic, whereas it should not.
 Namely, the internal read-from relation~\textrel{rfi} does
 not create global order in the TSO model.
 Hence, \textrel{rfi} is not included in \textrel{ghb}.
@@ -263,7 +263,7 @@ as it allows some behaviours that any model must
 reject for the sake of single thread correctness.
 The following test \atest{CoRWR} illustrates the issue:
 \verbatiminput{CoRWR.litmus}
-The test final condition targets the following excution candidate:
+The test final condition targets the following execution candidate:
 \begin{center}\img{CoRWR}\end{center}
 The TSO check ``\verb+acyclic po-tso|com-tso+'' does not suffice to reject
 two absurd behaviours pictured in the execution diagram above:
@@ -363,7 +363,7 @@ We can generate all such topological orders with the \cat{}~primitive
 \begin{verbatim}
 let allS = linearisations(M\IW,preSC)
 \end{verbatim}
-The call \texttt{linearisation($E$,$r$)}, where $E$ is a set of events
+The call \texttt{linearisations($E$,$r$)}, where $E$ is a set of events
 and~$r$ is a relation on events, returns the set of all total
 orders defined on~$S$ that extend~$r$. Notice that if~$r$ is cyclic,
 the empty set is  returned.
@@ -386,7 +386,7 @@ As a first consistency check, we check that $S$ includes the program order:
 \begin{verbatim}
 empty po \ S as PoCons
 \end{verbatim}
-Notice that, to check for inclusion, we test the emptyness of relation
+Notice that, to check for inclusion, we test the emptiness of relation
 difference (operator ``\verb+\+'').
 
 
@@ -410,7 +410,7 @@ The definition is a two-step process: we first define
 a relation~\texttt{WRS} from writes to reads (to the same location)
 that follow them in~$S$. Observe that,
 by complementing~$S$ with initial writes, we achieve that for any read~$r$
-there exists at least a write~$w$ such thar $(w,r) \in \texttt{WRS}$.
+there exists at least a write~$w$ such that $(w,r) \in \texttt{WRS}$.
 It then remains to filter out non-maximal writes in \texttt{WRS}
 as we do in the definition of \texttt{rf-S}, by the means of
 the difference operator ``\verb+\+''.
@@ -421,7 +421,7 @@ empty rf \ rf-S as RfCons
 empty rf-S \ rf as RfCons
 \end{verbatim}
 
-As an exemple, he show six attempts of \texttt{po} compatible $S$~orders
+As an example, he show six attempts of \texttt{po} compatible $S$~orders
 for the non-SC outcome of the test~\atest{SB} in figure~\ref{sblamport}.
 \begin{figure}[htp]
 \caption{\label{sblamport}Failed attempts of SC scheduling orders~$S$.}
@@ -433,7 +433,7 @@ for the non-SC outcome of the test~\atest{SB} in figure~\ref{sblamport}.
 Observe that all attempts fail as \texttt{rf} and \texttt{rf-S}
 are different in all diagrams.
 
-We also show all successfull SC scheduling in figure~\ref{sbok}.
+We also show all successful SC scheduling in figure~\ref{sbok}.
 \begin{figure}[htp]
 \caption{\label{sbok}SC executions of test~\atest{SB}.}
 \begin{center}
@@ -659,7 +659,7 @@ pictures of some executions with the \opt{-show} option.
 This option accepts specific keywords, its default being ``\opt{none}'',
 instructing \herd{} not to produce any picture.
 
-A frequentlty used keyword is ``\opt{prop}'' that means ``show the executions
+A frequently used keyword is ``\opt{prop}'' that means ``show the executions
 that validate the proposition in the final condition''.
 Namely, the final condition in litmus test is a quantified
 boolean proposition as for instance ``\verb+exists (0:EAX=0 /\ 1:EAX=0)+'' at the end of test \atest{SB}.
@@ -712,7 +712,7 @@ and that is reproduced in Fig.~\ref{fig:sb}
 \label{mode:example}In effect, \herd{} can produce three styles
 of pictures, \prog{dot} clustered pictures, \prog{dot} free pictures,
 and \prog{neato} pictures with explicit placement of the
-events of one thread as a colum.
+events of one thread as a column.
 The style is commanded by the \opt{-graph} option that accepts three
 possible arguments: \opt{cluster} (default), \opt{free} and~\opt{columns}.
 The following pictures show
@@ -755,14 +755,14 @@ As a consequence,
 forbidden executions won't appear by default.
 Consider for instance the test \atest{SB+mfences},
 where the \texttt{mfence} instruction is used to forbid
-\atest{SB} non-SC execution. Runing \herd{} as
+\atest{SB} non-SC execution. Running \herd{} as
 \begin{verbatim}
 % herd7 -model tso-02.cat -conf doc.cfg -show prop -gv SB+mfences.litmus
 \end{verbatim}
 will produce no picture, as the TSO model forbids the target execution
 of~\textsf{SB+mfences}.
 
-To get a picture, we can run \textsf{SB+mfences} on top of the mininal
+To get a picture, we can run \textsf{SB+mfences} on top of the minimal
 model, a pre-defined model that allows all executions:
 \begin{verbatim}
 % herd7 -model minimal -conf doc.cfg -show prop -gv SB+mfences.litmus
@@ -815,16 +815,16 @@ will produce the images:
 \end{center}
 Namely, command line options are scanned left-to-right,
 so that most of the settings of \afile{doc.cfg} are kept\footnote{The setting of \opt{showthread} is also changed, by the omitted \opt{-showthread true} command line option}
-(for instance thick \verb+ghb+ arrows), while the graph mode is overriden.
+(for instance thick \verb+ghb+ arrows), while the graph mode is overridden.
 
 
 \section{\label{herd:language}Model definitions}
 
-We describe our \cat{}~langage for defining models.
+We describe our \cat{}~language for defining models.
 The syntax of the language is given in BNF-like notation. Terminal
 symbols are set in typewriter font (\synt{\T{like} \T{this}}).
 Non-terminal symbols are set in italic font (\synt{\NT{like} \NT{that}}).
-An unformatted vertical bar \synt{\ldots\orelse\ldots}
+A~vertical bar \synt{\ldots\orelse\ldots}
 denotes alternative.
 Square brackets \synt{\boption{}\ldots\eoption{}} denote optional components. Curly brackets
 \synt{\brepet{}\ldots\erepet{}} denotes zero,

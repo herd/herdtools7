@@ -239,7 +239,7 @@ clean::
 
 #version
 version.tex: ../herdtools7.opam
-	/bin/echo '\def\version{'`grep "^version:" ../opam | cut -d ":" -f 2 | cut -d '"' -f 2`'}' > $@
+	/bin/echo '\def\version{'`grep "^version:" ../herdtools7.opam | cut -d ":" -f 2 | cut -d '"' -f 2`'}' > $@
 
 clean::
 	/bin/rm -f version.tex
