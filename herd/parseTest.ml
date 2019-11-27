@@ -205,10 +205,7 @@ module Top (Conf:Config) = struct
           X.run start_time name chan env splitted
 
       | `AArch64 ->
-          let module AArch64Conf = struct
-            include ArchConfig
-            let moreedges = Conf.moreedges
-          end in
+          let module AArch64Conf = ArchConfig in
           let module AArch64 = AArch64Arch_herd.Make(AArch64Conf)(Int64Value) in
           let module AArch64LexParse = struct
             type instruction = AArch64.parsedPseudo

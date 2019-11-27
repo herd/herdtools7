@@ -20,12 +20,7 @@ module Make
     =
   struct
     module ConfLoc = SemExtra.ConfigToArchConfig(C)
-    module AArch64 =
-      AArch64Arch_herd.Make
-        (struct
-          let moreedges = C.moreedges
-          include ConfLoc
-        end)(V)
+    module AArch64 = AArch64Arch_herd.Make(ConfLoc)(V)
 
     module Act = MachAction.Make(ConfLoc)(AArch64)
     include SemExtra.Make(C)(AArch64)(Act)
@@ -35,7 +30,7 @@ module Make
 
 (* Barrier pretty print *)
     let barriers =
-      let bs = AArch64Base.do_fold_dmb_dsb C.moreedges (fun h t -> h::t) []
+      let bs = AArch64Base.do_fold_dmb_dsb true (fun h t -> h::t) []
       in List.map
         (fun b ->
           { barrier = b;

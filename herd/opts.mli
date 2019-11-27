@@ -64,7 +64,6 @@ val suffix : string ref
 val dumpes : bool ref
 val dumplem : bool ref
 val dumptex : bool ref
-val moreedges : bool ref
 
 val statelessrc11 : bool ref
 
