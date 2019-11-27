@@ -26,6 +26,7 @@ type t = {
     rfm : bool ;
     pretty : bool ;
     mixed : bool ;
+    files : bool ;
   }
 
 let tags =
@@ -39,6 +40,7 @@ let tags =
   "rfm";
   "pretty";
   "mixed";
+  "files";
 ]
 
 let none =
@@ -52,6 +54,7 @@ let none =
    rfm = false ;
    pretty = false ;
    mixed = false ;
+   files = false ;
  }
 
 let parse t tag = match tag with
@@ -64,6 +67,7 @@ let parse t tag = match tag with
   | "rfm" -> Some { t with rfm = true; }
   | "pretty" -> Some { t with pretty = true ;}
   | "mixed" -> Some { t with mixed = true ;}
+  | "files"|"file" -> Some { t with files = true ;}
   | _ -> None
 
 

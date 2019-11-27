@@ -68,6 +68,7 @@ let libfind =
         let includes = includes
         let env = None
         let libdir = Version_jingle.libdir
+        let debug = verbose
       end) in
   ML.find
 

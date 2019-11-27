@@ -26,10 +26,9 @@ type t = {
   rfm : bool  ;
   pretty : bool ;
   mixed : bool ;
+  files : bool ;
   }
 
 val none : t
 val tags : string list
 val parse : t -> string -> t option
-
-

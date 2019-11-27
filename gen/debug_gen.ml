@@ -21,6 +21,7 @@ type t = {
   top : bool ;
   generator : bool ;
   model : bool ;
+  files : bool ;    
   }
 
 let tags =
@@ -28,7 +29,7 @@ let tags =
   "lexer";
   "top";
   "generator";"gen";
-  "model";
+  "model"; "files";
 ]
 
 let none =
@@ -37,6 +38,7 @@ let none =
    top = false ;
    generator = false ;
    model = false ;
+   files = false ;
  }
 
 let parse t tag = match tag with
@@ -44,6 +46,7 @@ let parse t tag = match tag with
   | "top" -> Some { t with top = true; }
   | "generator"|"gen" -> Some { t with generator = true; }
   | "model" -> Some { t with model = true; }
+  | "files"|"file" -> Some { t with files = true; }
   | _ -> None
 
 

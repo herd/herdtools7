@@ -19,7 +19,10 @@ module type Config = sig
   val includes : string list
   val env : string option
   val libdir : string
+  val debug : bool
 end
+
+val pp_debug : string -> unit
 
 module Make :
   functor (C:Config) ->

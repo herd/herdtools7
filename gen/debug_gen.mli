@@ -21,6 +21,7 @@ type t = {
   top : bool ;
   generator : bool ;
   model : bool ;
+  files : bool ;
   }
 
 val none : t

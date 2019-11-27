@@ -121,7 +121,9 @@ let parse_stringset opt v msg =
 
 (* Option list *)
 
-let load_config s = LexConf_herd.lex (Opts.libfind !includes s)
+let load_config s =
+  LexConf_herd.lex
+    (Opts.libfind !includes !debug.Debug_herd.files s)
 
 let pp_default_model a = sprintf "%s=%s" (Archs.pp a) (Model.pp (Model.get_default_model a))
 
@@ -438,7 +440,7 @@ let () =
 
 (* Read generic model, if any *)
 
-let libfind = libfind !includes
+let libfind = libfind !includes !debug.Debug_herd.files
 
 module ParserConfig = struct
   let debug = !debug.Debug_herd.lexer

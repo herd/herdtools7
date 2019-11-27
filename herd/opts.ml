@@ -156,12 +156,13 @@ end
 
 (* Load file from library, list of includes to add to search paths given *)
 
-let libfind includes =
+let libfind includes debug =
   let module ML =
     MyLib.Make
       (struct
         let includes = includes
         let env = Some "HERDLIB"
         let libdir = Version_herd.libdir
+        let debug = debug
       end) in
   ML.find

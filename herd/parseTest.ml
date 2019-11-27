@@ -102,6 +102,7 @@ module Top (Conf:Config) = struct
       end)
 
   let do_from_file start_time env name chan =
+    if Conf.debug.Debug_herd.files then MyLib.pp_debug name ;
 (* First split the input file in sections *)
     let (splitted:Splitter.result) =  SP.split name chan in
     let tname = splitted.Splitter.name.Name.name in

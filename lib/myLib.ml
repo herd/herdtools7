@@ -20,14 +20,20 @@ module type Config = sig
   val includes : string list
   val env : string option
   val libdir : string
+  val debug : bool
 end
+
+let pp_debug name = Printf.eprintf "Found and opened: '%s'\n" name
 
 module Make =
   functor (C:Config) -> struct
     
     let try_open dir name =
       let rname = Filename.concat dir name in
-      try rname,open_in rname
+      try
+        let r = rname,open_in rname in
+        if C.debug then pp_debug rname ;
+        r
       with _ -> raise Exit
 
     let rec try_opens dirs name = match dirs with

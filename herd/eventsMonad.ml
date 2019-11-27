@@ -357,7 +357,7 @@ and type evt_struct = E.event_structure) =
       eiid,Evt.singleton ((),cls,es)
 
 (* Simple alternative *)
-    let altT : 'a t -> 'a t -> 'a t =
+    let altT    : 'a t -> 'a t -> 'a t =
       fun m1 m2 eiid ->
         let (eiid, act1) = m1 eiid in
         let (eiid, act2) = m2 eiid in

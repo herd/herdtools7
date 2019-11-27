@@ -133,4 +133,4 @@ module PP : sig
   val labelinit : bool ref
 end
 
-val libfind : string list -> string -> string
+val libfind : string list -> bool -> string -> string

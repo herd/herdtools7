@@ -48,6 +48,7 @@ let bi = match O.bell with
                 let includes = []
                 let env = None
                 let libdir = O.libdir
+                let debug = O.debug.Debug_gen.files
               end) in
           ML.find
         let compat = false
