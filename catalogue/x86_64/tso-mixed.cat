@@ -1,0 +1,21 @@
+TSO-MS
+
+include "cos.cat"
+include "filters.cat"
+include "x86fences.cat"
+(* co - coherence (subset of WxW) *)
+(* fr - from read (subset of RxW) *)
+
+let rsm = sm
+
+(* External communication *)
+let come = rfe | fre | coe
+
+(* GHB *)
+let po-ghb = WW(po) | RM(po) | mfence
+
+(* Uniproc check *)
+acyclic po-loc | rf | fr | co as uniproc
+
+acyclic come ; (rsm | po-ghb) ; come ; rsm as mixed
+acyclic po-ghb | rfe | fr | co as tso-ms
