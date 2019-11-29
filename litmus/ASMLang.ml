@@ -89,6 +89,22 @@ module RegMap = A.RegMap)
         try Some (List.assoc reg test.Tmpl.init)
         with Not_found -> None
 
+      let strip_equal s =
+        let explode s =
+          let rec expl i l =
+            if i < 0 then l else
+              expl (i - 1) (s.[i] :: l) in
+          expl (String.length s - 1) [] in
+        let implode l =
+          let result = String.make (List.length l) 'c' in
+          String.mapi (fun i _ -> List.nth l i) result in
+        let rec seq s =
+          match s with
+          | [] -> []
+          | c::r when c = '&' || c ='=' -> seq r
+          | c::r -> c :: seq r in
+        implode (seq (explode s))
+
       let dump_inputs compile_val chan t trashed =
         let stable = RegSet.of_list t.Tmpl.stable in
         let all = Tmpl.all_regs t in
@@ -120,9 +136,9 @@ module RegMap = A.RegMap)
             | Some (s,_) -> sprintf "\"%s\" (%s)" (tag_reg_def reg) s
           end else match A.internal_init reg with
           | None ->
-              sprintf "%s \"Q\" (%s)" (tag_reg_def reg) (dump_v v)
+              sprintf "%s \"%s\" (%s)" (tag_reg_def reg) (strip_equal (A.reg_class reg)) (dump_v v)
           | Some (s,_) ->
-              sprintf "%s \"Q\" (%s)" (tag_reg_def reg) s in
+              sprintf "%s \"%s\" (%s)" (tag_reg_def reg) (strip_equal (A.reg_class reg)) s in
 
         (* Input from state *)
         let ins =
