@@ -56,7 +56,7 @@ module Make(Config:Config)(T:Builder.S)
 (* High-level normalisation *)
 (****************************)
 
-      let normalise = 
+      let normalise =
         if Config.canonical_only then
           let module Normer = Normaliser.Make(Config)(T.E) in
           fun cy ->
@@ -82,7 +82,7 @@ module Make(Config:Config)(T:Builder.S)
       | None -> fun n -> n
       | Some s -> fun n -> n ^ s
 
-      let global_mk_name =    
+      let global_mk_name =
         if Config.numeric then
           fun env base _es ->
             let n = try Env.find base env with Not_found -> 0 in
@@ -91,10 +91,10 @@ module Make(Config:Config)(T:Builder.S)
           let module Namer = Namer.Make(T.A)(T.E) in
           fun env base es -> add_suffix (Namer.mk_name base es),env
 
-      exception DupName of string 
+      exception DupName of string
 
 (* No need to add disambiguating numbers to numeric names *)
-      let addnum =  Config.addnum 
+      let addnum =  Config.addnum
 
       let dup_name =
         if addnum then
@@ -137,7 +137,7 @@ module Make(Config:Config)(T:Builder.S)
               "Signatures for are more than 2 bytes, expect duplicates" ;
           i,
           { sigs with
-            sig_next=i+1; sig_map = T.E.Map.add e i sigs.sig_map; } 
+            sig_next=i+1; sig_map = T.E.Map.add e i sigs.sig_map; }
 
       let sig_of sigs out e =
         let i,sigs = get_sig sigs e in
@@ -263,7 +263,7 @@ module Make(Config:Config)(T:Builder.S)
       let tar_output_protect f name =
         Misc.output_protect f (Tar.outname name)
 
-(* Compile & dump proper *)        
+(* Compile & dump proper *)
 
 (* Test specification *)
       type cycle =
@@ -271,7 +271,7 @@ module Make(Config:Config)(T:Builder.S)
            orig : T.E.edge list ;
 (* As given, for actually building the test & name. *)
            norm : T.E.edge list;
-(* Normalized, for the cycle and info field. *)  
+(* Normalized, for the cycle and info field. *)
          }
 
 (* Output test proper *)
@@ -337,7 +337,7 @@ module Make(Config:Config)(T:Builder.S)
             dump_test_st false all_chan check cycle info relaxed env n c
               (fun _ -> st) res
         | Scope.Gen scs ->
-            let t = 
+            let t =
               T.test_of_cycle n ~info:info ~check:check cycle.orig c in
             let res =
               { res with
@@ -352,7 +352,7 @@ module Make(Config:Config)(T:Builder.S)
                 do_dump_test all_chan t res)
               res
         | Scope.All ->
-            let t = 
+            let t =
               T.test_of_cycle n ~info:info ~check:check cycle.orig c in
             let res =
               { res with
@@ -368,15 +368,15 @@ module Make(Config:Config)(T:Builder.S)
               res
 (* Compose duplicate checker and dumper *)
       let check_dump =
-        if Config.canonical_only then    
+        if Config.canonical_only then
           fun all_chan check es mk_info mk_name mk_scope r  ->
             let es,c = T.C.resolve_edges es in
             let seen,nes,sigs = have_seen r.sigs es in
             if seen then Warn.fatal "Duplicate" ;
             T.C.finish c ;
             dump_test all_chan check { orig = es ; norm = nes }
-              mk_info mk_name mk_scope c { r with sigs = sigs; } 
-        else 
+              mk_info mk_name mk_scope c { r with sigs = sigs; }
+        else
           fun all_chan check es mk_info mk_name mk_scope r ->
             let es,c = T.C.resolve_edges es in
             T.C.finish c ;
@@ -405,15 +405,25 @@ module Make(Config:Config)(T:Builder.S)
               name
 
       let check_dump all_chan check es mk_info mk_name mk_scope res =
-        let es = normalise es in
-        T.E.varatom
-          es
-          (fun es res ->
-            if Config.debug.Debug_gen.generator then
-              eprintf "Atomic variation: %s\n" (T.E.pp_edges es) ;
-            check_dump all_chan check es mk_info mk_name mk_scope res)
+        try
+          let es =
+            try normalise es
+            with Normaliser.CannotNormalise msg ->
+              Warn.fatal "Cannot normalise '%s'" msg in
+          T.E.varatom
+            es
+            (fun es res ->
+              if Config.debug.Debug_gen.generator then
+                eprintf "Atomic variation: %s\n" (T.E.pp_edges es) ;
+              check_dump all_chan check es mk_info mk_name mk_scope res)
+            res
+        with
+        | Misc.Fatal msg|Misc.UserError msg ->
+          if Config.verbose > 0 then
+            eprintf "Fatal ignored: %s\n" msg ;
           res
-
+        |Misc.Exit ->
+            res
 (* Exported *)
       let all ?(check=(fun _ -> true)) gen =
         tar_output_protect

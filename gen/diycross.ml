@@ -51,9 +51,6 @@ module Make (Config:Config) (M:Builder.S) =
     | None -> true
     | Some _ -> false
 
-    module Name = Namer.Make(M.A)(M.E)
-    module Norm = Normaliser.Make(Config)(M.E)
-
     let gen ess kont r =
       Misc.fold_cross ess
         (fun es r ->
