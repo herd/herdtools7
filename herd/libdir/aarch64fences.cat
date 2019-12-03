@@ -1,19 +1,46 @@
 AArch64Fences
 
-(* Fences *)
-let dmb.ish = try fencerel(DMB.ISH) with 0
-let dmb.ishld = try fencerel(DMB.ISHLD) with 0
-let dmb.ishst = try fencerel(DMB.ISHST) with 0
-let dmb.fullsy = try fencerel(DMB.SY) with 0
-let dmb.fullst = try fencerel(DMB.ST) with 0
-let dmb.fullld = try fencerel(DMB.LD) with 0
+(* Protection agains running tests of other architecture *)
+let DMB.ISH = try DMB.ISH with emptyset
+let DMB.ISHLD = try DMB.ISHLD with emptyset
+let DMB.ISHST = try DMB.ISHST with emptyset
+let DSB.ISH = try DSB.ISH with emptyset
+let DSB.ISHLD = try DSB.ISHLD with emptyset
+let DSB.ISHST = try DSB.ISHST with emptyset
+let DMB.SY = try DMB.SY with emptyset
+let DMB.ST = try DMB.ST with emptyset
+let DMB.LD = try DMB.LD with emptyset
+let DSB.SY = try DSB.SY with emptyset
+let DSB.ST = try DSB.ST with emptyset
+let DSB.LD = try DSB.LD with emptyset
+let DMB.OSH = try DMB.OSH with emptyset
+let DSB.OSH = try DSB.OSH with emptyset
+let DMB.OSHLD = try DMB.OSHLD with emptyset
+let DSB.OSHLD = try DSB.OSH with emptyset
+let DMB.OSHST = try DMB.OSHST with emptyset
+let DSB.OSHST = try DSB.OSHST with emptyset
+let ISB = try ISB with emptyset
+
+let A = try A with emptyset
+and L = try L with emptyset
+and Q = try Q with emptyset
+and NoRet = try NoRet with emptyset
+
+(* Fences, for showing *)
+let dmb.ish = fencerel(DMB.ISH)
+let dmb.ishld = fencerel(DMB.ISHLD)
+let dmb.ishst = fencerel(DMB.ISHST)
+let dmb.fullsy = fencerel(DMB.SY)
+let dmb.fullst = fencerel(DMB.ST)
+let dmb.fullld = fencerel(DMB.LD)
 let dmb.sy = dmb.fullsy | dmb.ish
 let dmb.st = dmb.fullst | dmb.ishst
 let dmb.ld = dmb.fullld | dmb.ishld
-let dsb.sy = try fencerel(DSB.SY) with 0
-let dsb.st = try fencerel(DSB.ST) with 0
-let dsb.ld = try fencerel(DSB.LD) with 0
-let isb = try fencerel(ISB) with 0
+let dsb.sy = fencerel(DSB.SY)
+let dsb.st = fencerel(DSB.ST)
+let dsb.ld = fencerel(DSB.LD)
+let isb = fencerel(ISB)
+
 show dmb.sy,dmb.st,dmb.ld,dsb.sy,sb.st,dsb.ld,dmb,dsb
 
 (* Dependencies *)
