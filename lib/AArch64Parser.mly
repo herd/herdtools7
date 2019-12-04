@@ -15,7 +15,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-
+module Bell = BellBase
+open Bell
 open AArch64Base
 %}
 
@@ -30,7 +31,7 @@ open AArch64Base
 %token <string> CODEVAR
 %token <int> PROC
 
-%token SEMI COMMA PIPE COLON LBRK RBRK
+%token SEMI COMMA PIPE COLON LBRK RBRK LPAR RPAR SCOPES REGIONS SCOPETREE
 %token SXTW
 
 /* Instructions */
@@ -80,15 +81,15 @@ open AArch64Base
 %token <AArch64Base.sysreg> SYSREG
 %token MRS TST RBIT
 %token STG LDG
-
 %type <int list * (AArch64Base.parsedPseudo) list list> main
 %type <AArch64Base.parsedPseudo list> instr_option_seq
 %start  main instr_option_seq
 
 %nonassoc SEMI
+%type <BellInfo.test> scopes_and_memory_map
 %%
 main:
-| semi_opt proc_list iol_list EOF { $2,$3 }
+| semi_opt proc_list iol_list scopes_and_memory_map EOF { $2,$3 }
 
 semi_opt:
 | { () }
@@ -99,6 +100,49 @@ proc_list:
     {[$1]}
 
 | PROC PIPE proc_list  { $1::$3 }
+
+proc_list_sc:
+| PROC proc_list_sc {$1::$2}
+| {[]}
+
+scope_tree_list:
+| scope_tree {[$1]}
+| scope_tree scope_tree_list {$1::$2}
+scope_tree:
+ | LPAR NAME scope_tree_list RPAR  
+   {
+   BellInfo.Children($2,$3)
+   }
+ | LPAR NAME proc_list_sc RPAR
+   {
+   BellInfo.Leaf($2,$3)
+   }
+top_scope_tree:
+ | scope_tree_list
+    { let ts = $1 in
+      match ts with
+      | [t] -> t
+      | _ -> BellInfo.Children ("",ts) }
+scope_option:
+| SCOPES COLON top_scope_tree {Some $3}
+| {None}
+
+memory_map_option:
+| REGIONS COLON memory_map {Some $3}
+| {None}
+memory_map_atom:
+ | NAME COLON NAME
+{ ($1,$3) }
+memory_map:
+ | memory_map_atom COMMA memory_map {$1::$3}
+ | memory_map_atom {[$1]}
+ | {[]
+    (*jade: todo memory map*)
+   }
+
+scopes_and_memory_map:
+ | scope_option memory_map_option
+{ { BellInfo.scopes=$1; BellInfo.regions=$2; }}
 
 iol_list :
 |  instr_option_list SEMI

@@ -348,7 +348,11 @@ rule token = parse
 | '|' { PIPE }
 | '[' { LBRK }
 | ']' { RBRK }
+| '(' { LPAR }
+| ')' { RPAR }
 | ':' { COLON }
+| "scopes"  { SCOPES  }
+| "regions" { REGIONS }
 | '&' (name as x) { META x }
 | "codevar:" (name as x) { CODEVAR x }
 | name as x  { check_name x }
