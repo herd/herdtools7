@@ -1,7 +1,7 @@
 Cross
 (* Utilities for combining co's *)
 
-(* Compute linarisations per locations *)
+(* Compute linearisations per locations *)
 let co_locs (pco,wss) =
   let rec do_locs wss = match wss with
   || {} -> {}

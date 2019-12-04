@@ -1,6 +1,6 @@
 ARM
 
-(* Model for ARM, ie with po-loc ommited from ppo *)
+(* Model for ARM, ie with po-loc omitted from ppo *)
 include "cos.cat"
 
 (* Uniproc *)

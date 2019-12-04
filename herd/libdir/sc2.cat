@@ -1,5 +1,5 @@
 SC
-(* Sc with explict (and redundant) coherence check *)
+(* Sc with explicit (and redundant) coherence check *)
 include "fences.cat"
 include "cos.cat"
 
