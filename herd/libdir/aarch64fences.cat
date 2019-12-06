@@ -1,6 +1,6 @@
 AArch64Fences
 
-(* Protection agains running tests of other architecture *)
+(* Protection against running tests of other architecture *)
 let DMB.ISH = try DMB.ISH with emptyset
 let DMB.ISHLD = try DMB.ISHLD with emptyset
 let DMB.ISHST = try DMB.ISHST with emptyset

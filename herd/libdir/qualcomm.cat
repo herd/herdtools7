@@ -1,4 +1,4 @@
-"ARM relaxing ppo to accomodate qualcomm behaviors"
+"ARM relaxing ppo to accommodate qualcomm behaviors"
 
 include "cos.cat"
 
