@@ -18,7 +18,7 @@
 
 module Make :
 functor (O:sig val debug : bool val compat :bool end) ->
-  functor (A:Arch_herd.S) ->
+  functor (A:ArchBase.S) ->
       functor
         (C:sig
           val info : BellModel.info option

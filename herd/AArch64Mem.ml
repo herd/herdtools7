@@ -15,6 +15,7 @@
 (****************************************************************************)
 module type Config = sig
   val model : Model.t
+  val bell_model_info : (string * BellModel.info) option
   include Model.Config
 end
 
@@ -33,7 +34,6 @@ module S = S
 
     module S = S
 
-    module ModelConfig = (O : Model.Config)
     let model = O.model
 
     let check_event_structure test = match O.model with
@@ -63,8 +63,7 @@ module S = S
            MachModelChecker.Make
              (struct
                let m = m
-               let bell_model_info = None
-               include ModelConfig                  
+               include O                  
              end)(S) in
          X.check_event_structure test
       | _ -> failwith "[AArch64Mem.ml] Unimplemented model for AArch64."

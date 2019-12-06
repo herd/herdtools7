@@ -36,7 +36,7 @@ let get_arch =
        type token = AArch64Parser.token
        module Lexer = AArch64Lexer.Make(struct let debug = false end)
        let lexer = Lexer.token
-       let parser = MiscParser.mach2generic AArch64Parser.main
+       let parser = (*MiscParser.mach2generic*) AArch64Parser.main
        let instr_parser = AArch64Parser.instr_option_seq
      end in (module struct
                include AArch64Arch_jingle

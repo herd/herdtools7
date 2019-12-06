@@ -481,7 +481,7 @@ end = struct
                   type token = AArch64Parser.token
                   module Lexer = AArch64Lexer.Make(LexConfig)
                   let lexer = Lexer.token
-                  let parser = MiscParser.mach2generic AArch64Parser.main
+                  let parser = (*MiscParser.mach2generic*) AArch64Parser.main
                 end in
                 let module Compile = AArch64Compile_litmus.Make(V)(OC) in
                 let module X = Make(Cfg)(Arch')(LexParse)(Compile) in

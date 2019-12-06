@@ -226,7 +226,7 @@ module Top (Conf:Config) = struct
             type token = AArch64Parser.token
             module Lexer = AArch64Lexer.Make(LexConfig)
             let lexer = Lexer.token
-            let parser = MiscParser.mach2generic AArch64Parser.main
+            let parser = (*MiscParser.mach2generic*) AArch64Parser.main
           end in
           let module AArch64S = AArch64Sem.Make(Conf)(Int64Value) in
           let module AArch64Barrier = struct
@@ -240,10 +240,23 @@ module Top (Conf:Config) = struct
             | AArch64.DSB(d,t) -> DSB(d,t)
             | AArch64.ISB -> ISB
           end in
+          let module AArch64C =
+          BellCheck.Make
+            (struct
+              let debug = Conf.debug.Debug_herd.barrier
+              let compat = Conf.variant Variant.BackCompat
+            end)
+            (AArch64)
+            (struct
+              let info = Misc.snd_opt Conf.bell_model_info
+              let get_id_and_list _ = raise Not_found
+              let set_list _ _ = assert false
+              let tr_compat i = i
+             end) in
           let module AArch64M =
             AArch64Mem.Make(ModelConfig)(AArch64S) (AArch64Barrier) in
           let module P = GenParser.Make (Conf) (AArch64) (AArch64LexParse) in
-          let module X = Make (AArch64S) (P) (NoCheck) (AArch64M) in
+          let module X = Make (AArch64S) (P) (AArch64C) (AArch64M) in
           X.run start_time name chan env splitted
 
       | `X86 ->
@@ -347,7 +360,7 @@ module Top (Conf:Config) = struct
             end)
             (Bell)
             (struct
-              let info = Misc.app_opt (fun (_,y) -> y) Conf.bell_model_info
+              let info = Misc.snd_opt Conf.bell_model_info
               let get_id_and_list = Bell.get_id_and_list
               let set_list = Bell.set_list
               let tr_compat = Bell.tr_compat

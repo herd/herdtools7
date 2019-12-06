@@ -81,7 +81,7 @@ open AArch64Base
 %token <AArch64Base.sysreg> SYSREG
 %token MRS TST RBIT
 %token STG LDG
-%type <int list * (AArch64Base.parsedPseudo) list list> main
+%type <int list * (AArch64Base.parsedPseudo) list list * MiscParser.extra_data> main
 %type <AArch64Base.parsedPseudo list> instr_option_seq
 %start  main instr_option_seq
 
@@ -89,7 +89,8 @@ open AArch64Base
 %type <BellInfo.test> scopes_and_memory_map
 %%
 main:
-| semi_opt proc_list iol_list scopes_and_memory_map EOF { $2,$3 }
+| semi_opt proc_list iol_list scopes_and_memory_map EOF 
+   { $2,$3,MiscParser.BellExtra $4 }
 
 semi_opt:
 | { () }

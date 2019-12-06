@@ -88,7 +88,7 @@ end = struct
 
           module L = AArch64Lexer.Make(LexConf)
 	  let lexer = L.token
-	  let parser = MiscParser.mach2generic AArch64Parser.main
+	  let parser = (*MiscParser.mach2generic*) AArch64Parser.main
         end in
         let module X = Make (AArch64) (AArch64LexParse) in
         X.zyva chan splitted
@@ -273,7 +273,7 @@ module Tops
 
               module L = AArch64Lexer.Make(LexConf)
 	      let lexer = L.token
-	      let parser =  MiscParser.mach2generic AArch64Parser.main
+	      let parser =  (*MiscParser.mach2generic*) AArch64Parser.main
             end in
             let module X = Make (AArch64) (AArch64LexParse) in
             X.zyva

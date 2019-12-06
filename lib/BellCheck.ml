@@ -20,7 +20,7 @@ open Printf
 
 module Make
     (O:sig val debug : bool val compat : bool end)
-    (A:Arch_herd.S)
+    (A:ArchBase.S)
     (C:sig
       val info : BellModel.info option
       val get_id_and_list : A.instruction -> string * string list
