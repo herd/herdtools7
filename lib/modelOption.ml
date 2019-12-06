@@ -16,21 +16,20 @@
 
 open Printf
 
-type t = { co : bool ; init : bool ; sc : bool } 
+type t = { arch : Archs.t option ; co : bool ; init : bool ; }
 
-let default = {co=false; init=true; sc=false}
-let compat = {co=true; init=false; sc=false}
+let default = {arch=None; co=false; init=true; }
+let compat = {arch=None; co=true; init=false; }
 
 let pp_opt tag default b =
   if b = default then ""
   else
     sprintf "%s%s" (if b then "with" else "without") tag
 
-let pp { co; init; sc; } =
+let pp { co; init; } =
   let pp =
     [pp_opt "co" default.co co;
-     pp_opt "init" default.init init;
-     pp_opt "sc" default.sc sc;] in
+     pp_opt "init" default.init init;] in
   let pp =
     List.filter
       (fun pp -> pp <> "")
@@ -48,4 +47,6 @@ let set_enumco b t =
 let set_init b t =
   if not t.co then t else { t with init=b; }
 
-let set_enumsc b t = { t with sc=b; }
+let set_arch a t =
+  let a = Archs.parse a in
+  { t with arch = a; }

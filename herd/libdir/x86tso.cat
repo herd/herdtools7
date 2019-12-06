@@ -1,4 +1,4 @@
-"X86 TSO"
+X86 TSO
 include "x86fences.cat"
 include "filters.cat"
 include "cos.cat"

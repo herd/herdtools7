@@ -18,6 +18,7 @@
 
 module type Config = sig
   val model : Model.t option
+  val archcheck : bool
   val through : Model.through
   val strictskip : bool
   val cycles : StringSet.t

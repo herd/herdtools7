@@ -80,12 +80,18 @@ let tuple_pat = function
 %%
 
 main:
-| identity topins_list EOF { ModelOption.default, $1, $2 }
+| identity topins_list EOF
+ {
+  let a,id = $1 in
+   ModelOption.set_arch a ModelOption.default, id, $2 }
 
 identity:
-| VAR { $1 }
-| STRING { $1 }
-|  { "Unknown" }
+| VAR VAR { $1,$2 }
+| VAR STRING { $1,$2 }
+| VAR { $1,$1 }
+| STRING  { $1,$1 }
+|   { "None","Unknown" }
+
 
 topins_list:
 | { [] }

@@ -19,6 +19,7 @@
 (*******************************)
 module type Config = sig
   val model : Model.t option
+  val archcheck : bool
   val through : Model.through
   val strictskip : bool
   val cycles : StringSet.t
@@ -101,6 +102,21 @@ module Top (Conf:Config) = struct
         let check_rename = Conf.check_rename
       end)
 
+  let check_arch_model a m =
+    if Conf.archcheck then match m with
+    | Model.Generic (o,_,_) ->
+        begin match o.ModelOption.arch with
+        | None -> m
+        | Some b ->
+            if a = b then m
+            else
+              Warn.user_error
+                "Architecture mismatch between test and model (%s vs. %s)"
+                (Archs.pp a)  (Archs.pp b)
+        end
+    | m -> m
+    else m
+
   let do_from_file start_time env name chan =
     if Conf.debug.Debug_herd.files then MyLib.pp_debug name ;
 (* First split the input file in sections *)
@@ -113,28 +129,24 @@ module Top (Conf:Config) = struct
       let module LexConfig = struct
         let debug = Conf.debug.Debug_herd.lexer
       end in
+      let model =
+        let m = match Conf.model with
+        | None -> Model.get_default_model arch
+        | Some m -> m in
+        let m = match m with
+        | Model.File fname ->
+            let module P =
+              ParseModel.Make
+                (struct
+                  include LexUtils.Default
+                  let libfind = Conf.libfind
+                end) in
+            Model.Generic (P.parse fname)
+        | _ -> m in
+        check_arch_model arch m in
       let module ModelConfig = struct
         let bell_model_info = Conf.bell_model_info
-        let model =
-          let m =
-            match Conf.model with
-            | None -> Model.get_default_model arch
-            | Some m -> m in
-          match m with
-          | Model.File fname ->
-              let module P =
-                ParseModel.Make
-                  (struct
-                    include LexUtils.Default
-                    let libfind = Conf.libfind
-                   end) in
-              let (b,_,_) as r = P.parse fname in
-              if b <> ModelOption.default then
-                Warn.fatal
-                  "default model in \"%s\" does not have default options"
-                  fname ;
-              Model.Generic r
-          | _ -> m
+        let model = model
         let showsome =
           begin match Conf.outputdir with
           | PrettyConf.StdoutOutput | PrettyConf.Outputdir _ -> true
@@ -152,6 +164,7 @@ module Top (Conf:Config) = struct
 
         let statelessrc11 = Conf.statelessrc11
       end in
+
       let module ArchConfig = SemExtra.ConfigToArchConfig(Conf) in
       match arch with
       | `PPC ->

@@ -1,5 +1,14 @@
 "C++11"
 
+(* All c11_*.cat files are C11 models
+Overhauling SC atomics in C11 and OpenCL.
+M. Batty, A. Donaldson, J. Wickerson. In Proc.
+43rd ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages (POPL), 2016.
+
+Rewritten by Luc Maranget for herd7
+
+*)
+
 include "c11_cos.cat"
 include "c11_los.cat"
 
@@ -10,7 +19,7 @@ let mo = co
 
 let cacq = ACQ | (SC & (R | F)) | ACQ_REL | (F & CON)
 let crel = REL | (SC & (W | F)) | ACQ_REL
-let ccon = R & CON				   	   
+let ccon = R & CON
 
 let fr = rf^-1 ; mo
 
@@ -24,17 +33,17 @@ let sbf = sb & (_ * F)
    release_sequence_set *)
 
 (* OLD: let rs = [crel] ; fsb? ; [A & W] ;
-	 (((mo ; [rmw]) | coi) & ~(coe ; [!rmw] ; mo))? *)
+         (((mo ; [rmw]) | coi) & ~(coe ; [!rmw] ; mo))? *)
 
 let rs_prime = int | (_ * (R & W))
 let rs = mo & rs_prime \ ((mo \ rs_prime) ; mo)
-		       
+
 (* OLD: let swra = ext (rs ; rf ; [A] ; sbf? ; [cacq]) *)
 let swra =
  ext &
  (toid(crel) ; fsb? ; toid(A & W) ; rs? ; rf ;
  toid(R & A) ; sbf? ; toid(cacq))
-								     
+
 let swul = ext & (toid(UL) ; lo ; toid(LK))
 let pp_asw = asw \ (asw ; sb)
 let sw = pp_asw | swul | swra
@@ -66,9 +75,9 @@ irreflexive ((rf^-1)? ; mo ; rf? ; hb) as Coh
 (* visible_side_effect_set *)
 let vis = (hbl & (W * R)) \ (hbl; toid(W) ; hbl)
 
-(* consistent_atomic_rf *) 
+(* consistent_atomic_rf *)
 irreflexive (rf ; hb) as Rf
-	      
+
 (* consistent_non_atomic_rf  *)
 empty ((rf ; [R\A]) \ vis) as NaRf
 empty [FW\A];hbl;[W] as NaRf (* implicit read of Na final writes.. *)
@@ -101,4 +110,3 @@ let losbwoul = (sb & lo & ~(lo; toid(UL); lo))
 
 let lu = toid(UL) &
   ~(toid(UL) ; losbwoul^-1 ; toid(LS) ; losbwoul ; toid(UL))
-

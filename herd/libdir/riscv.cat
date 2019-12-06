@@ -1,4 +1,4 @@
-"Risc V partial order model"
+RISCV "Risc V partial order model"
 
 (*****************************************)
 (* The RISCV Instruction set manual v2.3 *)

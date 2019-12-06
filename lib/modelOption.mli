@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type t = { co : bool ; init : bool ; sc : bool } 
+type t = { arch : Archs.t option ; co : bool ; init : bool ; }
 
 val pp : t -> string
 val default : t
@@ -22,4 +22,4 @@ val compat : t
 
 val set_enumco : bool -> t -> t
 val set_init : bool -> t -> t
-val set_enumsc : bool -> t -> t
+val set_arch : string -> t -> t

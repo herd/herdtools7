@@ -231,7 +231,7 @@ let options = [
   ParseMachSize.parse "-machsize" byte "set basic machine size" end ;
   begin let module ParseEndian = ParseTag.Make(Endian) in
   ParseEndian.parse_opt "-endian" endian "set endianness" end ;
-
+  parse_bool "-archcheck" archcheck "check compatibility of test and cat model architectures" ;
   "-optace", Arg.Bool (fun b -> optace := Some b),
     "<bool> optimize axiomatic candidate generation, default is true except for the minimal model and all generic models";
   "-initwrites", Arg.Bool (fun b -> initwrites := Some b),
@@ -492,6 +492,7 @@ let () =
     let showkind = !showkind
     let shortlegend = !shortlegend
     let model = model
+    let archcheck = !archcheck
     let through = !through
     let skipchecks = !skipchecks
     let strictskip = !strictskip

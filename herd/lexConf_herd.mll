@@ -154,6 +154,8 @@ let handle_key main key arg = match key with
     lex_int unroll arg
 | "optace" ->
     lex_bool_fun (fun b ->  optace := Some b) arg
+| "archcheck" ->
+    lex_bool archcheck arg
 | "initwrites" ->
     lex_bool_fun (fun b ->  initwrites := Some b) arg
 | "speedcheck" ->
