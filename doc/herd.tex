@@ -1334,9 +1334,6 @@ flag ~empty race as undefined
 Then, \herd{} will indicate in its output that some
 execution have been flagged as \verb+undefined+.
 
-
-
-
 \subsubsection*{Procedure definition and call}
 Procedures are similar to functions except that they have no results:
 the body of a procedure is a list of instructions
@@ -1507,13 +1504,17 @@ between instructions TODO
  
 \subsection{\label{language:model}Models}
 \begin{syntax}
-\NT{model} \is \NT{model-comment}  \NT{instruction} \erepet
+\NT{model} \is \boption \NT{id} \eoption \boption \NT{model-comment} \eoption \brepet \NT{instruction} \erepet
 \sep
 \NT{model-comment} \is \NT{id} \orelse  \nt{string}
 \end{syntax}
-A model is a list of instruction preceded by a small comment,
-which can be either a name that follows \herd{} conventions for identifiers,
-or a string enclosed in double quotes~``\verb+"+''.
+A model is a list of instructions preceded by an optional architecture
+specification and an optional comment.
+Architecture specification is a name that follows  \herd{} conventions for identifiers. Identifiers that are not valid architecture names, such as \texttt{AArch64}, \texttt{PPC} etc., are silently ignored.
+The following \synth{\NT{model-comment}} can be either a name or a string enclosed in double quotes~``\verb+"+''.
+If only one name is present, it will act both as tentative architecture specification and as a comment.
+When present, model architecture specifications will be checked against test architectures, see also option~\ahrefloc{opt:archcheck}{\opt{-archcheck}}.
+
 
 Models operate on candidate executions
 (see Sec.~\ref{sec:predef}),
@@ -1522,7 +1523,8 @@ until one instruction stops, or until the end of the instruction list.
 In that latter case, the model accepts the execution.
 The accepted execution is then passed over to the rest of \herd{}
 engine, in order to collect final states of locations
-and to display pictures.
+and to display pictures. Notice that the \synth{\NT{model-comment}} will appear
+in those picture legends.
 
 \iffalse
 \subsubsection*{Model options}
@@ -1773,6 +1775,13 @@ the second being faster.
 Setting \opt{-optace true} can lower the execution time significantly,
 but one should pay attention not to design models that forget the uniproc
 condition.
+
+\item[{\tt \aname{opt:archcheck}{-archcheck} <bool>}]
+Control compatibily check of test and cat file
+architecture. More precisely, some cat files are specific to an architecture.
+Running tests of a different architecture on them will result in
+cryptic error messages. In that situation, compatibility check will
+yield a more understandable diagnostic. Default is~\opt{true}.
 
 \item[{\tt \aname{opt:show}{-show} (prop|neg|all|cond|wit|none)}]
 Select execution diagrams for picture display and generation.
