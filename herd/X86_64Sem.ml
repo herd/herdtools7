@@ -208,6 +208,19 @@ module Make (C:Sem.Config)(V : Value.S)
             and w2 = fun v -> write_loc_atomic sz l2 v ii in
             M.exch r1 r2 w1 w2) >>! B.Next
 
+      let cmpxchg sz locked ea r ii =
+        lval_ea ea ii >>= fun loc_ea -> read_loc_gen sz true locked loc_ea ii >>=
+          fun v_ea -> lval_ea (X86_64.Effaddr_rm64 (X86_64.Rm64_reg (X86_64.Ireg (X86_64.AX,X86_64.R64b)))) ii >>=
+          fun loc_ra -> read_loc_gen sz true locked loc_ra ii >>=
+          fun v_ra -> write_zf v_ea v_ra ii >>=
+          fun _ -> rval_ea sz locked (X86_64.Effaddr_rm64 (X86_64.Rm64_reg r)) ii >>=
+          fun v_r -> M.op Op.Eq v_ea v_ra >>=
+          (fun vcf ->
+            M.choiceT vcf
+              (write_loc_gen sz locked loc_ea v_r ii)
+              (write_loc_gen sz locked loc_ra v_ea ii))
+                     >>! B.Next
+
       let do_op sz locked o ea op ii =
         (lval_ea ea ii >>=
            fun loc ->
@@ -313,7 +326,9 @@ module Make (C:Sem.Config)(V : Value.S)
           | X86_64.I_EFF_EFF (_,sz,ea1,ea2) ->
              let sz = inst_size_to_mach_size sz in
              xchg  sz ea1 ea2 ii
-          | X86_64.I_CMPXCHG (_,_,_) -> Warn.fatal "I_CMPXCHG not implemented"
+          | X86_64.I_CMPXCHG (sz,ea,r) ->
+             let sz = inst_size_to_mach_size sz in
+             cmpxchg sz locked ea r ii
           | X86_64.I_MFENCE ->
              create_barrier X86_64.Mfence ii >>! B.Next
         in
