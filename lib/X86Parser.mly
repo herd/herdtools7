@@ -16,7 +16,6 @@
 (****************************************************************************)
 
 module X86 = X86Base
-open X86
 %}
 
 %token EOF
@@ -33,13 +32,12 @@ open X86
 
 %token  I_XOR I_OR I_ADD  I_MOV  I_MOVB I_MOVW I_MOVL I_MOVQ I_MOVT I_MOVSD I_DEC  I_CMP  I_CMOVC  I_INC  I_JMP
 %token  I_LOCK  I_XCHG   I_LFENCE  I_SFENCE  I_MFENCE
-%token  I_READ I_SETNB I_JE I_JNE
+%token  I_SETNB I_JE I_JNE
 %token  I_CMPXCHG
 
 %type <int list * (X86Base.pseudo) list list> main
 %start  main
 
-%nonassoc SEMI
 %%
 main: semi_opt proc_list iol_list EOF { $2,$3 }
 
@@ -64,13 +62,13 @@ instr_option_list :
       {$1::$3}
 
 instr_option :
-| {Nop}
-| NAME COLON instr_option { Label ($1,$3) }
-| instr      { Instruction $1}
+| { X86.Nop}
+| NAME COLON instr_option { X86.Label ($1,$3) }
+| instr      { X86.Instruction $1}
 
 
 reg:
-| SYMB_REG { Symbolic_reg $1 }
+| SYMB_REG { X86.Symbolic_reg $1 }
 | ARCH_REG { $1 }
 
 k:
@@ -78,64 +76,64 @@ k:
 
 instr:
   | I_XOR   effaddr  COMMA  operand
-    {I_XOR ($2,$4)}
+    { X86.I_XOR ($2,$4)}
   | I_OR   effaddr  COMMA  operand
-    {I_OR ($2,$4)}
+    { X86.I_OR ($2,$4)}
   | I_ADD   effaddr  COMMA  operand
-    {I_ADD ($2,$4)}
+    { X86.I_ADD ($2,$4)}
   | I_MOV   effaddr  COMMA  operand
-    {I_MOV ($2,$4)}
+    { X86.I_MOV ($2,$4)}
   | I_MOVB   effaddr  COMMA  operand
-    {I_MOVB ($2,$4)}
+    { X86.I_MOVB ($2,$4)}
   | I_MOVW   effaddr  COMMA  operand
-    {I_MOVW ($2,$4)}
+    { X86.I_MOVW ($2,$4)}
   | I_MOVL   effaddr  COMMA  operand
-    {I_MOVL ($2,$4)}
+    { X86.I_MOVL ($2,$4)}
   | I_MOVQ   effaddr  COMMA  operand
-    {I_MOVQ ($2,$4)}
+    { X86.I_MOVQ ($2,$4)}
   | I_MOVT   effaddr  COMMA  operand
-    {I_MOVT ($2,$4)}
+    { X86.I_MOVT ($2,$4)}
   | I_MOVSD
-    {I_MOVSD}
+    { X86.I_MOVSD}
   | I_DEC   effaddr
-    {I_DEC $2}
+    { X86.I_DEC $2}
   | I_CMP   effaddr COMMA   operand
-    {I_CMP ($2,$4)}
+    { X86.I_CMP ($2,$4)}
   | I_CMOVC reg COMMA  effaddr
-    {I_CMOVC ($2, $4)}
+    { X86.I_CMOVC ($2, $4)}
   | I_INC   effaddr
-    {I_INC $2}
+    { X86.I_INC $2}
   | I_JMP  NAME
-    {I_JMP $2}
+    { X86.I_JMP $2}
   | I_JE NAME
-    {I_JCC(C_EQ, $2)}
+    { X86.I_JCC(X86.C_EQ, $2)}
   | I_JNE NAME
-    {I_JCC(C_NE, $2)}
+    { X86.I_JCC(X86.C_NE, $2)}
   | I_LOCK semi_opt instr
-    {I_LOCK $3 }
+    { X86.I_LOCK $3 }
   | I_XCHG   effaddr COMMA effaddr
-    { I_XCHG ($2,$4)}
+    { X86.I_XCHG ($2,$4)}
   | I_CMPXCHG effaddr COMMA reg
-    { I_CMPXCHG ($2,$4)}
+    { X86.I_CMPXCHG ($2,$4)}
   | I_LFENCE
-      { I_LFENCE}
+      { X86.I_LFENCE}
   | I_SFENCE
-      { I_SFENCE}
+      { X86.I_SFENCE}
   | I_MFENCE
-      { I_MFENCE}
-  | I_SETNB effaddr {I_SETNB $2 }
+      { X86.I_MFENCE}
+  | I_SETNB effaddr { X86.I_SETNB $2 }
 
 effaddr:
-  | rm32  {Effaddr_rm32 $1}
+  | rm32  { X86.Effaddr_rm32 $1 }
 
 rm32:
-  |  reg {Rm32_reg $1}
-  |  LPAR reg RPAR {Rm32_deref $2}
-  |  LBRK reg RBRK {Rm32_deref $2}
-  |  LBRK NAME RBRK {Rm32_abs (Constant.mk_sym $2) }
-  |  LBRK NUM RBRK {Rm32_abs (Constant.Concrete $2) }
+  |  reg { X86.Rm32_reg $1}
+  |  LPAR reg RPAR  { X86.Rm32_deref $2}
+  |  LBRK reg RBRK  { X86.Rm32_deref $2}
+  |  LBRK NAME RBRK { X86.Rm32_abs (Constant.mk_sym $2) }
+  |  LBRK NUM RBRK  { X86.Rm32_abs (Constant.Concrete $2) }
 
 operand:
-  | effaddr {Operand_effaddr $1}
-  | k {Operand_immediate (Misc.string_as_int $1) }
-  | INTEL_NUM {Operand_immediate (Misc.string_as_int $1)} /* enough ? */
+  | effaddr { X86.Operand_effaddr $1}
+  | k { X86.Operand_immediate (Misc.string_as_int $1) }
+  | INTEL_NUM { X86.Operand_immediate (Misc.string_as_int $1)} /* enough ? */

@@ -49,7 +49,6 @@ let tr_name s = match s with
 | "atomic_int" -> ATOMIC_TYPE "int"
 | "srcu_struct" -> STRUCT_TYPE s
 | "void" -> VOID
-| "NULL" -> NULL
 (* C11 primitives, quite a lot! *)
 | "atomic_fetch_add_explicit" -> ATOMIC_FETCH_EXPLICIT Op.Add
 | "atomic_fetch_sub_explicit" -> ATOMIC_FETCH_EXPLICIT Op.Add
@@ -109,7 +108,6 @@ rule token deep = parse
 | ';' { SEMI }
 | ',' { COMMA }
 | '|' { PIPE }
-| ':' { COLON }
 | '*' { STAR }
 | '/' { DIV }
 | '+' { ADD }
@@ -124,7 +122,6 @@ rule token deep = parse
           BODY (Buffer.contents buf)
         end }
 | '}' { RBRACE }
-| "while" { WHILE }
 | "if"    { IF }
 | "else"  { ELSE }
 | '=' {EQ}
@@ -134,7 +131,6 @@ rule token deep = parse
 | ">" { GT }
 | "<=" { LE }
 | ">=" { GE }
-| '.' {DOT}
 | "constvar:" (name as s) { CONSTVAR s }
 | "codevar:" (name as s) { CODEVAR s }
 | '%' name as s { IDENTIFIER s }

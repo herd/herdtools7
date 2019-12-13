@@ -32,8 +32,7 @@ let pp_annot_group ag =
   let mapped = List.map pp_annot_set ag in
   "["^(String.concat ", " mapped)^"]"
 
-let pp_event_dec  l  =
-  String.concat "," (List.map (fun x -> pp_annot_group x) l)
+let pp_event_dec l = String.concat "," (List.map (fun x -> pp_annot_group x) l)
 
 let pp_event_dec_bd t l  = sprintf "%s: %s" t (pp_event_dec l)
 

@@ -20,6 +20,7 @@
 (* Those names are special *) 
 val scopes : string
 val regions : string
+val levels : string
 val wider : string
 val narrower : string
 

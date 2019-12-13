@@ -58,6 +58,7 @@ val is_some : 'a option -> bool
 val as_some : 'a option -> 'a
 val proj_opt : 'a -> 'a option -> 'a
 val app_opt : ('a -> 'b) -> 'a option -> 'b option
+val check_opt : ('a -> unit) -> 'a option -> unit
 val snd_opt : ('a * 'b) option -> 'b option
 val map_opt : ('a -> 'b) -> 'a option -> 'b option
 val option_map : ('a -> 'b option) -> 'a list -> 'b list

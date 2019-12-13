@@ -1084,6 +1084,7 @@ module Make
          "fulldelift",fulldelift;
          "linearisations",linearisations ks;
          "tag2scope",tag2scope m;
+         "tag2level",tag2scope m;
          "tag2events",tag2events m;
          "tag2fenced",tag2fenced m;
          "loc2events",loc2events ks;
@@ -1886,6 +1887,9 @@ module Make
               else if name = BellName.regions then
                 let bell_info = BellModel.add_regions tags st.bell_info in
                 { st with bell_info;}
+              else if name = BellName.levels then
+                let bell_info = BellModel.add_rel name tags st.bell_info in
+                { st with bell_info }
               else st
             with BellModel.Defined ->
               error st.silent loc "second definition of bell enum %s" name

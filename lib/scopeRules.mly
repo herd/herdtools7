@@ -1,3 +1,4 @@
+%{
 (****************************************************************************)
 (*                           the diy toolsuite                              *)
 (*                                                                          *)
@@ -13,42 +14,59 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
+%}
 
-{
-module Make(O:LexUtils.Config) = struct
-open Lexing
-open ScopeParser
-open LexMisc
-}
+%%
 
+proc:
+ | PROC { $1 }
+ | NUM  { $1 }
 
-let digit =  [ '0'-'9' ]
-let alpha = [ 'a'-'z' 'A'-'Z']
-let name  = alpha (alpha|digit|'_' | '/' | '-')*
-let num = "0x"?digit+
+proc_list_sc:
+| proc proc_list_sc {$1::$2}
+| {[]}
 
-rule token = parse
-| [' ''\t''\r'] { token lexbuf  }
-| '\n'      { incr_lineno lexbuf; token lexbuf  }
-| num as x { NUM (int_of_string x) }
-| 'P' (num as x)
-    { NUM (int_of_string x) }
-| '(' { LPAR  }
-| ')' { RPAR  }
-| name as x
-    { NAME x }
-| ""  { error "Scope lexer" lexbuf }
+scope_tree_list:
+| scope_tree {[$1]}
+| scope_tree scope_tree_list {$1::$2}
 
-{
-let token lexbuf =
-   let tok = token lexbuf in
-   if O.debug then begin
-     Printf.eprintf
-       "%a: Lexed '%s'\n"
-       Pos.pp_pos2
-       (lexeme_start_p lexbuf,lexeme_end_p lexbuf)
-       (lexeme lexbuf)
-   end ;
-   tok
- end
-}
+scope_tree:
+ | LPAR NAME scope_tree_list RPAR  
+   {
+   BellInfo.Tree($2,[],$3)
+   }
+ | LPAR NAME proc_list_sc RPAR 
+   {
+   BellInfo.Tree($2,$3,[])
+   }
+
+%public top_scope_tree:
+ | scope_tree_list
+    { let ts = $1 in
+      match ts with
+      | [t] -> t
+      | _ -> BellInfo.Tree ("",[],ts) }
+
+level_tree_list:
+| PROC { [$1],[] }
+| level_tree {let ps =  [] in ps,[$1]}
+| PROC level_tree_list
+    { let ps,ts = $2 in
+      $1::ps,ts }
+| level_tree level_tree_list
+    {let ps,ts = $2 in
+     ps,$1::ts }
+
+level_tree:
+ | LPAR NAME level_tree_list RPAR
+  {
+   let ps,ts = $3 in
+   BellInfo.Tree ($2,ps,ts)
+   }
+
+%public top_level_tree:
+ | level_tree_list
+    { let ps,ts = $1 in
+      match ps,ts with
+      | [],[t] -> t
+      | _ -> BellInfo.Tree ("",ps,ts) }

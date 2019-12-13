@@ -57,6 +57,6 @@ let parse tag = match tag with
       let lexbuf = Lexing.from_string tag in
       let st =
         GenParser.call_parser "_none_" lexbuf
-          Lexer.token ScopeParser.top_scope_tree in
+          Lexer.token ScopeParser.main in
       Some (One st)
 

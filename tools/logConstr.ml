@@ -86,7 +86,7 @@ let get_locs c = fold_constr get_locs_atom c LocSet.empty
 let parse_observed s = 
   try
     let lxb = Lexing.from_string s in
-    let locs,c = StateParser.loc_constr SL.token lxb in
+    let locs,c = StateParser.main_loc_constr SL.token lxb in
     Some
       (LocSet.union
          (LocSet.of_list (List.map fst locs))
@@ -97,7 +97,7 @@ let parse_observed s =
 
 let parse_locs_cond lxb =
   try
-    let locs,c = StateParser.loc_constr SL.token lxb in
+    let locs,c = StateParser.main_loc_constr SL.token lxb in
     Some (locs,tr_cond c)
   with
   | Parsing.Parse_error
@@ -107,7 +107,7 @@ let parse_locs_cond lxb =
 let parse_locs s = 
   try
     let lxb = Lexing.from_string s in
-    let locs,cstr = StateParser.loc_constr SL.token lxb in
+    let locs,cstr = StateParser.main_loc_constr SL.token lxb in
     Some (LocSet.union (LocSet.of_list (List.map fst locs)) (get_locs cstr))
   with
   | Parsing.Parse_error
@@ -115,7 +115,7 @@ let parse_locs s =
 
 let parse_filter lxb =
    try
-     match StateParser.filter SL.token lxb with
+     match StateParser.main_filter SL.token lxb with
      | None -> None
      | Some p -> Some (ConstrGen.map_prop tr_atom p)
   with

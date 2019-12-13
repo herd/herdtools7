@@ -19,10 +19,12 @@ open Printf
 open BellInfo
 
 let rec of_scope = function
-  | Children ("",ts) -> of_scopes ts
-  | Leaf (sc,ps) ->
+  | Tree ("",_,ts) -> of_scopes ts
+  | Tree (sc,ps,[]) ->
       String.concat "" (List.map (sprintf "%i") ps) ^ "-" ^ sc
-  | Children (sc,ts) -> of_scopes ts ^ "-" ^ sc
+  | Tree (sc,[],ts) -> of_scopes ts ^ "-" ^ sc
+  | Tree (_,_::_,_::_) ->
+      Warn.fatal "Namer.of_scope, irregular scope"
 
 and of_scopes ts =
   String.concat "-" (List.map of_scope ts)

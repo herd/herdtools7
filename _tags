@@ -8,7 +8,7 @@
 true: safe_string
 true: dtypes
 true: -traverse
-
+true: use_menhir
 <*/*.byte>: debug
 <*/*.cmo>: debug
 <*/*.{d.byte,byte,native}>: use_unix,use_str

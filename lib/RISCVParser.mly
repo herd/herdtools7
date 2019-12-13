@@ -15,12 +15,12 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-open RISCVBase
+module A=RISCVBase
 
 let tr_rw = function
-  | "r" -> R
-  | "w" -> W
-  | "rw" -> RW
+  | "r" -> A.R
+  | "w" -> A.W
+  | "rw" -> A.RW
   | _ -> raise Parsing.Parse_error
 %}
 
@@ -52,7 +52,6 @@ let tr_rw = function
 %type <RISCVBase.parsedPseudo list> instr_option_seq
 %start main instr_option_seq
 
-%nonassoc SEMI
 %%
 
 main:
@@ -81,18 +80,15 @@ instr_option_list :
 
 
 instr_option_seq :
-  | instr_option
-      {[$1]}
-  | instr_option SEMI instr_option_seq
-      {$1::$3}
+  | is=separated_nonempty_list(SEMI,instr_option) EOF { is }
 
 instr_option :
-|            { Nop }
-| NAME COLON instr_option { Label ($1,$3) }
-| instr      { Instruction $1}
+|            { A.Nop }
+| NAME COLON instr_option { A.Label ($1,$3) }
+| instr      { A.Instruction $1}
 
 reg:
-| SYMB_REG { Symbolic_reg $1 }
+| SYMB_REG { A.Symbolic_reg $1 }
 | ARCH_REG { $1 }
 
 k:
@@ -115,41 +111,41 @@ addr0:
 instr:
 /* OPs */
 | LI reg COMMA k
-  { OpI (ORI,$2,Ireg X0,$4) }
+  { A.OpI (A.ORI,$2,A.Ireg A.X0,$4) }
 | OPI reg COMMA reg COMMA k 
-  { OpI ($1,$2,$4,$6) }
+  { A.OpI ($1,$2,$4,$6) }
 | OPIW reg COMMA reg COMMA k 
-  { OpIW ($1,$2,$4,$6) }
+  { A.OpIW ($1,$2,$4,$6) }
 | OP reg COMMA reg COMMA reg 
-  { Op ($1,$2,$4,$6) }
+  { A.Op ($1,$2,$4,$6) }
 | OPW reg COMMA reg COMMA reg 
-  { OpW ($1,$2,$4,$6) }
+  { A.OpW ($1,$2,$4,$6) }
 | J NAME
-    { J $2 }
+    { A.J $2 }
 | BCC reg COMMA reg COMMA NAME
-    { Bcc ($1,$2,$4,$6) }
+    { A.Bcc ($1,$2,$4,$6) }
 | LOAD reg COMMA addr
     { let w,s,mo = $1 in
     let off,r = $4 in
-    Load (w,s,mo,$2,off,r) }
+    A.Load (w,s,mo,$2,off,r) }
 | STORE reg COMMA addr
     {let w,mo = $1 in
      let off,r = $4 in
-     Store (w,mo,$2,off,r) }
+     A.Store (w,mo,$2,off,r) }
 | LR reg COMMA addr0
     { let w,mo = $1 in
-    LoadReserve (w,mo,$2,$4) }
+    A.LoadReserve (w,mo,$2,$4) }
 | SC reg COMMA reg COMMA addr0
     { let w,mo = $1 in
-    StoreConditional (w,mo,$2,$4,$6) }
+    A.StoreConditional (w,mo,$2,$4,$6) }
 | AMO reg COMMA reg COMMA addr0
     { let op,w,mo = $1 in
-    Amo (op,w,mo,$2,$4,$6) }
+    A.Amo (op,w,mo,$2,$4,$6) }
 | FENCEI
-    { FenceIns FenceI }
+    { A.FenceIns A.FenceI }
 | FENCETSO
-    { FenceIns FenceTSO }
+    { A.FenceIns A.FenceTSO }
 | FENCE
-    { FenceIns (Fence (RW,RW)) }
+    { A.FenceIns (A.Fence (A.RW,A.RW)) }
 | FENCE NAME COMMA NAME
-    { FenceIns (Fence (tr_rw $2,tr_rw $4)) } 
+    { A.FenceIns (A.Fence (tr_rw $2,tr_rw $4)) } 

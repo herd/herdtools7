@@ -34,10 +34,9 @@ let do_op op e1 e2 =
   Op (mk_loc(),op,es1@es2)
 
 let pp () =
-  let open Lexing in
-  let start = symbol_start_pos ()
-  and fin = symbol_end () in
-  let pos = start.pos_cnum in
+  let start = Parsing.symbol_start_pos ()
+  and fin = Parsing.symbol_end () in
+  let pos = start.Lexing.pos_cnum in
   let len = fin - pos in
   Pos {pos;len}
 
@@ -50,17 +49,14 @@ let tuple_pat = function
 %token <string> VAR
 %token <string> TAG
 %token <string> STRING
-%token <string> LATEX
 %token INCLUDE
 %token LPAR RPAR BEGIN END LACC RACC LBRAC RBRAC
 %token EMPTY UNDERSCORE SUBSET
-%token WITHCO WITHOUTCO WITHINIT WITHOUTINIT
-%token WITHSC WITHOUTSC
 %token ALT SEMI UNION INTER COMMA DIFF PLUSPLUS
 %token STAR PLUS OPT INV COMP HAT
 %token LET REC AND WHEN ACYCLIC IRREFLEXIVE TESTEMPTY EQUAL
 %token SHOW UNSHOW AS FUN IN PROCEDURE CALL FORALL DO FROM
-%token TRY INSTRUCTIONS DEFAULT IF THEN ELSE YIELD COMPAT
+%token TRY INSTRUCTIONS DEFAULT IF THEN ELSE
 %token REQUIRES FLAG
 %token ARROW
 %token ENUM DEBUG MATCH WITH
@@ -68,14 +64,12 @@ let tuple_pat = function
 %start main
 
 /* Precedences */
-%right COMMA
-%left prec_app
 %right UNION
 %right PLUSPLUS
 %right SEMI
 %left DIFF
 %right INTER
-%nonassoc STAR PLUS OPT INV COMP
+%nonassoc STAR PLUS OPT COMP
 %nonassoc HAT
 %%
 
@@ -318,8 +312,8 @@ clause_list:
 
 
 exp0:
-| VAR                 { Var (mk_loc (),$1) }
-| exp0  arg %prec prec_app   { App (mk_loc (),$1,$2) }
+| VAR          { Var (mk_loc (),$1) }
+| exp0  arg    { App (mk_loc (),$1,$2) }
 
 arg:
 | VAR { Var (mk_loc (),$1) }

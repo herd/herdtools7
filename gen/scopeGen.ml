@@ -41,7 +41,7 @@ module Make(O:Config) : S = struct
       let o = BellModel.get_order BellName.scopes O.info in    
       let tops = StringRel.leaves o in
       let top = StringSet.choose tops in
-      Leaf (top,Misc.interval 0 n)
+      Tree (top,Misc.interval 0 n,[])
     with
     | Not_found -> bad_order ()
 
@@ -76,11 +76,11 @@ module Make(O:Config) : S = struct
   let gen_leaf sc min max xs k res =
     part min max xs
       (fun yss res ->
-        let sts = List.map (fun ys -> Leaf (sc,ys)) yss in
+        let sts = List.map (fun ys -> Tree (sc,ys,[])) yss in
         k sts res)
       res
 
-  let children sc ts = Children (sc,ts)
+  let children sc ts = Tree (sc,[],ts)
 
   let contract =
     if O.debug then Misc.identity

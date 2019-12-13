@@ -45,7 +45,7 @@ end = struct
           let lexbuf = Lexing.from_string st in
           let st =
             GenParser.call_parser "_none_" lexbuf
-              Lexer.token ScopeParser.top_scope_tree in
+              Lexer.token ScopeParser.main in
           Some st in
       name,es,st
           with

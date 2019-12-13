@@ -15,7 +15,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-open MIPSBase
+module A=MIPSBase
+
 %}
 
 %token EOF
@@ -40,7 +41,6 @@ open MIPSBase
 %type <int list * (MIPSBase.pseudo) list list> main 
 %start  main
 
-%nonassoc SEMI
 %%
 
 main:
@@ -68,12 +68,12 @@ instr_option_list :
       {$1::$3}
 
 instr_option :
-|            { Nop }
-| NAME COLON instr_option { Label ($1,$3) }
-| instr      { Instruction $1}
+|            { A.Nop }
+| NAME COLON instr_option { A.Label ($1,$3) }
+| instr      { A.Instruction $1}
 
 reg:
-| SYMB_REG { Symbolic_reg $1 }
+| SYMB_REG { A.Symbolic_reg $1 }
 | ARCH_REG { $1 }
 
 k:
@@ -82,83 +82,83 @@ k:
 instr:
 /* ADD */
 | ADD reg COMMA reg COMMA reg 
-  { OP (ADD,$2,$4,$6) }
+  { A.OP (A.ADD,$2,$4,$6) }
 | ADDI reg COMMA reg COMMA k
-  { OPI (ADD,$2,$4,$6) }
+  { A.OPI (A.ADD,$2,$4,$6) }
 | ADDU reg COMMA reg COMMA reg 
-  { OP (ADDU,$2,$4,$6) }
+  { A.OP (A.ADDU,$2,$4,$6) }
 | ADDIU reg COMMA reg COMMA k
-  { OPI (ADDU,$2,$4,$6) }
+  { A.OPI (A.ADDU,$2,$4,$6) }
 /* SUB */
 | SUB reg COMMA reg COMMA reg 
-  { OP (SUB,$2,$4,$6) }
+  { A.OP (A.SUB,$2,$4,$6) }
 | SUBI reg COMMA reg COMMA k
-  { OPI (SUB,$2,$4,$6) }
+  { A.OPI (A.SUB,$2,$4,$6) }
 | SUBU reg COMMA reg COMMA reg 
-  { OP (SUBU,$2,$4,$6) }
+  { A.OP (A.SUBU,$2,$4,$6) }
 | SUBIU reg COMMA reg COMMA k
-  { OPI (SUBU,$2,$4,$6) }
+  { A.OPI (A.SUBU,$2,$4,$6) }
 /* SLT */
 | SLT reg COMMA reg COMMA reg 
-  { OP (SLT,$2,$4,$6) }
+  { A.OP (A.SLT,$2,$4,$6) }
 | SLTI reg COMMA reg COMMA k
-  { OPI (SLT,$2,$4,$6) }
+  { A.OPI (A.SLT,$2,$4,$6) }
 | SLTU reg COMMA reg COMMA reg 
-  { OP (SLTU,$2,$4,$6) }
+  { A.OP (A.SLTU,$2,$4,$6) }
 | SLTIU reg COMMA reg COMMA k
-  { OPI (SLTU,$2,$4,$6) }
+  { A.OPI (A.SLTU,$2,$4,$6) }
 /* AND */
 | AND reg COMMA reg COMMA reg 
-  { OP (AND,$2,$4,$6) }
+  { A.OP (A.AND,$2,$4,$6) }
 | ANDI reg COMMA reg COMMA k
-  { OPI (AND,$2,$4,$6) }
+  { A.OPI (A.AND,$2,$4,$6) }
 /* OR */
 | OR reg COMMA reg COMMA reg 
-  { OP (OR,$2,$4,$6) }
+  { A.OP (A.OR,$2,$4,$6) }
 | ORI reg COMMA reg COMMA k
-  { OPI (OR,$2,$4,$6) }
+  { A.OPI (A.OR,$2,$4,$6) }
 /* XOR */
 | XOR reg COMMA reg COMMA reg 
-  { OP (XOR,$2,$4,$6) }
+  { A.OP (A.XOR,$2,$4,$6) }
 | XORI reg COMMA reg COMMA k
-  { OPI (XOR,$2,$4,$6) }
+  { A.OPI (A.XOR,$2,$4,$6) }
 /* NOR */
 | NOR reg COMMA reg COMMA reg 
-  { OP (NOR,$2,$4,$6) }
+  { A.OP (A.NOR,$2,$4,$6) }
 /* Branch */
 | B NAME
-  { B $2 }
+  { A.B $2 }
 | BEQ reg COMMA reg COMMA NAME
-  { BC (EQ,$2,$4,$6) }
+  { A.BC (A.EQ,$2,$4,$6) }
 | BNE reg COMMA reg COMMA NAME
-  { BC (NE,$2,$4,$6) }
+  { A.BC (A.NE,$2,$4,$6) }
 | BLEZ reg COMMA NAME
-  { BCZ (LEZ,$2,$4) }
+  { A.BCZ (A.LEZ,$2,$4) }
 | BGTZ reg COMMA NAME
-  { BCZ (GTZ,$2,$4) }
+  { A.BCZ (A.GTZ,$2,$4) }
 | BLTZ reg COMMA NAME
-  { BCZ (LTZ,$2,$4) }
+  { A.BCZ (A.LTZ,$2,$4) }
 | BGEZ reg COMMA NAME
-  { BCZ (GEZ,$2,$4) }
+  { A.BCZ (A.GEZ,$2,$4) }
 /* Load and Store */
 | LW reg COMMA k LPAR reg RPAR
-  { LW ($2,$4,$6) }
+  { A.LW ($2,$4,$6) }
 | LW reg COMMA LPAR reg RPAR
-  { LW ($2,0,$5) }
+  { A.LW ($2,0,$5) }
 | SW reg COMMA k LPAR reg RPAR
-  { SW ($2,$4,$6) }
+  { A.SW ($2,$4,$6) }
 | SW reg COMMA LPAR reg RPAR
-  { SW ($2,0,$5) }
+  { A.SW ($2,0,$5) }
 | LL reg COMMA k LPAR reg RPAR
-  { LL ($2,$4,$6) }
+  { A.LL ($2,$4,$6) }
 | LL reg COMMA LPAR reg RPAR
-  { LL ($2,0,$5) }
+  { A.LL ($2,0,$5) }
 | SC reg COMMA k LPAR reg RPAR
-  { SC ($2,$4,$6) }
+  { A.SC ($2,$4,$6) }
 | SC reg COMMA LPAR reg RPAR
-  { SC ($2,0,$5) }
+  { A.SC ($2,0,$5) }
 /* Misc */
 | LI reg COMMA k
-  { LI ($2,$4) }
+  { A.LI ($2,$4) }
 | SYNC
-  { SYNC }
+  { A.SYNC }

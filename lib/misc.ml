@@ -78,6 +78,10 @@ let app_opt f = function
   | None -> None
   | Some x -> Some (f x)
 
+let check_opt check = function
+  | None -> ()
+  | Some x -> check x
+
 let snd_opt p = app_opt snd p
 
 let map_opt = app_opt

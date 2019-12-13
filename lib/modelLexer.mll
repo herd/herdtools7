@@ -56,11 +56,9 @@ module LU = LexUtils.Make(O)
     | "if" -> IF
     | "then" -> THEN
     | "else" -> ELSE
-    | "yield" -> YIELD
     (* for bell files *)
     | "instructions" -> INSTRUCTIONS
     | "default" -> DEFAULT
-    | "compat" -> COMPAT
     | x -> VAR x
 
 

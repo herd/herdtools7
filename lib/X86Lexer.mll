@@ -67,7 +67,6 @@ rule token = parse
 | "lfence"|"LFENCE"   { I_LFENCE }
 | "sfence"|"SFENCE"   { I_SFENCE }
 | "mfence"|"MFENCE"   { I_MFENCE }
-| "read"|"READ"       { I_READ }
 | "setnb"|"SETNB"       { I_SETNB }
 | name as x
   { match X86.parse_reg x with

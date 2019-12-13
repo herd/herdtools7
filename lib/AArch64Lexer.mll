@@ -211,6 +211,7 @@ match name with
 | "stsminb"|"STSMINB" -> STSMINB
 | "stsminlb"|"STSMINLB" -> STSMINLB
 (* Fetch and Max, Unsigned *)
+(*
 | "ldumax"|"LDUMAX" -> LDUMAX
 | "ldumaxa"|"LDUMAXA" -> LDUMAXA
 | "ldumaxl"|"LDUMAXL" -> LDUMAXL
@@ -248,6 +249,7 @@ match name with
 | "stuminlh"|"STUMINLH" -> STUMINLH
 | "stuminb"|"STUMINB" -> STUMINB
 | "stuminlb"|"STUMINLB" -> STUMINLB
+*)
 (* Memory Tagging *)
 | "stg"|"STG" -> STG
 | "ldg"|"LDG" -> LDG
@@ -352,6 +354,7 @@ rule token = parse
 | ')' { RPAR }
 | ':' { COLON }
 | "scopes"  { SCOPES  }
+| "levels"  { LEVELS  }
 | "regions" { REGIONS }
 | '&' (name as x) { META x }
 | "codevar:" (name as x) { CODEVAR x }

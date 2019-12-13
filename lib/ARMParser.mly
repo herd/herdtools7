@@ -15,7 +15,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-open ARMBase
+module A = ARMBase
 %}
 
 %token EOF
@@ -40,7 +40,6 @@ open ARMBase
 %type <ARMBase.parsedPseudo list> instr_option_seq
 %start instr_option_seq
 
-%nonassoc SEMI
 %%
 
 main:
@@ -67,20 +66,17 @@ instr_option_list :
   | instr_option PIPE instr_option_list 
       {$1::$3}
 
-instr_option_seq :
-  | instr_option
-      {[$1]}
-  | instr_option SEMI instr_option_seq 
-      {$1::$3}
+instr_option_seq:
+| separated_nonempty_list(SEMI,instr_option) EOF { $1 }
 
 instr_option :
-|            { Nop }
-| NAME COLON instr_option { Label ($1,$3) }
-| CODEVAR { Symbolic $1 }
-| instr      { Instruction $1}
+|            { A.Nop }
+| NAME COLON instr_option { A.Label ($1,$3) }
+| CODEVAR { A.Symbolic $1 }
+| instr      { A.Instruction $1}
 
 reg:
-| SYMB_REG { Symbolic_reg $1 }
+| SYMB_REG { A.Symbolic_reg $1 }
 | ARCH_REG { $1 }
 
 k:
@@ -89,105 +85,105 @@ k:
 
 instr:
   | I_ADD reg COMMA reg COMMA k
-     { I_ADD (DontSetFlags,$2,$4,$6) }
+     { A.I_ADD (A.DontSetFlags,$2,$4,$6) }
   | I_ADDS reg COMMA reg COMMA k
-     { I_ADD (SetFlags,$2,$4,$6) }
+     { A.I_ADD (A.SetFlags,$2,$4,$6) }
   | I_ADD reg COMMA reg COMMA reg
-     { I_ADD3 (DontSetFlags,$2, $4, $6) }
+     { A.I_ADD3 (A.DontSetFlags,$2, $4, $6) }
   | I_ADDS reg COMMA reg COMMA reg
-     { I_ADD3 (SetFlags,$2, $4, $6) }
+     { A.I_ADD3 (A.SetFlags,$2, $4, $6) }
   | I_AND reg COMMA reg COMMA k
-     { I_AND (DontSetFlags,$2,$4,$6) }
+     { A.I_AND (A.DontSetFlags,$2,$4,$6) }
   | I_ANDS reg COMMA reg COMMA k
-     { I_AND (SetFlags,$2,$4,$6) }
+     { A.I_AND (A.SetFlags,$2,$4,$6) }
   | I_B NAME
-     { I_B $2 }
+     { A.I_B $2 }
   | I_BNE NAME
-     { I_BNE $2 }
+     { A.I_BNE $2 }
   | I_BEQ NAME
-     { I_BEQ $2 }
+     { A.I_BEQ $2 }
   | I_CBZ reg COMMA NAME
-     { I_CB (false,$2,$4) }
+     { A.I_CB (false,$2,$4) }
   | I_CBNZ reg COMMA NAME
-     { I_CB (true,$2,$4) }
+     { A.I_CB (true,$2,$4) }
   | I_CMP reg COMMA k
-     { I_CMPI ($2,$4) }
+     { A.I_CMPI ($2,$4) }
   | I_CMP reg COMMA reg
-     { I_CMP ($2,$4) }
+     { A.I_CMP ($2,$4) }
 /* Load */
   | I_LDR reg COMMA reg
-     { I_LDR ($2,$4, AL) }
+     { A.I_LDR ($2,$4, A.AL) }
   | I_LDR reg COMMA LBRK reg RBRK
-     { I_LDR ($2,$5,AL) }
+     { A.I_LDR ($2,$5,A.AL) }
   | I_LDR reg COMMA LBRK reg COMMA reg RBRK
-     { I_LDR3 ($2,$5,$7,AL) }
+     { A.I_LDR3 ($2,$5,$7,A.AL) }
   | I_LDRNE reg COMMA reg
-     { I_LDR ($2,$4,NE) }
+     { A.I_LDR ($2,$4,A.NE) }
   | I_LDRNE reg COMMA LBRK reg RBRK
-     { I_LDR ($2,$5,NE) }
+     { A.I_LDR ($2,$5,A.NE) }
   | I_LDRNE reg COMMA LBRK reg COMMA reg RBRK
-     { I_LDR3 ($2,$5,$7,NE) }
+     { A.I_LDR3 ($2,$5,$7,A.NE) }
   | I_LDREQ reg COMMA reg
-     { I_LDR ($2,$4,EQ) }
+     { A.I_LDR ($2,$4,A.EQ) }
   | I_LDREQ reg COMMA LBRK reg RBRK
-     { I_LDR ($2,$5,EQ) }
+     { A.I_LDR ($2,$5,A.EQ) }
   | I_LDREQ reg COMMA LBRK reg COMMA reg RBRK
-     { I_LDR3 ($2,$5,$7,EQ) }
+     { A.I_LDR3 ($2,$5,$7,A.EQ) }
   | I_LDREX reg COMMA reg
-     { I_LDREX ($2,$4) }
+     { A.I_LDREX ($2,$4) }
   | I_LDREX reg COMMA LBRK reg RBRK
-     { I_LDREX ($2,$5) }
+     { A.I_LDREX ($2,$5) }
 /* Store */
   | I_STR reg COMMA reg
-     { I_STR ($2,$4,AL) }
+     { A.I_STR ($2,$4,A.AL) }
   | I_STR reg COMMA LBRK reg RBRK
-     { I_STR ($2,$5,AL) }
+     { A.I_STR ($2,$5,A.AL) }
   | I_STR reg COMMA LBRK reg COMMA reg RBRK
-     { I_STR3 ($2,$5,$7,AL) }
+     { A.I_STR3 ($2,$5,$7,A.AL) }
   | I_STRNE reg COMMA reg
-     { I_STR ($2,$4,NE) }
+     { A.I_STR ($2,$4,A.NE) }
   | I_STRNE reg COMMA LBRK reg RBRK
-     { I_STR ($2,$5,NE) }
+     { A.I_STR ($2,$5,A.NE) }
   | I_STRNE reg COMMA LBRK reg COMMA reg RBRK
-     { I_STR3 ($2,$5,$7,NE) }
+     { A.I_STR3 ($2,$5,$7,A.NE) }
   | I_STREQ reg COMMA reg
-     { I_STR ($2,$4,EQ) }
+     { A.I_STR ($2,$4,A.EQ) }
   | I_STREQ reg COMMA LBRK reg RBRK
-     { I_STR ($2,$5,EQ) }
+     { A.I_STR ($2,$5,A.EQ) }
   | I_STREQ reg COMMA LBRK reg COMMA reg RBRK
-     { I_STR3 ($2,$5,$7,EQ) }
+     { A.I_STR3 ($2,$5,$7,A.EQ) }
   | I_STREX reg COMMA reg COMMA LBRK reg RBRK
-     { I_STREX ($2,$4,$7,AL) }
+     { A.I_STREX ($2,$4,$7,A.AL) }
 /* MOVE */
   | I_MOV reg COMMA k
-     { I_MOVI ($2,$4,AL) }
+     { A.I_MOVI ($2,$4,A.AL) }
   | I_MOVNE reg COMMA k
-     { I_MOVI ($2,$4,NE) }
+     { A.I_MOVI ($2,$4,A.NE) }
   | I_MOVEQ reg COMMA k
-     { I_MOVI ($2,$4,EQ) }
+     { A.I_MOVI ($2,$4,A.EQ) }
   | I_MOV reg COMMA reg
-     { I_MOV ($2,$4,AL) }
+     { A.I_MOV ($2,$4,A.AL) }
   | I_MOVNE reg COMMA reg
-     { I_MOV ($2,$4,NE) }
+     { A.I_MOV ($2,$4,A.NE) }
   | I_MOVEQ reg COMMA reg
-     { I_MOV ($2,$4,EQ) }
+     { A.I_MOV ($2,$4,A.EQ) }
   | I_XOR reg COMMA reg COMMA reg
-     { I_XOR (DontSetFlags,$2,$4,$6) }
+     { A.I_XOR (A.DontSetFlags,$2,$4,$6) }
   | I_XORS reg COMMA reg COMMA reg
-     { I_XOR (SetFlags,$2,$4,$6) }
+     { A.I_XOR (A.SetFlags,$2,$4,$6) }
 /* FENCES */
-  | I_DMB { I_DMB SY }
-  | I_DSB opt { I_DSB $2 }
-  | I_DMB opt { I_DMB $2 }
-  | I_DSB { I_DSB SY }
-  | I_ISB { I_ISB }
+  | I_DMB { A.I_DMB A.SY }
+  | I_DSB opt { A.I_DSB $2 }
+  | I_DMB opt { A.I_DMB $2 }
+  | I_DSB { A.I_DSB A.SY }
+  | I_ISB { A.I_ISB }
 
 opt:
-  | I_SY { SY }
-  | I_ST { ST }
-  | I_ISH { ISH }
-  | I_ISHST { ISHST }
-  | I_NSH { NSH }
-  | I_NSHST { NSHST }
-  | I_OSH { OSH }
-  | I_OSHST { OSHST }
+  | I_SY { A.SY }
+  | I_ST { A.ST }
+  | I_ISH { A.ISH }
+  | I_ISHST { A.ISHST }
+  | I_NSH { A.NSH }
+  | I_NSHST { A.NSHST }
+  | I_OSH { A.OSH }
+  | I_OSHST { A.OSHST }

@@ -176,7 +176,7 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
 
     let parse_cond lexbuf =
       let cond =  call_parser "cond" lexbuf
-          SL.token StateParser.constr in
+          SL.token StateParser.main_constr in
       cond
 
     module D = TestHash.Make(A)

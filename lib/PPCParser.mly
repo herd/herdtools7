@@ -53,7 +53,6 @@ open MachSize
 %type <PPCBase.parsedPseudo list> instr_option_seq
 %start instr_option_seq
 
-%nonassoc SEMI
 %%
 
 main:
@@ -81,11 +80,7 @@ instr_option_list :
   | instr_option PIPE instr_option_list 
       {$1::$3}
 
-instr_option_seq :
-  | instr_option
-      {[$1]}
-  | instr_option SEMI instr_option_seq 
-      {$1::$3}
+instr_option_seq : xs=separated_nonempty_list(SEMI,instr_option) EOF { xs }
 
 instr_option :
 |            { Nop }

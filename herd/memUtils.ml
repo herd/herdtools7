@@ -96,20 +96,19 @@ let get_scope_classes evts =
   let open BellInfo in
   let m = by_proc evts in
   let rec do_rec = function
-    | Leaf (s,ps) ->
+    | Tree (s,ps,ts) ->
         let es =
           E.EventSet.unions
             (List.map
                (fun p -> IntMap.safe_find E.EventSet.empty p m)
                ps) in
-        es,StringMap.add s [es] StringMap.empty
-    | Children (s,ts) ->
+        let cls = StringMap.add s [es] StringMap.empty in
         let ess,clss =
           List.fold_left
             (fun (es,clss) t ->
               let es_t,cls_t = do_rec t in
               es_t::es,cls_t::clss)
-            ([],[]) ts in
+            ([es],[cls]) ts in
         let es = E.EventSet.unions ess in
         let cls = StringMap.unions (@) clss in
         es,StringMap.add s [es] cls in

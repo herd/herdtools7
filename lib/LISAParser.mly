@@ -20,23 +20,18 @@ open Bell
 let mk_sym s = Constant.Symbolic ((s,None),0)
 %}
 
-%token EOF SEMI COMMA PIPE COLON LPAR RPAR RBRAC LBRAC LBRACE RBRACE SCOPES REGIONS MOV AND ADD BRANCH EQ NEQ READ WRITE FENCE RMW CAS EXCH DOT XOR PLUS CALL
+%token EOF SEMI COMMA PIPE COLON LPAR RPAR RBRAC LBRAC LBRACE RBRACE SCOPES LEVELS REGIONS MOV AND ADD BRANCH EQ NEQ READ WRITE FENCE RMW XOR PLUS CALL
 %token <BellBase.reg> REG
 %token <int> NUM
 %token <string> CODEVAR
 %token <string> NAME
 %token <string> META
 %token <BellBase.reg> SYMB_REG
-%token <string> MEM_ANNOT
 %token <int> PROC
 
 %type <int list * (BellBase.parsedPseudo) list list * MiscParser.extra_data > main 
 %type <BellBase.parsedPseudo list> instr_option_seq
 %start main instr_option_seq
-
-%nonassoc SEMI
-
-%token SCOPETREE THREAD COMMA 
 
 %type <BellInfo.test> scopes_and_memory_map
 %%
@@ -68,10 +63,7 @@ instr_option_list :
       {$1::$3}
 
 instr_option_seq:
-  | instr_option
-      {[$1]}
-  | instr_option SEMI instr_option_seq 
-      {$1::$3}
+  | xs=separated_nonempty_list(SEMI,instr_option) EOF { xs }
 
 iol_list :
 |  instr_option_list SEMI
@@ -177,34 +169,12 @@ instr:
 | MOV reg operation
   { Pmov ($2,$3) }
 
-proc:
- | PROC { $1 }
- | NUM { $1 }
-
-proc_list_sc:
-| proc proc_list_sc {$1::$2}
-| {[]}
-
-scope_tree_list:
-| scope_tree {[$1]}
-| scope_tree scope_tree_list {$1::$2}
-scope_tree:
- | LPAR NAME scope_tree_list RPAR  
-   {
-   BellInfo.Children($2,$3)
-   }
- | LPAR NAME proc_list_sc RPAR 
-   {
-   BellInfo.Leaf($2,$3)
-   }
-top_scope_tree:
- | scope_tree_list
-    { let ts = $1 in
-      match ts with
-      | [t] -> t
-      | _ -> BellInfo.Children ("",ts) }
 scope_option:
 | SCOPES COLON top_scope_tree {Some $3}
+| {None}
+
+level_option:
+| LEVELS COLON top_level_tree {Some $3}
 | {None}
 
 memory_map_option:
@@ -221,6 +191,6 @@ memory_map:
    }
 
 scopes_and_memory_map:
- | scope_option memory_map_option
-{ { BellInfo.scopes=$1; BellInfo.regions=$2; }}
+ | scope_option level_option memory_map_option
+{ { BellInfo.scopes=$1; BellInfo.regions=$3; BellInfo.levels=$2}}
 

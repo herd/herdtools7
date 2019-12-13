@@ -41,7 +41,6 @@ rule token = parse
     { PROC (int_of_string x) }
 | '%' (name as name) { SYMB_REG name }
 | ',' { COMMA }
-| '\'' { QUOTE }
 | '&' { AMPER }
 | ';' { SEMI }
 | ':' { COLON }
@@ -52,7 +51,6 @@ rule token = parse
 | '=' { EQUAL }
 | "==" { EQUALEQUAL }
 | "!="|"<>" { NOTEQUAL }
-| '+' { PLUS_DISJ }
 | "=>" { IMPLIES }
  | "/\\" {AND}
 | "\\/" {OR}
@@ -63,7 +61,6 @@ rule token = parse
 | "and" { TOKAND }
 | "exists"   { EXISTS }
 | "forall"   { FORALL }
-| "cases"    { CASES }
 | "final"    { FINAL }
 | "with"     { WITH }
 | "locations" { LOCATIONS }
@@ -81,8 +78,6 @@ rule token = parse
 | ".u32" as x
 | ".pred" as x {PTX_REG_TYPE x}
 (* Memory Tagging *)
-| ".patag" {PATAG}
-
 | "*" { STAR }
 | '$' (digit+|alpha+) as name { DOLLARNAME name }
 | name as name { NAME name }

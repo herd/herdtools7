@@ -23,13 +23,18 @@
 type mem_space_map = (string * string) list
 val pp_mem_map : mem_space_map -> string
 
-type scopes = Leaf of string * int list | Children of string * scopes list
+type scopes =
+  | Tree of string * int list * scopes list
+
+type levels = scopes
+
 val pp_scopes : scopes -> string
 val contract : scopes -> scopes
 
 type test = {
   regions : mem_space_map option;
   scopes : scopes option;
+  levels : scopes option
 }
 
 val pp : test -> string

@@ -158,7 +158,7 @@ module LU = LexUtils.Make (LexConfig)
 module SL = StateLexer.Make (LexConfig)
 			    
 let parse_cond lexbuf =
-  let cond =  call_parser "cond" lexbuf SL.token StateParser.constr in
+  let cond =  call_parser "cond" lexbuf SL.token StateParser.main_constr in
   cond
     
 (* Compute hash as litmus does *)

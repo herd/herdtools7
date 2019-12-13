@@ -30,44 +30,42 @@ let mk_lab p s = Label (p,s)
 %token <string> NUM
 
 %token TRUE FALSE
-%token EQUAL NOTEQUAL EQUALEQUAL PLUS_DISJ
-%token FINAL FORALL EXISTS OBSERVED TOKAND NOT AND OR IMPLIES CASES WITH FILTER
+%token EQUAL NOTEQUAL EQUALEQUAL
+%token FINAL FORALL EXISTS OBSERVED TOKAND NOT AND OR IMPLIES WITH FILTER
 %token LOCATIONS FAULT STAR
-%token LBRK RBRK LPAR RPAR SEMI COLON AMPER QUOTE COMMA
+%token LBRK RBRK LPAR RPAR SEMI COLON AMPER COMMA
 %token ATOMIC
 %token ATOMICINIT
 
 %token PTX_REG_DEC
 %token <string> PTX_REG_TYPE
 
-%token PATAG
-
-%left PLUS_DISJ OR
+%left OR
 %left AND
 %right IMPLIES
 %nonassoc NOT
 
 %type <MiscParser.state> init
 %start init
-%type <MiscParser.location> location
-%start location
+%type <MiscParser.location> main_location
+%start main_location
 %type <(MiscParser.location * MiscParser.run_type) list * MiscParser.prop option * MiscParser.constr * (string * MiscParser.quantifier) list> constraints
 %start constraints
-%type  <MiscParser.constr> constr
-%start constr
+%type  <MiscParser.constr> main_constr
+%start main_constr
 %type  <MiscParser.constr> skip_loc_constr
 %start skip_loc_constr
-%type  <(MiscParser.location * MiscParser.run_type) list * MiscParser.constr> loc_constr
-%start loc_constr
-%type <MiscParser.location list> locs
-%start locs
-%type <MiscParser.prop option> filter
-%start filter
+%type  <(MiscParser.location * MiscParser.run_type) list * MiscParser.constr> main_loc_constr
+%start main_loc_constr
+%type <MiscParser.location list> main_locs
+%start main_locs
+%type <MiscParser.prop option> main_filter
+%start main_filter
 %%
 
 /* For initial state */
 init:
-| init_semi_list EOF { $1 }
+| st=init_semi_list EOF { st }
 
 
 reg:
@@ -75,7 +73,7 @@ reg:
 | DOLLARNAME {  $1 }
 
 maybev_notag:
-| NUM  { Concrete $1 }|
+| NUM  { Concrete $1 }
 | NAME { mk_sym $1  }
 | NAME COLON NAME { mk_sym_tag $1 $3 }
 
@@ -104,6 +102,9 @@ location_deref:
 | location_reg { $1 }
 | STAR location_reg { $2 }
 | STAR NAME { Location_global (Constant.mk_sym $2) }
+
+main_location:
+| loc=location EOF { loc }
 
 location:
 | location_reg { $1 }
@@ -154,6 +155,9 @@ loc_typ:
 | location NAME { ($1, Ty $2) }
 | location NAME STAR { ($1, Pointer $2) }
 
+main_locs:
+| ls = list(location)  EOF { ls }
+
 loc_semi_list:
 | {[]}
 | SEMI {[]}
@@ -164,24 +168,23 @@ locations:
 |  LOCATIONS LBRK loc_semi_list RBRK { $3 }
 | { [] }
 
-locs:
-| { [] }
-| location locs { $1 :: $2 }
-
 filter:
 | { None }
 | FILTER prop { Some $2 }
 
+main_filter:
+| f=filter EOF { f }
+
 constraints:
-| locations filter old_constraints
+| locations filter old_constraints EOF
   { let x = $1 in
     let f = $2 in
     let y,z = $3 in
     x,f,y,z }
 
 old_constraints :
-| final EOF { $1,[] }
-| final WITH kinds EOF { $1,$3 }
+| final { $1,[] }
+| final WITH kinds { $1,$3 }
 
 
 kinds :
@@ -198,6 +201,9 @@ kind:
 final:
 | constr { $1 }
 | constr SEMI { $1 }
+
+main_constr:
+| c = constr EOF { c }
 
 constr:
 |  { ConstrGen.constr_true }
@@ -222,11 +228,14 @@ obsone:
 |                       { [] }
 | atom_prop SEMI obsone { $1 :: $3 }
 
+main_loc_constr:
+| lc = loc_constr EOF { lc }
+
 loc_constr:
 | locations constr { $1,$2 }
 
 skip_loc_constr:
-| locations constr { $2 }
+| locations constr EOF { $2 }
 
 lbl:
 | PROC { ($1,None) }

@@ -1,6 +1,26 @@
 (ocamllex AArch64Lexer ARMLexer BellLexer CLexer lexHint lexOutMapping lexRename lexSplit lexUtils MIPSLexer modelLexer PPCLexer RISCVLexer runTypeUtils scopeLexer splitter stateLexer X86Lexer echo)
 
-(ocamlyacc AArch64Parser CParser MIPSParser PPCParser    scopeParser  X86Parser ARMParser  LISAParser modelParser  RISCVParser  stateParser)
+
+(menhir (modules PPCParser) (flags  --fixed-exception))
+(menhir (modules CParser) (flags  --fixed-exception))
+(menhir (modules ARMParser) (flags  --fixed-exception))
+(menhir (modules MIPSParser) (flags  --fixed-exception))
+(menhir (modules X86Parser) (flags  --fixed-exception))
+(menhir (modules modelParser) (flags  --fixed-exception))
+(menhir (modules RISCVParser) (flags  --fixed-exception))
+(menhir (modules stateParser) (flags  --fixed-exception))
+
+(menhir (modules scopeRules AArch64Parser)
+  (merge_into AArch64Parser)
+  (flags  --fixed-exception))
+
+(menhir (modules scopeRules LISAParser)
+  (merge_into LISAParser)
+  (flags  --fixed-exception))
+
+(menhir (modules scopeRules scopeParser)
+  (merge_into scopeParser)
+   (flags  --fixed-exception))
 
 (library
    (name herdtools)

@@ -291,13 +291,13 @@ module Make
         match bell_info with
         | None -> m
         | Some _ ->
-            let scopes =
-              let open MiscParser in
-              match test.Test_herd.extra_data with
-              | NoExtra|CExtra _ ->
-                  None (* must be here as, O.bell_mode_info is *)
-              | BellExtra tbi -> tbi.BellInfo.scopes in
-            begin match scopes with
+            let open MiscParser in
+            let extract_tbi e = match test.Test_herd.extra_data with
+            | NoExtra|CExtra _ ->
+                None (* must be here as, O.bell_mode_info is *)
+            | BellExtra tbi -> e tbi in
+            let scopes =  extract_tbi (fun tbi -> tbi.BellInfo.scopes) in
+            let m = match scopes with
  (* If no scope definition in test, do not build relations, will fail
     later if the model attempts to use scope relations *)
             | None -> m
@@ -307,18 +307,9 @@ module Make
                 I.add_rels m
                   (List.map
                      (fun (scope,r) -> BellName.tag2rel_var scope,lazy r)
-                     rs)
-            end in
-(*
-                I.add_rels m
-                  (List.map
-                     (fun scope ->
-                       BellName.tag2rel_var scope,
-                       lazy begin
-                         U.int_scope_bell scope scopes (Lazy.force unv)
-                       end)
-                     (BellModel.get_scope_rels bi))
-            end in *)
+                     rs)  in
+            let _lvls = extract_tbi (fun tbi -> tbi.BellInfo.levels) in
+            m in
 (* Now call interpreter, with or without generated co *)
       if withco then
         let process_co co0 res =

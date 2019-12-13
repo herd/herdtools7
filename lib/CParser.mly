@@ -34,8 +34,7 @@ open MemOrderOrAnnot
 %token LPAR RPAR COMMA LBRACE RBRACE STAR
 %token ATOMIC CHAR INT LONG VOID
 %token MUTEX
-%token TYPEDEF EXTERN STATIC AUTO REGISTER
-%token CONST VOLATILE
+%token VOLATILE
 %token STRUCT
 
 /* For shallow parsing */
@@ -45,13 +44,12 @@ open MemOrderOrAnnot
 
 /* For deep parsing */
 %token <string> CONSTANT
-%token NULL
-%token SEMI COLON EQ EQ_OP NEQ_OP LT LE GT GE DOT
+%token SEMI EQ EQ_OP NEQ_OP LT LE GT GE
 %token XOR PIPE
 %token LAND
 %token ADD SUB
-%token MUL DIV
-%token WHILE IF ELSE
+%token DIV
+%token IF ELSE
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
 %token <MemOrder.t> MEMORDER
@@ -273,14 +271,17 @@ block_ins:
 | instruction { $1 }
 | LBRACE ins_seq RBRACE { Seq($2,true) }
 
-pseudo_seq:
+do_pseudo_seq:
 | block_ins { [Instruction $1] }
-| block_ins pseudo_seq { (Instruction $1)::$2 }
+| block_ins do_pseudo_seq { (Instruction $1)::$2 }
 | declaration { [] }
-| declaration pseudo_seq { $2 }
+| declaration do_pseudo_seq { $2 }
+
+pseudo_seq:
+| p=do_pseudo_seq EOF { p }
 
 function_def:
-| voidopt PROC LPAR parameter_list RPAR LBRACE pseudo_seq RBRACE
+| voidopt PROC LPAR parameter_list RPAR LBRACE do_pseudo_seq RBRACE
   { { CAst.proc = $2;
       CAst.params = $4;
       CAst.body = $7 } }
@@ -310,6 +311,4 @@ macro:
 | IDENTIFIER LPAR formals RPAR body { PDef ($1,$3,$5) }
 
 macros:
-| { [] }
-| macro macros
-    { $1 :: $2 }
+| ms=list(macro) EOF { ms }
