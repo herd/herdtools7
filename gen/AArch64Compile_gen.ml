@@ -51,10 +51,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let next_reg x = A64.alloc_reg x
     let pseudo = List.map (fun i -> Instruction i)
 
-    let tempo1 st = A.alloc_trashed_reg "T1" st (* May be used for address *)
+    let tempo1 st = A.alloc_trashed_reg "T1" st (* May be used for address  *)
     let tempo2 st = A.alloc_trashed_reg "T2" st (* May be used for second address *)
     let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
 
+    let tempo4 st = A.alloc_loop_idx "I4" st (* Loop observer index *)
 (******************)
 (* Idiosyncrasies *)
 (******************)
@@ -325,7 +326,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
         let emit_load_not st p init x cmp =
           let rA,st = next_reg st in
-          let rC,st = next_reg st in
+          let rC,st = tempo4 st in
           let rB,init,st = U.next_init st p init x in
           let ld,st = L.load st rA rB in
           let lab = Label.next_label "L" in

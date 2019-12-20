@@ -52,9 +52,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     module U = GenUtils.Make(Cfg)(ARM)(Extra)
 
 (* RMW utilities *)
-    let tempo1 = ARM.Symbolic_reg "T1" (* May be used for address *)
+    let tempo1 = ARM.Symbolic_reg "T1" (* May be used for address, and loop observer index *)
     let tempo2 = ARM.Symbolic_reg "T2" (* utility *)
-
 
     let emit_loop_pair _p st r1 r2 addr =
       let lab = Label.next_label "Loop" in
@@ -129,7 +128,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let emit_load_not st p init x cmp =
       let rA,st = next_reg st in
-      let rC,st = next_reg st in
+      let rC = tempo1 in
       let rB,init,st = U.next_init st p init x in
       let lab = Label.next_label "L" in
       let out = Label.next_label "L" in

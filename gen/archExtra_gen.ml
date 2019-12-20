@@ -51,10 +51,11 @@ module type S = sig
 
   val alloc_reg : st -> arch_reg * st
   val alloc_trashed_reg : string -> st -> arch_reg * st
+  val alloc_loop_idx : string -> st -> arch_reg * st
 
   val current_label : st -> int
   val next_label : st -> int
-  
+
   val next_label_st : st -> st
 
 end
@@ -103,13 +104,22 @@ module Make(I:I) : S with type arch_reg = I.arch_reg
     | [],_,_ -> Warn.fatal "No more registers"
     | r::rs,m,i -> r,(rs,m,i)
 
-  let alloc_trashed_reg k (_,m,_ as st) =
+  let alloc_last_reg = function
+    | [],_,_ -> Warn.fatal "No more registers"
+    | r::rs,m,i ->
+        let r,rs = Misc.pop_last r rs in
+        r,(rs,m,i)
+
+
+  let do_alloc_trashed_reg alloc k (_,m,_ as st) =
     try StringMap.find k m,st
     with Not_found ->
-      let r,(rs,m,i) = alloc_reg st in
-      r,(rs,StringMap.add k r m,i) 
+      let r,(rs,m,i) = alloc st in
+      r,(rs,StringMap.add k r m,i)
+  let alloc_trashed_reg k st = do_alloc_trashed_reg alloc_reg k st
+  and alloc_loop_idx k st = do_alloc_trashed_reg alloc_last_reg k st
 
   let current_label (_,_,i) = i
-  let next_label (_,_,i) = i+1  
+  let next_label (_,_,i) = i+1
   let next_label_st (r,rs,i) = (r,rs,i+1)
 end

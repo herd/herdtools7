@@ -98,18 +98,24 @@ module Make(O:Config) : Builder.S
         do_rec StringMap.empty n
 
 (* Basics *)
-      let st0 = 0
+      let i0 = 128
+      let st0 = 0,i0
 
-      let reset_alloc,alloc_reg =
+(* With the alloc_loop_idx trick, straight and loop coherence observers
+   feature the same observed registers *)
+
+      let reset_alloc,alloc_reg,alloc_loop_idx =
         if O.cpp then
           let c = ref 0 in
-          (fun () -> c := 0),
-          (fun _p st ->
+          let alloc _p (st,i) =
             let c0 = !c in
             incr c ;
-            { A.id = c0; },st+1)
+            { A.id = c0; },(st+1,i) in
+          (fun () -> c := 0),alloc,alloc
         else
-          (fun () -> ()),(fun _p st -> { A.id=st;},st+1)
+          (fun () -> ()),
+          (fun _p (st,i) -> { A.id=st;},(st+1,i)),
+          (fun _p (st,i) -> { A.id=i;},(st,i+1))
 
       type prev_load =
         | No       (* Non-existent or irrelevant *)
@@ -219,8 +225,8 @@ module Make(O:Config) : Builder.S
 
 
       let do_compile_load_not st p mo x e =
-        let idx,st = alloc_reg p st in
         let r,st = alloc_reg p st in
+        let idx,st = alloc_loop_idx p st in
         let decls =
           A.Seq
             (A.Decl (A.Plain TypBase.Int,idx,Some (A.Const 200)),

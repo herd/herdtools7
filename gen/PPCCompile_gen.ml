@@ -252,7 +252,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
 
     let emit_obs_not st p init x cmp =
       let rA,st = next_reg st in
-      let rC,st = next_reg st in
+      let rC,st = A.alloc_loop_idx "I" st in
       let rB,init,st = U.next_init st p init x in
       let lab = Label.next_label "L" in
       let out = Label.next_label "L" in

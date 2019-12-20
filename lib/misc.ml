@@ -89,6 +89,12 @@ let rec last = function
   | [x] -> x
   | _::xs -> last xs
 
+let rec pop_last x = function
+  | [] -> x,[]
+  | y::ys ->
+      let lst,xs = pop_last y ys in
+      lst,x::xs
+
 let rec option_map f xs = match xs with
 | [] -> []
 | x::xs ->
