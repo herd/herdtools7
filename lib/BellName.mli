@@ -21,6 +21,7 @@
 val scopes : string
 val regions : string
 val levels : string
+val nextlevel : string
 val wider : string
 val narrower : string
 

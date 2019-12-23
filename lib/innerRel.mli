@@ -20,7 +20,7 @@ module type S =  sig
   type elt0
 
   module Elts : MySet.S with type elt = elt0
-	
+
   include Rel.S with
   type elt1 = elt0 and type elt2 = elt0
   and module Elts1 = Elts and module Elts2 = Elts
@@ -81,7 +81,7 @@ module type S =  sig
 (* All toplogical orders, raises Cyclic in case of cycle
    Enhancement: all_topos nodes edges still works
     when edges relates elts not in nodes *)
-  
+
   exception Cyclic
   val topo : Elts.t -> t -> elt0 list
 (****************************************************)
@@ -106,7 +106,7 @@ module type S =  sig
    [LUC: set argument. removed, it is useless, since set = nodes rel is ok]
    remove_transitive_edges [set] rel
       [assumes rel \in set \times set]
-      returns rel' \subset rel such that rel' 
+      returns rel' \subset rel such that rel'
         does not have (e1, e2) if it has both (e1, e3) and (e3, e2),
         but transitive_closure rel' = transitive_closure rel
 *)
@@ -121,7 +121,6 @@ module type S =  sig
 
 (* strata ie sets of nodes by increasing distance *)
   val strata : Elts.t -> t -> Elts.t list
-
 end
 
 module Make:

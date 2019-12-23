@@ -566,7 +566,6 @@ and module Elts = MySet.Make(O) =
         with Exit -> false
       end
 
-
 (***************************)
 (* Remove transitive edges *)
 (***************************)
@@ -620,5 +619,4 @@ and module Elts = MySet.Make(O) =
 (* Strata *)
 (**********)
     let strata es r = M.strata es r
-
   end

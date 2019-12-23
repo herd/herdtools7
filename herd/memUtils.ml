@@ -92,16 +92,17 @@ let by_proc evts =
 
 (*******************)
 
-let get_scope_classes evts =
+let ps2evts m ps =
+  E.EventSet.unions
+    (List.map
+       (fun p -> IntMap.safe_find E.EventSet.empty p m)
+       ps)
+
+let get_scope_classes m =
   let open BellInfo in
-  let m = by_proc evts in
   let rec do_rec = function
     | Tree (s,ps,ts) ->
-        let es =
-          E.EventSet.unions
-            (List.map
-               (fun p -> IntMap.safe_find E.EventSet.empty p m)
-               ps) in
+        let es = ps2evts m ps in
         let cls = StringMap.add s [es] StringMap.empty in
         let ess,clss =
           List.fold_left
@@ -116,17 +117,55 @@ let get_scope_classes evts =
     let _,cls = do_rec sc in
     cls
 
-let get_scope_rels evts sc =
-  let cls = get_scope_classes evts sc in
-  StringMap.fold
-    (fun s cls k ->
-      let r =
-        E.EventRel.unions
-          (List.map
-             (fun evts -> E.EventRel.cartesian evts evts)
-             cls) in
-      (s,r)::k)
-    cls []
+let get_level_classes m =
+  let open BellInfo in
+  let rec do_rec = function
+    | Tree (s,ps,ts) ->
+        let es = ps2evts m ps in
+        let cls = StringMap.add s [es] StringMap.empty in
+        let clss =
+          List.fold_left
+            (fun clss t ->
+              let cls_t = do_rec t in
+              cls_t::clss)
+            [cls] ts in
+        let cls = StringMap.unions (@) clss in
+        cls in
+  do_rec
+
+  let tree2succ m =
+    let open BellInfo in
+    let rec do_rec = function
+      | Tree (_,ps,ts) ->
+          let es = ps2evts m ps in
+          let rs =
+            List.fold_left
+              (fun rs t ->
+                let es_t,r = do_rec t in
+                E.EventRel.cartesian es es_t::r::rs)
+              [] ts in
+          es,E.EventRel.unions rs in
+    fun t -> let _,r = do_rec t in r
+
+  let classes2rels cls =
+    StringMap.fold
+      (fun s cls k ->
+        let r =
+          E.EventRel.unions
+            (List.map
+               (fun evts -> E.EventRel.cartesian evts evts)
+               cls) in
+        (s,r)::k)
+      cls []
+
+let get_scope_rels evts sc = classes2rels (get_scope_classes (by_proc evts) sc)
+
+let get_level_rels evts sc =
+  let m = by_proc evts in
+  let cls = get_level_classes m sc in
+  let rs = classes2rels cls
+  and s = tree2succ m sc in
+  s,rs
 
 
 (******************)
@@ -258,7 +297,7 @@ let get_scope_rels evts sc =
               E.EventSet.filter
                 (fun eb ->  E.po_strict e eb)
                 evts in
-	    E.EventRel.of_pred before after is_applicable::k
+            E.EventRel.of_pred before after is_applicable::k
           else k)
         evts [] in
     E.EventRel.unions rels
@@ -312,8 +351,8 @@ let get_scope_rels evts sc =
   module LocEnv =
     Map.Make
       (struct
-	type t = A.location
-	let compare = A.location_compare
+        type t = A.location
+        let compare = A.location_compare
       end)
 
 (* Collect various events by their location *)
@@ -392,9 +431,9 @@ let get_scope_rels evts sc =
     let stores_by_loc = collect_mem_stores conc.S.str in
     let orders =
       LocEnv.fold
-	(fun _loc stores k ->
+        (fun _loc stores k ->
           let orders =
-	    E.EventRel.all_topos (PC.verbose > 0)
+            E.EventRel.all_topos (PC.verbose > 0)
               (E.EventSet.of_list stores) vb in
           List.map E.EventRel.order_to_succ orders::k)
         stores_by_loc [] in

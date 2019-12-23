@@ -1889,6 +1889,8 @@ module Make
                 { st with bell_info;}
               else if name = BellName.levels then
                 let bell_info = BellModel.add_rel name tags st.bell_info in
+                let bell_info = BellModel.add_order name
+                    (StringRel.order_to_succ tags) bell_info in
                 { st with bell_info }
               else st
             with BellModel.Defined ->

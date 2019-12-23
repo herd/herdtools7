@@ -19,6 +19,7 @@
 let scopes = "scopes"
 and regions = "regions"
 and levels = "levels"
+and nextlevel = "next-level"
 and wider = "wider"
 and narrower = "narrower"
 

@@ -308,7 +308,16 @@ module Make
                   (List.map
                      (fun (scope,r) -> BellName.tag2rel_var scope,lazy r)
                      rs)  in
-            let _lvls = extract_tbi (fun tbi -> tbi.BellInfo.levels) in
+            let lvls = extract_tbi (fun tbi -> tbi.BellInfo.levels) in
+            let m = match lvls with
+            | None -> m
+            | Some lvls ->
+                let r,rs = U.get_level_rels evts lvls in
+                I.add_rels m
+                  ((BellName.nextlevel,lazy r)::
+                   List.map
+                     (fun (lvl,r) -> BellName.tag2rel_var lvl,lazy r)
+                     rs)  in
             m in
 (* Now call interpreter, with or without generated co *)
       if withco then

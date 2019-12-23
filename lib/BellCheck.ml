@@ -34,6 +34,7 @@ module Make
 (******************)
 
     exception Error of string
+
     let error fmt =
       ksprintf (fun msg -> raise (Error msg)) fmt
 
@@ -90,6 +91,7 @@ module Make
 
     let expand_scope scopes order =
       if O.debug then eprintf "ORDER: %s\n" (BellModel.pp_order_dec order) ;
+
       let rec expand_rec top st =
         let sc = scope_of st in
         if O.debug then eprintf "EXPAND_REC top=%s, sc=%s\n" top sc;
@@ -169,17 +171,22 @@ module Make
         Warn.user_error "scope error, %s" msg
 
 
-    let rec do_check_levels levels _order = function
-      | Tree (sc,_ps,ts) ->
-          check_tag BellName.levels sc levels ;
-          List.iter (do_check_levels levels _order) ts
+    let rec do_check_levels levels t = match levels,t with
+    | level::levels,Tree (sc,_ps,ts) ->
+        if not (Misc.string_eq sc level) then
+          error
+            "tag %s found in level tree, where %s should be" sc level ;
+        List.iter (do_check_levels levels) ts
+    | [],Tree (sc,_,_) ->
+        error "tag %s found in level tree as a leaf is not the leaf tag" sc
 
+(* NB: Level check is simpler than scope checking, as levels define
+       a total order, given as the order of tags in the definition
+       of the 'levels' enum type *)
     let check_levels lvls i =
       try
-        let levels = get_relation BellName.levels i
-        and order =  get_order BellName.levels i in
-        if true then eprintf "LEVEL ORDER: %s\n" (BellModel.pp_order_dec order) ;
-        do_check_levels levels (StringRel.inverse order) lvls
+        let levels = get_relation BellName.levels i in
+        do_check_levels (List.rev levels) lvls
       with Error msg ->
         Warn.user_error "level error, %s" msg
 
