@@ -52,6 +52,7 @@ module type S = sig
   type nice_prog = A.nice_prog
   type start_points = A.start_points
 
+  type proc_info = Test_herd.proc_info
   type test =
       (program, nice_prog, start_points,
        state, A.size_env, prop, location, A.LocSet.t) Test_herd.t
@@ -207,6 +208,7 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
     type nice_prog = A.nice_prog
     type start_points = A.start_points
 
+  type proc_info = Test_herd.proc_info
     type test =
       (program, nice_prog, start_points,
        state, A.size_env, prop, location, A.LocSet.t) Test_herd.t

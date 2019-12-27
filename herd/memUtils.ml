@@ -167,6 +167,19 @@ let get_level_rels evts sc =
   and s = tree2succ m sc in
   s,rs
 
+let lift_proc_info i evts =
+  let m = by_proc evts in
+  List.map
+    (fun (tag,ps) ->
+      let evts =
+        lazy begin
+          E.EventSet.unions
+            (List.map
+               (fun p -> IntMap.safe_find E.EventSet.empty p m)
+               ps)
+        end in
+      tag,evts)
+    i
 
 (******************)
 (* View of a proc *)

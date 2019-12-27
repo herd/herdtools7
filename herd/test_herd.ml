@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+type proc_info = (string * int list) list
+
 type ('prog,'nice_prog,'start,'state,'size_env, 'prop,'loc,'locset) t =
     {
      arch : Archs.t ;
@@ -31,6 +33,7 @@ type ('prog,'nice_prog,'start,'state,'size_env, 'prop,'loc,'locset) t =
      displayed : 'locset ;
      extra_data : MiscParser.extra_data ;
      access_size : MachSize.sz list ;
+     proc_info : proc_info ;
    }
 
 (* Name and nothing else *)
@@ -114,6 +117,19 @@ module Make(A:Arch_herd.S) =
       | None -> displayed
       | Some filter ->
           ConstrGen.fold_prop collect_atom filter displayed in
+      let proc_info =
+        let m =
+          List.fold_left
+            (fun m ((p,ao),_) -> match ao with
+            | None -> m
+            | Some ans ->
+                List.fold_left
+                  (fun m an ->
+                    let old = StringMap.safe_find [] an m in
+                    StringMap.add an (p::old) m)
+                  m ans)
+            StringMap.empty nice_prog in
+        StringMap.bindings m in
       {
        arch = A.arch ;
        name = name ;
@@ -134,6 +150,7 @@ module Make(A:Arch_herd.S) =
          if A.is_mixed then mem_access_size_prog nice_prog
          else []
        end ;
+       proc_info;
      }
 
     let empty_test =
@@ -162,7 +179,8 @@ module Make(A:Arch_herd.S) =
        observed = A.LocSet.empty; displayed = A.LocSet.empty;
        extra_data = MiscParser.empty_extra;
        access_size = [];
-      }
+       proc_info = [];
+     }
 
     let find_our_constraint test = test.cond
 

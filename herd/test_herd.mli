@@ -15,6 +15,7 @@
 (****************************************************************************)
 
 (** Litmus tests *)
+type proc_info = (string * int list) list
 
 type ('prog,'nice_prog,'start,'state, 'size_env, 'prop, 'loc, 'locset) t =
     {
@@ -32,6 +33,7 @@ type ('prog,'nice_prog,'start,'state, 'size_env, 'prop, 'loc, 'locset) t =
      displayed : 'locset ;
      extra_data : MiscParser.extra_data ;
      access_size : MachSize.sz list ;
+     proc_info : proc_info ;
    }
 
 val simple_name :

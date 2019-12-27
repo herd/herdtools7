@@ -262,6 +262,12 @@ module Make
                let pred e = p e.E.action in
                k,lazy (U.po_fence_po conc.S.po pred))
              E.Act.arch_fences) in
+(* Event sets from proc info *)
+      let m = match test.Test_herd.proc_info with
+      | [] -> m
+      | _::_ as i ->
+          let bds = U.lift_proc_info i evts in
+          I.add_sets m bds in
 (* Event sets from bell_info *)
       let m =
         match bell_info with

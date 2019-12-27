@@ -70,11 +70,8 @@ end = struct
         "%s(%s)"
         f
         (String.concat "," (List.map A.pp_reg regs))
-  let fmt_ao = function
-    | None -> ""
-    | Some a -> String.concat "," a
 
-  let fmt_col ((p,ao),is) = sprintf "P%i%s" p (fmt_ao ao)::List.map fmt_io is
+  let fmt_col (p,is) = MiscParser.pp_proc p::List.map fmt_io is
 
   let prog chan prog =
     let pp = List.map fmt_col prog in

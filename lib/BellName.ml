@@ -28,7 +28,7 @@ let tag2instrs_var s =
   assert (len > 0) ;
   let c = s.[0] in
   String.make 1 (Misc.char_uppercase c) ^ String.sub s 1 (len-1)
-
+let tag2set_var s = tag2instrs_var s
 let tag2rel_var s = s
 
 let r = "R"

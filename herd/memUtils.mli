@@ -37,6 +37,8 @@ module Make : functor (S: SemExtra.S) -> sig
       S.event_set -> BellInfo.scopes -> (string * S.event_rel) list
   val get_level_rels :
       S.event_set -> BellInfo.scopes -> S.event_rel * (string * S.event_rel) list
+  val lift_proc_info :
+      S.proc_info -> S.event_set -> (string * S.event_set Lazy.t) list
 
 (* View of a relation by a processor:
    restricted to local events and mem_stores *)
