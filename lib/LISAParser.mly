@@ -29,7 +29,7 @@ let mk_sym s = Constant.Symbolic ((s,None),0)
 %token <BellBase.reg> SYMB_REG
 %token <int> PROC
 
-%type <int list * (BellBase.parsedPseudo) list list * MiscParser.extra_data > main 
+%type <MiscParser.proc list * (BellBase.parsedPseudo) list list * MiscParser.extra_data > main 
 %type <BellBase.parsedPseudo list> instr_option_seq
 %start main instr_option_seq
 
@@ -43,12 +43,6 @@ main:
 semi_opt:
 | { () }
 | SEMI { () }
-
-proc_list:
-| PROC SEMI
-    {[$1]}
-
-| PROC PIPE proc_list  { $1::$3 }
 
 instr_option :
 |            { Nop }
@@ -168,29 +162,4 @@ instr:
 
 | MOV reg operation
   { Pmov ($2,$3) }
-
-scope_option:
-| SCOPES COLON top_scope_tree {Some $3}
-| {None}
-
-level_option:
-| LEVELS COLON top_level_tree {Some $3}
-| {None}
-
-memory_map_option:
-| REGIONS COLON memory_map {Some $3}
-| {None}
-memory_map_atom:
- | NAME COLON NAME
-{ ($1,$3) }
-memory_map:
- | memory_map_atom COMMA memory_map {$1::$3}
- | memory_map_atom {[$1]}
- | {[]
-    (*jade: todo memory map*)
-   }
-
-scopes_and_memory_map:
- | scope_option level_option memory_map_option
-{ { BellInfo.scopes=$1; BellInfo.regions=$3; BellInfo.levels=$2}}
 

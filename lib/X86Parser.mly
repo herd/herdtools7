@@ -35,7 +35,7 @@ module X86 = X86Base
 %token  I_SETNB I_JE I_JNE
 %token  I_CMPXCHG
 
-%type <int list * (X86Base.pseudo) list list> main
+%type <MiscParser.proc list * (X86Base.pseudo) list list> main
 %start  main
 
 %%
@@ -47,8 +47,8 @@ semi_opt:
 | SEMI { () }
 
 proc_list:
-| PROC SEMI  {[$1]}
-| PROC PIPE proc_list  { $1::$3 }
+| PROC SEMI  {[$1,None]}
+| PROC PIPE proc_list  { ($1,None)::$3 }
 
 iol_list :
 |  instr_option_list SEMI

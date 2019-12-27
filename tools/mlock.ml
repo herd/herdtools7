@@ -416,10 +416,10 @@ module Top(O:Config)(Out:OutTests.S) = struct
                 changed := false ;
                 let prog =
                   List.map
-                    (fun (i,ps) ->
+                    (fun ((i,_) as proc,ps) ->
                       let vs,ps = expand_pseudo_code ps in
                       StringSet.fold (fun v k -> Location_reg (i,v)::k) vs [],
-                      (i,ps))
+                      (proc,ps))
                     parsed.prog in
                 if not !changed then not_changed name ;
                 let locss,prog = List.split prog in

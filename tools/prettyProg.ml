@@ -35,7 +35,7 @@ module Make(O:Config)(A:Arch_tools.S) =
         {
          arch : Archs.t ;
          name : Name.t ;
-         prog : (int * A.pseudo list) list ;
+         prog : (MiscParser.proc * A.pseudo list) list ;
          init : (A.location * (MiscParser.run_type * A.v)) list ;
          constr : (A.location, A.v) ConstrGen.prop ConstrGen.constr ;
        }
@@ -134,10 +134,13 @@ module Make(O:Config)(A:Arch_tools.S) =
       | 3 -> "Three"
       | 4 -> "Four"
       | _ -> "Two" in
-      let pp_proc s chan p =
+      let pp_ao = function
+        | None -> ""
+        | Some a -> ":" ^ String.concat "," a in
+      let pp_proc s chan (p,ao) =
         let th =
-          if O.texmacros then sprintf "\\myth{%i}" p
-          else sprintf "Thread %i" p in
+          if O.texmacros then sprintf "\\myth{%i%s}" p (pp_ao ao)
+          else sprintf "Thread %i%s" p (pp_ao ao) in
         fprintf chan
           "\\multicolumn{1}{%sc|}{\\makebox[%s][c]{%s}}"
           s width th in

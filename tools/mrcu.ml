@@ -210,8 +210,8 @@ module Top
       let tr_test n m u v s c free =
         let rec tr_rec st = function
           | [] -> []
-          | (id,ps)::rem ->
-              let st,ps = tr n m u v s c id st ps in
+          | ((p,_) as id,ps)::rem ->
+              let st,ps = tr n m u v s c p st ps in
               (id,ps)::tr_rec st rem in
         fun t ->
           let open MiscParser in

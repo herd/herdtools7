@@ -10,11 +10,11 @@
 (menhir (modules RISCVParser) (flags  --fixed-exception))
 (menhir (modules stateParser) (flags  --fixed-exception))
 
-(menhir (modules scopeRules AArch64Parser)
+(menhir (modules procRules scopeRules  BellExtraRules AArch64Parser)
   (merge_into AArch64Parser)
   (flags  --fixed-exception))
 
-(menhir (modules scopeRules LISAParser)
+(menhir (modules procRules scopeRules BellExtraRules LISAParser)
   (merge_into LISAParser)
   (flags  --fixed-exception))
 

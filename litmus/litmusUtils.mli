@@ -24,4 +24,5 @@ module Hash : functor(O:Warn.Config) ->
     val hash_ok : hash_env -> string -> hash -> bool
   end
 
-module Pseudo : functor(A:Arch_litmus.S) -> PseudoAbstract.S with type code = int * A.pseudo list
+module Pseudo : functor(A:Arch_litmus.S) ->
+  PseudoAbstract.S with type code = MiscParser.proc * A.pseudo list

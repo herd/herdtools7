@@ -38,7 +38,7 @@ module A=MIPSBase
 %token B BEQ BNE BLEZ BGTZ BLTZ BGEZ
 
 
-%type <int list * (MIPSBase.pseudo) list list> main 
+%type <MiscParser.proc list * (MIPSBase.pseudo) list list> main
 %start  main
 
 %%
@@ -51,10 +51,8 @@ semi_opt:
 | SEMI { () }
 
 proc_list:
-| PROC SEMI
-    {[$1]}
-
-| PROC PIPE proc_list  { $1::$3 }
+| ps=separated_nonempty_list(PIPE,PROC) SEMI
+  { List.map (fun p -> p,None) ps }
 
 iol_list :
 |  instr_option_list SEMI
@@ -64,7 +62,7 @@ iol_list :
 instr_option_list :
   | instr_option
       {[$1]}
-  | instr_option PIPE instr_option_list 
+  | instr_option PIPE instr_option_list
       {$1::$3}
 
 instr_option :
@@ -81,49 +79,49 @@ k:
 
 instr:
 /* ADD */
-| ADD reg COMMA reg COMMA reg 
+| ADD reg COMMA reg COMMA reg
   { A.OP (A.ADD,$2,$4,$6) }
 | ADDI reg COMMA reg COMMA k
   { A.OPI (A.ADD,$2,$4,$6) }
-| ADDU reg COMMA reg COMMA reg 
+| ADDU reg COMMA reg COMMA reg
   { A.OP (A.ADDU,$2,$4,$6) }
 | ADDIU reg COMMA reg COMMA k
   { A.OPI (A.ADDU,$2,$4,$6) }
 /* SUB */
-| SUB reg COMMA reg COMMA reg 
+| SUB reg COMMA reg COMMA reg
   { A.OP (A.SUB,$2,$4,$6) }
 | SUBI reg COMMA reg COMMA k
   { A.OPI (A.SUB,$2,$4,$6) }
-| SUBU reg COMMA reg COMMA reg 
+| SUBU reg COMMA reg COMMA reg
   { A.OP (A.SUBU,$2,$4,$6) }
 | SUBIU reg COMMA reg COMMA k
   { A.OPI (A.SUBU,$2,$4,$6) }
 /* SLT */
-| SLT reg COMMA reg COMMA reg 
+| SLT reg COMMA reg COMMA reg
   { A.OP (A.SLT,$2,$4,$6) }
 | SLTI reg COMMA reg COMMA k
   { A.OPI (A.SLT,$2,$4,$6) }
-| SLTU reg COMMA reg COMMA reg 
+| SLTU reg COMMA reg COMMA reg
   { A.OP (A.SLTU,$2,$4,$6) }
 | SLTIU reg COMMA reg COMMA k
   { A.OPI (A.SLTU,$2,$4,$6) }
 /* AND */
-| AND reg COMMA reg COMMA reg 
+| AND reg COMMA reg COMMA reg
   { A.OP (A.AND,$2,$4,$6) }
 | ANDI reg COMMA reg COMMA k
   { A.OPI (A.AND,$2,$4,$6) }
 /* OR */
-| OR reg COMMA reg COMMA reg 
+| OR reg COMMA reg COMMA reg
   { A.OP (A.OR,$2,$4,$6) }
 | ORI reg COMMA reg COMMA k
   { A.OPI (A.OR,$2,$4,$6) }
 /* XOR */
-| XOR reg COMMA reg COMMA reg 
+| XOR reg COMMA reg COMMA reg
   { A.OP (A.XOR,$2,$4,$6) }
 | XORI reg COMMA reg COMMA k
   { A.OPI (A.XOR,$2,$4,$6) }
 /* NOR */
-| NOR reg COMMA reg COMMA reg 
+| NOR reg COMMA reg COMMA reg
   { A.OP (A.NOR,$2,$4,$6) }
 /* Branch */
 | B NAME

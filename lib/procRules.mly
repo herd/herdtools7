@@ -5,7 +5,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2015-present Institut National de Recherche en Informatique et *)
+(* Copyright 2019-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -16,26 +16,13 @@
 (****************************************************************************)
 %}
 
-%token EOF
-%token LPAR RPAR COLON COMMA
-%token <int> NUM
-%token <int> PROC
-%token <string> NAME
-
-%type <BellInfo.scopes> main
-%type <BellInfo.levels> main_level
-%type <(string * string) list> main_memory_map
-
-%start main
-%start main_level
-%start main_memory_map
 %%
 
-main:
-| top_scope_tree EOF { $1 }
+proc_annot:
+| COLON os=separated_list(COMMA,NAME) { os } 
 
-main_level:
-| top_level_tree EOF { $1 }
+proc_annotated:
+| p=PROC os=option(proc_annot) { p,os }    
 
-main_memory_map:
-| top_memory_map EOF { $1 }
+%public proc_list:
+| separated_nonempty_list(PIPE,proc_annotated) SEMI { $1 }

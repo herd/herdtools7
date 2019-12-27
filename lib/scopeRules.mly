@@ -5,7 +5,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2015-present Institut National de Recherche en Informatique et *)
+(* Copyright 2019-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -70,3 +70,9 @@ level_tree:
       match ps,ts with
       | [],[t] -> t
       | _ -> BellInfo.Tree ("",ps,ts) }
+
+memory_map_atom:
+ | NAME COLON NAME { ($1,$3) }
+
+%public top_memory_map:
+ | atoms = separated_list(COMMA,memory_map_atom) { atoms }

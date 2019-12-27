@@ -50,7 +50,7 @@ module Hash(O:Warn.Config) =
 
 module Pseudo(A:Arch_litmus.S) = struct
   
-  type code = int * A.pseudo list
+  type code = MiscParser.proc * A.pseudo list
 
   let rec fmt_io io = match io with
   | A.Nop -> ""
@@ -63,7 +63,7 @@ module Pseudo(A:Arch_litmus.S) = struct
         f
         (String.concat "," (List.map A.pp_reg regs))
 
-  let dump_prog (p,is) = Printf.sprintf "P%i" p::List.map fmt_io is
+  let dump_prog (p,is) = MiscParser.pp_proc  p::List.map fmt_io is
 
   let dump_prog_lines prog =
     let pp = List.map dump_prog prog in
@@ -74,7 +74,12 @@ module Pseudo(A:Arch_litmus.S) = struct
     let pp = List.map dump_prog prog in
     Misc.pp_prog chan pp
 
+  let rec find_code p = function
+    | [] -> assert false
+    | ((q,_),is)::rem ->
+        if Misc.int_eq p q then is else find_code p rem
+
   let find_offset code p lbl =
-    let is = List.assoc p code in
+    let is = find_code p code in
     A.find_offset lbl is
 end

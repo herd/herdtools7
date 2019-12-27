@@ -249,7 +249,7 @@ type A.location = A.location and
 module A.LocSet = A.LocSet and
 module A.LocMap = A.LocMap and
 type A.Out.t = A.Out.t and
-type P.code = int * A.pseudo list)
+type P.code = MiscParser.proc * A.pseudo list)
     (C:XXXCompile_litmus.S with module A = A) =
   struct
     open Printf
@@ -603,6 +603,7 @@ let count_ret =
       let initenv = List.map (fun (loc,(_,v)) -> loc,v) init in
       let observed = Generic.all_observed final filter locs in
       let ty_env = Generic.build_type_env init final filter locs in
+      let code = List.map (fun ((p,_),c) -> p,c) code in
       let code =
         if do_self then
           List.map (fun (p,c) -> p,A.Instruction A.nop::c) code

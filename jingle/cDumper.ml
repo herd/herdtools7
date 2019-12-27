@@ -142,7 +142,7 @@ let extract_decl init i prog =
 
 let code init prog = 
   let open CAst in
-  List.map (fun (i,p) ->
+  List.map (fun ((i,_),p) ->
 	    let params = get_params init i in
 	    let decls =  extract_decl init i (unwrap_pseudo p)
 	    in Test { proc = i;
@@ -179,8 +179,8 @@ let do_dump withinfo chan doc t =
   fprintf chan "%s\n" (dump_constr t.MiscParser.condition) ;
   ()
     
-let dump = do_dump false
-let dump_info = do_dump true
+let dump chan = do_dump false chan
+let dump_info chan = do_dump true chan
 			
 let (@@) f k = f k
 (*		 

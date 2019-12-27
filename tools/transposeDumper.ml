@@ -19,7 +19,7 @@
 (*****************)
 module type I = sig
   module A : ArchBase.S
-  type prog =  (int * A.pseudo list) list
+  type prog =  (MiscParser.proc * A.pseudo list) list
 
   type state
   val dump_global_state : prog -> state -> string
@@ -35,7 +35,7 @@ module type I = sig
 end
 
 module Make(I:I) : sig
-  type prog =  (int * I.A.pseudo list) list
+  type prog =  (MiscParser.proc * I.A.pseudo list) list
   val dump : out_channel ->
     Name.t ->
       (I.state, prog, I.prop, I.location)  MiscParser.result
@@ -48,7 +48,7 @@ module Make(I:I) : sig
 end = struct
   open Printf
   open I
-  type prog =  (int * I.A.pseudo list) list
+  type prog =  (MiscParser.proc * I.A.pseudo list) list
   let rec fmt_io io = match io with
   | A.Nop -> ""
   | A.Instruction ins -> A.dump_instruction ins
@@ -87,8 +87,8 @@ end = struct
 (* Procs *)
     let prog = t.prog in
     List.iter
-      (fun (p,code) ->
-        dump_sep chan (sprintf "P%i" p) ;
+      (fun ((p,_) as proc,code) ->
+        dump_sep chan (MiscParser.pp_proc proc) ;
         begin match dump_proc_state p code t.init with
         | Some st ->
             fprintf chan "%s\n" st ; 

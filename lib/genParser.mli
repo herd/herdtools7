@@ -38,14 +38,14 @@ module type LexParse = sig
   val lexer : Lexing.lexbuf -> token
   val parser :
        (Lexing.lexbuf -> token) -> Lexing.lexbuf ->
-	 int list * instruction list list *
+	 MiscParser.proc list * instruction list list *
            MiscParser.extra_data
 end
 
 module type S = sig
   type pseudo
   type init = MiscParser.state
-  type prog = (int * pseudo list) list
+  type prog = (MiscParser.proc * pseudo list) list
   type locations = MiscParser.LocSet.t
 
 (*

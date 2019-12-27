@@ -43,7 +43,7 @@ module type S = sig
   val map_labels : (string -> string) -> pseudo -> pseudo
 
 (* For printing the program, code per processor *)
-  type nice_prog = (int * pseudo list) list
+  type nice_prog = (MiscParser.proc * pseudo list) list
 
 (* Counting (static) memory accesses *)
   val get_naccesses : pseudo list -> int
@@ -130,7 +130,7 @@ struct
   | Macro _ -> assert false
 
 (* For printing the program, code per processor *)
-  type nice_prog = (int * pseudo list) list
+  type nice_prog = (MiscParser.proc * pseudo list) list
 
 (* Counting memory accesses *)
   let get_naccesses code =

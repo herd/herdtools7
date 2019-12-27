@@ -64,7 +64,7 @@ module Make(A:Arch_tools.S) = struct
   let collect t = 
     let m =
       List.fold_left
-        (fun m (p,cs) ->
+        (fun m ((p,_),cs) ->
           A.ProcMap.add p (collect_code cs) m)
         A.ProcMap.empty t.prog in
     let m = collect_state t.init m in

@@ -16,9 +16,16 @@
 
 (** The basic types of architectures and semantics, just parsed *)
 
+(* Processor name with optional annotations *)
+type proc = int * string list option
+
+val pp_proc : proc -> string
+
+(* Values just parsed *)
 type maybev = ParsedConstant.v
 
-type reg = string (* Registers not yet parsed *)
+(* Registers not yet parsed *)
+type reg = string
 
 type location =
   | Location_reg of int * reg
@@ -84,7 +91,7 @@ type ('i, 'p, 'prop, 'loc) result =
 (* Easier to handle *)
 type ('loc,'v,'ins) r3 =
        (('loc * (run_type * 'v)) list,
-       (int * 'ins list) list,
+       (proc * 'ins list) list,
        ('loc, 'v) ConstrGen.prop,
        'loc) result
 
@@ -95,7 +102,7 @@ type ('loc,'v,'code) r4 =
        'loc) result
 
 (* Result of generic parsing *)
-type 'pseudo t = (state, (int * 'pseudo list) list, prop, location) result
+type 'pseudo t = (state, (proc * 'pseudo list) list, prop, location) result
 
 (* Add empty extra info to machine parsers *)
 val mach2generic :

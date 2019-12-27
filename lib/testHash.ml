@@ -106,7 +106,7 @@ module Make(A:ArchBase.S)
     = struct
 
       type init = MiscParser.state
-      type prog = (int * A.pseudo list) list
+      type prog = (MiscParser.proc * A.pseudo list) list
       type locations =  MiscParser.LocSet.t
 
 

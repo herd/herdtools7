@@ -47,7 +47,7 @@ module Top
         TransposeDumper.Make
           (struct
             module A = A
-            type prog =  (int * A.pseudo list) list
+            type prog =  (MiscParser.proc * A.pseudo list) list
 
             let dump_loc = MiscParser.dump_location
             let dump_reg r = r

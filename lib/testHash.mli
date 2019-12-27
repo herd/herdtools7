@@ -40,7 +40,7 @@ val digest_init :
 module Make :
   functor (A:ArchBase.S) -> sig
     type init = MiscParser.state
-    type prog = (int * A.pseudo list) list
+    type prog = (MiscParser.proc * A.pseudo list) list
     type locations = MiscParser.LocSet.t
 
     val refresh_labels : string -> prog -> prog

@@ -16,26 +16,21 @@
 (****************************************************************************)
 %}
 
-%token EOF
-%token LPAR RPAR COLON COMMA
-%token <int> NUM
-%token <int> PROC
-%token <string> NAME
-
-%type <BellInfo.scopes> main
-%type <BellInfo.levels> main_level
-%type <(string * string) list> main_memory_map
-
-%start main
-%start main_level
-%start main_memory_map
 %%
 
-main:
-| top_scope_tree EOF { $1 }
+scope_option:
+| SCOPES COLON top_scope_tree {Some $3}
+| {None}
 
-main_level:
-| top_level_tree EOF { $1 }
+levels_option:
+| LEVELS COLON top_level_tree {Some $3}
+| {None}
 
-main_memory_map:
-| top_memory_map EOF { $1 }
+memory_map_option:
+| REGIONS COLON top_memory_map {Some $3}
+| {None}
+
+%public scopes_and_memory_map:
+ | scopes=scope_option levels=levels_option regions=memory_map_option
+{ let open BellInfo in { scopes; regions; levels;}}
+

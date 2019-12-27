@@ -31,9 +31,9 @@ let call_parser name lexbuf lex parse =
       Warn.user_error "%s: unexpected '%s' (in %s)" (Pos.str_pos2 (start_loc, end_loc)) lxm name
   | e ->
       Printf.eprintf
-	"%a: Uncaught exception %s (in %s)\n"
-	Pos.pp_pos lexbuf.lex_curr_p
-	(Printexc.to_string e) name ;
+        "%a: Uncaught exception %s (in %s)\n"
+        Pos.pp_pos lexbuf.lex_curr_p
+        (Printexc.to_string e) name ;
       assert false
 
 
@@ -59,14 +59,14 @@ module type LexParse = sig
   val lexer : Lexing.lexbuf -> token
   val parser :
         (Lexing.lexbuf -> token) -> Lexing.lexbuf ->
-	  int list * instruction list list * MiscParser.extra_data
+          MiscParser.proc list * instruction list list * MiscParser.extra_data
 end
 
 (* Output signature *)
 module type S = sig
   type pseudo
   type init = MiscParser.state
-  type prog = (int * pseudo list) list
+  type prog = (MiscParser.proc * pseudo list) list
   type locations = MiscParser.LocSet.t
 
   val parse : in_channel -> Splitter.result ->  pseudo MiscParser.t
@@ -82,7 +82,7 @@ module Make
   struct
     type pseudo = A.pseudo
     type init = MiscParser.state
-    type prog = (int * pseudo list) list
+    type prog = (MiscParser.proc * pseudo list) list
     type locations = MiscParser.LocSet.t
 
 
@@ -93,11 +93,11 @@ module Make
 *)
     let transpose procs prog =
       try
-	let prog = Misc.transpose prog in
-	List.combine procs prog 
+        let prog = Misc.transpose prog in
+        List.combine procs prog
       with
       |  Misc.TransposeFailure | Invalid_argument _ ->
-	  Warn.fatal "mismatch in instruction lines"
+          Warn.fatal "mismatch in instruction lines"
 
 
 (************************)
@@ -106,7 +106,7 @@ module Make
 
 let check_procs procs =
   Misc.iteri
-    (fun k p ->
+    (fun k (p,_) ->
       if k <> p then
         Warn.fatal "Processes must be P0, P1, ...")
     procs
@@ -124,13 +124,14 @@ let check_atom procs a =
   | LL (l1,l2) -> check_loc procs l1 ; check_loc procs l2
   | FF _       -> () (* Checks does no apply to global location *)
 
-let check_regs procs init locs final =
-  List.iter (fun (loc,_) -> check_loc procs  loc) init ;
-  List.iter (fun (loc,_) -> check_loc procs  loc) locs ;
-  ConstrGen.fold_constr (fun a () -> check_atom procs a) final ()
+ let check_regs procs init locs final =
+   let procs = List.map fst procs in
+   List.iter (fun (loc,_) -> check_loc procs  loc) init ;
+   List.iter (fun (loc,_) -> check_loc procs  loc) locs ;
+   ConstrGen.fold_constr (fun a () -> check_atom procs a) final ()
 
 (*******************)
-(* Macro expansion *)  
+(* Macro expansion *)
 (*******************)
 
     let rec expn  = function
@@ -198,17 +199,17 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
          info = info ; _
        }  =
       let init =
-	I.call_parser_loc "init"
-	  chan init_loc SL.token StateParser.init in
+        I.call_parser_loc "init"
+          chan init_loc SL.token StateParser.init in
       let procs,prog,extra_data =
-	I.call_parser_loc "prog" chan prog_loc L.lexer L.parser in
+        I.call_parser_loc "prog" chan prog_loc L.lexer L.parser in
       check_procs procs ;
       let prog = parsed_tr prog in
       let prog = transpose procs prog in
       let prog = expn_prog prog in
       let (locs,filter,final,_quantifiers) =
-	I.call_parser_loc "final"
-	  chan constr_loc SL.token StateParser.constraints in
+        I.call_parser_loc "final"
+          chan constr_loc SL.token StateParser.constraints in
       check_regs procs init locs final ;
       let all_locs =
         MiscParser.LocSet.union
@@ -218,7 +219,7 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
         {
          MiscParser.info; init; prog = prog;
          filter = filter;
-         condition = final; 
+         condition = final;
          locations = locs;
          extra_data ;
        } in
@@ -296,4 +297,3 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
       let module P = Do(Src) in
       P.parse s x
   end
-          

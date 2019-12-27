@@ -48,7 +48,7 @@ let tr_rw = function
 %token <RISCVBase.opamo * RISCVBase.width * RISCVBase.mo> AMO
 %token FENCE FENCEI FENCETSO
 %token <string> META
-%type <int list * (RISCVBase.parsedPseudo) list list> main 
+%type <MiscParser.proc list * (RISCVBase.parsedPseudo) list list> main 
 %type <RISCVBase.parsedPseudo list> instr_option_seq
 %start main instr_option_seq
 
@@ -62,10 +62,8 @@ semi_opt:
 | SEMI { () }
 
 proc_list:
-| PROC SEMI
-    {[$1]}
-
-| PROC PIPE proc_list  { $1::$3 }
+| ps=separated_nonempty_list(PIPE,PROC) SEMI
+  { List.map (fun p -> p,None) ps }
 
 iol_list :
 |  instr_option_list SEMI

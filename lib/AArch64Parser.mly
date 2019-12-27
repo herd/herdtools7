@@ -83,7 +83,7 @@ module A = AArch64Base
 %token <AArch64Base.sysreg> SYSREG
 %token MRS TST RBIT
 %token STG LDG
-%type <int list * (AArch64Base.parsedPseudo) list list * MiscParser.extra_data> main
+%type <(int * string list option) list * (AArch64Base.parsedPseudo) list list * MiscParser.extra_data> main
 %type <AArch64Base.parsedPseudo list> instr_option_seq
 
 %start  main
@@ -98,38 +98,6 @@ main:
 semi_opt:
 | { () }
 | SEMI { () }
-
-proc_list:
-| PROC SEMI
-    {[$1]}
-
-| PROC PIPE proc_list  { $1::$3 }
-
-scope_option:
-| SCOPES COLON top_scope_tree {Some $3}
-| {None}
-
-levels_option:
-| LEVELS COLON top_level_tree {Some $3}
-| {None}
-
-memory_map_option:
-| REGIONS COLON memory_map {Some $3}
-| {None}
-memory_map_atom:
- | NAME COLON NAME
-{ ($1,$3) }
-
-memory_map:
- | memory_map_atom COMMA memory_map {$1::$3}
- | memory_map_atom {[$1]}
- | {[]
-    (*jade: todo memory map*)
-   }
-
-scopes_and_memory_map:
- | scope_option memory_map_option levels_option
-{ { BellInfo.scopes=$1; BellInfo.regions=$2; BellInfo.levels=$3;}}
 
 iol_list :
 |  instr_option_list SEMI

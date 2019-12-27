@@ -84,7 +84,7 @@ end
 module type S = sig
   type pseudo   
   type init = MiscParser.state
-  type prog = (int * pseudo list) list
+  type prog = (MiscParser.proc * pseudo list) list
   type locations = MiscParser.LocSet.t
 
   val parse : in_channel -> Splitter.result ->  pseudo MiscParser.t
@@ -100,7 +100,7 @@ module Make
   struct
     type pseudo = A.pseudo
     type init = MiscParser.state
-    type prog = (int * pseudo list) list
+    type prog = (MiscParser.proc * pseudo list) list
     type locations = MiscParser.LocSet.t
 
 
@@ -222,7 +222,7 @@ module Do
             fname in
         List.map (L.macros_expand ms) in
 
-    let prog =  List.map (fun p -> p.CAst.proc,expand_body p.CAst.body) prog in
+    let prog =  List.map (fun p -> (p.CAst.proc,None),expand_body p.CAst.body) prog in
 (*
     List.iter
       (fun (p,code) ->
