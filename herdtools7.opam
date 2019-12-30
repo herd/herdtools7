@@ -20,4 +20,5 @@ install: ["sh" "./dune-install.sh" "%{prefix}%"]
 depends: [
   "ocaml" {>= "4.02.0"}
   "dune"
+  "menhir"
 ]
