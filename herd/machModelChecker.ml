@@ -122,8 +122,8 @@ module Make
            (fun annot k ->
              let tag = BellName.tag2instrs_var annot in
              let rel = lazy begin
-                 E.EventSet.filter (pred annot) evts
-               end in
+               E.EventSet.filter (pred annot) evts
+             end in
              if O.debug then
                Printf.eprintf "annotation %s recorded as set %s\n"
                  annot tag ;
@@ -183,44 +183,44 @@ module Make
               ("instr",lazy begin
                 E.EventRel.of_pred all_evts all_evts E.po_eq
               end)::k
-        else Misc.identity)
-          ["id",id;
-            "loc", lazy begin
-              E.EventRel.restrict_rel E.same_location (Lazy.force unv)
-            end;
-            "int",lazy begin
-              E.EventRel.restrict_rel E.same_proc_not_init (Lazy.force unv)
-            end ;
-            "ext",lazy begin
-              E.EventRel.restrict_rel
-                (fun e1 e2 -> not (E.same_proc e1 e2)) (Lazy.force unv)
-            end ;
-            "ext",lazy begin
-              E.EventRel.restrict_rel
-                (fun e1 e2 -> not (E.same_proc e1 e2)) (Lazy.force unv)
-            end ;
-           "rmw",lazy conc.S.atomic_load_store;
-           "amo",lazy (Lazy.force pr).S.amo;
-           "po", lazy  po;
-           "addr", lazy (Lazy.force pr).S.addr;
-           "data", lazy (Lazy.force pr).S.data;
-           "depend", lazy (Lazy.force pr).S.depend;
-           "ctrl", lazy (Lazy.force pr).S.ctrl;
-           "success", lazy (Lazy.force pr).S.success;
-           "rf", lazy (Lazy.force pr).S.rf;
-           "control",lazy conc.S.str.E.control ;
-           "sm",lazy begin
-             if mixed then
-               E.EventRel.unions
-                 (E.EventSetSet.map_list
-                    (fun sm -> E.EventRel.cartesian sm sm)
-                    conc.S.str.E.sca)
-             else
-               E.EventRel.set_to_rln (Lazy.force mem_evts)
-           end;
-           "iico_data", lazy conc.S.str.E.intra_causality_data;
-           "iico_ctrl", lazy conc.S.str.E.intra_causality_control;
-         ]) in
+          else Misc.identity)
+             ["id",id;
+              "loc", lazy begin
+                E.EventRel.restrict_rel E.same_location (Lazy.force unv)
+              end;
+              "int",lazy begin
+                E.EventRel.restrict_rel E.same_proc_not_init (Lazy.force unv)
+              end ;
+              "ext",lazy begin
+                E.EventRel.restrict_rel
+                  (fun e1 e2 -> not (E.same_proc e1 e2)) (Lazy.force unv)
+              end ;
+              "ext",lazy begin
+                E.EventRel.restrict_rel
+                  (fun e1 e2 -> not (E.same_proc e1 e2)) (Lazy.force unv)
+              end ;
+              "rmw",lazy conc.S.atomic_load_store;
+              "amo",lazy (Lazy.force pr).S.amo;
+              "po", lazy  po;
+              "addr", lazy (Lazy.force pr).S.addr;
+              "data", lazy (Lazy.force pr).S.data;
+              "depend", lazy (Lazy.force pr).S.depend;
+              "ctrl", lazy (Lazy.force pr).S.ctrl;
+              "success", lazy (Lazy.force pr).S.success;
+              "rf", lazy (Lazy.force pr).S.rf;
+              "control",lazy conc.S.str.E.control ;
+              "sm",lazy begin
+                if mixed then
+                  E.EventRel.unions
+                    (E.EventSetSet.map_list
+                       (fun sm -> E.EventRel.cartesian sm sm)
+                       conc.S.str.E.sca)
+                else
+                  E.EventRel.set_to_rln (Lazy.force mem_evts)
+              end;
+              "iico_data", lazy conc.S.str.E.intra_causality_data;
+              "iico_ctrl", lazy conc.S.str.E.intra_causality_control;
+            ]) in
       let m =
         I.add_sets m
           (("M",mem_evts)::
@@ -244,16 +244,16 @@ module Make
           (List.map
              (fun (k,a) ->
                k,lazy (E.EventSet.filter (fun e -> a e.E.action) evts))
-          E.Act.arch_sets) in
+             E.Act.arch_sets) in
 (* Define empty fence relation
    (for the few models that apply to several archs) *)
       let m = I.add_rels m
-         [
+          [
 (* PTX fences *)
            "membar.cta",lazy E.EventRel.empty;
            "membar.gl", lazy E.EventRel.empty;
            "membar.sys",lazy E.EventRel.empty;
-        ] in
+         ] in
 (* Override arch specific fences *)
       let m =
         I.add_rels m
@@ -280,17 +280,45 @@ module Make
                 (BellModel.get_mem_annots bi) in
             let open MiscParser in
             begin match test.Test_herd.extra_data with
-              (* No region in test, no event sets *)
-              | NoExtra|BellExtra {BellInfo.regions=None;_} -> m
-              | BellExtra {BellInfo.regions=Some regions;_} ->
-                  add_bell_events m
-                    (fun region e -> match E.Act.location_of e.E.action with
-                    | None -> false
-                    | Some x ->
-                       List.mem (E.Act.A.pp_location x, region) regions)
-                    evts
-                    (BellModel.get_region_sets bi)
-              | CExtra _ -> m (* Ignore CExtra ?? *)
+            (* No region in test, empty regions *)
+            | NoExtra|BellExtra {BellInfo.regions=None;_} ->
+                I.add_sets m
+                  (List.map
+                     (fun r -> BellName.tag2instrs_var r,lazy E.EventSet.empty)
+                     (StringSet.elements (BellModel.get_region_sets bi)))
+            | BellExtra {BellInfo.regions=Some regions;_} ->
+                let reg2loc =
+                  List.fold_left
+                    (fun m (x,rs) ->
+                      List.fold_left
+                        (fun m r ->
+                          let old = StringMap.safe_find StringSet.empty r m in
+                          StringMap.add r (StringSet.add x old) m)
+                        m rs)
+                    StringMap.empty regions in
+                let loc2evts = U.collect_mem conc.S.str in
+                let loc2evts = U.LocEnv.map E.EventSet.of_list loc2evts in
+                I.add_sets m
+                  (StringSet.fold
+                     (fun region k ->
+                       let tag = BellName.tag2instrs_var region in
+                       let set = lazy begin
+                         let locs =
+                           StringMap.safe_find StringSet.empty
+                             region reg2loc in
+                         let evts =
+                           StringSet.fold
+                             (fun loc k ->
+                               let v = S.A.V.nameToV loc in
+                               let x = S.A.Location_global v in
+                               U.LocEnv.safe_find E.EventSet.empty
+                                 x loc2evts::k)
+                             locs [] in
+                         E.EventSet.unions evts
+                       end in
+                       (tag,set)::k)
+                     (BellModel.get_region_sets bi) [])
+            | CExtra _ -> m (* Ignore CExtra ?? *)
             end in
 (* Scope relations from bell info *)
       let m =
@@ -304,10 +332,10 @@ module Make
             | BellExtra tbi -> e tbi in
             let scopes =  extract_tbi (fun tbi -> tbi.BellInfo.scopes) in
             let m = match scopes with
- (* If no scope definition in test, do not build relations, will fail
-    later if the model attempts to use scope relations *)
+              (* If no scope definition in test, do not build relations, will fail
+                 later if the model attempts to use scope relations *)
             | None -> m
- (* Otherwise, build scope relations *)
+                  (* Otherwise, build scope relations *)
             | Some scopes ->
                 let rs = U.get_scope_rels evts scopes in
                 I.add_rels m

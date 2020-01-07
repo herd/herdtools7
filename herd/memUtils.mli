@@ -81,7 +81,7 @@ module Make : functor (S: SemExtra.S) -> sig
   val extract_external :  S.event_rel -> S.event_rel
 
 (* Mapping from locations *)
-  module LocEnv : Map.S with type key = S.location
+  module LocEnv : MyMap.S with type key = S.location
 
 (* Collect various events, indexed by location *)
   val collect_reg_loads : S.event_structure -> S.event list LocEnv.t

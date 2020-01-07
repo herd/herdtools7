@@ -72,7 +72,7 @@ level_tree:
       | _ -> BellInfo.Tree ("",ps,ts) }
 
 memory_map_atom:
- | NAME COLON NAME { ($1,$3) }
+ | NAME COLON nonempty_list(NAME) { ($1,$3) }
 
 %public top_memory_map:
  | atoms = separated_list(COMMA,memory_map_atom) { atoms }

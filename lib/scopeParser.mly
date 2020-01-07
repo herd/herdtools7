@@ -24,7 +24,7 @@
 
 %type <BellInfo.scopes> main
 %type <BellInfo.levels> main_level
-%type <(string * string) list> main_memory_map
+%type <BellInfo.mem_space_map> main_memory_map
 
 %start main
 %start main_level

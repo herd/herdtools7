@@ -362,7 +362,7 @@ let lift_proc_info i evts =
 (******************************)
 
   module LocEnv =
-    Map.Make
+    MyMap.Make
       (struct
         type t = A.location
         let compare = A.location_compare

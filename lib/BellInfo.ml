@@ -26,11 +26,13 @@ let _docheck = true
 (* For tests *)
 (*************)
 
-type mem_space_map = (string * string) list
+type mem_space_map = (string * string list) list
 
 let pp_mem_map m = 
   String.concat ","
-    (List.map (fun (n,r) -> sprintf "%s: %s" n r) m)
+    (List.map (fun (n,r) ->
+      let pp = String.concat " " r in
+      sprintf "%s: %s" n pp) m)
 
 type scopes = 
  | Tree of string * int list * scopes list

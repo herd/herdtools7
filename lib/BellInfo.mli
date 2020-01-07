@@ -20,7 +20,7 @@
 (* In tests *)
 (************)
 
-type mem_space_map = (string * string) list
+type mem_space_map = (string * string list) list
 val pp_mem_map : mem_space_map -> string
 
 type scopes =

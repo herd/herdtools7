@@ -47,11 +47,14 @@ module Make
             error "no definition of %s in bell file"  BellName.regions
         | Some r -> r in
         List.iter
-          (fun (_,r) ->
-            if not (StringSet.mem r regions) then
-              error
-                "region %s from test is not part of bell file regions {%s}"
-                r (StringSet.pp_str "," Misc.identity regions))
+          (fun (_,rs) ->
+            List.iter
+              (fun r ->
+                if not (StringSet.mem r regions) then
+                  error
+                    "region %s from test is not part of bell file regions {%s}"
+                    r (StringSet.pp_str "," Misc.identity regions))
+              rs)
           defs
       with Error msg ->
         Warn.user_error "region error, %s" msg
