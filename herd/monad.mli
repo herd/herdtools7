@@ -97,9 +97,9 @@ module type S =
     val choiceT : A.V.v -> 'a t -> 'a t -> 'a t
     val altT : 'a t -> 'a t -> 'a t
 
-    val tooFar : string -> 'a t
+    val tooFar : string -> unit t
 
-        (* read_loc is_data mk_action loc ii:
+        (* read_loc is_data mk_action loc ii:DGG
            for each value v that could be read,
            make an event structure comprising a single event with
            instruction id "ii", and action "mk_action v loc".

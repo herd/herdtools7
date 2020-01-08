@@ -252,6 +252,7 @@ end = struct
   let is_commit_pred _ = false
 
 (* Unrolling control *)
+  let toofar = TooFar
   let is_toofar = function
     | TooFar -> true
     | _ -> false

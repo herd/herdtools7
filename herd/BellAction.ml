@@ -24,6 +24,7 @@ module Make (A : Arch_herd.S) : sig
           bool * string list * MachSize.sz
     | Barrier of string list * (Label.Set.t * Label.Set.t) option
     | Commit
+    | TooFar
 
   include Action.S with module A = A and type action := action
 
@@ -40,6 +41,7 @@ end = struct
 
     | Barrier of string list * (Label.Set.t * Label.Set.t) option
     | Commit
+    | TooFar
 
 (* I think this is right... *)
   let mk_init_write l sz v = Access(W,l,v,false,[],sz)
@@ -76,6 +78,7 @@ end = struct
             (BellBase.string_of_labels s2)
       )
   | Commit -> "Commit"
+  | TooFar -> "TooFar"
 
 (* Utility functions to pick out components *)
   let value_of a = match a with
@@ -183,7 +186,10 @@ end = struct
   let is_commit_pred  _a = false (* No predicated instructions... *)
 
 (* Unroll control *)
-  let is_toofar _ = raise Exit
+  let toofar = TooFar
+  let is_toofar = function
+    | TooFar -> true
+    | _ -> false
 
 (* Equations *)
 
@@ -195,7 +201,7 @@ end = struct
         | Some v -> V.ValueSet.singleton v in
         if V.is_var_determined v then undet_loc
         else V.ValueSet.add v undet_loc
-    | Barrier _|Commit -> V.ValueSet.empty
+    | Barrier _|Commit|TooFar -> V.ValueSet.empty
 
   let simplify_vars_in_action soln a =
     match a with
@@ -203,7 +209,7 @@ end = struct
         let l' = A.simplify_vars_in_loc soln l in
         let v' = V.simplify_var soln v in
         Access (d,l',v',ato,s,sz)
-    | Barrier _ | Commit -> a
+    | Barrier _ | Commit| TooFar -> a
 
 (*************************************************************)
 (* Add together event structures from different instructions *)

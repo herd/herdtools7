@@ -880,7 +880,15 @@ and type evt_struct = E.event_structure) =
                    E.action = mk_action v vstored})
                acc_inner)) (eiid,Evt.empty)
 
-    let tooFar _msg = zeroT
+    let tooFar _msg =
+      fun eiid ->
+        (eiid+1,
+         Evt.singleton
+           ((), [],
+            trivial_event_structure false
+              {E.eiid = eiid ;
+               E.iiid = None;
+               E.action = E.Act.toofar }))
 
     type evt_struct = E.event_structure
     type output = VC.cnstrnts * evt_struct

@@ -41,7 +41,7 @@ module type S = sig
   type result =
      {
       event_structures : (int * S.M.VC.cnstrnts * S.event_structure) list ;
-      too_far : bool ; (* some events structures discarded (loop) *)
+      loop_present : bool ;
      }
 
   val glommed_event_structures : S.test -> result
@@ -191,7 +191,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     type result =
         {
          event_structures : (int * S.M.VC.cnstrnts * S.event_structure) list ;
-         too_far : bool ; (* some events structures discarded (loop) *)
+         loop_present : bool ;
         }
 
 (* All locations from init state, a bit contrieved *)
@@ -246,10 +246,10 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     module SM = S.Mixed(C)
 
     let glommed_event_structures (test:S.test) =
+      let tooFar = ref false in
       let p = test.Test_herd.program in
       let starts = test.Test_herd.start_points in
       let procs = List.map fst starts in
-      let tooFar = ref false in
 
       let instr2labels =
         let one_label lbl code res = match code with
@@ -304,7 +304,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         | Some (code,seen) -> add_code proc prog_order seen code
 
       and next_instr proc prog_order seen addr nexts b = match b with
-      | S.B.Exit ->  EM.unitT ()
+      | S.B.Exit ->  tooFar := true ; EM.unitT ()
       | S.B.Next -> add_code proc prog_order seen nexts
       | S.B.Jump lbl ->
           add_lbl proc prog_order seen addr lbl
@@ -339,7 +339,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           let es = { (relabel es) with E.procs = procs } in
           (i,vcl,es)::index xs (i+1) in
       let r = EM.get_output set_of_all_instr_events  in
-      { event_structures=index r 0; too_far = !tooFar; }
+      { event_structures=index r 0; loop_present = !tooFar; }
 
 
 (*******************)

@@ -91,6 +91,7 @@ module type S = sig
   val is_commit_pred : action -> bool
 
 (* Unrolling control *)
+  val toofar : action
   val is_toofar : action -> bool
 
 (********************)
