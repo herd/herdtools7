@@ -49,7 +49,7 @@ open MemOrderOrAnnot
 %token LAND
 %token ADD SUB
 %token DIV
-%token IF ELSE
+%token IF ELSE WHILE
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
 %token <MemOrder.t> MEMORDER
@@ -153,14 +153,19 @@ annot_list:
 | annot
   {[$1]}
 
-
 expr:
-| LPAR expr RPAR { $2 }
+| expr0 { $1 }
+| expr1 { $1 }
+
+expr0:
 | CONSTANT { Const(Constant.Concrete $1) }
 | CONSTVAR { Const(mk_sym $1) }
 | IDENTIFIER { LoadReg $1 }
-| LPAR typ RPAR expr %prec CAST { $4 }
 | STAR IDENTIFIER { LoadMem (LoadReg $2,AN []) }
+| LPAR expr RPAR { $2 }
+
+expr1:
+| LPAR typ RPAR expr %prec CAST { $4 }
 | STAR LPAR typ RPAR IDENTIFIER { LoadMem (LoadReg $5,AN []) }
 | STAR LPAR expr RPAR { LoadMem ($3,AN []) }
 | LOAD LBRACE annot_list RBRACE LPAR expr RPAR { LoadMem($6,AN $3) }
@@ -228,6 +233,8 @@ instruction:
   { If($3,$5,None) }
 | IF LPAR expr RPAR block_ins ELSE block_ins
   { If($3,$5,Some $7) }
+| WHILE expr0 block_ins
+  { While ($2,$3,0) }
 | initialisation SEMI
   { $1 }
 | IDENTIFIER EQ expr SEMI

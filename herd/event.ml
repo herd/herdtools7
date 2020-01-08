@@ -105,6 +105,9 @@ module type S = sig
   val is_commit_pred : event -> bool
   val is_commit : event -> bool
 
+(* Too much unrolling *)
+  val is_toofar : event -> bool
+
 (**************)
 (* Event sets *)
 (**************)
@@ -492,6 +495,9 @@ struct
   let is_commit e =
     let act = e.action in
     Act.is_commit_bcc act ||  Act.is_commit_pred act
+
+(*  Unrolling control *)
+  let is_toofar e = Act.is_toofar e.action
 
 (******************************)
 (* Build structures of events *)

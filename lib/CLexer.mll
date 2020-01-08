@@ -124,6 +124,7 @@ rule token deep = parse
 | '}' { RBRACE }
 | "if"    { IF }
 | "else"  { ELSE }
+| "while" { WHILE }
 | '=' {EQ}
 | "==" {EQ_OP}
 | "!=" {NEQ_OP}

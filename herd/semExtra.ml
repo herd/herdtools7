@@ -161,8 +161,9 @@ type concrete =
 (************)
   module B : Branch.S
   with type v = v and type 'a monad = 'a M.t
-
   type branch = B.t
+
+  val gone_toofar : concrete -> bool
 
 (************)
 (* Barriers *)
@@ -362,6 +363,10 @@ type concrete =
 (************)
     module B = Branch.Make(M)
     type branch = B.t
+
+    let gone_toofar { str; _ } =
+      try E.EventSet.exists E.is_toofar str.E.events
+      with Exit -> false
 
 (************)
 (* Barriers *)

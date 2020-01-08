@@ -13,7 +13,12 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
-module Make (Conf:Sem.Config)(V:Value.S)
+module type Config = sig
+  include Sem.Config
+  val unroll : int
+end
+
+module Make (Conf:Config)(V:Value.S)
     =
   struct
 
@@ -53,6 +58,8 @@ module Make (Conf:Sem.Config)(V:Value.S)
       let a_rb_dep = ["rb_dep"]
       let no_mo = MOorAN.AN []
       let mo_as_anmo mo = MOorAN.MO mo
+
+      let mk_toofar ii = M.mk_singleton_es (Act.TooFar) ii
 
       let read_loc is_data mo =
         M.read_loc is_data (fun loc v -> Act.Access (Dir.R, loc, v, mo, false, nat_sz))
@@ -335,7 +342,6 @@ module Make (Conf:Sem.Config)(V:Value.S)
         match ii.A.inst with
         | C.Seq (insts,_) ->
             build_semantics_list insts ii
-
         | C.If(c,t,Some e) ->
             build_cond c ii >>>> fun ret ->
               let ii' =
@@ -354,6 +360,19 @@ module Make (Conf:Sem.Config)(V:Value.S)
               in
               let then_branch = build_semantics {ii' with A.inst = t} in
               M.choiceT ret then_branch (build_semantics_list [] ii)
+        | C.While(c,t,n) ->
+            build_cond c ii >>>>
+            begin
+              let else_branch = M.unitT (ii.A.program_order_index, B.Next)
+              and then_branch =
+                if n >= Conf.unroll then
+                  mk_toofar ii >>= fun () -> M.unitT (ii.A.program_order_index, B.Exit)
+                else
+                  build_semantics {ii with A.inst = t} >>> fun (prog_order, _branch) ->
+                  build_semantics
+                    {ii with A.program_order_index = prog_order; A.inst = C.While(c,t,n+1);} in
+              fun ret -> M.choiceT ret then_branch else_branch
+            end
         | C.DeclReg _ ->  M.unitT (ii.A.program_order_index, B.Next)
         | C.StoreReg(_,r,e) ->
             build_semantics_expr true e ii >>=

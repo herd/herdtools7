@@ -182,6 +182,9 @@ end = struct
 
   let is_commit_pred  _a = false (* No predicated instructions... *)
 
+(* Unroll control *)
+  let is_toofar _ = raise Exit
+
 (* Equations *)
 
   let undetermined_vars_in_action a =

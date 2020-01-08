@@ -90,6 +90,9 @@ module type S = sig
   val is_commit_bcc : action -> bool
   val is_commit_pred : action -> bool
 
+(* Unrolling control *)
+  val is_toofar : action -> bool
+
 (********************)
 (* Equation solving *)
 (********************)

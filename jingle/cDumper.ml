@@ -91,6 +91,7 @@ let list_loc prog =
     | Seq(l,_) -> List.fold_left ins s l
     | If(c,t,Some e) -> expr (ins (ins s e) t) c
     | If(c,t,None) -> expr (ins s t) c
+    | While (e,i,_) -> expr (ins s i) e
     | DeclReg (_,r) ->  LocSet.add r s
     | StoreReg(_,r,e) ->  LocSet.add r (expr s e)
     | StoreMem(l,e,_) -> loc (expr s e) l

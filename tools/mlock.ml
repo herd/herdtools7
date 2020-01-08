@@ -90,7 +90,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
           (Op.Eq,ECall ("xchg_acquire",[e;Const const_one]),Const const_zero)
     | IsLocked (e,_) ->
         let e = tr_expr e in
-        LoadMem (e,AN [])        
+        LoadMem (e,AN [])
     | LoadMem (e,a) -> LoadMem(tr_expr e,a)
     | Op (op,e1,e2) -> Op (op,tr_expr e1,tr_expr e2)
     | Exchange (e1,e2,a) ->  Exchange (tr_expr e1,tr_expr e2,a)
@@ -140,6 +140,10 @@ module Top(O:Config)(Out:OutTests.S) = struct
             let nxt,vs,f = tr_ins nxt f in
             nxt,vs,Some f in
         nxt,vs,If (ec,it,o)
+    | While (ec,it,n) ->
+        let ec = tr_expr ec in
+        let nxt,vs,it = tr_ins nxt it in
+        nxt,vs,While (ec,it,n)
     | AtomicOp (loc,op,e) ->
         let loc = tr_expr loc
         and e = tr_expr e in
@@ -251,6 +255,10 @@ module Top(O:Config)(Out:OutTests.S) = struct
         let s = expr_read ec in
         let i = If (ec,tr_ins it,Misc.app_opt tr_ins o) in
         add_locks s i
+    | While (ec,it,n) ->
+        let s = expr_read ec in
+        let i = While (ec,tr_ins it,n) in
+        add_locks s i
     | StoreReg (_,_,e) ->
         let s = expr_read e in
         add_locks s i
@@ -345,6 +353,10 @@ module Top(O:Config)(Out:OutTests.S) = struct
         and it = tr_ins it
         and o = Misc.app_opt tr_ins o in
         If (ec,it,o)
+    | While (ec,it,n) ->
+        let ec = tr_expr ec
+        and it = tr_ins it in
+        While (ec,it,n)
     | StoreReg (t,r,e) ->
         StoreReg (t,r,tr_expr e)
     | StoreMem (e1,e2,a) ->

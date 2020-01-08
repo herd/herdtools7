@@ -36,6 +36,8 @@ module Make (A : Arch_herd.S) : sig
     | ReadLock of A.location * bool
 (* SRCU : location, nature, and optional value (for lock/unlock) *)
     | SRCU of A.location * MemOrderOrAnnot.annot * A.V.v option
+(* TooFar: unroll too much *)
+    | TooFar
 
   include Action.S with type action := action and module A = A
 
@@ -59,6 +61,7 @@ end = struct
     | TryLock of A.location (* Failed trylock *)
     | ReadLock of A.location * bool
     | SRCU of A.location * annot * V.v option
+    | TooFar
 
   let mk_init_write l sz v = Access (W,l,v,AN [],false,sz)
 
@@ -112,6 +115,8 @@ end = struct
         (bra pp_annot an)
         (A.pp_location l)
         (V.pp_v v)
+  | TooFar -> "TooFar"
+
 (* Utility functions to pick out components *)
 
   let value_of a = match a with
@@ -132,15 +137,15 @@ end = struct
   | _ -> None
 
   let location_of a = match a with
-  | Access (_, l, _,_,_,_)
-  | Lock (l,_)
-  | Unlock (l,_)
-  | TryLock (l)
-  | ReadLock (l,_)
-  | RMW (l,_,_,_,_)
-  | SRCU (l,_,_)
-    -> Some l
-  | Fence _ -> None
+  | Access (_, loc, _,_,_,_)
+  | Lock (loc,_)
+  | Unlock (loc,_)
+  | TryLock (loc)
+  | ReadLock (loc,_)
+  | RMW (loc,_,_,_,_)
+  | SRCU (loc,_,_)
+    -> Some loc
+  | Fence _|TooFar -> None
 
 (* relative to memory *)
   let is_mem_store a = match a with
@@ -245,6 +250,11 @@ end = struct
 (* (No) commits *)
   let is_commit_bcc _ = false
   let is_commit_pred _ = false
+
+(* Unrolling control *)
+  let is_toofar = function
+    | TooFar -> true
+    | _ -> false
 
 (* RMWs *)
   let is_rmw a = match a with
@@ -356,7 +366,7 @@ end = struct
         (match A.undetermined_vars_in_loc l with
         | None -> V.ValueSet.empty
         | Some v -> V.ValueSet.singleton v)
-    | Fence _ -> V.ValueSet.empty
+    | Fence _|TooFar -> V.ValueSet.empty
 
   let simplify_vars_in_action soln a =
     match a with
@@ -384,7 +394,7 @@ end = struct
     | SRCU(l,a,vo) ->
         let l' =  A.simplify_vars_in_loc soln l in
         SRCU(l',a,Misc.app_opt (V.simplify_var soln) vo)
-    | Fence _ -> a
+    | Fence _|TooFar -> a
 
 (*************************************************************)
 (* Add together event structures from different instructions *)
@@ -396,5 +406,5 @@ end = struct
   | SRCU(_,a,_)
     -> List.exists (fun a -> Misc.string_eq str a) a
   | Access (_, _, _, MO _,_,_)|Fence (MO _)|RMW (_, _, _, _,_)
-  | Lock _|Unlock _|TryLock _|ReadLock _ -> false
+  | Lock _|Unlock _|TryLock _|ReadLock _|TooFar -> false
 end

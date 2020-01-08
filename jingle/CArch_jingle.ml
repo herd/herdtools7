@@ -186,8 +186,9 @@ include Arch.MakeArch(struct
           expl_expr u >> fun u ->
           expl_expr a >! fun a ->
           AtomicAddUnless (loc,u,a,rb)
-      | ExpSRCU (e,a) -> expl_expr e >! fun e -> ExpSRCU (e,a)
-    in let rec expl_instr =  function
+      | ExpSRCU (e,a) -> expl_expr e >! fun e -> ExpSRCU (e,a) in
+
+    let rec expl_instr =  function
       | Fence _|DeclReg _ as i -> unitT i
       | Seq (is,b) ->
           mapT expl_instr is >! fun is -> Seq (is,b)
@@ -196,6 +197,10 @@ include Arch.MakeArch(struct
           expl_instr t >> fun t ->
           optT expl_instr e >! fun e ->
           If (c,t,e)
+      | While (c,t,n) ->
+          expl_expr c >> fun c ->
+          expl_instr t >! fun t ->
+          While (c,t,n)
       | StoreReg(ot,r,e) ->
           conv_reg r >> fun r ->
           expl_expr e >! fun e ->

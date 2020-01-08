@@ -94,17 +94,19 @@ module Make(O:Config)(M:XXXMem.S) =
           pos : int ;
           neg : int ;
 (* flagged executions *)
-	  flagged : int list Flag.Map.t ;
+          flagged : int list Flag.Map.t ;
 (* shown executions *)
           shown : int;
 (* registers that read memory *)
           reads : S.loc_set;
+(* Too much loop unrolling *)
+          toofar : bool;
         }
 
     let start =
       { states = A.StateSet.empty; cfail=0; cands=0; pos=0; neg=0;
         flagged=Flag.Map.empty; shown=0;
-        reads = A.LocSet.empty; }
+        reads = A.LocSet.empty; toofar=false; }
 
     let kfail c = { c with cfail=c.cfail+1; }
 
@@ -157,9 +159,9 @@ module Make(O:Config)(M:XXXMem.S) =
       let k =
         List.fold_left
           (fun res (_i,cs,es) ->
-	    MC.calculate_rf_with_cnstrnts test es cs
-	      kont kont_loop res)
-	  k rfms in
+            MC.calculate_rf_with_cnstrnts test es cs
+              kont kont_loop res)
+          k rfms in
       k
 
 (* Open a dot outfile or not *)
@@ -175,12 +177,12 @@ module Make(O:Config)(M:XXXMem.S) =
               None
             end else None
       | PrettyConf.StdoutOutput ->
-	 let fname = Test_herd.basename test in
-	 fprintf stdout "\nDOTBEGIN %s\n" fname;
-	 fprintf stdout "DOTCOM %s\n"
+         let fname = Test_herd.basename test in
+         fprintf stdout "\nDOTBEGIN %s\n" fname;
+         fprintf stdout "DOTCOM %s\n"
            (let module G = Show.Generator(PC) in
            G.generator) ;
-	 Some (stdout, fname)
+         Some (stdout, fname)
       | PrettyConf.Outputdir d ->
           let base = Test_herd.basename test in
           let base = base ^ O.suffix in
@@ -193,12 +195,12 @@ module Make(O:Config)(M:XXXMem.S) =
     let close_dot = function
       | None -> ()
       | Some (chan,fname) ->
-	 match O.outputdir with
-	 | PrettyConf.NoOutputdir | PrettyConf.Outputdir _ ->
+         match O.outputdir with
+         | PrettyConf.NoOutputdir | PrettyConf.Outputdir _ ->
             if S.O.PC.debug then eprintf "close %s\n" fname ;
             close_out chan
-	 | PrettyConf.StdoutOutput ->
-	    fprintf stdout "\nDOTEND %s\n" fname
+         | PrettyConf.StdoutOutput ->
+            fprintf stdout "\nDOTEND %s\n" fname
 
     let my_remove name =
       try Sys.remove name
@@ -232,7 +234,8 @@ module Make(O:Config)(M:XXXMem.S) =
       let check = check_prop test in
 
       fun conc fsc (set_pp,vbpp) flags c ->
-        if do_observed && not (all_observed test conc) then c
+        if S.gone_toofar conc then { c with toofar = true; }
+        else if do_observed && not (all_observed test conc) then c
         else if
           match O.throughflag with
           | None -> false
@@ -329,6 +332,7 @@ module Make(O:Config)(M:XXXMem.S) =
                 if O.outcomereads then
                   A.LocSet.union (PU.all_regs_that_read conc.S.str) c.reads
                 else c.reads;
+              toofar = c.toofar;
             } in
           if not O.badexecs && is_bad flags then raise (Over r) ;
           let r = match O.nshow with
@@ -459,6 +463,7 @@ module Make(O:Config)(M:XXXMem.S) =
           finals ;
 (* Condition result *)
         let ok = check_cond test c in
+        let loop = loop || c.toofar  in
         printf "%s%s\n"
           (if loop then "Loop " else "")
           (if is_bad then "Undef" else if ok then "Ok" else "No") ;

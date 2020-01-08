@@ -249,6 +249,9 @@ end = struct
   | Commit b -> not b
   | _ -> false
 
+(* Unroll control *)
+  let is_toofar _ = raise Exit
+
 (* Architecture-specific sets *)
 
   let arch_sets =
