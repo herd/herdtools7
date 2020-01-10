@@ -31,7 +31,7 @@ type t =
   | MemTag           (* Memory Tagging *)
   | TagCheckPrecise
   | TagCheckUnprecise
-
+  | TooFar         (* Do not discard candidates with TooFar events *)
 
 val compare : t -> t -> int
 val tags : string list

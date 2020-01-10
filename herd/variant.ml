@@ -33,12 +33,13 @@ type t =
   | MemTag
   | TagCheckPrecise
   | TagCheckUnprecise
+  | TooFar
 
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
    "fullscdepend";"splittedrmw";"switchdepscwrite";"lrscdiffok";
    "mixed";"weakpredicated"; "memtag";
-   "tagcheckprecise"; "tagcheckunprecise"; ]
+   "tagcheckprecise"; "tagcheckunprecise"; "toofar"; ]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -56,6 +57,7 @@ let parse s = match Misc.lowercase s with
 | "tagmem"|"memtag" -> Some MemTag
 | "tagcheckprecise"|"precise" -> Some TagCheckPrecise
 | "tagcheckunprecise"|"unprecise" -> Some TagCheckUnprecise
+| "toofar" -> Some TooFar
 | _ -> None
 
 let pp = function
@@ -74,7 +76,7 @@ let pp = function
   | MemTag -> "memtag"
   | TagCheckPrecise -> "TagCheckPrecise"
   | TagCheckUnprecise -> "TagCheckUnprecise"
-
+  | TooFar -> "TooFar"
 
 let compare = compare
 

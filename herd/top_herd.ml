@@ -55,6 +55,7 @@ module Make(O:Config)(M:XXXMem.S) =
     module W = Warn.Make(O)
 
     let memtag = O.variant Variant.MemTag
+    let showtoofar = O.variant Variant.TooFar
 
 (* Utilities *)
     open Restrict
@@ -234,7 +235,7 @@ module Make(O:Config)(M:XXXMem.S) =
       let check = check_prop test in
 
       fun conc fsc (set_pp,vbpp) flags c ->
-        if loop && S.gone_toofar conc then { c with toofar = true; }
+        if not showtoofar && loop && S.gone_toofar conc then { c with toofar = true; }
         else if do_observed && not (all_observed test conc) then c
         else if
           match O.throughflag with
@@ -332,7 +333,7 @@ module Make(O:Config)(M:XXXMem.S) =
                 if O.outcomereads then
                   A.LocSet.union (PU.all_regs_that_read conc.S.str) c.reads
                 else c.reads;
-              toofar = c.toofar;
+              toofar =  c.toofar || (showtoofar && S.gone_toofar conc);
             } in
           if not O.badexecs && is_bad flags then raise (Over r) ;
           let r = match O.nshow with
