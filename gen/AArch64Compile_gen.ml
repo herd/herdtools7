@@ -109,7 +109,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let ldr_mixed r1 r2 sz o =
       let open MachSize in
       match sz with
-      | Byte -> I_LDRBH (B,r-1,r2,K o)
+      | Byte -> I_LDRBH (B,r1,r2,K o)
       | Short -> I_LDRBH (H,r1,r2,K o)
       | Word -> I_LDR (V32,r1,r2,K o)
       | Quad -> I_LDR (V64,r1,r2,K o)
@@ -122,7 +122,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let ldaxr r1 r2 = I_LDAR (vloc,AX,r1,r2)
     let sxtw r1 r2 = I_SXTW (r1,r2)
     let ldr_idx r1 r2 idx = I_LDR (vloc,r1,r2,RV (vloc,idx))
-    let ldg_idx r1 r2 idx = I_LDG (r1,r2,RV (vloc,idx))
 
     let ldr_mixed_idx v r1 r2 idx sz  =
       let open MachSize in
@@ -144,7 +143,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let stg r1 r2 = I_STG (r1,r2,K 0)
     let stlr r1 r2 = I_STLR (vloc,r1,r2)
     let str_idx r1 r2 idx = I_STR (vloc,r1,r2,RV (vloc,idx))
-    let stg_idx r1 r2 idx = I_STG (r1,r2,RV (vloc,idx))
     let stxr r1 r2 r3 = I_STXR (vloc,YY,r1,r2,r3)
     let stlxr r1 r2 r3 = I_STXR (vloc,LY,r1,r2,r3)
 

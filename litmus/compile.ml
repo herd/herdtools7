@@ -254,17 +254,6 @@ module A.LocMap = A.LocMap and
 type A.Out.t = A.Out.t and
 type P.code = MiscParser.proc * A.pseudo list)
     (C:XXXCompile_litmus.S with module A = A) =
-         (O:Config)
-         (A:Arch_litmus.S)
-         (T:Test_litmus.S with
-            module A.V = A.V and
-            type A.reg = A.reg and
-            type A.location = A.location and
-            module A.LocSet = A.LocSet and
-            module A.LocMap = A.LocMap and
-            type A.Out.t = A.Out.t and
-            type P.code = int * A.pseudo list)
-         (C:XXXCompile_litmus.S with module A = A) =
   struct
     open Printf
     open Constant

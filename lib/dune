@@ -6,6 +6,7 @@
 (menhir (modules ARMParser) (flags  --fixed-exception))
 (menhir (modules MIPSParser) (flags  --fixed-exception))
 (menhir (modules X86Parser) (flags  --fixed-exception))
+(menhir (modules X86_64Parser) (flags  --fixed-exception))
 (menhir (modules modelParser) (flags  --fixed-exception))
 (menhir (modules RISCVParser) (flags  --fixed-exception))
 (menhir (modules stateParser) (flags  --fixed-exception))

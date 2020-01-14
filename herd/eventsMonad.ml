@@ -674,12 +674,6 @@ and type evt_struct = E.event_structure) =
 
       module AM = A.Mixed(SZ)
 
-    module Mixed(SZ:ByteSize.S) = struct
-
-      let memtag = C.variant Variant.MemTag
-
-      module AM = A.Mixed(SZ)
-
       module Scalar = V.Cst.Scalar
       let def_size = Scalar.machsize
 
@@ -862,10 +856,6 @@ and type evt_struct = E.event_structure) =
       let initwrites =
         if A.is_mixed then initwrites_mixed else initwrites_non_mixed
 
-    end
-
-      let initwrites =
-        if A.is_mixed then initwrites_mixed else initwrites_non_mixed
     end
 
 (* Add an inequality constraint *)

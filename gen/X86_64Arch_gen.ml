@@ -64,6 +64,8 @@ module Make
 
   let varatom_dir _d f = f None
 
+  let atom_to_bank _ = Code.Ord
+
   module ValsMixed =
     MachMixed.Vals
       (struct

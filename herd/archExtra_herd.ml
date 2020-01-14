@@ -324,28 +324,6 @@ module Make(C:Config) (I:I) : S with module I = I
 
       let state_fold  f st x = State.fold f st x
 
-      module State =
-        MyMap.Make
-          (struct
-            type t = location
-            let compare = location_compare
-          end)
-
-      type state = v State.t
-
-      let state_empty = State.empty
-
-      let state_add st l v = State.add l v st
-
-      let state_is_empty = State.is_empty
-
-      let state_to_list st =
-        List.rev (State.fold (fun l v k -> (l,v)::k) st [])
-
-      let state_size st = State.fold (fun _ _ k -> 1+k) st 0
-
-      let state_fold  f st x = State.fold f st x
-
       let pp_nice_state st delim pp_bd =
         let bds =
           State.fold

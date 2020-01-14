@@ -42,9 +42,6 @@ type reg_part =
 type flag =
   | ZF | SF | CF
 
-type flag =
-  | ZF | SF | CF
-
 type reg =
   | RIP
   | Ireg of base_reg * reg_part
