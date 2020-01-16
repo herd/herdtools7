@@ -168,6 +168,10 @@ end = struct
     | TagAccess _ -> true
     | Access _ | Barrier _ | Commit _ | Amo _ | Fault _ | TooFar | Inv _ -> false
 
+  let is_inv = function
+    | Inv _ -> true
+    | TagAccess _|Access _|Amo _|Commit _|Barrier _ | Fault _ | TooFar -> false
+
   let is_fault = function
     | Fault _ -> true
     | TagAccess _|Access _|Amo _|Commit _|Barrier _ | TooFar | Inv _ -> false
