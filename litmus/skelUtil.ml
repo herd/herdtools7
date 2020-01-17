@@ -60,6 +60,7 @@ module Make
       val select_global : env -> (A.loc_global * CType.t) list
 
 (* Some dumping stuff *)
+      val register_type : A.location ->  CType.t -> CType.t
       val fmt_outcome : T.t -> (CType.base -> string) -> A.LocSet.t -> env -> string
 
 (* Locations *)
@@ -175,27 +176,14 @@ module Make
       let tr_out test = OutMapping.info_to_tr test.T.info
 
       let pp_loc tr_out loc =  match loc with
-      | A.Location_reg (proc,reg) ->
-          tr_out (sprintf "%i:%s" proc (A.pp_reg reg))
+      | A.Location_reg (proc,reg) -> tr_out (sprintf "%i:%s" proc (A.pp_reg reg))
       | A.Location_global s -> sprintf "%s" s
       | A.Location_deref (s,i) -> sprintf "%s[%i]" s i
 
+      let register_type _loc t = t (* Systematically follow given type *)
+
       let fmt_outcome test pp_fmt_base locs env =
         let tr_out = tr_out test in
-(*
-  let pp_fmt_base t = match Compile.get_fmt Cfg.hexa t with
-  | CType.Direct fmt ->
-  if Cfg.hexa then "0x%" ^ fmt else fmt
-  | CType.Macro fmt ->
-  (if Cfg.hexa then "0x%\"" else "%\"") ^ fmt ^ "\"" in
- *)
-        let register_type loc =
-          if A.arch = `X86_64 then
-            match loc with
-            | A.Location_reg (_,r) -> A.typeof r
-            | _ -> find_type loc env
-          else find_type loc env in
-
         let rec pp_fmt t = match t with
         | CType.Pointer _ -> "%s"
         | CType.Base t -> pp_fmt_base t
@@ -210,7 +198,7 @@ module Make
           (fun loc ->
             sprintf "%s=%s;"
               (pp_loc tr_out loc)
-              (pp_fmt (register_type loc)))
+              (pp_fmt (register_type loc (find_type loc env))))
           locs
 
 (* Locations *)
@@ -358,6 +346,7 @@ module Make
               O.oi "pp_hash(out,hash,g->verbose > 1,g->group);"
           end ;
 (* Print condition and witnesses *)
+          let pp_cond = sprintf "\"%s\"" (String.escaped (pp_cond test)) in
           if Cfg.kind then begin
             let to_check = match c with
             | ExistsState _ -> "p_true > 0"
@@ -374,11 +363,11 @@ module Make
                | ExistsState _ -> "p_false"
                | NotExistsState _|ForallStates _ -> "p_true")] ;
             EPF.fi
-              (sprintf "Condition %s is %%svalidated\n" (pp_cond test))
-              [sprintf "%s ? \"\" : \"NOT \"" "cond" ;] ;
+              "Condition %s is %svalidated\n"
+              [pp_cond ; sprintf "%s ? \"\" : \"NOT \"" "cond" ;] ;
           end else begin
             EPF.fi
-              (sprintf "\nCondition %s\n" (pp_cond test)) []
+              "\nCondition %s\n" [pp_cond ;]
           end ;
 
 (* Print meta-information *)

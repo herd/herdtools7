@@ -1,0 +1,25 @@
+TSO
+
+include "x86fences.cat"
+include "filters.cat"
+include "cos.cat"
+
+(* Uniproc check *)
+acyclic po-loc | rf | fr | co
+
+(* Atomic *)
+empty rmw & (fre;coe)
+
+(* GHB *)
+#implied barriers
+let poWR = [W];po;[R]
+let i1 = poWR;[A]
+let i2 = [A];poWR
+let implied = i1 | i2
+
+#ppo
+let ppo = [R];po;[R] | [M];po;[W] | [M];po;[MFENCE];po;[M] | implied
+
+let ghb = ppo | ((rfe | fr | co);sm)
+show sm\id as si
+acyclic ghb as tso

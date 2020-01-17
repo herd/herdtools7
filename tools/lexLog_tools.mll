@@ -78,6 +78,7 @@ let hexanum = "0x" hexa+
 let set = '{' (' '|','|('-'?(num|hexanum)))* '}'
 let alpha = [ 'a'-'z' 'A'-'Z']
 let name = alpha (alpha|digit| '.')*
+let reg = name
 let loc = name | ('$' (alpha+|digit+))
 let blank = [' ' '\t']
 let testname  = (alpha|digit|'_' | '/' | '.' | '-' | '+' | '[' | ']')+
@@ -171,7 +172,7 @@ and skip_empty_lines = parse
 
 and pline k = parse
 | blank*
- ((num ':' loc as loc)|(('['?) (loc as loc) ( ']'?))|(loc '[' num ']' as loc))
+ ((num ':' reg as loc)|(('['?) (loc as loc) ( ']'?))|(loc '[' num ']' as loc))
     blank* '=' blank* (('-' ? (num|hexanum))|(name(':'name)?)|set as v)
     blank* ';'
     {
@@ -183,7 +184,7 @@ and pline k = parse
 
 and skip_pline = parse
 | blank*
- ((num ':' loc)|(('['?) (loc) ( ']'?))|(loc '[' num ']'))
+ ((num ':' reg)|(('['?) (loc) ( ']'?))|(loc '[' num ']'))
     blank* '=' blank* (('-' ? (num|hexanum))|name|set)
     blank* ';'
     { skip_pline lexbuf }

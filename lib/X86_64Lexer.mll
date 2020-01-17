@@ -35,7 +35,10 @@ rule token = parse
 | '$' ('-'? num as x) { INTEL_NUM x }
 | 'P' (num as x)
     { PROC (int_of_string x) }
-| '%' (name as name) { SYMB_REG name }
+| '%' (name as name)
+    { match X86_64.parse_anyreg name with
+    | Some r -> ARCH_REG r
+    | None -> SYMB_REG name }
 | ';' { SEMI }
 | ',' { COMMA }
 | '|' { PIPE }
@@ -112,7 +115,7 @@ rule token = parse
 | "mfence"|"MFENCE"   { I_MFENCE }
 | "setnb"|"SETNB"       { I_SETNB }
 | name as x
-  { match X86_64.parse_reg x with
+  { match X86_64.parse_anyreg x with
   | Some r -> ARCH_REG r
   | None -> NAME x }
 | eof { EOF }

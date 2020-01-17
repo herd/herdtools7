@@ -88,6 +88,8 @@ maybev_label:
 location_reg:
 | PROC COLON reg  {Location_reg ($1,$3)}
 | NUM COLON reg   {Location_reg (Misc.string_as_int $1,$3)}
+| PROC COLON SYMB_REG  {Location_reg ($1,$3)}
+| NUM COLON SYMB_REG   {Location_reg (Misc.string_as_int $1,$3)}
 | SYMB_REG        {Location_sreg $1 }
 /* PTX registers */
 | NUM COLON PTX_REG_DEC PTX_REG_TYPE reg

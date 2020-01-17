@@ -869,12 +869,7 @@ module Make
       let dump_cond_fun_call test dump_loc dump_val =
         DC.funcall test.T.condition dump_loc dump_val
 
-      let register_type loc t =
-          if A.arch = `X86_64 then
-             match loc with
-             | A.Location_reg (_,r) -> A.typeof r
-             | _ -> t
-          else t
+      let register_type loc t = U.register_type loc t
 
       let dump_defs_outs doc env test =
         (* If some of the output registers is of pointer type,

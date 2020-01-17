@@ -115,6 +115,9 @@ let map_string f s =
   done ;
   Buffer.contents b
 
+let fmt_percent s = map_string (function | '%' -> "%%" | c -> String.make 1 c) s
+
+
 let opt_compare cmp x y = match x,y with
 | None,None -> 0
 | None,Some _ -> -1

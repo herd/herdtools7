@@ -26,6 +26,7 @@ let tr_prec = function
 let digit = ['0'-'9']
 let num = '-'? digit+
 let sp = ' '*
+
 rule main k = parse
 | "%%" { main (Percent::k) lexbuf }
 | '%'
@@ -70,5 +71,9 @@ and lexconv pad = parse
 | "" { failwith ("lexFmt: lexconv") }
 
 {
-let lex s = main [] (Lexing.from_string s)
+ let lex s =
+   try main [] (Lexing.from_string s)
+   with e ->
+     Printf.eprintf "LexFmt.lex failed on '%s'\n" s ;
+     raise e
 }

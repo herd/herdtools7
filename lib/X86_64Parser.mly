@@ -244,6 +244,7 @@ rm64:
   |  k LPAR reg RPAR {X86_64.Rm64_deref ($3, Misc.string_as_int $1)}
   |  k LBRK reg RBRK {X86_64.Rm64_deref ($3, Misc.string_as_int $1)}
   |  LBRK NAME RBRK {X86_64.Rm64_abs (Constant.mk_sym $2)}
+  |  LPAR NAME RPAR {X86_64.Rm64_abs (Constant.mk_sym $2)}
   |  LBRK NUM RBRK {X86_64.Rm64_abs (Constant.Concrete $2)}
 
 operand:

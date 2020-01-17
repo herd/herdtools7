@@ -15,10 +15,12 @@
 (****************************************************************************)
 
 module Make
-         (C:sig
-              val naturalsize : MachSize.sz
-              val fullmixed : bool
-            end) = struct
+    (C:sig
+      val naturalsize : MachSize.sz
+      val fullmixed : bool
+    end) = struct
+
+  open Printf
   open Code
   include X86_64Base
   let tr_endian = Misc.identity
@@ -33,38 +35,67 @@ module Make
 
   let bellatom = false
 
-  type atom = Atomic | Mixed of MachMixed.t
+  type atom_acc = Plain | Atomic
+  type atom = atom_acc * MachMixed.t option
 
-  let default_atom = Atomic
+  let default_atom = Atomic,None
 
   let applies_atom a d = match a,d with
-    | Atomic, Code.W | Mixed _, (Code.W|Code.R) -> true
-    | _,_ -> false
+  | ((Atomic,_),Code.W)
+  | ((Plain,_), (Code.W|Code.R)) -> true
+  | ((Atomic,_),Code.R)
+  | (_,Code.J)-> false
 
   let compare_atom = compare
-
-  let merge_atoms a1 a2 = if a1 = a2 then Some a1 else None
 
   let pp_plain = Code.plain
 
   let pp_as_a = None
 
-  let pp_atom = function
-    | Atomic -> "A"
-    | Mixed mix -> Mixed.pp_mixed mix
+  let pp_atom_acc = function
+  | Atomic -> "A" | Plain -> ""
 
-  let fold_mixed f r = Mixed.fold_mixed (fun mix r -> f (Mixed mix) r) r
-  let fold_non_mixed f k = f Atomic k
+  let pp_atom = function
+    | a,None -> pp_atom_acc a
+    | a,Some m -> sprintf "%s%s" (pp_atom_acc a) (Mixed.pp_mixed m)
+
+  let fold_mixed f r =
+    Mixed.fold_mixed (fun mix r -> f (Plain,Some mix) r) r
+
+  let fold_acc f k = f Atomic k
+
+  let fold_non_mixed f r = fold_acc (fun acc r -> f (acc,None) r) r
 
   let fold_atom f r =
-    let r = fold_mixed f r in
-    fold_non_mixed f r
+    fold_acc
+      (fun acc r ->
+        Mixed.fold_mixed
+          (fun m r -> f (acc,Some m) r)
+          (f (acc,None) r))
+      (fold_mixed f r)
 
   let worth_final _ = true
 
   let varatom_dir _d f = f None
 
-  let atom_to_bank _ = Code.Ord
+   let merge_atoms a1 a2 = match a1,a2 with
+   | ((Plain,sz),(a,None))
+   | ((a,None),(Plain,sz)) -> Some (a,sz)
+   | ((a1,None),(a2,sz))
+   | ((a1,sz),(a2,None)) when a1=a2 -> Some (a1,sz)
+   | ((Plain,sz1),(a,sz2))
+   | ((a,sz1),(Plain,sz2)) when sz1=sz2 -> Some (a,sz1)
+   | _,_ -> if a1=a2 then Some a1 else None
+
+   let atom_to_bank _ = Code.Ord
+
+(**************)
+(* Mixed size *)
+(**************)
+
+  let tr_value ao v = match ao with
+    | None | Some ((Plain|Atomic),None) -> v
+    | Some ((Plain|Atomic), Some (sz, _)) -> Mixed.tr_value sz v
 
   module ValsMixed =
     MachMixed.Vals
@@ -73,18 +104,14 @@ module Make
         let endian = endian
       end)
 
-  let tr_value ao v = match ao with
-    | None | Some (Atomic) -> v
-    | Some (Mixed (sz, _)) -> Mixed.tr_value sz v
-
   let overwrite_value v ao w = match ao with
-    | None | Some (Atomic) -> w
-    | Some (Mixed (sz, o)) ->
+    | None | Some ((Plain|Atomic),None) -> w
+    | Some ((Plain|Atomic),Some (sz, o)) ->
        ValsMixed.overwrite_value v sz o w
 
   let extract_value v ao = match ao with
-    | None | Some (Atomic) -> v
-    | Some (Mixed (sz, o)) ->
+    | None | Some ((Plain|Atomic),None) -> v
+    | Some ((Plain|Atomic),Some (sz, o)) ->
        ValsMixed.extract_value v sz o
 
   (**********)

@@ -92,6 +92,7 @@ module Make(O:Config)(A:Arch_tools.S) =
     let pp_arch a =
       match a with
       | `PPC -> "POWER"
+      | `X86_64 -> "X86\\_64"
       | _ -> Archs.pp a
 
     let pp_prog chan prog test initial_opt finals_opt show_po =

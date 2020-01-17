@@ -137,19 +137,48 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let emit_store st p init addr v =
       emit_store_mixed mach_size 0 st p init addr v
 
-    let emit_sta addr r v =
-      let r = change_size_reg r size_reg_part in
+    let emit_sta sz addr r v =
+      let rsz = size_to_reg_size sz
+      and isz = size_to_inst_size sz in
+      let r = change_size_reg r rsz in
       [
         I_EFF_OP
-          (I_MOV, size,
+          (I_MOV, isz,
            Effaddr_rm64 (Rm64_reg r), Operand_immediate v);
         I_EFF_EFF
-          (I_XCHG, size,
+          (I_XCHG, isz,
            Effaddr_rm64 (Rm64_abs (ParsedConstant.nameToV addr)),
            Effaddr_rm64 (Rm64_reg r))
       ]
 
-    and emit_cmp_zero_ins r =
+    let emit_sta_mixed sz o st p init addr v =
+      let rsz = size_to_reg_size sz
+      and isz = size_to_inst_size sz in
+      let r64,st = next_reg st in
+      let r = change_size_reg r64 rsz in
+      let imov =
+        I_EFF_OP
+          (I_MOV, isz, Effaddr_rm64 (Rm64_reg r), Operand_immediate v) in
+      let init,iexch,st =
+        match o with
+        | 0 ->
+            let iexch =
+              I_EFF_EFF
+              (I_XCHG, isz,
+               Effaddr_rm64 (Rm64_abs (ParsedConstant.nameToV addr)),
+               Effaddr_rm64 (Rm64_reg r)) in
+          init,iexch,st
+      | _ ->
+          let rbase,init,st = U.next_init st p init addr in
+          let iexch =
+            I_EFF_EFF
+              (I_XCHG, isz,
+               Effaddr_rm64 (Rm64_deref (rbase,o)),
+               Effaddr_rm64 (Rm64_reg r)) in
+          init,iexch,st in
+      r64,init,pseudo [imov;iexch;],st
+
+    let emit_cmp_zero_ins r =
       let r = change_size_reg r size_reg_part in
       I_EFF_OP
         (I_CMP, size, Effaddr_rm64 (Rm64_reg r), Operand_immediate 0)
@@ -236,24 +265,28 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
             begin match d with
             | R ->
                begin match e.C.atom with
-               | None ->
+               | None|Some (Plain,None) ->
                   let r,init,cs,st = emit_load st _p init loc  in
                   Some r,init, cs,st
-               | Some Atomic ->
+               | Some (Atomic,_) ->
                   Warn.fatal "No atomic load for X86_64"
-               | Some (Mixed (sz, o)) ->
+               | Some (Plain,Some (sz, o)) ->
                   let r,init,cs,st = emit_load_mixed sz o st _p init loc  in
                   Some r,init,cs,st
                end
             | W ->
                begin match e.C.atom with
-               | None ->
+               | None|Some (Plain,None) ->
                   let init,cs,st = emit_store st _p init loc e.C.v in
                   None,init,cs,st
-               | Some Atomic ->
-                  let rX,st = next_reg st in
-                  None,init,pseudo (emit_sta loc rX e.C.v), st
-               | Some (Mixed (sz, o)) ->
+               | Some (Atomic,None) ->
+                   let rX,st = next_reg st in
+                   Some rX,init,pseudo (emit_sta mach_size loc rX e.C.v), st
+               | Some (Atomic,Some (sz,o)) ->
+                   let _r,init,cs,st =
+                     emit_sta_mixed sz o st _p init loc e.C.v in
+                  None,init,cs,st
+               | Some (Plain,Some (sz, o)) ->
                   let init,cs,st = emit_store_mixed sz o st _p init loc e.C.v in
                   None,init,cs,st
                end
@@ -265,7 +298,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let emit_exch st _p init er ew =
       let rA,st = next_reg st in
       rA,init,
-      pseudo  (emit_sta (Code.as_data er.C.loc) rA ew.C.v),
+      pseudo  (emit_sta mach_size (Code.as_data er.C.loc) rA ew.C.v),
       st
 
     let emit_rmw () st p init er ew  =

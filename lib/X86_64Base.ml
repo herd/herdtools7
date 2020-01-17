@@ -21,7 +21,7 @@ open Printf
 (* Who am I ? *)
 let arch = Archs.x86_64
 let endian = Endian.Little
-let base_type = CType.Base "uint64_t"
+let base_type = CType.Base "int"
 
 (*************)
 (* Registers *)
@@ -53,96 +53,92 @@ let loop_idx = Internal 0
 let sig_cell = "sig_cell"
 
 let pc = RIP
-
-let gen_regs =
-  [
+let gen_regs64 =
+    [
 (* 64b registers *)
-    (AX, R64b), "RAX";
-    (BX, R64b), "RBX";
-    (CX, R64b), "RCX";
-    (DX, R64b), "RDX";
-    (SI, R64b), "RSI";
-    (DI, R64b), "RDI";
-    (BP, R64b), "RBP";
-    (SP, R64b), "RSP";
-    (R8, R64b), "R8";
-    (R9, R64b), "R9";
-    (R10, R64b), "R10";
-    (R11, R64b), "R11";
-    (R12, R64b), "R12";
-    (R13, R64b), "R13";
-    (R14, R64b), "R14";
-    (R15, R64b), "R15";
+    (AX, R64b), "rax";
+    (BX, R64b), "rbx";
+    (CX, R64b), "rcx";
+    (DX, R64b), "rdx";
+    (SI, R64b), "rsi";
+    (DI, R64b), "rdi";
+    (BP, R64b), "rbp";
+    (SP, R64b), "rsp";
+    (R8, R64b), "r8";
+    (R9, R64b), "r9";
+    (R10, R64b), "r10";
+    (R11, R64b), "r11";
+    (R12, R64b), "r12";
+    (R13, R64b), "r13";
+    (R14, R64b), "r14";
+    (R15, R64b), "r15";
+   ]
+let gen_regs =
+  gen_regs64 @
+  [
 (* 32b registers *)
-    (AX, R32b), "EAX";
-    (BX, R32b), "EBX";
-    (CX, R32b), "ECX";
-    (DX, R32b), "EDX";
-    (SI, R32b), "ESI";
-    (DI, R32b), "EDI";
-    (BP, R32b), "EBP";
-    (SP, R32b), "ESP";
-    (R8, R32b), "R8D";
-    (R9, R32b), "R9D";
-    (R10, R32b), "R10D";
-    (R11, R32b), "R11D";
-    (R12, R32b), "R12D";
-    (R13, R32b), "R13D";
-    (R14, R32b), "R14D";
-    (R15, R32b), "R15D";
+    (AX, R32b), "eax";
+    (BX, R32b), "ebx";
+    (CX, R32b), "ecx";
+    (DX, R32b), "edx";
+    (SI, R32b), "esi";
+    (DI, R32b), "edi";
+    (BP, R32b), "ebp";
+    (SP, R32b), "esp";
+    (R8, R32b), "r8d";
+    (R9, R32b), "r9d";
+    (R10, R32b), "r10d";
+    (R11, R32b), "r11d";
+    (R12, R32b), "r12d";
+    (R13, R32b), "r13d";
+    (R14, R32b), "r14d";
+    (R15, R32b), "r15d";
 (* 16b registers *)
-    (AX, R16b), "AX";
-    (BX, R16b), "BX";
-    (CX, R16b), "CX";
-    (DX, R16b), "DX";
-    (SI, R16b), "SI";
-    (DI, R16b), "DI";
-    (BP, R16b), "BP";
-    (SP, R16b), "SP";
-    (R8, R16b), "R8W";
-    (R9, R16b), "R9W";
-    (R10, R16b), "R10W";
-    (R11, R16b), "R11W";
-    (R12, R16b), "R12W";
-    (R13, R16b), "R13W";
-    (R14, R16b), "R14W";
-    (R15, R16b), "R15W";
+    (AX, R16b), "ax";
+    (BX, R16b), "bx";
+    (CX, R16b), "cx";
+    (DX, R16b), "dx";
+    (SI, R16b), "si";
+    (DI, R16b), "di";
+    (BP, R16b), "bp";
+    (SP, R16b), "sp";
+    (R8, R16b), "r8w";
+    (R9, R16b), "r9w";
+    (R10, R16b), "r10w";
+    (R11, R16b), "r11w";
+    (R12, R16b), "r12w";
+    (R13, R16b), "r13w";
+    (R14, R16b), "r14w";
+    (R15, R16b), "r15w";
 (* 8 low bits registers *)
-    (AX, R8bL), "AL";
-    (BX, R8bL), "BL";
-    (CX, R8bL), "CL";
-    (DX, R8bL), "DL";
-    (SI, R8bL), "SIL";
-    (DI, R8bL), "DIL";
-    (BP, R8bL), "BPL";
-    (SP, R8bL), "SPL";
-    (R8, R8bL), "R8B";
-    (R9, R8bL), "R9B";
-    (R10, R8bL), "R10B";
-    (R11, R8bL), "R11B";
-    (R12, R8bL), "R12B";
-    (R13, R8bL), "R13B";
-    (R14, R8bL), "R14B";
-    (R15, R8bL), "R15B";
+    (AX, R8bL), "al";
+    (BX, R8bL), "bl";
+    (CX, R8bL), "cl";
+    (DX, R8bL), "dl";
+    (SI, R8bL), "sil";
+    (DI, R8bL), "dil";
+    (BP, R8bL), "bpl";
+    (SP, R8bL), "spl";
+    (R8, R8bL), "r8b";
+    (R9, R8bL), "r9b";
+    (R10, R8bL), "r10b";
+    (R11, R8bL), "r11b";
+    (R12, R8bL), "r12b";
+    (R13, R8bL), "r13b";
+    (R14, R8bL), "r14b";
+    (R15, R8bL), "r15b";
 (* 8 high bits registers *)
-    (AX, R8bH), "AH";
-    (BX, R8bH), "BH";
-    (CX, R8bH), "CH";
-    (DX, R8bH), "DH";
+    (AX, R8bH), "ah";
+    (BX, R8bH), "bh";
+    (CX, R8bH), "ch";
+    (DX, R8bH), "dh";
   ]
 
 let flag_string =
   [
-    Flag ZF, "ZF";
-    Flag SF, "SF";
-    Flag CF, "CF";
-  ]
-
-let flag_string =
-  [
-    Flag ZF, "ZF";
-    Flag SF, "SF";
-    Flag CF, "CF";
+    Flag ZF, "zf";
+    Flag SF, "sf";
+    Flag CF, "cf";
   ]
 
 (* Match reg size with its nae in GCC asm inline *)
@@ -154,21 +150,21 @@ let reg_size_to_string = function
   | R64b -> "q"
 
 let parse_list = List.map (fun ((r, t),s) -> s, Ireg (r, t)) gen_regs
+let parse_list64 = List.map (fun ((r, t),s) -> s, Ireg (r, t)) gen_regs64
 let regs = List.map (fun ((r, t),s) -> Ireg (r, t), s) gen_regs
 
 let reg_string r t =
   String.lowercase_ascii (List.assoc (Ireg (r, t)) regs)
+
 let reg64_string r = reg_string r R64b
 
 let parse_reg s =
-  try Some (List.assoc (String.uppercase_ascii s) parse_list)
+  try Some (List.assoc (Misc.lowercase s) parse_list64)
   with Not_found -> None
 
-let pp_reg r = match r with
-  | Symbolic_reg r -> "%"^r
-  | Internal i -> sprintf "i%i" i
-  | Flag _ -> (try List.assoc r flag_string with Not_found -> assert false)
-  | _ -> try List.assoc r regs with Not_found -> assert false
+let parse_anyreg s =
+  try Some (List.assoc (Misc.lowercase s) parse_list)
+  with Not_found -> None
 
 let reg_compare r1 r2 = match r1, r2 with
   | Ireg (b1, _), Ireg (b2, _) -> compare b1 b2
@@ -206,7 +202,7 @@ type barrier =
   | Mfence
 
 let pp_barrier b = match b with
-  | Mfence -> "MFENCE"
+  | Mfence -> "mfence"
 
 let barrier_compare = compare
 
@@ -272,32 +268,32 @@ type condition =
   | C_NS         (* Not sign *)
 
 let pp_inst_size = function
-  | I8b -> "B"
-  | I16b -> "W"
-  | I32b -> "L"
-  | I64b -> "Q"
+  | I8b -> "b"
+  | I16b -> "w"
+  | I32b -> "l"
+  | I64b -> "q"
   | INSb -> ""
 
 let pp_inst_eff_op inst size =
   let inst_string = match inst with
-    | I_ADD -> "ADD"
-    | I_OR -> "OR"
-    | I_XOR -> "XOR"
-    | I_MOV -> "MOV"
-    | I_CMP -> "CMP" in
+    | I_ADD -> "add"
+    | I_OR -> "or"
+    | I_XOR -> "xor"
+    | I_MOV -> "mov"
+    | I_CMP -> "cmp" in
   inst_string ^ pp_inst_size size
 
 let pp_inst_eff inst size =
   let inst_string = match inst with
-    | I_DEC -> "DEC"
-    | I_INC -> "INC"
-    | I_SETNB -> "SETNB" in
+    | I_DEC -> "dec"
+    | I_INC -> "inc"
+    | I_SETNB -> "setnb" in
   inst_string ^ pp_inst_size size
 
 let pp_inst_eff_eff inst size =
   let inst_string = match inst with
-    | I_XCHG -> "XCHG"
-    | I_XCHG_UNLOCKED -> "UXCH" in
+    | I_XCHG -> "xchg"
+    | I_XCHG_UNLOCKED -> "uxch" in
   inst_string ^ pp_inst_size size
 
 type instruction =
@@ -323,32 +319,62 @@ let pp_comma m = match m with
   | Latex -> "\\m "
   | DotFig -> "\\\\m "
 
+let pp_dollar m = match m with
+  | Ascii |Dot -> "$"
+  | Latex -> "\\$ "
+  | DotFig -> "\\\\$ "
+
+let pp_amper m = match m with
+  | Ascii |Dot -> "%"
+  | Latex -> "\\% "
+  | DotFig -> "\\\\% "
+
 type mm =
   {immediate : int -> string ;
-   comma : string ;}
+   comma : string ;
+   amper : string ; }
+
 
   let pp_condition = function
-    | C_EQ  -> "E"
-    | C_NE  -> "NE"
-    | C_LE  -> "LE"
-    | C_LT  -> "L"
-    | C_GT  -> "G"
-    | C_GE  -> "GE"
-    | C_S   -> "S"
-    | C_NS  -> "NS"
+    | C_EQ  -> "e"
+    | C_NE  -> "ne"
+    | C_LE  -> "le"
+    | C_LT  -> "l"
+    | C_GT  -> "g"
+    | C_GE  -> "ge"
+    | C_S   -> "s"
+    | C_NS  -> "ns"
 
   let pp_offset = function
     | 0 -> ""
     | a -> string_of_int a
 
 
+let ascii_m =
+ { immediate = (fun v -> "$" ^ string_of_int v) ;
+   comma = "," ; amper = "%"; }
+
+let do_pp_reg amper r = match r with
+  | Symbolic_reg r -> amper ^ r
+  | Internal i -> sprintf "i%i" i
+  | Flag _ -> (try List.assoc r flag_string with Not_found -> assert false)
+  | _ -> try List.assoc r regs with Not_found -> assert false
+
+let pp_reg r = do_pp_reg "%" r
+
+let rec do_pp_instruction (m : mm) =
+
+  let pp_reg r = match r with
+  | Symbolic_reg r -> m.amper ^ r
+  | Internal i -> sprintf "i%i" i
+  | Flag _ -> (try List.assoc r flag_string with Not_found -> assert false)
+  | _ -> try sprintf "%s%s" m.amper (List.assoc r regs) with Not_found -> assert false in
   let pp_rm64 rm64 =
     match rm64 with
     | Rm64_reg r -> pp_reg r
-    | Rm64_deref (r,o) -> pp_offset o ^ "[" ^ pp_reg r ^ "]"
-    | Rm64_abs v -> "[" ^ pp_abs v ^ "]"
+    | Rm64_deref (r,o) -> pp_offset o ^ "(" ^ pp_reg r ^ ")"
+    | Rm64_abs v -> "(" ^ pp_abs v ^ ")" in
 
-let rec do_pp_instruction (m : mm) =
   let pp_effaddr ea =  match ea with
     | Effaddr_rm64 rm64 -> pp_rm64 rm64 in
 
@@ -388,13 +414,11 @@ let rec do_pp_instruction (m : mm) =
 
 let pp_instruction m i =
   do_pp_instruction
-    {immediate = string_of_int ;
-     comma = pp_comma m ; } i
+    {immediate = (fun x -> pp_dollar m ^ string_of_int x) ;
+     comma = pp_comma m ;
+     amper = pp_amper m ; } i
 
-let dump_instruction =
-  do_pp_instruction
-    { immediate = (fun v -> "$" ^ string_of_int v) ;
-      comma = "," ; }
+let dump_instruction = do_pp_instruction ascii_m
 
 (****************************)
 (* Symbolic registers stuff *)
@@ -406,8 +430,6 @@ let reg_size_p size = function
 
 let allowed_for_symb_size size = List.filter (reg_size_p size)
                          (List.map (fun ((r, t),_) -> Ireg (r, t)) gen_regs)
-
-let allowed_for_symb = allowed_for_symb_size R64b
 
 let allowed_for_symb = allowed_for_symb_size R64b
 

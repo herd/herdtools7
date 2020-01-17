@@ -65,6 +65,8 @@ val option_map : ('a -> 'b option) -> 'a list -> 'b list
 val app_opt_def : 'b -> ('a -> 'b) -> 'a option -> 'b
 
 val map_string : (char -> string) -> string -> string
+val fmt_percent : string -> string
+
 val opt_compare : ('a -> 'a -> int) -> 'a option -> 'a option -> int
 val opt_eq : ('a -> 'a -> bool) -> 'a option -> 'a option -> bool
 val pair_compare :
