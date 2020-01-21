@@ -7,4 +7,5 @@ include "cos.cat"
 empty rmw & (fre;coe) as atom
 
 (* Sequential consistency *)
-acyclic po | fr | rf | co as sc
+show sm\id as si
+acyclic po | ((fr | rf | co);sm) as sc

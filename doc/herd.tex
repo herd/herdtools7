@@ -983,12 +983,12 @@ Expressions are evaluated by \herd, yielding a value.
 \alt \T{let} \boption{} \T{rec} \eoption \NT{binding} \brepet{} \T{and} \NT{binding} \erepet{} \T{in} \NT{expr}
 \alt \T{match} \NT{expr} \T{with} \NT{clauses} \T{end}
 \alt \T{(}\NT{expr}\T{)} \orelse  \T{begin} \NT{expr} \T{end}
-\alt \T{instructions} \NT{id}\NT{[taglist]}
+\alt \T{instructions} \NT{id}\T{[}\NT{taglist}\T{]}
 \sep
 \sep
 \NT{tag} \is \T{'} \NT{id}
 \sep
-\NT{taglist} \is \NT{tag, taglist}
+\NT{taglist} \is \NT{tag} \T{,} \NT{taglist}
 \sep
 \NT{pat} \is \NT{id} \orelse \T{(}\T{)} \orelse \T{(} \NT{id} \brepet{} \T{,} \NT{id} \erepet \T{)}
 \sep
@@ -1483,13 +1483,13 @@ The predefined sets of events \textrel{W}, \textrel{R}, \textrel{RMW},
 \textrel{F}, and \textrel{B} can be \emph{annotated} with user-defined tags
 (see Sec.~\ref{sec:enum}).
 
-The constructs:
+The construct :
 
 \begin{center}
-\T{instructions}\NT{id}\NT{[taglist]}  
+\T{instructions}\NT{id}\T{[}\NT{taglist}  \T{]}
 \end{center}
 
-take the identifier of a pre-defined set and a possibly empty, square bracketed
+takes the identifier of a pre-defined set and a possibly empty, square bracketed
 list of tags. 
 
 %jade@Luc: du coup il faudrait peut etre les distinguer dans la def des
@@ -1511,7 +1511,7 @@ between instructions TODO
 A model is a list of instructions preceded by an optional architecture
 specification and an optional comment.
 Architecture specification is a name that follows  \herd{} conventions for identifiers. Identifiers that are not valid architecture names, such as \texttt{AArch64}, \texttt{PPC} etc., are silently ignored.
-The following \synth{\NT{model-comment}} can be either a name or a string enclosed in double quotes~``\verb+"+''.
+The following \synt{\NT{model-comment}} can be either a name or a string enclosed in double quotes~``\verb+"+''.
 If only one name is present, it will act both as tentative architecture specification and as a comment.
 When present, model architecture specifications will be checked against test architectures, see also option~\ahrefloc{opt:archcheck}{\opt{-archcheck}}.
 
@@ -1523,7 +1523,7 @@ until one instruction stops, or until the end of the instruction list.
 In that latter case, the model accepts the execution.
 The accepted execution is then passed over to the rest of \herd{}
 engine, in order to collect final states of locations
-and to display pictures. Notice that the \synth{\NT{model-comment}} will appear
+and to display pictures. Notice that the \synt{\NT{model-comment}} will appear
 in those picture legends.
 
 \iffalse
