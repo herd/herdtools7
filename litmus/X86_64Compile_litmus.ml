@@ -161,11 +161,10 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
     let op_ea_ea memo ea1 ea2 =
       let ea1,(i,ins1),(o,outs1) = compile_ea_output 0 0 ea1 in
       let ea2,(_,ins2),(_,outs2) = compile_ea_output i o ea2 in
-(* For exchange, order of operands is irrelevant,
-   let us swap them anyway... good idea since operands
-   as asymmetric in practice (ea2 must be a reg) *)
+(* For exchange, order of operands is irrelevant.
+   Let us not swap them... *)
       { empty_ins with
-        memo = sprintf "%s %s,%s" memo ea2 ea1;
+        memo = sprintf "%s %s,%s" memo ea1 ea2;
         inputs = ins1@ins2;
         outputs = outs1@outs2; }
 

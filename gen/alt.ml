@@ -241,12 +241,24 @@ module Make(C:Builder.S)
       else fun _ _ -> true
 
     let do_compat safes po_safe xs ys =
+      (*
+      eprintf "do_compat '%s' '%s'\n"
+        (C.E.pp_edges xs)
+        (C.E.pp_edgesq ys) ;
+      *)
       let x = Misc.last xs and y = List.hd ys in
       C.E.can_precede x y && check_mixed x y && pair_ok safes po_safe xs ys x y
 
     let can_precede safes po_safe (_,xs) k = match k with
     | [] -> true
-    | (_,ys)::_ -> do_compat safes po_safe xs ys
+    | (_,ys)::_ ->
+        do_compat safes po_safe xs ys &&
+        begin match k with
+        | (_,[{edge=Id;_}])::(_,y::_)::_ when mixed ->
+            let x = Misc.last xs in
+            C.E.can_precede x y
+        | _ -> true
+        end
 
     let pp_ess ess =
       String.concat " "
@@ -338,8 +350,16 @@ module Make(C:Builder.S)
             (n = 0 || (n > 0 && O.upto)) &&
             can_prefix prefix (can_precede safes po_safe) suff
           then begin
-            try f0 po_safe (prefix@suff) k
-            with  Misc.Exit|Misc.Fatal _|Misc.UserError _ -> k
+            let tr =  prefix@suff in
+(*
+            eprintf "TRY: '%s'\n"
+              (C.E.pp_edges (List.flatten (List.map snd tr))) ;
+*)
+            try f0 po_safe tr k
+            with  Misc.Exit -> k
+            | Misc.Fatal msg |Misc.UserError msg ->
+                eprintf "Marche pas: '%s'\n" msg ;
+                k
             | e ->
               eprintf "Exc in F0: '%s'\n" (Printexc.to_string e) ;
               raise e

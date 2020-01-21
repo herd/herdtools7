@@ -154,12 +154,20 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let emit_sta_mixed sz o st p init addr v =
       let rsz = size_to_reg_size sz
       and isz = size_to_inst_size sz in
+      let r_opt,init,st = U.emit_const st p init v in
       let r64,st = next_reg st in
       let r = change_size_reg r64 rsz in
       let imov =
-        I_EFF_OP
-          (I_MOV, isz, Effaddr_rm64 (Rm64_reg r), Operand_immediate v) in
-      let init,iexch,st =
+        match r_opt with
+        | None ->
+            I_EFF_OP
+              (I_MOV, isz, Effaddr_rm64 (Rm64_reg r), Operand_immediate v)
+        | Some rc ->
+            let rc = change_size_reg rc rsz in
+            I_EFF_OP
+              (I_MOV, isz, Effaddr_rm64 (Rm64_reg r),
+               Operand_effaddr (Effaddr_rm64 (Rm64_reg rc))) in
+    let init,iexch,st =
         match o with
         | 0 ->
             let iexch =
@@ -283,9 +291,9 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
                    let rX,st = next_reg st in
                    Some rX,init,pseudo (emit_sta mach_size loc rX e.C.v), st
                | Some (Atomic,Some (sz,o)) ->
-                   let _r,init,cs,st =
+                   let r,init,cs,st =
                      emit_sta_mixed sz o st _p init loc e.C.v in
-                  None,init,cs,st
+                  Some r,init,cs,st
                | Some (Plain,Some (sz, o)) ->
                   let init,cs,st = emit_store_mixed sz o st _p init loc e.C.v in
                   None,init,cs,st
