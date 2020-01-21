@@ -1,0 +1,12 @@
+"UNIPROC+SCA"
+
+include "cos.cat"
+
+(* reflexive same memory access *)
+let si = sm
+
+irreflexive co;si;co;si as sca
+irreflexive rf;si;fr;si as sca
+acyclic po-loc | rf | fr | co as uniproc
+
+show si\id as si
