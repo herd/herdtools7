@@ -169,11 +169,11 @@ let get_nprocs a cfg = match cfg.nprocs with
     begin
       match a with
       | `PPC -> 4
-      | `X86 -> 2
-      | `ARM -> 2
-      | `MIPS -> 2
-      | `LISA -> 2
-      | `AArch64 -> 2
+      | `X86|`X86_64
+      | `ARM
+      | `MIPS
+      | `LISA
+      | `AArch64
       | `RISCV -> 2
       | `C | `CPP -> 2
     end
