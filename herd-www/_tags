@@ -1,5 +1,6 @@
 true: dtypes
 true: safe_string
+true: use_menhir
 <herd>: include
 <lib>: include
 <{webInput,jerd,catIncludes}.{ml,byte}>:package(str), \

@@ -32,6 +32,7 @@ let load_config s =
         let includes = !includes
         let env = None
         let libdir = Version.libdir
+        let debug = false
       end) in
   let found = ML.find s in
   LexConf_herd.lex found
@@ -90,6 +91,7 @@ let run_herd bell cat litmus cfg =
         let includes = !includes
         let env = None
         let libdir = Version.libdir
+        let debug = false
       end) in
 
  let libfind = ML.find in
@@ -142,6 +144,7 @@ let run_herd bell cat litmus cfg =
     let showkind = !showkind
     let shortlegend = !shortlegend
     let model = model
+    let archcheck = !archcheck
     let through = !through
     let skipchecks = !skipchecks
     let strictskip = !strictskip
@@ -178,13 +181,13 @@ let run_herd bell cat litmus cfg =
       | Some (Model.Minimal b) -> b
       | Some (Model.Generic _|Model.File _) -> false
       | _ -> false
-     let variant = !variant
+    let variant = !variant
+    let precision = !precision
     let byte = !byte
     let endian = !endian
     let outputdir = !outputdir
     let suffix = !suffix
     let dumpes = !dumpes
-    let moreedges = !moreedges
 
     module PC = struct
       let debug = debug.Debug_herd.pretty
