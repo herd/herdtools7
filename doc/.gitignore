@@ -3,12 +3,15 @@
 /*.fig
 /*.tar
 /BASIC-img/
+/BASIC-src/
 /MPPOSS-img/
+/MPPOSS-src/
 /html/
 /pdf/
 
 # There are some files with these extensions in git, so we can't use wildcards
 # @todo Use a separate build directory and .gitignore it instead of ignoring patterns.
+/LB.dot
 /6.SB.dot
 /CoRWR.dot
 /IRIW+lwsyncs+APOIL.dot
