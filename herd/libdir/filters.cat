@@ -16,7 +16,7 @@ and MM(r) = r & (M * M)
 and AA(r) = r & (A * A)
 and AP(r) = r & (A * P)
 and PA(r) = r & (P * A)
-and PP(r) = r * (P * P)
+and PP(r) = r & (P * P)
 and AM(r) = r & (A * M)
 and MA(r) = r & (M * A)
 
