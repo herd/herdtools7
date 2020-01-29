@@ -256,11 +256,11 @@ module Make
         else
           mop ma >>! B.Next
 
-      let do_str sz an rs ma ii f =
+      let do_str sz an rs ma ii =
         lift_memop
           (fun ma ->
             (ma >>| read_reg_data sz rs ii) >>= fun (a,v) ->
-            f (do_write_mem sz an a v ii))
+            do_write_mem sz an a v ii)
           ma ii
 
       let do_ldr sz an rd ma ii =
