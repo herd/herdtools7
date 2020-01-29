@@ -21,3 +21,7 @@ ocb-clean:
 
 dune-clean:
 	dune clean
+
+versions:
+	@ sh ./version-gen.sh $(PREFIX)
+	@ dune build --workspace dune-workspace.versions @all
