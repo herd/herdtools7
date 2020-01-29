@@ -21,7 +21,7 @@ module Make
     end) = struct
 
   open Printf
-  open Code
+
   include X86_64Base
   let tr_endian = Misc.identity
 

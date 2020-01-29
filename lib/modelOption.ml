@@ -26,7 +26,7 @@ let pp_opt tag default b =
   else
     sprintf "%s%s" (if b then "with" else "without") tag
 
-let pp { co; init; } =
+let pp { co; init; _ } =
   let pp =
     [pp_opt "co" default.co co;
      pp_opt "init" default.init init;] in

@@ -16,8 +16,8 @@
 
 (** Extract list of names from log(s), only names with successfull outcomes
     are listed *)
+
 open Printf
-open LogState
 
 let verbose = ref 0
 let logs = ref []

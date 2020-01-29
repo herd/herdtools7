@@ -16,10 +16,15 @@
 
 module Make(O:sig val memory : Memory.t val hexa : bool end) = struct
   module V = Int32Constant
-  include CBase
 
-  type reg = string
-  type instruction = unit
+  module type SmallBase = sig
+    val base_type : CType.t
+
+    type reg = string
+    type instruction
+  end
+
+  include (CBase : SmallBase)
 
   module RegSet = StringSet
   module RegMap = StringMap

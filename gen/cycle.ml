@@ -348,14 +348,6 @@ let same_proc e = E.get_ie e = Int
 let diff_proc e = E.get_ie e = Ext
 
 (* Coherence definition *)
-let rec count_ws = function
-  | [] -> 0
-  | n::ns -> match n.evt.dir with
-    | Some W -> 1+count_ws ns
-    | Some R|Some J|None -> count_ws ns
-
-let () = ignore (count_ws)
-
 module CoSt = MyMap.Make(struct type t = Code.bank let compare = compare end)
 
 let co_st_0  = CoSt.add Ord 0 (CoSt.add Tag 0 CoSt.empty)
