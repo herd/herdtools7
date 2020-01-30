@@ -218,7 +218,7 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
         | I_CMPXCHG (size, _, _) -> "CMPXCHG" ^ pp_inst_size size
         | _ -> assert false
       in
-           String.lowercase_ascii inst_str
+           Misc.lowercase inst_str
 
     let rec do_compile_ins tr_lab ins = match ins with
    | I_NOP ->

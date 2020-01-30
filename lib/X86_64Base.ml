@@ -153,8 +153,7 @@ let parse_list = List.map (fun ((r, t),s) -> s, Ireg (r, t)) gen_regs
 let parse_list64 = List.map (fun ((r, t),s) -> s, Ireg (r, t)) gen_regs64
 let regs = List.map (fun ((r, t),s) -> Ireg (r, t), s) gen_regs
 
-let reg_string r t =
-  String.lowercase_ascii (List.assoc (Ireg (r, t)) regs)
+let reg_string r t = List.assoc (Ireg (r, t)) regs
 
 let reg64_string r = reg_string r R64b
 
