@@ -18,7 +18,8 @@ install: ["sh" "./dune-install.sh" "%{prefix}%"]
 # @todo Add "build-doc" field
 # @todo Add "build-test" field
 depends: [
-  "ocaml" {>= "4.02.0"}
-  "dune"
+  "ocaml" {>= "4.05.0"}
+  "dune"  {>= "1.2" }
+  "ocamlfind" { build }
   "menhir" {>= "20180530"}
 ]
