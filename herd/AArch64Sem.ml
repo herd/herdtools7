@@ -60,6 +60,10 @@ module Make
         | V32 -> fun v -> M.op1 (Op.Mask MachSize.Word) v >>= m
         | V64 -> m
 
+      let flip_flag v = M.op Op.Xor v V.one
+      let is_zero v = M.op Op.Eq v V.zero
+      let is_not_zero v = M.op Op.Ne v V.zero
+
 
 (* Basic read, from register *)
       let mk_read sz an loc v = Act.Access (Dir.R, loc, v, an, sz)
@@ -175,9 +179,23 @@ module Make
 
 
 (* Old read_mem that returns value read *)
+      let ptw a sz ii =
+        M.op1 Op.PTELoc a >>= fun pte_a ->
+        (*old_do_read_mem sz AArch64.NExp pte_a ii >>=*)
+        M.read_loc false (mk_read sz AArch64.NExp) (A.Location_global pte_a) ii >>=
+        fun pte_v ->
+          is_zero pte_v (*INV*) >>= fun pte_inv ->
+          M.choiceT pte_inv
+            (mk_fault pte_a ii(* >>! B.Next*))
+            ((*f*) pte_v (*>>! B.Next*))
+
       let old_do_read_mem sz an a ii =
         if mixed then begin
           Mixed.read_mixed false sz (fun sz -> mk_read sz an) a ii
+        end else
+        if kvm then
+          begin 
+            ptw a sz ii >>= fun pte_v -> pte_v 
         end else
           M.read_loc false (mk_read sz an) (A.Location_global a) ii
 
@@ -197,7 +215,11 @@ module Make
       let do_write_mem sz an a v ii =
         if mixed then begin
           Mixed.write_mixed sz (fun sz -> mk_write sz an) a v ii
-        end else write_loc sz an (A.Location_global a) v ii
+        end else 
+        if kvm then begin 
+            ptw a sz ii >>= fun pte_v -> write_loc sz an pte_v v ii
+        end else
+          write_loc sz an (A.Location_global a) v ii
 
       let write_mem sz = do_write_mem sz AArch64.N
       let write_mem_release sz = do_write_mem sz AArch64.L
@@ -266,37 +288,28 @@ module Make
       let do_ldr sz an rd ma ii =
           lift_memop
             (fun ma -> ma >>= fun a ->
-             old_do_read_mem sz an a ii >>= fun v ->
-             write_reg rd v ii )
+               old_do_read_mem sz an a ii >>= fun v -> write_reg rd v ii) 
           ma ii
 
-      let ptw a sz ii f = 
-        M.op1 Op.PTELoc a >>= fun pte_a -> 
-        old_do_read_mem sz AArch64.NExp pte_a ii >>= 
-        fun pte_v ->
-          is_zero pte_v (*INV*) >>= fun pte_inv ->
-          M.choiceT pte_inv 
-            (mk_fault pte_a ii >>! B.Next)           
-            (f pte_v >>! B.Next)
-
-     let do_str_ptw sz an rs ma ii =
+(*     let do_str_ptw sz an rs ma ii =
         (ma >>| read_reg_data sz rs ii) >>= fun (a,v) -> 
         ptw a sz ii (fun pte_v -> do_write_mem sz an pte_v v ii)
 
-      let do_ldr_ptw sz rd ma ii =
+       let do_ldr_ptw sz rd ma ii =
         ma >>= fun a -> 
-        ptw a sz ii (fun pte_v -> write_reg rd pte_v ii)
+        ptw a sz ii (fun pte_v -> write_reg rd pte_v ii) >>! B.Next
+*)
 
       let ldr sz rd rs kr ii =
-        if kvm then 
+(*        if kvm then 
           do_ldr_ptw sz rd (get_ea rs kr ii) ii
-        else
+        else *)
           do_ldr sz AArch64.N rd (get_ea rs kr ii) ii
 
       and str sz rs rd kr ii = 
-        if kvm then
+ (*       if kvm then
           do_str_ptw sz AArch64.N rs (get_ea rd kr ii) ii
-        else 
+        else *) 
           do_str sz AArch64.N rs (get_ea rd kr ii) ii
 
       and stlr sz rs rd ii = do_str sz AArch64.L rs (read_reg_ord rd ii) ii
