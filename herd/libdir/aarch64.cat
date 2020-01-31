@@ -117,7 +117,7 @@ let aob = rmw
 	| [range(rmw)]; lrs; [A | Q]
 
 (* Barrier-ordered-before *)
-let bob = po; [dmb.full]; po
+let bob = po; [dmb.full]; po 
         | po; ([A];amo;[L]); po
 	| [L]; po; [A]
 	| [R\NoRet]; po; [dmb.ld]; po
