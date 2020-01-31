@@ -37,5 +37,11 @@ module type S =
     include ArchExtra_herd.S with module I.V = V
     and type I.arch_reg = reg
     and type I.arch_instruction = instruction
-   end
+
+    module TLBI : 
+    sig 
+      type op 
+      val pp_op : op -> string
+    end
+  end
       

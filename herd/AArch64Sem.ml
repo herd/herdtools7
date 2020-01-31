@@ -115,8 +115,8 @@ module Make
       let create_barrier b ii = M.mk_singleton_es (Act.Barrier b) ii
 
 (* Page tables and TLBs *)
-      let mk_inv loc = Act.Inv loc
-      let inv_loc loc ii = M.mk_singleton_es (mk_inv loc) ii
+      let mk_inv op loc = Act.Inv(op,loc)
+      let inv_loc op loc ii = M.mk_singleton_es (mk_inv op loc) ii
 
 (******************)
 (* Memory Tagging *)
@@ -179,7 +179,7 @@ module Make
 
 
 (* Old read_mem that returns value read *)
-      let ptw a sz ii =
+      let ptw a sz ii f =
         M.op1 Op.PTELoc a >>= fun pte_a ->
         (*old_do_read_mem sz AArch64.NExp pte_a ii >>=*)
         M.read_loc false (mk_read sz AArch64.NExp) (A.Location_global pte_a) ii >>=
@@ -187,15 +187,18 @@ module Make
           is_zero pte_v (*INV*) >>= fun pte_inv ->
           M.choiceT pte_inv
             (mk_fault pte_a ii(* >>! B.Next*))
-            ((*f*) pte_v (*>>! B.Next*))
+            (f pte_v (*>>! B.Next*))
 
       let old_do_read_mem sz an a ii =
         if mixed then begin
           Mixed.read_mixed false sz (fun sz -> mk_read sz an) a ii
         end else
+         M.read_loc false (mk_read sz an) (A.Location_global a) ii
+
+      let do_read_mem sz an rd a ii =
         if kvm then
           begin 
-            ptw a sz ii >>= fun pte_v -> pte_v 
+            ptw a sz ii (fun pte_v -> old_do_read_mem sz an pte_v ii >>= fun v -> write_reg rd v ii) 
         end else
           M.read_loc false (mk_read sz an) (A.Location_global a) ii
 
@@ -217,7 +220,7 @@ module Make
           Mixed.write_mixed sz (fun sz -> mk_write sz an) a v ii
         end else 
         if kvm then begin 
-            ptw a sz ii >>= fun pte_v -> write_loc sz an pte_v v ii
+            ptw a sz ii (fun pte_v -> write_loc sz an (A.Location_global pte_v) v ii)
         end else
           write_loc sz an (A.Location_global a) v ii
 
@@ -253,7 +256,7 @@ module Make
         | AArch64.LT -> is_ge
 
 (* Page tables and TLBs *)
-    let do_inv a ii = inv_loc (A.Location_global a) ii
+    let do_inv op a ii = inv_loc op (A.Location_global a) ii
 
 (***********************)
 (* Memory instructions *)
@@ -287,30 +290,14 @@ module Make
 
       let do_ldr sz an rd ma ii =
           lift_memop
-            (fun ma -> ma >>= fun a ->
-               old_do_read_mem sz an a ii >>= fun v -> write_reg rd v ii) 
+            (fun ma -> ma >>= fun a -> do_read_mem sz an rd a ii) 
           ma ii
 
-(*     let do_str_ptw sz an rs ma ii =
-        (ma >>| read_reg_data sz rs ii) >>= fun (a,v) -> 
-        ptw a sz ii (fun pte_v -> do_write_mem sz an pte_v v ii)
-
-       let do_ldr_ptw sz rd ma ii =
-        ma >>= fun a -> 
-        ptw a sz ii (fun pte_v -> write_reg rd pte_v ii) >>! B.Next
-*)
-
       let ldr sz rd rs kr ii =
-(*        if kvm then 
-          do_ldr_ptw sz rd (get_ea rs kr ii) ii
-        else *)
-          do_ldr sz AArch64.N rd (get_ea rs kr ii) ii
+         do_ldr sz AArch64.N rd (get_ea rs kr ii) ii
 
       and str sz rs rd kr ii = 
- (*       if kvm then
-          do_str_ptw sz AArch64.N rs (get_ea rd kr ii) ii
-        else *) 
-          do_str sz AArch64.N rs (get_ea rd kr ii) ii
+         do_str sz AArch64.N rs (get_ea rd kr ii) ii
 
       and stlr sz rs rd ii = do_str sz AArch64.L rs (read_reg_ord rd ii) ii
 
@@ -608,7 +595,7 @@ module Make
         | I_TLBI (op, rd) ->
           read_reg_ord rd ii >>= fun a ->
           M.op1 Op.TLBLoc a >>= fun tlb_a ->
-          do_inv tlb_a ii >>! B.Next
+          do_inv op tlb_a ii >>! B.Next
 (*  Cannot handle *)
         | (I_RBIT _|I_MRS _|I_LDP _|I_STP _|I_IC _|I_DC _|I_BL _|I_BLR _|I_BR _|I_RET _) as i ->
             Warn.fatal "illegal instruction: %s"
