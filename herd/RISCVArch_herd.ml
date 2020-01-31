@@ -103,6 +103,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | Amo (_,w,_,_,_,_)
         -> Some (tr_width w)
 
+    module TLBI = NoTLBI 
+
     include ArchExtra_herd.Make(C)
         (struct
           module V = V

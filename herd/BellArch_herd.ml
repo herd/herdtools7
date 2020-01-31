@@ -27,6 +27,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) = struct
   let mem_access_size _ = None
 
   module V = V
+    
+  module TLBI = NoTLBI 
 
   include ArchExtra_herd.Make(C)
       (struct

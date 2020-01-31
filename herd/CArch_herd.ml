@@ -24,6 +24,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) = struct
 
   module V = V
 
+  module TLBI = NoTLBI 
+
   include ArchExtra_herd.Make(C)
       (struct
         module V = V
