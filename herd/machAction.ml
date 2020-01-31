@@ -45,8 +45,8 @@ module Make (C:Config) (A : A) : sig
     | Fault of A.inst_instance_id * A.location * string option
 (* Unrolling control *)
     | TooFar
-(* Invalidate event *)
-   | Inv of (*A.TLBI.op **) A.location
+(* Invalidate event *) 
+   | Inv of A.TLBI.op * A.location
 
   include Action.S with type action := action and module A = A
 
@@ -64,7 +64,7 @@ end = struct
     | Amo of A.location * A.V.v * A.V.v * A.lannot * MachSize.sz
     | Fault of A.inst_instance_id * A.location * string option
     | TooFar
-    | Inv of (*A.TLBI.op **) A.location
+    | Inv of A.TLBI.op * A.location
 
   let mk_init_write l sz v = match v with
   | A.V.Val (Constant.Tag _) -> TagAccess (W,l,v)
@@ -97,8 +97,8 @@ end = struct
         (A.pp_location loc)
         (Misc.proj_opt "None" msg)
   | TooFar -> "TooFar"
-  | Inv loc ->
-      Printf.sprintf "Inv(%s)" (A.pp_location loc)
+  | Inv (op,loc) ->
+      Printf.sprintf "Inv(%s,%s)" (A.TLBI.pp_op op) (A.pp_location loc)
 
 (* Utility functions to pick out components *)
   let value_of a = match a with
@@ -130,7 +130,7 @@ end = struct
   | Access (_, l, _,_,_)
   | Amo (l,_,_,_,_)
   | Fault (_,l,_)
-  | Inv l
+  | Inv (_,l)
     -> Some l
   | Barrier _|Commit _ | TooFar -> None
 
@@ -346,9 +346,9 @@ end = struct
     | Fault (ii,loc,msg) ->
         let loc = A.simplify_vars_in_loc soln loc in
         Fault(ii,loc,msg)
-    | Inv loc ->
+    | Inv (op,loc) ->
         let loc = A.simplify_vars_in_loc soln loc in
-        Inv loc
+        Inv (op,loc)
     | Barrier _ | Commit _|TooFar -> a
 
   let annot_in_list _str _ac = false
