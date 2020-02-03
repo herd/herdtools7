@@ -441,7 +441,7 @@ let () =
 
 (* Read generic model, if any *)
 
-let libfind = libfind !includes !debug.Debug_herd.files
+let libfind = Opts.libfind !includes !debug.Debug_herd.files
 
 module ParserConfig = struct
   let debug = !debug.Debug_herd.lexer
