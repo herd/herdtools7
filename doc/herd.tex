@@ -298,7 +298,7 @@ This last model illustrates another feature of \cat{}:
 \subsection{Sequential consistency, total order definition}
 We now illustrate another style of model.
 We consider the original definition of sequential consistency~\cite{lam79}.
-An execution is SC when there exists a total order~\verb+S+ on events such that:
+An execution is SC when there exists a total (strict) order~\verb+S+ on events such that:
 \begin{enumerate}
 \item $S$ includes the program order~\verb+po+;
 \item \label{rfcond}and read events read from the most recent write events in the past,
@@ -306,7 +306,7 @@ An execution is SC when there exists a total order~\verb+S+ on events such that:
 the \verb+S+-maximal write amongst those writes to location~$x$
 that are \verb+S+ smaller than~$r$.
 \end{enumerate}
-So we could just generate all total orders amongst memory events,
+So we could just generate all total strict orders amongst memory events,
 and filter those ``scheduling order candidates'' according to the two rules
 above.
 
@@ -354,7 +354,7 @@ Notice that we could include initial writes in~$S$ as we did for
 final writes. Not doing so will improve efficiency.
 
 \label{intro:linearisations}%
-Finally, the order~$S$ is not just any order on memory events (predefined
+Finally, the strict order~$S$ is not just any order on memory events (predefined
 set~\verb+M+, which includes initial and final writes writes),
 it is a topological order of the program events (implemented as the set
 \verb+M\IW+) that extends the pre-order~\verb+preSC+.
@@ -365,7 +365,7 @@ let allS = linearisations(M\IW,preSC)
 \end{verbatim}
 The call \texttt{linearisations($E$,$r$)}, where $E$ is a set of events
 and~$r$ is a relation on events, returns the set of all total
-orders defined on~$S$ that extend~$r$. Notice that if~$r$ is cyclic,
+strict orders defined on~$S$ that extend~$r$. Notice that if~$r$ is cyclic,
 the empty set is  returned.
 
 \label{intro:with}We now need to iterate over the set~\verb+allS+.
@@ -375,7 +375,7 @@ with S from allS
 \end{verbatim}
 It is important to notice that the construct above extends the current
 execution candidate (\emph{i.e.} a choice of events, plus a choice of
-two relations~\texttt{po} and~\texttt{rf}) with a candidate order~$S$.
+two relations~\texttt{po} and~\texttt{rf}) with a candidate strict order~$S$.
 In other words, the scope of the iteration is the remainder of the model text.
 Once model execution terminates for a choice of~$S$
 (some element of~\texttt{allS}), model execution restarts just
@@ -397,8 +397,8 @@ writes that  must precede all events to their location:
 \begin{verbatim}
 let S = S | loc & IW * (M \ IW)
 \end{verbatim}
-Observe that $S$ is no longer a total order. However, it is still a total
-order when restricted to events that access a given location,
+Observe that $S$ is no longer a total strict order. However, it is still a total
+strict order when restricted to events that access a given location,
 which is all that matters for condition~\ref{rfcond} to give a value
 to all reads. As regards our SC model, we define \texttt{rf-S}
 the read-from relation induced by~$S$ as follows:
@@ -453,9 +453,9 @@ This section describes the file~\texttt{cos.cat}.
 It can be skipped in first reading, as users may find sufficient
 to include the file.
 
-For a given location~$x$ the coherence order is a total order on the
+For a given location~$x$ the coherence order is a total strict order on the
 write events to location~$x$. The coherence relation~\texttt{co} is the union
-of those total orders for all locations.
+of those orders for all locations.
 In this section, we show how to compute all possible coherence orders for
 a candidate execution.
 We seize the opportunity to introduce advanced features of the \cat{}
@@ -1589,7 +1589,7 @@ also include \co{} and~\fr{}.
 Those can be defined by including the file \texttt{cos.cat}
 (see Sec.~\ref{sec:cos}).
 \begin{idtable}
-$\co$    & coherence     & total order over writes to the same address \\
+$\co$    & coherence     & total strict order over writes to the same address \\
 $\fr$    & from-read     & links a read $r$ to a write $w'$ $\co$-after the write $w$ from which $r$ takes its value \\
 \coi, \fri & internal communications &
 communication between events of the same thread\\

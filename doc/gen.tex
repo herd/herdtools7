@@ -1217,7 +1217,7 @@ the results of tests---see~\mysec{\ref{readRelax:intro}}.
 \subsection{A note \label{sec:names}\label{naming}on test names}
 We have designed a simple naming scheme for tests.
 A normalised test name decomposes first as a family name,
-and second as a description of program-order (or internal)
+and second as a description of program~order (or internal)
 candidate relaxations.
 
 \subsubsection{Family names}
@@ -1285,7 +1285,7 @@ to different locations (for \texttt{WW}, \texttt{WR} etc.).
 For instance, the \ahref{MP.litmus}{\ltest{MP}} test
 is derived from the cycle ``PodWW Rfe PodRR Fre''.
 Variants are described by tags that illustrates the various
-program-order relaxations: they appear after the family name, still with ``\texttt{+}'' as a separation.
+program~order relaxations: they appear after the family name, still with ``\texttt{+}'' as a separation.
 For instance the test derived from ``LwSyncdWW Rfe DpAddrdR Fre''
 is named \ahref{MP+lwsync+addr.litmus}{\ltest{MP+lwsync+addr}}.
 
@@ -1298,7 +1298,7 @@ in order to yield family names for the prototype tests --- cf.
  \atest{\ltest{MP}} whose name would have been
 \texttt{MP+pos} otherwise.
 
-For the sake of terseness, tags do not describe program-order relaxations
+For the sake of terseness, tags do not describe program~order relaxations
 completely. For instance both DpAddrdR and DpAddrdW (address dependency to
 read and write, respectively) have the same tag, \texttt{addr}.
 It does not harm for simple tests, as the missing direction can be inferred from
@@ -1309,7 +1309,7 @@ the family name. Consider for instance
 \cycle{MP+lwsync+addr}\qquad\cycle{LB+lwsync+addr}
 \end{center}
 
-The naming scheme extends to cycles with consecutive program-order relaxations,
+The naming scheme extends to cycles with consecutive program order relaxations,
 by separating tags with ``\texttt{-}'' when they follow one another:
 for instance ``LwSyncdWW Rfe DpAddrdR PodRR Fre'' is named
 \ltest{MP+lwsync+addr-po}. Unfortunately, the current naming scheme falls short
