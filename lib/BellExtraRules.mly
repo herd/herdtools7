@@ -14,23 +14,49 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
+open BellInfo
+let nones = { scopes=None; levels=None; regions=None; }
 %}
 
 %%
 
-scope_option:
-| SCOPES COLON top_scope_tree {Some $3}
-| {None}
+permut(S,L,R):
+  scopes=S levels=L regions=R
+| levels=L scopes=S regions=R
+| regions=R levels=L scopes=S
+| levels=L regions=R scopes=S
+| regions=R scopes=S levels=L
+| scopes=S regions=R levels=L
+    { { levels=Some levels; scopes=Some scopes; regions=Some regions; } }
+| scopes=S levels=L
+| levels=L scopes=S
+    { { nones with  levels=Some levels; scopes=Some scopes; } }
+| scopes=S regions=R
+| regions=R scopes=S
+    { { nones with scopes=Some scopes; regions=Some regions; } }
+| levels=L regions=R
+| regions=R levels=L
+    { { nones with levels=Some levels; regions=Some regions; } }
+| scopes=S
+    { { nones with scopes=Some scopes; } }
+| levels=L
+    { { nones with levels=Some levels; } }
+| regions=R
+    { { nones with regions=Some regions; } }
+|
+    {  nones }
 
-levels_option:
-| LEVELS COLON top_level_tree {Some $3}
-| {None}
+scopes_key:
+| SCOPES COLON top_scope_tree { $3 }
 
-memory_map_option:
-| REGIONS COLON top_memory_map {Some $3}
-| {None}
+levels_key:
+| LEVELS COLON top_level_tree { $3 }
+
+memory_map_key:
+| REGIONS COLON top_memory_map { $3 }
+
+
 
 %public scopes_and_memory_map:
- | scopes=scope_option levels=levels_option regions=memory_map_option
-{ let open BellInfo in { scopes; regions; levels;}}
+| x=permut(scopes_key, levels_key,  memory_map_key) { x }
 
