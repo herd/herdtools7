@@ -172,6 +172,22 @@ end = struct
     | Inv _ -> true
     | TagAccess _|Access _|Amo _|Commit _|Barrier _ | Fault _ | TooFar -> false
 
+  let is_at_EL0 = function
+    | Inv(op,_) -> Printf.printf "coucou\n"; A.TLBI.is_at_EL0 op
+    | _ -> false
+
+  let is_at_EL1 = function
+    | Inv(op,_) -> A.TLBI.is_at_EL1 op
+    | _ -> false
+
+  let is_at_EL2 = function
+    | Inv(op,_) -> A.TLBI.is_at_EL2 op
+    | _ -> false
+
+  let is_at_EL3 = function
+    | Inv(op,_) -> A.TLBI.is_at_EL3 op
+    | _ -> false
+
   let is_fault = function
     | Fault _ -> true
     | TagAccess _|Access _|Amo _|Commit _|Barrier _ | TooFar | Inv _ -> false
