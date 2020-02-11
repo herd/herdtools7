@@ -306,6 +306,18 @@ module TLBI = struct
 
   let pp_op { typ; level; domain; } =
     sprintf "%s%s%s" (pp_typ typ) (pp_level level) (pp_domain domain)
+
+  let is_at_EL0 op =  match op.level with 
+    | E0 -> true | _ -> false
+
+  let is_at_EL1 op = printf "%s\n" (pp_level op.level);    match op.level with 
+    | E1 -> true | _ -> false
+
+  let is_at_EL2 op = match op.level with 
+    | E2 -> true | _ -> false
+
+  let is_at_EL3 op = match op.level with 
+    | E3 -> true | _ -> false
 end
 
 (********************)

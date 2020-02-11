@@ -42,5 +42,9 @@ module type S =
     sig 
       type op 
       val pp_op : op -> string
+      val is_at_EL0 : op -> bool
+      val is_at_EL1 : op -> bool
+      val is_at_EL2 : op -> bool
+      val is_at_EL3 : op -> bool
     end
   end
