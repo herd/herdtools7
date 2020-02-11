@@ -117,6 +117,10 @@ end = struct
   | _ -> false
 
   let is_inv _ = false
+  let is_at_EL0 _ = false
+  let is_at_EL1 _ = false
+  let is_at_EL2 _ = false
+  let is_at_EL3 _ = false
   
   let is_fault _ = false
 
