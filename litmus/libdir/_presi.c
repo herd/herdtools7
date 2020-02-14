@@ -13,6 +13,9 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
+#ifdef KVM
+#include <libcflat.h>
+#else
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -20,19 +23,31 @@
 #include <limits.h>
 #include <errno.h>
 #include <stdint.h>
+#endif
+
 #include "utils.h"
+
+
+#ifdef KVM
+#define fprintf(stderr,fmt,...) printf(fmt, __VA_ARGS__)
+const static int stderr = 2 ;
+
+static int errno = 0 ;
+const static int ERANGE = 1 ;
+static char *strerror(int e) { return "ERROR"; }
+#endif
 
 /********/
 /* Misc */
 /********/
 
-void fatal(char *msg) {
+void fatal(const char *msg) {
   fprintf(stderr,"Failure: %s\n", msg) ;
   fprintf(stdout,"Failure: %s\n", msg) ;
   exit(1) ;
 }
 
-void errexit(char *msg,int err) {
+void errexit(const char *msg,int err) {
   fprintf(stderr,"%s: %s\n",msg,strerror(err)) ;
   exit(2) ;
 }
@@ -45,19 +60,6 @@ void *do_align(void *p,size_t sz) {
   x /= sz ;
   x *= sz ;
   return (void *)x ;
-}
-
-void cat_file(char *path, char *msg, FILE *out) {
-  FILE *fp = fopen(path,"r") ;
-  if (fp == NULL) return ;
-  fprintf(out,"%s\n",msg) ;
-  int c,nl=1 ;
-  while ((c = fgetc(fp)) != EOF) {
-    fputc(c,out) ;
-    nl = c == '\n' ;
-  }
-  fclose(fp) ;
-  if (!nl) fputc('\n',out) ;
 }
 
 /* Artithmetic  */
@@ -77,6 +79,38 @@ static long my_pow10(int p,long x) {
   }
   return r ;
 }
+#ifdef KVM
+/* NB: Radix is ignored, will be ten anyway. */
+static long strtol(char *ptr,char **q,int radix10) {
+    long acc = 0;
+    char *s = ptr;
+    int neg, c;
+
+    while (*s == ' ' || *s == '\t')
+        s++;
+    if (*s == '-'){
+        neg = 1;
+        s++;
+    } else {
+        neg = 0;
+        if (*s == '+')
+            s++;
+    }
+
+    while (*s) {
+        if (*s < '0' || *s > '9')
+            break;
+        c = *s - '0';
+        acc = acc * 10 + c;
+        s++;
+    }
+    if (q) *q = s ;
+    if (neg)
+        acc = -acc;
+
+    return acc;
+}
+#endif
 
 static int do_argint(char *p, char **q) {
   long r =  strtol(p,q,10) ;
@@ -86,6 +120,60 @@ static int do_argint(char *p, char **q) {
   return r ;
 }
 
+#ifdef KVM
+/**********/
+/* Random */
+/**********/
+
+/*
+  Simple generator
+  http://en.wikipedia.org/wiki/Linear_congruential_generator
+*/
+
+
+/*
+
+  From ocaml sources: (globroot.c)
+  Linear congruence with modulus = 2^32, multiplier = 69069
+  (Knuth vol 2 p. 106, line 15 of table 1), additive = 25173.
+
+
+  Knuth (vol 2 p. 13) shows that the least significant bits are
+  "less random" than the most significant bits with a modulus of 2^m.
+  We just swap half words, enough? */
+
+static const uint32_t a = 69069;
+static const uint32_t c = 25173 ;
+
+inline static uint32_t unlocked_rand(st_t *st)  {
+  uint32_t r = a * *st + c ;
+  *st = r ;
+  /* Swap high & low bits */
+  uint32_t low = r & 0xffff ;
+  uint32_t high = r >> 16 ;
+  r = high | (low << 16) ;
+  return r ;
+}
+
+int rand_bit(st_t *st)  {
+  uint32_t r = unlocked_rand(st) ;
+  r &= 1 ;
+  return r ; 
+}
+
+static const uint32_t r_max = UINT32_MAX ;
+
+uint32_t rand_k (uint32_t *st,uint32_t k) {
+  uint32_t r, v ;
+  do {
+    r = unlocked_rand(st) ;
+    v = r % k ;
+  } while (r-v > r_max-k+1) ;
+  return v ;
+}
+#endif
+
+#ifndef KVM
 /*************************/
 /* Concurrency utilities */
 /*************************/
@@ -103,11 +191,15 @@ void *join(pthread_t *th) {
   if (e)  errexit("pthread_join",e);
   return r ;
 }
+#endif
 
 /****************/
 /* Time counter */
 /****************/
 
+#ifdef KVM
+#include "kvm_timeofday.c"
+#else
 #include <sys/time.h>
 #include <time.h>
 
@@ -116,6 +208,7 @@ tsc_t timeofday(void) {
   if (gettimeofday(&tv,NULL)) errexit("gettimeoday",errno) ;  
   return tv.tv_sec * ((tsc_t)1000000) + tv.tv_usec ;
 }
+#endif
 
 double tsc_ratio(tsc_t t1, tsc_t t2) {
   return ((double) t1) / ((double)t2) ;
@@ -125,6 +218,18 @@ double tsc_ratio(tsc_t t1, tsc_t t2) {
 double tsc_millions(tsc_t t) {
   return t / 1000000.0 ;
 }
+
+#ifdef KVM
+void emit_double(double f) {
+  double g = f < 0.0 ? -f : f ;
+  g *= 100.0 ; g += 0.5 ;
+  uint64_t x = g ;
+  if (f < 0.0) puts("-") ;
+  printf("%" PRIu64, x / 100) ;
+  puts(".");
+  printf("%02"PRIu64,x % 100) ;
+}
+#endif
 
 /**********/
 /* Pre-Si */
