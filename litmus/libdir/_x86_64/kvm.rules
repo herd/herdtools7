@@ -1,0 +1,27 @@
+
+EXE=$(SRC:.c=.flat)
+T=$(SRC:.c=.t)
+
+all: $(EXE) $(T)
+
+clean:
+	/bin/rm -f *.o *.s *.t *.flat *~
+
+cleansource:
+	/bin/rm -f *.o *.c *.h *.s *~
+
+%.s: %.c
+	$(GCC) $(GCCOPTS) -S $<
+%.o: %.c
+%.o: %.s
+	$(GCC) $(GCCOPTS) -c -o $@ $<
+%.t: %.s
+	awk -f show.awk $< > $@
+
+%.elf: %.o utils.o $(FLATLIBS) $(SRCDIR)/x86/flat.lds $(cstart.o)
+	$(GCC) $(CFLAGS) -nostdlib -o $@ -Wl,-T,$(SRCDIR)/x86/flat.lds  $(filter %.o, $^) $(FLATLIBS)
+	@chmod a-x $@
+
+%.flat: %.elf
+	$(OBJCOPY) -O  elf32-i386 $^ $@
+	@chmod a-x $@

@@ -77,6 +77,7 @@ module Make
       val select_aligned : env -> (A.loc_global * CType.t) list
 
 (* Some dumping stuff *)
+      val cast_reg_type : A.location -> string
       val register_type : A.location ->  CType.t -> CType.t
       val fmt_outcome : T.t -> (CType.base -> string) -> A.LocSet.t -> env -> string
 
@@ -224,6 +225,13 @@ module Make
           env
 
 (* Format stuff *)
+      let cast_reg_type loc = 
+        if A.arch = `X86_64 then
+          match loc with
+          | A.Location_reg (_,r) -> "(" ^ CType.dump (A.typeof r) ^ ")"
+          | _ -> ""
+        else ""
+
       let tr_out test = OutMapping.info_to_tr test.T.info
 
       let pp_loc tr_out loc =  match loc with

@@ -863,7 +863,7 @@ module Make
           let find_type loc =
             let t = U.find_type loc env in
             CType.dump (CType.strip_atomic t),CType.is_ptr t in
-          DC.fundef_prop "filter_cond" find_type f
+            DC.fundef_prop "filter_cond" find_type f
 
       let dump_cond_fun_call test dump_loc dump_val =
         DC.funcall test.T.condition dump_loc dump_val
