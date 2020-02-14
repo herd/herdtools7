@@ -479,8 +479,6 @@ module Make
   ()
  *)
 
-
-
       let dump_cond_fun env test =
         let module DC =
           CompCond.Make(O)

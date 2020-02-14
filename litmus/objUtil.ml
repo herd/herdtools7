@@ -71,7 +71,7 @@ module Insert (O:InsertConfig) :
 
     let dir = match O.sysarch with
     | `X86 -> "_x86"
-    | `X86_64 -> "_x86"
+    | `X86_64 -> "_x86_64"
     | `PPC -> "_ppc"
     | `ARM -> "_arm"
     | `MIPS -> "_mips"
@@ -146,7 +146,8 @@ module Make(O:Config)(Tar:Tar.S) =
     let cpy ?prf fnames name ext = do_cpy ?prf fnames ("_" ^ name) name ext
 
 (* Copy lib file, changing its name *)
-    let cpy' fnames src dst ext = do_cpy fnames ("_" ^ src) dst ext
+    let cpy' ?prf fnames src dst ext = do_cpy ?prf fnames ("_" ^ src) dst ext
+
 (* Copy from platform subdirectory *)
     let cpy_platform fnames name ext =
       let name = sprintf "platform_%s" name in
@@ -202,7 +203,9 @@ module Make(O:Config)(Tar:Tar.S) =
       | Mode.PreSi ->
           let fnames = cpy' fnames "presi" "utils" ".c" in
           cpy' fnames "presi" "utils" ".h"
-      |  Mode.Kvm -> [] in
+      |  Mode.Kvm ->
+          let fnames = cpy' ~prf:"#define KVM 1" fnames "presi" "utils" ".c" in
+          cpy' ~prf:"#define KVM 1" fnames "presi" "utils" ".h" in
       let fnames =
         match O.mode with
         | Mode.Std ->
