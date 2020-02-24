@@ -374,6 +374,9 @@ module Make (Conf:Config)(V:Value.S)
               fun ret -> M.choiceT ret then_branch else_branch
             end
         | C.DeclReg _ ->  M.unitT (ii.A.program_order_index, B.Next)
+        | C.CastExpr e ->
+            build_semantics_expr true e ii >>=
+            fun _ ->  M.unitT (ii.A.program_order_index, B.Next)
         | C.StoreReg(_,r,e) ->
             build_semantics_expr true e ii >>=
             fun v -> write_reg r v ii >>=

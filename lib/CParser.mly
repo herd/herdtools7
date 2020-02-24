@@ -86,13 +86,18 @@ parameter_list:
 | parameter_declaration COMMA parameter_list { $1 :: $3 }
 
 parameter_declaration:
-| toptyp IDENTIFIER { {CAst.param_ty = $1; param_name = $2} }
+| typ_ptr IDENTIFIER { {CAst.param_ty = $1; param_name = $2} }
 
-toptyp:
+typ_ptr:
 | typ STAR { Pointer $1 }
+| void STAR { Pointer $1 }
+
+void:
+| VOID { Base "void" }
+
 
 typ:
-| typ STAR { Pointer $1 }
+| typ_ptr { $1 }
 | typ VOLATILE { Volatile $1 }
 | ATOMIC base { Atomic $2 }
 | VOLATILE base0 { Volatile $2 }
@@ -101,7 +106,6 @@ typ:
 base0:
 | ATOMIC_TYPE { Atomic (Base $1) }
 | BASE_TYPE { (Base $1) }
-| VOID { (Base "void") }
 | STRUCT STRUCT_TYPE { Base ("struct " ^ $2) }
 | ty_attr MUTEX { Base ($1 ^ "mutex") }
 | ty_attr CHAR { Base ($1 ^ "char") }
@@ -240,7 +244,7 @@ instruction:
 | IDENTIFIER EQ expr SEMI
   { StoreReg(None,$1,$3) }
 | LPAR VOID RPAR expr SEMI
-  { StoreReg(None,"",$4) }
+  { CastExpr $4 }
 | STAR location EQ expr SEMI
   { StoreMem($2,$4,AN []) }
 | STORE LBRACE annot_list RBRACE LPAR expr COMMA expr RPAR SEMI

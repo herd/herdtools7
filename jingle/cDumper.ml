@@ -93,6 +93,7 @@ let list_loc prog =
     | If(c,t,None) -> expr (ins s t) c
     | While (e,i,_) -> expr (ins s i) e
     | DeclReg (_,r) ->  LocSet.add r s
+    | CastExpr e -> expr s e
     | StoreReg(_,r,e) ->  LocSet.add r (expr s e)
     | StoreMem(l,e,_) -> loc (expr s e) l
     | Lock (l,_) 

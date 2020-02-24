@@ -122,6 +122,8 @@ module Top(O:Config)(Out:OutTests.S) = struct
     | DeclReg _
     | Symb _
       -> nxt,StringSet.empty,i
+    | CastExpr e ->
+        nxt,StringSet.empty,CastExpr (tr_expr e)
     | StoreReg (t,r,e) ->
         nxt,StringSet.empty,StoreReg (t,r,tr_expr e)
     | StoreMem (e1,e2,m) ->
@@ -259,6 +261,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
         let s = expr_read ec in
         let i = While (ec,tr_ins it,n) in
         add_locks s i
+    | CastExpr e
     | StoreReg (_,_,e) ->
         let s = expr_read e in
         add_locks s i
@@ -357,6 +360,8 @@ module Top(O:Config)(Out:OutTests.S) = struct
         let ec = tr_expr ec
         and it = tr_ins it in
         While (ec,it,n)
+    | CastExpr e ->
+        CastExpr (tr_expr e)
     | StoreReg (t,r,e) ->
         StoreReg (t,r,tr_expr e)
     | StoreMem (e1,e2,a) ->

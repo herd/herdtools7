@@ -83,6 +83,7 @@ type instruction =
   | Seq of instruction list * bool (* scope ? *)
   | If of expression * instruction * instruction option
   | While of expression * instruction * int (* number of unrollings *)
+  | CastExpr of expression
   | DeclReg of CType.t * reg
   | StoreReg of CType.t option * reg * expression
   | StoreMem of expression * expression * MemOrderOrAnnot.t
@@ -192,6 +193,7 @@ let rec do_dump_instruction indent =
   | While (e,i,_) ->
       sprintf "%swhile (%s) " indent (dump_expr e) ^
       do_dump_instruction indent i
+  | CastExpr e -> pindent "(void)%s;" (dump_expr e)
   | StoreReg(None,r,e) ->
      pindent "%s = %s;" r (dump_expr e)
   | StoreReg(Some t,r,e) ->
@@ -286,6 +288,7 @@ include Pseudo.Make
             | Some ie -> Some(parsed_tr ie) in
             If(parsed_expr_tr e,parsed_tr it,tr_ie)
         | While (e,i,n) -> While (parsed_expr_tr e,parsed_tr i,n)
+        | CastExpr e -> CastExpr (parsed_expr_tr e)
         | StoreReg(ot,l,e) -> StoreReg(ot,l,parsed_expr_tr e)
         | StoreMem(l,e,mo) ->
             StoreMem(parsed_expr_tr l,parsed_expr_tr e,mo)
@@ -326,7 +329,7 @@ include Pseudo.Make
               let k = get_exp k cond in
               get_opt (get_rec k ifso) ifno
           | While (e,i,_) -> get_exp (get_rec k i) e
-          | StoreReg (_,_,e) -> get_exp k e
+          | CastExpr e|StoreReg (_,_,e) -> get_exp k e
           | StoreMem (loc,e,_)
           | AtomicOp(loc,_,e) -> get_exp (get_exp k loc) e
           | Lock (e,_)|Unlock (e,_) -> get_exp (k+1) e
@@ -416,6 +419,8 @@ let rec subst env i = match i with
     If (subst_expr env c,subst env ifso,Misc.app_opt (subst env) ifno)
 | While (e,i,n) ->
     While (subst_expr env e, subst env  i,n)
+| CastExpr e ->
+    CastExpr (subst_expr env e)
 | StoreReg (ot,r,e) ->
     let e = subst_expr env e in
     begin try

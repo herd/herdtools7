@@ -201,6 +201,8 @@ include Arch.MakeArch(struct
           expl_expr c >> fun c ->
           expl_instr t >! fun t ->
           While (c,t,n)
+      | CastExpr e ->
+          expl_expr e >! fun e -> CastExpr e
       | StoreReg(ot,r,e) ->
           conv_reg r >> fun r ->
           expl_expr e >! fun e ->
