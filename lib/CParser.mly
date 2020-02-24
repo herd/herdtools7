@@ -239,6 +239,8 @@ instruction:
   { $1 }
 | IDENTIFIER EQ expr SEMI
   { StoreReg(None,$1,$3) }
+| LPAR VOID RPAR expr SEMI
+  { StoreReg(None,"",$4) }
 | STAR location EQ expr SEMI
   { StoreMem($2,$4,AN []) }
 | STORE LBRACE annot_list RBRACE LPAR expr COMMA expr RPAR SEMI
