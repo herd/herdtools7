@@ -67,6 +67,9 @@ rule token = parse
 | "movw"|"MOVW"   { I_MOVW }
 | "movl"|"MOVL"   { I_MOVL }
 | "movq"|"MOVQ"   { I_MOVQ }
+| "movnti"|"MOVNTI"   { I_MOVNTI }
+| "movntil"|"MOVNTIL"   { I_MOVNTIL }
+| "movntiq"|"MOVNTIQ"   { I_MOVNTIQ }
 | "dec"|"DEC"    { I_DEC}
 | "decb"|"DECB"    { I_DECB}
 | "decw"|"DECW"    { I_DECW}

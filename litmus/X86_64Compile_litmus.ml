@@ -59,6 +59,7 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
       | I_CMPXCHG (_, ea,_)
         | I_EFF (_, _, ea)
         | I_CMOVC (_, _, ea)
+        | I_MOVNTI (_,ea,_)
         -> extract_ea ea
       | I_EFF_EFF (_, _, ea1, ea2)
         ->  StringSet.union (extract_ea ea1) (extract_ea ea2)
@@ -158,6 +159,14 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
         inputs = ins1@ins2@[reg_ax] ;
         outputs = outs1@[reg_ax] ; }
 
+    let movnti sz ea r =
+      let ea1,(_,ins1) = compile_ea_input 0 ea in
+      let ea2,ins2 = compile_reg r, [r] in
+       { empty_ins with
+        memo = sprintf "movnti%s %s,%s" (pp_inst_size sz) ea2 ea1;
+        inputs = ins2@ins1;
+        outputs = [] ; }
+
     let op_ea_ea memo ea1 ea2 =
       let ea1,(i,ins1),(o,outs1) = compile_ea_output 0 0 ea1 in
       let ea2,(_,ins2),(_,outs2) = compile_ea_output i o ea2 in
@@ -244,6 +253,7 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
     | I_EFF_EFF (_, _, ea1, ea2) as i
       -> op_ea_ea (inst_string i) ea1 ea2
     | I_CMPXCHG (_, ea, r) as i-> cmpxchg (inst_string i) ea r
+    | I_MOVNTI (sz,ea,r) -> movnti sz ea r
 (* here I fail to know *)
     | I_CMOVC _ -> Warn.user_error "CMOVC ??"
 
