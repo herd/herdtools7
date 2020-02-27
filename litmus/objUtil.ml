@@ -58,13 +58,13 @@ let insert_lib_file o src =
 
 module type InsertConfig = sig
   val sysarch : Archs.System.t
-  val word : Word.t
 end
 
 module Insert (O:InsertConfig) :
     sig
       val insert : (string -> unit) -> string -> unit
       val exists : string -> bool
+      val copy : string -> (string -> string) -> unit
     end =
   struct
     open Word
@@ -78,26 +78,11 @@ module Insert (O:InsertConfig) :
     | `AArch64 -> "_aarch64"
     | `RISCV -> "_riscv"
 
-    let sz = match O.word with
-    | W32|WXX -> "32" (* our "default" word size, used for PPC only *)
-    | W64 -> "64"
-
-
     let find_lib src =
-      let len = String.length src in
-      let base =
-        try Filename.chop_extension src
-        with Invalid_argument _ -> src in
-      let baselen = String.length base in
-      let ext = String.sub src baselen (len-baselen) in
       let n1 = Filename.concat dir src in
       try MyName.open_lib n1
       with Misc.Fatal _ ->
-        try
-          let n2 = Filename.concat dir (sprintf "%s%s%s" base sz ext) in
-          MyName.open_lib n2
-        with Misc.Fatal _ ->
-          Warn.fatal "Cannot insert lib file %s" src
+        Warn.fatal "Cannot find lib file %s" src
 
     let insert out src =
       let _,in_chan = find_lib src in
@@ -111,6 +96,18 @@ module Insert (O:InsertConfig) :
         begin try close_in in_chan with _ -> () end ;
         true
       with Misc.Fatal _ -> false
+
+    let copy fname outname =
+      let _,in_chan = find_lib fname in
+      begin try
+        MySys.cp in_chan (outname fname)
+      with e ->
+        begin
+          close_in in_chan  ;
+          raise e
+        end
+      end ;
+      close_in in_chan
   end
 
 module type Config = sig
@@ -118,6 +115,7 @@ module type Config = sig
   val driver : Driver.t
   val affinity : Affinity.t
   val arch : Archs.t
+  val carch   : Archs.System.t option
   val mode : Mode.t
   val stdio : bool
   val platform : string
@@ -205,7 +203,15 @@ module Make(O:Config)(Tar:Tar.S) =
           cpy' fnames "presi" "utils" ".h"
       |  Mode.Kvm ->
           let fnames = cpy' ~prf:"#define KVM 1" fnames "presi" "utils" ".c" in
-          cpy' ~prf:"#define KVM 1" fnames "presi" "utils" ".h" in
+          let fnames = cpy' ~prf:"#define KVM 1" fnames "presi" "utils" ".h" in
+          let fnames = cpy fnames "kvm_timeofday" ".h" in
+          let sysarch = match Archs.get_sysarch O.arch O.carch with
+          | Some a -> a
+          | None -> assert false in
+          let module I = Insert(struct let sysarch = sysarch end) in
+          I.copy "kvm_timeofday.c" Tar.outname ;
+          I.copy "kvm-headers.h" Tar.outname ;
+          fnames in
       let fnames =
         match O.mode with
         | Mode.Std ->

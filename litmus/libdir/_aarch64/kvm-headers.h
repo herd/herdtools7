@@ -14,15 +14,7 @@
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
 
-#include <asm/processor.h>
-#include "kvm_timeofday.h"
-
-uint64_t gettimeofday(void) {
-  uint64_t cycles = read_sysreg(cntpct_el0) ;
-  uint64_t freq =  get_cntfrq() ;
-  return (cycles * 1000000UL)/freq ;
-}
-
-
-
-
+#include <asm-generic/atomic.h>
+#include <asm/smp.h>
+#include <asm/delay.h>
+static inline void smp_init(void) {}

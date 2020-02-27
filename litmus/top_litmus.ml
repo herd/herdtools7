@@ -118,6 +118,7 @@ module type Config = sig
   include Run_litmus.Config
   val limit : bool
   val sysarch : Archs.System.t
+  val word : Word.t
 end
 
 module Top (OT:TopConfig) (Tar:Tar.S) : sig
@@ -265,17 +266,14 @@ end = struct
                 dump source doc compiled;
                 if not OT.is_out then begin
                     let _utils =
-                      let module O = struct
-                          include OT
-                          let arch = A'.arch
-                        end in
                       let module OO = struct
-                          include O
-                          let cached =
-                            match threadstyle with
-                            | ThreadStyle.Cached -> true
-                            | _ -> false
-                        end in
+                        include OT
+                        let arch = A'.arch
+                        let cached =
+                          match threadstyle with
+                          | ThreadStyle.Cached -> true
+                          | _ -> false
+                      end in
                       let module Obj = ObjUtil.Make(OO)(Tar) in
                       Obj.dump () in
                     ()
@@ -416,13 +414,15 @@ end = struct
             include OT
             include ODep
             let debuglexer = debuglexer
-            let sysarch = match arch with
-              | #Archs.System.t as a -> a
-              | (`CPP|`LISA) -> Warn.fatal "no support for arch '%s'" (Archs.pp arch)
-              | `C -> begin match OT.carch with
-                      | Some a -> a
-                      | None  -> Warn.fatal "Test %s not performed because -carch is not given but required while using C arch" tname
-                      end
+          let sysarch =
+            match Archs.get_sysarch arch  OT.carch with
+            | Some a -> a
+            | None -> begin match arch with
+              | `C ->
+                  Warn.fatal "Test %s not performed because -carch is not given but required while using C arch" tname
+              | _ ->
+                Warn.fatal "no support for arch '%s'" (Archs.pp arch)
+            end
           end in
         let module Cfg = OX in
         let aux = function

@@ -24,9 +24,9 @@ typedef struct {
 } entry_t ;
 
 #ifdef KVM
-static void pp_entry(entry_t *p, int verbose, char **group) ;
+static void pp_entry(entry_t *p, int verbose, const char **group) ;
 #else
-static void pp_entry(FILE *out,entry_t *p, int verbose, char **group) ;
+static void pp_entry(FILE *out,entry_t *p, int verbose, const char **group) ;
 #endif
 
 typedef struct {
@@ -35,9 +35,9 @@ typedef struct {
 } hash_t ;
 
 #ifdef KVM
-static void pp_hash(hash_t *t,int verbose,char **group) {
+static void pp_hash(hash_t *t,int verbose,const char **group) {
 #else
-static void pp_hash(FILE *fp,hash_t *t,int verbose,char **group) {
+static void pp_hash(FILE *fp,hash_t *t,int verbose,constchar **group) {
 #endif
   for (int k = 0 ; k < HASHSZ ; k++) {
     entry_t *p = t->t+k ;
