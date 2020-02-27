@@ -27,8 +27,10 @@ static pthread_t th[AVAIL];
 #endif
 
 #ifdef KVM
+int RUN(int argc,char **argv) ;
 int RUN(int argc,char **argv) {
 #else
+int RUN(int argc,char **argv,FILE *out) ;
 int RUN(int argc,char **argv,FILE *out) {
 #endif
 #ifdef OUT
@@ -81,7 +83,7 @@ int RUN(int argc,char **argv,FILE *out) {
   for (int id=0; id < AVAIL ; id++) join(&th[id]);
 #endif
   int nexe = global.nexe ;
-  hash_init(&global.hash) ;  
+  hash_init(&global.hash) ;
   for (int k=0 ; k < nexe ; k++) {
     hash_adds(&global.hash,&global.ctx[k].t) ;
   }
@@ -108,6 +110,7 @@ int RUN(int argc,char **argv,FILE *out) {
 #ifdef MAIN
 int main (int argc,char **argv) {
 #ifdef KVM
+  smp_init();
   return RUN(argc,argv) ;
 #else
   return RUN(argc,argv,stdout) ;

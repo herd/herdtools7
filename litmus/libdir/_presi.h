@@ -73,10 +73,13 @@ typedef uint64_t tsc_t ;
 
 /* Result in micro-seconds */
 tsc_t timeofday(void) ;
+#ifdef KVM
+typedef struct { tsc_t sec,frac; } sec_t ;
+sec_t tsc_millions(tsc_t t) ;
+void emit_double(sec_t f) ;
+#else
 double tsc_ratio(tsc_t t1, tsc_t t2) ;
 double tsc_millions(tsc_t t) ;
-#ifdef KVM
-void emit_double(double f) ;
 #endif
 
 
@@ -100,7 +103,7 @@ typedef struct {
 char **parse_opt(int argc,char **argv,opt_t *def, opt_t *p) ;
 
 typedef struct {
-  char* tag;
+  const char* tag;
   int *dst;
   int (*f)(int);
   int max;

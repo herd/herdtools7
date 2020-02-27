@@ -31,13 +31,13 @@ module Make(Cfg:Config)(O:Indent.S) : EmitPrintf.S = struct
 
   let pp_pad = function
     | No_padding -> ""
-    | Some_padding (p,Zeros) -> sprintf "0%i" p
-    | Some_padding (p,Left) -> sprintf "-%i" p
-    | Some_padding (p,Right) -> sprintf "%i" p
+    | Some_padding (p,Zeros) -> sprintf "0%d" p
+    | Some_padding (p,Left) -> sprintf "-%d" p
+    | Some_padding (p,Right) -> sprintf "%d" p
 
 
   let pp_ic = function
-    | Int_i -> 'i'
+    | Int_i -> 'd'
     | Int_x -> 'x'
     | Int_u -> 'u'
 
@@ -106,13 +106,13 @@ module Make(Cfg:Config)(O:Indent.S) : EmitPrintf.S = struct
   | Int (No_padding,c,i) ->
       sprintf "emit%s%s(%s,%s);" (tr_int_ty i) (tr_int_conv c) out a
   | Int (Some_padding(p,Left),c,i) ->
-      sprintf "emit_pad%s%s(%s,' ',%i,%s);"
+      sprintf "emit_pad%s%s(%s,' ',%d,%s);"
          (tr_int_ty i) (tr_int_conv c) out (-p) a
   | Int (Some_padding(p,Right),c,i) ->
-      sprintf "emit_pad%s%s(%s,' ',%i,%s);"
+      sprintf "emit_pad%s%s(%s,' ',%d,%s);"
          (tr_int_ty i) (tr_int_conv c) out p a
   | Int (Some_padding(p,Zeros),c,i) ->
-      sprintf "emit_pad%s%s(%s,'0',%i,%s);"
+      sprintf "emit_pad%s%s(%s,'0',%d,%s);"
          (tr_int_ty i) (tr_int_conv c) out p a
 (*  | _ -> Warn.fatal "Missing conversion" *)
 

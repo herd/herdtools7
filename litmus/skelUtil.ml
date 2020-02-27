@@ -235,9 +235,9 @@ module Make
       let tr_out test = OutMapping.info_to_tr test.T.info
 
       let pp_loc tr_out loc =  match loc with
-      | A.Location_reg (proc,reg) -> tr_out (sprintf "%i:%s" proc (A.pp_reg reg))
+      | A.Location_reg (proc,reg) -> tr_out (sprintf "%d:%s" proc (A.pp_reg reg))
       | A.Location_global s -> sprintf "%s" s
-      | A.Location_deref (s,i) -> sprintf "%s[%i]" s i
+      | A.Location_deref (s,i) -> sprintf "%s[%d]" s i
 
       let register_type _loc t = t (* Systematically follow given type *)
 
@@ -343,7 +343,7 @@ module Make
                     O.f "typedef %s %s;" t (type_name s)
                 | Some _ -> assert false
                 end)
-            globs ;
+           globs ;
           begin match globs with _::_ -> O.o "" | [] -> () end ;
           ()
 
@@ -376,7 +376,7 @@ module Make
 (* Postlude *)
 
         let pp_nstates nstates =
-          EPF.fi "Histogram (%i states)\n" [nstates]
+          EPF.fi "Histogram (%d states)\n" [nstates]
 
         let cstring s = sprintf "%S" s
 
@@ -523,7 +523,7 @@ module Make
               O.oii "for (int k = 0 ; k < SCANSZ ; k++) {" ;
               O.oiii "count_t c = ngroups[k];" ;
               O.oiii "if ((g->verbose > 1 && c > 0) || (c*100)/p_true > ENOUGH) {" ;
-              let fmt = "Topology %-6PCTR:> part=%i %s\n" in
+              let fmt = "Topology %-6PCTR:> part=%d %s\n" in
               EPF.fiv fmt ["c";"k";"g->group[k]"] ;
               O.oiii "}" ;
               O.oii "}"
@@ -543,7 +543,7 @@ module Make
                       sprintf "%s %%-6PCTR:> {%s}\n"
                         tag
                         (String.concat ", "
-                           (List.map (sprintf "%s=%%i") tags))
+                           (List.map (sprintf "%s=%%d") tags))
                     and args =
                       List.map
                         (fun k -> process (sprintf "k%i" k))
@@ -569,7 +569,7 @@ module Make
           | Mode.Kvm ->
               let s = sprintf "Time %s "  doc.Name.name in
               O.fi "puts(%S);" s ;
-              O.oi "emit_double(((double)total) / 1000000.0);" ;
+              O.oi "emit_double(tsc_millions(total));" ;
               O.oi "puts(\"\\n\");"
           end ;
           if Cfg.exit_cond then O.oi "return cond;" ;
