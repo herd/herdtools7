@@ -64,7 +64,6 @@ module Make
         ObjUtil.Insert
           (struct
             let sysarch = Cfg.sysarch
-            let word = Cfg.word
           end)
 
       module EPF =
@@ -131,10 +130,8 @@ module Make
         if Cfg.is_kvm then begin
           O.o "#define KVM 1" ;
           O.o "#include <libcflat.h>" ;
-          O.o "#include <asm-generic/atomic.h>" ;
-          O.o "#include <asm/smp.h>" ;
-          O.o "#include <asm/delay.h>" ;
-          O.o "#include <litmus.h>"
+          O.o "#include \"kvm-headers.h\"" ;
+          O.o "#include \"utils.h\""
         end else begin
           O.o "#include <stdlib.h>" ;
           O.o "#include <inttypes.h>" ;
@@ -689,7 +686,7 @@ module Make
         O.o "" ;
         ObjUtil.insert_lib_file O.o "_hash.c" ;
         O.o "" ;
-        O.f "static void pp_entry(%sentry_t *p, int verbose, char **group) {"
+        O.f "static void pp_entry(%sentry_t *p, int verbose, const char **group) {"
           (k_nkvm "FILE *out,") ;
         let fmt = "%-6PCTR%c>" in
         EPF.fi fmt ["p->c";"p->ok ? '*' : ':'";] ;

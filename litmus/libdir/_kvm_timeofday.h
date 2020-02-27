@@ -13,16 +13,6 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
+#include <stdint.h>
 
-#include <asm/processor.h>
-#include "kvm_timeofday.h"
-
-uint64_t gettimeofday(void) {
-  uint64_t cycles = read_sysreg(cntpct_el0) ;
-  uint64_t freq =  get_cntfrq() ;
-  return (cycles * 1000000UL)/freq ;
-}
-
-
-
-
+uint64_t gettimeofday(void);

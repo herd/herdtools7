@@ -60,14 +60,14 @@ typedef struct global_t {
   int volatile over;
 #endif
   /* Topology */
-  int *inst, *role ;  
-  char **group ;
+  const int *inst, *role ;
+  const char **group ;
   /* memory */
   intmax_t *mem ;
   /* Cache control */
 #ifdef ACTIVE
   active_t *active;
-#endif  
+#endif
   /* Runtime control */
   int verbose ;
   int size,nruns,nexe,noccs ;

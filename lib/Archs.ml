@@ -111,3 +111,8 @@ let lisa = `LISA
 let x86_64 = `X86_64
 
 let compare = compare
+
+let get_sysarch (a:t) (ca:System.t option) = match a with
+| #System.t as a -> Some a
+|`CPP|`LISA -> None
+| `C -> ca
