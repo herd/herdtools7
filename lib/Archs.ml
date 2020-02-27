@@ -77,7 +77,7 @@ let tags =
   ::System.tags
 
 let parse s = match System.parse s with
-  | None -> begin 
+  | None -> begin
     match s with
       | "C"   -> Some `C
       | "CPP" | "C++"   -> Some `CPP
@@ -111,3 +111,8 @@ let lisa = `LISA
 let x86_64 = `X86_64
 
 let compare = compare
+
+let get_sysarch (a:t) (ca:System.t option) = match a with
+| #System.t as a -> Some a
+|`CPP|`LISA -> None
+| `C -> ca

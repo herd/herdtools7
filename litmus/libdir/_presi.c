@@ -30,11 +30,10 @@
 
 #ifdef KVM
 #define fprintf(stderr,fmt,...) printf(fmt, __VA_ARGS__)
-const static int stderr = 2 ;
 
 static int errno = 0 ;
-const static int ERANGE = 1 ;
-static char *strerror(int e) { return "ERROR"; }
+static const int ERANGE = 1 ;
+static const char *strerror(int e) { return "ERROR"; }
 #endif
 
 /********/
@@ -198,7 +197,8 @@ void *join(pthread_t *th) {
 /****************/
 
 #ifdef KVM
-#include "kvm_timeofday.c"
+#include "kvm_timeofday.h"
+tsc_t timeofday(void) { return gettimeofday(); }
 #else
 #include <sys/time.h>
 #include <time.h>
@@ -210,24 +210,28 @@ tsc_t timeofday(void) {
 }
 #endif
 
+#ifdef KVM
+sec_t tsc_millions(tsc_t t) {
+  tsc_t a = t / 1000000 ;
+  tsc_t b = t % 1000000 ;
+  b = (b + 5000) / 10000 ;
+  sec_t r = { a, b } ;
+  return r ;
+}
+
+void emit_double(sec_t f) {
+  printf("%" PRIu64, f.sec) ;
+  puts(".");
+  printf("%02" PRIu64, f.frac) ;
+}
+
+#else
 double tsc_ratio(tsc_t t1, tsc_t t2) {
   return ((double) t1) / ((double)t2) ;
 }
 
-
 double tsc_millions(tsc_t t) {
   return t / 1000000.0 ;
-}
-
-#ifdef KVM
-void emit_double(double f) {
-  double g = f < 0.0 ? -f : f ;
-  g *= 100.0 ; g += 0.5 ;
-  uint64_t x = g ;
-  if (f < 0.0) puts("-") ;
-  printf("%" PRIu64, x / 100) ;
-  puts(".");
-  printf("%02"PRIu64,x % 100) ;
 }
 #endif
 
@@ -237,8 +241,8 @@ void emit_double(double f) {
 
 static void usage_opt(char *prog,opt_t *d) {
   fprintf(stderr,"usage: %s (options)* (parameters)*\n",prog) ;
-  fprintf(stderr,"  -v      be verbose\n") ;
-  fprintf(stderr,"  -q      be quiet\n") ;
+  fprintf(stderr,"%s","  -v      be verbose\n") ;
+  fprintf(stderr,"%s","  -q      be quiet\n") ;
   fprintf(stderr,"  -a <n>  consider that <n> cores are available (default %i)\n",d->avail) ;
   fprintf(stderr,"  -n <n>  run n tests concurrently (default %i)\n",d->n_exe) ;
   fprintf(stderr,"  -r <n>  perform n external runs (default %i)\n",d->max_run) ;
@@ -294,7 +298,7 @@ char **parse_opt(int argc,char **argv,opt_t *d, opt_t *p) {
   }
 }
 
-static char *check_key(char *key, char *arg) {
+static char *check_key(const char *key, char *arg) {
   while (*key) {
     if (*key != *arg) return NULL ;
     key++ ; arg++ ;

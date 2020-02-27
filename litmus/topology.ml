@@ -279,7 +279,7 @@ let part pp_part maxelt maxpart k r =
               
 
   let handle_groups sz all_gs =
-    O.o "static char *group[] = {" ;
+    O.o "static const char *group[] = {" ;
     List.iter
       (fun g -> O.f "\"%s\"," (pp_gss g))
       all_gs ;
@@ -305,7 +305,7 @@ let part pp_part maxelt maxpart k r =
     handle_groups (nthreads*ninst) (List.rev all_gs)
 
   let handle_table name mk gss cpus =
-    O.f "static int %s[] = {" name ;
+    O.f "static const int %s[] = {" name ;
     List.iter2
       (fun gs cpu ->
         let xs = mk cpu in

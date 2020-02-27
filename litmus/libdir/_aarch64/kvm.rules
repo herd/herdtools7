@@ -19,7 +19,7 @@ cleansource:
 	awk -f show.awk $< > $@
 
 %.elf: LDFLAGS = -nostdlib -pie -n
-%.elf: %.o $(FLATLIBS) $(SRCDIR)/arm/flat.lds $(cstart.o)
+%.elf: %.o utils.o kvm_timeofday.o $(FLATLIBS) $(SRCDIR)/arm/flat.lds $(cstart.o)
 	$(GCC) $(CFLAGS) -c -o $(@:.elf=.aux.o) $(SRCDIR)/lib/auxinfo.c \
 		-DPROGNAME=\"$(@:.elf=.flat)\" -DAUXFLAGS=$(AUXFLAGS)
 	$(LD) $(LDFLAGS) -o $@ -T $(SRCDIR)/arm/flat.lds \

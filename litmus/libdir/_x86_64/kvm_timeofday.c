@@ -4,7 +4,7 @@
 /* Jade Alglave, University College London, UK.                             */
 /* Luc Maranget, INRIA Paris-Rocquencourt, France.                          */
 /*                                                                          */
-/* Copyright 2020-present Institut National de Recherche en Informatique et */
+/* Copyright 2015-present Institut National de Recherche en Informatique et */
 /* en Automatique and the authors. All rights reserved.                     */
 /*                                                                          */
 /* This software is governed by the CeCILL-B license under French law and   */
@@ -13,16 +13,11 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
-
-#include <asm/processor.h>
 #include "kvm_timeofday.h"
 
 uint64_t gettimeofday(void) {
-  uint64_t cycles = read_sysreg(cntpct_el0) ;
-  uint64_t freq =  get_cntfrq() ;
-  return (cycles * 1000000UL)/freq ;
+  uint32_t a,d; ;
+  asm __volatile__ ("rdtsc" : "=a" (a), "=d" (d)) ;
+  uint64_t r = ((uint64_t)a) | (((uint64_t)d)<<32);
+  return r / 2200 ;
 }
-
-
-
-
