@@ -54,7 +54,7 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
       | I_LOCK ins -> extract_addrs ins
       | I_EFF_OP (_, _, ea, op)
         ->  StringSet.union (extract_ea ea) (extract_op op)
-      | I_NOP | I_JMP _ | I_MFENCE | I_JCC _
+      | I_NOP | I_JMP _ | I_FENCE _ | I_JCC _
         -> StringSet.empty
       | I_CMPXCHG (_, ea,_)
         | I_EFF (_, _, ea)
@@ -245,7 +245,7 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
        end
     | I_JMP lbl -> jmp tr_lab lbl
     | I_JCC (cond, lbl) -> jcc tr_lab cond lbl
-    | I_MFENCE -> op_none "mfence"
+    | I_FENCE f -> op_none (pp_barrier f)
     | I_LOCK ins ->
         let r = do_compile_ins tr_lab ins in
         { r with memo = "lock; " ^ r.memo ; }

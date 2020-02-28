@@ -198,10 +198,14 @@ let get_reg_size = function
 (************)
 
 type barrier =
-  | Mfence
+  | MFENCE
+  | SFENCE
+  | LFENCE
 
-let pp_barrier b = match b with
-  | Mfence -> "mfence"
+let pp_barrier = function
+  | MFENCE -> "mfence"
+  | SFENCE -> "sfence"
+  | LFENCE -> "lfence"
 
 let barrier_compare = compare
 
@@ -306,7 +310,7 @@ type instruction =
   | I_JCC of condition * lbl
   | I_CMOVC of inst_size * reg * effaddr
   | I_LOCK of instruction
-  | I_MFENCE
+  | I_FENCE of barrier
   | I_MOVNTI of inst_size * effaddr * reg
 
 type parsedInstruction = instruction
@@ -410,8 +414,8 @@ let rec do_pp_instruction (m : mm) =
            | I_CMOVC (s, r, ea) ->  ppi_r_ea "cmovc" s r ea
            | I_LOCK inst -> "lock; " ^ do_pp_instruction m inst
            | I_JMP(lbl) -> ppi_lbl "jmp" lbl
-           | I_JCC(cond, lbl) -> ppi_lbl ("J" ^ pp_condition cond) lbl
-           | I_MFENCE  -> "mfence"
+           | I_JCC(cond, lbl) -> ppi_lbl ("j" ^ pp_condition cond) lbl
+           | I_FENCE f -> pp_barrier f
            | I_MOVNTI (sz,ea,r) ->
                sprintf "movnti%s %s,%s"
                  (pp_inst_size sz)
@@ -459,7 +463,7 @@ let rec fold_regs (f_reg,f_sreg) =
                | I_EFF_OP (_, _, ea, op) ->
                   let c = fold_effaddr c ea in
                   fold_operand c op
-               | I_NOP | I_JMP _ | I_JCC _ | I_MFENCE -> c
+               | I_NOP | I_JMP _ | I_JCC _ | I_FENCE _ -> c
                | I_EFF (_, _, eff) -> fold_effaddr c eff
                | I_EFF_EFF (_, _, ea1, ea2) ->
                   let c = fold_effaddr c ea1 in
@@ -495,7 +499,7 @@ let rec map_regs f_reg f_symb =
   fun ins -> match ins with
              | I_EFF_OP(inst, s, ea, op) ->
                 I_EFF_OP (inst, s, map_effaddr ea, map_operand op)
-             | I_NOP | I_JMP _ | I_JCC _| I_MFENCE -> ins
+             | I_NOP | I_JMP _ | I_JCC _| I_FENCE _ -> ins
              | I_EFF (inst, s, ea) ->
                 I_EFF (inst, s, map_effaddr ea)
              | I_EFF_EFF (inst, s, ea1, ea2) ->
@@ -526,7 +530,7 @@ let rec fold_addrs f =
                | I_EFF_OP (_, _, ea, op) ->
                   let c = fold_effaddr c ea in
                   fold_operand c op
-               | I_NOP | I_JMP _ | I_JCC _ | I_MFENCE -> c
+               | I_NOP | I_JMP _ | I_JCC _ | I_FENCE _ -> c
                | I_EFF (_, _, eff) -> fold_effaddr c eff
                | I_EFF_EFF (_, _, ea1, ea2) ->
                   let c = fold_effaddr c ea1 in
@@ -553,7 +557,7 @@ let rec map_addrs f =
   fun ins -> match ins with
              | I_EFF_OP(inst, s, ea, op) ->
                 I_EFF_OP (inst, s, map_effaddr ea, map_operand op)
-             | I_NOP | I_JMP _ | I_JCC _| I_MFENCE -> ins
+             | I_NOP | I_JMP _ | I_JCC _| I_FENCE _ -> ins
              | I_EFF (inst, s, ea) ->
                 I_EFF (inst, s, map_effaddr ea)
              | I_EFF_EFF (inst, s, ea1, ea2) ->
@@ -570,7 +574,7 @@ let rec map_addrs f =
 let norm_ins ins = ins
 
 let rec get_next = function
-  | I_NOP | I_EFF_OP _ | I_MFENCE
+  | I_NOP | I_EFF_OP _ | I_FENCE _
     | I_EFF_EFF _ | I_EFF _ | I_CMPXCHG _
     | I_CMOVC _|I_MOVNTI _ -> [Label.Next]
     | I_JMP lbl-> [Label.To lbl]
@@ -588,7 +592,7 @@ include Pseudo.Make
             let rec get_naccesses = function
               | I_EFF_OP (_, _, ea, op)
                 -> get_naccs_eff ea + get_naccs_op op
-              | I_NOP | I_MFENCE | I_JMP _ | I_JCC _ -> 0
+              | I_NOP | I_FENCE _ | I_JMP _ | I_JCC _ -> 0
               | I_EFF (I_SETNB, _, e) -> get_naccs_eff e
               | I_EFF (_, _, e) | I_CMPXCHG (_, e, _) -> 2 * get_naccs_eff e
               | I_EFF_EFF (_, _, e1, e2) ->
@@ -600,14 +604,14 @@ include Pseudo.Make
             let rec fold_labels k f = function
               | I_LOCK ins -> fold_labels k f ins
               | I_JMP lbl | I_JCC (_, lbl)-> f k lbl
-              | I_NOP | I_EFF_OP _ | I_MFENCE
+              | I_NOP | I_EFF_OP _ | I_FENCE _
                 | I_EFF_EFF _ | I_EFF _ | I_CMPXCHG _
                 | I_CMOVC _|I_MOVNTI _ -> k
 
             let rec map_labels f ins = match ins with
               | I_LOCK ins -> I_LOCK (map_labels f ins)
               | I_JMP lbl | I_JCC (_, lbl) -> I_JMP (f lbl)
-              | I_NOP | I_EFF_OP _ | I_MFENCE
+              | I_NOP | I_EFF_OP _ | I_FENCE _
                 | I_EFF_EFF _ | I_EFF _ | I_CMPXCHG _
                 | I_CMOVC _|I_MOVNTI _ -> ins
 

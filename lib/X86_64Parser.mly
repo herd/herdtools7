@@ -41,8 +41,9 @@ module X86_64 = X86_64Base
 %token I_UXCH I_UXCHB I_UXCHW I_UXCHL I_UXCHQ
 %token I_CMPXCHG I_CMPXCHGB I_CMPXCHGW I_CMPXCHGL I_CMPXCHGQ
 %token I_CMOVC I_CMOVCB I_CMOVCW I_CMOVCL I_CMOVCQ
-%token  I_LOCK  I_JMP  I_MFENCE I_SETNB
-%token  I_JE I_JNE I_JLE I_JLT I_JGT I_JGE I_JS I_JNS
+%token I_LOCK  I_JMP I_SETNB
+%token I_MFENCE I_SFENCE I_LFENCE
+%token I_JE I_JNE I_JLE I_JLT I_JGT I_JGE I_JS I_JNS
 %token I_MOVNTI  I_MOVNTIL I_MOVNTIQ
 
 %type <MiscParser.proc list * (X86_64Base.pseudo) list list> main
@@ -168,7 +169,11 @@ instr:
     {X86_64.I_JCC(X86_64.C_NS, $2)}
 
   | I_MFENCE
-      { X86_64.I_MFENCE}
+      { X86_64.I_FENCE (X86_64.MFENCE) }
+  | I_SFENCE
+      { X86_64.I_FENCE (X86_64.SFENCE) }
+  | I_LFENCE
+      { X86_64.I_FENCE (X86_64.LFENCE) }
 
   | I_DEC  effaddr
     {X86_64.I_EFF (X86_64.I_DEC, X86_64.INSb, $2)}

@@ -14,166 +14,194 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+module Config = struct
+  let naturalsize = MachSize.Word
+  let fullmixed = true
+end
+
 module Make
     (C:sig
       val naturalsize : MachSize.sz
       val fullmixed : bool
     end) = struct
 
-  open Printf
+      open Printf
 
-  include X86_64Base
-  let tr_endian = Misc.identity
+      include X86_64Base
+      let tr_endian = Misc.identity
 
-  module ScopeGen = ScopeGen.NoGen
-  module Mixed =
-    MachMixed.Make
-      (struct
-        let naturalsize = Some C.naturalsize
-        let fullmixed = C.fullmixed
-      end)
+      module ScopeGen = ScopeGen.NoGen
+      module Mixed =
+        MachMixed.Make
+          (struct
+            let naturalsize = Some C.naturalsize
+            let fullmixed = C.fullmixed
+          end)
 
-  let bellatom = false
+      let bellatom = false
 
-  type atom_acc = Plain | Atomic
-  type atom = atom_acc * MachMixed.t option
+      type atom_acc = Plain | Atomic | NonTemporal
 
-  let default_atom = Atomic,None
+      type atom = atom_acc * MachMixed.t option
 
-  let applies_atom a d = match a,d with
-  | ((Atomic,_),Code.W)
-  | ((Plain,_), (Code.W|Code.R)) -> true
-  | ((Atomic,_),Code.R)
-  | (_,Code.J)-> false
+      let default_atom = Atomic,None
 
-  let compare_atom = compare
+      let applies_atom a d = match a,d with
+      | (((NonTemporal|Atomic),_),Code.W)
+      | ((Plain,_),(Code.W|Code.R)) -> true
+      | (((NonTemporal|Atomic),_),Code.R)
+      | (_,Code.J)-> false
 
-  let pp_plain = Code.plain
+      let compare_atom = compare
 
-  let pp_as_a = None
+      let pp_plain = Code.plain
 
-  let pp_atom_acc = function
-  | Atomic -> "A" | Plain -> ""
+      let pp_as_a = None
 
-  let pp_atom = function
-    | a,None -> pp_atom_acc a
-    | a,Some m -> sprintf "%s%s" (pp_atom_acc a) (Mixed.pp_mixed m)
+      let pp_atom_acc = function
+        | Atomic -> "A" | Plain -> ""
+        | NonTemporal -> "NT"
 
-  let fold_mixed f r =
-    Mixed.fold_mixed (fun mix r -> f (Plain,Some mix) r) r
+      let pp_atom = function
+        | a,None -> pp_atom_acc a
+        | a,Some m -> sprintf "%s%s" (pp_atom_acc a) (Mixed.pp_mixed m)
 
-  let fold_acc f k = f Atomic k
+      let fold_mixed f r =
+        Mixed.fold_mixed (fun mix r -> f (Plain,Some mix) r) r
 
-  let fold_non_mixed f r = fold_acc (fun acc r -> f (acc,None) r) r
+      let fold_acc f k = f Atomic (f NonTemporal k)
 
-  let fold_atom f r =
-    fold_acc
-      (fun acc r ->
-        Mixed.fold_mixed
-          (fun m r -> f (acc,Some m) r)
-          (f (acc,None) r))
-      (fold_mixed f r)
+      let fold_non_mixed f r =
+        fold_acc (fun acc r -> f (acc,None) r) r
 
-  let worth_final _ = true
+      let apply_mix f acc m r = match acc,m with
+      | (NonTemporal,(None|Some ((MachSize.Quad|MachSize.Word),_)))
+      | ((Plain|Atomic),_) ->
+          f (acc,m) r
+      |  (NonTemporal,Some ((MachSize.Short|MachSize.Byte),_))
+          -> r
 
-  let varatom_dir _d f = f None
+      let fold_atom f r =
+        fold_acc
+          (fun acc r ->
+            Mixed.fold_mixed
+              (fun m r -> apply_mix f acc (Some m) r)
+              (f (acc,None) r))
+          (fold_mixed f r)
 
-   let merge_atoms a1 a2 = match a1,a2 with
-   | ((Plain,sz),(a,None))
-   | ((a,None),(Plain,sz)) -> Some (a,sz)
-   | ((a1,None),(a2,sz))
-   | ((a1,sz),(a2,None)) when a1=a2 -> Some (a1,sz)
-   | ((Plain,sz1),(a,sz2))
-   | ((a,sz1),(Plain,sz2)) when sz1=sz2 -> Some (a,sz1)
-   | _,_ -> if a1=a2 then Some a1 else None
+      let worth_final _ = true
 
-   let atom_to_bank _ = Code.Ord
+      let varatom_dir _d f = f None
+
+      let check_nt a sz =
+        apply_mix (fun c _ -> Some c) a sz None
+
+        let merge_atoms a1 a2 = match a1,a2 with
+      | ((Plain,sz),(a,None))
+      | ((a,None), (Plain,sz)) -> check_nt a sz
+      | ((a1,None),(a2,sz))
+      | ((a1,sz),(a2,None)) when a1=a2 ->
+          check_nt a1 sz
+      | ((Plain,sz1),(a,sz2))
+      | ((a,sz1),(Plain,sz2)) when sz1=sz2 ->
+          check_nt a sz1
+      | _,_ -> if a1=a2 then Some a1 else None
+
+      let atom_to_bank _ = Code.Ord
 
 (**************)
 (* Mixed size *)
 (**************)
 
-  let tr_value ao v = match ao with
-    | None | Some ((Plain|Atomic),None) -> v
-    | Some ((Plain|Atomic), Some (sz, _)) -> Mixed.tr_value sz v
+      let tr_value ao v = match ao with
+      | None | Some ((NonTemporal|Plain|Atomic),None) -> v
+      | Some ((NonTemporal|Plain|Atomic), Some (sz, _)) -> Mixed.tr_value sz v
 
-  module ValsMixed =
-    MachMixed.Vals
-      (struct
-        let naturalsize () = C.naturalsize
-        let endian = endian
-      end)
+      module ValsMixed =
+        MachMixed.Vals
+          (struct
+            let naturalsize () = C.naturalsize
+            let endian = endian
+          end)
 
-  let overwrite_value v ao w = match ao with
-    | None | Some ((Plain|Atomic),None) -> w
-    | Some ((Plain|Atomic),Some (sz, o)) ->
-       ValsMixed.overwrite_value v sz o w
+      let overwrite_value v ao w = match ao with
+      | None | Some ((Plain|Atomic|NonTemporal),None) -> w
+      | Some ((Plain|Atomic|NonTemporal),Some (sz, o)) ->
+          ValsMixed.overwrite_value v sz o w
 
-  let extract_value v ao = match ao with
-    | None | Some ((Plain|Atomic),None) -> v
-    | Some ((Plain|Atomic),Some (sz, o)) ->
-       ValsMixed.extract_value v sz o
+      let extract_value v ao = match ao with
+      | None | Some ((Plain|Atomic|NonTemporal),None) -> v
+      | Some ((Plain|Atomic|NonTemporal),Some (sz, o)) ->
+          ValsMixed.extract_value v sz o
 
-  (**********)
-  (* Fences *)
-  (**********)
+      (**********)
+      (* Fences *)
+      (**********)
 
-  type fence = MFence
+      type fence = barrier
 
-  let is_isync _ = false
+      let is_isync _ = false
 
-  let compare_fence = compare
+      let compare_fence = barrier_compare
 
-  let default = MFence
-  let strong = default
+      let default = MFENCE
+      let strong = default
 
-  let pp_fence = function
-    | MFence -> "MFence"
+      let pp_fence = function
+        | MFENCE -> "MFence"
+        | SFENCE -> "SFence"
+        | LFENCE -> "LFence"
 
-  let fold_all_fences f r = f MFence r
-  let fold_cumul_fences f r = f MFence r
-  let fold_some_fences f r =  f MFence r
+      let fold_all_fences f r = f MFENCE (f SFENCE (f LFENCE r))
+      let fold_cumul_fences = fold_all_fences
+      let fold_some_fences f r =  f MFENCE r
 
-  let orders f d1 d2 = match f,d1,d2 with
-    | MFence,_,_ -> true
+      let orders f d1 d2 =
+        let open Code in match f,d1,d2 with
+        | (MFENCE,_,_)
+        | (SFENCE,W,W)
+        | (LFENCE,R,R)
+          -> true
+        | (_,_,_)
+          -> false
 
-  let var_fence f r = f default r
+      let var_fence f r = f default r
 
-  (********)
-  (* Deps *)
-  (********)
+      (********)
+      (* Deps *)
+      (********)
 
-  type dp
+      type dp
 
-  let pp_dp _ = assert false
+      let pp_dp _ = assert false
 
-  let fold_dpr _f r =  r
-  let fold_dpw _f r =  r
+      let fold_dpr _f r =  r
+      let fold_dpw _f r =  r
 
-  let ddr_default = None
-  let ddw_default = None
-  let ctrlr_default = None
-  let ctrlw_default = None
+      let ddr_default = None
+      let ddw_default = None
+      let ctrlr_default = None
+      let ctrlw_default = None
 
-  let is_ctrlr _ = assert false
-  let fst_dp _ = assert false
-  let sequence_dp _ _ = assert false
+      let is_ctrlr _ = assert false
+      let fst_dp _ = assert false
+      let sequence_dp _ _ = assert false
 
-  (*******)
-  (* RWM *)
-  (*******)
+      (*******)
+      (* RWM *)
+      (*******)
 
-  include OneRMW
-  include NoEdge
+      include OneRMW
+      include NoEdge
 
-  include
-    ArchExtra_gen.Make
-      (struct
-        type arch_reg = reg
-        let is_symbolic = function
-          | Symbolic_reg _ -> true
-          | _ -> false
-        let pp_reg = pp_reg
-        let free_registers = allowed_for_symb
-      end)
-end
+      include
+          ArchExtra_gen.Make
+          (struct
+            type arch_reg = reg
+            let is_symbolic = function
+              | Symbolic_reg _ -> true
+              | _ -> false
+            let pp_reg = pp_reg
+            let free_registers = allowed_for_symb
+          end)
+    end

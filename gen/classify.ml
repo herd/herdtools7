@@ -148,7 +148,9 @@ let () =
   | `X86 ->
       let module M = Build(X86Arch_gen) in
       M.zyva
-  | `X86_64 -> assert false
+  | `X86_64 ->
+      let module M = Build(X86_64Arch_gen.Make(X86_64Arch_gen.Config)) in
+      M.zyva
   | `PPC ->
       let module M = Build(PPCArch_gen.Make(PPCArch_gen.Config)) in
       M.zyva

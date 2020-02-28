@@ -294,9 +294,8 @@ module Top (Conf:Config) = struct
           let module X86_64S = X86_64Sem.Make(Conf)(Int64Value) in
           let module X86_64Barrier = struct
             type a = X86_64.barrier
-            type b = MFENCE
-            let a_to_b a = match a with
-            | X86_64.Mfence -> MFENCE
+            type b = X86_64.barrier
+            let a_to_b (f:a) = (f:b)
           end in
           let module X86_64M = X86_64Mem.Make(ModelConfig)(X86_64S)(X86_64Barrier) in
           let module P = GenParser.Make(Conf)(X86_64)(X86_64LexParse) in

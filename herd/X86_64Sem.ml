@@ -24,8 +24,11 @@ module Make (C:Sem.Config)(V : Value.S)
     include SemExtra.Make(C)(X86_64)(Act)
     let mixed = C.variant Variant.Mixed
     (* barrier pretty print *)
-    let mfence = {barrier=X86_64.Mfence; pp="mfence";}
-    let barriers = [mfence]
+    let barriers =
+      let mfence = {barrier=X86_64.MFENCE; pp="mfence";}
+      and sfence = {barrier=X86_64.SFENCE; pp="sfence";}
+      and lfence = {barrier=X86_64.LFENCE; pp="lfence";} in
+      [mfence; sfence; lfence;]
     let isync = None
     let nat_sz = V.Cst.Scalar.machsize
     let is_global = A.is_global
@@ -75,7 +78,7 @@ module Make (C:Sem.Config)(V : Value.S)
       let get_inst_size inst =
         let open X86_64 in
            match inst with
-           | I_NOP | I_MFENCE | I_LOCK _ | I_JMP _ | I_JCC _ -> INSb
+           | I_NOP | I_FENCE _ | I_LOCK _ | I_JMP _ | I_JCC _ -> INSb
            | I_EFF_OP (_, sz, _, _) | I_EFF (_, sz, _) | I_EFF_EFF (_, sz, _, _)
            | I_CMPXCHG (sz, _, _) | I_CMOVC (sz, _, _)
            | I_MOVNTI (sz,_,_)-> sz
@@ -247,6 +250,12 @@ module Make (C:Sem.Config)(V : Value.S)
              (lval_ea ea ii >>| rval_op sz locked op ii) >>=
                fun (loc,v_op) ->
                write_loc_gen sz locked loc v_op ii >>! B.Next
+(* TODO add NTI annottation, at movnti is an ordinary store *)
+          | X86_64.I_MOVNTI (sz,ea,r) ->
+              let sz = inst_size_to_mach_size sz in
+              (lval_ea ea ii >>| read_reg true r ii) >>=
+              fun (loc,v) ->
+              write_loc_gen sz locked loc v ii >>! B.Next
           | X86_64.I_EFF_OP (_, sz, ea, op) ->
              let sz = inst_size_to_mach_size sz in
              do_op sz locked Op.Xor ea op ii (* Problem, it's not always xor but the parameter of I_EFF_OP *)
@@ -330,10 +339,8 @@ module Make (C:Sem.Config)(V : Value.S)
           | X86_64.I_CMPXCHG (sz,ea,r) ->
              let sz = inst_size_to_mach_size sz in
              cmpxchg sz locked ea r ii
-          | X86_64.I_MFENCE ->
-             create_barrier X86_64.Mfence ii >>! B.Next
-          | X86_64.I_MOVNTI _ as i ->
-              Warn.fatal "Instruction %s not implemented" (X86_64.dump_instruction i)
+          | X86_64.I_FENCE f ->
+             create_barrier f ii >>! B.Next
         in
         M.addT
           (A.next_po_index ii.A.program_order_index)

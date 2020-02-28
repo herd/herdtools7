@@ -100,7 +100,9 @@ module FromX86_64(XB:X86_64Barrier.S) = struct
       | MEMBAR_CTA | MEMBAR_GL | MEMBAR_SYS (*PTX barriers*)
 
   let a_to_b a = match XB.a_to_b a with
-  | XB.MFENCE -> MFENCE
+  | X86_64Base.MFENCE -> MFENCE
+  | X86_64Base.SFENCE -> SFENCE
+  | X86_64Base.LFENCE -> LFENCE
 
   let pp_isync = "???"
 end

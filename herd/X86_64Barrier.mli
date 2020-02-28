@@ -19,6 +19,6 @@
 module type S =
   sig
     type a (* Native arch barrier *)
-    type b = MFENCE (* X86_64 arch barrier *)
+    type b = X86_64Base.barrier
     val a_to_b : a -> b
   end

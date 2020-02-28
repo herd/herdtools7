@@ -116,6 +116,8 @@ rule token = parse
 | "cmpxchgl"|"CMPXCHGL"    { I_CMPXCHGL}
 | "cmpxchgq"|"CMPXCHGQ"    { I_CMPXCHGQ}
 | "mfence"|"MFENCE"   { I_MFENCE }
+| "lfence"|"LFENCE"   { I_LFENCE }
+| "sfence"|"SFENCE"   { I_SFENCE }
 | "setnb"|"SETNB"       { I_SETNB }
 | name as x
   { match X86_64.parse_anyreg x with
