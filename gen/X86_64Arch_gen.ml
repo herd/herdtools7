@@ -79,7 +79,7 @@ module Make
       | ((Plain|Atomic),_) ->
           f (acc,m) r
       |  (NonTemporal,Some ((MachSize.Short|MachSize.Byte),_))
-          -> r
+        -> r
 
       let fold_atom f r =
         fold_acc
@@ -96,16 +96,16 @@ module Make
       let check_nt a sz =
         apply_mix (fun c _ -> Some c) a sz None
 
-        let merge_atoms a1 a2 = match a1,a2 with
-      | ((Plain,sz),(a,None))
-      | ((a,None), (Plain,sz)) -> check_nt a sz
-      | ((a1,None),(a2,sz))
-      | ((a1,sz),(a2,None)) when a1=a2 ->
-          check_nt a1 sz
-      | ((Plain,sz1),(a,sz2))
-      | ((a,sz1),(Plain,sz2)) when sz1=sz2 ->
-          check_nt a sz1
-      | _,_ -> if a1=a2 then Some a1 else None
+      let merge_atoms a1 a2 = match a1,a2 with
+        | ((Plain,sz),(a,None))
+        | ((a,None), (Plain,sz)) -> check_nt a sz
+        | ((a1,None),(a2,sz))
+        | ((a1,sz),(a2,None)) when a1=a2 ->
+            check_nt a1 sz
+        | ((Plain,sz1),(a,sz2))
+        | ((a,sz1),(Plain,sz2)) when sz1=sz2 ->
+            check_nt a sz1
+        | _,_ -> if a1=a2 then Some a1 else None
 
       let atom_to_bank _ = Code.Ord
 
@@ -134,9 +134,9 @@ module Make
       | Some ((Plain|Atomic|NonTemporal),Some (sz, o)) ->
           ValsMixed.extract_value v sz o
 
-      (**********)
-      (* Fences *)
-      (**********)
+            (**********)
+            (* Fences *)
+            (**********)
 
       type fence = barrier
 
@@ -187,9 +187,9 @@ module Make
       let fst_dp _ = assert false
       let sequence_dp _ _ = assert false
 
-      (*******)
-      (* RWM *)
-      (*******)
+          (*******)
+          (* RWM *)
+          (*******)
 
       include OneRMW
       include NoEdge
