@@ -36,9 +36,13 @@ rule token = parse
 | 'P' (num as x)
     { PROC (int_of_string x) }
 | '%' (name as name)
-    { match X86_64.parse_anyreg name with
+    { match X86_64.parse_any_reg name with
     | Some r -> ARCH_REG r
-    | None -> SYMB_REG name }
+    | None ->
+        begin match X86_64.parse_xmm_reg name with
+        | Some xmm -> XMM xmm
+        | None -> SYMB_REG name
+        end }          
 | ';' { SEMI }
 | ',' { COMMA }
 | '|' { PIPE }
@@ -70,6 +74,8 @@ rule token = parse
 | "movnti"|"MOVNTI"   { I_MOVNTI }
 | "movntil"|"MOVNTIL"   { I_MOVNTIL }
 | "movntiq"|"MOVNTIQ"   { I_MOVNTIQ }
+| "movd"|"MOVD" { I_MOVD }
+| "movntdqa"|"MOVNTDQA" { I_MOVNTDQA }
 | "dec"|"DEC"    { I_DEC}
 | "decb"|"DECB"    { I_DECB}
 | "decw"|"DECW"    { I_DECW}
@@ -120,9 +126,13 @@ rule token = parse
 | "sfence"|"SFENCE"   { I_SFENCE }
 | "setnb"|"SETNB"       { I_SETNB }
 | name as x
-  { match X86_64.parse_anyreg x with
+  { match X86_64.parse_any_reg x with
   | Some r -> ARCH_REG r
-  | None -> NAME x }
+  | None ->
+      begin match  X86_64.parse_xmm_reg x with
+      | Some r -> XMM r
+      | None -> NAME x
+      end }
 | eof { EOF }
 | ""  { error "X86_64" lexbuf }
 

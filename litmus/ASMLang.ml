@@ -153,8 +153,8 @@ module RegMap = A.RegMap)
           RegSet.diff
             (RegSet.diff all stable)
             (RegSet.unions [in_outputs;init_set]) in
-        let rem =
-          if AL.arch = `X86_64 then
+        let rem = (* ??? *)
+          if false && AL.arch = `X86_64 then
             RegSet.unions [rem;(RegSet.diff all init_set)]
           else rem in
         let rem =

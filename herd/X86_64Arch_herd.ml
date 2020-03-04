@@ -23,7 +23,8 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
       | I_LOCK _ | I_EFF_EFF (I_XCHG,_,_,_) -> true
       | I_NOP | I_EFF_OP _ | I_EFF _ | I_EFF_EFF _
       | I_CMPXCHG _ | I_JMP _ | I_JCC _ | I_CMOVC _ | I_MOVNTI _
-      | I_FENCE _ -> false
+      | I_FENCE _ | I_MOVD _ | I_MOVNTDQA _
+        -> false
 
     let pp_barrier_short = pp_barrier
     let reject_mixed = false
@@ -63,13 +64,15 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
 
     let reg_to_mach_size r = match r with
       | Ireg (_,p) -> reg_part_to_mach_size p
-      | RIP | Symbolic_reg _ | Internal _ | Flag _ -> Warn.fatal "No size for register %s" (pp_reg r)
+      | RIP | Symbolic_reg _ | Internal _ | Flag _ | XMM _ -> Warn.fatal "No size for register %s" (pp_reg r)
 
     let mem_access_size = function
-      | I_NOP | I_JMP _ | I_JCC _ | I_LOCK _ | I_FENCE _ -> None
+      | I_NOP | I_JMP _ | I_JCC _ | I_LOCK _ | I_FENCE _
+      | I_MOVNTDQA _ (* twice a quad in fact *)
+        -> None
       | I_EFF_OP (_, sz, _, _) | I_EFF (_, sz, _) | I_EFF_EFF (_, sz, _, _)
       | I_CMPXCHG (sz, _, _) | I_CMOVC (sz, _, _)
-      | I_MOVNTI (sz,_,_)
+      | I_MOVNTI (sz,_,_)  | I_MOVD (sz,_,_)
         -> Some (inst_size_to_mach_size sz)
 
 

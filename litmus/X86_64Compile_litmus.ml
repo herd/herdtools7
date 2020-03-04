@@ -54,12 +54,13 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
       | I_LOCK ins -> extract_addrs ins
       | I_EFF_OP (_, _, ea, op)
         ->  StringSet.union (extract_ea ea) (extract_op op)
-      | I_NOP | I_JMP _ | I_FENCE _ | I_JCC _
+      | I_NOP | I_JMP _ | I_FENCE _ | I_JCC _ | I_MOVD _
         -> StringSet.empty
       | I_CMPXCHG (_, ea,_)
         | I_EFF (_, _, ea)
         | I_CMOVC (_, _, ea)
         | I_MOVNTI (_,ea,_)
+        | I_MOVNTDQA (_,ea)
         -> extract_ea ea
       | I_EFF_EFF (_, _, ea1, ea2)
         ->  StringSet.union (extract_ea ea1) (extract_ea ea2)
@@ -70,14 +71,14 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
 (* compilation to templates *)
 (****************************)
 
-
-
     let compile_reg = function
       | RIP -> sprintf "%%[rip]"
-      | Ireg (r, t) -> sprintf "%%%s[%s]" (reg_size_to_string t) (reg64_string r)
+      | Ireg (r, t) ->
+          sprintf "%%%s[%s]" (reg_size_to_string t) (reg64_string r)
       | Symbolic_reg s -> s
       | Internal i -> sprintf "%i" i
       | Flag _ as f-> pp_reg f
+      | XMM xmm -> sprintf "%%[%s]" (xmm_string xmm)
 
     let compile_rm64_move i o r =  match r with
     |  Rm64_reg reg -> compile_reg reg,(i,[]),(o+1,[reg])
@@ -163,9 +164,27 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
       let ea1,(_,ins1) = compile_ea_input 0 ea in
       let ea2,ins2 = compile_reg r, [r] in
        { empty_ins with
-        memo = sprintf "movnti%s %s,%s" (pp_inst_size sz) ea2 ea1;
+        memo = sprintf "%s %s,%s" (pp_movnti sz) ea2 ea1;
         inputs = ins2@ins1;
         outputs = [] ; }
+
+    let movntdqa xmm ea =
+      let xmm = XMM xmm in
+      let ea,(_,inp) = compile_ea_input 0 ea in
+      let xmm,outp = compile_reg xmm,[xmm] in
+      { empty_ins with
+        memo = sprintf "%s %s,%s" pp_movntdqa ea xmm ;
+        inputs = inp ;
+        outputs = outp ; }
+
+    let movd sz r xmm =
+      let xmm = XMM xmm in
+      let xmm,inp  = compile_reg xmm,[xmm]
+      and r,outp = compile_reg r,[r] in
+      { empty_ins with
+        memo = sprintf "%s %s,%s" (pp_movd sz) xmm r ;
+        inputs = inp ;
+        outputs = outp ; }
 
     let op_ea_ea memo ea1 ea2 =
       let ea1,(i,ins1),(o,outs1) = compile_ea_output 0 0 ea1 in
@@ -224,7 +243,7 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
         | I_EFF_OP (inst, size, _, _) -> pp_inst_eff_op inst size
         | I_EFF_EFF (inst, size, _, _) -> pp_inst_eff_eff inst size
         | I_EFF (inst, size, _) -> pp_inst_eff inst size
-        | I_CMPXCHG (size, _, _) -> "CMPXCHG" ^ pp_inst_size size
+        | I_CMPXCHG (size, _, _) -> "cmpxchg" ^ pp_inst_size size
         | _ -> assert false
       in
            Misc.lowercase inst_str
@@ -254,6 +273,8 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
       -> op_ea_ea (inst_string i) ea1 ea2
     | I_CMPXCHG (_, ea, r) as i-> cmpxchg (inst_string i) ea r
     | I_MOVNTI (sz,ea,r) -> movnti sz ea r
+    | I_MOVD (sz,r,xmm) -> movd sz r xmm
+    | I_MOVNTDQA (xmm,ea) -> movntdqa xmm ea
 (* here I fail to know *)
     | I_CMOVC _ -> Warn.user_error "CMOVC ??"
 

@@ -26,6 +26,7 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
     | RIP -> "%rip"
 (* We always want the 64 bits version of the register because the smaller version are created by GCC*)
     | Ireg (r, _) -> "%" ^ X86_64Base.reg64_string r
+    | XMM xmm -> "%" ^ X86_64Base.xmm_string xmm
     | Internal i -> sprintf "i%i" i
     | _ -> assert false
 
@@ -52,6 +53,7 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
           | Ireg RDI -> "=&D" *)
           | Ireg (AX, _) -> "=&a"
           | Ireg (_, R8bH) -> "=&Q"
+          | XMM _ -> "=&x"
           | _ -> "=&r"
         let reg_class_stable r = reg_class r
         let comment = comment

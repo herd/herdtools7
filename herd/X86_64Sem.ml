@@ -78,10 +78,10 @@ module Make (C:Sem.Config)(V : Value.S)
       let get_inst_size inst =
         let open X86_64 in
            match inst with
-           | I_NOP | I_FENCE _ | I_LOCK _ | I_JMP _ | I_JCC _ -> INSb
+           | I_NOP | I_FENCE _ | I_LOCK _ | I_JMP _ | I_JCC _ | I_MOVNTDQA _ -> INSb
            | I_EFF_OP (_, sz, _, _) | I_EFF (_, sz, _) | I_EFF_EFF (_, sz, _, _)
            | I_CMPXCHG (sz, _, _) | I_CMOVC (sz, _, _)
-           | I_MOVNTI (sz,_,_)-> sz
+           | I_MOVNTI (sz,_,_) | I_MOVD (sz,_,_) -> sz
 
       let read_reg is_data r ii =
         if is_data then
@@ -340,7 +340,9 @@ module Make (C:Sem.Config)(V : Value.S)
              let sz = inst_size_to_mach_size sz in
              cmpxchg sz locked ea r ii
           | X86_64.I_FENCE f ->
-             create_barrier f ii >>! B.Next
+              create_barrier f ii >>! B.Next
+          | X86_64.I_MOVD _| X86_64.I_MOVNTDQA _ as i ->
+              Warn.fatal "X86_64Sem.ml: Instruction %s not implemented" (X86_64.dump_instruction i)
         in
         M.addT
           (A.next_po_index ii.A.program_order_index)
