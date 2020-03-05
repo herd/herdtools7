@@ -22,6 +22,9 @@ module type I = sig
   val is_symbolic : arch_reg -> bool
   val pp_reg : arch_reg -> string
   val free_registers : arch_reg list
+
+  type special
+  val specials : special list
 end
 
 module type S = sig
@@ -58,9 +61,12 @@ module type S = sig
 
   val next_label_st : st -> st
 
+  type special
+  val alloc_special : st -> special * st
 end
 
-module Make(I:I) : S with type arch_reg = I.arch_reg
+module Make(I:I) : S
+with type arch_reg = I.arch_reg and type special = I.special
 = struct
   type arch_reg = I.arch_reg
 
@@ -96,30 +102,46 @@ module Make(I:I) : S with type arch_reg = I.arch_reg
 
   type init = (location * string option) list
 
-  type st = arch_reg list * arch_reg StringMap.t * int
+  type st =
+      { regs : arch_reg list ;
+        map  : arch_reg StringMap.t ;
+        label : int ;
+        specials : I.special list ; }
 
-  let st0 = I.free_registers,StringMap.empty,0
+  let st0 =
+    { regs = I.free_registers;
+      map = StringMap.empty;
+      label = 0;
+      specials = I.specials; }
 
-  let alloc_reg = function
-    | [],_,_ -> Warn.fatal "No more registers"
-    | r::rs,m,i -> r,(rs,m,i)
+  let alloc_reg st = match st.regs with
+    | [] -> Warn.fatal "No more registers"
+    | r::rs -> r,{ st with regs = rs; }
 
-  let alloc_last_reg = function
-    | [],_,_ -> Warn.fatal "No more registers"
-    | r::rs,m,i ->
+  let alloc_last_reg st = match st.regs with
+    | [] -> Warn.fatal "No more registers"
+    | r::rs ->
         let r,rs = Misc.pop_last r rs in
-        r,(rs,m,i)
+        r,{ st with regs = rs; }
 
 
-  let do_alloc_trashed_reg alloc k (_,m,_ as st) =
-    try StringMap.find k m,st
+  let do_alloc_trashed_reg alloc k st =
+    try
+      let r = StringMap.find k st.map in
+      r,st
     with Not_found ->
-      let r,(rs,m,i) = alloc st in
-      r,(rs,StringMap.add k r m,i)
+      let r,st = alloc st in
+      r,{ st with map = StringMap.add k r st.map; }
+
   let alloc_trashed_reg k st = do_alloc_trashed_reg alloc_reg k st
   and alloc_loop_idx k st = do_alloc_trashed_reg alloc_last_reg k st
 
-  let current_label (_,_,i) = i
-  let next_label (_,_,i) = i+1
-  let next_label_st (r,rs,i) = (r,rs,i+1)
+  let current_label st = st.label
+  let next_label st = st.label+1
+  let next_label_st st = { st with label = st.label+1; }
+
+  type special = I.special
+  let alloc_special st = match st.specials with
+  | [] -> Warn.fatal "No more special registers"
+  | r::rs -> r,{ st with specials = rs; }
 end

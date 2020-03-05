@@ -160,6 +160,8 @@ let xmm_regs =
    XMM7, "xmm7";
  ]
 
+let xmms = List.map fst xmm_regs
+
 (* Match reg size with its nae in GCC asm inline *)
 let reg_size_to_string = function
   | R8bL -> "b"

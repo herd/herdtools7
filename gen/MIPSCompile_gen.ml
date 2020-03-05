@@ -432,4 +432,6 @@ let emit_joker st init = None,init,[],st
       else init,cs,st
 
     let get_xstore_results _ = []
+
+    include NoInfo
   end

@@ -149,8 +149,21 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       init,cv@pseudo [emit_store_nti_ins_reg (size_to_inst_size sz) o rA rV],st
 
 
-    let emit_store_nti st p init addr v =
-      emit_store_nti_mixed  mach_size 0 st p init addr v
+    let emit_store_nti st p init addr v = emit_store_nti_mixed  mach_size 0 st p init addr v
+
+    let emit_movntdqa_ins xmm rA =
+      I_MOVNTDQA (xmm,Effaddr_rm64 (Rm64_deref (rA,0)))
+
+    let emit_movd_ins sz r xmm = I_MOVD (sz,r,xmm)
+
+    let emit_load_nti sz st p init addr =
+      let rA,init,st = U.next_init st p init addr in
+      let r64,st = next_reg st in
+      let r = change_size_reg r64 (size_to_reg_size sz) in
+      let xmm,st = alloc_special st in
+      let c = [emit_movntdqa_ins xmm rA;emit_movd_ins (size_to_inst_size sz) r xmm] in
+      r64,init,pseudo c,st
+
 
     let emit_sta sz addr r v =
       let rsz = size_to_reg_size sz
@@ -297,8 +310,14 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
                | Some (Plain,Some (sz, o)) ->
                   let r,init,cs,st = emit_load_mixed sz o st _p init loc  in
                   Some r,init,cs,st
-               | Some (NonTemporal,_) ->
-                 Warn.fatal "No non temporal load (yet)"
+               | Some (NonTemporal,None) ->
+                   let r,init,cs,st = emit_load_nti mach_size st _p init loc  in
+                   Some r,init,cs,st
+               | Some (NonTemporal,Some (sz,0)) ->
+                   let r,init,cs,st = emit_load_nti sz st _p init loc  in
+                   Some r,init,cs,st
+               | Some (NonTemporal,Some _) ->
+                   Warn.fatal "Illegal non-temporal load"
                end
             | W ->
                begin match e.C.atom with
@@ -393,4 +412,22 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 
     let get_xstore_results _ = []
 
+(* Info computation, compute extra alignement constraints *)
+    let add_info n k =
+      let e = n.C.evt in
+      match e.C.loc,e.C.dir,e.C.atom with
+      | Data x,Some R,Some (NonTemporal,_) ->
+          let v =
+            try
+              let old = StringMap.find x k in
+              max 16 old
+            with Not_found -> 16 in
+          StringMap.add x v k
+      | _,_,_ -> k
+
+    let get_archinfo n =
+      let i = C.fold add_info n StringMap.empty in
+      let i =
+        StringMap.fold (fun x a k -> Printf.sprintf "%s:%i" x a::k) i [] in
+      ["Align",String.concat "," i;]
   end

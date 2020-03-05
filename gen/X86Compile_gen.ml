@@ -211,4 +211,6 @@ struct
 
   let get_xstore_results _ = []
 
+  include NoInfo
+
 end

@@ -1325,4 +1325,5 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           List.rev_map (fun r -> r,0) rs
     | Some _|None -> fun _ -> []
 
+    include NoInfo
   end

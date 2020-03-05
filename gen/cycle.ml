@@ -89,6 +89,8 @@ module type S = sig
 (* All (modified) code labels *)
   val get_labels : node -> string list
 
+(* Generic fold *)
+  val fold : (node -> 'a -> 'a) -> node -> 'a -> 'a
 end
 
 module type Config = sig
@@ -989,4 +991,12 @@ let rec group_rec x ns = function
       m
 
 
+(* generic scan *)
+  let fold f m k =
+    let rec fold_rec n k =
+      let k = f n k
+      and nxt = n.next in
+      if nxt == m then k
+      else fold_rec nxt k in
+    fold_rec m k
 end

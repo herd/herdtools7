@@ -77,4 +77,6 @@ module type S = sig
 
   val get_xstore_results : A.pseudo list -> (A.reg * int) list
 
+(* Info from events *)
+  val get_archinfo : C.node -> (string * string) list
 end

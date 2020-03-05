@@ -765,6 +765,7 @@ let test_of_cycle name
   ?com ?(info=[]) ?(check=(fun _ -> true)) ?scope es c =
   let com = match com with None -> pp_edges es | Some com -> com in
   let (init,prog,final,env),(prf,coms) = compile_cycle check c in
+  let archinfo = Comp.get_archinfo c in
   let m_labs = num_labels prog in
   let init = tr_labs m_labs init in
   let coms = String.concat " " coms in
@@ -776,7 +777,7 @@ let test_of_cycle name
     | None -> myinfo
     | Some st -> ("Scopes",BellInfo.pp_scopes st)::myinfo in
     let myinfo = ("Generator",O.generator)::myinfo in
-    info@myinfo in
+    info@myinfo@archinfo in
 
   { name=name ; info=info; com=com ;  edges = es ;
     init=init ; prog=prog ; scopes = scope; final=final ; env=env; }
@@ -790,6 +791,5 @@ let make_test name ?com ?info ?check ?scope es =
   with
   | Misc.Fatal msg|Misc.UserError msg ->
       Warn.fatal "Test %s [%s] failed:\n%s" name (pp_edges es) msg
-
 
 end

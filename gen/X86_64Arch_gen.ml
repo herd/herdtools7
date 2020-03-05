@@ -47,9 +47,9 @@ module Make
       let default_atom = Atomic,None
 
       let applies_atom a d = match a,d with
-      | (((NonTemporal|Atomic),_),Code.W)
-      | ((Plain,_),(Code.W|Code.R)) -> true
-      | (((NonTemporal|Atomic),_),Code.R)
+      | ((Atomic,_),Code.W)
+      | (((Plain|NonTemporal),_),(Code.W|Code.R)) -> true
+      | ((Atomic,_),Code.R)
       | (_,Code.J)-> false
 
       let compare_atom = compare
@@ -203,5 +203,7 @@ module Make
               | _ -> false
             let pp_reg = pp_reg
             let free_registers = allowed_for_symb
+            type special = xmm
+            let specials = xmms
           end)
     end

@@ -447,4 +447,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       else init,cs,st
 
     let get_xstore_results _ = []
+
+    include NoInfo
   end

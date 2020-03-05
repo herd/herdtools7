@@ -346,7 +346,7 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
   | Ws _|Fr _|Rmw _|Ifr _ -> Dir W
   | Leave c|Back c -> do_dir_tgt_com c
   | Id -> not_that e "do_dir_tgt"
-   |Insert _ -> NoDir
+  | Insert _ -> NoDir
   | Node d -> Dir d
 
 

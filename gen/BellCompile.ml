@@ -377,4 +377,6 @@ let emit_rmw_dep _ = assert false
       else init,cs,st
 
     let get_xstore_results _ = []
+
+    include NoInfo
   end

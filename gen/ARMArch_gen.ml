@@ -98,6 +98,7 @@ include NoEdge
 
       let pp_reg = pp_reg
       let free_registers = allowed_for_symb
+      include NoSpecial
     end)
 
 end
