@@ -605,7 +605,16 @@ type P.code = MiscParser.proc * A.pseudo list)
           } = t in
       let initenv = List.map (fun (loc,(_,v)) -> loc,v) init in
       let observed = Generic.all_observed final filter locs in
-      let ty_env = Generic.build_type_env init final filter locs in
+      let ty_env1 = Generic.build_type_env init final filter locs
+      and ty_env2 =
+        try
+          let ps = List.assoc MiscParser.align_key info in
+          List.fold_left
+            (fun m (x,i) ->
+              StringMap.add x (CType.type_for_align i) m)
+            StringMap.empty (InfoAlign.parse ps)
+        with Not_found -> StringMap.empty in
+      let ty_env = ty_env1,ty_env2 in
       let code = List.map (fun ((p,_),c) -> p,c) code in
       let code =
         if do_self then
@@ -622,14 +631,14 @@ type P.code = MiscParser.proc * A.pseudo list)
               | Some r -> r::k)
               [] rs in
           A.RegSet.of_list rs in
-      let code = mk_templates ty_env name stable_info initenv code observed in
-      let code_typed = type_outs ty_env code in
+      let code = mk_templates ty_env1 name stable_info initenv code observed in
+      let code_typed = type_outs ty_env1 code in
         { T.init = initenv ;
           info = info;
           code = code_typed;
           condition = final;
           filter = filter;
-          globals = comp_globals ty_env init code;
+          globals = comp_globals ty_env1 init code;
           flocs = List.map fst locs ;
           global_code = [];
           src = t;

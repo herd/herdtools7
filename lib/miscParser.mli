@@ -112,6 +112,7 @@ val mach2generic :
 (* Info keys *)
 val hash_key : string
 val stable_key : string
+val align_key : string
 
 (* Extract hash *)
 val get_hash : ('i, 'p, 'c, 'loc) result -> string option

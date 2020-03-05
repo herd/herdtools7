@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open Printf
+
 module type Config = sig
   val memory : Memory.t
   val preload : Preload.t
@@ -30,8 +32,14 @@ type stat =
       process : string -> string; }
 
 let type_name loc = Printf.sprintf "%s_t" loc
+let pp_global_env ge =
+  String.concat ","
+    (List.map
+       (fun (x,t) -> sprintf "<%s,%s>" x (CType.dump t))
+       ge)
 
 open CType
+
 let dump_global_type loc t = match t with
 | Array _ -> type_name loc
 | _ ->  CType.dump t
@@ -51,13 +59,22 @@ module Make
     (A:Arch_litmus.Base)
     (T:Test_litmus.S with type P.code = P.code and module A = A) : sig
 
+(* Info *)
+      val get_info : string -> T.t -> string option
+      val get_prefetch_info : T.t -> string
+
 (* Typing utilities *)
       type env
+      val pp_env : env -> string
       val build_env : T.t -> env
       val find_type : A.location -> env -> CType.t
+      val find_type_align : string -> env -> CType.t option
+      val is_aligned : string -> env -> bool
+      val dump_mem_type : string -> CType.t -> env -> string
 
       val select_proc : int -> env -> CType.t A.RegMap.t
       val select_global : env -> (A.loc_global * CType.t) list
+      val select_aligned : env -> (A.loc_global * CType.t) list
 
 (* Some dumping stuff *)
       val register_type : A.location ->  CType.t -> CType.t
@@ -68,16 +85,13 @@ module Make
       val get_displayed_globals : T.t -> StringSet.t
       val get_observed_locs : T.t -> A.LocSet.t
       val get_observed_globals : T.t -> StringSet.t
+      val get_stabilized : T.t -> StringSet.t
       val is_ptr : A.location -> env -> bool
       val ptr_in_outs : env -> T.t -> bool
 
 (* Instructions *)
       val do_store : CType.t -> string -> string -> string
       val do_load : CType.t -> string -> string
-
-(* Info *)
-      val get_info : string -> T.t -> string option
-      val get_prefetch_info : T.t -> string
 
 (* Condition *)
       val pp_cond : T.t -> string
@@ -96,13 +110,30 @@ module Make
               stat list -> unit
       end
     end = struct
+(* Info *)
+      let get_info key test =
+        try Some (List.assoc key test.T.info)
+        with Not_found -> None
 
-      open Printf
+      let get_prefetch_info test = match get_info "Prefetch" test with
+      | Some i -> i
+      | None -> ""
 
 (* Typing stuff *)
-      type env = CType.t A.LocMap.t
+      type env =
+          CType.t A.LocMap.t * CType.t StringMap.t
+
+      let pp_env (env,_m) =
+        A.LocMap.pp_str
+          (fun loc t ->
+            sprintf "%s -> %s" (A.pp_location loc) (CType.dump t))
+          env
 
       let build_env test = test.T.type_env
+(*
+        let m =
+
+*)
 
         (*
         let e = A.LocMap.empty in
@@ -132,7 +163,7 @@ module Make
         try A.LocMap.find loc env
         with Not_found -> Compile.base
 
-      let find_type loc env = match loc with
+      let find_type loc (env,_) = match loc with
       | A.Location_deref (s,_) ->
           begin match do_find_type (A.Location_global s) env with
           | CType.Array (t,_) -> CType.Base t
@@ -140,7 +171,18 @@ module Make
           end
       | _ -> do_find_type loc env
 
+      let is_aligned loc (_,env) =
+        try ignore (StringMap.find loc env) ; true with Not_found -> false
 
+      let dump_mem_type loc t env =
+        if is_aligned loc env then type_name loc
+        else dump_global_type loc t
+
+      let do_find_type_align loc env =
+        try Some (StringMap.find loc env)
+        with Not_found -> None
+
+      let find_type_align loc (_,env) = do_find_type_align loc env
 
       let select_types_reg f env =
         A.LocMap.fold
@@ -149,7 +191,7 @@ module Make
           | None -> k)
           env A.RegMap.empty
 
-      let select_proc (p:int) env =
+      let select_proc (p:int) (env,_) =
         select_types_reg
           (function
             | A.Location_reg (q,reg) when p = q -> Some reg
@@ -157,7 +199,7 @@ module Make
             | A.Location_deref _ -> assert false)
           env
 
-      let select_types f env =
+      let select_types f (env,_) =
         A.LocMap.fold
           (fun loc t k -> match f loc with
           | Some r -> (r,t)::k
@@ -170,6 +212,15 @@ module Make
             | A.Location_reg _ -> None
             | A.Location_deref _ -> assert false
             | A.Location_global loc -> Some loc)
+          env
+
+      let select_aligned env =
+        select_types
+          (function
+            | A.Location_reg _ -> None
+            | A.Location_deref _ -> assert false
+            | A.Location_global loc ->
+                if is_aligned loc env then Some loc else None)
           env
 
 (* Format stuff *)
@@ -225,6 +276,12 @@ module Make
 
       let get_observed_globals t =  filter_globals (get_observed_locs t)
 
+      let get_stabilized t =
+        let env = build_env t in
+        StringSet.filter
+          (fun loc -> not (is_aligned loc env))
+          (get_observed_globals t)
+
       let is_ptr loc env = CType.is_ptr (find_type loc env)
 
       let ptr_in_outs env test =
@@ -243,15 +300,6 @@ module Make
           sprintf "atomic_load_explicit(&%s,memory_order_relaxed)" loc
         else loc
 
-
-(* Info *)
-      let get_info key test =
-        try Some (List.assoc key test.T.info)
-        with Not_found -> None
-
-      let get_prefetch_info test = match get_info "Prefetch" test with
-      | Some i -> i
-      | None -> ""
 
 (* Dump *)
       open ConstrGen
@@ -272,12 +320,21 @@ module Make
       module Dump (O:Indent.S) (EPF:EmitPrintf.S) = struct
 
         let dump_vars_types test =
+          let _,env = build_env test in
           let globs = test.T.globals in
           List.iter
             (fun (s,t) -> match t with
             | CType.Array (t,sz) ->
                 O.f "typedef %s %s[%i];" t (type_name s) sz
-            | _ -> ())
+            | _ ->
+                begin match do_find_type_align s env with
+                | None -> ()
+                | Some (CType.Array (t,sz)) ->
+                    O.f "typedef %s %s[%i];" t (type_name s) sz
+                | Some (CType.Base t) ->
+                    O.f "typedef %s %s;" t (type_name s)
+                | Some _ -> assert false
+                end)
             globs ;
           begin match globs with _::_ -> O.o "" | [] -> () end ;
           ()

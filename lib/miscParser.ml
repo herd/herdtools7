@@ -186,6 +186,7 @@ let mach2generic parser lexer buff =
 (* Info keys *)
 let hash_key =  "Hash"
 and stable_key = "Stable"
+and align_key = "Align"
 
 (* get hash from info fields *)
 

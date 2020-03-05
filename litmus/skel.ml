@@ -107,6 +107,7 @@ module Make
       let do_safer = match Cfg.safer with
       | Safer.No -> false
       | Safer.All|Safer.Write -> true
+
       let do_safer_write = match Cfg.safer with
       | Safer.No -> false
       | Safer.All|Safer.Write -> true
@@ -172,6 +173,7 @@ module Make
 
       open Memory
       let memory = Cfg.memory
+
       let indirect_star = match memory with
       | Direct -> ""
       | Indirect -> "*"
@@ -292,8 +294,8 @@ module Make
       let find_global_init a t =
         A.find_in_state (A.Location_global a) t.T.init
 
-      let have_observed_globals t =
-        not (StringSet.is_empty (U.get_observed_globals t))
+      let have_stabilized_globals t =
+        not (StringSet.is_empty (U.get_stabilized t))
 
 
       let dump_loc_name loc =  match loc with
@@ -684,34 +686,37 @@ module Make
 (*************)
 (* Variables *)
 (*************)
-
       let dump_global_type = SkelUtil.dump_global_type
       let dump_vars_types = UD.dump_vars_types
       let tag_malloc s = sprintf "malloc_%s" s
       let tag_mem s = sprintf "mem_%s" s
 
-      let dump_vars test =
+      let dump_vars env test =
         O.o "/* Shared variables */" ;
         if do_contiguous then O.oi "void *mem;" ;
+
+        let pp_t s t =
+          if U.is_aligned s env then SkelUtil.type_name s
+          else
+            let t = match t with
+            | Base "mtx_t" ->
+                begin match memory with
+                | Memory.Direct -> Pointer t
+                | Memory.Indirect -> t
+                end
+            | _ -> t in
+            dump_global_type s t in
+
         List.iter
           (fun (s,t) ->
-            let pp_t =
-              let t = CType.strip_volatile t in
-              let t = match t with
-              | Base "mtx_t" ->
-                  begin match memory with
-                  | Memory.Direct -> Pointer t
-                  | Memory.Indirect -> t
-                  end
-              | _ -> t in
-              dump_global_type s t in
-
+            let is_aligned = U.is_aligned s env in
+            let pp_t = pp_t s t in
             match memory,t,do_staticalloc with
             | Direct,Array _,false ->
                 O.fi "%s *%s;" pp_t (tag_malloc s) ;
                 O.fi "%s *%s;" pp_t s
             | Direct,_,_ ->
-                if do_noalign test s then  O.fi "%s *%s;" pp_t (tag_malloc s) ;
+                if is_aligned || do_noalign test s then  O.fi "%s *%s;" pp_t (tag_malloc s) ;
                 O.fi "%s%s *%s;" pp_t indirect_star s
             | Indirect,_,_->
                 O.fi "%s%s *%s;" pp_t indirect_star s)
@@ -724,14 +729,14 @@ module Make
                 (fun (b,t) k -> match t with
                 | Base "mtx_t" -> k
                 | _ ->
-                    let pp_t = dump_global_type b (CType.strip_volatile t) in
+                    let pp_t = pp_t b (CType.strip_volatile t) in
                     let a = tag_mem b in
                     begin match t,do_staticalloc with
                     | Array _,false ->
                         O.fi "%s *%s;" pp_t (tag_malloc a) ;
                         O.fi "%s *%s;" pp_t a
                     | _,_ ->
-                        if do_noalign test b then
+                        if U.is_aligned b env || do_noalign test b then
                           O.fi "%s *%s;" pp_t (tag_malloc a) ;
                         O.fi "%s *%s;" pp_t a
                     end ;
@@ -863,7 +868,7 @@ module Make
           let find_type loc =
             let t = U.find_type loc env in
             CType.dump (CType.strip_atomic t),CType.is_ptr t in
-            DC.fundef_prop "filter_cond" find_type f cast_type
+          DC.fundef_prop "filter_cond" find_type f cast_type
 
 
       let dump_cond_fun_call test dump_loc dump_val =
@@ -1030,8 +1035,8 @@ module Make
                      let rec pp_rec k =
                        if k >= sz then []
                        else sprintf "(%s)o[%s_f+%i]"
-                              (CType.dump (register_type loc (CType.Base t)))
-                              sloc k::pp_rec (k+1) in
+                           (CType.dump (register_type loc (CType.Base t)))
+                           sloc k::pp_rec (k+1) in
                      String.concat "," (pp_rec 0)
                  | t -> sprintf "(%s)o[%s_f]" (CType.dump (register_type loc t)) sloc)
                (A.LocSet.elements outs)) in
@@ -1065,7 +1070,7 @@ module Make
           O.o "/* Check data */" ;
           O.oi "pb_t *fst_barrier;" ;
           if do_safer_write then begin
-            let locs = U.get_observed_globals test in
+            let locs = U.get_stabilized test in
             if not (StringSet.is_empty locs) then begin
               O.oi "po_t *s_or;" ;
               StringSet.iter
@@ -1081,7 +1086,7 @@ module Make
 
       let dump_static_check_vars env test =
         if do_check_globals && do_safer_write then begin
-          let locs = U.get_observed_globals test in
+          let locs = U.get_stabilized test in
           StringSet.iter
             (fun a ->
               let loc = A.Location_global a in
@@ -1113,26 +1118,34 @@ module Make
                       | Pointer _ -> ()
                       | _ ->
                           O.fi "%s *mem_%s = _a->mem_%s;"
-                            (dump_global_type a t) a a
+                            (U.dump_mem_type a t env) a a
                       end
                   | Direct ->
-                      O.fi "%s *%s = _a->%s;" (dump_global_type a t) a a)
+                      O.fi "%s *%s = _a->%s;" (U.dump_mem_type a t env) a a)
             test.T.globals ;
 (* LOOPS *)
           loop_test_prelude indent "_a->_p->" ;
 
-          let dump_test wrap (a,t) =
+          let dump_addr (a,t) = match memory,t with
+          | (Indirect,Pointer _)
+          | (Direct,_)
+              -> dump_leftval a
+          | Indirect,_ ->
+              sprintf "mem_%s[_i]" a in
+
+          let dump_test dump_addr wrap (a,t as p) =
             let v = find_global_init a test in
+            let addr = dump_addr p in
             match memory,t with
             | (Indirect,Pointer _) ->
-                let load = U.do_load t (wrap (dump_a_leftval a)) in
+                let load = U.do_load t (wrap addr) in
                 sprintf "%s != %s"
                   load (dump_a_v_casted v)
             | Indirect,_ ->
-                let load = U.do_load t (wrap (sprintf "mem_%s[_i]" a)) in
+                let load = U.do_load t (wrap addr) in
                 sprintf "%s != %s" load (A.Out.dump_v v)
             | (Direct,_) ->
-                let load = U.do_load t (wrap (dump_leftval a)) in
+                let load = U.do_load t (wrap addr) in
                 sprintf "%s != %s"
                   load (dump_a_v_casted v) in
           List.iter
@@ -1142,13 +1155,20 @@ module Make
                 O.fii "for (int _j = 0 ; _j < %i ; _j++) {" sz ;
                 O.fiii "if (%s%s) fatal(\"%s, check_globals failed\");"
                   (if do_randompl then "rand_bit(&(_a->seed)) && " else "")
-                  (dump_test (sprintf "(%s)[_j]") (s,Base t))
+                  (dump_test dump_addr (sprintf "(%s)[_j]") (s,Base t))
                   doc.Name.name ;
                 O.fii "}"
             | _ ->
+                let s_ptr = sprintf "_%s_ptr" s in
+                let dump_addr =
+                if U.is_aligned s env then begin
+                  let pp_t = CType.dump t in
+                  O.fii "%s *%s = (%s *)&%s;" pp_t s_ptr pp_t (dump_addr x) ;
+                  fun _ -> "*" ^ s_ptr
+                end else dump_addr in
                 O.fii "if (%s%s) fatal(\"%s, check_globals failed\");"
                   (if do_randompl then "rand_bit(&(_a->seed)) && " else "")
-                  (dump_test (fun s -> s) x) doc.Name.name)
+                  (dump_test dump_addr (fun s -> s) x) doc.Name.name)
             test.T.globals ;
 (* Check locals *)
           if Cfg.cautious then begin
@@ -1174,7 +1194,7 @@ module Make
 
 (* STABILIZE *)
           if  do_safer_write then begin
-            let locs = U.get_observed_globals test in
+            let locs = U.get_stabilized test in
             if not (StringSet.is_empty locs) then begin
               O.f "" ;
               O.f "static void stabilize_globals(int _id, ctx_t *_a) {" ;
@@ -1251,7 +1271,7 @@ module Make
           end
         end
 
-      let dump_reinit _env test cpys =
+      let dump_reinit env test cpys =
         O.o "/*******************************************************/" ;
         O.o "/* Context allocation, freeing and reinitialization    */" ;
         O.o "/*******************************************************/" ;
@@ -1369,7 +1389,7 @@ module Make
               O.fx indent
                 "for (int _i=0 ; _i < size_of_test ; _i++) _a->%s[_i] = pm_create();" a
           | Direct,_ ->
-              (if do_noalign test a then set_or_malloc3 a else set_or_malloc)
+              (if U.is_aligned a env || do_noalign test a then set_or_malloc3 a else set_or_malloc)
                 indent a
           | Indirect,_ -> set_or_malloc indent a)
             test.T.globals ;
@@ -1381,7 +1401,8 @@ module Make
                 | Array _ -> set_or_malloc3 a indent (sprintf "mem_%s" a)
                 | Base "mtx_t" -> ()
                 | _ ->
-                    (if do_noalign test a then set_or_malloc3 a else set_or_malloc)
+                    (if U.is_aligned a env || do_noalign test a then set_or_malloc3 a
+                    else set_or_malloc)
                       indent (sprintf "mem_%s" a))
                 test.T.globals ;
               ()
@@ -1410,7 +1431,7 @@ module Make
           O.oi "_a->fst_barrier = pb_create(N);" ;
         end ;
         if do_safer && do_collect_after then begin
-          let locs = U.get_observed_globals test in
+          let locs = U.get_stabilized test in
           if not (StringSet.is_empty locs) then begin
             O.oi "_a->s_or = po_create(N);" ;
             loop_proc_prelude indent ;
@@ -1456,7 +1477,7 @@ module Make
               O.fi "_a->%s = code_size((ins_t *)code%i,%i);"
                 (fmt_code_size n) n (A.Out.get_nrets t) ;
               O.fi "_a->%s = prelude_size((ins_t *)code%i);"
-              (fmt_prelude n) n ;
+                (fmt_prelude n) n ;
               O.fi "_sz = _a->%s * size_of_test * sizeof(ins_t);"
                 (fmt_code_size n) ;
               O.fi "_a->code%i = mmap_exec(_sz);" n)
@@ -1482,7 +1503,7 @@ module Make
               let tag = dump_ctx_tag a in
               let tag = match t with
               | Array _ -> tag_malloc tag
-              | _ -> if do_noalign test a then tag_malloc tag else tag in
+              | _ -> if do_noalign test a || U.is_aligned a env then tag_malloc tag else tag in
               begin match t with
               | Base "mtx_t" ->
                   O.fi "for (int _i = 0 ; _i < _a->_p->size_of_test ; _i++) pm_free(_a->%s[_i]);" a ;
@@ -1509,7 +1530,7 @@ module Make
           test ;
         if do_safer && do_collect_after then  begin
           pb_free "fst_barrier" ;
-          let locs = U.get_observed_globals test in
+          let locs = U.get_stabilized test in
           if not (StringSet.is_empty locs) then begin
             po_free "s_or" ;
             if do_dynamicalloc  then begin
@@ -1579,8 +1600,14 @@ module Make
                         (sprintf "(%s)[_j]" pp_a) pp_v in
                     sprintf "for (int _j = 0 ; _j < %i; _j++) %s" sz ins
                 | _ ->
-                    U.do_store t
-                      (dump_a_leftval a) (dump_a_v_casted v)
+                    if U.is_aligned a env then
+                      let tp = sprintf "_%s_ptr" a in
+                      let pp_t = CType.dump t in
+                      sprintf "%s *%s = (%s *)%s; *%s = (%s)%s"
+                        pp_t tp pp_t (dump_a_addr a) tp pp_t (dump_a_v_casted v)
+                    else
+                      U.do_store t
+                        (dump_a_leftval a) (dump_a_v_casted v)
                 end in
               O.fii "%s;" ins
             with Exit -> ())
@@ -1694,13 +1721,17 @@ module Make
             | _ ->  ())
             test.T.src.MiscParser.init
         end ;
+        let aligned_env =
+          List.filter
+            (fun (a,_) -> U.is_aligned a env)
+            test.T.globals in
         List.iter
           (fun (proc,(out,(outregs,envVolatile))) ->
             let myenv = U.select_proc proc env
             and global_env = U.select_global env in
             if do_ascall then begin
-                Lang.dump_fun O.out myenv global_env envVolatile proc out
-              end ;
+              Lang.dump_fun O.out myenv global_env envVolatile proc out
+            end ;
             let  do_collect =  do_collect_local && (do_safer || proc=0) in
             O.f "static void *P%i(void *_vb) {" proc ;
             O.fi "mbar();" ;
@@ -1708,26 +1739,26 @@ module Make
             O.fi "parg_t *_b = (parg_t *)_vb;" ;
             O.fi "ctx_t *_a = _b->_a;" ;
             if do_affinity then begin
-                O.fi "int _ecpu = _b->cpu[_b->th_id];" ;
-                if do_verbose_barrier then O.fi "_a->ecpu[%i] = _ecpu;" proc ;
-                let fun_name,arg =
-                  if do_force_affinity then
-                    "force_one_affinity",sprintf ",AVAIL,_a->_p->verbose,\"%s\"" tname
-                  else
-                    "write_one_affinity","" in
-                O.fi "%s(_ecpu%s);" fun_name arg
-              end ;
+              O.fi "int _ecpu = _b->cpu[_b->th_id];" ;
+              if do_verbose_barrier then O.fi "_a->ecpu[%i] = _ecpu;" proc ;
+              let fun_name,arg =
+                if do_force_affinity then
+                  "force_one_affinity",sprintf ",AVAIL,_a->_p->verbose,\"%s\"" tname
+                else
+                  "write_one_affinity","" in
+              O.fi "%s(_ecpu%s);" fun_name arg
+            end ;
             if do_check_globals then begin
-                O.fi "check_globals(_a);"
-              end ;
+              O.fi "check_globals(_a);"
+            end ;
             begin match barrier with
             | User|User2|UserFence|UserFence2 ->
-               O.fi "int _th_id = _b->th_id;" ;
-               O.fi "int volatile *barrier = _a->barrier;"
+                O.fi "int _th_id = _b->th_id;" ;
+                O.fi "int volatile *barrier = _a->barrier;"
             | TimeBase ->
-               O.fi "sense_t *barrier = &_a->barrier;"
+                O.fi "sense_t *barrier = &_a->barrier;"
             | Pthread ->
-               O.fi "barrier_t *barrier = _a->barrier;"
+                O.fi "barrier_t *barrier = _a->barrier;"
             | NoBarrier -> ()
             end ;
             O.fi "int _size_of_test = _a->_p->size_of_test;" ;
@@ -1738,20 +1769,20 @@ module Make
             if do_custom then
               O.fi "prfone_t *_prft = _a->_p->prefetch->t[%i].t;" proc ;
             if do_staticpl then begin match prf with
-                                | [] -> ()
-                                | _::_ ->
-                                   O.oi "unsigned int _static_prefetch = _a->_p->static_prefetch;"
-                                end ;
+            | [] -> ()
+            | _::_ ->
+                O.oi "unsigned int _static_prefetch = _a->_p->static_prefetch;"
+            end ;
             begin if Stride.some stride then
-                    O.oi "int _stride = _a->_p->stride;"
+              O.oi "int _stride = _a->_p->stride;"
             end ;
             let addrs = A.Out.get_addrs out in
             (*
-  List.iter
-  (fun a ->
-  let t = find_global_type a env in
-  O.fi "%s *%s = _a->%s;" (dump_global_type t) a a)
-  addrs ;
+              List.iter
+              (fun a ->
+              let t = find_global_type a env in
+              O.fi "%s *%s = _a->%s;" (dump_global_type t) a a)
+              addrs ;
              *)
             List.iter
               (fun (r,t) ->
@@ -1761,200 +1792,201 @@ module Make
 
             let iloop =
               if Stride.some stride then begin
-                  O.fi "for (int _j = _stride ; _j > 0 ; _j--) {" ;
-                  O.fii "for (int _i = _size_of_test-_j ; _i >= 0 ; _i -= _stride) {" ;
-                  indent3 end else begin
+                O.fi "for (int _j = _stride ; _j > 0 ; _j--) {" ;
+                O.fii "for (int _i = _size_of_test-_j ; _i >= 0 ; _i -= _stride) {" ;
+                indent3 end else begin
                   loop_test_prelude indent "_" ;
                   indent2 end in
             if do_self then begin
-                let id = LangUtils.code_fun_cpy proc
-                and ty = LangUtils.code_fun_type proc in
-                O.fx iloop "%s %s = (%s)&_a->code%i[_a->code%i_sz*_i];"
-                  ty id ty proc proc
-              end ;
+              let id = LangUtils.code_fun_cpy proc
+              and ty = LangUtils.code_fun_type proc in
+              O.fx iloop "%s %s = (%s)&_a->code%i[_a->code%i_sz*_i];"
+                ty id ty proc proc
+            end ;
             if do_custom then begin
-                let i = iloop in
-                begin match addrs with
+              let i = iloop in
+              begin match addrs with
+              | [] -> ()
+              | _::_ ->
+                  O.fx i "prfdir_t _dir;" ;
+                  Misc.iteri
+                    (fun k loc ->
+                      let addr = dump_a_addr loc in
+                      O.fx i "_dir = _prft[%i].dir;" k ;
+                      O.fx i "if (_dir == flush) cache_flush(%s);" addr ;
+                      O.fx i "else if (_dir == touch) cache_touch(%s);" addr ;
+                      O.fx i "else if (_dir == touch_store) cache_touch_store(%s);" addr ;
+                      ())
+                    addrs
+              end
+            end else begin
+              let vars = get_global_names test in
+              let iter pp =
+                List.iter
+                  (fun (_xproc,loc,t) ->
+                    if List.mem loc vars then begin
+                      try
+                        let f = match t with
+                        | Prefetch.Ignore -> raise Exit
+                        | Prefetch.Flush -> "cache_flush"
+                        | Prefetch.Touch -> "cache_touch"
+                        | Prefetch.TouchStore -> "cache_touch_store" in
+                        pp f (dump_a_addr loc)
+                      with Exit -> ()
+                    end else
+                      Warn.warn_always
+                        "Variable %s from prefetch is absent in test" loc)
+                  prf in
+              if do_staticNpl then begin
+                match Cfg.preload with
+                | Preload.StaticNPL Preload.One ->
+                    iter
+                      (fun f loc ->
+                        O.fx iloop "%s(%s);" f loc)
+                | Preload.StaticNPL Preload.Two ->
+                    iter
+                      (fun f loc ->
+                        O.fx iloop "if (rand_bit(&(_a->seed))) %s(%s);" f loc)
+                | _ -> assert false
+              end else if do_staticpl then begin
+                match prf with
                 | [] -> ()
                 | _::_ ->
-                   O.fx i "prfdir_t _dir;" ;
-                   Misc.iteri
-                     (fun k loc ->
-                       let addr = dump_a_addr loc in
-                       O.fx i "_dir = _prft[%i].dir;" k ;
-                       O.fx i "if (_dir == flush) cache_flush(%s);" addr ;
-                       O.fx i "else if (_dir == touch) cache_touch(%s);" addr ;
-                       O.fx i "else if (_dir == touch_store) cache_touch_store(%s);" addr ;
-                       ())
-                     addrs
-                end
-              end else begin
-                let vars = get_global_names test in
-                let iter pp =
-                  List.iter
-                    (fun (_xproc,loc,t) ->
-                      if List.mem loc vars then begin
-                          try
-                            let f = match t with
-                              | Prefetch.Ignore -> raise Exit
-                              | Prefetch.Flush -> "cache_flush"
-                              | Prefetch.Touch -> "cache_touch"
-                              | Prefetch.TouchStore -> "cache_touch_store" in
-                            pp f (dump_a_addr loc)
-                          with Exit -> ()
-                        end else
-                        Warn.warn_always
-                          "Variable %s from prefetch is absent in test" loc)
-                    prf in
-                if do_staticNpl then begin
-                    match Cfg.preload with
-                    | Preload.StaticNPL Preload.One ->
-                       iter
-                         (fun f loc ->
-                           O.fx iloop "%s(%s);" f loc)
-                    | Preload.StaticNPL Preload.Two ->
-                       iter
-                         (fun f loc ->
-                           O.fx iloop "if (rand_bit(&(_a->seed))) %s(%s);" f loc)
-                    | _ -> assert false
-                  end else if do_staticpl then begin match prf with
-                                               | [] -> ()
-                                               | _::_ ->
-                                                  O.fx iloop "switch (_static_prefetch) {" ;
-                                                  let i = iloop in
-                                                  let j = Indent.tab i in
-                                                  O.fx i "case 0:" ;
-                                                  O.fx j "break;" ;
-                                                  O.o "" ;
-                                                  O.fx i "case 1:" ;
-                                                  iter
-                                                    (fun f loc -> O.fx j "%s(%s);" f loc) ;
-                                                  O.fx j "break;" ;
-                                                  O.o "" ;
-                                                  O.fx i "case 2:" ;
-                                                  iter
-                                                    (fun f loc -> O.fx j "if (rand_bit(&(_a->seed))) %s(%s);" f loc) ;
-                                                  O.fx j "break;" ;
-                                                  O.o "" ;
-                                                  O.fx i "default:" ;
-                                                  iter
-                                                    (fun f loc ->
-                                                      O.fx j "if (rand_k(&(_a->seed),_static_prefetch) == 0) %s(%s);"
-                                                        f loc) ;
-                                                  O.fx j "break;" ;
-                                                  O.fx iloop "}" ;
-                                               end
-              end ;
+                    O.fx iloop "switch (_static_prefetch) {" ;
+                    let i = iloop in
+                    let j = Indent.tab i in
+                    O.fx i "case 0:" ;
+                    O.fx j "break;" ;
+                    O.o "" ;
+                    O.fx i "case 1:" ;
+                    iter
+                      (fun f loc -> O.fx j "%s(%s);" f loc) ;
+                    O.fx j "break;" ;
+                    O.o "" ;
+                    O.fx i "case 2:" ;
+                    iter
+                      (fun f loc -> O.fx j "if (rand_bit(&(_a->seed))) %s(%s);" f loc) ;
+                    O.fx j "break;" ;
+                    O.o "" ;
+                    O.fx i "default:" ;
+                    iter
+                      (fun f loc ->
+                        O.fx j "if (rand_k(&(_a->seed),_static_prefetch) == 0) %s(%s);"
+                          f loc) ;
+                    O.fx j "break;" ;
+                    O.fx iloop "}" ;
+              end
+            end ;
             begin match barrier with
             | User|UserFence|UserFence2 ->
-               O.fx iloop "barrier_wait(_th_id,_i,&barrier[_i]);" ;
-               ()
+                O.fx iloop "barrier_wait(_th_id,_i,&barrier[_i]);" ;
+                ()
             | User2 ->
-               O.fx iloop "barrier_wait(_th_id,_i,barrier);"  ;
-               ()
+                O.fx iloop "barrier_wait(_th_id,_i,barrier);"  ;
+                ()
             | TimeBase ->
-               if have_timebase then begin
-                   O.fx iloop "_a->next_tb = read_timebase();" ;
-                   O.fx iloop "barrier_wait(barrier);" ;
-                   O.fx iloop "tb_t _tb0 = _a->next_tb;"
-                 end else begin
-                   O.fx iloop "barrier_wait(barrier);" ;
-                 end
+                if have_timebase then begin
+                  O.fx iloop "_a->next_tb = read_timebase();" ;
+                  O.fx iloop "barrier_wait(barrier);" ;
+                  O.fx iloop "tb_t _tb0 = _a->next_tb;"
+                end else begin
+                  O.fx iloop "barrier_wait(barrier);" ;
+                end
             | Pthread ->
-               O.fx iloop "barrier_wait(%i,barrier);" proc ;
-               if Cfg.cautious then O.fx iloop "mcautious();"
+                O.fx iloop "barrier_wait(%i,barrier);" proc ;
+                if Cfg.cautious then O.fx iloop "mcautious();"
             | NoBarrier ->
-               if Cfg.cautious then O.fx iloop "mcautious();"
+                if Cfg.cautious then O.fx iloop "mcautious();"
             end ;
 
             begin match barrier with
             | TimeBase ->
-               if have_timebase then begin
-                   if do_verbose_barrier then begin
-                       O.fx iloop "int _delta, _count=0;" ;
-                       O.fx iloop "do { _delta =  read_timebase() - _tb0; _count++; } while (_delta < _b->delay);"
-                     end else begin
-                       O.fx iloop "int _delta;" ;
-                       O.fx iloop "do { _delta =  read_timebase() - _tb0; } while (_delta < _b->delay);"
-                     end
-                 end ;
-               if Cfg.cautious then O.fx iloop "mcautious();"
+                if have_timebase then begin
+                  if do_verbose_barrier then begin
+                    O.fx iloop "int _delta, _count=0;" ;
+                    O.fx iloop "do { _delta =  read_timebase() - _tb0; _count++; } while (_delta < _b->delay);"
+                  end else begin
+                    O.fx iloop "int _delta;" ;
+                    O.fx iloop "do { _delta =  read_timebase() - _tb0; } while (_delta < _b->delay);"
+                  end
+                end ;
+                if Cfg.cautious then O.fx iloop "mcautious();"
             | _ ->
-               if do_verbose_barrier && have_timebase then begin
-                   O.fx iloop "tb_t _start = read_timebase();"
-                 end
+                if do_verbose_barrier && have_timebase then begin
+                  O.fx iloop "tb_t _start = read_timebase();"
+                end
             end ;
             if do_isync then begin match barrier with
-                             | User | User2 | UserFence | UserFence2 | TimeBase ->
-                                let aux = function
-                                  | `PPCGen
-                                    | `PPC ->
-                                     O.fx iloop "asm __volatile__ (\"isync\" : : : \"memory\");"
-                                  | `ARM ->
-                                     O.fx iloop "asm __volatile__ (\"isb\" : : : \"memory\");"
-                                  | `AArch64 -> assert false (* FIXME: ??? *)
-                                  | `X86_64 | `X86|`MIPS|`RISCV -> ()
-                                  | `GPU_PTX -> assert false
-                                in
-                                aux Cfg.sysarch
-                             | Pthread|NoBarrier -> ()
-                             end ;
+            | User | User2 | UserFence | UserFence2 | TimeBase ->
+                let aux = function
+                  | `PPCGen
+                  | `PPC ->
+                      O.fx iloop "asm __volatile__ (\"isync\" : : : \"memory\");"
+                  | `ARM ->
+                      O.fx iloop "asm __volatile__ (\"isb\" : : : \"memory\");"
+                  | `AArch64 -> assert false (* FIXME: ??? *)
+                  | `X86_64 | `X86|`MIPS|`RISCV -> ()
+                  | `GPU_PTX -> assert false
+                in
+                aux Cfg.sysarch
+            | Pthread|NoBarrier -> ()
+            end ;
             (* Dump real code now *)
             (if do_ascall then
-               let f_id =
-                 if do_self then LangUtils.code_fun_cpy proc else
-                   LangUtils.code_fun proc in
-               Lang.dump_call f_id (fun _ s -> s) else Lang.dump)
-              O.out (Indent.as_string iloop) myenv global_env envVolatile proc out ;
+              let f_id =
+                if do_self then LangUtils.code_fun_cpy proc else
+                LangUtils.code_fun proc in
+              Lang.dump_call f_id (fun _ s -> s) else Lang.dump)
+              O.out (Indent.as_string iloop) myenv aligned_env envVolatile proc out ;
             if do_verbose_barrier && have_timebase  then begin
-                if do_timebase then begin
-                    O.fx iloop "_a->tb_delta[%i][_i] = _delta;" proc ;
-                    O.fx iloop "_a->tb_count[%i][_i] = _count;" proc
-                  end else begin
-                    O.fx iloop "_a->tb_start[%i][_i] = _start;" proc
-                  end
-              end ;
+              if do_timebase then begin
+                O.fx iloop "_a->tb_delta[%i][_i] = _delta;" proc ;
+                O.fx iloop "_a->tb_count[%i][_i] = _count;" proc
+              end else begin
+                O.fx iloop "_a->tb_start[%i][_i] = _start;" proc
+              end
+            end ;
 
             if do_collect then begin
-                let locs = U.get_displayed_locs test in
-                O.fx iloop "barrier_wait(barrier);" ;
-                O.fx iloop "int cond = final_ok(%s);"
-                  (dump_cond_fun_call test
-                     (dump_ctx_loc "_a->") dump_a_addr) ;
-                O.ox iloop "if (cond) { hist->n_pos++; } else { hist->n_neg++; }" ;
+              let locs = U.get_displayed_locs test in
+              O.fx iloop "barrier_wait(barrier);" ;
+              O.fx iloop "int cond = final_ok(%s);"
+                (dump_cond_fun_call test
+                   (dump_ctx_loc "_a->") dump_a_addr) ;
+              O.ox iloop "if (cond) { hist->n_pos++; } else { hist->n_neg++; }" ;
 
-                (* My own private outcome collection *)
-                O.fx iloop "outcome_t _o;" ;
-                A.LocSet.iter
-                  (fun loc ->
-                    O.fx iloop "_o[%s_f] = %s;"
-                      (dump_loc_name loc)
-                      (let sloc =  dump_ctx_loc "_a->" loc in
-                       match U.is_ptr loc env with
-                       | false -> sloc
-                       | true -> sprintf "idx_addr(_a,_i,%s)" sloc))
-                  locs ;
-                O.ox iloop "add_outcome(hist,1,_o,cond);" ;
-                if do_verbose_barrier_local && proc = 0 then begin
-                    O.ox iloop "if (_a->_p->verbose_barrier) {" ;
-                    O.ox (Indent.tab iloop) "pp_tb_log(_b->p_mutex,_a,_i,cond);" ;
-                    O.ox iloop "}"
-                  end
-              end else if do_collect_local then begin
-                O.fx iloop "barrier_wait(barrier);"
-              end else if do_timebase && have_timebase then begin
+              (* My own private outcome collection *)
+              O.fx iloop "outcome_t _o;" ;
+              A.LocSet.iter
+                (fun loc ->
+                  O.fx iloop "_o[%s_f] = %s;"
+                    (dump_loc_name loc)
+                    (let sloc =  dump_ctx_loc "_a->" loc in
+                    match U.is_ptr loc env with
+                    | false -> sloc
+                    | true -> sprintf "idx_addr(_a,_i,%s)" sloc))
+                locs ;
+              O.ox iloop "add_outcome(hist,1,_o,cond);" ;
+              if do_verbose_barrier_local && proc = 0 then begin
+                O.ox iloop "if (_a->_p->verbose_barrier) {" ;
+                O.ox (Indent.tab iloop) "pp_tb_log(_b->p_mutex,_a,_i,cond);" ;
+                O.ox iloop "}"
+              end
+            end else if do_collect_local then begin
+              O.fx iloop "barrier_wait(barrier);"
+            end else if do_timebase && have_timebase then begin
               (*          O.fx iloop "barrier_wait(barrier);"
-            Problematic 4.2W on squale *)
-              end  ;
+                          Problematic 4.2W on squale *)
+            end  ;
             if Stride.some stride then begin
-                loop_test_postlude indent2 ;
-                loop_test_postlude indent
-              end else begin
-                loop_test_postlude indent
-              end ;
-            if do_safer && do_collect_after && have_observed_globals test then begin
-                O.fi "stabilize_globals(%i,_a);" proc ;
-              end ;
+              loop_test_postlude indent2 ;
+              loop_test_postlude indent
+            end else begin
+              loop_test_postlude indent
+            end ;
+            if do_safer && do_collect_after && have_stabilized_globals test then begin
+              O.fi "stabilize_globals(%i,_a);" proc ;
+            end ;
             O.oi "mbar();" ;
             let r = if do_collect then "hist" else "NULL" in
             O.fi "return %s;" r ;
@@ -2179,8 +2211,14 @@ module Make
             (fun loc ->
               let t = U.find_type loc env in
               let t = CType.strip_attributes t in
-              begin match t with
-              | CType.Array _ -> ()
+              begin match t,loc with
+              | CType.Array _,_ -> ()
+              | _,A.Location_global a when U.is_aligned a env ->
+                  let _ptr = sprintf "_%s_ptr" a in                  
+                  let pp_t = CType.dump t in
+                  O.fiii "%s *%s = (%s *)&%s;"
+                    pp_t _ptr pp_t (dump_ctx_loc "ctx." loc) ;
+                  O.fiii "%s %s = *%s;" pp_t (dump_loc_copy loc) _ptr
               | _ ->
                   O.fiii "%s %s = %s;"
                     (CType.dump t)
@@ -2200,7 +2238,7 @@ module Make
           O.o "" ;
 (* check globals against stabilized value *)
           if do_safer && do_collect_after then begin
-            let locs =  U.get_observed_globals test in
+            let locs =  U.get_stabilized test in
             StringSet.iter
               (fun loc ->
                 let loc = A.Location_global loc in
@@ -2355,7 +2393,7 @@ module Make
         O.o "" ;
         dump_vars_types test ;
         O.o "typedef struct {" ;
-        let cpys = dump_vars test in
+        let cpys = dump_vars env test in
         dump_out_vars test ;
         dump_check_vars env test ;
         dump_barrier_vars test ;
