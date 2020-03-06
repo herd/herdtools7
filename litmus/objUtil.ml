@@ -67,7 +67,6 @@ module Insert (O:InsertConfig) :
       val copy : string -> (string -> string) -> unit
     end =
   struct
-    open Word
 
     let dir = match O.sysarch with
     | `X86 -> "_x86"

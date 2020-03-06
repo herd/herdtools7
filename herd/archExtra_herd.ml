@@ -256,7 +256,11 @@ module Make(C:Config) (I:I) : S with module I = I
 
       include Location.Make (LocArg)
 
-      let maybev_to_location v = Location_global (I.V.maybevToV v)
+      let maybev_to_location v = match MiscParser.tr_pte v with
+      | Some v ->
+          Location_pte (I.V.maybevToV v)
+      | None ->
+          Location_global (I.V.maybevToV v)
 
       let do_brackets =
         if C.brackets then Printf.sprintf "[%s]"
@@ -267,6 +271,7 @@ module Make(C:Config) (I:I) : S with module I = I
             tr (string_of_int proc ^ ":" ^ I.pp_reg r)
         | Location_global a -> do_brackets (pp_global a)
         | Location_deref (a,idx) -> Printf.sprintf "%s[%i]" (pp_global a) idx
+        | Location_pte a -> do_brackets (Misc.add_pte (pp_global a))
 
       let dump_location = do_dump_location Misc.identity
 
@@ -278,10 +283,11 @@ module Make(C:Config) (I:I) : S with module I = I
           then "\\asm{Proc " ^ bodytext ^ "}" else bodytext
       | Location_global a -> do_brackets (pp_global a)
       | Location_deref (a,idx) ->  Printf.sprintf "%s[%i]" (pp_global a) idx
+      | Location_pte a -> do_brackets (Misc.add_pte (pp_global a))
 
       let undetermined_vars_in_loc l =  match l with
       | Location_reg _ -> None
-      | Location_global a|Location_deref (a,_) ->
+      | Location_global a|Location_deref (a,_)|Location_pte a ->
           if I.V.is_var_determined a then None
           else Some a
 
@@ -292,12 +298,14 @@ module Make(C:Config) (I:I) : S with module I = I
           Location_global (I.V.simplify_var soln a)
       | Location_deref (a,idx) ->
           Location_deref (I.V.simplify_var soln a,idx)
+      | Location_pte a ->
+          Location_pte (I.V.simplify_var soln a)
 
       let map_loc fv loc = match loc with
       | Location_reg _ -> loc
       | Location_global a -> Location_global (fv a)
       | Location_deref (a,idx) -> Location_deref (fv a,idx)
-
+      | Location_pte a -> Location_pte (fv a)
 (*********)
 (* Fault *)
 (*********)

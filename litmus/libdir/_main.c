@@ -110,7 +110,7 @@ int RUN(int argc,char **argv,FILE *out) {
 #ifdef MAIN
 int main (int argc,char **argv) {
 #ifdef KVM
-  smp_init();
+  litmus_init();
   return RUN(argc,argv) ;
 #else
   return RUN(argc,argv,stdout) ;

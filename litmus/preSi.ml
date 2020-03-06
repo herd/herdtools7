@@ -55,6 +55,7 @@ module Make
       val dump : Name.t -> T.t -> unit
     end = struct
       let k_nkvm x = if Cfg.is_kvm then "" else x
+      let is_pte = true
       open CType
 
 (*******************************************)
@@ -244,9 +245,14 @@ module Make
         let all = List.map fst test.T.globals in
         let vs =
           List.map
-            (fun (_,(out,_)) -> A.Out.get_addrs out)
+            (fun (_,(out,_)) -> A.Out.get_addrs_only out)
             test.T.code in
         all,vs
+
+      let get_addrs test =
+        List.map
+          (fun (_,(out,_)) -> fst (A.Out.get_addrs out))
+          test.T.code
 
       let dump_topology test =
         let n = T.get_nprocs test in
@@ -269,7 +275,7 @@ module Make
         O.o "/* Topology */" ;
         O.o "/************/" ;
         O.o "" ;
-        Topo.dump_alloc (let _,vss = get_all_vars test in vss)
+        Topo.dump_alloc (get_addrs test)
 
 (************)
 (* Outcomes *)
@@ -279,7 +285,7 @@ module Make
         | A.Location_reg (proc,reg) -> A.Out.dump_out_reg proc reg
         | A.Location_global s -> s
         | A.Location_deref (s,i) -> sprintf "%s_%i" s i
-
+        | A.Location_pte _ -> assert false
       let does_pad t =
         let open CType in
         match t with
@@ -318,8 +324,15 @@ module Make
             O.o "typedef struct {" ;
             O.fi "intmax_t %s;"
               (String.concat ","
-                 (List.map (fun (a,_) -> (sprintf "*%s") a) locs)) ;
-            O.o "} vars_t;"
+                 (List.map (fun (a,_) -> sprintf "*%s" a) locs)) ;
+            if is_pte then begin
+              O.fi "pteval_t %s;" 
+                (String.concat ","
+                   (List.map (fun (a,_) ->
+                     sprintf "*pte_%s,saved_pte_%s" a a)
+                      locs)) ;
+            end ;
+            O.o "} vars_t;" ;
         end ;
         O.o "" ;
         UD.dump_vars_types test ;
@@ -440,41 +453,6 @@ module Make
         O.o "}" ;
         O.o "" ;
         some_ptr
-(*
-  O.o "/* Hash of outcome */" ;
-  ObjUtil.insert_lib_file O.o "_mix.h" ;
-  O.o "" ;
-  O.o "static uint32_t hash_log(log_t *p) {" ;
-  O.oi "uint32_t a,b,c; ";
-  O.oi "a = b = c = 0xdeadbeef;" ;
-
-  let dump_loc_tag loc = choose_dump_loc_tag loc env in
-  let rec do_rec = function
-  | [] -> ()
-  | [x] ->
-  O.fi "a += p->%s;" (dump_loc_tag x) ;
-  O.oi "final(a,b,c);"
-  | [x;y;] ->
-  O.fi "a += p->%s;" (dump_loc_tag x) ;
-  O.fi "b += p->%s;" (dump_loc_tag y) ;
-  O.oi "final(a,b,c);"
-  | [x;y;z;] ->
-  O.fi "a += p->%s;" (dump_loc_tag x) ;
-  O.fi "b += p->%s;" (dump_loc_tag y) ;
-  O.fi "c += p->%s;" (dump_loc_tag z) ;
-  O.oi "final(a,b,c);"
-  | x::y::z::rem ->
-  O.fi "a += p->%s;" (dump_loc_tag x) ;
-  O.fi "b += p->%s;" (dump_loc_tag y) ;
-  O.fi "c += p->%s;" (dump_loc_tag z) ;
-  O.oi "mix(a,b,c);" ;
-  do_rec rem in
-  do_rec locs ;
-  O.oi"return c;" ;
-  O.o "}" ;
-  O.o "" ;
-  ()
- *)
 
       let dump_cond_fun env test =
         let module DC =
@@ -552,14 +530,14 @@ module Make
           let r =
             List.map
               (fun (proc,(out,_)) ->
-                List.map (fun a -> proc,a) (A.Out.get_addrs out))
+                List.map (fun a -> proc,a) (A.Out.get_addrs_only out))
               test.T.code in
           List.flatten r
         end else []
 
       let get_stats test =
         let open SkelUtil in
-        begin let tags = get_param_vars test in
+        begin let tags = if Cfg.is_kvm then [] else get_param_vars test in
         if tags = [] then [] else
         [{tags=List.map (fun (s,_) -> pvtag s) tags;
           name = "vars"; max="NVARS"; tag = "Vars";
@@ -578,7 +556,9 @@ module Make
             process=(fun s -> s);};] end
 
       let dump_parameters _env test =
-        let v_tags = List.map (fun (s,_) -> pvtag s) (get_param_vars test)
+        let v_tags =
+          if Cfg.is_kvm then []
+          else List.map (fun (s,_) -> pvtag s) (get_param_vars test)
         and d_tags = List.map pdtag (get_param_delays test)
         and c_tags = List.map pctag (get_param_caches test) in
         let all_tags = "part"::v_tags@d_tags@c_tags in
@@ -705,7 +685,7 @@ module Make
 (* Test instance *)
 (*****************)
 
-      let dump_instance_def _env _test =
+      let dump_instance_def _env test =
         O.o "/***************/" ;
         O.o "/* Memory size */" ;
         O.o "/***************/" ;
@@ -713,11 +693,25 @@ module Make
         O.f "/* %s line */"
           (if Cfg.is_kvm then "Page size" else "Cache line") ;
         if Cfg.is_kvm then begin
-          O.o "#define LINE PAGE_SIZE" ;
-          O.f "#define VOFF %i" Cfg.line
+          O.o "#define LINE LITMUS_PAGE_SIZE" ;
         end else begin
           O.f "#define LINE %i" Cfg.line ;
           O.o "#define VOFF 1"
+        end ;
+        O.o "" ;
+        if Cfg.is_kvm then begin
+          O.o "static void vars_init(vars_t *_vars,intmax_t *_mem) {" ;
+          O.oi "const size_t _sz = LINE/sizeof(intmax_t);";
+          O.oi "pteval_t *_p;" ;
+          O.o "" ;
+          List.iter
+            (fun (a,_) ->
+              O.fi "_vars->%s = _mem;" a ;
+              O.fi "_vars->pte_%s = _p = litmus_tr_pte((void *)_mem);" a ;
+              O.fi "_vars->saved_pte_%s = *_p;" a ;
+              O.oi "_mem += _sz ;")
+            test.T.globals ;
+          O.o "}"
         end ;
         O.o "" ;
         ObjUtil.insert_lib_file O.o "_instance.c" ;
@@ -754,7 +748,7 @@ module Make
           env test _some_ptr stats glob
           (_vars,inits) (proc,(out,(_outregs,envVolatile)))  =
         let my_regs = U.select_proc proc env in
-        let addrs = A.Out.get_addrs out in (* accessed in code *)
+        let addrs = A.Out.get_addrs_only out in (* accessed in code *)
         O.fi "case %i: {" proc ;
         (* Delays *)
         if have_timebase then begin
@@ -812,6 +806,14 @@ module Make
           O.out (Indent.as_string Indent.indent2)
           my_regs { glob with Lang.volatile=envVolatile; } proc out ;
         O.oii "barrier_wait(_b);" ;
+(* Restore pte *)
+        if is_pte then begin
+          List.iter
+            (fun a ->
+              O.fii "*(_vars->pte_%s) = _vars->saved_pte_%s;" a a ;
+              O.fii "litmus_flush_tlb((void *)%s);" a)
+            inits
+        end ;
 (* Collect shared locations final values, if appropriate *)
         let globs = U.get_displayed_globals test in
         if not (StringSet.is_empty globs) then begin
@@ -824,7 +826,7 @@ module Make
               (fun loc -> match loc with
               | A.Location_global s|A.Location_deref (s,_) ->
                   StringSet.mem s to_collect
-              | A.Location_reg _ -> false)
+              | A.Location_reg _|A.Location_pte _ -> false)
               (U.get_displayed_locs test) in
           A.LocSet.iter
             (fun loc ->
@@ -948,12 +950,14 @@ module Make
         O.oi "ctx_t *ctx = c->ctx;" ;
         O.oi "param_t *q = g->param;" ;
         let has_globals =
-          match test.T.globals with
+          not Cfg.is_kvm &&
+          begin match test.T.globals with
           | [] -> false
           | _::_ ->
               O.oi "intmax_t *_mem = ctx->mem;" ;
               O.oi "vars_t *_vars = &ctx->v;" ;
-              true in
+              true
+          end in
         O.o "" ;
         O.oi "for (int _s=0 ; _s < g->size ; _s++) {" ;
         let n = T.get_nprocs test in
@@ -981,7 +985,7 @@ module Make
           (fun i (vs,(ps,cs)) ->
             O.fii "case %i:" i ;
 (* Location placement comes first, as cache setting depends on it *)
-            if has_globals then begin
+            if not Cfg.is_kvm && has_globals then begin
               List.iter
                 (fun (a,_) ->
                   try

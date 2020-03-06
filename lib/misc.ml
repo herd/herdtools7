@@ -706,4 +706,10 @@ let add_atag = sprintf "%s.atag"
 and check_atag s = Filename.check_suffix s ".atag"
 
 let add_pte = sprintf "pte_%s"
+let tr_pte s =
+  let len = String.length s in
+  if len > 4 && String.sub s 0 4 = "pte_" then
+    Some (String.sub s 4 (len-4))
+  else None
+
 let add_tlb = sprintf "tlb_%s"
