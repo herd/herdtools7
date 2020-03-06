@@ -34,6 +34,7 @@ module type Arch = sig
 
 (* Values and global locations and their creators *)
   type v
+
   val maybevToV : MiscParser.maybev -> v
   type global
   val maybevToGlobal : MiscParser.maybev -> global
@@ -43,7 +44,7 @@ module type Arch = sig
     | Location_global of global
     | Location_deref of global * int
     | Location_reg of int * reg
-
+    | Location_pte of global
 end
 
 module Make (A:Arch) : S 
@@ -68,7 +69,13 @@ and type pseudo = A.pseudo
   let finish_reg = get_reg
 
   let finish_location f_reg loc = match loc with
-  | Location_global m -> A.Location_global (A.maybevToGlobal m)
+  | Location_global m ->
+      begin match MiscParser.tr_pte m with
+      | None ->
+          A.Location_global (A.maybevToGlobal m)
+      | Some m ->
+          A.Location_pte (A.maybevToGlobal m)
+      end
   | Location_deref (m,i) -> A.Location_deref (A.maybevToGlobal m,i)
   | Location_reg (i,r) -> A.Location_reg (i,finish_reg r)
   | Location_sreg reg  ->

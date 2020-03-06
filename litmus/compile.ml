@@ -504,6 +504,12 @@ type P.code = MiscParser.proc * A.pseudo list)
       let pecs = outs in
       List.map
         (fun (proc,addrs,stable,code,nrets) ->
+          let addrs,ptes =
+            StringSet.fold
+              (fun s (a,p) -> match Misc.tr_pte s with
+              | None -> StringSet.add s a,p
+              | Some s -> a,StringSet.add s p)
+              addrs (StringSet.empty,StringSet.empty) in
           let all_clobbers =
             List.fold_left
               (fun k i -> match i.A.Out.clobbers with
@@ -528,6 +534,7 @@ type P.code = MiscParser.proc * A.pseudo list)
           let t =
             { init = compile_init proc init observed_proc code ;
               addrs = StringSet.elements addrs ;
+              ptes = StringSet.elements ptes ;
               stable = [];
               final = compile_final proc observed_proc;
               all_clobbers;
@@ -571,7 +578,7 @@ type P.code = MiscParser.proc * A.pseudo list)
           (fun (_,(t,v)) env ->
             match t,v with
             | (MiscParser.TyDef|MiscParser.TyDefPointer),
-              Constant.Symbolic ((a,_),_) ->
+              Constant.Symbolic ((a,_),_) when Misc.tr_pte a = None ->
                 begin try
                   let _ = StringMap.find a env in
                   env

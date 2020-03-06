@@ -401,15 +401,16 @@ end = struct
           end in
         (* Compile configuration, must also be used to configure arch modules *)
         let module OC = struct
-            let word = word
-            let syncmacro =OT.syncmacro
-            let syncconst = OT.syncconst
-            let memory = OT.memory
-            let morearch = OT.morearch
-            let cautious = OT.cautious
-            let asmcomment = OT.asmcomment
-            let hexa = OT.hexa
-          end in
+          let word = word
+          let syncmacro =OT.syncmacro
+          let syncconst = OT.syncconst
+          let memory = OT.memory
+          let morearch = OT.morearch
+          let cautious = OT.cautious
+          let asmcomment = OT.asmcomment
+          let hexa = OT.hexa
+          let mode = OT.mode
+        end in
         let module OX = struct
             include OT
             include ODep

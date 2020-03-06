@@ -146,7 +146,7 @@ end =
 
     let shift_location k loc = match loc with
     | A.Location_reg (i,r) -> A.Location_reg (i+k,r)
-    | A.Location_global _|A.Location_deref _ -> loc
+    | A.Location_global _|A.Location_deref _|A.Location_pte _ -> loc
 
     let shift_state_atom k (loc,v) = shift_location k loc,v
 

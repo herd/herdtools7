@@ -33,6 +33,7 @@ let fmt_lbl_var p lbl = sprintf "P%i_%s" p lbl
 module type Config = sig
   val memory : Memory.t
   val hexa : bool
+  val mode : Mode.t
 end
 
 module DefaultConfig = struct
@@ -48,12 +49,24 @@ module Make(O:Config)(V:Constant.S) = struct
   | Direct -> sprintf "&_a->%s[_i]" a
   | Indirect -> sprintf "_a->%s[_i]" a
 
-  let dump_v v = match v with
+  let dump_v_std v = match v with
   | Concrete _ -> V.pp O.hexa v
   | Symbolic ((a,None),0) -> dump_addr a
   | Tag _
   | Symbolic _
   | Label _ -> assert false 
+
+  let dump_v_kvm v = match v with
+  | Symbolic ((a,None),0) ->
+      begin match Misc.tr_pte a with
+      | Some a -> sprintf "_vars->%s" (Misc.add_pte a)
+      | None -> V.pp_v v
+      end
+  | _ -> V.pp_v v
+
+  let dump_v = match O. mode with
+  | Mode.Std -> dump_v_std
+  | Mode.PreSi|Mode.Kvm -> dump_v_kvm
 
   let addr_cpy_name s p = sprintf "_addr_%s_%i" s p
 end
