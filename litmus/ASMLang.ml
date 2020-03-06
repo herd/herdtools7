@@ -68,9 +68,7 @@ module RegMap = A.RegMap)
 
       and compile_addr_fun x = sprintf "*%s" x
 
-      and compile_val_inline = match O.mode with
-      | Mode.Std -> checkVal Tmpl.dump_v
-      | Mode.PreSi|Mode.Kvm -> checkVal A.V.pp_v
+      and compile_val_inline = checkVal Tmpl.dump_v
 
       let dump_clobbers chan t =
         fprintf chan ":%s\n"
@@ -199,6 +197,11 @@ module RegMap = A.RegMap)
                    (fun a k -> sprintf "[%s] \"=m\" (*%s)" a
                        (compile_addr a)::k))
                t.Tmpl.addrs
+             @@List.fold_right
+                  (fun a k ->
+                    let a = Misc.add_pte a in
+                    sprintf "[%s] \"=m\" (*(_vars->%s))" a a::k)
+                  t.Tmpl.ptes
              @@RegSet.fold
                   (fun reg k ->
                     (if O.cautious then
@@ -356,7 +359,7 @@ module RegMap = A.RegMap)
             dump_ins (k+1) ts in
         let trashed = Tmpl.trashed_regs t in
         before_dump
-          compile_out_reg compile_val compile_cpy chan indent env proc t trashed;
+         compile_out_reg compile_val compile_cpy chan indent env proc t trashed;
         fprintf chan "asm __volatile__ (\n" ;
         fprintf chan "\"\\n\"\n" ;
         begin if O.asmcommentaslabel then
@@ -438,7 +441,7 @@ module RegMap = A.RegMap)
           List.map
             (fun (p,lbl) -> sprintf "ins_t *%s" (OutUtils.fmt_lbl_var p lbl))
             labels in
-        let addrs_proc = Tmpl.get_addrs t in
+        let addrs_proc,ptes_proc = Tmpl.get_addrs t in
         let addrs =
           List.map
             (fun x ->
@@ -452,6 +455,10 @@ module RegMap = A.RegMap)
               | Memory.Indirect ->
                   sprintf "%s **%s" ty x)
             addrs_proc in
+        let ptes =
+          List.map
+            (fun x -> sprintf "pteval_t *%s" (Misc.add_pte x))
+            ptes_proc in
         let cpys =
           if O.memory = Memory.Indirect && O.cautious then
             List.map
@@ -472,7 +479,7 @@ module RegMap = A.RegMap)
                 with Not_found -> assert false in
               let x = Tmpl.dump_out_reg proc x in
               sprintf "%s *%s" (CType.dump ty) x) t.Tmpl.final in
-        let params =  String.concat "," (labels@addrs@cpys@outs) in
+        let params =  String.concat "," (labels@addrs@ptes@cpys@outs) in
         LangUtils.dump_code_def chan true proc params ;
         do_dump
           compile_init_val_fun
@@ -509,9 +516,9 @@ module RegMap = A.RegMap)
 
       let dump_call f_id _tr_idx chan indent _env glob proc t =
         let labels = List.map compile_label_call (Tmpl.get_labels t) in
-        let addrs_proc = Tmpl.get_addrs t in
-        let addrs = List.map (compile_addr_call glob.aligned) addrs_proc in
-        let addrs_cpy =
+        let addrs_proc,_ = Tmpl.get_addrs t in
+        let addrs = List.map compile_addr_call addrs_proc
+        and addrs_cpy =
           if O.memory = Memory.Indirect && O.cautious then
             List.map (compile_cpy_addr_call proc) addrs_proc
           else []

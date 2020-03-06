@@ -300,7 +300,7 @@ module Make
       | A.Location_reg (proc,reg) -> A.Out.dump_out_reg proc reg
       | A.Location_global s -> s
       | A.Location_deref (s,i) -> sprintf "%s_%i" s i
-
+      | A.Location_pte _ -> assert false
 
       let dump_loc_copy loc = "_" ^ dump_loc_name loc ^ "_i"
       let dump_loc_param loc = "_" ^ dump_loc_name loc
@@ -322,6 +322,7 @@ module Make
           | Indirect ->
               sprintf "(*(%s%s[_i]))[%i]" pref s idx
           end
+      | A.Location_pte _ -> assert false
 
       let dump_loc = dump_ctx_loc ""
 
@@ -1768,7 +1769,7 @@ module Make
             begin if Stride.some stride then
               O.oi "int _stride = _a->_p->stride;"
             end ;
-            let addrs = A.Out.get_addrs out in
+            let addrs = A.Out.get_addrs_only out in
             (*
               List.iter
               (fun a ->
@@ -2178,7 +2179,7 @@ module Make
                   | CType.Array _ ->  StringSet.add s  k
                   | _ -> k
                   end
-              | A.Location_reg _ -> k)
+              | A.Location_reg _|A.Location_pte _ -> k)
               locs StringSet.empty in
 (* Make copies of final locations *)
           if Cfg.cautious && not (A.LocSet.is_empty locs) then begin
@@ -2811,7 +2812,7 @@ module Make
         if do_custom then begin
           List.iter
             (fun (i,(out,_)) ->
-              let addrs = A.Out.get_addrs out in
+              let addrs = A.Out.get_addrs_only out in
               O.fi "prfone_t _prf_t_%i[] = { %s };" i
                 (String.concat ", "
                    (List.map

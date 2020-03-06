@@ -80,6 +80,7 @@ module Make
     | A.Location_reg (proc,reg) -> A.Out.dump_out_reg proc reg
     | A.Location_global s -> s
     | A.Location_deref (s,i) -> sprintf "%s_%i" s i
+    | A.Location_pte _ -> assert false
 
     module DC =
       CompCond.Make(O)

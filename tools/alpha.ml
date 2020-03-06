@@ -58,7 +58,7 @@ struct
 
   let collect_location loc regs = match loc with
   | A.Location_reg (p,r) -> ProcRegSet.add (p,r) regs
-  | A.Location_global _|A.Location_deref _ -> regs
+  | A.Location_global _|A.Location_deref _|A.Location_pte _ -> regs
 
   let collect_state_atom (loc,_) = collect_location loc
 
@@ -98,7 +98,7 @@ struct
 
   let alpha_location f = function
     | A.Location_reg (p,r) -> f (p,r)
-    | A.Location_global _|A.Location_deref _ as loc -> loc
+    | A.Location_global _|A.Location_deref _|A.Location_pte _ as loc -> loc
 
   let alpha_atom f a =
     let open ConstrGen in
@@ -202,12 +202,13 @@ struct
 
     let collect_location f loc k = match loc with
     | A.Location_reg _ -> k
-    | A.Location_global v|A.Location_deref (v,_) -> collect_value f v k
+    | A.Location_global v|A.Location_deref (v,_)|A.Location_pte v -> collect_value f v k
 
     let map_location f loc = match loc with
     | A.Location_reg _ -> loc
     | A.Location_global v -> A.Location_global (map_value f v)
     | A.Location_deref (v,idx) -> A.Location_deref (map_value f v,idx)
+    | A.Location_pte v -> A.Location_pte (map_value f v)
 
     let collect_state_atom f (loc,(_,v)) k =
       collect_location f loc (collect_value f v k)

@@ -196,7 +196,7 @@ module Make
         select_types_reg
           (function
             | A.Location_reg (q,reg) when p = q -> Some reg
-            | A.Location_global _ | A.Location_reg _ -> None
+            | A.Location_global _ | A.Location_reg _ | A.Location_pte _-> None
             | A.Location_deref _ -> assert false)
           env
 
@@ -212,7 +212,8 @@ module Make
           (function
             | A.Location_reg _ -> None
             | A.Location_deref _ -> assert false
-            | A.Location_global loc -> Some loc)
+            | A.Location_global loc -> Some loc
+            | A.Location_pte _ -> None)
           env
 
       let select_aligned env =
@@ -225,7 +226,7 @@ module Make
           env
 
 (* Format stuff *)
-      let cast_reg_type loc = 
+      let cast_reg_type loc =
         if A.arch = `X86_64 then
           match loc with
           | A.Location_reg (_,r) -> "(" ^ CType.dump (A.typeof r) ^ ")"
@@ -238,7 +239,7 @@ module Make
       | A.Location_reg (proc,reg) -> tr_out (sprintf "%d:%s" proc (A.pp_reg reg))
       | A.Location_global s -> sprintf "%s" s
       | A.Location_deref (s,i) -> sprintf "%s[%d]" s i
-
+      | A.Location_pte s -> Misc.add_pte s
       let register_type _loc t = t (* Systematically follow given type *)
 
       let fmt_outcome test pp_fmt_base locs env =
@@ -270,7 +271,7 @@ module Make
         A.LocSet.fold
           (fun a k -> match a with
           | A.Location_global a|A.Location_deref (a,_) -> StringSet.add a k
-          | A.Location_reg _ -> k)
+          | A.Location_reg _|A.Location_pte _ -> k)
           locs StringSet.empty
 
       let get_displayed_globals t = filter_globals (get_displayed_locs t)

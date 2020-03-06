@@ -266,7 +266,7 @@ val same_instance : event -> event -> bool
   val location_compare : event -> event -> int
   val same_location : event -> event -> bool
   val same_value : event -> event -> bool
-  val is_visible_location : A.location -> bool
+(*  val is_visible_location : A.location -> bool *)
 
 (********************************)
 (* Event structure output ports *)
@@ -457,10 +457,11 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     | _,_ -> assert false
 
 (* Visible locations *)
+(*
     let is_visible_location  = function
       | A.Location_global _|A.Location_deref _ -> true
       | A.Location_reg _ -> false
-
+*)
     let same_location e1 e2 =
       if (location_of e1 = None || location_of e2 = None) then
         false
