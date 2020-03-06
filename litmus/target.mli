@@ -21,7 +21,8 @@ module type S = sig
   type t
 
   val get_nrets : t -> int
-  val get_addrs : t -> string list
+  val get_addrs_only : t -> string list
+  val get_addrs : t -> string list * string list
   val dump_out_reg : int -> arch_reg -> string
   val addr_cpy_name : string -> int -> string
   val dump_v : V.v -> string

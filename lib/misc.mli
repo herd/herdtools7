@@ -258,4 +258,5 @@ val add_atag : string -> string
 val check_atag : string -> bool
 
 val add_pte : string -> string
+val tr_pte : string ->  string option
 val add_tlb : string -> string

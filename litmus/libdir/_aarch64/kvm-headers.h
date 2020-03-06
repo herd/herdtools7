@@ -14,7 +14,19 @@
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
 
+#include <vmalloc.h>
 #include <asm-generic/atomic.h>
 #include <asm/smp.h>
 #include <asm/delay.h>
-static inline void smp_init(void) {}
+#include <asm/mmu.h>
+#define LITMUS_PAGE_SIZE PAGE_SIZE
+
+static inline void litmus_init(void) {}
+
+static inline pteval_t *litmus_tr_pte(void *p) {
+  return tr_pte(p);
+}
+
+static inline void litmus_flush_tlb(void *p) {
+  flush_tlb_page((unsigned long)p);
+}

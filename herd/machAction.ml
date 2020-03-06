@@ -231,10 +231,12 @@ end = struct
   | (A.Location_global _,A.Location_global _)
   | (A.Location_reg _,A.Location_reg _)
   | (A.Location_deref _,A.Location_deref _)
+  | (A.Location_pte _,A.Location_pte _)
     -> true
-  | (A.Location_global _,(A.Location_deref _|A.Location_reg _))
-  | (A.Location_deref _,(A.Location_global _|A.Location_reg _))
-  | (A.Location_reg _,(A.Location_global _|A.Location_deref _))
+  | (A.Location_global _,(A.Location_deref _|A.Location_reg _|A.Location_pte _))
+  | (A.Location_deref _,(A.Location_global _|A.Location_reg _|A.Location_pte _))
+  | (A.Location_reg _,(A.Location_global _|A.Location_deref _|A.Location_pte _))
+  | (A.Location_pte _,(A.Location_global _|A.Location_reg _|A.Location_deref _))
     -> false
 
   let compatible_accesses a1 a2 = match a1,a2 with

@@ -73,10 +73,6 @@ module type S = sig
   (* Normalize instruction (for hashes) *)
   val norm_ins : instruction -> instruction
 
-(* LM: Was not used, delete
-  (* Recognise store, data read from register r *)
-  val is_data : reg -> instruction -> bool
-*)
 
   (* Instruction continuation *)
   val get_next : instruction -> Label.next list

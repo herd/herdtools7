@@ -999,7 +999,7 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
             | A.Location_global a ->
                 if is_tagloc a then glob,a::tag
                 else a::glob,tag
-            | A.Location_deref _|A.Location_reg _ -> p)
+            | A.Location_deref _|A.Location_reg _|A.Location_pte _ -> p)
             ([],[]) env in
         let tag_set = A.VSet.of_list tag in
         let env =

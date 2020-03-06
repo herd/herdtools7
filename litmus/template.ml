@@ -35,12 +35,14 @@ module type Config = sig
   val memory : Memory.t
   val cautious : bool
   val hexa : bool
+  val mode : Mode.t
 end
 
 module DefaultConfig = struct
   let memory = Memory.Direct
   let cautious = false
   let hexa = false
+  let mode = Mode.Std
 end
 
 
@@ -67,6 +69,7 @@ module type S = sig
   type t = {
       init : (arch_reg * V.v) list ;
       addrs : string list ; (* addesses in code (eg X86) *)
+      ptes : string list ;  (* pte in code (eg X86) *)
       stable : arch_reg list; (* stable registers, ie must be self-allocated by gcc *)
       final : arch_reg list ;
       code : ins list;
@@ -77,7 +80,8 @@ module type S = sig
     }
 
   val get_nrets : t -> int
-  val get_addrs : t -> string list
+  val get_addrs_only : t -> string list
+  val get_addrs : t -> string list * string list (* addresses X ptes *)
   val get_labels : t -> (int * string) list
   val fmt_reg : arch_reg -> string
   val dump_label : string -> string
@@ -138,6 +142,7 @@ module Make(O:Config)(A:I) =
     type t = {
         init : (arch_reg * V.v) list ;
         addrs : string list ;
+        ptes : string list ;
         stable : arch_reg list;
         final : arch_reg list ;
         code : ins list;
@@ -150,7 +155,7 @@ module Make(O:Config)(A:I) =
 
     let get_nrets t = t.nrets
 
-    let get_addrs { init=init; addrs=addrs; _ } =
+    let get_gen tr init addrs =
       let set =
         StringSet.union
           (StringSet.of_list addrs)
@@ -158,10 +163,23 @@ module Make(O:Config)(A:I) =
              (List.fold_left
                 (fun k (_,v) ->
                   match v with
-                  | Symbolic ((s,_),_) -> s::k
+                  | Symbolic ((s,_),_) ->
+                      begin match tr s with
+                      | Some s -> s::k
+                      | None -> k
+                      end
                   | Concrete _|Label _|Tag _ -> k)
                 [] init)) in
       StringSet.elements set
+
+    let get_addrs_only {init; addrs; _} =
+      get_gen
+        (fun s -> match Misc.tr_pte s with
+        | Some _ -> None | None -> Some s)
+        init addrs
+
+    let get_addrs ({ init; ptes; _ } as t) =
+      get_addrs_only t,get_gen Misc.tr_pte init ptes
 
     let get_labels { init; _} =
       List.fold_left

@@ -22,7 +22,7 @@ end =
 
     let perm_location p loc = match loc with
     | A.Location_reg (i,r) -> A.Location_reg (p.(i),r)
-    | A.Location_global _|A.Location_deref _ -> loc
+    | A.Location_global _|A.Location_deref _|A.Location_pte _ -> loc
 
     let perm_state_atom p (loc,v) = perm_location p loc,v
 
