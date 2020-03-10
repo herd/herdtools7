@@ -354,7 +354,7 @@ let inverse_cond = function
   | GE -> GT
   | GT -> LE
 
-type op = ADD | ADDS | SUB | SUBS | AND | ANDS | ORR | EOR | ASR
+type op = ADD | ADDS | SUB | SUBS | AND | ANDS | ORR | EOR | ASR | LSR
 type variant = V32 | V64
 
 let pp_variant = function
@@ -558,8 +558,8 @@ let pp_op = function
   | SUB  -> "SUBS"
   | SUBS -> "SUBS"
   | AND  -> "AND"
-  | ANDS -> "ANDS"
   | ASR  -> "ASR"
+  | LSR   -> "LSR"
 
 let do_pp_instruction m =
   let pp_rrr memo v rt rn rm =

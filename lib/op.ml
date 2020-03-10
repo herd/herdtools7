@@ -22,7 +22,7 @@ type op =
   | Add | Sub | Mul | Div
   | And | Or | Xor | Nor | AndNot2
   | ASR
-  | ShiftLeft
+  | ShiftLeft | Lsr
   | ShiftRight
   | Lt | Gt | Eq | Ne
   | Le | Ge
@@ -42,6 +42,7 @@ let pp_op o =
   | AndNot2 -> "(andnot2)"
   | ShiftLeft -> "<<<" (* In Java ?? *)
   | ShiftRight -> ">>>"
+  | Lsr -> ">>>"
   | Eq -> "=="
   | Lt -> "<"
   | Gt -> ">"
