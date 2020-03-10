@@ -25,7 +25,7 @@ type op =
   | And | Or | Xor | Nor
   | AndNot2
 (* Logical shift left *)
-  | ShiftLeft
+  | ShiftLeft | Lsr
 (* Return C-style boolean (zero is false, not zero is true) *)
   | Lt | Gt | Eq | Ne
   | Le | Ge

@@ -538,12 +538,13 @@ module Make
             | ORR -> fun (v1,v2) -> M.op Op.Or v1 v2
             | SUB|SUBS -> fun (v1,v2) -> M.op Op.Sub v1 v2
             | AND|ANDS -> fun (v1,v2) -> M.op Op.And v1 v2
+            | LSR -> fun (v1,v2) -> M.op Op.Lsr v1 v2
             end >>=
             (let m =  (fun v ->
               (write_reg rd v ii) >>|
               (match op with
               | ADDS|SUBS|ANDS -> is_zero v >>= fun v -> write_reg NZP v ii
-              | ADD|EOR|ORR|AND|SUB -> M.unitT ())) in
+              | ADD|EOR|ORR|AND|SUB|LSR -> M.unitT ())) in
             mask32 ty m) >>!
             B.Next
               (* Barrier *)
