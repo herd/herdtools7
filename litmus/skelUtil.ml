@@ -219,7 +219,7 @@ module Make
       let select_aligned env =
         select_types
           (function
-            | A.Location_reg _ -> None
+            | A.Location_reg _|A.Location_pte _ -> None
             | A.Location_deref _ -> assert false
             | A.Location_global loc ->
                 if is_aligned loc env then Some loc else None)
