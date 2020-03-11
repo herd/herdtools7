@@ -4,13 +4,10 @@
 let preSC =  loc & (W \ FW) * FW
 
 (* Compute the set of total orders that extend preSC on program events *)
-let allS = linearisations(M \ IW,preSC)
+let allS = linearisations(~IW,preSC)
 
 (* For all such orders *)
 with S from allS
-
-let PO = po
-let POminusS = PO\S
 
 (* Check compatibility with po *)
 empty po \ S as ScPo
@@ -26,4 +23,3 @@ let rf-S = WRS \ (S;WRS)   (* Most recent amongst them *)
 (* Check equality with rf *)
 empty rf \ rf-S as RfCons
 empty rf-S \ rf as RfCons
-
