@@ -530,8 +530,12 @@ module Make(V:Constant.S)(C:Config) =
       { empty_ins with memo = Misc.lowercase (A.pp_barrier f); }
 
     let cache memo r =
-      let r,f = arg1 "xzr" (fun s -> "^i"^s) r in
-      { empty_ins with memo = memo ^ "," ^ f; inputs=r; reg_env=add_v r; }
+      match r with
+      | ZR ->
+          { empty_ins with memo; }
+      | _ ->
+          let r,f = arg1 "xzr" (fun s -> "^i"^s) r in
+          { empty_ins with memo = memo ^ "," ^ f; inputs=r; reg_env=add_v r; }
 
     let tlbi op r =
       let op = Misc.lowercase  (TLBI.pp_op op) in
