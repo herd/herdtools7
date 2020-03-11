@@ -711,6 +711,8 @@ instr:
 | ISB
   { A.I_FENCE A.ISB }
 /* Cache Maintenance */
+| IC IC_OP
+  { A.I_IC ($2,A.ZR) }
 | IC IC_OP COMMA xreg
   { A.I_IC ($2,$4) }
 | IC IVAU COMMA xreg
