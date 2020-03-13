@@ -55,7 +55,7 @@ module Make
       val dump : Name.t -> T.t -> unit
     end = struct
       let k_nkvm x = if Cfg.is_kvm then "" else x
-      let is_pte = true
+      let is_pte = Cfg.is_kvm
       open CType
 
 (*******************************************)
@@ -241,12 +241,18 @@ module Make
 (**************)
       let is_active = not Cfg.is_kvm
 
+      let dbg = false
+
       let get_all_vars test =
         let all = List.map fst test.T.globals in
         let vs =
           List.map
             (fun (_,(out,_)) -> A.Out.get_addrs_only out)
             test.T.code in
+        if dbg then begin
+          eprintf "get_all_vars: all={%s} vs=%s\n" (String.concat "," all)
+            (String.concat " " (List.map (fun vs -> sprintf "{%s}" (String.concat "," vs)) vs))
+        end ;
         all,vs
 
       let get_addrs test =
@@ -326,7 +332,7 @@ module Make
               (String.concat ","
                  (List.map (fun (a,_) -> sprintf "*%s" a) locs)) ;
             if is_pte then begin
-              O.fi "pteval_t %s;" 
+              O.fi "pteval_t %s;"
                 (String.concat ","
                    (List.map (fun (a,_) ->
                      sprintf "*pte_%s,saved_pte_%s" a a)
@@ -723,15 +729,31 @@ module Make
 (*****************)
 
 
-(* Responsability for initialising or collecting, per thread *)
-      let responsible =
-        let rec do_rec seen = function
-          | [] -> []
-          | vs::vss ->
-              let vs =
-                List.filter (fun v -> not (StringSet.mem v seen)) vs in
-              vs::do_rec (StringSet.union (StringSet.of_list vs) seen) vss in
-        do_rec StringSet.empty
+(* Responsability for initialising or collecting, per thread,
+   attempt to distribute responsability evenly *)
+      let responsible vss =
+        let vss = List.map StringSet.of_list vss in
+        let all = StringSet.unions vss in
+        let tvs = Array.of_list vss in
+        let tlen = Array.map StringSet.cardinal tvs in
+        let sz = Array.length tvs in
+        let tr = Array.create sz [] in
+        StringSet.iter
+          (fun a ->
+            let ks = ref [] in
+            for k = 0 to sz-1 do
+              if StringSet.mem a tvs.(k) then ks := k :: !ks
+            done ;
+            let ks =
+              List.sort
+                (fun k1 k2 -> compare tlen.(k1) tlen.(k2))
+                !ks in
+            let k = match ks with | k::_ -> k | [] -> assert false in
+            tlen.(k) <- tlen.(k)+1 ;
+            tr.(k) <- a :: tr.(k))
+          all ;
+      Array.to_list tr
+
 
 (* Untouched variables, per thread + responsability *)
       let part_vars test =
@@ -739,6 +761,9 @@ module Make
         let touched_set = StringSet.unions (List.map StringSet.of_list vs)
         and all_set = StringSet.of_list all in
         let rem = StringSet.elements (StringSet.diff all_set touched_set) in
+        if dbg then begin
+          eprintf "rem={%s}\n" (String.concat "," rem)
+        end ;
         let rems = Misc.nsplit (T.get_nprocs test) rem in
         let vss = List.map2 (@) rems vs in
         List.combine rems (responsible vss)
@@ -747,6 +772,7 @@ module Make
       let dump_run_thread
           env test _some_ptr stats glob
           (_vars,inits) (proc,(out,(_outregs,envVolatile)))  =
+        if dbg then eprintf "P%i: inits={%s}\n" proc (String.concat "," inits) ;
         let my_regs = U.select_proc proc env in
         let addrs = A.Out.get_addrs_only out in (* accessed in code *)
         O.fi "case %i: {" proc ;
@@ -761,25 +787,28 @@ module Make
           (fun a ->
             let at =  find_addr_type a env in
             let v = A.find_in_state (A.Location_global a) test.T.init in
-            let ins =
-              let pp_const v =
-                let open Constant in
-                match v with
-                | Concrete i -> A.V.Scalar.pp Cfg.hexa i
-                | Symbolic ((s,None),_) ->
-                    sprintf "(%s)_vars->%s" (CType.dump at) s
-                | Label _ ->
-                    Warn.fatal "PreSi mode cannot handle code labels (yet)"
-                | Symbolic _|Tag _ ->
-                    Warn.user_error "Litmus cannot handle tags" in
-              match at with
-              | Array (t,sz) ->
-                  sprintf "for (int _j = 0 ; _j < %i ; _j++) %s"
-                    sz
-                    (U.do_store (Base t) (sprintf "%s[_j]" a) (pp_const v))
-              | _ ->
-                  U.do_store at (sprintf "*%s" a) (pp_const v) in
-            O.fii "%s;" ins)
+            let pp_const v =
+              let open Constant in
+              match v with
+              | Concrete i -> A.V.Scalar.pp Cfg.hexa i
+              | Symbolic ((s,None),_) ->
+                  sprintf "(%s)_vars->%s" (CType.dump at) s
+              | Label _ ->
+                  Warn.fatal "PreSi mode cannot handle code labels (yet)"
+              | Symbolic _|Tag _ ->
+                  Warn.user_error "Litmus cannot handle tags" in
+            match at with
+            | Array (t,sz) ->
+                O.fii "for (int _j = 0 ; _j < %i ; _j++) {" sz ;
+                O.fiii "%s;"
+                  (U.do_store (Base t)
+                     (sprintf "%s[_j]" a) (pp_const v)) ;
+                O.oii "}" ;
+                if is_pte then
+                  O.fii "litmus_flush_tlb((void *)%s);" a
+            | _ ->
+                O.fii "%s;" (U.do_store at (sprintf "*%s" a) (pp_const v)) ;
+                if is_pte then O.fii "litmus_flush_tlb((void *)%s);" a)
           inits ;
 (*        eprintf "%i: INIT {%s}\n" proc (String.concat "," inits) ; *)
         (* And cache-instruct them *)
