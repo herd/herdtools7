@@ -195,7 +195,13 @@ module Make
         end
 
 (* Memory barrier *)
+      let has_fault_handler = is_pte && Insert.exists "kvm_fault_handler.c"
+
       let dump_mbar_def () =
+        if Cfg.is_kvm && has_fault_handler begin
+          O.o "/* Handle MMU faults */" ;
+          Insert.insert O.o "kvm_fault_handler.c" ;
+        end ;
         O.o "/* Full memory barrier */" ;
         Insert.insert O.o "mbar.c" ;
         O.o ""
@@ -1186,6 +1192,9 @@ module Make
         O.oi "zyva_t *a = (zyva_t*)_a;" ;
         O.oi "int id = a->id;" ;
         O.oi "global_t *g = a->g;" ;
+        if Cfg.is_kvm && has_fault_handler then begin
+          O.oi "install_fault_handler();"
+        end ;
         if not Cfg.is_kvm then begin
           O.oi
             (if Cfg.force_affinity then
