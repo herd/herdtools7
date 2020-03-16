@@ -380,6 +380,9 @@ module Make
           EPF.fi "Histogram (%d states)\n" [nstates]
 
         let cstring s = sprintf "%S" s
+        let show_stats = match Cfg.mode with
+        | Mode.Kvm -> false
+        | Mode.Std|Mode.PreSi -> true
 
         let postlude doc test affi show_topos stats =
           let t = if Cfg.exit_cond then "int" else "void" in
@@ -389,7 +392,7 @@ module Make
           | Mode.Std ->
               O.f "static %s postlude(FILE *out,cmd_t *cmd,hist_t *hist,count_t p_true,count_t p_false,tsc_t total) {" t
           | Mode.PreSi ->
-              O.f "static %s postlude(FILE *out,global_t *g,count_t p_true,count_t p_false,tsc_t total) {" t ;
+              O.f "static %s postl sude(FILE *out,global_t *g,count_t p_true,count_t p_false,tsc_t total) {" t ;
               O.oi "hash_t *hash = &g->hash ;"
           | Mode.Kvm ->
               O.f "static %s postlude(global_t *g,count_t p_true,count_t p_false,tsc_t total) {" t ;
@@ -504,63 +507,66 @@ module Make
           EPF.fi fmt [obs;"cond_true";"cond_false";] ;
 (* Parameter sumaries,
    meaningful only when 'remarkable outcomes are present *)
-          O.oi "if (p_true > 0) {" ;
+          if show_stats then begin
+            O.oi "if (p_true > 0) {" ;
 (* Topologies sumaries *)
-          begin match Cfg.mode with
-          | Mode.Std ->
-              if show_topos then begin
-                O.oii "if (cmd->aff_mode == aff_scan) {" ;
-                O.oiii "for (int k = 0 ; k < SCANSZ ; k++) {" ;
-                O.oiv "count_t c = ngroups[k];" ;
-                let fmt = "\"Topology %-6\" PCTR\":> %s\\n\"" in
-                O.fiv "if ((c*100)/p_true > ENOUGH) { printf(%s,c,group[k]); }" fmt ;
+            begin match Cfg.mode with
+            | Mode.Std ->
+                if show_topos then begin
+                  O.oii "if (cmd->aff_mode == aff_scan) {" ;
+                  O.oiii "for (int k = 0 ; k < SCANSZ ; k++) {" ;
+                  O.oiv "count_t c = ngroups[k];" ;
+                  let fmt = "\"Topology %-6\" PCTR\":> %s\\n\"" in
+                  O.fiv "if ((c*100)/p_true > ENOUGH) { printf(%s,c,group[k]); }" fmt ;
+                  O.oiii "}" ;
+                  O.oii "} else if (cmd->aff_mode == aff_topo) {"  ;
+                  O.oiii "printf(\"Topology %-6\" PCTR \":> %s\\n\",ngroups[0],cmd->aff_topo);" ;
+                  O.oii "}"
+                end
+            | Mode.Kvm|Mode.PreSi ->
+                O.oii "count_t *ngroups = &g->stats.groups[0];" ;
+                O.oii "for (int k = 0 ; k < SCANSZ ; k++) {" ;
+                O.oiii "count_t c = ngroups[k];" ;
+                O.oiii "if ((g->verbose > 1 && c > 0) || (c*100)/p_true > ENOUGH) {" ;
+                let fmt = "Topology %-6PCTR:> part=%d %s\n" in
+                EPF.fiv fmt ["c";"k";"g->group[k]"] ;
                 O.oiii "}" ;
-                O.oii "} else if (cmd->aff_mode == aff_topo) {"  ;
-                O.oiii "printf(\"Topology %-6\" PCTR \":> %s\\n\",ngroups[0],cmd->aff_topo);" ;
                 O.oii "}"
-              end
-          | Mode.Kvm|Mode.PreSi ->
-              O.oii "count_t *ngroups = &g->stats.groups[0];" ;
-              O.oii "for (int k = 0 ; k < SCANSZ ; k++) {" ;
-              O.oiii "count_t c = ngroups[k];" ;
-              O.oiii "if ((g->verbose > 1 && c > 0) || (c*100)/p_true > ENOUGH) {" ;
-              let fmt = "Topology %-6PCTR:> part=%d %s\n" in
-              EPF.fiv fmt ["c";"k";"g->group[k]"] ;
-              O.oiii "}" ;
-              O.oii "}"
-          end ;
+            end ;
 (* Other stats *)
-          List.iter
-            (fun {tags; name; max; tag; process; } ->
-              let ks = Misc.interval 0 (List.length tags) in
-              let rec loop_rec i = function
-                | [] ->
-                    O.fx i "{" ;
-                    let j = Indent.tab i in
-                    O.fx j "count_t c = g->stats.%s%s;" name
-                      (String.concat ""
-                         (List.map (sprintf "[k%i]") ks))  ;
-                    let fmt =
-                      sprintf "%s %%-6PCTR:> {%s}\n"
-                        tag
-                        (String.concat ", "
-                           (List.map (sprintf "%s=%%d") tags))
-                    and args =
-                      List.map
-                        (fun k -> process (sprintf "k%i" k))
-                        ks in
-                    O.fx j "if ((g->verbose > 1 && c > 0) || (c*100)/p_true >= ENOUGH) {" ;
-                    EPF.fx (Indent.tab j) fmt ("c"::args) ;
-                    O.fx j "}" ;
-                    O.fx i "}"
-                | k::ks ->
-                    let i = Indent.tab i in
-                    O.fx i "for (int k%i = 0 ; k%i < %s; k%i++)"
-                      k k max k ;
-                    loop_rec i ks in
-              loop_rec Indent.indent ks)
-            stats ;
-          O.oi "}" ;
+            List.iter
+              (fun {tags; name; max; tag; process; } ->
+                let ks = Misc.interval 0 (List.length tags) in
+                let rec loop_rec i = function
+                  | [] ->
+                      O.fx i "{" ;
+                      let j = Indent.tab i in
+                      O.fx j "count_t c = g->stats.%s%s;" name
+                        (String.concat ""
+                           (List.map (sprintf "[k%i]") ks))  ;
+                      let fmt =
+                        sprintf "%s %%-6PCTR:> {%s}\n"
+                          tag
+                          (String.concat ", "
+                             (List.map (sprintf "%s=%%d") tags))
+                      and args =
+                        List.map
+                          (fun k -> process (sprintf "k%i" k))
+                          ks in
+                      O.fx j "if ((g->verbose > 1 && c > 0) || (c*100)/p_true >= ENOUGH) {" ;
+                      EPF.fx (Indent.tab j) fmt ("c"::args) ;
+                      O.fx j "}" ;
+                      O.fx i "}"
+                  | k::ks ->
+                      let i = Indent.tab i in
+                      O.fx i "for (int k%i = 0 ; k%i < %s; k%i++)"
+                        k k max k ;
+                      loop_rec i ks in
+                loop_rec Indent.indent ks)
+              stats ;
+            O.oi "}" ;
+            ()
+          end ;
 (* Show running time *)
           begin match Cfg.mode with
           | Mode.Std|Mode.PreSi ->
