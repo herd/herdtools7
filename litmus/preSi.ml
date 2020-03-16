@@ -195,10 +195,11 @@ module Make
         end
 
 (* Memory barrier *)
-      let has_fault_handler = is_pte && Insert.exists "kvm_fault_handler.c"
+      let has_fault_handler =
+        is_pte && Insert.exists "kvm_fault_handler.c"
 
       let dump_mbar_def () =
-        if Cfg.is_kvm && has_fault_handler begin
+        if Cfg.is_kvm && has_fault_handler then begin
           O.o "/* Handle MMU faults */" ;
           Insert.insert O.o "kvm_fault_handler.c" ;
         end ;
