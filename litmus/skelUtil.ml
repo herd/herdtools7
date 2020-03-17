@@ -23,6 +23,7 @@ module type Config = sig
   val kind : bool
   val hexa : bool
   val exit_cond : bool
+  val have_fault_handler : bool
 end
 
 type stat =
@@ -418,7 +419,8 @@ module Make
               O.oi "pp_hash(out,hash,g->verbose > 1,g->group);"
           | Mode.Kvm ->
               pp_nstates "hash->nhash" ;
-              O.oi "pp_hash(hash,g->verbose > 1,g->group);"
+              O.oi "pp_hash(hash,g->verbose > 1,g->group);" ;
+              if Cfg.have_fault_handler then O.oi "pp_faults();"
           end ;
 (* Print condition and witnesses *)
           let pp_cond = sprintf "\"%s\"" (String.escaped (pp_cond test)) in
