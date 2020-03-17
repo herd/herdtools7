@@ -260,7 +260,17 @@ module Make
 
 
 (* Utilities *)
-      module U = SkelUtil.Make(Cfg)(P)(A)(T)
+      module UCfg = struct
+        let memory = Cfg.memory
+        let preload = Cfg.preload
+        let mode = Cfg.mode
+        let kind = Cfg.kind
+        let hexa = Cfg.hexa
+        let exit_cond = Cfg.exit_cond
+        let have_fault_handler = false
+      end
+
+      module U = SkelUtil.Make(UCfg)(P)(A)(T)
       module EPF =
         DoEmitPrintf.Make
           (struct
