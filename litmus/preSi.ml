@@ -90,6 +90,8 @@ module Make
 (*************)
 (* Utilities *)
 (*************)
+      let have_fault_handler = is_pte && Insert.exists "kvm_fault_handler.c"
+
       module UCfg = struct
         let memory = Memory.Direct
         let preload = Cfg.preload
@@ -97,7 +99,9 @@ module Make
         let kind = Cfg.kind
         let hexa = Cfg.hexa
         let exit_cond = Cfg.exit_cond
+        let have_fault_handler = have_fault_handler
       end
+
       module U = SkelUtil.Make(UCfg)(P)(A)(T)
       module UD = U.Dump(O)(EPF)
 
@@ -195,12 +199,12 @@ module Make
         end
 
 (* Memory barrier *)
-      let has_fault_handler =
-        is_pte && Insert.exists "kvm_fault_handler.c"
-
       let dump_mbar_def () =
-        if Cfg.is_kvm && has_fault_handler then begin
+          O.o "static int whoami[AVAIL];" ;
+          O.o "" ;
+        if Cfg.is_kvm && have_fault_handler then begin
           O.o "/* Handle MMU faults */" ;
+          O.o "" ;
           Insert.insert O.o "kvm_fault_handler.c" ;
         end ;
         O.o "/* Full memory barrier */" ;
@@ -985,7 +989,7 @@ module Make
         O.oi "if (_role < 0) return;" ;
         O.oi "ctx_t *ctx = c->ctx;" ;
         O.oi "param_t *q = g->param;" ;
-        let has_globals =
+        let have_globals =
           not Cfg.is_kvm &&
           begin match test.T.globals with
           | [] -> false
@@ -1021,7 +1025,7 @@ module Make
           (fun i (vs,(ps,cs)) ->
             O.fii "case %i:" i ;
 (* Location placement comes first, as cache setting depends on it *)
-            if not Cfg.is_kvm && has_globals then begin
+            if not Cfg.is_kvm && have_globals then begin
               List.iter
                 (fun (a,_) ->
                   try
@@ -1046,7 +1050,7 @@ module Make
                   "ctx->p.%s = comp_param(&c->seed,&q->%s,%s,0);" tag tag max ;)
               ps ;
 (* Cache parameters, locations must be allocated *)
-            if has_globals then O.oiii "barrier_wait(&ctx->b);" ;
+            if have_globals then O.oiii "barrier_wait(&ctx->b);" ;
             List.iter
               (fun (_proc,v as p) ->
                 if is_active then begin
@@ -1193,7 +1197,7 @@ module Make
         O.oi "zyva_t *a = (zyva_t*)_a;" ;
         O.oi "int id = a->id;" ;
         O.oi "global_t *g = a->g;" ;
-        if Cfg.is_kvm && has_fault_handler then begin
+        if Cfg.is_kvm && have_fault_handler then begin
           O.oi "install_fault_handler();"
         end ;
         if not Cfg.is_kvm then begin

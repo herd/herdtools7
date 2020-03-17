@@ -137,7 +137,7 @@ typedef struct {
   int role ;
   ctx_t *ctx ;
 #ifdef ACTIVE
-  active_t *act;
+  active_t *act;_
 #endif
 } thread_ctx_t ;
 
@@ -148,7 +148,7 @@ static void set_role(global_t *g,thread_ctx_t *c,int part) {
   int inst = g->inst[idx] ;
   if (0 <= inst && inst < g->nexe) {
     c->ctx = &g->ctx[inst] ;
-    c->role = g->role[idx] ;
+    whoami[idx] = c->role = g->role[idx] ;
 #ifdef ACTIVE
     c->act = &g->active[part] ;
 #endif

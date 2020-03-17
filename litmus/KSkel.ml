@@ -65,6 +65,7 @@ module Make
       let kind = true
       let hexa = Cfg.hexa
       let exit_cond = false
+      let have_fault_handler = false
     end
 
     module U = SkelUtil.Make(UCfg)(P)(A)(T)

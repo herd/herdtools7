@@ -260,7 +260,17 @@ module Make
 
 
 (* Utilities *)
-      module U = SkelUtil.Make(Cfg)(P)(A)(T)
+      module UCfg = struct
+        let memory = Cfg.memory
+        let preload = Cfg.preload
+        let mode = Cfg.mode
+        let kind = Cfg.kind
+        let hexa = Cfg.hexa
+        let exit_cond = Cfg.exit_cond
+        let have_fault_handler = false
+      end
+
+      module U = SkelUtil.Make(UCfg)(P)(A)(T)
       module EPF =
         DoEmitPrintf.Make
           (struct
@@ -2207,7 +2217,7 @@ module Make
               begin match t,loc with
               | CType.Array _,_ -> ()
               | _,A.Location_global a when U.is_aligned a env ->
-                  let _ptr = sprintf "_%s_ptr" a in                  
+                  let _ptr = sprintf "_%s_ptr" a in
                   let pp_t = CType.dump t in
                   O.fiii "%s *%s = (%s *)&%s;"
                     pp_t _ptr pp_t (dump_ctx_loc "ctx." loc) ;
