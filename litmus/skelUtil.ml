@@ -420,7 +420,7 @@ module Make
           | Mode.Kvm ->
               pp_nstates "hash->nhash" ;
               O.oi "pp_hash(hash,g->verbose > 1,g->group);" ;
-              if Cfg.have_fault_handler then O.oi "pp_faults();"
+              ()
           end ;
 (* Print condition and witnesses *)
           let pp_cond = sprintf "\"%s\"" (String.escaped (pp_cond test)) in
@@ -576,6 +576,7 @@ module Make
               EPF.fi fmt ["total / 1000000.0"] ;
               O.oi "fflush(out);"
           | Mode.Kvm ->
+              if Cfg.have_fault_handler then O.oi "pp_faults();" ;
               let s = sprintf "Time %s "  doc.Name.name in
               O.fi "puts(%S);" s ;
               O.oi "emit_double(tsc_millions(total));" ;
