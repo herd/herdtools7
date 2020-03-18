@@ -17,7 +17,7 @@ static void pp_faults(void) {
     total += fault[k];
   }
   if (total > 0) {
-    printf("Faults: %d faults",total);
+    printf("Faults %d faults",total);
     for (int k=0 ; k < NTHREADS; k++) {
       int f = fault[k];
       if (f > 0) {
