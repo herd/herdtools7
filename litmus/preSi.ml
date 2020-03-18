@@ -748,7 +748,7 @@ module Make
         let tvs = Array.of_list vss in
         let tlen = Array.map StringSet.cardinal tvs in
         let sz = Array.length tvs in
-        let tr = Array.create sz [] in
+        let tr = Array.make sz [] in
         StringSet.iter
           (fun a ->
             let ks = ref [] in
