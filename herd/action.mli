@@ -58,12 +58,6 @@ module type S = sig
   val is_tag : action -> bool
   val is_additional_mem : action -> bool (* abstract memory actions, eg locks *)
   val is_atomic : action -> bool
-  val is_inv : action -> bool
-  val is_at_EL0 : action -> bool
-  val is_at_EL1 : action -> bool
-  val is_at_EL2 : action -> bool
-  val is_at_EL3 : action -> bool
-  val is_fault : action -> bool
   val to_fault : action -> A.fault option
   val get_mem_dir : action -> Dir.dirn
   val get_mem_size : action -> MachSize.sz

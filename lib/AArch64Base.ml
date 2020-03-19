@@ -262,6 +262,17 @@ module DC = struct
     pp_point op.point
 end
 
+type level = |E0 |E1 |E2 |E3
+
+let levels  = [E0;E1;E2;E3;]
+
+let pp_level = function
+    | E0 -> "E0"
+    | E1 -> "E1"
+    | E2 -> "E2"
+    | E3 -> "E3"
+
+
 module TLBI = struct
 
   type typ =
@@ -288,13 +299,7 @@ module TLBI = struct
     | IPAS2 -> "IPAS2"
     | IPAS2L -> "IPAS2L"
 
-  type level = |E0 |E1 |E2 |E3
 
-  let pp_level = function
-    | E0 -> "E0"
-    | E1 -> "E1"
-    | E2 -> "E2"
-    | E3 -> "E3"
 
   type domain = | IS | No
 
@@ -307,17 +312,8 @@ module TLBI = struct
   let pp_op { typ; level; domain; } =
     sprintf "%s%s%s" (pp_typ typ) (pp_level level) (pp_domain domain)
 
-  let is_at_EL0 op =  match op.level with 
-    | E0 -> true | _ -> false
+  let is_at_level lvl op =  op.level = lvl
 
-  let is_at_EL1 op = printf "%s\n" (pp_level op.level);    match op.level with 
-    | E1 -> true | _ -> false
-
-  let is_at_EL2 op = match op.level with 
-    | E2 -> true | _ -> false
-
-  let is_at_EL3 op = match op.level with 
-    | E3 -> true | _ -> false
 end
 
 (********************)

@@ -38,14 +38,16 @@ module type S =
     and type I.arch_reg = reg
     and type I.arch_instruction = instruction
 
+(* Levels are abstract, for AArch64, they are E0 to E3 *)
+    type level
+    val levels : level list
+    val pp_level : level -> string
+
     module TLBI : 
     sig 
       type op 
       val pp_op : op -> string
-      val is_at_EL0 : op -> bool
-      val is_at_EL1 : op -> bool
-      val is_at_EL2 : op -> bool
-      val is_at_EL3 : op -> bool
+      val is_at_level : level -> op -> bool
     end
   end
       
