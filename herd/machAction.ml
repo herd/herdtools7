@@ -46,7 +46,7 @@ module Make (C:Config) (A : A) : sig
 (* Unrolling control *)
     | TooFar
 (* Invalidate event *) 
-   | Inv of A.TLBI.op * A.location
+    | Inv of A.TLBI.op * A.location
 
   include Action.S with type action := action and module A = A
 
@@ -172,20 +172,8 @@ end = struct
     | Inv _ -> true
     | TagAccess _|Access _|Amo _|Commit _|Barrier _ | Fault _ | TooFar -> false
 
-  let is_at_EL0 = function
-    | Inv(op,_) -> Printf.printf "coucou\n"; A.TLBI.is_at_EL0 op
-    | _ -> false
-
-  let is_at_EL1 = function
-    | Inv(op,_) -> A.TLBI.is_at_EL1 op
-    | _ -> false
-
-  let is_at_EL2 = function
-    | Inv(op,_) -> A.TLBI.is_at_EL2 op
-    | _ -> false
-
-  let is_at_EL3 = function
-    | Inv(op,_) -> A.TLBI.is_at_EL3 op
+  let is_at_level lvl = function
+    | Inv(op,_) -> A.TLBI.is_at_level lvl op
     | _ -> false
 
   let is_fault = function
@@ -311,8 +299,13 @@ end = struct
           | Access(_,_,_,annot,_)|Amo (_,_,_,annot,_) -> p annot
           | _ -> false
           in tag,p) A.annot_sets
+    and lsets =
+      List.map
+        (fun lvl -> A.pp_level lvl,is_at_level lvl)
+        A.levels
     in
-    ("T",is_tag)::("FAULT",is_fault):: bsets @ asets
+    ("T",is_tag)::("FAULT",is_fault)::("INV",is_inv)::
+    bsets @ asets @ lsets
 
   let arch_fences = []
 
