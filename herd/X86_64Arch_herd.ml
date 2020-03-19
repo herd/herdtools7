@@ -81,7 +81,7 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
     (********************)
     module V = V
 
-    module TLBI = NoTLBI 
+    include NoLevelNorTLBI
 
     include ArchExtra_herd.Make (C)
               (struct

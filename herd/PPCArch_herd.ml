@@ -67,7 +67,7 @@ module Make (C:Arch_herd.Config) (V:Value.S)
       | Pstore (sz,_,_,_) | Pstorex (sz,_,_,_)
         -> Some sz
 
-    module TLBI = NoTLBI 
+    include NoLevelNorTLBI
 
     include ArchExtra_herd.Make(C)
         (struct
