@@ -184,7 +184,6 @@ module Top(O:Config)(Tar:Tar.S) = struct
 
   module MakeC = struct
 
-    module V = SymbConstant
     module A = CArch_litmus.Make(OX)
     module LexParse = struct
       type token = CParser.token
@@ -244,7 +243,6 @@ module Top(O:Config)(Tar:Tar.S) = struct
     let tname = splitted.Splitter.name.Name.name in
     if O.check_name tname then begin
 (* Then call appropriate compiler, depending upon arch *)
-      let module V = SymbConstant in
       match arch with
       | `LISA ->
           MakeLISA.compile fname hash_env chan splitted
