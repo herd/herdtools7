@@ -51,17 +51,13 @@ module Make(O:Config)(V:Constant.S) = struct
 
   let dump_v_std v = match v with
   | Concrete _ -> V.pp O.hexa v
-  | Symbolic ((a,None),0) -> dump_addr a
+  | Symbolic (Virtual ((a,None),0)) -> dump_addr a
   | Tag _
   | Symbolic _
   | Label _ -> assert false 
 
   let dump_v_kvm v = match v with
-  | Symbolic ((a,None),0) ->
-      begin match Misc.tr_pte a with
-      | Some a -> sprintf "_vars->%s" (Misc.add_pte a)
-      | None -> V.pp_v v
-      end
+  | Symbolic (System (PTE,a)) -> sprintf "_vars->%s" (Misc.add_pte a)
   | _ -> V.pp_v v
 
   let dump_v = match O. mode with

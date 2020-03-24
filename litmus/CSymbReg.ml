@@ -50,9 +50,11 @@ with type v = A.V.v and type location = A.location
 
   let finish_reg = get_reg
 
+  let finish_global a = Global_litmus.Addr (ParsedConstant.pp_v a)
+
   let finish_location f_reg loc = match loc with
-  | Location_global m -> A.Location_global (ParsedConstant.vToName m)
-  | Location_deref (m,i) -> A.Location_deref (ParsedConstant.vToName m,i)
+  | Location_global m -> A.Location_global (finish_global m)
+  | Location_deref (m,i) -> A.Location_deref (finish_global m,i)
   | Location_reg (i,r) -> A.Location_reg (i,finish_reg r)
   | Location_sreg reg  ->
       let p,r = f_reg reg in A.Location_reg (p,r)

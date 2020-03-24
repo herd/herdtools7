@@ -16,10 +16,27 @@
 
 (** Constants in code *)
 
+(*
+   Symbols defined below are the union of all possible sort of symbols
+   used by all tools. Abstract later?
+*)
+
+type syskind = PTE|TAG|TLB (* Various kinds of system memory *)
+
+type symbol =
+  | Virtual of (string * string option) * int (* (symbol, optional tag), index *)
+  | Physical of string * int                  (* symbol, index *)
+  | System of (syskind * string)                 (* System memory *)
+
+val pp_symbol : symbol -> string
+
+val as_address : symbol -> string
+
+(* Add scalars *)
 type 'scalar t =
   | Concrete of 'scalar
 (* Memory cell, with optional tag and offet *)
-  | Symbolic  of (string * string option) * int
+  | Symbolic  of symbol
   | Label of Proc.t * string     (* In code *)
   | Tag of string
 
@@ -45,5 +62,4 @@ module type S =  sig
   val pp_v  : v -> string
   val compare : v -> v -> int
   val eq : v -> v -> bool
-  val vToName : v -> string
 end

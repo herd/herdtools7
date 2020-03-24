@@ -17,7 +17,6 @@
 
 module Bell = BellBase
 open Bell
-let mk_sym s = Constant.Symbolic ((s,None),0)
 %}
 
 %token EOF SEMI COMMA PIPE COLON LPAR RPAR RBRAC LBRAC LBRACE RBRACE SCOPES LEVELS REGIONS MOV AND ADD BRANCH EQ NEQ READ WRITE FENCE RMW XOR PLUS CALL
@@ -96,7 +95,7 @@ reg:
 
 reg_or_addr:
 | reg  {Rega $1}
-| name { Abs (mk_sym $1)}
+| name { Abs $1}
 
 k:
 | NUM { MetaConst.Int $1 }

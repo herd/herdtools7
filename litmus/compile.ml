@@ -39,6 +39,7 @@ module Generic (A : Arch_litmus.Base)
     (C:Constr.S
     with type location = A.location and module LocSet = A.LocSet) = struct
 
+      module G = Global_litmus
       open CType
 
       let base =  A.base_type
@@ -115,7 +116,7 @@ module Generic (A : Arch_litmus.Base)
       let add_addr_type a ty env =
 (*      Printf.eprintf "Type %s : %s\n"  a (CType.dump ty) ; *)
         try
-          let tz = StringMap.find a env in
+          let tz = G.Map.find a env in
           match ty,tz with
           | (Pointer (Base s1), Pointer (Base s2))
           | (Atomic (Base s1), Atomic (Base s2))
@@ -124,9 +125,9 @@ module Generic (A : Arch_litmus.Base)
           | _,_ (* (Pointer _|Base _),(Pointer _|Base _) *) ->
               Warn.fatal
                 "Type mismatch detected on location %s, required %s vs. found %s"
-                a (dump ty) (dump tz)
+                (Global_litmus.pp a) (dump ty) (dump tz)
         with
-          Not_found -> StringMap.add a ty env
+          Not_found -> G.Map.add a ty env
 
 (********************)
 (* Complete typing  *)
@@ -170,11 +171,12 @@ module Generic (A : Arch_litmus.Base)
           env init
 
       let type_init_values init env =
+        let open Constant in
         List.fold_left
           (fun env (loc,(t,v)) -> match loc,v with
           | _,Constant.Concrete _ -> env
-          | A.Location_global _,Constant.Symbolic ((s,_),_) ->
-              let a = A.Location_global s in
+          | A.Location_global _,Symbolic s ->
+              let a = A.Location_global (G.tr_symbol s) in
               begin try
                 ignore (A.LocMap.find a env) ;
                 env
@@ -246,7 +248,7 @@ module Make
     (O:Config)
     (A:Arch_litmus.S)
     (T:Test_litmus.S with
-     module A.V = A.V and
+module A.V = A.V and
 type A.reg = A.reg and
 type A.location = A.location and
 module A.LocSet = A.LocSet and
@@ -259,7 +261,7 @@ type P.code = MiscParser.proc * A.pseudo list)
     open Constant
 
     let do_self = O.variant Variant_litmus.Self
-
+    module G = Global_litmus
     module A = A
     module V = A.V
     module Constr = T.C
@@ -273,14 +275,14 @@ type P.code = MiscParser.proc * A.pseudo list)
     | A.Symbolic _ (*no symbolic in litmus *)
     | A.Macro (_,_) -> assert false
 
-    let extract_pseudo = do_extract_pseudo StringSet.empty C.extract_addrs
+    let extract_pseudo = do_extract_pseudo G.Set.empty C.extract_addrs
 
     let extract_addrs code =
       List.fold_right
         (fun ins env ->
-          StringSet.union (extract_pseudo ins) env)
+          G.Set.union (extract_pseudo ins) env)
         code
-        StringSet.empty
+        G.Set.empty
 
     let stable_regs code =
       List.fold_right
@@ -505,10 +507,10 @@ type P.code = MiscParser.proc * A.pseudo list)
       List.map
         (fun (proc,addrs,stable,code,nrets) ->
           let addrs,ptes =
-            StringSet.fold
-              (fun s (a,p) -> match Misc.tr_pte s with
-              | None -> StringSet.add s a,p
-              | Some s -> a,StringSet.add s p)
+            G.Set.fold
+              (fun s (a,p) -> match s with
+              | G.Addr s -> StringSet.add s a,p
+              | G.Pte s -> a,StringSet.add s p)
               addrs (StringSet.empty,StringSet.empty) in
           let all_clobbers =
             List.fold_left
@@ -556,17 +558,18 @@ type P.code = MiscParser.proc * A.pseudo list)
 (* First from typing env, this catches all globals listed in init,final,flocs *)
         A.LocMap.fold
           (fun loc t k -> match loc with
-          | A.Location_global a -> StringMap.add a t k
+          | A.Location_global a -> G.Map.add a t k
           | _ -> k)
-          env StringMap.empty in
+          env G.Map.empty in
 (* Then extract types from code, notice that env types have precedence *)
       let env =
         List.fold_right
           (fun (_,t) ->
             List.fold_right
               (fun a env ->
+                let a = G.Addr a in
                 try
-                  ignore (StringMap.find a env) ; env
+                  ignore (G.Map.find a env) ; env
                 with Not_found ->
                   Generic.add_addr_type a base env)
               t.addrs)
@@ -578,17 +581,18 @@ type P.code = MiscParser.proc * A.pseudo list)
           (fun (_,(t,v)) env ->
             match t,v with
             | (MiscParser.TyDef|MiscParser.TyDefPointer),
-              Constant.Symbolic ((a,_),_) when Misc.tr_pte a = None ->
+              Constant.Symbolic s ->
+                let a = G.tr_symbol s in
                 begin try
-                  let _ = StringMap.find a env in
+                  let _ = G.Map.find a env in
                   env
                 with Not_found  ->
-                  StringMap.add a Generic.base env
+                  G.Map.add a Generic.base env
                 end
             | _ -> env)
           init env in
-      StringMap.fold
-        (fun a ty k -> (a,ty)::k)
+      G.Map.fold
+        (fun a ty k -> match a with G.Addr a -> (a,ty)::k | G.Pte _ -> k)
         env []
 
     let type_out env p t =

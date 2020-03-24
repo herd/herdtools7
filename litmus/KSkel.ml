@@ -77,11 +77,7 @@ module Make
         (fun (proc,(_,(outs,_))) -> iter_outs f proc outs)
         test.T.code
 
-    let dump_loc_name loc =  match loc with
-    | A.Location_reg (proc,reg) -> A.Out.dump_out_reg proc reg
-    | A.Location_global s -> s
-    | A.Location_deref (s,i) -> sprintf "%s_%i" s i
-    | A.Location_pte _ -> assert false
+    let dump_loc_name = A.dump_loc_tag
 
     module DC =
       CompCond.Make(O)
@@ -296,7 +292,7 @@ module Make
       let open Constant in
       match v with
       | Concrete i -> A.V.Scalar.pp Cfg.hexa i
-      | Symbolic ((s,None),0) -> dump_a_addr s
+      | Symbolic (Virtual ((s,None),0)) -> dump_a_addr s
       | Label _ ->
           Warn.user_error "No label value for klitmus"
       | Symbolic _|Tag _ ->
@@ -438,7 +434,7 @@ module Make
       O.oi "for (int _i = 0 ; _i < sz ; _i++) {" ;
       List.iter
         (fun (s,_) ->
-          let loc = A.Location_global s in
+          let loc = A.location_of_addr s in
           let v = A.find_in_state loc test.T.init in
           let ty = U.find_type loc env in
           match ty with

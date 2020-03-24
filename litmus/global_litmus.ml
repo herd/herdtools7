@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2013-present Institut National de Recherche en Informatique et *)
+(* Copyright 2020-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,50 +14,36 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-
-(* Crossrun option *)
-
-type addr ={ host : string ; port : int option ; }
-
-type t =
-  | Host of addr
-  | Qemu of string
-  | Kvm of string
-  | Adb
-  | No
-
-let tags = ["none";"adb";"qemu[:exec]";"host[:port]";]
-
-let parse tag = match tag with
-| "none" -> Some No
-| "adb"  -> Some Adb
-| "qemu"  -> Some (Qemu "qemu")
-| _ ->
-    let h =
-      try
-        let j = try String.index tag ':' with Not_found -> raise Exit in
-        let h = String.sub tag 0 j
-        and p = String.sub tag (j+1) (String.length tag - (j+1)) in
-        match h with
-        | "qemu" -> Qemu p
-        | _ ->
-            let p = try int_of_string p with _ -> raise Exit in
-            Host { host=h; port=Some p;}
-      with
-      | Exit -> Host { host=tag ; port=None; } in
-    Some h
-
-open Printf
+type t = Addr of string | Pte of string
 
 let pp = function
-  | No -> "none"
-  | Adb -> "adb"
-  | Qemu "qemu" -> "qemu"
-  | Qemu e -> sprintf "qemu:%s" e
-  | Kvm "./arm-run" -> "kvm"
-  | Kvm e -> sprintf "kvm:%s" e
-  | Host h ->
-      match h.port with
-      | None -> h.host
-      | Some p ->  sprintf "%s:%i" h.host p
+  | Addr s -> s
+  | Pte s -> Misc.add_pte s
 
+let compare g1 g2 = match g1,g2 with
+| (Addr s1,Addr s2)
+| (Pte s1,Pte s2)
+    -> String.compare s1 s2
+| Addr _,Pte _ -> -1
+| Pte _,Addr _ -> 1
+
+let as_addr = function
+  | Addr s -> s
+  | Pte _ -> assert false
+
+let tr_symbol =
+  let open Constant in
+  function
+    | Virtual ((s,None),0) -> Addr s
+    | System (PTE,s) -> Pte s
+    | c ->  Warn.fatal "litmus cannot handle symbol '%s'" (pp_symbol c)
+
+type u = t
+
+module Ordered = struct
+  type t = u
+  let compare = compare
+end
+
+module Set = MySet.Make(Ordered)
+module Map = MyMap.Make(Ordered)

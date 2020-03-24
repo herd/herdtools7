@@ -47,7 +47,6 @@ module Hash(O:Warn.Config) =
 
   end
 
-
 module Pseudo(A:Arch_litmus.S) = struct
   
   type code = MiscParser.proc * A.pseudo list

@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2010-present Institut National de Recherche en Informatique et *)
+(* Copyright 2020-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,30 +14,14 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Operations on symbolic registers *)
+(** Global locations for litmus *)
 
-module type Arch = sig
-  include ArchBase.S
+type t = Addr of string | Pte of string
 
-(* Values and global locations and their creators *)
-  type v
+val pp : t -> string
+val compare : t -> t -> int
+val as_addr : t -> string (* assert false if not an addr *)
+val tr_symbol : Constant.symbol -> t
 
-  val maybevToV : MiscParser.maybev -> v
-  type global
-  val maybevToGlobal : MiscParser.maybev -> global
-
-(* Manifest location type *)
-  type location = 
-    | Location_global of global
-    | Location_deref of global * int
-    | Location_reg of int * reg
-end
-
-module Make(A:Arch) : sig
-
-  type ('loc,'v) t = ('loc,'v, A.pseudo) MiscParser.r3
-      
-  val allocate_regs :
-    (MiscParser.location, MiscParser.maybev) t -> (A.location,A.v) t
-
-end
+module Set : MySet.S with type elt = t
+module Map : MyMap.S with type key = t

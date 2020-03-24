@@ -23,16 +23,15 @@ module Make(Scalar:Scalar.S) = struct
   open Constant
 
   let intToV i = Concrete (Scalar.of_int i)
-  and nameToV s = Symbolic ((s,None),0)
+  and nameToV s = Constant.mk_sym s
 
   let zero = Concrete Scalar.zero
   and one = Concrete Scalar.one
 
   let tag_compare = Misc.opt_compare String.compare
 
-  let compare c1 c2 = match c1,c2 with
-  | Concrete i1, Concrete i2 -> Scalar.compare i1 i2
-  | Symbolic ((s1,t1),o1),Symbolic ((s2,t2),o2) ->
+  let symbol_compare sym1 sym2 = match sym1,sym2 with
+  | Virtual ((s1,t1),o1),Virtual ((s2,t2),o2) ->
       begin match String.compare s1 s2 with
       | 0 ->
           begin match tag_compare t1 t2 with
@@ -41,6 +40,22 @@ module Make(Scalar:Scalar.S) = struct
           end
       | r -> r
       end
+  | Physical (s1,o1),Physical (s2,o2) ->
+      begin match String.compare s1 s2 with
+      | 0 -> Misc.int_compare o1 o2
+      | r -> r
+      end
+  | System (t1,s1),System (t2,s2) ->
+      begin match compare t1 t2 with
+      | 0 -> String.compare s1 s2
+      | r -> r
+      end
+  | (Virtual _,(Physical _|System _)) | (Physical _,System _) -> -1
+  | ((Physical _|System _),Virtual _) | (System _,Physical _) -> 1
+
+  let compare c1 c2 = match c1,c2 with
+  | Concrete i1, Concrete i2 -> Scalar.compare i1 i2
+  | Symbolic sym1,Symbolic sym2 -> symbol_compare sym1 sym2
   | Label (p1,s1),Label (p2,s2) ->
       begin match String.compare s1 s2 with
       | 0 -> Proc.compare p1 p2
@@ -56,14 +71,9 @@ module Make(Scalar:Scalar.S) = struct
   | (Tag _,Label _)
       -> 1
 
-  let pp_location (s,t) = match t with
-  | None -> s
-  | Some t -> sprintf "%s:%s" s t
-
   let pp hexa = function
     | Concrete i -> Scalar.pp hexa i
-    | Symbolic (s,0) -> pp_location s
-    | Symbolic (s,o) -> sprintf "%s+%i" (pp_location s) o
+    | Symbolic s -> pp_symbol s
     | Label (p,lbl)  -> sprintf "%i:%s" p lbl
     | Tag s -> sprintf ":%s" s
 
@@ -75,8 +85,12 @@ module Make(Scalar:Scalar.S) = struct
 
   let eq c1 c2 = match c1,c2 with
   | Concrete i1, Concrete i2 -> Scalar.compare i1 i2 = 0
-  | Symbolic (s1,o1),Symbolic (s2,o2) ->
+  | Symbolic (Virtual (s1,o1)),Symbolic (Virtual (s2,o2)) ->
       location_eq  s1 s2 && Misc.int_eq o1 o2
+  | Symbolic (Physical (s1,o1)),Symbolic (Physical (s2,o2)) ->
+      Misc.string_eq s1 s2 && Misc.int_eq o1 o2
+  | Symbolic (System (t1,s1)),Symbolic (System (t2,s2)) ->
+      t1=t2 && Misc.string_eq s1 s2
   | Label (p1,s1),Label (p2,s2) ->
       Misc.string_eq  s1 s2 && Misc.int_eq p1 p2
   | Tag t1,Tag t2 -> Misc.string_eq t1 t2
@@ -84,10 +98,9 @@ module Make(Scalar:Scalar.S) = struct
   | (Symbolic _,(Concrete _|Label _|Tag _))
   | (Label _,(Concrete _|Symbolic _|Tag _))
   | (Tag _,(Concrete _|Symbolic _|Label _))
+  | (Symbolic (Virtual _),Symbolic (Physical _|System _))
+  | (Symbolic (Physical _),Symbolic (Virtual _|System _))
+  | (Symbolic (System _),Symbolic (Virtual _|Physical _))
     -> false
 
- (* For building code symbols, significant for symbols only ? *)
-  let vToName = function
-    | Symbolic ((s,None),0) -> s
-    | Symbolic _|Concrete _|Label _|Tag _ -> assert false
 end

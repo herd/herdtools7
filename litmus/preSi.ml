@@ -56,7 +56,9 @@ module Make
     end = struct
       let k_nkvm x = if Cfg.is_kvm then "" else x
       let is_pte = Cfg.is_kvm
+
       open CType
+      module G = Global_litmus
 
 (*******************************************)
 (* Set compile time parameters from config *)
@@ -105,7 +107,7 @@ module Make
       module U = SkelUtil.Make(UCfg)(P)(A)(T)
       module UD = U.Dump(O)(EPF)
 
-      let find_addr_type a env = U.find_type (A.Location_global a) env
+      let find_addr_type a env = U.find_type (A.location_of_addr a) env
 
 (***************)
 (* File header *)
@@ -298,11 +300,8 @@ module Make
 (* Outcomes *)
 (************)
 
-      let dump_loc_tag = function
-        | A.Location_reg (proc,reg) -> A.Out.dump_out_reg proc reg
-        | A.Location_global s -> s
-        | A.Location_deref (s,i) -> sprintf "%s_%i" s i
-        | A.Location_pte _ -> assert false
+      let dump_loc_tag = A.dump_loc_tag
+
       let does_pad t =
         let open CType in
         match t with
@@ -345,9 +344,9 @@ module Make
             if is_pte then begin
               O.fi "pteval_t %s;"
                 (String.concat ","
-                   (List.map (fun (a,_) ->
-                     sprintf "*pte_%s,saved_pte_%s" a a)
-                      locs)) ;
+                   (List.map
+                      (fun (a,_) -> sprintf "*pte_%s,saved_pte_%s" a a)
+                      locs))
             end ;
             O.o "} vars_t;" ;
         end ;
@@ -374,7 +373,7 @@ module Make
             else match loc with
             | A.Location_global a ->
                 O.fi "%s %s;"
-                  (SkelUtil.dump_global_type a t) (dump_loc_tag loc)
+                  (SkelUtil.dump_global_type (G.as_addr a) t) (dump_loc_tag loc)
             | _ ->
                 O.fi "%s %s;"
                   (CType.dump t) (dump_loc_tag loc))
@@ -797,12 +796,12 @@ module Make
         List.iter
           (fun a ->
             let at =  find_addr_type a env in
-            let v = A.find_in_state (A.Location_global a) test.T.init in
+            let v = A.find_in_state (A.location_of_addr a) test.T.init in
             let pp_const v =
               let open Constant in
               match v with
               | Concrete i -> A.V.Scalar.pp Cfg.hexa i
-              | Symbolic ((s,None),_) ->
+              | Symbolic (Virtual ((s,None),_)) ->
                   sprintf "(%s)_vars->%s" (CType.dump at) s
               | Label _ ->
                   Warn.fatal "PreSi mode cannot handle code labels (yet)"
@@ -864,9 +863,10 @@ module Make
           let to_collect =
             A.LocSet.filter
               (fun loc -> match loc with
-              | A.Location_global s|A.Location_deref (s,_) ->
+              | A.Location_global (G.Addr s)|A.Location_deref (G.Addr s,_) ->
                   StringSet.mem s to_collect
-              | A.Location_reg _|A.Location_pte _ -> false)
+              | A.Location_reg _
+              | A.Location_global (G.Pte _)|A.Location_deref(G.Pte _,_) -> false)
               (U.get_displayed_locs test) in
           A.LocSet.iter
             (fun loc ->

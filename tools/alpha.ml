@@ -58,7 +58,7 @@ struct
 
   let collect_location loc regs = match loc with
   | A.Location_reg (p,r) -> ProcRegSet.add (p,r) regs
-  | A.Location_global _|A.Location_deref _|A.Location_pte _ -> regs
+  | A.Location_global _|A.Location_deref _ -> regs
 
   let collect_state_atom (loc,_) = collect_location loc
 

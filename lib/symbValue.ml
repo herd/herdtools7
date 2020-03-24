@@ -74,10 +74,6 @@ module Make(Cst:Constant.S) = struct
   | Symbolic _ | Label _ | Tag _ as _m -> Val _m
   | Concrete s -> Val (Concrete (Scalar.of_string s))
 
-  let as_symbol = function
-    | Val v -> Cst.vToName v
-    | Var _ -> assert false
-
   let zero = Val Cst.zero
   and one = Val Cst.one
   and two = intToV 2
@@ -126,10 +122,14 @@ module Make(Cst:Constant.S) = struct
     if protect_is is_zero v1 then v2
     else if protect_is is_zero v2 then v1
     else match v1,v2 with
-    | (Val (Concrete i1),Val (Symbolic (s,i2)))
-    | (Val (Symbolic (s,i2)),Val (Concrete i1)) ->
+    | (Val (Concrete i1),Val (Symbolic (Virtual (s,i2))))
+    | (Val (Symbolic (Virtual (s,i2))),Val (Concrete i1)) ->
         let i1 = Scalar.to_int i1 in
-        Val (Symbolic (s,i1+i2))
+        Val (Symbolic (Virtual (s,i1+i2)))
+    | (Val (Concrete i1),Val (Symbolic (Physical (s,i2))))
+    | (Val (Symbolic (Physical (s,i2))),Val (Concrete i1)) ->
+        let i1 = Scalar.to_int i1 in
+        Val (Symbolic (Physical (s,i1+i2)))
     | _,_ -> (* General case *)
     binop Op.Add Scalar.add v1 v2
 
@@ -147,8 +147,9 @@ module Make(Cst:Constant.S) = struct
 
   and add_konst k v = match v with
   | Val (Concrete v) -> Val (Concrete (Scalar.addk v k))
-  | Val (Symbolic (s,i)) -> Val (Symbolic (s,i+k))
-  | Val (Label _|Tag _) ->
+  | Val (Symbolic (Virtual (s,i))) -> Val (Symbolic (Virtual (s,i+k)))
+  | Val (Symbolic (Physical (s,i))) -> Val (Symbolic (Physical (s,i+k)))
+  | Val (Symbolic (System _)|Label _|Tag _) ->
       Warn.user_error "Illegal addition on constants %s" (pp_v v)
   | Var _ -> raise Undetermined
 
@@ -215,7 +216,7 @@ module Make(Cst:Constant.S) = struct
 
 (* Ops on tagged locations *)
   let settag v1 v2 = match v1,v2 with
-  | Val (Symbolic ((a,_),o)),Val (Tag t) -> Val (Symbolic((a,Some t),o))
+  | Val (Symbolic (Virtual ((a,_),o))),Val (Tag t) -> Val (Symbolic (Virtual ((a,Some t),o)))
   | Val cst1,Val cst2 ->
       Warn.user_error "Illegal settag on %s and %s"
         (Cst.pp_v cst1)  (Cst.pp_v cst2)
@@ -223,24 +224,15 @@ module Make(Cst:Constant.S) = struct
       raise Undetermined
 
   let op_tagged op_op op v = match v with
-  |  Val (Symbolic (a,o)) -> Val (op a o)
-  |  Val (Concrete _|Label _|Tag _) ->
+  |  Val (Symbolic (Virtual (s,o))) -> Val (op s o)
+  |  Val (Concrete _|Symbolic (Physical _|System _)|Label _|Tag _) ->
       Warn.user_error "Illegal %s on %s" op_op (pp_v v)
   | Var _ -> raise Undetermined
 
   (*  Returns the location of the tag associated to a location *)
-  let op_tagloc (a,_) _ =  Symbolic ((Misc.add_atag a,None),0)
+  let op_tagloc (a,_) _ =  Symbolic (System (TAG,a))
+
   let tagloc = op_tagged "tagloc" op_tagloc
-
-  let get_sym = function
-    | Val (Symbolic ((s,_),_)) -> s
-    | Var _|Val (Concrete _|Label _|Tag _) ->
-        Warn.fatal "Illegal get_sym" (* NB: not an user error *)
-
-  let check_atag = function
-    | Val (Symbolic ((s,_),_)) -> Misc.check_atag s
-    | Var _|Val (Concrete _|Label _|Tag _) ->
-        Warn.fatal "Illegal check_atag" (* NB: not an user error *)
 
   (* Decompose tagged locations *)
   let op_tagextract (_,t) _ = match t with
@@ -248,19 +240,19 @@ module Make(Cst:Constant.S) = struct
   | None -> Constant.default_tag
 
   let tagextract v = op_tagged "tagextract" op_tagextract v
-  let op_locextract (a,_) o = Symbolic ((a,None),o)
+  let op_locextract (a,_) o = Symbolic (Virtual ((a,None),o))
   let locextract v = op_tagged "locextract" op_locextract v
 
   let op_pte_tlb op_op op v = match v with
-  |  Val (Symbolic (a,_)) -> Val (op a)
-  |  Val (Concrete _|Label _|Tag _) ->
+  |  Val (Symbolic (Virtual (a,_))) -> Val (op a)
+  |  Val (Concrete _|Label _|Tag _|Symbolic _) ->
       Warn.user_error "Illegal %s on %s" op_op (pp_v v)
   | Var _ -> raise Undetermined
 
-  let op_pteloc (a,_) = Symbolic ((Misc.add_pte a,None), 0)   
+  let op_pteloc (a,_) = Symbolic (System (PTE,a))   
   let pteloc = op_pte_tlb "pteloc" op_pteloc
    
-  let op_tlbloc (a,_) = Symbolic ((Misc.add_tlb a,None), 0)  
+  let op_tlbloc (a,_) = Symbolic (System (TLB,a))  
   let tlbloc = op_pte_tlb "tlbloc" op_tlbloc
 
   let op1 op =

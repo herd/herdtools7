@@ -90,6 +90,8 @@ module Make
     and module RegMap = T.A.RegMap) : sig
       val dump : Name.t -> T.t -> unit
     end = struct
+
+      module G = Global_litmus
       module C = T.C
       open Constant
       open CType
@@ -299,18 +301,13 @@ module Make
               else find_rec (k+1) ws in
         find_rec 0
 
-      let find_global_init a t =
-        A.find_in_state (A.Location_global a) t.T.init
+      let find_global_init a t = A.find_in_state (A.location_of_addr a) t.T.init
 
       let have_stabilized_globals t =
         not (StringSet.is_empty (U.get_stabilized t))
 
 
-      let dump_loc_name loc =  match loc with
-      | A.Location_reg (proc,reg) -> A.Out.dump_out_reg proc reg
-      | A.Location_global s -> s
-      | A.Location_deref (s,i) -> sprintf "%s_%i" s i
-      | A.Location_pte _ -> assert false
+      let dump_loc_name = A.dump_loc_tag
 
       let dump_loc_copy loc = "_" ^ dump_loc_name loc ^ "_i"
       let dump_loc_param loc = "_" ^ dump_loc_name loc
@@ -318,21 +315,23 @@ module Make
       let dump_ctx_loc pref loc = match loc with
       | A.Location_reg (proc,reg) ->
           sprintf "%s%s[_i]" pref (A.Out.dump_out_reg  proc reg)
-      | A.Location_global s ->
+      | A.Location_global (G.Addr s) ->
           begin match memory with
           | Direct ->
               sprintf "%s%s[_i]" pref s
           | Indirect ->
               sprintf "*(%s%s[_i])" pref s
           end
-      | A.Location_deref (s,idx) ->
+      | A.Location_deref (G.Addr s,idx) ->
           begin match memory with
           | Direct ->
               sprintf "%s%s[_i][%i]" pref s idx
           | Indirect ->
               sprintf "(*(%s%s[_i]))[%i]" pref s idx
           end
-      | A.Location_pte _ -> assert false
+      | A.Location_global (G.Pte _)
+      | A.Location_deref (G.Pte _,_)
+        -> assert false
 
       let dump_loc = dump_ctx_loc ""
 
@@ -357,7 +356,7 @@ module Make
 (* Right value, casted if pointer *)
       let dump_a_v_casted = function
         | Concrete i ->  A.V.Scalar.pp  Cfg.hexa i
-        | Symbolic ((s,None),_) -> sprintf "((int *)%s)" (dump_a_addr s)
+        | Symbolic (Virtual ((s,None),0)) -> sprintf "((int *)%s)" (dump_a_addr s)
         | Symbolic _|Label _|Tag _ -> assert false
 
 (* Dump left & right values when context is available *)
@@ -753,7 +752,7 @@ module Make
                     if Cfg.cautious then
                       List.fold_right
                         (fun (loc,v) k -> match loc,v with
-                        | A.Location_reg(p,_),Symbolic ((s,_),_) when s = a ->
+                        | A.Location_reg(p,_),Symbolic (Virtual ((s,_),_)) when s = a ->
                             let cpy = A.Out.addr_cpy_name a p in
                             O.fi "%s* *%s ;" (CType.dump t) cpy ;
                             (cpy,a)::k
@@ -786,7 +785,7 @@ module Make
                 if Cfg.cautious then
                   List.iter
                     (fun (loc,v) -> match loc,v with
-                    | A.Location_reg(p,_),Symbolic ((s,_),_)
+                    | A.Location_reg(p,_),Symbolic (Virtual ((s,_),_))
                       when Misc.string_eq s a ->
                         let cpy = A.Out.addr_cpy_name a p in
                         O.f "static %s* %s[SIZE_OF_ALLOC];"
@@ -1077,7 +1076,7 @@ module Make
               O.oi "po_t *s_or;" ;
               StringSet.iter
                 (fun a ->
-                  let loc = A.Location_global a in
+                  let loc = A.location_of_addr a in
                   O.fi "%s* cpy_%s[N] ;"
                     (dump_global_type a (U.find_type loc env))
                     (dump_loc_name loc))
@@ -1091,7 +1090,7 @@ module Make
           let locs = U.get_stabilized test in
           StringSet.iter
             (fun a ->
-              let loc = A.Location_global a in
+              let loc = A.location_of_addr a in
               O.f "static %s cpy_%s[N*SIZE_OF_MEM];"
                 (dump_global_type a (U.find_type loc env)) (dump_loc_name loc))
             locs
@@ -1203,8 +1202,8 @@ module Make
               O.fi "int size_of_test = _a->_p->size_of_test;" ;
               O.f "" ;
               StringSet.iter
-                (fun loc ->
-                  let loc = A.Location_global loc in
+                (fun a ->
+                  let loc = A.location_of_addr a in
                   let a = dump_loc_name loc
                   and t = U.find_type loc env in
                   O.fi "%s%s *%s = _a->%s;" (dump_global_type a t)
@@ -1217,7 +1216,7 @@ module Make
               loop_test_prelude indent2 "" ;
               StringSet.iter
                 (fun loc ->
-                  let loc = A.Location_global loc in
+                  let loc = A.Location_global (G.Addr loc) in
                   let t = U.find_type loc env in
                   match t with
                   | Array (t,sz) ->
@@ -1241,7 +1240,7 @@ module Make
               O.fii "for (int _i = size_of_test-1 ; _i >= 0 && !_found ; _i--) {" ;
               StringSet.iter
                 (fun loc ->
-                  let loc = A.Location_global loc in
+                  let loc = A.location_of_addr loc in
                   let a = dump_loc_name loc in
                   let t = U.find_type loc env in
                   let do_load = match t with
@@ -1439,7 +1438,7 @@ module Make
             loop_proc_prelude indent ;
             StringSet.iter
               (fun loc ->
-                let loc = A.Location_global loc in
+                let loc = A.location_of_addr loc in
                 if do_staticalloc then
                   let loc = dump_loc_name loc in
                   O.fx indent2
@@ -1539,7 +1538,7 @@ module Make
               loop_proc_prelude indent ;
               StringSet.iter
                 (fun loc ->
-                  let loc = A.Location_global loc in
+                  let loc = A.location_of_addr loc in
                   nop_or_free indent2 (sprintf "cpy_%s[_p]" (dump_loc_name loc)))
                 locs ;
               loop_proc_postlude indent
@@ -1585,7 +1584,7 @@ module Make
         loop_test_prelude indent "_a->_p->" ;
         List.iter
           (fun (a,t) ->
-            let v = A.find_in_state (A.Location_global a) test.T.init in
+            let v = A.find_in_state (A.location_of_addr a) test.T.init in
             if Cfg.cautious then O.oii "mcautious();" ;
             try
               let ins =
@@ -2181,15 +2180,16 @@ module Make
           let loc_arrays =
             A.LocSet.fold
               (fun loc k -> match loc with
-              | A.Location_deref (s,_) -> StringSet.add s  k
-              | A.Location_global s ->
+              | A.Location_deref (G.Addr s,_) -> StringSet.add s  k
+              | A.Location_global (G.Addr s) ->
                   let t = U.find_type loc env in
                   let t = CType.strip_attributes t in
                   begin match t with
                   | CType.Array _ ->  StringSet.add s  k
                   | _ -> k
                   end
-              | A.Location_reg _|A.Location_pte _ -> k)
+              | A.Location_reg _
+              | A.Location_global (G.Pte _)|A.Location_deref (G.Pte _,_)  -> k)
               locs StringSet.empty in
 (* Make copies of final locations *)
           if Cfg.cautious && not (A.LocSet.is_empty locs) then begin
@@ -2198,7 +2198,7 @@ module Make
           (* Arrays first (because of deref just below) *)
           StringSet.iter
             (fun s ->
-              let loc = A.Location_global s in
+              let loc = A.location_of_addr s in
               match  CType.strip_attributes (U.find_type loc env) with
               | CType.Array (t,_) ->
                   O.fiii "%s *%s = %s;"
@@ -2216,7 +2216,7 @@ module Make
               let t = CType.strip_attributes t in
               begin match t,loc with
               | CType.Array _,_ -> ()
-              | _,A.Location_global a when U.is_aligned a env ->
+              | _,A.Location_global (G.Addr a) when U.is_aligned a env ->
                   let _ptr = sprintf "_%s_ptr" a in
                   let pp_t = CType.dump t in
                   O.fiii "%s *%s = (%s *)&%s;"
@@ -2244,7 +2244,7 @@ module Make
             let locs =  U.get_stabilized test in
             StringSet.iter
               (fun loc ->
-                let loc = A.Location_global loc in
+                let loc = A.location_of_addr loc in
                 let t = U.find_type loc env in
                 loop_proc_prelude indent3 ;
                 let pp_test i e1 e2 =

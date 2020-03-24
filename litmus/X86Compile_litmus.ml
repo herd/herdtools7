@@ -26,30 +26,31 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
 (* Not so nice..., the price of code sharing of
    symbConst.ml with memevents *)
 
-    let abs_to_string abs =  ParsedConstant.vToName abs
-
-
 (***************************************************)
 (* Extract explicit [symbolic] addresses from code *)
 (***************************************************)
-    let internal_addr name = name = sig_cell
-      
+    module G = Global_litmus      
+
+    let internal_addr name = match name with
+    | G.Addr n -> Misc.string_eq n sig_cell
+    | G.Pte _ -> false
+
     let extract_rm32 r = match r with
     |  Rm32_reg _
-    |  Rm32_deref _ -> StringSet.empty
+    |  Rm32_deref _ -> G.Set.empty
     |  Rm32_abs v ->
-        let name = abs_to_string v in
+        let name = A.tr_global v in
         if internal_addr name then
-          StringSet.empty
+          G.Set.empty
         else
-          StringSet.singleton name
+          G.Set.singleton name
 
     let extract_ea ea = match ea with
     | Effaddr_rm32 r -> extract_rm32 r
 
     let extract_op op = match op with
     | Operand_effaddr ea -> extract_ea ea
-    | Operand_immediate _ -> StringSet.empty
+    | Operand_immediate _ -> G.Set.empty
 
     let rec extract_addrs ins = match ins with
     | I_LOCK ins -> extract_addrs ins
@@ -63,10 +64,10 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
     | I_MOVQ (ea,op)
     | I_MOVT (ea,op)
     | I_CMP (ea,op)
-        ->  StringSet.union (extract_ea ea) (extract_op op)
+        ->  G.Set.union (extract_ea ea) (extract_op op)
     | I_XCHG (ea1,ea2)
     | I_XCHG_UNLOCKED (ea1,ea2)
-        ->  StringSet.union (extract_ea ea1) (extract_ea ea2)
+        ->  G.Set.union (extract_ea ea1) (extract_ea ea2)
     | I_CMPXCHG (ea,_)
     | I_DEC ea
     | I_INC ea
@@ -79,7 +80,7 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
     | I_JCC _
     | I_MFENCE|I_SFENCE|I_LFENCE
     | I_MOVSD
-      -> StringSet.empty
+      -> G.Set.empty
 
     let stable_regs _ins = A.RegSet.empty
 
@@ -91,9 +92,9 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
     |  Rm32_reg reg ->  sprintf "^o%i" o,(i,[]),(o+1,[reg])
     |  Rm32_deref reg -> sprintf "(^i%i)" i,(i+1,[reg]),(o,[])
     |  Rm32_abs abs ->
-        (let name = abs_to_string abs in
-        if internal_addr name then name
-        else sprintf "%%[%s]" name),
+        (let name = A.tr_global abs in
+        if internal_addr name then G.pp name
+        else sprintf "%%[%s]" (G.pp name)),
         (i,[]),(o,[])
 
     let compile_ea_move i o ea = match ea with
@@ -104,8 +105,8 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
     |  Rm32_reg reg ->  sprintf "^o%i" o,(i,[reg]),(o+1,[reg])
     |  Rm32_deref reg -> sprintf "(^i%i)" i,(i+1,[reg]),(o,[])
     |  Rm32_abs abs ->
-        let name = abs_to_string abs in
-        sprintf "%%[%s]" name,(i,[]),(o,[])
+        let name = A.tr_global abs in
+        sprintf "%%[%s]" (G.pp name),(i,[]),(o,[])
 
     let compile_ea_output i o ea = match ea with
     | Effaddr_rm32 r -> compile_rm32_output i o r
@@ -115,8 +116,8 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
     |  Rm32_reg reg ->  sprintf "^i%i" i,(i+1,[reg])
     |  Rm32_deref reg -> sprintf "(^i%i)" i,(i+1,[reg])
     |  Rm32_abs abs ->
-        let name = abs_to_string abs in
-        sprintf "%%[%s]" name,(i,[])
+        let name = A.tr_global abs in
+        sprintf "%%[%s]" (G.pp name),(i,[])
 
     let compile_ea_input i ea = match ea with
     | Effaddr_rm32 r -> compile_rm32_input i r

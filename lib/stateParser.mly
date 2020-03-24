@@ -18,7 +18,7 @@
 open Constant
 open MiscParser
 open ConstrGen
-let mk_sym_tag s t = Symbolic ((s,Some t),0)
+let mk_sym_tag s t = Symbolic (Virtual ((s,Some t),0))
 let mk_lab p s = Label (p,s)
 %}
 
