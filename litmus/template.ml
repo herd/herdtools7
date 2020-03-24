@@ -163,8 +163,8 @@ module Make(O:Config)(A:I) =
              (List.fold_left
                 (fun k (_,v) ->
                   match v with
-                  | Symbolic ((s,_),_) ->
-                      begin match tr s with
+                  | Symbolic sym ->
+                      begin match tr sym with
                       | Some s -> s::k
                       | None -> k
                       end
@@ -174,12 +174,19 @@ module Make(O:Config)(A:I) =
 
     let get_addrs_only {init; addrs; _} =
       get_gen
-        (fun s -> match Misc.tr_pte s with
-        | Some _ -> None | None -> Some s)
+        (function
+          | Virtual ((s,_),_) -> Some s
+          | _ -> None)
         init addrs
 
-    let get_addrs ({ init; ptes; _ } as t) =
-      get_addrs_only t,get_gen Misc.tr_pte init ptes
+    let get_ptes_only {init; ptes; _} =
+      get_gen
+        (function
+          | System (PTE,s) -> Some s
+          | _ -> None)
+        init ptes
+
+    let get_addrs t =  get_addrs_only t,get_ptes_only t
 
     let get_labels { init; _} =
       List.fold_left

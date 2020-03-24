@@ -29,7 +29,7 @@ module Make(V:Constant.S)(C:Config) =
     let is_ret _ = assert false
 
 (* No addresses in code *)
-    let extract_addrs _ins = StringSet.empty
+    let extract_addrs _ins = Global_litmus.Set.empty
 
     let stable_regs _ins = A.RegSet.empty
 

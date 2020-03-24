@@ -42,7 +42,7 @@ module type S =
       val as_var : v -> csym option
       val as_symbol : v -> string
 
-(* Equality (for constraint solver) is possible *)
+(* Equality (for constraint solver) is possible *)	  
       val equalityPossible : v -> v -> bool
 
 (* Please use this for comparing constants... *)
@@ -71,8 +71,6 @@ module type S =
 
       val is_zero : v -> bool
       val is_one : v -> bool
-      val check_atag : v -> bool
-      val get_sym : v -> string
 
       val op1 : Op.op1 -> v -> v
       val op : Op.op -> v -> v -> v

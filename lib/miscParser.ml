@@ -35,15 +35,6 @@ type location =
   | Location_global of maybev
   | Location_deref of maybev * int
 
-let tr_pte = function
-  | Constant.Symbolic ((s,None),0) ->
-      begin match Misc.tr_pte s with
-      | None -> None
-      | Some s ->
-          Some (Constant.Symbolic ((s,None),0))
-      end
-  | _ -> None
-
 let location_compare loc1 loc2 = match loc1,loc2 with
 | Location_reg (i1,r1), Location_reg (i2,r2) ->
     begin match Misc.int_compare i1 i2 with

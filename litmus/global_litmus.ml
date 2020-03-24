@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2010-present Institut National de Recherche en Informatique et *)
+(* Copyright 2020-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,30 +14,36 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Operations on symbolic registers *)
+type t = Addr of string | Pte of string
 
-module type Arch = sig
-  include ArchBase.S
+let pp = function
+  | Addr s -> s
+  | Pte s -> Misc.add_pte s
 
-(* Values and global locations and their creators *)
-  type v
+let compare g1 g2 = match g1,g2 with
+| (Addr s1,Addr s2)
+| (Pte s1,Pte s2)
+    -> String.compare s1 s2
+| Addr _,Pte _ -> -1
+| Pte _,Addr _ -> 1
 
-  val maybevToV : MiscParser.maybev -> v
-  type global
-  val maybevToGlobal : MiscParser.maybev -> global
+let as_addr = function
+  | Addr s -> s
+  | Pte _ -> assert false
 
-(* Manifest location type *)
-  type location =
-    | Location_global of global
-    | Location_deref of global * int
-    | Location_reg of int * reg
+let tr_symbol =
+  let open Constant in
+  function
+    | Virtual ((s,None),0) -> Addr s
+    | System (PTE,s) -> Pte s
+    | c ->  Warn.fatal "litmus cannot handle symbol '%s'" (pp_symbol c)
+
+type u = t
+
+module Ordered = struct
+  type t = u
+  let compare = compare
 end
 
-module Make(A:Arch) : sig
-
-  type ('loc,'v) t = ('loc,'v, A.pseudo) MiscParser.r3
-
-  val allocate_regs :
-    (MiscParser.location, MiscParser.maybev) t -> (A.location,A.v) t
-
-end
+module Set = MySet.Make(Ordered)
+module Map = MyMap.Make(Ordered)

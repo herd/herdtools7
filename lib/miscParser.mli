@@ -33,7 +33,6 @@ type location =
   | Location_global of maybev
   | Location_deref of maybev * int
 
-val tr_pte : maybev -> maybev option
 val location_compare : location -> location -> int
 val dump_location : location -> string
 val dump_rval : location -> string

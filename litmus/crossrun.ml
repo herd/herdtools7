@@ -55,7 +55,7 @@ let pp = function
   | Qemu "qemu" -> "qemu"
   | Qemu e -> sprintf "qemu:%s" e
   | Kvm "./arm-run" -> "kvm"
-  | Kvm e -> sprintf "qemu:%s" e
+  | Kvm e -> sprintf "kvm:%s" e
   | Host h ->
       match h.port with
       | None -> h.host

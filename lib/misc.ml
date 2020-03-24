@@ -704,12 +704,24 @@ let clean_name n =
 
 let add_atag = sprintf "%s.atag"
 and check_atag s = Filename.check_suffix s ".atag"
-
-let add_pte = sprintf "pte_%s"
-let tr_pte s =
-  let len = String.length s in
-  if len > 4 && String.sub s 0 4 = "pte_" then
-    Some (String.sub s 4 (len-4))
+let tr_atag s =
+  if check_atag s then
+    Some (Filename.chop_suffix ".atag" s)
   else None
 
+let do_tr prf =
+  let prf_len = String.length prf in
+  fun s ->
+    let len = String.length s in
+    if len > prf_len && String.sub s 0 prf_len = "pte_" then
+      Some (String.sub s prf_len (len-prf_len))
+    else None
+
+
+let add_pte = sprintf "pte_%s"
+let tr_pte = do_tr "pte_"
+
 let add_tlb = sprintf "tlb_%s"
+
+let add_physical s = sprintf "phy_%s" s
+let tr_physical = do_tr "phy_"

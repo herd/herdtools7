@@ -26,15 +26,14 @@ module Make(V:Constant.S) =
 (***************************************************)
 (* Extract explicit [symbolic] addresses from code *)
 (***************************************************)
-    let abs_to_string abs =  ParsedConstant.vToName abs
+    module G = Global_litmus
 
     let extract_ra = function
-      | Rega _ -> StringSet.empty
-      | Abs a -> StringSet.singleton (abs_to_string a)
-
+      | Rega _ -> G.Set.empty
+      | Abs a -> G.Set.singleton (G.Addr a) (* No table pages in LISA *)
     let extract_iar = function
       | IAR_roa ra -> extract_ra ra
-      | IAR_imm _ -> StringSet.empty
+      | IAR_imm _ -> G.Set.empty
 
     let extract_ao = function
       | Addr_op_atom ra
@@ -44,16 +43,16 @@ module Make(V:Constant.S) =
     let extract_op = function
       | RAI iar -> extract_iar iar
       | OP (_,iar1,iar2)
-        ->  StringSet.union (extract_iar iar1) (extract_iar iar2)
+        ->  G.Set.union (extract_iar iar1) (extract_iar iar2)
 
     let extract_addrs = function
       | Pld (_,ao,_)
       | Pst (ao,_,_)
         -> extract_ao ao
       | Prmw (_,op,ao,_) ->
-          StringSet.union (extract_op op) (extract_ao ao)
+          G.Set.union (extract_op op) (extract_ao ao)
       | Pmov  (_,op) -> extract_op op
-      | Pnop|Pfence _|Pcall _|Pbranch _ -> StringSet.empty
+      | Pnop|Pfence _|Pcall _|Pbranch _ -> G.Set.empty
 
 (*****************************)
 (* Compilation (to kernel C) *)
@@ -63,10 +62,8 @@ module Make(V:Constant.S) =
       function
         | IAR_imm i -> sprintf "%i" i,[]
         | IAR_roa (Rega r) -> reg_to_string r,[r]
-        | IAR_roa (Abs (Symbolic ((s,None),0))) -> s,[]
-        | IAR_roa
-            (Abs (Symbolic _|Concrete _|Label _|Tag _))
-          -> assert false
+        | IAR_roa (Abs s) -> s,[]
+
 
     let compile_roi = function
       | Imm i -> sprintf "%i" i,[]
@@ -81,18 +78,15 @@ module Make(V:Constant.S) =
     let compile_addr_op vo =
       let open Constant in
       function
-        | Addr_op_atom (Abs (Constant.Symbolic ((s,None),0))) -> s,[],[]
+        | Addr_op_atom (Abs s) -> s,[],[]
         | Addr_op_atom (Rega r) -> reg_to_string r,[r;],[r,type_vo vo]
-        | Addr_op_add (Abs (Constant.Symbolic ((s,None),0)),roi) ->
+        | Addr_op_add (Abs s,roi) ->
             let m,i = compile_roi roi in
             add_par (s ^ "+" ^ m),i,[]
         | Addr_op_add (Rega r,roi) ->
             let m,i = compile_roi roi in
             add_par (reg_to_string r ^ "+" ^ m),r::i,[r,type_vo vo]
-        | Addr_op_atom (Abs (Concrete _|Label _|Tag _|Symbolic _))
-        | Addr_op_add (Abs  (Concrete _|Label _|Tag _|Symbolic _),_)
-          ->
-            assert false
+
 
     let compile_ins tr_lab ins k = match ins with
     | Pld (r,a,["once"]) ->
@@ -148,7 +142,7 @@ module Make(V:Constant.S) =
         { empty_ins with
           memo = sprintf "%s = %s;" (reg_to_string r) (reg_to_string r0);
           outputs=[r;]; inputs=[r0;]}::k
-    | Pmov (r,RAI (IAR_roa (Abs (Constant.Symbolic ((x,None),0))))) ->
+    | Pmov (r,RAI (IAR_roa (Abs x))) ->
         { empty_ins with
           memo = sprintf "%s = %s;" (reg_to_string r) x;
           outputs=[r;] }::k
