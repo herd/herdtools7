@@ -30,7 +30,7 @@ module Make
      type A.loc_reg = string and
      type A.Out.t = CTarget.t) =
   struct
-
+    module G = Global_litmus
     module A = T.A
     module C = T.C
     module Generic = Compile.Generic(A)(C)
@@ -67,23 +67,22 @@ module Make
         else None
     | _ -> None
 
-    let add_param {CAst.param_ty; param_name} env =
+    let add_param {CAst.param_ty; param_name=g} env =
       let ty = CType.strip_volatile param_ty in
       try
-        let oty = StringMap.find param_name env in
+        let oty = StringMap.find g env in
 (* add atomic qualifier, when appearing in parameters *)
         let oty = match add_atomic oty ty with
         | Some t -> t
         | None -> oty in
-        if compat oty ty then StringMap.add param_name oty env
+        if compat oty ty then StringMap.add g oty env
         else begin
           Warn.user_error
             "Parameter %s, type mismatch %s vs. %s"
-            param_name (CType.dump oty) (CType.dump ty)
-(*          env *)
+            g (CType.dump oty) (CType.dump ty)
         end
       with Not_found ->
-        StringMap.add param_name ty env
+        StringMap.add g ty env
 
     let add_params = List.fold_right add_param
 
@@ -91,8 +90,7 @@ module Make
       let env =
         A.LocMap.fold
           (fun loc t env -> match loc with
-          | A.Location_global a -> StringMap.add a t env
-          | A.Location_pte a -> StringMap.add (Misc.add_pte a) CType.pte env
+          | A.Location_global a -> StringMap.add (G.as_addr a) t env
           | A.Location_deref _ -> assert false
           | A.Location_reg _ -> env)
           env StringMap.empty in
@@ -176,7 +174,7 @@ module Make
    declaration *)
       let env =
         List.fold_left
-          (fun env (s,ty) -> A.LocMap.add (A.Location_global s) ty env)
+          (fun env (s,ty) -> A.LocMap.add (A.Location_global (G.Addr s)) ty env)
           env globals in
       let observed = Generic.all_observed final filter locs in
       { T.init = initenv;

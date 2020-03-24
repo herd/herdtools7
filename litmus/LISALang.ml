@@ -93,11 +93,10 @@ module Make(V:Constant.S) = struct
   let compile_val_fun v =
     let open Constant in
     match v with
-    | Symbolic ((s,None),0) -> sprintf "%s" s
+    | Symbolic sym -> sprintf "%s" (Constant.as_address sym)
     | Concrete _ -> Tmpl.dump_v v
     | Label _ -> Warn.user_error "No label value in LISA"
-    | Symbolic _|Tag _ ->
-        Warn.user_error "No tag nor indexed accesses in LISA"
+    | Tag _ -> Warn.user_error "No tag in LISA"
 
   and compile_addr_fun x = sprintf "*%s" x
 

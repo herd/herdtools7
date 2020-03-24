@@ -256,7 +256,11 @@ val clean_name : string -> string
 
 val add_atag : string -> string
 val check_atag : string -> bool
+val tr_atag : string -> string option
 
 val add_pte : string -> string
 val tr_pte : string ->  string option
 val add_tlb : string -> string
+
+val add_physical : string -> string
+val tr_physical : string -> string option

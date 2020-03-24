@@ -315,8 +315,8 @@ end = struct
           match c with
           | Tag _|Symbolic _|Label _ as sym -> sym
           | Concrete i -> Concrete (A.V.Scalar.of_string i)
-        type global = string
-        let maybevToGlobal = ParsedConstant.vToName
+        type global = Global_litmus.t
+        let maybevToGlobal = A.tr_global
       end
 
       let compile =

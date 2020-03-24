@@ -32,11 +32,14 @@ type stat =
       max : string; tag : string;
       process : string -> string; }
 
-let type_name loc = Printf.sprintf "%s_t" loc
+module G = Global_litmus
+
+let type_name loc =  Printf.sprintf "%s_t" loc
+
 let pp_global_env ge =
   String.concat ","
     (List.map
-       (fun (x,t) -> sprintf "<%s,%s>" x (CType.dump t))
+       (fun (x,t) -> sprintf "<%s,%s>" (G.pp x) (CType.dump t))
        ge)
 
 open CType
@@ -74,8 +77,8 @@ module Make
       val dump_mem_type : string -> CType.t -> env -> string
 
       val select_proc : int -> env -> CType.t A.RegMap.t
-      val select_global : env -> (A.loc_global * CType.t) list
-      val select_aligned : env -> (A.loc_global * CType.t) list
+      val select_global : env -> (string * CType.t) list
+      val select_aligned : env -> (string * CType.t) list
 
 (* Some dumping stuff *)
       val cast_reg_type : A.location -> string
@@ -112,6 +115,7 @@ module Make
               stat list -> unit
       end
     end = struct
+      module G = Global_litmus
 (* Info *)
       let get_info key test =
         try Some (List.assoc key test.T.info)
@@ -133,33 +137,33 @@ module Make
 
       let build_env test = test.T.type_env
 (*
-        let m =
+  let m =
 
-*)
+ *)
 
-        (*
-        let e = A.LocMap.empty in
-        let e =
-          List.fold_left
+          (*
+            let e = A.LocMap.empty in
+            let e =
+            List.fold_left
             (fun e (s,t) ->
 (*              eprintf "BUILD %s <%s>\n" s (CType.dump t) ; *)
-              A.LocMap.add (A.Location_global s) t e)
+            A.LocMap.add (A.Location_global s) t e)
             e test.T.globals in
-        let e =
-          List.fold_left
+            let e =
+            List.fold_left
             (fun e (proc,(_,(outs, _))) ->
-              List.fold_left
-                (fun e  (reg,t) ->
-                  A.LocMap.add (A.Location_reg (proc,reg)) t e)
-                e outs)
+            List.fold_left
+            (fun e  (reg,t) ->
+            A.LocMap.add (A.Location_reg (proc,reg)) t e)
+            e outs)
             e test.T.code in
-        let pp = A.LocMap.fold
-          (fun loc t k ->
+            let pp = A.LocMap.fold
+            (fun loc t k ->
             sprintf "%s -> %s" (A.pp_location loc) (CType.dump t)::k)
             e [] in
-        eprintf "Env: {%s}\n" (String.concat "; " pp) ;
-        e
-*)
+            eprintf "Env: {%s}\n" (String.concat "; " pp) ;
+            e
+           *)
 
       let do_find_type loc env =
         try A.LocMap.find loc env
@@ -169,7 +173,7 @@ module Make
       | A.Location_deref (s,_) ->
           begin match do_find_type (A.Location_global s) env with
           | CType.Array (t,_) -> CType.Base t
-          | _ -> Warn.user_error "Non array %s refered as array" s
+          | _ -> Warn.user_error "Non array %s refered as array" (G.pp s)
           end
       | _ -> do_find_type loc env
 
@@ -197,7 +201,7 @@ module Make
         select_types_reg
           (function
             | A.Location_reg (q,reg) when p = q -> Some reg
-            | A.Location_global _ | A.Location_reg _ | A.Location_pte _-> None
+            | A.Location_global _ | A.Location_reg _  -> None
             | A.Location_deref _ -> assert false)
           env
 
@@ -211,18 +215,17 @@ module Make
       let select_global env =
         select_types
           (function
-            | A.Location_reg _ -> None
-            | A.Location_deref _ -> assert false
-            | A.Location_global loc -> Some loc
-            | A.Location_pte _ -> None)
+            | A.Location_reg _|A.Location_global (G.Pte _) -> None
+            | A.Location_global (G.Addr a) -> Some a
+            | A.Location_deref _ -> assert false)
           env
 
       let select_aligned env =
         select_types
           (function
-            | A.Location_reg _|A.Location_pte _ -> None
+            | A.Location_reg _|A.Location_global (G.Pte _) -> None
             | A.Location_deref _ -> assert false
-            | A.Location_global loc ->
+            | A.Location_global (G.Addr loc) ->
                 if is_aligned loc env then Some loc else None)
           env
 
@@ -238,9 +241,8 @@ module Make
 
       let pp_loc tr_out loc =  match loc with
       | A.Location_reg (proc,reg) -> tr_out (sprintf "%d:%s" proc (A.pp_reg reg))
-      | A.Location_global s -> sprintf "%s" s
-      | A.Location_deref (s,i) -> sprintf "%s[%d]" s i
-      | A.Location_pte s -> Misc.add_pte s
+      | A.Location_global s -> G.pp s
+      | A.Location_deref (s,i) -> sprintf "%s[%d]" (G.pp s) i
       let register_type _loc t = t (* Systematically follow given type *)
 
       let fmt_outcome test pp_fmt_base locs env =
@@ -271,8 +273,12 @@ module Make
       let filter_globals locs =
         A.LocSet.fold
           (fun a k -> match a with
-          | A.Location_global a|A.Location_deref (a,_) -> StringSet.add a k
-          | A.Location_reg _|A.Location_pte _ -> k)
+          | A.Location_global (G.Addr a)
+          | A.Location_deref (G.Addr a,_) -> StringSet.add a k
+          | A.Location_reg _
+          | A.Location_global (G.Pte _)
+          | A.Location_deref (G.Pte _,_)
+            -> k)
           locs StringSet.empty
 
       let get_displayed_globals t = filter_globals (get_displayed_locs t)

@@ -107,13 +107,14 @@ let list_loc prog =
   in
   LocSet.elements (List.fold_left ins LocSet.empty prog)
 
-let get_params init i =
-  List.fold_left
-    (fun a ->
+let get_params init i = 
+  let open Constant in
+  List.fold_left 
+    (fun a -> 
      function
      | (MiscParser.Location_reg(p,_),
-	(_,Constant.Symbolic ((s,_),_))) when i = p ->
-	{ CAst.param_ty = CType.(Volatile (Base "int"));
+	(_,Symbolic (Virtual ((s,_),_)))) when i = p ->
+	{ CAst.param_ty = CType.Volatile CType.word;
 	  CAst.param_name = s }::a
      | _ -> a
     ) [] init

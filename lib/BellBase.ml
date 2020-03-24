@@ -107,11 +107,11 @@ let string_of_reg_or_imm pk r = match r with
   | Imm r -> pk r
 
 type reg_or_addr =
-  | Rega of reg  (* address given in register *)
-  | Abs of ParsedConstant.v (* address given as a constant *)
+  | Rega of reg   (* address given in register *)
+  | Abs of string (* address given as a constant *)
 
 
-let pp_abs = ParsedConstant.pp_v
+let pp_abs s = s
 
 let string_of_reg_or_addr r = match r with
   | Rega r -> pp_reg r
@@ -338,7 +338,7 @@ let map_regs f_reg f_symb =
 let norm_ins ins = ins
 
 
-let fold_addrs f =
+let do_fold_addrs f =
  let fold_roa roa c = match roa with
   | Rega _ -> c
   | Abs a -> f a c
@@ -362,6 +362,7 @@ let fold_addrs f =
   | Prmw (_,op,x,_) -> fold_op op (fold_ao x c)
   | Pmov (_,op) -> fold_op op c
 
+let fold_addrs f i = do_fold_addrs (fun s -> f (ParsedConstant.nameToV s)) i 
 let dump_instruction i = do_dump_instruction (sprintf "%i") i
 let dump_parsedInstruction i = do_dump_instruction MetaConst.pp i
 

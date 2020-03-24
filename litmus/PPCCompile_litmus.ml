@@ -391,7 +391,7 @@ module Make(V:Constant.S)(C:Config) =
             { empty_ins with memo = ".long 0x00000200"; }::k
         | _ -> k )
 
-    let extract_addrs _ins = StringSet.empty
+    let extract_addrs _ins = Global_litmus.Set.empty
 
     let stable_regs ins = match ins with
     | Pstmw (r1,_,_)
