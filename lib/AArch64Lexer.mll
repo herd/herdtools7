@@ -41,7 +41,7 @@ match name with
 (* Memory *)
 | "ldr"|"LDR" -> LDR
 | "ldp"|"LDP" -> LDP
-| "ldnp"|"LDNP" -> LDP
+| "ldnp"|"LDNP" -> LDNP
 | "stp"|"STP" -> STP
 | "stnp"|"STNP" -> STNP
 | "ldrb"|"LDRB" -> LDRB
