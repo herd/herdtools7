@@ -84,7 +84,7 @@ struct
       code : (int * (A.Out.t * (A.reg type_env * env_volatile))) list ;
       condition : C.cond ;
       filter : C.prop option ;
-      globals : string type_env ;
+      globals : string type_env ; (* Virtual addresses only *)
       flocs : A.location list ;
       global_code : string list;
       src : src ;

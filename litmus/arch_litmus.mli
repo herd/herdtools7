@@ -33,9 +33,8 @@ module type Base = sig
 
   include Location.S
   with type loc_reg = reg and
-  type loc_global = string
-
-  val vToName : V.v -> loc_global
+  type loc_global = Global_litmus.t
+  val location_of_addr : string -> location
 
   val parse_reg : string -> reg option
   val reg_compare : reg -> reg -> int
@@ -46,6 +45,8 @@ module type Base = sig
   module Out : Target.S
   with type arch_reg = reg (* Out abstracted *)
   and module V = V
+
+  val dump_loc_tag : location -> string
 
   val arch : Archs.t
 

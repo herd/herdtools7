@@ -248,19 +248,11 @@ module Make(C:Config) (I:I) : S with module I = I
           type arch_global = v
           let pp_global = pp_global
           let global_compare = I.V.compare
-          let same_base g1 g2 =
-            let b1 = I.V.get_sym g1
-            and b2 = I.V.get_sym g2 in
-            Misc.string_eq b1 b2
         end
 
       include Location.Make (LocArg)
 
-      let maybev_to_location v = match MiscParser.tr_pte v with
-      | Some v ->
-          Location_pte (I.V.maybevToV v)
-      | None ->
-          Location_global (I.V.maybevToV v)
+      let maybev_to_location v = Location_global (I.V.maybevToV v)
 
       let do_brackets =
         if C.brackets then Printf.sprintf "[%s]"
@@ -271,7 +263,6 @@ module Make(C:Config) (I:I) : S with module I = I
             tr (string_of_int proc ^ ":" ^ I.pp_reg r)
         | Location_global a -> do_brackets (pp_global a)
         | Location_deref (a,idx) -> Printf.sprintf "%s[%i]" (pp_global a) idx
-        | Location_pte a -> do_brackets (Misc.add_pte (pp_global a))
 
       let dump_location = do_dump_location Misc.identity
 
@@ -283,11 +274,10 @@ module Make(C:Config) (I:I) : S with module I = I
           then "\\asm{Proc " ^ bodytext ^ "}" else bodytext
       | Location_global a -> do_brackets (pp_global a)
       | Location_deref (a,idx) ->  Printf.sprintf "%s[%i]" (pp_global a) idx
-      | Location_pte a -> do_brackets (Misc.add_pte (pp_global a))
 
       let undetermined_vars_in_loc l =  match l with
       | Location_reg _ -> None
-      | Location_global a|Location_deref (a,_)|Location_pte a ->
+      | Location_global a|Location_deref (a,_) ->
           if I.V.is_var_determined a then None
           else Some a
 
@@ -298,18 +288,26 @@ module Make(C:Config) (I:I) : S with module I = I
           Location_global (I.V.simplify_var soln a)
       | Location_deref (a,idx) ->
           Location_deref (I.V.simplify_var soln a,idx)
-      | Location_pte a ->
-          Location_pte (I.V.simplify_var soln a)
 
       let map_loc fv loc = match loc with
       | Location_reg _ -> loc
       | Location_global a -> Location_global (fv a)
       | Location_deref (a,idx) -> Location_deref (fv a,idx)
-      | Location_pte a -> Location_pte (fv a)
+
 (*********)
 (* Fault *)
 (*********)
-      include Fault.Make(LocArg)
+      module FaultArg = struct
+        include LocArg
+        open Constant
+        let same_base v1 v2 =  match v1,v2 with
+         |I.V.Val (Symbolic (Virtual ((s1,_),_))),
+          I.V.Val (Symbolic (Virtual ((s2,_),_))) ->
+            Misc.string_eq s1 s2
+         | _,_ -> assert false
+
+      end
+      include Fault.Make(FaultArg)
 
 (************************)
 (* Mixed size utilities *)
@@ -386,7 +384,7 @@ module Make(C:Config) (I:I) : S with module I = I
       let look_size env s = StringMap.safe_find MachSize.Word s env
 
       let look_size_location env loc = match loc with
-      | Location_global (I.V.Val (Constant.Symbolic ((s,_),0))) -> look_size env s
+      | Location_global (I.V.Val v) -> look_size env (Constant.get_sym v)
       | _ -> assert false
             (* Typing *)
 
@@ -525,8 +523,10 @@ module Make(C:Config) (I:I) : S with module I = I
                  content yet *)
               raise LocUndetermined
           | None ->
+              let open Constant in
               match loc with
-              | Location_global (I.V.Val (Constant.Symbolic ((s,_),0)) as a)   ->
+              | Location_global (I.V.Val (Symbolic (Virtual ((s,_),0))) as a)
+                ->
                   let sz = look_size senv s in
                   let eas = byte_eas sz a in
                   let vs = List.map (get_of_val st) eas in

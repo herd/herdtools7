@@ -990,7 +990,11 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
           let st = make_mixed es e_full in
           bump_eid eiid,(Evt.singleton ((),a_eqs@v_eqs,st),None)
 
-      let is_tagloc a = A.V.check_atag a
+      let is_tagloc a =
+        let open Constant in
+        match a with
+        | V.Val (System (TAG,_)) -> true
+        | _ -> false
 
       let add_inittags env =
         let glob,tag =

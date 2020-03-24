@@ -36,19 +36,22 @@ module type S = sig
 
   val comment : string (* ASM comment to use *)
 
-  val vToName : I.V.v -> string
-
   module RegSet : MySet.S with type elt = I.arch_reg
   module RegMap : MyMap.S with type key = I.arch_reg
 
   include Location.S
-  with type loc_reg = I.arch_reg and type loc_global = string
+  with type loc_reg = I.arch_reg and type loc_global = Global_litmus.t
+  val location_of_addr : string -> location
+  val tr_global : MiscParser.maybev -> Global_litmus.t
 
   module Out : Template.S with
   module V = I.V and
   type arch_reg = I.arch_reg
   and module RegSet = RegSet
   and module RegMap = RegMap
+
+(* Normalised tag for symbols *)
+  val dump_loc_tag : location -> string
 
   module MapValue : MyMap.S with type key = I.V.v
 
@@ -74,8 +77,6 @@ module Make(O:Config)(I:I) : S with module I = I
 
   module I = I
 
-  let vToName v = I.V.vToName v
-
   module RegSet =
     MySet.Make
       (struct
@@ -93,11 +94,21 @@ module Make(O:Config)(I:I) : S with module I = I
   include Location.Make
       (struct
         include I
-
-        type arch_global = string
-        let pp_global s = s
-        let global_compare = String.compare
+        module G = Global_litmus
+        type arch_global = G.t
+        let pp_global = G.pp
+        let global_compare = G.compare
       end)
+
+  let location_of_addr a = Location_global (Global_litmus.Addr a)
+
+  let tr_global (c:ParsedConstant.v) = 
+    let open Constant in
+    match c with
+    | Symbolic sym -> Global_litmus.tr_symbol sym
+    | Tag _|Concrete _|Label _ ->
+        Warn.fatal "Constant %s cannot be translated to a litmus adress"
+          (ParsedConstant.pp O.hexa c)
 
   module Out =
     Template.Make
@@ -113,6 +124,15 @@ module Make(O:Config)(I:I) : S with module I = I
         module RegMap = RegMap
       end)
 
+  let dump_loc_tag loc =
+    let module G = Global_litmus in
+    match loc with
+    | Location_reg (proc,reg) -> Out.dump_out_reg proc reg
+    | Location_global (G.Addr s) -> s
+    | Location_deref (G.Addr s,i) -> Printf.sprintf "%s_%i" s i
+    | Location_global (G.Pte _)
+    | Location_deref (G.Pte _,_)
+      -> assert false
 
   module MapValue =
     MyMap.Make

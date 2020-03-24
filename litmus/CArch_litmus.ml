@@ -25,7 +25,6 @@ module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) =
   end
 
   include (CBase : SmallBase)
-
   module RegSet = StringSet
   module RegMap = StringMap
 
@@ -33,17 +32,17 @@ module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) =
     let open Constant in
     function
       | Concrete i -> "addr_" ^ V.Scalar.pp O.hexa i
-      | Symbolic ((s,None),_) -> s
+      | Symbolic (Virtual ((s,None),_)) -> s
       | Label _|Symbolic _|Tag _ -> assert false
 
   module Internal = struct
     type arch_reg = reg
     let pp_reg x = x
     let reg_compare = String.compare
-
-    type arch_global = string
-    let pp_global x = x
-    let global_compare = String.compare
+    module G = Global_litmus
+    type arch_global = G.t
+    let pp_global = G.pp
+    let global_compare = G.compare
 
     let arch = `C
   end
@@ -63,6 +62,9 @@ module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) =
 
     let dump_init_val = dump_v
   end
+
+  let dump_loc_tag _loc = assert false
+  let location_of_addr a = Location_global (Global_litmus.Addr a)
 
   let arch = Internal.arch
 

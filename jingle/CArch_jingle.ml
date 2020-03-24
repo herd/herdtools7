@@ -36,11 +36,12 @@ include Arch.MakeArch(struct
   let rec match_location subs pat instr =  match_expr subs pat instr
 
   and match_expr subs pat instr =
+    let open Constant in
     let r =  match pat,instr with
-    | Const(Constant.Symbolic ((s,_),_)),Const(Constant.Concrete c) ->
+    | Const(Symbolic (Virtual ((s,_),_))),Const(Concrete c) ->
         let c = ParsedConstant.Scalar.to_int c in
         add_subs [Cst(s, c)] subs
-    | Const(Constant.Concrete s),Const(Constant.Concrete c)
+    | Const(Concrete s),Const(Concrete c)
       when c=s ->
        Some subs
     | LoadReg(l),LoadReg(l') ->
@@ -147,7 +148,7 @@ include Arch.MakeArch(struct
     in
 
     let rec expl_expr = let open Constant in function
-      | Const(Symbolic ((s,_),_)) -> find_cst s >! fun k -> Const k
+      | Const(Symbolic (Virtual ((s,_),_))) -> find_cst s >! fun k -> Const k
       | Const(Concrete _|Label _|Tag _) as e -> unitT e
       | LoadReg r -> conv_reg r >! fun r -> LoadReg r
       | LoadMem (loc,mo) -> expl_expr loc >! fun loc -> LoadMem (loc,mo)

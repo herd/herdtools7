@@ -34,13 +34,17 @@ module type Config = sig
 end
 module Make (C:Config) (A : A) : sig
 
+ (* All sorts of accesses, redundunt with symbol hidden in location,
+    when symbol is known, which may not be the case *)
+    
+  type access_t = A_REG | A_VIR | A_PHY | A_PTE | A_TLB | A_TAG
+
   type action =
-    | Access of Dir.dirn * A.location * A.V.v * A.lannot * MachSize.sz
-    | TagAccess of Dir.dirn * A.location * A.V.v
+    | Access of Dir.dirn * A.location * A.V.v * A.lannot * MachSize.sz * access_t
     | Barrier of A.barrier
     | Commit of bool (* true = bcc / false = pred *)
 (* Atomic modify, (location,value read, value written, annotation *)
-    | Amo of A.location * A.V.v * A.V.v * A.lannot * MachSize.sz
+    | Amo of A.location * A.V.v * A.V.v * A.lannot * MachSize.sz * access_t
 (* NB: Amo used in some arch only (e.g., Arm, RISCV) *)
     | Fault of A.inst_instance_id * A.location
 (* Unrolling control *)
@@ -56,32 +60,52 @@ end = struct
   module V = A.V
   open Dir
 
+  type access_t = A_REG | A_VIR | A_PHY | A_PTE | A_TLB | A_TAG
+
+  let access_of_constant cst =
+    let open Constant in
+    match cst with
+    | Symbolic (Virtual _) -> A_VIR
+    | Symbolic (Physical _) -> A_PHY
+    | Symbolic (System (PTE,_)) -> A_PTE
+    | Symbolic (System (TLB,_)) -> A_TLB
+    | Symbolic (System (TAG,_)) -> A_TAG
+    | Concrete _|Label _|Tag _ -> assert false
+
+(* precondition: v is a constant symbol *)
+  let access_of_value v = match v with
+  | V.Var _ -> assert false
+  | V.Val cst -> access_of_constant cst
+
+  let access_of_location = function
+    | A.Location_reg _ -> A_REG
+    | A.Location_global v
+    | A.Location_deref (v,_)
+      -> access_of_value v
+
   type action =
-    | Access of dirn * A.location * V.v * A.lannot * MachSize.sz
-    | TagAccess of Dir.dirn * A.location * A.V.v
+    | Access of dirn * A.location * V.v * A.lannot * MachSize.sz * access_t
     | Barrier of A.barrier
     | Commit of bool
-    | Amo of A.location * A.V.v * A.V.v * A.lannot * MachSize.sz
+    | Amo of A.location * A.V.v * A.V.v * A.lannot * MachSize.sz * access_t
     | Fault of A.inst_instance_id * A.location
     | TooFar
     | Inv of A.TLBI.op * A.location
 
+
   let mk_init_write l sz v = match v with
-  | A.V.Val (Constant.Tag _) -> TagAccess (W,l,v)
-  | _ ->  Access(W,l,v,A.empty_annot,sz)
+  | A.V.Val (Constant.Tag _) ->
+      Access(W,l,v,A.empty_annot,sz,A_TAG)
+  | _ ->
+      Access(W,l,v,A.empty_annot,sz,access_of_location l)
 
   let pp_action a = match a with
-  | Access (d,l,v,an,sz) ->
+  | Access (d,l,v,an,sz,_) ->
       Printf.sprintf "%s%s%s%s=%s"
         (pp_dirn d)
         (A.pp_location l)
         (A.pp_annot an)
         (if sz = MachSize.Word then "" else MachSize.pp_short sz)
-        (V.pp C.hexa v)
-  | TagAccess (d,l,v) ->
-      Printf.sprintf "%s%s=%s"
-        (pp_dirn d)
-        (A.pp_location l)
         (V.pp C.hexa v)
   | Barrier b -> A.pp_barrier_short b
   | Commit bcc -> if bcc then "PoD" else "PoD"
@@ -101,33 +125,30 @@ end = struct
 
 (* Utility functions to pick out components *)
   let value_of a = match a with
-  | TagAccess (_,_,v)|Access (_,_ , v,_,_)
+  | Access (_,_ , v,_,_,_)
     -> Some v
   | Barrier _|Commit _|Amo _|Fault _|TooFar|Inv _
     -> None
 
   let read_of a = match a with
-  | TagAccess (R,_,v)
-  | Access (R,_,v,_,_)
-  | Amo (_,v,_,_,_)
+  | Access (R,_,v,_,_,_)
+  | Amo (_,v,_,_,_,_)
     -> Some v
-  | TagAccess (W,_,_)|Access (W, _, _, _,_)|Barrier _|Commit _|Fault _
+  | Access (W, _, _, _,_,_)|Barrier _|Commit _|Fault _
   | TooFar|Inv _
     -> None
 
   and written_of a = match a with
-  | TagAccess (W,_,v)
-  | Access (W,_,v,_,_)
-  | Amo (_,_,v,_,_)
+  | Access (W,_,v,_,_,_)
+  | Amo (_,_,v,_,_,_)
     -> Some v
-  | TagAccess(R,_,_)|Access (R, _, _, _,_)|Barrier _|Commit _|Fault _
+  | Access (R, _, _, _,_,_)|Barrier _|Commit _|Fault _
   | TooFar|Inv _
     -> None
 
   let location_of a = match a with
-  | TagAccess (_,l,_)
-  | Access (_, l, _,_,_)
-  | Amo (l,_,_,_,_)
+  | Access (_, l, _,_,_,_)
+  | Amo (l,_,_,_,_,_)
   | Fault (_,l)
   | Inv (_,l)
     -> Some l
@@ -135,42 +156,39 @@ end = struct
 
 (* relative to memory *)
   let is_mem_store a = match a with
-  | TagAccess (W,A.Location_global _,_)
-  | Access (W,A.Location_global _,_,_,_)
-  | Amo (A.Location_global _,_,_,_,_)
+  | Access (W,A.Location_global _,_,_,_,_)
+  | Amo (A.Location_global _,_,_,_,_,_)
     -> true
   | _ -> false
 
   let is_mem_load a = match a with
-  | TagAccess (R,A.Location_global _,_)
-  | Access (R,A.Location_global _,_,_,_)
-  | Amo (A.Location_global _,_,_,_,_)
+  | Access (R,A.Location_global _,_,_,_,_)
+  | Amo (A.Location_global _,_,_,_,_,_)
     -> true
   | _ -> false
 
   let is_additional_mem_load _ = false
 
   let is_mem a = match a with
-  | TagAccess (_,A.Location_global _,_)
-  | Access (_,A.Location_global _,_,_,_)
-  | Amo (A.Location_global _,_,_,_,_)
+  | Access (_,A.Location_global _,_,_,_,_)
+  | Amo (A.Location_global _,_,_,_,_,_)
     -> true
   | _ -> false
 
   let is_additional_mem _ = false
 
   let is_atomic a = match a with
-  | Access (_,_,_,annot,_) ->
+  | Access (_,_,_,annot,_,_) ->
       is_mem a && A.is_atomic annot
   | _ -> false
 
   let is_tag = function
-    | TagAccess _ -> true
+    | Access (_,_,_,_,_,A_TAG)
     | Access _ | Barrier _ | Commit _ | Amo _ | Fault _ | TooFar | Inv _ -> false
 
   let is_inv = function
     | Inv _ -> true
-    | TagAccess _|Access _|Amo _|Commit _|Barrier _ | Fault _ | TooFar -> false
+    | Access _|Amo _|Commit _|Barrier _ | Fault _ | TooFar -> false
 
   let is_at_level lvl = function
     | Inv(op,_) -> A.TLBI.is_at_level lvl op
@@ -178,76 +196,69 @@ end = struct
 
   let is_fault = function
     | Fault _ -> true
-    | TagAccess _|Access _|Amo _|Commit _|Barrier _ | TooFar | Inv _ -> false
+    | Access _|Amo _|Commit _|Barrier _ | TooFar | Inv _ -> false
 
   let to_fault = function
     | Fault (i,A.Location_global x) -> Some ((i.A.proc,i.A.labels),x)
-    | Fault _|TagAccess _|Access _|Amo _|Commit _|Barrier _ | TooFar | Inv _ -> None
+    | Fault _|Access _|Amo _|Commit _|Barrier _ | TooFar | Inv _ -> None
 
   let get_mem_dir a = match a with
-  | TagAccess (d,A.Location_global _,_)
-  | Access (d,A.Location_global _,_,_,_) -> d
+  | Access (d,A.Location_global _,_,_,_,_) -> d
   | _ -> assert false
 
   let get_mem_size a = match a with
-  | Access (_,A.Location_global _,_,_,sz) -> sz
+  | Access (_,A.Location_global _,_,_,sz,_) -> sz
   | _ -> assert false
 
 (* relative to the registers of the given proc *)
   let is_reg_store a (p:int) = match a with
-  | Access (W,A.Location_reg (q,_),_,_,_) -> p = q
+  | Access (W,A.Location_reg (q,_),_,_,_,_) -> p = q
   | _ -> false
 
   let is_reg_load a (p:int) = match a with
-  | Access (R,A.Location_reg (q,_),_,_,_) -> p = q
+  | Access (R,A.Location_reg (q,_),_,_,_,_) -> p = q
   | _ -> false
 
   let is_reg a (p:int) = match a with
-  | Access (_,A.Location_reg (q,_),_,_,_) -> p = q
+  | Access (_,A.Location_reg (q,_),_,_,_,_) -> p = q
   | _ -> false
 
 (* Store/Load anywhere *)
   let is_store a = match a with
-  | TagAccess (W,_,_)|Access (W,_,_,_,_)|Amo _ -> true
-  | TagAccess (R,_,_)|Access (R,_,_,_,_)|Barrier _|Commit _|Fault _|TooFar| Inv _ -> false
+  | Access (W,_,_,_,_,_)|Amo _ -> true
+  | Access (R,_,_,_,_,_)|Barrier _|Commit _|Fault _|TooFar| Inv _ -> false
 
   let is_load a = match a with
-  | TagAccess(R,_,_)|Access (R,_,_,_,_)|Amo _ -> true
-  | TagAccess(W,_,_)|Access (W,_,_,_,_)|Barrier _|Commit _|Fault _|TooFar|Inv _ -> false
+  | Access (R,_,_,_,_,_)|Amo _ -> true
+  | Access (W,_,_,_,_,_)|Barrier _|Commit _|Fault _|TooFar|Inv _ -> false
 
   let compatible_categories loc1 loc2 = match loc1,loc2 with
   | (A.Location_global _,A.Location_global _)
   | (A.Location_reg _,A.Location_reg _)
   | (A.Location_deref _,A.Location_deref _)
-  | (A.Location_pte _,A.Location_pte _)
-    -> true
-  | (A.Location_global _,(A.Location_deref _|A.Location_reg _|A.Location_pte _))
-  | (A.Location_deref _,(A.Location_global _|A.Location_reg _|A.Location_pte _))
-  | (A.Location_reg _,(A.Location_global _|A.Location_deref _|A.Location_pte _))
-  | (A.Location_pte _,(A.Location_global _|A.Location_reg _|A.Location_deref _))
+      -> true
+  | (A.Location_global _,(A.Location_deref _|A.Location_reg _))
+  | (A.Location_deref _,(A.Location_global _|A.Location_reg _))
+  | (A.Location_reg _,(A.Location_global _|A.Location_deref _))
     -> false
 
   let compatible_accesses a1 a2 = match a1,a2 with
-  | (TagAccess _,TagAccess _) -> true
-  | (Access (_,loc1,_,_,_)|Amo (loc1,_,_,_,_)),
-     (Access (_,loc2,_,_,_)|Amo (loc2,_,_,_,_))
+  | (Access (_,loc1,_,_,_,k1)|Amo (loc1,_,_,_,_,k1)),
+    (Access (_,loc2,_,_,_,k2)|Amo (loc2,_,_,_,_,k2))
     ->
-      compatible_categories loc1 loc2
-  | (TagAccess _,(Access _|Amo _))
-  | ((Access _|Amo _),TagAccess _)
-    -> false
+      k1 = k2 &&  compatible_categories loc1 loc2
   | _,_ -> assert false
 
   let is_reg_any a = match a with
-  | Access (_,A.Location_reg _,_,_,_) -> true
+  | Access (_,A.Location_reg _,_,_,_,_) -> true
   | _ -> false
 
   let is_reg_store_any a = match a with
-  | Access (W,A.Location_reg _,_,_,_) -> true
+  | Access (W,A.Location_reg _,_,_,_,_) -> true
   | _ -> false
 
   let is_reg_load_any a = match a with
-  | Access (R,A.Location_reg _,_,_,_) -> true
+  | Access (R,A.Location_reg _,_,_,_,_) -> true
   | _ -> false
 
 (* Barriers *)
@@ -296,7 +307,7 @@ end = struct
       List.map
         (fun (tag,p) ->
           let p act = match act with
-          | Access(_,_,_,annot,_)|Amo (_,_,_,annot,_) -> p annot
+          | Access(_,_,_,annot,_,_)|Amo (_,_,_,annot,_,_) -> p annot
           | _ -> false
           in tag,p) A.annot_sets
     and lsets =
@@ -322,13 +333,12 @@ end = struct
 
   let undetermined_vars_in_action a =
     match a with
-    | TagAccess (_,l,v)
-    | Access (_,l,v,_,_) ->
+    | Access (_,l,v,_,_,_) ->
         let undet_loc = match A.undetermined_vars_in_loc l with
         | None -> V.ValueSet.empty
         | Some v -> V.ValueSet.singleton v in
         add_v_undet v undet_loc
-    | Amo (loc,v1,v2,_,_) ->
+    | Amo (loc,v1,v2,_,_,_) ->
         let undet = match A.undetermined_vars_in_loc loc with
         | None -> V.ValueSet.empty
         | Some v -> V.ValueSet.singleton v in
@@ -337,19 +347,15 @@ end = struct
 
   let simplify_vars_in_action soln a =
     match a with
-    | TagAccess (d,l,v) ->
+    | Access (d,l,v,an,sz,t) ->
         let l = A.simplify_vars_in_loc soln l in
         let v = V.simplify_var soln v in
-        TagAccess (d,l,v)
-    | Access (d,l,v,an,sz) ->
-        let l = A.simplify_vars_in_loc soln l in
-        let v = V.simplify_var soln v in
-        Access (d,l,v,an,sz)
-    | Amo (loc,v1,v2,an,sz) ->
+        Access (d,l,v,an,sz,t)
+    | Amo (loc,v1,v2,an,sz,t) ->
         let loc =  A.simplify_vars_in_loc soln loc in
         let v1 = V.simplify_var soln v1 in
         let v2 = V.simplify_var soln v2 in
-        Amo (loc,v1,v2,an,sz)
+        Amo (loc,v1,v2,an,sz,t)
     | Fault (ii,loc) ->
         let loc = A.simplify_vars_in_loc soln loc in
         Fault(ii,loc)

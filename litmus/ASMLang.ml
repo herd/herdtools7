@@ -262,7 +262,7 @@ module RegMap = A.RegMap)
         | Memory.Indirect ->
             List.iter
               (fun (reg,v) -> match v with
-              | Constant.Symbolic ((a,None),_) ->
+              | Constant.Symbolic a ->
                   let cpy =  copy_name (Tmpl.tag_reg reg) in
                   fprintf chan "%svoid *%s = %s;\n" indent
                     cpy
@@ -414,7 +414,7 @@ module RegMap = A.RegMap)
 
         do_dump
           compile_val_inline compile_addr_inline
-          (fun x -> sprintf "_a->%s[_i]" (Tmpl.addr_cpy_name x proc))
+          (fun x -> sprintf "_a->%s[_i]" (Tmpl.addr_cpy_name (Constant.as_address x) proc))
           compile_out_reg
           chan indent env proc t
 
@@ -422,13 +422,14 @@ module RegMap = A.RegMap)
       let compile_val_fun =
         let open Constant in
         fun v -> match v with
-        | Symbolic ((s,None),_) ->
+        | Symbolic sym ->
+            let s = Constant.as_address sym in
             sprintf "%s%s"
               (match O.memory with Memory.Direct -> "" | Memory.Indirect -> "*")
               s
         | Concrete _ -> Tmpl.dump_v v
         | Label (p,lbl) -> OutUtils.fmt_lbl_var p lbl
-        | Symbolic _|Tag _ -> assert false
+        | Tag _ -> assert false
 
       let compile_init_val_fun = compile_val_fun
 
@@ -484,7 +485,7 @@ module RegMap = A.RegMap)
         do_dump
           compile_init_val_fun
           compile_addr_fun
-          (compile_cpy_fun proc)
+          (fun sym -> compile_cpy_fun proc (Constant.as_address sym))
           (fun p r  -> sprintf "*%s" (Tmpl.dump_out_reg p r))
           chan "  " env proc t ;
         fprintf chan "}\n\n" ;
