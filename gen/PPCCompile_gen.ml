@@ -471,11 +471,13 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
       let cs = if isync then insert_isync c cs else c@cs in
       r,init,cs,st
 
-    let emit_access_dep st p init e dp r1 v1 = match dp with
-    | PPC.ADDR -> emit_access_dep_addr st p init e r1
-    | PPC.DATA -> emit_access_dep_data st p init e r1
-    | PPC.CTRL -> emit_access_ctrl false st p init e r1 v1
-    | PPC.CTRLISYNC -> emit_access_ctrl true st p init e r1 v1
+    let emit_access_dep st p init e dp r1 n1 =
+      let v1 = n1.C.evt.C.v in
+      match dp with
+      | PPC.ADDR -> emit_access_dep_addr st p init e r1
+      | PPC.DATA -> emit_access_dep_data st p init e r1
+      | PPC.CTRL -> emit_access_ctrl false st p init e r1 v1
+      | PPC.CTRLISYNC -> emit_access_ctrl true st p init e r1 v1
 
     let emit_exch_dep st p init er ew dp rd = match dp with
     | PPC.ADDR -> emit_exch_dep_addr st p init er ew rd
@@ -491,11 +493,11 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
 
     let emit_fence _ _ _ f =
       [PPC.Instruction
-        (match f with
-        | PPC.Sync -> PPC.Psync
-        | PPC.LwSync -> PPC.Plwsync
-        | PPC.ISync -> PPC.Pisync
-        | PPC.Eieio -> PPC.Peieio)]
+         (match f with
+         | PPC.Sync -> PPC.Psync
+         | PPC.LwSync -> PPC.Plwsync
+         | PPC.ISync -> PPC.Pisync
+         | PPC.Eieio -> PPC.Peieio)]
     let full_emit_fence = GenUtils.to_full emit_fence
     let stronger_fence = PPC.Sync
 

@@ -53,7 +53,7 @@ module type S = sig
 
   val emit_access_dep :
       A.st -> Code.proc -> A.init -> C.event -> A.dp ->
-        A.reg -> Code.v -> A.reg option * A.init * A.pseudo list * A.st
+        A.reg -> C.node -> A.reg option * A.init * A.pseudo list * A.st
 
   val emit_rmw_dep :
       A.rmw -> A.st -> Code.proc -> A.init -> C.event ->  C.event ->

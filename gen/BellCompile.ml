@@ -280,10 +280,12 @@ let emit_access_ctrl st p init e r1 v1 =
     let ropt,init,cs,st = emit_access st p init e in
     ropt,init,c@cs,st
 
-let emit_access_dep  st p init e dp r1 v1 = match dp with
-| ADDR -> emit_access_dep_addr st p init e r1
-| DATA -> emit_access_dep_data st p init e r1
-| CTRL -> emit_access_ctrl st p init e r1 v1
+let emit_access_dep  st p init e dp r1 n1 =
+  let v1 = n1.C.evt.C.v in
+  match dp with
+  | ADDR -> emit_access_dep_addr st p init e r1
+  | DATA -> emit_access_dep_data st p init e r1
+  | CTRL -> emit_access_ctrl st p init e r1 v1
 
 let emit_rmw_dep _ = assert false
 

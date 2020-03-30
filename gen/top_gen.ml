@@ -109,7 +109,7 @@ module U = TopUtils.Make(O)(Comp)
 
   type prev_load =
     | No       (* Non-existent or irrelevant *)
-    | Yes of E.dp * A.arch_reg * Code.v
+    | Yes of E.dp * A.arch_reg * C.node
 
 (* Catch exchanges at the very last moment... *)
   let as_rmw n = match n.C.edge.E.edge with
@@ -140,7 +140,7 @@ module U = TopUtils.Make(O)(Comp)
         (E.pp_edge n.C.edge)
         (E.pp_atom_option e.C.atom) (Misc.app_opt_def "_" pp_dir e.C.dir)
 
-  let call_emit_access_dep st p init n dp r1 v1 =
+  let call_emit_access_dep st p init n dp r1 n1 =
     let e = n.C.evt in
      if e.C.rmw then match e.C.dir with
      | Some R ->
@@ -148,7 +148,7 @@ module U = TopUtils.Make(O)(Comp)
      | Some W|None -> None,init,[],st
      | Some J -> assert false
      else
-       Comp.emit_access_dep st p init e dp r1 v1
+       Comp.emit_access_dep st p init e dp r1 n1
 
 (* Encodes load of first non-initial value in chain,
    can poll on value in place of checking it *)
@@ -167,15 +167,15 @@ module U = TopUtils.Make(O)(Comp)
         else
           call_emit_access st p init n
     | No,Code _ -> call_emit_access st p init n
-    | (Yes (dp,r1,v1),_)
-      -> call_emit_access_dep st p init n dp r1 v1 in
+    | Yes (dp,r1,n1),_
+      -> call_emit_access_dep st p init n dp r1 n1 in
     o,init,ip@i,st
 
 let edge_to_prev_load o n = match o with
 | None -> No
 | Some r ->
     begin match n.C.edge.E.edge with
-    | Dp (dp,_,_) -> Yes (dp,r,n.C.evt.C.v)
+    | Dp (dp,_,_) -> Yes (dp,r,n)
     | _ -> No
     end
 

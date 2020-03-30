@@ -94,17 +94,18 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     module U = GenUtils.Make(Cfg)(A)(Extra)
 
     let cbz r1 lbl = I_CBZ (vloc,r1,lbl)
-    let cbnz r1 lbl = I_CBNZ (vloc,r1,lbl)
+    let do_cbnz v r1 lbl = I_CBNZ (v,r1,lbl)
+    let cbnz = do_cbnz vloc
     let cmpi r i = I_OP3 (vloc,SUBS,ZR,r,K i)
     let cmp r1 r2 = I_OP3 (vloc,SUBS,ZR,r1,RV (vloc,r2))
     let bne lbl = I_BC (NE,lbl)
-    let eor r1 r2 r3 = I_OP3 (vloc,EOR,r1,r2,RV (vloc,r3))
-    let andi r1 r2 k = I_OP3 (vloc,AND,r1,r2,K k)
+    let eor sz r1 r2 r3 = I_OP3 (sz,EOR,r1,r2,RV (sz,r3))
+    let andi sz r1 r2 k = I_OP3 (sz,AND,r1,r2,K k)
     let addi r1 r2 k = I_OP3 (vloc,ADD,r1,r2,K k)
     let addi_64 r1 r2 k = I_OP3 (V64,ADD,r1,r2,K k)
 (*    let add r1 r2 r3 = I_OP3 (vloc,ADD,r1,r2,r3) *)
     let add v r1 r2 r3 = I_OP3 (v,ADD,r1,r2,RV (v,r3))
-    let add64 r1 r2 r3 = I_OP3 (V64,ADD,r1,r2,RV (vloc,r3))
+    let do_add64 v r1 r2 r3 = I_OP3 (V64,ADD,r1,r2,RV (v,r3))
 
     let ldr_mixed r1 r2 sz o =
       let open MachSize in
@@ -114,14 +115,17 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Word -> I_LDR (V32,r1,r2,K o)
       | Quad -> I_LDR (V64,r1,r2,K o)
 
-    let ldr r1 r2 = I_LDR (vloc,r1,r2,K 0)
+    let do_ldr v r1 r2 = I_LDR (v,r1,r2,K 0)
+    let ldr = do_ldr vloc
     let ldg r1 r2 = I_LDG (r1,r2,K 0)
     let ldar r1 r2 = I_LDAR (vloc,AA,r1,r2)
     let ldapr r1 r2 = I_LDAR (vloc,AQ,r1,r2)
     let ldxr r1 r2 = I_LDAR (vloc,XX,r1,r2)
     let ldaxr r1 r2 = I_LDAR (vloc,AX,r1,r2)
     let sxtw r1 r2 = I_SXTW (r1,r2)
-    let ldr_idx r1 r2 idx = I_LDR (vloc,r1,r2,RV (vloc,idx))
+    let do_ldr_idx v r1 r2 idx = I_LDR (v,r1,r2,RV (vloc,idx))
+    let ldr_idx = do_ldr_idx vloc
+
 
     let ldr_mixed_idx v r1 r2 idx sz  =
       let open MachSize in
@@ -139,10 +143,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Word -> I_STR (V32,r1,r2,K o)
       | Quad -> I_STR (V64,r1,r2,K o)
 
-    let str r1 r2 = I_STR (vloc,r1,r2,K 0)
+    let do_str v r1 r2 = I_STR (v,r1,r2,K 0)
+    let str = do_str vloc
     let stg r1 r2 = I_STG (r1,r2,K 0)
     let stlr r1 r2 = I_STLR (vloc,r1,r2)
-    let str_idx r1 r2 idx = I_STR (vloc,r1,r2,RV (vloc,idx))
+    let do_str_idx v r1 r2 idx = I_STR (vloc,r1,r2,RV (v,idx))
+    let str_idx = do_str_idx vloc
     let stxr r1 r2 r3 = I_STXR (vloc,YY,r1,r2,r3)
     let stlxr r1 r2 r3 = I_STXR (vloc,LY,r1,r2,r3)
 
@@ -223,9 +229,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | V64 -> k
     | V32 -> sxtw r r::k
 
-    let sum_addr st rA idx =
+    let do_sum_addr v st rA idx =
       let r,st = tempo1 st in
-      r,[add64 r rA idx],st
+      r,[do_add64 v r rA idx],st
+
+    let sum_addr = do_sum_addr vloc
 
     let stlr_mixed sz o st r1 r2 =
       let open MachSize in
@@ -256,9 +264,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | Quad -> I_LDAR (V64,t,r1,rA) in
       cs@[ld],st
 
-    let ldar_mixed_idx t sz o st r1 r2 idx =
+    let do_ldar_mixed_idx v t sz o st r1 r2 idx =
       let rA,cs1,st = sumi_addr st r2 o in
-      let rA,cs2,st = sum_addr st rA idx in
+      let rA,cs2,st = do_sum_addr v st rA idx in
       let ld =
         let open MachSize in
         match sz  with
@@ -268,11 +276,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | Quad -> I_LDAR (V64,t,r1,rA) in
       cs1@cs2@[ld],st
 
+    let ldar_mixed_idx = do_ldar_mixed_idx vloc
+
 (*********)
 (* loads *)
 (*********)
 
     module type L = sig
+
       val load : A.st -> reg -> reg -> instruction list * A.st
       val load_idx : A.st -> reg -> reg -> reg -> instruction list * A.st
     end
@@ -369,16 +380,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         end)
 
     module LDG = struct
-
       let emit_load st p init x =
         let rA,st = next_reg st in
         let rB,init,st = U.next_init st p init x in
         rA,init,lift_code [mov_reg_addr rA rB;ldg rA rB],st
 
-      let emit_load_idx st p init x idx =
+      let emit_load_idx v st p init x idx =
         let rA,st = next_reg st in
         let rB,init,st = U.next_init st p init x in
-        let rC,c,st = sum_addr st rB idx in
+        let rC,c,st = do_sum_addr v st rB idx in
         rA,init,lift_code (mov_reg_addr rA rB::c@[ldg rA rC]),st
 
 (*
@@ -493,13 +503,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let rA,init,st = U.next_init st p init v in
         emit_store_reg st p init x rA
 
-      let emit_store_idx st p init e idx =
+      let emit_store_idx vaddr st p init e idx =
         let loc = Code.as_data e.loc in
         let x = add_tag loc e.tag
         and v = add_tag loc e.v in
         let rA,init,st = U.next_init st p init v in
         let rB,init,st = U.next_init st p init x in
-        let rC,c,st = sum_addr st rB idx in
+        let rC,c,st = do_sum_addr vaddr st rB idx in
         init,pseudo (c@[stg rA rC]),st
 
     end
@@ -508,7 +518,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       STORE
         (struct
           let store = wrap_st stlr
-          let store_idx  st rA rB idx =
+          let store_idx st rA rB idx =
             let r,ins,st = sum_addr st rB idx in
             ins@[stlr rA r],st
         end)
@@ -664,9 +674,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let r,cs,st =  emit_lda_reg rw st init p rA in
       r,init,cs,st
 
-    let emit_lda_idx rw st p init loc idx =
+    let do_emit_lda_idx v rw st p init loc idx =
       let rA,init,st = U.next_init st p init loc in
-      let rA,cs1,st = sum_addr st rA idx in
+      let rA,cs1,st = do_sum_addr v st rA idx in
       let r,cs2,st =  emit_lda_reg rw st init p rA in
       r,init,pseudo cs1@cs2,st
 
@@ -680,12 +690,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let r,cs,st =  emit_lda_mixed_reg sz o rw st p init rA in
       r,init,cs,st
 
-    let emit_lda_mixed_idx sz o rw st p init loc idx =
+    let do_emit_lda_mixed_idx v sz o rw st p init loc idx =
       let rA,init,st = U.next_init st p init loc in
-      let rA,cs1,st = sum_addr st rA idx in
+      let rA,cs1,st = do_sum_addr v st rA idx in
       let r,cs2,st =  emit_lda_mixed_reg sz o rw st p init rA in
       r,init,pseudo cs1@cs2,st
-
 
     let do_emit_sta rw st p init rW rA =
       let rR,st = next_reg st in
@@ -972,23 +981,38 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
 
 (* Dependencies *)
-    let calc0 =
+    let calc0 vdep =
       if Cfg.realdep then
-        fun dst src ->  andi dst src 128
+        fun dst src ->  andi vdep dst src 128
       else
-        fun dst src -> eor dst src src
+        fun dst src -> eor vdep dst src src
 
-    let emit_access_dep_addr st p init e rd =
+
+    let emit_access_dep_addr vdep st p init e rd =
       let r2,st = next_reg st in
-      let c =  calc0 r2 rd in
+      let c =  calc0 vdep r2 rd in
       match e.dir,e.loc with
       | None,_ -> Warn.fatal "TODO"
       | Some d,Data loc ->
           begin match d,e.atom with
           | R,None ->
+              let module LDR =
+                LOAD
+                  (struct
+                    let load = wrap_st ldr
+                    let load_idx  st rA rB idx = [do_ldr_idx vdep rA rB idx],st
+                  end) in
               let r,init,cs,st = LDR.emit_load_idx st p init loc r2 in
               Some r,init, Instruction c::cs,st
           | R,Some (Acq,None) ->
+              let module LDAR =
+                LOAD
+                  (struct
+                    let load = wrap_st ldar
+                    let load_idx  st rA rB idx =
+                      let r,ins,st = do_sum_addr vdep st rB idx in
+                      ins@[ldar rA r],st
+                  end) in
               let r,init,cs,st = LDAR.emit_load_idx st p init loc r2 in
               Some r,init, Instruction c::cs,st
           | R,Some (Acq,Some (sz,o)) ->
@@ -996,11 +1020,19 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 LOAD
                   (struct
                     let load = ldar_mixed AA sz o
-                    let load_idx = ldar_mixed_idx AA sz o
+                    let load_idx = do_ldar_mixed_idx vdep AA sz o
                   end) in
               let r,init,cs,st = L.emit_load_idx st p init loc r2 in
               Some r,init,Instruction c::cs,st
           | R,Some (AcqPc,None) ->
+              let module LDAPR =
+                LOAD
+                  (struct
+                    let load = wrap_st ldapr
+                    let load_idx st rA rB idx =
+                      let r,ins,st = do_sum_addr vdep st rB idx in
+                      ins@[ldapr rA r],st
+                  end) in
               let r,init,cs,st = LDAPR.emit_load_idx st p init loc r2 in
               Some r,init, Instruction c::cs,st
           | R,Some (AcqPc,Some (sz,o)) ->
@@ -1008,26 +1040,42 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 LOAD
                   (struct
                     let load = ldar_mixed AQ sz o
-                    let load_idx = ldar_mixed_idx AQ sz o
+                    let load_idx = do_ldar_mixed_idx vdep AQ sz o
                   end) in
               let r,init,cs,st = L.emit_load_idx st p init loc r2 in
               Some r,init,Instruction c::cs,st
           | R,Some (Rel,_) ->
               Warn.fatal "No load release"
           | R,Some (Atomic rw,None) ->
-              let r,init,cs,st = emit_lda_idx (tr_rw rw) st p init loc r2 in
+              let r,init,cs,st = do_emit_lda_idx vdep (tr_rw rw) st p init loc r2 in
               Some r,init, Instruction c::cs,st
           | R,Some (Atomic rw,Some (sz,o)) ->
-              let r,init,cs,st = emit_lda_mixed_idx sz o rw st p init loc r2 in
+              let r,init,cs,st =
+                do_emit_lda_mixed_idx vdep sz o rw st p init loc r2 in
               Some r,init, Instruction c::cs,st
           | R,Some (Tag,None) ->
-              let r,init,cs,st = LDG.emit_load_idx st p init loc r2 in
+              let r,init,cs,st = LDG.emit_load_idx vdep st p init loc r2 in
               Some r,init, Instruction c::cs,st
           | R,Some (Tag,Some _) -> assert false
           | W,None ->
+              let module STR =
+                STORE
+                  (struct
+                    let store = wrap_st str
+                    let store_idx st rA rB idx =
+                      [do_str_idx vdep rA rB idx],st
+                  end) in
               let init,cs,st = STR.emit_store_idx st p init loc r2 e.v in
               None,init,Instruction c::cs,st
           | W,Some (Rel,None) ->
+              let module STLR =
+                STORE
+                  (struct
+                    let store = wrap_st stlr
+                    let store_idx st rA rB idx =
+                      let r,ins,st = do_sum_addr vdep st rB idx in
+                      ins@[stlr rA r],st
+                  end) in
               let init,cs,st = STLR.emit_store_idx st p init loc r2 e.v in
               None,init,Instruction c::cs,st
           | W,Some (Rel,Some (sz,o)) ->
@@ -1083,7 +1131,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let init,cs,st = S.emit_store_idx_reg st p init loc r2 rA in
               None,init,Instruction c::cs_mov@cs,st
           | W,Some (Tag, None) ->
-              let init,cs,st = STG.emit_store_idx st p init e r2 in
+              let init,cs,st = STG.emit_store_idx vdep st p init e r2 in
               None,init,Instruction c::cs,st
           | W,Some (Tag,Some _) -> assert false
           | J,_ -> emit_joker st init
@@ -1091,12 +1139,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           end
       | _,Code _ -> Warn.fatal "No dependency to code location"
 
-    let emit_addr_dep  st p init loc rd =
+    let do_emit_addr_dep vdep st p init loc rd =
       let r2,st = next_reg st in
-      let c = calc0 r2 rd in
+      let c = calc0 vdep r2 rd in
       let rA,init,st = U.next_init st p init loc in
       let rA,csum,st = sum_addr st rA r2 in
       rA,init,pseudo (c::csum),st
+
+    let emit_addr_dep = do_emit_addr_dep vloc
 
     let emit_exch_dep_addr st p init er ew rd =
       let rA,init,caddr,st =  emit_addr_dep  st p init (as_data er.loc) rd in
@@ -1108,7 +1158,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       csi@caddr@cs,
       st
 
-    let emit_access_dep_data st p init e  r1 =
+    let emit_access_dep_data vdep st p init e  r1 =
       match e.dir,e.loc with
       | None,_ -> Warn.fatal "TODO"
       | Some R,_ -> Warn.fatal "data dependency to load"
@@ -1119,16 +1169,16 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             | Some (Tag,None) ->
                 let rA,init,st = U.next_init st p init (add_tag loc e.v) in
                 let rB,cB,st = sum_addr st rA r2 in
-                rB,pseudo (calc0 r2 r1::cB),init,st
+                rB,pseudo (calc0 vdep r2 r1::cB),init,st
             | Some (_,Some (sz,_)) ->
                 let rA,init,csA,st = U.emit_mov_sz sz st p init e.v in
                 let cs2 =
-                  [Instruction (calc0 r2 r1) ;
+                  [Instruction (calc0 vdep r2 r1) ;
                    Instruction (add (sz2v sz) r2 r2 rA); ] in
               r2,csA@cs2,init,st
             | _ ->
                 let cs2 =
-                  [Instruction (calc0 r2 r1) ;
+                  [Instruction (calc0 vdep r2 r1) ;
                    Instruction (addi r2 r2 e.v); ] in
                 r2,cs2,init,st in
           begin match e.atom with
@@ -1188,26 +1238,33 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       if isb then cs1@[Instruction (I_FENCE ISB)]@cs2
       else cs1@cs2
 
-    let emit_ctrl r =
+    let emit_ctrl vdep r =
       let lab = Label.next_label "LC" in
-      let c = [Instruction (cbnz r lab); Label (lab,Nop);] in c
+      let c = [Instruction (do_cbnz vdep r lab); Label (lab,Nop);] in c
 
-    let emit_access_ctrl isb st p init e r1 =
-      let c = emit_ctrl r1 in
+    let emit_access_ctrl vdep isb st p init e r1 =
+      let c = emit_ctrl vdep r1 in
       let ropt,init,cs,st = emit_access st p init e in
       ropt,init,insert_isb isb c cs,st
 
     let emit_exch_ctrl isb st p init er ew r1 =
-      let c = emit_ctrl r1 in
+      let c = emit_ctrl vloc r1 in
       let ropt,init,cs,st = emit_exch st p init er ew in
       ropt,init,insert_isb isb c cs,st
 
+    let tr_atom = function
+      | Some (Tag,_) -> V64
+      | _ -> vloc
 
-    let emit_access_dep st p init e dp r1 _v1 = match dp with
-    | ADDR -> emit_access_dep_addr st p init e r1
-    | DATA -> emit_access_dep_data st p init e r1
-    | CTRL -> emit_access_ctrl false st p init e r1
-    | CTRLISYNC -> emit_access_ctrl true st p init e r1
+    let emit_access_dep st p init e dp r1 n1 =
+      let e1 = n1.C.evt in
+      let at1 = e1.C.atom in
+      let vdep = tr_atom at1 in
+      match dp with
+      | ADDR -> emit_access_dep_addr vdep st p init e r1
+      | DATA -> emit_access_dep_data vdep st p init e r1
+      | CTRL -> emit_access_ctrl vdep false st p init e r1
+      | CTRLISYNC -> emit_access_ctrl vdep true st p init e r1
 
     let emit_exch_dep st p init er ew dp rd = match dp with
     | ADDR -> emit_exch_dep_addr   st p init er ew rd
@@ -1221,7 +1278,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let rR,init,cs,st = do_emit_ldop_rA ins ins_mixed st p init er ew rA in
         rR,init,caddr@cs,st
     | CTRL|CTRLISYNC ->
-        let c = emit_ctrl rd in
+        let c = emit_ctrl vloc rd in
         let rR,init,cs,st = do_emit_ldop ins ins_mixed st p init er ew in
         rR,init,insert_isb (is_ctrlisync dp) c cs,st
     | DATA -> Warn.fatal "Data dependency to LDOP"
@@ -1232,7 +1289,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let rR,init,cs,st = emit_cas_rA st p init er ew rA in
         rR,init,caddr@cs,st
     | CTRL|CTRLISYNC ->
-        let c = emit_ctrl rd in
+        let c = emit_ctrl vloc rd in
         let rR,init,cs,st = emit_cas st p init er ew in
         rR,init,insert_isb (is_ctrlisync dp) c cs,st
     | DATA -> Warn.fatal "Data dependency to CAS"
@@ -1243,7 +1300,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let rR,init,cs,st = emit_stop_rA op st p init er ew rA in
         rR,init,caddr@cs,st
     | CTRL|CTRLISYNC ->
-        let c = emit_ctrl rd in
+        let c = emit_ctrl vloc rd in
         let rR,init,cs,st = emit_stop op st p init er ew in
         rR,init,insert_isb (is_ctrlisync dp) c cs,st
     | DATA -> Warn.fatal "Data dependency to STOP"
