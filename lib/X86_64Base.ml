@@ -56,6 +56,10 @@ type reg =
   | Internal of int
   | Flag of flag
 
+let copy_part r1 r2 = match r1,r2 with
+| Ireg (_,p),Ireg (r,_) -> Ireg (r,p)
+| _,_ -> r2
+
 let loop_idx = Internal 0
 let sig_cell = "sig_cell"
 
@@ -528,6 +532,8 @@ let rec fold_regs (f_reg,f_sreg) =
                | I_MOVNTDQA (xmm,effaddr) -> fold_effaddr (fold_xmm c xmm) effaddr
                    
 let rec map_regs f_reg f_symb =
+
+  let f_reg r = copy_part r (f_reg r) in
 
   let map_reg reg = match reg with
   | RIP | Ireg _ | Flag _ | Internal _ | XMM _ -> f_reg reg
