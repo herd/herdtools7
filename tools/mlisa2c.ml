@@ -60,7 +60,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
   let collect_ra xs =
     let open Constant in
     function
-      | Abs (Symbolic (Virtual ((s,_),_))) -> StringSet.add s xs
+      | Abs s -> StringSet.add s xs
       | _ -> xs
 
   let collect_addr xs = function
@@ -81,8 +81,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
 
   let tr_ra = function
     | Rega r -> LoadReg (tr_reg r)
-    | Abs (Constant.Symbolic (Constant.Virtual ((s,_),_))) -> LoadReg s
-    | _ -> assert false
+    | Abs s -> LoadReg s
 
   let do_tr_addr = function
     | Addr_op_atom ra -> tr_ra ra
