@@ -101,7 +101,9 @@ module Make (C:Sem.Config)(V:Value.S)
       | RISCV.GE -> Op.Ge
       | RISCV.LTU|RISCV.GEU ->  unimplemented (RISCV.pp_bcc cond)
 
-      let mk_read sz ato loc v = Act.Access (Dir.R, loc, v, ato, sz)
+      let mk_read sz ato loc v =
+        let ac = Act.access_of_location_std loc in
+        Act.Access (Dir.R, loc, v, ato, sz, ac)
 
       let plain = RISCV.(P Rlx)
 
@@ -125,13 +127,17 @@ module Make (C:Sem.Config)(V:Value.S)
       let read_mem_atomic sz mo = read_mem_annot sz (RISCV.X mo)
 
       let write_loc_annot sz an loc v ii =
-        M.mk_singleton_es (Act.Access (Dir.W, loc, v, an, sz)) ii
+        M.mk_singleton_es
+          (Act.Access (Dir.W, loc, v, an, sz, Act.A_VIR))
+          ii
 
       let do_write_reg mk r v ii = match r with
       | RISCV.Ireg RISCV.X0 -> M.unitT ()
       | _ ->
           mk
-            (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, plain, nat_sz)) ii
+            (Act.Access
+               (Dir.W, (A.Location_reg (ii.A.proc,r)), v, plain, nat_sz, Act.A_REG))
+            ii
 
       let write_reg = do_write_reg M.mk_singleton_es
 
@@ -143,11 +149,12 @@ module Make (C:Sem.Config)(V:Value.S)
       let do_write_mem sz an a v ii  =
         if mixed then
           Mixed.write_mixed sz
-            (fun sz a v -> Act.Access (Dir.W, a, v, an, sz))
+            (fun sz a v -> Act.Access (Dir.W, a, v, an, sz, Act.A_VIR))
             a v ii
         else
           M.mk_singleton_es
-            (Act.Access (Dir.W, A.Location_global a, v, an, sz)) ii
+            (Act.Access (Dir.W, A.Location_global a, v, an, sz, Act.A_VIR))
+            ii
 
       let write_mem sz an = do_write_mem sz (RISCV.P an)
 
@@ -156,12 +163,12 @@ module Make (C:Sem.Config)(V:Value.S)
       let write_mem_conditional sz an a v resa ii =
         if  lrscdiffok then
           (M.mk_singleton_es_eq
-             (Act.Access (Dir.W, A.Location_global a, v, RISCV.X an,sz)) [] ii >>|
+             (Act.Access (Dir.W, A.Location_global a, v, RISCV.X an,sz,Act.A_VIR)) [] ii >>|
              M.neqT resa V.zero) >>! () (* resa = zero <-> no matching load reserve *)
         else
           let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
           M.mk_singleton_es_eq
-            (Act.Access (Dir.W, A.Location_global a, v, RISCV.X an,sz)) eq ii
+            (Act.Access (Dir.W, A.Location_global a, v, RISCV.X an,sz,Act.A_VIR)) eq ii
 
       let write_mem_atomic sz an = do_write_mem sz (RISCV.X an)
 
@@ -210,13 +217,14 @@ module Make (C:Sem.Config)(V:Value.S)
               (ra >>| rv) >>=
               (fun (loc,vstore) ->
                 M.read_loc false
-                  (fun loc v -> Act.Amo (loc,v,vstore,X an,sz))
+                  (fun loc v -> Act.Amo (loc,v,vstore,X an,sz,Act.A_VIR))
                   (A.Location_global loc) ii) >>= fun r -> write_reg rd r ii
           | _ ->
               (ra >>| rv) >>=
               (fun (loc,v) ->
                 M.fetch (tr_opamo op) v
-                  (fun v vstored -> Act.Amo (A.Location_global loc,v,vstored,RISCV.X an,sz))
+                  (fun v vstored ->
+                    Act.Amo (A.Location_global loc,v,vstored,RISCV.X an,sz,Act.A_VIR))
                   ii)  >>=  fun v -> write_reg rd v ii
         else match specialX0,op,rd,rv with
         | true,AMOSWAP,Ireg X0,_ ->

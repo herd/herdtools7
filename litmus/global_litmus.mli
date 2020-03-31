@@ -16,7 +16,7 @@
 
 (** Global locations for litmus *)
 
-type t = Addr of string | Pte of string
+type t = Addr of string | Pte of string | Phy of string
 
 val pp : t -> string
 val compare : t -> t -> int

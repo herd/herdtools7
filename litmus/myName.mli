@@ -36,4 +36,5 @@ val read_cfg : string -> unit
 (******************)
 (* Legal C symbol *)
 (******************)
+val name_as_symbol : string -> string
 val as_symbol : Name.t -> string

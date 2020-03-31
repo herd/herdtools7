@@ -57,6 +57,9 @@ module type S = sig
 
 (* A bit of state handling *)
   type state = (location * I.V.v) list
+
+  val debug_state : state -> string
+
   type fullstate = (location * (MiscParser.run_type * I.V.v)) list
 
   val find_in_state : location -> state -> I.V.v
@@ -130,8 +133,8 @@ module Make(O:Config)(I:I) : S with module I = I
     | Location_reg (proc,reg) -> Out.dump_out_reg proc reg
     | Location_global (G.Addr s) -> s
     | Location_deref (G.Addr s,i) -> Printf.sprintf "%s_%i" s i
-    | Location_global (G.Pte _)
-    | Location_deref (G.Pte _,_)
+    | Location_global (G.Pte _|G.Phy _)
+    | Location_deref ((G.Pte _|G.Phy _),_)
       -> assert false
 
   module MapValue =
@@ -143,6 +146,13 @@ module Make(O:Config)(I:I) : S with module I = I
 
 (* A bit of state handling *)
   type state = (location * I.V.v) list
+
+  let debug_state st =
+    String.concat " "
+      (List.map
+         (fun (loc,v) -> Printf.sprintf "<%s -> %s>" (pp_location loc) (I.V.pp_v v))
+         st)
+
   type fullstate = (location * (MiscParser.run_type * I.V.v)) list
 
   let rec find_in_state loc = function

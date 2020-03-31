@@ -76,6 +76,7 @@ type op1 =
   | UnSetXBits of int * int (* Unset x bits to the left from y*)
   | TLBLoc (* get TLB entry from location *)
   | PTELoc (* get PTE entry from location *)
+  | IsVirtual (* Detect virtual addresses *)
 
 let pp_op1 hexa o = match o with
 | Not -> "!"
@@ -93,6 +94,7 @@ let pp_op1 hexa o = match o with
 | UnSetXBits (nbBits, from) -> sprintf "unset %i bits to the left from %ith bit" nbBits from
 | TLBLoc -> "TLBloc"
 | PTELoc -> "PTEloc"
+| IsVirtual -> "IsVirtual"
 
 (***********)
 

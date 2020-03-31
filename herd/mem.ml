@@ -196,29 +196,48 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
          loop_present : bool ;
        }
 
-(* All locations from init state, a bit contrieved *)
+(* All (virtual) locations from init state *)
+
+    let is_virtual v =
+      let open Constant in
+      match v with
+      | V.Val (Constant.Symbolic sym) ->
+          begin match sym with
+          | Virtual _ -> true
+          | Physical _|System (TAG,_) ->
+              assert false (* Internal use only, real bug *)
+          | System ((PTE|TLB),_) ->
+              if kvm then false
+              else
+                Warn.user_error "symbol '%s' is present, while -variant kvm is not active"
+                  (Constant.pp_symbol sym)
+          end
+      | V.Val (Concrete _|Label (_, _)|Tag _)|V.Var _ ->
+          false
+
     let get_all_locs_init init =
       let locs =
         List.fold_left
           (fun locs (loc,v) ->
+            let open Constant in
             let locs =
               match loc with
-              | A.Location_global _|A.Location_deref _|A.Location_pte _ -> loc::locs
-              | A.Location_reg _ -> locs in
-            let locs = match v with
-            | A.V.Val (Constant.Symbolic ((s,_),_)) ->
-                A.Location_global (A.V.Val (Constant.mk_sym s))::locs
-            | _ -> locs in
+              | A.Location_global v|A.Location_deref (v,_) when is_virtual v -> loc::locs
+              | A.Location_global _|A.Location_deref _|A.Location_reg _ -> locs in
+            let locs =
+              if is_virtual v then  A.Location_global v::locs else locs in
             locs)
           [] (A.state_to_list init) in
       A.LocSet.of_list locs
+
+(* All (virtual) memory locations reachable by a test *)
 
     let get_all_mem_locs test =
       let locs_final =
         A.LocSet.filter
           (function
-            | A.Location_global _|A.Location_deref _|A.Location_pte _ -> true
-            | A.Location_reg _ -> false)
+            | A.Location_global v |A.Location_deref (v,_) when is_virtual v -> true
+            | A.Location_global _|A.Location_deref _|A.Location_reg _ -> false)
           test.Test_herd.observed
       and locs_init = get_all_locs_init test.Test_herd.init_state in
       let locs = A.LocSet.union locs_final locs_init in
@@ -230,7 +249,9 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                 A.fold_addrs
                   (fun x ->
                     let loc = A.maybev_to_location x in
-                    A.LocSet.add loc)
+                    match loc with
+                    | A.Location_global v when is_virtual v -> A.LocSet.add loc
+                    | _ -> fun locs -> locs)
                   locs ins)
               locs code)
           locs
@@ -763,19 +784,19 @@ let match_reg_events es =
 
     exception CannotSca
 
-(* Various utilities on symbolic addresses as locatiosn *)
+(* Various utilities on symbolic addresses as locations *)
     let get_base a =
       let open Constant in match a with
-      | A.Location_global (V.Val (Symbolic (s,_))) ->
-          A.Location_global (V.Val (Symbolic (s,0)))
+      | A.Location_global (V.Val (Symbolic (Virtual (s,_)))) ->
+          A.Location_global (V.Val (Symbolic (Virtual (s,0))))
       | _ -> raise CannotSca
 
 (* Sort same_base *)
     let compare_index e1 e2 =
       let open Constant in
       match E.global_loc_of e1, E.global_loc_of e2 with
-      | Some (V.Val (Symbolic ((s1,_),i1))),
-        Some (V.Val (Symbolic ((s2,_),i2))) when  Misc.string_eq s1 s2 ->
+      | Some (V.Val (Symbolic (Virtual ((s1,_),i1)))),
+        Some (V.Val (Symbolic (Virtual ((s2,_),i2)))) when  Misc.string_eq s1 s2 ->
           Misc.int_compare i1 i2
       | _,_ -> raise CannotSca
 
@@ -855,7 +876,7 @@ let match_reg_events es =
       | e::_ -> e
       | [] -> assert false in
       let s,idx= match  E.global_loc_of fst with
-      |  Some (V.Val (Symbolic ((s,_),i))) -> s,i
+      |  Some (V.Val (Symbolic (Virtual ((s,_),i)))) -> s,i
       | _ -> raise CannotSca in
       let sz = List.length sca*byte_sz in
       is_spec es fst,E.get_mem_dir fst,s,idx,sz,sca
@@ -1165,9 +1186,9 @@ let match_reg_events es =
             if mixed then
               let senv = S.size_env test in
               A.LocSet.map_union
-                (fun loc -> match loc with
-                | A.Location_global a ->
-                    let eas = AM.byte_eas (A.look_size senv (A.V.as_symbol a)) a in
+                (fun loc -> let open Constant in match loc with
+                | A.Location_global (V.Val (Symbolic ((Virtual ((s,_),_)))) as a)->
+                    let eas = AM.byte_eas (A.look_size senv s) a in
                     A.LocSet.of_list
                       (List.map (fun a -> A.Location_global a) eas)
                 | _ -> A.LocSet.singleton loc)
@@ -1222,7 +1243,7 @@ let match_reg_events es =
           let compare_index idx e =
             let open Constant in
             match E.global_loc_of e with
-            | Some (V.Val (Symbolic (_,i))) -> Misc.int_compare idx i
+            | Some (V.Val (Symbolic (Virtual (_,i)))) -> Misc.int_compare idx i
             | _ -> assert false
 
           let debug_read out = fprintf out "%i"

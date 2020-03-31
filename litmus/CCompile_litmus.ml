@@ -186,6 +186,7 @@ module Make
         global_code = get_global_code code;
         src = t;
         type_env = env,StringMap.empty;
+        bellinfo = None;
       }
 
   end

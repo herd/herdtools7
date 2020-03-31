@@ -28,30 +28,6 @@ module Make(Scalar:Scalar.S) = struct
   let zero = Concrete Scalar.zero
   and one = Concrete Scalar.one
 
-  let tag_compare = Misc.opt_compare String.compare
-
-  let symbol_compare sym1 sym2 = match sym1,sym2 with
-  | Virtual ((s1,t1),o1),Virtual ((s2,t2),o2) ->
-      begin match String.compare s1 s2 with
-      | 0 ->
-          begin match tag_compare t1 t2 with
-          | 0 -> Misc.int_compare o1 o2
-          | r -> r
-          end
-      | r -> r
-      end
-  | Physical (s1,o1),Physical (s2,o2) ->
-      begin match String.compare s1 s2 with
-      | 0 -> Misc.int_compare o1 o2
-      | r -> r
-      end
-  | System (t1,s1),System (t2,s2) ->
-      begin match compare t1 t2 with
-      | 0 -> String.compare s1 s2
-      | r -> r
-      end
-  | (Virtual _,(Physical _|System _)) | (Physical _,System _) -> -1
-  | ((Physical _|System _),Virtual _) | (System _,Physical _) -> 1
 
   let compare c1 c2 = match c1,c2 with
   | Concrete i1, Concrete i2 -> Scalar.compare i1 i2

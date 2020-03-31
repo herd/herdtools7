@@ -44,6 +44,39 @@ let as_address = function
   | Virtual ((s,None),0) -> s
   | sym -> Warn.fatal "symbol '%s' is not an address" (pp_symbol sym)
 
+let tag_compare = Misc.opt_compare String.compare
+
+let symbol_compare sym1 sym2 = match sym1,sym2 with
+| Virtual ((s1,t1),o1),Virtual ((s2,t2),o2) ->
+    begin match String.compare s1 s2 with
+    | 0 ->
+        begin match tag_compare t1 t2 with
+        | 0 -> Misc.int_compare o1 o2
+        | r -> r
+        end
+    | r -> r
+    end
+| Physical (s1,o1),Physical (s2,o2) ->
+    begin match String.compare s1 s2 with
+    | 0 -> Misc.int_compare o1 o2
+    | r -> r
+    end
+| System (t1,s1),System (t2,s2) ->
+    begin match compare t1 t2 with
+    | 0 -> String.compare s1 s2
+    | r -> r
+    end
+| (Virtual _,(Physical _|System _)) | (Physical _,System _) -> -1
+| ((Physical _|System _),Virtual _) | (System _,Physical _) -> 1
+
+module SC = struct
+  type t = symbol
+  let compare = symbol_compare
+end
+
+module SymbolSet = MySet.Make(SC)
+module SymbolMap = MyMap.Make(SC)
+
 type 'scalar t =
   | Concrete of 'scalar
 (* Memory cell, with optional tag and offet *)
@@ -64,8 +97,9 @@ and get_sym = function
   | Concrete _|Label _| Tag _ -> assert false
 
 let is_non_mixed_symbol = function
-  | Symbolic (_,idx) -> idx=0
-  | Concrete _|Label _| Tag _ -> true
+  | Symbolic (Virtual (_,idx)) -> idx=0
+  | Symbolic (Physical (_,idx)) -> idx=0
+  | Symbolic (System _) | Concrete _|Label _| Tag _ -> true
 
 let default_tag = Tag "green"
 

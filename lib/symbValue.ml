@@ -16,7 +16,9 @@
 open Printf
 
 module Make(Cst:Constant.S) = struct
+
   module Cst = Cst
+
   module Scalar = Cst.Scalar
 
   open Constant
@@ -97,7 +99,7 @@ module Make(Cst:Constant.S) = struct
   let protect_is p v =  try p v with Undetermined -> false
 
   let unop op_op op v1 = match v1 with
-    | Val (Concrete i1) -> Val (Concrete (op i1))
+  | Val (Concrete i1) -> Val (Concrete (op i1))
   | Val (Symbolic _|Label _|Tag _ as x) ->
       Warn.user_error "Illegal operation %s on %s"
         (Op.pp_op1 true op_op) (Cst.pp_v x)
@@ -131,7 +133,7 @@ module Make(Cst:Constant.S) = struct
         let i1 = Scalar.to_int i1 in
         Val (Symbolic (Physical (s,i1+i2)))
     | _,_ -> (* General case *)
-    binop Op.Add Scalar.add v1 v2
+        binop Op.Add Scalar.add v1 v2
 
   and sub v1 v2 = (* Used for comparison for by some arch, so let us compare *)
     match v1,v2 with
@@ -210,8 +212,8 @@ module Make(Cst:Constant.S) = struct
     let rec pow a = function (* Why Ocaml hasn't pow function in it's standard library ??? *)
       | 0 -> 1 | 1 -> a
       | n ->
-         let b = pow a (n / 2) in
-         b * b * (if n mod 2 = 0 then 1 else a) in
+          let b = pow a (n / 2) in
+          b * b * (if n mod 2 = 0 then 1 else a) in
     Scalar.shift_left (Scalar.of_int ((pow 2 nbBits) - 1)) k
 
 (* Ops on tagged locations *)
@@ -229,12 +231,12 @@ module Make(Cst:Constant.S) = struct
       Warn.user_error "Illegal %s on %s" op_op (pp_v v)
   | Var _ -> raise Undetermined
 
-  (*  Returns the location of the tag associated to a location *)
+        (*  Returns the location of the tag associated to a location *)
   let op_tagloc (a,_) _ =  Symbolic (System (TAG,a))
 
   let tagloc = op_tagged "tagloc" op_tagloc
 
-  (* Decompose tagged locations *)
+      (* Decompose tagged locations *)
   let op_tagextract (_,t) _ = match t with
   | Some t -> Tag t
   | None -> Constant.default_tag
@@ -249,43 +251,51 @@ module Make(Cst:Constant.S) = struct
       Warn.user_error "Illegal %s on %s" op_op (pp_v v)
   | Var _ -> raise Undetermined
 
-  let op_pteloc (a,_) = Symbolic (System (PTE,a))   
+  let op_pteloc (a,_) = Symbolic (System (PTE,a))
   let pteloc = op_pte_tlb "pteloc" op_pteloc
-   
-  let op_tlbloc (a,_) = Symbolic (System (TLB,a))  
+
+  let op_tlbloc (a,_) = Symbolic (System (TLB,a))
   let tlbloc = op_pte_tlb "tlbloc" op_tlbloc
+
+  let is_virtual v = match v with
+  | Val (Symbolic (Virtual _)) -> one
+  | Val _ -> zero
+  | Var _ -> raise Undetermined
 
   let op1 op =
     let open! Scalar in
     match op with
-  | Not -> unop op (fun v -> bool_to_scalar (not (scalar_to_bool v)))
-  | SetBit k ->
-      unop op (fun s -> logor (mask_one k) s)
-  | UnSetBit k ->
-      unop op
-        (fun s -> logand (lognot (mask_one k)) s)
-  | ReadBit k ->
-      unop op
-        (fun s ->
-          bool_to_scalar (Scalar.compare (logand (mask_one k) s) zero <> 0))
-  | LogicalRightShift 0
-  | LeftShift 0
-  | AddK 0 -> fun s -> s
-  | LeftShift k ->
-      unop  op (fun s -> Scalar.shift_left s k)
-  | LogicalRightShift k ->
-      unop op (fun s -> Scalar.shift_right_logical s k)
-  | AddK k -> add_konst k
-  | AndK k -> unop op (fun s -> Scalar.logand s (Scalar.of_string k))
-  | Mask sz -> maskop op sz
-  | TagLoc -> tagloc
-  | TagExtract -> tagextract
-  | LocExtract -> locextract
-  | UnSetXBits (nb, k) ->
-      unop op
-        (fun s -> logand (lognot (mask_many nb k)) s)
-  | TLBLoc -> tlbloc
-  | PTELoc -> pteloc
+    | Not -> unop op (fun v -> bool_to_scalar (not (scalar_to_bool v)))
+    | SetBit k ->
+        unop op (fun s -> logor (mask_one k) s)
+    | UnSetBit k ->
+        unop op
+          (fun s -> logand (lognot (mask_one k)) s)
+    | ReadBit k ->
+        unop op
+          (fun s ->
+            bool_to_scalar (Scalar.compare (logand (mask_one k) s) zero <> 0))
+    | LogicalRightShift 0
+    | LeftShift 0
+    | AddK 0 -> fun s -> s
+    | LeftShift k ->
+        unop  op (fun s -> Scalar.shift_left s k)
+    | LogicalRightShift k ->
+        unop op (fun s -> Scalar.shift_right_logical s k)
+    | AddK k -> add_konst k
+    | AndK k -> unop op (fun s -> Scalar.logand s (Scalar.of_string k))
+    | Mask sz -> maskop op sz
+    | TagLoc -> tagloc
+    | TagExtract -> tagextract
+    | LocExtract -> locextract
+    | UnSetXBits (nb, k) ->
+        unop op
+          (fun s -> logand (lognot (mask_many nb k)) s)
+    | TLBLoc -> tlbloc
+    | PTELoc -> pteloc
+    | IsVirtual -> is_virtual
+
+
 
   let op op = match op with
   | Add -> add

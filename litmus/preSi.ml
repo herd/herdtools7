@@ -268,6 +268,18 @@ module Make
         end ;
         all,vs
 
+      let get_pte_init =
+        if is_pte then
+          fun env ->
+          let open Constant in
+          List.fold_right
+            (fun bd k -> match bd with
+            | A.Location_global (G.Pte pte),Symbolic (Physical (phy,0)) ->
+                (pte,phy)::k
+            | _,_ -> k)
+            env []
+        else fun _ -> []
+
       let get_addrs test =
         List.map
           (fun (_,(out,_)) -> fst (A.Out.get_addrs out))
@@ -525,7 +537,6 @@ module Make
                 let sz = SkelUtil.nitems t in
                 i+sz,StringMap.add a i m)
               (SkelUtil.nitems t0,StringMap.empty) xs in
-(*          eprintf "sum=%i\n" _sum ; *)
           fun x -> StringMap.find x m
 
       let mk_get_param_prefix test =
@@ -767,6 +778,7 @@ module Make
 
 (* Untouched variables, per thread + responsability *)
       let part_vars test =
+        if dbg then eprintf "part_vars: init=%s\n" (A.debug_state test.T.init) ;
         let all,vs = get_all_vars test in
         let touched_set = StringSet.unions (List.map StringSet.of_list vs)
         and all_set = StringSet.of_list all in
@@ -778,9 +790,8 @@ module Make
         let vss = List.map2 (@) rems vs in
         List.combine rems (responsible vss)
 
-
       let dump_run_thread
-          env test _some_ptr stats glob
+          pte_init env test _some_ptr stats global_env
           (_vars,inits) (proc,(out,(_outregs,envVolatile)))  =
         if dbg then eprintf "P%i: inits={%s}\n" proc (String.concat "," inits) ;
         let my_regs = U.select_proc proc env in
@@ -832,6 +843,36 @@ module Make
                 (pctag (proc,addr)) addr)
             addrs
         end ;
+        let mem_map =
+          let open BellInfo in
+          match test.T.bellinfo with
+          | None|Some { regions=None; } -> []
+          | Some { regions=Some map } -> map in
+        begin match pte_init,mem_map with
+        | [],[] -> ()
+        | bds,_ ->
+            O.oii "barrier_wait(_b);" ;
+            List.iter
+              (fun x ->
+                let ok1 = try
+                  let phy = Misc.Simple.assoc x bds in
+                  O.fii
+                    "litmus_set_pte_physical(_vars->pte_%s,_vars->saved_pte_%s);"
+                    x phy ;
+                  true
+                with Not_found ->false in
+                let ok2 = try
+                  let rs = Misc.Simple.assoc x mem_map in
+                  List.iter
+                    (fun r ->
+                      let r = sprintf "attr_%s" (MyName.name_as_symbol r) in
+                      O.fii "litmus_set_pte_attribute(_vars->pte_%s,%s);" x r)
+                    rs ;
+                  true
+                with Not_found -> false in
+                if ok1 || ok2 then O.fii "litmus_flush_tlb((void *)%s);" x)
+              inits
+        end ;
         (* Synchronise *)
         if have_timebase then O.oii "_ctx->next_tb = read_timebase();" ;
         O.oii "barrier_wait(_b);" ;
@@ -843,7 +884,7 @@ module Make
         (* Dump code *)
         Lang.dump
           O.out (Indent.as_string Indent.indent2)
-          my_regs { glob with Lang.volatile=envVolatile; } proc out ;
+          my_regs global_env envVolatile proc out ;
         O.oii "barrier_wait(_b);" ;
 (* Restore pte *)
         if is_pte then begin
@@ -866,7 +907,7 @@ module Make
               | A.Location_global (G.Addr s)|A.Location_deref (G.Addr s,_) ->
                   StringSet.mem s to_collect
               | A.Location_reg _
-              | A.Location_global (G.Pte _)|A.Location_deref(G.Pte _,_) -> false)
+              | A.Location_global (G.Pte _|G.Phy _)|A.Location_deref((G.Pte _|G.Phy _),_) -> false)
               (U.get_displayed_locs test) in
           A.LocSet.iter
             (fun loc ->
@@ -952,20 +993,10 @@ module Make
         end ;
         O.oi "barrier_wait(_b);" ;
         O.oi "switch (_role) {" ;
-        let glob  =
-          let global = U.select_global env
-          and aligned =
-            if 
-              List.exists
-                (fun (a,_) -> U.is_aligned a env)
-                test.T.globals
-            then
-              Warn.fatal "align feature not implemented in presi mode";
-            [] in
-          let open Lang in
-          { global; aligned; volatile=[]; } in
+        let global_env = U.select_global env
+        and pte_init = get_pte_init test.T.init in
         List.iter2
-          (dump_run_thread env test some_ptr stats glob)
+          (dump_run_thread pte_init env test some_ptr stats global_env)
           (part_vars test)
           test.T.code ;
         O.oi "}" ;
