@@ -34,6 +34,7 @@ module type S = sig
   val reg_compare : reg -> reg -> int
   val symb_reg_name : reg -> string option
   val symb_reg : string -> reg
+  val typeof : reg -> CType.t
 
   type barrier
   val pp_barrier            : barrier -> string

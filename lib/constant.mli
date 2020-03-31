@@ -32,6 +32,11 @@ val pp_symbol : symbol -> string
 
 val as_address : symbol -> string
 
+val symbol_compare : symbol -> symbol -> int
+
+module SymbolSet : MySet.S with type elt = symbol
+module SymbolMap : MyMap.S with type key = symbol
+
 (* Add scalars *)
 type 'scalar t =
   | Concrete of 'scalar

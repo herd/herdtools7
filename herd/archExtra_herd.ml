@@ -418,9 +418,14 @@ module Make(C:Config) (I:I) : S with module I = I
         if is_mixed then
           fun bds ->
             List.fold_left
-              (fun m (loc,(t,_)) -> match loc with
-              | Location_global a -> StringMap.add (I.V.as_symbol a) (misc_to_size t) m
-              | _ -> m)
+              (fun m (loc,(t,_)) ->
+                let open Constant in
+                match loc with
+                | Location_global
+                    (I.V.Val
+                       (Symbolic
+                          (Virtual ((a,_),_)))) -> StringMap.add a (misc_to_size t) m
+                | _ -> m)
               StringMap.empty bds
         else
           (fun _ -> StringMap.empty)

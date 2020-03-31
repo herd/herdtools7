@@ -329,8 +329,8 @@ module Make
           | Indirect ->
               sprintf "(*(%s%s[_i]))[%i]" pref s idx
           end
-      | A.Location_global (G.Pte _)
-      | A.Location_deref (G.Pte _,_)
+      | A.Location_global (G.Pte _|G.Phy _)
+      | A.Location_deref ((G.Pte _|G.Phy _),_)
         -> assert false
 
       let dump_loc = dump_ctx_loc ""
@@ -870,7 +870,7 @@ module Make
           let find_type loc =
             let t = U.find_type loc env in
             CType.dump (CType.strip_atomic t),CType.is_ptr t in
-            DC.fundef_prop "filter_cond" find_type f
+          DC.fundef_prop "filter_cond" find_type f
 
       let dump_cond_fun_call test dump_loc dump_val =
         DC.funcall test.T.condition dump_loc dump_val
@@ -1722,17 +1722,16 @@ module Make
             | _ ->  ())
             test.T.src.MiscParser.init
         end ;
-        let aligned = List.filter (fun (a,_) -> U.is_aligned a env) test.T.globals
-        and global = U.select_global env in
-        let glob =
-          let open Lang in
-          { global; aligned; volatile=[]; } in
+        let aligned_env =
+          List.filter
+            (fun (a,_) -> U.is_aligned a env)
+            test.T.globals in
         List.iter
           (fun (proc,(out,(outregs,envVolatile))) ->
-            let myenv = U.select_proc proc env in
-            let glob = { glob with Lang.volatile=envVolatile; } in
+            let myenv = U.select_proc proc env
+            and global_env = U.select_global env in
             if do_ascall then begin
-              Lang.dump_fun O.out myenv glob proc out
+              Lang.dump_fun O.out myenv global_env envVolatile proc out
             end ;
             let  do_collect =  do_collect_local && (do_safer || proc=0) in
             O.f "static void *P%i(void *_vb) {" proc ;
@@ -1939,7 +1938,7 @@ module Make
                 if do_self then LangUtils.code_fun_cpy proc else
                 LangUtils.code_fun proc in
               Lang.dump_call f_id (fun _ s -> s) else Lang.dump)
-              O.out (Indent.as_string iloop) myenv glob proc out ;
+              O.out (Indent.as_string iloop) myenv aligned_env envVolatile proc out ;
             if do_verbose_barrier && have_timebase  then begin
               if do_timebase then begin
                 O.fx iloop "_a->tb_delta[%i][_i] = _delta;" proc ;
@@ -2189,7 +2188,7 @@ module Make
                   | _ -> k
                   end
               | A.Location_reg _
-              | A.Location_global (G.Pte _)|A.Location_deref (G.Pte _,_)  -> k)
+              | A.Location_global (G.Pte _|G.Phy _)|A.Location_deref ((G.Pte _|G.Phy _),_)  -> k)
               locs StringSet.empty in
 (* Make copies of final locations *)
           if Cfg.cautious && not (A.LocSet.is_empty locs) then begin

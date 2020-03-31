@@ -215,7 +215,7 @@ module Make
       let select_global env =
         select_types
           (function
-            | A.Location_reg _|A.Location_global (G.Pte _) -> None
+            | A.Location_reg _|A.Location_global (G.Pte _|G.Phy _) -> None
             | A.Location_global (G.Addr a) -> Some a
             | A.Location_deref _ -> assert false)
           env
@@ -223,7 +223,7 @@ module Make
       let select_aligned env =
         select_types
           (function
-            | A.Location_reg _|A.Location_global (G.Pte _) -> None
+            | A.Location_reg _|A.Location_global (G.Pte _|G.Phy _) -> None
             | A.Location_deref _ -> assert false
             | A.Location_global (G.Addr loc) ->
                 if is_aligned loc env then Some loc else None)
@@ -276,8 +276,8 @@ module Make
           | A.Location_global (G.Addr a)
           | A.Location_deref (G.Addr a,_) -> StringSet.add a k
           | A.Location_reg _
-          | A.Location_global (G.Pte _)
-          | A.Location_deref (G.Pte _,_)
+          | A.Location_global (G.Pte _|G.Phy _)
+          | A.Location_deref ((G.Pte _|G.Phy _),_)
             -> k)
           locs StringSet.empty
 
@@ -341,7 +341,7 @@ module Make
           List.iter
             (fun (s,t) -> match t with
             | CType.Array (t,sz) ->
-                O.f "typedef %s %s[%i];" t (type_name s) sz
+                O.f "typedef %s %s[%d];" t (type_name s) sz
             | _ ->
                 begin match do_find_type_align s env with
                 | None -> ()
@@ -351,7 +351,7 @@ module Make
                     O.f "typedef %s %s;" t (type_name s)
                 | Some _ -> assert false
                 end)
-           globs ;
+            globs ;
           begin match globs with _::_ -> O.o "" | [] -> () end ;
           ()
 
