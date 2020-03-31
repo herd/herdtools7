@@ -55,7 +55,9 @@ module Make (C:Sem.Config)(V : Value.S)
         | X86_64.R32b -> MachSize.Word
         | X86_64.R64b -> MachSize.Quad
 
-      let mk_read sz ato loc v = Act.Access (Dir.R, loc, v, ato, sz)
+      let mk_read sz ato loc v =
+        let ac = Act.access_of_location_std loc in
+        Act.Access (Dir.R, loc, v, ato, sz, ac)
 
       let read_loc sz is_d = M.read_loc is_d (mk_read sz false)
 
@@ -113,7 +115,9 @@ module Make (C:Sem.Config)(V : Value.S)
 
       let read_loc_atomic sz is_d loc ii = read_loc_gen sz is_d (is_global loc) loc ii
 
-      let mk_write sz an loc v = Act.Access (Dir.W, loc, v, an, sz)
+      let mk_write sz an loc v =
+        let ac = Act.access_of_location_std loc in
+        Act.Access (Dir.W, loc, v, an, sz, ac)
 
       let write_loc sz an loc v ii =
         M.mk_singleton_es (mk_write sz an loc v) ii

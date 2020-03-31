@@ -279,13 +279,6 @@ module Top(O:Config)(Tar:Tar.S) = struct
         Out.f "ccflags-y += %s"
           (String.concat " "
              ("-std=gnu99"::"-Wno-declaration-after-statement"::O.ccopts)) ;
-        Out.o "ifneq (\"$(wildcard /lib/modules/$(shell uname -r)/build/include/linux/proc_fs.h)\",\"\")" ;
-        Out.o "ifneq ($(shell grep proc_ops /lib/modules/$(shell uname -r)/build/include/linux/proc_fs.h | wc -l),0)" ;
-        Out.o "ccflags-y += -DKLITMUS_HAVE_STRUCT_PROC_OPS" ;
-        Out.o "endif" ;
-        Out.o "else" ;
-        Out.o "$(error kernel header include/linux/proc_fs.h for $(shell uname -r) not found)" ;
-        Out.o "endif" ;
         List.iter (fun (src,_) -> Out.f "obj-m += %s.o" src) srcs ;
         Out.o "" ;
         Out.o "all:" ;

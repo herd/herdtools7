@@ -40,6 +40,9 @@ module type Base = sig
   val reg_compare : reg -> reg -> int
 
   type state = (location * V.v) list
+
+  val debug_state : state -> string
+
   type fullstate = (location * (MiscParser.run_type * V.v)) list
 
   module Out : Target.S
@@ -53,6 +56,7 @@ module type Base = sig
   val find_in_state : location -> state -> V.v
   val pp_reg : reg -> string
 
+  val typeof : reg -> CType.t
 end
 
 module type K = sig

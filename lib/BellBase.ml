@@ -42,6 +42,7 @@ let symb_reg_name = function
   | _ -> None
 
 let symb_reg r = Symbolic_reg r
+let typeof _ = assert false
 
 let parse_reg s =
   let len = String.length s in

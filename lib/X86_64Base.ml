@@ -211,6 +211,16 @@ let symb_reg_name = function
 
 let symb_reg r = Symbolic_reg r
 
+let reg_size_to_uint = function
+  | R8bL | R8bH -> "uint8_t"
+  | R16b -> "uint16_t"
+  | R32b -> "uint32_t"
+  | R64b -> "uint64_t"
+
+let typeof = function
+  | Ireg (_, t) -> CType.Base (reg_size_to_uint t)
+  | _ -> CType.Base "int"
+
 let change_size_reg r sz = match r with
   | Ireg (b, _) -> Ireg (b, sz)
   | _ -> r

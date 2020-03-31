@@ -44,12 +44,6 @@ module Make(C:Config)(E:Extra) = struct
 
   type t = CTarget.t
 
-  type glob_t = {
-      global : (string * CType.t) list ;
-      aligned : (string * CType.t) list ;
-      volatile : string list ;
-    }
-
   let dump_start chan indent proc =
     if not E.simple then begin
       if C.asmcommentaslabel then
@@ -88,7 +82,7 @@ module Make(C:Config)(E:Extra) = struct
     and ty = out_type env x in
     sprintf "%s*" (CType.dump ty),outname
 
-  let dump_fun chan env glob proc t =
+  let dump_fun chan env globEnv _envVolatile proc t =
 (*
   let pp_env =
   String.concat "; "
@@ -99,7 +93,7 @@ module Make(C:Config)(E:Extra) = struct
  *)
     let out fmt = fprintf chan fmt in
     let input_defs =
-      List.map (dump_global_def glob.global) t.CTarget.inputs
+      List.map (dump_global_def globEnv) t.CTarget.inputs
     and output_defs =
       List.map (dump_output_def env proc) t.CTarget.finals in
     let defs = input_defs@output_defs in
@@ -124,17 +118,10 @@ module Make(C:Config)(E:Extra) = struct
       t.CTarget.finals ;
     out "}\n\n"
 
-  let get_amper x env =
-    try
-      begin match List.assoc x env  with
-      | CType.Base "mtx_t" -> ""
-      | _ -> "&"
-      end
-    with Not_found -> "&"
 
-  let dump_call f_id tr_idx chan indent _env glob proc t =
+  let dump_call f_id tr_idx chan indent _env globEnv _envVolatile proc t =
     let is_array_of a =
-      try  match List.assoc a glob.global with
+      try  match List.assoc a globEnv with
       | CType.Array (t,_) -> Some t
       | _ -> None
       with Not_found -> None in
@@ -145,7 +132,9 @@ module Make(C:Config)(E:Extra) = struct
           let cast = match is_array_of x with
           | Some t -> sprintf "(%s *)" t
           | None -> "" in
-          let amper = get_amper x glob.global in
+          let amper = match List.assoc x globEnv with
+          | CType.Base "mtx_t" -> ""
+          | _ -> "&" in
           match C.memory with
          | Memory.Direct ->
              sprintf "%s%s_a->%s[%s]" cast amper (CTarget.fmt_reg x) idx
@@ -159,14 +148,17 @@ module Make(C:Config)(E:Extra) = struct
           let args = String.concat "," (global_args@out_args) in
           LangUtils.dump_code_call chan indent f_id args
 
-  let dump chan indent env glob proc t =
+
+  let dump chan indent env globEnv _envVolatile proc t =
     let out x = fprintf chan x in
     out "%sdo {\n" indent;
     begin
       let indent = "  " ^ indent in
       let dump_input x =
-        let ty,x = dump_global_def glob.global x in
-        let amper = get_amper x glob.global in
+        let ty,x = dump_global_def globEnv x in
+        let amper = match List.assoc x globEnv with
+        | CType.Base "mtx_t" -> ""
+        | _ -> "&" in
         match C.memory with
         | Memory.Direct -> begin match C.mode with
           | Mode.Std ->
