@@ -47,7 +47,9 @@ module Make (C:Sem.Config)(V : Value.S)
       let (>>|) = M.(>>|)
       let (>>!) = M.(>>!)
 
-      let mk_read sz ato loc v = Act.Access (Dir.R, loc, v, ato, sz)
+      let mk_read sz ato loc v =
+        let ac = Act.access_of_location_std loc in
+        Act.Access (Dir.R, loc, v, ato, sz, ac)
 
       let read_loc sz is_d = M.read_loc is_d (mk_read sz false)
 
@@ -72,22 +74,41 @@ module Make (C:Sem.Config)(V : Value.S)
 
       let write_loc_gen sz locked loc v ii = match loc with
       |  A.Location_global _ ->
-          M.mk_singleton_es (Act.Access (Dir.W, loc, v, locked, sz)) ii
+          M.mk_singleton_es
+            (Act.Access (Dir.W, loc, v, locked, sz, Act.A_VIR))
+            ii
       | _ ->
-          M.mk_singleton_es (Act.Access (Dir.W, loc, v, locked, nat_sz)) ii
+          M.mk_singleton_es
+            (Act.Access
+               (Dir.W, loc, v, locked, nat_sz, Act.A_VIR))
+            ii
 
       let write_loc sz loc v ii =
-        M.mk_singleton_es (Act.Access (Dir.W, loc, v, false, sz)) ii
+        let ac = Act.access_of_location_std loc in
+        M.mk_singleton_es
+          (Act.Access (Dir.W, loc, v, false, sz, ac))
+          ii
 
       let write_reg r v ii =
-        M.mk_singleton_es (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false, nat_sz)) ii
+        M.mk_singleton_es
+          (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false, nat_sz, Act.A_REG))
+          ii
+
       let write_mem sz a v ii  =
-        M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v, false, sz)) ii
+        M.mk_singleton_es
+          (Act.Access (Dir.W, A.Location_global a, v, false, sz, Act.A_VIR))
+          ii
+
       let write_mem_atomic sz a v ii =
-        M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v, true, sz)) ii
+        M.mk_singleton_es
+          (Act.Access (Dir.W, A.Location_global a, v, true, sz, Act.A_VIR))
+          ii
 
       let write_loc_atomic sz loc v ii =
-        M.mk_singleton_es (Act.Access (Dir.W, loc, v, (is_global loc), sz)) ii
+        let ac = Act.access_of_location_std loc in
+        M.mk_singleton_es
+          (Act.Access (Dir.W, loc, v, (is_global loc), sz, ac))
+          ii
 
       let write_flag r o v1 v2 ii =
         M.addT

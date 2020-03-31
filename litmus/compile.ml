@@ -518,7 +518,8 @@ type P.code = MiscParser.proc * A.pseudo list)
             G.Set.fold
               (fun s (a,p) -> match s with
               | G.Addr s -> StringSet.add s a,p
-              | G.Pte s -> a,StringSet.add s p)
+              | G.Pte s -> a,StringSet.add s p
+              | G.Phy _ -> assert false)
               addrs (StringSet.empty,StringSet.empty) in
           let all_clobbers =
             List.fold_left
@@ -600,7 +601,7 @@ type P.code = MiscParser.proc * A.pseudo list)
             | _ -> env)
           init env in
       G.Map.fold
-        (fun a ty k -> match a with G.Addr a -> (a,ty)::k | G.Pte _ -> k)
+        (fun a ty k -> match a with G.Addr a -> (a,ty)::k | G.Pte _| G.Phy _ -> k)
         env []
 
     let type_out env p t =
@@ -620,7 +621,8 @@ type P.code = MiscParser.proc * A.pseudo list)
             prog = code;
             condition = final;
             filter ;
-            locations = locs ; _
+            locations = locs ;
+            extra_data ;_
           } = t in
       let initenv = List.map (fun (loc,(_,v)) -> loc,v) init in
       let observed = Generic.all_observed final filter locs in
@@ -651,6 +653,11 @@ type P.code = MiscParser.proc * A.pseudo list)
               [] rs in
           A.RegSet.of_list rs in
       let code = mk_templates ty_env1 name stable_info initenv code observed in
+      let bellinfo =
+        let open MiscParser in
+        match extra_data with
+        | NoExtra|CExtra _ -> None
+        | BellExtra i -> Some i in
       let code_typed = type_outs ty_env1 code in
         { T.init = initenv ;
           info = info;
@@ -662,6 +669,7 @@ type P.code = MiscParser.proc * A.pseudo list)
           global_code = [];
           src = t;
           type_env = ty_env;
+          bellinfo;
         }
 
   end

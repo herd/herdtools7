@@ -53,6 +53,13 @@ module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) =
   let reg_compare = Internal.reg_compare
 
   type state = (location * V.v) list
+
+  let debug_state st =
+    String.concat " "
+      (List.map
+         (fun (loc,v) -> Printf.sprintf "<%s -> %s>" (pp_location loc) (V.pp_v v))
+         st)
+
   type fullstate = (location * (MiscParser.run_type * V.v)) list
 
   module Out = struct

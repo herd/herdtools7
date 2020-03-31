@@ -31,7 +31,9 @@ end
 
 module type Config = sig
   val hexa : bool
+  val variant : Variant.t -> bool
 end
+
 module Make (C:Config) (A : A) : sig
 
  (* All sorts of accesses, redundunt with symbol hidden in location,
@@ -54,11 +56,15 @@ module Make (C:Config) (A : A) : sig
 
   include Action.S with type action := action and module A = A
 
+  val access_of_location_std : A.location -> access_t
+
 end = struct
 
   module A = A
   module V = A.V
   open Dir
+
+  let kvm = C.variant Variant.Kvm
 
   type access_t = A_REG | A_VIR | A_PHY | A_PTE | A_TLB | A_TAG
 
@@ -82,6 +88,22 @@ end = struct
     | A.Location_global v
     | A.Location_deref (v,_)
       -> access_of_value v
+
+  let access_of_location_std = 
+    let open Constant in function
+      | A.Location_reg _ -> A_REG
+      | A.Location_global (V.Val (Symbolic (Virtual _))|V.Var _)
+      | A.Location_deref ((V.Val (Symbolic (Virtual _))|V.Var _),_)
+        -> A_VIR
+      | A.Location_global (V.Val (Symbolic ((System (PTE,_))))) as loc
+        ->
+          if kvm then A_PTE
+          else Warn.fatal "PTE %s while -variant kvm is not active"
+              (A.pp_location loc)
+      | A.Location_global v
+      | A.Location_deref (v,_)
+        -> Warn.fatal "access_of_location_std on non-standard symbol '%s'\n" (V.pp_v v)
+          
 
   type action =
     | Access of dirn * A.location * V.v * A.lannot * MachSize.sz * access_t
@@ -315,7 +337,7 @@ end = struct
         (fun lvl -> A.pp_level lvl,is_at_level lvl)
         A.levels
     in
-    ("T",is_tag)::("FAULT",is_fault)::("INV",is_inv)::
+    ("T",is_tag)::("FAULT",is_fault)::("TLBI",is_inv)::
     bsets @ asets @ lsets
 
   let arch_fences = []

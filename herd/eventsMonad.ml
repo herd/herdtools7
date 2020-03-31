@@ -888,6 +888,7 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
     module Mixed(SZ:ByteSize.S) = struct
 
       let memtag = C.variant Variant.MemTag
+      let kvm = C.variant Variant.Kvm
 
       module AM = A.Mixed(SZ)
 
@@ -993,7 +994,7 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
       let is_tagloc a =
         let open Constant in
         match a with
-        | V.Val (System (TAG,_)) -> true
+        | V.Val (Symbolic (System (TAG,_))) -> true
         | _ -> false
 
       let add_inittags env =
@@ -1003,7 +1004,7 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
             | A.Location_global a ->
                 if is_tagloc a then glob,a::tag
                 else a::glob,tag
-            | A.Location_deref _|A.Location_reg _|A.Location_pte _ -> p)
+            | A.Location_deref _|A.Location_reg _ -> p)
             ([],[]) env in
         let tag_set = A.VSet.of_list tag in
         let env =
@@ -1015,7 +1016,47 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
             env glob in
         env
 
+      let add_initpte =
+
+        let open Constant in
+
+        let tr_physical = function
+          | Virtual ((s,_),idx) -> Physical (s,idx)
+          | _ -> assert false
+        and tr_pte = function
+          | Virtual ((s,_),_) -> System (PTE,s)
+          | _ -> assert false in
+
+
+        let add_val vloc v k =  match vloc with
+        | V.Val (Symbolic (Virtual _ as a)) -> SymbolMap.add a v k
+        | V.Val (Symbolic (Physical _|System _)|Concrete _|Label (_, _)|Tag _)|V.Var _ -> k in
+
+        fun env ->
+          let k,rem =
+            List.fold_left
+              (fun (k,rem) ((loc,v) as bd) ->
+                let k = match loc with
+                | A.Location_global vloc|A.Location_deref(vloc,_) -> add_val vloc v k,rem
+                | A.Location_reg _ -> k,(bd::rem)in
+                k)
+               (SymbolMap.empty,[]) env  in
+          let env =
+            SymbolMap.fold
+              (fun a v env ->
+                let tr_sym sym = V.Val (Symbolic sym) in
+                let a_pte = tr_sym (tr_pte a)
+                and a_phy = tr_sym (tr_physical a) in
+                (A.Location_global a_pte,a_phy)::
+                (A.Location_global a_phy,v)::env)
+              k rem in
+          env
+
       let initwrites_non_mixed env _ =
+        let env =
+          if memtag then add_inittags env
+          else if kvm then add_initpte env
+          else env in
         fun eiid ->
           let eiid,es =
             List.fold_left
@@ -1048,26 +1089,28 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
             let eiid,es,sca =
               List.fold_left
                 (fun (eiid,es,sca) (loc,v) ->
+                  let open Constant in
                   match loc with
                   | A.Location_global
-                      (A.V.Val (Constant.Symbolic ((s,_),0)) as a)
+                      (A.V.Val
+                         (Symbolic (Virtual ((s,_),0))) as a) 
                       when not (Misc.check_atag s) ->
  (* Suffix encoding of tag addresses, sufficient for now *)
-                        let sz = A.look_size size_env s in
-                        let ds = AM.explode sz v
-                        and eas = AM.byte_eas sz a in
-                        let eiid,ews =
-                          List.fold_left2
-                            (fun (eiid,ews) a d ->
-                              let ew =
-                                { E.eiid = eiid.id ; E.subid = eiid.sub;
-                                  E.iiid = None ;
-                                  E.action =
-                                  E.Act.mk_init_write
-                                    (A.Location_global a) SZ.byte d ;} in
-                              bump_eid eiid,ew::ews)
-                            (eiid,[]) eas ds in
-                        eiid,ews@es, E.EventSetSet.add (E.EventSet.of_list ews) sca
+                           let sz = A.look_size size_env s in
+                           let ds = AM.explode sz v
+                           and eas = AM.byte_eas sz a in
+                           let eiid,ews =
+                             List.fold_left2
+                               (fun (eiid,ews) a d ->
+                                 let ew =
+                                   { E.eiid = eiid.id ; E.subid = eiid.sub;
+                                     E.iiid = None ;
+                                     E.action =
+                                     E.Act.mk_init_write
+                                       (A.Location_global a) SZ.byte d ;} in
+                                 bump_eid eiid,ew::ews)
+                               (eiid,[]) eas ds in
+                           eiid,ews@es, E.EventSetSet.add (E.EventSet.of_list ews) sca
                   | _ ->
                       let ew =
                         {E.eiid = eiid.id ; E.subid = eiid.sub;

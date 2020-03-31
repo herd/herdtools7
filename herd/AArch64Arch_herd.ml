@@ -21,7 +21,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     let pp_barrier_short = pp_barrier
     let reject_mixed = true
 
-    type annot = A | XA | L | XL | X | N | Q | NoRet | T | NExp
+    type annot = A | XA | L | XL | X | N | Q | NoRet | T  | S | NExp
     type lannot = annot
 
     let empty_annot = N

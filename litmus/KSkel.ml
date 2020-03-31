@@ -501,20 +501,14 @@ let dump_threads _tname env test =
   O.o "/***************/" ;
   O.o "" ;
   let global_env = U.select_global env in
-  let glob =
-    let global =
-      List.map (fun (x,ty) -> x,CType.strip_volatile ty) global_env
-    and aligned =
-      if List.exists (fun (a,_) -> U.is_aligned a env) test.T.globals then
-        Warn.fatal "align feature not available in klitmus" ;
-      [] in
-    let open Lang in
-    { global; aligned; volatile=[]; } in
+  let global_env =
+    List.map
+      (fun (x,ty) -> x,CType.strip_volatile ty)
+      global_env in
   List.iter
     (fun (proc,(out,(_outregs,envVolatile))) ->
       let myenv = U.select_proc proc env in
-      let glob = { glob with Lang.volatile=envVolatile; } in
-      Lang.dump_fun O.out myenv glob proc out ;
+      Lang.dump_fun O.out myenv global_env envVolatile proc out ;
       O.f "static int thread%i(void *_p) {" proc ;
       O.oi "ctx_t *_a = (ctx_t *)_p;" ;
       O.o "" ;
@@ -534,7 +528,7 @@ let dump_threads _tname env test =
       | Some _|None -> idx in
       Lang.dump_call (LangUtils.code_fun proc)
         tr_idx O.out (Indent.as_string indent3)
-        myenv glob proc out ;
+        myenv global_env envVolatile proc out ;
       O.oii "}" ;
       O.oi "}" ;
       O.oi "atomic_inc(&done);" ;
@@ -694,22 +688,13 @@ let dump_proc tname _test =
   O.oi "return single_open(fp,litmus_proc_show,NULL);" ;
   O.o "}" ;
   O.o "" ;
-  O.o "#if defined(KLITMUS_HAVE_STRUCT_PROC_OPS)" ;
-  O.o "static const struct proc_ops litmus_proc_ops = {" ;
-  O.oi ".proc_open    = litmus_proc_open," ;
-  O.oi ".proc_read    = seq_read," ;
-  O.oi ".proc_lseek   = seq_lseek," ;
-  O.oi ".proc_release = single_release," ;
-  O.o "};" ;
-  O.o "#else" ;
-  O.o "static const struct file_operations litmus_proc_ops = {" ;
+  O.o "static const struct file_operations litmus_proc_fops = {" ;
   O.oi ".owner   = THIS_MODULE," ;
   O.oi ".open    = litmus_proc_open," ;
   O.oi ".read    = seq_read," ;
   O.oi ".llseek   = seq_lseek," ;
   O.oi ".release = single_release," ;
   O.o "};" ;
-  O.o "#endif" ;
   O.o ""
 
 (**************************)
@@ -720,7 +705,7 @@ let dump_init_exit _test =
   O.o "static int __init" ;
   O.o "litmus_init(void) {" ;
   O.oi "int err=0;" ;
-  O.oi "struct proc_dir_entry *litmus_pde = proc_create(\"litmus\",0,NULL,&litmus_proc_ops);" ;
+  O.oi "struct proc_dir_entry *litmus_pde = proc_create(\"litmus\",0,NULL,&litmus_proc_fops);" ;
   O.oi "if (litmus_pde == NULL) { return -ENOMEM; }" ;
   O.oi "stride = stride == 0 ? 1 : stride;" ;
   O.oi "nonline = num_online_cpus ();" ;

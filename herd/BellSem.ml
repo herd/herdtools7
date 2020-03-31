@@ -87,7 +87,7 @@ module Make (C:Sem.Config)(V:Value.S)
       let read_roa is_data ?(stack=[]) roa ii =
         match roa with
         | BellBase.Rega r -> read_reg is_data ~stack:stack r ii
-        | BellBase.Abs a -> (M.unitT (V.maybevToV a))
+        | BellBase.Abs a -> (M.unitT (V.nameToV a))
 
       let read_roi is_data roi ii =
         match roi with
