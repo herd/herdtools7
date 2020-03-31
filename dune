@@ -1,4 +1,4 @@
-(ignored_subdirs (herd herd-www tools jingle))
+(ignored_subdirs (herd herd-www jingle))
 (env
  (release
 (flags (:standard -w +a-3-4-9-29-33-41-45-60-67))))
