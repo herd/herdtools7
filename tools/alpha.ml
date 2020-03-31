@@ -98,7 +98,7 @@ struct
 
   let alpha_location f = function
     | A.Location_reg (p,r) -> f (p,r)
-    | A.Location_global _|A.Location_deref _|A.Location_pte _ as loc -> loc
+    | A.Location_global _|A.Location_deref _ as loc -> loc
 
   let alpha_atom f a =
     let open ConstrGen in
@@ -173,16 +173,21 @@ struct
     let notag_value () = Warn.user_error "No tag value for %s" Sys.argv.(0)
 
     let collect_value f v k = match v with
-    | Symbolic ((s,_),_) -> f s k
+    | Symbolic (Virtual ((s,_),_))
+    | Symbolic (System (PTE,s))
+      -> f s k
     | Concrete _ -> k
     | Label _ -> nolabel_value ()
     | Tag _ -> notag_value ()
+    | Symbolic (Physical _|System ((TLB|TAG),_)) -> assert false
 
     let map_value f v = match v with
-    | Symbolic ((s,t),o) -> Symbolic ((f s,t),o)
+    | Symbolic (Virtual ((s,t),o)) -> Symbolic (Virtual ((f s,t),o))
+    | Symbolic (System (PTE,s)) ->  Symbolic (System (PTE,f s))
     | Concrete _ -> v
     | Label _ -> nolabel_value ()
     | Tag _ -> notag_value ()
+    | Symbolic (Physical _|System ((TLB|TAG),_)) -> assert false
 
     let collect_pseudo f =
       A.pseudo_fold
@@ -202,13 +207,12 @@ struct
 
     let collect_location f loc k = match loc with
     | A.Location_reg _ -> k
-    | A.Location_global v|A.Location_deref (v,_)|A.Location_pte v -> collect_value f v k
+    | A.Location_global v|A.Location_deref (v,_) -> collect_value f v k
 
     let map_location f loc = match loc with
     | A.Location_reg _ -> loc
     | A.Location_global v -> A.Location_global (map_value f v)
     | A.Location_deref (v,idx) -> A.Location_deref (map_value f v,idx)
-    | A.Location_pte v -> A.Location_pte (map_value f v)
 
     let collect_state_atom f (loc,(_,v)) k =
       collect_location f loc (collect_value f v k)
