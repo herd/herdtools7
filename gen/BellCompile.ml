@@ -40,7 +40,7 @@ module Make(Cfg:Config)(BO:BellArch_gen.Config) : XXXCompile_gen.S =
     let pseudo = List.map (fun i -> Instruction i)
 
 (* Bell instructions *)
-    let symb_of_string x = Abs (ParsedConstant.nameToV x)
+    let symb_of_string x = Abs x
 (*    let movi r i = Pmov (r,IAR_imm i) *)
     let ld_tagged r x a = Pld (r, Addr_op_atom (symb_of_string x),a)
     let ld r x = ld_tagged r x []
@@ -51,7 +51,7 @@ module Make(Cfg:Config)(BO:BellArch_gen.Config) : XXXCompile_gen.S =
       Pst (Addr_op_atom (symb_of_string  x),Imm v,a)
 
     let st_reg_tagged x r a =
-      Pst (Addr_op_atom (Abs (ParsedConstant.nameToV x)),Regi r,a)
+      Pst (Addr_op_atom (Abs x),Regi r,a)
 
     let st_idx_tagged x v idx a =
       Pst (Addr_op_add (symb_of_string x,Regi idx),Imm v,a)
