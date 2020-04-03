@@ -352,6 +352,11 @@ module Make(V:Constant.S)(C:Config) =
           memo = "mflr ^o0";
           outputs=[rD];
           inputs=[A.LR]; }::k
+    | Pmfcr rD ->
+        { empty_ins with
+          memo = "mfcr ^o0";
+          outputs=[rD];
+          inputs=[]; }::k
     | Plmw (rD,d,rA) ->
         { empty_ins with
           memo =

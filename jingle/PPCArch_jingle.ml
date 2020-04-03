@@ -238,6 +238,8 @@ include Arch.MakeArch(struct
         conv_reg r >! fun r -> Pmtlr r
     | Pmflr r ->
         conv_reg r >! fun r -> Pmflr r
+    | Pmfcr r ->
+        conv_reg r >! fun r -> Pmfcr r
     | Plmw(r1,k,r2) ->
         par21 conv_reg r1 r2 find_cst k
           (fun r1 r2 k -> Plmw (r1,k,r2))

@@ -58,7 +58,7 @@ module Make (C:Arch_herd.Config) (V:Value.S)
       | Pli _ | Pb _ | Pbcc _ | Pcmpwi _ | Pcmpw _
       | Pmr _ | Psync | Peieio | Pisync | Plwsync
       | Pdcbf _ | Pblr | Pnor _ | Pneg _ | Pslw _ 
-      | Psrawi _| Psraw _ | Pbl _ | Pmtlr _ | Pmflr _
+      | Psrawi _| Psraw _ | Pbl _ | Pmtlr _ | Pmflr _ | Pmfcr _
       | Plmw  _ | Pstmw _ | Pcomment _
         -> None
       | Plwzu _ | Pstwu _ | Plwarx _ | Pstwcx _

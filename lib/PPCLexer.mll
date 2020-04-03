@@ -117,6 +117,7 @@ rule token = parse
 | "blr"   { BLR }
 | "mtlr"  { MTLR }
 | "mflr"  { MFLR }
+| "mfcr"  { MFCR }
 | "stmw"  { STMW }
 | "lmw"  { LMW }
 | "com"   { COMMENT}

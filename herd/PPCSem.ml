@@ -260,6 +260,9 @@ module Make (C:Sem.Config)(V:Value.S)
           | PPC.Pcmpw (cr,rA,rB) ->
               (read_reg_ord rA ii >>| read_reg_ord rB ii) >>=
               fun (vA,vB) -> flags true cr vA vB ii >>! B.Next
+          | PPC.Pmfcr rA ->
+              read_reg_ord (PPC.CRField 0) ii >>=
+              fun v -> write_reg rA v ii >>! B.Next
 (* memory loads/stores *)
           | PPC.Pload(sz,rD,d,rA) ->
               read_reg_ord rA ii >>=

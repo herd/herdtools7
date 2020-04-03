@@ -282,6 +282,7 @@ type 'k kinstruction =
   | Plmw of reg * 'k * reg
   | Pstmw of reg * 'k * reg
   | Pcomment of string
+  | Pmfcr of reg (* read condition register *)
 
 type instruction = int kinstruction
 
@@ -400,6 +401,7 @@ let do_pp_instruction pp_k i = match i with
 | Pblr -> "blr"
 | Pmtlr reg -> "mtlr " ^ pp_reg reg
 | Pmflr reg -> "mflr " ^ pp_reg reg
+| Pmfcr reg -> "mfcr " ^ pp_reg reg
 | Pcomment s -> "com \"" ^ s ^ "\""
 
 let pp_instruction _m ins = do_pp_instruction string_of_int ins
@@ -467,6 +469,7 @@ let fold_regs (f_reg,f_sreg) =
   | Pcmpwi (_,r1,_)
   | Pmtlr r1
   | Pmflr r1
+  | Pmfcr r1
     ->  fold_reg r1 (y_reg,y_sreg)
 	(* None *)
   | Pnop
@@ -572,6 +575,8 @@ let map_regs f_reg f_symb =
       Pmtlr (map_reg r)
   | Pmflr r ->
       Pmflr (map_reg r)
+  | Pmfcr r ->
+      Pmfcr (map_reg r)
 
 	(* None *)
   | Pnop
@@ -618,7 +623,7 @@ let norm_ins ins = match ins with
   | Plwsync|Pisync|Peieio|Psync
   | Pnor (_,_,_,_) | Pneg(_,_,_)
   | Pslw(_,_,_,_) | Psrawi(_,_,_,_) | Psraw(_,_,_,_)
-  | Pbl _ | Pblr | Pmtlr _ | Pmflr _
+  | Pbl _ | Pblr | Pmtlr _ | Pmflr _ | Pmfcr _
   | Pcomment _
   | Plmw _|Pstmw _
           -> ins
@@ -650,7 +655,7 @@ let get_next = function
   |Pbcc (_, lbl) -> [Label.Next;Label.To lbl]
         (* Hum *)
   |Pbl _ -> [Label.Next]
-  |Pblr|Pmtlr _|Pmflr _ -> []
+  |Pblr|Pmtlr _|Pmflr _|Pmfcr _ -> []
 
 
 (* Macros *)
@@ -691,7 +696,7 @@ include Pseudo.Make
 	| Plwsync|Pisync|Peieio|Psync
 	| Pnor (_,_,_,_) | Pneg(_,_,_)
 	| Pslw(_,_,_,_) | Psraw(_,_,_,_)
-	| Pbl _ | Pblr | Pmtlr _ | Pmflr _
+	| Pbl _ | Pblr | Pmtlr _ | Pmflr _ | Pmfcr _
 	| Pcomment _
           as same -> same
 
@@ -733,6 +738,7 @@ include Pseudo.Make
         | Pblr
         | Pmtlr _
         | Pmflr _
+        | Pmfcr _
         | Pcomment _
           -> 0
         | Plwzu _
@@ -762,7 +768,7 @@ include Pseudo.Make
         | Plwsync|Pisync|Peieio|Psync
         | Pnor (_,_,_,_) | Pneg(_,_,_)
         | Pslw(_,_,_,_) | Psrawi(_,_,_,_) | Psraw(_,_,_,_)
-        | Pbl _ | Pblr | Pmtlr _ | Pmflr _
+        | Pbl _ | Pblr | Pmtlr _ | Pmflr _ | Pmfcr _
         | Pcomment _
         | Plmw _|Pstmw _
         | Pload _|Ploadx _|Pstore _|Pstorex _
@@ -788,7 +794,7 @@ include Pseudo.Make
         | Plwsync|Pisync|Peieio|Psync
         | Pnor (_,_,_,_) | Pneg(_,_,_)
         | Pslw(_,_,_,_) | Psrawi(_,_,_,_) | Psraw(_,_,_,_)
-        | Pbl _ | Pblr | Pmtlr _ | Pmflr _
+        | Pbl _ | Pblr | Pmtlr _ | Pmflr _ | Pmfcr _
         | Plmw _|Pstmw _
         | Pcomment _
         | Pload _|Ploadx _|Pstore _|Pstorex _
