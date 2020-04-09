@@ -153,8 +153,11 @@ module RegMap = A.RegMap)
           RegSet.diff
             (RegSet.diff all stable)
             (RegSet.unions [in_outputs;init_set]) in
-        let rem = (* ??? *)
-          if false && AL.arch = `X86_64 then
+        let rem =
+          (* Beware: in X86_64 non-initialised registers have to be zero-ed,
+             even when not in live-in, as they may be initialised only
+             partially by code. *)
+          if AL.arch = `X86_64 then
             RegSet.unions [rem;(RegSet.diff all init_set)]
           else rem in
         let rem =
