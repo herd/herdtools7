@@ -18,20 +18,20 @@
 
 open AST
 
-let mk_loc () =
-  TxtLoc.make
-    (Parsing.symbol_start_pos ())
-    (Parsing.symbol_end_pos ())
-
+let mk_loc (p1,p2) =
+  let loc =
+    TxtLoc.make p1 p2 in
+  Printf.eprintf "Parsed loc: %a\n" TxtLoc.pp loc ;
+  loc
 
 let as_op op = function
   | Op (_,op0,es) when op0 = op -> es
   | e -> [e]
 
-let do_op op e1 e2 =
+let do_op loc op e1 e2 =
   let es1 = as_op op e1
   and es2 = as_op op e2 in
-  Op (mk_loc(),op,es1@es2)
+  Op (loc,op,es1@es2)
 
 let pp () =
   let start = Parsing.symbol_start_pos ()
@@ -113,7 +113,7 @@ ins_clause_list:
 
 
 topins:
-| ENUM VAR EQUAL altopt alttags { Enum (mk_loc (),$2,$5) }
+| ENUM VAR EQUAL altopt alttags { Enum (mk_loc $loc,$2,$5) }
 | ins { $1 }
 
 pat0:
@@ -121,39 +121,39 @@ pat0:
 | VAR        { Some $1 }
 
 ins:
-| LET pat_bind_list in_opt { Let (mk_loc (),$2) }
-| LET REC pat_bind_list  in_opt { Rec (mk_loc (),$3,None) }
-| LET REC pat_bind_list WHEN app_test in_opt { Rec (mk_loc (),$3,Some $5) }
+| LET pat_bind_list in_opt { Let (mk_loc $loc,$2) }
+| LET REC pat_bind_list  in_opt { Rec (mk_loc $loc,$3,None) }
+| LET REC pat_bind_list WHEN app_test in_opt { Rec (mk_loc $loc,$3,Some $5) }
 | MATCH exp WITH altopt ins_clause_list END
     {
      let cls,d = $5 in
-     InsMatch (mk_loc(),$2,cls,d)
+     InsMatch (mk_loc $loc,$2,cls,d)
     }
 | deftest { $1 }
-| SHOW base AS VAR { ShowAs (mk_loc(),$2, $4) }
-| SHOW var_list { Show (mk_loc(),$2) }
-| UNSHOW var_list { UnShow (mk_loc(),$2) }
-| INCLUDE STRING { Include (mk_loc(),$2) }
+| SHOW base AS VAR { ShowAs (mk_loc $loc,$2, $4) }
+| SHOW var_list { Show (mk_loc $loc,$2) }
+| UNSHOW var_list { UnShow (mk_loc $loc,$2) }
+| INCLUDE STRING { Include (mk_loc $loc,$2) }
 | PROCEDURE VAR LPAR formals RPAR EQUAL ins_list END
-   { Procedure (mk_loc (),$2,tuple_pat $4,$7,IsNotRec) }
+   { Procedure (mk_loc $loc,$2,tuple_pat $4,$7,IsNotRec) }
 | PROCEDURE VAR pat0 EQUAL ins_list END
-   { Procedure (mk_loc (),$2,Pvar $3,$5,IsNotRec) }
+   { Procedure (mk_loc $loc,$2,Pvar $3,$5,IsNotRec) }
 | PROCEDURE REC VAR LPAR formals RPAR EQUAL ins_list END
-   { Procedure (mk_loc (),$3,tuple_pat $5,$8,IsRec) }
+   { Procedure (mk_loc $loc,$3,tuple_pat $5,$8,IsRec) }
 | PROCEDURE REC VAR pat0 EQUAL ins_list END
-   { Procedure (mk_loc (),$3,Pvar $4,$6,IsRec) }
+   { Procedure (mk_loc $loc,$3,Pvar $4,$6,IsRec) }
 
-| CALL VAR simple optional_name { Call (mk_loc (),$2,$3,$4) }
-| DEBUG exp { Debug (mk_loc (),$2) }
+| CALL VAR simple optional_name { Call (mk_loc $loc,$2,$3,$4) }
+| DEBUG exp { Debug (mk_loc $loc,$2) }
 | FORALL VAR IN exp DO ins_list END
-    { Forall (mk_loc (),$2,$4,$6) }
+    { Forall (mk_loc $loc,$2,$4,$6) }
 | WITH VAR FROM exp
-    { WithFrom (mk_loc (),$2,$4) }
+    { WithFrom (mk_loc $loc,$2,$4) }
 
 
 //Bell file declarations
-| INSTRUCTIONS VAR LBRAC args RBRAC  {Events(mk_loc(),$2,$4,false)}
-| DEFAULT VAR LBRAC args RBRAC  {Events(mk_loc(),$2,$4,true)}
+| INSTRUCTIONS VAR LBRAC args RBRAC  {Events(mk_loc $loc,$2,$4,false)}
+| DEFAULT VAR LBRAC args RBRAC  {Events(mk_loc $loc,$2,$4,true)}
 
 
 altopt:
@@ -169,7 +169,7 @@ deftest:
 
 
 app_test:
-| test exp optional_name { (mk_loc(),pp (),$1,$2,$3) }
+| test exp optional_name { (mk_loc $loc,pp (),$1,$2,$3) }
 
 test_type:
 |          { Check }
@@ -194,15 +194,15 @@ var_list:
 | VAR COMMA var_list { $1 :: $3 }
 
 bind:
-| LPAR formals RPAR EQUAL exp { (mk_loc (),tuple_pat $2,$5) }
-| formalsN EQUAL exp { (mk_loc (),tuple_pat $1,$3) }
+| LPAR formals RPAR EQUAL exp { (mk_loc $loc,tuple_pat $2,$5) }
+| formalsN EQUAL exp { (mk_loc $loc,tuple_pat $1,$3) }
 
 pat_bind:
 | bind { $1 }
 | VAR pat0 EQUAL exp
-   { (mk_loc (),Pvar (Some $1),Fun (mk_loc(),Pvar $2,$4,$1,ASTUtils.free_body [$2] $4)) }
+   { (mk_loc $loc,Pvar (Some $1),Fun (mk_loc $loc,Pvar $2,$4,$1,ASTUtils.free_body [$2] $4)) }
 | VAR LPAR formals RPAR EQUAL exp
-   { (mk_loc(),Pvar (Some $1),Fun (mk_loc(),tuple_pat $3,$6,$1,ASTUtils.free_body $3 $6)) }
+   { (mk_loc $loc,Pvar (Some $1),Fun (mk_loc $loc,tuple_pat $3,$6,$1,ASTUtils.free_body $3 $6)) }
 
 pat_bind_list:
 | pat_bind { [$1] }
@@ -218,25 +218,25 @@ formalsN:
 | pat0 COMMA formalsN { $1 :: $3 }
 
 exp:
-| LET pat_bind_list IN exp { Bind (mk_loc(),$2,$4) }
-| LET REC pat_bind_list IN exp { BindRec (mk_loc(),$3,$5) }
+| LET pat_bind_list IN exp { Bind (mk_loc $loc,$2,$4) }
+| LET REC pat_bind_list IN exp { BindRec (mk_loc $loc,$3,$5) }
 | FUN pat0 ARROW exp
-    { Fun (mk_loc(),Pvar $2,$4,"*fun*",ASTUtils.free_body [$2] $4) }
+    { Fun (mk_loc $loc,Pvar $2,$4,"*fun*",ASTUtils.free_body [$2] $4) }
 | FUN LPAR formals RPAR ARROW exp
-    { Fun (mk_loc(),tuple_pat $3,$6,"*fun*",ASTUtils.free_body $3 $6) }
+    { Fun (mk_loc $loc,tuple_pat $3,$6,"*fun*",ASTUtils.free_body $3 $6) }
 | TRY exp WITH exp
-    { Try (mk_loc(),$2,$4) }
+    { Try (mk_loc $loc,$2,$4) }
 | IF cond THEN exp ELSE exp
-    { If (mk_loc(),$2,$4,$6) }
+    { If (mk_loc $loc,$2,$4,$6) }
 | MATCH exp WITH altopt clause_list END
     {
      let cls,d = $5 in
-     Match (mk_loc(),$2,cls,d)
+     Match (mk_loc $loc,$2,cls,d)
     }
 | MATCH exp WITH altopt set_clauses END
     {
      let e,f = $5 in
-     MatchSet (mk_loc (),$2,e,f)
+     MatchSet (mk_loc $loc,$2,e,f)
    }
 | baseortuple { $1 }
 
@@ -246,14 +246,14 @@ cond:
 | exp IN exp     { In ($1,$3) }
 
 simple:
-| EMPTY { Konst (mk_loc(),Empty RLN) }
-| TAG  { Tag (mk_loc (),$1) }
-| LACC args RACC { ExplicitSet (mk_loc (),$2) }
-| UNDERSCORE  { Konst (mk_loc(),Universe SET) }
-| LPAR RPAR { Op (mk_loc (),Tuple,[]) }
+| EMPTY { Konst (mk_loc $loc,Empty RLN) }
+| TAG  { Tag (mk_loc $loc,$1) }
+| LACC args RACC { ExplicitSet (mk_loc $loc,$2) }
+| UNDERSCORE  { Konst (mk_loc $loc,Universe SET) }
+| LPAR RPAR { Op (mk_loc $loc,Tuple,[]) }
 | LPAR exp RPAR { $2 }
 | BEGIN exp END { $2 }
-| LBRAC exp RBRAC { Op1 (mk_loc(),ToId,$2) }
+| LBRAC exp RBRAC { Op1 (mk_loc $loc,ToId,$2) }
 
 tupleargs:
 | base COMMA tupleend { $1 :: $3 }
@@ -265,21 +265,21 @@ tupleend:
 base:
 | simple { $1 }
 | exp0 { $1 }
-| base STAR base {Op (mk_loc(),Cartesian, [$1; $3])}
-| base STAR { Op1(mk_loc(),Star,$1) }
-| base PLUS { Op1(mk_loc(),Plus,$1) }
-| base OPT { Op1(mk_loc(),Opt,$1) }
-| base HAT INV { Op1(mk_loc(),Inv,$1) }
-| base SEMI base { do_op Seq $1 $3 }
-| base UNION base { do_op Union $1 $3 }
-| base PLUSPLUS base { Op (mk_loc (), Add, [$1; $3]) }
-| base DIFF base { Op (mk_loc (),Diff, [$1; $3;]) }
-| base INTER base {  Op (mk_loc (),Inter, [$1; $3;]) }
-| COMP base { Op1 (mk_loc(),Comp, $2) }
+| base STAR base {Op (mk_loc $loc,Cartesian, [$1; $3])}
+| base STAR { Op1(mk_loc $loc,Star,$1) }
+| base PLUS { Op1(mk_loc $loc,Plus,$1) }
+| base OPT { Op1(mk_loc $loc,Opt,$1) }
+| base HAT INV { Op1(mk_loc $loc,Inv,$1) }
+| base SEMI base { do_op (mk_loc $loc) Seq $1 $3 }
+| base UNION base { do_op (mk_loc $loc)  Union $1 $3 }
+| base PLUSPLUS base { Op (mk_loc $loc, Add, [$1; $3]) }
+| base DIFF base { Op (mk_loc $loc,Diff, [$1; $3;]) }
+| base INTER base {  Op (mk_loc $loc,Inter, [$1; $3;]) }
+| COMP base { Op1 (mk_loc $loc,Comp, $2) }
 
 baseortuple:
 | base { $1 }
-| tupleargs { Op (mk_loc (),Tuple,$1) }
+| tupleargs { Op (mk_loc $loc,Tuple,$1) }
 
 empty_clause:
 | LACC RACC ARROW exp { $4 }
@@ -312,11 +312,11 @@ clause_list:
 
 
 exp0:
-| VAR          { Var (mk_loc (),$1) }
-| exp0  arg    { App (mk_loc (),$1,$2) }
+| VAR          { Var (mk_loc $loc,$1) }
+| exp0  arg    { App (mk_loc $loc,$1,$2) }
 
 arg:
-| VAR { Var (mk_loc (),$1) }
+| VAR { Var (mk_loc $loc,$1) }
 | simple { $1 }
 
 
