@@ -83,7 +83,7 @@ let compare = compare
 let get_default a = function
   | SwitchDepScWrite ->
       begin match a with
-      | `RISCV -> true
+      | `RISCV|`AArch64 -> true
       | _ -> false
       end
   | v -> Warn.fatal "No default for variant %s" (pp v)
