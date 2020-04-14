@@ -38,7 +38,7 @@ module Make (C:Config) (A : A) : sig
 
  (* All sorts of accesses, redundunt with symbol hidden in location,
     when symbol is known, which may not be the case *)
-    
+
   type access_t = A_REG | A_VIR | A_PHY | A_PTE | A_TLB | A_TAG
 
   type action =
@@ -51,8 +51,9 @@ module Make (C:Config) (A : A) : sig
     | Fault of A.inst_instance_id * A.location
 (* Unrolling control *)
     | TooFar
-(* Invalidate event *) 
-    | Inv of A.TLBI.op * A.location
+(* Invalidate event, operation (for print and level), address, if any.
+   No adresss means complete invalidation at level *)
+    | Inv of A.TLBI.op * A.location option
 
   include Action.S with type action := action and module A = A
 
@@ -89,7 +90,7 @@ end = struct
     | A.Location_deref (v,_)
       -> access_of_value v
 
-  let access_of_location_std = 
+  let access_of_location_std =
     let open Constant in function
       | A.Location_reg _ -> A_REG
       | A.Location_global (V.Val (Symbolic (Virtual _))|V.Var _)
@@ -103,7 +104,7 @@ end = struct
       | A.Location_global v
       | A.Location_deref (v,_)
         -> Warn.fatal "access_of_location_std on non-standard symbol '%s'\n" (V.pp_v v)
-          
+
 
   type action =
     | Access of dirn * A.location * V.v * A.lannot * MachSize.sz * access_t
@@ -112,7 +113,7 @@ end = struct
     | Amo of A.location * A.V.v * A.V.v * A.lannot * MachSize.sz * access_t
     | Fault of A.inst_instance_id * A.location
     | TooFar
-    | Inv of A.TLBI.op * A.location
+    | Inv of A.TLBI.op * A.location option
 
 
   let mk_init_write l sz v = match v with
@@ -142,7 +143,9 @@ end = struct
         (A.pp_prog_order_index ii.A.program_order_index)
         (A.pp_location loc)
   | TooFar -> "TooFar"
-  | Inv (op,loc) ->
+  | Inv (op,None) ->
+      Printf.sprintf "Inv(%s)" (A.TLBI.pp_op op)
+  | Inv (op,Some loc) ->
       Printf.sprintf "Inv(%s,%s)" (A.TLBI.pp_op op) (A.pp_location loc)
 
 (* Utility functions to pick out components *)
@@ -172,9 +175,9 @@ end = struct
   | Access (_, l, _,_,_,_)
   | Amo (l,_,_,_,_,_)
   | Fault (_,l)
-  | Inv (_,l)
+  | Inv (_,Some l)
     -> Some l
-  | Barrier _|Commit _ | TooFar -> None
+  | Barrier _|Commit _ | TooFar| Inv (_,None) -> None
 
 (* relative to memory *)
   let is_mem_store a = match a with
@@ -340,7 +343,38 @@ end = struct
     ("T",is_tag)::("FAULT",is_fault)::("TLBI",is_inv)::
     bsets @ asets @ lsets
 
-  let arch_fences = []
+  let arch_rels =
+    if kvm then
+      let open Constant in
+      let ok_sym a1 a2 = match a1,a2 with
+      | ((Virtual ((s1,_),_)|Physical (s1,_)|System (PTE,s1)),System (TLB,s2))
+      | (System (TLB,s2),(Virtual ((s1,_),_)|Physical (s1,_)|System (PTE,s1)))
+          -> Misc.string_eq s1 s2
+      | _,_ -> false in
+
+      let ok_loc loc1 loc2 = match loc1,loc2 with
+      | A.Location_global (A.V.Val (Symbolic a1)),
+        A.Location_global (A.V.Val (Symbolic a2))
+          -> ok_sym a1 a2
+      | _,_ -> false in
+      let ok_act act1 act2 = match act1,act2 with
+      | (act,Inv (_,None))|(Inv (_, None),act)
+        ->
+          is_mem act &&
+          begin match location_of act with
+          | Some (A.Location_global _) ->  true
+          | Some _|None -> false
+          end
+      | (e,Inv (_,Some loc1))|(Inv (_, Some loc1),e)
+        ->
+          is_mem e &&
+          begin match location_of e with
+          | Some loc2 -> ok_loc loc1 loc2
+          | None -> false
+          end
+      | _ -> false in
+      ["loctlb",ok_act]
+    else []
 
   let is_isync act = match act with
   | Barrier b -> A.is_isync b
@@ -381,9 +415,9 @@ end = struct
     | Fault (ii,loc) ->
         let loc = A.simplify_vars_in_loc soln loc in
         Fault(ii,loc)
-    | Inv (op,loc) ->
-        let loc = A.simplify_vars_in_loc soln loc in
-        Inv (op,loc)
+    | Inv (op,oloc) ->
+        let oloc = Misc.app_opt (A.simplify_vars_in_loc soln) oloc in
+        Inv (op,oloc)
     | Barrier _ | Commit _|TooFar -> a
 
   let annot_in_list _str _ac = false

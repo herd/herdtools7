@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2010-present Institut National de Recherche en Informatique et *)
+(* Copyright 2010-present Institut National de Recherche en Inl_formatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -29,9 +29,7 @@ type symbol =
   | System of (syskind * string)                 (* System memory *)
 
 val pp_symbol : symbol -> string
-
 val as_address : symbol -> string
-
 val symbol_compare : symbol -> symbol -> int
 
 module SymbolSet : MySet.S with type elt = symbol
@@ -54,6 +52,8 @@ val default_tag : 'scalar t
 (* Check  non-concrete constant (and change type!) *)
 val check_sym : 'a t -> 'b t
 
+val is_virtual : 'a t -> bool
+
 module type S =  sig
 
   module Scalar : Scalar.S
@@ -67,4 +67,7 @@ module type S =  sig
   val pp_v  : v -> string
   val compare : v -> v -> int
   val eq : v -> v -> bool
+
+(* Arch dependent result *)
+  exception Result of Archs.t * v * string
 end

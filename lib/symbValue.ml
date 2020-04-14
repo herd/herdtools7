@@ -86,6 +86,7 @@ module Make(Cst:Constant.S) = struct
 (************************************)
 
 (* generic *)
+
   exception Undetermined
 
   let is_zero v = match v with
@@ -167,6 +168,19 @@ module Make(Cst:Constant.S) = struct
   and maskop op sz v = match v with
   | Val (Tag _) -> v (* tags are small enough for any mask be idempotent *)
   | _ ->  unop op (Scalar.mask sz) v
+
+  and shift_right_logical v1 v2 = match v1,v2 with
+  | Val (Symbolic (Virtual ((s,_),_))),Val (Concrete v) when
+      Scalar.compare v (Scalar.of_int 12) = 0 ->
+        let msg =
+          sprintf
+            "Illegal operation %s on constants %s and %s"
+            (Op.pp_op Op.Lsr) (pp_v v1) (pp_v v2) in
+        (* Beware: AArch64 only, otherwise a fatal error. *)
+        raise (Cst.Result (`AArch64,Symbolic (System (TLB,s)),msg))
+  | _,_ ->
+      binop Op.Lsr (fun x y -> Scalar.shift_right_logical x (Scalar.to_int y))
+        v1 v2
 
   let bool_to_v f v1 v2 = match f v1 v2 with
   | false -> zero
@@ -258,9 +272,10 @@ module Make(Cst:Constant.S) = struct
   let tlbloc = op_pte_tlb "tlbloc" op_tlbloc
 
   let is_virtual v = match v with
-  | Val (Symbolic (Virtual _)) -> one
-  | Val _ -> zero
+  | Val c -> Constant.is_virtual c
   | Var _ -> raise Undetermined
+
+  let is_virtual_v v =  if is_virtual v then one else zero
 
   let op1 op =
     let open! Scalar in
@@ -293,7 +308,7 @@ module Make(Cst:Constant.S) = struct
           (fun s -> logand (lognot (mask_many nb k)) s)
     | TLBLoc -> tlbloc
     | PTELoc -> pteloc
-    | IsVirtual -> is_virtual
+    | IsVirtual -> is_virtual_v
 
 
 
@@ -310,7 +325,7 @@ module Make(Cst:Constant.S) = struct
   | ShiftLeft ->
       binop op (fun x y -> Scalar.shift_left x (Scalar.to_int y))
   | Lsr ->
-      binop op (fun x y -> Scalar.shift_right_logical x (Scalar.to_int y))
+      shift_right_logical
   | Lt -> lt
   | Gt -> gt
   | Eq -> eq

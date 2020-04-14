@@ -62,10 +62,12 @@ module type S =
       (* The following operations may raise
          exception "Undetermined", if their arguments of
 	 type v are not determined enough to yield a result *)
+
       exception Undetermined
 
       val is_zero : v -> bool
       val is_one : v -> bool
+      val is_virtual : v -> bool
 
       val op1 : Op.op1 -> v -> v
       val op : Op.op -> v -> v -> v

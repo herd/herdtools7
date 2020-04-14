@@ -198,22 +198,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
 (* All (virtual) locations from init state *)
 
-    let is_virtual v =
-      let open Constant in
-      match v with
-      | V.Val (Constant.Symbolic sym) ->
-          begin match sym with
-          | Virtual _ -> true
-          | Physical _|System (TAG,_) ->
-              assert false (* Internal use only, real bug *)
-          | System ((PTE|TLB),_) ->
-              if kvm then false
-              else
-                Warn.user_error "symbol '%s' is present, while -variant kvm is not active"
-                  (Constant.pp_symbol sym)
-          end
-      | V.Val (Concrete _|Label (_, _)|Tag _)|V.Var _ ->
-          false
+    let is_virtual_protected v =
+      try V.is_virtual v with V.Undetermined -> assert false
 
     let get_all_locs_init init =
       let locs =
@@ -222,10 +208,10 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             let open Constant in
             let locs =
               match loc with
-              | A.Location_global v|A.Location_deref (v,_) when is_virtual v -> loc::locs
+              | A.Location_global v|A.Location_deref (v,_) when is_virtual_protected v -> loc::locs
               | A.Location_global _|A.Location_deref _|A.Location_reg _ -> locs in
             let locs =
-              if is_virtual v then  A.Location_global v::locs else locs in
+              if is_virtual_protected v then  A.Location_global v::locs else locs in
             locs)
           [] (A.state_to_list init) in
       A.LocSet.of_list locs
@@ -236,7 +222,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       let locs_final =
         A.LocSet.filter
           (function
-            | A.Location_global v |A.Location_deref (v,_) when is_virtual v -> true
+            | A.Location_global v |A.Location_deref (v,_) when is_virtual_protected v -> true
             | A.Location_global _|A.Location_deref _|A.Location_reg _ -> false)
           test.Test_herd.observed
       and locs_init = get_all_locs_init test.Test_herd.init_state in
@@ -250,7 +236,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                   (fun x ->
                     let loc = A.maybev_to_location x in
                     match loc with
-                    | A.Location_global v when is_virtual v -> A.LocSet.add loc
+                    | A.Location_global v when is_virtual_protected v -> A.LocSet.add loc
                     | _ -> fun locs -> locs)
                   locs ins)
               locs code)

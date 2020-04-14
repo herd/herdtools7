@@ -126,8 +126,9 @@ module Make
       let create_barrier b ii = M.mk_singleton_es (Act.Barrier b) ii
 
 (* Page tables and TLBs *)
-      let mk_inv op loc = Act.Inv(op,loc)
-      let inv_loc op loc ii = M.mk_singleton_es (mk_inv op loc) ii
+      let inv_loc op loc ii =
+        let oloc = if A.TLBI.inv_all op then None else Some loc in
+        M.mk_singleton_es (Act.Inv (op,oloc)) ii
 
 (******************)
 (* Memory Tagging *)
@@ -622,8 +623,7 @@ module Make
 (* Page tables and TLBs *)
         | I_TLBI (op, rd) ->
           read_reg_ord rd ii >>= fun a ->
-          M.op1 Op.TLBLoc a >>= fun tlb_a ->
-          do_inv op tlb_a ii >>! B.Next
+          do_inv op a ii >>! B.Next
 (*  Cannot handle *)
         | (I_RBIT _|I_MRS _|I_LDP _|I_STP _|I_IC _|I_DC _|I_BL _|I_BLR _|I_BR _|I_RET _) as i ->
             Warn.fatal "illegal instruction: %s"

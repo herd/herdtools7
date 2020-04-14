@@ -79,4 +79,6 @@ module Make(Scalar:Scalar.S) = struct
   | (Symbolic (System _),Symbolic (Virtual _|Physical _))
     -> false
 
+(* Arch dependant result *)
+  exception Result of Archs.t * v * string
 end
