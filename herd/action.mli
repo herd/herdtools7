@@ -26,12 +26,10 @@ module type S = sig
 
   val pp_action : action -> string
 
-(* Some architecture-specific sets, and their definitions
-   e.g. ["rmw", is_rmw; "ls", is_successful_lock]
- *)
+(* Some architecture-specific sets and relations, with their definitions *)
   val arch_sets : (string * (action -> bool)) list
-(* architecture specific fences *)
-  val arch_fences : (string * (action -> bool)) list
+  val arch_rels : (string * (action -> action -> bool)) list
+
 (* control fence *)
   val is_isync : action -> bool
   val pp_isync : string

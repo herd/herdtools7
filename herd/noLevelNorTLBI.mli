@@ -24,4 +24,5 @@ module TLBI : sig
   type op
   val pp_op : op -> string
   val is_at_level : level -> op -> bool
+  val inv_all : op -> bool
 end 
