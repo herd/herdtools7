@@ -304,7 +304,7 @@ An execution is SC when there exists a total (strict) order~\verb+S+ on events s
 \item \label{rfcond}and read events read from the most recent write events in the past,
 \emph{i.e.} a read~$r$ from location~$x$ reads the value stored by
 the \verb+S+-maximal write amongst those writes to location~$x$
-that are \verb+S+ precede~$r$.
+that \verb+S+-precede~$r$.
 \end{enumerate}
 So we could just generate all total strict orders amongst events,
 and filter those ``scheduling order candidates'' according to the two rules
