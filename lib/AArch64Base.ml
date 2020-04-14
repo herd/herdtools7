@@ -315,6 +315,19 @@ module TLBI = struct
 
   let is_at_level lvl op =  op.level = lvl
 
+  let inv_all op = match op.typ with
+    | ALL
+    | VMALL
+    | VMALLS12
+        -> true
+    | ASID
+    | VA
+    | VAL
+    | VAA
+    | VAAL
+    | IPAS2
+    | IPAS2L
+      -> false
 end
 
 (********************)
