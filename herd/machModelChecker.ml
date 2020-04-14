@@ -302,13 +302,14 @@ module Make
            "membar.sys",lazy E.EventRel.empty;
          ] in
 (* Override arch specific fences *)
+
       let m =
         I.add_rels m
           (List.map
              (fun (k,p) ->
-               let pred e = p e.E.action in
-               k,lazy (U.po_fence_po conc.S.po pred))
-             E.Act.arch_fences) in
+               let pred (e1,e2) = p e1.E.action e2.E.action in
+               k,lazy (E.EventRel.filter pred (Lazy.force unv)))
+             E.Act.arch_rels) in
 (* Event sets from proc info *)
       let m = match test.Test_herd.proc_info with
       | [] -> m
