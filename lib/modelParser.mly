@@ -18,11 +18,7 @@
 
 open AST
 
-let mk_loc (p1,p2) =
-  let loc =
-    TxtLoc.make p1 p2 in
-  Printf.eprintf "Parsed loc: %a\n" TxtLoc.pp loc ;
-  loc
+let mk_loc (p1,p2) = TxtLoc.make p1 p2
 
 let as_op op = function
   | Op (_,op0,es) when op0 = op -> es
