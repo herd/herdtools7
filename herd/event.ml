@@ -37,6 +37,8 @@ module type S = sig
       iiid : A.inst_instance_id option;
       action : action;  }
 
+val same_instruction : event -> event -> bool
+
 (* Only basic printing is here *)
   val pp_eiid       : event -> string
   val pp_action     : event -> string
@@ -52,8 +54,8 @@ module type S = sig
   val progorder_of  : event -> A.program_order_index option
 
 (* Is e1 before e2 w.r.t. prog order ? Nothing assumed on e1 and e2 *)
-  val po_strict : event -> event -> bool
-  val before_in_po : event -> event -> bool
+(*  val po_strict : event -> event -> bool
+  val before_in_po : event -> event -> bool *)
   val po_eq : event -> event -> bool
 
 (************************)
@@ -104,6 +106,8 @@ module type S = sig
   val is_commit_bcc : event -> bool
   val is_commit_pred : event -> bool
   val is_commit : event -> bool
+
+  val is_pod : event -> bool
 
 (* Too much unrolling *)
   val is_toofar : event -> bool
@@ -176,6 +180,8 @@ module type S = sig
   type event_structure = {
       procs : A.proc list ;
       events : EventSet.t ;                     (* really a set *)
+      speculated : EventSet.t ;                     (* really a set *)
+      po : EventSet.t * EventRel.t;
       intra_causality_data : EventRel.t ;       (* really a partial order relation *)
       intra_causality_control : EventRel.t ;    (* really a partial order relation *)
       (* If style control inside structure *)
@@ -200,6 +206,9 @@ module type S = sig
   val map_event_structure :
       (event -> event) -> event_structure -> event_structure
 
+  val do_speculate :
+      event_structure -> event_structure
+
   (*****************************************************************)
   (* Those projection return lists of event sets/relations by proc *)
   (*****************************************************************)
@@ -210,12 +219,11 @@ module type S = sig
   (* relation must operate on events of the same proc *)
   val proj_rel : event_structure -> event_rel -> event_rel list
   (* relation must be as before, or one of the related
-     events is be a mem_store *)
+     events be a mem_store *)
   val proj_proc_view : event_structure -> event_rel -> event_rel list
 
   (* e1 < e2 in UNION (strict_po,iico) ? *)
-  val strict_before_po_iico : event_structure -> event -> event -> bool
-
+(*  val strict_before_po_iico : event_structure -> event -> event -> bool *)
 
 (********************)
 (* Equation solving *)
@@ -245,6 +253,12 @@ module type S = sig
   val same_value : event -> event -> bool
   val is_visible_location : A.location -> bool
 
+(********************************)
+(* Instruction+code composition *)
+(********************************)
+
+  val inst_code_comp :
+     event_structure -> event_structure -> event_structure
 
 (************************)
 (* Parallel composition *)
@@ -366,6 +380,11 @@ struct
         iiid : A.inst_instance_id option ;
         action : action;  }
 
+    let same_instruction e1 e2 = 
+      match e1.iiid,e2.iiid with 
+      | None,_ -> false
+      | _,None -> false
+      | Some i1,Some i2 -> A.same_instruction i1 i2
 
     let pp_eiid e =
       if e.eiid < 26 then
@@ -434,14 +453,14 @@ struct
 (* Predicates on events *)
 (************************)
 
-    let before_in_po e1 e2 =
+(*    let before_in_po e1 e2 =
       proc_of e1 = proc_of e2 &&
       (progorder_of e1 < progorder_of e2 ||
        progorder_of e1 = progorder_of e2 )
 
     let po_strict e1 e2 =
       proc_of e1 = proc_of e2 && progorder_of e1 < progorder_of e2
-
+*)
     let po_eq e1 e2 =
       proc_of e1 = proc_of e2 && progorder_of e1 = progorder_of e2
 
@@ -495,6 +514,10 @@ struct
   let is_commit e =
     let act = e.action in
     Act.is_commit_bcc act ||  Act.is_commit_pred act
+
+  let is_pod e =
+    let act = e.action in
+    Act.is_pod act || is_commit e
 
 (*  Unrolling control *)
   let is_toofar e = Act.is_toofar e.action
@@ -568,6 +591,8 @@ struct
     type event_structure = {
         procs : A.proc list ; (* will prove convenient *)
         events : EventSet.t ;        (* really a set *)
+        speculated : EventSet.t ;        (* really a set *)
+        po : EventSet.t * EventRel.t;
         intra_causality_data : EventRel.t ;   (* really a (partial order) relation *)
         intra_causality_control : EventRel.t ;(* really a (partial order) relation *)
         control : EventRel.t ;
@@ -586,6 +611,10 @@ struct
       and map_set = EventSet.map f in
       { procs = es.procs ;
        events = map_set es.events ;
+       speculated = map_set es.speculated ;
+       po = begin 
+            let r,e = es.po in (map_set r, map_rel e) 
+            end;
        intra_causality_data = map_rel  es.intra_causality_data ;
        intra_causality_control = map_rel es.intra_causality_control ;
        control = map_rel es.control ;
@@ -597,8 +626,14 @@ struct
 
       }
 
+    let do_speculate es =
+      let s = es.events in
+      {es with speculated = s}
+
     let empty =
       { procs = [] ; events = EventSet.empty ;
+        speculated = EventSet.empty ;
+        po = (EventSet.empty,EventRel.empty);
         intra_causality_data = EventRel.empty ;
         intra_causality_control = EventRel.empty ;
         control = EventRel.empty ;
@@ -681,7 +716,7 @@ struct
       | None,None -> [] in
       ProjRel.proj proc_of (procs_of es) rel
 
-    let strict_before_po_iico es e1 e2 =
+(*    let strict_before_po_iico es e1 e2 =
       let strict_po_reln =
         EventRel.of_pred es.events es.events po_strict in
       let iico_reln =
@@ -689,7 +724,7 @@ struct
           es.intra_causality_data
           es.intra_causality_control in
       EventRel.mem_transitive (e1, e2) (EventRel.union strict_po_reln iico_reln)
-
+*)
     let undetermined_vars_in_event e =
       Act.undetermined_vars_in_action e.action
 
@@ -768,7 +803,6 @@ let check_disjoint do_it es1 es2 =
   assert (EventSet.disjoint es1.events es2.events) ;
   Some (do_it es1 es2)
 
-(* Parallel composition *)
     let union_output es1 es2 = match es1.output,es2.output with
     | Some o1, Some o2 -> Some (EventSet.union o1 o2)
     | None,None -> None
@@ -777,9 +811,37 @@ let check_disjoint do_it es1 es2 =
     | Some o1,None ->
         Some (EventSet.union o1 (maximals_data es2))
 
+(* Sequential composition *)
+
+let inst_code_comp (*poi*) es1 es2 =
+  { procs = [] ;
+    events = EventSet.union es1.events es2.events;
+    speculated = EventSet.union es1.speculated es2.speculated;
+    po = 
+      begin
+      let r1 = es1.events and r2,e2 = es2.po in 
+      (r1, EventRel.union (EventRel.cartesian r1 r2) e2) end ;
+    intra_causality_data = EventRel.union
+      es1.intra_causality_data es2.intra_causality_data ;
+    intra_causality_control = EventRel.union
+      es1.intra_causality_control  es2.intra_causality_control ;
+    control = EventRel.union es1.control es2.control;
+    data_ports = EventSet.union es1.data_ports es2.data_ports;
+    success_ports = EventSet.union es1.success_ports es2.success_ports;
+    output = union_output es1 es2;
+    sca = EventSetSet.union es1.sca es2.sca;
+    mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; }
+
+let po_union es1 es2 =
+      let r1,e1 = es1.po and r2,e2 = es2.po in
+      (EventSet.union r1 r2, EventRel.union e1 e2)
+
+(* Parallel composition *)
 let do_para_comp es1 es2 =
   { procs = [] ;
     events = EventSet.union es1.events es2.events;
+    speculated = EventSet.union es1.speculated es2.speculated;
+    po = po_union es1 es2 ;
     intra_causality_data = EventRel.union
       es1.intra_causality_data es2.intra_causality_data ;
     intra_causality_control = EventRel.union
@@ -798,6 +860,8 @@ let do_para_comp es1 es2 =
 (* Composition with intra_causality_data from first to second *)
   let data_comp mini_loc mkOut es1 es2 =
     { procs = [];  events = EventSet.union es1.events es2.events;
+      speculated = EventSet.union es1.speculated es2.speculated;
+      po = po_union es1 es2 ;
       intra_causality_data =
       EventRel.filter
         (fun (e1,e2) -> e1 != e2)
@@ -824,6 +888,8 @@ let do_para_comp es1 es2 =
   let control_comp mini_loc es1 es2 =
     { procs = [] ;
       events =  EventSet.union es1.events es2.events;
+      speculated = EventSet.union es1.speculated es2.speculated;
+      po = po_union es1 es2 ;
       intra_causality_data = EventRel.union
         es1.intra_causality_data es2.intra_causality_data ;
       intra_causality_control = EventRel.union
@@ -839,13 +905,23 @@ let do_para_comp es1 es2 =
 
   let (=**=) = check_disjoint (control_comp minimals)
 
+let po_union4 es1 es2 es3 es4 =
+      let r1,e1 = es1.po and r2,e2 = es2.po and r3,e3 = es3.po and r4,e4 = es4.po in
+      (EventSet.union4 r1 r2 r3 r4, EventRel.union4 e1 e2 e3 e4) 
+
   let bind_ctrl_avoid aset es1 es2 =
     Some (control_comp (minimals_avoid aset) es1 es2)
+
+let po_union3 es1 es2 es3 =
+      let r1,e1 = es1.po and r2,e2 = es2.po and r3,e3 = es3.po in
+      (EventSet.union3 r1 r2 r3, EventRel.union3 e1 e2 e3) 
 
 (* Specific composition for checkint tags *)
       let check_tags a rtag commit =
         { procs= [];
           events = EventSet.union3 a.events rtag.events commit.events;
+          speculated = EventSet.union3 a.speculated rtag.speculated commit.speculated;
+          po = po_union3 a rtag commit;          
           intra_causality_data =
           EventRel.union3
             (EventRel.union3
@@ -877,6 +953,8 @@ let do_para_comp es1 es2 =
   let exch_comp rs1 rs2 ws1 ws2 =
     { procs = [] ;
       events = EventSet.union4 rs1.events rs2.events ws1.events ws2.events;
+      speculated = EventSet.union4 rs1.speculated rs2.speculated ws1.speculated ws2.speculated;
+      po = po_union4 rs1 rs2 ws1 ws2;
       intra_causality_data =
       EventRel.unions
         [EventRel.unions
@@ -904,10 +982,17 @@ let do_para_comp es1 es2 =
         rs1.mem_accesses rs2.mem_accesses
         ws1.mem_accesses ws2.mem_accesses ; }
 
+let po_union5 es1 es2 es3 es4 es5 =
+      let r1,e1 = es1.po and r2,e2 = es2.po and r3,e3 = es3.po and r4,e4 = es4.po and r5,e5 = es5.po in
+      (EventSet.union5 r1 r2 r3 r4 r5, EventRel.union5 e1 e2 e3 e4 e5) 
+
   let swp_comp rloc rmem rreg wmem wreg =
     { procs = [] ;
       events = EventSet.union5
         rloc.events rmem.events rreg.events wmem.events wreg.events;
+      speculated =
+      EventSet.union5 rloc.speculated rmem.speculated rreg.speculated wmem.speculated wreg.speculated;
+      po = po_union5 rloc rmem rreg wmem wreg;
       intra_causality_data =
       EventRel.unions
         [EventRel.union5
@@ -968,6 +1053,9 @@ let do_para_comp es1 es2 =
     { procs = [];
       events =
       EventSet.union4 re.events rloc.events rmem.events wmem.events;
+      speculated =
+      EventSet.union4 re.speculated rloc.speculated rmem.speculated wmem.speculated;
+      po = po_union4 re rloc rmem wmem;
       intra_causality_data =
       EventRel.unions
         [EventRel.union4
@@ -1004,6 +1092,9 @@ let do_para_comp es1 es2 =
     { procs = [];
       events =
       EventSet.union4 re.events rloc.events rmem.events wmem.events;
+      speculated =
+        EventSet.union4 re.speculated rloc.speculated rmem.speculated wmem.speculated;
+      po = po_union4 re rloc rmem wmem;
       intra_causality_data =
       EventRel.unions
         [EventRel.union4
@@ -1045,6 +1136,10 @@ let do_para_comp es1 es2 =
       events =
       EventSet.union5 rloc.events rold.events rnew.events
         rmem.events wmem.events;
+      speculated =
+      EventSet.union5 rloc.speculated rold.speculated rnew.speculated
+        rmem.speculated wmem.speculated;
+      po = po_union5 rloc rold rnew rmem wmem; 
       intra_causality_data =
       EventRel.unions
         [EventRel.union5
@@ -1089,6 +1184,10 @@ let do_para_comp es1 es2 =
     { procs = [];
       events =
       EventSet.union3 rloc.events rold.events rmem.events;
+      speculated =
+      EventSet.union3 rloc.speculated rold.speculated rmem.speculated;
+      po =
+      po_union3 rloc rold rmem;
       intra_causality_data =
       EventRel.unions
         [EventRel.union3
@@ -1121,6 +1220,8 @@ let do_para_comp es1 es2 =
     and in_wmem = minimals wmem in
     { procs = [];
       events = EventSet.union5 loc.events a.events u.events rmem.events wmem.events;
+      speculated = EventSet.union5 loc.speculated a.speculated u.speculated rmem.speculated wmem.speculated;
+      po = po_union5 loc a u rmem wmem;
       intra_causality_data =
       EventRel.unions
         [EventRel.union5
@@ -1165,6 +1266,9 @@ let do_para_comp es1 es2 =
     { procs = [];
       events =
       EventSet.union3 loc.events u.events rmem.events;
+      speculated =
+      EventSet.union3 loc.speculated u.speculated rmem.speculated;
+      po = po_union3 loc u rmem;
       intra_causality_data =
       EventRel.unions
         [loc.intra_causality_data; u.intra_causality_data;
@@ -1188,6 +1292,9 @@ let do_para_comp es1 es2 =
       EventSet.union3 loc.mem_accesses u.mem_accesses rmem.mem_accesses;
     }
 
+let po_union6 es1 es2 es3 es4 es5 es6 =
+      let r1,e1 = es1.po and r2,e2 = es2.po and r3,e3 = es3.po and r4,e4 = es4.po and r5,e5 = es5.po and r6,e6 = es6.po in
+      (EventSet.union (EventSet.union5 r1 r2 r3 r4 r5) r6, EventRel.union (EventRel.union5 e1 e2 e3 e4 e5) e6) 
 
 (* RISCV Store conditional *)
   let riscv_sc success resa data addr wres wresult wmem =
@@ -1206,6 +1313,11 @@ let do_para_comp es1 es2 =
       EventSet.union
         (EventSet.union3 resa.events data.events addr.events)
         (EventSet.union3 wres.events wresult.events wmem.events);
+      speculated =
+      EventSet.union
+        (EventSet.union3 resa.speculated data.speculated addr.speculated)
+        (EventSet.union3 wres.speculated wresult.speculated wmem.speculated);
+      po = po_union6 resa data addr wres wresult wmem;
       intra_causality_data =
       EventRel.unions
         [EventRel.union3 resa.intra_causality_data
@@ -1264,6 +1376,11 @@ let do_para_comp es1 es2 =
       EventSet.union6
         rn.events rs.events rt.events
         wrs.events rm.events wm.events ;
+      speculated =
+      EventSet.union6
+        rn.speculated rs.speculated rt.speculated
+        wrs.speculated rm.speculated wm.speculated ;
+      po = po_union6 rn rs rt wrs rm wm;
       intra_causality_data =
       EventRel.union
         (EventRel.union6
@@ -1323,6 +1440,8 @@ let stu rD rEA wEA wM =
     EventRel.is_empty wM.intra_causality_control) ;
   { procs = [] ;
     events = EventSet.union4 rD.events rEA.events wEA.events wM.events;
+    speculated = EventSet.union4 rD.speculated rEA.speculated wEA.speculated wM.speculated;
+    po = po_union4 rD rEA wEA wM;
     intra_causality_data = begin
       let drD = rD.intra_causality_data
       and drEA = rEA.intra_causality_data

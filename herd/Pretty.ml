@@ -499,35 +499,43 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
   and only from maximal intra-causality to minimal intra-causality.
  *)
 
-  let rec min_max_to_succ = function
+(*  let rec min_max_to_succ = function
     | []|[_] -> E.EventRel.empty
     | (_xmin,xmax)::((ymin,_ymax)::_ as rem) ->
         E.EventRel.union
           (E.EventRel.cartesian xmax ymin)
-          (min_max_to_succ rem)
+          (min_max_to_succ rem) *)
 
   let make_visible_po es by_proc_and_poi =
-    let intra =
+   let iico =
       E.EventRel.transitive_closure
-        (E.EventRel.union
+         (E.EventRel.union
            es.E.intra_causality_data
            es.E.intra_causality_control) in
-    let min_max_list =
-      List.map
-        (List.map
-           (fun es ->
-             let mins =
+    let _,po0 = es.E.po in
+    let po = E.EventRel.diff po0 iico in
+    let po = E.EventRel.remove_transitive_edges po in
+      let mins,maxs =
+      List.fold_left
+        (fun p ess ->
+           List.fold_left
+           (fun (min,max) es ->
+             let min2 =
                E.EventSet.filter
-                 (fun e -> not (E.EventRel.exists_pred intra e))
+                 (fun e -> not (E.EventRel.exists_pred (*po_*)iico e))
                  es
-             and maxs =
+             and max2 =
                E.EventSet.filter
-                 (fun e -> not (E.EventRel.exists_succ intra e))
+                 (fun e -> not (E.EventRel.exists_succ (*po_*)iico e))
                  es in
-             mins,maxs))
-        by_proc_and_poi in
-    E.EventRel.unions
-      (List.map  min_max_to_succ min_max_list)
+             E.EventSet.union min min2,E.EventSet.union max max2) p ess
+          )
+        (E.EventSet.empty, E.EventSet.empty) by_proc_and_poi in
+     let r =
+     E.EventRel.filter (fun (e1,e2) -> E.EventSet.mem e1 maxs && E.EventSet.mem e2 mins) po
+     in
+     eprintf "make_visible_po {%a} => \n {%a} \n%!" E.debug_rel po0 E.debug_rel r;
+     r
 
   let dm = PC.dotmode
   let m = match dm with | Plain -> Ascii| Fig -> DotFig
@@ -1047,9 +1055,10 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
       if not PC.squished then begin
         begin match lbl with
         | None ->
-            fprintf chan "%s [label=\"%s%s%s\\l%a%a\""
+            fprintf chan "%s [label=\"%s%s%s%s\\l%a%a\""
               (pp_node_eiid e) (pp_node_eiid_label e)
               (escape_label dm act)
+              (if E.EventSet.mem e es.E.speculated then " (ghost)" else "")
               (if E.EventSet.mem e es.E.data_ports then " (data)" else "")
               pp_node_ii e.E.iiid
               (pp_instruction dm m) e.E.iiid
@@ -1414,6 +1423,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
       end ;
       List.iter
         (fun (label,vbs) ->
+          eprintf "label=%s\n%!" label;
           E.EventRel.pp chan ""
             (fun chan (e,e') ->
               do_pp_edge chan (pp_node_eiid e) (pp_node_eiid e') label
@@ -1456,6 +1466,12 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
     { es with
       E.events = select_events
         es.E.events ;
+      speculated = select_events 
+        es.E.speculated;
+      po = begin
+           let s,po = es.E.po in
+           s,select_rel po  
+           end;
       intra_causality_data = select_rel
         es.E.intra_causality_data;
       intra_causality_control = select_rel

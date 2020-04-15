@@ -21,7 +21,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     let pp_barrier_short = pp_barrier
     let reject_mixed = true
 
-    type annot = A | XA | L | XL | X | N | Q | NoRet | T
+    type annot = A | XA | L | XL | X | N | Q | NoRet | T | S
     type lannot = annot
 
     let empty_annot = N
@@ -30,6 +30,10 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     let wrap_is is_fun a = is_fun a
 
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
+
+    let is_speculated = function 
+      | S -> true
+      | _ -> false
 
     let _is_atomic = function
       | XA | XL | X | NoRet -> true
@@ -70,7 +74,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       "Q",  wrap_is is_acquire_pc;
       "L",  wrap_is is_release;
       "NoRet", wrap_is is_noreturn;
-      "T", wrap_is is_tag
+      "T", wrap_is is_tag;
+      "S", is_speculated;
     ]
 
     let is_isync = is_barrier ISB
@@ -86,6 +91,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | N -> ""
       | NoRet -> "NoRet"
       | T -> "Tag"
+      | S -> "^s"
 
     module V = V
 

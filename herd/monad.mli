@@ -35,8 +35,11 @@ module type S =
 
     type 'a t
 
+    type 'a code
     val zeroT        : 'a t
+    val zerocodeT        : 'a code
     val unitT        : 'a -> 'a t
+    val unitcodeT        : 'a -> 'a code
     val delay : 'a t -> ('a * 'a t) t
     val (>>=) : 'a t -> ('a -> 'b t) -> ('b) t
     val (>>==) : 'a t -> ('a -> 'b t) -> ('b) t (* Output event stay in first arg *)
@@ -78,26 +81,28 @@ module type S =
           ('v -> unit t) -> ('loc -> 'v t) -> ('loc -> 'v -> unit t) ->
             ('v -> 'v -> unit t) -> unit t
     val stu : 'a t -> 'a t -> ('a -> unit t) -> (('a * 'a) -> unit t) -> unit t
-    val (>>>) : 'a t -> ('a -> 'b t) -> 'b t
+    val cseq : 'a t -> ('a -> 'b t) -> 'b t
+    type poi = int
+    val (>>>) : (poi -> (poi * 'a) t) -> ('a -> 'b code) -> 'b code
     val (>>>>) : 'a t -> ('a -> 'b t) -> 'b t
 
 (* Parallel composition *)
     val (>>|) : 'a t -> 'b t -> ('a * 'b)  t
-    val (>>||) : 'a t -> 'b t -> ('a * 'b)  t (* Do not check disjointness *)
 
     val (>>::) : 'a t -> 'a list t -> 'a list t
-    val (|*|)   : unit t -> unit t -> unit t   (* Cross product *)
+    val (|*|)   : unit code -> unit code -> unit code   (* Cross product *)
 (*    val lockT : 'a t -> 'a t *)
     val forceT : 'a -> 'b t -> 'a t
     val (>>!) : 'a t -> 'b -> 'b t
 
     val discardT : 'a t -> unit t
     val addT : 'a -> 'b t -> ('a * 'b) t
-    val filterT : A.V.v -> A.V.v t -> A.V.v t
-    val choiceT : A.V.v -> 'a t -> 'a t -> 'a t
+    val choiceT : A.V.v -> 'a t -> 'a t -> 'a t 
+    val speculT : A.V.v -> 'a code -> 'a code -> 'a code
     val altT : 'a t -> 'a t -> 'a t
 
     val tooFar : string -> unit t
+    val tooFarcode : string -> 'a code
 
         (* read_loc is_data mk_action loc ii:DGG
            for each value v that could be read,
@@ -119,7 +124,7 @@ module type S =
       (MachSize.sz -> A.location -> A.V.v -> E.action) ->
         A.V.v -> A.V.v ->  A.inst_instance_id -> unit t
 
-      val initwrites : (A.location * A.V.v) list -> A.size_env -> unit t
+      val initwrites : (A.location * A.V.v) list -> A.size_env -> unit code
 
     end
 
@@ -153,5 +158,5 @@ module type S =
     type evt_struct
     type output = VC.cnstrnts * evt_struct
 
-    val get_output  : 'a t -> output list
+    val get_output  : 'a code -> output list
   end

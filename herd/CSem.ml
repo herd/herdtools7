@@ -47,7 +47,7 @@ module Make (Conf:Config)(V:Value.S)
       let (>>|) = M.(>>|)
       let (>>::) = M.(>>::)
       let (>>!) = M.(>>!)
-      let (>>>) = M.(>>>)
+      let (>>>) = M.cseq
       let (>>>>) = M.(>>>>)
 
       module MOorAN = MemOrderOrAnnot

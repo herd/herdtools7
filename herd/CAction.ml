@@ -250,6 +250,7 @@ end = struct
 (* (No) commits *)
   let is_commit_bcc _ = false
   let is_commit_pred _ = false
+  let is_pod _ = false
 
 (* Unrolling control *)
   let toofar = TooFar

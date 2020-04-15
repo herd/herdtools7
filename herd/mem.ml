@@ -103,7 +103,7 @@ module type S = sig
         ('a -> 'a) -> 'a -> 'a
 
   val compute_final_state :
-      S.test -> S.read_from S.RFMap.t -> S.event_set -> S.A.final_state
+    S.test -> S.read_from S.RFMap.t -> S.E.EventSet.t -> S.A.state * S.A.FaultSet.t
 
   val check_filter : S.test -> S.A.final_state -> bool
 
@@ -269,6 +269,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         x+1,seen in
 
       let fetch_code seen addr_jmp lbl =
+      let r =
         let tgt =
           try A.LabelMap.find lbl p
           with Not_found ->
@@ -282,38 +283,40 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           end else
             Some (tgt,seen)
         else
-          Some (tgt,seen) in
+          Some (tgt,seen) 
+        in if false then eprintf "fetch: %s %s\n" lbl (match r with None -> "None" | Some _ -> "Some"); r in 
 
-      let rec add_next_instr proc prog_order seen addr inst nexts =
-        let ii =
-          { A.program_order_index = prog_order;
-            proc = proc; inst = inst; unroll_count = 0;
-            labels = labels_of_instr addr; }
-        in
-        SM.build_semantics ii >>> fun (prog_order, branch) ->
-          next_instr proc prog_order seen addr nexts branch
+       let rec add_next_instr proc seen addr inst nexts =
+         let wrap poi = 
+           (let ii =
+             { A.program_order_index = poi;
+               proc = proc; inst = inst; unroll_count = 0;
+               labels = labels_of_instr addr; }
+             in SM.build_semantics ii) in
+            wrap >>> fun branch ->
+           next_instr proc seen addr nexts branch
+ 
+       and add_code proc seen nexts = match nexts with
+       | [] -> EM.unitcodeT ()
+       | (addr,inst)::nexts ->
+           add_next_instr proc seen addr inst nexts
 
-      and add_code proc prog_order seen nexts = match nexts with
-      | [] -> EM.unitT ()
-      | (addr,inst)::nexts ->
-          add_next_instr proc prog_order seen addr inst nexts
-
-      and add_lbl proc prog_order seen addr_jmp lbl =
+      and add_lbl proc seen addr_jmp lbl =
         match fetch_code seen addr_jmp lbl with
-        | None -> tooFar := true ; EM.tooFar lbl
-        | Some (code,seen) -> add_code proc prog_order seen code
+        | None -> tooFar := true ; EM.tooFarcode lbl
+        | Some (code,seen) -> add_code proc seen code
 
-      and next_instr proc prog_order seen addr nexts b = match b with
-      | S.B.Exit ->  tooFar := true ; EM.unitT ()
-      | S.B.Next -> add_code proc prog_order seen nexts
+      and next_instr proc seen addr nexts b = match b with
+      | S.B.Exit -> tooFar := true ; EM.tooFarcode "" 
+      | S.B.Next -> add_code proc seen nexts
       | S.B.Jump lbl ->
-          add_lbl proc prog_order seen addr lbl
+          add_lbl proc seen addr lbl
       | S.B.CondJump (v,lbl) ->
-          EM.choiceT v
-            (add_lbl proc prog_order seen addr lbl)
-            (add_code proc prog_order seen nexts) in
+          EM.speculT v
+            (add_lbl proc seen addr lbl)
+            (add_code proc seen nexts) in
       let jump_start proc code =
-        add_code proc  A.zero_po_index Imap.empty code in
+        add_code proc Imap.empty code in
 
       let add_events_for_a_processor (proc,code) evts =
         let evts_proc = jump_start proc code in
@@ -323,7 +326,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       if C.initwrites then
         let module MI = EM.Mixed(C) in
         MI.initwrites env size_env
-      else EM.zeroT in
+      else EM.zerocodeT in
 
       let set_of_all_instr_events =
         List.fold_right
@@ -331,12 +334,17 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           starts
           (add_inits (get_all_mem_locs test) test.Test_herd.size_env) in
 
+      let transitive_po es = 
+        let r,e = es.E.po in
+        (r,E.EventRel.transitive_closure e) in
+
       let rec index xs i = match xs with
       | [] ->
           W.warn "%i abstract event structures\n%!" i ;
           []
       | (vcl,es)::xs ->
           let es = { (relabel es) with E.procs = procs } in
+          let es = {es with E.po = transitive_po es ;} in
           (i,vcl,es)::index xs (i+1) in
       let r = EM.get_output set_of_all_instr_events  in
       { event_structures=index r 0; loop_present = !tooFar; }
@@ -369,7 +377,9 @@ and get_written e = match E.written_of e with
 
 let add_finals es =
     U.LocEnv.fold
-      (fun loc stores k -> match stores with
+      (fun loc stores k -> 
+      let stores = List.filter (fun x -> not (E.EventSet.mem x (es.E.speculated))) stores in
+      match stores with
       | [] -> k
       | ew::stores ->
           let last =
@@ -377,7 +387,7 @@ let add_finals es =
               (fun ew0 _k ->
                 if U.is_before_strict es ew0 ew then ew
                 else begin
-                  assert (U.is_before_strict es ew0 ew) ;
+                  assert (U.is_before_strict es ew ew0) ;
                   ew0
                 end)
               stores ew in
@@ -560,25 +570,43 @@ let solve_regs test es csn =
         (fun load k -> (load,init)::k)
         loads []
 
+(*condition:
+  soit le load est specule, auquel cas il peut lire de partout;
+  soit le load n'est pas specule, auquel cas il ne peut pas lire de stores specules*)
+let check_speculation es store load = 
+  let spec = es.E.speculated in
+  E.EventSet.mem load spec ||
+  not (E.EventSet.mem store spec) 
+
+let is_spec es e = E.EventSet.mem e es.E.speculated
+
 (* Consider all stores that may feed a load
    - Compatible location.
    - Not after in program order (suppressed when uniproc
    is not optmised early) *)
     let map_load_possible_stores es loads stores compat_locs =
-      E.EventSet.fold
-        (fun store map_load ->
-          List.map
-            (fun ((load,stores) as c) ->
-              if
-                compat_locs store load &&
-                (if C.optace then
-                  not (U.is_before_strict es load store)
-                else true)
-              then
-                load,S.Store store::stores
-              else c)
-            map_load)
-        stores (map_load_init loads)
+      let r =
+        E.EventSet.fold
+          (fun store map_load ->
+            List.map
+              (fun ((load,stores) as c) ->
+                if
+                  compat_locs store load &&
+                  check_speculation es store load && 
+                  (if C.optace then
+                    not (U.is_before_strict es load store)
+                  else true)
+                then
+                  load,S.Store store::stores
+                else c)
+              map_load)
+          stores (map_load_init loads) in
+      List.fold_right
+        (fun (er,ws as p) k ->
+          if (is_spec es er) && C.initwrites then
+            (er,(S.Init::ws))::k  
+          else p::k)
+        r []
 
 (* Add memory events to rfmap *)
     let add_mem loads stores rfm =
@@ -602,7 +630,11 @@ let solve_regs test es csn =
             (* Add constraints now *)
             let cns =
               List.fold_right2
-                (fun load rf -> add_eqs test rf load)
+                (fun load rf k ->
+                   (*speculated reads from unknown addresses*) 
+                   if rf = S.Init && C.initwrites then 
+                     k 
+                   else add_eqs test rf load k)
                 loads stores cns in
             (* And solve *)
             match VC.solve cns with
@@ -1017,8 +1049,8 @@ let solve_regs test es csn =
  *)
 (* Store to final state comes last *)
     let last_store test es rfm =
-      let loc_stores = U.collect_stores es
-      and loc_loads = U.collect_loads es in
+      let loc_stores = U.collect_stores_non_spec es
+      and loc_loads = U.collect_loads_non_spec es in
       U.LocEnv.fold
         (fun loc ws k ->
           match get_max_store test es rfm loc with
@@ -1043,7 +1075,7 @@ let solve_regs test es csn =
         loc_stores E.EventRel.empty
 
     let all_finals_non_mixed test es =
-      let loc_stores = U.collect_mem_stores es in
+      let loc_stores = U.remove_spec_from_map es (U.collect_mem_stores es) in
       let loc_stores =
         if C.observed_finals_only then
           let observed_locs =
@@ -1059,9 +1091,11 @@ let solve_regs test es csn =
                 | _ -> A.LocSet.singleton loc)
                 locs
             else locs in
-(*          eprintf "Observed locs: {%s}\n"
-            (A.LocSet.pp_str "," A.pp_location   observed_locs) ; *)
-          U.LocEnv.fold
+          if false then begin
+            eprintf "Observed locs: {%s}\n"
+              (A.LocSet.pp_str "," A.pp_location   observed_locs) 
+          end ; 
+         U.LocEnv.fold
             (fun loc ws k ->
               if A.LocSet.mem loc observed_locs then
                 U.LocEnv.add loc ws k
@@ -1081,6 +1115,13 @@ let solve_regs test es csn =
             loc_stores []
         else
           U.LocEnv.fold (fun _loc ws k -> ws::k) loc_stores [] in
+      if C.debug.Debug_herd.solver && Misc.consp possible_finals then begin
+        eprintf "+++++++++ possible finals ++++++++++++++\n" ;
+        List.iter
+          (fun ws ->  eprintf "[%a]\n" debug_events ws)
+          possible_finals ;
+        flush stderr
+      end ;
       List.map (fun ws -> List.map (fun w -> [w]) ws) (possible_finals)
 
 
@@ -1114,7 +1155,7 @@ let solve_regs test es csn =
         E.EventSetSet.fold
           (fun sca k ->
             let e = E.EventSet.choose sca in
-            if E.is_store e then match E.location_of e with
+            if E.is_store e && not (E.EventSet.mem e es.E.speculated) then match E.location_of e with
             | Some a ->
                 let a = get_base a in
                 if A.LocSet.mem a locs then
@@ -1181,13 +1222,17 @@ let solve_regs test es csn =
             with Not_found -> S.RFMap.add (S.Final loc) S.Init k)
           loc_loads rfm in
       try
-        let pco0 =
+       let pco0 =
           if C.initwrites then U.compute_pco_init es
           else E.EventRel.empty in
-        let pco =
+         (*jade: looks ok even in specul case: writes from init are before all
+            other writes, including speculated writes*)
+         let pco =
           if not C.optace then
             pco0
           else
+          (*jade: looks compatible with speculation, but there might be some
+             unforeseen subtlety here so flagging it to be sure*)
             match U.compute_pco rfm ppoloc with
             | None -> raise Exit
             | Some pco -> E.EventRel.union pco0 pco in
@@ -1196,13 +1241,13 @@ let solve_regs test es csn =
         Misc.fold_cross
           possible_finals
           (fun ws res ->
-(*
-  eprintf "Finals:" ;
-  List.iter
-  (fun e -> eprintf " %a"  E.debug_event e) ws ;
-  eprintf "\n";
- *)
-            let rfm =
+            if false then begin
+              eprintf "Finals:" ;
+              List.iter
+                (fun es -> List.iter (fun e -> eprintf " %a"  E.debug_event e) es ; eprintf "\n") ws ;
+              eprintf "END\n"
+            end ;
+           let rfm =
               fold_left_left
                 (fun k w ->
                   S.RFMap.add (S.Final (get_loc w)) (S.Store w) k)
@@ -1211,7 +1256,7 @@ let solve_regs test es csn =
             if check_filter test fsc && worth_going test fsc then begin
               if C.debug.Debug_herd.solver then begin
                 let module PP = Pretty.Make(S) in
-                prerr_endline "Final rfmap" ;
+                let fsc,_ = fsc in eprintf "Final rfmap, final state=%s\n%!" (S.A.dump_state fsc);
                 PP.show_es_rfm test es rfm ;
               end ;
               let last_store_vbf = last_store test es rfm in
@@ -1234,7 +1279,28 @@ let solve_regs test es csn =
                    atomic_load_store = atomic_load_store ;
                  } in
                 kont conc res
-              else begin res end
+              else begin
+                if C.debug.Debug_herd.solver then begin
+                  let conc =
+                  {
+                   S.str = es ;
+                   rfmap = rfm ;
+                   fs = fsc ;
+                   po = po_iico ;
+                   pos = ppoloc ;
+                   pco = pco ;
+
+                   store_load_vbf = store_load_vbf ;
+                   init_load_vbf = init_load_vbf ;
+                   last_store_vbf = last_store_vbf ;
+                   atomic_load_store = atomic_load_store ;
+                 } in
+                  let module PP = Pretty.Make(S) in
+                  eprintf "PCO is cyclic, discarding candidate\n%!" ;
+                  PP.show_legend test "PCO is cyclic" conc [("last_store_vbf",last_store_vbf); ("pco",pco);];
+                end ;      
+                res
+              end
             end else res)
           res
       with Exit -> res
@@ -1317,9 +1383,12 @@ let solve_regs test es csn =
           solve_mem test es rfm cs
             (fun es rfm cs res ->
               match cs with
-              | [] ->
+              | _::_ when not C.initwrites ->
+                (*jade: on tolere qu'il reste des equations dans le cas d'evts specules - mais il faudrait sans doute le preciser dans la clause when ci-dessus*)
+                when_unsolved test es rfm cs kont_loop res
+              | _ ->
                   if mixed then check_aligned test es ;
-                  (*if A.reject_mixed then check_sizes es ;*)
+                  if A.reject_mixed then check_sizes es ;
                   if C.debug.Debug_herd.solver && C.verbose > 0 then begin
                     let module PP = Pretty.Make(S) in
                     prerr_endline "Mem solved" ;
@@ -1331,8 +1400,7 @@ let solve_regs test es csn =
                     fold_mem_finals test es rfm kont res
                   else begin
                     res
-                  end
-              | _ -> when_unsolved test es rfm cs kont_loop res)
+                  end)
             res
 
   end

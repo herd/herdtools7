@@ -32,8 +32,7 @@ module Make(S : SemExtra.S) = struct
     (E.EventRel.union es.E.intra_causality_data  es.E.intra_causality_control)
 
   let po_strict es =
-    E.EventRel.of_pred
-      es.E.events es.E.events E.po_strict
+    let _,e = es.E.po in e 
 
   let po_iico_data es =
     E.EventRel.union
@@ -46,7 +45,7 @@ module Make(S : SemExtra.S) = struct
   let is_before_strict es e1 e2 =
     E.EventRel.mem (e1,e2) es.E.intra_causality_data  ||
     E.EventRel.mem (e1,e2) es.E.intra_causality_control ||
-    E.po_strict e1 e2
+    E.EventRel.mem (e1,e2) (po_strict es) 
 
 (* Fence *)
   let po_fence_po po pred =
@@ -296,7 +295,7 @@ let lift_proc_info i evts =
 
 
 (* po-separation *)
-  let sep is_sep is_applicable evts =
+  let sep es is_sep is_applicable evts =
     let is_applicable e1 e2 = is_applicable (e1,e2) in
     let rels =
       E.EventSet.fold
@@ -304,11 +303,11 @@ let lift_proc_info i evts =
           if is_sep e then
             let before =
               E.EventSet.filter
-                (fun ea -> E.po_strict ea e)
+                (fun ea -> E.EventRel.mem (ea,e) (po_strict es))
                 evts
             and after =
               E.EventSet.filter
-                (fun eb ->  E.po_strict e eb)
+                (fun eb ->  E.EventRel.mem (e,eb) (po_strict es))
                 evts in
             E.EventRel.of_pred before after is_applicable::k
           else k)
@@ -384,6 +383,7 @@ let lift_proc_info i evts =
         else k)
       es.E.events LocEnv.empty
 
+  let not_speculated es e = not (E.EventSet.mem e es.E.speculated)
   let collect_reg_loads es = collect_by_loc es E.is_reg_load_any
   and collect_reg_stores es = collect_by_loc es E.is_reg_store_any
   and collect_mem_loads es = collect_by_loc es E.is_mem_load
@@ -391,6 +391,8 @@ let lift_proc_info i evts =
   and collect_mem es = collect_by_loc es E.is_mem
   and collect_loads es = collect_by_loc es E.is_load
   and collect_stores es = collect_by_loc es E.is_store
+  and collect_loads_non_spec es = collect_by_loc es (fun e -> E.is_load e && not_speculated es e)
+  and collect_stores_non_spec es = collect_by_loc es (fun e -> E.is_store e && not_speculated es e)
   and collect_atomics es = collect_by_loc es E.is_atomic
 
   let partition_events es =
@@ -538,5 +540,19 @@ let lift_proc_info i evts =
       Some pco
     with Exit -> None
 
+(*to handle speculation in final state*)
+
+let remove_spec_from_map es m =
+  let spec = es.E.speculated in
+  LocEnv.fold
+    (fun loc es k ->
+        let es =
+          List.filter
+            (fun e -> not (E.EventSet.mem e spec))
+            es in
+        match es with
+        | [] ->  k
+        | _  -> LocEnv.add loc es k)
+     m LocEnv.empty
 
 end

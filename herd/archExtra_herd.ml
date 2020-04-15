@@ -63,6 +63,9 @@ module type S = sig
   val inst_instance_compare :
       inst_instance_id -> inst_instance_id -> int
 
+  val same_instruction :
+      inst_instance_id -> inst_instance_id -> bool
+
   val pp_global : global_loc -> string
   include Location.S
   with type loc_reg := I.arch_reg and type loc_global := v
@@ -231,6 +234,8 @@ module Make(C:Config) (I:I) : S with module I = I
       let inst_instance_compare i1 i2 = match Misc.int_compare i1.proc i2.proc with
       | 0 -> Misc.int_compare i1.program_order_index i2.program_order_index
       | r -> r
+
+      let same_instruction i1 i2 = i1.inst == i2.inst
 
       let pp_global = I.V.pp C.hexa
 

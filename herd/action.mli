@@ -89,6 +89,7 @@ module type S = sig
 (* Commits *)
   val is_commit_bcc : action -> bool
   val is_commit_pred : action -> bool
+  val is_pod : action -> bool
 
 (* Unrolling control *)
   val toofar : action

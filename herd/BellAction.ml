@@ -185,6 +185,8 @@ end = struct
 
   let is_commit_pred  _a = false (* No predicated instructions... *)
 
+  let is_pod a = is_commit_bcc a
+
 (* Unroll control *)
   let toofar = TooFar
   let is_toofar = function

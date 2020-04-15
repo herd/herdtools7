@@ -49,7 +49,6 @@ module Make
       let (>>==) = M.(>>==)
       let (>>*=) = M.(>>*=)
       let (>>|) = M.(>>|)
-      let (>>||) = M.(>>||)
       let (>>!) = M.(>>!)
       let (>>::) = M.(>>::)
 
@@ -225,7 +224,7 @@ module Make
             (mm  >>! B.Next)
             (let mfault = ma >>= fun a -> mk_fault a ii in
             if C.precision then  mfault >>! B.Exit
-            else (mfault >>|| mm) >>! B.Next)
+            else (mfault >>| mm) >>! B.Next)
         else
           mop ma >>! B.Next
 
@@ -498,6 +497,7 @@ module Make
             let sz = tr_variant var in
             if C.variant Variant.WeakPredicated then
               read_reg_ord NZP ii >>= tr_cond c >>= fun v ->
+                commit_bcc ii >>= fun () ->
                 M.choiceT v
                   (read_reg_data sz r2 ii >>= fun v -> write_reg r1 v ii)
                   (read_reg_data sz r3 ii >>=
@@ -507,6 +507,7 @@ module Make
               begin
                 (read_reg_ord NZP ii >>= tr_cond c) >>|  read_reg_data sz r2 ii >>| read_reg_data sz r3 ii
               end >>= fun ((v,v2),v3) ->
+                commit_bcc ii >>= fun () ->
                 M.choiceT v
                   (write_reg r1 v2 ii)
                   (csel_op op v3 >>= mask32 var (fun v ->  write_reg r1 v ii))

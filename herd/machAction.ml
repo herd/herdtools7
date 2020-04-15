@@ -41,7 +41,7 @@ module Make (C:Config) (A : A) : sig
     | Commit of bool (* true = bcc / false = pred *)
 (* Atomic modify, (location,value read, value written, annotation *)
     | Amo of A.location * A.V.v * A.V.v * A.lannot * MachSize.sz
-(* NB: Amo used in some arch only (ie RISCV) *)
+(* NB: Amo used in some arch only (e.g., Arm, RISCV) *)
     | Fault of A.inst_instance_id * A.location
 (* Unrolling control *)
     | TooFar
@@ -80,7 +80,7 @@ end = struct
         (A.pp_location l)
         (V.pp C.hexa v)
   | Barrier b -> A.pp_barrier_short b
-  | Commit bcc -> if bcc then "Commit" else "Pred"
+  | Commit bcc -> if bcc then "PoD" else "Pred"
   | Amo (loc,v1,v2,an,sz) ->
       Printf.sprintf "RMW(%s)%s%s(%s>%s)"
         (A.pp_annot an)
@@ -252,6 +252,10 @@ end = struct
 
   let is_commit_pred a = match a with
   | Commit b -> not b
+  | _ -> false
+
+  let is_pod a = match a with
+  | Commit _ -> true
   | _ -> false
 
 (* Unroll control *)

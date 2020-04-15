@@ -139,6 +139,7 @@ module Make
     let run_interpret test  kfail =
       let run =  I.interpret test kfail in
       fun ks m vb_pp kont res ->
+        (*Printf.eprintf "vb_pp = {%s}\n%!" (String.concat "," (List.map fst (Lazy.force vb_pp)));*)
         run ks m vb_pp
           (fun st res ->
             if
@@ -157,7 +158,7 @@ module Make
           lazy (MU.pp_procrels None (Lazy.force pr))
         else
           lazy [] in
-      let relevant e = not (E.is_reg_any e) in
+      let relevant = (*not (E.is_reg_any e)*) fun _ -> true in
       let all_evts =  conc.S.str.E.events in
       let evts = E.EventSet.filter relevant all_evts in
       let mem_evts = lazy (E.EventSet.filter E.is_mem evts) in
@@ -217,8 +218,14 @@ module Make
               "sm",si; "si",si;
               "iico_data", lazy conc.S.str.E.intra_causality_data;
               "iico_ctrl", lazy conc.S.str.E.intra_causality_control;
+              "rf-reg", lazy (U.make_rf_regs conc);
+              "same-instr", lazy begin E.EventRel.of_pred all_evts all_evts E.same_instruction end;
             ]) in
       let m =
+        let spec = conc.S.str.E.speculated in
+        let is_spec = (fun e -> E.EventSet.mem e spec) in 
+        let data_ports = conc.S.str.E.data_ports in
+        let is_data_port = (fun e -> E.EventSet.mem e data_ports) in
         I.add_sets m
           (("M",mem_evts)::
            List.fold_right
@@ -226,6 +233,8 @@ module Make
                (k,lazy (E.EventSet.filter p (Lazy.force mem_evts)))::ps)
              ["R", E.is_mem_load;
               "W", E.is_mem_store;
+              "SPEC", is_spec;
+              "EXEC", (fun e -> not (is_spec e));
               "AMO",E.is_amo;
               "I", E.is_mem_store_init;
               "IW", E.is_mem_store_init;
@@ -235,7 +244,10 @@ module Make
              (List.map
                 (fun (k,p) -> k,lazy (E.EventSet.filter p evts))
                 ["C", E.is_commit;
-                 "F", E.is_barrier; ])) in
+                 "PoD", E.is_pod;
+                 "F", E.is_barrier;
+                 "DATA", is_data_port;
+                 "NDATA", (fun e -> not (is_data_port e)); ])) in
       let m =
         I.add_sets m
           (List.map
