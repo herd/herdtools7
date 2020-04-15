@@ -24,7 +24,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
 (* Complete re-computation of dependencies *)
 (*******************************************)
   let evt_relevant x =
-    E.is_mem x || E.is_commit x || E.is_barrier x || E.is_additional_mem x
+    E.is_mem x || E.is_commit x || E.is_barrier x || E.is_additional_mem x || E.is_pod x
 
   let is_mem_load_total e = E.is_mem_load e || E.is_additional_mem_load e
   let is_load_total e = E.is_load e || E.is_additional_mem_load e
