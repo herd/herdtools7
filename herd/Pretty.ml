@@ -534,7 +534,8 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
      let r =
      E.EventRel.filter (fun (e1,e2) -> E.EventSet.mem e1 maxs && E.EventSet.mem e2 mins) po
      in
-     eprintf "make_visible_po {%a} => \n {%a} \n%!" E.debug_rel po0 E.debug_rel r;
+     if dbg then
+       eprintf "make_visible_po {%a} => \n {%a} \n%!" E.debug_rel po0 E.debug_rel r;
      r
 
   let dm = PC.dotmode
@@ -1423,7 +1424,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
       end ;
       List.iter
         (fun (label,vbs) ->
-          eprintf "label=%s\n%!" label;
+          if dbg then eprintf "label=%s\n%!" label;
           E.EventRel.pp chan ""
             (fun chan (e,e') ->
               do_pp_edge chan (pp_node_eiid e) (pp_node_eiid e') label
