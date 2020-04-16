@@ -10,6 +10,8 @@ cfgs = [
 ]
 
 illustrative_tests = [
+    "tests/2+2W+addr+dmb.litmus",
+    "tests/2+2W+xp+dmb.litmus",
     "tests/H10bX.litmus",
     "tests/H10X.litmus",
     "tests/H11bQ.litmus",
@@ -52,6 +54,8 @@ illustrative_tests = [
     "tests/PPOCA6c.litmus",
     "tests/PPOCA.litmus",
     "tests/STXR-ctrl1.litmus",
+    "tests/STXR-ctrl1a.litmus",
+    "tests/STXR-ctrl1b.litmus",
     "tests/STXR-ctrl2.litmus",
     "tests/STXR-ctrl3.litmus",
     "tests/STXR-ctrl.litmus",
