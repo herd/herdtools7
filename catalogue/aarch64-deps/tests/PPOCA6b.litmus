@@ -1,0 +1,34 @@
+AArch64 PPOCA6b
+{
+0:X1=x; 0:X3=y;
+1:X1=y; 1:X3=z; 1:X7=x;
+}
+P0           | P1                  ;
+MOV W0,#1    | LDR W0,[X1]         ;
+STR W0,[X1]  | MOV W2,#1           ;
+MOV W2,#1    | CBZ W0,over         ;
+STLR W2,[X3] | MOV W2,#2           ;
+             | over:               ;
+             | MOV W8,#7           ;
+             | STR W8,[X3]         ;
+             | LDR W4,[X3]         ;
+             | EOR W5,W4,W4        ;
+             | LDR W6,[X7,W5,SXTW] ;
+exists (1:X0=1 /\ 1:X4=7 /\ 1:X6=0)
+
+(* probably remove X4=7 from exists clause
+
+6.
+A	R0 = Load
+B	flags = Compare(R0, 0)
+C	R1 = 1
+D	conditional branch over
+E	R1 = 2
+over:
+F	Store(R7, [R8])		// completely independent
+
+there is an argument that the Store (F) can be made visible to other observers
+before the Load (A) has returned its data, because the Store is "independent"
+of the conditional branch, so the value returned by the Load (which determines
+the direction of the branch) doesn't affect the operation of the Store in any
+way.*) 
