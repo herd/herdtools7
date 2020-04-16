@@ -7,9 +7,13 @@ cats = [
 
 cfgs = [
     "cfgs/web-deps.cfg",
+    "cfgs/deps.cfg",
 ]
 
 illustrative_tests = [
+    "tests/mp-stxr-success.litmus",
+    "tests/mp-stxr-fail.litmus",
+    "tests/mp-stxr.litmus",
     "tests/2+2W+addr+dmb.litmus",
     "tests/2+2W+xp+dmb.litmus",
     "tests/H10bX.litmus",
@@ -45,9 +49,6 @@ illustrative_tests = [
     "tests/LB6b2.litmus",
     "tests/LB6b3.litmus",
     "tests/LB6b.litmus",
-    "tests/mp-stxr-fail.litmus",
-    "tests/mp-stxr.litmus",
-    "tests/mp-stxr-success.litmus",
     "tests/PPOCA4b.litmus",
     "tests/PPOCA5b.litmus",
     "tests/PPOCA6b.litmus",
