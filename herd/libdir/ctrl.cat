@@ -94,7 +94,7 @@ let rf-reg-restrict =
   [NW];rf-reg
 let dd = (rf-reg | intrinsic)+
 let dd-restrict = (rf-reg-restrict | intrinsic)+
-let to-PoD = [R]; dd; [PoD]
+let to-PoD = [R]; dd-restrict; [PoD]
 let pre-ctrl = to-PoD; po; [W]
 let Dmins = roots(DpoDorW)
 let Dm=Dmins*Dmins

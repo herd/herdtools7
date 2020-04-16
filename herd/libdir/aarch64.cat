@@ -102,8 +102,8 @@ let obs = rfe | fre | coe
 (* Dependency-ordered-before *)
 let dob = new-addr | new-data
 	| new-ctrl; [W]
-	| (to-PoD;po | (new-addr; po)); [ISB]; po; [R]
-        | to-PoD; po; [ISB]; po; [W]
+	| (new-addr; po); [ISB]; po; [R]
+        | to-PoD; po; [ISB]; po
 	| new-addr; po; [W]
 	| (new-addr | new-data); lrs
 
