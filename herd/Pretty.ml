@@ -1053,13 +1053,14 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
             act ^ " (success)"
           else act
         end else act in
+      let is_ghost = E.EventSet.mem e es.E.speculated in
       if not PC.squished then begin
         begin match lbl with
         | None ->
             fprintf chan "%s [label=\"%s%s%s%s\\l%a%a\""
               (pp_node_eiid e) (pp_node_eiid_label e)
               (escape_label dm act)
-              (if E.EventSet.mem e es.E.speculated then " (ghost)" else "")
+              (if is_ghost then " (ghost)" else "")
               (if E.EventSet.mem e es.E.data_ports then " (data)" else "")
               pp_node_ii e.E.iiid
               (pp_instruction dm m) e.E.iiid
@@ -1072,7 +1073,10 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
         pp_attr chan "color" color ;
         fprintf chan "];\n"
       end else begin
-        let act =
+      let act =
+        if is_ghost then act^" (ghost)"
+        else act in
+      let act =
           match lbl with
           | None ->
               let eiid_lab =
@@ -1080,8 +1084,10 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
                   sprintf "i%s:" (pp_loc e)
                 else
                   pp_node_eiid_label e in
-              fprintf chan "%s [label=\"%s%s\""
-                (pp_node_eiid e) (eiid_lab)
+              fprintf chan "%s [%slabel=\"%s%s\""
+                (pp_node_eiid e)
+                (if is_ghost then "fontcolor=\"grey64\", " else "")
+                (eiid_lab)
                 (escape_label dm act) ;
               act
           | Some es ->
