@@ -12,6 +12,7 @@ cfgs = [
 
 illustrative_tests = [
     "tests/mp-stxr-success.litmus",
+    "tests/S-stxr-success.litmus",
     "tests/mp-stxr-fail.litmus",
     "tests/mp-stxr.litmus",
     "tests/2+2W+addr+dmb.litmus",
