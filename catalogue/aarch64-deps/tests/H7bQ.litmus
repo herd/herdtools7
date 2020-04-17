@@ -15,5 +15,3 @@ STLR W2,[X3] | B.EQ over           ;
              | MOV W8,#7           ;
              | STR W8,[X3]         ;
 exists (0:X0=7 /\ 1:X0=1)
-
-(*Q*) 

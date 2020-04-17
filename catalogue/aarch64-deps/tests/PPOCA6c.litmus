@@ -15,18 +15,3 @@ STLR W2,[X3] | MOV W2,#2           ;
              | EOR W5,W4,W4        ;
              | LDR W6,[X7,W5,SXTW] ;
 exists (1:X0=1 /\ 1:X4=7 /\ 1:X6=0)
-
-(*6.
-A	R0 = Load
-B	flags = Compare(R0, 0)
-C	R1 = 1
-D	conditional branch over
-E	R1 = 2
-over:
-F	Store(R7, [R8])		// completely independent
-
-there is an argument that the Store (F) can be made visible to other observers
-before the Load (A) has returned its data, because the Store is "independent"
-of the conditional branch, so the value returned by the Load (which determines
-the direction of the branch) doesn't affect the operation of the Store in any
-way.*) 

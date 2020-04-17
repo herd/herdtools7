@@ -14,5 +14,3 @@ STLR W2,[X3] | MOV W6,#2           ;
              | MOV W8,#7           ;
              | STR W8,[X3]         ;
 exists (0:X0=7 /\ 1:X0=1)
-
-(*V*) 

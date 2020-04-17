@@ -11,12 +11,5 @@ LDR W0,[X1]  | LDR W0,[X1]         ;
 MOV W2,#1    | CSEL W2,W5,W6,EQ    ;
 STLR W2,[X3] | MOV W8,#7           ;
              | STR W8,[X3]         ;
-             (*| MOV W2,W5         ;*)
-             (*| B.EQ over         ;*)
-             (*| MOV W2,W6         ;*)
-             (*| over:             ;*)
-             (*|MOV W8,#7          ;*)
-             (*| STR W8,[X3]       ;*)
 exists (0:X0=7 /\ 1:X0=1)
 
-(*X*) 
