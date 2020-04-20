@@ -1297,10 +1297,13 @@ let po_union6 es1 es2 es3 es4 es5 es6 =
       (EventSet.union (EventSet.union5 r1 r2 r3 r4 r5) r6, EventRel.union (EventRel.union5 e1 e2 e3 e4 e5) e6) 
 
 (* RISCV Store conditional *)
+let get_switch v =
+  let d = Variant.get_default A.arch v in
+  if C.variant v then not d else d
+
   let riscv_sc success resa data addr wres wresult wmem =
-    let dep_on_write =
-      let d = Variant.get_default A.arch Variant.SwitchDepScWrite in
-      if C.variant Variant.SwitchDepScWrite then not d else d in
+    let dep_on_write = get_switch Variant.SwitchDepScWrite
+    and dep_sc_result = get_switch Variant.SwitchDepScResult in
     let in_wmem = minimals wmem
     and out_wmem = maximals wmem
     and in_wres = minimals wres
@@ -1327,7 +1330,7 @@ let po_union6 es1 es2 es3 es4 es5 es6 =
          EventRel.cartesian
            (EventSet.union out_addr out_resa)
            (EventSet.union3 in_wmem in_wres
-              (if C.variant Variant.FullScDepend || success
+              (if (C.variant Variant.FullScDepend || success) && dep_sc_result
               then in_wresult else EventSet.empty));
          EventRel.cartesian out_data
            (if C.variant Variant.Success || not (C.variant Variant.FullScDepend) then in_wmem else

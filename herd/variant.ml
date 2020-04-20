@@ -26,6 +26,7 @@ type t =
   | FullScDepend    (* Complete dependencies for Store Conditinal *)
   | SplittedRMW     (* Splitted RMW events for riscv *)
   | SwitchDepScWrite  (* Switch dependency on sc mem write, riscv, aarch64 *)
+  | SwitchDepScResult  (* Switch dependency from address read to sc result register,  aarch64 *)
   | LrScDiffOk      (* Lr/Sc paired to <> addresses may succeed (!) *)
   | Mixed
   | WeakPredicated (* "Weak" predicated instructions, not performing non-selected events, aarch64 *)
@@ -37,7 +38,7 @@ type t =
 
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
-   "fullscdepend";"splittedrmw";"switchdepscwrite";"lrscdiffok";
+   "fullscdepend";"splittedrmw";"switchdepscwrite";"switchdepscresult";"lrscdiffok";
    "mixed";"weakpredicated"; "memtag";
    "tagcheckprecise"; "tagcheckunprecise"; "toofar"; ]
 
@@ -51,6 +52,7 @@ let parse s = match Misc.lowercase s with
 | "fullscdepend"|"scdepend" -> Some FullScDepend
 | "splittedrmw" -> Some SplittedRMW
 | "switchdepscwrite" -> Some  SwitchDepScWrite
+| "switchdepscresult" -> Some  SwitchDepScResult
 | "lrscdiffok" -> Some  LrScDiffOk
 | "mixed" -> Some Mixed
 | "weakpredicated"|"weakpred" -> Some WeakPredicated
@@ -70,6 +72,7 @@ let pp = function
   | FullScDepend -> "FullScDepend"
   | SplittedRMW -> "SplittedRWM"
   | SwitchDepScWrite -> "SwitchDepScWrite"
+  | SwitchDepScResult -> "SwitchDepScResult"
   | LrScDiffOk -> " LrScDiffOk"
   | Mixed -> "mixed"
   | WeakPredicated -> "WeakPredicated"
@@ -86,4 +89,5 @@ let get_default a = function
       | `RISCV(*|`AArch64*) -> true
       | _ -> false
       end
+  | SwitchDepScResult -> true
   | v -> Warn.fatal "No default for variant %s" (pp v)

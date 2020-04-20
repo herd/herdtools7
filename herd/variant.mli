@@ -24,7 +24,8 @@ type t =
   | BackCompat (* Linux, Backward compatibility -> LISA *)
   | FullScDepend    (* Complete dependencies for Store Conditinal *)
   | SplittedRMW  (* Splitted RMW events for riscv *)
-  | SwitchDepScWrite    (* Switch dependency on sc mem write, riscv *)
+  | SwitchDepScWrite     (* Switch dependency on sc mem write, riscv *)
+  | SwitchDepScResult    (* Switch dependency from address read to sc result write, riscv,aarch64 *)
   | LrScDiffOk      (* Lr/Sc paired to <> addresses may succeed (!) *)
   | Mixed           (* Mixed-Size *)
   | WeakPredicated (* "Weak" predicated instructions, not performing non-selected events, aarch64 *)
@@ -38,4 +39,6 @@ val tags : string list
 val parse : string -> t option
 val pp : t -> string
 
-val get_default : Archs.t -> t -> bool
+(* switch variant that flips an arch-dependent, default value *)
+val get_default :  Archs.t -> t -> bool
+
