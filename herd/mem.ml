@@ -130,6 +130,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     module U = MemUtils.Make(S)
     module W = Warn.Make(C)
 
+    let dbg = C.debug.Debug_herd.mem
     let mixed = C.variant Variant.Mixed
     let memtag = C.variant Variant.MemTag
 
@@ -451,31 +452,31 @@ let add_eq v1 v2 eqs =
   else
     VC.Assign (v1, VC.Atom v2)::eqs
 
-let solve_regs test es csn =
-  let rfm = match_reg_events es in
-  let csn =
-    S.RFMap.fold
-      (fun wt rf csn -> match wt with
-      | S.Final _ -> csn
-      | S.Load load ->
-          let v_loaded = get_read load in
-          let v_stored = get_rf_value test load rf in
-          try add_eq v_loaded v_stored csn
-          with Contradiction -> assert false)
-      rfm csn in
-  match VC.solve csn with
-  | VC.NoSolns ->
-      if C.debug.Debug_herd.solver then begin
-          let module PP = Pretty.Make(S) in
-          prerr_endline "No solution at register level";
-          PP.show_es_rfm test es rfm ;
-      end ;
-    None
-  | VC.Maybe (sol,csn) ->
-      Some
-        (E.simplify_vars_in_event_structure sol es,
-         S.simplify_vars_in_rfmap sol rfm,
-         csn)
+    let solve_regs test es csn =
+      let rfm = match_reg_events es in
+      let csn =
+        S.RFMap.fold
+          (fun wt rf csn -> match wt with
+          | S.Final _ -> csn
+          | S.Load load ->
+              let v_loaded = get_read load in
+              let v_stored = get_rf_value test load rf in
+              try add_eq v_loaded v_stored csn
+              with Contradiction -> assert false)
+          rfm csn in
+      match VC.solve csn with
+      | VC.NoSolns ->
+          if C.debug.Debug_herd.solver then begin
+            let module PP = Pretty.Make(S) in
+            prerr_endline "No solution at register level";
+            PP.show_es_rfm test es rfm ;
+          end ;
+          None
+      | VC.Maybe (sol,csn) ->
+          Some
+            (E.simplify_vars_in_event_structure sol es,
+             S.simplify_vars_in_rfmap sol rfm,
+             csn)
 
 (**************************************)
 (* Step 2. Generate rfmap for memory  *)
@@ -565,20 +566,51 @@ let solve_regs test es csn =
    - Not after in program order (suppressed when uniproc
    is not optmised early) *)
     let map_load_possible_stores es loads stores compat_locs =
-      E.EventSet.fold
-        (fun store map_load ->
-          List.map
-            (fun ((load,stores) as c) ->
-              if
-                compat_locs store load &&
-                (if C.optace then
-                  not (U.is_before_strict es load store)
-                else true)
-              then
-                load,S.Store store::stores
-              else c)
-            map_load)
-        stores (map_load_init loads)
+      let m =
+        E.EventSet.fold
+          (fun store map_load ->
+            List.map
+              (fun ((load,stores) as c) ->
+                if
+                  compat_locs store load &&
+                  (if C.optace then
+                    not (U.is_before_strict es load store)
+                  else true)
+                then
+                  load,S.Store store::stores
+                else c)
+              map_load)
+          stores (map_load_init loads) in
+      if dbg then begin
+        let pp_read_froms chan rfs =
+          List.iter
+            (fun rf -> match rf with
+            | S.Init -> fprintf chan "Init"
+            | S.Store e -> E.debug_event chan e ; fprintf chan ",")
+            rfs in
+        List.iter
+          (fun (load,stores) ->
+            eprintf "Paring {%a} with {%a}\n"
+              E.debug_event load
+              pp_read_froms stores)
+          m
+      end ;
+(* Check for loads that cannot feed on some write *)
+      List.iter
+        (fun (load,stores) -> match stores with
+        | [] ->
+            begin match E.location_of load with
+            | Some (A.Location_global (V.Val sym) as loc) ->
+                if Constant.is_non_mixed_symbol sym then
+                  Warn.fatal "read on location %s does not match any write"
+                    (A.pp_location loc)
+                else
+                  Warn.user_error "illegal mixed-size test"
+            | _ -> assert false
+            end
+        | _::_ -> ())
+        m ;
+      m
 
 (* Add memory events to rfmap *)
     let add_mem loads stores rfm =
@@ -661,7 +693,7 @@ let solve_regs test es csn =
 (*
   eprintf "Loads : %a\n"E.debug_events loads ;
   eprintf "Stores: %a\n"E.debug_events stores ;
-*)
+ *)
       let compat_locs = compatible_locs_mem in
       solve_mem_or_res test es rfm cns kont res
         loads stores compat_locs add_mem_eqs
@@ -797,19 +829,19 @@ let solve_regs test es csn =
             x,rs,List.map (fun (_,_,ws) -> ws) ws)
           rs in
 (*
-        eprintf "+++++++++++++++++++++++\n" ;
-        List.iter
-        (fun (rs,wss) ->
-        List.iter (eprintf "%a " E.debug_event) rs ;
-        eprintf "->\n" ;
-        List.iter
-        (fun ws ->
-        eprintf "    [" ;
-        List.iter (fun w -> eprintf "%a; " E.debug_event w) ws ;
-        eprintf "]\n")
-        wss ;
-        eprintf "\n")
-        ms ; flush stderr ;
+  eprintf "+++++++++++++++++++++++\n" ;
+  List.iter
+  (fun (rs,wss) ->
+  List.iter (eprintf "%a " E.debug_event) rs ;
+  eprintf "->\n" ;
+  List.iter
+  (fun ws ->
+  eprintf "    [" ;
+  List.iter (fun w -> eprintf "%a; " E.debug_event w) ws ;
+  eprintf "]\n")
+  wss ;
+  eprintf "\n")
+  ms ; flush stderr ;
  *)
       let ms =
         List.map
@@ -898,19 +930,19 @@ let solve_regs test es csn =
   If no, not need to go on
  *)
 
-  module T = Test_herd.Make(S.A)
+    module T = Test_herd.Make(S.A)
 
-  let final_is_relevant test fsc =
-    let open ConstrGen in
-    let cnstr = T.find_our_constraint test in
-    let senv = S.size_env test in
-    match cnstr with
-      (* Looking for 'Allow' witness *)
-    | ExistsState p ->  CM.check_prop p senv fsc
-          (* Looking for witness that invalidates 'Require' *)
-    | ForallStates p -> not (CM.check_prop p senv fsc)
-          (* Looking for witness that invalidates 'Forbid' *)
-    | NotExistsState p -> CM.check_prop p senv fsc
+    let final_is_relevant test fsc =
+      let open ConstrGen in
+      let cnstr = T.find_our_constraint test in
+      let senv = S.size_env test in
+      match cnstr with
+        (* Looking for 'Allow' witness *)
+      | ExistsState p ->  CM.check_prop p senv fsc
+            (* Looking for witness that invalidates 'Require' *)
+      | ForallStates p -> not (CM.check_prop p senv fsc)
+            (* Looking for witness that invalidates 'Forbid' *)
+      | NotExistsState p -> CM.check_prop p senv fsc
 
     let worth_going test fsc = match C.speedcheck with
     | Speed.True|Speed.Fast -> final_is_relevant test fsc
@@ -1275,7 +1307,14 @@ let solve_regs test es csn =
     let check_sizes es =
       let loc_mems = U.collect_mem es in
       U.LocEnv.iter
-        (fun _ evts ->
+        (fun loc evts ->
+          let open Constant in
+          begin match loc with
+          | A.Location_global (V.Val sym)
+            when not (Constant.is_non_mixed_symbol sym)
+            -> Warn.user_error "Illegal mixed-size test"
+          | _ -> ()
+          end ;
           (* hum TODO, init write size should be depend upon declaration and be checked *)
           let evts =  List.filter (fun e -> not (E.is_mem_store_init e))evts in
           match evts with
@@ -1319,7 +1358,7 @@ let solve_regs test es csn =
               match cs with
               | [] ->
                   if mixed then check_aligned test es ;
-                  (*if A.reject_mixed then check_sizes es ;*)
+                  if A.reject_mixed && not (mixed || memtag) then check_sizes es ;
                   if C.debug.Debug_herd.solver && C.verbose > 0 then begin
                     let module PP = Pretty.Make(S) in
                     prerr_endline "Mem solved" ;

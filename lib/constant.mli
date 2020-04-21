@@ -23,8 +23,10 @@ type 'scalar t =
   | Label of Proc.t * string     (* In code *)
   | Tag of string
 
+
 val mk_sym : string -> 'scalar t
 val get_sym : 'scalar t -> string
+val is_non_mixed_symbol : 'scalar t -> bool
 val default_tag : 'scalar t
 
 (* Check  non-concrete constant (and change type!) *)

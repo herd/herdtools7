@@ -39,6 +39,7 @@ and type evt_struct = E.event_structure) =
         end)
         (A)
 
+    let dbg = C.debug.Debug_herd.mem
 
 (* LM Use lists for polymorphism.
    It is assumed that list elts are pairwise distinct.
@@ -807,7 +808,9 @@ and type evt_struct = E.event_structure) =
                 (eiid+1,ew::es))
               (eiid,[]) env in
           let es = E.EventSet.of_list es in
-(*        Printf.eprintf "Init writes %a\n" E.debug_events es; *)
+          if dbg then begin
+            Printf.eprintf "Init writes %a\n" E.debug_events es
+          end ;
           eiid,
           Evt.singleton ((),[],do_trivial es)
 
@@ -844,7 +847,10 @@ and type evt_struct = E.event_structure) =
                        E.EventSetSet.add (E.EventSet.singleton ew) sca))
                 (eiid,[],E.EventSetSet.empty) env in
             let es = E.EventSet.of_list es in
-(*        Printf.eprintf "Init writes %a\n" E.debug_events es; *)
+
+            if dbg then begin
+              Printf.eprintf "Init writes %a\n" E.debug_events es
+            end ;
 
             let st = do_trivial es in
             let st = { st with E.sca; } in

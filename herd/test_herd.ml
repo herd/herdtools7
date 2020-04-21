@@ -145,11 +145,7 @@ module Make(A:Arch_herd.S) =
        displayed = displayed ;
        extra_data = extra_data ;
        size_env = A.build_size_env init ;
-       access_size =
-       begin
-         if A.is_mixed then mem_access_size_prog nice_prog
-         else []
-       end ;
+       access_size = mem_access_size_prog nice_prog ;
        proc_info;
      }
 
