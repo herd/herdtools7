@@ -115,6 +115,8 @@ end = struct
           (fun (loc,t) -> match t with
           | MiscParser.TyDef  ->
               fprintf chan "%s; " (I.dump_location loc)
+          | MiscParser.Address  ->
+              fprintf chan "&%s; " (I.dump_location loc)
           | MiscParser.TyDefPointer ->
               fprintf chan "%s*; "(I.dump_location loc)
           | MiscParser.Ty t ->

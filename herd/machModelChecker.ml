@@ -55,7 +55,7 @@ module Make
         let x = A.V.nameToV x in
         E.EventSet.filter
           (fun e -> match E.location_of e with
-          | Some (A.Location_global loc) -> A.V.compare loc x = 0
+          | Some (A.Location_global (loc,None)) -> A.V.compare loc x = 0
           | None | Some _ -> false)
           es
 
@@ -307,7 +307,7 @@ module Make
                            StringSet.fold
                              (fun loc k ->
                                let v = S.A.V.nameToV loc in
-                               let x = S.A.Location_global v in
+                               let x = S.A.Location_global (v,None) in
                                U.LocEnv.safe_find E.EventSet.empty
                                  x loc2evts::k)
                              locs [] in

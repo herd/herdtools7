@@ -128,6 +128,7 @@ atom_init:
 | NAME STAR location EQUAL amperopt maybev { ($3,(Pointer $1,$6))}
 | STAR location { ($2,(TyDefPointer,ParsedConstant.zero))}
 | STAR location EQUAL amperopt maybev { ($2,(TyDefPointer,$5))}
+| AMPER location EQUAL maybev { ($2, (Address, $4)) }
 | NAME NAME LBRK NUM RBRK
     { (Location_global (Constant.mk_sym $2),
        (TyArray ($1,Misc.string_as_int $4),ParsedConstant.zero)) }

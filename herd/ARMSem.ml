@@ -71,9 +71,9 @@ module Make (C:Sem.Config)(V:Value.S)
       let read_reg_data = read_reg true
 
       let read_mem sz a ii  =
-        M.read_loc false (mk_read false sz) (A.Location_global a) ii
+        M.read_loc false (mk_read false sz) (A.Location_global (a,None)) ii
       let read_mem_atomic sz a ii =
-        M.read_loc false (mk_read true sz) (A.Location_global a) ii
+        M.read_loc false (mk_read true sz) (A.Location_global (a,None)) ii
 
       let write_loc sz loc v ii =
         M.mk_singleton_es (Act.Access (Dir.W, loc, v, false,sz)) ii
@@ -83,12 +83,12 @@ module Make (C:Sem.Config)(V:Value.S)
 
       let write_mem sz a v ii  =
         M.mk_singleton_es
-          (Act.Access (Dir.W, A.Location_global a, v, false, sz)) ii
+          (Act.Access (Dir.W, A.Location_global (a,None), v, false, sz)) ii
 
       let write_mem_atomic sz a v resa ii =
         let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
         M.mk_singleton_es_eq
-          (Act.Access (Dir.W, A.Location_global a, v, true, sz)) eq ii
+          (Act.Access (Dir.W, A.Location_global (a,None), v, true, sz)) eq ii
 
       let write_flag r o v1 v2 ii =
         M.addT

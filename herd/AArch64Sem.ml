@@ -116,7 +116,7 @@ module Make
       let read_tag_mem a ii =
         M.op1 Op.TagLoc a >>= fun atag ->
           M.read_loc false (fun loc v -> Act.TagAccess (Dir.R,loc,v))
-            (A.Location_global atag) ii
+            (A.Location_global (atag, None)) ii
 
 
 (* For checking tags *)
@@ -150,9 +150,9 @@ module Make
       let do_checked_read sz an rd a ii =
         check_tags a ii
           (loc_extract a >>= fun a ->
-           M.read_loc false (mk_read sz an) (A.Location_global a) ii >>= fun v ->
+           M.read_loc false (mk_read sz an) (A.Location_global (a, None)) ii >>= fun v ->
            write_reg rd v ii >>! B.Next)
-          (mk_fault a ii >>! B.Exit)
+          (mk_fault (a,None) ii >>! B.Exit)
 
 
 (* Old read_mem that returns value read *)
@@ -161,7 +161,7 @@ module Make
           assert (not memtag) ;
           Mixed.read_mixed false sz (fun sz -> mk_read sz an) a ii
         end else
-          M.read_loc false (mk_read sz an) (A.Location_global a) ii
+          M.read_loc false (mk_read sz an) (A.Location_global (a,None)) ii
 
       let do_read_mem sz an rd a ii =
         old_do_read_mem sz an a ii >>= fun v ->  write_reg rd v ii
@@ -180,7 +180,7 @@ module Make
         if mixed then begin
           assert (not memtag) ;
           Mixed.write_mixed sz (fun sz -> mk_write sz an) a v ii
-        end else write_loc sz an (A.Location_global a) v ii
+        end else write_loc sz an (A.Location_global (a,None)) v ii
 
       let write_mem sz = do_write_mem sz AArch64.N
       let write_mem_release sz = do_write_mem sz AArch64.L
@@ -196,7 +196,7 @@ module Make
         end else
           let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
           M.mk_singleton_es_eq
-            (Act.Access (Dir.W, A.Location_global a, v,an, sz)) eq ii
+            (Act.Access (Dir.W, A.Location_global (a,None), v,an, sz)) eq ii
 
       let flip_flag v = M.op Op.Xor v V.one
       let is_zero v = M.op Op.Eq v V.zero
@@ -223,11 +223,23 @@ module Make
           let  mm = mop (ma >>= fun a -> loc_extract a) in
           delayed_check_tags ma ii
             (mm  >>! B.Next)
-            (let mfault = ma >>= fun a -> mk_fault a ii in
+            (let mfault = ma >>= fun a -> mk_fault (a, None) ii in
             if C.precision then  mfault >>! B.Exit
             else (mfault >>|| mm) >>! B.Next)
         else
           mop ma >>! B.Next
+
+      (* Helper function to increment address for ldp/stp*)
+      let incr_a var =
+        let n = V.intToV (MachSize.nbytes (AArch64.tr_variant var)) in
+        M.add n
+
+      (* add immediate to initial base address *)
+      let add_imm =
+        function
+        | AArch64.K 0 -> M.unitT
+        | AArch64.K k -> M.add (V.intToV k)
+        | _   -> Warn.fatal "illegal register variant in instruction ldp/stp"
 
       let do_str sz an rs ma ii =
         lift_memop
@@ -244,6 +256,30 @@ module Make
           (get_ea rs kr ii) ii
 
       and str sz rs rd kr ii = do_str sz AArch64.N rs (get_ea rd kr ii) ii
+
+      (* Store Pair *)
+      and stp var r1 r2 rd kr ii =
+        let open AArch64Base in
+        let sz = tr_variant var in
+        (read_reg_ord r1 ii >>| read_reg_ord r2 ii >>| read_reg_ord rd ii)
+          >>= fun ((v1,v2),a) ->
+            (M.address_of a >>= add_imm kr >>= M.deref)
+          >>= fun a ->
+              (M.unitT a >>| (M.address_of a >>= incr_a var >>= M.deref))
+            >>= fun (a,a2) ->
+              (write_mem sz a v1 ii) >>| (write_mem sz a2 v2 ii)
+        >>! B.Next
+
+      (* Load pair *)
+      and ldp var rd1 rd2 ra kr ii =
+        let sz = AArch64.tr_variant var in
+
+        (read_reg_ord ra ii >>= M.address_of >>= add_imm kr)
+        >>= fun a ->
+         (M.deref a >>= fun a -> read_mem sz rd1 a ii)
+        >>|
+         (incr_a var a >>= M.deref >>= fun a -> read_mem sz rd2 a ii)
+        >>! B.Next
 
       and stlr sz rs rd ii = do_str sz AArch64.L rs (read_reg_ord rd ii) ii
 
@@ -404,9 +440,14 @@ module Make
         | I_LDARBH(bh,t,rd,rs) ->
             let sz = bh_to_sz bh in
             ldar sz t rd rs ii
+        | I_LDP(_, var, rd1, rd2, ra, kr) ->
+            ldp var rd1 rd2 ra kr ii
 
         | I_STR(var,rs,rd,kr) ->
             str (tr_variant var) rs rd kr ii
+
+        | I_STP(_, var, r1, r2, rd, kr) ->
+            stp var r1 r2 rd kr ii
 
         | I_STRBH(bh,rs,rd,kr) ->
             str (bh_to_sz bh) rs rd kr ii
@@ -424,7 +465,7 @@ module Make
               get_ea rn kr ii
             end >>= fun (v,a) ->
             M.op1 Op.TagLoc a  >>= fun a ->
-            do_write_tag a v ii >>! B.Next
+            do_write_tag (a,None) v ii >>! B.Next
 
         | I_LDG (rt,rn,kr) ->
             if not memtag then Warn.user_error "LDG without -variant memtag" ;
@@ -432,7 +473,7 @@ module Make
               read_reg_ord rt ii >>|
               (get_ea rn kr ii  >>= fun a ->
                M.op1 Op.TagLoc a  >>= fun a ->
-               do_read_tag a ii)
+               do_read_tag (a,None) ii)
             end >>= fun (old,tag) ->
             M.op Op.SetTag old tag >>= fun v ->
             write_reg rt v ii >>! B.Next
@@ -529,7 +570,7 @@ module Make
         | I_LDOPBH (op,v,rmw,rs,rt,rn) ->
             ldop op (bh_to_sz v) rmw rs rt rn ii >>! B.Next
 (*  Cannot handle *)
-        | (I_RBIT _|I_MRS _|I_LDP _|I_STP _|I_IC _|I_DC _|I_BL _|I_BLR _|I_BR _|I_RET _) as i ->
+        | (I_RBIT _|I_MRS _|I_IC _|I_DC _|I_BL _|I_BLR _|I_BR _|I_RET _) as i ->
             Warn.fatal "illegal instruction: %s"
               (AArch64.dump_instruction i)
        )

@@ -345,13 +345,13 @@ end = struct
     | SRCU (l,_,Some v) ->
         let undet_loc = match A.undetermined_vars_in_loc l with
         | None -> V.ValueSet.empty
-        | Some v -> V.ValueSet.singleton v in
+        | Some (v,_) -> V.ValueSet.singleton v in
         if V.is_var_determined v then undet_loc
         else V.ValueSet.add v undet_loc
     | RMW(l,v1,v2,_,_) ->
         let undet_loc = match A.undetermined_vars_in_loc l with
         | None -> V.ValueSet.empty
-        | Some v -> V.ValueSet.singleton v in
+        | Some (v,_) -> V.ValueSet.singleton v in
         let undet_loc =
           (if V.is_var_determined v1 then undet_loc
           else V.ValueSet.add v1 undet_loc) in
@@ -366,7 +366,7 @@ end = struct
     | SRCU(l,_,None) ->
         (match A.undetermined_vars_in_loc l with
         | None -> V.ValueSet.empty
-        | Some v -> V.ValueSet.singleton v)
+        | Some (v,_) -> V.ValueSet.singleton v)
     | Fence _|TooFar -> V.ValueSet.empty
 
   let simplify_vars_in_action soln a =

@@ -1,0 +1,8 @@
+AArch64 A30
+(* Tests load pair, concrete location, no offset *)
+{ &x = 200; &y =208; 0:X2=200; x=1; y=2;}
+
+P0;
+  LDP X0, X1, [X2];
+
+exists (0:X0=1 /\ 0:X1=2)

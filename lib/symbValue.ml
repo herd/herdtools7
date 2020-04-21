@@ -65,6 +65,13 @@ module Make(Cst:Constant.S) = struct
   | Val _,Var _ -> 1
   | Var _,Val _ -> -1
 
+  let is_symbol = function
+    | Val (Symbolic _) -> true
+    | _ -> false
+
+  let is_concrete = function
+    | Val (Concrete _) -> true
+    | _ -> false
 
   let intToV i  = Val (Cst.intToV i)
   and nameToV s = Val (Cst.nameToV s)

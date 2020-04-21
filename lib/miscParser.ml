@@ -113,14 +113,20 @@ type run_type =
   | Ty of string | Pointer of string
   | TyArray of string * int
   | Atomic of string
+  | Address
 
 let pp_run_type = function
   | TyDef -> "TyDef"
   | TyDefPointer -> "TyDefPointer"
   | Ty s -> sprintf "Ty<%s>" s
   | Atomic s -> sprintf "Atomic<%s>" s
+  | Address -> "Address"
   | Pointer s -> sprintf "Pointer<%s>" s
   | TyArray (s,sz) -> sprintf "TyArray<%s,%i>" s sz
+
+let is_address = function
+  | Address -> true
+  | _       -> false
 
 type state = (location * (run_type * maybev)) list
 
@@ -134,6 +140,8 @@ let dump_state_atom dump_loc dump_val (loc,(t,v)) = match t with
     sprintf "%s %s=%s" t (dump_loc loc) (dump_val v)
 | Atomic t ->
     sprintf "_Atomic %s %s=%s" t (dump_loc loc) (dump_val v)
+| Address ->
+    sprintf "&%s=%s" (dump_loc loc) (dump_val v)
 | Pointer t ->
     sprintf "%s *%s=%s" t (dump_loc loc) (dump_val v)
 | TyArray (t,sz) ->

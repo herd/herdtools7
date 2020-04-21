@@ -656,6 +656,20 @@ and type evt_struct = E.event_structure) =
 
     let add =  op Op.Add
 
+    let address_of v =
+      (fun eiid_next ->
+        eiid_next,
+        let v1 = V.fresh_var () in
+        Evt.singleton
+          (v1, [VC.Assign (v1, VC.Address v)], E.empty_event_structure))
+
+    let deref v =
+      (fun eiid_next ->
+        eiid_next,
+        let v1 = V.fresh_var () in
+        Evt.singleton
+          (v1, [VC.Assign (v1, VC.Deref v)], E.empty_event_structure))
+
     let assign v1 v2 =
       fun eiid ->
         eiid,
@@ -727,7 +741,7 @@ and type evt_struct = E.event_structure) =
       let read_mixed is_data sz mk_act a ii =
         fun eiid ->
           let eas,a_eqs = byte_eas sz a in
-          let eavs = List.map (fun ea -> ea,V.fresh_var ()) eas in
+          let eavs = List.map (fun ea -> (ea, None),V.fresh_var ()) eas in
           let vs = List.map snd eavs in
           let v,v_eqs = recompose vs in
           let eiid,es =
@@ -741,7 +755,7 @@ and type evt_struct = E.event_structure) =
               (eiid,E.EventSet.empty) eavs  in
           let e_full =
             { E.eiid=eiid; E.iiid = Some ii;
-              E.action = mk_act sz (A.Location_global a) v; } in
+              E.action = mk_act sz (A.Location_global (a,None)) v; } in
           let st =
             { E.empty_event_structure with
               E.events = es;
@@ -752,7 +766,8 @@ and type evt_struct = E.event_structure) =
 
       let write_mixed sz mk_act a v ii =
         fun eiid ->
-          let eas,a_eqs = byte_eas sz a
+          let eas,a_eqs = byte_eas sz a in
+          let eavs = List.map (fun ea -> (ea, None)) eas
           and vs,v_eqs = explode sz v in
           let eiid,es =
             List.fold_left2
@@ -762,10 +777,10 @@ and type evt_struct = E.event_structure) =
                   {E.eiid = eiid;
                    E.iiid = Some ii;
                    E.action = mk_act SZ.byte (A.Location_global ea) v;} es)
-              (eiid,E.EventSet.empty) eas vs in
+              (eiid,E.EventSet.empty) eavs vs in
           let e_full =
             { E.eiid=eiid; E.iiid = Some ii;
-              E.action = mk_act sz (A.Location_global a) v; } in
+              E.action = mk_act sz (A.Location_global (a,None)) v; } in
           let st =
             { E.empty_event_structure with
               E.events = es;
@@ -773,24 +788,24 @@ and type evt_struct = E.event_structure) =
               E.mem_accesses = E.EventSet.singleton e_full;} in
           eiid+1,Evt.singleton ((),a_eqs@v_eqs,st)
 
-      let is_tagloc a = A.V.check_atag a
+      let is_tagloc (a,_) = A.V.check_atag a
 
       let add_inittags env =
         let glob,tag =
           List.fold_left
-            (fun (glob,tag as p) (loc,_) -> match loc with
+            (fun (glob,tag as p) (loc,v) -> match loc with
             | A.Location_global a ->
                 if is_tagloc a then glob,a::tag
-                else a::glob,tag
+                else (fst a, snd v)::glob,tag
             | A.Location_deref _|A.Location_reg _ -> p)
             ([],[]) env in
         let tag_set = A.VSet.of_list tag in
         let env =
           List.fold_left
-            (fun env a ->
-              let atag =  V.op1 Op.TagLoc a in
+            (fun env (a,v) ->
+              let atag =  V.op1 Op.TagLoc a, v in
               if A.VSet.mem atag tag_set then env
-              else (A.Location_global atag,A.V.Val (Constant.default_tag))::env)
+              else (A.Location_global atag,(A.V.Val (Constant.default_tag),v))::env)
             env glob in
         env
 
@@ -799,7 +814,7 @@ and type evt_struct = E.event_structure) =
         fun eiid ->
           let eiid,es =
             List.fold_left
-              (fun (eiid,es) (loc,v) ->
+              (fun (eiid,es) (loc,(v,_)) ->
                 let ew =
                   {E.eiid = eiid ;
                    E.iiid = None ;
@@ -819,10 +834,10 @@ and type evt_struct = E.event_structure) =
                 (fun (eiid,es,sca) (loc,v) ->
                   match loc with
                   | A.Location_global
-                      (A.V.Val (Constant.Symbolic ((s,_),0)) as a) ->
+                      (A.V.Val (Constant.Symbolic ((s,_),0)) as a, l) ->
                         let sz = A.look_size size_env s in
-                        let ds = AM.explode sz v
-                        and eas = AM.byte_eas sz a in
+                        let ds = List.map fst (AM.explode sz v)
+                        and eas = AM.byte_eas sz (a,l) in
                         let eiid,ews =
                           List.fold_left2
                             (fun (eiid,ews) a d ->
@@ -839,7 +854,7 @@ and type evt_struct = E.event_structure) =
                       let ew =
                         {E.eiid = eiid ;
                          E.iiid = None ;
-                         E.action = E.Act.mk_init_write loc def_size v ;} in
+                         E.action = E.Act.mk_init_write loc def_size (fst v) ;} in
                       (eiid+1,ew::es,
                        E.EventSetSet.add (E.EventSet.singleton ew) sca))
                 (eiid,[],E.EventSetSet.empty) env in

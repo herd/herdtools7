@@ -37,8 +37,8 @@ module type S = sig
 
   module I : I
 
-  type global_loc = I.V.v
-  type v = I.V.v
+  type global_loc = I.V.v * I.V.v option
+  type v = I.V.v * I.V.v option
 
   module VSet : MySet.S with type elt = v
   module VMap : MyMap.S with type key = v
@@ -94,7 +94,7 @@ module type S = sig
       state -> string (* delim, as in String.concat  *)
         -> (location -> v -> string) -> string
 
-  val build_state : (location * ('t * v)) list -> state
+  val build_state : (location * (MiscParser.run_type * v)) list -> state
   val build_concrete_state : (location * int) list -> state
 
   val state_is_empty : state -> bool
@@ -195,12 +195,12 @@ module Make(C:Config) (I:I) : S with module I = I
       let is_mixed = C.variant Variant.Mixed
 
       module I = I
-      type v = I.V.v
+      type v = I.V.v * I.V.v option
 
       module OV =
         struct
           type t = v
-          let compare = I.V.compare
+          let compare (v1,_) (v2,_) = I.V.compare v1 v2
         end
 
       module VSet = MySet.Make(OV)
@@ -232,7 +232,7 @@ module Make(C:Config) (I:I) : S with module I = I
       | 0 -> Misc.int_compare i1.program_order_index i2.program_order_index
       | r -> r
 
-      let pp_global = I.V.pp C.hexa
+      let pp_global (v,_) = I.V.pp C.hexa v
 
       module LocArg =
         struct
@@ -242,8 +242,8 @@ module Make(C:Config) (I:I) : S with module I = I
 
           type arch_global = v
           let pp_global = pp_global
-          let global_compare = I.V.compare
-          let same_base g1 g2 =
+            let global_compare (v1,_) (v2,_) = I.V.compare v1 v2
+          let same_base (g1,_) (g2,_) =
             let b1 = I.V.get_sym g1
             and b2 = I.V.get_sym g2 in
             Misc.string_eq b1 b2
@@ -251,7 +251,7 @@ module Make(C:Config) (I:I) : S with module I = I
 
       include Location.Make (LocArg)
 
-      let maybev_to_location v = Location_global (I.V.maybevToV v)
+      let maybev_to_location v = Location_global (I.V.maybevToV v, None)
 
       let do_brackets =
         if C.brackets then Printf.sprintf "[%s]"
@@ -276,17 +276,17 @@ module Make(C:Config) (I:I) : S with module I = I
 
       let undetermined_vars_in_loc l =  match l with
       | Location_reg _ -> None
-      | Location_global a|Location_deref (a,_) ->
+      | Location_global (a,l) |Location_deref ((a,l),_) ->
           if I.V.is_var_determined a then None
-          else Some a
+          else Some (a,l)
 
 
       let simplify_vars_in_loc soln l = match l with
       | Location_reg _ -> l
-      | Location_global a ->
-          Location_global (I.V.simplify_var soln a)
-      | Location_deref (a,idx) ->
-          Location_deref (I.V.simplify_var soln a,idx)
+      | Location_global (a,l) ->
+          Location_global (I.V.simplify_var soln a,l)
+      | Location_deref ((a,l),idx) ->
+          Location_deref ((I.V.simplify_var soln a, l),idx)
 
       let map_loc fv loc = match loc with
       | Location_reg _ -> loc
@@ -333,32 +333,61 @@ module Make(C:Config) (I:I) : S with module I = I
 
       let pp_equal = if C.texmacros then "\\mathord{=}" else "="
 
+      let pp_addr_opt = function
+        | Some v -> "(&" ^ I.V.pp C.hexa v ^ ")"
+        | None   -> ""
+
       let pp_state st =
         pp_nice_state st " "
-          (fun l v -> pp_location l ^ pp_equal ^ I.V.pp C.hexa v ^";")
+          (fun l (v,a) -> pp_location l ^ pp_addr_opt a ^ pp_equal ^ I.V.pp C.hexa v ^ ";")
 
       let do_dump_state tr st =
         pp_nice_state st " "
-          (fun l v -> do_dump_location tr l ^ "=" ^ I.V.pp C.hexa v ^";")
+          (fun l (v,_) -> do_dump_location tr l ^ "=" ^ I.V.pp C.hexa v ^";")
 
       let dump_state st = do_dump_state Misc.identity st
 
       let build_state bds =
-        List.fold_left (fun st (loc,(_,v)) -> State.add loc v st)
+        List.fold_left
+          (fun st (loc,(t,v)) ->
+            (* locations can have an address as a number *)
+            (* We optionally include this, if it is specified *)
+            if MiscParser.is_address t then
+              (* if we have an address, store it with the value*)
+              (* todo: generalize this to a record update - lot's of work *)
+              let (a, _) = v in
+              try
+                begin match State.find loc st with
+                  | (v2,None) -> State.add loc (v2, Some a) st
+                  | _  -> Warn.fatal
+                           "Address %s non-unique in init state"
+                           (dump_location loc)
+                end
+              with Not_found   -> State.add loc (I.V.zero, Some a) st
+            else
+              (* if we have a value, store it *)
+              try
+                begin match State.find loc st with
+                  | (_,Some a) -> State.add loc (fst v, Some a) st
+                  | _  -> Warn.fatal
+                           "Address %s non-unique in init state"
+                           (dump_location loc)
+                end
+              with Not_found   -> State.add loc v st)
           State.empty bds
 
       let build_concrete_state bds =
         List.fold_left
           (fun st (loc,v) ->
-            State.add loc (I.V.intToV v) st)
+            State.add loc ((I.V.intToV v),None) st)
           State.empty bds
 
 (* To get protection against wandering undetermined locations,
    all loads from state are by this function *)
       exception LocUndetermined
 
-      let get_in_state loc st = State.safe_find I.V.zero loc st
-      let get_of_val st a = State.safe_find I.V.zero (Location_global a) st
+      let get_in_state loc st = State.safe_find (I.V.zero,None) loc st
+      let get_of_val st a = State.safe_find (I.V.zero,None) (Location_global a) st
 
       let look_address_in_state st loc =
         match undetermined_vars_in_loc loc with
@@ -373,7 +402,7 @@ module Make(C:Config) (I:I) : S with module I = I
       let look_size env s = StringMap.safe_find MachSize.Word s env
 
       let look_size_location env loc = match loc with
-      | Location_global (I.V.Val (Constant.Symbolic ((s,_),0))) -> look_size env s
+      | Location_global (I.V.Val (Constant.Symbolic ((s,_),0)),_) ->  look_size env s
       | _ -> assert false
             (* Typing *)
 
@@ -395,6 +424,7 @@ module Make(C:Config) (I:I) : S with module I = I
 
 
       let misc_to_size ty  = match ty with
+      | MiscParser.Address
       | MiscParser.TyDef -> size_of "int"
       | MiscParser.Ty t|MiscParser.Atomic t -> (size_of t)
       | MiscParser.Pointer _
@@ -408,7 +438,7 @@ module Make(C:Config) (I:I) : S with module I = I
           fun bds ->
             List.fold_left
               (fun m (loc,(t,_)) -> match loc with
-              | Location_global a -> StringMap.add (I.V.as_symbol a) (misc_to_size t) m
+              | Location_global (a,_) -> StringMap.add (I.V.as_symbol a) (misc_to_size t) m
               | _ -> m)
               StringMap.empty bds
         else
@@ -428,7 +458,8 @@ module Make(C:Config) (I:I) : S with module I = I
             type t = final_state
 
             let compare (st1,flt1) (st2,flt2) =
-              match State.compare I.V.compare st1 st2 with
+              let compare_st (v1,_) (v2,_) = I.V.compare v1 v2 in
+              match State.compare compare_st st1 st2 with
               | 0 -> FaultSet.compare flt1 flt2
               | r -> r
           end)
@@ -471,39 +502,39 @@ module Make(C:Config) (I:I) : S with module I = I
               d::ds in
           0::do_rec 1
 
-        let byte_eas_incr sz a =
-          let kmax = nsz sz in
-          let rec do_rec k =
+      let byte_eas_incr sz a l =
+        let kmax = nsz sz in
+        let rec do_rec k l =
             if k >= kmax then []
             else
-              let ds = do_rec (k+1) in
-              let d = I.V.op1 (Op.AddK (k*byte_sz)) a in
+            let ds = do_rec (k+1) l in
+            let d = (I.V.op1 (Op.AddK (k*byte_sz)) a, l) in
               d::ds in
-          a::do_rec 1
+        (a,l)::do_rec 1 l
 
-        let byte_eas sz a =
-          let r = byte_eas_incr sz a in
+        let byte_eas sz (a, l) =
+          let r = byte_eas_incr sz a l in
           match endian with
           | Endian.Little -> r
           | Endian.Big -> List.rev r
 
 
         let explode sz v =
-          let rec do_rec k v =
-            if k <= 1 then [v]
+          let rec do_rec k (v,l) =
+           if k <= 1 then [(v,l)]
             else
-              let d = I.V.op1 (Op.AndK mask) v
+              let d = I.V.op1 (Op.AndK mask) v, l
               and w = I.V.op1 (Op.LogicalRightShift nshift) v in
-              let ds = do_rec (k-1) w in
+              let ds = do_rec (k-1) (w,l) in
               d::ds in
           do_rec (nsz sz) v
 
         let rec recompose ds = match ds with
         | [] -> assert false
-        | [d] -> d
-        | d::ds ->
-            let w = recompose ds in
-            I.V.op Op.Or (I.V.op1 (Op.LeftShift nshift) w) d
+        | [(d,l)] -> d,l
+        | (d,l)::ds ->
+            let (w,_) = recompose ds in
+            (I.V.op Op.Or (I.V.op1 (Op.LeftShift nshift) w) d,l)
 
         let look_in_state_mixed senv st loc =
           match undetermined_vars_in_loc loc with
@@ -513,9 +544,9 @@ module Make(C:Config) (I:I) : S with module I = I
               raise LocUndetermined
           | None ->
               match loc with
-              | Location_global (I.V.Val (Constant.Symbolic ((s,_),0)) as a)   ->
+              | Location_global (I.V.Val (Constant.Symbolic ((s,_),0)) as a,l) ->
                   let sz = look_size senv s in
-                  let eas = byte_eas sz a in
+                  let eas = byte_eas sz (a, l) in
                   let vs = List.map (get_of_val st) eas in
                   let v = recompose vs in
                   v
@@ -528,9 +559,9 @@ module Make(C:Config) (I:I) : S with module I = I
           if is_mixed then  look_in_state_mixed
           else fun _senv -> look_address_in_state (* No need for size-env when sizes are ignored *)
 
-        let state_mem senv st loc v =
+        let state_mem senv st loc (v,_) =
           try
-            let w = look_in_state senv st loc in
+            let (w,_) = look_in_state senv st loc in
             I.V.compare v w = 0
           with LocUndetermined -> assert false
 

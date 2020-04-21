@@ -58,8 +58,10 @@ type run_type =
   | Ty of string | Pointer of string
   | TyArray of string * int
   | Atomic of string
+  | Address
 
 val pp_run_type : run_type -> string
+val is_address : run_type -> bool
 
 type state = (location * (run_type * maybev)) list
 

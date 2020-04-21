@@ -62,7 +62,7 @@ module Make (C:Sem.Config)(V:Value.S)
       let read_reg_ord = read_reg false
       let read_reg_data = read_reg true
 
-      let do_read_mem sz ato a ii = M.read_loc false (mk_read sz ato) (A.Location_global a) ii
+      let do_read_mem sz ato a ii = M.read_loc false (mk_read sz ato) (A.Location_global (a,None)) ii
       let read_mem sz a ii = do_read_mem sz false a ii
       let read_mem_atomic sz a ii = do_read_mem sz true a ii
 
@@ -73,11 +73,11 @@ module Make (C:Sem.Config)(V:Value.S)
             (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false, nat_sz)) ii
 
       let write_mem sz a v ii  =
-        M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v, false, sz)) ii
+        M.mk_singleton_es (Act.Access (Dir.W, A.Location_global (a,None), v, false, sz)) ii
 
       let write_mem_atomic sz a v resa ii =
         let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
-        M.mk_singleton_es_eq (Act.Access (Dir.W, A.Location_global a, v, true, sz)) eq ii
+        M.mk_singleton_es_eq (Act.Access (Dir.W, A.Location_global (a,None), v, true, sz)) eq ii
 
       let create_barrier b ii =
         M.mk_singleton_es (Act.Barrier b) ii

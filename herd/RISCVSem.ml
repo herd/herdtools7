@@ -119,7 +119,7 @@ module Make (C:Sem.Config)(V:Value.S)
           Mixed.read_mixed false sz (fun sz a v -> mk_read sz an a v)
             a ii
         else
-          M.read_loc false (mk_read sz an) (A.Location_global a) ii
+          M.read_loc false (mk_read sz an) (A.Location_global (a,None)) ii
 
       let read_mem sz mo = read_mem_annot sz (RISCV.P mo)
       let read_mem_atomic sz mo = read_mem_annot sz (RISCV.X mo)
@@ -147,7 +147,7 @@ module Make (C:Sem.Config)(V:Value.S)
             a v ii
         else
           M.mk_singleton_es
-            (Act.Access (Dir.W, A.Location_global a, v, an, sz)) ii
+            (Act.Access (Dir.W, A.Location_global (a,None), v, an, sz)) ii
 
       let write_mem sz an = do_write_mem sz (RISCV.P an)
 
@@ -156,12 +156,12 @@ module Make (C:Sem.Config)(V:Value.S)
       let write_mem_conditional sz an a v resa ii =
         if  lrscdiffok then
           (M.mk_singleton_es_eq
-             (Act.Access (Dir.W, A.Location_global a, v, RISCV.X an,sz)) [] ii >>|
+             (Act.Access (Dir.W, A.Location_global (a,None), v, RISCV.X an,sz)) [] ii >>|
              M.neqT resa V.zero) >>! () (* resa = zero <-> no matching load reserve *)
         else
           let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
           M.mk_singleton_es_eq
-            (Act.Access (Dir.W, A.Location_global a, v, RISCV.X an,sz)) eq ii
+            (Act.Access (Dir.W, A.Location_global (a,None), v, RISCV.X an,sz)) eq ii
 
       let write_mem_atomic sz an = do_write_mem sz (RISCV.X an)
 
@@ -211,12 +211,12 @@ module Make (C:Sem.Config)(V:Value.S)
               (fun (loc,vstore) ->
                 M.read_loc false
                   (fun loc v -> Act.Amo (loc,v,vstore,X an,sz))
-                  (A.Location_global loc) ii) >>= fun r -> write_reg rd r ii
+                  (A.Location_global (loc,None)) ii) >>= fun r -> write_reg rd r ii
           | _ ->
               (ra >>| rv) >>=
               (fun (loc,v) ->
                 M.fetch (tr_opamo op) v
-                  (fun v vstored -> Act.Amo (A.Location_global loc,v,vstored,RISCV.X an,sz))
+                  (fun v vstored -> Act.Amo (A.Location_global (loc,None),v,vstored,RISCV.X an,sz))
                   ii)  >>=  fun v -> write_reg rd v ii
         else match specialX0,op,rd,rv with
         | true,AMOSWAP,Ireg X0,_ ->

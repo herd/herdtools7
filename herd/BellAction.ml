@@ -198,7 +198,7 @@ end = struct
     | Access (_,l,v,_,_,_) ->
         let undet_loc = match A.undetermined_vars_in_loc l with
         | None -> V.ValueSet.empty
-        | Some v -> V.ValueSet.singleton v in
+        | Some (v,_) -> V.ValueSet.singleton v in
         if V.is_var_determined v then undet_loc
         else V.ValueSet.add v undet_loc
     | Barrier _|Commit|TooFar -> V.ValueSet.empty

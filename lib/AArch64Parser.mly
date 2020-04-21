@@ -143,6 +143,8 @@ k:
 | NUM  { MetaConst.Int $1 }
 | META { MetaConst.Meta $1 }
 
+(* In a future patch this will be renamed kr_shift *)
+(* With more shifts, this is shift-work *)
 kr:
 | k { A.K $1 }
 | xreg { A.RV (A.V64,$1) }
@@ -151,6 +153,10 @@ kr:
 kr0:
 | { A.K (MetaConst.zero) }
 | COMMA kr { $2 }
+
+kr0_no_shift:
+| { A.K (MetaConst.zero) }
+| COMMA k { A.K $2 }
 
 kwr:
 | k { A.K $1 }
@@ -192,13 +198,13 @@ instr:
 /* Memory */
 | LDR reg COMMA LBRK xreg kr0 RBRK
   { let v,r = $2 in A.I_LDR (v,r,$5,$6) }
-| ldp_instr wreg COMMA wreg COMMA LBRK xreg kr0 RBRK
+| ldp_instr wreg COMMA wreg COMMA LBRK xreg kr0_no_shift RBRK
   { $1 A.V32 $2 $4 $7 $8 }
-| ldp_instr xreg COMMA xreg COMMA LBRK xreg kr0 RBRK
+| ldp_instr xreg COMMA xreg COMMA LBRK xreg kr0_no_shift RBRK
   { $1 A.V64 $2 $4 $7 $8 }
-| stp_instr wreg COMMA wreg COMMA LBRK xreg kr0 RBRK
+| stp_instr wreg COMMA wreg COMMA LBRK xreg kr0_no_shift RBRK
   { $1 A.V32 $2 $4 $7 $8 }
-| stp_instr xreg COMMA xreg COMMA LBRK xreg kr0 RBRK
+| stp_instr xreg COMMA xreg COMMA LBRK xreg kr0_no_shift RBRK
   { $1 A.V64 $2 $4 $7 $8 }
 | LDRB wreg COMMA LBRK xreg kr0 RBRK
   { A.I_LDRBH (A.B,$2,$5,$6) }
