@@ -180,8 +180,8 @@ val same_instruction : event -> event -> bool
   type event_structure = {
       procs : A.proc list ;
       events : EventSet.t ;                     (* really a set *)
-      speculated : EventSet.t ;                     (* really a set *)
-      po : EventSet.t * EventRel.t;
+      speculated : EventSet.t ;                 (* really a set *)
+      po : EventSet.t * EventRel.t; (* A forest: roots first + partial order *)
       intra_causality_data : EventRel.t ;       (* really a partial order relation *)
       intra_causality_control : EventRel.t ;    (* really a partial order relation *)
       (* If style control inside structure *)
@@ -819,8 +819,11 @@ let inst_code_comp (*poi*) es1 es2 =
     speculated = EventSet.union es1.speculated es2.speculated;
     po = 
       begin
-      let r1 = es1.events and r2,e2 = es2.po in 
-      (r1, EventRel.union (EventRel.cartesian r1 r2) e2) end ;
+      let r1 = es1.events in
+      if EventSet.is_empty r1 then es2.po
+      else
+        let r2,e2 = es2.po in
+        (r1, EventRel.union (EventRel.cartesian r1 r2) e2) end ;
     intra_causality_data = EventRel.union
       es1.intra_causality_data es2.intra_causality_data ;
     intra_causality_control = EventRel.union
