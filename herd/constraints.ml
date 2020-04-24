@@ -29,7 +29,7 @@ module type S = sig
 
   type final_state = A.state * A.FaultSet.t
 
-  type prop = (A.location,A.V.v) ConstrGen.prop
+  type prop = (A.location,A.v) ConstrGen.prop
 
   val ptrue : prop
 
@@ -46,7 +46,7 @@ module type S = sig
     val check_constr : constr -> A.size_env -> final_state list -> bool
   end
 
-(* Build a new constraint thar checks State membership *)
+(* Build a new constraint that checks State membership *)
   val constr_of_finals : A.StateSet.t -> constr
 
 (* Parsable dumping *)
@@ -75,7 +75,7 @@ module Make (C:Config) (A : Arch_herd.S) :
 
         module V = A.V
 
-        type prop = (A.location,V.v) ConstrGen.prop
+        type prop = (A.location,A.v) ConstrGen.prop
 
         let ptrue : prop = And []
 
@@ -115,8 +115,8 @@ module Make (C:Config) (A : Arch_herd.S) :
           | Atom (LV (l,v)) -> AM.state_mem senv state l v
           | Atom (LL (l1,l2)) ->
               begin try
-                let v1 = AM.look_in_state senv state l1
-                and v2 = AM.look_in_state senv state l2 in
+                let (v1,_) = AM.look_in_state senv state l1
+                and (v2,_) = AM.look_in_state senv state l2 in
                 A.V.compare v1 v2 = 0
               with A.LocUndetermined -> assert false end
           | Atom (FF f) -> A.check_fatom flts f
@@ -136,7 +136,7 @@ module Make (C:Config) (A : Arch_herd.S) :
 
         let matrix_of_states fs =
           A.StateSet.fold
-            (fun (f,_) k -> A.state_to_list f::k)
+            (fun f k -> A.state_to_list (fst f)::k)
             fs []
 
         let best_col m =
@@ -273,7 +273,7 @@ module Make (C:Config) (A : Arch_herd.S) :
 
         let pp_atom tr m a =
           match a with
-          | LV (loc,v) ->
+          | LV (loc,(v,_)) ->
               mbox m (pp_loc tr m loc) ^
               pp_equal m ^
               mbox m (do_add_asm m (V.pp C.hexa v))
@@ -282,7 +282,7 @@ module Make (C:Config) (A : Arch_herd.S) :
               pp_equal m ^
               mbox m (pp_rvalue tr m l2)
           | FF f ->
-              mbox m (Fault.pp_fatom (fun v -> do_add_asm m (V.pp_v v)) f)
+              mbox m (Fault.pp_fatom (fun (v,_) -> do_add_asm m (V.pp_v v)) f)
 
 (* ascii, parsable dump *)
         let dump_as_kind c = pp_kind (kind_of c)

@@ -102,7 +102,7 @@ module Make (C:Sem.Config)(V : Value.S)
           M.unitT (X86.Location_reg (ii.X86.proc,r))
       | X86.Effaddr_rm32 (X86.Rm32_deref r)     ->
           read_reg false r ii >>=
-          fun vreg -> M.unitT (X86.Location_global vreg)
+          fun vreg -> M.unitT (X86.Location_global (vreg,None))
       | X86.Effaddr_rm32 (X86.Rm32_abs v)->
           M.unitT (X86.maybev_to_location v)
 

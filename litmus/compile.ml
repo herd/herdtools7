@@ -57,6 +57,7 @@ module Generic (A : Arch_litmus.Base)
         | MiscParser.TyDefPointer  -> pointer
         | MiscParser.Ty t -> Base t
         | MiscParser.Atomic t -> Atomic (Base t)
+        | MiscParser.Address -> pointer
         | MiscParser.Pointer t -> Pointer (Base t)
         | MiscParser.TyArray (t,sz) -> Array (t,sz)
 
@@ -104,6 +105,7 @@ module Generic (A : Arch_litmus.Base)
                     | MiscParser.TyDefPointer -> Some pointer
                     | MiscParser.Ty s -> Some (Base s)
                     | MiscParser.Atomic s -> Some (Atomic (Base s))
+                    | MiscParser.Address -> Warn.fatal "Numeric addresses not supported in litmus"
                     | MiscParser.Pointer s -> Some (Pointer (Base s))
                     | MiscParser.TyArray _ -> assert false (* No array register *)
                     end

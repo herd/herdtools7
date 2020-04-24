@@ -26,7 +26,7 @@ let dump_locations dump_location env = match env with
     | TyDefPointer -> dump_location loc ^"*;"
     | Ty t -> sprintf "%s %s;" (dump_location loc) t
     | Pointer t -> sprintf "%s %s*;" (dump_location loc) t
-    | TyArray _|Atomic _ -> assert false (* No arrays nor atomics here *) in
+    | TyArray _|Atomic _ | Address -> assert false (* No arrays nor atomics here *) in
     let pp = List.map dump_loc_type env in
     let pp = String.concat " " pp in
     sprintf "locations [%s]" pp

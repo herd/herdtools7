@@ -242,6 +242,9 @@ module Make(O:Config)(A:Arch_tools.S) =
           | TyDefPointer ->
 	    "{} "^ pp_mbox ("*" ^ pp_location l) ^ " " ^
               pp_equal ^ " " ^ pp_v v ^ "\\\\ "
+          | Address ->
+	    "{} "^ pp_mbox ("\\&" ^ pp_location l) ^ " " ^
+              pp_equal ^ " " ^ pp_v v ^ "\\\\ "
           | Ty t ->
 	    "{} "^ pp_mbox (t ^ " " ^ pp_location l) ^ " " ^
               pp_equal ^ " " ^ pp_v v ^ "\\\\ "

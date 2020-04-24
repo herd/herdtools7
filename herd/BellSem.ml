@@ -59,10 +59,10 @@ module Make (C:Sem.Config)(V:Value.S)
       and read_reg_data = read_reg true
 
       let read_mem sz a s ii =
-        M.read_loc false (mk_read sz false s) (A.Location_global a) ii
+        M.read_loc false (mk_read sz false s) (A.Location_global (a,None)) ii
 
       let read_mem_atom sz a s ii =
-        M.read_loc false (mk_read sz true s) (A.Location_global a) ii
+        M.read_loc false (mk_read sz true s) (A.Location_global (a,None)) ii
 
 
 (*    let read_mem_atom cop a ii =
@@ -72,10 +72,10 @@ module Make (C:Sem.Config)(V:Value.S)
         M.mk_singleton_es (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false, [], reg_sz)) ii
 
       let write_mem sz a v s ii =
-        M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v, false, s, sz)) ii
+        M.mk_singleton_es (Act.Access (Dir.W, A.Location_global (a,None), v, false, s, sz)) ii
 
       let write_mem_atom sz a v s ii =
-        M.mk_singleton_es (Act.Access (Dir.W, A.Location_global a, v, true, s, sz)) ii
+        M.mk_singleton_es (Act.Access (Dir.W, A.Location_global (a,None), v, true, s, sz)) ii
 
 
       let commit ii =  M.mk_singleton_es (Act.Commit) ii

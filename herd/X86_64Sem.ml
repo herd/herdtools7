@@ -97,14 +97,14 @@ module Make (C:Sem.Config)(V : Value.S)
         if mixed then
           Mixed.read_mixed data sz (fun sz -> mk_read sz an) a ii
         else
-          let a = A.Location_global a in
+          let a = A.Location_global (a,None) in
           M.read_loc data (mk_read sz an) a ii
 
       let read_mem_atomic sz a ii = read_mem sz false true a ii
 
       let read_loc_gen sz data locked loc ii = begin
         match loc with
-        | A.Location_global l -> read_mem sz data locked l ii
+        | A.Location_global (l,_) -> read_mem sz data locked l ii
         | A.Location_reg (_, reg) -> read_reg data reg ii
         | _ -> M.read_loc data (mk_read sz false) loc ii
         end >>= mask_from_reg_part (if data
@@ -120,7 +120,7 @@ module Make (C:Sem.Config)(V : Value.S)
 
       let write_mem sz an a v ii =
         if mixed then Mixed.write_mixed sz (fun sz -> mk_write sz an) a v ii
-        else write_loc sz an (A.Location_global a) v ii
+        else write_loc sz an (A.Location_global (a,None)) v ii
 
       let write_reg r v ii =
         (* Spec from intel manual :
@@ -150,7 +150,7 @@ module Make (C:Sem.Config)(V : Value.S)
         | _ -> write_loc nat_sz false (A.Location_reg (ii.A.proc,r)) v ii
 
       let write_loc_gen sz locked loc v ii = match loc with
-        | A.Location_global l -> write_mem sz locked l v ii
+        | A.Location_global (l, None) -> write_mem sz locked l v ii
         | A.Location_reg (_, reg) -> write_reg reg v ii
         | _ -> write_loc sz locked loc v ii
 
@@ -173,7 +173,7 @@ module Make (C:Sem.Config)(V : Value.S)
         | X86_64.Effaddr_rm64 (X86_64.Rm64_deref (r,o)) ->
            read_reg false r ii >>=
              fun v -> M.add v (V.intToV o) >>=
-             fun vreg -> M.unitT (X86_64.Location_global vreg)
+             fun vreg -> M.unitT (X86_64.Location_global (vreg,None))
         | X86_64.Effaddr_rm64 (X86_64.Rm64_abs v)->
            M.unitT (X86_64.maybev_to_location v)
 

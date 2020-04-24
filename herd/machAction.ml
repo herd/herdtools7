@@ -300,12 +300,12 @@ end = struct
     | Access (_,l,v,_,_) ->
         let undet_loc = match A.undetermined_vars_in_loc l with
         | None -> V.ValueSet.empty
-        | Some v -> V.ValueSet.singleton v in
+        | Some (v,_) -> V.ValueSet.singleton v in
         add_v_undet v undet_loc
     | Amo (loc,v1,v2,_,_) ->
         let undet = match A.undetermined_vars_in_loc loc with
         | None -> V.ValueSet.empty
-        | Some v -> V.ValueSet.singleton v in
+        | Some (v,_) -> V.ValueSet.singleton v in
         add_v_undet v1 (add_v_undet v2 undet)
    | Barrier _|Commit _|Fault _|TooFar -> V.ValueSet.empty
 

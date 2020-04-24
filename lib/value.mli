@@ -47,6 +47,8 @@ module type S =
 
 (* Please use this for comparing constants... *)
       val compare : v -> v -> int
+      val is_symbol : v -> bool
+      val is_concrete : v -> bool
 
 (* Build constant values, either numerical or symbolic *)
       val intToV  : int -> v 

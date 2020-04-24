@@ -76,6 +76,11 @@ module Top (Conf:Config) = struct
           | Some hash ->
               TestHash.check_env env name.Name.name filename hash in
           let test = T.build name parsed in
+          let symbs =
+            List.filter_map
+              (function | (loc,(_,Some a)) -> Some (S.A.dump_location loc, S.A.V.pp true a)
+                        | _ -> None)
+              (S.A.state_to_list test.Test_herd.init_state) in
 (* Compute basic machine size *)
           let sz =
             if S.A.is_mixed then begin match Conf.byte with
@@ -90,7 +95,7 @@ module Top (Conf:Config) = struct
 (* And run test *)
           let module T =
             Top_herd.Make(struct include Conf let byte = sz end)(M) in
-          T.run start_time test ;
+          T.run start_time test symbs ;
           env
           with TestHash.Seen -> env
     end

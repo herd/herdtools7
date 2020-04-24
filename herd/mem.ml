@@ -44,7 +44,7 @@ module type S = sig
       loop_present : bool ;
      }
 
-  val glommed_event_structures : S.test -> result
+  val glommed_event_structures : S.test -> (string * string) list -> result
 
 
 
@@ -198,14 +198,14 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     let get_all_locs_init init =
       let locs =
         List.fold_left
-          (fun locs (loc,v) ->
+          (fun locs (loc,(v,_)) ->
             let locs =
               match loc with
               | A.Location_global _|A.Location_deref _ -> loc::locs
               | A.Location_reg _ -> locs in
             let locs = match v with
             | A.V.Val (Constant.Symbolic ((s,_),_)) ->
-                A.Location_global (A.V.Val (Constant.mk_sym s))::locs
+                A.Location_global (A.V.Val (Constant.mk_sym s), None)::locs
             | _ -> locs in
             locs)
           [] (A.state_to_list init) in
@@ -245,11 +245,15 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
     module SM = S.Mixed(C)
 
-    let glommed_event_structures (test:S.test) =
+    let glommed_event_structures (test:S.test) symbs =
       let tooFar = ref false in
       let p = test.Test_herd.program in
       let starts = test.Test_herd.start_points in
       let procs = List.map fst starts in
+
+      (* Get address 0xf00 of variable x as a constraint for the solver &x=0xf00*)
+      let assign (x,y) = VC.AssignAddr (V.nameToV x, V.intToV (int_of_string y)) in
+      let csn = List.map assign symbs in
 
       let instr2labels =
         let one_label lbl code res = match code with
@@ -337,7 +341,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           []
       | (vcl,es)::xs ->
           let es = { (relabel es) with E.procs = procs } in
-          (i,vcl,es)::index xs (i+1) in
+          (i,vcl@csn,es)::index xs (i+1) in
       let r = EM.get_output set_of_all_instr_events  in
       { event_structures=index r 0; loop_present = !tooFar; }
 
@@ -359,7 +363,7 @@ and get_read e = match E.read_of e  with
 | None -> assert false
 
 and get_written e = match E.written_of e with
-| Some v -> v
+| Some v -> v, None
 | None -> assert false
 
 
@@ -459,7 +463,7 @@ let solve_regs test es csn =
       | S.Final _ -> csn
       | S.Load load ->
           let v_loaded = get_read load in
-          let v_stored = get_rf_value test load rf in
+          let v_stored = fst (get_rf_value test load rf) in
           try add_eq v_loaded v_stored csn
           with Contradiction -> assert false)
       rfm csn in
@@ -511,17 +515,17 @@ let solve_regs test es csn =
           let state = test.Test_herd.init_state
           and loc_load = get_loc load in
           begin try
-            let v_stored = A.look_address_in_state state loc_load in
+            let v_stored = fst (A.look_address_in_state state loc_load) in
             add_eq v_stored  v_loaded eqs
           with A.LocUndetermined ->
             VC.Assign
               (v_loaded, VC.ReadInit (loc_load,state))::eqs
           end
       | S.Store store ->
-          add_eq v_loaded (get_written store)
+          add_eq v_loaded (fst (get_written store))
             (add_eq
-               (get_loc_as_value store)
-               (get_loc_as_value load) eqs)
+               (fst (get_loc_as_value store))
+               (fst (get_loc_as_value load)) eqs)
 
 (* Our rather loose rfmaps can induce a cycle in
    causality. Check this. *)
@@ -639,7 +643,7 @@ let solve_regs test es csn =
               Warn.warn_always
                 "unrolling too deep at label: %s" lbl;
               true
-          | VC.Assign _ -> false)
+          | VC.Assign _ | VC.AssignAddr _ -> false)
           cs in
       if unroll_only then
         kont_loop res
@@ -675,16 +679,16 @@ let solve_regs test es csn =
 (* Various utilities on symbolic addresses as locatiosn *)
     let get_base a =
       let open Constant in match a with
-      | A.Location_global (V.Val (Symbolic (s,_))) ->
-          A.Location_global (V.Val (Symbolic (s,0)))
+      | A.Location_global (V.Val (Symbolic (s,_)), l) ->
+          A.Location_global (V.Val (Symbolic (s,0)), l)
       | _ -> raise CannotSca
 
 (* Sort same_base *)
     let compare_index e1 e2 =
       let open Constant in
       match E.global_loc_of e1, E.global_loc_of e2 with
-      | Some (V.Val (Symbolic ((s1,_),i1))),
-        Some (V.Val (Symbolic ((s2,_),i2))) when  Misc.string_eq s1 s2 ->
+      | Some (V.Val (Symbolic ((s1,_),i1)), _),
+        Some (V.Val (Symbolic ((s2,_),i2)), _) when  Misc.string_eq s1 s2 ->
           Misc.int_compare i1 i2
       | _,_ -> raise CannotSca
 
@@ -764,7 +768,7 @@ let solve_regs test es csn =
       | e::_ -> e
       | [] -> assert false in
       let s,idx= match  E.global_loc_of fst with
-      |  Some (V.Val (Symbolic ((s,_),i))) -> s,i
+      |  Some (V.Val (Symbolic ((s,_),i)), _) -> s,i
       | _ -> raise CannotSca in
       let sz = List.length sca*byte_sz in
       E.get_mem_dir fst,s,idx,sz,sca
@@ -842,7 +846,7 @@ let solve_regs test es csn =
                   List.fold_right2
                     (fun r w eqs ->
                       assert (E.same_location r w) ;
-                      add_eq (get_read r) (get_written w) eqs)
+                      add_eq (get_read r) (fst (get_written w)) eqs)
                     rs ws eqs)
                 rss wss cns in
             (* And solve *)
@@ -1052,8 +1056,8 @@ let solve_regs test es csn =
               let senv = S.size_env test in
               A.LocSet.map_union
                 (fun loc -> match loc with
-                | A.Location_global a ->
-                    let eas = AM.byte_eas (A.look_size senv (A.V.as_symbol a)) a in
+                | A.Location_global ((v,_) as a) ->
+                    let eas = AM.byte_eas (A.look_size senv (A.V.as_symbol v)) a in
                     A.LocSet.of_list
                       (List.map (fun a -> A.Location_global a) eas)
                 | _ -> A.LocSet.singleton loc)
@@ -1099,7 +1103,7 @@ let solve_regs test es csn =
           let compare_index idx e =
             let open Constant in
             match E.global_loc_of e with
-            | Some (V.Val (Symbolic (_,i))) -> Misc.int_compare idx i
+            | Some (V.Val (Symbolic (_,i)),_) -> Misc.int_compare idx i
             | _ -> assert false
 
           let debug_read out = fprintf out "%i"
@@ -1296,12 +1300,12 @@ let solve_regs test es csn =
           let a = Misc.as_some (E.global_loc_of e)
           and sz_e = E.get_mem_size e in
           match a with
-          | V.Val (Symbolic ((s,_),idx)) ->
+          | (V.Val (Symbolic ((s,_),idx)),_) ->
               let sz_s =
                 A.look_size (S.size_env test) s in
               if not (List.mem idx (MachSize.get_off sz_s sz_e)) then
                 Warn.user_error "Non aligned or out-of-bound access: %s"
-                  (A.V.pp_v a)
+                  (A.V.pp_v (fst a))
           | _ -> assert false)
         es.E.mem_accesses
 

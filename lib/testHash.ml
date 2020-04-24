@@ -48,7 +48,8 @@ let digest_init debug init =
         | 0 ->
             if
               ParsedConstant.compare v1 v2 <> 0 &&
-              compare t1 t2 <> 0
+              compare t1 t2 <> 0 &&
+              is_address t1 = is_address t2
             then begin
               Warn.fatal
                 "Location %s non-unique in init state"
@@ -59,7 +60,8 @@ let digest_init debug init =
       init in
   let init =
     Misc.rem_dups
-      (fun (loc1,_) (loc2,_) -> location_compare loc1 loc2 = 0)
+      (fun (loc1,(t1,_)) (loc2,(t2,_)) -> location_compare loc1 loc2 = 0
+                                          && is_address t1 = is_address t2)
       init in
 
 (* We perform explicit printing to be  more robust
@@ -88,6 +90,9 @@ let digest_init debug init =
                 (dump_location loc) (ParsedConstant.pp_v v)
           | Atomic t ->
               sprintf "_Atomic %s %s=%s" t
+                (dump_location loc) (ParsedConstant.pp_v v)
+          | Address ->
+              sprintf "&%s=%s"
                 (dump_location loc) (ParsedConstant.pp_v v)
           | Pointer t ->
               sprintf "%s *%s=%s" t

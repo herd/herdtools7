@@ -119,7 +119,7 @@ module type S =
       (MachSize.sz -> A.location -> A.V.v -> E.action) ->
         A.V.v -> A.V.v ->  A.inst_instance_id -> unit t
 
-      val initwrites : (A.location * A.V.v) list -> A.size_env -> unit t
+      val initwrites : (A.location * A.v) list -> A.size_env -> unit t
 
     end
 
@@ -137,6 +137,9 @@ module type S =
     val op : Op.op -> A.V.v -> A.V.v -> A.V.v t
     val op3 : Op.op3 -> A.V.v -> A.V.v -> A.V.v -> A.V.v t
     val add : A.V.v -> A.V.v -> A.V.v t
+    val address_of : A.V.v -> A.V.v t
+    val deref : A.V.v -> A.V.v t
+
 
 (* Equality *)
     val assign : A.V.v -> A.V.v -> unit t

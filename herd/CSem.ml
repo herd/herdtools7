@@ -71,27 +71,27 @@ module Make (Conf:Config)(V:Value.S)
         read_loc is_data no_mo (A.Location_reg (ii.A.proc,r)) ii
 
       let read_mem is_data mo a =
-        read_loc is_data mo (A.Location_global a)
+        read_loc is_data mo (A.Location_global (a,None))
 
       let read_mem_atomic is_data a loc =
         M.read_loc is_data
           (fun loc v -> Act.Access (Dir.R, loc, v,  a, true, nat_sz))
-          (A.Location_global loc)
+          (A.Location_global (loc,None))
 
       let read_mem_atomic_known is_data a loc v =
         M.read_loc is_data
           (fun loc _v -> Act.Access (Dir.R, loc, v,  a, true, nat_sz))
-          (A.Location_global loc)
+          (A.Location_global (loc,None))
 
 
       let write_loc mo loc v ii =
         M.mk_singleton_es (Act.Access (Dir.W, loc, v, mo, false, nat_sz)) ii >>! v
 
       let write_reg r v ii = write_loc no_mo (A.Location_reg (ii.A.proc,r)) v ii
-      let write_mem mo a  = write_loc mo (A.Location_global a)
+      let write_mem mo a  = write_loc mo (A.Location_global (a,None))
       let write_mem_atomic a loc v ii =
         M.mk_singleton_es
-          (Act.Access (Dir.W, A.Location_global loc, v, a, true,nat_sz)) ii >>! v
+          (Act.Access (Dir.W, A.Location_global (loc,None), v, a, true,nat_sz)) ii >>! v
 
 
       let mk_fence_a a ii = M.mk_fence (Act.Fence  (MOorAN.AN a)) ii
@@ -167,18 +167,18 @@ module Make (Conf:Config)(V:Value.S)
           build_semantics_expr is_data loc ii >>=
           fun l ->
             M.altT
-              (linux_lock l ii >>! V.one)
+              (linux_lock (l,None) ii >>! V.one)
               (M.mk_singleton_es
-                 (Act.TryLock (A.Location_global l)) ii >>! V.zero)
+                 (Act.TryLock (A.Location_global (l,None))) ii >>! V.zero)
       | C.IsLocked (_,C.MutexC11) -> assert false
       | C.IsLocked (loc,C.MutexLinux) ->
           build_semantics_expr is_data loc ii >>=
           fun l ->
             M.altT
               (M.mk_singleton_es (* Read from lock *)
-                 (Act.ReadLock (A.Location_global l,true)) ii >>! V.one)
+                 (Act.ReadLock (A.Location_global (l,None),true)) ii >>! V.one)
               (M.mk_singleton_es (* Read from a unlock *)
-                 (Act.ReadLock (A.Location_global l,false)) ii >>! V.zero)
+                 (Act.ReadLock (A.Location_global (l,None),false)) ii >>! V.zero)
       | C.Op(op,e1,e2) ->
           (build_semantics_expr is_data e1 ii >>|
           build_semantics_expr is_data e2 ii) >>= fun (v1,v2) ->
@@ -199,7 +199,7 @@ module Make (Conf:Config)(V:Value.S)
             (build_semantics_expr true e ii >>|
             build_semantics_expr false l ii)
               >>= (fun (v,l) ->
-                read_exchange is_data v mo (A.Location_global l) ii)
+                read_exchange is_data v mo (A.Location_global (l,None)) ii)
 
       | C.CmpExchange (eloc,eold,enew,a) ->
           let add_mb r = match a with
@@ -258,7 +258,7 @@ module Make (Conf:Config)(V:Value.S)
                       (* Do RMW action on "object", to change its value from "expected"
                          to "desired", using memory order "success" *)
                       M.mk_singleton_es
-                        (Act.RMW (A.Location_global loc_obj,v_exp,v_des,success,nat_sz)) ii >>!
+                        (Act.RMW (A.Location_global (loc_obj,None),v_exp,v_des,success,nat_sz)) ii >>!
                       V.one)
 
 
@@ -297,7 +297,7 @@ module Make (Conf:Config)(V:Value.S)
           | _ -> None in
           build_semantics_expr false eloc ii >>=
           fun (vloc) ->
-            M.mk_singleton_es (Act.SRCU (A.Location_global vloc,a,r)) ii
+            M.mk_singleton_es (Act.SRCU (A.Location_global (vloc,None),a,r)) ii
               >>! (match r with None -> V.zero | Some v -> v)
       | C.ECall (f,_) -> Warn.fatal "Macro call %s in CSem" f
 
@@ -324,7 +324,7 @@ module Make (Conf:Config)(V:Value.S)
                   (MOorAN.MO (MemOrder.extract_write mo)) loc w ii >>! oldv
         else
           M.fetch op v
-            (fun v vstored -> Act.RMW (A.Location_global loc,v,vstored,mo,nat_sz))
+            (fun v vstored -> Act.RMW (A.Location_global (loc,None),v,vstored,mo,nat_sz))
             ii
 
       let zero = ParsedConstant.zero
@@ -402,15 +402,15 @@ module Make (Conf:Config)(V:Value.S)
             | C.MutexC11 ->
                 (* C11 Lock always successful, oversimplification?  *)
                 (M.mk_singleton_es
-                   (Act.Lock (A.Location_global l, Act.LockC11 true)) ii)
+                   (Act.Lock (A.Location_global (l,None), Act.LockC11 true)) ii)
             | C.MutexLinux ->
-                linux_lock l ii
+                linux_lock (l,None) ii
             end
                 >>= fun () -> M.unitT (ii.A.program_order_index, B.Next)
         | C.Unlock (l,k) ->
             build_semantics_expr false l ii >>=
             fun l ->
-              M.mk_singleton_es (Act.Unlock (A.Location_global l,k)) ii
+              M.mk_singleton_es (Act.Unlock (A.Location_global (l,None),k)) ii
                 >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
 (********************)
         | C.AtomicOp  (eloc,op,e) ->
@@ -428,7 +428,7 @@ module Make (Conf:Config)(V:Value.S)
             | Some e -> build_semantics_expr true e ii >>= fun v -> M.unitT (Some v))
               >>=
             fun (l,v) ->
-              M.mk_singleton_es (Act.SRCU (A.Location_global l,a,v)) ii
+              M.mk_singleton_es (Act.SRCU (A.Location_global (l,None),a,v)) ii
                 >>= fun _ -> M.unitT (ii.A.program_order_index, B.Next)
 (********************)
           | C.Symb _ -> Warn.fatal "No symbolic instructions allowed."
