@@ -76,6 +76,7 @@ let show = ref (None:ShowGen.t option)
 let debug = ref Debug_gen.none
 let moreedges = ref false
 let realdep = ref false
+let addret = ref false
 
 let parse_cond tag = match tag with
 | "cycle" -> Cycle
@@ -224,6 +225,8 @@ let common_specs =
      sprintf "<i> size of integer added to base name that yield test names (default %i)" !fmt)::
    ("-no", Arg.String (fun s -> no := Some s),
      "<fname> do not generate tests for these cycles")::
+   ("-addret", Arg.Unit (fun () -> addret := true),
+     "prepends functions with void return type, makes valid C when -arch C is used")::
   []
 
 let numeric = ref true

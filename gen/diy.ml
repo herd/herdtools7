@@ -256,6 +256,7 @@ let () =
     let moreedges = !Config.moreedges
     let realdep = !Config.realdep
     let variant = !Config.variant
+    let addret = !Config.addret
   end in
   let module T = Top_gen.Make(Co) in
   let f = match !Config.arch with
