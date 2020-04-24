@@ -52,6 +52,9 @@ module type S = sig
      which need not be pairwise distinct *)
   val of_list : elt list -> t
 
+  (* Takes lists of lists and gets the set of all elements *)
+  val uniq_lists : elt list list -> elt list
+
   (* Should be obvious *)
   val map : (elt -> elt) -> t -> t
   val map_list : (elt -> 'a) -> t -> 'a list
@@ -131,6 +134,10 @@ module Make(O:OrderedType) : S with type elt = O.t =
 
     (* Why not do it that way! *)
     let of_list xs = unions (List.rev_map singleton xs)
+
+    let uniq_lists xss =
+      let sxs = List.map of_list xss in
+      elements (unions sxs)
 
     let map f s =
       fold
