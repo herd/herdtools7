@@ -25,6 +25,9 @@ let base_type = CType.Base "int"
 (* Registers *)
 (*************)
 
+(* RSPecial is assigned for registers like SP that don't have a number by default *)
+(* This means we don't have to double up on the rules in the parser for all *)
+(* for variants of instructions with SP etc...*)
 type gpr =
   | R0  | R1  | R2  | R3
   | R4  | R5  | R6  | R7
@@ -33,7 +36,7 @@ type gpr =
   | R16 | R17 | R18 | R19
   | R20 | R21 | R22 | R23
   | R24 | R25 | R26 | R27
-  | R28 | R29 | R30
+  | R28 | R29 | R30 | RSpecial
 
 type reg =
   | ZR
@@ -53,7 +56,7 @@ let gprs =
   R16; R17; R18; R19 ;
   R20; R21; R22; R23 ;
   R24; R25; R26; R27 ;
-  R28; R29; R30 ;
+  R28; R29; R30; RSpecial;
 ]
 
 let linkreg = Ireg R30
@@ -67,7 +70,8 @@ let xgprs =
  R16,"X16" ; R17,"X17" ; R18,"X18" ; R19,"X19" ;
  R20,"X20" ; R21,"X21" ; R22,"X22" ; R23,"X23" ;
  R24,"X24" ; R25,"X25" ; R26,"X26" ; R27,"X27" ;
- R28,"X28" ; R29,"X29" ; R30,"X30" ;
+ R28,"X28" ; R29,"X29" ; R30,"X30" ; R30, "LR" ;
+ RSpecial,"SP"  ;
 ]
 
 let xregs = (ZR,"XZR")::List.map (fun (r,s) -> Ireg r,s) xgprs
@@ -607,7 +611,7 @@ let do_pp_instruction m =
   | I_OP3 (v,op,r1,r2,kr) ->
       pp_rrkr (pp_op op) v r1 r2 kr
   | I_ADDR (r,lbl) ->
-      sprintf "ADDR %s,%s" (pp_xreg r) (pp_label lbl)
+      sprintf "ADR %s,%s" (pp_xreg r) (pp_label lbl)
   | I_RBIT (v,rd,rs) ->
       sprintf "RBIT %s,%s" (pp_vreg v rd) (pp_vreg v rs)
 (* Barrier *)
