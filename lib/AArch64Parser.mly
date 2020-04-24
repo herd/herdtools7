@@ -33,7 +33,7 @@ module A = AArch64Base
 %token SXTW
 
 /* Instructions */
-%token NOP
+%token NOP HINT
 %token B BR BEQ BNE CBZ CBNZ EQ NE
 %token BL BLR RET
 %token LDR LDP LDNP STP STNP LDRB LDRH STR STRB STRH STLR STLRB STLRH
@@ -184,6 +184,7 @@ cond:
 
 instr:
 | NOP { A.I_NOP }
+| HINT NUM { A.I_NOP }
 /* Branch */
 | B NAME { A.I_B $2 }
 | BR xreg { A.I_BR $2 }
