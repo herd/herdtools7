@@ -171,6 +171,17 @@ module Make
       let read_mem_acquire_pc sz = do_read_mem sz AArch64.Q
       let read_mem_noreturn sz = do_read_mem sz AArch64.NoRet
 
+      (* We calculate addresses from labels L0xf00 -> 0xf00 *)
+      (* This is needed to for literal instructions *)
+      let parse_lbl lbl =
+        (* We should use more robust types for this in the future *)
+        let addr = Str.regexp "L.*" in
+        if Str.string_match addr lbl 0 then
+          int_of_string ("0x"^String.sub lbl 1 (String.length lbl -1))
+        else
+          Warn.fatal "Cannot infer address from label %s" lbl
+
+
       let read_mem_reserve sz an rd a ii =
         (write_reg AArch64.ResAddr a ii >>| do_read_mem sz an rd a ii) >>! ()
 
@@ -282,6 +293,14 @@ module Make
         >>! B.Next
 
       and stlr sz rs rd ii = do_str sz AArch64.L rs (read_reg_ord rd ii) ii
+
+      (* Load literal *)
+      and ldr_lit rd lbl ii =
+        (* We do not use the reg size as we load a word *)
+        let open AArch64Base in
+        M.deref (V.intToV (parse_lbl lbl))
+        >>= fun a -> read_mem MachSize.Word rd a ii
+        >>! B.Next
 
       and ldar sz t rd rs ii =
         let open AArch64 in
@@ -430,6 +449,8 @@ module Make
         | I_LDR(var,rd,rs,kr) ->
             let sz = tr_variant var in
             ldr sz rd rs kr ii
+        | I_LDR_L(_,rd,lbl) ->
+            ldr_lit rd lbl ii
         | I_LDRBH (bh, rd, rs, kr) ->
             let sz = bh_to_sz bh in
             ldr sz rd rs kr ii

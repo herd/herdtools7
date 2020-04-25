@@ -38,6 +38,7 @@ include Arch.MakeArch(struct
 
     | I_CBZ(_,r,lp),I_CBZ(_,r',li)
     | I_CBNZ(_,r,lp),I_CBNZ(_,r',li)
+    | I_LDR_L(_,r,lp), I_LDR_L(_,r',li)
       ->  add_subs [Reg(sr_name r,r'); Lab(lp,li)] subs
 
     | I_MOV(_,r,kr),I_MOV(_,r',kr') ->
@@ -146,6 +147,10 @@ include Arch.MakeArch(struct
         conv_reg r2 >> fun r2 ->
         expl_kr kr >! fun kr ->
         I_LDR(a,r1,r2,kr)
+    | I_LDR_L (v,r,lbl) ->
+        conv_reg r >> fun r ->
+        find_lab lbl >! fun lbl ->
+        I_LDR_L (v,r,lbl)
     | I_LDP(t,a,r1,r2,r3,kr) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->

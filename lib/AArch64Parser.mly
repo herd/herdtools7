@@ -29,6 +29,9 @@ module A = AArch64Base
 %token <string> CODEVAR
 %token <int> PROC
 
+%token <int> HEX
+%token <string> LABEL
+
 %token SEMI COMMA PIPE COLON LBRK RBRK LPAR RPAR SCOPES LEVELS REGIONS
 %token SXTW
 
@@ -182,6 +185,11 @@ cond:
 | EQ { A.EQ }
 | NE { A.NE }
 
+label_addr:
+| HEX LABEL { Printf.sprintf "L%x" $1 }
+| NUM LABEL { Printf.sprintf "L%x" $1 }
+| NAME { $1 }
+
 instr:
 | NOP { A.I_NOP }
 | HINT NUM { A.I_NOP }
@@ -199,6 +207,8 @@ instr:
 /* Memory */
 | LDR reg COMMA LBRK xreg kr0 RBRK
   { let v,r = $2 in A.I_LDR (v,r,$5,$6) }
+| LDR reg COMMA label_addr
+  { let v,r = $2 in A.I_LDR_L (v,r,$4) }
 | ldp_instr wreg COMMA wreg COMMA LBRK xreg kr0_no_shift RBRK
   { $1 A.V32 $2 $4 $7 $8 }
 | ldp_instr xreg COMMA xreg COMMA LBRK xreg kr0_no_shift RBRK

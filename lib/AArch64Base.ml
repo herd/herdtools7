@@ -392,6 +392,7 @@ type 'k kinstruction =
   | I_RET of reg option
 (* Load and Store *)
   | I_LDR of variant * reg * reg * 'k kr
+  | I_LDR_L of variant * reg * lbl
   | I_LDP of temporal * variant * reg * reg * reg * 'k kr
   | I_STP of temporal * variant * reg * reg * reg * 'k kr
   | I_LDAR of variant * ld_type * reg * reg
@@ -552,6 +553,8 @@ let do_pp_instruction m =
       pp_mem "LDR" v r1 r2 k
   | I_LDP (t,v,r1,r2,r3,k) ->
       pp_memp (match t with TT -> "LDP" | NT -> "LDNP") v r1 r2 r3 k
+  | I_LDR_L (_, r,lbl) ->
+      sprintf "LDR %s,%s" (pp_xreg r) (pp_label lbl)
   | I_STP (t,v,r1,r2,r3,k) ->
       pp_memp (match t with TT -> "STP" | NT -> "STNP") v r1 r2 r3 k
   | I_LDAR (v,t,r1,r2) ->
@@ -677,7 +680,7 @@ let fold_regs (f_regs,f_sregs) =
     -> c
   | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_BLR r | I_BR r | I_RET (Some r)
   | I_MOV (_,r,_) | I_ADDR (r,_) | I_IC (_,r) | I_DC (_,r) | I_MRS (r,_)
-    -> fold_reg r c
+  | I_LDR_L (_,r,_) -> fold_reg r c
   | I_LDAR (_,_,r1,r2) | I_STLR (_,r1,r2) | I_STLRBH (_,r1,r2)
   | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2)
   | I_STOP (_,_,_,r1,r2) | I_STOPBH (_,_,_,r1,r2)
@@ -736,6 +739,8 @@ let map_regs f_reg f_symb =
 (* Load and Store *)
   | I_LDR (v,r1,r2,kr) ->
      I_LDR (v,map_reg r1,map_reg r2,map_kr kr)
+  | I_LDR_L (v,r1,lbl) ->
+     I_LDR_L (v,map_reg r1, lbl)
   | I_LDP (t,v,r1,r2,r3,kr) ->
      I_LDP (t,v,map_reg r1,map_reg r2,map_reg r3,map_kr kr)
   | I_STP (t,v,r1,r2,r3,kr) ->
@@ -827,6 +832,7 @@ let get_next = function
   | I_BLR _|I_BR _|I_RET _ -> [Label.Any]
   | I_NOP
   | I_LDR _
+  | I_LDR_L _
   | I_LDP _
   | I_STP _
   | I_STR _
@@ -902,6 +908,7 @@ include Pseudo.Make
         | I_IC _
         | I_DC _
         | I_MRS _
+        | I_LDR_L _
             as keep -> keep
         | I_LDR (v,r1,r2,kr) -> I_LDR (v,r1,r2,kr_tr kr)
         | I_LDP (t,v,r1,r2,r3,kr) -> I_LDP (t,v,r1,r2,r3,kr_tr kr)
@@ -916,7 +923,7 @@ include Pseudo.Make
 
 
       let get_naccesses = function
-        | I_LDR _ | I_LDAR _ | I_LDARBH _
+        | I_LDR _ | I_LDAR _ | I_LDARBH _ | I_LDR_L _
         | I_STR _ | I_STLR _ | I_STLRBH _ | I_STXR _
         | I_LDRBH _ | I_STRBH _ | I_STXRBH _ | I_IC _ | I_DC _
         | I_STG _ | I_LDG _
@@ -951,6 +958,7 @@ include Pseudo.Make
         | I_CBNZ (_,_,lbl)
         | I_BL lbl
         | I_ADDR (_,lbl)
+        | I_LDR_L(_,_,lbl)
           -> f k lbl
         | _ -> k
 
@@ -961,6 +969,7 @@ include Pseudo.Make
         | I_CBZ (v,r,lbl) -> I_CBZ (v,r,f lbl)
         | I_CBNZ (v,r,lbl) -> I_CBNZ (v,r,f lbl)
         | I_ADDR (r,lbl) -> I_ADDR (r, f lbl)
+        | I_LDR_L (v,r,lbl) -> I_LDR_L(v,r,f lbl)
         | ins -> ins
     end)
 

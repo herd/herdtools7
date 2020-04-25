@@ -118,6 +118,16 @@ module Make(V:Constant.S)(C:Config) =
 
     let ldr_memo t = Misc.lowercase (ldr_memo t)
     let str_memo t = Misc.lowercase (str_memo t)
+    let load_literal tr_lab memo v rD lbl = match v with
+      | V32 ->
+          { empty_ins with
+            memo = sprintf "%s ^wo0, %s" memo (A.Out.dump_label (tr_lab lbl));
+            outputs=[rD]; reg_env=[(rD, word)]; }
+      | V64 ->
+          { empty_ins with
+            memo = sprintf "%s ^o0, %s" memo (A.Out.dump_label (tr_lab lbl));
+            outputs=[rD]; reg_env=[(rD, word)]; }
+
 
     let load memo v rD rA kr = match v,kr with
       | V32,K 0 ->
@@ -546,6 +556,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_CBNZ (v,r,lbl) -> cbz tr_lab "cbnz" v r lbl::k
 (* Load and Store *)
     | I_LDR (v,r1,r2,kr) -> load "ldr" v r1 r2 kr::k
+    | I_LDR_L (v, rd, lbl) -> load_literal tr_lab "ldr" v rd lbl::k
     | I_LDP (t,v,r1,r2,r3,kr) ->
         load_pair (match t with TT -> "ldp" | NT -> "ldnp") v r1 r2 r3 kr::k
     | I_STP (t,v,r1,r2,r3,kr) ->
