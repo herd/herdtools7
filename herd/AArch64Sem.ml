@@ -318,6 +318,30 @@ module Make
                   read_mem_acquire_pc sz rd a ii)
           (read_reg_ord rs ii) ii
 
+      let movz sz rd k os ii =
+        let open AArch64Base in
+        let is_imm16 n = n >= 0 && n < 65535 in
+        assert (is_imm16 k);
+        begin match sz, os with
+        | V32, None | V64, None ->
+          (* Or'ing zero with value should zero out what's left *)
+          M.op Op.Or (V.intToV k) V.zero
+        | V32, Some(LSL(0|16 as s))
+        | V64, Some(LSL((0|16|32|48 as s))) ->
+          let v = V.op1 (Op.LeftShift s) (V.intToV k) in
+          M.op Op.Or v V.zero
+        | _, Some(LSL(n)) -> Warn.fatal
+                   "illegal shift immediate %d in %s instruction movz"
+                   n
+                   (pp_variant sz)
+        | _, Some(s) -> Warn.fatal
+                   "illegal shift operand %s in %s instruction movz"
+                   (pp_barrel_shift s pp_imm)
+                   (pp_variant sz)
+        end
+          >>= (fun v -> write_reg rd v ii)
+          >>! B.Next
+
       and stxr sz t rr rs rd ii =
         let open AArch64Base in
         lift_memop
@@ -511,7 +535,11 @@ module Make
         | I_MOV(var,r1,RV (_,r2)) ->
             let sz = tr_variant var in
             read_reg_ord_sz sz r2 ii >>= fun v -> write_reg r1 v ii >>! B.Next
-
+        | I_MOVZ(var,rd,K k,os) ->
+            movz var rd k os ii
+        | I_MOVZ(_,_,_,_) ->
+            Warn.fatal "Illegal argument in movz, expecting imm16 only"
+        
         | I_ADDR (r,lbl) ->
             write_reg r (V.nameToV lbl) ii >>! B.Next
         | I_SXTW(rd,rs) ->

@@ -300,6 +300,10 @@ let inverse_cond = function
 type op = ADD | ADDS | SUB | SUBS | AND | ANDS | ORR | EOR
 type variant = V32 | V64
 
+let pp_variant = function
+  | V32 -> "V32"
+  | V64 -> "V64"
+
 let tr_variant = function
   | V32 -> MachSize.Word
   | V64 -> MachSize.Quad
@@ -381,6 +385,23 @@ let sel_memo = function
   | Inv -> "CSINV"
   | Neg -> "CSNEG"
 
+(* Inline barrel shift and extenders - need to add all variants *)
+type 'k s
+  = LSL of 'k
+  | LSR of 'k
+  | ASR of 'k
+  | SXTW of 'k
+  | UXTW of 'k
+
+let pp_barrel_shift s pp_k = match s with
+  | LSL(k) -> "LSL "  ^ (pp_k k)
+  | LSR(k) -> "LSR "  ^ (pp_k k)
+  | ASR(k) -> "ASR "  ^ (pp_k k)
+  | SXTW(k)-> "SXTW " ^ (pp_k k)
+  | UXTW(k)-> "UXTW " ^ (pp_k k)
+
+let pp_imm n = "#" ^ string_of_int n
+
 type 'k kinstruction =
   | I_NOP
 (* Branches *)
@@ -418,6 +439,7 @@ type 'k kinstruction =
   | I_STOPBH of  atomic_op * bh * w_type  * reg * reg
 (* Operations *)
   | I_MOV of variant * reg * 'k kr
+  | I_MOVZ of variant * reg * 'k kr * 'k s option
   | I_SXTW of reg * reg
   | I_OP3 of variant * op * reg * reg * 'k kr
   | I_ADDR of reg * lbl
@@ -601,6 +623,10 @@ let do_pp_instruction m =
 (* Operations *)
   | I_MOV (v,r,kr) ->
       pp_rkr "MOV" v r kr
+  | I_MOVZ (v,r,kr,Some(s)) ->
+      pp_rkr "MOVZ" v r kr ^ ", " ^ pp_barrel_shift s (m.pp_k)
+  | I_MOVZ (v,r,kr,None) ->
+      pp_rkr "MOVZ" v r kr
   | I_SXTW (r1,r2) ->
       sprintf "SXTW %s,%s" (pp_xreg r1) (pp_wreg r2)
   | I_OP3 (v,SUBS,ZR,r,K k) ->
@@ -679,7 +705,8 @@ let fold_regs (f_regs,f_sregs) =
   | I_NOP | I_B _ | I_BC _ | I_BL _ | I_FENCE _ | I_RET None
     -> c
   | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_BLR r | I_BR r | I_RET (Some r)
-  | I_MOV (_,r,_) | I_ADDR (r,_) | I_IC (_,r) | I_DC (_,r) | I_MRS (r,_)
+  | I_MOV (_,r,_) | I_MOVZ (_,r,_,_)
+  | I_ADDR (r,_) | I_IC (_,r) | I_DC (_,r) | I_MRS (r,_)
   | I_LDR_L (_,r,_) -> fold_reg r c
   | I_LDAR (_,_,r1,r2) | I_STLR (_,r1,r2) | I_STLRBH (_,r1,r2)
   | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2)
@@ -786,6 +813,8 @@ let map_regs f_reg f_symb =
 (* Operations *)
   | I_MOV (v,r,k) ->
       I_MOV (v,map_reg r,k)
+  | I_MOVZ (v,r,k,s) ->
+      I_MOVZ (v,map_reg r,k,s)
   | I_SXTW (r1,r2) ->
       I_SXTW (map_reg r1,map_reg r2)
   | I_OP3 (v,op,r1,r2,kr) ->
@@ -845,6 +874,7 @@ let get_next = function
   | I_LDRBH _
   | I_STRBH _
   | I_MOV _
+  | I_MOVZ _
   | I_SXTW _
   | I_OP3 _
   | I_FENCE _
@@ -875,6 +905,13 @@ include Pseudo.Make
       let kr_tr = function
         | K i -> K (k_tr i)
         | RV _ as kr -> kr
+
+      let ap_shift f s = match s with
+        | LSL(s) -> LSL(f s)
+        | LSR(s) -> LSR(f s)
+        | ASR(s) -> ASR(f s)
+        | SXTW(s)-> SXTW(f s)
+        | UXTW(s)-> UXTW(f s)
 
       let parsed_tr i = match i with
         | I_NOP
@@ -919,6 +956,10 @@ include Pseudo.Make
         | I_LDRBH (v,r1,r2,kr) -> I_LDRBH (v,r1,r2,kr_tr kr)
         | I_STRBH (v,r1,r2,kr) -> I_STRBH (v,r1,r2,kr_tr kr)
         | I_MOV (v,r,k) -> I_MOV (v,r,kr_tr k)
+        | I_MOVZ (v,r,k,None) ->
+          I_MOVZ (v,r,kr_tr k,None)
+        | I_MOVZ (v,r,k,Some(s)) ->
+          I_MOVZ (v,r,kr_tr k,Some(ap_shift k_tr s))
         | I_OP3 (v,op,r1,r2,kr) -> I_OP3 (v,op,r1,r2,kr_tr kr)
 
 
@@ -942,6 +983,7 @@ include Pseudo.Make
         | I_CBZ _
         | I_CBNZ _
         | I_MOV _
+        | I_MOVZ _
         | I_SXTW _
         | I_OP3 _
         | I_FENCE _

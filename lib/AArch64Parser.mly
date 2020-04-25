@@ -35,12 +35,15 @@ module A = AArch64Base
 %token SEMI COMMA PIPE COLON LBRK RBRK LPAR RPAR SCOPES LEVELS REGIONS
 %token SXTW
 
+/* Inline Barrel Shift Operands */
+%token LSL
+
 /* Instructions */
 %token NOP HINT
 %token B BR BEQ BNE CBZ CBNZ EQ NE
 %token BL BLR RET
 %token LDR LDP LDNP STP STNP LDRB LDRH STR STRB STRH STLR STLRB STLRH
-%token CMP MOV ADR
+%token CMP MOV MOVZ ADR
 %token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH
 %token STXR STXRB STXRH STLXR STLXRB STLXRH
 %token <AArch64Base.op> OP
@@ -640,6 +643,14 @@ instr:
   { A.I_MOV (A.V64,$2,$4) }
 | MOV wreg COMMA kwr
   { A.I_MOV (A.V32,$2,$4) }
+| MOVZ xreg COMMA NUM
+  { A.I_MOVZ (A.V64,$2, A.K (MetaConst.Int $4), None) }
+| MOVZ xreg COMMA NUM COMMA LSL k
+  { A.I_MOVZ (A.V64,$2, A.K (MetaConst.Int $4), Some (A.LSL $7)) }
+| MOVZ wreg COMMA kwr
+  { A.I_MOVZ (A.V32,$2,$4, None) }
+| MOVZ wreg COMMA kwr COMMA LSL k
+  { A.I_MOVZ (A.V32,$2,$4, Some (A.LSL $7)) }
 | ADR xreg COMMA NAME
   { A.I_ADDR ($2,$4) }
 | SXTW xreg COMMA wreg

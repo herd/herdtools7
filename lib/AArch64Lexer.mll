@@ -258,6 +258,7 @@ match name with
 (* Operations *)
 | "sxtw"|"SXTW" -> SXTW
 | "mov"|"MOV" -> MOV
+| "movz"|"MOVZ" -> MOVZ
 | "adr"|"ADR" -> ADR
 | "rbit"|"RBIT" -> RBIT
 | "add"|"ADD" -> OP A.ADD
@@ -293,6 +294,8 @@ match name with
 | "nsh"|"NSH" -> NSH
 | "nshst"|"NSHST" -> NSHST
 | "nshld"|"NSHLD" -> NSHLD
+(* inline barrel shift operands *)
+| "lsl" | "LSL" -> LSL
 (* Cache maintenance *)
 | "ic"|"IC" -> IC
 | "dc"|"DC" -> DC
