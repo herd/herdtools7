@@ -177,9 +177,9 @@ module Make
         (* We should use more robust types for this in the future *)
         let addr = Str.regexp "L.*" in
         if Str.string_match addr lbl 0 then
-          int_of_string ("0x"^String.sub lbl 1 (String.length lbl -1))
+          V.intToV (int_of_string ("0x"^String.sub lbl 1 (String.length lbl -1)))
         else
-          Warn.fatal "Cannot infer address from label %s" lbl
+          V.nameToV lbl
 
 
       let read_mem_reserve sz an rd a ii =
@@ -298,7 +298,7 @@ module Make
       and ldr_lit rd lbl ii =
         (* We do not use the reg size as we load a word *)
         let open AArch64Base in
-        M.deref (V.intToV (parse_lbl lbl))
+        M.deref (parse_lbl lbl)
         >>= fun a -> read_mem MachSize.Word rd a ii
         >>! B.Next
 
@@ -541,7 +541,9 @@ module Make
             Warn.fatal "Illegal argument in movz, expecting imm16 only"
         
         | I_ADDR (r,lbl) ->
-            write_reg r (V.nameToV lbl) ii >>! B.Next
+            write_reg r (parse_lbl lbl) ii >>! B.Next
+        | I_ADRP (r,lbl) ->
+            write_reg r (parse_lbl lbl) ii >>! B.Next
         | I_SXTW(rd,rs) ->
             let m = V.op1 (Op.LeftShift 31) V.one in
             (read_reg_ord_sz MachSize.Word rs ii) >>=

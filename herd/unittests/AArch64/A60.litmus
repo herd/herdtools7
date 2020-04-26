@@ -1,0 +1,10 @@
+AArch64 A60
+(* Tests adr, numeric location *)
+
+{ 0:X0=0; }
+
+P0;
+ADR X0, L230000;
+
+exists (0:X0=2293760)
+

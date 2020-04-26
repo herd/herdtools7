@@ -443,6 +443,7 @@ type 'k kinstruction =
   | I_SXTW of reg * reg
   | I_OP3 of variant * op * reg * reg * 'k kr
   | I_ADDR of reg * lbl
+  | I_ADRP of reg * lbl
   | I_RBIT of variant * reg * reg
 (* Barrier *)
   | I_FENCE of barrier
@@ -641,6 +642,8 @@ let do_pp_instruction m =
       pp_rrkr (pp_op op) v r1 r2 kr
   | I_ADDR (r,lbl) ->
       sprintf "ADR %s,%s" (pp_xreg r) (pp_label lbl)
+  | I_ADRP (r,lbl) ->
+      sprintf "ADRP %s,%s" (pp_xreg r) (pp_label lbl)
   | I_RBIT (v,rd,rs) ->
       sprintf "RBIT %s,%s" (pp_vreg v rd) (pp_vreg v rs)
 (* Barrier *)
@@ -706,7 +709,7 @@ let fold_regs (f_regs,f_sregs) =
     -> c
   | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_BLR r | I_BR r | I_RET (Some r)
   | I_MOV (_,r,_) | I_MOVZ (_,r,_,_)
-  | I_ADDR (r,_) | I_IC (_,r) | I_DC (_,r) | I_MRS (r,_)
+  | I_ADDR (r,_) | I_ADRP (r,_) | I_IC (_,r) | I_DC (_,r) | I_MRS (r,_)
   | I_LDR_L (_,r,_) -> fold_reg r c
   | I_LDAR (_,_,r1,r2) | I_STLR (_,r1,r2) | I_STLRBH (_,r1,r2)
   | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2)
@@ -819,7 +822,7 @@ let map_regs f_reg f_symb =
       I_SXTW (map_reg r1,map_reg r2)
   | I_OP3 (v,op,r1,r2,kr) ->
       I_OP3 (v,op,map_reg r1,map_reg r2,map_kr kr)
-  | I_ADDR (r,lbl) ->
+  | I_ADDR (r,lbl) | I_ADRP (r,lbl) ->
       I_ADDR (map_reg r,lbl)
   | I_RBIT (v,r1,r2) ->
       I_RBIT (v,map_reg r1,map_reg r2)
@@ -888,6 +891,7 @@ let get_next = function
   | I_STOP _
   | I_STOPBH _
   | I_ADDR _
+  | I_ADRP _
   | I_RBIT _
   | I_IC _
   | I_DC _
@@ -941,6 +945,7 @@ include Pseudo.Make
         | I_STOP _
         | I_STOPBH _
         | I_ADDR _
+        | I_ADRP _
         | I_RBIT _
         | I_IC _
         | I_DC _
@@ -989,6 +994,7 @@ include Pseudo.Make
         | I_FENCE _
         | I_CSEL _
         | I_ADDR _
+        | I_ADRP _
         | I_RBIT _
         | I_MRS _
           -> 0
@@ -1000,6 +1006,7 @@ include Pseudo.Make
         | I_CBNZ (_,_,lbl)
         | I_BL lbl
         | I_ADDR (_,lbl)
+        | I_ADRP (_,lbl)
         | I_LDR_L(_,_,lbl)
           -> f k lbl
         | _ -> k
@@ -1011,6 +1018,7 @@ include Pseudo.Make
         | I_CBZ (v,r,lbl) -> I_CBZ (v,r,f lbl)
         | I_CBNZ (v,r,lbl) -> I_CBNZ (v,r,f lbl)
         | I_ADDR (r,lbl) -> I_ADDR (r, f lbl)
+        | I_ADRP (r,lbl) -> I_ADRP (r, f lbl)
         | I_LDR_L (v,r,lbl) -> I_LDR_L(v,r,f lbl)
         | ins -> ins
     end)

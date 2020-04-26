@@ -260,6 +260,7 @@ match name with
 | "mov"|"MOV" -> MOV
 | "movz"|"MOVZ" -> MOVZ
 | "adr"|"ADR" -> ADR
+| "adrp"|"ADRP" -> ADRP
 | "rbit"|"RBIT" -> RBIT
 | "add"|"ADD" -> OP A.ADD
 | "adds"|"ADDS" -> OP A.ADDS
