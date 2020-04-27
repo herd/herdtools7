@@ -87,10 +87,9 @@ module Top (Conf:Config) = struct
               | [sz] -> MachSize.pred sz
               | sz::_ -> sz
             end else begin
-              begin match test.Test_herd.access_size with
-              | []|[_] -> ()
-              | _ -> Warn.user_error "illegal mixed-size test"
-              end ;
+              (* Cannot that easily check the test not to mix sizes,
+                 as there are several locations in test that may be of
+                 different sizes *)
               MachSize.Byte
             end in
 (* And run test *)
