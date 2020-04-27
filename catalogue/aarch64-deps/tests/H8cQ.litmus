@@ -12,6 +12,6 @@ STLR W2,[X3] | B.EQ over           ;
              | over:               ;
              | LDR W4,[X10]        ;
              | EOR W9,W4,W4        ; 
-           (*  | MOV W8,#7           ;*)
+             | MOV W8,#7           ;
              | STR W8,[X3,W9,SXTW] ;
 exists (0:X0=7 /\ 1:X0=1)
