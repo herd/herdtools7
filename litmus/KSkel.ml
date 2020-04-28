@@ -697,13 +697,22 @@ let dump_proc tname _test =
   O.oi "return single_open(fp,litmus_proc_show,NULL);" ;
   O.o "}" ;
   O.o "" ;
-  O.o "static const struct file_operations litmus_proc_fops = {" ;
+  O.o "#if defined(KLITMUS_HAVE_STRUCT_PROC_OPS)" ;
+  O.o "static const struct proc_ops litmus_proc_ops = {" ;
+  O.oi ".proc_open    = litmus_proc_open," ;
+  O.oi ".proc_read    = seq_read," ;
+  O.oi ".proc_lseek   = seq_lseek," ;
+  O.oi ".proc_release = single_release," ;
+  O.o "};" ;
+  O.o "#else" ;
+  O.o "static const struct file_operations litmus_proc_ops = {" ;
   O.oi ".owner   = THIS_MODULE," ;
   O.oi ".open    = litmus_proc_open," ;
   O.oi ".read    = seq_read," ;
   O.oi ".llseek   = seq_lseek," ;
   O.oi ".release = single_release," ;
   O.o "};" ;
+  O.o "#endif" ;
   O.o ""
 
 (**************************)
@@ -714,7 +723,7 @@ let dump_init_exit _test =
   O.o "static int __init" ;
   O.o "litmus_init(void) {" ;
   O.oi "int err=0;" ;
-  O.oi "struct proc_dir_entry *litmus_pde = proc_create(\"litmus\",0,NULL,&litmus_proc_fops);" ;
+  O.oi "struct proc_dir_entry *litmus_pde = proc_create(\"litmus\",0,NULL,&litmus_proc_ops);" ;
   O.oi "if (litmus_pde == NULL) { return -ENOMEM; }" ;
   O.oi "stride = stride == 0 ? 1 : stride;" ;
   O.oi "nonline = num_online_cpus ();" ;
