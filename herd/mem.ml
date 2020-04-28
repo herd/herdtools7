@@ -132,6 +132,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
     let mixed = C.variant Variant.Mixed
     let memtag = C.variant Variant.MemTag
+    let dbg = C.debug.Debug_herd.mem
 
 (*****************************)
 (* Event structure generator *)
@@ -284,7 +285,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             Some (tgt,seen)
         else
           Some (tgt,seen)
-        in if false then eprintf "fetch: %s %s\n" lbl (match r with None -> "None" | Some _ -> "Some"); r in
+        in if dbg then eprintf "fetch: %s %s\n" lbl (match r with None -> "None" | Some _ -> "Some"); r in
 
        let rec add_next_instr proc seen addr inst nexts =
          let wrap poi =
@@ -436,30 +437,30 @@ let match_reg_events es =
 
 
 
-let get_rf_value test read rf = match rf with
-| S.Init ->
-    let loc = get_loc read in
-    begin try A.look_address_in_state test.Test_herd.init_state loc
-    with A.LocUndetermined -> assert false end
-| S.Store e -> get_written e
+    let get_rf_value test read rf = match rf with
+    | S.Init ->
+        let loc = get_loc read in
+        begin try A.look_address_in_state test.Test_herd.init_state loc
+        with A.LocUndetermined -> assert false end
+    | S.Store e -> get_written e
 
 (* Add a constraint for two values *)
 
 (* More like an optimization, adding constraint v1 := v2 should work *)
 
-exception Contradiction
+    exception Contradiction
 
-let add_eq v1 v2 eqs =
-  if V.is_var_determined v1 then
-    if V.is_var_determined v2 then
-      if V.compare v1 v2 = 0 then
-        eqs
+    let add_eq v1 v2 eqs =
+      if V.is_var_determined v1 then
+        if V.is_var_determined v2 then
+          if V.compare v1 v2 = 0 then
+            eqs
+          else
+            raise Contradiction
+        else
+          VC.Assign (v2, VC.Atom v1)::eqs
       else
-        raise Contradiction
-    else
-      VC.Assign (v2, VC.Atom v1)::eqs
-  else
-    VC.Assign (v1, VC.Atom v2)::eqs
+        VC.Assign (v1, VC.Atom v2)::eqs
 
     let solve_regs test es csn =
       let rfm = match_reg_events es in
@@ -513,6 +514,17 @@ let add_eq v1 v2 eqs =
       end
 
 (* Add a constraint for a store/load match *)
+    let pp_init load =
+      if dbg then
+        eprintf "Add eq load=%a, store=Init\n%!"
+          E.debug_event load
+
+    let pp_add load store =
+      if dbg then
+        eprintf "Add eq load=%a, store=%a\n%!"
+          E.debug_event load
+          E.debug_event store
+
     let add_mem_eqs test rf load eqs =
       let v_loaded = get_read load in
       match rf with
@@ -520,6 +532,7 @@ let add_eq v1 v2 eqs =
                      not know yet, emit a specific constraint *)
           let state = test.Test_herd.init_state
           and loc_load = get_loc load in
+          pp_init load  ;
           begin try
             let v_stored = A.look_address_in_state state loc_load in
             add_eq v_stored  v_loaded eqs
@@ -528,6 +541,7 @@ let add_eq v1 v2 eqs =
               (v_loaded, VC.ReadInit (loc_load,state))::eqs
           end
       | S.Store store ->
+          pp_add load store ;
           add_eq v_loaded (get_written store)
             (add_eq
                (get_loc_as_value store)
@@ -586,42 +600,46 @@ let add_eq v1 v2 eqs =
    - Not after in program order (suppressed when uniproc
    is not optmised early) *)
     let map_load_possible_stores es loads stores compat_locs =
-      let r =
-        E.EventSet.fold
-          (fun store map_load ->
-            List.map
-              (fun ((load,stores) as c) ->
-                if
-                  compat_locs store load &&
-                  check_speculation es store load &&
-                  (if C.optace then
-                    not (U.is_before_strict es load store)
-                  else true)
-                then
-                  load,S.Store store::stores
-                else c)
-              map_load)
-          stores (map_load_init loads) in
-      List.fold_right
-        (fun (er,ws as p) k ->
-          if (is_spec es er) && C.initwrites then
-            (er,(S.Init::ws))::k
-          else p::k)
-        r []
+      E.EventSet.fold
+        (fun store map_load ->
+          List.map
+            (fun ((load,stores) as c) ->
+              if
+                compat_locs store load &&
+                check_speculation es store load &&
+                (if C.optace then
+                  not (U.is_before_strict es load store)
+                else true)
+              then
+                load,S.Store store::stores
+              else c)
+            map_load)
+        stores (map_load_init loads)
+
 
 (* Add memory events to rfmap *)
-    let add_mem loads stores rfm =
+    let add_mem =
       List.fold_right2
-        (fun er -> S.RFMap.add (S.Load er))
-        loads stores rfm
+        (fun er rf ->  match rf with
+        | None -> fun rfm -> rfm
+        | Some rf -> S.RFMap.add (S.Load er) rf)
+
 
     let add_mems =
       List.fold_right2
         (List.fold_right2 (fun r w ->  S.RFMap.add (S.Load r) (S.Store w)))
 
     let solve_mem_or_res test es rfm cns kont res loads stores compat_locs add_eqs =
-      let loads,possible_stores =
-        List.split (map_load_possible_stores es loads stores compat_locs) in
+      let possible = map_load_possible_stores es loads stores compat_locs in
+      let possible =
+        List.map
+          (fun (er,ws) ->
+            let ws = List.map (fun w -> Some w) ws in
+            (* Add reading from nowhere for speculated reads *)
+            let ws = if is_spec es er then None::ws else ws in
+            er,ws)
+          possible in
+      let loads,possible_stores =  List.split possible in
       (* Cross product fold. Probably an overkill here *)
       Misc.fold_cross possible_stores
         (fun stores res ->
@@ -629,14 +647,14 @@ let add_eq v1 v2 eqs =
              Both lists in same order [by List.split above]. *)
           try
             (* Add constraints now *)
+            if dbg then eprintf "Add equations\n" ;
             let cns =
               List.fold_right2
-                (fun load rf k ->
-                   (*speculated reads from unknown addresses*)
-                   if rf = S.Init && C.initwrites then
-                     k
-                   else add_eqs test rf load k)
+                (fun load rf k -> match rf with
+                | None -> k (* No write, no equation *)
+                | Some rf -> add_eqs test rf load k)
                 loads stores cns in
+            if dbg then eprintf "\n%!" ;
             (* And solve *)
             match VC.solve cns with
             | VC.NoSolns -> res
@@ -691,10 +709,12 @@ let add_eq v1 v2 eqs =
     let solve_mem_non_mixed test es rfm cns kont res =
       let loads =  E.EventSet.filter E.is_mem_load es.E.events
       and stores = E.EventSet.filter E.is_mem_store es.E.events in
-(*
-  eprintf "Loads : %a\n"E.debug_events loads ;
-  eprintf "Stores: %a\n"E.debug_events stores ;
-*)
+
+      if dbg then begin
+        eprintf "Loads : %a\n"E.debug_events loads ;
+        eprintf "Stores: %a\n"E.debug_events stores
+      end ;
+
       let compat_locs = compatible_locs_mem in
       solve_mem_or_res test es rfm cns kont res
         loads stores compat_locs add_mem_eqs
@@ -828,26 +848,26 @@ let add_eq v1 v2 eqs =
               List.filter
                 (fun (gw,i_w,sz_w,_) ->
                   not (not gr && gw) &&
- (* non-ghost reads cannot read from ghost writes *)
+                  (* non-ghost reads cannot read from ghost writes *)
                   i+sz >= i_w && i < i_w+sz_w
- (* write and read intersects *))
+                    (* write and read intersects *))
                 ws in
             x,rs,List.map (fun (_,_,_,ws) -> ws) ws)
           rs in
 (*
-        eprintf "+++++++++++++++++++++++\n" ;
-        List.iter
-        (fun (rs,wss) ->
-        List.iter (eprintf "%a " E.debug_event) rs ;
-        eprintf "->\n" ;
-        List.iter
-        (fun ws ->
-        eprintf "    [" ;
-        List.iter (fun w -> eprintf "%a; " E.debug_event w) ws ;
-        eprintf "]\n")
-        wss ;
-        eprintf "\n")
-        ms ; flush stderr ;
+  eprintf "+++++++++++++++++++++++\n" ;
+  List.iter
+  (fun (rs,wss) ->
+  List.iter (eprintf "%a " E.debug_event) rs ;
+  eprintf "->\n" ;
+  List.iter
+  (fun ws ->
+  eprintf "    [" ;
+  List.iter (fun w -> eprintf "%a; " E.debug_event w) ws ;
+  eprintf "]\n")
+  wss ;
+  eprintf "\n")
+  ms ; flush stderr ;
  *)
       let ms =
         List.map
@@ -936,19 +956,19 @@ let add_eq v1 v2 eqs =
   If no, not need to go on
  *)
 
-  module T = Test_herd.Make(S.A)
+    module T = Test_herd.Make(S.A)
 
-  let final_is_relevant test fsc =
-    let open ConstrGen in
-    let cnstr = T.find_our_constraint test in
-    let senv = S.size_env test in
-    match cnstr with
-      (* Looking for 'Allow' witness *)
-    | ExistsState p ->  CM.check_prop p senv fsc
-          (* Looking for witness that invalidates 'Require' *)
-    | ForallStates p -> not (CM.check_prop p senv fsc)
-          (* Looking for witness that invalidates 'Forbid' *)
-    | NotExistsState p -> CM.check_prop p senv fsc
+    let final_is_relevant test fsc =
+      let open ConstrGen in
+      let cnstr = T.find_our_constraint test in
+      let senv = S.size_env test in
+      match cnstr with
+        (* Looking for 'Allow' witness *)
+      | ExistsState p ->  CM.check_prop p senv fsc
+            (* Looking for witness that invalidates 'Require' *)
+      | ForallStates p -> not (CM.check_prop p senv fsc)
+            (* Looking for witness that invalidates 'Forbid' *)
+      | NotExistsState p -> CM.check_prop p senv fsc
 
     let worth_going test fsc = match C.speedcheck with
     | Speed.True|Speed.Fast -> final_is_relevant test fsc
@@ -1101,7 +1121,7 @@ let add_eq v1 v2 eqs =
             eprintf "Observed locs: {%s}\n"
               (A.LocSet.pp_str "," A.pp_location   observed_locs)
           end ;
-         U.LocEnv.fold
+          U.LocEnv.fold
             (fun loc ws k ->
               if A.LocSet.mem loc observed_locs then
                 U.LocEnv.add loc ws k
@@ -1228,17 +1248,17 @@ let add_eq v1 v2 eqs =
             with Not_found -> S.RFMap.add (S.Final loc) S.Init k)
           loc_loads rfm in
       try
-       let pco0 =
+        let pco0 =
           if C.initwrites then U.compute_pco_init es
           else E.EventRel.empty in
-         (*jade: looks ok even in specul case: writes from init are before all
-            other writes, including speculated writes*)
-         let pco =
+        (*jade: looks ok even in specul case: writes from init are before all
+          other writes, including speculated writes*)
+        let pco =
           if not C.optace then
             pco0
           else
-          (*jade: looks compatible with speculation, but there might be some
-             unforeseen subtlety here so flagging it to be sure*)
+            (*jade: looks compatible with speculation, but there might be some
+              unforeseen subtlety here so flagging it to be sure*)
             match U.compute_pco rfm ppoloc with
             | None -> raise Exit
             | Some pco -> E.EventRel.union pco0 pco in
@@ -1253,7 +1273,7 @@ let add_eq v1 v2 eqs =
                 (fun es -> List.iter (fun e -> eprintf " %a"  E.debug_event e) es ; eprintf "\n") ws ;
               eprintf "END\n"
             end ;
-           let rfm =
+            let rfm =
               fold_left_left
                 (fun k w ->
                   S.RFMap.add (S.Final (get_loc w)) (S.Store w) k)
@@ -1288,19 +1308,19 @@ let add_eq v1 v2 eqs =
               else begin
                 if C.debug.Debug_herd.solver then begin
                   let conc =
-                  {
-                   S.str = es ;
-                   rfmap = rfm ;
-                   fs = fsc ;
-                   po = po_iico ;
-                   pos = ppoloc ;
-                   pco = pco ;
+                    {
+                     S.str = es ;
+                     rfmap = rfm ;
+                     fs = fsc ;
+                     po = po_iico ;
+                     pos = ppoloc ;
+                     pco = pco ;
 
-                   store_load_vbf = store_load_vbf ;
-                   init_load_vbf = init_load_vbf ;
-                   last_store_vbf = last_store_vbf ;
-                   atomic_load_store = atomic_load_store ;
-                 } in
+                     store_load_vbf = store_load_vbf ;
+                     init_load_vbf = init_load_vbf ;
+                     last_store_vbf = last_store_vbf ;
+                     atomic_load_store = atomic_load_store ;
+                   } in
                   let module PP = Pretty.Make(S) in
                   eprintf "PCO is cyclic, discarding candidate\n%!" ;
                   PP.show_legend test "PCO is cyclic" conc [("last_store_vbf",last_store_vbf); ("pco",pco);];
@@ -1390,8 +1410,8 @@ let add_eq v1 v2 eqs =
             (fun es rfm cs res ->
               match cs with
               | _::_ when not C.initwrites ->
-                (*jade: on tolere qu'il reste des equations dans le cas d'evts specules - mais il faudrait sans doute le preciser dans la clause when ci-dessus*)
-                when_unsolved test es rfm cs kont_loop res
+                  (*jade: on tolere qu'il reste des equations dans le cas d'evts specules - mais il faudrait sans doute le preciser dans la clause when ci-dessus*)
+                  when_unsolved test es rfm cs kont_loop res
               | _ ->
                   if mixed then check_aligned test es ;
                   if A.reject_mixed then check_sizes es ;
