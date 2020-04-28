@@ -1251,6 +1251,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
                       match e0.E.iiid with
                       | Some iiid -> iiid.A.inst
                       | None -> assert false in
+                    E.pp_instance e0 ^ " " ^
                     a_pp_instruction dm mmode ins
                   else "" in
                 fprintf chan "subgraph cluster_proc%i_poi%i" n m ;

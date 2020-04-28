@@ -18,11 +18,21 @@ module type S =  sig
   type elt0
 
   module Elts : MySet.S with type elt = elt0
-
   include Rel.S with
   type elt1 = elt0 and type elt2 = elt0
   and module Elts1 = Elts
   and module Elts2 = Elts
+
+(* Map representation *)
+  module M : sig
+    module ME : Map.S with type key = elt0
+    type map = Elts.t ME.t
+    val succs : elt0 -> map -> Elts.t
+    val add : elt0 -> elt0 -> map -> map
+    val subrel : map -> map -> bool
+    val to_map : t -> map
+    val of_map : map -> t
+  end
 
 (* All elements related *)
   val nodes : t -> Elts.t
@@ -121,6 +131,18 @@ module type S =  sig
 
 (* strata ie sets of nodes by increasing distance *)
   val strata : Elts.t -> t -> Elts.t list
+
+(*****************************************************************************)
+(* "Bisimulation" w.r.t. relation r, with initial equivalence relation equiv *)
+(*****************************************************************************)
+
+(*
+   `bisimulation T E0` computes the greater equivalence E such that
+   E0 greater than E
+   e1 <-E-> e2,  e1 -T-> e1' ==> exists e2' s.t. e2 -T-> e2', e1' <-E-> e2'
+   e1 <-E-> e2,  e2 -T-> e2' ==> exists e1' s.t. e1 -T-> e1', e2' <-E-> e1'
+*)
+   val bisimulation : t (* transition *) -> t (* equivalence *)-> t
 end
 
 module Make(O:MySet.OrderedType) : S
@@ -239,7 +261,10 @@ and module Elts = MySet.Make(O) =
 
 (* Some operations can be accerelated with maps *)
     module M = struct
+
       module ME = Map.Make(O)
+
+      type map = Elts.t ME.t
 
       let succs e m = try ME.find e m with Not_found -> Elts.empty
 
@@ -260,6 +285,18 @@ and module Elts = MySet.Make(O) =
             (fun e1 es k -> of_succs e1 es::k)
             m [] in
         unions xs
+
+(* sub relation *)
+
+      let subrel m1 m2 =
+        try
+          ME.iter
+            (fun x n1 ->
+              let n2 = succs x m2 in
+              if not (Elts.subset n1 n2) then raise Exit)
+            m1 ;
+          true
+        with Exit -> false
 
 (* Transitive closure the naive way,
    not significantly worse than before... *)
@@ -339,12 +376,47 @@ and module Elts = MySet.Make(O) =
             if Elts.is_empty stplus then []
             else stplus::do_rec (Elts.union seen stplus) stplus in
           st0::do_rec st0 st0
+
+(****************)
+(* bisimulation *)
+(****************)
+
+      let ok x y e =  Elts.mem x (succs y e)
+
+      let matches xs ys e =
+        Elts.for_all
+          (fun x -> Elts.exists (fun y -> ok x y e) ys)
+          xs
+
+      let step t e =
+        ME.fold
+          (fun x ys k ->
+            let next_x = succs x t in
+            Elts.fold
+              (fun y k ->
+                if O.compare x y = 0 then
+                (* Optimisation, when identical will stay in o forever *)
+                  add x y k
+                else
+                  let next_y = succs y t in
+                  if
+                    matches next_x next_y e &&
+                    matches next_y next_x e
+                  then
+                    add x y k
+                  else k)
+              ys k)
+          e ME.empty
+
+      let rec fix t e =
+        let next = step t e in
+        if subrel e next then e else fix t next
+
+      let bisimulation t e0 = fix t e0
+
     end
 
-
     let transitive_closure r = M.of_map (M.tr (M.to_map r))
-
-
 
 (* Acyclicity check *)
 
@@ -618,5 +690,15 @@ and module Elts = MySet.Make(O) =
 (**********)
 (* Strata *)
 (**********)
+
     let strata es r = M.strata es r
+
+(****************)
+(* Bisimulation *)
+(****************)
+
+    let bisimulation t e0 =
+      let e = M.bisimulation (M.to_map t) (M.to_map e0) in
+      M.of_map e
+
   end

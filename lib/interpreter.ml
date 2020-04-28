@@ -48,6 +48,7 @@ module type SimplifiedSem = sig
     type event
     val event_compare : event -> event -> int
     val pp_eiid : event -> string
+    val pp_instance : event -> string
 
     module EventSet : MySet.S
     with type elt = event
@@ -818,6 +819,60 @@ module Make
       u_rec
 
 (* Definition of primitives *)
+
+    module type PrimArg = sig
+      type base
+      module Rel : InnerRel.S with type elt0=base
+      val debug_set : out_channel -> Rel.Elts.t -> unit
+      val debug_rel : out_channel -> Rel.t -> unit
+      val mk_val : Rel.t -> V.v
+      val typ : typ
+    end
+
+    module EventArg = struct
+      type base = E.event
+      module Rel = E.EventRel
+      let debug_set = debug_set
+      let debug_rel = debug_rel
+      let mk_val r = Rel r
+      let typ = TRel
+    end
+
+    module ClassArg = struct
+      type base = E.EventSet.t
+      module Rel = ClassRel
+      let debug_set chan ss =
+        fprintf chan "{%a}"
+          (fun chan ss -> ClassRel.Elts.pp chan "," debug_set ss)
+          ss
+      let debug_rel = debug_class_rel
+      let mk_val r = ClassRel r
+      let typ = TClassRel
+    end
+
+(* Debug ClassRel's as instance relations
+    module InstanceArg = struct
+      type base = E.EventSet.t
+      module Rel = ClassRel
+      let debug_set chan ss =
+        fprintf chan "{%a}"
+          (fun chan ss -> ClassRel.Elts.pp chan "," debug_set ss)
+          ss
+    let debug_instance chan es =
+      try fprintf chan "%s"  (E.pp_instance (E.EventSet.choose es))
+      with Not_found -> assert false
+
+    let debug_instance_rel chan r =
+      ClassRel.pp chan ","
+        (fun chan (e1,e2) -> fprintf chan "{%a -> %a}"
+            debug_instance e1 debug_instance e2)
+        r
+
+      let debug_rel = debug_instance_rel
+      let mk_val r = ClassRel r
+      let typ = TClassRel
+    end
+*)
     let arg_mismatch () = raise (PrimError "argument mismatch")
 
     let partition arg = match arg with
@@ -867,6 +922,7 @@ module Make
             clsr [] in
         Rel (E.EventRel.unions r)
     | _ -> arg_mismatch ()
+
 (* Restrict delift by intersection (fulldeflift(clsr) & loc) *)
     and delift arg = match arg with
     | V.Tuple[Rel m;ClassRel clsr] ->
@@ -883,17 +939,8 @@ module Make
     | _ -> arg_mismatch ()
 
     and linearisations =
-      let module
-          Make =
-        functor
-        (In : sig
-          type base
-          module Rel : InnerRel.S with type elt0=base
-          val debug_set : out_channel -> Rel.Elts.t -> unit
-          val debug_rel : out_channel -> Rel.t -> unit
-          val mk_val : Rel.t -> V.v
-          val typ : typ
-        end) -> struct
+      let module Make =
+        functor (In : PrimArg) -> struct
           let mem = In.Rel.Elts.mem
           let zyva es r =
             if O.debug && O.verbose > 1 then begin
@@ -934,35 +981,22 @@ module Make
         end in
       fun ks arg -> match arg with
       | V.Tuple [Set es;Rel r;] ->
-          let module L =
-            Make
-              (struct
-                type base = E.event
-                module Rel = E.EventRel
-                let debug_set = debug_set
-                let debug_rel = debug_rel
-                let mk_val r = Rel r
-                let typ = TRel
-              end) in
+          let module L = Make(EventArg) in
           L.zyva es r
       | V.Tuple [ValSet (TEvents,es);ClassRel r;] ->
-          let module L =
-            Make
-              (struct
-                type base = E.EventSet.t
-                module Rel = ClassRel
-                let debug_set chan ss =
-                  fprintf chan "{%a}"
-                    (fun chan ss -> ClassRel.Elts.pp chan "," debug_set ss)
-                    ss
-                let debug_rel = debug_class_rel
-                let mk_val r = ClassRel r
-                let typ = TClassRel
-              end) in
+          let module L = Make(ClassArg) in
           let es =
             let sets = ValSet.fold (fun v k -> as_set ks v::k) es [] in
             ClassRel.Elts.of_list sets in
           L.zyva es r
+      | _ -> arg_mismatch ()
+
+    and bisimulation =
+      fun arg -> match arg with
+      | V.Tuple [Rel t; Rel e; ] ->
+          Rel (E.EventRel.bisimulation t e)
+      | V.Tuple [ClassRel t; ClassRel e; ] ->
+          ClassRel (ClassRel.bisimulation t e)
       | _ -> arg_mismatch ()
 
     and tag2scope env arg = match arg with
@@ -1083,6 +1117,7 @@ module Make
          "delift",delift;
          "fulldelift",fulldelift;
          "linearisations",linearisations ks;
+         "bisimulation",bisimulation;
          "tag2scope",tag2scope m;
          "tag2level",tag2scope m;
          "tag2events",tag2events m;

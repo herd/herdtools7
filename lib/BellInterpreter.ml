@@ -55,7 +55,8 @@ module Make (C: Config) = struct
 
         type event = unit
         let event_compare () () = 0
-        let pp_eiid () = "a"
+        let pp_eiid () = "eiid"
+        let pp_instance () = "instance"
 
         module Ordered = struct
           type t = unit

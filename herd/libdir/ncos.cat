@@ -1,10 +1,10 @@
 "Generate co's" 
 
-include "ncross.cat"
+include "cross.cat"
 
 let invrf = rf^-1
 let cobase = co0
-with co from generate_cos(cobase)
+with co from generate_orders(W\SPEC,cobase)
 
 (* From now, co is a coherence order *)
 let coi = co & int

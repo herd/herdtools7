@@ -25,6 +25,17 @@ module type S =  sig
   type elt1 = elt0 and type elt2 = elt0
   and module Elts1 = Elts and module Elts2 = Elts
 
+(* Map representation *)
+  module M : sig
+    module ME : Map.S with type key = elt0
+    type map = Elts.t ME.t
+    val succs : elt0 -> map -> Elts.t
+    val add : elt0 -> elt0 -> map -> map
+    val subrel : map -> map -> bool
+    val to_map : t -> map
+    val of_map : map -> t
+  end
+
 (* All elements related *)
   val nodes : t -> Elts.t
 
@@ -121,6 +132,20 @@ module type S =  sig
 
 (* strata ie sets of nodes by increasing distance *)
   val strata : Elts.t -> t -> Elts.t list
+
+(*****************************************************************************)
+(* "Bisimulation" w.r.t. relation r, with initial equivalence relation equiv *)
+(*****************************************************************************)
+
+(*
+   `bisimulation T E0` computes the greater equivalence E such that
+   E0 greater than E
+   e1 <-E-> e2,  e1 -T-> e1' ==> exists e2' s.t. e2 -T-> e2', e1' <-E-> e2'
+   e1 <-E-> e2,  e2 -T-> e2' ==> exists e1' s.t. e1 -T-> e1', e2' <-E-> e1'
+
+*)
+   val bisimulation : t (* transition *) -> t (* equivalence *)-> t
+
 end
 
 module Make:

@@ -110,9 +110,11 @@ module Make
       let same_value e1 e2 = match S.E.value_of e1,S.E.value_of e2 with
       | Some v1,Some v2 -> S.A.V.compare v1 v2 = 0
       | _ -> false
+
     end
 
     module I = Interpreter.Make(IConfig)(S)(IUtils)
+    module Equiv = EquivSpec.Make(S)
     module E = S.E
 
 (* Local utility: bell event selection *)
@@ -184,6 +186,7 @@ module Make
         else
           E.EventRel.set_to_rln (Lazy.force mem_evts)
       end in
+      let rf_reg = lazy (U.make_rf_regs conc) in
 (* Initial env *)
       let m =
         I.add_rels
@@ -218,12 +221,14 @@ module Make
               "sm",si; "si",si;
               "iico_data", lazy conc.S.str.E.intra_causality_data;
               "iico_ctrl", lazy conc.S.str.E.intra_causality_control;
-              "rf-reg", lazy (U.make_rf_regs conc);
+              "rf-reg", rf_reg ;
               "same-instr", lazy begin E.EventRel.of_pred all_evts all_evts E.same_instruction end;
+              "same-instance", lazy begin E.EventRel.of_pred all_evts all_evts E.same_instance end;
+              "equiv-spec", lazy begin Equiv.build (Lazy.force rf_reg) all_evts end;
             ]) in
       let m =
         let spec = conc.S.str.E.speculated in
-        let is_spec = (fun e -> E.EventSet.mem e spec) in 
+        let is_spec = (fun e -> E.EventSet.mem e spec) in
         let data_ports = conc.S.str.E.data_ports in
         let is_data_port = (fun e -> E.EventSet.mem e data_ports) in
         I.add_sets m
@@ -289,7 +294,7 @@ module Make
                 (BellModel.get_mem_annots bi) in
             let open MiscParser in
             begin match test.Test_herd.extra_data with
-            (* No region in test, empty regions *)
+              (* No region in test, empty regions *)
             | NoExtra|BellExtra {BellInfo.regions=None;_} ->
                 I.add_sets m
                   (List.map

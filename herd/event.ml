@@ -38,9 +38,11 @@ module type S = sig
       action : action;  }
 
 val same_instruction : event -> event -> bool
+val same_instance : event -> event -> bool
 
 (* Only basic printing is here *)
   val pp_eiid       : event -> string
+  val pp_instance   : event -> string
   val pp_action     : event -> string
   val debug_event : out_channel -> event -> unit
 
@@ -386,10 +388,20 @@ struct
       | _,None -> false
       | Some i1,Some i2 -> A.same_instruction i1 i2
 
+    let same_instance e1 e2 =
+      match e1.iiid,e2.iiid with
+      | (None,_) | (_,None) -> false
+      | Some i1,Some i2 -> A.inst_instance_compare i1 i2 = 0
+
     let pp_eiid e =
       if e.eiid < 26 then
         String.make 1 (Char.chr (Char.code 'a' + e.eiid))
       else "ev"^string_of_int e.eiid
+
+    let  pp_instance e =
+      match e.iiid with
+      | None -> sprintf "init(%s)" (pp_eiid e)
+      | Some i -> sprintf "%i:%i" i.A.proc i.A.program_order_index
 
     let pp_action e = Act.pp_action e.action
 
