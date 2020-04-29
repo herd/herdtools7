@@ -25,7 +25,7 @@ let base_type = CType.Base "int"
 (* Registers *)
 (*************)
 
-(* RSPecial is assigned for registers like SP that don't have a number by default *)
+(* Registers like SP that don't have a number by default *)
 (* This means we don't have to double up on the rules in the parser for all *)
 (* for variants of instructions with SP etc...*)
 type gpr =
@@ -36,7 +36,7 @@ type gpr =
   | R16 | R17 | R18 | R19
   | R20 | R21 | R22 | R23
   | R24 | R25 | R26 | R27
-  | R28 | R29 | R30 | RSpecial
+  | R28 | R29 | R30 | SP
 
 type reg =
   | ZR
@@ -56,7 +56,7 @@ let gprs =
   R16; R17; R18; R19 ;
   R20; R21; R22; R23 ;
   R24; R25; R26; R27 ;
-  R28; R29; R30; RSpecial;
+  R28; R29; R30; SP  ;
 ]
 
 let linkreg = Ireg R30
@@ -71,7 +71,7 @@ let xgprs =
  R20,"X20" ; R21,"X21" ; R22,"X22" ; R23,"X23" ;
  R24,"X24" ; R25,"X25" ; R26,"X26" ; R27,"X27" ;
  R28,"X28" ; R29,"X29" ; R30,"X30" ; R30, "LR" ;
- RSpecial,"SP"  ;
+ SP,"SP"   ;
 ]
 
 let xregs = (ZR,"XZR")::List.map (fun (r,s) -> Ireg r,s) xgprs
@@ -392,6 +392,7 @@ type 'k s
   | ASR of 'k
   | SXTW of 'k
   | UXTW of 'k
+  | NOEXT
 
 let pp_barrel_shift s pp_k = match s with
   | LSL(k) -> "LSL "  ^ (pp_k k)
@@ -399,6 +400,7 @@ let pp_barrel_shift s pp_k = match s with
   | ASR(k) -> "ASR "  ^ (pp_k k)
   | SXTW(k)-> "SXTW " ^ (pp_k k)
   | UXTW(k)-> "UXTW " ^ (pp_k k)
+  | NOEXT  -> ""
 
 let pp_imm n = "#" ^ string_of_int n
 
@@ -439,7 +441,7 @@ type 'k kinstruction =
   | I_STOPBH of  atomic_op * bh * w_type  * reg * reg
 (* Operations *)
   | I_MOV of variant * reg * 'k kr
-  | I_MOVZ of variant * reg * 'k kr * 'k s option
+  | I_MOVZ of variant * reg * 'k kr * 'k s
   | I_SXTW of reg * reg
   | I_OP3 of variant * op * reg * reg * 'k kr
   | I_ADDR of reg * lbl
@@ -624,10 +626,10 @@ let do_pp_instruction m =
 (* Operations *)
   | I_MOV (v,r,kr) ->
       pp_rkr "MOV" v r kr
-  | I_MOVZ (v,r,kr,Some(s)) ->
-      pp_rkr "MOVZ" v r kr ^ ", " ^ pp_barrel_shift s (m.pp_k)
-  | I_MOVZ (v,r,kr,None) ->
+  | I_MOVZ (v,r,kr,NOEXT) ->
       pp_rkr "MOVZ" v r kr
+  | I_MOVZ (v,r,kr,s) ->
+      pp_rkr "MOVZ" v r kr ^ ", " ^ pp_barrel_shift s (m.pp_k)
   | I_SXTW (r1,r2) ->
       sprintf "SXTW %s,%s" (pp_xreg r1) (pp_wreg r2)
   | I_OP3 (v,SUBS,ZR,r,K k) ->
@@ -916,6 +918,7 @@ include Pseudo.Make
         | ASR(s) -> ASR(f s)
         | SXTW(s)-> SXTW(f s)
         | UXTW(s)-> UXTW(f s)
+        | NOEXT  -> NOEXT
 
       let parsed_tr i = match i with
         | I_NOP
@@ -961,10 +964,10 @@ include Pseudo.Make
         | I_LDRBH (v,r1,r2,kr) -> I_LDRBH (v,r1,r2,kr_tr kr)
         | I_STRBH (v,r1,r2,kr) -> I_STRBH (v,r1,r2,kr_tr kr)
         | I_MOV (v,r,k) -> I_MOV (v,r,kr_tr k)
-        | I_MOVZ (v,r,k,None) ->
-          I_MOVZ (v,r,kr_tr k,None)
-        | I_MOVZ (v,r,k,Some(s)) ->
-          I_MOVZ (v,r,kr_tr k,Some(ap_shift k_tr s))
+        | I_MOVZ (v,r,k,NOEXT) ->
+          I_MOVZ (v,r,kr_tr k,NOEXT)
+        | I_MOVZ (v,r,k,s) ->
+          I_MOVZ (v,r,kr_tr k,ap_shift k_tr s)
         | I_OP3 (v,op,r1,r2,kr) -> I_OP3 (v,op,r1,r2,kr_tr kr)
 
 

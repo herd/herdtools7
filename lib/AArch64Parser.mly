@@ -189,9 +189,11 @@ cond:
 | NE { A.NE }
 
 label_addr:
-| HEX LABEL { Printf.sprintf "L%x" $1 }
-| NUM LABEL { Printf.sprintf "L%x" $1 }
-| NAME { $1 }
+| HEX LABEL { Printf.sprintf "0x%x" $1 }
+| HEX       { Printf.sprintf "0x%x" $1 }
+| NUM LABEL { Printf.sprintf "%d" $1 }
+| NUM       { Printf.sprintf "%d" $1 }
+| NAME      { $1 }
 
 instr:
 | NOP { A.I_NOP }
@@ -644,13 +646,13 @@ instr:
 | MOV wreg COMMA kwr
   { A.I_MOV (A.V32,$2,$4) }
 | MOVZ xreg COMMA NUM
-  { A.I_MOVZ (A.V64,$2, A.K (MetaConst.Int $4), None) }
+  { A.I_MOVZ (A.V64,$2, A.K (MetaConst.Int $4), A.NOEXT) }
 | MOVZ xreg COMMA NUM COMMA LSL k
-  { A.I_MOVZ (A.V64,$2, A.K (MetaConst.Int $4), Some (A.LSL $7)) }
+  { A.I_MOVZ (A.V64,$2, A.K (MetaConst.Int $4), A.LSL $7) }
 | MOVZ wreg COMMA kwr
-  { A.I_MOVZ (A.V32,$2,$4, None) }
+  { A.I_MOVZ (A.V32,$2,$4, A.NOEXT) }
 | MOVZ wreg COMMA kwr COMMA LSL k
-  { A.I_MOVZ (A.V32,$2,$4, Some (A.LSL $7)) }
+  { A.I_MOVZ (A.V32,$2,$4, A.LSL $7) }
 | ADR xreg COMMA label_addr
   { A.I_ADDR ($2,$4) }
 | ADRP xreg COMMA label_addr

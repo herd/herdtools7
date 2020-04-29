@@ -89,7 +89,8 @@ include Arch.MakeArch(struct
       | SXTW(n) ->
           find_cst n >! fun n -> SXTW(n)
       | UXTW(n) ->
-          find_cst n >! fun n -> UXTW(n) in
+          find_cst n >! fun n -> UXTW(n)
+      | NOEXT -> fun n -> NOEXT, n in
 
 
     function
@@ -119,15 +120,15 @@ include Arch.MakeArch(struct
         conv_reg r >> fun r ->
         expl_kr kr >! fun kr ->
         I_MOV(a,r,kr)
-    | I_MOVZ(a,r,kr,Some(s)) ->
+    | I_MOVZ(a,r,kr,NOEXT) ->
+        conv_reg r >> fun r  ->
+        expl_kr kr >! fun kr ->
+        I_MOVZ(a,r,kr,NOEXT)
+    | I_MOVZ(a,r,kr,s) ->
         conv_reg r >> fun r  ->
         expl_kr kr >> fun kr ->
         find_shift s >! fun s->
-        I_MOVZ(a,r,kr,Some(s))
-    | I_MOVZ(a,r,kr,None) ->
-        conv_reg r >> fun r  ->
-        expl_kr kr >! fun kr ->
-        I_MOVZ(a,r,kr,None)
+        I_MOVZ(a,r,kr,s)
     | I_ADDR (r,lbl) ->
         conv_reg r >> fun r ->
         find_lab lbl >! fun lbl ->

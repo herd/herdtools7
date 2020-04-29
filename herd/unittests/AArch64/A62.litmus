@@ -4,7 +4,7 @@ AArch64 A62
 { 0:X0=0; }
 
 P0;
-ADRP X0, L230000;
+ADRP X0, 0x230000;
 
 exists (0:X0=2293760)
 

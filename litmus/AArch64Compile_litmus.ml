@@ -56,6 +56,15 @@ module Make(V:Constant.S)(C:Config) =
     let add_q = add_type quad
     let add_v = add_type voidstar
 
+(* pretty prints barrel shifters *)
+let pp_shifter = function
+  | LSL(s) -> Printf.sprintf "LSL #%d" s;
+  | LSR(s) -> Printf.sprintf "LSR #%d" s;
+  | ASR(s) -> Printf.sprintf "ASR #%d" s;
+  | SXTW(s) -> Printf.sprintf "SXTW #%d" s;
+  | UXTW(s) -> Printf.sprintf "UXTW #%d" s;
+  | NOEXT  -> ""
+
 (************************)
 (* Template compilation *)
 (************************)
@@ -126,7 +135,7 @@ module Make(V:Constant.S)(C:Config) =
       | V64 ->
           { empty_ins with
             memo = sprintf "%s ^o0, %s" memo (A.Out.dump_label (tr_lab lbl));
-            outputs=[rD]; reg_env=[(rD, word)]; }
+            outputs=[rD]; reg_env=[(rD, quad)]; }
 
 
     let load memo v rD rA kr = match v,kr with
@@ -441,23 +450,23 @@ module Make(V:Constant.S)(C:Config) =
           memo=sprintf "%s %s,%s" memo f1 f2;
           inputs = r2; outputs=r1; reg_env=add_q (r1@r2);}
 
-    let do_mov memo v rd k os = match v, k, os with
-    | V32, K k, Some(LSL(s)) ->
+    let do_movz memo v rd k os = match v, k, os with
+    | V32, K k, LSL(s) ->
         let r1,f1 = arg1 "wzr" (fun s -> "^wo"^s) rd in
         { empty_ins with
-          memo=sprintf "%s %s, #%d, LSL #%d" memo f1 k s;
+          memo=sprintf "%s %s, #%d, %s" memo f1 k (pp_shifter (LSL s));
           outputs=r1; reg_env=add_w r1;}
-    | V32, K k, None ->
+    | V32, K k, NOEXT ->
         let r1,f1 = arg1 "wzr" (fun s -> "^wo"^s) rd in
         { empty_ins with
           memo=sprintf "%s %s, #%d" memo f1 k;
           outputs=r1; reg_env=add_w r1;}
-    | V64, K k, Some(LSL(s)) ->
+    | V64, K k, LSL(s) ->
         let r1,f1 = arg1 "xzr" (fun s -> "^o"^s) rd in
         { empty_ins with
-          memo=sprintf "%s %s, #%d, LSL #%d" memo f1 k s;
+          memo=sprintf "%s %s, #%d, %s" memo f1 k (pp_shifter (LSL s));
           outputs=r1; reg_env=add_q r1;}
-    | V64, K k, None ->
+    | V64, K k, NOEXT ->
         let r1,f1 = arg1 "xzr" (fun s -> "^o"^s) rd in
         { empty_ins with
           memo=sprintf "%s %s, #%d" memo f1 k;
@@ -466,7 +475,7 @@ module Make(V:Constant.S)(C:Config) =
 
 
     let movr = do_movr "mov"
-    and movz = do_mov "movz"
+    and movz = do_movz "movz"
     and rbit = do_movr "rbit"
 
     let sxtw r1 r2 =

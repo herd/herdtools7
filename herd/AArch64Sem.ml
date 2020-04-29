@@ -171,15 +171,13 @@ module Make
       let read_mem_acquire_pc sz = do_read_mem sz AArch64.Q
       let read_mem_noreturn sz = do_read_mem sz AArch64.NoRet
 
-      (* We calculate addresses from labels L0xf00 -> 0xf00 *)
+      (* We calculate addresses from labels 0xf00 *)
+      (* non-numeric addresses work too x *)
       (* This is needed to for literal instructions *)
       let parse_lbl lbl =
         (* We should use more robust types for this in the future *)
-        let addr = Str.regexp "L.*" in
-        if Str.string_match addr lbl 0 then
-          V.intToV (int_of_string ("0x"^String.sub lbl 1 (String.length lbl -1)))
-        else
-          V.nameToV lbl
+          try V.intToV (int_of_string lbl)
+          with _ -> V.nameToV lbl
 
 
       let read_mem_reserve sz an rd a ii =
@@ -295,11 +293,11 @@ module Make
       and stlr sz rs rd ii = do_str sz AArch64.L rs (read_reg_ord rd ii) ii
 
       (* Load literal *)
-      and ldr_lit rd lbl ii =
+      and ldr_lit var rd lbl ii =
         (* We do not use the reg size as we load a word *)
         let open AArch64Base in
         M.deref (parse_lbl lbl)
-        >>= fun a -> read_mem MachSize.Word rd a ii
+        >>= fun a -> read_mem (tr_variant var) rd a ii
         >>! B.Next
 
       and ldar sz t rd rs ii =
@@ -320,24 +318,19 @@ module Make
 
       let movz sz rd k os ii =
         let open AArch64Base in
-        let is_imm16 n = n >= 0 && n < 65535 in
-        assert (is_imm16 k);
+        assert (MachSize.is_imm16 k);
         begin match sz, os with
-        | V32, None | V64, None ->
+        | V32, NOEXT | V64, NOEXT ->
           (* Or'ing zero with value should zero out what's left *)
-          M.op Op.Or (V.intToV k) V.zero
-        | V32, Some(LSL(0|16 as s))
-        | V64, Some(LSL((0|16|32|48 as s))) ->
+          M.unitT (V.intToV k)
+        | V32, LSL(0|16 as s)
+        | V64, LSL((0|16|32|48 as s)) ->
           let v = V.op1 (Op.LeftShift s) (V.intToV k) in
           M.op Op.Or v V.zero
-        | _, Some(LSL(n)) -> Warn.fatal
-                   "illegal shift immediate %d in %s instruction movz"
-                   n
-                   (pp_variant sz)
-        | _, Some(s) -> Warn.fatal
-                   "illegal shift operand %s in %s instruction movz"
-                   (pp_barrel_shift s pp_imm)
-                   (pp_variant sz)
+        | _, LSL(_) | _, _ ->
+            Warn.fatal
+              "illegal instruction %s"
+              (dump_instruction (I_MOVZ (sz, rd, K k, os)))
         end
           >>= (fun v -> write_reg rd v ii)
           >>! B.Next
@@ -473,8 +466,8 @@ module Make
         | I_LDR(var,rd,rs,kr) ->
             let sz = tr_variant var in
             ldr sz rd rs kr ii
-        | I_LDR_L(_,rd,lbl) ->
-            ldr_lit rd lbl ii
+        | I_LDR_L(var,rd,lbl) ->
+            ldr_lit var rd lbl ii
         | I_LDRBH (bh, rd, rs, kr) ->
             let sz = bh_to_sz bh in
             ldr sz rd rs kr ii
@@ -540,9 +533,7 @@ module Make
         | I_MOVZ(_,_,_,_) ->
             Warn.fatal "Illegal argument in movz, expecting imm16 only"
         
-        | I_ADDR (r,lbl) ->
-            write_reg r (parse_lbl lbl) ii >>! B.Next
-        | I_ADRP (r,lbl) ->
+        | I_ADDR (r,lbl) | I_ADRP (r,lbl) ->
             write_reg r (parse_lbl lbl) ii >>! B.Next
         | I_SXTW(rd,rs) ->
             let m = V.op1 (Op.LeftShift 31) V.one in
