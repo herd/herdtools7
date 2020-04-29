@@ -133,6 +133,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     let dbg = C.debug.Debug_herd.mem
     let mixed = C.variant Variant.Mixed
     let memtag = C.variant Variant.MemTag
+ (* default is checking *)
+    let check_mixed =  not (C.variant Variant.DontCheckMixed)
 
 (*****************************)
 (* Event structure generator *)
@@ -440,17 +442,17 @@ let get_rf_value test read rf = match rf with
 
 exception Contradiction
 
-let add_eq v1 v2 eqs =
-  if V.is_var_determined v1 then
-    if V.is_var_determined v2 then
-      if V.compare v1 v2 = 0 then
-        eqs
+    let add_eq v1 v2 eqs =
+      if V.is_var_determined v1 then
+        if V.is_var_determined v2 then
+          if V.compare v1 v2 = 0 then
+            eqs
+          else
+            raise Contradiction
+        else
+          VC.Assign (v2, VC.Atom v1)::eqs
       else
-        raise Contradiction
-    else
-      VC.Assign (v2, VC.Atom v1)::eqs
-  else
-    VC.Assign (v1, VC.Atom v2)::eqs
+        VC.Assign (v1, VC.Atom v2)::eqs
 
     let solve_regs test es csn =
       let rfm = match_reg_events es in
@@ -590,7 +592,7 @@ let add_eq v1 v2 eqs =
             rfs in
         List.iter
           (fun (load,stores) ->
-            eprintf "Paring {%a} with {%a}\n"
+            eprintf "Pairing {%a} with {%a}\n"
               E.debug_event load
               pp_read_froms stores)
           m
@@ -604,8 +606,8 @@ let add_eq v1 v2 eqs =
                 if Constant.is_non_mixed_symbol sym then
                   Warn.fatal "read on location %s does not match any write"
                     (A.pp_location loc)
-                else
-                  Warn.user_error "illegal mixed-size test"
+                else if check_mixed then
+                  Warn.user_error "Illegal mixed-size test"
             | _ -> assert false
             end
         | _::_ -> ())
@@ -1305,28 +1307,33 @@ let add_eq v1 v2 eqs =
         rfm
 
     let check_sizes es =
-      let loc_mems = U.collect_mem es in
-      U.LocEnv.iter
-        (fun loc evts ->
-          let open Constant in
-          begin match loc with
-          | A.Location_global (V.Val sym)
-            when not (Constant.is_non_mixed_symbol sym)
-            -> Warn.user_error "Illegal mixed-size test"
-          | _ -> ()
-          end ;
-          (* hum TODO, init write size should be depend upon declaration and be checked *)
-          let evts =  List.filter (fun e -> not (E.is_mem_store_init e))evts in
-          match evts with
-          | [] -> ()
-          | e0::es ->
-              let sz0 = E.get_mem_size e0 in
-              List.iter
-                (fun e ->
-                  if sz0 <> E.get_mem_size e then
-                    Warn.user_error "Illegal mixed-size test")
-                es)
-        loc_mems
+      if check_mixed then begin
+        let loc_mems = U.collect_mem es in
+        U.LocEnv.iter
+          (fun loc evts ->
+            let open Constant in
+            begin match loc with
+            | A.Location_global (V.Val sym)
+              when not (Constant.is_non_mixed_symbol sym)
+              -> Warn.user_error "Illegal mixed-size test"
+            | _ -> ()
+            end ;
+            (* hum TODO, init write size should be depend upon declaration and be checked *)
+            if check_mixed then begin
+              let evts =
+                List.filter (fun e -> not (E.is_mem_store_init e))evts in
+              match evts with
+              | [] -> ()
+              | e0::es ->
+                  let sz0 = E.get_mem_size e0 in
+                  List.iter
+                    (fun e ->
+                      if sz0 <> E.get_mem_size e then
+                        Warn.user_error "Illegal mixed-size test")
+                    es
+            end)
+          loc_mems
+      end
 
     let check_aligned test es =
       let open Constant in

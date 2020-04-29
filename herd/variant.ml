@@ -27,8 +27,11 @@ type t =
   | SplittedRMW     (* Splitted RMW events for riscv *)
   | SwitchDepScWrite  (* Switch dependency on sc mem write, riscv, aarch64 *)
   | LrScDiffOk      (* Lr/Sc paired to <> addresses may succeed (!) *)
-  | Mixed
   | WeakPredicated (* "Weak" predicated instructions, not performing non-selected events, aarch64 *)
+(* Mixed size *)
+  | Mixed
+ (* Do not check (and reject early) mixed size tests in non-mixed-size mode *)
+  | DontCheckMixed
 (* Tags *)
   | MemTag
   | TagCheckPrecise
@@ -38,7 +41,7 @@ type t =
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
    "fullscdepend";"splittedrmw";"switchdepscwrite";"lrscdiffok";
-   "mixed";"weakpredicated"; "memtag";
+   "mixed";"dontcheckmixed";"weakpredicated"; "memtag";
    "tagcheckprecise"; "tagcheckunprecise"; "toofar"; ]
 
 let parse s = match Misc.lowercase s with
@@ -53,6 +56,7 @@ let parse s = match Misc.lowercase s with
 | "switchdepscwrite" -> Some  SwitchDepScWrite
 | "lrscdiffok" -> Some  LrScDiffOk
 | "mixed" -> Some Mixed
+| "dontcheckmixed" -> Some DontCheckMixed
 | "weakpredicated"|"weakpred" -> Some WeakPredicated
 | "tagmem"|"memtag" -> Some MemTag
 | "tagcheckprecise"|"precise" -> Some TagCheckPrecise
@@ -72,6 +76,7 @@ let pp = function
   | SwitchDepScWrite -> "SwitchDepScWrite"
   | LrScDiffOk -> " LrScDiffOk"
   | Mixed -> "mixed"
+  | DontCheckMixed -> "DontCheckMixed"
   | WeakPredicated -> "WeakPredicated"
   | MemTag -> "memtag"
   | TagCheckPrecise -> "TagCheckPrecise"

@@ -26,8 +26,11 @@ type t =
   | SplittedRMW  (* Splitted RMW events for riscv *)
   | SwitchDepScWrite    (* Switch dependency on sc mem write, riscv *)
   | LrScDiffOk      (* Lr/Sc paired to <> addresses may succeed (!) *)
-  | Mixed           (* Mixed-Size *)
   | WeakPredicated (* "Weak" predicated instructions, not performing non-selected events, aarch64 *)
+(* Mixed size *)
+  | Mixed
+ (* Do not check (and reject early) mixed size tests in non-mixed-size mode *)
+  | DontCheckMixed
   | MemTag           (* Memory Tagging *)
   | TagCheckPrecise
   | TagCheckUnprecise
