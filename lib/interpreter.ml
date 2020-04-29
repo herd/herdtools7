@@ -859,7 +859,7 @@ module Make
     | _ -> arg_mismatch ()
 
 (* Delift a relation from event classes to events *)
-    and fulldelift arg = match arg with
+    and delift arg = match arg with
     | ClassRel clsr ->
         let r =
           ClassRel.fold
@@ -868,7 +868,7 @@ module Make
         Rel (E.EventRel.unions r)
     | _ -> arg_mismatch ()
 (* Restrict delift by intersection (fulldeflift(clsr) & loc) *)
-    and delift arg = match arg with
+    and deliftinter arg = match arg with
     | V.Tuple[Rel m;ClassRel clsr] ->
         let make_rel_from_classpair (cl1,cl2) =
           E.EventRel.filter
@@ -1081,7 +1081,7 @@ module Make
          "classes",classes;
          "lift",lift;
          "delift",delift;
-         "fulldelift",fulldelift;
+         "deliftinter",deliftinter;
          "linearisations",linearisations ks;
          "tag2scope",tag2scope m;
          "tag2level",tag2scope m;
