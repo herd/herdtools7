@@ -108,15 +108,11 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
         S.seq r1 r2
       with Misc.NoIsync -> S.E.EventRel.empty in
     let rf = U.make_rf conc in
-    let amo =
-      E.EventRel.filter
-        (fun (r,w) -> E.po_eq r w)
-        conc.S.atomic_load_store in
     { S.addr=addr_dep; data=data_dep; ctrl=ctrl_dep; depend=dd_pre;
       ctrlisync;
       data_commit;
       success;
-      rf; amo;}
+      rf;}
 
   let pp_procrels pp_isync pr =
     let pp =  ["data",pr.S.data; "addr",pr.S.addr;] in
