@@ -1267,7 +1267,7 @@ let match_reg_events es =
         Misc.fold_cross
           possible_finals
           (fun ws res ->
-            if false then begin
+            if C.debug.Debug_herd.mem then begin
               eprintf "Finals:" ;
               List.iter
                 (fun es -> List.iter (fun e -> eprintf " %a"  E.debug_event e) es ; eprintf "\n") ws ;
