@@ -1,5 +1,3 @@
-include "ncos.cat"
-
 (* Utilities *)
 
 let roots(r) = domain(r) \ range(r)
