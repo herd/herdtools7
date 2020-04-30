@@ -1311,7 +1311,6 @@ exception Contradiction
         let loc_mems = U.collect_mem es in
         U.LocEnv.iter
           (fun loc evts ->
-            let open Constant in
             begin match loc with
             | A.Location_global (V.Val sym)
               when not (Constant.is_non_mixed_symbol sym)
