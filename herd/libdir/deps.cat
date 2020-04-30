@@ -13,8 +13,11 @@ let sim = (same-instr & ((EXEC*SPEC) | (SPEC*EXEC))) \ id
    histories *)
 let instances = classes(same-instance)
 let depi = lift(instances,(rf-reg|rfi)^-1) in
-let bisim = fulldelift(bisimulation(depi,lift(instances,same-instr)))
-let equiv = sim & (M*M) & bisim
+let diffw =(loc & (W * W)) \ id
+let diff = ((rfe^-1;diffw;rf)|(rf^-1;diffw;rfe))
+let diffi = lift(instances,diff)
+let bisim = fulldelift(bisimulation(depi,lift(instances,same-instr)\diffi))\id
+let equiv = (W*W) & bisim
 
 let new-ctrl = ctrlequiv equiv 
 let AE = always-exec equiv
