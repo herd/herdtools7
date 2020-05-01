@@ -177,7 +177,7 @@ module Make
       let parse_lbl lbl =
         (* We should use more robust types for this in the future *)
           try V.intToV (int_of_string lbl)
-          with _ -> V.nameToV lbl
+          with Failure _ -> V.nameToV lbl
 
 
       let read_mem_reserve sz an rd a ii =
@@ -325,8 +325,7 @@ module Make
           M.unitT (V.intToV k)
         | V32, LSL(0|16 as s)
         | V64, LSL((0|16|32|48 as s)) ->
-          let v = V.op1 (Op.LeftShift s) (V.intToV k) in
-          M.op Op.Or v V.zero
+          M.op1 (Op.LeftShift s) (V.intToV k)
         | _, LSL(_) | _, _ ->
             Warn.fatal
               "illegal instruction %s"
