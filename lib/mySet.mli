@@ -54,6 +54,8 @@ module type S = sig
      which need not be pairwise distinct *)
   val of_list : elt list -> t
 
+  val uniq_lists : elt list list -> elt list
+
   (* Should be obvious *)
   val map : (elt -> elt) -> t -> t
   val map_list : (elt -> 'a) -> t -> 'a list

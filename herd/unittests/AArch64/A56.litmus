@@ -1,0 +1,10 @@
+AArch64 A56
+(* Tests movz, 64-bit, LSL 16 *)
+
+{ 0:X0=0; }
+
+P0;
+MOVZ X0, #42, LSL #16;
+
+exists (0:X0=2752512)
+

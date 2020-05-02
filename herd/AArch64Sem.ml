@@ -171,6 +171,15 @@ module Make
       let read_mem_acquire_pc sz = do_read_mem sz AArch64.Q
       let read_mem_noreturn sz = do_read_mem sz AArch64.NoRet
 
+      (* We calculate addresses from labels 0xf00 *)
+      (* non-numeric addresses work too x *)
+      (* This is needed to for literal instructions *)
+      let parse_lbl lbl =
+        (* We should use more robust types for this in the future *)
+          try V.intToV (int_of_string lbl)
+          with Failure _ -> V.nameToV lbl
+
+
       let read_mem_reserve sz an rd a ii =
         (write_reg AArch64.ResAddr a ii >>| do_read_mem sz an rd a ii) >>! ()
 
@@ -283,6 +292,14 @@ module Make
 
       and stlr sz rs rd ii = do_str sz AArch64.L rs (read_reg_ord rd ii) ii
 
+      (* Load literal *)
+      and ldr_lit var rd lbl ii =
+        (* We do not use the reg size as we load a word *)
+        let open AArch64Base in
+        M.deref (parse_lbl lbl)
+        >>= fun a -> read_mem (tr_variant var) rd a ii
+        >>! B.Next
+
       and ldar sz t rd rs ii =
         let open AArch64 in
         lift_memop
@@ -298,6 +315,24 @@ module Make
               | AQ ->
                   read_mem_acquire_pc sz rd a ii)
           (read_reg_ord rs ii) ii
+
+      let movz sz rd k os ii =
+        let open AArch64Base in
+        assert (MachSize.is_imm16 k);
+        begin match sz, os with
+        | V32, NOEXT | V64, NOEXT ->
+          (* Or'ing zero with value should zero out what's left *)
+          M.unitT (V.intToV k)
+        | V32, LSL(0|16 as s)
+        | V64, LSL((0|16|32|48 as s)) ->
+          M.op1 (Op.LeftShift s) (V.intToV k)
+        | _, LSL(_) | _, _ ->
+            Warn.fatal
+              "illegal instruction %s"
+              (dump_instruction (I_MOVZ (sz, rd, K k, os)))
+        end
+          >>= (fun v -> write_reg rd v ii)
+          >>! B.Next
 
       and stxr sz t rr rs rd ii =
         let open AArch64Base in
@@ -430,6 +465,8 @@ module Make
         | I_LDR(var,rd,rs,kr) ->
             let sz = tr_variant var in
             ldr sz rd rs kr ii
+        | I_LDR_L(var,rd,lbl) ->
+            ldr_lit var rd lbl ii
         | I_LDRBH (bh, rd, rs, kr) ->
             let sz = bh_to_sz bh in
             ldr sz rd rs kr ii
@@ -490,9 +527,13 @@ module Make
         | I_MOV(var,r1,RV (_,r2)) ->
             let sz = tr_variant var in
             read_reg_ord_sz sz r2 ii >>= fun v -> write_reg r1 v ii >>! B.Next
-
-        | I_ADDR (r,lbl) ->
-            write_reg r (V.nameToV lbl) ii >>! B.Next
+        | I_MOVZ(var,rd,K k,os) ->
+            movz var rd k os ii
+        | I_MOVZ(_,_,_,_) ->
+            Warn.fatal "Illegal argument in movz, expecting imm16 only"
+        
+        | I_ADDR (r,lbl) | I_ADRP (r,lbl) ->
+            write_reg r (parse_lbl lbl) ii >>! B.Next
         | I_SXTW(rd,rs) ->
             let m = V.op1 (Op.LeftShift 31) V.one in
             (read_reg_ord_sz MachSize.Word rs ii) >>=

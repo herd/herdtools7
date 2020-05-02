@@ -18,4 +18,5 @@
 
 module Make : functor(O:LexUtils.Config) -> sig
   val token : Lexing.lexbuf -> AArch64Parser.token
+  val check_name : string -> AArch64Parser.token
 end

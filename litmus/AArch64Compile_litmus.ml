@@ -56,6 +56,15 @@ module Make(V:Constant.S)(C:Config) =
     let add_q = add_type quad
     let add_v = add_type voidstar
 
+(* pretty prints barrel shifters *)
+let pp_shifter = function
+  | LSL(s) -> Printf.sprintf "LSL #%d" s;
+  | LSR(s) -> Printf.sprintf "LSR #%d" s;
+  | ASR(s) -> Printf.sprintf "ASR #%d" s;
+  | SXTW(s) -> Printf.sprintf "SXTW #%d" s;
+  | UXTW(s) -> Printf.sprintf "UXTW #%d" s;
+  | NOEXT  -> ""
+
 (************************)
 (* Template compilation *)
 (************************)
@@ -118,6 +127,16 @@ module Make(V:Constant.S)(C:Config) =
 
     let ldr_memo t = Misc.lowercase (ldr_memo t)
     let str_memo t = Misc.lowercase (str_memo t)
+    let load_literal tr_lab memo v rD lbl = match v with
+      | V32 ->
+          { empty_ins with
+            memo = sprintf "%s ^wo0, %s" memo (A.Out.dump_label (tr_lab lbl));
+            outputs=[rD]; reg_env=[(rD, word)]; }
+      | V64 ->
+          { empty_ins with
+            memo = sprintf "%s ^o0, %s" memo (A.Out.dump_label (tr_lab lbl));
+            outputs=[rD]; reg_env=[(rD, quad)]; }
+
 
     let load memo v rD rA kr = match v,kr with
       | V32,K 0 ->
@@ -431,7 +450,32 @@ module Make(V:Constant.S)(C:Config) =
           memo=sprintf "%s %s,%s" memo f1 f2;
           inputs = r2; outputs=r1; reg_env=add_q (r1@r2);}
 
+    let do_movz memo v rd k os = match v, k, os with
+    | V32, K k, LSL(s) ->
+        let r1,f1 = arg1 "wzr" (fun s -> "^wo"^s) rd in
+        { empty_ins with
+          memo=sprintf "%s %s, #%d, %s" memo f1 k (pp_shifter (LSL s));
+          outputs=r1; reg_env=add_w r1;}
+    | V32, K k, NOEXT ->
+        let r1,f1 = arg1 "wzr" (fun s -> "^wo"^s) rd in
+        { empty_ins with
+          memo=sprintf "%s %s, #%d" memo f1 k;
+          outputs=r1; reg_env=add_w r1;}
+    | V64, K k, LSL(s) ->
+        let r1,f1 = arg1 "xzr" (fun s -> "^o"^s) rd in
+        { empty_ins with
+          memo=sprintf "%s %s, #%d, %s" memo f1 k (pp_shifter (LSL s));
+          outputs=r1; reg_env=add_q r1;}
+    | V64, K k, NOEXT ->
+        let r1,f1 = arg1 "xzr" (fun s -> "^o"^s) rd in
+        { empty_ins with
+          memo=sprintf "%s %s, #%d" memo f1 k;
+          outputs=r1; reg_env=add_q r1;}
+    | _ -> Warn.fatal "Illegal form of %s instruction" memo
+
+
     let movr = do_movr "mov"
+    and movz = do_movz "movz"
     and rbit = do_movr "rbit"
 
     let sxtw r1 r2 =
@@ -546,6 +590,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_CBNZ (v,r,lbl) -> cbz tr_lab "cbnz" v r lbl::k
 (* Load and Store *)
     | I_LDR (v,r1,r2,kr) -> load "ldr" v r1 r2 kr::k
+    | I_LDR_L (v, rd, lbl) -> load_literal tr_lab "ldr" v rd lbl::k
     | I_LDP (t,v,r1,r2,r3,kr) ->
         load_pair (match t with TT -> "ldp" | NT -> "ldnp") v r1 r2 r3 kr::k
     | I_STP (t,v,r1,r2,r3,kr) ->
@@ -569,7 +614,9 @@ module Make(V:Constant.S)(C:Config) =
 (* Arithmetic *)
     | I_MOV (v,r,K i) ->  movk v r i::k
     | I_MOV (v,r1,RV (_,r2)) ->  movr v r1 r2::k
+    | I_MOVZ (v,rd,i,os) -> movz v rd i os::k
     | I_ADDR (r,lbl) -> adr tr_lab r lbl::k
+    | I_ADRP (r,lbl) -> adr tr_lab r lbl::k
     | I_RBIT (v,rd,rs) -> rbit v rd rs::k
     | I_SXTW (r1,r2) -> sxtw r1 r2::k
     | I_OP3 (v,SUBS,ZR,r,K i) ->  cmpk v r i::k

@@ -1,0 +1,10 @@
+AArch64 A62
+(* Tests adrp, numeric location *)
+
+{ 0:X0=0; }
+
+P0;
+ADRP X0, 0x230000;
+
+exists (0:X0=2293760)
+

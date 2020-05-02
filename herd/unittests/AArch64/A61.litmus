@@ -1,0 +1,10 @@
+AArch64 A61
+(* Tests adrp, symbolic location *)
+
+{ 0:X0=0; }
+
+P0;
+ADRP X0, x;
+
+exists (0:X0=x)
+

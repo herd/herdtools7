@@ -29,15 +29,21 @@ module A = AArch64Base
 %token <string> CODEVAR
 %token <int> PROC
 
+%token <int> HEX
+%token <string> LABEL
+
 %token SEMI COMMA PIPE COLON LBRK RBRK LPAR RPAR SCOPES LEVELS REGIONS
 %token SXTW
 
+/* Inline Barrel Shift Operands */
+%token LSL
+
 /* Instructions */
-%token NOP
+%token NOP HINT
 %token B BR BEQ BNE CBZ CBNZ EQ NE
 %token BL BLR RET
 %token LDR LDP LDNP STP STNP LDRB LDRH STR STRB STRH STLR STLRB STLRH
-%token CMP MOV ADR
+%token CMP MOV MOVZ ADR ADRP
 %token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH
 %token STXR STXRB STXRH STLXR STLXRB STLXRH
 %token <AArch64Base.op> OP
@@ -182,8 +188,16 @@ cond:
 | EQ { A.EQ }
 | NE { A.NE }
 
+label_addr:
+| HEX LABEL { Printf.sprintf "0x%x" $1 }
+| HEX       { Printf.sprintf "0x%x" $1 }
+| NUM LABEL { Printf.sprintf "%d" $1 }
+| NUM       { Printf.sprintf "%d" $1 }
+| NAME      { $1 }
+
 instr:
 | NOP { A.I_NOP }
+| HINT NUM { A.I_NOP }
 /* Branch */
 | B NAME { A.I_B $2 }
 | BR xreg { A.I_BR $2 }
@@ -198,6 +212,8 @@ instr:
 /* Memory */
 | LDR reg COMMA LBRK xreg kr0 RBRK
   { let v,r = $2 in A.I_LDR (v,r,$5,$6) }
+| LDR reg COMMA label_addr
+  { let v,r = $2 in A.I_LDR_L (v,r,$4) }
 | ldp_instr wreg COMMA wreg COMMA LBRK xreg kr0_no_shift RBRK
   { $1 A.V32 $2 $4 $7 $8 }
 | ldp_instr xreg COMMA xreg COMMA LBRK xreg kr0_no_shift RBRK
@@ -629,8 +645,18 @@ instr:
   { A.I_MOV (A.V64,$2,$4) }
 | MOV wreg COMMA kwr
   { A.I_MOV (A.V32,$2,$4) }
-| ADR xreg COMMA NAME
+| MOVZ xreg COMMA NUM
+  { A.I_MOVZ (A.V64,$2, A.K (MetaConst.Int $4), A.NOEXT) }
+| MOVZ xreg COMMA NUM COMMA LSL k
+  { A.I_MOVZ (A.V64,$2, A.K (MetaConst.Int $4), A.LSL $7) }
+| MOVZ wreg COMMA kwr
+  { A.I_MOVZ (A.V32,$2,$4, A.NOEXT) }
+| MOVZ wreg COMMA kwr COMMA LSL k
+  { A.I_MOVZ (A.V32,$2,$4, A.LSL $7) }
+| ADR xreg COMMA label_addr
   { A.I_ADDR ($2,$4) }
+| ADRP xreg COMMA label_addr
+  { A.I_ADRP ($2,$4) }
 | SXTW xreg COMMA wreg
   { A.I_SXTW ($2,$4) }
 | OP xreg COMMA xreg COMMA kr

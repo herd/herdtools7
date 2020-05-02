@@ -8,3 +8,5 @@ jerd.js
 jerd.byte
 catIncludes.ml
 *~
+*.swp
+@all

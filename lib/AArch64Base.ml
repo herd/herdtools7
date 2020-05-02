@@ -25,6 +25,9 @@ let base_type = CType.Base "int"
 (* Registers *)
 (*************)
 
+(* Registers like SP that don't have a number by default *)
+(* This means we don't have to double up on the rules in the parser for all *)
+(* for variants of instructions with SP etc...*)
 type gpr =
   | R0  | R1  | R2  | R3
   | R4  | R5  | R6  | R7
@@ -33,7 +36,7 @@ type gpr =
   | R16 | R17 | R18 | R19
   | R20 | R21 | R22 | R23
   | R24 | R25 | R26 | R27
-  | R28 | R29 | R30
+  | R28 | R29 | R30 | SP
 
 type reg =
   | ZR
@@ -53,7 +56,7 @@ let gprs =
   R16; R17; R18; R19 ;
   R20; R21; R22; R23 ;
   R24; R25; R26; R27 ;
-  R28; R29; R30 ;
+  R28; R29; R30; SP  ;
 ]
 
 let linkreg = Ireg R30
@@ -67,7 +70,8 @@ let xgprs =
  R16,"X16" ; R17,"X17" ; R18,"X18" ; R19,"X19" ;
  R20,"X20" ; R21,"X21" ; R22,"X22" ; R23,"X23" ;
  R24,"X24" ; R25,"X25" ; R26,"X26" ; R27,"X27" ;
- R28,"X28" ; R29,"X29" ; R30,"X30" ;
+ R28,"X28" ; R29,"X29" ; R30,"X30" ; R30, "LR" ;
+ SP,"SP"   ;
 ]
 
 let xregs = (ZR,"XZR")::List.map (fun (r,s) -> Ireg r,s) xgprs
@@ -296,6 +300,10 @@ let inverse_cond = function
 type op = ADD | ADDS | SUB | SUBS | AND | ANDS | ORR | EOR
 type variant = V32 | V64
 
+let pp_variant = function
+  | V32 -> "V32"
+  | V64 -> "V64"
+
 let tr_variant = function
   | V32 -> MachSize.Word
   | V64 -> MachSize.Quad
@@ -377,6 +385,25 @@ let sel_memo = function
   | Inv -> "CSINV"
   | Neg -> "CSNEG"
 
+(* Inline barrel shift and extenders - need to add all variants *)
+type 'k s
+  = LSL of 'k
+  | LSR of 'k
+  | ASR of 'k
+  | SXTW of 'k
+  | UXTW of 'k
+  | NOEXT
+
+let pp_barrel_shift s pp_k = match s with
+  | LSL(k) -> "LSL "  ^ (pp_k k)
+  | LSR(k) -> "LSR "  ^ (pp_k k)
+  | ASR(k) -> "ASR "  ^ (pp_k k)
+  | SXTW(k)-> "SXTW " ^ (pp_k k)
+  | UXTW(k)-> "UXTW " ^ (pp_k k)
+  | NOEXT  -> ""
+
+let pp_imm n = "#" ^ string_of_int n
+
 type 'k kinstruction =
   | I_NOP
 (* Branches *)
@@ -388,6 +415,7 @@ type 'k kinstruction =
   | I_RET of reg option
 (* Load and Store *)
   | I_LDR of variant * reg * reg * 'k kr
+  | I_LDR_L of variant * reg * lbl
   | I_LDP of temporal * variant * reg * reg * reg * 'k kr
   | I_STP of temporal * variant * reg * reg * reg * 'k kr
   | I_LDAR of variant * ld_type * reg * reg
@@ -413,9 +441,11 @@ type 'k kinstruction =
   | I_STOPBH of  atomic_op * bh * w_type  * reg * reg
 (* Operations *)
   | I_MOV of variant * reg * 'k kr
+  | I_MOVZ of variant * reg * 'k kr * 'k s
   | I_SXTW of reg * reg
   | I_OP3 of variant * op * reg * reg * 'k kr
   | I_ADDR of reg * lbl
+  | I_ADRP of reg * lbl
   | I_RBIT of variant * reg * reg
 (* Barrier *)
   | I_FENCE of barrier
@@ -548,6 +578,8 @@ let do_pp_instruction m =
       pp_mem "LDR" v r1 r2 k
   | I_LDP (t,v,r1,r2,r3,k) ->
       pp_memp (match t with TT -> "LDP" | NT -> "LDNP") v r1 r2 r3 k
+  | I_LDR_L (_, r,lbl) ->
+      sprintf "LDR %s,%s" (pp_xreg r) (pp_label lbl)
   | I_STP (t,v,r1,r2,r3,k) ->
       pp_memp (match t with TT -> "STP" | NT -> "STNP") v r1 r2 r3 k
   | I_LDAR (v,t,r1,r2) ->
@@ -594,6 +626,10 @@ let do_pp_instruction m =
 (* Operations *)
   | I_MOV (v,r,kr) ->
       pp_rkr "MOV" v r kr
+  | I_MOVZ (v,r,kr,NOEXT) ->
+      pp_rkr "MOVZ" v r kr
+  | I_MOVZ (v,r,kr,s) ->
+      pp_rkr "MOVZ" v r kr ^ ", " ^ pp_barrel_shift s (m.pp_k)
   | I_SXTW (r1,r2) ->
       sprintf "SXTW %s,%s" (pp_xreg r1) (pp_wreg r2)
   | I_OP3 (v,SUBS,ZR,r,K k) ->
@@ -607,7 +643,9 @@ let do_pp_instruction m =
   | I_OP3 (v,op,r1,r2,kr) ->
       pp_rrkr (pp_op op) v r1 r2 kr
   | I_ADDR (r,lbl) ->
-      sprintf "ADDR %s,%s" (pp_xreg r) (pp_label lbl)
+      sprintf "ADR %s,%s" (pp_xreg r) (pp_label lbl)
+  | I_ADRP (r,lbl) ->
+      sprintf "ADRP %s,%s" (pp_xreg r) (pp_label lbl)
   | I_RBIT (v,rd,rs) ->
       sprintf "RBIT %s,%s" (pp_vreg v rd) (pp_vreg v rs)
 (* Barrier *)
@@ -672,8 +710,9 @@ let fold_regs (f_regs,f_sregs) =
   | I_NOP | I_B _ | I_BC _ | I_BL _ | I_FENCE _ | I_RET None
     -> c
   | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_BLR r | I_BR r | I_RET (Some r)
-  | I_MOV (_,r,_) | I_ADDR (r,_) | I_IC (_,r) | I_DC (_,r) | I_MRS (r,_)
-    -> fold_reg r c
+  | I_MOV (_,r,_) | I_MOVZ (_,r,_,_)
+  | I_ADDR (r,_) | I_ADRP (r,_) | I_IC (_,r) | I_DC (_,r) | I_MRS (r,_)
+  | I_LDR_L (_,r,_) -> fold_reg r c
   | I_LDAR (_,_,r1,r2) | I_STLR (_,r1,r2) | I_STLRBH (_,r1,r2)
   | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2)
   | I_STOP (_,_,_,r1,r2) | I_STOPBH (_,_,_,r1,r2)
@@ -732,6 +771,8 @@ let map_regs f_reg f_symb =
 (* Load and Store *)
   | I_LDR (v,r1,r2,kr) ->
      I_LDR (v,map_reg r1,map_reg r2,map_kr kr)
+  | I_LDR_L (v,r1,lbl) ->
+     I_LDR_L (v,map_reg r1, lbl)
   | I_LDP (t,v,r1,r2,r3,kr) ->
      I_LDP (t,v,map_reg r1,map_reg r2,map_reg r3,map_kr kr)
   | I_STP (t,v,r1,r2,r3,kr) ->
@@ -777,11 +818,13 @@ let map_regs f_reg f_symb =
 (* Operations *)
   | I_MOV (v,r,k) ->
       I_MOV (v,map_reg r,k)
+  | I_MOVZ (v,r,k,s) ->
+      I_MOVZ (v,map_reg r,k,s)
   | I_SXTW (r1,r2) ->
       I_SXTW (map_reg r1,map_reg r2)
   | I_OP3 (v,op,r1,r2,kr) ->
       I_OP3 (v,op,map_reg r1,map_reg r2,map_kr kr)
-  | I_ADDR (r,lbl) ->
+  | I_ADDR (r,lbl) | I_ADRP (r,lbl) ->
       I_ADDR (map_reg r,lbl)
   | I_RBIT (v,r1,r2) ->
       I_RBIT (v,map_reg r1,map_reg r2)
@@ -823,6 +866,7 @@ let get_next = function
   | I_BLR _|I_BR _|I_RET _ -> [Label.Any]
   | I_NOP
   | I_LDR _
+  | I_LDR_L _
   | I_LDP _
   | I_STP _
   | I_STR _
@@ -835,6 +879,7 @@ let get_next = function
   | I_LDRBH _
   | I_STRBH _
   | I_MOV _
+  | I_MOVZ _
   | I_SXTW _
   | I_OP3 _
   | I_FENCE _
@@ -848,6 +893,7 @@ let get_next = function
   | I_STOP _
   | I_STOPBH _
   | I_ADDR _
+  | I_ADRP _
   | I_RBIT _
   | I_IC _
   | I_DC _
@@ -865,6 +911,14 @@ include Pseudo.Make
       let kr_tr = function
         | K i -> K (k_tr i)
         | RV _ as kr -> kr
+
+      let ap_shift f s = match s with
+        | LSL(s) -> LSL(f s)
+        | LSR(s) -> LSR(f s)
+        | ASR(s) -> ASR(f s)
+        | SXTW(s)-> SXTW(f s)
+        | UXTW(s)-> UXTW(f s)
+        | NOEXT  -> NOEXT
 
       let parsed_tr i = match i with
         | I_NOP
@@ -894,10 +948,12 @@ include Pseudo.Make
         | I_STOP _
         | I_STOPBH _
         | I_ADDR _
+        | I_ADRP _
         | I_RBIT _
         | I_IC _
         | I_DC _
         | I_MRS _
+        | I_LDR_L _
             as keep -> keep
         | I_LDR (v,r1,r2,kr) -> I_LDR (v,r1,r2,kr_tr kr)
         | I_LDP (t,v,r1,r2,r3,kr) -> I_LDP (t,v,r1,r2,r3,kr_tr kr)
@@ -908,11 +964,15 @@ include Pseudo.Make
         | I_LDRBH (v,r1,r2,kr) -> I_LDRBH (v,r1,r2,kr_tr kr)
         | I_STRBH (v,r1,r2,kr) -> I_STRBH (v,r1,r2,kr_tr kr)
         | I_MOV (v,r,k) -> I_MOV (v,r,kr_tr k)
+        | I_MOVZ (v,r,k,NOEXT) ->
+          I_MOVZ (v,r,kr_tr k,NOEXT)
+        | I_MOVZ (v,r,k,s) ->
+          I_MOVZ (v,r,kr_tr k,ap_shift k_tr s)
         | I_OP3 (v,op,r1,r2,kr) -> I_OP3 (v,op,r1,r2,kr_tr kr)
 
 
       let get_naccesses = function
-        | I_LDR _ | I_LDAR _ | I_LDARBH _
+        | I_LDR _ | I_LDAR _ | I_LDARBH _ | I_LDR_L _
         | I_STR _ | I_STLR _ | I_STLRBH _ | I_STXR _
         | I_LDRBH _ | I_STRBH _ | I_STXRBH _ | I_IC _ | I_DC _
         | I_STG _ | I_LDG _
@@ -931,11 +991,13 @@ include Pseudo.Make
         | I_CBZ _
         | I_CBNZ _
         | I_MOV _
+        | I_MOVZ _
         | I_SXTW _
         | I_OP3 _
         | I_FENCE _
         | I_CSEL _
         | I_ADDR _
+        | I_ADRP _
         | I_RBIT _
         | I_MRS _
           -> 0
@@ -947,6 +1009,8 @@ include Pseudo.Make
         | I_CBNZ (_,_,lbl)
         | I_BL lbl
         | I_ADDR (_,lbl)
+        | I_ADRP (_,lbl)
+        | I_LDR_L(_,_,lbl)
           -> f k lbl
         | _ -> k
 
@@ -957,6 +1021,8 @@ include Pseudo.Make
         | I_CBZ (v,r,lbl) -> I_CBZ (v,r,f lbl)
         | I_CBNZ (v,r,lbl) -> I_CBNZ (v,r,f lbl)
         | I_ADDR (r,lbl) -> I_ADDR (r, f lbl)
+        | I_ADRP (r,lbl) -> I_ADRP (r, f lbl)
+        | I_LDR_L (v,r,lbl) -> I_LDR_L(v,r,f lbl)
         | ins -> ins
     end)
 

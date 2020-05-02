@@ -38,6 +38,7 @@ include Arch.MakeArch(struct
 
     | I_CBZ(_,r,lp),I_CBZ(_,r',li)
     | I_CBNZ(_,r,lp),I_CBNZ(_,r',li)
+    | I_LDR_L(_,r,lp), I_LDR_L(_,r',li)
       ->  add_subs [Reg(sr_name r,r'); Lab(lp,li)] subs
 
     | I_MOV(_,r,kr),I_MOV(_,r',kr') ->
@@ -78,6 +79,20 @@ include Arch.MakeArch(struct
           conv_reg r >! fun r -> RV(a,r)
       | K k ->
           find_cst k >! fun k -> K k in
+    let find_shift = function
+      | LSL(n) ->
+          find_cst n >! fun n -> LSL(n)
+      | LSR(n) ->
+          find_cst n >! fun n -> LSR(n)
+      | ASR(n) ->
+          find_cst n >! fun n -> ASR(n)
+      | SXTW(n) ->
+          find_cst n >! fun n -> SXTW(n)
+      | UXTW(n) ->
+          find_cst n >! fun n -> UXTW(n)
+      | NOEXT -> fun n -> NOEXT, n in
+
+
     function
     | (I_FENCE _|I_NOP|I_RET None) as i -> unitT i
     | I_B l ->
@@ -105,10 +120,23 @@ include Arch.MakeArch(struct
         conv_reg r >> fun r ->
         expl_kr kr >! fun kr ->
         I_MOV(a,r,kr)
+    | I_MOVZ(a,r,kr,NOEXT) ->
+        conv_reg r >> fun r  ->
+        expl_kr kr >! fun kr ->
+        I_MOVZ(a,r,kr,NOEXT)
+    | I_MOVZ(a,r,kr,s) ->
+        conv_reg r >> fun r  ->
+        expl_kr kr >> fun kr ->
+        find_shift s >! fun s->
+        I_MOVZ(a,r,kr,s)
     | I_ADDR (r,lbl) ->
         conv_reg r >> fun r ->
         find_lab lbl >! fun lbl ->
         I_ADDR (r,lbl)
+    | I_ADRP (r,lbl) ->
+        conv_reg r >> fun r ->
+        find_lab lbl >! fun lbl ->
+        I_ADRP (r,lbl)
     | I_RBIT (v,r1,r2) ->
         conv_reg r1 >> fun r1 -> conv_reg r2 >! fun r2 -> I_RBIT (v,r1,r2)
     | I_LDAR(a,b,r1,r2) ->
@@ -146,6 +174,10 @@ include Arch.MakeArch(struct
         conv_reg r2 >> fun r2 ->
         expl_kr kr >! fun kr ->
         I_LDR(a,r1,r2,kr)
+    | I_LDR_L (v,r,lbl) ->
+        conv_reg r >> fun r ->
+        find_lab lbl >! fun lbl ->
+        I_LDR_L (v,r,lbl)
     | I_LDP(t,a,r1,r2,r3,kr) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->

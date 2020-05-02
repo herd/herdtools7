@@ -26,6 +26,8 @@ let check_name name =
 if O.debug then Printf.eprintf "Check: '%s'\n"  name ;
 match name with
 | "nop"|"NOP" -> NOP
+(* Hints are NOPS in AArch64 *)
+| "hint"|"HINT" -> HINT
 (* Branch *)
 | "b"  | "B"  -> B
 | "br"  | "BR"  -> BR
@@ -256,7 +258,9 @@ match name with
 (* Operations *)
 | "sxtw"|"SXTW" -> SXTW
 | "mov"|"MOV" -> MOV
+| "movz"|"MOVZ" -> MOVZ
 | "adr"|"ADR" -> ADR
+| "adrp"|"ADRP" -> ADRP
 | "rbit"|"RBIT" -> RBIT
 | "add"|"ADD" -> OP A.ADD
 | "adds"|"ADDS" -> OP A.ADDS
@@ -291,6 +295,8 @@ match name with
 | "nsh"|"NSH" -> NSH
 | "nshst"|"NSHST" -> NSHST
 | "nshld"|"NSHLD" -> NSHLD
+(* inline barrel shift operands *)
+| "lsl" | "LSL" -> LSL
 (* Cache maintenance *)
 | "ic"|"IC" -> IC
 | "dc"|"DC" -> DC
@@ -341,6 +347,7 @@ rule token = parse
 | '\n'      { incr_lineno lexbuf; token lexbuf }
 | "(*"      { LU.skip_comment lexbuf ; token lexbuf }
 | '#' ('-' ? num as x) { NUM (int_of_string x) }
+| ("0x" num as x) { HEX (int_of_string x) }
 | 'P' (num as x)
     { PROC (int_of_string x) }
 | ['w''W']'%' (name as name) { SYMB_WREG name }

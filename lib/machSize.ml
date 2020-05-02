@@ -43,6 +43,9 @@ let nbytes = function
 
 let nbits sz = nbytes sz * 8
 
+(* check is 16 bit immediate *)
+let is_imm16 n = n >= 0 && n < 65535
+
 (* Correct endianess *)
 let swap16 x =
   let r = (x land 0xff) lsl 8 in

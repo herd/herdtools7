@@ -22,6 +22,7 @@ val debug : sz -> string
 
 val nbytes : sz -> int
 val nbits : sz -> int
+val is_imm16 : int -> bool
 
 val tr_endian : sz -> int -> int
 

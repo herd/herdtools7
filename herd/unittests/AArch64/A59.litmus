@@ -1,0 +1,10 @@
+AArch64 A59
+(* Tests adr, symbolic location *)
+
+{ 0:X0=0; }
+
+P0;
+ADR X0, x;
+
+exists (0:X0=x)
+
