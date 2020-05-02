@@ -1,0 +1,10 @@
+AArch64 A38
+(* Tests ADRP, given a concrete location, decimal value*)
+(* This is interesting as we must infer the address from a label*)
+(* We don't encode a notion of page boundaries yet, but we should *)
+{ &x=2293760; x=42}
+
+P0;
+  ADRP X0, #230000;
+
+exists (0:X0=230000)

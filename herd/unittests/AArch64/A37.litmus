@@ -1,0 +1,9 @@
+AArch64 A37
+(* Tests ADR, given a concrete location, decimal value*)
+(* This is interesting as we must infer the address from a label*)
+{ &x=230000; x=42}
+
+P0;
+  ADR X0, #230000;
+
+exists (0:X0=230000)
