@@ -262,6 +262,7 @@ match name with
 | "uxtw"|"UXTW" -> UXTW
 | "mov"|"MOV" -> MOV
 | "movz"|"MOVZ" -> MOVZ
+| "movk"|"MOVK" -> MOVK
 | "adr"|"ADR" -> ADR
 | "adrp"|"ADRP" -> ADRP
 | "rbit"|"RBIT" -> RBIT

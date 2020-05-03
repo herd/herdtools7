@@ -133,6 +133,11 @@ include Arch.MakeArch(struct
         expl_kr kr >> fun kr ->
         find_shift s >! fun s->
         I_MOVZ(a,r,kr,s)
+    | I_MOVK(a,r,kr,s) ->
+        conv_reg r >> fun r  ->
+        expl_kr kr >> fun kr ->
+        find_shift s >! fun s->
+        I_MOVK(a,r,kr,s)
     | I_ADDR (r,lbl) ->
         conv_reg r >> fun r ->
         find_lab lbl >! fun lbl ->

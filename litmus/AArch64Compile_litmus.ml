@@ -500,9 +500,33 @@ let pp_shifter = function
           outputs=r1; reg_env=add_q r1;}
     | _ -> Warn.fatal "Illegal form of %s instruction" memo
 
+    let do_movk memo v rd k os = match v, k, os with
+    | V32, K k, S_LSL(s) ->
+        let r1,f1 = arg1 "wzr" (fun s -> "^wo"^s) rd in
+        { empty_ins with
+          memo=sprintf "%s %s, #%d, LSL #%d" memo f1 k s;
+          outputs=r1; reg_env=add_w r1;}
+    | V32, K k, S_NOEXT ->
+        let r1,f1 = arg1 "wzr" (fun s -> "^wo"^s) rd in
+        { empty_ins with
+          memo=sprintf "%s %s, #%d" memo f1 k;
+          outputs=r1; reg_env=add_w r1;}
+    | V64, K k, S_LSL(s) ->
+        let r1,f1 = arg1 "xzr" (fun s -> "^o"^s) rd in
+        { empty_ins with
+          memo=sprintf "%s %s, #%d, LSL #%d" memo f1 k s;
+          outputs=r1; reg_env=add_q r1;}
+    | V64, K k, S_NOEXT ->
+        let r1,f1 = arg1 "xzr" (fun s -> "^o"^s) rd in
+        { empty_ins with
+          memo=sprintf "%s %s, #%d" memo f1 k;
+          outputs=r1; reg_env=add_q r1;}
+    | _ -> Warn.fatal "Illegal form of %s instruction" memo
+
 
     let movr = do_movr "mov"
     and movz = do_movz "movz"
+    and movk' = do_movk "movk"
     and rbit = do_movr "rbit"
 
     let sxtw r1 r2 =
@@ -643,6 +667,7 @@ let pp_shifter = function
     | I_MOV (v,r,K i) ->  movk v r i::k
     | I_MOV (v,r1,RV (_,r2)) ->  movr v r1 r2::k
     | I_MOVZ (v,rd,i,os) -> movz v rd i os::k
+    | I_MOVK (v,rd,i,os) -> movk' v rd i os::k
     | I_ADDR (r,lbl) -> adr tr_lab r lbl::k
     | I_ADRP (r,lbl) -> adr tr_lab r lbl::k
     | I_RBIT (v,rd,rs) -> rbit v rd rs::k

@@ -1,5 +1,5 @@
 AArch64 A58
-(* Tests movz, 64-bit, LSL 32 *)
+(* Tests movz, 64-bit, LSL 48 *)
 
 { 0:X0=0; }
 
