@@ -301,8 +301,8 @@ module Make
           >>= (fun v -> write_reg rs v ii)
           >>! B.Next
 
-      and str sz rs rd kr ii =
-        do_str sz AArch64.N rs (get_ea rd kr AArch64.S_NOEXT ii) ii
+      and str sz rs rd kr s ii =
+        do_str sz AArch64.N rs (get_ea rd kr s ii) ii
 
       (* Store Pair *)
       and stp var r1 r2 rd kr ii =
@@ -569,14 +569,14 @@ module Make
         | I_LDP(_, var, rd1, rd2, ra, kr) ->
             ldp var rd1 rd2 ra kr ii
 
-        | I_STR(var,rs,rd,kr) ->
-            str (tr_variant var) rs rd kr ii
+        | I_STR(var,rs,rd,kr,os) ->
+            str (tr_variant var) rs rd kr os ii
 
         | I_STP(_, var, r1, r2, rd, kr) ->
             stp var r1 r2 rd kr ii
 
         | I_STRBH(bh,rs,rd,kr) ->
-            str (bh_to_sz bh) rs rd kr ii
+            str (bh_to_sz bh) rs rd kr AArch64.S_NOEXT ii
 
         | I_STLR(var,rs,rd) ->
             stlr (tr_variant var) rs rd ii

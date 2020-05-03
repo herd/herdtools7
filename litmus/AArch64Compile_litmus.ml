@@ -318,51 +318,60 @@ let pp_shifter = function
       | V32,RV (V64,_) -> assert false
 
 
-    let store memo v rA rB kr = match v,kr with
-      | V32,K 0 ->
+    let store memo v rA rB kr s = match v,kr,s with
+      | V32,K 0, S_NOEXT ->
           { empty_ins with
             memo=memo ^ " ^wi0,[^i1]";
             inputs=[rA;rB]; reg_env=[rB,voidstar;rA,word;]; }
-      | V32,K k ->
+      | V32,K k, S_NOEXT ->
           { empty_ins with
             memo=memo ^ sprintf " ^wi0,[^i1,#%i]" k;
             inputs=[rA;rB]; reg_env=[rB,voidstar;rA,word;]; }
-      | V32,RV (V32,rC) ->
+      | V32,RV (V32,rC), s ->
+          let shift  = pp_barrel_shift s pp_imm in
           let rC,fC = match rC with
           | ZR -> [],"wzr"
           | _  -> [rC],"^wi2" in
           { empty_ins with
-            memo=memo^ sprintf " ^wi0,[^i1,%s,sxtw]" fC;
+            memo=memo^ sprintf " ^wi0,[^i1,%s,%s]" fC shift;
             inputs=[rA; rB;]@rC; reg_env=add_w rC@[rB,voidstar; rA,word;]; }
-      | V64,K 0 ->
+      | V64,K 0, S_NOEXT ->
           { empty_ins with
             memo=memo ^ " ^i0,[^i1]";
             inputs=[rA;rB]; reg_env=[rB,voidstar; rA,quad;]; }
-      | V64,K k ->
+      | V64,K k, S_NOEXT ->
           { empty_ins with
             memo=memo ^ sprintf " ^i0,[^i1,#%i]" k;
             inputs=[rA;rB]; reg_env=[rB,voidstar; rA,quad;]; }
-      | V64,RV (V64,rC) ->
+      | V64,RV (V64,rC), s ->
+          let shift  = match s with
+          | S_NOEXT -> ""
+          | s -> ", " ^ pp_barrel_shift s pp_imm in
           let rC,fC = match rC with
           | ZR -> [],"xzr"
           | _  -> [rC],"^i2" in
           { empty_ins with
-            memo=memo ^ sprintf " ^i0,[^i1,%s]" fC;
+            memo=memo ^ sprintf " ^i0,[^i1,%s%s]" fC shift;
             inputs=[rA; rB;]@rC; reg_env=add_q rC@[rB,voidstar; rA,quad;]; }
-      | V64,RV (V32,rC) ->
+      | V64,RV (V32,rC),s ->
+          let shift  = pp_barrel_shift s pp_imm in
           let rC,fC = match rC with
           | ZR -> [],"wzr"
           | _  -> [rC],"^wi2" in
           { empty_ins with
-            memo=memo ^ sprintf " ^i0,[^i1,%s,sxtw]" fC;
+            memo=memo ^ sprintf " ^i0,[^i1,%s,%s]" fC shift;
             inputs=[rA; rB;]@rC; reg_env=add_w rC@[rB,voidstar; rA,quad;]; }
-      | V32,RV (V64,rC) ->
+      | V32,RV (V64,rC),s ->
+          let shift  = match s with
+          | S_NOEXT -> ""
+          | s -> ", " ^ pp_barrel_shift s pp_imm in
           let rC,fC = match rC with
           | ZR -> [],"xzr"
           | _  -> [rC],"^i2" in
           { empty_ins with
-            memo=memo ^ sprintf " ^wi0,[^i1,%s]" fC;
+            memo=memo ^ sprintf " ^wi0,[^i1,%s%s]" fC shift;
             inputs=[rA; rB;]@rC; reg_env=add_q rC@[rB,voidstar; rA,word;]; }
+      | _,_,_ -> assert false
 
     let stxr memo v r1 r2 r3 = match v with
     | V32 ->
@@ -653,12 +662,12 @@ let pp_shifter = function
     | I_LDRBH (H,r1,r2,kr) -> load "ldrh" V32 r1 r2 kr S_NOEXT::k
     | I_LDAR (v,t,r1,r2) -> load (ldr_memo t) v r1 r2 k0 S_NOEXT::k
     | I_LDARBH (bh,t,r1,r2) -> load (ldrbh_memo bh t) V32 r1 r2 k0 S_NOEXT::k
-    | I_STR (v,r1,r2,kr) -> store "str" v r1 r2 kr::k
-    | I_STRBH (B,r1,r2,kr) -> store "strb" V32 r1 r2 kr::k
-    | I_STRBH (H,r1,r2,kr) -> store "strh" V32 r1 r2 kr::k
-    | I_STLR (v,r1,r2) -> store "stlr" v r1 r2 k0::k
-    | I_STLRBH (B,r1,r2) -> store "stlrb" V32 r1 r2 k0::k
-    | I_STLRBH (H,r1,r2) -> store "stlrh" V32 r1 r2 k0::k
+    | I_STR (v,r1,r2,kr, s) -> store "str" v r1 r2 kr s::k
+    | I_STRBH (B,r1,r2,kr) -> store "strb" V32 r1 r2 kr S_NOEXT::k
+    | I_STRBH (H,r1,r2,kr) -> store "strh" V32 r1 r2 kr S_NOEXT::k
+    | I_STLR (v,r1,r2) -> store "stlr" v r1 r2 k0 S_NOEXT ::k
+    | I_STLRBH (B,r1,r2) -> store "stlrb" V32 r1 r2 k0 S_NOEXT ::k
+    | I_STLRBH (H,r1,r2) -> store "stlrh" V32 r1 r2 k0 S_NOEXT ::k
     | I_STXR (v,t,r1,r2,r3) -> stxr (str_memo t) v r1 r2 r3::k
     | I_STXRBH (bh,t,r1,r2,r3) -> stxr (strbh_memo bh t) V32 r1 r2 r3::k
     | I_CAS (v,rmw,r1,r2,r3) -> cas (cas_memo rmw) v r1 r2 r3::k

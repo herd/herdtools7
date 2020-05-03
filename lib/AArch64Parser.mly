@@ -163,8 +163,8 @@ kr_shift:
 | k                { A.K $1, A.S_NOEXT }
 | xreg             { (A.RV (A.V64,$1)),  A.S_NOEXT }
 | wreg             { (A.RV (A.V32,$1)),  A.S_NOEXT }
-| wreg COMMA shift { (A.RV (A.V32, $1)), A.S_NOEXT }
-| xreg COMMA shift { (A.RV (A.V64, $1)), A.S_NOEXT }
+| wreg COMMA shift { (A.RV (A.V32, $1)), $3 }
+| xreg COMMA shift { (A.RV (A.V64, $1)), $3 }
 
 kr0:
 | { A.K (MetaConst.zero), A.S_NOEXT }
@@ -276,8 +276,9 @@ instr:
   { A.I_LDARBH (A.B,A.AQ,$2,$5) }
 | LDAPRH wreg COMMA LBRK xreg RBRK
   { A.I_LDARBH (A.H,A.AQ,$2,$5) }
-| STR reg COMMA LBRK xreg kr0_no_shift RBRK
-  { let v,r = $2 in A.I_STR (v,r,$5,$6) }
+| STR reg COMMA LBRK xreg kr0 RBRK
+  { let (v,r)   = $2 in
+    let (kr,os) = $6 in A.I_STR (v,r,$5,kr,os) }
 | STRB wreg COMMA LBRK xreg kr0_no_shift RBRK
   { A.I_STRBH (A.B,$2,$5,$6) }
 | STRH wreg COMMA LBRK xreg kr0_no_shift RBRK

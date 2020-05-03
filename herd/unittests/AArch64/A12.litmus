@@ -1,0 +1,9 @@
+AArch64 A12
+(* Store immediate, with offset, symbolic location *)
+
+ { 0:x0=1; 0:x2=x;}
+
+P0;
+  STR X0, [X2, #4];
+
+exists (x=0) (* Not much we can test here, offsetting a symbolic location doesn't make sense*)

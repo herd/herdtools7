@@ -1,0 +1,9 @@
+AArch64 A15
+(* Store register, with offset, concrete location *)
+
+ { 0:x0=1; 0:x2=x; 0:x3=4; &x=42; &y=46}
+
+P0;
+  STR X0, [X2, X3];
+
+exists (x=0 /\ y=1)
