@@ -641,6 +641,8 @@ let pp_shifter = function
     | I_CBNZ (v,r,lbl) -> cbz tr_lab "cbnz" v r lbl::k
 (* Load and Store *)
     | I_LDR (v,r1,r2,kr,os) -> load "ldr" v r1 r2 kr os::k
+    | I_LDUR (v,r1,r2,Some(k')) -> load "ldur" v r1 r2 (K k') S_NOEXT ::k
+    | I_LDUR (v,r1,r2,None) -> load "ldur" v r1 r2 (K 0) S_NOEXT ::k
     | I_LDR_P (v,r1,r2,k1) -> load_p "ldr" v r1 r2 k1::k
     | I_LDR_L (v, rd, lbl) -> load_literal tr_lab "ldr" v rd lbl::k
     | I_LDP (t,v,r1,r2,r3,kr) ->

@@ -415,6 +415,7 @@ type 'k kinstruction =
   | I_RET of reg option
 (* Load and Store *)
   | I_LDR of variant * reg * reg * 'k kr * 'k s
+  | I_LDUR of variant * reg * reg * 'k option
 (* Post-indexed load with immediate - like a writeback *)
 (* sufficiently different (and semantically interesting) to need a new inst *)
   | I_LDR_P of variant * reg * reg * 'k
@@ -592,6 +593,10 @@ let do_pp_instruction m =
       pp_mem "LDR" v r1 r2 k
   | I_LDR (v,r1,r2,k,s) ->
       pp_mem_shift "LDR" v r1 r2 k s
+  | I_LDUR (_,r1,r2,None) ->
+      sprintf "LDUR %s, [%s]" (pp_reg r1) (pp_reg r2)
+  | I_LDUR (_,r1,r2,Some(k)) ->
+      sprintf "LDUR %s, [%s, #%s]" (pp_reg r1) (pp_reg r2) (m.pp_k k)
   | I_LDR_P (v,r1,r2,k) ->
       pp_mem_post "LDR" v r1 r2 k
   | I_LDP (t,v,r1,r2,r3,k) ->
@@ -740,7 +745,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_LDAR (_,_,r1,r2) | I_STLR (_,r1,r2) | I_STLRBH (_,r1,r2)
   | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2)
   | I_STOP (_,_,_,r1,r2) | I_STOPBH (_,_,_,r1,r2)
-  | I_RBIT (_,r1,r2) | I_LDR_P (_, r1, r2, _)
+  | I_RBIT (_,r1,r2) | I_LDR_P (_, r1, r2, _) | I_LDUR (_, r1, r2, _)
   | I_LDG (r1,r2,_) | I_STG (r1,r2,_)
     -> fold_reg r1 (fold_reg r2 c)
   | I_LDR (_,r1,r2,kr,_) | I_STR (_,r1,r2,kr)
@@ -795,6 +800,8 @@ let map_regs f_reg f_symb =
 (* Load and Store *)
   | I_LDR (v,r1,r2,kr,os) ->
      I_LDR (v,map_reg r1,map_reg r2,map_kr kr,os)
+  | I_LDUR (v,r1,r2,k) ->
+     I_LDUR (v,map_reg r1,map_reg r2,k)
   | I_LDR_L (v,r1,lbl) ->
      I_LDR_L (v,map_reg r1, lbl)
   | I_LDR_P (v,r1,r2,k) ->
@@ -894,6 +901,7 @@ let get_next = function
   | I_BLR _|I_BR _|I_RET _ -> [Label.Any]
   | I_NOP
   | I_LDR _
+  | I_LDUR _
   | I_LDR_L _
   | I_LDR_P _
   | I_LDP _
@@ -986,6 +994,8 @@ include Pseudo.Make
         | I_LDR_L _
             as keep -> keep
         | I_LDR (v,r1,r2,kr,s) -> I_LDR (v,r1,r2,kr_tr kr,ap_shift k_tr s)
+        | I_LDUR (v,r1,r2,None) -> I_LDUR (v,r1,r2,None)
+        | I_LDUR (v,r1,r2,Some(k)) -> I_LDUR (v,r1,r2,Some(k_tr k))
         | I_LDR_P (v,r1,r2,k) -> I_LDR_P (v,r1,r2,k_tr k)
         | I_LDP (t,v,r1,r2,r3,kr) -> I_LDP (t,v,r1,r2,r3,kr_tr kr)
         | I_STP (t,v,r1,r2,r3,kr) -> I_STP (t,v,r1,r2,r3,kr_tr kr)
@@ -1008,7 +1018,7 @@ include Pseudo.Make
 
 
       let get_naccesses = function
-        | I_LDR _ | I_LDAR _ | I_LDARBH _ | I_LDR_L _
+        | I_LDR _ | I_LDAR _ | I_LDARBH _ | I_LDR_L _ | I_LDUR _
         | I_STR _ | I_STLR _ | I_STLRBH _ | I_STXR _
         | I_LDRBH _ | I_STRBH _ | I_STXRBH _ | I_IC _ | I_DC _
         | I_STG _ | I_LDG _

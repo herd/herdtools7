@@ -1,0 +1,9 @@
+AArch64 A19
+(* Tests unscaled load, given a concrete location, with offset*)
+{ 0:X1=x; &x=42; &y=48; y=1}
+
+P0;
+  LDUR X0, [X1, #6];
+
+exists (0:X0=1)
+

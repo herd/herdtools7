@@ -330,6 +330,23 @@ module Make
 
       and stlr sz rs rd ii = do_str sz AArch64.L rs (read_reg_ord rd ii) ii
 
+      (* Unscaled load, signed *)
+      and ldur sz rd rs k ii =
+        let open AArch64Base in
+        begin match k with
+        | Some(k) ->
+            (read_reg_ord rs ii)
+            >>= M.address_of
+            >>= M.add (V.intToV k)
+            >>= M.deref
+        | None ->
+            read_reg_ord rs ii
+            >>= M.address_of
+            >>= M.deref
+        end
+          >>= (fun a -> read_mem sz rd a ii)
+          >>! B.Next
+
       (* Load literal *)
       and ldr_lit var rd lbl ii =
         (* We do not use the reg size as we load a word *)
@@ -540,6 +557,9 @@ module Make
         | I_LDR_P(var,rd,rs,k) ->
             let sz = tr_variant var in
             ldr_p sz rd rs k ii
+        | I_LDUR(var,rd,rs,k) ->
+            let sz = tr_variant var in
+            ldur sz rd rs k ii
         | I_LDAR(var,t,rd,rs) ->
             let sz = tr_variant var in
             ldar sz t rd rs ii

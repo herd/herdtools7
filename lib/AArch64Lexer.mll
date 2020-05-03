@@ -44,6 +44,7 @@ match name with
 | "cbnz"  | "CBNZ" -> CBNZ
 (* Memory *)
 | "ldr"|"LDR" -> LDR
+| "ldur"|"LDUR" -> LDUR
 | "ldp"|"LDP" -> LDP
 | "ldnp"|"LDNP" -> LDNP
 | "stp"|"STP" -> STP

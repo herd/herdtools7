@@ -42,7 +42,7 @@ module A = AArch64Base
 %token NOP HINT HLT
 %token B BR BEQ BNE CBZ CBNZ EQ NE
 %token BL BLR RET
-%token LDR LDP LDNP STP STNP LDRB LDRH STR STRB STRH STLR STLRB STLRH
+%token LDR LDP LDNP STP STNP LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
 %token CMP MOV MOVZ MOVK ADR ADRP
 %token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH
 %token STXR STXRB STXRH STLXR STLXRB STLXRH
@@ -238,6 +238,8 @@ instr:
       A.I_LDR (v,r,$5,kr,os) }
 | LDR reg COMMA label_addr
   { let v,r = $2 in A.I_LDR_L (v,r,$4) }
+| LDUR reg COMMA LBRK xreg k0 RBRK
+  { let v,r = $2 in A.I_LDUR (v,r,$5,$6)}
 | ldp_instr wreg COMMA wreg COMMA LBRK xreg kr0_no_shift RBRK
   { $1 A.V32 $2 $4 $7 $8 }
 | ldp_instr xreg COMMA xreg COMMA LBRK xreg kr0_no_shift RBRK
