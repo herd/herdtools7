@@ -58,7 +58,11 @@ include Arch.MakeArch(struct
         add_subs
           [Reg(sr_name r1,r1'); Reg(sr_name r2,r2'); Reg(sr_name r3,r3')]
           subs
-    | I_LDR(_,r1,r2,kr),I_LDR(_,r1',r2',kr')
+    | I_LDR_P(_,r1,r2,k),I_LDR_P(_,r1',r2',k')
+      ->
+        match_kr subs (K k) (K k') >>>
+        add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
+    | I_LDR(_,r1,r2,kr,_),I_LDR(_,r1',r2',kr',_)
     | I_STR(_,r1,r2,kr),I_STR(_,r1',r2',kr')
       ->
         match_kr subs kr kr' >>>
@@ -169,11 +173,17 @@ include Arch.MakeArch(struct
         conv_reg r2 >> fun r2 ->
         conv_reg r3 >! fun r3 ->
         I_STXRBH(a,b,r1,r2,r3)
-    | I_LDR(a,r1,r2,kr) ->
+    | I_LDR(a,r1,r2,kr,s) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
+        find_shift s >> fun s ->
         expl_kr kr >! fun kr ->
-        I_LDR(a,r1,r2,kr)
+        I_LDR(a,r1,r2,kr,s)
+    | I_LDR_P(a,r1,r2,k) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        find_cst k >! fun k ->
+        I_LDR_P(a,r1,r2,k)
     | I_LDR_L (v,r,lbl) ->
         conv_reg r >> fun r ->
         find_lab lbl >! fun lbl ->

@@ -1,0 +1,8 @@
+AArch64 A6
+(* Tests load immediate, with offset*)
+{ 0:x1=x; &x=200; &y=244; y=4;}
+
+P0;
+  LDR X0, [X1, #44];
+
+exists (0:X0=4)

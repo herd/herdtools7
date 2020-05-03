@@ -1,0 +1,8 @@
+AArch64 A9
+(* Tests load immediate, post-indexed, concrete location *)
+{ 0:x1=44; &x=44; x=2;}
+
+P0;
+  LDR X0, [X1], #44;
+
+exists (0:X0=2 /\ 0:X1=88)

@@ -90,7 +90,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     module V = V
 
     let mem_access_size = function
-      | I_LDR (v,_,_,_) | I_LDP (_,v,_,_,_,_)
+      | I_LDR (v,_,_,_,_) | I_LDP (_,v,_,_,_,_)
+      | I_LDR_P(v,_,_,_)
       | I_LDR_L(v,_,_)
       | I_STR (v,_,_,_) | I_STLR (v,_,_) | I_STXR (v,_,_,_,_)
       | I_STP (_,v,_,_,_,_)
