@@ -64,7 +64,7 @@ include Arch.MakeArch(struct
         match_kr subs kr kr' >>>
         add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
 
-    | I_OP3(_,opp,r1,r2,kr),I_OP3(_,opi,r1',r2',kr') when opp=opi
+    | I_OP3(_,opp,r1,r2,kr,_),I_OP3(_,opi,r1',r2',kr',_) when opp=opi
       ->
         match_kr subs kr kr' >>>
         add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
@@ -80,17 +80,17 @@ include Arch.MakeArch(struct
       | K k ->
           find_cst k >! fun k -> K k in
     let find_shift = function
-      | LSL(n) ->
-          find_cst n >! fun n -> LSL(n)
-      | LSR(n) ->
-          find_cst n >! fun n -> LSR(n)
-      | ASR(n) ->
-          find_cst n >! fun n -> ASR(n)
-      | SXTW(n) ->
-          find_cst n >! fun n -> SXTW(n)
-      | UXTW(n) ->
-          find_cst n >! fun n -> UXTW(n)
-      | NOEXT -> fun n -> NOEXT, n in
+      | S_LSL(n) ->
+          find_cst n >! fun n -> S_LSL(n)
+      | S_LSR(n) ->
+          find_cst n >! fun n -> S_LSR(n)
+      | S_ASR(n) ->
+          find_cst n >! fun n -> S_ASR(n)
+      | S_SXTW(n) ->
+          find_cst n >! fun n -> S_SXTW(n)
+      | S_UXTW(n) ->
+          find_cst n >! fun n -> S_UXTW(n)
+      | S_NOEXT -> fun n -> S_NOEXT, n in
 
 
     function
@@ -120,10 +120,10 @@ include Arch.MakeArch(struct
         conv_reg r >> fun r ->
         expl_kr kr >! fun kr ->
         I_MOV(a,r,kr)
-    | I_MOVZ(a,r,kr,NOEXT) ->
+    | I_MOVZ(a,r,kr,S_NOEXT) ->
         conv_reg r >> fun r  ->
         expl_kr kr >! fun kr ->
-        I_MOVZ(a,r,kr,NOEXT)
+        I_MOVZ(a,r,kr,S_NOEXT)
     | I_MOVZ(a,r,kr,s) ->
         conv_reg r >> fun r  ->
         expl_kr kr >> fun kr ->
@@ -205,11 +205,12 @@ include Arch.MakeArch(struct
         conv_reg r2 >> fun r2 ->
         expl_kr kr >! fun kr ->
         I_STRBH(a,r1,r2,kr)
-    | I_OP3(a,b,r1,r2,kr) ->
+    | I_OP3(a,b,r1,r2,kr, s) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
+        find_shift s >> fun s ->
         expl_kr kr >! fun kr ->
-        I_OP3(a,b,r1,r2,kr)
+        I_OP3(a,b,r1,r2,kr,s)
     | I_CSEL(v,r1,r2,r3,c,op) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->

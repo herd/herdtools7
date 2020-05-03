@@ -96,16 +96,16 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let cbz r1 lbl = I_CBZ (vloc,r1,lbl)
     let do_cbnz v r1 lbl = I_CBNZ (v,r1,lbl)
     let cbnz = do_cbnz vloc
-    let cmpi r i = I_OP3 (vloc,SUBS,ZR,r,K i)
-    let cmp r1 r2 = I_OP3 (vloc,SUBS,ZR,r1,RV (vloc,r2))
+    let cmpi r i = I_OP3 (vloc,SUBS,ZR,r,K i, S_NOEXT)
+    let cmp r1 r2 = I_OP3 (vloc,SUBS,ZR,r1,RV (vloc,r2), S_NOEXT)
     let bne lbl = I_BC (NE,lbl)
-    let eor sz r1 r2 r3 = I_OP3 (sz,EOR,r1,r2,RV (sz,r3))
-    let andi sz r1 r2 k = I_OP3 (sz,AND,r1,r2,K k)
-    let addi r1 r2 k = I_OP3 (vloc,ADD,r1,r2,K k)
-    let addi_64 r1 r2 k = I_OP3 (V64,ADD,r1,r2,K k)
+    let eor sz r1 r2 r3 = I_OP3 (sz,EOR,r1,r2,RV (sz,r3), S_NOEXT)
+    let andi sz r1 r2 k = I_OP3 (sz,AND,r1,r2,K k, S_NOEXT)
+    let addi r1 r2 k = I_OP3 (vloc,ADD,r1,r2,K k, S_NOEXT)
+    let addi_64 r1 r2 k = I_OP3 (V64,ADD,r1,r2,K k, S_NOEXT)
 (*    let add r1 r2 r3 = I_OP3 (vloc,ADD,r1,r2,r3) *)
-    let add v r1 r2 r3 = I_OP3 (v,ADD,r1,r2,RV (v,r3))
-    let do_add64 v r1 r2 r3 = I_OP3 (V64,ADD,r1,r2,RV (v,r3))
+    let add v r1 r2 r3 = I_OP3 (v,ADD,r1,r2,RV (v,r3), S_NOEXT)
+    let do_add64 v r1 r2 r3 = I_OP3 (V64,ADD,r1,r2,RV (v,r3), S_NOEXT)
 
     let ldr_mixed r1 r2 sz o =
       let open MachSize in
@@ -349,7 +349,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           pseudo
             (ld@
              [cmp rA;
-              bne out; I_OP3 (vloc,SUBS,rC,rC,K 1) ;
+              bne out; I_OP3 (vloc,SUBS,rC,rC,K 1, S_NOEXT) ;
               cbnz rC lab ;
             ])@
           [Label (out,Nop)],st

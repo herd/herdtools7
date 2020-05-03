@@ -58,12 +58,12 @@ module Make(V:Constant.S)(C:Config) =
 
 (* pretty prints barrel shifters *)
 let pp_shifter = function
-  | LSL(s) -> Printf.sprintf "LSL #%d" s;
-  | LSR(s) -> Printf.sprintf "LSR #%d" s;
-  | ASR(s) -> Printf.sprintf "ASR #%d" s;
-  | SXTW(s) -> Printf.sprintf "SXTW #%d" s;
-  | UXTW(s) -> Printf.sprintf "UXTW #%d" s;
-  | NOEXT  -> ""
+  | S_LSL(s) -> Printf.sprintf "LSL #%d" s;
+  | S_LSR(s) -> Printf.sprintf "LSR #%d" s;
+  | S_ASR(s) -> Printf.sprintf "ASR #%d" s;
+  | S_SXTW(s) -> Printf.sprintf "SXTW #%d" s;
+  | S_UXTW(s) -> Printf.sprintf "UXTW #%d" s;
+  | S_NOEXT  -> ""
 
 (************************)
 (* Template compilation *)
@@ -451,22 +451,22 @@ let pp_shifter = function
           inputs = r2; outputs=r1; reg_env=add_q (r1@r2);}
 
     let do_movz memo v rd k os = match v, k, os with
-    | V32, K k, LSL(s) ->
+    | V32, K k, S_LSL(s) ->
         let r1,f1 = arg1 "wzr" (fun s -> "^wo"^s) rd in
         { empty_ins with
-          memo=sprintf "%s %s, #%d, %s" memo f1 k (pp_shifter (LSL s));
+          memo=sprintf "%s %s, #%d, %s" memo f1 k (pp_shifter (S_LSL s));
           outputs=r1; reg_env=add_w r1;}
-    | V32, K k, NOEXT ->
+    | V32, K k, S_NOEXT ->
         let r1,f1 = arg1 "wzr" (fun s -> "^wo"^s) rd in
         { empty_ins with
           memo=sprintf "%s %s, #%d" memo f1 k;
           outputs=r1; reg_env=add_w r1;}
-    | V64, K k, LSL(s) ->
+    | V64, K k, S_LSL(s) ->
         let r1,f1 = arg1 "xzr" (fun s -> "^o"^s) rd in
         { empty_ins with
-          memo=sprintf "%s %s, #%d, %s" memo f1 k (pp_shifter (LSL s));
+          memo=sprintf "%s %s, #%d, %s" memo f1 k (pp_shifter (S_LSL s));
           outputs=r1; reg_env=add_q r1;}
-    | V64, K k, NOEXT ->
+    | V64, K k, S_NOEXT ->
         let r1,f1 = arg1 "xzr" (fun s -> "^o"^s) rd in
         { empty_ins with
           memo=sprintf "%s %s, #%d" memo f1 k;
@@ -619,10 +619,10 @@ let pp_shifter = function
     | I_ADRP (r,lbl) -> adr tr_lab r lbl::k
     | I_RBIT (v,rd,rs) -> rbit v rd rs::k
     | I_SXTW (r1,r2) -> sxtw r1 r2::k
-    | I_OP3 (v,SUBS,ZR,r,K i) ->  cmpk v r i::k
-    | I_OP3 (v,SUBS,ZR,r2,RV (v3,r3)) when v=v3->  cmp v r2 r3::k
-    | I_OP3 (v,ANDS,ZR,r,K i) -> tst v r i::k
-    | I_OP3 (v,op,r1,r2,kr) ->  op3 v op r1 r2 kr::k
+    | I_OP3 (v,SUBS,ZR,r,K i, S_NOEXT) ->  cmpk v r i::k
+    | I_OP3 (v,SUBS,ZR,r2,RV (v3,r3), S_NOEXT) when v=v3->  cmp v r2 r3::k
+    | I_OP3 (v,ANDS,ZR,r,K i, S_NOEXT) -> tst v r i::k
+    | I_OP3 (v,op,r1,r2,kr,_) ->  op3 v op r1 r2 kr::k
 (* Fence *)
     | I_FENCE f -> fence f::k
 (* Fetch and Op *)

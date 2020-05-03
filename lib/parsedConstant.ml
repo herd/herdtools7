@@ -39,6 +39,7 @@ module StringScalar = struct
   let lognot = op1 "lognot"
   let shift_left _ _ =  Warn.fatal "shift left on parsed constant"
   let shift_right_logical _ _ =  Warn.fatal "shift right logical on parsed constant"
+  let shift_right_arithmetic _ _ =  Warn.fatal "shift right logical on parsed constant"
   let addk _ k =  Warn.fatal "add constant %i on parsed constant" k
   let lt = op2 "(<)"
   let le = op2 "(<=)"

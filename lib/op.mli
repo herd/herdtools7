@@ -24,8 +24,11 @@ type op =
   | Add | Sub | Mul | Div
   | And | Or | Xor | Nor
   | AndNot2
+(* Arithmetic shift right *)
+  | ASR
 (* Logical shift left *)
   | ShiftLeft
+  | ShiftRight
 (* Return C-style boolean (zero is false, not zero is true) *)
   | Lt | Gt | Eq | Ne
   | Le | Ge
@@ -49,6 +52,7 @@ type op1 =
   | ReadBit of int
   | LeftShift of int
   | LogicalRightShift of int
+  | SignExtendWord of int
   | AddK of int
   | AndK of string
   | Mask of MachSize.sz

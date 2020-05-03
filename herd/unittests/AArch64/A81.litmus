@@ -1,0 +1,10 @@
+AArch64 A81
+(* Tests add (shifted register), left shift by zero (noop) *)
+
+{ 0:X0=42; 0:X1=1; }
+
+P0;
+ADD X0, X0, X1, lsl #0;
+
+exists (0:X0=43)
+

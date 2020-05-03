@@ -1,0 +1,451 @@
+Test A2 Allowed
+States 1
+a=2; z=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (z=1 /\ a=2)
+Observation A2 Always 1 0
+Time A2 0.01
+Hash=4ffb80d766777327b1e247c7421d833d
+
+Test A3 Allowed
+States 1
+0:X0=1; 0:X1=2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=1 /\ 0:X1=2)
+Observation A3 Always 1 0
+Time A3 0.00
+Hash=8934e42f68b86bcce5ff2dae8f0f636f
+
+Test A17 Allowed
+States 1
+0:X0=42;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=42)
+Observation A17 Always 1 0
+Time A17 0.00
+Hash=5153c0f8c95a8b934957f5b7300f6ba6
+
+Test A30 Allowed
+States 1
+0:X0=1; 0:X1=2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=1 /\ 0:X1=2)
+Observation A30 Always 1 0
+Time A30 0.00
+Hash=d46a62926920e39802da309bd2c79f7f
+
+Test A31 Allowed
+States 1
+0:X0=1; 0:X1=2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=1 /\ 0:X1=2)
+Observation A31 Always 1 0
+Time A31 0.00
+Hash=8934e42f68b86bcce5ff2dae8f0f636f
+
+Test A32 Allowed
+States 1
+0:X0=1; 0:X1=2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=1 /\ 0:X1=2)
+Observation A32 Always 1 0
+Time A32 0.00
+Hash=49d4629d388e6f87e12d326afdd2951b
+
+Test A37 Allowed
+States 1
+0:X0=230000;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=230000)
+Observation A37 Always 1 0
+Time A37 0.00
+Hash=657de372f40445422df595ce3a3a63ff
+
+Test A38 Allowed
+States 1
+0:X0=230000;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=230000)
+Observation A38 Always 1 0
+Time A38 0.00
+Hash=0bf85c94a37df867d9591f02160961d1
+
+Test A51 Allowed
+States 1
+0:X0=42;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=42)
+Observation A51 Always 1 0
+Time A51 0.00
+Hash=1611ac52d31d484b8a8d216395caf808
+
+Test A52 Allowed
+States 1
+0:X0=42;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=42)
+Observation A52 Always 1 0
+Time A52 0.00
+Hash=3c026fd18ddf34f3f54848067f25f89f
+
+Test A53 Allowed
+States 1
+0:X0=42;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=42)
+Observation A53 Always 1 0
+Time A53 0.00
+Hash=d83f643d9144040c20388e3cc7653945
+
+Test A54 Allowed
+States 1
+0:X0=42;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=42)
+Observation A54 Always 1 0
+Time A54 0.00
+Hash=53e9b8f2236e8b28b9da15c456cca998
+
+Test A55 Allowed
+States 1
+0:X0=2752512;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=2752512)
+Observation A55 Always 1 0
+Time A55 0.00
+Hash=ef9b26abf6434d844b4d06cf439cb700
+
+Test A56 Allowed
+States 1
+0:X0=2752512;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=2752512)
+Observation A56 Always 1 0
+Time A56 0.00
+Hash=5a280ecb70b17711f935412933055a53
+
+Test A57 Allowed
+States 1
+0:X0=180388626432;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=180388626432)
+Observation A57 Always 1 0
+Time A57 0.00
+Hash=b143f1b74e7dc5fd25227cc69e216d18
+
+Test A58 Allowed
+States 1
+0:X0=11821949021847552;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=11821949021847552)
+Observation A58 Always 1 0
+Time A58 0.00
+Hash=fc18568d85e97af0b76d779950598401
+
+Test A59 Allowed
+States 1
+0:X0=x;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=x)
+Observation A59 Always 1 0
+Time A59 0.00
+Hash=c8dc54a6dfe8405d05405f915b51af01
+
+Test A60 Allowed
+States 1
+0:X0=2293760;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=2293760)
+Observation A60 Always 1 0
+Time A60 0.00
+Hash=c8dc54a6dfe8405d05405f915b51af01
+
+Test A61 Allowed
+States 1
+0:X0=x;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=x)
+Observation A61 Always 1 0
+Time A61 0.00
+Hash=d8b4177eea4733b639f77bb6dbabf6f6
+
+Test A62 Allowed
+States 1
+0:X0=2293760;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=2293760)
+Observation A62 Always 1 0
+Time A62 0.00
+Hash=d8b4177eea4733b639f77bb6dbabf6f6
+
+Test A63 Allowed
+States 1
+0:X0=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=1)
+Observation A63 Always 1 0
+Time A63 0.00
+Hash=d16bbe1d52e5026fb2bd42d1e3f90eb4
+
+Test A64 Allowed
+States 1
+0:X0=32;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=32)
+Observation A64 Always 1 0
+Time A64 0.00
+Hash=f345fb541fef63340c7b35623a5fda88
+
+Test A65 Allowed
+States 1
+0:X0=32;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=32)
+Observation A65 Always 1 0
+Time A65 0.00
+Hash=436f9ec7d06118b7abb83eeec247fe45
+
+Test A66 Allowed
+States 1
+0:X0=42;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=42)
+Observation A66 Always 1 0
+Time A66 0.00
+Hash=0bbf4832cac85dbe6dc262ccbb4239ac
+
+Test A67 Allowed
+States 1
+0:X0=43;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=43)
+Observation A67 Always 1 0
+Time A67 0.00
+Hash=2da12aedee65fffa2c410381fd99590e
+
+Test A68 Allowed
+States 1
+0:X0=42;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=42)
+Observation A68 Always 1 0
+Time A68 0.00
+Hash=58a1dea9f5a4cf04aa59654924c02d1a
+
+Test A69 Allowed
+States 1
+0:X0=4138;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=4138)
+Observation A69 Always 1 0
+Time A69 0.00
+Hash=61f20d4d9d0ed8cbf1fbf2e2a29b5218
+
+Test A70 Allowed
+States 1
+0:X0=43;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=43)
+Observation A70 Always 1 0
+Time A70 0.00
+Hash=90123e3972cdfa5e7e7beccc76e5ab5c
+
+Test A71 Allowed
+States 1
+0:X0=43;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=43)
+Observation A71 Always 1 0
+Time A71 0.00
+Hash=91b7d02ca299ae9d31bc7dd576654b87
+
+Test A72 Allowed
+States 1
+0:X0=58;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=58)
+Observation A72 Always 1 0
+Time A72 0.00
+Hash=989d1da117c0b37844c5b2804d2d3420
+
+Test A73 Allowed
+States 1
+0:X0=43;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=43)
+Observation A73 Always 1 0
+Time A73 0.00
+Hash=2c0fda570f6a9a1bd1d301dddf5f5979
+
+Test A74 Allowed
+States 1
+0:X0=50;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=50)
+Observation A74 Always 1 0
+Time A74 0.00
+Hash=ed827e67ca4a3e21db130c90c0bd30ac
+
+Test A75 Allowed
+States 1
+0:X0=43;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=43)
+Observation A75 Always 1 0
+Time A75 0.00
+Hash=5a28f7cce313252f8a119ad5050ff0b8
+
+Test A76 Allowed
+States 1
+0:X0=50;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=50)
+Observation A76 Always 1 0
+Time A76 0.00
+Hash=ecaf02554031e56a37994cae7908d489
+
+Test A77 Allowed
+States 1
+0:X0=43;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=43)
+Observation A77 Always 1 0
+Time A77 0.00
+Hash=6eb82cdb5b6305661eb73eba5b4e416e
+
+Test A78 Allowed
+States 1
+0:X0=42;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=42)
+Observation A78 Always 1 0
+Time A78 0.00
+Hash=23197068ed8108b34da1a8d3f29dfb2c
+
+Test A79 Allowed
+States 1
+0:X0=4138;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=4138)
+Observation A79 Always 1 0
+Time A79 0.00
+Hash=21a8fbfa34bff840ed29217e1329f1cc
+
+Test A80 Allowed
+States 1
+0:X0=43;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=43)
+Observation A80 Always 1 0
+Time A80 0.00
+Hash=c5bb91df2d37b38f41a1a3b11e4e2b9e
+
+Test A81 Allowed
+States 1
+0:X0=43;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=43)
+Observation A81 Always 1 0
+Time A81 0.00
+Hash=e622c0c8b3d5e68c52aa5a5473537861
+
+Test A82 Allowed
+States 1
+0:X0=58;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=58)
+Observation A82 Always 1 0
+Time A82 0.00
+Hash=b7ecc0d6817cef728611fb867b35e422
+
+Test A83 Allowed
+States 1
+0:X0=43;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=43)
+Observation A83 Always 1 0
+Time A83 0.00
+Hash=9ab5f1a0fff199f8c5614aa3604856a1
+

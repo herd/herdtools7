@@ -1,0 +1,10 @@
+AArch64 A66
+(* Tests adds (immediate), zero immediate, no shift *)
+
+{ 0:X0=42; }
+
+P0;
+ADDS X0, X0, #0;
+
+exists (0:X0=42)
+

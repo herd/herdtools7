@@ -1,4 +1,5 @@
-(****************************************************************************)(*                           the diy toolsuite                              *)
+(****************************************************************************)
+(*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
@@ -276,6 +277,8 @@ module Make(Cst:Constant.S) = struct
       unop  op (fun s -> Scalar.shift_left s k)
   | LogicalRightShift k ->
       unop op (fun s -> Scalar.shift_right_logical s k)
+  | SignExtendWord _ ->
+      Warn.fatal "sxtw op not implemented yet"
   | AddK k -> add_konst k
   | AndK k -> unop op (fun s -> Scalar.logand s (Scalar.of_string k))
   | Mask sz -> maskop op sz
@@ -292,10 +295,14 @@ module Make(Cst:Constant.S) = struct
   | Mul -> binop op (Scalar.mul)
   | Div -> binop op (Scalar.div)
   | And -> binop op (Scalar.logand)
+  | ASR ->
+          binop op (fun x y -> Scalar.shift_right_arithmetic x (Scalar.to_int y))
   | Or -> orop
   | Xor -> xor
   | Nor -> binop op (fun x1 x2 -> Scalar.lognot (Scalar.logor x1 x2))
   | AndNot2 -> binop op (fun x1 x2 -> Scalar.logand x1 (Scalar.lognot x2))
+  | ShiftRight ->
+      binop op (fun x y -> Scalar.shift_right_logical x (Scalar.to_int y))
   | ShiftLeft ->
       binop op (fun x y -> Scalar.shift_left x (Scalar.to_int y))
   | Lt -> lt

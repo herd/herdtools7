@@ -36,7 +36,7 @@ module A = AArch64Base
 %token SXTW
 
 /* Inline Barrel Shift Operands */
-%token LSL
+%token LSL LSR ASR UXTW
 
 /* Instructions */
 %token NOP HINT
@@ -149,16 +149,10 @@ k:
 | NUM  { MetaConst.Int $1 }
 | META { MetaConst.Meta $1 }
 
-(* In a future patch this will be renamed kr_shift *)
-(* With more shifts, this is shift-work *)
 kr:
-| k { A.K $1 }
+| k    { A.K $1 }
 | xreg { A.RV (A.V64,$1) }
-| wreg COMMA SXTW { A.RV (A.V32,$1) }
-
-kr0:
-| { A.K (MetaConst.zero) }
-| COMMA kr { $2 }
+| wreg { A.RV (A.V32,$1) }
 
 kr0_no_shift:
 | { A.K (MetaConst.zero) }
@@ -167,6 +161,13 @@ kr0_no_shift:
 kwr:
 | k { A.K $1 }
 | wreg { A.RV (A.V32,$1) }
+
+shift:
+| LSL NUM  { A.S_LSL(MetaConst.Int $2)  }
+| LSR NUM  { A.S_LSR(MetaConst.Int $2)  }
+| ASR NUM  { A.S_ASR(MetaConst.Int $2)  }
+| SXTW NUM { A.S_SXTW(MetaConst.Int $2) }
+| UXTW NUM { A.S_UXTW(MetaConst.Int $2) }
 
 zeroopt:
 | { () }
@@ -210,7 +211,7 @@ instr:
 | CBZ reg COMMA NAME   { let v,r = $2 in A.I_CBZ (v,r,$4) }
 | CBNZ reg COMMA NAME  { let v,r = $2 in A.I_CBNZ (v,r,$4) }
 /* Memory */
-| LDR reg COMMA LBRK xreg kr0 RBRK
+| LDR reg COMMA LBRK xreg kr0_no_shift RBRK
   { let v,r = $2 in A.I_LDR (v,r,$5,$6) }
 | LDR reg COMMA label_addr
   { let v,r = $2 in A.I_LDR_L (v,r,$4) }
@@ -222,9 +223,9 @@ instr:
   { $1 A.V32 $2 $4 $7 $8 }
 | stp_instr xreg COMMA xreg COMMA LBRK xreg kr0_no_shift RBRK
   { $1 A.V64 $2 $4 $7 $8 }
-| LDRB wreg COMMA LBRK xreg kr0 RBRK
+| LDRB wreg COMMA LBRK xreg kr0_no_shift RBRK
   { A.I_LDRBH (A.B,$2,$5,$6) }
-| LDRH wreg COMMA LBRK xreg kr0 RBRK
+| LDRH wreg COMMA LBRK xreg kr0_no_shift RBRK
   { A.I_LDRBH (A.H,$2,$5,$6) }
 | LDAR reg COMMA LBRK xreg RBRK
   { let v,r = $2 in A.I_LDAR (v,A.AA,r,$5) }
@@ -250,11 +251,11 @@ instr:
   { A.I_LDARBH (A.B,A.AQ,$2,$5) }
 | LDAPRH wreg COMMA LBRK xreg RBRK
   { A.I_LDARBH (A.H,A.AQ,$2,$5) }
-| STR reg COMMA LBRK xreg kr0 RBRK
+| STR reg COMMA LBRK xreg kr0_no_shift RBRK
   { let v,r = $2 in A.I_STR (v,r,$5,$6) }
-| STRB wreg COMMA LBRK xreg kr0 RBRK
+| STRB wreg COMMA LBRK xreg kr0_no_shift RBRK
   { A.I_STRBH (A.B,$2,$5,$6) }
-| STRH wreg COMMA LBRK xreg kr0 RBRK
+| STRH wreg COMMA LBRK xreg kr0_no_shift RBRK
   { A.I_STRBH (A.H,$2,$5,$6) }
 | STLR reg COMMA LBRK xreg RBRK
   { let v,r = $2 in A.I_STLR (v,r,$5) }
@@ -341,9 +342,9 @@ instr:
 | SWPALH wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_SWPBH (A.H,A.RMW_AL,$2,$4,$7) }
 /* Memory Tagging */
-| STG xreg COMMA LBRK xreg kr0 RBRK
+| STG xreg COMMA LBRK xreg kr0_no_shift RBRK
   { A.I_STG ($2,$5,$6) }
-| LDG xreg COMMA LBRK xreg kr0 RBRK
+| LDG xreg COMMA LBRK xreg kr0_no_shift RBRK
   { A.I_LDG ($2,$5,$6) }
 
 /* Fetch and ADD */
@@ -646,31 +647,38 @@ instr:
 | MOV wreg COMMA kwr
   { A.I_MOV (A.V32,$2,$4) }
 | MOVZ xreg COMMA NUM
-  { A.I_MOVZ (A.V64,$2, A.K (MetaConst.Int $4), A.NOEXT) }
+  { A.I_MOVZ (A.V64,$2, A.K (MetaConst.Int $4), A.S_NOEXT) }
 | MOVZ xreg COMMA NUM COMMA LSL k
-  { A.I_MOVZ (A.V64,$2, A.K (MetaConst.Int $4), A.LSL $7) }
+  { A.I_MOVZ (A.V64,$2, A.K (MetaConst.Int $4), A.S_LSL $7) }
 | MOVZ wreg COMMA kwr
-  { A.I_MOVZ (A.V32,$2,$4, A.NOEXT) }
+  { A.I_MOVZ (A.V32,$2,$4, A.S_NOEXT) }
 | MOVZ wreg COMMA kwr COMMA LSL k
-  { A.I_MOVZ (A.V32,$2,$4, A.LSL $7) }
+  { A.I_MOVZ (A.V32,$2,$4, A.S_LSL $7) }
 | ADR xreg COMMA label_addr
   { A.I_ADDR ($2,$4) }
 | ADRP xreg COMMA label_addr
   { A.I_ADRP ($2,$4) }
 | SXTW xreg COMMA wreg
   { A.I_SXTW ($2,$4) }
+/* Special handling for ASR operation */
+| ASR xreg COMMA xreg COMMA kr
+  { A.I_OP3 (A.V64, AArch64Base.ASR, $2, $4, $6, A.S_NOEXT) }
 | OP xreg COMMA xreg COMMA kr
-  { A.I_OP3 (A.V64,$1,$2,$4,$6) }
+  { A.I_OP3 (A.V64,$1,$2,$4,$6, A.S_NOEXT) }
+| OP xreg COMMA xreg COMMA kr COMMA shift
+  { A.I_OP3 (A.V64,$1,$2,$4,$6, $8) }
 | OP wreg COMMA wreg COMMA kwr
-    { A.I_OP3 (A.V32,$1,$2,$4,$6) }
+  { A.I_OP3 (A.V32,$1,$2,$4,$6, A.S_NOEXT) }
+| OP wreg COMMA wreg COMMA kwr COMMA shift
+  { A.I_OP3 (A.V32,$1,$2,$4,$6, $8) }
 | CMP wreg COMMA kwr
-  { A.I_OP3 (A.V32,A.SUBS,A.ZR,$2,$4) }
+  { A.I_OP3 (A.V32,A.SUBS,A.ZR,$2,$4, A.S_NOEXT) }
 | CMP xreg COMMA kr
-  { A.I_OP3 (A.V64,A.SUBS,A.ZR,$2,$4) }
+  { A.I_OP3 (A.V64,A.SUBS,A.ZR,$2,$4, A.S_NOEXT) }
 | TST wreg COMMA k
-  { A.I_OP3 (A.V32,A.ANDS,A.ZR,$2,A.K $4) }
+  { A.I_OP3 (A.V32,A.ANDS,A.ZR,$2,A.K $4, A.S_NOEXT) }
 | TST xreg COMMA k
-  { A.I_OP3 (A.V64,A.ANDS,A.ZR,$2,A.K $4) }
+  { A.I_OP3 (A.V64,A.ANDS,A.ZR,$2,A.K $4, A.S_NOEXT) }
 | RBIT wreg COMMA wreg
   { A.I_RBIT (A.V32,$2,$4) }
 | RBIT xreg COMMA xreg

@@ -1,0 +1,10 @@
+AArch64 A73
+(* Tests adds (shifted register), right shift by zero (noop) *)
+
+{ 0:X0=42; 0:X1=1; }
+
+P0;
+ADDS X0, X0, X1, lsr #0;
+
+exists (0:X0=43)
+
