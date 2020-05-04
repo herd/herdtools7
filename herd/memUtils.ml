@@ -31,8 +31,13 @@ module Make(S : SemExtra.S) = struct
     E.EventRel.transitive_closure
     (E.EventRel.union es.E.intra_causality_data  es.E.intra_causality_control)
 
-  let po_strict es =
-    let _,e = es.E.po in e 
+  let po_strict =
+    if S.do_spec then
+      fun es -> let _,e = es.E.po in e
+    else
+      fun es ->
+        E.EventRel.of_pred
+          es.E.events es.E.events E.po_strict
 
   let po_iico_data es =
     E.EventRel.union
@@ -43,10 +48,11 @@ module Make(S : SemExtra.S) = struct
 
 (* slight extension of prog order *)
   let is_before_strict es e1 e2 =
-    E.EventRel.mem (e1,e2) es.E.intra_causality_data  ||
-    E.EventRel.mem (e1,e2) es.E.intra_causality_control ||
-    E.EventRel.mem (e1,e2) (po_strict es) 
-
+    let p = e1,e2 in
+    E.EventRel.mem p es.E.intra_causality_data  ||
+    E.EventRel.mem p es.E.intra_causality_control ||
+    (if S.do_spec then E.EventRel.mem p (po_strict es) 
+    else E.po_strict e1 e2)
 (* Fence *)
   let po_fence_po po pred =
     let r1 =
@@ -293,32 +299,6 @@ let lift_proc_info i evts =
   let ext r = E.EventRel.filter (fun (e1,e2) -> not (E.same_proc e1 e2)) r
   let internal r = E.EventRel.filter (fun (e1,e2) -> E.same_proc e1 e2) r
 
-
-(* po-separation *)
-  let sep es is_sep is_applicable evts =
-    let is_applicable e1 e2 = is_applicable (e1,e2) in
-    let rels =
-      E.EventSet.fold
-        (fun e k ->
-          if is_sep e then
-            let before =
-              E.EventSet.filter
-                (fun ea -> E.EventRel.mem (ea,e) (po_strict es))
-                evts
-            and after =
-              E.EventSet.filter
-                (fun eb ->  E.EventRel.mem (e,eb) (po_strict es))
-                evts in
-            E.EventRel.of_pred before after is_applicable::k
-          else k)
-        evts [] in
-    E.EventRel.unions rels
-
-(* Extract external sub-relation *)
-
-  let extract_external r =
-    E.EventRel.filter (fun (e1,e2) -> E.proc_of e1 <> E.proc_of e2) r
-
 (**************************************)
 (* Place loads in write_serialization *)
 (**************************************)
@@ -406,32 +386,9 @@ let lift_proc_info i evts =
 
     LocEnv.fold (fun _ evts k -> E.EventSet.of_list evts::k) env []
 
-
-(* fr to init stores only *)
-  let make_fr_partial conc =
-    let ws_by_loc = collect_mem_stores conc.S.str in
-    let rs_by_loc = collect_mem_loads conc.S.str in
-    let rfm = conc.S.rfmap in
-    let k =
-      LocEnv.fold
-        (fun loc rs k ->
-          List.fold_left
-            (fun k r ->
-              match find_rf r rfm with
-              | S.Init ->
-                  let ws =
-                    try LocEnv.find loc ws_by_loc
-                    with Not_found -> [] in
-                  List.fold_left (fun k w -> (r,w)::k) k ws
-              | S.Store _ -> k)
-            k rs)
-        rs_by_loc [] in
-    E.EventRel.of_list k
-
 (********************************************)
 (* Write serialization candidate generator. *)
 (********************************************)
-
 
   let restrict_to_mem_stores rel =
     E.EventRel.filter

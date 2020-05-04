@@ -56,8 +56,7 @@ val same_instance : event -> event -> bool
   val progorder_of  : event -> A.program_order_index option
 
 (* Is e1 before e2 w.r.t. prog order ? Nothing assumed on e1 and e2 *)
-(*  val po_strict : event -> event -> bool
-  val before_in_po : event -> event -> bool *)
+  val po_strict : event -> event -> bool
   val po_eq : event -> event -> bool
 
 (************************)
@@ -224,9 +223,6 @@ val same_instance : event -> event -> bool
      events be a mem_store *)
   val proj_proc_view : event_structure -> event_rel -> event_rel list
 
-  (* e1 < e2 in UNION (strict_po,iico) ? *)
-(*  val strict_before_po_iico : event_structure -> event -> event -> bool *)
-
 (********************)
 (* Equation solving *)
 (********************)
@@ -366,16 +362,18 @@ module type Config = sig
 end
 
 module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
-  (S with module A = AI and module Act = Act) =
-struct
+    (S with module A = AI and module Act = Act) =
+  struct
 
-  module Act = Act
-  module A = AI
-  module V = AI.V
+    module Act = Act
+    module A = AI
+    module V = AI.V
 
-  type eiid = int
+    let do_spec = C.variant Variant.Speculate
 
-  type action = Act.action
+    type eiid = int
+
+    type action = Act.action
 
     type event = {
         eiid : eiid;
@@ -465,14 +463,9 @@ struct
 (* Predicates on events *)
 (************************)
 
-(*    let before_in_po e1 e2 =
-      proc_of e1 = proc_of e2 &&
-      (progorder_of e1 < progorder_of e2 ||
-       progorder_of e1 = progorder_of e2 )
-
     let po_strict e1 e2 =
       proc_of e1 = proc_of e2 && progorder_of e1 < progorder_of e2
-*)
+
     let po_eq e1 e2 =
       proc_of e1 = proc_of e2 && progorder_of e1 = progorder_of e2
 
@@ -508,31 +501,31 @@ struct
     let is_reg_load_any e = Act.is_reg_load_any e.action
 
 (* Compatible events ie accesses of the same category *)
-  let compatible_accesses e1 e2 =
-    Act.compatible_accesses e1.action e2.action
+    let compatible_accesses e1 e2 =
+      Act.compatible_accesses e1.action e2.action
 
 (* Barriers *)
     let is_barrier e = Act.is_barrier e.action
     let barrier_of e = Act.barrier_of e.action
 (*
-    let same_barrier_id e1 e2 =
-      Act.same_barrier_id e1.action e2.action
-*)
-  let is_isync e = Act.is_isync e.action
+  let same_barrier_id e1 e2 =
+  Act.same_barrier_id e1.action e2.action
+ *)
+    let is_isync e = Act.is_isync e.action
 
 (* Commits *)
-  let is_commit_bcc e = Act.is_commit_bcc e.action
-  let is_commit_pred e = Act.is_commit_pred e.action
-  let is_commit e =
-    let act = e.action in
-    Act.is_commit_bcc act ||  Act.is_commit_pred act
+    let is_commit_bcc e = Act.is_commit_bcc e.action
+    let is_commit_pred e = Act.is_commit_pred e.action
+    let is_commit e =
+      let act = e.action in
+      Act.is_commit_bcc act ||  Act.is_commit_pred act
 
-  let is_pod e =
-    let act = e.action in
-    Act.is_pod act || is_commit e
+    let is_pod e =
+      let act = e.action in
+      Act.is_pod act || is_commit e
 
 (*  Unrolling control *)
-  let is_toofar e = Act.is_toofar e.action
+    let is_toofar e = Act.is_toofar e.action
 
 (******************************)
 (* Build structures of events *)
@@ -556,7 +549,7 @@ struct
       fprintf chan "}" ;
       ()
 
-  module EventSetSet = MySet.Make(EventSet)
+    module EventSetSet = MySet.Make(EventSet)
 
 (* relative to memory *)
     let mem_stores_of = EventSet.filter is_mem_store
@@ -622,19 +615,17 @@ struct
       let map_rel = EventRel.map (fun (e1,e2) -> f e1,f e2)
       and map_set = EventSet.map f in
       { procs = es.procs ;
-       events = map_set es.events ;
-       speculated = map_set es.speculated ;
-       po = begin 
-            let r,e = es.po in (map_set r, map_rel e) 
-            end;
-       intra_causality_data = map_rel  es.intra_causality_data ;
-       intra_causality_control = map_rel es.intra_causality_control ;
-       control = map_rel es.control ;
-       data_ports = map_set es.data_ports ;
-       success_ports = map_set es.success_ports ;
-       output = Misc.app_opt map_set es.output ;
-       sca = EventSetSet.map map_set es.sca ;
-       mem_accesses = map_set es.mem_accesses ;
+        events = map_set es.events ;
+        speculated = map_set es.speculated ;
+        po = begin let r,e = es.po in (map_set r, map_rel e) end;
+        intra_causality_data = map_rel  es.intra_causality_data ;
+        intra_causality_control = map_rel es.intra_causality_control ;
+        control = map_rel es.control ;
+        data_ports = map_set es.data_ports ;
+        success_ports = map_set es.success_ports ;
+        output = Misc.app_opt map_set es.output ;
+        sca = EventSetSet.map map_set es.sca ;
+        mem_accesses = map_set es.mem_accesses ;
 
       }
 
@@ -655,15 +646,15 @@ struct
         mem_accesses = EventSet.empty ;
       }
 
-  let is_empty_event_structure es =
-    not (Misc.consp es.procs) &&
-    EventSet.is_empty es.events &&
-    EventRel.is_empty es.intra_causality_data &&
-    EventRel.is_empty es.intra_causality_control &&
-    EventRel.is_empty es.control &&
-    EventSet.is_empty es.data_ports &&
-    EventSet.is_empty es.success_ports &&
-    Misc.is_none es.output
+    let is_empty_event_structure es =
+      not (Misc.consp es.procs) &&
+      EventSet.is_empty es.events &&
+      EventRel.is_empty es.intra_causality_data &&
+      EventRel.is_empty es.intra_causality_control &&
+      EventRel.is_empty es.control &&
+      EventSet.is_empty es.data_ports &&
+      EventSet.is_empty es.success_ports &&
+      Misc.is_none es.output
 
 (****************************)
 (* Projection of event set *)
@@ -714,29 +705,20 @@ struct
 
     let proj_proc_view es rel =
       let proc_of (e1,e2) =
-       let p1 = proc_of e1 and p2 = proc_of e2 in
-       match p1,p2 with
-       | Some p1, Some p2 ->
-           if Misc.int_eq p1 p2 then [p1]
-           else if is_mem_store e1 then [p2]
-           else if is_mem_store e2 then [p1]
-           else [] (* Can occur for X86CC -> no projected relation *)
-      | None,Some p2 ->
-           if is_mem_store e1 then [p2] else []
-      | Some p1,None ->
-          if is_mem_store e2 then [p1] else []
-      | None,None -> [] in
+        let p1 = proc_of e1 and p2 = proc_of e2 in
+        match p1,p2 with
+        | Some p1, Some p2 ->
+            if Misc.int_eq p1 p2 then [p1]
+            else if is_mem_store e1 then [p2]
+            else if is_mem_store e2 then [p1]
+            else [] (* Can occur for X86CC -> no projected relation *)
+        | None,Some p2 ->
+            if is_mem_store e1 then [p2] else []
+        | Some p1,None ->
+            if is_mem_store e2 then [p1] else []
+        | None,None -> [] in
       ProjRel.proj proc_of (procs_of es) rel
 
-(*    let strict_before_po_iico es e1 e2 =
-      let strict_po_reln =
-        EventRel.of_pred es.events es.events po_strict in
-      let iico_reln =
-        EventRel.union
-          es.intra_causality_data
-          es.intra_causality_control in
-      EventRel.mem_transitive (e1, e2) (EventRel.union strict_po_reln iico_reln)
-*)
     let undetermined_vars_in_event e =
       Act.undetermined_vars_in_action e.action
 
@@ -753,56 +735,56 @@ struct
       else map_event_structure (simplify_vars_in_event soln) es
 
 (* Event structure manipulation *)
-let minimals es =
-  let intra_causality =
-    EventRel.union
-      es.intra_causality_data es.intra_causality_control in
-  EventSet.filter
-    (fun e ->
-      EventRel.for_all
-        (fun (_,e2) -> e.eiid <> e2.eiid) intra_causality)
-    es.events
+    let minimals es =
+      let intra_causality =
+        EventRel.union
+          es.intra_causality_data es.intra_causality_control in
+      EventSet.filter
+        (fun e ->
+          EventRel.for_all
+            (fun (_,e2) -> e.eiid <> e2.eiid) intra_causality)
+        es.events
 
-let minimals_avoid aset es =
-  let intra_causality =
-    let r =
-      EventRel.union
-        es.intra_causality_data es.intra_causality_control in
-    EventRel.filter (fun (e,_) -> not (EventSet.mem e aset)) r in
-  EventSet.filter
-    (fun e ->
-      EventRel.for_all
-        (fun (_,e2) -> e.eiid <> e2.eiid) intra_causality)
-    (EventSet.diff es.events aset)
+    let minimals_avoid aset es =
+      let intra_causality =
+        let r =
+          EventRel.union
+            es.intra_causality_data es.intra_causality_control in
+        EventRel.filter (fun (e,_) -> not (EventSet.mem e aset)) r in
+      EventSet.filter
+        (fun e ->
+          EventRel.for_all
+            (fun (_,e2) -> e.eiid <> e2.eiid) intra_causality)
+        (EventSet.diff es.events aset)
 
-let minimals_data es =
-  let intra_causality = es.intra_causality_data in
-  EventSet.filter
-    (fun e ->
-      EventRel.for_all
-        (fun (_,e2) -> e.eiid <> e2.eiid) intra_causality)
-    es.events
+    let minimals_data es =
+      let intra_causality = es.intra_causality_data in
+      EventSet.filter
+        (fun e ->
+          EventRel.for_all
+            (fun (_,e2) -> e.eiid <> e2.eiid) intra_causality)
+        es.events
 
-let maximals es =
-  let intra_causality =
-    EventRel.union es.intra_causality_data es.intra_causality_control in
-  EventSet.filter
-    (fun e ->
-      EventRel.for_all
-        (fun (e1,_) -> e.eiid <> e1.eiid) intra_causality)
-    es.events
+    let maximals es =
+      let intra_causality =
+        EventRel.union es.intra_causality_data es.intra_causality_control in
+      EventSet.filter
+        (fun e ->
+          EventRel.for_all
+            (fun (e1,_) -> e.eiid <> e1.eiid) intra_causality)
+        es.events
 
-let maximals_data es =
-  let intra_causality = es.intra_causality_data in
-  EventSet.filter
-    (fun e ->
-      EventRel.for_all
-        (fun (e1,_) -> e.eiid <> e1.eiid) intra_causality)
-    es.events
+    let maximals_data es =
+      let intra_causality = es.intra_causality_data in
+      EventSet.filter
+        (fun e ->
+          EventRel.for_all
+            (fun (e1,_) -> e.eiid <> e1.eiid) intra_causality)
+        es.events
 
-let get_output es = match es.output with
-| None -> maximals_data es
-| Some o -> o
+    let get_output es = match es.output with
+    | None -> maximals_data es
+    | Some o -> o
 
 
 (**********************************)
@@ -811,9 +793,9 @@ let get_output es = match es.output with
 
 (* Checking events sets are disjoint *)
 
-let check_disjoint do_it es1 es2 =
-  assert (EventSet.disjoint es1.events es2.events) ;
-  Some (do_it es1 es2)
+    let check_disjoint do_it es1 es2 =
+      assert (EventSet.disjoint es1.events es2.events) ;
+      Some (do_it es1 es2)
 
     let union_output es1 es2 = match es1.output,es2.output with
     | Some o1, Some o2 -> Some (EventSet.union o1 o2)
@@ -825,667 +807,748 @@ let check_disjoint do_it es1 es2 =
 
 (* Sequential composition *)
 
-let inst_code_comp (*poi*) es1 es2 =
-  { procs = [] ;
-    events = EventSet.union es1.events es2.events;
-    speculated = EventSet.union es1.speculated es2.speculated;
-    po = 
-      begin
-      let r1 = es1.events in
-      if EventSet.is_empty r1 then es2.po
-      else
-        let r2,e2 = es2.po in
-        (r1, EventRel.union (EventRel.cartesian r1 r2) e2) end ;
-    intra_causality_data = EventRel.union
-      es1.intra_causality_data es2.intra_causality_data ;
-    intra_causality_control = EventRel.union
-      es1.intra_causality_control  es2.intra_causality_control ;
-    control = EventRel.union es1.control es2.control;
-    data_ports = EventSet.union es1.data_ports es2.data_ports;
-    success_ports = EventSet.union es1.success_ports es2.success_ports;
-    output = union_output es1 es2;
-    sca = EventSetSet.union es1.sca es2.sca;
-    mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; }
+    let inst_code_comp (*poi*) es1 es2 =
+      { procs = [] ;
+        events = EventSet.union es1.events es2.events;
+        speculated = EventSet.union es1.speculated es2.speculated;
+        po =
+        begin
+          if do_spec then
+            let r1 = es1.events in
+            if EventSet.is_empty r1 then es2.po
+            else
+              let r2,e2 = es2.po in
+              (r1, EventRel.union (EventRel.cartesian r1 r2) e2)
+          else es2.po
+        end ;
+        intra_causality_data = EventRel.union
+          es1.intra_causality_data es2.intra_causality_data ;
+        intra_causality_control = EventRel.union
+          es1.intra_causality_control  es2.intra_causality_control ;
+        control = EventRel.union es1.control es2.control;
+        data_ports = EventSet.union es1.data_ports es2.data_ports;
+        success_ports = EventSet.union es1.success_ports es2.success_ports;
+        output = union_output es1 es2;
+        sca = EventSetSet.union es1.sca es2.sca;
+        mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; }
 
-let po_union es1 es2 =
-      let r1,e1 = es1.po and r2,e2 = es2.po in
-      (EventSet.union r1 r2, EventRel.union e1 e2)
+    let po_union =
+      if do_spec then
+        fun es1 es2 ->
+          let r1,e1 = es1.po and r2,e2 = es2.po in
+          (EventSet.union r1 r2, EventRel.union e1 e2)
+      else fun es _ -> es.po
+
+    let speculated_union =
+      if do_spec then
+        fun es1 es2 ->
+          EventSet.union es1.speculated es2.speculated;
+      else
+        fun es _ -> es.speculated
 
 (* Parallel composition *)
-let do_para_comp es1 es2 =
-  { procs = [] ;
-    events = EventSet.union es1.events es2.events;
-    speculated = EventSet.union es1.speculated es2.speculated;
-    po = po_union es1 es2 ;
-    intra_causality_data = EventRel.union
-      es1.intra_causality_data es2.intra_causality_data ;
-    intra_causality_control = EventRel.union
-      es1.intra_causality_control  es2.intra_causality_control ;
-    control = EventRel.union es1.control es2.control;
-    data_ports = EventSet.union es1.data_ports es2.data_ports;
-    success_ports = EventSet.union es1.success_ports es2.success_ports;
-    output = union_output es1 es2;
-    sca = EventSetSet.union es1.sca es2.sca;
-    mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; }
+    let do_para_comp es1 es2 =
+      { procs = [] ;
+        events = EventSet.union es1.events es2.events;
+        speculated = speculated_union es1 es2;
+        po = po_union es1 es2 ;
+        intra_causality_data = EventRel.union
+          es1.intra_causality_data es2.intra_causality_data ;
+        intra_causality_control = EventRel.union
+          es1.intra_causality_control  es2.intra_causality_control ;
+        control = EventRel.union es1.control es2.control;
+        data_ports = EventSet.union es1.data_ports es2.data_ports;
+        success_ports = EventSet.union es1.success_ports es2.success_ports;
+        output = union_output es1 es2;
+        sca = EventSetSet.union es1.sca es2.sca;
+        mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; }
 
-  let para_comp check =
-    if check then check_disjoint do_para_comp
-    else fun es1 es2 -> Some (do_para_comp es1 es2)
+    let para_comp check =
+      if check then check_disjoint do_para_comp
+      else fun es1 es2 -> Some (do_para_comp es1 es2)
 
 (* Composition with intra_causality_data from first to second *)
-  let data_comp mini_loc mkOut es1 es2 =
-    { procs = [];  events = EventSet.union es1.events es2.events;
-      speculated = EventSet.union es1.speculated es2.speculated;
-      po = po_union es1 es2 ;
-      intra_causality_data =
-      EventRel.filter
-        (fun (e1,e2) -> e1 != e2)
+    let data_comp mini_loc mkOut es1 es2 =
+      { procs = [];  events = EventSet.union es1.events es2.events;
+        speculated = speculated_union es1 es2;
+        po = po_union es1 es2 ;
+        intra_causality_data =
+        EventRel.filter
+          (fun (e1,e2) -> e1 != e2)
           (EventRel.union
-            (EventRel.union es1.intra_causality_data
-               es2.intra_causality_data)
-            (EventRel.cartesian (get_output es1) (mini_loc es2))) ;
-      intra_causality_control = EventRel.union
-        es1.intra_causality_control es2.intra_causality_control ;
-      control = EventRel.union es1.control es2.control;
-      data_ports = EventSet.union es1.data_ports es2.data_ports;
-      success_ports = EventSet.union es1.success_ports es2.success_ports;
-      output = mkOut es1 es2;
-      sca = EventSetSet.union es1.sca es2.sca;
-      mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; }
+             (EventRel.union es1.intra_causality_data
+                es2.intra_causality_data)
+             (EventRel.cartesian (get_output es1) (mini_loc es2))) ;
+        intra_causality_control = EventRel.union
+          es1.intra_causality_control es2.intra_causality_control ;
+        control = EventRel.union es1.control es2.control;
+        data_ports = EventSet.union es1.data_ports es2.data_ports;
+        success_ports = EventSet.union es1.success_ports es2.success_ports;
+        output = mkOut es1 es2;
+        sca = EventSetSet.union es1.sca es2.sca;
+        mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; }
 
-  let (=*$=) =
-    check_disjoint (data_comp minimals_data (fun _ es -> es.output))
+    let (=*$=) =
+      check_disjoint (data_comp minimals_data (fun _ es -> es.output))
 
-  let (=$$=) =
-    check_disjoint (data_comp minimals_data (fun es _ -> Some (get_output es)))
+    let (=$$=) =
+      check_disjoint (data_comp minimals_data (fun es _ -> Some (get_output es)))
 
 (* Composition with intra_causality_control from first to second *)
-  let control_comp mini_loc es1 es2 =
-    { procs = [] ;
-      events =  EventSet.union es1.events es2.events;
-      speculated = EventSet.union es1.speculated es2.speculated;
-      po = po_union es1 es2 ;
-      intra_causality_data = EventRel.union
-        es1.intra_causality_data es2.intra_causality_data ;
-      intra_causality_control = EventRel.union
-        (EventRel.union es1.intra_causality_control
-           es2.intra_causality_control)
-        (EventRel.cartesian (maximals es1) (mini_loc es2));
-      control = EventRel.union es1.control es2.control;
-      data_ports = EventSet.union es1.data_ports es2.data_ports;
-      success_ports = EventSet.union es1.success_ports es2.success_ports;
-      output = union_output es1 es2;
-      sca = EventSetSet.union es1.sca es2.sca;
-      mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; }
+    let control_comp mini_loc es1 es2 =
+      { procs = [] ;
+        events =  EventSet.union es1.events es2.events;
+        speculated = speculated_union es1 es2;
+        po = po_union es1 es2 ;
+        intra_causality_data = EventRel.union
+          es1.intra_causality_data es2.intra_causality_data ;
+        intra_causality_control = EventRel.union
+          (EventRel.union es1.intra_causality_control
+             es2.intra_causality_control)
+          (EventRel.cartesian (maximals es1) (mini_loc es2));
+        control = EventRel.union es1.control es2.control;
+        data_ports = EventSet.union es1.data_ports es2.data_ports;
+        success_ports = EventSet.union es1.success_ports es2.success_ports;
+        output = union_output es1 es2;
+        sca = EventSetSet.union es1.sca es2.sca;
+        mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; }
 
-  let (=**=) = check_disjoint (control_comp minimals)
+    let (=**=) = check_disjoint (control_comp minimals)
 
-let po_union4 es1 es2 es3 es4 =
-      let r1,e1 = es1.po and r2,e2 = es2.po and r3,e3 = es3.po and r4,e4 = es4.po in
-      (EventSet.union4 r1 r2 r3 r4, EventRel.union4 e1 e2 e3 e4) 
+    let po_union4 =
+      if do_spec then
+        fun es1 es2 es3 es4 ->
+          let r1,e1 = es1.po and r2,e2 = es2.po
+          and r3,e3 = es3.po and r4,e4 = es4.po in
+          (EventSet.union4 r1 r2 r3 r4, EventRel.union4 e1 e2 e3 e4)
+      else fun es _ _ _ -> es.po
 
-  let bind_ctrl_avoid aset es1 es2 =
-    Some (control_comp (minimals_avoid aset) es1 es2)
+    let bind_ctrl_avoid aset es1 es2 =
+      Some (control_comp (minimals_avoid aset) es1 es2)
 
-let po_union3 es1 es2 es3 =
-      let r1,e1 = es1.po and r2,e2 = es2.po and r3,e3 = es3.po in
-      (EventSet.union3 r1 r2 r3, EventRel.union3 e1 e2 e3) 
+    let po_union3 =
+      if do_spec then
+        fun es1 es2 es3 ->
+          let r1,e1 = es1.po and r2,e2 = es2.po and r3,e3 = es3.po in
+          (EventSet.union3 r1 r2 r3, EventRel.union3 e1 e2 e3)
+      else
+        fun es _ _ -> es.po
 
-(* Specific composition for checkint tags *)
-      let check_tags a rtag commit =
-        { procs= [];
-          events = EventSet.union3 a.events rtag.events commit.events;
-          speculated = EventSet.union3 a.speculated rtag.speculated commit.speculated;
-          po = po_union3 a rtag commit;          
-          intra_causality_data =
-          EventRel.union3
-            (EventRel.union3
-               a.intra_causality_data rtag.intra_causality_data commit.intra_causality_data)
-            (EventRel.cartesian (maximals a)
-               (EventSet.union (minimals rtag) (minimals commit)))
-            (EventRel.cartesian (maximals rtag) (minimals commit));
-          intra_causality_control =
-            EventRel.union3
-            a.intra_causality_control rtag.intra_causality_control
-            commit.intra_causality_control;
-          control =
-          EventRel.union3
-            a.control rtag.control commit.control;
-          data_ports =
-          EventSet.union3
-            a.data_ports rtag.data_ports commit.data_ports;
-          success_ports =
-          EventSet.union3
-            a.success_ports rtag.success_ports commit.success_ports;
-          output = Some (get_output commit);
-          sca = EventSetSet.union3  a.sca rtag.sca commit.sca;
-          mem_accesses =
-          EventSet.union3  a.mem_accesses rtag.mem_accesses commit.mem_accesses;
-        }
+(* Specific composition for checking tags *)
+    let check_tags a rtag commit =
+      { procs= [];
+        events = EventSet.union3 a.events rtag.events commit.events;
+        speculated =
+        if do_spec then
+          EventSet.union3 a.speculated rtag.speculated commit.speculated
+        else a.speculated;
+        po = po_union3 a rtag commit;
+        intra_causality_data =
+        EventRel.union3
+          (EventRel.union3
+             a.intra_causality_data rtag.intra_causality_data commit.intra_causality_data)
+          (EventRel.cartesian (maximals a)
+             (EventSet.union (minimals rtag) (minimals commit)))
+          (EventRel.cartesian (maximals rtag) (minimals commit));
+        intra_causality_control =
+        EventRel.union3
+          a.intra_causality_control rtag.intra_causality_control
+          commit.intra_causality_control;
+        control =
+        EventRel.union3
+          a.control rtag.control commit.control;
+        data_ports =
+        EventSet.union3
+          a.data_ports rtag.data_ports commit.data_ports;
+        success_ports =
+        EventSet.union3
+          a.success_ports rtag.success_ports commit.success_ports;
+        output = Some (get_output commit);
+        sca = EventSetSet.union3  a.sca rtag.sca commit.sca;
+        mem_accesses =
+        EventSet.union3  a.mem_accesses rtag.mem_accesses commit.mem_accesses;
+      }
 (* Multi composition for exchange *)
 
 (* rsX/wsX are from/to the same location *)
-  let exch_comp rs1 rs2 ws1 ws2 =
-    { procs = [] ;
-      events = EventSet.union4 rs1.events rs2.events ws1.events ws2.events;
-      speculated = EventSet.union4 rs1.speculated rs2.speculated ws1.speculated ws2.speculated;
-      po = po_union4 rs1 rs2 ws1 ws2;
-      intra_causality_data =
-      EventRel.unions
-        [EventRel.unions
-           [rs1.intra_causality_data;rs2.intra_causality_data;
-            ws1.intra_causality_data;ws2.intra_causality_data;];
-         EventRel.cartesian (maximals rs1) (minimals ws2);
-         EventRel.cartesian (maximals rs2) (minimals ws1);];
-      intra_causality_control =
-      EventRel.unions
-        [EventRel.unions
-           [rs1.intra_causality_control;rs2.intra_causality_control;
-            ws1.intra_causality_control;ws2.intra_causality_control;];
-         EventRel.cartesian (maximals rs1) (minimals ws1);
-         EventRel.cartesian (maximals rs2) (minimals ws2);];
-      control =
-      EventRel.union4 rs1.control rs2.control ws1.control ws2.control;
-      data_ports =
-      EventSet.union4 rs1.data_ports rs2.data_ports ws1.data_ports ws2.data_ports;
-      success_ports =
-      EventSet.union4 rs1.success_ports rs2.success_ports ws1.success_ports ws2.success_ports;
-      output = None;
-      sca = EventSetSet.union4 rs1.sca rs2.sca ws1.sca ws2.sca;
-      mem_accesses =
-      EventSet.union4
-        rs1.mem_accesses rs2.mem_accesses
-        ws1.mem_accesses ws2.mem_accesses ; }
+    let exch_comp rs1 rs2 ws1 ws2 =
+      { procs = [] ;
+        events = EventSet.union4 rs1.events rs2.events ws1.events ws2.events;
+        speculated =
+        if do_spec then
+          EventSet.union4
+            rs1.speculated rs2.speculated
+            ws1.speculated ws2.speculated
+        else
+          rs1.speculated;
+        po = po_union4 rs1 rs2 ws1 ws2;
+        intra_causality_data =
+        EventRel.unions
+          [EventRel.unions
+             [rs1.intra_causality_data;rs2.intra_causality_data;
+              ws1.intra_causality_data;ws2.intra_causality_data;];
+           EventRel.cartesian (maximals rs1) (minimals ws2);
+           EventRel.cartesian (maximals rs2) (minimals ws1);];
+        intra_causality_control =
+        EventRel.unions
+          [EventRel.unions
+             [rs1.intra_causality_control;rs2.intra_causality_control;
+              ws1.intra_causality_control;ws2.intra_causality_control;];
+           EventRel.cartesian (maximals rs1) (minimals ws1);
+           EventRel.cartesian (maximals rs2) (minimals ws2);];
+        control =
+        EventRel.union4 rs1.control rs2.control ws1.control ws2.control;
+        data_ports =
+        EventSet.union4 rs1.data_ports rs2.data_ports ws1.data_ports ws2.data_ports;
+        success_ports =
+        EventSet.union4 rs1.success_ports rs2.success_ports ws1.success_ports ws2.success_ports;
+        output = None;
+        sca = EventSetSet.union4 rs1.sca rs2.sca ws1.sca ws2.sca;
+        mem_accesses =
+        EventSet.union4
+          rs1.mem_accesses rs2.mem_accesses
+          ws1.mem_accesses ws2.mem_accesses ; }
 
-let po_union5 es1 es2 es3 es4 es5 =
-      let r1,e1 = es1.po and r2,e2 = es2.po and r3,e3 = es3.po and r4,e4 = es4.po and r5,e5 = es5.po in
-      (EventSet.union5 r1 r2 r3 r4 r5, EventRel.union5 e1 e2 e3 e4 e5) 
+    let po_union5 es1 es2 es3 es4 es5 =
+      let r1,e1 = es1.po and r2,e2 = es2.po and r3,e3 = es3.po
+      and r4,e4 = es4.po and r5,e5 = es5.po in
+      (EventSet.union5 r1 r2 r3 r4 r5, EventRel.union5 e1 e2 e3 e4 e5)
 
-  let swp_comp rloc rmem rreg wmem wreg =
-    { procs = [] ;
-      events = EventSet.union5
-        rloc.events rmem.events rreg.events wmem.events wreg.events;
-      speculated =
-      EventSet.union5 rloc.speculated rmem.speculated rreg.speculated wmem.speculated wreg.speculated;
-      po = po_union5 rloc rmem rreg wmem wreg;
-      intra_causality_data =
-      EventRel.unions
-        [EventRel.union5
-           rloc.intra_causality_data
-           rmem.intra_causality_data rreg.intra_causality_data
-           wmem.intra_causality_data wreg.intra_causality_data ;
-         EventRel.cartesian (maximals rmem) (minimals wreg);
-         EventRel.cartesian (maximals rreg) (minimals wmem);
-         EventRel.cartesian (maximals rloc)
-           (EventSet.union (minimals rmem) (minimals wmem))];
-      intra_causality_control =
-      EventRel.unions
-        [EventRel.unions
-           [rloc.intra_causality_control;
-            rmem.intra_causality_control;rreg.intra_causality_control;
-            wmem.intra_causality_control;wreg.intra_causality_control;];
-         EventRel.cartesian (maximals rmem) (minimals wmem);
-         EventRel.cartesian (maximals rreg) (minimals wreg);];
-      control =
-      EventRel.union5 rloc.control rmem.control rreg.control wmem.control wreg.control;
-      data_ports =
-      EventSet.union5
-        rloc.data_ports
-        rmem.data_ports rreg.data_ports wmem.data_ports wreg.data_ports;
-      success_ports =
-      EventSet.union5
-        rloc.success_ports
-        rmem.success_ports rreg.success_ports wmem.success_ports wreg.success_ports;
-      output = None;
-      sca = EventSetSet.union5 rloc.sca rmem.sca rreg.sca wmem.sca wreg.sca;
-      mem_accesses =
-      EventSet.union5
-        rloc.mem_accesses
-        rmem.mem_accesses rreg.mem_accesses
-        wmem.mem_accesses wreg.mem_accesses ; }
+    let swp_comp rloc rmem rreg wmem wreg =
+      { procs = [] ;
+        events = EventSet.union5
+          rloc.events rmem.events rreg.events wmem.events wreg.events;
+        speculated =
+        if do_spec then
+          EventSet.union5
+            rloc.speculated rmem.speculated rreg.speculated
+            wmem.speculated wreg.speculated
+        else
+          rloc.speculated;
+        po = po_union5 rloc rmem rreg wmem wreg;
+        intra_causality_data =
+        EventRel.unions
+          [EventRel.union5
+             rloc.intra_causality_data
+             rmem.intra_causality_data rreg.intra_causality_data
+             wmem.intra_causality_data wreg.intra_causality_data ;
+           EventRel.cartesian (maximals rmem) (minimals wreg);
+           EventRel.cartesian (maximals rreg) (minimals wmem);
+           EventRel.cartesian (maximals rloc)
+             (EventSet.union (minimals rmem) (minimals wmem))];
+        intra_causality_control =
+        EventRel.unions
+          [EventRel.unions
+             [rloc.intra_causality_control;
+              rmem.intra_causality_control;rreg.intra_causality_control;
+              wmem.intra_causality_control;wreg.intra_causality_control;];
+           EventRel.cartesian (maximals rmem) (minimals wmem);
+           EventRel.cartesian (maximals rreg) (minimals wreg);];
+        control =
+        EventRel.union5 rloc.control rmem.control rreg.control wmem.control wreg.control;
+        data_ports =
+        EventSet.union5
+          rloc.data_ports
+          rmem.data_ports rreg.data_ports wmem.data_ports wreg.data_ports;
+        success_ports =
+        EventSet.union5
+          rloc.success_ports
+          rmem.success_ports rreg.success_ports wmem.success_ports wreg.success_ports;
+        output = None;
+        sca = EventSetSet.union5 rloc.sca rmem.sca rreg.sca wmem.sca wreg.sca;
+        mem_accesses =
+        EventSet.union5
+          rloc.mem_accesses
+          rmem.mem_accesses rreg.mem_accesses
+          wmem.mem_accesses wreg.mem_accesses ; }
 
 
 (* disjointness is awful *)
 
-  let exch rx ry wx wy =
-    if
-      EventSet.disjoint rx.events ry.events &&
-      EventSet.disjoint rx.events wx.events &&
-      EventSet.disjoint rx.events wy.events &&
-      EventSet.disjoint ry.events wx.events &&
-      EventSet.disjoint ry.events wy.events &&
-      EventSet.disjoint wx.events wy.events
-    then
-      exch_comp rx ry wx wy
-    else
-      assert false
+    let exch rx ry wx wy =
+      if
+        EventSet.disjoint rx.events ry.events &&
+        EventSet.disjoint rx.events wx.events &&
+        EventSet.disjoint rx.events wy.events &&
+        EventSet.disjoint ry.events wx.events &&
+        EventSet.disjoint ry.events wy.events &&
+        EventSet.disjoint wx.events wy.events
+      then
+        exch_comp rx ry wx wy
+      else
+        assert false
 
-  let swp = swp_comp
+    let swp = swp_comp
 
-  let linux_exch re rloc rmem wmem =
-    let input_wmem = minimals wmem in
-    let output_rloc = maximals rloc in
-    { procs = [];
-      events =
-      EventSet.union4 re.events rloc.events rmem.events wmem.events;
-      speculated =
-      EventSet.union4 re.speculated rloc.speculated rmem.speculated wmem.speculated;
-      po = po_union4 re rloc rmem wmem;
-      intra_causality_data =
-      EventRel.unions
-        [EventRel.union4
-           re.intra_causality_data rloc.intra_causality_data
-           rmem.intra_causality_data wmem.intra_causality_data;
-         EventRel.cartesian (maximals re) input_wmem;
-         EventRel.cartesian output_rloc input_wmem;
-         EventRel.cartesian output_rloc (minimals rmem);];
-      intra_causality_control =
-      EventRel.union
+    let linux_exch re rloc rmem wmem =
+      let input_wmem = minimals wmem in
+      let output_rloc = maximals rloc in
+      { procs = [];
+        events =
+        EventSet.union4 re.events rloc.events rmem.events wmem.events;
+        speculated =
+        if do_spec then
+          EventSet.union4
+            re.speculated rloc.speculated rmem.speculated wmem.speculated
+        else
+          re.speculated;
+        po = po_union4 re rloc rmem wmem;
+        intra_causality_data =
+        EventRel.unions
+          [EventRel.union4
+             re.intra_causality_data rloc.intra_causality_data
+             rmem.intra_causality_data wmem.intra_causality_data;
+           EventRel.cartesian (maximals re) input_wmem;
+           EventRel.cartesian output_rloc input_wmem;
+           EventRel.cartesian output_rloc (minimals rmem);];
+        intra_causality_control =
+        EventRel.union
+          (EventRel.union4
+             re.intra_causality_control rloc.intra_causality_control
+             rmem.intra_causality_control wmem.intra_causality_control)
+          (EventRel.cartesian (maximals rmem) (minimals wmem));
+        control =
+        EventRel.union4
+          re.control rloc.control rmem.control wmem.control;
+        data_ports =
+        EventSet.union4
+          re.data_ports rloc.data_ports rmem.data_ports wmem.data_ports;
+        success_ports =
+        EventSet.union4
+          re.success_ports rloc.success_ports rmem.success_ports wmem.success_ports;
+        output = Some (get_output rmem);
+        sca = EventSetSet.union4 re.sca rloc.sca rmem.sca wmem.sca;
+        mem_accesses =
+        EventSet.union4
+          re.mem_accesses rloc.mem_accesses rmem.mem_accesses wmem.mem_accesses;
+      }
+
+    let amo re rloc rmem wmem =
+      let input_wmem = minimals wmem in
+      let output_rloc = maximals rloc in
+      { procs = [];
+        events =
+        EventSet.union4 re.events rloc.events rmem.events wmem.events;
+        speculated =
+        if do_spec then
+          EventSet.union4
+            re.speculated rloc.speculated rmem.speculated wmem.speculated
+        else
+          re.speculated;
+        po = po_union4 re rloc rmem wmem;
+        intra_causality_data =
+        EventRel.unions
+          [EventRel.union4
+             re.intra_causality_data rloc.intra_causality_data
+             rmem.intra_causality_data wmem.intra_causality_data;
+           EventRel.cartesian (maximals rmem) input_wmem;
+           EventRel.cartesian (maximals re) input_wmem;
+           EventRel.cartesian output_rloc input_wmem;
+           EventRel.cartesian output_rloc (minimals rmem);];
+        intra_causality_control =
         (EventRel.union4
            re.intra_causality_control rloc.intra_causality_control
-           rmem.intra_causality_control wmem.intra_causality_control)
-        (EventRel.cartesian (maximals rmem) (minimals wmem));
-      control =
-      EventRel.union4
-        re.control rloc.control rmem.control wmem.control;
-      data_ports =
-      EventSet.union4
-        re.data_ports rloc.data_ports rmem.data_ports wmem.data_ports;
-      success_ports =
-      EventSet.union4
-        re.success_ports rloc.success_ports rmem.success_ports wmem.success_ports;
-      output = Some (get_output rmem);
-      sca = EventSetSet.union4 re.sca rloc.sca rmem.sca wmem.sca;
-      mem_accesses =
-      EventSet.union4
-        re.mem_accesses rloc.mem_accesses rmem.mem_accesses wmem.mem_accesses;
-    }
-
-  let amo re rloc rmem wmem =
-    let input_wmem = minimals wmem in
-    let output_rloc = maximals rloc in
-    { procs = [];
-      events =
-      EventSet.union4 re.events rloc.events rmem.events wmem.events;
-      speculated =
-        EventSet.union4 re.speculated rloc.speculated rmem.speculated wmem.speculated;
-      po = po_union4 re rloc rmem wmem;
-      intra_causality_data =
-      EventRel.unions
-        [EventRel.union4
-           re.intra_causality_data rloc.intra_causality_data
-           rmem.intra_causality_data wmem.intra_causality_data;
-         EventRel.cartesian (maximals rmem) input_wmem;
-         EventRel.cartesian (maximals re) input_wmem;
-         EventRel.cartesian output_rloc input_wmem;
-         EventRel.cartesian output_rloc (minimals rmem);];
-      intra_causality_control =
-      (EventRel.union4
-         re.intra_causality_control rloc.intra_causality_control
-         rmem.intra_causality_control wmem.intra_causality_control);
-      control =
-      EventRel.union4
-        re.control rloc.control rmem.control wmem.control;
-      data_ports =
-      EventSet.union4
-        re.data_ports rloc.data_ports rmem.data_ports wmem.data_ports;
-      success_ports =
-      EventSet.union4
-        re.success_ports rloc.success_ports rmem.success_ports wmem.success_ports;
-      output = Some (get_output rmem);
-      sca = EventSetSet.union4 re.sca rloc.sca rmem.sca wmem.sca;
-      mem_accesses =
-      EventSet.union4
-        re.mem_accesses rloc.mem_accesses rmem.mem_accesses wmem.mem_accesses; }
+           rmem.intra_causality_control wmem.intra_causality_control);
+        control =
+        EventRel.union4
+          re.control rloc.control rmem.control wmem.control;
+        data_ports =
+        EventSet.union4
+          re.data_ports rloc.data_ports rmem.data_ports wmem.data_ports;
+        success_ports =
+        EventSet.union4
+          re.success_ports rloc.success_ports rmem.success_ports wmem.success_ports;
+        output = Some (get_output rmem);
+        sca = EventSetSet.union4 re.sca rloc.sca rmem.sca wmem.sca;
+        mem_accesses =
+        EventSet.union4
+          re.mem_accesses rloc.mem_accesses rmem.mem_accesses wmem.mem_accesses; }
 
 (************************************)
 (* Compare exchange, really complex *)
 (************************************)
 
 (* Success *)
-  let linux_cmpexch_ok rloc rold rnew rmem wmem =
-    let input_wmem = minimals wmem in
-    let input_rmem = minimals rmem in
-    let output_rloc = maximals rloc in
-    { procs = [];
-      events =
-      EventSet.union5 rloc.events rold.events rnew.events
-        rmem.events wmem.events;
-      speculated =
-      EventSet.union5 rloc.speculated rold.speculated rnew.speculated
-        rmem.speculated wmem.speculated;
-      po = po_union5 rloc rold rnew rmem wmem; 
-      intra_causality_data =
-      EventRel.unions
-        [EventRel.union5
-           rloc.intra_causality_data rold.intra_causality_data
-           rnew.intra_causality_data
-           rmem.intra_causality_data wmem.intra_causality_data;
-         EventRel.cartesian (maximals rnew) input_wmem;
-         EventRel.cartesian output_rloc input_wmem;
-         EventRel.cartesian output_rloc input_rmem;];
-      intra_causality_control =
-      EventRel.unions
-        [EventRel.union5
-           rloc.intra_causality_control rold.intra_causality_control
-           rnew.intra_causality_control
-           rmem.intra_causality_control wmem.intra_causality_control;
-         EventRel.cartesian (maximals rold) input_wmem;
-         EventRel.cartesian (maximals rmem) input_wmem;];
-      control=
-      EventRel.union5 rloc.control rold.control rnew.control
-        rmem.control wmem.control;
-      data_ports=
-      EventSet.union5 rloc.data_ports rold.data_ports rnew.data_ports
-        rmem.data_ports wmem.data_ports;
-      output=Some (get_output rmem);
-      success_ports=
-      EventSet.union5 rloc.success_ports rold.success_ports rnew.success_ports
-        rmem.success_ports wmem.success_ports;
-      sca = EventSetSet.union5 rloc.sca rold.sca rnew.sca rmem.sca wmem.sca;
-      mem_accesses=
-      EventSet.union5 rloc.mem_accesses rold.mem_accesses rnew.mem_accesses
-        rmem.mem_accesses wmem.mem_accesses;
-    }
+    let linux_cmpexch_ok rloc rold rnew rmem wmem =
+      let input_wmem = minimals wmem in
+      let input_rmem = minimals rmem in
+      let output_rloc = maximals rloc in
+      { procs = [];
+        events =
+        EventSet.union5 rloc.events rold.events rnew.events
+          rmem.events wmem.events;
+        speculated =
+        if do_spec then
+          EventSet.union5
+            rloc.speculated rold.speculated rnew.speculated
+            rmem.speculated wmem.speculated
+        else
+          rloc.speculated;
+        po = po_union5 rloc rold rnew rmem wmem;
+        intra_causality_data =
+        EventRel.unions
+          [EventRel.union5
+             rloc.intra_causality_data rold.intra_causality_data
+             rnew.intra_causality_data
+             rmem.intra_causality_data wmem.intra_causality_data;
+           EventRel.cartesian (maximals rnew) input_wmem;
+           EventRel.cartesian output_rloc input_wmem;
+           EventRel.cartesian output_rloc input_rmem;];
+        intra_causality_control =
+        EventRel.unions
+          [EventRel.union5
+             rloc.intra_causality_control rold.intra_causality_control
+             rnew.intra_causality_control
+             rmem.intra_causality_control wmem.intra_causality_control;
+           EventRel.cartesian (maximals rold) input_wmem;
+           EventRel.cartesian (maximals rmem) input_wmem;];
+        control=
+        EventRel.union5 rloc.control rold.control rnew.control
+          rmem.control wmem.control;
+        data_ports=
+        EventSet.union5 rloc.data_ports rold.data_ports rnew.data_ports
+          rmem.data_ports wmem.data_ports;
+        output=Some (get_output rmem);
+        success_ports=
+        EventSet.union5 rloc.success_ports rold.success_ports rnew.success_ports
+          rmem.success_ports wmem.success_ports;
+        sca = EventSetSet.union5 rloc.sca rold.sca rnew.sca rmem.sca wmem.sca;
+        mem_accesses=
+        EventSet.union5 rloc.mem_accesses rold.mem_accesses rnew.mem_accesses
+          rmem.mem_accesses wmem.mem_accesses;
+      }
 
 (* Failure, a phantom write event that would iico_control depens
    upon rold may be an idea... Without it rold has no impact out evt_struct
    outcome... As another illustration of something lacking the cmpxchg introduces no
    new iico_control edge. *)
 
-  let linux_cmpexch_no rloc rold rmem =
-    let input_rmem = minimals rmem in
-    let output_rloc = maximals rloc in
-    { procs = [];
-      events =
-      EventSet.union3 rloc.events rold.events rmem.events;
-      speculated =
-      EventSet.union3 rloc.speculated rold.speculated rmem.speculated;
-      po =
-      po_union3 rloc rold rmem;
-      intra_causality_data =
-      EventRel.unions
-        [EventRel.union3
-           rloc.intra_causality_data rold.intra_causality_data
-           rmem.intra_causality_data;
-         EventRel.cartesian output_rloc input_rmem;];
-      intra_causality_control =
-      EventRel.union3
-        rloc.intra_causality_control rold.intra_causality_control
-        rmem.intra_causality_control;
-      control=
-      EventRel.union3 rloc.control rold.control rmem.control;
-      data_ports=
-      EventSet.union3 rloc.data_ports rold.data_ports rmem.data_ports;
-      success_ports=
-      EventSet.union3 rloc.success_ports rold.success_ports rmem.success_ports;
-      output=Some (get_output rmem);
-      sca = EventSetSet.union3 rloc.sca rold.sca rmem.sca;
-      mem_accesses=
-      EventSet.union3 rloc.mem_accesses rold.mem_accesses rmem.mem_accesses;
-    }
+    let linux_cmpexch_no rloc rold rmem =
+      let input_rmem = minimals rmem in
+      let output_rloc = maximals rloc in
+      { procs = [];
+        events =
+        EventSet.union3 rloc.events rold.events rmem.events;
+        speculated =
+        if do_spec then
+          EventSet.union3 rloc.speculated rold.speculated rmem.speculated
+        else
+          rloc.speculated;
+        po = po_union3 rloc rold rmem;
+        intra_causality_data =
+        EventRel.unions
+          [EventRel.union3
+             rloc.intra_causality_data rold.intra_causality_data
+             rmem.intra_causality_data;
+           EventRel.cartesian output_rloc input_rmem;];
+        intra_causality_control =
+        EventRel.union3
+          rloc.intra_causality_control rold.intra_causality_control
+          rmem.intra_causality_control;
+        control=
+        EventRel.union3 rloc.control rold.control rmem.control;
+        data_ports=
+        EventSet.union3 rloc.data_ports rold.data_ports rmem.data_ports;
+        success_ports=
+        EventSet.union3 rloc.success_ports rold.success_ports rmem.success_ports;
+        output=Some (get_output rmem);
+        sca = EventSetSet.union3 rloc.sca rold.sca rmem.sca;
+        mem_accesses=
+        EventSet.union3 rloc.mem_accesses rold.mem_accesses rmem.mem_accesses;
+      }
 
 (**************)
 (* Add unless *)
 (**************)
 
-  let linux_add_unless_ok loc a u rmem wmem retbool =
-    let out_loc = maximals loc
-    and in_rmem = minimals rmem
-    and in_wmem = minimals wmem in
-    { procs = [];
-      events = EventSet.union5 loc.events a.events u.events rmem.events wmem.events;
-      speculated = EventSet.union5 loc.speculated a.speculated u.speculated rmem.speculated wmem.speculated;
-      po = po_union5 loc a u rmem wmem;
-      intra_causality_data =
-      EventRel.unions
-        [EventRel.union5
-           loc.intra_causality_data a.intra_causality_data
-           u.intra_causality_data
-           rmem.intra_causality_data wmem.intra_causality_data;
-         EventRel.cartesian out_loc in_wmem;
-         EventRel.cartesian out_loc in_rmem;
-         EventRel.cartesian (maximals a) in_wmem;
-         EventRel.cartesian (maximals rmem) in_wmem;];
-      intra_causality_control =
-      EventRel.unions
-        [EventRel.union5
-           loc.intra_causality_control a.intra_causality_control
-           u.intra_causality_control
-           rmem.intra_causality_control wmem.intra_causality_control;
-         EventRel.cartesian (maximals u) in_wmem;];
-      control =
-      EventRel.union5
-        loc.control a.control u.control rmem.control wmem.control;
-      data_ports =
-      EventSet.union5
-        loc.data_ports a.data_ports u.data_ports
-        rmem.data_ports wmem.data_ports;
-      success_ports =
-      EventSet.union5
-        loc.success_ports a.success_ports u.success_ports
-        rmem.success_ports wmem.success_ports;
-      output =
-      Some
-        (if retbool then EventSet.union (get_output rmem) (get_output u) else get_output rmem);
-      sca = EventSetSet.union5 loc.sca a.sca u.sca rmem.sca wmem.sca;
-      mem_accesses =
-      EventSet.union5
-        loc.mem_accesses a.mem_accesses u.mem_accesses
-        rmem.mem_accesses wmem.mem_accesses;
-    }
+    let linux_add_unless_ok loc a u rmem wmem retbool =
+      let out_loc = maximals loc
+      and in_rmem = minimals rmem
+      and in_wmem = minimals wmem in
+      { procs = [];
+        events = EventSet.union5 loc.events a.events u.events rmem.events wmem.events;
+        speculated =
+        if do_spec then
+          EventSet.union5
+            loc.speculated a.speculated u.speculated
+            rmem.speculated wmem.speculated
+        else
+          loc.speculated;
+        po = po_union5 loc a u rmem wmem;
+        intra_causality_data =
+        EventRel.unions
+          [EventRel.union5
+             loc.intra_causality_data a.intra_causality_data
+             u.intra_causality_data
+             rmem.intra_causality_data wmem.intra_causality_data;
+           EventRel.cartesian out_loc in_wmem;
+           EventRel.cartesian out_loc in_rmem;
+           EventRel.cartesian (maximals a) in_wmem;
+           EventRel.cartesian (maximals rmem) in_wmem;];
+        intra_causality_control =
+        EventRel.unions
+          [EventRel.union5
+             loc.intra_causality_control a.intra_causality_control
+             u.intra_causality_control
+             rmem.intra_causality_control wmem.intra_causality_control;
+           EventRel.cartesian (maximals u) in_wmem;];
+        control =
+        EventRel.union5
+          loc.control a.control u.control rmem.control wmem.control;
+        data_ports =
+        EventSet.union5
+          loc.data_ports a.data_ports u.data_ports
+          rmem.data_ports wmem.data_ports;
+        success_ports =
+        EventSet.union5
+          loc.success_ports a.success_ports u.success_ports
+          rmem.success_ports wmem.success_ports;
+        output =
+        Some
+          (if retbool then EventSet.union (get_output rmem) (get_output u) else get_output rmem);
+        sca = EventSetSet.union5 loc.sca a.sca u.sca rmem.sca wmem.sca;
+        mem_accesses =
+        EventSet.union5
+          loc.mem_accesses a.mem_accesses u.mem_accesses
+          rmem.mem_accesses wmem.mem_accesses;
+      }
 
-  let linux_add_unless_no loc u rmem retbool =
-    let out_loc = maximals loc
-    and in_rmem = minimals rmem in
-    { procs = [];
-      events =
-      EventSet.union3 loc.events u.events rmem.events;
-      speculated =
-      EventSet.union3 loc.speculated u.speculated rmem.speculated;
-      po = po_union3 loc u rmem;
-      intra_causality_data =
-      EventRel.unions
-        [loc.intra_causality_data; u.intra_causality_data;
-         rmem.intra_causality_data;
-         EventRel.cartesian out_loc in_rmem;];
-      intra_causality_control =
-      EventRel.union3
-        loc.intra_causality_control u.intra_causality_control
-        rmem.intra_causality_control;
-      control =
-      EventRel.union3 loc.control u.control rmem.control;
-      data_ports =
-      EventSet.union3 loc.data_ports u.data_ports rmem.data_ports;
-      success_ports =
-      EventSet.union3 loc.success_ports u.success_ports rmem.success_ports;
-      output =
-      Some
-        (if retbool then EventSet.union (get_output rmem) (get_output u) else get_output rmem);
-      sca = EventSetSet.union3 loc.sca u.sca rmem.sca;
-      mem_accesses =
-      EventSet.union3 loc.mem_accesses u.mem_accesses rmem.mem_accesses;
-    }
+    let linux_add_unless_no loc u rmem retbool =
+      let out_loc = maximals loc
+      and in_rmem = minimals rmem in
+      { procs = [];
+        events =
+        EventSet.union3 loc.events u.events rmem.events;
+        speculated =
+        if do_spec then
+          EventSet.union3 loc.speculated u.speculated rmem.speculated
+        else
+          loc.speculated;
+        po = po_union3 loc u rmem;
+        intra_causality_data =
+        EventRel.unions
+          [loc.intra_causality_data; u.intra_causality_data;
+           rmem.intra_causality_data;
+           EventRel.cartesian out_loc in_rmem;];
+        intra_causality_control =
+        EventRel.union3
+          loc.intra_causality_control u.intra_causality_control
+          rmem.intra_causality_control;
+        control =
+        EventRel.union3 loc.control u.control rmem.control;
+        data_ports =
+        EventSet.union3 loc.data_ports u.data_ports rmem.data_ports;
+        success_ports =
+        EventSet.union3 loc.success_ports u.success_ports rmem.success_ports;
+        output =
+        Some
+          (if retbool then EventSet.union (get_output rmem) (get_output u) else get_output rmem);
+        sca = EventSetSet.union3 loc.sca u.sca rmem.sca;
+        mem_accesses =
+        EventSet.union3 loc.mem_accesses u.mem_accesses rmem.mem_accesses;
+      }
 
-let po_union6 es1 es2 es3 es4 es5 es6 =
-      let r1,e1 = es1.po and r2,e2 = es2.po and r3,e3 = es3.po and r4,e4 = es4.po and r5,e5 = es5.po and r6,e6 = es6.po in
-      (EventSet.union (EventSet.union5 r1 r2 r3 r4 r5) r6, EventRel.union (EventRel.union5 e1 e2 e3 e4 e5) e6) 
+    let po_union6 =
+      if do_spec then
+        fun es1 es2 es3 es4 es5 es6 ->
+          let r1,e1 = es1.po and r2,e2 = es2.po and r3,e3 = es3.po
+          and r4,e4 = es4.po and r5,e5 = es5.po and r6,e6 = es6.po in
+          let r =
+            EventSet.union
+              (EventSet.union3 r1 r2 r3) (EventSet.union3 r4 r5 r6)
+          and e =
+            EventRel.union
+              (EventRel.union3 e1 e2 e3) (EventRel.union3 e4 e5 e6) in
+          r,e
+      else
+        fun es _ _ _ _ _ -> es.po
 
 (* RISCV Store conditional *)
-let get_switch v =
-  let d = Variant.get_default A.arch v in
-  if C.variant v then not d else d
+    let get_switch v =
+      let d = Variant.get_default A.arch v in
+      if C.variant v then not d else d
 
-  let riscv_sc success resa data addr wres wresult wmem =
-    let dep_on_write = get_switch Variant.SwitchDepScWrite
-    and dep_sc_result = get_switch Variant.SwitchDepScResult in
-    let in_wmem = minimals wmem
-    and out_wmem = maximals wmem
-    and in_wres = minimals wres
-    and in_wresult = minimals wresult
-    and out_data = maximals data
-    and out_addr = maximals addr
-    and out_resa = maximals resa in
-    { procs = [];
-      events =
-      EventSet.union
-        (EventSet.union3 resa.events data.events addr.events)
-        (EventSet.union3 wres.events wresult.events wmem.events);
-      speculated =
-      EventSet.union
-        (EventSet.union3 resa.speculated data.speculated addr.speculated)
-        (EventSet.union3 wres.speculated wresult.speculated wmem.speculated);
-      po = po_union6 resa data addr wres wresult wmem;
-      intra_causality_data =
-      EventRel.unions
-        [EventRel.union3 resa.intra_causality_data
-           data.intra_causality_data addr.intra_causality_data;
-         EventRel.union3 wres.intra_causality_data
-           wresult.intra_causality_data wmem.intra_causality_data;
-         EventRel.cartesian
-           (EventSet.union out_addr out_resa)
-           (EventSet.union3 in_wmem in_wres
-              (if (C.variant Variant.FullScDepend || success) && dep_sc_result
-              then in_wresult else EventSet.empty));
-         EventRel.cartesian out_data
-           (if C.variant Variant.Success || not (C.variant Variant.FullScDepend) then in_wmem else
-           EventSet.union in_wresult in_wmem); ];
-      intra_causality_control =
-      EventRel.union3
-        (if dep_on_write then EventRel.cartesian out_wmem in_wresult
-        else EventRel.empty)
-        (EventRel.union3 resa.intra_causality_control
-           data.intra_causality_control addr.intra_causality_control)
-        (EventRel.union3 wres.intra_causality_control
-           wresult.intra_causality_control wmem.control);
-      control =
-      EventRel.union
-        (EventRel.union3 resa.control data.control addr.control)
-        (EventRel.union3 wres.control wresult.control wmem.control);
-      data_ports =
-      EventSet.union
-        (EventSet.union3 resa.data_ports data.data_ports addr.data_ports)
-        (EventSet.union3 wres.data_ports wresult.data_ports wmem.data_ports);
-      success_ports =
-      EventSet.union
-        (EventSet.union3 resa.success_ports data.success_ports addr.success_ports)
-        (EventSet.union3 wres.success_ports wresult.success_ports wmem.success_ports);
-      output = Some (EventSet.union (get_output wresult) (get_output wres));
-      sca =
-      EventSetSet.union
-        (EventSetSet.union3 resa.sca data.sca addr.sca)
-        (EventSetSet.union3 wres.sca wresult.sca wmem.sca);
-      mem_accesses =
-      EventSet.union
-        (EventSet.union3 resa.mem_accesses data.mem_accesses addr.mem_accesses)
-        (EventSet.union3 wres.mem_accesses wresult.mem_accesses wmem.mem_accesses);
-    }
+    let riscv_sc success resa data addr wres wresult wmem =
+      let dep_on_write = get_switch Variant.SwitchDepScWrite
+      and dep_sc_result = get_switch Variant.SwitchDepScResult in
+      let in_wmem = minimals wmem
+      and out_wmem = maximals wmem
+      and in_wres = minimals wres
+      and in_wresult = minimals wresult
+      and out_data = maximals data
+      and out_addr = maximals addr
+      and out_resa = maximals resa in
+      { procs = [];
+        events =
+        EventSet.union
+          (EventSet.union3 resa.events data.events addr.events)
+          (EventSet.union3 wres.events wresult.events wmem.events);
+        speculated =
+        if do_spec then
+          EventSet.union
+            (EventSet.union3 resa.speculated data.speculated addr.speculated)
+            (EventSet.union3 wres.speculated wresult.speculated wmem.speculated)
+        else
+          resa.speculated;
+        po = po_union6 resa data addr wres wresult wmem;
+        intra_causality_data =
+        EventRel.unions
+          [EventRel.union3 resa.intra_causality_data
+             data.intra_causality_data addr.intra_causality_data;
+           EventRel.union3 wres.intra_causality_data
+             wresult.intra_causality_data wmem.intra_causality_data;
+           EventRel.cartesian
+             (EventSet.union out_addr out_resa)
+             (EventSet.union3 in_wmem in_wres
+                (if (C.variant Variant.FullScDepend || success) && dep_sc_result
+                then in_wresult else EventSet.empty));
+           EventRel.cartesian out_data
+             (if C.variant Variant.Success || not (C.variant Variant.FullScDepend) then in_wmem else
+             EventSet.union in_wresult in_wmem); ];
+        intra_causality_control =
+        EventRel.union3
+          (if dep_on_write then EventRel.cartesian out_wmem in_wresult
+          else EventRel.empty)
+          (EventRel.union3 resa.intra_causality_control
+             data.intra_causality_control addr.intra_causality_control)
+          (EventRel.union3 wres.intra_causality_control
+             wresult.intra_causality_control wmem.control);
+        control =
+        EventRel.union
+          (EventRel.union3 resa.control data.control addr.control)
+          (EventRel.union3 wres.control wresult.control wmem.control);
+        data_ports =
+        EventSet.union
+          (EventSet.union3 resa.data_ports data.data_ports addr.data_ports)
+          (EventSet.union3 wres.data_ports wresult.data_ports wmem.data_ports);
+        success_ports =
+        EventSet.union
+          (EventSet.union3 resa.success_ports data.success_ports addr.success_ports)
+          (EventSet.union3 wres.success_ports wresult.success_ports wmem.success_ports);
+        output = Some (EventSet.union (get_output wresult) (get_output wres));
+        sca =
+        EventSetSet.union
+          (EventSetSet.union3 resa.sca data.sca addr.sca)
+          (EventSetSet.union3 wres.sca wresult.sca wmem.sca);
+        mem_accesses =
+        EventSet.union
+          (EventSet.union3 resa.mem_accesses data.mem_accesses addr.mem_accesses)
+          (EventSet.union3 wres.mem_accesses wresult.mem_accesses wmem.mem_accesses);
+      }
 
 (* AArch64 CAS, success *)
-  let aarch64_cas_ok rn rs rt wrs rm wm =
-    let output_rn = maximals rn
-    and output_rs = maximals rs
-    and output_rm = maximals rm
-    and input_wrs = minimals wrs
-    and input_rm = minimals rm
-    and input_wm = minimals wm in
-    { procs = [] ;
-      events =
-      EventSet.union6
-        rn.events rs.events rt.events
-        wrs.events rm.events wm.events ;
-      speculated =
-      EventSet.union6
-        rn.speculated rs.speculated rt.speculated
-        wrs.speculated rm.speculated wm.speculated ;
-      po = po_union6 rn rs rt wrs rm wm;
-      intra_causality_data =
-      EventRel.union
+    let aarch64_cas_ok rn rs rt wrs rm wm =
+      let output_rn = maximals rn
+      and output_rs = maximals rs
+      and output_rm = maximals rm
+      and input_wrs = minimals wrs
+      and input_rm = minimals rm
+      and input_wm = minimals wm in
+      { procs = [] ;
+        events =
+        EventSet.union6
+          rn.events rs.events rt.events
+          wrs.events rm.events wm.events ;
+        speculated =
+        if do_spec then
+          EventSet.union6
+            rn.speculated rs.speculated rt.speculated
+            wrs.speculated rm.speculated wm.speculated
+        else
+          rn.speculated;
+        po = po_union6 rn rs rt wrs rm wm;
+        intra_causality_data =
+        EventRel.union
+          (EventRel.union6
+             rn.intra_causality_data
+             rs.intra_causality_data
+             rt.intra_causality_data
+             wrs.intra_causality_data
+             rm.intra_causality_data
+             wm.intra_causality_data)
+          (EventRel.union4
+             (EventRel.cartesian output_rn input_rm)
+             (EventRel.cartesian output_rn input_wm)
+             (EventRel.cartesian (maximals rt) input_wm)
+             (EventRel.cartesian output_rm input_wrs));
+        intra_causality_control =
+        EventRel.union
+          (EventRel.union6
+             rn.intra_causality_control
+             rs.intra_causality_control
+             rt.intra_causality_control
+             wrs.intra_causality_control
+             rm.intra_causality_control
+             wm.intra_causality_control)
+          (EventRel.union
+             (EventRel.cartesian output_rs input_wm)
+             (EventRel.cartesian output_rm input_wm));
+        control =
         (EventRel.union6
-           rn.intra_causality_data
-           rs.intra_causality_data
-           rt.intra_causality_data
-           wrs.intra_causality_data
-           rm.intra_causality_data
-           wm.intra_causality_data)
-        (EventRel.union4
-           (EventRel.cartesian output_rn input_rm)
-           (EventRel.cartesian output_rn input_wm)
-           (EventRel.cartesian (maximals rt) input_wm)
-           (EventRel.cartesian output_rm input_wrs));
-      intra_causality_control =
-      EventRel.union
-        (EventRel.union6
-           rn.intra_causality_control
-           rs.intra_causality_control
-           rt.intra_causality_control
-           wrs.intra_causality_control
-           rm.intra_causality_control
-           wm.intra_causality_control)
-        (EventRel.union
-           (EventRel.cartesian output_rs input_wm)
-           (EventRel.cartesian output_rm input_wm));
-      control =
-       (EventRel.union6
-         rn.control rs.control rt.control
-         wrs.control rm.control wm.control);
-      data_ports =
-      (EventSet.union6
-          rn.data_ports rs.data_ports rt.data_ports
-          wrs.data_ports rm.data_ports wm.data_ports);
-      success_ports =
-       (EventSet.union6
-          rn.success_ports rs.success_ports rt.success_ports
-          wrs.success_ports rm.success_ports wm.success_ports);
-      sca =
-      (EventSetSet.union6
-         rn.sca rs.sca rt.sca
-         wrs.sca rm.sca wm.sca);
-      mem_accesses =
-       (EventSet.union6
-         rn.mem_accesses rs.mem_accesses rt.mem_accesses
-         wrs.mem_accesses rm.mem_accesses wm.mem_accesses);
-      output = Some (maximals wrs);
-    }
+           rn.control rs.control rt.control
+           wrs.control rm.control wm.control);
+        data_ports =
+        (EventSet.union6
+           rn.data_ports rs.data_ports rt.data_ports
+           wrs.data_ports rm.data_ports wm.data_ports);
+        success_ports =
+        (EventSet.union6
+           rn.success_ports rs.success_ports rt.success_ports
+           wrs.success_ports rm.success_ports wm.success_ports);
+        sca =
+        (EventSetSet.union6
+           rn.sca rs.sca rt.sca
+           wrs.sca rm.sca wm.sca);
+        mem_accesses =
+        (EventSet.union6
+           rn.mem_accesses rs.mem_accesses rt.mem_accesses
+           wrs.mem_accesses rm.mem_accesses wm.mem_accesses);
+        output = Some (maximals wrs);
+      }
 (* Store update composition, read data, read EA, write EA and  write Mem *)
 
 (* Dijointness not checked..., useless *)
-let stu rD rEA wEA wM =
-  assert
-    (EventRel.is_empty rD.intra_causality_control &&
-    EventRel.is_empty rEA.intra_causality_control &&
-    EventRel.is_empty wEA.intra_causality_control &&
-    EventRel.is_empty wM.intra_causality_control) ;
-  { procs = [] ;
-    events = EventSet.union4 rD.events rEA.events wEA.events wM.events;
-    speculated = EventSet.union4 rD.speculated rEA.speculated wEA.speculated wM.speculated;
-    po = po_union4 rD rEA wEA wM;
-    intra_causality_data = begin
-      let drD = rD.intra_causality_data
-      and drEA = rEA.intra_causality_data
-      and dwEA = wEA.intra_causality_data
-      and dwM = wM.intra_causality_data in
-      EventRel.unions
-        [EventRel.unions [drD; drEA; dwEA; dwM;];
-         EventRel.cartesian (maximals rEA) (minimals wEA);
-         EventRel.cartesian
-           (EventSet.union (maximals rEA) (maximals rD)) (minimals wM);]
-    end ;
-    intra_causality_control = EventRel.empty;
-    control =
-      EventRel.union4 rD.control rEA.control wEA.control wM.control ;
-    data_ports =
-      EventSet.union4
-        rD.data_ports rEA.data_ports wEA.data_ports wM.data_ports ;
-    success_ports =
-      EventSet.union4
-        rD.success_ports rEA.success_ports wEA.success_ports wM.success_ports ;
-    output = None;
-    sca = EventSetSet.union4 rD.sca rEA.sca wEA.sca wM.sca;
-    mem_accesses =
-      EventSet.union4
-        rD.mem_accesses rEA.mem_accesses wEA.mem_accesses wM.mem_accesses ;
-  }
+    let stu rD rEA wEA wM =
+      assert
+        (EventRel.is_empty rD.intra_causality_control &&
+         EventRel.is_empty rEA.intra_causality_control &&
+         EventRel.is_empty wEA.intra_causality_control &&
+         EventRel.is_empty wM.intra_causality_control) ;
+      { procs = [] ;
+        events = EventSet.union4 rD.events rEA.events wEA.events wM.events;
+        speculated =
+        if do_spec then
+          EventSet.union4
+            rD.speculated rEA.speculated wEA.speculated wM.speculated
+        else
+          rD.speculated;
+        po = po_union4 rD rEA wEA wM;
+        intra_causality_data = begin
+          let drD = rD.intra_causality_data
+          and drEA = rEA.intra_causality_data
+          and dwEA = wEA.intra_causality_data
+          and dwM = wM.intra_causality_data in
+          EventRel.unions
+            [EventRel.unions [drD; drEA; dwEA; dwM;];
+             EventRel.cartesian (maximals rEA) (minimals wEA);
+             EventRel.cartesian
+               (EventSet.union (maximals rEA) (maximals rD)) (minimals wM);]
+        end ;
+        intra_causality_control = EventRel.empty;
+        control =
+        EventRel.union4 rD.control rEA.control wEA.control wM.control ;
+        data_ports =
+        EventSet.union4
+          rD.data_ports rEA.data_ports wEA.data_ports wM.data_ports ;
+        success_ports =
+        EventSet.union4
+          rD.success_ports rEA.success_ports wEA.success_ports wM.success_ports ;
+        output = None;
+        sca = EventSetSet.union4 rD.sca rEA.sca wEA.sca wM.sca;
+        mem_accesses =
+        EventSet.union4
+          rD.mem_accesses rEA.mem_accesses wEA.mem_accesses wM.mem_accesses ;
+      }
 
 (*************************************************************)
 (* Add together event structures from different instructions *)
@@ -1517,12 +1580,12 @@ let stu rD rEA wEA wM =
     let (+|+) = check_both do_para_comp
 
 
-  let empty_event_structure = empty
+    let empty_event_structure = empty
 
 (* Instruction control *)
 
-  let cond_comp es1 es2 =
-    let r = do_para_comp es1 es2 in
-    let control = EventRel.cartesian es1.events es2.events in
-    { r with control =  EventRel.union control r.control; }
-end
+    let cond_comp es1 es2 =
+      let r = do_para_comp es1 es2 in
+      let control = EventRel.cartesian es1.events es2.events in
+      { r with control =  EventRel.union control r.control; }
+  end

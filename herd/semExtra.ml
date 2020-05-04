@@ -34,6 +34,8 @@ module type S = sig
   with module A = A and module E = E and type evt_struct = E.event_structure
   module Cons : Constraints.S with module A = A
 
+(* Report some flags *)
+  val do_spec : bool
 (* A good place to (re)define all these types *)
   type cst = A.V.Cst.v
   type v = A.V.v
@@ -190,6 +192,8 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
 
     module M = EventsMonad.Make(CEM)(A)(E)
     module Cons = Constraints.Make (C.PC)(A)
+
+    let do_spec = C.variant Variant.Speculate
 
 (* A good place to (re)define all these types *)
     type cst = A.V.Cst.v

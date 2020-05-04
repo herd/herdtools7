@@ -346,8 +346,9 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           W.warn "%i abstract event structures\n%!" i ;
           []
       | (vcl,es)::xs ->
-          let es = { (relabel es) with E.procs = procs } in
-          let es = {es with E.po = transitive_po es ;} in
+          let es = relabel es in
+          let es =
+            { es with E.procs = procs; E.po = if do_spec then transitive_po es else es.E.po } in
           (i,vcl,es)::index xs (i+1) in
       let r = EM.get_output set_of_all_instr_events  in
       { event_structures=index r 0; loop_present = !tooFar; }

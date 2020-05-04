@@ -27,6 +27,7 @@ module Make
     (S:Sem.Semantics)
     =
   struct
+    let do_spec = O.variant Variant.Speculate
     let mixed = O.variant Variant.Mixed
     let memtag = O.variant Variant.MemTag
 
@@ -152,6 +153,7 @@ module Make
             else res)
           res
 
+    let choose_spec f1 f2 x = if do_spec then f1 x else f2 x
 (* Enter here *)
     let check_event_structure test conc kfail kont res =
       let pr = lazy (MU.make_procrels E.is_isync conc) in
@@ -160,13 +162,17 @@ module Make
           lazy (MU.pp_procrels None (Lazy.force pr))
         else
           lazy [] in
-      let relevant = (*not (E.is_reg_any e)*) fun _ -> true in
+      let relevant =
+        if do_spec then fun _ -> true
+        else fun e -> not (E.is_reg_any e) in
       let all_evts =  conc.S.str.E.events in
-      let evts = E.EventSet.filter relevant all_evts in
+      let evts =
+        choose_spec Misc.identity (E.EventSet.filter relevant) all_evts in
       let mem_evts = lazy (E.EventSet.filter E.is_mem evts) in
       let po =
-        E.EventRel.filter
-          (fun (e1,e2) -> relevant e1 && relevant e2)
+        choose_spec
+          Misc.identity
+          (E.EventRel.filter (fun (e1,e2) -> relevant e1 && relevant e2))
           conc.S.po in
       let id =
         lazy begin
