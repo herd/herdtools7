@@ -86,7 +86,12 @@ module Top (Conf:Config) = struct
               | [] -> MachSize.Byte
               | [sz] -> MachSize.pred sz
               | sz::_ -> sz
-            end else MachSize.Byte in
+            end else begin
+              (* Cannot that easily check the test not to mix sizes,
+                 as there are several locations in test that may be of
+                 different sizes *)
+              MachSize.Byte
+            end in
 (* And run test *)
           let module T =
             Top_herd.Make(struct include Conf let byte = sz end)(M) in

@@ -209,7 +209,6 @@ module Make
                   (fun e1 e2 -> not (E.same_proc e1 e2)) (Lazy.force unv)
               end ;
               "rmw",lazy conc.S.atomic_load_store;
-              "amo",lazy (Lazy.force pr).S.amo;
               "po", lazy  po;
               "addr", lazy (Lazy.force pr).S.addr;
               "data", lazy (Lazy.force pr).S.data;

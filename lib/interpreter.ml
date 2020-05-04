@@ -401,6 +401,8 @@ module Make
           raise Misc.Exit) (* Silent failure *)
         fmt
 
+    let error_not_silent loc fmt = error false loc fmt
+
     let warn loc fmt =
       ksprintf
         (fun msg ->
@@ -540,18 +542,26 @@ module Make
         | Set _ as sr -> sr
     end
 
+(* Internal status of interpreter *)
+    type inter_st = {
+        included : StringSet.t ;
+        loc : loc ;
+      }
+
+    let inter_st_empty = { included = StringSet.empty; loc = []; }
+
+(* Complete status *)
     type st = {
         env : V.env ;
         show : Shown.t StringMap.t Lazy.t ;
         skipped : StringSet.t ;
-        silent : bool ; flags : Flag.Set.t ;
+        flags : Flag.Set.t ;
         ks : ks ;
         bell_info : BellModel.info ;
-        loc : loc ;
+        st : inter_st ;
       }
 
 (* Interpretation result *)
-
     type st_out = {
         out_show : S.event_rel Misc.Simple.bds Lazy.t ;
         out_sets : S.event_set StringMap.t Lazy.t ;
@@ -591,12 +601,18 @@ module Make
 
 
     let push_loc st loc =
-      let loc = loc :: st.loc in
-      { st with loc; }
+      let ist = st.st in
+      let loc = loc :: ist.loc in
+      let ist = { ist with loc; } in
+      { st with st=ist; }
 
-    let pop_loc st = match st.loc with
-    | [] -> assert false
-    | _::stack -> { st with loc=stack; }
+    let pop_loc st =
+      let ist = st.st in
+      match ist.loc with
+      | [] -> assert false
+      | _::loc ->
+          let ist = { ist with loc; } in
+          { st with st=ist; }
 
     let show_loc (loc,name) =
       eprintf "%a: calling procedure%s\n" TxtLoc.pp loc
@@ -609,8 +625,9 @@ module Make
     let protect_call st f x =
       try f x
       with Misc.Exit ->
+        let st = st.st in
         List.iter
-          (fun loc -> if O.debug || not st.silent then show_loc loc)
+          (fun loc -> if O.debug then show_loc loc)
           st.loc ;
         raise Misc.Exit
 
@@ -621,7 +638,7 @@ module Make
     end
 
 
-    let from_st st = { EV.env=st.env; silent=st.silent; ks=st.ks; }
+    let from_st st = { EV.env=st.env; silent=false; ks=st.ks; }
 
     let set_op env loc t op s1 s2 =
       try V.ValSet (t,op s1 s2)
@@ -914,7 +931,7 @@ module Make
     | _ -> arg_mismatch ()
 
 (* Delift a relation from event classes to events *)
-    and fulldelift arg = match arg with
+    and delift arg = match arg with
     | ClassRel clsr ->
         let r =
           ClassRel.fold
@@ -924,7 +941,7 @@ module Make
     | _ -> arg_mismatch ()
 
 (* Restrict delift by intersection (fulldeflift(clsr) & loc) *)
-    and delift arg = match arg with
+    and deliftinter arg = match arg with
     | V.Tuple[Rel m;ClassRel clsr] ->
         let make_rel_from_classpair (cl1,cl2) =
           E.EventRel.filter
@@ -1115,7 +1132,7 @@ module Make
          "classes",classes;
          "lift",lift;
          "delift",delift;
-         "fulldelift",fulldelift;
+         "deliftinter",deliftinter;
          "linearisations",linearisations ks;
          "bisimulation",bisimulation;
          "tag2scope",tag2scope m;
@@ -1929,7 +1946,7 @@ module Make
                 { st with bell_info }
               else st
             with BellModel.Defined ->
-              error st.silent loc "second definition of bell enum %s" name
+              error_not_silent loc "second definition of bell enum %s" name
         else
           fun _loc st _v _tags -> st in
 
@@ -2001,7 +2018,7 @@ module Make
                 try BellModel.get_order id_tags st.bell_info
                 with Not_found -> assert false in
               if not (StringRel.equal old order) then
-                error st.silent
+                error_not_silent
                   loc "incompatible definition of order on %s by %s" id_tags id_fun ;
               st in
 
@@ -2035,9 +2052,9 @@ module Make
               fun env ->
                 eval_test (check_through Check) env t e in
 
-      let pp_check_failure st (loc,pos,_,e,_) =
+      let pp_check_failure (st:st) (loc,pos,_,e,_) =
         warn loc "check failed" ;
-        show_call_stack st.loc ;
+        show_call_stack st.st.loc ;
         if O.debug && O.verbose > 0 then begin
           let pp = match pos with
           | Pos _ -> "???"
@@ -2186,7 +2203,7 @@ module Make
                         begin match d with
                         | Some dseq -> run st dseq kfail kont res
                         | None ->
-                            error st.silent
+                            error_not_silent
                               loc "pattern matching failed on value '%s'" s
                         end
                     | (ps,pprog)::cls ->
@@ -2194,11 +2211,11 @@ module Make
                         else match_rec cls in
                   match_rec cls
               | V.Empty ->
-                  error st.silent (get_loc e) "matching on empty"
+                  error_not_silent (get_loc e) "matching on empty"
               | V.Unv ->
-                  error st.silent (get_loc e) "matching on universe"
+                  error_not_silent (get_loc e) "matching on universe"
               | _ ->
-                  error st.silent (get_loc e)
+                  error_not_silent (get_loc e)
                     "matching on non-tag value of type '%s'"
                     (pp_typ (type_val v))
               end
@@ -2207,7 +2224,13 @@ module Make
               let fname = match fname with
               | "lock.cat" when O.compat -> "cos-opt.cat"
               | _ -> fname in
-              do_include loc fname st kfail kont res
+              if StringSet.mem fname st.st.included then begin
+                Warn.warn_always "%a: not including %s another time"
+                  TxtLoc.pp loc fname ;
+                kont st res
+              end else begin
+                do_include loc fname st kfail kont res
+              end
           | Procedure (_,name,args,body,is_rec) ->
               let p =  { proc_args=args; proc_env=st.env; proc_body=body; } in
               let proc = Proc p in
@@ -2301,7 +2324,7 @@ module Make
                         res in
                   run_set st set res
               | _ ->
-                  error st.silent
+                  error_not_silent
                     (get_loc e) "forall instruction applied to non-set value"
               end
           | WithFrom (_loc,x,e) when not O.bell  ->
@@ -2316,12 +2339,12 @@ module Make
                       let env = do_add_val x (lazy v) env0 in
                       kont (doshowone x {st with env;}) res)
                     vs res
-              | _ -> error st.silent (get_loc e) "set expected"
+              | _ -> error_not_silent (get_loc e) "set expected"
               end
           | Events (loc,x,es,def) when O.bell ->
               let x = BellName.tr_compat x in
               if not (StringSet.mem x BellName.all_sets) then
-                error st.silent loc
+                error_not_silent loc
                   "event type %s is not part of legal {%s}\n"
                   x (StringSet.pp_str "," Misc.identity BellName.all_sets) ;
               let vs = List.map (eval_loc (from_st st)) es in
@@ -2354,11 +2377,11 @@ module Make
                     List.map2
                       (fun ss e -> match StringSet.as_singleton ss with
                       | None ->
-                          error st.silent (get_loc e) "ambiguous default declaration"
+                          error_not_silent (get_loc e) "ambiguous default declaration"
                       | Some a -> a) event_sets es in
                   try BellModel.add_default x defarg bell_info
                   with BellModel.Defined ->
-                    error st.silent loc "second definition of default for %s" x
+                    error_not_silent loc "second definition of default for %s" x
                 else bell_info in
               let st = { st with bell_info;} in
               kont st res
@@ -2443,7 +2466,11 @@ module Make
                 let (_,_,iprog) =
                   try P.parse fname
                   with Misc.Fatal msg | Misc.UserError msg ->
-                    error st.silent loc "%s" msg  in
+                    error_not_silent loc "%s" msg  in
+                let stst = st.st in
+                let included = StringSet.add fname stst.included in
+                let stst = { stst with included; } in
+                let st = { st with st=stst; } in
                 run st iprog kfail kont res
 
           and run : 'a.st -> ins list ->
@@ -2479,9 +2506,9 @@ module Make
 
         let st =
           {env=m; show=show; skipped=StringSet.empty;
-           silent=false; flags=Flag.Set.empty;
+           flags=Flag.Set.empty;
            ks; bell_info=BellModel.empty_info;
-           loc=[]} in
+           st=inter_st_empty; } in
 
         let kont st res =  kont (st2out st) res in
 

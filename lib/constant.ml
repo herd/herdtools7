@@ -24,9 +24,14 @@ type 'scalar t =
   | Tag of string
 
 let mk_sym s = Symbolic ((s,None),0)
+
 and get_sym = function
   | Symbolic ((s,_),_) -> s
   | Concrete _|Label _| Tag _ -> assert false
+
+let is_non_mixed_symbol = function
+  | Symbolic (_,idx) -> idx=0
+  | Concrete _|Label _| Tag _ -> true
 
 let default_tag = Tag "green"
 

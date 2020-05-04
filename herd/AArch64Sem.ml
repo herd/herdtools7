@@ -87,6 +87,15 @@ module Make
       let write_loc sz an loc v ii = M.mk_singleton_es (mk_write sz an loc v) ii
       let write_reg r v ii = write_loc MachSize.Quad AArch64.N (A.Location_reg (ii.A.proc,r)) v ii
 
+      let write_reg_sz sz r v ii = match sz with
+      | MachSize.Quad -> write_reg r v ii
+      | MachSize.Word|MachSize.Short|MachSize.Byte ->
+          M.op1 (Op.Mask sz) v >>= fun v -> write_reg r v ii
+
+      let write_reg_sz_non_mixed =
+        if mixed then fun _sz -> write_reg
+        else write_reg_sz
+
 (* Emit commit event *)
       let commit_bcc ii = M.mk_singleton_es (Act.Commit true) ii
       let commit_pred ii = M.mk_singleton_es (Act.Commit false) ii
@@ -150,7 +159,7 @@ module Make
         check_tags a ii
           (loc_extract a >>= fun a ->
            M.read_loc false (mk_read sz an) (A.Location_global a) ii >>= fun v ->
-           write_reg rd v ii >>! B.Next)
+           write_reg_sz sz rd v ii >>! B.Next)
           (mk_fault a ii >>! B.Exit)
 
 
@@ -163,7 +172,7 @@ module Make
           M.read_loc false (mk_read sz an) (A.Location_global a) ii
 
       let do_read_mem sz an rd a ii =
-        old_do_read_mem sz an a ii >>= fun v ->  write_reg rd v ii
+        old_do_read_mem sz an a ii >>= fun v ->  write_reg_sz_non_mixed sz rd v ii
 
       let read_mem sz = do_read_mem sz AArch64.N
       let read_mem_acquire sz = do_read_mem sz AArch64.A
@@ -239,7 +248,7 @@ module Make
         lift_memop
           (fun ma -> ma >>= fun a ->
            old_do_read_mem sz AArch64.N a ii >>= fun v ->
-           write_reg rd v ii )
+           write_reg_sz_non_mixed sz rd v ii )
           (get_ea rs kr ii) ii
 
       and str sz rs rd kr ii = do_str sz AArch64.N rs (get_ea rd kr ii) ii
@@ -312,7 +321,7 @@ module Make
             lift_memop
               (fun ma ->
                 let r2 = read_reg_data sz r1 ii
-                and w2 v = write_reg r2 v ii
+                and w2 v = write_reg r2 v ii (* no sz since alread masked *)
                 and r1 a = read_mem sz a ii
                 and w1 a v = write_mem sz a v ii in
                 M.swp ma r1 r2 w1 w2)
@@ -331,12 +340,12 @@ module Make
                | RMW_A|RMW_AL -> old_do_read_mem sz A
                | RMW_L|RMW_P  -> old_do_read_mem sz N in
                read_mem sz a ii >>=
-               fun v -> write_reg rs v ii >>! v end) >>=
+               fun v -> write_reg_sz_non_mixed sz rs v ii >>! v end) >>=
                fun (cv,v) -> M.neqT cv v >>! ())
               (let read_rt =  read_reg_data sz rt ii
               and read_mem a = rmw_amo_read rmw sz  a ii
               and write_mem a v = rmw_amo_write rmw sz a v ii
-              and write_rs v =  write_reg rs v ii in
+              and write_rs v =  write_reg rs v ii in (* no sz, argument masked *)
               M.aarch64_cas_ok
                 ma read_rs read_rt write_rs read_mem write_mem M.eqT))
           (read_reg_ord rn ii)
@@ -359,7 +368,7 @@ module Make
             M.amo op
               ma (read_reg_data sz rs ii)
               (fun a -> read_mem sz a ii) (fun a v -> write_mem sz a v ii)
-            >>= fun w ->if noret then M.unitT () else write_reg rt w ii)
+            >>= fun w ->if noret then M.unitT () else write_reg_sz_non_mixed sz rt w ii)
           (read_reg_ord rn ii)
           ii
 
@@ -441,8 +450,9 @@ module Make
         | I_STXRBH(bh,t,rr,rs,rd) ->
             stxr (bh_to_sz bh) t rr rs rd ii
 
-              (* Operations *)
-        | I_MOV(_,r,K k) ->
+        (* Operations *)
+        | I_MOV(_sz,r,K k) ->
+            (* Masking assumed to be useless, given k size. Hence _sz ignored *)
             write_reg r (V.intToV k) ii >>! B.Next
 
         | I_MOV(var,r1,RV (_,r2)) ->
@@ -495,13 +505,16 @@ module Make
               (* Conditional selection *)
         | I_CSEL (var,r1,r2,r3,c,op) ->
             let sz = tr_variant var in
+            let mask = match op with
+            | Cpy|Neg -> fun m -> m
+            | Inc|Inv -> mask32 var in
             if C.variant Variant.WeakPredicated then
               read_reg_ord NZP ii >>= tr_cond c >>= fun v ->
                 commit_bcc ii >>= fun () ->
                 M.choiceT v
                   (read_reg_data sz r2 ii >>= fun v -> write_reg r1 v ii)
                   (read_reg_data sz r3 ii >>=
-                   csel_op op >>= mask32 var (fun v ->  write_reg r1 v ii))
+                   csel_op op >>= mask (fun v ->  write_reg r1 v ii))
                   >>! B.Next
             else
               begin
@@ -510,7 +523,7 @@ module Make
                 commit_bcc ii >>= fun () ->
                 M.choiceT v
                   (write_reg r1 v2 ii)
-                  (csel_op op v3 >>= mask32 var (fun v ->  write_reg r1 v ii))
+                  (csel_op op v3 >>= mask (fun v ->  write_reg r1 v ii))
                   >>! B.Next
 (* Swap *)
         | I_SWP (v,rmw,r1,r2,r3) -> swp (tr_variant v) rmw r1 r2 r3 ii >>! B.Next

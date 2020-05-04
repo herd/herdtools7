@@ -130,9 +130,12 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     module U = MemUtils.Make(S)
     module W = Warn.Make(C)
 
+    let dbg = C.debug.Debug_herd.mem
     let mixed = C.variant Variant.Mixed
     let memtag = C.variant Variant.MemTag
-    let dbg = C.debug.Debug_herd.mem
+ (* default is checking *)
+    let check_mixed =  not (C.variant Variant.DontCheckMixed)
+    let specul = true (* TODO VARIANT *)
 
 (*****************************)
 (* Event structure generator *)
@@ -597,25 +600,57 @@ let match_reg_events es =
 
 (* Consider all stores that may feed a load
    - Compatible location.
-   - Not after in program order (suppressed when uniproc
-   is not optmised early) *)
+   - Not after in program order
+    (suppressed when uniproc is not optmised early) *)
     let map_load_possible_stores es loads stores compat_locs =
-      E.EventSet.fold
-        (fun store map_load ->
-          List.map
-            (fun ((load,stores) as c) ->
-              if
-                compat_locs store load &&
-                check_speculation es store load &&
-                (if C.optace then
-                  not (U.is_before_strict es load store)
-                else true)
-              then
-                load,S.Store store::stores
-              else c)
-            map_load)
-        stores (map_load_init loads)
-
+      let m =
+        E.EventSet.fold
+          (fun store map_load ->
+            List.map
+              (fun ((load,stores) as c) ->
+                if
+                  compat_locs store load &&
+                  check_speculation es store load &&
+                  (if C.optace then
+                    not (U.is_before_strict es load store)
+                  else true)
+                then
+                  load,S.Store store::stores
+                else c)
+              map_load)
+          stores (map_load_init loads) in
+      if dbg then begin
+        let pp_read_froms chan rfs =
+          List.iter
+            (fun rf -> match rf with
+            | S.Init -> fprintf chan "Init"
+            | S.Store e -> E.debug_event chan e ; fprintf chan ",")
+            rfs in
+        List.iter
+          (fun (load,stores) ->
+            eprintf "Pairing {%a} with {%a}\n"
+              E.debug_event load
+              pp_read_froms stores)
+          m
+      end ;
+(* Check for loads that cannot feed on some write *)
+      if not specul then begin
+        List.iter
+        (fun (load,stores) -> match stores with
+        | [] ->
+            begin match E.location_of load with
+            | Some (A.Location_global (V.Val sym) as loc) ->
+                if Constant.is_non_mixed_symbol sym then
+                  Warn.fatal "read on location %s does not match any write"
+                    (A.pp_location loc)
+                else if check_mixed then
+                  Warn.user_error "Illegal mixed-size test"
+            | _ -> assert false
+            end
+        | _::_ -> ())
+        m
+      end ;
+      m
 
 (* Add memory events to rfmap *)
     let add_mem =
@@ -709,12 +744,10 @@ let match_reg_events es =
     let solve_mem_non_mixed test es rfm cns kont res =
       let loads =  E.EventSet.filter E.is_mem_load es.E.events
       and stores = E.EventSet.filter E.is_mem_store es.E.events in
-
       if dbg then begin
         eprintf "Loads : %a\n"E.debug_events loads ;
         eprintf "Stores: %a\n"E.debug_events stores
       end ;
-
       let compat_locs = compatible_locs_mem in
       solve_mem_or_res test es rfm cns kont res
         loads stores compat_locs add_mem_eqs
@@ -1365,21 +1398,32 @@ let match_reg_events es =
         rfm
 
     let check_sizes es =
-      let loc_mems = U.collect_mem es in
-      U.LocEnv.iter
-        (fun _ evts ->
-          (* hum TODO, init write size should be depend upon declaration and be checked *)
-          let evts =  List.filter (fun e -> not (E.is_mem_store_init e))evts in
-          match evts with
-          | [] -> ()
-          | e0::es ->
-              let sz0 = E.get_mem_size e0 in
-              List.iter
-                (fun e ->
-                  if sz0 <> E.get_mem_size e then
-                    Warn.user_error "Illegal mixed-size test")
-                es)
-        loc_mems
+      if check_mixed then begin
+        let loc_mems = U.collect_mem es in
+        U.LocEnv.iter
+          (fun loc evts ->
+            begin match loc with
+            | A.Location_global (V.Val sym)
+              when not (Constant.is_non_mixed_symbol sym)
+              -> Warn.user_error "Illegal mixed-size test"
+            | _ -> ()
+            end ;
+            (* hum TODO, init write size should be depend upon declaration and be checked *)
+            if check_mixed then begin
+              let evts =
+                List.filter (fun e -> not (E.is_mem_store_init e))evts in
+              match evts with
+              | [] -> ()
+              | e0::es ->
+                  let sz0 = E.get_mem_size e0 in
+                  List.iter
+                    (fun e ->
+                      if sz0 <> E.get_mem_size e then
+                        Warn.user_error "Illegal mixed-size test")
+                    es
+            end)
+          loc_mems
+      end
 
     let check_aligned test es =
       let open Constant in
@@ -1414,7 +1458,7 @@ let match_reg_events es =
                   when_unsolved test es rfm cs kont_loop res
               | _ ->
                   if mixed then check_aligned test es ;
-                  if A.reject_mixed then check_sizes es ;
+                  if A.reject_mixed && not (mixed || memtag) then check_sizes es ;
                   if C.debug.Debug_herd.solver && C.verbose > 0 then begin
                     let module PP = Pretty.Make(S) in
                     prerr_endline "Mem solved" ;

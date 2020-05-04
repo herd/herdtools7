@@ -27,8 +27,11 @@ type t =
   | SwitchDepScWrite     (* Switch dependency on sc mem write, riscv *)
   | SwitchDepScResult    (* Switch dependency from address read to sc result write, riscv,aarch64 *)
   | LrScDiffOk      (* Lr/Sc paired to <> addresses may succeed (!) *)
-  | Mixed           (* Mixed-Size *)
   | WeakPredicated (* "Weak" predicated instructions, not performing non-selected events, aarch64 *)
+(* Mixed size *)
+  | Mixed
+ (* Do not check (and reject early) mixed size tests in non-mixed-size mode *)
+  | DontCheckMixed
   | MemTag           (* Memory Tagging *)
   | TagCheckPrecise
   | TagCheckUnprecise

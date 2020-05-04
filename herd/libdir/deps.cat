@@ -16,7 +16,7 @@ let depi = lift(instances,(rf-reg|rfi)^-1) in
 let diffw =(loc & (W * W)) \ id
 let diff = ((rfe^-1;diffw;rf)|(rf^-1;diffw;rfe))
 let diffi = lift(instances,diff)
-let bisim = fulldelift(bisimulation(depi,lift(instances,same-instr)\diffi))\id
+let bisim = delift(bisimulation(depi,lift(instances,same-instr)\diffi))\id
 let equiv = (W*W) & bisim
 
 let new-ctrl = ctrlequiv equiv 
