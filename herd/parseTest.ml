@@ -136,7 +136,7 @@ module Top (Conf:Config) = struct
       end in
       let model =
         let m = match Conf.model with
-        | None -> Model.get_default_model arch
+        | None -> Model.get_default_model Conf.variant arch
         | Some m -> m in
         let m = match m with
         | Model.File fname ->

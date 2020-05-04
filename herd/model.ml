@@ -96,13 +96,16 @@ module type Config = sig
   val variant : Variant.t -> bool
 end
 
-let get_default_model a = 
+let get_default_model variant a = 
 match a with
 | `X86 -> File "x86tso.cat"
 | `MIPS -> File "mips.cat"
 | `PPC ->  File "ppc.cat"
 | `ARM -> File "arm.cat"
-| `AArch64 -> File "aarch64.cat"
+| `AArch64 ->
+    File
+      (if variant Variant.Speculate then "aarch64-deps.cat"        
+      else "aarch64.cat")
 | `C -> File "c11_partialSC.cat"
 | `RISCV -> File "riscv.cat"
 | `X86_64 -> File "tso.cat"

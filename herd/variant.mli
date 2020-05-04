@@ -36,6 +36,8 @@ type t =
   | TagCheckPrecise
   | TagCheckUnprecise
   | TooFar         (* Do not discard candidates with TooFar events *)
+(* Speculate *)
+  | Speculate
 
 val compare : t -> t -> int
 val tags : string list

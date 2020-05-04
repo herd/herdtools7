@@ -56,4 +56,4 @@ module type Config = sig
 end
 
 (* Defaults *)
-val get_default_model : Archs.t -> t
+val get_default_model : (Variant.t -> bool) -> Archs.t -> t
