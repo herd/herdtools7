@@ -15,7 +15,8 @@
 (****************************************************************************)
 
 module Make
-    (C:sig include Sem.Config val precision : bool end)
+    (C:sig include Sem.Config val precision : bool
+                              val allow_num_literals : bool end)
     (V:Value.S)
     =
   struct
@@ -176,7 +177,12 @@ module Make
       (* This is needed to for literal instructions *)
       let parse_lbl lbl =
         (* We should use more robust types for this in the future *)
-          try V.intToV (int_of_string lbl)
+          try
+            let lbl = int_of_string lbl in
+            if C.allow_num_literals then
+              V.intToV lbl
+            else
+              Warn.user_error "Cannot parse numeric label in literal position"
           with Failure _ -> V.nameToV lbl
 
 

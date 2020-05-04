@@ -36,6 +36,7 @@ let model = ref None
 let bell = ref None
 let macros = ref None
 let unroll = ref 2
+let allow_num_literals = ref false
 let speedcheck = ref Speed.False
 let archcheck = ref true
 let optace = ref None

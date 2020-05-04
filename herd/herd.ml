@@ -174,6 +174,9 @@ let options = [
   ("-suffix", Arg.String (fun s -> suffix := s),
    "<suf> add <suf> at the end of the base of generated files") ;
   parse_bool "-dumpes" Opts.dumpes "dump event structures";
+  ( "-allow_numeric_literals",
+    Arg.Unit (fun _ -> Opts.allow_num_literals := true ),
+    "Do not allow numeric values in literal instructions: e.g ADR Xn, 0x23000 (AArch64 only, default false)") ;
   ( "-gv",
     Arg.Unit (fun _ -> PP.gv := true),
     "<non-default>  fork gv to show output graphs") ;
@@ -505,6 +508,7 @@ let () =
     let throughflag = !throughflag
 
     let statelessrc11 = !statelessrc11
+    let allow_num_literals = !Opts.allow_num_literals
 
     let check_name = Check.ok
     let check_rename = Check.rename_opt
