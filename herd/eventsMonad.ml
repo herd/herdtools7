@@ -40,12 +40,13 @@ and type evt_struct = E.event_structure) =
         (A)
 
     let dbg = C.debug.Debug_herd.mem
+    let do_spec = C.variant Variant.Speculate
 
 (* LM Use lists for polymorphism.
    It is assumed that list elts are pairwise distinct.
  *)
     module Evt = struct
-      type 'a elt = ('a * VC.cnstrnts * E.event_structure) 
+      type 'a elt = ('a * VC.cnstrnts * E.event_structure)
       type 'a t = 'a elt list
 
       let empty = []
@@ -76,50 +77,44 @@ and type evt_struct = E.event_structure) =
       let fold f xs y0 =
         List.fold_left (fun x y -> f y x) y0 xs
 
-(*      let filter = List.filter*)
-
       let union = (@)
 
       let elements (x:'a t) = x
-(*    end
 
-    type 'a t = int -> int * ('a Evt.t) (* Threading through eiid *)
+      let rec check_same_value p x = match x with
+      | [] -> true
+      | elt::s ->
+          p elt && check_same_value p s
 
-    let zeroT : 'a t
-        = (fun eiid_next -> (eiid_next, Evt.empty))
-*)
- let rec check_same_value p x = match x with
-    | [] -> true  
-    | elt::s -> 
-      p elt && check_same_value p s
+      let wrap_check p x = match x with
+      | [] -> assert false
+      | elt::s -> assert(check_same_value (p elt) s); elt
+    end
 
-  let wrap_check p x = match x with
-     | [] -> assert false
-     | elt::s -> assert(check_same_value (p elt) s); elt
-   end
-
+(* Returned value is a pair, whose first element is concrete branch and second collect
+   speculated branch. None means no speculation at all *)
     type 'a t = int -> int * ('a Evt.t * 'a Evt.elt option) (* Threading through eiid *)
     type 'a code = (int * int) -> (int * int) * ('a Evt.t * 'a Evt.elt option) (* Threading through eiid *)
 
-   let zeroT : 'a t
+    let zeroT : 'a t
         = (fun eiid_next -> (eiid_next, (Evt.empty, None)))
 
-   let zerocodeT : 'a code
+    let zerocodeT : 'a code
         = (fun eiid_next -> (eiid_next, (Evt.empty, None)))
 
     let unitT (v : 'a) : 'a t =
       fun eiid_next ->
-(*        eiid_next,Evt.singleton (v, [], E.empty_event_structure) *)
         eiid_next, (Evt.singleton (v, [], E.empty_event_structure), None)
 
     let unitcodeT (v : 'a) : 'a code =
       fun eiid_next ->
         eiid_next, (Evt.singleton (v, [], E.empty_event_structure), None)
 
+(* Delay incompatible with speculation *)
     let delay
         = fun (m:'a t) (eiid:int) ->
           let eiid,(mact,_) = m eiid in
-          let v,cl,es = Evt.as_singleton mact in
+          let v,cl,es = try Evt.as_singleton mact with _ -> assert false in
           let delayed : 'a t = fun eiid -> eiid,(Evt.singleton (v,[],es),None) in
           eiid,(Evt.singleton ((v,delayed),cl,E.empty_event_structure),None)
 
@@ -136,26 +131,17 @@ and type evt_struct = E.event_structure) =
         let (eiid,(sact,spec)) = s eiid in
         assert(spec = None);
         let eiid,bfinal=
-        Evt.fold (fun (v1, vcl1, es1) (eiid1,acc) ->
-          let b_set = f v1 in
-(*          let (eiid_b,b_setact) = b_set eiid1 in
-          Evt.fold (fun (v2,vcl2,es2) (eiid2,acc_inner) ->
-            match comp_str es1 es2 with
-            | None -> (eiid2, acc_inner)
-            | Some es -> (eiid2,Evt.add (v2,vcl2@vcl1,es) acc_inner)
-                   )
-            b_setact (eiid_b,acc)*)
-          let (eiid_b,(b_setact,_)) = b_set eiid1 in
+          Evt.fold (fun (v1, vcl1, es1) (eiid1,acc) ->
+            let b_set = f v1 in
+            let (eiid_b,(b_setact,spec_b)) = b_set eiid1 in
+            assert (spec_b = None) ;
             Evt.fold (fun (v2,vcl2,es2) (eiid2,acc) ->
               match comp_str es1 es2 with
               | None -> (eiid2, acc)
-              | Some es -> (eiid2,Evt.add (v2,vcl2@vcl1,es) acc)
-                     )
-              b_setact (eiid_b,acc)
-                 )
-          (*sact (eiid_next,Evt.empty))*)
-          sact (eiid,Evt.empty)
-          in eiid,(bfinal,None))
+              | Some es -> (eiid2,Evt.add (v2,vcl2@vcl1,es) acc))
+              b_setact (eiid_b,acc))
+            sact (eiid,Evt.empty)
+        in eiid,(bfinal,None))
 
     let (>>=) : 'a t -> ('a -> 'b t) -> ('b) t
         = fun s f -> data_comp (=*$=) s f
@@ -166,23 +152,10 @@ and type evt_struct = E.event_structure) =
 (* Bind the result *)
     let (>>*=) : 'a t -> ('a -> 'b t) -> ('b) t
         = fun s f -> data_comp (=**=) s f
-(*
-  (fun eiid ->
-  let (eiid_next, sact) = s eiid in
-  Evt.fold (fun (v1, vcl1, es1) (eiid1,acc) ->
-  let b_set = f v1 in
-  let (eiid_b,b_setact) = b_set eiid1 in
-  Evt.fold (fun (v2,vcl2,es2) (eiid2,acc_inner) ->
-  match es1 =**= es2 with
-  | None -> (eiid2, acc_inner)
-  | Some es -> (eiid2,Evt.add (v2,vcl2@vcl1,es) acc_inner)
-  )
-  b_setact (eiid_b,acc)
-  )
-  sact (eiid_next,Evt.empty))
- *)
+
     let bind_ctrl_avoid ma s f = fun eiid ->
-      let eiid,(mact,_) = ma eiid in
+      let eiid,(mact,spec) = ma eiid in
+      assert(spec = None) ;
       let _,cl,es = Evt.as_singleton mact in
       assert (cl=[]) ;
       data_comp (E.bind_ctrl_avoid es.E.events) s f eiid
@@ -191,14 +164,14 @@ and type evt_struct = E.event_structure) =
     let check_tags : 'v t -> ('v -> 'v t) -> ('v -> 'v -> 'v t) -> 'x t -> 'v t
         = fun ma rtag comp commit ->
           fun (eiid:int) ->
-            let eiid,(aact,_) = ma eiid in
-            let a,acl,aes = Evt.as_singleton aact in
-            let eiid,(rtagact,_) = rtag a eiid in
-            let eiid,(commitact,_) = commit eiid in
-            let tag,rtagcl,rtages = Evt.as_singleton rtagact
-            and _,commitcl,commites = Evt.as_singleton commitact in
-            let eiid,(compact,_) = comp a tag eiid in
-            let vcomp,compcl,_ = Evt.as_singleton compact in
+            let eiid,(aact) = ma eiid in
+            let a,acl,aes = Evt.as_singleton_nospecul aact in
+            let eiid,rtagact = rtag a eiid in
+            let eiid,commitact = commit eiid in
+            let tag,rtagcl,rtages = Evt.as_singleton_nospecul rtagact
+            and _,commitcl,commites = Evt.as_singleton_nospecul commitact in
+            let eiid,compact = comp a tag eiid in
+            let vcomp,compcl,_ = Evt.as_singleton_nospecul compact in
             let es = E.check_tags aes rtages commites in
             eiid,(Evt.singleton (vcomp,acl@rtagcl@commitcl@compcl,es),None)
 
@@ -223,16 +196,16 @@ and type evt_struct = E.event_structure) =
       ('loc -> 'v t) -> 'w t -> ('loc -> 'w -> unit t) -> ('v -> unit t)
         -> unit t  = fun rloc rmem rreg wmem wreg ->
           fun eiid ->
-            let eiid,(rlocact,_) = rloc eiid in
-            let vloc,vclloc,esloc = Evt.as_singleton rlocact in
-            let eiid,(rmemact,_) = rmem vloc eiid in
-            let eiid,(rregact,_) = rreg eiid in
-            let vrmem,vclrmem,esrmem = Evt.as_singleton rmemact
-            and vrreg,vclrreg,esrreg = Evt.as_singleton rregact in
-            let eiid,(wmemact,_) = wmem vloc vrreg eiid in
-            let eiid,(wregact,_) = wreg vrmem eiid in
-            let (),vclwmem,eswmem = Evt.as_singleton wmemact
-            and (),vclwreg,eswreg = Evt.as_singleton wregact in
+            let eiid,rlocact = rloc eiid in
+            let vloc,vclloc,esloc = Evt.as_singleton_nospecul rlocact in
+            let eiid,rmemact = rmem vloc eiid in
+            let eiid,rregact = rreg eiid in
+            let vrmem,vclrmem,esrmem = Evt.as_singleton_nospecul rmemact
+            and vrreg,vclrreg,esrreg = Evt.as_singleton_nospecul rregact in
+            let eiid,wmemact = wmem vloc vrreg eiid in
+            let eiid,wregact = wreg vrmem eiid in
+            let (),vclwmem,eswmem = Evt.as_singleton_nospecul wmemact
+            and (),vclwreg,eswreg = Evt.as_singleton_nospecul wregact in
             let es =
               E.swp esloc esrmem esrreg eswmem eswreg in
             eiid,(Evt.singleton((),vclloc@vclrmem@vclrreg@vclwmem@vclwreg,es),None)
@@ -291,8 +264,8 @@ and type evt_struct = E.event_structure) =
               assert (E.is_empty_event_structure eseq) ;
               eiid,
               (Evt.singleton
-                (w,vcleq@vlcloc@vlcold@vlcnew@vclrmem@vclwmem,es),
-              None)
+                 (w,vcleq@vlcloc@vlcold@vlcnew@vclrmem@vclwmem,es),
+               None)
 
 
     let linux_cmpexch_no :
@@ -310,8 +283,8 @@ and type evt_struct = E.event_structure) =
               let (),vcleq,_ =  Evt.as_singleton_nospecul eqm in
               eiid,
               (Evt.singleton
-                (w,vcleq@vlcloc@vlcold@vclrmem,es),
-              None)
+                 (w,vcleq@vlcloc@vlcold@vclrmem,es),
+               None)
 
 
 (**************)
@@ -340,8 +313,8 @@ and type evt_struct = E.event_structure) =
       let r = match ropt with Some r -> r | None -> vv in
       eiid,
       (Evt.singleton
-        (r,cleq@cladd@clwmem@clrmem@clloc@cla@clu,es),
-      None)
+         (r,cleq@cladd@clwmem@clrmem@clloc@cla@clu,es),
+       None)
 
 (* Failure *)
     let linux_add_unless_no rloc ru rmem eq ropt eiid =
@@ -406,15 +379,15 @@ and type evt_struct = E.event_structure) =
       let cls = cl_a@cl_cv@cl_nv@cl_rm@cl_wm@cl_wrs@cl_eq  in
       eiid,(Evt.singleton ((),cls,es), None)
 
-let has_no_spec (x,y) = assert(y=None); x
+    let has_no_spec (x,y) = assert(y=None); x
 
 (* Simple alternative *)
     let altT    : 'a t -> 'a t -> 'a t =
       fun m1 m2 eiid ->
         let (eiid, act1) = m1 eiid in
-        let act1 = has_no_spec act1 in 
+        let act1 = has_no_spec act1 in
         let (eiid, act2) = m2 eiid in
-        let act2 = has_no_spec act2 in 
+        let act2 = has_no_spec act2 in
         let un =  Evt.union act1 act2 in
         (eiid, (un,None))
 
@@ -445,92 +418,56 @@ let has_no_spec (x,y) = assert(y=None); x
             let es = E.stu esrd esrea eswea eswm in
             eiid,(Evt.singleton ((),vclrd@vclrea@vclwea@vclwm,es), None)
 
-(* Combine the results *)
-(*    let para_comp check s1 s2 =
-      (fun eiid ->
-        let (eiid_next, s1act) = s1 eiid in
-        Evt.fold (fun (v1,vcl1,es1) (eiid1,acc) ->
-          let (eiid2,s2act) = s2 eiid1 in
-          Evt.fold (fun (v2,vcl2,es2) (eiid3,acc_inner) ->
-            match E.para_comp check es1 es2 with
-            | None -> (eiid3,acc_inner)
-            | Some es -> (eiid3,Evt.add ((v1,v2),vcl2@vcl1,es) acc_inner))
-            s2act (eiid2, acc))
-          s1act (eiid_next,Evt.empty))
+    let lift_combi_opt f c (v1,vcl1,es1) (v2,vcl2,es2) =
+      match c es1 es2 with
+      | None -> None
+      | Some es -> Some (f v1 v2,vcl2@vcl1,es)
 
-    let (>>|) s1 s2 = para_comp true s1 s2
-    and (>>||) s1 s2 = para_comp false s1 s2
-*)
-let lift_combi_opt f c (v1,vcl1,es1) (v2,vcl2,es2) =
-  match c es1 es2 with
-   | None -> None 
-   | Some es -> Some (f v1 v2,vcl2@vcl1,es)
+    let lift_combi f c elt1 elt2 acc =
+      match lift_combi_opt f c elt1 elt2 with
+      | None -> acc
+      | Some s3 -> Evt.add s3 acc
 
-let lift_combi f c elt1 elt2 acc =
-  match lift_combi_opt f c elt1 elt2 with 
-    | None -> acc
-    | Some s3 -> Evt.add s3 acc
+    let do_speculate (v,vcl,es) = (v,vcl,E.do_speculate es)
 
-let do_speculate (v,vcl,es) = (v,vcl,E.do_speculate es)
- 
- (* Combine the results *)
-    let combi f c  
-        = fun s1 s2 -> 
-          fun eiid ->
-            let (eiid,(s1act,spec1)) = s1 eiid in
-            let (eiid,(s2act,spec2)) = s2 eiid in
-            let s3act = 
-              Evt.fold (fun elt1 acc ->
-                Evt.fold (fun elt2 acc ->
-                  lift_combi f c elt1 elt2 acc)
-                  s2act acc)
-                s1act Evt.empty
-            in
-            let spec3 = match spec1,spec2 with
-              | None, None -> None
-              | Some elt1, Some elt2 -> lift_combi_opt f c elt1 elt2       
-              | None, Some elt2 -> let elt1 = Evt.as_singleton s1act 
-                                   in lift_combi_opt f c (do_speculate elt1) elt2
-              | Some elt1, None -> let elt2 = Evt.as_singleton s2act 
-                                   in lift_combi_opt f c elt1 (do_speculate elt2)
-            in 
-            (eiid,(s3act,spec3))
+    (* Combine the results *)
+    let combi f c s1 s2 =
+      fun eiid ->
+        let (eiid,(s1act,spec1)) = s1 eiid in
+        let (eiid,(s2act,spec2)) = s2 eiid in
+        let s3act =
+          Evt.fold (fun elt1 acc ->
+            Evt.fold (fun elt2 acc ->
+              lift_combi f c elt1 elt2 acc)
+              s2act acc)
+            s1act Evt.empty
+        in
+        let spec3 = match spec1,spec2 with
+        | None, None -> None
+        | Some elt1, Some elt2 -> lift_combi_opt f c elt1 elt2
+        | None, Some elt2 -> let elt1 = Evt.as_singleton s1act
+        in lift_combi_opt f c (do_speculate elt1) elt2
+        | Some elt1, None -> let elt2 = Evt.as_singleton s2act
+        in lift_combi_opt f c elt1 (do_speculate elt2)
+        in
+        (eiid,(s3act,spec3))
 
     let (>>|) : 'a t -> 'b t -> ('a * 'b)  t
-      = fun s1 s2 -> combi (fun v1 v2 -> (v1,v2)) (fun es1 es2 -> es1 =|= es2) s1 s2
+        = fun s1 s2 -> combi (fun v1 v2 -> (v1,v2)) (fun es1 es2 -> es1 =|= es2) s1 s2
 
     let (>>::) : 'a t -> 'a list t -> 'a list  t
-(*        = fun s1 s2 ->
-          (fun eiid ->
-            let (eiid_next, s1act) = s1 eiid in
-            Evt.fold (fun (v1,vcl1,es1) (eiid1,acc) ->
-              let (eiid2,s2act) = s2 eiid1 in
-              Evt.fold (fun (v2,vcl2,es2) (eiid3,acc_inner) ->
-                match es1 =|= es2 with
-                | None -> (eiid3,acc_inner)
-                | Some es -> (eiid3,Evt.add (v1 :: v2,vcl2@vcl1,es) acc_inner))
-                s2act (eiid2, acc))
-              s1act (eiid_next,Evt.empty))
-*)
         = fun s1 s2 -> combi (fun v1 v2 -> v1::v2) (fun es1 es2 -> es1 =|= es2) s1 s2
 
 (* Force monad value *)
     let forceT : 'a -> 'b t -> 'a t =
       fun v s eiid ->
-(*        let (eiid,sact) = s eiid in
-        (eiid,Evt.map
-           (fun (_,vcl,es) -> (v,vcl,es))
-           sact)
-*)
-      let (eiid,(sact,spec)) = s eiid in
-      let f = fun (_,vcl,es) -> (v,vcl,es) in 
-      (eiid,(Evt.map f sact, Misc.app_opt f spec))
+        let (eiid,(sact,spec)) = s eiid in
+        let f = fun (_,vcl,es) -> (v,vcl,es) in
+        (eiid,(Evt.map f sact, Misc.app_opt f spec))
 
     let (>>!) s v = forceT v s
-(*      let (>>!!) s f a = forceT (f a) s *)
 
-    let discardT : 'a t -> unit t =
-      fun s eiid -> forceT () s eiid
+    let discardT : 'a t -> unit t = fun s eiid -> forceT () s eiid
 
 
 (* Add a value *)
@@ -540,161 +477,141 @@ let do_speculate (v,vcl,es) = (v,vcl,E.do_speculate es)
           let f = (fun (vin, vcl, es) -> ((v, vin), vcl, es)) in
           (eiid1,(Evt.map f sact, Misc.app_opt f spec))
 
-(* Choosing dependant upon flag,
-   notice that, once determined v is either one or zero *)
-    let choiceT : V.v -> 'a t -> 'a t -> 'a t =
-        fun v l r eiid ->
-          if V.is_var_determined v then
-            if V.is_zero v  then r eiid else l eiid
+(* Choosing dependant upon flag, notice that, once determined v is either one or zero *)
+    let choiceT =
+      fun v l r eiid ->
+        if V.is_var_determined v then
+          if V.is_zero v  then r eiid else l eiid
+        else
+          let (eiid, (lact,lspec)) = l eiid in
+          assert (lspec = None);
+          let (eiid, (ract,rspec)) = r eiid in
+          assert (rspec = None);
+          let fl = (fun (r,cs,es) ->
+            (r,(VC.Assign (v,VC.Atom V.one)) :: cs,es)) in
+          let fr = (fun (r,cs,es) ->
+            (r,(VC.Assign (v,VC.Atom V.zero)) :: cs, es)) in
+          let un =
+            Evt.union
+              (Evt.map fl lact)
+              (Evt.map fr ract) in
+          (eiid, (un, None))
+
+    let as_speculated (act,spec) = match spec with
+    | Some spec -> spec
+    | None -> (fun (v,cs,es) -> v,cs,E.do_speculate es) (Evt.as_singleton act)
+
+    let combi_acts ok no fapp =
+      let _,cs_spec,es_spec =  as_speculated no in
+      let act,_ = ok in
+      Evt.map (fun (v,cs,es) -> v,fapp cs@cs_spec,Misc.as_some(es =|= es_spec)) act
+
+    let combi_spec p1 p2 =
+      let v,cs1,es1 = as_speculated p1
+      and _,cs2,es2 = as_speculated p2 in
+      Some (v,cs1@cs2,Misc.as_some(es1 =|= es2))
+
+    let speculT  : V.v -> 'a code -> 'a code -> 'a code =
+      fun v l r eiid ->
+        let eiid,pl = l eiid in
+        let eiid,pr = r eiid in
+        if V.is_var_determined v then begin
+          if V.is_zero v then
+            eiid,(combi_acts pr pl (fun cs -> cs),combi_spec pl pr)
           else
-            let (eiid, (lact,lspec)) = l eiid in
-            assert (lspec = None);
-            let (eiid, (ract,rspec)) = r eiid in
-            assert (rspec = None);
-            let fl = (fun (r,cs,es) ->
-                      (r,(VC.Assign (v,VC.Atom V.one)) :: cs,es)) in
-            let fr = (fun (r,cs,es) ->
-                       (r,(VC.Assign (v,VC.Atom V.zero)) :: cs, es)) in 
-            let un =
-              Evt.union
-                (Evt.map fl lact)
-                (Evt.map fr ract) in
-            (eiid, (un, None))
-  
-  let as_speculated (act,spec) =
-          match spec with
-           | Some spec -> spec
-           | None -> (fun (v,cs,es) -> v,cs,E.do_speculate es) (Evt.as_singleton act)  
-  
-  let combi_acts ok no fapp =
-     let _,cs_spec,es_spec =  as_speculated no in
-     let act,_ = ok in
-     Evt.map (fun (v,cs,es) -> v,fapp cs@cs_spec,Misc.as_some(es =|= es_spec)) act
-  
-  let combi_spec p1 p2 =
-    let v,cs1,es1 = as_speculated p1
-    and _,cs2,es2 = as_speculated p2 in
-    Some (v,cs1@cs2,Misc.as_some(es1 =|= es2))
-  
-  let speculT  : V.v -> 'a code -> 'a code -> 'a code = 
-    fun v l r eiid ->
-    let eiid,pl = l eiid in
-    let eiid,pr = r eiid in
-    if V.is_var_determined v then begin
-      if V.is_zero v then
-        eiid,(combi_acts pr pl (fun cs -> cs),combi_spec pl pr)
-      else
-        eiid,(combi_acts pl pr (fun cs -> cs),combi_spec pr pl)
-    end else
-      let act =
-        Evt.union
-          (combi_acts pr pl (fun cs -> VC.Assign (v,VC.Atom V.zero)::cs))
-          (combi_acts pl pr (fun cs -> VC.Assign (v,VC.Atom V.one)::cs))
-      and spec = combi_spec pr pl in
-      eiid,(act,spec)
+            eiid,(combi_acts pl pr (fun cs -> cs),combi_spec pr pl)
+        end else
+          let act =
+            Evt.union
+              (combi_acts pr pl (fun cs -> VC.Assign (v,VC.Atom V.zero)::cs))
+              (combi_acts pl pr (fun cs -> VC.Assign (v,VC.Atom V.one)::cs))
+          and spec = combi_spec pr pl in
+          eiid,(act,spec)
+
+    let condJumpT = if do_spec then speculT else choiceT
 
     let (|*|) : unit code -> unit code -> unit code
         = fun s1 s2 ->
-           fun (poi,eiid) ->
-             let ((_,eiid), (s1act,spec1)) = s1 (poi,eiid) in
-             let ((_,eiid), (s2act,spec2)) = s2 (poi,eiid) in
-             let s1lst = Evt.elements s1act in
-             let s2lst = Evt.elements s2act in
+          fun (poi,eiid) ->
+            let ((_,eiid), (s1act,spec1)) = s1 (poi,eiid) in
+            let ((_,eiid), (s2act,spec2)) = s2 (poi,eiid) in
+            let s1lst = Evt.elements s1act in
+            let s2lst = Evt.elements s2act in
             let s3act =
-               List.fold_left
-                 (fun acc (_,vcla,evta) ->
-                   List.fold_left
-                     (fun acc (_,vclb,evtb) ->
-(*                      lift_combi (fun v1 v2 -> ()) (fun evta evtb -> evta +|+ evtb) evta evtb acc *)
-                       match evta +|+ evtb with
-                       | Some evtc -> Evt.add ((), vcla@vclb, evtc) acc
-                       | None      -> acc  
-                  )
-                     acc s2lst
-                 )
-                 Evt.empty s1lst in
+              List.fold_left
+                (fun acc (_,vcla,evta) ->
+                  List.fold_left
+                    (fun acc (_,vclb,evtb) ->
+                      match evta +|+ evtb with
+                      | Some evtc -> Evt.add ((), vcla@vclb, evtc) acc
+                      | None      -> acc)
+                    acc s2lst)
+                Evt.empty s1lst in
             let spec3 = None in
-            let pair = begin 
-                       if Evt.is_empty s2act then (s1act,spec1)
-                       else if Evt.is_empty s1act then (s2act,spec2)
-                       else (s3act,spec3)
-                       end
+            let pair = begin
+              if Evt.is_empty s2act then (s1act,spec1)
+              else if Evt.is_empty s1act then (s2act,spec2)
+              else (s3act,spec3)
+            end
             in
             ((poi,eiid),pair)
 
 (* For combining instruction + next instructions.
    Notice: no causality from s to f v1 *)
 
- let other_combi (_,vcl1,es1) (v2,vcl2,es2) =
-   let es = E.inst_code_comp es1 es2 in 
-   (v2,vcl2@vcl1,es)
- (*
-     type 'a t = int -> int * ('a Evt.t * 'a Evt.elt option) (* Threading through eiid *)
-     type 'a code = (int * int) -> (int * int) * ('a Evt.t * 'a Evt.elt option) (* Threading through eiid *)
- *)
- 
- 
-     let cseq : 'a t -> ('a -> 'b t) -> 'b t
-     = fun s f -> (*fun eiid -> let (eiid_next, sact) = s eiid in
-       Evt.fold
-         (fun (v1, vcl1, es1) (eiid1,acc) ->
-           let b_set = f v1 in
-           let eiid_b,b_setact = b_set eiid1 in
-           Evt.fold
-             (fun (v2,vcl2,es2) (eiid2,acc_inner) ->
-               match es1 +|+ es2 with
-               | None -> eiid2, acc_inner
-               | Some es ->
-                   eiid2,Evt.add (v2,vcl2@vcl1,es) acc_inner)
-             b_setact (eiid_b,acc))
-         sact (eiid_next,Evt.empty)*) data_comp (+|+) s f 
- 
- type poi = int
- 
-     let (>>>) : (poi -> (poi * 'a) t) -> ('a -> 'b code) -> 'b code
- (*      = fun s f -> data_comp (+|+) s f *)
-     = fun s f -> fun (poi,eiid) ->
-       let (eiid, (sact,spec)) = s poi eiid in
-       let ((poi,v1),_,_) = Evt.wrap_check (fun (v1,_,_) (v2,_,_) -> v1 = v2) sact (*assert false*) in 
-       let (poi_b,eiid_b),(b_setact,bspec) = f v1 (poi,eiid) in
-       let k = Evt.fold
-         (fun elt1 k ->
-             Evt.fold
-               (fun elt2 k ->
-                 let to_add = other_combi elt1 elt2 in
-                 Evt.add to_add k)
-               b_setact k) 
-           sact Evt.empty
-       in  
-       let spec = match spec,bspec with
+    let other_combi (_,vcl1,es1) (v2,vcl2,es2) =
+      let es = E.inst_code_comp es1 es2 in
+      (v2,vcl2@vcl1,es)
+
+    let cseq : 'a t -> ('a -> 'b t) -> 'b t
+        = fun s f ->  data_comp (+|+) s f
+
+    type poi = int
+
+    let (>>>) : (poi -> (poi * 'a) t) -> ('a -> 'b code) -> 'b code
+        (*      = fun s f -> data_comp (+|+) s f *)
+        = fun s f -> fun (poi,eiid) ->
+          let (eiid, (sact,spec)) = s poi eiid in
+          let ((poi,v1),_,_) =
+            Evt.wrap_check (fun (v1,_,_) (v2,_,_) -> v1 = v2) sact in
+          let (poi_b,eiid_b),(b_setact,bspec) = f v1 (poi,eiid) in
+          let k = Evt.fold
+              (fun elt1 k ->
+                Evt.fold
+                  (fun elt2 k ->
+                    let to_add = other_combi elt1 elt2 in
+                    Evt.add to_add k)
+                  b_setact k)
+              sact Evt.empty
+          in
+          let spec = match spec,bspec with
           | None, None -> None
           | None, Some elt2 ->
-            begin 
-              match (Evt.give_singleton sact) with
-              | None -> Some elt2 
-              | Some se ->
-                 Some (other_combi (do_speculate se) elt2)
-            end    
+              begin
+                match (Evt.give_singleton sact) with
+                | None -> Some elt2
+                | Some se ->
+                    Some (other_combi (do_speculate se) elt2)
+              end
           | Some _, _ -> assert false
-       in
-       ((poi_b,eiid_b),(k,spec))
+          in
+          ((poi_b,eiid_b),(k,spec))
 
-(* For combining conditions and branches of an if,
-   as above + instruction dependencies *)
+(* For combining conditions and branches of an if, as above + instruction dependencies *)
     let (>>>>) s f = fun eiid ->
-         let (eiid,(sact,spec)) = s eiid in
-         assert(spec = None);
-         let eiid,bfinal=
-         Evt.fold (fun (v1, vcl1, es1) (eiid1,acc) ->
-           let b_set = f v1 in
-           let (eiid_b,(b_setact,bspec)) = b_set eiid1 in
-           assert (bspec = None);
-             Evt.fold (fun (v2,vcl2,es2) (eiid2,acc) ->
-               let es = E.cond_comp es1 es2 in
-               eiid2,Evt.add (v2,vcl2@vcl1,es) acc)
-               b_setact (eiid_b,acc))
-           sact (eiid,Evt.empty)
-           in eiid,(bfinal,None)
+      let (eiid,(sact,spec)) = s eiid in
+      assert(spec = None);
+      let eiid,bfinal=
+        Evt.fold (fun (v1, vcl1, es1) (eiid1,acc) ->
+          let b_set = f v1 in
+          let (eiid_b,(b_setact,bspec)) = b_set eiid1 in
+          assert (bspec = None);
+          Evt.fold (fun (v2,vcl2,es2) (eiid2,acc) ->
+            let es = E.cond_comp es1 es2 in
+            eiid2,Evt.add (v2,vcl2@vcl1,es) acc)
+            b_setact (eiid_b,acc))
+          sact (eiid,Evt.empty)
+      in eiid,(bfinal,None)
 
 (* trivial event_structure with just one event
    and no relation *)
@@ -713,60 +630,60 @@ let do_speculate (v,vcl,es) = (v,vcl,E.do_speculate es)
     let read_loc is_data mk_action loc ii =
       fun eiid ->
         V.fold_over_vals
-           (fun v (eiid1,(acc_inner,_)) ->
+          (fun v (eiid1,(acc_inner,_)) ->
             (eiid1+1,
              (Evt.add
-               (v, [],
-                trivial_event_structure is_data
-                  {E.eiid = eiid1 ;
-                   E.iiid = Some ii;
-                   E.action = mk_action loc v })
-               acc_inner, None))) (eiid,(Evt.empty,None))
+                (v, [],
+                 trivial_event_structure is_data
+                   {E.eiid = eiid1 ;
+                    E.iiid = Some ii;
+                    E.action = mk_action loc v })
+                acc_inner, None))) (eiid,(Evt.empty,None))
 
     let mk_singleton_es a ii =
       fun eiid ->
         (eiid+1,
          (Evt.singleton
-           ((), [],
-            trivial_event_structure false
-              {E.eiid = eiid ;
-               E.iiid = Some ii;
-               E.action = a }),None))
+            ((), [],
+             trivial_event_structure false
+               {E.eiid = eiid ;
+                E.iiid = Some ii;
+                E.action = a }),None))
 
     let mk_singleton_es_success =
       fun a ii ->
         fun eiid ->
           (eiid+1,
            (Evt.singleton
-             ((), [],
-              let str =
-                trivial_event_structure false
-                  {E.eiid = eiid ;
-                   E.iiid = Some ii;
-                   E.action = a } in
-              { str with E.success_ports=str.E.events; }),None))
+              ((), [],
+               let str =
+                 trivial_event_structure false
+                   {E.eiid = eiid ;
+                    E.iiid = Some ii;
+                    E.action = a } in
+               { str with E.success_ports=str.E.events; }),None))
 
     let mk_fence a ii =
       fun eiid ->
         (eiid+1,
          (Evt.singleton
-           ((), [],
-            let es =
-              trivial_event_structure false
-                {E.eiid = eiid ;
-                 E.iiid = Some ii;
-                 E.action = a } in
+            ((), [],
+             let es =
+               trivial_event_structure false
+                 {E.eiid = eiid ;
+                  E.iiid = Some ii;
+                  E.action = a } in
              { es with E.output = Some E.EventSet.empty; }), None))
 
     let mk_singleton_es_eq a eqs ii =
       fun eiid ->
         (eiid+1,
          (Evt.singleton
-           ((), eqs,
-            trivial_event_structure false
-              {E.eiid = eiid ;
-               E.iiid = Some ii;
-               E.action = a }),None))
+            ((), eqs,
+             trivial_event_structure false
+               {E.eiid = eiid ;
+                E.iiid = Some ii;
+                E.action = a }),None))
 
 
     let any_op mk_v mk_c =
@@ -775,11 +692,11 @@ let do_speculate (v,vcl,es) = (v,vcl,E.do_speculate es)
         begin try
           let v = mk_v () in
           (Evt.singleton
-            (v, [], E.empty_event_structure),None)
+             (v, [], E.empty_event_structure),None)
         with V.Undetermined ->
           let v = V.fresh_var () in
           (Evt.singleton
-            (v, [VC.Assign (v, mk_c ())], E.empty_event_structure), None)
+             (v, [VC.Assign (v, mk_c ())], E.empty_event_structure), None)
         end)
 
     let op1 op v1 =
@@ -806,8 +723,8 @@ let do_speculate (v,vcl,es) = (v,vcl,E.do_speculate es)
       fun eiid ->
         eiid,
         (Evt.singleton
-          ((), [(VC.Assign (v1,VC.Atom v2))],
-           E.empty_event_structure),None)
+           ((), [(VC.Assign (v1,VC.Atom v2))],
+            E.empty_event_structure),None)
 
 
 (**************)
@@ -1007,12 +924,12 @@ let do_speculate (v,vcl,es) = (v,vcl,E.do_speculate es)
       let do_initwrites =
         if A.is_mixed then initwrites_mixed else initwrites_non_mixed
 
-    let t2code : 'a t -> 'a code
-      = fun m -> fun (poi,eiid) ->
-        let eiid,r = m eiid in
-        ((poi,eiid),r)
+      let t2code : 'a t -> 'a code
+          = fun m -> fun (poi,eiid) ->
+            let eiid,r = m eiid in
+            ((poi,eiid),r)
 
-    let initwrites env size_env = t2code (do_initwrites env size_env)
+      let initwrites env size_env = t2code (do_initwrites env size_env)
 
     end
 
@@ -1031,23 +948,23 @@ let do_speculate (v,vcl,es) = (v,vcl,E.do_speculate es)
             let vstored = V.fresh_var () in
             (eiid1+1,
              (Evt.add
-               (v, [VC.Assign (vstored,VC.Binop (op,v,arg))],
-                trivial_event_structure false
-                  {E.eiid = eiid1 ;
-                   E.iiid = Some ii;
-                   E.action = mk_action v vstored})
-               acc_inner,None))) (eiid,(Evt.empty,None))
+                (v, [VC.Assign (vstored,VC.Binop (op,v,arg))],
+                 trivial_event_structure false
+                   {E.eiid = eiid1 ;
+                    E.iiid = Some ii;
+                    E.action = mk_action v vstored})
+                acc_inner,None))) (eiid,(Evt.empty,None))
 
     let tooFar _msg = zeroT
 (*      fun eiid ->
         (eiid+1,
-         Evt.singleton
-           ((), [],
-            trivial_event_structure false
-              {E.eiid = eiid ;
-               E.iiid = None;
-               E.action = E.Act.toofar }))
-*)
+        Evt.singleton
+        ((), [],
+        trivial_event_structure false
+        {E.eiid = eiid ;
+        E.iiid = None;
+        E.action = E.Act.toofar }))
+ *)
     let tooFarcode _msg = zerocodeT
 
     type evt_struct = E.event_structure

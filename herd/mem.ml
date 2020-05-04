@@ -133,9 +133,9 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     let dbg = C.debug.Debug_herd.mem
     let mixed = C.variant Variant.Mixed
     let memtag = C.variant Variant.MemTag
- (* default is checking *)
+        (* default is checking *)
     let check_mixed =  not (C.variant Variant.DontCheckMixed)
-    let specul = true (* TODO VARIANT *)
+    let do_spec = C.variant Variant.Speculate
 
 (*****************************)
 (* Event structure generator *)
@@ -182,8 +182,6 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     let (|*|) = EM.(|*|)
     let (>>>) = EM.(>>>)
 
-
-
     module Imap =
       Map.Make
         (struct type t = string let compare = String.compare end)
@@ -196,7 +194,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         {
          event_structures : (int * S.M.VC.cnstrnts * S.event_structure) list ;
          loop_present : bool ;
-        }
+       }
 
 (* All locations from init state, a bit contrieved *)
     let get_all_locs_init init =
@@ -257,11 +255,11 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
       let instr2labels =
         let one_label lbl code res = match code with
-          | [] -> res (* Luc, it is legal to have nothing after label *)
+        | [] -> res (* Luc, it is legal to have nothing after label *)
 (*            assert false (*jade: case where there's nothing after the label*) *)
-          | (addr,_)::_ ->
-              let ins_lbls = IntMap.safe_find Label.Set.empty addr res in
-              IntMap.add addr (Label.Set.add lbl ins_lbls) res in
+        | (addr,_)::_ ->
+            let ins_lbls = IntMap.safe_find Label.Set.empty addr res in
+            IntMap.add addr (Label.Set.add lbl ins_lbls) res in
         A.LabelMap.fold one_label p IntMap.empty in
 
       let labels_of_instr i =
@@ -273,37 +271,37 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         x+1,seen in
 
       let fetch_code seen addr_jmp lbl =
-      let r =
-        let tgt =
-          try A.LabelMap.find lbl p
-          with Not_found ->
-            Warn.user_error
-              "Segmentation fault (kidding, label %s not found)" lbl in
-        if is_back_jump addr_jmp tgt then
-          let x,seen = see seen lbl in
-          if x > C.unroll then begin
-            W.warn "loop unrolling limit reached: %s" lbl;
-            None
-          end else
+        let r =
+          let tgt =
+            try A.LabelMap.find lbl p
+            with Not_found ->
+              Warn.user_error
+                "Segmentation fault (kidding, label %s not found)" lbl in
+          if is_back_jump addr_jmp tgt then
+            let x,seen = see seen lbl in
+            if x > C.unroll then begin
+              W.warn "loop unrolling limit reached: %s" lbl;
+              None
+            end else
+              Some (tgt,seen)
+          else
             Some (tgt,seen)
-        else
-          Some (tgt,seen)
         in if dbg then eprintf "fetch: %s %s\n" lbl (match r with None -> "None" | Some _ -> "Some"); r in
 
-       let rec add_next_instr proc seen addr inst nexts =
-         let wrap poi =
-           (let ii =
-             { A.program_order_index = poi;
-               proc = proc; inst = inst; unroll_count = 0;
-               labels = labels_of_instr addr; }
-             in SM.build_semantics ii) in
-            wrap >>> fun branch ->
-           next_instr proc seen addr nexts branch
+      let rec add_next_instr proc seen addr inst nexts =
+        let wrap poi =
+          (let ii =
+            { A.program_order_index = poi;
+              proc = proc; inst = inst; unroll_count = 0;
+              labels = labels_of_instr addr; }
+          in SM.build_semantics ii) in
+        wrap >>> fun branch ->
+          next_instr proc seen addr nexts branch
 
-       and add_code proc seen nexts = match nexts with
-       | [] -> EM.unitcodeT ()
-       | (addr,inst)::nexts ->
-           add_next_instr proc seen addr inst nexts
+      and add_code proc seen nexts = match nexts with
+      | [] -> EM.unitcodeT ()
+      | (addr,inst)::nexts ->
+          add_next_instr proc seen addr inst nexts
 
       and add_lbl proc seen addr_jmp lbl =
         match fetch_code seen addr_jmp lbl with
@@ -316,9 +314,10 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       | S.B.Jump lbl ->
           add_lbl proc seen addr lbl
       | S.B.CondJump (v,lbl) ->
-          EM.speculT v
+          EM.condJumpT v
             (add_lbl proc seen addr lbl)
             (add_code proc seen nexts) in
+
       let jump_start proc code =
         add_code proc Imap.empty code in
 
@@ -326,11 +325,11 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         let evts_proc = jump_start proc code in
         evts_proc |*| evts in
 
-    let add_inits env size_env =
-      if C.initwrites then
-        let module MI = EM.Mixed(C) in
-        MI.initwrites env size_env
-      else EM.zerocodeT in
+      let add_inits env size_env =
+        if C.initwrites then
+          let module MI = EM.Mixed(C) in
+          MI.initwrites env size_env
+        else EM.zerocodeT in
 
       let set_of_all_instr_events =
         List.fold_right
@@ -634,7 +633,7 @@ let match_reg_events es =
           m
       end ;
 (* Check for loads that cannot feed on some write *)
-      if not specul then begin
+      if not do_spec then begin
         List.iter
         (fun (load,stores) -> match stores with
         | [] ->
