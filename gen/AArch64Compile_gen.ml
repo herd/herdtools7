@@ -235,23 +235,21 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let sum_addr = do_sum_addr vloc
 
-    let stlr_mixed sz o st r1 r2 =
-      let open MachSize in
-      let rA,cs_sum,st = sumi_addr st r2 o in
-      let str = match sz with
-      | Byte  -> I_STLRBH (B,r1,rA)
-      | Short -> I_STLRBH (H,r1,rA)
-      | Word -> I_STLR (V32,r1,rA)
-      | Quad -> I_STLR (V64,r1,rA) in
-      cs_sum@[str],st
-
-    let stlr_mixed_idx sz r1 r2 idx  =
+    let stlr_of_sz sz r1 r2 =
       let open MachSize in
       match sz with
-      | Byte -> I_STRBH (B,r1,r2,RV (V64,idx))
-      | Short -> I_STRBH (H,r1,r2,RV (V64,idx))
-      | Word -> I_STR (V32,r1,r2,RV (V64,idx))
-      | Quad -> I_STR (V64,r1,r2,RV (V64,idx))
+      | Byte  -> I_STLRBH (B,r1,r2)
+      | Short -> I_STLRBH (H,r1,r2)
+      | Word -> I_STLR (V32,r1,r2)
+      | Quad -> I_STLR (V64,r1,r2)
+
+    let stlr_mixed sz o st r1 r2 =
+      let rA,cs_sum,st = sumi_addr st r2 o in
+      cs_sum@[stlr_of_sz sz r1 rA],st
+
+    let stlr_mixed_idx sz st r1 r2 idx  =
+      let rA,cs_sum,st = sum_addr st r2 idx in
+      cs_sum@[stlr_of_sz sz r1 rA],st
 
     let ldar_mixed t sz o st r1 r2 =
       let rA,cs,st = sumi_addr st r2 o in
@@ -832,10 +830,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 (struct
                   let store = stlr_mixed sz o
                   let store_idx st r1 r2 idx =
-                    let cs = [stlr_mixed_idx sz r1 r2 idx] in
+                    let cs,st = stlr_mixed_idx sz st r1 r2 idx in
                     let cs = match o with
                     | 0 -> cs
-                    | _ -> addi_64 idx idx o::cs in
+                    | _ -> addi idx idx o::cs in
                     cs,st
                 end) in
             let init,cs,st = S.emit_store st p init loc e.v in
@@ -1084,10 +1082,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   (struct
                     let store = stlr_mixed sz o
                     let store_idx st r1 r2 idx =
-                      let cs = [stlr_mixed_idx sz r1 r2 idx] in
+                      let cs,st = stlr_mixed_idx sz st r1 r2 idx in
                       let cs = match o with
                       | 0 -> cs
-                      | _ -> addi_64 idx idx o::cs in
+                      | _ -> addi idx idx o::cs in
                       cs,st
                   end) in
               let init,cs,st = S.emit_store_idx st p init loc r2 e.v in
