@@ -27,6 +27,7 @@ module Make
 
     let mixed = AArch64.is_mixed
     let memtag = C.variant Variant.MemTag
+    let is_deps = C.variant Variant.Deps
 
 (* Barrier pretty print *)
     let barriers =
@@ -508,9 +509,11 @@ module Make
             let mask = match op with
             | Cpy|Neg -> fun m -> m
             | Inc|Inv -> mask32 var in
+            let if_deps_commit_bcc ii  =
+              if is_deps then commit_bcc ii else M.unitT () in
             if C.variant Variant.WeakPredicated then
               read_reg_ord NZP ii >>= tr_cond c >>= fun v ->
-                commit_bcc ii >>= fun () ->
+                if_deps_commit_bcc ii >>= fun () ->
                 M.choiceT v
                   (read_reg_data sz r2 ii >>= fun v -> write_reg r1 v ii)
                   (read_reg_data sz r3 ii >>=
@@ -520,7 +523,7 @@ module Make
               begin
                 (read_reg_ord NZP ii >>= tr_cond c) >>|  read_reg_data sz r2 ii >>| read_reg_data sz r3 ii
               end >>= fun ((v,v2),v3) ->
-                commit_bcc ii >>= fun () ->
+                if_deps_commit_bcc ii >>= fun () ->
                 M.choiceT v
                   (write_reg r1 v2 ii)
                   (csel_op op v3 >>= mask (fun v ->  write_reg r1 v ii))
