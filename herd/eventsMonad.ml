@@ -40,7 +40,7 @@ and type evt_struct = E.event_structure) =
         (A)
 
     let dbg = C.debug.Debug_herd.mem
-    let do_spec = C.variant Variant.Speculate
+    let do_deps = C.variant Variant.Deps
 
 (* LM Use lists for polymorphism.
    It is assumed that list elts are pairwise distinct.
@@ -528,7 +528,7 @@ and type evt_struct = E.event_structure) =
           and spec = combi_spec pr pl in
           eiid,(act,spec)
 
-    let condJumpT = if do_spec then speculT else choiceT
+    let condJumpT = if do_deps then speculT else choiceT
 
     let (|*|) : unit code -> unit code -> unit code
         = fun s1 s2 ->

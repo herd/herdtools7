@@ -135,7 +135,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     let memtag = C.variant Variant.MemTag
         (* default is checking *)
     let check_mixed =  not (C.variant Variant.DontCheckMixed)
-    let do_spec = C.variant Variant.Speculate
+    let do_deps = C.variant Variant.Deps
 
 (*****************************)
 (* Event structure generator *)
@@ -348,7 +348,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       | (vcl,es)::xs ->
           let es = relabel es in
           let es =
-            { es with E.procs = procs; E.po = if do_spec then transitive_po es else es.E.po } in
+            { es with E.procs = procs; E.po = if do_deps then transitive_po es else es.E.po } in
           (i,vcl,es)::index xs (i+1) in
       let r = EM.get_output set_of_all_instr_events  in
       { event_structures=index r 0; loop_present = !tooFar; }
@@ -634,7 +634,7 @@ let match_reg_events es =
           m
       end ;
 (* Check for loads that cannot feed on some write *)
-      if not do_spec then begin
+      if not do_deps then begin
         List.iter
         (fun (load,stores) -> match stores with
         | [] ->

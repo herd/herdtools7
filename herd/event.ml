@@ -369,7 +369,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     module A = AI
     module V = AI.V
 
-    let do_spec = C.variant Variant.Speculate
+    let do_deps = C.variant Variant.Deps
 
     type eiid = int
 
@@ -813,7 +813,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         speculated = EventSet.union es1.speculated es2.speculated;
         po =
         begin
-          if do_spec then
+          if do_deps then
             let r1 = es1.events in
             if EventSet.is_empty r1 then es2.po
             else
@@ -833,14 +833,14 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; }
 
     let po_union =
-      if do_spec then
+      if do_deps then
         fun es1 es2 ->
           let r1,e1 = es1.po and r2,e2 = es2.po in
           (EventSet.union r1 r2, EventRel.union e1 e2)
       else fun es _ -> es.po
 
     let speculated_union =
-      if do_spec then
+      if do_deps then
         fun es1 es2 ->
           EventSet.union es1.speculated es2.speculated;
       else
@@ -916,7 +916,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let (=**=) = check_disjoint (control_comp minimals)
 
     let po_union4 =
-      if do_spec then
+      if do_deps then
         fun es1 es2 es3 es4 ->
           let r1,e1 = es1.po and r2,e2 = es2.po
           and r3,e3 = es3.po and r4,e4 = es4.po in
@@ -927,7 +927,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       Some (control_comp (minimals_avoid aset) es1 es2)
 
     let po_union3 =
-      if do_spec then
+      if do_deps then
         fun es1 es2 es3 ->
           let r1,e1 = es1.po and r2,e2 = es2.po and r3,e3 = es3.po in
           (EventSet.union3 r1 r2 r3, EventRel.union3 e1 e2 e3)
@@ -939,7 +939,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       { procs= [];
         events = EventSet.union3 a.events rtag.events commit.events;
         speculated =
-        if do_spec then
+        if do_deps then
           EventSet.union3 a.speculated rtag.speculated commit.speculated
         else a.speculated;
         po = po_union3 a rtag commit;
@@ -975,7 +975,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       { procs = [] ;
         events = EventSet.union4 rs1.events rs2.events ws1.events ws2.events;
         speculated =
-        if do_spec then
+        if do_deps then
           EventSet.union4
             rs1.speculated rs2.speculated
             ws1.speculated ws2.speculated
@@ -1019,7 +1019,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         events = EventSet.union5
           rloc.events rmem.events rreg.events wmem.events wreg.events;
         speculated =
-        if do_spec then
+        if do_deps then
           EventSet.union5
             rloc.speculated rmem.speculated rreg.speculated
             wmem.speculated wreg.speculated
@@ -1087,7 +1087,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         events =
         EventSet.union4 re.events rloc.events rmem.events wmem.events;
         speculated =
-        if do_spec then
+        if do_deps then
           EventSet.union4
             re.speculated rloc.speculated rmem.speculated wmem.speculated
         else
@@ -1130,7 +1130,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         events =
         EventSet.union4 re.events rloc.events rmem.events wmem.events;
         speculated =
-        if do_spec then
+        if do_deps then
           EventSet.union4
             re.speculated rloc.speculated rmem.speculated wmem.speculated
         else
@@ -1178,7 +1178,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         EventSet.union5 rloc.events rold.events rnew.events
           rmem.events wmem.events;
         speculated =
-        if do_spec then
+        if do_deps then
           EventSet.union5
             rloc.speculated rold.speculated rnew.speculated
             rmem.speculated wmem.speculated
@@ -1230,7 +1230,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         events =
         EventSet.union3 rloc.events rold.events rmem.events;
         speculated =
-        if do_spec then
+        if do_deps then
           EventSet.union3 rloc.speculated rold.speculated rmem.speculated
         else
           rloc.speculated;
@@ -1268,7 +1268,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       { procs = [];
         events = EventSet.union5 loc.events a.events u.events rmem.events wmem.events;
         speculated =
-        if do_spec then
+        if do_deps then
           EventSet.union5
             loc.speculated a.speculated u.speculated
             rmem.speculated wmem.speculated
@@ -1320,7 +1320,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         events =
         EventSet.union3 loc.events u.events rmem.events;
         speculated =
-        if do_spec then
+        if do_deps then
           EventSet.union3 loc.speculated u.speculated rmem.speculated
         else
           loc.speculated;
@@ -1349,7 +1349,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       }
 
     let po_union6 =
-      if do_spec then
+      if do_deps then
         fun es1 es2 es3 es4 es5 es6 ->
           let r1,e1 = es1.po and r2,e2 = es2.po and r3,e3 = es3.po
           and r4,e4 = es4.po and r5,e5 = es5.po and r6,e6 = es6.po in
@@ -1384,7 +1384,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           (EventSet.union3 resa.events data.events addr.events)
           (EventSet.union3 wres.events wresult.events wmem.events);
         speculated =
-        if do_spec then
+        if do_deps then
           EventSet.union
             (EventSet.union3 resa.speculated data.speculated addr.speculated)
             (EventSet.union3 wres.speculated wresult.speculated wmem.speculated)
@@ -1450,7 +1450,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           rn.events rs.events rt.events
           wrs.events rm.events wm.events ;
         speculated =
-        if do_spec then
+        if do_deps then
           EventSet.union6
             rn.speculated rs.speculated rt.speculated
             wrs.speculated rm.speculated wm.speculated
@@ -1517,7 +1517,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       { procs = [] ;
         events = EventSet.union4 rD.events rEA.events wEA.events wM.events;
         speculated =
-        if do_spec then
+        if do_deps then
           EventSet.union4
             rD.speculated rEA.speculated wEA.speculated wM.speculated
         else

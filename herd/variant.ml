@@ -38,14 +38,14 @@ type t =
   | TagCheckPrecise
   | TagCheckUnprecise
   | TooFar
-(* Speculatiion *)
-  | Speculate
+(* Branch speculation+ cat computation of dependencies *)
+  | Deps
 
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
    "fullscdepend";"splittedrmw";"switchdepscwrite";"switchdepscresult";"lrscdiffok";
    "mixed";"dontcheckmixed";"weakpredicated"; "memtag";
-   "tagcheckprecise"; "tagcheckunprecise"; "toofar"; "speculate"; ]
+   "tagcheckprecise"; "tagcheckunprecise"; "toofar"; "deps"; ]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -66,7 +66,7 @@ let parse s = match Misc.lowercase s with
 | "tagcheckprecise"|"precise" -> Some TagCheckPrecise
 | "tagcheckunprecise"|"unprecise" -> Some TagCheckUnprecise
 | "toofar" -> Some TooFar
-| "speculate"|"spec" -> Some Speculate
+| "deps" -> Some Deps
 | _ -> None
 
 let pp = function
@@ -88,7 +88,7 @@ let pp = function
   | TagCheckPrecise -> "TagCheckPrecise"
   | TagCheckUnprecise -> "TagCheckUnprecise"
   | TooFar -> "TooFar"
-  | Speculate -> "Speculate"
+  | Deps -> "Deps"
 
 let compare = compare
 
