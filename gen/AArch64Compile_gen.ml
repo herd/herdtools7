@@ -777,7 +777,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               LOAD
                 (struct
                   let load = ldar_mixed AA sz o
-                  let load_idx = ldar_mixed_idx AQ sz o
+                  let load_idx = ldar_mixed_idx AA sz o
                 end) in
             let r,init,cs,st = L.emit_load st p init loc in
             Some r,init,cs,st
