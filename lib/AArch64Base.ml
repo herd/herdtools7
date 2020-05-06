@@ -390,16 +390,16 @@ type 'k s
   = S_LSL of 'k
   | S_LSR of 'k
   | S_ASR of 'k
-  | S_SXTW of 'k
-  | S_UXTW of 'k
+  | S_SXTW
+  | S_UXTW
   | S_NOEXT
 
 let pp_barrel_shift s pp_k = match s with
   | S_LSL(k) -> "LSL "  ^ (pp_k k)
   | S_LSR(k) -> "LSR "  ^ (pp_k k)
   | S_ASR(k) -> "ASR "  ^ (pp_k k)
-  | S_SXTW(k)-> "SXTW " ^ (pp_k k)
-  | S_UXTW(k)-> "UXTW " ^ (pp_k k)
+  | S_SXTW -> "SXTW"
+  | S_UXTW -> "UXTW"
   | S_NOEXT  -> ""
 
 let pp_imm n = "#" ^ string_of_int n
@@ -494,15 +494,15 @@ let pp_vreg v r = match v with
 
 
 let pp_op = function
-  | ADD  -> "ADD"
+  | ADD -> "ADD"
   | ADDS -> "ADDS"
-  | EOR  -> "EOR"
-  | ORR  -> "ORR"
-  | SUB  -> "SUBS"
+  | EOR -> "EOR"
+  | ORR -> "ORR"
+  | SUB -> "SUBS"
   | SUBS -> "SUBS"
   | AND  -> "AND"
   | ANDS -> "ANDS"
-  | ASR  -> "ASR"
+  | ASR -> "ASR"
 
 let do_pp_instruction m =
   let pp_rrr memo v rt rn rm =
@@ -654,11 +654,11 @@ let do_pp_instruction m =
   | I_MOVZ (v,r,kr,S_NOEXT) ->
       pp_rkr "MOVZ" v r kr
   | I_MOVZ (v,r,kr,s) ->
-      pp_rkr "MOVZ" v r kr ^ ", " ^ pp_barrel_shift s (m.pp_k)
+      pp_rkr "MOVZ" v r kr ^ "," ^ pp_barrel_shift s (m.pp_k)
   | I_MOVK (v,r,kr,S_NOEXT) ->
       pp_rkr "MOVK" v r kr
   | I_MOVK (v,r,kr,s) ->
-      pp_rkr "MOVK" v r kr ^ ", " ^ pp_barrel_shift s (m.pp_k)
+      pp_rkr "MOVK" v r kr ^ "," ^ pp_barrel_shift s (m.pp_k)
   | I_SXTW (r1,r2) ->
       sprintf "SXTW %s,%s" (pp_xreg r1) (pp_wreg r2)
   | I_OP3 (v,SUBS,ZR,r,K k, S_NOEXT) ->
@@ -672,7 +672,7 @@ let do_pp_instruction m =
   | I_OP3 (v,op,r1,r2,kr, S_NOEXT) ->
       pp_rrkr (pp_op op) v r1 r2 kr
   | I_OP3 (v,op,r1,r2,kr, s) ->
-      pp_rrkr (pp_op op) v r1 r2 kr ^ ", " ^ pp_barrel_shift s (m.pp_k)
+      pp_rrkr (pp_op op) v r1 r2 kr ^ "," ^ pp_barrel_shift s (m.pp_k)
   | I_ADDR (r,lbl) ->
       sprintf "ADR %s,%s" (pp_xreg r) (pp_label lbl)
   | I_ADRP (r,lbl) ->
@@ -956,8 +956,8 @@ include Pseudo.Make
         | S_LSL(s) -> S_LSL(f s)
         | S_LSR(s) -> S_LSR(f s)
         | S_ASR(s) -> S_ASR(f s)
-        | S_SXTW(s)-> S_SXTW(f s)
-        | S_UXTW(s)-> S_UXTW(f s)
+        | S_SXTW -> S_SXTW
+        | S_UXTW -> S_UXTW
         | S_NOEXT  -> S_NOEXT
 
       let parsed_tr i = match i with
@@ -1007,14 +1007,8 @@ include Pseudo.Make
         | I_LDRBH (v,r1,r2,kr) -> I_LDRBH (v,r1,r2,kr_tr kr)
         | I_STRBH (v,r1,r2,kr) -> I_STRBH (v,r1,r2,kr_tr kr)
         | I_MOV (v,r,k) -> I_MOV (v,r,kr_tr k)
-        | I_MOVZ (v,r,k,S_NOEXT) ->
-          I_MOVZ (v,r,kr_tr k,S_NOEXT)
-        | I_MOVZ (v,r,k,s) ->
-          I_MOVZ (v,r,kr_tr k,ap_shift k_tr s)
-        | I_MOVK (v,r,k,S_NOEXT) ->
-          I_MOVK (v,r,kr_tr k,S_NOEXT)
-        | I_MOVK (v,r,k,s) ->
-          I_MOVK (v,r,kr_tr k,ap_shift k_tr s)
+        | I_MOVZ (v,r,k,s) -> I_MOVZ (v,r,kr_tr k,ap_shift k_tr s)
+        | I_MOVK (v,r,k,s) -> I_MOVK (v,r,kr_tr k,ap_shift k_tr s)
         | I_OP3 (v,op,r1,r2,kr,s) -> I_OP3 (v,op,r1,r2,kr_tr kr,ap_shift k_tr s)
 
 

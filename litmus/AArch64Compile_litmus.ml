@@ -61,8 +61,8 @@ let pp_shifter = function
   | S_LSL(s) -> Printf.sprintf "LSL #%d" s;
   | S_LSR(s) -> Printf.sprintf "LSR #%d" s;
   | S_ASR(s) -> Printf.sprintf "ASR #%d" s;
-  | S_SXTW(s) -> Printf.sprintf "SXTW #%d" s;
-  | S_UXTW(s) -> Printf.sprintf "UXTW #%d" s;
+  | S_SXTW -> "SXTW";
+  | S_UXTW -> "UXTW";
   | S_NOEXT  -> ""
 
 (************************)
@@ -157,7 +157,7 @@ let pp_shifter = function
           | _  -> [rB],"^wi1" in
           let shift = match s with
           | S_NOEXT -> ""
-          | s -> ", " ^ pp_shifter s in
+          | s -> "," ^ pp_shifter s in
           { empty_ins with
             memo=memo^ sprintf " ^wo0,[^i0,%s%s]" fB shift;
             inputs=[rA]@rB;
@@ -181,7 +181,7 @@ let pp_shifter = function
           | _  -> [rB],"^i1" in
           let shift = match s with
           | S_NOEXT -> ""
-          | s       -> ", " ^ pp_shifter s in
+          | s       -> "," ^ pp_shifter s in
           { empty_ins with
             memo=memo^ sprintf " ^o0,[^i0,%s%s]" fB shift;
             inputs=[rA;]@rB;
@@ -205,7 +205,7 @@ let pp_shifter = function
           | _  -> [rB],"^i1" in
           let shift = match s with
           | S_NOEXT -> ""
-          | s -> ", " ^ pp_shifter s in
+          | s -> "," ^ pp_shifter s in
           { empty_ins with
             memo=memo^ sprintf " ^wo0,[^i0,%s%s]" fB shift;
             inputs=[rA;]@rB;
@@ -346,7 +346,7 @@ let pp_shifter = function
       | V64,RV (V64,rC), s ->
           let shift  = match s with
           | S_NOEXT -> ""
-          | s -> ", " ^ pp_barrel_shift s pp_imm in
+          | s -> "," ^ pp_barrel_shift s pp_imm in
           let rC,fC = match rC with
           | ZR -> [],"xzr"
           | _  -> [rC],"^i2" in
@@ -364,7 +364,7 @@ let pp_shifter = function
       | V32,RV (V64,rC),s ->
           let shift  = match s with
           | S_NOEXT -> ""
-          | s -> ", " ^ pp_barrel_shift s pp_imm in
+          | s -> "," ^ pp_barrel_shift s pp_imm in
           let rC,fC = match rC with
           | ZR -> [],"xzr"
           | _  -> [rC],"^i2" in
@@ -509,33 +509,9 @@ let pp_shifter = function
           outputs=r1; reg_env=add_q r1;}
     | _ -> Warn.fatal "Illegal form of %s instruction" memo
 
-    let do_movk memo v rd k os = match v, k, os with
-    | V32, K k, S_LSL(s) ->
-        let r1,f1 = arg1 "wzr" (fun s -> "^wo"^s) rd in
-        { empty_ins with
-          memo=sprintf "%s %s, #%d, LSL #%d" memo f1 k s;
-          outputs=r1; reg_env=add_w r1;}
-    | V32, K k, S_NOEXT ->
-        let r1,f1 = arg1 "wzr" (fun s -> "^wo"^s) rd in
-        { empty_ins with
-          memo=sprintf "%s %s, #%d" memo f1 k;
-          outputs=r1; reg_env=add_w r1;}
-    | V64, K k, S_LSL(s) ->
-        let r1,f1 = arg1 "xzr" (fun s -> "^o"^s) rd in
-        { empty_ins with
-          memo=sprintf "%s %s, #%d, LSL #%d" memo f1 k s;
-          outputs=r1; reg_env=add_q r1;}
-    | V64, K k, S_NOEXT ->
-        let r1,f1 = arg1 "xzr" (fun s -> "^o"^s) rd in
-        { empty_ins with
-          memo=sprintf "%s %s, #%d" memo f1 k;
-          outputs=r1; reg_env=add_q r1;}
-    | _ -> Warn.fatal "Illegal form of %s instruction" memo
-
-
     let movr = do_movr "mov"
     and movz = do_movz "movz"
-    and movk' = do_movk "movk"
+    and movk' = do_movz "movk"
     and rbit = do_movr "rbit"
 
     let sxtw r1 r2 =

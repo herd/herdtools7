@@ -70,7 +70,6 @@ type op1 =
   | ReadBit of int
   | LeftShift of int
   | LogicalRightShift of int
-  | SignExtendWord of int
   | AddK of int
   | AndK of string
   | Mask of MachSize.sz
@@ -86,7 +85,6 @@ let pp_op1 hexa o = match o with
 | ReadBit i -> sprintf "readbit%i" i
 | LeftShift i -> sprintf "<<[%i]" i
 | LogicalRightShift i -> sprintf ">>>[%i]" i
-| SignExtendWord i -> sprintf "sxtw %i" i
 | AddK i  -> (if hexa then sprintf "+[0x%x]" else sprintf "+[%i]") i
 | AndK i  -> sprintf "&[%s]" i
 | Mask sz  -> sprintf "mask%02i" (MachSize.nbits sz)

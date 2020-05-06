@@ -229,11 +229,15 @@ module Make
       let shift s =
         let open AArch64Base in
         match s with
-          | S_NOEXT   -> M.unitT
-          | S_LSL(n)  -> fun x -> M.op (Op.ShiftLeft) x (V.intToV n)
-          | S_LSR(n)  -> fun x -> M.op (Op.ShiftRight) x (V.intToV n)
-          | S_ASR(n)  -> fun x -> M.op (Op.ASR) x (V.intToV n)
-          | S_SXTW(_) | S_UXTW(_) ->
+          | S_NOEXT  -> M.unitT
+          | S_LSL(n) -> fun x -> M.op (Op.ShiftLeft) x (V.intToV n)
+          | S_LSR(n) -> fun x -> M.op (Op.ShiftRight) x (V.intToV n)
+          | S_ASR(n) -> fun x -> M.op (Op.ASR) x (V.intToV n)
+          | S_SXTW -> fun x ->
+            let m = V.op1 (Op.LeftShift 31) V.one in
+            M.op Op.Xor x m
+            >>= fun v -> M.op Op.Sub v m
+          | S_UXTW->
             Warn.fatal "UXTW barrel shift not supported yet"
 
       let get_ea rs kr s ii =
@@ -336,23 +340,6 @@ module Make
 
       and stlr sz rs rd ii = do_str sz AArch64.L rs (read_reg_ord rd ii) ii
 
-      (* Unscaled load, signed *)
-      and ldur sz rd rs k ii =
-        let open AArch64Base in
-        begin match k with
-        | Some(k) ->
-            (read_reg_ord rs ii)
-            >>= M.address_of
-            >>= M.add (V.intToV k)
-            >>= M.deref
-        | None ->
-            read_reg_ord rs ii
-            >>= M.address_of
-            >>= M.deref
-        end
-          >>= (fun a -> read_mem sz rd a ii)
-          >>! B.Next
-
       (* Load literal *)
       and ldr_lit var rd lbl ii =
         (* We do not use the reg size as we load a word *)
@@ -397,8 +384,7 @@ module Make
 
       let movk sz rd k os ii =
         let open AArch64Base in
-        let is_imm16 n = n >= 0 && n < 65535 in
-        assert (is_imm16 k);
+        assert (MachSize.is_imm16 k);
         begin match sz, os with
         | V32, S_NOEXT | V64, S_NOEXT ->
           let sz = tr_variant sz in
@@ -565,7 +551,7 @@ module Make
             ldr_p sz rd rs k ii
         | I_LDUR(var,rd,rs,k) ->
             let sz = tr_variant var in
-            ldur sz rd rs k ii
+            ldr sz rd rs (AArch64.K (Option.value k ~default:0)) AArch64.S_NOEXT ii
         | I_LDAR(var,t,rd,rs) ->
             let sz = tr_variant var in
             ldar sz t rd rs ii
@@ -629,7 +615,7 @@ module Make
         | I_MOVK(var,rd,K k,os) ->
             movk var rd k os ii
         | I_MOVK(_,_,_,_) ->
-            Warn.fatal "Illegal argument in movk, expecting imm16 only"
+            Warn.fatal "Illegal argument in movk, expecting constant"
         | I_ADDR (r,lbl) | I_ADRP (r,lbl) ->
             write_reg r (parse_lbl lbl) ii >>! B.Next
         | I_SXTW(rd,rs) ->
@@ -678,7 +664,7 @@ module Make
                 begin match os with
                 | S_NOEXT    -> M.unitT (v,v)
                 | s -> check_and_shift op ty s v
-                       >>= fun v -> M.unitT (v,v)
+                       >>= fun v2 -> M.unitT (v,v2)
                 end
             | RV (_,r) -> (* register variant *)
                 (* no sharing, we optionally shift v2 and return the pair *)

@@ -52,7 +52,6 @@ type op1 =
   | ReadBit of int
   | LeftShift of int
   | LogicalRightShift of int
-  | SignExtendWord of int
   | AddK of int
   | AndK of string
   | Mask of MachSize.sz

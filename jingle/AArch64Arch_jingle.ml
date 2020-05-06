@@ -25,6 +25,16 @@ include Arch.MakeArch(struct
     | K(MetaConst.Int i),K(j) when i=j -> Some subs
     | _ -> None
 
+  let match_shift s s' subs =  match s,s' with
+    | S_LSL (MetaConst.Meta m), S_LSL y
+    | S_LSR (MetaConst.Meta m), S_LSR y
+    | S_ASR (MetaConst.Meta m), S_ASR y -> add_subs [(Cst(m,y))] subs
+    | S_LSL (MetaConst.Int m), S_LSL y
+    | S_LSR (MetaConst.Int m), S_LSR y
+    | S_ASR (MetaConst.Int m), S_ASR y when m=y -> Some subs
+    | S_SXTW, S_SXTW | S_UXTW, S_UXTW | S_NOEXT, S_NOEXT -> Some subs
+    | _ -> None
+
   let match_instr subs pattern instr = match pattern,instr with
     | I_NOP,I_NOP -> Some subs
     | I_FENCE fp,I_FENCE fi when fp = fi
@@ -68,15 +78,17 @@ include Arch.MakeArch(struct
       ->
         match_kr subs (K k) (K k') >>>
         add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
-    | I_LDR(_,r1,r2,kr,_),I_LDR(_,r1',r2',kr',_)
-    | I_STR(_,r1,r2,kr,_),I_STR(_,r1',r2',kr',_)
+    | I_LDR(_,r1,r2,kr,s),I_LDR(_,r1',r2',kr',s')
+    | I_STR(_,r1,r2,kr,s),I_STR(_,r1',r2',kr',s')
       ->
         match_kr subs kr kr' >>>
+        match_shift s s' >>>
         add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
 
-    | I_OP3(_,opp,r1,r2,kr,_),I_OP3(_,opi,r1',r2',kr',_) when opp=opi
+    | I_OP3(_,opp,r1,r2,kr,s),I_OP3(_,opi,r1',r2',kr',s') when opp=opi
       ->
         match_kr subs kr kr' >>>
+        match_shift s s' >>>
         add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
     | _,_ -> None
 
@@ -96,10 +108,8 @@ include Arch.MakeArch(struct
           find_cst n >! fun n -> S_LSR(n)
       | S_ASR(n) ->
           find_cst n >! fun n -> S_ASR(n)
-      | S_SXTW(n) ->
-          find_cst n >! fun n -> S_SXTW(n)
-      | S_UXTW(n) ->
-          find_cst n >! fun n -> S_UXTW(n)
+      | S_SXTW -> fun n -> S_SXTW, n
+      | S_UXTW -> fun n -> S_UXTW, n
       | S_NOEXT -> fun n -> S_NOEXT, n in
 
 
@@ -130,10 +140,6 @@ include Arch.MakeArch(struct
         conv_reg r >> fun r ->
         expl_kr kr >! fun kr ->
         I_MOV(a,r,kr)
-    | I_MOVZ(a,r,kr,S_NOEXT) ->
-        conv_reg r >> fun r  ->
-        expl_kr kr >! fun kr ->
-        I_MOVZ(a,r,kr,S_NOEXT)
     | I_MOVZ(a,r,kr,s) ->
         conv_reg r >> fun r  ->
         expl_kr kr >> fun kr ->

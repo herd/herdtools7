@@ -182,8 +182,8 @@ shift:
 | LSL NUM  { A.S_LSL(MetaConst.Int $2)  }
 | LSR NUM  { A.S_LSR(MetaConst.Int $2)  }
 | ASR NUM  { A.S_ASR(MetaConst.Int $2)  }
-| SXTW NUM { A.S_SXTW(MetaConst.Int $2) }
-| UXTW NUM { A.S_UXTW(MetaConst.Int $2) }
+| SXTW { A.S_SXTW }
+| UXTW { A.S_UXTW }
 
 zeroopt:
 | { () }
