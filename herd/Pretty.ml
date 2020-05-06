@@ -65,7 +65,6 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
   module A = S.A
   module E = S.E
   module PC = S.O.PC
-
   let dbg = false
 
 (* One init *)
@@ -499,14 +498,39 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
   and only from maximal intra-causality to minimal intra-causality.
  *)
 
-(*  let rec min_max_to_succ = function
+(* Non deps mode *)
+  let rec min_max_to_succ = function
     | []|[_] -> E.EventRel.empty
     | (_xmin,xmax)::((ymin,_ymax)::_ as rem) ->
         E.EventRel.union
           (E.EventRel.cartesian xmax ymin)
-          (min_max_to_succ rem) *)
+          (min_max_to_succ rem)
 
-  let make_visible_po es by_proc_and_poi =
+ let make_visible_po_nodeps es by_proc_and_poi =
+    let intra =
+      E.EventRel.transitive_closure
+        (E.EventRel.union
+           es.E.intra_causality_data
+           es.E.intra_causality_control) in
+    let min_max_list =
+      List.map
+        (List.map
+           (fun es ->
+             let mins =
+               E.EventSet.filter
+                 (fun e -> not (E.EventRel.exists_pred intra e))
+                 es
+             and maxs =
+               E.EventSet.filter
+                 (fun e -> not (E.EventRel.exists_succ intra e))
+                 es in
+             mins,maxs))
+        by_proc_and_poi in
+    E.EventRel.unions
+      (List.map  min_max_to_succ min_max_list)
+
+(* Deps mode *)
+  let make_visible_po_deps es by_proc_and_poi =
    let iico =
       E.EventRel.transitive_closure
          (E.EventRel.union
@@ -537,6 +561,10 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
      if dbg then
        eprintf "make_visible_po {%a} => \n {%a} \n%!" E.debug_rel po0 E.debug_rel r;
      r
+
+  let make_visible_po =
+    if S.do_deps then make_visible_po_deps
+    else make_visible_po_nodeps
 
   let dm = PC.dotmode
   let m = match dm with | Plain -> Ascii| Fig -> DotFig
