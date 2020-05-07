@@ -32,7 +32,6 @@ module type Config = sig
   include Sem.Config
 
   val statelessrc11 : bool
-  val allow_num_literals : bool
   val byte : MachSize.Tag.t
   val precision : bool
 end

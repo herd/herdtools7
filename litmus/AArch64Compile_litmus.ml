@@ -169,9 +169,12 @@ let pp_shifter = function
             inputs=[rA];
             outputs=[rD];
             reg_env=[rA,voidstar;rD,quad;]; }
-      | V64,K k, _ ->
+      | V64,K k, s ->
+          let shift = match s with
+          | S_NOEXT -> ""
+          | s -> "," ^ pp_shifter s in
           { empty_ins with
-            memo=memo ^ sprintf " ^o0,[^i0,#%i]" k;
+            memo=memo ^ sprintf " ^o0,[^i0,#%i%s]" k shift;
             inputs=[rA];
             outputs=[rD];
             reg_env=[rA,voidstar; rD,quad;]; }
@@ -553,14 +556,17 @@ let pp_shifter = function
 
     let memo_of_op op = Misc.lowercase (pp_op op)
 
-    let op3 v op rD rA kr =
+    let op3 v op rD rA kr s =
       let memo = memo_of_op op in
+      let shift = match s with
+      | S_NOEXT -> ""
+      | s -> ","^pp_barrel_shift s pp_imm in
       match v,kr with
       | V32,K k ->
           let rD,fD = arg1 "wzr" (fun s -> "^wo"^s) rD
           and rA,fA = arg1 "wzr" (fun s -> "^wi"^s) rA in
           { empty_ins with
-            memo=sprintf "%s %s,%s,#%i" memo fD fA k;
+            memo=sprintf "%s %s,%s,#%i%s" memo fD fA k shift;
             inputs=rA;
             outputs=rD; reg_env = add_w (rA@rD);}
       | V32,RV (V32,rB) ->
@@ -568,14 +574,14 @@ let pp_shifter = function
           and rA,fA,rB,fB = args2 "wzr"  (fun s -> "^wi"^s) rA rB in
           let inputs = rA@rB in
           { empty_ins with
-            memo=sprintf "%s %s,%s,%s" memo fD fA fB;
+            memo=sprintf "%s %s,%s,%s%s" memo fD fA fB shift;
             inputs=inputs;
             outputs=rD; reg_env = add_w (rD@inputs);}
       | V64,K k ->
           let rD,fD = arg1 "xzr" (fun s -> "^o"^s) rD
           and rA,fA = arg1 "xzr" (fun s -> "^i"^s) rA in
           { empty_ins with
-            memo=sprintf "%s %s,%s,#%i" memo fD fA k;
+            memo=sprintf "%s %s,%s,#%i%s" memo fD fA k shift;
             inputs=rA;
             outputs=rD; reg_env = add_q (rA@rD);}
       | V64,RV (V64,rB) ->
@@ -583,7 +589,7 @@ let pp_shifter = function
           and rA,fA,rB,fB = args2 "xzr"  (fun s -> "^i"^s) rA rB in
           let inputs = rA@rB in
           { empty_ins with
-            memo=sprintf "%s %s,%s,%s" memo fD fA fB;
+            memo=sprintf "%s %s,%s,%s%s" memo fD fA fB shift;
             inputs=inputs;
             outputs=rD; reg_env=add_q (inputs@rD);}
       | V64,RV (V32,rB) ->
@@ -596,7 +602,7 @@ let pp_shifter = function
             | _ -> [rB],"^wi1"
           end in
           { empty_ins with
-            memo=sprintf "%s %s,%s,%s,sxtw" memo fD fA fB;
+            memo=sprintf "%s %s,%s,%s%s" memo fD fA fB shift;
             inputs=rA@rB;
             outputs=rD; reg_env=add_q (rD@rA)@add_w rB; }
       | V32,RV (V64,_) -> assert false
@@ -662,7 +668,7 @@ let pp_shifter = function
     | I_OP3 (v,SUBS,ZR,r,K i, S_NOEXT) ->  cmpk v r i::k
     | I_OP3 (v,SUBS,ZR,r2,RV (v3,r3), S_NOEXT) when v=v3->  cmp v r2 r3::k
     | I_OP3 (v,ANDS,ZR,r,K i, S_NOEXT) -> tst v r i::k
-    | I_OP3 (v,op,r1,r2,kr,_) ->  op3 v op r1 r2 kr::k
+    | I_OP3 (v,op,r1,r2,kr,s) ->  op3 v op r1 r2 kr s::k
 (* Fence *)
     | I_FENCE f -> fence f::k
 (* Fetch and Op *)

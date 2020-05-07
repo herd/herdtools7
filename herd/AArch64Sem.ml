@@ -15,8 +15,7 @@
 (****************************************************************************)
 
 module Make
-    (C:sig include Sem.Config val precision : bool
-                              val allow_num_literals : bool end)
+    (C:sig include Sem.Config val precision : bool end)
     (V:Value.S)
     =
   struct
@@ -27,6 +26,7 @@ module Make
     include SemExtra.Make(C)(AArch64)(Act)
 
     let mixed = AArch64.is_mixed
+    let allow_num_literals = AArch64.allow_num_literals
     let memtag = C.variant Variant.MemTag
 
 (* Barrier pretty print *)
@@ -179,7 +179,7 @@ module Make
         (* We should use more robust types for this in the future *)
           try
             let lbl = int_of_string lbl in
-            if C.allow_num_literals then
+            if allow_num_literals then
               V.intToV lbl
             else
               Warn.user_error "Cannot parse numeric label in literal position"
@@ -306,9 +306,10 @@ module Make
         let open AArch64Base in
           (read_reg_ord rs ii)
           >>= M.address_of >>= fun a1 -> M.deref a1
-          >>= fun a -> read_mem sz rd a ii
-          >>= (fun _ -> M.add a1 (V.intToV k))
-          >>= (fun v -> write_reg rs v ii)
+          >>= (fun a -> read_mem sz rd a ii)
+              >>|
+              (M.add a1 (V.intToV k)
+                >>= fun v -> write_reg rs v ii)
           >>! B.Next
 
       and str sz rs rd kr s ii =

@@ -34,6 +34,7 @@ end
 module type S = sig
 
   val is_mixed : bool
+  val allow_num_literals : bool
 
   module I : I
 
@@ -193,6 +194,7 @@ module Make(C:Config) (I:I) : S with module I = I
     = struct
 
       let is_mixed = C.variant Variant.Mixed
+      let allow_num_literals = C.variant Variant.AllowNumericLiterals
 
       module I = I
       type v = I.V.v * I.V.v option
