@@ -98,8 +98,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | I_CAS (v,_,_,_,_) | I_SWP (v,_,_,_,_)
       | I_LDOP (_,v,_,_,_,_) | I_STOP (_,v,_,_,_) ->
           Some (tr_variant v)
-      | I_LDRBH (v,_,_,_) | I_LDARBH (v,_,_,_)
-      | I_STRBH (v,_,_,_) | I_STLRBH (v,_,_) | I_STXRBH (v,_,_,_,_)
+      | I_LDRBH (v,_,_,_,_) | I_LDARBH (v,_,_,_)
+      | I_STRBH (v,_,_,_,_) | I_STLRBH (v,_,_) | I_STXRBH (v,_,_,_,_)
       | I_CASBH (v,_,_,_,_) | I_SWPBH (v,_,_,_,_)
       | I_LDOPBH (_,v,_,_,_,_) | I_STOPBH (_,v,_,_,_) ->
           Some (bh_to_sz v)

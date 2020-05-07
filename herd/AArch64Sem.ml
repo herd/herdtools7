@@ -544,9 +544,9 @@ module Make
             ldr sz rd rs kr s ii
         | I_LDR_L(var,rd,lbl) ->
             ldr_lit var rd lbl ii
-        | I_LDRBH (bh, rd, rs, kr) ->
+        | I_LDRBH (bh, rd, rs, kr, s) ->
             let sz = bh_to_sz bh in
-            ldr sz rd rs kr S_NOEXT ii
+            ldr sz rd rs kr s ii
         | I_LDR_P(var,rd,rs,k) ->
             let sz = tr_variant var in
             ldr_p sz rd rs k ii
@@ -568,8 +568,8 @@ module Make
         | I_STP(_, var, r1, r2, rd, kr) ->
             stp var r1 r2 rd kr ii
 
-        | I_STRBH(bh,rs,rd,kr) ->
-            str (bh_to_sz bh) rs rd kr AArch64.S_NOEXT ii
+        | I_STRBH(bh,rs,rd,kr, s) ->
+            str (bh_to_sz bh) rs rd kr s ii
 
         | I_STLR(var,rs,rd) ->
             stlr (tr_variant var) rs rd ii

@@ -1,0 +1,9 @@
+AArch64 A100
+(* Strb immediate, no offset, symbolic location *)
+
+ { 0:x0=1; 0:x2=x}
+
+P0;
+  STRB W0, [X2];
+
+exists (x=1)

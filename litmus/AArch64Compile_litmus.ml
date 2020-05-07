@@ -640,13 +640,13 @@ let pp_shifter = function
         load_pair (match t with TT -> "ldp" | NT -> "ldnp") v r1 r2 r3 kr::k
     | I_STP (t,v,r1,r2,r3,kr) ->
         store_pair (match t with TT -> "stp" | NT -> "stnp") v r1 r2 r3 kr::k
-    | I_LDRBH (B,r1,r2,kr) -> load "ldrb" V32 r1 r2 kr S_NOEXT::k
-    | I_LDRBH (H,r1,r2,kr) -> load "ldrh" V32 r1 r2 kr S_NOEXT::k
+    | I_LDRBH (B,r1,r2,kr,s) -> load "ldrb" V32 r1 r2 kr s::k
+    | I_LDRBH (H,r1,r2,kr,s) -> load "ldrh" V32 r1 r2 kr s::k
     | I_LDAR (v,t,r1,r2) -> load (ldr_memo t) v r1 r2 k0 S_NOEXT::k
     | I_LDARBH (bh,t,r1,r2) -> load (ldrbh_memo bh t) V32 r1 r2 k0 S_NOEXT::k
     | I_STR (v,r1,r2,kr, s) -> store "str" v r1 r2 kr s::k
-    | I_STRBH (B,r1,r2,kr) -> store "strb" V32 r1 r2 kr S_NOEXT::k
-    | I_STRBH (H,r1,r2,kr) -> store "strh" V32 r1 r2 kr S_NOEXT::k
+    | I_STRBH (B,r1,r2,kr,s) -> store "strb" V32 r1 r2 kr s::k
+    | I_STRBH (H,r1,r2,kr,s) -> store "strh" V32 r1 r2 kr s::k
     | I_STLR (v,r1,r2) -> store "stlr" v r1 r2 k0 S_NOEXT ::k
     | I_STLRBH (B,r1,r2) -> store "stlrb" V32 r1 r2 k0 S_NOEXT ::k
     | I_STLRBH (H,r1,r2) -> store "stlrh" V32 r1 r2 k0 S_NOEXT ::k
