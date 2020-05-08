@@ -40,7 +40,7 @@ module A = AArch64Base
 
 /* Instructions */
 %token NOP HINT HLT
-%token B BR BEQ BNE CBZ CBNZ EQ NE
+%token B BR BEQ BNE CBZ CBNZ EQ NE TBZ TBNZ
 %token BL BLR RET
 %token LDR LDP LDNP STP STNP LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
 %token CMP MOV MOVZ MOVK ADR ADRP
@@ -227,6 +227,10 @@ instr:
 | BNE NAME { A.I_BC (A.NE,$2) }
 | CBZ reg COMMA NAME   { let v,r = $2 in A.I_CBZ (v,r,$4) }
 | CBNZ reg COMMA NAME  { let v,r = $2 in A.I_CBNZ (v,r,$4) }
+| TBNZ reg COMMA NUM COMMA label_addr
+  { let v,r = $2 in A.I_TBNZ (v,r,MetaConst.Int $4,$6) }
+| TBZ reg COMMA NUM COMMA label_addr
+  { let v,r = $2 in A.I_TBZ (v,r,MetaConst.Int $4,$6) }
 /* Memory */
 /* must differentiate between regular and post-indexed load */
 | LDR reg COMMA LBRK xreg kr0 RBRK k0

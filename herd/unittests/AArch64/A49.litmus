@@ -1,0 +1,11 @@
+AArch64 A49
+(* Tests test bit zero *)
+
+{ 0:X0=1 }
+
+P0;
+  TBZ X0, #1, foo;
+  MOV X1, #1;
+  foo:MOV X2, #1;
+
+exists (0:X1=0)

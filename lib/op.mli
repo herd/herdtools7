@@ -29,6 +29,7 @@ type op =
 (* Logical shift left *)
   | ShiftLeft
   | ShiftRight
+  | BitAt
 (* Return C-style boolean (zero is false, not zero is true) *)
   | Lt | Gt | Eq | Ne
   | Le | Ge

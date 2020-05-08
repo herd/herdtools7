@@ -123,6 +123,17 @@ let pp_shifter = function
         memo; inputs=[r;]; outputs=[];
         branch=[Next; Branch lbl] ; }
 
+    let tbz tr_lab memo v r k lbl =
+      let memo =
+        sprintf
+          (match v with
+          | V32 -> "%s ^wi0,#%d, %s"
+          | V64 -> "%s ^i0, #%d, %s")
+          memo k (A.Out.dump_label (tr_lab lbl)) in
+      { empty_ins with
+        memo; inputs=[r;]; outputs=[];
+        branch=[Next; Branch lbl] ; }
+
 (* Load and Store *)
 
     let ldr_memo t = Misc.lowercase (ldr_memo t)
@@ -630,6 +641,8 @@ let pp_shifter = function
     | I_BC (c,lbl) -> bcc tr_lab c lbl::k
     | I_CBZ (v,r,lbl) -> cbz tr_lab "cbz" v r lbl::k
     | I_CBNZ (v,r,lbl) -> cbz tr_lab "cbnz" v r lbl::k
+    | I_TBNZ (v,r,k2,lbl) -> tbz tr_lab "tbnz" v r k2 lbl::k
+    | I_TBZ (v,r,k2,lbl) -> tbz tr_lab "tbz" v r k2 lbl::k
 (* Load and Store *)
     | I_LDR (v,r1,r2,kr,os) -> load "ldr" v r1 r2 kr os::k
     | I_LDUR (v,r1,r2,Some(k')) -> load "ldur" v r1 r2 (K k') S_NOEXT ::k

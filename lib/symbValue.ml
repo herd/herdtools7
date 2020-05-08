@@ -106,6 +106,12 @@ module Make(Cst:Constant.S) = struct
   | Val cst ->  Cst.eq cst Cst.one
   | Var _ -> raise  Undetermined
 
+  let bit_at k = function
+    | Val (Concrete v) -> Val (Concrete (Cst.Scalar.bit_at k v))
+    | Val (Symbolic _|Label _|Tag _ as x) ->
+      Warn.user_error "Illegal operation on %s" (Cst.pp_v x)
+    | Var _ -> raise Undetermined
+
   let unop op_op op v1 = match v1 with
     | Val (Concrete i1) -> Val (Concrete (op i1))
   | Val (Symbolic _|Label _|Tag _ as x) ->
@@ -303,6 +309,7 @@ module Make(Cst:Constant.S) = struct
       binop op (fun x y -> Scalar.shift_right_logical x (Scalar.to_int y))
   | ShiftLeft ->
       binop op (fun x y -> Scalar.shift_left x (Scalar.to_int y))
+  | BitAt -> binop op (fun k v -> Scalar.bit_at (Scalar.to_int k) v)
   | Lt -> lt
   | Gt -> gt
   | Eq -> eq

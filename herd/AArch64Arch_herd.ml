@@ -105,7 +105,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
           Some (bh_to_sz v)
       | I_NOP|I_B _|I_BR _|I_BC (_, _)|I_CBZ (_, _, _)
       | I_CBNZ (_, _, _)|I_BL _|I_BLR _|I_RET _|I_LDAR (_, _, _, _)
-      | I_MOVZ (_,_,_,_) | I_MOVK (_,_,_,_)
+      | I_TBNZ(_,_,_,_) | I_TBZ (_,_,_,_) | I_MOVZ (_,_,_,_) | I_MOVK(_,_,_,_)
       | I_MOV (_, _, _)|I_SXTW (_, _)|I_OP3 (_, _, _, _, _, _)
       | I_ADDR (_, _)| I_ADRP (_, _) | I_RBIT (_, _, _)|I_FENCE _
       | I_CSEL (_, _, _, _, _, _)|I_IC (_, _)|I_DC (_, _)|I_MRS (_, _)

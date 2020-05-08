@@ -537,6 +537,19 @@ module Make
               >>= is_not_zero
               >>= fun v -> commit_bcc ii
                   >>= fun () -> B.bccT v l
+        | I_TBZ(_,r,k,l) ->
+            (read_reg_ord r ii)
+              >>= M.op Op.BitAt (V.intToV k)
+              >>= is_zero
+              >>= fun v -> commit_bcc ii
+                  >>= fun () -> B.bccT v l
+        | I_TBNZ(_,r,k,l) ->
+            (read_reg_ord r ii)
+              >>= M.op Op.BitAt (V.intToV k)
+              >>= is_not_zero
+              >>= fun v -> commit_bcc ii
+                  >>= fun () -> B.bccT v l
+
 
                       (* Load and Store *)
         | I_LDR(var,rd,rs,kr,s) ->
