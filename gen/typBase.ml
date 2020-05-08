@@ -27,6 +27,7 @@ let tags =
    "int16_t"; "uint16_t";
    "int32_t"; "uint32_t";
    "int64_t"; "uint64_t";
+   "__int128_t"; "__uint128_t"
  ]
 
 let parse s = match s with
@@ -39,6 +40,8 @@ let parse s = match s with
 | "uint32_t" -> Some (Std (Unsigned,Word))
 | "int64_t" -> Some (Std (Signed,Quad))
 | "uint64_t" -> Some (Std (Unsigned,Quad))
+| "__int128_t" -> Some (Std (Signed, QuadWord))
+| "__uint128_t" -> Some (Std (Unsigned, QuadWord))
 | _ -> None
 
 let pp = function
@@ -51,6 +54,8 @@ let pp = function
 | Std (Unsigned,Word) ->  "uint32_t"
 | Std (Signed,Quad) ->  "int64_t"
 | Std (Unsigned,Quad) ->  "uint64_t"
+| Std (Signed, QuadWord) -> "__int128_t"
+| Std (Unsigned, QuadWord) -> "__uint128_t"
 
 
 let default = Int

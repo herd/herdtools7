@@ -52,6 +52,7 @@ module Make(C:Config) = struct
   | Quad ->
       let x = tr_value Word v in
       x lsl 32 + x
+  | QuadWord -> Warn.fatal "128-bit value translation not supported"
 
 
 end

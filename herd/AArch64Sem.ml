@@ -78,6 +78,7 @@ module Make
       | MachSize.Quad -> read_reg is_data r ii
       | MachSize.Word|MachSize.Short|MachSize.Byte ->
           read_reg is_data r ii >>= fun v -> M.op1 (Op.Mask sz) v
+      | MachSize.QuadWord -> Warn.fatal "128-bit register read unsupported"
 
       let read_reg_ord = read_reg_sz MachSize.Quad false
       let read_reg_ord_sz sz = read_reg_sz sz false

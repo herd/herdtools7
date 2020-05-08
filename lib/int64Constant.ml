@@ -37,6 +37,7 @@ module Int64Scalar = struct
     | Short -> fun v -> logand v 0xffffL
     | Word -> fun v ->  logand v 0xffffffffL
     | Quad -> fun v -> v
+    | QuadWord -> Warn.fatal "QuadWord received, cannot mask"
 end
 
 include SymbConstant.Make(Int64Scalar)

@@ -80,6 +80,7 @@ module Make
           f (acc,m) r
       |  (NonTemporal,Some ((MachSize.Short|MachSize.Byte),_))
         -> r
+      | _,Some (MachSize.QuadWord, _) -> Warn.fatal "128-bit type not supported"
 
       let fold_atom f r =
         fold_acc
