@@ -44,8 +44,8 @@ module A = AArch64Base
 %token BL BLR RET
 %token LDR LDP LDNP STP STNP LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
 %token CMP MOV MOVZ MOVK ADR ADRP
-%token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH LDXP
-%token STXR STXRB STXRH STLXR STLXRB STLXRH STXP
+%token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH LDXP LDAXP
+%token STXR STXRB STXRH STLXR STLXRB STLXRH STXP STLXP
 %token <AArch64Base.op> OP
 %token CSEL CSINC CSINV CSNEG CSET
 %token DMB DSB ISB
@@ -204,6 +204,8 @@ stp_instr:
 stxp_instr:
 | STXP
   { (fun v r1 r2 r3 r4 kr -> A.I_STXP (v,A.YY,r1,r2,r3,r4,kr)) }
+| STLXP
+  { (fun v r1 r2 r3 r4 kr -> A.I_STXP (v,A.LY,r1,r2,r3,r4,kr)) }
 
 cond:
 | EQ { A.EQ }
@@ -278,6 +280,8 @@ instr:
   { A.I_LDARBH (A.H,A.XX,$2,$5) }
 | LDXP reg COMMA reg COMMA LBRK xreg RBRK
   { let v,r1 = $2 in let _,r2 = $4 in A.I_LDXP (v,A.XX,r1,r2,$7) }
+| LDAXP reg COMMA reg COMMA LBRK xreg RBRK
+  { let v,r1 = $2 in let _,r2 = $4 in A.I_LDXP (v,A.AX,r1,r2,$7) }
 | LDAXR reg COMMA LBRK xreg RBRK
   { let v,r = $2 in A.I_LDAR (v,A.AX,r,$5) }
 | LDAXRB wreg COMMA LBRK xreg RBRK

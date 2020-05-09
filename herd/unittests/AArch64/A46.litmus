@@ -1,0 +1,12 @@
+AArch64 A46
+(* Test load exclusive; Store exclusive, symbolic location *)
+
+ { &x=33264; &y=33272; 0:X3=x; x=1; y=1}
+
+P0;
+  LDAXP X1, X2, [X3];
+  ADD X1, X1, #1;
+  ADD X2, X2, #1;
+  STLXP W0, X1, X2, [X3];
+
+exists ((0:X0=1 /\ x=1 /\ y=1) \/ (0:X0=0 /\ x=2 /\ y=2))
