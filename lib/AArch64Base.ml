@@ -326,6 +326,10 @@ let str_memo = function
   | YY -> "STXR"
   | LY -> "STLXR"
 
+let stxp_memo = function
+  | YY -> "STXP"
+  | LY -> "STLXP"
+
 type rmw_type = RMW_P | RMW_A | RMW_L | RMW_AL
 
 type w_type = W_P | W_L
@@ -428,6 +432,7 @@ type 'k kinstruction =
   | I_STR of variant * reg * reg * 'k kr * 'k s
   | I_STLR of variant * reg * reg
   | I_STXR of variant * st_type * reg * reg * reg
+  | I_STXP of variant * st_type * reg * reg * reg * reg * 'k kr
 (* Idem for bytes and half words *)
   | I_LDRBH of bh * reg * reg * 'k kr * 'k s
   | I_LDARBH of bh * ld_type * reg * reg
@@ -568,6 +573,14 @@ let do_pp_instruction m =
     pp_vreg v r2 ^ ",[" ^
     pp_xreg r3 ^ "]" in
 
+  let pp_stxp memo v r1 r2 r3 r4 kr =
+    pp_memo memo ^ " " ^
+    pp_wreg r1 ^","   ^
+    pp_vreg v r2 ^", "^
+    pp_vreg v r3 ^",["^
+    pp_xreg r4 ^
+    pp_kr true kr ^ "]" in
+
   fun i -> match i with
   | I_NOP -> "NOP"
 (* Branches *)
@@ -623,6 +636,8 @@ let do_pp_instruction m =
       pp_mem "STLR" v r1 r2 m.k0
   | I_STXR (v,t,r1,r2,r3) ->
       pp_stxr (str_memo t) v r1 r2 r3
+  | I_STXP (v,t,r1,r2,r3,r4,kr) ->
+      pp_stxp (stxp_memo t) v r1 r2 r3 r4 kr
   | I_LDRBH (bh,r1,r2,k, s) ->
       pp_mem_shift ("LDR"^pp_bh bh) V32 r1 r2 k s
   | I_STRBH (bh,r1,r2,k, s) ->
@@ -763,6 +778,8 @@ let fold_regs (f_regs,f_sregs) =
   | I_CSEL (_,r1,r2,r3,_,_)
   | I_STXR (_,_,r1,r2,r3) | I_STXRBH (_,_,r1,r2,r3)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
+  | I_STXP (_,_,r1,r2,r3,r4,_)
+    -> fold_reg r1 (fold_reg r2 (fold_reg r3 (fold_reg r4 c)))
   | I_LDP (_,_,r1,r2,r3,kr)
   | I_STP (_,_,r1,r2,r3,kr)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 (fold_kr kr c)))
@@ -836,6 +853,8 @@ let map_regs f_reg f_symb =
       I_STXR (v,t,map_reg r1,map_reg r2,map_reg r3)
   | I_STXRBH (bh,t,r1,r2,r3) ->
       I_STXRBH (bh,t,map_reg r1,map_reg r2,map_reg r3)
+  | I_STXP (v,t,r1,r2,r3,r4,kr) ->
+      I_STXP (v,t,map_reg r1,map_reg r2,map_reg r3, map_reg r4,kr)
 (* Byte and Half loads and stores *)
   | I_LDRBH (v,r1,r2,kr,os) ->
      I_LDRBH (v,map_reg r1,map_reg r2,map_kr kr,os)
@@ -926,6 +945,7 @@ let get_next = function
   | I_STLR _
   | I_STLRBH _
   | I_STXR _
+  | I_STXP _
   | I_STXRBH _
   | I_LDRBH _
   | I_STRBH _
@@ -1013,6 +1033,7 @@ include Pseudo.Make
         | I_LDR_P (v,r1,r2,k) -> I_LDR_P (v,r1,r2,k_tr k)
         | I_LDP (t,v,r1,r2,r3,kr) -> I_LDP (t,v,r1,r2,r3,kr_tr kr)
         | I_STP (t,v,r1,r2,r3,kr) -> I_STP (t,v,r1,r2,r3,kr_tr kr)
+        | I_STXP (t,v,r1,r2,r3,r4,kr) -> I_STXP (t,v,r1,r2,r3,r4,kr_tr kr)
         | I_STR (v,r1,r2,kr,s) -> I_STR (v,r1,r2,kr_tr kr,ap_shift k_tr s)
         | I_STG (r1,r2,kr) -> I_STG (r1,r2,kr_tr kr)
         | I_LDG (r1,r2,kr) -> I_LDG (r1,r2,kr_tr kr)
@@ -1035,7 +1056,7 @@ include Pseudo.Make
         | I_LDRBH _ | I_STRBH _ | I_STXRBH _ | I_IC _ | I_DC _
         | I_STG _ | I_LDG _
           -> 1
-        | I_LDP _|I_STP _
+        | I_LDP _|I_STP _ | I_STXP _
         | I_CAS _ | I_CASBH _
         | I_SWP _ | I_SWPBH _
         | I_LDOP _ | I_LDOPBH _

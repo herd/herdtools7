@@ -72,6 +72,13 @@ module type S =
             (A.V.v -> unit t) -> (* write result *)
               (A.V.v -> A.V.v -> A.V.v -> unit t) -> (* write mem *)
                 unit t
+    val riscv_store_conditional_pair :
+        A.V.v t -> A.V.v t -> A.V.v t -> A.V.v t -> A.V.v t -> (* read reserve, data1, data2, address1, address2 *)
+        (unit t) ->
+        (A.V.v -> unit t) -> (* write result *)
+        (A.V.v -> A.V.v -> A.V.v -> unit t) -> (* write mem1 *)
+        (A.V.v -> A.V.v -> A.V.v -> unit t) -> (* write mem2 *)
+          unit t
 
     val aarch64_cas_ok :
         'loc t -> 'v t -> 'v t ->

@@ -399,6 +399,19 @@ let pp_shifter = function
           inputs = [r2;r3;];
           outputs = [r1;]; reg_env=[r3,voidstar; r2,quad; r1,quad; ]}
 
+    let stxp memo v r1 r2 r3 r4 kr = match v,kr with
+    | V32,K k ->
+        { empty_ins with
+          memo = sprintf "%s ^wo0,^wi0,^wi1,[^i1, #%i]" memo k;
+          inputs = [r2;r3;r4];
+          outputs = [r1;]; reg_env=[r4,voidstar; r3,word; r1,word; r2,word; ]; }
+    | V64,K k ->
+        { empty_ins with
+          memo = sprintf "%s ^wo0,^i0,^i1,[^i2, #%i]" memo k;
+          inputs = [r2;r3;r4];
+          outputs = [r1;]; reg_env=[r4,voidstar; r3,quad; r2,quad; r1,word; ]}
+    | _ -> Warn.fatal "Illegal form of %s instruction" memo
+
 (* Compare and swap *)
     let type_of_variant = function
       | V32 -> word | V64 -> quad
@@ -665,6 +678,7 @@ let pp_shifter = function
     | I_STLRBH (H,r1,r2) -> store "stlrh" V32 r1 r2 k0 S_NOEXT ::k
     | I_STXR (v,t,r1,r2,r3) -> stxr (str_memo t) v r1 r2 r3::k
     | I_STXRBH (bh,t,r1,r2,r3) -> stxr (strbh_memo bh t) V32 r1 r2 r3::k
+    | I_STXP (v,t,r1,r2,r3,r4,kr) -> stxp (str_memo t) v r1 r2 r3 r4 kr::k
     | I_CAS (v,rmw,r1,r2,r3) -> cas (cas_memo rmw) v r1 r2 r3::k
     | I_CASBH (bh,rmw,r1,r2,r3) -> cas (casbh_memo bh rmw) V32 r1 r2 r3::k
     | I_SWP (v,rmw,r1,r2,r3) -> swp (swp_memo rmw) v r1 r2 r3::k
