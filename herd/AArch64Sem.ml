@@ -366,7 +366,7 @@ module Make
                   read_mem_reserve sz AArch64.XA rd a ii
               | AQ ->
                   read_mem_acquire_pc sz rd a ii)
-          (read_reg_ord rs ii) ii
+          (read_reg_ord rs ii >>= M.address_of >>= M.deref) ii
 
       let movz sz rd k os ii =
         let open AArch64Base in
