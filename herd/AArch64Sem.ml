@@ -171,6 +171,8 @@ module Make
       let read_mem sz = do_read_mem sz AArch64.N
       let read_mem_acquire sz = do_read_mem sz AArch64.A
       let read_mem_acquire_pc sz = do_read_mem sz AArch64.Q
+      let read_mem_atomic sz = do_read_mem sz AArch64.X
+      let read_mem_atomic_acquire sz = do_read_mem sz AArch64.XA
       let read_mem_noreturn sz = do_read_mem sz AArch64.NoRet
 
       (* We calculate addresses from labels 0xf00 *)
@@ -458,7 +460,20 @@ module Make
             >>= incr_a var
             >>= M.deref
             >>= fun resa2 -> write sz ea2 v2 resa2 ii)
+        >>! B.Next
 
+      and ldxp var t r1 r2 ra ii =
+        let open AArch64 in
+        let sz = tr_variant var in
+
+        let ldar rd f t = match t with
+          | XX -> f >>= fun a -> read_mem_atomic sz rd a ii
+          | AX -> f >>= fun a -> read_mem_atomic_acquire sz rd a ii
+          | _ -> Warn.fatal "Other atomic variants not yet supported in LD**P" in
+
+        read_reg_ord ra ii >>= M.address_of >>= fun a ->
+        ldar r1 (M.deref a >>= fun a -> write_reg ResAddr a ii >>= fun _ -> M.unitT a) t
+        >>| (ldar r2 (incr_a var a >>= M.deref) t)
         >>! B.Next
 
       let csel_op op v =
@@ -608,6 +623,8 @@ module Make
             ldar sz t rd rs ii
         | I_LDP(_, var, rd1, rd2, ra, kr) ->
             ldp var rd1 rd2 ra kr ii
+        | I_LDXP(var,t,r1,r2,ra) ->
+            ldxp var t r1 r2 ra ii
 
         | I_STR(var,rs,rd,kr,os) ->
             str (tr_variant var) rs rd kr os ii

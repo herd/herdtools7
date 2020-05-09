@@ -412,6 +412,18 @@ let pp_shifter = function
           outputs = [r1;]; reg_env=[r4,voidstar; r3,quad; r2,quad; r1,word; ]}
     | _ -> Warn.fatal "Illegal form of %s instruction" memo
 
+    let ldxp memo v r1 r2 r3 = match v with
+    | V32 ->
+        { empty_ins with
+          memo = sprintf "%s ^wo0,^wo1,[^i0]" memo ;
+          inputs = [r3;];
+          outputs = [r1;r2;]; reg_env=[r3,word; r1,word; r2,quad; ]; }
+    | V64 ->
+        { empty_ins with
+          memo = sprintf "%s ^wo0,^wo1,[^i0]" memo ;
+          inputs = [r3;];
+          outputs = [r1;r2;]; reg_env=[r3,quad; r2,quad; r1,quad; ]}
+
 (* Compare and swap *)
     let type_of_variant = function
       | V32 -> word | V64 -> quad
@@ -670,6 +682,9 @@ let pp_shifter = function
     | I_LDRBH (H,r1,r2,kr,s) -> load "ldrh" V32 r1 r2 kr s::k
     | I_LDAR (v,t,r1,r2) -> load (ldr_memo t) v r1 r2 k0 S_NOEXT::k
     | I_LDARBH (bh,t,r1,r2) -> load (ldrbh_memo bh t) V32 r1 r2 k0 S_NOEXT::k
+    | I_LDXP (v,XX,r1,r2,r3) -> ldxp "ldxp" v r1 r2 r3::k
+    | I_LDXP (v,AA,r1,r2,r3) -> ldxp "ldaxp" v r1 r2 r3::k
+    | I_LDXP (_,_,_,_,_) -> Warn.fatal "other ld**p variants not supported yet"
     | I_STR (v,r1,r2,kr, s) -> store "str" v r1 r2 kr s::k
     | I_STRBH (B,r1,r2,kr,s) -> store "strb" V32 r1 r2 kr s::k
     | I_STRBH (H,r1,r2,kr,s) -> store "strh" V32 r1 r2 kr s::k
