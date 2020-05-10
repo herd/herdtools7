@@ -1,0 +1,12 @@
+AArch64 A122
+(* BEQ instruction, relies on CMP  *)
+
+ { 0:X0=1; }
+
+P0;
+  CMP X0, #1;
+  B.EQ foo;
+  ADD X0, X0, #1;
+  foo: NOP;
+
+forall (0:X0=1)
