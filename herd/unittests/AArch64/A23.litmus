@@ -1,0 +1,10 @@
+AArch64 A23
+(* Tests load exclusive register, a concrete location, no offset*)
+(* Analog of A21 test*)
+{ &x=42; 0:X1=x}
+
+P0;
+  LDXR X0, [X1];
+
+exists (0:X0=0)
+

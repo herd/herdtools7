@@ -427,7 +427,7 @@ module Make
              (fun ea resa v -> match t with
              | YY -> write_mem_atomic AArch64.X sz ea v resa ii
              | LY -> write_mem_atomic AArch64.XL sz ea v resa ii))
-          (read_reg_ord rd ii)
+          (read_reg_ord rd ii >>= M.address_of >>= M.deref)
           ii
 
       and stxp var t rr r1 r2 rd kr ii =

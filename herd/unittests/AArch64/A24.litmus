@@ -1,0 +1,9 @@
+AArch64 A24
+(* Tests load exclusive register, symbolic location, no offset*)
+{ 0:X1=x}
+
+P0;
+  LDXR X0, [X1];
+
+exists (0:X0=0)
+

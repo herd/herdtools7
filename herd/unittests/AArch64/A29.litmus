@@ -1,0 +1,10 @@
+AArch64 A29
+(* Test Store exclusive, concrete location *)
+
+ { 0:X0 = 1; 0:X1=2; z=0; &z=200; &a=264; 0:X2=z; 0:x3=2;}
+
+P0;
+  STXR W3, X0, [X2];
+
+(* We expect the instruction to fail without an accompanying load *)
+exists (z=0  /\ a=0 /\ 0:X3=1)
