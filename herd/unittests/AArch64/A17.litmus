@@ -1,6 +1,9 @@
 AArch64 A17
 (* Tests load literal, given a concrete location*)
 (* This is interesting as we must infer the address from a label*)
+(* This variant is not strictly part of the arm arm, but a convenience*)
+(* so we can parse numeric addresses easily inline - useful for testing *)
+(* disassembly, call herd with -variant allow_numeric_literals  *)
 { &x=2293760; x=42}
 
 P0;

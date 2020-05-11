@@ -21,7 +21,9 @@ open Printf
 type op =
   | Add | Sub | Mul | Div
   | And | Or | Xor | Nor | AndNot2
+  | ASR
   | ShiftLeft
+  | ShiftRight
   | Lt | Gt | Eq | Ne
   | Le | Ge
   | Max | Min
@@ -39,6 +41,7 @@ let pp_op o =
   | Nor -> "(nor)"
   | AndNot2 -> "(andnot2)"
   | ShiftLeft -> "<<<" (* In Java ?? *)
+  | ShiftRight -> ">>>"
   | Eq -> "=="
   | Lt -> "<"
   | Gt -> ">"
@@ -47,6 +50,7 @@ let pp_op o =
   | Ne -> "!="
   | Max -> "max"
   | Min -> "min"
+  | ASR -> "ASR"
   | SetTag -> "settag"
 
 let pp_ptx_cmp_op = function

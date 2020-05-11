@@ -1,0 +1,8 @@
+AArch64 A7
+(* Tests load immediate, no offset, from address *)
+{ 0:x1=44; &x=44 }
+
+P0;
+  LDR X0, [X1];
+
+exists (0:X0=0)

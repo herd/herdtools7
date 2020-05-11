@@ -1,0 +1,10 @@
+AArch64 A78
+(* Tests add (immediate), zero immediate, left shift 0 *)
+
+{ 0:X0=42; }
+
+P0;
+ADD X0, X0, #0, lsl #0;
+
+exists (0:X0=42)
+

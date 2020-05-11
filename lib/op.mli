@@ -24,8 +24,11 @@ type op =
   | Add | Sub | Mul | Div
   | And | Or | Xor | Nor
   | AndNot2
+(* Arithmetic shift right *)
+  | ASR
 (* Logical shift left *)
   | ShiftLeft
+  | ShiftRight
 (* Return C-style boolean (zero is false, not zero is true) *)
   | Lt | Gt | Eq | Ne
   | Le | Ge

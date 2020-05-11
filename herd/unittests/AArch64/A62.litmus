@@ -1,5 +1,8 @@
 AArch64 A62
 (* Tests adrp, numeric location *)
+(* This variant is not strictly part of the arm arm, but a convenience*)
+(* so we can parse numeric addresses easily inline - useful for testing *)
+(* disassembly, call herd with -variant allow_numeric_literals  *)
 
 { 0:X0=0; }
 

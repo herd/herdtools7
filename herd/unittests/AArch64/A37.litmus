@@ -1,0 +1,13 @@
+AArch64 A37
+(* Tests ADR, given a concrete location, decimal value*)
+(* This is interesting as we must infer the address from a label*)
+(* This variant is not strictly part of the arm arm, but a convenience*)
+(* so we can parse numeric addresses easily inline - useful for testing *)
+(* disassembly, call herd with -variant allow_numeric_literals  *)
+
+{ &x=230000; x=42}
+
+P0;
+  ADR X0, #230000;
+
+exists (0:X0=230000)

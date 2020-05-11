@@ -26,6 +26,7 @@ module Make
     include SemExtra.Make(C)(AArch64)(Act)
 
     let mixed = AArch64.is_mixed
+    let allow_num_literals = AArch64.allow_num_literals
     let memtag = C.variant Variant.MemTag
 
 (* Barrier pretty print *)
@@ -176,7 +177,12 @@ module Make
       (* This is needed to for literal instructions *)
       let parse_lbl lbl =
         (* We should use more robust types for this in the future *)
-          try V.intToV (int_of_string lbl)
+          try
+            let lbl = int_of_string lbl in
+            if allow_num_literals then
+              V.intToV lbl
+            else
+              Warn.user_error "Cannot parse numeric label in literal position"
           with Failure _ -> V.nameToV lbl
 
 
@@ -219,12 +225,42 @@ module Make
 (* Memory instructions *)
 (***********************)
 
-      let get_ea rs kr ii = match kr with
-      | AArch64.K k ->
-          read_reg_ord rs ii >>= fun v -> M.add v (V.intToV k)
-      | AArch64.RV(_,r) ->
-          (read_reg_ord rs ii >>| read_reg_ord r ii) >>= fun (v1,v2) ->
-            M.add v1 v2
+      (* Apply a shift as monadic op *)
+      let shift s =
+        let open AArch64Base in
+        match s with
+          | S_NOEXT  -> M.unitT
+          | S_LSL(n) -> fun x -> M.op (Op.ShiftLeft) x (V.intToV n)
+          | S_LSR(n) -> fun x -> M.op (Op.ShiftRight) x (V.intToV n)
+          | S_ASR(n) -> fun x -> M.op (Op.ASR) x (V.intToV n)
+          | S_SXTW -> fun x ->
+            let m = V.op1 (Op.LeftShift 31) V.one in
+            M.op Op.Xor x m
+            >>= fun v -> M.op Op.Sub v m
+          | S_UXTW->
+            Warn.fatal "UXTW barrel shift not supported yet"
+
+      let get_ea rs kr s ii =
+      let open AArch64Base in
+      match kr, s with
+      | K 0, S_NOEXT -> (* Immediate with no shift*)
+          read_reg_ord rs ii >>= M.address_of >>= M.deref
+      | K k, s -> (* Immediate with offset, with shift *)
+          read_reg_ord rs ii
+          >>= M.address_of
+          >>= fun v -> shift s (V.intToV k)
+          >>= M.add v
+          >>= M.deref
+      | RV(_,r), S_NOEXT -> (* register, no shift *)
+          (read_reg_ord rs ii >>| read_reg_ord r ii)
+          >>= fun (v1,v2) -> M.address_of v1
+          >>= M.add v2
+          >>= M.deref
+      | RV(_,r), s -> (* register, with shift *)
+          (read_reg_ord rs ii >>| read_reg_ord r ii)
+          >>= (fun (v1,v2) -> (M.address_of v1) >>| (shift s v2))
+          >>= fun (v1,v2) -> M.add v1 v2 >>= M.deref
+
 
       let lift_memop mop ma ii =
         if memtag then
@@ -257,14 +293,27 @@ module Make
             do_write_mem sz an a v ii)
           ma ii
 
-      let ldr sz rd rs kr ii =
+      let ldr sz rd rs kr s ii =
         lift_memop
           (fun ma -> ma >>= fun a ->
            old_do_read_mem sz AArch64.N a ii >>= fun v ->
            write_reg rd v ii )
-          (get_ea rs kr ii) ii
+          (get_ea rs kr s ii) ii
 
-      and str sz rs rd kr ii = do_str sz AArch64.N rs (get_ea rd kr ii) ii
+      (* Post-Indexed load immediate *)
+      and ldr_p sz rd rs k ii =
+        assert (k >= -256 && k <= 255);
+        let open AArch64Base in
+          (read_reg_ord rs ii)
+          >>= M.address_of >>= fun a1 -> M.deref a1
+          >>= (fun a -> read_mem sz rd a ii)
+              >>|
+              (M.add a1 (V.intToV k)
+                >>= fun v -> write_reg rs v ii)
+          >>! B.Next
+
+      and str sz rs rd kr s ii =
+        do_str sz AArch64.N rs (get_ea rd kr s ii) ii
 
       (* Store Pair *)
       and stp var r1 r2 rd kr ii =
@@ -320,16 +369,44 @@ module Make
         let open AArch64Base in
         assert (MachSize.is_imm16 k);
         begin match sz, os with
-        | V32, NOEXT | V64, NOEXT ->
+        | V32, S_NOEXT | V64, S_NOEXT ->
           (* Or'ing zero with value should zero out what's left *)
           M.unitT (V.intToV k)
-        | V32, LSL(0|16 as s)
-        | V64, LSL((0|16|32|48 as s)) ->
+        | V32, S_LSL(0|16 as s)
+        | V64, S_LSL((0|16|32|48 as s)) ->
           M.op1 (Op.LeftShift s) (V.intToV k)
-        | _, LSL(_) | _, _ ->
+        | _, S_LSL(_) | _, _ ->
             Warn.fatal
               "illegal instruction %s"
               (dump_instruction (I_MOVZ (sz, rd, K k, os)))
+        end
+          >>= (fun v -> write_reg rd v ii)
+          >>! B.Next
+
+      let movk sz rd k os ii =
+        let open AArch64Base in
+        assert (MachSize.is_imm16 k);
+        begin match sz, os with
+        | V32, S_NOEXT | V64, S_NOEXT ->
+          let sz = tr_variant sz in
+          (read_reg_data sz rd ii)
+          >>= fun v2 -> M.op Op.Or v2 (V.intToV k)
+        | V32, S_LSL(0|16 as s)
+        | V64, S_LSL((0|16|32|48 as s)) ->
+          let v1 = V.op1 (Op.LeftShift s) (V.intToV k) in
+          let sz = tr_variant sz in
+          (read_reg_data sz rd ii)
+          >>= fun v2 -> M.op Op.Or v2 v1
+        | _, S_LSL(n) ->
+          Warn.fatal
+            "illegal shift immediate %d in %s instruction movk"
+            n
+            (pp_variant sz)
+        | _, s ->
+          Warn.fatal
+            "illegal shift operand %s in %s instruction movk"
+            (pp_barrel_shift s pp_imm)
+            (pp_variant sz)
         end
           >>= (fun v -> write_reg rd v ii)
           >>! B.Next
@@ -462,15 +539,20 @@ module Make
                   >>= fun () -> B.bccT v l
 
                       (* Load and Store *)
-        | I_LDR(var,rd,rs,kr) ->
+        | I_LDR(var,rd,rs,kr,s) ->
             let sz = tr_variant var in
-            ldr sz rd rs kr ii
+            ldr sz rd rs kr s ii
         | I_LDR_L(var,rd,lbl) ->
             ldr_lit var rd lbl ii
         | I_LDRBH (bh, rd, rs, kr) ->
             let sz = bh_to_sz bh in
-            ldr sz rd rs kr ii
-
+            ldr sz rd rs kr S_NOEXT ii
+        | I_LDR_P(var,rd,rs,k) ->
+            let sz = tr_variant var in
+            ldr_p sz rd rs k ii
+        | I_LDUR(var,rd,rs,k) ->
+            let sz = tr_variant var in
+            ldr sz rd rs (AArch64.K (Option.value k ~default:0)) AArch64.S_NOEXT ii
         | I_LDAR(var,t,rd,rs) ->
             let sz = tr_variant var in
             ldar sz t rd rs ii
@@ -480,14 +562,14 @@ module Make
         | I_LDP(_, var, rd1, rd2, ra, kr) ->
             ldp var rd1 rd2 ra kr ii
 
-        | I_STR(var,rs,rd,kr) ->
-            str (tr_variant var) rs rd kr ii
+        | I_STR(var,rs,rd,kr,os) ->
+            str (tr_variant var) rs rd kr os ii
 
         | I_STP(_, var, r1, r2, rd, kr) ->
             stp var r1 r2 rd kr ii
 
         | I_STRBH(bh,rs,rd,kr) ->
-            str (bh_to_sz bh) rs rd kr ii
+            str (bh_to_sz bh) rs rd kr AArch64.S_NOEXT ii
 
         | I_STLR(var,rs,rd) ->
             stlr (tr_variant var) rs rd ii
@@ -499,7 +581,7 @@ module Make
             if not memtag then Warn.user_error "STG without -variant memtag" ;
             begin
               (read_reg_data MachSize.Quad rt ii >>= tag_extract) >>|
-              get_ea rn kr ii
+              get_ea rn kr AArch64.S_NOEXT ii
             end >>= fun (v,a) ->
             M.op1 Op.TagLoc a  >>= fun a ->
             do_write_tag (a,None) v ii >>! B.Next
@@ -508,7 +590,7 @@ module Make
             if not memtag then Warn.user_error "LDG without -variant memtag" ;
             begin
               read_reg_ord rt ii >>|
-              (get_ea rn kr ii  >>= fun a ->
+              (get_ea rn kr AArch64.S_NOEXT ii >>= fun a ->
                M.op1 Op.TagLoc a  >>= fun a ->
                do_read_tag (a,None) ii)
             end >>= fun (old,tag) ->
@@ -531,7 +613,10 @@ module Make
             movz var rd k os ii
         | I_MOVZ(_,_,_,_) ->
             Warn.fatal "Illegal argument in movz, expecting imm16 only"
-        
+        | I_MOVK(var,rd,K k,os) ->
+            movk var rd k os ii
+        | I_MOVK(_,_,_,_) ->
+            Warn.fatal "Illegal argument in movk, expecting constant"
         | I_ADDR (r,lbl) | I_ADRP (r,lbl) ->
             write_reg r (parse_lbl lbl) ii >>! B.Next
         | I_SXTW(rd,rs) ->
@@ -542,19 +627,61 @@ module Make
               fun x -> M.op Op.Sub x m >>=
                 fun v -> write_reg rd v ii >>! B.Next
 
-        | I_OP3(ty,op,rd,rn,kr) ->
+        | I_OP3(ty,op,rd,rn,kr,os) ->
             let sz = tr_variant ty in
+            (* Check correctness of shift, and shift if correct *)
+            (* These checks aren't needed, but correctness checks are good! *)
+            (* Besides this seems to be the only place they are checked... *)
+            (* Details can be found in the Arm Arch reference manual *)
+            let check_and_shift op ty s = begin match op, ty, s with
+              (*These patterns could be further merged, but are not for legibility *)
+              | (ADD|ADDS), V32, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 32) ->
+                shift s
+              | (ADD|ADDS), V64, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 64) ->
+                shift s
+              | (AND|ANDS), V32, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 32) ->
+                shift s (* todo add ROR shift if it occurs*)
+              | (AND|ANDS), V64, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 64) ->
+                shift s (* todo add ROR shift if it occurs*)
+              | (SUB|SUBS), V32, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 32) ->
+                shift s
+              | (SUB|SUBS), V64, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 64) ->
+                shift s
+              | (ORR|EOR), V32, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 32) ->
+                shift s (* todo add ROR shift if it occurs*)
+              | (ORR|EOR), V64, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 64) ->
+                shift s (* todo add ROR shift if it occues*)
+              | _ -> Warn.fatal "Unsupported shift arg %s in %s instruction %s"
+                  (pp_barrel_shift s pp_imm)
+                  (pp_variant ty)
+                  (pp_op op)
+            end in
             begin match kr with
-            | RV (_,r) when reg_compare r rn = 0 ->
+            | RV (_,r) when reg_compare r rn = 0 -> (* register variant*)
                 (* Keep sharing here, otherwise performance penalty on address
                    dependency by r^r in mixed size mode *)
-                read_reg_ord_sz sz rn ii >>=
-                fun v -> M.unitT (v,v)
-            |_ ->
+                read_reg_ord_sz sz rn ii >>= fun v ->
+                (* if present, apply an optional inline barrel shift *)
+                begin match os with
+                | S_NOEXT    -> M.unitT (v,v)
+                | s -> check_and_shift op ty s v
+                       >>= fun v2 -> M.unitT (v,v2)
+                end
+            | RV (_,r) -> (* register variant *)
+                (* no sharing, we optionally shift v2 and return the pair *)
+                read_reg_ord_sz sz rn ii  >>| read_reg_ord_sz sz r ii
+                (* if present, apply an optional inline barrel shift *)
+                >>= fun (v1,v2) ->
+                begin match os with
+                | S_NOEXT -> M.unitT (v1,v2)
+                | s -> check_and_shift op ty s v2
+                       >>= fun v2 -> M.unitT(v1,v2)
+                end
+            | K k -> (* immediate  *)
                 read_reg_ord_sz sz rn ii >>|
-                begin match kr with
-                | K k -> M.unitT (V.intToV k)
-                | RV(_,r) -> read_reg_ord_sz sz r ii
+                begin match os with
+                | S_NOEXT -> M.unitT (V.intToV k)
+                | s -> check_and_shift op ty s (V.intToV k)
                 end
             end
               >>=
@@ -564,12 +691,13 @@ module Make
             | ORR -> fun (v1,v2) -> M.op Op.Or v1 v2
             | SUB|SUBS -> fun (v1,v2) -> M.op Op.Sub v1 v2
             | AND|ANDS -> fun (v1,v2) -> M.op Op.And v1 v2
+            | ASR -> fun (v1, v2) -> M.op Op.ASR v1 v2
             end >>=
             (let m =  (fun v ->
               (write_reg rd v ii) >>|
               (match op with
               | ADDS|SUBS|ANDS -> is_zero v >>= fun v -> write_reg NZP v ii
-              | ADD|EOR|ORR|AND|SUB -> M.unitT ())) in
+              | ADD|EOR|ORR|AND|SUB|ASR -> M.unitT ())) in
             mask32 ty m) >>!
             B.Next
               (* Barrier *)

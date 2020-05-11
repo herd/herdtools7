@@ -28,6 +28,8 @@ match name with
 | "nop"|"NOP" -> NOP
 (* Hints are NOPS in AArch64 *)
 | "hint"|"HINT" -> HINT
+(* Halt instructions are used by Debug mode, not needed here - NOP *)
+| "hlt" | "HLT" -> HLT
 (* Branch *)
 | "b"  | "B"  -> B
 | "br"  | "BR"  -> BR
@@ -42,6 +44,7 @@ match name with
 | "cbnz"  | "CBNZ" -> CBNZ
 (* Memory *)
 | "ldr"|"LDR" -> LDR
+| "ldur"|"LDUR" -> LDUR
 | "ldp"|"LDP" -> LDP
 | "ldnp"|"LDNP" -> LDNP
 | "stp"|"STP" -> STP
@@ -257,8 +260,10 @@ match name with
 | "ldg"|"LDG" -> LDG
 (* Operations *)
 | "sxtw"|"SXTW" -> SXTW
+| "uxtw"|"UXTW" -> UXTW
 | "mov"|"MOV" -> MOV
 | "movz"|"MOVZ" -> MOVZ
+| "movk"|"MOVK" -> MOVK
 | "adr"|"ADR" -> ADR
 | "adrp"|"ADRP" -> ADRP
 | "rbit"|"RBIT" -> RBIT
@@ -270,6 +275,9 @@ match name with
 | "ands"|"ANDS" -> OP A.ANDS
 | "sub"|"SUB" -> OP A.SUB
 | "subs"|"SUBS" -> OP A.SUBS
+(* Although ASR is an instruction, it is also a barrel shift *)
+(* It needs special handling as both an operation and operand *)
+| "asr" | "ASR" -> ASR
 | "cmp"|"CMP" -> CMP
 | "tst"|"TST" -> TST
 (* Misc *)
@@ -297,6 +305,7 @@ match name with
 | "nshld"|"NSHLD" -> NSHLD
 (* inline barrel shift operands *)
 | "lsl" | "LSL" -> LSL
+| "lsr" | "LSR" -> LSR
 (* Cache maintenance *)
 | "ic"|"IC" -> IC
 | "dc"|"DC" -> DC

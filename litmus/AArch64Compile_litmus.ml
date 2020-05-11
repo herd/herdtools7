@@ -58,12 +58,12 @@ module Make(V:Constant.S)(C:Config) =
 
 (* pretty prints barrel shifters *)
 let pp_shifter = function
-  | LSL(s) -> Printf.sprintf "LSL #%d" s;
-  | LSR(s) -> Printf.sprintf "LSR #%d" s;
-  | ASR(s) -> Printf.sprintf "ASR #%d" s;
-  | SXTW(s) -> Printf.sprintf "SXTW #%d" s;
-  | UXTW(s) -> Printf.sprintf "UXTW #%d" s;
-  | NOEXT  -> ""
+  | S_LSL(s) -> Printf.sprintf "LSL #%d" s;
+  | S_LSR(s) -> Printf.sprintf "LSR #%d" s;
+  | S_ASR(s) -> Printf.sprintf "ASR #%d" s;
+  | S_SXTW -> "SXTW";
+  | S_UXTW -> "UXTW";
+  | S_NOEXT  -> ""
 
 (************************)
 (* Template compilation *)
@@ -138,67 +138,97 @@ let pp_shifter = function
             outputs=[rD]; reg_env=[(rD, quad)]; }
 
 
-    let load memo v rD rA kr = match v,kr with
-      | V32,K 0 ->
+    let load memo v rD rA kr os = match v,kr,os with
+      | V32,K 0, S_NOEXT ->
           { empty_ins with
             memo= sprintf "%s ^wo0,[^i0]" memo;
             inputs=[rA];
             outputs=[rD];
             reg_env=[(rA,voidstar);(rD,word)]; }
-      | V32,K k ->
+      | V32,K k, S_NOEXT ->
           { empty_ins with
             memo= sprintf "%s ^wo0,[^i0,#%i]" memo k;
             inputs=[rA];
             outputs=[rD];
             reg_env=[(rA,voidstar);(rD,word)];}
-      | V32,RV (V32,rB) ->
+      | V32,RV (V32,rB), s ->
           let rB,fB = match rB with
           | ZR -> [],"wzr"
           | _  -> [rB],"^wi1" in
+          let shift = match s with
+          | S_NOEXT -> ""
+          | s -> "," ^ pp_shifter s in
           { empty_ins with
-            memo=memo^ sprintf " ^wo0,[^i0,%s,sxtw]" fB;
+            memo=memo^ sprintf " ^wo0,[^i0,%s%s]" fB shift;
             inputs=[rA]@rB;
             outputs=[rD];
             reg_env=add_w rB@[(rA,voidstar); (rD,word);]; }
-      | V64,K 0 ->
+      | V64,K 0, S_NOEXT ->
           { empty_ins with
             memo=memo ^ sprintf " ^o0,[^i0]";
             inputs=[rA];
             outputs=[rD];
             reg_env=[rA,voidstar;rD,quad;]; }
-      | V64,K k ->
+      | V64,K k, s ->
+          let shift = match s with
+          | S_NOEXT -> ""
+          | s -> "," ^ pp_shifter s in
           { empty_ins with
-            memo=memo ^ sprintf " ^o0,[^i0,#%i]" k;
+            memo=memo ^ sprintf " ^o0,[^i0,#%i%s]" k shift;
             inputs=[rA];
             outputs=[rD];
             reg_env=[rA,voidstar; rD,quad;]; }
-      | V64,RV (V64,rB) ->
+      | V64,RV (V64,rB), s ->
           let rB,fB = match rB with
           | ZR -> [],"xzr"
           | _  -> [rB],"^i1" in
+          let shift = match s with
+          | S_NOEXT -> ""
+          | s       -> "," ^ pp_shifter s in
           { empty_ins with
-            memo=memo^ sprintf " ^o0,[^i0,%s]" fB;
+            memo=memo^ sprintf " ^o0,[^i0,%s%s]" fB shift;
             inputs=[rA;]@rB;
             outputs=[rD];
             reg_env=add_q rB@[rA,voidstar;rD,quad]; }
-      | V64,RV (V32,rB) ->
+      | V64,RV (V32,rB), s ->
           let rB,fB = match rB with
           | ZR -> [],"wzr"
           | _  -> [rB],"^wi1" in
+          let shift = match s with
+          | S_NOEXT -> ""
+          | s -> "," ^ pp_shifter s in
           { empty_ins with
-            memo=memo ^ sprintf " ^o0,[^i0,%s,sxtw]" fB;
+            memo=memo ^ sprintf " ^o0,[^i0,%s%s]" fB shift;
             inputs=[rA]@rB;
             outputs=[rD];
             reg_env=add_w rB@[rA,voidstar;rD,quad;]; }
-      | V32,RV (V64,rB) ->
+      | V32,RV (V64,rB), s ->
           let rB,fB = match rB with
           | ZR -> [],"xzr"
           | _  -> [rB],"^i1" in
+          let shift = match s with
+          | S_NOEXT -> ""
+          | s -> "," ^ pp_shifter s in
           { empty_ins with
-            memo=memo^ sprintf " ^wo0,[^i0,%s]" fB;
+            memo=memo^ sprintf " ^wo0,[^i0,%s%s]" fB shift;
             inputs=[rA;]@rB;
             outputs=[rD];
             reg_env=add_q rB@[rA,voidstar;rD,word]; }
+     | _,_,_ -> assert false
+
+    let load_p memo v rD rA k = match v with
+      | V32 ->
+          { empty_ins with
+            memo= sprintf "%s ^wo0,[^i0],#%i" memo k;
+            inputs=[rA];
+            outputs=[rD];
+            reg_env=[(rA,voidstar);(rD,word)];}
+      | V64 ->
+          { empty_ins with
+            memo=memo ^ sprintf " ^o0,[^i0],#%i" k;
+            inputs=[rA];
+            outputs=[rD];
+            reg_env=[rA,voidstar; rD,quad;]; }
 
     let load_pair memo v rD1 rD2 rA kr = match v,kr with
       | V32,K 0 ->
@@ -291,51 +321,60 @@ let pp_shifter = function
       | V32,RV (V64,_) -> assert false
 
 
-    let store memo v rA rB kr = match v,kr with
-      | V32,K 0 ->
+    let store memo v rA rB kr s = match v,kr,s with
+      | V32,K 0, S_NOEXT ->
           { empty_ins with
             memo=memo ^ " ^wi0,[^i1]";
             inputs=[rA;rB]; reg_env=[rB,voidstar;rA,word;]; }
-      | V32,K k ->
+      | V32,K k, S_NOEXT ->
           { empty_ins with
             memo=memo ^ sprintf " ^wi0,[^i1,#%i]" k;
             inputs=[rA;rB]; reg_env=[rB,voidstar;rA,word;]; }
-      | V32,RV (V32,rC) ->
+      | V32,RV (V32,rC), s ->
+          let shift  = pp_barrel_shift s pp_imm in
           let rC,fC = match rC with
           | ZR -> [],"wzr"
           | _  -> [rC],"^wi2" in
           { empty_ins with
-            memo=memo^ sprintf " ^wi0,[^i1,%s,sxtw]" fC;
+            memo=memo^ sprintf " ^wi0,[^i1,%s,%s]" fC shift;
             inputs=[rA; rB;]@rC; reg_env=add_w rC@[rB,voidstar; rA,word;]; }
-      | V64,K 0 ->
+      | V64,K 0, S_NOEXT ->
           { empty_ins with
             memo=memo ^ " ^i0,[^i1]";
             inputs=[rA;rB]; reg_env=[rB,voidstar; rA,quad;]; }
-      | V64,K k ->
+      | V64,K k, S_NOEXT ->
           { empty_ins with
             memo=memo ^ sprintf " ^i0,[^i1,#%i]" k;
             inputs=[rA;rB]; reg_env=[rB,voidstar; rA,quad;]; }
-      | V64,RV (V64,rC) ->
+      | V64,RV (V64,rC), s ->
+          let shift  = match s with
+          | S_NOEXT -> ""
+          | s -> "," ^ pp_barrel_shift s pp_imm in
           let rC,fC = match rC with
           | ZR -> [],"xzr"
           | _  -> [rC],"^i2" in
           { empty_ins with
-            memo=memo ^ sprintf " ^i0,[^i1,%s]" fC;
+            memo=memo ^ sprintf " ^i0,[^i1,%s%s]" fC shift;
             inputs=[rA; rB;]@rC; reg_env=add_q rC@[rB,voidstar; rA,quad;]; }
-      | V64,RV (V32,rC) ->
+      | V64,RV (V32,rC),s ->
+          let shift  = pp_barrel_shift s pp_imm in
           let rC,fC = match rC with
           | ZR -> [],"wzr"
           | _  -> [rC],"^wi2" in
           { empty_ins with
-            memo=memo ^ sprintf " ^i0,[^i1,%s,sxtw]" fC;
+            memo=memo ^ sprintf " ^i0,[^i1,%s,%s]" fC shift;
             inputs=[rA; rB;]@rC; reg_env=add_w rC@[rB,voidstar; rA,quad;]; }
-      | V32,RV (V64,rC) ->
+      | V32,RV (V64,rC),s ->
+          let shift  = match s with
+          | S_NOEXT -> ""
+          | s -> "," ^ pp_barrel_shift s pp_imm in
           let rC,fC = match rC with
           | ZR -> [],"xzr"
           | _  -> [rC],"^i2" in
           { empty_ins with
-            memo=memo ^ sprintf " ^wi0,[^i1,%s]" fC;
+            memo=memo ^ sprintf " ^wi0,[^i1,%s%s]" fC shift;
             inputs=[rA; rB;]@rC; reg_env=add_q rC@[rB,voidstar; rA,word;]; }
+      | _,_,_ -> assert false
 
     let stxr memo v r1 r2 r3 = match v with
     | V32 ->
@@ -451,31 +490,31 @@ let pp_shifter = function
           inputs = r2; outputs=r1; reg_env=add_q (r1@r2);}
 
     let do_movz memo v rd k os = match v, k, os with
-    | V32, K k, LSL(s) ->
+    | V32, K k, S_LSL(s) ->
         let r1,f1 = arg1 "wzr" (fun s -> "^wo"^s) rd in
         { empty_ins with
-          memo=sprintf "%s %s, #%d, %s" memo f1 k (pp_shifter (LSL s));
+          memo=sprintf "%s %s, #%d, %s" memo f1 k (pp_shifter (S_LSL s));
           outputs=r1; reg_env=add_w r1;}
-    | V32, K k, NOEXT ->
+    | V32, K k, S_NOEXT ->
         let r1,f1 = arg1 "wzr" (fun s -> "^wo"^s) rd in
         { empty_ins with
           memo=sprintf "%s %s, #%d" memo f1 k;
           outputs=r1; reg_env=add_w r1;}
-    | V64, K k, LSL(s) ->
+    | V64, K k, S_LSL(s) ->
         let r1,f1 = arg1 "xzr" (fun s -> "^o"^s) rd in
         { empty_ins with
-          memo=sprintf "%s %s, #%d, %s" memo f1 k (pp_shifter (LSL s));
+          memo=sprintf "%s %s, #%d, %s" memo f1 k (pp_shifter (S_LSL s));
           outputs=r1; reg_env=add_q r1;}
-    | V64, K k, NOEXT ->
+    | V64, K k, S_NOEXT ->
         let r1,f1 = arg1 "xzr" (fun s -> "^o"^s) rd in
         { empty_ins with
           memo=sprintf "%s %s, #%d" memo f1 k;
           outputs=r1; reg_env=add_q r1;}
     | _ -> Warn.fatal "Illegal form of %s instruction" memo
 
-
     let movr = do_movr "mov"
     and movz = do_movz "movz"
+    and movk' = do_movz "movk"
     and rbit = do_movr "rbit"
 
     let sxtw r1 r2 =
@@ -517,14 +556,17 @@ let pp_shifter = function
 
     let memo_of_op op = Misc.lowercase (pp_op op)
 
-    let op3 v op rD rA kr =
+    let op3 v op rD rA kr s =
       let memo = memo_of_op op in
+      let shift = match s with
+      | S_NOEXT -> ""
+      | s -> ","^pp_barrel_shift s pp_imm in
       match v,kr with
       | V32,K k ->
           let rD,fD = arg1 "wzr" (fun s -> "^wo"^s) rD
           and rA,fA = arg1 "wzr" (fun s -> "^wi"^s) rA in
           { empty_ins with
-            memo=sprintf "%s %s,%s,#%i" memo fD fA k;
+            memo=sprintf "%s %s,%s,#%i%s" memo fD fA k shift;
             inputs=rA;
             outputs=rD; reg_env = add_w (rA@rD);}
       | V32,RV (V32,rB) ->
@@ -532,14 +574,14 @@ let pp_shifter = function
           and rA,fA,rB,fB = args2 "wzr"  (fun s -> "^wi"^s) rA rB in
           let inputs = rA@rB in
           { empty_ins with
-            memo=sprintf "%s %s,%s,%s" memo fD fA fB;
+            memo=sprintf "%s %s,%s,%s%s" memo fD fA fB shift;
             inputs=inputs;
             outputs=rD; reg_env = add_w (rD@inputs);}
       | V64,K k ->
           let rD,fD = arg1 "xzr" (fun s -> "^o"^s) rD
           and rA,fA = arg1 "xzr" (fun s -> "^i"^s) rA in
           { empty_ins with
-            memo=sprintf "%s %s,%s,#%i" memo fD fA k;
+            memo=sprintf "%s %s,%s,#%i%s" memo fD fA k shift;
             inputs=rA;
             outputs=rD; reg_env = add_q (rA@rD);}
       | V64,RV (V64,rB) ->
@@ -547,7 +589,7 @@ let pp_shifter = function
           and rA,fA,rB,fB = args2 "xzr"  (fun s -> "^i"^s) rA rB in
           let inputs = rA@rB in
           { empty_ins with
-            memo=sprintf "%s %s,%s,%s" memo fD fA fB;
+            memo=sprintf "%s %s,%s,%s%s" memo fD fA fB shift;
             inputs=inputs;
             outputs=rD; reg_env=add_q (inputs@rD);}
       | V64,RV (V32,rB) ->
@@ -560,7 +602,7 @@ let pp_shifter = function
             | _ -> [rB],"^wi1"
           end in
           { empty_ins with
-            memo=sprintf "%s %s,%s,%s,sxtw" memo fD fA fB;
+            memo=sprintf "%s %s,%s,%s%s" memo fD fA fB shift;
             inputs=rA@rB;
             outputs=rD; reg_env=add_q (rD@rA)@add_w rB; }
       | V32,RV (V64,_) -> assert false
@@ -589,22 +631,25 @@ let pp_shifter = function
     | I_CBZ (v,r,lbl) -> cbz tr_lab "cbz" v r lbl::k
     | I_CBNZ (v,r,lbl) -> cbz tr_lab "cbnz" v r lbl::k
 (* Load and Store *)
-    | I_LDR (v,r1,r2,kr) -> load "ldr" v r1 r2 kr::k
+    | I_LDR (v,r1,r2,kr,os) -> load "ldr" v r1 r2 kr os::k
+    | I_LDUR (v,r1,r2,Some(k')) -> load "ldur" v r1 r2 (K k') S_NOEXT ::k
+    | I_LDUR (v,r1,r2,None) -> load "ldur" v r1 r2 (K 0) S_NOEXT ::k
+    | I_LDR_P (v,r1,r2,k1) -> load_p "ldr" v r1 r2 k1::k
     | I_LDR_L (v, rd, lbl) -> load_literal tr_lab "ldr" v rd lbl::k
     | I_LDP (t,v,r1,r2,r3,kr) ->
         load_pair (match t with TT -> "ldp" | NT -> "ldnp") v r1 r2 r3 kr::k
     | I_STP (t,v,r1,r2,r3,kr) ->
         store_pair (match t with TT -> "stp" | NT -> "stnp") v r1 r2 r3 kr::k
-    | I_LDRBH (B,r1,r2,kr) -> load "ldrb" V32 r1 r2 kr::k
-    | I_LDRBH (H,r1,r2,kr) -> load "ldrh" V32 r1 r2 kr::k
-    | I_LDAR (v,t,r1,r2) -> load (ldr_memo t) v r1 r2 k0::k
-    | I_LDARBH (bh,t,r1,r2) -> load (ldrbh_memo bh t) V32 r1 r2 k0::k
-    | I_STR (v,r1,r2,kr) -> store "str" v r1 r2 kr::k
-    | I_STRBH (B,r1,r2,kr) -> store "strb" V32 r1 r2 kr::k
-    | I_STRBH (H,r1,r2,kr) -> store "strh" V32 r1 r2 kr::k
-    | I_STLR (v,r1,r2) -> store "stlr" v r1 r2 k0::k
-    | I_STLRBH (B,r1,r2) -> store "stlrb" V32 r1 r2 k0::k
-    | I_STLRBH (H,r1,r2) -> store "stlrh" V32 r1 r2 k0::k
+    | I_LDRBH (B,r1,r2,kr) -> load "ldrb" V32 r1 r2 kr S_NOEXT::k
+    | I_LDRBH (H,r1,r2,kr) -> load "ldrh" V32 r1 r2 kr S_NOEXT::k
+    | I_LDAR (v,t,r1,r2) -> load (ldr_memo t) v r1 r2 k0 S_NOEXT::k
+    | I_LDARBH (bh,t,r1,r2) -> load (ldrbh_memo bh t) V32 r1 r2 k0 S_NOEXT::k
+    | I_STR (v,r1,r2,kr, s) -> store "str" v r1 r2 kr s::k
+    | I_STRBH (B,r1,r2,kr) -> store "strb" V32 r1 r2 kr S_NOEXT::k
+    | I_STRBH (H,r1,r2,kr) -> store "strh" V32 r1 r2 kr S_NOEXT::k
+    | I_STLR (v,r1,r2) -> store "stlr" v r1 r2 k0 S_NOEXT ::k
+    | I_STLRBH (B,r1,r2) -> store "stlrb" V32 r1 r2 k0 S_NOEXT ::k
+    | I_STLRBH (H,r1,r2) -> store "stlrh" V32 r1 r2 k0 S_NOEXT ::k
     | I_STXR (v,t,r1,r2,r3) -> stxr (str_memo t) v r1 r2 r3::k
     | I_STXRBH (bh,t,r1,r2,r3) -> stxr (strbh_memo bh t) V32 r1 r2 r3::k
     | I_CAS (v,rmw,r1,r2,r3) -> cas (cas_memo rmw) v r1 r2 r3::k
@@ -615,14 +660,15 @@ let pp_shifter = function
     | I_MOV (v,r,K i) ->  movk v r i::k
     | I_MOV (v,r1,RV (_,r2)) ->  movr v r1 r2::k
     | I_MOVZ (v,rd,i,os) -> movz v rd i os::k
+    | I_MOVK (v,rd,i,os) -> movk' v rd i os::k
     | I_ADDR (r,lbl) -> adr tr_lab r lbl::k
     | I_ADRP (r,lbl) -> adr tr_lab r lbl::k
     | I_RBIT (v,rd,rs) -> rbit v rd rs::k
     | I_SXTW (r1,r2) -> sxtw r1 r2::k
-    | I_OP3 (v,SUBS,ZR,r,K i) ->  cmpk v r i::k
-    | I_OP3 (v,SUBS,ZR,r2,RV (v3,r3)) when v=v3->  cmp v r2 r3::k
-    | I_OP3 (v,ANDS,ZR,r,K i) -> tst v r i::k
-    | I_OP3 (v,op,r1,r2,kr) ->  op3 v op r1 r2 kr::k
+    | I_OP3 (v,SUBS,ZR,r,K i, S_NOEXT) ->  cmpk v r i::k
+    | I_OP3 (v,SUBS,ZR,r2,RV (v3,r3), S_NOEXT) when v=v3->  cmp v r2 r3::k
+    | I_OP3 (v,ANDS,ZR,r,K i, S_NOEXT) -> tst v r i::k
+    | I_OP3 (v,op,r1,r2,kr,s) ->  op3 v op r1 r2 kr s::k
 (* Fence *)
     | I_FENCE f -> fence f::k
 (* Fetch and Op *)

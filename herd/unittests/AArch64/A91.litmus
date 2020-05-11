@@ -1,0 +1,10 @@
+AArch64 A91
+(* Tests movk, 32-bit, LSL 16 *)
+
+{ 0:X0=131072; }
+
+P0;
+MOVK W0, #1, LSL #16;
+
+exists (0:X0=196608)
+
