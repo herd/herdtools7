@@ -228,6 +228,10 @@ module Make
               "iico_ctrl", lazy conc.S.str.E.intra_causality_control;
               "rf-reg", rf_reg ;
               "same-instr", lazy begin E.EventRel.of_pred all_evts all_evts E.same_instruction end;
+              "same-static",
+              lazy begin
+                E.EventRel.of_pred all_evts all_evts E.same_static_event
+              end;
               "same-instance", lazy begin E.EventRel.of_pred all_evts all_evts E.same_instance end;
               "equiv-spec", lazy begin Equiv.build (Lazy.force rf_reg) all_evts end;
             ]) in

@@ -11,12 +11,10 @@ let sim = (same-instr & ((EXEC*SPEC) | (SPEC*EXEC))) \ id
 
 (* Alternative computation of equiv-spec, by intersection with equivalent
    histories *)
-let instances = classes(same-instance)
-let depi = lift(instances,(rf-reg|rfi)^-1) in
+let dep = (iico_data|rf-reg|rfi)^-1
 let diffw =(loc & (W * W)) \ id
 let diff = ((rfe^-1;diffw;rf)|(rf^-1;diffw;rfe))
-let diffi = lift(instances,diff)
-let bisim = delift(bisimulation(depi,lift(instances,same-instr)\diffi))\id
+let bisim = bisimulation(dep,same-static\diff)\id
 let equiv = (W*W) & bisim
 
 let new-ctrl = ctrlequiv equiv 

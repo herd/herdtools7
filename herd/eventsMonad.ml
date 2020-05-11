@@ -95,15 +95,21 @@ Monad type:
     None means no speculation at all
 *)
 
-    type eid = int
+
+    type eid =
+        { id : int ;  (* event identifier proper *)
+          sub : int } (* identifier amongst one instruction instance *)
+
+    let bump_eid { id; sub; } = { id=id+1; sub=sub+1; }
+
     type 'a t =
         eid -> eid * ('a Evt.t * 'a Evt.t option)
 
  (* Code monad slight differs as regardes agument *)
- (* Threading by instruction instance identifier *)
+ (* Threading by instruction instance identifier and event id proper *)
 
     type 'a code =
-        (int * eid) -> (int * eid) * ('a Evt.t * 'a Evt.t option)
+        (int * int) -> (int * int) * ('a Evt.t * 'a Evt.t option)
 
     let zeroT : 'a t
         = (fun eiid_next -> (eiid_next, (Evt.empty, None)))
@@ -121,7 +127,7 @@ Monad type:
 
 (* Delay incompatible with speculation *)
     let delay
-        = fun (m:'a t) (eiid:int) ->
+        = fun (m:'a t) (eiid:eid) ->
           let eiid,(mact,_) = m eiid in
           let v,cl,es = try Evt.as_singleton mact with _ -> assert false in
           let delayed : 'a t = fun eiid -> eiid,(Evt.singleton (v,[],es),None) in
@@ -172,7 +178,7 @@ Monad type:
 (* Tag check combinator *)
     let check_tags : 'v t -> ('v -> 'v t) -> ('v -> 'v -> 'v t) -> 'x t -> 'v t
         = fun ma rtag comp commit ->
-          fun (eiid:int) ->
+          fun (eiid:eid) ->
             let eiid,(aact) = ma eiid in
             let a,acl,aes = Evt.as_singleton_nospecul aact in
             let eiid,rtagact = rtag a eiid in
@@ -601,7 +607,7 @@ Monad type:
     let (>>>) : (poi -> (poi * 'a) t) -> ('a -> 'b code) -> 'b code
         (*      = fun s f -> data_comp (+|+) s f *)
         = fun s f -> fun (poi,eiid) ->
-          let (eiid, (sact,spec)) = s poi eiid in
+          let ({id=eiid;_}, (sact,spec)) = s poi {id=eiid;sub=0} in
           let ((poi,v1),_,_) =
             Evt.wrap_check (fun (v1,_,_) (v2,_,_) -> v1 = v2) sact in
           let (poi_b,eiid_b),(b_setact,bspec) = f v1 (poi,eiid) in
@@ -652,57 +658,57 @@ Monad type:
       fun eiid ->
         V.fold_over_vals
           (fun v (eiid1,(acc_inner,_)) ->
-            (eiid1+1,
+            (bump_eid eiid1,
              (Evt.add
                 (v, [],
                  trivial_event_structure is_data
-                   {E.eiid = eiid1 ;
+                   {E.eiid = eiid1.id ; E.subid=eiid.sub ;
                     E.iiid = Some ii;
                     E.action = mk_action loc v })
                 acc_inner, None))) (eiid,(Evt.empty,None))
 
     let mk_singleton_es a ii =
       fun eiid ->
-        (eiid+1,
+        (bump_eid eiid,
          (Evt.singleton
             ((), [],
              trivial_event_structure false
-               {E.eiid = eiid ;
+               {E.eiid = eiid.id ; E.subid=eiid.sub ;
                 E.iiid = Some ii;
                 E.action = a }),None))
 
     let mk_singleton_es_success =
       fun a ii ->
         fun eiid ->
-          (eiid+1,
+          (bump_eid eiid,
            (Evt.singleton
               ((), [],
                let str =
                  trivial_event_structure false
-                   {E.eiid = eiid ;
+                   {E.eiid = eiid.id ; E.subid = eiid.sub;
                     E.iiid = Some ii;
                     E.action = a } in
                { str with E.success_ports=str.E.events; }),None))
 
     let mk_fence a ii =
       fun eiid ->
-        (eiid+1,
+        (bump_eid eiid,
          (Evt.singleton
             ((), [],
              let es =
                trivial_event_structure false
-                 {E.eiid = eiid ;
+                 {E.eiid = eiid.id ; E.subid = eiid.sub ;
                   E.iiid = Some ii;
                   E.action = a } in
              { es with E.output = Some E.EventSet.empty; }), None))
 
     let mk_singleton_es_eq a eqs ii =
       fun eiid ->
-        (eiid+1,
+        (bump_eid eiid,
          (Evt.singleton
             ((), eqs,
              trivial_event_structure false
-               {E.eiid = eiid ;
+               {E.eiid = eiid.id ; E.subid=eiid.sub ;
                 E.iiid = Some ii;
                 E.action = a }),None))
 
@@ -817,14 +823,14 @@ Monad type:
           let eiid,es =
             List.fold_left
               (fun (eiid,es) (ea,v) ->
-                eiid+1,
+                bump_eid eiid,
                 E.EventSet.add
-                  {E.eiid = eiid;
+                  {E.eiid = eiid.id; E.subid=eiid.sub;
                    E.iiid = Some ii;
                    E.action = mk_act SZ.byte (A.Location_global ea) v;} es)
               (eiid,E.EventSet.empty) eavs  in
           let e_full =
-            { E.eiid=eiid; E.iiid = Some ii;
+            { E.eiid=eiid.id; E.subid=eiid.sub; E.iiid = Some ii;
               E.action = mk_act sz (A.Location_global a) v; } in
           let st =
             { E.empty_event_structure with
@@ -832,7 +838,7 @@ Monad type:
               E.data_ports = if is_data then es else E.EventSet.empty;
               E.sca = E.EventSetSet.singleton es;
               E.mem_accesses = E.EventSet.singleton e_full;} in
-          eiid+1,(Evt.singleton (v,a_eqs@v_eqs,st),None)
+          bump_eid eiid,(Evt.singleton (v,a_eqs@v_eqs,st),None)
 
       let write_mixed sz mk_act a v ii =
         fun eiid ->
@@ -841,21 +847,21 @@ Monad type:
           let eiid,es =
             List.fold_left2
               (fun (eiid,es) ea v ->
-                eiid+1,
+                bump_eid eiid,
                 E.EventSet.add
-                  {E.eiid = eiid;
+                  {E.eiid = eiid.id; E.subid=eiid.sub;
                    E.iiid = Some ii;
                    E.action = mk_act SZ.byte (A.Location_global ea) v;} es)
               (eiid,E.EventSet.empty) eas vs in
           let e_full =
-            { E.eiid=eiid; E.iiid = Some ii;
+            { E.eiid=eiid.id; E.subid=eiid.sub; E.iiid = Some ii;
               E.action = mk_act sz (A.Location_global a) v; } in
           let st =
             { E.empty_event_structure with
               E.events = es;
               E.sca = E.EventSetSet.singleton es;
               E.mem_accesses = E.EventSet.singleton e_full;} in
-          eiid+1,(Evt.singleton ((),a_eqs@v_eqs,st),None)
+          bump_eid eiid,(Evt.singleton ((),a_eqs@v_eqs,st),None)
 
       let is_tagloc a = A.V.check_atag a
 
@@ -885,10 +891,10 @@ Monad type:
             List.fold_left
               (fun (eiid,es) (loc,v) ->
                 let ew =
-                  {E.eiid = eiid ;
+                  {E.eiid = eiid.id ; E.subid = eiid.sub ;
                    E.iiid = None ;
                    E.action = E.Act.mk_init_write loc def_size v ;} in
-                (eiid+1,ew::es))
+                (bump_eid eiid,ew::es))
               (eiid,[]) env in
           let es = E.EventSet.of_list es in
           if dbg then begin
@@ -913,20 +919,20 @@ Monad type:
                           List.fold_left2
                             (fun (eiid,ews) a d ->
                               let ew =
-                                { E.eiid = eiid ;
+                                { E.eiid = eiid.id ; E.subid = eiid.sub;
                                   E.iiid = None ;
                                   E.action =
                                   E.Act.mk_init_write
                                     (A.Location_global a) SZ.byte d ;} in
-                              eiid+1,ew::ews)
+                              bump_eid eiid,ew::ews)
                             (eiid,[]) eas ds in
                         eiid,ews@es, E.EventSetSet.add (E.EventSet.of_list ews) sca
                   | _ ->
                       let ew =
-                        {E.eiid = eiid ;
+                        {E.eiid = eiid.id ; E.subid = eiid.sub;
                          E.iiid = None ;
                          E.action = E.Act.mk_init_write loc def_size v ;} in
-                      (eiid+1,ew::es,
+                      (bump_eid eiid,ew::es,
                        E.EventSetSet.add (E.EventSet.singleton ew) sca))
                 (eiid,[],E.EventSetSet.empty) env in
             let es = E.EventSet.of_list es in
@@ -947,8 +953,8 @@ Monad type:
 
       let t2code : 'a t -> 'a code
           = fun m -> fun (poi,eiid) ->
-            let eiid,r = m eiid in
-            ((poi,eiid),r)
+            let eiid,r = m {id=eiid;sub=0;} in
+            ((poi,eiid.id),r)
 
       let initwrites env size_env = t2code (do_initwrites env size_env)
 
@@ -965,13 +971,13 @@ Monad type:
     let fetch op arg mk_action ii =
       fun eiid ->
         V.fold_over_vals
-          (fun v (eiid1,(acc_inner,_)) ->
+          (fun v (eiid,(acc_inner,_)) ->
             let vstored = V.fresh_var () in
-            (eiid1+1,
+            (bump_eid eiid,
              (Evt.add
                 (v, [VC.Assign (vstored,VC.Binop (op,v,arg))],
                  trivial_event_structure false
-                   {E.eiid = eiid1 ;
+                   {E.eiid = eiid.id ; E.subid = eiid.sub ;
                     E.iiid = Some ii;
                     E.action = mk_action v vstored})
                 acc_inner,None))) (eiid,(Evt.empty,None))
