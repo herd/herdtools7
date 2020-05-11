@@ -66,10 +66,6 @@ and type evt_struct = E.event_structure) =
         assert (y = None);
         x
 
-      let give_singleton = function
-        | [x] -> Some x
-        | _ -> None
-
       let add x s = x::s
 
       let map = List.map
@@ -91,10 +87,23 @@ and type evt_struct = E.event_structure) =
       | elt::s -> assert(check_same_value (p elt) s); elt
     end
 
-(* Returned value is a pair, whose first element is concrete branch and second collect
-   speculated branch. None means no speculation at all *)
-    type 'a t = int -> int * ('a Evt.t * 'a Evt.elt option) (* Threading through eiid *)
-    type 'a code = (int * int) -> (int * int) * ('a Evt.t * 'a Evt.elt option) (* Threading through eiid *)
+(*
+Monad type:
+  + Argument is event identifier
+  + Returned value is a pair, whose first element is
+    concrete branch and second collects speculated branch.
+    None means no speculation at all
+*)
+
+    type eid = int
+    type 'a t =
+        eid -> eid * ('a Evt.t * 'a Evt.t option)
+
+ (* Code monad slight differs as regardes agument *)
+ (* Threading by instruction instance identifier *)
+
+    type 'a code =
+        (int * eid) -> (int * eid) * ('a Evt.t * 'a Evt.t option)
 
     let zeroT : 'a t
         = (fun eiid_next -> (eiid_next, (Evt.empty, None)))
@@ -428,28 +437,32 @@ and type evt_struct = E.event_structure) =
       | None -> acc
       | Some s3 -> Evt.add s3 acc
 
+    let fold2_ess f ess1 ess2 k =
+      Evt.fold
+        (fun es1 k ->
+          Evt.fold (fun es2 k -> f es1 es2 k) ess2 k)
+        ess1 k
+
+    let lift_combis f c ess1 ess2 = fold2_ess (lift_combi f c) ess1 ess2 Evt.empty
+
     let do_speculate (v,vcl,es) = (v,vcl,E.do_speculate es)
+    let do_speculates ess = Evt.map do_speculate ess
 
     (* Combine the results *)
     let combi f c s1 s2 =
       fun eiid ->
         let (eiid,(s1act,spec1)) = s1 eiid in
         let (eiid,(s2act,spec2)) = s2 eiid in
-        let s3act =
-          Evt.fold (fun elt1 acc ->
-            Evt.fold (fun elt2 acc ->
-              lift_combi f c elt1 elt2 acc)
-              s2act acc)
-            s1act Evt.empty
-        in
+        let s3act = lift_combis f c s1act s2act in
         let spec3 = match spec1,spec2 with
         | None, None -> None
-        | Some elt1, Some elt2 -> lift_combi_opt f c elt1 elt2
-        | None, Some elt2 -> let elt1 = Evt.as_singleton s1act
-        in lift_combi_opt f c (do_speculate elt1) elt2
-        | Some elt1, None -> let elt2 = Evt.as_singleton s2act
-        in lift_combi_opt f c elt1 (do_speculate elt2)
-        in
+        | Some elt1, Some elt2 -> Some (lift_combis f c elt1 elt2)
+        | None, Some elt2 ->
+            let elt1 = do_speculates s1act in
+            Some (lift_combis f c elt1 elt2)
+        | Some elt1, None ->
+            let elt2 = do_speculates s2act in
+            Some (lift_combis f c elt1 elt2) in
         (eiid,(s3act,spec3))
 
     let (>>|) : 'a t -> 'b t -> ('a * 'b)  t
@@ -463,7 +476,7 @@ and type evt_struct = E.event_structure) =
       fun v s eiid ->
         let (eiid,(sact,spec)) = s eiid in
         let f = fun (_,vcl,es) -> (v,vcl,es) in
-        (eiid,(Evt.map f sact, Misc.app_opt f spec))
+        (eiid,(Evt.map f sact, Misc.app_opt (Evt.map f) spec))
 
     let (>>!) s v = forceT v s
 
@@ -475,7 +488,7 @@ and type evt_struct = E.event_structure) =
         = fun v s eiid ->
           let (eiid1,(sact,spec)) = s eiid in
           let f = (fun (vin, vcl, es) -> ((v, vin), vcl, es)) in
-          (eiid1,(Evt.map f sact, Misc.app_opt f spec))
+          (eiid1,(Evt.map f sact, Misc.app_opt (Evt.map f) spec))
 
 (* Choosing dependant upon flag, notice that, once determined v is either one or zero *)
     let choiceT =
@@ -497,19 +510,36 @@ and type evt_struct = E.event_structure) =
               (Evt.map fr ract) in
           (eiid, (un, None))
 
+(* Extract speculaive behaviout, base case is to speculate active branch *)
     let as_speculated (act,spec) = match spec with
     | Some spec -> spec
-    | None -> (fun (v,cs,es) -> v,cs,E.do_speculate es) (Evt.as_singleton act)
+    | None -> do_speculates act
 
-    let combi_acts ok no fapp =
-      let _,cs_spec,es_spec =  as_speculated no in
-      let act,_ = ok in
-      Evt.map (fun (v,cs,es) -> v,fapp cs@cs_spec,Misc.as_some(es =|= es_spec)) act
+(* Combine active branch and speculated one -> active *)
+    let combi_acts ok no fcs =
+      let acts,_ = ok
+      and specs =  as_speculated no in
+      Evt.fold
+        (fun (v,cl_act,es_act) acc ->
+          let cl_act = fcs cl_act in
+          Evt.fold
+            (fun (_v_spec,cl_spec,es_spec) acc ->
+              Evt.add
+                (v,cl_act@cl_spec,Misc.as_some (es_act =|= es_spec))
+                acc)
+            specs acc)
+        acts Evt.empty
 
+(* Simple union of speculated structure(s) *)
     let combi_spec p1 p2 =
-      let v,cs1,es1 = as_speculated p1
-      and _,cs2,es2 = as_speculated p2 in
-      Some (v,cs1@cs2,Misc.as_some(es1 =|= es2))
+      let es1 = as_speculated p1
+      and es2 = as_speculated p2 in
+      let specs =
+        lift_combis
+          (fun v _ -> v) (* Values are assume to be the same, unchecked *)
+          (=|=)
+          es1 es2 in
+      Some specs
 
     let speculT  : V.v -> 'a code -> 'a code -> 'a code =
       fun v l r eiid ->
@@ -559,9 +589,9 @@ and type evt_struct = E.event_structure) =
 (* For combining instruction + next instructions.
    Notice: no causality from s to f v1 *)
 
-    let other_combi (_,vcl1,es1) (v2,vcl2,es2) =
+    let other_combi (_,vcl1,es1) (v2,vcl2,es2) k =
       let es = E.inst_code_comp es1 es2 in
-      (v2,vcl2@vcl1,es)
+      Evt.add (v2,vcl1@vcl2,es) k
 
     let cseq : 'a t -> ('a -> 'b t) -> 'b t
         = fun s f ->  data_comp (+|+) s f
@@ -575,25 +605,16 @@ and type evt_struct = E.event_structure) =
           let ((poi,v1),_,_) =
             Evt.wrap_check (fun (v1,_,_) (v2,_,_) -> v1 = v2) sact in
           let (poi_b,eiid_b),(b_setact,bspec) = f v1 (poi,eiid) in
-          let k = Evt.fold
-              (fun elt1 k ->
-                Evt.fold
-                  (fun elt2 k ->
-                    let to_add = other_combi elt1 elt2 in
-                    Evt.add to_add k)
-                  b_setact k)
-              sact Evt.empty
-          in
+          let k = fold2_ess other_combi sact b_setact Evt.empty in
           let spec = match spec,bspec with
           | None, None -> None
-          | None, Some elt2 ->
+          | None, Some spec2 ->
               begin
-                match (Evt.give_singleton sact) with
-                | None -> Some elt2
-                | Some se ->
-                    Some (other_combi (do_speculate se) elt2)
+                let spec1 = do_speculates sact in
+                Some (fold2_ess other_combi spec1 spec2 Evt.empty)
               end
-          | Some _, _ -> assert false
+          | Some _, _ ->
+              Warn.fatal "Refuse to consider speculation that originates from single instruction"
           in
           ((poi_b,eiid_b),(k,spec))
 
