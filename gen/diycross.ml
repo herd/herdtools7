@@ -237,15 +237,7 @@ let () =
         let module M = Make(C)(T(RISCVCompile_gen.Make(C))) in
         M.zyva
     | `LISA ->
-        let module BellConfig =
-        struct
-          let debug = !Config.debug
-          let verbose = !Config.verbose
-          let libdir = Version_gen.libdir
-          let prog = Config.prog
-          let bell = !Config.bell
-          let varatom = !Config.varatom
-        end in
+        let module BellConfig = Config.ToLisa(Config) in
         let module M = Make(C)(T(BellCompile.Make(C)(BellConfig))) in
         M.zyva
     | `C | `CPP ->

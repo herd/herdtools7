@@ -37,6 +37,8 @@ module type Config = sig
   val symetric : StringSet.t
 (* find files *)
   val libfind : string -> string
+(* check variant *)
+  val variant : string -> bool
 end
 
 (* Simplified Sem module.
@@ -868,28 +870,28 @@ module Make
     end
 
 (* Debug ClassRel's as instance relations
-    module InstanceArg = struct
-      type base = E.EventSet.t
-      module Rel = ClassRel
-      let debug_set chan ss =
-        fprintf chan "{%a}"
-          (fun chan ss -> ClassRel.Elts.pp chan "," debug_set ss)
-          ss
-    let debug_instance chan es =
-      try fprintf chan "%s"  (E.pp_instance (E.EventSet.choose es))
-      with Not_found -> assert false
+   module InstanceArg = struct
+   type base = E.EventSet.t
+   module Rel = ClassRel
+   let debug_set chan ss =
+   fprintf chan "{%a}"
+   (fun chan ss -> ClassRel.Elts.pp chan "," debug_set ss)
+   ss
+   let debug_instance chan es =
+   try fprintf chan "%s"  (E.pp_instance (E.EventSet.choose es))
+   with Not_found -> assert false
 
-    let debug_instance_rel chan r =
-      ClassRel.pp chan ","
-        (fun chan (e1,e2) -> fprintf chan "{%a -> %a}"
-            debug_instance e1 debug_instance e2)
-        r
+   let debug_instance_rel chan r =
+   ClassRel.pp chan ","
+   (fun chan (e1,e2) -> fprintf chan "{%a -> %a}"
+   debug_instance e1 debug_instance e2)
+   r
 
-      let debug_rel = debug_instance_rel
-      let mk_val r = ClassRel r
-      let typ = TClassRel
-    end
-*)
+   let debug_rel = debug_instance_rel
+   let mk_val r = ClassRel r
+   let typ = TClassRel
+   end
+ *)
     let arg_mismatch () = raise (PrimError "argument mismatch")
 
     let partition arg = match arg with
@@ -1153,6 +1155,16 @@ module Make
       | Rid of (E.event -> bool)
       | Revent of E.EventRel.t
       | Rclass of ClassRel.t
+
+
+    let eval_variant loc v xtrue xfalse =
+      try if O.variant v then xtrue else xfalse
+      with Not_found ->
+        Warn.warn_always
+          "%a: non-existent variant \"%s\", assumed unset"
+          TxtLoc.pp loc v ;
+        xfalse
+
 
 (* For all success call kont, accumulating results *)
     let interpret test kfail =
@@ -1643,6 +1655,7 @@ module Make
           | ty ->
               error env.EV.silent loc
                 "cannot perform subset on type '%s'" (pp_typ ty) end
+      | Variant v -> eval_variant loc v true false
 
       and eval_app loc env vf va = match vf with
       | Clo f ->
@@ -2105,6 +2118,9 @@ module Make
       let rec exec : 'a. st -> ins -> ('a -> 'a) ->
         (st -> 'a -> 'a) -> 'a -> 'a  =
           fun  (type res) st i kfail kont (res:res) ->  match i with
+          | IfVariant (loc,v,ins_true,ins_false) ->
+              let ins = eval_variant loc v ins_true ins_false in
+              run st ins kfail kont res
           | Debug (_,e) ->
               if O.debug then begin
                 let v = eval_st st e in

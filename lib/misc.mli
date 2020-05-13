@@ -52,6 +52,8 @@ external identity : 'a -> 'a = "%identity"
 (* ignore argument(s) *)
 val ing : 'a -> unit
 val ing2 : 'a -> 'b -> unit
+(* raise Not_found *)
+val not_found : unit -> 'a
 
 val is_none : 'a option -> bool
 val is_some : 'a option -> bool
@@ -63,6 +65,8 @@ val snd_opt : ('a * 'b) option -> 'b option
 val map_opt : ('a -> 'b) -> 'a option -> 'b option
 val option_map : ('a -> 'b option) -> 'a list -> 'b list
 val app_opt_def : 'b -> ('a -> 'b) -> 'a option -> 'b
+val app_opt2 : ('v -> 'r) -> (unit -> 'r) -> ('i -> 'v option) -> 'i -> 'r
+val delay_parse : ('v -> 'r) -> ('i -> 'v option) -> 'i -> 'r
 
 val map_string : (char -> string) -> string -> string
 val fmt_percent : string -> string

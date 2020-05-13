@@ -41,6 +41,7 @@ module LU = LexUtils.Make(O)
     | "undefined_unless" -> REQUIRES (* jade: deprecated?, indeed but still here ! *)
     | "flag" -> FLAG
     | "include" -> INCLUDE
+    | "variant" -> VARIANT
     | "begin" -> BEGIN
     | "end" -> END
     | "procedure" -> PROCEDURE

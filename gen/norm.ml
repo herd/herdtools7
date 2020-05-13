@@ -112,15 +112,7 @@ let () =
       let module M = Build(RISCVArch_gen.Make(RISCVArch_gen.Config)) in
       M.zyva
   | `LISA ->
-      let module BellConfig =
-	struct
-	  let debug = !Config.debug
-	  let verbose = !Config.verbose
-	  let libdir = Version_gen.libdir
-	  let prog = Config.prog
-	  let bell = !bell
-	  let varatom = []
-	end in
+      let module BellConfig = Config.ToLisa(Config) in
       let module M = Build(BellArch_gen.Make(BellConfig)) in
       M.zyva
   | `C | `CPP ->

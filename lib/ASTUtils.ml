@@ -81,6 +81,7 @@ and free_cond c = match c with
 | Subset (e1,e2)
 | In (e1,e2)
   -> StringSet.union (free e1) (free e2)
+| Variant _ -> StringSet.empty
 
 and frees es = StringSet.unions (List.map free es)
 

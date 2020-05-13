@@ -53,6 +53,7 @@ let tuple_pat = function
 %token LET REC AND WHEN ACYCLIC IRREFLEXIVE TESTEMPTY EQUAL
 %token SHOW UNSHOW AS FUN IN PROCEDURE CALL FORALL DO FROM
 %token TRY INSTRUCTIONS DEFAULT IF THEN ELSE
+%token VARIANT
 %token REQUIRES FLAG
 %token ARROW
 %token ENUM DEBUG MATCH WITH
@@ -145,7 +146,10 @@ ins:
     { Forall (mk_loc $loc,$2,$4,$6) }
 | WITH VAR FROM exp
     { WithFrom (mk_loc $loc,$2,$4) }
-
+| IF variant ins_list ELSE ins_list END
+    { IfVariant (mk_loc $loc,$2,$3,$5) }
+| IF variant ins_list END
+    { IfVariant (mk_loc $loc,$2,$3,[]) }
 
 //Bell file declarations
 | INSTRUCTIONS VAR LBRAC args RBRAC  {Events(mk_loc $loc,$2,$4,false)}
@@ -240,6 +244,11 @@ cond:
 | exp EQUAL exp  { Eq ($1,$3) }
 | exp SUBSET exp { Subset ($1,$3) }
 | exp IN exp     { In ($1,$3) }
+| variant        { Variant $1 }
+
+variant:
+| VARIANT STRING { $2 }
+| STRING { $1 }
 
 simple:
 | EMPTY { Konst (mk_loc $loc,Empty RLN) }

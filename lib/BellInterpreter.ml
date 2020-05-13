@@ -20,6 +20,7 @@ module type Config = sig
   val verbose : int
   val libfind : string -> string
   val compat : bool
+  val variant : string -> bool
 end
 
 module Make (C: Config) = struct
@@ -46,6 +47,8 @@ module Make (C: Config) = struct
       let showraw = StringSet.empty
       let symetric = StringSet.empty
       let libfind = C.libfind
+(* Variant, coming from outer world *)
+      let variant = C.variant
     end in
 
  (* A dummy semantics! *)

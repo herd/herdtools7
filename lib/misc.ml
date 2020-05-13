@@ -58,6 +58,8 @@ external identity : 'a -> 'a = "%identity"
 let ing _ = ()
 let ing2 _ _ = ()
 
+let not_found () = raise Not_found
+
 let is_none = function
   | None -> true
   | Some _ -> false
@@ -77,6 +79,12 @@ let proj_opt default = function
 let app_opt f = function
   | None -> None
   | Some x -> Some (f x)
+
+let app_opt2 ok no parse s = match parse s with
+| None -> no ()
+| Some v -> ok v
+
+let delay_parse ok parse = app_opt2 ok not_found parse
 
 let check_opt check = function
   | None -> ()

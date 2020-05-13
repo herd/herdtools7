@@ -23,6 +23,7 @@ module type Config = sig
   val libfind : string -> string
   val compat : bool
   val prog : string
+  val variant : string -> bool
 end
 
 module Make(O:Config) =
@@ -41,6 +42,7 @@ module Make(O:Config) =
           let verbose = O.verbose
           let libfind = O.libfind
           let compat = O.compat
+          let variant = O.variant
         end)
 
     let parse fname =

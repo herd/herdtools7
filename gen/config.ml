@@ -292,6 +292,7 @@ let read_bell libfind fname =
         let libfind = libfind
         let compat = false
         let prog = prog
+        let variant = Misc.delay_parse !variant Variant_gen.parse
       end) in
   R.read fname
 
@@ -304,3 +305,23 @@ let parse_annots lines = match lines with
           let debug = !debug.Debug_gen.lexer
         end) in
     Some (P.parse lines)
+
+(* Dereference config variables into a config module for Lisa *)
+
+module ToLisa = functor
+  (O:sig
+    val debug : Debug_gen.t ref
+    val verbose : int ref
+    val prog : string
+    val bell : string option ref
+    val varatom : string list ref
+    val variant : (Variant_gen.t -> bool) ref
+  end) -> struct
+    let debug = !O.debug
+    let verbose = !O.verbose
+    let libdir = Version_gen.libdir
+    let prog = O.prog
+    let bell = !O.bell
+    let varatom = !O.varatom
+    let variant = !O.variant
+  end

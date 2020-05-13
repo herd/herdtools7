@@ -45,6 +45,7 @@ module Make
       let doshow = S.O.PC.doshow
       let showraw = S.O.PC.showraw
       let symetric = S.O.PC.symetric
+      let variant = Misc.delay_parse O.variant Variant.parse
     end
     module U = MemUtils.Make(S)
     module MU = ModelUtils.Make(O)(S)

@@ -69,7 +69,9 @@ and pat = Pvar of pat0 | Ptuple of pat0 list
 
 and pat0 = var option
 
-and cond = Eq of exp * exp | Subset of exp * exp | In of exp * exp
+and cond =
+| Eq of exp * exp | Subset of exp * exp | In of exp * exp
+| Variant of string
 
 and clause = string * exp
 
@@ -98,6 +100,8 @@ type ins =
   | WithFrom of TxtLoc.t * var * exp (* set of relations *)
 (*For bell files*)
   | Events of TxtLoc.t * var * exp list * bool (* define default *)
+(*Conditional, on variant as a string, avoiding dependency on herd/variant.ml *)
+  | IfVariant of TxtLoc.t * string * ins list * ins list
 
 and insclause = string * ins list
 

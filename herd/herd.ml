@@ -631,6 +631,7 @@ let () =
             let libfind = libfind
             let compat = Config.variant Variant.BackCompat
             let prog = prog
+            let variant = Misc.delay_parse Config.variant Variant.parse
           end) in
       let bi = R.read fname in
       Some (fname,bi) in
