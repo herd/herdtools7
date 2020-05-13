@@ -54,8 +54,14 @@ include "ncos.cat"
 (*
  * Include aarch64fences.cat so that barriers show up in generated diagrams.
  *)
+
 include "aarch64fences.cat"
-include "deps.cat"
+
+if variant "instances"
+  include "deps-instances.cat"
+else
+  include "deps.cat"
+end
 
 (*
  * As a restriction of the model, all observers are limited to the same

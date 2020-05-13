@@ -16,7 +16,7 @@
 
 type t =
   | Success     (* Riscv Model with explicit success dependency *)
-  | Instr
+  | Instr       (* Define instr (or same-instance) relation *)
   | SpecialX0   (* Some events by AMO to or from x0 are not generated *)
   | NoRMW
 (* Riscv: Expand load acquire and store release as fences *)
@@ -40,12 +40,13 @@ type t =
   | TooFar
 (* Branch speculation+ cat computation of dependencies *)
   | Deps
+  | Instances (* Compute dependencies on instruction instances *)
 
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
    "fullscdepend";"splittedrmw";"switchdepscwrite";"switchdepscresult";"lrscdiffok";
    "mixed";"dontcheckmixed";"weakpredicated"; "memtag";
-   "tagcheckprecise"; "tagcheckunprecise"; "toofar"; "deps"; ]
+   "tagcheckprecise"; "tagcheckunprecise"; "toofar"; "deps"; "instances"; ]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -67,6 +68,7 @@ let parse s = match Misc.lowercase s with
 | "tagcheckunprecise"|"unprecise" -> Some TagCheckUnprecise
 | "toofar" -> Some TooFar
 | "deps" -> Some Deps
+| "instances"|"instance" -> Some Instances
 | _ -> None
 
 let pp = function
@@ -89,6 +91,7 @@ let pp = function
   | TagCheckUnprecise -> "TagCheckUnprecise"
   | TooFar -> "TooFar"
   | Deps -> "Deps"
+  | Instances -> "Instances"
 
 let compare = compare
 

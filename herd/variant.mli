@@ -38,6 +38,7 @@ type t =
   | TooFar         (* Do not discard candidates with TooFar events *)
 (* Branch speculation+ cat computation of dependencies *)
   | Deps
+  | Instances (* Compute dependencies on instruction instances *)
 
 val compare : t -> t -> int
 val tags : string list
