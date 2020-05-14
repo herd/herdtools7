@@ -1247,6 +1247,7 @@ checking a condition, and specifying relations that are shown in pictures.
 \alt \T{forall} \NT{id} \T{in} \NT{expr} \T{do} \brepet{} \NT{instruction} \erepet \T{end}
 \alt \T{with} \NT{id} \T{from} \NT{expr}
 \alt \T{include} \nt{string}
+\alt \T{if} \T{variant} \nt{string}  \brepet \NT{instruction} \erepet \boption \T{else} \brepet \NT{instruction} \erepet \eoption \T{end} 
 \sep
 \NT{check} \is \NT{checkname} \orelse \T{\textasciitilde} \NT{checkname}
 \sep
@@ -1417,19 +1418,29 @@ An example of the construct usage is described in Sec.~\ref{intro:with}.
 The construct \synt{\T{include} \T{"}\nt{filename}\T{"}} is interpreted as
 the inclusion of the model contained in the file whose name is given as
 an argument to the \synt{\T{include}} instruction.
-In practice the list of intructions defined by the included model file
+In practice, the list of intructions defined by the included model file
 are executed.
 The string argument is delimited by double quotes ``\verb+"+'',
 which, of course, are not part of the filename.
-\iftrue
 Files are searched according to \herd{} rules --- see Sec.~\ref{herd:searchpath}.
-\else
-Notice that:
-\begin{itemize}
-\item Files are searched according to \herd{} rules --- see Sec.~\ref{herd:searchpath}.
-\item Model options defined in the model file \synt{\nt{filename}} are ignored.
-\end{itemize}
-\fi
+
+Inclusion is performed only \emph{once}. Subsequent \synt{\T{include}} instructions
+are not executed and a warning is issued.
+
+\subsubsection*{Conditional execution}
+The conditional instruction allows some control over model execution by setting variants.
+\ahrefloc{opt:variant}{Variants} are predefined tags set on the
+command line or in configuration files.
+
+The
+construct \synt{\T{if} \T{variant} \T{"}\nt{tag}\T{"} \nt{instructions}_1 \T{else} \nt{instructions}_2 \T{end}}
+behaves as follows: if the variant \textit{tag} is set, then the
+(possibly empty) list of instructions \synt{\nt{instructions}_1} is
+executed, otherwise the (optional, possibly empty) list of
+instructions \synt{\nt{instructions}_2} is executed. If \textit{tag}
+is not a recognised variant tag, a warning is issued and the
+non-existent variant is assumed to~be~unset.
+
 
 \subsection*{Bell extensions}
 
@@ -1802,11 +1813,16 @@ and false for \verb+forall+.
 \end{itemize}
 Default is \opt{none}.
 
-\item[{\tt \aname{opt:initwrites}{-initwrites} <bool>}]
+\item[{\tt \aname{opt:initwrites}{-initwrites}  <bool>}]
 Represent init writes as plain write events, default is \opt{false} except
 for specifically tagged generic models --- see ``Model options''
 in Sec.~\ref{language:model}.
 
+\item[{\tt \aname{opt:variant}{-variant} <\textit{tag}$_1$,\ldots,\textit{tag}$_n$>}]
+Activate variation(s) of models. Most variations are minor change in instruction semantics,
+are used for experimental purpose and remain undocumented. With the exception of tag
+``\texttt{mixed}'' that command mixed-size mode. Mixed-size mode is appropriate for mixed-size
+tests that performs accesses of different sizes, as well as indexed accesses.
 
 \end{description}
 
