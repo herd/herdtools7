@@ -297,7 +297,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
         "syncext";"lwsyncext";"dmbext";"dsbext";]
       {color="darkgreen"; style="";  }
       {color="black"; style="" ;  } ;
-    add_eas ["A" ; "B"; "co"; "ws";]
+    add_eas ["A" ; "B"; "co"; "ws"; "ca";]
       {color="blue" ; style = "" ; }
       {color="black" ; style = "" ; } ;
     add_eas ["LL" ; "LS" ; "PML"; "ll" ; "ls"; "pml"; "isync"; "dep"; "ctrl"; "data"; "addr"; "ctrlisync"; "isync"; "isb"; "ctrlisb";"ppo";"success";]

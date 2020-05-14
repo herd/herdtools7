@@ -1,7 +1,7 @@
 include "ctrl.cat"
 
-let new-data = [R]; dd-restrict; [DATA]; intrinsic; [W]
-let new-addr = [R]; dd-restrict; [NDATA]; intrinsic; [M] 
+let data = [R]; dd-restrict; [DATA]; intrinsic; [W]
+let addr = [R]; dd-restrict; [NDATA]; intrinsic; [M]
 let pom = po & (M*M)
 
 let sim = (same-instr & ((EXEC*SPEC) | (SPEC*EXEC))) \ id
@@ -9,14 +9,14 @@ let sim = (same-instr & ((EXEC*SPEC) | (SPEC*EXEC))) \ id
 (* Alternative computation of equiv-spec, by intersection with equivalent
    histories at the instance level *)
 let instances = classes(same-instance)
-let depi = lift(instances,(rf-reg|rfi)^-1) in
+let depi = lift(instances,(rf-reg-restrict|rfi)^-1) in
 let diffw =(loc & (W * W)) \ id
 let diff = ((rfe^-1;diffw;rf)|(rf^-1;diffw;rfe))
 let diffi = lift(instances,diff)
 let bisim = delift(bisimulation(depi,lift(instances,same-instr)\diffi))\id
 let equiv = (W*W) & bisim
 
-let new-ctrl = ctrlequiv equiv 
+let ctrl = ctrlequiv equiv
 let AE = always-exec equiv
 let DW = zyva equiv Dmins
 let rf-mem = rf \ rf-reg

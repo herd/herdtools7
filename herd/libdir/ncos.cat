@@ -15,4 +15,3 @@ let fr = ([EXEC]; invrf ; co; [EXEC]) \ id
 let fri = fr & int
 let fre = fr \ fri
 
-show co,fr

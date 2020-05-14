@@ -106,12 +106,12 @@ show (sm \ id) \ (I * I) as si
 let obs = rfe | fre | coe
 
 (* Dependency-ordered-before *)
-let dob = new-addr | new-data
-	| new-ctrl; [W]
-	| (new-addr; po); [ISB]; po; [R]
+let dob = addr | data
+	| ctrl; [W]
+	| (addr; po); [ISB]; po; [R]
         | to-PoD; po; [ISB]; po
-	| new-addr; po; [W]
-	| (new-addr | new-data); lrs
+	| addr; po; [W]
+	| (addr | data); lrs
 
 (* Atomic-ordered-before *)
 let aob = rmw
