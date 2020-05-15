@@ -329,39 +329,6 @@ and type evt_struct = E.event_structure) =
       eiid,
       Evt.singleton (r,cl_resa@cl_data@cl_addr@cl_wres@cl_wresult@cl_wmem,es)
 
-(* Store conditional pair, tricky dependencies *)
-    let riscv_sc_pair success read_res read_data1 read_data2 read_addr1 read_addr2
-        cancel_res write_result write_mem1 write_mem2 eiid =
-      let eiid,read_res =  read_res eiid in
-      let eiid,read_data1 = read_data1 eiid in
-      let eiid,read_addr1 = read_addr1 eiid in
-      let eiid,read_data2 = read_data2 eiid in
-      let eiid,read_addr2 = read_addr2 eiid in
-      let resa,cl_resa,es_resa =  Evt.as_singleton read_res
-      and data1,cl_data1,es_data1 =  Evt.as_singleton read_data1
-      and addr1,cl_addr1,es_addr1 =  Evt.as_singleton read_addr1
-      and data2,cl_data2,es_data2 =  Evt.as_singleton read_data2
-      and addr2,cl_addr2,es_addr2 =  Evt.as_singleton read_addr2 in
-      let eiid,cancel_res = cancel_res eiid in
-      let eiid,write_result = write_result eiid in
-      let eiid,write_mem1 = write_mem1 addr1 resa data1 eiid in
-      let eiid,write_mem2 = write_mem2 addr2 resa data2 eiid in
-      let (),cl_wres,es_wres = Evt.as_singleton cancel_res
-      and (),cl_wresult,es_wresult =  Evt.as_singleton write_result
-      and (),cl_wmem1,es_wmem1 =  Evt.as_singleton write_mem1
-      and (),cl_wmem2,es_wmem2 =  Evt.as_singleton write_mem2 in
-      let es =
-        E.riscv_sc_pair success
-          es_resa
-          es_data1 es_data2
-          es_addr1 es_addr2
-          es_wres es_wresult
-          es_wmem1 es_wmem2 in
-      eiid,
-      Evt.singleton ((),cl_resa@cl_data1@cl_data2@cl_addr1@cl_addr2
-                        @cl_wres@cl_wresult@cl_wmem1@cl_wmem2,es)
-
-
 (* AArch64 successful cas *)
     let aarch64_cas_ok
         (read_rn:'loc t) (read_rs:'v t) (read_rt: 'v t)
@@ -412,20 +379,6 @@ and type evt_struct = E.event_structure) =
            read_res read_data read_addr cancel_res
            (write_result A.V.zero)
            write_mem)
-
-    let riscv_store_conditional_pair read_res read_data1 read_data2 read_addr1 read_addr2
-        cancel_res write_result write_mem1 write_mem2 =
-      altT
-        (riscv_sc_pair false
-           read_res read_data1 read_data2 read_addr1 read_addr2 cancel_res
-           (write_result A.V.one)
-           (fun _a _resa _v -> unitT ()) (fun _a _resa _v -> unitT ()))
-        (riscv_sc_pair true
-           read_res read_data1 read_data2 read_addr1 read_addr2 cancel_res
-           (write_result A.V.zero)
-           write_mem1 write_mem2)
-
-
 
 (* stu combinator *)
     let stu : 'a t -> 'b t -> ('a -> unit t) -> (('a * 'b) -> unit t) -> unit t

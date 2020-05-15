@@ -316,16 +316,6 @@ module type S = sig
           event_structure ->  event_structure ->  event_structure ->
             event_structure
 
-  val riscv_sc_pair :
-      bool (* success *) ->
-        event_structure -> (* Read Reserve *)
-        event_structure -> event_structure -> (* Read Data1, data2*)
-        event_structure -> event_structure -> (* Read Address1, Address2 *)
-        event_structure -> event_structure -> (* cancel res, write res *)
-        event_structure -> event_structure -> (* Write Mem1, Mem2*)
-            event_structure
-
-
   val aarch64_cas_ok :
         event_structure -> event_structure -> event_structure ->
           event_structure ->  event_structure ->  event_structure ->
@@ -1260,98 +1250,6 @@ let do_para_comp es1 es2 =
         (EventSet.union3 resa.mem_accesses data.mem_accesses addr.mem_accesses)
         (EventSet.union3 wres.mem_accesses wresult.mem_accesses wmem.mem_accesses);
     }
-
-(* Store conditional pair - identical to store pair, but we do a union of datas, addrs, wmems*)
-  let riscv_sc_pair success resa data1 data2 addr1 addr2 wres wresult wmem1 wmem2 =
-    let dep_on_write =
-      let d = Variant.get_default A.arch Variant.SwitchDepScWrite in
-      if C.variant Variant.SwitchDepScWrite then not d else d in
-    let in_wmem1 = minimals wmem1
-    and in_wmem2 = minimals wmem2
-    and out_wmem1 = maximals wmem1
-    and out_wmem2 = maximals wmem2
-    and in_wres   = minimals wres
-    and in_wresult = minimals wresult
-    and out_data1 = maximals data1
-    and out_data2 = maximals data2
-    and out_addr1 = maximals addr1
-    and out_addr2 = maximals addr2
-    and out_resa = maximals resa in
-    { procs = [];
-      events = EventSet.unions
-        [data1.events; data2.events;
-         addr1.events; addr2.events;
-         wmem1.events; wmem2.events;
-         resa.events; wres.events; wresult.events];
-      intra_causality_data =
-      EventRel.unions
-        [EventRel.union
-           data1.intra_causality_data addr1.intra_causality_data;
-         EventRel.union
-           data2.intra_causality_data addr2.intra_causality_data;
-         EventRel.union3 wres.intra_causality_data
-           wresult.intra_causality_data resa.intra_causality_data;
-         EventRel.union
-           wmem1.intra_causality_data wmem2.intra_causality_data;
-         EventRel.cartesian
-           (EventSet.union out_addr1 out_resa)
-           (EventSet.union3 (EventSet.union in_wmem1 in_wmem2) in_wres
-              (if C.variant Variant.FullScDepend || success
-              then in_wresult else EventSet.empty));
-         EventRel.cartesian
-           (EventSet.union out_addr2 out_resa)
-           (EventSet.union3 in_wmem2 in_wres
-              (if C.variant Variant.FullScDepend || success
-              then in_wresult else EventSet.empty));
-         EventRel.cartesian out_data1
-           (if C.variant Variant.Success || not (C.variant Variant.FullScDepend) then
-              EventSet.union in_wmem1 in_wmem2 else
-           EventSet.union3 in_wresult in_wmem1 in_wmem2);
-         EventRel.cartesian out_data2
-           (if C.variant Variant.Success || not (C.variant Variant.FullScDepend) then in_wmem2 else
-           EventSet.union in_wresult in_wmem2); ];
-      intra_causality_control =
-      EventRel.union3
-        (if dep_on_write then EventRel.cartesian
-          (EventSet.union out_wmem1 out_wmem2)
-          in_wresult
-        else EventRel.empty)
-        (EventRel.union3 resa.intra_causality_control
-           (EventRel.union data1.intra_causality_control data2.intra_causality_control)
-           (EventRel.union addr1.intra_causality_control addr2.intra_causality_control))
-        (EventRel.union3 wres.intra_causality_control
-           wresult.intra_causality_control (EventRel.union wmem1.control wmem2.control));
-      control =
-      EventRel.union3
-        (EventRel.union data1.control addr1.control)
-        (EventRel.union data2.control addr2.control)
-        (EventRel.union3 wres.control wresult.control resa.control);
-      data_ports =
-      EventSet.unions
-        [addr1.data_ports; addr2.data_ports;
-         data1.data_ports; data2.data_ports;
-         wmem1.data_ports; wmem2.data_ports;
-         wres.data_ports; wresult.data_ports; resa.data_ports];
-      success_ports =
-      EventSet.unions
-        [data1.success_ports; data2.success_ports;
-         addr1.success_ports; addr2.success_ports;
-         wmem1.success_ports; wmem2.success_ports;
-         wres.success_ports; wresult.success_ports; resa.success_ports];
-      output = Some (EventSet.union (get_output wresult) (get_output wres));
-      sca =
-      EventSetSet.unions
-        [resa.sca; data1.sca; data2.sca; addr1.sca; addr2.sca;
-         wres.sca; wresult.sca; wmem1.sca; wmem2.sca];
-      mem_accesses =
-      EventSet.unions
-        [resa.mem_accesses;
-         data1.mem_accesses; data2.mem_accesses;
-         addr1.mem_accesses; addr2.mem_accesses;
-         wres.mem_accesses; wresult.mem_accesses;
-         wmem1.mem_accesses; wmem2.mem_accesses;];
-    }
-
 
 (* AArch64 CAS, success *)
   let aarch64_cas_ok rn rs rt wrs rm wm =

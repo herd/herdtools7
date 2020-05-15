@@ -69,7 +69,6 @@ match name with
 | "stlr"|"STLR" -> STLR
 | "stxr"|"STXR" -> STXR
 | "stlxr"|"STLXR" -> STLXR
-| "stxp"|"STXP" -> STXP
 | "strb"|"STRB" -> STRB
 | "strh"|"STRH" -> STRH
 | "stlrb"|"STLRB" -> STLRB

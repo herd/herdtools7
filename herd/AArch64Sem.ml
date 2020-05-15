@@ -427,39 +427,6 @@ module Make
           (read_reg_ord rd ii >>= M.address_of >>= M.deref)
           ii
 
-      and stxp var t rr r1 r2 rd kr ii =
-        let open AArch64Base in
-        let sz = tr_variant var in
-        (* According to the Arm ISA the kr should only ever be #0 *)
-        (* We don't need to do anything other than check this *)
-        let _ = begin match kr with
-          | K 0 -> ()
-          | _   -> Warn.fatal "illegal pre-index operand in store exclusive pair"
-        end in
-        (* Select which write we want *)
-        let write = match t with
-          | YY -> write_mem_atomic AArch64.X
-          | LY -> write_mem_atomic AArch64.XL in
-
-        read_reg_ord rd ii >>= M.address_of >>= fun a ->
-        M.riscv_store_conditional_pair
-          (read_reg_ord ResAddr ii)
-          (read_reg_data sz r1 ii)
-          (read_reg_data sz r2 ii)
-          (M.deref a)
-          (incr_a var a >>= fun a -> M.deref a)
-          (write_reg ResAddr V.zero ii)
-          (fun v -> write_reg rr v ii)
-          (fun ea1 resa1 v1 -> write sz ea1 v1 resa1 ii)
-          (* We increment the residual address here so we ask about the second element of the pair *)
-          (fun ea2 resa2 v2 ->
-            M.address_of resa2
-            >>= incr_a var
-            >>= M.deref
-            >>= fun resa2 -> write sz ea2 v2 resa2 ii)
-
-        >>! B.Next
-
       let csel_op op v =
         let open AArch64Base in  match op with
         | Cpy -> M.unitT v
@@ -647,8 +614,6 @@ module Make
             stxr (tr_variant var) t rr rs rd ii
         | I_STXRBH(bh,t,rr,rs,rd) ->
             stxr (bh_to_sz bh) t rr rs rd ii
-        | I_STXP(var,t,rr,r1,r2,rd,kr) ->
-            stxp var t rr r1 r2 rd kr ii
 
               (* Operations *)
         | I_MOV(_,r,K k) ->
