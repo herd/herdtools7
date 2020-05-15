@@ -68,19 +68,6 @@ include Arch.MakeArch(struct
         add_subs
           [Reg(sr_name r1,r1'); Reg(sr_name r2,r2'); Reg(sr_name r3,r3')]
           subs
-    | I_LDXP(_,tp,r1,r2,r3),I_LDXP(_,ti,r1',r2',r3') when tp = ti
-      ->
-        add_subs
-          [Reg(sr_name r1,r1'); Reg(sr_name r2,r2'); Reg(sr_name r3,r3')]
-          subs
-    | I_STXP(_,tp,r1,r2,r3,r4,kr),I_STXP(_,ti,r1',r2',r3',r4',kr') when tp = ti
-      ->
-        match_kr subs kr kr' >>>
-        add_subs
-          [Reg(sr_name r1,r1');
-           Reg(sr_name r2,r2');
-           Reg(sr_name r3,r3');
-           Reg(sr_name r4,r4')]
     | I_LDR_P(_,r1,r2,k),I_LDR_P(_,r1',r2',k')
       ->
         match_kr subs (K k) (K k') >>>
@@ -252,11 +239,6 @@ include Arch.MakeArch(struct
         conv_reg r3 >> fun r3 ->
         expl_kr kr  >! fun kr ->
         I_LDP(t,a,r1,r2,r3,kr)
-    | I_LDXP(a,b,r1,r2,r3) ->
-        conv_reg r1 >> fun r1 ->
-        conv_reg r2 >> fun r2 ->
-        conv_reg r3 >! fun r3 ->
-        I_LDXP(a,b,r1,r2,r3)
     | I_STP(t,a,r1,r2,r3,kr) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->

@@ -330,11 +330,6 @@ let stxp_memo = function
   | YY -> "STXP"
   | LY -> "STLXP"
 
-let ldxp_memo = function
-  | XX -> "LDXP"
-  | AX -> "LDAXP"
-  | _  -> Warn.fatal "LD*P variant not implemented"
-
 type rmw_type = RMW_P | RMW_A | RMW_L | RMW_AL
 
 type w_type = W_P | W_L
@@ -434,7 +429,6 @@ type 'k kinstruction =
   | I_LDP of temporal * variant * reg * reg * reg * 'k kr
   | I_STP of temporal * variant * reg * reg * reg * 'k kr
   | I_LDAR of variant * ld_type * reg * reg
-  | I_LDXP of variant * ld_type * reg * reg * reg
   | I_STR of variant * reg * reg * 'k kr * 'k s
   | I_STLR of variant * reg * reg
   | I_STXR of variant * st_type * reg * reg * reg
@@ -573,13 +567,6 @@ let do_pp_instruction m =
       pp_xreg r2 ^ pp_kr true kr
   | V32,RV (V64,_) -> assert false in
 
-
-  let pp_ldxp memo v r1 r2 r3 =
-    pp_memo memo ^ " " ^
-    pp_vreg v r1 ^"," ^
-    pp_vreg v r2 ^ ",[" ^
-    pp_xreg r3 ^ "]" in
-
   let pp_stxr memo v r1 r2 r3 =
     pp_memo memo ^ " " ^
     pp_wreg r1 ^"," ^
@@ -641,8 +628,6 @@ let do_pp_instruction m =
       pp_mem (ldr_memo t) v r1 r2 m.k0
   | I_LDARBH (bh,t,r1,r2) ->
       pp_mem (ldrbh_memo bh t)  V32 r1 r2 m.k0
-  | I_LDXP (v,t,r1,r2,r3) ->
-      pp_ldxp (ldxp_memo t) v r1 r2 r3
   | I_STR (v,r1,r2,k,S_NOEXT) ->
       pp_mem "STR" v r1 r2 k
   | I_STR (v,r1,r2,k,s) ->
@@ -795,8 +780,6 @@ let fold_regs (f_regs,f_sregs) =
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_STXP (_,_,r1,r2,r3,r4,_)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 (fold_reg r4 c)))
-  | I_LDXP (_,_,r1,r2,r3)
-    -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_LDP (_,_,r1,r2,r3,kr)
   | I_STP (_,_,r1,r2,r3,kr)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 (fold_kr kr c)))
@@ -860,8 +843,6 @@ let map_regs f_reg f_symb =
      I_LDAR (v,t,map_reg r1,map_reg r2)
   | I_LDARBH (bh,t,r1,r2) ->
      I_LDARBH (bh,t,map_reg r1,map_reg r2)
-  | I_LDXP (v,t,r1,r2,r3) ->
-     I_LDXP (v,t,map_reg r1,map_reg r2, map_reg r3)
   | I_STR (v,r1,r2,k,s) ->
       I_STR (v,map_reg r1,map_reg r2,k,s)
   | I_STLR (v,r1,r2) ->
@@ -960,7 +941,6 @@ let get_next = function
   | I_STP _
   | I_STR _
   | I_LDAR _
-  | I_LDXP _
   | I_LDARBH _
   | I_STLR _
   | I_STLRBH _
@@ -1023,7 +1003,6 @@ include Pseudo.Make
         | I_BLR _
         | I_RET _
         | I_LDAR _
-        | I_LDXP _
         | I_LDARBH _
         | I_STLR _
         | I_STLRBH _
@@ -1077,7 +1056,7 @@ include Pseudo.Make
         | I_LDRBH _ | I_STRBH _ | I_STXRBH _ | I_IC _ | I_DC _
         | I_STG _ | I_LDG _
           -> 1
-        | I_LDP _|I_STP _ | I_STXP _ | I_LDXP _
+        | I_LDP _|I_STP _ | I_STXP _
         | I_CAS _ | I_CASBH _
         | I_SWP _ | I_SWPBH _
         | I_LDOP _ | I_LDOPBH _

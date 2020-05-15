@@ -1,8 +1,0 @@
-AArch64 A33
-(* Tests load exclusive pair, symbolic location, no offset*)
-{ &x = 200; &y =208; 0:X2=x; x=1; y=2;}
-
-P0;
-  LDXP X0, X1, [X2];
-
-exists (0:X0=1 /\ 0:X1=2)
