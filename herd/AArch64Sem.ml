@@ -588,13 +588,13 @@ module Make
                   >>= fun () -> B.bccT v l
         | I_TBZ(_,r,k,l) ->
             (read_reg_ord r ii)
-              >>= M.op Op.BitAt (V.intToV k)
+              >>= M.op1 (Op.ReadBit k)
               >>= is_zero
               >>= fun v -> commit_bcc ii
                   >>= fun () -> B.bccT v l
         | I_TBNZ(_,r,k,l) ->
             (read_reg_ord r ii)
-              >>= M.op Op.BitAt (V.intToV k)
+              >>= M.op1 (Op.ReadBit k)
               >>= is_not_zero
               >>= fun v -> commit_bcc ii
                   >>= fun () -> B.bccT v l

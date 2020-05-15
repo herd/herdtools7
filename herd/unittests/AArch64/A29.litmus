@@ -7,4 +7,4 @@ P0;
   STXR W3, X0, [X2];
 
 (* We expect the instruction to fail without an accompanying load *)
-exists (z=0  /\ a=0 /\ 0:X3=1)
+forall (z=0  /\ a=0 /\ 0:X3=1)

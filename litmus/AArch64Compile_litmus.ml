@@ -121,7 +121,9 @@ let pp_shifter = function
           memo (A.Out.dump_label (tr_lab lbl)) in
       { empty_ins with
         memo; inputs=[r;]; outputs=[];
-        branch=[Next; Branch lbl] ; }
+        branch=[Next; Branch lbl] ;
+        reg_env= [r,(match v with V32 -> word | V64 -> quad)]
+      }
 
     let tbz tr_lab memo v r k lbl =
       let memo =
@@ -132,7 +134,9 @@ let pp_shifter = function
           memo k (A.Out.dump_label (tr_lab lbl)) in
       { empty_ins with
         memo; inputs=[r;]; outputs=[];
-        branch=[Next; Branch lbl] ; }
+        branch=[Next; Branch lbl] ;
+        reg_env= [r,(match v with V32 -> word | V64 -> quad)]
+      }
 
 (* Load and Store *)
 

@@ -309,7 +309,6 @@ module Make(Cst:Constant.S) = struct
       binop op (fun x y -> Scalar.shift_right_logical x (Scalar.to_int y))
   | ShiftLeft ->
       binop op (fun x y -> Scalar.shift_left x (Scalar.to_int y))
-  | BitAt -> binop op (fun k v -> Scalar.bit_at (Scalar.to_int k) v)
   | Lt -> lt
   | Gt -> gt
   | Eq -> eq
