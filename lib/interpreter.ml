@@ -2156,10 +2156,13 @@ module Make
           | ShowAs (_,e,id) when not O.bell  ->
               if O.showsome then
                 let show = lazy begin
-                  let v =
-                    Shown.apply_rel
-                      (rt_loc id) (eval_shown (from_st st) e) in
-                  StringMap.add id v (Lazy.force st.show)
+                  try
+                    let v =
+                      Shown.apply_rel
+                        (rt_loc id)
+                        (eval_shown { (from_st st) with EV.silent=true } e) in
+                    StringMap.add id v (Lazy.force st.show)
+                  with Misc.Exit -> Lazy.force st.show
                 end in
                 kont { st with show; } res
               else kont st res

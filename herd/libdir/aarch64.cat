@@ -56,6 +56,9 @@ include "cos.cat"
  *)
 include "aarch64fences.cat"
 
+(* Show dependencies *)
+include "show-deps.cat"
+
 (*
  * As a restriction of the model, all observers are limited to the same
  * inner-shareable domain. Consequently, the ISH, OSH and SY barrier

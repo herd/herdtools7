@@ -204,6 +204,11 @@ module Make
                 E.EventRel.of_pred all_evts all_evts E.po_eq
               end)::k
           else Misc.identity)
+             (((if do_deps then Misc.identity
+             else fun k ->
+              ("addr", lazy (Lazy.force pr).S.addr)::
+              ("data", lazy (Lazy.force pr).S.data)::
+              ("ctrl", lazy (Lazy.force pr).S.ctrl)::k)
              ["id",id;
               "loc", lazy begin
                 E.EventRel.restrict_rel E.same_location (Lazy.force unv)
@@ -217,10 +222,7 @@ module Make
               end ;
               "rmw",lazy conc.S.atomic_load_store;
               "po", lazy  po;
-              "addr", lazy (Lazy.force pr).S.addr;
-              "data", lazy (Lazy.force pr).S.data;
               "depend", lazy (Lazy.force pr).S.depend;
-              "ctrl", lazy (Lazy.force pr).S.ctrl;
               "success", lazy (Lazy.force pr).S.success;
               "rf", lazy (Lazy.force pr).S.rf;
               "control",lazy conc.S.str.E.control ;
@@ -235,7 +237,7 @@ module Make
               end;
               "same-instance", lazy begin E.EventRel.of_pred all_evts all_evts E.same_instance end;
               "equiv-spec", lazy begin Equiv.build (Lazy.force rf_reg) all_evts end;
-            ]) in
+            ]))) in
       let m =
         let spec = conc.S.str.E.speculated in
         let is_spec = (fun e -> E.EventSet.mem e spec) in

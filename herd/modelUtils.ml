@@ -19,6 +19,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
   module U = MemUtils.Make(S)
 
   let memtag = O.variant Variant.MemTag
+  let do_deps = O.variant Variant.Deps
 
 (*******************************************)
 (* Complete re-computation of dependencies *)
@@ -29,18 +30,35 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
   let is_mem_load_total e = E.is_mem_load e || E.is_additional_mem_load e
   let is_load_total e = E.is_load e || E.is_additional_mem_load e
 
-  let make_procrels is_isync conc =
-    let is_data_port =
-      let data_ports = conc.S.str.E.data_ports in
-      fun e -> E.EventSet.mem e data_ports in
+  let make_procrels_deps conc =
     let iico = conc.S.str.E.intra_causality_data
-    and po = U.po_iico conc.S.str
     and rf_regs = U.make_rf_regs conc in
-    let iico_rmw = E.EventRel.inter conc.S.atomic_load_store iico
-    and iico_regs =
+    let iico_regs =
       E.EventRel.restrict_rel
         (fun  e1 e2  -> not (evt_relevant e1 || evt_relevant e2)) iico in
     let dd_inside = S.tr (E.EventRel.union rf_regs iico_regs) in
+    let success =
+      if O.variant Variant.Success then
+        S.seq
+          (E.EventRel.restrict_domain
+             (fun e1 -> E.EventSet.mem e1 conc.S.str.E.success_ports)
+             dd_inside)
+          (E.EventRel.restrict_codomain E.is_mem iico)
+      else E.EventRel.empty in
+
+    let e =  E.EventRel.empty in
+    let addr = e and data = e and ctrl = e and depend = e
+    and ctrlisync = e and data_commit = e in
+    let rf = U.make_rf conc in
+    { S.addr; data; ctrl; depend; ctrlisync; data_commit;
+      success; rf;},iico,dd_inside
+
+  let make_procrels_nodeps is_isync conc =
+    let pr0,iico,dd_inside = make_procrels_deps conc in
+    let is_data_port =
+      let data_ports = conc.S.str.E.data_ports in
+      fun e -> E.EventSet.mem e data_ports in
+    let iico_rmw = E.EventRel.inter conc.S.atomic_load_store iico in
     let dd_pre =
 (* Most dependencies start with a mem load, a few with a mem store + ctrl
    RISCV *)
@@ -50,14 +68,6 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
               conc.S.str.E.intra_causality_control)
            (E.EventRel.restrict_domain is_mem_load_total iico))
         dd_inside in
-    let success =
-      if O.variant Variant.Success then
-        S.seq
-          (E.EventRel.restrict_domain
-             (fun e1 -> E.EventSet.mem e1 conc.S.str.E.success_ports)
-             dd_inside)
-          (E.EventRel.restrict_codomain E.is_mem iico)
-      else E.EventRel.empty in
     let data_dep =
 (* Data deps are (1) dd to commits (2) data deps to stores *)
       let last_data =
@@ -81,6 +91,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
            (* Patch: a better solution would be a direct iico from read address register to access *)
           (if memtag then E.EventRel.transitive_closure iico else iico) in
       S.seq dd_pre last_addr in
+    let po = U.po_iico conc.S.str in
     let ctrl_one = (* For bcc: from commit to event by po *)
       S.restrict E.is_commit_bcc evt_relevant po
     and ctrl_two = (* For predicated instruction from commit to event by iico *)
@@ -107,12 +118,15 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
         and r2 = S.restrict is_isync E.is_mem po in
         S.seq r1 r2
       with Misc.NoIsync -> S.E.EventRel.empty in
-    let rf = U.make_rf conc in
-    { S.addr=addr_dep; data=data_dep; ctrl=ctrl_dep; depend=dd_pre;
+    { pr0 with S.addr=addr_dep; data=data_dep; ctrl=ctrl_dep; depend=dd_pre;
       ctrlisync;
-      data_commit;
-      success;
-      rf;}
+      data_commit; }
+
+  let make_procrels =
+    if do_deps then
+      fun _ conc -> let pr,_,_ = make_procrels_deps conc in pr
+    else
+      make_procrels_nodeps
 
   let pp_procrels pp_isync pr =
     let pp =  ["data",pr.S.data; "addr",pr.S.addr;] in
