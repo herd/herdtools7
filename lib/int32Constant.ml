@@ -39,7 +39,6 @@ module Int32Scalar = struct
     | Short -> fun v -> logand v 0xffffl
     | Word -> fun v -> v
     | Quad -> Warn.fatal "make 32 value with quad mask"
-    | QuadWord -> Warn.fatal "QuadWord received, make 32 value with quad mask"
 end
 
 include SymbConstant.Make(Int32Scalar)

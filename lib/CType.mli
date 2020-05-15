@@ -29,7 +29,6 @@ type t =
 val voidstar : t
 val word : t
 val quad : t
-val quadword : t
 
 val dump : t -> string
 val debug : t -> string

@@ -29,7 +29,6 @@ type t =
 let voidstar = Pointer (Base "void")
 let word = Base "int"
 let quad = Base "int64_t"
-let quadword = Base "__int128_t"
 
 let rec  dump = function
   | Base s -> s
@@ -63,8 +62,6 @@ let fmt10 = function
   | "uint32_t" -> Some (Macro  "PRIu32")
   | "int64_t" -> Some (Macro  "PRIi64")
   | "uint64_t" -> Some (Macro  "PRIu64")
-  | "__int128_t" -> Some (Macro "PRIi128")
-  | "__uint128_t" -> Some (Macro "PRIu128")
   | "intprt_t" -> Some (Macro "PRIiPTR")
   | "uintprt_t" -> Some (Macro "PRIuPTR")
   | _ -> None
@@ -81,8 +78,6 @@ let fmt16 = function
   | "uint32_t" -> Some (Macro  "PRIx32")
   | "int64_t" -> Some (Macro  "PRIx64")
   | "uint64_t" -> Some (Macro  "PRIx64")
-  | "__int128_t" -> Some (Macro "PRIx128")
-  | "__uint128_t" -> Some (Macro "PRx128")
   | "intprt_t" -> Some (Macro "PRIxPTR")
   | "uintprt_t" -> Some (Macro "PRIxPTR")
   | _ -> None
@@ -135,7 +130,6 @@ let same_base t0 t1 = match t0,t1 with
     | ("int16_t","uint16_t")|("uint16_t","int16_t")
     | ("int32_t","uint32_t")|("uint32_t","int32_t")
     | ("int64_t","uint64_t")|("uint64_t","int64_t")
-    | ("__int128_t","__uint128_t")|("__uint128_t","__int128_t")
       -> true
     | _,_ -> false
     end

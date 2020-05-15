@@ -334,7 +334,6 @@ let memo_load = function
   | Short -> "lhz"
   | Word -> "lwz"
   | Quad -> "ld"
-  | QuadWord -> Warn.fatal "128-bit types not supported"
 
 let memo_loadx sz = memo_load sz ^ "x"
 
@@ -343,7 +342,6 @@ let memo_store = function
   | Short -> "sth"
   | Word -> "stw"
   | Quad -> "std"
-  | QuadWord -> Warn.fatal "128-bit types not supported"
 
 let memo_storex sz = memo_store sz ^ "x"
 
@@ -607,10 +605,10 @@ let norm_ins ins = match ins with
   | Pstore(Quad,r1,cst,r2) -> Pstore(Word,r1,cst,r2)
   | Pstorex(Quad,r1,r2,r3) -> Pstorex(Word,r1,r2,r3)
   | Pnop
-  | Pload ((Byte|Short|Word|QuadWord),_,_,_)
-  | Ploadx ((Byte|Short|Word|QuadWord),_,_,_)
-  | Pstore ((Byte|Short|Word|QuadWord),_,_,_)
-  | Pstorex ((Byte|Short|Word|QuadWord),_,_,_)
+  | Pload ((Byte|Short|Word),_,_,_)
+  | Ploadx ((Byte|Short|Word),_,_,_)
+  | Pstore ((Byte|Short|Word),_,_,_)
+  | Pstorex ((Byte|Short|Word),_,_,_)
   | Pb _ | Pbcc (_,_)
   | Pdcbf (_, _)
   | Pstwcx (_, _, _)|Plwarx (_, _, _)

@@ -73,7 +73,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
       match Cfg.typ with
       | Std (_,MachSize.Quad) -> AV.Double
       | Int |Std (_,(Word|Short|Byte)) -> AV.Word
-      | Std (_,MachSize.QuadWord) -> Warn.fatal "128-bit size not supported"
 
 
     let bne r1 r2 lab =  AV.Bcc (AV.NE,r1,r2,lab)
@@ -117,7 +116,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
       | MachSize.Short -> AV.Half
       | MachSize.Word -> AV.Word
       | MachSize.Quad -> AV.Double
-      | MachSize.QuadWord -> Warn.fatal "128-bit size not supported"
 
     let ldr_mixed r1 r2 sz o = AV.Load (tr_sz sz,Signed,AV.Rlx,r1,o,r2)
     and str_mixed r1 r2 sz o = AV.Store (tr_sz sz,AV.Rlx,r1,o,r2)

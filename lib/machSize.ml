@@ -14,14 +14,13 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type sz = Byte | Short | Word | Quad | QuadWord
+type sz = Byte | Short | Word | Quad
 
 let pp = function
   | Byte -> "byte"
   | Short -> "short"
   | Word -> "word"
   | Quad -> "quad"
-  | QuadWord -> "quadword"
 
 
 let pp_short = function
@@ -29,21 +28,18 @@ let pp_short = function
   | Short -> "h"
   | Word -> "w"
   | Quad -> "q"
-  | QuadWord -> "x"
 
 let debug = function
   | Byte -> "Byte"
   | Short -> "Short"
   | Word -> "Word"
   | Quad -> "Quad"
-  | QuadWord -> "QuadWord"
 
 let nbytes = function
   | Byte -> 1
   | Short -> 2
   | Word -> 4
   | Quad -> 8
-  | QuadWord -> 16
 
 let nbits sz = nbytes sz * 8
 
@@ -70,7 +66,7 @@ let rec swap k x =
 let tr_endian sz = match sz with
 | Byte -> fun x -> x
 | Short -> swap16
-| Word|Quad|QuadWord -> swap (nbits sz)
+| Word|Quad -> swap (nbits sz)
 
 
 let l0 = [0;]
@@ -80,43 +76,33 @@ let l04 = [0;4;]
 let l0123 = [0;1;2;3;]
 let l0246 = [0;2;4;6;]
 let l01234567 = [0;1;2;3;4;5;6;7;]
-let l0to15 = [0;1;2;3;4;5;6;7;8;9;10;11;12;13;14;15]
 
 let off_byte = function
   | Byte -> l0
-  | Short|Word|Quad|QuadWord -> []
+  | Short|Word|Quad -> []
 
 let off_short = function
   | Byte -> l01
   | Short -> l0
-  | Word|Quad|QuadWord -> []
+  | Word|Quad -> []
 
 let off_word = function
   | Byte -> l0123
   | Short -> l02
   | Word -> l0
-  | Quad | QuadWord -> []
+  | Quad -> []
 
 let off_quad = function
   | Byte -> l01234567
   | Short -> l0246
   | Word ->  l04
   | Quad -> l0
-  | QuadWord -> []
-
-let off_quadword = function
-  | Byte     -> l0to15
-  | Short    -> l01234567
-  | Word     -> l0246
-  | Quad     -> l02
-  | QuadWord -> l0
 
 let get_off sz = match sz with
 | Byte -> off_byte
 | Short -> off_short
 | Word -> off_word
 | Quad -> off_quad
-| QuadWord -> off_quadword
 
 let get_off_reduced sz = match sz with
 | Byte -> off_byte
@@ -131,28 +117,20 @@ let get_off_reduced sz = match sz with
     | Byte|Short -> []
     | _ -> off_quad sz
     end
-| QuadWord ->
-    begin fun sz -> match sz with
-    | Byte | Short | Word -> []
-    | _ -> off_quadword sz
-    end
 
 let compare sz1 sz2 = match sz1,sz2 with
-| (Byte,(Short|Word|Quad|QuadWord))
-| (Short,(Word|Quad|QuadWord))
-| (Word,(Quad|QuadWord))
-| (Quad, QuadWord)
+| (Byte,(Short|Word|Quad))
+| (Short,(Word|Quad))
+| (Word,Quad)
   -> -1
 | (Byte,Byte)
 | (Short,Short)
 | (Word,Word)
 | (Quad,Quad)
-| (QuadWord, QuadWord)
   -> 0
-| ((Short|Word|Quad|QuadWord),Byte)
-| ((Word|Quad|QuadWord),Short)
-| ((Quad|QuadWord),Word)
-| (QuadWord, _)
+| ((Short|Word|Quad),Byte)
+| ((Word|Quad),Short)
+| (Quad,Word)
     -> 1
 
 module Set =
@@ -168,7 +146,6 @@ let pred = function
   | Byte|Short -> Byte
   | Word -> Short
   | Quad -> Word
-  | QuadWord -> Quad
 
 module Tag = struct
 
@@ -181,7 +158,6 @@ module Tag = struct
   | "short" -> Some (Size Short)
   | "word" -> Some (Size Word)
   | "quad" -> Some (Size Quad)
-  | "quadword" -> Some (Size QuadWord)
   | "auto" -> Some Auto
   | _      -> None
 
