@@ -63,7 +63,6 @@ match name with
 | "ldxrb"|"LDXRB" -> LDXRB
 | "ldxrh"|"LDXRH" -> LDXRH
 | "ldxp"|"LDXP" -> LDXP
-| "ldaxp"|"LDAXP" -> LDAXP
 | "ldaxr"|"LDAXR" -> LDAXR
 | "ldaxrb"|"LDAXRB" -> LDAXRB
 | "ldaxrh"|"LDAXRH" -> LDAXRH
@@ -72,7 +71,6 @@ match name with
 | "stxr"|"STXR" -> STXR
 | "stlxr"|"STLXR" -> STLXR
 | "stxp"|"STXP" -> STXP
-| "stlxp"|"STLXP" -> STLXP
 | "strb"|"STRB" -> STRB
 | "strh"|"STRH" -> STRH
 | "stlrb"|"STLRB" -> STLRB
