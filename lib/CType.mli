@@ -21,6 +21,7 @@ type base = string
 type t =
   | Base of base
   | Volatile of t
+  | Const of t
   | Atomic of t
   | Pointer of t
 (** limited arrays *)

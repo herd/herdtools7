@@ -21,6 +21,7 @@ type base = string
 type t =
   | Base of base
   | Volatile of t
+  | Const of t
   | Atomic of t
   | Pointer of t
 (** limited arrays *)
@@ -35,6 +36,7 @@ let rec  dump = function
   | Volatile (Base s) -> "volatile " ^ s
   | Atomic (Base s) -> "_Atomic " ^ s
   | Volatile t -> sprintf "%s volatile" (dump t)
+  | Const t -> sprintf "%s const" (dump t)
   | Atomic t -> sprintf "_Atomic (%s)" (dump t)
   | Pointer t -> dump t  ^ "*"
   | Array (t,sz) -> sprintf "%s[%i]" t sz
@@ -44,6 +46,7 @@ let rec  debug = function
   | Volatile (Base s) -> "volatile <" ^ s ^ ">"
   | Atomic (Base s) -> "_Atomic " ^ s
   | Volatile t -> sprintf "%s volatile" (debug t)
+  | Const t -> sprintf "%s const" (debug t)
   | Atomic t -> sprintf "_Atomic (%s)" (debug t)
   | Pointer t -> debug t  ^ "*"
   | Array (t,sz) -> sprintf "%s[%i]" t sz

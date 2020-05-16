@@ -47,7 +47,7 @@ let dump_global_type loc t = match t with
 
 let rec nitems t = match t with
 | Array (_,sz) -> sz
-| Volatile t|Atomic t -> nitems t
+| Volatile t|Atomic t|Const t -> nitems t
 | Base _|Pointer _ -> 1
 
 
@@ -238,7 +238,7 @@ module Make
         let rec pp_fmt t = match t with
         | CType.Pointer _ -> "%s"
         | CType.Base t -> pp_fmt_base t
-        | CType.Atomic t|CType.Volatile t -> pp_fmt t
+        | CType.Atomic t|CType.Volatile t|CType.Const t-> pp_fmt t
         | CType.Array (t,sz) ->
             let fmt_elt = pp_fmt_base t in
             let fmts = Misc.replicate sz fmt_elt in

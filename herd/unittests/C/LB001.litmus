@@ -1,0 +1,25 @@
+C LB001
+"FenceReldRW Rfe FenceReldRW Rfe"
+Cycle=Rfe FenceReldRW Rfe FenceReldRW
+Relax=ACFenceReldRW
+Safe=
+Generator=diy7 (version 7.55+01(dev))
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Rf
+Orig=FenceReldRW Rfe FenceReldRW Rfe
+
+{}
+
+P0 (const int* y,volatile int* x) {
+  int r0 = *x;
+  atomic_thread_fence(memory_order_release);
+  *y = 1;
+}
+
+P1 (const int* y,volatile int* x) {
+  int r0 = *y;
+  atomic_thread_fence(memory_order_release);
+  *x = 1;
+}
+
+exists (0:r0=1 /\ 1:r0=1)
