@@ -31,6 +31,7 @@ module type Config = sig
   val cpp : bool
   val docheck : bool
   val addret : bool
+  val novolatile : bool
 end
 
 module Make(O:Config) : Builder.S
@@ -812,7 +813,9 @@ module Make(O:Config) : Builder.S
           List.map
             (fun (t,loc) -> match t with
             | A.Plain _ ->
-                sprintf "volatile %s* %s" (A.dump_typ t) loc
+                let volatile = if O.novolatile then
+                    "" else "volatile " in
+                sprintf "%s%s* %s" volatile (A.dump_typ t) loc
             | A.Atomic _ ->
                 sprintf "%s* %s" (A.dump_typ t) loc)
             args in
