@@ -363,7 +363,7 @@ module Make
                   read_mem_reserve sz AArch64.XA rd a ii
               | AQ ->
                   read_mem_acquire_pc sz rd a ii)
-          (read_reg_ord rs ii) ii
+          (read_reg_ord rs ii >>= M.address_of >>= M.deref) ii
 
       let movz sz rd k os ii =
         let open AArch64Base in
@@ -424,7 +424,7 @@ module Make
              (fun ea resa v -> match t with
              | YY -> write_mem_atomic AArch64.X sz ea v resa ii
              | LY -> write_mem_atomic AArch64.XL sz ea v resa ii))
-          (read_reg_ord rd ii)
+          (read_reg_ord rd ii >>= M.address_of >>= M.deref)
           ii
 
       let csel_op op v =
@@ -537,6 +537,19 @@ module Make
               >>= is_not_zero
               >>= fun v -> commit_bcc ii
                   >>= fun () -> B.bccT v l
+        | I_TBZ(_,r,k,l) ->
+            (read_reg_ord r ii)
+              >>= M.op1 (Op.ReadBit k)
+              >>= is_zero
+              >>= fun v -> commit_bcc ii
+                  >>= fun () -> B.bccT v l
+        | I_TBNZ(_,r,k,l) ->
+            (read_reg_ord r ii)
+              >>= M.op1 (Op.ReadBit k)
+              >>= is_not_zero
+              >>= fun v -> commit_bcc ii
+                  >>= fun () -> B.bccT v l
+
 
                       (* Load and Store *)
         | I_LDR(var,rd,rs,kr,s) ->
@@ -544,9 +557,9 @@ module Make
             ldr sz rd rs kr s ii
         | I_LDR_L(var,rd,lbl) ->
             ldr_lit var rd lbl ii
-        | I_LDRBH (bh, rd, rs, kr) ->
+        | I_LDRBH (bh, rd, rs, kr, s) ->
             let sz = bh_to_sz bh in
-            ldr sz rd rs kr S_NOEXT ii
+            ldr sz rd rs kr s ii
         | I_LDR_P(var,rd,rs,k) ->
             let sz = tr_variant var in
             ldr_p sz rd rs k ii
@@ -568,8 +581,8 @@ module Make
         | I_STP(_, var, r1, r2, rd, kr) ->
             stp var r1 r2 rd kr ii
 
-        | I_STRBH(bh,rs,rd,kr) ->
-            str (bh_to_sz bh) rs rd kr AArch64.S_NOEXT ii
+        | I_STRBH(bh,rs,rd,kr, s) ->
+            str (bh_to_sz bh) rs rd kr s ii
 
         | I_STLR(var,rs,rd) ->
             stlr (tr_variant var) rs rd ii

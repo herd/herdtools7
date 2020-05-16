@@ -1,0 +1,11 @@
+AArch64 A117
+(* unconditional Branch instruction *)
+
+ { 0:X0=1; }
+
+P0;
+  B foo;
+  ADD X0, X0, #1;
+  foo: NOP;
+
+forall (0:X0=1)

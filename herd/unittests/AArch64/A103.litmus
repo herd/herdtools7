@@ -1,0 +1,9 @@
+AArch64 A103
+(* Strb immediate, with offset, concrete location *)
+
+ { 0:x0=1; 0:x2=x; &x=42; &y=46}
+
+P0;
+  STRB W0, [X2, #4];
+
+exists (x=0 /\ y=1)

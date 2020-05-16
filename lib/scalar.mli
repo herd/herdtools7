@@ -42,6 +42,7 @@ module type S = sig
   val shift_left : t -> int -> t
   val shift_right_logical : t -> int -> t
   val shift_right_arithmetic : t -> int -> t
+  val bit_at : int -> t -> t
   val addk : t -> int -> t
   val lt : t -> t -> bool
   val le : t -> t -> bool

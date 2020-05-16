@@ -40,7 +40,7 @@ module A = AArch64Base
 
 /* Instructions */
 %token NOP HINT HLT
-%token B BR BEQ BNE CBZ CBNZ EQ NE
+%token B BR BEQ BNE CBZ CBNZ EQ NE TBZ TBNZ
 %token BL BLR RET
 %token LDR LDP LDNP STP STNP LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
 %token CMP MOV MOVZ MOVK ADR ADRP
@@ -217,16 +217,20 @@ instr:
 | HINT NUM { A.I_NOP }
 | HLT NUM { A.I_NOP }
 /* Branch */
-| B NAME { A.I_B $2 }
+| B label_addr { A.I_B $2 }
 | BR xreg { A.I_BR $2 }
-| BL NAME { A.I_BL $2 }
+| BL label_addr { A.I_BL $2 }
 | BLR xreg { A.I_BLR $2 }
 | RET  { A.I_RET None }
 | RET xreg { A.I_RET (Some $2) }
-| BEQ NAME { A.I_BC (A.EQ,$2) }
-| BNE NAME { A.I_BC (A.NE,$2) }
-| CBZ reg COMMA NAME   { let v,r = $2 in A.I_CBZ (v,r,$4) }
-| CBNZ reg COMMA NAME  { let v,r = $2 in A.I_CBNZ (v,r,$4) }
+| BEQ label_addr { A.I_BC (A.EQ,$2) }
+| BNE label_addr { A.I_BC (A.NE,$2) }
+| CBZ reg COMMA label_addr   { let v,r = $2 in A.I_CBZ (v,r,$4) }
+| CBNZ reg COMMA label_addr  { let v,r = $2 in A.I_CBNZ (v,r,$4) }
+| TBNZ reg COMMA NUM COMMA label_addr
+  { let v,r = $2 in A.I_TBNZ (v,r,MetaConst.Int $4,$6) }
+| TBZ reg COMMA NUM COMMA label_addr
+  { let v,r = $2 in A.I_TBZ (v,r,MetaConst.Int $4,$6) }
 /* Memory */
 /* must differentiate between regular and post-indexed load */
 | LDR reg COMMA LBRK xreg kr0 RBRK k0
@@ -248,10 +252,10 @@ instr:
   { $1 A.V32 $2 $4 $7 $8 }
 | stp_instr xreg COMMA xreg COMMA LBRK xreg kr0_no_shift RBRK
   { $1 A.V64 $2 $4 $7 $8 }
-| LDRB wreg COMMA LBRK xreg kr0_no_shift RBRK
-  { A.I_LDRBH (A.B,$2,$5,$6) }
-| LDRH wreg COMMA LBRK xreg kr0_no_shift RBRK
-  { A.I_LDRBH (A.H,$2,$5,$6) }
+| LDRB wreg COMMA LBRK xreg kr0 RBRK
+  { let (kr, s) = $6 in A.I_LDRBH (A.B,$2,$5,kr,s) }
+| LDRH wreg COMMA LBRK xreg kr0 RBRK
+  { let (kr, s) = $6 in A.I_LDRBH (A.H,$2,$5,kr,s) }
 | LDAR reg COMMA LBRK xreg RBRK
   { let v,r = $2 in A.I_LDAR (v,A.AA,r,$5) }
 | LDARB wreg COMMA LBRK xreg RBRK
@@ -279,10 +283,10 @@ instr:
 | STR reg COMMA LBRK xreg kr0 RBRK
   { let (v,r)   = $2 in
     let (kr,os) = $6 in A.I_STR (v,r,$5,kr,os) }
-| STRB wreg COMMA LBRK xreg kr0_no_shift RBRK
-  { A.I_STRBH (A.B,$2,$5,$6) }
-| STRH wreg COMMA LBRK xreg kr0_no_shift RBRK
-  { A.I_STRBH (A.H,$2,$5,$6) }
+| STRB wreg COMMA LBRK xreg kr0 RBRK
+  { let (kr,os) = $6 in A.I_STRBH (A.B,$2,$5,kr,os) }
+| STRH wreg COMMA LBRK xreg kr0 RBRK
+  { let (kr, os) = $6 in A.I_STRBH (A.H,$2,$5,kr,os) }
 | STLR reg COMMA LBRK xreg RBRK
   { let v,r = $2 in A.I_STLR (v,r,$5) }
 | STLRB wreg COMMA LBRK xreg RBRK

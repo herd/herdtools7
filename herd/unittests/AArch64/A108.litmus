@@ -1,0 +1,8 @@
+AArch64 A108
+(* Tests ldrh register instruction where X2 contains an address*)
+{ 0:x1=x; 0:X2=40; &x=200; &y=240; y=10}
+
+P0;
+  LDRH W0, [X1, X2];
+
+exists (0:X0=10)

@@ -1,0 +1,9 @@
+AArch64 A112
+(* Strh immediate, no offset, concrete location *)
+
+ { 0:x0=1; 0:x2=42; &x=42}
+
+P0;
+  STRH W0, [X2];
+
+exists (x=1)

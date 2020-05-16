@@ -121,7 +121,22 @@ let pp_shifter = function
           memo (A.Out.dump_label (tr_lab lbl)) in
       { empty_ins with
         memo; inputs=[r;]; outputs=[];
-        branch=[Next; Branch lbl] ; }
+        branch=[Next; Branch lbl] ;
+        reg_env= [r,(match v with V32 -> word | V64 -> quad)]
+      }
+
+    let tbz tr_lab memo v r k lbl =
+      let memo =
+        sprintf
+          (match v with
+          | V32 -> "%s ^wi0,#%d, %s"
+          | V64 -> "%s ^i0, #%d, %s")
+          memo k (A.Out.dump_label (tr_lab lbl)) in
+      { empty_ins with
+        memo; inputs=[r;]; outputs=[];
+        branch=[Next; Branch lbl] ;
+        reg_env= [r,(match v with V32 -> word | V64 -> quad)]
+      }
 
 (* Load and Store *)
 
@@ -630,6 +645,8 @@ let pp_shifter = function
     | I_BC (c,lbl) -> bcc tr_lab c lbl::k
     | I_CBZ (v,r,lbl) -> cbz tr_lab "cbz" v r lbl::k
     | I_CBNZ (v,r,lbl) -> cbz tr_lab "cbnz" v r lbl::k
+    | I_TBNZ (v,r,k2,lbl) -> tbz tr_lab "tbnz" v r k2 lbl::k
+    | I_TBZ (v,r,k2,lbl) -> tbz tr_lab "tbz" v r k2 lbl::k
 (* Load and Store *)
     | I_LDR (v,r1,r2,kr,os) -> load "ldr" v r1 r2 kr os::k
     | I_LDUR (v,r1,r2,Some(k')) -> load "ldur" v r1 r2 (K k') S_NOEXT ::k
@@ -640,13 +657,13 @@ let pp_shifter = function
         load_pair (match t with TT -> "ldp" | NT -> "ldnp") v r1 r2 r3 kr::k
     | I_STP (t,v,r1,r2,r3,kr) ->
         store_pair (match t with TT -> "stp" | NT -> "stnp") v r1 r2 r3 kr::k
-    | I_LDRBH (B,r1,r2,kr) -> load "ldrb" V32 r1 r2 kr S_NOEXT::k
-    | I_LDRBH (H,r1,r2,kr) -> load "ldrh" V32 r1 r2 kr S_NOEXT::k
+    | I_LDRBH (B,r1,r2,kr,s) -> load "ldrb" V32 r1 r2 kr s::k
+    | I_LDRBH (H,r1,r2,kr,s) -> load "ldrh" V32 r1 r2 kr s::k
     | I_LDAR (v,t,r1,r2) -> load (ldr_memo t) v r1 r2 k0 S_NOEXT::k
     | I_LDARBH (bh,t,r1,r2) -> load (ldrbh_memo bh t) V32 r1 r2 k0 S_NOEXT::k
     | I_STR (v,r1,r2,kr, s) -> store "str" v r1 r2 kr s::k
-    | I_STRBH (B,r1,r2,kr) -> store "strb" V32 r1 r2 kr S_NOEXT::k
-    | I_STRBH (H,r1,r2,kr) -> store "strh" V32 r1 r2 kr S_NOEXT::k
+    | I_STRBH (B,r1,r2,kr,s) -> store "strb" V32 r1 r2 kr s::k
+    | I_STRBH (H,r1,r2,kr,s) -> store "strh" V32 r1 r2 kr s::k
     | I_STLR (v,r1,r2) -> store "stlr" v r1 r2 k0 S_NOEXT ::k
     | I_STLRBH (B,r1,r2) -> store "stlrb" V32 r1 r2 k0 S_NOEXT ::k
     | I_STLRBH (H,r1,r2) -> store "stlrh" V32 r1 r2 k0 S_NOEXT ::k

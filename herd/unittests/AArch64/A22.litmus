@@ -1,0 +1,9 @@
+AArch64 A22
+(* Tests load acquire register, symbolic location, no offset*)
+{ 0:X1=x}
+
+P0;
+  LDAR X0, [X1];
+
+exists (0:X0=0)
+

@@ -1,0 +1,8 @@
+AArch64 A96
+(* Tests ldrb immediate, no offset, from location *)
+{ 0:X1=x }
+
+P0;
+  LDRB W0, [X1];
+
+exists (0:X0=0)

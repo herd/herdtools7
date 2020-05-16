@@ -1,0 +1,9 @@
+AArch64 A115
+(* Strh register, with offset, symbolic location *)
+
+ { 0:x0=1; 0:x2=x; 0:x3=4;}
+
+P0;
+  STRH W0, [X2, X3];
+
+exists (x=0 /\ y=0)(* Nothing we can do here, offsetting a symbolic location doesn't make sense*)

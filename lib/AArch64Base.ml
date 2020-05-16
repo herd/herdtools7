@@ -411,6 +411,8 @@ type 'k kinstruction =
   | I_BC of condition * lbl
   | I_CBZ of variant * reg * lbl
   | I_CBNZ of variant * reg * lbl
+  | I_TBNZ of variant * reg * 'k * lbl
+  | I_TBZ of variant * reg * 'k * lbl
   | I_BL of lbl | I_BLR of reg
   | I_RET of reg option
 (* Load and Store *)
@@ -427,9 +429,9 @@ type 'k kinstruction =
   | I_STLR of variant * reg * reg
   | I_STXR of variant * st_type * reg * reg * reg
 (* Idem for bytes and half words *)
-  | I_LDRBH of bh * reg * reg * 'k kr
+  | I_LDRBH of bh * reg * reg * 'k kr * 'k s
   | I_LDARBH of bh * ld_type * reg * reg
-  | I_STRBH of bh * reg * reg * 'k kr
+  | I_STRBH of bh * reg * reg * 'k kr * 'k s
   | I_STLRBH of bh * reg * reg
   | I_STXRBH of bh * st_type * reg * reg * reg
 (* CAS *)
@@ -579,6 +581,10 @@ let do_pp_instruction m =
       sprintf "CBZ %s,%s" (pp_vreg v r) (pp_label lbl)
   | I_CBNZ (v,r,lbl) ->
       sprintf "CBNZ %s,%s" (pp_vreg v r) (pp_label lbl)
+  | I_TBNZ (v,r, k, lbl) ->
+      sprintf "TBNZ %s,%s,%s" (pp_vreg v r) (m.pp_k k) (pp_label lbl)
+  | I_TBZ (v,r, k, lbl) ->
+      sprintf "TBZ %s,%s,%s" (pp_vreg v r) (m.pp_k k) (pp_label lbl)
   | I_BL lbl ->
       sprintf "BL %s" (pp_label lbl)
   | I_BLR r ->
@@ -617,10 +623,10 @@ let do_pp_instruction m =
       pp_mem "STLR" v r1 r2 m.k0
   | I_STXR (v,t,r1,r2,r3) ->
       pp_stxr (str_memo t) v r1 r2 r3
-  | I_LDRBH (bh,r1,r2,k) ->
-      pp_mem ("LDR"^pp_bh bh) V32 r1 r2 k
-  | I_STRBH (bh,r1,r2,k) ->
-      pp_mem ("STR"^pp_bh bh) V32 r1 r2 k
+  | I_LDRBH (bh,r1,r2,k, s) ->
+      pp_mem_shift ("LDR"^pp_bh bh) V32 r1 r2 k s
+  | I_STRBH (bh,r1,r2,k, s) ->
+      pp_mem_shift ("STR"^pp_bh bh) V32 r1 r2 k s
   | I_STLRBH (bh,r1,r2) ->
       pp_mem ("STLR"^pp_bh bh) V32 r1 r2 m.k0
   | I_STXRBH (bh,t,r1,r2,r3) ->
@@ -743,7 +749,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_BLR r | I_BR r | I_RET (Some r)
   | I_MOV (_,r,_) | I_MOVZ (_,r,_,_) | I_MOVK (_,r,_,_)
   | I_ADDR (r,_) | I_ADRP (r,_) | I_IC (_,r) | I_DC (_,r) | I_MRS (r,_)
-  | I_LDR_L (_,r,_) -> fold_reg r c
+  | I_LDR_L (_,r,_) |  I_TBNZ (_,r,_,_) | I_TBZ(_,r,_,_) -> fold_reg r c
   | I_LDAR (_,_,r1,r2) | I_STLR (_,r1,r2) | I_STLRBH (_,r1,r2)
   | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2)
   | I_STOP (_,_,_,r1,r2) | I_STOPBH (_,_,_,r1,r2)
@@ -752,7 +758,7 @@ let fold_regs (f_regs,f_sregs) =
     -> fold_reg r1 (fold_reg r2 c)
   | I_LDR (_,r1,r2,kr,_) | I_STR (_,r1,r2,kr,_)
   | I_OP3 (_,_,r1,r2,kr,_)
-  | I_LDRBH (_,r1,r2,kr) | I_STRBH (_,r1,r2,kr)
+  | I_LDRBH (_,r1,r2,kr,_) | I_STRBH (_,r1,r2,kr,_)
     -> fold_reg r1 (fold_reg r2 (fold_kr kr c))
   | I_CSEL (_,r1,r2,r3,_,_)
   | I_STXR (_,_,r1,r2,r3) | I_STXRBH (_,_,r1,r2,r3)
@@ -793,6 +799,10 @@ let map_regs f_reg f_symb =
       I_CBZ (v,map_reg r,lbl)
   | I_CBNZ (v,r,lbl) ->
       I_CBNZ (v,map_reg r,lbl)
+  | I_TBNZ (v,r,k,lbl) ->
+      I_TBNZ (v,map_reg r,k,lbl)
+  | I_TBZ (v,r,k,lbl) ->
+      I_TBZ (v,map_reg r,k,lbl)
   | I_BR r ->
       I_BR (map_reg r)
   | I_BLR r ->
@@ -827,10 +837,10 @@ let map_regs f_reg f_symb =
   | I_STXRBH (bh,t,r1,r2,r3) ->
       I_STXRBH (bh,t,map_reg r1,map_reg r2,map_reg r3)
 (* Byte and Half loads and stores *)
-  | I_LDRBH (v,r1,r2,kr) ->
-     I_LDRBH (v,map_reg r1,map_reg r2,map_kr kr)
-  | I_STRBH (v,r1,r2,kr) ->
-     I_STRBH (v,map_reg r1,map_reg r2,map_kr kr)
+  | I_LDRBH (v,r1,r2,kr,os) ->
+     I_LDRBH (v,map_reg r1,map_reg r2,map_kr kr,os)
+  | I_STRBH (v,r1,r2,kr,os) ->
+     I_STRBH (v,map_reg r1,map_reg r2,map_kr kr,os)
 (* CAS *)
   | I_CAS (v,rmw,r1,r2,r3) ->
       I_CAS (v,rmw,map_reg r1,map_reg r2,map_reg r3)
@@ -898,6 +908,8 @@ let get_next = function
   | I_BC (_,lbl)
   | I_CBZ (_,_,lbl)
   | I_CBNZ (_,_,lbl)
+  | I_TBNZ (_,_,_,lbl)
+  | I_TBZ (_,_,_,lbl)
   | I_BL lbl
     -> [Label.Next; Label.To lbl;]
   | I_BLR _|I_BR _|I_RET _ -> [Label.Any]
@@ -1004,8 +1016,12 @@ include Pseudo.Make
         | I_STR (v,r1,r2,kr,s) -> I_STR (v,r1,r2,kr_tr kr,ap_shift k_tr s)
         | I_STG (r1,r2,kr) -> I_STG (r1,r2,kr_tr kr)
         | I_LDG (r1,r2,kr) -> I_LDG (r1,r2,kr_tr kr)
-        | I_LDRBH (v,r1,r2,kr) -> I_LDRBH (v,r1,r2,kr_tr kr)
-        | I_STRBH (v,r1,r2,kr) -> I_STRBH (v,r1,r2,kr_tr kr)
+        | I_LDRBH (v,r1,r2,kr,s) ->
+            I_LDRBH (v,r1,r2,kr_tr kr,ap_shift k_tr s)
+        | I_STRBH (v,r1,r2,kr,s) ->
+            I_STRBH (v,r1,r2,kr_tr kr,ap_shift k_tr s)
+        | I_TBNZ (v,r1,k,lbl) -> I_TBNZ (v,r1,k_tr k, lbl)
+        | I_TBZ (v,r1,k,lbl) -> I_TBZ (v,r1,k_tr k, lbl)
         | I_MOV (v,r,k) -> I_MOV (v,r,kr_tr k)
         | I_MOVZ (v,r,k,s) -> I_MOVZ (v,r,kr_tr k,ap_shift k_tr s)
         | I_MOVK (v,r,k,s) -> I_MOVK (v,r,kr_tr k,ap_shift k_tr s)
@@ -1034,6 +1050,8 @@ include Pseudo.Make
         | I_BC _
         | I_CBZ _
         | I_CBNZ _
+        | I_TBZ _
+        | I_TBNZ _
         | I_MOV _
         | I_MOVZ _
         | I_MOVK _
@@ -1052,6 +1070,8 @@ include Pseudo.Make
         | I_BC (_,lbl)
         | I_CBZ (_,_,lbl)
         | I_CBNZ (_,_,lbl)
+        | I_TBNZ (_,_,_,lbl)
+        | I_TBZ (_,_,_,lbl)
         | I_BL lbl
         | I_ADDR (_,lbl)
         | I_ADRP (_,lbl)
@@ -1065,6 +1085,8 @@ include Pseudo.Make
         | I_BC (c,lbl) -> I_BC (c,f lbl)
         | I_CBZ (v,r,lbl) -> I_CBZ (v,r,f lbl)
         | I_CBNZ (v,r,lbl) -> I_CBNZ (v,r,f lbl)
+        | I_TBNZ (v,r,k,lbl) -> I_TBNZ (v,r,k,f lbl)
+        | I_TBZ (v,r,k,lbl) -> I_TBZ (v,r,k,f lbl)
         | I_ADDR (r,lbl) -> I_ADDR (r, f lbl)
         | I_ADRP (r,lbl) -> I_ADRP (r, f lbl)
         | I_LDR_L (v,r,lbl) -> I_LDR_L(v,r,f lbl)

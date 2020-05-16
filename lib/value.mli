@@ -67,6 +67,10 @@ module type S =
 	 type v are not determined enough to yield a result *)
       exception Undetermined
 
+
+(* Bit-Twiddling Ops *)
+      val bit_at: int -> v -> v
+
       val is_zero : v -> bool
       val is_one : v -> bool
       val check_atag : v -> bool

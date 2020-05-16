@@ -1,0 +1,8 @@
+AArch64 A98
+(* Tests ldrb  with offset*)
+{ 0:x1=x; &x=200; &y=244; y=4;}
+
+P0;
+  LDRB W0, [X1, #44];
+
+exists (0:X0=4)

@@ -30,6 +30,8 @@ module Int32Scalar = struct
   let lt v1 v2 = compare v1 v2 < 0
   let le v1 v2 = compare v1 v2 <= 0
 
+  let bit_at k v = Int32.logand v (Int32.shift_left Int32.one k)
+
   let mask sz =
     let open MachSize in
     match sz with

@@ -1,0 +1,11 @@
+AArch64 A120
+(* CBNZ instruction *)
+
+ { 0:X0=0; }
+
+P0;
+  CBNZ X0, foo;
+  ADD X0, X0, #1;
+  foo: NOP;
+
+forall (0:X0=1)

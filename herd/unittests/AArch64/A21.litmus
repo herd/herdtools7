@@ -1,0 +1,9 @@
+AArch64 A21
+(* Tests load acquire register, a concrete location, no offset*)
+{ &x=42; 0:X1=42; x=1}
+
+P0;
+  LDAR X0, [X1];
+
+exists (0:X0=1)
+

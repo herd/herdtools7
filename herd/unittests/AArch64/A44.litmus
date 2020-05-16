@@ -1,0 +1,11 @@
+AArch64 A44
+(* Test load exclusive; Store exclusive, symbolic location *)
+
+ { 0:X4=z; z=2; 1:X5=5; 1:X6=z}
+
+P0                    | P1;
+  LDXR X0, [X4]       | STR X5, [X6];
+  ADD X0, X0, #1      | ;
+  STXR W3, X0, [X4]   | ;
+
+forall not ((z=3  /\ 0:X3=1) \/ (z=6 /\ 0:X3=1))

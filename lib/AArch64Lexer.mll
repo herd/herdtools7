@@ -42,6 +42,8 @@ match name with
 | "b.ne" | "B.NE" -> BNE
 | "cbz"  | "CBZ" -> CBZ
 | "cbnz"  | "CBNZ" -> CBNZ
+| "tbnz" | "TBNZ" -> TBNZ
+| "tbz" | "TBZ" -> TBZ
 (* Memory *)
 | "ldr"|"LDR" -> LDR
 | "ldur"|"LDUR" -> LDUR
