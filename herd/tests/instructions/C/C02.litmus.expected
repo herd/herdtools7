@@ -1,0 +1,10 @@
+Test C02 Required
+States 1
+0:r0=0x0; y=0x1;
+No
+Witnesses
+Positive: 0 Negative: 1
+Condition forall (0:r0=0x1 /\ y=0x1)
+Observation C02 Never 0 1
+Hash=d92b65c8b850301b8f1b811599b2f905
+
