@@ -258,11 +258,20 @@ val same_instance : event -> event -> bool
   val is_visible_location : A.location -> bool
 
 (********************************)
+(* Event structure output ports *)
+(********************************)
+  val get_output : event_structure -> event_set
+
+(********************************)
 (* Instruction+code composition *)
 (********************************)
 
   val inst_code_comp :
      event_structure -> event_structure -> event_structure
+
+  val inst_code_comp_spec :
+     event_structure -> event_structure -> event_structure -> event_structure
+
 
 (************************)
 (* Parallel composition *)
@@ -839,10 +848,67 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         control = EventRel.union es1.control es2.control;
         data_ports = EventSet.union es1.data_ports es2.data_ports;
         success_ports = EventSet.union es1.success_ports es2.success_ports;
-        output = union_output es1 es2;
+        output = es2.output;
         sca = EventSetSet.union es1.sca es2.sca;
         mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; }
 
+(* Function inst_code_comp_spec builds pod node with two branches, left and right,
+   It is important that left and right output are single, have increasing ids
+   and are immediate successors or the pod. *)
+
+    let inst_code_comp_spec es1 es2 es3 =
+      let outs = get_output es1 in
+      begin match EventSet.as_singleton (EventSet.filter is_pod es1.events) with
+        | Some pod ->
+              let succs = EventRel.succs es1.intra_causality_data pod in
+              if not (EventSet.equal succs outs) then
+                Warn.fatal "Reject complex dependance in inst_code_comp_spec"
+        | None -> Warn.fatal "No single pod in inst_comp_code_comp_spec"
+      end ;
+      match EventSet.elements outs with
+      | [lo;ro;] ->
+          let lo,ro = if EventSet.mem ro es1.speculated then lo,ro else ro,lo in
+          { procs = [] ;
+            events = EventSet.union3 es1.events es2.events es3.events;
+            speculated =
+            EventSet.union3 es1.speculated es2.speculated es3.events;
+            po =
+            begin
+              assert do_deps ;
+              let r1 = EventSet.diff es1.events outs in
+              let r1l = EventSet.add lo r1
+              and r1r = EventSet.add ro r1 in
+              let r2,e2 = es2.po
+              and r3,e3 = es3.po in
+              r1,
+              EventRel.union
+                (EventRel.union (EventRel.cartesian r1l r2) e2)
+                (EventRel.union (EventRel.cartesian r1r r3) e3)
+            end ;
+            intra_causality_data =
+            EventRel.union3
+              es1.intra_causality_data
+              es2.intra_causality_data
+              es3.intra_causality_data;
+            intra_causality_control =
+            EventRel.union3
+              es1.intra_causality_control
+              es2.intra_causality_control
+              es3.intra_causality_control;
+            control = EventRel.union3 es1.control es2.control es3.control;
+        data_ports =
+            EventSet.union3 es1.data_ports es2.data_ports es3.data_ports;
+        success_ports =
+            EventSet.union3
+              es1.success_ports es2.success_ports es3.success_ports;
+        output = None;
+        sca = EventSetSet.union3 es1.sca es2.sca es3.sca;
+        mem_accesses =
+            EventSet.union3 es1.mem_accesses es2.mem_accesses es3.mem_accesses;
+          }
+      | _ -> Warn.fatal "Event.inst_code_comp_spec called in wrong context"
+
+(* Two utilities *)
     let po_union =
       if do_deps then
         fun es1 es2 ->

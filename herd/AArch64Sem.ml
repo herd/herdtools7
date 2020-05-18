@@ -523,11 +523,11 @@ module Make
               begin
                 (read_reg_ord NZP ii >>= tr_cond c) >>|  read_reg_data sz r2 ii >>| read_reg_data sz r3 ii
               end >>= fun ((v,v2),v3) ->
-                if_deps_commit_bcc ii >>= fun () ->
-                M.choiceT v
+                M.condPredT v
+                  (if_deps_commit_bcc ii)
                   (write_reg r1 v2 ii)
                   (csel_op op v3 >>= mask (fun v ->  write_reg r1 v ii))
-                  >>! B.Next
+                >>! B.Next
 (* Swap *)
         | I_SWP (v,rmw,r1,r2,r3) -> swp (tr_variant v) rmw r1 r2 r3 ii >>! B.Next
         | I_SWPBH (v,rmw,r1,r2,r3) -> swp (bh_to_sz v) rmw r1 r2 r3 ii >>! B.Next

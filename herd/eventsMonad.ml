@@ -84,7 +84,16 @@ and type evt_struct = E.event_structure) =
 
       let wrap_check p x = match x with
       | [] -> assert false
-      | elt::s -> assert(check_same_value (p elt) s); elt
+      | elt::s ->
+          assert(check_same_value (p elt) s); elt
+
+      let rec combine_rec k xs ys = match xs,ys with
+      | [],[] -> k
+      | x::xs,y::ys -> combine_rec ((x,y)::k) xs ys
+      | ([],_::_)|(_::_,[]) -> assert false (* By construction *)
+
+      let combine xs ys = combine_rec [] xs ys
+
     end
 
 (*
@@ -142,21 +151,31 @@ Monad type:
 (* Bind the result *)
     let data_comp comp_str s f =
       (fun eiid ->
-(*        let (eiid_next, sact) = s eiid in*)
-        let (eiid,(sact,spec)) = s eiid in
-        assert(spec = None);
-        let eiid,bfinal=
-          Evt.fold (fun (v1, vcl1, es1) (eiid1,acc) ->
-            let b_set = f v1 in
-            let (eiid_b,(b_setact,spec_b)) = b_set eiid1 in
-            assert (spec_b = None) ;
-            Evt.fold (fun (v2,vcl2,es2) (eiid2,acc) ->
-              match comp_str es1 es2 with
-              | None -> (eiid2, acc)
-              | Some es -> (eiid2,Evt.add (v2,vcl2@vcl1,es) acc))
-              b_setact (eiid_b,acc))
-            sact (eiid,Evt.empty)
-        in eiid,(bfinal,None))
+        let (eiid,(sact,sspec)) = s eiid in
+        assert(sspec = None);
+        let eiid,(acts,specs) =
+          Evt.fold (fun (v1, vcl1, es1) (eiid,(acts,specs)) ->
+            let eiid,(b_acts,b_specs) = f v1 eiid in
+            let acts =
+              Evt.fold (fun (v2,vcl2,es2) acts ->
+                match comp_str es1 es2 with
+                | None -> acts
+                | Some es -> Evt.add (v2,vcl2@vcl1,es) acts)
+                b_acts acts in
+            let specs = match b_specs with
+            | None -> specs
+            | Some b_specs ->
+                Evt.fold
+                  (fun (v2,vcl2,es2) specs ->
+                    match comp_str (E.do_speculate es1) es2 with
+                    | None -> specs
+                    | Some es -> Evt.add (v2,vcl2@vcl2,es) specs)
+                  b_specs specs in
+            eiid,(acts,specs))
+            sact (eiid,(Evt.empty,Evt.empty)) in
+        let specs =
+          if Evt.is_empty specs then None else Some specs in
+        eiid,(acts,specs))
 
     let (>>=) : 'a t -> ('a -> 'b t) -> ('b) t
         = fun s f -> data_comp (=*$=) s f
@@ -443,13 +462,22 @@ Monad type:
       | None -> acc
       | Some s3 -> Evt.add s3 acc
 
-    let fold2_ess f ess1 ess2 k =
+    let fold2_ess f ess1 ess2 =
       Evt.fold
         (fun es1 k ->
           Evt.fold (fun es2 k -> f es1 es2 k) ess2 k)
-        ess1 k
+        ess1 Evt.empty
 
-    let lift_combis f c ess1 ess2 = fold2_ess (lift_combi f c) ess1 ess2 Evt.empty
+    let fold3_ess f essa essb essc =
+      let essbc = Evt.combine essb essc in
+      Evt.fold
+        (fun esa k ->
+          List.fold_left
+            (fun k (esb,esc) -> f esa esb esc k)
+            k essbc)
+        essa Evt.empty
+
+    let lift_combis f c ess1 ess2 = fold2_ess (lift_combi f c) ess1 ess2
 
     let do_speculate (v,vcl,es) = (v,vcl,E.do_speculate es)
     let do_speculates ess = Evt.map do_speculate ess
@@ -566,6 +594,35 @@ Monad type:
 
     let condJumpT = if do_deps then speculT else choiceT
 
+    let speculPredT v pod l r =
+      fun eiid ->
+        let eiid,pod = pod eiid in
+        let eiid,l = l eiid in
+        let eiid,r = r eiid in
+        let (),podcl,podact = Evt.as_singleton_nospecul pod
+        and lv,lcl,lact = Evt.as_singleton_nospecul l
+        and rv,rcl,ract = Evt.as_singleton_nospecul r in
+        let lspec = E.do_speculate lact
+        and rspec = E.do_speculate ract in
+        let cl = podcl@lcl@rcl in
+        let lact =
+          Misc.as_some (podact =*$= Misc.as_some (lact =|= rspec))
+        and ract =
+          Misc.as_some (podact =*$= Misc.as_some (ract =|= lspec))
+        and spec =
+          Misc.as_some
+            (E.do_speculate podact =*$=  Misc.as_some (lspec =|= rspec)) in
+        let act =
+          Evt.union
+            (Evt.singleton (rv, VC.Assign (v,VC.Atom V.zero)::cl,ract))
+            (Evt.singleton (lv, VC.Assign (v,VC.Atom V.one)::cl,lact))
+        and spec = Evt.singleton (rv,cl,spec) in
+        eiid,(act,Some spec)
+
+    let condPredT  v pod m1 m2 =
+      if do_deps then speculPredT v pod m1 m2
+      else pod >>= fun () -> choiceT v m1 m2
+
     let (|*|) : unit code -> unit code -> unit code
         = fun s1 s2 ->
           fun (poi,eiid) ->
@@ -592,37 +649,69 @@ Monad type:
             in
             ((poi,eiid),pair)
 
-(* For combining instruction + next instructions.
-   Notice: no causality from s to f v1 *)
+    let cseq : 'a t -> ('a -> 'b t) -> 'b t = fun s f ->  data_comp (+|+) s f
 
+    type poi = int
+
+(************************************************)
+(* Combining instruction and continuation code. *)
+(* Notice that result is v2                     *)
+(************************************************)
+
+
+(* ordinary combination, not much to say *)
     let other_combi (_,vcl1,es1) (v2,vcl2,es2) k =
       let es = E.inst_code_comp es1 es2 in
       Evt.add (v2,vcl1@vcl2,es) k
 
-    let cseq : 'a t -> ('a -> 'b t) -> 'b t
-        = fun s f ->  data_comp (+|+) s f
+    let other_combi_spec (_,vcl1,es1) (v2,vcl2,es2) (_,vcl3,es3) k =
+      let es = E.inst_code_comp_spec es1 es2 es3 in
+      Evt.add (v2,vcl1@vcl2@vcl3,es) k
 
-    type poi = int
+(* Check presence of speculation inside instruction, typically AArch64 CSEL *)
+
+    let not_speculated es = E.EventSet.is_empty es.E.speculated
 
     let (>>>) : (poi -> (poi * 'a) t) -> ('a -> 'b code) -> 'b code
-        (*      = fun s f -> data_comp (+|+) s f *)
         = fun s f -> fun (poi,eiid) ->
           let ({id=eiid;_}, (sact,spec)) = s poi {id=eiid;sub=0} in
-          let ((poi,v1),_,_) =
-            Evt.wrap_check (fun (v1,_,_) (v2,_,_) -> v1 = v2) sact in
-          let (poi_b,eiid_b),(b_setact,bspec) = f v1 (poi,eiid) in
-          let k = fold2_ess other_combi sact b_setact Evt.empty in
-          let spec = match spec,bspec with
-          | None, None -> None
-          | None, Some spec2 ->
-              begin
-                let spec1 = do_speculates sact in
-                Some (fold2_ess other_combi spec1 spec2 Evt.empty)
-              end
-          | Some _, _ ->
-              Warn.fatal "Refuse to consider speculation that originates from single instruction"
-          in
-          ((poi_b,eiid_b),(k,spec))
+          (* We check that all semantics for "s" (instruction)
+             1. Yield the same value,
+             2. Have the same status w.r.t. speculation.
+             So as to apply f (code continuation) only once (or twice) *)
+          let ((poi,v1),_,es1) =
+            Evt.wrap_check
+              (fun (v1,_,es1) (v2,_,es2) ->
+                v1 = v2 && not_speculated es1 = not_speculated es2) sact in
+          if not_speculated es1 then
+              let poi,(b_setact,bspec) = f v1 (poi,eiid) in
+              let k = fold2_ess other_combi sact b_setact in
+              let spec = match spec,bspec with
+              | None, None -> None
+              | None, Some spec2 ->
+                  let spec1 = do_speculates sact in
+                  Some (fold2_ess other_combi spec1 spec2)
+              | Some spec1,None ->
+                  let spec2 = do_speculates b_setact in
+                  Some (fold2_ess other_combi spec1 spec2)
+              | Some spec1,Some spec2 ->
+                  Some (fold2_ess other_combi spec1 spec2) in
+              (poi,(k,spec))
+          else
+              let poi,(b_setact,bspec) = f v1 (poi,eiid) in
+              let poi,(c_setact,cspec) = f v1 poi in
+              let k =
+                fold3_ess other_combi_spec sact b_setact c_setact in
+              let spec = match spec,bspec,cspec with
+              | Some spec1,None,None ->
+                  let spec2 = do_speculates b_setact
+                  and spec3 = do_speculates c_setact in
+                  Some (fold3_ess other_combi_spec spec1 spec2 spec3)
+              | Some spec1,Some spec2,Some spec3 ->
+                  Some (fold3_ess other_combi_spec spec1 spec2 spec3)
+              | _ ->
+                  Warn.fatal "Inconsistent speculation in (<<<)" in
+              poi,(k,spec)
 
 (* For combining conditions and branches of an if, as above + instruction dependencies *)
     let (>>>>) s f = fun eiid ->

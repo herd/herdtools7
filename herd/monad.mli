@@ -97,8 +97,11 @@ module type S =
 
     val discardT : 'a t -> unit t
     val addT : 'a -> 'b t -> ('a * 'b) t
+
     val choiceT : A.V.v -> 'a t -> 'a t -> 'a t 
+    val condPredT : A.V.v -> unit t -> 'a t -> 'a t -> 'a t
     val condJumpT : A.V.v -> 'a code -> 'a code -> 'a code
+
     val altT : 'a t -> 'a t -> 'a t
 
     val tooFar : string -> unit t
