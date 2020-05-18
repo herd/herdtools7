@@ -6,7 +6,10 @@ let addr = [R]; dd-restrict; [NDATA]; intrinsic; [M]
 let sim = (same-instr & ((EXEC*SPEC) | (SPEC*EXEC))) \ id
 
 (* Computation of equiv-spec, by intersection with equivalent  histories *)
-let dep = (iico_data|rf-reg-restrict|rfi)^-1
+let co-loc =
+    let ww-loc = [W];po-loc;[W] in
+    ww-loc\(ww-loc;ww-loc)
+let dep = (iico_data|rf-reg-restrict|rfi|co-loc)^-1
 let diffw =(loc & (W * W)) \ id
 let diff = ((rfe^-1;diffw;rf)|(rf^-1;diffw;rfe))
 let bisim = bisimulation(dep,same-static\diff)\id

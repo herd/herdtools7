@@ -101,5 +101,9 @@ let get_default a = function
       | `RISCV(*|`AArch64*) -> true
       | _ -> false
       end
-  | SwitchDepScResult -> true
+  | SwitchDepScResult ->
+      begin match a with
+      | `AArch64 -> false
+      | _ -> true
+      end
   | v -> Warn.fatal "No default for variant %s" (pp v)
