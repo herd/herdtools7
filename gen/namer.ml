@@ -53,10 +53,10 @@ module Make
          | Dp (dp,Same,_) -> Some (Misc.lowercase (A.pp_dp dp) ^ "s")
          | Dp (dp,Diff,_) -> Some (Misc.lowercase (A.pp_dp dp))
          | Rf Int -> Some "rfi"
-         | Ws Int -> Some "wsi"
+         | Ws Int -> Some "coi"
          | Fr Int -> Some "fri"
          | Rf Ext -> Some "rfe"
-         | Ws Ext -> Some "wse"
+         | Ws Ext -> Some "coe"
          | Fr Ext -> Some "fre"
          | Rmw rmw ->
              let pp =

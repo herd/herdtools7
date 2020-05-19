@@ -29,8 +29,8 @@ let fencerel(B) = (po & (_ * B)) ;  po
 let ctrlcfence(CFENCE) = (ctrl & (_ * CFENCE)) ; po
 
 (* Make the difference between load-reserve/store conditional and amo insructions *)
-let lxsx = rmw & po
-let amo = rmw \ lxsx
+let lxsx = rmw \ amo
+
 
 (* Some utilities (cpp11) *)
 
@@ -70,3 +70,5 @@ let map f =
   do_map
 
 let LKW = try LKW with emptyset
+
+show (si \ id) \ (I * I) as si

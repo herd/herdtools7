@@ -28,10 +28,10 @@ typedef cpuset_t cpu_set_t;
 cpus_t *read_affinity(void) {
   cpu_set_t mask;
   int sz = 0 ;
-  int res = pthread_getaffinity_np(pthread_self(), sizeof(mask), &mask) ;
-  
-  if (res != 0) { 
-    errexit("pthread_getaffinity_np",res);
+  int res = sched_getaffinity(0, sizeof(mask), &mask);
+
+  if (res != 0) {
+    errexit("sched_getaffinity", res);
   }
   for (int p=0 ; p <  CPU_SETSIZE ; p++) {
     if (CPU_ISSET(p,&mask)) sz++ ;
@@ -106,9 +106,9 @@ void write_affinity(cpus_t *p) {
     }
   }
   if  (exists_pos) {
-    int r = pthread_setaffinity_np(pthread_self(),sizeof(mask),&mask) ;
+    int r = sched_setaffinity(0, sizeof(mask), &mask);
     if (r != 0) {
-      errexit("pthread_setaffinity_np",r) ;
+      errexit("sched_setaffinity",r) ;
     }
   }
 }
@@ -119,9 +119,9 @@ void write_one_affinity(int a) {
     cpu_set_t mask;
     CPU_ZERO(&mask) ;
     CPU_SET(a,&mask) ;
-    int r = pthread_setaffinity_np(pthread_self(), sizeof(mask), &mask) ;
+    int r = sched_setaffinity(0, sizeof(mask), &mask);
     if (r != 0) {
-      errexit("pthread_setaffinity_np",r) ;
+      errexit("sched_setaffinity",r) ;
     }
   }
 }
@@ -148,7 +148,7 @@ void force_one_affinity(int a, int sz,int verbose, char *name) {
     CPU_ZERO(&mask) ;
     CPU_SET(a,&mask) ;
     do {
-      r = pthread_setaffinity_np(pthread_self(), sizeof(mask), &mask) ;
+      r = sched_setaffinity(0, sizeof(mask), &mask);
       if (r != 0) {
         if (verbose)
           fprintf(stderr,"%s: force %i failed\n",name,a) ;

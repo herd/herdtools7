@@ -221,6 +221,12 @@ module Make
                   (fun e1 e2 -> not (E.same_proc e1 e2)) (Lazy.force unv)
               end ;
               "rmw",lazy conc.S.atomic_load_store;
+              "amo",
+              lazy begin
+                E.EventRel.filter
+                  (fun (r,w) -> E.po_eq r w)
+                  conc.S.atomic_load_store
+              end;
               "po", lazy  po;
               "depend", lazy (Lazy.force pr).S.depend;
               "success", lazy (Lazy.force pr).S.success;
