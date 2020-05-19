@@ -69,7 +69,7 @@ module Make
       let read_loc v is_data = M.read_loc is_data (mk_read v AArch64.N)
 
       let read_reg is_data r ii = match r with
-      | AArch64Base.ZR -> M.unitT V.zero
+      | AArch64.ZR -> M.unitT V.zero
       | _ ->
           M.read_loc is_data (mk_read MachSize.Quad AArch64.N) (A.Location_reg (ii.A.proc,r)) ii
 
@@ -86,12 +86,17 @@ module Make
 (* Basic write, to register  *)
       let mk_write sz an loc v = Act.Access (Dir.W, loc, v, an, sz)
       let write_loc sz an loc v ii = M.mk_singleton_es (mk_write sz an loc v) ii
-      let write_reg r v ii = write_loc MachSize.Quad AArch64.N (A.Location_reg (ii.A.proc,r)) v ii
+      let write_reg r v ii = match r with
+      | AArch64.ZR -> M.unitT ()
+      | _ ->
+          write_loc MachSize.Quad AArch64.N (A.Location_reg (ii.A.proc,r)) v ii
 
-      let write_reg_sz sz r v ii = match sz with
-      | MachSize.Quad -> write_reg r v ii
-      | MachSize.Word|MachSize.Short|MachSize.Byte ->
-          M.op1 (Op.Mask sz) v >>= fun v -> write_reg r v ii
+      let write_reg_sz sz r v ii = match r with
+      | AArch64.ZR -> M.unitT ()
+      | _ -> match sz with
+        | MachSize.Quad -> write_reg r v ii
+        | MachSize.Word|MachSize.Short|MachSize.Byte ->
+            M.op1 (Op.Mask sz) v >>= fun v -> write_reg r v ii
 
       let write_reg_sz_non_mixed =
         if mixed then fun _sz -> write_reg
