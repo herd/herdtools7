@@ -97,7 +97,7 @@ let zyva equiv =
 
 let intrinsic = (iico_data | iico_ctrl)+
 let udr r = domain r | range r
-let generated-by-stxr = udr(same-instr;[range(rmw)])
+let generated-by-stxr = udr(same-instr;[range(lxsx)])
 let rf-reg-restrict = 
   let NW = ~generated-by-stxr in
   [NW];rf-reg
