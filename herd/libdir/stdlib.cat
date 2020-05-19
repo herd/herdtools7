@@ -70,3 +70,5 @@ let map f =
   do_map
 
 let LKW = try LKW with emptyset
+
+show (si \ id) \ (I * I) as si

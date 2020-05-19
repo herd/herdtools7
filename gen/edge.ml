@@ -264,10 +264,10 @@ and type rmw = F.rmw = struct
   | None,None  when not (is_id e) -> ""
   | _,_ -> pp_one_or_two pp_a_qua e a1 a2
 
-  let pp_tedge = function
+  let do_pp_tedge compat = function
     | Rf ie -> sprintf "Rf%s" (pp_ie ie)
     | Fr ie -> sprintf "Fr%s" (pp_ie ie)
-    | Ws ie -> sprintf "Ws%s" (pp_ie ie)
+    | Ws ie -> if compat then sprintf "Ws%s" (pp_ie ie) else sprintf "Co%s" (pp_ie ie)
     | Po (sd,e1,e2) -> sprintf "Po%s%s%s" (pp_sd sd) (pp_extr e1) (pp_extr e2)
     | Fenced (f,sd,e1,e2) ->
         sprintf "%s%s%s%s" (F.pp_fence f) (pp_sd sd) (pp_extr e1) (pp_extr e2)
@@ -275,7 +275,7 @@ and type rmw = F.rmw = struct
           (F.pp_dp dp) (pp_sd sd) (pp_extr e)
     | Hat -> "Hat"
     | Rmw rmw-> begin match F.pp_rmw rmw with
-      | "" -> "Rmw" (* Backward compatibility *)
+      | "" -> if compat then "Rmw" else "LxSx" (* Backward compatibility *)
       | s -> sprintf "Amo.%s" s
     end
     | Leave c -> sprintf "%sLeave" (pp_com c)
@@ -288,24 +288,26 @@ and type rmw = F.rmw = struct
     | Irf ie -> sprintf "Irf%s" (pp_ie ie)
     | Ifr ie -> sprintf "Ifr%s" (pp_ie ie)
 
+  let pp_tedge = do_pp_tedge false
+
   let debug_edge e =
     sprintf
       "{edge=%s, a1=%s, a2=%s}"
-      (pp_tedge e.edge) (pp_a e.a1) (pp_a e.a2)
+      (do_pp_tedge false e.edge) (pp_a e.a1) (pp_a e.a2)
 
-  let do_pp_edge pp_aa e =
-    (match e.edge with Id -> "" | _ -> pp_tedge e.edge) ^
+  let do_pp_edge compat pp_aa e =
+    (match e.edge with Id -> "" | _ -> do_pp_tedge compat e.edge) ^
     pp_aa e.edge e.a1 e.a2
 
-  let pp_edge e = do_pp_edge pp_archs e
+  let pp_edge e = do_pp_edge false pp_archs e
 
-  let pp_edge_with_xx e = do_pp_edge pp_aa e
+  let pp_edge_with_xx compat e = do_pp_edge compat pp_aa e
 
-  let pp_edge_with_p e = do_pp_edge pp_aa_bis e
+  let pp_edge_with_p compat e = do_pp_edge compat pp_aa_bis e
 
-  let pp_edge_with_a e = do_pp_edge pp_aa_ter e
+  let pp_edge_with_a compat e = do_pp_edge compat pp_aa_ter e
 
-  let pp_edge_with_pa e = do_pp_edge pp_aa_qua e
+  let pp_edge_with_pa compat e = do_pp_edge compat pp_aa_qua e
 
   let compare_atomo a1 a2 = match a1,a2 with
   | None,None -> 0
@@ -359,6 +361,12 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
   | Insert _ -> NoDir
   | Node d -> Dir d
 
+let fold_tedges_compat f r =
+  let r = fold_ie (fun ie -> f (Ws ie)) r in
+  let r = 
+    F.fold_rmw (fun rmw r -> if Misc.string_eq (F.pp_rmw rmw) "" then f (Rmw rmw) r else r) r 
+  in r
+
 let fold_tedges f r =
   let r =
     if do_self then
@@ -395,7 +403,7 @@ let fold_tedges f r =
   let fold_atomo_list aos f k =
     List.fold_right (fun a k -> f (Some a) k) aos k
 
-  let fold_edges f =
+  let do_fold_edges fold_tedges f =
    fold_atomo
       (fun a1 ->
         fold_atomo
@@ -435,6 +443,7 @@ let fold_tedges f r =
                        k
                      end ))))
 
+  let fold_edges f = do_fold_edges fold_tedges f
 
 (* checked later... because rmw accepts all atomicity
                      let d1 = do_dir_src te
@@ -511,28 +520,32 @@ let fold_tedges f r =
 (* Fill lexeme table *)
   let iter_ie = Misc.fold_to_iter fold_ie
 
-  let () =
-    iter_edges  (fun e -> add_lxm (pp_edge_with_xx e) e) ;
+  let four_times_iter_edges compat iter_edges =
+    iter_edges  (fun e -> add_lxm (pp_edge_with_xx compat e) e) ;
     iter_edges
       (fun e -> match e.a1,e.a2 with
       | (None,Some _)
       | (Some _,None) ->
-          add_lxm (pp_edge_with_p e) e
+          add_lxm (pp_edge_with_p compat e) e
       | _,_ -> ()) ;
     iter_edges
       (fun e -> match e.a1,e.a2 with
       | (_,(Some _ as a)) when a = F.pp_as_a ->
-          add_lxm (pp_edge_with_a e) e
+          add_lxm (pp_edge_with_a compat e) e
       | ((Some _ as a),_) when a = F.pp_as_a ->
-          add_lxm (pp_edge_with_a e) e
+          add_lxm (pp_edge_with_a compat e) e
       | _,_ -> ()) ;
     iter_edges
       (fun e -> match e.a1,e.a2 with
       | (None,(Some _ as a))
       | ((Some _ as a),None) when a = F.pp_as_a ->
-          add_lxm (pp_edge_with_pa e) e
-      | _,_ -> ()) ;
-    fold_sd_extr_extr
+          add_lxm (pp_edge_with_pa compat e) e
+      | _,_ -> ()) 
+ 
+
+  let () =
+   four_times_iter_edges false iter_edges; 
+   fold_sd_extr_extr
       (fun sd e1 e2 () ->
         add_lxm
           (pp_strong sd e1 e2) (plain_edge (Fenced (F.strong,sd,e1,e2)))) () ;
@@ -552,6 +565,8 @@ let fold_tedges f r =
         ()) () ;
     if not (Hashtbl.mem t "R") then add_lxm "R" (plain_edge (Node R)) ;
     if not (Hashtbl.mem t "W") then add_lxm "W" (plain_edge (Node W)) ;
+(*Co aka Ws and LxSx aka Rmw*)
+   four_times_iter_edges true (Misc.fold_to_iter (do_fold_edges fold_tedges_compat));
 (* Backward compatibility *)
     if do_self then
       iter_ie
