@@ -115,7 +115,7 @@ type com =  CRf | CFr | CWs
 let pp_com = function
   | CRf -> "Rf"
   | CFr -> "Fr"
-  | CWs -> "Ws"
+  | CWs -> "Co"
 
 let fold_com f r = f CRf (f CFr (f CWs r))
 

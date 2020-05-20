@@ -209,7 +209,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           match last_edge ns with
           | Fr _|Leave CFr|Back CFr -> "Fr"
           | Rf _|Leave CRf|Back CRf -> "Rf"
-          | Ws _|Leave CWs|Back CWs -> "Ws"
+          | Ws _|Leave CWs|Back CWs -> "Co"
           | Irf _ -> "Irf" | Ifr _ -> "Ifr"
           | _ -> assert false)
         nss
