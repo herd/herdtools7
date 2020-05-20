@@ -100,8 +100,8 @@ and type evt_struct = E.event_structure) =
 Monad type:
   + Argument is event identifier
   + Returned value is a pair, whose first element is
-    concrete branch and second collects speculated branch.
-    None means no speculation at all
+   concrete branch and second collects speculated branch.
+   None means no speculation at all
 *)
 
 
@@ -668,22 +668,48 @@ Monad type:
       let es = E.inst_code_comp_spec es1 es2 es3 in
       Evt.add (v2,vcl1@vcl2@vcl3,es) k
 
-(* Check presence of speculation inside instruction, typically AArch64 CSEL *)
+
+(* Ordinary instr + code compostion. Notice: no causality from s to f v1 *)
+
+    let comb_instr_code
+        : (poi -> (poi * 'a) t) -> ('a -> 'b code) -> 'b code
+            =
+          fun s f (poi,eiid) ->
+            let ({id=eiid;_},(acts1,spec1)) = s poi {id=eiid; sub=0;} in
+            assert (spec1 = None) ;
+            let poi,acts =
+              Evt.fold
+                (fun ((poi1,v1), vcl1, es1) ((po,eiid),acts) ->
+                  let (po2,eiid),(acts2,spec2) = f v1 (poi1,eiid) in
+                  assert (spec2 = None) ;
+                  let acts =
+                    Evt.fold
+                      (fun (v2,vcl2,es2) acts ->
+                        let es = E.inst_code_comp es1 es2 in
+                        Evt.add (v2,vcl2@vcl1,es) acts)
+                      acts2 acts in
+                  (max po2 po,eiid),acts)
+                acts1 ((0,eiid),Evt.empty) in
+            (poi,(acts,None))
+
+(* Idem, speculation is possible and handled if present *)
 
     let not_speculated es = E.EventSet.is_empty es.E.speculated
 
-    let (>>>) : (poi -> (poi * 'a) t) -> ('a -> 'b code) -> 'b code
-        = fun s f -> fun (poi,eiid) ->
-          let ({id=eiid;_}, (sact,spec)) = s poi {id=eiid;sub=0} in
-          (* We check that all semantics for "s" (instruction)
-             1. Yield the same value,
-             2. Have the same status w.r.t. speculation.
-             So as to apply f (code continuation) only once (or twice) *)
-          let ((poi,v1),_,es1) =
-            Evt.wrap_check
-              (fun (v1,_,es1) (v2,_,es2) ->
-                v1 = v2 && not_speculated es1 = not_speculated es2) sact in
-          if not_speculated es1 then
+    let comb_instr_code_deps
+        : (poi -> (poi * 'a) t) -> ('a -> 'b code) -> 'b code
+            =
+          fun s f -> fun (poi,eiid) ->
+            let ({id=eiid;_}, (sact,spec)) = s poi {id=eiid;sub=0} in
+            (* We check that all semantics for "s" (instruction)
+               1. Yield the same value,
+               2. Have the same status w.r.t. speculation.
+               So as to apply f (code continuation) only once (or twice) *)
+            let ((poi,v1),_,es1) =
+              Evt.wrap_check
+                (fun (v1,_,es1) (v2,_,es2) ->
+                  v1 = v2 && not_speculated es1 = not_speculated es2) sact in
+            if not_speculated es1 then
               let poi,(b_setact,bspec) = f v1 (poi,eiid) in
               let k = fold2_ess other_combi sact b_setact in
               let spec = match spec,bspec with
@@ -697,7 +723,7 @@ Monad type:
               | Some spec1,Some spec2 ->
                   Some (fold2_ess other_combi spec1 spec2) in
               (poi,(k,spec))
-          else
+            else
               let poi,(b_setact,bspec) = f v1 (poi,eiid) in
               let poi,(c_setact,cspec) = f v1 poi in
               let k =
@@ -712,6 +738,11 @@ Monad type:
               | _ ->
                   Warn.fatal "Inconsistent speculation in (<<<)" in
               poi,(k,spec)
+
+(* Actual instr + code combinatioj depends upon deps mode *)
+
+let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
+
 
 (* For combining conditions and branches of an if, as above + instruction dependencies *)
     let (>>>>) s f = fun eiid ->
