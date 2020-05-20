@@ -17,6 +17,7 @@ open Printf
 
 module type Config = sig
   val debug : bool
+  val debug_files : bool
   val verbose : int
   val libfind : string -> string
   val compat : bool
@@ -37,6 +38,7 @@ module Make (C: Config) = struct
 (* Model, restricted *)
       let showsome = false
       let debug = C.debug
+      let debug_files = C.debug_files
       let verbose = C.verbose
       let skipchecks = StringSet.empty
       let strictskip = false

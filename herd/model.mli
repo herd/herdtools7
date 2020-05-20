@@ -46,6 +46,7 @@ module type Config = sig
   val showsome : bool
   val through : through
   val debug : bool
+  val debug_files : bool
   val verbose : int
   val skipchecks : StringSet.t
   val strictskip : bool

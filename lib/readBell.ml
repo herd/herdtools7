@@ -19,6 +19,7 @@
 module type Config = sig
   val debug_lexer : bool
   val debug_model : bool
+  val debug_files : bool
   val verbose : int
   val libfind : string -> string
   val compat : bool
@@ -39,6 +40,7 @@ module Make(O:Config) =
       BellInterpreter.Make
         (struct
           let debug = O.debug_model
+          let debug_files = O.debug_files
           let verbose = O.verbose
           let libfind = O.libfind
           let compat = O.compat

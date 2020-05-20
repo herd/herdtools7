@@ -41,6 +41,7 @@ let bi = match O.bell with
       (struct
         let debug_lexer = O.debug.Debug_gen.lexer
         let debug_model = O.debug.Debug_gen.model
+        let debug_files = false
         let verbose = O.verbose
         let libfind =
           let module ML =

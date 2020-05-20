@@ -288,6 +288,7 @@ let read_bell libfind fname =
       (struct
         let debug_lexer = false
         let debug_model = false
+        let debug_files = false
         let verbose = !verbose
         let libfind = libfind
         let compat = false

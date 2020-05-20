@@ -159,6 +159,7 @@ module Top (Conf:Config) = struct
           end || Conf.PC.gv || Conf.PC.evince || Conf.variant Variant.MemTag
         let through = Conf.through
         let debug = Conf.debug.Debug_herd.barrier
+        let debug_files = Conf.debug.Debug_herd.files
         let verbose = Conf.verbose
         let skipchecks = Conf.skipchecks
         let strictskip = Conf.strictskip

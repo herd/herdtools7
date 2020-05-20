@@ -627,6 +627,7 @@ let () =
           (struct
             let debug_lexer = Config.debug.Debug_herd.lexer
             let debug_model = Config.debug.Debug_herd.barrier
+            let debug_files = Config.debug.Debug_herd.files
             let verbose = Config.verbose
             let libfind = libfind
             let compat = Config.variant Variant.BackCompat

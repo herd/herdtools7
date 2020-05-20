@@ -26,6 +26,7 @@ module type Config = sig
 (* Restricted Model.Config *)
   val showsome : bool
   val debug : bool
+  val debug_files : bool
   val verbose : int
   val skipchecks : StringSet.t
   val strictskip : bool
@@ -2244,8 +2245,9 @@ module Make
               | "lock.cat" when O.compat -> "cos-opt.cat"
               | _ -> fname in
               if StringSet.mem fname st.st.included then begin
-                Warn.warn_always "%a: not including %s another time"
-                  TxtLoc.pp loc fname ;
+                if O.verbose > 0 || O.debug_files then
+                  Warn.warn_always "%a: not including %s another time"
+                    TxtLoc.pp loc fname ;
                 kont st res
               end else begin
                 do_include loc fname st kfail kont res
