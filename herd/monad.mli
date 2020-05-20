@@ -47,11 +47,32 @@ module type S =
     val bind_ctrl_avoid : 'c t -> 'a t -> ('a -> 'b t) -> 'b t
     val check_tags : 'v t -> ('v -> 'v t) -> ('v -> 'v -> 'v t) -> 'x t -> 'v t
     val exch : 'a t -> 'a t -> ('a -> 'b t) ->  ('a -> 'c t) ->  ('b * 'c) t
+
+(*
+  Those amo_strict and swp are the AArch64 combinators,
+  with complete internal dependencies.
+
+  In particular there is a iico_ctrl dependency
+  from read_register to write_register.
+  The dependency from read_mem to write_mem is iico_ctrl for swp
+  and iico_data for amo_strict.
+*)
     val swp : ('loc t) ->
-        ('loc -> 'v t) -> 'w t -> ('loc -> 'w -> unit t) -> ('v -> unit t)
+      ('loc -> A.V.v t) -> A.V.v t (* read reg *) ->
+        ('loc -> A.V.v -> unit t) ->  (A.V.v -> unit t) (* Write reg *)
           -> unit t
+
+    val amo_strict : Op.op -> ('loc t) ->
+      ('loc -> A.V.v t) -> A.V.v t (* read reg *) ->
+        ('loc -> A.V.v -> unit t) ->  (A.V.v -> unit t) (* Write reg *)
+          -> unit t
+
+
     val linux_exch :
         'loc t -> 'v t -> ('loc -> 'w t) -> ('loc -> 'v -> unit t) -> 'w t
+
+(* Weak amo, without control dependency from read read to write reg.
+  In fact, the write reg is absent *)
     val amo : Op.op ->
       'loc t -> A.V.v t -> ('loc -> A.V.v t) -> ('loc -> A.V.v -> unit t) -> A.V.v t
 
