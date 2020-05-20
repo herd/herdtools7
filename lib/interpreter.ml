@@ -2244,14 +2244,14 @@ module Make
               let fname = match fname with
               | "lock.cat" when O.compat -> "cos-opt.cat"
               | _ -> fname in
-              if StringSet.mem fname st.st.included then begin
-                if O.verbose > 0 || O.debug_files then
-                  Warn.warn_always "%a: not including %s another time"
-                    TxtLoc.pp loc fname ;
-                kont st res
-              end else begin
-                do_include loc fname st kfail kont res
-              end
+              if
+                StringSet.mem fname st.st.included &&
+                (O.verbose > 0 || O.debug_files)
+              then begin
+                Warn.warn_always "%a: including %s another time"
+                  TxtLoc.pp loc fname
+              end ;
+              do_include loc fname st kfail kont res
           | Procedure (_,name,args,body,is_rec) ->
               let p =  { proc_args=args; proc_env=st.env; proc_body=body; } in
               let proc = Proc p in
