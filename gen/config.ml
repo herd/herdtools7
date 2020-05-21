@@ -262,7 +262,9 @@ let speclist =
     sprintf "<n> test relaxation together up to <n> (default %i). Implies -mix true " !max_relax)::
    ("-safe", Arg.String (fun s -> safes := Some s),
     "<relax-list> specify a safe list")::
-  []
+   ("-relaxlist", Arg.String (fun s -> safes := Some s),
+    "<relax-list> specify a list of relaxations of interest")::
+   []
 
 let varatom = ref ([] : string list)
 
