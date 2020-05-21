@@ -308,7 +308,7 @@ val same_instance : event -> event -> bool
      event_structure -> event_structure ->
      event_structure
 
-  val swp :
+  val swp_or_amo : 'op option -> (* When None this is a swp, otherwise amo *)
      event_structure -> event_structure ->
      event_structure -> event_structure ->
      event_structure -> event_structure
@@ -859,11 +859,11 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let inst_code_comp_spec es1 es2 es3 =
       let outs = get_output es1 in
       begin match EventSet.as_singleton (EventSet.filter is_pod es1.events) with
-        | Some pod ->
-              let succs = EventRel.succs es1.intra_causality_data pod in
-              if not (EventSet.equal succs outs) then
-                Warn.fatal "Reject complex dependance in inst_code_comp_spec"
-        | None -> Warn.fatal "No single pod in inst_comp_code_comp_spec"
+      | Some pod ->
+          let succs = EventRel.succs es1.intra_causality_data pod in
+          if not (EventSet.equal succs outs) then
+            Warn.fatal "Reject complex dependance in inst_code_comp_spec"
+      | None -> Warn.fatal "No single pod in inst_comp_code_comp_spec"
       end ;
       match EventSet.elements outs with
       | [lo;ro;] ->
@@ -896,14 +896,14 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
               es2.intra_causality_control
               es3.intra_causality_control;
             control = EventRel.union3 es1.control es2.control es3.control;
-        data_ports =
+            data_ports =
             EventSet.union3 es1.data_ports es2.data_ports es3.data_ports;
-        success_ports =
+            success_ports =
             EventSet.union3
               es1.success_ports es2.success_ports es3.success_ports;
-        output = None;
-        sca = EventSetSet.union3 es1.sca es2.sca es3.sca;
-        mem_accesses =
+            output = None;
+            sca = EventSetSet.union3 es1.sca es2.sca es3.sca;
+            mem_accesses =
             EventSet.union3 es1.mem_accesses es2.mem_accesses es3.mem_accesses;
           }
       | _ -> Warn.fatal "Event.inst_code_comp_spec called in wrong context"
@@ -1091,7 +1091,12 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       and r4,e4 = es4.po and r5,e5 = es5.po in
       (EventSet.union5 r1 r2 r3 r4 r5, EventRel.union5 e1 e2 e3 e4 e5)
 
-    let swp_comp rloc rmem rreg wmem wreg =
+(* If swp then add ctrl dependency from rmem to wmem, else (amo) add data dependency *)
+    let swp_or_amo op rloc rmem rreg wmem wreg =
+      let is_amo = Misc.is_some op in
+      let outrmem = maximals rmem and outrreg = maximals rreg and outrloc = maximals rloc
+      and inwmem = minimals wmem and inwreg = minimals wreg and inrmem = minimals rmem in
+      let mem2mem = EventRel.cartesian outrmem inwmem in
       { procs = [] ;
         events = EventSet.union5
           rloc.events rmem.events rreg.events wmem.events wreg.events;
@@ -1109,18 +1114,18 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
              rloc.intra_causality_data
              rmem.intra_causality_data rreg.intra_causality_data
              wmem.intra_causality_data wreg.intra_causality_data ;
-           EventRel.cartesian (maximals rmem) (minimals wreg);
-           EventRel.cartesian (maximals rreg) (minimals wmem);
-           EventRel.cartesian (maximals rloc)
-             (EventSet.union (minimals rmem) (minimals wmem))];
+           EventRel.cartesian outrmem inwreg;
+           if is_amo then mem2mem else EventRel.empty;
+           EventRel.cartesian outrreg inwmem;
+           EventRel.cartesian outrloc (EventSet.union inrmem inwmem)];
         intra_causality_control =
         EventRel.unions
           [EventRel.unions
              [rloc.intra_causality_control;
               rmem.intra_causality_control;rreg.intra_causality_control;
               wmem.intra_causality_control;wreg.intra_causality_control;];
-           EventRel.cartesian (maximals rmem) (minimals wmem);
-           EventRel.cartesian (maximals rreg) (minimals wreg);];
+           if is_amo then EventRel.empty else mem2mem;
+           EventRel.cartesian outrreg inwreg;];
         control =
         EventRel.union5 rloc.control rmem.control rreg.control wmem.control wreg.control;
         data_ports =
@@ -1154,8 +1159,6 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         exch_comp rx ry wx wy
       else
         assert false
-
-    let swp = swp_comp
 
     let linux_exch re rloc rmem wmem =
       let input_wmem = minimals wmem in

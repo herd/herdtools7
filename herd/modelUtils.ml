@@ -20,6 +20,9 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
 
   let memtag = O.variant Variant.MemTag
   let do_deps = O.variant Variant.Deps
+  let iico_ctrl_as_dep = match S.A.arch with
+  | `AArch64 -> true
+  | _ -> false
 
 (*******************************************)
 (* Complete re-computation of dependencies *)
@@ -31,7 +34,13 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
   let is_load_total e = E.is_load e || E.is_additional_mem_load e
 
   let make_procrels_deps conc =
-    let iico = conc.S.str.E.intra_causality_data
+    let iico =
+      E.EventRel.union
+        conc.S.str.E.intra_causality_data
+        (if iico_ctrl_as_dep then
+          conc.S.str.E.intra_causality_control
+        else
+          E.EventRel.empty)
     and rf_regs = U.make_rf_regs conc in
     let iico_regs =
       E.EventRel.restrict_rel
@@ -58,7 +67,9 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
     let is_data_port =
       let data_ports = conc.S.str.E.data_ports in
       fun e -> E.EventSet.mem e data_ports in
-    let iico_rmw = E.EventRel.inter conc.S.atomic_load_store iico in
+    let iico_rmw =
+      E.EventRel.inter conc.S.atomic_load_store
+        conc.S.str.E.intra_causality_data in
     let dd_pre =
 (* Most dependencies start with a mem load, a few with a mem store + ctrl
    RISCV *)

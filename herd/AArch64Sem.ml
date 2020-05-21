@@ -371,10 +371,11 @@ module Make
             | A_SMIN -> Op.Min in
             let read_mem = if noret then fun sz -> old_do_read_mem sz NoRet else rmw_amo_read rmw
             and write_mem = rmw_amo_write rmw in
-            M.amo op
-              ma (read_reg_data sz rs ii)
-              (fun a -> read_mem sz a ii) (fun a v -> write_mem sz a v ii)
-            >>= fun w ->if noret then M.unitT () else write_reg_sz_non_mixed sz rt w ii)
+            M.amo_strict op
+              ma
+              (fun a -> read_mem sz a ii) (read_reg_data sz rs ii)
+              (fun a v -> write_mem sz a v ii)
+              (fun w ->if noret then M.unitT () else write_reg_sz_non_mixed sz rt w ii))
           (read_reg_ord rn ii)
           ii
 

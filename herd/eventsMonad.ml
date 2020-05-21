@@ -226,24 +226,31 @@ Monad type:
             eiid,(Evt.singleton((vwx,vwy),vclrx@vclry@vclwx@vclwy,es),None)
 
 (* Exchange combination *)
-    let swp : ('loc t) ->
-      ('loc -> 'v t) -> 'w t -> ('loc -> 'w -> unit t) -> ('v -> unit t)
-        -> unit t  = fun rloc rmem rreg wmem wreg ->
-          fun eiid ->
-            let eiid,rlocact = rloc eiid in
-            let vloc,vclloc,esloc = Evt.as_singleton_nospecul rlocact in
-            let eiid,rmemact = rmem vloc eiid in
-            let eiid,rregact = rreg eiid in
-            let vrmem,vclrmem,esrmem = Evt.as_singleton_nospecul rmemact
-            and vrreg,vclrreg,esrreg = Evt.as_singleton_nospecul rregact in
-            let eiid,wmemact = wmem vloc vrreg eiid in
-            let eiid,wregact = wreg vrmem eiid in
-            let (),vclwmem,eswmem = Evt.as_singleton_nospecul wmemact
-            and (),vclwreg,eswreg = Evt.as_singleton_nospecul wregact in
-            let es =
-              E.swp esloc esrmem esrreg eswmem eswreg in
-            eiid,(Evt.singleton((),vclloc@vclrmem@vclrreg@vclwmem@vclwreg,es),None)
 
+    let swp_or_amo : Op.op option -> ('loc t) ->
+      ('loc -> A.V.v t) -> A.V.v t -> ('loc -> A.V.v -> unit t) -> (A.V.v -> unit t)
+        -> unit t  = fun op rloc rmem rreg wmem wreg ->
+          fun eiid ->
+        let eiid,locm = rloc eiid in
+        let eiid,expm = rreg eiid in
+        let (loc,vlcloc,esloc) =  Evt.as_singleton_nospecul locm
+        and (v,vclexp,esexp) = Evt.as_singleton_nospecul expm in
+        let eiid,rmemm = rmem loc eiid in
+        let r = match op with None -> v | Some _ -> V.fresh_var () in
+        let eiid,wmemm = wmem loc r eiid in
+        let w,vclrmem,esrmem =  Evt.as_singleton_nospecul rmemm
+        and (),vclwmem,eswmem = Evt.as_singleton_nospecul wmemm in
+        let vlop =
+          match op with
+          | None -> Misc.identity
+          | Some op -> fun k -> VC.Assign (r,VC.Binop (op,w,v))::k in
+        let eiid,wreg = wreg w eiid in
+        let (),vclwreg,eswreg = Evt.as_singleton_nospecul wreg in
+        let es = E.swp_or_amo op esloc esrmem esexp eswmem eswreg in
+        eiid,
+        (Evt.singleton ((),vlop (vlcloc@vclexp@vclrmem@vclwmem@vclwreg),es), None)
+    let swp rloc rmem rreg wmem wreg = swp_or_amo None rloc rmem rreg wmem wreg
+    let amo_strict op rloc rmem rreg wmem wreg = swp_or_amo (Some op) rloc rmem rreg wmem wreg
 
 (* linux exchange *)
     let linux_exch : 'loc t -> 'v t -> ('loc -> 'w t) -> ('loc -> 'v -> unit t) -> 'w t = fun rloc rexpr rmem wmem ->
