@@ -276,10 +276,12 @@ let run_herd bell cat litmus cfg =
           (struct
             let debug_lexer = Config.debug.Debug_herd.lexer
             let debug_model = Config.debug.Debug_herd.barrier
+            let debug_files = Config.debug.Debug_herd.files
             let verbose = Config.verbose
             let libfind = libfind
             let compat = Config.variant Variant.BackCompat
             let prog = prog
+            let variant = Misc.delay_parse Config.variant Variant.parse
           end) in
       let bi = R.read fname in
       Some (fname,bi) in
