@@ -64,7 +64,7 @@ let addr = [R]; dd; [NDATA]; intrinsic; [M]
 let to-PoD = [R]; dd; [PoD]
 
 (* Pre-control dependency *)
-let pre-ctrl = to-PoD; po; [W]
+let pre-ctrl = to-PoD; po
 
 (* Equivalent writes *)
 let antecedent = 

@@ -1,0 +1,15 @@
+AArch64 STXR-ctrla
+{
+0:X1=x; 0:X3=y;
+1:X0=y; 1:X5=x;
+}
+ P0          | P1              ;
+ MOV W0,#2   | MOV W2,#2       ;
+ STR W0,[X1] |                 ;
+ DMB ST      | LDXR W1,[X0]    ;
+ MOV W2,#1   | STXR W3,W2,[X0] ;
+ STR W2,[X3] | CBZ W3,Ok       ;
+             | MOV W4,#1       ;
+             | STR W4,[X5]     ;
+             | Ok:             ;
+exists (x=2 /\ y=2 /\ 1:X1=1 /\ 1:X3=0)
