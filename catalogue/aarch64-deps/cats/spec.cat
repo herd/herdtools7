@@ -1,0 +1,17 @@
+(* Ghost internal visibility requirement *)
+(* co for ghost:
+  + Initial writes before all other writes, including ghosts.
+  + po between writes at the same location, including ghosts.
+  + co
+*)
+let co_spec = (((IW * (W\IW)) | [W];po;[W] | co) & loc)+
+let rf_spec = rf;[SPEC]
+let fr_spec = rf_spec^-1;co_spec
+let com_spec = (co_spec|rf_spec|fr_spec)+
+
+(* Actual internal requirement *)
+irreflexive po;com_spec as ghost
+(* Cannot read from other branch *)
+empty rfi\po as ghost
+(* Must read something *)
+empty [R]\(rf^-1;rf) as ghost
