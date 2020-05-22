@@ -100,8 +100,9 @@ let rmw = lxsx | amo
 (* Dependency-ordered-before *)
 let dob = addr | data
 	| ctrl; [W]
-	| (ctrl | (addr; po)); [ISB]; po; [R]
+        | ctrl; [ISB]; po
 	| addr; po; [W]
+	| addr; po; [ISB]; po; [R]
 	| (addr | data); lrs
 
 (* Atomic-ordered-before *)

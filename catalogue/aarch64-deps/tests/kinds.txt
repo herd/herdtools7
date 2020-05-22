@@ -12,8 +12,8 @@ H15V             Forbid
 H16X             Allow 
 H1CX             Allow 
 H1X              Allow 
-H2CX             Allow 
-H2X              Allow 
+H2CV             Forbid
+H2V              Forbid
 H3CV             Forbid 
 H3V              Forbid 
 H3bCQ            Allow 
