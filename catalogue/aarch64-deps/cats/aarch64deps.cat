@@ -76,8 +76,10 @@ let pre-equiv-evts =
     let wwloc = ((W * W) & loc) \ id in
     ((rfe^-1;wwloc;rf)|(rf^-1;wwloc;rfe)) 
   in same-static\rdw-ext
+show pre-equiv-evts \ id as pre-equiv-evts
 
 let equivalent-writes = (W*W) & bisimulation(antecedent,pre-equiv-evts)
+show equivalent-writes \ id as equivalent-writes
 
 (* Control dependency *)
 let ctrl = pre-ctrl \ (always-executed(to-PoD,equivalent-writes))
