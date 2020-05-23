@@ -68,7 +68,8 @@ module Make
     | _ -> None
 
     let add_param {CAst.param_ty; param_name} env =
-      let ty = CType.strip_volatile param_ty in
+      let ty = CType.strip_const param_ty in
+      let ty = CType.strip_volatile ty in
       try
         let oty = StringMap.find param_name env in
 (* add atomic qualifier, when appearing in parameters *)
@@ -109,7 +110,7 @@ module Make
         env []
 
     let tr_param_ty =
-      if O.kernel then CType.strip_volatile
+      if O.kernel then fun x -> (CType.strip_volatile (CType.strip_const x))
       else Misc.identity
 
      let string_of_params =
