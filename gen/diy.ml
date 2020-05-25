@@ -298,6 +298,7 @@ let () =
         include Co
         include C
         let typ = !Config.typ
+        let novolatile = !Config.variant Variant_gen.NoVolatile
       end in
       let module M = Make(CCompile_gen.Make(CoC))(Co) in
       M.go in

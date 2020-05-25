@@ -26,6 +26,8 @@ type t =
   | Self
 (* MTE = Memory tagging *)
   | MemTag
+(* Prevents the use of Volatile to capture bugs in compilation *)
+  | NoVolatile
 
 val tags : string list
 

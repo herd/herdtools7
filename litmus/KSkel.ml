@@ -323,7 +323,9 @@ module Make
       O.o "/* Shared locations */" ;
       List.iter
         (fun (s,t) ->
-          let pp_t = SkelUtil.dump_global_type s (CType.strip_volatile t) in
+          let t = CType.strip_const t in
+          let t = CType.strip_volatile t in
+          let pp_t = SkelUtil.dump_global_type s t in
           O.fi "%s *%s;" pp_t s)
         test.T.globals ;
       O.o "/* Final contents of observed registers */" ;
@@ -512,7 +514,7 @@ let dump_threads _tname env test =
   let global_env = U.select_global env in
   let global_env =
     List.map
-      (fun (x,ty) -> x,CType.strip_volatile ty)
+      (fun (x,ty) -> x,CType.strip_const (CType.strip_volatile ty))
       global_env in
   List.iter
     (fun (proc,(out,(_outregs,envVolatile))) ->

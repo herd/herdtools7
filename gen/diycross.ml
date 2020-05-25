@@ -253,6 +253,7 @@ let () =
         let module CoC = struct
           include C
           let typ = !Config.typ
+          let novolatile = !Config.variant Variant_gen.NoVolatile
         end in
         let module T = CCompile_gen.Make(CoC) in
         let module M = Make(C)(T) in

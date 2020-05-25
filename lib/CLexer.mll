@@ -24,6 +24,7 @@ module LU = LexUtils.Make(O)
 (* Compiled efficiently by the next version of ocaml *)
 let tr_name s = match s with
 | "volatile" -> VOLATILE
+| "const" -> CONST
 | "_Atomic" -> ATOMIC
 | "char" -> CHAR
 | "int" -> INT

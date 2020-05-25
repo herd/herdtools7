@@ -21,6 +21,7 @@ type base = string
 type t =
   | Base of base
   | Volatile of t
+  | Const of t
   | Atomic of t
   | Pointer of t
 (** limited arrays *)
@@ -42,6 +43,7 @@ val is_array : t -> bool
 val is_atomic : t -> bool
 val strip_atomic : t -> t
 val strip_volatile : t -> t
+val strip_const : t -> t
 val strip_attributes : t -> t
 
 val is_ptr_to_atomic : t -> bool
