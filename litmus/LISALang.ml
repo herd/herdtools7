@@ -21,14 +21,19 @@ module Make(V:Constant.S) = struct
   module A = LISAArch_litmus.Make(V)
 
   type arch_reg = A.reg
+  module RegSet = A.Out.RegSet
+  module RegMap = A.Out.RegMap
   type t = A.Out.t
+
+  type glob_t = {
+      global : (string * CType.t) list ;
+      aligned : (string * CType.t) list ;
+      volatile : string list ;
+    }
 
   module Tmpl = A.Out
 
   let checkVal f v = f v
-
-  module RegSet = A.Out.RegSet
-  module RegMap = A.Out.RegMap
 
   let debug = false
 
@@ -98,13 +103,13 @@ module Make(V:Constant.S) = struct
 
   and compile_out_reg_fun p r = sprintf "*%s" (Tmpl.dump_out_reg p r)
 
-  let dump_fun chan env globEnv _volatileEnv proc t =
+  let dump_fun chan env glob proc t =
     let addrs_proc = A.Out.get_addrs t in
     let addrs =
       List.map
         (fun x ->
           let ty =
-            try List.assoc x globEnv
+            try List.assoc x glob.global
             with Not_found -> Compile.base in
           let ty = SkelUtil.dump_global_type x ty in
           sprintf "%s *%s" ty x)
@@ -137,7 +142,7 @@ module Make(V:Constant.S) = struct
   let compile_out_reg_call proc reg =
     sprintf "&_a->%s" (Tmpl.compile_out_reg proc reg)
 
-  let dump_call f_id _tr_idx chan indent _env _globEnv _volatileEnv proc t =
+  let dump_call f_id _tr_idx chan indent _env _glob proc t =
     let addrs_proc = Tmpl.get_addrs t in
     let addrs = List.map compile_addr_call addrs_proc
     and outs = List.map (compile_out_reg_call proc) t.Tmpl.final in
@@ -145,6 +150,6 @@ module Make(V:Constant.S) = struct
     LangUtils.dump_code_call chan indent f_id args
 
 
-  let dump _chan _indent _env _globEnv _volatileEnv _proc _t = ()
+  let dump _chan _indent _env _glob _proc _t = ()
 
 end

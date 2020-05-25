@@ -46,7 +46,17 @@ module RegMap = A.RegMap)
     = struct
 
       type arch_reg = Tmpl.arch_reg
+
+      module RegSet = Tmpl.RegSet
+      module RegMap = Tmpl.RegMap
+
       type t = Tmpl.t
+
+      type glob_t = {
+          global : (string * CType.t) list ;
+          aligned : (string * CType.t) list ;
+          volatile : string list ;
+        }
 
       open Printf
 
@@ -61,9 +71,6 @@ module RegMap = A.RegMap)
       and compile_val_inline = match O.mode with
       | Mode.Std -> checkVal Tmpl.dump_v
       | Mode.PreSi -> checkVal A.V.pp_v
-
-      module RegSet = Tmpl.RegSet
-      module RegMap = Tmpl.RegMap
 
       let dump_clobbers chan t =
         fprintf chan ":%s\n"
@@ -387,9 +394,9 @@ module RegMap = A.RegMap)
           (String.concat " " pp)
 
 
-      let dump chan indent env globEnv _volatileEnv proc t =
+      let dump chan indent env glob proc t =
 
-        if debug then debug_globEnv globEnv ;
+        if debug then debug_globEnv glob.global ;
 
         let compile_out_reg = match O.mode with
         | Mode.Std -> Tmpl.compile_out_reg
@@ -424,8 +431,8 @@ module RegMap = A.RegMap)
 
       let compile_cpy_fun proc a = sprintf "*%s" (Tmpl.addr_cpy_name a proc)
 
-      let dump_fun chan env globEnv _volatileEnv proc t =
-        if debug then debug_globEnv globEnv ;
+      let dump_fun chan env glob proc t =
+        if debug then debug_globEnv glob.global ;
         let labels = Tmpl.get_labels t in
         let labels =
           List.map
@@ -436,7 +443,7 @@ module RegMap = A.RegMap)
           List.map
             (fun x ->
               let ty =
-                try List.assoc x globEnv
+                try List.assoc x glob.global
                 with Not_found -> Compile.base in
               let ty = SkelUtil.dump_global_type x ty in
               match O.memory with
@@ -450,7 +457,7 @@ module RegMap = A.RegMap)
             List.map
               (fun x ->
                 let ty =
-                  try List.assoc x globEnv
+                  try List.assoc x glob.global
                   with Not_found -> assert false in
                 sprintf "%s **%s"
                   (CType.dump ty)
@@ -500,10 +507,10 @@ module RegMap = A.RegMap)
       let compile_out_reg_call proc reg =
         sprintf "&%s" (Tmpl.compile_out_reg proc reg)
 
-      let dump_call f_id _tr_idx chan indent _env alignedEnv _volatileEnv proc t =
+      let dump_call f_id _tr_idx chan indent _env glob proc t =
         let labels = List.map compile_label_call (Tmpl.get_labels t) in
         let addrs_proc = Tmpl.get_addrs t in
-        let addrs = List.map (compile_addr_call alignedEnv) addrs_proc in
+        let addrs = List.map (compile_addr_call glob.aligned) addrs_proc in
         let addrs_cpy =
           if O.memory = Memory.Indirect && O.cautious then
             List.map (compile_cpy_addr_call proc) addrs_proc

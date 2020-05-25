@@ -510,14 +510,20 @@ let dump_threads _tname env test =
   O.o "/***************/" ;
   O.o "" ;
   let global_env = U.select_global env in
-  let global_env =
-    List.map
-      (fun (x,ty) -> x,CType.strip_volatile ty)
-      global_env in
+  let glob =
+    let global =
+      List.map (fun (x,ty) -> x,CType.strip_volatile ty) global_env
+    and aligned =
+      if List.exists (fun (a,_) -> U.is_aligned a env) test.T.globals then
+        Warn.fatal "align feature not available in klitmus" ;
+      [] in
+    let open Lang in
+    { global; aligned; volatile=[]; } in
   List.iter
     (fun (proc,(out,(_outregs,envVolatile))) ->
       let myenv = U.select_proc proc env in
-      Lang.dump_fun O.out myenv global_env envVolatile proc out ;
+      let glob = { glob with Lang.volatile=envVolatile; } in
+      Lang.dump_fun O.out myenv glob proc out ;
       O.f "static int thread%i(void *_p) {" proc ;
       O.oi "ctx_t *_a = (ctx_t *)_p;" ;
       O.o "" ;
@@ -537,7 +543,7 @@ let dump_threads _tname env test =
       | Some _|None -> idx in
       Lang.dump_call (LangUtils.code_fun proc)
         tr_idx O.out (Indent.as_string indent3)
-        myenv global_env envVolatile proc out ;
+        myenv glob proc out ;
       O.oii "}" ;
       O.oi "}" ;
       O.oi "atomic_inc(&done);" ;

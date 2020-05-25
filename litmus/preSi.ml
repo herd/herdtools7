@@ -715,7 +715,7 @@ module Make
 
 
       let dump_run_thread
-          env test _some_ptr stats global_env
+          env test _some_ptr stats glob
           (_vars,inits) (proc,(out,(_outregs,envVolatile)))  =
         let my_regs = U.select_proc proc env in
         let addrs = A.Out.get_addrs out in (* accessed in code *)
@@ -774,7 +774,7 @@ module Make
         (* Dump code *)
         Lang.dump
           O.out (Indent.as_string Indent.indent2)
-          my_regs global_env envVolatile proc out ;
+          my_regs { glob with Lang.volatile=envVolatile; } proc out ;
         O.oii "barrier_wait(_b);" ;
 (* Collect shared locations final values, if appropriate *)
         let globs = U.get_displayed_globals test in
@@ -874,9 +874,20 @@ module Make
         end ;
         O.oi "barrier_wait(_b);" ;
         O.oi "switch (_role) {" ;
-        let global_env = U.select_global env in
+        let glob  =
+          let global = U.select_global env
+          and aligned =
+            if 
+              List.exists
+                (fun (a,_) -> U.is_aligned a env)
+                test.T.globals
+            then
+              Warn.fatal "align feature not implemented in presi mode";
+            [] in
+          let open Lang in
+          { global; aligned; volatile=[]; } in
         List.iter2
-          (dump_run_thread env test some_ptr stats global_env)
+          (dump_run_thread env test some_ptr stats glob)
           (part_vars test)
           test.T.code ;
         O.oi "}" ;

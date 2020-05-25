@@ -19,12 +19,18 @@ module type S = sig
   module RegMap : MyMap.S with type key = arch_reg
   type t
 
+  type glob_t = {
+      global : (string * CType.t) list ;  (* Types of global locations *)
+      aligned : (string * CType.t) list ; (* Hidden, implementation, type to force alignment *) 
+      volatile : string list ;
+    }
+
 (* Function dump *)
+
   val dump_fun :
     out_channel ->
     CType.t RegMap.t ->
-    (string * CType.t) list ->
-    string list ->
+    glob_t ->
     int ->
     t ->
     unit
@@ -35,8 +41,7 @@ module type S = sig
     out_channel ->
     string ->
     CType.t RegMap.t ->
-    (string * CType.t) list ->
-    string list ->
+    glob_t ->
     int ->
     t ->
     unit
@@ -46,8 +51,7 @@ module type S = sig
     out_channel ->
     string ->
     CType.t RegMap.t ->
-    (string * CType.t) list ->
-    string list ->
+    glob_t ->
     int ->
     t ->
     unit
