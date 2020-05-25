@@ -503,13 +503,13 @@ module Make
       let mk_get_param_pos _env test = match test.T.globals with
       | [] -> fun _ -> assert false
       | (_,t0)::xs ->
-          let sum,m =
+          let _sum,m =
             List.fold_left
               (fun (i,m) (a,t) ->
                 let sz = SkelUtil.nitems t in
                 i+sz,StringMap.add a i m)
               (SkelUtil.nitems t0,StringMap.empty) xs in
-          eprintf "sum=%i\n" sum ;
+(*          eprintf "sum=%i\n" _sum ; *)
           fun x -> StringMap.find x m
 
       let mk_get_param_prefix test =
