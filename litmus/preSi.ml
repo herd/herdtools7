@@ -468,16 +468,15 @@ module Make
               end
             end) in
 
-        let cast_type = assert false in (* Not iplemented yet *)
         begin match test.T.filter with
         | None -> ()
         | Some f ->
-            DC.fundef_onlog_prop "filter_cond" f cast_type ;
+            DC.fundef_onlog_prop "filter_cond" f ;
             O.o "" ;
             ()
         end ;
         let cond = test.T.condition in
-        DC.fundef_onlog cond cast_type ;
+        DC.fundef_onlog cond ;
         ()
 
       let dump_cond_def env test =
@@ -504,13 +503,13 @@ module Make
       let mk_get_param_pos _env test = match test.T.globals with
       | [] -> fun _ -> assert false
       | (_,t0)::xs ->
-          let sum,m =
+          let _sum,m =
             List.fold_left
               (fun (i,m) (a,t) ->
                 let sz = SkelUtil.nitems t in
                 i+sz,StringMap.add a i m)
               (SkelUtil.nitems t0,StringMap.empty) xs in
-          eprintf "sum=%i\n" sum ;
+(*          eprintf "sum=%i\n" _sum ; *)
           fun x -> StringMap.find x m
 
       let mk_get_param_prefix test =

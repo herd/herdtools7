@@ -847,18 +847,11 @@ module Make
             end
           end)
 
-      let cast_type loc =
-        if A.arch = `X86_64 then
-          match loc with
-          | A.Location_reg (_,r) -> "(" ^ CType.dump (A.typeof r) ^ ")"
-          | _ -> ""
-        else ""
-
       let do_dump_cond_fun env cond =
         let find_type loc =
           let t = U.find_type loc env in
           CType.dump (CType.strip_atomic t),CType.is_ptr t in
-        DC.fundef find_type cond cast_type
+        DC.fundef find_type cond
 
       let dump_cond_fun env test = do_dump_cond_fun env test.T.condition
 
@@ -868,8 +861,7 @@ module Make
           let find_type loc =
             let t = U.find_type loc env in
             CType.dump (CType.strip_atomic t),CType.is_ptr t in
-          DC.fundef_prop "filter_cond" find_type f cast_type
-
+          DC.fundef_prop "filter_cond" find_type f
 
       let dump_cond_fun_call test dump_loc dump_val =
         DC.funcall test.T.condition dump_loc dump_val

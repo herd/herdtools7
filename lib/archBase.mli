@@ -28,23 +28,14 @@ module type S = sig
   (***********************************************)
 
   type reg
-(*  val pc : reg (* Program counter *) *)
 
   val parse_reg : string -> reg option
   val pp_reg : reg -> string
   val reg_compare : reg -> reg -> int
   val symb_reg_name : reg -> string option
   val symb_reg : string -> reg
-    (* Use if you want to implicitly type a final register *)
-  val typeof : reg -> CType.t
-(*
-  type reservation
-  val pp_res : reservation -> string
-  val res_compare : reservation -> reservation -> int
-*)
 
   type barrier
-(*  val all_kinds_of_barriers : barrier list *)
   val pp_barrier            : barrier -> string
   val barrier_compare : barrier -> barrier -> int
 
