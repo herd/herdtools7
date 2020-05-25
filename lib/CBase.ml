@@ -38,15 +38,7 @@ let symb_reg r = sprintf "%%%s" r
 type 's t_reg =
   | T of 's Constant.t
   | Reg of reg
-let typeof _ = assert false
 
-(*
-let loc_compare l1 l2 = match l1,l2 with
-  | Reg s1,Reg s2 -> reg_compare s1 s2
-  | Mem s1,Mem s2 -> reg_compare s1 s2
-  | Reg _,Mem _ -> -1
-  | Mem _,Reg _ -> 1
-*)
 type mem_order = MemOrder.t
 
 type barrier = MemOrderOrAnnot.t
