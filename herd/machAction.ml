@@ -359,6 +359,7 @@ end = struct
         A.Location_global (A.V.Val (Symbolic a2))
           -> ok_sym a1 a2
       | _,_ -> false in
+
       let ok_act act1 act2 = match act1,act2 with
       | (act,Inv (_,None))|(Inv (_, None),act)
         ->
@@ -375,7 +376,7 @@ end = struct
           | None -> false
           end
       | _ -> false in
-      ["loctlb",ok_act]
+      ["inv-loc",ok_act]
     else []
 
   let is_isync act = match act with
