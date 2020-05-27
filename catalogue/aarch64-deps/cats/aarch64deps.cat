@@ -5,7 +5,7 @@
  * the latest stable definition of the notions of dependencies in the Armv8 memory model.
  * If you have comments on the content of this file, please send an email to
  * jade.alglave@arm.com, referring to version number:
- * 
+ *
  * For a textual version of the model, see section B2.3 of the Armv8 ARM:
  *   https://developer.arm.com/docs/ddi0487/latest/arm-architecture-reference-manual-armv8-for-armv8-a-architecture-profile
  *
@@ -52,28 +52,32 @@ let rf-reg-no-stxr =
   [NW];rf-reg
 let dd = (rf-reg-no-stxr | intrinsic)+
 
-(** Data and Address dependencies *)
-let data = [R]; dd; [DATA]; intrinsic; [W]
-let addr = [R]; dd; [NDATA]; intrinsic; [M]
-
-(** Control dependency *)
-
-(* The relation to-PoD is a dependency through register 
+(* The relation to-PoD is a dependency through register
    to a point of divergence*)
 let to-PoD = [R]; dd; [PoD]
+
+(** Data and Address dependencies *)
+let data = [R]; dd; [DATA]; intrinsic; [W]
+let addrW = [R]; dd; [NDATA]; intrinsic; [W]
+let addrR =
+ let dd-no-interv-PoD = dd \ (to-PoD;dd) in
+ [R]; dd-no-interv-PoD; [NDATA]; intrinsic; [R]
+let addr = addrW | addrR
+
+(** Control dependency *)
 
 (* Pre-control dependency *)
 let pre-ctrl = to-PoD; po
 
 (* Equivalent writes *)
-let antecedent = 
+let antecedent =
   let immediate-lws = singlestep([W];po-loc;[W]) in
   (intrinsic|rf-reg|lrs|immediate-lws)^-1
 
 let pre-equiv-evts =
-  let rdw-ext = 
+  let rdw-ext =
     let wwloc = ((W * W) & loc) \ id in
-    ((rfe^-1;wwloc;rf)|(rf^-1;wwloc;rfe)) 
+    ((rfe^-1;wwloc;rf)|(rf^-1;wwloc;rfe))
   in same-static\rdw-ext
 show pre-equiv-evts \ id as pre-equiv-evts
 
