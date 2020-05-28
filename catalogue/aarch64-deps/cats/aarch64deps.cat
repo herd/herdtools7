@@ -88,4 +88,4 @@ show equivalent-writes \ id as equivalent-writes
 let ctrl = pre-ctrl \ (always-executed(to-PoD,equivalent-writes))
 
 (* After dependency relation ctrl is defined *)
-include "show-deps.cat"
+include "aarch64show-deps.cat"
