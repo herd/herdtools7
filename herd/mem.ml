@@ -1453,8 +1453,15 @@ let match_reg_events es =
           solve_mem test es rfm cs
             (fun es rfm cs res ->
               match cs with
-              | _::_ when not C.initwrites ->
-                  (*jade: on tolere qu'il reste des equations dans le cas d'evts specules - mais il faudrait sans doute le preciser dans la clause when ci-dessus*)
+              | _::_ when not C.initwrites || not do_deps ->
+(*
+ Jade:
+  on tolere qu'il reste des equations dans le cas d'evts specules -
+  mais il faudrait sans doute le preciser dans la clause when ci-dessus.
+ Luc:
+   Done, or at least avoid accepting such candidates in non-deps mode.
+   Namely, having  non-sensical candidates rejected later by model
+   entails a tremendous runtime penalty. *)
                   when_unsolved test es rfm cs kont_loop res
               | _ ->
                   if mixed then check_aligned test es ;
