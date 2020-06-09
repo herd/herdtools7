@@ -34,7 +34,7 @@ module A = AArch64Base
 
 /* Instructions */
 %token NOP
-%token B BR BEQ BNE CBZ CBNZ EQ NE
+%token B BR BEQ BNE BGE BGT BLE BLT CBZ CBNZ EQ NE 
 %token BL BLR RET
 %token LDR LDP LDNP STP STNP LDRB LDRH STR STRB STRH STLR STLRB STLRH
 %token CMP MOV ADR
@@ -187,6 +187,10 @@ instr:
 | RET xreg { A.I_RET (Some $2) }
 | BEQ NAME { A.I_BC (A.EQ,$2) }
 | BNE NAME { A.I_BC (A.NE,$2) }
+| BLE NAME { A.I_BC (A.LE,$2) }
+| BLT NAME { A.I_BC (A.LT,$2) }
+| BGE NAME { A.I_BC (A.GE,$2) }
+| BGT NAME { A.I_BC (A.GT,$2) }
 | CBZ reg COMMA NAME   { let v,r = $2 in A.I_CBZ (v,r,$4) }
 | CBNZ reg COMMA NAME  { let v,r = $2 in A.I_CBNZ (v,r,$4) }
 /* Memory */

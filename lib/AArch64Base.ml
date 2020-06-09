@@ -286,11 +286,15 @@ let pp_sysreg = function
 
 type lbl = Label.t
 
-type condition = NE | EQ
+type condition = NE | EQ | GE | GT | LE | LT
 
 let inverse_cond = function
   | NE -> EQ
   | EQ -> NE
+  | LE -> GT
+  | LT -> GE
+  | GE -> GT
+  | GT -> LE
 
 type op = ADD | ADDS | SUB | SUBS | AND | ANDS | ORR | EOR
 type variant = V32 | V64
@@ -451,6 +455,10 @@ let pp_memo memo = memo
 let pp_cond = function
   | NE -> "NE"
   | EQ -> "EQ"
+  | GT -> "GT"
+  | GE -> "GE"
+  | LT -> "LT"
+  | LE -> "LE"
 
 let pp_vreg v r = match v with
 | V32 -> pp_wreg r

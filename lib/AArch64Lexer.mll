@@ -34,8 +34,16 @@ match name with
 | "ret"  | "RET" -> RET
 | "ne"  | "NE"  -> NE
 | "eq"  | "EQ"  -> EQ
+| "ge"  | "GE"  -> GE
+| "gt"  | "GT"  -> GT
+| "le"  | "LE"  -> LE
+| "lt"  | "LT"  -> LT
 | "b.eq" | "B.EQ" -> BEQ
 | "b.ne" | "B.NE" -> BNE
+| "b.ge" | "B.GE" -> BGE
+| "b.gt" | "B.GT" -> BGT
+| "b.le" | "B.LE" -> BLE
+| "b.lt" | "B.LT" -> BLT
 | "cbz"  | "CBZ" -> CBZ
 | "cbnz"  | "CBNZ" -> CBNZ
 (* Memory *)

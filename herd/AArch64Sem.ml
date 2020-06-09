@@ -215,10 +215,18 @@ module Make
       let flip_flag v = M.op Op.Xor v V.one
       let is_zero v = M.op Op.Eq v V.zero
       let is_not_zero v = M.op Op.Ne v V.zero
+      let is_ge v = M.op Op.Ge v V.zero
+      let is_gt v = M.op Op.Gt v V.zero
+      let is_le v = M.op Op.Le v V.zero
+      let is_lt v = M.op Op.Lt v V.zero
 
       let tr_cond = function
         | AArch64.NE -> is_zero
         | AArch64.EQ -> is_not_zero
+        | AArch64.GE -> is_lt
+        | AArch64.GT -> is_le
+        | AArch64.LE -> is_gt
+        | AArch64.LT -> is_ge
 
 (***********************)
 (* Memory instructions *)
