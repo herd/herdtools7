@@ -711,12 +711,17 @@ let tr_atag s =
 
 let do_tr prf =
   let prf_len = String.length prf in
+    (*Printf.printf "prf: %s\n" prf;*)
   fun s ->
     let len = String.length s in
-    if len > prf_len && String.sub s 0 prf_len = "pte_" then
-      Some (String.sub s prf_len (len-prf_len))
-    else None
-
+        (*Printf.printf "s: %s\n" s;*)
+    if len > prf_len && String.sub s 0 prf_len = prf then
+      let news = (String.sub s prf_len (len-prf_len)) in
+          (*Printf.printf "news: %s\n" news;*)
+      Some news 
+    else 
+        (*Printf.printf "notnews: %s\n" s;*)
+      None
 
 let add_pte = sprintf "pte_%s"
 let tr_pte = do_tr "pte_"
