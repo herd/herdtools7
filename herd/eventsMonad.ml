@@ -1027,10 +1027,35 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
           | Virtual ((s,_),_) -> System (PTE,s)
           | _ -> assert false in
 
+        let add_val vloc v k =  begin match vloc with
+        | V.Val (Symbolic (System (_,s) as a)) -> 
+          if C.debug.Debug_herd.mem then begin
+            Printf.printf "add_val PTE: %s\n" s end;
+          SymbolMap.add a v k
+        | V.Val (Symbolic (Physical (s,_) as a)) -> 
+          if C.debug.Debug_herd.mem then begin
+            Printf.printf "add_val Phys: %s\n" s end;
+          SymbolMap.add a v k
+         | V.Val (Symbolic (Virtual ((s,_),_) as a)) -> 
+           if C.debug.Debug_herd.mem then begin
+             Printf.printf "add_val Virt: %s\n" s end;
+           SymbolMap.add a v k
+        | V.Val (Concrete _|Label (_, _)|Tag _)|V.Var _ -> k end in
 
-        let add_val vloc v k =  match vloc with
-        | V.Val (Symbolic (Virtual _ as a)) -> SymbolMap.add a v k
-        | V.Val (Symbolic (Physical _|System _)|Concrete _|Label (_, _)|Tag _)|V.Var _ -> k in
+        let rec find_one l a k =
+          begin match l with
+          | [] -> None,k 
+          | (x,y)::r -> 
+              if x = a then Some(a,y),(List.append r k)
+              else let o,s = find_one r a k 
+                   in o,(x,y)::s 
+          end in
+
+        let have_same_base_addr apte aphy =
+          begin match apte,aphy with
+          | A.Location_global (V.Val (Symbolic (System (_,x)))),(V.Val (Symbolic (Physical (y,_)))) -> x = y 
+          | _ -> false 
+          end in
 
         fun env ->
           let k,rem =
@@ -1045,12 +1070,40 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
             SymbolMap.fold
               (fun a v env ->
                 let tr_sym sym = V.Val (Symbolic sym) in
-                let a_pte = tr_sym (tr_pte a)
-                and a_phy = tr_sym (tr_physical a) in
-                (A.Location_global a_pte,a_phy)::
-                (A.Location_global a_phy,v)::env)
-              k rem in
-          env
+                let a_sym = tr_sym a in
+                begin match a with
+                | Physical _ -> (A.Location_global a_sym,v)::env
+                | System _ -> 
+                  if C.debug.Debug_herd.mem then begin
+                    Printf.printf "env PTE: %s\n" (A.pp_location (A.Location_global a_sym)) end;
+                  let aloc = A.Location_global a_sym in  
+                 begin match (find_one env aloc []) with
+                 | None,_ -> (aloc,v)::env  
+                 | Some(_,aphy),r -> 
+                     if have_same_base_addr aloc aphy then 
+                     begin match (find_one r (A.Location_global v) []) with 
+                     | None,_ -> (aloc,v)::(A.Location_global v,V.zero)::r
+                     | Some _,_ -> (aloc,v)::r    
+                     end
+                     (*jade: this is supposed to be the case where pte_x = phy_y AND pte_x=phy_z in the initial state, which should be a user error*) 
+                     else assert false 
+                end 
+                | _ ->
+                  let a_pte = tr_sym (tr_pte a)
+                  and a_phy = tr_sym (tr_physical a) in
+                  let no_phy_dup_env = 
+                  begin match (find_one env (A.Location_global a_phy) []) with
+                  | None,_ -> (A.Location_global a_phy,v)::env
+                  | Some (_,x),nl when (x=V.zero) -> (A.Location_global a_phy,v)::nl  
+                  | _ -> assert false (*jade: case of duplicates assignments to a_phy*)
+                 end in
+                 match (find_one no_phy_dup_env (A.Location_global a_pte) []) with
+                 | None,_ -> 
+                     (A.Location_global a_pte,a_phy)::no_phy_dup_env   
+                 | Some _,_ -> no_phy_dup_env    
+                end)
+              k rem in 
+         env
 
       let initwrites_non_mixed env _ =
         let env =

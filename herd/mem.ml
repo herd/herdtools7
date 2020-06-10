@@ -208,8 +208,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             let open Constant in
             let locs =
               match loc with
-              | A.Location_global v|A.Location_deref (v,_) when is_virtual_protected v -> loc::locs
-              | A.Location_global _|A.Location_deref _|A.Location_reg _ -> locs in
+              | A.Location_global _ |A.Location_deref _ (*when is_virtual_protected v*) ->loc::locs
+              | A.Location_reg _ -> locs in
             let locs =
               if is_virtual_protected v then  A.Location_global v::locs else locs in
             locs)
@@ -222,8 +222,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       let locs_final =
         A.LocSet.filter
           (function
-            | A.Location_global v |A.Location_deref (v,_) when is_virtual_protected v -> true
-            | A.Location_global _|A.Location_deref _|A.Location_reg _ -> false)
+            | A.Location_global _ |A.Location_deref _ (*when is_virtual_protected v*) -> true
+            | A.Location_reg _ -> false)
           test.Test_herd.observed
       and locs_init = get_all_locs_init test.Test_herd.init_state in
       let locs = A.LocSet.union locs_final locs_init in
@@ -236,7 +236,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                   (fun x ->
                     let loc = A.maybev_to_location x in
                     match loc with
-                    | A.Location_global v when is_virtual_protected v -> A.LocSet.add loc
+                    | A.Location_global _ (*when is_virtual_protected v*) -> A.LocSet.add loc
                     | _ -> fun locs -> locs)
                   locs ins)
               locs code)
