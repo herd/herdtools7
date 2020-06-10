@@ -85,10 +85,16 @@ type 'scalar t =
   | Tag of string
 
 let do_mk_sym sym = match Misc.tr_pte sym with
-| Some s -> System (PTE,s)
+| Some s -> 
+      (*Printf.printf "PTE: %s\n" s;*)
+    System (PTE,s)
 | None -> match Misc.tr_physical sym with
-  | Some _ -> Warn.user_error "explicit physical address: %s" sym
-  | None -> Virtual ((sym,None),0)
+  | Some s -> 
+      (*Printf.printf "PHYS: %s\n" s;*)
+    Physical (s,0)
+  | None -> 
+      (*Printf.printf "VIRT: %s\n" sym;*)
+    Virtual ((sym,None),0)
 
 let mk_sym s = Symbolic (do_mk_sym s)
 
