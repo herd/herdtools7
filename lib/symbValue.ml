@@ -98,6 +98,8 @@ module Make(Cst:Constant.S) = struct
   | Val cst ->  Cst.eq cst Cst.one
   | Var _ -> raise  Undetermined
 
+  let protect_is p v =  try p v with Undetermined -> false
+
   let unop op_op op v1 = match v1 with
     | Val (Concrete i1) -> Val (Concrete (op i1))
   | Val (Symbolic _|Label _|Tag _ as x) ->
@@ -121,8 +123,8 @@ module Make(Cst:Constant.S) = struct
 
   let add v1 v2 =
 (* Particular cases are important for symbolic constants *)
-    if is_zero v1 then v2
-    else if is_zero v2 then v1
+    if protect_is is_zero v1 then v2
+    else if protect_is is_zero v2 then v1
     else match v1,v2 with
     | (Val (Concrete i1),Val (Symbolic (s,i2)))
     | (Val (Symbolic (s,i2)),Val (Concrete i1)) ->
@@ -151,8 +153,8 @@ module Make(Cst:Constant.S) = struct
   | Var _ -> raise Undetermined
 
   and orop v1 v2 =
-    if is_zero v1 then v2
-    else if is_zero v2 then v1
+    if protect_is is_zero v1 then v2
+    else if protect_is is_zero v2 then v1
     else binop Op.Or Scalar.logor v1 v2
 
   and xor v1 v2 =
