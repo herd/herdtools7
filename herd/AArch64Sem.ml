@@ -192,16 +192,18 @@ module Make
 
 (* PTW Basics *)
 
-      let check_ptw a_virt ii mdirect mok mfault =
+      let check_ptw a_virt ma ii mdirect mok mfault =
         let mvirt =
           M.op1 Op.PTELoc a_virt >>= fun a_pte ->
-            let loc = A.Location_global a_pte in
-            M.read_loc false
-              (fun loc v ->
-                Act.Access (Dir.R,loc,v,AArch64.NExp,quad,Act.A_PTE))
-              loc ii >>=
-            fun a_phy -> is_zero a_phy >>= fun cond ->
-              M.choiceT cond (mfault a_virt) (mok a_phy) in
+            let ma =
+              ma >>=
+              fun _ -> M.read_loc false
+                (fun loc v ->
+                  Act.Access (Dir.R,loc,v,AArch64.NExp,quad,Act.A_PTE))
+                (A.Location_global a_pte) ii in
+            M.delay ma >>=
+            fun (a_phy,ma) -> is_zero a_phy >>= fun cond ->
+              M.choiceT cond (mfault ma a_virt) (mok ma a_phy) in
         M.op1 Op.IsVirtual a_virt >>= fun cond ->
         M.choiceT cond mvirt mdirect
 
@@ -299,14 +301,14 @@ module Make
             if C.precision then  mfault >>! B.Exit
            else (mfault >>| mm) >>! B.Next)
         else if kvm then
-          ma >>= fun a ->
+          M.delay ma >>= fun (a,ma) ->
             match Act.access_of_location_std (A.Location_global a) with
             | Act.A_VIR ->
-                check_ptw a ii
-                  (mop Act.A_PTE (M.unitT a) >>! B.Next)
-                  (fun a -> mop Act.A_PHY (M.unitT a) >>! B.Next)
-                  (fun a -> mk_fault a ii >>! B.Exit)
-            | ac -> mop ac (M.unitT a) >>! B.Next
+                check_ptw a ma ii
+                  (mop Act.A_PTE ma >>! B.Next)
+                  (fun ma _a -> mop Act.A_PHY ma >>! B.Next)
+                  (fun ma a -> ma >>| mk_fault a ii >>! B.Exit)
+            | ac -> mop ac ma >>! B.Next
         else
           mop Act.A_VIR ma >>! B.Next
 
