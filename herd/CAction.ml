@@ -175,6 +175,10 @@ end = struct
   | Lock _|Unlock _|TryLock _|ReadLock _ -> true
   | _ -> false
 
+  let is_PTE_access _ = false
+
+  let is_PA_val _ = false
+
         (* The following definition of is_atomic
            is quite arbitrary. *)
 
