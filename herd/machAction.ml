@@ -235,6 +235,14 @@ end = struct
   | Access (_,A.Location_global _,_,_,sz,_) -> sz
   | _ -> assert false
 
+  let is_PTE_access = function 
+  | Access (_,_,_,_,_,A_PTE) -> true
+  | _ -> false
+
+  let is_PA_val = let open Constant in function
+  | (A.V.Val (Symbolic (Physical _))) -> true
+  | _ -> false
+
 (* relative to the registers of the given proc *)
   let is_reg_store a (p:int) = match a with
   | Access (W,A.Location_reg (q,_),_,_,_,_) -> p = q

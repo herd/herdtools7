@@ -111,6 +111,10 @@ end = struct
   let is_tag _ = false
   let is_additional_mem _ = false
 
+  let is_PTE_access _ = false
+
+  let is_PA_val _ = false
+
   let is_atomic a = match a with
   | Access (_,_,_,true,_,_) ->
       assert (is_mem a); true

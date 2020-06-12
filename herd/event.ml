@@ -260,6 +260,7 @@ val same_instance : event -> event -> bool
   val location_compare : event -> event -> int
   val same_location : event -> event -> bool
   val same_value : event -> event -> bool
+  val same_PA : event -> event -> bool
 (*  val is_visible_location : A.location -> bool *)
 
 (********************************)
@@ -450,6 +451,12 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     | Some loc1,Some loc2 -> A.location_compare loc1 loc2
     | _,_ -> assert false
 
+    let is_PTE_loc e = Act.is_PTE_access e.action 
+
+    let is_PA_val e = match value_of e with 
+    | Some v -> Act.is_PA_val v
+    | _ -> assert false
+
 (* Visible locations *)
 (*
     let is_visible_location  = function
@@ -465,6 +472,9 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let same_value e1 e2 = match value_of e1, value_of e2 with
     | Some v1,Some v2 -> V.compare v1 v2 = 0
     | _,_ -> assert false
+
+    let same_PA e1 e2 = 
+      (is_PTE_loc e1) && (is_PA_val e1) && (same_value e1 e2)
 
     let proc_of e = match e.iiid with
     | Some i -> Some i.A.proc
