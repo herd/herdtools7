@@ -65,7 +65,10 @@ module Make(V:Constant.S)(C:Config) =
     let pp_cond = function
       | EQ -> "eq"
       | NE -> "ne"
-
+      | GE -> "ge"
+      | GT -> "gt"
+      | LE -> "le"
+      | LT -> "lt"
 
     let b tr_lab lbl =
       { empty_ins with
