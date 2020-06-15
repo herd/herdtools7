@@ -34,7 +34,7 @@ module A = AArch64Base
 
 /* Instructions */
 %token NOP
-%token B BR BEQ BNE BGE BGT BLE BLT CBZ CBNZ EQ NE 
+%token B BR BEQ BNE BGE BGT BLE BLT CBZ CBNZ EQ NE GE GT LE LT
 %token BL BLR RET
 %token LDR LDP LDNP STP STNP LDRB LDRH STR STRB STRH STLR STLRB STLRH
 %token CMP MOV ADR
@@ -175,6 +175,11 @@ stp_instr:
 cond:
 | EQ { A.EQ }
 | NE { A.NE }
+| GE { A.GE }
+| GT { A.GT }
+| LE { A.LE }
+| LT { A.LT }
+
 
 instr:
 | NOP { A.I_NOP }
