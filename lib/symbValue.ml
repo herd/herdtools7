@@ -195,7 +195,7 @@ module Make(Cst:Constant.S) = struct
   let gt v1 v2 = lt v2 v1
 
   let le =
-    binop Op.Lt
+    binop Op.Le
       (fun s1 s2 -> bool_to_scalar (Scalar.le s1 s2))
 
   let ge v1 v2 = le v2 v1
