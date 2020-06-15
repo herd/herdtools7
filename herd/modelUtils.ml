@@ -23,6 +23,11 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
   let iico_ctrl_as_dep = match S.A.arch with
   | `AArch64 -> true
   | _ -> false
+  and kvm = O.variant Variant.Kvm
+
+  let is_mem_kvm =
+    if kvm then E.is_mem_physical
+    else E.is_mem
 
 (*******************************************)
 (* Complete re-computation of dependencies *)
@@ -30,7 +35,8 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
   let evt_relevant x =
     E.is_mem x || E.is_commit x || E.is_barrier x || E.is_additional_mem x || E.is_pod x
 
-  let is_mem_load_total e = E.is_mem_load e || E.is_additional_mem_load e
+  let is_mem_load_total e =
+    (is_mem_kvm e && E.is_load e) || E.is_additional_mem_load e
   let is_load_total e = E.is_load e || E.is_additional_mem_load e
 
   let make_procrels_deps conc =
@@ -85,7 +91,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
         E.EventRel.restrict_rel
           (fun e1 e2 ->
             E.is_commit e2 ||
-            (E.is_mem_store e2 && is_data_port e1)) iico in
+            (is_mem_kvm e2 && E.is_store e2 && is_data_port e1)) iico in
       S.union
         (S.seq dd_pre last_data)
         (iico_rmw) (* Internal data dep of RMW's *)
@@ -96,11 +102,12 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
       let last_addr =
         E.EventRel.restrict_rel
           (fun e1 e2 ->
-            E.is_mem_load e2 ||
-            (E.is_mem_store e2 && not (is_data_port e1)) ||
+            (is_mem_kvm e2 &&
+             (E.is_load e2 ||
+             (E.is_store e2 && not (is_data_port e1)))) ||
             E.is_additional_mem e2)
            (* Patch: a better solution would be a direct iico from read address register to access *)
-          (if memtag then E.EventRel.transitive_closure iico else iico) in
+          (if memtag || kvm then E.EventRel.transitive_closure iico else iico) in
       S.seq dd_pre last_addr in
     let po = U.po_iico conc.S.str in
     let ctrl_one = (* For bcc: from commit to event by po *)
