@@ -69,6 +69,11 @@ let symbol_compare sym1 sym2 = match sym1,sym2 with
 | (Virtual _,(Physical _|System _)) | (Physical _,System _) -> -1
 | ((Physical _|System _),Virtual _) | (System _,Physical _) -> 1
 
+let virt_match_phy s1 s2 = match s1,s2 with
+| Virtual ((s1,_),i1),Physical (s2,i2) ->
+    Misc.string_eq s1 s2 && Misc.int_eq i1 i2
+| _,_ -> false
+
 module SC = struct
   type t = symbol
   let compare = symbol_compare

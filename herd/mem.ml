@@ -1042,12 +1042,22 @@ let match_reg_events es =
 (***************************)
 
 (* final state *)
+    let tr_physical =
+      let open Constant in
+      if kvm then
+        (function
+          | A.Location_global (V.Val (Symbolic (Physical (s,idx)))) ->
+              A.Location_global (V.Val (Symbolic (Virtual ((s,None),idx))))
+          | loc -> loc)
+      else
+        Misc.identity
+
     let compute_final_state test rfm es =
       let st =
         S.RFMap.fold
           (fun wt rf k -> match wt,rf with
           | S.Final loc,S.Store ew ->
-              A.state_add k loc (get_written ew)
+              A.state_add k (tr_physical loc) (get_written ew)
           | _,_ -> k)
           rfm test.Test_herd.init_state in
       st,
@@ -1163,6 +1173,21 @@ let match_reg_events es =
                 k ws)
         loc_stores E.EventRel.empty
 
+    let keep_observed_loc =
+      if kvm then
+        let open Constant in
+        fun loc -> match loc with
+        | A.Location_global (V.Val (Symbolic (Physical _ as sym1))) ->
+            let p oloc = match oloc with
+            | A.Location_global (V.Val (Symbolic sym2)) ->
+                Constant.virt_match_phy sym2 sym1
+            | _ -> false in
+            A.LocSet.exists p
+        | _ -> A.LocSet.mem loc
+      else A.LocSet.mem
+
+    let pp_locations = A.LocSet.pp_str " " A.pp_location
+
     let all_finals_non_mixed test es =
       let loc_stores = U.remove_spec_from_map es (U.collect_mem_stores es) in
       let loc_stores =
@@ -1180,17 +1205,17 @@ let match_reg_events es =
                 | _ -> A.LocSet.singleton loc)
                 locs
             else locs in
-          if false then begin
-            eprintf "Observed locs: {%s}\n"
-              (A.LocSet.pp_str "," A.pp_location   observed_locs)
+          if C.debug.Debug_herd.mem then begin
+            eprintf "Observed locs: {%s}\n" (pp_locations observed_locs)
           end ;
           U.LocEnv.fold
             (fun loc ws k ->
-              if A.LocSet.mem loc observed_locs then
+              if keep_observed_loc loc observed_locs then
                 U.LocEnv.add loc ws k
               else k)
             loc_stores U.LocEnv.empty
         else loc_stores in
+
       let possible_finals =
         if C.optace then
           U.LocEnv.fold
@@ -1247,7 +1272,7 @@ let match_reg_events es =
             if E.is_store e && not (E.EventSet.mem e es.E.speculated) then match E.location_of e with
             | Some a ->
                 let a = get_base a in
-                if A.LocSet.mem a locs then
+                if keep_observed_loc a locs then
                   let old = A.LocMap.safe_find [] a k in
                   A.LocMap.add a (sort_same_base (E.EventSet.elements sca)::old) k
                 else k
@@ -1299,6 +1324,17 @@ let match_reg_events es =
       let atomic_load_store = make_atomic_load_store es in
 (* Now generate final stores *)
       let possible_finals = all_finals test es in
+      if C.debug.Debug_herd.mem then begin
+        eprintf "Possible finals:\n" ;
+        List.iter
+          (fun wss ->
+            (List.iter
+               (fun ws ->
+                 List.iter (eprintf " %a" E.debug_event) ws)
+               wss ;
+             eprintf "\n"))
+          possible_finals
+      end ;
 (* Add final loads from init for all locations, cleaner *)
       let loc_stores = U.collect_stores es
       and loc_loads = U.collect_loads es in
@@ -1330,12 +1366,17 @@ let match_reg_events es =
         Misc.fold_cross
           possible_finals
           (fun ws res ->
+
             if C.debug.Debug_herd.mem then begin
               eprintf "Finals:" ;
               List.iter
-                (fun es -> List.iter (fun e -> eprintf " %a"  E.debug_event e) es ; eprintf "\n") ws ;
-              eprintf "END\n"
+                (fun ws ->
+                  List.iter
+                    (fun e -> eprintf " %a"  E.debug_event e) ws)
+                ws ;
+              eprintf "\n";
             end ;
+
             let rfm =
               fold_left_left
                 (fun k w ->
