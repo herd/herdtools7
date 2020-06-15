@@ -200,6 +200,12 @@ end = struct
     -> true
   | _ -> false
 
+  let is_mem_physical a = let open Constant in match a with
+  | Access (_,A.Location_global (V.Val (Symbolic (Physical _))),_,_,_,_)
+  | Amo (A.Location_global (V.Val (Symbolic (Physical _))),_,_,_,_,_)
+    -> true
+  | _ -> false
+
   let is_additional_mem _ = false
 
   let is_atomic a = match a with
