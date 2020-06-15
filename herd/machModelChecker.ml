@@ -30,6 +30,7 @@ module Make
     let do_deps = O.variant Variant.Deps
     let mixed = O.variant Variant.Mixed
     let memtag = O.variant Variant.MemTag
+    let kvm = O.variant Variant.Kvm
 
     let bell_fname =  Misc.app_opt (fun (x,_) -> x) O.bell_model_info
     let bell_info = Misc.app_opt (fun (_,x) -> x) O.bell_model_info
@@ -228,8 +229,10 @@ module Make
                 E.EventRel.restrict_rel E.same_location (Lazy.force unv)
               end;
               "alias", lazy begin
-                E.EventRel.restrict_rel E.same_PA (Lazy.force unv)
-              end;
+                if kvm then
+                  E.EventRel.restrict_rel E.same_PA (Lazy.force unv)
+                else assert false
+                end;
                "int",lazy begin
                 E.EventRel.restrict_rel E.same_proc_not_init (Lazy.force unv)
               end ;
