@@ -109,6 +109,10 @@ end = struct
 
 (* None of those below *)
   let is_tag _ = false
+  let is_mem_physical a = let open Constant in match a with
+  | Access (_,A.Location_global (V.Val (Symbolic (Physical _))),_,_,_,_)   -> true
+  | _ -> false
+
   let is_additional_mem _ = false
 
   let is_PTE_access _ = false
