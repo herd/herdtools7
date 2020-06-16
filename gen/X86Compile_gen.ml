@@ -163,10 +163,10 @@ struct
 
   let emit_rmw_dep () =  emit_exch_dep
 
-  let emit_fence _ _ _ = function
-    | MFence -> [X86.Instruction I_MFENCE]
+  let emit_fence st _ init _ f = match f with 
+    | MFence -> init,[X86.Instruction I_MFENCE],st
 
-  let full_emit_fence = GenUtils.to_full emit_fence
+  let full_emit_fence = (*GenUtils.to_full*) emit_fence
 
   let stronger_fence = MFence
 

@@ -383,13 +383,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
 (* Fences *)
 
-    let emit_fence _ _ _ f =
-      [Instruction
+    let emit_fence st _ init _ f =
+      init,[Instruction
         (match f with
         | DMB o -> I_DMB o
         | DSB o -> I_DSB o
-        | ISB -> I_ISB)]
-    let full_emit_fence = GenUtils.to_full emit_fence
+        | ISB -> I_ISB)],st
+    let full_emit_fence = (*GenUtils.to_full*) emit_fence
     let stronger_fence = DMB SY
 
     let do_check_load p st r e =
