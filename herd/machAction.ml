@@ -51,9 +51,11 @@ module Make (C:Config) (A : A) : sig
     | Fault of A.inst_instance_id * A.location
 (* Unrolling control *)
     | TooFar
-(* Invalidate event, operation (for print and level), address, if any.
+(* TLB Invalidate event, operation (for print and level), address, if any.
    No adresss means complete invalidation at level *)
     | Inv of A.TLBI.op * A.location option
+(* Data cache operation event *)    
+    | DC of AArch64Base.DC.op * A.location option
 
   include Action.S with type action := action and module A = A
 
@@ -114,7 +116,7 @@ end = struct
     | Fault of A.inst_instance_id * A.location
     | TooFar
     | Inv of A.TLBI.op * A.location option
-
+    | DC of AArch64Base.DC.op * A.location option
 
   let mk_init_write l sz v = match v with
   | A.V.Val (Constant.Tag _) ->
@@ -144,15 +146,19 @@ end = struct
         (A.pp_location loc)
   | TooFar -> "TooFar"
   | Inv (op,None) ->
-      Printf.sprintf "Inv(%s)" (A.TLBI.pp_op op)
+      Printf.sprintf "TLBI(%s)" (A.TLBI.pp_op op)
   | Inv (op,Some loc) ->
-      Printf.sprintf "Inv(%s,%s)" (A.TLBI.pp_op op) (A.pp_location loc)
+      Printf.sprintf "TLBI(%s,%s)" (A.TLBI.pp_op op) (A.pp_location loc)
+  | DC (op,None) ->
+      Printf.sprintf "DC(%s)" (AArch64Base.DC.pp_op op)
+   | DC(op,Some loc) -> 
+      Printf.sprintf "DC(%s,%s)" (AArch64Base.DC.pp_op op) (A.pp_location loc)
 
 (* Utility functions to pick out components *)
   let value_of a = match a with
   | Access (_,_ , v,_,_,_)
     -> Some v
-  | Barrier _|Commit _|Amo _|Fault _|TooFar|Inv _
+  | Barrier _|Commit _|Amo _|Fault _|TooFar|Inv _|DC _
     -> None
 
   let read_of a = match a with
@@ -160,7 +166,7 @@ end = struct
   | Amo (_,v,_,_,_,_)
     -> Some v
   | Access (W, _, _, _,_,_)|Barrier _|Commit _|Fault _
-  | TooFar|Inv _
+  | TooFar|Inv _|DC _
     -> None
 
   and written_of a = match a with
@@ -168,7 +174,7 @@ end = struct
   | Amo (_,_,v,_,_,_)
     -> Some v
   | Access (R, _, _, _,_,_)|Barrier _|Commit _|Fault _
-  | TooFar|Inv _
+  | TooFar|Inv _|DC _
     -> None
 
   let location_of a = match a with
@@ -176,8 +182,9 @@ end = struct
   | Amo (l,_,_,_,_,_)
   | Fault (_,l)
   | Inv (_,Some l)
+  | DC(_,Some l)
     -> Some l
-  | Barrier _|Commit _ | TooFar| Inv (_,None) -> None
+  | Barrier _|Commit _ | TooFar| Inv (_,None) | DC (_,None) -> None
 
 (* relative to memory *)
   let is_mem_store a = match a with
@@ -215,11 +222,15 @@ end = struct
 
   let is_tag = function
     | Access (_,_,_,_,_,A_TAG)
-    | Access _ | Barrier _ | Commit _ | Amo _ | Fault _ | TooFar | Inv _ -> false
+    | Access _ | Barrier _ | Commit _ | Amo _ | Fault _ | TooFar | Inv _ | DC _ -> false
 
   let is_inv = function
     | Inv _ -> true
-    | Access _|Amo _|Commit _|Barrier _ | Fault _ | TooFar -> false
+    | Access _|Amo _|Commit _|Barrier _ | Fault _ | TooFar | DC _ -> false
+
+  let is_dc = function
+    | DC _ -> true
+    | Access _|Amo _|Commit _|Barrier _ | Fault _ | TooFar | Inv _ -> false
 
   let is_at_level lvl = function
     | Inv(op,_) -> A.TLBI.is_at_level lvl op
@@ -227,11 +238,11 @@ end = struct
 
   let is_fault = function
     | Fault _ -> true
-    | Access _|Amo _|Commit _|Barrier _ | TooFar | Inv _ -> false
+    | Access _|Amo _|Commit _|Barrier _ | TooFar | Inv _ | DC _ -> false
 
   let to_fault = function
     | Fault (i,A.Location_global x) -> Some ((i.A.proc,i.A.labels),x)
-    | Fault _|Access _|Amo _|Commit _|Barrier _ | TooFar | Inv _ -> None
+    | Fault _|Access _|Amo _|Commit _|Barrier _ | TooFar | Inv _ | DC _ -> None
 
   let get_mem_dir a = match a with
   | Access (d,A.Location_global _,_,_,_,_) -> d
@@ -265,11 +276,11 @@ end = struct
 (* Store/Load anywhere *)
   let is_store a = match a with
   | Access (W,_,_,_,_,_)|Amo _ -> true
-  | Access (R,_,_,_,_,_)|Barrier _|Commit _|Fault _|TooFar| Inv _ -> false
+  | Access (R,_,_,_,_,_)|Barrier _|Commit _|Fault _|TooFar| Inv _ | DC _ -> false
 
   let is_load a = match a with
   | Access (R,_,_,_,_,_)|Amo _ -> true
-  | Access (W,_,_,_,_,_)|Barrier _|Commit _|Fault _|TooFar|Inv _ -> false
+  | Access (W,_,_,_,_,_)|Barrier _|Commit _|Fault _|TooFar|Inv _ | DC _ -> false
 
   let compatible_categories loc1 loc2 = match loc1,loc2 with
   | (A.Location_global _,A.Location_global _)
@@ -354,7 +365,7 @@ end = struct
         (fun lvl -> A.pp_level lvl,is_at_level lvl)
         A.levels
     in
-    ("T",is_tag)::("FAULT",is_fault)::("TLBI",is_inv)::
+    ("T",is_tag)::("FAULT",is_fault)::("TLBI",is_inv)::("DC",is_dc)::
     bsets @ asets @ lsets
 
   let arch_rels =
@@ -414,7 +425,7 @@ end = struct
         | None -> V.ValueSet.empty
         | Some v -> V.ValueSet.singleton v in
         add_v_undet v1 (add_v_undet v2 undet)
-   | Barrier _|Commit _|Fault _|TooFar|Inv _ -> V.ValueSet.empty
+   | Barrier _|Commit _|Fault _|TooFar|Inv _ | DC _ -> V.ValueSet.empty
 
   let simplify_vars_in_action soln a =
     match a with
@@ -433,6 +444,9 @@ end = struct
     | Inv (op,oloc) ->
         let oloc = Misc.app_opt (A.simplify_vars_in_loc soln) oloc in
         Inv (op,oloc)
+    | DC (op,oloc) ->
+        let oloc = Misc.app_opt (A.simplify_vars_in_loc soln) oloc in
+        DC (op,oloc)
     | Barrier _ | Commit _|TooFar -> a
 
   let annot_in_list _str _ac = false

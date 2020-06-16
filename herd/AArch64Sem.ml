@@ -130,6 +130,11 @@ module Make
         let oloc = if A.TLBI.inv_all op then None else Some loc in
         M.mk_singleton_es (Act.Inv (op,oloc)) ii
 
+(* Data cache operations *)
+      let dc_loc op loc ii =
+        let oloc = if AArch64Base.DC.sw op then None else Some loc in
+        M.mk_singleton_es (Act.DC (op,oloc)) ii
+
 (******************)
 (* Memory Tagging *)
 (******************)
@@ -279,6 +284,9 @@ module Make
 
 (* Page tables and TLBs *)
     let do_inv op a ii = inv_loc op (A.Location_global a) ii
+
+(* Data cache operations *)
+    let do_dc op a ii = dc_loc op (A.Location_global a) ii
 
 (***********************)
 (* Memory instructions *)
@@ -626,10 +634,12 @@ module Make
         | I_TLBI (op, rd) ->
           read_reg_ord rd ii >>= fun a ->
           do_inv op a ii >>! B.Next
+(* Data cache instructions *)
+        | I_DC (op,rd) -> read_reg_ord rd ii >>= fun a ->
+          do_dc op a ii >>! B.Next
 (*  Cannot handle *)
-        | (I_RBIT _|I_MRS _|I_LDP _|I_STP _|I_IC _|I_DC _|I_BL _|I_BLR _|I_BR _|I_RET _) as i ->
-            Warn.fatal "illegal instruction: %s"
-              (AArch64.dump_instruction i)
-       )
-    end
+     | (I_RBIT _|I_MRS _|I_LDP _|I_STP _|I_IC _|I_BL _|I_BLR _|I_BR _|I_RET _) as i ->
+          Warn.fatal "illegal instruction: %s"
+            (AArch64.dump_instruction i)
+     )
 end
