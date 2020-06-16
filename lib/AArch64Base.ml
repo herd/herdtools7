@@ -315,7 +315,9 @@ module TLBI = struct
 
   type op = { typ:typ; level:level; domain:domain; }
 
-  let pp_op { typ; level; domain; } =
+  let alle1is = { typ=ALL; level=E1; domain=IS; }
+
+   let pp_op { typ; level; domain; } =
     sprintf "%s%s%s" (pp_typ typ) (pp_level level) (pp_domain domain)
 
   let is_at_level lvl op =  op.level = lvl

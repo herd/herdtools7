@@ -440,8 +440,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
 (* Fences *)
 (**********)
 
-    let emit_fence _ _ _ f = [Instruction (AV.FenceIns f)]
-    let full_emit_fence = GenUtils.to_full emit_fence
+    let emit_fence st _ init _ f = init,[Instruction (AV.FenceIns f)],st
+    let full_emit_fence = (*GenUtils.to_full*) emit_fence
     let stronger_fence = strong
 
         (* Dependencies *)
@@ -519,8 +519,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
       | Some Code.J,_ -> emit_joker st init
       | _,Code _ -> Warn.fatal "No code location for RISCV"
 
-    let insert_isb isb cs1 cs2 =
-      if isb then cs1@emit_fence 0 [] C.nil FenceI@cs2
+    let insert_isb st p init isb cs1 cs2 =
+      let _,cs,_ = emit_fence st p init 0 FenceI in
+      if isb then cs1@cs@cs2
       else cs1@cs2
 
     let emit_access_ctrl isb st p init e r1 =
@@ -529,7 +530,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
         [Instruction (cbnz r1 lab);
          Label (lab,Nop);] in
       let ropt,init,cs,st = emit_access st p init e in
-      ropt,init,insert_isb isb c cs,st
+      ropt,init,insert_isb st p init isb c cs,st
 
     let emit_exch_ctrl isb st p init er ew r1 =
       let lab = Label.next_label "LC" in
@@ -537,7 +538,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
         [Instruction (cbnz r1 lab);
          Label (lab,Nop);] in
       let ropt,init,cs,st = emit_exch st p init er ew in
-      ropt,init,insert_isb isb c cs,st
+      ropt,init,insert_isb st p init isb c cs,st
 
 
     let emit_access_dep st p init e dp r1 _v1 = match dp with

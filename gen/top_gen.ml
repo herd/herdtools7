@@ -206,13 +206,15 @@ let get_fence n =
             (fun is ->
               pref
                 (List.fold_right
-                   (fun f is -> Comp.emit_fence p init n f@is)
+                   (fun f is -> let _,cs,_ = Comp.emit_fence st p init n f 
+                   in cs@is)
                    fs is))
             chk loc_writes st p ro_prev init ns
       | E.Insert f ->
           let init,is,finals,st =
             compile_proc pref chk loc_writes st p ro_prev init ns in
-          init,Comp.emit_fence p init n f@is,finals,st
+          let init,cs,st = Comp.emit_fence st p init n f in 
+          init,cs@is,finals,st
       | _ ->
           let o,init,i,st = emit_access ro_prev st p init n in
           let nchk,add_check =
@@ -269,7 +271,7 @@ let rec fenced_observer st p i x = function
   | [v] -> last_observation st p i x v
   | v::vs ->
       let r,i,c,st = Comp.emit_obs Ord st p i x in
-      let f = Comp.emit_fence p i C.nil Comp.stronger_fence in
+      let i,f,st = Comp.emit_fence st p i C.nil Comp.stronger_fence in
       let i,cs,fs = fenced_observer st p i x vs in
       i,c@f@cs,F.add_final_v p r v fs
 
@@ -478,7 +480,8 @@ let max_set = IntSet.max_elt
         i,code@c,f,st
     | Config.Fenced ->
         let i,c,f,st = do_add_load st p i f x v in
-        let c = Comp.emit_fence p i C.nil Comp.stronger_fence@c in
+        let i,c',st = Comp.emit_fence st p i C.nil Comp.stronger_fence in
+        let c = c'@c in
         i,code@c,f,st
     | Loop ->
         let i,c,f,st = do_add_loop st p i f x prev_v v in
