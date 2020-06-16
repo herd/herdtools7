@@ -61,7 +61,8 @@ module type S = sig
           A.reg option * A.init * A.pseudo list * A.st
 
 (* Fences *)
-  val emit_fence : Code.proc -> A.init -> C.node -> A.fence -> A.pseudo list
+  val emit_fence : A.st -> Code.proc -> A.init -> C.node -> A.fence ->
+    A.init * A.pseudo list * A.st
   val full_emit_fence : A.st -> Code.proc -> A.init -> C.node -> A.fence ->
     A.init * A.pseudo list * A.st
 

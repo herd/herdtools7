@@ -179,7 +179,8 @@ let overwrite_value v ao w = match ao with
 type strength = Strong | Weak
 let fold_strength f r = f Strong (f Weak r)
 
-type fence = | Barrier of barrier | CacheSync of strength * bool
+type fence = | Barrier of barrier | CacheSync of strength * bool | 
+               Shootdown of AArch64Base.mBReqDomain * AArch64Base.TLBI.op 
 
 let is_isync = function
   | Barrier ISB -> true
@@ -204,11 +205,14 @@ let pp_fence f = match f with
 | CacheSync (s,isb) -> sprintf "CacheSync%s%s"
       (match s with Strong -> "Strong" | Weak -> "")
       (if isb then "Isb" else "")
+| Shootdown (d,op) -> sprintf "Shootdown%s%s"
+      (AArch64Base.pp_domain d) (AArch64Base.TLBI.pp_op op)
 
 let fold_cumul_fences f k =
    do_fold_dmb_dsb C.moreedges (fun b k -> f (Barrier b) k) k
 
 let fold_all_fences f k =
+  let k = AArch64Base.fold_domain (fun d -> f (Shootdown(d,AArch64Base.TLBI.alle1is))) k in  
   fold_barrier  C.moreedges (fun b k -> f (Barrier b) k)
     (if do_self then
       Misc.fold_bool
@@ -235,6 +239,7 @@ let orders f d1 d2 = match f,d1,d2 with
 | Barrier (DSB (_,LD)|DMB (_,LD)),Code.R,(W|Code.R) -> true
 | Barrier (DSB (_,LD)|DMB (_,LD)),_,_ -> false
 | CacheSync _,_,_ -> true
+| Shootdown _,_,_ -> false
 
 let var_fence f r = f default r
 
