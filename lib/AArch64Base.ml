@@ -261,6 +261,8 @@ module DC = struct
     pp_funct op.funct ^
     pp_typ op.typ ^
     pp_point op.point
+
+  let sw op = match op.typ with | SW -> true | _ -> false
 end
 
 type level = |E0 |E1 |E2 |E3
