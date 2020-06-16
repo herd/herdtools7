@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-let to_full emit st p init n x = init,emit p init n x,st
+let to_full emit st p init n x = init,emit st p init n x,st
 
 module type Config = sig
   val hexa : bool
