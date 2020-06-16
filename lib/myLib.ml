@@ -23,16 +23,18 @@ module type Config = sig
   val debug : bool
 end
 
-let pp_debug name = Printf.eprintf "Found and opened: '%s'\n" name
+let pp_debug name = Printf.eprintf "Found and opened: '%s'\n%!" name
 
 module Make =
   functor (C:Config) -> struct
-    
+
+    let debug = C.debug
+
     let try_open dir name =
       let rname = Filename.concat dir name in
       try
         let r = rname,open_in rname in
-        if C.debug then pp_debug rname ;
+        if debug then pp_debug rname ;
         r
       with _ -> raise Exit
 
@@ -47,15 +49,23 @@ module Make =
     | Some v ->
         try Some (Sys.getenv v) with Not_found -> None
 
+    let includes =
+      List.map
+        (fun d ->
+          let len = String.length d in
+          if len > 0 && d.[0] = '+' then
+            Filename.concat C.libdir (String.sub d 1 (len-1))
+          else d)
+        C.includes
 
     let open_lib name =
-      try try_opens ("."::C.includes) name
+      try try_opens ("."::includes) name
       with Exit -> try match envlib with
       | Some lib -> try_open lib name
       | None -> raise Exit
       with Exit -> try try_open C.libdir name
       with Exit -> Warn.fatal "Cannot find file %s" name
-  
+
     let do_find name =
       let r,chan = open_lib name in
       begin try close_in chan with _ -> () end ;

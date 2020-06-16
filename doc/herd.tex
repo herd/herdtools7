@@ -1668,7 +1668,8 @@ We describe the more useful ones:
 \item[{\tt -version}] Show version number and exit.
 \item[{\tt -libdir}] Show installation directory and exit.
 \item[{\tt -I <name>}] Add directory~\opt{name} at the end of
-\prog{herd} \ahrefloc{herd:searchpath}{search path}.
+\prog{herd} \ahrefloc{herd:searchpath}{search path}. If the given directory
+starts with \texttt{+} it is taken relative to \herd{} library directory.
 \item[{\tt -v}] Be verbose, can be repeated to increase verbosity.
 \item[{\tt -q}] Be quiet, suppress any diagnostic message.
 \item[{\tt -conf <name>}] Read configuration file~\opt{name}.
