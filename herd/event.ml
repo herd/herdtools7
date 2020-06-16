@@ -472,7 +472,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 
     let same_value e1 e2 = match value_of e1, value_of e2 with
     | Some v1,Some v2 -> V.compare v1 v2 = 0
-    | _,_ -> assert false
+    | _,_ -> false
 
     let same_PA e1 e2 = 
       (is_PTE_loc e1) && (is_PA_val e1) && (same_value e1 e2)
