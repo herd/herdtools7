@@ -232,6 +232,18 @@ end = struct
     | DC _ -> true
     | Access _|Amo _|Commit _|Barrier _ | Fault _ | TooFar | Inv _ -> false
 
+  let is_ci = function 
+    | DC(op,_) as a -> is_dc a & AArch64Base.DC.ci op
+    | _ -> false
+
+  let is_c = function 
+    | DC(op,_) as a -> is_dc a & AArch64Base.DC.c op
+    | _ -> false
+
+  let is_i = function 
+    | DC(op,_) as a -> is_dc a & AArch64Base.DC.i op
+    | _ -> false
+
   let is_at_level lvl = function
     | Inv(op,_) -> A.TLBI.is_at_level lvl op
     | _ -> false
@@ -365,7 +377,7 @@ end = struct
         (fun lvl -> A.pp_level lvl,is_at_level lvl)
         A.levels
     in
-    ("T",is_tag)::("FAULT",is_fault)::("TLBI",is_inv)::("DC",is_dc)::
+    ("T",is_tag)::("FAULT",is_fault)::("INV",is_inv)::("DC",is_dc)::("CI",is_ci)::("C",is_c)::("I",is_i)::
     bsets @ asets @ lsets
 
   let arch_rels =

@@ -263,6 +263,9 @@ module DC = struct
     pp_point op.point
 
   let sw op = match op.typ with | SW -> true | _ -> false
+  let ci op = match op.funct with | CI -> true | _ -> false
+  let c op = match op.funct with | C -> true | _ -> false
+  let i op = match op.funct with | I -> true | _ -> false
 end
 
 type level = |E0 |E1 |E2 |E3
