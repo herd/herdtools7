@@ -1,0 +1,94 @@
+(*
+ * The ARMv8 Application Level Memory Model.
+ *
+ * See section B2.3 of the ARMv8 ARM:
+ *   https://developer.arm.com/docs/ddi0487/latest/arm-architecture-reference-manual-armv8-for-armv8-a-architecture-profile
+ *
+ * Author: Will Deacon <will.deacon@arm.com>
+ * Author: Jade Alglave <jade.alglave@arm.com>
+ *
+ * Copyright (C) 2016-2020, ARM Ltd.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in
+ *       the documentation and/or other materials provided with the
+ *       distribution.
+ *     * Neither the name of ARM nor the names of its contributors may be
+ *       used to endorse or promote products derived from this software
+ *       without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+ * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+ * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+ * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *)
+
+"ARMv8 AArch64"
+
+include "armv8-util.cat"
+
+(* Coherence-after *)
+let ca = fr | co
+
+(* Local read successor *)
+let lrs = [W]; po-loc \ intervening-write(po-loc); [R]
+
+(* Local write successor *)
+let lws = po-loc; [W]
+
+(* Observed-by *)
+let obs = rfe | fre | coe
+
+(* Read-modify-write *)
+let rmw = lxsx | amo
+
+(* Dependency-ordered-before *)
+let dob = addr | data
+	| ctrl; [W]
+	| (ctrl | (addr; po)); [ISB]; po; [R]
+	| addr; po; [W]
+	| (addr | data); lrs 
+
+(* Atomic-ordered-before *)
+let aob = rmw
+	| [W & range(rmw)]; lrs; [A | Q]
+
+(* Barrier-ordered-before *)
+let bob = po; [dmb.full]; po
+        | po; ([A];amo;[L]); po
+	| [L]; po; [A]
+	| [R]; po; [dmb.ld]; po
+	| [A | Q]; po
+	| [W]; po; [dmb.st]; po; [W]
+	| po; [L]
+
+(* Tag-ordered-before *)
+let tob = [R & T]; intrinsic; [M \ T]
+
+(* Locally-ordered-before *)
+let rec lob = lws 
+        | dob
+	| aob
+	| bob
+        | tob
+	| lob; lob
+
+(* Internal visibility requirement *)
+acyclic po-loc | ca | rf as internal
+
+(* Atomic: Basic LDXR/STXR constraint to forbid intervening writes. *)
+empty rmw & (fre; coe) as atomic
