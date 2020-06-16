@@ -39,6 +39,9 @@ LB6b3            Forbid
 MP-STXR          Allow 
 MP-STXR-fail     Allow 
 MP-STXR-success  Allow 
+MP+DMB.ST+B      Allow
+MP+DMB.ST+B-EOR  Forbid
+MP+DMB.ST+CSEL   Forbid
 PPCOA4b          Allow 
 PPOCA            Allow 
 PPOCA5b          Forbid 
