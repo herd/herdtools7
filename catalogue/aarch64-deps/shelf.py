@@ -1,7 +1,7 @@
 record = "AArch64"
 
 cats = [
-    "cats/aarch64-deps.cat",
+    "cats/aarch64-exp.cat",
     "cats/sc.cat",
 ]
 
@@ -17,6 +17,19 @@ illustrative_tests = [
     "tests/mp-stxr.litmus",
     "tests/2+2W+addr+dmb.litmus",
     "tests/2+2W+xp+dmb.litmus",
+    "tests/MP+DMB.ST+CSEL.litmus",
+    "tests/MP+DMB.ST+B-EOR.litmus",
+    "tests/MP+DMB.ST+B.litmus",
+    "tests/SpecCE-01.litmus",
+    "tests/SpecCE-02.litmus",
+    "tests/SpecCE-03.litmus",
+    "tests/SpecCE-04.litmus",
+    "tests/SpecCE-05.litmus",
+    "tests/SpecCoiV.litmus",
+    "tests/SpecCoiX.litmus",
+    "tests/SpecRfiV.litmus",
+    "tests/SpecRfiX.litmus",
+    "tests/SpecRfeX.litmus",
     "tests/H1CX.litmus",
     "tests/H1X.litmus",
     "tests/H2CV.litmus",
@@ -44,6 +57,7 @@ illustrative_tests = [
     "tests/H10X.litmus",
     "tests/H11bQ.litmus",
     "tests/H11V.litmus",
+    "tests/H12CV.litmus",
     "tests/H12V.litmus",
     "tests/H13V.litmus",
     "tests/H14V.litmus",
@@ -63,4 +77,5 @@ illustrative_tests = [
     "tests/STXR-ctrl2.litmus",
     "tests/STXR-ctrl3.litmus",
     "tests/STXR-ctrl.litmus",
+    "tests/STXR-ctrla.litmus",
 ]

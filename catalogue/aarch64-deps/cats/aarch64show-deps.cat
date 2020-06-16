@@ -1,0 +1,9 @@
+include "aarch64spec.cat"
+
+(* Show dependencies *)
+show data,addr
+let ctrlisb = try ctrl;[ISB];po with 0
+show ctrlisb
+show isb \ ctrlisb as isb
+show ctrl \ ctrlisb as ctrl
+

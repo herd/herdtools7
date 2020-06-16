@@ -55,7 +55,15 @@ include "ncos.cat"
  * Include aarch64fences.cat so that barriers show up in generated diagrams.
  *)
 include "aarch64fences.cat"
-include "deps.cat"
+
+(* Local read successor *)
+let lrs = [W]; (po-loc \ (po-loc;[W];po-loc)) ; [R]
+
+(* Local write successor *)
+let lws = po-loc; [W]
+
+(* Include definitions of dependencies *)
+include "aarch64deps.cat"
 
 (*
  * As a restriction of the model, all observers are limited to the same
@@ -80,39 +88,30 @@ flag ~empty (dmb.full | dmb.ld | dmb.st) \
 	    (DMB.SY | DMB.LD | DMB.ST | DSB.SY | DSB.LD | DSB.ST)
 	    as Assuming-common-inner-shareable-domain
 
-(* Intrinsic order *)
-let intrinsic = (iico_data|iico_ctrl)+
-
 (* Coherence-after *)
 let ca = fr | co
-
-(* Local read successor *)
-let lrs = [W]; (po-loc \ (po-loc;[W];po-loc)) ; [R]
-
-(* Local write successor *)
-let lws = po-loc; [W]
-
-(* Properties of single-copy atomic accesses *)
-let si = sm 
-show (sm \ id) \ (I * I) as si
 
 (* Observed-by *)
 let obs = rfe | fre | coe
 
+(* Read-modify-write *)
+let rmw = lxsx | amo 
+
 (* Dependency-ordered-before *)
-let dob = new-addr | new-data
-	| new-ctrl; [W]
-	| (new-addr; po); [ISB]; po; [R]
-        | to-PoD; po; [ISB]; po
-	| new-addr; po; [W]
-	| (new-addr | new-data); lrs
+let dob = addr | data
+	| ctrl; [W]
+        | ctrl; [ISB]; po
+	| addr; po; [W]
+	| addr; po; [ISB]; po; [R]
+	| (addr | data); lrs
 
 (* Atomic-ordered-before *)
 let aob = rmw
 	| [range(rmw)]; lrs; [A | Q]
 
 (* Barrier-ordered-before *)
-let bob = po; ([dmb.full]|([A];amo;[L])); po
+let bob = po; [dmb.full]; po
+        | po; ([A];amo;[L]); po
 	| [L]; po; [A]
 	| [R\NoRet]; po; [dmb.ld]; po
 	| [A | Q]; po
