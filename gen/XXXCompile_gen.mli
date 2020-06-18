@@ -63,8 +63,6 @@ module type S = sig
 (* Fences *)
   val emit_fence : A.st -> Code.proc -> A.init -> C.node -> A.fence ->
     A.init * A.pseudo list * A.st
-  val full_emit_fence : A.st -> Code.proc -> A.init -> C.node -> A.fence ->
-    A.init * A.pseudo list * A.st
 
   val stronger_fence : A.fence
 
