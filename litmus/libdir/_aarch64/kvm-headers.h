@@ -30,3 +30,10 @@ static inline pteval_t *litmus_tr_pte(void *p) {
 static inline void litmus_flush_tlb(void *p) {
   flush_tlb_page((unsigned long)p);
 }
+
+/* Extract address component of PTE */
+#define FULL_MASK ((((pteval_t)1 << 48)-1) & ~(((pteval_t)1 << 12)-1))
+static inline void litmus_set_physical(pteval_t *p,pteval_t v) {
+  pteval_t prev = *p ;
+  *p = (v & FULL_MASK)|(prev & ~FULL_MASK) ;
+}
