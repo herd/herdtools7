@@ -1075,19 +1075,31 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
                 | Physical _ -> (A.Location_global a_sym,v)::env
                 | System _ -> 
                   if C.debug.Debug_herd.mem then begin
-                    Printf.printf "env PTE: %s\n" (A.pp_location (A.Location_global a_sym)) end;
+                  Printf.printf "env PTE: %s\n" (A.pp_location (A.Location_global a_sym)) end;
                   let aloc = A.Location_global a_sym in  
-                 begin match (find_one env aloc []) with
-                 | None,_ -> (aloc,v)::env  
-                 | Some(_,aphy),r -> 
-                     if have_same_base_addr aloc aphy then 
-                     begin match (find_one r (A.Location_global v) []) with 
-                     | None,_ -> (aloc,v)::(A.Location_global v,V.zero)::r
-                     | Some _,_ -> (aloc,v)::r    
-                     end
-                     (*jade: this is supposed to be the case where pte_x = phy_y AND pte_x=phy_z in the initial state, which should be a user error*) 
-                     else assert false 
-                end 
+                  begin match (find_one env aloc []) with
+                   | None,_ -> 
+                     if C.debug.Debug_herd.mem then begin
+                       Printf.printf "I aloc,v: %s,%s\n" (A.pp_location aloc) (V.pp_v v) end;
+                     (aloc,v)::env  
+                   | Some(_,aphy),r -> 
+                      if have_same_base_addr aloc aphy then 
+                       begin match (find_one r (A.Location_global v) []) with 
+                       | None,_ -> 
+                         if C.debug.Debug_herd.mem then begin
+                           Printf.printf "II aloc,aphy,v: %s,%s,%s\n" (A.pp_location aloc) (V.pp_v aphy) (V.pp_v v) end;
+                         begin match v with
+                         | V.Val _ -> (aloc,v)::r
+                         | _ -> (aloc,v)::(A.Location_global v,V.zero)::r
+end                     
+  | Some _,_ -> 
+                         if C.debug.Debug_herd.mem then begin
+                           Printf.printf "III aloc,v: %s,%s\n" (A.pp_location aloc) (V.pp_v v) end;
+                         (aloc,v)::r    
+                       end
+                       (*jade: this is supposed to be the case where pte_x = phy_y AND pte_x=phy_z in the initial state, which should be a user error*) 
+                       else assert false 
+                  end 
                 | _ ->
                   let a_pte = tr_sym (tr_pte a)
                   and a_phy = tr_sym (tr_physical a) in
