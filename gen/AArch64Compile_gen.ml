@@ -963,8 +963,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let emit_fence st p init n f = match f with
     | Barrier f -> init,[Instruction (I_FENCE f)],st
-    | Shootdown(dom,op) ->  
-          let r,st = next_reg st in 
+    | Shootdown(dom,op) -> 
+          let loc = match n.C.evt.C.loc with
+              | Data loc -> loc
+              | Code _ -> Warn.user_error "TLBI/CacheSync"
+          in 
+          let r,init,st = U.next_init st p init loc in
           init,emit_shootdown dom r,st
     | CacheSync (s,isb) ->
         try
@@ -972,19 +976,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let r = U.find_init p init lab in
           init,emit_cachesync s isb r,st
         with Not_found -> Warn.user_error "No code write before CacheSync"
-
-    let full_emit_fence st p init n f = match f with
-    | Barrier f -> init,[Instruction (I_FENCE f)],st
-    | Shootdown(dom,op) ->  
-          let r,st = next_reg st in 
-          init,emit_shootdown dom r,st
-     | CacheSync (s,isb) ->
-        try
-          let lab = C.find_prev_code_write n in
-          let r,init,st = U.next_init st p init lab in
-          init,emit_cachesync s isb r,st
-        with Not_found ->
-          Warn.user_error "No code write before CacheSync"
 
     let stronger_fence = strong
 

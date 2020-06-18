@@ -166,8 +166,6 @@ struct
   let emit_fence st _ init _ f = match f with 
     | MFence -> init,[X86.Instruction I_MFENCE],st
 
-  let full_emit_fence = (*GenUtils.to_full*) emit_fence
-
   let stronger_fence = MFence
 
 (* Check load *)

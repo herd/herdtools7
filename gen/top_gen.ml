@@ -229,7 +229,7 @@ let get_fence n =
               init ns in
           let init,cf,st =
             match get_fence n with
-            | Some fe -> Comp.full_emit_fence st p init n fe
+            | Some fe -> Comp.emit_fence st p init n fe
             | None -> init,[],st in
           add_init_check chk p o init,
           i@
