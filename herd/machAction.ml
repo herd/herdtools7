@@ -79,7 +79,8 @@ end = struct
     | Symbolic (System (PTE,_)) -> A_PTE
     | Symbolic (System (TLB,_)) -> A_TLB
     | Symbolic (System (TAG,_)) -> A_TAG
-    | Concrete _|Label _|Tag _ -> assert false
+    | Concrete _ as v -> Warn.fatal "access_of_constant %s as an address\n" (V.pp_v (V.Val v)) (* assert false *)
+    | Label _|Tag _ -> assert false
 
 (* precondition: v is a constant symbol *)
   let access_of_value v = match v with
