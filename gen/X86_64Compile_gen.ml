@@ -367,8 +367,6 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 
     let emit_fence st _ init _ f = init,[X86_64.Instruction (I_FENCE f)],st
 
-    let full_emit_fence = (*GenUtils.to_full*) emit_fence
-
     let stronger_fence = MFENCE
 
     (* Check load *)

@@ -498,7 +498,6 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
          | PPC.LwSync -> PPC.Plwsync
          | PPC.ISync -> PPC.Pisync
          | PPC.Eieio -> PPC.Peieio)],st
-    let full_emit_fence = (*GenUtils.to_full*) emit_fence
     let stronger_fence = PPC.Sync
 
 (* Check load *)
