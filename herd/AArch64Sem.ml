@@ -315,7 +315,7 @@ module Make
                 check_ptw a ma ii
                   (mop Act.A_PTE ma >>! B.Next)
                   (fun ma _a -> mop Act.A_PHY ma >>! B.Next)
-                  (fun ma a -> ma >>| mk_fault a ii >>! B.Exit)
+                  (fun ma a -> ma >>= fun _ -> mk_fault a ii >>! B.Exit)
             | ac -> mop ac ma >>! B.Next
         else
           mop Act.A_VIR ma >>! B.Next
