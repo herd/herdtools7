@@ -955,10 +955,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
          I_FENCE (DSB (ISH,FULL))::
          (if isb then [I_FENCE ISB] else []))
 
-    let emit_shootdown dom r =
+    let emit_shootdown dom op r =
       pseudo
         (I_FENCE (DSB(dom,FULL))::
-         I_TLBI(TLBI.alle1is,r)::
+         I_TLBI(op,r)::
          I_FENCE (DSB(dom,FULL))::[])
 
     let emit_fence st p init n f = match f with
@@ -969,7 +969,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               | Code _ -> Warn.user_error "TLBI/CacheSync"
           in 
           let r,init,st = U.next_init st p init loc in
-          init,emit_shootdown dom r,st
+          init,emit_shootdown dom op r,st
     | CacheSync (s,isb) ->
         try
           let lab = C.find_prev_code_write n in
