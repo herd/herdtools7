@@ -136,6 +136,7 @@ let typeof _ = assert false
 (************)
 
 type mBReqDomain = NSH | ISH | OSH | SY
+let mBReqDomain_list = [SY; OSH; ISH; NSH]
 
 let fold_domain f k =
   let k = f SY k in
@@ -278,6 +279,12 @@ let pp_level = function
     | E2 -> "E2"
     | E3 -> "E3"
 
+let fold_EL f k = 
+  let k = f E0 k in
+  let k = f E1 k in
+  let k = f E2 k in
+  let k = f E3 k in
+  k
 
 module TLBI = struct
 
@@ -305,7 +312,17 @@ module TLBI = struct
     | IPAS2 -> "IPAS2"
     | IPAS2L -> "IPAS2L"
 
-
+let fold_typ f k =
+  let k = f ALL k in
+  let k = f VMALL k in
+  let k = f VMALLS12 k in
+  let k = f ASID k in
+  let k = f VA k in
+  let k = f VAL k in
+  let k = f VAA k in
+  let k = f IPAS2 k in
+  let k = f IPAS2L k
+  in k
 
   type domain = | IS | No
 
@@ -313,9 +330,38 @@ module TLBI = struct
     | IS -> "IS"
     | No -> ""
 
+let fold_domain f k =
+  let k = f IS k in
+  let k = f No k
+  in k
+
   type op = { typ:typ; level:level; domain:domain; }
 
   let alle1is = { typ=ALL; level=E1; domain=IS; }
+  let alle2is = { typ=ALL; level=E2; domain=IS; }
+
+  let level_list = [ E0; E1; E2; E3 ]
+
+  let typ_list = [ ALL; VMALL; VMALLS12; ASID; VA; VAL; VAA; VAAL; IPAS2; IPAS2L ]
+
+  let domain_list = [ IS; No ]
+
+  let mk_op a_typ a_level a_domain = { typ=a_typ; level=a_level; domain=a_domain }
+  let enumerate funs elems =
+    List.fold_right (fun elem sofar ->
+        (List.fold_right (fun f sofar -> (f elem)::sofar) funs [])@sofar
+    ) elems []
+  let op_list = enumerate 
+                   (enumerate 
+                     (enumerate [mk_op] typ_list) 
+                   level_list)
+                domain_list
+
+  let rec do_fold_op f k l = match l with
+  | [] -> k
+  | x::xs -> let k = f x k in do_fold_op f k xs
+
+  let fold_op f k = do_fold_op f k op_list
 
    let pp_op { typ; level; domain; } =
     sprintf "%s%s%s" (pp_typ typ) (pp_level level) (pp_domain domain)
