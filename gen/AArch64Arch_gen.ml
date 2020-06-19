@@ -212,7 +212,10 @@ let fold_cumul_fences f k =
    do_fold_dmb_dsb C.moreedges (fun b k -> f (Barrier b) k) k
 
 let fold_all_fences f k =
-  let k = AArch64Base.fold_domain (fun d -> f (Shootdown(d,AArch64Base.TLBI.alle1is))) k in  
+  let mk_shootdown op d = (fun k -> f (Shootdown(d,op)) k) in  
+  let k = AArch64Base.TLBI.fold_op 
+            (fun op k -> AArch64Base.fold_domain (fun d k -> f (Shootdown(d,op)) k) k) 
+          k in  
   fold_barrier  C.moreedges (fun b k -> f (Barrier b) k)
     (if do_self then
       Misc.fold_bool
