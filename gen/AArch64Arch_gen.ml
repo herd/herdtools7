@@ -187,14 +187,23 @@ let is_isync = function
   | _ -> false
 
 let compare_fence b1 b2 = match b1,b2 with
-| Barrier _,CacheSync _ -> -1
+| (Barrier _,(CacheSync _|Shootdown _))
+| (CacheSync _,Shootdown _)
+  -> -1
+| Barrier b1,Barrier b2 -> barrier_compare b1 b2
 | CacheSync (s1,b1) ,CacheSync (s2,b2)->
     begin match compare b1 b2 with
    | 0 -> compare s1 s2
    | r -> r
     end
-| Barrier b1,Barrier b2 -> barrier_compare b1 b2
-| CacheSync _,Barrier _ -> +1
+| Shootdown (dom1,op1),Shootdown (dom2,op2) ->
+    begin match compare dom1 dom2 with
+   | 0 -> compare op1 op2
+   | r -> r
+    end
+| (Shootdown _,(Barrier _|CacheSync _))
+| (CacheSync _,Barrier _)
+ -> +1
 
 
 let default = Barrier (DMB (SY,FULL))
