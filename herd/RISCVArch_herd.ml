@@ -39,10 +39,15 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     type lannot = P of mo | X of mo
     let get_machsize _ = V.Cst.Scalar.machsize (* TODO, consider machsizes *)
     let empty_annot = P Rlx
+    let exp_annot = P Rlx 
+    let nexp_annot = P Rlx
+
 
     let is_atomic = function
     | X _ -> true
     | P _ -> false
+    let is_explicit = function | _ -> true
+    let is_not_explicit = function | _ -> false
 
     let is_acquire = function
       | X Acq|P Acq -> true

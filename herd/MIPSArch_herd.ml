@@ -28,6 +28,11 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
         
     let empty_annot = false
     let is_atomic annot = annot 
+    let exp_annot = false
+    let nexp_annot = false
+    let is_explicit annot = annot
+    let is_not_explicit annot = annot
+
 
     let barrier_sets = ["SYNC",(function Sync -> true);]
     let annot_sets = ["X", is_atomic]
