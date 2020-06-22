@@ -240,15 +240,15 @@ end = struct
     | Access _|Amo _|Commit _|Barrier _ | Fault _ | TooFar | Inv _ -> false
 
   let is_ci = function 
-    | DC(op,_) as a -> is_dc a & AArch64Base.DC.ci op
+    | DC(op,_) as a -> is_dc a && AArch64Base.DC.ci op
     | _ -> false
 
   let is_c = function 
-    | DC(op,_) as a -> is_dc a & AArch64Base.DC.c op
+    | DC(op,_) as a -> is_dc a && AArch64Base.DC.c op
     | _ -> false
 
   let is_i = function 
-    | DC(op,_) as a -> is_dc a & AArch64Base.DC.i op
+    | DC(op,_) as a -> is_dc a && AArch64Base.DC.i op
     | _ -> false
 
   let is_at_level lvl = function
