@@ -57,7 +57,7 @@ module Make (C:Sem.Config)(V : Value.S)
 
       let mk_read sz ato loc v =
         let ac = Act.access_of_location_std loc in
-        Act.Access (Dir.R, loc, v, ato, sz, ac)
+        Act.Access (Dir.R, loc, v, ato, false, sz, ac)
 
       let read_loc sz is_d = M.read_loc is_d (mk_read sz false)
 
@@ -117,7 +117,7 @@ module Make (C:Sem.Config)(V : Value.S)
 
       let mk_write sz an loc v =
         let ac = Act.access_of_location_std loc in
-        Act.Access (Dir.W, loc, v, an, sz, ac)
+        Act.Access (Dir.W, loc, v, an, false, sz, ac)
 
       let write_loc sz an loc v ii =
         M.mk_singleton_es (mk_write sz an loc v) ii

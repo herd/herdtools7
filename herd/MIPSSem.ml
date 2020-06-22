@@ -54,7 +54,7 @@ module Make (C:Sem.Config)(V:Value.S)
 
       let mk_read sz ato loc v =
         Act.Access
-          (Dir.R, loc, v, ato, sz, Act.access_of_location_std loc)
+          (Dir.R, loc, v, ato, false, sz, Act.access_of_location_std loc)
 
       let read_reg is_data r ii = match r with
       | MIPS.IReg MIPS.R0 -> M.unitT V.zero
@@ -73,17 +73,17 @@ module Make (C:Sem.Config)(V:Value.S)
       | _ ->
           M.mk_singleton_es
             (Act.Access
-               (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false, nat_sz, Act.A_REG))
+               (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false, false, nat_sz, Act.A_REG))
             ii
 
       let write_mem sz a v ii  =
         M.mk_singleton_es
-          (Act.Access (Dir.W, A.Location_global a, v, false, sz, Act.A_VIR)) ii
+          (Act.Access (Dir.W, A.Location_global a, v, false, false, sz, Act.A_VIR)) ii
 
       let write_mem_atomic sz a v resa ii =
         let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
         M.mk_singleton_es_eq
-          (Act.Access (Dir.W, A.Location_global a, v, true, sz, Act.A_VIR))
+          (Act.Access (Dir.W, A.Location_global a, v, true, false, sz, Act.A_VIR))
           eq ii
 
       let create_barrier b ii =

@@ -61,7 +61,7 @@ module Make (C:Sem.Config)(V:Value.S)
       and nat_sz = V.Cst.Scalar.machsize
 
       let mk_read ato sz loc v =
-        Act.Access (Dir.R, loc, v, ato, sz, Act.access_of_location_std loc)
+        Act.Access (Dir.R, loc, v, ato, false, sz, Act.access_of_location_std loc)
 
       let read_reg is_data r ii =
         M.read_loc is_data
@@ -78,22 +78,22 @@ module Make (C:Sem.Config)(V:Value.S)
 
       let write_loc sz loc v ii =
         let ac = Act.access_of_location_std loc in
-        M.mk_singleton_es (Act.Access (Dir.W, loc, v, false, sz, ac)) ii
+        M.mk_singleton_es (Act.Access (Dir.W, loc, v, false, false, sz, ac)) ii
 
       let write_reg r v ii =
         M.mk_singleton_es
-          (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false, reg_sz, Act.A_REG))
+          (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false, false, reg_sz, Act.A_REG))
           ii
 
       let write_mem sz a v ii  =
         M.mk_singleton_es
-          (Act.Access (Dir.W, A.Location_global a, v, false, sz, Act.A_VIR))
+          (Act.Access (Dir.W, A.Location_global a, v, false, false, sz, Act.A_VIR))
           ii
 
       let write_mem_atomic sz a v resa ii =
         let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
         M.mk_singleton_es_eq
-          (Act.Access (Dir.W, A.Location_global a, v, true, sz, Act.A_VIR))
+          (Act.Access (Dir.W, A.Location_global a, v, true, false, sz, Act.A_VIR))
           eq ii
 
       let write_flag r o v1 v2 ii =
