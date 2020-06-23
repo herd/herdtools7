@@ -400,7 +400,7 @@ end = struct
         (fun lvl -> A.pp_level lvl,is_at_level lvl)
         A.levels
     in
-    ("T",is_tag)::("FAULT",is_fault)::("INV",is_inv)::("DC",is_dc)::("CI",is_ci)::("C",is_c)::("I",is_i)::("Exp",is_explicit)::("NExp",is_not_explicit)::
+    ("T",is_tag)::("FAULT",is_fault)::("TLBI",is_inv)::("DC",is_dc)::("CI",is_ci)::("C",is_c)::("I",is_i)::("Exp",is_explicit)::("NExp",is_not_explicit)::
     bsets @ asets @ lsets
 
   let arch_rels =
