@@ -872,7 +872,7 @@ module Make
                 with Not_found -> false in
                 if ok1 || ok2 then O.fii "litmus_flush_tlb((void *)%s);" x)
               inits
-       end ;
+        end ;
         (* Synchronise *)
         if have_timebase then O.oii "_ctx->next_tb = read_timebase();" ;
         O.oii "barrier_wait(_b);" ;
