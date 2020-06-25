@@ -29,6 +29,9 @@ module Make
     let memtag = C.variant Variant.MemTag
     let is_deps = C.variant Variant.Deps
     let kvm = C.variant Variant.Kvm
+    let tthm = C.variant Variant.TTHM
+    let ha = C.variant Variant.HA
+    let hd = C.variant Variant.HD
 
 (* Barrier pretty print *)
     let barriers =
@@ -65,7 +68,7 @@ module Make
       let flip_flag v = M.op Op.Xor v V.one
       let is_zero v = M.op Op.Eq v V.zero
       let is_not_zero v = M.op Op.Ne v V.zero
-
+      
 (* Ordinary access action *)
       let access_ord d loc v ac = Act.Access (d,loc,v,AArch64.N,AArch64.Exp,quad,ac)
 
@@ -200,20 +203,121 @@ module Make
 
 (* PTW Basics *)
 
-      let check_ptw a_virt ma an ii mdirect mok mfault =
-        let mvirt =
-          M.op1 Op.PTELoc a_virt >>= fun a_pte ->
-            let ma =
-              ma >>=
-              fun _ -> M.read_loc false
-                (fun loc v ->
-                  Act.Access (Dir.R,loc,v,an,AArch64.NExp,quad,Act.A_PTE))
-                (A.Location_global a_pte) ii in
-            M.delay ma >>=
-            fun (a_phy,ma) -> is_zero a_phy >>= fun cond ->
-              M.choiceT cond (mfault ma a_virt) (mok ma a_phy) in
-        M.op1 Op.IsVirtual a_virt >>= fun cond ->
-        M.choiceT cond mvirt mdirect
+      let check_ptw dir a_virt ma an ii mdirect mok mfault =
+(*
+         let mvirt =
+             (M.op1 Op.PTELoc a_virt >>= fun a_pte ->
+                let ma =
+                  ma >>=
+                  fun _ -> (M.read_loc false
+                    (fun loc v ->
+                      Act.Access (Dir.R,loc,v,an,AArch64.NExp,quad,Act.A_PTE))
+                    (A.Location_global a_pte) ii) in
+                 (M.delay ma >>=
+                     fun (a_phy,ma) -> is_zero a_phy >>= fun cond ->
+                        M.choiceT cond (mfault ma a_virt) (mok ma a_phy))) in 
+*)
+
+           let do_m = (M.op1 Op.PTELoc a_virt >>= fun a_pte ->
+                let ma =
+                  ma >>=
+                  fun _ -> (M.read_loc false
+                    (fun loc v ->
+                      Act.Access (Dir.R,loc,v,an,AArch64.NExp,quad,Act.A_PTE))
+                    (A.Location_global a_pte) ii) in
+                 (M.delay ma >>=
+                     fun (a_phy,ma) -> is_zero a_phy >>= fun cond ->
+                        M.choiceT cond (mfault ma a_virt) (mok ma a_phy))) in 
+
+         let check_bit_clear bit act =
+            (M.read_loc false
+              (fun loc v ->
+                Act.Access (Dir.R,loc,v,an,AArch64.NExp,quad,act))
+              (A.Location_global bit) ii) >>= 
+                 fun v -> is_zero v in
+
+          let set_bit bit act =
+            (M.read_loc false 
+               (fun loc _ -> 
+                  Act.Access (Dir.W,loc,V.one,an,AArch64.NExp,quad,act)) 
+             (A.Location_global bit) ii) in
+
+   (*
+     Without HW-management (on old CPUs, or where TCR_ELx.{HA,HD} == {0,0}): 
+
+     A load/store to x where pte_x has the access flag clear will raise a
+     permission fault 
+
+     A store to x where pte_x has the dirty bit clear will raise a permission
+     fault 
+
+     and SW is expected to deal with this by updating the translation tables with
+     explicit stores or atomics
+   *)
+         let notTTHM a_virt ma a_af a_db = 
+              (check_bit_clear a_af Act.A_AF >>= fun af_clear ->
+              M.choiceT af_clear (mfault ma a_virt) 
+              (begin match dir with 
+                | Dir.R -> do_m 
+                | Dir.W -> check_bit_clear a_db Act.A_DB >>= fun db_clear ->
+                           M.choiceT db_clear (mfault ma a_virt) do_m
+              end)) in
+
+    (*
+      With HW management (i.e. when ARMv8.1-TTHM is implemented) where TCR_ELx.HA = 1: 
+      A load/store to x where pte_x has the access flag clear results in the MMU
+      updating the translation table entry to set the access flag, and continuing
+      without a fault.
+     *)
+         let isTTHM_and_HA a_af kont = 
+              (check_bit_clear a_af Act.A_AF >>= fun af_clear ->
+               M.choiceT af_clear 
+                 (set_bit a_af Act.A_AF >>= fun _ -> kont)
+                 kont) in
+
+     (*
+       With HW management (i.e. when ARMv8.1-TTHM is implemented) where TCR_ELx.{HA,HD} == {1,1}:
+
+       A load/store to x where pte_x has the access flag clear results in the
+       MMU updating the translation table entry to set the access flag, and continuing
+       without a fault.
+
+       A store to x where pte_x has the dirty bit clear and also has DBM clear
+       will raise a permission fault
+
+       A store to x where pte_x has the dirty bit clear and has DBM set results in the
+       MMU updating the translation table entry to set the dirty bit, and continuing
+       without a fault.  
+      *)
+
+         let isTTHM_and_HA_and_HD a_af a_db a_dbm = 
+           let kont = 
+              (begin match dir with 
+                | Dir.R -> do_m 
+                | Dir.W -> check_bit_clear a_db Act.A_DB >>= fun db_clear ->
+                           M.choiceT db_clear 
+                             (check_bit_clear a_dbm Act.A_DBM >>= fun dbm_clear ->
+                              M.choiceT dbm_clear 
+                                (mfault ma a_virt) 
+                                (set_bit a_db Act.A_DB >>= fun _ -> do_m)) 
+                             do_m
+              end) in
+           (isTTHM_and_HA a_af kont)  
+      
+         in
+
+         let mvirt = 
+            (M.op1 Op.AF a_virt >>| M.op1 Op.DB a_virt >>| M.op1 Op.DBM a_virt)  >>= 
+              fun ((a_af,a_db),a_dbm) ->
+            if (not tthm || (tthm && (not ha && not hd))) then 
+              (notTTHM a_virt ma a_af a_db) 
+            else if (tthm && ha && not hd) then
+              (isTTHM_and_HA a_af do_m) 
+            else (*if (tthm && ha && hd)*) 
+              (isTTHM_and_HA_and_HD a_af a_db a_dbm) in 
+             
+        (M.op1 Op.IsVirtual a_virt >>= fun cond ->
+           M.choiceT cond mvirt mdirect)
 
 (* Old read_mem that returns value read *)
       let do_read_mem_ret sz an anexp ac a ii =
@@ -248,9 +352,6 @@ module Make
           Mixed.write_mixed sz
             (fun sz loc v -> mk_write sz an anexp loc v Act.A_VIR)
             a v ii
-        end else 
-        if kvm then begin 
-            ptw a sz ii (fun pte_v -> write_loc sz an (A.Location_global pte_v) v ii)
         end else
           write_loc sz an anexp (A.Location_global a) v ac ii
 
@@ -296,7 +397,7 @@ module Make
           (read_reg_ord rs ii >>| read_reg_ord r ii) >>= fun (v1,v2) ->
             M.add v1 v2
 
-      let lift_memop mop ma an ii =
+      let lift_memop dir mop ma an ii =
         if memtag then
           M.delay ma >>= fun (_,ma) ->
           let mm = mop Act.A_VIR (ma >>= fun a -> loc_extract a) in
@@ -309,7 +410,7 @@ module Make
           M.delay ma >>= fun (a,ma) ->
             match Act.access_of_location_std (A.Location_global a) with
             | Act.A_VIR ->
-                check_ptw a ma an ii
+                check_ptw dir a ma an ii
                   (mop Act.A_PTE ma >>! B.Next)
                   (fun ma _a -> mop Act.A_PHY ma >>! B.Next)
                   (fun ma a -> ma >>= fun _ -> mk_fault a ii >>! B.Exit)
@@ -318,14 +419,14 @@ module Make
           mop Act.A_VIR ma >>! B.Next
 
       let do_str sz an anexp rs ma ii =
-        lift_memop
+        lift_memop Dir.W
           (fun ac ma ->
             (ma >>| read_reg_data sz rs ii) >>= fun (a,v) ->
             do_write_mem sz an anexp ac a v ii)
           ma an ii
 
       let do_ldr sz an anexp rd ma ii =
-          lift_memop
+          lift_memop Dir.R
             (fun ac ma -> ma >>= fun a -> do_read_mem sz an anexp ac rd a ii)
           ma an ii
 
@@ -345,7 +446,7 @@ module Make
           | AX -> AArch64.XA
           | AQ -> AArch64.Q
         in
-        lift_memop
+        lift_memop Dir.R
           (fun ac ma ->
             ma >>= fun a ->
               match t with
@@ -365,7 +466,7 @@ module Make
           | YY -> AArch64.X
           | LY -> AArch64.XL
         in
-         lift_memop
+         lift_memop Dir.W
          (fun ac ma ->
            M.riscv_store_conditional
              (read_reg_ord ResAddr ii)
@@ -407,7 +508,8 @@ module Make
             let write_mem = match rmw with
             | RMW_L|RMW_AL -> write_mem_release
             | RMW_P|RMW_A  -> write_mem in
-            lift_memop
+            (*SWP is a write for the purpose of the DB*)
+            lift_memop Dir.W
               (fun ac ma ->
                 (read_reg_data sz r1 ii >>| ma) >>= fun (v,a) ->
                  write_mem sz AArch64.Exp ac a v ii)
@@ -416,7 +518,7 @@ module Make
         |  _ ->
             let read_mem = rmw_amo_read rmw
             and write_mem = rmw_amo_write rmw in
-            lift_memop
+            lift_memop Dir.W
               (fun ac ma ->
                 let r2 = read_reg_data sz r1 ii
                 and w2 v = write_reg r2 v ii (* no sz since alread masked *) 
@@ -434,7 +536,8 @@ module Make
         | RMW_P | RMW_L -> AArch64.N
         | RMW_A | RMW_AL -> AArch64.A
         in
-        lift_memop
+        (*CAS is a write for the purpose of the DB*)
+        lift_memop Dir.W
           (fun ac ma ->
             let read_rs = read_reg_ord_sz sz rs ii in
             M.altT
@@ -463,7 +566,7 @@ module Make
         | RMW_P | RMW_L -> AArch64.N
         | RMW_A | RMW_AL -> AArch64.A
         in
-         lift_memop
+         lift_memop Dir.R
           (fun ac ma ->
             let noret = match rt with | ZR -> true | _ -> false in
             let op = match op with

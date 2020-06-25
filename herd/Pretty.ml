@@ -1491,7 +1491,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
   | AllEvents -> (fun _ -> true)
   | MemEvents ->  E.is_mem
   | NonRegEvents -> (fun e -> not (E.is_reg_any e))
-  | MemFenceEvents -> let open Misc in E.is_mem ||| E.is_barrier ||| E.is_fault
+  | MemFenceEvents -> let open Misc in E.is_mem ||| E.is_barrier
   let select_event = let open Misc in select_event &&& select_non_init
 
   let select_events = E.EventSet.filter select_event

@@ -76,6 +76,9 @@ type op1 =
   | UnSetXBits of int * int (* Unset x bits to the left from y*)
   | TLBLoc (* get TLB entry from location *)
   | PTELoc (* get PTE entry from location *)
+  | AF (* get AF from PTE entry *)
+  | DB (* get DB from PTE entry *)
+  | DBM (* get DBM from PTE entry *)
   | IsVirtual (* Detect virtual addresses *)
 
 let pp_op1 hexa o = match o with
@@ -95,7 +98,10 @@ let pp_op1 hexa o = match o with
 | TLBLoc -> "TLBloc"
 | PTELoc -> "PTEloc"
 | IsVirtual -> "IsVirtual"
-
+| AF -> "AF" 
+| DB -> "DB" 
+| DBM -> "DBM" 
+  
 (***********)
 
 type op3 = If

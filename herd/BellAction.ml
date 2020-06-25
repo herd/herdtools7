@@ -158,7 +158,9 @@ end = struct
   | Access (R,_,_,_,_,_) -> true
   | _ -> false
 
-
+(* Setting AF and DB *)
+  let is_af _ = false
+  let is_db _ = false
 
   let is_reg_any a = match a with
   | Access (_,A.Location_reg _,_,_,_,_) -> true

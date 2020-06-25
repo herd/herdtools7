@@ -18,7 +18,7 @@ open Printf
 
 (** Constants in code *)
 
-type syskind = PTE|TAG|TLB
+type syskind = PTE|TAG|TLB|AF|DB|DBM
 
 type symbol =
   | Virtual of (string * string option) * int (* (symbol, optional tag), index *)
@@ -38,6 +38,9 @@ let pp_symbol = function
   | Physical (s,o) -> pp_index (Misc.add_physical s) o
   | System (TLB,s) -> Misc.add_tlb s
   | System (PTE,s) -> Misc.add_pte s
+  | System (AF,s) -> Misc.add_af s
+  | System (DB,s) -> Misc.add_db s
+  | System (DBM,s) -> Misc.add_dbm s
   | System (TAG,s) -> Misc.add_atag s
 
 let as_address = function
@@ -93,13 +96,19 @@ let do_mk_sym sym = match Misc.tr_pte sym with
 | Some s -> 
       (*Printf.printf "PTE: %s\n" s;*)
     System (PTE,s)
-| None -> match Misc.tr_physical sym with
-  | Some s -> 
-      (*Printf.printf "PHYS: %s\n" s;*)
-    Physical (s,0)
-  | None -> 
-      (*Printf.printf "VIRT: %s\n" sym;*)
-    Virtual ((sym,None),0)
+| None -> match Misc.tr_af sym with
+  | Some s -> System(AF,s)
+  | None -> match Misc.tr_db sym with
+    | Some s -> System(DB,s)
+    | None -> match Misc.tr_dbm sym with 
+      | Some s -> System(DBM,s)
+      | None -> match Misc.tr_physical sym with
+        | Some s -> 
+            (*Printf.printf "PHYS: %s\n" s;*)
+          Physical (s,0)
+        | None -> 
+            (*Printf.printf "VIRT: %s\n" sym;*)
+          Virtual ((sym,None),0)
 
 let mk_sym s = Symbolic (do_mk_sym s)
 

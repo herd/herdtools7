@@ -21,7 +21,7 @@
    used by all tools. Abstract later?
 *)
 
-type syskind = PTE|TAG|TLB (* Various kinds of system memory *)
+type syskind = PTE|TAG|TLB|AF|DB|DBM (* Various kinds of system memory *)
 
 type symbol =
   | Virtual of (string * string option) * int (* (symbol, optional tag), index *)

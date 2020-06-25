@@ -78,6 +78,8 @@ val same_instance : event -> event -> bool
 (* Tag memory access *)
   val is_tag : event -> bool
   val is_mem_physical : event -> bool
+  val is_af : event -> bool
+  val is_db : event -> bool
 (* includes additional memory events,  eg lock, unlocks... *)
   val is_additional_mem : event -> bool
 (* Specific memory property examination *)
@@ -521,9 +523,6 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let is_additional_mem e = Act.is_additional_mem e.action
     let is_atomic e = Act.is_atomic e.action
     let to_fault e = Act.to_fault e.action
-    let is_fault e = match Act.to_fault e.action with
-    | None -> false
-    | Some _ -> true
     let is_amo e = match e.iiid with
     | Some {A.inst=i; _} when A.is_amo i -> Act.is_mem_store e.action
     | _ -> false
@@ -541,6 +540,10 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let is_reg_any e = Act.is_reg_any e.action
     let is_reg_store_any e = Act.is_reg_store_any e.action
     let is_reg_load_any e = Act.is_reg_load_any e.action
+
+(* Setting AF and DB *)
+    let is_af e = Act.is_af e.action
+    let is_db e = Act.is_db e.action
 
 (* Compatible events ie accesses of the same category *)
     let compatible_accesses e1 e2 =

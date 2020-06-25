@@ -58,6 +58,9 @@ type op1 =
   | UnSetXBits of int * int
   | TLBLoc (* get TLB entry from location *)
   | PTELoc (* get PTE entry from location *)
+  | AF (* get AF from PTE entry *)
+  | DB (* get DB from PTE entry *)
+  | DBM (* get DBM from PTE entry *)
   | IsVirtual (* Predicate for virtual adresses *)
 
 val pp_op1 : bool -> op1 -> string

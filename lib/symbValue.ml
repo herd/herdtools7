@@ -268,6 +268,15 @@ module Make(Cst:Constant.S) = struct
   let op_pteloc (a,_) = Symbolic (System (PTE,a))
   let pteloc = op_pte_tlb "pteloc" op_pteloc
 
+  let op_afloc (a,_) = Symbolic (System (AF,a))
+  let afloc = op_pte_tlb "afloc" op_afloc
+
+  let op_dbloc (a,_) = Symbolic (System (DB,a))
+  let dbloc = op_pte_tlb "dbloc" op_dbloc
+
+  let op_dbmloc (a,_) = Symbolic (System (DBM,a))
+  let dbmloc = op_pte_tlb "dbmloc" op_dbmloc
+
   let op_tlbloc (a,_) = Symbolic (System (TLB,a))
   let tlbloc = op_pte_tlb "tlbloc" op_tlbloc
 
@@ -309,8 +318,9 @@ module Make(Cst:Constant.S) = struct
     | TLBLoc -> tlbloc
     | PTELoc -> pteloc
     | IsVirtual -> is_virtual_v
-
-
+    | AF -> afloc
+    | DB -> dbloc
+    | DBM -> dbmloc
 
   let op op = match op with
   | Add -> add
