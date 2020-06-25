@@ -77,6 +77,10 @@ module type S = sig
   val is_store : action -> bool
   val is_load : action -> bool
 
+(* Setting AF and DB *)
+  val is_af : action -> bool
+  val is_db : action -> bool
+
 (* Compatible accesses *)
   val compatible_accesses : action -> action -> bool
 

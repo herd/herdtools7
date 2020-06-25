@@ -174,7 +174,7 @@ struct
 
     let collect_value f v k = match v with
     | Symbolic (Virtual ((s,_),_))
-    | Symbolic (System (PTE,s))
+    | Symbolic (System (PTE,s)) | Symbolic (System (AF,s)) | Symbolic (System (DB,s)) | Symbolic (System (DBM,s))   
       -> f s k
     | Concrete _ -> k
     | Label _ -> nolabel_value ()
@@ -184,6 +184,9 @@ struct
     let map_value f v = match v with
     | Symbolic (Virtual ((s,t),o)) -> Symbolic (Virtual ((f s,t),o))
     | Symbolic (System (PTE,s)) ->  Symbolic (System (PTE,f s))
+    | Symbolic (System (AF,s)) ->  Symbolic (System (AF,f s))
+    | Symbolic (System (DB,s)) ->  Symbolic (System (DB,f s))
+    | Symbolic (System (DBM,s)) ->  Symbolic (System (DBM,f s))
     | Concrete _ -> v
     | Label _ -> nolabel_value ()
     | Tag _ -> notag_value ()

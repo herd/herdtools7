@@ -728,5 +728,14 @@ let tr_pte = do_tr "pte_"
 
 let add_tlb = sprintf "tlb_%s"
 
+let add_af = sprintf "af_%s"
+let tr_af = do_tr "af_"
+
+let add_db = sprintf "db_%s"
+let tr_db = do_tr "db_"
+
+let add_dbm = sprintf "dbm_%s"
+let tr_dbm = do_tr "dbm_"
+
 let add_physical s = sprintf "phy_%s" s
 let tr_physical = do_tr "phy_"

@@ -43,7 +43,7 @@ module Make (C:Config) (A : A) : sig
  (* All sorts of accesses, redundunt with symbol hidden in location,
     when symbol is known, which may not be the case *)
 
-  type access_t = A_REG | A_VIR | A_PHY | A_PTE | A_TLB | A_TAG
+  type access_t = A_REG | A_VIR | A_PHY | A_PTE | A_AF | A_DB | A_DBM | A_TLB | A_TAG
 
   type action =
     | Access of Dir.dirn * A.location * A.V.v * A.lannot * A.lannot * MachSize.sz * access_t
@@ -73,7 +73,7 @@ end = struct
 
   let kvm = C.variant Variant.Kvm
 
-  type access_t = A_REG | A_VIR | A_PHY | A_PTE | A_TLB | A_TAG
+  type access_t = A_REG | A_VIR | A_PHY | A_PTE | A_AF | A_DB | A_DBM | A_TLB | A_TAG
 
   let access_of_constant cst =
     let open Constant in
@@ -81,6 +81,9 @@ end = struct
     | Symbolic (Virtual _) -> A_VIR
     | Symbolic (Physical _) -> A_PHY
     | Symbolic (System (PTE,_)) -> A_PTE
+    | Symbolic (System (AF,_)) -> A_AF
+    | Symbolic (System (DB,_)) -> A_DB
+    | Symbolic (System (DBM,_)) -> A_DBM
     | Symbolic (System (TLB,_)) -> A_TLB
     | Symbolic (System (TAG,_)) -> A_TAG
     | Concrete _ as v -> Warn.fatal "access_of_constant %s as an address\n" (V.pp_v (V.Val v)) (* assert false *)
@@ -107,6 +110,21 @@ end = struct
         ->
           if kvm then A_PTE
           else Warn.fatal "PTE %s while -variant kvm is not active"
+              (A.pp_location loc)
+      | A.Location_global (V.Val (Symbolic ((System (AF,_))))) as loc
+        ->
+          if kvm then A_AF
+          else Warn.fatal "AF %s while -variant kvm is not active"
+              (A.pp_location loc)
+      | A.Location_global (V.Val (Symbolic ((System (DB,_))))) as loc
+        ->
+          if kvm then A_DB
+          else Warn.fatal "DB %s while -variant kvm is not active"
+              (A.pp_location loc)
+      | A.Location_global (V.Val (Symbolic ((System (DBM,_))))) as loc
+        ->
+          if kvm then A_DBM
+          else Warn.fatal "DBM %s while -variant kvm is not active"
               (A.pp_location loc)
       | A.Location_global v
       | A.Location_deref (v,_)
@@ -318,6 +336,15 @@ end = struct
   | (A.Location_deref _,(A.Location_global _|A.Location_reg _))
   | (A.Location_reg _,(A.Location_global _|A.Location_deref _))
     -> false
+
+(* Setting AF and DB *)
+  let is_af a = match a with
+  | Access (W,_,_,_,_,_,A_AF) -> true
+  | _ -> false
+
+  let is_db a = match a with
+  | Access (W,_,_,_,_,_,A_DB) -> true
+  | _ -> false
 
   let compatible_accesses a1 a2 = match a1,a2 with
   | (Access (_,loc1,_,_,_,_,k1)|Amo (loc1,_,_,_,_,_,k1)),

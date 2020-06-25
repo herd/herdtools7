@@ -1022,21 +1022,30 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
 
         let tr_physical = function
           | Virtual ((s,_),idx) -> Physical (s,idx)
-          | _ -> assert false
-        and tr_pte = function
+          | _ -> assert false in
+        let tr_pte = function
           | Virtual ((s,_),_) -> System (PTE,s)
+          | _ -> assert false in
+        let tr_af = function
+          | Virtual ((s,_),_) -> System (AF,s)
+          | _ -> assert false in
+        let tr_db = function
+          | Virtual ((s,_),_) -> System (DB,s)
+          | _ -> assert false in
+        let tr_dbm = function
+          | Virtual ((s,_),_) -> System (DBM,s)
           | _ -> assert false in
 
         let add_val vloc v k =  begin match vloc with
         | V.Val (Symbolic (System (_,s) as a)) -> 
           if C.debug.Debug_herd.mem then begin
-            Printf.printf "add_val PTE: %s\n" s end;
+            Printf.printf "add_val System: %s\n" s end;
           SymbolMap.add a v k
         | V.Val (Symbolic (Physical (s,_) as a)) -> 
           if C.debug.Debug_herd.mem then begin
             Printf.printf "add_val Phys: %s\n" s end;
           SymbolMap.add a v k
-         | V.Val (Symbolic (Virtual ((s,_),_) as a)) -> 
+        | V.Val (Symbolic (Virtual ((s,_),_) as a)) -> 
            if C.debug.Debug_herd.mem then begin
              Printf.printf "add_val Virt: %s\n" s end;
            SymbolMap.add a v k
@@ -1073,7 +1082,7 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
                 let a_sym = tr_sym a in
                 begin match a with
                 | Physical _ -> (A.Location_global a_sym,v)::env
-                | System _ -> 
+                | System (PTE,_) -> 
                   if C.debug.Debug_herd.mem then begin
                   Printf.printf "env PTE: %s\n" (A.pp_location (A.Location_global a_sym)) end;
                   let aloc = A.Location_global a_sym in  
@@ -1100,19 +1109,39 @@ end
                        (*jade: this is supposed to be the case where pte_x = phy_y AND pte_x=phy_z in the initial state, which should be a user error*) 
                        else assert false 
                   end 
-                | _ ->
-                  let a_pte = tr_sym (tr_pte a)
-                  and a_phy = tr_sym (tr_physical a) in
-                  let no_phy_dup_env = 
-                  begin match (find_one env (A.Location_global a_phy) []) with
-                  | None,_ -> (A.Location_global a_phy,v)::env
-                  | Some (_,x),nl when (x=V.zero) -> (A.Location_global a_phy,v)::nl  
-                  | _ -> assert false (*jade: case of duplicates assignments to a_phy*)
+                 | System (AF,_) | System (DB,_) | System (DBM,_) -> 
+                  if C.debug.Debug_herd.mem then begin
+                  Printf.printf "env AF/DB/DBM: %s\n" (A.pp_location (A.Location_global a_sym)) end;
+                  let aloc = A.Location_global a_sym in  
+                  begin match (find_one env aloc []) with
+                   | None,_ -> 
+                     if C.debug.Debug_herd.mem then begin
+                       Printf.printf "AF/DB/DBM I aloc,v: %s,%s\n" (A.pp_location aloc) (V.pp_v v) end;
+                     (aloc,v)::env  
+                   | Some(_,af_v),r -> 
+                     if C.debug.Debug_herd.mem then begin
+                       Printf.printf "AF/DB/DBM II aloc,v,af_v: %s,%s,%s\n" (A.pp_location aloc) (V.pp_v v) (V.pp_v af_v) end;
+                      (aloc,v)::r 
+                  end 
+                 | _ ->
+                  let a_pte = tr_sym (tr_pte a) in
+                  let a_af = tr_sym (tr_af a) in
+                  let a_db = tr_sym (tr_db a) in
+                  let a_dbm = tr_sym (tr_dbm a) in
+                  let a_phy = tr_sym (tr_physical a) in
+                  let no_dup_env env x v = 
+                  begin match (find_one env (A.Location_global x) []) with
+                  | None,_ -> (A.Location_global x,v)::env
+                  | Some (_,x),nl when (x=V.zero) -> (A.Location_global x,v)::nl  
+                  | _ -> assert false (*jade: case of duplicates assignments to x*)
                  end in
-                 match (find_one no_phy_dup_env (A.Location_global a_pte) []) with
+                 let env = (no_dup_env env a_af V.one) in  
+                 let env = (no_dup_env env a_db V.one) in  
+                 let env = (no_dup_env env a_dbm V.zero) in  
+                 match (find_one (no_dup_env env a_phy v) (A.Location_global a_pte) []) with
                  | None,_ -> 
-                     (A.Location_global a_pte,a_phy)::no_phy_dup_env   
-                 | Some _,_ -> no_phy_dup_env    
+                     (A.Location_global a_pte,a_phy)::(no_dup_env env a_phy v)  
+                 | Some _,_ -> (no_dup_env env a_phy v)   
                 end)
               k rem in 
          env
