@@ -280,6 +280,8 @@ module Make
               "SPEC", is_spec;
               "EXEC", (fun e -> not (is_spec e));
               "AMO",E.is_amo;
+              "AF",E.is_af;
+              "DB",E.is_db;
               "I", E.is_mem_store_init;
               "IW", E.is_mem_store_init;
               "FW",

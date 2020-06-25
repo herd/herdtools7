@@ -220,6 +220,10 @@ end = struct
   | Access (_,A.Location_reg (q,_),_,_,_,_) -> p = q
   | _ -> false
 
+(* Setting AF and DB *)
+  let is_af _ = false
+  let is_db _ = false
+
 
 (* Store/Load anywhere *)
   let is_store a = match a with
