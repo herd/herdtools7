@@ -1,0 +1,14 @@
+AArch64 coRR-MemTag2
+{
+uint16_t x=0x0102;
+0:X0=x:red;
+1:X0=x:red;
+1:X3=x:red;
+}
+P0                  | P1         ;
+L0: LDRB W1,[X0,#1] | STG X3,[X0];
+L1: LDRH W2,[X0]    |            ;
+locations [0:X1; 0:X2;]
+exists(~fault(P0:L0,x) /\ fault(P0:L1,x))
+
+(* Memory reads by P0 overlap *)
