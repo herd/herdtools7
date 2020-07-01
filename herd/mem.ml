@@ -167,17 +167,15 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       let _,_,r = E.EventSet.fold build_bd evts (0,n_mem,IMap.empty) in
       r
 
-
+(* Note: events from mem_accesses are not relabeled, as they are not part of final events *)
     let relabel es =
       let n_mem = count_mem es.E.events in
       let map = build_map n_mem es.E.events in
       let relabel_event e =
-        try { e with E.eiid = IMap.find e.E.eiid map }
-        with Not_found -> assert false in
-      let e_fulls = es.E.mem_accesses in (* Those will not be relabelled *)
-      let es = { es with E.mem_accesses = E.EventSet.empty; } in
-      let es = E.map_event_structure relabel_event es in
-      { es with E.mem_accesses = e_fulls; }
+        let id =  e.E.eiid in
+        try { e with E.eiid = IMap.find id map }
+        with Not_found -> assert (E.EventSet.mem e es.E.mem_accesses) ; e in
+       E.map_event_structure relabel_event es
 
 
     let (|*|) = EM.(|*|)

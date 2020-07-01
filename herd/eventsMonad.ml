@@ -941,6 +941,14 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
         | Little -> xas,eqs
         | Big -> List.rev xas,eqs
 
+(* Build mixed size event structure *)
+      let make_mixed es e =
+        { E.empty_event_structure with
+          E.events = es ;
+          E.sca = E.EventSetSet.singleton es;
+          E.mem_accesses = E.EventSet.singleton e;
+          aligned = [e,es]; }
+
       let read_mixed is_data sz mk_act a ii =
         fun eiid ->
           let eas,a_eqs = byte_eas sz a in
@@ -960,11 +968,7 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
             { E.eiid=eiid.id; E.subid=eiid.sub; E.iiid = Some ii;
               E.action = mk_act sz (A.Location_global a) v; } in
           let st =
-            { E.empty_event_structure with
-              E.events = es;
-              E.data_ports = if is_data then es else E.EventSet.empty;
-              E.sca = E.EventSetSet.singleton es;
-              E.mem_accesses = E.EventSet.singleton e_full;} in
+            { (make_mixed es e_full) with  E.data_ports = if is_data then es else E.EventSet.empty; } in
           bump_eid eiid,(Evt.singleton (v,a_eqs@v_eqs,st),None)
 
       let write_mixed sz mk_act a v ii =
@@ -983,11 +987,7 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
           let e_full =
             { E.eiid=eiid.id; E.subid=eiid.sub; E.iiid = Some ii;
               E.action = mk_act sz (A.Location_global a) v; } in
-          let st =
-            { E.empty_event_structure with
-              E.events = es;
-              E.sca = E.EventSetSet.singleton es;
-              E.mem_accesses = E.EventSet.singleton e_full;} in
+          let st = make_mixed es e_full in
           bump_eid eiid,(Evt.singleton ((),a_eqs@v_eqs,st),None)
 
       let is_tagloc a = A.V.check_atag a

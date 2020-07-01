@@ -517,7 +517,7 @@ let remove_spec_from_map es m =
           let a = Misc.as_some (E.global_loc_of e)
           and sz_e = E.get_mem_size e in
           match a with
-          | A.V.Val (Symbolic ((s,_),idx)) ->
+          | A.V.Val (Constant.Symbolic ((s,_),idx)) ->
               let sz_s =
                 A.look_size sz s in
                 (List.mem idx (MachSize.get_off sz_s sz_e))
