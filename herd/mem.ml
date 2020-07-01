@@ -1448,20 +1448,17 @@ let match_reg_events es =
           loc_mems
       end
 
+     let check_event_aligned test e =
+          let a = Misc.as_some (E.global_loc_of e) in
+          if not (U.is_aligned (S.size_env test) e) then
+             Printf.printf "UNALIGNED: %s\n" (E.pp_action e);
+             Warn.user_error "Unaligned or out-of-bound access: %s"
+                  (A.V.pp_v a)
+
     let check_aligned test es =
       let open Constant in
       E.EventSet.iter
-        (fun e ->
-          let a = Misc.as_some (E.global_loc_of e)
-          and sz_e = E.get_mem_size e in
-          match a with
-          | V.Val (Symbolic ((s,_),idx)) ->
-              let sz_s =
-                A.look_size (S.size_env test) s in
-              if not (List.mem idx (MachSize.get_off sz_s sz_e)) then
-                Warn.user_error "Non aligned or out-of-bound access: %s"
-                  (A.V.pp_v a)
-          | _ -> assert false)
+        (fun e -> check_event_aligned test e)
         es.E.mem_accesses
 
     let calculate_rf_with_cnstrnts test es cs kont kont_loop res =

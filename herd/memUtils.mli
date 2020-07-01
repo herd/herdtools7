@@ -144,5 +144,8 @@ NOTICE: The generator takes care of placing stores to final state
 (* Assumes complete uniproc and hence may fail (because of Init in rfmap *)
   val compute_pco : S.rfmap -> S.event_rel -> S.event_rel option
 
+(* Alignment check *)
+val is_aligned : S.A.size_env -> S.event -> bool
+
 end
 

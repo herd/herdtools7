@@ -512,4 +512,15 @@ let remove_spec_from_map es m =
         | _  -> LocEnv.add loc es k)
      m LocEnv.empty
 
+(* Alignment check *)
+     let is_aligned sz e =
+          let a = Misc.as_some (E.global_loc_of e)
+          and sz_e = E.get_mem_size e in
+          match a with
+          | A.V.Val (Symbolic ((s,_),idx)) ->
+              let sz_s =
+                A.look_size sz s in
+                (List.mem idx (MachSize.get_off sz_s sz_e))
+          | _ -> assert false
+
 end

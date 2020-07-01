@@ -259,6 +259,7 @@ module Make
               "SPEC", is_spec;
               "EXEC", (fun e -> not (is_spec e));
               "AMO",E.is_amo;
+              "ALIGN", (fun e -> U.is_aligned (S.size_env test) e);
               "I", E.is_mem_store_init;
               "IW", E.is_mem_store_init;
               "FW",
