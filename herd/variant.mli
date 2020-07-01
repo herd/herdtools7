@@ -30,6 +30,7 @@ type t =
   | WeakPredicated (* "Weak" predicated instructions, not performing non-selected events, aarch64 *)
 (* Mixed size *)
   | Mixed
+  | Unaligned
  (* Do not check (and reject early) mixed size tests in non-mixed-size mode *)
   | DontCheckMixed
   | MemTag           (* Memory Tagging *)
