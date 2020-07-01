@@ -1012,7 +1012,6 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
         env
 
       let initwrites_non_mixed env _ =
-        let env = if memtag then add_inittags env else env in
         fun eiid ->
           let eiid,es =
             List.fold_left
@@ -1030,7 +1029,16 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
           eiid,
           (Evt.singleton ((),[],do_trivial es),None)
 
+      let debug_env env =
+        String.concat "; "
+          (List.map
+             (fun (loc,v) -> A.pp_location loc ^ " -> " ^ A.V.pp_v v)
+             env)
+
       let initwrites_mixed env size_env =
+        if dbg then begin
+          Printf.eprintf "Env is: [%s]\n" (debug_env env)
+        end ;
         fun eiid ->
           try
             let eiid,es,sca =
@@ -1038,7 +1046,9 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
                 (fun (eiid,es,sca) (loc,v) ->
                   match loc with
                   | A.Location_global
-                      (A.V.Val (Constant.Symbolic ((s,_),0)) as a) ->
+                      (A.V.Val (Constant.Symbolic ((s,_),0)) as a)
+                      when not (Misc.check_atag s) ->
+ (* Suffix encoding of tag addresses, sufficient for now *)
                         let sz = A.look_size size_env s in
                         let ds = AM.explode sz v
                         and eas = AM.byte_eas sz a in
@@ -1063,7 +1073,6 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
                        E.EventSetSet.add (E.EventSet.singleton ew) sca))
                 (eiid,[],E.EventSetSet.empty) env in
             let es = E.EventSet.of_list es in
-
             if dbg then begin
               Printf.eprintf "Init writes %a\n" E.debug_events es
             end ;
@@ -1075,8 +1084,9 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
           with
           | V.Undetermined -> assert false
 
-      let do_initwrites =
-        if A.is_mixed then initwrites_mixed else initwrites_non_mixed
+      let do_initwrites env =
+        let env = if memtag then add_inittags env else env in
+        (if A.is_mixed then initwrites_mixed else initwrites_non_mixed) env
 
       let t2code : 'a t -> 'a code
           = fun m -> fun (poi,eiid) ->

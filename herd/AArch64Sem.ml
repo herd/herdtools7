@@ -172,7 +172,6 @@ module Make
 (* Old read_mem that returns value read *)
       let old_do_read_mem sz an a ii =
         if mixed then begin
-          assert (not memtag) ;
           Mixed.read_mixed false sz (fun sz -> mk_read sz an) a ii
         end else
           M.read_loc false (mk_read sz an) (A.Location_global a) ii
@@ -192,7 +191,6 @@ module Make
 (* Write *)
       let do_write_mem sz an a v ii =
         if mixed then begin
-          assert (not memtag) ;
           Mixed.write_mixed sz (fun sz -> mk_write sz an) a v ii
         end else write_loc sz an (A.Location_global a) v ii
 
@@ -204,7 +202,6 @@ module Make
 (* Write atomic *)
       let write_mem_atomic an sz a v resa ii =
         if mixed then begin
-          assert (not memtag) ;
           (M. assign a resa >>|
            Mixed.write_mixed sz (fun sz -> mk_write sz an)  a v ii) >>! ()
         end else
