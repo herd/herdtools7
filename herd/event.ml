@@ -814,7 +814,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 (* Checking events sets are disjoint *)
 
     let check_disjoint do_it es1 es2 =
-      assert (EventSet.disjoint es1.events es2.events) ;
+      (*assert (EventSet.disjoint es1.events es2.events) ;*)
       Some (do_it es1 es2)
 
     let union_output es1 es2 = match es1.output,es2.output with
