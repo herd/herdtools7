@@ -309,7 +309,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         | Some (code,seen) -> add_code proc seen code
 
       and next_instr proc seen addr nexts b = match b with
-      | S.B.Exit -> tooFar := true ; EM.tooFarcode ""
+      | S.B.Exit -> tooFar := true ; EM.unitcodeT ()
       | S.B.Next -> add_code proc seen nexts
       | S.B.Jump lbl ->
           add_lbl proc seen addr lbl
