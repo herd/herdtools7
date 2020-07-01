@@ -132,6 +132,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
     let dbg = C.debug.Debug_herd.mem
     let mixed = C.variant Variant.Mixed
+    let unaligned = C.variant Variant.Unaligned
     let memtag = C.variant Variant.MemTag
         (* default is checking *)
     let check_mixed =  not (C.variant Variant.DontCheckMixed)
@@ -1484,7 +1485,7 @@ let match_reg_events es =
    entails a tremendous runtime penalty. *)
                   when_unsolved test es rfm cs kont_loop res
               | _ ->
-                  if mixed then check_aligned test es ;
+                  if (mixed && not unaligned) then check_aligned test es ;
                   if A.reject_mixed && not (mixed || memtag) then check_sizes es ;
                   if C.debug.Debug_herd.solver && C.verbose > 0 then begin
                     let module PP = Pretty.Make(S) in
