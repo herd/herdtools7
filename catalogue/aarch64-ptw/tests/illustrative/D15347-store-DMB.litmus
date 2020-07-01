@@ -1,0 +1,15 @@
+AArch64 D15347-store-DMB
+{
+pte_x=0; (*invalid*)
+0:X2=pte_x;
+0:X1=phy_y; 
+0:X4=1;
+0:X3=x;
+}
+P0         ;
+STR X1,[X2];
+DMB ISH    ;
+L0:STR X4,[X3];
+exists(fault(P0:L0,x))
+(* Non-ETS: Fault Allowed
+   ETS: Fault Forbidden *)

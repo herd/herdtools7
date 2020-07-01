@@ -1,0 +1,8 @@
+AArch64 LDR-AF0 
+{
+0:X3=x;
+af_x=0;
+}
+P0         ;
+L0:LDR X4,[X3];
+exists(fault(P0:L0,x))

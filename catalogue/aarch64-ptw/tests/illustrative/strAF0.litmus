@@ -1,0 +1,9 @@
+AArch64 STR-AF0 
+{
+0:X3=x;
+af_x=0;
+}
+P0            ;
+MOV X4,#1     ;
+L0:STR X4,[X3];
+exists(fault(P0:L0,x))
