@@ -1,0 +1,19 @@
+AArch64 D15347-load-shoot
+{
+pte_x=0; (*invalid*)
+0:X2=pte_x;
+0:X1=phy_y; 
+0:X3=x;
+y=1;
+}
+P0              ;
+STR X1,[X2]     ;
+DSB ISH         ;
+TLBI VAAE1IS,X2 ; 
+DSB ISH         ;
+L0:LDR X4,[X3]  ;
+exists(fault(P0:L0,x))
+(*
+Non-ETS: Forbid
+ETS: Forbid
+*)

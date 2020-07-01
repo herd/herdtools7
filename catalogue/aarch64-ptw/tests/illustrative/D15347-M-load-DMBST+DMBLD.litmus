@@ -1,0 +1,20 @@
+AArch64 D15347-M-load-DMBST+DMBLD
+{
+pte_x=0; (*invalid*)
+0:X2=pte_x;
+0:X1=phy_y; 
+1:X3=x;
+y=1;
+0:X8=z; 
+1:X8=z;
+}
+P0          | P1;
+STR X1,[X2] | LDR X7,[X8]   ;
+DMB ST      | DMB LD        ;
+MOV X7,#1   | L0:LDR X4,[X3];
+STR X7,[X8] |               ;
+exists(1:X7=1 /\ fault(P1:L0,x))
+(*
+Non-ETS: Allowed
+ETS: Forbidden
+*)

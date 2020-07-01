@@ -1179,7 +1179,7 @@ $(function () {
     }
 
     if (typeof record === 'undefined') {
-        record = 'aarch64';
+        record = 'aarch64-ptw';
     }
     readRecord(record, displayName, compatNum, bellString, catString, cfgString, litmusString, campaignCode);
     current_dot_name = null;
