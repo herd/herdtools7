@@ -1,0 +1,14 @@
+AArch64 coRR-pte3
+{
+0:X1=x;
+0:X3=x;
+1:X3=pte_x;
+1:X4=phy_y;
+y=1;
+}
+P0          | P1          ;
+LDR X2,[X1] | STR X4, [X3];
+LDR X4,[X3] |             ;
+exists(0:X2=1 /\ 0:X4=0)
+(*Allowed*)
+
