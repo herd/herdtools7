@@ -1,0 +1,21 @@
+AArch64 D15347-M-store-shoot+data
+{
+pte_x=0; (*invalid*)
+0:X2=pte_x;
+0:X1=phy_y; 
+1:X3=x;
+0:X8=z; 
+1:X8=z;
+}
+P0              | P1;
+STR X1,[X2]     | LDR X7,[X8]           ;
+DSB ISH         | EOR X4,X7,X7          ;
+TLBI VAAE1IS,X2 | ADD X4,X4,#1          ;
+DSB ISH         | L0:STR X4,[X3]        ;
+MOV X7,#1       |                       ;
+STR X7,[X8]     |                       ;
+exists(1:X7=1 /\ fault(P1:L0,x))
+(*
+Non-ETS: Forbid
+ETS: Forbid
+*)

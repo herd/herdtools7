@@ -1,0 +1,8 @@
+AArch64 LDR-invalid-pte 
+{
+pte_x=0; (*invalid*)
+0:X3=x;
+}
+P0         ;
+L0:LDR X4,[X3];
+exists(fault(P0:L0,x))

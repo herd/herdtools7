@@ -1,0 +1,12 @@
+AArch64 VIS7+SY
+
+{x=1; y=2; 0:X1=x; 0:X2=pte_y; 0:X3=pte_x;}
+
+ P0          ;
+ LDR X5,[X2] ;
+ STR X5,[X3] ;
+ DSB SY      ;
+ LDR W4,[X1] ;
+
+exists (0:X4=1)
+(*Allowed*)
