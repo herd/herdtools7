@@ -5,7 +5,7 @@
 
 set -o errexit
 
-if ! git branch | grep "^\* master$" >/dev/null
+if ! git branch | grep -e "^\* master$" -e "^\* release" >/dev/null
 then
   echo "Cowardly refusing to publish from branch other than master."
   exit 1
