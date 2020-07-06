@@ -65,9 +65,7 @@ module Make
         | V32 -> fun v -> M.op1 (Op.Mask MachSize.Word) v >>= m
         | V64 -> m
 
-      let flip_flag v = M.op Op.Xor v V.one
       let is_zero v = M.op Op.Eq v V.zero
-      let is_not_zero v = M.op Op.Ne v V.zero
       
 (* Ordinary access action *)
       let access_ord d loc v ac = Act.Access (d,loc,v,AArch64.N,AArch64.Exp,quad,ac)

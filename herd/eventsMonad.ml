@@ -1225,9 +1225,8 @@ end
           with
           | V.Undetermined -> assert false
 
-      let do_initwrites env =
-        let env = if memtag then add_inittags env else env in
-        (if A.is_mixed then initwrites_mixed else initwrites_non_mixed) env
+      let do_initwrites =
+        if A.is_mixed then initwrites_mixed else initwrites_non_mixed
 
       let t2code : 'a t -> 'a code
           = fun m -> fun (poi,eiid) ->
