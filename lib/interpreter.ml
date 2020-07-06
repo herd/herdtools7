@@ -749,25 +749,6 @@ module Make
       | _ -> false
 
 
-(* Get an instruction location *)
-    let _get_instr_loc = function
-      | Let (loc , _)
-      | Rec (loc , _ , _)
-      | InsMatch (loc , _ , _ , _)
-      | UnShow (loc , _)
-      | Show (loc , _)
-      | ShowAs (loc , _ , _)
-      | Include (loc , _)
-      | Procedure (loc , _, _ , _ , _)
-      | Call (loc , _, _ , _ )
-      | Enum (loc , _, _)
-      | Forall (loc , _, _ , _)
-      | Debug (loc , _)
-      | WithFrom (loc , _, _)
-      | Events (loc , _,_ , _)
-      | Test ((loc,_,_,_,_),_)
-        -> loc
-
 (* Get an expression location *)
 
     let get_loc = function

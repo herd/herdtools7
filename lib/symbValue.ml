@@ -268,13 +268,13 @@ module Make(Cst:Constant.S) = struct
   let op_pteloc (a,_) = Symbolic (System (PTE,a))
   let pteloc = op_pte_tlb "pteloc" op_pteloc
 
-  let op_afloc (a,_) = Symbolic (System (AF,a))
+  let op_afloc (a,_) = Symbolic (System (Constant.AF,a))
   let afloc = op_pte_tlb "afloc" op_afloc
 
-  let op_dbloc (a,_) = Symbolic (System (DB,a))
+  let op_dbloc (a,_) = Symbolic (System (Constant.DB,a))
   let dbloc = op_pte_tlb "dbloc" op_dbloc
 
-  let op_dbmloc (a,_) = Symbolic (System (DBM,a))
+  let op_dbmloc (a,_) = Symbolic (System (Constant.DBM,a))
   let dbmloc = op_pte_tlb "dbmloc" op_dbmloc
 
   let op_tlbloc (a,_) = Symbolic (System (TLB,a))
