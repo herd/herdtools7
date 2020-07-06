@@ -241,8 +241,8 @@ end = struct
   let is_additional_mem _ = false
 
   let is_atomic a = match a with
-  | Access (_,_,_,_,annot,_,_) ->
-      is_mem a && A.is_atomic annot
+  | Access (_,_,_,a1,a2,_,_) ->
+      is_mem a && (A.is_atomic a1 || A.is_atomic a2)
   | _ -> false
 
   let is_tag = function
