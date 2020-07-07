@@ -1268,7 +1268,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
             (fun m evts -> (* evts = all events from one instruction.. *)
               if
                 PC.withbox &&
-                show_all_events
+                (show_all_events || not (E.EventSet.is_singleton evts))
               then begin
                 let pp_ins =
                   if PC.labelbox then
