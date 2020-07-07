@@ -1,0 +1,12 @@
+AArch64 MP+dmb.stTT+addr
+"DMB.STdWWTT RfeTP DpAddrdR FrePT"
+{
+0:X0=B:red; 0:X2=B:green; 0:X1=A:red; 0:X3=A:green;
+1:X1=A:red; 1:X4=B:red;
+}
+ P0          | P1                      ;
+ STG X0,[X2] | L3: LDR W5,[X1]         ;
+ DMB ST      | EOR W5,W5,W5            ;
+ STG X1,[X3] | L4: LDR W6,[X4,W5,SXTW] ;
+locations[A;B;1:X5;1:X6;]
+exists (~(fault(P1:L3,A)) /\ fault(P1:L4,B))

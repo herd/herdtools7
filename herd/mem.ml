@@ -602,6 +602,7 @@ let match_reg_events es =
    - Compatible location.
    - Not after in program order
     (suppressed when uniproc is not optmised early) *)
+
     let map_load_possible_stores es loads stores compat_locs =
       let m =
         E.EventSet.fold
@@ -655,6 +656,10 @@ let match_reg_events es =
 (* Add memory events to rfmap *)
     let add_mem =
       List.fold_right2
+        (fun er rf -> S.RFMap.add (S.Load er) rf)
+
+    let add_some_mem =
+      List.fold_right2
         (fun er rf ->  match rf with
         | None -> fun rfm -> rfm
         | Some rf -> S.RFMap.add (S.Load er) rf)
@@ -695,7 +700,7 @@ let match_reg_events es =
             | VC.NoSolns -> res
             | VC.Maybe (sol,cs) ->
                 (* Time to complete rfmap *)
-                let rfm = add_mem loads stores rfm in
+                let rfm = add_some_mem loads stores rfm in
                 (* And to make everything concrete *)
                 let es = E.simplify_vars_in_event_structure sol es
                 and rfm = S.simplify_vars_in_rfmap sol rfm in
@@ -705,7 +710,7 @@ let match_reg_events es =
               if C.debug.Debug_herd.top then begin
                 eprintf "Exception: %s\n%!" (Printexc.to_string e) ;
                 let module PP = Pretty.Make(S) in
-                let rfm = add_mem loads stores rfm in
+                let rfm = add_some_mem loads stores rfm in
                 PP.show_es_rfm test es rfm
               end ;
               raise e
@@ -918,44 +923,62 @@ let match_reg_events es =
       end ;
       ms
 
+(* Non-mixed pairing for tags, if any *)
+    let pair_tags es =
+      let tags = E.EventSet.filter E.is_tag es.E.events in
+      let loads = E.EventSet.filter E.is_load tags
+      and stores = E.EventSet.filter E.is_store tags in
+      let m =
+        map_load_possible_stores es loads stores compatible_locs_mem in
+      m
 
     let solve_mem_mixed test es rfm cns kont res =
+      let match_tags = pair_tags es in
+      let tag_loads,tag_possible_stores = List.split match_tags in
       let ms = expose_scas es in
       let rss,wsss = List.split ms in
       (* Cross product fold. Probably an overkill here *)
       Misc.fold_cross wsss
         (fun wss res ->
-          try
-            (* Add constraints now *)
-            let cns =
-              List.fold_right2
-                (fun rs ws eqs ->
-                  List.fold_right2
-                    (fun r w eqs ->
-                      assert (E.same_location r w) ;
-                      add_eq (get_read r) (get_written w) eqs)
-                    rs ws eqs)
-                rss wss cns in
-            (* And solve *)
-            match VC.solve cns with
-            | VC.NoSolns -> res
-            | VC.Maybe (sol,cs) ->
-                (* Time to complete rfmap *)
-                let rfm = add_mems rss wss rfm in
-                (* And to make everything concrete *)
-                let es = E.simplify_vars_in_event_structure sol es
-                and rfm = S.simplify_vars_in_rfmap sol rfm in
-                kont es rfm cs res
-          with Contradiction -> res  (* can be raised by add_mem_eqs *)
-          | e ->
-              if C.debug.Debug_herd.top then begin
-                eprintf "Exception: %s\n%!" (Printexc.to_string e) ;
-                let module PP = Pretty.Make(S) in
-                let rfm = add_mems rss wss rfm in
-                PP.show_es_rfm test es rfm
-              end ;
-              raise e
-        )
+          (* Add memory constraints now *)
+          let cns =
+            List.fold_right2
+              (fun rs ws eqs ->
+                List.fold_right2
+                  (fun r w eqs ->
+                    assert (E.same_location r w) ;
+                    add_eq (get_read r) (get_written w) eqs)
+                  rs ws eqs)
+              rss wss cns in
+          Misc.fold_cross tag_possible_stores
+            (fun tag_stores res ->
+              (* Add tag memory constraints *)
+              let cns =
+                List.fold_right2
+                  (fun load store k -> add_mem_eqs test store load k)
+                  tag_loads tag_stores cns in
+              try
+                (* And solve *)
+                match VC.solve cns with
+                | VC.NoSolns -> res
+                | VC.Maybe (sol,cs) ->
+                    (* Time to complete rfmap *)
+                    let rfm = add_mems rss wss rfm in
+                    let rfm = add_mem tag_loads tag_stores rfm in
+                    (* And to make everything concrete *)
+                    let es = E.simplify_vars_in_event_structure sol es
+                    and rfm = S.simplify_vars_in_rfmap sol rfm in
+                    kont es rfm cs res
+              with Contradiction -> res  (* can be raised by add_mem_eqs *)
+              | e ->
+                  if C.debug.Debug_herd.top then begin
+                    eprintf "Exception: %s\n%!" (Printexc.to_string e) ;
+                    let module PP = Pretty.Make(S) in
+                    let rfm = add_mems rss wss rfm in
+                    PP.show_es_rfm test es rfm
+                  end ;
+                  raise e)
+            res)
         res
 
     let solve_mem test es rfm cns kont res =

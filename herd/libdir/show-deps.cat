@@ -5,3 +5,6 @@ show ctrlisb
 show isb \ ctrlisb as isb
 show ctrl \ ctrlisb as ctrl
 
+(* Show same-tag-loc without id edges *)
+show same-tag-loc\id as same-tag-loc
+

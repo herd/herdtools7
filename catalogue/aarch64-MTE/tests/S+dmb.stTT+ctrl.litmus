@@ -1,0 +1,13 @@
+AArch64 S+dmb.stTT+ctrl
+{
+0:X0=B:red; 0:X1=B:green; 0:X2=A:red; 0:X3=A:green;
+1:X1=A:red; 1:X3=B:red;
+}
+ P0          | P1               ;
+ STG X0,[X1] | L3: LDR W0,[X1]  ;
+ DMB ST      | CBNZ W0,LC00     ;
+ STG X2,[X3] | MOV W2,#1        ; 
+             | L4: STR W2,[X3]  ;
+             | LC00:            ;      
+locations[A;B;1:X0;1:X2;]
+exists ~(fault(P1:L3,A)) /\ fault(P1:L4,B)

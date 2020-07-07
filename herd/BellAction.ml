@@ -107,6 +107,8 @@ end = struct
   | Access (_,A.Location_global _,_,_,_,_)   -> true
   | _ -> false
 
+(* None of those below *)
+  let is_tag _ = false
   let is_additional_mem _ = false
 
   let is_atomic a = match a with
