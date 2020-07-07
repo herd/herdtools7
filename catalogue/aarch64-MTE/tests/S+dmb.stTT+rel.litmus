@@ -1,0 +1,12 @@
+AArch64 S+dmb.stTT+rel
+"DMB.STdWWTT RfeTP PodRWPL CoeLT"
+{
+0:X0=x:red; 0:X1=x:green; 0:X2=y:red; 0:X3=y:green;
+1:X1=y:red; 1:X3=x:green;
+}
+ P0          | P1               ;
+ STG X0,[X1] | L3: LDR W0,[X1]  ;
+ DMB ST      | MOV W2,#1        ;
+ STG X2,[X3] | L4: STLR W2,[X3] ;
+locations[x;y;1:X0;1:X2;]
+exists ~(fault(P1:L3,y) \/ fault(P1:L4,x))
