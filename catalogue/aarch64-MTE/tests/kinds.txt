@@ -1,0 +1,7 @@
+MP+dmb.stPT+addr Forbidden
+MP+dmb.stTT+addr Forbidden
+S+dmb.stTT+addr Forbidden
+S+dmb.stTT+data Allowed
+S+dmb.stTT+ctrl Allowed
+S+dmb.stTT+rel Allowed
+R+dmb.stTT+rel-acq Allowed

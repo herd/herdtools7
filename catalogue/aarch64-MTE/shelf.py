@@ -8,9 +8,7 @@ cfgs = [
     "cfgs/web-MTE.cfg",
 ]
 
-illustrative_tests = [    
-    "tests/coRR-MemTag1.litmus",
-    "tests/coRR-MemTag2.litmus",
+illustrative_tests = [
     "tests/MP+dmb.stPT+addr.litmus",
     "tests/MP+dmb.stTT+addr.litmus",
     "tests/R+dmb.stTT+rel-acq.litmus",
