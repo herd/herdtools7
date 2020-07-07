@@ -5,7 +5,7 @@
  * the latest stable version of the Armv8 memory model.
  * If you have comments on the content of this file, please send an email to
  * jade.alglave@arm.com, referring to version number:
- * 9470edab1356b1d824422808bf681d59529e8b91 
+ * 814a6fc1610ec1a24f2cbd178e171966375626ac
  * For a textual version of the model, see section B2.3 of the Armv8 ARM:
  *   https://developer.arm.com/docs/ddi0487/latest/arm-architecture-reference-manual-armv8-for-armv8-a-architecture-profile
  *
