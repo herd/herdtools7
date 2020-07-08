@@ -1176,8 +1176,7 @@ end
 
       let initwrites_non_mixed env _ =
         let env =
-          if memtag then add_inittags env
-          else if kvm then add_initpte env
+          if kvm then add_initpte env
           else env in
         fun eiid ->
           let eiid,es =
@@ -1215,9 +1214,7 @@ end
                   match loc with
                   | A.Location_global
                       (A.V.Val
-                         (Symbolic (Virtual ((s,_),0))) as a) 
-                      when not (Misc.check_atag s) ->
- (* Suffix encoding of tag addresses, sufficient for now *)
+                         (Symbolic (Virtual ((s,_),0))) as a) ->
                            let sz = A.look_size size_env s in
                            let ds = AM.explode sz v
                            and eas = AM.byte_eas sz a in
@@ -1253,8 +1250,10 @@ end
           with
           | V.Undetermined -> assert false
 
-      let do_initwrites =
-        if A.is_mixed then initwrites_mixed else initwrites_non_mixed
+      let do_initwrites env =
+        let env = if memtag then add_inittags env else env in
+        (if A.is_mixed then initwrites_mixed
+        else initwrites_non_mixed) env
 
       let t2code : 'a t -> 'a code
           = fun m -> fun (poi,eiid) ->
