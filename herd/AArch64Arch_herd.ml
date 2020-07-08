@@ -17,6 +17,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
   struct
     include AArch64Base
 
+    let is_kvm = C.variant Variant.Kvm
+
     let is_amo _ = false
     let pp_barrier_short = pp_barrier
     let reject_mixed = true
@@ -104,7 +106,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | NoRet -> "NoRet"
       | T -> "Tag"
       | S -> "^s"
-      | Exp -> "Exp"
+      | Exp -> if is_kvm then "Exp" else ""
       | NExp -> "NExp"
 
     module V = V
