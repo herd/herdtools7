@@ -296,7 +296,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             Some (tgt,seen)
         in if dbg then eprintf "fetch: %s %s\n" lbl (match r with None -> "None" | Some _ -> "Some"); r in
 
-      let rec add_next_instr proc seen addr inst nexts =
+      let rec add_next_instr re_exec proc seen addr inst nexts =
         let wrap poi =
           (let ii =
             { A.program_order_index = poi;
@@ -304,20 +304,26 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
               labels = labels_of_instr addr; }
           in SM.build_semantics ii) in
         wrap >>> fun branch ->
-          next_instr proc seen addr nexts branch
+          next_instr re_exec inst proc seen addr nexts branch
 
       and add_code proc seen nexts = match nexts with
-      | [] -> EM.unitcodeT ()
+      | [] -> EM.unitcodeT true
       | (addr,inst)::nexts ->
-          add_next_instr proc seen addr inst nexts
+          add_next_instr false proc seen addr inst nexts
 
       and add_lbl proc seen addr_jmp lbl =
         match fetch_code seen addr_jmp lbl with
-        | None -> tooFar := true ; EM.tooFarcode lbl
+        | None -> tooFar := true ; EM.tooFarcode lbl true
         | Some (code,seen) -> add_code proc seen code
 
-      and next_instr proc seen addr nexts b = match b with
-      | S.B.Exit -> tooFar := true ; EM.unitcodeT ()
+      and next_instr re_exec inst proc seen addr nexts b = match b with
+      | S.B.Exit -> tooFar := true ; EM.unitcodeT true
+      | S.B.ReExec ->
+          if re_exec then begin
+            tooFar := true ;
+            EM.unitcodeT false
+          end else
+            add_next_instr true proc seen addr inst nexts
       | S.B.Next -> add_code proc seen nexts
       | S.B.Jump lbl ->
           add_lbl proc seen addr lbl
@@ -326,6 +332,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             (add_lbl proc seen addr lbl)
             (add_code proc seen nexts) in
 
+(* Code monad returns a boolean. When false the code must be discarded.
+   See also add_instr in eventsMonad.ml *)
       let jump_start proc code =
         add_code proc Imap.empty code in
 
