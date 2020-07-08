@@ -93,22 +93,18 @@ type 'scalar t =
   | Tag of string
 
 let do_mk_sym sym = match Misc.tr_pte sym with
-| Some s -> 
-      (*Printf.printf "PTE: %s\n" s;*)
-    System (PTE,s)
-| None -> match Misc.tr_af sym with
-  | Some s -> System(AF,s)
-  | None -> match Misc.tr_db sym with
-    | Some s -> System(DB,s)
-    | None -> match Misc.tr_dbm sym with 
-      | Some s -> System(DBM,s)
-      | None -> match Misc.tr_physical sym with
-        | Some s -> 
-            (*Printf.printf "PHYS: %s\n" s;*)
-          Physical (s,0)
-        | None -> 
-            (*Printf.printf "VIRT: %s\n" sym;*)
-          Virtual ((sym,None),0)
+| Some s -> System (PTE,s)
+| None -> match Misc.tr_atag sym with
+  | Some s -> System (TAG,s)
+  | None ->  match Misc.tr_af sym with
+    | Some s -> System(AF,s)
+    | None -> match Misc.tr_db sym with
+      | Some s -> System(DB,s)
+      | None -> match Misc.tr_dbm sym with
+        | Some s -> System(DBM,s)
+        | None -> match Misc.tr_physical sym with
+          | Some s -> Physical (s,0)
+          | None -> Virtual ((sym,None),0)
 
 let mk_sym s = Symbolic (do_mk_sym s)
 

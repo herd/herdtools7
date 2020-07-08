@@ -706,7 +706,7 @@ let add_atag = sprintf "%s.atag"
 and check_atag s = Filename.check_suffix s ".atag"
 let tr_atag s =
   if check_atag s then
-    Some (Filename.chop_suffix ".atag" s)
+    Some (Filename.chop_suffix s ".atag")
   else None
 
 let do_tr prf =
