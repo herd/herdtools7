@@ -131,6 +131,9 @@ let is_virtual v = match v with
 | Symbolic (Virtual _) -> true
 | _ -> false
 
+let as_virtual v = match v with
+| Symbolic (Virtual ((s,_),_)) -> Some s
+| _ -> None
 
 module type S =  sig
 

@@ -68,6 +68,7 @@ module type S =
       val is_zero : v -> bool
       val is_one : v -> bool
       val is_virtual : v -> bool
+      val as_virtual : v -> string option
 
       val op1 : Op.op1 -> v -> v
       val op : Op.op -> v -> v -> v

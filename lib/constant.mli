@@ -55,6 +55,7 @@ val default_tag : 'scalar t
 val check_sym : 'a t -> 'b t
 
 val is_virtual : 'a t -> bool
+val as_virtual : 'a t -> string option
 
 module type S =  sig
 

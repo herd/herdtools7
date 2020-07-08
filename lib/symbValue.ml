@@ -284,6 +284,9 @@ module Make(Cst:Constant.S) = struct
   | Val c -> Constant.is_virtual c
   | Var _ -> raise Undetermined
 
+  let as_virtual v = match v with
+  | Val c -> Constant.as_virtual c
+  | Var _ -> raise Undetermined
   let is_virtual_v v =  if is_virtual v then one else zero
 
   let op1 op =
