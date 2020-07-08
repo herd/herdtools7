@@ -246,7 +246,7 @@ end = struct
   | _ -> false
 
   let is_tag = function
-    | Access (_,_,_,_,_,_,A_TAG)
+    | Access (_,_,_,_,_,_,A_TAG) -> true
     | Access _ | Barrier _ | Commit _ | Amo _ | Fault _ | TooFar | Inv _ | DC _ -> false
 
   let is_inv = function
