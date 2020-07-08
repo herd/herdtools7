@@ -1012,7 +1012,12 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
             (fun env a ->
               let atag =  V.op1 Op.TagLoc a in
               if A.VSet.mem atag tag_set then env
-              else (A.Location_global atag,A.V.Val (Constant.default_tag))::env)
+              else begin
+                if dbg then
+                  Printf.eprintf "Tag %s for %s defaulting\n"
+                    (A.V.pp_v atag) (A.V.pp_v a) ;
+                (A.Location_global atag,A.V.Val (Constant.default_tag))::env
+              end)
             env glob in
         env
 
