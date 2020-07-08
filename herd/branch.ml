@@ -32,6 +32,8 @@ module type S = sig
     | CondJump of v * lbl
     (* Stop now *)
     | Exit
+    (* Re-execute instruction *)
+    | ReExec
 
 (* Next instruction in sequence *)
   val nextT : t monad
@@ -40,6 +42,7 @@ module type S = sig
 (* Conditional branch *)
   val bccT : v -> lbl -> t monad
 end
+
 
 module Make(M:Monad.S) = struct
 
@@ -56,6 +59,8 @@ module Make(M:Monad.S) = struct
     | CondJump of v * lbl
     (* Stop now *)
     | Exit
+    (* Re-execute instruction *)
+    | ReExec
 
 (* Utilities *)
 
