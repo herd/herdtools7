@@ -104,6 +104,9 @@ module type S =
     val stu : 'a t -> 'a t -> ('a -> unit t) -> (('a * 'a) -> unit t) -> unit t
     val cseq : 'a t -> ('a -> 'b t) -> 'b t
     type poi = int
+
+    val add_instr :
+        ('b -> bool) -> (poi -> (poi * 'a) t) -> ('a -> 'b code) -> 'b code
     val (>>>) : (poi -> (poi * 'a) t) -> ('a -> 'b code) -> 'b code
     val (>>>>) : 'a t -> ('a -> 'b t) -> 'b t
 
@@ -111,7 +114,7 @@ module type S =
     val (>>|) : 'a t -> 'b t -> ('a * 'b)  t
 
     val (>>::) : 'a t -> 'a list t -> 'a list t
-    val (|*|)   : unit code -> unit code -> unit code   (* Cross product *)
+    val (|*|)   : bool code -> unit code -> unit code   (* Cross product *)
 (*    val lockT : 'a t -> 'a t *)
     val forceT : 'a -> 'b t -> 'a t
     val (>>!) : 'a t -> 'b -> 'b t
@@ -125,8 +128,8 @@ module type S =
 
     val altT : 'a t -> 'a t -> 'a t
 
-    val tooFar : string -> unit t
-    val tooFarcode : string -> 'a code
+    val tooFar : string -> 'a -> 'a t
+    val tooFarcode : string -> 'a -> 'a code
 
         (* read_loc is_data mk_action loc ii
            for each value v that could be read,
