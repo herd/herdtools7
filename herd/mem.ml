@@ -198,9 +198,6 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
 (* All (virtual) locations from init state *)
 
-    let is_virtual_protected v =
-      try V.is_virtual v with V.Undetermined -> assert false
-
     let get_all_locs_init init =
       let locs =
         List.fold_left
@@ -211,7 +208,11 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
               | A.Location_global _ |A.Location_deref _ (*when is_virtual_protected v*) ->loc::locs
               | A.Location_reg _ -> locs in
             let locs =
-              if is_virtual_protected v then  A.Location_global v::locs else locs in
+              match A.V.as_virtual v with
+              | Some s ->
+                  let sym = Symbolic (Virtual ((s,None),0)) in
+                  A.Location_global (A.V.Val sym)::locs
+              | None -> locs in
             locs)
           [] (A.state_to_list init) in
       A.LocSet.of_list locs
