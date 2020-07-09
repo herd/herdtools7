@@ -269,6 +269,8 @@ module Make
         end ;
         all,vs
 
+      type pte_addr = P of string | Z
+
       let get_pte_init =
         if is_pte then
           fun env ->
@@ -277,7 +279,8 @@ module Make
             (fun bd k -> match bd with
             | A.Location_global (G.Pte pte),v ->
                 begin match v with
-                | Symbolic (Physical (phy,0)) -> (pte,phy)::k
+                | Symbolic (Physical (phy,0)) -> (pte,P phy)::k
+                | Concrete z when A.V.Scalar.compare z A.V.Scalar.zero = 0 -> (pte,Z)::k
                 | _ ->
                     Warn.user_error "litmus cannot handle pte initialisation with '%s'"
                       (A.V.pp_v v)
@@ -861,10 +864,14 @@ module Make
             List.iter
               (fun x ->
                 let ok1 = try
-                  let phy = Misc.Simple.assoc x bds in
-                  O.fii
-                    "litmus_set_pte_physical(_vars->pte_%s,_vars->saved_pte_%s);"
-                    x phy ;
+                  begin match Misc.Simple.assoc x bds with
+                  | P phy ->
+                      O.fii
+                        "litmus_set_pte_physical(_vars->pte_%s,_vars->saved_pte_%s);"
+                        x phy ;
+                  | Z ->
+                      O.fii "litmus_set_pte_invalid(_vars->pte_%s);" x
+                  end ;
                   true
                 with Not_found ->false in
                 let ok2 = try

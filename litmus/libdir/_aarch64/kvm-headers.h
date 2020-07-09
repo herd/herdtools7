@@ -38,6 +38,10 @@ static inline void litmus_set_pte_physical(pteval_t *p,pteval_t v) {
   *p = (v & FULL_MASK)|(prev & ~FULL_MASK) ;
 }
 
+static inline void litmus_set_pte_invalid(pteval_t *p) {
+  *p &= ~((pteval_t)1) ;
+}
+
 /* set PTE attributes */
 
 typedef enum
