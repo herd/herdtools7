@@ -103,3 +103,10 @@ static inline void litmus_set_pte_attribute(pteval_t *p,pte_attr_key k) {
     break;
   }
 }
+
+/* Faulty virtual adress in handler */
+inline static void *read_far(void) {
+  void *r ;
+  asm volatile("mrs %0, far_el1": "=r" (r));
+  return r ;
+}

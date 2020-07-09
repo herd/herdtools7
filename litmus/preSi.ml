@@ -92,6 +92,7 @@ module Make
 (*************)
 (* Utilities *)
 (*************)
+
       let have_fault_handler = is_pte && Insert.exists "kvm_fault_handler.c"
 
       module UCfg = struct
@@ -202,16 +203,16 @@ module Make
 
 (* Memory barrier *)
       let dump_mbar_def () =
-          O.o "static int whoami[AVAIL];" ;
-          O.o "" ;
-        if Cfg.is_kvm && have_fault_handler then begin
-          O.o "/* Handle MMU faults */" ;
-          O.o "" ;
-          Insert.insert O.o "kvm_fault_handler.c" ;
-        end ;
         O.o "/* Full memory barrier */" ;
         Insert.insert O.o "mbar.c" ;
         O.o ""
+
+(* Fault handler *)
+      let dump_fault_handler () =
+        if Cfg.is_kvm && have_fault_handler then begin
+          O.o "#define HAVE_FAULT_HANDLER 1" ;
+          Insert.insert O.o "kvm_fault_handler.c" ;
+        end
 
 (* Cache *)
       let dump_cache_def () =
@@ -274,8 +275,13 @@ module Make
           let open Constant in
           List.fold_right
             (fun bd k -> match bd with
-            | A.Location_global (G.Pte pte),Symbolic (Physical (phy,0)) ->
-                (pte,phy)::k
+            | A.Location_global (G.Pte pte),v ->
+                begin match v with
+                | Symbolic (Physical (phy,0)) -> (pte,phy)::k
+                | _ ->
+                    Warn.user_error "litmus cannot handle pte initialisation with '%s'"
+                      (A.V.pp_v v)
+                end
             | _,_ -> k)
             env []
         else fun _ -> []
@@ -395,18 +401,20 @@ module Make
         O.o "" ;
 (* There are some pointers in log *)
         let some_ptr =  U.ptr_in_outs env test in
-        if some_ptr then begin
+        if some_ptr || have_fault_handler then begin
           (* To log actual pointers *)
-          O.o "#define SOME_PTR 1" ;
-          O.o "typedef struct {" ;
-          A.LocSet.iter
-            (fun loc ->
-              let t = U.find_type loc env in
-              if CType.is_ptr t then
-                O.fi "%s %s;"  (CType.dump t) (dump_loc_tag loc))
-            locs ;
-          O.o "} log_ptr_t;" ;
-          O.o "" ;
+          if some_ptr then begin
+            O.o "#define SOME_PTR 1" ;
+            O.o "typedef struct {" ;
+            A.LocSet.iter
+              (fun loc ->
+                let t = U.find_type loc env in
+                if CType.is_ptr t then
+                  O.fi "%s %s;"  (CType.dump t) (dump_loc_tag loc))
+              locs ;
+            O.o "} log_ptr_t;" ;
+            O.o ""
+          end ;
           (* Define indices *)
           List.iteri
             (fun k (a,_) ->
@@ -425,9 +433,7 @@ module Make
           O.o "}" ;
           O.o "" ;
 (* Pretty-print indices *)
-          let naddrs = List.length test.T.globals in
-          O.f "static char *pretty_addr[%i] = {\"0\",%s};"
-            (naddrs+1)
+          O.f "static char *pretty_addr[NVARS+1] = {\"0\",%s};"
             (String.concat ""
                (List.map (fun (s,_) -> sprintf "\"%s\"," s) test.T.globals)) ;
           O.o "" ;
@@ -1293,6 +1299,7 @@ let dump_main_def doc _env test stats =
     let env = U.build_env test in
     let stats = get_stats test in
     let some_ptr = dump_outcomes env test in
+    dump_fault_handler () ;
     dump_cond_def env test ;
     dump_parameters env test ;
     dump_hash_def doc.Name.name env test ;
