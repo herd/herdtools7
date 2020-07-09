@@ -411,7 +411,8 @@ module Make
                 check_ptw dir a ma an ii
                   (mop Act.A_PTE ma >>! B.Next)
                   (fun ma _a -> mop Act.A_PHY ma >>! B.Next)
-                  (fun ma a -> ma >>= fun _ -> mk_fault a ii >>! B.ReExec)
+                  (fun ma a -> ma >>= fun _ -> mk_fault a ii
+                      >>! if C.precision then B.Exit else B.ReExec)
             | ac -> mop ac ma >>! B.Next
         else
           mop Act.A_VIR ma >>! B.Next
