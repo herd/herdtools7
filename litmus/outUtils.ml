@@ -58,6 +58,7 @@ module Make(O:Config)(V:Constant.S) = struct
 
   let dump_v_kvm v = match v with
   | Symbolic (System (PTE,a)) -> sprintf "_vars->%s" (Misc.add_pte a)
+  | Symbolic (Physical (a,0)) -> sprintf "_vars->saved_%s" (Misc.add_pte a)
   | _ -> V.pp_v v
 
   let dump_v = match O. mode with
