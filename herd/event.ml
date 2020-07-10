@@ -260,8 +260,8 @@ val same_instance : event -> event -> bool
 (* Convenience on locations *)
 (****************************)
 
-  val location_compare : event -> event -> int
   val same_location : event -> event -> bool
+  val same_location_with_faults : event -> event -> bool
   val same_value : event -> event -> bool
   val same_PA : event -> event -> bool
 (*  val is_visible_location : A.location -> bool *)
@@ -450,10 +450,6 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     | Some (A.Location_global a) -> Some a
     | _ -> None
 
-    let location_compare e1 e2 = match location_of e1,location_of e2 with
-    | Some loc1,Some loc2 -> A.location_compare loc1 loc2
-    | _,_ -> assert false
-
     let is_PTE_loc e = Act.is_PTE_access e.action 
 
     let is_PA_val e = match value_of e with 
@@ -466,11 +462,16 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       | A.Location_global _|A.Location_deref _ -> true
       | A.Location_reg _ -> false
 *)
-    let same_location e1 e2 =
-      if (location_of e1 = None || location_of e2 = None) then
-        false
-      else
-        location_compare e1 e2 = 0
+    let same_location e1 e2 = match location_of e1,location_of e2 with
+    | (None,_)|(_,None) -> false
+    | Some loc1,Some loc2 -> A.location_compare loc1 loc2 = 0
+
+    let same_location_with_faults e1 e2 = match location_of e1,location_of e2 with
+    | (None,_)|(_,None) -> false
+    | Some loc1,Some loc2 ->
+        if Act.is_fault e1.action || Act.is_fault e2.action then
+          A.same_base_virt loc1 loc2
+        else  A.location_compare loc1 loc2 = 0
 
     let same_value e1 e2 = match value_of e1, value_of e2 with
     | Some v1,Some v2 -> V.compare v1 v2 = 0
