@@ -79,6 +79,8 @@ module type S = sig
   val simplify_vars_in_loc : I.V.solution ->  location -> location
   val map_loc : (v -> v) -> location -> location
 
+  val same_base_virt : location -> location -> bool
+
 (**********)
 (* Faults *)
 (**********)
@@ -294,6 +296,7 @@ module Make(C:Config) (I:I) : S with module I = I
       | Location_global a -> Location_global (fv a)
       | Location_deref (a,idx) -> Location_deref (fv a,idx)
 
+
 (*********)
 (* Fault *)
 (*********)
@@ -304,10 +307,18 @@ module Make(C:Config) (I:I) : S with module I = I
          |I.V.Val (Symbolic (Virtual ((s1,_),_))),
           I.V.Val (Symbolic (Virtual ((s2,_),_))) ->
             Misc.string_eq s1 s2
-         | _,_ -> assert false
+         | _,_ -> false
 
       end
       include Fault.Make(FaultArg)
+
+      let same_base_virt loc1 loc2 =
+        let open Constant in
+        match loc1,loc2 with
+        | (Location_global v1|Location_deref (v1,_)),
+          (Location_global v2|Location_deref (v2,_))
+          -> FaultArg.same_base v1 v2
+      |  _,_ -> false
 
 (************************)
 (* Mixed size utilities *)
