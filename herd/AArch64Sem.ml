@@ -68,7 +68,8 @@ module Make
       let is_zero v = M.op Op.Eq v V.zero
       
 (* Ordinary access action *)
-      let access_ord d loc v ac = Act.Access (d,loc,v,AArch64.N,AArch64.Exp,quad,ac)
+     let access_anexp anexp d loc v ac = Act.Access (d,loc,v,AArch64.N,anexp,quad,ac)
+     let access_ord d loc v ac = access_anexp AArch64.Exp d loc v ac 
 
 (* Basic read, from register *)
       let mk_read sz an anexp loc v =
@@ -154,6 +155,10 @@ module Make
         M.read_loc false
           (fun loc v -> access_ord Dir.R loc v Act.A_TAG)
           (A.Location_global a) ii
+      and do_read_tag_nexp a ii =
+        M.read_loc false
+          (fun loc v -> access_anexp AArch64.NExp Dir.R loc v Act.A_TAG)
+          (A.Location_global a) ii
       and do_write_tag a v ii =
         let loc = A.Location_global a in
         M.mk_singleton_es
@@ -162,11 +167,7 @@ module Make
 
 (* Read tag from memory *)
       let read_tag_mem a ii =
-        M.op1 Op.TagLoc a >>= fun atag -> do_read_tag atag ii
-
-(* For checking tags *)
-      let get_both_tags a ii = tag_extract a >>| read_tag_mem a ii
-      let do_check atag patag = M.op Op.Eq patag atag
+        M.op1 Op.TagLoc a >>= fun atag -> do_read_tag_nexp atag ii
 
 (*******************)
 (* Memory accesses *)
@@ -175,15 +176,7 @@ module Make
 
 (*
   Implementation of accesses depends upon the appropriate variants,
-  NB: for now, mixed and memtag do not combine.
  *)
-
-(* Read *)
-      let check_tags a ii m1 m2 =
-        get_both_tags a ii >>= fun (atag,patag) ->
-        do_check atag patag  >>= fun cond ->
-        commit_pred ii >>*= fun () ->
-        M.choiceT cond m1 m2
 
       let delayed_check_tags ma ii m1 m2 =
         let (++) = M.bind_ctrl_avoid ma in
@@ -191,13 +184,6 @@ module Make
           ma (fun a -> read_tag_mem a ii)
           (fun a tag1 -> tag_extract a  >>= fun tag2 -> M.op Op.Eq tag1 tag2)
           (commit_pred ii)  ++ fun cond ->  M.choiceT cond m1 m2
-
-      let do_checked_read sz an aexp rd a ii =
-        check_tags a ii
-          (loc_extract a >>= fun a ->
-           M.read_loc false (mk_read sz an aexp) (A.Location_global a) ii >>= fun v ->
-           write_reg_sz sz rd v ii >>! B.Next)
-          (mk_fault a ii >>! B.Exit)
 
 (* PTW Basics *)
 
