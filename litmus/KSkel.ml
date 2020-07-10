@@ -88,6 +88,7 @@ module Make
             type t = A.location
             let compare = A.location_compare
             let dump loc = "_" ^ dump_loc_name loc
+            let dump_fatom d a = "_" ^ SkelUtil.dump_fatom_tag d a
           end
         end)
 

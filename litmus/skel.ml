@@ -657,6 +657,10 @@ module Make
           O.o ""
         end ;
         if do_self then begin
+          Insert.insert O.o "instruction.h" ;
+          O.o "" ;
+          Insert.insert O.o "getnop.c" ;
+          O.o "" ;
           Insert.insert O.o "self.c"
         end
 (* All of them *)
@@ -853,6 +857,7 @@ module Make
               type t = A.location
               let compare = A.location_compare
               let dump = dump_loc_param
+              let dump_fatom d a = SkelUtil.dump_fatom_tag d a
             end
           end)
 
@@ -1700,12 +1705,7 @@ module Make
           begin match lbls with
           | [] -> ()
           | _::_ ->
-              let find p lbl =
-                try
-                  T.find_offset src.MiscParser.prog p lbl
-                with Not_found ->
-                  let v = Constant.Label (p,lbl) in
-                  Warn.user_error "Non-existant label %s" (A.V.pp_v v) in
+              let find p lbl = U.find_label_offset p lbl test in
               List.iter
                 (fun (p,lbl) ->
                   let off = find p lbl in

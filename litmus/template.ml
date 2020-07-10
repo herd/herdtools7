@@ -81,6 +81,7 @@ module type S = sig
 
   val get_nrets : t -> int
   val get_addrs_only : t -> string list
+  val get_phys_only : t -> string list
   val get_addrs : t -> string list * string list (* addresses X ptes *)
   val get_labels : t -> (int * string) list
   val fmt_reg : arch_reg -> string
@@ -186,7 +187,15 @@ module Make(O:Config)(A:I) =
           | _ -> None)
         init ptes
 
-    let get_addrs t =  get_addrs_only t,get_ptes_only t
+    let get_phys_only {init; _} =
+      get_gen
+        (function
+          | Physical (s,_) -> Some s
+          | _ -> None)
+        init []
+
+    let get_addrs t =
+      get_addrs_only t,get_ptes_only t
 
     let get_labels { init; _} =
       List.fold_left

@@ -130,6 +130,11 @@ val nsplit : int -> 'a list -> 'a list list
    WARNING, correct only when duplicates are in sequence *)
 val rem_dups : ('a -> 'a -> bool) -> 'a list -> 'a list
 
+(* group elements, quadratic *)
+val group : ('a -> 'a -> bool) -> 'a list -> 'a list list
+val group_iter : ('a -> 'a -> bool) -> ('a -> 'a list -> unit) -> 'a list -> unit
+val group_iteri : ('a -> 'a -> bool) -> (int -> 'a -> 'a list -> unit) -> 'a list -> unit
+
 (* Lift boolean connectors to predicates *)
 val (|||) : ('a -> bool) -> ('a -> bool) -> 'a -> bool
 val (&&&) : ('a -> bool) -> ('a -> bool) -> 'a -> bool

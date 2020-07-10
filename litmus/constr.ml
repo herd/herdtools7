@@ -33,6 +33,10 @@ module type S = sig
 (* List locations that appears as  values *)
   val location_values : cond -> string list
   val location_values_prop : prop -> string list
+
+(* All faults *)
+  val get_faults : cond -> V.v Fault.atom list
+
 end
 
 open ConstrGen
@@ -55,10 +59,7 @@ type location = A.location and module LocSet = A.LocSet =
       match a with
       | LV (loc,_) -> LocSet.add loc r
       | LL (loc1,loc2) -> LocSet.add loc1 (LocSet.add loc2 r)
-      | FF f ->
-          Warn.warn_always "Ignoring fault %s"
-            (Fault.pp_fatom V.pp_v f) ;
-          r
+      | FF _ -> r
 
     let locations (c:cond) =
       let locs = fold_constr locations_atom c LocSet.empty in
@@ -88,5 +89,19 @@ type location = A.location and module LocSet = A.LocSet =
       let locs =  fold_prop atom_values p Strings.empty in
       Strings.elements locs
 
+    module F = struct
+      type t = A.V.v Fault.atom
+      let compare = Fault.atom_compare A.V.compare
+    end
+
+    module FSet = MySet.Make(F)
+
+    let add_fault a k = match a with
+    | LV _|LL _ -> k
+    | FF a -> FSet.add a k
+
+    let get_faults c =
+      let fs = fold_constr add_fault c FSet.empty in
+      FSet.elements fs
 
   end

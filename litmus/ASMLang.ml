@@ -50,6 +50,8 @@ module RegMap = A.RegMap)
 
       open Printf
 
+      let debug = false
+
       let checkVal f v = f v
 
       let compile_addr_inline = match O.mode with
@@ -111,15 +113,17 @@ module RegMap = A.RegMap)
                (fun (reg,_) -> RegSet.add reg) t.Tmpl.init RegSet.empty) in
         let in_outputs =
           RegSet.unions [trashed;stable;RegSet.of_list t.Tmpl.final] in
-(*
-  let pp_reg chan r = fprintf chan "%s" (A.reg_to_string r) in
-  eprintf "Trashed in In: %a\n"
-  (fun chan rs -> RegSet.pp chan "," pp_reg rs)
-  trashed ;
-  eprintf "Outputs in In: %a\n"
-  (fun chan rs -> RegSet.pp chan "," pp_reg rs)
-  in_outputs ;
- *)
+
+        if debug then begin
+          let pp_reg chan r = fprintf chan "%s" (A.reg_to_string r) in
+          eprintf "Trashed in In: %a\n"
+            (fun chan rs -> RegSet.pp chan "," pp_reg rs)
+            trashed ;
+          eprintf "Outputs in In: %a\n"
+            (fun chan rs -> RegSet.pp chan "," pp_reg rs)
+            in_outputs
+        end ;
+
         let dump_pair reg v =
           let dump_v = compile_val in
           let dump_v = (* catch those addresses that are saved in a variable *)
@@ -169,8 +173,6 @@ module RegMap = A.RegMap)
         fprintf chan ":%s\n" out
 
       let (@@) f k  = f k
-
-      let debug = false
 
       let pp_regs rs = String.concat "," (List.map A.reg_to_string (RegSet.elements rs))
 
@@ -416,7 +418,7 @@ module RegMap = A.RegMap)
         let open Constant in
         fun v -> match v with
         | Symbolic sym ->
-            let s = Constant.as_address sym in
+            let s = Constant.pp_symbol sym in
             sprintf "%s%s"
               (match O.memory with Memory.Direct -> "" | Memory.Indirect -> "*")
               s
@@ -435,7 +437,8 @@ module RegMap = A.RegMap)
           List.map
             (fun (p,lbl) -> sprintf "ins_t *%s" (OutUtils.fmt_lbl_var p lbl))
             labels in
-        let addrs_proc,ptes_proc = Tmpl.get_addrs t in
+        let addrs_proc,ptes_proc = Tmpl.get_addrs t
+        and phys_proc = Tmpl.get_phys_only t in
         let addrs =
           List.map
             (fun x ->
@@ -453,6 +456,10 @@ module RegMap = A.RegMap)
           List.map
             (fun x -> sprintf "pteval_t *%s" (Misc.add_pte x))
             ptes_proc in
+        let phys =
+          List.map
+            (fun x -> sprintf "pteval_t %s" (Misc.add_physical x))
+            phys_proc in
         let cpys =
           if O.memory = Memory.Indirect && O.cautious then
             List.map
@@ -473,7 +480,7 @@ module RegMap = A.RegMap)
                 with Not_found -> assert false in
               let x = Tmpl.dump_out_reg proc x in
               sprintf "%s *%s" (CType.dump ty) x) t.Tmpl.final in
-        let params =  String.concat "," (labels@addrs@ptes@cpys@outs) in
+        let params =  String.concat "," (labels@addrs@ptes@phys@cpys@outs) in
         LangUtils.dump_code_def chan true proc params ;
         do_dump
           compile_init_val_fun
@@ -496,22 +503,44 @@ module RegMap = A.RegMap)
         | Direct -> ""
         | Indirect -> "*"
 
-      let compile_addr_call env x =
+      let compile_addr_call_std env x =
         let pp = sprintf "&_a->%s[_i]" x in
         try
           let t = List.assoc x env in
           sprintf "(%s %s*)%s" (CType.dump t) indirect_star pp
         with Not_found  -> pp
 
+      let compile_addr_call_kvm _ x = x
+
+      let compile_addr_call =
+        let open Mode in
+        match O.mode with
+        | Std -> compile_addr_call_std
+        | Kvm|PreSi -> compile_addr_call_kvm
+
       let compile_cpy_addr_call proc x =
         sprintf "&_a->%s[_i]" (Tmpl.addr_cpy_name x proc)
-      let compile_out_reg_call proc reg =
+
+      let compile_out_reg_call_std proc reg =
         sprintf "&%s" (Tmpl.compile_out_reg proc reg)
+
+      let compile_out_reg_call_kvm proc reg =
+        sprintf "&%s" (Tmpl.compile_presi_out_reg proc reg)
+
+      let compile_out_reg_call =
+        let open Mode in
+        match O.mode with
+        | Std -> compile_out_reg_call_std
+        | Kvm|PreSi -> compile_out_reg_call_kvm
 
       let dump_call f_id _tr_idx chan indent _env alignedEnv _volatileEnv proc t =
         let labels = List.map compile_label_call (Tmpl.get_labels t) in
-        let addrs_proc,_ = Tmpl.get_addrs t in
-        let addrs = List.map (compile_addr_call alignedEnv) addrs_proc in
+        let addrs_proc,ptes = Tmpl.get_addrs t
+        and phys = Tmpl.get_phys_only t in
+        let addrs =
+          List.map (compile_addr_call alignedEnv) addrs_proc @
+          List.map OutUtils.fmt_pte_kvm ptes @
+          List.map OutUtils.fmt_phy_kvm phys in
         let addrs_cpy =
           if O.memory = Memory.Indirect && O.cautious then
             List.map (compile_cpy_addr_call proc) addrs_proc

@@ -36,6 +36,14 @@ let pp_fatom pp_loc =
     | Some lbl -> sprintf "%s:%s" (Proc.pp p) (Label.pp lbl))
     pp_loc
 
+let atom_compare compare ((p1,lbl1),v1) ((p2,lbl2),v2) = match Proc.compare p1 p2 with
+| 0 ->
+    begin match Misc.opt_compare String.compare lbl1 lbl2 with
+    | 0 -> compare v1 v2
+    | r -> r
+    end
+| r -> r
+
 module type S = sig
   type loc_global
   type fault = (Proc.t * Label.Set.t) * loc_global

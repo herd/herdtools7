@@ -18,6 +18,7 @@ module type Config = sig
   val numeric_labels : bool
   val timeloop : int
   val barrier : Barrier.t
+  val mode : Mode.t
   val variant : Variant_litmus.t -> bool
 end
 
@@ -25,6 +26,7 @@ module Default = struct
   let numeric_labels = false
   let timeloop = 0
   let barrier = Barrier.UserFence
+  let mode = Mode.Std
   let variant _ = false
 end
 
@@ -261,6 +263,12 @@ type P.code = MiscParser.proc * A.pseudo list)
     open Constant
 
     let do_self = O.variant Variant_litmus.Self
+    let is_pte =
+      let open Mode in
+      match O.mode with
+      | Std|PreSi -> false
+      | Kvm -> true
+
     module G = Global_litmus
     module A = A
     module V = A.V
@@ -630,7 +638,7 @@ type P.code = MiscParser.proc * A.pseudo list)
       let ty_env = ty_env1,ty_env2 in
       let code = List.map (fun ((p,_),c) -> p,c) code in
       let code =
-        if do_self then
+        if do_self || is_pte then
           List.map (fun (p,c) -> p,A.Instruction A.nop::c) code
         else code in
       let stable_info = match MiscParser.get_info  t MiscParser.stable_key with

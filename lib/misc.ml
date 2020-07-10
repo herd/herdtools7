@@ -379,6 +379,28 @@ let nsplit n xs =
   let yss = do_rec xs (replicate n []) in
   List.map List.rev yss
 
+let rec group same xs = match xs with
+| [] -> []
+| x::xs ->
+    let xx,xs = List.partition (same x) xs in
+    (x::xx)::group same xs
+
+let group_iter same do_it xs =
+  let xss = group same xs in
+  List.iter
+    (fun xs -> match xs with
+    | [] -> assert false
+    | x::_ -> do_it x xs)
+    xss
+
+let group_iteri same do_it xs =
+  let xss = group same xs in
+  List.iteri
+    (fun k xs -> match xs with
+    | [] -> assert false
+    | x::_ -> do_it k x xs)
+    xss
+
 (* Bool's *)
 
 let (|||) p1 p2 = fun e -> p1 e || p2 e
