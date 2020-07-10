@@ -197,6 +197,8 @@ end = struct
     | Access (_,A.Location_global _,_,_,at,_) -> at
     | _ -> false
   
+  let is_fault _ = false
+
   let to_fault _ = None
 
   let get_mem_dir a = match a with

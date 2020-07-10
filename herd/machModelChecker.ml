@@ -227,7 +227,9 @@ module Make
               ("ctrl", lazy (Lazy.force pr).S.ctrl)::k)
              ["id",id;
               "loc", lazy begin
-                E.EventRel.restrict_rel E.same_location (Lazy.force unv)
+                E.EventRel.restrict_rel
+                  E.same_location_with_faults
+                  (Lazy.force unv)
               end;
               "alias", lazy begin
                 if kvm then
