@@ -143,7 +143,7 @@ end = struct
 
   let mk_init_write l sz v = match v with
   | A.V.Val (Constant.Tag _) ->
-      Access(W,l,v,A.empty_annot,A.nexp_annot,sz,A_TAG)
+      Access(W,l,v,A.empty_annot,A.exp_annot,sz,A_TAG)
   | _ ->
       Access(W,l,v,A.empty_annot,A.exp_annot,sz,access_of_location l)
 
