@@ -28,6 +28,7 @@ type 'loc atom =  (Proc.t * Label.t option) * 'loc
 
 val pp_fatom : ('loc -> string) -> 'loc atom -> string
 
+val atom_compare : ('loc -> 'loc -> int) -> 'loc atom -> 'loc atom -> int
 
 
 module type S = sig
