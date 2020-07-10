@@ -54,6 +54,8 @@ let rec nitems t = match t with
 | Volatile t|Atomic t -> nitems t
 | Base _|Pointer _ -> 1
 
+let dump_fatom_tag d ((p,lbl),v) =
+  sprintf "fault_P%d%s_%s" p (match lbl with None -> "" | Some lbl -> "_" ^ lbl) (d v)
 
 (* Skeleton utilities, useful for Skel and PreSi *)
 
@@ -80,10 +82,11 @@ module Make
       val select_global : env -> (string * CType.t) list
       val select_aligned : env -> (string * CType.t) list
 
-(* Some dumping stuff *)
+(* Some dump`ing stuff *)
       val cast_reg_type : A.location -> string
       val register_type : A.location ->  CType.t -> CType.t
       val fmt_outcome : T.t -> (CType.base -> string) -> A.LocSet.t -> env -> string
+      val fmt_faults : A.V.v Fault.atom list -> string
 
 (* Locations *)
       val get_displayed_locs : T.t -> A.LocSet.t
@@ -93,6 +96,8 @@ module Make
       val get_stabilized : T.t -> StringSet.t
       val is_ptr : A.location -> env -> bool
       val ptr_in_outs : env -> T.t -> bool
+      val get_faults : T.t -> A.V.v Fault.atom list
+      val find_label_offset : Proc.t -> string -> T.t -> int
 
 (* Instructions *)
       val do_store : CType.t -> string -> string -> string
@@ -264,6 +269,8 @@ module Make
               (pp_fmt (register_type loc (find_type loc env))))
           locs
 
+      let fmt_faults fs = String.concat "" (List.map (fun _ -> "%s") fs)
+
 (* Locations *)
       let get_displayed_locs t =
         A.LocSet.union
@@ -303,6 +310,15 @@ module Make
       let ptr_in_outs env test =
         let locs = get_displayed_locs test in
         A.LocSet.exists (fun loc ->is_ptr loc env ) locs
+
+      let get_faults test = T.C.get_faults test.T.condition
+
+      let find_label_offset p lbl test =
+        try
+          T.find_offset test.T.src.MiscParser.prog p lbl
+        with Not_found ->
+          let v = Constant.Label (p,lbl) in
+          Warn.user_error "Non-existant label %s" (A.V.pp_v v)
 
 (* Instructions *)
       let do_store t loc v =

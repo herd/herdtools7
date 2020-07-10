@@ -27,6 +27,9 @@ typedef struct {
 #ifdef SOME_VARS
   vars_t v;
 #endif
+#ifdef SEE_FAULTS
+  see_fault_t f;
+#endif
 #ifdef HAVE_TIMEBASE
   tb_t next_tb;
 #endif
@@ -42,10 +45,10 @@ static void instance_init (ctx_t *p, int id, intmax_t *mem) {
   hash_init(&p->t) ;
   barrier_init(&p->b,N) ;
 #ifdef KVM
-#ifdef SOME_VARS  
+#ifdef SOME_VARS
   vars_init(&p->v,mem);
 #endif
-#endif  
+#endif
 }
 
 /******************/
@@ -134,7 +137,7 @@ static void init_global(global_t *g,int id) {
 typedef struct {
   int id ;
   st_t seed ;
-  int role ;
+  int role,inst ;
   ctx_t *ctx ;
 #ifdef ACTIVE
   active_t *act;
@@ -147,10 +150,18 @@ static void set_role(global_t *g,thread_ctx_t *c,int part) {
   int idx = SCANLINE*part+c->id ;
   int inst = g->inst[idx] ;
   if (0 <= inst && inst < g->nexe) {
+    c->inst = inst ;
     c->ctx = &g->ctx[inst] ;
+    c->role = g->role[idx] ;
 #ifdef HAVE_FAULT_HANDLER
-    whoami[idx] = c->role = g->role[idx] ;
-    vars_ptr[idx] = &c->ctx->v;
+    whoami[idx].instance = inst ;
+    whoami[idx].proc = c->role ;
+#ifdef SEE_FAULTS
+    if (c->role == 0) {
+      vars_ptr[inst] = &c->ctx->v;
+      see_fault[inst] = &c->ctx->f;
+    }
+#endif
 #endif
 #ifdef ACTIVE
     c->act = &g->active[part] ;
