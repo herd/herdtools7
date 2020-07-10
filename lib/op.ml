@@ -76,6 +76,7 @@ type op1 =
   | UnSetXBits of int * int (* Unset x bits to the left from y*)
   | TLBLoc (* get TLB entry from location *)
   | PTELoc (* get PTE entry from location *)
+  | PhyLoc (* get PA from VA *)
   | AF (* get AF from PTE entry *)
   | DB (* get DB from PTE entry *)
   | DBM (* get DBM from PTE entry *)
@@ -97,6 +98,7 @@ let pp_op1 hexa o = match o with
 | UnSetXBits (nbBits, from) -> sprintf "unset %i bits to the left from %ith bit" nbBits from
 | TLBLoc -> "TLBloc"
 | PTELoc -> "PTEloc"
+| PhyLoc -> "Phyloc"
 | IsVirtual -> "IsVirtual"
 | AF -> "AF" 
 | DB -> "DB" 

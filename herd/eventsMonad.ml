@@ -195,7 +195,7 @@ Monad type:
       data_comp (E.bind_ctrl_avoid es.E.events) s f eiid
 
 (* Tag check combinator *)
-    let check_tags : 'v t -> ('v -> 'v t) -> ('v -> 'v -> 'v t) -> 'x t -> 'v t
+    let check_tags : 'v t -> ('v -> 'v t) -> ('v -> 'v t) -> 'x t -> 'v t
         = fun ma rtag comp commit ->
           fun (eiid:eid) ->
             let eiid,(aact) = ma eiid in
@@ -204,7 +204,7 @@ Monad type:
             let eiid,commitact = commit eiid in
             let tag,rtagcl,rtages = Evt.as_singleton_nospecul rtagact
             and _,commitcl,commites = Evt.as_singleton_nospecul commitact in
-            let eiid,compact = comp a tag eiid in
+            let eiid,compact = comp tag eiid in
             let vcomp,compcl,_ = Evt.as_singleton_nospecul compact in
             let es = E.check_tags aes rtages commites in
             eiid,(Evt.singleton (vcomp,acl@rtagcl@commitcl@compcl,es),None)
@@ -1020,6 +1020,12 @@ Monad type:
         | V.Val (Symbolic (System (TAG,_))) -> true
         | _ -> false
 
+      let is_pteloc a =
+        let open Constant in
+        match a with
+        | V.Val (Symbolic (System (PTE,_))) -> true
+        | _ -> false
+
       let add_inittags env =
         let glob,tag =
           List.fold_left
@@ -1033,14 +1039,18 @@ Monad type:
         let env =
           List.fold_left
             (fun env a ->
-              let atag =  V.op1 Op.TagLoc a in
-              if A.VSet.mem atag tag_set then env
-              else begin
-                if dbg then
-                  Printf.eprintf "Tag %s for %s defaulting\n"
-                    (A.V.pp_v atag) (A.V.pp_v a) ;
-                (A.Location_global atag,A.V.Val (Constant.default_tag))::env
-              end)
+              if not (is_pteloc a) then
+              begin
+                let atag =  V.op1 Op.TagLoc a in
+                if A.VSet.mem atag tag_set then env
+                else begin
+                  if dbg then
+                    Printf.eprintf "Tag %s for %s defaulting\n"
+                      (A.V.pp_v atag) (A.V.pp_v a) ;
+                  (A.Location_global atag,A.V.Val (Constant.default_tag))::env
+                end
+              end
+              else env)
             env glob in
         env
 
@@ -1109,7 +1119,7 @@ Monad type:
                 let tr_sym sym = V.Val (Symbolic sym) in
                 let a_sym = tr_sym a in
                 begin match a with
-                | Physical _ -> (A.Location_global a_sym,v)::env
+                | System (TAG,_) | Physical _ -> (A.Location_global a_sym,v)::env
                 | System (PTE,_) -> 
                   if C.debug.Debug_herd.mem then begin
                   Printf.printf "env PTE: %s\n" (A.pp_location (A.Location_global a_sym)) end;

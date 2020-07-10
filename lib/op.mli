@@ -58,6 +58,7 @@ type op1 =
   | UnSetXBits of int * int
   | TLBLoc (* get TLB entry from location *)
   | PTELoc (* get PTE entry from location *)
+  | PhyLoc (* get PA from VA *)
   | AF (* get AF from PTE entry *)
   | DB (* get DB from PTE entry *)
   | DBM (* get DBM from PTE entry *)

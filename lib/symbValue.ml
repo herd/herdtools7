@@ -241,14 +241,18 @@ module Make(Cst:Constant.S) = struct
 
   let op_tagged op_op op v = match v with
   |  Val (Symbolic (Virtual (s,o))) -> Val (op s o)
-  |  Val (Concrete _|Symbolic (Physical _|System _)|Label _|Tag _) ->
+  |  Val (Concrete _|Symbolic (Physical _ | System _)|Label _|Tag _) ->
       Warn.user_error "Illegal %s on %s" op_op (pp_v v)
   | Var _ -> raise Undetermined
 
         (*  Returns the location of the tag associated to a location *)
-  let op_tagloc (a,_) _ =  Symbolic (System (TAG,a))
 
-  let tagloc = op_tagged "tagloc" op_tagloc
+  let tagloc v =  match v with
+  | Val (Symbolic (Virtual ((a,_),_)|Physical (a,_))) ->
+       Val (Symbolic (System (TAG,a)))
+  | Val (Concrete _| Symbolic (System _)|Label _|Tag _) ->
+      Warn.user_error "Illegal tagloc on %s" (pp_v v)
+  | Var _ -> raise Undetermined
 
       (* Decompose tagged locations *)
   let op_tagextract (_,t) _ = match t with
@@ -256,8 +260,15 @@ module Make(Cst:Constant.S) = struct
   | None -> Constant.default_tag
 
   let tagextract v = op_tagged "tagextract" op_tagextract v
-  let op_locextract (a,_) o = Symbolic (Virtual ((a,None),o))
-  let locextract v = op_tagged "locextract" op_locextract v
+  (*let op_locextract (a,_) o = Symbolic (Virtual ((a,None),o))*)
+
+  let locextract v =
+    match v with 
+    | Val (Symbolic (Virtual ((s,_),o))) -> Val (Symbolic (Virtual ((s,None),o)))
+    | Val (Symbolic (Physical _)) as aphy -> aphy 
+    | Val (Concrete _|Symbolic (System _)|Label _|Tag _) ->
+      Warn.user_error "Illegal locextract on %s" (pp_v v)
+    | Var _ -> raise Undetermined
 
   let op_pte_tlb op_op op v = match v with
   |  Val (Symbolic (Virtual (a,_))) -> Val (op a)
@@ -279,6 +290,9 @@ module Make(Cst:Constant.S) = struct
 
   let op_tlbloc (a,_) = Symbolic (System (TLB,a))
   let tlbloc = op_pte_tlb "tlbloc" op_tlbloc
+
+  let op_phyloc (a,_) = Symbolic (Physical (a,0))
+  let phyloc = op_pte_tlb "phyloc" op_phyloc
 
   let is_virtual v = match v with
   | Val c -> Constant.is_virtual c
@@ -320,6 +334,7 @@ module Make(Cst:Constant.S) = struct
           (fun s -> logand (lognot (mask_many nb k)) s)
     | TLBLoc -> tlbloc
     | PTELoc -> pteloc
+    | PhyLoc -> phyloc
     | IsVirtual -> is_virtual_v
     | AF -> afloc
     | DB -> dbloc
