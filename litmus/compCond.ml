@@ -52,8 +52,8 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
             O.fprintf "%s == %s" (I.Loc.dump loc) (dump_v v)
         | Atom (LL (loc1,loc2)) ->
             O.fprintf"%s == %s" (I.Loc.dump loc1) (I.Loc.dump loc2)
-        | Atom (FF _) ->
-            Warn.fatal "No fault in litmus conditions"
+        | Atom (FF f) ->
+            O.fprintf "%s" (I.Loc.dump_fatom dump_v f)
         | Not p ->
             O.output "!(" ;
             dump_prop p ;

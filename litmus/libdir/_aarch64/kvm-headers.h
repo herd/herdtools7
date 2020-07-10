@@ -114,3 +114,9 @@ inline static void *read_far(void) {
   asm volatile("mrs %0, far_el1": "=r" (r));
   return r ;
 }
+
+inline static void *read_elr_el1(void) {
+  void *r ;
+  asm volatile("mrs %0, elr_el1": "=r" (r));
+  return r ;
+}

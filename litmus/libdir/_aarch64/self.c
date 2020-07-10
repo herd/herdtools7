@@ -13,12 +13,9 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
-
 /***********************************/
 /* Support for self-modifying code */
 /***********************************/
-
-typedef uint32_t ins_t ;
 
 inline static void selfbar(void *p) {
   asm __volatile__
@@ -30,20 +27,6 @@ inline static void isync(void) {
   asm __volatile__ ("isb" ::: "memory");
 }
 
-static ins_t getnop(void) {
-  ins_t *x1;
-  ins_t r;
-  asm __volatile__ (
-  "adr %[x1],0f\n\t"
-  "ldr %w[x2],[%[x1]]\n"
-  "0:\n\t"
-  "nop\n"
-:[x1] "=&r" (x1),[x2] "=&r" (r)
-:
-: "cc","memory"
-);
-  return r;
-}
 
 static ins_t getret(void) {
   ins_t *x1;
