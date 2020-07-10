@@ -45,7 +45,7 @@ module type S =
     val (>>==) : 'a t -> ('a -> 'b t) -> ('b) t (* Output event stay in first arg *)
     val (>>*=) : 'a t -> ('a -> 'b t) -> ('b) t
     val bind_ctrl_avoid : 'c t -> 'a t -> ('a -> 'b t) -> 'b t
-    val check_tags : 'v t -> ('v -> 'v t) -> ('v -> 'v -> 'v t) -> 'x t -> 'v t
+    val check_tags : 'v t -> ('v -> 'v t) -> ('v -> 'v t) -> 'x t -> 'v t
     val exch : 'a t -> 'a t -> ('a -> 'b t) ->  ('a -> 'c t) ->  ('b * 'c) t
 
 (*
