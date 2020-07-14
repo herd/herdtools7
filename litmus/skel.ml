@@ -1342,16 +1342,11 @@ module Make
             O.fx indent "_a->%s = %s(_a->%s,sizeof(*_a->%s));" a alg a a
         in
         if do_self then begin
-          O.o "static size_t find_ins(ins_t opcode,ins_t *p,int skip) {" ;
-          O.oi "ins_t *q = p;" ;
+          ObjUtil.insert_lib_file O.o "_find_ins.c" ;
           O.o "" ;
-          O.oi "for  ( ; *q != opcode || (skip-- > 0); q++);" ;
-          O.oi "return q-p+1;" ;
-          O.o "}" ;
+          O.o "static size_t code_size(ins_t *p,int skip) { return find_ins(getret(),p,skip)+1; }" ;
           O.o "" ;
-          O.o "static size_t code_size(ins_t *p,int skip) { return find_ins(getret(),p,skip); }" ;
-          O.o "" ;
-          O.o "static size_t prelude_size(ins_t *p) { return find_ins(getnop(),p,0); }" ;
+          O.o "static size_t prelude_size(ins_t *p) { return find_ins(getnop(),p,0)+1; }" ;
           O.o ""
         end ;
         O.f "static void init(ctx_t *_a%s) {"

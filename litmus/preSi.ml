@@ -63,6 +63,7 @@ module Make
       let k_nkvm x = if Cfg.is_kvm then "" else x
       let is_pte = Cfg.is_kvm
       let do_ascall = Cfg.ascall || is_pte
+      let do_precise = Cfg.variant Variant_litmus.Precise
 
       open CType
       module G = Global_litmus
@@ -239,17 +240,29 @@ module Make
           O.o "" ;
           Insert.insert O.o "instruction.h" ;
           O.o "" ;
+          if do_precise then begin
+            O.o "#define PRECISE 1" ;
+            O.o "ins_t *label_ret[NTHREADS];" ;
+            O.o ""
+          end ;
+
+          let insert_ins_ops () =
+            ObjUtil.insert_lib_file O.o "_find_ins.c" ;
+            O.o "" ;
+            Insert.insert O.o "getnop.c" ;
+            O.o "" in
+
           let faults = U.get_faults test in
           begin match faults with
-          | [] -> ()
+          | [] -> if do_precise then insert_ins_ops ()
           | _::_ ->
               O.o "#define SEE_FAULTS 1" ;
               O.o "" ;
               begin match filter_fault_lbls faults with
-              | [] -> ()
+              | [] ->
+                  if do_precise then insert_ins_ops ()
               | faults ->
-                  Insert.insert O.o "getnop.c" ;
-                  O.o "" ;
+                  insert_ins_ops () ;
                   O.o "typedef struct {" ;
                   O.fi "ins_t %s;"
                     (String.concat ","
@@ -257,13 +270,6 @@ module Make
                   O.o "} labels_t;" ;
                   O.o "" ;
                   O.o "static labels_t labels;" ;
-                  O.o "" ;
-                  O.o "static size_t find_ins(ins_t opcode,ins_t *p) {" ;
-                  O.oi "ins_t *q = p;" ;
-                  O.o "" ;
-                  O.oi "for  ( ; *q != opcode; q++);" ;
-                  O.oi "return q-p+1;" ;
-                  O.o "}" ;
                   O.o ""
               end ;
               O.o "typedef struct {" ;
@@ -1222,27 +1228,46 @@ module Make
         O.oi "return _ok;" ;
         O.o "}" ;
         O.o "" ;
-        if is_pte then begin match filter_fault_lbls faults with
-        | [] ->
-            O.o "static void init_labels(void) { }" 
-        | faults ->
-            O.o "static void init_labels(void) {" ;
-            O.oi "ins_t nop = getnop();" ;
-            List.iter
-              (fun ((p,lbl),_ as f) ->                
-                let lbl = Misc.as_some lbl in
-                let off = U.find_label_offset p lbl test in
-                let lhs = sprintf "labels.%s" (tag_code f)
-                and rhs =
-                  sprintf "((ins_t *)%s)+find_ins(nop,(ins_t *)%s)+%d"
-                    (LangUtils.code_fun p) (LangUtils.code_fun p) off in
-                O.fi "%s = %s;" lhs rhs)
-              faults ;
-            O.o "}" ;
-            O.o ""
+        if is_pte then begin
+          let init_rets nop_defined =
+            if do_precise then begin
+              if not nop_defined then O.oi "ins_t nop = getnop();" ;
+              List.iter
+                (fun (p,(t,_)) ->
+                  let rhs = sprintf
+                      "((ins_t *)%s)+find_ins(nop,(ins_t *)%s,%d)"
+                      (LangUtils.code_fun p)
+                      (LangUtils.code_fun p)
+                      (A.Out.get_nnops t-1) in
+                  O.fi "label_ret[%d] = %s;" p rhs)
+                test.T.code
+            end in
+          begin match filter_fault_lbls faults with
+          | [] ->
+              O.o "static void init_labels(void) {" ;
+              init_rets false ;
+              O.o "}" ;
+              O.o ""
+          | faults ->
+              O.o "static void init_labels(void) {" ;
+              O.oi "ins_t nop = getnop();" ;
+              List.iter
+                (fun ((p,lbl),_ as f) ->
+                  let lbl = Misc.as_some lbl in
+                  let off = U.find_label_offset p lbl test+1 in (* +1 because of added inital nop *)
+                  let lhs = sprintf "labels.%s" (tag_code f)
+                  and rhs =
+                    sprintf "((ins_t *)%s)+find_ins(nop,(ins_t *)%s,0)+%d"
+                      (LangUtils.code_fun p) (LangUtils.code_fun p) off in
+                  O.fi "%s = %s;" lhs rhs)
+                faults ;
+              init_rets true ;
+              O.o "}" ;
+              O.o ""
+          end
         end ;
         ()
-          
+
 (********)
 (* zyva *)
 (********)

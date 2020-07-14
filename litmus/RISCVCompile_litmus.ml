@@ -22,6 +22,9 @@ module Make(V:Constant.S)(C:Arch_litmus.Config) =
     open Printf
 
     let is_ret _ = assert false
+    and is_nop = function
+      | A.INop -> true
+      | _ -> false
 
 (* No addresses in code *)
     let extract_addrs _ins = Global_litmus.Set.empty
