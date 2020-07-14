@@ -144,7 +144,7 @@ let rec ob = obs; si
 	| ob; ob
 
 (* Tag-location-ordered *)
-let tlo = [R & T]; tob; loc; tob^-1; [R & T]
+let tlo = [R & T]; intrinsic; loc; intrinsic^-1; [R & T]
 
 (* Internal visibility requirement *)
 let po-loc =
