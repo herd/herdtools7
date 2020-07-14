@@ -30,6 +30,9 @@ module Make(V:Constant.S)(C:Config) =
     open Printf
 
     let is_ret _ = assert false
+    and is_nop = function
+      | A.Pnop -> true
+      | _ -> false
 
 (* Ready for template compilation *)
     let op3regs memo set rD rA rB =

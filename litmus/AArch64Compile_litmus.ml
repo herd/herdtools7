@@ -36,6 +36,10 @@ module Make(V:Constant.S)(C:Config) =
       | A.I_RET None -> true
       | _ -> false
 
+    let is_nop = function
+      | A.I_NOP -> true
+      | _ -> false
+
 (* No addresses in code *)
     let extract_addrs _ins = Global_litmus.Set.empty
 

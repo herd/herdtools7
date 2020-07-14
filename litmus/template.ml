@@ -76,10 +76,12 @@ module type S = sig
       name : Name.t ;
       all_clobbers : arch_reg list;
       nrets : int ; (* number of return instruction in code *)
+      nnops : int ; (* number of nop instruction in code *)
       ty_env :  (arch_reg * CType.t) list ;
     }
 
   val get_nrets : t -> int
+  val get_nnops : t -> int
   val get_addrs_only : t -> string list
   val get_phys_only : t -> string list
   val get_addrs : t -> string list * string list (* addresses X ptes *)
@@ -149,12 +151,13 @@ module Make(O:Config)(A:I) =
         code : ins list;
         name : Name.t ;
         all_clobbers : arch_reg list;
-        nrets : int ;
+        nrets : int ; nnops : int ;
         ty_env :  (arch_reg * CType.t) list ;
       }
 
 
     let get_nrets t = t.nrets
+    and get_nnops t = t.nnops
 
     let get_gen tr init addrs =
       let set =

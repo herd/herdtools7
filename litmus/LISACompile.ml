@@ -21,7 +21,9 @@ module Make(V:Constant.S) =
     open A.Out
     open CType
     open Printf
+
     let is_ret _ = assert false
+    and is_nop _ = assert false
 
 (***************************************************)
 (* Extract explicit [symbolic] addresses from code *)

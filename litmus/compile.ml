@@ -263,6 +263,7 @@ type P.code = MiscParser.proc * A.pseudo list)
     open Constant
 
     let do_self = O.variant Variant_litmus.Self
+    and do_precise = O.variant Variant_litmus.Precise
     let is_pte =
       let open Mode in
       match O.mode with
@@ -342,6 +343,7 @@ type P.code = MiscParser.proc * A.pseudo list)
     let count_ret =
       if do_self then fun code -> count_ins C.is_ret code else fun _ -> 0
 
+    let count_nop = count_ins C.is_nop
 
 (****************)
 (* Compile code *)
@@ -506,14 +508,15 @@ type P.code = MiscParser.proc * A.pseudo list)
         List.map
           (fun (proc,code) ->
             let nrets = count_ret code in
+            let nnops = count_nop code in
             let addrs = extract_addrs code in
             let stable = stable_regs code in
             let code = compile_code code in
-            proc,addrs,stable,code,nrets)
+            proc,addrs,stable,code,nrets,nnops)
           code in
       let pecs = outs in
       List.map
-        (fun (proc,addrs,stable,code,nrets) ->
+        (fun (proc,addrs,stable,code,nrets,nnops) ->
           let addrs,ptes =
             G.Set.fold
               (fun s (a,p) -> match s with
@@ -549,7 +552,7 @@ type P.code = MiscParser.proc * A.pseudo list)
               stable = [];
               final = compile_final proc observed_proc;
               all_clobbers;
-              code = code; name=name; nrets;
+              code = code; name=name; nrets; nnops;
               ty_env = my_ty_env;
             } in
           { t with stable = A.RegSet.elements (A.RegSet.inter (A.RegSet.union stable stable_info) (A.Out.all_regs t)) ; })
@@ -639,7 +642,13 @@ type P.code = MiscParser.proc * A.pseudo list)
       let code = List.map (fun ((p,_),c) -> p,c) code in
       let code =
         if do_self || is_pte then
-          List.map (fun (p,c) -> p,A.Instruction A.nop::c) code
+          let do_append_nop = is_pte && do_precise in
+          List.map (fun (p,c) ->
+            let nop = A.Instruction A.nop in
+            let c = A.Instruction A.nop::c in
+            let c =
+              if do_append_nop then c@[nop] else c in
+            p,c) code
         else code in
       let stable_info = match MiscParser.get_info  t MiscParser.stable_key with
       | None -> A.RegSet.empty

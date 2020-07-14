@@ -22,6 +22,9 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
     open Printf
 
     let is_ret _ = assert false
+    let is_nop = function
+      | A.I_NOP -> true
+      | _ -> false
 
 (***************************************************)
 (* Extract explicit [symbolic] addresses from code *)
