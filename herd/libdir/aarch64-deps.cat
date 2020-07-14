@@ -63,8 +63,8 @@ else
   include "deps.cat"
 end
 
-(* Show dependencies *)
-include "show-deps.cat"
+(* Show relations *)
+include "aarch64show.cat"
 
 (*
  * As a restriction of the model, all observers are limited to the same
