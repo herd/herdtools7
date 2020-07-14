@@ -42,7 +42,7 @@ module Make (C:Config) (A : A) : sig
 (* Atomic modify, (location,value read, value written, annotation *)
     | Amo of A.location * A.V.v * A.V.v * A.lannot * MachSize.sz
 (* NB: Amo used in some arch only (e.g., Arm, RISCV) *)
-    | Fault of A.inst_instance_id * A.location
+    | Fault of A.inst_instance_id * A.location * string option
 (* Unrolling control *)
     | TooFar
   include Action.S with type action := action and module A = A
@@ -59,7 +59,7 @@ end = struct
     | Barrier of A.barrier
     | Commit of bool
     | Amo of A.location * A.V.v * A.V.v * A.lannot * MachSize.sz
-    | Fault of A.inst_instance_id * A.location
+    | Fault of A.inst_instance_id * A.location * string option
     | TooFar
 
   let mk_init_write l sz v = match v with
@@ -86,11 +86,12 @@ end = struct
         (A.pp_annot an)
         (A.pp_location loc) (MachSize.pp_short sz)
         (V.pp C.hexa v1) (V.pp C.hexa v2)
-  | Fault (ii,loc) ->
-      Printf.sprintf "Fault(proc:%s,poi:%s,loc:%s)"
+  | Fault (ii,loc,msg) ->
+      Printf.sprintf "Fault(proc:%s,poi:%s,loc:%s,type:%s)"
         (A.pp_proc ii.A.proc)
         (A.pp_prog_order_index ii.A.program_order_index)
         (A.pp_location loc)
+        (Misc.proj_opt "None" msg)
   | TooFar -> "TooFar"
 
 (* Utility functions to pick out components *)
@@ -122,7 +123,7 @@ end = struct
   | TagAccess (_,l,_)
   | Access (_, l, _,_,_)
   | Amo (l,_,_,_,_)
-  | Fault (_,l)
+  | Fault (_,l,_)
     -> Some l
   | Barrier _|Commit _ | TooFar -> None
 
@@ -166,7 +167,7 @@ end = struct
     | TagAccess _|Access _|Amo _|Commit _|Barrier _ | TooFar -> false
 
   let to_fault = function
-    | Fault (i,A.Location_global x) -> Some ((i.A.proc,i.A.labels),x)
+    | Fault (i,A.Location_global x,msg) -> Some ((i.A.proc,i.A.labels),x,msg)
     | Fault _|TagAccess _|Access _|Amo _|Commit _|Barrier _ | TooFar -> None
 
   let get_mem_dir a = match a with
@@ -328,9 +329,9 @@ end = struct
         let v1 = V.simplify_var soln v1 in
         let v2 = V.simplify_var soln v2 in
         Amo (loc,v1,v2,an,sz)
-    | Fault (ii,loc) ->
+    | Fault (ii,loc,msg) ->
         let loc = A.simplify_vars_in_loc soln loc in
-        Fault(ii,loc)
+        Fault(ii,loc,msg)
     | Barrier _ | Commit _|TooFar -> a
 
   let annot_in_list _str _ac = false

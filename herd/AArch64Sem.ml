@@ -63,8 +63,8 @@ module Make
 (* Basic read, from register *)
       let mk_read sz an loc v = Act.Access (Dir.R, loc, v, an, sz)
       let mk_read_std = mk_read MachSize.Quad AArch64.N
-      let mk_fault a ii =
-        M.mk_singleton_es (Act.Fault (ii,A.Location_global a)) ii
+      let mk_fault a ii msg =
+        M.mk_singleton_es (Act.Fault (ii,A.Location_global a,msg)) ii
 
       let read_loc v is_data = M.read_loc is_data (mk_read v AArch64.N)
 
@@ -166,7 +166,7 @@ module Make
           (loc_extract a >>= fun a ->
            M.read_loc false (mk_read sz an) (A.Location_global a) ii >>= fun v ->
            write_reg_sz sz rd v ii >>! B.Next)
-          (mk_fault a ii >>! B.Exit)
+          (mk_fault a ii (Some "MTE read") >>! B.Exit)
 
 
 (* Old read_mem that returns value read *)
@@ -242,7 +242,7 @@ module Make
           let  mm = mop (ma >>= fun a -> loc_extract a) in
           delayed_check_tags ma ii
             (mm  >>! B.Next)
-            (let mfault = ma >>= fun a -> mk_fault a ii in
+            (let mfault = ma >>= fun a -> mk_fault a ii (Some "MTE lift_memop") in
             if C.precision then  mfault >>! B.Exit
             else (mfault >>| mm) >>! B.Next)
         else
