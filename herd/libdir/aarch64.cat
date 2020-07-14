@@ -142,12 +142,12 @@ let rec ob = obs; si
 	| ob; ob
 
 (* Tag-location-ordered *)
-let tlo = [R & T]; tob; loc; tob^-1; [R & T]
+let tlo = [R & T]; intrinsic; loc; intrinsic^-1; [R & T]
 
 (* Internal visibility requirement *)
 let po-loc = 
-  let Exp = M\domain(tob) in
-  (po-loc & Exp*Exp) | (po & tlo)
+  let Exp = M\domain(tlo) in
+  (po-loc & Exp*_) | (po-loc & _*Exp) | (po & tlo)
 acyclic po-loc | ca | rf as internal
 
 (* External visibility requirement *)
