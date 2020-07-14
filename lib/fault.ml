@@ -38,7 +38,7 @@ let pp_fatom pp_loc =
 
 module type S = sig
   type loc_global
-  type fault = (Proc.t * Label.Set.t) * loc_global
+  type fault = (Proc.t * Label.Set.t) * loc_global * string option
 
   val pp_fault : fault -> string
 
@@ -53,7 +53,7 @@ module Make(A:I) =
   struct
 
     type loc_global = A.arch_global
-    type fault = (Proc.t * Label.Set.t) * loc_global
+    type fault = (Proc.t * Label.Set.t) * loc_global * string option
 
     let pp_lbl (p,lbl) = match Label.Set.as_small 1 lbl with
     | Some [] ->  Proc.pp p
@@ -63,14 +63,22 @@ module Make(A:I) =
           (Label.Set.pp_str "," Label.pp lbl)
 
 
-    let pp_fault (lbl,x) =  sprintf "Fault(%s,%s)" (pp_lbl lbl) (A.pp_global x)
+    let pp_fault (lbl,x,msg) =
+      sprintf "Fault(%s,%s,%s)"
+        (pp_lbl lbl)
+        (A.pp_global x)
+        (Misc.proj_opt "None" msg)
 
     let compare_lbl (p1,lbl1) (p2,lbl2) = match Proc.compare p1 p2 with
     | 0 -> Label.Set.compare lbl1 lbl2
     | r -> r
 
-    let compare (lbl1,x1) (lbl2,x2) = match compare_lbl lbl1 lbl2 with
-    | 0 -> A.global_compare x1 x2
+    let compare (lbl1,x1,msg1) (lbl2,x2,msg2) = match compare_lbl lbl1 lbl2 with
+    | 0 ->
+      begin match A.global_compare x1 x2 with
+      | 0 -> Misc.opt_compare String.compare msg1 msg2
+      | r -> r
+      end
     | r -> r
 
     module FaultSet =
@@ -82,7 +90,7 @@ module Make(A:I) =
 
     type fatom = loc_global atom
 
-    let check_one_fatom ((p0,lbls0),x0)  ((p,lblo),x) =
+    let check_one_fatom ((p0,lbls0),x0,_)  ((p,lblo),x) =
       Proc.compare p p0 = 0 &&
       A.same_base x x0 &&
       begin match lblo with

@@ -34,7 +34,7 @@ module type S = sig
 
   type loc_global
 
-  type fault = (Proc.t * Label.Set.t) * loc_global
+  type fault = (Proc.t * Label.Set.t) * loc_global * string option
   val pp_fault : fault -> string
 
   module FaultSet : MySet.S with type elt = fault
