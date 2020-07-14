@@ -4,7 +4,11 @@
 
 static void fault_handler(struct pt_regs *regs,unsigned int esr) {
   struct thread_info *ti = current_thread_info();
-  record_fault(&whoami[ti->cpu],read_elr_el1(),read_far());
+  who_t *w = &whoami[ti->cpu];
+  record_fault(w,read_elr_el1(),read_far());
+#ifdef PRECISE
+  regs->pc = (u64)label_ret[w->proc];
+#endif
 }
 
 static void install_fault_handler(void) {

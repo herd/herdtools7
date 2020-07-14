@@ -120,3 +120,4 @@ inline static void *read_elr_el1(void) {
   asm volatile("mrs %0, elr_el1": "=r" (r));
   return r ;
 }
+

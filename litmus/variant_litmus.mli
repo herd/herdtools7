@@ -16,6 +16,7 @@
 
 type t =
   | Self (* Self modifying code *)
+  | Precise (* Precise exception in kvm mode, ie jump to end of thread code in case of exception *)
 
 val tags : string list
 val parse : string -> t option

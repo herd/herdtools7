@@ -18,6 +18,7 @@ module type S = sig
   module A : Arch_litmus.S
 
   val is_ret : A.instruction -> bool
+  val is_nop : A.instruction -> bool
   val extract_addrs : A.instruction -> Global_litmus.Set.t
   val stable_regs : A.instruction -> A.RegSet.t
   val emit_loop : A.Out.ins list -> A.Out.ins list

@@ -16,17 +16,19 @@
 
 type t =
   | Self (* Self modifying code *)
-
+  | Precise (* Precise exception in kvm mode, ie jump to end of thread code in case of exception *)
 let compare = compare
 
-let tags = ["self";]
+let tags = ["self";"precise";]
 
 let parse s = match Misc.lowercase s with
 | "self" -> Some Self
+| "precise" -> Some Precise
 | _ -> None
 
 let pp = function
   | Self -> "self"
+  | Precise -> "precise"
 
 let ok v a = match v,a with
 | Self,`AArch64 -> true
