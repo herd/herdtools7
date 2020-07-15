@@ -499,10 +499,10 @@ let lift_proc_info i evts =
 
 (*to handle speculation in final state*)
 
-let remove_spec_from_map es m =
-  let spec = es.E.speculated in
-  LocEnv.fold
-    (fun loc es k ->
+  let remove_spec_from_map es m =
+    let spec = es.E.speculated in
+    LocEnv.fold
+      (fun loc es k ->
         let es =
           List.filter
             (fun e -> not (E.EventSet.mem e spec))
@@ -510,17 +510,17 @@ let remove_spec_from_map es m =
         match es with
         | [] ->  k
         | _  -> LocEnv.add loc es k)
-     m LocEnv.empty
+      m LocEnv.empty
 
 (* Alignment check *)
-     let is_aligned sz e =
-          let a = Misc.as_some (E.global_loc_of e)
-          and sz_e = E.get_mem_size e in
-          match a with
-          | A.V.Val (Constant.Symbolic ((s,_),idx)) ->
-              let sz_s =
-                A.look_size sz s in
-                (List.mem idx (MachSize.get_off sz_s sz_e))
-          | _ -> assert false
+  let is_aligned sz e =
+    let a = Misc.as_some (E.global_loc_of e)
+    and sz_e = E.get_mem_size e in
+    match a with
+    | A.V.Val (Constant.Symbolic ((s,_),idx)) ->
+        let sz_s =
+          A.look_size sz s in
+        List.exists (Misc.int_eq idx) (MachSize.get_off sz_s sz_e)
+    | _ -> assert false
 
 end
