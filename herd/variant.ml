@@ -31,6 +31,7 @@ type t =
   | WeakPredicated (* "Weak" predicated instructions, not performing non-selected events, aarch64 *)
 (* Mixed size *)
   | Mixed
+  | Unaligned
  (* Do not check (and reject early) mixed size tests in non-mixed-size mode *)
   | DontCheckMixed
 (* Tags *)
@@ -61,6 +62,7 @@ let parse s = match Misc.lowercase s with
 | "switchdepscresult" -> Some  SwitchDepScResult
 | "lrscdiffok" -> Some  LrScDiffOk
 | "mixed" -> Some Mixed
+| "unaligned" -> Some Unaligned
 | "dontcheckmixed" -> Some DontCheckMixed
 | "weakpredicated"|"weakpred" -> Some WeakPredicated
 | "tagmem"|"memtag" -> Some MemTag
@@ -84,6 +86,7 @@ let pp = function
   | SwitchDepScResult -> "SwitchDepScResult"
   | LrScDiffOk -> " LrScDiffOk"
   | Mixed -> "mixed"
+  | Unaligned -> "unaligned"
   | DontCheckMixed -> "DontCheckMixed"
   | WeakPredicated -> "WeakPredicated"
   | MemTag -> "memtag"

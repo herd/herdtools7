@@ -208,6 +208,8 @@ val same_instance : event -> event -> bool
       (* Original events, before splitted in sub-accesses (mixed-size).
        * NB: not included in events above *)
       mem_accesses : EventSet.t ;
+      (* mem_access -> corresponding sca *)
+      aligned : (event * EventSet.t) list ;
     }
 
   val procs_of    : event_structure -> A.proc list
@@ -515,7 +517,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     | _ -> false
     let get_mem_dir e = Act.get_mem_dir e.action
     let get_mem_size e = Act.get_mem_size e.action
-
+    
 (* relative to the registers of the given proc *)
     let is_reg_store e (p:int) = Act.is_reg_store e.action p
     let is_reg_load e (p:int) = Act.is_reg_load e.action p
@@ -633,11 +635,14 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         output : EventSet.t option ;
         sca : EventSetSet.t ;
         mem_accesses : EventSet.t ;
+        aligned : (event * EventSet.t) list ;
       }
 
     let procs_of es = es.procs
 
     let locs_of es = EventSet.fold (fun e k -> match location_of e with Some l -> l::k | None -> k) es.events []
+
+    let map_aligned f = List.map (fun (e,es) -> f e,EventSet.map f es)
 
     let map_event_structure f es =
       let map_rel = EventRel.map (fun (e1,e2) -> f e1,f e2)
@@ -654,7 +659,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         output = Misc.app_opt map_set es.output ;
         sca = EventSetSet.map map_set es.sca ;
         mem_accesses = map_set es.mem_accesses ;
-
+        aligned = map_aligned f es.aligned;
       }
 
     let do_speculate es =
@@ -672,6 +677,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         output = None ;
         sca = EventSetSet.empty ;
         mem_accesses = EventSet.empty ;
+        aligned = [];
       }
 
     let is_empty_event_structure es =
@@ -858,7 +864,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         success_ports = EventSet.union es1.success_ports es2.success_ports;
         output = es2.output;
         sca = EventSetSet.union es1.sca es2.sca;
-        mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; }
+        mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; 
+        aligned = List.append (es1.aligned) (es2.aligned); }
 
 (* Function inst_code_comp_spec builds pod node with two branches, left and right,
    It is important that left and right output are single, have increasing ids
@@ -913,6 +920,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
             sca = EventSetSet.union3 es1.sca es2.sca es3.sca;
             mem_accesses =
             EventSet.union3 es1.mem_accesses es2.mem_accesses es3.mem_accesses;
+            aligned = List.append (List.append (es1.aligned) (es2.aligned)) (es3.aligned); 
           }
       | _ -> Warn.fatal "Event.inst_code_comp_spec called in wrong context"
 
@@ -946,7 +954,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         success_ports = EventSet.union es1.success_ports es2.success_ports;
         output = union_output es1 es2;
         sca = EventSetSet.union es1.sca es2.sca;
-        mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; }
+        mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; 
+        aligned = List.append es1.aligned es2.aligned;}
 
     let para_comp check =
       if check then check_disjoint do_para_comp
@@ -971,7 +980,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         success_ports = EventSet.union es1.success_ports es2.success_ports;
         output = mkOut es1 es2;
         sca = EventSetSet.union es1.sca es2.sca;
-        mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; }
+        mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; 
+        aligned = List.append es1.aligned es2.aligned;}
 
     let (=*$=) =
       check_disjoint (data_comp minimals_data (fun _ es -> es.output))
@@ -996,7 +1006,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         success_ports = EventSet.union es1.success_ports es2.success_ports;
         output = union_output es1 es2;
         sca = EventSetSet.union es1.sca es2.sca;
-        mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; }
+        mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses; 
+        aligned = List.append es1.aligned es2.aligned;}
 
     let (=**=) = check_disjoint (control_comp minimals)
 
@@ -1052,7 +1063,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         sca = EventSetSet.union3  a.sca rtag.sca commit.sca;
         mem_accesses =
         EventSet.union3  a.mem_accesses rtag.mem_accesses commit.mem_accesses;
-      }
+        aligned = List.append (List.append (a.aligned) (rtag.aligned)) (commit.aligned);}
+
 (* Multi composition for exchange *)
 
 (* rsX/wsX are from/to the same location *)
@@ -1092,7 +1104,13 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         mem_accesses =
         EventSet.union4
           rs1.mem_accesses rs2.mem_accesses
-          ws1.mem_accesses ws2.mem_accesses ; }
+          ws1.mem_accesses ws2.mem_accesses ; 
+        aligned = List.append 
+                    (List.append  
+                      (List.append (rs1.aligned) 
+                                   (rs2.aligned)) 
+                                   (ws1.aligned)) 
+                                   (ws2.aligned);}
 
     let po_union5 es1 es2 es3 es4 es5 =
       let r1,e1 = es1.po and r2,e2 = es2.po and r3,e3 = es3.po
@@ -1150,8 +1168,15 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         EventSet.union5
           rloc.mem_accesses
           rmem.mem_accesses rreg.mem_accesses
-          wmem.mem_accesses wreg.mem_accesses ; }
-
+          wmem.mem_accesses wreg.mem_accesses ; 
+        aligned = List.append 
+                    (List.append 
+                      (List.append 
+                        (List.append (rloc.aligned) 
+                                     (rmem.aligned)) 
+                                     (rreg.aligned)) 
+                                     (wmem.aligned))
+                                     (wreg.aligned) ;}
 
 (* disjointness is awful *)
 
@@ -1209,7 +1234,12 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         mem_accesses =
         EventSet.union4
           re.mem_accesses rloc.mem_accesses rmem.mem_accesses wmem.mem_accesses;
-      }
+        aligned = List.append 
+                    (List.append  
+                      (List.append (re.aligned) 
+                                   (rloc.aligned)) 
+                                   (rmem.aligned)) 
+                                   (wmem.aligned);}
 
     let amo re rloc rmem wmem =
       let input_wmem = minimals wmem in
@@ -1250,7 +1280,14 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         sca = EventSetSet.union4 re.sca rloc.sca rmem.sca wmem.sca;
         mem_accesses =
         EventSet.union4
-          re.mem_accesses rloc.mem_accesses rmem.mem_accesses wmem.mem_accesses; }
+          re.mem_accesses rloc.mem_accesses rmem.mem_accesses wmem.mem_accesses; 
+        aligned = List.append 
+                    (List.append  
+                      (List.append (re.aligned) 
+                                   (rloc.aligned)) 
+                                   (rmem.aligned)) 
+                                   (wmem.aligned);}
+
 
 (************************************)
 (* Compare exchange, really complex *)
@@ -1304,7 +1341,14 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         mem_accesses=
         EventSet.union5 rloc.mem_accesses rold.mem_accesses rnew.mem_accesses
           rmem.mem_accesses wmem.mem_accesses;
-      }
+        aligned = List.append 
+                    (List.append 
+                      (List.append 
+                        (List.append (rloc.aligned) 
+                                     (rold.aligned)) 
+                                     (rnew.aligned)) 
+                                     (rmem.aligned))
+                                     (wmem.aligned) ;}
 
 (* Failure, a phantom write event that would iico_control depens
    upon rold may be an idea... Without it rold has no impact out evt_struct
@@ -1343,6 +1387,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         sca = EventSetSet.union3 rloc.sca rold.sca rmem.sca;
         mem_accesses=
         EventSet.union3 rloc.mem_accesses rold.mem_accesses rmem.mem_accesses;
+        aligned = List.append (List.append (rloc.aligned) (rold.aligned)) (rmem.aligned); 
       }
 
 (**************)
@@ -1399,7 +1444,14 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         EventSet.union5
           loc.mem_accesses a.mem_accesses u.mem_accesses
           rmem.mem_accesses wmem.mem_accesses;
-      }
+         aligned = List.append 
+                    (List.append 
+                      (List.append 
+                        (List.append (loc.aligned) 
+                                     (a.aligned)) 
+                                     (u.aligned)) 
+                                     (rmem.aligned))
+                                     (wmem.aligned) ;}
 
     let linux_add_unless_no loc u rmem retbool =
       let out_loc = maximals loc
@@ -1434,6 +1486,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         sca = EventSetSet.union3 loc.sca u.sca rmem.sca;
         mem_accesses =
         EventSet.union3 loc.mem_accesses u.mem_accesses rmem.mem_accesses;
+        aligned = List.append (List.append (loc.aligned) (u.aligned)) (rmem.aligned); 
       }
 
     let po_union6 =
@@ -1522,7 +1575,16 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         EventSet.union
           (EventSet.union3 resa.mem_accesses data.mem_accesses addr.mem_accesses)
           (EventSet.union3 wres.mem_accesses wresult.mem_accesses wmem.mem_accesses);
-      }
+        aligned = List.append 
+                    (List.append 
+                      (List.append 
+                        (List.append 
+                          (List.append (resa.aligned) 
+                                       (data.aligned)) 
+                                       (addr.aligned)) 
+                                       (wres.aligned))
+                                       (wresult.aligned))
+                                       (wmem.aligned) ;}
 
 (* AArch64 CAS, success *)
     let aarch64_cas_ok rn rs rt wrs rm wm =
@@ -1592,7 +1654,17 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
            rn.mem_accesses rs.mem_accesses rt.mem_accesses
            wrs.mem_accesses rm.mem_accesses wm.mem_accesses);
         output = Some (maximals wrs);
-      }
+        aligned = List.append 
+                    (List.append 
+                      (List.append 
+                        (List.append 
+                          (List.append (rn.aligned) 
+                                       (rs.aligned)) 
+                                       (rt.aligned)) 
+                                       (wrs.aligned))
+                                       (rm.aligned))
+                                       (wm.aligned) ;}
+
 (* Store update composition, read data, read EA, write EA and  write Mem *)
 
 (* Dijointness not checked..., useless *)
@@ -1636,7 +1708,12 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         mem_accesses =
         EventSet.union4
           rD.mem_accesses rEA.mem_accesses wEA.mem_accesses wM.mem_accesses ;
-      }
+        aligned = List.append 
+                    (List.append  
+                      (List.append (rD.aligned) 
+                                   (rEA.aligned)) 
+                                   (wEA.aligned)) 
+                                   (wM.aligned);}
 
 (*************************************************************)
 (* Add together event structures from different instructions *)

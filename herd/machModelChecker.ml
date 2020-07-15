@@ -184,15 +184,29 @@ module Make
         end in
       let unv = lazy begin E.EventRel.cartesian evts evts  end in
       let ks = { I.id; unv; evts; conc; po;} in
-      let si = lazy begin
+      let calc_si sca = begin
         if mixed then
           E.EventRel.unions
             (E.EventSetSet.map_list
                (fun sm -> E.EventRel.cartesian sm sm)
-               conc.S.str.E.sca)
+               sca)
         else
           E.EventRel.set_to_rln (Lazy.force mem_evts)
       end in
+      let si = lazy begin calc_si conc.S.str.E.sca end
+      in
+      let aligned =
+        lazy begin
+          let rs =
+            List.map
+              (fun (mem,sca) ->
+                 if U.is_aligned (S.size_env test) mem then
+                   calc_si (E.EventSetSet.singleton sca)
+                 else
+                   E.EventRel.empty)
+              conc.S.str.E.aligned in
+          E.EventRel.unions rs
+        end in
       let rf_reg = lazy (U.make_rf_regs conc) in
 (* Initial env *)
       let m =
@@ -233,6 +247,7 @@ module Make
               "rf", lazy (Lazy.force pr).S.rf;
               "control",lazy conc.S.str.E.control ;
               "sm",si; "si",si;
+              "aligned",aligned;
               "iico_data", lazy conc.S.str.E.intra_causality_data;
               "iico_ctrl", lazy conc.S.str.E.intra_causality_control;
               "rf-reg", rf_reg ;

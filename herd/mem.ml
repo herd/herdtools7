@@ -132,6 +132,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
     let dbg = C.debug.Debug_herd.mem
     let mixed = C.variant Variant.Mixed
+    let unaligned = C.variant Variant.Unaligned
     let memtag = C.variant Variant.MemTag
         (* default is checking *)
     let check_mixed =  not (C.variant Variant.DontCheckMixed)
@@ -166,17 +167,15 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       let _,_,r = E.EventSet.fold build_bd evts (0,n_mem,IMap.empty) in
       r
 
-
+(* Note: events from mem_accesses are not relabeled, as they are not part of final events *)
     let relabel es =
       let n_mem = count_mem es.E.events in
       let map = build_map n_mem es.E.events in
       let relabel_event e =
-        try { e with E.eiid = IMap.find e.E.eiid map }
-        with Not_found -> assert false in
-      let e_fulls = es.E.mem_accesses in (* Those will not be relabelled *)
-      let es = { es with E.mem_accesses = E.EventSet.empty; } in
-      let es = E.map_event_structure relabel_event es in
-      { es with E.mem_accesses = e_fulls; }
+        let id =  e.E.eiid in
+        try { e with E.eiid = IMap.find id map }
+        with Not_found -> assert (E.EventSet.mem e es.E.mem_accesses) ; e in
+       E.map_event_structure relabel_event es
 
 
     let (|*|) = EM.(|*|)
@@ -1448,20 +1447,17 @@ let match_reg_events es =
           loc_mems
       end
 
+     let check_event_aligned test e =
+          let a = Misc.as_some (E.global_loc_of e) in
+          if not (U.is_aligned (S.size_env test) e) then
+             Printf.printf "UNALIGNED: %s\n" (E.pp_action e);
+             Warn.user_error "Unaligned or out-of-bound access: %s"
+                  (A.V.pp_v a)
+
     let check_aligned test es =
       let open Constant in
       E.EventSet.iter
-        (fun e ->
-          let a = Misc.as_some (E.global_loc_of e)
-          and sz_e = E.get_mem_size e in
-          match a with
-          | V.Val (Symbolic ((s,_),idx)) ->
-              let sz_s =
-                A.look_size (S.size_env test) s in
-              if not (List.mem idx (MachSize.get_off sz_s sz_e)) then
-                Warn.user_error "Non aligned or out-of-bound access: %s"
-                  (A.V.pp_v a)
-          | _ -> assert false)
+        (fun e -> check_event_aligned test e)
         es.E.mem_accesses
 
     let calculate_rf_with_cnstrnts test es cs kont kont_loop res =
@@ -1487,7 +1483,7 @@ let match_reg_events es =
    entails a tremendous runtime penalty. *)
                   when_unsolved test es rfm cs kont_loop res
               | _ ->
-                  if mixed then check_aligned test es ;
+                  if (mixed && not unaligned) then check_aligned test es ;
                   if A.reject_mixed && not (mixed || memtag) then check_sizes es ;
                   if C.debug.Debug_herd.solver && C.verbose > 0 then begin
                     let module PP = Pretty.Make(S) in
