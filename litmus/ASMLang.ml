@@ -524,16 +524,21 @@ module RegMap = A.RegMap)
       let compile_out_reg_call_std proc reg =
         sprintf "&%s" (Tmpl.compile_out_reg proc reg)
 
-      let compile_out_reg_call_kvm proc reg =
-        sprintf "&%s" (Tmpl.compile_presi_out_reg proc reg)
+      let compile_out_reg_call_kvm env proc reg =
+        let is_ptr =
+          try CType.is_ptr (A.RegMap.find reg env)
+          with Not_found -> false in
+        sprintf "&%s"
+          ((if is_ptr then Tmpl.compile_presi_out_ptr_reg
+          else Tmpl.compile_presi_out_reg) proc reg)
 
-      let compile_out_reg_call =
+      let compile_out_reg_call env =
         let open Mode in
         match O.mode with
         | Std -> compile_out_reg_call_std
-        | Kvm|PreSi -> compile_out_reg_call_kvm
+        | Kvm|PreSi -> compile_out_reg_call_kvm env
 
-      let dump_call f_id _tr_idx chan indent _env alignedEnv _volatileEnv proc t =
+      let dump_call f_id _tr_idx chan indent env alignedEnv _volatileEnv proc t =
         let labels = List.map compile_label_call (Tmpl.get_labels t) in
         let addrs_proc,ptes = Tmpl.get_addrs t
         and phys = Tmpl.get_phys_only t in
@@ -545,7 +550,7 @@ module RegMap = A.RegMap)
           if O.memory = Memory.Indirect && O.cautious then
             List.map (compile_cpy_addr_call proc) addrs_proc
           else []
-        and outs = List.map (compile_out_reg_call proc) t.Tmpl.final in
+        and outs = List.map (compile_out_reg_call env proc) t.Tmpl.final in
         let args = String.concat "," (labels@addrs@addrs_cpy@outs) in
         LangUtils.dump_code_call chan indent f_id args
 
