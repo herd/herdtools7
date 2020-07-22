@@ -52,12 +52,17 @@ AArch64 "ARMv8 AArch64"
 include "cos.cat"
 
 (*
- * Include aarch64fences.cat so that barriers show up in generated diagrams.
+ * Include aarch64fences.cat to define barriers.
  *)
 include "aarch64fences.cat"
 
-(* Show dependencies *)
-include "show-deps.cat"
+(*
+ * Include aarch64deps.cat to define dependencies.
+ *)
+include "aarch64deps.cat"
+
+(* Show relations in generated diagrams *)
+include "aarch64show.cat"
 
 (*
  * As a restriction of the model, all observers are limited to the same

@@ -105,7 +105,7 @@ match a with
 | `ARM -> File "arm.cat"
 | `AArch64 ->
     File
-      (if variant Variant.Deps then "aarch64-deps.cat"        
+      (if variant Variant.Deps then "aarch64deps.cat"        
       else "aarch64.cat")
 | `C -> File "c11_partialSC.cat"
 | `RISCV -> File "riscv.cat"

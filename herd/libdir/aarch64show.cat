@@ -8,3 +8,12 @@ show ctrl \ ctrlisb as ctrl
 (* Show same-tag-loc without id edges *)
 show same-tag-loc\id as same-tag-loc
 
+(* Communication relations *)
+let rf-mem = rf \ rf-reg
+show rf-reg
+show rf-mem as rf
+show co|fr as ca
+
+(* Intrinsic order *)
+show iico_data | iico_ctrl as intrinsic
+
