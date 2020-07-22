@@ -56,7 +56,12 @@ include "cos.cat"
  *)
 include "aarch64fences.cat"
 
-(* Show dependencies *)
+(*
+ * Include aarch64deps.cat so that dependencies show up in generated diagrams.
+ *)
+include "aarch64deps.cat"
+
+(* Show relations *)
 include "aarch64show.cat"
 
 (*
