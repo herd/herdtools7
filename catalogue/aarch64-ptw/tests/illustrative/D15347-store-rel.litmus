@@ -5,6 +5,7 @@ pte_x=0; (*invalid*)
 0:X1=phy_y; 
 0:X4=1;
 0:X3=x;
+y=2;
 }
 P0             ;
 STR X1,[X2]    ;

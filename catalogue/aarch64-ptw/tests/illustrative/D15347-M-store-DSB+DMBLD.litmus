@@ -4,6 +4,7 @@ pte_x=0; (*invalid*)
 0:X2=pte_x;
 0:X1=phy_y; 
 1:X3=x;
+y=1;
 0:X8=z;
 1:X8=z;
 }
