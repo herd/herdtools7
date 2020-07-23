@@ -305,7 +305,9 @@ module Make
           (fun loc -> not (is_aligned loc env))
           (get_observed_globals t)
 
-      let is_ptr loc env = CType.is_ptr (find_type loc env)
+      let is_ptr loc env =
+        let t = find_type loc env in
+       CType.is_ptr t
 
       let ptr_in_outs env test =
         let locs = get_displayed_locs test in

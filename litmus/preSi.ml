@@ -564,14 +564,28 @@ module Make
           (* Define indices *)
           List.iteri
             (fun k (a,_) ->
+              let idx = if is_pte then 3*k+1 else k+1 in
+              O.f "static const int %s = %i;" (dump_addr_idx a) idx ;
+              if is_pte then begin
               O.f "static const int %s = %i;"
-                (dump_addr_idx a) (k+1))
+                  (dump_addr_idx (Misc.add_physical a)) (3*k+2) ;
+              O.f "static const int %s = %i;"
+                  (dump_addr_idx (Misc.add_pte a)) (3*k+3)
+              end)
             test.T.globals ;
           O.o "" ;
           (*  Translation to indices *)
           let dump_test (s,_) =
             O.fi "else if (v_addr == p->%s) return %s;"
-              s (dump_addr_idx s) in
+              s (dump_addr_idx s) ;
+            if is_pte then begin
+            O.fi "else if ((pteval_t)v_addr == p->%s) return %s;"
+                (OutUtils.fmt_phy_tag s)
+                (dump_addr_idx (Misc.add_physical s)) ;
+            O.fi "else if ((pteval_t *)v_addr == p->%s) return %s;"
+                (OutUtils.fmt_pte_tag s)
+                (dump_addr_idx (Misc.add_pte s))
+            end in
           O.o "static int idx_addr(intmax_t *v_addr,vars_t *p) {" ;
           O.oi "if (v_addr == NULL) { return 0;}" ;
           List.iter dump_test test.T.globals ;
@@ -580,9 +594,18 @@ module Make
           O.o "" ;
 (* Pretty-print indices *)
           if some_ptr then begin
-          O.f "static char *pretty_addr[NVARS+1] = {\"0\",%s};"
+          O.f "static char *pretty_addr[%s+1] = {\"0\",%s};"
+              (if is_pte then "(3*NVARS)" else "NVARS")
             (String.concat ""
-               (List.map (fun (s,_) -> sprintf "\"%s\"," s) test.T.globals)) ;
+               (List.map (fun (s,_) ->
+                 sprintf "\"%s\",%s"
+                   s
+                   (if is_pte then
+                     sprintf "\"%s\",\"%s\","
+                       (Misc.add_physical s)
+                       (Misc.add_pte s)
+                   else ""))
+                   test.T.globals)) ;
           O.o ""
           end
         end ;
@@ -656,6 +679,9 @@ module Make
 
               let with_ok = true
               module C = T.C
+              let dump_value v = match v with
+              | Constant.Symbolic _ -> dump_addr_idx (T.C.V.pp O.hexa v)
+              | _ -> T.C.V.pp O.hexa v
               module Loc = struct
                 type t = A.location
                 let compare = A.location_compare

@@ -44,7 +44,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
       module S = Switch.Make(O)(I)
       module V = I.C.V
 
-      let dump_v v = V.pp O.hexa v
+      let dump_v v = I.dump_value v
 
       let dump  =
         let rec dump_prop p = match p with
@@ -53,7 +53,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
         | Atom (LL (loc1,loc2)) ->
             O.fprintf"%s == %s" (I.Loc.dump loc1) (I.Loc.dump loc2)
         | Atom (FF f) ->
-            O.fprintf "%s" (I.Loc.dump_fatom dump_v f)
+            O.fprintf "%s" (I.Loc.dump_fatom (V.pp O.hexa) f)
         | Not p ->
             O.output "!(" ;
             dump_prop p ;
