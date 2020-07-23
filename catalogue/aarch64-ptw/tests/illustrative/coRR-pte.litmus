@@ -4,6 +4,7 @@ AArch64 coRR-pte
 0:X3=pte_x;
 1:X3=pte_x;
 1:X4=phy_y;
+x=0;
 y=1;
 }
 P0          | P1          ;

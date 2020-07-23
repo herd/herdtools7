@@ -188,8 +188,7 @@ module Make
       let calc_si sca = begin
         if mixed then
           E.EventRel.unions
-            (id_mem::
-             E.EventSetSet.map_list
+            (E.EventSetSet.map_list
                (fun sm -> E.EventRel.cartesian sm sm)
                sca)
         else
