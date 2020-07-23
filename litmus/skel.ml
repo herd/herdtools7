@@ -853,6 +853,7 @@ module Make
           (struct
             let with_ok = true
             module C = C
+            let dump_value = C.V.pp O.hexa
             module Loc = struct
               type t = A.location
               let compare = A.location_compare
