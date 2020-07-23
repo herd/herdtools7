@@ -2,6 +2,7 @@ AArch64 D15347-M-load-shoot+addr
 {
 pte_x=0; (*invalid*)
 0:X2=pte_x;
+0:X4=x;
 0:X1=phy_y; 
 1:X3=x;
 y=1;
@@ -11,7 +12,8 @@ y=1;
 P0              | P1;
 STR X1,[X2]     | LDR X7,[X8]           ;
 DSB ISH         | EOR X5,X7,X7          ;
-TLBI VAAE1IS,X2 | L0:LDR X4,[X3,W5,SXTW];
+LSR X3,X4,12    | L0:LDR X4,[X3,W5,SXTW]; 
+TLBI VAAE1IS,X2 |                       ;
 DSB ISH         |                       ;
 MOV X7,#1       |                       ;
 STR X7,[X8]     |                       ;
