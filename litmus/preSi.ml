@@ -1095,7 +1095,7 @@ module Make
           List.iter
             (fun ((p,_),_ as f) ->
               if proc = p then
-                O.fii "_log->%s = _ctx->f.%s;" (tag_log f) (tag_seen f))
+                O.fii "_log->%s = _ctx->f.%s?1:0;" (tag_log f) (tag_seen f))
             faults
         end ;
 (* Collect shared locations final values, if appropriate *)
