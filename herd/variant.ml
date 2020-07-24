@@ -43,6 +43,7 @@ type t =
   | Deps
   | Instances (* Compute dependencies on instruction instances *)
   | Kvm
+  | ETS
   | TTHM
   | HA
   | HD
@@ -76,6 +77,7 @@ let parse s = match Misc.lowercase s with
 | "deps" -> Some Deps
 | "instances"|"instance" -> Some Instances
 | "kvm" -> Some Kvm
+| "ets" -> Some ETS
 | "tthm" | "TTHM" -> Some TTHM
 | "ha" | "HA" -> Some HA
 | "hd" | "HD" -> Some HD
@@ -104,6 +106,7 @@ let pp = function
   | Deps -> "Deps"
   | Instances -> "Instances"
   | Kvm -> "kvm" 
+  | ETS -> "ets" 
   | TTHM -> "tthm"
   | HA -> "ha"
   | HD -> "hd"  
