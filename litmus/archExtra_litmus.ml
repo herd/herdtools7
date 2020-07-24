@@ -28,6 +28,7 @@ module type I = sig
   val reg_class_stable : arch_reg -> string
   val comment : string
   val error : CType.t -> CType.t -> bool
+  val warn : CType.t -> CType.t -> bool
 end
 
 module type S = sig

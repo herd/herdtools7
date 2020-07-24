@@ -30,8 +30,9 @@ module type I = sig
 (* gcc assembly template register class *)
   val reg_class : arch_reg -> string
   val reg_class_stable : arch_reg -> string
-(* type errors *)
+(* type errors ad warnings *)
   val error : CType.t -> CType.t  -> bool
+  val warn : CType.t -> CType.t  -> bool
 end
 
 module Make
@@ -305,7 +306,7 @@ module RegMap = A.RegMap)
       let before_dump compile_out_reg compile_val compile_cpy
           chan indent env proc t trashed =
 
-        let reg_env = Tmpl.get_reg_env A.error t in
+        let reg_env = Tmpl.get_reg_env A.error A.warn t in
         RegSet.iter
           (fun reg ->
             let ty = match A.internal_init reg with

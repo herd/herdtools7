@@ -32,6 +32,7 @@ end
 exception Error of string
 
 module type Config = sig
+  val verbose : int
   val memory : Memory.t
   val cautious : bool
   val hexa : bool
@@ -39,6 +40,7 @@ module type Config = sig
 end
 
 module DefaultConfig = struct
+  let verbose = 0
   let memory = Memory.Direct
   let cautious = false
   let hexa = false
@@ -109,7 +111,9 @@ module type S = sig
   val all_regs : t -> RegSet.t
   val trashed_regs : t -> RegSet.t
   val get_reg_env :
-      (CType.t -> CType.t -> bool) -> t -> CType.t RegMap.t
+      (CType.t -> CType.t -> bool)-> (* fail *)
+        (CType.t -> CType.t -> bool)->  (* warn *)
+          t -> CType.t RegMap.t
 end
 
 module Make(O:Config)(A:I) =
@@ -357,7 +361,7 @@ module Make(O:Config)(A:I) =
            (RegSet.of_list t.final)
            (RegSet.of_list t.stable))
 
-    let get_reg_env error tst =
+    let get_reg_env error warn tst =
       let m =
         List.fold_left (fun m (r,t) -> RegMap.add r t m)
           RegMap.empty tst.ty_env in
@@ -373,9 +377,7 @@ module Make(O:Config)(A:I) =
                       "Register %s has different types: <%s> and <%s>"
                       (A.reg_to_string r) (CType.dump t0) (CType.dump t)
                   end else
-                    if not
-                        ((CType.is_ptr t0 && CType.is_ptr t) ||
-                        CType.same_base t0 t)
+                    if warn t0 t
                     then
                         Warn.warn_always
                       "File \"%s\" Register %s has different types: <%s> and <%s>"
