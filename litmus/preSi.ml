@@ -969,10 +969,6 @@ module Make
           pte_init env test _some_ptr stats global_env
           (_vars,inits) (proc,(out,(_outregs,envVolatile)))  =
         if dbg then eprintf "P%i: inits={%s}\n" proc (String.concat "," inits) ;
-        let faults =
-          List.filter
-            (fun ((p,_),_) -> Proc.compare proc p = 0)
-            faults in
         let have_faults = have_fault_handler && Misc.consp faults in
         let my_regs = U.select_proc proc env in
         let addrs = A.Out.get_addrs_only out in (* accessed in code *)
@@ -1079,6 +1075,15 @@ module Make
             O.out (Indent.as_string Indent.indent2)
             my_regs global_env envVolatile proc out
         end ;
+(* Collect faults *)
+        if is_pte then begin
+          List.iter
+            (fun ((p,_),_ as f) ->
+              if Proc.compare proc p = 0 then
+                O.fii "_log->%s = _ctx->f.%s?1:0;" (tag_log f) (tag_seen f))
+            faults
+        end ;
+(* Stnchronise *)
         O.oii "barrier_wait(_b);" ;
 (* Restore pte *)
         if is_pte then begin
@@ -1089,14 +1094,6 @@ module Make
               O.fii "*(%s) = %s;" pte phy ;
               O.fii "litmus_flush_tlb((void *)%s);" a)
             inits
-        end ;
-(* Collect faults *)
-        if is_pte then begin
-          List.iter
-            (fun ((p,_),_ as f) ->
-              if proc = p then
-                O.fii "_log->%s = _ctx->f.%s?1:0;" (tag_log f) (tag_seen f))
-            faults
         end ;
 (* Collect shared locations final values, if appropriate *)
         let globs = U.get_displayed_globals test in
