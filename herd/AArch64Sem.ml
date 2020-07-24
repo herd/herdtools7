@@ -424,48 +424,57 @@ module Make
             if C.precision then  mfault >>! B.Exit
            else (mfault >>| mm) >>! B.Next)
 
-        let lift_kvm dir mop ma an ii mphy =
-          M.delay ma >>= fun (a,ma) ->
-            match Act.access_of_location_std (A.Location_global a) with
-            | Act.A_VIR ->
-                check_ptw dir a ma an ii
-                  (mop Act.A_PTE ma >>! B.Next)
-                  mphy
+        let lift_kvm dir mop ma omv an ii mphy =
+           let mfault = 
+              begin match omv with 
+              | None ->
                   (fun ma a -> ma >>= fun _ -> mk_fault a ii
                       >>! if C.precision then B.Exit else B.ReExec)
+              | Some mv -> 
+                  (fun ma a -> (ma >>| mv) >>= fun (_,_) -> mk_fault a ii
+                      >>! if C.precision then B.Exit else B.ReExec)
+               end 
+            in
+            M.delay ma >>= fun (a,ma) ->
+            match Act.access_of_location_std (A.Location_global a) with
+            | Act.A_VIR ->
+               check_ptw dir a ma an ii
+                  (mop Act.A_PTE ma >>! B.Next)
+                  mphy
+                  mfault
             | ac -> mop ac ma >>! B.Next
 
-        let lift_memop dir mop ma an ii =
+        let lift_memop dir mop ma omv an ii =
         if memtag then 
           if kvm then 
             let mphy = (fun ma a -> lift_memtag_phy mop a ma ii) in
-            lift_kvm dir mop ma an ii mphy
+            lift_kvm dir mop ma omv an ii mphy
           else lift_memtag_virt mop ma ii
         else if kvm then
           let mphy = (fun ma _a -> mop Act.A_PHY ma >>! B.Next) in
-          lift_kvm dir mop ma an ii mphy
+          lift_kvm dir mop ma omv an ii mphy
         else
           mop Act.A_VIR ma >>! B.Next
 
-      let do_str sz an anexp rs ma ii =
+      let do_str sz an anexp ma mv ii =
         lift_memop Dir.W
           (fun ac ma ->
-            (ma >>| read_reg_data sz rs ii) >>= fun (a,v) ->
+            (ma >>| mv) >>= fun (a,v) ->
             do_write_mem sz an anexp ac a v ii)
-          ma an ii
+          ma (Some mv) an ii
 
       let do_ldr sz an anexp rd ma ii =
           lift_memop Dir.R
             (fun ac ma -> ma >>= fun a -> do_read_mem sz an anexp ac rd a ii)
-          ma an ii
+          ma None an ii
 
       let ldr sz rd rs kr ii =
          do_ldr sz AArch64.N AArch64.Exp rd (get_ea rs kr ii) ii
 
       and str sz rs rd kr ii =
-         do_str sz AArch64.N AArch64.Exp rs (get_ea rd kr ii) ii
+         do_str sz AArch64.N AArch64.Exp (get_ea rd kr ii) (read_reg_data sz rs ii) ii
 
-      and stlr sz rs rd ii = do_str sz AArch64.L AArch64.Exp rs (read_reg_ord rd ii) ii
+      and stlr sz rs rd ii = do_str sz AArch64.L AArch64.Exp (read_reg_ord rd ii) (read_reg_data sz rs ii) ii
 
       and ldar sz t rd rs ii =
         let open AArch64 in
@@ -487,7 +496,7 @@ module Make
                   read_mem_reserve sz AArch64.XA AArch64.Exp ac rd a ii
               | AQ ->
                   read_mem_acquire_pc sz AArch64.Exp ac rd a ii)
-          (read_reg_ord rs ii) an ii
+          (read_reg_ord rs ii) None an ii
 
       and stxr sz t rr rs rd ii =
         let open AArch64Base in
@@ -507,7 +516,7 @@ module Make
              | YY -> write_mem_atomic sz AArch64.X AArch64.Exp ac ea v resa ii
              | LY -> write_mem_atomic sz AArch64.XL AArch64.Exp ac ea v resa ii))
           (read_reg_ord rd ii)
-          an ii
+          (Some (read_reg_ord rd ii >>| read_reg_data sz rs ii)) an ii
 
       let csel_op op v =
         let open AArch64Base in  match op with
@@ -540,10 +549,10 @@ module Make
             (*SWP is a write for the purpose of the DB*)
             lift_memop Dir.W
               (fun ac ma ->
-                (read_reg_data sz r1 ii >>| ma) >>= fun (v,a) ->
+                (ma >>| read_reg_data sz r1 ii) >>= fun (a,v) ->
                  write_mem sz AArch64.Exp ac a v ii)
               (read_reg_ord r3 ii)
-              an ii
+              (Some (read_reg_ord r3 ii >>| read_reg_data sz r1 ii)) an ii
         |  _ ->
             let read_mem = rmw_amo_read rmw
             and write_mem = rmw_amo_write rmw in
@@ -555,7 +564,7 @@ module Make
                 and w1 a v = write_mem sz AArch64.Exp ac a v ii in
                 M.swp ma r1 r2 w1 w2)
               (read_reg_ord r3 ii)
-              an ii
+              (Some (read_reg_ord r3 ii >>| read_reg_data sz r1 ii)) an ii
 
       let cas sz rmw rs rt rn ii =
         let open AArch64 in
@@ -585,7 +594,7 @@ module Make
               M.aarch64_cas_ok
                 ma read_rs read_rt write_rs read_mem write_mem M.eqT))
           (read_reg_ord rn ii)
-          an ii
+          (Some (read_reg_ord rn ii >>| read_reg_ord_sz sz rs ii)) an ii
 
       let ldop op sz rmw rs rt rn ii =
         let open AArch64 in
@@ -613,7 +622,7 @@ module Make
               (fun a v -> write_mem sz ac a v ii)
               (fun w -> if noret then M.unitT () else write_reg_sz_non_mixed sz rt w ii))
          (read_reg_ord rn ii)
-          an ii
+          None an ii
 
       let build_semantics ii =
         M.addT (A.next_po_index ii.A.program_order_index)
