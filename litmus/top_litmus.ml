@@ -401,6 +401,7 @@ end = struct
           end in
         (* Compile configuration, must also be used to configure arch modules *)
         let module OC = struct
+          let verbose = OT.verbose
           let word = word
           let syncmacro =OT.syncmacro
           let syncconst = OT.syncconst

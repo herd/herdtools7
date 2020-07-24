@@ -44,7 +44,7 @@ module Make(V:Constant.S) = struct
  *)
         dump_ins (k+1) ts in
 (* Prefix *)
-    let reg_env = Tmpl.get_reg_env A.I.error t in
+    let reg_env = Tmpl.get_reg_env A.I.error A.I.warn t in
     let all_regs = Tmpl.all_regs t in
     let init =
       List.fold_left (fun m (r,v) -> RegMap.add r v m)

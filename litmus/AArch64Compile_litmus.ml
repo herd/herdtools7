@@ -15,6 +15,7 @@
 (****************************************************************************)
 
 module type Config = sig
+  val verbose : int
   val word : Word.t
   val memory : Memory.t
   val cautious : bool

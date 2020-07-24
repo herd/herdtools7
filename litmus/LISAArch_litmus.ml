@@ -50,6 +50,7 @@ module Make(V:Constant.S) = struct
           | (Pointer _,Base "int")  ->
               true
           | _ -> false
+        let warn _t1 _t2 = false
       end)
   let nop = Pnop
 end
