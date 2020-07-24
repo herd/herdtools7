@@ -41,6 +41,7 @@ type t =
   | Deps
   | Instances (* Compute dependencies on instruction instances *)
   | Kvm
+  | ETS 
   | TTHM
   | HA
   | HD
