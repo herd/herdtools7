@@ -153,9 +153,20 @@ and plines nk k = parse
       skip_pline lexbuf ;
       plines (nk+1) k lexbuf
     end }
-|  ("Loop" blank+ as loop)?
+| blank* nl
+  { incr_lineno lexbuf ;
+    let st = {
+      p_noccs = Int64.one;
+      p_st = LS.as_st_concrete [] []
+    } in
+    plines (nk+1) (st::k) lexbuf
+  }
+| ("Loop" blank+ as loop)?
    (((validation as ok) ([^'\r''\n']*))
-|("" as ok))  nl  (* missing validation result, from some litmus logs *)
+(* Alternative below deleted as there is an ambiguity with empty output,
+   expecting old logs not to show up anymore . *)
+(* | ("" as ok)  nl   missing validation result, from some litmus logs  *)
+)
     { incr_lineno lexbuf ;
       let ok = match ok with
       | "Succeeded"|"Ok" -> Ok
