@@ -726,6 +726,7 @@ let clean_name n =
 
 let add_atag = sprintf "%s.atag"
 and check_atag s = Filename.check_suffix s ".atag"
+
 let tr_atag s =
   if check_atag s then
     Some (Filename.chop_suffix s ".atag")
@@ -761,3 +762,27 @@ let tr_dbm = do_tr "dbm_"
 
 let add_physical s = sprintf "phy_%s" s
 let tr_physical = do_tr "phy_"
+
+(******************)
+(* Hash utilities *)
+(******************)
+let  mix a b c =
+  let a = a-b in let a = a-c in
+  let a = a lxor (c lsr 13) in
+  let b = b-c in let b = b-a in
+  let b = b lxor (a lsl 8) in
+  let c = c-a in let c = c-b in
+  let c = c lxor (b lsr 13) in
+  let a = a-b in let a = a-c in
+  let a = a lxor (c lsr 12) in 
+  let b = b-c in let b = b-a in
+  let b = b lxor (a lsl 16) in
+  let c = c-a in let c = c-b in
+  let c = c lxor (c lsr 5) in
+  let a = a-b in let a = a-c in
+  let a = a lxor (c lsl 3) in
+  let b = b-c in let b = b-a in
+  let b = b lxor (a lsl 10) in
+  let c = c-a in let c = c-b in
+  let c = c lxor (c lsr  15) in
+  c

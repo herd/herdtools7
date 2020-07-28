@@ -36,7 +36,7 @@ module LS = LogState.Make(O)
 
 let c_init = 100
 let count = ref 0
-let poolize loc v = HashedPair.as_hashed loc v
+let poolize loc v = HashedBinding.as_hashed loc v
 let no_wits = Int64.zero,Int64.zero
 let no_topos = []
 let no_cond = None
@@ -68,6 +68,8 @@ let to_hex =
 
 let to_xxx = if O.hexa then to_hex else to_dec
 
+let to_proc s = try int_of_string s with _ -> assert false
+
 let nstates_limit = 1024
 }
 
@@ -77,7 +79,9 @@ let hexa = ['0'-'9' 'a'-'f' 'A'-'F' ]
 let hexanum = "0x" hexa+
 let set = '{' (' '|','|('-'?(num|hexanum)))* '}'
 let alpha = [ 'a'-'z' 'A'-'Z']
-let name = alpha (alpha|digit| '.')*
+let name = alpha (alpha|digit|'_'| '.')*
+let label = 'L' (alpha|digit)+
+let fault = (['f''F'] "ault")
 let reg = name
 let loc = name | ('$' (alpha+|digit+))
 let blank = [' ' '\t']
@@ -136,14 +140,14 @@ and pstate = parse
 and plines nk k = parse
 | ((num as c) blank* (":>"|"*>"))?
     { if O.acceptBig || nk <= nstates_limit then
-        let line = pline [] lexbuf in
+        let bds,fs = pline [] [] lexbuf in
         let st =
           { p_noccs =
             begin match c with
             | None -> Int64.one
             | Some s -> Int64.of_string s
             end ;
-            p_st = LS.as_st_concrete line } in
+            p_st = LS.as_st_concrete bds fs } in
         plines (nk+1) (st::k) lexbuf
     else begin
       skip_pline lexbuf ;
@@ -170,7 +174,7 @@ and skip_empty_lines = parse
 | blank*  nl  { incr_lineno lexbuf ; skip_empty_lines lexbuf }
 | "" { () }
 
-and pline k = parse
+and pline bds fs = parse
 | blank*
  ((num ':' reg as loc)|(('['?) (loc as loc) ( ']'?))|(loc '[' num ']' as loc))
     blank* '=' blank* (('-' ? (num|hexanum))|(name(':'name)?)|set as v)
@@ -178,8 +182,14 @@ and pline k = parse
     {
      let v = to_xxx v in  (* Translate to decimal *)
      let p = poolize loc v in
-     pline (p::k) lexbuf }
-| blank* ('#' [^'\n']*)?  nl  { incr_lineno lexbuf ; k }
+     pline (p::bds) fs lexbuf }
+| blank* fault blank* '(' blank* ('P'? (num as proc)) ':' (label as lbl) blank* ','
+    (loc as loc) blank* ')' blank* ';'
+    {
+     let f = (to_proc proc,lbl),loc in
+     let f = HashedFault.as_hashed f in
+     pline bds (f::fs) lexbuf }
+| blank* ('#' [^'\n']*)?  nl  { incr_lineno lexbuf ; bds,fs }
 | "" { error "pline" lexbuf }
 
 and skip_pline = parse
@@ -187,6 +197,8 @@ and skip_pline = parse
  ((num ':' reg)|(('['?) (loc) ( ']'?))|(loc '[' num ']'))
     blank* '=' blank* (('-' ? (num|hexanum))|name|set)
     blank* ';'
+| blank* fault blank* '(' blank* ('P'? num) ':' label blank* ','
+    loc blank* ')' blank* ';'
     { skip_pline lexbuf }
 | blank* ('#' [^'\n']*)?  nl  { incr_lineno lexbuf }
 | "" { error "skip_pline" lexbuf }
@@ -283,8 +295,8 @@ and sstate = parse
 
 and slines k = parse
 | ((num) blank* (":>"|"*>"))?
-    { let line = pline [] lexbuf in
-      let st = LS.as_st_concrete line in
+    { let bds,fs = pline [] [] lexbuf in
+      let st = LS.as_st_concrete bds fs in
       slines (st::k) lexbuf }
 |  ("Loop" blank+ )?
    ((validation ([^'\r''\n']*))

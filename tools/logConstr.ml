@@ -131,6 +131,7 @@ module type I = sig
 
   val state_mem : state -> MiscParser.location -> V.v -> bool
   val state_eqloc : state -> MiscParser.location -> MiscParser.location -> bool
+  val state_fault : state -> V.v Fault.atom -> bool
 end
 
 module Make(I:I) : sig
@@ -157,7 +158,7 @@ end  =
     let rec check_prop p state = match p with
     | Atom (LV (l,v)) -> I.state_mem state l v
     | Atom (LL (l1,l2)) -> I.state_eqloc state l1 l2
-    | Atom (FF _) -> Warn.fatal "No fault in LogConstr proposition"
+    | Atom (FF f) -> I.state_fault state f
     | Not p -> not (check_prop p state)
     | And ps -> List.for_all (fun p -> check_prop p state) ps
     | Or ps -> List.exists (fun p -> check_prop p state) ps

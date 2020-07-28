@@ -260,6 +260,7 @@ val clean_name : string -> string
    For location x, tag location is x.atag *)
 
 val add_atag : string -> string
+val check_atag : string -> bool
 val tr_atag : string -> string option
 
 val add_pte : string -> string
@@ -274,3 +275,9 @@ val tr_dbm : string ->  string option
 
 val add_physical : string -> string
 val tr_physical : string -> string option
+
+(******************)
+(* Hash utilities *)
+(******************)
+
+val mix : int -> int -> int -> int
