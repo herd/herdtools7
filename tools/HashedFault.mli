@@ -14,11 +14,11 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type bd = string * string
-type fault = string
-type bds = bd list * fault list
-type cnf = bds list
+include (Hashcons.S with type key = Proc.t * HashedString.t * HashedString.t)
 
+open Hashcons
 
-val pp_simple : cnf -> string
-val pp_opt : cnf -> string
+val as_hashed  : Fault_tools.t -> node
+val as_t :  node -> Fault_tools.t
+val as_hash :  node -> int
+val compare :  node ->  node -> int

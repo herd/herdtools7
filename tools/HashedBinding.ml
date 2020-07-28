@@ -18,7 +18,6 @@ module S = struct
   type t = HashedString.t * HashedString.t
   let equal (a1,b1) (a2,b2) =  a1 == a2 && b1 == b2
 
-
   let  mix a b c =
     let a = a-b in let a = a-c in
     let a = a lxor (c lsr 13) in
@@ -43,7 +42,7 @@ module S = struct
   let hash (a,b) =
     let ah =  HashedString.as_hash a
     and bh = HashedString.as_hash b in
-    abs (mix (0x4F1BBCDC+ah) (0x4F1BBCDC+bh) 0)
+    abs (Misc.mix (0x4F1BBCDC+ah) (0x4F1BBCDC+bh) 0)
 end
 
 include(Hashcons.Make(S))
