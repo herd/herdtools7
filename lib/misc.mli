@@ -256,3 +256,9 @@ val clean_name : string -> string
 
 val add_atag : string -> string
 val check_atag : string -> bool
+
+(******************)
+(* Hash utilities *)
+(******************)
+
+val mix : int -> int -> int -> int

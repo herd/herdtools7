@@ -18,16 +18,15 @@
 (* Hash-consed lists for bindings *)
 (**********************************)
 
-type binding = HashedPair.key Hashcons.hash_consed
+(* type binding = HashedBinding.key Hashcons.hash_consed *)
 
-
-
+(*
 type st = st_node Hashcons.hash_consed
 and st_node =
   | Nil
-  | Cons of binding * st
+  | Cons of  HashedBinding.key Hashcons.hash_consed * st
 
-module HashedList =
+module HashedEnv =
   Hashcons.Make
     (struct
       type t = st_node
@@ -41,13 +40,39 @@ module HashedList =
         | Cons (x,r) ->
             abs ((19 * x.Hashcons.hkey) + r.Hashcons.hkey + 1)
     end)
-(* Concrete types for states *)
+*)
 
-let is_hashed_nil nh = match nh.Hashcons.node with
-| Nil -> true
-| Cons _ -> false
+(* Hashed list of bindings *)
+module HashedEnv = HashedList.Make (struct type elt = HashedBinding.key end)
 
-type st_concrete = st_node Hashcons.hash_consed
+(* Hashed list of faults *)
+module HashedFaults = HashedList.Make(struct type elt = HashedFault.key end)
+
+(* Hashed pair of lists *)
+module HashedState = struct
+
+  module S = struct
+
+    type t = HashedEnv.t * HashedFaults.t
+
+    let equal (e1,f1) (e2,f2) = e1 == e2 && f1 == f2
+
+    let hash (e,f) =
+      let eh = HashedEnv.as_hash e and fh = HashedFaults.as_hash f in
+      abs (Misc.mix (0x4F1BBCDC+eh) (0x4F1BBCDC+fh) 0)
+  end
+
+  module M = Hashcons.Make(S)
+  type node = M.node
+
+  let t = M.create 101
+
+  let as_hashed a b = M.hashcons t (a,b)
+  let as_t h = h.Hashcons.node
+
+end
+
+type st_concrete = HashedState.node
 
 type parsed_st =
   {
@@ -138,31 +163,25 @@ module W = Warn.Make(O)
    in an outcome is an error *)
 
 let compare_binding p1 p2 =
-  match HashedPair.compare_loc p1 p2 with
+  match HashedBinding.compare_loc p1 p2 with
 | 0 -> assert false
 | r -> r
 
-let ht = HashedList.create 101
+let as_st_concrete bds fs =
+  let bds = List.sort compare_binding bds
+  and fs = List.sort HashedFault.compare fs in
+  let bds = List.fold_right HashedEnv.cons bds HashedEnv.nil
+  and fs =  List.fold_right HashedFaults.cons fs HashedFaults.nil in
+  HashedState.as_hashed bds fs
+      
 
-let cons x r = HashedList.hashcons ht  (Cons (x,r))
-let nil =  HashedList.hashcons ht Nil
-
-let as_st_concrete xs =
-  let xs = List.sort compare_binding xs in
-  List.fold_right cons xs nil
-
-
-(* Iter hashconsed list *)
-let rec hashconsed_iter f xs = match xs.Hashcons.node with
-| Nil -> ()
-| Cons (x,r) -> f x ; hashconsed_iter f r
-
-(* Map to list *)
-let rec hashconsed_map f xs = match xs.Hashcons.node with
-| Cons (x,r) -> f x :: hashconsed_map f r
-| Nil        -> []
-
-let st_as_string st = hashconsed_map HashedPair.as_t st
+let st_as_string st =
+  let e,f = HashedState.as_t st in
+  let pp_env = HashedEnv.map HashedBinding.as_t e
+  and pp_faults =
+    let fs = HashedFaults.map HashedFault.as_t f in
+    List.map Fault_tools.pp fs in
+  pp_env,pp_faults
 
 let is_empty_simple st = match st.s_states with
 | [] -> true
@@ -173,25 +192,26 @@ let get_bindings st = List.map (fun st -> st_as_string st.p_st) st.p_sts
 
 let empty_sts = { p_nouts = Int64.zero ; p_sts = []; }
 
-let add_binding buff p =
-  let loc,v = HashedPair.as_t p in
-  Buffer.add_string buff loc ;
-  Buffer.add_char buff '=' ;
-  Buffer.add_string buff  v ;
-  Buffer.add_char buff ';'
+let pp_binding p =
+  let loc,v = HashedBinding.as_t p in
+  sprintf "%s=%s;" loc v
+
+let pp_fault f =
+  let f = HashedFault.as_t f in
+  Fault_tools.pp f ^ ";"
 
 let pretty_state pref mode with_noccs st =
   let buff = Buffer.create 10 in
-  let rec do_rec xs = match xs.Hashcons.node with
-    | Nil -> ()
-    | Cons (p,{Hashcons.node=Nil;_}) -> add_binding buff p
-    | Cons (p,r) ->
-        add_binding buff p ;
-        Buffer.add_char buff ' ' ;
-        do_rec r in
   Buffer.add_string buff pref ;
   Buffer.add_char buff '[' ;
-  do_rec st.p_st ;
+  let e,f = HashedState.as_t st.p_st in
+  let pp_e = HashedEnv.pp pp_binding e
+  and pp_f = HashedFaults.pp pp_fault f in
+  let pp = match pp_e,pp_f with
+  | "","" -> ""
+  | (x,"")|("",x) -> x
+  | (x,y) -> x ^ " " ^ y in
+  Buffer.add_string buff pp ;
   Buffer.add_char buff ']' ;
   if with_noccs then begin
     match mode with
@@ -203,13 +223,20 @@ let pretty_state pref mode with_noccs st =
   Buffer.contents buff
 
 (* Redump log *)
+
 let dump_state chan is_litmus st =
   if is_litmus then fprintf chan  "%-8s:>" (Int64.to_string st.p_noccs) ;
-  hashconsed_iter
+  let e,f = HashedState.as_t st.p_st in
+  HashedEnv.iter
     (fun p ->
-      let loc,v = HashedPair.as_t p in
+      let loc,v = HashedBinding.as_t p in
       fprintf chan " %s=%s;"loc v)
-    st.p_st ;
+    e ;
+  HashedFaults.iter
+    (fun p ->
+      let f = HashedFault.as_t p in
+      fprintf chan " %s;" (Fault_tools.pp f))
+    f ;
   output_char chan '\n'
 
 let dump_states_cond chan is_litmus t =
@@ -227,7 +254,9 @@ let no_states sts = match sts.p_sts with
 
 let no_states_or_no_obs sts = match sts.p_sts with
 | [] -> true
-| [st] -> is_hashed_nil st.p_st
+| [st] ->
+    let e,f = HashedState.as_t st.p_st in
+    HashedEnv.nilp e && HashedFaults.nilp f
 | _::_::_ -> false
 
 let card sts = List.length  sts.p_sts
@@ -286,29 +315,48 @@ let pp_validation = function
 
 
 let extract_loc h =
-  let loc,_ = HashedPair.as_t h in
+  let loc,_ = HashedBinding.as_t h in
   loc
 
 let mismatch s = raise (StateMismatch (extract_loc s))
 
-let rec do_compare_state st1 st2 =
+let rec compare_env st1 st2 =
   let open Hashcons in
+  let open HashedEnv in
   match st1.node,st2.node with
   | Nil,Nil -> 0
   | (Nil,Cons (p,_))
   | (Cons (p,_),Nil) -> mismatch p
   | Cons (p1,st1),Cons (p2,st2) ->
-      match HashedPair.compare_loc p1 p2 with
+      match HashedBinding.compare_loc p1 p2 with
       | 0 ->
-          begin match HashedPair.compare_v p1 p2 with
-          | 0 -> do_compare_state st1 st2
+          begin match HashedBinding.compare_v p1 p2 with
+          | 0 -> compare_env st1 st2
           | r -> r
           end
       | r ->
           mismatch (if r > 0 then p2 else p1)
 
+let rec compare_faults st1 st2 =
+  let open Hashcons in
+  let open HashedFaults in
+  match st1.node,st2.node with
+  | Nil,Nil -> 0
+  | (Nil,Cons _) -> -1
+  | (Cons _,Nil) -> 1
+  | Cons (p1,st1),Cons (p2,st2) ->
+      match HashedFault.compare p1 p2 with
+      | 0 -> compare_faults st1 st2
+      | r -> r
 
- let compare_state st1 st2 = do_compare_state st1.p_st st2.p_st
+
+ let compare_state st1 st2 =
+   let e1,f1 = HashedState.as_t st1.p_st
+   and e2,f2 = HashedState.as_t st2.p_st in
+   match compare_env e1 e2 with
+   | 0 -> compare_faults f1 f2
+   | r -> r
+
 
 let rec do_diff_states sts1 sts2 =  match sts1,sts2 with
 | [],_ -> []
@@ -363,15 +411,16 @@ module LC =
 
 
       let rec bds_assoc  bds loc = match bds.Hashcons.node with
-      | Nil -> Warn.fatal "No value for location %s" loc
-      | Cons (p,r) ->
-          if Misc.string_eq loc (HashedPair.get_loc p) then
-            HashedPair.get_v p
+      | HashedEnv.Nil -> Warn.fatal "No value for location %s" loc
+      | HashedEnv.Cons (p,r) ->
+          if Misc.string_eq loc (HashedBinding.get_loc p) then
+            HashedBinding.get_v p
           else
             bds_assoc r loc
 
 
-      let state_mem bds loc v =
+      let state_mem st loc v =
+        let bds,_ = HashedState.as_t st in
         let v_bound_pp = bds_assoc bds (MiscParser.dump_location  loc) in
         let v_bound =
           try
@@ -380,10 +429,13 @@ module LC =
           with Failure _ -> Int64Constant.nameToV v_bound_pp in
         Int64Constant.eq v v_bound
 
-      let state_eqloc bds loc1 loc2 =
+      let state_eqloc st loc1 loc2 =
+        let bds,_ = HashedState.as_t st in
         let v1 = bds_assoc bds (MiscParser.dump_location  loc1)
         and v2 = bds_assoc bds (MiscParser.dump_location  loc2) in
         Misc.string_eq v1 v2
+
+      let state_fault _ _ = assert false
     end)
 
 
