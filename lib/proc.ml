@@ -23,3 +23,5 @@ let dump = Printf.sprintf "%i"
 let pp = Printf.sprintf "P%i"
 
 let compare = Misc.int_compare
+
+let equal = Misc.int_eq
