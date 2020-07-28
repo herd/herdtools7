@@ -46,17 +46,18 @@ module type HashedType =
 module type S =
   sig
     type key
+    type node = key hash_consed
     type t
     val create : int -> t
     val clear : t -> unit
-    val hashcons : t -> key -> key hash_consed
-    val iter : (key hash_consed -> unit) -> t -> unit
+    val hashcons : t -> key -> node
+    val iter : (node -> unit) -> t -> unit
   end
 
 module Make(H : HashedType) : (S with type key = H.t) = struct
 
   type key = H.t
-
+  type node = key hash_consed
 
   type t = H.t u
 (*

@@ -89,7 +89,8 @@ type simple_t = { s_name : string ; s_tests : simple_test list; }
 
 module Make(O:sig val verbose : int end) : sig
 
-val as_st_concrete :  HashedPair.key Hashcons.hash_consed list -> st_concrete
+val as_st_concrete :
+    HashedBinding.node list -> HashedFault.node list -> st_concrete
 
 val is_empty_simple : simple_test -> bool
 val empty_sts : sts
@@ -97,7 +98,7 @@ val get_nouts : sts -> Int64.t
 val millions : Int64.t -> float
 
 (* Extract bindings from states, break abstraction, use with care *)
-val get_bindings : sts -> (string * string) list list
+val get_bindings : sts -> ((string * string) list * string list) list
 
 (* - first argument is to be prefixed to all states
    - second argument is pp mode.
