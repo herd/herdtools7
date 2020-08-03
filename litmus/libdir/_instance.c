@@ -154,8 +154,8 @@ static void set_role(global_t *g,thread_ctx_t *c,int part) {
     c->ctx = &g->ctx[inst] ;
     c->role = g->role[idx] ;
 #ifdef HAVE_FAULT_HANDLER
-    whoami[idx].instance = inst ;
-    whoami[idx].proc = c->role ;
+    whoami[c->id].instance = inst ;
+    whoami[c->id].proc = c->role ;
 #ifdef SEE_FAULTS
     if (c->role == 0) {
       vars_ptr[inst] = &c->ctx->v;
