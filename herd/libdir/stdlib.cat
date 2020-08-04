@@ -26,7 +26,7 @@ let toid(s) = [s]
 let fencerel(B) = (po & (_ * B)) ;  po
 
 (* Control+cfence *)
-let ctrlcfence(CFENCE) = (ctrl & (_ * CFENCE)) ; po
+let ctrlcfence(ctrl,CFENCE) = (ctrl & (_ * CFENCE)) ; po
 
 (* Make the difference between load-reserve/store conditional and amo insructions *)
 let lxsx = rmw \ amo

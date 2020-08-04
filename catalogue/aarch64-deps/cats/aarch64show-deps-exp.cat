@@ -1,4 +1,4 @@
-include "aarch64spec.cat"
+include "aarch64spec-exp.cat"
 
 (* Show dependencies *)
 show data,addr

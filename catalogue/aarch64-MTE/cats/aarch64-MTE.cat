@@ -57,7 +57,7 @@ include "cos.cat"
 include "aarch64fences.cat"
 
 (* Show dependencies *)
-include "show-deps.cat"
+include "aarch64show.cat"
 
 (*
  * As a restriction of the model, all observers are limited to the same

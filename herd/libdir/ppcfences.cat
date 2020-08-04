@@ -8,7 +8,7 @@ show sync,lwsync,eieio
 
 (* Dependencies *)
 show data,addr
-let ctrlisync = try ctrlcfence(ISYNC) with 0
+let ctrlisync = try ctrlcfence(ctrl,ISYNC) with 0
 show ctrlisync
 show isync \ ctrlisync as isync
 show ctrl \ ctrlisync as ctrl

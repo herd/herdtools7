@@ -63,7 +63,7 @@ let lrs = [W]; (po-loc \ (po-loc;[W];po-loc)) ; [R]
 let lws = po-loc; [W]
 
 (* Include definitions of dependencies *)
-include "aarch64deps.cat"
+include "aarch64deps-exp.cat"
 
 (*
  * As a restriction of the model, all observers are limited to the same
