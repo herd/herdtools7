@@ -220,10 +220,10 @@ module Make
       let tr_cond = function
         | AArch64.NE -> is_zero
         | AArch64.EQ -> is_not_zero
-        | AArch64.GE -> is_lt
-        | AArch64.GT -> is_le
-        | AArch64.LE -> is_gt
-        | AArch64.LT -> is_ge
+        | AArch64.GE -> is_ge
+        | AArch64.GT -> is_gt
+        | AArch64.LE -> is_le
+        | AArch64.LT -> is_lt
 
 (***********************)
 (* Memory instructions *)
