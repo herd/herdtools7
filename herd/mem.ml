@@ -566,7 +566,7 @@ let match_reg_events es =
       | None -> prerr_endline "no cycle"; false
       | Some cy ->
           if C.debug.Debug_herd.rfm then begin
-            let debug_event chan e = Printf.fprintf chan "%i" e.E.eiid in
+            let debug_event chan e = fprintf chan "%i" e.E.eiid in
             eprintf "cycle = %a\n" debug_event
               (match cy with e::_ -> e | [] -> assert false)
           end; true
@@ -1448,11 +1448,12 @@ let match_reg_events es =
       end
 
      let check_event_aligned test e =
-          let a = Misc.as_some (E.global_loc_of e) in
-          if not (U.is_aligned (S.size_env test) e) then
-             Printf.printf "UNALIGNED: %s\n" (E.pp_action e);
-             Warn.user_error "Unaligned or out-of-bound access: %s"
-                  (A.V.pp_v a)
+       let a = Misc.as_some (E.global_loc_of e) in
+       if not (U.is_aligned (S.size_env test) e) then begin
+         if dbg then eprintf "UNALIGNED: %s\n" (E.pp_action e);
+         Warn.user_error "Unaligned or out-of-bound access: %s"
+           (A.V.pp_v a)
+       end
 
     let check_aligned test es =
       let open Constant in
