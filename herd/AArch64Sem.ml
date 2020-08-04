@@ -437,6 +437,15 @@ module Make
         | I_STLRBH(bh,rs,rd) ->
             stlr (bh_to_sz bh) rs rd ii
 
+        | I_STZG(rt,rn,kr) ->
+            if not memtag then Warn.user_error "STZG without -variant memtag" ;
+            begin
+              (read_reg_data MachSize.Quad rt ii >>= tag_extract) >>|
+              get_ea rn kr ii
+            end >>= fun (v,a) ->
+            (M.op1 Op.TagLoc a >>| loc_extract a) >>= fun (atag,loc) ->
+            (do_write_tag atag v ii >>| do_write_mem MachSize.Quad AArch64.N loc V.zero ii) >>! B.Next
+
         | I_STG(rt,rn,kr) ->
             if not memtag then Warn.user_error "STG without -variant memtag" ;
             begin

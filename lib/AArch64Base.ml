@@ -431,6 +431,7 @@ type 'k kinstruction =
   | I_MRS of reg * sysreg
 (* Memory Tagging *)
   | I_STG of reg * reg * 'k kr
+  | I_STZG of reg * reg * 'k kr
   | I_LDG of reg * reg * 'k kr
 
 type instruction = int kinstruction
@@ -636,6 +637,8 @@ let do_pp_instruction m =
 (* Memory Tagging *)
   | I_STG (rt,rn,kr) ->
       pp_mem "STG" V64 rt rn kr
+  | I_STZG (rt,rn,kr) ->
+      pp_mem "STZG" V64 rt rn kr
   | I_LDG (rt,rn,kr) ->
       pp_mem "LDG" V64 rt rn kr
 
@@ -685,7 +688,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2)
   | I_STOP (_,_,_,r1,r2) | I_STOPBH (_,_,_,r1,r2)
   | I_RBIT (_,r1,r2)
-  | I_LDG (r1,r2,_) | I_STG (r1,r2,_)
+  | I_LDG (r1,r2,_) | I_STZG (r1,r2,_) | I_STG (r1,r2,_)
     -> fold_reg r1 (fold_reg r2 c)
   | I_LDR (_,r1,r2,kr) | I_STR (_,r1,r2,kr)
   | I_OP3 (_,_,r1,r2,kr)
@@ -806,6 +809,8 @@ let map_regs f_reg f_symb =
 (* Memory Tagging *)
   | I_STG (r1,r2,k) ->
       I_STG (map_reg r1,map_reg r2,k)
+  | I_STZG (r1,r2,k) ->
+      I_STZG (map_reg r1,map_reg r2,k)
   | I_LDG (r1,r2,k) ->
       I_LDG (map_reg r1,map_reg r2,k)
 
@@ -859,7 +864,7 @@ let get_next = function
   | I_IC _
   | I_DC _
   | I_MRS _
-  | I_STG _|I_LDG _
+  | I_STG _| I_STZG _|I_LDG _
     -> [Label.Next;]
 
 include Pseudo.Make
@@ -911,6 +916,7 @@ include Pseudo.Make
         | I_STP (t,v,r1,r2,r3,kr) -> I_STP (t,v,r1,r2,r3,kr_tr kr)
         | I_STR (v,r1,r2,kr) -> I_STR (v,r1,r2,kr_tr kr)
         | I_STG (r1,r2,kr) -> I_STG (r1,r2,kr_tr kr)
+        | I_STZG (r1,r2,kr) -> I_STZG (r1,r2,kr_tr kr)
         | I_LDG (r1,r2,kr) -> I_LDG (r1,r2,kr_tr kr)
         | I_LDRBH (v,r1,r2,kr) -> I_LDRBH (v,r1,r2,kr_tr kr)
         | I_STRBH (v,r1,r2,kr) -> I_STRBH (v,r1,r2,kr_tr kr)
@@ -929,6 +935,7 @@ include Pseudo.Make
         | I_SWP _ | I_SWPBH _
         | I_LDOP _ | I_LDOPBH _
         | I_STOP _ | I_STOPBH _
+        | I_STZG _ 
           -> 2
         | I_NOP
         | I_B _ | I_BR _

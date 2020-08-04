@@ -231,6 +231,11 @@ include Arch.MakeArch(struct
         conv_reg r2 >> fun r2 ->
         expl_kr kr >! fun kr ->
         I_STG (r1,r2,kr)
+    | I_STZG (r1,r2,kr) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        expl_kr kr >! fun kr ->
+        I_STZG (r1,r2,kr)
     | I_LDG (r1,r2,kr) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->

@@ -82,7 +82,7 @@ module A = AArch64Base
 %token <AArch64Base.DC.op> DC_OP
 %token <AArch64Base.sysreg> SYSREG
 %token MRS TST RBIT
-%token STG LDG
+%token STG STZG LDG
 %type <(int * string list option) list * (AArch64Base.parsedPseudo) list list * MiscParser.extra_data> main
 %type <AArch64Base.parsedPseudo list> instr_option_seq
 
@@ -330,6 +330,8 @@ instr:
 /* Memory Tagging */
 | STG xreg COMMA LBRK xreg kr0 RBRK
   { A.I_STG ($2,$5,$6) }
+| STZG xreg COMMA LBRK xreg kr0 RBRK
+  { A.I_STZG ($2,$5,$6) }
 | LDG xreg COMMA LBRK xreg kr0 RBRK
   { A.I_LDG ($2,$5,$6) }
 

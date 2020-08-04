@@ -260,6 +260,7 @@ match name with
 *)
 (* Memory Tagging *)
 | "stg"|"STG" -> STG
+| "stzg"|"STZG" -> STZG
 | "ldg"|"LDG" -> LDG
 (* Operations *)
 | "sxtw"|"SXTW" -> SXTW

@@ -626,7 +626,7 @@ module Make(V:Constant.S)(C:Config) =
           sprintf "mrs %s,%s" f (Misc.lowercase (pp_sysreg sr)) in
         {empty_ins with
          memo; outputs=r; reg_env=add_type quad r;}::k
-    | I_STG _|I_LDG _ ->
+    | I_STG _| I_STZG _|I_LDG _ ->
         Warn.fatal "No litmus output for instruction %s"
           (dump_instruction ins)
 
