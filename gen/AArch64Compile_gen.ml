@@ -992,6 +992,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       match e.dir,e.loc with
       | None,_ -> Warn.fatal "TODO"
       | Some d,Data loc ->
+          let loc = add_tag loc e.tag in
           begin match d,e.atom with
           | R,None ->
               let module LDR =
@@ -1179,6 +1180,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   [Instruction (calc0 vdep r2 r1) ;
                    Instruction (addi r2 r2 e.v); ] in
                 r2,cs2,init,st in
+          let loc = add_tag loc e.tag in
           begin match e.atom with
           | None ->
               let init,cs,st = STR.emit_store_reg st p init loc r2 in
