@@ -1,0 +1,10 @@
+AArch64 STRaf1db0
+{
+pte_x=(oa:phy_y,af:1);
+0:X2=x;
+0:X1=1;
+}
+P0         ;
+STR X1,[X2];
+locations[0:X2;]
+

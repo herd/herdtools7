@@ -162,6 +162,7 @@ module Make(Cst:Constant.S) = struct
   | Val (Symbolic (System _)|Label _|Tag _) ->
       Warn.user_error "Illegal addition on constants %s" (pp_v v)
   | Var _ -> raise Undetermined
+  | Val (Symbolic (PTEVal _)) -> assert false
 
   and orop v1 v2 =
     if protect_is is_zero v1 then v2
@@ -251,6 +252,7 @@ module Make(Cst:Constant.S) = struct
   |  Val (Concrete _|Symbolic (Physical _ | System _)|Label _|Tag _) ->
       Warn.user_error "Illegal %s on %s" op_op (pp_v v)
   | Var _ -> raise Undetermined
+  | Val (Symbolic (PTEVal _)) -> assert false
 
         (*  Returns the location of the tag associated to a location *)
 
@@ -260,6 +262,7 @@ module Make(Cst:Constant.S) = struct
   | Val (Concrete _| Symbolic (System _)|Label _|Tag _) ->
       Warn.user_error "Illegal tagloc on %s" (pp_v v)
   | Var _ -> raise Undetermined
+  | Val (Symbolic (PTEVal _)) -> assert false
 
       (* Decompose tagged locations *)
   let op_tagextract (_,t) _ = match t with
@@ -273,7 +276,7 @@ module Make(Cst:Constant.S) = struct
     match v with 
     | Val (Symbolic (Virtual ((s,_),o))) -> Val (Symbolic (Virtual ((s,None),o)))
     | Val (Symbolic (Physical _)) as aphy -> aphy 
-    | Val (Concrete _|Symbolic (System _)|Label _|Tag _) ->
+    | Val (Concrete _|Symbolic (System _|PTEVal _)|Label _|Tag _) ->
       Warn.user_error "Illegal locextract on %s" (pp_v v)
     | Var _ -> raise Undetermined
 
@@ -286,14 +289,33 @@ module Make(Cst:Constant.S) = struct
   let op_pteloc (a,_) = Symbolic (System (PTE,a))
   let pteloc = op_pte_tlb "pteloc" op_pteloc
 
-  let op_afloc (a,_) = Symbolic (System (Constant.AF,a))
-  let afloc = op_pte_tlb "afloc" op_afloc
+  let op_pte_val op_op op v = match v with
+  | Val (Symbolic (PTEVal a)) -> Val (op a)
+  | Var _ -> raise Undetermined
+  | _ -> Warn.user_error "Illegal %s on %s" op_op (pp_v v) 
 
-  let op_dbloc (a,_) = Symbolic (System (Constant.DB,a))
-  let dbloc = op_pte_tlb "dbloc" op_dbloc
+  let op_afloc a = Cst.intToV a.af
+  let afloc = op_pte_val "afloc" op_afloc 
+  let setaf v = match v with 
+    | Val (Symbolic (PTEVal pte_v)) -> Val (Symbolic (PTEVal {pte_v with af = 1})) 
+    | Var _ -> raise Undetermined
+    | _ -> Warn.user_error "Illegal setaf on %s" (pp_v v)
 
-  let op_dbmloc (a,_) = Symbolic (System (Constant.DBM,a))
-  let dbmloc = op_pte_tlb "dbmloc" op_dbmloc
+  let op_dbloc a = Cst.intToV a.db 
+  let dbloc = op_pte_val "dbloc" op_dbloc
+  let setdb v = match v with 
+    | Val (Symbolic (PTEVal pte_v)) -> Val (Symbolic (PTEVal {pte_v with db = 1})) 
+    | Var _ -> raise Undetermined
+    | _ -> Warn.user_error "Illegal setdb on %s" (pp_v v)
+
+  let op_dbmloc a = Cst.intToV a.dbm
+  let dbmloc = op_pte_val "dbmloc" op_dbmloc
+
+  let op_validloc a = Cst.intToV a.valid
+  let validloc = op_pte_val "validloc" op_validloc
+
+  let op_oaloc a = Cst.nameToV a.oa
+  let oaloc = op_pte_val "oaloc" op_oaloc
 
   let op_tlbloc (a,_) = Symbolic (System (TLB,a))
   let tlbloc = op_pte_tlb "tlbloc" op_tlbloc
@@ -345,9 +367,13 @@ module Make(Cst:Constant.S) = struct
     | PTELoc -> pteloc
     | PhyLoc -> phyloc
     | IsVirtual -> is_virtual_v
-    | AF -> afloc
-    | DB -> dbloc
+    | AF -> afloc 
+    | SetAF -> setaf 
+    | DB -> dbloc 
+    | SetDB -> setdb 
     | DBM -> dbmloc
+    | Valid -> validloc
+    | OA -> oaloc  
 
   let op op = match op with
   | Add -> add

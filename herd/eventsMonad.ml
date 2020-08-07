@@ -1064,21 +1064,23 @@ Monad type:
         let tr_pte = function
           | Virtual ((s,_),_) -> System (PTE,s)
           | _ -> assert false in
+(*
         let tr_af = function
-          | Virtual ((s,_),_) -> System (AF,s)
+          (*| Virtual ((s,_),_) -> System (AF,s) *)
           | _ -> assert false in
         let tr_db = function
-          | Virtual ((s,_),_) -> System (DB,s)
+          (*| Virtual ((s,_),_) -> System (DB,s) *)
           | _ -> assert false in
         let tr_dbm = function
-          | Virtual ((s,_),_) -> System (DBM,s)
+          (*| Virtual ((s,_),_) -> System (DBM,s) *)
           | _ -> assert false in
-
+*)
         let add_val vloc v k =  begin match vloc with
         | V.Val (Symbolic (System (_,s) as a)) -> 
           if C.debug.Debug_herd.mem then begin
             Printf.printf "add_val System: %s\n" s end;
           SymbolMap.add a v k
+        | V.Val (Symbolic (PTEVal _)) -> assert false
         | V.Val (Symbolic (Physical (s,_) as a)) -> 
           if C.debug.Debug_herd.mem then begin
             Printf.printf "add_val Phys: %s\n" s end;
@@ -1100,10 +1102,21 @@ Monad type:
 
         let have_same_base_addr apte aphy =
           begin match apte,aphy with
-          | A.Location_global (V.Val (Symbolic (System (_,x)))),(V.Val (Symbolic (Physical (y,_)))) -> x = y 
+          | A.Location_global (V.Val (Symbolic (System (_,x)))),(V.Val (Symbolic (PTEVal p))) -> 
+              begin match Misc.tr_physical (p.oa) with
+              | None -> assert false 
+              | Some y -> x = y 
+              end
           | _ -> false 
           end in
 
+        let no_dup_env env x v = 
+          begin match (find_one env (A.Location_global x) []) with
+          | None,_ -> (A.Location_global x,v)::env
+          | Some (_,x),nl when (x=V.zero) -> (A.Location_global x,v)::nl  
+          | _ -> assert false (*jade: case of duplicates assignments to x*)
+          end in
+ 
         fun env ->
           let k,rem =
             List.fold_left
@@ -1121,61 +1134,51 @@ Monad type:
                 begin match a with
                 | System (TAG,_) | Physical _ -> (A.Location_global a_sym,v)::env
                 | System (PTE,_) -> 
-                  if C.debug.Debug_herd.mem then begin
-                  Printf.printf "env PTE: %s\n" (A.pp_location (A.Location_global a_sym)) end;
                   let aloc = A.Location_global a_sym in  
+                  if C.debug.Debug_herd.mem then begin
+                  Printf.printf "env PTE: %s\n" (A.pp_location (A.Location_global a_sym));
+                  let pte_v = match v with | V.Val (Symbolic (PTEVal x)) -> x | _ -> assert false in 
+                    Printf.printf "env PTEVal: %s\n" (Constant.pp_pte_val pte_v) end;
+(*
+                  (aloc,v)::env
+*)
                   begin match (find_one env aloc []) with
                    | None,_ -> 
                      if C.debug.Debug_herd.mem then begin
                        Printf.printf "I aloc,v: %s,%s\n" (A.pp_location aloc) (V.pp_v v) end;
                      (aloc,v)::env  
                    | Some(_,aphy),r -> 
+                     if C.debug.Debug_herd.mem then begin
+                       Printf.printf "II aloc,aphy,v: %s,%s,%s\n" (A.pp_location aloc) (V.pp_v aphy) (V.pp_v v) 
+                     end;
                       if have_same_base_addr aloc aphy then 
                        begin match (find_one r (A.Location_global v) []) with 
                        | None,_ -> 
                          if C.debug.Debug_herd.mem then begin
-                           Printf.printf "II aloc,aphy,v: %s,%s,%s\n" (A.pp_location aloc) (V.pp_v aphy) (V.pp_v v) end;
+                           Printf.printf "III aloc,aphy,v: %s,%s,%s\n" (A.pp_location aloc) (V.pp_v aphy) (V.pp_v v) end;
                          begin match v with
                          | V.Val _ -> (aloc,v)::r
                          | _ -> (aloc,v)::(A.Location_global v,V.zero)::r
-end                     
-  | Some _,_ -> 
+                         end                     
+                       | Some _,_ -> 
                          if C.debug.Debug_herd.mem then begin
-                           Printf.printf "III aloc,v: %s,%s\n" (A.pp_location aloc) (V.pp_v v) end;
+                           Printf.printf "IV aloc,v: %s,%s\n" (A.pp_location aloc) (V.pp_v v) end;
                          (aloc,v)::r    
                        end
                        (*jade: this is supposed to be the case where pte_x = phy_y AND pte_x=phy_z in the initial state, which should be a user error*) 
-                       else assert false 
-                  end 
-                 | System (AF,_) | System (DB,_) | System (DBM,_) -> 
-                  if C.debug.Debug_herd.mem then begin
-                  Printf.printf "env AF/DB/DBM: %s\n" (A.pp_location (A.Location_global a_sym)) end;
-                  let aloc = A.Location_global a_sym in  
-                  begin match (find_one env aloc []) with
-                   | None,_ -> 
-                     if C.debug.Debug_herd.mem then begin
-                       Printf.printf "AF/DB/DBM I aloc,v: %s,%s\n" (A.pp_location aloc) (V.pp_v v) end;
-                     (aloc,v)::env  
-                   | Some(_,af_v),r -> 
-                     if C.debug.Debug_herd.mem then begin
-                       Printf.printf "AF/DB/DBM II aloc,v,af_v: %s,%s,%s\n" (A.pp_location aloc) (V.pp_v v) (V.pp_v af_v) end;
-                      (aloc,v)::r 
-                  end 
+                        else (*if C.debug.Debug_herd.mem then begin
+                           Printf.printf "IV aloc,v: %s,%s\n" (A.pp_location aloc) (V.pp_v v) end; *)   
+                        assert false 
+                  end
                  | _ ->
-                  let a_pte = tr_sym (tr_pte a) in
-                  let a_af = tr_sym (tr_af a) in
-                  let a_db = tr_sym (tr_db a) in
-                  let a_dbm = tr_sym (tr_dbm a) in
-                  let a_phy = tr_sym (tr_physical a) in
-                  let no_dup_env env x v = 
-                  begin match (find_one env (A.Location_global x) []) with
-                  | None,_ -> (A.Location_global x,v)::env
-                  | Some (_,x),nl when (x=V.zero) -> (A.Location_global x,v)::nl  
-                  | _ -> assert false (*jade: case of duplicates assignments to x*)
-                 end in
-                 let env = (no_dup_env env a_af V.one) in  
-                 let env = (no_dup_env env a_db V.one) in  
-                 let env = (no_dup_env env a_dbm V.zero) in  
+                 let a_pte = tr_sym (tr_pte a) in
+                 let a_phy = tr_sym (tr_physical a) in
+                 let s_phy = 
+                   begin match a_phy with
+                   | V.Val (Symbolic (Physical (s,_))) -> s
+                   | _ -> assert false
+                   end in
+                 let env = (no_dup_env env a_pte (V.Val (Symbolic (PTEVal (Constant.default_pte_val s_phy))))) in  
                  match (find_one (no_dup_env env a_phy v) (A.Location_global a_pte) []) with
                  | None,_ -> 
                      (A.Location_global a_pte,a_phy)::(no_dup_env env a_phy v)  

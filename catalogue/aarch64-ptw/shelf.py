@@ -47,12 +47,15 @@ illustrative_tests = [
   "tests/illustrative/coRR-pte2.litmus",
   "tests/illustrative/coRR-pte3.litmus",
   "tests/illustrative/coRR-pte4.litmus",
-  "tests/illustrative/ldr-invalid-pte.litmus",
-  "tests/illustrative/ldr-valid-pte.litmus",
-  "tests/illustrative/ldrAF0.litmus",
-  "tests/illustrative/str-invalid-pte.litmus",
-  "tests/illustrative/str-valid-pte.litmus",
-  "tests/illustrative/strAF0.litmus",
+  "tests/illustrative/LDRv0.litmus",
+  "tests/illustrative/LDRaf0.litmus",
+  "tests/illustrative/LDRaf1.litmus",
+  "tests/illustrative/STRv0.litmus",
+  "tests/illustrative/STRaf0.litmus",
+  "tests/illustrative/STRaf1.litmus",
+  "tests/illustrative/STRaf1db0dbm1.litmus",
+  "tests/illustrative/STRaf1db0dbm0.litmus",
+  "tests/illustrative/STRaf1db1.litmus",
 ]
 
 campaign = []
