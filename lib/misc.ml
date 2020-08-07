@@ -763,6 +763,9 @@ let tr_dbm = do_tr "dbm_"
 let add_physical s = sprintf "phy_%s" s
 let tr_physical = do_tr "phy_"
 
+let add_valid = sprintf "valid_%s"
+let add_oa = sprintf "oa_%s"
+
 (******************)
 (* Hash utilities *)
 (******************)

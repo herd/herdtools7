@@ -272,6 +272,8 @@ val add_db : string -> string
 val tr_db : string ->  string option
 val add_dbm : string -> string
 val tr_dbm : string ->  string option
+val add_valid : string -> string
+val add_oa : string -> string
 
 val add_physical : string -> string
 val tr_physical : string -> string option
