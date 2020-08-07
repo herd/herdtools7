@@ -81,13 +81,14 @@ end = struct
     | Symbolic (Virtual _) -> A_VIR
     | Symbolic (Physical _) -> A_PHY
     | Symbolic (System (PTE,_)) -> A_PTE
-    | Symbolic (System (AF,_)) -> A_AF
+(*  | Symbolic (System (AF,_)) -> A_AF
     | Symbolic (System (DB,_)) -> A_DB
     | Symbolic (System (DBM,_)) -> A_DBM
-    | Symbolic (System (TLB,_)) -> A_TLB
+*)  | Symbolic (System (TLB,_)) -> A_TLB
     | Symbolic (System (TAG,_)) -> A_TAG
     | Concrete _ as v -> Warn.fatal "access_of_constant %s as an address\n" (V.pp_v (V.Val v)) (* assert false *)
     | Label _|Tag _ -> assert false
+    | Symbolic (PTEVal _) -> assert false
 
 (* precondition: v is a constant symbol *)
   let access_of_value v = match v with
@@ -111,7 +112,7 @@ end = struct
           if kvm then A_PTE
           else Warn.fatal "PTE %s while -variant kvm is not active"
               (A.pp_location loc)
-      | A.Location_global (V.Val (Symbolic ((System (AF,_))))) as loc
+(*    | A.Location_global (V.Val (Symbolic ((System (AF,_))))) as loc
         ->
           if kvm then A_AF
           else Warn.fatal "AF %s while -variant kvm is not active"
@@ -126,7 +127,7 @@ end = struct
           if kvm then A_DBM
           else Warn.fatal "DBM %s while -variant kvm is not active"
               (A.pp_location loc)
-      | A.Location_global v
+*)    | A.Location_global v
       | A.Location_deref (v,_)
         -> Warn.fatal "access_of_location_std on non-standard symbol '%s'\n" (V.pp_v v)
 

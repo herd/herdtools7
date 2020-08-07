@@ -194,44 +194,35 @@ module Make
 
 (* PTW Basics *)
 
-      let check_ptw dir a_virt ma an ii mdirect mok mfault =
-(*
-         let mvirt =
-             (M.op1 Op.PTELoc a_virt >>= fun a_pte ->
-                let ma =
-                  ma >>=
-                  fun _ -> (M.read_loc false
-                    (fun loc v ->
-                      Act.Access (Dir.R,loc,v,an,AArch64.NExp,quad,Act.A_PTE))
-                    (A.Location_global a_pte) ii) in
-                 (M.delay ma >>=
-                     fun (a_phy,ma) -> is_zero a_phy >>= fun cond ->
-                        M.choiceT cond (mfault ma a_virt) (mok ma a_phy))) in 
-*)
+	open Constant 
 
-           let do_m = (M.op1 Op.PTELoc a_virt >>= fun a_pte ->
-                let ma =
-                  ma >>=
-                  fun _ -> (M.read_loc false
-                    (fun loc v ->
-                      Act.Access (Dir.R,loc,v,an,AArch64.NExp,quad,Act.A_PTE))
-                    (A.Location_global a_pte) ii) in
-                 (M.delay ma >>=
-                     fun (a_phy,ma) -> is_zero a_phy >>= fun cond ->
-                        M.choiceT cond (mfault ma a_virt) (mok ma a_virt))) in 
+	let extract_af v = M.op1 Op.AF v 
+	let extract_db v = M.op1 Op.DB v 
+	let extract_dbm v = M.op1 Op.DBM v 
+	let extract_valid v = M.op1 Op.Valid v 
+	let extract_oa v = M.op1 Op.OA v 
 
-         let check_bit_clear bit act =
-            (M.read_loc false
-              (fun loc v ->
-                Act.Access (Dir.R,loc,v,an,AArch64.NExp,quad,act))
-              (A.Location_global bit) ii) >>= 
-                 fun v -> is_zero v in
+        let mextract_whole_pte_val a_pte an ii =
+	  (M.read_loc false
+	    (fun loc v ->
+	      Act.Access (Dir.R,loc,v,an,AArch64.NExp,quad,Act.A_PTE))
+	     (A.Location_global a_pte) ii)
 
-          let set_bit bit act =
+	let mextract_pte_vals pte_v =
+	  (extract_oa pte_v >>|  
+	   extract_valid pte_v >>| 
+	   extract_af pte_v >>| 
+	   extract_db pte_v >>| 
+	   extract_dbm pte_v) 
+
+       let check_ptw dir a_virt ma an ii mdirect mok mfault =
+
+          let do_m a_phy = (mok ma a_phy) in 
+          let set_bit a_pte new_val =
             (M.read_loc false 
                (fun loc _ -> 
-                  Act.Access (Dir.W,loc,V.one,an,AArch64.NExp,quad,act)) 
-             (A.Location_global bit) ii) in
+                  Act.Access (Dir.W,loc,new_val,an,AArch64.NExp,quad,Act.A_PTE)) 
+             (A.Location_global a_pte) ii) in
 
    (*
      Without HW-management (on old CPUs, or where TCR_ELx.{HA,HD} == {0,0}): 
@@ -245,26 +236,45 @@ module Make
      and SW is expected to deal with this by updating the translation tables with
      explicit stores or atomics
    *)
-         let notTTHM a_virt ma a_af a_db = 
-              (check_bit_clear a_af Act.A_AF >>= fun af_clear ->
-              M.choiceT af_clear (mfault ma a_virt) 
-              (begin match dir with 
-                | Dir.R -> do_m 
-                | Dir.W -> check_bit_clear a_db Act.A_DB >>= fun db_clear ->
-                           M.choiceT db_clear (mfault ma a_virt) do_m
-              end)) in
+
+        let check_bit_clear bit_v kont1 kont2 = 
+          is_zero bit_v >>= fun bit_clear ->
+             commit_bcc ii >>= fun () ->
+             M.choiceT bit_clear 
+              kont1 
+              kont2 in
+
+         let notTTHM a_virt ma a_phy af_v db_v = 
+           let check_db = check_bit_clear db_v (mfault ma a_virt) (do_m a_phy) in
+           let kont_af = begin match dir with  
+                         | Dir.R -> (do_m a_phy) 
+                         | Dir.W -> check_db
+                         end in 
+           check_bit_clear af_v (mfault ma a_virt) kont_af in
 
     (*
       With HW management (i.e. when ARMv8.1-TTHM is implemented) where TCR_ELx.HA = 1: 
       A load/store to x where pte_x has the access flag clear results in the MMU
       updating the translation table entry to set the access flag, and continuing
       without a fault.
+
+      A store where pte_x has the dirty bit clear will raise a permission fault.
      *)
-         let isTTHM_and_HA a_af kont = 
-              (check_bit_clear a_af Act.A_AF >>= fun af_clear ->
-               M.choiceT af_clear 
-                 (set_bit a_af Act.A_AF >>= fun _ -> kont)
-                 kont) in
+ 
+         let isTTHM_and_HA a_pte pte_v af_v kont_R kont_W =
+           let kont_af_clear = begin match dir with
+                               | Dir.R -> (M.op1 Op.SetAF pte_v >>= fun new_af -> 
+                                           set_bit a_pte new_af >>= fun _ -> kont_R)
+                               | Dir.W -> kont_W
+                               end in
+           let kont_af_set = begin match dir with
+                               | Dir.R -> kont_R
+                               | Dir.W -> kont_W
+                               end in
+           check_bit_clear af_v 
+             kont_af_clear 
+             kont_af_set
+           in 
 
      (*
        With HW management (i.e. when ARMv8.1-TTHM is implemented) where TCR_ELx.{HA,HD} == {1,1}:
@@ -281,32 +291,37 @@ module Make
        without a fault.  
       *)
 
-         let isTTHM_and_HA_and_HD a_af a_db a_dbm = 
-           let kont = 
-              (begin match dir with 
-                | Dir.R -> do_m 
-                | Dir.W -> check_bit_clear a_db Act.A_DB >>= fun db_clear ->
-                           M.choiceT db_clear 
-                             (check_bit_clear a_dbm Act.A_DBM >>= fun dbm_clear ->
-                              M.choiceT dbm_clear 
-                                (mfault ma a_virt) 
-                                (set_bit a_db Act.A_DB >>= fun _ -> do_m)) 
-                             do_m
-              end) in
-           (isTTHM_and_HA a_af kont)  
+         let isTTHM_and_HA_and_HD a_pte pte_v a_phy af_v db_v dbm_v =
+           let kont_R = do_m a_phy in 
+           let kont_W =
+             let kont_db = begin check_bit_clear dbm_v
+                           (mfault ma a_virt)
+                           (M.op1 Op.SetDB pte_v >>= fun new_db ->
+                            set_bit a_pte new_db >>= fun _ -> kont_R) end in
+             check_bit_clear db_v kont_db kont_R in 
+           (isTTHM_and_HA a_pte pte_v af_v kont_R kont_W)  
       
          in
 
-         let mvirt = 
-            (M.op1 Op.AF a_virt >>| M.op1 Op.DB a_virt >>| M.op1 Op.DBM a_virt)  >>= 
-              fun ((a_af,a_db),a_dbm) ->
-            if (not tthm || (tthm && (not ha && not hd))) then 
-              (notTTHM a_virt ma a_af a_db) 
-            else if (tthm && ha && not hd) then
-              (isTTHM_and_HA a_af do_m) 
-            else (*if (tthm && ha && hd)*) 
-              (isTTHM_and_HA_and_HD a_af a_db a_dbm) in 
-             
+
+         let mvirt = begin
+           (M.op1 Op.PTELoc a_virt) >>= fun a_pte -> 
+             (mextract_whole_pte_val a_pte an ii) >>= fun pte_v ->
+             (mextract_pte_vals pte_v) >>=
+             fun ((((a_phy,valid_v),af_v),db_v),dbm_v) -> 
+
+           let kont_valid = 
+             if (not tthm || (tthm && (not ha && not hd))) then 
+               (notTTHM a_virt ma a_phy af_v db_v) 
+             else if (tthm && ha && not hd) then
+               let kont_R = (do_m a_phy) in  
+               let kont_W = check_bit_clear db_v (mfault ma a_virt) kont_R in
+               (isTTHM_and_HA a_pte pte_v af_v kont_R kont_W) 
+             else (*if (tthm && ha && hd)*) 
+               (isTTHM_and_HA_and_HD a_pte pte_v a_phy af_v db_v dbm_v) in 
+
+           check_bit_clear valid_v (mfault ma a_virt) kont_valid end in
+            
         (M.op1 Op.IsVirtual a_virt >>= fun cond ->
            M.choiceT cond mvirt mdirect)
 
@@ -388,31 +403,6 @@ module Make
           (read_reg_ord rs ii >>| read_reg_ord r ii) >>= fun (v1,v2) ->
             M.add v1 v2
 
-      
-(*
-      let lift_memop dir mop ma an ii =
-        if memtag then
-          M.delay ma >>= fun (_,ma) ->
-          let mm = mop Act.A_VIR (ma >>= fun a -> loc_extract a) in
-          delayed_check_tags ma ii
-            (mm  >>! B.Next)
-            (let mfault = ma >>= fun a -> mk_fault a ii (Some "MTE lift_memop") in
-            if C.precision then  mfault >>! B.Exit
-           else (mfault >>| mm) >>! B.Next)
-        else if kvm then
-          M.delay ma >>= fun (a,ma) ->
-            match Act.access_of_location_std (A.Location_global a) with
-            | Act.A_VIR ->
-                check_ptw dir a ma an ii
-                  (mop Act.A_PTE ma >>! B.Next)
-                  (fun ma _a -> mop Act.A_PHY ma >>! B.Next)
-                  (fun ma a -> ma >>= fun _ -> mk_fault a ii
-                      >>! if C.precision then B.Exit else B.ReExec)
-            | ac -> mop ac ma >>! B.Next
-        else
-          mop Act.A_VIR ma >>! B.Next
-*)
-
         let lift_memtag_phy mop a_virt ma ii =
           M.delay ma >>= fun (_,ma) ->
           let mm = mop Act.A_PHY ma in
@@ -435,19 +425,20 @@ module Make
            let mfault = 
               begin match omv with 
               | None ->
-                  (fun ma a -> ma >>= fun _ -> mk_fault a ii
+                  (fun _ma a ->  mk_fault a ii
                       >>! if C.precision then B.Exit else B.ReExec)
               | Some mv -> 
-                  (fun ma a -> (ma >>| mv) >>= fun (_,_) -> mk_fault a ii
+                  (fun _ma a -> mk_fault a ii
                       >>! if C.precision then B.Exit else B.ReExec)
                end 
             in
-            M.delay ma >>= fun (a,ma) ->
+            M.delay ma >>= fun (_,ma) ->
+            ma >>= fun a ->
             match Act.access_of_location_std (A.Location_global a) with
             | Act.A_VIR ->
                check_ptw dir a ma an ii
                   (mop Act.A_PTE ma >>! B.Next)
-                  mphy
+                  mphy 
                   mfault
             | ac -> mop ac ma >>! B.Next
 
@@ -458,7 +449,7 @@ module Make
             lift_kvm dir mop ma omv an ii mphy
           else lift_memtag_virt mop ma ii
         else if kvm then
-          let mphy = (fun ma _a -> mop Act.A_PHY ma >>! B.Next) in
+          let mphy = (fun _ma a -> mop Act.A_PHY (M.unitT a) >>! B.Next) in
           lift_kvm dir mop ma omv an ii mphy
         else
           mop Act.A_VIR ma >>! B.Next
@@ -474,6 +465,18 @@ module Make
           lift_memop Dir.R
             (fun ac ma -> ma >>= fun a -> do_read_mem sz an anexp ac rd a ii)
           ma None an ii
+(* 
+     let do_ldr sz an anexp rd ma ii =
+          ma >>= fun a_virt ->
+            (M.op1 Op.PTELoc a_virt) >>= fun a_pte ->
+              (M.read_loc false
+                (fun loc v ->
+                  Act.Access (Dir.R,loc,v,an,AArch64.NExp,quad,Act.A_PTE))
+                (A.Location_global a_pte) ii) >>= fun pte_v ->
+             (M.op1 Op.OA pte_v) >>= fun a_phy ->
+             do_read_mem sz an anexp Act.A_PHY rd a_phy ii
+*)
+
 
       let ldr sz rd rs kr ii =
          do_ldr sz AArch64.N AArch64.Exp rd (get_ea rs kr ii) ii

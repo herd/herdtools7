@@ -72,13 +72,15 @@ module Make(Scalar:Scalar.S) = struct
   | Label (p1,s1),Label (p2,s2) ->
       Misc.string_eq  s1 s2 && Misc.int_eq p1 p2
   | Tag t1,Tag t2 -> Misc.string_eq t1 t2
+  | Symbolic (PTEVal _),Symbolic (PTEVal _) -> assert false
   | (Concrete _,(Symbolic _|Label _|Tag _))
   | (Symbolic _,(Concrete _|Label _|Tag _))
   | (Label _,(Concrete _|Symbolic _|Tag _))
   | (Tag _,(Concrete _|Symbolic _|Label _))
-  | (Symbolic (Virtual _),Symbolic (Physical _|System _))
-  | (Symbolic (Physical _),Symbolic (Virtual _|System _))
-  | (Symbolic (System _),Symbolic (Virtual _|Physical _))
+  | (Symbolic (Virtual _),Symbolic (Physical _|System _|PTEVal _))
+  | (Symbolic (Physical _),Symbolic (Virtual _|System _|PTEVal _))
+  | (Symbolic (System _),Symbolic (Virtual _|Physical _|PTEVal _))
+  | (Symbolic (PTEVal _), Symbolic (Virtual _|Physical _|System _))
     -> false
 
 (* Arch dependant result *)

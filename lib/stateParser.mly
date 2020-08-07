@@ -72,6 +72,13 @@ reg:
 | NAME       {  $1 }
 | DOLLARNAME {  $1 }
 
+name_or_num:
+| NAME { $1 }
+| NUM { $1 };
+
+maybev_prop:
+| separated_pair(NAME, COLON, name_or_num) { $1 };
+
 maybev_notag:
 | NUM  { Concrete $1 }
 | NAME { mk_sym $1  }
@@ -131,6 +138,8 @@ atom_init:
 | NAME NAME LBRK NUM RBRK
     { (Location_global (Constant.mk_sym $2),
        (TyArray ($1,Misc.string_as_int $4),ParsedConstant.zero)) }
+| location EQUAL LPAR separated_nonempty_list(COMMA, maybev_prop) RPAR 
+  { ($1,(Ty "pteval_t", mk_pte_val (as_global $1) $4)) }
 
 amperopt:
 | AMPER { () }
