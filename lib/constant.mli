@@ -21,12 +21,24 @@
    used by all tools. Abstract later?
 *)
 
-type syskind = PTE|TAG|TLB|AF|DB|DBM (* Various kinds of system memory *)
+type syskind = PTE|TAG|TLB (* Various kinds of system memory *)
+
+type pte_val = {
+      oa : string;
+      valid : int;
+      af : int;
+      db : int;
+      dbm : int;
+  }
+
+val default_pte_val : string -> pte_val
+val pp_pte_val : pte_val -> string
 
 type symbol =
   | Virtual of (string * string option) * int (* (symbol, optional tag), index *)
   | Physical of string * int                  (* symbol, index *)
   | System of (syskind * string)                 (* System memory *)
+  | PTEVal of pte_val 
 
 val pp_symbol : symbol -> string
 val as_address : symbol -> string
@@ -45,6 +57,7 @@ type 'scalar t =
   | Label of Proc.t * string     (* In code *)
   | Tag of string
 
+val mk_pte_val : 'a t -> (string * string) list -> 'b t 
 
 val mk_sym : string -> 'scalar t
 val get_sym : 'scalar t -> string

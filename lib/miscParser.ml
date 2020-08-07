@@ -84,6 +84,10 @@ let as_local_proc i syms = function
         Some (Misc.dump_symbolic reg)
       else None
 
+let as_global l = match l with
+  | Location_global x -> x
+  | _ -> assert false
+
 module LocSet =
   MySet.Make
     (struct type t = location let compare = location_compare end)
