@@ -57,7 +57,7 @@ type 'scalar t =
   | Label of Proc.t * string     (* In code *)
   | Tag of string
 
-val mk_pte_val : 'a t -> (string * string) list -> 'b t 
+val pte_val_of_list : string -> (string * string) list -> pte_val
 
 val mk_sym : string -> 'scalar t
 val get_sym : 'scalar t -> string
