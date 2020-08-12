@@ -139,7 +139,7 @@ atom_init:
     { (Location_global (Constant.mk_sym $2),
        (TyArray ($1,Misc.string_as_int $4),ParsedConstant.zero)) }
 | location EQUAL LPAR separated_nonempty_list(COMMA, maybev_prop) RPAR 
-  { ($1,(Ty "pteval_t", mk_pte_val (as_global $1) $4)) }
+  { ($1,(Ty "pteval_t", mk_pte_val $1 $4)) }
 
 amperopt:
 | AMPER { () }
@@ -262,6 +262,8 @@ atom_prop:
 | location EQUAL location_deref {Atom (LL ($1,$3))}
 | location EQUALEQUAL location_deref {Atom (LL ($1,$3))}
 | FAULT LPAR lbl COMMA NAME RPAR { Atom (FF ($3,mk_sym $5)) }
+| location EQUAL LPAR separated_nonempty_list(COMMA, maybev_prop) RPAR
+  { Atom (LV ($1, mk_pte_val $1 $4)) }
 
 prop:
 | TRUE

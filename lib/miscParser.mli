@@ -38,7 +38,6 @@ val dump_location : location -> string
 val dump_rval : location -> string
 val is_global : location -> bool
 val as_local_proc : int -> StringSet.t -> location -> reg option
-val as_global : location -> maybev
 
 module LocSet : MySet.S with type elt = location
 module LocMap : MyMap.S with type key = location
@@ -123,3 +122,5 @@ val set_hash :
 
 (* Extract meta information from key *)
 val get_info :  ('i, 'p, 'c, 'loc) result -> string -> string option
+
+val mk_pte_val : location -> (string * string) list -> 'b Constant.t
