@@ -28,9 +28,8 @@ type pte_val = {
   dbm : int;
   }
 
-let add_physical s = sprintf "phy_%s" s
 let default_pte_val s =
-  { oa=(add_physical s); valid=1; af=1; db=0; dbm=1; }
+  { oa=(Misc.add_physical s); valid=1; af=1; db=0; dbm=1; }
 
 type symbol =
   | Virtual of (string * string option) * int (* (symbol, optional tag), index *)
@@ -171,14 +170,10 @@ let pte_val_of_list pte l =
     | h::t -> let a = mk_pte_vals a h in
               mk_pte_val_of_list a t
   in
-  mk_pte_val_of_list (default_pte_val pte) l
-
-let mk_pte_val pte l =
-  match pte with
-  | Symbolic (System (PTE,s)) -> 
-    let v = pte_val_of_list (Misc.add_physical s) l in
-    Symbolic(PTEVal v)
-  | _ -> Warn.user_error "Expected a PTE"
+  let ret = mk_pte_val_of_list (default_pte_val pte) l in
+  if ret.valid <> 0 && String.compare ret.oa (Misc.add_physical "") = 0
+    then Warn.user_error "oa required"
+    else ret
  
 let mk_sym s = Symbolic (do_mk_sym s)
 

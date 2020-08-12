@@ -84,10 +84,6 @@ let as_local_proc i syms = function
         Some (Misc.dump_symbolic reg)
       else None
 
-let as_global l = match l with
-  | Location_global x -> x
-  | _ -> assert false
-
 module LocSet =
   MySet.Make
     (struct type t = location let compare = location_compare end)
@@ -128,6 +124,18 @@ let pp_run_type = function
 
 type state = (location * (run_type * maybev)) list
 
+let mk_pte_val pte l =
+  let open Constant in
+  let s = match pte with
+  | Location_global (Symbolic (System (PTE,s))) -> s
+  | Location_global (Symbolic (Virtual ((_,t),i))) ->
+    assert (i = 0) ;
+    assert (Misc.is_none t) ;
+    ""
+  | Location_reg _ -> ""
+  | _ -> Warn.user_error "Expected a PTE or a register" in
+  let v = pte_val_of_list s l in
+  Symbolic(PTEVal v)
 
 let dump_state_atom dump_loc dump_val (loc,(t,v)) = match t with
 | TyDef ->
