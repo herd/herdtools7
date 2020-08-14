@@ -457,13 +457,11 @@ module Make
 
         | I_LDG (rt,rn,kr) ->
             if not memtag then Warn.user_error "LDG without -variant memtag" ;
-            begin
-              read_reg_ord rt ii >>|
-              (get_ea rn kr ii  >>= fun a ->
-               M.op1 Op.TagLoc a  >>= fun a ->
-               do_read_tag a ii)
-            end >>= fun (old,tag) ->
-            M.op Op.SetTag old tag >>= fun v ->
+            get_ea rn kr ii  >>= 
+            fun a -> M.op1 Op.TagLoc a >>= 
+            fun atag -> do_read_tag atag ii 
+            >>= fun tag ->
+            M.op Op.SetTag a tag >>= fun v ->
             write_reg rt v ii >>! B.Next
 
         | I_STXR(var,t,rr,rs,rd) ->

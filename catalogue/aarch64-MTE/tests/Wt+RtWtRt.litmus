@@ -1,0 +1,10 @@
+AArch64 Wt+RtWtRt 
+{
+0:X0=x; 0:X1=x:red;
+1:X0=x; 1:X3=x:blue
+}
+P0           | P1          ;
+STG X1, [X0] | LDG X1, [X0];
+             | STG X3, [X0];
+             | LDG X2, [X0];
+exists(1:X1=x:red /\ 1:X2=x:red)

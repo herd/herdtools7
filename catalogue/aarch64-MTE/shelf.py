@@ -18,4 +18,6 @@ illustrative_tests = [
     "tests/S+dmb.stTT+rel.litmus",
     "tests/LDR-STZG1.litmus",
     "tests/LDR-STZG2.litmus",
+    "tests/Wt+RtWtRt.litmus",
+    "tests/RtWtRt+WztWzt.litmus",
 ]
