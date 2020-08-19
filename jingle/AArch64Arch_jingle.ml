@@ -39,7 +39,6 @@ include Arch.MakeArch(struct
     | I_CBZ(_,r,lp),I_CBZ(_,r',li)
     | I_CBNZ(_,r,lp),I_CBNZ(_,r',li)
       ->  add_subs [Reg(sr_name r,r'); Lab(lp,li)] subs
-
     | I_MOV(_,r,kr),I_MOV(_,r',kr') ->
         match_kr subs kr kr' >>> add_subs [Reg(sr_name r,r');]
 
@@ -101,6 +100,16 @@ include Arch.MakeArch(struct
         conv_reg r >> fun r ->
         find_lab l >! fun l ->
         I_CBNZ (a,r,l)
+    | I_TBNZ(a,r,k,l) ->
+        conv_reg r >> fun r ->
+        find_cst k >> fun k ->
+        find_lab l >! fun l ->
+        I_TBNZ (a,r,k,l)
+    | I_TBZ(a,r,k,l) ->
+        conv_reg r >> fun r ->
+        find_cst k >> fun k ->
+        find_lab l >! fun l ->
+        I_TBZ (a,r,k,l)
     | I_MOV(a,r,kr) ->
         conv_reg r >> fun r ->
         expl_kr kr >! fun kr ->

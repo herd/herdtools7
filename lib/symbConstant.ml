@@ -25,6 +25,8 @@ module Make(Scalar:Scalar.S) = struct
   let intToV i = Concrete (Scalar.of_int i)
   and nameToV s = Symbolic ((s,None),0)
 
+  let bit_at k v = Scalar.bit_at k v
+
   let zero = Concrete Scalar.zero
   and one = Concrete Scalar.one
 

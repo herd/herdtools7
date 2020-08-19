@@ -29,12 +29,15 @@ module A = AArch64Base
 %token <string> CODEVAR
 %token <int> PROC
 
+%token <int> HEX
+%token <string> LABEL
+
 %token SEMI COMMA PIPE COLON LBRK RBRK LPAR RPAR SCOPES LEVELS REGIONS
 %token SXTW
 
 /* Instructions */
 %token NOP
-%token B BR BEQ BNE BGE BGT BLE BLT CBZ CBNZ EQ NE GE GT LE LT
+%token B BR BEQ BNE BGE BGT BLE BLT CBZ CBNZ EQ NE GE GT LE LT TBZ TBNZ
 %token BL BLR RET
 %token LDR LDP LDNP STP STNP LDRB LDRH STR STRB STRH STLR STLRB STLRH
 %token CMP MOV ADR
@@ -180,6 +183,12 @@ cond:
 | LE { A.LE }
 | LT { A.LT }
 
+label_addr:
+| HEX LABEL { Printf.sprintf "0x%x" $1 }
+| HEX       { Printf.sprintf "0x%x" $1 }
+| NUM LABEL { Printf.sprintf "%d" $1 }
+| NUM       { Printf.sprintf "%d" $1 }
+| NAME      { $1 }
 
 instr:
 | NOP { A.I_NOP }
@@ -198,6 +207,10 @@ instr:
 | BGT NAME { A.I_BC (A.GT,$2) }
 | CBZ reg COMMA NAME   { let v,r = $2 in A.I_CBZ (v,r,$4) }
 | CBNZ reg COMMA NAME  { let v,r = $2 in A.I_CBNZ (v,r,$4) }
+| TBNZ reg COMMA NUM COMMA label_addr
+  { let v,r = $2 in A.I_TBNZ (v,r,MetaConst.Int $4,$6) }
+| TBZ reg COMMA NUM COMMA label_addr
+  { let v,r = $2 in A.I_TBZ (v,r,MetaConst.Int $4,$6) }
 /* Memory */
 | LDR reg COMMA LBRK xreg kr0 RBRK
   { let v,r = $2 in A.I_LDR (v,r,$5,$6) }
