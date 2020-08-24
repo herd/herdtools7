@@ -1,4 +1,5 @@
-(****************************************************************************)(*                           the diy toolsuite                              *)
+(****************************************************************************)
+(*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
@@ -99,6 +100,12 @@ module Make(Cst:Constant.S) = struct
   | Var _ -> raise  Undetermined
 
   let protect_is p v =  try p v with Undetermined -> false
+
+  let bit_at k = function
+    | Val (Concrete v) -> Val (Concrete (Cst.Scalar.bit_at k v))
+    | Val (Symbolic _|Label _|Tag _ as x) ->
+      Warn.user_error "Illegal operation on %s" (Cst.pp_v x)
+    | Var _ -> raise Undetermined
 
   let unop op_op op v1 = match v1 with
     | Val (Concrete i1) -> Val (Concrete (op i1))
@@ -271,6 +278,8 @@ module Make(Cst:Constant.S) = struct
       unop  op (fun s -> Scalar.shift_left s k)
   | LogicalRightShift k ->
       unop op (fun s -> Scalar.shift_right_logical s k)
+  | SignExtendWord _ ->
+      Warn.fatal "sxtw op not implemented yet"
   | AddK k -> add_konst k
   | AndK k -> unop op (fun s -> Scalar.logand s (Scalar.of_string k))
   | Mask sz -> maskop op sz
@@ -287,10 +296,14 @@ module Make(Cst:Constant.S) = struct
   | Mul -> binop op (Scalar.mul)
   | Div -> binop op (Scalar.div)
   | And -> binop op (Scalar.logand)
+  | ASR ->
+          binop op (fun x y -> Scalar.shift_right_arithmetic x (Scalar.to_int y))
   | Or -> orop
   | Xor -> xor
   | Nor -> binop op (fun x1 x2 -> Scalar.lognot (Scalar.logor x1 x2))
   | AndNot2 -> binop op (fun x1 x2 -> Scalar.logand x1 (Scalar.lognot x2))
+  | ShiftRight ->
+      binop op (fun x y -> Scalar.shift_right_logical x (Scalar.to_int y))
   | ShiftLeft ->
       binop op (fun x y -> Scalar.shift_left x (Scalar.to_int y))
   | Lt -> lt

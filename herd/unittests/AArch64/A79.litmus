@@ -1,0 +1,10 @@
+AArch64 A79
+(* Tests add (immediate), zero immediate, left shift 12 *)
+
+{ 0:X0=42; }
+
+P0;
+ADD X0, X0, #1, lsl #12;
+
+exists (0:X0=4138)
+

@@ -17,6 +17,8 @@
 module Int32Scalar = struct
   include Int32
 
+  let shift_right_arithmetic = Int32.shift_right
+
   let addk x k = match k with
   | 0 -> x
   | 1 -> succ x
@@ -27,6 +29,8 @@ module Int32Scalar = struct
     Printf.sprintf (if hexa then "0x%lx" else "%li") v
   let lt v1 v2 = compare v1 v2 < 0
   let le v1 v2 = compare v1 v2 <= 0
+
+  let bit_at k v = Int32.logand v (Int32.shift_left Int32.one k)
 
   let mask sz =
     let open MachSize in

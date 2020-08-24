@@ -1,0 +1,10 @@
+AArch64 A65
+(* Tests asr (register), reg shift of 1 *)
+
+{ 0:X0=64; 0:X1=1 }
+
+P0;
+ASR X0, X0, X1;
+
+exists (0:X0=32)
+

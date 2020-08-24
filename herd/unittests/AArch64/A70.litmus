@@ -1,0 +1,10 @@
+AArch64 A70
+(* Tests adds (shifted register), no shift *)
+
+{ 0:X0=42; 0:X1=1; }
+
+P0;
+ADDS X0, X0, X1;
+
+exists (0:X0=43)
+
