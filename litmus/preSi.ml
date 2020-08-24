@@ -228,7 +228,7 @@ module Make
       and dump_addr_idx s = sprintf "_idx_%s" s
 
 
-      let dump_fault_handler test =
+      let dump_fault_handler doc test =
         if have_fault_handler then begin
           O.o "/* Fault Handling */" ;
           O.o "#define HAVE_FAULT_HANDLER 1" ;
@@ -338,7 +338,7 @@ module Make
         O.oi "count_t total=0;" ;
         O.oi "for (int k=0 ; k < NTHREADS; k++) { total += nfaults[k]; }" ;
         O.oi "if (total > 0) {" ;
-        O.oii "printf(\"Faults %\"PCTR\"\",total);" ;
+        O.fii "printf(\"Faults %s %%\"PCTR\"\",total);"  doc.Name.name ;
         O.oii "for (int k = 0 ; k < NTHREADS ; k++) {" ;
         O.oiii "count_t c = nfaults[k];" ;
         let fmt = " P%d:%\"PCTR\"" in
@@ -1594,7 +1594,7 @@ let dump_main_def doc _env test stats =
     let env = U.build_env test in
     let stats = get_stats test in
     let some_ptr = dump_outcomes env test in
-    dump_fault_handler test ;
+    dump_fault_handler doc test ;
     dump_cond_def env test ;
     dump_parameters env test ;
     dump_hash_def doc.Name.name env test ;
