@@ -359,7 +359,6 @@ rule token = parse
 | '\n'      { incr_lineno lexbuf; token lexbuf }
 | "(*"      { LU.skip_comment lexbuf ; token lexbuf }
 | '#' ('-' ? num as x) { NUM (int_of_string x) }
-| ("0x" num as x) { HEX (int_of_string x) }
 | 'P' (num as x)
     { PROC (int_of_string x) }
 | ['w''W']'%' (name as name) { SYMB_WREG name }

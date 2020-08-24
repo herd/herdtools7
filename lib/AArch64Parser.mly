@@ -29,9 +29,6 @@ module A = AArch64Base
 %token <string> CODEVAR
 %token <int> PROC
 
-%token <int> HEX
-%token <string> LABEL
-
 %token SEMI COMMA PIPE COLON LBRK RBRK LPAR RPAR SCOPES LEVELS REGIONS
 %token SXTW
 
@@ -198,10 +195,6 @@ cond:
 | LT { A.LT }
 
 label_addr:
-| HEX LABEL { Printf.sprintf "0x%x" $1 }
-| HEX       { Printf.sprintf "0x%x" $1 }
-| NUM LABEL { Printf.sprintf "%d" $1 }
-| NUM       { Printf.sprintf "%d" $1 }
 | NAME      { $1 }
 
 instr:
