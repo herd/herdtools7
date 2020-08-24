@@ -1,0 +1,29 @@
+"x86 TSO Mixed"
+
+include "x86fences.cat"
+include "filters.cat"
+include "cos.cat"
+
+(* Coherence-after *)
+let ca = fr | co
+
+(* Observed-by *)
+let obs = rfe | fre | coe
+
+(* Locally-ordered-before *)
+let rec lob = po \ ([W]; po; [R])
+        | [W]; po; [MFENCE]; po; [R]
+        | [W]; po; [R & X]
+        | [W & X]; po; [R]
+        | lob; lob
+
+(* Ordered-before *)
+let rec ob = obs; si
+        | lob
+        | ob; ob
+
+(* Internal visibility requirement *)
+acyclic po-loc | ca | rf as internal
+
+(* External visibility requirement *)
+irreflexive ob as external
