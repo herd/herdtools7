@@ -266,6 +266,7 @@ match name with
 | "ldg"|"LDG" -> LDG
 (* Operations *)
 | "sxtw"|"SXTW" -> SXTW
+| "uxtw"|"UXTW" -> UXTW
 | "mov"|"MOV" -> MOV
 | "adr"|"ADR" -> ADR
 | "rbit"|"RBIT" -> RBIT
@@ -277,6 +278,9 @@ match name with
 | "ands"|"ANDS" -> OP A.ANDS
 | "sub"|"SUB" -> OP A.SUB
 | "subs"|"SUBS" -> OP A.SUBS
+(* Although ASR is an instruction, it is also a barrel shift *)
+(* It needs special handling as both an operation and operand *)
+| "asr" | "ASR" -> ASR
 | "cmp"|"CMP" -> CMP
 | "tst"|"TST" -> TST
 (* Misc *)
@@ -302,6 +306,9 @@ match name with
 | "nsh"|"NSH" -> NSH
 | "nshst"|"NSHST" -> NSHST
 | "nshld"|"NSHLD" -> NSHLD
+(* inline barrel shift operands *)
+| "lsl" | "LSL" -> LSL
+| "lsr" | "LSR" -> LSR
 (* Cache maintenance *)
 | "ic"|"IC" -> IC
 | "dc"|"DC" -> DC

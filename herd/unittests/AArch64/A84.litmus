@@ -1,0 +1,10 @@
+AArch64 A84
+(* Tests add (shifted register), right shift by 2 *)
+
+{ 0:X0=42; 0:X1=32; }
+
+P0;
+ADD X0, X0, X1, lsr #2;
+
+exists (0:X0=50)
+

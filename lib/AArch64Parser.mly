@@ -35,6 +35,9 @@ module A = AArch64Base
 %token SEMI COMMA PIPE COLON LBRK RBRK LPAR RPAR SCOPES LEVELS REGIONS
 %token SXTW
 
+/* Inline Barrel Shift Operands */
+%token LSL LSR ASR UXTW
+
 /* Instructions */
 %token NOP
 %token B BR BEQ BNE BGE BGT BLE BLT CBZ CBNZ EQ NE GE GT LE LT TBZ TBNZ
@@ -149,15 +152,26 @@ k:
 kr:
 | k { A.K $1 }
 | xreg { A.RV (A.V64,$1) }
-| wreg COMMA SXTW { A.RV (A.V32,$1) }
+| wreg { A.RV (A.V32,$1) }
 
 kr0:
 | { A.K (MetaConst.zero) }
 | COMMA kr { $2 }
 
+kr0_no_shift:
+| { A.K (MetaConst.zero) }
+| COMMA k { A.K $2 }
+
 kwr:
 | k { A.K $1 }
 | wreg { A.RV (A.V32,$1) }
+
+shift:
+| LSL NUM  { A.S_LSL(MetaConst.Int $2)  }
+| LSR NUM  { A.S_LSR(MetaConst.Int $2)  }
+| ASR NUM  { A.S_ASR(MetaConst.Int $2)  }
+| SXTW { A.S_SXTW }
+| UXTW { A.S_UXTW }
 
 zeroopt:
 | { () }
@@ -250,11 +264,11 @@ instr:
   { A.I_LDARBH (A.B,A.AQ,$2,$5) }
 | LDAPRH wreg COMMA LBRK xreg RBRK
   { A.I_LDARBH (A.H,A.AQ,$2,$5) }
-| STR reg COMMA LBRK xreg kr0 RBRK
+| STR reg COMMA LBRK xreg kr0_no_shift RBRK
   { let v,r = $2 in A.I_STR (v,r,$5,$6) }
-| STRB wreg COMMA LBRK xreg kr0 RBRK
+| STRB wreg COMMA LBRK xreg kr0_no_shift RBRK
   { A.I_STRBH (A.B,$2,$5,$6) }
-| STRH wreg COMMA LBRK xreg kr0 RBRK
+| STRH wreg COMMA LBRK xreg kr0_no_shift RBRK
   { A.I_STRBH (A.H,$2,$5,$6) }
 | STLR reg COMMA LBRK xreg RBRK
   { let v,r = $2 in A.I_STLR (v,r,$5) }
@@ -651,18 +665,25 @@ instr:
   { A.I_ADDR ($2,$4) }
 | SXTW xreg COMMA wreg
   { A.I_SXTW ($2,$4) }
+/* Special handling for ASR operation */
+| ASR xreg COMMA xreg COMMA kr
+  { A.I_OP3 (A.V64, AArch64Base.ASR, $2, $4, $6, A.S_NOEXT) }
 | OP xreg COMMA xreg COMMA kr
-  { A.I_OP3 (A.V64,$1,$2,$4,$6) }
+  { A.I_OP3 (A.V64,$1,$2,$4,$6, A.S_NOEXT) }
+| OP xreg COMMA xreg COMMA kr COMMA shift
+  { A.I_OP3 (A.V64,$1,$2,$4,$6, $8) }
 | OP wreg COMMA wreg COMMA kwr
-    { A.I_OP3 (A.V32,$1,$2,$4,$6) }
+  { A.I_OP3 (A.V32,$1,$2,$4,$6, A.S_NOEXT) }
+| OP wreg COMMA wreg COMMA kwr COMMA shift
+  { A.I_OP3 (A.V32,$1,$2,$4,$6, $8) }
 | CMP wreg COMMA kwr
-  { A.I_OP3 (A.V32,A.SUBS,A.ZR,$2,$4) }
+  { A.I_OP3 (A.V32,A.SUBS,A.ZR,$2,$4, A.S_NOEXT) }
 | CMP xreg COMMA kr
-  { A.I_OP3 (A.V64,A.SUBS,A.ZR,$2,$4) }
+  { A.I_OP3 (A.V64,A.SUBS,A.ZR,$2,$4, A.S_NOEXT) }
 | TST wreg COMMA k
-  { A.I_OP3 (A.V32,A.ANDS,A.ZR,$2,A.K $4) }
+  { A.I_OP3 (A.V32,A.ANDS,A.ZR,$2,A.K $4, A.S_NOEXT) }
 | TST xreg COMMA k
-  { A.I_OP3 (A.V64,A.ANDS,A.ZR,$2,A.K $4) }
+  { A.I_OP3 (A.V64,A.ANDS,A.ZR,$2,A.K $4, A.S_NOEXT) }
 | RBIT wreg COMMA wreg
   { A.I_RBIT (A.V32,$2,$4) }
 | RBIT xreg COMMA xreg

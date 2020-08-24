@@ -17,6 +17,8 @@
 module Int64Scalar = struct
   include Int64
 
+  let shift_right_arithmetic = Int64.shift_right
+
   let addk x k = match k with
   | 0 -> x
   | 1 -> succ x

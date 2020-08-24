@@ -21,7 +21,9 @@ open Printf
 type op =
   | Add | Sub | Mul | Div
   | And | Or | Xor | Nor | AndNot2
+  | ASR
   | ShiftLeft
+  | ShiftRight
   | Lt | Gt | Eq | Ne
   | Le | Ge
   | Max | Min
@@ -39,6 +41,7 @@ let pp_op o =
   | Nor -> "(nor)"
   | AndNot2 -> "(andnot2)"
   | ShiftLeft -> "<<<" (* In Java ?? *)
+  | ShiftRight -> ">>>"
   | Eq -> "=="
   | Lt -> "<"
   | Gt -> ">"
@@ -47,6 +50,7 @@ let pp_op o =
   | Ne -> "!="
   | Max -> "max"
   | Min -> "min"
+  | ASR -> "ASR"
   | SetTag -> "settag"
 
 let pp_ptx_cmp_op = function
@@ -66,6 +70,7 @@ type op1 =
   | ReadBit of int
   | LeftShift of int
   | LogicalRightShift of int
+  | SignExtendWord of int
   | AddK of int
   | AndK of string
   | Mask of MachSize.sz
@@ -81,6 +86,7 @@ let pp_op1 hexa o = match o with
 | ReadBit i -> sprintf "readbit%i" i
 | LeftShift i -> sprintf "<<[%i]" i
 | LogicalRightShift i -> sprintf ">>>[%i]" i
+| SignExtendWord i -> sprintf "sxtw %i" i
 | AddK i  -> (if hexa then sprintf "+[0x%x]" else sprintf "+[%i]") i
 | AndK i  -> sprintf "&[%s]" i
 | Mask sz  -> sprintf "mask%02i" (MachSize.nbits sz)

@@ -305,6 +305,21 @@ module Make
         | Neg -> M.op Op.Sub V.zero v
         | Inv -> Warn.fatal "size dependent inverse not implemented"
 
+      (* Apply a shift as monadic op *)
+      let shift s =
+        let open AArch64Base in
+        match s with
+          | S_NOEXT   -> M.unitT
+          | S_LSL(n)  -> fun x -> M.op (Op.ShiftLeft) x (V.intToV n)
+          | S_LSR(n)  -> fun x -> M.op (Op.ShiftRight) x (V.intToV n)
+          | S_ASR(n)  -> fun x -> M.op (Op.ASR) x (V.intToV n)
+          | S_SXTW -> fun x ->
+            let m = V.op1 (Op.LeftShift 31) V.one in
+            M.op Op.Xor x m
+            >>= fun v -> M.op Op.Sub v m
+          | S_UXTW->
+            Warn.fatal "UXTW barrel shift not supported yet"
+
       let rmw_amo_read rmw sz = let open AArch64 in match rmw with
       | RMW_A|RMW_AL -> old_do_read_mem sz XA
       | RMW_L|RMW_P  -> old_do_read_mem sz X
@@ -500,19 +515,61 @@ module Make
               fun x -> M.op Op.Sub x m >>=
                 fun v -> write_reg rd v ii >>! B.Next
 
-        | I_OP3(ty,op,rd,rn,kr) ->
+        | I_OP3(ty,op,rd,rn,kr,os) ->
             let sz = tr_variant ty in
+            (* Check correctness of shift, and shift if correct *)
+            (* These checks aren't needed, but correctness checks are good! *)
+            (* Besides this seems to be the only place they are checked... *)
+            (* Details can be found in the Arm Arch reference manual *)
+            let check_and_shift op ty s = begin match op, ty, s with
+              (*These patterns could be further merged, but are not for legibility *)
+              | (ADD|ADDS), V32, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 32) ->
+                shift s
+              | (ADD|ADDS), V64, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 64) ->
+                shift s
+              | (AND|ANDS), V32, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 32) ->
+                shift s (* todo add ROR shift if it occurs*)
+              | (AND|ANDS), V64, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 64) ->
+                shift s (* todo add ROR shift if it occurs*)
+              | (SUB|SUBS), V32, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 32) ->
+                shift s
+              | (SUB|SUBS), V64, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 64) ->
+                shift s
+              | (ORR|EOR), V32, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 32) ->
+                shift s (* todo add ROR shift if it occurs*)
+              | (ORR|EOR), V64, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 64) ->
+                shift s (* todo add ROR shift if it occues*)
+              | _ -> Warn.fatal "Unsupported shift arg %s in %s instruction %s"
+                  (pp_barrel_shift s pp_imm)
+                  (pp_variant ty)
+                  (pp_op op)
+            end in
             begin match kr with
-            | RV (_,r) when reg_compare r rn = 0 ->
+            | RV (_,r) when reg_compare r rn = 0 -> (* register variant*)
                 (* Keep sharing here, otherwise performance penalty on address
                    dependency by r^r in mixed size mode *)
-                read_reg_ord_sz sz rn ii >>=
-                fun v -> M.unitT (v,v)
-            |_ ->
+                read_reg_ord_sz sz rn ii >>= fun v ->
+                (* if present, apply an optional inline barrel shift *)
+                begin match os with
+                | S_NOEXT    -> M.unitT (v,v)
+                | s -> check_and_shift op ty s v
+                       >>= fun v -> M.unitT (v,v)
+                end
+            | RV (_,r) -> (* register variant *)
+                (* no sharing, we optionally shift v2 and return the pair *)
+                read_reg_ord_sz sz rn ii  >>| read_reg_ord_sz sz r ii
+                (* if present, apply an optional inline barrel shift *)
+                >>= fun (v1,v2) ->
+                begin match os with
+                | S_NOEXT -> M.unitT (v1,v2)
+                | s -> check_and_shift op ty s v2
+                       >>= fun v2 -> M.unitT(v1,v2)
+                end
+            | K k -> (* immediate  *)
                 read_reg_ord_sz sz rn ii >>|
-                begin match kr with
-                | K k -> M.unitT (V.intToV k)
-                | RV(_,r) -> read_reg_ord_sz sz r ii
+                begin match os with
+                | S_NOEXT -> M.unitT (V.intToV k)
+                | s -> check_and_shift op ty s (V.intToV k)
                 end
             end
               >>=
@@ -522,12 +579,13 @@ module Make
             | ORR -> fun (v1,v2) -> M.op Op.Or v1 v2
             | SUB|SUBS -> fun (v1,v2) -> M.op Op.Sub v1 v2
             | AND|ANDS -> fun (v1,v2) -> M.op Op.And v1 v2
+            | ASR -> fun (v1, v2) -> M.op Op.ASR v1 v2
             end >>=
             (let m =  (fun v ->
               (write_reg rd v ii) >>|
               (match op with
               | ADDS|SUBS|ANDS -> is_zero v >>= fun v -> write_reg NZP v ii
-              | ADD|EOR|ORR|AND|SUB -> M.unitT ())) in
+              | ADD|EOR|ORR|AND|SUB|ASR -> M.unitT ())) in
             mask32 ty m) >>!
             B.Next
               (* Barrier *)

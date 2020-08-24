@@ -1,0 +1,10 @@
+AArch64 A64
+(* Tests asr (immediate), right shift by 1 *)
+
+{ 0:X0=64; }
+
+P0;
+ASR X0, X0, #1;
+
+exists (0:X0=32)
+
