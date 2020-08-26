@@ -1,7 +1,6 @@
 "x86 TSO Mixed"
 
 include "x86fences.cat"
-include "filters.cat"
 include "cos.cat"
 
 (* Coherence-after *)
@@ -24,6 +23,9 @@ let rec ob = obs; si
 
 (* Internal visibility requirement *)
 acyclic po-loc | ca | rf as internal
+
+(* Atomicity requirement *)
+empty rmw & (fre;coe) as atomic
 
 (* External visibility requirement *)
 irreflexive ob as external
