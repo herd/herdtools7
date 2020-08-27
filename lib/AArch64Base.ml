@@ -393,12 +393,12 @@ type 'k s
   | S_UXTW
   | S_NOEXT
 
-let pp_barrel_shift s pp_k = match s with
-  | S_LSL(k) -> "LSL "  ^ (pp_k k)
-  | S_LSR(k) -> "LSR "  ^ (pp_k k)
-  | S_ASR(k) -> "ASR "  ^ (pp_k k)
-  | S_SXTW -> "SXTW"
-  | S_UXTW -> "UXTW"
+let pp_barrel_shift sep s pp_k = match s with
+  | S_LSL(k) -> sep ^ "LSL "  ^ (pp_k k)
+  | S_LSR(k) -> sep ^ "LSR "  ^ (pp_k k)
+  | S_ASR(k) -> sep ^ "ASR "  ^ (pp_k k)
+  | S_SXTW -> sep ^ "SXTW"
+  | S_UXTW -> sep ^ "UXTW"
   | S_NOEXT  -> ""
 
 let pp_imm n = "#" ^ string_of_int n
@@ -643,7 +643,7 @@ let do_pp_instruction m =
   | I_OP3 (v,op,r1,r2,K k, S_NOEXT) ->
       pp_rri (pp_op op) v r1 r2 k
   | I_OP3 (v,op,r1,r2,kr, s) ->
-      pp_rrkr (pp_op op) v r1 r2 kr ^ "," ^ pp_barrel_shift s (m.pp_k)
+      pp_rrkr (pp_op op) v r1 r2 kr ^ pp_barrel_shift "," s (m.pp_k)
   | I_ADDR (r,lbl) ->
       sprintf "ADDR %s,%s" (pp_xreg r) (pp_label lbl)
   | I_RBIT (v,rd,rs) ->

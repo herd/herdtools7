@@ -540,7 +540,7 @@ module Make
               | (ORR|EOR), V64, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 64) ->
                 shift s (* todo add ROR shift if it occues*)
               | _ -> Warn.fatal "Unsupported shift arg %s in %s instruction %s"
-                  (pp_barrel_shift s pp_imm)
+                  (pp_barrel_shift "" s pp_imm)
                   (pp_variant ty)
                   (pp_op op)
             end in

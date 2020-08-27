@@ -489,9 +489,7 @@ module Make(V:Constant.S)(C:Config) =
 
     let op3 v op rD rA kr s =
       let memo = memo_of_op op in
-      let shift = match s with
-      | S_NOEXT -> ""
-      | s -> ","^pp_barrel_shift s pp_imm in
+      let shift = pp_barrel_shift "," s pp_imm in
       match v,kr with
       | V32,K k ->
           let rD,fD = arg1 "wzr" (fun s -> "^wo"^s) rD
