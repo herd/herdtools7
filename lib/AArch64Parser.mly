@@ -149,15 +149,15 @@ k:
 kr:
 | k { A.K $1 }
 | xreg { A.RV (A.V64,$1) }
-| wreg { A.RV (A.V32,$1) }
+| wreg  { A.RV (A.V32,$1) }
 
 kr0:
 | { A.K (MetaConst.zero) }
-| COMMA kr { $2 }
-
-kr0_no_shift:
-| { A.K (MetaConst.zero) }
 | COMMA k { A.K $2 }
+| COMMA xreg {  A.RV (A.V64,$2) }
+| COMMA wreg {  A.RV (A.V32,$2) }
+| COMMA wreg COMMA SXTW {  A.RV (A.V32,$2) }
+/* For indexed accesses SXTW is considered always present */
 
 kwr:
 | k { A.K $1 }
@@ -257,11 +257,11 @@ instr:
   { A.I_LDARBH (A.B,A.AQ,$2,$5) }
 | LDAPRH wreg COMMA LBRK xreg RBRK
   { A.I_LDARBH (A.H,A.AQ,$2,$5) }
-| STR reg COMMA LBRK xreg kr0_no_shift RBRK
+| STR reg COMMA LBRK xreg kr0 RBRK
   { let v,r = $2 in A.I_STR (v,r,$5,$6) }
-| STRB wreg COMMA LBRK xreg kr0_no_shift RBRK
+| STRB wreg COMMA LBRK xreg kr0 RBRK
   { A.I_STRBH (A.B,$2,$5,$6) }
-| STRH wreg COMMA LBRK xreg kr0_no_shift RBRK
+| STRH wreg COMMA LBRK xreg kr0 RBRK
   { A.I_STRBH (A.H,$2,$5,$6) }
 | STLR reg COMMA LBRK xreg RBRK
   { let v,r = $2 in A.I_STLR (v,r,$5) }
