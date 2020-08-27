@@ -57,6 +57,7 @@ let tuple_pat = function
 %token REQUIRES FLAG
 %token ARROW
 %token ENUM DEBUG MATCH WITH
+%token CATDEP
 %type <AST.t> main
 %start main
 
@@ -71,10 +72,12 @@ let tuple_pat = function
 %%
 
 main:
-| identity topins_list EOF
+| identity catdep topins_list EOF
  {
   let a,id = $1 in
-   ModelOption.set_arch a ModelOption.default, id, $2 }
+  let catdep = $2 in
+  ModelOption.set_arch a
+    (ModelOption.set_catdep catdep ModelOption.default), id, $3 }
 
 identity:
 | VAR VAR { $1,$2 }
@@ -83,6 +86,9 @@ identity:
 | STRING  { $1,$1 }
 |   { "None","Unknown" }
 
+catdep:
+| CATDEP { true }
+| { false }
 
 topins_list:
 | { [] }

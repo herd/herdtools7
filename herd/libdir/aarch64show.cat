@@ -12,6 +12,7 @@ show same-tag-loc\id as same-tag-loc
 let rf-mem = rf \ rf-reg
 show rf-reg
 show rf-mem as rf
+unshow fr,co
 show co|fr as ca
 
 (* Intrinsic order *)

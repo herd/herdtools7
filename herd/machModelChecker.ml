@@ -139,7 +139,7 @@ module Make
 (* Intepreter call *)
     let (opts,_,prog) = O.m
     let withco = opts.ModelOption.co
-
+    let catdep = opts.ModelOption.catdep
     let run_interpret test  kfail =
       let run =  I.interpret test kfail in
       fun ks m vb_pp kont res ->
@@ -164,7 +164,7 @@ module Make
         else
           lazy [] in
       let relevant =
-        if do_deps then fun _ -> true
+        if do_deps || catdep then fun _ -> true
         else fun e -> not (E.is_reg_any e) in
       let all_evts =  conc.S.str.E.events in
       let evts =

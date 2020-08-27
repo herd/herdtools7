@@ -14,7 +14,14 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type t = { arch : Archs.t option ; co : bool ; init : bool ; }
+(* Model options:
+  - arch: enforce arch matching, or not.
+  - co: co is computed externaly and defined in initial environment.
+  - init: add initial write events (default)
+  - catdep: cat fill computes dependencies
+*)
+
+type t = { arch : Archs.t option ; co : bool ; init : bool ; catdep : bool; }
 
 val pp : t -> string
 val default : t
@@ -22,4 +29,5 @@ val compat : t
 
 val set_enumco : bool -> t -> t
 val set_init : bool -> t -> t
+val set_catdep : bool -> t -> t
 val set_arch : string -> t -> t

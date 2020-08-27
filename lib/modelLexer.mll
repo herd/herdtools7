@@ -57,6 +57,8 @@ module LU = LexUtils.Make(O)
     | "if" -> IF
     | "then" -> THEN
     | "else" -> ELSE
+    (* Model option *)
+    | "catdep" -> CATDEP
     (* for bell files *)
     | "instructions" -> INSTRUCTIONS
     | "default" -> DEFAULT

@@ -55,10 +55,10 @@ let to-PoD = [R]; dd; [PoD]
 
 (** Data and Address dependencies *)
 let data = [R]; dd; [DATA]; intrinsic; [W]
+let Y = [R]; dd; [DATA]
+show Y
 let addrW = [R]; dd; [NDATA]; intrinsic; [W]
 let addrR =
  let dd-no-interv-PoD = dd \ (to-PoD;dd) in
  [R]; dd-no-interv-PoD; [NDATA]; intrinsic; [R]
 let addr = addrW | addrR
-
-include "aarch64show.cat"
