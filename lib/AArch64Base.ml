@@ -514,22 +514,22 @@ let do_pp_instruction m =
   and pp_rr memo v r1 r2 =
     pp_memo memo ^ " " ^ pp_vreg v r1 ^ "," ^  pp_vreg v r2 in
 
-  let pp_kr showzero kr = match kr with
+  let pp_kr showsxtw showzero kr = match kr with
   | K k when m.zerop k && not showzero -> ""
   | K k -> "," ^ m.pp_k k
   | RV (v,r) ->
       "," ^ pp_vreg v r ^
-      (match v with V32 -> ",SXTW" | V64 -> "") in
+      (match v with V32 when showsxtw -> ",SXTW" | V32|V64 -> "") in
 
   let pp_mem memo v rt ra kr =
     pp_memo memo ^ " " ^ pp_vreg v rt ^
-    ",[" ^ pp_xreg ra ^ pp_kr false kr ^ "]" in
+    ",[" ^ pp_xreg ra ^ pp_kr true false kr ^ "]" in
 
   let pp_memp memo v r1 r2 ra kr =
     pp_memo memo ^ " " ^
     pp_vreg v r1 ^ "," ^
     pp_vreg v r2 ^ ",[" ^
-    pp_xreg ra ^ pp_kr false kr ^ "]" in
+    pp_xreg ra ^ pp_kr true false kr ^ "]" in
 
   let pp_rkr memo v r1 kr = match v,kr with
   | _, K k -> pp_ri memo v r1 k
@@ -546,7 +546,7 @@ let do_pp_instruction m =
   | V64,RV (V32,_) ->
       pp_memo memo ^ " " ^
       pp_xreg r1  ^ "," ^
-      pp_xreg r2 ^ pp_kr true kr
+      pp_xreg r2 ^ pp_kr false true kr
   | V32,RV (V64,_) -> assert false in
 
   let pp_stxr memo v r1 r2 r3 =

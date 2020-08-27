@@ -497,9 +497,12 @@ module Make
             stxr (bh_to_sz bh) t rr rs rd ii
 
         (* Operations *)
-        | I_MOV(_sz,r,K k) ->
+        | I_MOV(var,r,K k) ->
             (* Masking assumed to be useless, given k size. Hence _sz ignored *)
-            write_reg r (V.intToV k) ii >>! B.Next
+            (mask32 var
+              (fun k -> write_reg r k ii)
+              (V.intToV k))
+              >>! B.Next
 
         | I_MOV(var,r1,RV (_,r2)) ->
             let sz = tr_variant var in
@@ -523,23 +526,26 @@ module Make
             (* Details can be found in the Arm Arch reference manual *)
             let check_and_shift op ty s = begin match op, ty, s with
               (*These patterns could be further merged, but are not for legibility *)
-              | (ADD|ADDS), V32, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 32) ->
+            | _,V64,S_SXTW ->
+                shift s (* sign extension should always be possible *)
+            | (ADD|ADDS), V32, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 32) ->
                 shift s
-              | (ADD|ADDS), V64, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 64) ->
+            | (ADD|ADDS), V64, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 64) ->
                 shift s
-              | (AND|ANDS), V32, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 32) ->
+            | (AND|ANDS), V32, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 32) ->
                 shift s (* todo add ROR shift if it occurs*)
-              | (AND|ANDS), V64, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 64) ->
+            | (AND|ANDS), V64, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 64) ->
                 shift s (* todo add ROR shift if it occurs*)
-              | (SUB|SUBS), V32, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 32) ->
+            | (SUB|SUBS), V32, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 32) ->
                 shift s
-              | (SUB|SUBS), V64, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 64) ->
+            | (SUB|SUBS), V64, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 64) ->
                 shift s
-              | (ORR|EOR), V32, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 32) ->
+            | (ORR|EOR), V32, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 32) ->
                 shift s (* todo add ROR shift if it occurs*)
-              | (ORR|EOR), V64, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 64) ->
+            | (ORR|EOR), V64, (S_LSL(n)|S_LSR(n)|S_ASR(n)) when (n >=0 && n < 64) ->
                 shift s (* todo add ROR shift if it occues*)
-              | _ -> Warn.fatal "Unsupported shift arg %s in %s instruction %s"
+            | _ ->
+                Warn.fatal "Unsupported shift arg %s in %s instruction %s"
                   (pp_barrel_shift "" s pp_imm)
                   (pp_variant ty)
                   (pp_op op)
