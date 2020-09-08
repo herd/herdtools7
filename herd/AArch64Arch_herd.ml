@@ -106,7 +106,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | NoRet -> "NoRet"
       | T -> "Tag"
       | S -> "^s"
-      | Exp -> if is_kvm then "Exp" else ""
+      | Exp -> if is_kvm && C.verbose > 2 then "Exp" else ""
       | NExp -> "NExp"
 
     module V = V
