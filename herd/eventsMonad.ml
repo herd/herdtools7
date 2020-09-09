@@ -29,6 +29,8 @@ module Make (C:Config)
 and type evt_struct = E.event_structure) =
   struct
 
+    open Printf
+
     module A = A
     module E = E
     module V = A.V
@@ -1045,7 +1047,7 @@ Monad type:
                 if A.VSet.mem atag tag_set then env
                 else begin
                   if dbg then
-                    Printf.eprintf "Tag %s for %s defaulting\n"
+                    eprintf "Tag %s for %s defaulting\n"
                       (A.V.pp_v atag) (A.V.pp_v a) ;
                   (A.Location_global atag,A.V.Val (Constant.default_tag))::env
                 end
@@ -1053,6 +1055,28 @@ Monad type:
               else env)
             env glob in
         env
+
+      let debug_env env =
+        String.concat ", "
+          (List.map
+             (fun (loc,v) -> sprintf "%s -> %s" (A.pp_location loc) (A.V.pp_v v))
+             env)
+
+      let check_initpte env =
+        let open Constant in
+        List.map
+          (fun (loc,v as bd) -> match loc with
+          | A.Location_global (V.Val (Symbolic (System (PTE,_)))) ->
+              begin match v with
+              | V.Val (Symbolic (Physical (s,_))) ->
+                  loc,V.Val (Symbolic (PTEVal (Constant.default_pte_val s)))
+              | V.Val (Symbolic (PTEVal _)) -> bd
+              | _ ->
+                  Warn.user_error
+                    "Cannot initialize %s with %s" (A.pp_location loc ) (A.V.pp C.hexa v)
+              end
+          | _ -> bd)
+          env
 
       let add_initpte =
 
@@ -1064,30 +1088,20 @@ Monad type:
         let tr_pte = function
           | Virtual ((s,_),_) -> System (PTE,s)
           | _ -> assert false in
-(*
-        let tr_af = function
-          (*| Virtual ((s,_),_) -> System (AF,s) *)
-          | _ -> assert false in
-        let tr_db = function
-          (*| Virtual ((s,_),_) -> System (DB,s) *)
-          | _ -> assert false in
-        let tr_dbm = function
-          (*| Virtual ((s,_),_) -> System (DBM,s) *)
-          | _ -> assert false in
-*)
+
         let add_val vloc v k =  begin match vloc with
         | V.Val (Symbolic (System (_,s) as a)) -> 
-          if C.debug.Debug_herd.mem then begin
-            Printf.printf "add_val System: %s\n" s end;
+          if dbg then begin
+            printf "add_val System: %s\n" s end;
           SymbolMap.add a v k
         | V.Val (Symbolic (PTEVal _)) -> assert false
         | V.Val (Symbolic (Physical (s,_) as a)) -> 
-          if C.debug.Debug_herd.mem then begin
-            Printf.printf "add_val Phys: %s\n" s end;
+          if dbg then begin
+            printf "add_val Phys: %s\n" s end;
           SymbolMap.add a v k
         | V.Val (Symbolic (Virtual ((s,_),_) as a)) -> 
-           if C.debug.Debug_herd.mem then begin
-             Printf.printf "add_val Virt: %s\n" s end;
+           if dbg then begin
+             printf "add_val Virt: %s\n" s end;
            SymbolMap.add a v k
         | V.Val (Concrete _|Label (_, _)|Tag _)|V.Var _ -> k end in
 
@@ -1118,6 +1132,7 @@ Monad type:
           end in
  
         fun env ->
+          let env = check_initpte env in
           let k,rem =
             List.fold_left
               (fun (k,rem) ((loc,v) as bd) ->
@@ -1135,39 +1150,35 @@ Monad type:
                 | System (TAG,_) | Physical _ -> (A.Location_global a_sym,v)::env
                 | System (PTE,_) -> 
                   let aloc = A.Location_global a_sym in  
-                  if C.debug.Debug_herd.mem then begin
-                  Printf.printf "env PTE: %s\n" (A.pp_location (A.Location_global a_sym));
-                  let pte_v = match v with | V.Val (Symbolic (PTEVal x)) -> x | _ -> assert false in 
-                    Printf.printf "env PTEVal: %s\n" (Constant.pp_pte_val pte_v) end;
-(*
-                  (aloc,v)::env
-*)
+                  if dbg then begin
+                    printf "env PTE: %s is %s\n" (A.pp_location (A.Location_global a_sym)) (A.V.pp_v v)
+                  end ;
                   begin match (find_one env aloc []) with
                    | None,_ -> 
-                     if C.debug.Debug_herd.mem then begin
-                       Printf.printf "I aloc,v: %s,%s\n" (A.pp_location aloc) (V.pp_v v) end;
+                     if dbg then begin
+                       printf "I aloc,v: %s,%s\n" (A.pp_location aloc) (V.pp_v v) end;
                      (aloc,v)::env  
                    | Some(_,aphy),r -> 
-                     if C.debug.Debug_herd.mem then begin
-                       Printf.printf "II aloc,aphy,v: %s,%s,%s\n" (A.pp_location aloc) (V.pp_v aphy) (V.pp_v v) 
+                     if dbg then begin
+                       printf "II aloc,aphy,v: %s,%s,%s\n" (A.pp_location aloc) (V.pp_v aphy) (V.pp_v v)
                      end;
                       if have_same_base_addr aloc aphy then 
                        begin match (find_one r (A.Location_global v) []) with 
                        | None,_ -> 
-                         if C.debug.Debug_herd.mem then begin
-                           Printf.printf "III aloc,aphy,v: %s,%s,%s\n" (A.pp_location aloc) (V.pp_v aphy) (V.pp_v v) end;
+                         if dbg then begin
+                           printf "III aloc,aphy,v: %s,%s,%s\n" (A.pp_location aloc) (V.pp_v aphy) (V.pp_v v) end;
                          begin match v with
                          | V.Val _ -> (aloc,v)::r
                          | _ -> (aloc,v)::(A.Location_global v,V.zero)::r
                          end                     
                        | Some _,_ -> 
-                         if C.debug.Debug_herd.mem then begin
-                           Printf.printf "IV aloc,v: %s,%s\n" (A.pp_location aloc) (V.pp_v v) end;
+                         if dbg then begin
+                           printf "IV aloc,v: %s,%s\n" (A.pp_location aloc) (V.pp_v v) end;
                          (aloc,v)::r    
                        end
                        (*jade: this is supposed to be the case where pte_x = phy_y AND pte_x=phy_z in the initial state, which should be a user error*) 
-                        else (*if C.debug.Debug_herd.mem then begin
-                           Printf.printf "IV aloc,v: %s,%s\n" (A.pp_location aloc) (V.pp_v v) end; *)   
+                        else (*if dbg then begin
+                           printf "IV aloc,v: %s,%s\n" (A.pp_location aloc) (V.pp_v v) end; *)
                         assert false 
                   end
                  | _ ->
@@ -1185,11 +1196,17 @@ Monad type:
                  | Some _,_ -> (no_dup_env env a_phy v)   
                 end)
               k rem in 
-         env
+          env
+
+      let debug_add_initpte env =
+        let r = add_initpte env in
+        eprintf "Complete pte initialisation:\n[%s] -> [%s]\n" (debug_env env) (debug_env r) ;
+        r
+
 
       let initwrites_non_mixed env _ =
         let env =
-          if kvm then add_initpte env
+          if kvm then (if dbg then debug_add_initpte else add_initpte) env
           else env in
         fun eiid ->
           let eiid,es =
@@ -1203,7 +1220,7 @@ Monad type:
               (eiid,[]) env in
           let es = E.EventSet.of_list es in
           if dbg then begin
-            Printf.eprintf "Init writes %a\n" E.debug_events es
+            eprintf "Init writes %a\n" E.debug_events es
           end ;
           eiid,
           (Evt.singleton ((),[],do_trivial es),None)
@@ -1216,7 +1233,7 @@ Monad type:
 
       let initwrites_mixed env size_env =
         if dbg then begin
-          Printf.eprintf "Env is: [%s]\n" (debug_env env)
+          eprintf "Env is: [%s]\n" (debug_env env)
         end ;
         fun eiid ->
           try
@@ -1253,7 +1270,7 @@ Monad type:
                 (eiid,[],E.EventSetSet.empty) env in
             let es = E.EventSet.of_list es in
             if dbg then begin
-              Printf.eprintf "Init writes %a\n" E.debug_events es
+              eprintf "Init writes %a\n" E.debug_events es
             end ;
 
             let st = do_trivial es in
