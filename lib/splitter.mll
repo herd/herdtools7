@@ -80,7 +80,10 @@ and main start = parse
   { begin match line with Some _ -> incr_lineno lexbuf | None -> () end ;
     let arch = Archs.lex arch in
     let (info,init1,(init2,prog1)) = find_init [] lexbuf in
-    let is_empty,prog2 = inside_prog lexbuf in
+    let do_skip_comments = match arch with
+    | `C|`CPP -> false (* We can't skip comments in C, because "(*" is legal and frequent syntax *)
+    | _ -> true in
+    let is_empty,prog2 = inside_prog do_skip_comments lexbuf in
     let constr2 =
       if is_empty then prog2 else inside_constr lexbuf in
     let loc_eof = find_eof lexbuf in
@@ -126,10 +129,15 @@ and inside_init = parse
 | [^'\n''}']+   { inside_init lexbuf }
 | "" { error "inside init section" lexbuf }
 
-and inside_prog  = parse
-| '\n'  { incr_lineno lexbuf ;  inside_prog lexbuf }
- (* Had to erase comments to handle C-code *)
-| "\""  { skip_string lexbuf ; inside_prog lexbuf }
+and inside_prog do_skip_comments = parse
+| '\n'  { incr_lineno lexbuf ;  inside_prog do_skip_comments lexbuf }
+(* Had to erase comments to handle C-code *)
+| "(*"
+    { if  do_skip_comments then  begin
+      skip_comment lexbuf
+    end ;
+    inside_prog do_skip_comments lexbuf }
+| "\""  { skip_string lexbuf ; inside_prog do_skip_comments lexbuf }
 (* | "<<" *)  (* Had to erase this to handle C-code *)
 |eof
     { true,lexeme_start_p lexbuf } (* boolean -> empty constraint *)
@@ -144,7 +152,7 @@ and inside_prog  = parse
 | "filter"
    { false,lexeme_start_p lexbuf }
  (* name is for longest match to avoid confusion, in case of eg. forallx *)
-| (name | _)  { inside_prog lexbuf }
+| (name | _)  { inside_prog do_skip_comments lexbuf }
 | "" { error "inside_prog" lexbuf }
 
 and inside_constr  = parse
