@@ -28,7 +28,7 @@ type t =
   | SwitchDepScWrite  (* Switch dependency on sc mem write, riscv, aarch64 *)
   | SwitchDepScResult  (* Switch dependency from address read to sc result register,  aarch64 *)
   | LrScDiffOk      (* Lr/Sc paired to <> addresses may succeed (!) *)
-  | WeakPredicated (* "Weak" predicated instructions, not performing non-selected events, aarch64 *)
+  | NotWeakPredicated (* NOT "Weak" predicated instructions, not performing non-selected events, aarch64 *)
 (* Mixed size *)
   | Mixed
   | Unaligned
@@ -64,7 +64,7 @@ let parse s = match Misc.lowercase s with
 | "mixed" -> Some Mixed
 | "unaligned" -> Some Unaligned
 | "dontcheckmixed" -> Some DontCheckMixed
-| "weakpredicated"|"weakpred" -> Some WeakPredicated
+| "notweakpredicated"|"notweakpred" -> Some NotWeakPredicated
 | "tagmem"|"memtag" -> Some MemTag
 | "tagcheckprecise"|"precise" -> Some TagCheckPrecise
 | "tagcheckunprecise"|"unprecise" -> Some TagCheckUnprecise
@@ -88,7 +88,7 @@ let pp = function
   | Mixed -> "mixed"
   | Unaligned -> "unaligned"
   | DontCheckMixed -> "DontCheckMixed"
-  | WeakPredicated -> "WeakPredicated"
+  | NotWeakPredicated -> "NotWeakPredicated"
   | MemTag -> "memtag"
   | TagCheckPrecise -> "TagCheckPrecise"
   | TagCheckUnprecise -> "TagCheckUnprecise"
