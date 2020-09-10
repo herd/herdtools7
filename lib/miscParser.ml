@@ -158,7 +158,7 @@ let mk_pte_val pte l =
   | Location_reg _ -> ""
   | _ -> Warn.user_error "Expected a PTE or a register" in
   let v = PTEVal.of_list s l in
-  Symbolic(PTEVal v)
+  PteVal v
 
 let dump_state_atom dump_loc dump_val (loc,(t,v)) = match t with
 | TyDef ->

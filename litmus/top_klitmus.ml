@@ -150,7 +150,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
               let open  Constant in
               match c with
               | Concrete i ->  Concrete (V.Scalar.of_string i)
-              | Symbolic _|Label _|Tag _ as sym -> sym
+              | Symbolic _|Label _|Tag _|PteVal _ as sym -> sym
             type global = Global_litmus.t
             let maybevToGlobal = A.tr_global
           end)

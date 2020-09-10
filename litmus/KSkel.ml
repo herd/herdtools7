@@ -297,8 +297,8 @@ module Make
       | Symbolic (Virtual ((s,None),0)) -> dump_a_addr s
       | Label _ ->
           Warn.user_error "No label value for klitmus"
-      | Symbolic _|Tag _ ->
-          Warn.user_error "No tag nor indexed access for klitmus"
+      | Symbolic _|Tag _| PteVal _ ->
+          Warn.user_error "No tag, indexed access, nor pteval for klitmus"
 
     let dump_ctx env test =
       O.o "/****************/" ;

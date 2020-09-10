@@ -38,13 +38,16 @@ module Make(Scalar:Scalar.S) = struct
       | r -> r
       end
   | Tag t1,Tag t2 -> String.compare t1 t2
-  | (Concrete _,(Symbolic _|Label _|Tag _))
-  | (Symbolic _,(Label _|Tag _))
-  | (Label _,Tag _)
+  | PteVal p1,PteVal p2 -> PTEVal.compare p1 p2
+  | (Concrete _,(Symbolic _|Label _|Tag _|PteVal _))
+  | (Symbolic _,(Label _|Tag _|PteVal _))
+  | (Label _,(Tag _|PteVal _))
+  | (Tag _,PteVal _)
       -> -1
-  | (Symbolic _|Label _|Tag _),Concrete _
-  | ((Label _|Tag _),Symbolic _)
-  | (Tag _,Label _)
+  | (Symbolic _|Label _|Tag _|PteVal _),Concrete _
+  | ((Label _|Tag _|PteVal _),Symbolic _)
+  | ((Tag _|PteVal _),Label _)
+  | (PteVal _,Tag _)
       -> 1
 
   let pp hexa = function
@@ -52,6 +55,7 @@ module Make(Scalar:Scalar.S) = struct
     | Symbolic s -> pp_symbol s
     | Label (p,lbl)  -> sprintf "%i:%s" p lbl
     | Tag s -> sprintf ":%s" s
+    | PteVal p -> PTEVal.pp p
 
   let pp_v = pp false
 
@@ -70,15 +74,15 @@ module Make(Scalar:Scalar.S) = struct
   | Label (p1,s1),Label (p2,s2) ->
       Misc.string_eq  s1 s2 && Misc.int_eq p1 p2
   | Tag t1,Tag t2 -> Misc.string_eq t1 t2
-  | Symbolic (PTEVal _),Symbolic (PTEVal _) -> assert false
-  | (Concrete _,(Symbolic _|Label _|Tag _))
-  | (Symbolic _,(Concrete _|Label _|Tag _))
-  | (Label _,(Concrete _|Symbolic _|Tag _))
-  | (Tag _,(Concrete _|Symbolic _|Label _))
-  | (Symbolic (Virtual _),Symbolic (Physical _|System _|PTEVal _))
-  | (Symbolic (Physical _),Symbolic (Virtual _|System _|PTEVal _))
-  | (Symbolic (System _),Symbolic (Virtual _|Physical _|PTEVal _))
-  | (Symbolic (PTEVal _), Symbolic (Virtual _|Physical _|System _))
+  | PteVal p1,PteVal p2 -> PTEVal.compare p1 p2 = 0
+  | (PteVal _,(Symbolic _|Concrete _|Label _|Tag _))
+  | (Concrete _,(Symbolic _|Label _|Tag _|PteVal _))
+  | (Symbolic _,(Concrete _|Label _|Tag _|PteVal _))
+  | (Label _,(Concrete _|Symbolic _|Tag _|PteVal _))
+  | (Tag _,(Concrete _|Symbolic _|Label _|PteVal _))
+  | (Symbolic (Virtual _),Symbolic (Physical _|System _))
+  | (Symbolic (Physical _),Symbolic (Virtual _|System _))
+  | (Symbolic (System _),Symbolic (Virtual _|Physical _))
     -> false
 
 (* Arch dependant result *)

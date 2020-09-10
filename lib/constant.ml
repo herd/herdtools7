@@ -24,7 +24,6 @@ type symbol =
   | Virtual of (string * string option) * int (* (symbol, optional tag), index *)
   | Physical of string * int                  (* symbol, index *)
   | System of (syskind * string)              (* System memory *)
-  | PTEVal of PTEVal.t
 
 let pp_index base o = match o with
 | 0 -> base
@@ -40,7 +39,6 @@ let pp_symbol = function
   | System (TLB,s) -> Misc.add_tlb s
   | System (PTE,s) -> Misc.add_pte s
   | System (TAG,s) -> Misc.add_atag s
-  | PTEVal p -> PTEVal.pp p
 
 let as_address = function
   | Virtual ((s,None),0) -> s
@@ -68,18 +66,20 @@ let symbol_compare sym1 sym2 = match sym1,sym2 with
     | 0 -> String.compare s1 s2
     | r -> r
     end
-| (Virtual _,(Physical _|System _ |PTEVal _))
-| (PTEVal _,(Physical _|System _))
+| (Virtual _,(Physical _|System _ ))
 | (Physical _,System _) -> -1
-| ((Physical _|System _|PTEVal _),Virtual _)
-| ((Physical _|System _), PTEVal _)
+| ((Physical _|System _),Virtual _)
 | (System _,Physical _) -> 1
-| (PTEVal p1, PTEVal p2) -> PTEVal.compare p1 p2
 
 let virt_match_phy s1 s2 = match s1,s2 with
 | Virtual ((s1,_),i1),Physical (s2,i2) ->
     Misc.string_eq s1 s2 && Misc.int_eq i1 i2
 | _,_ -> false
+
+let is_non_mixed_symbol = function
+  | Virtual (_,idx)
+  | Physical (_,idx) -> idx=0
+  | System _ -> true
 
 module SC = struct
   type t = symbol
@@ -95,6 +95,7 @@ type 'scalar t =
   | Symbolic  of symbol
   | Label of Proc.t * string     (* In code *)
   | Tag of string
+  | PteVal of PTEVal.t
 
 let do_mk_sym sym = match Misc.tr_pte sym with
 | Some s -> System (PTE,s)
@@ -108,18 +109,13 @@ let mk_sym s = Symbolic (do_mk_sym s)
 
 and get_sym = function
   | Symbolic (Virtual ((s,_),_)|Physical (s,_)|System (_,s)) -> s
-  | Concrete _|Label _| Tag _ -> assert false
-  | Symbolic (PTEVal _) -> assert false
+  | Concrete _|Label _| Tag _|PteVal _ -> assert false
 
-let is_non_mixed_symbol = function
-  | Symbolic (Virtual (_,idx)) -> idx=0
-  | Symbolic (Physical (_,idx)) -> idx=0
-  | Symbolic (System _ | PTEVal _) | Concrete _|Label _| Tag _ -> true
 
 let default_tag = Tag "green"
 
 let check_sym v =  match v with
-| Concrete _ ->  assert false
+| Concrete _|PteVal _ ->  assert false
 | Symbolic _|Label _|Tag _ as sym -> sym
 
 let is_virtual v = match v with

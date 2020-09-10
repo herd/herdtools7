@@ -58,7 +58,9 @@ module Make(O:Config)(V:Constant.S) = struct
   | Symbolic (Virtual ((a,None),0)) -> dump_addr a
   | Tag _
   | Symbolic _
-  | Label _ -> assert false 
+  | Label _
+  | PteVal _
+    -> assert false
 
   let dump_v_kvm v = match v with
   | Symbolic (System (PTE,a)) -> sprintf "_vars->%s" (Misc.add_pte a)

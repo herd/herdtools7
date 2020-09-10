@@ -74,7 +74,7 @@ module Make(Cst:Constant.S) = struct
   and cstToV cst = Val cst
 
   let maybevToV m = match m with
-  | Symbolic _ | Label _ | Tag _ as _m -> Val _m
+  | Symbolic _ | Label _ | Tag _ | PteVal _ as _m -> Val _m
   | Concrete s -> Val (Concrete (Scalar.of_string s))
 
   let zero = Val Cst.zero
@@ -102,16 +102,16 @@ module Make(Cst:Constant.S) = struct
 
   let unop op_op op v1 = match v1 with
   | Val (Concrete i1) -> Val (Concrete (op i1))
-  | Val (Symbolic _|Label _|Tag _ as x) ->
+  | Val (Symbolic _|Label _|Tag _|PteVal _ as x) ->
       Warn.user_error "Illegal operation %s on %s"
         (Op.pp_op1 true op_op) (Cst.pp_v x)
   | Var _ -> raise Undetermined
 
   let binop op_op op v1 v2 = match v1,v2 with
   | (Val (Concrete i1),Val (Concrete i2)) -> Val (Concrete (op i1 i2))
-  | (Val (Concrete _),Val (Symbolic _|Label _|Tag _))
-  | (Val (Symbolic _|Label _|Tag _),Val (Concrete _))
-  | (Val (Symbolic _|Label _|Tag _),Val (Symbolic _|Label _|Tag _)) ->
+  | (Val (Concrete _),Val (Symbolic _|Label _|Tag _|PteVal _))
+  | (Val (Symbolic _|Label _|Tag _|PteVal _),Val (Concrete _))
+  | (Val (Symbolic _|Label _|Tag _|PteVal _),Val (Symbolic _|Label _|Tag _|PteVal _)) ->
       Warn.user_error
         "Illegal operation %s on constants %s and %s"
         (Op.pp_op op_op) (pp_v v1) (pp_v v2)
@@ -153,10 +153,9 @@ module Make(Cst:Constant.S) = struct
   | Val (Concrete v) -> Val (Concrete (Scalar.addk v k))
   | Val (Symbolic (Virtual (s,i))) -> Val (Symbolic (Virtual (s,i+k)))
   | Val (Symbolic (Physical (s,i))) -> Val (Symbolic (Physical (s,i+k)))
-  | Val (Symbolic (System _)|Label _|Tag _) ->
+  | Val (Symbolic (System _)|Label _|Tag _|PteVal _) ->
       Warn.user_error "Illegal addition on constants %s" (pp_v v)
   | Var _ -> raise Undetermined
-  | Val (Symbolic (PTEVal _)) -> assert false
 
   and orop v1 v2 =
     if protect_is is_zero v1 then v2
@@ -243,20 +242,19 @@ module Make(Cst:Constant.S) = struct
 
   let op_tagged op_op op v = match v with
   |  Val (Symbolic (Virtual (s,o))) -> Val (op s o)
-  |  Val (Concrete _|Symbolic (Physical _ | System _)|Label _|Tag _) ->
+  |  Val (Concrete _|Symbolic (Physical _ | System _)|Label _|Tag _|PteVal _) ->
       Warn.user_error "Illegal tagged operation %s on %s" op_op (pp_v v)
   | Var _ -> raise Undetermined
-  | Val (Symbolic (PTEVal _)) -> assert false
 
         (*  Returns the location of the tag associated to a location *)
 
   let tagloc v =  match v with
   | Val (Symbolic (Virtual ((a,_),_)|Physical (a,_))) ->
        Val (Symbolic (System (TAG,a)))
-  | Val (Concrete _| Symbolic (System _)|Label _|Tag _) ->
+  | Val (Concrete _| Symbolic (System _)|Label _|Tag _|PteVal _) ->
       Warn.user_error "Illegal tagloc on %s" (pp_v v)
   | Var _ -> raise Undetermined
-  | Val (Symbolic (PTEVal _)) -> assert false
+
 
       (* Decompose tagged locations *)
   let op_tagextract (_,t) _ = match t with
@@ -270,13 +268,13 @@ module Make(Cst:Constant.S) = struct
     match v with 
     | Val (Symbolic (Virtual ((s,_),o))) -> Val (Symbolic (Virtual ((s,None),o)))
     | Val (Symbolic (Physical _)) as aphy -> aphy 
-    | Val (Concrete _|Symbolic (System _|PTEVal _)|Label _|Tag _) ->
+    | Val (Concrete _|Symbolic (System _)|Label _|Tag _|PteVal _) ->
       Warn.user_error "Illegal locextract on %s" (pp_v v)
     | Var _ -> raise Undetermined
 
   let op_pte_tlb op_op op v = match v with
   |  Val (Symbolic (Virtual (a,_))) -> Val (op a)
-  |  Val (Concrete _|Label _|Tag _|Symbolic _) ->
+  |  Val (Concrete _|Label _|Tag _|Symbolic _|PteVal _) ->
       Warn.user_error "Illegal %s on %s" op_op (pp_v v)
   | Var _ -> raise Undetermined
 
@@ -284,23 +282,23 @@ module Make(Cst:Constant.S) = struct
   let pteloc = op_pte_tlb "pteloc" op_pteloc
 
   let op_pte_val op_op op v = match v with
-  | Val (Symbolic (PTEVal a)) -> Val (op a)
+  | Val (PteVal a) -> Val (op a)
   | Var _ -> raise Undetermined
   | _ -> Warn.user_error "Illegal pte operation %s on %s" op_op (pp_v v)
 
   let op_afloc a = Cst.intToV a.af
   let afloc = op_pte_val "afloc" op_afloc 
-  let setaf v = match v with 
-    | Val (Symbolic (PTEVal pte_v)) -> Val (Symbolic (PTEVal {pte_v with af = 1})) 
+
+  let op_set_pteval op op_op v = match v with
+    | Val (PteVal pte_v) -> Val (PteVal (op pte_v))
     | Var _ -> raise Undetermined
-    | _ -> Warn.user_error "Illegal setaf on %s" (pp_v v)
+    | _ -> Warn.user_error "Illegal %s on %s" op_op (pp_v v)
+
+  let setaf = op_set_pteval (fun v -> { v with af = 1}) "setaf"
 
   let op_dbloc a = Cst.intToV a.db 
   let dbloc = op_pte_val "dbloc" op_dbloc
-  let setdb v = match v with 
-    | Val (Symbolic (PTEVal pte_v)) -> Val (Symbolic (PTEVal {pte_v with db = 1})) 
-    | Var _ -> raise Undetermined
-    | _ -> Warn.user_error "Illegal setdb on %s" (pp_v v)
+  let setdb = op_set_pteval (fun v ->  {v with db = 1}) "setdb"
 
   let op_dbmloc a = Cst.intToV a.dbm
   let dbmloc = op_pte_val "dbmloc" op_dbmloc
@@ -397,7 +395,7 @@ module Make(Cst:Constant.S) = struct
 
   let op3 If v1 v2 v3 = match v1 with
   | Val (Concrete x) -> if scalar_to_bool x then v2 else v3
-  | Val (Symbolic _ |Label _|Tag _ as s) ->
+  | Val (Symbolic _ |Label _|Tag _ | PteVal _ as s) ->
       Warn.user_error "illegal if on symbolic constant %s" (Cst.pp_v s)
   | Var _ -> raise Undetermined
 

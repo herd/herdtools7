@@ -1021,8 +1021,10 @@ module Make
                   sprintf "(%s)_vars->%s" (CType.dump at) s
               | Label _ ->
                   Warn.fatal "PreSi mode cannot handle code labels (yet)"
-              | Symbolic _|Tag _ ->
-                  Warn.user_error "Litmus cannot handle tags" in
+              | Tag _|Symbolic _ ->
+                  Warn.user_error "Litmus cannot handle this initial value %s"
+                    (A.V.pp_v v)
+              | PteVal _ -> assert false in
             match at with
             | Array (t,sz) ->
                 O.fii "for (int _j = 0 ; _j < %i ; _j++) {" sz ;

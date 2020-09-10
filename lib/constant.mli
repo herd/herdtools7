@@ -27,13 +27,13 @@ type symbol =
   | Virtual of (string * string option) * int (* (symbol, optional tag), index *)
   | Physical of string * int                  (* symbol, index *)
   | System of (syskind * string)                 (* System memory *)
-  | PTEVal of PTEVal.t
 
 val pp_symbol : symbol -> string
 val as_address : symbol -> string
 val symbol_compare : symbol -> symbol -> int
 (* 'phy' is the physical address (initially) matching virual adress 'virt' *)
 val virt_match_phy : symbol (* virt *) -> symbol (* phy *)-> bool
+val is_non_mixed_symbol : symbol -> bool
 
 module SymbolSet : MySet.S with type elt = symbol
 module SymbolMap : MyMap.S with type key = symbol
@@ -45,10 +45,10 @@ type 'scalar t =
   | Symbolic  of symbol
   | Label of Proc.t * string     (* In code *)
   | Tag of string
+  | PteVal of PTEVal.t
 
 val mk_sym : string -> 'scalar t
 val get_sym : 'scalar t -> string
-val is_non_mixed_symbol : 'scalar t -> bool
 val default_tag : 'scalar t
 
 (* Check  non-concrete constant (and change type!) *)

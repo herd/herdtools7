@@ -247,8 +247,8 @@ include Pseudo.Make
         let open Constant in
         function
           | Const(Concrete _) as k -> k
-          | Const (Symbolic _|Label _|Tag _) ->
-              Warn.fatal "No constant variable allowed"
+          | Const (Symbolic _|Label _|Tag _|PteVal _ as v) ->
+              Warn.fatal "No constant '%s' allowed" (ParsedConstant.pp_v v)
           | LoadReg _ as l -> l
           | LoadMem (l,mo) ->
               LoadMem (parsed_expr_tr l,mo)

@@ -48,12 +48,14 @@ module Generic (A : Arch_litmus.Base)
       let pointer = CType.Pointer base
       let code_pointer = Pointer (Base "ins_t")
       let tag = Base "tag_t"
+      let pteval_t = Base "pteval_t"
 
       let typeof = function
         | Constant.Concrete _ -> base
         | Constant.Symbolic _ -> pointer
         | Constant.Label _ -> code_pointer
         | Constant.Tag _ -> tag
+        | Constant.PteVal _ -> pteval_t
 
       let misc_to_c  = function
         | MiscParser.TyDef -> base
@@ -366,8 +368,7 @@ type P.code = MiscParser.proc * A.pseudo list)
 
     let as_int = function
       | Concrete i -> i
-      | Symbolic _|Label _|Tag _ -> raise CannotIntern
-
+      | Symbolic _|Label _|Tag _|PteVal _ -> raise CannotIntern
 
     let compile_pseudo_code code k =
       let m =

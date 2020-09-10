@@ -176,7 +176,7 @@ module Make(O:Config)(A:I) =
                       | Some s -> s::k
                       | None -> k
                       end
-                  | Concrete _|Label _|Tag _ -> k)
+                  | Concrete _|Label _|Tag _|PteVal _ -> k)
                 [] init)) in
       StringSet.elements set
 
@@ -209,7 +209,7 @@ module Make(O:Config)(A:I) =
         (fun k (_,v) ->
           match v with
           | Label (p,s) -> (p,s)::k
-          | Concrete _|Symbolic _|Tag _ -> k)
+          | Concrete _|Symbolic _|Tag _|PteVal _ -> k)
         [] init
 
     let get_stable { stable; _} = stable
