@@ -28,8 +28,9 @@ type pte_val = {
   dbm : int;
   }
 
+(* For ordinary tests not to fault, the dirty bit has to be set. *)
 let default_pte_val s =
-  { oa=(Misc.add_physical s); valid=1; af=1; db=0; dbm=1; }
+  { oa=(Misc.add_physical s); valid=1; af=1; db=1; dbm=1; }
 
 type symbol =
   | Virtual of (string * string option) * int (* (symbol, optional tag), index *)

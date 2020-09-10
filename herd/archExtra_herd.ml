@@ -187,6 +187,7 @@ module type S = sig
 end
 
 module type Config = sig
+  val verbose : int
   val texmacros : bool
   val hexa : bool
   val brackets : bool
