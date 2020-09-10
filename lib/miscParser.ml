@@ -124,6 +124,29 @@ let pp_run_type = function
 
 type state = (location * (run_type * maybev)) list
 
+(* Check that initialisations are unique *)
+
+let check_env_for_dups env =
+  let bad,_ =
+    List.fold_left
+      (fun (bad,seen) (loc,_) ->
+        if LocSet.mem loc seen then LocSet.add loc bad,seen
+        else bad,LocSet.add loc seen)
+      (LocSet.empty,LocSet.empty)
+      env in
+  if not (LocSet.is_empty bad) then begin
+    match LocSet.as_singleton bad with
+    | Some loc ->
+        Warn.user_error
+          "Location %s is initialized more than once"
+          (dump_location loc)
+    | None ->
+        Warn.user_error
+          "Locations {%s} are initialized more than once"
+          (LocSet.pp_str "," dump_location bad)
+  end
+
+
 let mk_pte_val pte l =
   let open Constant in
   let s = match pte with

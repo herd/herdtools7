@@ -18,6 +18,7 @@
 
 (* Some configuration *)
 module type Config = sig
+  val verbose : int
   val optace : bool
   val debug : Debug_herd.t
   val variant : Variant.t -> bool
@@ -382,6 +383,7 @@ type concrete =
 
 module ConfigToArchConfig(C:Config) : ArchExtra_herd.Config =
   struct
+    let verbose = C.verbose
     let texmacros = C.PC.texmacros
     let hexa = C.PC.hexa
     let brackets = C.PC.brackets
