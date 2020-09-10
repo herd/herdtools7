@@ -201,6 +201,7 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
       let init =
         I.call_parser_loc "init"
           chan init_loc SL.token StateParser.init in
+      MiscParser.check_env_for_dups init ;
       let procs,prog,extra_data =
         I.call_parser_loc "prog" chan prog_loc L.lexer L.parser in
       check_procs procs ;

@@ -250,7 +250,7 @@ module Make(Cst:Constant.S) = struct
   let op_tagged op_op op v = match v with
   |  Val (Symbolic (Virtual (s,o))) -> Val (op s o)
   |  Val (Concrete _|Symbolic (Physical _ | System _)|Label _|Tag _) ->
-      Warn.user_error "Illegal %s on %s" op_op (pp_v v)
+      Warn.user_error "Illegal tagged operation %s on %s" op_op (pp_v v)
   | Var _ -> raise Undetermined
   | Val (Symbolic (PTEVal _)) -> assert false
 
@@ -292,7 +292,7 @@ module Make(Cst:Constant.S) = struct
   let op_pte_val op_op op v = match v with
   | Val (Symbolic (PTEVal a)) -> Val (op a)
   | Var _ -> raise Undetermined
-  | _ -> Warn.user_error "Illegal %s on %s" op_op (pp_v v) 
+  | _ -> Warn.user_error "Illegal pte operation %s on %s" op_op (pp_v v)
 
   let op_afloc a = Cst.intToV a.af
   let afloc = op_pte_val "afloc" op_afloc 
