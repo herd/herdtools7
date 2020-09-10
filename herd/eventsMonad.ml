@@ -1064,7 +1064,7 @@ Monad type:
 
       let default_pteval s =
         let open Constant in
-        V.Val (Symbolic (PTEVal (Constant.default_pte_val s)))
+        V.Val (Symbolic (PTEVal (PTEVal.default s)))
 
       let expand_pteval loc v =
         let open Constant in

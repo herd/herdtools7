@@ -22,6 +22,7 @@ module Make(Cst:Constant.S) = struct
   module Scalar = Cst.Scalar
 
   open Constant
+  open PTEVal
 
   type csym = int
 
