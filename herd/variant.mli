@@ -27,7 +27,7 @@ type t =
   | SwitchDepScWrite     (* Switch dependency on sc mem write, riscv *)
   | SwitchDepScResult    (* Switch dependency from address read to sc result write, riscv,aarch64 *)
   | LrScDiffOk      (* Lr/Sc paired to <> addresses may succeed (!) *)
-  | WeakPredicated (* "Weak" predicated instructions, not performing non-selected events, aarch64 *)
+  | NotWeakPredicated (* NOT "Weak" predicated instructions, not performing non-selected events, aarch64 *)
 (* Mixed size *)
   | Mixed
   | Unaligned
