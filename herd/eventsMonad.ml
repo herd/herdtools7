@@ -1062,140 +1062,61 @@ Monad type:
              (fun (loc,v) -> sprintf "%s -> %s" (A.pp_location loc) (A.V.pp_v v))
              env)
 
-      let check_initpte env =
+      let default_pteval s =
         let open Constant in
-        List.map
-          (fun (loc,v as bd) -> match loc with
-          | A.Location_global (V.Val (Symbolic (System (PTE,_)))) ->
-              begin match v with
-              | V.Val (Symbolic (Physical (s,_))) ->
-                  loc,V.Val (Symbolic (PTEVal (Constant.default_pte_val s)))
-              | V.Val (Symbolic (PTEVal _)) -> bd
-              | _ ->
-                  Warn.user_error
-                    "Cannot initialize %s with %s" (A.pp_location loc ) (A.V.pp C.hexa v)
-              end
-          | _ -> bd)
-          env
+        V.Val (Symbolic (PTEVal (Constant.default_pte_val s)))
+
+      let expand_pteval loc v =
+        let open Constant in
+        match v with
+        | V.Val (Symbolic (Physical (s,_))) -> default_pteval s
+        | V.Val (Symbolic (PTEVal _)) -> v
+        | _ ->
+            Warn.user_error
+              "Cannot initialize %s with %s"
+              (A.pp_location loc ) (A.V.pp C.hexa v)
+
+      let extract_virtual_pte env =
+        let open Constant in
+        List.fold_right
+          (fun (loc,v as bd) (env,(virt,pte as maps)) -> match loc with
+          | A.Location_global (V.Val (Symbolic (Virtual ((s,None),0)))) ->
+              env,(StringMap.add s v virt,pte)
+          | A.Location_global (V.Val (Symbolic (System (PTE,s)))) ->
+              let v = expand_pteval loc v in
+              (loc,v)::env,(virt,StringSet.add s pte)
+          | A.Location_deref _
+          | A.Location_global (V.Val (Symbolic (Physical _|Virtual _))) ->
+              Warn.user_error "herd cannot handle initialisation of '%s'"
+                (A.pp_location loc)
+          | _ -> bd::env,maps)
+          env ([],(StringMap.empty,StringSet.empty))
+
+      let pte_loc s =
+        let open Constant in
+        A.Location_global (V.Val (Symbolic (System (PTE,s))))
+
+      let phy_loc s =
+        let open Constant in
+        A.Location_global (V.Val (Symbolic (Physical (s,0))))
 
       let add_initpte =
-
         let open Constant in
-
-        let tr_physical = function
-          | Virtual ((s,_),idx) -> Physical (s,idx)
-          | _ -> assert false in
-        let tr_pte = function
-          | Virtual ((s,_),_) -> System (PTE,s)
-          | _ -> assert false in
-
-        let add_val vloc v k =  begin match vloc with
-        | V.Val (Symbolic (System (_,s) as a)) -> 
-          if dbg then begin
-            printf "add_val System: %s\n" s end;
-          SymbolMap.add a v k
-        | V.Val (Symbolic (PTEVal _)) -> assert false
-        | V.Val (Symbolic (Physical (s,_) as a)) -> 
-          if dbg then begin
-            printf "add_val Phys: %s\n" s end;
-          SymbolMap.add a v k
-        | V.Val (Symbolic (Virtual ((s,_),_) as a)) -> 
-           if dbg then begin
-             printf "add_val Virt: %s\n" s end;
-           SymbolMap.add a v k
-        | V.Val (Concrete _|Label (_, _)|Tag _)|V.Var _ -> k end in
-
-        let rec find_one l a k =
-          begin match l with
-          | [] -> None,k 
-          | (x,y)::r -> 
-              if x = a then Some(a,y),(List.append r k)
-              else let o,s = find_one r a k 
-                   in o,(x,y)::s 
-          end in
-
-        let have_same_base_addr apte aphy =
-          begin match apte,aphy with
-          | A.Location_global (V.Val (Symbolic (System (_,x)))),(V.Val (Symbolic (PTEVal p))) -> 
-              begin match Misc.tr_physical (p.oa) with
-              | None -> assert false 
-              | Some y -> x = y 
-              end
-          | _ -> false 
-          end in
-
-        let no_dup_env env x v = 
-          begin match (find_one env (A.Location_global x) []) with
-          | None,_ -> (A.Location_global x,v)::env
-          | Some (_,x),nl when (x=V.zero) -> (A.Location_global x,v)::nl  
-          | _ -> assert false (*jade: case of duplicates assignments to x*)
-          end in
- 
         fun env ->
-          let env = check_initpte env in
-          let k,rem =
-            List.fold_left
-              (fun (k,rem) ((loc,v) as bd) ->
-                let k = match loc with
-                | A.Location_global vloc|A.Location_deref(vloc,_) -> add_val vloc v k,rem
-                | A.Location_reg _ -> k,(bd::rem)in
-                k)
-               (SymbolMap.empty,[]) env  in
+          (* Collect virtual initialisations and explicit pte initialisations *)
+          let env,(virt,pte) = extract_virtual_pte env in
+          (* Initialise physical locations *)
           let env =
-            SymbolMap.fold
-              (fun a v env ->
-                let tr_sym sym = V.Val (Symbolic sym) in
-                let a_sym = tr_sym a in
-                begin match a with
-                | System (TAG,_) | Physical _ -> (A.Location_global a_sym,v)::env
-                | System (PTE,_) -> 
-                  let aloc = A.Location_global a_sym in  
-                  if dbg then begin
-                    printf "env PTE: %s is %s\n" (A.pp_location (A.Location_global a_sym)) (A.V.pp_v v)
-                  end ;
-                  begin match (find_one env aloc []) with
-                   | None,_ -> 
-                     if dbg then begin
-                       printf "I aloc,v: %s,%s\n" (A.pp_location aloc) (V.pp_v v) end;
-                     (aloc,v)::env  
-                   | Some(_,aphy),r -> 
-                     if dbg then begin
-                       printf "II aloc,aphy,v: %s,%s,%s\n" (A.pp_location aloc) (V.pp_v aphy) (V.pp_v v)
-                     end;
-                      if have_same_base_addr aloc aphy then 
-                       begin match (find_one r (A.Location_global v) []) with 
-                       | None,_ -> 
-                         if dbg then begin
-                           printf "III aloc,aphy,v: %s,%s,%s\n" (A.pp_location aloc) (V.pp_v aphy) (V.pp_v v) end;
-                         begin match v with
-                         | V.Val _ -> (aloc,v)::r
-                         | _ -> (aloc,v)::(A.Location_global v,V.zero)::r
-                         end                     
-                       | Some _,_ -> 
-                         if dbg then begin
-                           printf "IV aloc,v: %s,%s\n" (A.pp_location aloc) (V.pp_v v) end;
-                         (aloc,v)::r    
-                       end
-                       (*jade: this is supposed to be the case where pte_x = phy_y AND pte_x=phy_z in the initial state, which should be a user error*) 
-                        else (*if dbg then begin
-                           printf "IV aloc,v: %s,%s\n" (A.pp_location aloc) (V.pp_v v) end; *)
-                        assert false 
-                  end
-                 | _ ->
-                 let a_pte = tr_sym (tr_pte a) in
-                 let a_phy = tr_sym (tr_physical a) in
-                 let s_phy = 
-                   begin match a_phy with
-                   | V.Val (Symbolic (Physical (s,_))) -> s
-                   | _ -> assert false
-                   end in
-                 let env = (no_dup_env env a_pte (V.Val (Symbolic (PTEVal (Constant.default_pte_val s_phy))))) in  
-                 match (find_one (no_dup_env env a_phy v) (A.Location_global a_pte) []) with
-                 | None,_ -> 
-                     (A.Location_global a_pte,a_phy)::(no_dup_env env a_phy v)  
-                 | Some _,_ -> (no_dup_env env a_phy v)   
-                end)
-              k rem in 
+            StringMap.fold
+              (fun s v env -> (phy_loc s,v)::env)
+              virt env in
+          (* Add default initialisation of pte, when appropriate *)
+          let env =
+            StringMap.fold
+              (fun s _ env ->
+                if StringSet.mem s pte then env
+                else (pte_loc s,default_pteval s)::env)
+              virt env in
           env
 
       let debug_add_initpte env =
