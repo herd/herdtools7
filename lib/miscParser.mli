@@ -63,6 +63,8 @@ val pp_run_type : run_type -> string
 
 type state = (location * (run_type * maybev)) list
 
+val check_env_for_dups : state -> unit
+
 val dump_state_atom :
   ('loc -> string) -> ('v -> string) -> ('loc * (run_type * 'v)) -> string
 

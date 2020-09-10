@@ -16,13 +16,8 @@
 
 (** Basic arch, ie with no definition of what a global location is *)
 
-module type Config = sig
-  val texmacros : bool
-  val hexa : bool
-  val brackets : bool
-  val variant : Variant.t -> bool
-  val endian : Endian.t option
-end
+module type Config = ArchExtra_herd.Config
+
 
 module type S =
   sig
