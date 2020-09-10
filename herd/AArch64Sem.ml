@@ -218,6 +218,10 @@ module Make
              (A.Location_global a_pte) ii) in
 
    (*
+     The dirty bit correspond to HW level write permission in PTE's.
+     Hence, in simple (stage 1) case, we have AP[2] == 0b1 for clean,
+     and AP[2] for dirty, with AP[2] == 0b0 being more directly "writable".
+
      Without HW-management (on old CPUs, or where TCR_ELx.{HA,HD} == {0,0}): 
 
      A load/store to x where pte_x has the access flag clear will raise a
