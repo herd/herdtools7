@@ -177,7 +177,7 @@ irreflexive rmwv
    let scff = sc & ([_*fence] | [fence*_])
    let scfc = (co;     scff; po; rf') |
    (co; po; scff;     rf') |
-   (co; po; scff; po; rf') |           
+   (co; po; scff; po; rf') |
    ( po; scff; po; co) |
    (     scff; po; co) |
    ( po; scff;     co)
@@ -261,7 +261,7 @@ let locSomeW = loc & ((W * _) | (_ * W)) (* same location, at least a W *)
 
 let dr =
   let r1 = locSomeW & ext in (* By different threads *)
-  let r2 = r1 \ (A * A)  in  (* At least one non-atomic *)  
+  let r2 = r1 \ (A * A)  in  (* At least one non-atomic *)
   r2 \ (hb | hb^-1)          (* unrelated by hb *)
 
 
@@ -292,7 +292,7 @@ show dr
 show ur
 show bl
 
-undefined_unless empty dr as dataRace 
-undefined_unless empty ur as unsequencedRace 
+undefined_unless empty dr as dataRace
+undefined_unless empty ur as unsequencedRace
 undefined_unless empty bl as badLock
 undefined_unless empty lu as badUnlock

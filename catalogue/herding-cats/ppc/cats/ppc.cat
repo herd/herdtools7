@@ -25,7 +25,7 @@ and cc = cc0 | ci | (ci;ic) | (cc;cc)
 let ppo = ii & R*R | ic & R*W
 
 
-let ffence = fencerel(SYNC) 
+let ffence = fencerel(SYNC)
 let lwfence = fencerel(LWSYNC) & (W*W | R*M) | fencerel(EIEIO) & W*W
 let fences = ffence|lwfence
 let A-cumul = rfe;fences
@@ -38,4 +38,3 @@ let prop = (prop-base & W*W)| (com*; prop-base*; ffence; hb*)
 
 irreflexive fre;prop;hb* as observation
 acyclic co | prop as propagation
-

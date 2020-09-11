@@ -19,5 +19,3 @@ L:                          |                                         |         
 scopes: (wg 0 1 2 3)
 locations [3:r1;3:r2;]
 exists(3:r3=1)
-
-

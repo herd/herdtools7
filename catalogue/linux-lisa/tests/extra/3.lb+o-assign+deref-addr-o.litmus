@@ -1,4 +1,4 @@
-LISA 3.LB+o-assign+deref-addr-o (*Paul says forbid*) 
+LISA 3.LB+o-assign+deref-addr-o (*Paul says forbid*)
 {
 x = 0;
 y = 0;

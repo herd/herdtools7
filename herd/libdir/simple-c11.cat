@@ -72,13 +72,13 @@ show S
 
 (* Consistent rf for non-atomic accesses *)
 let rfNA = rf \ AA(rf)
-empty rfNA \ hb-loc as ConsRFna 
+empty rfNA \ hb-loc as ConsRFna
 
 (* SC Reads *)
 
 let S-loc = MM(S) & loc
 
-let minWRSC = 
+let minWRSC =
   let aux = WR(S-loc) in
   aux \ (WW(S-loc);aux)
 
@@ -131,7 +131,7 @@ let locSomeW = loc \ RR(loc) (* same location, at least a W *)
 
 let dr =
   let r1 = locSomeW & ext in (* By different threads *)
-  let r2 = r1 \ AA(r1)  in   (* At least one non-atomic *)  
+  let r2 = r1 \ AA(r1)  in   (* At least one non-atomic *)
   r2 \ (hb | hb^-1)          (* unrelated by hb *)
 show dr
 

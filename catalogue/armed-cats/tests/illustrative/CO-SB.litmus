@@ -7,5 +7,4 @@ ARM CO-SB
  STR R0,[R2] | STR R0,[R2] ;
  LDR R1,[R2] | LDR R1,[R2] ;
 
-exists (0:R1=2 /\ 1:R1=1) 
-
+exists (0:R1=2 /\ 1:R1=1)

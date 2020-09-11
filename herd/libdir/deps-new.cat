@@ -1,7 +1,7 @@
 include "ctrl.cat"
 
 let new-data = [R]; dd-restrict; [DATA]; intrinsic; [W]
-let new-addr = [R]; dd-restrict; [NDATA]; intrinsic; [M] 
+let new-addr = [R]; dd-restrict; [NDATA]; intrinsic; [M]
 let pom = po & (M*M)
 
 let sim = (same-instr & ((EXEC*SPEC) | (SPEC*EXEC))) \ id
@@ -20,7 +20,7 @@ let diffi = lift(instances,diff)
 let bisim = fulldelift(bisimulation(depi,lift(instances,same-instr)\diffi))\id
 let equiv = sim & (M*M) & bisim
 
-let new-ctrl = ctrlequiv equiv 
+let new-ctrl = ctrlequiv equiv
 let AE = always-exec equiv
 let DW = zyva equiv Dmins
 let rf-mem = rf \ rf-reg

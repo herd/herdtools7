@@ -8,5 +8,3 @@ let po-rel = (M * Rel) & po
 let strong-fence = all-dmb | all-dsb
 let weak-fence = po-rel
 let fence = strong-fence | weak-fence
-
-

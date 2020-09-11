@@ -34,10 +34,10 @@ let stf = dmb.st & (W * W)
 
 let ldf = dmb.ld & (R * M)
 	| dsb.ld & (R * M)
-	    
+
 let fence = syf | stf | ldf
 	  | acq | rel
-    
+
 let hb = (R * M) & fence | rfe | ppo
 
 acyclic hb as thin_air

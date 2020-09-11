@@ -1,7 +1,7 @@
 "VIPS"
 
 let rel = po? & (W*Sd)
-let acq = po? & (Si*R) 
+let acq = po? & (Si*R)
 let wrel = domain(rel)
 let racq = range(acq)
 let ra r = r & (wrel*racq)

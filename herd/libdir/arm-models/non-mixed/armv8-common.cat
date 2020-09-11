@@ -61,7 +61,7 @@ let dob = addr | data
 	| ctrl; [W]
 	| (ctrl | (addr; po)); [ISB]; po; [R]
 	| addr; po; [W]
-	| (addr | data); lrs 
+	| (addr | data); lrs
 
 (* Atomic-ordered-before *)
 let aob = rmw
@@ -80,7 +80,7 @@ let bob = po; [dmb.full]; po
 let tob = [R & T]; intrinsic; [M \ T]
 
 (* Locally-ordered-before *)
-let rec lob = lws 
+let rec lob = lws
         | dob
 	| aob
 	| bob

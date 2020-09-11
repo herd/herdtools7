@@ -18,5 +18,3 @@ let ppo = (po \ (W*R)) | sync
 let ghb = ppo | rfe | fr | co
 
 acyclic ghb as tso
-
-

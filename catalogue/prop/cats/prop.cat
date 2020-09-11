@@ -2,7 +2,7 @@
 
 let ww-prop r = r & W*W
 let rw-prop r = rf;(r & R*W)
-let wr-prop r = ((r & W*R);rf^-1) \ id   
+let wr-prop r = ((r & W*R);rf^-1) \ id
 let rr-prop r = (rf;(r & R*R);rf^-1) \ id
 
 let light-prop r = ww-prop(r) | rw-prop(r)

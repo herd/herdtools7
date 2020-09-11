@@ -8,5 +8,5 @@ procedure sc() =
   call total(ord,unv)
   irreflexive ord
   irreflexive rf;ord
-  call no-intervening(rf,ord,ord & (W*_) & loc) 
+  call no-intervening(rf,ord,ord & (W*_) & loc)
 end

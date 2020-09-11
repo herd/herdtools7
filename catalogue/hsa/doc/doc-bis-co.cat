@@ -44,7 +44,7 @@ let acq-rel =
   ((po? & (_ * W)); coh; (po & (R * _)))
 
 let sso s = same-instance(s) & acq-rel
-  
+
 let hhb = (po | union-scopes sso)+
 
 irreflexive hhb as HhbCons

@@ -1,4 +1,4 @@
-AArch64 R+dmb.stTT+rel-acq 
+AArch64 R+dmb.stTT+rel-acq
 "DMB.STdWWTT Wse PodWRLA Fre"
 {
 0:X0=x:red; 0:X1=x:green; 0:X2=y:red; 0:X3=y:green;

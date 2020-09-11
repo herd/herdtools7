@@ -57,7 +57,7 @@ let comstar = (fr|rf|co)*
    written by a write [to that location by any observer] that is sequenced
    in the Coherence order of the location after the observed write.
       -> rfe
-   - A subsequent write of the location by the same observer is sequenced 
+   - A subsequent write of the location by the same observer is sequenced
      in the Coherence order of the location after the observed write
       -> coe
 *)
@@ -69,7 +69,7 @@ let observe-access = observe-write|observe-read
 
 let prop_base = observe-access?;fence;hbstar
 
-let prop = prop_base & (W * W) 
+let prop = prop_base & (W * W)
 	 | (comstar; prop_base*; strongf; hbstar)
 
 (* Observer: a thread that performs two observations,

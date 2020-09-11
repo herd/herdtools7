@@ -6,7 +6,7 @@ Com=Rf Rf
 
 }
  P0           | P1          ;
- LDR W0,[X1]  | LDR W0,[X3] ;           
+ LDR W0,[X1]  | LDR W0,[X3] ;
  CBNZ W0,LC00 | STR W0,[X1] ;
  MOV W2,#2    |             ;
  B LC01       |             ;
@@ -15,5 +15,5 @@ LC00:         |             ;
 LC01:         |             ;
  STR W2,[X5]  |             ;
  LDR W4,[X5]  |             ;
- STR W4,[X3]  |             ; 
+ STR W4,[X3]  |             ;
 exists (0:X0=1 /\ 1:X0=1)

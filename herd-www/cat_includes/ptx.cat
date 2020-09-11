@@ -1,7 +1,7 @@
 "GPU_PTX"
 
 {%(*
-  \paragraph{SC-per-location with load-load hazard} 
+  \paragraph{SC-per-location with load-load hazard}
   We require that communications do not
   contradict program order, unless the events
   are for different locations, or both events
@@ -18,7 +18,7 @@ let po-loc-llh = po-loc & ((M * W) | (W * M))
 acyclic (po-loc-llh | com) as sc-per-loc-llh
 
 {%(*
-  \paragraph{No thin air} 
+  \paragraph{No thin air}
   This prevents causal loops. No event
   may read from its dependants.
 %*)}
@@ -27,7 +27,7 @@ let dp = addr | data | ctrl
 acyclic (dp | rf) as no-thin-air
 
 {%(*
-  \paragraph{Scoped RMO} 
+  \paragraph{Scoped RMO}
   We now integrate the concurrency hierarchy.
   The $X${\tt -fence} relation relates events
   that are separated by a fence of scope $X$

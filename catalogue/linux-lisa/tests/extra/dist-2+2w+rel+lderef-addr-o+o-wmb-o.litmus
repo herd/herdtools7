@@ -9,4 +9,3 @@ y = 0;
                 | mov r4 (add y r9)   |              ;
                 | w[once] r4 2        | w[once] x 2  ;
 exists (1:r1=1 /\ x=1 /\ y=1)
-

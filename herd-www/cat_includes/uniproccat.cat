@@ -22,5 +22,3 @@ show fr,co
 
 (* a few additional shows *)
 include "fences.cat"
-
-

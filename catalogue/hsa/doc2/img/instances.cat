@@ -2,6 +2,3 @@ Show
 include "uniproc.cat"
 show same-wg \ id as same-wg
 show same-agent \ id as same-agent
-
-
-

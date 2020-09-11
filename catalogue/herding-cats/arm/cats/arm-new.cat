@@ -35,7 +35,7 @@ let fences = dmb|dsb|dmb.st|dsb.st
 let hb = ppo | fences | rfe
 acyclic hb as no-thin-air
 
-let light f = (f | rfe;f);hb* 
+let light f = (f | rfe;f);hb*
 let prop = (light(fences);(rfe^-1)*) & W*W
 
 irreflexive co;prop as observation

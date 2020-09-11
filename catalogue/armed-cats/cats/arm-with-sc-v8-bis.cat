@@ -24,13 +24,13 @@ let ppo = ii & R*R | ic & R*W
 let all-dmb = dmb.sy|dmb.st|dmb.ld
 let all-dsb = dsb.sy|dsb.st|dsb.ld
 
-let acq = A 
-let rel = L 
-let acq-po = po & (acq * M) 
+let acq = A
+let rel = L
+let acq-po = po & (acq * M)
 let po-rel = po & (M * rel)
 let weak-fence = po-rel
-let strong-fence = all-dmb | all-dsb 
-let cumul-fence = weak-fence | strong-fence 
+let strong-fence = all-dmb | all-dsb
+let cumul-fence = weak-fence | strong-fence
 let fence = acq-po | cumul-fence (*jade: il faudrait effectivement peut etre
 mettre acq-po dans le ppo, pas sure de comment faire*)
 let A-cumul = rfe;cumul-fence

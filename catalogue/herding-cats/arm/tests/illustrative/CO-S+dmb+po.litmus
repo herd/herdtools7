@@ -9,4 +9,3 @@ ARM CO-S+dmb+po
  MOV R1,#2   |             ;
  STR R1,[R2] |             ;
 exists (1:R0=2 /\ x=2 \/ 1:R0=1 /\ x=1)
-

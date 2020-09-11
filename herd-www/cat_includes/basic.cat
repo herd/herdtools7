@@ -9,4 +9,3 @@ let fr = rf^-1;co
 let fre = fr & ext
 show co
 show fr
-

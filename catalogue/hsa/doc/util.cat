@@ -22,5 +22,5 @@ let rec cross ess = match ess with
       let yss = cross ess in
       fold
         (fun (e,r) -> map (fun ys -> e | ys) yss | r)
-        (es,{})           
-   end      
+        (es,{})
+   end

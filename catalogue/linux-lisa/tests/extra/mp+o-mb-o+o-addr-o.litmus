@@ -1,5 +1,5 @@
 LISA MP+o-mb-o+o-addr-o
-{ 
+{
 a = 1;
 x = 2;
 }
@@ -9,4 +9,3 @@ x = 2;
                  | mov r3 (add a r9)  ;
  w[once] x 4     | r[once] r2 r3      ;
 exists (1:r1 = 4 /\ 1:r2 = 1)
-

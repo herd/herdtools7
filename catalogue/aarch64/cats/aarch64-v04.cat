@@ -13,7 +13,7 @@
  * Author: Jade Alglave <jade.alglave@arm.com>
  *
  * Copyright (C) 2016-2020, Arm Ltd.
- * All rights reserved. 
+ * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -98,7 +98,7 @@ let lws = po-loc; [W]
 let obs = rfe | fre | coe
 
 (* Read-modify-write *)
-let rmw = lxsx | amo 
+let rmw = lxsx | amo
 
 (* Dependency-ordered-before *)
 let dob = addr | data
@@ -140,7 +140,7 @@ let rec ob = obs; si
 let tlo = [R & T]; tob; loc; tob^-1; [R & T]
 
 (* Internal visibility requirement *)
-let po-loc = 
+let po-loc =
   let Exp = M\domain(tob) in
   (po-loc & Exp*Exp) | (po & tlo)
 acyclic po-loc | ca | rf as internal

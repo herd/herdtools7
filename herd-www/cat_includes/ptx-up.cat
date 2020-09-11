@@ -2,7 +2,7 @@
 
 
 {%(*
-  \paragraph{Barrier heirarchy} 
+  \paragraph{Barrier heirarchy}
   We define the hierarchy of memory barriers.
   The $X${\tt -fence} relation relates events
   that are separated by a fence of scope $X$
@@ -15,7 +15,7 @@ let cta-fence = membar.cta | gl-fence
 
 
 {%(*
-  \paragraph{SC-per-location with load-load hazard} 
+  \paragraph{SC-per-location with load-load hazard}
   We require that communications do not
   contradict program order, unless the events
   are for different locations, or both events
@@ -34,7 +34,7 @@ acyclic (po-loc-llh | com | RRfence) as sc-per-loc-llh
 
 
 {%(*
-  \paragraph{Atomicity} 
+  \paragraph{Atomicity}
   This ensures that read-modify-write accesses are read and write atomically in coherence order.
 %*)}
 
@@ -42,7 +42,7 @@ acyclic (po-loc-llh | com | RRfence) as sc-per-loc-llh
 empty rmw & (fre;coe)
 
 {%(*
-  \paragraph{No thin air} 
+  \paragraph{No thin air}
   This prevents causal loops. No event
   may read from its dependants.
 %*)}
@@ -53,7 +53,7 @@ acyclic (dp | rf) as no-thin-air
 
 
 {%(*
-  \paragraph{Scoped RMO} 
+  \paragraph{Scoped RMO}
   We declare a generic {\tt rmo} relation, and
   instantiate it for each scope. We implement
   RMO-per-scope by requiring each of these
@@ -68,4 +68,3 @@ let rmo-sys = rmo(rmo-gl+,  sys-fence)
 acyclic rmo-cta as cta-constraint
 acyclic rmo-gl as gl-constraint
 acyclic rmo-sys as sys-constraint
-

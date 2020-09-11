@@ -36,19 +36,19 @@ let fence = strong-fence | weak-fence
 
 let hb = ppo | (R * M) & fence | rfe
 
-let com-ext = rfe | coe | fre 
+let com-ext = rfe | coe | fre
 
 //let observer = com-ext; (ppo | fence | po & (Rel * Acq));(fre | coe)
 let observer = com-ext; (ppo | fence | po & (Rel * Acq))
 
 let obs-base = com-ext?;fence;hb*
-let obs-strong = obs-base & (W * W) 
+let obs-strong = obs-base & (W * W)
          	 | (com*; obs-base*; strong-fence; hb*)
 let obs = obs-strong+;observer
 
 let po-xx = po & (W * W) & (X * X)
-let prop-ar = 
-  (com-ext & ((Acq | Rel) * (Acq | Rel)) 
+let prop-ar =
+  (com-ext & ((Acq | Rel) * (Acq | Rel))
    | po & (Rel * Acq)); hb*
 let prop = obs | po-xx | prop-ar
 
@@ -56,7 +56,7 @@ procedure sc-per-location() =
   acyclic po-loc | com
 end
 
-procedure no-thin-air() = 
+procedure no-thin-air() =
   acyclic hb
 end
 

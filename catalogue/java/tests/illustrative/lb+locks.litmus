@@ -6,7 +6,7 @@ m1 = 0;
 m2 = 0;
 }
  P0                | P1             ;
- r[lock] r0 m1     | r[lock] r0 m2    ; 
+ r[lock] r0 m1     | r[lock] r0 m2    ;
  (*w[lock] m1 1      | w[lock] m2 1     ;*)
  r[normal] r1 x    | r[normal] r2 y   ;
  w[unlock] m1 0    | w[unlock] m2 0   ;
@@ -15,4 +15,3 @@ m2 = 0;
  w[normal] y 1     | w[normal] x 1    ;
  w[unlock] m2 0    | w[unlock] m1 0   ;
 exists (0:r1 = 0 /\ 1:r2 = 1)
-

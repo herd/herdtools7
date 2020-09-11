@@ -16,7 +16,7 @@ include "basic-rels.cat"
 let propbase = transitive(0)
 let hb = (non-transitive | propbase)+
 
-procedure causality() =  
+procedure causality() =
   irreflexive hb as cau
 end
 

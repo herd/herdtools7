@@ -27,4 +27,3 @@ include "fences.cat"
 
 (* uni check proper *)
 irreflexive co as uniproc
-

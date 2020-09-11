@@ -17,5 +17,3 @@ let po-tso = po & (W*W | R*M) | mfence
 let ghb = po-tso | com-tso
 show mfence,ghb
 acyclic ghb as tso
-
-

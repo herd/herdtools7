@@ -5,7 +5,7 @@ let W = rf^-1
 enum memory-location-tags =
   'volatile
 
-enum synchronization-tags = 
+enum synchronization-tags =
   'lock || 'unlock || 'thread_start || 'thread_end
 
 let synchronization-actions = lock | unlock | thread_start | thread_end
@@ -18,4 +18,3 @@ let sw = so & (unlock*lock) & loc | (W*R) & (volatile*volatile) & loc
 let hb = (po | sw)+
 
 let well-formed = see def 7 of [25]
-

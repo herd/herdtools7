@@ -6,7 +6,7 @@
  * in the notion of control dependency in the Armv8 memory model.
  * If you have comments on the content of this file, please send an email to
  * jade.alglave@arm.com, referring to version number:
- * 
+ *
  * For a textual version of the model, see section B2.3 of the Armv8 ARM:
  *   https://developer.arm.com/docs/ddi0487/latest/arm-architecture-reference-manual-armv8-for-armv8-a-architecture-profile
  *
@@ -73,7 +73,7 @@ let sibling =
 
 let DpoDorW = [PoD];poDorW
 
-(* Add pair dw for w in ws  
+(* Add pair dw for w in ws
    More precisely:
    addD d (ws,dw) = dw U {(d,w) | w in ws}
 *)
@@ -84,7 +84,7 @@ let addD d =
   || w ++ ws ->
        let kws = do_rec ws in
        fun k -> (d,w) ++ kws k
-  end in do_rec 
+  end in do_rec
 
 (*
   Set combination: union of equiv-related sets
@@ -92,9 +92,9 @@ let addD d =
 
 let addifequiv (equiv,ws0) = mapset2set (fun w -> succs (w,equiv) & ws0)
 
-let combine (equiv,ws1,ws2) = 
+let combine (equiv,ws1,ws2) =
   addifequiv (equiv,ws1) ws2 | addifequiv (equiv,ws2) ws1
-      
+
 (* Tree scan: returns ws,dw, where ws is the set of writes always performed at
 this level and dw is the relation from PoD to writes always performed *)
 
@@ -119,7 +119,7 @@ and write_acc (equiv,es) = match es with
     let (ws_e,dw_e) = case_disjunction (equiv, e)
     and (ws_es,dw_es) = write_acc (equiv, es) in
     (ws_e|ws_es, dw_e|dw_es)
-end    
+end
 
 (* Warning, base case is on singleton *)
 and keep_equiv_writes (equiv,es) = match es with
@@ -131,7 +131,7 @@ and keep_equiv_writes (equiv,es) = match es with
           let (ws_e,dw_e) = case_disjunction(equiv,e)
           and (ws_es,dw_es) = keep_equiv_writes(equiv,es) in
           (combine (equiv,ws_e,ws_es), dw_e|dw_es)
-        end      
+        end
 end
 
 (* Final call *)
@@ -141,5 +141,5 @@ let zyva equiv =
 
 let Dmins = roots(DpoDorW)
 let always-executed (to-PoD,equiv) =
-  let DW = zyva equiv Dmins in 
+  let DW = zyva equiv Dmins in
   to-PoD; DW

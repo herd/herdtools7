@@ -31,8 +31,8 @@ procedure sc_consistent(s) =
   acyclic sc(s) as ScCons
 end
 
-let po-rel = 
-    id & (Release*Release) 
+let po-rel =
+    id & (Release*Release)
   | po & ((F & Release) * M)
 let acq-po =
     id & (Acquire*Acquire)

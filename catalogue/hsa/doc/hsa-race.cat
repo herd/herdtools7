@@ -16,4 +16,3 @@ let conflicts =
 let hsa-race = conflicts \ (hhb | hhb^-1)
 
 flag ~empty hsa-race as undefined
-

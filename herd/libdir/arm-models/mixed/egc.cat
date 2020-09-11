@@ -41,13 +41,13 @@ include "armv8-common.cat"
 include "sca.cat"
 
 let gc-req = (W * _) | (R * _) & ((range(rfe) * _) | (rfi^-1; lob))
-let preorder = IM0 | lob & gc-req | scaob 
+let preorder = IM0 | lob & gc-req | scaob
 let preorder-lift = lift(MC,preorder)
 
 with gcb from linearisations(MC, preorder-lift)
 ~empty gcb
 
-let dgcbl = delift(gcb) & loc 
+let dgcbl = delift(gcb) & loc
 let rf-gcb = (W * R) & dgcbl \ intervening-write(dgcbl)
 let co-gcb = (W * W) & dgcbl
 

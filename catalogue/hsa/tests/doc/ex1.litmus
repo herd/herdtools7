@@ -26,4 +26,3 @@ $s1=1, $s2=0 & $s3=1, $s4=0
 Sequential consistency implies that units of execution C and D must observe X
 and Y changing from 0 to 1 in the same order.
 *)
-

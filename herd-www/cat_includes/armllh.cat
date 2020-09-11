@@ -43,5 +43,3 @@ let strong = dmb|dsb|dmb.st|dsb.st
 let light = 0
 
 include "ppc-checks.cat"
-
-

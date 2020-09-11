@@ -13,7 +13,7 @@ procedure sc-per-location() =
   acyclic po-loc | com
 end
 
-procedure no-thin-air() = 
+procedure no-thin-air() =
   acyclic hb
 end
 

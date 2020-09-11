@@ -9,6 +9,5 @@ y = 0;
               | f[sync]      ;
  r[once] r2 y | r[once] r4 x ;
  f[unlock]    |              ;
- 
-exists (0:r2=0 /\ 1:r4=0)
 
+exists (0:r2=0 /\ 1:r4=0)

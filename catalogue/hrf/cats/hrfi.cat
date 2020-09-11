@@ -1,6 +1,6 @@
 "HRF indirect"
 
-(*note: 
+(*note:
   page 7, top of column 1:
   "The structure of HRF-indirect is identical to the HRF-direct definition but
     with a different happens-before relation"
@@ -21,7 +21,7 @@ enum scope =
   'device ||
   'system
  
-(*jade: perhaps worth not having these indirections below, and use e.g. 
+(*jade: perhaps worth not having these indirections below, and use e.g.
   memory_order_sub_group always, instead of renaming it to subgroup?*)
 let subgroup = memory_order_sub_group (*jade: Tyler, i changed the syntax to
 follow the paper*)
@@ -187,4 +187,3 @@ definition of "apparent" order nor "observed" in the paper.
 
 jade: for Tyler to prove
 *)
-

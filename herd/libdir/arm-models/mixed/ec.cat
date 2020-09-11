@@ -47,12 +47,10 @@ with cb from linearisations(MC,preorder-lift)
 ~empty cb
 
 let dcbl = delift(cb) & loc
-let rf-fwd = (W*R) & po-loc & dcbl^-1 \ intervening-write(po-loc) 
-let rf-nfwd = (W*R) & dcbl \ intervening-write(dcbl | po-loc) 
+let rf-fwd = (W*R) & po-loc & dcbl^-1 \ intervening-write(po-loc)
+let rf-nfwd = (W*R) & dcbl \ intervening-write(dcbl | po-loc)
 let rf-cb = rf-fwd | rf-nfwd
 let co-cb = dcbl & (W*W)
 
 call equal(rf, rf-cb) as rfeq
 call equal(co, co-cb) as cbeq
-
-

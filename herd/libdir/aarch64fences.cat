@@ -42,4 +42,3 @@ let dsb.ld = fencerel(DSB.LD)
 let isb = fencerel(ISB)
 
 show dmb.sy,dmb.st,dmb.ld,dsb.sy,sb.st,dsb.ld,dmb,dsb
-

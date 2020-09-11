@@ -7,4 +7,3 @@ P0;
 ADDS X0, X0, X1, asr #0;
 
 exists (0:X0=43)
-

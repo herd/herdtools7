@@ -10,7 +10,7 @@ P1 (int* x, atomic_int* y) {
    int r2 = 0;
    int r1 = atomic_load_explicit(y, memory_order_relaxed);
    if (r1) {
-      r2 = *x;   
+      r2 = *x;
    }
 }
 

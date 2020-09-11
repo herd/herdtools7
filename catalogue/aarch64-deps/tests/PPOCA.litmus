@@ -13,4 +13,3 @@ STLR W2,[X3] | STR W2,[X3]         ;
              | LDR W6,[X7,W5,SXTW] ;
              | over:               ;
 exists (1:X0=1 /\ 1:X4=1 /\ 1:X6=0)
-

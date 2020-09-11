@@ -1,4 +1,4 @@
-LISA less-super-dist-2+2w+rel+acq-rel+acq-o+o-wmb-o+o-wmb-o (*Paul says forbid*) 
+LISA less-super-dist-2+2w+rel+acq-rel+acq-o+o-wmb-o+o-wmb-o (*Paul says forbid*)
 {
 x = 0;
 y = 0;
@@ -15,4 +15,3 @@ creating a 2+2w pair at the end:
 And same answer [as for the other super-dist one], my current belief being that
 the model needs to allow this cycle.
 *)
-

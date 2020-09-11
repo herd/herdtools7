@@ -39,8 +39,8 @@ let rec cross ess = match ess with
       let yss = cross ess in
       fold
         (fun (e,r) -> map (fun ys -> e | ys) yss | r)
-        (es,{})           
-   end      
+        (es,{})
+   end
 
 (*************)
 (* Coherence *)
@@ -93,7 +93,7 @@ let acq-rel =
   ((po? & (_ * W)); coh; (po & (R * _)))
 
 let sso s = same-instance(s) & acq-rel
-  
+
 let hhb = (po | union-scopes sso)+
 
 irreflexive hhb as HhbCons
@@ -167,4 +167,3 @@ let conflicts =
 let hsa-race = conflicts \ (hhb | hhb^-1)
 
 flag ~empty hsa-race as undefined
-

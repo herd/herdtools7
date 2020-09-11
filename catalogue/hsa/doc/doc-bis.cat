@@ -11,7 +11,7 @@ include "hsa-lib.cat"
 (*************)
 
 let makeCohL(s) = linearisations(s,co0)
-let allCohL = map makeCohL (partition M) 
+let allCohL = map makeCohL (partition M)
 with coh from cross allCohL
 
 
@@ -53,9 +53,9 @@ let acq-rel =
   ((po? & (_ * W)); coh; (po & (R * _)))
 
 let sso s = same-instance(s) & acq-rel
- 
+
 let union-scopes f = fold (fun (s,y) -> f s | y) (scopes,{})
- 
+
 let hhb = (po | union-scopes sso)+
 
 irreflexive hhb as HhbCons

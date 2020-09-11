@@ -15,7 +15,7 @@ let scp = r1|r2|r3|r4|r5|r6|r7
 acyclic (((SC * SC) & scp) \ id) as Spartial
 show scp
 
-undefined_unless empty dr as Dr 
-undefined_unless empty ur as unsequencedRace 
+undefined_unless empty dr as Dr
+undefined_unless empty ur as unsequencedRace
 undefined_unless empty bl as badLock
 undefined_unless empty lu as badUnlock

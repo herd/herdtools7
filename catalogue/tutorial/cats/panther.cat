@@ -46,8 +46,8 @@ end
 
 let at-least-one k = (k * _ | _ * k)
 let conflict = at-least-one(W) & loc & ext
-let race = 
-  let r = conflict & ~(hb | hb^-1) 
+let race =
+  let r = conflict & ~(hb | hb^-1)
   in r \ (id | (I * M) | (M * I) | (Special * Special))
 show race
 

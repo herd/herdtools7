@@ -12,7 +12,7 @@ procedure sc-per-location() =
 end
 
 procedure locking() =
-  let ppo = po & (Lock * R) | po & (W * Unlock) 
+  let ppo = po & (Lock * R) | po & (W * Unlock)
   acyclic ppo | com
 end
 
@@ -27,12 +27,12 @@ procedure volatile() =
 end
 
 procedure ecma() =
-  call fundamental-rules() 
+  call fundamental-rules()
   call volatile()
 end
 
 procedure tso() =
-  let ppo = po & (W*W) 
+  let ppo = po & (W*W)
   acyclic ppo | rfe | co | fr
 end
 
