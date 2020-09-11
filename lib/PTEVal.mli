@@ -24,7 +24,10 @@ type t = {
   dbm : int;
   }
 
+(* Default value for location argument *)
 val default : string -> t
+(* Flags have default values *)
+val is_default : t -> bool
 val of_list : string -> (string * string) list -> t
 val pp : t -> string
 
