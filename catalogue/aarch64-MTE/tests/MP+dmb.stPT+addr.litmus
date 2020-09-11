@@ -1,4 +1,4 @@
-AArch64 MP+dmb.stPT+addr 
+AArch64 MP+dmb.stPT+addr
 "DMB.STdWWPT RfeTP DpAddrdR Fre"
 {
 0:X2=B:green; 0:X1=A:red; 0:X3=A:green;

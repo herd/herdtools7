@@ -14,7 +14,7 @@ exists(0:r1=1 /\ 1:r2=1 /\ 2:r3=1)
 
 (*More precisely:
 
-        But I expect that there will be eventually need to be a    
+        But I expect that there will be eventually need to be a
         r[ctrl] or some such.  Until then, forbidden.
         But herd disagrees, probably because it does not yet know
         about control dependencies.

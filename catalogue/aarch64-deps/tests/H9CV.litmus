@@ -1,4 +1,4 @@
-AArch64 H9CV 
+AArch64 H9CV
 {
 0:X1=x; 0:X3=y;
 1:X1=y; 1:X3=x;
@@ -12,4 +12,3 @@ STLR W2,[X3] | MOV W6,#2           ;
              | MOV W8,#7           ;
              | STLR W8,[X3]        ;
 exists (0:X0=7 /\ 1:X0=1)
-

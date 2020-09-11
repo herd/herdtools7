@@ -11,7 +11,7 @@ STLR W2,[X3] | B.EQ over           ;
              | MOV W2,#2           ;
              | over:               ;
              | LDR W4,[X1]         ;
-             | EOR W9,W4,W4        ; 
+             | EOR W9,W4,W4        ;
              | ADD W6,W6,#1        ;
              | STR W6,[X5]         ;
              | MOV W8,#7           ;

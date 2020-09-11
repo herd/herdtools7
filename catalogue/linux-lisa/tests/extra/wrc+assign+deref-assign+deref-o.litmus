@@ -7,4 +7,3 @@ y = 0;
  w[assign] y 1   | r[deref] r3 y  | r[deref] r1 x  ;
                  | w[assign] x 1  | r[once] r2 y   ;
 exists (1:r3=1 /\ 2:r1=1 /\ 2:r2=0)
-

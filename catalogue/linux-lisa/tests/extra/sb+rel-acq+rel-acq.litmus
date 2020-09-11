@@ -7,4 +7,3 @@ y = 0;
  w[release] x 1  | w[release] y 1  ;
  r[acquire] r2 y | r[acquire] r4 x ;
 exists (0:r2=0 /\ 1:r4=0)
-

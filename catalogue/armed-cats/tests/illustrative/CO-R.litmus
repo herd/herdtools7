@@ -8,4 +8,3 @@ ARM CO-R
  MOV R1,#2   | LDR R1,[R2] ;
  STR R1,[R2] |             ;
 exists (x=3 /\ (1:R1=1 \/ 1:R1=2) \/ x=1)
-

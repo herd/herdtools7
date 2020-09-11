@@ -1,4 +1,4 @@
-LISA alt-ww-rw+rel+acq-rel+acq-o+o-wb-rel+acq-o+o-wb-o 
+LISA alt-ww-rw+rel+acq-rel+acq-o+o-wb-rel+acq-o+o-wb-o
 {
 x = 0;
 y = 0;
@@ -8,4 +8,3 @@ y = 0;
                 |                 |                 | f[wmb]         |                 | f[wmb]       ;
                 | w[release] y 1  | w[once] z 1     | w[release] a 1 | w[once] c 1     | w[once] x 2  ;
 exists (1:r1=1 /\ 2:r2=1 /\ z=2 /\ 4:r3=1 /\ c=2 /\ x=1)
-

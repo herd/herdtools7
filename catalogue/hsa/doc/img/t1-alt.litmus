@@ -13,7 +13,7 @@ w[atomic,rlx,system] d1 r1
 w[atomic,rlx,system] d2 r2
 f[screl,system]
 w[atomic,rlx,system] s 1
-L: 
+L:
 
 ----- P1
 r[atomic,scacq,wg] r1 x
@@ -22,7 +22,7 @@ b r3 L1
 add r1 r1 1
 w[atomic,screl,agent] x r1
 rmw.add[atomic,scar,agent] r9 c 1
-L1: 
+L1:
 
 ----- P2
 r[atomic,scacq,wg] r1 y
@@ -31,16 +31,16 @@ b r3 L2
 mov r1 (add r1 2)
 w[atomic,screl,agent] y r1
 rmw[atomic,scar,agent] r9 (add c 1)
-L2: 
+L2:
 
 ----- P3
 r[atomic,rlx,system] r3 s
-mov r4 (neq r3 1) 
+mov r4 (neq r3 1)
 b r4 L3
 f[scacq,system]
 r[atomic,rlx,system] r1 d1
 r[atomic,rlx,system] r2 d2
-L3: 
+L3:
 
 ----- Scope
 scopes: (wg 0 1 2 3)

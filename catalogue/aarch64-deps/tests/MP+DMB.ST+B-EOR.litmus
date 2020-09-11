@@ -1,5 +1,5 @@
 AArch64 MP+DMB.ST+B-EOR
-{ 
+{
 0:X1=x; 0:X3=y;
 1:X1=x; 1:X3=y;
 }

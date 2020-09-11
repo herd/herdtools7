@@ -8,4 +8,3 @@ y = 0;
                 |                 | f[wmb]       ;
                 | w[once] y 2     | w[once] x 2  ;
 exists (1:r1=1 /\ x=1 /\ y=1)
-

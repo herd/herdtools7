@@ -1,4 +1,4 @@
-AArch64 STXR-ctrl 
+AArch64 STXR-ctrl
 {
 0:X1=x; 0:X3=y;
 1:X0=y; 1:X5=x;

@@ -10,4 +10,3 @@ y = 0;
               | w[once] x 1  | r[once] r2 y ;
               |              | f[unlock]    ;
 exists (1:r3=1 /\ 2:r1=1 /\ 2:r2=0)
-

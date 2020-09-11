@@ -7,4 +7,3 @@ P0;
 ASR X0, X0, #0;
 
 exists (0:X0=1)
-

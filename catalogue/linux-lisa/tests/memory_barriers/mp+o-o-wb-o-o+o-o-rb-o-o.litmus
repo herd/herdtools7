@@ -11,7 +11,7 @@ d = 0;
  f[wmb]      | f[rmb]       ;
  w[once] c 3 | r[once] r3 a ;
  w[once] d 4 | r[once] r4 x ;
-exists ((1:r1 = 3 /\ 1:r3 = 0) \/ 
+exists ((1:r1 = 3 /\ 1:r3 = 0) \/
         (1:r1 = 3 /\ 1:r4 = 0) \/
         (1:r2 = 4 /\ 1:r3 = 0) \/
         (1:r2 = 4 /\ 1:r4 = 0))

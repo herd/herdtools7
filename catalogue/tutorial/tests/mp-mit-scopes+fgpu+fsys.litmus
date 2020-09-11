@@ -10,4 +10,3 @@ y = 0;
 scopes: (system (gpu (cta P0) (cta P1)))
 
 exists (1:r1 = 1 /\ 1:r2 = 0)
-

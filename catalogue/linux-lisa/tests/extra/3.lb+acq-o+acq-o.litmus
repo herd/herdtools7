@@ -9,7 +9,7 @@ r[acquire] r1 x | r[acquire] r3 y | r[acquire] r4 z ;
 w[once] y 1     | w[once] z 1     | w[once] x 1     ;
 exists(0:r1=1 /\ 1:r3=1 /\ 2:r4=1)
 
-(*More precisely, Paul says: 
+(*More precisely, Paul says:
 
   See lb+acq-o+acq-o.litmus.
 

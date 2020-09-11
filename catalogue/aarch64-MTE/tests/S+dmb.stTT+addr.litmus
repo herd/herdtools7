@@ -10,4 +10,4 @@ AArch64 S+dmb.stTT+addr
  STG X1,[X3] | MOV W6,#1               ;
              | L4: STR W6,[X4,W5,SXTW] ;
 locations[A;B;1:X5;1:X6;]
-exists (~(fault(P1:L3,A)) /\ fault(P1:L4,B))  
+exists (~(fault(P1:L3,A)) /\ fault(P1:L4,B))

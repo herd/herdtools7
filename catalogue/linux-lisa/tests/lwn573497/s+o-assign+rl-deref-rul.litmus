@@ -9,4 +9,3 @@ y = 0;
  w[assign] x 1 | w[once] y 1   ;
                | f[unlock]     ;
 exists (y=2 /\ 1:r1=1)
-
