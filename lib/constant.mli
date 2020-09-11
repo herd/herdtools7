@@ -26,6 +26,7 @@ type 'scalar t =
 
 val mk_sym : string -> 'scalar t
 val get_sym : 'scalar t -> string
+val is_symbol : 'scalar t -> bool
 val is_non_mixed_symbol : 'scalar t -> bool
 val default_tag : 'scalar t
 

@@ -1461,6 +1461,19 @@ let match_reg_events es =
         (fun e -> check_event_aligned test e)
         es.E.mem_accesses
 
+    let check_symbolic_locations _test es =
+      let open Constant in
+      E.EventSet.iter
+        (fun e -> match E.location_of e with
+        | Some (A.Location_global (V.Val cst)) when Constant.is_symbol cst
+              -> ()
+        | Some loc ->
+            Warn.user_error "Non-symbolic memory access found on '%s'"
+              (A.pp_location loc)
+        | None -> assert false)
+        (E.mem_of es.E.events)
+
+
     let calculate_rf_with_cnstrnts test es cs kont kont_loop res =
       match solve_regs test es cs with
       | None -> res
@@ -1484,6 +1497,7 @@ let match_reg_events es =
    entails a tremendous runtime penalty. *)
                   when_unsolved test es rfm cs kont_loop res
               | _ ->
+                  check_symbolic_locations test es ;
                   if (mixed && not unaligned) then check_aligned test es ;
                   if A.reject_mixed && not (mixed || memtag) then check_sizes es ;
                   if C.debug.Debug_herd.solver && C.verbose > 0 then begin
