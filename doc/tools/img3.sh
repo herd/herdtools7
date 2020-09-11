@@ -1,3 +1,7 @@
+#!/bin/sh
+
+set -eu
+
 DIR=$(dirname $0)
 HERD=$1
 TAG=$2

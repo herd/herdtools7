@@ -1,3 +1,5 @@
+#!/bin/sh
+
 . ./dune-defs.sh
 
 LIBDIR=$1/share/herdtools7

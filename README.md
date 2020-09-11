@@ -30,6 +30,30 @@ Compilation and installation
 
 See file [INSTALL.md](INSTALL.md).
 
+Contributing
+============
+
+This repository uses the [Pre-Commit tool](https://pre-commit.com) to manage
+pre-commit validation, to check for formatting, test regressions, etc.
+
+Pre-Commit can be installed on macOS with [Homebrew](https://brew.sh), or on
+all platforms with Python's `pip`:
+
+    # macOS with Homebrew.
+    % brew install pre-commit
+
+    # All other OS (including macOS without Homebrew).
+    % pip install pre-commit
+
+To make Pre-Commit run automatically when you `git commit`, add it to your Git
+repository's local `pre-commit` hooks. From within this repository, run:
+
+    % pre-commit install
+
+When adding a new pre-commit check, please run Pre-Commit manually first:
+
+    % pre-commit run --all-files
+
 License
 =======
 
