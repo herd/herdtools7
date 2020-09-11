@@ -1,3 +1,7 @@
+#!/bin/sh
+
+set -eu
+
 BUCKET=c11popl15
 
 CATS=${BUCKET}/c11/cats
