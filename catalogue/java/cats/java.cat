@@ -14,31 +14,31 @@ let hb = (IW*(M \ IW) | sw | po)+
 acyclic hb
 
 (*item 5 of definition 7 p. 46*)
-procedure properly-typed-W() = 
-    let same-ends = (Normal * Normal) | truc 
+procedure properly-typed-W() =
+    let same-ends = (Normal * Normal) | truc
     empty rf \ (same-ends | IW*R)
 end
 
 (*item 6 of definition 7 p. 46*)
-procedure proper-locking() = 
-    let tmp = po & (Lock * Unlock) & loc; (Unlock * Lock) & loc 
+procedure proper-locking() =
+    let tmp = po & (Lock * Unlock) & loc; (Unlock * Lock) & loc
     empty so & ext & (tmp \ (Lock * Lock) & loc)
 end
 
 (*item 8 of definition 7 p. 46*)
 procedure so-consistent-with-W() =
-    let rf-volatile = rf & (Volatile * Volatile) 
-    let so-volatile-loc = so & loc & (Volatile * Volatile) 
+    let rf-volatile = rf & (Volatile * Volatile)
+    let so-volatile-loc = so & loc & (Volatile * Volatile)
     empty rf-volatile \ so-volatile-loc
-    
-    let ww = so-volatile-loc & (W*W) 
-    let wr = so-volatile-loc & (W*R) 
+
+    let ww = so-volatile-loc & (W*W)
+    let wr = so-volatile-loc & (W*R)
     empty rf-volatile & (ww;wr)
 end
 
 procedure hb-consistent-with-W() =
     irreflexive rf;hb
-    
+
     let ww = hb & loc & (W*W)
     let wr = hb & loc & (W*R)
     empty rf & (ww;wr)
@@ -54,7 +54,3 @@ end
 call well-formed()
 (*para Committing semantics p. 34*)
 flag empty rf \ hb as well-behaved
-
-
-
-

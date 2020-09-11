@@ -15,17 +15,17 @@ end
 
 let ldo = addr | data | ctrl
 let gdo = (coh | ldo)+
-procedure gdo_consistent() = 
+procedure gdo_consistent() =
   acyclic gdo
-end 
+end
 
-with SC from linearisations(Synchronizing, po) 
+with SC from linearisations(Synchronizing, po)
 let sc(s) = SC & same-instance(s)
 
 procedure sc_consistent(s) =
   call consistent(sc(s),po)
   call consistent(sc(s),coh)
-  forall s' in scopes do 
+  forall s' in scopes do
     call consistent(sc(s),sc(s'))
   end
   acyclic sc(s)
@@ -39,8 +39,8 @@ let sso s =
   (po & (_ * (W | RMW));(coh & loc); po? & ((R | RMW) * _))
 | ((Synchronizing & Release) * (F & Acquire)) &
   (po? & (_ * (W | RMW));(coh & loc); po & ((R | RMW) * _))
-) 
-  
+)
+
 let hhb = (po | union-scopes sso)+
 
 procedure hhb_consistent(s) =
@@ -56,20 +56,20 @@ procedure equal(r1,r2) =
 end
 
 procedure value-of-a-load() =
-  let coh-loc = coh & loc 
+  let coh-loc = coh & loc
   let coh-locWR = coh-loc & (W * R)
   let coh-locWW = coh-loc & (W * W)
-  let min-coh-locWR = coh-locWR \ (coh-locWW; coh-locWR) 
-  call equal(rf, min-coh-locWR) 
+  let min-coh-locWR = coh-locWR \ (coh-locWW; coh-locWR)
+  call equal(rf, min-coh-locWR)
 end
 
 procedure valid(s) =
-  call gdo_consistent() 
+  call gdo_consistent()
   call sc_consistent(s)
   call coh_consistent(s)
   call hhb_consistent(s)
   call value-of-a-load()
-  empty rmwid & (coh;coh) as atom 
+  empty rmwid & (coh;coh) as atom
 end
 
 let at-least-one a = (a*_| _*a)
@@ -82,9 +82,9 @@ let special-conflict =
   r \ Match
 
 let hsa-race =
-   ((ordinary-conflict | special-conflict) & ext & ~(hhb | hhb^-1)) \     
+   ((ordinary-conflict | special-conflict) & ext & ~(hhb | hhb^-1)) \
    ((I * M) | (M * I))
-(*jade: j'ai enleve \ id, qui est implique par & ext*)     
+(*jade: j'ai enleve \ id, qui est implique par & ext*)
 
 procedure race-free() =
   flag ~empty hsa-race as undefined

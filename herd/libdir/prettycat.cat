@@ -74,5 +74,3 @@ let strong = sync|dmb|dsb|dmb.st|dsb.st
 let light = lwsync|eieio
 
 include "ppc-checks.cat"
-
-

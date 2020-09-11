@@ -19,11 +19,11 @@ procedure equal(r1,r2) =
 end
 
 procedure value-of-a-load() =
-  let coh-loc = coh & loc 
+  let coh-loc = coh & loc
   let coh-locWR = coh-loc & (W * R)
   let coh-locWW = coh-loc & (W * W)
-  let min-coh-locWR = coh-locWR \ (coh-locWW; coh-locWR) 
-  call equal(rf, min-coh-locWR) 
+  let min-coh-locWR = coh-locWR \ (coh-locWW; coh-locWR)
+  call equal(rf, min-coh-locWR)
 end
 
 call value-of-a-load() as LoadCons
@@ -46,7 +46,7 @@ let sso s =
 | (Synchronizing & Release) * (F & Acquire) &
   (po? & (_ * (W | RMW));(coh & loc); po & ((R | RMW) * _))
  )
-  
+
 let hhb = (po | union-scopes sso)+
 
 irreflexive hhb as HhbCons
@@ -104,12 +104,11 @@ let special-conflict =
   r \ Match
 
 let hsa-race =
-   ((ordinary-conflict | special-conflict) & ext & ~(hhb | hhb^-1)) \     
-   (id | (I * M) | (M * I))     
+   ((ordinary-conflict | special-conflict) & ext & ~(hhb | hhb^-1)) \
+   (id | (I * M) | (M * I))
 
 procedure race-free() =
   flag ~empty hsa-race as undefined
 end
 
 call race-free()
-

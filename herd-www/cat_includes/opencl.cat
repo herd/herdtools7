@@ -21,7 +21,7 @@ undefined_unless empty dr as data_race
 show dr
 
 (* Unsequenced races *)
-let ur = (wi & conflict & ~symm(po)) \ id 
+let ur = (wi & conflict & ~symm(po)) \ id
 undefined_unless empty ur as unsequenced_race
 show ur
 

@@ -1,4 +1,4 @@
-"Generate co's" 
+"Generate co's"
 
 include "cross.cat"
 
@@ -14,4 +14,3 @@ let coe = co \ coi
 let fr = ([EXEC]; invrf ; co; [EXEC]) \ id
 let fri = fr & int
 let fre = fr \ fri
-

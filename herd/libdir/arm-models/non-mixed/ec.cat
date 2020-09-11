@@ -46,12 +46,10 @@ with cb from linearisations(M,preorder)
 ~empty cb
 
 let cbl = cb & loc
-let rf-fwd = (W*R) & po-loc & cbl^-1 \ intervening-write(po-loc) 
-let rf-nfwd = (W*R) & cbl \ intervening-write(cbl | po-loc) 
+let rf-fwd = (W*R) & po-loc & cbl^-1 \ intervening-write(po-loc)
+let rf-nfwd = (W*R) & cbl \ intervening-write(cbl | po-loc)
 let rf-cb = rf-fwd | rf-nfwd
 let co-cb = cbl & (W*W)
 
 call equal(rf, rf-cb) as rfeq
 call equal(co, co-cb) as cbeq
-
-

@@ -10,8 +10,7 @@ acyclic po-loc | com as sc-per-location
 let dp = addr | data | ctrl
 acyclic dp | rf as no-thin-air
 
-let ppo = (R*M | W*W) & loc 
+let ppo = (R*M | W*W) & loc
 acyclic ppo | rfe | co | fr as alpha
 (*note:
   Alpha's ppo is so weak that we need an explicit thin-air check*)
-

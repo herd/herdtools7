@@ -20,7 +20,7 @@ and RR = R * R
 let ppo =
 (*  True or False Address Dependency from Load to Store create
     externally visible order *)
-  addr & RW | 
+  addr & RW |
 (*  True Data Dependency from Load to Store creates externally visible
 order  [derives from  no visible write speculation rule] *)
   data & RW | (* NB 'false dependcies included... *)
@@ -31,7 +31,7 @@ order  [derives from  no visible write speculation rule] *)
   ctrl & RW |  (* NB 'false dependcies included... *)
 (* CTRL + ISB will create externally visible order (derives from ISB
    cannot happen speculatively] *)
-  ctrlisb  
+  ctrlisb
 
 (**********)
 (* Fences *)

@@ -6,11 +6,11 @@ let co_locs (pco,wss) =
   let rec do_locs wss = match wss with
   || {} -> {}
   || ws ++ wss ->
-      linearisations(ws,pco) ++ do_locs(wss)   
+      linearisations(ws,pco) ++ do_locs(wss)
   end in do_locs(wss)
 
 (* Cross product linearisations *)
-let cross = 
+let cross =
   let rec do_cross (k,ys,oss) = match oss with
   || {} -> ys ++ k
   || os ++ oss ->

@@ -6,4 +6,3 @@ include "aarch64fences.cat" // Defines fence relations (and ctrlisb)
 (* Alternative names *)
 let Acq = A
 let Rel = L
-

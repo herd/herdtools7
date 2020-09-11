@@ -26,5 +26,5 @@ let fence = dmb|dsb|dmb.st|dsb.st
 let hb = ppo | fence | rfe
 acyclic hb as no-thin-air
 
-let prop = com*; fence; hb* 
+let prop = com*; fence; hb*
 acyclic prop as propagation

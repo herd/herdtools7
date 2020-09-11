@@ -30,15 +30,15 @@ let dmb(t) = match t with
 let all-dmb = dmb('none) | dmb('st) | dmb('ld)
 let all-dsb = all-dmb
 
-let acq = A 
-let rel = L 
+let acq = A
+let rel = L
 let acq-po = po & (acq * M)
 let po-rel = po & (M * rel)
 let rel-acq = acq-po;po-rel
 let fence = all-dmb | all-dsb | acq-po | po-rel
 let strong-fence = all-dmb | all-dsb
 let weak-fence = po-rel
-let cumul-fence = strong-fence | weak-fence 
+let cumul-fence = strong-fence | weak-fence
 let A-cumul = rfe;cumul-fence
 
 let hb = ppo | fence | rfe

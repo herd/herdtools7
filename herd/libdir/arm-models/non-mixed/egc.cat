@@ -41,7 +41,7 @@
 include "armv8-common.cat"
 
 let gc-req = (W * _) | (R * _) & ((range(rfe) * _) | (rfi^-1; lob))
-let preorder = IM0 | lob & gc-req 
+let preorder = IM0 | lob & gc-req
 
 with gcb from linearisations(M, preorder)
 ~empty gcb

@@ -24,14 +24,14 @@ let ppo = ii & R*R | ic & R*W
 let all-dmb = dmb.sy|dmb.st|dmb.ld
 let all-dsb = dsb.sy|dsb.st|dsb.ld
 
-let acq = A 
-let rel = L 
+let acq = A
+let rel = L
 let acq-po = po & (acq * M)
 let po-rel = po & (M * rel) (*jade: est ce que M contient acq?*)
 let fence = all-dmb | all-dsb | acq-po | po-rel
 let strong-fence = all-dmb | all-dsb
 let weak-fence = po-rel
-let cumul-fence = strong-fence | weak-fence 
+let cumul-fence = strong-fence | weak-fence
 let A-cumul = rfe;cumul-fence
 
 let hb = ppo | fence | rfe
@@ -46,5 +46,5 @@ si on peut*)
 acyclic co | prop | xx as propagation
 empty rmw & (fre;coe) as atomic
 
-let all-acq-rel = acq-po | po-rel | po & (rel * acq) 
+let all-acq-rel = acq-po | po-rel | po & (rel * acq)
 acyclic com | strong-fence | all-acq-rel as restoring-sc

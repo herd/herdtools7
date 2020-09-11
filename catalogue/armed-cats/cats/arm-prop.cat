@@ -6,9 +6,9 @@ let com-ext = com & ext
 let hb = ppo | (R * M) & fence | rfe
 
 let po-xx = po & (W * W) & (X * X)
-let prop-ar = 
-  (com-ext & ((Acq | Rel) * (Acq | Rel)) 
+let prop-ar =
+  (com-ext & ((Acq | Rel) * (Acq | Rel))
    | po & (Rel * Acq)); hb*
-let prop = obs 
+let prop = obs
          | po-xx
          | prop-ar

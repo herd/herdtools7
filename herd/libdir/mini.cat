@@ -5,5 +5,3 @@ include "cross.cat"
 with co from generate_cos(co0)
 show co
 show rf^-1 ; co as fr
-
-

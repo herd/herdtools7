@@ -10,7 +10,7 @@ acyclic co | hb
 (*hb treats events within a same transaction uniformly*)
 enum transaction = 't1 || 't2 || 't3
 (*jade: we need match on pairs! =)
-let twiddle(t, t', r) = 
+let twiddle(t, t', r) =
   match (t,t') with
   || ('t1,'t1) -> r
   || ('t2,'t2) -> r
@@ -20,21 +20,21 @@ let hb-quotient = union (transaction*transaction) twiddle(t,t',hb)*)
 
 let twiddle(t, t', r) =
   match t with
-  || 't1 -> 
-     match t' with 
+  || 't1 ->
+     match t' with
      || 't1 -> r
      end
-  || 't2 -> 
-     match t' with 
+  || 't2 ->
+     match t' with
      || 't2 -> r
      end
-  || 't3 -> 
-     match t' with 
+  || 't3 ->
+     match t' with
      || 't3 -> r
      end
   end
 
-let hb-quotient = 
+let hb-quotient =
   (*union (transaction*transaction) twiddle(t,t',hb)*)
   twiddle('t1, 't1, hb) | twiddle('t2, 't2, hb) | twiddle('t3, 't3, hb)
 

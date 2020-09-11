@@ -2,19 +2,19 @@
 
 include "~/svn/herd/catalogue/stdlib/std.cat"
 
-procedure requireWeakTotalOrder rln order = 
+procedure requireWeakTotalOrder rln order =
   call total(rln, order)
 end
 
-let requireTransitiveOrder rln order = 
+let requireTransitiveOrder rln order =
   order+ & rln
 
-procedure requireAsymmetricOrder rln order = 
+procedure requireAsymmetricOrder rln order =
   irreflexive(order & rln)
 end
 
-procedure requireReadValue rln order = 
-  let o = order & rln 
+procedure requireReadValue rln order =
+  let o = order & rln
   irreflexive rf;o
   call no-intervening(rf,o,o & (_*W))
 (*  irreflexive o;(o & (_*W) & loc);rf^-1 *)
@@ -24,10 +24,10 @@ procedure requireSerialization rln order =
   (*requireWeakTotalOrder
     requireTransitiveOrder
     requireAsymmetricOrder*)
-  let orders = linearisations(order) 
+  let orders = linearisations(order)
   with o from orders
   call requireReadValue(rln,o)
-end 
+end
 
 procedure requireProgramOrder ops order =
   let from-init = I*~I
@@ -40,7 +40,7 @@ end
 
 let restrictProp = int | (_*~R) | (~R*_)
 
-procedure mapConstraints rln1 order1 rln2 order2 = 
-  let r = rln1 & rln2 
+procedure mapConstraints rln1 order1 rln2 order2 =
+  let r = rln1 & rln2
   call equality(order1 & r, order2)
 end

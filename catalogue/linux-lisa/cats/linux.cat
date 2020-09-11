@@ -15,9 +15,9 @@ let deref-po-deps = (deref-po & deps)
 let lderef-po-deps = (lderef-po & deps)
 let rb-fence = (fencerel(F & Rb_dep) & deps)
 let ctrl-po-deps = (ctrl-po & ctrl)
-let proper-deps =   rb-fence (*| deref-po-deps 
+let proper-deps =   rb-fence (*| deref-po-deps
                   | lderef-po-deps*) | ctrl-po-deps
-let local = proper-deps | fences 
+let local = proper-deps | fences
 let non-transitive = rfe?;local
 
 let pairs = ((po?;(rfe & (Release * Acquire));po?) |
@@ -30,7 +30,7 @@ let transitive(extra) = (rfe?;transitive-fences(extra) | rfe?;pairs)+
 
 let hb = (non-transitive | transitive(0));non-transitive?
 
-procedure causality() =  
+procedure causality() =
   irreflexive hb
 end
 
@@ -43,7 +43,7 @@ let propA = (*need mb to forbid both 2+2W and R*)
             prop(0)
 let propB = (*need wmb to forbid 2+2W and mb to forbid R*)
             prop(wmb)
-(*let propC = need wmb to forbid both 2+2W and R, i.e. decrete Power broken*) 
+(*let propC = need wmb to forbid both 2+2W and R, i.e. decrete Power broken*)
 procedure propagation(prop) =
   acyclic co | prop
 end

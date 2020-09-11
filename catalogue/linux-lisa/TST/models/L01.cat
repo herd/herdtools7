@@ -21,7 +21,7 @@ let propbase = transitive(0)
 let hb = (non-transitive | propbase)+
 
 
-procedure causality() =  
+procedure causality() =
   irreflexive hb as cau
 end
 
@@ -39,7 +39,7 @@ let propA = (*need mb to forbid both 2+2W and R*)
             prop(0)
 let propB = (*need wmb to forbid 2+2W and mb to forbid R*)
             prop(wmb)
-(*let propC = need wmb to forbid both 2+2W and R, i.e. decrete Power broken*) 
+(*let propC = need wmb to forbid both 2+2W and R, i.e. decrete Power broken*)
 procedure propagation(prop) =
   acyclic co | prop as pro
 end
@@ -101,14 +101,14 @@ let ue = po ? ; ue0
 (* From start of grace period to start of rs-cs *)
 let sl0 = (Start-Sync * _) & po ; com+  ; ml
 
-(* Restricted 
+(* Restricted
 let sl = sl0 ; (po & (_ * Lock)) ?
 *)
 (* Generalized *)
 let sl = sl0 ; po ?
 
 
-(*LUC 
+(*LUC
 (* From end of grace period to end of rs-cs *)
 let eu = (End-Sync * _) & po ; com+  ; mu
 *)

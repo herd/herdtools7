@@ -5,4 +5,3 @@ include "mike.cat"
 irreflexive pr;val;pr;val^-1 as queue
 
 let ir = (val | pr^-1)+
-  

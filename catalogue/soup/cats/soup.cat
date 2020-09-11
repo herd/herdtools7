@@ -22,13 +22,13 @@ let b-cumul(t,avant) = in-between(t,avant);rf
 
 let all-lf = lf('ww) | lf('wr) | lf('rw) | lf('rr)
 
-let phi(avant) = 
+let phi(avant) =
   avant | scpv1 | scpv2(avant) |
   observation(avant) | no-thin-air |
   all-lf | a-cumul('prop,avant) | b-cumul('prop,avant)
 
 let avant0 = (po | rf)+
-let rec lfp(a) = 
+let rec lfp(a) =
   let p = phi(a) in
   if p subset a then a else lfp(p)
 

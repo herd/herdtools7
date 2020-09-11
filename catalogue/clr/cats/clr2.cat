@@ -18,9 +18,9 @@ procedure volatile() =
 end
 
 procedure full-barrier() =
-  let ppo = fencerel(Full) 
+  let ppo = fencerel(Full)
   acyclic ppo | com
-end 
+end
 
 procedure dot-net() =
   call dependence()

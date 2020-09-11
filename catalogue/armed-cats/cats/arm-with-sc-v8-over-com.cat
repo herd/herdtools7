@@ -21,8 +21,8 @@ and ci = ci0 | (ci;ii) | (cc;ci)
 and cc = cc0 | ci | (ci;ic) | (cc;cc)
 
 (* Acquire release *)
-let acq = A 
-let rel = L 
+let acq = A
+let rel = L
 
 let acq-po = (acq * M) & po
 let po-rel = (M * rel) & po
@@ -32,7 +32,7 @@ let ppo = ii & R*R | ic & R*W | acq-po
 let all-dmb = dmb.sy|dmb.st|dmb.ld
 let all-dsb = dsb.sy|dsb.st|dsb.ld
 
-let strong-fence = all-dmb | all-dsb 
+let strong-fence = all-dmb | all-dsb
 let weak-fence = po-rel
 let fence = strong-fence | weak-fence
 let A-cumul = rfe;fence

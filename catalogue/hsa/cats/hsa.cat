@@ -4,7 +4,7 @@ include "hsa-lib.cat"
 
 (* Coherence *)
 let makeCohL(s) = linearisations(s,co0)
-let allCohL = map makeCohL (partition M) 
+let allCohL = map makeCohL (partition M)
 with coh from cross allCohL
 call consistent(coh,po) as CohPoCons
 
@@ -92,4 +92,3 @@ let conflicts =
 let hsa-race = conflicts \ (hhb | hhb^-1)
 
 flag ~empty hsa-race as undefined
-

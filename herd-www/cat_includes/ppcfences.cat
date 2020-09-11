@@ -13,5 +13,3 @@ let X = ctrlisync
 show ctrlisync
 show isync \ ctrlisync as isync
 show ctrl \ ctrlisync as ctrl
-
-

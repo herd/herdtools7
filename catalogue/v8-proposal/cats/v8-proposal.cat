@@ -18,8 +18,8 @@ and ic = ic0 | ii | cc | (ic;cc) | (ii;ic)
 and ci = ci0 | (ci;ii) | (cc;ci)
 and cc = cc0 | ci | (ci;ic) | (cc;cc)
 
-let Acq = A 
-let Rel = L 
+let Acq = A
+let Rel = L
 let acq-po = (Acq * M) & po
 let po-rel = (M * Rel) & po
 
@@ -27,7 +27,7 @@ let ppo = ii & R*R | ic & R*W | acq-po
 
 let all-dmb = dmb.sy|dmb.st|dmb.ld
 let all-dsb = dsb.sy|dsb.st|dsb.ld
-let strong-fence = all-dmb | all-dsb 
+let strong-fence = all-dmb | all-dsb
 let weak-fence = po-rel
 let fence = strong-fence | weak-fence
 let A-cumul = rfe;fence
@@ -36,7 +36,7 @@ let hb = ppo | (R * M) & fence | rfe
 
 let prop = ((fence | A-cumul);hb*) & W*W
 
-let xx = (W*W) & (X *X) & po 
+let xx = (W*W) & (X *X) & po
 
 let car = com & (Acq|Rel) * (Acq|Rel)
 let poar = po & (Acq|Rel) * (Acq|Rel)
@@ -62,7 +62,7 @@ procedure propagation() =
 end
 
 procedure restoring-sc() =
-  acyclic co | xx 
+  acyclic co | xx
   acyclic ((com*;strong-fence)|car|(rfe?;weak-fence));hb* | poar
 end
 

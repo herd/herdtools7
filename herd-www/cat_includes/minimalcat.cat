@@ -5,4 +5,3 @@ include "fences.cat"
 let co=co0+
 let fr=(rf^-1;co) \ id
 show co,fr
-

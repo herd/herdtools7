@@ -58,7 +58,7 @@ let acq-rel =
   ((po? & (_ * W)); coh; (po & (R * _)))
 
 let sso s = same-instance(s) & acq-rel
-  
+
 let hhb = (po | union-scopes sso)+
 
 irreflexive hhb as HhbCons
@@ -112,7 +112,7 @@ let rec pairs(s) = match s with
 end
 
 let allPairs = pairs (map getSC scopes)
-    
+
 procedure compatible(sc1,sc2) =
   acyclic sc1|sc2
 end

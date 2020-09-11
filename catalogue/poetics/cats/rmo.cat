@@ -11,7 +11,7 @@ acyclic po-loc-llh | com as sc-per-loc-llh
   sc-per-location*)
 
 let dp = addr | data | ctrl
-let ppo = dp 
-acyclic ppo | rfe | co | fr as rmo 
-(*note: 
+let ppo = dp
+acyclic ppo | rfe | co | fr as rmo
+(*note:
   this forbids thin-air cycles*)

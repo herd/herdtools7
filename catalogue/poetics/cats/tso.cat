@@ -8,5 +8,5 @@ acyclic po-loc | com as sc-per-location
 
 let ppo = po \ W*R
 acyclic ppo | rfe | co | fr as tso
-(*note: 
+(*note:
   this forbids thin-air cycles*)

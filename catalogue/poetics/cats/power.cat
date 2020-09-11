@@ -9,7 +9,7 @@ acyclic dp | rf as no-thin-air
 
 let ppo = dp
 let rec ab-sync = sync | rf;sync | sync;rf
-let rec ab-lwsync = lwsync & (W*W | R*M) | 
+let rec ab-lwsync = lwsync & (W*W | R*M) |
                     rf;(lwsync & M*W)    |
                     (lwsync & R*M); rf
 let ab = ab-sync | ab-lwsync
