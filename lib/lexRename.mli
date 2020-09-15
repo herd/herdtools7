@@ -31,16 +31,16 @@ sig
             (string -> 'a option) ->(* For parsing values *)
                 int * 'a TblRename.t (* new map *)
 
-  val read_from_file : 
+  val read_from_file :
       string -> (* One file name *)
         (string -> 'a option) ->(* For parsing values *)
             'a TblRename.t (* New map *)
 
-  val read_from_files : 
+  val read_from_files :
       string list -> (* List of file names *)
         (string -> 'a option) ->(* For parsing values *)
             'a TblRename.t (* New map *)
-            
+
   val read :
       string -> in_channel ->
         'a TblRename.t -> (* old map *)

@@ -74,7 +74,7 @@ let remove name =
 let move s1 s2 =
   if Sys.os_type <> "Unix" && Sys.file_exists s2 then do_remove s2 ;
   Sys.rename s1 s2
-  
+
 (********)
 (* grep *)
 (********)
@@ -113,7 +113,7 @@ let is_substring pat s =
         false in
     do_rec 0
 
-    
+
 let do_grep out_chan pat in_chan =
   read_by_line in_chan
     (fun line () ->
@@ -167,8 +167,8 @@ let command cmd =
     flush stderr
   end ;
   r
-  
-    
+
+
 let exec_stdout cmd =
   match command cmd with
   | 0 -> ()
@@ -180,7 +180,7 @@ let exec cmd kont =
   let _cmd = cmd ^">"^f in
   match command _cmd with
   | 0 -> cat_and_remove f kont
-  | _ -> Warn.fatal "Exec of '%s' failed" cmd      
+  | _ -> Warn.fatal "Exec of '%s' failed" cmd
 
 
 (************************************)

@@ -65,7 +65,7 @@ let zyva name_ok fname = Misc.input_protect (zyva name_ok) fname
 let args = ref []
 let names = ref []
 
-let () = 
+let () =
   Arg.parse
     [
      "-v", Arg.Unit (fun () -> verbose := true), "be verbose" ;
@@ -78,7 +78,7 @@ let () =
 (* Read names *)
 let name_ok = match !names with
 | [] -> fun _ -> true
-| names -> 
+| names ->
     let set = ReadNames.from_files names StringSet.add StringSet.empty in
     fun n -> StringSet.mem n set
 

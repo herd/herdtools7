@@ -53,7 +53,7 @@ module Make(O:Config)(V:Constant.S) = struct
   | Symbolic ((a,None),0) -> dump_addr a
   | Tag _
   | Symbolic _
-  | Label _ -> assert false 
+  | Label _ -> assert false
 
   let addr_cpy_name s p = sprintf "_addr_%s_%i" s p
 end

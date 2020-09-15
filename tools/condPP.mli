@@ -20,4 +20,3 @@ type cnf = bds list
 
 val pp_simple : cnf -> string
 val pp_opt : cnf -> string
-

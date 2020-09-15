@@ -45,4 +45,3 @@ module type S = sig
 end
 
 val mk_config : AutoOpt.t -> (module S)
-

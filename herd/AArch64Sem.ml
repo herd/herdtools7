@@ -484,9 +484,9 @@ module Make
 
         | I_LDG (rt,rn,kr) ->
             if not memtag then Warn.user_error "LDG without -variant memtag" ;
-            get_ea rn kr ii  >>= 
-            fun a -> M.op1 Op.TagLoc a >>= 
-            fun atag -> do_read_tag atag ii 
+            get_ea rn kr ii  >>=
+            fun a -> M.op1 Op.TagLoc a >>=
+            fun atag -> do_read_tag atag ii
             >>= fun tag ->
             M.op Op.SetTag a tag >>= fun v ->
             write_reg rt v ii >>! B.Next

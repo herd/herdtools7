@@ -28,7 +28,7 @@ module type S = sig
   module Elts2 : MySet.S with type elt = elt2
   val exists_succ : t -> elt1 -> bool
   val exists_pred : t -> elt2 -> bool
- 
+
   val succs : t -> elt1 -> Elts2.t
   val preds : t -> elt2 -> Elts1.t
 
@@ -55,7 +55,7 @@ end
 module Make :
 functor (O1:MySet.OrderedType) ->
   functor(O2:MySet.OrderedType) ->
-    S with  
+    S with
 type elt1 = O1.t and type elt2 = O2.t
 and module Elts1 = MySet.Make(O1)
 and module Elts2 = MySet.Make(O2)

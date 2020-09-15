@@ -34,4 +34,3 @@ let find_all lbl m =
     let n = StringMap.find lbl m in
     StringMap.fold (fun a v k -> (a,v)::k) n []
   with Not_found -> []
-

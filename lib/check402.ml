@@ -18,4 +18,3 @@ let () =
     Printf.printf "ok\n"
   else
     Printf.printf "no\n"
-

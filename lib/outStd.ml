@@ -39,4 +39,3 @@ let tar () = ()
 let chan = function
   | No -> assert false
   | Out -> stdout
-

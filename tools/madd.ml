@@ -26,9 +26,9 @@ module Top
   struct
 
     module T = struct
-      type t = 
+      type t =
         { tname : string ;
-          hash : string option; } 
+          hash : string option; }
     end
 
     module Make(A:ArchBase.S) = struct
@@ -36,11 +36,11 @@ module Top
       let zyva name parsed =
 	let tname = name.Name.name in
 	let hash = MiscParser.get_hash parsed in
-	if Opt.verbose 
+	if Opt.verbose
 	then printf "Name=%s\nHash=%s\n\n"
 			   tname
-			    (match hash with 
-			    | None -> "none" 
+			    (match hash with
+			    | None -> "none"
 			    | Some h -> h);
         { T.tname = tname ;
           hash = hash; }
@@ -67,12 +67,12 @@ module Top
     let zyva tests =
       let xs = match tests with
 	| [] -> raise (Misc.Fatal "No given tests base\n")
-	| [base] -> if Opt.verbose 
-		    then eprintf "#From base : %s" base; 
+	| [base] -> if Opt.verbose
+		    then eprintf "#From base : %s" base;
 		    (Misc.fold_argv do_test [base] [],
 		     Misc.fold_stdin do_test [])
-	| base::tests -> if Opt.verbose 
-			 then eprintf "#From base : %s" base; 
+	| base::tests -> if Opt.verbose
+			 then eprintf "#From base : %s" base;
 			 (Misc.fold_argv do_test [base] [],
 			  Misc.fold_argv do_test tests []) in
 
@@ -84,25 +84,25 @@ module Top
       let xs =
 	let rec exists (f,h) = function
 	  | [] -> None
-	  | (f',h')::tail -> 
-	     let sameh = h = h' in 
+	  | (f',h')::tail ->
+	     let sameh = h = h' in
 	     let samen = tname_compare f f' = 0 in
 	     match samen,sameh with
 	     | true,true -> Some (f',h')
-	     | false,true -> 
+	     | false,true ->
 		if Opt.ncheck
 		then Some (f',h')
 		else exists (f,h) tail
-	     | true,false -> Warn.warn_always 
+	     | true,false -> Warn.warn_always
 			       "%s already exists in %s." f'.fname f.fname;
 			     Some (f',h')
 	     | _ -> exists (f,h) tail
 	in let rec cut base (n,f) = function
 	     | [] -> (n,f)
-	     | t::ts -> match exists t base with 
+	     | t::ts -> match exists t base with
 			| Some t -> cut base (n,t::f) ts
 			| None -> cut base (t::n,f) ts
-			  
+
 	in cut (fst xs) ([],[]) (snd xs)
       in
 
@@ -117,7 +117,7 @@ module Top
         List.iter (fun (f,_) -> printf "%s\n" (pname f)) (fst xs);
 	match Opt.found with
 	| None -> ()
-	| Some s -> 
+	| Some s ->
 	   let file = open_out s in
 	   List.iter (fun (f,_) -> fprintf file "%s\n" (pname f)) (snd xs)
       in
@@ -140,7 +140,7 @@ let () =
     ["-v",Arg.Unit (fun () -> verbose := true), "- be verbose";
      "-t",Arg.Unit (fun () -> tnames := true),"- output test names";
      "-s",Arg.Unit (fun () -> ncheck := true),"- do not add already existing tests with different names";
-     "-found",Arg.String (fun s -> found := Some s),"<name> - list already existing tests in file <name>"]       
+     "-found",Arg.String (fun s -> found := Some s),"<name> - list already existing tests in file <name>"]
     (fun s -> arg := s :: !arg)
     (sprintf "Usage: %s [options]* [test]*" prog)
 

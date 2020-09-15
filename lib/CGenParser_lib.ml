@@ -76,13 +76,13 @@ module type LexParse = sig
 
   type macro
   val macros_parser :
-      (Lexing.lexbuf -> token) -> Lexing.lexbuf -> macro list	
+      (Lexing.lexbuf -> token) -> Lexing.lexbuf -> macro list
   val macros_expand : macro list -> pseudo -> pseudo
 end
 
 (* Output signature *)
 module type S = sig
-  type pseudo   
+  type pseudo
   type init = MiscParser.state
   type prog = (MiscParser.proc * pseudo list) list
   type locations = MiscParser.LocSet.t
@@ -156,14 +156,14 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
 module LexConfig = struct let debug = O.debuglexer end
 module LU = LexUtils.Make (LexConfig)
 module SL = StateLexer.Make (LexConfig)
-			    
+
 let parse_cond lexbuf =
   let cond =  call_parser "cond" lexbuf SL.token StateParser.main_constr in
   cond
-    
+
 (* Compute hash as litmus does *)
 module D = CTestHash.Make(DumpCAst)
-			 
+
 module Do
          (I:
 	    sig
@@ -202,9 +202,9 @@ module Do
 			     (ty,ParsedConstant.nameToV loc))::env)
 			   env t.params)
         init prog_litmus in
-    let procs = List.map (fun p -> p.CAst.proc) prog in 
-    check_procs procs ;    
-    let params =  List.map (fun p -> p.CAst.params) prog in 
+    let procs = List.map (fun p -> p.CAst.proc) prog in
+    check_procs procs ;
+    let params =  List.map (fun p -> p.CAst.params) prog in
 
     let expand_body = match O.macros with
     | None -> Misc.identity
@@ -247,7 +247,7 @@ module Do
       {
         MiscParser.info; init=full_init; prog = prog;
         filter = filter;
-        condition = final; 
+        condition = final;
         locations = locs;
         extra_data = MiscParser.CExtra params;
       } in
@@ -278,8 +278,8 @@ module Do
         | Some _ -> parsed in
     parsed
 end
-      		     
-      
+
+
   let parse chan x =
     let module Src = struct
       type src = in_channel
@@ -289,7 +289,7 @@ end
     end in
     let module P = Do(Src) in
     P.parse chan x
-	    
+
   let parse_string s x =
     let module Src = struct
       type src = string

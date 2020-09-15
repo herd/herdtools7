@@ -29,9 +29,9 @@ let int32 = ref true
 let options =
   let open CheckName in
   [
-  
+
   ("-q", Arg.Unit (fun _ -> verbose := -1),
-   "<non-default> be silent");  
+   "<non-default> be silent");
   ("-v", Arg.Unit (fun _ -> incr verbose),
    "<non-default> show various diagnostics, repeat to increase verbosity");
    parse_hexa hexa; parse_int32 int32;
@@ -110,7 +110,7 @@ let zyva log1 log2  =
 
   let test1 = readlog log1 in
   let test2 = readlog log2 in
-  
+
 (* Dumping of log files *)
 
   let is_reliable k = match k with
@@ -121,7 +121,7 @@ let zyva log1 log2  =
   | None -> ()
   | Some h -> fprintf chan "Hash=%s\n" h in
 
-  
+
   let dump_condition chan v c = match c,v with
   | Some c,(Ok|No) ->
       fprintf chan
@@ -147,15 +147,15 @@ let zyva log1 log2  =
       let p,n = t.witnesses in
       fprintf chan "Positive: %s Negative: %s\n"
         (Int64.to_string p) (Int64.to_string n) ;
-      dump_condition chan t.validation t.condition 
+      dump_condition chan t.validation t.condition
     end else begin
       fprintf chan "??\n" ;
-      dump_prop chan t.condition       
+      dump_prop chan t.condition
     end ;
-    dump_hash chan t.hash ;    
+    dump_hash chan t.hash ;
     begin match t.time with
     | None -> ()
-    | Some time -> 
+    | Some time ->
         fprintf chan "Time %s %0.2f\n" t.tname time
     end ;
     output_char chan '\n';
@@ -174,4 +174,3 @@ let () =
   try zyva log1 log2
   with Misc.Fatal msg|Misc.UserError msg ->
     eprintf "Fatal error: %s\n%!" msg
-

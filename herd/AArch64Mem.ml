@@ -38,7 +38,7 @@ module S = S
 
     let check_event_structure test = match O.model with
     (*| Minimal uni ->
-        let module X = 
+        let module X =
           Minimal.Make
             (struct
               let uniproc = uni
@@ -47,7 +47,7 @@ module S = S
             (S) in
         X.check_event_structure test
     | CAV12 opt ->
-        let module X = 
+        let module X =
           CAV12.Make
             (struct
               let opt = opt
@@ -56,14 +56,14 @@ module S = S
             (S)
             (AllBarrier.FromAArch64(B)) in
         X.check_event_structure test
-    | File _ -> assert false        
-   *)    
+    | File _ -> assert false
+   *)
       | Generic m ->
          let module X =
            MachModelChecker.Make
              (struct
                let m = m
-               include O                  
+               include O
              end)(S) in
          X.check_event_structure test
       | _ -> failwith "[AArch64Mem.ml] Unimplemented model for AArch64."

@@ -37,5 +37,3 @@ let none = in_file "_none_";;
 let make p1 p2 = { loc_start=p1; loc_end=p2; loc_ghost=false; }
 
 let pp chan p = Pos.pp_pos2 chan (p.loc_start,p.loc_end)
-
-

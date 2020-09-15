@@ -19,4 +19,3 @@ type t = One | Two
 let pp = function
   | One -> "1"
   | Two -> "2"
-

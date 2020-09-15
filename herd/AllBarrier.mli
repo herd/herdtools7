@@ -19,7 +19,7 @@
 module type S =
   sig
     type a (* Native arch barrier *)
-    type b = 
+    type b =
       | SYNC | LWSYNC | ISYNC | EIEIO (* PPC memory model barrier *)
       | DSB | DMB | ISB               (* ARM barrier *)
       | DSBST | DMBST

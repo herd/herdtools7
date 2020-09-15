@@ -33,5 +33,5 @@ module Make(A:Arch_gen.S) : S
 
 
   module  L = LogRelax.Make(LogInput)
-          
+
 end

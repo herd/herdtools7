@@ -42,5 +42,3 @@ let compare k1 k2 = match k1,k2 with
 | Meta v1,Meta v2 -> String.compare v1 v2
 | Int _,Meta _ -> -1
 | Meta _,Int _ -> 1
-
-

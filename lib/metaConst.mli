@@ -26,5 +26,3 @@ val pp : k -> string
 val pp_prefix : string -> k -> string
 
 val compare : k -> k -> int
-
-

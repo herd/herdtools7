@@ -41,4 +41,3 @@ let pp = function
 let some = function
   | No -> false
   | Adapt|St _ -> true
-        

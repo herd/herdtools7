@@ -123,13 +123,13 @@ module Make(A:ArchBase.S)
 (* Code digest *)
 
       let all_labels =
-        List.fold_left 
+        List.fold_left
           (fun k (_,code) ->
-            List.fold_left 
+            List.fold_left
               (A.fold_labels (fun k lbl -> StringSet.add lbl k))
               k code)
           StringSet.empty
-          
+
       let change_labels f =
         List.map
           (fun (p,code) ->
@@ -152,7 +152,7 @@ module Make(A:ArchBase.S)
             with Not_found -> assert false)
           prog
 
-      let norm_labels = refresh_labels "" 
+      let norm_labels = refresh_labels ""
 
       let norm_instructions =
         List.map
@@ -193,7 +193,7 @@ module Make(A:ArchBase.S)
         debug "LOCS" pp ;
         Digest.string pp
 
-        
+
       let digest init code observed =
         Digest.to_hex
           (Digest.string

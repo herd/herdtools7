@@ -17,7 +17,7 @@
 {
 
 let mask = Int64.sub (Int64.shift_left Int64.one 32) Int64.one
-     
+
 module type Config = sig
   val verbose : int
   val rename : string -> string
@@ -366,7 +366,7 @@ let read_chan_simple name chan =
       (List.length r)
       (if is_litmus then "litmus log" else "memevents log");
   normalize name is_litmus r
-    
+
 let read_name name = Misc.input_protect (read_chan name) name
 
 let read_names names =  do_read_names main LS.normalize full_log names

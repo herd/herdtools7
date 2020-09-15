@@ -20,12 +20,12 @@ type dp = ADDR | DATA | CTRL
 
 let fold_dpr f r =  f ADDR (f CTRL r)
 let fold_dpw f r =  f ADDR (f DATA (f CTRL r))
-    
+
 let ddr_default = Some ADDR
 let ddw_default = Some DATA
 let ctrlr_default = Some CTRL
 let ctrlw_default = Some CTRL
-    
+
 let is_ctrlr _ = false
 
 let fst_dp = function
@@ -40,4 +40,3 @@ let pp_dp = function
   | ADDR -> "Addr"
   | DATA -> "Data"
   | CTRL -> "Ctrl"
-

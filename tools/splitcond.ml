@@ -58,7 +58,7 @@ module Make(Config:Config)(Out:Out) =
                   (String.concat " /\\ "
                      (List.map
                         (fun (loc,v) ->
-                          sprintf "%s=%s"              
+                          sprintf "%s=%s"
                             (MiscParser.dump_location loc)
                             (Int64Constant.pp Config.hexa v))
                         bds)))
@@ -67,7 +67,7 @@ module Make(Config:Config)(Out:Out) =
           0 in
       ()
 
-    let from_chan fname in_chan =    
+    let from_chan fname in_chan =
       try
         let { Splitter.locs = locs; name;_} =
           S.split fname in_chan in
@@ -82,7 +82,7 @@ module Make(Config:Config)(Out:Out) =
         Printf.eprintf
 	  "%a: Lex error %s (in %s)\n" Pos.pp_pos pos msg fname ;
         raise Misc.Exit
-          
+
     let from_file name =
       try
         Misc.input_protect
@@ -106,7 +106,7 @@ and hexa = ref false
 let set_tar x = tar := x
 let arg = ref None
 
-let opts = 
+let opts =
   [ "-v",
     Arg.Unit (fun () -> incr verbose),
     " be verbose";
@@ -129,7 +129,7 @@ let () =
         raise (Arg.Bad "takes exactly one argument"))
     (sprintf "Usage %s [options] [test]*" prog)
 
-let from_file = 
+let from_file =
   let module X =
     Make
       (struct
@@ -152,4 +152,3 @@ let () = match !arg with
   | None ->
       eprintf "%s takes exactly one argument!!!\n" prog ;
       exit 2
-

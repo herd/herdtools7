@@ -97,7 +97,7 @@ module type Config = sig
   val variant : Variant.t -> bool
 end
 
-let get_default_model variant a = 
+let get_default_model variant a =
 match a with
 | `X86 -> File "x86tso.cat"
 | `MIPS -> File "mips.cat"
@@ -105,11 +105,11 @@ match a with
 | `ARM -> File "arm.cat"
 | `AArch64 ->
     File
-      (if variant Variant.Deps then "aarch64deps.cat"        
+      (if variant Variant.Deps then "aarch64deps.cat"
       else "aarch64.cat")
 | `C -> File "c11_partialSC.cat"
 | `RISCV -> File "riscv.cat"
 | `X86_64 -> File "x86tso-mixed.cat"
 | _ ->
-    Warn.user_error 
+    Warn.user_error
     "There is no default model for architecture %s.\nSpecify a model explicitly using the -model flag." (Archs.pp a)

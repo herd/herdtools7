@@ -49,7 +49,7 @@ module Make(Co:Config) (A:Arch_gen.S) = struct
     let rec do_rec () =
       let line = input_line chan in
       let name,es = parse_line line in
-      printf "%s: %s\n" name (E.pp_edges es) ;        
+      printf "%s: %s\n" name (E.pp_edges es) ;
       do_rec () in
     try do_rec ()
     with End_of_file ->  ()

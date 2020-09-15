@@ -27,7 +27,7 @@ module Make(A:AutoArch.S) = struct
   type relax_set = R.Set.t
   type count = int R.Map.t
 
-  let pp = R.pp_set_set 
+  let pp = R.pp_set_set
 
   let interpret all o = R.relaxs_of all (A.E.parse_edges o.L.cycle)
 
@@ -67,7 +67,7 @@ module Make(A:AutoArch.S) = struct
                   corresponding cycle is non-global *)
                if R.Set.is_empty (R.Set.inter relaxed rs) then rs::k
                else k)
-             i []) in    
+             i []) in
     let i =
       R.SetSet.of_list
         (R.SetSet.fold
@@ -97,7 +97,7 @@ module Make(A:AutoArch.S) = struct
           then select_rec r ps
           else select_rec (p::r) ps in
     select_rec [] (select_rec [] ps)
- 
+
   let safe_by_cardinal i k =
     let i =
       R.SetSet.of_list
@@ -110,7 +110,7 @@ module Make(A:AutoArch.S) = struct
         (fun rs k -> (rs,c)::k)
         i k
     else k
-    
+
 
 (* Relaxation connt for false safe heuristic *)
   let unexplained safe i =

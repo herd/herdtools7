@@ -26,5 +26,5 @@ rule zyva buf = parse
 | eof            { Buffer.contents buf }
 
 {
- let tr s = zyva (Buffer.create 16) (Lexing.from_string s)      
+ let tr s = zyva (Buffer.create 16) (Lexing.from_string s)
 }

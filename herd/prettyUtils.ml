@@ -26,7 +26,7 @@ module Make(S : SemExtra.S) = struct
   let get_poi e = match E.progorder_of e with
   | Some x -> x
   | None -> assert false
-        
+
   let progorder_as_list es  =
     let by_po =
       E.EventSet.fold

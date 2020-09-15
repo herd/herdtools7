@@ -25,7 +25,7 @@ module type S = sig
 
   type relax =
 (* Sequence of edges (eg Cumulativity) *)
-    | ERS of edge list 
+    | ERS of edge list
     | PPO
 
   val ac_fence : fence -> sd -> extr -> extr -> relax
@@ -48,7 +48,7 @@ module type S = sig
   val com : relax list
   val po : relax list
 
-(* parsing *)      
+(* parsing *)
   val parse_relax : LexUtil.t -> relax
   val parse_relaxs : LexUtil.t list -> relax list
 (* parsing, with macro expansion *)
@@ -97,7 +97,7 @@ module Make
 with type fence = E.fence
 and type dp = E.dp
 and type edge = E.edge
-      = struct 
+      = struct
         type fence = E.fence
         type dp = E.dp
         type edge = E.edge
@@ -138,7 +138,7 @@ and type edge = E.edge
         let bc_dp dp sl d = ERS [E.plain_edge (E.Dp (dp,sl,d)); rf]
 
 (* Pretty print, macros are filtered and printed specially *)
-        let pp_relax r = 
+        let pp_relax r =
           let open E in
           match r with
           | ERS [e] -> E.pp_edge e
@@ -155,7 +155,7 @@ and type edge = E.edge
                    sprintf "ABC%s" (pp_edge e)
           | ERS [{edge=Dp _; a1=None; a2=None;} as e;
                  {edge=Rf Ext; a1=None; a2=None;}] ->
-                   sprintf "BC%s" (pp_edge e) 
+                   sprintf "BC%s" (pp_edge e)
           | ERS es ->
               sprintf "[%s]" (String.concat "," (List.map pp_edge es))
           | PPO -> "PPO"
@@ -167,7 +167,7 @@ and type edge = E.edge
 
         let fold_relax f k =
           let k = E.fold_edges (fun e -> f (ERS [e])) k in
-          let k = 
+          let k =
             F.fold_cumul_fences
               (fun fe k ->
                 let k =
@@ -215,7 +215,7 @@ and type edge = E.edge
               Hashtbl.add t pp e);
           ()
 
-        let do_parse_relax s = 
+        let do_parse_relax s =
           try ERS [E.parse_edge s] (* Because some edges have special parsing *)
           with _ ->
             try Hashtbl.find t s
@@ -229,7 +229,7 @@ and type edge = E.edge
         let rec do_expand_relax ppo r f = match r with
         | ERS es -> E.expand_edges es (fun es -> f (ERS es))
         | PPO  -> ppo (fun r -> do_expand_relax ppo r f)
-              
+
 
         let expand_relaxs ppo rs =
           let expand_relax r =  do_expand_relax ppo r Misc.cons in
@@ -246,7 +246,7 @@ and type edge = E.edge
 
           let rec expn rs = match rs with
           | [] -> [[]]
-          | PPO ::_-> Warn.fatal "PPO in expand_relax_seq" 
+          | PPO ::_-> Warn.fatal "PPO in expand_relax_seq"
           | ERS es::rem ->
               let rs =
                 E.expand_edges es (fun es k -> ERS es::k) [] in
@@ -281,8 +281,8 @@ and type edge = E.edge
                 [ers [Rf Int; Fenced (f,Diff,Dir R,Dir W)]]
               else [])@k)
             []
-            
-            
+
+
         open LexUtil
 
         let parse_relax = function
@@ -302,7 +302,7 @@ and type edge = E.edge
         let some_fences sd d1 d2 =
           F.fold_some_fences
             (fun f k -> er (E.Fenced (f,sd,Dir d1,Dir d2))::k)
-            
+
 (* Limited variations *)
         let app_def_dp o f r = match o with
         | None -> r
@@ -311,27 +311,27 @@ and type edge = E.edge
         let someR sd d =
           er (E.Po (sd,Dir R,Dir d))::
           app_def_dp
-            (match d with R | J -> F.ddr_default 
+            (match d with R | J -> F.ddr_default
                           | W -> F.ddw_default)
             (fun dp k -> er (E.Dp (dp,sd,Dir d))::k)
-            (some_fences sd R d [])      
+            (some_fences sd R d [])
 
         let someW sd d =
           er (E.Po (sd,Dir W,Dir d))::
-          (some_fences sd W d [])      
+          (some_fences sd W d [])
 
-            
+
 (* ALL *)
         let allR sd d =
           er (E.Po (sd,Dir R,Dir d))::
-          (match d with R | J -> F.fold_dpr 
+          (match d with R | J -> F.fold_dpr
                         | W -> F.fold_dpw)
             (fun dp k -> er (E.Dp (dp,sd,Dir d))::k)
-            (all_fences sd R d [])      
+            (all_fences sd R d [])
 
         let allW sd d =
           er (E.Po (sd,Dir W,Dir d))::
-          (all_fences sd W d [])      
+          (all_fences sd W d [])
 
         let atoms_key = "atoms"
 
@@ -386,7 +386,7 @@ and type edge = E.edge
           Set.pp chan ", "
             (fun chan r -> fprintf chan "%s" (pp_relax r))
             t ;
-          fprintf chan "}"    
+          fprintf chan "}"
 
         let is_cumul r =
           let open E in
@@ -400,7 +400,7 @@ and type edge = E.edge
           | ERS
               [{edge=Rf Code.Ext; a1=None; a2=None;};
                {edge=Fenced _; a1=None; a2=None;};
-               {edge=Rf Code.Ext; a1=None; a2=None;};]      
+               {edge=Rf Code.Ext; a1=None; a2=None;};]
             -> true
           | _ -> false
 
@@ -411,7 +411,7 @@ and type edge = E.edge
               let compare = F.compare_fence
             end)
 
-        let add_fence r k = 
+        let add_fence r k =
           let open E in
           match r with
           | ERS
@@ -424,7 +424,7 @@ and type edge = E.edge
           | ERS
               [{edge=Rf Code.Ext; _};
                {edge=Fenced (f,_,_,_); _};
-               {edge=Rf Code.Ext; _};]      
+               {edge=Rf Code.Ext; _};]
             -> FenceSet.add f k
           | _ -> k
 
@@ -434,7 +434,7 @@ and type edge = E.edge
 
         module RSet = Set
 
-        let add_cumul_fence r k = 
+        let add_cumul_fence r k =
           let open E in
           match r with
           | ERS
@@ -445,7 +445,7 @@ and type edge = E.edge
           | ERS
               [{edge=Rf Code.Ext; _};
                {edge=Fenced (f,_,_,_); _};
-               {edge=Rf Code.Ext; _};]      
+               {edge=Rf Code.Ext; _};]
             -> FenceSet.add f k
           | _ -> k
 
@@ -459,12 +459,12 @@ and type edge = E.edge
 
         let expand_cumul rs =
           let er e = ERS [e] in
-          let xs = 
+          let xs =
             Set.fold
               (fun r k ->
                 let open E in
                 match r with
-                | ERS 
+                | ERS
                     ([{edge=Rf Ext; _}; {edge=Fenced _; _};] as rs)
                 | ERS
                     ([{edge=Fenced _; _}; {edge=Rf Ext; _};] as rs)
@@ -498,7 +498,7 @@ and type edge = E.edge
               let compare = compare
             end)
 
-            
+
 
 (***************************************)
 (* From edge cycle back to relaxations *)

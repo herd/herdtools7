@@ -1143,7 +1143,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
           (match cl with| None -> color | Some cl -> cl) in
         pp_attr chan "shape"
           (if is_shape then "box" else "none") ;
-        pp_fontsize chan ;       
+        pp_fontsize chan ;
         if is_shape then pp_attr chan "color" color ;
         pp_event_position chan e ;
         pp_attr chan "fixedsize" (if PC.fixedsize then "true" else "false") ;
@@ -1502,11 +1502,11 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
     { es with
       E.events = select_events
         es.E.events ;
-      speculated = select_events 
+      speculated = select_events
         es.E.speculated;
       po = begin
            let s,po = es.E.po in
-           s,select_rel po  
+           s,select_rel po
            end;
       intra_causality_data = select_rel
         es.E.intra_causality_data;

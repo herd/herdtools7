@@ -28,7 +28,7 @@ module type S = sig
 
   val expand_cumul : t -> t
 
-  val get_relaxed_assuming : relax_set -> t -> relax list -> relax list 
+  val get_relaxed_assuming : relax_set -> t -> relax list -> relax list
 
   val shows_relax : relax_set -> relax -> t -> bool
 

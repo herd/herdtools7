@@ -28,9 +28,9 @@ let int32 = ref true
 
 let options =
   [
-  
+
   ("-q", Arg.Unit (fun _ -> verbose := -1),
-   "<non-default> be silent");  
+   "<non-default> be silent");
   ("-v", Arg.Unit (fun _ -> incr verbose),
    "<non-default> show various diagnostics, repeat to increase verbosity");
    ("-forall", Arg.Bool (fun b -> forall := b),
@@ -119,4 +119,3 @@ let () =
   try zyva log
   with Misc.Fatal msg|Misc.UserError msg ->
     eprintf "Fatal error: %s\n%!" msg
-

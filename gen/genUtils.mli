@@ -27,7 +27,7 @@ module type Extra = sig
   val use_symbolic : bool
   type reg
   type instruction
-  val mov : reg -> int -> instruction   
+  val mov : reg -> int -> instruction
   val mov_mixed : MachSize.sz -> reg -> int -> instruction
   val mov_reg : reg -> reg -> instruction
   val mov_reg_mixed : MachSize.sz -> reg -> reg -> instruction
@@ -38,7 +38,7 @@ functor (Cfg:Config) ->
   functor (A:Arch_gen.S) ->
     functor(Extra : Extra with
             type reg = A.reg
-            and type instruction = A.pseudo) -> 
+            and type instruction = A.pseudo) ->
   sig
 
     val next_init :

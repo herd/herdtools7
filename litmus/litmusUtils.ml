@@ -49,7 +49,7 @@ module Hash(O:Warn.Config) =
 
 
 module Pseudo(A:Arch_litmus.S) = struct
-  
+
   type code = MiscParser.proc * A.pseudo list
 
   let rec fmt_io io = match io with

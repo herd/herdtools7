@@ -35,7 +35,7 @@ module Top (Opt:MixOption.S) = struct
         let merge =
           let open MixOption.Action in
           match Opt.action with
-          | Append -> M.append 
+          | Append -> M.append
           | Mix -> M.merge
           | Cat -> M.cat
 
@@ -49,7 +49,7 @@ module Top (Opt:MixOption.S) = struct
           { doc with
             name = mk_name (fun () -> "2+" ^ doc.name);
             doc = "2+" ^ doc.doc ; }
-          
+
         let mix_doc doc1 doc2 =
           { doc1 with
             name = mk_name (fun () -> doc1.name ^ "+" ^ doc2.name) ;
@@ -68,9 +68,9 @@ module Top (Opt:MixOption.S) = struct
             List.map
               (fun (n,parsed) -> n,Alloc.allocate_regs parsed)
               nps in
-          let n,p = 
+          let n,p =
             match nps with
-            | [d,_ as dt] -> 
+            | [d,_ as dt] ->
                 let _,t = merges [dt;dt] in
                 double_doc d,t
             | _ ->  merges nps in
@@ -112,7 +112,7 @@ let () =
     (fun s -> arg := !arg @ [s])
     usage
 
-module X = 
+module X =
   Top
     (struct
       let verbose = !verbose
@@ -124,6 +124,6 @@ module X =
     end)
 
 
-let () = 
+let () =
   try X.zyva !arg
   with Misc.Fatal msg|Misc.UserError msg -> eprintf "%s: %s\n" prog msg ; exit 2

@@ -44,7 +44,7 @@ let blank = [' ' '\t']
 let validation = "Undef"|"Succeeded"|"Failed"|"Ok"|"No"|"??"
 
 rule main keep same out name = parse
-| ("Test" blank+ (testname as t) ((blank+ (name))| ("")) as line) nl 
+| ("Test" blank+ (testname as t) ((blank+ (name))| ("")) as line) nl
     {let t = Misc.clean_name t in
      let keep = C.check_name t in
      out keep line ;
@@ -57,7 +57,7 @@ rule main keep same out name = parse
      | None -> None
      | Some n ->
          try Some (StringMap.find n C.map) with
-         | Not_found -> None in     
+         | Not_found -> None in
      let same = match map with
      | None -> same
      | Some map ->
@@ -188,7 +188,7 @@ let rewrite fname =
     let lexbuf = Lexing.from_channel chan in
     LexMisc.init_file "*stdin*" lexbuf ;
     ignore begin
-      main true true 
+      main true true
         (fun b line -> if b then MySys.output_line stdout line)
         None lexbuf
     end

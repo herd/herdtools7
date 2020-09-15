@@ -20,7 +20,7 @@ module type Config = sig
   val env : string StringMap.t
   val map : (string->string) StringMap.t
   val check_name : string -> bool
-end 
+end
 
 module Make :
  functor (C:Config) -> sig

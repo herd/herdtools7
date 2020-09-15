@@ -119,7 +119,7 @@ module Make(O:Config)(A:Arch_tools.S) =
         if test.arch <> `X86 then
           pp_arch test.arch
         else "" in
-      if numberofcolumns > 1 then 
+      if numberofcolumns > 1 then
         fprintf chan
           "\\multicolumn{%i}{@{}l}{\\makebox[0pt][l]{%s}}\n&\\multicolumn{1}{r@{}}{\\makebox[0pt][r]{%s}}\\\\\n"
           (numberofcolumns-1)
@@ -145,7 +145,7 @@ module Make(O:Config)(A:Arch_tools.S) =
         fprintf chan
           "\\multicolumn{1}{%sc|}{\\makebox[%s][c]{%s}}"
           s width th in
-      begin if show_po then 
+      begin if show_po then
         fprintf chan "\\multicolumn{1}{|c|}{%s}" (just_name test)
       else match prog with
       | (p,_)::_ -> pp_proc "|" chan p
@@ -167,46 +167,46 @@ module Make(O:Config)(A:Arch_tools.S) =
       pp_rows chan "\\rule{0ex}{2ex}" "" "\\\\\n" " & " cols ;
       output_string chan "\\hline\n" ;
       (* States *)
-      let _initial_final so = 
+      let _initial_final so =
         match so with
         | None -> ()
         | Some s ->
 	    fprintf chan "\\multicolumn{%i}{|l|}{%s}\\\\\\hline\n"
 	      (numprocs + if show_po then 1 else 0) s in
-      let initial_final_line_breaking so = 
+      let initial_final_line_breaking so =
         match so with
         | None -> ()
         | Some s ->
             let wedge = "\\mywedge" in
             let parts = Str.split (Str.regexp_string wedge) s in
             let allowed_parts_on_first_line = (numprocs + 1) in
-            let rec take n acc xs = 
+            let rec take n acc xs =
               if n=0 then (List.rev acc,xs) else match xs with
-              | [] -> (List.rev acc,xs) 
+              | [] -> (List.rev acc,xs)
               | x::xs' -> take (n-1) (x::acc) xs' in
-	    let rec do_print_parts str_list init = 
+	    let rec do_print_parts str_list init =
 	      if List.length str_list <= allowed_parts_on_first_line then
-	        begin 
-		  let line = 
-		    (if init then "" else "$\\phantom{Initial state:}") ^ 
-		    String.concat wedge 
+	        begin
+		  let line =
+		    (if init then "" else "$\\phantom{Initial state:}") ^
+		    String.concat wedge
 		      (if init then str_list else " "::str_list) in
 	          fprintf chan "\\multicolumn{%i}{|l|}{%s}\\\\\\hline\n"
-		    (numprocs + if show_po then 1 else 0) 
-		    line 
+		    (numprocs + if show_po then 1 else 0)
+		    line
 	        end
 	      else
 	        begin
-                  let (first_line,second_line) = 
+                  let (first_line,second_line) =
 		    take allowed_parts_on_first_line [] str_list in
-                  let first_line = 
-		    (if init then "" else "$\\hspace{5em}") ^ 
-		    String.concat wedge 
+                  let first_line =
+		    (if init then "" else "$\\hspace{5em}") ^
+		    String.concat wedge
 		      (if init then first_line else " "::first_line) ^ "$" in
 	          fprintf chan "\\multicolumn{%i}{|l|}{%s}\\\\\n"
 		    (numprocs + if show_po then 1 else 0) first_line ;
-		  do_print_parts second_line false 
-	        end 
+		  do_print_parts second_line false
+	        end
 	    in
 	    do_print_parts parts true in
       initial_final_line_breaking initial_opt ;
@@ -252,10 +252,10 @@ module Make(O:Config)(A:Arch_tools.S) =
       ^ "\\hline \\end{tabular}\n"
 
     let zero = Constant.Concrete "0"
-	
+
     let pp_initial_state_flat sc =
-      let non_zero_constraints = 
-        Misc.option_map 
+      let non_zero_constraints =
+        Misc.option_map
 	  (fun (l,(_,v))->
 	    if ParsedConstant.compare v zero = 0 then None
 	    else
@@ -265,7 +265,7 @@ module Make(O:Config)(A:Arch_tools.S) =
               Some (" \\mbox{"^ pp_location l ^
                     "} \\mathord{=} " ^ ppv ^" "))
 	  sc in (* That will do *)
-      match non_zero_constraints with 
+      match non_zero_constraints with
       | [] -> None
       | _ ->
           let has_zero =
@@ -311,11 +311,11 @@ module Make(O:Config)(A:Arch_tools.S) =
             match a with
           | LV (loc,v) ->
               pp_mbox (pp_location loc) ^
-              pp_equal ^          
+              pp_equal ^
               pp_mbox (pp_asm_v v)
           | LL (l1,l2) ->
               pp_mbox (pp_location l1) ^
-              pp_equal ^ 
+              pp_equal ^
               pp_mbox (pp_rval l2) ;
           | FF f ->
               pp_mbox (Fault.pp_fatom pp_asm_v f)
@@ -323,7 +323,7 @@ module Make(O:Config)(A:Arch_tools.S) =
 
       let enddollar = sprintf "$%s$"
 
-      let pp_as_kind c = 
+      let pp_as_kind c =
         let bodytext = pp_kind (kind_of c) in
         if O.texmacros then
           bodytext ^ " Final State" else bodytext
@@ -336,27 +336,27 @@ module Make(O:Config)(A:Arch_tools.S) =
         | ForallStates p ->
             pp_as_kind c ^ ": "^ pp_prop p
     end
-      
+
     let pp_constraint cstr = match cstr with
     | ForallStates (And []) -> None
-    | _ -> Some (Constr.pp cstr) 
+    | _ -> Some (Constr.pp cstr)
     let pp_newcommand chan name =
       Printf.fprintf chan "\\newcommand{\\%s}{" name
 
     let pp_close_par chan = output_string chan "}%\n"
 (* partial escaping of strings into legal tex command identifiers *)
-  let tex_command_escape s = 
-    let char_list_of_string s = 
+  let tex_command_escape s =
+    let char_list_of_string s =
       let n = String.length s in
       let rec f i = if i=n then [] else String.get s i :: f (i+1) in
       f 0 in
-    String.concat "" 
-      (List.map 
+    String.concat ""
+      (List.map
          (fun c -> match c with
-         | '-' ->"M" 
-         | '_' ->"U" 
-         | '#' -> "H" 
-         | '\'' -> "P" 
+         | '-' ->"M"
+         | '_' ->"U"
+         | '#' -> "H"
+         | '\'' -> "P"
          | '0' -> "Zero"
          | '1' -> "One"
          | '2' -> "Two"
@@ -367,7 +367,7 @@ module Make(O:Config)(A:Arch_tools.S) =
          | '7' -> "Seven"
          | '8' -> "Eight"
          | '9' -> "Nine"
-         | _ -> String.make 1 c) 
+         | _ -> String.make 1 c)
          (char_list_of_string s))
 
     let get_tex t = tex_command_escape t.name.Name.texname
@@ -384,9 +384,9 @@ module Make(O:Config)(A:Arch_tools.S) =
       pp_prog fd
 	test.prog
         test ppd_isc
-	ppd_constr 
+	ppd_constr
             false ; (* do not show po *)
-      if as_tex_commands then 
+      if as_tex_commands then
         begin
           pp_close_par fd ;
           pp_newcommand fd (texname_initial test) ;
@@ -394,7 +394,7 @@ module Make(O:Config)(A:Arch_tools.S) =
           pp_close_par fd ;
           pp_newcommand fd (texname_final test) ;
           output_string fd (Constr.pp constr) ;
-          pp_close_par fd 
+          pp_close_par fd
         end
 
     let dump_prog_filename test as_tex_commands  =
@@ -402,14 +402,14 @@ module Make(O:Config)(A:Arch_tools.S) =
 
     let filebase test = Misc.filebase test.name.Name.file
 
-    let dump_prog name parsed = 
-      let test =        
+    let dump_prog name parsed =
+      let test =
         { arch = A.arch ;
           name = name ;
           prog = parsed.MiscParser.prog;
           init = parsed.MiscParser.init ;
           constr = parsed.MiscParser.condition;
-        } in 
+        } in
       match O.outputdir with
       | None -> dump_prog_internal test O.ascommands stdout
       | Some d ->

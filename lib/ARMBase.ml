@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Define registers, barriers, and instructions for ARM *) 
+(** Define registers, barriers, and instructions for ARM *)
 
 open Printf
 
@@ -27,15 +27,15 @@ let base_type = CType.Base "int"
 (* Registers *)
 (*************)
 
-type reg = 
+type reg =
   | R0 | R1 | R2 | R3
   | R4 | R5 | R6 | R7
   | R8 | R9 | R10 | R11
-  | R12 
+  | R12
   | SP | LR | PC
-      
+
   | Z  (* condition flags *)
-      
+
   | Symbolic_reg of string
   | Internal of int
   | RESADDR
@@ -47,7 +47,7 @@ and idx = Internal 2
 and ephemeral = Internal 3
 let loop_idx = Internal 4
 
-let pc = PC	  
+let pc = PC
 
 let regs =
   [
@@ -84,16 +84,16 @@ let parse_list =
        (fun (r,_) -> match r with
        | Z|RESADDR -> false | _ -> true)
        regs)
-    
+
 let parse_reg s =
   try Some (List.assoc s parse_list)
   with Not_found -> None
-      
-let pp_reg r = match r with 
+
+let pp_reg r = match r with
 | Symbolic_reg r -> "%"^r
 | Internal i -> Printf.sprintf "i%i" i
 | _ -> try List.assoc r regs with Not_found -> assert false
-	  
+
 
 let reg_compare = compare
 
@@ -129,7 +129,7 @@ let fold_barrier_option f k =
   let k = f OSHST k in
   k
 
-type barrier = 
+type barrier =
   | DMB of barrier_option
   | DSB of barrier_option
   | ISB
@@ -179,7 +179,7 @@ type 'k kinstruction =
   | I_SUB3 of setflags * reg * reg * reg
   | I_AND of setflags * reg * reg * 'k
   | I_B of lbl
-  | I_BEQ of lbl 
+  | I_BEQ of lbl
   | I_BNE of lbl (* Was maybeVal ??? *)
   | I_CB of bool * reg * lbl
   | I_CMPI of reg * 'k
@@ -197,8 +197,8 @@ type 'k kinstruction =
   | I_DSB of barrier_option
   | I_ISB
  (* SIMD *)
-  | I_SADD16 of reg * reg * reg           
-  | I_SEL of reg * reg * reg     	    
+  | I_SADD16 of reg * reg * reg
+  | I_SEL of reg * reg * reg
 
 type instruction = int kinstruction
 type parsedInstruction = MetaConst.k kinstruction
@@ -227,7 +227,7 @@ let pp_condition = function
 
 let pp_memoc memo c = sprintf "%s%s" memo (pp_condition c)
 
-let do_pp_instruction m = 
+let do_pp_instruction m =
   let ppi_rrr opcode s rt rn rm =
     pp_memo opcode s^" "^ pp_reg rt ^ "," ^ pp_reg rn ^ "," ^ pp_reg rm in
   let ppi_rrr_noflags opcode = ppi_rrr opcode DontSetFlags in
@@ -256,9 +256,9 @@ let do_pp_instruction m =
   fun i -> match i with
   | I_NOP -> "NOP"
   | I_ADD(s,rt,rn,v) -> ppi_rri "ADD" s rt rn v
-  | I_ADD3 (s,r1,r2,r3) -> ppi_rrr "ADD" s r1 r2 r3 
+  | I_ADD3 (s,r1,r2,r3) -> ppi_rrr "ADD" s r1 r2 r3
   | I_SUB(s,rt,rn,v) -> ppi_rri "SUB" s rt rn v
-  | I_SUB3 (s,r1,r2,r3) -> ppi_rrr "SUB" s r1 r2 r3 
+  | I_SUB3 (s,r1,r2,r3) -> ppi_rrr "SUB" s r1 r2 r3
   | I_AND(s,rt,rn,v) -> ppi_rri "AND" s rt rn v
   | I_B v -> "B " ^ pp_lbl v
   | I_BEQ(v) -> "BEQ "^ pp_lbl v
@@ -280,12 +280,12 @@ let do_pp_instruction m =
   | I_DMB o -> pp_barrier_ins "DMB" o
   | I_DSB o -> pp_barrier_ins "DSB" o
   | I_ISB  -> "ISB"
-  | I_SADD16 (r1,r2,r3) -> ppi_rrr_noflags "SADD16" r1 r2 r3 
-  | I_SEL (r1,r2,r3) -> ppi_rrr_noflags "SEL" r1 r2 r3 
-	
+  | I_SADD16 (r1,r2,r3) -> ppi_rrr_noflags "SADD16" r1 r2 r3
+  | I_SEL (r1,r2,r3) -> ppi_rrr_noflags "SEL" r1 r2 r3
+
 
 let pp_instruction m =
-  do_pp_instruction 
+  do_pp_instruction
     {pp_k = pp_k m}
 
 let dump_instruction =
@@ -299,35 +299,35 @@ and dump_parsedInstruction =
 (****************************)
 
 let allowed_for_symb =
-  [ R0 ; R1 ; R2 ; R3 ; R4 ; R5 ; R6 ; 
+  [ R0 ; R1 ; R2 ; R3 ; R4 ; R5 ; R6 ;
     R7 ; R8 ; R9 ; R10; R11; R12 ]
 
 let fold_regs (f_reg,f_sreg) =
 
   let fold_reg reg (y_reg,y_sreg) = match reg with
-  | R0 | R1 | R2 | R3 | R4 | R5 | R6 | R7 | R8 
+  | R0 | R1 | R2 | R3 | R4 | R5 | R6 | R7 | R8
   | R9 | R10 | R11 | R12 | SP | LR | PC | Z | RESADDR ->  f_reg reg y_reg,y_sreg
   | Symbolic_reg reg -> y_reg,f_sreg reg y_sreg
   | Internal _ -> y_reg,y_sreg in
 
   fun c ins -> match ins with
-  | I_ADD (_,r1, r2, _) 
-  | I_SUB (_,r1, r2, _) 
+  | I_ADD (_,r1, r2, _)
+  | I_SUB (_,r1, r2, _)
   | I_AND (_,r1, r2, _)
-  | I_LDR (r1, r2, _) 
-  | I_LDREX (r1, r2) 
+  | I_LDR (r1, r2, _)
+  | I_LDREX (r1, r2)
   | I_STR (r1, r2, _)
   | I_MOV (r1, r2, _)
   | I_CMP (r1,r2)
       -> fold_reg r2 (fold_reg r1 c)
   | I_LDR3 (r1, r2, r3, _)
-  | I_ADD3 (_, r1, r2, r3) 
-  | I_SUB3 (_, r1, r2, r3) 
+  | I_ADD3 (_, r1, r2, r3)
+  | I_SUB3 (_, r1, r2, r3)
   | I_STR3 (r1, r2, r3, _)
   | I_STREX (r1, r2, r3, _)
   | I_XOR (_,r1, r2, r3)
-  | I_SADD16 (r1, r2, r3) 
-  | I_SEL (r1, r2, r3) 
+  | I_SADD16 (r1, r2, r3)
+  | I_SEL (r1, r2, r3)
       -> fold_reg r3 (fold_reg r2 (fold_reg r1 c))
   | I_CMPI (r, _)
   | I_MOVI (r, _, _)
@@ -346,7 +346,7 @@ let fold_regs (f_reg,f_sreg) =
 let map_regs f_reg f_symb =
 
   let map_reg  reg = match reg with
-  | R0 | R1 | R2 | R3 | R4 | R5 | R6 | R7 | R8 
+  | R0 | R1 | R2 | R3 | R4 | R5 | R6 | R7 | R8
   | R9 | R10 | R11 | R12 | SP | LR | PC | Z | RESADDR -> f_reg reg
   | Symbolic_reg reg -> f_symb reg
   | Internal _ -> reg in
@@ -359,7 +359,7 @@ let map_regs f_reg f_symb =
   | I_AND (s,r1, r2, k) -> I_AND (s,map_reg r1, map_reg r2, k)
   | I_NOP
   | I_B _
-  | I_BEQ _ 
+  | I_BEQ _
   | I_BNE _ -> ins
   | I_CB (n,r,lbl) -> I_CB (n,map_reg r,lbl)
   | I_CMPI (r, k) -> I_CMPI (map_reg r, k)

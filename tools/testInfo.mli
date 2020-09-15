@@ -18,8 +18,8 @@
 
 (* Type of information *)
 module T : sig
-  type t = 
-      { tname : string ; fname : string ; hash : string ; } 
+  type t =
+      { tname : string ; fname : string ; hash : string ; }
   val compare : t -> t -> int
 end
 

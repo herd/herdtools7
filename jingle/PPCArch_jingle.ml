@@ -40,7 +40,7 @@ include Arch.MakeArch(struct
 	   Reg(sr_name r2,r2');
 	   Reg(sr_name r3,r3')]
 	  subs
-       
+
     | Paddi(r1,r2,k),Paddi(r1',r2',k')
     | Pandi(r1,r2,k),Pandi(r1',r2',k')
     | Pori(r1,r2,k),Pori(r1',r2',k')
@@ -60,7 +60,7 @@ include Arch.MakeArch(struct
         add_subs
           [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
           subs
-       
+
     | Plwarx(r1,r2,r3),Plwarx(r1',r2',r3')
     | Pstwcx(r1,r2,r3),Pstwcx(r1',r2',r3')
       ->
@@ -106,9 +106,9 @@ include Arch.MakeArch(struct
     | Pload(s,r1,k,r2),Pload(s',r1',k',r2')
     | Pstore(s,r1,k,r2),Pstore(s',r1',k',r2')
       when s = s' ->
-        match_const subs k k' >>> 
+        match_const subs k k' >>>
         add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
-	 
+
     | Ploadx(s,r1,r2,r3),Ploadx(s',r1',r2',r3')
     | Pstorex(s,r1,r2,r3),Pstorex(s',r1',r2',r3')
       when s = s' ->
@@ -121,7 +121,7 @@ include Arch.MakeArch(struct
         add_subs
           [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
 	  subs
-       
+
     | Pnor(s,r1,r2,r3),Pnor(s',r1',r2',r3')
     | Pslw(s,r1,r2,r3),Pslw(s',r1',r2',r3')
     | Psraw(s,r1,r2,r3),Psraw(s',r1',r2',r3')
@@ -129,7 +129,7 @@ include Arch.MakeArch(struct
         add_subs
           [Reg(sr_name r1,r1'); Reg(sr_name r2,r2'); Reg(sr_name r3,r3')]
 	  subs
-       
+
     | Psrawi(s,r1,r2,k),Psrawi(s',r1',r2',k')
       when s = s' ->
         match_const subs k k' >>>
@@ -173,7 +173,7 @@ include Arch.MakeArch(struct
     | Pmulli(r1,r2,k) ->
         par21 conv_reg r1 r2 find_cst k (fun r1 r2 k ->  Pxori (r1,r2,k))
     | Pli(r,k) ->
-        conv_reg r >> fun r -> find_cst k >! fun k -> Pli (r,k) 
+        conv_reg r >> fun r -> find_cst k >! fun k -> Pli (r,k)
     | Pb l ->
         find_lab l >! fun l -> Pb l
     | Pbcc(c,l) ->
@@ -247,6 +247,5 @@ include Arch.MakeArch(struct
         par21 conv_reg r1 r2 find_cst k
           (fun r1 r2 k -> Pstmw (r1,k,r2))
     | Pcomment _ as i -> unitT i
-       
-end)
 
+end)

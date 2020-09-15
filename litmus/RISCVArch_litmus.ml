@@ -8,7 +8,7 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
   let reg_to_string r = match r with
   | Symbolic_reg _|RESADDR -> assert false
   | Ireg _ -> pp_reg r
-      
+
 
   include
       ArchExtra_litmus.Make(O)

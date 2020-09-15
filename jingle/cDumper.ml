@@ -15,21 +15,21 @@
 (****************************************************************************)
 open CBase
 open Printf
-     
+
 type pseudo = CBase.pseudo
 
 let dump_loc = MiscParser.dump_location
-		 
+
 let dump_state_atom a = MiscParser.dump_state_atom dump_loc ParsedConstant.pp_v a
-			     
+
 type state = MiscParser.state
-	       
+
 let dump_state st =
   String.concat " "
                 (List.map
                    (fun a -> sprintf "%s;" (dump_state_atom a))
                    st)
-		
+
 type prop = MiscParser.prop
 type constr = MiscParser.constr
 let dump_atom a =
@@ -40,9 +40,9 @@ let dump_atom a =
      sprintf "%s=%s" (dump_loc loc1) (MiscParser.dump_rval loc2)
   | FF f -> Fault.pp_fatom ParsedConstant.pp_v f
 
-let dump_prop = ConstrGen.prop_to_string dump_atom	     
+let dump_prop = ConstrGen.prop_to_string dump_atom
 let dump_constr = ConstrGen.constraints_to_string dump_atom
-						  
+
 type location = MiscParser.location
 let dump_location = dump_loc
 
@@ -58,16 +58,16 @@ let rec fmt_io io = match io with
        f
         (String.concat "," (List.map pp_reg regs))
 
-let rec unwrap_pseudo = function 
+let rec unwrap_pseudo = function
   | [] -> []
   | (Instruction i)::is -> i::(unwrap_pseudo is)
   | (Label(_,p))::is -> (unwrap_pseudo [p])@(unwrap_pseudo is)
   | Nop:: is -> unwrap_pseudo is
   | _::is -> unwrap_pseudo is
 
-let list_loc prog = 
-  let module LocSet = 
-    Set.Make(struct 
+let list_loc prog =
+  let module LocSet =
+    Set.Make(struct
 	      type t = reg
 	      let compare = reg_compare
 	    end) in
@@ -96,7 +96,7 @@ let list_loc prog =
     | CastExpr e -> expr s e
     | StoreReg(_,r,e) ->  LocSet.add r (expr s e)
     | StoreMem(l,e,_) -> loc (expr s e) l
-    | Lock (l,_) 
+    | Lock (l,_)
     | Unlock (l,_) -> loc s l
     | PCall (_,es) ->
         List.fold_left expr s es
@@ -107,9 +107,9 @@ let list_loc prog =
   in
   LocSet.elements (List.fold_left ins LocSet.empty prog)
 
-let get_params init i = 
-  List.fold_left 
-    (fun a -> 
+let get_params init i =
+  List.fold_left
+    (fun a ->
      function
      | (MiscParser.Location_reg(p,_),
 	(_,Constant.Symbolic ((s,_),_))) when i = p ->
@@ -118,45 +118,45 @@ let get_params init i =
      | _ -> a
     ) [] init
 
-let extract_decl init i prog = 
+let extract_decl init i prog =
   let rec find_v s = function
     | [] -> None
-    | (MiscParser.Location_reg(n,r),(_,v))::_ 
-	 when String.compare s r = 0 
+    | (MiscParser.Location_reg(n,r),(_,v))::_
+	 when String.compare s r = 0
 	      && n = i ->
        Some (ParsedConstant.pp_v v)
     | _::init -> find_v s init in
   let to_decl = function
-    | s -> 
+    | s ->
        let aff = match find_v s init with
 		| None -> ";"
 		| Some s -> " = "^s^";"
        in sprintf "int %s%s" s aff
 (*
-    | Mem (Load (Reg s, MemOrderOrAnnot.AN [])) -> 
+    | Mem (Load (Reg s, MemOrderOrAnnot.AN [])) ->
        let aff = match find_v s init with
 		| None -> ";"
-		| Some s -> " = "^s^";"                
+		| Some s -> " = "^s^";"
        in sprintf "int* %s%s" s aff
     | _loc ->  assert false
 *)
   in List.map to_decl (list_loc prog)
 
-let code init prog = 
+let code init prog =
   let open CAst in
   List.map (fun ((i,_),p) ->
 	    let params = get_params init i in
 	    let decls =  extract_decl init i (unwrap_pseudo p)
 	    in Test { proc = i;
 		   params = params;
-		   body = String.concat "\n" 
+		   body = String.concat "\n"
 			   (decls@(List.map fmt_io p))
 	    })
 	   prog
 
 let prog = DumpCAst.print_prog
-       
-       
+
+
 let do_dump withinfo chan doc t =
   fprintf chan "%s %s\n" (Archs.pp arch) doc.Name.name ;
   begin match doc.Name.doc with
@@ -170,7 +170,7 @@ let do_dump withinfo chan doc t =
     end ;
   fprintf chan "\n{%s}\n\n" (dump_state  t.MiscParser.init) ;
   prog chan (code t.MiscParser.init t.MiscParser.prog) ;
-  let locs = DumpUtils.dump_locations 
+  let locs = DumpUtils.dump_locations
 	       dump_location t.MiscParser.locations in
   if locs <> "" then fprintf chan "%s\n" locs ;
   begin match t.MiscParser.extra_data with
@@ -180,12 +180,12 @@ let do_dump withinfo chan doc t =
   end ;
   fprintf chan "%s\n" (dump_constr t.MiscParser.condition) ;
   ()
-    
+
 let dump chan = do_dump false chan
 let dump_info chan = do_dump true chan
-			
+
 let (@@) f k = f k
-(*		 
+(*
 let lines doc t =
   begin fun k -> sprintf "%s %s" (Archs.pp arch) doc.Name.name :: k
   end @@

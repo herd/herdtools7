@@ -59,4 +59,3 @@ let parse tag = match tag with
         GenParser.call_parser "_none_" lexbuf
           Lexer.token ScopeParser.main in
       Some (One st)
-

@@ -42,7 +42,7 @@ rule token = parse
         begin match X86_64.parse_xmm_reg name with
         | Some xmm -> XMM xmm
         | None -> SYMB_REG name
-        end }          
+        end }
 | ';' { SEMI }
 | ',' { COMMA }
 | '|' { PIPE }

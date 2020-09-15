@@ -18,4 +18,3 @@
 (** Output litmus files, contatenate on stdout *)
 
 include OutTests.S
-

@@ -26,7 +26,7 @@ let eof = ref false
      let b = Buffer.create 32 in
      Buffer.add_string b lxm ;
      let now =
-       try 
+       try
          image 0 b lexbuf ;
          Some (Buffer.contents b)
        with End_of_file -> None in
@@ -51,7 +51,7 @@ and image depth b = parse
     { Buffer.add_string b lxm ; image depth b lexbuf }
 | eof { eof := true ; raise End_of_file }
 {
- 
+
 let args = ref []
 let max = ref 16
 

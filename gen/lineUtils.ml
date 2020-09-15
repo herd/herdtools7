@@ -19,7 +19,7 @@
 module type E = sig
   type edge
   val parse_edges : string -> edge list
-end    
+end
 
 module Make(E:E) :sig
   val parse : string ->  string * E.edge list * BellInfo.scopes option

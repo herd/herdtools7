@@ -46,8 +46,8 @@ module Make : functor (S: SemExtra.S) -> sig
   val proc_view_event : S.proc -> S.event -> bool
 
 (* Perform operations columnwise *)
- val diff_p :  S.event_rel list -> S.event_rel list -> S.event_rel list 
- val union_p :  S.event_rel list -> S.event_rel list -> S.event_rel list 
+ val diff_p :  S.event_rel list -> S.event_rel list -> S.event_rel list
+ val union_p :  S.event_rel list -> S.event_rel list -> S.event_rel list
  val unions_p : S.event_rel list list -> S.event_rel list
  val transitive_closure_p :   S.event_rel list -> S.event_rel list
 
@@ -67,7 +67,7 @@ module Make : functor (S: SemExtra.S) -> sig
 
 (* make_fr conc ws, where ws is write serialization as
    a relation (ie as a transitive relation, not as a successor
-   relation *)  
+   relation *)
   val make_fr : S.concrete -> S.event_rel -> S.event_rel
 
 (* Mapping from locations *)
@@ -114,8 +114,8 @@ val make_load_stores : S.concrete -> S.event_rel -> S.event_rel
 (* fold a function over write serialization candidates
    'fold_write_serialization_candidates test es env vb kont res'
 
-    - test is test    
-    - es is concrete event structure   
+    - test is test
+    - es is concrete event structure
     - vb is a relation that candidates must include.
     - kont of type relation ->'a -> 'a will apply
       to each generated candidate
@@ -148,4 +148,3 @@ NOTICE: The generator takes care of placing stores to final state
 val is_aligned : S.A.size_env -> S.event -> bool
 
 end
-

@@ -21,7 +21,7 @@
 module type Input = sig
   type code
 
-  val dump_prog : code -> string list        
+  val dump_prog : code -> string list
 end
 
 module Make(P:Input) : sig

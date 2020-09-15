@@ -18,7 +18,7 @@ exception StateMismatch of string
 
 
 (* Concrete types for states *)
-type st_concrete 
+type st_concrete
 
 type parsed_st =
   {

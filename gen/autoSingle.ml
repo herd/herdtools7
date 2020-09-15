@@ -28,7 +28,7 @@ module Make(A:AutoArch.S) = struct
   type relax_set = R.Set.t
   type count = int R.Map.t
 
-  let pp = R.pp_set 
+  let pp = R.pp_set
 
   let interpret _ o = R.Set.of_list (o.L.relaxs @ o.L.safes)
 
@@ -45,7 +45,7 @@ module Make(A:AutoArch.S) = struct
     match R.Set.as_singleton (R.Set.diff rs safe) with
     | None -> false
     | Some s -> R.compare r s = 0
-    
+
   let simplify_for_safes relaxed testing i =
     if R.Set.is_empty (R.Set.inter relaxed i) then
       let i = R.Set.inter i testing in
@@ -62,7 +62,7 @@ module Make(A:AutoArch.S) = struct
   let safe_by_cardinal i k = (i,1)::k
 
 (* Relaxation count for false safe heuristic *)
-  let unexplained safe cy = 
+  let unexplained safe cy =
     if R.Set.subset cy safe then Some cy
     else None
 

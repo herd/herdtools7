@@ -33,7 +33,7 @@ let no_header out =
         if is_com s then st := Inside
         else begin
           st := After ;
-          out s        
+          out s
         end
       end
   | Inside ->
@@ -175,7 +175,7 @@ module Make(O:Config)(Tar:Tar.S) =
               cpy' fnames "showLabel" "show" ".awk"
             else
               cpy fnames "show" ".awk"
-        | `CPP|`LISA -> Warn.fatal "no support for arch '%s'" (Archs.pp O.arch) 
+        | `CPP|`LISA -> Warn.fatal "no support for arch '%s'" (Archs.pp O.arch)
       in
       let fnames = cpy fnames "litmus_rand" ".c" in
       let fnames = cpy fnames "litmus_rand" ".h" in

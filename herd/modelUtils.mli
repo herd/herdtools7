@@ -21,7 +21,7 @@ module Make : functor (O:Model.Config) -> functor (S:SemExtra.S) -> sig
 (*******************************************)
 (* Complete re-computation of dependencies *)
 (*******************************************)
-    
+
   val make_procrels : (S.event -> bool) -> S.concrete -> S.procrels
   val pp_procrels : string option -> S.procrels -> S.rel_pp
 
@@ -43,14 +43,14 @@ module Make : functor (O:Model.Config) -> functor (S:SemExtra.S) -> sig
 (* Includes pretty printing of failures *)
   val check_uniproc :
       S.test ->
-        S.concrete -> 
+        S.concrete ->
           S.event_rel (* rf *)->
             S.event_rel (* fr *)->
               S.event_rel (* co *) -> bool
 
   val check_atom :
       S.test ->
-        S.concrete -> 
+        S.concrete ->
             S.event_rel (* fr *)->
               S.event_rel (* co *) -> bool
 end

@@ -54,7 +54,7 @@ module Top
       let byName,byHash =
         TSet.fold
           (fun t (byName,byHash) -> add t.T.tname t byName,add t.T.hash t byHash)
-          tests (StringMap.empty,StringMap.empty) in            
+          tests (StringMap.empty,StringMap.empty) in
       StringMap.iter
         (fun tname ts ->
           let hashes = TSet.fold (fun t k -> t.T.hash::k) ts [] in
@@ -62,7 +62,7 @@ module Top
           if not (is_singleton hashes) then begin
             printf "Error: name %s has different hashes\n"  tname ;
             StringSet.iter
-                (fun hash ->                  
+                (fun hash ->
                   let fnames =
                     try
                       let ts = StringMap.find hash byHash in
@@ -87,7 +87,7 @@ module Top
             printf "Warning: tests {%s} are the same test\n"
               (StringSet.pp_str "," Misc.identity names))
         byHash ;
-      
+
       StringMap.iter
         (fun name ts ->
           let fnames = TSet.fold (fun t k -> t.T.fname::k) ts [] in

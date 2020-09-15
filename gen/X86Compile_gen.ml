@@ -179,7 +179,7 @@ struct
       k),
     next_label_st st
 
-  let check_load  p r e init st = 
+  let check_load  p r e init st =
     let cs,st = do_check_load p st r e in
     init,cs,st
 

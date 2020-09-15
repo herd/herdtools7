@@ -25,7 +25,7 @@ type t =
     finals : arch_reg list ;
     code : code ; }
 
-   
+
 val fmt_reg : arch_reg -> string
 val dump_out_reg : int -> arch_reg -> string
 val compile_out_reg : int -> arch_reg -> string

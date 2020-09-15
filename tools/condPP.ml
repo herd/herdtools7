@@ -63,7 +63,7 @@ let mk_and p1 p2 = match p1,p2 with
 | (False,_)|(_,False) -> False
 | _,_ -> And (p1,p2)
 
- 
+
 let pp_prop =
   let rec pp_or_arg = function
     | True|False -> assert false
@@ -80,7 +80,7 @@ let pp_prop =
     | And (p1,p2) ->
         sprintf "%s /\\ %s" (pp_and_arg p1) (pp_and_arg p2) in
   pp_or_arg
-  
+
 let do_opt =
   let build_env =
     List.fold_left

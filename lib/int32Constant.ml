@@ -42,4 +42,3 @@ module Int32Scalar = struct
 end
 
 include SymbConstant.Make(Int32Scalar)
-

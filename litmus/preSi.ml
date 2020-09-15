@@ -876,7 +876,7 @@ module Make
         let glob  =
           let global = U.select_global env
           and aligned =
-            if 
+            if
               List.exists
                 (fun (a,_) -> U.is_aligned a env)
                 test.T.globals

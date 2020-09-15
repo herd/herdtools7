@@ -222,4 +222,3 @@ let applies_atom_rmw () ar aw = match ar,aw with
   | Some a1,Some a2 -> compare_atom a1 a2 = 0
 
 include NoEdge
-

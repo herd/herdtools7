@@ -15,7 +15,7 @@
 (****************************************************************************)
 
 
-(* RCU translation *) 
+(* RCU translation *)
 
 open Printf
 
@@ -44,7 +44,7 @@ module Top
 
     module Dec = struct let hexa = false end
     module P = GenParser.Make(GenParser.DefaultConfig)(LISA)(LISALexParse)
-    module A = ArchExtra_tools.Make(Dec)(LISA) 
+    module A = ArchExtra_tools.Make(Dec)(LISA)
     module Alloc = SymbReg.Make(A)
 
     module D = Dumper.Make(A)
@@ -52,7 +52,7 @@ module Top
     module RegAlloc = struct
 
       type t = A.RegSet.t A.ProcMap.t
-      let all_regs = A.RegSet.of_list  A.allowed_for_symb      
+      let all_regs = A.RegSet.of_list  A.allowed_for_symb
       module Collect = CollectRegs.Make(A)
 
       let create t =
@@ -75,7 +75,7 @@ module Top
 (* Reduce critical sections to useful ones *)
       let rec opt d p = match p with
         | Macro _|Symbolic _ -> assert false
-        | Label (lbl,p) ->     
+        | Label (lbl,p) ->
             let d,p = opt d p  in
             d,Label (lbl,p)
         | Nop -> d,Nop
@@ -108,7 +108,7 @@ module Top
         if d > 0 then  Warn.user_error "extra lock"
         else cs
 
-      let opt_test t = 
+      let opt_test t =
         let open MiscParser in
         { t with prog = List.map (fun (i,cs) -> i,opt_code cs) t.prog; }
 
@@ -217,7 +217,7 @@ module Top
           let open MiscParser in
           let prog = tr_rec (0,0,free) t.prog in
 
-          let open ConstrGen in          
+          let open ConstrGen in
           let rec loop_i i k =
             if i >= m then k
             else
@@ -321,7 +321,7 @@ let allchan = match !outputdir with
 | None -> None
 | Some d -> Some (open_out (Filename.concat d "@all"))
 
-module X = 
+module X =
   Top
     (struct
       let verbose = !verbose
@@ -348,4 +348,3 @@ let () =
   match allchan with
   | None -> ()
   | Some chan -> close_out chan
-

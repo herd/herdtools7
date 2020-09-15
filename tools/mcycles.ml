@@ -70,7 +70,7 @@ module S =
       type t = string * string option
 
       let compare x y =
-        Misc.pair_compare 
+        Misc.pair_compare
           String.compare
           (Misc.opt_compare String.compare)
           x y
@@ -105,9 +105,3 @@ let () =
 	  Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
 	  raise e)
     tests
-
-
-
-
-
-

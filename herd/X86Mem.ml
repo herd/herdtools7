@@ -41,7 +41,7 @@ module S = S
 
     let check_event_structure test = match O.model with
     | Minimal uni ->
-        let module X = 
+        let module X =
           Minimal.Make
             (struct
               let uniproc = uni

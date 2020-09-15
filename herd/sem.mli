@@ -28,8 +28,7 @@ module type Semantics =
 (* Extra condition on RMW *)
     val atomic_pair_allowed : event -> event -> bool
 (* Instruction semantics, highly arch dependant *)
-    module Mixed(SZ:ByteSize.S) : sig 
+    module Mixed(SZ:ByteSize.S) : sig
       val build_semantics : A.inst_instance_id -> (A.program_order_index * branch) M.t
     end
   end
-

@@ -16,7 +16,7 @@
 
 (** Map for renaming, also provides an order *)
 
-type 'a t 
+type 'a t
 
 val empty : 'a t
 

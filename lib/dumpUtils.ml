@@ -20,7 +20,7 @@ open MiscParser
 
 let dump_locations dump_location env = match env with
 | [] -> ""
-| _::_ -> 
+| _::_ ->
     let dump_loc_type (loc,t) = match t with
     | TyDef -> dump_location loc ^";"
     | TyDefPointer -> dump_location loc ^"*;"

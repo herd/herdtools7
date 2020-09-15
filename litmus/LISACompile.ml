@@ -58,7 +58,7 @@ module Make(V:Constant.S) =
 (*****************************)
 (* Compilation (to kernel C) *)
 (*****************************)
-    let compile_iar = 
+    let compile_iar =
       let open Constant in
       function
         | IAR_imm i -> sprintf "%i" i,[]

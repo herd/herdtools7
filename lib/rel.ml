@@ -27,7 +27,7 @@ module type S = sig
   module Elts2 : MySet.S with type elt = elt2
   val exists_succ : t -> elt1 -> bool
   val exists_pred : t -> elt2 -> bool
- 
+
   val succs : t -> elt1 -> Elts2.t
   val preds : t -> elt2 -> Elts1.t
 
@@ -63,7 +63,7 @@ with
 
     type elt1 = O1.t
     type elt2 = O2.t
-  
+
     include
       MySet.Make
 	(struct

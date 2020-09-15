@@ -48,7 +48,7 @@ let tr_rw = function
 %token <RISCVBase.opamo * RISCVBase.width * RISCVBase.mo> AMO
 %token FENCE FENCEI FENCETSO
 %token <string> META
-%type <MiscParser.proc list * (RISCVBase.parsedPseudo) list list> main 
+%type <MiscParser.proc list * (RISCVBase.parsedPseudo) list list> main
 %type <RISCVBase.parsedPseudo list> instr_option_seq
 %start main instr_option_seq
 
@@ -73,7 +73,7 @@ iol_list :
 instr_option_list :
   | instr_option
       {[$1]}
-  | instr_option PIPE instr_option_list 
+  | instr_option PIPE instr_option_list
       {$1::$3}
 
 
@@ -110,13 +110,13 @@ instr:
 /* OPs */
 | LI reg COMMA k
   { A.OpI (A.ORI,$2,A.Ireg A.X0,$4) }
-| OPI reg COMMA reg COMMA k 
+| OPI reg COMMA reg COMMA k
   { A.OpI ($1,$2,$4,$6) }
-| OPIW reg COMMA reg COMMA k 
+| OPIW reg COMMA reg COMMA k
   { A.OpIW ($1,$2,$4,$6) }
-| OP reg COMMA reg COMMA reg 
+| OP reg COMMA reg COMMA reg
   { A.Op ($1,$2,$4,$6) }
-| OPW reg COMMA reg COMMA reg 
+| OPW reg COMMA reg COMMA reg
   { A.OpW ($1,$2,$4,$6) }
 | J NAME
     { A.J $2 }
@@ -146,4 +146,4 @@ instr:
 | FENCE
     { A.FenceIns (A.Fence (A.RW,A.RW)) }
 | FENCE NAME COMMA NAME
-    { A.FenceIns (A.Fence (tr_rw $2,tr_rw $4)) } 
+    { A.FenceIns (A.Fence (tr_rw $2,tr_rw $4)) }

@@ -191,7 +191,7 @@ module Task(A:TArg) = struct
           with Not_found -> assert false in
         eprintf " %02i" idx)
       ok ;
-    eprintf "\n%!"  
+    eprintf "\n%!"
 
   let rec loop (nrun,_ as k) =
     if nrun > 0 then begin
@@ -288,5 +288,3 @@ let () =
           let mode = !mode
         end) in
     T.run !j names
-
-

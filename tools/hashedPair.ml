@@ -27,7 +27,7 @@ module S = struct
     let c = c-a in let c = c-b in
     let c = c lxor (b lsr 13) in
     let a = a-b in let a = a-c in
-    let a = a lxor (c lsr 12) in 
+    let a = a lxor (c lsr 12) in
     let b = b-c in let b = b-a in
     let b = b lxor (a lsl 16) in
     let c = c-a in let c = c-b in
@@ -83,4 +83,3 @@ let compare h1 h2 =
   match compare_loc h1 h2 with
   | 0 ->  compare_v h1 h2
   | r -> r
-

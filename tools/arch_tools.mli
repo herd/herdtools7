@@ -34,7 +34,7 @@ module type S = sig
 
   include Location.S with type loc_reg = reg and type loc_global = global
 (*
-  type location = 
+  type location =
     | Location_global of global
     | Location_reg of int * reg
 

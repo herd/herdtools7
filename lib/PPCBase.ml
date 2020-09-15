@@ -681,7 +681,7 @@ include Pseudo.Make
 	| Psrawi(s,r1,r2,k) -> Psrawi(s,r1,r2,MetaConst.as_int k)
 	| Plmw(r1,k,r2) -> Plmw(r1,MetaConst.as_int k,r2)
 	| Pstmw (r1,k,r2) -> Pstmw(r1,MetaConst.as_int k,r2)
-	    
+
         | Pnop
 	| Ploadx (_,_,_,_)
 	| Pstorex (_,_,_,_)

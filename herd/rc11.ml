@@ -165,4 +165,3 @@ module Make (O:Cfg)(S:Sem.Semantics)
         else res in
       U.apply_process_co test conc proc_ws res
   end
-

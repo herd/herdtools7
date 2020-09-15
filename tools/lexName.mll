@@ -29,7 +29,7 @@ let alpha = ['a'-'z''A'-'Z']
 let digit = ['0'-'9']
 let word = (alpha|digit|'-')+
 
-rule name = parse 
+rule name = parse
 | [^'+'' ']+
 | "2+2W"
 | "WRR+WR"
@@ -97,7 +97,7 @@ and edge = parse
 }
 
 and edges = parse
-| '+' 
+| '+'
    {
     let e = edge lexbuf in
     e::edges lexbuf }

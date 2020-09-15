@@ -15,7 +15,7 @@
 (****************************************************************************)
 
 (** Name selection utilities *)
- 
+
 val parse_select : string list ref ->  Arg.key * Arg.spec * Arg.doc
 val parse_names : string list ref ->  Arg.key * Arg.spec * Arg.doc
 val parse_rename : string list ref ->  Arg.key * Arg.spec * Arg.doc

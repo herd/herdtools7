@@ -77,7 +77,7 @@ let tags =
   ::System.tags
 
 let parse s = match System.parse s with
-  | None -> begin 
+  | None -> begin
     match s with
       | "C"   -> Some `C
       | "CPP" | "C++"   -> Some `CPP

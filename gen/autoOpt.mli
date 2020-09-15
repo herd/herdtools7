@@ -47,7 +47,7 @@ type t =
   {
    arch : Archs.t ;
    output : string ; (* Directory for all output *)
-   testing : string option ; 
+   testing : string option ;
    safe : string option ;
    mode : mode ;
    mach : mach ;

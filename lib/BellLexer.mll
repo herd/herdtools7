@@ -67,7 +67,7 @@ rule token = parse
 | '&' (name as x) { META x }
 | '%' (name as x) { SYMB_REG (BellBase.Symbolic_reg x) }
 | name as x
-    { 
+    {
       match Bell.parse_reg x with
       | Some r -> REG r
       | None ->  NAME x

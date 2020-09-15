@@ -47,7 +47,7 @@ module type S = sig
   type cnstrnts = cnstrnt list
   val pp_cnstrnts : cnstrnt list -> string
 
-  type solution 
+  type solution
 
   type answer =
     | NoSolns
@@ -112,16 +112,16 @@ and type state = A.state =
       | Terop (op,a1,a2,a3) ->
 	  Op.pp_op3 op
 	    (pp_atom a1) (pp_atom a2) (pp_atom a3)
-	    
+
     let pp_rvalue e = pp_expr e
 
     let pp_cnstrnt cnstr =  match cnstr  with
-      | Assign (v,rval) -> 
+      | Assign (v,rval) ->
 	  (V.pp C.hexa v) ^ ":=" ^(pp_rvalue rval)
       | Unroll msg -> "Unroll "^msg
 
-    let pp_cnstrnts lst = 
-      String.concat "\n" 
+    let pp_cnstrnts lst =
+      String.concat "\n"
 	(List.map pp_cnstrnt lst)
 
     type solution = V.solution
@@ -130,7 +130,7 @@ and type state = A.state =
       | NoSolns
       | Maybe of solution * cnstrnts
 
-	    
+
     let pp_answer =
 
       let pp_cns cns = match cns with
@@ -234,7 +234,7 @@ and type state = A.state =
       let t = add_vars_cns cns in
       let m = uf_cns t cns in
       let cns = subst_cns m cns in
-      if C.debug then begin 
+      if C.debug then begin
        eprintf "* Normalizes to *\n%s\n%!" (pp_cnstrnts cns)
       end ;
       m,cns
@@ -275,7 +275,7 @@ and type state = A.state =
 	      else raise Contradiction
 	    else
 	      Assign (v,e)::k
-	| ReadInit _ 
+	| ReadInit _
 	| Unop _|Binop _|Terop _ -> Assign (v,e)::k
 	end
     | Unroll _ -> cn::k
@@ -350,7 +350,7 @@ let solve_cnstrnts =
       (* Phase 1, check individual constraint validity *)
       let cns = check_true_false_constraints cns in
       (* Phase 2, orient constraints S := cst / cst := S *)
-      let solns = solve_cnstrnts cns in      
+      let solns = solve_cnstrnts cns in
       if V.Solution.is_empty solns then
 	solns_final,cns
       else
@@ -369,14 +369,14 @@ let solve_cnstrnts =
             V.Solution.add x (V.Var y) solns)
         m
         (V.Solution.map (fun x -> V.Val x) solns0)
-      
-    let solve lst = 
+
+    let solve lst =
       if C.debug then begin
 	prerr_endline "** Solve **" ;
 	eprintf "%s\n" (pp_cnstrnts lst) ; flush stderr
       end ;
       let m,lst = normalize_vars lst in
-      let sol = 
+      let sol =
 	try
 	  let solns,lst = solve_step lst V.Solution.empty in
           let solns = add_vars_solns m solns in

@@ -189,7 +189,7 @@ let armopt =
 let mipsopt =
   { delay = 1024; gccopts = "-O2";
     word = Word.WXX; line = 1024 ;} (* cache line size cannot be wrong... *)
-  
+
 let copt =
   { delay = 2048; gccopts = ""; word = Word.WXX; line = 1024} (* maximal *)
 let get_default arch = match arch with
@@ -202,7 +202,7 @@ let get_default arch = match arch with
 | `C -> copt
 | `CPP
 | `LISA
-| `GPU_PTX 
+| `GPU_PTX
 | `OpenCL -> assert false
 
 let replace_config f =

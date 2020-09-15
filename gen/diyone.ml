@@ -35,7 +35,7 @@ module type Config = sig
   include Top_gen.Config
   include DumpAll.Config
   val norm : bool
-  val cpp : bool    
+  val cpp : bool
   val docheck : bool
   val prog : string
 end
@@ -62,7 +62,7 @@ module Make(O:Config) (M:Builder.S) =
 
     let gen_one_scope gen n =
       try
-        gen n 
+        gen n
           (fun st r -> match r with
           | Some _ -> raise Exit
           | None -> Some st)
@@ -73,7 +73,7 @@ module Make(O:Config) (M:Builder.S) =
     | Scope.No -> None
     | Scope.One st -> Some st
     | Scope.Default -> Some (M.A.ScopeGen.default n)
-    | Scope.Gen scs ->        
+    | Scope.Gen scs ->
         begin match gen_one_scope (M.A.ScopeGen.gen scs) n with
         | None ->
             Warn.fatal
@@ -96,7 +96,7 @@ module Make(O:Config) (M:Builder.S) =
 	  let es = M.E.resolve_edges es in
           let es,_ = M.C.resolve_edges es in
           let base,es,nprocs = Normer.normalise_family es in
-          let scope = get_scope nprocs in 
+          let scope = get_scope nprocs in
           let name = Namer.mk_name base ?scope es in
           dump_file name ?scope es
       else
@@ -109,7 +109,7 @@ module Make(O:Config) (M:Builder.S) =
           | Some name -> dump_file name ?scope (M.E.resolve_edges es)
 
     module P = LineUtils.Make(M.E)
- 
+
     let parse_line s = P.parse s
 
 
@@ -141,7 +141,7 @@ module Make(O:Config) (M:Builder.S) =
             let module D = DumpAll.Make(O)(M) in
             let gen kont =
               let rec do_rec k0 =
-                let k = 
+                let k =
                   try
                     let line = read_line_no_comment () in
                     try
@@ -287,4 +287,3 @@ let () =
       M.zyva
 )
     pp_es
-

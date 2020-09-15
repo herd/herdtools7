@@ -29,7 +29,7 @@ module KOption : sig
 
   val argbool :  string -> bool ref -> string -> arg_triple
   val argint :  string -> int ref -> string -> arg_triple
-  val arginto : int option ref -> Arg.spec   
+  val arginto : int option ref -> Arg.spec
   val argkm : string -> int ref -> string -> arg_triple
 
 (* Complex settings *)
@@ -67,7 +67,7 @@ end = struct
 end
 
 open KOption
-  
+
 module PStride = ParseTag.Make(KStride)
 
 let opts =
@@ -82,7 +82,7 @@ let opts =
      "<name> cross compilation to directory or tar file <name>" ;
    "-hexa", Arg.Set KOption.hexa,
    " hexadecimal output";
-   argint "-pad" KOption.pad "size of padding for C litmus source names";   
+   argint "-pad" KOption.pad "size of padding for C litmus source names";
 (* Test parameters *)
    "-a", arginto KOption.avail,
      "<n> Run maximal number of tests concurrently for n available cores (default, run one test)";
@@ -193,7 +193,7 @@ let () =
     | LexRename.Error|Misc.Exit -> exit 2
     | Misc.UserError msg ->
         eprintf "User error: %s\n%!" msg ;
-        exit 2        
+        exit 2
     | Misc.Fatal msg ->
         eprintf "Fatal error: %s\n%!" msg ;
         exit 2

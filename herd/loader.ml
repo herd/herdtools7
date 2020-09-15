@@ -42,7 +42,7 @@ and type start_points = A.start_points =
 	load_ins addr mem ins code
 
     and load_ins addr mem ins code = match ins with
-    | A.Nop -> load_code addr mem code 
+    | A.Nop -> load_code addr mem code
     | A.Instruction ins ->
 	let mem,start = load_code (addr+4) mem code in
 	mem,(addr,ins)::start

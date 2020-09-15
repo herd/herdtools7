@@ -526,7 +526,7 @@ let rec fold_regs (f_reg,f_sreg) =
                    fold_reg (fold_effaddr c ea) r
                | I_MOVD (_,r,xmm) -> fold_reg (fold_xmm c xmm) r
                | I_MOVNTDQA (xmm,effaddr) -> fold_effaddr (fold_xmm c xmm) effaddr
-                   
+
 let rec map_regs f_reg f_symb =
 
   let map_reg reg = match reg with

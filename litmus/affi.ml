@@ -119,7 +119,7 @@ let collect m =
     | Ws|Fr|Hat -> [n],(add xs ys)
 (* Rf *)
     | Rf-> n::xs,ys in
-  
+
   let xs,ys = do_rec m in
   add xs ys
 
@@ -131,7 +131,7 @@ let collect_fr m =
     let e = n.edge in
     match e with
     | Fr -> (n.p,n.next.p)::frs
-    | _  -> frs in 
+    | _  -> frs in
   do_rec m
 
 let compute cs =

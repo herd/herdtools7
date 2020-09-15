@@ -2207,7 +2207,7 @@ module Make
               begin match t,loc with
               | CType.Array _,_ -> ()
               | _,A.Location_global a when U.is_aligned a env ->
-                  let _ptr = sprintf "_%s_ptr" a in                  
+                  let _ptr = sprintf "_%s_ptr" a in
                   let pp_t = CType.dump t in
                   O.fiii "%s *%s = (%s *)&%s;"
                     pp_t _ptr pp_t (dump_ctx_loc "ctx." loc) ;

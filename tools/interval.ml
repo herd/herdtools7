@@ -31,7 +31,7 @@ let pp_b low = function
         sprintf "%i%c" i (match o with Open -> '[' | Closed -> ']')
   | Infinity ->
       if low then "]" else "["
-      
+
 let pp (b1,b2) = match b1,b2 with
 | Nat (i1,Open),Nat(i2,Open) when i1=i2 -> sprintf "%i" i1
 | _,_ ->
@@ -48,5 +48,3 @@ let inside  (b1,b2) c =
   (match b2 with
   | Nat (i,o) -> (get_pred o) c i
   | Infinity ->  true)
-
-

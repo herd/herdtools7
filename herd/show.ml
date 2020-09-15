@@ -45,11 +45,11 @@ module Make(O:PrettyConf.S) = struct
       try Filename.chop_extension name_dot
       with Invalid_argument _ -> name_dot in
     base ^ ".ps"
-             
+
   module G = Generator(O)
   let generator = G.generator
 
-  let do_show_file name_dot prog =    
+  let do_show_file name_dot prog =
     let name_ps = psfile name_dot in
     Handler.push (fun () -> my_remove name_ps) ;
     let cmd =
@@ -73,7 +73,7 @@ let show ouput_dot =
     let name_dot = Filename.temp_file "herd" ".dot" in
     Handler.push (fun () -> my_remove name_dot) ;
     Misc.output_protect ouput_dot name_dot ;
-    do_show_file name_dot "gv"; 
+    do_show_file name_dot "gv";
     my_remove name_dot ;
     Handler.pop ()
   end

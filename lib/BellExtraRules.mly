@@ -59,4 +59,3 @@ memory_map_key:
 
 %public scopes_and_memory_map:
 | x=permut(scopes_key, levels_key,  memory_map_key) { x }
-

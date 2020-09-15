@@ -74,5 +74,5 @@ module Make(O:Set.OrderedType) : S with type key = O.t =
     let add_bindings bds m =
       List.fold_left (fun m (k,v) -> add k v m) m bds
     let from_bindings bds = add_bindings bds empty
-        
+
   end

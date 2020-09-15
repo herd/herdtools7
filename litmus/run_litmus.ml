@@ -43,7 +43,7 @@ module Make(O:Config)(Tar:Tar.S)(D:Test) =
 
     let gcc2as =
       let gcc_opts = RU.get_gcc_opts in
-      sprintf "%s %s" O.gcc gcc_opts 
+      sprintf "%s %s" O.gcc gcc_opts
 
     let compile_test name source =
       let sX = MyName.outname name ".exe" in
@@ -97,7 +97,7 @@ module Make(O:Config)(Tar:Tar.S)(D:Test) =
             gcc2as sS source in
         exec_stdout com ;
         showcode chan sS  ;
-        output_line chan ""        
+        output_line chan ""
       end ;
       sS
 
@@ -109,7 +109,7 @@ module Make(O:Config)(Tar:Tar.S)(D:Test) =
 
     let run_test chan _t name sX =
       let opts =
-        sprintf "%s $LITMUSOPTS" (if O.verbose > 0 then "-v" else "-q") in      
+        sprintf "%s $LITMUSOPTS" (if O.verbose > 0 then "-v" else "-q") in
       if O.is_out then begin
         let exe = Filename.concat "." sX in
         let com =
@@ -140,7 +140,7 @@ module Make(O:Config)(Tar:Tar.S)(D:Test) =
         let com = sprintf "%s %s" (Tar.outname sX) opts in
         exec_stdout com ;
         ()
-      end 
+      end
 
 
 

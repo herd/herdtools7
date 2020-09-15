@@ -17,10 +17,10 @@
 (* Extract information from test, at the moment name + fname + hash *)
 
 module T = struct
-  type t = 
+  type t =
       { tname : string ;
         fname : string ;
-        hash : string ; } 
+        hash : string ; }
 
       let cmp_pair cmp1 cmp2 t1 t2 = match cmp1 t1 t2 with
       | 0 -> cmp2 t1 t2
@@ -42,7 +42,7 @@ module Make(A:ArchBase.S) = struct
     let fname =  name.Name.file in
     let hash = MiscParser.get_hash parsed in
     let hash =
-      match hash with 
+      match hash with
       | None -> assert false
       | Some h -> h in
     { T.tname = tname ; fname=fname; hash = hash; }

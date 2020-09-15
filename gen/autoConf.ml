@@ -26,7 +26,7 @@ module PPC = struct
      ACSyncdR*, ABCLwSyncdRW,ABCSyncdRW, BCLwSyncd*W, BCSyncd*W,\
      Rfe,[Rfi,DpdR],[Rfi,CtrldR],\
      [DpAddrdW,Wsi],[DpDatadW,Wsi],[DpAddrdR,Fri]"
-  let safe ="Wse,Fre" 
+  let safe ="Wse,Fre"
   let safe_conform =
     "Fre, Wse, DpAddrdR,DpAddrdW,DpDatadW, DpCtrlIsyncdR,DpCtrldW,\
      Syncd**, ACSyncdR*, BCSyncd*W, ABCSyncdRW,\
@@ -63,7 +63,7 @@ module ARM = struct
      ACDSBdR*, ABCDSBdRW, BCDSBd*W,\
      Rfe,[Rfi,DpdR],[Rfi,CtrldR],\
      [DpAddrdW,Wsi],[DpDatadW,Wsi],[DpAddrdR,Fri]"
-  let safe ="Wse,Fre" 
+  let safe ="Wse,Fre"
   let safe_conform =
     "Fre, Wse, DpdR,DpdW, CtrldR,CtrldW,DpDatadW,\
      DMBd**, ACDMBdR*, BCDMBd*W, ABCDMBdRW,\
@@ -71,7 +71,7 @@ module ARM = struct
      [DpAddrdW,Wsi],[DpDatadW,Wsi],[DpAddrdR,Fri]"
 end
 
-module type InitialSets = sig 
+module type InitialSets = sig
   val testing : string val safe : string
 end
 
@@ -90,7 +90,7 @@ let get_arch a =
   | _ ->
       Warn.fatal "architecture %s not implemented" (Archs.pp a)
 
-open AutoOpt 
+open AutoOpt
 
 module type B = sig
   val mode : mode
@@ -169,7 +169,7 @@ module MakeInitialSets
 
 let mk_config opt =
   let module X = struct
-    include (val (get_arch opt.arch) : ArchConf)        
+    include (val (get_arch opt.arch) : ArchConf)
     include
         (MakeInitialSets
            (struct
@@ -177,21 +177,20 @@ let mk_config opt =
              let testing = testing
              let safe = safe
              let safe_conform = safe_conform
-           end))        
+           end))
     include (val (copy_b opt): B)  end in
   match opt.interpretation with
   | Single ->
       let module C = struct
         include X
-        module I = AutoSingle.Make(A)            
+        module I = AutoSingle.Make(A)
         let opt = opt
       end in
       (module C : S)
   | Multi ->
       let module C = struct
         include X
-        module I = AutoMulti.Make(A)            
+        module I = AutoMulti.Make(A)
         let opt = opt
       end in
       (module C : S)
-        

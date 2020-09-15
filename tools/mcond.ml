@@ -34,7 +34,7 @@ module Make(Config:Config) =
       let lexbuf = LU.from_section sec in_chan in
       Echo.echo lexbuf out_chan
 
-    let from_chan chan fname in_chan =    
+    let from_chan chan fname in_chan =
       try
         let { Splitter.locs = locs;  name=name; _} =
           S.split fname in_chan in
@@ -51,8 +51,8 @@ module Make(Config:Config) =
       with LexMisc.Error (msg,pos) ->
         Printf.eprintf
 	  "%a: Lex error %s (in %s)\n" Pos.pp_pos pos msg fname ;
-        raise Misc.Exit 
-          
+        raise Misc.Exit
+
     let from_file chan name =
       try
         Misc.input_protect
@@ -74,7 +74,7 @@ let names = ref []
 
 let args = ref []
 
-let opts = 
+let opts =
   [ "-v", Arg.Unit (fun () -> incr verbose)," be verbose";
     "-names",
     Arg.String (fun s -> names := [s] @ !names),
@@ -105,4 +105,3 @@ module X =
    end)
 
 let () = X.from_args !args
-

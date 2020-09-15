@@ -21,7 +21,7 @@ type t = {
   top : bool ;
   generator : bool ;
   model : bool ;
-  files : bool ;    
+  files : bool ;
   }
 
 let tags =
@@ -48,5 +48,3 @@ let parse t tag = match tag with
   | "model" -> Some { t with model = true; }
   | "files"|"file" -> Some { t with files = true; }
   | _ -> None
-
-

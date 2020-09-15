@@ -40,4 +40,3 @@ module Int64Scalar = struct
 end
 
 include SymbConstant.Make(Int64Scalar)
-

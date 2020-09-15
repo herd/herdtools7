@@ -45,4 +45,3 @@ rule main = parse
 {
 let parse s = main (Lexing.from_string s)
 }
-

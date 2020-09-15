@@ -37,7 +37,7 @@ module Make(Opt:Opt)(Out:OutTests.S) =
         if Opt.check_name name.Name.name then begin
           let base = Filename.basename fname in
           let out = Out.open_file base in
-          Misc.output_protect_close Out.close       
+          Misc.output_protect_close Out.close
             (fun out ->
               let echo sec =
                 let lexbuf = LU.from_section sec in_chan in
@@ -56,7 +56,7 @@ module Make(Opt:Opt)(Out:OutTests.S) =
       with LexMisc.Error (msg,pos) ->
         Printf.eprintf
 	  "%a: Lex error %s (in %s)\n" Pos.pp_pos pos msg fname ;
-        raise Misc.Exit  
+        raise Misc.Exit
  let from_file idx_chan name =
       try
         Misc.input_protect
@@ -91,7 +91,7 @@ let prog =
   if Array.length Sys.argv > 0 then Sys.argv.(0)
   else "mrehash"
 
-let opts = 
+let opts =
   [ "-v",Arg.Unit (fun () -> incr verbose)," be verbose";
     "-names",
     Arg.String (set_list names),
@@ -116,7 +116,7 @@ module LR = LexRename.Make(struct let verbose = !verbose end)
 let hashes = LR.read_from_files !hashes (fun s -> Some s)
 
 (* Call *)
-let from_args = 
+let from_args =
   let module X =
     Make
       (struct

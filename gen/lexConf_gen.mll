@@ -20,13 +20,13 @@ let blank = [' ''\t''\r']
 let not_blank = [^' ''\t''\n''\r']
 let alpha = ['A'-'Z' 'a'-'z']
 let opt = '-' (('_'|alpha)+)
- 
+
 rule main = parse
 | eof { [] }
 | (opt as opt) blank* '\n' {opt :: main lexbuf}
 | (opt as opt) blank+
   ((not_blank [^'\n']* not_blank | not_blank) as arg)
-   blank* 
+   blank*
  {opt :: arg :: main lexbuf}
 | blank* '\n' {main lexbuf}
 | '#' [^'\n']* '\n' {main lexbuf}

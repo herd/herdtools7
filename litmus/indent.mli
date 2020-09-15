@@ -26,7 +26,7 @@ val indent3 : t
 val indent4 : t
 val indent5 : t
 
-module type S = 
+module type S =
   sig
     val hexa : bool
     val out : out_channel
@@ -42,7 +42,7 @@ module type S =
 
     val output : string -> unit
     val ox : t -> string -> unit
-    val oy : t -> string -> unit        
+    val oy : t -> string -> unit
     val o : string -> unit
     val oi : string -> unit
     val oii : string -> unit

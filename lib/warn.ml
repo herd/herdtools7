@@ -43,11 +43,10 @@ let prerr_exit s =
   prerr_endline s ;
   raise Misc.Exit
 
-let exit fmt = ksprintf prerr_exit fmt  
+let exit fmt = ksprintf prerr_exit fmt
 
 let user_error fmt =
-  ksprintf (fun msg ->raise  (Misc.UserError msg))  fmt 
+  ksprintf (fun msg ->raise  (Misc.UserError msg))  fmt
 
 let fatal fmt =
-  ksprintf (fun msg ->raise  (Misc.Fatal msg))  fmt 
-  
+  ksprintf (fun msg ->raise  (Misc.Fatal msg))  fmt

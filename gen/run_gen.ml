@@ -54,7 +54,7 @@ module Make (O:Config) (C:ArchRun.S) :
       let rec do_one k = function
         | [] -> k
         | e::es ->
-            let k = 
+            let k =
               List.fold_left
                 (fun k f ->
                   if Code.loc_eq e.C.loc f.C.loc then
@@ -85,7 +85,7 @@ module Make (O:Config) (C:ArchRun.S) :
     type str =
         { evts : ESet.t ; wsi : ESet.t ;
           pox : Rel.t ; }
-          
+
 
     let make_str evts =
       let wsi,evts = make_evts evts
@@ -106,7 +106,7 @@ module Make (O:Config) (C:ArchRun.S) :
       MySet.Make
         (struct
           type t = Code.v State.t
-          let compare = State.compare Misc.int_compare              
+          let compare = State.compare Misc.int_compare
         end)
 
     let by_loc pred evts =
@@ -128,7 +128,7 @@ module Make (O:Config) (C:ArchRun.S) :
           List.fold_left (fun k r -> (r,ws)::k) k rs)
         m []
 
-        
+
     let gen_rfm kont str =
       let rs,ws =
         List.split (get_possible (by_loc (fun _ -> true) str.evts)) in
@@ -168,7 +168,7 @@ module Make (O:Config) (C:ArchRun.S) :
                 (O.verbose > 1) ws (Rel.of_list vb_loc) in
             orders_loc::k)
           ws_by_loc [] in
-      
+
       Misc.fold_cross_gen (fun x xs -> x::xs) []
         orders
         (kont str rfm rf)
@@ -195,7 +195,7 @@ module Make (O:Config) (C:ArchRun.S) :
           rfm [] in
       let fr = Rel.of_list fr in
       Rel.unions [rf;co;fr]
-        
+
 
     let process_co kont str rfm _rf co k =
       let com = make_com rfm co in
@@ -215,7 +215,7 @@ module Make (O:Config) (C:ArchRun.S) :
               let w = Misc.last ws in
               State.add (A.of_loc w.C.loc) w.C.v fs)
           State.empty co in
-      let fs = 
+      let fs =
         C.EventMap.fold
           (fun r reg fs ->
             try
@@ -283,12 +283,12 @@ module Make (O:Config) (C:ArchRun.S) :
             swap_list (k-1) (x::prev) xs in
       fun k xs -> swap_list k [] xs
 
-          
+
     let swap_col k m =
       let mt = Misc.transpose m in
       let mt = swap_list k mt in
       Misc.transpose mt
-        
+
     let extract_column xss = match xss with
     | []|[]::_ -> assert false
     | ((loc0,_)::_)::_ ->
@@ -309,15 +309,15 @@ module Make (O:Config) (C:ArchRun.S) :
             with Not_found -> [] in
           VMap.add v (ps::pss) m)
         VMap.empty ps
-        
-    let rec compile_cond m = 
+
+    let rec compile_cond m =
       let k = best_col m in
       let loc,ps = extract_column (swap_col k m) in
       let m = group_rows ps in
       match ps with
       | [] -> assert false
       | (_,[])::_ ->
-          Or 
+          Or
             (VMap.fold
                (fun v _ k -> Atom (loc,v)::k)
                m [])
@@ -347,4 +347,3 @@ module Make (O:Config) (C:ArchRun.S) :
 
 
   end
-

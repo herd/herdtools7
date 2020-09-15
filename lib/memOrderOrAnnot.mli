@@ -18,4 +18,3 @@ type annot = string list
 val pp_annot : annot -> string
 
 type t = MO of MemOrder.t | AN of annot
-

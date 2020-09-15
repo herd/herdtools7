@@ -167,7 +167,7 @@ let st_as_string st = hashconsed_map HashedPair.as_t st
 let is_empty_simple st = match st.s_states with
 | [] -> true
 | _::_ -> false
-  
+
 let get_nouts st = st.p_nouts
 let get_bindings st = List.map (fun st -> st_as_string st.p_st) st.p_sts
 
