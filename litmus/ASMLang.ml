@@ -414,10 +414,19 @@ module RegMap = A.RegMap)
           compile_out_reg
           chan indent env proc t
 
+      let add_pteval k = sprintf "_pteval%d" k
+
+      let find_pteval_index p =
+        let rec find_rec k = function
+          | [] -> assert false
+          | q::rem ->
+              if PTEVal.compare p q = 0 then k
+              else find_rec (k+1) rem in
+        find_rec 0
 
       let compile_val_fun =
         let open Constant in
-        fun v -> match v with
+        fun ptevalEnv v -> match v with
         | Symbolic sym ->
             let s = Constant.pp_symbol sym in
             sprintf "%s%s"
@@ -425,14 +434,25 @@ module RegMap = A.RegMap)
               s
         | Concrete _ -> Tmpl.dump_v v
         | Label (p,lbl) -> OutUtils.fmt_lbl_var p lbl
-        | Tag _|PteVal _ -> assert false
+        | PteVal p ->
+            let idx = find_pteval_index p ptevalEnv in
+            add_pteval idx
+        | Tag _ -> assert false
 
       let compile_init_val_fun = compile_val_fun
 
       let compile_cpy_fun proc a = sprintf "*%s" (Tmpl.addr_cpy_name a proc)
 
+      let extract_ptevals t =
+        List.fold_left
+          (fun k (_,v) -> match v with
+          | Constant.PteVal p -> p::k
+          | _ -> k)
+          [] t.Tmpl.init
+
       let dump_fun chan env globEnv _volatileEnv proc t =
         if debug then debug_globEnv globEnv ;
+        let ptevalEnv = extract_ptevals t in
         let labels = Tmpl.get_labels t in
         let labels =
           List.map
@@ -461,6 +481,10 @@ module RegMap = A.RegMap)
           List.map
             (fun x -> sprintf "pteval_t %s" (Misc.add_physical x))
             phys_proc in
+        let ptevals =
+          List.mapi
+            (fun i _ -> sprintf "pteval_t %s" (add_pteval i))
+            ptevalEnv in
         let cpys =
           if O.memory = Memory.Indirect && O.cautious then
             List.map
@@ -481,10 +505,10 @@ module RegMap = A.RegMap)
                 with Not_found -> assert false in
               let x = Tmpl.dump_out_reg proc x in
               sprintf "%s *%s" (CType.dump ty) x) t.Tmpl.final in
-        let params =  String.concat "," (labels@addrs@ptes@phys@cpys@outs) in
+        let params =  String.concat "," (labels@addrs@ptes@phys@ptevals@cpys@outs) in
         LangUtils.dump_code_def chan true proc params ;
         do_dump
-          compile_init_val_fun
+          (compile_init_val_fun ptevalEnv)
           compile_addr_fun
           (fun sym -> compile_cpy_fun proc (Constant.as_address sym))
           (fun p r  -> sprintf "*%s" (Tmpl.dump_out_reg p r))
@@ -547,12 +571,24 @@ module RegMap = A.RegMap)
           List.map (compile_addr_call alignedEnv) addrs_proc @
           List.map OutUtils.fmt_pte_kvm ptes @
           List.map OutUtils.fmt_phy_kvm phys in
+        let ptevals = extract_ptevals t in
+        let ptevals =
+          List.map
+            (fun p ->
+              let open PTEVal in
+              match Misc.tr_physical p.oa with
+              | None ->
+                  Warn.user_error "litmus cannot handle pte initialisation with '%s'"
+                    (PTEVal.pp p)
+              | Some s ->
+                  SkelUtil.dump_pteval_flags (OutUtils.fmt_phy_kvm s) p)
+            ptevals in
         let addrs_cpy =
           if O.memory = Memory.Indirect && O.cautious then
             List.map (compile_cpy_addr_call proc) addrs_proc
           else []
         and outs = List.map (compile_out_reg_call env proc) t.Tmpl.final in
-        let args = String.concat "," (labels@addrs@addrs_cpy@outs) in
+        let args = String.concat "," (labels@addrs@ptevals@addrs_cpy@outs) in
         LangUtils.dump_code_call chan indent f_id args
 
     end
