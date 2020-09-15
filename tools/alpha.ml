@@ -171,6 +171,7 @@ struct
 
     let nolabel_value () = Warn.user_error "No label value for %s" Sys.argv.(0)
     let notag_value () = Warn.user_error "No tag value for %s" Sys.argv.(0)
+    let nopte_value () = Warn.user_error "No pteval_t value for %s" Sys.argv.(0)
 
     let collect_value f v k = match v with
     | Symbolic (Virtual ((s,_),_))
@@ -179,8 +180,9 @@ struct
     | Concrete _ -> k
     | Label _ -> nolabel_value ()
     | Tag _ -> notag_value ()
+    | PteVal _ -> nopte_value ()
     | Symbolic (Physical _|System ((TLB|TAG),_)) -> assert false
-    | Symbolic (PTEVal _) -> assert false
+
 
     let map_value f v = match v with
     | Symbolic (Virtual ((s,t),o)) -> Symbolic (Virtual ((f s,t),o))
@@ -188,8 +190,9 @@ struct
     | Concrete _ -> v
     | Label _ -> nolabel_value ()
     | Tag _ -> notag_value ()
+    | PteVal _ -> nopte_value ()
     | Symbolic (Physical _|System ((TLB|TAG),_)) -> assert false
-    | Symbolic (PTEVal _) -> assert false
+
 
     let collect_pseudo f =
       A.pseudo_fold

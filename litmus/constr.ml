@@ -77,7 +77,7 @@ type location = A.location and module LocSet = A.LocSet =
             match v with
             | Symbolic (Virtual ((s,None),_)) -> Strings.add s k
             | Concrete _ -> k
-            | Label _|Symbolic _|Tag _ -> assert false
+            | Label _|Symbolic _|Tag _|PteVal _ -> assert false
           end
       | LL _|FF _ -> k
 

@@ -149,7 +149,7 @@ include Arch.MakeArch(struct
 
     let rec expl_expr = let open Constant in function
       | Const(Symbolic (Virtual ((s,_),_))) -> find_cst s >! fun k -> Const k
-      | Const(Concrete _|Label _|Tag _|Symbolic _) as e -> unitT e
+      | Const(Concrete _|Label _|Tag _|Symbolic _|PteVal _) as e -> unitT e
       | LoadReg r -> conv_reg r >! fun r -> LoadReg r
       | LoadMem (loc,mo) -> expl_expr loc >! fun loc -> LoadMem (loc,mo)
       | Op (op,e1,e2) ->

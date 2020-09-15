@@ -30,7 +30,7 @@ let tr_v v =
   let open Constant in
   match v with
   | Concrete i -> Concrete (Int64.of_string i)
-  | Symbolic _|Label _|Tag _ as sym -> sym
+  | Symbolic _|Label _|Tag _|PteVal _ as sym -> sym
 
 let tr_atom = function
   | LV(loc,v) ->  LV(loc,tr_v v)
