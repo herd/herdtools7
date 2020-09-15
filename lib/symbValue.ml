@@ -149,6 +149,7 @@ module Make(Cst:Constant.S) = struct
     | (Val (Tag _),Val (Tag _))
     | (Val (Symbolic _),Val (Symbolic _))
     | (Val (Label _),Val (Label _))
+    | (Val (PteVal _),Val (PteVal _))
       ->
         Val (Concrete (Scalar.of_int (compare  v1 v2)))
     | _,_
