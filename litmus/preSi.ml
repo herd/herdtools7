@@ -1085,20 +1085,8 @@ module Make
                         | Some s ->
                             sprintf "litmus_set_pte_physical(*_vars->pte_%s,_vars->saved_pte_%s)"
                               x s in
-                        if is_default then begin
-                          O.fii "*_vars->pte_%s = %s;" x arg
-                        end else begin
-                          let open PTEVal in
-                          let add b s k = if b<>0 then s::k else k in
-                          let msk =
-                            add pteval.valid "msk_valid"
-                              (add pteval.af "msk_af"
-                                 (add pteval.dbm "msk_dbm"
-                                    (add pteval.db "msk_db" []))) in
-                          let msk = String.concat "|" msk in
-                          O.fii "*_vars->pte_%s = litmus_set_pte_flags(%s,%s);"
-                            x arg msk
-                        end
+                        O.fii "*_vars->pte_%s = %s;"
+                          x (SkelUtil.dump_pteval_flags arg pteval)
                       end
                   end ;
                   true
