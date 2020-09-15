@@ -425,7 +425,7 @@ module RegMap = A.RegMap)
               s
         | Concrete _ -> Tmpl.dump_v v
         | Label (p,lbl) -> OutUtils.fmt_lbl_var p lbl
-        | Tag _ -> assert false
+        | Tag _|PteVal _ -> assert false
 
       let compile_init_val_fun = compile_val_fun
 

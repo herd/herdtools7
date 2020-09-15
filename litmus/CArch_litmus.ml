@@ -33,7 +33,7 @@ module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) =
     function
       | Concrete i -> "addr_" ^ V.Scalar.pp O.hexa i
       | Symbolic (Virtual ((s,None),_)) -> s
-      | Label _|Symbolic _|Tag _ -> assert false
+      | Label _|Symbolic _|Tag _|PteVal _ -> assert false
 
   module Internal = struct
     type arch_reg = reg

@@ -1063,14 +1063,13 @@ Monad type:
              env)
 
       let default_pteval s =
-        let open Constant in
-        V.Val (Symbolic (PTEVal (Constant.default_pte_val s)))
+        V.Val (Constant.PteVal (PTEVal.default s))
 
       let expand_pteval loc v =
         let open Constant in
         match v with
         | V.Val (Symbolic (Physical (s,_))) -> default_pteval s
-        | V.Val (Symbolic (PTEVal _)) -> v
+        | V.Val (PteVal _) -> v
         | _ ->
             Warn.user_error
               "Cannot initialize %s with %s"

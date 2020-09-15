@@ -357,7 +357,7 @@ module Make
       let dump_a_v_casted = function
         | Concrete i ->  A.V.Scalar.pp  Cfg.hexa i
         | Symbolic (Virtual ((s,None),0)) -> sprintf "((int *)%s)" (dump_a_addr s)
-        | Symbolic _|Label _|Tag _ -> assert false
+        | Symbolic _|Label _|Tag _|PteVal _ -> assert false
 
 (* Dump left & right values when context is available *)
 
