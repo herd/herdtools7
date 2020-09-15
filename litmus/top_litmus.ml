@@ -313,7 +313,7 @@ end = struct
         let maybevToV c =
           let open Constant in
           match c with
-          | Tag _|Symbolic _|Label _ as sym -> sym
+          | Tag _|Symbolic _|Label _|PteVal _ as sym -> sym
           | Concrete i -> Concrete (A.V.Scalar.of_string i)
         type global = Global_litmus.t
         let maybevToGlobal = A.tr_global

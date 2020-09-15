@@ -92,6 +92,7 @@ module Make(V:Constant.S) = struct
     | Concrete _ -> Tmpl.dump_v v
     | Label _ -> Warn.user_error "No label value in LISA"
     | Tag _ -> Warn.user_error "No tag in LISA"
+    | PteVal _ -> Warn.user_error "No pteval in LISA"
 
   and compile_addr_fun x = sprintf "*%s" x
 

@@ -110,7 +110,7 @@ module Make(O:Config)(I:I) : S with module I = I
     let open Constant in
     match c with
     | Symbolic sym -> Global_litmus.tr_symbol sym
-    | Tag _|Concrete _|Label _ ->
+    | Tag _|Concrete _|Label _|PteVal _ ->
         Warn.fatal "Constant %s cannot be translated to a litmus adress"
           (ParsedConstant.pp O.hexa c)
 

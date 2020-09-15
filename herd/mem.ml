@@ -656,7 +656,7 @@ let match_reg_events es =
         (fun (load,stores) -> match stores with
         | [] ->
             begin match E.location_of load with
-            | Some (A.Location_global (V.Val sym) as loc) ->
+            | Some (A.Location_global (V.Val (Constant.Symbolic sym)) as loc) ->
                 if Constant.is_non_mixed_symbol sym then
                   Warn.fatal "read on location %s does not match any write"
                     (A.pp_location loc)
@@ -1483,7 +1483,7 @@ let match_reg_events es =
         U.LocEnv.iter
           (fun loc evts ->
             begin match loc with
-            | A.Location_global (V.Val sym)
+            | A.Location_global (V.Val (Constant.Symbolic sym))
               when not (Constant.is_non_mixed_symbol sym)
               -> Warn.user_error "Illegal mixed-size test"
             | _ -> ()

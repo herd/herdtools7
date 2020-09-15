@@ -31,18 +31,52 @@ static inline void litmus_flush_tlb(void *p) {
   flush_tlb_page((unsigned long)p);
 }
 
+/* Field access */
+
+static inline uint64_t litmus_get_field(pteval_t x,int low,int sz) {
+  uint64_t y = (uint64_t)x;
+  y >>= low ;
+  int64_t mask = (((uint64_t)1) << sz)-1;
+  return y & mask;
+}
+
+static inline pteval_t litmus_set_field(pteval_t old,int low,int sz,pteval_t v) {
+  pteval_t mask = ((((uint64_t)1) << sz)-1) ;
+  v &= mask ; v <<= low ;
+  mask <<= low ;
+  old &= ~mask ;
+  old |= v ;
+  return old;
+}
+
+
 /* Extract address component of PTE */
 #define FULL_MASK ((((pteval_t)1 << 48)-1) & ~(((pteval_t)1 << 12)-1))
-static inline void litmus_set_pte_physical(pteval_t *p,pteval_t v) {
-  pteval_t prev = *p ;
-  *p = (v & FULL_MASK)|(prev & ~FULL_MASK) ;
+
+static inline pteval_t litmus_set_pte_physical(pteval_t old,pteval_t v) {
+  return (v & FULL_MASK)|(old & ~FULL_MASK) ;
 }
 
-static inline void litmus_set_pte_invalid(pteval_t *p) {
-  *p &= ~((pteval_t)1) ;
+static inline pteval_t litmus_set_pte_invalid(pteval_t old) {
+  return old & ~((pteval_t)1) ;
 }
 
-/* set PTE attributes */
+static const uint64_t msk_valid = 0x1U;
+static const uint64_t msk_af = 0x400U;
+static const uint64_t msk_dbm = 0x8000000000000U;
+static const uint64_t msk_db = 0x80U;
+static const uint64_t msk_full = msk_valid | msk_af | msk_dbm | msk_db;
+
+static inline pteval_t litmus_set_pte_flags(pteval_t old,pteval_t flags) {
+  flags ^= msk_db; /* inverse dirty bit -> AF[2] */
+  old |= ~msk_full ;
+  old |= flags ;
+  return old ;
+}
+
+/* Some 'explicit' PTE attributes */
+
+/* set 'global' PTE attributes */
 
 typedef enum
   {attr_normal, attr_write_2D_through,
@@ -57,16 +91,12 @@ typedef enum
 
 /* Act on SH[1:0] ie bits [9:8] */
 static inline pteval_t litmus_set_sh(pteval_t old,pteval_t sh) {
-  pteval_t mask = ((pteval_t)3) << 8 ;
-  old &= ~mask ; old |= sh << 8 ;
-  return old ;
+  return litmus_set_field(old,8,2,sh);
 }
 
 /* Act on MEMATTR[3:0] ie bits [5:2] */
 static inline pteval_t litmus_set_memattr(pteval_t old,pteval_t memattr) {
-  pteval_t mask = ((pteval_t)15) << 2 ;
-  old &= ~mask ; old |= memattr << 2 ;
-  return old ;
+  return litmus_set_field(old,2,4,memattr);
 }
 
 static inline void litmus_set_pte_attribute(pteval_t *p,pte_attr_key k) {
@@ -121,3 +151,35 @@ inline static void *read_elr_el1(void) {
   return r ;
 }
 
+/* Hardware managment of access flag and dirty state */
+
+/* Feature check */
+inline static uint64_t get_hafdbs(void) {
+  uint64_t r ;
+  asm volatile("mrs %0, id_aa64mmfr1_el1": "=r" (r));
+  return r & 0b1111;
+}
+
+inline static uint64_t get_tcr_el1(void) {
+  uint64_t r ;
+  asm volatile("mrs %x0, tcr_el1": "=r" (r));
+  return r ;
+}
+
+inline static void set_tcr_el1(uint64_t a) {
+  asm volatile("msr tcr_el1,%x0": : "r" (a));
+}
+
+inline static void set_tcr_el1_bit(unsigned b,unsigned v) {
+  uint64_t old = get_tcr_el1();
+  uint64_t msk = ((uint64_t)1) << b;
+  set_tcr_el1((old & ~msk)|(((uint64_t)v) << b));
+}
+
+inline static void set_ha_bit(unsigned v) {
+  set_tcr_el1_bit(39,v);
+}
+
+inline static void set_hd_bit(unsigned v) {
+  set_tcr_el1_bit(40,v);
+}

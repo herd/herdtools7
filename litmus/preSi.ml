@@ -404,7 +404,7 @@ module Make
         end ;
         all,vs
 
-      type pte_addr = P of string | Z
+      type pte_addr = V of string option * PTEVal.t | P of string | Z
 
       let get_pte_init =
         if is_pte then
@@ -416,6 +416,14 @@ module Make
                 begin match v with
                 | Symbolic (Physical (phy,0)) -> (pte,P phy)::k
                 | Concrete z when A.V.Scalar.compare z A.V.Scalar.zero = 0 -> (pte,Z)::k
+                | PteVal pteval ->
+                    let open PTEVal in
+                    begin match Misc.tr_physical pteval.oa with
+                    | None ->
+                        Warn.user_error "litmus cannot handle pte initialisation with '%s'"
+                          (A.V.pp_v v)
+                    | Some s -> (pte,V ((if pte=s then None else Some s),pteval))::k
+                    end
                 | _ ->
                     Warn.user_error "litmus cannot handle pte initialisation with '%s'"
                       (A.V.pp_v v)
@@ -1021,8 +1029,10 @@ module Make
                   sprintf "(%s)_vars->%s" (CType.dump at) s
               | Label _ ->
                   Warn.fatal "PreSi mode cannot handle code labels (yet)"
-              | Symbolic _|Tag _ ->
-                  Warn.user_error "Litmus cannot handle tags" in
+              | Tag _|Symbolic _ ->
+                  Warn.user_error "Litmus cannot handle this initial value %s"
+                    (A.V.pp_v v)
+              | PteVal _ -> assert false in
             match at with
             | Array (t,sz) ->
                 O.fii "for (int _j = 0 ; _j < %i ; _j++) {" sz ;
@@ -1063,10 +1073,33 @@ module Make
                   begin match Misc.Simple.assoc x bds with
                   | P phy ->
                       O.fii
-                        "litmus_set_pte_physical(_vars->pte_%s,_vars->saved_pte_%s);"
-                        x phy ;
+                        "*_vars->pte_%s = litmus_set_pte_physical(*_vars->pte_%s,_vars->saved_pte_%s);"
+                        x x phy
                   | Z ->
-                      O.fii "litmus_set_pte_invalid(_vars->pte_%s);" x
+                      O.fii "*_vars->pte_%s = litmus_set_pte_invalid(*_vars->pte_%s);" x x
+                  | V (o,pteval) ->
+                      let is_default = PTEVal.is_default pteval in
+                      if not (o = None && is_default) then begin
+                        let arg = match o with
+                        | None -> sprintf "*_vars->pte_%s" x
+                        | Some s ->
+                            sprintf "litmus_set_pte_physical(*_vars->pte_%s,_vars->saved_pte_%s)"
+                              x s in
+                        if is_default then begin
+                          O.fii "*_vars->pte_%s = %s;" x arg
+                        end else begin
+                          let open PTEVal in
+                          let add b s k = if b<>0 then s::k else k in
+                          let msk =
+                            add pteval.valid "msk_valid"
+                              (add pteval.af "msk_af"
+                                 (add pteval.dbm "msk_dbm"
+                                    (add pteval.db "msk_db" []))) in
+                          let msk = String.concat "|" msk in
+                          O.fii "*_vars->pte_%s = litmus_set_pte_flags(%s,%s);"
+                            x arg msk
+                        end
+                      end
                   end ;
                   true
                 with Not_found ->false in
