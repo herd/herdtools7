@@ -132,23 +132,32 @@ module Generic (A : Arch_litmus.Base)
 (* Complete typing  *)
 (********************)
 
-(* final, only default types *)
-      let type_atom a env =
+(* Typing of final items, find as much as possible,
+   do not overwrite known type *)
+      let type_atom_final a env =
         let open ConstrGen in
         match a with
         | LV (loc,v) ->
-          A.LocMap.add loc (typeof v) env
+            begin try
+              ignore (A.LocMap.find loc env) ;
+              env
+            with Not_found ->  A.LocMap.add loc (typeof v) env end
         | LL _|FF _ -> env
 
       let type_final final env =
-        ConstrGen.fold_constr type_atom final env
+        ConstrGen.fold_constr type_atom_final final env
 
-      let type_prop prop env = ConstrGen.fold_prop type_atom prop env
+      let type_prop prop env = ConstrGen.fold_prop type_atom_final prop env
 
 (* locations, default and explicit types *)
       let type_locations flocs env =
         List.fold_left
-          (fun env (loc,t) -> A.LocMap.add loc (misc_to_c t) env)
+          (fun env (loc,t) ->
+            try
+              ignore (A.LocMap.find loc env) ; env
+            with
+            | Not_found ->
+                A.LocMap.add loc (misc_to_c t) env)
           env flocs
 
 (* init, default and explicit types *)
@@ -162,9 +171,7 @@ module Generic (A : Arch_litmus.Base)
                 ignore (A.LocMap.find loc env) ;
                 env
               with Not_found ->
-                type_atom (ConstrGen.LV (loc, v)) env
-                  (*
-                A.LocMap.add loc (typeof v) env*)
+                A.LocMap.add loc (typeof v) env
               end
           | _ -> A.LocMap.add loc (misc_to_c t) env)
           env init
@@ -209,7 +216,14 @@ module Generic (A : Arch_litmus.Base)
       let debug = false
 
       let build_type_env init final filter flocs =
-        let env = type_final final A.LocMap.empty in
+        let env = A.LocMap.empty in
+        let env = type_init init env in
+        if debug then dump_type_env "INIT" env ;
+        let env = type_init_values init env in
+        if debug then dump_type_env "INIT VALUES" env ;
+        let env = type_locations flocs env in
+        if debug then dump_type_env "LOCS" env ;
+        let env = type_final final env in
         if debug then dump_type_env "FINAL" env ;
         let env = match filter with
         | None -> env
@@ -217,12 +231,6 @@ module Generic (A : Arch_litmus.Base)
             let env = type_prop f env in
             if debug then dump_type_env "FILTER" env ;
             env in
-        let env = type_locations flocs env in
-        if debug then dump_type_env "LOCS" env ;
-        let env = type_init init env in
-        if debug then dump_type_env "INIT" env ;
-        let env = type_init_values init env in
-        if debug then dump_type_env "INIT VALUES" env ;
         env
 
       let find_type loc env =
