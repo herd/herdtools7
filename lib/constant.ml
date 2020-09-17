@@ -111,15 +111,6 @@ and get_sym = function
   | Symbolic (Virtual ((s,_),_)|Physical (s,_)|System (_,s)) -> s
   | Concrete _|Label _| Tag _|PteVal _ -> assert false
 
-let is_symbol = function
-  | Symbolic _ -> true
-  | Concrete _|Label _| Tag _ -> false
-
-let is_non_mixed_symbol = function
-  | Symbolic (Virtual (_,idx)) -> idx=0
-  | Symbolic (Physical (_,idx)) -> idx=0
-  | Symbolic (System _ | PTEVal _) | Concrete _|Label _| Tag _ -> true
-
 let default_tag = Tag "green"
 
 let check_sym v =  match v with
@@ -148,6 +139,7 @@ module type S =  sig
   val pp_v  : v -> string
   val compare : v -> v -> int
   val eq : v -> v -> bool
+  val vToName : v -> string
 
   exception Result of Archs.t * v * string
 end

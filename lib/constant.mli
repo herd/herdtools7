@@ -49,8 +49,6 @@ type 'scalar t =
 
 val mk_sym : string -> 'scalar t
 val get_sym : 'scalar t -> string
-val is_symbol : 'scalar t -> bool
-val is_non_mixed_symbol : 'scalar t -> bool
 val default_tag : 'scalar t
 
 (* Check  non-concrete constant (and change type!) *)
@@ -73,6 +71,7 @@ module type S =  sig
   val pp_v  : v -> string
   val compare : v -> v -> int
   val eq : v -> v -> bool
+  val vToName : v -> string
 
 (* Arch dependent result *)
   exception Result of Archs.t * v * string

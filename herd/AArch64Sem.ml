@@ -707,7 +707,7 @@ module Make
               get_ea rn kr ii
             end >>= fun (v,a) ->
             (M.op1 Op.TagLoc a >>| loc_extract a) >>= fun (atag,loc) ->
-            (do_write_tag atag v ii >>| do_write_mem MachSize.Quad AArch64.N loc V.zero ii) >>! B.Next
+            (do_write_tag atag v ii >>| do_write_mem MachSize.Quad AArch64.N AArch64.Exp Act.A_VIR loc V.zero ii) >>! B.Next
 
         | I_STG(rt,rn,kr) ->
             if not memtag then Warn.user_error "STG without -variant memtag" ;

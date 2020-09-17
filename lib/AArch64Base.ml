@@ -621,6 +621,7 @@ let pp_op = function
   | SUB  -> "SUBS"
   | SUBS -> "SUBS"
   | AND  -> "AND"
+  | ANDS  -> "ANDS"
   | ASR  -> "ASR"
   | LSR   -> "LSR"
 

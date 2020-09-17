@@ -1523,7 +1523,7 @@ let match_reg_events es =
       let open Constant in
       E.EventSet.iter
         (fun e -> match E.location_of e with
-        | Some (A.Location_global (V.Val cst)) when Constant.is_symbol cst
+        | Some (A.Location_global (V.Val (Symbolic _))) 
               -> ()
         | Some loc ->
             Warn.user_error "Non-symbolic memory access found on '%s'"
