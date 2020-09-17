@@ -60,7 +60,7 @@ include "aarch64fences.cat"
 
 (*
  * Include aarch64deps.cat to define dependencies.
- *)
+*)
 include "aarch64deps.cat"
 
 (* Show relations in generated diagrams *)
