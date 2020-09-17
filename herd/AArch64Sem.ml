@@ -15,10 +15,15 @@
 (****************************************************************************)
 
 module Make
-    (C:sig include Sem.Config val precision : bool end)
+    (TopConf:sig
+      module C : Sem.Config
+      val precision : bool
+      val dirty : DirtyBit.t
+    end)
     (V:Value.S)
     =
   struct
+    module C = TopConf.C
     module ConfLoc = SemExtra.ConfigToArchConfig(C)
     module AArch64 = AArch64Arch_herd.Make(ConfLoc)(V)
 
@@ -29,9 +34,6 @@ module Make
     let memtag = C.variant Variant.MemTag
     let is_deps = C.variant Variant.Deps
     let kvm = C.variant Variant.Kvm
-    let tthm = C.variant Variant.TTHM
-    let ha = C.variant Variant.HA
-    let hd = C.variant Variant.HD
 
 (* Barrier pretty print *)
     let barriers =
@@ -208,7 +210,7 @@ module Make
 	   extract_db pte_v >>| 
 	   extract_dbm pte_v) 
 
-       let check_ptw dir a_virt ma an ii mdirect mok mfault =
+       let check_ptw proc dir a_virt ma an ii mdirect mok mfault =
 
           let do_m a_phy = (mok ma a_phy) in 
           let set_bit a_pte new_val =
@@ -307,7 +309,11 @@ module Make
              (mextract_pte_vals pte_v) >>=
              fun ((((a_phy,valid_v),af_v),db_v),dbm_v) -> 
 
-           let kont_valid = 
+           let kont_valid =
+             let open DirtyBit in
+             let tthm = TopConf.dirty.tthm proc
+             and ha = TopConf.dirty.ha proc
+             and hd = TopConf.dirty.hd proc in
              if (not tthm || (tthm && (not ha && not hd))) then 
                (notTTHM a_virt ma a_phy af_v db_v) 
              else if (tthm && ha && not hd) then
@@ -406,7 +412,7 @@ module Make
           delayed_check_tags a_virt ma ii
             (mm  >>! B.Next)
             (let mfault = mk_fault a_virt ii in
-            if C.precision then  mfault >>! B.Exit
+            if TopConf.precision then  mfault >>! B.Exit
            else (mfault >>| mm) >>! B.Next)
 
         let lift_memtag_virt mop ma ii =
@@ -415,19 +421,19 @@ module Make
           delayed_check_tags a_virt ma ii
             (mm  >>! B.Next)
             (let mfault = ma >>= fun a -> mk_fault a ii in
-            if C.precision then  mfault >>! B.Exit
+            if TopConf.precision then  mfault >>! B.Exit
            else (mfault >>| mm) >>! B.Next)
 
         let lift_kvm dir mop ma an ii mphy =
            let mfault _ma a =
              mk_fault a ii
-               >>! if C.precision then B.Exit else B.ReExec
+               >>! if TopConf.precision then B.Exit else B.ReExec
             in
             M.delay ma >>= fun (_,ma) ->
             ma >>= fun a ->
             match Act.access_of_location_std (A.Location_global a) with
             | Act.A_VIR ->
-               check_ptw dir a ma an ii
+               check_ptw ii.AArch64.proc dir a ma an ii
                   (mop Act.A_PTE ma >>! B.Next)
                   mphy 
                   mfault

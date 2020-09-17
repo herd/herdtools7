@@ -222,21 +222,28 @@ let mach2generic parser lexer buff =
 let hash_key =  "Hash"
 and stable_key = "Stable"
 and align_key = "Align"
+and tthm_key = "TTHM"
+
+let low_hash = "hash"
+
+let get_info_on_info key =
+  let key = Misc.lowercase key in
+  let rec find = function
+    | [] -> None
+    | (k,v)::rem ->
+        if Misc.string_eq (Misc.lowercase k) key then Some v
+        else find rem in
+  find
 
 (* get hash from info fields *)
-
-
-let get_hash p =
-  try Some (List.assoc hash_key p.info)
-  with Not_found -> None
+let get_hash p = get_info_on_info hash_key p.info
 
 let rec set_hash_rec h = function
   | [] -> [hash_key,h]
-  | ("Hash" as k,_)::rem -> (k,h)::rem
+  | (k,_)::rem when Misc.string_eq (Misc.lowercase k) low_hash -> (k,h)::rem
   | p::rem -> p::set_hash_rec h rem
 
 let set_hash p h = { p with info = set_hash_rec  h p.info; }
 
-let get_info p key =
-  try Some (List.assoc key p.info)
-  with Not_found -> None
+
+let get_info p key = get_info_on_info key p.info

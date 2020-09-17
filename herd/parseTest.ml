@@ -50,9 +50,9 @@ module Top (Conf:Config) = struct
   module Make
       (S:Sem.Semantics)
       (P:sig
-         type pseudo
-         val parse : in_channel -> Splitter.result ->  pseudo MiscParser.t
-       end with type pseudo = S.A.pseudo)
+        type pseudo
+        val parse : in_channel -> Splitter.result ->  pseudo MiscParser.t
+      end with type pseudo = S.A.pseudo)
       (Check:
          sig
            val check : S.A.pseudo MiscParser.t -> S.A.pseudo MiscParser.t
@@ -81,11 +81,11 @@ module Top (Conf:Config) = struct
             if S.A.is_mixed then begin match Conf.byte with
             | MachSize.Tag.Size sz -> sz
             | MachSize.Tag.Auto ->
-              let szs = test.Test_herd.access_size in
-              match szs with
-              | [] -> MachSize.Byte
-              | [sz] -> MachSize.pred sz
-              | sz::_ -> sz
+                let szs = test.Test_herd.access_size in
+                match szs with
+                | [] -> MachSize.Byte
+                | [sz] -> MachSize.pred sz
+                | sz::_ -> sz
             end else begin
               (* Cannot that easily check the test not to mix sizes,
                  as there are several locations in test that may be of
@@ -170,7 +170,6 @@ module Top (Conf:Config) = struct
 
         let statelessrc11 = Conf.statelessrc11
       end in
-
       let module ArchConfig = SemExtra.ConfigToArchConfig(Conf) in
       match arch with
       | `PPC ->
@@ -234,7 +233,14 @@ module Top (Conf:Config) = struct
             let lexer = Lexer.token
             let parser = (*MiscParser.mach2generic*) AArch64Parser.main
           end in
-          let module AArch64S = AArch64Sem.Make(Conf)(Int64Value) in
+          let module AArch64SemConf = struct
+            module C = Conf
+
+            let precision = Conf.precision
+            let dirty = DirtyBit.get splitted.Splitter.info
+
+          end in
+          let module AArch64S = AArch64Sem.Make(AArch64SemConf)(Int64Value) in
           let module AArch64Barrier = struct
             type a = AArch64.barrier
             type b =
@@ -247,18 +253,18 @@ module Top (Conf:Config) = struct
             | AArch64.ISB -> ISB
           end in
           let module AArch64C =
-          BellCheck.Make
-            (struct
-              let debug = Conf.debug.Debug_herd.barrier
-              let compat = Conf.variant Variant.BackCompat
-            end)
-            (AArch64)
-            (struct
-              let info = Misc.snd_opt Conf.bell_model_info
-              let get_id_and_list _ = raise Not_found
-              let set_list _ _ = assert false
-              let tr_compat i = i
-             end) in
+            BellCheck.Make
+              (struct
+                let debug = Conf.debug.Debug_herd.barrier
+                let compat = Conf.variant Variant.BackCompat
+              end)
+              (AArch64)
+              (struct
+                let info = Misc.snd_opt Conf.bell_model_info
+                let get_id_and_list _ = raise Not_found
+                let set_list _ _ = assert false
+                let tr_compat i = i
+              end) in
           let module AArch64M =
             AArch64Mem.Make(ModelConfig)(AArch64S) (AArch64Barrier) in
           let module P = GenParser.Make (Conf) (AArch64) (AArch64LexParse) in
@@ -345,56 +351,56 @@ module Top (Conf:Config) = struct
           let module X = Make (RISCVS) (P) (NoCheck) (RISCVM) in
           X.run start_time name chan env splitted
       | `C ->
-        let module C = CArch_herd.Make(ArchConfig)(Int64Value) in
-        let module CLexParse = struct
-          (* Parsing *)
-          type pseudo = C.pseudo
-          type token = CParser.token
-          module Lexer = CLexer.Make(LexConfig)
-          let shallow_lexer = Lexer.token false
-          let deep_lexer = Lexer.token true
-          let shallow_parser = CParser.shallow_main
-          let deep_parser = CParser.deep_main
+          let module C = CArch_herd.Make(ArchConfig)(Int64Value) in
+          let module CLexParse = struct
+            (* Parsing *)
+            type pseudo = C.pseudo
+            type token = CParser.token
+            module Lexer = CLexer.Make(LexConfig)
+            let shallow_lexer = Lexer.token false
+            let deep_lexer = Lexer.token true
+            let shallow_parser = CParser.shallow_main
+            let deep_parser = CParser.deep_main
 
-          (* Macros *)
-          type macro = C.macro
-          let macros_parser = CParser.macros
-          let macros_expand = CBase.expand
-        end in
-        let module CS = CSem.Make(Conf)(Int64Value) in
-        let module CM = CMem.Make(ModelConfig)(CS) in
-        let module P = CGenParser_lib.Make (Conf) (C) (CLexParse) in
-        let module X = Make (CS) (P) (NoCheck) (CM) in
-        X.run start_time name chan env splitted
+                (* Macros *)
+            type macro = C.macro
+            let macros_parser = CParser.macros
+            let macros_expand = CBase.expand
+          end in
+          let module CS = CSem.Make(Conf)(Int64Value) in
+          let module CM = CMem.Make(ModelConfig)(CS) in
+          let module P = CGenParser_lib.Make (Conf) (C) (CLexParse) in
+          let module X = Make (CS) (P) (NoCheck) (CM) in
+          X.run start_time name chan env splitted
       | `CPP as arch -> Warn.fatal "no support for arch '%s'" (Archs.pp arch)
       | `LISA ->
-        let module Bell = BellArch_herd.Make(ArchConfig)(Int64Value) in
-        let module BellLexParse = struct
-          type instruction = Bell.parsedPseudo
-          type token = LISAParser.token
-          module Lexer = BellLexer.Make(LexConfig)
-          let lexer = Lexer.token
-          let parser = LISAParser.main
-        end in
+          let module Bell = BellArch_herd.Make(ArchConfig)(Int64Value) in
+          let module BellLexParse = struct
+            type instruction = Bell.parsedPseudo
+            type token = LISAParser.token
+            module Lexer = BellLexer.Make(LexConfig)
+            let lexer = Lexer.token
+            let parser = LISAParser.main
+          end in
 
-        let module BellS = BellSem.Make(Conf)(Int64Value) in
-        let module BellM = BellMem.Make(ModelConfig)(BellS) in
-        let module BellC =
-          BellCheck.Make
-            (struct
-              let debug = Conf.debug.Debug_herd.barrier
-              let compat = Conf.variant Variant.BackCompat
-            end)
-            (Bell)
-            (struct
-              let info = Misc.snd_opt Conf.bell_model_info
-              let get_id_and_list = Bell.get_id_and_list
-              let set_list = Bell.set_list
-              let tr_compat = Bell.tr_compat
-             end) in
-        let module P = GenParser.Make (Conf) (Bell) (BellLexParse) in
-        let module X = Make (BellS) (P) (BellC) (BellM) in
-        X.run start_time name chan env splitted
+          let module BellS = BellSem.Make(Conf)(Int64Value) in
+          let module BellM = BellMem.Make(ModelConfig)(BellS) in
+          let module BellC =
+            BellCheck.Make
+              (struct
+                let debug = Conf.debug.Debug_herd.barrier
+                let compat = Conf.variant Variant.BackCompat
+              end)
+              (Bell)
+              (struct
+                let info = Misc.snd_opt Conf.bell_model_info
+                let get_id_and_list = Bell.get_id_and_list
+                let set_list = Bell.set_list
+                let tr_compat = Bell.tr_compat
+              end) in
+          let module P = GenParser.Make (Conf) (Bell) (BellLexParse) in
+          let module X = Make (BellS) (P) (BellC) (BellM) in
+          X.run start_time name chan env splitted
 
     end else env
 
