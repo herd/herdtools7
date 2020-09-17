@@ -61,7 +61,7 @@ let dump_pteval_flags s p =
   if PTEVal.is_default p then s
   else
     let open PTEVal in
-    let add b s k = if b<>0 then s::k else k in (* all flag defaults are non-zero *)
+    let add b s k = if b<>0 then s::k else k in
     let msk =
       add p.valid "msk_valid"
         (add p.af "msk_af"
@@ -104,6 +104,7 @@ module Make
 (* Locations *)
       val get_displayed_locs : T.t -> A.LocSet.t
       val get_displayed_globals : T.t -> StringSet.t
+      val get_displayed_ptes : T.t -> StringSet.t
       val get_observed_locs : T.t -> A.LocSet.t
       val get_observed_globals : T.t -> StringSet.t
       val get_stabilized : T.t -> StringSet.t
@@ -267,6 +268,7 @@ module Make
         let tr_out = tr_out test in
         let rec pp_fmt t = match t with
         | CType.Pointer _ -> "%s"
+        | CType.Base "pteval_t" -> "(oa:%s, af:%d, db:%d, dbm:%d, valid:%d)"
         | CType.Base t -> pp_fmt_base t
         | CType.Atomic t|CType.Volatile t -> pp_fmt t
         | CType.Array (t,sz) ->
@@ -301,7 +303,20 @@ module Make
             -> k)
           locs StringSet.empty
 
+      let filter_ptes locs =
+        A.LocSet.fold
+          (fun a k -> match a with
+          | A.Location_global (G.Pte a) ->  StringSet.add a k
+          | A.Location_deref (G.Pte _,_) -> assert false
+          | A.Location_reg _
+          | A.Location_global (G.Phy _|G.Addr _)
+          | A.Location_deref ((G.Phy _|G.Addr _),_)
+            -> k)
+          locs StringSet.empty
+
       let get_displayed_globals t = filter_globals (get_displayed_locs t)
+
+      let get_displayed_ptes t = filter_ptes (get_displayed_locs t)
 
       let get_observed_locs t =
         let locs =  get_displayed_locs t in

@@ -35,7 +35,8 @@ let compare g1 g2 = match g1,g2 with
 
 let as_addr = function
   | Addr s -> s
-  | Pte _|Phy _ -> assert false
+  | Pte s -> Printf.sprintf "pte_%s" s
+  | Phy _ -> assert false
 
 let tr_symbol =
   let open Constant in

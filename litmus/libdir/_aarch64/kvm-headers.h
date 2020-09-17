@@ -57,6 +57,10 @@ static inline pteval_t litmus_set_pte_physical(pteval_t old,pteval_t v) {
   return (v & FULL_MASK)|(old & ~FULL_MASK) ;
 }
 
+static inline int litmus_same_oa(pteval_t p,pteval_t q) {
+  return ((p ^ q) & FULL_MASK) == 0 ;
+}
+
 static inline pteval_t litmus_set_pte_invalid(pteval_t old) {
   return old & ~((pteval_t)1) ;
 }
@@ -69,7 +73,7 @@ static const uint64_t msk_full = msk_valid | msk_af | msk_dbm | msk_db;
 
 static inline pteval_t litmus_set_pte_flags(pteval_t old,pteval_t flags) {
   flags ^= msk_db; /* inverse dirty bit -> AF[2] */
-  old |= ~msk_full ;
+  old &= ~msk_full ;
   old |= flags ;
   return old ;
 }
@@ -137,6 +141,54 @@ static inline void litmus_set_pte_attribute(pteval_t *p,pte_attr_key k) {
     break;
   }
 }
+
+/* Packed pte */
+#define AF_PACKED 0
+#define DB_PACKED 1
+#define DBM_PACKED 2
+#define VALID_PACKED 3
+#define OA_PACKED 4
+
+inline static pteval_t pack_flag(pteval_t v,pteval_t mask,int shift) {
+  return (v & mask ? 1 : 0) << shift;
+}
+
+
+inline static pteval_t pack_pte(int oa,pteval_t v) {
+  return
+    ((pteval_t)oa << OA_PACKED) |
+    pack_flag(v,msk_af,AF_PACKED) |
+    pack_flag(v ^ msk_db,msk_db,DB_PACKED) |
+    pack_flag(v,msk_dbm,DBM_PACKED) |
+    pack_flag(v,msk_valid,VALID_PACKED) ;
+}
+
+
+inline static pteval_t pack_pack_flag(int f,int shift) {
+  return ((pteval_t)f) << shift ;
+}
+
+inline static pteval_t pack_pack(int oa,int af,int db,int dbm,int valid) {
+  return
+    (((pteval_t)oa) << OA_PACKED) |
+    pack_pack_flag(oa,OA_PACKED) |
+    pack_pack_flag(db,DB_PACKED) |
+    pack_pack_flag(dbm,DBM_PACKED) |
+    pack_pack_flag(valid,VALID_PACKED) ;
+}
+
+inline static int unpack_oa(pteval_t v) {
+  return v >> OA_PACKED;
+}
+
+inline static int unpack_flag(pteval_t v,int shift) {
+  return (v >> shift) & 1;
+}
+
+inline static int unpack_af(pteval_t v) { return unpack_flag(v,AF_PACKED); }
+inline static int unpack_db(pteval_t v) { return unpack_flag(v,DB_PACKED); }
+inline static int unpack_dbm(pteval_t v) { return unpack_flag(v,DBM_PACKED); }
+inline static int unpack_valid(pteval_t v) { return unpack_flag(v,VALID_PACKED); }
 
 /* Faulty virtual adress in handler */
 inline static void *read_far(void) {

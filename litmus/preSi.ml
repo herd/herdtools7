@@ -572,13 +572,11 @@ module Make
           (* Define indices *)
           List.iteri
             (fun k (a,_) ->
-              let idx = if is_pte then 3*k+1 else k+1 in
+              let idx = if is_pte then 2*k+1 else k+1 in
               O.f "static const int %s = %i;" (dump_addr_idx a) idx ;
               if is_pte then begin
               O.f "static const int %s = %i;"
-                  (dump_addr_idx (Misc.add_physical a)) (3*k+2) ;
-              O.f "static const int %s = %i;"
-                  (dump_addr_idx (Misc.add_pte a)) (3*k+3)
+                  (dump_addr_idx (Misc.add_pte a)) (2*k+2)
               end)
             test.T.globals ;
           O.o "" ;
@@ -587,10 +585,7 @@ module Make
             O.fi "else if (v_addr == p->%s) return %s;"
               s (dump_addr_idx s) ;
             if is_pte then begin
-            O.fi "else if ((pteval_t)v_addr == p->%s) return %s;"
-                (OutUtils.fmt_phy_tag s)
-                (dump_addr_idx (Misc.add_physical s)) ;
-            O.fi "else if ((pteval_t *)v_addr == p->%s) return %s;"
+              O.fi "else if ((pteval_t *)v_addr == p->%s) return %s;"
                 (OutUtils.fmt_pte_tag s)
                 (dump_addr_idx (Misc.add_pte s))
             end in
@@ -603,7 +598,7 @@ module Make
 (* Pretty-print indices *)
           if some_ptr then begin
           O.f "static char *pretty_addr[%s+1] = {\"0\",%s};"
-              (if is_pte then "(3*NVARS)" else "NVARS")
+              (if is_pte then "(2*NVARS)" else "NVARS")
             (String.concat ""
                (List.map (fun (s,_) ->
                  sprintf "\"%s\",%s"
@@ -617,7 +612,30 @@ module Make
           O.o ""
           end
         end ;
-
+(* Now physical pages in output *)
+        if is_pte && not (StringSet.is_empty (U.get_displayed_ptes test)) then begin
+          List.iteri
+            (fun k (a,_) ->
+              O.f "static const int %s = %i;" (dump_addr_idx (Misc.add_physical a)) k)
+            test.T.globals ;
+          O.o "" ;
+          O.o "static int idx_physical(pteval_t v,vars_t *p) {" ;
+          List.iteri
+            (fun k (s,_) ->
+              let pref = if k=0 then "if" else "else if" in
+              O.fi "%s (litmus_same_oa(v,p->saved_pte_%s)) return %s;"
+                pref s (dump_addr_idx (Misc.add_physical s)))
+            test.T.globals ;
+          O.oi "else return NVARS;" ;
+          O.o "}" ;
+          O.o "" ;
+          O.f "static char *pretty_addr_physical[NVARS+1] = {%s,\"???\"};"
+            (String.concat ","
+               (List.map
+                  (fun (s,_) -> sprintf "\"%s\"" (Misc.add_physical s))
+                  test.T.globals)) ;
+          O.o ""
+        end ;
         O.o "/* Dump of outcome */" ;
         O.f "static void pp_log(%slog_t *p) {" (k_nkvm  "FILE *chan,") ;
         let fmt = fmt_outcome test env locs
@@ -633,6 +651,14 @@ module Make
                   else
                     sprintf "p->%s[%i]" (dump_loc_tag loc) k::pp_rec (k+1) in
                 pp_rec 0
+            | Base "pteval_t" ->
+                let v = sprintf "p->%s" (dump_loc_tag loc) in
+                let fs =
+                  sprintf "pretty_addr_physical[unpack_oa(%s)]" v::
+                  List.map
+                    (fun f -> sprintf "unpack_%s(%s)" f v)
+                    ["af";"db";"dbm";"valid";] in
+                fs
             | _ ->
                 [sprintf "p->%s" (dump_loc_tag loc)])
             locs
@@ -689,6 +715,11 @@ module Make
               module C = T.C
               let dump_value v = match v with
               | Constant.Symbolic _ -> dump_addr_idx (T.C.V.pp O.hexa v)
+              | Constant.PteVal p ->
+                  let open PTEVal in
+                    sprintf
+                     "pack_pack(%s,%d,%d,%d,%d)"
+                      (dump_addr_idx p.oa) p.af p.db p.dbm p.valid
               | _ -> T.C.V.pp O.hexa v
               module Loc = struct
                 type t = A.location
@@ -1073,18 +1104,16 @@ module Make
                   begin match Misc.Simple.assoc x bds with
                   | P phy ->
                       O.fii
-                        "*_vars->pte_%s = litmus_set_pte_physical(*_vars->pte_%s,_vars->saved_pte_%s);"
-                        x x phy
+                        "*_vars->pte_%s = _vars->saved_pte_%s;"
+                        x phy
                   | Z ->
                       O.fii "*_vars->pte_%s = litmus_set_pte_invalid(*_vars->pte_%s);" x x
                   | V (o,pteval) ->
                       let is_default = PTEVal.is_default pteval in
                       if not (o = None && is_default) then begin
                         let arg = match o with
-                        | None -> sprintf "*_vars->pte_%s" x
-                        | Some s ->
-                            sprintf "litmus_set_pte_physical(*_vars->pte_%s,_vars->saved_pte_%s)"
-                              x s in
+                        | None -> sprintf "_vars->saved_pte_%s" x
+                        | Some s -> sprintf "_vars->saved_pte_%s" s in
                         O.fii "*_vars->pte_%s = %s;"
                           x (SkelUtil.dump_pteval_flags arg pteval)
                       end
@@ -1132,8 +1161,20 @@ module Make
         end ;
 (* Stnchronise *)
         O.oii "barrier_wait(_b);" ;
-(* Restore pte *)
+(* Save/Restore pte *)
         if is_pte then begin
+          begin match proc with
+          | 0 ->
+              let ptes = U.get_displayed_ptes test in
+              StringSet.iter
+                (fun s ->
+                  let temp = sprintf "_pteval_%s" s in
+                  O.fii "pteval_t %s = *%s;" temp (OutUtils.fmt_pte_kvm s) ;
+                  O.fii "_log->%s = pack_pte(idx_physical(%s,_vars),%s);"
+                    (OutUtils.fmt_pte_tag s) temp temp)
+                ptes
+          | _ -> ()
+          end ;
           List.iter
             (fun a ->
               let pte = OutUtils.fmt_pte_kvm a
