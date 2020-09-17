@@ -227,7 +227,7 @@ and pwitnesses = parse
 
 and pcond = parse
 | blank*  nl
-| "Bad executions" [^'\n''\r']* nl
+| ("Bad executions"|"Flag ") [^'\n''\r']* nl
   { incr_lineno lexbuf ; pcond lexbuf }
 | "Condition" blank+
   ([^'\r''\n']+ as c)  nl
