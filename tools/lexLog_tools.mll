@@ -78,6 +78,7 @@ let num = digit+
 let hexa = ['0'-'9' 'a'-'f' 'A'-'F' ]
 let hexanum = "0x" hexa+
 let set = '{' (' '|','|('-'?(num|hexanum)))* '}'
+let pteval = '(' [^')''\n''\r']+ ')'
 let alpha = [ 'a'-'z' 'A'-'Z']
 let name = alpha (alpha|digit|'_'| '.')*
 let label = 'L' (alpha|digit)+
@@ -188,7 +189,7 @@ and skip_empty_lines = parse
 and pline bds fs = parse
 | blank*
  ((num ':' reg as loc)|(('['?) (loc as loc) ( ']'?))|(loc '[' num ']' as loc))
-    blank* '=' blank* (('-' ? (num|hexanum))|(name(':'name)?)|set as v)
+    blank* '=' blank* (('-' ? (num|hexanum))|(name(':'name)?)|set|pteval as v)
     blank* ';'
     {
      let v = to_xxx v in  (* Translate to decimal *)
