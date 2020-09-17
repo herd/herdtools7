@@ -460,7 +460,7 @@ end = struct
           | None -> false
           end
       | _ -> false in
-      ["inv-loc",ok_act]
+      ["inv-field",ok_act]
     else []
 
   let is_isync act = match act with
