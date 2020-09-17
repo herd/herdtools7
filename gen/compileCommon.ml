@@ -41,12 +41,12 @@ module type S = sig
   with type fence = A.fence
   and type dp = A.dp
   and type edge = E.edge
-  
+
   module C : Cycle.S with type fence = A.fence and type edge=E.edge and type atom = A.atom
 end
 
 module Make(C:Config) (A:Arch_gen.S) = struct
-  module A = A 
+  module A = A
 
   module E =  Edge.Make(C)(A)
 
@@ -69,4 +69,3 @@ module Make(C:Config) (A:Arch_gen.S) = struct
 (* Big constant *)
   let kbig = 128
 end
-

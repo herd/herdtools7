@@ -39,7 +39,7 @@ end = struct
 
   type t = cell M.t
 
-  let map_find x m = try M.find x m with Not_found -> assert false 
+  let map_find x m = try M.find x m with Not_found -> assert false
 
 (* Creation *)
   let create () = M.empty
@@ -56,8 +56,8 @@ end = struct
       let d = find_aux c.parent in
       c.parent <- d ;
       d
-      
-      
+
+
   let find m x =
     let c = map_find x m in
     let d = find_aux c in
@@ -77,7 +77,7 @@ end = struct
     end
 
   let union m x1 x2 = union_aux (map_find x1 m) (map_find x2 m)
-      
+
 (* Extract *)
   module Sol = M
 

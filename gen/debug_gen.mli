@@ -27,5 +27,3 @@ type t = {
 val none : t
 val tags : string list
 val parse : t -> string -> t option
-
-

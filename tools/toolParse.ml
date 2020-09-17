@@ -27,7 +27,7 @@ sig
 end = struct
 
   module Make
-      (A:ArchBase.S) 
+      (A:ArchBase.S)
       (L:GenParser.LexParse with type instruction = A.parsedPseudo) =
     struct
       module P = GenParser.Make(GenParser.DefaultConfig)(A)(L)
@@ -42,7 +42,7 @@ end = struct
 
   module LexConf = Splitter.Default
 
-  let from_chan chan splitted = 
+  let from_chan chan splitted =
     match splitted.Splitter.arch with
     | `PPC ->
         let module PPC = PPCBase in
@@ -223,7 +223,7 @@ module Tops
 
 (* Code shared for machine arch's *)
       module Make
-          (A:ArchBase.S) 
+          (A:ArchBase.S)
           (L:GenParser.LexParse with type instruction = A.parsedPseudo) =
         struct
           module P = GenParser.Make(GenParser.DefaultConfig)(A)(L)
@@ -239,7 +239,7 @@ module Tops
               end)
         end
 
-      let from_arch arch = 
+      let from_arch arch =
         match arch with
         | `PPC ->
             let module PPC = PPCBase in
@@ -252,7 +252,7 @@ module Tops
 	      let parser = MiscParser.mach2generic PPCParser.main
             end in
             let module X = Make (PPC) (PPCLexParse) in
-            X.zyva 
+            X.zyva
         | `X86 ->
             let module X86 = X86Base in
             let module X86LexParse = struct
@@ -357,4 +357,3 @@ module Tops
           from_arch arch names
 
     end
-

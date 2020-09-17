@@ -38,8 +38,8 @@ module S = S
 (*
     let bell_model = match O.bell_model with
       | Some m -> m
-      | None -> Warn.fatal "Running a bell test requires a .bell file"	
-*)    
+      | None -> Warn.fatal "Running a bell test requires a .bell file"
+*)
 
     module S = S
 

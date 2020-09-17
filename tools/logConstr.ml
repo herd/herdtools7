@@ -39,7 +39,7 @@ let tr_atom = function
 
 let tr_cond c = ConstrGen.map_constr tr_atom c
 
-let parse s = 
+let parse s =
   try
     let lxb = Lexing.from_string s in
     let c = StateParser.skip_loc_constr SL.token lxb in
@@ -83,7 +83,7 @@ let get_locs_atom a =
 
 let get_locs c = fold_constr get_locs_atom c LocSet.empty
 
-let parse_observed s = 
+let parse_observed s =
   try
     let lxb = Lexing.from_string s in
     let locs,c = StateParser.main_loc_constr SL.token lxb in
@@ -104,7 +104,7 @@ let parse_locs_cond lxb =
   | LexMisc.Error _ -> None
 
 
-let parse_locs s = 
+let parse_locs s =
   try
     let lxb = Lexing.from_string s in
     let locs,cstr = StateParser.main_loc_constr SL.token lxb in
@@ -161,14 +161,14 @@ end  =
     | Not p -> not (check_prop p state)
     | And ps -> List.for_all (fun p -> check_prop p state) ps
     | Or ps -> List.exists (fun p -> check_prop p state) ps
-    | Implies (p1, p2) -> 
+    | Implies (p1, p2) ->
         if check_prop p1 state then check_prop p2 state else true
-          
+
     let check_constr c states = match c with
     | ForallStates p -> List.for_all (fun s -> check_prop p s) states
     | ExistsState p -> List.exists (fun s -> check_prop p s) states
     | NotExistsState p ->
-        not (List.exists (fun s -> check_prop p s) states)	      
+        not (List.exists (fun s -> check_prop p s) states)
 
     let validate = check_constr
 

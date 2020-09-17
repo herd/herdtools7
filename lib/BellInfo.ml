@@ -28,22 +28,22 @@ let _docheck = true
 
 type mem_space_map = (string * string list) list
 
-let pp_mem_map m = 
+let pp_mem_map m =
   String.concat ","
     (List.map (fun (n,r) ->
       let pp = String.concat " " r in
       sprintf "%s: %s" n pp) m)
 
-type scopes = 
+type scopes =
  | Tree of string * int list * scopes list
 
 type levels = scopes
 
 let pp_int_list il = String.concat " " (List.map (sprintf "%i") il)
-  
 
-let rec pp_scopes_rec s = match s with 
-| Tree (s,ps,ts) -> 
+
+let rec pp_scopes_rec s = match s with
+| Tree (s,ps,ts) ->
     sprintf "(%s %s%s)" s
       (match ps with
         | [] -> ""
@@ -87,7 +87,7 @@ and do_children sc0 sc1 ts = match ts with
 let contract st = match st with
 | Tree (_,_,[]) -> st
 | Tree ("",[],[t]) -> do_contract t
-| Tree ("",[],ts) -> 
+| Tree ("",[],ts) ->
     let ts =  List.map do_contract ts in
     Tree ("",[],ts)
 | Tree (sc,[],ts) -> do_children sc "" ts
@@ -103,9 +103,9 @@ let pp t = begin match t.scopes with
 | None -> ""
 | Some sc ->
     sprintf "scopes: %s\n" (pp_scopes sc)
-end ^ 
+end ^
   begin match t.regions with
   | None -> ""
-  | Some m -> 
+  | Some m ->
       sprintf "regions: %s\n" (pp_mem_map m) ;
   end

@@ -38,4 +38,3 @@ module type S =
     and type I.arch_reg = reg
     and type I.arch_instruction = instruction
    end
-      

@@ -45,7 +45,7 @@ let parse_fence s k =  match s with
 let parse_relaxs = List.map parse_relax
 let parse_edges = List.map parse_edge
 let parse_fences fs = List.fold_right parse_fence fs []
-  
+
 
   module AltConfig = struct
     include O
@@ -80,7 +80,7 @@ let parse_fences fs = List.fold_right parse_fence fs []
           (fun k es -> ERS es::k) rs ess
 
 
-  let var_atom = 
+  let var_atom =
     if C.A.bellatom then Misc.identity
     else match O.varatom with
     | [] -> Misc.identity
@@ -138,7 +138,7 @@ let parse_fences fs = List.fold_right parse_fence fs []
         | Some lr,None -> gen lr [] n
         | Some lr,Some ls -> gen lr ls n
         end
-    | Thin -> gen_thin n 
+    | Thin -> gen_thin n
     | Uni ->
         begin match olr,ols with
         | None,None -> gen_uni n
@@ -158,11 +158,11 @@ let split s = match s with
 let get_arg s =
   raise (Arg.Bad (Printf.sprintf "%s takes no argument, argument %s is present" Config.prog s))
 
-let norm_cmd cmd = 
+let norm_cmd cmd =
   match cmd with
   | [] -> assert false
-  | _::s -> 
-    let rec no_conf l = 
+  | _::s ->
+    let rec no_conf l =
       match l with
       | [] -> []
       | "-conf"::_::l -> no_conf l

@@ -30,7 +30,7 @@ module Make (C: Config) = struct
 (* phew, a lot of work to set up the interpreter *)
 
     let module InterpreterConfig = struct
-(* Model *)      
+(* Model *)
       let m = model
 (* Bell stuff *)
       let bell = true

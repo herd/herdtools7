@@ -45,7 +45,7 @@ end =
         prog ;
       Array.to_list t
 
-      
+
     open MiscParser
 
 (* Ramdom permutation *)

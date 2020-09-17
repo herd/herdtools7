@@ -36,7 +36,7 @@ type e =
   | Wsi
   | ISync
   | ISB
-  | Eieio 
+  | Eieio
   | LwSync
   | Sync
   | DMBST
@@ -88,6 +88,5 @@ let pp_p = function
 
 type t = e * a * a * p
 
-let pp (e,a1,a2,p) = sprintf "%s%s%s" (pp_e e) (pp_a2 a1 a2) (pp_p p) 
-let dbg (e,a1,a2,p) = sprintf "%s|%s|%s" (pp_e e) (pp_a2 a1 a2) (pp_p p) 
-
+let pp (e,a1,a2,p) = sprintf "%s%s%s" (pp_e e) (pp_a2 a1 a2) (pp_p p)
+let dbg (e,a1,a2,p) = sprintf "%s|%s|%s" (pp_e e) (pp_a2 a1 a2) (pp_p p)

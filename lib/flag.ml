@@ -23,7 +23,7 @@ let pp = function
 
 type u = t
 
-module O = 
+module O =
   struct
     type t = u
     let compare = compare

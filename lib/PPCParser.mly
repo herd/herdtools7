@@ -75,7 +75,7 @@ iol_list :
 instr_option_list :
   | instr_option
       {[$1]}
-  | instr_option PIPE instr_option_list 
+  | instr_option PIPE instr_option_list
       {$1::$3}
 
 instr_option_seq : xs=separated_nonempty_list(SEMI,instr_option) EOF { xs }
@@ -234,9 +234,9 @@ instr:
     { Pnor (DontSetCR0,$2,$4,$6)}
   | NORDOT reg COMMA reg COMMA reg
     { Pnor (SetCR0,$2,$4,$6)}
-  | NEG reg COMMA reg 
+  | NEG reg COMMA reg
     { Pneg (DontSetCR0,$2,$4)}
-  | NEGDOT reg COMMA reg 
+  | NEGDOT reg COMMA reg
     { Pneg (SetCR0,$2,$4)}
   | SLW reg COMMA reg COMMA reg
     { Pslw (DontSetCR0,$2,$4,$6)}
@@ -252,7 +252,7 @@ instr:
   | LMW reg  COMMA idx LPAR reg RPAR { Plmw ($2,$4,$6) }
   | STMW reg  COMMA idx LPAR reg RPAR { Pstmw ($2,$4,$6) }
   | COMMENT STRING { Pcomment $2 }
- 
+
 k:
 | NUM  { MetaConst.Int $1 }
 | CSTVAR { MetaConst.Meta $1 }

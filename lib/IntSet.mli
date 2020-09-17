@@ -17,4 +17,3 @@
 (** Sets of ints *)
 
 include MySet.S with type elt = int and type t = MySet.Make(IntOrd).t
-

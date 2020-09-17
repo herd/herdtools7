@@ -35,4 +35,3 @@ let push f = handlers := f :: !handlers
 let pop () = match !handlers with
 | [] -> ()
 | _::rem -> handlers := rem
-

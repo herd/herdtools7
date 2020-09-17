@@ -43,7 +43,7 @@ let split_space s =
     String.sub s 0 i,
     String.sub s (i+1) (String.length s - (i+1))
   with Not_found -> s,""
-  
+
 let parse_mach s =
 
   let key,v = split_space s in
@@ -56,7 +56,7 @@ let parse_mach s =
       let v1,v2 = split_space v in
       Some (Cross (v1,v2))
   | _ -> None
-        
+
 let sp s = if s = "" then "" else " "
 
 let pp_mach = function
@@ -64,7 +64,7 @@ let pp_mach = function
   | Distant addr -> sprintf "ssh %s" addr
   | Simul (prog,opts) ->
       sprintf "%s%s%s" prog (sp opts) opts
-  | Cross (addr1,addr2) -> sprintf "cross %s %s" addr1 addr2 
+  | Cross (addr1,addr2) -> sprintf "cross %s %s" addr1 addr2
 (* Interpretation *)
 
 type interpretation = Single | Multi
@@ -156,7 +156,7 @@ let set_compress b opts = { opts with compress = b ; }
 
 let set_arch arg cfg = match Archs.parse arg with
 | None -> raise (Arg.Bad (sprintf "unkown architecture: %s" arg))
-| Some a -> { cfg with arch =a; } 
+| Some a -> { cfg with arch =a; }
 
 let set_mode arg cfg = match parse_mode arg with
 | None -> raise (Arg.Bad (sprintf "bad mode: %s" arg))

@@ -90,7 +90,7 @@ module PP : sig
   val sep : string option ref
   val pad : float option ref
   val margin : float option ref
-  val scale : float ref      
+  val scale : float ref
   val xscale : float ref
   val yscale : float ref
   val dsiy : float ref
@@ -129,7 +129,7 @@ module PP : sig
   val classes : string option ref
   val showraw : StringSet.t ref
   val extrachars : float ref
-  val shift : float array ref      
+  val shift : float array ref
   val edgemerge : bool ref
   val labelinit : bool ref
 end

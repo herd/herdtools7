@@ -32,7 +32,7 @@ let blank = [' ''\t']
 let alpha = ['a'-'z''A'-'Z']
 let num = ['0'-'9']
 let reg = alpha (alpha|num)*
-    
+
 rule main out = parse
 | '(' blank* "xor" blank+ (reg as r1) blank+ (reg as r2) ')' as lxm
 {

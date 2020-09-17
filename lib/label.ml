@@ -20,7 +20,7 @@ type t = string
 
 let pp = Misc.identity
 
-let lab_count = ref 0 
+let lab_count = ref 0
 
 let reset () = lab_count := 0
 
@@ -28,7 +28,7 @@ let next_label s =
   let x = !lab_count in
   incr lab_count ;
   sprintf "%s%02i" s x
- 
+
 let fail p i = sprintf "Fail%i%i" p i
 and exit p i = sprintf "Exit%i%i" p i
 

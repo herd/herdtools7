@@ -44,4 +44,3 @@ let parse_cmdline options get_cmd_arg =
   Arg.parse options
     get_cmd_arg
     (sprintf "Usage %s [options] [arg]*\noptions are:" Sys.argv.(0))
-

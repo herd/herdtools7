@@ -26,7 +26,7 @@ module type Arch = sig
   val maybevToGlobal : MiscParser.maybev -> global
 
 (* Manifest location type *)
-  type location = 
+  type location =
     | Location_global of global
     | Location_deref of global * int
     | Location_reg of int * reg
@@ -36,7 +36,7 @@ end
 module Make(A:Arch) : sig
 
   type ('loc,'v) t = ('loc,'v, A.pseudo) MiscParser.r3
-      
+
   val allocate_regs :
     (MiscParser.location, MiscParser.maybev) t -> (A.location,A.v) t
 

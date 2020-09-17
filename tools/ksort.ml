@@ -22,7 +22,7 @@ let pp_name (n,es) =
   sprintf "N=%s E=[%s]" n
     (String.concat ","
        (List.map EdgeName.dbg es))
-    
+
 let read_name line =
   try
     let n = LexName.read line in
@@ -32,7 +32,7 @@ let read_name line =
     n
   with LexName.Error msg ->
     Warn.fatal "%s on '%s'" msg line
-    
+
 let rec do_rec k chan =
   let line =  try Some (input_line chan) with End_of_file -> None in
   match line with

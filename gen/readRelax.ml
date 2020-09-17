@@ -38,7 +38,7 @@ let () =
 module Top = struct
 
 (* Simplified relaxation: just strings... *)
-  
+
   module R = struct
     open LexUtil
 
@@ -80,7 +80,7 @@ module Top = struct
     Set.pp chan ", "
       (fun chan r -> fprintf chan "%s" (pp_relax r))
       t ;
-    fprintf chan "}"    
+    fprintf chan "}"
 
     module SetSet =  MySet.Make(Set)
 
@@ -93,7 +93,7 @@ module Top = struct
   open M
 
   let pp_relaxs rs = String.concat " " (List.map R.pp_relax rs)
-    
+
   let pp_os chan =
     List.iter
       (fun o ->
@@ -121,7 +121,7 @@ module Top = struct
           k)
       RelaxMap.empty os
 
-  let collect_non_relax rmap os =    
+  let collect_non_relax rmap os =
     List.fold_left
       (fun k o ->
         let relax = R.Set.of_list o.relaxs in
@@ -176,7 +176,7 @@ module Top = struct
       end
     end ;
     ()
-    
+
 end
 
 let read_names = function
@@ -189,7 +189,7 @@ let read_names = function
         | Some x -> read_rec (x::k)
         | None -> k in
       read_rec []
-  | xs ->  xs 
+  | xs ->  xs
 
 let names = read_names !names
 

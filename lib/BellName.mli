@@ -17,7 +17,7 @@
 (** Bell name handling *)
 
 
-(* Those names are special *) 
+(* Those names are special *)
 val scopes : string
 val regions : string
 val levels : string

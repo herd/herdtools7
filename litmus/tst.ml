@@ -31,5 +31,5 @@ let zyva fname =
 
 
 let () =
-  try zyva Sys.argv.(1) 
+  try zyva Sys.argv.(1)
   with Misc.Exit -> exit 2

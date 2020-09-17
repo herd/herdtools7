@@ -23,7 +23,7 @@ module type S = sig
   type pseudo
 
   type ('loc,'v) t = ('loc,'v, pseudo) MiscParser.r3
-      
+
   val allocate_regs :
     (MiscParser.location, MiscParser.maybev) t -> (location,v) t
 end
@@ -39,14 +39,14 @@ module type Arch = sig
   val maybevToGlobal : MiscParser.maybev -> global
 
 (* Manifest location type *)
-  type location = 
+  type location =
     | Location_global of global
     | Location_deref of global * int
     | Location_reg of int * reg
 
 end
 
-module Make (A:Arch) : S 
+module Make (A:Arch) : S
 with type v = A.v
 and type location = A.location
 and type pseudo = A.pseudo
@@ -56,7 +56,7 @@ and type pseudo = A.pseudo
    type location = A.location
    type pseudo = A.pseudo
    type ('loc,'v) t = ('loc,'v, pseudo) MiscParser.r3
-      
+
 (******************************************************)
 (* All those to substitute symbolic regs by real ones *)
 (******************************************************)
@@ -103,11 +103,11 @@ and type pseudo = A.pseudo
   let finish_code f_reg = List.map (finish_pseudo f_reg)
 
 
-(**********************************)	
+(**********************************)
 (* All those to collect registers *)
-(**********************************)	
+(**********************************)
 
-  module ProcRegSet = 
+  module ProcRegSet =
     MySet.Make
       (struct
 	type t = int * A.reg
@@ -133,7 +133,7 @@ and type pseudo = A.pseudo
       (List.fold_left
 	 (collect_pseudo  (RegSet.add,StringSet.add))
 	 (RegSet.empty,StringSet.empty))
-      
+
 
   let collect_location loc (regs,symbs as c) = match loc with
   | Location_reg (p,r) ->
@@ -243,7 +243,7 @@ and type pseudo = A.pseudo
 	    with Not_found -> assert false in
 	  proc,finish_code replace code)
 	prog envs in
-    
+
     let env =
       List.fold_left
 	(fun k (p,env_p) ->

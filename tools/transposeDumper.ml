@@ -91,7 +91,7 @@ end = struct
         dump_sep chan (MiscParser.pp_proc proc) ;
         begin match dump_proc_state p code t.init with
         | Some st ->
-            fprintf chan "%s\n" st ; 
+            fprintf chan "%s\n" st ;
             fprintf chan "***\n"
         | None -> ()
         end ;

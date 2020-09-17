@@ -90,7 +90,7 @@ with type loc_reg = A.arch_reg and type loc_global = A.arch_global =
         | 0 -> A.reg_compare r1 r2
         | r -> r
         end
-    | Location_global a1, Location_global a2 -> A.global_compare a1 a2 
+    | Location_global a1, Location_global a2 -> A.global_compare a1 a2
     | Location_deref (a1,i1), Location_deref (a2,i2) ->
         begin match A.global_compare a1 a2  with
         | 0 -> Misc.int_compare i1 i2

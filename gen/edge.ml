@@ -363,8 +363,8 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
 
 let fold_tedges_compat f r =
   let r = fold_ie (fun ie -> f (Ws ie)) r in
-  let r = 
-    F.fold_rmw (fun rmw r -> if Misc.string_eq (F.pp_rmw rmw) "" then f (Rmw rmw) r else r) r 
+  let r =
+    F.fold_rmw (fun rmw r -> if Misc.string_eq (F.pp_rmw rmw) "" then f (Rmw rmw) r else r) r
   in r
 
 let fold_tedges f r =
@@ -540,11 +540,11 @@ let fold_tedges f r =
       | (None,(Some _ as a))
       | ((Some _ as a),None) when a = F.pp_as_a ->
           add_lxm (pp_edge_with_pa compat e) e
-      | _,_ -> ()) 
- 
+      | _,_ -> ())
+
 
   let () =
-   four_times_iter_edges false iter_edges; 
+   four_times_iter_edges false iter_edges;
    fold_sd_extr_extr
       (fun sd e1 e2 () ->
         add_lxm

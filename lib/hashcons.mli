@@ -18,7 +18,7 @@
 (* Hash tables for hash-consing. Code borrowed to Jean-Christophe Filliatre,
    included by permission. *)
 
-type 'a hash_consed = private { 
+type 'a hash_consed = private {
   hkey : int;
   tag : int;
   node : 'a }

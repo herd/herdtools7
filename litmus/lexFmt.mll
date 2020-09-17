@@ -20,7 +20,7 @@ open Fmt
 
 let tr_prec = function
   | None -> 0
-  | Some s -> try int_of_string s with _ -> assert false 
+  | Some s -> try int_of_string s with _ -> assert false
 }
 
 let digit = ['0'-'9']
@@ -30,7 +30,7 @@ let sp = ' '*
 rule main k = parse
 | "%%" { main (Percent::k) lexbuf }
 | '%'
-  { 
+  {
     let pad = lexpad lexbuf in
     let conv = lexconv pad lexbuf in
     main (Conv conv::k) lexbuf }
@@ -38,7 +38,7 @@ rule main k = parse
 | eof { List.rev k }
 | "" { failwith "lexFmt: main" }
 
-and lexpad = parse 
+and lexpad = parse
 | '-' (num as x)? { Some_padding (tr_prec x,Left) }
 | '0' (num as x)? { Some_padding (tr_prec x,Zeros) }
 | num as x        { Some_padding (tr_prec (Some x),Right) }

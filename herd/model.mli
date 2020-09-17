@@ -23,7 +23,7 @@ type jade_opt = { jstrongst : bool;}
 type t =
   | File of string (* To convey model filename *)
   | Minimal of bool    (* true <=> check uniproc *)
-  | CAV12 of cav12_opt 
+  | CAV12 of cav12_opt
   | Generic of AST.t
 
 val tags : string list

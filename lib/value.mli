@@ -21,7 +21,7 @@ module type S =
 
 (* Constants, notice that they include symbolic "rigid" constants *)
       module Cst : Constant.S
-          
+
 (* flexible variables *)
       type csym = int (* Opened by Susmit, lose pointless abstraction *)
       val pp_csym : csym -> string
@@ -29,27 +29,27 @@ module type S =
 
 (* Values, ie constants + variables, that should be instanciated
    to constants later *)
-      type v = 
+      type v =
         | Var of csym
         | Val of Cst.v
 
       val pp_v  : v -> string
-      val pp : bool (* hexa *) -> v -> string 
+      val pp : bool (* hexa *) -> v -> string
 
 (* produce a fresh variable *)
       val fresh_var : unit -> v
       val from_var : csym -> v
       val as_var : v -> csym option
       val as_symbol : v -> string
-       
-(* Equality (for constraint solver) is possible *)	  
+
+(* Equality (for constraint solver) is possible *)
       val equalityPossible : v -> v -> bool
 
 (* Please use this for comparing constants... *)
       val compare : v -> v -> int
 
 (* Build constant values, either numerical or symbolic *)
-      val intToV  : int -> v 
+      val intToV  : int -> v
       val nameToV  : string -> v
       val cstToV : Cst.v -> v
       val maybevToV : MiscParser.maybev -> v

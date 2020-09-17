@@ -25,11 +25,10 @@ let num = digit+
 rule main = parse
 | [' ''\t''\n'',']+ { main lexbuf }
 | (name as id) ' '* ':' ' '* (num as i)
-    { (id,as_int i) :: main lexbuf } 
+    { (id,as_int i) :: main lexbuf }
 | eof { [] }
 | "" { assert false }
 
 {
 let parse s = main (Lexing.from_string s)
 }
-

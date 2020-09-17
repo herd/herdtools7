@@ -61,7 +61,7 @@ module Make(A:Arch_tools.S) = struct
 
   open MiscParser
 
-  let collect t = 
+  let collect t =
     let m =
       List.fold_left
         (fun m ((p,_),cs) ->

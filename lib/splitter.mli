@@ -63,4 +63,3 @@ module Make : functor (O:Config) -> sig
   val reinfo : info -> Lexing.lexbuf -> string
   val rehash : string -> Lexing.lexbuf -> string
 end
-

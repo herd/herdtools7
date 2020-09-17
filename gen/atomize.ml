@@ -19,7 +19,7 @@ open Code
 
 (* Configuration *)
 let arch = ref `PPC
- 
+
 let opts = [Util.arch_opt arch]
 
 module Make (A:Fence.S) =
@@ -60,7 +60,7 @@ module Make (A:Fence.S) =
                 if is_ext fst || is_ext lst then
                   { fst with E.a1 = atomic;}::rem
                 else es
-            
+
       let parse_line s =
         try
           let r = String.index s ':' in
@@ -132,5 +132,5 @@ let () =
   | `C ->
       let module M = Make(CArch_gen) in
       M.zyva
-  | `CPP -> Warn.fatal "CCP arch in atomize")      
+  | `CPP -> Warn.fatal "CCP arch in atomize")
      pp_es

@@ -50,7 +50,7 @@ module Make(O:Option) : S =
     | None -> Filename.current_dir_name
     | Some n -> n
 
-    let style = 
+    let style =
       if Filename.check_suffix arg ".tgz" then TarGz
       else if Filename.check_suffix arg ".tar" then Tar
       else Dir
@@ -70,7 +70,7 @@ module Make(O:Option) : S =
         eprintf "%i\n%!" r
       end ;
       r
-        
+
     let exec cmd = match command cmd with
     | 0 -> ()
     | _ -> Warn.fatal "Exec of '%s' failed" cmd
@@ -95,7 +95,7 @@ module Make(O:Option) : S =
         else
           Warn.fatal "directory %s does not exist"  arg
     | Tar|TarGz -> mk_temp_dir ()
-          
+
 
     let outname name = Filename.concat out_dir name
 
@@ -109,7 +109,7 @@ module Make(O:Option) : S =
       exec
         (sprintf "( cd %s && tar c%sf - %s ) > %s" dir1 z dir2 tar)
 
-    let exec_tar dir tar = exec_tar2 dir "." tar  
+    let exec_tar dir tar = exec_tar2 dir "." tar
 
     let tar () = match style with
     | Tar|TarGz ->
@@ -117,8 +117,8 @@ module Make(O:Option) : S =
         exec_tar dir arg ;
         rmdir dir
     | Dir -> ()
-          
-          
+
+
     let tar_dir dir =
       let tar = arg in
       let up = Filename.dirname dir
@@ -126,4 +126,3 @@ module Make(O:Option) : S =
       exec_tar2 up name tar ;
       rmdir up
   end
-    

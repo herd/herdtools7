@@ -31,11 +31,11 @@ scope_tree_list:
 | scope_tree scope_tree_list {$1::$2}
 
 scope_tree:
- | LPAR NAME scope_tree_list RPAR  
+ | LPAR NAME scope_tree_list RPAR
    {
    BellInfo.Tree($2,[],$3)
    }
- | LPAR NAME proc_list_sc RPAR 
+ | LPAR NAME proc_list_sc RPAR
    {
    BellInfo.Tree($2,$3,[])
    }

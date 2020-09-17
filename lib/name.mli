@@ -23,4 +23,3 @@ type t =
    texname : string ; (* to derive latex commands *)
    doc : string ;   (* Some limited info, carried to latex *)
   }
-    

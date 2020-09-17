@@ -39,7 +39,7 @@ module Top
       | e ->
           Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
           raise e
-            
+
     let zyva tests = Misc.iter_argv_or_stdin do_test tests
   end
 

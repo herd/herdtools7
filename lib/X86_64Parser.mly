@@ -47,7 +47,7 @@ module X86_64 = X86_64Base
 %token I_JE I_JNE I_JLE I_JLT I_JGT I_JGE I_JS I_JNS
 %token I_MOVNTI  I_MOVNTIL I_MOVNTIQ
 %token I_MOVD I_MOVNTDQA
-  
+
 %type <MiscParser.proc list * (X86_64Base.pseudo) list list> main
 %start  main
 
@@ -132,9 +132,9 @@ instr:
   | I_MOVQ   operand  COMMA  effaddr
     {X86_64.I_EFF_OP (X86_64.I_MOV, X86_64.I64b, $4,$2)}
   | I_MOVQ XMM COMMA reg
-    { X86_64.I_MOVD ( X86_64.I64b,$4,$2) }  
+    { X86_64.I_MOVD ( X86_64.I64b,$4,$2) }
   | I_MOVD XMM COMMA reg
-    { X86_64.I_MOVD ( X86_64.I32b,$4,$2) }  
+    { X86_64.I_MOVD ( X86_64.I32b,$4,$2) }
   | I_MOVNTI reg COMMA effaddr
       {X86_64.I_MOVNTI (X86_64.INSb,$4,$2)}
   | I_MOVNTIL reg COMMA effaddr

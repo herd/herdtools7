@@ -31,7 +31,7 @@ module Make(O:Config) = struct
 let blank = [' ''\t''\r']
 let name = [^' ''\t''\n''\r''%' '#''"']+
 let comment = ('#'|'%') [^'\n']*
-rule main parse_value t idx = parse 
+rule main parse_value t idx = parse
 | blank* (name as key)
  (blank+
  ((name as value_pp)|('"' ([^'"']* as value_pp) '"'))  (* '"' *)
@@ -61,7 +61,7 @@ let read_from idx fname chan t parse_value =
      pos_bol = 0; pos_cnum = 0};
   try
     main  parse_value t idx lexbuf
-  with LexMisc.Error (msg,loc) ->    
+  with LexMisc.Error (msg,loc) ->
     Printf.eprintf "%a: error in rename map, %s\n"
       Pos.pp_pos loc msg ;
     raise Misc.Exit (* silent, message printed above *)

@@ -62,4 +62,3 @@ let is_default = function
 let get_size = function
   | Int -> Word
   | Std (_,sz) -> sz
-

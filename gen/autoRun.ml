@@ -29,8 +29,8 @@ type base_ck = int StringMap.t
 
 let pp_base chan m =
   StringMap.iter
-    (fun k v -> fprintf chan "<%s,%i>" k v) 
-    m 
+    (fun k v -> fprintf chan "<%s,%i>" k v)
+    m
 
 type answers = string Answers.t
 
@@ -39,7 +39,7 @@ let pp_answers chan m =
     (fun n s -> fprintf chan "<%i,\"%s\">" n s)
     m
 
-type ckpt = 
+type ckpt =
     { logs_ck : StringSet.t ;
       base_ck : base_ck ;
       lastrun_ck : int ;
@@ -52,7 +52,7 @@ let pp_ckpt chan c =
     (fun chan s -> StringSet.pp chan "," output_string s)
     c.logs_ck ;
   fprintf chan "Answers = %a\n" pp_answers c.answers_ck ;
-  flush chan 
+  flush chan
 
 let empty_ckpt =
   { logs_ck = StringSet.empty ; base_ck = StringMap.empty ;
@@ -76,9 +76,9 @@ module Make(C:AutoConf.S) = struct
 
 (* One module is still configured the old way, using a reference... *)
 
-  let () = if verbose > 1 then MySys.debug := true 
+  let () = if verbose > 1 then MySys.debug := true
 
-      
+
 (*********)
 (* Utils *)
 (*********)
@@ -102,7 +102,7 @@ module Make(C:AutoConf.S) = struct
     else
       sprintf "tar cf %s %s" tar arg
 
-        
+
   let open_process_in com =
     if verbose > 1 then eprintf "open_process_in: %s\n" com ;
     Unix.open_process_in com
@@ -153,7 +153,7 @@ module Make(C:AutoConf.S) = struct
        (* All relaxations involved *)
        all :  R.Set.t ;
        (* Initial safe set *)
-       safe0 : R.Set.t ; 
+       safe0 : R.Set.t ;
        (* Cumulativity relaxation present in all *)
        cumul : FenceSet.t Config.cumul ;
        (* Three significant sets *)
@@ -162,9 +162,9 @@ module Make(C:AutoConf.S) = struct
        relaxed_r : R.Set.t ;
        (* Internal record of test subdirectories *)
        bases : Base.t ;
-       (* Checkpoint data *)    
+       (* Checkpoint data *)
        lastrun : int ;
-       logs : StringSet.t ; 
+       logs : StringSet.t ;
        base_ntests : base_ck ;
        answers : answers ;
        (* List of tests not run again (as edge cycles) *)
@@ -181,7 +181,7 @@ module Make(C:AutoConf.S) = struct
     let tname = sprintf "%s.tmp" name in
 
     let ckpt =
-      { 
+      {
         logs_ck = st.logs ;
         base_ck  = st.base_ntests ;
         lastrun_ck = st.lastrun ;
@@ -201,7 +201,7 @@ module Make(C:AutoConf.S) = struct
     ()
 
 
-      
+
   let pp_state chan st =
     fprintf chan "** Step %i **\n" st.nrun ;
     fprintf chan "Testing: %a\n" R.pp_set st.cur ;
@@ -265,14 +265,14 @@ module Make(C:AutoConf.S) = struct
       -> Some e
     | _ -> None
 
-  let rfe = parse_relax "Rfe" 
+  let rfe = parse_relax "Rfe"
   let relax_rfe = rfe
 
 
   let rfe_is_safe safes = R.Set.mem rfe safes
 
   let pp_rs chan =
-    R.Set.pp chan "," 
+    R.Set.pp chan ","
       (fun chan r -> fprintf chan "%s" (R.pp_relax r))
 
   let diy_mode =
@@ -298,7 +298,7 @@ module Make(C:AutoConf.S) = struct
            let open Config in
            match x with
           | Empty -> "false"
-          | All -> "true" 
+          | All -> "true"
           | Set rs ->
               FenceSet.pp_str "," A.A.pp_fence rs) ;
         fprintf chan "-size %i\n" sz ;
@@ -336,7 +336,7 @@ module Make(C:AutoConf.S) = struct
     let safe,relax,cumul =
       if rfe_is_safe safe then
         let safe = R.expand_cumul safe in
-        let relax = R.Set.diff (R.expand_cumul relax) safe in 
+        let relax = R.Set.diff (R.expand_cumul relax) safe in
         safe,relax,Config.All
       else
         safe,relax,cumul in
@@ -350,7 +350,7 @@ module Make(C:AutoConf.S) = struct
 
     if R.Set.is_empty relax then dir,0
     else
-      let do_diy cumul maxrelax = 
+      let do_diy cumul maxrelax =
         let cname =
           mk_conf cumul dir base diy_sz maxrelax relax safe in
         let com =
@@ -359,7 +359,7 @@ module Make(C:AutoConf.S) = struct
         let ntests = AutoLex.diy chan in
         ignore (Unix.close_process_in chan) ;
         ntests in
-      
+
       let rec do_rec cumul n =
         if n > 2 then
           let open AutoOpt in
@@ -400,7 +400,7 @@ module Make(C:AutoConf.S) = struct
 (***************)
 
   let litmus_opts =
-    let open AutoOpt in 
+    let open AutoOpt in
     match C.mach with
     | Simul _ | Local | Distant _ -> litmus_opts
     | Cross (_,addr) -> sprintf "-crossrun %s %s" addr litmus_opts
@@ -419,10 +419,10 @@ module Make(C:AutoConf.S) = struct
     end ;
     tar_name
 
-(*************) 
+(*************)
 (* Run tests *)
 (*************)
-  let addpath = opt.AutoOpt.distaddpath 
+  let addpath = opt.AutoOpt.distaddpath
   let cross_dir = C.opt.AutoOpt.work_dir
 
   module Compile =
@@ -481,8 +481,8 @@ module Make(C:AutoConf.S) = struct
     remove tarname ;
     let compile =
       sprintf
-        "/bin/rm -rf %s && mkdir %s && cd %s && %s && /bin/rm %s && %s" 
-        dname dname dname (untar dist_tar) dist_tar build in      
+        "/bin/rm -rf %s && mkdir %s && cd %s && %s && /bin/rm %s && %s"
+        dname dname dname (untar dist_tar) dist_tar build in
     begin match C.mach with
     | Local|Simul _|Distant _ ->
         begin
@@ -499,7 +499,7 @@ module Make(C:AutoConf.S) = struct
         begin
           try Compile.dist_sh com
           with e -> compile_cleans [dist_tar; dname] ; raise e
-        end ;        
+        end ;
         let inter =
           Filename.concat cross_dir dist_tar2 in
         begin try
@@ -521,8 +521,8 @@ module Make(C:AutoConf.S) = struct
           run_cleans [dname2] ;
         end ;
         dname2
-    end          
-      
+    end
+
 
   let run com dname dir base =
 
@@ -606,7 +606,7 @@ module Make(C:AutoConf.S) = struct
         (StringSet.of_list
            (List.map (fun o -> o.L.cycle) yes))
         st.dontrun in
-    
+
     let ok = Outs.diff (Outs.make st.all yes) st.ok in
     let new_ok = Outs.union ok st.ok in
     let outs_no = Outs.diff (Outs.make st.all no) new_ok in
@@ -621,8 +621,8 @@ module Make(C:AutoConf.S) = struct
 
 (* Safe heuristic *)
   let (++) x f = if R.Set.is_empty x then f () else x
-    
-  let get_safe_in_outs os st =    
+
+  let get_safe_in_outs os st =
     if verbose > 0 then Outs.pp stderr "No" os ;
     let os = Outs.simplify_for_safes st.relaxed_r st.cur os in
     if verbose > 0 then Outs.pp stderr "Simplified No" os ;
@@ -663,7 +663,7 @@ module Make(C:AutoConf.S) = struct
 (********)
 (* zyva *)
 (********)
-      
+
 (* Generic diy & litmus & run *)
 
   let call_diy_litmus_run phase st cumul brfi =
@@ -681,9 +681,9 @@ module Make(C:AutoConf.S) = struct
             | Two -> safe_diy st my_dir base_id st.safe_r cumul brfi in
           let base = { base with AutoBase.ntests = ntests ; } in
           src_dir,base
-        end else 
-          diy_dir my_dir base_id,          
-          try 
+        end else
+          diy_dir my_dir base_id,
+          try
             let ntests = StringMap.find base_id st.base_ntests in
             { base with AutoBase.ntests = ntests ; }
           with Not_found -> assert false
@@ -714,7 +714,7 @@ module Make(C:AutoConf.S) = struct
 (* Sub-Step one, find new relaxations to be relaxed or safe *)
 
 (* Returns a pair bool X state, the boolean is false when obvious fixpoint is reached
-   (ie sub-phase 1 does not produce any test *)      
+   (ie sub-phase 1 does not produce any test *)
 
   let phase_one st =
     let cumul = st.cumul in
@@ -740,7 +740,7 @@ module Make(C:AutoConf.S) = struct
         let new_cur =
           R.Set.diff
             st.all (R.Set.union new_safe new_relax) in
-        { st with 
+        { st with
           cur = new_cur ;
           safe_r = new_safe ;
           relaxed_r =  new_relax ; }
@@ -770,7 +770,7 @@ module Make(C:AutoConf.S) = struct
         let new_cur =
           R.Set.diff
             st.all (R.Set.union new_safe new_relax) in
-        { st with 
+        { st with
           cur = new_cur ;
           safe_r = new_safe ;
           relaxed_r =  new_relax ; }
@@ -792,7 +792,7 @@ module Make(C:AutoConf.S) = struct
     else
       let cumul = Config.All in
       let logs,st = call_diy_litmus_run Two st cumul false in
-      let st = 
+      let st =
         match logs with
         | None -> st
         | Some logs ->
@@ -829,7 +829,7 @@ module Make(C:AutoConf.S) = struct
         try line,R.Set.inter (parse_relaxs line) st.cur
         with Misc.Fatal msg -> eprintf "%s\n%!" msg ; do_ask_user st
 
-  let ask_user_record st =    
+  let ask_user_record st =
     try
       let line = Answers.find st.nrun st.answers in
       printf "Previous run answer is: %s\n%!" line ;
@@ -838,7 +838,7 @@ module Make(C:AutoConf.S) = struct
       | _ ->
           try R.Set.inter (parse_relaxs line) st.cur
           with Misc.Fatal _ -> assert false in
-      safe,st 
+      safe,st
     with Not_found ->
       if interactive || st.interactive_forced then
         let line,safe = do_ask_user st in
@@ -847,7 +847,7 @@ module Make(C:AutoConf.S) = struct
         printf "Assuming %a to be safe\n%!" R.pp_set st.cur ;
         st.cur,st
       end
-          
+
 (*
   These settings of state will have two effects:
   1. force user input;
@@ -866,7 +866,7 @@ module Make(C:AutoConf.S) = struct
     if C.opt.AutoOpt.force_interactive && not st.interactive_forced then
       ask_user
         (forget_up_to_now { st with interactive_forced = true ; } )
-    else      
+    else
       let safe,st = ask_user_record st in
       let unexplained =
         Outs.unexplained (R.Set.union safe st.safe_r) st.ok in
@@ -874,7 +874,7 @@ module Make(C:AutoConf.S) = struct
         safe,st
       else begin
         printf
-          "You cannot select %a!!!\n" 
+          "You cannot select %a!!!\n"
           R.pp_set safe ;
         Outs.pp stdout "Unexplained Ok tests" unexplained ;
         if not interactive then begin
@@ -933,7 +933,7 @@ module Make(C:AutoConf.S) = struct
           | _ -> r::k)
           safes [] in
       R.Set.of_list rs
-            
+
 (* Remove cumulativity from safes when rfe is safe *)
     let cumul safes =
       if R.Set.mem relax_rfe safes then
@@ -956,7 +956,7 @@ module Make(C:AutoConf.S) = struct
       else safes
 
     let expand_nice (safes,relaxs) =
-      let safes = expand_ones safes safes 
+      let safes = expand_ones safes safes
       and relaxs = expand_ones safes relaxs in
       let safes =  R.Set.diff safes relaxs in
 (*      let safes = remove_all_safes safes in *)
@@ -967,11 +967,11 @@ module Make(C:AutoConf.S) = struct
       let s,r as p1 = expand_nice p in
       if R.Set.equal s safes && R.Set.equal r relaxs then p1
       else fix p1
-  
-    let nice st = fix (st.safe_r,st.relaxed_r) 
+
+    let nice st = fix (st.safe_r,st.relaxed_r)
   end
-    
-            
+
+
 
   let over st =
     R.Set.iter
@@ -982,15 +982,15 @@ module Make(C:AutoConf.S) = struct
         Outs.pp stdout title w)
       st.relaxed_r ;
 (*
-  let st = 
-      if rfe_is_safe st.safe_r then expand_cumul_st st 
+  let st =
+      if rfe_is_safe st.safe_r then expand_cumul_st st
       else st in
     let relaxed = analyse_observed_relaxs st.relaxed_r st.safe_r in
     let safe = remove_safe_rfi st.safe_r in
 *)
     let nice_safe,nice_relaxed = Expand.nice st in
     fprintf stdout "Observed relaxed: %a\n" R.pp_set nice_relaxed;
-    fprintf stdout "Observed safe: %a\n" R.pp_set nice_safe ;    
+    fprintf stdout "Observed safe: %a\n" R.pp_set nice_safe ;
     fprintf stdout "** Now checking safe set conformance **\n%!" ;
     let safe_check =
       Expand.remove_all_safes (Expand.cumul st.safe_r) in
@@ -1000,7 +1000,7 @@ module Make(C:AutoConf.S) = struct
         cur = R.Set.empty ; all = safe_check ; safe0 = safe_check ;
         ok = Outs.empty ;
         dontrun = StringSet.empty ;
-      } in    
+      } in
     let ok = conform_safe st_conform opt.AutoOpt.stabilise in
     fprintf stdout "Observed relaxed: %a\n" R.pp_set nice_relaxed;
     fprintf stdout "Observed safe: %a\n" R.pp_set nice_safe ;
@@ -1011,7 +1011,7 @@ module Make(C:AutoConf.S) = struct
     ()
 
 
-(* Compute 'observed' current set *) 
+(* Compute 'observed' current set *)
 let as_fences rs =
   R.Set.fold
     (fun r k -> match as_fence r with
@@ -1068,8 +1068,8 @@ let as_fences rs =
       lastrun = -1 ;
       all = R.Set.empty ;
       safe0 = R.Set.empty ;
-      cur = R.Set.empty ; 
-      safe_r = R.Set.empty ; relaxed_r = R.Set.empty ; 
+      cur = R.Set.empty ;
+      safe_r = R.Set.empty ; relaxed_r = R.Set.empty ;
       bases = Base.empty ;
       base_ntests = StringMap.empty ;
       logs = StringSet.empty ;
@@ -1120,7 +1120,7 @@ let as_fences rs =
 
   let restore_conform c =
     let safe = parse_relaxs C.safe in
-    conform 
+    conform
       { empty_state with
         logs = c.logs_ck ;  lastrun = c.lastrun_ck ;
         base_ntests = c.base_ck ;

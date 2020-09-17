@@ -36,7 +36,7 @@ and high = parse
 | (nat as nat) '[' { Nat (as_nat nat,Open) }
 | '['              { Infinity }
 
-and dots = parse 
+and dots = parse
 | sp* ".." '.'* sp* { () }
 | "" { raise Error }
 

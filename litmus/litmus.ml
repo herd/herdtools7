@@ -89,7 +89,7 @@ let opts =
      "used detached POSIX threads" ;
    begin let module P = ParseTag.Make(ThreadStyle) in
    P.parse "-thread" Option.threadstyle "set thread nature" end ;
-   begin let module P = ParseTag.Make(Launch) in   
+   begin let module P = ParseTag.Make(Launch) in
    P.parse "-launch" Option.launch "set type of phread lauch" end ;
    begin let module P = ParseTag.Make(Memory) in
    P.parse "-mem" Option.memory "set memory mode" end ;

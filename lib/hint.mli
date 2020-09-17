@@ -19,7 +19,7 @@
 type t = (string * string) list
 
 (* Dumping info *)
-type out 
+type out
 
 val none : out
 val open_out : string -> out

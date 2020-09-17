@@ -34,4 +34,3 @@ let parse tag =
 let pp = function
   | Adapt -> "adapt"
   | St i -> sprintf "%i" i
-        

@@ -48,4 +48,4 @@ end
 
 module Make :
   functor (O:Config) -> functor(Tar : Tar.S) -> functor (CT : OneTest) ->
-  sig val from_files : string list -> unit end   
+  sig val from_files : string list -> unit end

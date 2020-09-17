@@ -27,7 +27,7 @@ let fconcat d1 d2 = match d1 with
       d2
 
 let do_include lex fname =
-  Misc.input_protect 
+  Misc.input_protect
     (fun chan ->
       try
         let lexbuf = Lexing.from_channel chan in
@@ -57,7 +57,7 @@ rule main dir get acc = parse
    }
 | '#' [^'\n']* '\n'
    { incr_lineno lexbuf; main dir get acc lexbuf }
-  
+
 | (non_space_eq+ as name) space+
   (non_space_eq+ as key) (space+|(space* '=' space*))
   ("" | (non_space_eq [^'\n']+) as v)

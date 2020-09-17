@@ -74,14 +74,14 @@ struct
         let tr = Misc.identity
       end)
 
-  let from_chan chan fname in_chan =    
+  let from_chan chan fname in_chan =
     try
       let { Splitter.locs = locs;  name=name; _} =
         S.split fname in_chan in
       let tname =  name.Name.name in
       match check_locs tname with
       | None -> ()
-      | Some ls ->          
+      | Some ls ->
           let _,_,(constr_start,constr_end),(_last_start,_loc_eof) = locs in
           let lexbuf = LU.from_section (constr_start,constr_end) in_chan in
           match LogConstr.parse_locs_cond lexbuf with
@@ -96,8 +96,8 @@ struct
     with LexMisc.Error (msg,pos) ->
       Printf.eprintf
 	"%a: Lex error %s (in %s)\n" Pos.pp_pos pos msg fname ;
-      raise Misc.Exit 
-      
+      raise Misc.Exit
+
   let from_file chan name =
     try
       Misc.input_protect
@@ -119,7 +119,7 @@ let verbose = ref 0
 let args = ref []
 let locs = ref []
 
-let opts = 
+let opts =
   [ "-v", Arg.Unit (fun () -> incr verbose)," be verbose";
     "-locs", Arg.String (fun s -> locs := !locs @ [s]), " <name> specify location files";]
 
@@ -143,4 +143,3 @@ module X =
    end)
 
 let () = X.from_args !args
-

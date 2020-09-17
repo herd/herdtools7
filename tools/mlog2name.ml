@@ -24,9 +24,9 @@ let logs = ref []
 let acceptempty = ref false
 
 let options =
-  [  
+  [
   ("-q", Arg.Unit (fun _ -> verbose := -1),
-   "<non-default> be silent");  
+   "<non-default> be silent");
   ("-v", Arg.Unit (fun _ -> incr verbose),
    "<non-default> show various diagnostics, repeat to increase verbosity");
    ("-acceptempty", Arg.Bool (fun b -> acceptempty := b),
@@ -92,4 +92,3 @@ let () =
     StringSet.iter print_endline names
   with Misc.Fatal msg|Misc.UserError msg ->
     eprintf "Fatal error: %s\n%!" msg
-

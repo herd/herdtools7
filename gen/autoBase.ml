@@ -42,7 +42,7 @@ module Make(A:AutoArch.S) =
            cur : R.Set.t ;
            rel : R.Set.t ; saf : R.Set.t ;
          }
-      let compare a b = 
+      let compare a b =
         begin match R.Set.compare a.cur b.cur with
         | 0 ->
             begin match R.Set.compare a.rel b.rel with
@@ -63,7 +63,7 @@ module Make(A:AutoArch.S) =
     module Key = struct
       type t = { phase : AutoPhase.t ; key : K.t }
 
-      let compare a b = 
+      let compare a b =
         match compare a.phase b.phase with
         | 0 -> K.compare a.key b.key
         | r -> r
@@ -97,7 +97,7 @@ module Make(A:AutoArch.S) =
       with Not_found ->
         let new_base =
           { id = do_mk_base bases.next_base ;
-            num = bases.next_base ; 
+            num = bases.next_base ;
             ntests = -1 ;
             next_log = 0 ; } in
         let bases =

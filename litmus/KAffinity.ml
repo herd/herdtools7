@@ -38,7 +38,7 @@ let parse tag = match Misc.lowercase tag with
           if pref <> incr_pref then raise (Failure incr_pref) ;
           let suff = String.sub tag pref_len (len-pref_len) in
           Some (Incr (int_of_string suff))
-        else          
+        else
           None
       with Failure _ -> None
 
@@ -46,4 +46,3 @@ let parse tag = match Misc.lowercase tag with
     | No -> "none"
     | Incr i -> sprintf "incr%i" i
     | Random -> "random"
-        

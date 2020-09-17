@@ -58,7 +58,7 @@ module Make(O:Config) = struct
 
   let of_name name chan =
     zyva (LL.read_name name) chan
-    
+
 end
 
 
@@ -116,4 +116,3 @@ module X = Make(Config)
 let () = match !log with
 | None -> X.of_chan "*stdin*" stdin stdout
 | Some log -> X.of_name log stdout
-

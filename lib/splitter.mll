@@ -45,7 +45,7 @@ let add_info buff k v =
   Buffer.add_string buff k ;
   Buffer.add_char buff '=' ;
   Buffer.add_string buff v ;
-  Buffer.add_char buff '\n'        
+  Buffer.add_char buff '\n'
 
 module Make(O:Config) = struct
   module LU = LexUtils.Make(O)
@@ -200,7 +200,7 @@ and change_info found p buff = parse
   { incr_lineno lexbuf ;
     let k,v = p in
     if O.debug then Printf.eprintf "Found key: %s\n%!" key ;
-    let found = 
+    let found =
       if k = key then begin
         if not found then add_info buff k v ;
         true

@@ -21,7 +21,7 @@ module type S = sig
 
   type glob_t = {
       global : (string * CType.t) list ;  (* Types of global locations *)
-      aligned : (string * CType.t) list ; (* Hidden, implementation, type to force alignment *) 
+      aligned : (string * CType.t) list ; (* Hidden, implementation, type to force alignment *)
       volatile : string list ;
     }
 

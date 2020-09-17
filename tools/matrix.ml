@@ -38,7 +38,7 @@ type matrix = column list
 (****************)
 
 module type I = sig
-  type info 
+  type info
 
 (*
  Build information matrix from test result matrix.
@@ -78,7 +78,7 @@ module Build (I:I) = struct
           let k = ks.(i_ks) and t = ts.(i_ts) in
           let c = String.compare k.Key.name t.LogState.tname in
           if c < 0 then begin
-            out nope ; loop (i_ks+1) i_ts            
+            out nope ; loop (i_ks+1) i_ts
           end else if c > 0 then begin
             loop i_ks (i_ts+1)
           end else (* c = 0 *) begin
@@ -89,7 +89,7 @@ module Build (I:I) = struct
       end in
     loop 0 0 ;
     ExtArray.to_array tout
-    
+
   let build keys logs =
     List.map (fun log -> extract log keys log.LogState.tests) logs
 
@@ -163,12 +163,12 @@ module Dump(Opt:Config) = struct
 
   let hline c n =
     match mode with
-    | Txt -> 
+    | Txt ->
         for _k=1 to n do
 	  output_char chan c
         done ;
         output_char chan '\n'
-    | LaTeX|HeVeA|HeVeANew -> 
+    | LaTeX|HeVeA|HeVeANew ->
         fprintf chan "\\hline\n"
 
   let dump_row cell1 w1 cell2 w2 cells ws =
@@ -186,20 +186,20 @@ module Dump(Opt:Config) = struct
         in
 
 (* Annoying typechecker wants me to put that annotation exactly there *)
-        let fmtstringbegin = 
+        let fmtstringbegin =
 	  match mode with
 	  | Txt -> ("%-*s|" : (int -> string -> unit, out_channel, unit) format)
 	  | LaTeX|HeVeA|HeVeANew -> "%-*s" in
 
 
-        let fmtstringmid = 
-	  match mode with 
-	  | Txt -> (" %-*s" : (int -> string -> unit, out_channel, unit) format) 
+        let fmtstringmid =
+	  match mode with
+	  | Txt -> (" %-*s" : (int -> string -> unit, out_channel, unit) format)
 	  | LaTeX|HeVeA|HeVeANew -> "& %-*s" in
 
         let endline () =
-	  match mode with 
-	  | Txt -> output_char chan '\n' 
+	  match mode with
+	  | Txt -> output_char chan '\n'
 	  | LaTeX|HeVeA|HeVeANew -> fprintf chan " \\\\\n"
         in
 
@@ -219,13 +219,13 @@ module Dump(Opt:Config) = struct
 	    fprintf chan fmtstringbegin w2 (Misc.proj_opt "" x2) ;
 	end;
         List.iter2
-          (fun w x -> 
-	    let xo = Misc.proj_opt "" x in 
+          (fun w x ->
+	    let xo = Misc.proj_opt "" x in
 	    (* Ghastly hack to kill column in latex output *)
-	    if xo = "kill" then () 
+	    if xo = "kill" then ()
 	    else fprintf chan fmtstringmid w xo)
           ws xs ;
-        endline (); 
+        endline ();
         do_rec c1 c2 cs
       end in
 
@@ -243,7 +243,7 @@ module Dump(Opt:Config) = struct
   | _,_ -> String.compare s1 s2
 
   let order_order k1 k2 =
-    let idx1 = TblRename.find_order Opt.orders k1 
+    let idx1 = TblRename.find_order Opt.orders k1
     and idx2 = TblRename.find_order Opt.orders k2 in
     Misc.int_compare idx1 idx2
 
@@ -254,7 +254,7 @@ module Dump(Opt:Config) = struct
         try let idx1 = TblRename.find_order Opt.kinds  k1 in
         try let idx2 = TblRename.find_order Opt.kinds  k2 in
         Misc.int_compare idx1 idx2
-        with Not_found -> -1          
+        with Not_found -> -1
         with Not_found ->
           try ignore (TblRename.find_order kinds  k2) ; 1
           with Not_found -> str_compare k1 k2)
@@ -302,7 +302,7 @@ let transpose_out m =
       col1,Array.to_list mout
   | [] -> assert false
 
-  
+
 (* Sorting rows proper *)
   let sort_with_col2 col1 m = match m with
   | [] -> (* Empty matrix do not transpose *)
@@ -377,28 +377,28 @@ let transpose_out m =
         add_last col1 "",
         (match col2 with None -> None | Some c -> Some (add_last c [])),
         List.map2 (fun col c -> add_last col [c]) m rown in
-    let col1,col2,m = sort_matrix_by_col1 col1 ?col2:col2 m in    
+    let col1,col2,m = sort_matrix_by_col1 col1 ?col2:col2 m in
     let col1,col2,m =
-      if show_empty_rows then col1,col2,m        
+      if show_empty_rows then col1,col2,m
       else erase_empty_rows col1 ?col2:col2 m in
     let w1 = max_array String.length col1
     and w2 = match col2 with
     | None -> 0
     | Some col2 -> max_array (max_list String.length) col2 in
-    let row1_expanded = 
-      List.flatten 
-        (List.map 
-	   (fun (k,s) -> 
-	     let smode = 
+    let row1_expanded =
+      List.flatten
+        (List.map
+	   (fun (k,s) ->
+	     let smode =
 	       match mode with
 	       | Txt -> s
 	       | LaTeX|HeVeA ->
-		   if k = 1 then sprintf "\\multicolumn{1}{|c|}{%s}" s 
-		   else sprintf "\\multicolumn{%i}{|l|}{%s}" k s 
-               |HeVeANew -> 
-		   if k = 1 then sprintf "\\multicolumn{1}{|c}{%s}" s 
-		   else sprintf "\\multicolumn{%i}{l}{%s}" k s 
-	     in 
+		   if k = 1 then sprintf "\\multicolumn{1}{|c|}{%s}" s
+		   else sprintf "\\multicolumn{%i}{|l|}{%s}" k s
+               |HeVeANew ->
+		   if k = 1 then sprintf "\\multicolumn{1}{|c}{%s}" s
+		   else sprintf "\\multicolumn{%i}{l}{%s}" k s
+	     in
 	     complete_list "kill" k [smode]) row1) in
     let ws =
       match m with
@@ -410,17 +410,17 @@ let transpose_out m =
             (List.map (max_array (max_list String.length)) m)
             (List.map String.length row1_expanded) in
     let rec do_rec i width c1 c2 cs previous_first_char (*linecount*) =
-      let x1 = extract_col i c1 
+      let x1 = extract_col i c1
       and xc2 = extract_col_opt i c2
       and xs = extract_cols i cs in
       let x2 = Misc.app_opt (fun x -> x) xc2 in
       if not (Misc.is_none x1) then begin
         hline '-' width ;
-        let this_first_char = 
-          match x1 with 
+        let this_first_char =
+          match x1 with
           | Some s -> (try s.[0] with Invalid_argument _ -> ' ')
           | None -> ' ' in
-        if this_first_char <> previous_first_char then 
+        if this_first_char <> previous_first_char then
           (match mode with
           | Txt|HeVeA|HeVeANew -> ()
           | LaTeX -> hline '-' width);
@@ -435,14 +435,14 @@ let transpose_out m =
         do_rec (i+1) width c1 c2 cs this_first_char (* (linecount+1) *)
       end in
 
-    let do_header () = 
+    let do_header () =
       match mode with
       | Txt -> fprintf chan "*%s*\n" legend
       | LaTeX ->
 	  fprintf chan "\\newcommand{\\%stable}{\n" legend ;
 	  fprintf chan "\\begin{longtable}" ;
           begin match col2 with
-          | None -> fprintf chan "{|l||" 
+          | None -> fprintf chan "{|l||"
           | Some _ -> fprintf chan "{|l|l||"
           end ;
 	  List.iter (fun _ -> fprintf chan "r|") row1_expanded;
@@ -454,10 +454,10 @@ let transpose_out m =
           | _ -> assert false in
 	  fprintf chan "\\begin{tabular}" ;
           begin if is_new then  match col2 with
-          | None -> fprintf chan "{l|" 
+          | None -> fprintf chan "{l|"
           | Some _ -> fprintf chan "{l|l|"
           else match col2 with
-          | None -> fprintf chan "{|l||" 
+          | None -> fprintf chan "{|l||"
           | Some _ -> fprintf chan "{|l|l||"
           end ;
           let rs = List.map (fun _ -> "r") row1_expanded in
@@ -471,8 +471,8 @@ let transpose_out m =
 
     in
 
-    let do_footer () = 
-      match mode with 
+    let do_footer () =
+      match mode with
       | Txt -> ()
       | LaTeX ->
           fprintf chan "\\hline\n\\end{longtable}}\n"
@@ -482,7 +482,7 @@ let transpose_out m =
           fprintf chan "\\end{tabular}\n"
 
     in
-    
+
     do_header ();
     dump_row "" w1 ["Kind"] w2 (List.map (fun x -> [x]) row1_expanded) ws ;
     let width =
@@ -491,7 +491,7 @@ let transpose_out m =
     | HeVeANew -> ()
     | Txt|LaTeX|HeVeA -> hline '-' width
     end ;
-    begin match mode with 
+    begin match mode with
     | Txt|HeVeA|HeVeANew -> ()
     | LaTeX -> fprintf chan "\\endhead\n"
     end ;

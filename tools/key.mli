@@ -63,7 +63,7 @@ module Make(Opt:Config) : sig
    and first column *)
   module Cond : sig
 
-    type info = 
+    type info =
         { cond : LogConstr.cond option ; unsure : bool ;
           kind : LogState.kind; }
 

@@ -13,7 +13,7 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
-{  
+{
   exception Error of string
 
   type func =
@@ -40,7 +40,7 @@ rule main = parse
       let (src,tgt) = match Archs.parse src,Archs.parse tgt with
 	| Some s,Some t -> s,t
 	| _ -> raise (Error "Source or target architecture unrecognized.")
-      in { 
+      in {
 	source = src;
 	target = tgt;
         funcs = List.rev f;
@@ -48,7 +48,7 @@ rule main = parse
       }
     }
 | "" {raise (Error "Source or target architecture unspecified.")}
-	
+
 and conv l f = parse
     | eof {(l,f)}
     | '"' ([^'"']* as left) '"' blank* arrow blank* '"' ([^'"']* as right) '"' blank*
@@ -75,7 +75,7 @@ and conv l f = parse
       raise (Error msg)}
 
 {
-  
+
   let parse chin = main (Lexing.from_channel chin)
-    
+
 }

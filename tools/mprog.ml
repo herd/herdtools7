@@ -83,7 +83,7 @@ module Top
                   (fun k (_,(_,v)) -> match v with
                   | Constant.Symbolic _ as loc -> add_loc loc k
                   | _ -> k) gs st in
-                      
+
               let zeros =
                 MiscParser.LocSet.fold
                   (fun loc k ->
@@ -133,7 +133,7 @@ module Top
                          (fun a -> sprintf "%s;" (dump_state_atom dump_reg a))
                          st) in
                   Some pp
-                
+
             type prop = MiscParser.prop
 
             let dump_atom a =
@@ -189,7 +189,7 @@ module Top
       module D = Dumper.Make(Arch)
 
       let zyva = match O.outputdir with
-      | None -> 
+      | None ->
           fun name parsed ->
             D.dump_info stdout name (Alloc.allocate_regs parsed)
       | Some d ->
@@ -232,7 +232,7 @@ module Top
       | LaTeX|HeVeA|HeVeANew ->
           let module Z =  ToolParse.Top(T)(Latex) in
           Z.from_file
-          
+
   end
 
 (***********************)
@@ -256,7 +256,7 @@ let opts =
    "-transpose", Arg.Bool (fun b -> transpose := b),
    (sprintf "<bool> show code proc by proc, default %b" !transpose);
    "-alloc", Arg.Bool (fun b -> alloc := b),
-   (sprintf "<bool> alloc symbolic registers (text mode only), default %b" !alloc);   
+   (sprintf "<bool> alloc symbolic registers (text mode only), default %b" !alloc);
    "-o", Arg.String (fun s -> outputdir := Some s),
    "<name>  all output in directory <name>";
  ]
@@ -297,4 +297,3 @@ let () =
           Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 fname ;
           raise e)
     !args
-

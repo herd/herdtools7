@@ -38,7 +38,7 @@ module Make(O:Config) : S = struct
   let bad_order () = Warn.fatal "unsuitable or no order in bell file"
   let default n =
     try
-      let o = BellModel.get_order BellName.scopes O.info in    
+      let o = BellModel.get_order BellName.scopes O.info in
       let tops = StringRel.leaves o in
       let top = StringSet.choose tops in
       Tree (top,Misc.interval 0 n,[])
@@ -112,7 +112,7 @@ module Make(O:Config) : S = struct
 
   let get_scopes () =
     try
-      let o = BellModel.get_order BellName.scopes O.info in    
+      let o = BellModel.get_order BellName.scopes O.info in
       let tops = StringRel.leaves o
       and bots = StringRel.roots o in
       let top = StringSet.choose tops

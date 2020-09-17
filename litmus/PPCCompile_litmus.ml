@@ -74,7 +74,7 @@ module Make(V:Constant.S)(C:Config) =
       { empty_ins with
         memo=sprintf "%s:" (A.Out.dump_label lbl) ;
         label = Some lbl ; branch=[Next] ; }
-    
+
     let next_label =
       let count = ref 0 in
       fun () ->
@@ -87,7 +87,7 @@ module Make(V:Constant.S)(C:Config) =
         memo=sprintf "li ^o0,%i" v;
         inputs=[];
         outputs=[rD]; }
-      
+
     let mr rD rS =
       { empty_ins with
         memo="mr ^o0,^i0" ;
@@ -115,7 +115,7 @@ module Make(V:Constant.S)(C:Config) =
     let incr r i = op2regsI "addi" r r i
     let decr r i =  incr r (-i)
 
-    let cmpwi rS v = 
+    let cmpwi rS v =
       { empty_ins with
         memo=sprintf "cmpwi ^i0,%i" v;
         inputs=[rS];
@@ -185,7 +185,7 @@ module Make(V:Constant.S)(C:Config) =
         outputs=[r]; }
 
     let tr_nolab lbl = lbl
-      
+
     let emit_sync_macro k =
       let delta = C.syncconst  in
       let lbl_loop = next_label () in
@@ -205,7 +205,7 @@ module Make(V:Constant.S)(C:Config) =
       bcc tr_nolab Lt lbl_loop::
       emit_lbl lbl_out::k
 
-    let emit_loop k = 
+    let emit_loop k =
         let lbl1 = next_label () in
         let lbl2 = next_label () in
         jump tr_nolab lbl2::
@@ -269,7 +269,7 @@ module Make(V:Constant.S)(C:Config) =
               memo = memo ^ " ^o0,0,^i0";
               inputs = [rB];
               outputs= [rD]; }::k
-        | _ -> 
+        | _ ->
             { empty_ins with
               memo = memo ^ " ^o0,^i0,^i1";
               inputs = [rA;rB];
@@ -425,7 +425,7 @@ or 3,3,9
        outputs = [rD] ;}
 
 
-      
+
     let emit_mftb =
       match C.word with
       | Word.W64 ->
@@ -442,10 +442,10 @@ or 3,3,9
               (sldi r3 r3 32::
                rldicl r2 r2 0 32::
                op3or r r3 r2::k)
-                
-              
-          
-      
+
+
+
+
     let emit_tb_wait k =
       let lbl_loop = next_label () in
       ld tb0 0 tb_addr0::

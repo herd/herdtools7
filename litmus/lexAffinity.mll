@@ -44,7 +44,7 @@ rule coms = parse
 | "Hat"  { Hat :: coms lexbuf }
 | eof    { [] }
 | non_space* as lxm   { error (sprintf "'%s'" lxm) }
-   
+
 and  affinity = parse
 | ""
   { let cs = colors lexbuf in

@@ -23,8 +23,5 @@ type t = b * b
 val all : t
 
 val pp : t -> string
- 
+
 val inside : t -> int -> bool
-
-
-

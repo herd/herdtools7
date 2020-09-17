@@ -66,7 +66,7 @@ module type S = sig
 
   val proj_loc_ord :  SplittedRel.t -> loc_ord
 
-  val splitted_loc_ord : 
+  val splitted_loc_ord :
       model ->
         concrete ->
           event_set ->
@@ -107,14 +107,14 @@ and type concrete = S.concrete
 
 (* Events relevant to Sela's model *)
     let evt_relevant x = E.is_mem x || E.is_commit x || E.is_barrier x
- 
+
     let globally_visible x = E.is_mem_store x || Conf.visible_fence x
 
     type nature = Exe | Com | Prop of int
 
     let pp_nature = function
       | Exe -> "e"
-      | Com -> "c"            
+      | Com -> "c"
       | Prop i -> sprintf "t%i" i
 
     let nature_compare n1 n2 = compare n1 n2
@@ -137,7 +137,7 @@ and type concrete = S.concrete
       E.is_store e.event &&
       (match e.nature with | Exe -> true | _ -> false)
 
-    let is_commit e = 
+    let is_commit e =
       match e.nature with | Com -> true | _ -> false
 
     let locally_relevant xe =
@@ -205,7 +205,7 @@ and type concrete = S.concrete
           r M.empty in
       let vb_pp =
         M.fold
-          (fun (n1,n2) pairs k ->            
+          (fun (n1,n2) pairs k ->
             let tag =  sprintf "%s -> %s" (pp_nature n1) (pp_nature n2)
             and r = E.EventRel.of_list pairs in
             (tag,r)::k)
@@ -213,9 +213,9 @@ and type concrete = S.concrete
       List.map
         (fun (tag,r) -> tag, rt r)
         vb_pp
-            
-    let vb_pp_splitted r = spiltted2r r 
-      
+
+    let vb_pp_splitted r = spiltted2r r
+
 
 (***************)
 (* Local order *)
@@ -242,7 +242,7 @@ and type concrete = S.concrete
        cord=E.EventRel.empty ;
        e2c=E.EventRel.empty ;
        c2e=E.EventRel.empty ; }
-  
+
   let proj_loc_ord r =
     SplittedRel.fold
       (fun (xe,ye) k ->
@@ -259,11 +259,11 @@ and type concrete = S.concrete
 
 
 (* Big loc_ord (on events) *)
-      
+
   let fold_se f e k =
     f { nature=Exe; event=e;}
       (f  { nature=Com; event=e;} k)
-      
+
   let fold_se3 f x y z =
     fold_se
       (fun xe ->
@@ -335,5 +335,5 @@ and type concrete = S.concrete
         | Com,Com -> loc_ord.cord
         | Prop _,_ | _,Prop _ -> assert false in
       E.EventRel.mem (e1.event,e2.event) r
-        
+
   end

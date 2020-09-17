@@ -16,14 +16,14 @@
 
 (** Sela Haim's axiomatic model for PPC, second version *)
 
-open Printf	
+open Printf
 
 module type Config =
   sig
     val opt : Model.cav12_opt
     include Model.Config
   end
-  
+
 module Make
     (O:Config)
     (S:Sem.Semantics)
@@ -64,7 +64,7 @@ module Make
       SelaEvent.Make(S)
         (struct
           type event = S.event
-          let visible_fence = is_fence            
+          let visible_fence = is_fence
         end)
 
 
@@ -130,9 +130,9 @@ module Make
 (* Parameters of Sela's "generic" model *)
     let fbefore (x,y) =
       (E.is_mem_store x && is_fence y) ||
-      (is_fence x && E.is_mem_store y) 
+      (is_fence x && E.is_mem_store y)
 
-    let fafter (x,y) = 
+    let fafter (x,y) =
       E.event_compare x y <> 0 &&
       is_strong x && is_strong y
 
@@ -158,7 +158,7 @@ module Make
           E.EventRel.subset b1 b0
         else true
       end
-        
+
 
     let before_sources m evord =
       SE.SplittedRel.fold
@@ -168,7 +168,7 @@ module Make
           let py = get_proc y in
           if
             m.SE.fbefore (x,y) &&
-            SE.relevant_to_proc x1e py && 
+            SE.relevant_to_proc x1e py &&
             SE.relevant_to_proc y1e py
           then (x,y)::k
           else k)
@@ -182,7 +182,7 @@ module Make
           let x = x1e.SE.event
           and y = y1e.SE.event in
           let px = get_proc x in
-          
+
           if
             m.SE.fafter (x,y) &&
             SE.relevant_to_proc x1e px
@@ -236,7 +236,7 @@ module Make
             k ps)
         [] xys
 
-    let seq2 r = SE.SplittedRel.union r (SE.SplittedRel.sequence r r)          
+    let seq2 r = SE.SplittedRel.union r (SE.SplittedRel.sequence r r)
 
 
     let mk_evord m test conc evts vb_pp _po com rf _co loc_ord =
@@ -288,7 +288,7 @@ module Make
         and r4 =
           let pairs =
             E.EventSet.fold
-              (fun e k -> 
+              (fun e k ->
                 if SE.globally_visible e then
                   let j = get_proc e
                   and ecom = { SE.nature = SE.Com ; event = e; } in
@@ -347,7 +347,7 @@ module Make
           let evord,(br,ar) =
             SE.SplittedRel.unions [evord; aft; bef; ],(br,ar) in
           seq2 evord,(br,ar) in
-      
+
 
       fixpoint pp_st eq_st f (evord0,(E.EventRel.empty,E.EventRel.empty))
 
@@ -371,7 +371,7 @@ module Make
           conc.S.str.E.events
       then
         Warn.user_error "ST qualifier not handled by CAV12" ;
-      
+
       let pr = MU.make_procrels is_isync conc in
       if O.debug && O.verbose > 0 then begin
         let module PP = Pretty.Make(S) in
@@ -387,7 +387,7 @@ module Make
         let mem = E.EventRel.mem in
         let open SE in
         let x = xe.event and y = ye.event in
-        let p = (x,y) in        
+        let p = (x,y) in
         begin
           SE.is_satisfy xe && (SE.is_satisfy ye || SE.is_init ye) &&
           (mem p pr.S.addr || mem p pr.S.data)
@@ -405,7 +405,7 @@ module Make
           SE.is_commit xe && SE.is_commit ye &&
           E.same_location x y
         end ||
-        begin          
+        begin
           SE.is_commit xe && SE.is_commit ye &&
           (is_fence x || is_fence y) &&
           (not
@@ -431,7 +431,7 @@ module Make
  *)
         begin
           SE.is_commit xe && SE.is_satisfy ye &&
-          (is_isync x || is_strong x)          
+          (is_isync x || is_strong x)
         end in
 (****************)
 (* Model proper *)
@@ -441,10 +441,10 @@ module Make
 (* Restrict to relevant *)
       let po = E.EventRel.restrict_domain SE.evt_relevant conc.S.po in
       let evts = E.EventSet.filter SE.evt_relevant conc.S.str.E.events in
-(* No co dependence *)      
+(* No co dependence *)
       let rf = U.make_rf conc in
       let loc_ord = SE.splitted_loc_ord m conc evts rf po in
-      fun kont res ->  
+      fun kont res ->
         let process_co co res =
           let co = S.tr co in
           let fr = U.make_fr conc co in
@@ -504,7 +504,7 @@ module Make
                       "evord is cyclic"
                       vb_pp ;
                     res
-                end else begin           
+                end else begin
                   kont conc conc.S.fs
                     (lazy StringMap.empty,vb_pp) Flag.Set.empty res
                 end

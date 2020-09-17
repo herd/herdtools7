@@ -981,7 +981,7 @@ include Pseudo.Make
         | I_SWP _ | I_SWPBH _
         | I_LDOP _ | I_LDOPBH _
         | I_STOP _ | I_STOPBH _
-        | I_STZG _ 
+        | I_STZG _
           -> 2
         | I_NOP
         | I_B _ | I_BR _

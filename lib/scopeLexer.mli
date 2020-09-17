@@ -13,10 +13,9 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
- 
+
 (** Lexing scope trees *)
 
 module Make : functor(O:LexUtils.Config) -> sig
   val token : Lexing.lexbuf -> ScopeParser.token
 end
-

@@ -20,7 +20,7 @@ open Printf
 
 (* Configuration *)
 let arch = ref `PPC
- 
+
 let opts = [Util.arch_opt arch]
 
 module Make (A:Fence.S) =
@@ -42,7 +42,7 @@ module Make (A:Fence.S) =
           es
 
       let parse_line s =
-        try          
+        try
           let r = String.index s ':' in
           let name  = String.sub s 0 r
           and es = String.sub s (r+1) (String.length s - (r+1)) in
@@ -62,7 +62,7 @@ module Make (A:Fence.S) =
           | '%'|'#' -> next_line ()
           | _ -> line
         end
-        
+
       let zyva () =
         try while true do
           try
@@ -96,16 +96,16 @@ let () =
       M.zyva
   | `MIPS ->
       let module M = Make(MIPSArch_gen.Make(MIPSArch_gen.Config)) in
-      M.zyva 
+      M.zyva
  | `RISCV ->
       let module M = Make(RISCVArch_gen.Make(RISCVArch_gen.Config)) in
       M.zyva
   | `LISA ->
       let module BellConfig = Config.ToLisa(Config) in
       let module M = Make(BellArch_gen.Make(BellConfig)) in
-      M.zyva 
+      M.zyva
   | `C ->
       let module M = Make(CArch_gen) in
       M.zyva
-  | `CPP -> Warn.fatal "CCP arch in atoms")      
+  | `CPP -> Warn.fatal "CCP arch in atoms")
      ()

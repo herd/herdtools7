@@ -54,7 +54,7 @@ end = struct
               | Smt.End ->  fun j -> i + cores_in_sock * s + ncores * j
               | Smt.No -> Warn.fatal "smtmode must be specified")))
 
-      
+
   let pp_ints = pp_t (sprintf "%i")
   let pp_intss = pp_t pp_ints
   let pp_intsss = pp_t pp_intss
@@ -166,7 +166,7 @@ end = struct
     let rec alloc_rec next = function
       | [] -> next,[]
       | (xs,c)::rem ->
-          let i = find_next next c in          
+          let i = find_next next c in
           let next,ys =
             alloc_rec
               (IntMap.add c { i with next = add_next i.next xs} next)
@@ -219,7 +219,7 @@ end = struct
   let pp_line gs xs =
     O.f "// %s" (pp_gss gs) ;
     O.o (String.concat " " (List.map (sprintf "%i,") xs))
-    
+
   let std_kont k gss cpu =
     pp_line gss cpu ;
     gss::k
@@ -247,7 +247,7 @@ end = struct
           (fun (r,id) -> cpu.(i*nthreads+r) <- id) ps)
       r ;
     kont k gss (Array.to_list cpu)
-      
+
 
 (* maxelt  : maximum cardinal of an subset in partition
    maxpart : maximum cardinal of a partition *)
@@ -275,7 +275,7 @@ let part pp_part maxelt maxpart k r =
   function
     | [] -> assert false
     | x::xs -> p_rec r 1 [[x]] xs
-              
+
 
   let handle_groups sz all_gs =
     O.o "static char *group[] = {" ;
@@ -321,7 +321,7 @@ let part pp_part maxelt maxpart k r =
     List.iteri
       (fun i c -> if c >= 0 then t.(c) <- f i)
       cpu ;
-    Array.to_list t    
+    Array.to_list t
 
   let mk_inst = mk_t (fun i -> i / nthreads)
   and mk_role = mk_t (fun i -> i mod nthreads)
@@ -397,7 +397,7 @@ let part pp_part maxelt maxpart k r =
     end
 
 
-  let presi_handle vss groups = 
+  let presi_handle vss groups =
     let (gss,cpus) = groups ([],[]) procs in
     let gss = List.rev gss and cpus = List.rev cpus in
     handle_table "inst" mk_inst gss cpus ;
@@ -426,5 +426,5 @@ let part pp_part maxelt maxpart k r =
   let dump_alloc vss = match Cfg.mode with
   | Mode.Std -> dump_alloc_gen std_kont std_handle
   | Mode.PreSi -> dump_alloc_gen presi_kont (presi_handle vss)
-    
-end 
+
+end

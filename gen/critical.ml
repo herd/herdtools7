@@ -39,7 +39,7 @@ let opts =
 module type Config = sig
   include Top.Config
   include DumpAll.Config
-  val cpp : bool    
+  val cpp : bool
   val docheck : bool
 end
 
@@ -166,4 +166,3 @@ let () =
       M.zyva
 )
   !size
-

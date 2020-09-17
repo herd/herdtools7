@@ -18,7 +18,7 @@
 (* Hash tables for hash-consing. Code borrowed to Jean-Christophe Filliatre,
    included by permission. *)
 
-type 'a hash_consed = { 
+type 'a hash_consed = {
   hkey : int;
   tag : int;
   node : 'a }
@@ -84,7 +84,7 @@ module Make(H : HashedType) : (S with type key = H.t) = struct
     done;
     t.totsize <- 0;
     t.limit <- 3
-  
+
   let fold f t init =
     let rec fold_bucket i b accu =
       if i >= Weak.length b then accu else
@@ -130,7 +130,7 @@ module Make(H : HashedType) : (S with type key = H.t) = struct
     let rec loop i =
       if i >= sz then begin
         let newsz = min (sz + 3) (Sys.max_array_length - 1) in
-        if newsz <= sz then 
+        if newsz <= sz then
 	  failwith "Hashcons.Make: hash bucket cannot grow more";
         let newbucket = Weak.create newsz in
         Weak.blit bucket 0 newbucket 0 sz;
@@ -150,7 +150,7 @@ module Make(H : HashedType) : (S with type key = H.t) = struct
     let hkey = H.hash d in
     let hkey = hkey land max_int in (* >=0 !!! *)
     let sztable = Array.length t.table in
-    let index = hkey mod sztable in    
+    let index = hkey mod sztable in
     let bucket = t.table.(index) in
     let sz = Weak.length bucket in
     let rec loop i =
@@ -160,7 +160,7 @@ module Make(H : HashedType) : (S with type key = H.t) = struct
 	hnode
       end else begin
         match Weak.get_copy bucket i with
-        | Some v when H.equal v.node d -> 
+        | Some v when H.equal v.node d ->
 	    begin match Weak.get bucket i with
               | Some v -> v
               | None -> loop (i+1)
@@ -169,5 +169,5 @@ module Make(H : HashedType) : (S with type key = H.t) = struct
       end
     in
     loop 0
-  
+
 end

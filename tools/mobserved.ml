@@ -29,7 +29,7 @@ struct
   module LU = LexUtils.Make(D)
   module S = Splitter.Make(D)
 
-  let from_chan chan fname in_chan =    
+  let from_chan chan fname in_chan =
     try
       let { Splitter.locs = locs;  name=name; _} =
         S.split fname in_chan in
@@ -50,8 +50,8 @@ struct
     with LexMisc.Error (msg,pos) ->
       Printf.eprintf
 	"%a: Lex error %s (in %s)\n" Pos.pp_pos pos msg fname ;
-      raise Misc.Exit 
-      
+      raise Misc.Exit
+
   let from_file chan name =
     try
       Misc.input_protect
@@ -72,7 +72,7 @@ let verbose = ref 0
 
 let args = ref []
 
-let opts = 
+let opts =
   [ "-v", Arg.Unit (fun () -> incr verbose)," be verbose";]
 
 let prog =
@@ -91,4 +91,3 @@ module X =
    end)
 
 let () = X.from_args !args
-

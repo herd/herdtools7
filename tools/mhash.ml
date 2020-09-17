@@ -44,7 +44,7 @@ module Top
     open Action
 
     module T = struct
-      type t = 
+      type t =
         { tname : string ;
           hash : string option;
           map : string -> string; }
@@ -60,8 +60,8 @@ module Top
 	then
           eprintf "%s %s\n"
 	    tname
-	    (match hash with 
-	    | None -> "none" 
+	    (match hash with
+	    | None -> "none"
 	    | Some h -> h);
         { T.tname = tname ;
           hash = hash;
@@ -119,7 +119,7 @@ module Top
             let check_name  = Opt.check_name
           end) in
       match logs with
-      | [] -> 
+      | [] ->
           let action = match Opt.action with
           | Check -> Lex.check_chan
           | Rewrite -> Lex.rewrite_chan in
@@ -161,7 +161,7 @@ let () =
      parse_rename rename;
      parse_names names;
      parse_excl excl;
-     begin let module P = ParseTag.Make(Action) in     
+     begin let module P = ParseTag.Make(Action) in
      P.parse "-action" action "action performed" end ;
     ]
     (fun s -> arg := !arg @ [s])

@@ -23,7 +23,7 @@ let output_postlude () =
   pp "    ignore (prefix) ; Some (StringMap.find path map_env)" ;
   pp "  with Not_found -> None" ;
   ()
-      
+
 let file_ok f =
   Filename.check_suffix f ".cat" ||
   Filename.check_suffix f ".bell" ||
@@ -52,7 +52,7 @@ let read_file f =
 let bind d f =
   let g = Filename.concat d f in
   f,read_file g
-    
+
 let _ =
   let mr = ref StringMap.empty in
   for k = 1 to Array.length Sys.argv-1 do

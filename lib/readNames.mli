@@ -18,4 +18,3 @@
 
 val from_file : string -> (string -> 'a -> 'a) -> 'a -> 'a
 val from_files : string list -> (string -> 'a -> 'a) -> 'a -> 'a
-

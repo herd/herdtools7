@@ -36,7 +36,7 @@ let opts =
 
 
 
-module type Config = sig  
+module type Config = sig
   include DumpAll.Config
   val varatom : string list
   val unrollatomic : int option
@@ -69,7 +69,7 @@ module Make (Config:Config) (M:Builder.S) =
     let some_fences sd d1 d2 =
       M.A.fold_some_fences
         (fun f k -> er (M.E.Fenced (f,sd,Dir d1,Dir d2))::k)
-        
+
 (* Limited variations *)
     let app_def_dp o f r = match o with
     | None -> r
@@ -80,23 +80,23 @@ module Make (Config:Config) (M:Builder.S) =
       app_def_dp
         (match d with R|J -> M.A.ddr_default | W -> M.A.ddw_default)
         (fun dp k -> er (Dp (dp,sd,Dir d))::k)
-        (some_fences sd R d [])      
+        (some_fences sd R d [])
 
     let someW sd d =
       er (Po (sd,Dir W,Dir d))::
-      (some_fences sd W d [])      
+      (some_fences sd W d [])
 
-        
+
 (* ALL *)
     let allR sd d =
       er (Po (sd,Dir R,Dir d))::
 	      (match d with R|J -> M.A.fold_dpr | W -> M.A.fold_dpw)
         (fun dp k -> er (Dp (dp,sd,Dir d))::k)
-        (all_fences sd R d [])      
+        (all_fences sd R d [])
 
     let allW sd d =
       er (Po (sd,Dir W,Dir d))::
-      (all_fences sd W d [])      
+      (all_fences sd W d [])
 
     let parse_relaxs s = match s with
     | "allRR" -> allR Diff R
@@ -220,7 +220,7 @@ let () =
     | `X86_64 ->
         let module M = Make(C)(T(X86_64Compile_gen.Make(C))) in
         M.zyva
-    | `PPC -> 
+    | `PPC ->
         let module PPCConf = struct let eieio = !use_eieio end in
         let module M = Make(C)(T(PPCCompile_gen.Make(C)(PPCConf))) in
         M.zyva
@@ -253,4 +253,3 @@ let () =
         | Misc.Exit -> ()
         | (Misc.Fatal msg|Misc.UserError msg) ->
             eprintf "%s: Fatal error: %s\n" Config.prog msg
-

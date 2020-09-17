@@ -17,4 +17,3 @@
 (** Symbolic constants *)
 
 module Make : functor (Scalar:Scalar.S)  -> Constant.S with module Scalar = Scalar
-

@@ -31,7 +31,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
 
-    let is_speculated = function 
+    let is_speculated = function
       | S -> true
       | _ -> false
 

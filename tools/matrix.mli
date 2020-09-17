@@ -45,7 +45,7 @@ val one_liness : string list list -> matrix
 (*****************)
 
 module type I = sig
-  type info 
+  type info
 
 (*
  Build information matrix from test result matrix.

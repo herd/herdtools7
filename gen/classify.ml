@@ -96,7 +96,7 @@ module Make(Co:Config) (A:Fence.S) = struct
         let rec do_rec seen = function
           | [] -> ()
           | (name,(es,scope))::rem ->
-              let new_name = N.mk_name base ?scope es in              
+              let new_name = N.mk_name base ?scope es in
               if Co.uniq &&  StringSet.mem new_name seen then
                 Warn.fatal "Duplicate name: %s" new_name ;
               if Co.diyone then

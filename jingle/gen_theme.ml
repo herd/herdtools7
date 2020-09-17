@@ -21,7 +21,7 @@ let call = ref None
 let outdir = ref None
 let loops = ref 5
 let prog =
-  if Array.length Sys.argv > 0 
+  if Array.length Sys.argv > 0
   then Sys.argv.(0)
   else "gen_theme"
 
@@ -115,7 +115,7 @@ let rec apply f arg func_env = match pick_func f func_env with
 let rec expand call_list map_env func_env times =
         let callable = List.filter (fun (_, _, e) -> List.mem_assoc e map_env) call_list in
         let uncallable = List.filter (fun (_, _, e) -> not (List.mem_assoc e map_env)) call_list in
-        let try_expand (l, f, a) = 
+        let try_expand (l, f, a) =
                 (pick_mapping a map_env) |> Misc.map_opt (fun (_, arg) -> let r = apply f arg func_env in (l, r)) in
         let res = callable |> List.map try_expand
                            |> List.filter (fun x -> Misc.is_some x)
@@ -150,5 +150,3 @@ let () =
   Printf.printf "%s to %s\n\n" (Archs.pp parsed.ParseMap.source) (Archs.pp parsed.ParseMap.target);
   List.iter (fun (l, r) -> Printf.printf "\"%s\" -> \"%s\"\n" l r) maps;
   List.iter (fun (l, r) -> Printf.printf "\"%s\" -> \"%s\"\n" l r) (expand calls maps funcs loops)
-
-

@@ -51,7 +51,7 @@ module Make(S : SemExtra.S) = struct
     let p = e1,e2 in
     E.EventRel.mem p es.E.intra_causality_data  ||
     E.EventRel.mem p es.E.intra_causality_control ||
-    (if S.do_deps then E.EventRel.mem p (po_strict es) 
+    (if S.do_deps then E.EventRel.mem p (po_strict es)
     else E.po_strict e1 e2)
 (* Fence *)
   let po_fence_po po pred =

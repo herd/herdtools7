@@ -20,12 +20,12 @@ type dp = ADDR | DATA | CTRL | CTRLISYNC
 
 let fold_dpr f r =  f ADDR (f CTRL (f CTRLISYNC r))
 let fold_dpw f r =  f ADDR (f DATA (f CTRL (f CTRLISYNC r)))
-    
+
 let ddr_default = Some ADDR
 let ddw_default = Some DATA
 let ctrlr_default = Some CTRLISYNC
 let ctrlw_default = Some CTRL
-    
+
 let is_ctrlr = function
   | CTRLISYNC -> true
   | _ -> false

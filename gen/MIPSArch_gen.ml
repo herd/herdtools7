@@ -67,12 +67,12 @@ let pp_dp = function
 
 let fold_dpr f r =  f ADDR (f CTRL r)
 let fold_dpw f r =  f ADDR (f DATA (f CTRL r))
-    
+
 let ddr_default = Some ADDR
 let ddw_default = Some DATA
 let ctrlr_default = Some CTRL
 let ctrlw_default = Some CTRL
-    
+
 let is_ctrlr = function
   | CTRL -> true
   | _ -> false
@@ -97,6 +97,6 @@ include
         | _ -> false
       let pp_reg = pp_reg
       let free_registers = allowed_for_symb
-      include NoSpecial          
+      include NoSpecial
     end)
 end

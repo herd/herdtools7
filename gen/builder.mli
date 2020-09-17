@@ -19,7 +19,7 @@ module type S = sig
 
   include ArchRun.S
 
-        
+
   val ppo : (R.relax -> 'a -> 'a) -> 'a -> 'a
 
 
@@ -51,7 +51,7 @@ module type S = sig
       string ->
         ?com:string -> ?info:Code.info -> ?check:check ->
           ?scope:BellInfo.scopes ->
-            edge list -> node -> test  
+            edge list -> node -> test
 
 (* Dump the given test *)
   val dump_test_channel : out_channel -> test -> unit

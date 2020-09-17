@@ -22,7 +22,7 @@ let empty = StringMap.empty
 
 let add_binding t key o v = StringMap.add key (v,o) t
 let find_value t key = let v,_ = StringMap.find key t in v
-let find_value_opt t key = 
+let find_value_opt t key =
   try
     let v,_ = StringMap.find key t in Some v
   with Not_found -> None

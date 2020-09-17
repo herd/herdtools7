@@ -31,7 +31,7 @@ open AutoOpt
 
 let read_conf name = opt := AutoLex.conf !opt name
 
-let speclist = 
+let speclist =
   ("-v", Arg.Unit (fun () -> opt := incr_verbose !opt),"be verbose")::
   ("-version", Arg.Unit (fun () -> print_endline Version_gen.version ; exit 0),
    " show version number and exit")::
@@ -69,7 +69,7 @@ let main () =
         (fun chan ->
           (Marshal.from_channel chan : AutoOpt.t * AutoRun.ckpt))
         (Filename.concat name AutoOpt.ckpt_name) in
-    
+
     let opt =
       { ropt  with
         verbose = !opt.verbose ;
@@ -104,4 +104,3 @@ let () =
   with Misc.Fatal msg ->
     eprintf "Fatal error: %s\n%!" msg ;
     exit 1
-

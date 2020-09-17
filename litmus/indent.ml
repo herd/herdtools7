@@ -41,10 +41,10 @@ module type S = sig
   val fiii : ('a, out_channel, unit, unit) format4 -> 'a
   val fiv : ('a, out_channel, unit, unit) format4 -> 'a
   val fv : ('a, out_channel, unit, unit) format4 -> 'a
-      
+
   val output : string -> unit
-  val ox : t -> string -> unit        
-  val oy : t -> string -> unit        
+  val ox : t -> string -> unit
+  val oy : t -> string -> unit
   val o : string -> unit
   val oi : string -> unit
   val oii : string -> unit
@@ -61,7 +61,7 @@ module Make (Chan : sig val hexa : bool val out : out_channel end) = struct
   let fprintf fmt = Printf.fprintf Chan.out fmt
 
   let fx indent fmt =
-    output_string Chan.out indent ;    
+    output_string Chan.out indent ;
     kfprintf (fun chan -> output_char chan '\n')
       Chan.out fmt
 
@@ -77,19 +77,19 @@ module Make (Chan : sig val hexa : bool val out : out_channel end) = struct
   let ox i s =
    output_string Chan.out i ;
    output_string Chan.out  s ;
-   output_char Chan.out '\n' 
+   output_char Chan.out '\n'
 
   let oy i s =
    output_string Chan.out i ;
    output_string Chan.out indent ;
    output_string Chan.out  s ;
-   output_char Chan.out '\n' 
+   output_char Chan.out '\n'
 
   let o s =
    output_string Chan.out  s ;
-   output_char Chan.out '\n' 
+   output_char Chan.out '\n'
 
-  let oi s = ox indent s 
+  let oi s = ox indent s
   let oii s = ox indent2 s
   let oiii s = ox indent3 s
   let oiv s = ox indent4 s

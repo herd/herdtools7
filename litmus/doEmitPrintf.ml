@@ -66,14 +66,14 @@ module Make(Cfg:Config)(O:Indent.S) : EmitPrintf.S = struct
   let pp_fmt fmt =
     let xs =
       List.map
-        (function 
+        (function
           | Conv c -> pp_conv c
           | Lit s -> String.escaped s
           | Percent -> "%%")
         fmt in
     sprintf "\"%s\"" (String.concat "" xs)
 
-              
+
   let emit_printf out i fmt args =
     O.fx i "fprintf(%s,%s%s);" out (pp_fmt (LexFmt.lex fmt))
       (String.concat ""

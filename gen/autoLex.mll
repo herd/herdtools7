@@ -28,15 +28,15 @@
   let  get_bool arg = match arg with
   | "true" -> true
   | "false" -> false
-  | _ ->  error "boolean argument expected"   
-                                                                      
+  | _ ->  error "boolean argument expected"
+
 }
 
 let blank = [' ''\t''\r']
 let not_blank = [^' ''\t''\n''\r']
 let alpha = ['A'-'Z' 'a'-'z']
-let arg = 
-  blank* '=' blank* 
+let arg =
+  blank* '=' blank*
  (not_blank | not_blank [^'\n']* not_blank as arg)
   blank* '\n'
 
@@ -64,7 +64,7 @@ and lex_conf cfg = parse
        | None -> error (sprintf "unkown architecture: %s" arg)
        | Some a -> { cfg with arch =a; } )
      lexbuf
-  } 
+  }
 | "testing" blank* '=' blank* '\n'
     { lex_conf { cfg with testing = Some "" ; } lexbuf }
 | "testing" arg

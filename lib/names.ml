@@ -18,7 +18,7 @@
 
 module S = Splitter.Make(Splitter.Default)
 
-let from_file name chan = 
+let from_file name chan =
   let splitted = S.split name chan in
   splitted.Splitter.name.Name.name
 

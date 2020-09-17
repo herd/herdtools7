@@ -21,7 +21,7 @@ open Lexing
 
 type pos2 = position * position
 (*********************)
-(* Position printing *)   
+(* Position printing *)
 (*********************)
 
 val debug_pos : out_channel -> position -> unit

@@ -28,7 +28,7 @@ let pp_string_set set = StringSet.pp_str "," Misc.identity set
 
 let pp_annot_set set = sprintf "{%s}" (pp_string_set set)
 
-let pp_annot_group ag = 
+let pp_annot_group ag =
   let mapped = List.map pp_annot_set ag in
   "["^(String.concat ", " mapped)^"]"
 
@@ -57,7 +57,7 @@ let pp_order_dec ol =
   StringRel.pp_str " "
     (fun (f,s) -> sprintf "(%s,%s)" f s)
     ol
-  
+
 let pp_order_bd t ol =  sprintf "%s: %s" t (pp_order_dec ol)
 
 let pp_order_decs decs = StringMap.pp_str_delim "\n" pp_order_bd decs
@@ -78,7 +78,7 @@ type info = {
   regions : StringSet.t option ;
 }
 
-let pp_info  i = 
+let pp_info  i =
   sprintf "All events: %s\n" (pp_string_set i.all_events) ^
   "Events:\n" ^ pp_event_decs i.events ^ "\n" ^
   "Relations:\n" ^ pp_rel_decs i.relations ^ "\n" ^
@@ -87,7 +87,7 @@ let pp_info  i =
   (match i.regions with
   | None -> ""
   | Some r -> sprintf "Regions: %s\n" (pp_string_set r))
- 
+
 let empty_info = {
   all_events = StringSet.empty  ;
   events = StringMap.empty ;
@@ -102,7 +102,7 @@ let empty_info = {
 
 let get_regions i = i.regions
 (* By default, no annotation allowed *)
-let get_events tag {events;_} =  StringMap.safe_find [[]] tag events 
+let get_events tag {events;_} =  StringMap.safe_find [[]] tag events
 
 
 let rec same_length xs ys = match xs,ys with
@@ -111,7 +111,7 @@ let rec same_length xs ys = match xs,ys with
 | ([],_::_) | (_::_,[]) -> false
 
 
-let check_event id al bi = 
+let check_event id al bi =
   let ok =
     let events_group = get_events id bi in
     List.exists
@@ -133,7 +133,7 @@ let get_scope_rels i = StringMap.safe_find [] BellName.scopes i.relations
 let get_relation k i =  StringMap.find k i.relations
 let get_order k i = StringMap.find k i.orders
 let get_default k i = StringMap.find k i.defaults
-  
+
 (* Add *)
 
 exception Defined

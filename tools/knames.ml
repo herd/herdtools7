@@ -28,7 +28,7 @@ let prog =
   else "kname"
 
 let kinds = ref []
-let defkind = ref LogState.NoKind 
+let defkind = ref LogState.NoKind
 
 module NoVerb = struct let verbose = 0 end
 module L =  LogState.Make(NoVerb)
@@ -40,7 +40,7 @@ let parse_kind s = match L.parse_kind s with
 let () =
   Arg.parse
     [("-kinds", Arg.String (fun s -> kinds := !kinds @ [s]),
-      "<name> specify kinds of tests") ;    
+      "<name> specify kinds of tests") ;
      ("-default", Arg.String (fun s -> defkind := (parse_kind s)),
       sprintf "<kind> default kind (default %s)" (L.pp_kind  !defkind)) ;
    ]

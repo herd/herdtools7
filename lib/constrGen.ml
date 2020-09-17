@@ -85,7 +85,7 @@ let rec do_dnf p = match p with
     List.concat pss
 | Not _|Implies _ -> assert false
 
-    
+
 let dnf p =
   let p = nnf p in
   do_dnf p
@@ -133,11 +133,11 @@ let rec fold_prop f_atom p = match p with
     List.fold_right (fold_prop f_atom) ps
 | Implies (p,q) ->
     fun y -> fold_prop f_atom q (fold_prop f_atom p y)
-      
+
 let fold_constr f_atom c = match c with
-| ForallStates p 
-| ExistsState p 
-| NotExistsState p -> fold_prop f_atom p   
+| ForallStates p
+| ExistsState p
+| NotExistsState p -> fold_prop f_atom p
 
 let rec map_prop c_atom p = match p with
 | Atom a ->
@@ -202,7 +202,7 @@ let pp_prop arg =
         (pp_prop O_implies p1 ^
          arg.pp_implies ^
          pp_prop O_implies p2) in
-  pp_prop O_top 
+  pp_prop O_top
 
 
 

@@ -56,14 +56,14 @@ module Make(R:I) : S with type relax = R.relax
         with Misc.Fatal msg  ->
           Warn.warn_always "%s" msg ;
           assert false
-          
+
   let add_outcome env name validates rs ss cy =
     let rs = parse_relaxs rs
     and ss = parse_relaxs ss in
     {name=name; validates=validates; relaxs=rs; safes=ss; cycle=cy; }::env
 
 
-  let add_file env name =    
+  let add_file env name =
     try
       Misc.input_protect
         (fun chan ->
@@ -79,5 +79,3 @@ module Make(R:I) : S with type relax = R.relax
     let all = List.sort (fun o1 o2 -> String.compare o1.name o2.name) all in
     all
 end
-
-

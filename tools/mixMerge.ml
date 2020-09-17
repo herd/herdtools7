@@ -63,13 +63,13 @@ end =
 
     let rec mix_list xs sx ys sy = match xs, ys with
     | [],[] -> []
-    | x::rx, [] -> x::mix_list rx (sx-1) ys sy 
+    | x::rx, [] -> x::mix_list rx (sx-1) ys sy
     | [],y::ry -> y::mix_list xs sx ry (sy-1)
     | x::rx, y::ry ->
         if Random.int(sx+sy) < sx then
           x::mix_list rx (sx-1) ys sy
-        else 
-          y::mix_list xs sx ry (sy-1) 
+        else
+          y::mix_list xs sx ry (sy-1)
 
     let clean_code =
       List.filter
@@ -79,7 +79,7 @@ end =
         | A.Instruction _
 	| A.Symbolic _
         | A.Macro _ -> true)
- 
+
     let mix_code c1 c2 =
       let c1 = clean_code c1
       and c2 = clean_code c2 in
@@ -181,5 +181,5 @@ end =
         locations = t1.locations @ t2.locations ;
         condition = append_cond t1.condition t2.condition ; }
 
-        
+
 end

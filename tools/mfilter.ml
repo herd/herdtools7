@@ -31,9 +31,9 @@ let int32 = ref true
 
 let options =
   let open CheckName in
-  [ 
+  [
   ("-q", Arg.Unit (fun _ -> verbose := -1),
-   "<non-default> be silent");  
+   "<non-default> be silent");
   ("-v", Arg.Unit (fun _ -> incr verbose),
    "<non-default> show various diagnostics, repeat to increase verbosity");
   ("-inverse", Arg.Bool (fun b -> inverse := b),
@@ -146,15 +146,15 @@ let zyva log =
       let p,n = t.witnesses in
       fprintf chan "Positive: %s Negative: %s\n"
         (Int64.to_string p) (Int64.to_string n) ;
-      dump_condition chan t.validation t.condition 
+      dump_condition chan t.validation t.condition
     end else begin
       fprintf chan "??\n" ;
-      dump_prop chan t.condition       
+      dump_prop chan t.condition
     end ;
-    dump_hash chan t.hash ;    
+    dump_hash chan t.hash ;
     begin match t.time with
     | None -> ()
-    | Some time -> 
+    | Some time ->
         fprintf chan "Time %s %0.2f\n" t.tname time
     end ;
     output_char chan '\n';
@@ -171,4 +171,3 @@ let () =
   try zyva log
   with Misc.Fatal msg|Misc.UserError msg ->
     eprintf "Fatal error: %s\n%!" msg
-

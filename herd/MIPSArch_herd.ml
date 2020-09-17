@@ -25,9 +25,9 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
     type lannot = bool (* atomicity *)
     let get_machsize _ = V.Cst.Scalar.machsize
-        
+
     let empty_annot = false
-    let is_atomic annot = annot 
+    let is_atomic annot = annot
 
     let barrier_sets = ["SYNC",(function Sync -> true);]
     let annot_sets = ["X", is_atomic]
@@ -35,7 +35,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     let is_isync _ = false
     let pp_isync = "???"
 
-    let pp_annot annot = 
+    let pp_annot annot =
       if annot then "*" else ""
 
     module V = V
@@ -45,7 +45,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
     include ArchExtra_herd.Make(C)
 	(struct
-	  module V = V 
+	  module V = V
           let endian = endian
 
 	  type arch_reg = reg
@@ -56,5 +56,5 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
           let fromto_of_instr _ = None
 
 	end)
-	  
+
   end

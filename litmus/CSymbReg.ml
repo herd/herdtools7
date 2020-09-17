@@ -201,7 +201,7 @@ with type v = A.V.v and type location = A.location
         Warn.user_error
           "symbolic register %%%s does not appear in code" name in
     { test with
-      init = finish_state replace initial ;      
+      init = finish_state replace initial ;
       filter = begin match test.filter with
       | None -> None
       | Some f -> Some (finish_prop replace f) end;

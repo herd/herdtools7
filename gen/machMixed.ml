@@ -58,7 +58,7 @@ end
 
 
 module type ValsConfig = sig
-  val naturalsize : unit -> MachSize.sz 
+  val naturalsize : unit -> MachSize.sz
   val endian : Endian.t
 end
 
@@ -98,4 +98,3 @@ module Vals(C:ValsConfig) = struct
     r
 
 end
-    

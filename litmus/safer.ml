@@ -25,10 +25,9 @@ let parse tag  = match Misc.lowercase tag with
 | "false"|"no" -> Some No
 | "true"|"all" -> Some All
 | "write" -> Some Write
-| _ -> None 
+| _ -> None
 
 let pp = function
 | No -> "no"
 | All -> "all"
 | Write -> "write"
-

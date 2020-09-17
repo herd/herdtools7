@@ -74,7 +74,7 @@ module Make(C:AutoConf.S) : S with module A = C.A
 
 
 (* Outcome proper *)
-      module O =  struct 
+      module O =  struct
         type t =
             { name : string ;
               cycle : string ;
@@ -115,7 +115,7 @@ module Make(C:AutoConf.S) : S with module A = C.A
 
       let intests os =
         let xs =
-          fold (fun _ o k -> I.intest o.O.interpret::k)              
+          fold (fun _ o k -> I.intest o.O.interpret::k)
             os [] in
         R.Set.unions xs
 
@@ -123,7 +123,7 @@ module Make(C:AutoConf.S) : S with module A = C.A
 (* Convenient additions to Map *)
 (*******************************)
 
-      let union = fold add          
+      let union = fold add
 
       let diff o1 o2 =
         fold
@@ -157,7 +157,7 @@ module Make(C:AutoConf.S) : S with module A = C.A
           fold
             (fun _ o -> I.get_relaxed_assuming safe o.O.interpret)
             os [] in
-        R.Set.of_list rs        
+        R.Set.of_list rs
 
   let get_relax_witnesses safe r os =
     fold
@@ -229,7 +229,7 @@ module Make(C:AutoConf.S) : S with module A = C.A
         r
 
       let extract os =
-        let xs = 
+        let xs =
           fold
             (fun _ o ->I.safe_by_cardinal o.O.interpret)
             os [] in
@@ -241,7 +241,7 @@ module Make(C:AutoConf.S) : S with module A = C.A
         | xs::_ -> xs
 
       let safe_by_cardinal ok os =
-        match extract os with 
+        match extract os with
         | [] -> R.Set.empty
         | xs ->
             if !Misc.switch then
@@ -258,14 +258,14 @@ module Make(C:AutoConf.S) : S with module A = C.A
 
       let find_max avoid rm =
         let _,r =
-          R.Map.fold 
-            (fun r n ((max,k) as acc) -> 
+          R.Map.fold
+            (fun r n ((max,k) as acc) ->
               if R.Set.mem r avoid  then acc
               else
                 if n < max then acc
                 else if n > max then (n,R.Set.singleton r)
                 else (n,R.Set.add r k))
-            rm (0,R.Set.empty) in 
+            rm (0,R.Set.empty) in
         r
 
 

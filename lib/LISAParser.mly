@@ -29,7 +29,7 @@ let mk_sym s = Constant.Symbolic ((s,None),0)
 %token <BellBase.reg> SYMB_REG
 %token <int> PROC
 
-%type <MiscParser.proc list * (BellBase.parsedPseudo) list list * MiscParser.extra_data > main 
+%type <MiscParser.proc list * (BellBase.parsedPseudo) list list * MiscParser.extra_data > main
 %type <BellBase.parsedPseudo list> instr_option_seq
 %start main instr_option_seq
 
@@ -53,7 +53,7 @@ instr_option :
 instr_option_list :
   | instr_option
       {[$1]}
-  | instr_option PIPE instr_option_list 
+  | instr_option PIPE instr_option_list
       {$1::$3}
 
 instr_option_seq:
@@ -151,7 +151,7 @@ instr:
 | CALL LBRAC name RBRAC
   { Pcall $3 }
 
-| RMW annot_list_option reg operation addr_op  
+| RMW annot_list_option reg operation addr_op
   { Prmw($3,$4,$5,$2)}
 
 | BRANCH annot_list_option reg NAME
@@ -162,4 +162,3 @@ instr:
 
 | MOV reg operation
   { Pmov ($2,$3) }
-

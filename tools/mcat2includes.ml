@@ -44,7 +44,7 @@ module Make
     end
 
     module Parser = ParseModel.Make(ParserConfig)
-        
+
     let rec get_ast indent fname =
         let fname0,(_,_,ast)  = Parser.find_parse fname in
         printf "%sBEGIN %s\n" indent fname0 ;
@@ -78,7 +78,7 @@ let opts =
    "-v",Arg.Unit (fun () -> incr verbose), " be verbose";
    "-I",Arg.String (fun s -> includes := !includes @ [s]),
    "<dir> add <dir> to search path";
-  ] 
+  ]
 
 let () =
   Arg.parse opts setarg
