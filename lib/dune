@@ -1,4 +1,4 @@
-(ocamllex AArch64Lexer ARMLexer BellLexer CLexer lexHint lexOutMapping lexRename lexSplit lexUtils MIPSLexer modelLexer PPCLexer RISCVLexer runTypeUtils scopeLexer splitter stateLexer X86Lexer X86_64Lexer echo)
+(ocamllex AArch64Lexer ARMLexer BellLexer CLexer lexHint lexOutMapping lexRename lexSplit lexUtils MIPSLexer modelLexer PPCLexer RISCVLexer runTypeUtils scopeLexer splitter stateLexer X86Lexer X86_64Lexer echo dirtyBit)
 
 
 (menhir (modules PPCParser) (flags  --fixed-exception))

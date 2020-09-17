@@ -115,6 +115,7 @@ val mach2generic :
 val hash_key : string
 val stable_key : string
 val align_key : string
+val tthm_key : string
 
 (* Extract hash *)
 val get_hash : ('i, 'p, 'c, 'loc) result -> string option
@@ -123,6 +124,8 @@ val set_hash :
       ('i, 'p, 'c, 'loc) result
 
 (* Extract meta information from key *)
+val get_info_on_info : string -> (string * string) list -> string option
+
 val get_info :  ('i, 'p, 'c, 'loc) result -> string -> string option
 
 val mk_pte_val : location -> (string * string) list -> 'b Constant.t

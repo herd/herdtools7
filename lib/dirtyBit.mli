@@ -2,9 +2,9 @@
 (*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
-(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(* Luc Maranget, INRIA Paris France.                                        *)
 (*                                                                          *)
-(* Copyright 2010-present Institut National de Recherche en Informatique et *)
+(* Copyright 2020-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,9 +14,12 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-exception Error
+type t =
+    {
+     tthm : Proc.t -> bool; 
+     ha : Proc.t -> bool;
+     hd : Proc.t -> bool;
+    }
 
-val ints : string -> int list
-val strings : string -> string list
-val strings_spaces : string -> string list
-val pp_ints : int list -> string
+val get : MiscParser.info -> t
+ 

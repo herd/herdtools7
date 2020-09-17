@@ -33,10 +33,17 @@ and strings = parse
 | eof { [] }
 | "" { raise Error }
 
+and strings_spaces = parse
+| [','' '] { strings_spaces lexbuf }
+| [^','' ']+ as lxm { lxm :: strings_spaces lexbuf }
+| eof { [] }
+| "" { raise Error }
+
 {
 
 let ints s = main (Lexing.from_string s)
 let strings s = strings (Lexing.from_string s)
+let strings_spaces s = strings_spaces (Lexing.from_string s)
 
 let pp_ints xs = String.concat "," (List.map string_of_int xs)
 
