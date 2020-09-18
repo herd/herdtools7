@@ -398,12 +398,11 @@ module LC =
       let state_mem st loc v =
         let bds,_ = HashedState.as_t st in
         let v_bound_pp = bds_assoc bds (MiscParser.dump_location  loc) in
-        let v_bound =
-          try
-            let i = int_of_string v_bound_pp in
-            Int64Constant.intToV i
-          with Failure _ -> Int64Constant.nameToV v_bound_pp in
-        Int64Constant.eq v v_bound
+        try (* Ints are treated differently to abstract away radix *)
+          let i = Int64.of_string v_bound_pp in
+          Int64Constant.eq v (Constant.Concrete i)
+        with Failure _ ->
+          Misc.string_eq v_bound_pp (Int64Constant.pp false v)
 
       let state_eqloc st loc1 loc2 =
         let bds,_ = HashedState.as_t st in
