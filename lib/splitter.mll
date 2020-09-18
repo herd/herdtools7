@@ -118,7 +118,7 @@ and find_init info = parse
     { let loc1 = lexeme_end_p lexbuf in
       let loc2 = inside_init lexbuf in
       List.rev info,loc1,loc2 }
-| (name as key) blank* '=' blank* ([^'\n']* as value) '\n'
+| (name as key) blank* '=' blank* ([^'\n''\r']* as value) '\r'?'\n'
   { incr_lineno lexbuf ; find_init ((key,value)::info) lexbuf }
 | [^'\n''{']+  { find_init info lexbuf }
 | "" { error "find init section" lexbuf }

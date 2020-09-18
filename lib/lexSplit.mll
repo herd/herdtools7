@@ -20,7 +20,7 @@ exception Error
 
 let blank = [' ''\n''\r''\t']
 let digit = ['0'-'9']
-
+let printable = ['0'-'9''a'-'z''A'-'Z'':']
 rule main = parse
 | ',' | blank+  { main lexbuf }
 | digit+ as lxm { int_of_string lxm :: main lexbuf }
@@ -34,8 +34,8 @@ and strings = parse
 | "" { raise Error }
 
 and strings_spaces = parse
-| [','' '] { strings_spaces lexbuf }
-| [^','' ']+ as lxm { lxm :: strings_spaces lexbuf }
+| (','|blank)+ { strings_spaces lexbuf }
+| printable+ as lxm { lxm :: strings_spaces lexbuf }
 | eof { [] }
 | "" { raise Error }
 
