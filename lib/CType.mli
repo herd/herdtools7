@@ -38,6 +38,7 @@ type fmt = Direct of string | Macro of string
 val get_fmt : bool (* hexa *) -> base -> fmt option
 
 val is_ptr : t -> bool
+val is_pte : t -> bool
 val is_array : t -> bool
 val is_atomic : t -> bool
 val strip_atomic : t -> t

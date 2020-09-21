@@ -403,7 +403,7 @@ module RegMap = A.RegMap)
             fun proc reg ->
               let ty =
                 try RegMap.find reg env with Not_found -> assert false in
-              if CType.is_ptr ty then
+              if CType.is_ptr ty || CType.is_pte ty then
                 Tmpl.compile_presi_out_ptr_reg proc reg
               else
                 Tmpl.compile_presi_out_reg proc reg in
@@ -550,11 +550,12 @@ module RegMap = A.RegMap)
         sprintf "&%s" (Tmpl.compile_out_reg proc reg)
 
       let compile_out_reg_call_kvm env proc reg =
-        let is_ptr =
-          try CType.is_ptr (A.RegMap.find reg env)
-          with Not_found -> false in
+        let ty =
+          try A.RegMap.find reg env
+          with Not_found -> assert false in
         sprintf "&%s"
-          ((if is_ptr then Tmpl.compile_presi_out_ptr_reg
+          ((if CType.is_ptr ty ||  CType.is_pte ty then
+            Tmpl.compile_presi_out_ptr_reg
           else Tmpl.compile_presi_out_reg) proc reg)
 
       let compile_out_reg_call env =

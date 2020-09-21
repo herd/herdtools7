@@ -110,6 +110,9 @@ module Make
       val get_stabilized : T.t -> StringSet.t
       val is_ptr : A.location -> env -> bool
       val ptr_in_outs : env -> T.t -> bool
+      val is_pte : A.location -> env -> bool
+      val pte_in_outs : env -> T.t -> bool
+      val ptr_pte_in_outs : env -> T.t -> bool
       val get_faults : T.t -> A.V.v Fault.atom list
       val find_label_offset : Proc.t -> string -> T.t -> int
 
@@ -134,7 +137,11 @@ module Make
               stat list -> unit
       end
     end = struct
+
+      let dbg = false
+
       module G = Global_litmus
+
 (* Info *)
       let get_info key test =
         try Some (List.assoc key test.T.info)
@@ -335,11 +342,28 @@ module Make
 
       let is_ptr loc env =
         let t = find_type loc env in
-       CType.is_ptr t
+        CType.is_ptr t
 
       let ptr_in_outs env test =
         let locs = get_displayed_locs test in
-        A.LocSet.exists (fun loc ->is_ptr loc env ) locs
+        if dbg then Printf.eprintf "locs={%s}\n" (A.LocSet.pp_str "," A.pp_location locs) ;
+        A.LocSet.exists (fun loc -> is_ptr loc env) locs
+
+      let is_pte loc env =
+        let t = find_type loc env in
+        CType.is_pte t
+
+      let pte_in_outs env test =
+        let locs = get_displayed_locs test in
+        A.LocSet.exists (fun loc ->is_pte loc env) locs
+
+      let is_ptr_pte loc env =
+        let t = find_type loc env in
+        CType.is_ptr t || CType.is_pte t
+
+      let ptr_pte_in_outs env test =
+        let locs = get_displayed_locs test in
+        A.LocSet.exists (fun loc ->is_ptr_pte loc env) locs
 
       let get_faults test = T.C.get_faults test.T.condition
 

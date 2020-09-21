@@ -61,8 +61,7 @@ module Make
       val dump : Name.t -> T.t -> unit
     end = struct
       let k_nkvm x = if Cfg.is_kvm then "" else x
-      let is_pte = Cfg.is_kvm
-      let do_ascall = Cfg.ascall || is_pte
+      let do_ascall = Cfg.ascall || Cfg.is_kvm
       let do_precise = Cfg.variant Variant_litmus.Precise
 
       open CType
@@ -101,7 +100,7 @@ module Make
 (* Utilities *)
 (*************)
 
-      let have_fault_handler = is_pte && Insert.exists "kvm_fault_handler.c"
+      let have_fault_handler = Cfg.is_kvm && Insert.exists "kvm_fault_handler.c"
 
       module UCfg = struct
         let memory = Memory.Direct
@@ -407,7 +406,7 @@ module Make
       type pte_addr = V of string option * PTEVal.t | P of string | Z
 
       let get_pte_init =
-        if is_pte then
+        if Cfg.is_kvm then
           fun env ->
             let open Constant in
             List.fold_right
@@ -504,7 +503,7 @@ module Make
             O.fi "intmax_t %s;"
               (String.concat ","
                  (List.map (fun (a,_) -> sprintf "*%s" a) locs)) ;
-            if is_pte then begin
+            if Cfg.is_kvm then begin
               O.fi "pteval_t %s;"
                 (String.concat ","
                    (List.map
@@ -554,65 +553,69 @@ module Make
         O.o "} log_t;" ;
         O.o "" ;
 (* There are some pointers in log *)
-        let some_ptr =  U.ptr_in_outs env test in
-        if some_ptr || see_faults test then begin
+        let some_ptr_pte =  U.ptr_pte_in_outs env test in
+        let do_see_faults = see_faults test in
+        if some_ptr_pte || do_see_faults then begin
           (* To log actual pointers *)
-          if some_ptr then begin
+          if some_ptr_pte then begin
             O.o "#define SOME_PTR 1" ;
             O.o "typedef struct {" ;
             A.LocSet.iter
               (fun loc ->
                 let t = U.find_type loc env in
-                if CType.is_ptr t then
+                if CType.is_ptr t || CType.is_pte t then
                   O.fi "%s %s;"  (CType.dump t) (dump_loc_tag loc))
               locs ;
             O.o "} log_ptr_t;" ;
             O.o ""
           end ;
+          let some_ptr =  U.ptr_in_outs env test in
+          if some_ptr || do_see_faults then begin
           (* Define indices *)
-          List.iteri
-            (fun k (a,_) ->
-              let idx = if is_pte then 2*k+1 else k+1 in
-              O.f "static const int %s = %i;" (dump_addr_idx a) idx ;
-              if is_pte then begin
-                O.f "static const int %s = %i;"
-                  (dump_addr_idx (Misc.add_pte a)) (2*k+2)
-              end)
-            test.T.globals ;
-          O.o "" ;
-          (*  Translation to indices *)
-          let dump_test (s,_) =
-            O.fi "else if (v_addr == p->%s) return %s;"
-              s (dump_addr_idx s) ;
-            if is_pte then begin
-              O.fi "else if ((pteval_t *)v_addr == p->%s) return %s;"
-                (OutUtils.fmt_pte_tag s)
-                (dump_addr_idx (Misc.add_pte s))
-            end in
-          O.o "static int idx_addr(intmax_t *v_addr,vars_t *p) {" ;
-          O.oi "if (v_addr == NULL) { return 0;}" ;
-          List.iter dump_test test.T.globals ;
-          O.oi "else { fatal(\"???\"); return -1;}" ;
-          O.o "}" ;
-          O.o "" ;
+            List.iteri
+              (fun k (a,_) ->
+                let idx = if Cfg.is_kvm then 2*k+1 else k+1 in
+                O.f "static const int %s = %i;" (dump_addr_idx a) idx ;
+                if Cfg.is_kvm then begin
+                  O.f "static const int %s = %i;"
+                    (dump_addr_idx (Misc.add_pte a)) (2*k+2)
+                end)
+              test.T.globals ;
+            O.o "" ;
+            (*  Translation to indices *)
+            let dump_test (s,_) =
+              O.fi "else if (v_addr == p->%s) return %s;"
+                s (dump_addr_idx s) ;
+              if Cfg.is_kvm then begin
+                O.fi "else if ((pteval_t *)v_addr == p->%s) return %s;"
+                  (OutUtils.fmt_pte_tag s)
+                  (dump_addr_idx (Misc.add_pte s))
+              end in
+            O.o "static int idx_addr(intmax_t *v_addr,vars_t *p) {" ;
+            O.oi "if (v_addr == NULL) { return 0;}" ;
+            List.iter dump_test test.T.globals ;
+            O.oi "else { fatal(\"???\"); return -1;}" ;
+            O.o "}" ;
+            O.o "" ;
 (* Pretty-print indices *)
-          if some_ptr then begin
-            O.f "static char *pretty_addr[%s+1] = {\"0\",%s};"
-              (if is_pte then "(2*NVARS)" else "NVARS")
-              (String.concat ""
-                 (List.map (fun (s,_) ->
-                   sprintf "\"%s\",%s"
-                     s
-                     (if is_pte then
-                       sprintf "\"%s\""
-                         (Misc.add_pte s)
-                     else ""))
-                    test.T.globals)) ;
-            O.o ""
+            if some_ptr then begin
+              O.f "static char *pretty_addr[%s+1] = {\"0\",%s};"
+                (if Cfg.is_kvm then "(2*NVARS)" else "NVARS")
+                (String.concat ""
+                   (List.map (fun (s,_) ->
+                     sprintf "\"%s\",%s"
+                       s
+                       (if Cfg.is_kvm then
+                         sprintf "\"%s\""
+                           (Misc.add_pte s)
+                       else ""))
+                      test.T.globals)) ;
+              O.o ""
+            end
           end
         end ;
 (* Now physical pages in output *)
-        if is_pte && not (StringSet.is_empty (U.get_displayed_ptes test)) then begin
+        if Cfg.is_kvm && U.pte_in_outs env test then begin
           List.iteri
             (fun k (a,_) ->
               O.f "static const int %s = %i;" (dump_addr_idx (Misc.add_physical a)) k)
@@ -703,7 +706,7 @@ module Make
         do_rec  locs ;
         O.o "}" ;
         O.o "" ;
-        some_ptr
+        some_ptr_pte
 
       let dump_cond_fun env test =
         let module DC =
@@ -1111,11 +1114,11 @@ let dump_thread_code env (proc,(out,(_outregs,envVolatile)))  =
                   (U.do_store (Base t)
                      (sprintf "%s[_j]" a) (pp_const v)) ;
                 O.oii "}" ;
-                if is_pte then
+                if Cfg.is_kvm then
                   O.fii "litmus_flush_tlb((void *)%s);" a
             | _ ->
                 O.fii "%s;" (U.do_store at (sprintf "*%s" a) (pp_const v)) ;
-                if is_pte then O.fii "litmus_flush_tlb((void *)%s);" a)
+                if Cfg.is_kvm then O.fii "litmus_flush_tlb((void *)%s);" a)
           inits ;
 (*        eprintf "%i: INIT {%s}\n" proc (String.concat "," inits) ; *)
         (* And cache-instruct them *)
@@ -1192,7 +1195,7 @@ let dump_thread_code env (proc,(out,(_outregs,envVolatile)))  =
             my_regs global_env envVolatile proc out
         end ;
 (* Collect faults *)
-        if is_pte then begin
+        if Cfg.is_kvm then begin
           List.iter
             (fun ((p,_),_ as f) ->
               if Proc.compare proc p = 0 then
@@ -1202,16 +1205,15 @@ let dump_thread_code env (proc,(out,(_outregs,envVolatile)))  =
 (* Stnchronise *)
         O.oii "barrier_wait(_b);" ;
 (* Save/Restore pte *)
-        if is_pte then begin
+        if Cfg.is_kvm then begin
           begin match proc with
           | 0 ->
               let ptes = U.get_displayed_ptes test in
               StringSet.iter
                 (fun s ->
-                  let temp = sprintf "_pteval_%s" s in
-                  O.fii "pteval_t %s = *%s;" temp (OutUtils.fmt_pte_kvm s) ;
-                  O.fii "_log->%s = pack_pte(idx_physical(%s,_vars),%s);"
-                    (OutUtils.fmt_pte_tag s) temp temp)
+                  O.fii "_log_ptr->%s = *%s;"
+                    (OutUtils.fmt_pte_tag s)
+                    (OutUtils.fmt_pte_kvm s))
                 ptes
           | _ -> ()
           end ;
@@ -1261,7 +1263,11 @@ let dump_thread_code env (proc,(out,(_outregs,envVolatile)))  =
               if U.is_ptr loc env then
                 O.fii "%s = idx_addr((intmax_t *)%s,_vars);"
                   (OutUtils.fmt_presi_index (dump_loc_tag_coded loc))
-                  (OutUtils.fmt_presi_ptr_index (dump_loc_tag loc)))
+                  (OutUtils.fmt_presi_ptr_index (dump_loc_tag loc))
+              else if U.is_pte loc env then
+                let src = OutUtils.fmt_presi_ptr_index (dump_loc_tag loc) in
+                O.fii "%s = pack_pte(idx_physical(%s,_vars),%s);"
+                  (OutUtils.fmt_presi_index (dump_loc_tag loc)) src src)
             (U.get_displayed_locs test) ;
           (* condition *)
           let id = match test.T.filter with
@@ -1336,7 +1342,7 @@ let dump_thread_code env (proc,(out,(_outregs,envVolatile)))  =
                 let t =  match t with
                 | Array (t,_) -> t
                 | _ -> CType.dump t in
-                let vopt = if is_pte then "" else "volatile " in
+                let vopt = if Cfg.is_kvm then "" else "volatile " in
                 O.fi "%s %s*%s = (%s %s*)_vars->%s;" t vopt a t vopt a)
               globs ;
             ()
@@ -1367,7 +1373,7 @@ let dump_thread_code env (proc,(out,(_outregs,envVolatile)))  =
         O.oi "return _ok;" ;
         O.o "}" ;
         O.o "" ;
-        if is_pte then begin
+        if Cfg.is_kvm then begin
           let init_rets nop_defined =
             if do_precise then begin
               if not nop_defined then O.oi "ins_t nop = getnop();" ;
@@ -1422,7 +1428,12 @@ let dump_thread_code env (proc,(out,(_outregs,envVolatile)))  =
         O.oi "int _role = c->role;" ;
         O.oi "if (_role < 0) return;" ;
         O.oi "ctx_t *ctx = c->ctx;" ;
-        O.oi "param_t *q = g->param;" ;
+        let param = if Cfg.is_kvm then
+          "g->param" (* As not sure that param will be used, avoid binding. *)
+        else begin (* Here we know, it will. *)
+          O.oi "param_t *q = g->param;" ;
+          "q"
+        end in
         let have_globals =
           not Cfg.is_kvm &&
           begin match test.T.globals with
@@ -1467,8 +1478,8 @@ let dump_thread_code env (proc,(out,(_outregs,envVolatile)))  =
                     (* Must come first [raises Not_found] *)
                     let tag = pvtag a in
                     O.fiii
-                      "ctx->p.%s = comp_param(&c->seed,&q->%s,NVARS,0);"
-                      tag tag ;
+                      "ctx->p.%s = comp_param(&c->seed,&%s->%s,NVARS,0);"
+                      tag param tag ;
                     O.fiii "_vars->%s = _mem + LINESZ*ctx->p.%s + %i*VOFF;"
                       a tag pos
                   with Not_found ->
@@ -1481,7 +1492,7 @@ let dump_thread_code env (proc,(out,(_outregs,envVolatile)))  =
             List.iter
               (fun (tag,max) ->
                 O.fiii
-                  "ctx->p.%s = comp_param(&c->seed,&q->%s,%s,0);" tag tag max ;)
+                  "ctx->p.%s = comp_param(&c->seed,&%s->%s,%s,0);" tag param tag max ;)
               ps ;
 (* Cache parameters, locations must be allocated *)
             if have_globals then O.oiii "barrier_wait(&ctx->b);" ;
@@ -1503,15 +1514,15 @@ let dump_thread_code env (proc,(out,(_outregs,envVolatile)))  =
                   O.fiii "if (c->act->%s%s) {"
                     (Topology.active_tag p) more_test ;
                   let tag = pctag p in
-                  O.fiv "ctx->p.%s = comp_param(&c->seed,&q->%s,cmax,1);"
-                    tag tag ;
+                  O.fiv "ctx->p.%s = comp_param(&c->seed,&%s->%s,cmax,1);"
+                    tag param tag ;
                   O.oiii "} else {" ;
                   O.fiv "ctx->p.%s = cignore;" tag ;
                   O.oiii "}"
                 end else begin
                   let tag = pctag p in
-                  O.fiii "ctx->p.%s = comp_param(&c->seed,&q->%s,cmax,1);"
-                    tag tag
+                  O.fiii "ctx->p.%s = comp_param(&c->seed,&%s->%s,cmax,1);"
+                    tag param tag
                 end)
               cs ;
             O.oiii "break;")

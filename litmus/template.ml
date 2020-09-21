@@ -265,7 +265,6 @@ module Make(O:Config)(A:I) =
     let compile_presi_out_ptr_reg proc reg =
       OutUtils.fmt_presi_ptr_index (dump_out_reg proc reg)
 
-
     let get_reg k rs =
       try List.nth rs k
       with _ ->

@@ -90,6 +90,11 @@ let rec is_ptr =  function
   | Atomic t|Volatile t -> is_ptr t
   | _ -> false
 
+let rec is_pte t = match t with
+| Base "pteval_t" -> true
+| Atomic t|Volatile t -> is_pte t
+| _ -> false
+
 let rec is_array = function
   | Array _ -> true
   | Atomic t|Volatile t -> is_array t
