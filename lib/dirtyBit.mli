@@ -19,7 +19,9 @@ type t =
      tthm : Proc.t -> bool; 
      ha : Proc.t -> bool;
      hd : Proc.t -> bool;
-    }
+     some_ha : bool;
+     some_hd : bool;
+   }
 
 val get : MiscParser.info -> t
  

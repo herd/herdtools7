@@ -212,6 +212,7 @@ inline static uint64_t get_hafdbs(void) {
   return r & 0b1111;
 }
 
+/* Feature enabling/disabling */
 inline static uint64_t get_tcr_el1(void) {
   uint64_t r ;
   asm volatile("mrs %x0, tcr_el1": "=r" (r));

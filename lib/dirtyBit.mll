@@ -20,7 +20,9 @@
      tthm : Proc.t -> bool; 
      ha : Proc.t -> bool;
      hd : Proc.t -> bool;
-    }
+     some_ha : bool;
+     some_hd : bool;
+   }
 
 type nat = HA | HD | SW
 
@@ -47,7 +49,9 @@ rule all k = parse
 
 {
 
-let soft = let f _ = false in { tthm=f; ha=f; hd=f; }
+ let soft =
+   let f _ = false in
+   { tthm=f; ha=f; hd=f; some_ha=false; some_hd=false; }
 
 let filter_opt f =
   List.fold_left
@@ -65,30 +69,33 @@ let get info =
  | Some s ->
     try
       let xs = all [] (Lexing.from_string s) in
+      let has = List.filter (function (_,HA) -> true | _ -> false) xs
+      and hds = List.filter (function (_,HD) -> true | _ -> false) xs in
       let soft =
         filter_opt
           (function (Some _ as p,SW) -> p | _ -> None)
           xs in
       let tthm p = not (List.exists (Misc.int_eq p) soft) in
       let ha =
-        if List.exists (function None,HA -> true | _ -> false) xs then
+        if List.exists (function None,HA -> true | _ -> false) has then
           fun _ -> true
         else
           let xs = 
             filter_opt
               (function (Some _ as p,HA) -> p | _ -> None)
-              xs in
+              has in
           fun proc -> List.exists (Misc.int_eq proc) xs
       and hd =
-        if List.exists (function None,HD -> true | _ -> false) xs then
+        if List.exists (function None,HD -> true | _ -> false) hds then
           fun _ -> true
         else
           let xs = 
             filter_opt
               (function (Some _ as p,HD) -> p | _ -> None)
-              xs in
+              hds in
           fun proc -> List.exists (Misc.int_eq proc) xs in
-      {tthm; ha; hd;}
+      {tthm; ha; hd;
+       some_ha=Misc.consp has; some_hd=Misc.consp hds;}
     with Error ->
       Warn.user_error "Incorrect dirty bit managment specification '%s'" s
 }

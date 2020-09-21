@@ -91,9 +91,9 @@ module Make
 
       let have_timebase =
         Cfg.is_tb &&
-          (timebase_possible ||
-          (Warn.user_error
-             "No timebase for arch %s" (Archs.pp  Cfg.sysarch)))
+        (timebase_possible ||
+        (Warn.user_error
+           "No timebase for arch %s" (Archs.pp  Cfg.sysarch)))
 
       let have_cache = Insert.exists "cache.c"
 
@@ -409,27 +409,27 @@ module Make
       let get_pte_init =
         if is_pte then
           fun env ->
-          let open Constant in
-          List.fold_right
-            (fun bd k -> match bd with
-            | A.Location_global (G.Pte pte),v ->
-                begin match v with
-                | Symbolic (Physical (phy,0)) -> (pte,P phy)::k
-                | Concrete z when A.V.Scalar.compare z A.V.Scalar.zero = 0 -> (pte,Z)::k
-                | PteVal pteval ->
-                    let open PTEVal in
-                    begin match Misc.tr_physical pteval.oa with
-                    | None ->
-                        Warn.user_error "litmus cannot handle pte initialisation with '%s'"
-                          (A.V.pp_v v)
-                    | Some s -> (pte,V ((if pte=s then None else Some s),pteval))::k
-                    end
-                | _ ->
-                    Warn.user_error "litmus cannot handle pte initialisation with '%s'"
-                      (A.V.pp_v v)
-                end
-            | _,_ -> k)
-            env []
+            let open Constant in
+            List.fold_right
+              (fun bd k -> match bd with
+              | A.Location_global (G.Pte pte),v ->
+                  begin match v with
+                  | Symbolic (Physical (phy,0)) -> (pte,P phy)::k
+                  | Concrete z when A.V.Scalar.compare z A.V.Scalar.zero = 0 -> (pte,Z)::k
+                  | PteVal pteval ->
+                      let open PTEVal in
+                      begin match Misc.tr_physical pteval.oa with
+                      | None ->
+                          Warn.user_error "litmus cannot handle pte initialisation with '%s'"
+                            (A.V.pp_v v)
+                      | Some s -> (pte,V ((if pte=s then None else Some s),pteval))::k
+                      end
+                  | _ ->
+                      Warn.user_error "litmus cannot handle pte initialisation with '%s'"
+                        (A.V.pp_v v)
+                  end
+              | _,_ -> k)
+              env []
         else fun _ -> []
 
       let get_addrs test =
@@ -575,7 +575,7 @@ module Make
               let idx = if is_pte then 2*k+1 else k+1 in
               O.f "static const int %s = %i;" (dump_addr_idx a) idx ;
               if is_pte then begin
-              O.f "static const int %s = %i;"
+                O.f "static const int %s = %i;"
                   (dump_addr_idx (Misc.add_pte a)) (2*k+2)
               end)
             test.T.globals ;
@@ -597,19 +597,18 @@ module Make
           O.o "" ;
 (* Pretty-print indices *)
           if some_ptr then begin
-          O.f "static char *pretty_addr[%s+1] = {\"0\",%s};"
+            O.f "static char *pretty_addr[%s+1] = {\"0\",%s};"
               (if is_pte then "(2*NVARS)" else "NVARS")
-            (String.concat ""
-               (List.map (fun (s,_) ->
-                 sprintf "\"%s\",%s"
-                   s
-                   (if is_pte then
-                     sprintf "\"%s\",\"%s\","
-                       (Misc.add_physical s)
-                       (Misc.add_pte s)
-                   else ""))
-                   test.T.globals)) ;
-          O.o ""
+              (String.concat ""
+                 (List.map (fun (s,_) ->
+                   sprintf "\"%s\",%s"
+                     s
+                     (if is_pte then
+                       sprintf "\"%s\""
+                         (Misc.add_pte s)
+                     else ""))
+                    test.T.globals)) ;
+            O.o ""
           end
         end ;
 (* Now physical pages in output *)
@@ -693,11 +692,11 @@ module Make
             pp_rec 0
         | _ -> do_eq loc suf in
         let rec do_eq_faults = function
-        | [] -> O.oii "1;"
-        | f::fs ->
-            let tag = SkelUtil.dump_fatom_tag A.V.pp_v f in
-            O.fii "p->%s == q->%s &&" tag tag ;
-            do_eq_faults fs in
+          | [] -> O.oii "1;"
+          | f::fs ->
+              let tag = SkelUtil.dump_fatom_tag A.V.pp_v f in
+              O.fii "p->%s == q->%s &&" tag tag ;
+              do_eq_faults fs in
         let rec do_rec = function
           | [] -> do_eq_faults faults
           | x::rem  -> do_eq_array x " &&" ; do_rec rem in
@@ -717,9 +716,9 @@ module Make
               | Constant.Symbolic _ -> dump_addr_idx (T.C.V.pp O.hexa v)
               | Constant.PteVal p ->
                   let open PTEVal in
-                    sprintf
-                     "pack_pack(%s,%d,%d,%d,%d)"
-                      (dump_addr_idx p.oa) p.af p.db p.dbm p.valid
+                  sprintf
+                    "pack_pack(%s,%d,%d,%d,%d)"
+                    (dump_addr_idx p.oa) p.af p.db p.dbm p.valid
               | _ -> T.C.V.pp O.hexa v
               module Loc = struct
                 type t = A.location
@@ -943,6 +942,47 @@ module Make
         O.o "}" ;
         O.o ""
 
+
+(****************************************)
+(* Feature enabling/disabling, per role *)
+(****************************************)
+
+      let forall_procs test p =
+        let n = T.get_nprocs test in
+        let rec do_rec k =
+          if k = 0 then p 0
+          else
+            let aft = do_rec (k-1)
+            and here = p k in
+            if aft = here then here
+            else raise Exit in
+        try Some (do_rec (n-1)) with Exit -> None
+
+      let dump_set_feature test db =
+        if Cfg.is_kvm  then begin
+          let open DirtyBit in
+          let ha_diff = Misc.is_none (forall_procs test db.ha)
+          and hd_diff = Misc.is_none (forall_procs test db.hd) in
+          if  ha_diff || hd_diff  then begin
+            O.o "static void set_feature(int role) {" ;
+            O.oi "switch (role) {" ;
+            for k=0 to T.get_nprocs test-1 do
+              O.fi "case %i:" k ;
+              if ha_diff then O.fii "set_ha_bit(%s);"
+                  (if db.ha k then "1" else "0") ;
+              if hd_diff then O.fii "set_hd_bit(%s);"
+                  (if db.hd k then "1" else "0") ;
+              O.fii "return;"
+            done ;
+            O.oi "}" ;
+            O.oi "return;" ;
+            O.o"}"
+          end else begin
+            O.o "static void set_feature(int _role) { }"
+          end ;
+          O.o ""
+        end
+
 (*****************)
 (* Test instance *)
 (*****************)
@@ -1008,13 +1048,13 @@ module Make
             tlen.(k) <- tlen.(k)+1 ;
             tr.(k) <- a :: tr.(k))
           all ;
-      Array.to_list tr
+        Array.to_list tr
 
 (* Thread code, as functions *)
-      let dump_thread_code env (proc,(out,(_outregs,envVolatile)))  =
-        let myenv = U.select_proc proc env
-        and global_env = U.select_global env in
-        Lang.dump_fun O.out myenv global_env envVolatile proc out
+let dump_thread_code env (proc,(out,(_outregs,envVolatile)))  =
+  let myenv = U.select_proc proc env
+  and global_env = U.select_global env in
+  Lang.dump_fun O.out myenv global_env envVolatile proc out
 
 (* Untouched variables, per thread + responsability *)
       let part_vars test =
@@ -1271,11 +1311,11 @@ module Make
             O.oi "if (_c->role == 0 && _c->inst == 0) {" ;
             List.iter
               (fun ((p,lbl),_ as f) -> match lbl with
-                | None ->
-                    O.fii "labels.%s = (ins_t *) &&CODE%d;" (tag_code f) p
-                | Some lbl ->
-                    let off = U.find_label_offset p lbl test in
-                    O.fii "labels.%s = ((ins_t *)&&CODE%d) + %d;" (tag_code f) p off)
+              | None ->
+                  O.fii "labels.%s = (ins_t *) &&CODE%d;" (tag_code f) p
+              | Some lbl ->
+                  let off = U.find_label_offset p lbl test in
+                  O.fii "labels.%s = ((ins_t *)&&CODE%d) + %d;" (tag_code f) p off)
               faults ;
             O.oi "}" ;
         end ;
@@ -1290,7 +1330,7 @@ module Make
         | [] -> O.o ""
         | globs ->
             O.oi "vars_t *_vars = &_ctx->v;" ;
-        (* Define locations *)
+            (* Define locations *)
             List.iter
               (fun (a,t) ->
                 let t =  match t with
@@ -1450,16 +1490,16 @@ module Make
                 if is_active then begin
                   let more_test =
                     try
-                    let prx = get_param_prefix v in
-                    let tsts =
-                      sprintf " && ctx->p.%s != 0" (pvtag v)::
-                      List.map
-                        (fun w ->
-                          sprintf " && ctx->p.%s != ctx->p.%s"
-                            (pvtag v) (pvtag w))
-                        prx in
-                    String.concat "" tsts
-                  with Not_found -> "" in
+                      let prx = get_param_prefix v in
+                      let tsts =
+                        sprintf " && ctx->p.%s != 0" (pvtag v)::
+                        List.map
+                          (fun w ->
+                            sprintf " && ctx->p.%s != ctx->p.%s"
+                              (pvtag v) (pvtag w))
+                          prx in
+                      String.concat "" tsts
+                    with Not_found -> "" in
                   O.fiii "if (c->act->%s%s) {"
                     (Topology.active_tag p) more_test ;
                   let tag = pctag p in
@@ -1575,7 +1615,7 @@ module Make
         O.o "}" ;
         O.o ""
 
-      let dump_zyva_def tname env test stats =
+      let dump_zyva_def tname env test db stats =
         O.o "/*******************/" ;
         O.o "/* Forked function */" ;
         O.o "/*******************/" ;
@@ -1591,6 +1631,14 @@ module Make
         O.oi "zyva_t *a = (zyva_t*)_a;" ;
         O.oi "int id = a->id;" ;
         O.oi "global_t *g = a->g;" ;
+        if Cfg.is_kvm then begin
+          let feat_same p set = match forall_procs test p with
+          | None -> ()
+          | Some b ->
+              O.fi "%s(%s);" set (if b then "1" else "0") in
+          feat_same db.DirtyBit.ha "set_ha_bit" ;
+          feat_same db.DirtyBit.hd "set_hd_bit"
+        end ;
         if Cfg.is_kvm && have_fault_handler then begin
           O.oi "install_fault_handler();"
         end ;
@@ -1624,47 +1672,70 @@ module Make
 (* Main *)
 (********)
 
-let dump_main_def doc _env test stats =
-  begin match Cfg.driver with
-  | Driver.Shell ->
-      O.o "#define RUN run" ;
-      O.o "#define MAIN 1" ;
-  | Driver.C|Driver.XCode ->
-      O.f "#define RUN %s" (MyName.as_symbol doc) ;
-      O.f "#define PRELUDE 1" ;
-     ()
-  end ;
-  O.o "" ;
-  UD.postlude doc test None true stats ;
-  O.o "" ;
-  ObjUtil.insert_lib_file O.o "_main.c" ;
-  ()
+      let dump_main_def doc _env test stats =
+        begin match Cfg.driver with
+        | Driver.Shell ->
+            O.o "#define RUN run" ;
+            O.o "#define MAIN 1" ;
+        | Driver.C|Driver.XCode ->
+            O.f "#define RUN %s" (MyName.as_symbol doc) ;
+            O.f "#define PRELUDE 1" ;
+            ()
+        end ;
+        O.o "" ;
+        UD.postlude doc test None true stats ;
+        O.o "" ;
+        ObjUtil.insert_lib_file O.o "_main.c" ;
+        ()
 
 (***************)
 (* Entry point *)
 (***************)
 
-  let dump doc test =
-    ObjUtil.insert_lib_file O.o "header.txt" ;
-    dump_header test ;
-    dump_delay_def () ;
-    dump_read_timebase () ;
-    dump_mbar_def () ;
-    dump_cache_def () ;
-    dump_barrier_def () ;
-    dump_topology test ;
-    let env = U.build_env test in
-    let stats = get_stats test in
-    let some_ptr = dump_outcomes env test in
-    dump_fault_handler doc test ;
-    dump_cond_def env test ;
-    dump_parameters env test ;
-    dump_hash_def doc.Name.name env test ;
-    dump_instance_def env test ;
-    dump_run_def env test some_ptr stats ;
-    dump_zyva_def doc.Name.name env test stats ;
-    dump_prelude_def doc test ;
-    dump_main_def doc env test stats ;
-    ()
+      let dump doc test =
+        let db = DirtyBit.get test.T.info in
+        ObjUtil.insert_lib_file O.o "header.txt" ;
+        dump_header test ;
+        dump_delay_def () ;
+        dump_read_timebase () ;
+        dump_mbar_def () ;
+        dump_cache_def () ;
+        dump_barrier_def () ;
+        dump_topology test ;
+        let env = U.build_env test in
+        let stats = get_stats test in
+        let some_ptr = dump_outcomes env test in
+        dump_fault_handler doc test ;
+        dump_cond_def env test ;
+        dump_parameters env test ;
+        dump_hash_def doc.Name.name env test ;
+        dump_set_feature test db ;
+        dump_instance_def env test ;
+        dump_run_def env test some_ptr stats ;
+        dump_zyva_def doc.Name.name env test db stats ;
+        dump_prelude_def doc test ;
+        if Cfg.is_kvm then begin
+          let open DirtyBit in
+          let to_check,msg  =
+            if db.some_hd then ["0b0010";],"dirty bit"
+            else if db.some_ha then  ["0b0010";"0b0001"],"access flag"
+            else [],"" in
+          O.o "static void feature_check(void) {" ;
+          begin match to_check with
+          | [] -> ()
+          | vs ->
+              O.oi "uint64_t v = get_hafdbs();" ;
+              List.iter
+                (fun v -> O.fi "if (v == %s) return;" v)
+                vs ;
+              O.fi
+                "fatal(\"Test %s, hardware management of %s not available on this system\");"
+                doc.Name.name msg
+          end ;
+          O.o "}" ;
+          O.o ""
+        end ;
+        dump_main_def doc env test stats ;
+        ()
 
-end
+    end
