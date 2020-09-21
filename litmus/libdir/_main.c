@@ -29,6 +29,7 @@ static pthread_t th[AVAIL];
 #ifdef KVM
 int RUN(int argc,char **argv) ;
 int RUN(int argc,char **argv) {
+  feature_check();
 #else
 int RUN(int argc,char **argv,FILE *out) ;
 int RUN(int argc,char **argv,FILE *out) {

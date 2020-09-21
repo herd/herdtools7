@@ -153,6 +153,8 @@ static void set_role(global_t *g,thread_ctx_t *c,int part) {
     c->inst = inst ;
     c->ctx = &g->ctx[inst] ;
     c->role = g->role[idx] ;
+#ifdef KVM
+    set_feature(c->role) ;
 #ifdef HAVE_FAULT_HANDLER
     whoami[c->id].instance = inst ;
     whoami[c->id].proc = c->role ;
@@ -161,6 +163,7 @@ static void set_role(global_t *g,thread_ctx_t *c,int part) {
       vars_ptr[inst] = &c->ctx->v;
       see_fault[inst] = &c->ctx->f;
     }
+#endif
 #endif
 #endif
 #ifdef ACTIVE

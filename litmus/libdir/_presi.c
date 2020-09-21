@@ -41,7 +41,9 @@ static const char *strerror(int e) { return "ERROR"; }
 /********/
 
 void fatal(const char *msg) {
+#ifndef KVM
   fprintf(stderr,"Failure: %s\n", msg) ;
+#endif
   fprintf(stdout,"Failure: %s\n", msg) ;
   exit(1) ;
 }
