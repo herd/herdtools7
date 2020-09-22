@@ -380,7 +380,15 @@ module Make(C:Config) (I:I) : S with module I = I
    all loads from state are by this function *)
       exception LocUndetermined
 
-      let get_in_state loc st = State.safe_find I.V.zero loc st
+      let get_in_state loc st =
+        try State.find loc st
+        with Not_found ->
+          let open Constant in
+          match loc with
+          | Location_global (I.V.Val (Symbolic (System (PTE,s)))) ->
+              I.V.Val (PteVal (PTEVal.default s))
+          | _ -> I.V.zero
+
       let get_of_val st a = State.safe_find I.V.zero (Location_global a) st
 
       let look_address_in_state st loc =
