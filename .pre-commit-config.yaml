@@ -8,3 +8,12 @@ repos:
     -   id: check-executables-have-shebangs
     -   id: check-yaml
     -   id: mixed-line-ending
+
+-   repo: local
+    hooks:
+    -   id: make-all
+        name: Run make all
+        language: system
+        entry: make all
+        files: (dune|\.ml.*$)
+        pass_filenames: false
