@@ -33,7 +33,6 @@ val as_address : symbol -> string
 val symbol_compare : symbol -> symbol -> int
 (* 'phy' is the physical address (initially) matching virual adress 'virt' *)
 val virt_match_phy : symbol (* virt *) -> symbol (* phy *)-> bool
-val is_non_mixed_symbol : symbol -> bool
 
 module SymbolSet : MySet.S with type elt = symbol
 module SymbolMap : MyMap.S with type key = symbol
@@ -50,7 +49,7 @@ type 'scalar t =
 val mk_sym : string -> 'scalar t
 val get_sym : 'scalar t -> string
 val is_symbol : 'scalar t -> bool
-val is_non_mixed_symbol : 'scalar t -> bool
+val is_non_mixed_symbol : symbol -> bool
 val default_tag : 'scalar t
 
 (* Check  non-concrete constant (and change type!) *)
@@ -73,6 +72,7 @@ module type S =  sig
   val pp_v  : v -> string
   val compare : v -> v -> int
   val eq : v -> v -> bool
+  val vToName : v -> string
 
 (* Arch dependent result *)
   exception Result of Archs.t * v * string

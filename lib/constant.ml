@@ -76,11 +76,6 @@ let virt_match_phy s1 s2 = match s1,s2 with
     Misc.string_eq s1 s2 && Misc.int_eq i1 i2
 | _,_ -> false
 
-let is_non_mixed_symbol = function
-  | Virtual (_,idx)
-  | Physical (_,idx) -> idx=0
-  | System _ -> true
-
 module SC = struct
   type t = symbol
   let compare = symbol_compare
@@ -113,12 +108,12 @@ and get_sym = function
 
 let is_symbol = function
   | Symbolic _ -> true
-  | Concrete _|Label _| Tag _ -> false
+  | Concrete _|Label _| Tag _|PteVal _ -> false
 
 let is_non_mixed_symbol = function
-  | Symbolic (Virtual (_,idx)) -> idx=0
-  | Symbolic (Physical (_,idx)) -> idx=0
-  | Symbolic (System _ ) | Concrete _|Label _| Tag _| PteVal _ -> true
+  | Virtual (_,idx)
+  | Physical (_,idx) -> idx=0
+  | System _ -> true
 
 let default_tag = Tag "green"
 
@@ -148,6 +143,7 @@ module type S =  sig
   val pp_v  : v -> string
   val compare : v -> v -> int
   val eq : v -> v -> bool
+  val vToName : v -> string
 
   exception Result of Archs.t * v * string
 end
