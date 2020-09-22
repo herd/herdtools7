@@ -309,7 +309,6 @@ match name with
 | "nshld"|"NSHLD" -> NSHLD
 (* inline barrel shift operands *)
 | "lsl" | "LSL" -> LSL
-| "lsr" | "LSR" -> LSR
 (* Cache maintenance *)
 | "ic"|"IC" -> IC
 | "dc"|"DC" -> DC

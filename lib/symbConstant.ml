@@ -87,6 +87,11 @@ module Make(Scalar:Scalar.S) = struct
   | (Symbolic (System _),Symbolic (Virtual _|Physical _))
     -> false
 
+ (* For building code symbols, significant for symbols only ? *)
+  let vToName = function
+    | Symbolic (Virtual((s,_),_)) -> s
+    | Symbolic _|Concrete _|Label _|Tag _|PteVal _ -> assert false
+
 (* Arch dependant result *)
   exception Result of Archs.t * v * string
 end

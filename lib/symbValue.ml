@@ -78,6 +78,10 @@ module Make(Cst:Constant.S) = struct
   | Symbolic _ | Label _ | Tag _ | PteVal _ as _m -> Val _m
   | Concrete s -> Val (Concrete (Scalar.of_string s))
 
+  let as_symbol = function
+    | Val v -> Cst.vToName v
+    | Var _ -> assert false
+
   let zero = Val Cst.zero
   and one = Val Cst.one
   and two = intToV 2
@@ -103,7 +107,7 @@ module Make(Cst:Constant.S) = struct
 
   let bit_at k = function
     | Val (Concrete v) -> Val (Concrete (Cst.Scalar.bit_at k v))
-    | Val (Symbolic _|Label _|Tag _ as x) ->
+    | Val (Symbolic _|Label _|Tag _|PteVal _ as x) ->
       Warn.user_error "Illegal operation on %s" (Cst.pp_v x)
     | Var _ -> raise Undetermined
 
