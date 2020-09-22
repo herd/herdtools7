@@ -303,6 +303,12 @@ end = struct
   | (A.V.Val (Symbolic (Physical _))) -> true
   | _ -> false
 
+  let is_invalid_val = let open Constant in function
+  | Some (A.V.Val (PteVal v)) -> V.is_zero (V.intToV v.valid) 
+  | _ -> false
+
+  let invalid_pte act = is_invalid_val (written_of act)
+
 (* relative to the registers of the given proc *)
   let is_reg_store a (p:int) = match a with
   | Access (W,A.Location_reg (q,_),_,_,_,_,_) -> p = q
@@ -425,7 +431,7 @@ end = struct
         (fun lvl -> A.pp_level lvl,is_at_level lvl)
         A.levels
     in
-    ("T",is_tag)::("FAULT",is_fault)::("TLBI",is_inv)::("DC",is_dc)::("CI",is_ci)::("C",is_c)::("I",is_i)::("Exp",is_explicit)::("NExp",is_not_explicit)::
+    ("T",is_tag)::("FAULT",is_fault)::("TLBI",is_inv)::("DC",is_dc)::("CI",is_ci)::("C",is_c)::("I",is_i)::("Exp",is_explicit)::("NExp",is_not_explicit)::("PTEINV",invalid_pte)::
     bsets @ asets @ lsets
 
   let arch_rels =
