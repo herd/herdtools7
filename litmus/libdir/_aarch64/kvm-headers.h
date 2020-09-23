@@ -208,31 +208,46 @@ inline static void *read_elr_el1(void) {
 /* Feature check */
 inline static uint64_t get_hafdbs(void) {
   uint64_t r ;
-  asm volatile("mrs %0, id_aa64mmfr1_el1": "=r" (r));
+  asm volatile("mrs %x0, id_aa64mmfr1_el1": "=r" (r));
   return r & 0b1111;
 }
 
 /* Feature enabling/disabling */
 inline static uint64_t get_tcr_el1(void) {
   uint64_t r ;
-  asm volatile("mrs %x0, tcr_el1": "=r" (r));
+  asm volatile ("mrs %x0, tcr_el1" : "=r" (r));
   return r ;
 }
 
 inline static void set_tcr_el1(uint64_t a) {
-  asm volatile("msr tcr_el1,%x0": : "r" (a));
+  asm volatile
+    (
+     "msr tcr_el1,%x0\n"
+     "\tisb\n"
+     "\ttlbi vmalle1\n"
+     "\tdsb nsh\n"
+     "\tisb"
+     : : "r" (a)
+     );
 }
 
-inline static void set_tcr_el1_bit(unsigned b,unsigned v) {
+inline static void set_tcr_el1_bit(unsigned b,uint64_t v) {
   uint64_t old = get_tcr_el1();
   uint64_t msk = ((uint64_t)1) << b;
-  set_tcr_el1((old & ~msk)|(((uint64_t)v) << b));
+  set_tcr_el1((old & ~msk)|(v << b));
 }
 
-inline static void set_ha_bit(unsigned v) {
+inline static void set_ha_bit(uint64_t v) {
   set_tcr_el1_bit(39,v);
 }
 
-inline static void set_hd_bit(unsigned v) {
+inline static void set_hd_bit(uint64_t v) {
   set_tcr_el1_bit(40,v);
+}
+
+inline static void set_hahd_bits(uint64_t v) {
+  uint64_t old = get_tcr_el1();
+  uint64_t msk = ((uint64_t)0b11) << 39;
+  uint64_t n = (old & ~msk)|(v << 39);
+  set_tcr_el1(n);
 }
