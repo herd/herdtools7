@@ -1456,13 +1456,11 @@ let match_reg_events es =
        end
 
     let check_aligned test es =
-      let open Constant in
       E.EventSet.iter
         (fun e -> check_event_aligned test e)
         es.E.mem_accesses
 
     let check_symbolic_locations _test es =
-      let open Constant in
       E.EventSet.iter
         (fun e -> match E.location_of e with
         | Some (A.Location_global (V.Val cst)) when Constant.is_symbol cst
