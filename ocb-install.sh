@@ -1,38 +1,35 @@
 #!/bin/bash
 
+set -eu
+
 . ./defs.sh
 
-if [ "x$1" = "x" ]
+if [ "$#" -ne 1 ]
 then
-  echo "Usage: ./install.sh prefix"
+  readonly this="${0}"
+
+  echo "Usage: ${this} prefix"
   echo
-  echo "For example './install.sh /home/john/.local' will copy:"
+  echo "For example '${this} /home/john/.local' will copy:"
   echo "  * executables into    /home/john/.local/bin"
   echo "  * library files into  /home/john/.local/share/herdtools7"
   exit 1
-else
-  PREFIX=$1
 fi
 
-BINDIR=$PREFIX/bin
-LIBDIR=$PREFIX/share/herdtools7
+readonly prefix="${1}"
 
-if ! [ -d $BINDIR ]
-then
-	mkdir -p $BINDIR
-fi
+readonly bindir="${prefix}/bin"
+readonly libdir="${prefix}/share/herdtools7"
 
-if ! [ -d $LIBDIR ]
-then
-	mkdir -p $LIBDIR
-fi
+mkdir -p "${bindir}"
+mkdir -p "${libdir}"
 
 cpbin () {
-  SUB=$1
-  EXECS="$2"
-  for exec in $EXECS
+  local sub="${1}"
+  local execs="${2}"
+  for exec in $execs
   do
-    cp _build/$SUB/$exec $BINDIR/$(basename $exec .native)7
+    cp "_build/${sub}/${exec}" "${bindir}/$(basename $exec .native)7"
   done
 }
 
@@ -44,6 +41,6 @@ cpbin gen "$GEN"
 cpbin jingle "$JINGLE"
 
 # Copy libfiles
-cpdir herd/libdir $LIBDIR/herd
-cpdir litmus/libdir $LIBDIR/litmus
-cpdir jingle/libdir $LIBDIR/jingle
+cpdir herd/libdir   "${libdir}/herd"
+cpdir litmus/libdir "${libdir}/litmus"
+cpdir jingle/libdir "${libdir}/jingle"
