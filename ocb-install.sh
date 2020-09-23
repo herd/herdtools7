@@ -2,8 +2,6 @@
 
 set -eu
 
-. ./defs.sh
-
 if [ "$#" -ne 1 ]
 then
   readonly this="${0}"
@@ -17,6 +15,8 @@ then
 fi
 
 readonly prefix="${1}"
+
+. ./defs.sh
 
 readonly bindir="${prefix}/bin"
 readonly libdir="${prefix}/share/herdtools7"
