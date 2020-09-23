@@ -17,19 +17,7 @@ fi
 readonly prefix="${1}"
 readonly libdir="${prefix}/share/herdtools7"
 
-cpdir () {
-  if [ "$#" -ne 2 ]
-  then
-    echo "Usage: cpdir <from> <to>"
-    exit 1
-  fi
-
-  local from="${1}"
-  local to="${2}"
-
-  rm -rf "${to}" && mkdir -p "${to}" && ( cd "${from}" && cp -r . "${to}" )
-}
-
+. ./defs.sh
 
 # Copy binaries
 dune install --prefix "${prefix}"
