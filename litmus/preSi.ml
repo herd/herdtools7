@@ -1643,12 +1643,17 @@ let dump_thread_code env (proc,(out,(_outregs,envVolatile)))  =
         O.oi "int id = a->id;" ;
         O.oi "global_t *g = a->g;" ;
         if Cfg.is_kvm then begin
-          let feat_same p set = match forall_procs test p with
-          | None -> ()
-          | Some b ->
-              O.fi "%s(%s);" set (if b then "1" else "0") in
-          feat_same db.DirtyBit.ha "set_ha_bit" ;
-          feat_same db.DirtyBit.hd "set_hd_bit"
+          let feat_same p = match forall_procs test p with
+          | None -> None
+          | Some b -> Some (if b then '1' else '0') in
+          match feat_same db.DirtyBit.ha,feat_same db.DirtyBit.hd with
+          | Some ha,Some hd ->
+              O.fi "set_hahd_bits(0b%c%c);" hd ha
+          | Some ha,None ->
+              O.fi "set_ha_bit(0b%c);" ha
+          | None,Some hd ->
+              O.fi "set_hd_bit(0b%c);" hd
+          | None,None -> ()
         end ;
         if Cfg.is_kvm && have_fault_handler then begin
           O.oi "install_fault_handler();"
@@ -1728,17 +1733,16 @@ let dump_thread_code env (proc,(out,(_outregs,envVolatile)))  =
         if Cfg.is_kvm then begin
           let open DirtyBit in
           let to_check,msg  =
-            if db.some_hd then ["0b0010";],"dirty bit"
-            else if db.some_ha then  ["0b0010";"0b0001"],"access flag"
-            else [],"" in
+            if db.some_hd then Some "0b0010","dirty bit"
+            else if db.some_ha then  Some "0b0001","access flag"
+            else None,"" in
           O.o "static void feature_check(void) {" ;
           begin match to_check with
-          | [] -> ()
-          | vs ->
+          | None -> ()
+          | Some b ->
               O.oi "uint64_t v = get_hafdbs();" ;
-              List.iter
-                (fun v -> O.fi "if (v == %s) return;" v)
-                vs ;
+              O.fi "if (v  >= %s) return;" b ;
+              O.oi "printf(\"HAFDBS is %lx\\n\",v);" ;
               O.fi
                 "fatal(\"Test %s, hardware management of %s not available on this system\");"
                 doc.Name.name msg
