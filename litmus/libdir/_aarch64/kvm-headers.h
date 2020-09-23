@@ -65,11 +65,11 @@ static inline pteval_t litmus_set_pte_invalid(pteval_t old) {
   return old & ~((pteval_t)1) ;
 }
 
-static const uint64_t msk_valid = 0x1U;
-static const uint64_t msk_af = 0x400U;
-static const uint64_t msk_dbm = 0x8000000000000U;
-static const uint64_t msk_db = 0x80U;
-static const uint64_t msk_full = msk_valid | msk_af | msk_dbm | msk_db;
+static const uint64_t msk_valid = 0x1UL;
+static const uint64_t msk_af = 0x400UL;
+static const uint64_t msk_dbm = 0x8000000000000UL;
+static const uint64_t msk_db = 0x80UL;
+#define  msk_full (msk_valid|msk_af|msk_dbm|msk_db)
 
 static inline pteval_t litmus_set_pte_flags(pteval_t old,pteval_t flags) {
   flags ^= msk_db; /* inverse dirty bit -> AF[2] */
