@@ -171,7 +171,7 @@ inline static pteval_t pack_pack_flag(int f,int shift) {
 inline static pteval_t pack_pack(int oa,int af,int db,int dbm,int valid) {
   return
     (((pteval_t)oa) << OA_PACKED) |
-    pack_pack_flag(oa,OA_PACKED) |
+    pack_pack_flag(af,AF_PACKED) |
     pack_pack_flag(db,DB_PACKED) |
     pack_pack_flag(dbm,DBM_PACKED) |
     pack_pack_flag(valid,VALID_PACKED) ;
