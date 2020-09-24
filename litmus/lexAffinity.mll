@@ -40,7 +40,7 @@ rule coms = parse
 | space+ { coms lexbuf }
 | "Fr"|"Iff"   { Fr :: coms lexbuf }
 | "Rf"|"Fif"   { Rf :: coms lexbuf }
-| "Ws"   { Ws :: coms lexbuf }
+| "Ws"|"Co"    { Ws :: coms lexbuf }
 | "Hat"  { Hat :: coms lexbuf }
 | eof    { [] }
 | non_space* as lxm   { error (sprintf "'%s'" lxm) }

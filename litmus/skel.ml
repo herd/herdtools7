@@ -230,7 +230,9 @@ module Make
               let res = List.assoc "Com" test.T.info in
               let coms =
                 try LexAffinity.coms res
-                with _ -> assert false in
+                with e ->
+                  Warn.fatal "Lexing affinity on '%s' failed (%s)"
+                    res (Printexc.to_string e) in
               let nprocs = T.get_nprocs test in
               if nprocs <> List.length coms then None
               else if smt > 1 then match smtmode with
