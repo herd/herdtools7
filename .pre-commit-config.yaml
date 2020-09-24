@@ -17,3 +17,9 @@ repos:
         entry: make all
         files: (dune|\.ml.*$)
         pass_filenames: false
+
+    -   id: opam-lint
+        name: opam lint
+        language: system
+        entry: opam lint
+        files: (\.opam$)
