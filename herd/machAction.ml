@@ -308,7 +308,7 @@ end = struct
   | Some (A.V.Val (PteVal v)) -> V.is_zero (V.intToV v.valid) 
   | _ -> false
 
-  let invalid_pte act = is_invalid_val (written_of act)
+  let invalid_pte act = is_invalid_val (written_of act) || is_invalid_val (read_of act)
 
 (* relative to the registers of the given proc *)
   let is_reg_store a (p:int) = match a with
