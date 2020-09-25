@@ -490,9 +490,12 @@ type P.code = MiscParser.proc * A.pseudo list)
     let comp_initset proc initenv code inputs_final =
       let reg_set  = comp_fix code inputs_final in
       let reg_set =
-        if do_self || A.arch = `X86_64 then (* Bypass livein analysis for X64 arch *)
+        (* Bypass livein analysis for X64 arch, kvm and self mode as register must
+           be initialized in all those situations, due to partial writes,
+           code modification and faults *)
+        if do_self || is_pte || A.arch = `X86_64 then
           RegSet.union
-            reg_set
+            (if is_pte then RegSet.union inputs_final reg_set else reg_set)
             (RegSet.of_list
                (List.fold_left
                   (fun k (r,_) -> match A.of_proc proc r with
