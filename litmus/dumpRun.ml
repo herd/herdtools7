@@ -239,12 +239,12 @@ let dump_shell names =
           fprintf out_chan "QEMU=\"${QEMU:-%s}\"\n" e
       | Crossrun.Kvm e ->
           fprintf out_chan "TDIR=$(dirname $0)\n" ;
-          fprintf out_chan "QEMU=\"${QEMU:-%s}\"\n" e ;
+          fprintf out_chan "ARM_RUN=\"${ARM_RUN:-%s}\"\n" e ;
           fprintf out_chan "dorun () {\n" ;
           fprintf out_chan "  EXE=$1\n" ;
           fprintf out_chan "  shift\n" ;
           fprintf out_chan "  OPTS=\"$@\"\n" ;
-          fprintf out_chan "  ${QEMU} ${TDIR}/${EXE} -smp %i -append \"${OPTS}\"\n"
+          fprintf out_chan "  ${ARM_RUN} ${TDIR}/${EXE} -smp %i -append \"${OPTS}\"\n"
             (match Cfg.avail with
             | Some e -> e
             | None ->
