@@ -23,6 +23,7 @@ val prog : string
 
 (* Local options *)
 val verbose : int ref
+val libdir : string ref
 val includes : string list ref
 val exit_if_failed : bool ref
 val debug : Debug_herd.t ref

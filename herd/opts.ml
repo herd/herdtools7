@@ -24,6 +24,7 @@ let prog =
 
 (* Local options *)
 let verbose = ref 0
+let libdir = ref (Filename.concat Version.libdir "herd")
 let includes = ref []
 let exit_if_failed = ref false
 let debug = ref Debug_herd.none
@@ -163,7 +164,7 @@ let libfind includes debug =
       (struct
         let includes = includes
         let env = Some "HERDLIB"
-        let libdir = Version_herd.libdir
+        let libdir = !libdir
         let debug = debug
       end) in
   ML.find
