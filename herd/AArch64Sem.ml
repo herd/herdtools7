@@ -248,6 +248,17 @@ module Make
         else
           mop ma >>! B.Next
 
+      (* Helper function to increment address for ldp/stp*)
+      let incr_a var =
+        let n = V.intToV (MachSize.nbytes (AArch64.tr_variant var)) in
+        M.add n
+
+      (* add immediate to initial base address *)                                    let add_imm =
+        function
+        | AArch64.K 0 -> M.unitT
+        | AArch64.K k -> M.add (V.intToV k)
+        | _   -> Warn.fatal "illegal register variant in instruction ldp/stp"
+
       let do_str sz an rs ma ii =
         lift_memop
           (fun ma ->
@@ -263,6 +274,30 @@ module Make
           (get_ea rs kr ii) ii
 
       and str sz rs rd kr ii = do_str sz AArch64.N rs (get_ea rd kr ii) ii
+
+      (* Store Pair *)
+      and stp var r1 r2 rd kr ii =
+        let open AArch64Base in
+        let sz = tr_variant var in
+        (read_reg_ord r1 ii >>| read_reg_ord r2 ii >>| read_reg_ord rd ii)
+          >>= fun ((v1,v2),a) ->
+            (add_imm kr a)
+          >>= fun a ->
+              (M.unitT a >>| incr_a var a)
+            >>= fun (a,a2) ->
+              (write_mem sz a v1 ii) >>| (write_mem sz a2 v2 ii)
+        >>! B.Next
+
+      (* Load pair *)
+      and ldp var rd1 rd2 ra kr ii =
+        let sz = AArch64.tr_variant var in
+
+        (read_reg_ord ra ii >>= add_imm kr)
+        >>= fun a ->
+         (read_mem sz rd1 a ii)
+        >>|
+         (incr_a var a >>= fun a -> read_mem sz rd2 a ii)
+        >>! B.Next
 
       and stlr sz rs rd ii = do_str sz AArch64.L rs (read_reg_ord rd ii) ii
 
@@ -451,9 +486,14 @@ module Make
         | I_LDARBH(bh,t,rd,rs) ->
             let sz = bh_to_sz bh in
             ldar sz t rd rs ii
+        | I_LDP(_, var, rd1, rd2, ra, kr) ->
+            ldp var rd1 rd2 ra kr ii
 
         | I_STR(var,rs,rd,kr) ->
             str (tr_variant var) rs rd kr ii
+
+        | I_STP(_, var, r1, r2, rd, kr) ->
+            stp var r1 r2 rd kr ii
 
         | I_STRBH(bh,rs,rd,kr) ->
             str (bh_to_sz bh) rs rd kr ii
@@ -638,7 +678,7 @@ module Make
         | I_LDOPBH (op,v,rmw,rs,rt,rn) ->
             ldop op (bh_to_sz v) rmw rs rt rn ii >>! B.Next
 (*  Cannot handle *)
-        | (I_RBIT _|I_MRS _|I_LDP _|I_STP _|I_IC _|I_DC _|I_BL _|I_BLR _|I_BR _|I_RET _) as i ->
+        | (I_RBIT _|I_MRS _|I_IC _|I_DC _|I_BL _|I_BLR _|I_BR _|I_RET _) as i ->
             Warn.fatal "illegal instruction: %s"
               (AArch64.dump_instruction i)
        )

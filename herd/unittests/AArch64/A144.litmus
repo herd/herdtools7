@@ -1,0 +1,12 @@
+AArch64 A144
+
+(* Equivalent to A02, but with symbolic addresses *)
+
+ { 0:X0 = 1; 0:X1=2; int64_t z=0; 0:X2=z; }
+(* Note we cannot do the fully symbolic case yet without a larger 128-bit type*)
+(* to store 2 64-bit values, or a vector type - cannot do XREG case *)
+P0;
+  STP W0, W1, [X2];
+
+exists (z=8589934593)
+(* this is 1 and 2 next to each other in binary*)

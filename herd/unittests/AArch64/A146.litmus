@@ -1,0 +1,13 @@
+AArch64 A146
+(* Tests load pair, symbolic location, no offset*)
+(* equivalent to A31 but without numeric addresses*)
+
+(* Note we cannot do the fully symbolic case yet without a larger 128-bit type*)
+(* to store 2 64-bit values, or a vector type - cannot do XREG case *)
+{ 0:X2=x; uint64_t x=8589934593}
+(* this is 1 and 2 next to each other in binary*)
+
+P0;
+  LDP W0, W1, [X2];
+
+exists (0:X0=1 /\ 0:X1=2)

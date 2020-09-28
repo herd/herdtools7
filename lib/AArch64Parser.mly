@@ -159,6 +159,10 @@ kr0:
 | COMMA wreg COMMA SXTW {  A.RV (A.V32,$2) }
 /* For indexed accesses SXTW is considered always present */
 
+kr0_no_shift:
+| { A.K (MetaConst.zero) }
+| COMMA k { A.K $2 }
+
 kwr:
 | k { A.K $1 }
 | wreg { A.RV (A.V32,$1) }
@@ -221,13 +225,13 @@ instr:
 /* Memory */
 | LDR reg COMMA LBRK xreg kr0 RBRK
   { let v,r = $2 in A.I_LDR (v,r,$5,$6) }
-| ldp_instr wreg COMMA wreg COMMA LBRK xreg kr0 RBRK
+| ldp_instr wreg COMMA wreg COMMA LBRK xreg kr0_no_shift RBRK
   { $1 A.V32 $2 $4 $7 $8 }
-| ldp_instr xreg COMMA xreg COMMA LBRK xreg kr0 RBRK
+| ldp_instr xreg COMMA xreg COMMA LBRK xreg kr0_no_shift RBRK
   { $1 A.V64 $2 $4 $7 $8 }
-| stp_instr wreg COMMA wreg COMMA LBRK xreg kr0 RBRK
+| stp_instr wreg COMMA wreg COMMA LBRK xreg kr0_no_shift RBRK
   { $1 A.V32 $2 $4 $7 $8 }
-| stp_instr xreg COMMA xreg COMMA LBRK xreg kr0 RBRK
+| stp_instr xreg COMMA xreg COMMA LBRK xreg kr0_no_shift RBRK
   { $1 A.V64 $2 $4 $7 $8 }
 | LDRB wreg COMMA LBRK xreg kr0 RBRK
   { A.I_LDRBH (A.B,$2,$5,$6) }
