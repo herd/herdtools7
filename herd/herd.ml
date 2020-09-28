@@ -148,10 +148,12 @@ let gen_model_opt s =
 let options = [
 (* Basic *)
   ("-version", Arg.Unit
-     (fun () -> printf "%s, Rev: %s\n" Version_herd.version Version_herd.rev ; exit 0),
+     (fun () -> printf "%s, Rev: %s\n" Version.version Version.rev ; exit 0),
    " show version number and exit") ;
-  ("-libdir", Arg.Unit (fun () -> print_endline Version_herd.libdir; exit 0),
+  ("-libdir", Arg.Unit (fun () -> print_endline !Opts.libdir; exit 0),
     " show installation directory and exit");
+  ("-set-libdir", Arg.String (fun s -> Opts.libdir := s),
+    "<path> set installation directory to <path>");
   ("-v", Arg.Unit (fun _ -> incr verbose),
    "<non-default> show various diagnostics, repeat to increase verbosity");
   ("-q", Arg.Unit (fun _ -> verbose := -1; debug := Debug_herd.none),

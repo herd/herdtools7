@@ -106,7 +106,7 @@ let handle_key main key arg = match key with
         (struct
           let includes = !includes
           let env = Some "HERDLIB"
-          let libdir = Version_herd.libdir
+          let libdir = !Opts.libdir
           let debug = !debug.Debug_herd.files
         end) in
       dolex main (ML.find arg)
