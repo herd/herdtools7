@@ -1,31 +1,29 @@
 #!/bin/bash
 
-. ./dune-defs.sh
+set -eu
 
-if [ "x$1" = "x" ]
+if [ "$#" -ne 1 ]
 then
-  echo "Usage: ./dune-uninstall.sh prefix"
+  readonly this="${0}"
+
+  echo "Usage: ${this} <prefix>"
   echo
-  echo "For example './install.sh /home/john/.local' will remove:"
+  echo "For example '${this} /home/john/.local' will remove:"
   echo "  * executables from      /home/john/.local/bin"
   echo "  * delete the directory  /home/john/.local/share/herdtools7"
   exit 1
-else
-  PREFIX=$1
 fi
 
-BINDIR=$PREFIX/bin
-LIBDIR=$PREFIX/share/herdtools7
+readonly prefix="${1}"
 
-rmbin () {
-  for exec
-  do
-    rm -f $BINDIR/$(basename $exec .exe)7
-  done
-}
+readonly bindir="${prefix}/bin"
+readonly libdir="${prefix}/share/herdtools7"
+
+# Print out the commands that this script runs.
+set -x
 
 # Remove binaries
-rmbin $EXE
+dune uninstall --prefix "${prefix}"
 
 # Remove libfiles
-rm -rf $LIBDIR
+rm -rf "${libdir}"

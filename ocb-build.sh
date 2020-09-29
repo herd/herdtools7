@@ -1,17 +1,19 @@
 #!/bin/bash
-#Assume run as ./build.sh
+
+set -eu
+
 . ./defs.sh
 
-if [ "x$1" = "x" ]
+if [ "$#" -eq 1 ]
 then
-  LIBDIR=$(pwd)/_build/libdir
-  rm -rf $LIBDIR
-  mkdir -p $LIBDIR
-  cpdir herd/libdir $LIBDIR/herd
-  cpdir litmus/libdir $LIBDIR/litmus
-  cpdir jingle/libdir $LIBDIR/jingle
+	readonly libdir="${1}/share/herdtools7"
 else
-  LIBDIR=$1/share/herdtools7
+	readonly libdir="$(pwd)/_build/libdir"
+	rm -rf "${libdir}"
+	mkdir -p "${libdir}"
+	cpdir herd/libdir   "${libdir}/herd"
+	cpdir litmus/libdir "${libdir}/litmus"
+	cpdir jingle/libdir "${libdir}/jingle"
 fi
 
 cat > Version.ml <<EOD
@@ -19,7 +21,7 @@ cat > Version.ml <<EOD
 
 let version = "$VERSION"
 let rev = "$REV"
-let libdir = "$LIBDIR/"
+let libdir = "$libdir/"
 EOD
 
 ocamlbuild -no-links -j 5 -cflags -w,+a-3-4-9-29-33-41-45,-strict-sequence $NATIVE

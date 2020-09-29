@@ -1,15 +1,20 @@
 #!/bin/sh
 
-. ./dune-defs.sh
+set -eu
 
-LIBDIR=$1/share/herdtools7
-cat > Version.ml <<EOD
-(* GENERATED, DO NOT EDIT *)
+if [ "$#" -ne 1 ]
+then
+  readonly this="${0}"
 
-let version = "$VERSION"
-let rev = "$REV"
-let libdir = "$LIBDIR/"
-EOD
+  echo "Usage: ${this} <prefix>"
+  exit 1
+fi
 
-dune build --profile release $EXE
+readonly prefix="${1}"
 
+# Print out the commands that this script runs.
+set -x
+
+./version-gen.sh "${prefix}"
+
+dune build --profile release

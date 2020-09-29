@@ -1,43 +1,28 @@
 #!/bin/bash
 
-. ./dune-defs.sh
+set -eu
 
-if [ "x$1" = "x" ]
+if [ "$#" -ne 1 ]
 then
-  echo "Usage: ./dune-install.sh prefix"
+  readonly this="${0}"
+
+  echo "Usage: ${this} <prefix>"
   echo
-  echo "For example './install.sh /home/john/.local' will copy:"
+  echo "For example '${this} /home/john/.local' will copy:"
   echo "  * executables into    /home/john/.local/bin"
   echo "  * library files into  /home/john/.local/share/herdtools7"
   exit 1
-else
-  PREFIX=$1
 fi
 
-BINDIR=$PREFIX/bin
-LIBDIR=$PREFIX/share/herdtools7
+readonly prefix="${1}"
+readonly libdir="${prefix}/share/herdtools7"
 
-if ! [ -d $BINDIR ]
-then
-	mkdir -p $BINDIR
-fi
-
-if ! [ -d $LIBDIR ]
-then
-	mkdir -p $LIBDIR
-fi
-
-cpbin () {
-  for exec
-  do
-    cp _build/default/$exec $BINDIR/$(basename $exec .exe)7
-  done
-}
+. ./defs.sh
 
 # Copy binaries
-#cpbin $EXE
-dune install --prefix $PREFIX
+dune install --prefix "${prefix}"
+
 # Copy libfiles
-cpdir herd/libdir $LIBDIR/herd
-cpdir litmus/libdir $LIBDIR/litmus
-cpdir jingle/libdir $LIBDIR/jingle
+cpdir herd/libdir   "${libdir}/herd"
+cpdir litmus/libdir "${libdir}/litmus"
+cpdir jingle/libdir "${libdir}/jingle"

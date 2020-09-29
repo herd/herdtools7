@@ -1,10 +1,22 @@
 #! /bin/sh
-. ./dune-defs.sh
-LIBDIR=$1/share/herdtools7
-OUT=$2
+
+set -eu
+
+if [ "$#" -ne 1 ]
+then
+  readonly this="${0}"
+
+  echo "Usage: ${this} <prefix>"
+  exit 1
+fi
+
+readonly libdir="${1}/share/herdtools7"
+
+. ./defs.sh
+
 cat > Version.ml <<EOF
 (* GENERATED, DO NOT EDIT *)
 let version = "$VERSION"
 let rev = "$REV"
-let libdir = "$LIBDIR/"
+let libdir = "$libdir/"
 EOF

@@ -19,9 +19,16 @@ mk_exe () {
 EXE="$(mk_exe herd $HERD) $(mk_exe litmus $LITMUS) $(mk_exe gen $GEN) $(mk_exe jingle $JINGLE) $(mk_exe tools $TOOLS)"
 
 cpdir () {
-  FROM=$1
-  TO=$2
-  rm -rf $TO && mkdir -p $TO && ( cd $FROM && cp -r . $TO )
+  if [ "$#" -ne 2 ]
+  then
+    echo "Usage: cpdir <from> <to>"
+    exit 1
+  fi
+
+  local from="${1}"
+  local to="${2}"
+
+  rm -rf "${to}" && mkdir -p "${to}" && ( cd "${from}" && cp -r . "${to}" )
 }
 
 VERSION=$(grep "^version:" herdtools7.opam | cut -d ":" -f 2 | cut -d '"' -f 2)
