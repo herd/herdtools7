@@ -606,7 +606,7 @@ module Make
                      sprintf "\"%s\",%s"
                        s
                        (if Cfg.is_kvm then
-                         sprintf "\"%s\""
+                         sprintf "\"%s\","
                            (Misc.add_pte s)
                        else ""))
                       test.T.globals)) ;
