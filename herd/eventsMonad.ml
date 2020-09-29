@@ -1046,7 +1046,7 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
                 (fun (eiid,es,sca) (loc,v) ->
                   match loc with
                   | A.Location_global
-                      (A.V.Val (Constant.Symbolic ((s,_),0)) as a)
+                      (A.V.Val (Constant.Symbolic ((s,_,_),0)) as a)
                       when not (Misc.check_atag s) ->
  (* Suffix encoding of tag addresses, sufficient for now *)
                         let sz = A.look_size size_env s in

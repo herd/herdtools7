@@ -26,6 +26,8 @@ type t =
   | Self
 (* MTE = Memory tagging *)
   | MemTag
+(* Morello C64 instruction set *)
+  | Morello
 
 val tags : string list
 

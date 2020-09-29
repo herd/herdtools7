@@ -205,7 +205,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
               | A.Location_global _|A.Location_deref _ -> loc::locs
               | A.Location_reg _ -> locs in
             let locs = match v with
-            | A.V.Val (Constant.Symbolic ((s,_),_)) ->
+            | A.V.Val (Constant.Symbolic ((s,_,_),_)) ->
                 A.Location_global (A.V.Val (Constant.mk_sym s))::locs
             | _ -> locs in
             locs)
@@ -773,8 +773,8 @@ let match_reg_events es =
     let compare_index e1 e2 =
       let open Constant in
       match E.global_loc_of e1, E.global_loc_of e2 with
-      | Some (V.Val (Symbolic ((s1,_),i1))),
-        Some (V.Val (Symbolic ((s2,_),i2))) when  Misc.string_eq s1 s2 ->
+      | Some (V.Val (Symbolic ((s1,_,_),i1))),
+        Some (V.Val (Symbolic ((s2,_,_),i2))) when  Misc.string_eq s1 s2 ->
           Misc.int_compare i1 i2
       | _,_ -> raise CannotSca
 
@@ -854,7 +854,7 @@ let match_reg_events es =
       | e::_ -> e
       | [] -> assert false in
       let s,idx= match  E.global_loc_of fst with
-      |  Some (V.Val (Symbolic ((s,_),i))) -> s,i
+      |  Some (V.Val (Symbolic ((s,_,_),i))) -> s,i
       | _ -> raise CannotSca in
       let sz = List.length sca*byte_sz in
       is_spec es fst,E.get_mem_dir fst,s,idx,sz,sca

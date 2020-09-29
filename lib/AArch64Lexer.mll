@@ -350,7 +350,11 @@ match name with
     | None ->
         begin match A.parse_xreg name with
         | Some r -> ARCH_XREG r
-        | None -> NAME name
+        | None ->
+            begin match A.parse_creg name with
+            | Some r -> ARCH_CREG r
+            | None -> NAME name
+            end
         end
     end
 }
@@ -368,6 +372,7 @@ rule token = parse
     { PROC (int_of_string x) }
 | ['w''W']'%' (name as name) { SYMB_WREG name }
 | ['x''X']?'%' (name as name) { SYMB_XREG name }
+| ['c''C']?'%' (name as name) { SYMB_CREG name }
 | ';' { SEMI }
 | ',' { COMMA }
 | '|' { PIPE }

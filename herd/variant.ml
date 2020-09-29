@@ -39,6 +39,7 @@ type t =
   | TagCheckPrecise
   | TagCheckUnprecise
   | TooFar
+  | Morello
 (* Branch speculation+ cat computation of dependencies *)
   | Deps
   | Instances (* Compute dependencies on instruction instances *)
@@ -47,7 +48,7 @@ let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
    "fullscdepend";"splittedrmw";"switchdepscwrite";"switchdepscresult";"lrscdiffok";
    "mixed";"dontcheckmixed";"weakpredicated"; "memtag";
-   "tagcheckprecise"; "tagcheckunprecise"; "toofar"; "deps"; "instances"; ]
+   "tagcheckprecise"; "tagcheckunprecise"; "toofar"; "morello"; "deps"; "instances"; ]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -69,6 +70,7 @@ let parse s = match Misc.lowercase s with
 | "tagcheckprecise"|"precise" -> Some TagCheckPrecise
 | "tagcheckunprecise"|"unprecise" -> Some TagCheckUnprecise
 | "toofar" -> Some TooFar
+| "morello" -> Some Morello
 | "deps" -> Some Deps
 | "instances"|"instance" -> Some Instances
 | _ -> None
@@ -93,6 +95,7 @@ let pp = function
   | TagCheckPrecise -> "TagCheckPrecise"
   | TagCheckUnprecise -> "TagCheckUnprecise"
   | TooFar -> "TooFar"
+  | Morello -> "Morello"
   | Deps -> "Deps"
   | Instances -> "Instances"
 

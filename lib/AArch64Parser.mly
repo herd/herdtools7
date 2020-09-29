@@ -19,6 +19,8 @@ module A = AArch64Base
 %}
 
 %token EOF
+%token <AArch64Base.reg> ARCH_CREG
+%token <string> SYMB_CREG
 %token <AArch64Base.reg> ARCH_XREG
 %token <string> SYMB_XREG
 %token <AArch64Base.reg> ARCH_WREG
@@ -129,10 +131,16 @@ instr_option :
 | instr      { A.Instruction $1}
 
 reg:
+| SYMB_CREG { A.V128,A.Symbolic_reg $1 }
+| ARCH_CREG { A.V128,$1 }
 | SYMB_XREG { A.V64,A.Symbolic_reg $1 }
 | ARCH_XREG { A.V64,$1 }
 | SYMB_WREG { A.V32,A.Symbolic_reg $1 }
 | ARCH_WREG { A.V32,$1 }
+
+creg:
+| SYMB_CREG { A.Symbolic_reg $1 }
+| ARCH_CREG { $1 }
 
 xreg:
 | SYMB_XREG { A.Symbolic_reg $1 }

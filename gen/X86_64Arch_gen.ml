@@ -80,6 +80,7 @@ module Make
           f (acc,m) r
       |  (NonTemporal,Some ((MachSize.Short|MachSize.Byte),_))
         -> r
+      | (NonTemporal,Some (MachSize.S128,_)) -> assert false
 
       let fold_atom f r =
         fold_acc

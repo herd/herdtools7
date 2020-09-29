@@ -58,6 +58,7 @@ module Make
         match ty with
         | V32 -> fun v -> M.op1 (Op.Mask MachSize.Word) v >>= m
         | V64 -> m
+        | V128 -> assert false
 
 
 (* Basic read, from register *)
@@ -74,6 +75,7 @@ module Make
           M.read_loc is_data (mk_read MachSize.Quad AArch64.N) (A.Location_reg (ii.A.proc,r)) ii
 
       let read_reg_sz sz is_data r ii = match sz with
+      | MachSize.S128 -> assert false
       | MachSize.Quad -> read_reg is_data r ii
       | MachSize.Word|MachSize.Short|MachSize.Byte ->
           read_reg is_data r ii >>= fun v -> M.op1 (Op.Mask sz) v
@@ -94,6 +96,7 @@ module Make
       let write_reg_sz sz r v ii = match r with
       | AArch64.ZR -> M.unitT ()
       | _ -> match sz with
+        | MachSize.S128 -> assert false
         | MachSize.Quad -> write_reg r v ii
         | MachSize.Word|MachSize.Short|MachSize.Byte ->
             M.op1 (Op.Mask sz) v >>= fun v -> write_reg r v ii

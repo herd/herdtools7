@@ -18,8 +18,8 @@
 
 type 'scalar t =
   | Concrete of 'scalar
-(* Memory cell, with optional tag and offet *)
-  | Symbolic  of (string * string option) * int
+(* Memory cell, with optional tag, optional capability<128:95> and offet *)
+  | Symbolic  of (string * string option * int) * int
   | Label of Proc.t * string     (* In code *)
   | Tag of string
 

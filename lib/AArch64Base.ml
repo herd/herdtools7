@@ -58,6 +58,20 @@ let gprs =
 
 let linkreg = Ireg R30
 
+let cgprs =
+[
+ R0,"C0"  ; R1,"C1"  ; R2,"C2"  ; R3,"C3" ;
+ R4,"C4"  ; R5,"C5"  ; R6,"C6"  ; R7,"C7" ;
+ R8,"C8"  ; R9,"C9"  ; R10,"C10" ; R11,"C11" ;
+ R12,"C12" ; R13,"C13" ; R14,"C14" ; R15,"C15" ;
+ R16,"C16" ; R17,"C17" ; R18,"C18" ; R19,"C19" ;
+ R20,"C20" ; R21,"C21" ; R22,"C22" ; R23,"C23" ;
+ R24,"C24" ; R25,"C25" ; R26,"C26" ; R27,"C27" ;
+ R28,"C28" ; R29,"C29" ; R30,"C30" ;
+]
+
+let cregs = (ZR,"CZR")::List.map (fun (r,s) -> Ireg r,s) cgprs
+
 let xgprs =
 [
  R0,"X0"  ; R1,"X1"  ; R2,"X2"  ; R3,"X3" ;
@@ -89,11 +103,18 @@ let wgprs =
 let wregs =
   (ZR,"WZR")::List.map (fun (r,s) -> Ireg r,s) wgprs
 
+let parse_clist =
+  List.map (fun (r,s) -> s,r) cregs
+
 let parse_list =
   List.map (fun (r,s) -> s,r) regs
 
 let parse_wlist =
   List.map (fun (r,s) -> s,r) wregs
+
+let parse_creg s =
+  try Some (List.assoc (Misc.uppercase s) parse_clist)
+  with Not_found -> None
 
 let parse_xreg s =
   try Some (List.assoc (Misc.uppercase s) parse_list)
@@ -104,6 +125,13 @@ let parse_reg s = parse_xreg s
 let parse_wreg s =
   try Some (List.assoc (Misc.uppercase s) parse_wlist)
   with Not_found -> None
+
+let pp_creg r = match r with
+| Symbolic_reg r -> "C%" ^ r
+| Internal i -> Printf.sprintf "i%i" i
+| NZP -> "NZP"
+| ResAddr -> "Res"
+| _ -> try List.assoc r cregs with Not_found -> assert false
 
 let pp_xreg r = match r with
 | Symbolic_reg r -> "X%" ^ r
@@ -297,15 +325,17 @@ let inverse_cond = function
   | GT -> LE
 
 type op = ADD | ADDS | SUB | SUBS | AND | ANDS | ORR | EOR | ASR
-type variant = V32 | V64
+type variant = V32 | V64 | V128
 
 let pp_variant = function
   | V32 -> "V32"
   | V64 -> "V64"
+  | V128 -> "V128"
 
 let tr_variant = function
   | V32 -> MachSize.Word
   | V64 -> MachSize.Quad
+  | V128 -> MachSize.S128
 
 
 type 'k kr = K of 'k | RV of variant * reg
@@ -493,6 +523,7 @@ let pp_cond = function
 let pp_vreg v r = match v with
 | V32 -> pp_wreg r
 | V64 -> pp_xreg r
+| V128 -> pp_creg r
 
 
 let pp_op = function
@@ -523,7 +554,7 @@ let do_pp_instruction m =
   | K k -> "," ^ m.pp_k k
   | RV (v,r) ->
       "," ^ pp_vreg v r ^
-      (match v with V32 when showsxtw -> ",SXTW" | V32|V64 -> "") in
+      (match v with V32 when showsxtw -> ",SXTW" | V32|V64 -> "" | V128 -> assert false) in
 
   let pp_mem memo v rt ra kr =
     pp_memo memo ^ " " ^ pp_vreg v rt ^
@@ -547,20 +578,28 @@ let do_pp_instruction m =
   let pp_rkr memo v r1 kr = match v,kr with
   | _, K k -> pp_ri memo v r1 k
   | V32, RV (V32,r2)
-  | V64, RV (V64,r2)  ->
+  | V64, RV (V64,r2)
+  | V128,RV (V128,r2) ->
       pp_rr memo v r1 r2
-  | V32,RV (V64,_)
-  | V64,RV (V32,_) -> assert false in
+  | V32,RV ((V64|V128),_)
+  | V64,RV ((V32|V128),_)
+  | V128,RV ((V32|V64),_) -> assert false in
 
   let pp_rrkr memo v r1 r2 kr = match v,kr with
   | _,K k -> pp_rri memo v r1 r2 k
   | V32,RV (V32,r3)
-  | V64,RV (V64,r3) -> pp_rrr memo v r1 r2 r3
+  | V64,RV (V64,r3)
+  | V128,RV (V128,r3) -> pp_rrr memo v r1 r2 r3
   | V64,RV (V32,_) ->
       pp_memo memo ^ " " ^
       pp_xreg r1  ^ "," ^
       pp_xreg r2 ^ pp_kr false true kr
-  | V32,RV (V64,_) -> assert false in
+  | V128,RV ((V32|V64),_) ->
+      pp_memo memo ^ " " ^
+      pp_creg r1  ^ "," ^
+      pp_creg r2 ^ pp_kr false true kr
+  | V32,RV (V64,_)
+  | _,RV (V128,_) -> assert false in
 
   let pp_stxr memo v r1 r2 r3 =
     pp_memo memo ^ " " ^

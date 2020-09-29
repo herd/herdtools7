@@ -23,7 +23,7 @@ module Make(Scalar:Scalar.S) = struct
   open Constant
 
   let intToV i = Concrete (Scalar.of_int i)
-  and nameToV s = Symbolic ((s,None),0)
+  and nameToV s = Symbolic ((s,None,0),0)
 
   let bit_at k v = Scalar.bit_at k v
 
@@ -34,11 +34,15 @@ module Make(Scalar:Scalar.S) = struct
 
   let compare c1 c2 = match c1,c2 with
   | Concrete i1, Concrete i2 -> Scalar.compare i1 i2
-  | Symbolic ((s1,t1),o1),Symbolic ((s2,t2),o2) ->
+  | Symbolic ((s1,t1,m1),o1),Symbolic ((s2,t2,m2),o2) ->
       begin match String.compare s1 s2 with
       | 0 ->
           begin match tag_compare t1 t2 with
-          | 0 -> Misc.int_compare o1 o2
+          | 0 ->
+              begin match Misc.int_compare m1 m2 with
+              | 0 -> Misc.int_compare o1 o2
+              | r -> r
+              end
           | r -> r
           end
       | r -> r
@@ -58,9 +62,13 @@ module Make(Scalar:Scalar.S) = struct
   | (Tag _,Label _)
       -> 1
 
-  let pp_location (s,t) = match t with
-  | None -> s
-  | Some t -> sprintf "%s:%s" s t
+  let pp_location (s,t,c) = match t with
+  | None -> if c = 0
+    then s
+    else sprintf "%#x:%s:%i" ((c land 0x1ffffffff) lsl 3) s (c lsr 33)
+  | Some t -> if c = 0
+    then sprintf "%s:%s" s t
+    else sprintf "%#x:%s:%i:%s" ((c land 0x1ffffffff) lsl 3) s (c lsr 33) t
 
   let pp hexa = function
     | Concrete i -> Scalar.pp hexa i
@@ -73,7 +81,8 @@ module Make(Scalar:Scalar.S) = struct
 
   let tag_eq = Misc.opt_eq Misc.string_eq
 
-  let location_eq (s1,t1) (s2,t2) = Misc.string_eq s1 s2 && tag_eq t1 t2
+  let location_eq (s1,t1,c1) (s2,t2,c2) =
+    Misc.string_eq s1 s2 && tag_eq t1 t2 && Misc.int_eq c1 c2
 
   let eq c1 c2 = match c1,c2 with
   | Concrete i1, Concrete i2 -> Scalar.compare i1 i2 = 0
@@ -90,6 +99,6 @@ module Make(Scalar:Scalar.S) = struct
 
  (* For building code symbols, significant for symbols only ? *)
   let vToName = function
-    | Symbolic ((s,None),0) -> s
+    | Symbolic ((s,None,0),0) -> s
     | Symbolic _|Concrete _|Label _|Tag _ -> assert false
 end

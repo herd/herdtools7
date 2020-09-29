@@ -61,10 +61,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (******************)
 
     let vloc = let open TypBase in
-    match Cfg.typ with
-    | Std (_,MachSize.Quad) -> V64
-    | Int |Std (_,MachSize.Word) -> V32
-    | Std (_,(MachSize.Short|MachSize.Byte)) -> V32
+      let sz = match Cfg.typ with
+      | Std (_,MachSize.S128) -> V128
+      | Std (_,MachSize.Quad) -> V64
+      | Int |Std (_,MachSize.Word) -> V32
+      | Std (_,(MachSize.Short|MachSize.Byte)) -> V32 in
+      (* Minimum size is V64 with morello to reduce mixed-size gap with V128 *)
+      if do_morello && sz = V32 then V64 else sz
 
 
     let sz2v =
@@ -72,6 +75,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       function
         | Byte|Short|Word -> V32
         | Quad -> V64
+        | S128 -> V128
 
     let mov r i = I_MOV (vloc,r,K i)
     let mov_mixed sz r i = let v = sz2v sz in I_MOV (v,r,i)
@@ -114,6 +118,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Short -> I_LDRBH (H,r1,r2,K o)
       | Word -> I_LDR (V32,r1,r2,K o, S_NOEXT)
       | Quad -> I_LDR (V64,r1,r2,K o, S_NOEXT)
+      | S128 -> assert false
 
     let do_ldr v r1 r2 = I_LDR (v,r1,r2,K 0, S_NOEXT)
     let ldr = do_ldr vloc
@@ -134,6 +139,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Short -> I_LDRBH (H,r1,r2,RV (v,idx))
       | Word -> I_LDR (V32,r1,r2,RV (v,idx), S_NOEXT)
       | Quad -> I_LDR (V64,r1,r2,RV (v,idx), S_NOEXT)
+      | S128 -> assert false
 
     let str_mixed sz o r1 r2 =
       let open MachSize in
@@ -142,6 +148,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Short -> I_STRBH (H,r1,r2,K o)
       | Word -> I_STR (V32,r1,r2,K o)
       | Quad -> I_STR (V64,r1,r2,K o)
+      | S128 -> assert false
 
     let do_str v r1 r2 = I_STR (v,r1,r2,K 0)
     let str = do_str vloc
@@ -159,6 +166,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Short -> I_STXRBH (H,t,r1,r2,r3)
       | Word -> I_STXR (V32,t,r1,r2,r3)
       | Quad -> I_STXR (V64,t,r1,r2,r3)
+      | S128 -> assert false
 
     let ldxr_sz t sz r1 r2 =
       let open MachSize in
@@ -167,6 +175,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Short -> I_LDARBH (H,t,r1,r2)
       | Word -> I_LDAR (V32,t,r1,r2)
       | Quad -> I_LDAR (V64,t,r1,r2)
+      | S128 -> assert false
 
     let sumi_addr_gen tempo st rA o = match o with
     | 0 -> rA,[],st
@@ -183,6 +192,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Short -> I_STRBH (H,r1,r2,RV (v,idx))
       | Word -> I_STR (V32,r1,r2,RV (v,idx))
       | Quad -> I_STR (V64,r1,r2,RV (v,idx))
+      | S128 -> assert false
 
     let swp_mixed sz a rS rT rN =
       let open MachSize in
@@ -191,6 +201,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Short ->  I_SWPBH (H,a,rS,rT,rN)
       | Word ->  I_SWP (V32,a,rS,rT,rN)
       | Quad ->  I_SWP (V64,a,rS,rT,rN)
+      | S128 ->  assert false
 
     let swp a rS rT rN =  I_SWP (vloc,a,rS,rT,rN)
 
@@ -201,6 +212,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Short ->  I_CASBH (H,a,rS,rT,rN)
       | Word ->  I_CAS (V32,a,rS,rT,rN)
       | Quad ->  I_CAS (V64,a,rS,rT,rN)
+      | S128 ->  assert false
 
     let cas a rS rT rN =  I_CAS (vloc,a,rS,rT,rN)
 
@@ -211,6 +223,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Short ->  I_LDOPBH (op,H,a,rS,rT,rN)
       | Word ->  I_LDOP (op,V32,a,rS,rT,rN)
       | Quad ->  I_LDOP (op,V64,a,rS,rT,rN)
+      | S128 ->  assert false
 
     let ldop op a rS rT rN =  I_LDOP (op,vloc,a,rS,rT,rN)
 
@@ -221,12 +234,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Short ->  I_STOPBH (op,H,a,rS,rN)
       | Word ->  I_STOP (op,V32,a,rS,rN)
       | Quad ->  I_STOP (op,V64,a,rS,rN)
+      | S128 ->  assert false
 
     let stop op a rS rN =  I_STOP (op,vloc,a,rS,rN)
 
 (* Compute address in tempo1 *)
     let _sxtw r k = match vloc with
-    | V64 -> k
+    | V64|V128 -> k
     | V32 -> sxtw r r::k
 
     let do_sum_addr v st rA idx =
@@ -242,6 +256,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Short -> I_STLRBH (H,r1,r2)
       | Word -> I_STLR (V32,r1,r2)
       | Quad -> I_STLR (V64,r1,r2)
+      | S128 -> assert false
 
     let stlr_mixed sz o st r1 r2 =
       let rA,cs_sum,st = sumi_addr st r2 o in
@@ -259,7 +274,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | Byte -> I_LDARBH (B,t,r1,rA)
         | Short -> I_LDARBH (H,t,r1,rA)
         | Word -> I_LDAR (V32,t,r1,rA)
-        | Quad -> I_LDAR (V64,t,r1,rA) in
+        | Quad -> I_LDAR (V64,t,r1,rA)
+        | S128 -> assert false in
       cs@[ld],st
 
     let do_ldar_mixed_idx v t sz o st r1 r2 idx =
@@ -271,7 +287,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | Byte -> I_LDARBH (B,t,r1,rA)
         | Short -> I_LDARBH (H,t,r1,rA)
         | Word -> I_LDAR (V32,t,r1,rA)
-        | Quad -> I_LDAR (V64,t,r1,rA) in
+        | Quad -> I_LDAR (V64,t,r1,rA)
+        | S128 -> assert false in
       cs1@cs2@[ld],st
 
     let ldar_mixed_idx = do_ldar_mixed_idx vloc

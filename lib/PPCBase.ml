@@ -333,6 +333,7 @@ let memo_load = function
   | Short -> "lhz"
   | Word -> "lwz"
   | Quad -> "ld"
+  | S128 -> assert false
 
 let memo_loadx sz = memo_load sz ^ "x"
 
@@ -341,6 +342,7 @@ let memo_store = function
   | Short -> "sth"
   | Word -> "stw"
   | Quad -> "std"
+  | S128 -> assert false
 
 let memo_storex sz = memo_store sz ^ "x"
 
@@ -626,6 +628,8 @@ let norm_ins ins = match ins with
   | Pcomment _
   | Plmw _|Pstmw _
           -> ins
+  | Pload (S128, _, _, _)|Ploadx (S128, _, _, _)|Pstore (S128, _, _, _)
+  | Pstorex (S128, _, _, _) -> assert false
 
 let is_data r1 i = match i with
 | Pstore (_,r,_,_)

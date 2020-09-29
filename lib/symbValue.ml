@@ -222,7 +222,7 @@ module Make(Cst:Constant.S) = struct
 
 (* Ops on tagged locations *)
   let settag v1 v2 = match v1,v2 with
-  | Val (Symbolic ((a,_),o)),Val (Tag t) -> Val (Symbolic((a,Some t),o))
+  | Val (Symbolic ((a,_,c),o)),Val (Tag t) -> Val (Symbolic((a,Some t,c),o))
   | Val cst1,Val cst2 ->
       Warn.user_error "Illegal settag on %s and %s"
         (Cst.pp_v cst1)  (Cst.pp_v cst2)
@@ -236,26 +236,26 @@ module Make(Cst:Constant.S) = struct
   | Var _ -> raise Undetermined
 
   (*  Returns the location of the tag associated to a location *)
-  let op_tagloc (a,_) _ =  Symbolic ((Misc.add_atag a,None),0)
+  let op_tagloc (a,_,_) _ =  Symbolic ((Misc.add_atag a,None,0),0)
   let tagloc = op_tagged "tagloc" op_tagloc
 
   let get_sym = function
-    | Val (Symbolic ((s,_),_)) -> s
+    | Val (Symbolic ((s,_,_),_)) -> s
     | Var _|Val (Concrete _|Label _|Tag _) ->
         Warn.fatal "Illegal get_sym" (* NB: not an user error *)
 
   let check_atag = function
-    | Val (Symbolic ((s,_),_)) -> Misc.check_atag s
+    | Val (Symbolic ((s,_,_),_)) -> Misc.check_atag s
     | Var _|Val (Concrete _|Label _|Tag _) ->
         Warn.fatal "Illegal check_atag" (* NB: not an user error *)
 
   (* Decompose tagged locations *)
-  let op_tagextract (_,t) _ = match t with
+  let op_tagextract (_,t,_) _ = match t with
   | Some t -> Tag t
   | None -> Constant.default_tag
 
   let tagextract v = op_tagged "tagextract" op_tagextract v
-  let op_locextract (a,_) o = Symbolic ((a,None),o)
+  let op_locextract (a,_,c) o = Symbolic ((a,None,c),o)
   let locextract v = op_tagged "locextract" op_locextract v
 
   let op1 op =

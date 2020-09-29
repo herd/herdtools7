@@ -18,15 +18,15 @@
 
 type 'scalar t =
   | Concrete of 'scalar
-(* Memory cell, with optional tag and offet *)
-  | Symbolic  of (string * string option) * int
+(* Memory cell, with optional tag, capability<128:95> and offet *)
+  | Symbolic  of (string * string option * int) * int
   | Label of Proc.t * string     (* In code *)
   | Tag of string
 
-let mk_sym s = Symbolic ((s,None),0)
+let mk_sym s = Symbolic ((s,None,0),0)
 
 and get_sym = function
-  | Symbolic ((s,_),_) -> s
+  | Symbolic ((s,_,_),_) -> s
   | Concrete _|Label _| Tag _ -> assert false
 
 let is_symbol = function

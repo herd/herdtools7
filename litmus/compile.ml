@@ -180,7 +180,7 @@ module Generic (A : Arch_litmus.Base)
         List.fold_left
           (fun env (loc,(t,v)) -> match loc,v with
           | _,Constant.Concrete _ -> env
-          | A.Location_global _,Constant.Symbolic ((s,_),_) ->
+          | A.Location_global _,Constant.Symbolic ((s,_,_),_) ->
               let a = A.Location_global s in
               begin try
                 ignore (A.LocMap.find a env) ;
@@ -579,7 +579,7 @@ type P.code = MiscParser.proc * A.pseudo list)
           (fun (_,(t,v)) env ->
             match t,v with
             | (MiscParser.TyDef|MiscParser.TyDefPointer),
-              Constant.Symbolic ((a,_),_) ->
+              Constant.Symbolic ((a,_,_),_) ->
                 begin try
                   let _ = StringMap.find a env in
                   env

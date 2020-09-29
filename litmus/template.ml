@@ -158,7 +158,7 @@ module Make(O:Config)(A:I) =
              (List.fold_left
                 (fun k (_,v) ->
                   match v with
-                  | Symbolic ((s,_),_) -> s::k
+                  | Symbolic ((s,_,_),_) -> s::k
                   | Concrete _|Label _|Tag _ -> k)
                 [] init)) in
       StringSet.elements set

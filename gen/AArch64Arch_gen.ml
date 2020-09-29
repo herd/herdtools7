@@ -31,6 +31,7 @@ module Make
 
 let do_self = C.variant Variant_gen.Self
 let do_tag = C.variant Variant_gen.MemTag
+let do_morello = C.variant Variant_gen.Morello
 open Code
 open Printf
 
