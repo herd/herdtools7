@@ -1206,21 +1206,15 @@ let dump_thread_code env (proc,(out,(_outregs,envVolatile)))  =
         O.oii "barrier_wait(_b);" ;
 (* Save/Restore pte *)
         if Cfg.is_kvm then begin
-          begin match proc with
-          | 0 ->
-              let ptes = U.get_displayed_ptes test in
-              StringSet.iter
-                (fun s ->
-                  O.fii "_log_ptr->%s = *%s;"
-                    (OutUtils.fmt_pte_tag s)
-                    (OutUtils.fmt_pte_kvm s))
-                ptes
-          | _ -> ()
-          end ;
+          let ptes = U.get_displayed_ptes test in
           List.iter
             (fun a ->
               let pte = OutUtils.fmt_pte_kvm a
               and phy = OutUtils.fmt_phy_kvm a in
+              if StringSet.mem a ptes then begin
+                O.fii "_log_ptr->%s = *%s;"
+                  (OutUtils.fmt_pte_tag a) pte
+              end ;
               O.fii "*(%s) = %s;" pte phy ;
               O.fii "litmus_flush_tlb((void *)%s);" a)
             inits
