@@ -394,7 +394,7 @@ module Make(C:Config) (I:I) : S with module I = I
         | "char"|"int8_t" |"uint8_t" -> MachSize.Byte
         | "short" | "int16_t" | "uint16_t" -> MachSize.Short
         | "int64_t" | "uint64_t" -> MachSize.Quad
-        | "intprt_t" | "uintprt_t" -> I.V.Cst.Scalar.machsize (* Maximal size = ptr size *)
+        | "intptr_t" | "uintptr_t" -> I.V.Cst.Scalar.machsize (* Maximal size = ptr size *)
         | t ->
             Warn.fatal "Cannot find the size of type %s" t
 
@@ -461,7 +461,7 @@ module Make(C:Config) (I:I) : S with module I = I
         let nsz sz =
           let n = MachSize.nbytes sz in
           if n < byte_sz then
-            Warn.fatal "Size mismatch %s bigger than %s\n"
+            Warn.fatal "Size mismatch %s smaller than %s\n"
               (MachSize.debug sz) (MachSize.debug byte) ;
           assert (n mod byte_sz = 0) ;
           n / byte_sz
