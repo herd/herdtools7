@@ -735,7 +735,7 @@ module Make
                 let open Constant in
                 match v with
                 | Concrete i -> A.V.Scalar.pp Cfg.hexa i
-                | Symbolic ((s,None),_) ->
+                | Symbolic ((s,None,0),_) ->
                     sprintf "(%s)_vars->%s" (CType.dump at) s
                 | Label _ ->
                     Warn.fatal "PreSi mode cannot handle code labels (yet)"

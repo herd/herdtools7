@@ -63,6 +63,7 @@ module type S = sig
 
 (* Predicate for control on reads *)
   val is_ctrlr : dp -> bool
+  val is_addr : dp -> bool
 
 (* Sequence dependencies *)
   val fst_dp : dp -> dp list

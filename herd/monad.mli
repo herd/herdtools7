@@ -101,6 +101,9 @@ module type S =
         'loc t -> 'v t -> 'v t ->
           ('v -> unit t) -> ('loc -> 'v t) -> ('loc -> 'v -> unit t) ->
             ('v -> 'v -> unit t) -> unit t
+    (* Temporary morello variation of CAS *)
+    val aarch64_cas_ok_morello :
+        'loc t -> 'v t -> 'v t -> ('loc -> 'v -> unit t) -> unit t
     val stu : 'a t -> 'a t -> ('a -> unit t) -> (('a * 'a) -> unit t) -> unit t
     val cseq : 'a t -> ('a -> 'b t) -> 'b t
     type poi = int
@@ -136,6 +139,11 @@ module type S =
 
     val read_loc : bool -> (A.location -> A.V.v -> E.action) ->
       A.location -> A.inst_instance_id -> A.V.v t
+
+    val add_atomic_tag_read : A.V.v t -> A.V.v -> (A.location -> A.V.v ->
+      E.action) -> A.inst_instance_id -> A.V.v t
+    val add_atomic_tag_write : unit t -> A.V.v -> A.V.v -> (A.location ->
+      A.V.v -> E.action) -> A.inst_instance_id -> unit t
 
     module Mixed :
     functor (SZ : ByteSize.S) -> sig

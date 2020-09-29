@@ -73,6 +73,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
       match Cfg.typ with
       | Std (_,MachSize.Quad) -> AV.Double
       | Int |Std (_,(Word|Short|Byte)) -> AV.Word
+      | Std (_,MachSize.S128) -> assert false
 
 
     let bne r1 r2 lab =  AV.Bcc (AV.NE,r1,r2,lab)
@@ -116,6 +117,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
       | MachSize.Short -> AV.Half
       | MachSize.Word -> AV.Word
       | MachSize.Quad -> AV.Double
+      | MachSize.S128 -> assert false
 
     let ldr_mixed r1 r2 sz o = AV.Load (tr_sz sz,Signed,AV.Rlx,r1,o,r2)
     and str_mixed r1 r2 sz o = AV.Store (tr_sz sz,AV.Rlx,r1,o,r2)

@@ -157,6 +157,7 @@ module Top (Conf:Config) = struct
           | PrettyConf.StdoutOutput | PrettyConf.Outputdir _ -> true
           | _ -> false
           end || Conf.PC.gv || Conf.PC.evince || Conf.variant Variant.MemTag
+              || Conf.variant Variant.Morello
         let through = Conf.through
         let debug = Conf.debug.Debug_herd.barrier
         let debug_files = Conf.debug.Debug_herd.files
@@ -222,6 +223,48 @@ module Top (Conf:Config) = struct
           let module ARMM = ARMMem.Make(ModelConfig)(ARMS)(ARMBarrier) in
           let module P = GenParser.Make (Conf) (ARM) (ARMLexParse) in
           let module X = Make (ARMS) (P) (NoCheck) (ARMM) in
+          X.run start_time name chan env splitted
+
+      (* TODO: try to avoid complete duplication for morello variant *)
+      | `AArch64 when Conf.variant Variant.Morello ->
+          let module AArch64Conf = ArchConfig in
+          let module AArch64 = AArch64Arch_herd.Make(AArch64Conf)(CapabilityValue) in
+          let module AArch64LexParse = struct
+            type instruction = AArch64.parsedPseudo
+            type token = AArch64Parser.token
+            module Lexer = AArch64Lexer.Make(LexConfig)
+            let lexer = Lexer.token
+            let parser = (*MiscParser.mach2generic*) AArch64Parser.main
+          end in
+          let module AArch64S = AArch64Sem.Make(Conf)(CapabilityValue) in
+          let module AArch64Barrier = struct
+            type a = AArch64.barrier
+            type b =
+              | ISB
+              | DMB of AArch64Base.mBReqDomain * AArch64Base.mBReqTypes
+              | DSB of AArch64Base.mBReqDomain * AArch64Base.mBReqTypes
+            let a_to_b a = match a with
+            | AArch64.DMB(d,t) -> DMB(d,t)
+            | AArch64.DSB(d,t) -> DSB(d,t)
+            | AArch64.ISB -> ISB
+          end in
+          let module AArch64C =
+          BellCheck.Make
+            (struct
+              let debug = Conf.debug.Debug_herd.barrier
+              let compat = Conf.variant Variant.BackCompat
+            end)
+            (AArch64)
+            (struct
+              let info = Misc.snd_opt Conf.bell_model_info
+              let get_id_and_list _ = raise Not_found
+              let set_list _ _ = assert false
+              let tr_compat i = i
+             end) in
+          let module AArch64M =
+            AArch64Mem.Make(ModelConfig)(AArch64S) (AArch64Barrier) in
+          let module P = GenParser.Make (Conf) (AArch64) (AArch64LexParse) in
+          let module X = Make (AArch64S) (P) (AArch64C) (AArch64M) in
           X.run start_time name chan env splitted
 
       | `AArch64 ->

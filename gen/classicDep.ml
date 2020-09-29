@@ -27,6 +27,7 @@ let ctrlr_default = Some CTRL
 let ctrlw_default = Some CTRL
 
 let is_ctrlr _ = false
+let is_addr _ = false
 
 let fst_dp = function
   | CTRL -> [CTRL]

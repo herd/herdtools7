@@ -26,6 +26,7 @@ type op =
   | AndNot2
 (* Arithmetic shift right *)
   | ASR
+  | CapaAdd | Alignd | Alignu | Build | ClrPerm | CpyType | CSeal | Cthi | Seal | SetValue | CapaSub | CapaSubs | CapaSetTag | Unseal
 (* Logical shift left *)
   | ShiftLeft
   | ShiftRight
@@ -36,6 +37,8 @@ type op =
   | Max | Min
 (* Build tagged location from location and tag *)
   | SetTag
+  | SquashMutable
+  | CheckPerms of string
 
 val pp_op : op -> string
 
@@ -57,9 +60,13 @@ type op1 =
   | AndK of string
   | Mask of MachSize.sz
   | TagLoc       (* Get tag memory location from location *)
+  | CapaTagLoc
   | TagExtract   (* Extract tag from tagged location *)
   | LocExtract   (* Extract actual location from location *)
   | UnSetXBits of int * int
+  | CapaGetTag
+  | CheckSealed
+  | CapaStrip
 
 val pp_op1 : bool -> op1 -> string
 

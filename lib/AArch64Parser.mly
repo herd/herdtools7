@@ -19,6 +19,8 @@ module A = AArch64Base
 %}
 
 %token EOF
+%token <AArch64Base.reg> ARCH_CREG
+%token <string> SYMB_CREG
 %token <AArch64Base.reg> ARCH_XREG
 %token <string> SYMB_XREG
 %token <AArch64Base.reg> ARCH_WREG
@@ -44,6 +46,9 @@ module A = AArch64Base
 %token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH
 %token STXR STXRB STXRH STLXR STLXRB STLXRH
 %token <AArch64Base.op> OP
+%token <AArch64Base.sc> SC
+%token <AArch64Base.gc> GC
+%token ADD SUB SUBS
 %token CSEL CSINC CSINV CSNEG CSET
 %token DMB DSB ISB
 %token SY ST LD
@@ -86,6 +91,8 @@ module A = AArch64Base
 %token <AArch64Base.sysreg> SYSREG
 %token MRS TST RBIT
 %token STG STZG LDG
+%token ALIGND ALIGNU BUILD CHKEQ CHKSLD CHKTGD CLRTAG CPY CPYTYPE CPYVALUE CSEAL
+%token LDCT SEAL STCT UNSEAL
 %type <(int * string list option) list * (AArch64Base.parsedPseudo) list list * MiscParser.extra_data> main
 %type <AArch64Base.parsedPseudo list> instr_option_seq
 
@@ -129,10 +136,16 @@ instr_option :
 | instr      { A.Instruction $1}
 
 reg:
+| SYMB_CREG { A.V128,A.Symbolic_reg $1 }
+| ARCH_CREG { A.V128,$1 }
 | SYMB_XREG { A.V64,A.Symbolic_reg $1 }
 | ARCH_XREG { A.V64,$1 }
 | SYMB_WREG { A.V32,A.Symbolic_reg $1 }
 | ARCH_WREG { A.V32,$1 }
+
+creg:
+| SYMB_CREG { A.Symbolic_reg $1 }
+| ARCH_CREG { $1 }
 
 xreg:
 | SYMB_XREG { A.Symbolic_reg $1 }
@@ -186,6 +199,10 @@ shift:
 | ASR NUM  { A.S_ASR(MetaConst.Int $2)  }
 | SXTW { A.S_SXTW }
 | UXTW { A.S_UXTW }
+
+kxr:
+| k { A.K $1 }
+| xreg { A.RV (A.V64,$1) }
 
 zeroopt:
 | { () }
@@ -312,18 +329,26 @@ instr:
   { A.I_CAS (A.V32,A.RMW_P,$2,$4,$7) }
 | CAS xreg COMMA xreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_CAS (A.V64,A.RMW_P,$2,$4,$7) }
+| CAS creg COMMA creg COMMA  LBRK xreg zeroopt RBRK
+  { A.I_CAS (A.V128,A.RMW_P,$2,$4,$7) }
 | CASA wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_CAS (A.V32,A.RMW_A,$2,$4,$7) }
 | CASA xreg COMMA xreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_CAS (A.V64,A.RMW_A,$2,$4,$7) }
+| CASA creg COMMA creg COMMA  LBRK xreg zeroopt RBRK
+  { A.I_CAS (A.V128,A.RMW_A,$2,$4,$7) }
 | CASL wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_CAS (A.V32,A.RMW_L,$2,$4,$7) }
 | CASL xreg COMMA xreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_CAS (A.V64,A.RMW_L,$2,$4,$7) }
+| CASL creg COMMA creg COMMA  LBRK xreg zeroopt RBRK
+  { A.I_CAS (A.V128,A.RMW_L,$2,$4,$7) }
 | CASAL wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_CAS (A.V32,A.RMW_AL,$2,$4,$7) }
 | CASAL xreg COMMA xreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_CAS (A.V64,A.RMW_AL,$2,$4,$7) }
+| CASAL creg COMMA creg COMMA  LBRK xreg zeroopt RBRK
+  { A.I_CAS (A.V128,A.RMW_AL,$2,$4,$7) }
 | CASB wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_CASBH (A.B,A.RMW_P,$2,$4,$7) }
 | CASAB wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
@@ -345,18 +370,26 @@ instr:
   { A.I_SWP (A.V32,A.RMW_P,$2,$4,$7) }
 | SWP xreg COMMA xreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_SWP (A.V64,A.RMW_P,$2,$4,$7) }
+| SWP creg COMMA creg COMMA  LBRK xreg zeroopt RBRK
+  { A.I_SWP (A.V128,A.RMW_P,$2,$4,$7) }
 | SWPA wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_SWP (A.V32,A.RMW_A,$2,$4,$7) }
 | SWPA xreg COMMA xreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_SWP (A.V64,A.RMW_A,$2,$4,$7) }
+| SWPA creg COMMA creg COMMA  LBRK xreg zeroopt RBRK
+  { A.I_SWP (A.V128,A.RMW_A,$2,$4,$7) }
 | SWPL wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_SWP (A.V32,A.RMW_L,$2,$4,$7) }
 | SWPL xreg COMMA xreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_SWP (A.V64,A.RMW_L,$2,$4,$7) }
+| SWPL creg COMMA creg COMMA  LBRK xreg zeroopt RBRK
+  { A.I_SWP (A.V128,A.RMW_L,$2,$4,$7) }
 | SWPAL wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_SWP (A.V32,A.RMW_AL,$2,$4,$7) }
 | SWPAL xreg COMMA xreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_SWP (A.V64,A.RMW_AL,$2,$4,$7) }
+| SWPAL creg COMMA creg COMMA  LBRK xreg zeroopt RBRK
+  { A.I_SWP (A.V128,A.RMW_AL,$2,$4,$7) }
 | SWPB wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_SWPBH (A.B,A.RMW_P,$2,$4,$7) }
 | SWPAB wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
@@ -680,6 +713,10 @@ instr:
   { A.I_MOV (A.V64,$2,$4) }
 | MOV wreg COMMA kwr
   { A.I_MOV (A.V32,$2,$4) }
+| MOV creg COMMA creg
+  { A.I_MOV (A.V128,$2,A.RV (A.V128,$4)) }
+| CPY creg COMMA creg
+  { A.I_MOV (A.V128,$2,A.RV (A.V128,$4)) }
 | MOVZ xreg COMMA k
   { A.I_MOVZ (A.V64,$2, $4, A.S_NOEXT) }
 | MOVZ xreg COMMA k COMMA LSL k
@@ -703,6 +740,36 @@ instr:
   { A.I_OP3 (A.V32,$1,$2,$4,$6, A.S_NOEXT) }
 | OP wreg COMMA wreg COMMA kwr COMMA shift
   { A.I_OP3 (A.V32,$1,$2,$4,$6, $8) }
+| ADD xreg COMMA xreg COMMA kr
+  { A.I_OP3 (A.V64,A.ADD,$2,$4,$6, A.S_NOEXT) }
+| ADD xreg COMMA xreg COMMA kr COMMA shift
+  { A.I_OP3 (A.V64,A.ADD,$2,$4,$6, $8) }
+| ADD wreg COMMA wreg COMMA kwr
+  { A.I_OP3 (A.V32,A.ADD,$2,$4,$6, A.S_NOEXT) }
+| ADD wreg COMMA wreg COMMA kwr COMMA shift
+  { A.I_OP3 (A.V32,A.ADD,$2,$4,$6, $8) }
+| ADD creg COMMA creg COMMA kxr
+  { A.I_OP3 (A.V128,A.ADD,$2,$4,$6, A.S_NOEXT) }
+| SUB xreg COMMA xreg COMMA kr
+  { A.I_OP3 (A.V64,A.SUB,$2,$4,$6, A.S_NOEXT) }
+| SUB xreg COMMA xreg COMMA kr COMMA shift
+  { A.I_OP3 (A.V64,A.SUB,$2,$4,$6, $8) }
+| SUB wreg COMMA wreg COMMA kwr
+    { A.I_OP3 (A.V32,A.SUB,$2,$4,$6, A.S_NOEXT) }
+| SUB wreg COMMA wreg COMMA kwr COMMA shift
+    { A.I_OP3 (A.V32,A.SUB,$2,$4,$6, $8) }
+| SUB creg COMMA creg COMMA k
+  { A.I_OP3 (A.V128,A.SUB,$2,$4,A.K $6, A.S_NOEXT) }
+| SUBS xreg COMMA xreg COMMA kr
+  { A.I_OP3 (A.V64,A.SUBS,$2,$4,$6, A.S_NOEXT) }
+| SUBS xreg COMMA xreg COMMA kr COMMA shift
+  { A.I_OP3 (A.V64,A.SUBS,$2,$4,$6, $8) }
+| SUBS wreg COMMA wreg COMMA kwr
+  { A.I_OP3 (A.V32,A.SUBS,$2,$4,$6, A.S_NOEXT) }
+| SUBS wreg COMMA wreg COMMA kwr COMMA shift
+  { A.I_OP3 (A.V32,A.SUBS,$2,$4,$6, $8) }
+| SUBS xreg COMMA creg COMMA creg
+  { A.I_OP3 (A.V128,A.SUBS,$2,$4,A.RV (A.V128,$6), A.S_NOEXT) }
 | CMP wreg COMMA kwr
   { A.I_OP3 (A.V32,A.SUBS,A.ZR,$2,$4, A.S_NOEXT) }
 | CMP xreg COMMA kr
@@ -715,11 +782,46 @@ instr:
   { A.I_RBIT (A.V32,$2,$4) }
 | RBIT xreg COMMA xreg
   { A.I_RBIT (A.V64,$2,$4) }
+/* Morello */
+| ALIGND creg COMMA creg COMMA k
+  { A.I_ALIGND ($2,$4,A.K $6) }
+| ALIGNU creg COMMA creg COMMA k
+  { A.I_ALIGNU ($2,$4,A.K $6) }
+| BUILD creg COMMA creg COMMA creg
+  { A.I_BUILD ($2,$4,$6) }
+| CHKEQ creg COMMA creg
+  { A.I_CHKEQ ($2,$4) }
+| CHKSLD creg
+  { A.I_CHKSLD ($2) }
+| CHKTGD creg
+  { A.I_CHKTGD ($2) }
+| CLRTAG creg COMMA creg
+  { A.I_CLRTAG ($2,$4) }
+| CPYTYPE creg COMMA creg COMMA creg
+  { A.I_CPYTYPE ($2,$4,$6) }
+| CPYVALUE creg COMMA creg COMMA creg
+  { A.I_CPYVALUE ($2,$4,$6) }
+| CSEAL creg COMMA creg COMMA creg
+  { A.I_CSEAL ($2,$4,$6) }
+| GC xreg COMMA creg
+  { A.I_GC ($1,$2,$4) }
+| LDCT xreg COMMA LBRK xreg RBRK
+  { A.I_LDCT ($2,$5) }
+| SC creg COMMA creg COMMA xreg
+  { A.I_SC ($1,$2,$4,$6) }
+| SEAL creg COMMA creg COMMA creg
+  { A.I_SEAL ($2,$4,$6) }
+| STCT xreg COMMA LBRK xreg RBRK
+  { A.I_STCT ($2,$5) }
+| UNSEAL creg COMMA creg COMMA creg
+  { A.I_UNSEAL ($2,$4,$6) }
 /* Misc */
 | CSEL xreg COMMA  xreg COMMA  xreg COMMA cond
   { A.I_CSEL (A.V64,$2,$4,$6,$8,A.Cpy) }
 | CSEL wreg COMMA  wreg COMMA  wreg COMMA cond
   { A.I_CSEL (A.V32,$2,$4,$6,$8,A.Cpy) }
+| CSEL creg COMMA  creg COMMA  creg COMMA cond
+  { A.I_CSEL (A.V128,$2,$4,$6,$8,A.Cpy) }
 | CSINC xreg COMMA  xreg COMMA  xreg COMMA cond
   { A.I_CSEL (A.V64,$2,$4,$6,$8,A.Inc) }
 | CSINC wreg COMMA  wreg COMMA  wreg COMMA cond

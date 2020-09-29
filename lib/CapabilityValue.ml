@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2015-present Institut National de Recherche en Informatique et *)
+(* Copyright 2017-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,24 +14,4 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(* Classical dependencies *)
-type dp = ADDR | DATA | CTRL
-
-val pp_dp : dp -> string
-
-val fold_dpr : (dp -> 'a -> 'a) -> 'a -> 'a
-val fold_dpw : (dp -> 'a -> 'a) -> 'a -> 'a
-
-(* Defaults for backward compatibility *)
-val ddr_default : dp option
-val ddw_default : dp option
-val ctrlr_default : dp option
-val ctrlw_default : dp option
-
-(* Predicate for control on reads *)
-val is_ctrlr : dp -> bool
-val is_addr : dp -> bool
-
-(* Dependencies compositin by sequence *)
-val fst_dp : dp -> dp list
-val sequence_dp : dp -> dp -> dp list
+include SymbValue.Make(CapabilityConstant)

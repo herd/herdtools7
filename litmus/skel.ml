@@ -350,7 +350,7 @@ module Make
 (* Right value, casted if pointer *)
       let dump_a_v_casted = function
         | Concrete i ->  A.V.Scalar.pp  Cfg.hexa i
-        | Symbolic ((s,None),_) -> sprintf "((int *)%s)" (dump_a_addr s)
+        | Symbolic ((s,None,0),_) -> sprintf "((int *)%s)" (dump_a_addr s)
         | Symbolic _|Label _|Tag _ -> assert false
 
 (* Dump left & right values when context is available *)
@@ -745,7 +745,7 @@ module Make
                     if Cfg.cautious then
                       List.fold_right
                         (fun (loc,v) k -> match loc,v with
-                        | A.Location_reg(p,_),Symbolic ((s,_),_) when s = a ->
+                        | A.Location_reg(p,_),Symbolic ((s,_,_),_) when s = a ->
                             let cpy = A.Out.addr_cpy_name a p in
                             O.fi "%s* *%s ;" (CType.dump t) cpy ;
                             (cpy,a)::k
@@ -778,7 +778,7 @@ module Make
                 if Cfg.cautious then
                   List.iter
                     (fun (loc,v) -> match loc,v with
-                    | A.Location_reg(p,_),Symbolic ((s,_),_)
+                    | A.Location_reg(p,_),Symbolic ((s,_,_),_)
                       when Misc.string_eq s a ->
                         let cpy = A.Out.addr_cpy_name a p in
                         O.f "static %s* %s[SIZE_OF_ALLOC];"

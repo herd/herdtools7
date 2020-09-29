@@ -19,6 +19,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
   module U = MemUtils.Make(S)
 
   let memtag = O.variant Variant.MemTag
+  let morello = O.variant Variant.Morello
   let do_deps = O.variant Variant.Deps
   let iico_ctrl_as_dep = match S.A.arch with
   | `AArch64 -> true
@@ -101,7 +102,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
             (E.is_mem_store e2 && not (is_data_port e1)) ||
             E.is_additional_mem e2)
            (* Patch: a better solution would be a direct iico from read address register to access *)
-          (if memtag then E.EventRel.transitive_closure iico else iico) in
+          (if memtag || morello then E.EventRel.transitive_closure iico else iico) in
       S.union
         (E.EventRel.restrict_domain is_mem_load_total last_addr)
         (S.seq dd_pre last_addr) in

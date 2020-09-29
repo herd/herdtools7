@@ -195,7 +195,7 @@ end
 module Make(C:Config) (I:I) : S with module I = I
     = struct
 
-      let is_mixed = C.variant Variant.Mixed
+      let is_mixed = C.variant Variant.Mixed || C.variant Variant.Morello
 
       module I = I
       type v = I.V.v
@@ -378,7 +378,7 @@ module Make(C:Config) (I:I) : S with module I = I
       let look_size env s = StringMap.safe_find MachSize.Word s env
 
       let look_size_location env loc = match loc with
-      | Location_global (I.V.Val (Constant.Symbolic ((s,_),0))) -> look_size env s
+      | Location_global (I.V.Val (Constant.Symbolic ((s,_,_),0))) -> look_size env s
       | _ -> assert false
             (* Typing *)
 
@@ -394,6 +394,7 @@ module Make(C:Config) (I:I) : S with module I = I
         | "char"|"int8_t" |"uint8_t" -> MachSize.Byte
         | "short" | "int16_t" | "uint16_t" -> MachSize.Short
         | "int64_t" | "uint64_t" -> MachSize.Quad
+        | "int128_t" | "uint128_t" -> MachSize.S128
         | "intptr_t" | "uintptr_t" -> I.V.Cst.Scalar.machsize (* Maximal size = ptr size *)
         | t ->
             Warn.fatal "Cannot find the size of type %s" t
@@ -440,6 +441,7 @@ module Make(C:Config) (I:I) : S with module I = I
 
       module Mixed (SZ : ByteSize.S) = struct
 
+        let morello = C.variant Variant.Morello
         let byte = SZ.byte
 
         let endian = match C.endian with
@@ -452,6 +454,7 @@ module Make(C:Config) (I:I) : S with module I = I
         | 1 -> "0xff"
         | 2 -> "0xffff"
         | 4 -> "0xffffffff"
+        | 8 -> "0xffffffffffffffff"
         | _ ->
             Warn.user_error "Size cannot be %s in mixed-size mode"
               (MachSize.pp byte)
@@ -518,19 +521,22 @@ module Make(C:Config) (I:I) : S with module I = I
               raise LocUndetermined
           | None ->
               match loc with
-              | Location_global (I.V.Val (Constant.Symbolic ((s,_),0)) as a)   ->
+              | Location_global (I.V.Val (Constant.Symbolic ((s,_,_),0)) as a)   ->
                   let sz = look_size senv s in
                   let eas = byte_eas sz a in
                   let vs = List.map (get_of_val st) eas in
                   let v = recompose vs in
-                  v
+                  if morello then
+                    let ts = get_of_val st (I.V.op1 Op.CapaTagLoc a) in
+                    I.V.op Op.CapaSetTag v ts
+                  else v
               | _ ->
                   assert (not (is_global loc)) ;
                   get_in_state loc st
 
 
         let look_in_state =
-          if is_mixed then  look_in_state_mixed
+          if is_mixed || morello then look_in_state_mixed
           else fun _senv -> look_address_in_state (* No need for size-env when sizes are ignored *)
 
         let state_mem senv st loc v =
@@ -559,7 +565,7 @@ module Make(C:Config) (I:I) : S with module I = I
 
 
         let state_restrict_locs =
-          if C.variant Variant.Mixed then state_restrict_locs_mixed
+          if is_mixed || morello then state_restrict_locs_mixed
           else  state_restrict_locs_non_mixed
 
       end

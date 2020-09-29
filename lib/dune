@@ -27,4 +27,5 @@
    (name herdtools)
    (wrapped false)
    (modules_without_implementation sign outTests AST CAst Scalar archBase PPMode name value)
+   (libraries stdint)
 )

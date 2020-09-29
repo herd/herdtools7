@@ -138,9 +138,9 @@ Monad type:
     let delay
         = fun (m:'a t) (eiid:eid) ->
           let eiid,(mact,_) = m eiid in
-          let v,cl,es = try Evt.as_singleton mact with _ -> assert false in
-          let delayed : 'a t = fun eiid -> eiid,(Evt.singleton (v,[],es),None) in
-          eiid,(Evt.singleton ((v,delayed),cl,E.empty_event_structure),None)
+          let delayed = fun v es eiid -> eiid,(Evt.singleton (v,[],es),None) in
+          let f = fun (v,cl,es) -> ((v,delayed v es),cl,E.empty_event_structure) in
+          eiid,(Evt.map f mact,None)
 
     let (=**=) = E.(=**=)
     let (=*$=) = E.(=*$=)
@@ -418,6 +418,24 @@ Monad type:
       let es =
         E.aarch64_cas_ok es_rn es_rs es_rt es_wrs es_rm es_wm in
       let cls = cl_a@cl_cv@cl_nv@cl_rm@cl_wm@cl_wrs@cl_eq  in
+      eiid,(Evt.singleton ((),cls,es), None)
+
+(* Temporary morello variation of CAS *)
+    let aarch64_cas_ok_morello
+        (read_rn:'loc t) (read_rt: 'v t)
+        (read_mem: 'v t) (write_mem: 'loc -> 'v -> unit t)
+        eiid =
+      let eiid,read_rn = read_rn eiid in
+      let eiid,read_rt = read_rt eiid in
+      let a,cl_a,es_rn = Evt.as_singleton_nospecul read_rn
+      and nv,cl_nv,es_rt = Evt.as_singleton_nospecul read_rt in
+      let eiid,read_mem = read_mem eiid in
+      let eiid,write_mem = write_mem a nv eiid in
+      let _,cl_rm,es_rm = Evt.as_singleton_nospecul read_mem
+      and (),cl_wm,es_wm= Evt.as_singleton_nospecul write_mem in
+      let es =
+        E.aarch64_cas_ok_morello es_rn es_rt es_rm es_wm in
+      let cls = cl_a@cl_nv@cl_rm@cl_wm in
       eiid,(Evt.singleton ((),cls,es), None)
 
     let has_no_spec (x,y) = assert(y=None); x
@@ -794,6 +812,53 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
                     E.action = mk_action loc v })
                 acc_inner, None))) (eiid,(Evt.empty,None))
 
+    let add_atomic_tag_read m a f ii = fun eiid ->
+      let (eiid,(sact,sspec)) = m eiid in
+      assert(sspec = None);
+      let (v,eqs,st) = Evt.as_singleton sact in
+      let a_tag = V.fresh_var () in
+      let eqs = VC.Assign (a_tag,VC.Unop (Op.CapaTagLoc,a))::eqs in
+      let vs_tag = V.fresh_var () in
+      let v_tag = V.fresh_var () in
+      let eqs = eqs@[VC.Assign (v_tag,VC.Binop (Op.CapaSetTag,v,vs_tag))] in
+      let eiid,es = bump_eid eiid, E.EventSet.add
+        { E.eiid = eiid.id; E.subid=eiid.sub; E.iiid = Some ii;
+          E.action = f (A.Location_global a_tag) vs_tag;} st.E.events in
+      let e_full_action = if E.EventSet.is_empty st.E.events then f (A.Location_global a) v
+        else (E.EventSet.max_elt st.E.events).E.action in
+      let e_full = if E.EventSet.is_empty st.E.mem_accesses then
+        { E.eiid=eiid.id; E.subid=eiid.sub; E.iiid = Some ii;
+          E.action = e_full_action; } else
+        E.EventSet.max_elt st.E.mem_accesses in
+      let st = { st with
+        E.events = es;
+        E.sca = E.EventSetSet.singleton es;
+        E.mem_accesses = E.EventSet.singleton e_full;
+        E.aligned = [e_full,es]; } in
+      bump_eid eiid,(Evt.singleton (v_tag,eqs,st),None)
+
+    let add_atomic_tag_write m a v f ii = fun eiid ->
+      let (eiid,(sact,sspec)) = m eiid in
+      assert(sspec = None);
+      let ((),eqs,st) = Evt.as_singleton sact in
+      let a_tag = V.fresh_var () in
+      let eqs = VC.Assign (a_tag,VC.Unop (Op.CapaTagLoc,a))::eqs in
+      let eiid,es = bump_eid eiid, E.EventSet.add
+        { E.eiid = eiid.id; E.subid=eiid.sub; E.iiid = Some ii;
+          E.action = f (A.Location_global a_tag) v;} st.E.events in
+      let e_full_action = if E.EventSet.is_empty st.E.events then f (A.Location_global a) v
+        else (E.EventSet.max_elt st.E.events).E.action in
+      let e_full = if E.EventSet.is_empty st.E.mem_accesses then
+        { E.eiid=eiid.id; E.subid=eiid.sub; E.iiid = Some ii;
+          E.action = e_full_action; } else
+        E.EventSet.max_elt st.E.mem_accesses in
+      let st = { st with
+        E.events = es;
+        E.sca = E.EventSetSet.singleton es;
+        E.mem_accesses = E.EventSet.singleton e_full;
+        E.aligned = [e_full,es]; } in
+      bump_eid eiid,(Evt.singleton ((),eqs,st),None)
+
     let mk_singleton_es a ii =
       fun eiid ->
         (bump_eid eiid,
@@ -888,6 +953,7 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
     module Mixed(SZ:ByteSize.S) = struct
 
       let memtag = C.variant Variant.MemTag
+      let morello = C.variant Variant.Morello
 
       module AM = A.Mixed(SZ)
 
@@ -1011,16 +1077,29 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
             env glob in
         env
 
+      let morello_init_tag eiid s v =
+        assert morello ;
+        { E.eiid = eiid.id; E.subid=eiid.sub; E.iiid = None;
+          E.action = E.Act.mk_init_write (A.Location_global
+            (A.V.Val (Constant.Symbolic ((Misc.add_ctag s,None,0),0))))
+            def_size v; }
+
       let initwrites_non_mixed env _ =
         fun eiid ->
           let eiid,es =
             List.fold_left
               (fun (eiid,es) (loc,v) ->
-                let ew =
+                let eiid,ew = bump_eid eiid,
                   {E.eiid = eiid.id ; E.subid = eiid.sub ;
                    E.iiid = None ;
                    E.action = E.Act.mk_init_write loc def_size v ;} in
-                (bump_eid eiid,ew::es))
+                match loc with
+                | A.Location_global (A.V.Val (Constant.Symbolic ((s,_,_),0))) ->
+                    let eiid,ews = if morello then bump_eid eiid,
+                        (morello_init_tag eiid s (A.V.op1 Op.CapaGetTag v))::[ew]
+                      else eiid,[ew] in
+                    (eiid,ews@es)
+                | _ -> (eiid,ew::es))
               (eiid,[]) env in
           let es = E.EventSet.of_list es in
           if dbg then begin
@@ -1046,7 +1125,7 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
                 (fun (eiid,es,sca) (loc,v) ->
                   match loc with
                   | A.Location_global
-                      (A.V.Val (Constant.Symbolic ((s,_),0)) as a)
+                      (A.V.Val (Constant.Symbolic ((s,_,_),0)) as a)
                       when not (Misc.check_atag s) ->
  (* Suffix encoding of tag addresses, sufficient for now *)
                         let sz = A.look_size size_env s in
@@ -1063,6 +1142,9 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
                                     (A.Location_global a) SZ.byte d ;} in
                               bump_eid eiid,ew::ews)
                             (eiid,[]) eas ds in
+                        let eiid,ews = if morello then bump_eid eiid,
+                            (morello_init_tag eiid s (A.V.op1 Op.CapaGetTag v))::ews
+                          else eiid,ews in
                         eiid,ews@es, E.EventSetSet.add (E.EventSet.of_list ews) sca
                   | _ ->
                       let ew =

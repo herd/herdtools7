@@ -256,3 +256,10 @@ val clean_name : string -> string
 
 val add_atag : string -> string
 val check_atag : string -> bool
+
+(* Tag names capability tags locations in memory.
+   For location x, tag location is x.ctag *)
+
+val add_ctag : string -> string
+val check_ctag : string -> bool
+val tr_ctag : string -> string

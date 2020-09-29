@@ -18,7 +18,14 @@
 open Constant
 open MiscParser
 open ConstrGen
-let mk_sym_tag s t = Symbolic ((s,Some t),0)
+let mk_sym_tag s t = Symbolic ((s,Some t,0),0)
+let mk_sym_morello p s t =
+  let p_int = (Misc.string_as_int p) in
+  if p_int land 0x7 <> 0 || p_int >= 1 lsl 36
+    then Printf.eprintf "Warning: incorrect address encoding: %#x\n" p_int ;
+  let truncated_perms = p_int lsr 3 in
+  let tag = if Misc.string_as_int t <> 0 then 1 else 0 in
+  Symbolic ((s,None,truncated_perms lor (tag lsl 33) ),0)
 let mk_lab p s = Label (p,s)
 %}
 
@@ -76,6 +83,14 @@ maybev_notag:
 | NUM  { Concrete $1 }
 | NAME { mk_sym $1  }
 | NAME COLON NAME { mk_sym_tag $1 $3 }
+(* TODO: have MTE and Morello tags be usable at the same time? *)
+| NUM COLON NAME COLON NUM {mk_sym_morello $1 $3 $5}
+| NAME COLON NUM { mk_sym_morello "0" $1 $3 }
+/* conflicts with location_reg:
+| NUM COLON NAME { mk_sym_morello $1 $3 "0" }
+*/
+(* TODO: restrict to something like "NUM COLON BOOL"? *)
+| NUM COLON NUM { Concrete ($1 ^ ":" ^ $3) }
 
 maybev:
 | maybev_notag { $1 }

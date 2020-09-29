@@ -173,13 +173,13 @@ struct
     let notag_value () = Warn.user_error "No tag value for %s" Sys.argv.(0)
 
     let collect_value f v k = match v with
-    | Symbolic ((s,_),_) -> f s k
+    | Symbolic ((s,_,_),_) -> f s k
     | Concrete _ -> k
     | Label _ -> nolabel_value ()
     | Tag _ -> notag_value ()
 
     let map_value f v = match v with
-    | Symbolic ((s,t),o) -> Symbolic ((f s,t),o)
+    | Symbolic ((s,t,c),o) -> Symbolic ((f s,t,c),o)
     | Concrete _ -> v
     | Label _ -> nolabel_value ()
     | Tag _ -> notag_value ()

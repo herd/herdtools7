@@ -80,6 +80,7 @@ module Make
           f (acc,m) r
       |  (NonTemporal,Some ((MachSize.Short|MachSize.Byte),_))
         -> r
+      | (NonTemporal,Some (MachSize.S128,_)) -> assert false
 
       let fold_atom f r =
         fold_acc
@@ -184,6 +185,7 @@ module Make
       let ctrlw_default = None
 
       let is_ctrlr _ = assert false
+      let is_addr _ = assert false
       let fst_dp _ = assert false
       let sequence_dp _ _ = assert false
 

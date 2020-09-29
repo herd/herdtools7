@@ -23,7 +23,8 @@ module type S = sig
   type atom
 
   type event =
-      { loc : loc ; tag : int;
+      { loc : loc ; ord : int; tag : int;
+        ctag : int; cseal : int; dep : int;
         v   : v ;
         dir : dir option ;
         proc : Code.proc ;
@@ -108,12 +109,14 @@ module Make (O:Config) (E:Edge.S) :
 = struct
   let dbg = false
   let do_memtag = O.variant Variant_gen.MemTag
+  let do_morello = O.variant Variant_gen.Morello
   type fence = E.fence
   type edge = E.edge
   type atom = E.atom
 
   type event =
-      { loc : loc ; tag : int;
+      { loc : loc ; ord : int; tag : int;
+        ctag : int; cseal : int; dep : int;
         v   : v ;
         dir : dir option ;
         proc : Code.proc ;
@@ -124,7 +127,8 @@ module Make (O:Config) (E:Edge.S) :
         idx : int ; }
 
   let evt_null =
-    { loc=Code.loc_none ; tag=0;
+    { loc=Code.loc_none ; ord=0; tag=0;
+      ctag=0; cseal=0; dep=0;
       v=(-1) ; dir=None; proc=(-1); atom=None; rmw=false;
       cell=(-1); bank=Code.Ord; idx=(-1); }
 
@@ -159,19 +163,24 @@ module Make (O:Config) (E:Edge.S) :
     if do_memtag then fun e -> sprintf " (tag=%i)" e.tag
     else fun _ -> ""
 
+  let debug_morello =
+    if do_morello then fun e ->
+      sprintf " (ord=%i) (ctag=%i) (cseal=%i) (dep=%i)" e.ord e.ctag e.cseal e.dep
+    else fun _ -> ""
+
   let debug_evt e =
     if O.hexa then
-      sprintf "%s%s %s 0x%x%s"
+      sprintf "%s%s %s 0x%x%s%s"
         (debug_dir e.dir)
         (debug_atom e.atom)
         (Code.pp_loc e.loc)
-        e.v (debug_tag e)
+        e.v (debug_tag e) (debug_morello e)
     else
-      sprintf "%s%s %s %i%s"
+      sprintf "%s%s %s %i%s%s"
         (debug_dir e.dir)
         (debug_atom e.atom)
         (Code.pp_loc e.loc) e.v
-        ( debug_tag e)
+        (debug_tag e) (debug_morello e)
 
   let debug_edge = E.pp_edge
 
@@ -352,8 +361,8 @@ let diff_proc e = E.get_ie e = Ext
 (* Coherence definition *)
 module CoSt = MyMap.Make(struct type t = Code.bank let compare = compare end)
 
-let co_st_0  = CoSt.add Ord 0 (CoSt.add Tag 0 CoSt.empty)
-let co_st_1  = CoSt.add Ord 1 (CoSt.add Tag 1 CoSt.empty)
+let co_st_0  = CoSt.add Ord 0 (CoSt.add Tag 0 (CoSt.add CapaTag 0 (CoSt.add CapaSeal 0 CoSt.empty)))
+let co_st_1  = CoSt.add Ord 1 (CoSt.add Tag 1 (CoSt.add CapaTag 1 (CoSt.add CapaSeal 1 CoSt.empty)))
 let start_co _ = co_st_1
 
 let get_co st bank =
@@ -580,9 +589,16 @@ let set_same_loc st n0 =
   let rec do_set_write_val old next = function
     | [] -> ()
     | n::ns ->
-        begin if do_memtag && Code.is_data n.evt.loc then
-          let tag = get_co old Tag in
-          n.evt <- { n.evt with tag=tag; }
+        begin if Code.is_data n.evt.loc then
+          begin if do_memtag then
+            let tag = get_co old Tag in
+            n.evt <- { n.evt with tag=tag; }
+          else if do_morello then
+            let ord = get_co old Ord in
+            let ctag = get_co old CapaTag in
+            let cseal = get_co old CapaSeal in
+            n.evt <- { n.evt with ord=ord; ctag=ctag; cseal=cseal; }
+          end
         end ;
         begin match n.evt.dir with
         | Some W ->
@@ -592,15 +608,18 @@ let set_same_loc st n0 =
                 begin match bank with
                 | Ord ->
                     n.evt <- { n.evt with v =  tr_value n.evt (get_co next Ord); } ;
+                    (* Writing Ord resets morello tag *)
+                    let old = set_co old CapaTag evt_null.ctag in
+                    let next = next_co (set_co next CapaTag evt_null.ctag) CapaTag in
                     set_cell n (get_co old Ord) ;
                     do_set_write_val
                       (set_co old bank n.evt.cell)
                       (if E.is_node n.edge.E.edge then next else next_co next Ord) ns
-                | Tag ->
-                    let v =  get_co next Tag in
+                | Tag | CapaTag | CapaSeal ->
+                    let v = get_co next bank in
                     n.evt <- { n.evt with v = v; } ;
-                    do_set_write_val (set_co old Tag v)
-                      (next_co next Tag) ns
+                    do_set_write_val (set_co old bank v)
+                      (next_co next bank) ns
                 end
             | Code _ ->
                 do_set_write_val old next ns
@@ -636,6 +655,21 @@ let set_same_loc st n0 =
     set_all_write_val nss ;
     nss
 
+(* Loop over every node and set the expected value from the previous node *)
+let set_dep_v nss =
+  let v = List.fold_left
+    (fun k ns ->
+      List.fold_left
+        (fun v n ->
+          n.evt <- { n.evt with dep=v; } ;
+          n.evt.v)
+        k ns)
+    0 nss in
+  (if List.length nss > 0 then
+    if List.length (List.hd nss) > 0 then
+      let n = (List.hd (List.hd nss)) in
+      n.evt <- { n.evt with dep=v; }) ;
+  ()
 
 (* TODO: this is wrong for Store CR's: consider Rfi Store PosRR *)
 let set_read_v n cell =
@@ -663,7 +697,8 @@ let do_set_read_v =
         | Some W ->
             let st = set_co st n.evt.bank n.evt.v in
             do_rec st
-              (match n.evt.bank with | Ord -> n.evt.cell | Tag -> cell)
+              (match n.evt.bank with | Ord -> n.evt.cell | Tag | CapaTag
+                | CapaSeal -> cell)
               ns
         | None | Some J ->
             do_rec st cell ns
@@ -712,6 +747,8 @@ let finish n =
   end ;
 (* Set load values *)
   let vs = set_read_v by_loc in
+(* Set dependency values *)
+  (if do_morello then set_dep_v by_loc) ;
   if O.verbose > 1 then begin
     eprintf "READ VALUES\n" ;
     debug_cycle stderr n ;

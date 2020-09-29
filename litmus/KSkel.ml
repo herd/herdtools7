@@ -294,7 +294,7 @@ module Make
       let open Constant in
       match v with
       | Concrete i -> A.V.Scalar.pp Cfg.hexa i
-      | Symbolic ((s,None),0) -> dump_a_addr s
+      | Symbolic ((s,None,0),0) -> dump_a_addr s
       | Label _ ->
           Warn.user_error "No label value for klitmus"
       | Symbolic _|Tag _ ->

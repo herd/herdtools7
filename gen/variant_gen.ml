@@ -28,8 +28,12 @@ type t =
   | MemTag
 (* C: Prevents the use of Volatile to capture bugs in compilation *)
   | NoVolatile
+(* Morello C64 instruction set *)
+  | Morello
 
-let tags = ["AsAmo";"ConstsInInit";"Mixed";"FullMixed";"Self"; "MemTag"; "NoVolatile"]
+let tags =
+ ["AsAmo";"ConstsInInit";"Mixed";"FullMixed";"Self"; "MemTag";
+  "NoVolatile"; "Morello"; ]
 
 let parse tag = match Misc.lowercase tag with
 | "asamo" -> Some AsAmo
@@ -39,6 +43,7 @@ let parse tag = match Misc.lowercase tag with
 | "self" -> Some Self
 | "memtag" -> Some MemTag
 | "novolatile" -> Some NoVolatile
+| "morello" -> Some Morello
 | _ -> None
 
 let pp = function
@@ -49,3 +54,4 @@ let pp = function
   | Self -> "Self"
   | MemTag -> "MemTag"
   | NoVolatile -> "NoVolatile"
+  | Morello -> "Morello"

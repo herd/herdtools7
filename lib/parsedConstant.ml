@@ -45,6 +45,9 @@ module StringScalar = struct
   let lt = op2 "(<)"
   let le = op2 "(<=)"
   let mask sz = op1 (Op.pp_op1 false (Op.Mask sz))
+
+  let get_tag _ = assert false
+  let set_tag _ = assert false
 end
 
 include SymbConstant.Make(StringScalar)

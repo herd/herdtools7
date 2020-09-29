@@ -43,6 +43,7 @@ module Make(C:Config) = struct
     let r = do_fold f Short (get_off Short) r in
     let r = do_fold f Word (get_off Word) r in
     let r = do_fold f Quad (get_off Quad) r in
+    let r = do_fold f S128 (get_off S128) r in
     r
 
   let rec tr_value sz v = match sz with
@@ -52,6 +53,7 @@ module Make(C:Config) = struct
   | Quad ->
       let x = tr_value Word v in
       x lsl 32 + x
+  | S128 -> assert false
 
 
 end
@@ -90,6 +92,7 @@ module Vals(C:ValsConfig) = struct
     let nshift =  o * 8 in
     let mask =
       match sz with
+      | S128 -> assert false
       | Quad -> -1
       | _ -> (1 lsl sz_bits) - 1 in
     let r = (v lsr nshift) land mask in

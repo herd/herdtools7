@@ -28,6 +28,7 @@ val ctrlw_default : dp option
 
 (* Predicate for control on reads *)
 val is_ctrlr : dp -> bool
+val is_addr : dp -> bool
 
 (* Dependencies compositin by sequence *)
 val fst_dp : dp -> dp list
