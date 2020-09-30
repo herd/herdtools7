@@ -275,19 +275,45 @@ match name with
 | "movz"|"MOVZ" -> MOVZ
 | "adr"|"ADR" -> ADR
 | "rbit"|"RBIT" -> RBIT
-| "add"|"ADD" -> OP A.ADD
+| "add"|"ADD" -> ADD
 | "adds"|"ADDS" -> OP A.ADDS
 | "eor"|"EOR" -> OP A.EOR
 | "orr"|"ORR" -> OP A.ORR
 | "and"|"AND" -> OP A.AND
 | "ands"|"ANDS" -> OP A.ANDS
-| "sub"|"SUB" -> OP A.SUB
-| "subs"|"SUBS" -> OP A.SUBS
 (* Although ASR is an instruction, it is also a barrel shift *)
 (* It needs special handling as both an operation and operand *)
 | "asr" | "ASR" -> ASR
+| "sub"|"SUB" -> SUB
+| "subs"|"SUBS" -> SUBS
 | "cmp"|"CMP" -> CMP
 | "tst"|"TST" -> TST
+(* Morello *)
+| "alignd"|"ALIGND" -> ALIGND
+| "alignu"|"ALIGNU" -> ALIGNU
+| "build"|"BUILD" -> BUILD
+| "chkeq"|"CHKEQ" -> CHKEQ
+| "chksld"|"CHKSLD" -> CHKSLD
+| "chktgd"|"CHKTGD" -> CHKTGD
+| "clrtag"|"CLRTAG" -> CLRTAG
+| "cpy"|"CPY" -> CPY
+| "cpytype"|"CPYTYPE" -> CPYTYPE
+| "cpyvalue"|"CPYVALUE" -> CPYVALUE
+| "cseal"|"CSEAL" -> CSEAL
+| "cthi"|"CTHI" -> SC A.CTHI
+| "gcflgs"|"GCFLGS" -> GC A.GCFLGS
+| "gcperm"|"GCPERM" -> GC A.GCPERM
+| "gcseal"|"GCSEAL" -> GC A.GCSEAL
+| "gctag"|"GCTAG" -> GC A.GCTAG
+| "gctype"|"GCTYPE" -> GC A.GCTYPE
+| "gcvalue"|"GCVALUE" -> GC A.GCVALUE
+| "ldct"|"LDCT" -> LDCT
+| "scflgs"|"SCFLGS" -> SC A.SCFLGS
+| "sctag"|"SCTAG" -> SC A.SCTAG
+| "scvalue"|"SCVALUE" -> SC A.SCVALUE
+| "seal"|"SEAL" -> SEAL
+| "stct"|"STCT" -> STCT
+| "unseal"|"UNSEAL" -> UNSEAL
 (* Misc *)
 | "csel"|"CSEL" -> CSEL
 | "csinc"|"CSINC" -> CSINC

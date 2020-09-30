@@ -291,4 +291,73 @@ include Arch.MakeArch(struct
         conv_reg r2 >> fun r2 ->
         expl_kr kr >! fun kr ->
         I_LDG (r1,r2,kr)
+    | I_ALIGND(r1,r2,k) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >! fun r2 ->
+        I_ALIGND(r1,r2,k)
+    | I_ALIGNU(r1,r2,k) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >! fun r2 ->
+        I_ALIGNU(r1,r2,k)
+    | I_BUILD(r1,r2,r3) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        conv_reg r3 >! fun r3 ->
+        I_BUILD(r1,r2,r3)
+    | I_CHKEQ(r1,r2) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >! fun r2 ->
+        I_CHKEQ(r1,r2)
+    | I_CHKSLD(r1) ->
+        conv_reg r1 >! fun r1 ->
+        I_CHKSLD(r1)
+    | I_CHKTGD(r1) ->
+        conv_reg r1 >! fun r1 ->
+        I_CHKTGD(r1)
+    | I_CLRTAG(r1,r2) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >! fun r2 ->
+        I_CLRTAG(r1,r2)
+    | I_CPYTYPE(r1,r2,r3) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        conv_reg r3 >! fun r3 ->
+        I_CPYTYPE(r1,r2,r3)
+    | I_CPYVALUE(r1,r2,r3) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        conv_reg r3 >! fun r3 ->
+        I_CPYVALUE(r1,r2,r3)
+    | I_CSEAL(r1,r2,r3) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        conv_reg r3 >! fun r3 ->
+        I_CSEAL(r1,r2,r3)
+    | I_GC(op,r1,r2) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >! fun r2 ->
+        I_GC(op,r1,r2)
+    | I_SC(op,r1,r2,r3) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        conv_reg r3 >! fun r3 ->
+        I_SC(op,r1,r2,r3)
+    | I_SEAL(r1,r2,r3) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        conv_reg r3 >! fun r3 ->
+        I_SEAL(r1,r2,r3)
+    | I_UNSEAL(r1,r2,r3) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        conv_reg r3 >! fun r3 ->
+        I_UNSEAL(r1,r2,r3)
+    | I_LDCT(r1,r2) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >! fun r2 ->
+        I_LDCT(r1,r2)
+    | I_STCT(r1,r2) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >! fun r2 ->
+        I_STCT(r1,r2)
 end)

@@ -22,12 +22,16 @@ type op =
   | Add | Sub | Mul | Div
   | And | Or | Xor | Nor | AndNot2
   | ASR
+  | CapaAdd | Alignd | Alignu | Build | ClrPerm | CpyType | CSeal | Cthi | Seal
+  | SetValue | CapaSub | CapaSubs | CapaSetTag | Unseal
   | ShiftLeft
   | ShiftRight
   | Lt | Gt | Eq | Ne
   | Le | Ge
   | Max | Min
   | SetTag
+  | SquashMutable
+  | CheckPerms of string
 
 let pp_op o =
   match o with
@@ -40,6 +44,19 @@ let pp_op o =
   | Xor -> "^" (* in C ?? *)
   | Nor -> "(nor)"
   | AndNot2 -> "(andnot2)"
+  | CapaAdd -> "(capaadd)"
+  | Alignd -> "(alignd)"
+  | Alignu -> "(alignu)"
+  | Build -> "(build)"
+  | ClrPerm -> "(clrperm)"
+  | CpyType -> "(cpytype)"
+  | CSeal -> "(cseal)"
+  | Cthi -> "(cthi)"
+  | Seal -> "(seal)"
+  | SetValue -> "(setvalue)"
+  | CapaSub -> "(capasub)"
+  | CapaSubs -> "(capasubs)"
+  | Unseal -> "(unseal)"
   | ShiftLeft -> "<<<" (* In Java ?? *)
   | ShiftRight -> ">>>"
   | Eq -> "=="
@@ -52,6 +69,9 @@ let pp_op o =
   | Min -> "min"
   | ASR -> "ASR"
   | SetTag -> "settag"
+  | CapaSetTag -> "capasettag"
+  | SquashMutable -> "squashmutable"
+  | CheckPerms perms -> sprintf "(checkcapa:%s)" perms
 
 let pp_ptx_cmp_op = function
   | Eq -> ".eq"
@@ -75,9 +95,13 @@ type op1 =
   | AndK of string
   | Mask of MachSize.sz
   | TagLoc       (* Get tag memory location from location *)
+  | CapaTagLoc
   | TagExtract   (* Extract tag from tagged location *)
   | LocExtract   (* Extract actual location from location *)
   | UnSetXBits of int * int (* Unset x bits to the left from y*)
+  | CapaGetTag
+  | CheckSealed
+  | CapaStrip
 
 let pp_op1 hexa o = match o with
 | Not -> "!"
@@ -91,9 +115,13 @@ let pp_op1 hexa o = match o with
 | AndK i  -> sprintf "&[%s]" i
 | Mask sz  -> sprintf "mask%02i" (MachSize.nbits sz)
 | TagLoc ->  "tagloc"
+| CapaTagLoc -> "capatagloc"
 | TagExtract -> "tagextract"
 | LocExtract -> "locextract"
 | UnSetXBits (nbBits, from) -> sprintf "unset %i bits to the left from %ith bit" nbBits from
+| CapaGetTag -> "capagettag"
+| CheckSealed -> "checksealed"
+| CapaStrip -> "capastrip"
 (***********)
 
 type op3 = If

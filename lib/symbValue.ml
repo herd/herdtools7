@@ -107,13 +107,38 @@ module Make(Cst:Constant.S) = struct
       Warn.user_error "Illegal operation on %s" (Cst.pp_v x)
     | Var _ -> raise Undetermined
 
+  let bin_to_capa c =
+    let tag = c land 0x200000000 <> 0 in
+    Scalar.set_tag tag (Scalar.shift_left (Scalar.of_int c) 95)
+
+  let capa_to_bin a =
+    let tag = if Scalar.get_tag a then 0x200000000 else 0 in
+    Scalar.to_int (Scalar.shift_right_logical a 95) lor tag
+
+  (* Concrete -> Concrete
+     Symbolic -> Symbolic *)
   let unop op_op op v1 = match v1 with
     | Val (Concrete i1) -> Val (Concrete (op i1))
-  | Val (Symbolic _|Label _|Tag _ as x) ->
+    | Val (Symbolic ((a,t,c),o)) ->
+        Val (Symbolic ((a,t,capa_to_bin (op (bin_to_capa c))),o))
+  | Val (Label _|Tag _ as x) ->
       Warn.user_error "Illegal operation %s on %s"
         (Op.pp_op1 true op_op) (Cst.pp_v x)
   | Var _ -> raise Undetermined
 
+  (* Concrete -> Concrete
+     Symbolic -> Concrete *)
+  let unop_c op_op op v = match v with
+    | Val (Concrete i) ->
+        Val (Concrete (op i))
+    | Val (Symbolic ((_,_,c),_)) ->
+        Val (Concrete (op (bin_to_capa c)))
+    | Val cst ->
+        Warn.user_error "Illegal operation %s on %s"
+          (Op.pp_op1 true op_op) (Cst.pp_v cst)
+    | Var _ -> raise Undetermined
+
+  (* Concrete,Concrete -> Concrete *)
   let binop op_op op v1 v2 = match v1,v2 with
   | (Val (Concrete i1),Val (Concrete i2)) -> Val (Concrete (op i1 i2))
   | (Val (Concrete _),Val (Symbolic _|Label _|Tag _))
@@ -125,6 +150,65 @@ module Make(Cst:Constant.S) = struct
   | (Var _,_)|(_,Var _)
     -> raise Undetermined
 
+  (* Concrete,Concrete -> Concrete
+     Symbolic,Concrete -> Symbolic *)
+  let binop_cs_c op_op op v1 v2 = match v1,v2 with
+  | (Val (Concrete i1),Val (Concrete i2)) -> Val (Concrete (op i1 i2))
+  | (Val (Symbolic ((a,t,c),o)),Val (Concrete i)) ->
+      Val (Symbolic ((a,t,capa_to_bin (op (bin_to_capa c) i)),o))
+  | Val cst1,Val cst2 ->
+        Warn.user_error "Illegal operation %s on %s and %s"
+          (Op.pp_op op_op) (Cst.pp_v cst1) (Cst.pp_v cst2)
+  | (Var _,_)|(_,Var _)
+    -> raise Undetermined
+
+  (* Concrete,Concrete -> Concrete
+     Concrete,Symbolic -> Concrete *)
+  let binop_c_cs op_op op v1 v2 = match v1,v2 with
+  | (Val (Concrete i1),Val (Concrete i2)) -> Val (Concrete (op i1 i2))
+  | (Val (Concrete i),Val (Symbolic ((_,_,c),_))) ->
+      Val (Concrete (op i (bin_to_capa c)))
+  | Val cst1,Val cst2 ->
+        Warn.user_error "Illegal operation %s on %s and %s"
+          (Op.pp_op op_op) (Cst.pp_v cst1) (Cst.pp_v cst2)
+  | (Var _,_)|(_,Var _)
+    -> raise Undetermined
+
+  (* Concrete,Concrete -> Concrete
+     Concrete,Symbolic -> Concrete
+     Symbolic,Concrete -> Symbolic
+     Symbolic,Symbolic -> Symbolic *)
+  let binop_cs_cs op_op op v1 v2 = match v1,v2 with
+  | (Val (Concrete i1),Val (Concrete i2)) -> Val (Concrete (op i1 i2))
+  | (Val (Concrete i),Val (Symbolic ((_,_,c),_))) ->
+      Val (Concrete (op i (bin_to_capa c)))
+  | (Val (Symbolic ((a,t,c),o)),Val (Concrete i)) ->
+      Val (Symbolic ((a,t,capa_to_bin (op (bin_to_capa c) i)),o))
+  | (Val (Symbolic ((a,t,c1),o)),Val (Symbolic ((_,_,c2),_))) ->
+      Val (Symbolic ((a,t,capa_to_bin (op (bin_to_capa c1) (bin_to_capa c2))),o))
+  | Val cst1,Val cst2 ->
+        Warn.user_error "Illegal operation %s on %s and %s"
+          (Op.pp_op op_op) (Cst.pp_v cst1) (Cst.pp_v cst2)
+  | (Var _,_)|(_,Var _)
+    -> raise Undetermined
+
+  (* Concrete,Concrete -> Concrete
+     Concrete,Symbolic -> Concrete
+     Symbolic,Concrete -> Concrete
+     Symbolic,Symbolic -> Concrete *)
+  let binop_cs_cs_c op_op op v1 v2 = match v1,v2 with
+  | (Val (Concrete i1),Val (Concrete i2)) -> Val (Concrete (op i1 i2))
+  | (Val (Concrete i),Val (Symbolic ((_,_,c),_))) ->
+      Val (Concrete (op i (bin_to_capa c)))
+  | (Val (Symbolic ((_,_,c),_)),Val (Concrete i)) ->
+      Val (Concrete (op (bin_to_capa c) i))
+  | (Val (Symbolic ((_,_,c1),_)),Val (Symbolic ((_,_,c2),_))) ->
+      Val (Concrete (op (bin_to_capa c1) (bin_to_capa c2)))
+  | Val cst1,Val cst2 ->
+        Warn.user_error "Illegal operation %s on %s and %s"
+          (Op.pp_op op_op) (Cst.pp_v cst1) (Cst.pp_v cst2)
+  | (Var _,_)|(_,Var _)
+    -> raise Undetermined
 
 (* specific binops, with some specific cases for symbolic constants *)
 
@@ -162,7 +246,10 @@ module Make(Cst:Constant.S) = struct
   and orop v1 v2 =
     if protect_is is_zero v1 then v2
     else if protect_is is_zero v2 then v1
-    else binop Op.Or Scalar.logor v1 v2
+    else match v1,v2 with
+    | (Val (Symbolic _),Val (Symbolic _)) -> Warn.user_error "Illegal | on %s and %s" (pp_v v1) (pp_v v2)
+    | (Val (Concrete _),Val (Symbolic _)) -> binop_cs_cs Op.Or Scalar.logor v2 v1
+    | _ -> binop_cs_cs Op.Or Scalar.logor v1 v2
 
   and xor v1 v2 =
     if compare v1 v2 = 0 then zero else
@@ -236,8 +323,9 @@ module Make(Cst:Constant.S) = struct
   | Var _ -> raise Undetermined
 
   (*  Returns the location of the tag associated to a location *)
-  let op_tagloc (a,_,_) _ =  Symbolic ((Misc.add_atag a,None,0),0)
-  let tagloc = op_tagged "tagloc" op_tagloc
+  let op_tagloc f (a,_,_) _ =  Symbolic ((f a,None,0),0)
+  let tagloc = op_tagged "tagloc" (op_tagloc Misc.add_atag)
+  let capatagloc = op_tagged "capatagloc" (op_tagloc Misc.add_ctag)
 
   let get_sym = function
     | Val (Symbolic ((s,_,_),_)) -> s
@@ -249,6 +337,11 @@ module Make(Cst:Constant.S) = struct
     | Var _|Val (Concrete _|Label _|Tag _) ->
         Warn.fatal "Illegal check_atag" (* NB: not an user error *)
 
+  let check_ctag = function
+    | Val (Symbolic ((s,_,_),_)) -> Misc.check_ctag s
+    | Var _|Val (Concrete _|Label _|Tag _) ->
+        Warn.fatal "Illegal check_mtag" (* NB: not an user error *)
+
   (* Decompose tagged locations *)
   let op_tagextract (_,t,_) _ = match t with
   | Some t -> Tag t
@@ -257,6 +350,230 @@ module Make(Cst:Constant.S) = struct
   let tagextract v = op_tagged "tagextract" op_tagextract v
   let op_locextract (a,_,c) o = Symbolic ((a,None,c),o)
   let locextract v = op_tagged "locextract" op_locextract v
+
+  let andnot x1 x2 =
+    Scalar.logand x1 (Scalar.lognot x2)
+
+  let cap_perm_global = 1
+  let cap_perm_mutable_load = 1 lsl 6
+  let cap_perm_unseal = 1 lsl 10
+  let cap_perm_seal = 1 lsl 11
+  let cap_perm_store_local = 1 lsl 12
+  let cap_perm_store_cap = 1 lsl 13
+  let cap_perm_load_cap = 1 lsl 14
+  (* let cap_perm_execute = 1 lsl 15 *)
+  let cap_perm_store = 1 lsl 16
+  let cap_perm_load = 1 lsl 17
+
+  let lo64 x =
+    Scalar.mask MachSize.Quad x
+
+  let hi64 x =
+    Scalar.shift_left (Scalar.shift_right_logical x 64) 64
+
+  let ones k =
+    Scalar.addk (Scalar.shift_left Scalar.one k) (-1)
+
+  (* Check that an immediate is not bigger than a certain size *)
+  let check_immediate imm sz =
+    if scalar_to_bool (Scalar.shift_right_logical imm sz) then
+      Warn.user_error "illegal immediate value %s" (Scalar.pp false imm)
+
+  (* Returns the object type *)
+  let cap_get_object_type c =
+    Scalar.logand (Scalar.shift_right_logical c 95) (ones 15)
+
+  (* Returns the capability c with the object type set to x *)
+  let cap_set_object_type c x =
+    let result = Scalar.logor (Scalar.shift_left x 95)
+      (andnot c (Scalar.shift_left (ones 15) 95)) in
+    Scalar.set_tag (Scalar.get_tag c) result
+
+  (* Returns true if the input capability is sealed *)
+  let cap_is_sealed c =
+    scalar_to_bool (cap_get_object_type c)
+
+  (* Returns true if a capability has all permissions in a given bit mask, false
+     otherwise *)
+  let cap_check_permissions c mask =
+    let perms = Scalar.to_int (Scalar.shift_right_logical c 110) in
+    (perms lor (lnot mask)) land 0x3ffff = 0x3ffff
+
+  (* Returns true if the capability is local, false otherwise *)
+  let cap_is_local c =
+    not (scalar_to_bool (Scalar.logand (Scalar.shift_right_logical c 110) Scalar.one))
+
+  (* Returns the input capability with permissions cleared according to a given
+     bit mask *)
+  let cap_clear_perms c mask =
+    Scalar.set_tag (Scalar.get_tag c) (andnot c (Scalar.shift_left (Scalar.of_int mask) 110))
+
+  (* Perform the following processing
+      - If the Capability was loaded without LoadCap permission clear the tag
+      - Remove MutableLoad, Store, StoreCap and StoreLocalCap permissions in a
+        loaded capability if accessed without MutableLoad permission *)
+  let cap_squash_post_load_cap v a =
+    let mask = cap_perm_store lor cap_perm_store_cap lor
+      cap_perm_store_local lor cap_perm_mutable_load in
+    let v = if not (cap_check_permissions a cap_perm_load_cap)
+      then Scalar.set_tag false v
+      else v in
+    let v = if not (cap_check_permissions a cap_perm_mutable_load) &&
+        Scalar.get_tag v && not (cap_is_sealed v)
+      then cap_clear_perms v mask
+      else v in
+    v
+
+  (* Returns an unsealed version of the input capability *)
+  let cap_unseal c =
+    cap_set_object_type c Scalar.zero
+
+  let alignd c k =
+    check_immediate k 6; (* Check user input *)
+    let align = ones (Scalar.to_int k) in
+    let result = andnot c align in
+    (* NB: bounds check skipped *)
+    let tagclear = cap_is_sealed c in
+    Scalar.set_tag (Scalar.get_tag c && not tagclear) result
+
+  let alignu c k =
+    check_immediate k 6; (* Check user input *)
+    let align = ones (Scalar.to_int k) in
+    let newvalue = andnot (Scalar.add c align) align in
+    let result = Scalar.logor (hi64 c) (lo64 newvalue) in
+    (* NB: bounds check skipped *)
+    let tagclear = cap_is_sealed c in
+    Scalar.set_tag (Scalar.get_tag c && not tagclear) result
+
+  let capaadd v1 v2 = match v1,v2 with
+    | (Val (Symbolic ((a,t,c),o)),Val (Concrete i)) ->
+        let i = Scalar.to_int i in
+        let c = bin_to_capa c in
+        let tagclear = cap_is_sealed c in
+        let c = Scalar.set_tag (Scalar.get_tag c && not tagclear) c in
+        Val (Symbolic ((a,t,capa_to_bin c),o+i))
+    | (Val (Concrete c)),(Val (Concrete increment)) -> (* General case *)
+        let result = Scalar.logor (hi64 c) (lo64 (Scalar.add c increment)) in
+        (* NB: bounds check skipped *)
+        let tagclear = cap_is_sealed c in
+        Val (Concrete (Scalar.set_tag (Scalar.get_tag c && not tagclear) result))
+    | Val _,Val _ ->
+        Warn.user_error "Illegal capaadd on %s and %s" (pp_v v1) (pp_v v2)
+    | (Var _,_)|(_,Var _)
+      -> raise Undetermined
+
+  let capasub c decrement =
+    let result = Scalar.logor (hi64 c) (lo64 (Scalar.sub c decrement)) in
+    (* NB: bounds check skipped *)
+    let tagclear = cap_is_sealed c in
+    Scalar.set_tag (Scalar.get_tag c && not tagclear) result
+
+  let capasubs v1 v2 =
+    let tag1 = if Scalar.get_tag v1 then 1 else 0 in
+    let tag2 = if Scalar.get_tag v2 then 1 else 0 in
+    if tag1 = tag2
+      then Scalar.mask MachSize.Quad (Scalar.sub v1 v2)
+      else Scalar.of_int ((tag1 - tag2) land 3)
+
+  let check_perms perms a v =
+    let conditionnal_perms x =
+      if Scalar.get_tag x then
+        cap_perm_store_cap lor
+        if cap_is_local x then
+          cap_perm_store_local
+        else 0
+      else 0 in
+    let conditionnal_perms_stct x =
+      if Scalar.compare (Scalar.bit_at 0 x) Scalar.one = 0 then
+        cap_perm_store_cap
+      else 0 in
+    let mask = match perms with
+      | "r" | "r_c" -> cap_perm_load
+      | "w" -> cap_perm_store
+      | "rw" -> cap_perm_load lor cap_perm_store
+      | "w_c" -> cap_perm_store lor (conditionnal_perms v)
+      | "rw_c" -> cap_perm_load lor cap_perm_store lor (conditionnal_perms v)
+      | "tw_c" -> cap_perm_store lor (conditionnal_perms_stct v)
+      | "tr_c" -> cap_perm_load_cap
+      | _ -> assert false in
+    if cap_check_permissions a mask then Scalar.one else Scalar.zero
+
+  let check_seal v1 v2 =
+    let otype = lo64 v2 in
+    Scalar.get_tag v1 && Scalar.get_tag v2 && not (cap_is_sealed v1) &&
+      not (cap_is_sealed v2) && cap_check_permissions v2 cap_perm_seal &&
+      (* NB: bounds check skipped *)
+      Scalar.le otype (ones 15)
+
+  let seal v1 v2 =
+    let otype = lo64 v2 in
+    let tag = check_seal v1 v2 in
+    let result = cap_set_object_type v1 otype in
+    Scalar.set_tag tag result
+
+  let unseal v1 v2 =
+    let value = lo64 v2 in
+    let otype = cap_get_object_type v1 in
+    (* NB: bounds check skipped *)
+    let tag = Scalar.get_tag v1 && Scalar.get_tag v2 && cap_is_sealed v1 &&
+      not (cap_is_sealed v2) && cap_check_permissions v2 cap_perm_unseal &&
+      Scalar.compare otype value = 0 in
+    let result = cap_unseal v1 in
+    let result = if not (cap_check_permissions v2 cap_perm_global)
+      then cap_clear_perms result cap_perm_global
+      else result in
+    Scalar.set_tag tag result
+
+  let build v1 v2 =
+    let datawassealed = cap_is_sealed v1 in
+    let data = if datawassealed then cap_unseal v1 else v1 in
+    (* NB: bounds check skipped *)
+    let tagclear = not (Scalar.get_tag v2) || cap_is_sealed v2 in
+    Scalar.set_tag (not tagclear || (not datawassealed && Scalar.get_tag v1)) data
+
+  let do_setvalue v1 v2 =
+    let result = Scalar.logor (hi64 v1) (lo64 v2) in
+    let tagclear = cap_is_sealed v1 in
+    Scalar.set_tag (Scalar.get_tag v1 && not tagclear) result
+
+  let setvalue v1 v2 = match v1,v2 with
+    | (Val (Symbolic ((_,_,c),_)),Val (Concrete i)) ->
+        let c = bin_to_capa c in
+        Val (Concrete (do_setvalue c i))
+    | (Val (Concrete i1)),(Val (Concrete i2)) ->
+        Val (Concrete (do_setvalue i1 i2))
+    | Val _,Val _ ->
+        Warn.user_error "Illegal setvalue on %s and %s" (pp_v v1) (pp_v v2)
+    | (Var _,_)|(_,Var _)
+      -> raise Undetermined
+
+  let clrperm c x =
+    let result = andnot c (Scalar.shift_right_logical x 110) in
+    let tagclear = cap_is_sealed c in
+    Scalar.set_tag (Scalar.get_tag c && not tagclear) result
+
+  let cpytype key data =
+    let result = if cap_is_sealed data
+      then Scalar.logor (hi64 key) (cap_get_object_type data)
+      else Scalar.logor key (ones 64) in
+    let tagclear = cap_is_sealed key in
+    Scalar.set_tag (Scalar.get_tag key && not tagclear) result
+
+  let cthi c x =
+    let result = Scalar.logor (Scalar.shift_left x 64) (lo64 c) in
+    Scalar.set_tag false result
+
+  let cseal v1 v2 =
+    let otype = lo64 v2 in
+    if Scalar.compare (Scalar.logand otype (ones 15)) (ones 15) <> 0 &&
+      check_seal v1 v2
+    then cap_set_object_type v1 otype
+    else v1
+
+  let capastrip v = match v with
+  | Val (Symbolic ((s,t,_),o)) -> Val (Symbolic ((s,t,0),o))
+  | Val cst -> Warn.user_error "Illegal capastrip on %s" (Cst.pp_v cst)
+  | Var _ -> raise Undetermined
 
   let op1 op =
     let open! Scalar in
@@ -277,21 +594,38 @@ module Make(Cst:Constant.S) = struct
   | LeftShift k ->
       unop  op (fun s -> Scalar.shift_left s k)
   | LogicalRightShift k ->
-      unop op (fun s -> Scalar.shift_right_logical s k)
+      unop_c op (fun s -> Scalar.shift_right_logical s k)
   | SignExtendWord _ ->
       Warn.fatal "sxtw op not implemented yet"
   | AddK k -> add_konst k
   | AndK k -> unop op (fun s -> Scalar.logand s (Scalar.of_string k))
   | Mask sz -> maskop op sz
   | TagLoc -> tagloc
+  | CapaTagLoc -> capatagloc
   | TagExtract -> tagextract
   | LocExtract -> locextract
   | UnSetXBits (nb, k) ->
       unop op
         (fun s -> logand (lognot (mask_many nb k)) s)
+  | CapaGetTag -> unop_c op (fun s -> bool_to_scalar (Scalar.get_tag s))
+  | CheckSealed -> unop_c op (fun s -> Scalar.logand (Scalar.shift_right_logical s 95) (ones 15))
+  | CapaStrip -> capastrip
 
   let op op = match op with
   | Add -> add
+  | Alignd -> binop op alignd
+  | Alignu -> binop op alignu
+  | CapaAdd -> capaadd
+  | Build -> binop_cs_cs op build
+  | ClrPerm -> binop_cs_c op clrperm
+  | CpyType -> binop_c_cs op cpytype
+  | CSeal -> binop_cs_c op cseal
+  | Cthi -> binop_cs_c op cthi
+  | Seal -> binop_cs_c op seal
+  | SetValue -> setvalue
+  | CapaSub -> binop op capasub
+  | CapaSubs -> binop op capasubs
+  | Unseal -> binop_cs_c op unseal
   | Sub -> sub
   | Mul -> binop op (Scalar.mul)
   | Div -> binop op (Scalar.div)
@@ -301,7 +635,7 @@ module Make(Cst:Constant.S) = struct
   | Or -> orop
   | Xor -> xor
   | Nor -> binop op (fun x1 x2 -> Scalar.lognot (Scalar.logor x1 x2))
-  | AndNot2 -> binop op (fun x1 x2 -> Scalar.logand x1 (Scalar.lognot x2))
+  | AndNot2 -> binop op andnot
   | ShiftRight ->
       binop op (fun x y -> Scalar.shift_right_logical x (Scalar.to_int y))
   | ShiftLeft ->
@@ -319,6 +653,9 @@ module Make(Cst:Constant.S) = struct
       binop op
         (fun x y -> if Scalar.lt x y then x else y)
   | SetTag -> settag
+  | CapaSetTag -> binop_cs_c op (fun c x -> Scalar.set_tag (scalar_to_bool x) c)
+  | SquashMutable -> fun v1 v2 -> binop_cs_cs op cap_squash_post_load_cap v2 v1
+  | CheckPerms perms -> binop_cs_cs_c op (check_perms perms)
 
   let op3 If v1 v2 v3 = match v1 with
   | Val (Concrete x) -> if scalar_to_bool x then v2 else v3

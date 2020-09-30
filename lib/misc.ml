@@ -704,3 +704,9 @@ let clean_name n =
 
 let add_atag = sprintf "%s.atag"
 and check_atag s = Filename.check_suffix s ".atag"
+
+let add_ctag = sprintf "%s.ctag"
+and check_ctag s = Filename.check_suffix s ".ctag"
+let tr_ctag s =
+  assert (check_ctag s) ;
+  String.sub s 0 (String.length s - 5)

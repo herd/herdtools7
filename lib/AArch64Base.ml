@@ -325,6 +325,8 @@ let inverse_cond = function
   | GT -> LE
 
 type op = ADD | ADDS | SUB | SUBS | AND | ANDS | ORR | EOR | ASR
+type gc = CFHI | GCFLGS | GCPERM | GCSEAL | GCTAG | GCTYPE | GCVALUE
+type sc = CLRPERM | CTHI | SCFLGS | SCTAG | SCVALUE
 type variant = V32 | V64 | V128
 
 let pp_variant = function
@@ -455,6 +457,23 @@ type 'k kinstruction =
   | I_STR of variant * reg * reg * 'k kr
   | I_STLR of variant * reg * reg
   | I_STXR of variant * st_type * reg * reg * reg
+(* Morello *)
+  | I_ALIGND of reg * reg * 'k kr
+  | I_ALIGNU of reg * reg * 'k kr
+  | I_BUILD of reg * reg * reg
+  | I_CHKEQ of reg * reg
+  | I_CHKSLD of reg
+  | I_CHKTGD of reg
+  | I_CLRTAG of reg * reg
+  | I_CPYTYPE of reg * reg * reg
+  | I_CPYVALUE of reg * reg * reg
+  | I_CSEAL of reg * reg * reg
+  | I_GC of gc * reg * reg
+  | I_LDCT of reg * reg
+  | I_SC of sc * reg * reg * reg
+  | I_SEAL of reg * reg * reg
+  | I_STCT of reg * reg
+  | I_UNSEAL of reg * reg * reg
 (* Idem for bytes and half words *)
   | I_LDRBH of bh * reg * reg * 'k kr
   | I_LDARBH of bh * ld_type * reg * reg
@@ -536,6 +555,22 @@ let pp_op = function
   | AND  -> "AND"
   | ANDS -> "ANDS"
   | ASR  -> "ASR"
+
+let pp_sc = function
+  | CLRPERM -> "CLRPERM"
+  | CTHI -> "CTHI"
+  | SCFLGS -> "SCFLGS"
+  | SCTAG -> "SCTAG"
+  | SCVALUE -> "SCVALUE"
+
+let pp_gc = function
+  | CFHI -> "CFHI"
+  | GCFLGS -> "GCFLGS"
+  | GCPERM -> "GCPERM"
+  | GCSEAL -> "GCSEAL"
+  | GCTAG -> "GCTAG"
+  | GCTYPE -> "GCTYPE"
+  | GCVALUE -> "GCVALUE"
 
 let do_pp_instruction m =
   let pp_rrr memo v rt rn rm =
@@ -662,6 +697,39 @@ let do_pp_instruction m =
       pp_mem ("STLR"^pp_bh bh) V32 r1 r2 m.k0
   | I_STXRBH (bh,t,r1,r2,r3) ->
       pp_stxr (strbh_memo bh t) V32 r1 r2 r3
+(* Morello *)
+  | I_ALIGND (r1,r2,k) ->
+      sprintf "ALIGND %s,%s,%s" (pp_creg r1) (pp_creg r2) (pp_kr false true k)
+  | I_ALIGNU (r1,r2,k) ->
+      sprintf "ALIGNU %s,%s,%s" (pp_creg r1) (pp_creg r2) (pp_kr false true k)
+  | I_BUILD (r1,r2,r3) ->
+      sprintf "BUILD %s,%s,%s" (pp_creg r1) (pp_creg r2) (pp_creg r3)
+  | I_CHKEQ (r1,r2) ->
+      sprintf "CHKEQ %s,%s" (pp_creg r1) (pp_creg r2)
+  | I_CHKSLD (r1) ->
+      sprintf "CHKSLD %s" (pp_creg r1)
+  | I_CHKTGD (r1) ->
+      sprintf "CHKTGD %s" (pp_creg r1)
+  | I_CLRTAG (r1,r2) ->
+      sprintf "CLRTAG %s,%s" (pp_creg r1) (pp_creg r2)
+  | I_CPYTYPE (r1,r2,r3) ->
+      sprintf "CPYTYPE %s,%s,%s" (pp_creg r1) (pp_creg r2) (pp_creg r3)
+  | I_CPYVALUE (r1,r2,r3) ->
+      sprintf "CPYVALUE %s,%s,%s" (pp_creg r1) (pp_creg r2) (pp_creg r3)
+  | I_CSEAL (r1,r2,r3) ->
+      sprintf "CSEAL %s,%s,%s" (pp_creg r1) (pp_creg r2) (pp_creg r3)
+  | I_GC (op,r1,r2) ->
+      sprintf "%s %s,%s" (pp_gc op) (pp_xreg r1) (pp_creg r2)
+  | I_LDCT (r1,r2) ->
+      sprintf "LDCT %s,[%s]" (pp_xreg r1) (pp_xreg r2)
+  | I_SC (op,r1,r2,r3) ->
+      sprintf "%s %s,%s,%s" (pp_sc op) (pp_creg r1) (pp_creg r2) (pp_xreg r3)
+  | I_SEAL (r1,r2,r3) ->
+      sprintf "SEAL %s,%s,%s" (pp_creg r1) (pp_creg r2) (pp_creg r3)
+  | I_STCT (r1,r2) ->
+      sprintf "STCT %s,[%s]" (pp_xreg r1) (pp_xreg r2)
+  | I_UNSEAL (r1,r2,r3) ->
+      sprintf "UNSEAL %s,%s,%s" (pp_creg r1) (pp_creg r2) (pp_creg r3)
 (* CAS *)
   | I_CAS (v,rmw,r1,r2,r3) ->
       sprintf "%s %s,%s,[%s]" (cas_memo rmw) (pp_vreg v r1) (pp_vreg v r2) (pp_xreg r3)
@@ -776,19 +844,27 @@ let fold_regs (f_regs,f_sregs) =
     -> c
   | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_BLR r | I_BR r | I_RET (Some r)
   | I_MOV (_,r,_) | I_MOVZ (_,r,_,_) |  I_ADDR (r,_) | I_IC (_,r) | I_DC (_,r) | I_MRS (r,_)
-  | I_TBNZ (_,r,_,_) | I_TBZ (_,r,_,_) -> fold_reg r c
+  | I_TBNZ (_,r,_,_) | I_TBZ (_,r,_,_)
+  | I_CHKSLD r | I_CHKTGD r
+    -> fold_reg r c
   | I_LDAR (_,_,r1,r2) | I_STLR (_,r1,r2) | I_STLRBH (_,r1,r2)
   | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2)
   | I_STOP (_,_,_,r1,r2) | I_STOPBH (_,_,_,r1,r2)
   | I_RBIT (_,r1,r2) | I_LDR_P (_,r1,r2,_)
   | I_LDG (r1,r2,_) | I_STZG (r1,r2,_) | I_STG (r1,r2,_)
+  | I_CHKEQ (r1,r2) | I_CLRTAG (r1,r2) | I_GC (_,r1,r2) | I_LDCT (r1,r2)
+  | I_STCT (r1,r2)
     -> fold_reg r1 (fold_reg r2 c)
   | I_LDR (_,r1,r2,kr,_) | I_STR (_,r1,r2,kr)
   | I_OP3 (_,_,r1,r2,kr,_)
   | I_LDRBH (_,r1,r2,kr) | I_STRBH (_,r1,r2,kr)
+  | I_ALIGND (r1,r2,kr) | I_ALIGNU (r1,r2,kr)
     -> fold_reg r1 (fold_reg r2 (fold_kr kr c))
   | I_CSEL (_,r1,r2,r3,_,_)
   | I_STXR (_,_,r1,r2,r3) | I_STXRBH (_,_,r1,r2,r3)
+  | I_BUILD (r1,r2,r3) | I_CPYTYPE (r1,r2,r3) | I_CPYVALUE (r1,r2,r3)
+  | I_CSEAL (r1,r2,r3) | I_SEAL (r1,r2,r3) | I_UNSEAL (r1,r2,r3)
+  | I_SC (_,r1,r2,r3)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_LDP (_,_,r1,r2,r3,kr)
   | I_STP (_,_,r1,r2,r3,kr)
@@ -859,6 +935,39 @@ let map_regs f_reg f_symb =
       I_STXR (v,t,map_reg r1,map_reg r2,map_reg r3)
   | I_STXRBH (bh,t,r1,r2,r3) ->
       I_STXRBH (bh,t,map_reg r1,map_reg r2,map_reg r3)
+(* Morello *)
+  | I_ALIGND (r1,r2,k) ->
+      I_ALIGND(map_reg r1,map_reg r2,k)
+  | I_ALIGNU (r1,r2,k) ->
+      I_ALIGNU(map_reg r1,map_reg r2,k)
+  | I_BUILD (r1,r2,r3) ->
+      I_BUILD(map_reg r1,map_reg r2,map_reg r3)
+  | I_CHKEQ (r1,r2) ->
+      I_CHKEQ(map_reg r1,map_reg r2)
+  | I_CHKSLD (r1) ->
+      I_CHKSLD(map_reg r1)
+  | I_CHKTGD (r1) ->
+      I_CHKTGD(map_reg r1)
+  | I_CLRTAG (r1,r2) ->
+      I_CLRTAG(map_reg r1,map_reg r2)
+  | I_CPYTYPE (r1,r2,r3) ->
+      I_CPYTYPE(map_reg r1,map_reg r2,map_reg r3)
+  | I_CPYVALUE (r1,r2,r3) ->
+      I_CPYVALUE(map_reg r1,map_reg r2,map_reg r3)
+  | I_CSEAL (r1,r2,r3) ->
+      I_CSEAL(map_reg r1,map_reg r2,map_reg r3)
+  | I_GC (op,r1,r2) ->
+      I_GC(op,map_reg r1,map_reg r2)
+  | I_LDCT (r1,r2) ->
+      I_LDCT(map_reg r1,map_reg r2)
+  | I_SC (op,r1,r2,r3) ->
+      I_SC(op,map_reg r1,map_reg r2,map_reg r3)
+  | I_SEAL (r1,r2,r3) ->
+      I_SEAL(map_reg r1,map_reg r2,map_reg r3)
+  | I_STCT (r1,r2) ->
+      I_STCT(map_reg r1,map_reg r2)
+  | I_UNSEAL (r1,r2,r3) ->
+      I_UNSEAL(map_reg r1,map_reg r2,map_reg r3)
 (* Byte and Half loads and stores *)
   | I_LDRBH (v,r1,r2,kr) ->
      I_LDRBH (v,map_reg r1,map_reg r2,map_kr kr)
@@ -970,6 +1079,9 @@ let get_next = function
   | I_DC _
   | I_MRS _
   | I_STG _| I_STZG _|I_LDG _
+  | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _
+  | I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|I_LDCT _|I_SC _|I_SEAL _|I_STCT _
+  | I_UNSEAL _
     -> [Label.Next;]
 
 include Pseudo.Make
@@ -1023,6 +1135,9 @@ include Pseudo.Make
         | I_IC _
         | I_DC _
         | I_MRS _
+        | I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _|I_CPYTYPE _
+        | I_CPYVALUE _|I_CSEAL _|I_GC _|I_LDCT _|I_SC _|I_SEAL _|I_STCT _
+        | I_UNSEAL _
             as keep -> keep
         | I_LDR (v,r1,r2,kr,s) -> I_LDR (v,r1,r2,kr_tr kr,ap_shift k_tr s)
         | I_LDR_P (v,r1,r2,k) -> I_LDR_P (v,r1,r2,k_tr k)
@@ -1039,6 +1154,8 @@ include Pseudo.Make
         | I_MOV (v,r,k) -> I_MOV (v,r,kr_tr k)
         | I_MOVZ (v,r,k,s) -> I_MOVZ (v,r,k_tr k,ap_shift k_tr s)
         | I_OP3 (v,op,r1,r2,kr,s) -> I_OP3 (v,op,r1,r2,kr_tr kr,ap_shift k_tr s)
+        | I_ALIGND (r1,r2,k) -> I_ALIGND (r1,r2,kr_tr k)
+        | I_ALIGNU (r1,r2,k) -> I_ALIGNU (r1,r2,kr_tr k)
 
 
       let get_naccesses = function
@@ -1056,6 +1173,8 @@ include Pseudo.Make
           -> 2
         | I_LDR_P _ (* reads, stores, then post-index stores *)
           -> 3
+        | I_LDCT _ | I_STCT _
+          -> 4
         | I_NOP
         | I_B _ | I_BR _
         | I_BL _ | I_BLR _
@@ -1074,6 +1193,9 @@ include Pseudo.Make
         | I_ADDR _
         | I_RBIT _
         | I_MRS _
+        | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _
+        | I_CLRTAG _|I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|I_SC _|I_SEAL _
+        | I_UNSEAL _
           -> 0
 
       let fold_labels k f = function

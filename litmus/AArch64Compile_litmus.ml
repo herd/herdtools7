@@ -739,6 +739,11 @@ let pp_shifter = function
     | I_STG _| I_STZG _|I_LDG _ ->
         Warn.fatal "No litmus output for instruction %s"
           (dump_instruction ins)
+    | I_ALIGND _|I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|
+      I_CLRTAG _|I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|I_LDCT _|I_SC _|
+      I_SEAL _|I_STCT _|I_UNSEAL _ ->
+        Warn.fatal "No litmus output for instruction %s"
+            (dump_instruction ins)
 
     let no_tr lbl = lbl
     let branch_neq r i lab k = cmpk V32 r i::bcc no_tr NE lab::k

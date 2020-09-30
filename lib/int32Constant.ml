@@ -40,6 +40,9 @@ module Int32Scalar = struct
     | Word -> fun v -> v
     | Quad -> Warn.fatal "make 32 value with quad mask"
     | S128 -> Warn.fatal "make 32 value with s128 mask"
+
+  let get_tag _ = assert false
+  let set_tag _ = assert false
 end
 
 include SymbConstant.Make(Int32Scalar)
