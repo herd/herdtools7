@@ -305,7 +305,7 @@ end = struct
   | _ -> false
 
   let is_invalid_val = let open Constant in function
-  | Some (A.V.Val (PteVal v)) -> V.is_zero (V.intToV v.valid) 
+  | Some (A.V.Val (PteVal v)) -> V.is_zero (V.intToV v.PTEVal.valid) 
   | _ -> false
 
   let invalid_pte act = is_invalid_val (written_of act) || is_invalid_val (read_of act)
