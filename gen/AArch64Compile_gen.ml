@@ -112,10 +112,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       match sz with
       | Byte -> I_LDRBH (B,r1,r2,K o)
       | Short -> I_LDRBH (H,r1,r2,K o)
-      | Word -> I_LDR (V32,r1,r2,K o)
-      | Quad -> I_LDR (V64,r1,r2,K o)
+      | Word -> I_LDR (V32,r1,r2,K o, S_NOEXT)
+      | Quad -> I_LDR (V64,r1,r2,K o, S_NOEXT)
 
-    let do_ldr v r1 r2 = I_LDR (v,r1,r2,K 0)
+    let do_ldr v r1 r2 = I_LDR (v,r1,r2,K 0, S_NOEXT)
     let ldr = do_ldr vloc
     let ldg r1 r2 = I_LDG (r1,r2,K 0)
     let ldar r1 r2 = I_LDAR (vloc,AA,r1,r2)
@@ -123,7 +123,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let ldxr r1 r2 = I_LDAR (vloc,XX,r1,r2)
     let ldaxr r1 r2 = I_LDAR (vloc,AX,r1,r2)
     let sxtw r1 r2 = I_SXTW (r1,r2)
-    let do_ldr_idx v r1 r2 idx = I_LDR (v,r1,r2,RV (vloc,idx))
+    let do_ldr_idx v r1 r2 idx = I_LDR (v,r1,r2,RV (vloc,idx), S_NOEXT)
     let ldr_idx = do_ldr_idx vloc
 
 
@@ -132,8 +132,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       match sz with
       | Byte -> I_LDRBH (B,r1,r2,RV (v,idx))
       | Short -> I_LDRBH (H,r1,r2,RV (v,idx))
-      | Word -> I_LDR (V32,r1,r2,RV (v,idx))
-      | Quad -> I_LDR (V64,r1,r2,RV (v,idx))
+      | Word -> I_LDR (V32,r1,r2,RV (v,idx), S_NOEXT)
+      | Quad -> I_LDR (V64,r1,r2,RV (v,idx), S_NOEXT)
 
     let str_mixed sz o r1 r2 =
       let open MachSize in

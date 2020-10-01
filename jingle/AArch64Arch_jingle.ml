@@ -25,6 +25,16 @@ include Arch.MakeArch(struct
     | K(MetaConst.Int i),K(j) when i=j -> Some subs
     | _ -> None
 
+  let match_shift s s' subs =  match s,s' with
+    | S_LSL (MetaConst.Meta m), S_LSL y
+    | S_LSR (MetaConst.Meta m), S_LSR y
+    | S_ASR (MetaConst.Meta m), S_ASR y -> add_subs [(Cst(m,y))] subs
+    | S_LSL (MetaConst.Int m), S_LSL y
+    | S_LSR (MetaConst.Int m), S_LSR y
+    | S_ASR (MetaConst.Int m), S_ASR y when m=y -> Some subs
+    | S_SXTW, S_SXTW | S_UXTW, S_UXTW | S_NOEXT, S_NOEXT -> Some subs
+    | _ -> None
+
   let match_instr subs pattern instr = match pattern,instr with
     | I_NOP,I_NOP -> Some subs
     | I_FENCE fp,I_FENCE fi when fp = fi
@@ -56,7 +66,15 @@ include Arch.MakeArch(struct
         add_subs
           [Reg(sr_name r1,r1'); Reg(sr_name r2,r2'); Reg(sr_name r3,r3')]
           subs
-    | I_LDR(_,r1,r2,kr),I_LDR(_,r1',r2',kr')
+    | I_LDR_P(_,r1,r2,k),I_LDR_P(_,r1',r2',k')
+      ->
+        match_kr subs (K k) (K k') >>>
+        add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
+    | I_LDR(_,r1,r2,kr,s),I_LDR(_,r1',r2',kr',s')
+      ->
+        match_kr subs kr kr' >>>
+        match_shift s s' >>>
+        add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
     | I_STR(_,r1,r2,kr),I_STR(_,r1',r2',kr')
       ->
         match_kr subs kr kr' >>>
@@ -161,11 +179,17 @@ include Arch.MakeArch(struct
         conv_reg r2 >> fun r2 ->
         conv_reg r3 >! fun r3 ->
         I_STXRBH(a,b,r1,r2,r3)
-    | I_LDR(a,r1,r2,kr) ->
+    | I_LDR(a,r1,r2,kr,s) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
+        find_shift s >> fun s ->
         expl_kr kr >! fun kr ->
-        I_LDR(a,r1,r2,kr)
+        I_LDR(a,r1,r2,kr,s)
+    | I_LDR_P(a,r1,r2,k) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        find_cst k >! fun k ->
+        I_LDR_P(a,r1,r2,k)
     | I_LDP(t,a,r1,r2,r3,kr) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->

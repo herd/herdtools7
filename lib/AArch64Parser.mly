@@ -146,18 +146,29 @@ k:
 | NUM  { MetaConst.Int $1 }
 | META { MetaConst.Meta $1 }
 
+k0:
+| { None }
+| COMMA k { Some $2}
+
 kr:
 | k { A.K $1 }
 | xreg { A.RV (A.V64,$1) }
 | wreg  { A.RV (A.V32,$1) }
 
+kr_shift:
+| k                { A.K $1, A.S_NOEXT }
+| xreg             { (A.RV (A.V64,$1)),  A.S_NOEXT }
+| wreg             { (A.RV (A.V32,$1)),  A.S_NOEXT }
+| wreg COMMA shift { (A.RV (A.V32, $1)), $3 }
+| xreg COMMA shift { (A.RV (A.V64, $1)), $3 }
+
 kr0:
+| { A.K (MetaConst.zero), A.S_NOEXT }
+| COMMA kr_shift { $2 }
+
+kr0_no_shift:
 | { A.K (MetaConst.zero) }
 | COMMA k { A.K $2 }
-| COMMA xreg {  A.RV (A.V64,$2) }
-| COMMA wreg {  A.RV (A.V32,$2) }
-| COMMA wreg COMMA SXTW {  A.RV (A.V32,$2) }
-/* For indexed accesses SXTW is considered always present */
 
 kwr:
 | k { A.K $1 }
@@ -219,19 +230,25 @@ instr:
 | TBZ reg COMMA NUM COMMA label_addr
   { let v,r = $2 in A.I_TBZ (v,r,MetaConst.Int $4,$6) }
 /* Memory */
-| LDR reg COMMA LBRK xreg kr0 RBRK
-  { let v,r = $2 in A.I_LDR (v,r,$5,$6) }
-| ldp_instr wreg COMMA wreg COMMA LBRK xreg kr0 RBRK
+/* must differentiate between regular and post-indexed load */
+| LDR reg COMMA LBRK xreg kr0 RBRK k0
+  { let v,r    = $2 in
+    let kr, os = $6 in
+    if Option.is_some $8 && kr = A.K MetaConst.zero then
+      A.I_LDR_P (v,r,$5,Option.get $8)
+    else
+      A.I_LDR (v,r,$5,kr,os) }
+| ldp_instr wreg COMMA wreg COMMA LBRK xreg kr0_no_shift RBRK
   { $1 A.V32 $2 $4 $7 $8 }
-| ldp_instr xreg COMMA xreg COMMA LBRK xreg kr0 RBRK
+| ldp_instr xreg COMMA xreg COMMA LBRK xreg kr0_no_shift RBRK
   { $1 A.V64 $2 $4 $7 $8 }
-| stp_instr wreg COMMA wreg COMMA LBRK xreg kr0 RBRK
+| stp_instr wreg COMMA wreg COMMA LBRK xreg kr0_no_shift RBRK
   { $1 A.V32 $2 $4 $7 $8 }
-| stp_instr xreg COMMA xreg COMMA LBRK xreg kr0 RBRK
+| stp_instr xreg COMMA xreg COMMA LBRK xreg kr0_no_shift RBRK
   { $1 A.V64 $2 $4 $7 $8 }
-| LDRB wreg COMMA LBRK xreg kr0 RBRK
+| LDRB wreg COMMA LBRK xreg kr0_no_shift RBRK
   { A.I_LDRBH (A.B,$2,$5,$6) }
-| LDRH wreg COMMA LBRK xreg kr0 RBRK
+| LDRH wreg COMMA LBRK xreg kr0_no_shift RBRK
   { A.I_LDRBH (A.H,$2,$5,$6) }
 | LDAR reg COMMA LBRK xreg RBRK
   { let v,r = $2 in A.I_LDAR (v,A.AA,r,$5) }
@@ -257,11 +274,11 @@ instr:
   { A.I_LDARBH (A.B,A.AQ,$2,$5) }
 | LDAPRH wreg COMMA LBRK xreg RBRK
   { A.I_LDARBH (A.H,A.AQ,$2,$5) }
-| STR reg COMMA LBRK xreg kr0 RBRK
+| STR reg COMMA LBRK xreg kr0_no_shift RBRK
   { let v,r = $2 in A.I_STR (v,r,$5,$6) }
-| STRB wreg COMMA LBRK xreg kr0 RBRK
+| STRB wreg COMMA LBRK xreg kr0_no_shift RBRK
   { A.I_STRBH (A.B,$2,$5,$6) }
-| STRH wreg COMMA LBRK xreg kr0 RBRK
+| STRH wreg COMMA LBRK xreg kr0_no_shift RBRK
   { A.I_STRBH (A.H,$2,$5,$6) }
 | STLR reg COMMA LBRK xreg RBRK
   { let v,r = $2 in A.I_STLR (v,r,$5) }
@@ -348,11 +365,11 @@ instr:
 | SWPALH wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_SWPBH (A.H,A.RMW_AL,$2,$4,$7) }
 /* Memory Tagging */
-| STG xreg COMMA LBRK xreg kr0 RBRK
+| STG xreg COMMA LBRK xreg kr0_no_shift RBRK
   { A.I_STG ($2,$5,$6) }
-| STZG xreg COMMA LBRK xreg kr0 RBRK
+| STZG xreg COMMA LBRK xreg kr0_no_shift RBRK
   { A.I_STZG ($2,$5,$6) }
-| LDG xreg COMMA LBRK xreg kr0 RBRK
+| LDG xreg COMMA LBRK xreg kr0_no_shift RBRK
   { A.I_LDG ($2,$5,$6) }
 
 /* Fetch and ADD */

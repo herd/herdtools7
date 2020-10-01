@@ -229,12 +229,37 @@ module Make
 (* Memory instructions *)
 (***********************)
 
-      let get_ea rs kr ii = match kr with
-      | AArch64.K k ->
-          read_reg_ord rs ii >>= fun v -> M.add v (V.intToV k)
-      | AArch64.RV(_,r) ->
-          (read_reg_ord rs ii >>| read_reg_ord r ii) >>= fun (v1,v2) ->
-            M.add v1 v2
+      (* Apply a shift as monadic op *)
+      let shift s =
+        let open AArch64Base in
+        match s with
+          | S_NOEXT   -> M.unitT
+          | S_LSL(n)  -> fun x -> M.op (Op.ShiftLeft) x (V.intToV n)
+          | S_LSR(n)  -> fun x -> M.op (Op.ShiftRight) x (V.intToV n)
+          | S_ASR(n)  -> fun x -> M.op (Op.ASR) x (V.intToV n)
+          | S_SXTW -> fun x ->
+            let m = V.op1 (Op.LeftShift 31) V.one in
+            M.op Op.Xor x m
+            >>= fun v -> M.op Op.Sub v m
+          | S_UXTW->
+            Warn.fatal "UXTW barrel shift not supported yet"
+
+      let get_ea rs kr s ii =
+      let open AArch64Base in
+      match kr, s with
+      | K 0, S_NOEXT -> (* Immediate with no shift*)
+          read_reg_ord rs ii
+      | K k, s -> (* Immediate with offset, with shift *)
+          read_reg_ord rs ii
+          >>= fun v -> shift s (V.intToV k)
+          >>= M.add v
+      | RV(_,r), S_NOEXT -> (* register, no shift *)
+          (read_reg_ord rs ii >>| read_reg_ord r ii)
+          >>= fun (v1,v2) -> M.add v2 v1
+      | RV(_,r), s -> (* register, with shift *)
+          (read_reg_ord rs ii >>| read_reg_ord r ii)
+          >>= fun (v1,v2) -> shift s v2
+          >>= fun v2 -> M.add v1 v2
 
       let lift_memop mop ma ii =
         if memtag then
@@ -255,14 +280,26 @@ module Make
             do_write_mem sz an a v ii)
           ma ii
 
-      let ldr sz rd rs kr ii =
+      let ldr sz rd rs kr s ii =
         lift_memop
           (fun ma -> ma >>= fun a ->
            old_do_read_mem sz AArch64.N a ii >>= fun v ->
-           write_reg_sz_non_mixed sz rd v ii )
-          (get_ea rs kr ii) ii
+           write_reg rd v ii )
+          (get_ea rs kr s ii) ii
 
-      and str sz rs rd kr ii = do_str sz AArch64.N rs (get_ea rd kr ii) ii
+      (* Post-Indexed load immediate *)
+      and ldr_p sz rd rs k ii =
+        assert (k >= -256 && k <= 255);
+        let open AArch64Base in
+          (read_reg_ord rs ii)
+          >>= fun a1 ->
+              (read_mem sz rd a1 ii)
+              >>|
+              (M.add a1 (V.intToV k)
+                >>= fun v -> write_reg rs v ii)
+          >>! B.Next
+
+      and str sz rs rd kr ii = do_str sz AArch64.N rs (get_ea rd kr AArch64.S_NOEXT ii) ii
 
       and stlr sz rs rd ii = do_str sz AArch64.L rs (read_reg_ord rd ii) ii
 
@@ -304,21 +341,6 @@ module Make
         | Inc -> M.op Op.Add v V.one
         | Neg -> M.op Op.Sub V.zero v
         | Inv -> Warn.fatal "size dependent inverse not implemented"
-
-      (* Apply a shift as monadic op *)
-      let shift s =
-        let open AArch64Base in
-        match s with
-          | S_NOEXT   -> M.unitT
-          | S_LSL(n)  -> fun x -> M.op (Op.ShiftLeft) x (V.intToV n)
-          | S_LSR(n)  -> fun x -> M.op (Op.ShiftRight) x (V.intToV n)
-          | S_ASR(n)  -> fun x -> M.op (Op.ASR) x (V.intToV n)
-          | S_SXTW -> fun x ->
-            let m = V.op1 (Op.LeftShift 31) V.one in
-            M.op Op.Xor x m
-            >>= fun v -> M.op Op.Sub v m
-          | S_UXTW->
-            Warn.fatal "UXTW barrel shift not supported yet"
 
       let rmw_amo_read rmw sz = let open AArch64 in match rmw with
       | RMW_A|RMW_AL -> old_do_read_mem sz XA
@@ -438,12 +460,15 @@ module Make
                   >>= fun () -> B.bccT v l
 
                       (* Load and Store *)
-        | I_LDR(var,rd,rs,kr) ->
+        | I_LDR(var,rd,rs,kr,s) ->
             let sz = tr_variant var in
-            ldr sz rd rs kr ii
+            ldr sz rd rs kr s ii
         | I_LDRBH (bh, rd, rs, kr) ->
             let sz = bh_to_sz bh in
-            ldr sz rd rs kr ii
+            ldr sz rd rs kr S_NOEXT ii
+        | I_LDR_P(var,rd,rs,k) ->
+            let sz = tr_variant var in
+            ldr_p sz rd rs k ii
 
         | I_LDAR(var,t,rd,rs) ->
             let sz = tr_variant var in
@@ -468,7 +493,7 @@ module Make
             if not memtag then Warn.user_error "STZG without -variant memtag" ;
             begin
               (read_reg_data MachSize.Quad rt ii >>= tag_extract) >>|
-              get_ea rn kr ii
+              get_ea rn kr AArch64.S_NOEXT ii
             end >>= fun (v,a) ->
             (M.op1 Op.TagLoc a >>| loc_extract a) >>= fun (atag,loc) ->
             (do_write_tag atag v ii >>| do_write_mem MachSize.Quad AArch64.N loc V.zero ii) >>! B.Next
@@ -477,14 +502,14 @@ module Make
             if not memtag then Warn.user_error "STG without -variant memtag" ;
             begin
               (read_reg_data MachSize.Quad rt ii >>= tag_extract) >>|
-              get_ea rn kr ii
+              get_ea rn kr S_NOEXT ii
             end >>= fun (v,a) ->
             M.op1 Op.TagLoc a  >>= fun a ->
             do_write_tag a v ii >>! B.Next
 
         | I_LDG (rt,rn,kr) ->
             if not memtag then Warn.user_error "LDG without -variant memtag" ;
-            get_ea rn kr ii  >>=
+            get_ea rn kr S_NOEXT ii  >>=
             fun a -> M.op1 Op.TagLoc a >>=
             fun atag -> do_read_tag atag ii
             >>= fun tag ->
