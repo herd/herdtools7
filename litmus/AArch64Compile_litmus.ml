@@ -381,7 +381,7 @@ let pp_shifter = function
         { empty_ins with
           memo = sprintf "%s ^wo0,^i0,[^i1]" memo ;
           inputs = [r2;r3;];
-          outputs = [r1;]; reg_env=[r3,voidstar; r2,quad; r1,quad; ]}
+          outputs = [r1;]; reg_env=[r3,voidstar; r2,quad; r1,word; ]}
 
 (* Compare and swap *)
     let type_of_variant = function
