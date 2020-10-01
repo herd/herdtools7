@@ -40,7 +40,7 @@ module A = AArch64Base
 %token B BR BEQ BNE BGE BGT BLE BLT CBZ CBNZ EQ NE GE GT LE LT TBZ TBNZ
 %token BL BLR RET
 %token LDR LDP LDNP STP STNP LDRB LDRH STR STRB STRH STLR STLRB STLRH
-%token CMP MOV ADR
+%token CMP MOV MOVZ ADR
 %token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH
 %token STXR STXRB STXRH STLXR STLXRB STLXRH
 %token <AArch64Base.op> OP
@@ -654,6 +654,14 @@ instr:
   { A.I_MOV (A.V64,$2,$4) }
 | MOV wreg COMMA kwr
   { A.I_MOV (A.V32,$2,$4) }
+| MOVZ xreg COMMA NUM
+  { A.I_MOVZ (A.V64,$2, A.K (MetaConst.Int $4), A.S_NOEXT) }
+| MOVZ xreg COMMA NUM COMMA LSL k
+  { A.I_MOVZ (A.V64,$2, A.K (MetaConst.Int $4), A.S_LSL $7) }
+| MOVZ wreg COMMA kwr
+  { A.I_MOVZ (A.V32,$2,$4, A.S_NOEXT) }
+| MOVZ wreg COMMA kwr COMMA LSL k
+  { A.I_MOVZ (A.V32,$2,$4, A.S_LSL $7) }
 | ADR xreg COMMA NAME
   { A.I_ADDR ($2,$4) }
 | SXTW xreg COMMA wreg
