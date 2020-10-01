@@ -300,7 +300,7 @@ module Make
                   Misc.group_iteri
                     (fun (_,v) (_,w) -> A.V.compare v w = 0)
                     (fun k (_,v) fs ->
-                      let prf = if k > 0 then "} else if" else "if"
+                      let prf = if k > 0 then "else if" else "if"
                       and test =
                         sprintf "idx_loc == %s" (dump_addr_idx (A.V.pp_v v)) in
                       O.fii "%s (%s) {" prf test ;
