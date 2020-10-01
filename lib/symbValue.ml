@@ -195,6 +195,18 @@ module Make(Cst:Constant.S) = struct
       binop Op.Lsr (fun x y -> Scalar.shift_right_logical x (Scalar.to_int y))
         v1 v2
 
+  and andnot2 v1 v2 = match v1,v2 with
+  | Val (PteVal p),Val (Concrete v) when Scalar.compare v (Scalar.one) = 0 ->
+        let msg =
+          sprintf
+            "Illegal operation %s on constants %s and %s"
+            (Op.pp_op Op.AndNot2) (pp_v v1) (pp_v v2) in
+        let p = { p with PTEVal.valid=0; } in
+        raise (Cst.Result (`AArch64,PteVal p,msg))
+  | _,_ ->
+      binop Op.AndNot2
+        (fun x1 x2 -> Scalar.logand x1 (Scalar.lognot x2)) v1 v2
+
   let bool_to_v f v1 v2 = match f v1 v2 with
   | false -> zero
   | true -> one
@@ -390,7 +402,7 @@ module Make(Cst:Constant.S) = struct
   | Or -> orop
   | Xor -> xor
   | Nor -> binop op (fun x1 x2 -> Scalar.lognot (Scalar.logor x1 x2))
-  | AndNot2 -> binop op (fun x1 x2 -> Scalar.logand x1 (Scalar.lognot x2))
+  | AndNot2 -> andnot2
   | ShiftRight ->
       binop op (fun x y -> Scalar.shift_right_logical x (Scalar.to_int y))
   | ShiftLeft ->
