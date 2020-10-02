@@ -60,6 +60,7 @@ module type S = sig
       end)
 
   val find_offset : P.code list -> int -> string -> int
+  val code_exists : (P.ins -> bool) -> t -> bool
 end
 
 
@@ -104,5 +105,10 @@ struct
         module C = C
         module P = P
       end)
+
   let find_offset code p lbl = P.find_offset code p lbl
+  let code_exists p t =
+    let src = t.src in
+    let code = src.MiscParser.prog in
+    List.exists (P.code_exists p) code
 end

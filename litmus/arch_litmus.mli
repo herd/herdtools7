@@ -57,6 +57,9 @@ module type Base = sig
   val pp_reg : reg -> string
 
   val typeof : reg -> CType.t
+
+  val features : ((instruction -> bool) * string) list
+
 end
 
 module type K = sig
@@ -91,5 +94,7 @@ module type S =
     include ArchExtra_litmus.S with module I.V = V
     and type I.arch_reg = reg
 
+    val features : ((instruction -> bool) * string) list
     val nop : instruction
+
   end

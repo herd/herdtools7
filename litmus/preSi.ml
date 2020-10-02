@@ -51,9 +51,12 @@ module Make
       val is_tb : bool
       val ascall : bool
     end)
-    (P:sig type code end)
-    (A:Arch_litmus.Base)
-    (T:Test_litmus.S with type P.code = P.code and module A = A)
+    (P:sig type ins type code end)
+    (A:Arch_litmus.Base with type instruction = P.ins)
+    (T:Test_litmus.S with
+     type P.ins = P.ins
+     and type P.code = P.code
+     and module A = A)
     (O:Indent.S)
     (Lang:Language.S
     with type arch_reg = T.A.reg and type t = A.Out.t
@@ -1731,6 +1734,13 @@ let dump_thread_code env (proc,(out,(_outregs,envVolatile)))  =
             else if db.some_ha then  Some "0b0001","access flag"
             else None,"" in
           O.o "static void feature_check(void) {" ;
+(* Check if hardware features are present *)
+          List.iter
+            (fun (p,name) ->
+              if T.code_exists p test then
+                O.fi "if (!check_%s()) fatal(\"Test %s, required hardware feature '%s' not available on this system\");" name doc.Name.name name)
+            A.features ;
+(* Check ability to enable features *)
           begin match to_check with
           | None -> ()
           | Some b ->

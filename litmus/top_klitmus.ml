@@ -193,8 +193,10 @@ module Top(O:Config)(Tar:Tar.S) = struct
     end
     module Pseudo =
       struct
+        type ins
         include DumpCAst
         let find_offset _ _ _ =  Warn.user_error "No label value in C"
+        let code_exists _ _ = false
       end
     module Lang = CLang.Make(CLang.DefaultConfig)
         (struct

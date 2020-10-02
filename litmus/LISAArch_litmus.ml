@@ -52,5 +52,6 @@ module Make(V:Constant.S) = struct
           | _ -> false
         let warn _t1 _t2 = false
       end)
+  let features = []
   let nop = Pnop
 end

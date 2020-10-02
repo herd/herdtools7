@@ -56,5 +56,6 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
         let error _ _ = false
         let warn _ _ = false
       end)
+  let features = []
   let nop = I_NOP
 end

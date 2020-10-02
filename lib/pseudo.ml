@@ -56,6 +56,9 @@ module type S = sig
 
 (* Find offest of label (may raise Not_found) *)
   val find_offset : string -> 'a kpseudo list -> int
+
+(* Does exist some instruction s.t. predicate yields true *)
+  val code_exists : (ins -> bool) -> pseudo list -> bool
 end
 
 (* Input signature *)
@@ -111,7 +114,9 @@ struct
     | Symbolic _ -> k
     | Macro (_,_) -> assert false
 
+  let pseudo_exists p = pseudo_fold (fun b i -> b || p i) false
   let pseudo_iter f ins = pseudo_fold (fun () ins -> f ins) () ins
+
 
 (* Fold/Map over labels *)
 
@@ -152,4 +157,11 @@ struct
       | (Nop|Label (_,Nop))::is -> find_rec k is
       | _::is -> find_rec (k+1) is in
     find_rec 0
+
+  let code_exists p =
+    let rec exists = function
+      | [] -> false
+      | ins::code -> pseudo_exists p ins || exists code in
+    exists
+
 end

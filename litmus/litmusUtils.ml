@@ -49,6 +49,7 @@ module Hash(O:Warn.Config) =
 
 module Pseudo(A:Arch_litmus.S) = struct
 
+  type ins = A.instruction
   type code = MiscParser.proc * A.pseudo list
 
   let rec fmt_io io = match io with
@@ -81,4 +82,6 @@ module Pseudo(A:Arch_litmus.S) = struct
   let find_offset code p lbl =
     let is = find_code p code in
     A.find_offset lbl is
+
+  let code_exists p (_,c) = A.code_exists p c
 end

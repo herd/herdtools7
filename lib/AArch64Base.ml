@@ -1161,6 +1161,13 @@ include Pseudo.Make
         | ins -> ins
     end)
 
+(* Atomic-modify instruction *)
+let is_atomic = function
+  | I_CAS _ | I_CASBH _ | I_SWP _ | I_SWPBH _
+  | I_LDOP _ | I_LDOPBH _ | I_STOP _ | I_STOPBH _
+      -> true
+  | _ -> false
+
 let get_macro _name = raise Not_found
 
 let base =  Internal 0

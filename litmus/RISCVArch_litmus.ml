@@ -28,5 +28,6 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
         let error _t1 _t2 = false
         and warn _t1 _t2 = false
       end)
-      let nop = INop
+  let features = []
+  let nop = INop
 end

@@ -25,4 +25,6 @@ module Hash : functor(O:Warn.Config) ->
   end
 
 module Pseudo : functor(A:Arch_litmus.S) ->
-  PseudoAbstract.S with type code = MiscParser.proc * A.pseudo list
+  PseudoAbstract.S with
+type ins = A.instruction
+and type code = MiscParser.proc * A.pseudo list

@@ -206,6 +206,15 @@ inline static void *read_elr_el1(void) {
 /* Hardware managment of access flag and dirty state */
 
 /* Feature check */
+
+inline static int check_atomic(void) {
+  uint64_t r ;
+  asm volatile("mrs %x0, id_aa64isar0_el1": "=r" (r));
+  r >>= 20 ;
+  r &= 0b1111 ;
+  return r == 0b0010;
+}
+
 inline static uint64_t get_hafdbs(void) {
   uint64_t r ;
   asm volatile("mrs %x0, id_aa64mmfr1_el1": "=r" (r));

@@ -89,4 +89,5 @@ module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) =
     | [] -> 0
 
   let typeof _ = assert false
+  let features = []
 end

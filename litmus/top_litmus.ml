@@ -163,7 +163,7 @@ end = struct
             with type arch_reg = A'.Out.arch_reg
              and type t = A'.Out.t
              and module RegMap = A'.RegMap)
-           (Pseudo:PseudoAbstract.S) =
+           (Pseudo:PseudoAbstract.S with type ins = A'.instruction) =
     struct
       module T = Test_litmus.Make(O)(A')(Pseudo)
       module R = Run_litmus.Make(O)(Tar)(T.D)
@@ -342,8 +342,10 @@ end = struct
 
       module Pseudo =
         struct
+          type ins = A'.instruction
           include DumpCAst
           let find_offset _ _ _ = Warn.user_error "No label value in C"
+          let code_exists _ _ = assert false
         end
 
       module Lang =
