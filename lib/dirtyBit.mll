@@ -69,7 +69,7 @@ let get info =
  | Some s ->
     try
       let xs = all [] (Lexing.from_string s) in
-      let has = List.filter (function (_,HA) -> true | _ -> false) xs
+      let has = List.filter (function (_,(HA|HD)) -> true | _ -> false) xs
       and hds = List.filter (function (_,HD) -> true | _ -> false) xs in
       let soft =
         filter_opt
@@ -77,12 +77,12 @@ let get info =
           xs in
       let tthm p = not (List.exists (Misc.int_eq p) soft) in
       let ha =
-        if List.exists (function None,HA -> true | _ -> false) has then
+        if List.exists (function None,(HA|HD) -> true | _ -> false) has then
           fun _ -> true
         else
           let xs = 
             filter_opt
-              (function (Some _ as p,HA) -> p | _ -> None)
+              (function (Some _ as p,(HA|HD)) -> p | _ -> None)
               has in
           fun proc -> List.exists (Misc.int_eq proc) xs
       and hd =
