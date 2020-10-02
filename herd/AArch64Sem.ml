@@ -426,6 +426,37 @@ module Make
           (read_reg_ord rn ii)
           ii
 
+      (* Temporary morello variation of CAS *)
+      let cas_morello sz rmw rs rt rn ii =
+        lift_memop
+          (read_reg_data sz rt ii)
+          (fun ma mv ->
+            let open AArch64 in
+            let read_mem sz = match rmw with
+            | RMW_A|RMW_AL -> old_do_read_mem sz XA
+            | RMW_L|RMW_P  -> old_do_read_mem sz X in
+            let mrs = read_reg_data sz rs ii in
+            let mrt = mv in
+            M.delay ma >>| M.delay mrs >>| M.delay mrt >>= fun (((_,ma),(_,mrs)),(_,mrt)) ->
+            let muncond = ma >>| mrs >>| mrt in
+            let mmem = ma >>= fun a -> read_mem sz a ii in
+            let write_rs mv = mv >>= fun v -> write_reg_sz_non_mixed sz rs v ii in
+            let branch = fun mrs mmem mavoid m1 m2 ->
+              let (++) = M.bind_ctrl_avoid mavoid in
+              (mrs >>| mmem >>= fun (rs,mem) -> (M.op Op.Eq rs mem) >>= fun cond ->
+                commit_pred ii >>! cond) ++ fun cond ->
+                  M.choiceT cond m1 m2 in
+            let mop = fun ma mv mmem ->
+              let write_mem a v = rmw_amo_write rmw sz a v ii in
+              M.aarch64_cas_ok_morello ma mv mmem write_mem in
+            M.delay mmem >>= fun (_,mmem) ->
+            branch mrs mmem (muncond >>| mmem)
+              (mop ma mrt mmem)
+              (mrt >>! ())
+            >>| write_rs mmem)
+          (read_reg_ord rn ii)
+          ii
+
       let ldop op sz rmw rs rt rn ii =
         lift_memop
           (read_reg_data sz rs ii)

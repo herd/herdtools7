@@ -420,6 +420,24 @@ Monad type:
       let cls = cl_a@cl_cv@cl_nv@cl_rm@cl_wm@cl_wrs@cl_eq  in
       eiid,(Evt.singleton ((),cls,es), None)
 
+(* Temporary morello variation of CAS *)
+    let aarch64_cas_ok_morello
+        (read_rn:'loc t) (read_rt: 'v t)
+        (read_mem: 'v t) (write_mem: 'loc -> 'v -> unit t)
+        eiid =
+      let eiid,read_rn = read_rn eiid in
+      let eiid,read_rt = read_rt eiid in
+      let a,cl_a,es_rn = Evt.as_singleton_nospecul read_rn
+      and nv,cl_nv,es_rt = Evt.as_singleton_nospecul read_rt in
+      let eiid,read_mem = read_mem eiid in
+      let eiid,write_mem = write_mem a nv eiid in
+      let _,cl_rm,es_rm = Evt.as_singleton_nospecul read_mem
+      and (),cl_wm,es_wm= Evt.as_singleton_nospecul write_mem in
+      let es =
+        E.aarch64_cas_ok_morello es_rn es_rt es_rm es_wm in
+      let cls = cl_a@cl_nv@cl_rm@cl_wm in
+      eiid,(Evt.singleton ((),cls,es), None)
+
     let has_no_spec (x,y) = assert(y=None); x
 
 (* Simple alternative *)

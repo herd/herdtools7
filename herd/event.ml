@@ -354,6 +354,10 @@ val same_instance : event -> event -> bool
           event_structure ->  event_structure ->  event_structure ->
             event_structure
 
+  val aarch64_cas_ok_morello :
+        event_structure -> event_structure -> event_structure ->
+          event_structure -> event_structure
+
 (* stu computation :
    stu rD rEA wEA wM ->
       rEA -data-> wEA,
@@ -1664,6 +1668,65 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
                                        (wrs.aligned))
                                        (rm.aligned))
                                        (wm.aligned) ;}
+
+(* Temporary morello variation of CAS *)
+    let aarch64_cas_ok_morello rn rt rm wm =
+      let output_rn = maximals rn
+      and output_rm = maximals rm
+      and input_rm = minimals rm
+      and input_wm = minimals wm in
+      { procs = [] ;
+        events =
+        EventSet.union4
+          rn.events rt.events rm.events wm.events ;
+        speculated =
+        if do_deps then
+          EventSet.union4
+            rn.speculated rt.speculated rm.speculated wm.speculated
+        else
+          rn.speculated;
+        po = po_union4 rn rt rm wm;
+        intra_causality_data =
+        EventRel.union
+          (EventRel.union4
+             rn.intra_causality_data
+             rt.intra_causality_data
+             rm.intra_causality_data
+             wm.intra_causality_data)
+          (EventRel.union3
+             (EventRel.cartesian output_rn input_rm)
+             (EventRel.cartesian output_rn input_wm)
+             (EventRel.cartesian (maximals rt) input_wm));
+        intra_causality_control =
+        EventRel.union
+          (EventRel.union4
+             rn.intra_causality_control
+             rt.intra_causality_control
+             rm.intra_causality_control
+             wm.intra_causality_control)
+          (EventRel.cartesian output_rm input_wm);
+        control =
+        (EventRel.union4
+           rn.control rt.control rm.control wm.control);
+        data_ports =
+        (EventSet.union4
+           rn.data_ports rt.data_ports rm.data_ports wm.data_ports);
+        success_ports =
+        (EventSet.union4
+           rn.success_ports rt.success_ports rm.success_ports wm.success_ports);
+        sca =
+        (EventSetSet.union4
+           rn.sca rt.sca rm.sca wm.sca);
+        mem_accesses =
+        (EventSet.union4
+           rn.mem_accesses rt.mem_accesses rm.mem_accesses wm.mem_accesses);
+        output = None;
+        aligned = List.append
+                    (List.append
+                      (List.append (rn.aligned)
+                                   (rt.aligned))
+                                   (rm.aligned))
+                                   (wm.aligned) ;}
 
 (* Store update composition, read data, read EA, write EA and  write Mem *)
 
