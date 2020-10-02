@@ -157,8 +157,8 @@ module Make
         commit_pred ii >>*= fun () ->
         M.choiceT cond m1 m2
 
-      let delayed_check_tags ma ii m1 m2 =
-        let (++) = M.bind_ctrl_avoid ma in
+      let delayed_check_tags ma mavoid ii m1 m2 =
+        let (++) = M.bind_ctrl_avoid mavoid in
         M.check_tags
           ma (fun a -> read_tag_mem a ii)
           (fun a tag1 -> tag_extract a  >>= fun tag2 -> M.op Op.Eq tag1 tag2)
@@ -264,28 +264,29 @@ module Make
           >>= fun (v1,v2) -> shift s v2
           >>= fun v2 -> M.add v1 v2
 
-      let lift_memop mop ma ii =
+      let lift_memop mv mop ma ii =
         if memtag then
-          M.delay ma >>= fun (_,ma) ->
-          let  mm = mop (ma >>= fun a -> loc_extract a) in
-          delayed_check_tags ma ii
-            (mm  >>! B.Next)
+          M.delay ma >>| M.delay mv >>= fun ((_,ma),(_,mv)) ->
+          let mm = mop (ma >>= fun a -> loc_extract a) mv in
+          delayed_check_tags ma (ma >>| mv) ii
+            (mm >>! B.Next)
             (let mfault = ma >>= fun a -> mk_fault a ii (Some "MTE lift_memop") in
-            if C.precision then  mfault >>! B.Exit
+            if C.precision then mfault >>| mv >>! B.Exit
             else (mfault >>| mm) >>! B.Next)
         else
-          mop ma >>! B.Next
+          mop ma mv >>! B.Next
 
       let do_str sz an rs ma ii =
         lift_memop
-          (fun ma ->
-            (ma >>| read_reg_data sz rs ii) >>= fun (a,v) ->
+          (read_reg_data sz rs ii)
+          (fun ma mv -> ma >>| mv >>= fun (a,v) ->
             do_write_mem sz an a v ii)
           ma ii
 
       let ldr sz rd rs kr s ii =
         lift_memop
-          (fun ma -> ma >>= fun a ->
+          (M.unitT M.A.V.zero)
+          (fun ma _ -> ma >>= fun a ->
            old_do_read_mem sz AArch64.N a ii >>= fun v ->
            write_reg_sz_non_mixed sz rd v ii )
           (get_ea rs kr s ii) ii
@@ -309,7 +310,8 @@ module Make
       and ldar sz t rd rs ii =
         let open AArch64 in
         lift_memop
-          (fun ma ->
+          (M.unitT M.A.V.zero)
+          (fun ma _ ->
             ma >>= fun a ->
               match t with
               | XX ->
@@ -343,10 +345,11 @@ module Make
       and stxr sz t rr rs rd ii =
         let open AArch64Base in
         lift_memop
-         (fun ma ->
+         (read_reg_data sz rs ii)
+         (fun ma mv ->
            M.riscv_store_conditional
              (read_reg_ord ResAddr ii)
-             (read_reg_data sz rs ii)
+             mv
              ma
              (write_reg ResAddr V.zero ii)
              (fun v -> write_reg rr v ii)
@@ -379,8 +382,9 @@ module Make
             | RMW_L|RMW_AL -> write_mem_release
             | RMW_P|RMW_A  -> write_mem in
             lift_memop
-              (fun ma ->
-                (read_reg_data sz r1 ii >>| ma) >>= fun (v,a) ->
+              (read_reg_data sz r1 ii)
+              (fun ma mv ->
+                (mv >>| ma) >>= fun (v,a) ->
                  write_mem sz a v ii)
               (read_reg_ord r3 ii)
               ii
@@ -388,8 +392,9 @@ module Make
             let read_mem = rmw_amo_read rmw
             and write_mem =  rmw_amo_write rmw in
             lift_memop
-              (fun ma ->
-                let r2 = read_reg_data sz r1 ii
+              (read_reg_data sz r1 ii)
+              (fun ma mv ->
+                let r2 = mv
                 and w2 v = write_reg r2 v ii (* no sz since alread masked *)
                 and r1 a = read_mem sz a ii
                 and w1 a v = write_mem sz a v ii in
@@ -399,7 +404,8 @@ module Make
 
       let cas sz rmw rs rt rn ii =
         lift_memop
-          (fun ma ->
+          (read_reg_data sz rt ii)
+          (fun ma mv ->
             let open AArch64 in
             let read_rs = read_reg_data sz rs ii in
             M.altT
@@ -411,7 +417,7 @@ module Make
                read_mem sz a ii >>=
                fun v -> write_reg_sz_non_mixed sz rs v ii >>! v end) >>=
                fun (cv,v) -> M.neqT cv v >>! ())
-              (let read_rt =  read_reg_data sz rt ii
+              (let read_rt = mv
               and read_mem a = rmw_amo_read rmw sz  a ii
               and write_mem a v = rmw_amo_write rmw sz a v ii
               and write_rs v =  write_reg rs v ii in (* no sz, argument masked *)
@@ -422,7 +428,8 @@ module Make
 
       let ldop op sz rmw rs rt rn ii =
         lift_memop
-          (fun ma ->
+          (read_reg_data sz rs ii)
+          (fun ma mv ->
             let open AArch64 in
             let noret = match rt with | ZR -> true | _ -> false in
             let op = match op with
@@ -436,7 +443,7 @@ module Make
             and write_mem = rmw_amo_write rmw in
             M.amo_strict op
               ma
-              (fun a -> read_mem sz a ii) (read_reg_data sz rs ii)
+              (fun a -> read_mem sz a ii) mv
               (fun a v -> write_mem sz a v ii)
               (fun w ->if noret then M.unitT () else write_reg_sz_non_mixed sz rt w ii))
           (read_reg_ord rn ii)
