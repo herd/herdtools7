@@ -974,10 +974,9 @@ module Make
             O.oi "switch (role) {" ;
             for k=0 to T.get_nprocs test-1 do
               O.fi "case %i:" k ;
-              if ha_diff then O.fii "set_ha_bit(%s);"
-                  (if db.ha k then "1" else "0") ;
-              if hd_diff then O.fii "set_hd_bit(%s);"
-                  (if db.hd k then "1" else "0") ;
+              let ha = if db.ha k then '1' else '0'
+              and hd = if db.hd k then '1' else '0' in
+              O.fii "set_hahd_bits(0b%c%c);" hd ha ;
               O.fii "return;"
             done ;
             O.oi "}" ;
@@ -1646,11 +1645,7 @@ let dump_thread_code env (proc,(out,(_outregs,envVolatile)))  =
           match feat_same db.DirtyBit.ha,feat_same db.DirtyBit.hd with
           | Some ha,Some hd ->
               O.fi "set_hahd_bits(0b%c%c);" hd ha
-          | Some ha,None ->
-              O.fi "set_ha_bit(0b%c);" ha
-          | None,Some hd ->
-              O.fi "set_hd_bit(0b%c);" hd
-          | None,None -> ()
+          | _,_ -> ()
         end ;
         if Cfg.is_kvm && have_fault_handler then begin
           O.oi "install_fault_handler();"
