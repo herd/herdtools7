@@ -80,7 +80,7 @@ end = struct
         (A.pp_location l)
         (V.pp C.hexa v)
   | Barrier b -> A.pp_barrier_short b
-  | Commit bcc -> if bcc then "PoD" else "PoD"
+  | Commit bcc -> if bcc then "Branching" else "Branching"
   | Amo (loc,v1,v2,an,sz) ->
       Printf.sprintf "RMW(%s)%s%s(%s>%s)"
         (A.pp_annot an)
