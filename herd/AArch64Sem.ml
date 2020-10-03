@@ -187,13 +187,6 @@ module Make
           (fun tag1 -> tag_extract a_virt  >>= fun tag2 -> M.op Op.Eq tag1 tag2)
           (commit_pred ii)  ++ fun cond ->  M.choiceT cond m1 m2
 
-      let do_checked_read sz an aexp rd a ii =
-        check_tags a ii
-          (loc_extract a >>= fun a ->
-           M.read_loc false (mk_read sz an aexp) (A.Location_global a) ii >>= fun v ->
-           write_reg_sz sz rd v ii >>! B.Next)
-          (mk_fault a ii (Some "MTE read") >>! B.Exit)
-
 (* PTW Basics *)
 
       open Constant
@@ -462,7 +455,7 @@ module Make
           let mm = mop Act.A_PHY ma in
           delayed_check_tags a_virt ma ii
             (mm  >>! B.Next)
-            (let mfault = mk_fault a_virt ii in
+            (let mfault = mk_fault a_virt ii None in
             if TopConf.precision then  mfault >>! B.Exit
            else (mfault >>| mm) >>! B.Next)
 
@@ -471,13 +464,13 @@ module Make
           let mm = mop Act.A_VIR (ma >>= fun a -> loc_extract a) in
           delayed_check_tags a_virt ma ii
             (mm  >>! B.Next)
-            (let mfault = ma >>= fun a -> mk_fault a ii in
+            (let mfault = ma >>= fun a -> mk_fault a ii None in
             if TopConf.precision then  mfault >>! B.Exit
            else (mfault >>| mm) >>! B.Next)
 
       let lift_kvm dir mop ma an ii mphy =
         let mfault ma a =
-          ma >>= fun _ -> mk_fault a ii
+          ma >>= fun _ -> mk_fault a ii None
           >>! if TopConf.precision then B.Exit else B.ReExec
         in
         M.delay ma >>= fun (a,ma) ->
