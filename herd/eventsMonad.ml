@@ -138,9 +138,9 @@ Monad type:
     let delay
         = fun (m:'a t) (eiid:eid) ->
           let eiid,(mact,_) = m eiid in
-          let v,cl,es = try Evt.as_singleton mact with _ -> assert false in
-          let delayed : 'a t = fun eiid -> eiid,(Evt.singleton (v,[],es),None) in
-          eiid,(Evt.singleton ((v,delayed),cl,E.empty_event_structure),None)
+          let delayed = fun v es eiid -> eiid,(Evt.singleton (v,[],es),None) in
+          let f = fun (v,cl,es) -> ((v,delayed v es),cl,E.empty_event_structure) in
+          eiid,(Evt.map f mact,None)
 
     let (=**=) = E.(=**=)
     let (=*$=) = E.(=*$=)
