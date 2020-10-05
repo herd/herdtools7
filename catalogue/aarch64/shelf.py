@@ -38,7 +38,9 @@ illustrative_tests = [
     "tests/LB+rel+BEQ.litmus",
     "tests/LB+rel+BEQ2.litmus",
     "tests/LB+rel+BEQ3.litmus",
+    "tests/LB+rel+BEQ4.litmus",
     "tests/LB+rel+CSEL.litmus",
     "tests/LB+rel+CSEL2.litmus",
     "tests/LB+rel+CSEL3.litmus",
+    "tests/LB+rel+CSEL4.litmus",
 ]

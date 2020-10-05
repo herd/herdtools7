@@ -1,0 +1,12 @@
+AArch64 LB+CSEL4
+{
+0:X1=x; 1:X1=x;
+0:X3=y; 1:X3=y;
+}
+P0           | P1              ;
+LDR W0,[X3]  | LDR W0,[X1]     ;
+MOV W2,#1    | CMP W0,#0       ;
+STLR W2,[X1] | CSEL W0,W0,W0,EQ;
+             | MOV W4,#1       ;
+             | STR W4,[X3]     ;
+exists(0:X0=1 /\ 1:X0=1)
