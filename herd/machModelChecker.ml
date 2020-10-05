@@ -220,9 +220,10 @@ module Make
           else Misc.identity)
              (((if do_deps then Misc.identity
              else fun k ->
-              ("addr", lazy (Lazy.force pr).S.addr)::
-              ("data", lazy (Lazy.force pr).S.data)::
-              ("ctrl", lazy (Lazy.force pr).S.ctrl)::k)
+               ("tst", lazy (Lazy.force pr).S.tst)::
+               ("addr", lazy (Lazy.force pr).S.addr)::
+               ("data", lazy (Lazy.force pr).S.data)::
+               ("ctrl", lazy (Lazy.force pr).S.ctrl)::k)
              ["id",id;
               "loc", lazy begin
                 E.EventRel.restrict_rel E.same_location (Lazy.force unv)

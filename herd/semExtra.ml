@@ -100,7 +100,8 @@ module type S = sig
         ctrl : event_rel;
         ctrlisync : event_rel;
         success : event_rel;
-        rf : event_rel; }
+        rf : event_rel;
+        tst: event_rel; }
 
 (*********)
 (* RFMap *)
@@ -259,7 +260,8 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
         ctrl : event_rel;
         ctrlisync : event_rel;
         success : event_rel;
-        rf : event_rel; }
+        rf : event_rel;
+        tst : event_rel; }
 
 (* Read-From maps exploitation *)
     type write_to =

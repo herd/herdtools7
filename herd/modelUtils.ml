@@ -60,7 +60,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
     and ctrlisync = e and data_commit = e in
     let rf = U.make_rf conc in
     { S.addr; data; ctrl; depend; ctrlisync; data_commit;
-      success; rf;},iico,dd_inside
+      success; rf; tst=e;},iico,dd_inside
 
   let make_procrels_nodeps is_isync conc =
     let pr0,iico,dd_inside = make_procrels_deps conc in
@@ -86,7 +86,8 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
           (fun e1 e2 ->
             E.is_commit e2 ||
             (E.is_mem_store e2 && is_data_port e1)) iico in
-      S.union
+      S.union3
+        (E.EventRel.restrict_domain is_mem_load_total last_data)
         (S.seq dd_pre last_data)
         (iico_rmw) (* Internal data dep of RMW's *)
     and addr_dep =
@@ -101,7 +102,9 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
             E.is_additional_mem e2)
            (* Patch: a better solution would be a direct iico from read address register to access *)
           (if memtag then E.EventRel.transitive_closure iico else iico) in
-      S.seq dd_pre last_addr in
+      S.union
+        (E.EventRel.restrict_domain is_mem_load_total last_addr)
+        (S.seq dd_pre last_addr) in
     let po = U.po_iico conc.S.str in
     let ctrl_one = (* For bcc: from commit to event by po *)
       S.restrict E.is_commit_bcc evt_relevant po
@@ -130,8 +133,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
         S.seq r1 r2
       with Misc.NoIsync -> S.E.EventRel.empty in
     { pr0 with S.addr=addr_dep; data=data_dep; ctrl=ctrl_dep; depend=dd_pre;
-      ctrlisync;
-      data_commit; }
+      ctrlisync; data_commit;}
 
   let make_procrels =
     if do_deps then
