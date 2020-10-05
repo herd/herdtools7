@@ -526,7 +526,10 @@ module Make(C:Config) (I:I) : S with module I = I
                   let eas = byte_eas sz a in
                   let vs = List.map (get_of_val st) eas in
                   let v = recompose vs in
-                  v
+                  if morello then
+                    let ts = get_of_val st (I.V.op1 Op.CapaTagLoc a) in
+                    I.V.op Op.CapaSetTag v ts
+                  else v
               | _ ->
                   assert (not (is_global loc)) ;
                   get_in_state loc st

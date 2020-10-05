@@ -55,6 +55,7 @@ module Make(O:Config)(M:XXXMem.S) =
     module W = Warn.Make(O)
 
     let memtag = O.variant Variant.MemTag
+    let morello = O.variant Variant.Morello
     let showtoofar = O.variant Variant.TooFar
 
 (* Utilities *)
@@ -357,7 +358,7 @@ module Make(O:Config)(M:XXXMem.S) =
       let cstr = T.find_our_constraint test in
 
       let restrict_faults =
-        if memtag then
+        if memtag || morello then
           let faults_in_cond =
             ConstrGen.fold_constr collect_atom_fault cstr [] in
           A.FaultSet.filter

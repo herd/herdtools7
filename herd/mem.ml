@@ -131,7 +131,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     module W = Warn.Make(C)
 
     let dbg = C.debug.Debug_herd.mem
-    let mixed = C.variant Variant.Mixed
+    let morello = C.variant Variant.Morello
+    let mixed = C.variant Variant.Mixed || morello
     let unaligned = C.variant Variant.Unaligned
     let memtag = C.variant Variant.MemTag
         (* default is checking *)
@@ -765,6 +766,8 @@ let match_reg_events es =
 (* Various utilities on symbolic addresses as locatiosn *)
     let get_base a =
       let open Constant in match a with
+      | A.Location_global (V.Val (Symbolic ((s,t,c),_))) when Misc.check_ctag s ->
+          A.Location_global (V.Val (Symbolic ((Misc.tr_ctag s,t,c),0)))
       | A.Location_global (V.Val (Symbolic (s,_))) ->
           A.Location_global (V.Val (Symbolic (s,0)))
       | _ -> raise CannotSca
@@ -776,6 +779,15 @@ let match_reg_events es =
       | Some (V.Val (Symbolic ((s1,_,_),i1))),
         Some (V.Val (Symbolic ((s2,_,_),i2))) when  Misc.string_eq s1 s2 ->
           Misc.int_compare i1 i2
+      | Some (V.Val (Symbolic ((s1,_,_),_))),
+        Some (V.Val (Symbolic ((s2,_,_),_))) when (morello && Misc.check_ctag s1
+          && Misc.string_eq (Misc.tr_ctag s1) s2) -> 1
+      | Some (V.Val (Symbolic ((s1,_,_),_))),
+        Some (V.Val (Symbolic ((s2,_,_),_))) when (morello && Misc.check_ctag s2
+          && Misc.string_eq s1 (Misc.tr_ctag s2)) -> -1
+      | Some (V.Val (Symbolic ((s1,_,_),_))),
+        Some (V.Val (Symbolic ((s2,_,_),_))) when (morello && Misc.check_ctag s1
+        && Misc.check_ctag s2 && Misc.string_eq s1 s2) -> 0
       | _,_ -> raise CannotSca
 
     let sort_same_base es = List.sort compare_index es
@@ -854,7 +866,8 @@ let match_reg_events es =
       | e::_ -> e
       | [] -> assert false in
       let s,idx= match  E.global_loc_of fst with
-      |  Some (V.Val (Symbolic ((s,_,_),i))) -> s,i
+      |  Some (V.Val (Symbolic ((s,_,_),i))) ->
+          (if morello && Misc.check_ctag s then Misc.tr_ctag s else s),i
       | _ -> raise CannotSca in
       let sz = List.length sca*byte_sz in
       is_spec es fst,E.get_mem_dir fst,s,idx,sz,sca
@@ -932,7 +945,8 @@ let match_reg_events es =
       m
 
     let solve_mem_mixed test es rfm cns kont res =
-      let match_tags = pair_tags es in
+      let match_tags = if morello then []
+        else pair_tags es in
       let tag_loads,tag_possible_stores = List.split match_tags in
       let ms = expose_scas es in
       let rss,wsss = List.split ms in
@@ -1043,7 +1057,7 @@ let match_reg_events es =
           | _,_ -> k)
           rfm test.Test_herd.init_state in
       st,
-      if memtag then
+      if memtag || morello then
         E.EventSet.fold
           (fun e k -> match E.to_fault e with
           | Some f -> A.FaultSet.add f k
@@ -1171,6 +1185,14 @@ let match_reg_events es =
                       (List.map (fun a -> A.Location_global a) eas)
                 | _ -> A.LocSet.singleton loc)
                 locs
+            else if morello then
+              A.LocSet.map_union
+                (fun loc -> match loc with
+                | A.Location_global (A.V.Val (Constant.Symbolic ((s,t,c),0))) ->
+                    A.LocSet.of_list (A.Location_global (A.V.Val
+                      (Constant.Symbolic ((Misc.add_ctag s,t,c),0)))::[loc])
+                | _ -> A.LocSet.singleton loc)
+                locs
             else locs in
           if false then begin
             eprintf "Observed locs: {%s}\n"
@@ -1221,6 +1243,8 @@ let match_reg_events es =
           let compare_index idx e =
             let open Constant in
             match E.global_loc_of e with
+            | Some (V.Val (Symbolic ((s,_,_),_))) when Misc.check_ctag s ->
+                Misc.int_compare idx max_int
             | Some (V.Val (Symbolic (_,i))) -> Misc.int_compare idx i
             | _ -> assert false
 
@@ -1253,6 +1277,7 @@ let match_reg_events es =
             and rs =
               let senv = S.size_env test in
               AM.byte_indices (A.look_size_location senv loc) in
+            let rs = if morello then rs@[max_int] else rs in
             MatchFinal.find_rfs_sca (A.pp_location loc) rs wss::k)
           loc_wss [] in
 
@@ -1497,7 +1522,7 @@ let match_reg_events es =
               | _ ->
                   check_symbolic_locations test es ;
                   if (mixed && not unaligned) then check_aligned test es ;
-                  if A.reject_mixed && not (mixed || memtag) then check_sizes es ;
+                  if A.reject_mixed && not (mixed || memtag || morello) then check_sizes es ;
                   if C.debug.Debug_herd.solver && C.verbose > 0 then begin
                     let module PP = Pretty.Make(S) in
                     prerr_endline "Mem solved" ;

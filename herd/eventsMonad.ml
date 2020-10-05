@@ -812,6 +812,53 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
                     E.action = mk_action loc v })
                 acc_inner, None))) (eiid,(Evt.empty,None))
 
+    let add_atomic_tag_read m a f ii = fun eiid ->
+      let (eiid,(sact,sspec)) = m eiid in
+      assert(sspec = None);
+      let (v,eqs,st) = Evt.as_singleton sact in
+      let a_tag = V.fresh_var () in
+      let eqs = VC.Assign (a_tag,VC.Unop (Op.CapaTagLoc,a))::eqs in
+      let vs_tag = V.fresh_var () in
+      let v_tag = V.fresh_var () in
+      let eqs = eqs@[VC.Assign (v_tag,VC.Binop (Op.CapaSetTag,v,vs_tag))] in
+      let eiid,es = bump_eid eiid, E.EventSet.add
+        { E.eiid = eiid.id; E.subid=eiid.sub; E.iiid = Some ii;
+          E.action = f (A.Location_global a_tag) vs_tag;} st.E.events in
+      let e_full_action = if E.EventSet.is_empty st.E.events then f (A.Location_global a) v
+        else (E.EventSet.max_elt st.E.events).E.action in
+      let e_full = if E.EventSet.is_empty st.E.mem_accesses then
+        { E.eiid=eiid.id; E.subid=eiid.sub; E.iiid = Some ii;
+          E.action = e_full_action; } else
+        E.EventSet.max_elt st.E.mem_accesses in
+      let st = { st with
+        E.events = es;
+        E.sca = E.EventSetSet.singleton es;
+        E.mem_accesses = E.EventSet.singleton e_full;
+        E.aligned = [e_full,es]; } in
+      bump_eid eiid,(Evt.singleton (v_tag,eqs,st),None)
+
+    let add_atomic_tag_write m a v f ii = fun eiid ->
+      let (eiid,(sact,sspec)) = m eiid in
+      assert(sspec = None);
+      let ((),eqs,st) = Evt.as_singleton sact in
+      let a_tag = V.fresh_var () in
+      let eqs = VC.Assign (a_tag,VC.Unop (Op.CapaTagLoc,a))::eqs in
+      let eiid,es = bump_eid eiid, E.EventSet.add
+        { E.eiid = eiid.id; E.subid=eiid.sub; E.iiid = Some ii;
+          E.action = f (A.Location_global a_tag) v;} st.E.events in
+      let e_full_action = if E.EventSet.is_empty st.E.events then f (A.Location_global a) v
+        else (E.EventSet.max_elt st.E.events).E.action in
+      let e_full = if E.EventSet.is_empty st.E.mem_accesses then
+        { E.eiid=eiid.id; E.subid=eiid.sub; E.iiid = Some ii;
+          E.action = e_full_action; } else
+        E.EventSet.max_elt st.E.mem_accesses in
+      let st = { st with
+        E.events = es;
+        E.sca = E.EventSetSet.singleton es;
+        E.mem_accesses = E.EventSet.singleton e_full;
+        E.aligned = [e_full,es]; } in
+      bump_eid eiid,(Evt.singleton ((),eqs,st),None)
+
     let mk_singleton_es a ii =
       fun eiid ->
         (bump_eid eiid,
@@ -906,6 +953,7 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
     module Mixed(SZ:ByteSize.S) = struct
 
       let memtag = C.variant Variant.MemTag
+      let morello = C.variant Variant.Morello
 
       module AM = A.Mixed(SZ)
 
@@ -1029,16 +1077,29 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
             env glob in
         env
 
+      let morello_init_tag eiid s v =
+        assert morello ;
+        { E.eiid = eiid.id; E.subid=eiid.sub; E.iiid = None;
+          E.action = E.Act.mk_init_write (A.Location_global
+            (A.V.Val (Constant.Symbolic ((Misc.add_ctag s,None,0),0))))
+            def_size v; }
+
       let initwrites_non_mixed env _ =
         fun eiid ->
           let eiid,es =
             List.fold_left
               (fun (eiid,es) (loc,v) ->
-                let ew =
+                let eiid,ew = bump_eid eiid,
                   {E.eiid = eiid.id ; E.subid = eiid.sub ;
                    E.iiid = None ;
                    E.action = E.Act.mk_init_write loc def_size v ;} in
-                (bump_eid eiid,ew::es))
+                match loc with
+                | A.Location_global (A.V.Val (Constant.Symbolic ((s,_,_),0))) ->
+                    let eiid,ews = if morello then bump_eid eiid,
+                        (morello_init_tag eiid s (A.V.op1 Op.CapaGetTag v))::[ew]
+                      else eiid,[ew] in
+                    (eiid,ews@es)
+                | _ -> (eiid,ew::es))
               (eiid,[]) env in
           let es = E.EventSet.of_list es in
           if dbg then begin
@@ -1081,6 +1142,9 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
                                     (A.Location_global a) SZ.byte d ;} in
                               bump_eid eiid,ew::ews)
                             (eiid,[]) eas ds in
+                        let eiid,ews = if morello then bump_eid eiid,
+                            (morello_init_tag eiid s (A.V.op1 Op.CapaGetTag v))::ews
+                          else eiid,ews in
                         eiid,ews@es, E.EventSetSet.add (E.EventSet.of_list ews) sca
                   | _ ->
                       let ew =

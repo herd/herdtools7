@@ -62,8 +62,9 @@ end = struct
     | Fault of A.inst_instance_id * A.location * string option
     | TooFar
 
-  let mk_init_write l sz v = match v with
-  | A.V.Val (Constant.Tag _) -> TagAccess (W,l,v)
+  let mk_init_write l sz v = match (l,v) with
+  | (A.Location_global lg,A.V.Val (Constant.Concrete _)) when A.V.check_ctag lg -> TagAccess (W,l,v)
+  | (_,A.V.Val (Constant.Tag _)) -> TagAccess (W,l,v)
   | _ ->  Access(W,l,v,A.empty_annot,sz)
 
   let pp_action a = match a with
@@ -177,6 +178,7 @@ end = struct
 
   let get_mem_size a = match a with
   | Access (_,A.Location_global _,_,_,sz) -> sz
+  | TagAccess (_,A.Location_global _,_) -> V.Cst.Scalar.machsize
   | _ -> assert false
 
 (* relative to the registers of the given proc *)

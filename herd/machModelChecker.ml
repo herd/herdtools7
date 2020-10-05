@@ -28,7 +28,8 @@ module Make
     =
   struct
     let do_deps = O.variant Variant.Deps
-    let mixed = O.variant Variant.Mixed
+    let morello = O.variant Variant.Morello
+    let mixed = O.variant Variant.Mixed || morello
     let memtag = O.variant Variant.MemTag
 
     let bell_fname =  Misc.app_opt (fun (x,_) -> x) O.bell_model_info
@@ -185,7 +186,7 @@ module Make
       let unv = lazy begin E.EventRel.cartesian evts evts  end in
       let ks = { I.id; unv; evts; conc; po;} in
       let calc_si sca = begin
-        if mixed then
+        if mixed || morello then
           E.EventRel.unions
             (E.EventSetSet.map_list
                (fun sm -> E.EventRel.cartesian sm sm)

@@ -140,6 +140,11 @@ module type S =
     val read_loc : bool -> (A.location -> A.V.v -> E.action) ->
       A.location -> A.inst_instance_id -> A.V.v t
 
+    val add_atomic_tag_read : A.V.v t -> A.V.v -> (A.location -> A.V.v ->
+      E.action) -> A.inst_instance_id -> A.V.v t
+    val add_atomic_tag_write : unit t -> A.V.v -> A.V.v -> (A.location ->
+      A.V.v -> E.action) -> A.inst_instance_id -> unit t
+
     module Mixed :
     functor (SZ : ByteSize.S) -> sig
 
