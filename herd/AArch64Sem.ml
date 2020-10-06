@@ -358,7 +358,7 @@ module Make
         lift_memop
           (fun ma ->
             let open AArch64 in
-            let read_rs = read_reg_ord_sz sz rs ii in
+            let read_rs = read_reg_data sz rs ii in
             M.altT
               (ma >>= fun a ->
                (read_rs >>|
