@@ -641,7 +641,7 @@ module Make
         (*CAS is a write for the purpose of the DB*)
         lift_memop Dir.W
           (fun ac ma ->
-            let read_rs = read_reg_ord_sz sz rs ii in
+            let read_rs = read_reg_data sz rs ii in
             M.altT
               (ma >>= fun a ->
                (read_rs >>|
