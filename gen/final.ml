@@ -112,12 +112,14 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         let v = match evt.C.C.dir with
         | Some Code.R ->
             begin match evt.C.C.bank with
+            | Code.CapaTag
+            | Code.CapaSeal
             | Code.Ord ->
                 Some (I evt.C.C.v)
             | Code.Tag ->
                 Some (S (Code.add_tag (Code.as_data evt.C.C.loc) evt.C.C.v))
             end
-        | Some Code.W -> assert (evt.C.C.bank = Code.Ord) ; Some (I (prev_value evt.C.C.v))
+        | Some Code.W -> assert (evt.C.C.bank = Code.Ord || evt.C.C.bank = Code.CapaSeal) ; Some (I (prev_value evt.C.C.v))
         | None|Some Code.J -> None in
         if show_in_cond n then match v with
         | Some v ->

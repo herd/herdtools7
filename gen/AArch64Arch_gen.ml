@@ -56,7 +56,7 @@ type atom_rw =  PP | PL | AP | AL
 type atom_acc_opt = Capability
 type atom_acc = Plain of atom_acc_opt option | Acq of atom_acc_opt option
   | AcqPc of atom_acc_opt option | Rel of atom_acc_opt option
-  | Atomic of atom_rw | Tag
+  | Atomic of atom_rw | Tag | CapaTag | CapaSeal
 type atom = atom_acc * MachMixed.t option
 
 let default_atom = Atomic PP,None
@@ -65,7 +65,7 @@ let applies_atom (a,_) d = match a,d with
 | Acq _,R
 | AcqPc _,R
 | Rel _,W
-| (Plain _|Atomic _|Tag),(R|W)
+| (Plain _|Atomic _|Tag|CapaTag|CapaSeal),(R|W)
   -> true
 | _ -> false
 
@@ -90,6 +90,8 @@ let applies_atom (a,_) d = match a,d with
      | AcqPc o -> sprintf "Q%s" (pp_opt o)
      | Plain o -> sprintf "P%s" (pp_opt o)
      | Tag -> "T"
+     | CapaTag -> "Ct"
+     | CapaSeal -> "Cs"
 
    let pp_atom (a,m) = match a with
    | Plain o ->
@@ -123,13 +125,22 @@ let applies_atom (a,_) d = match a,d with
      if do_tag then fun f r -> f Tag r
      else fun _f r -> r
 
+   let fold_morello =
+     if do_morello then fun f r -> f CapaSeal (f CapaTag r)
+     else fun _f r -> r
+
    let fold_acc f r =
+     fold_morello f (
      fold_tag f (
+     f (Plain (Some Capability)) (
+     f (Acq (Some Capability)) (
      f (Acq None) (
+     f (AcqPc (Some Capability)) (
      f (AcqPc None) (
+     f (Rel (Some Capability)) (
      f (Rel None) (
      fold_atom_rw (fun rw -> f (Atomic rw)) r)
-     )))
+     ))))))))
 
    let fold_non_mixed f r = fold_acc (fun acc r -> f (acc,None) r) r
 
@@ -143,7 +154,7 @@ let applies_atom (a,_) d = match a,d with
 
    let worth_final (a,_) = match a with
      | Atomic _ -> true
-     | Acq _|AcqPc _|Rel _|Plain _|Tag -> false
+     | Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal -> false
 
 
    let varatom_dir _d f r = f None r
@@ -161,6 +172,10 @@ let applies_atom (a,_) d = match a,d with
    let atom_to_bank = function
    | Tag,None -> Code.Tag
    | Tag,Some _ -> assert false
+   | CapaTag,None -> Code.CapaTag
+   | CapaTag,Some _ -> assert false
+   | CapaSeal,None -> Code.CapaSeal
+   | CapaSeal,Some _ -> assert false
    | (Plain _|Acq _|AcqPc _|Rel _|Atomic (PP|PL|AP|AL)),_
       -> Code.Ord
 
@@ -179,14 +194,14 @@ let applies_atom (a,_) d = match a,d with
        end)
 
 let overwrite_value v ao w = match ao with
-| None| Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Tag),None)
+| None| Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal),None)
   -> w (* total overwrite *)
-| Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Tag),Some (sz,o)) ->
+| Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal),Some (sz,o)) ->
     ValsMixed.overwrite_value v sz o w
 
  let extract_value v ao = match ao with
-  | None| Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Tag),None) -> v
-  | Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Tag),Some (sz,o)) ->
+  | None| Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal),None) -> v
+  | Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal),Some (sz,o)) ->
       ValsMixed.extract_value v sz o
 
 (* End of atoms *)

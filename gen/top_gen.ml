@@ -503,6 +503,14 @@ let max_set = IntSet.max_elt
           let v = lst.C.next.C.evt.C.v in
           let r,i,c,st = Comp.emit_obs Tag st p i x in
           i,code@c,F.add_final_loc p r (Code.add_tag x v) f,st
+      | Data x,CapaTag ->
+          let v = lst.C.next.C.evt.C.v in
+          let r,i,c,st = Comp.emit_obs CapaTag st p i x in
+          i,code@c,F.add_final_loc p r (Code.add_capability x v) f,st
+      | Data x,CapaSeal ->
+          let v = lst.C.next.C.evt.C.v in
+          let r,i,c,st = Comp.emit_obs CapaSeal st p i x in
+          i,code@c,F.add_final_loc p r (Code.add_capability x v) f,st
       | Code _,_ -> i,code,f,st
     else i,code,f,st
 
@@ -528,6 +536,7 @@ let max_set = IntSet.max_elt
     in do_rec oks []
 
   let do_memtag = O.variant Variant_gen.MemTag
+  let do_morello = O.variant Variant_gen.Morello
 
   let compile_cycle ok n =
     let open Config in
@@ -600,9 +609,12 @@ let max_set = IntSet.max_elt
             (fun m (loc,_) -> A.LocMap.add loc O.typ m)
             A.LocMap.empty f in
         let globals = C.get_globals n in
+        let typ = if do_morello
+          then TypBase.Std (TypBase.Unsigned,MachSize.S128)
+          else O.typ in
         let env =
           List.fold_left
-            (fun m loc -> A.LocMap.add (A.Loc loc) O.typ m)
+            (fun m loc -> A.LocMap.add (A.Loc loc) typ m)
             env globals in
         let flts =
           if do_memtag then
@@ -626,6 +638,18 @@ let max_set = IntSet.max_elt
                   [] ns in
               StringSet.of_list xs in
             let flts = List.mapi (fun i ns -> i,get_locs ns) splitted in
+            List.filter (fun (_,xs) -> not (StringSet.is_empty xs)) flts
+          else if do_morello then
+            let tagchange ns =
+              let ts =
+                List.fold_left
+                  (fun k n -> match n.C.prev.C.edge.edge,n.C.evt.C.loc,n.C.evt.C.bank with
+                  | Dp (dp,_,_),Data x,CapaTag when A.is_addr dp -> x::k
+                  | Dp (dp,_,_),Data x,CapaSeal when A.is_addr dp -> x::k
+                  | _ -> k)
+                  [] ns in
+              StringSet.of_list ts in
+            let flts = List.mapi (fun i ns -> i,tagchange ns) splitted in
             List.filter (fun (_,xs) -> not (StringSet.is_empty xs)) flts
           else [] in
         let f =
