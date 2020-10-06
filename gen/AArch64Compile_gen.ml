@@ -548,6 +548,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | (Acq,None)   -> ldaxr
       | (Acq,Some (sz,_)) -> ldxr_sz AX sz
       | (AcqPc,_) -> Warn.fatal "AcqPC annotation on xload"
+      | (Tag,_) -> Warn.fatal "variant annotation on xload"
       | _ -> assert false
 
     and get_xstore = function
@@ -555,6 +556,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | (Plain,Some (sz,_)) -> stxr_sz YY sz
       | (Rel,None) -> stlxr
       | (Rel,Some (sz,_)) -> stxr_sz LY sz
+      | (Tag,_) -> Warn.fatal "variant annotation on xstore"
       | _ -> assert false
 
     let get_rmw_addrs arw st rA = match arw with
