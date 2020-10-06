@@ -36,7 +36,7 @@ module A = AArch64Base
 %token LSL LSR ASR UXTW
 
 /* Instructions */
-%token NOP HINT
+%token NOP HINT HLT
 %token B BR BEQ BNE BGE BGT BLE BLT CBZ CBNZ EQ NE GE GT LE LT TBZ TBNZ
 %token BL BLR RET
 %token LDR LDP LDNP STP STNP LDRB LDRH STR STRB STRH STLR STLRB STLRH
@@ -200,6 +200,7 @@ label_addr:
 instr:
 | NOP { A.I_NOP }
 | HINT NUM { A.I_NOP }
+| HLT NUM { A.I_NOP }
 /* Branch */
 | B NAME { A.I_B $2 }
 | BR xreg { A.I_BR $2 }
