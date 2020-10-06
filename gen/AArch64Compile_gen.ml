@@ -543,19 +543,23 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (***************************)
 
     let get_xload = function
-      | (Plain,None) ->ldxr
-      | (Plain,Some (sz,_)) -> ldxr_sz XX sz
-      | (Acq,None)   -> ldaxr
-      | (Acq,Some (sz,_)) -> ldxr_sz AX sz
-      | (AcqPc,_) -> Warn.fatal "AcqPC annotation on xload"
+      | (Plain None,None) ->ldxr
+      | (Plain Some Capability,None) -> ldxr_sz XX MachSize.S128
+      | (Plain None,Some (sz,_)) -> ldxr_sz XX sz
+      | (Acq None,None)   -> ldaxr
+      | (Acq Some Capability,None) -> ldxr_sz AX MachSize.S128
+      | (Acq None,Some (sz,_)) -> ldxr_sz AX sz
+      | (AcqPc _,_) -> Warn.fatal "AcqPC annotation on xload"
       | (Tag,_) -> Warn.fatal "variant annotation on xload"
       | _ -> assert false
 
     and get_xstore = function
-      | (Plain,None) -> stxr
-      | (Plain,Some (sz,_)) -> stxr_sz YY sz
-      | (Rel,None) -> stlxr
-      | (Rel,Some (sz,_)) -> stxr_sz LY sz
+      | (Plain None,None) -> stxr
+      | (Plain Some Capability,None) -> stxr_sz YY MachSize.S128
+      | (Plain None,Some (sz,_)) -> stxr_sz YY sz
+      | (Rel None,None) -> stlxr
+      | (Rel Some Capability,None) -> stxr_sz LY MachSize.S128
+      | (Rel None,Some (sz,_)) -> stxr_sz LY sz
       | (Tag,_) -> Warn.fatal "variant annotation on xstore"
       | _ -> assert false
 
@@ -658,13 +662,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (* Translate annotations *)
 
     let tr_rw = function
-      | PP -> (Plain,None),(Plain,None)
-      | PL -> (Plain,None),(Rel,None)
-      | AP -> (Acq,None),(Plain,None)
-      | AL -> (Acq,None),(Rel,None)
+      | PP -> (Plain None,None),(Plain None,None)
+      | PL -> (Plain None,None),(Rel None,None)
+      | AP -> (Acq None,None),(Plain None,None)
+      | AL -> (Acq None,None),(Rel None,None)
 
     let tr_none = function
-      | None -> Plain,None
+      | None -> Plain None,None
       | Some p -> p
 
 
@@ -788,10 +792,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,None ->
             let r,init,cs,st = LDR.emit_load st p init loc in
             Some r,init,cs,st
-        | R,Some (Acq,None) ->
+        | R,Some (Acq _,None) ->
             let r,init,cs,st = LDAR.emit_load st p init loc  in
             Some r,init,cs,st
-        | R,Some (Acq,Some (sz,o)) ->
+        | R,Some (Acq _,Some (sz,o)) ->
             let module L =
               LOAD
                 (struct
@@ -800,10 +804,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 end) in
             let r,init,cs,st = L.emit_load st p init loc in
             Some r,init,cs,st
-        | R,Some (AcqPc,None) ->
+        | R,Some (AcqPc _,None) ->
             let r,init,cs,st = LDAPR.emit_load st p init loc  in
             Some r,init,cs,st
-        | R,Some (AcqPc,Some (sz,o)) ->
+        | R,Some (AcqPc _,Some (sz,o)) ->
             let module L =
               LOAD
                 (struct
@@ -812,7 +816,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 end) in
             let r,init,cs,st = L.emit_load st p init loc in
             Some r,init,cs,st
-        | R,Some (Rel,_) ->
+        | R,Some (Rel _,_) ->
             Warn.fatal "No load release"
         | R,Some (Atomic rw,None) ->
             let r,init,cs,st = emit_lda (tr_rw rw) st p init loc  in
@@ -820,7 +824,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,Some (Atomic rw,Some (sz,o)) ->
             let r,init,cs,st = emit_lda_mixed sz o rw st p init loc  in
             Some r,init,cs,st
-        | R,Some (Plain,Some (sz,o)) ->
+        | R,Some (Plain _,Some (sz,o)) ->
             let r,init,cs,st = emit_load_mixed sz o st p init loc in
             Some r,init,cs,st
         | R,Some (Tag,None) ->
@@ -829,21 +833,21 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | W,None ->
             let init,cs,st = STR.emit_store st p init loc e.v in
             None,init,cs,st
-        | W,Some (Rel,None) ->
+        | W,Some (Rel _,None) ->
             let init,cs,st = STLR.emit_store st p init loc e.v in
             None,init,cs,st
-        | W,Some (Acq,_) -> Warn.fatal "No store acquire"
-        | W,Some (AcqPc,_) -> Warn.fatal "No store acquirePc"
+        | W,Some (Acq _,_) -> Warn.fatal "No store acquire"
+        | W,Some (AcqPc _,_) -> Warn.fatal "No store acquirePc"
         | W,Some (Atomic rw,None) ->
             let r,init,cs,st = emit_sta (tr_rw rw) st p init loc e.v in
             Some r,init,cs,st
         | W,Some (Atomic rw,Some (sz,o)) ->
             let r,init,cs,st = emit_sta_mixed sz o rw st p init loc e.v in
             Some r,init,cs,st
-        | W,Some (Plain,Some (sz,o)) ->
+        | W,Some (Plain _,Some (sz,o)) ->
             let init,cs,st = emit_store_mixed sz o st p init loc e.v in
             None,init,cs,st
-        | W,Some (Rel,Some (sz,o)) ->
+        | W,Some (Rel _,Some (sz,o)) ->
             let module S =
               STORE
                 (struct
@@ -860,7 +864,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | W,Some (Tag,None) ->
             let init,cs,st = STG.emit_store st p init e in
             None,init,cs,st
-        | _,Some (Plain,None) -> assert false
+        | _,Some (Plain _,None) -> assert false
         | _,Some (Tag,_) -> assert false
         | J,_ -> emit_joker st init
         end
@@ -880,18 +884,18 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         Warn.fatal "Amo instructions with difference sizes"
 
     let do_rmw_type a1 a2 = match a1,a2 with
-    | Plain,Plain -> RMW_P
-    | Acq,Plain   -> RMW_A
-    | Plain,Rel   -> RMW_L
-    | Acq,Rel   -> RMW_AL
+    | Plain o1,Plain o2 when o1 = o2 -> RMW_P,o1
+    | Acq o1,Plain o2 when o1 = o2   -> RMW_A,o1
+    | Plain o1,Rel o2 when o1 = o2   -> RMW_L,o1
+    | Acq o1,Rel o2 when o1 = o2     -> RMW_AL,o1
     | _,_ ->
         Warn.fatal "Bad annotation for Amo: R=%s, W=%s"
           (pp_atom_acc a1) (pp_atom_acc a2)
 
     let do_rmw_annot (ar,szr) (aw,szw) =
       let sz =  do_sz szr szw in
-      let a = do_rmw_type ar aw in
-      sz,a
+      let a,opt = do_rmw_type ar aw in
+      sz,a,opt
 
     let mk_emit_mov sz = match sz with
     | None ->  U.emit_mov
@@ -902,7 +906,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | Some (sz,_) ->  U.emit_mov_sz_fresh sz
 
     let do_emit_ldop_rA  ins ins_mixed st p init er ew rA =
-      let sz,a = do_rmw_annot (tr_none er.C.atom) (tr_none ew.C.atom) in
+      let sz,a,_ = do_rmw_annot (tr_none er.C.atom) (tr_none ew.C.atom) in
       let rR,st = next_reg st in
       let rW,init,csi,st = mk_emit_mov sz st p init ew.v in
       let cs,st = match sz with
@@ -920,7 +924,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     and emit_ldop op = do_emit_ldop (ldop op) (ldop_mixed op)
 
     let emit_cas_rA st p init er ew rA =
-      let sz,a = do_rmw_annot (tr_none er.C.atom) (tr_none ew.C.atom) in
+      let sz,a,_ = do_rmw_annot (tr_none er.C.atom) (tr_none ew.C.atom) in
       let rS,init,csS,st = mk_emit_mov_fresh sz st p init er.v in
       let rT,init,csT,st = mk_emit_mov sz st p init ew.v in
       let cs,st = match sz with
@@ -937,8 +941,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let emit_stop_rA op st p init _er ew rA =
       let a,sz = tr_none ew.C.atom in
       let a = match a with
-      | Plain -> W_P
-      | Rel -> W_L
+      | Plain _ -> W_P
+      | Rel _ -> W_L
       | _ ->
           Warn.fatal "Unexpected atom in STOP instruction: %s"
             (pp_atom_acc a) in
@@ -1022,7 +1026,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let r,init,cs,st = LDR.emit_load_idx st p init loc r2 in
               Some r,init, Instruction c::cs,st
-          | R,Some (Acq,None) ->
+          | R,Some (Acq _,None) ->
               let module LDAR =
                 LOAD
                   (struct
@@ -1033,7 +1037,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let r,init,cs,st = LDAR.emit_load_idx st p init loc r2 in
               Some r,init, Instruction c::cs,st
-          | R,Some (Acq,Some (sz,o)) ->
+          | R,Some (Acq _,Some (sz,o)) ->
               let module L =
                 LOAD
                   (struct
@@ -1042,7 +1046,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let r,init,cs,st = L.emit_load_idx st p init loc r2 in
               Some r,init,Instruction c::cs,st
-          | R,Some (AcqPc,None) ->
+          | R,Some (AcqPc _,None) ->
               let module LDAPR =
                 LOAD
                   (struct
@@ -1053,7 +1057,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let r,init,cs,st = LDAPR.emit_load_idx st p init loc r2 in
               Some r,init, Instruction c::cs,st
-          | R,Some (AcqPc,Some (sz,o)) ->
+          | R,Some (AcqPc _,Some (sz,o)) ->
               let module L =
                 LOAD
                   (struct
@@ -1062,7 +1066,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let r,init,cs,st = L.emit_load_idx st p init loc r2 in
               Some r,init,Instruction c::cs,st
-          | R,Some (Rel,_) ->
+          | R,Some (Rel _,_) ->
               Warn.fatal "No load release"
           | R,Some (Atomic rw,None) ->
               let r,init,cs,st = do_emit_lda_idx vdep (tr_rw rw) st p init loc r2 in
@@ -1085,7 +1089,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = STR.emit_store_idx st p init loc r2 e.v in
               None,init,Instruction c::cs,st
-          | W,Some (Rel,None) ->
+          | W,Some (Rel _,None) ->
               let module STLR =
                 STORE
                   (struct
@@ -1096,7 +1100,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = STLR.emit_store_idx st p init loc r2 e.v in
               None,init,Instruction c::cs,st
-          | W,Some (Rel,Some (sz,o)) ->
+          | W,Some (Rel _,Some (sz,o)) ->
               let module S =
                 STORE
                   (struct
@@ -1110,8 +1114,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = S.emit_store_idx st p init loc r2 e.v in
               None,init,Instruction c::cs,st
-          | W,Some (Acq,_) -> Warn.fatal "No store acquire"
-          | W,Some (AcqPc,_) -> Warn.fatal "No store acquirePc"
+          | W,Some (Acq _,_) -> Warn.fatal "No store acquire"
+          | W,Some (AcqPc _,_) -> Warn.fatal "No store acquirePc"
           | W,Some (Atomic rw,None) ->
               let r,init,cs,st =
                 emit_sta_idx (tr_rw rw) st p init loc r2 e.v in
@@ -1119,7 +1123,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | W,Some (Atomic rw,Some (sz,o)) ->
               let r,init,cs,st = emit_sta_mixed_idx sz o rw st p init loc r2 e.v in
               Some r,init,Instruction c::cs,st
-          | R,Some (Plain,Some (sz,o)) ->
+          | R,Some (Plain _,Some (sz,o)) ->
               let module L =
                 LOAD
                   (struct
@@ -1133,7 +1137,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let r,init,cs,st = L.emit_load_idx st p init loc r2 in
               Some r,init,Instruction c::cs,st
-          | W,Some (Plain,Some (sz,o)) ->
+          | W,Some (Plain _,Some (sz,o)) ->
               let module S =
                 STORE
                   (struct
@@ -1153,7 +1157,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               None,init,Instruction c::cs,st
           | W,Some (Tag,Some _) -> assert false
           | J,_ -> emit_joker st init
-          | _,Some (Plain,None) -> assert false
+          | _,Some (Plain _,None) -> assert false
           end
       | _,Code _ -> Warn.fatal "No dependency to code location"
 
@@ -1204,10 +1208,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | None ->
               let init,cs,st = STR.emit_store_reg st p init loc r2 in
               None,init,cs2@cs,st
-          | Some (Rel,None) ->
+          | Some (Rel _,None) ->
               let init,cs,st = STLR.emit_store_reg st p init loc r2 in
               None,init,cs2@cs,st
-          | Some (Rel,Some (sz,o)) ->
+          | Some (Rel _,Some (sz,o)) ->
               let module S =
                 STORE
                   (struct
@@ -1222,11 +1226,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | Some (Atomic rw,Some (sz,o)) ->
               let r,init,cs,st = emit_sta_mixed_reg sz o rw st p init loc r2 in
               Some r,init,cs2@cs,st
-          | Some (Acq,_) ->
+          | Some (Acq _,_) ->
               Warn.fatal "No store acquire"
-          | Some (AcqPc,_) ->
+          | Some (AcqPc _,_) ->
               Warn.fatal "No store acquirePc"
-          | Some (Plain,Some (sz,o)) ->
+          | Some (Plain _,Some (sz,o)) ->
               let module S =
                 STORE
                   (struct
@@ -1243,7 +1247,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | Some (Tag, None) ->
               let init,cs,st = STG.emit_store_reg st p init loc r2 in
               None,init,cs2@cs,st
-          | Some (Plain,None) -> assert false
+          | Some (Plain _,None) -> assert false
           | Some (Tag,Some _) -> assert false
           end
       | Some J,_ -> emit_joker st init
