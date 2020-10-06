@@ -1,6 +1,7 @@
 record = "AArch64"
 
 cats = [
+    "cats/aarch64-v05.cat",
     "cats/aarch64-v04.cat",
     "cats/aarch64-v03.cat",
     "cats/aarch64-v02.cat",
