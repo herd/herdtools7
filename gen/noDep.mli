@@ -24,6 +24,7 @@ val ddw_default : dp option
 val ctrlr_default : dp option
 val ctrlw_default : dp option
 val is_ctrlr : 'a -> 'b
+val is_addr : 'a -> 'b
 val fst_dp : 'a -> 'b
 val sequence_dp : 'a -> 'b -> 'c
 val pp_dp : 'a -> 'b

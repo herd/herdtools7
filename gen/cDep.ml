@@ -30,6 +30,10 @@ let is_ctrlr = function
   | CTRL -> true
   | _ -> false
 
+let is_addr = function
+  | ADDR -> true
+  | _ -> false
+
 let fst_dp = function
   | CTRL -> [CTRL]
   | ADDR|DATA -> []
