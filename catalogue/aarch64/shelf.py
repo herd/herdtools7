@@ -43,4 +43,6 @@ illustrative_tests = [
     "tests/LB+rel+CSEL2.litmus",
     "tests/LB+rel+CSEL3.litmus",
     "tests/LB+rel+CSEL4.litmus",
+    "tests/CAS+data1.litmus",
+    "tests/CAS+data2.litmus",
 ]

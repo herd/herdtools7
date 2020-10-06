@@ -1,0 +1,14 @@
+AArch64 CAS+data1
+{
+0:X1=x; 0:X3=y;
+1:X1=x; 1:X3=y;
+}
+ P0                | P1          ;
+ NOP               | LDR W0, [X1];
+ NOP               | MOV W5, W0;
+ NOP               | MOV W6, #1;
+ MOV W0, #1        | CAS W0, W6, [X1] ;
+ STR W0, [X3]      | STR W4, [X3];
+ STLR W0, [X1]     | NOP;
+exists
+(1:X5=1 /\ y=1)
