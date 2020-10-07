@@ -28,6 +28,8 @@ match name with
 | "nop"|"NOP" -> NOP
 (* Hints are NOPS in AArch64 *)
 | "hint"|"HINT" -> HINT
+(* Halt instructions are used by Debug mode, not needed here - NOP *)
+| "hlt" | "HLT" -> HLT
 (* Branch *)
 | "b"  | "B"  -> B
 | "br"  | "BR"  -> BR
