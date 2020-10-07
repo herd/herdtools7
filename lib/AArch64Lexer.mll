@@ -54,6 +54,7 @@ match name with
 | "tbz" | "TBZ" -> TBZ
 (* Memory *)
 | "ldr"|"LDR" -> LDR
+| "ldur"|"LDUR" -> LDUR
 | "ldp"|"LDP" -> LDP
 | "ldnp"|"LDNP" -> LDNP
 | "stp"|"STP" -> STP
