@@ -239,7 +239,7 @@ module Make
       let check_ptw proc dir a_virt ma an ii mdirect mok mfault =
         let setbits_get_oa a_pte m =
           M.delay
-            (m >>= fun pte_v -> match pte_v.setbits with
+            (m >>== fun pte_v -> match pte_v.setbits with
             | [] -> M.unitT pte_v.oa_v
             | ops ->
                 let mops =
