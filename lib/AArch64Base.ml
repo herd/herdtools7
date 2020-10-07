@@ -441,7 +441,7 @@ type 'k kinstruction =
   | I_STOPBH of  atomic_op * bh * w_type  * reg * reg
 (* Operations *)
   | I_MOV of variant * reg * 'k kr
-  | I_MOVZ of variant * reg * 'k kr * 'k s
+  | I_MOVZ of variant * reg * 'k * 'k s
   | I_SXTW of reg * reg
   | I_OP3 of variant * op * reg * reg * 'k kr * 'k s
   | I_ADDR of reg * lbl
@@ -633,10 +633,13 @@ let do_pp_instruction m =
 (* Operations *)
   | I_MOV (v,r,kr) ->
       pp_rkr "MOV" v r kr
-  | I_MOVZ (v,r,kr,S_NOEXT) ->
-      pp_rkr "MOVZ" v r kr
-  | I_MOVZ (v,r,kr,s) ->
-      pp_rkr "MOVZ" v r kr ^ "," ^ pp_barrel_shift "," s (m.pp_k)
+  | I_MOVZ (v,r,k,S_NOEXT) ->
+      sprintf "MOVZ %s,%s" (pp_vreg v r) (m.pp_k k)
+  | I_MOVZ (v,r,k,s) ->
+      sprintf "MOVZ %s,%s,%s"
+        (pp_vreg v r)
+        (m.pp_k k)
+        (pp_barrel_shift "," s (m.pp_k))
   | I_SXTW (r1,r2) ->
       sprintf "SXTW %s,%s" (pp_xreg r1) (pp_wreg r2)
   | I_OP3 (v,SUBS,ZR,r,K k, S_NOEXT) ->
@@ -975,7 +978,7 @@ include Pseudo.Make
         | I_TBNZ (v,r1,k,lbl) -> I_TBNZ (v,r1,k_tr k, lbl)
         | I_TBZ (v,r1,k,lbl) -> I_TBZ (v,r1,k_tr k, lbl)
         | I_MOV (v,r,k) -> I_MOV (v,r,kr_tr k)
-        | I_MOVZ (v,r,k,s) -> I_MOVZ (v,r,kr_tr k,ap_shift k_tr s)
+        | I_MOVZ (v,r,k,s) -> I_MOVZ (v,r,k_tr k,ap_shift k_tr s)
         | I_OP3 (v,op,r1,r2,kr,s) -> I_OP3 (v,op,r1,r2,kr_tr kr,ap_shift k_tr s)
 
 

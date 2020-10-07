@@ -295,7 +295,7 @@ module Make
         | _, S_LSL(_) | _, _ ->
             Warn.fatal
               "illegal instruction %s"
-              (dump_instruction (I_MOVZ (sz, rd, K k, os)))
+              (dump_instruction (I_MOVZ (sz, rd, k, os)))
         end
           >>= (fun v -> write_reg rd v ii)
           >>! B.Next
@@ -526,10 +526,8 @@ module Make
             let sz = tr_variant var in
             read_reg_ord_sz sz r2 ii >>= fun v -> write_reg r1 v ii >>! B.Next
 
-        | I_MOVZ(var,rd,K k,os) ->
+        | I_MOVZ(var,rd,k,os) ->
             movz var rd k os ii
-        | I_MOVZ(_,_,_,_) ->
-            Warn.fatal "Illegal argument in movz, expecting imm16 only"
 
         | I_ADDR (r,lbl) ->
             write_reg r (V.nameToV lbl) ii >>! B.Next

@@ -654,13 +654,13 @@ instr:
   { A.I_MOV (A.V64,$2,$4) }
 | MOV wreg COMMA kwr
   { A.I_MOV (A.V32,$2,$4) }
-| MOVZ xreg COMMA NUM
-  { A.I_MOVZ (A.V64,$2, A.K (MetaConst.Int $4), A.S_NOEXT) }
-| MOVZ xreg COMMA NUM COMMA LSL k
-  { A.I_MOVZ (A.V64,$2, A.K (MetaConst.Int $4), A.S_LSL $7) }
-| MOVZ wreg COMMA kwr
+| MOVZ xreg COMMA k
+  { A.I_MOVZ (A.V64,$2, $4, A.S_NOEXT) }
+| MOVZ xreg COMMA k COMMA LSL k
+  { A.I_MOVZ (A.V64,$2, $4, A.S_LSL $7) }
+| MOVZ wreg COMMA k
   { A.I_MOVZ (A.V32,$2,$4, A.S_NOEXT) }
-| MOVZ wreg COMMA kwr COMMA LSL k
+| MOVZ wreg COMMA k COMMA LSL k
   { A.I_MOVZ (A.V32,$2,$4, A.S_LSL $7) }
 | ADR xreg COMMA NAME
   { A.I_ADDR ($2,$4) }
