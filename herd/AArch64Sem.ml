@@ -630,7 +630,7 @@ module Make
             | Inc|Inv -> mask32 var in
             if not (C.variant Variant.NotWeakPredicated) then
               read_reg_ord NZP ii >>= tr_cond c >>= fun v ->
-                commit_bcc ii >>= fun () ->
+                (*commit_bcc ii >>= fun () ->*)
                 M.choiceT v
                   (read_reg_data sz r2 ii >>= fun v -> write_reg r1 v ii)
                   (read_reg_data sz r3 ii >>=
