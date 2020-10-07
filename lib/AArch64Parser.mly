@@ -212,20 +212,20 @@ instr:
 | NOP { A.I_NOP }
 | HINT NUM { A.I_NOP }
 /* Branch */
-| B NAME { A.I_B $2 }
+| B label_addr { A.I_B $2 }
 | BR xreg { A.I_BR $2 }
-| BL NAME { A.I_BL $2 }
+| BL label_addr { A.I_BL $2 }
 | BLR xreg { A.I_BLR $2 }
 | RET  { A.I_RET None }
 | RET xreg { A.I_RET (Some $2) }
-| BEQ NAME { A.I_BC (A.EQ,$2) }
-| BNE NAME { A.I_BC (A.NE,$2) }
+| BEQ label_addr { A.I_BC (A.EQ,$2) }
+| BNE label_addr { A.I_BC (A.NE,$2) }
 | BLE NAME { A.I_BC (A.LE,$2) }
 | BLT NAME { A.I_BC (A.LT,$2) }
 | BGE NAME { A.I_BC (A.GE,$2) }
 | BGT NAME { A.I_BC (A.GT,$2) }
-| CBZ reg COMMA NAME   { let v,r = $2 in A.I_CBZ (v,r,$4) }
-| CBNZ reg COMMA NAME  { let v,r = $2 in A.I_CBNZ (v,r,$4) }
+| CBZ reg COMMA label_addr { let v,r = $2 in A.I_CBZ (v,r,$4) }
+| CBNZ reg COMMA label_addr { let v,r = $2 in A.I_CBNZ (v,r,$4) }
 | TBNZ reg COMMA NUM COMMA label_addr
   { let v,r = $2 in A.I_TBNZ (v,r,MetaConst.Int $4,$6) }
 | TBZ reg COMMA NUM COMMA label_addr

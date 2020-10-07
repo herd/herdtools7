@@ -1,0 +1,12 @@
+AArch64 A124
+(* BNE instruction, relies on CMP  *)
+
+ { 0:X0=1; }
+
+P0;
+  CMP X0, #1;
+  B.NE foo;
+  ADD X0, X0, #1;
+  foo: NOP;
+
+forall (0:X0=2)
