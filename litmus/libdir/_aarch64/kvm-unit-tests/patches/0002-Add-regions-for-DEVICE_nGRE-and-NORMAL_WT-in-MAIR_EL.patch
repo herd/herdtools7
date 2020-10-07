@@ -1,0 +1,51 @@
+From 24e70344705edf463d81a5fc33b099cd5c485b3b Mon Sep 17 00:00:00 2001
+From: Nikos Nikoleris <nikos.nikoleris@arm.com>
+Date: Wed, 7 Oct 2020 16:53:47 +0100
+Subject: [PATCH 1/2] Add regions for DEVICE_nGRE and NORMAL_WT in MAIR_EL1
+ init
+
+Signed-off-by: Nikos Nikoleris <nikos.nikoleris@arm.com>
+---
+ arm/cstart64.S                | 6 +++++-
+ lib/arm64/asm/pgtable-hwdef.h | 2 ++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/arm/cstart64.S b/arm/cstart64.S
+index ffdd49f..5a74d9d 100644
+--- a/arm/cstart64.S
++++ b/arm/cstart64.S
+@@ -154,6 +154,8 @@ halt:
+  *   DEVICE_GRE         010     00001100
+  *   NORMAL_NC          011     01000100
+  *   NORMAL             100     11111111
++ *   NORMAL_WT          101     10111011
++ *   DEVICE_nGRE        110     00001000
+  */
+ #define MAIR(attr, mt) ((attr) << ((mt) * 8))
+ 
+@@ -176,7 +178,9 @@ asm_mmu_enable:
+ 		     MAIR(0x04, MT_DEVICE_nGnRE) |	\
+ 		     MAIR(0x0c, MT_DEVICE_GRE) |	\
+ 		     MAIR(0x44, MT_NORMAL_NC) |		\
+-		     MAIR(0xff, MT_NORMAL)
++		     MAIR(0xff, MT_NORMAL) |	        \
++		     MAIR(0xbb, MT_NORMAL_WT) |         \
++		     MAIR(0x08, MT_DEVICE_nGRE)
+ 	msr	mair_el1, x1
+ 
+ 	/* TTBR0 */
+diff --git a/lib/arm64/asm/pgtable-hwdef.h b/lib/arm64/asm/pgtable-hwdef.h
+index 3352489..86f43cc 100644
+--- a/lib/arm64/asm/pgtable-hwdef.h
++++ b/lib/arm64/asm/pgtable-hwdef.h
+@@ -127,5 +127,7 @@
+ #define MT_DEVICE_GRE		2
+ #define MT_NORMAL_NC		3	/* writecombine */
+ #define MT_NORMAL		4
++#define MT_NORMAL_WT		5
++#define MT_DEVICE_nGRE		6
+ 
+ #endif /* _ASMARM64_PGTABLE_HWDEF_H_ */
+-- 
+2.17.1
+
