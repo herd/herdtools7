@@ -272,6 +272,7 @@ match name with
 | "sxtw"|"SXTW" -> SXTW
 | "uxtw"|"UXTW" -> UXTW
 | "mov"|"MOV" -> MOV
+| "movz"|"MOVZ" -> MOVZ
 | "adr"|"ADR" -> ADR
 | "rbit"|"RBIT" -> RBIT
 | "add"|"ADD" -> OP A.ADD

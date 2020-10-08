@@ -1,0 +1,10 @@
+AArch64 A54
+(* Tests movz, 64-bit, LSL 0 (noop) *)
+
+{ 0:X0=0; }
+
+P0;
+MOVZ X0, #42, LSL #0;
+
+exists (0:X0=42)
+
