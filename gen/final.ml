@@ -75,7 +75,12 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           | Rf _ | Fr _ | Ws _ | Hat
           | Back _|Leave _|Irf _|Ifr _ -> true
           | Rmw rmw -> C.A.show_rmw_reg rmw
-          | Po _ | Fenced _ | Dp _|Insert _|Node _ -> false
+          | Po _ | Fenced _ | Dp _ ->
+              begin match C.E.loc_sd e with
+              | Code.Same -> true
+              | Code.Diff -> false
+              end
+          |Insert _|Node _ -> false
           | Id -> assert false in
         (fun n ->
           let p = C.C.find_non_pseudo_prev n.C.C.prev in
