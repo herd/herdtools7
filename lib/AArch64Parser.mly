@@ -169,7 +169,13 @@ kr0:
 kr0_no_shift:
 | { A.K (MetaConst.zero) }
 | COMMA k { A.K $2 }
+| COMMA xreg { A.RV (A.V64,$2) }
+| COMMA wreg { A.RV (A.V32,$2) }
+| COMMA wreg COMMA SXTW { A.RV (A.V32,$2) }
 
+/* Beware: for w-indexed accesses SXTW is considered always present.
+   Far from ideal, one simple to get correct assembly output for
+   the litmus tool. */
 kwr:
 | k { A.K $1 }
 | wreg { A.RV (A.V32,$1) }
