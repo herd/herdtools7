@@ -495,6 +495,7 @@ type 'k kinstruction =
 (* Operations *)
   | I_MOV of variant * reg * 'k kr
   | I_MOVZ of variant * reg * 'k * 'k s
+  | I_MOVK of variant * reg * 'k * 'k s
   | I_SXTW of reg * reg
   | I_OP3 of variant * op * reg * reg * 'k kr * 'k s
   | I_ADDR of reg * lbl
@@ -768,6 +769,13 @@ let do_pp_instruction m =
         (pp_vreg v r)
         (m.pp_k k)
         (pp_barrel_shift "," s (m.pp_k))
+  | I_MOVK (v,r,k,S_NOEXT) ->
+      sprintf "MOVK %s,%s" (pp_vreg v r) (m.pp_k k)
+  | I_MOVK (v,r,k,s) ->
+      sprintf "MOVK %s,%s,%s"
+        (pp_vreg v r)
+        (m.pp_k k)
+        (pp_barrel_shift "," s (m.pp_k))
   | I_SXTW (r1,r2) ->
       sprintf "SXTW %s,%s" (pp_xreg r1) (pp_wreg r2)
   | I_OP3 (v,SUBS,ZR,r,K k, S_NOEXT) ->
@@ -848,7 +856,8 @@ let fold_regs (f_regs,f_sregs) =
   | I_NOP | I_B _ | I_BC _ | I_BL _ | I_FENCE _ | I_RET None
     -> c
   | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_BLR r | I_BR r | I_RET (Some r)
-  | I_MOV (_,r,_) | I_MOVZ (_,r,_,_) |  I_ADDR (r,_) | I_IC (_,r) | I_DC (_,r) | I_MRS (r,_)
+  | I_MOV (_,r,_) | I_MOVZ (_,r,_,_) | I_MOVK (_,r,_,_)
+  | I_ADDR (r,_) | I_IC (_,r) | I_DC (_,r) | I_MRS (r,_)
   | I_TBNZ (_,r,_,_) | I_TBZ (_,r,_,_)
   | I_CHKSLD r | I_CHKTGD r
     -> fold_reg r c
@@ -1004,6 +1013,8 @@ let map_regs f_reg f_symb =
       I_MOV (v,map_reg r,k)
   | I_MOVZ (v,r,k,s) ->
       I_MOVZ (v,map_reg r,k,s)
+  | I_MOVK (v,r,k,s) ->
+      I_MOVK (v,map_reg r,k,s)
   | I_SXTW (r1,r2) ->
       I_SXTW (map_reg r1,map_reg r2)
   | I_OP3 (v,op,r1,r2,kr,os) ->
@@ -1069,6 +1080,7 @@ let get_next = function
   | I_STRBH _
   | I_MOV _
   | I_MOVZ _
+  | I_MOVK _
   | I_SXTW _
   | I_OP3 _
   | I_FENCE _
@@ -1163,6 +1175,7 @@ include Pseudo.Make
         | I_TBZ (v,r1,k,lbl) -> I_TBZ (v,r1,k_tr k, lbl)
         | I_MOV (v,r,k) -> I_MOV (v,r,kr_tr k)
         | I_MOVZ (v,r,k,s) -> I_MOVZ (v,r,k_tr k,ap_shift k_tr s)
+        | I_MOVK (v,r,k,s) -> I_MOVK (v,r,k_tr k,ap_shift k_tr s)
         | I_OP3 (v,op,r1,r2,kr,s) -> I_OP3 (v,op,r1,r2,kr_tr kr,ap_shift k_tr s)
         | I_ALIGND (r1,r2,k) -> I_ALIGND (r1,r2,kr_tr k)
         | I_ALIGNU (r1,r2,k) -> I_ALIGNU (r1,r2,kr_tr k)
@@ -1196,6 +1209,7 @@ include Pseudo.Make
         | I_TBNZ _
         | I_MOV _
         | I_MOVZ _
+        | I_MOVK _
         | I_SXTW _
         | I_OP3 _
         | I_FENCE _

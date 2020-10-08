@@ -1,0 +1,10 @@
+Test A88 Allowed
+States 1
+0:X0=65537;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=65537)
+Observation A88 Always 1 0
+Hash=959076ef4e987e7fb16a80b3de93d49d
+
