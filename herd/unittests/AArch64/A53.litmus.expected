@@ -1,0 +1,10 @@
+Test A53 Allowed
+States 1
+0:X0=42;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=42)
+Observation A53 Always 1 0
+Hash=d8d50ee03150172d1e9afcc4b6da8d8a
+

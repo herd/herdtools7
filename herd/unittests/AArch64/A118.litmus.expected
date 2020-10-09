@@ -1,0 +1,10 @@
+Test A118 Required
+States 1
+0:X0=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=0)
+Observation A118 Always 1 0
+Hash=2c67ca5f7d5dba8516e38e179ce54014
+

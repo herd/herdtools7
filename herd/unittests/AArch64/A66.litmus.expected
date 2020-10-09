@@ -1,0 +1,10 @@
+Test A66 Allowed
+States 1
+0:X0=42;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=42)
+Observation A66 Always 1 0
+Hash=0bbf4832cac85dbe6dc262ccbb4239ac
+

@@ -1,0 +1,10 @@
+Test A4 Allowed
+States 1
+0:X0=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=0)
+Observation A4 Always 1 0
+Hash=b0a348f458429140b16552cc100cdc7c
+

@@ -1,0 +1,10 @@
+Test A120 Required
+States 1
+0:X0=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=1)
+Observation A120 Always 1 0
+Hash=d12d12f9d769d7e929a451f23adf86af
+

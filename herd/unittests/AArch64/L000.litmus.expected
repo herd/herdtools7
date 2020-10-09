@@ -1,0 +1,10 @@
+Test L000 Required
+States 1
+x=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (x=1)
+Observation L000 Always 1 0
+Hash=3c5726f58582737286d66b578b284edb
+

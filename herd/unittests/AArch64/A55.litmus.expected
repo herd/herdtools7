@@ -1,0 +1,10 @@
+Test A55 Allowed
+States 1
+0:X0=2752512;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=2752512)
+Observation A55 Always 1 0
+Hash=e59e662963bc13a720b6862fb3066839
+

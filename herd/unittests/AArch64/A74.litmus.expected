@@ -1,0 +1,10 @@
+Test A74 Allowed
+States 1
+0:X0=50;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=50)
+Observation A74 Always 1 0
+Hash=36fe0805cc0febc64c0720a09a03f884
+

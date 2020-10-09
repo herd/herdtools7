@@ -1,0 +1,10 @@
+Test A86 Allowed
+States 1
+0:X0=50;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=50)
+Observation A86 Always 1 0
+Hash=b21f163e719017f811e394d8b47a35cb
+

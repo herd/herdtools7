@@ -1,0 +1,10 @@
+Test A41 Allowed
+States 1
+0:X1=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X1=0)
+Observation A41 Always 1 0
+Hash=68fcc3fe810b23f725f15397c7e749a4
+
