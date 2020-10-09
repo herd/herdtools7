@@ -3,9 +3,10 @@ D=dune
 #For building with ocamlbuild set
 #D=ocb
 
-all:
-	sh ./$(D)-build.sh $(PREFIX)
+all: build
 
+build:
+	sh ./$(D)-build.sh $(PREFIX)
 
 install:
 	sh ./$(D)-install.sh $(PREFIX)
