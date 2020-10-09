@@ -31,6 +31,8 @@ module Make
 
 let do_self = C.variant Variant_gen.Self
 let do_tag = C.variant Variant_gen.MemTag
+let do_kvm = C.variant Variant_gen.KVM
+
 open Code
 open Printf
 
@@ -179,8 +181,8 @@ let overwrite_value v ao w = match ao with
 type strength = Strong | Weak
 let fold_strength f r = f Strong (f Weak r)
 
-type fence = | Barrier of barrier | CacheSync of strength * bool | 
-               Shootdown of AArch64Base.mBReqDomain * AArch64Base.TLBI.op 
+type fence = | Barrier of barrier | CacheSync of strength * bool |
+               Shootdown of mBReqDomain * TLBI.op
 
 let is_isync = function
   | Barrier ISB -> true
@@ -215,24 +217,38 @@ let pp_fence f = match f with
       (match s with Strong -> "Strong" | Weak -> "")
       (if isb then "Isb" else "")
 | Shootdown (d,op) -> sprintf "Shootdown%s%s"
-      (AArch64Base.pp_domain d) (AArch64Base.TLBI.pp_op op)
+      (pp_domain d) (TLBI.pp_op op)
 
 let fold_cumul_fences f k =
    do_fold_dmb_dsb C.moreedges (fun b k -> f (Barrier b) k) k
 
-let fold_all_fences f k =
-  let k = AArch64Base.TLBI.fold_op 
-            (fun op k -> AArch64Base.fold_domain (fun d k -> f (Shootdown(d,op)) k) k) 
-          k in  
-  fold_barrier  C.moreedges (fun b k -> f (Barrier b) k)
-    (if do_self then
-      Misc.fold_bool
-        (fun b k ->
-          fold_strength
-            (fun s k -> f (CacheSync (s,b)) k)
-            k)
+let fold_shootdown =
+  if do_kvm then
+    let fold_domain =
+      if C.moreedges then fold_domain
+      else fun f k -> f ISH k
+    and fold_op =
+      if C.moreedges then TLBI.full_fold_op
+      else TLBI.fold_op in
+    fun f k ->
+      fold_op
+        (fun op k ->
+          fold_domain (fun d k -> f (Shootdown(d,op)) k) k)
         k
-    else k)
+  else fun _f k -> k
+
+let fold_cachesync =
+  if do_self then
+    fun f ->
+      Misc.fold_bool
+        (fun b k -> fold_strength (fun s k -> f (CacheSync (s,b)) k) k)
+  else fun _ k -> k
+
+let fold_all_fences f k =
+  let k = fold_shootdown f k in
+  let k = fold_cachesync f k in
+  fold_barrier  C.moreedges (fun b k -> f (Barrier b) k) k
+
 
 let fold_some_fences f k =
   let f = fun b k -> f (Barrier b) k in

@@ -102,6 +102,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let eor sz r1 r2 r3 = I_OP3 (sz,EOR,r1,r2,RV (sz,r3), S_NOEXT)
     let andi sz r1 r2 k = I_OP3 (sz,AND,r1,r2,K k, S_NOEXT)
     let addi r1 r2 k = I_OP3 (vloc,ADD,r1,r2,K k, S_NOEXT)
+    let lsri64 r1 r2 k = I_OP3 (V64,LSR,r1,r2,K k, S_NOEXT)
     let addi_64 r1 r2 k = I_OP3 (V64,ADD,r1,r2,K k, S_NOEXT)
 (*    let add r1 r2 r3 = I_OP3 (vloc,ADD,r1,r2,r3) *)
     let add v r1 r2 r3 = I_OP3 (v,ADD,r1,r2,RV (v,r3), S_NOEXT)
@@ -963,13 +964,16 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let emit_fence st p init n f = match f with
     | Barrier f -> init,[Instruction (I_FENCE f)],st
-    | Shootdown(dom,op) -> 
+    | Shootdown(dom,op) ->
           let loc = match n.C.evt.C.loc with
               | Data loc -> loc
               | Code _ -> Warn.user_error "TLBI/CacheSync"
-          in 
+          in
           let r,init,st = U.next_init st p init loc in
-          init,emit_shootdown dom op r,st
+          let r1,st = tempo1 st in
+          let cs = emit_shootdown dom op r1 in
+          let cs = Instruction (lsri64 r1 r 12)::cs in
+          init,cs,st
     | CacheSync (s,isb) ->
         try
           let lab = C.find_prev_code_write n in

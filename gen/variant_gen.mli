@@ -26,6 +26,8 @@ type t =
   | Self
 (* MTE = Memory tagging *)
   | MemTag
+(* Explicit virtual memory *)
+  | KVM
 
 val tags : string list
 

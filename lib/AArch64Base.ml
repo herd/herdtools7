@@ -312,17 +312,17 @@ module TLBI = struct
     | IPAS2 -> "IPAS2"
     | IPAS2L -> "IPAS2L"
 
-let fold_typ f k =
-  let k = f ALL k in
-  let k = f VMALL k in
-  let k = f VMALLS12 k in
-  let k = f ASID k in
-  let k = f VA k in
-  let k = f VAL k in
-  let k = f VAA k in
-  let k = f IPAS2 k in
-  let k = f IPAS2L k
-  in k
+  let fold_typ f k =
+    let k = f ALL k in
+    let k = f VMALL k in
+    let k = f VMALLS12 k in
+    let k = f ASID k in
+    let k = f VA k in
+    let k = f VAL k in
+    let k = f VAA k in
+    let k = f IPAS2 k in
+    let k = f IPAS2L k
+    in k
 
   type domain = | IS | No
 
@@ -346,24 +346,27 @@ let fold_domain f k =
 
   let domain_list = [ IS; No ]
 
-  let mk_op a_typ a_level a_domain = { typ=a_typ; level=a_level; domain=a_domain }
-  let enumerate funs elems =
-    List.fold_right (fun elem sofar ->
-        (List.fold_right (fun f sofar -> (f elem)::sofar) funs [])@sofar
-    ) elems []
-  let op_list = enumerate 
-                   (enumerate 
-                     (enumerate [mk_op] typ_list) 
-                   level_list)
-                domain_list
-
-  let rec do_fold_op f k l = match l with
+  let rec fold_from_list xs f k = match xs with
   | [] -> k
-  | x::xs -> let k = f x k in do_fold_op f k xs
+  | x::xs -> fold_from_list xs f (f x k)
 
-  let fold_op f k = do_fold_op f k op_list
+  let full_fold_op f k =
+    fold_from_list
+      typ_list
+      (fun typ k ->
+        fold_from_list level_list
+          (fun level k ->
+            fold_from_list domain_list
+              (fun domain k -> f {typ; level; domain; } k)
+              k)
+          k)
+      k
 
-   let pp_op { typ; level; domain; } =
+  let fold_op f k =
+    let k = f  {typ=VMALLS12; level=E1; domain=IS;} k in
+    f {typ=VAA; level=E1; domain=IS; } k
+
+  let pp_op { typ; level; domain; } =
     sprintf "%s%s%s" (pp_typ typ) (pp_level level) (pp_domain domain)
 
   let is_at_level lvl op =  op.level = lvl
@@ -381,6 +384,7 @@ let fold_domain f k =
     | IPAS2
     | IPAS2L
       -> false
+
 end
 
 (********************)

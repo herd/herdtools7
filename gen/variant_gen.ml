@@ -26,8 +26,9 @@ type t =
   | Self
 (* MTE = Memory tagging *)
   | MemTag
-
-let tags = ["AsAmo";"ConstsInInit";"Mixed";"FullMixed";"Self"; "MemTag"; ]
+(* Explicit virtual memory *)
+  | KVM
+let tags = ["AsAmo";"ConstsInInit";"Mixed";"FullMixed";"Self"; "MemTag"; "kvm" ]
 
 let parse tag = match Misc.lowercase tag with
 | "asamo" -> Some AsAmo
@@ -36,6 +37,7 @@ let parse tag = match Misc.lowercase tag with
 | "fullmixed" -> Some FullMixed
 | "self" -> Some Self
 | "memtag" -> Some MemTag
+| "kvm" -> Some KVM
 | _ -> None
 
 let pp = function
@@ -45,3 +47,4 @@ let pp = function
   | FullMixed -> "FullMixed"
   | Self -> "Self"
   | MemTag -> "MemTag"
+  | KVM -> "kvm"
