@@ -55,7 +55,6 @@ val strictskip : bool ref
 val cycles : StringSet.t ref
 val show : PrettyConf.show ref
 val nshow :int option ref
-val auto : bool ref
 val candidates : bool ref
 val restrict : Restrict.t ref
 val showkind : bool ref

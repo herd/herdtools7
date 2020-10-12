@@ -165,8 +165,6 @@ let handle_key main key arg = match key with
 | "badflag" ->
      lex_string_opt badflag arg
 (* Control output *)
-| "auto" ->
-    lex_bool auto arg
 | "show" ->
     lex_tag "show"
        PrettyConf.parse_show PrettyConf.tags_show show arg

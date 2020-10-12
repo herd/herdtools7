@@ -67,7 +67,6 @@ let strictskip = ref false
 let cycles = ref StringSet.empty
 let show = ref PrettyConf.ShowNone
 let nshow = ref None
-let auto = ref false
 let candidates = ref false
 let restrict = ref Restrict.No
 let showkind = ref false
