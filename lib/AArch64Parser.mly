@@ -242,9 +242,10 @@ instr:
 | LDR reg COMMA LBRK xreg kr0 RBRK k0
   { let v,r    = $2 in
     let kr, os = $6 in
-    if Option.is_some $8 && kr = A.K MetaConst.zero then
-      A.I_LDR_P (v,r,$5,Option.get $8)
-    else
+    match $8 with
+    | Some post when kr = A.K MetaConst.zero ->
+      A.I_LDR_P (v,r,$5,post)
+    | _ ->
       A.I_LDR (v,r,$5,kr,os) }
 | ldp_instr wreg COMMA wreg COMMA LBRK xreg kr0_no_shift RBRK
   { $1 A.V32 $2 $4 $7 $8 }
