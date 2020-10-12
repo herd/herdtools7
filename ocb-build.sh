@@ -24,11 +24,12 @@ let rev = "$REV"
 let libdir = "$libdir/"
 EOD
 
-ocamlbuild -no-links -j 5 -cflags -w,+a-3-4-9-29-33-41-45,-strict-sequence $NATIVE
+ocamlbuild -no-links -j 5 -cflags -w,+a-3-4-9-29-33-41-45-67,-strict-sequence $NATIVE
 # Warnings ignored on purpose:
 # Warning 4: this pattern-matching is fragile
 # Warning 33: unused open
 # Warning 45: this open statement shadows the constructor
+# Warning 67: unused functor parameter
 
 # Warnings ignored temporarily to allow warning-free compilation (@todo Re-enable):
 # Warning 9: the following labels are not bound in this record pattern
