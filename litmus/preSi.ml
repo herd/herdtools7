@@ -574,7 +574,7 @@ module Make
           end ;
           let some_ptr =  U.ptr_in_outs env test in
           if some_ptr || do_see_faults then begin
-          (* Define indices *)
+            (* Define indices *)
             List.iteri
               (fun k (a,_) ->
                 let idx = if Cfg.is_kvm then 2*k+1 else k+1 in
@@ -1056,10 +1056,10 @@ module Make
         Array.to_list tr
 
 (* Thread code, as functions *)
-let dump_thread_code env (proc,(out,(_outregs,envVolatile)))  =
-  let myenv = U.select_proc proc env
-  and global_env = U.select_global env in
-  Lang.dump_fun O.out myenv global_env envVolatile proc out
+      let dump_thread_code env (proc,(out,(_outregs,envVolatile)))  =
+        let myenv = U.select_proc proc env
+        and global_env = U.select_global env in
+        Lang.dump_fun O.out myenv global_env envVolatile proc out
 
 (* Untouched variables, per thread + responsability *)
       let part_vars test =
@@ -1204,11 +1204,13 @@ let dump_thread_code env (proc,(out,(_outregs,envVolatile)))  =
                 O.fii "_log->%s = _ctx->f.%s?1:0;" (tag_log f) (tag_seen f))
             faults
         end ;
-(* Stnchronise *)
+(* Synchronise *)
         O.oii "barrier_wait(_b);" ;
 (* Save/Restore pte *)
+        let ptes =
+          if Cfg.is_kvm then U.get_displayed_ptes test
+          else StringSet.empty in
         if Cfg.is_kvm then begin
-          let ptes = U.get_displayed_ptes test in
           List.iter
             (fun a ->
               let pte = OutUtils.fmt_pte_kvm a
@@ -1249,9 +1251,10 @@ let dump_thread_code env (proc,(out,(_outregs,envVolatile)))  =
                     ((if U.is_ptr loc env then OutUtils.fmt_presi_ptr_index
                     else OutUtils.fmt_presi_index) tag)
                     tag)
-            to_collect ;
-          O.oii "barrier_wait(_b);"
+            to_collect
         end ;
+        if not (StringSet.is_empty ptes && StringSet.is_empty globs) then
+          O.oii "barrier_wait(_b);" ;
         if proc = 0 then begin
           (* addresse -> code *)
           A.LocSet.iter
@@ -1346,19 +1349,19 @@ let dump_thread_code env (proc,(out,(_outregs,envVolatile)))  =
         O.oi "barrier_wait(_b);" ;
         O.oi "switch (_role) {" ;
 (* jade: not sure how to integrate the aligned bit into KVM mode:
-        let glob  =
-          let global = U.select_global env
-          and aligned =
-            if
-              List.exists
-                (fun (a,_) -> U.is_aligned a env)
-                test.T.globals
-            then
-              Warn.fatal "align feature not implemented in presi mode";
-            [] in
-          let open Lang in
-          { global; aligned; volatile=[]; } in
-*)
+   let glob  =
+   let global = U.select_global env
+   and aligned =
+   if
+   List.exists
+   (fun (a,_) -> U.is_aligned a env)
+   test.T.globals
+   then
+   Warn.fatal "align feature not implemented in presi mode";
+   [] in
+   let open Lang in
+   { global; aligned; volatile=[]; } in
+ *)
         let global_env = U.select_global env
         and pte_init = get_pte_init test.T.init in
         List.iter2
