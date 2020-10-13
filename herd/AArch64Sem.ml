@@ -284,7 +284,7 @@ module Make
         lift_memop
           (fun ma -> ma >>= fun a ->
            old_do_read_mem sz AArch64.N a ii >>= fun v ->
-           write_reg rd v ii )
+           write_reg_sz_non_mixed sz rd v ii )
           (get_ea rs kr s ii) ii
 
       (* Post-Indexed load immediate *)
