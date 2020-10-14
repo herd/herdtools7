@@ -66,11 +66,6 @@ end = struct
     end
 
   open Speedcheck
-  let do_dont =
-    match Cfg.speedcheck with
-    | AllSpeed -> true
-    | NoSpeed|SomeSpeed -> false
-
 
   module type ArchConf = sig
     val word : Word.t
@@ -260,10 +255,8 @@ let dump_shell names =
       end ;
       let sleep = Cfg.sleep in
       if sleep >= 0 then fprintf out_chan "SLEEP=%i\n" sleep ;
-      if do_dont then fprintf out_chan "LOG=./$$.txt\n" ;
       let arch,_,sources,utils = run_tests names out_chan in
 
-      if do_dont then output_line out_chan "rm -f $LOG" ;
       let module O = struct
         include Cfg
         include (val (get_arch arch) : ArchConf)

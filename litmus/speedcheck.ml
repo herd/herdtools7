@@ -27,7 +27,7 @@ let tags = ["no";"some";"all";]
 let parse tag = match tag with
 | "false"|"no" -> Some NoSpeed
 | "true"|"some" -> Some SomeSpeed
-| "all"|"dont" -> Some AllSpeed
+| "all" -> Some AllSpeed
 | _ -> None
 
 let pp = function

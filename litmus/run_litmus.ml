@@ -103,11 +103,7 @@ module Make(O:Config)(Tar:Tar.S)(D:Test) =
 
     open Speedcheck
 
-    let do_dont = match O.speedcheck with
-    | AllSpeed -> true
-    | NoSpeed|SomeSpeed -> false
-
-    let run_test chan _t name sX =
+    let run_test chan _t _name sX =
       let opts =
         sprintf "%s $LITMUSOPTS" (if O.verbose > 0 then "-v" else "-q") in
       if O.is_out then begin
@@ -123,19 +119,8 @@ module Make(O:Config)(Tar:Tar.S)(D:Test) =
               let rm = sprintf "rm %s" exe in
               sprintf "%s && ssh -q -n -p $RPORT $RHOST \"%s 2>/dev/null && %s\""
                 scp  run rm in
-        let out_com chan com =
-          if do_dont then
-            fprintf chan "%s | tee $LOG\n" com
-          else output_line chan com in
+        let out_com chan com = output_line chan com in
         out_com chan com ;
-        if do_dont then begin
-          output_line chan
-            "if grep -e 'Sometimes' $LOG >/dev/null 2>/dev/null" ;
-          output_line chan "then" ;
-          fprintf chan "  touch %s.no\n" (RU.file_base name) ;
-          output_line chan "fi" ;
-          output_line chan "rm -f $LOG"
-        end
       end else begin
         let com = sprintf "%s %s" (Tar.outname sX) opts in
         exec_stdout com ;
