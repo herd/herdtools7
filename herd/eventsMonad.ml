@@ -42,6 +42,7 @@ and type evt_struct = E.event_structure) =
         (A)
 
     let dbg = C.debug.Debug_herd.mem
+    let dbg_monad = C.debug.Debug_herd.monad
     let do_deps = C.variant Variant.Deps
 
 (* LM Use lists for polymorphism.
@@ -136,13 +137,34 @@ Monad type:
       fun eiid_next ->
         eiid_next, (Evt.singleton (v, [], E.empty_event_structure), None)
 
-(* Delay incompatible with speculation *)
-    let delay
-        = fun (m:'a t) (eiid:eid) ->
-          let eiid,(mact,_) = m eiid in
-          let v,cl,es = try Evt.as_singleton mact with _ -> assert false in
-          let delayed : 'a t = fun eiid -> eiid,(Evt.singleton (v,[],es),None) in
-          eiid,(Evt.singleton ((v,delayed),cl,E.empty_event_structure),None)
+(* This very special combinator permits to get monad m's result,
+   while postponing the usaga of corresponding event structure.
+   It proves convenient to express complex dependencies.
+   Not compatible with speculation *)
+
+    let delay_kont
+        = fun tag (m:'a t) kont (eiid:eid) ->
+          let eiid,(acts,specs) = m eiid in
+          assert (specs=None) ;
+          let eiid,acts =
+            Evt.fold
+              (fun (v,cls,es) (eiid,acts) ->
+                if dbg_monad then
+                  eprintf "Delay %s output is %a\n" tag E.debug_output es ;
+                let delayed : 'a t =
+                  fun eiid -> eiid,(Evt.singleton (v,[],es),None) in
+                let eiid,(acts2,specs) = kont v delayed eiid in
+                assert (specs=None) ;
+                let acts =
+                  Evt.fold
+                    (fun (v,cls2,es) acts -> Evt.add (v,cls@cls2,es) acts)
+                    acts2 acts in
+                eiid,acts)
+              acts (eiid,Evt.empty) in
+          eiid,(acts,None)
+
+    let delay (m:'a t) eiid =
+      delay_kont "delay" m (fun v delayed -> unitT (v,delayed)) eiid
 
     let (=**=) = E.(=**=)
     let (=*$=) = E.(=*$=)

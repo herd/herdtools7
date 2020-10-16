@@ -40,7 +40,9 @@ module type S =
     val zerocodeT        : 'a code
     val unitT        : 'a -> 'a t
     val unitcodeT        : 'a -> 'a code
+    val delay_kont : string -> 'a t -> ('a ->  'a t -> 'b t) -> 'b t
     val delay : 'a t -> ('a * 'a t) t
+
     val (>>=) : 'a t -> ('a -> 'b t) -> ('b) t
     val (>>==) : 'a t -> ('a -> 'b t) -> ('b) t (* Output event stay in first arg *)
     val (>>*=) : 'a t -> ('a -> 'b t) -> ('b) t
