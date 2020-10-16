@@ -68,6 +68,7 @@ module Make
         | V64 -> m
 
       let is_zero v = M.op Op.Eq v V.zero
+      and is_not_zero v = M.op Op.Ne v V.zero
 
 (* Ordinary access action *)
       let access_anexp anexp d loc v ac = Act.Access (d,loc,v,AArch64.N,anexp,quad,ac)
@@ -175,7 +176,6 @@ module Make
 (* Memory accesses *)
 (*******************)
 
-
 (*
   Implementation of accesses depends upon the appropriate variants,
  *)
@@ -197,8 +197,7 @@ module Make
 
       type ipte =
           { pte_v:V.v; oa_v:V.v; af_v:V.v;
-            db_v:V.v; dbm_v:V.v; valid_v:V.v;
-            changed: bool; }
+            db_v:V.v; dbm_v:V.v; valid_v:V.v;}
 
       let extract_af v = M.op1 Op.AF v
       let extract_db v = M.op1 Op.DB v
@@ -216,6 +215,29 @@ module Make
         write_loc quad an AArch64.NExp
           (A.Location_global a_pte) v Act.A_PTE ii
 
+
+      let test_and_set_bit cond set a_pte ii =
+        mextract_whole_pte_val AArch64.X a_pte ii >>= fun pte_v ->
+        cond pte_v >>*= fun c ->
+        M.choiceT c
+            (M.op1 set pte_v >>= fun v ->
+             write_whole_pte_val AArch64.X a_pte v ii)
+            (M.unitT ())
+
+      let bit_is_zero op v = M.op1 op v >>= is_zero
+      let bit_is_not_zero op v = M.op1 op v >>= is_not_zero
+      let m_op op m1 m2 = (m1 >>| m2) >>= fun (v1,v2) -> M.op op v1 v2
+
+      let test_and_set_af =
+        test_and_set_bit
+          (fun v ->
+            m_op Op.And
+              (bit_is_zero Op.AF v) (bit_is_not_zero Op.Valid v))
+          Op.SetAF
+
+      and test_and_set_db =
+        test_and_set_bit (fun v -> M.op1 Op.DB v >>= is_zero) Op.SetDB
+
       let mextract_pte_vals pte_v =
         (extract_oa pte_v >>|
         extract_valid pte_v >>|
@@ -223,9 +245,8 @@ module Make
         extract_db pte_v >>|
         extract_dbm pte_v) >>=
         (fun ((((oa_v,valid_v),af_v),db_v),dbm_v) ->
-          M.unitT {pte_v; oa_v; af_v; db_v; dbm_v; valid_v; changed=false;})
+          M.unitT {pte_v; oa_v; af_v; db_v; dbm_v; valid_v;})
 
-      let get_flag f mpte = mpte >>= fun p -> M.unitT (p,f p)
       let get_oa mpte = mpte >>= fun p -> M.unitT p.oa_v
 
 (******************)
@@ -234,38 +255,11 @@ module Make
 
 (* With choice operator *)
       let do_check_cond m m_cond k1 k2 =
-        M.delay begin
-          m >>= fun (pte_v:ipte) ->
-            m_cond pte_v >>= fun c -> (* commit_bcc ii >>= fun () -> *)
-              M.unitT (c,pte_v)
-        end >>= fun ((c,pte_v),m) ->
-          let m = m >>= fun _ -> M.unitT pte_v in
-          M.choiceT c (k1 m) (k2 m)
-
-(* Without choice, as such, can be used inside delay *)
-      let if_cond pte_v m_cond m_ifcond =
-        m_cond pte_v >>| m_ifcond pte_v.pte_v >>= fun (c,ok) ->
-        M.op3 Op.If c ok pte_v.pte_v >>= fun v ->
-        M.unitT { pte_v with pte_v = v }
-
-
-      let if_af v =
-        if_cond v (fun v -> is_zero v.af_v) (fun v -> M.op1 Op.SetAF v)
-
-      and if_db dir = match dir with
-      | Dir.W ->
-          fun v ->
-            if_cond v (fun v -> is_zero v.db_v) (fun v -> M.op1 Op.SetDB v)
-      | Dir.R -> M.unitT
-
-
-(* Other utilities *)
-      let set_changed kont ma =
-        M.delay
-          (ma >>= fun pte_v -> M.unitT { pte_v with changed = true })
-          >>= fun (_,ma) -> kont ma
-
-      let m_op op m1 m2 = (m1 >>| m2) >>= fun (v1,v2) -> M.op op v1 v2
+        M.delay_kont "1"
+          (m >>= fun pte_v -> m_cond pte_v >>= fun c -> M.unitT (c,pte_v))
+          (fun (c,pte_v) m ->
+            let m = m >>= fun _ -> M.unitT pte_v in
+            M.choiceT c (k1 m) (k2 m))
 
         (* Summary of access flag and dirty bit management.
 
@@ -311,13 +305,17 @@ module Make
         let tthm = TopConf.dirty.tthm proc
         and ha = TopConf.dirty.ha proc
         and hd = TopConf.dirty.hd proc in
-
+        let ha = ha || hd in (* As far as we know hd => ha *)
 (* Perform PTE update, when told to do so *)
         let setbits_get_oa a_pte m =
-          m >>== fun pte_v -> (* >>== is important, as the write below is performed 'aside' *)
-            begin if pte_v.changed then
-              if_af pte_v >>= if_db dir >>= fun pte_v ->
-              write_whole_pte_val AArch64.N a_pte pte_v.pte_v ii
+          m >>== fun pte_v ->
+           (* >>== is important, as the test and set below
+              is performed 'on the side ' *)
+            begin if hd && dir = Dir.W then
+              is_zero pte_v.db_v >>= fun c ->
+              M.choiceT c
+                  (test_and_set_db a_pte ii)
+                  (M.unitT ())
             else M.unitT ()
             end >>| M.unitT pte_v.oa_v >>= fun (_,oa) -> M.unitT oa in
         let mfault m _a = mfault (get_oa m) a_virt
@@ -328,13 +326,18 @@ module Make
    Delay is used so as to have correct dependencies,
    getting content of PTE by anticipation. *)
         let mvirt = begin
-          let delayed = (* Read pte *)
-            M.delay
-              (ma >>= fun _ ->
-                (M.op1 Op.PTELoc a_virt) >>= fun a_pte ->
-                  (mextract_whole_pte_val an a_pte ii) >>= fun pte_v ->
-                    (mextract_pte_vals pte_v) >>| M.unitT a_pte) in
-          delayed >>= fun ((pte_v,a_pte),ma) -> (* now we have PTE content *)
+          M.delay_kont "3"
+            begin
+              let get_a_pte = ma >>= fun _ -> M.op1 Op.PTELoc a_virt
+              and test_and_set_af a_pte =
+                if tthm && ha then
+                  test_and_set_af a_pte ii >>! a_pte
+                else M.unitT a_pte in
+              (get_a_pte >>== test_and_set_af) >>= fun a_pte ->
+              mextract_whole_pte_val an a_pte ii >>= fun pte_v ->
+              (mextract_pte_vals pte_v) >>= fun pte_v -> M.unitT (pte_v,a_pte)
+            end
+          (fun (pte_v,a_pte) ma -> (* now we have PTE content *)
             (* Monad will carry changing internal pte value *)
             let ma = ma >>= fun (pte_v,_) -> M.unitT pte_v in
             (* wrapping of success/failure continuations, only pte value may have changed *)
@@ -355,29 +358,18 @@ module Make
               | Dir.R -> fun pte_v -> is_zero pte_v.valid_v
               | Dir.W ->
                   fun pte_v ->
-                    m_op Op.Or (is_zero pte_v.valid_v) (is_zero pte_v.db_v)
-              and mok ma  = (* AF will change, if zero *)
-                do_check_cond ma (fun v -> is_zero v.af_v)
-                  (set_changed mok) mok in
+                    m_op Op.Or (is_zero pte_v.valid_v) (is_zero pte_v.db_v) in
               do_check_cond ma cond mno mok
             else (* HW management of AF and DB *)
               let cond = match dir with (* Do not check AF *)
               | Dir.R -> fun pte_v -> is_zero pte_v.valid_v
-              | Dir.W -> (* Check DB when dirty bit management disabled for this page *)
+              | Dir.W ->
+(* Check DB when dirty bit management disabled for this page *)
                   fun pte_v ->
                     m_op Op.Or
                       (is_zero pte_v.valid_v)
-                      (m_op Op.And (is_zero pte_v.db_v) (is_zero pte_v.dbm_v))
-              and mok = match dir with (* AF will change, if zero *)
-              | Dir.R ->
-                  fun ma -> do_check_cond ma (fun v -> is_zero v.af_v)
-                    (set_changed mok) mok
-              | Dir.W -> (* And DB will change, if zero *)
-                  fun ma ->
-                    do_check_cond ma
-                      (fun v -> m_op Op.Or (is_zero v.af_v) (is_zero v.db_v))
-                      (set_changed mok) mok in
-              do_check_cond ma cond mno mok
+                      (m_op Op.And (is_zero pte_v.db_v) (is_zero pte_v.dbm_v)) in
+              do_check_cond ma cond mno mok)
         end in
 
         M.op1 Op.IsVirtual a_virt >>= fun cond ->
@@ -462,37 +454,40 @@ module Make
             M.add v1 v2
 
       let lift_memtag_phy mop a_virt ma ii =
-        M.delay ma >>= fun (_,ma) ->
-          let mm = mop Act.A_PHY ma in
-          delayed_check_tags a_virt ma ii
-            (mm  >>! B.Next)
-            (let mfault = mk_fault a_virt ii None in
-            if TopConf.precision then  mfault >>! B.Exit
-            else (mfault >>| mm) >>! B.Next)
+        M.delay_kont "4" ma
+          (fun _ ma ->
+            let mm = mop Act.A_PHY ma in
+            delayed_check_tags a_virt ma ii
+              (mm  >>! B.Next)
+              (let mfault = mk_fault a_virt ii None in
+              if TopConf.precision then  mfault >>! B.Exit
+              else (mfault >>| mm) >>! B.Next))
 
       let lift_memtag_virt mop ma ii =
-        M.delay ma >>= fun (a_virt,ma) ->
-          let mm = mop Act.A_VIR (ma >>= fun a -> loc_extract a) in
-          delayed_check_tags a_virt ma ii
-            (mm  >>! B.Next)
-            (let mfault = ma >>= fun a -> mk_fault a ii None in
-            if TopConf.precision then  mfault >>! B.Exit
-            else (mfault >>| mm) >>! B.Next)
+        M.delay_kont "5" ma
+          (fun a_virt ma  ->
+            let mm = mop Act.A_VIR (ma >>= fun a -> loc_extract a) in
+            delayed_check_tags a_virt ma ii
+              (mm  >>! B.Next)
+              (let mfault = ma >>= fun a -> mk_fault a ii None in
+              if TopConf.precision then  mfault >>! B.Exit
+              else (mfault >>| mm) >>! B.Next))
 
       let lift_kvm dir mop ma an ii mphy =
         let mfault ma a =
           ma >>= fun _ -> mk_fault a ii None
               >>! if TopConf.precision then B.Exit else B.ReExec
         in
-        M.delay ma >>= fun (a,ma) ->
-          match Act.access_of_location_std (A.Location_global a) with
-          | Act.A_VIR ->
-              check_ptw ii.AArch64.proc dir a ma an ii
-                (mop Act.A_PTE ma >>! B.Next)
-                mphy
-                mfault
-          | ac ->
-              mop ac ma >>! B.Next
+        M.delay_kont "6" ma
+          (fun a ma ->
+            match Act.access_of_location_std (A.Location_global a) with
+            | Act.A_VIR ->
+                check_ptw ii.AArch64.proc dir a ma an ii
+                  (mop Act.A_PTE ma >>! B.Next)
+                  mphy
+                  mfault
+            | ac ->
+                mop ac ma >>! B.Next)
 
 
       let lift_memop dir mop ma an ii =
