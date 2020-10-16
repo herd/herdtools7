@@ -1,0 +1,10 @@
+Test A42 Allowed
+States 1
+0:X1=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X1=0)
+Observation A42 Always 1 0
+Hash=52e5ef1e11570ba4e96f1b8962d85024
+

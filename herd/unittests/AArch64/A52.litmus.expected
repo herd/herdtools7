@@ -1,0 +1,10 @@
+Test A52 Allowed
+States 1
+0:X0=42;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=42)
+Observation A52 Always 1 0
+Hash=3c026fd18ddf34f3f54848067f25f89f
+

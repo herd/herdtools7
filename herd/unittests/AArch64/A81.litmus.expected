@@ -1,0 +1,10 @@
+Test A81 Allowed
+States 1
+0:X0=43;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=43)
+Observation A81 Always 1 0
+Hash=739eda1d46909d97bc187850fdfe84c1
+

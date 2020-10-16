@@ -1,0 +1,10 @@
+Test A69 Allowed
+States 1
+0:X0=4138;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=4138)
+Observation A69 Always 1 0
+Hash=9f7e1e7ff5aa637baa76567da789bd58
+

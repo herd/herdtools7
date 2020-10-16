@@ -1,0 +1,10 @@
+Test A68 Allowed
+States 1
+0:X0=42;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=42)
+Observation A68 Always 1 0
+Hash=795cc773f32a2bb8918e1dfbe8d918c0
+

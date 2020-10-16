@@ -1,0 +1,10 @@
+Test A63 Allowed
+States 1
+0:X0=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=1)
+Observation A63 Always 1 0
+Hash=d16bbe1d52e5026fb2bd42d1e3f90eb4
+

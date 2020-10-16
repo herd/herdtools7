@@ -1,0 +1,10 @@
+Test A48 Allowed
+States 1
+0:X1=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X1=1)
+Observation A48 Always 1 0
+Hash=c9eb0228a45c4dcd9a397f799004860d
+

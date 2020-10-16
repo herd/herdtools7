@@ -1,0 +1,10 @@
+Test A124 Required
+States 1
+0:X0=2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=2)
+Observation A124 Always 1 0
+Hash=5570f1f22606f38e48fd51fe1c8265e1
+

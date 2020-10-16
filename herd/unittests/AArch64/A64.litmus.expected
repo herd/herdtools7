@@ -1,0 +1,10 @@
+Test A64 Allowed
+States 1
+0:X0=32;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=32)
+Observation A64 Always 1 0
+Hash=f345fb541fef63340c7b35623a5fda88
+

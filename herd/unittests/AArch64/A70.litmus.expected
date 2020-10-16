@@ -1,0 +1,10 @@
+Test A70 Allowed
+States 1
+0:X0=43;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=43)
+Observation A70 Always 1 0
+Hash=90123e3972cdfa5e7e7beccc76e5ab5c
+
