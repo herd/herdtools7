@@ -269,6 +269,7 @@ val same_instance : event -> event -> bool
 (********************************)
 (* Event structure output ports *)
 (********************************)
+  val debug_output : out_channel -> event_structure -> unit
   val get_output : event_structure -> event_set
 
 (********************************)
@@ -382,6 +383,7 @@ val same_instance : event -> event -> bool
 end
 
 module type Config = sig
+  val debug : Debug_herd.t
   val variant : Variant.t -> bool
 end
 
@@ -393,6 +395,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     module A = AI
     module V = AI.V
 
+    let dbg = C.debug.Debug_herd.monad
     let do_deps = C.variant Variant.Deps
 
     type eiid = int
@@ -836,6 +839,10 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     | None -> maximals_data es
     | Some o -> o
 
+    let debug_output chan es = match es.output with
+    | None -> fprintf chan "-%a" debug_events (get_output es)
+    | Some es -> debug_events chan es
+
 
 (**********************************)
 (* Add together event structures  *)
@@ -854,6 +861,25 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         Some (EventSet.union (maximals_data es1) o2)
     | Some o1,None ->
         Some (EventSet.union o1 (maximals_data es2))
+
+    let debug_opt dbg chan = function
+      | None -> fprintf chan "None"
+      | Some e -> dbg chan e
+
+    let sequence_data_output es1 es2 =
+      if dbg then eprintf "Seq %a %a ->" debug_output es1 debug_output es2 ;
+      let r =  match es1.output,es2.output with
+      | __,(Some _ as out) -> out
+      | None,None -> None
+      | Some out,None ->
+          (* Tricky case, None would mean loosing the explicit output
+             and re-including maximal elts *)
+          Some (EventSet.union out (get_output es2)) in
+      if dbg then eprintf " %a\n" (debug_opt debug_events) r ;
+      r
+
+(* In all circontances es1 output must be discarded *)
+    let sequence_control_output _es1 es2 = Some (get_output es2)
 
 (* Sequential composition *)
 
@@ -1000,10 +1026,15 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         aligned = List.append es1.aligned es2.aligned;}
 
     let (=*$=) =
-      check_disjoint (data_comp minimals_data (fun _ es -> es.output))
+      check_disjoint (data_comp minimals_data sequence_data_output)
 
     let (=$$=) =
-      check_disjoint (data_comp minimals_data (fun es _ -> Some (get_output es)))
+      let out es1 es2 =
+        let out = get_output es1 in
+        if dbg then
+          eprintf "SeqFirst %a %a -> %a\n"  debug_output es1 debug_output es2 debug_events out ;
+        Some out in
+      check_disjoint (data_comp minimals_data out)
 
 (* Composition with intra_causality_control from first to second *)
     let control_comp mini_loc es1 es2 =
@@ -1020,7 +1051,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         control = EventRel.union es1.control es2.control;
         data_ports = EventSet.union es1.data_ports es2.data_ports;
         success_ports = EventSet.union es1.success_ports es2.success_ports;
-        output = union_output es1 es2;
+        output = sequence_control_output es1 es2;
         sca = EventSetSet.union es1.sca es2.sca;
         mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses;
         aligned = List.append es1.aligned es2.aligned;}
