@@ -233,24 +233,30 @@ Monad type:
       ('loc -> A.V.v t) -> A.V.v t -> ('loc -> A.V.v -> unit t) -> (A.V.v -> unit t)
         -> unit t  = fun op rloc rmem rreg wmem wreg ->
           fun eiid ->
-        let eiid,locm = rloc eiid in
-        let eiid,expm = rreg eiid in
-        let (loc,vlcloc,esloc) =  Evt.as_singleton_nospecul locm
-        and (v,vclexp,esexp) = Evt.as_singleton_nospecul expm in
-        let eiid,rmemm = rmem loc eiid in
-        let r = match op with None -> v | Some _ -> V.fresh_var () in
-        let eiid,wmemm = wmem loc r eiid in
-        let w,vclrmem,esrmem =  Evt.as_singleton_nospecul rmemm
-        and (),vclwmem,eswmem = Evt.as_singleton_nospecul wmemm in
-        let vlop =
-          match op with
-          | None -> Misc.identity
-          | Some op -> fun k -> VC.Assign (r,VC.Binop (op,w,v))::k in
-        let eiid,wreg = wreg w eiid in
-        let (),vclwreg,eswreg = Evt.as_singleton_nospecul wreg in
-        let es = E.swp_or_amo op esloc esrmem esexp eswmem eswreg in
-        eiid,
-        (Evt.singleton ((),vlop (vlcloc@vclexp@vclrmem@vclwmem@vclwreg),es), None)
+        let eiid,(locm,spec) = rloc eiid in
+        assert (spec=None) ;
+        let eiid,acts =
+          Evt.fold
+            (fun (loc,vlcloc,esloc) (eiid,acts) ->
+              let eiid,expm = rreg eiid in
+              let  (v,vclexp,esexp) = Evt.as_singleton_nospecul expm in
+              let eiid,rmemm = rmem loc eiid in
+              let r = match op with None -> v | Some _ -> V.fresh_var () in
+              let eiid,wmemm = wmem loc r eiid in
+              let w,vclrmem,esrmem =  Evt.as_singleton_nospecul rmemm
+              and (),vclwmem,eswmem = Evt.as_singleton_nospecul wmemm in
+              let vlop =
+                match op with
+                | None -> Misc.identity
+                | Some op -> fun k -> VC.Assign (r,VC.Binop (op,w,v))::k in
+              let eiid,wreg = wreg w eiid in
+              let (),vclwreg,eswreg = Evt.as_singleton_nospecul wreg in
+              let es = E.swp_or_amo op esloc esrmem esexp eswmem eswreg in
+              let act = (),vlop (vlcloc@vclexp@vclrmem@vclwmem@vclwreg),es in
+              eiid,Evt.add act acts)
+            locm (eiid,Evt.empty) in
+        eiid,(acts,None)
+
     let swp rloc rmem rreg wmem wreg = swp_or_amo None rloc rmem rreg wmem wreg
     let amo_strict op rloc rmem rreg wmem wreg = swp_or_amo (Some op) rloc rmem rreg wmem wreg
 
