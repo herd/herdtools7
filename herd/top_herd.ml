@@ -17,7 +17,6 @@
 (** Top level loop : execute test according to model *)
 
 module type CommonConfig = sig
-  val auto : bool
   val candidates : bool
   val show : PrettyConf.show
   val nshow : int option
@@ -494,17 +493,6 @@ module Make(O:Config)(M:XXXMem.S) =
         if O.candidates then
           printf "Candidates %s %i\n" tname (c.cfail+c.cands) ;
 (* Auto info or Hash only*)
-        if O.auto then begin
-          List.iter
-            (fun (k,v) ->
-              if Misc.string_eq k "Relax" then
-                printf "Relax %s %s %s\n"
-                  tname
-                  (if ok then "Ok" else "No") v
-              else if Misc.string_eq k "Cycle" ||  Misc.string_eq k "Safe" then
-                fprintf stdout "%s=%s\n" k v)
-            test.Test_herd.info
-        end  else
           List.iter
             (fun (k,v) ->
               if Misc.string_eq k "Hash" then
