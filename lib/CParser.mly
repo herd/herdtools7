@@ -128,6 +128,7 @@ shallow_main:
 
 voidopt:
 | VOID { () }
+| VOID STAR { () }
 | { () }
 
 declaration:
