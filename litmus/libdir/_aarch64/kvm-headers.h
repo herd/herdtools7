@@ -19,6 +19,8 @@
 #include <asm/smp.h>
 #include <asm/delay.h>
 #include <asm/mmu.h>
+#include <asm/pgtable-hwdef.h>
+
 #define LITMUS_PAGE_SIZE PAGE_SIZE
 
 static inline void litmus_init(void) {}
@@ -118,26 +120,36 @@ static inline void litmus_set_pte_attribute(pteval_t *p,pte_attr_key k) {
      is always non-cacheabke */
   case attr_normal:
   case attr_write_2D_back:
-    *p = litmus_set_memattr(*p,7);
+    *p = litmus_set_memattr(*p, MT_NORMAL);
     break;
   case attr_write_2D_through:
-    *p = litmus_set_memattr(*p,6);
+#ifdef MT_NORMAL_WT
+    *p = litmus_set_memattr(*p, MT_NORMAL_WT);
+#else
+#pragma message "Normal WT attribute not supported, using NC instead\n"
+    *p = litmus_set_memattr(*p, MT_NORMAL_NC);
+#endif
     break;
   case attr_non_2D_cacheable:
-    *p = litmus_set_memattr(*p,5);
+    *p = litmus_set_memattr(*p, MT_NORMAL_NC);
     break;
   case attr_device:
   case attr_nGnRE:
-    *p = litmus_set_memattr(*p,1);
+    *p = litmus_set_memattr(*p, MT_DEVICE_nGnRE);
     break;
   case attr_nGnRnE:
-    *p = litmus_set_memattr(*p,0);
+    *p = litmus_set_memattr(*p, MT_DEVICE_nGnRnE);
     break;
   case attr_nGRE:
-    *p = litmus_set_memattr(*p,2);
+#ifdef MT_DEVICE_nGRE
+    *p = litmus_set_memattr(*p, MT_DEVICE_nGRE);
+#else
+#pragma message "Device nGRE attribute not supported, using nGnRE instead\n"
+    *p = litmus_set_memattr(*p, MT_DEVICE_nGnRE);
+#endif
     break;
   case attr_GRE:
-    *p = litmus_set_memattr(*p,3);
+    *p = litmus_set_memattr(*p, MT_DEVICE_GRE);
     break;
   }
 }
