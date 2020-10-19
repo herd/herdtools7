@@ -17,4 +17,4 @@ set -x
 
 ./version-gen.sh "${prefix}"
 
-dune build --profile release
+dune build --profile release @all

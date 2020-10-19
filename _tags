@@ -1,5 +1,6 @@
 <gen>: include
 <herd>: include
+<internal>: include
 <jingle>: include
 <lib>: include
 <litmus>: include
