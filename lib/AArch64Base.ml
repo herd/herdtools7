@@ -531,8 +531,8 @@ let do_pp_instruction m =
 
   let pp_mem_shift memo v rt ra kr s =
     pp_memo memo ^ " " ^ pp_vreg v rt ^
-    ",[" ^ pp_xreg ra ^ pp_kr true false kr ^
-    ","  ^ pp_barrel_shift "," s (m.pp_k) ^ "]" in
+    ",[" ^ pp_xreg ra ^ pp_kr false false kr ^
+    pp_barrel_shift "," s (m.pp_k) ^ "]" in
 
   let pp_mem_post memo v rt ra k =
     pp_memo memo ^ " " ^ pp_vreg v rt ^

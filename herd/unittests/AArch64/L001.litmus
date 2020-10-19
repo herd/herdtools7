@@ -1,0 +1,17 @@
+AArch64 L001
+
+{
+int x=0;
+int y=1;
+0:X2=x;
+0:X4=y;
+}
+
+(* Regression on LDR indexed syntax *)
+
+ P0                  ;
+ LDR W0,[X2]         ; 
+ LDR W1,[X4,W0,SXTW] ;
+forall 0:X0=0 /\ 0:X1=1
+
+ 
