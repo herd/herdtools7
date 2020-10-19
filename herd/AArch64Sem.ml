@@ -160,7 +160,7 @@ module Make
           (A.Location_global a) ii
       and do_read_tag_nexp a ii =
         M.read_loc false
-          (fun loc v -> access_anexp AArch64.NExp Dir.R loc v Act.A_TAG)
+          (fun loc v -> access_anexp AArch64.nexp_annot Dir.R loc v Act.A_TAG)
           (A.Location_global a) ii
       and do_write_tag a v ii =
         let loc = A.Location_global a in
@@ -208,20 +208,25 @@ module Make
       let mextract_whole_pte_val an a_pte ii =
         (M.read_loc false
            (fun loc v ->
-             Act.Access (Dir.R,loc,v,an,AArch64.NExp,quad,Act.A_PTE))
+             Act.Access (Dir.R,loc,v,an,AArch64.nexp_annot,quad,Act.A_PTE))
            (A.Location_global a_pte) ii)
 
-      and write_whole_pte_val an a_pte v ii =
-        write_loc quad an AArch64.NExp
+      and write_whole_pte_val an explicit a_pte v ii =
+        write_loc quad an explicit
           (A.Location_global a_pte) v Act.A_PTE ii
 
+
+      let op_of_set = function
+        | AArch64.AF -> Op.SetAF
+        | AArch64.DB -> Op.SetDB
+        | AArch64.Other -> assert false
 
       let test_and_set_bit cond set a_pte ii =
         mextract_whole_pte_val AArch64.X a_pte ii >>= fun pte_v ->
         cond pte_v >>*= fun c ->
         M.choiceT c
-            (M.op1 set pte_v >>= fun v ->
-             write_whole_pte_val AArch64.X a_pte v ii)
+            (M.op1 (op_of_set set) pte_v >>= fun v ->
+             write_whole_pte_val AArch64.X (AArch64.NExp set) a_pte v ii)
             (M.unitT ())
 
       let bit_is_zero op v = M.op1 op v >>= is_zero
@@ -233,10 +238,10 @@ module Make
           (fun v ->
             m_op Op.And
               (bit_is_zero Op.AF v) (bit_is_not_zero Op.Valid v))
-          Op.SetAF
+          AArch64.AF
 
       and test_and_set_db =
-        test_and_set_bit (fun v -> M.op1 Op.DB v >>= is_zero) Op.SetDB
+        test_and_set_bit (fun v -> M.op1 Op.DB v >>= is_zero) AArch64.DB
 
       let mextract_pte_vals pte_v =
         (extract_oa pte_v >>|

@@ -23,15 +23,15 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     let pp_barrier_short = pp_barrier
     let reject_mixed = true
 
-    type annot = A | XA | L | XL | X | N | Q | NoRet | T | S | Exp | NExp
+    type annot = A | XA | L | XL | X | N | Q | NoRet | T | S
+    type nexp =  AF|DB|Other
+    type explicit = Exp | NExp of nexp
     type lannot = annot
 
     let empty_annot = N
     let tag_annot = T
     let exp_annot = Exp
-    let nexp_annot = NExp
-
-    let wrap_is is_fun a = is_fun a
+    let nexp_annot = NExp Other
 
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
 
@@ -43,7 +43,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | XA | XL | X | NoRet -> true
       | _ -> false
 
-    let is_atomic = wrap_is _is_atomic
+    let is_atomic = _is_atomic
 
     let is_noreturn = function
       | NoRet -> true
@@ -68,9 +68,14 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     let is_explicit = function
       | Exp -> true
       | _ -> false
-
-    let is_not_explicit = function
-      | NExp -> true
+    and is_not_explicit = function
+      | NExp _-> true
+      | _ -> false
+    and is_af = function (* Setting of access flag *)
+      | NExp AF-> true
+      | _ -> false
+    and is_db = function (* Setting of dirty bit flag *)
+      | NExp DB -> true
       | _ -> false
 
     let barrier_sets =
@@ -82,14 +87,19 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
     let annot_sets = [
       "X", is_atomic;
-      "A",  wrap_is is_acquire;
-      "Q",  wrap_is is_acquire_pc;
-      "L",  wrap_is is_release;
-      "NoRet", wrap_is is_noreturn;
-      "T", wrap_is is_tag;
+      "A",  is_acquire;
+      "Q",  is_acquire_pc;
+      "L",  is_release;
+      "NoRet", is_noreturn;
+      "T", is_tag;
       "S", is_speculated;
+    ]
+
+    let explicit_sets = [
       "Exp", is_explicit;
       "NExp", is_not_explicit;
+      "AF", is_af;
+      "DB", is_db;
     ]
 
     let is_isync = is_barrier ISB
@@ -106,9 +116,12 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | NoRet -> "NoRet"
       | T -> "Tag"
       | S -> "^s"
-      | Exp -> if is_kvm && C.verbose > 2 then "Exp" else ""
-      | NExp -> "NExp"
 
+    let pp_explicit = function
+      | Exp -> if is_kvm && C.verbose > 2 then "Exp" else ""
+      | NExp Other-> "NExp"
+      | NExp AF-> "NExpAF"
+      | NExp DB-> "NExpDB"
     module V = V
 
     let mem_access_size = function

@@ -21,16 +21,13 @@ module type A = sig
 
   type lannot
   val empty_annot : lannot
-  val exp_annot : lannot
-  val nexp_annot : lannot
-  val is_explicit : lannot -> bool
-  val is_not_explicit : lannot -> bool
   val barrier_sets : (string * (barrier -> bool)) list
   val annot_sets : (string * (lannot -> bool)) list
+  val pp_annot : lannot -> string
+  include Explicit.S
   val is_atomic : lannot -> bool
   val is_isync : barrier -> bool
   val pp_isync : string
-  val pp_annot : lannot -> string
 end
 
 module type Config = sig
@@ -43,14 +40,14 @@ module Make (C:Config) (A : A) : sig
  (* All sorts of accesses, redundunt with symbol hidden in location,
     when symbol is known, which may not be the case *)
 
-  type access_t = A_REG | A_VIR | A_PHY | A_PTE | A_AF | A_DB | A_DBM | A_TLB | A_TAG
+  type access_t = A_REG | A_VIR | A_PHY | A_PTE | A_TLB | A_TAG
 
   type action =
-    | Access of Dir.dirn * A.location * A.V.v * A.lannot * A.lannot * MachSize.sz * access_t
+    | Access of Dir.dirn * A.location * A.V.v * A.lannot * A.explicit * MachSize.sz * access_t
     | Barrier of A.barrier
     | Commit of bool (* true = bcc / false = pred *)
 (* Atomic modify, (location,value read, value written, annotation *)
-    | Amo of A.location * A.V.v * A.V.v * A.lannot * A.lannot * MachSize.sz * access_t
+    | Amo of A.location * A.V.v * A.V.v * A.lannot * A.explicit * MachSize.sz * access_t
 (* NB: Amo used in some arch only (e.g., Arm, RISCV) *)
     | Fault of A.inst_instance_id * A.location * string option
 (* Unrolling control *)
@@ -73,7 +70,7 @@ end = struct
 
   let kvm = C.variant Variant.Kvm
 
-  type access_t = A_REG | A_VIR | A_PHY | A_PTE | A_AF | A_DB | A_DBM | A_TLB | A_TAG
+  type access_t = A_REG | A_VIR | A_PHY | A_PTE | A_TLB | A_TAG
 
   let access_of_constant cst =
     let open Constant in
@@ -130,10 +127,10 @@ end = struct
 
 
   type action =
-    | Access of Dir.dirn * A.location * A.V.v * A.lannot * A.lannot * MachSize.sz * access_t
+    | Access of Dir.dirn * A.location * A.V.v * A.lannot * A.explicit * MachSize.sz * access_t
     | Barrier of A.barrier
     | Commit of bool
-    | Amo of A.location * A.V.v * A.V.v * A.lannot * A.lannot * MachSize.sz * access_t
+    | Amo of A.location * A.V.v * A.V.v * A.lannot * A.explicit * MachSize.sz * access_t
     | Fault of A.inst_instance_id * A.location * string option
     | TooFar
     | Inv of A.TLBI.op * A.location option
@@ -151,7 +148,7 @@ end = struct
         (pp_dirn d)
         (A.pp_location l)
         (A.pp_annot an)
-        (A.pp_annot exp_an)
+        (A.pp_explicit exp_an)
         (if sz = MachSize.Word then "" else MachSize.pp_short sz)
         (V.pp C.hexa v)
   | Barrier b -> A.pp_barrier_short b
@@ -159,7 +156,7 @@ end = struct
   | Amo (loc,v1,v2,an,exp_an,sz,_) ->
       Printf.sprintf "RMW(%s)%s%s%s(%s>%s)"
         (A.pp_annot an)
-        (A.pp_annot exp_an)
+        (A.pp_explicit exp_an)
         (A.pp_location loc) (MachSize.pp_short sz)
         (V.pp C.hexa v1) (V.pp C.hexa v2)
   | Fault (ii,loc,msg) ->
@@ -240,8 +237,8 @@ end = struct
   let is_additional_mem _ = false
 
   let is_atomic a = match a with
-  | Access (_,_,_,a1,a2,_,_) ->
-      is_mem a && (A.is_atomic a1 || A.is_atomic a2)
+  | Access (_,_,_,an,_,_,_) ->
+      is_mem a && A.is_atomic an
   | _ -> false
 
   let is_tag = function
@@ -270,14 +267,6 @@ end = struct
 
   let is_at_level lvl = function
     | Inv(op,_) -> A.TLBI.is_at_level lvl op
-    | _ -> false
-
-  let is_explicit = function
-    | Access(_,_,_,_,annot,_,_) -> A.is_explicit annot
-    | _ -> false
-
-  let is_not_explicit = function
-    | Access(_,_,_,_,annot,_,_) -> A.is_not_explicit annot
     | _ -> false
 
   let is_fault = function
@@ -341,15 +330,6 @@ end = struct
   | (A.Location_deref _,(A.Location_global _|A.Location_reg _))
   | (A.Location_reg _,(A.Location_global _|A.Location_deref _))
     -> false
-
-(* Setting AF and DB *)
-  let is_af a = match a with
-  | Access (W,_,_,_,_,_,A_AF) -> true
-  | _ -> false
-
-  let is_db a = match a with
-  | Access (W,_,_,_,_,_,A_DB) -> true
-  | _ -> false
 
   let compatible_accesses a1 a2 = match a1,a2 with
   | (Access (_,loc1,_,_,_,_,k1)|Amo (loc1,_,_,_,_,_,k1)),
@@ -419,6 +399,14 @@ end = struct
           | Access(_,_,_,annot,_,_,_)|Amo (_,_,_,annot,_,_,_) -> p annot
           | _ -> false
           in tag,p) A.annot_sets
+    and esets =
+      List.map
+        (fun (tag,p) ->
+          let p act = match act with
+          | Access(_,_,_,_,e,_,_)|Amo (_,_,_,_,e,_,_) -> p e
+          | _ -> false
+          in tag,p) A.explicit_sets
+      
 (*    and esets =
       List.map
         (fun (tag,p) ->
@@ -432,8 +420,8 @@ end = struct
         (fun lvl -> A.pp_level lvl,is_at_level lvl)
         A.levels
     in
-    ("T",is_tag)::("FAULT",is_fault)::("TLBI",is_inv)::("DC",is_dc)::("CI",is_ci)::("C",is_c)::("I",is_i)::("Exp",is_explicit)::("NExp",is_not_explicit)::("PTEINV",invalid_pte)::
-    bsets @ asets @ lsets
+    ("T",is_tag)::("FAULT",is_fault)::("TLBI",is_inv)::("DC",is_dc)::("CI",is_ci)::("C",is_c)::("I",is_i)::("PTEINV",invalid_pte)::
+    bsets @ asets @ esets @ lsets
 
   let arch_rels =
     if kvm then
