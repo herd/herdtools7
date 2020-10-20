@@ -140,6 +140,9 @@ let vvrs =
  V28,"V28" ; V29,"V29" ; V30,"V30" ; V31, "V31";
 ]
 
+let vregs =
+  List.map (fun (r,s) -> Vreg r,s) vvrs
+
 let bvrs =
 [
  V0,"B0"  ; V1,"B1"  ; V2,"B2"  ; V3,"B3" ;
@@ -151,6 +154,9 @@ let bvrs =
  V24,"B24" ; V25,"B25" ; V26,"B26" ; V27,"B27" ;
  V28,"B28" ; V29,"B29" ; V30,"B30" ; V31, "B31";
 ]
+
+let bregs =
+  List.map (fun (r,s) -> Vreg r,s) bvrs
 
 let hvrs = 
 [
@@ -164,6 +170,9 @@ let hvrs =
   V28,"H28" ; V29,"H29" ; V30,"H30" ; V31, "H31";
 ]
 
+let hregs =
+  List.map (fun (r,s) -> Vreg r,s) hvrs
+
 let svrs =
 [
  V0,"S0"  ; V1,"S1"  ; V2,"S2"  ; V3,"S3" ;
@@ -175,6 +184,9 @@ let svrs =
  V24,"S24" ; V25,"S25" ; V26,"S26" ; V27,"S27" ;
  V28,"S28" ; V29,"S29" ; V30,"S30" ; V31, "S31";
 ]
+
+let sregs =
+  List.map (fun (r,s) -> Vreg r,s) svrs
 
 let dvrs =
 [
@@ -188,6 +200,9 @@ let dvrs =
  V28,"D28" ; V29,"D29" ; V30,"D30" ; V31, "D31";
 ]
 
+let dregs =
+  List.map (fun (r,s) -> Vreg r,s) dvrs
+
 let qvrs =
 [
  V0,"Q0"  ; V1,"Q1"  ; V2,"Q2"  ; V3,"Q3" ;
@@ -200,24 +215,48 @@ let qvrs =
  V28,"Q28" ; V29,"Q29" ; V30,"Q30" ; V31, "Q31";
 ]
 
-let parse_list =
-  List.map (fun (r,s) -> s,r) regs
+let qregs =
+  List.map (fun (r,s) -> Vreg r,s) qvrs
 
-let parse_wlist =
-  List.map (fun (r,s) -> s,r) wregs
+let parse_list rs =
+  List.map (fun (r,s) -> s,r) rs
 
 let parse_creg s =
   try Some (List.assoc (Misc.uppercase s) parse_clist)
   with Not_found -> None
 
 let parse_xreg s =
-  try Some (List.assoc (Misc.uppercase s) parse_list)
+  try Some (List.assoc (Misc.uppercase s) (parse_list regs))
   with Not_found -> None
 
 let parse_reg s = parse_xreg s
 
 let parse_wreg s =
-  try Some (List.assoc (Misc.uppercase s) parse_wlist)
+  try Some (List.assoc (Misc.uppercase s) (parse_list wregs))
+  with Not_found -> None
+
+let parse_vreg s =
+  try Some (List.assoc (Misc.uppercase s) (parse_list vregs))
+  with Not_found -> None
+
+let parse_breg s =
+  try Some (List.assoc (Misc.uppercase s) (parse_list bregs))
+  with Not_found -> None
+
+let parse_hreg s =
+  try Some (List.assoc (Misc.uppercase s) (parse_list hregs))
+  with Not_found -> None
+
+let parse_sreg s =
+  try Some (List.assoc (Misc.uppercase s) (parse_list sregs))
+  with Not_found -> None
+
+let parse_dreg s =
+  try Some (List.assoc (Misc.uppercase s) (parse_list dregs))
+  with Not_found -> None
+
+let parse_qreg s =
+  try Some (List.assoc (Misc.uppercase s) (parse_list qregs))
   with Not_found -> None
 
 let pp_creg r = match r with
@@ -939,6 +978,7 @@ let fold_regs (f_regs,f_sregs) =
 
   let fold_reg reg (y_reg,y_sreg) = match reg with
   | Ireg _ -> f_regs reg y_reg,y_sreg
+  | Vreg _ -> f_regs reg y_reg,y_sreg
   | Symbolic_reg reg ->  y_reg,f_sregs reg y_sreg
   | Internal _ | NZP | ZR | ResAddr | Tag _ -> y_reg,y_sreg in
 
@@ -990,6 +1030,7 @@ let map_regs f_reg f_symb =
 
   let map_reg reg = match reg with
   | Ireg _ -> f_reg reg
+  | Vreg _ -> f_reg reg
   | Symbolic_reg reg -> f_symb reg
   | Internal _ | ZR | NZP | ResAddr | Tag _-> reg in
 

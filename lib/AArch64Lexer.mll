@@ -381,7 +381,31 @@ match name with
         | None ->
             begin match A.parse_creg name with
             | Some r -> ARCH_CREG r
-            | None -> NAME name
+            | None -> 
+                begin match A.parse_vreg name with
+                | Some r -> ARCH_VREG r
+                | None ->
+                    begin match A.parse_breg name with
+                    | Some r -> ARCH_BREG r
+                    | None ->
+                        begin match A.parse_hreg name with
+                        | Some r -> ARCH_HREG r
+                        | None ->
+                            begin match A.parse_sreg name with
+                            | Some r -> ARCH_SREG r
+                            | None ->
+                                begin match A.parse_dreg name with
+                                | Some r -> ARCH_DREG r
+                                | None ->
+                                    begin match A.parse_qreg name with
+                                    | Some r -> ARCH_QREG r
+                                    | None -> NAME name
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
             end
         end
     end

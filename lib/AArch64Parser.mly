@@ -30,6 +30,12 @@ let check_noext = function
 %token <string> SYMB_XREG
 %token <AArch64Base.reg> ARCH_WREG
 %token <string> SYMB_WREG
+%token <AArch64Base.reg> ARCH_VREG
+%token <AArch64Base.reg> ARCH_BREG
+%token <AArch64Base.reg> ARCH_HREG
+%token <AArch64Base.reg> ARCH_SREG
+%token <AArch64Base.reg> ARCH_DREG
+%token <AArch64Base.reg> ARCH_QREG
 %token <int> NUM
 %token <string> NAME
 %token <string> META
