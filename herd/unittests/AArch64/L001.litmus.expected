@@ -6,6 +6,5 @@ Witnesses
 Positive: 1 Negative: 0
 Condition forall (0:X0=0 /\ 0:X1=1)
 Observation L001 Always 1 0
-Time L001 0.00
 Hash=4dd48694675a0dd892680418816e67fa
 
