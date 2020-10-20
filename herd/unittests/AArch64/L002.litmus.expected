@@ -1,0 +1,11 @@
+Test L002 Allowed
+States 2
+1:X0=0; 1:X2=0;
+1:X0=1; 1:X2=1;
+No
+Witnesses
+Positive: 0 Negative: 2
+Condition exists (1:X0=1 /\ 1:X2=0)
+Observation L002 Never 0 2
+Hash=46b6dd93851ecaa429cdcdb54a03ca77
+
