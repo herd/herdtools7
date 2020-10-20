@@ -62,6 +62,6 @@ let addrR =
 let addr = addrW | addrR
 
 (** Control dependencies *)
-let ctrl = to-PoD; po; [W]
+let ctrl = to-PoD; po
 
 include "aarch64show.cat"

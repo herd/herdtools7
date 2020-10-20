@@ -1,9 +1,9 @@
 (* Show dependencies *)
 show data,addr
-let ctrlisb = try ctrl;[ISB];po with 0
+(* Show of control dependencies is restricted, so as not to clobber diagrams *) 
+let ctrlisb = try ctrl;[ISB];po;[M] with 0
 show ctrlisb
-show isb \ ctrlisb as isb
-show ctrl \ ctrlisb as ctrl
+show (ctrl;[M]) \ ctrlisb as ctrl
 
 (* Communication relations *)
 let rf-mem = rf \ rf-reg
