@@ -45,11 +45,22 @@ type vec_reg =
   | V24 | V25 | V26 | V27
   | V28 | V29 | V30 | V31
 
+let arrange_specifier =
+[
+  (1,64),".1D"  ; (1,128),".1Q" ;
+  (2,16),".2H"  ; (2,32),".2S" ; (2,64),".2D";
+  (4,8),".4B"   ; (4,16),".4H" ; (4,32),".4S";
+  (8,8),".8B"   ; (8,16),".8H" ;
+  (16, 8),".16B";
+  (0,8),".B"    ; (0,16),".H"  ; (0,32),".S" ; (0,64),".D";
+]
+
 type reg =
   | ZR
   | Ireg of gpr
   | Tag of gpr
-  | Vreg of vec_reg
+  | Vreg of (vec_reg * (int * int))
+  | SIMDreg of vec_reg
   | Symbolic_reg of string
   | Internal of int
   | NZP
@@ -140,9 +151,6 @@ let vvrs =
  V28,"V28" ; V29,"V29" ; V30,"V30" ; V31, "V31";
 ]
 
-let vregs =
-  List.map (fun (r,s) -> Vreg r,s) vvrs
-
 let bvrs =
 [
  V0,"B0"  ; V1,"B1"  ; V2,"B2"  ; V3,"B3" ;
@@ -156,7 +164,7 @@ let bvrs =
 ]
 
 let bregs =
-  List.map (fun (r,s) -> Vreg r,s) bvrs
+  List.map (fun (r,s) -> SIMDreg r,s) bvrs
 
 let hvrs = 
 [
@@ -171,7 +179,7 @@ let hvrs =
 ]
 
 let hregs =
-  List.map (fun (r,s) -> Vreg r,s) hvrs
+  List.map (fun (r,s) -> SIMDreg r,s) hvrs
 
 let svrs =
 [
@@ -186,7 +194,7 @@ let svrs =
 ]
 
 let sregs =
-  List.map (fun (r,s) -> Vreg r,s) svrs
+  List.map (fun (r,s) -> SIMDreg r,s) svrs
 
 let dvrs =
 [
@@ -201,7 +209,7 @@ let dvrs =
 ]
 
 let dregs =
-  List.map (fun (r,s) -> Vreg r,s) dvrs
+  List.map (fun (r,s) -> SIMDreg r,s) dvrs
 
 let qvrs =
 [
@@ -216,7 +224,7 @@ let qvrs =
 ]
 
 let qregs =
-  List.map (fun (r,s) -> Vreg r,s) qvrs
+  List.map (fun (r,s) -> SIMDreg r,s) qvrs
 
 let parse_list rs =
   List.map (fun (r,s) -> s,r) rs
@@ -236,7 +244,10 @@ let parse_wreg s =
   with Not_found -> None
 
 let parse_vreg s =
-  try Some (List.assoc (Misc.uppercase s) (parse_list vregs))
+  try let (g1, g2) =
+    ignore (Str.search_forward (Str.regexp "\\(V[0-9]+\\)\\(\\.[0-9]+[B,D,Q,H,S]\\)") (Misc.uppercase s) 0);
+    (Str.matched_group 1 s, Str.matched_group 2 s);
+    in Some (Vreg (List.assoc g1 (parse_list vvrs), List.assoc g2 (parse_list arrange_specifier)))
   with Not_found -> None
 
 let parse_breg s =
@@ -982,6 +993,7 @@ let fold_regs (f_regs,f_sregs) =
   let fold_reg reg (y_reg,y_sreg) = match reg with
   | Ireg _ -> f_regs reg y_reg,y_sreg
   | Vreg _ -> f_regs reg y_reg,y_sreg
+  | SIMDreg _ -> f_regs reg y_reg,y_sreg
   | Symbolic_reg reg ->  y_reg,f_sregs reg y_sreg
   | Internal _ | NZP | ZR | ResAddr | Tag _ -> y_reg,y_sreg in
 
@@ -1034,6 +1046,7 @@ let map_regs f_reg f_symb =
   let map_reg reg = match reg with
   | Ireg _ -> f_reg reg
   | Vreg _ -> f_reg reg
+  | SIMDreg _ -> f_reg reg
   | Symbolic_reg reg -> f_symb reg
   | Internal _ | ZR | NZP | ResAddr | Tag _-> reg in
 
