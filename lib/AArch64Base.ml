@@ -431,7 +431,8 @@ end
 type sysreg =
     CTR_EL0 | DCIZ_EL0 |
     MDCCSR_EL0 | DBGDTR_EL0 |
-    DBGDTRRX_EL0 | DBGDTRTX_EL0
+    DBGDTRRX_EL0 | DBGDTRTX_EL0 |
+    FPCR | FPSR
 
 let pp_sysreg = function
   | CTR_EL0 -> "CTR_EL0"
@@ -440,6 +441,8 @@ let pp_sysreg = function
   | DBGDTR_EL0 -> "DBGDTR_EL0"
   | DBGDTRRX_EL0 -> "DBGDTRRX_EL0"
   | DBGDTRTX_EL0 -> "DBGDTRTX_EL0"
+  | FPCR -> "FPCR"
+  | FPSR -> "FPSR"
 
 (****************)
 (* Instructions *)

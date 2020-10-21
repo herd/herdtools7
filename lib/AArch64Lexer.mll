@@ -372,6 +372,8 @@ match name with
 | "dbgdtr_el0"|"DBGDTR_EL0" -> SYSREG A.DBGDTR_EL0
 | "dbgdtrrx_el0"|"DBGDTRRX_EL0" -> SYSREG A.DBGDTRRX_EL0
 | "Dbgdtrtx_el0"|"DBGDTRTX_EL0" -> SYSREG A.DBGDTRTX_EL0
+| "fpcr" | "FPCR" -> SYSREG A.FPCR
+| "fpsr" | "FPSR" -> SYSREG A.FPSR
 | _ ->
     begin match A.parse_wreg name with
     | Some r -> ARCH_WREG r
