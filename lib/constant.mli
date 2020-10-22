@@ -21,7 +21,13 @@
    used by all tools. Abstract later?
 *)
 
-type syskind = PTE|TAG|TLB (* Various kinds of system memory *)
+(* Various kinds of system memory *)
+
+type syskind =
+  | PTE  (* Page table entry *)
+  | PTE2 (* Page table entry of page table entry (non-writable) *)
+  | TLB  (* TLB key *)
+  | TAG  (* Tag for MTE *)
 
 type symbol =
   | Virtual of (string * string option) * int (* (symbol, optional tag), index *)

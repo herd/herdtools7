@@ -48,6 +48,8 @@ type t = {
 let prot_default =  { oa=""; valid=1; af=1; db=1; dbm=0; el0=1; attrs=Attrs.default; }
 let default s = { prot_default with  oa=Misc.add_physical s; }
 
+let of_pte s = { prot_default with  oa=Misc.add_pte s; el0=0; }
+
 let pp_field ok pp eq ac p k =
   let f = ac p in if not ok && eq f (ac prot_default) then k else pp f::k
 

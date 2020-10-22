@@ -348,8 +348,12 @@ module Make(Cst:Constant.S) = struct
       Warn.user_error "Illegal %s on %s" op_op (pp_v v)
   | Var _ -> raise Undetermined
 
-  let op_pteloc (a,_) = Symbolic (System (PTE,a))
-  let pteloc = op_pte_tlb "pteloc" op_pteloc
+  let pteloc v = match v with
+  | Val (Symbolic (Virtual ((a,_),_))) -> Val (Symbolic (System (PTE,a)))
+  | Val (Symbolic (System (PTE,a))) -> Val (Symbolic (System (PTE2,a)))
+  | Val (Concrete _|Label _|Tag _|Symbolic _|PteVal _) ->
+      Warn.user_error "Illegal pteloc on %s" (pp_v v)
+  | Var _ -> raise Undetermined
 
   let op_pte_val op_op op v = match v with
   | Val (PteVal a) -> Val (op a)
@@ -384,9 +388,6 @@ module Make(Cst:Constant.S) = struct
 
   let op_tlbloc (a,_) = Symbolic (System (TLB,a))
   let tlbloc = op_pte_tlb "tlbloc" op_tlbloc
-
-  let op_phyloc (a,_) = Symbolic (Physical (a,0))
-  let phyloc = op_pte_tlb "phyloc" op_phyloc
 
   let is_virtual v = match v with
   | Val c -> Constant.is_virtual c
@@ -430,7 +431,6 @@ module Make(Cst:Constant.S) = struct
           (fun s -> logand (lognot (mask_many nb k)) s)
     | TLBLoc -> tlbloc
     | PTELoc -> pteloc
-    | PhyLoc -> phyloc
     | IsVirtual -> is_virtual_v
     | AF -> afloc 
     | SetAF -> setaf 

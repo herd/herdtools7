@@ -40,6 +40,10 @@ type t = {
 val prot_default : t (* Fields only *)
 val default : string -> t (* Physical address + default fields *)
 
+(* Value for pte argument *)
+val of_pte : string -> t
+
+(* Set oa  field *)
 val set_oa : t -> string -> t
 
 (* Flags have default values *)

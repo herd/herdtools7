@@ -77,7 +77,7 @@ end = struct
     match cst with
     | Symbolic (Virtual _) -> A_VIR
     | Symbolic (Physical _) -> A_PHY
-    | Symbolic (System (PTE,_)) -> A_PTE
+    | Symbolic (System ((PTE|PTE2),_)) -> A_PTE
     | Symbolic (System (TLB,_)) -> A_TLB
     | Symbolic (System (TAG,_)) -> A_TAG
     | Label _|Tag _|Concrete _|PteVal _ as v ->
@@ -89,7 +89,7 @@ end = struct
   | V.Var _ -> assert false
   | V.Val cst -> access_of_constant cst
 
-  let access_of_location = function
+  let access_of_location_init = function
     | A.Location_reg _ -> A_REG
     | A.Location_global v
     | A.Location_deref (v,_)
@@ -106,24 +106,10 @@ end = struct
           if kvm then A_PTE
           else Warn.fatal "PTE %s while -variant kvm is not active"
               (A.pp_location loc)
-(*    | A.Location_global (V.Val (Symbolic ((System (AF,_))))) as loc
-      ->
-      if kvm then A_AF
-      else Warn.fatal "AF %s while -variant kvm is not active"
-      (A.pp_location loc)
-      | A.Location_global (V.Val (Symbolic ((System (DB,_))))) as loc
-      ->
-      if kvm then A_DB
-      else Warn.fatal "DB %s while -variant kvm is not active"
-      (A.pp_location loc)
-      | A.Location_global (V.Val (Symbolic ((System (DBM,_))))) as loc
-      ->
-      if kvm then A_DBM
-      else Warn.fatal "DBM %s while -variant kvm is not active"
-      (A.pp_location loc)
- *)    | A.Location_global v
-| A.Location_deref (v,_)
-  -> Warn.fatal "access_of_location_std on non-standard symbol '%s'\n" (V.pp_v v)
+      | A.Location_global v
+      | A.Location_deref (v,_)
+        -> Warn.fatal "access_of_location_std on non-standard symbol '%s'\n" (V.pp_v v)
+
 
 
   type action =
@@ -140,7 +126,7 @@ end = struct
   | A.V.Val (Constant.Tag _) ->
       Access(W,l,v,A.empty_annot,A.exp_annot,sz,A_TAG)
   | _ ->
-      Access(W,l,v,A.empty_annot,A.exp_annot,sz,access_of_location l)
+      Access(W,l,v,A.empty_annot,A.exp_annot,sz,access_of_location_init l)
 
   let pp_action a = match a with
   | Access (d,l,v,an,exp_an,sz,_) ->

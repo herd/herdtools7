@@ -18,7 +18,7 @@ open Printf
 
 (** Constants in code *)
 
-type syskind = PTE|TAG|TLB
+type syskind = PTE|PTE2|TLB|TAG
 
 type symbol =
   | Virtual of (string * string option) * int (* (symbol, optional tag), index *)
@@ -38,6 +38,7 @@ let pp_symbol = function
   | Physical (s,o) -> pp_index (Misc.add_physical s) o
   | System (TLB,s) -> Misc.add_tlb s
   | System (PTE,s) -> Misc.add_pte s
+  | System (PTE2,s) -> Misc.add_pte (Misc.add_pte s)
   | System (TAG,s) -> Misc.add_atag s
 
 let as_address = function
