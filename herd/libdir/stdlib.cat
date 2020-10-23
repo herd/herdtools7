@@ -31,6 +31,8 @@ let ctrlcfence(ctrl,CFENCE) = (ctrl & (_ * CFENCE)) ; po
 (* Make the difference between load-reserve/store conditional and amo insructions *)
 let lxsx = rmw \ amo
 
+(* Backward compatibility *)
+let inv-field = try inv-domain with 0
 
 (* Some utilities (cpp11) *)
 
