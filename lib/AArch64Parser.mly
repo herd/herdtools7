@@ -36,13 +36,14 @@ let check_noext = function
 %token <AArch64Base.reg> ARCH_SREG
 %token <AArch64Base.reg> ARCH_DREG
 %token <AArch64Base.reg> ARCH_QREG
+%token <int> INDEX
 %token <int> NUM
 %token <string> NAME
 %token <string> META
 %token <string> CODEVAR
 %token <int> PROC
 
-%token SEMI COMMA PIPE COLON LBRK RBRK LPAR RPAR SCOPES LEVELS REGIONS
+%token SEMI COMMA PIPE COLON LCRL RCRL LBRK RBRK LPAR RPAR SCOPES LEVELS REGIONS
 %token SXTW
 
 /* Inline Barrel Shift Operands */
@@ -53,6 +54,7 @@ let check_noext = function
 %token B BR BEQ BNE BGE BGT BLE BLT CBZ CBNZ EQ NE GE GT LE LT TBZ TBNZ
 %token BL BLR RET
 %token LDR LDP LDNP STP STNP LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
+%token LD1 /* Neon load/store */
 %token CMP MOV MOVZ MOVK ADR
 %token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH
 %token STXR STXRB STXRH STLXR STLXRB STLXRH
@@ -166,6 +168,9 @@ wreg:
 | SYMB_WREG { A.Symbolic_reg $1 }
 | ARCH_WREG { $1 }
 
+vreg:
+| ARCH_VREG { $1 }
+
 k:
 | NUM  { MetaConst.Int $1 }
 | META { MetaConst.Meta $1 }
@@ -196,6 +201,11 @@ kr0_no_shift:
 | COMMA xreg { A.RV (A.V64,$2) }
 | COMMA wreg { A.RV (A.V32,$2) }
 | COMMA wreg COMMA SXTW { A.RV (A.V32,$2) }
+
+kx0_no_shift:
+| { A.K (MetaConst.zero) }
+| COMMA k { A.K $2 }
+| COMMA xreg { A.RV (A.V64,$2) }
 
 /* Beware: for w-indexed accesses SXTW is considered always present.
    Far from ideal, one simple to get correct assembly output for
@@ -337,6 +347,9 @@ instr:
   { A.I_STXRBH (A.B,A.LY,$2,$4,$7) }
 | STLXRH wreg COMMA wreg COMMA LBRK xreg RBRK
   { A.I_STXRBH (A.H,A.LY,$2,$4,$7) }
+   /* Neon extension Memory */
+| LD1 LCRL vreg RCRL INDEX COMMA LBRK xreg RBRK kx0_no_shift
+  { A.I_LD1 ($3, $5, $8, $10) }
     /* Compare and swap */
 | CAS wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_CAS (A.V32,A.RMW_P,$2,$4,$7) }

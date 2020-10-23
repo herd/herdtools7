@@ -85,6 +85,8 @@ match name with
 | "stlxrb"|"STLXRB" -> STLXRB
 | "stxrh"|"STXRH" -> STXRH
 | "stlxrh"|"STLXRH" -> STLXRH
+(* Neon Extension Memory *)
+| "ld1" | "LD1" -> LD1
 (* Compare and swap *)
 | "cas"|"CAS" -> CAS
 | "casa"|"CASA" -> CASA
@@ -427,9 +429,12 @@ rule token = parse
 | ['w''W']'%' (name as name) { SYMB_WREG name }
 | ['x''X']?'%' (name as name) { SYMB_XREG name }
 | ['c''C']?'%' (name as name) { SYMB_CREG name }
+| '[' (num as i) ']' { INDEX (int_of_string i) }
 | ';' { SEMI }
 | ',' { COMMA }
 | '|' { PIPE }
+| '{' { LCRL }
+| '}' { RCRL }
 | '[' { LBRK }
 | ']' { RBRK }
 | '(' { LPAR }
