@@ -245,7 +245,7 @@ let parse_wreg s =
 
 let parse_vreg s =
   try let (g1, g2) =
-    ignore (Str.search_forward (Str.regexp "\\(V[0-9]+\\)\\(\\.[0-9]+[B,D,Q,H,S]\\)") (Misc.uppercase s) 0);
+    ignore (Str.search_forward (Str.regexp "\\(V[0-9]+\\)\\(\\.[0-9]*[B,D,Q,H,S]\\)") (Misc.uppercase s) 0);
     (Str.matched_group 1 s, Str.matched_group 2 s);
     in Some (Vreg (List.assoc g1 (parse_list vvrs), List.assoc g2 (parse_list arrange_specifier)))
   with Not_found -> None
@@ -293,6 +293,11 @@ let pp_wreg r = match r with
 | ResAddr -> "Res"
 | _ -> try List.assoc r wregs with Not_found -> assert false
 
+let pp_simd_reg r = match r with
+| Vreg (r',s) ->
+  (try List.assoc r' vvrs with Not_found -> assert false) ^
+  (try List.assoc s arrange_specifier with Not_found -> assert false)
+| _ -> assert false
 
 let reg_compare = compare
 
@@ -596,6 +601,8 @@ type 'k kinstruction =
 (* Load and Store *)
   | I_LDR of variant * reg * reg * 'k kr * 'k s
   | I_LDUR of variant * reg * reg * 'k option
+(* Neon Extension Load and Store*)
+  | I_LD1 of reg * int * reg * 'k kr
 (* Post-indexed load with immediate - like a writeback *)
 (* sufficiently different (and semantically interesting) to need a new inst *)
   | I_LDR_P of variant * reg * reg * 'k
@@ -759,6 +766,12 @@ let do_pp_instruction m =
     pp_vreg v r2 ^ ",[" ^
     pp_xreg ra ^ pp_kr true false kr ^ "]" in
 
+  let pp_vmem_s memo r1 i r2 kr =
+    pp_memo memo ^ " " ^
+    "{" ^ pp_simd_reg r1 ^ "}" ^
+    "[" ^ string_of_int i ^ "] " ^
+    pp_xreg r2 ^ pp_kr false false kr in
+
   let pp_rkr memo v r1 kr = match v,kr with
   | _, K k -> pp_ri memo v r1 k
   | V32, RV (V32,r2)
@@ -850,6 +863,9 @@ let do_pp_instruction m =
       pp_mem ("STLR"^pp_bh bh) V32 r1 r2 m.k0
   | I_STXRBH (bh,t,r1,r2,r3) ->
       pp_stxr (strbh_memo bh t) V32 r1 r2 r3
+(* Neon Extension Load and Store *)
+  | I_LD1 (r1,i,r2,kr) ->
+    pp_vmem_s "LD1" r1 i r2 kr
 (* Morello *)
   | I_ALIGND (r1,r2,k) ->
       sprintf "ALIGND %s,%s,%s" (pp_creg r1) (pp_creg r2) (pp_kr false true k)
@@ -1022,6 +1038,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_OP3 (_,_,r1,r2,kr,_)
   | I_LDRBH (_,r1,r2,kr) | I_STRBH (_,r1,r2,kr)
   | I_ALIGND (r1,r2,kr) | I_ALIGNU (r1,r2,kr)
+  | I_LD1 (r1,_,r2,kr)
     -> fold_reg r1 (fold_reg r2 (fold_kr kr c))
   | I_CSEL (_,r1,r2,r3,_,_)
   | I_STXR (_,_,r1,r2,r3) | I_STXRBH (_,_,r1,r2,r3)
@@ -1102,6 +1119,9 @@ let map_regs f_reg f_symb =
       I_STXR (v,t,map_reg r1,map_reg r2,map_reg r3)
   | I_STXRBH (bh,t,r1,r2,r3) ->
       I_STXRBH (bh,t,map_reg r1,map_reg r2,map_reg r3)
+(* Neon Extension Loads and Stores *)
+  | I_LD1 (r1,i,r2,kr) ->
+      I_LD1 (map_reg r1, i, map_reg r2, map_kr kr)
 (* Morello *)
   | I_ALIGND (r1,r2,k) ->
       I_ALIGND(map_reg r1,map_reg r2,k)
@@ -1253,6 +1273,7 @@ let get_next = function
   | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _
   | I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|I_LDCT _|I_SC _|I_SEAL _|I_STCT _
   | I_UNSEAL _
+  | I_LD1 _
     -> [Label.Next;]
 
 include Pseudo.Make
@@ -1330,6 +1351,7 @@ include Pseudo.Make
         | I_OP3 (v,op,r1,r2,kr,s) -> I_OP3 (v,op,r1,r2,kr_tr kr,ap_shift k_tr s)
         | I_ALIGND (r1,r2,k) -> I_ALIGND (r1,r2,kr_tr k)
         | I_ALIGNU (r1,r2,k) -> I_ALIGNU (r1,r2,kr_tr k)
+        | I_LD1 (r1,i,r2,kr) -> I_LD1 (r1,i,r2,kr_tr kr)
 
 
       let get_naccesses = function
@@ -1337,6 +1359,7 @@ include Pseudo.Make
         | I_STR _ | I_STLR _ | I_STLRBH _ | I_STXR _
         | I_LDRBH _ | I_STRBH _ | I_STXRBH _ | I_IC _ | I_DC _
         | I_STG _ | I_LDG _
+        | I_LD1 _
           -> 1
         | I_LDP _|I_STP _
         | I_CAS _ | I_CASBH _
