@@ -858,7 +858,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | None,None -> None
     | Some s1,Some s2 when s1 = s2 -> sz1
     | _,_ ->
-        Warn.fatal "Amo instructions with difference sizes"
+        Warn.fatal "Amo instructions with different sizes"
 
     let do_rmw_type a1 a2 = match a1,a2 with
     | Plain,Plain -> RMW_P
@@ -915,14 +915,16 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let rA,init,st = U.next_init st p init (as_data er.loc) in
       emit_cas_rA st p init er ew rA
 
-    let emit_stop_rA op st p init _er ew rA =
-      let a,sz = tr_none ew.C.atom in
-      let a = match a with
-      | Plain -> W_P
-      | Rel -> W_L
+    let emit_stop_rA op st p init er ew rA =
+      let a,sz1 = tr_none ew.C.atom
+      and b,sz2 = tr_none er.C.atom in
+      let sz = do_sz sz1 sz2 in
+      let a = match b,a with
+      | Plain,Plain -> W_P
+      | Plain,Rel -> W_L
       | _ ->
-          Warn.fatal "Unexpected atom in STOP instruction: %s"
-            (pp_atom_acc a) in
+          Warn.fatal "Unexpected atoms in STOP instruction: %s,%s"
+            (pp_atom_acc b)  (pp_atom_acc a) in
       let rW,init,csi,st = mk_emit_mov sz st p init ew.v in
       let cs,st = match sz with
       | None -> [stop op a rW rA],st
