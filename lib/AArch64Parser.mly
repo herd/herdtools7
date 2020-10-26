@@ -54,7 +54,7 @@ let check_noext = function
 %token B BR BEQ BNE BGE BGT BLE BLT CBZ CBNZ EQ NE GE GT LE LT TBZ TBNZ
 %token BL BLR RET
 %token LDR LDP LDNP STP STNP LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
-%token LD1 /* Neon load/store */
+%token LD1 LD1R /* Neon load/store */
 %token CMP MOV MOVZ MOVK ADR
 %token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH
 %token STXR STXRB STXRH STLXR STLXRB STLXRH
@@ -172,10 +172,13 @@ vreg:
 | ARCH_VREG { $1 }
 
 vregs:
-| LCRL vreg RCRL { [$2] }
+| vregs1 { [$1] }
 | vregs2 { $1 }
 | vregs3 { $1 }
 | vregs4 { $1 }
+
+vregs1:
+| LCRL vreg RCRL { $2 }
 
 vregs2:
 | LCRL vreg COMMA vreg RCRL { [$2;$4] }
@@ -363,10 +366,12 @@ instr:
 | STLXRH wreg COMMA wreg COMMA LBRK xreg RBRK
   { A.I_STXRBH (A.H,A.LY,$2,$4,$7) }
    /* Neon extension Memory */
-| LD1 LCRL vreg RCRL INDEX COMMA LBRK xreg RBRK kx0_no_shift
-  { A.I_LD1 ($3, $5, $8, $10) }
+| LD1 vregs1 INDEX COMMA LBRK xreg RBRK kx0_no_shift
+  { A.I_LD1 ($2, $3, $6, $8) }
 | LD1 vregs COMMA LBRK xreg RBRK kx0_no_shift
   { A.I_LD1M ($2, $5, $7) }
+| LD1R vregs1 COMMA LBRK xreg RBRK kx0_no_shift
+  { A.I_LD1R ($2, $5, $7) }
     /* Compare and swap */
 | CAS wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_CAS (A.V32,A.RMW_P,$2,$4,$7) }
