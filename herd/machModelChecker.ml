@@ -230,12 +230,7 @@ module Make
                   E.same_location_with_faults
                   (Lazy.force unv)
               end;
-              "alias", lazy begin
-                if kvm then
-                  E.EventRel.restrict_rel E.same_PA (Lazy.force unv)
-                else assert false
-                end;
-               "int",lazy begin
+              "int",lazy begin
                 E.EventRel.restrict_rel E.same_proc_not_init (Lazy.force unv)
               end ;
               "ext",lazy begin
