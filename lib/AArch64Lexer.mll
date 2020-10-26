@@ -87,6 +87,7 @@ match name with
 | "stlxrh"|"STLXRH" -> STLXRH
 (* Neon Extension Memory *)
 | "ld1" | "LD1" -> LD1
+| "ld1r" | "LD1R" -> LD1R
 (* Compare and swap *)
 | "cas"|"CAS" -> CAS
 | "casa"|"CASA" -> CASA

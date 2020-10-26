@@ -604,6 +604,7 @@ type 'k kinstruction =
 (* Neon Extension Load and Store*)
   | I_LD1 of reg * int * reg * 'k kr
   | I_LD1M of reg list * reg * 'k kr
+  | I_LD1R of reg * reg * 'k kr
 (* Post-indexed load with immediate - like a writeback *)
 (* sufficiently different (and semantically interesting) to need a new inst *)
   | I_LDR_P of variant * reg * reg * 'k
@@ -779,6 +780,11 @@ let do_pp_instruction m =
     ", [" ^ pp_xreg r2 ^ "]" ^
     pp_kr false false kr in
 
+  let pp_vmem_r memo r1 r2 kr =
+    pp_memo memo ^ " " ^
+    "{" ^ pp_simd_reg r1 ^ "}" ^
+    pp_xreg r2 ^ pp_kr false false kr in
+
   let pp_rkr memo v r1 kr = match v,kr with
   | _, K k -> pp_ri memo v r1 k
   | V32, RV (V32,r2)
@@ -875,6 +881,8 @@ let do_pp_instruction m =
     pp_vmem_s "LD1" r1 i r2 kr
   | I_LD1M (rs,r2,kr) ->
     pp_vmem_m "LD1" rs r2 kr
+  | I_LD1R (r1, r2, kr) ->
+    pp_vmem_r "LD1R" r1 r2 kr
 (* Morello *)
   | I_ALIGND (r1,r2,k) ->
       sprintf "ALIGND %s,%s,%s" (pp_creg r1) (pp_creg r2) (pp_kr false true k)
@@ -1049,8 +1057,10 @@ let fold_regs (f_regs,f_sregs) =
   | I_ALIGND (r1,r2,kr) | I_ALIGNU (r1,r2,kr)
   | I_LD1 (r1,_,r2,kr)
     -> fold_reg r1 (fold_reg r2 (fold_kr kr c))
-  | I_LD1M (rs, r2, kr)
+  | I_LD1M (rs,r2,kr)
     -> List.fold_right fold_reg rs (fold_reg r2 (fold_kr kr c))
+  | I_LD1R (r1,r2,kr)
+    -> fold_reg r1 (fold_reg r2 (fold_kr kr c))
   | I_CSEL (_,r1,r2,r3,_,_)
   | I_STXR (_,_,r1,r2,r3) | I_STXRBH (_,_,r1,r2,r3)
   | I_BUILD (r1,r2,r3) | I_CPYTYPE (r1,r2,r3) | I_CPYVALUE (r1,r2,r3)
@@ -1135,7 +1145,9 @@ let map_regs f_reg f_symb =
       I_LD1 (map_reg r1, i, map_reg r2, map_kr kr)
   | I_LD1M (rs,r2,kr) ->
       I_LD1M (List.map map_reg rs, map_reg r2, map_kr kr)
-(* Morello *)
+  | I_LD1R (r1,r2,kr) ->
+    I_LD1R (map_reg r1, map_reg r2, map_kr kr)
+      (* Morello *)
   | I_ALIGND (r1,r2,k) ->
       I_ALIGND(map_reg r1,map_reg r2,k)
   | I_ALIGNU (r1,r2,k) ->
@@ -1288,6 +1300,7 @@ let get_next = function
   | I_UNSEAL _
   | I_LD1 _
   | I_LD1M _
+  | I_LD1R _
     -> [Label.Next;]
 
 include Pseudo.Make
@@ -1367,6 +1380,7 @@ include Pseudo.Make
         | I_ALIGNU (r1,r2,k) -> I_ALIGNU (r1,r2,kr_tr k)
         | I_LD1 (r1,i,r2,kr) -> I_LD1 (r1,i,r2,kr_tr kr)
         | I_LD1M (rs,r2,kr) -> I_LD1M (rs,r2,kr_tr kr)
+        | I_LD1R (r1,r2,kr) -> I_LD1R (r1,r2,kr_tr kr)
 
 
       let get_naccesses = function
@@ -1374,8 +1388,7 @@ include Pseudo.Make
         | I_STR _ | I_STLR _ | I_STLRBH _ | I_STXR _
         | I_LDRBH _ | I_STRBH _ | I_STXRBH _ | I_IC _ | I_DC _
         | I_STG _ | I_LDG _
-        | I_LD1 _
-        | I_LD1M _
+        | I_LD1 _ | I_LD1M _ | I_LD1R _
           -> 1
         | I_LDP _|I_STP _
         | I_CAS _ | I_CASBH _
