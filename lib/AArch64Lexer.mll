@@ -88,6 +88,12 @@ match name with
 (* Neon Extension Memory *)
 | "ld1" | "LD1" -> LD1
 | "ld1r" | "LD1R" -> LD1R
+| "ld2" | "LD2" -> LD2
+| "ld2r" | "LD2R" -> LD2R
+| "ld3" | "LD3" -> LD3
+| "ld3r" | "LD3R" -> LD3R
+| "ld4" | "LD4" -> LD4
+| "ld4r" | "LD4R" -> LD4R
 (* Compare and swap *)
 | "cas"|"CAS" -> CAS
 | "casa"|"CASA" -> CASA
