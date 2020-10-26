@@ -605,6 +605,15 @@ type 'k kinstruction =
   | I_LD1 of reg * int * reg * 'k kr
   | I_LD1M of reg list * reg * 'k kr
   | I_LD1R of reg * reg * 'k kr
+  | I_LD2 of reg list * int * reg * 'k kr
+  | I_LD2M of reg list * reg * 'k kr
+  | I_LD2R of reg list * reg * 'k kr
+  | I_LD3 of reg list * int * reg * 'k kr
+  | I_LD3M of reg list * reg * 'k kr
+  | I_LD3R of reg list * reg * 'k kr
+  | I_LD4 of reg list * int * reg * 'k kr
+  | I_LD4M of reg list * reg * 'k kr
+  | I_LD4R of reg list * reg * 'k kr
 (* Post-indexed load with immediate - like a writeback *)
 (* sufficiently different (and semantically interesting) to need a new inst *)
   | I_LDR_P of variant * reg * reg * 'k
@@ -768,22 +777,17 @@ let do_pp_instruction m =
     pp_vreg v r2 ^ ",[" ^
     pp_xreg ra ^ pp_kr true false kr ^ "]" in
 
-  let pp_vmem_s memo r1 i r2 kr =
+  let pp_vmem_s memo rs i r2 kr =
     pp_memo memo ^ " " ^
-    "{" ^ pp_simd_reg r1 ^ "}" ^
+    "{" ^ String.concat ", " (List.map pp_simd_reg rs) ^ "}" ^
     "[" ^ string_of_int i ^ "] " ^
     pp_xreg r2 ^ pp_kr false false kr in
 
-  let pp_vmem_m memo rs r2 kr =
+  let pp_vmem_r_m memo rs r2 kr =
     pp_memo memo ^ " " ^
     "{" ^ String.concat ", " (List.map pp_simd_reg rs) ^ "}" ^
     ", [" ^ pp_xreg r2 ^ "]" ^
     pp_kr false false kr in
-
-  let pp_vmem_r memo r1 r2 kr =
-    pp_memo memo ^ " " ^
-    "{" ^ pp_simd_reg r1 ^ "}" ^
-    pp_xreg r2 ^ pp_kr false false kr in
 
   let pp_rkr memo v r1 kr = match v,kr with
   | _, K k -> pp_ri memo v r1 k
@@ -878,11 +882,29 @@ let do_pp_instruction m =
       pp_stxr (strbh_memo bh t) V32 r1 r2 r3
 (* Neon Extension Load and Store *)
   | I_LD1 (r1,i,r2,kr) ->
-    pp_vmem_s "LD1" r1 i r2 kr
+      pp_vmem_s "LD1" [r1] i r2 kr
   | I_LD1M (rs,r2,kr) ->
-    pp_vmem_m "LD1" rs r2 kr
+      pp_vmem_r_m "LD1" rs r2 kr
   | I_LD1R (r1, r2, kr) ->
-    pp_vmem_r "LD1R" r1 r2 kr
+      pp_vmem_r_m "LD1R" [r1] r2 kr
+  | I_LD2 (r1,i,r2,kr) ->
+      pp_vmem_s "LD2" r1 i r2 kr
+  | I_LD2M (rs,r2,kr) ->
+      pp_vmem_r_m "LD2" rs r2 kr
+  | I_LD2R (r1,r2,kr) ->
+      pp_vmem_r_m "LD2R" r1 r2 kr
+  | I_LD3 (rs,i,r2,kr) ->
+      pp_vmem_s "LD3" rs i r2 kr
+  | I_LD3M (rs,r2,kr) ->
+      pp_vmem_r_m "LD3" rs r2 kr
+  | I_LD3R (rs, r2, kr) ->
+      pp_vmem_r_m "LD3R" rs r2 kr
+  | I_LD4 (rs,i,r2,kr) ->
+      pp_vmem_s "LD4" rs i r2 kr
+  | I_LD4M (rs,r2,kr) ->
+      pp_vmem_r_m "LD4" rs r2 kr
+  | I_LD4R (rs,r2,kr) ->
+      pp_vmem_r_m "LD4R" rs r2 kr
 (* Morello *)
   | I_ALIGND (r1,r2,k) ->
       sprintf "ALIGND %s,%s,%s" (pp_creg r1) (pp_creg r2) (pp_kr false true k)
@@ -916,6 +938,7 @@ let do_pp_instruction m =
       sprintf "STCT %s,[%s]" (pp_xreg r1) (pp_xreg r2)
   | I_UNSEAL (r1,r2,r3) ->
       sprintf "UNSEAL %s,%s,%s" (pp_creg r1) (pp_creg r2) (pp_creg r3)
+
 (* CAS *)
   | I_CAS (v,rmw,r1,r2,r3) ->
       sprintf "%s %s,%s,[%s]" (cas_memo rmw) (pp_vreg v r1) (pp_vreg v r2) (pp_xreg r3)
@@ -1061,6 +1084,24 @@ let fold_regs (f_regs,f_sregs) =
     -> List.fold_right fold_reg rs (fold_reg r2 (fold_kr kr c))
   | I_LD1R (r1,r2,kr)
     -> fold_reg r1 (fold_reg r2 (fold_kr kr c))
+  | I_LD2 (rs,_,r2,kr)
+    -> List.fold_right fold_reg rs (fold_reg r2 (fold_kr kr c))
+  | I_LD2M (rs,r2,kr)
+    -> List.fold_right fold_reg rs (fold_reg r2 (fold_kr kr c))
+  | I_LD2R (rs,r2,kr)
+    -> List.fold_right fold_reg rs (fold_reg r2 (fold_kr kr c))
+  | I_LD3 (rs,_,r2,kr)
+    -> List.fold_right fold_reg rs (fold_reg r2 (fold_kr kr c))
+  | I_LD3M (rs,r2,kr)
+    -> List.fold_right fold_reg rs (fold_reg r2 (fold_kr kr c))
+  | I_LD3R (rs,r2,kr)
+    -> List.fold_right fold_reg rs (fold_reg r2 (fold_kr kr c))
+  | I_LD4 (rs,_,r2,kr)
+    -> List.fold_right fold_reg rs (fold_reg r2 (fold_kr kr c))
+  | I_LD4M (rs,r2,kr)
+    -> List.fold_right fold_reg rs (fold_reg r2 (fold_kr kr c))
+  | I_LD4R (rs,r2,kr)
+    -> List.fold_right fold_reg rs (fold_reg r2 (fold_kr kr c))
   | I_CSEL (_,r1,r2,r3,_,_)
   | I_STXR (_,_,r1,r2,r3) | I_STXRBH (_,_,r1,r2,r3)
   | I_BUILD (r1,r2,r3) | I_CPYTYPE (r1,r2,r3) | I_CPYVALUE (r1,r2,r3)
@@ -1146,8 +1187,26 @@ let map_regs f_reg f_symb =
   | I_LD1M (rs,r2,kr) ->
       I_LD1M (List.map map_reg rs, map_reg r2, map_kr kr)
   | I_LD1R (r1,r2,kr) ->
-    I_LD1R (map_reg r1, map_reg r2, map_kr kr)
-      (* Morello *)
+      I_LD1R (map_reg r1, map_reg r2, map_kr kr)
+  | I_LD2 (rs,i,r2,kr) ->
+      I_LD2 (List.map map_reg rs, i, map_reg r2, map_kr kr)
+  | I_LD2M (rs,r2,kr) ->
+      I_LD2M (List.map map_reg rs, map_reg r2, map_kr kr)
+  | I_LD2R (rs,r2,kr) ->
+      I_LD2R (List.map map_reg rs, map_reg r2, map_kr kr)
+  | I_LD3 (rs,i,r2,kr) ->
+      I_LD3 (List.map map_reg rs, i, map_reg r2, map_kr kr)
+  | I_LD3M (rs,r2,kr) ->
+      I_LD3M (List.map map_reg rs, map_reg r2, map_kr kr)
+  | I_LD3R (rs,r2,kr) ->
+      I_LD3R (List.map map_reg rs, map_reg r2, map_kr kr)
+  | I_LD4 (rs,i,r2,kr) ->
+      I_LD4 (List.map map_reg rs, i, map_reg r2, map_kr kr)
+  | I_LD4M (rs,r2,kr) ->
+      I_LD4M (List.map map_reg rs, map_reg r2, map_kr kr)
+  | I_LD4R (rs,r2,kr) ->
+      I_LD4R (List.map map_reg rs, map_reg r2, map_kr kr)
+(* Morello *)
   | I_ALIGND (r1,r2,k) ->
       I_ALIGND(map_reg r1,map_reg r2,k)
   | I_ALIGNU (r1,r2,k) ->
@@ -1298,9 +1357,10 @@ let get_next = function
   | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _
   | I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|I_LDCT _|I_SC _|I_SEAL _|I_STCT _
   | I_UNSEAL _
-  | I_LD1 _
-  | I_LD1M _
-  | I_LD1R _
+  | I_LD1 _ | I_LD1M _ | I_LD1R _
+  | I_LD2 _ | I_LD2M _ | I_LD2R _
+  | I_LD3 _ | I_LD3M _ | I_LD3R _
+  | I_LD4 _ | I_LD4M _ | I_LD4R _
     -> [Label.Next;]
 
 include Pseudo.Make
@@ -1381,6 +1441,15 @@ include Pseudo.Make
         | I_LD1 (r1,i,r2,kr) -> I_LD1 (r1,i,r2,kr_tr kr)
         | I_LD1M (rs,r2,kr) -> I_LD1M (rs,r2,kr_tr kr)
         | I_LD1R (r1,r2,kr) -> I_LD1R (r1,r2,kr_tr kr)
+        | I_LD2 (rs,i,r2,kr) -> I_LD2 (rs,i,r2,kr_tr kr)
+        | I_LD2M (rs,r2,kr) -> I_LD2M (rs,r2,kr_tr kr)
+        | I_LD2R (rs,r2,kr) -> I_LD2R (rs,r2,kr_tr kr)
+        | I_LD3 (rs,i,r2,kr) -> I_LD3 (rs,i,r2,kr_tr kr)
+        | I_LD3M (rs,r2,kr) -> I_LD3M (rs,r2,kr_tr kr)
+        | I_LD3R (rs,r2,kr) -> I_LD3R (rs,r2,kr_tr kr)
+        | I_LD4 (rs,i,r2,kr) -> I_LD4 (rs,i,r2,kr_tr kr)
+        | I_LD4M (rs,r2,kr) -> I_LD4M (rs,r2,kr_tr kr)
+        | I_LD4R (rs,r2,kr) -> I_LD4R (rs,r2,kr_tr kr)
 
 
       let get_naccesses = function
@@ -1389,6 +1458,9 @@ include Pseudo.Make
         | I_LDRBH _ | I_STRBH _ | I_STXRBH _ | I_IC _ | I_DC _
         | I_STG _ | I_LDG _
         | I_LD1 _ | I_LD1M _ | I_LD1R _
+        | I_LD2 _ | I_LD2M _ | I_LD2R _
+        | I_LD3 _ | I_LD3M _ | I_LD3R _
+        | I_LD4 _ | I_LD4M _ | I_LD4R _
           -> 1
         | I_LDP _|I_STP _
         | I_CAS _ | I_CASBH _
