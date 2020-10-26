@@ -171,6 +171,21 @@ wreg:
 vreg:
 | ARCH_VREG { $1 }
 
+vregs:
+| LCRL vreg RCRL { [$2] }
+| vregs2 { $1 }
+| vregs3 { $1 }
+| vregs4 { $1 }
+
+vregs2:
+| LCRL vreg COMMA vreg RCRL { [$2;$4] }
+
+vregs3:
+| LCRL vreg COMMA vreg COMMA vreg RCRL { [$2;$4;$6] }
+
+vregs4:
+| LCRL vreg COMMA vreg COMMA vreg COMMA vreg RCRL { [$2;$4;$6;$8] }
+
 k:
 | NUM  { MetaConst.Int $1 }
 | META { MetaConst.Meta $1 }
@@ -350,6 +365,8 @@ instr:
    /* Neon extension Memory */
 | LD1 LCRL vreg RCRL INDEX COMMA LBRK xreg RBRK kx0_no_shift
   { A.I_LD1 ($3, $5, $8, $10) }
+| LD1 vregs COMMA LBRK xreg RBRK kx0_no_shift
+  { A.I_LD1M ($2, $5, $7) }
     /* Compare and swap */
 | CAS wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_CAS (A.V32,A.RMW_P,$2,$4,$7) }
