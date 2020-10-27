@@ -1027,18 +1027,20 @@ module Make(V:Constant.S)(C:Config) =
           inputs = [r;]; reg_env=[r,quad;];}
     | V128 -> assert false
 
-    let cmp v r1 r2 = match v with
+    let cmp v r1 r2 s = match v with
     | V32 ->
         let r1,fm1,r2,fm2 = args2 "wzr" (fun s -> "^wi"^s) r1 r2 in
+        let shift = Misc.lowercase (pp_barrel_shift "," s pp_imm) in
         let rs = r1 @ r2 in
         { empty_ins with
-          memo = sprintf "cmp %s,%s" fm1 fm2;
+          memo = sprintf "cmp %s,%s%s" fm1 fm2 shift;
           inputs = rs; reg_env=List.map (fun r -> r,word) rs; }
     | V64 ->
         let r1,fm1,r2,fm2 = args2 "xzr" (fun s -> "^i"^s) r1 r2 in
+        let shift = Misc.lowercase (pp_barrel_shift "," s pp_imm) in
         let rs = r1 @ r2 in
         { empty_ins with
-          memo = sprintf "cmp %s,%s" fm1 fm2;
+          memo = sprintf "cmp %s,%s%s" fm1 fm2 shift;
           inputs = rs; reg_env=List.map (fun r -> r,quad) rs; }
     | V128 -> assert false
 
@@ -1233,7 +1235,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_RBIT (v,rd,rs) -> rbit v rd rs::k
     | I_SXTW (r1,r2) -> sxtw r1 r2::k
     | I_OP3 (v,SUBS,ZR,r,K i, S_NOEXT) ->  cmpk v r i::k
-    | I_OP3 (v,SUBS,ZR,r2,RV (v3,r3), S_NOEXT) when v=v3->  cmp v r2 r3::k
+    | I_OP3 (v,SUBS,ZR,r2,RV (v3,r3), s) when v=v3->  cmp v r2 r3 s::k
     | I_OP3 (v,ANDS,ZR,r,K i, S_NOEXT) -> tst v r i::k
     | I_OP3 (V64,_,_,_,RV(V32,_),S_NOEXT) ->
         Warn.fatal "Instruction %s is illegal (extension required)"
