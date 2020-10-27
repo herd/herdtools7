@@ -293,6 +293,12 @@ end = struct
     | (A.V.Val (Symbolic (Physical _))) -> true
     | _ -> false
 
+  let is_PA_access = function
+    | Access (_,_,_,_,_,_,A_PHY)
+    | Amo  (_,_,_,_,_,_,A_PHY)
+        -> true
+    | _ -> false
+
   let is_invalid_val = let open Constant in function
     | Some (A.V.Val (PteVal v)) -> V.is_zero (V.intToV v.PTEVal.valid)
     | _ -> false
@@ -418,8 +424,20 @@ end = struct
         (fun lvl -> A.pp_level lvl,is_at_level lvl)
         A.levels
     in
-    ("T",is_tag)::("FAULT",is_fault)::("TLBI",is_inv)::("DC",is_dc)::("CI",is_ci)::("C",is_c)::("I",is_i)::("PTEINV",invalid_pte)::("PTEV",valid_pte):: 
-    bsets @ asets @ esets @ lsets
+    ("T",is_tag)::
+    ("FAULT",is_fault)::
+    ("TLBI",is_inv)::
+    ("DC",is_dc)::
+    ("CI",is_ci)::
+    ("C",is_c)::("I",is_i)::
+    (if kvm then
+      fun k ->
+        ("PA",is_PA_access)::
+        ("PTEINV",invalid_pte)::
+        ("PTEV",valid_pte)::k
+    else
+      fun k -> k)
+      (bsets @ asets @ esets @ lsets)
 
   let arch_rels =
     if kvm then
