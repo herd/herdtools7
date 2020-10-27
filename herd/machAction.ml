@@ -433,6 +433,7 @@ end = struct
     (if kvm then
       fun k ->
         ("PA",is_PA_access)::
+        ("PTE",is_PTE_access)::
         ("PTEINV",invalid_pte)::
         ("PTEV",valid_pte)::k
     else

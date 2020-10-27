@@ -205,10 +205,10 @@ module Make
       let extract_valid v = M.op1 Op.Valid v
       let extract_oa v = M.op1 Op.OA v
 
-      let mextract_whole_pte_val an a_pte ii =
+      let mextract_whole_pte_val an nexp a_pte ii =
         (M.read_loc false
            (fun loc v ->
-             Act.Access (Dir.R,loc,v,an,AArch64.nexp_annot,quad,Act.A_PTE))
+             Act.Access (Dir.R,loc,v,an,nexp,quad,Act.A_PTE))
            (A.Location_global a_pte) ii)
 
       and write_whole_pte_val an explicit a_pte v ii =
@@ -222,11 +222,12 @@ module Make
         | AArch64.Other -> assert false
 
       let test_and_set_bit cond set a_pte ii =
-        mextract_whole_pte_val AArch64.X a_pte ii >>= fun pte_v ->
+        let nexp = AArch64.NExp set in
+        mextract_whole_pte_val AArch64.X nexp a_pte ii >>= fun pte_v ->
         cond pte_v >>*= fun c ->
         M.choiceT c
             (M.op1 (op_of_set set) pte_v >>= fun v ->
-             write_whole_pte_val AArch64.X (AArch64.NExp set) a_pte v ii)
+             write_whole_pte_val AArch64.X nexp a_pte v ii)
             (M.unitT ())
 
       let bit_is_zero op v = M.op1 op v >>= is_zero
@@ -339,7 +340,7 @@ module Make
                   test_and_set_af a_pte ii >>! a_pte
                 else M.unitT a_pte in
               (get_a_pte >>== test_and_set_af) >>= fun a_pte ->
-              mextract_whole_pte_val an a_pte ii >>= fun pte_v ->
+              mextract_whole_pte_val an AArch64.nexp_annot a_pte ii >>= fun pte_v ->
               (mextract_pte_vals pte_v) >>= fun pte_v -> M.unitT (pte_v,a_pte)
             end
           (fun (pte_v,a_pte) ma -> (* now we have PTE content *)
