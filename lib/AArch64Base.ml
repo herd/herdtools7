@@ -299,6 +299,10 @@ let pp_simd_reg r = match r with
   (try List.assoc s arrange_specifier with Not_found -> assert false)
 | _ -> assert false
 
+let pp_simd_fp_reg rl r = match r with
+| SIMDreg r -> try List.assoc r rl with Not_found -> assert false
+| _ -> assert false
+
 let reg_compare = compare
 
 let symb_reg_name = function
@@ -480,6 +484,7 @@ type op = ADD | ADDS | SUB | SUBS | AND | ANDS | ORR | EOR | ASR
 type gc = CFHI | GCFLGS | GCPERM | GCSEAL | GCTAG | GCTYPE | GCVALUE
 type sc = CLRPERM | CTHI | SCFLGS | SCTAG | SCVALUE
 type variant = V32 | V64 | V128
+type simd_variant = VSIMD8 | VSIMD16 | VSIMD32 | VSIMD64 | VSIMD128
 
 let pp_variant = function
   | V32 -> "V32"
@@ -492,7 +497,7 @@ let tr_variant = function
   | V128 -> MachSize.S128
 
 
-type 'k kr = K of 'k | RV of variant * reg
+type 'k kr = K of 'k | RV of variant * reg | SIMDRV of simd_variant * reg
 let k0 = K 0
 
 type ld_type = AA | XX | AX | AQ
@@ -622,6 +627,7 @@ type 'k kinstruction =
   | I_ST3M of reg list * reg * 'k kr
   | I_ST4 of reg list * int * reg * 'k kr
   | I_ST4M of reg list * reg * 'k kr
+  | I_LDP_SIMD of temporal * simd_variant * reg * reg * reg * 'k kr
 (* Post-indexed load with immediate - like a writeback *)
 (* sufficiently different (and semantically interesting) to need a new inst *)
   | I_LDR_P of variant * reg * reg * 'k
@@ -719,6 +725,13 @@ let pp_vreg v r = match v with
 | V64 -> pp_xreg r
 | V128 -> pp_creg r
 
+let pp_vsimdreg v rs = match v with
+| VSIMD8 -> List.map (pp_simd_fp_reg bvrs) rs
+| VSIMD16 -> List.map (pp_simd_fp_reg hvrs) rs
+| VSIMD32 -> List.map (pp_simd_fp_reg svrs) rs
+| VSIMD64 -> List.map (pp_simd_fp_reg dvrs) rs
+| VSIMD128 -> List.map (pp_simd_fp_reg qvrs) rs
+
 
 let pp_op = function
   | ADD  -> "ADD"
@@ -784,6 +797,11 @@ let do_pp_instruction m =
     pp_vreg v r1 ^ "," ^
     pp_vreg v r2 ^ ",[" ^
     pp_xreg ra ^ pp_kr true false kr ^ "]" in
+
+  let pp_vmemp memo v r1 r2 ra kr = 
+    pp_memo memo ^ " " ^
+    String.concat ", " (pp_vsimdreg v [r1;r2]) ^ ",[" ^
+    pp_xreg ra ^ pp_kr false false kr ^ "]" in
 
   let pp_vmem_s memo rs i r2 kr =
     pp_memo memo ^ " " ^
@@ -929,6 +947,8 @@ let do_pp_instruction m =
       pp_vmem_s "ST4" rs i r2 kr
   | I_ST4M (rs,r2,kr) ->
       pp_vmem_r_m "ST4" rs r2 kr
+  | I_LDP_SIMD (t,v,r1,r2,r3,k) ->
+      pp_vmemp (match t with TT -> "LDP" | NT -> "LDNP") v r1 r2 r3 k
 (* Morello *)
   | I_ALIGND (r1,r2,k) ->
       sprintf "ALIGND %s,%s,%s" (pp_creg r1) (pp_creg r2) (pp_kr false true k)
@@ -1078,7 +1098,8 @@ let fold_regs (f_regs,f_sregs) =
 
   let fold_kr kr y = match kr with
   | K _ -> y
-  | RV (_,r) -> fold_reg r y in
+  | RV (_,r) -> fold_reg r y
+  | SIMDRV (_,r) -> fold_reg r y in
 
   fun c ins -> match ins with
   | I_NOP | I_B _ | I_BC _ | I_BL _ | I_FENCE _ | I_RET None
@@ -1149,6 +1170,7 @@ let fold_regs (f_regs,f_sregs) =
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_LDP (_,_,r1,r2,r3,kr)
   | I_STP (_,_,r1,r2,r3,kr)
+  | I_LDP_SIMD (_,_,r1,r2,r3,kr)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 (fold_kr kr c)))
   | I_CAS (_,_,r1,r2,r3)
   | I_CASBH (_,_,r1,r2,r3)
@@ -1170,7 +1192,8 @@ let map_regs f_reg f_symb =
 
   let map_kr kr = match kr with
   | K _ -> kr
-  | RV (v,r) -> RV (v,map_reg r) in
+  | RV (v,r) -> RV (v,map_reg r) 
+  | SIMDRV (v,r) -> SIMDRV (v,map_reg r) in
 
   fun ins -> match ins with
   | I_NOP
@@ -1261,6 +1284,8 @@ let map_regs f_reg f_symb =
       I_ST4 (List.map map_reg rs,i,map_reg r2,map_kr kr)
   | I_ST4M (rs,r2,kr) ->
       I_ST4M (List.map map_reg rs,map_reg r2,map_kr kr)
+  | I_LDP_SIMD (t,v,r1,r2,r3,kr) ->
+      I_LDP_SIMD (t,v,map_reg r1,map_reg r2,map_reg r3,map_kr kr)
 (* Morello *)
   | I_ALIGND (r1,r2,k) ->
       I_ALIGND(map_reg r1,map_reg r2,k)
@@ -1420,6 +1445,7 @@ let get_next = function
   | I_ST2 _ | I_ST2M _
   | I_ST3 _ | I_ST3M _
   | I_ST4 _ | I_ST4M _
+  | I_LDP_SIMD _
     -> [Label.Next;]
 
 include Pseudo.Make
@@ -1432,6 +1458,7 @@ include Pseudo.Make
       let kr_tr = function
         | K i -> K (k_tr i)
         | RV _ as kr -> kr
+        | SIMDRV _ as kr -> kr
 
       let ap_shift f s = match s with
         | S_LSL(s) -> S_LSL(f s)
@@ -1517,6 +1544,7 @@ include Pseudo.Make
         | I_ST3M (rs,r2,kr) -> I_ST3M (rs,r2,kr_tr kr)
         | I_ST4 (rs,i,r2,kr) -> I_ST4 (rs,i,r2,kr_tr kr)
         | I_ST4M (rs,r2,kr) -> I_ST4M (rs,r2,kr_tr kr)
+        | I_LDP_SIMD (t,v,r1,r2,r3,kr) -> I_LDP_SIMD (t,v,r1,r2,r3,kr_tr kr)
 
 
       let get_naccesses = function
@@ -1539,6 +1567,7 @@ include Pseudo.Make
         | I_LDOP _ | I_LDOPBH _
         | I_STOP _ | I_STOPBH _
         | I_STZG _
+        | I_LDP_SIMD _
           -> 2
         | I_LDR_P _ (* reads, stores, then post-index stores *)
           -> 3
