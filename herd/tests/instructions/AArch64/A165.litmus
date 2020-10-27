@@ -1,0 +1,14 @@
+AArch64 A165
+(* CMP shifted register is equivalent to SUBS WZR *)
+(* tests xwreg *)
+
+ { 0:X1=1; }
+
+P0;
+  CMP WZR, W1, ASR #1;
+  B.EQ foo;
+  MOV X0, #1;
+  foo: NOP;
+
+forall (0:X1=1 /\ 0:XZR=0 /\ 0:X0=0)
+

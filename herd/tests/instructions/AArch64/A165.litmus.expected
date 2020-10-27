@@ -1,0 +1,10 @@
+Test A165 Required
+States 1
+0:XZR=0; 0:X0=0; 0:X1=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X1=1 /\ 0:XZR=0 /\ 0:X0=0)
+Observation A165 Always 1 0
+Hash=e48a8df97eecd5c13e11852310f40a04
+

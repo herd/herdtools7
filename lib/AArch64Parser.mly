@@ -1005,10 +1005,12 @@ instr:
   { A.I_OP3 (A.V128,A.SUBS,$2,$4,A.RV (A.V128,$6), A.S_NOEXT) }
 | OP wreg COMMA wreg COMMA kwr COMMA shift
   { check_op3 $1 $6 ; A.I_OP3 (A.V32,$1,$2,$4,$6,$8) }
-| CMP wreg COMMA kwr
-  { A.I_OP3 (A.V32,A.SUBS,A.ZR,$2,$4, A.S_NOEXT) }
-| CMP xreg COMMA kr
-  { A.I_OP3 (A.V64,A.SUBS,A.ZR,$2,$4, A.S_NOEXT) }
+| CMP wreg COMMA kr_shift
+  { let (reg,shift) = $4 in
+    A.I_OP3 (A.V32,A.SUBS,A.ZR,$2,reg,shift) }
+| CMP xreg COMMA kr_shift
+  { let (reg,shift) = $4 in
+    A.I_OP3 (A.V64,A.SUBS,A.ZR,$2,reg,shift) }
 | TST wreg COMMA k
   { A.I_OP3 (A.V32,A.ANDS,A.ZR,$2,A.K $4, A.S_NOEXT) }
 | TST xreg COMMA k

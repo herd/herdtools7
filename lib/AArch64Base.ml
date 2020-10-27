@@ -1266,8 +1266,8 @@ let do_pp_instruction m =
       sprintf "SXTW %s,%s" (pp_xreg r1) (pp_wreg r2)
   | I_OP3 (v,SUBS,ZR,r,K k, S_NOEXT) ->
       pp_ri "CMP" v r k
-  | I_OP3 (v,SUBS,ZR,r2,RV (v3,r3), S_NOEXT) when v=v3->
-      pp_rr "CMP" v r2 r3
+  | I_OP3 (v,SUBS,ZR,r2,RV (v3,r3), s) when v=v3->
+      pp_rr "CMP" v r2 r3 ^ (pp_barrel_shift "," s m.pp_k)
   | I_OP3 (v,ANDS,ZR,r,(K _ as kr), S_NOEXT) ->
       pp_rkr "TST" v r kr
   | I_OP3 (v,op,r1,r2,K k, S_NOEXT) ->
