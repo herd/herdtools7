@@ -54,7 +54,7 @@ let check_noext = function
 %token B BR BEQ BNE BGE BGT BLE BLT CBZ CBNZ EQ NE GE GT LE LT TBZ TBNZ
 %token BL BLR RET
 %token LDR LDP LDNP STP STNP LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
-%token LD1 LD1R LD2 LD2R LD3 LD3R LD4 LD4R /* Neon load/store */
+%token LD1 LD1R LD2 LD2R LD3 LD3R LD4 LD4R ST1 ST2 ST3 ST4 /* Neon load/store */
 %token CMP MOV MOVZ MOVK ADR
 %token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH
 %token STXR STXRB STXRH STLXR STLXRB STLXRH
@@ -390,6 +390,22 @@ instr:
    { A.I_LD4M ($2, $5, $7) }
 | LD4R vregs4 COMMA LBRK xreg RBRK kx0_no_shift
    { A.I_LD4R ($2, $5, $7) }
+| ST1 vregs1 INDEX COMMA LBRK xreg RBRK kx0_no_shift
+   { A.I_ST1 ($2, $3, $6, $8) }
+| ST1 vregs COMMA LBRK xreg RBRK kx0_no_shift
+   { A.I_ST1M ($2, $5, $7) }
+| ST2 vregs2 INDEX COMMA LBRK xreg RBRK kx0_no_shift
+   { A.I_ST2 ($2, $3, $6, $8) }
+| ST2 vregs2 COMMA LBRK xreg RBRK kx0_no_shift
+   { A.I_ST2M ($2, $5, $7) }
+| ST3 vregs3 INDEX COMMA LBRK xreg RBRK kx0_no_shift
+   { A.I_ST3 ($2, $3, $6, $8) }
+| ST3 vregs3 COMMA LBRK xreg RBRK kx0_no_shift
+   { A.I_ST3M ($2, $5, $7) }
+| ST4 vregs4 INDEX COMMA LBRK xreg RBRK kx0_no_shift
+   { A.I_ST4 ($2, $3, $6, $8) }
+| ST4 vregs4 COMMA LBRK xreg RBRK kx0_no_shift
+   { A.I_ST4M ($2, $5, $7) }
     /* Compare and swap */
 | CAS wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_CAS (A.V32,A.RMW_P,$2,$4,$7) }

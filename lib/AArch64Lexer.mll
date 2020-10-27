@@ -94,6 +94,10 @@ match name with
 | "ld3r" | "LD3R" -> LD3R
 | "ld4" | "LD4" -> LD4
 | "ld4r" | "LD4R" -> LD4R
+| "st1" | "ST1" -> ST1
+| "st2" | "ST2" -> ST2
+| "st3" | "ST3" -> ST3
+| "st4" | "ST4" -> ST4
 (* Compare and swap *)
 | "cas"|"CAS" -> CAS
 | "casa"|"CASA" -> CASA
