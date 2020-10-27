@@ -1,0 +1,10 @@
+Test A173 Required
+States 1
+0:X2=9;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X2=9)
+Observation A173 Always 1 0
+Hash=81e30b7672e9d35849025c5af0cb2d71
+

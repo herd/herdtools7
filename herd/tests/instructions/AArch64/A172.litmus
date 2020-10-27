@@ -1,0 +1,9 @@
+AArch64 A172
+(* Tests load immediate, no offset, from stack pointer*)
+{ 0:sp = x; uint64_t x=1; uint64_t 0:X1 = 0; }
+
+P0;
+  ldr X1, [SP];
+
+
+forall (0:X1=1)

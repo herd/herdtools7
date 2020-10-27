@@ -1,0 +1,10 @@
+Test A174 Required
+States 1
+0:X6=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X6=1)
+Observation A174 Always 1 0
+Hash=535879c1c8a17cd9288b4bfc126f607f
+
