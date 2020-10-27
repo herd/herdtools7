@@ -532,7 +532,7 @@ module Make
         else if kvm then
           let mphy ma a_virt =
             M.op1 Op.IsVirtual a_virt >>= fun c ->
-              M.choiceT c (mop Act.A_PHY ma) (mop Act.A_PTE ma) >>! B.Next in
+              M.choiceT c (mop Act.A_PHY ma) (mop Act.A_PHY_PTE ma) >>! B.Next in
           lift_kvm dir mop ma an ii mphy
         else
           mop Act.A_VIR ma >>! B.Next

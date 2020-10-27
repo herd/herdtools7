@@ -40,7 +40,7 @@ module Make (C:Config) (A : A) : sig
   (* All sorts of accesses, redundunt with symbol hidden in location,
      when symbol is known, which may not be the case *)
 
-  type access_t = A_REG | A_VIR | A_PHY | A_PTE | A_TLB | A_TAG
+  type access_t = A_REG | A_VIR | A_PHY | A_PTE | A_TLB | A_TAG | A_PHY_PTE
 
   type action =
     | Access of Dir.dirn * A.location * A.V.v * A.lannot * A.explicit * MachSize.sz * access_t
@@ -70,7 +70,7 @@ end = struct
 
   let kvm = C.variant Variant.Kvm
 
-  type access_t = A_REG | A_VIR | A_PHY | A_PTE | A_TLB | A_TAG
+  type access_t = A_REG | A_VIR | A_PHY | A_PTE | A_TLB | A_TAG | A_PHY_PTE
 
   let access_of_constant cst =
     let open Constant in
@@ -282,8 +282,8 @@ end = struct
     | _ -> false
 
   let is_PA_access = function
-    | Access (_,_,_,_,_,_,A_PHY)
-    | Amo  (_,_,_,_,_,_,A_PHY)
+    | Access (_,_,_,_,_,_,(A_PHY|A_PHY_PTE))
+    | Amo  (_,_,_,_,_,_,(A_PHY|A_PHY_PTE))
         -> true
     | _ -> false
 
@@ -351,6 +351,10 @@ end = struct
   | Access (R,_,_,_,_,_,_)|Amo _ -> true
   | Access (W,_,_,_,_,_,_)|Barrier _|Commit _|Fault _|TooFar|Inv _ | DC _ -> false
 
+  let compatible_kinds k1 k2 = match k1,k2 with
+  | (A_PTE|A_PHY_PTE),(A_PTE|A_PHY_PTE) -> true
+  | _,_ -> k1 = k2
+
   let compatible_categories loc1 loc2 = match loc1,loc2 with
   | (A.Location_global _,A.Location_global _)
   | (A.Location_reg _,A.Location_reg _)
@@ -365,7 +369,7 @@ end = struct
   | (Access (_,loc1,_,_,_,_,k1)|Amo (loc1,_,_,_,_,_,k1)),
     (Access (_,loc2,_,_,_,_,k2)|Amo (loc2,_,_,_,_,_,k2))
     ->
-      k1 = k2 &&  compatible_categories loc1 loc2
+      compatible_kinds k1 k2 &&  compatible_categories loc1 loc2
   | _,_ -> assert false
 
   let is_reg_any a = match a with
