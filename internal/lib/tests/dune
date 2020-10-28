@@ -1,3 +1,4 @@
 (tests
- (names test_test)
- (libraries internal_lib))
+ (names channel_test test_test)
+ (libraries internal_lib unix)
+ (modes native))
