@@ -401,6 +401,7 @@ module Make
         if do_affinity then begin
           O.o "#include \"affinity.h\""
         end ;
+        if Cfg.sysarch = `AArch64 then O.o "#include <arm_neon.h>";
         O.o "" ;
         O.o "/* params */" ;
         O.o "typedef struct {" ;

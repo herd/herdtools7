@@ -402,6 +402,37 @@ module Make(V:Constant.S)(C:Config) =
           outputs = [r1;]; reg_env=[r3,voidstar; r2,quad; r1,word; ]}
     | V128 -> assert false
 
+(* Neon Extension Load and Store *)
+
+    let print_simd_reg i r = match r with
+    | Vreg (_,s) -> "^o" ^ string_of_int i ^
+      (try List.assoc s arrange_specifier with Not_found -> assert false)
+    | _ -> assert false
+
+    let print_simd_list rs =
+       String.concat "," (List.mapi print_simd_reg rs)
+
+    let load_simd_m memo rs rA kr = match kr with
+    | K 0 ->
+        { empty_ins with
+          memo = sprintf "%s {%s},[^i0]" memo (print_simd_list rs);
+          inputs = [rA];
+          outputs = List.rev rs;
+          reg_env = (List.map (fun r -> (r, int32x4)) rs) @ [(rA,voidstar)]}
+    | K k ->
+        { empty_ins with
+          memo = sprintf "%s {%s},[^i0],#%i" memo (print_simd_list rs) k;
+          inputs = [rA];
+          outputs = List.rev rs;
+          reg_env = (List.map (fun r -> (r, int32x4)) rs) @ [(rA,voidstar)]}
+    | RV (V64,rB) ->
+        { empty_ins with
+          memo = sprintf "%s {%s},[^i0],^i1" memo (print_simd_list rs);
+          inputs=[rA;rB;];
+          outputs = List.rev rs;
+          reg_env = (List.map (fun r -> (r, int32x4)) rs) @ [(rA,voidstar);(rB,quad)]}
+    | _ -> Warn.fatal "Illegal form of %s instruction" memo
+
 (* Compare and swap *)
     let type_of_variant = function
       | V32 -> word | V64 -> quad | V128 -> assert false
@@ -687,6 +718,8 @@ module Make(V:Constant.S)(C:Config) =
     | I_CASBH (bh,rmw,r1,r2,r3) -> cas (casbh_memo bh rmw) V32 r1 r2 r3::k
     | I_SWP (v,rmw,r1,r2,r3) -> swp (swp_memo rmw) v r1 r2 r3::k
     | I_SWPBH (bh,rmw,r1,r2,r3) -> swp (swpbh_memo bh rmw) V32 r1 r2 r3::k
+(* Neon Extension Load and Store *)
+    | I_LD2M (rs,r2,kr) -> load_simd_m "LD2" rs r2 kr::k
 (* Arithmetic *)
     | I_MOV (v,r,K i) ->  movk v r i::k
     | I_MOV (v,r1,RV (_,r2)) ->  movr v r1 r2::k
