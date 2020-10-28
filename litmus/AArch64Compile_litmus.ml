@@ -55,6 +55,7 @@ module Make(V:Constant.S)(C:Config) =
     let add_w = add_type word
     let add_q = add_type quad
     let add_v = add_type voidstar
+    let add_32x4 = add_type int32x4
 
 (* pretty prints barrel shifters *)
     let pp_shifter = function
@@ -404,33 +405,90 @@ module Make(V:Constant.S)(C:Config) =
 
 (* Neon Extension Load and Store *)
 
-    let print_simd_reg i r = match r with
-    | Vreg (_,s) -> "^o" ^ string_of_int i ^
+    let print_simd_reg io offset i r = match r with
+    | Vreg (_,s) -> "^" ^ io ^ string_of_int (i+offset) ^
       (try List.assoc s arrange_specifier with Not_found -> assert false)
     | _ -> assert false
 
-    let print_simd_list rs =
-       String.concat "," (List.mapi print_simd_reg rs)
+    let print_simd_list rs io offset =
+       String.concat "," (List.mapi (print_simd_reg io offset) rs)
+
+    let load_simd_s memo rs i rA kr = match kr with
+    | K 0 ->
+        { empty_ins with
+          memo = sprintf "%s {%s}[%i],[^i0]" memo (print_simd_list rs "o" 0) i;
+          inputs = [rA];
+          outputs = List.rev rs;
+          reg_env = (add_32x4 rs) @ [(rA,voidstar)]}
+    | K k ->
+        { empty_ins with
+          memo = sprintf "%s {%s}[%i],[^i0],#%i" memo (print_simd_list rs "o" 0) i k;
+          inputs = [rA];
+          outputs = List.rev rs;
+          reg_env = (add_32x4 rs) @ [(rA,voidstar)]}
+    | RV (V64,rB) ->
+        { empty_ins with
+          memo = sprintf "%s {%s}[%i],[^i0],^i1" memo (print_simd_list rs "o" 0) i;
+          inputs = [rA;rB;];
+          outputs = List.rev rs;
+          reg_env = (add_32x4 rs) @ [(rA,voidstar);(rB,quad)]}
+    | _ -> Warn.fatal "Illegal form of %s instruction" memo
 
     let load_simd_m memo rs rA kr = match kr with
     | K 0 ->
         { empty_ins with
-          memo = sprintf "%s {%s},[^i0]" memo (print_simd_list rs);
+          memo = sprintf "%s {%s},[^i0]" memo (print_simd_list rs "o" 0);
           inputs = [rA];
           outputs = List.rev rs;
-          reg_env = (List.map (fun r -> (r, int32x4)) rs) @ [(rA,voidstar)]}
+          reg_env = (add_32x4 rs) @ [(rA,voidstar)]}
     | K k ->
         { empty_ins with
-          memo = sprintf "%s {%s},[^i0],#%i" memo (print_simd_list rs) k;
+          memo = sprintf "%s {%s},[^i0],#%i" memo (print_simd_list rs "o" 0) k;
           inputs = [rA];
           outputs = List.rev rs;
-          reg_env = (List.map (fun r -> (r, int32x4)) rs) @ [(rA,voidstar)]}
+          reg_env = (add_32x4 rs) @ [(rA,voidstar)]}
     | RV (V64,rB) ->
         { empty_ins with
-          memo = sprintf "%s {%s},[^i0],^i1" memo (print_simd_list rs);
+          memo = sprintf "%s {%s},[^i0],^i1" memo (print_simd_list rs "o" 0);
           inputs=[rA;rB;];
           outputs = List.rev rs;
-          reg_env = (List.map (fun r -> (r, int32x4)) rs) @ [(rA,voidstar);(rB,quad)]}
+          reg_env = (add_32x4 rs) @ [(rA,voidstar);(rB,quad)]}
+    | _ -> Warn.fatal "Illegal form of %s instruction" memo
+
+    let store_simd_s memo rs i rA kr = match kr with
+    | K 0 ->
+        { empty_ins with
+          memo = sprintf "%s {%s}[%i],[^i0]" memo (print_simd_list rs "i" 1) i;
+          inputs = rA :: List.rev rs;
+          reg_env = (add_32x4 rs) @ [(rA,voidstar)]}
+    | K k ->
+        { empty_ins with
+          memo = sprintf "%s {%s}[%i],[^i0],#%i" memo (print_simd_list rs "i" 1) i k;
+          inputs = rA :: List.rev rs;
+          reg_env = (add_32x4 rs) @ [(rA,voidstar)]}
+    | RV (V64,rB) ->
+        { empty_ins with
+          memo = sprintf "%s {%s}[%i],[^i0],^i1" memo (print_simd_list rs "i" 2) i;
+          inputs = [rA;rB;] @ List.rev rs;
+          reg_env = (add_32x4 rs) @ [(rA,voidstar);(rB,quad)]}
+    | _ -> Warn.fatal "Illegal form of %s instruction" memo
+
+    let store_simd_m memo rs rA kr = match kr with
+    | K 0 ->
+      { empty_ins with
+        memo = sprintf "%s {%s},[^i0]" memo (print_simd_list rs "i" 1);
+        inputs = rA :: List.rev rs;
+        reg_env = [(rA,voidstar)] @ (add_32x4 rs)}
+    | K k ->
+      { empty_ins with
+        memo = sprintf "%s {%s},[^i0],#%i" memo (print_simd_list rs "i" 1) k;
+        inputs = rA :: List.rev rs;
+        reg_env = [(rA,voidstar)] @ (add_32x4 rs)}
+    | RV (V64,rB) ->
+      { empty_ins with
+        memo = sprintf "%s {%s},[^i0],^i1" memo (print_simd_list rs "i" 2);
+        inputs = [rA;rB;] @ List.rev rs;
+        reg_env = [(rA,voidstar);(rB,quad)] @ (add_32x4 rs)}
     | _ -> Warn.fatal "Illegal form of %s instruction" memo
 
 (* Compare and swap *)
@@ -719,7 +777,26 @@ module Make(V:Constant.S)(C:Config) =
     | I_SWP (v,rmw,r1,r2,r3) -> swp (swp_memo rmw) v r1 r2 r3::k
     | I_SWPBH (bh,rmw,r1,r2,r3) -> swp (swpbh_memo bh rmw) V32 r1 r2 r3::k
 (* Neon Extension Load and Store *)
+    | I_LD1 (r1,i,r2,kr) -> load_simd_s "LD1" [r1] i r2 kr::k
+    | I_LD1M (rs,r2,kr) -> load_simd_m "LD1" rs r2 kr::k
+    | I_LD1R (r1,r2,kr) -> load_simd_m "LD1R" [r1] r2 kr::k 
+    | I_LD2 (rs,i,r2,kr) -> load_simd_s "LD2" rs i r2 kr::k
     | I_LD2M (rs,r2,kr) -> load_simd_m "LD2" rs r2 kr::k
+    | I_LD2R (rs,r2,kr) -> load_simd_m "LD2R" rs r2 kr::k
+    | I_LD3 (rs,i,r2,kr) -> load_simd_s "LD3" rs i r2 kr::k
+    | I_LD3M (rs,r2,kr) -> load_simd_m "LD3" rs r2 kr::k
+    | I_LD3R (rs,r2,kr) -> load_simd_m "LD3R" rs r2 kr::k
+    | I_LD4 (rs,i,r2,kr) -> load_simd_s "LD4" rs i r2 kr::k
+    | I_LD4M (rs,r2,kr) -> load_simd_m "LD4" rs r2 kr::k
+    | I_LD4R (rs,r2,kr) -> load_simd_m "LD4R" rs r2 kr::k
+    | I_ST1 (r1,i,r2,kr) -> store_simd_s "ST1" [r1] i r2 kr::k
+    | I_ST1M (rs,r2,kr) -> store_simd_m "ST1" rs r2 kr::k
+    | I_ST2 (rs,i,r2,kr) -> store_simd_s "ST2" rs i r2 kr::k
+    | I_ST2M (rs,r2,kr) -> store_simd_m "ST2" rs r2 kr::k
+    | I_ST3 (rs,i,r2,kr) -> store_simd_s "ST3" rs i r2 kr::k
+    | I_ST3M (rs,r2,kr) -> store_simd_m "ST3" rs r2 kr::k
+    | I_ST4 (rs,i,r2,kr) -> store_simd_s "ST4" rs i r2 kr::k
+    | I_ST4M (rs,r2,kr) -> store_simd_m "ST4" rs r2 kr::k
 (* Arithmetic *)
     | I_MOV (v,r,K i) ->  movk v r i::k
     | I_MOV (v,r1,RV (_,r2)) ->  movr v r1 r2::k
