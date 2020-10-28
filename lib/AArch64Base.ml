@@ -629,6 +629,8 @@ type 'k kinstruction =
   | I_ST4M of reg list * reg * 'k kr
   | I_LDP_P_SIMD of temporal * simd_variant * reg * reg * reg * 'k
   | I_STP_P_SIMD of temporal * simd_variant * reg * reg * reg * 'k
+  | I_LDP_SIMD of temporal * simd_variant * reg * reg * reg * 'k kr
+  | I_STP_SIMD of temporal * simd_variant * reg * reg * reg * 'k kr
 (* Post-indexed load with immediate - like a writeback *)
 (* sufficiently different (and semantically interesting) to need a new inst *)
   | I_LDR_P of variant * reg * reg * 'k
@@ -803,6 +805,11 @@ let do_pp_instruction m =
     pp_memo memo ^ " " ^
     String.concat ", " (pp_vsimdreg v [r1;r2]) ^
     ",[" ^ pp_xreg ra ^ "]" ^ m.pp_k k in
+  
+  let pp_vmemp memo v r1 r2 ra kr = 
+    pp_memo memo ^ " " ^
+    String.concat ", " (pp_vsimdreg v [r1;r2]) ^
+    ",[" ^ pp_xreg ra ^ pp_kr false false kr ^ "]" in
 
   let pp_vmem_s memo rs i r2 kr =
     pp_memo memo ^ " " ^
@@ -949,9 +956,13 @@ let do_pp_instruction m =
   | I_ST4M (rs,r2,kr) ->
       pp_vmem_r_m "ST4" rs r2 kr
   | I_LDP_P_SIMD (t,v,r1,r2,r3,k) ->
-    pp_vmemp_post (match t with TT -> "LDP" | NT -> "LDNP") v r1 r2 r3 k
+      pp_vmemp_post (match t with TT -> "LDP" | NT -> "LDNP") v r1 r2 r3 k
   | I_STP_P_SIMD (t,v,r1,r2,r3,k) ->
-    pp_vmemp_post (match t with TT -> "STP" | NT -> "STNP") v r1 r2 r3 k
+      pp_vmemp_post (match t with TT -> "STP" | NT -> "STNP") v r1 r2 r3 k
+  | I_LDP_SIMD (t,v,r1,r2,r3,kr) ->
+      pp_vmemp (match t with TT -> "LDP" | NT -> "LDNP") v r1 r2 r3 kr
+  | I_STP_SIMD (t,v,r1,r2,r3,kr) ->
+      pp_vmemp (match t with TT -> "STP" | NT -> "STNP") v r1 r2 r3 kr
 (* Morello *)
   | I_ALIGND (r1,r2,k) ->
       sprintf "ALIGND %s,%s,%s" (pp_creg r1) (pp_creg r2) (pp_kr false true k)
@@ -1147,14 +1158,13 @@ let fold_regs (f_regs,f_sregs) =
   | I_ST4 (rs,_,r2,kr)
   | I_ST4M (rs,r2,kr)
     -> List.fold_right fold_reg rs (fold_reg r2 (fold_kr kr c))
-  | I_LDP_P_SIMD (_,_,r1,r2,r3,_)
-  | I_STP_P_SIMD (_,_,r1,r2,r3,_)
-    -> fold_reg r1 (fold_reg r2 c)
   | I_CSEL (_,r1,r2,r3,_,_)
   | I_STXR (_,_,r1,r2,r3) | I_STXRBH (_,_,r1,r2,r3)
   | I_BUILD (r1,r2,r3) | I_CPYTYPE (r1,r2,r3) | I_CPYVALUE (r1,r2,r3)
   | I_CSEAL (r1,r2,r3) | I_SEAL (r1,r2,r3) | I_UNSEAL (r1,r2,r3)
   | I_SC (_,r1,r2,r3)
+  | I_LDP_P_SIMD (_,_,r1,r2,r3,_) | I_LDP_SIMD (_,_,r1,r2,r3,_)
+  | I_STP_P_SIMD (_,_,r1,r2,r3,_) | I_STP_SIMD (_,_,r1,r2,r3,_)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_LDP (_,_,r1,r2,r3,kr)
   | I_STP (_,_,r1,r2,r3,kr)
@@ -1271,10 +1281,10 @@ let map_regs f_reg f_symb =
       I_ST4 (List.map map_reg rs,i,map_reg r2,map_kr kr)
   | I_ST4M (rs,r2,kr) ->
       I_ST4M (List.map map_reg rs,map_reg r2,map_kr kr)
-  | I_LDP_P_SIMD (t,v,r1,r2,r3,k) ->
-      I_LDP_P_SIMD (t,v,map_reg r1,map_reg r2,map_reg r3,k)
-  | I_STP_P_SIMD (t,v,r1,r2,r3,k) ->
-      I_STP_P_SIMD (t,v,map_reg r1,map_reg r2,map_reg r3,k)
+  | I_LDP_SIMD (t,v,r1,r2,r3,kr) ->
+      I_LDP_SIMD (t,v,map_reg r1,map_reg r2,map_reg r3,map_kr kr)
+  | I_STP_SIMD (t,v,r1,r2,r3,kr) ->
+      I_STP_SIMD (t,v,map_reg r1,map_reg r2,map_reg r3,map_kr kr)
 (* Morello *)
   | I_ALIGND (r1,r2,k) ->
       I_ALIGND(map_reg r1,map_reg r2,k)
@@ -1434,8 +1444,8 @@ let get_next = function
   | I_ST2 _ | I_ST2M _
   | I_ST3 _ | I_ST3M _
   | I_ST4 _ | I_ST4M _
-  | I_LDP_P_SIMD _
-  | I_STP_P_SIMD _
+  | I_LDP_P_SIMD _ | I_LDP_SIMD _
+  | I_STP_P_SIMD _ | I_STP_SIMD _
     -> [Label.Next;]
 
 include Pseudo.Make
@@ -1536,6 +1546,8 @@ include Pseudo.Make
         | I_ST4M (rs,r2,kr) -> I_ST4M (rs,r2,kr_tr kr)
         | I_LDP_P_SIMD (t,v,r1,r2,r3,k) -> I_LDP_P_SIMD (t,v,r1,r2,r3,k_tr k)
         | I_STP_P_SIMD (t,v,r1,r2,r3,k) -> I_STP_P_SIMD (t,v,r1,r2,r3,k_tr k)
+        | I_LDP_SIMD (t,v,r1,r2,r3,kr) -> I_LDP_SIMD (t,v,r1,r2,r3,kr_tr kr)
+        | I_STP_SIMD (t,v,r1,r2,r3,kr) -> I_STP_SIMD (t,v,r1,r2,r3,kr_tr kr)
 
 
       let get_naccesses = function
@@ -1558,10 +1570,10 @@ include Pseudo.Make
         | I_LDOP _ | I_LDOPBH _
         | I_STOP _ | I_STOPBH _
         | I_STZG _
+        | I_LDP_SIMD _ | I_STP_SIMD _
           -> 2
         | I_LDR_P _ (* reads, stores, then post-index stores *)
-        | I_LDP_P_SIMD _
-        | I_STP_P_SIMD _
+        | I_LDP_P_SIMD _ | I_STP_P_SIMD _
           -> 3
         | I_LDCT _ | I_STCT _
           -> 4
