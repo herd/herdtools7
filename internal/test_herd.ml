@@ -16,10 +16,12 @@
 
 (** A tool that runs regression tests of herd7, against .expected files. *)
 
+(* Contributed by Ethel Morgan <Ethel.Morgan@arm.com> *)
+
 (* General util *)
 
 let rec read_all chan =
-  let line = try Some (Stdlib.input_line chan) with End_of_file -> None in
+  let line = try Some (input_line chan) with End_of_file -> None in
   match line with
   | None -> []
   | Some line -> line :: (read_all chan)
@@ -27,17 +29,17 @@ let rec read_all chan =
 let read_file path =
   if Sys.file_exists path
   then begin
-    let chan = Stdlib.open_in path in
+    let chan = open_in path in
     let lines = read_all chan in
-    Stdlib.close_in chan ;
+    close_in chan ;
     Some lines
   end
   else None
 
 let write_file path lines =
-  let chan = Stdlib.open_out path in
+  let chan = open_out path in
   List.iter (fun l -> Printf.fprintf chan "%s\n" l) lines ;
-  Stdlib.close_out chan
+  close_out chan
 
 (* Tool-specific util *)
 
@@ -80,7 +82,7 @@ let litmuses_of_dir dir =
   let all_files = Array.to_list (Sys.readdir dir) in
   let only_litmus = List.filter (fun p -> (Filename.extension p) = ".litmus") all_files in
   let full_paths = List.map (Filename.concat dir) only_litmus in
-  List.sort Stdlib.compare full_paths
+  List.sort String.compare full_paths
 
 (* Commands *)
 
