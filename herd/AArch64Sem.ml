@@ -290,7 +290,6 @@ module Make
       (* Post-Indexed load immediate *)
       and ldr_p sz rd rs k ii =
         assert (k >= -256 && k <= 255);
-        let open AArch64Base in
           (read_reg_ord rs ii)
           >>= fun a1 ->
               (read_mem sz rd a1 ii)

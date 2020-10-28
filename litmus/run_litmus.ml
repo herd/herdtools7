@@ -101,8 +101,6 @@ module Make(O:Config)(Tar:Tar.S)(D:Test) =
       end ;
       sS
 
-    open Speedcheck
-
     let run_test chan _t _name sX =
       let opts =
         sprintf "%s $LITMUSOPTS" (if O.verbose > 0 then "-v" else "-q") in

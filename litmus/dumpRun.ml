@@ -65,8 +65,6 @@ end = struct
       output_line chan ""
     end
 
-  open Speedcheck
-
   module type ArchConf = sig
     val word : Word.t
     val delay : int
