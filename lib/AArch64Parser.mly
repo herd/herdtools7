@@ -240,7 +240,7 @@ kx0_no_shift:
 | COMMA k { A.K $2 }
 | COMMA xreg { A.RV (A.V64,$2) }
 
-ki0_no_shift:
+k0_no_shift:
 | { A.K (MetaConst.zero) }
 | COMMA k { A.K $2 }
 
@@ -274,9 +274,17 @@ ldp_instr:
 
 ldp_simd_instr:
 | LDP
-  { (fun v r1 r2 r3 kr -> A.I_LDP_SIMD (A.TT,v,r1,r2,r3,kr)) }
+  { ( fun v r1 r2 r3 k0 k0' -> 
+      match k0' with 
+      | Some post when k0 = A.K MetaConst.zero ->
+      A.I_LDP_P_SIMD (A.TT,v,r1,r2,r3,post)
+    )}
 | LDNP
-  { (fun v r1 r2 r3 kr -> A.I_LDP_SIMD (A.NT,v,r1,r2,r3,kr)) }
+  { ( fun v r1 r2 r3 k0 k0' -> 
+      match k0' with 
+      | Some post when k0 = A.K MetaConst.zero ->
+      A.I_LDP_P_SIMD (A.TT,v,r1,r2,r3,post)
+    )}
 
 stp_instr:
 | STP
@@ -286,9 +294,17 @@ stp_instr:
 
 stp_simd_instr:
 | STP
-  { (fun v r1 r2 r3 kr -> A.I_STP_SIMD (A.TT,v,r1,r2,r3,kr)) }
+  { ( fun v r1 r2 r3 k0 k0' -> 
+      match k0' with 
+      | Some post when k0 = A.K MetaConst.zero ->
+      A.I_STP_P_SIMD (A.TT,v,r1,r2,r3,post)
+    )}  
 | STNP
-  { (fun v r1 r2 r3 kr -> A.I_STP_SIMD (A.NT,v,r1,r2,r3,kr)) }
+  { ( fun v r1 r2 r3 k0 k0' -> 
+      match k0' with 
+      | Some post when k0 = A.K MetaConst.zero ->
+      A.I_STP_P_SIMD (A.TT,v,r1,r2,r3,post)
+    )}
 
 cond:
 | EQ { A.EQ }
@@ -437,18 +453,18 @@ instr:
    { A.I_ST4 ($2, $3, $6, $8) }
 | ST4 vregs4 COMMA LBRK xreg RBRK kx0_no_shift
    { A.I_ST4M ($2, $5, $7) }
-| ldp_simd_instr sreg COMMA sreg COMMA LBRK xreg RBRK ki0_no_shift
-  { $1 A.VSIMD32 $2 $4 $7 $9 }
-| ldp_simd_instr dreg COMMA dreg COMMA LBRK xreg RBRK ki0_no_shift
-  { $1 A.VSIMD64 $2 $4 $7 $9 }
-| ldp_simd_instr qreg COMMA qreg COMMA LBRK xreg RBRK ki0_no_shift
-  { $1 A.VSIMD128 $2 $4 $7 $9 }
-| stp_simd_instr sreg COMMA sreg COMMA LBRK xreg RBRK ki0_no_shift
-  { $1 A.VSIMD32 $2 $4 $7 $9 }
-| stp_simd_instr dreg COMMA dreg COMMA LBRK xreg RBRK ki0_no_shift
-  { $1 A.VSIMD64 $2 $4 $7 $9 }
-| stp_simd_instr qreg COMMA qreg COMMA LBRK xreg RBRK ki0_no_shift
-  { $1 A.VSIMD128 $2 $4 $7 $9 }
+| ldp_simd_instr sreg COMMA sreg COMMA LBRK xreg k0_no_shift RBRK k0
+  { $1 A.VSIMD32 $2 $4 $7 $8 $10 }
+| ldp_simd_instr dreg COMMA dreg COMMA LBRK xreg k0_no_shift RBRK k0
+  { $1 A.VSIMD64 $2 $4 $7 $8 $10 }
+| ldp_simd_instr qreg COMMA qreg COMMA LBRK xreg k0_no_shift RBRK k0
+  { $1 A.VSIMD128 $2 $4 $7 $8 $10 }
+| stp_simd_instr sreg COMMA sreg COMMA LBRK xreg k0_no_shift RBRK k0
+  { $1 A.VSIMD32 $2 $4 $7 $8 $10 }
+| stp_simd_instr dreg COMMA dreg COMMA LBRK xreg k0_no_shift RBRK k0
+  { $1 A.VSIMD64 $2 $4 $7 $8 $10 }
+| stp_simd_instr qreg COMMA qreg COMMA LBRK xreg k0_no_shift RBRK k0
+  { $1 A.VSIMD128 $2 $4 $7 $8 $10 }
     /* Compare and swap */
 | CAS wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_CAS (A.V32,A.RMW_P,$2,$4,$7) }
