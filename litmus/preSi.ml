@@ -1010,10 +1010,25 @@ module Make
           O.o "static void vars_init(vars_t *_vars,intmax_t *_mem) {" ;
           O.oi "const size_t _sz = LINE/sizeof(intmax_t);";
           O.oi "pteval_t *_p;" ;
-          O.o "" ;
+          let mem_map =
+            let open BellInfo in
+            match test.T.bellinfo with
+            | None|Some { regions=None; } -> []
+            | Some { regions=Some map } -> map in
           List.iter
             (fun (a,_) ->
+              O.o "" ;
               O.fi "_vars->%s = _mem;" a ;
+              begin try
+                let rs = Misc.Simple.assoc a mem_map in
+                O.fi "cache_flush((void *)%s);" (OutUtils.fmt_pte_kvm a);
+                List.iter
+                  (fun r ->
+                    let r = sprintf "attr_%s" (MyName.name_as_symbol r) in
+                    O.fi "litmus_set_pte_attribute(%s,%s);" (OutUtils.fmt_pte_kvm a) r)
+                  rs;
+                O.fi "litmus_flush_tlb((void *)%s);" (OutUtils.fmt_pte_kvm a);
+              with Not_found -> () end;
               O.fi "_vars->%s = _p = litmus_tr_pte((void *)_mem);" (OutUtils.fmt_pte_tag a) ;
               O.fi "_vars->%s = *_p;" (OutUtils.fmt_phy_tag a) ;
               O.oi "_mem += _sz ;")
@@ -1134,18 +1149,13 @@ module Make
                 (pctag (proc,addr)) addr)
             addrs
         end ;
-        let mem_map =
-          let open BellInfo in
-          match test.T.bellinfo with
-          | None|Some { regions=None; } -> []
-          | Some { regions=Some map } -> map in
-        begin match pte_init,mem_map with
-        | [],[] -> ()
-        | bds,_ ->
+        begin match pte_init with
+        | [] -> ()
+        | bds ->
             O.oii "barrier_wait(_b);" ;
             List.iter
               (fun x ->
-                let ok1 = try
+                try
                   begin match Misc.Simple.assoc x bds with
                   | P phy ->
                       O.fii
@@ -1163,18 +1173,9 @@ module Make
                           x (SkelUtil.dump_pteval_flags arg pteval)
                       end
                   end ;
-                  true
-                with Not_found ->false in
-                let ok2 = try
-                  let rs = Misc.Simple.assoc x mem_map in
-                  List.iter
-                    (fun r ->
-                      let r = sprintf "attr_%s" (MyName.name_as_symbol r) in
-                      O.fii "litmus_set_pte_attribute(%s,%s);" (OutUtils.fmt_pte_kvm x) r)
-                    rs ;
-                  true
-                with Not_found -> false in
-                if ok1 || ok2 then O.fii "litmus_flush_tlb((void *)%s);" x)
+                  O.fii "litmus_flush_tlb((void *)%s);" x;
+                with Not_found ->
+                  ())
               inits
         end ;
         (* Synchronise *)
