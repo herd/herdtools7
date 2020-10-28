@@ -35,5 +35,18 @@ versions:
 	@ sh ./version-gen.sh $(PREFIX)
 	@ dune build --workspace dune-workspace.versions @all
 
+
+# Tests.
+
 test:: | build
+
+test:: $(D)-test
+
+dune-test:
+	dune runtest
+
+ocb-test:
+	./ocb-test.sh
+
+test::
 	$(TEST_HERD) -herd-path $(HERD) -libdir-path ./herd/libdir -litmus-dir ./herd/unittests/AArch64 test

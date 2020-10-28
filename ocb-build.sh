@@ -24,7 +24,7 @@ let rev = "$REV"
 let libdir = "$libdir/"
 EOD
 
-ocamlbuild -no-links -j 5 -cflags -w,+a-3-4-9-29-33-41-45-67,-strict-sequence ${NATIVE} ${INTERNAL}
+ocamlbuild -no-links -j 5 -cflags -w,+a-3-4-9-29-33-41-45-67,-strict-sequence ${NATIVE} ${INTERNAL} ${TESTS}
 # Warnings ignored on purpose:
 # Warning 4: this pattern-matching is fragile
 # Warning 33: unused open
