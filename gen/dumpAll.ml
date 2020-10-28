@@ -241,7 +241,7 @@ module Make(Config:Config)(T:Builder.S)
         { sig_next = 0 ; sig_map = T.E.Map.empty ; sig_set = StringSet.empty }
 
       let sigs_init cys =
-        let cys = List.map T.E.parse_edges cys in
+        let cys = List.rev_map T.E.parse_edges cys in
         List.fold_left
           (fun k es ->
             let xxx,_,k = comp_sig k es in
