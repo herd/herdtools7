@@ -110,6 +110,10 @@ let () =
     ("-libdir-path", Arg.String (fun p -> libdir := p), "path to herd libdir") ;
     ("-litmus-dir", Arg.String (fun p -> litmus_dir := p), "path to directory of .litmus files to test against") ;
   ] (fun a -> anon_args := a :: !anon_args) usage ;
+  if (List.exists (fun a -> a = "") [!herd; !libdir; !litmus_dir]) then begin
+    Printf.printf "A flag is missing!\n" ;
+    exit 1
+  end ;
   match !anon_args with
   | "show" :: [] -> show_tests !herd !libdir !litmus_dir
   | "test" :: [] -> run_tests !herd !libdir !litmus_dir
