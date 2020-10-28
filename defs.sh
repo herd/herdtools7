@@ -7,6 +7,9 @@ GEN="readRelax.native atoms.native diycross.native mexpand.native atomize.native
 JINGLE="jingle.native gen_theme.native"
 NATIVE="$HERD $LITMUS $TOOLS $GEN $JINGLE"
 
+# Internal-only, not installed.
+INTERNAL="test_herd.native"
+
 mk_exe () {
   D=$1
   shift

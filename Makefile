@@ -5,8 +5,10 @@ D=dune
 
 ifeq ($(D), dune)
 	HERD = _build/install/default/bin/herd7
+	TEST_HERD = _build/default/internal/test_herd.exe
 else
 	HERD = _build/herd/herd.native
+	TEST_HERD = _build/internal/test_herd.native
 endif
 
 all: build
@@ -33,18 +35,5 @@ versions:
 	@ sh ./version-gen.sh $(PREFIX)
 	@ dune build --workspace dune-workspace.versions @all
 
-test: regression-tests
-	@ echo "Tests OK."
-
-regression-tests: AArch64-regression-tests
-
-REGRESSION_TEST_DIR = _build/regression-tests
-AARCH64_REGRESSION_TEST_LITMUSES = $(shell find herd/unittests/AArch64 -type f -name '*.litmus')
-AARCH64_REGRESSION_TEST_OUTPUTS  = $(patsubst %.litmus,$(REGRESSION_TEST_DIR)/%.litmus.expected,$(AARCH64_REGRESSION_TEST_LITMUSES))
-
-AArch64-regression-tests: $(AARCH64_REGRESSION_TEST_OUTPUTS)
-	@ $(foreach output,$^,(diff --new-file $(output) $(patsubst $(REGRESSION_TEST_DIR)/%.litmus.expected,%.litmus.expected,$(output)) || (echo $(output); exit 1)) && ) true
-
-$(REGRESSION_TEST_DIR)/%.litmus.expected: %.litmus | build
-	@ mkdir -p $(@D)
-	$(HERD) -set-libdir ./herd/libdir $^ | grep -v -E '^Time' > $@
+test:: | build
+	$(TEST_HERD) -herd-path $(HERD) -libdir-path ./herd/libdir -litmus-dir ./herd/unittests/AArch64 test
