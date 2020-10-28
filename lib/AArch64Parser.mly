@@ -278,12 +278,14 @@ ldp_simd_instr:
       match k0' with 
       | Some post when k0 = A.K MetaConst.zero ->
       A.I_LDP_P_SIMD (A.TT,v,r1,r2,r3,post)
+      | None ->
+      A.I_LDP_SIMD (A.TT,v,r1,r2,r3,k0)
     )}
 | LDNP
   { ( fun v r1 r2 r3 k0 k0' -> 
       match k0' with 
-      | Some post when k0 = A.K MetaConst.zero ->
-      A.I_LDP_P_SIMD (A.TT,v,r1,r2,r3,post)
+      | None ->
+      A.I_LDP_SIMD (A.NT,v,r1,r2,r3,k0)
     )}
 
 stp_instr:
@@ -296,14 +298,16 @@ stp_simd_instr:
 | STP
   { ( fun v r1 r2 r3 k0 k0' -> 
       match k0' with 
-      | Some post when k0 = A.K MetaConst.zero ->
+      | Some post when k0 = A.K MetaConst.zero -> 
       A.I_STP_P_SIMD (A.TT,v,r1,r2,r3,post)
+      | None -> 
+      A.I_STP_SIMD (A.TT,v,r1,r2,r3,k0)
     )}  
 | STNP
   { ( fun v r1 r2 r3 k0 k0' -> 
       match k0' with 
-      | Some post when k0 = A.K MetaConst.zero ->
-      A.I_STP_P_SIMD (A.TT,v,r1,r2,r3,post)
+      | None ->
+      A.I_STP_SIMD (A.NT,v,r1,r2,r3,k0)
     )}
 
 cond:
