@@ -284,6 +284,12 @@ stp_instr:
 | STNP
   { (fun v r1 r2 r3 kr -> A.I_STP (A.NT,v,r1,r2,r3,kr)) }
 
+stp_simd_instr:
+| STP
+  { (fun v r1 r2 r3 kr -> A.I_STP_SIMD (A.TT,v,r1,r2,r3,kr)) }
+| STNP
+  { (fun v r1 r2 r3 kr -> A.I_STP_SIMD (A.NT,v,r1,r2,r3,kr)) }
+
 cond:
 | EQ { A.EQ }
 | NE { A.NE }
@@ -436,6 +442,12 @@ instr:
 | ldp_simd_instr dreg COMMA dreg COMMA LBRK xreg RBRK ki0_no_shift
   { $1 A.VSIMD64 $2 $4 $7 $9 }
 | ldp_simd_instr qreg COMMA qreg COMMA LBRK xreg RBRK ki0_no_shift
+  { $1 A.VSIMD128 $2 $4 $7 $9 }
+| stp_simd_instr sreg COMMA sreg COMMA LBRK xreg RBRK ki0_no_shift
+  { $1 A.VSIMD32 $2 $4 $7 $9 }
+| stp_simd_instr dreg COMMA dreg COMMA LBRK xreg RBRK ki0_no_shift
+  { $1 A.VSIMD64 $2 $4 $7 $9 }
+| stp_simd_instr qreg COMMA qreg COMMA LBRK xreg RBRK ki0_no_shift
   { $1 A.VSIMD128 $2 $4 $7 $9 }
     /* Compare and swap */
 | CAS wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
