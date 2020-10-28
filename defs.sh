@@ -9,7 +9,7 @@ NATIVE="$HERD $LITMUS $TOOLS $GEN $JINGLE"
 
 # Internal-only, not installed.
 INTERNAL="test_herd.native"
-TESTS="test_test.native"
+TESTS="channel_test.native command_test.native test_test.native"
 
 mk_exe () {
   D=$1

@@ -1,3 +1,5 @@
 (library
  (name internal_lib)
+ (libraries unix)
+ (modes native)
  (wrapped false))
