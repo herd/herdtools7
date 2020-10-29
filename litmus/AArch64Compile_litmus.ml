@@ -472,7 +472,7 @@ module Make(V:Constant.S)(C:Config) =
 
     let sxtw r1 r2 =
       { empty_ins with
-        memo = "sxtw ^o0,^wi1";
+        memo = "sxtw ^o0,^wi0";
         inputs = [r2;]; outputs=[r1;]; reg_env=[r1,quad; r2,word];}
 
     let cmpk v r k = match v with
