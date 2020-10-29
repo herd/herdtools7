@@ -244,7 +244,7 @@ include Pseudo.Make
       let rec parsed_expr_tr =
         let open Constant in
         function
-          | Const(Concrete _) as k -> k
+          | Const(Concrete _) | Const(ConcreteVector (_,_)) as k -> k
           | Const (Symbolic _|Label _|Tag _) ->
               Warn.fatal "No constant variable allowed"
           | LoadReg _ as l -> l

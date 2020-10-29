@@ -1,0 +1,12 @@
+AArch64 A147
+(* tests storing to a location within the array, but offset *)
+(* symbolic locations *)
+
+{ 0:X0 = 42; 0:X2 = v; int64_t v[2] = {1, 2}; }
+
+P0;
+  STR X0, [X2, #8];
+
+(* THIS HAS THE SAME SYNTAX PROBLEM AS A130 *)
+forall (v[0] = 1 /\ v[8] = 42)
+

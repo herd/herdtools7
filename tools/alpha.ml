@@ -175,12 +175,14 @@ struct
     let collect_value f v k = match v with
     | Symbolic ((s,_,_),_) -> f s k
     | Concrete _ -> k
+    | ConcreteVector _ -> k
     | Label _ -> nolabel_value ()
     | Tag _ -> notag_value ()
 
     let map_value f v = match v with
     | Symbolic ((s,t,c),o) -> Symbolic ((f s,t,c),o)
     | Concrete _ -> v
+    | ConcreteVector _ -> v
     | Label _ -> nolabel_value ()
     | Tag _ -> notag_value ()
 

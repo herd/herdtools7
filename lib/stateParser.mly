@@ -26,6 +26,7 @@ let mk_sym_morello p s t =
   let truncated_perms = p_int lsr 3 in
   let tag = if Misc.string_as_int t <> 0 then 1 else 0 in
   Symbolic ((s,None,truncated_perms lor (tag lsl 33) ),0)
+let mk_sym_with_index s i = Symbolic ((s,None,0),Misc.string_as_int i)
 let mk_lab p s = Label (p,s)
 %}
 
@@ -40,7 +41,7 @@ let mk_lab p s = Label (p,s)
 %token EQUAL NOTEQUAL EQUALEQUAL
 %token FINAL FORALL EXISTS OBSERVED TOKAND NOT AND OR IMPLIES WITH FILTER
 %token LOCATIONS FAULT STAR
-%token LBRK RBRK LPAR RPAR SEMI COLON AMPER COMMA
+%token LBRK RBRK LPAR RPAR LCURLY RCURLY SEMI COLON AMPER COMMA
 %token ATOMIC
 %token ATOMICINIT
 
@@ -91,10 +92,15 @@ maybev_notag:
 */
 (* TODO: restrict to something like "NUM COLON BOOL"? *)
 | NUM COLON NUM { Concrete ($1 ^ ":" ^ $3) }
+| NAME LBRK NUM RBRK { mk_sym_with_index $1 $3 }
 
 maybev:
 | maybev_notag { $1 }
 | COLON NAME  { Tag $2 }
+
+maybev_list:
+| maybev_notag COMMA maybev_list { $1::$3 }
+| maybev_notag { [$1] }
 
 maybev_label:
 | maybev { $1 }
@@ -125,8 +131,6 @@ main_location:
 
 location:
 | location_reg { $1 }
-| LBRK maybev_notag RBRK {Location_global $2}
-/* Hum, for backward compatibility, and compatibility with printer */
 | maybev_notag { Location_global $1 }
 
 atom:
@@ -135,17 +139,27 @@ atom:
 
 atom_init:
 | atom { let x,v = $1 in x,(TyDef,v) }
-| NAME location { $2,(Ty $1,ParsedConstant.zero)}
+| NAME location
+/* We either have arrays or scalars here: typ v[i] = ... or typ v = ...*/
+   { match $2 with
+     | Location_global (Symbolic (s,sz)) when sz > 0 ->
+       let xs = List.init sz (fun _ -> ParsedConstant.zero) in
+       let arr = TyArray ($1,sz),Constant.mk_vec sz xs in
+       (Location_global (Symbolic (s,0)), arr)
+     | _ -> ($2, (Ty $1,ParsedConstant.zero)) }
 | ATOMIC NAME location { $3,(Atomic $2,ParsedConstant.zero)}
 | NAME location EQUAL maybev { ($2,(Ty $1,$4))}
+| NAME location EQUAL LCURLY maybev_list RCURLY
+   { match $2 with
+     | Location_global (Symbolic (s,sz)) when sz = List.length $5 ->
+       let arr = (TyArray ($1,sz),Constant.mk_vec sz $5) in
+       (Location_global (Symbolic (s,0)), arr)
+     | _ -> assert false }
 | NAME location EQUAL ATOMICINIT LPAR maybev RPAR { ($2,(Ty $1,$6))}
 | NAME STAR location { ($3,(Pointer $1,ParsedConstant.zero))}
 | NAME STAR location EQUAL amperopt maybev { ($3,(Pointer $1,$6))}
 | STAR location { ($2,(TyDefPointer,ParsedConstant.zero))}
 | STAR location EQUAL amperopt maybev { ($2,(TyDefPointer,$5))}
-| NAME NAME LBRK NUM RBRK
-    { (Location_global (Constant.mk_sym $2),
-       (TyArray ($1,Misc.string_as_int $4),ParsedConstant.zero)) }
 
 amperopt:
 | AMPER { () }
@@ -161,12 +175,7 @@ init_semi_list:
 
 /* For final state constraints */
 
-loc_deref:
-NAME LBRK NUM RBRK
-  { Location_deref (Constant.mk_sym $1, Misc.string_as_int $3) }
-
 loc_typ:
-| loc_deref { ($1,TyDef) }
 | location { ($1, TyDef) }
 | location STAR { ($1, TyDefPointer) }
 | location NAME { ($1, Ty $2) }
@@ -259,11 +268,8 @@ lbl:
 | PROC COLON NAME { ($1,Some $3) }
 
 atom_prop:
-| loc_deref  EQUAL maybev {Atom (LV ($1,$3))}
 | location EQUAL maybev {Atom (LV ($1,$3))}
-| loc_deref  EQUALEQUAL maybev {Atom (LV ($1,$3))}
 | location EQUALEQUAL maybev {Atom (LV ($1,$3))}
-| loc_deref  NOTEQUAL maybev {Not (Atom (LV ($1,$3)))}
 | location NOTEQUAL maybev {Not (Atom (LV ($1,$3)))}
 | location EQUAL location_deref {Atom (LL ($1,$3))}
 | location EQUALEQUAL location_deref {Atom (LL ($1,$3))}

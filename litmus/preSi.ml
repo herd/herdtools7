@@ -733,14 +733,19 @@ module Make
             let ins =
               let pp_const v =
                 let open Constant in
-                match v with
+                let rec f v = match v with
                 | Concrete i -> A.V.Scalar.pp Cfg.hexa i
+                | ConcreteVector (_,vs) ->
+                    let pp_vs = List.map f vs in
+                    sprintf "{%s}" (String.concat "," pp_vs)
+                    (* list initializer syntax *)
                 | Symbolic ((s,None,0),_) ->
                     sprintf "(%s)_vars->%s" (CType.dump at) s
                 | Label _ ->
                     Warn.fatal "PreSi mode cannot handle code labels (yet)"
                 | Symbolic _|Tag _ ->
                     Warn.user_error "Litmus cannot handle tags" in
+                f v in
               match at with
               | Array (t,sz) ->
                   sprintf "for (int _j = 0 ; _j < %i ; _j++) %s"

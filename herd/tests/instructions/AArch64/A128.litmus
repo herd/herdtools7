@@ -1,0 +1,9 @@
+AArch64 A128
+(* Tests accessing a location - symbolic location *)
+{  0:X2=v; v[1] = 44; v[0] = 22;}
+
+P0;
+  LDR X0, [X2];
+
+forall (0:X0=22 /\ v[0] = 22 /\ v[1] = 44)
+

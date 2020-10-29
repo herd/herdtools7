@@ -45,9 +45,12 @@ module Generic (A : Arch_litmus.Base)
       let pointer = CType.Pointer base
       let code_pointer = Pointer (Base "ins_t")
       let tag = Base "tag_t"
+      let array_ty sz = CType.Array ("int", sz)
+        (* is it right to assume int as the base type?*)
 
       let typeof = function
         | Constant.Concrete _ -> base
+        | Constant.ConcreteVector (sz,_) -> array_ty sz
         | Constant.Symbolic _ -> pointer
         | Constant.Label _ -> code_pointer
         | Constant.Tag _ -> tag
@@ -362,7 +365,7 @@ type P.code = MiscParser.proc * A.pseudo list)
 
     let as_int = function
       | Concrete i -> i
-      | Symbolic _|Label _|Tag _ -> raise CannotIntern
+      | Symbolic _|Label _|Tag _|ConcreteVector _ -> raise CannotIntern
 
 
     let compile_pseudo_code code k =

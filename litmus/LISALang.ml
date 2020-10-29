@@ -94,7 +94,7 @@ module Make(V:Constant.S) = struct
     let open Constant in
     match v with
     | Symbolic ((s,None,0),0) -> sprintf "%s" s
-    | Concrete _ -> Tmpl.dump_v v
+    | Concrete _| ConcreteVector _ -> Tmpl.dump_v v
     | Label _ -> Warn.user_error "No label value in LISA"
     | Symbolic _|Tag _ ->
         Warn.user_error "No tag nor indexed accesses in LISA"

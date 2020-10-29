@@ -71,9 +71,13 @@ module Make(Cst:Constant.S) = struct
   and nameToV s = Val (Cst.nameToV s)
   and cstToV cst = Val cst
 
-  let maybevToV m = match m with
-  | Symbolic _ | Label _ | Tag _ as _m -> Val _m
-  | Concrete s -> Val (Concrete (Scalar.of_string s))
+  let maybevToV m =
+    let rec tr m = match m with
+    | Symbolic _ | Label _ | Tag _ as _m -> _m
+    | Concrete s -> Concrete (Scalar.of_string s)
+    | ConcreteVector (sz, mvs) ->
+      ConcreteVector (sz, List.map tr mvs) in
+    Val (tr m) (* does OCaml have fancy combinators like <$> for this *)
 
   let as_symbol = function
     | Val v -> Cst.vToName v
@@ -103,7 +107,7 @@ module Make(Cst:Constant.S) = struct
 
   let bit_at k = function
     | Val (Concrete v) -> Val (Concrete (Cst.Scalar.bit_at k v))
-    | Val (Symbolic _|Label _|Tag _ as x) ->
+    | Val (Symbolic _|Label _|Tag _| ConcreteVector _ as x) ->
       Warn.user_error "Illegal operation on %s" (Cst.pp_v x)
     | Var _ -> raise Undetermined
 
@@ -121,10 +125,10 @@ module Make(Cst:Constant.S) = struct
     | Val (Concrete i1) -> Val (Concrete (op i1))
     | Val (Symbolic ((a,t,c),o)) ->
         Val (Symbolic ((a,t,capa_to_bin (op (bin_to_capa c))),o))
-  | Val (Label _|Tag _ as x) ->
+    | Val (Label _|Tag _|ConcreteVector _ as x) ->
       Warn.user_error "Illegal operation %s on %s"
         (Op.pp_op1 true op_op) (Cst.pp_v x)
-  | Var _ -> raise Undetermined
+    | Var _ -> raise Undetermined
 
   (* Concrete -> Concrete
      Symbolic -> Concrete *)
@@ -141,9 +145,9 @@ module Make(Cst:Constant.S) = struct
   (* Concrete,Concrete -> Concrete *)
   let binop op_op op v1 v2 = match v1,v2 with
   | (Val (Concrete i1),Val (Concrete i2)) -> Val (Concrete (op i1 i2))
-  | (Val (Concrete _),Val (Symbolic _|Label _|Tag _))
-  | (Val (Symbolic _|Label _|Tag _),Val (Concrete _))
-  | (Val (Symbolic _|Label _|Tag _),Val (Symbolic _|Label _|Tag _)) ->
+  | (Val (Concrete _),Val (Symbolic _|Label _|Tag _|ConcreteVector _))
+  | (Val (Symbolic _|Label _|Tag _|ConcreteVector _),Val (Concrete _))
+  | (Val (Symbolic _|Label _|Tag _|ConcreteVector _),Val (Symbolic _|Label _|Tag _|ConcreteVector _)) ->
       Warn.user_error
         "Illegal operation %s on constants %s and %s"
         (Op.pp_op op_op) (pp_v v1) (pp_v v2)
@@ -239,7 +243,7 @@ module Make(Cst:Constant.S) = struct
   and add_konst k v = match v with
   | Val (Concrete v) -> Val (Concrete (Scalar.addk v k))
   | Val (Symbolic (s,i)) -> Val (Symbolic (s,i+k))
-  | Val (Label _|Tag _) ->
+  | Val (Label _|Tag _|ConcreteVector _) ->
       Warn.user_error "Illegal addition on constants %s" (pp_v v)
   | Var _ -> raise Undetermined
 
@@ -271,11 +275,11 @@ module Make(Cst:Constant.S) = struct
 
   let eq v1 v2 = match v1,v2 with
   | Var i1,Var i2 when Misc.int_eq i1 i2 -> one
-  | Val (Symbolic _|Label _|Tag _ as s1),Val (Symbolic _|Label _|Tag _ as s2) ->
+  | Val (Symbolic _|Label _|Tag _|ConcreteVector _ as s1),Val (Symbolic _|Label _|Tag _|ConcreteVector _ as s2) ->
       bool_to_v Cst.eq s1 s2
 (* Assume concrete and others always to differ *)
-  | (Val (Symbolic _|Label _|Tag _), Val (Concrete _))
-  | (Val (Concrete _), Val (Symbolic _|Label _|Tag _)) -> zero
+  | (Val (Symbolic _|Label _|Tag _|ConcreteVector _), Val (Concrete _))
+  | (Val (Concrete _), Val (Symbolic _|Label _|Tag _|ConcreteVector _)) -> zero
   | _,_ ->
       binop
         Op.Eq
@@ -318,7 +322,7 @@ module Make(Cst:Constant.S) = struct
 
   let op_tagged op_op op v = match v with
   |  Val (Symbolic (a,o)) -> Val (op a o)
-  |  Val (Concrete _|Label _|Tag _) ->
+  |  Val (Concrete _|Label _|Tag _|ConcreteVector _) ->
       Warn.user_error "Illegal %s on %s" op_op (pp_v v)
   | Var _ -> raise Undetermined
 
@@ -329,17 +333,22 @@ module Make(Cst:Constant.S) = struct
 
   let get_sym = function
     | Val (Symbolic ((s,_,_),_)) -> s
-    | Var _|Val (Concrete _|Label _|Tag _) ->
+    | Var _|Val (Concrete _|Label _|Tag _|ConcreteVector _) ->
         Warn.fatal "Illegal get_sym" (* NB: not an user error *)
+
+  let get_vec = function
+    | Val (ConcreteVector (_,_) as vs) -> vs
+    | Var _|Val (Concrete _|Label _|Tag _|Symbolic _) ->
+        Warn.fatal "Illegal get_vec" (* NB: not an user error *)
 
   let check_atag = function
     | Val (Symbolic ((s,_,_),_)) -> Misc.check_atag s
-    | Var _|Val (Concrete _|Label _|Tag _) ->
+    | Var _|Val (Concrete _|Label _|Tag _|ConcreteVector _) ->
         Warn.fatal "Illegal check_atag" (* NB: not an user error *)
 
   let check_ctag = function
     | Val (Symbolic ((s,_,_),_)) -> Misc.check_ctag s
-    | Var _|Val (Concrete _|Label _|Tag _) ->
+    | Var _|Val (Concrete _|ConcreteVector _|Label _|Tag _) ->
         Warn.fatal "Illegal check_mtag" (* NB: not an user error *)
 
   (* Decompose tagged locations *)
@@ -660,7 +669,7 @@ module Make(Cst:Constant.S) = struct
 
   let op3 If v1 v2 v3 = match v1 with
   | Val (Concrete x) -> if scalar_to_bool x then v2 else v3
-  | Val (Symbolic _ |Label _|Tag _ as s) ->
+  | Val (Symbolic _ |Label _|Tag _|ConcreteVector _ as s) ->
       Warn.user_error "illegal if on symbolic constant %s" (Cst.pp_v s)
   | Var _ -> raise Undetermined
 

@@ -1,0 +1,14 @@
+AArch64 A139
+(* Tests whether we can load from a pointer - symbolic location+offset *)
+
+(* THIS HAS THE SAME BYTE OFFSET PROBLEM AS A130*)
+
+{ *pointer_to_x = x; x=4; v=42; pointer_to_x[8]=v }
+
+P0;
+  ADR X1, pointer_to_x;
+  LDR X1, [X1, #8];
+  LDR X1, [X1];
+
+exists (0:X1 = 42)
+

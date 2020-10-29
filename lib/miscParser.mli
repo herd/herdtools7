@@ -60,6 +60,8 @@ type run_type =
   | Atomic of string
 
 val pp_run_type : run_type -> string
+val is_array : run_type -> bool
+val get_array_primitive_ty : run_type -> string
 
 type state = (location * (run_type * maybev)) list
 

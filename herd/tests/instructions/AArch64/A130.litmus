@@ -1,0 +1,28 @@
+AArch64 A130
+(* THIS IS PROBLEMATIC*)
+(* There are two kinds of location in herd*)
+(* Location_deref, printed as v[i] *)
+(* Location_global, printed as v+i*)
+(* Location global  has the semantics we need for arrays *)
+(* that is v+i where v is the base address of the address *)
+(* and i is the  offset, so v == v+0 *)
+(* However the C syntax we would expect is v[0]*)
+(* We cannot parse v+i, so instead I parse v[2] here and set*)
+(* it as a Location_global so we have the syntax+semantics we expect for arrays*)
+(* However the syntax v[i] is for Location_deref and so there is a mismatch here*)
+(* also v[i]  byte offset rather than offset by the size of the type *)
+(* see e.g v[16] which should be v[3] for uint64_t v*)
+(* So we should decide on what to do with v+i vs v[i] *)
+(* as there is overlap on the meanings for global and deref variants *)
+(* We should also decide if we want C syntax to use the size of the type *)
+(* rather than v+0, v+8, v+16 etc...*)
+(* Also we should think about what to do with v+4 vs. v[0.5] when int64_t v *)
+(* this comes up e.g with STR W0, [X0] in non-mixed mode *)
+
+{ 0:X2 = v; int64_t v[2] = {1, 2}; v[16] = 3 }
+
+P0;
+  LDR X0, [X2, #16];
+
+forall (0:X0 = 3)
+

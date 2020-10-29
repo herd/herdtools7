@@ -148,9 +148,11 @@ module Top(O:Config)(Tar:Tar.S) = struct
             type v = V.v
             let maybevToV c =
               let open  Constant in
-              match c with
+              let rec f c = match c with
               | Concrete i ->  Concrete (V.Scalar.of_string i)
-              | Symbolic _|Label _|Tag _ as sym -> sym
+              | ConcreteVector (sz,vs) -> ConcreteVector (sz, List.map f vs)
+              | Symbolic _|Label _|Tag _ as sym -> sym in
+              f c
             type global = string
             let maybevToGlobal = ParsedConstant.vToName
           end)

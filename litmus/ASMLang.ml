@@ -424,6 +424,7 @@ module RegMap = A.RegMap)
               (match O.memory with Memory.Direct -> "" | Memory.Indirect -> "*")
               s
         | Concrete _ -> Tmpl.dump_v v
+        | ConcreteVector _ -> Tmpl.dump_v v
         | Label (p,lbl) -> OutUtils.fmt_lbl_var p lbl
         | Symbolic _|Tag _ -> assert false
 

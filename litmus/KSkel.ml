@@ -290,10 +290,13 @@ module Make
 (* Right value *)
     let dump_a_addr s = sprintf "&(_a->%s[_i])" s
 
-    let dump_a_v v =
+    let rec dump_a_v v =
       let open Constant in
       match v with
       | Concrete i -> A.V.Scalar.pp Cfg.hexa i
+       | ConcreteVector (_,vs)->
+          let pp_vs = List.map dump_a_v vs in
+          sprintf "{%s}" (String.concat "," pp_vs) (* list initializer syntax *)
       | Symbolic ((s,None,0),0) -> dump_a_addr s
       | Label _ ->
           Warn.user_error "No label value for klitmus"

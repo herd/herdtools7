@@ -116,18 +116,25 @@ and find_init info = parse
 | "(*" { skip_comment lexbuf ;  find_init info lexbuf }
 | '{'
     { let loc1 = lexeme_end_p lexbuf in
-      let loc2 = inside_init lexbuf in
+      let loc2 = inside_init (Buffer.create 16) 0 lexbuf in
       List.rev info,loc1,loc2 }
 | (name as key) blank* '=' blank* ([^'\n']* as value) '\n'
   { incr_lineno lexbuf ; find_init ((key,value)::info) lexbuf }
 | [^'\n''{']+  { find_init info lexbuf }
 | "" { error "find init section" lexbuf }
 
-and inside_init = parse
-| '\n'  { incr_lineno lexbuf ;  inside_init lexbuf }
-| '}'   { lexeme_start_p lexbuf,lexeme_end_p lexbuf }
-| [^'\n''}']+   { inside_init lexbuf }
+(* Courtesy of Luc - remove this comment when upstreaming *)
+and inside_init buff depth = parse
+| '{'   { Buffer.add_char buff '{'; inside_init buff (depth+1) lexbuf }
+| '\n'  { incr_lineno lexbuf ;  inside_init buff depth lexbuf }
+| '}'   { if depth > 0 then begin
+            Buffer.add_char buff '}';
+            inside_init buff (depth -1) lexbuf
+          end else
+            lexeme_start_p lexbuf,lexeme_end_p lexbuf
+          }
 | "" { error "inside init section" lexbuf }
+| _ as c { Buffer.add_char buff c; inside_init buff depth lexbuf }
 
 and inside_prog do_skip_comments = parse
 | '\n'  { incr_lineno lexbuf ;  inside_prog do_skip_comments lexbuf }

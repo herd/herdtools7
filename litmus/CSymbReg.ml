@@ -36,9 +36,11 @@ with type v = A.V.v and type location = A.location
 
    let maybevToV mv =
      let open Constant in
-     match mv with
+     let rec f mv = match mv with
      | Symbolic _|Label _|Tag _ as sym -> sym
      | Concrete s -> Concrete (A.V.Scalar.of_string s)
+     | ConcreteVector (sz,vs) -> ConcreteVector (sz,List.map f vs) in
+     f mv
 
 (******************************************************)
 (* All those to substitute symbolic regs by real ones *)

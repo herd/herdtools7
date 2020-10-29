@@ -348,8 +348,11 @@ module Make
       | Indirect -> sprintf "_a->%s[_i]"
 
 (* Right value, casted if pointer *)
-      let dump_a_v_casted = function
+      let rec dump_a_v_casted = function
         | Concrete i ->  A.V.Scalar.pp  Cfg.hexa i
+        | ConcreteVector (_,vs)->
+            let pp_vs = List.map dump_a_v_casted vs in
+            sprintf "{%s}" (String.concat "," pp_vs) (* list initializer syntax *)
         | Symbolic ((s,None,0),_) -> sprintf "((int *)%s)" (dump_a_addr s)
         | Symbolic _|Label _|Tag _ -> assert false
 

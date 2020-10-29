@@ -26,10 +26,11 @@ let foralltrue =  ForallStates (And [])
 
 module SL = StateLexer.Make(struct let debug = false end)
 
-let tr_v v =
+let rec tr_v v =
   let open Constant in
   match v with
   | Concrete i -> Concrete (Int64.of_string i)
+  | ConcreteVector (sz,vs) -> ConcreteVector (sz,List.map tr_v vs)
   | Symbolic _|Label _|Tag _ as sym -> sym
 
 let tr_atom = function

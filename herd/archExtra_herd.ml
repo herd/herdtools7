@@ -97,7 +97,7 @@ module type S = sig
       state -> string (* delim, as in String.concat  *)
         -> (location -> v -> string) -> string
 
-  val build_state : (location * ('t * v)) list -> state
+  val build_state : (location * (MiscParser.run_type * v)) list -> state
   val build_concrete_state : (location * int) list -> state
 
   val state_is_empty : state -> bool
@@ -348,8 +348,63 @@ module Make(C:Config) (I:I) : S with module I = I
 
       let dump_state st = do_dump_state Misc.identity st
 
+      (* Simplified typing, size only, integer types only *)
+
+      let size_of = function
+        | "atomic_t"
+        | "int"|"long"
+        | "int32_t"
+        | "uint32_t" ->  MachSize.Word
+        | "char"|"int8_t" |"uint8_t" -> MachSize.Byte
+        | "short" | "int16_t" | "uint16_t" -> MachSize.Short
+        | "int64_t" | "uint64_t" -> MachSize.Quad
+        | "int128_t" | "uint128_t" -> MachSize.S128
+        | "intprt_t" | "uintprt_t" -> I.V.Cst.Scalar.machsize (* Maximal size = ptr size *)
+        | t ->
+            Warn.fatal "Cannot find the size of type %s" t
+
       let build_state bds =
-        List.fold_left (fun st (loc,(_,v)) -> State.add loc v st)
+        List.fold_left
+          (fun st (loc,(t,v)) ->
+            if MiscParser.is_array t then begin
+              (* we expand v[3] = {a,b,c} into v+0 = a; v+1 = b; v+2 = c*)
+              (* where 1 is the sizeof the underlying primitive type *)
+              (* e.g uint64_t -> 8 bytes, so the above is v, v+8, v+16 *)
+              let vs = match I.V.get_vec v with
+                | Constant.ConcreteVector (sz,vs) when sz == List.length vs -> vs
+                | _ -> assert false in
+              let locval = if is_global loc then
+                 Option.get (global loc)
+              else assert false in
+              let array_prim = MiscParser.get_array_primitive_ty t in
+              let prim_sz = MachSize.nbytes (size_of array_prim) in
+              let vs = List.mapi
+                (fun i v ->
+                  Location_global
+                    (I.V.Val (Constant.Symbolic((I.V.pp false locval, None, 0),
+                                                 i*prim_sz))),
+                  (MiscParser.Ty array_prim,I.V.cstToV v))
+                vs in
+              List.fold_left
+                (fun st (loc,(_,v))->
+                   try
+                     begin match State.find loc st with
+                     | _  -> Warn.fatal
+                               "Address %s non-unique in init state"
+                               (dump_location loc)
+                      end
+                    with Not_found -> State.add loc v st)
+                st
+                vs
+            end else
+              (* if we have a value, store it *)
+              try
+                begin match State.find loc st with
+                  | _  -> Warn.fatal
+                           "Address %s non-unique in init state"
+                           (dump_location loc)
+                end
+              with Not_found   -> State.add loc v st)
           State.empty bds
 
       let build_concrete_state bds =
@@ -401,15 +456,14 @@ module Make(C:Config) (I:I) : S with module I = I
 
 
       let misc_to_size ty  = match ty with
+      | MiscParser.TyArray _
       | MiscParser.TyDef -> size_of "int"
       | MiscParser.Ty t|MiscParser.Atomic t
         -> size_of t
       | MiscParser.Pointer _| MiscParser.TyDefPointer
+      | MiscParser.TyArray _
       (* Assuming pointer size is machine 'natural' size *)
         ->  I.V.Cst.Scalar.machsize
-      | MiscParser.TyArray _ ->
-          Warn.fatal "Type %s is not allowed in mixed size mode"
-            (MiscParser.pp_run_type ty)
 
       let build_size_env bds =
         List.fold_left

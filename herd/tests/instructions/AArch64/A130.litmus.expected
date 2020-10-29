@@ -1,0 +1,10 @@
+Test A130 Required
+States 1
+0:X0=3;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=3)
+Observation A130 Always 1 0
+Hash=891fd97bbded81e8b694a10beb7ca1c9
+

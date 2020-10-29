@@ -65,7 +65,7 @@ module Make(V:Constant.S) =
         | IAR_roa (Rega r) -> reg_to_string r,[r]
         | IAR_roa (Abs (Symbolic ((s,None,0),0))) -> s,[]
         | IAR_roa
-            (Abs (Symbolic _|Concrete _|Label _|Tag _))
+            (Abs (Symbolic _|Concrete _|ConcreteVector _|Label _|Tag _))
           -> assert false
 
     let compile_roi = function
@@ -89,8 +89,8 @@ module Make(V:Constant.S) =
         | Addr_op_add (Rega r,roi) ->
             let m,i = compile_roi roi in
             add_par (reg_to_string r ^ "+" ^ m),r::i,[r,type_vo vo]
-        | Addr_op_atom (Abs (Concrete _|Label _|Tag _|Symbolic _))
-        | Addr_op_add (Abs  (Concrete _|Label _|Tag _|Symbolic _),_)
+        | Addr_op_atom (Abs (Concrete _|ConcreteVector _|Label _|Tag _|Symbolic _))
+        | Addr_op_add (Abs  (Concrete _|ConcreteVector _|Label _|Tag _|Symbolic _),_)
           ->
             assert false
 

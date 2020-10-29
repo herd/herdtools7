@@ -302,9 +302,11 @@ end = struct
         type v = A.V.v
         let maybevToV c =
           let open Constant in
-          match c with
+          let rec f c = match c with
           | Tag _|Symbolic _|Label _ as sym -> sym
           | Concrete i -> Concrete (A.V.Scalar.of_string i)
+          | ConcreteVector (sz,vs) -> ConcreteVector (sz, List.map f vs) in
+          f c
         type global = string
         let maybevToGlobal = ParsedConstant.vToName
       end

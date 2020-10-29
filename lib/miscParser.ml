@@ -122,6 +122,14 @@ let pp_run_type = function
   | Pointer s -> sprintf "Pointer<%s>" s
   | TyArray (s,sz) -> sprintf "TyArray<%s,%i>" s sz
 
+let is_array = function
+  | TyArray _ -> true
+  | _       -> false
+
+let get_array_primitive_ty = function
+  | TyArray (ty,_) -> ty
+  | _ -> assert false
+
 type state = (location * (run_type * maybev)) list
 
 

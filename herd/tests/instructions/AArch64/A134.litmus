@@ -1,0 +1,16 @@
+AArch64 A134
+(* tests storing  a location outside of the array bounds, but next to the array *)
+(* so we can have abstract memory locations which are logically 'next' to each other*)
+(* this means we can have both symbolic 'flatmaps' of memory, using
+the address_of operator *)
+(* symbolic locations *)
+
+(* THIS IS PROBLEMATIC - same syntax problem as A130 *)
+
+{ 0:X0=42; 0:X2 = v; int64_t v[2] = {1, 2}; v[16] = 3 }
+  
+P0;
+  STR X0, [X2, #16];
+
+exists (v[16] = 42)
+

@@ -1,0 +1,10 @@
+Test A133 Required
+States 1
+v=1; v+8=42;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (v=1 /\ v+8=42)
+Observation A133 Always 1 0
+Hash=0a6f5cf3aa0d4e49070b5833522ebc7e
+
