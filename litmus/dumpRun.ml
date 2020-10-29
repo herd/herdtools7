@@ -217,7 +217,7 @@ let dump_command names =
 let dump_shell names =
   Misc.output_protect
     (fun out_chan ->
-      output_line out_chan "#!/bin/bash\n" ;
+      output_line out_chan "#!/bin/sh\n" ;
       output_line out_chan "date" ;
       output_line out_chan "LITMUSOPTS=\"${@:-$LITMUSOPTS}\"" ;
       begin match Cfg.crossrun with
@@ -279,7 +279,7 @@ let dump_shell_cont arch sources utils =
   let module RU = RunUtils.Make(O) in
   Misc.output_protect
     (fun chan ->
-      fprintf chan "#!/bin/bash\n" ;
+      fprintf chan "#!/bin/sh\n" ;
       let gcc_opts = RU.get_gcc_opts in
       fprintf chan "GCC=%s\n" Cfg.gcc ;
       fprintf chan "GCCOPTS=\"%s\"\n" gcc_opts ;
