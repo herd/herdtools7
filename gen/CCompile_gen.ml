@@ -811,7 +811,10 @@ module Make(O:Config) : Builder.S
           List.map
             (fun (t,loc) -> match t with
             | A.Plain _ ->
-                sprintf "volatile %s* %s" (A.dump_typ t) loc
+                let novolatile = O.variant Variant_gen.NoVolatile in
+                let volatile = if novolatile then
+                    "" else "volatile " in
+                sprintf "%s%s* %s" volatile (A.dump_typ t) loc
             | A.Atomic _ ->
                 sprintf "%s* %s" (A.dump_typ t) loc)
             args in

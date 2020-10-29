@@ -26,8 +26,10 @@ type t =
   | Self
 (* MTE = Memory tagging *)
   | MemTag
+(* C: Prevents the use of Volatile to capture bugs in compilation *)
+  | NoVolatile
 
-let tags = ["AsAmo";"ConstsInInit";"Mixed";"FullMixed";"Self"; "MemTag"; ]
+let tags = ["AsAmo";"ConstsInInit";"Mixed";"FullMixed";"Self"; "MemTag"; "NoVolatile"]
 
 let parse tag = match Misc.lowercase tag with
 | "asamo" -> Some AsAmo
@@ -36,6 +38,7 @@ let parse tag = match Misc.lowercase tag with
 | "fullmixed" -> Some FullMixed
 | "self" -> Some Self
 | "memtag" -> Some MemTag
+| "novolatile" -> Some NoVolatile
 | _ -> None
 
 let pp = function
@@ -45,3 +48,4 @@ let pp = function
   | FullMixed -> "FullMixed"
   | Self -> "Self"
   | MemTag -> "MemTag"
+  | NoVolatile -> "NoVolatile"
