@@ -862,13 +862,14 @@ let do_pp_instruction m =
   let pp_vmem_s memo rs i r2 kr =
     pp_memo memo ^ " " ^
     "{" ^ String.concat ", " (List.map pp_simd_reg rs) ^ "}" ^
-    "[" ^ string_of_int i ^ "] " ^
-    pp_xreg r2 ^ pp_kr false false kr in
+    "[" ^ string_of_int i ^ "]" ^
+    ",[" ^ pp_xreg r2 ^ "]" ^
+    pp_kr false false kr in
 
   let pp_vmem_r_m memo rs r2 kr =
     pp_memo memo ^ " " ^
     "{" ^ String.concat ", " (List.map pp_simd_reg rs) ^ "}" ^
-    ", [" ^ pp_xreg r2 ^ "]" ^
+    ",[" ^ pp_xreg r2 ^ "]" ^
     pp_kr false false kr in
 
   let pp_rkr memo v r1 kr = match v,kr with
