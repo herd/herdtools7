@@ -21,4 +21,5 @@ depends: [
   "dune"  {>= "1.4" }
   "ocamlfind" { build }
   "menhir" {>= "20180530"}
+  "stdint" {>= "0.5.1" }
 ]

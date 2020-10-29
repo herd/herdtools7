@@ -23,11 +23,12 @@ Requirements
 - OCaml (version >= 4.05.0)
 - dune
 - menhir (version >= 20180530)
+- stdint library 
 
 We strongly recommend to have this base software installed through the opam
 package manager.
 
-    % opam install dune menhir
+    % opam install dune menhir stdint
 
 Notice: Compilation with ocamlbuild is possible, by setting D=ocb in Makefile.
  
