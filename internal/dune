@@ -1,1 +1,4 @@
-(executables (names test_herd) (libraries str unix))
+(executables
+ (names test_herd)
+ (modes native)
+ (libraries internal_lib str))
