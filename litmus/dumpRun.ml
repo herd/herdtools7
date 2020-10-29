@@ -217,6 +217,7 @@ let dump_command names =
 let dump_shell names =
   Misc.output_protect
     (fun out_chan ->
+      output_line out_chan "#!/bin/sh\n" ;
       output_line out_chan "date" ;
       output_line out_chan "LITMUSOPTS=\"${@:-$LITMUSOPTS}\"" ;
       begin match Cfg.crossrun with
@@ -261,7 +262,7 @@ let dump_shell names =
       end in
       let module RU = RunUtils.Make(O) in
       RU.report_machine out_chan ;
-      output_line out_chan "head -1 comp.sh" ;
+      output_line out_chan "sed '2q;d' comp.sh" ;
       output_line out_chan "echo \"LITMUSOPTS=$LITMUSOPTS\"" ;
       output_line out_chan "date" ;
       arch,sources,utils)
@@ -278,6 +279,7 @@ let dump_shell_cont arch sources utils =
   let module RU = RunUtils.Make(O) in
   Misc.output_protect
     (fun chan ->
+      fprintf chan "#!/bin/sh\n" ;
       let gcc_opts = RU.get_gcc_opts in
       fprintf chan "GCC=%s\n" Cfg.gcc ;
       fprintf chan "GCCOPTS=\"%s\"\n" gcc_opts ;
