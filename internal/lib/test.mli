@@ -16,9 +16,17 @@
 
 (** Unit-testing utilities. *)
 
+(** Raising [AssertionFailure msg] causes a test to fail, printing the reason
+ *  for failing [msg]. *)
+exception AssertionFailure of string
+
 (** [run tests] runs every named test in [tests], printing an error message if
  *  a test fails. *)
 val run : (string * (unit -> unit)) list -> unit
+
+(** [fail msg] raises an AssertionFailure with error message [msg], causing
+ *  the test to fail. *)
+val fail : string -> unit
 
 
 (* Pretty-printing for failure messages. *)

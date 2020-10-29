@@ -32,7 +32,7 @@ let tests = [
     close_in in_ch ;
 
     if Test.string_list_compare lines actual <> 0 then
-      failwith (Printf.sprintf "Expected %s, got %s" (pp_string_list lines) (pp_string_list actual))
+      Test.fail (Printf.sprintf "Expected %s, got %s" (pp_string_list lines) (pp_string_list actual))
   );
 
   "Channel.map_lines applies f", (fun () ->
@@ -48,7 +48,7 @@ let tests = [
     close_in in_ch ;
 
     if Test.int_list_compare expected actual <> 0 then
-      failwith (Printf.sprintf "Expected %s, got %s" (pp_int_list expected) (pp_int_list actual))
+      Test.fail (Printf.sprintf "Expected %s, got %s" (pp_int_list expected) (pp_int_list actual))
   );
 ]
 
