@@ -36,7 +36,7 @@ let tests = [
         Sys.remove path ;
 
         if Test.string_list_compare lines actual <> 0 then
-          failwith (Printf.sprintf "Expected %s, got %s" (pp_string_list lines) (pp_string_list actual))
+          Test.fail (Printf.sprintf "Expected %s, got %s" (pp_string_list lines) (pp_string_list actual))
       )
       tests
   );

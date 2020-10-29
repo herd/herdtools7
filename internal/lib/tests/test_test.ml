@@ -31,7 +31,7 @@ let tests = [
       (fun (xs, expected) ->
         let actual = Test.pp_int_list xs in
         if String.compare actual expected <> 0 then
-          failwith (Printf.sprintf "Expected %s, got %s" expected actual)
+          Test.fail (Printf.sprintf "Expected %s, got %s" expected actual)
       )
       tests
   );
@@ -47,7 +47,7 @@ let tests = [
       (fun (xs, expected) ->
         let actual = Test.pp_string_list xs in
         if String.compare actual expected <> 0 then
-          failwith (Printf.sprintf "Expected %s, got %s" expected actual)
+          Test.fail (Printf.sprintf "Expected %s, got %s" expected actual)
       )
       tests
   );
@@ -66,7 +66,7 @@ let tests = [
       (fun (xs, ys, expected) ->
         let actual = Test.int_list_compare xs ys in
         if actual <> expected then
-          failwith (Printf.sprintf "Expected %i, got %i" expected actual)
+          Test.fail (Printf.sprintf "Expected %i, got %i" expected actual)
       )
       tests
   );
@@ -85,7 +85,7 @@ let tests = [
       (fun (xs, ys, expected) ->
         let actual = Test.string_list_compare xs ys in
         if actual <> expected then
-          failwith (Printf.sprintf "Expected %i, got %i" expected actual)
+          Test.fail (Printf.sprintf "Expected %i, got %i" expected actual)
       )
       tests
   );

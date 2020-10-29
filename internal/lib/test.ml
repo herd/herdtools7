@@ -16,12 +16,14 @@
 
 (** Unit-testing utilities. *)
 
+exception AssertionFailure of string
+
 let run_test (name, test) =
   try
     test () ;
     true
   with
-  | Failure msg ->
+  | AssertionFailure msg ->
       Printf.printf "Failed: %s: %s\n" name msg ;
       false
   | e ->
@@ -33,6 +35,9 @@ let run tests =
   let failed r = not r in
   if List.exists failed results then
     exit 1
+
+let fail msg =
+    raise (AssertionFailure msg)
 
 
 (* Pretty-printing for failure messages. *)

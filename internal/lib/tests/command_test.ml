@@ -23,19 +23,19 @@ let tests = [
     let expected = "'foo'" in
     let actual = Command.command "foo" [] in
     if String.compare actual expected <> 0 then
-      failwith (Printf.sprintf "Expected %s, got %s" expected actual)
+      Test.fail (Printf.sprintf "Expected %s, got %s" expected actual)
   );
   "Command.command with args", (fun () ->
     let expected = "'foo' '-bar' 'baz'" in
     let actual = Command.command "foo" ["-bar"; "baz"] in
     if String.compare actual expected <> 0 then
-      failwith (Printf.sprintf "Expected %s, got %s" expected actual)
+      Test.fail (Printf.sprintf "Expected %s, got %s" expected actual)
   );
   "Command.command with escaping args", (fun () ->
     let expected = "'/bin/do foo' '-a flag' '~/foo'\\''s files/'" in
     let actual = Command.command "/bin/do foo" ["-a flag"; "~/foo's files/"] in
     if String.compare actual expected <> 0 then
-      failwith (Printf.sprintf "Expected %s, got %s" expected actual)
+      Test.fail (Printf.sprintf "Expected %s, got %s" expected actual)
   );
 
   "Command.run_with_stdout captures stdout", (fun () ->
@@ -49,7 +49,7 @@ let tests = [
       (fun (cmd, args, expected) ->
         let actual = Command.run_with_stdout cmd args Channel.read_lines in
         if Test.string_list_compare actual expected <> 0 then
-          failwith (Printf.sprintf "Expected %s, got %s" (pp_string_list expected) (pp_string_list actual)))
+          Test.fail (Printf.sprintf "Expected %s, got %s" (pp_string_list expected) (pp_string_list actual)))
       tests
   );
   "Command.run_with_stdout_lines raises on error", (fun () ->
@@ -61,7 +61,7 @@ let tests = [
     in
 
     if not raised_exception then
-      failwith "Expected exception, did not raise";
+      Test.fail "Expected exception, did not raise";
   );
 ]
 
