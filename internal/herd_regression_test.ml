@@ -18,49 +18,9 @@
 
 (* Contributed by Ethel Morgan <Ethel.Morgan@arm.com> *)
 
-let herd_args libdir litmus =
-  ["-set-libdir"; libdir; litmus]
-
-let time_re = Str.regexp "^Time "
-let without_time lines =
-  let not_time l = not (Str.string_match time_re l 0) in
-  List.filter not_time lines
-
-let run_herd herd libdir litmus =
-  let args = herd_args libdir litmus in
-  let lines = Command.run_with_stdout herd args Channel.read_lines in
-  without_time lines
-
-let log_compare a b = String.compare (String.concat "\n" a) (String.concat "\n" b)
-
-let expected_of_litmus litmus = litmus ^ ".expected"
-let is_litmus path = Filename.extension path = ".litmus"
-
-let run_test herd libdir litmus =
-  let output = try
-    Some (run_herd herd libdir litmus)
-  with _ -> None in
-  match output with
-  | None -> Printf.printf "Failed %s : Herd returned non-zero\n" litmus ; false
-  | Some output ->
-
-  let expected = expected_of_litmus litmus in
-  let expected_output = try
-    Some (Filesystem.read_file expected Channel.read_lines)
-  with _ -> None in
-  match expected_output with
-  | None -> Printf.printf "Failed %s : Missing file %s\n" litmus expected ; false
-  | Some expected_output ->
-
-  if log_compare output expected_output <> 0 then begin
-    Printf.printf "Failed %s : Logs do not match\n" litmus ;
-    false
-  end else
-    true
-
 let litmuses_of_dir dir =
   let all_files = Array.to_list (Sys.readdir dir) in
-  let only_litmus = List.filter is_litmus all_files in
+  let only_litmus = List.filter TestHerd.is_litmus all_files in
   let full_paths = List.map (Filename.concat dir) only_litmus in
   List.sort String.compare full_paths
 
@@ -68,15 +28,17 @@ let litmuses_of_dir dir =
 
 let show_tests herd libdir litmus_dir =
   let litmuses = litmuses_of_dir litmus_dir in
-  let command_of_litmus l = Command.command herd (herd_args libdir l) in
-  let commands = List.map command_of_litmus litmuses in
+  let commands = List.map (TestHerd.herd_command herd libdir) litmuses in
   Channel.write_lines stdout commands
 
 let run_tests herd libdir litmus_dir =
   let litmuses = litmuses_of_dir litmus_dir in
-  let statuses = List.map (run_test herd libdir) litmuses in
-  if List.for_all (fun x -> x) statuses
-  then
+  let expecteds = List.map TestHerd.expected_of_litmus litmuses in
+  let results = List.map
+   (fun (l, e) -> TestHerd.herd_output_matches_expected herd libdir l e)
+   (List.combine litmuses expecteds)
+  in
+  if List.for_all (fun x -> x) results then
     Printf.printf "Tests OK\n"
   else begin
     Printf.printf "Some tests had errors\n" ;
@@ -85,8 +47,8 @@ let run_tests herd libdir litmus_dir =
 
 let promote_tests herd libdir litmus_dir =
   let litmuses = litmuses_of_dir litmus_dir in
-  let outputs = List.map (run_herd herd libdir) litmuses in
-  let expecteds = List.map expected_of_litmus litmuses in
+  let outputs = List.map (TestHerd.run_herd herd libdir) litmuses in
+  let expecteds = List.map TestHerd.expected_of_litmus litmuses in
   let write_file (path, lines) =
     Filesystem.write_file path (fun o -> Channel.write_lines o lines)
   in

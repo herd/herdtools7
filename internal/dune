@@ -1,4 +1,4 @@
 (executables
  (names herd_regression_test)
- (modes native)
- (libraries internal_lib str))
+ (libraries internal_lib)
+ (modes native))
