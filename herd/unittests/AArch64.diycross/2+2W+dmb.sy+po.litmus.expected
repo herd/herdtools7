@@ -1,0 +1,13 @@
+Test 2+2W+dmb.sy+po Allowed
+States 4
+x=1; y=1;
+x=1; y=2;
+x=2; y=1;
+x=2; y=2;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (x=2 /\ y=2)
+Observation 2+2W+dmb.sy+po Sometimes 1 3
+Hash=5dbeaed3a1aa88c4cdded063346ba075
+

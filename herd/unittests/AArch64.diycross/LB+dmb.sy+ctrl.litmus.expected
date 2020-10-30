@@ -1,0 +1,12 @@
+Test LB+dmb.sy+ctrl Allowed
+States 3
+0:X0=0; 1:X0=0;
+0:X0=0; 1:X0=1;
+0:X0=1; 1:X0=0;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (0:X0=1 /\ 1:X0=1)
+Observation LB+dmb.sy+ctrl Never 0 3
+Hash=09dd50996dd3a70f794e79c60d599dc5
+

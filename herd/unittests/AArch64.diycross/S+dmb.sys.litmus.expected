@@ -1,0 +1,12 @@
+Test S+dmb.sys Allowed
+States 3
+1:X0=0; x=1;
+1:X0=0; x=2;
+1:X0=1; x=1;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (x=2 /\ 1:X0=1)
+Observation S+dmb.sys Never 0 3
+Hash=687f291fee293c61358dfb0225d8ceee
+
