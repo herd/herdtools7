@@ -35,3 +35,19 @@ let write_file path f =
     raise e
   end in
   close_out chan ; ret
+
+let rec remove_recursive path =
+  if Sys.file_exists path then begin
+    if Sys.is_directory path then begin
+      let children = Array.to_list (Sys.readdir path) in
+      let child_paths = List.map (Filename.concat path) children in
+      List.iter remove_recursive child_paths ;
+      Unix.rmdir path
+    end else
+      Sys.remove path
+  end
+
+let new_temp_dir () =
+  match Command.run_with_stdout "mktemp" ["-d"] Channel.read_lines with
+  | path :: [] -> path
+  | _ -> failwith "mktemp is behaving abnormally"
