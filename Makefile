@@ -5,10 +5,10 @@ D=dune
 
 ifeq ($(D), dune)
 	HERD = _build/install/default/bin/herd7
-	TEST_HERD = _build/default/internal/test_herd.exe
+	HERD_REGRESSION_TEST = _build/default/internal/herd_regression_test.exe
 else
 	HERD = _build/herd/herd.native
-	TEST_HERD = _build/internal/test_herd.native
+	HERD_REGRESSION_TEST = _build/internal/herd_regression_test.native
 endif
 
 all: build
@@ -49,4 +49,4 @@ ocb-test:
 	./ocb-test.sh
 
 test::
-	$(TEST_HERD) -herd-path $(HERD) -libdir-path ./herd/libdir -litmus-dir ./herd/unittests/AArch64 test
+	$(HERD_REGRESSION_TEST) -herd-path $(HERD) -libdir-path ./herd/libdir -litmus-dir ./herd/unittests/AArch64 test
