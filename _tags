@@ -14,7 +14,8 @@ true: -traverse
 true: use_menhir
 <*/*.byte>: debug
 <*/*.cmo>: debug
-<*/*.{d.byte,byte,native}>: use_unix,use_str
+<*/*.ml>: package(stdint)
+<*/*.{d.byte,byte,native}>: use_unix,use_str,package(stdint)
 <*/*/*/*.{d.byte,byte,native}>: use_unix,use_str
 
 <internal/lib>: use_unix
