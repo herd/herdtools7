@@ -38,6 +38,35 @@ let tests = [
       Test.fail (Printf.sprintf "Expected %s, got %s" expected actual)
   );
 
+  "Command.run runs cleanly", (fun () ->
+    (* This test uses `touch`, because it is a command that produces a
+     * side-effect, and so can be verified to have run. *)
+
+    (* Create a random file path, by creating a random file and deleting it. *)
+    let path = Filename.temp_file "" "" in
+    Sys.remove path ;
+
+    (* Recreate it with `touch`. *)
+    Command.run "touch" [path] ;
+
+    if not (Sys.file_exists path) then
+      Test.fail "File doesn't exist after `touch`"
+    else
+      (* Cleanup. *)
+      Sys.remove path
+  );
+  "Command.run_with_stdout_lines raises on error", (fun () ->
+    (* Deliberately fail. *)
+    let raised_exception = try
+      let _ = Command.run "false" [] in false
+    with
+      Command.Error _ -> true
+    in
+
+    if not raised_exception then
+      Test.fail "Expected exception, did not raise";
+  );
+
   "Command.run_with_stdout captures stdout", (fun () ->
     let tests = [
       ("true", [], []);

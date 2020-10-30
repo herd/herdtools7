@@ -23,6 +23,12 @@ let command bin args =
   | [] -> (Filename.quote bin)
   | _ -> Printf.sprintf "%s %s" (Filename.quote bin) (String.concat " " (List.map Filename.quote args))
 
+let run bin args =
+  let cmd = command bin args in
+  match Sys.command cmd with
+  | 0 -> ()
+  | n -> raise (Error (Printf.sprintf "Process returned error code %i" n))
+
 let run_with_stdout bin args f =
   let cmd = command bin args in
   let stdout = Unix.open_process_in cmd in
