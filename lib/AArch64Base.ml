@@ -631,6 +631,8 @@ type 'k kinstruction =
   | I_STP_P_SIMD of temporal * simd_variant * reg * reg * reg * 'k
   | I_LDP_SIMD of temporal * simd_variant * reg * reg * reg * 'k kr
   | I_STP_SIMD of temporal * simd_variant * reg * reg * reg * 'k kr
+  | I_LDR_SIMD of simd_variant * reg * reg * 'k kr * 'k s
+  | I_LDR_P_SIMD of simd_variant * reg * reg * 'k
 (* Post-indexed load with immediate - like a writeback *)
 (* sufficiently different (and semantically interesting) to need a new inst *)
   | I_LDR_P of variant * reg * reg * 'k
@@ -800,13 +802,26 @@ let do_pp_instruction m =
     pp_vreg v r1 ^ "," ^
     pp_vreg v r2 ^ ",[" ^
     pp_xreg ra ^ pp_kr true false kr ^ "]" in
+    
+  let pp_fpmem memo v rt ra kr = 
+    pp_memo memo ^ " " ^ List.hd (pp_vsimdreg v [rt]) ^
+    ",[" ^ pp_xreg ra ^ pp_kr false false kr ^ "]" in
 
-  let pp_vmemp_post memo v r1 r2 ra k = 
+  let pp_fpmem_shift memo v rt ra kr s = 
+    pp_memo memo ^ " " ^ List.hd (pp_vsimdreg v [rt]) ^
+    ",[" ^ pp_xreg ra ^ pp_kr false false kr ^
+    pp_barrel_shift "," s (m.pp_k) ^ "]" in
+
+  let pp_fpmem_post memo v rt ra k =
+    pp_memo memo ^ " " ^ List.hd (pp_vsimdreg v [rt]) ^
+    ",[" ^ pp_xreg ra ^ "]" ^ m.pp_k k in
+
+  let pp_fpmemp_post memo v r1 r2 ra k = 
     pp_memo memo ^ " " ^
     String.concat ", " (pp_vsimdreg v [r1;r2]) ^
     ",[" ^ pp_xreg ra ^ "]" ^ m.pp_k k in
   
-  let pp_vmemp memo v r1 r2 ra kr = 
+  let pp_fpmemp memo v r1 r2 ra kr = 
     pp_memo memo ^ " " ^
     String.concat ", " (pp_vsimdreg v [r1;r2]) ^
     ",[" ^ pp_xreg ra ^ pp_kr false false kr ^ "]" in
@@ -956,13 +971,19 @@ let do_pp_instruction m =
   | I_ST4M (rs,r2,kr) ->
       pp_vmem_r_m "ST4" rs r2 kr
   | I_LDP_P_SIMD (t,v,r1,r2,r3,k) ->
-      pp_vmemp_post (match t with TT -> "LDP" | NT -> "LDNP") v r1 r2 r3 k
+      pp_fpmemp_post (match t with TT -> "LDP" | NT -> "LDNP") v r1 r2 r3 k
   | I_STP_P_SIMD (t,v,r1,r2,r3,k) ->
-      pp_vmemp_post (match t with TT -> "STP" | NT -> "STNP") v r1 r2 r3 k
+      pp_fpmemp_post (match t with TT -> "STP" | NT -> "STNP") v r1 r2 r3 k
   | I_LDP_SIMD (t,v,r1,r2,r3,kr) ->
-      pp_vmemp (match t with TT -> "LDP" | NT -> "LDNP") v r1 r2 r3 kr
+      pp_fpmemp (match t with TT -> "LDP" | NT -> "LDNP") v r1 r2 r3 kr
   | I_STP_SIMD (t,v,r1,r2,r3,kr) ->
-      pp_vmemp (match t with TT -> "STP" | NT -> "STNP") v r1 r2 r3 kr
+      pp_fpmemp (match t with TT -> "STP" | NT -> "STNP") v r1 r2 r3 kr
+  | I_LDR_SIMD (v,r1,r2,k,S_NOEXT) ->
+      pp_fpmem "LDR" v r1 r2 k
+  | I_LDR_SIMD (v,r1,r2,k,s) ->
+      pp_fpmem_shift "LDR" v r1 r2 k s
+  | I_LDR_P_SIMD (v,r1,r2,k) ->
+      pp_fpmem_post "LDR" v r1 r2 k
 (* Morello *)
   | I_ALIGND (r1,r2,k) ->
       sprintf "ALIGND %s,%s,%s" (pp_creg r1) (pp_creg r2) (pp_kr false true k)
@@ -1131,6 +1152,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_LDG (r1,r2,_) | I_STZG (r1,r2,_) | I_STG (r1,r2,_)
   | I_CHKEQ (r1,r2) | I_CLRTAG (r1,r2) | I_GC (_,r1,r2) | I_LDCT (r1,r2)
   | I_STCT (r1,r2)
+  | I_LDR_P_SIMD(_,r1,r2,_)
     -> fold_reg r1 (fold_reg r2 c)
   | I_LDR (_,r1,r2,kr,_) | I_STR (_,r1,r2,kr)
   | I_OP3 (_,_,r1,r2,kr,_)
@@ -1139,6 +1161,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_LD1 (r1,_,r2,kr)
   | I_LD1R (r1,r2,kr)
   | I_ST1 (r1,_,r2,kr)
+  | I_LDR_SIMD (_,r1,r2,kr,_)
     -> fold_reg r1 (fold_reg r2 (fold_kr kr c))
   | I_LD1M (rs,r2,kr)
   | I_LD2 (rs,_,r2,kr)
@@ -1285,6 +1308,10 @@ let map_regs f_reg f_symb =
       I_LDP_SIMD (t,v,map_reg r1,map_reg r2,map_reg r3,map_kr kr)
   | I_STP_SIMD (t,v,r1,r2,r3,kr) ->
       I_STP_SIMD (t,v,map_reg r1,map_reg r2,map_reg r3,map_kr kr)
+  | I_LDR_SIMD (v,r1,r2,kr,os) ->
+      I_LDR_SIMD (v,map_reg r1,map_reg r2,map_kr kr,os)
+  | I_LDR_P_SIMD (v,r1,r2,k) ->
+      I_LDR_P_SIMD (v,map_reg r1,map_reg r2,k)
 (* Morello *)
   | I_ALIGND (r1,r2,k) ->
       I_ALIGND(map_reg r1,map_reg r2,k)
@@ -1446,6 +1473,7 @@ let get_next = function
   | I_ST4 _ | I_ST4M _
   | I_LDP_P_SIMD _ | I_LDP_SIMD _
   | I_STP_P_SIMD _ | I_STP_SIMD _
+  | I_LDR_SIMD _ | I_LDR_P_SIMD _
     -> [Label.Next;]
 
 include Pseudo.Make
@@ -1548,6 +1576,8 @@ include Pseudo.Make
         | I_STP_P_SIMD (t,v,r1,r2,r3,k) -> I_STP_P_SIMD (t,v,r1,r2,r3,k_tr k)
         | I_LDP_SIMD (t,v,r1,r2,r3,kr) -> I_LDP_SIMD (t,v,r1,r2,r3,kr_tr kr)
         | I_STP_SIMD (t,v,r1,r2,r3,kr) -> I_STP_SIMD (t,v,r1,r2,r3,kr_tr kr)
+        | I_LDR_SIMD (v,r1,r2,kr,s) -> I_LDR_SIMD (v,r1,r2,kr_tr kr,ap_shift k_tr s)
+        | I_LDR_P_SIMD (v,r1,r2,k) -> I_LDR_P_SIMD (v,r1,r2,k_tr k)
 
 
       let get_naccesses = function
