@@ -484,6 +484,14 @@ instr:
       A.I_LDR_P_SIMD (v,r,$5,post)
     | _ ->
       A.I_LDR_SIMD (v,r,$5,kr,os) }
+| STR fpregs COMMA LBRK xreg kr0 RBRK k0
+  { let v,r    = $2 in
+    let kr, os = $6 in
+    match $8 with
+    | Some post when kr = A.K MetaConst.zero ->
+      A.I_STR_P_SIMD (v,r,$5,post)
+    | _ ->
+      A.I_STR_SIMD (v,r,$5,kr,os) }
     /* Compare and swap */
 | CAS wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_CAS (A.V32,A.RMW_P,$2,$4,$7) }
