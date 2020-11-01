@@ -633,6 +633,8 @@ type 'k kinstruction =
   | I_STP_SIMD of temporal * simd_variant * reg * reg * reg * 'k kr
   | I_LDR_SIMD of simd_variant * reg * reg * 'k kr * 'k s
   | I_LDR_P_SIMD of simd_variant * reg * reg * 'k
+  | I_STR_SIMD of simd_variant * reg * reg * 'k kr * 'k s
+  | I_STR_P_SIMD of simd_variant * reg * reg * 'k
 (* Post-indexed load with immediate - like a writeback *)
 (* sufficiently different (and semantically interesting) to need a new inst *)
   | I_LDR_P of variant * reg * reg * 'k
@@ -984,6 +986,12 @@ let do_pp_instruction m =
       pp_fpmem_shift "LDR" v r1 r2 k s
   | I_LDR_P_SIMD (v,r1,r2,k) ->
       pp_fpmem_post "LDR" v r1 r2 k
+  | I_STR_SIMD (v,r1,r2,k,S_NOEXT) ->
+      pp_fpmem "STR" v r1 r2 k
+  | I_STR_SIMD (v,r1,r2,k,s) ->
+      pp_fpmem_shift "STR" v r1 r2 k s
+  | I_STR_P_SIMD (v,r1,r2,k) ->
+      pp_fpmem_post "STR" v r1 r2 k
 (* Morello *)
   | I_ALIGND (r1,r2,k) ->
       sprintf "ALIGND %s,%s,%s" (pp_creg r1) (pp_creg r2) (pp_kr false true k)
@@ -1152,7 +1160,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_LDG (r1,r2,_) | I_STZG (r1,r2,_) | I_STG (r1,r2,_)
   | I_CHKEQ (r1,r2) | I_CLRTAG (r1,r2) | I_GC (_,r1,r2) | I_LDCT (r1,r2)
   | I_STCT (r1,r2)
-  | I_LDR_P_SIMD(_,r1,r2,_)
+  | I_LDR_P_SIMD(_,r1,r2,_) | I_STR_P_SIMD(_,r1,r2,_)
     -> fold_reg r1 (fold_reg r2 c)
   | I_LDR (_,r1,r2,kr,_) | I_STR (_,r1,r2,kr)
   | I_OP3 (_,_,r1,r2,kr,_)
@@ -1161,7 +1169,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_LD1 (r1,_,r2,kr)
   | I_LD1R (r1,r2,kr)
   | I_ST1 (r1,_,r2,kr)
-  | I_LDR_SIMD (_,r1,r2,kr,_)
+  | I_LDR_SIMD (_,r1,r2,kr,_) | I_STR_SIMD(_,r1,r2,kr,_)
     -> fold_reg r1 (fold_reg r2 (fold_kr kr c))
   | I_LD1M (rs,r2,kr)
   | I_LD2 (rs,_,r2,kr)
@@ -1312,6 +1320,10 @@ let map_regs f_reg f_symb =
       I_LDR_SIMD (v,map_reg r1,map_reg r2,map_kr kr,os)
   | I_LDR_P_SIMD (v,r1,r2,k) ->
       I_LDR_P_SIMD (v,map_reg r1,map_reg r2,k)
+  | I_STR_SIMD (v,r1,r2,kr,os) ->
+      I_STR_SIMD (v,map_reg r1,map_reg r2,map_kr kr,os)
+  | I_STR_P_SIMD (v,r1,r2,k) ->
+      I_STR_P_SIMD (v,map_reg r1,map_reg r2,k)
 (* Morello *)
   | I_ALIGND (r1,r2,k) ->
       I_ALIGND(map_reg r1,map_reg r2,k)
@@ -1474,6 +1486,7 @@ let get_next = function
   | I_LDP_P_SIMD _ | I_LDP_SIMD _
   | I_STP_P_SIMD _ | I_STP_SIMD _
   | I_LDR_SIMD _ | I_LDR_P_SIMD _
+  | I_STR_SIMD _ | I_STR_P_SIMD _
     -> [Label.Next;]
 
 include Pseudo.Make
@@ -1578,6 +1591,8 @@ include Pseudo.Make
         | I_STP_SIMD (t,v,r1,r2,r3,kr) -> I_STP_SIMD (t,v,r1,r2,r3,kr_tr kr)
         | I_LDR_SIMD (v,r1,r2,kr,s) -> I_LDR_SIMD (v,r1,r2,kr_tr kr,ap_shift k_tr s)
         | I_LDR_P_SIMD (v,r1,r2,k) -> I_LDR_P_SIMD (v,r1,r2,k_tr k)
+        | I_STR_SIMD (v,r1,r2,kr,s) -> I_STR_SIMD (v,r1,r2,kr_tr kr,ap_shift k_tr s)
+        | I_STR_P_SIMD (v,r1,r2,k) -> I_STR_P_SIMD (v,r1,r2,k_tr k)
 
 
       let get_naccesses = function
@@ -1593,7 +1608,7 @@ include Pseudo.Make
         | I_ST2 _ | I_ST2M _
         | I_ST3 _ | I_ST3M _
         | I_ST4 _ | I_ST4M _
-        | I_LDR_SIMD _
+        | I_LDR_SIMD _ | I_STR_SIMD _
           -> 1
         | I_LDP _|I_STP _
         | I_CAS _ | I_CASBH _
@@ -1605,7 +1620,7 @@ include Pseudo.Make
           -> 2
         | I_LDR_P _ (* reads, stores, then post-index stores *)
         | I_LDP_P_SIMD _ | I_STP_P_SIMD _
-        | I_LDR_P_SIMD _
+        | I_LDR_P_SIMD _ | I_STR_P_SIMD _
           -> 3
         | I_LDCT _ | I_STCT _
           -> 4
