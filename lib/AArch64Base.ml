@@ -1593,6 +1593,7 @@ include Pseudo.Make
         | I_ST2 _ | I_ST2M _
         | I_ST3 _ | I_ST3M _
         | I_ST4 _ | I_ST4M _
+        | I_LDR_SIMD _
           -> 1
         | I_LDP _|I_STP _
         | I_CAS _ | I_CASBH _
@@ -1604,6 +1605,7 @@ include Pseudo.Make
           -> 2
         | I_LDR_P _ (* reads, stores, then post-index stores *)
         | I_LDP_P_SIMD _ | I_STP_P_SIMD _
+        | I_LDR_P_SIMD _
           -> 3
         | I_LDCT _ | I_STCT _
           -> 4
