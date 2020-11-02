@@ -6,13 +6,17 @@ D=dune
 OPAM_DEPS = menhir stdint
 
 ifeq ($(D), dune)
-	HERD = _build/install/default/bin/herd7
-	HERD_REGRESSION_TEST = _build/default/internal/herd_regression_test.exe
+	DIYCROSS                      = _build/install/default/bin/diycross7
+	HERD                          = _build/install/default/bin/herd7
+	HERD_REGRESSION_TEST          = _build/default/internal/herd_regression_test.exe
+	HERD_DIYCROSS_REGRESSION_TEST = _build/default/internal/herd_diycross_regression_test.exe
 
 	OPAM_DEPS += dune
 else
-	HERD = _build/herd/herd.native
-	HERD_REGRESSION_TEST = _build/internal/herd_regression_test.native
+	DIYCROSS                      = _build/gen/diycross.native
+	HERD                          = _build/herd/herd.native
+	HERD_REGRESSION_TEST          = _build/internal/herd_regression_test.native
+	HERD_DIYCROSS_REGRESSION_TEST = _build/internal/herd_diycross_regression_test.native
 
 	OPAM_DEPS += ocamlbuild ocamlfind
 endif
@@ -72,3 +76,16 @@ ocb-test:
 
 test::
 	$(HERD_REGRESSION_TEST) -herd-path $(HERD) -libdir-path ./herd/libdir -litmus-dir ./herd/unittests/AArch64 test
+
+test::
+	$(HERD_DIYCROSS_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-diycross-path $(DIYCROSS) \
+		-libdir-path ./herd/libdir \
+		-expected-dir ./herd/unittests/AArch64.diycross \
+		-arch AArch64 \
+		-relaxlist 'Pod**,Fenced**' \
+		-relaxlist 'Rfe,Fre,Coe' \
+		-relaxlist 'Pod**,Fenced**,DpAddrdR,DpAddrdW,DpDatadW,CtrldR,CtrldW' \
+		-relaxlist 'Rfe,Fre,Coe' \
+		test

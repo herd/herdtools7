@@ -431,7 +431,7 @@ module Make(Config:Config)(T:Builder.S)
             fprintf all_chan
               "# %s\n" (String.concat " " (Array.to_list Sys.argv)) ;
             fprintf all_chan "# Version %s, Revision: %s\n"
-              Version_gen.version Version_gen.rev ;
+              Version.version Version.rev ;
             let res =  gen (check_dump all_chan check) empty_t in
             flush stderr ;
             printf

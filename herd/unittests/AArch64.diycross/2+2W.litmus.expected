@@ -1,0 +1,13 @@
+Test 2+2W Allowed
+States 4
+x=1; y=1;
+x=1; y=2;
+x=2; y=1;
+x=2; y=2;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (x=2 /\ y=2)
+Observation 2+2W Sometimes 1 3
+Hash=5112e7c862483914f9d4e140b60657b2
+

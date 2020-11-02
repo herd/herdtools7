@@ -1,0 +1,13 @@
+Test R Allowed
+States 4
+1:X2=0; y=1;
+1:X2=0; y=2;
+1:X2=1; y=1;
+1:X2=1; y=2;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (y=2 /\ 1:X2=0)
+Observation R Sometimes 1 3
+Hash=94bd088306941f8b078a424a46e25395
+

@@ -25,3 +25,9 @@ val read_file : string -> (in_channel -> 'a) -> 'a
  *  the open channel. The file is closed after [f] returns. If an exception is
  *  raised, the file is closed before re-raising the exception. *)
 val write_file : string -> (out_channel -> 'a) -> 'a
+
+(** [remove_recursive path] removes [path] and all of its children, a la `rm -rf`. *)
+val remove_recursive : string -> unit
+
+(** [new_temp_dir ()] creates a new temporary directory, and returns the path. *)
+val new_temp_dir : unit -> string

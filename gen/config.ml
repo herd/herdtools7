@@ -17,6 +17,7 @@
 open Printf
 open Code
 let verbose = ref 0
+let libdir = ref (Filename.concat Version.libdir "herd")
 let nprocs = ref 4
 let size = ref 6
 let one = ref false
@@ -122,8 +123,10 @@ let parse_cumul = function
 
 let common_specs =
   ("-v", Arg.Unit (fun () -> incr verbose),"  be verbose")::
-  ("-version", Arg.Unit (fun () -> print_endline Version_gen.version ; exit 0),
+  ("-version", Arg.Unit (fun () -> print_endline Version.version ; exit 0),
    " show version number and exit")::
+  ("-set-libdir", Arg.String (fun s -> libdir := s),
+   " <path> path to libdir")::
   Util.parse_tag "-debug"
     (fun tag -> match Debug_gen.parse !debug tag with
     | None -> false
@@ -273,7 +276,7 @@ let varatomspec =
    "<atom specs> specify atom variations")
 
 let prog = if Array.length Sys.argv > 0 then Sys.argv.(0) else "XXX"
-let baseprog = sprintf "%s (version %s)" (Filename.basename prog) (Version_gen.version)
+let baseprog = sprintf "%s (version %s)" (Filename.basename prog) (Version.version)
 
 let usage_msg = "Usage: " ^ prog ^   "[options]*"
 
@@ -322,7 +325,7 @@ module ToLisa = functor
   end) -> struct
     let debug = !O.debug
     let verbose = !O.verbose
-    let libdir = Version_gen.libdir
+    let libdir = !libdir
     let prog = O.prog
     let bell = !O.bell
     let varatom = !O.varatom

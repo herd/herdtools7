@@ -14,27 +14,28 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Utilities for running commands. *)
+(** [herd_command herd libdir litmus] returns the command line that [run_herd]
+  * would run. *)
+val herd_command: string -> string -> string -> string
 
-exception Error of string
+(** [run_herd herd libdir litmus] runs the binary [herd] with a custom [libdir]
+  * on a [litmus] file, and returns the output with unstable lines removed (e.g.
+  * Time). *)
+val run_herd : string -> string -> string -> string list
 
-let command bin args =
-  match args with
-  | [] -> (Filename.quote bin)
-  | _ -> Printf.sprintf "%s %s" (Filename.quote bin) (String.concat " " (List.map Filename.quote args))
+(** [herd_output_matches_expected herd libdir litmus expected] runs the binary
+  * [herd] with a custom [libdir] on a [litmus] file, and compares the output
+  * with an [expected] file. *)
+val herd_output_matches_expected : string -> string -> string -> string -> bool
 
-let run bin args =
-  let cmd = command bin args in
-  match Sys.command cmd with
-  | 0 -> ()
-  | n -> raise (Error (Printf.sprintf "Process returned error code %i" n))
+(** [is_litmus filename] returns whether the [filename] is a .litmus file. *)
+val is_litmus : string -> bool
 
-let run_with_stdout bin args f =
-  let cmd = command bin args in
-  let stdout = Unix.open_process_in cmd in
-  let ret = f stdout in
-  match Unix.close_process_in stdout with
-  | Unix.WEXITED 0 -> ret
-  | Unix.WEXITED n -> raise (Error (Printf.sprintf "Process returned error code %i" n))
-  | Unix.WSIGNALED n -> raise (Error (Printf.sprintf "Process was killed by signal %i" n))
-  | Unix.WSTOPPED n -> raise (Error (Printf.sprintf "Process was stopped by signal %i" n))
+(** [is_expected filename] returns whether [filename] is a .litmus.expected file. *)
+val is_expected : string -> bool
+
+(** [expected_of_litmus filename] returns the .litmus.expected name for a given .litmus [filename]. *)
+val expected_of_litmus : string -> string
+
+(** [litmus_of_expected filename] returns the .litmus name for a given .litmus.expected [filename]. *)
+val litmus_of_expected : string -> string
