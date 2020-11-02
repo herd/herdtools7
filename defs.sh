@@ -8,7 +8,7 @@ JINGLE="jingle.native gen_theme.native"
 NATIVE="$HERD $LITMUS $TOOLS $GEN $JINGLE"
 
 # Internal-only, not installed.
-INTERNAL="test_herd.native"
+INTERNAL="herd_regression_test.native"
 TESTS="channel_test.native command_test.native filesystem_test.native test_test.native"
 
 mk_exe () {
