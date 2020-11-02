@@ -26,6 +26,13 @@ let names = ref []
 let excl = ref []
 let hexa = ref false
 let int32 = ref true
+let emptyok = ref false
+
+let parse_emptyok r =
+  "-emptyok", Arg.Bool (fun b -> r := b),
+  (Printf.sprintf "<bool> keep tests with empty outcome in output, default %b" !hexa)
+
+
 let options =
   let open CheckName in
   [
@@ -35,6 +42,7 @@ let options =
   ("-v", Arg.Unit (fun _ -> incr verbose),
    "<non-default> show various diagnostics, repeat to increase verbosity");
    parse_hexa hexa; parse_int32 int32;
+   parse_emptyok emptyok;
    parse_rename rename;
    parse_select select; parse_names names;
    parse_excl excl;
@@ -69,6 +77,7 @@ let rename = !rename
 let verbose = !verbose
 let hexa = !hexa
 let int32 = !int32
+let emptyok = !emptyok
 
 let log1,log2 = match !logs with
 | [log1;log2;] -> log1,log2
@@ -164,8 +173,8 @@ let zyva log1 log2  =
   let dump_log chan =  Array.iter (dump_test chan) in
 
   let diff = match act with
-  | Diff -> LS.diff_logs test1 test2
-  | Inter -> LS.inter_logs test1 test2 in
+  | Diff -> LS.diff_logs emptyok test1 test2
+  | Inter -> LS.inter_logs emptyok test1 test2 in
   dump_log stdout diff ;
   flush stdout ;
   ()

@@ -697,7 +697,7 @@ let diff_test f1 f2 t1 t2 =
             loc t1.tname f1 f2
       end
 
-let diff_tests nx ny xs ys =
+let diff_tests nx ny emptyok xs ys =
   let sz_xs = Array.length xs
   and sz_ys = Array.length ys in
   let tout = ExtArray.create () in
@@ -714,13 +714,14 @@ let diff_tests nx ny xs ys =
         loop i_xs (i_ys+1)
       end else begin
         let z = diff_test nx ny x y in
-        if z.states.p_sts <> [] then out z ;
+        if emptyok || z.states.p_sts <> [] then out z ;
         loop (i_xs+1) (i_ys+1)
       end in
   loop 0 0 ;
   ExtArray.to_array tout
 
-let diff_logs t1 t2 = diff_tests t1.name t2.name t1.tests t2.tests
+let diff_logs emptyok t1 t2 =
+  diff_tests t1.name t2.name emptyok t1.tests t2.tests
 
 (* Intersection of two logs *)
 
@@ -788,7 +789,7 @@ let inter_test f1 f2 t1 t2 =
             loc t1.tname f1 f2
       end
 
-let inter_tests nx ny xs ys =
+let inter_tests nx ny emptyok xs ys =
   let sz_xs = Array.length xs
   and sz_ys = Array.length ys in
   let tout = ExtArray.create () in
@@ -804,9 +805,9 @@ let inter_tests nx ny xs ys =
       end else if c > 0 then begin
         loop i_xs (i_ys+1)
       end else begin
-        let z = (inter_test nx ny x y) in
+        let z = inter_test nx ny x y in
         begin match z.states.p_sts with
-        | [] -> ()
+        | [] -> if emptyok then out z
         | _ -> out z
         end ;
         loop (i_xs+1) (i_ys+1)
@@ -814,7 +815,7 @@ let inter_tests nx ny xs ys =
   loop 0 0 ;
   ExtArray.to_array tout
 
-let inter_logs t1 t2 = inter_tests t1.name t2.name t1.tests t2.tests
+let inter_logs emptyok t1 t2 = inter_tests t1.name t2.name emptyok t1.tests t2.tests
 
 
 (* Apply union_test on adjacent tests with identical names in arrays *)

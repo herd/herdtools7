@@ -153,11 +153,11 @@ val count_outcomes : t -> int
 (* Union logs *)
 val union_logs : t list -> test array
 
-(* Diff logs *)
-val diff_logs : t -> t -> test array
+(* Diff logs, when first argument is true keep tests with no oucome in output *)
+val diff_logs : bool -> t -> t -> test array
 
-(* Intersect logs *)
-val inter_logs : t -> t -> test array
+(* Intersect logs, first argument as for diff_logs  *)
+val inter_logs : bool -> t -> t -> test array
 
 
 (* Rename logs *)
