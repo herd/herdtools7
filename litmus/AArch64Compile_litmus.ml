@@ -407,7 +407,7 @@ module Make(V:Constant.S)(C:Config) =
 
     let print_simd_reg io offset i r = match r with
     | Vreg (_,s) -> "^" ^ io ^ string_of_int (i+offset) ^
-      (try List.assoc s arrange_specifier with Not_found -> assert false)
+      (try Misc.lowercase (List.assoc s arrange_specifier) with Not_found -> assert false)
     | _ -> assert false
 
     let print_vecreg v io i = "^" ^ (match v with
@@ -905,26 +905,26 @@ module Make(V:Constant.S)(C:Config) =
     | I_SWP (v,rmw,r1,r2,r3) -> swp (swp_memo rmw) v r1 r2 r3::k
     | I_SWPBH (bh,rmw,r1,r2,r3) -> swp (swpbh_memo bh rmw) V32 r1 r2 r3::k
 (* Neon Extension Load and Store *)
-    | I_LD1 (r1,i,r2,kr) -> load_simd_s "LD1" [r1] i r2 kr::k
-    | I_LD1M (rs,r2,kr) -> load_simd_m "LD1" rs r2 kr::k
-    | I_LD1R (r1,r2,kr) -> load_simd_m "LD1R" [r1] r2 kr::k 
-    | I_LD2 (rs,i,r2,kr) -> load_simd_s "LD2" rs i r2 kr::k
-    | I_LD2M (rs,r2,kr) -> load_simd_m "LD2" rs r2 kr::k
-    | I_LD2R (rs,r2,kr) -> load_simd_m "LD2R" rs r2 kr::k
-    | I_LD3 (rs,i,r2,kr) -> load_simd_s "LD3" rs i r2 kr::k
-    | I_LD3M (rs,r2,kr) -> load_simd_m "LD3" rs r2 kr::k
-    | I_LD3R (rs,r2,kr) -> load_simd_m "LD3R" rs r2 kr::k
-    | I_LD4 (rs,i,r2,kr) -> load_simd_s "LD4" rs i r2 kr::k
-    | I_LD4M (rs,r2,kr) -> load_simd_m "LD4" rs r2 kr::k
-    | I_LD4R (rs,r2,kr) -> load_simd_m "LD4R" rs r2 kr::k
-    | I_ST1 (r1,i,r2,kr) -> store_simd_s "ST1" [r1] i r2 kr::k
-    | I_ST1M (rs,r2,kr) -> store_simd_m "ST1" rs r2 kr::k
-    | I_ST2 (rs,i,r2,kr) -> store_simd_s "ST2" rs i r2 kr::k
-    | I_ST2M (rs,r2,kr) -> store_simd_m "ST2" rs r2 kr::k
-    | I_ST3 (rs,i,r2,kr) -> store_simd_s "ST3" rs i r2 kr::k
-    | I_ST3M (rs,r2,kr) -> store_simd_m "ST3" rs r2 kr::k
-    | I_ST4 (rs,i,r2,kr) -> store_simd_s "ST4" rs i r2 kr::k
-    | I_ST4M (rs,r2,kr) -> store_simd_m "ST4" rs r2 kr::k
+    | I_LD1 (r1,i,r2,kr) -> load_simd_s "ld1" [r1] i r2 kr::k
+    | I_LD1M (rs,r2,kr) -> load_simd_m "ld1" rs r2 kr::k
+    | I_LD1R (r1,r2,kr) -> load_simd_m "ld1r" [r1] r2 kr::k
+    | I_LD2 (rs,i,r2,kr) -> load_simd_s "ld2" rs i r2 kr::k
+    | I_LD2M (rs,r2,kr) -> load_simd_m "ld2" rs r2 kr::k
+    | I_LD2R (rs,r2,kr) -> load_simd_m "ld2r" rs r2 kr::k
+    | I_LD3 (rs,i,r2,kr) -> load_simd_s "ld3" rs i r2 kr::k
+    | I_LD3M (rs,r2,kr) -> load_simd_m "ld3" rs r2 kr::k
+    | I_LD3R (rs,r2,kr) -> load_simd_m "ld3r" rs r2 kr::k
+    | I_LD4 (rs,i,r2,kr) -> load_simd_s "ld4" rs i r2 kr::k
+    | I_LD4M (rs,r2,kr) -> load_simd_m "ld4" rs r2 kr::k
+    | I_LD4R (rs,r2,kr) -> load_simd_m "ld4r" rs r2 kr::k
+    | I_ST1 (r1,i,r2,kr) -> store_simd_s "st1" [r1] i r2 kr::k
+    | I_ST1M (rs,r2,kr) -> store_simd_m "st1" rs r2 kr::k
+    | I_ST2 (rs,i,r2,kr) -> store_simd_s "st2" rs i r2 kr::k
+    | I_ST2M (rs,r2,kr) -> store_simd_m "st2" rs r2 kr::k
+    | I_ST3 (rs,i,r2,kr) -> store_simd_s "st3" rs i r2 kr::k
+    | I_ST3M (rs,r2,kr) -> store_simd_m "st3" rs r2 kr::k
+    | I_ST4 (rs,i,r2,kr) -> store_simd_s "st4" rs i r2 kr::k
+    | I_ST4M (rs,r2,kr) -> store_simd_m "st4" rs r2 kr::k
     | I_LDP_SIMD (t,v,r1,r2,r3,kr) ->
         load_pair_simd (match t with TT -> "ldp" | NT -> "ldnp") v r1 r2 r3 kr::k
     | I_STP_SIMD (t,v,r1,r2,r3,kr) ->

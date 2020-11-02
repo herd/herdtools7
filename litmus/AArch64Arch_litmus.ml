@@ -30,7 +30,7 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
   | Symbolic_reg _ -> assert false
   | Internal i -> sprintf "i%i" i
   | Vreg (vr, _) | SIMDreg vr ->
-      (try List.assoc vr vvrs with Not_found -> assert false)
+      (try Misc.lowercase (List.assoc vr vvrs) with Not_found -> assert false)
   | _ ->
       try Misc.lowercase (Hashtbl.find tab r) with Not_found -> assert false
 
