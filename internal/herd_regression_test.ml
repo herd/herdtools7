@@ -39,7 +39,7 @@ let run_tests herd libdir litmus_dir =
    (List.combine litmuses expecteds)
   in
   if List.for_all (fun x -> x) results then
-    Printf.printf "Tests OK\n"
+    Printf.printf "Herd regression tests OK\n"
   else begin
     Printf.printf "Some tests had errors\n" ;
     exit 1
