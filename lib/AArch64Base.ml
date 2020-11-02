@@ -1594,21 +1594,33 @@ include Pseudo.Make
         | I_STR_SIMD (v,r1,r2,kr,s) -> I_STR_SIMD (v,r1,r2,kr_tr kr,ap_shift k_tr s)
         | I_STR_P_SIMD (v,r1,r2,k) -> I_STR_P_SIMD (v,r1,r2,k_tr k)
 
+      let get_simd_rpt_selem ins rs = match ins with
+      | I_LD1M _
+      | I_ST1M _
+        -> (List.length rs, 1)
+      | I_LD2M _
+      | I_ST2M _
+        -> (1, 2)
+      | I_LD3M _
+      | I_ST3M _
+        -> (1, 3)
+      | I_LD4M _
+      | I_ST4M _
+        -> (1, 4)
+      | _ -> assert false
 
-      let get_naccesses = function
+      let get_simd_elements rs = match List.hd rs with
+      | Vreg (_, (n, _)) -> n
+      | _ -> assert false
+
+      let get_naccesses ins = match ins with
         | I_LDR _ | I_LDAR _ | I_LDARBH _ | I_LDUR _
         | I_STR _ | I_STLR _ | I_STLRBH _ | I_STXR _
         | I_LDRBH _ | I_STRBH _ | I_STXRBH _ | I_IC _ | I_DC _
         | I_STG _ | I_LDG _
-        | I_LD1 _ | I_LD1M _ | I_LD1R _
-        | I_LD2 _ | I_LD2M _ | I_LD2R _
-        | I_LD3 _ | I_LD3M _ | I_LD3R _
-        | I_LD4 _ | I_LD4M _ | I_LD4R _
-        | I_ST1 _ | I_ST1M _
-        | I_ST2 _ | I_ST2M _
-        | I_ST3 _ | I_ST3M _
-        | I_ST4 _ | I_ST4M _
         | I_LDR_SIMD _ | I_STR_SIMD _
+        | I_LD1 _ | I_LD1R _
+        | I_ST1 _
           -> 1
         | I_LDP _|I_STP _
         | I_CAS _ | I_CASBH _
@@ -1617,12 +1629,18 @@ include Pseudo.Make
         | I_STOP _ | I_STOPBH _
         | I_STZG _
         | I_LDP_SIMD _ | I_STP_SIMD _
+        | I_LD2 _ | I_LD2R _
+        | I_ST2 _
           -> 2
         | I_LDR_P _ (* reads, stores, then post-index stores *)
         | I_LDP_P_SIMD _ | I_STP_P_SIMD _
         | I_LDR_P_SIMD _ | I_STR_P_SIMD _
+        | I_LD3 _ | I_LD3R _
+        | I_ST3 _
           -> 3
         | I_LDCT _ | I_STCT _
+        | I_LD4 _ | I_LD4R _
+        | I_ST4 _
           -> 4
         | I_NOP
         | I_B _ | I_BR _
@@ -1647,6 +1665,17 @@ include Pseudo.Make
         | I_CLRTAG _|I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|I_SC _|I_SEAL _
         | I_UNSEAL _
           -> 0
+        | I_LD1M (rs, _, _)
+        | I_LD2M (rs, _, _)
+        | I_LD3M (rs, _, _)
+        | I_LD4M (rs, _, _)
+        | I_ST1M (rs, _, _)
+        | I_ST2M (rs, _, _)
+        | I_ST3M (rs, _, _)
+        | I_ST4M (rs, _, _)
+          -> let (rpt, selem) = (get_simd_rpt_selem ins rs) in
+             let n = get_simd_elements rs in
+             rpt * selem * n
 
       let fold_labels k f = function
         | I_B lbl
