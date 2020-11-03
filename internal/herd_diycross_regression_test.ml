@@ -82,15 +82,15 @@ let run_tests flags =
     (fun (l, e) -> TestHerd.herd_output_matches_expected flags.herd flags.libdir l e)
     (List.combine litmus_paths expected_paths)
   in
+  let passed x = x in
 
   let ok =
     (List.length only_in_expected = 0) &&
     (List.length only_in_got = 0) &&
-    (List.for_all (fun x -> x) results) in
+    (List.for_all passed results) in
   if ok then begin
     (* Clean up and exit cleanly. *)
-    Filesystem.remove_recursive tmp_dir ;
-    Printf.printf "Herd diycross regression tests OK\n"
+    Filesystem.remove_recursive tmp_dir
   end else begin
     (* Don't clean up in case the user wants to inspect the errors. *)
     Printf.printf "Some tests had errors\n" ;
