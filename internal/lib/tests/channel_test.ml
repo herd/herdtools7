@@ -16,8 +16,17 @@
 
 (** Tests for the Channel module. *)
 
-let pp_int_list = Test.pp_int_list
-let pp_string_list = Test.pp_string_list
+open ExtendedBaseModules
+
+module StringList = struct
+  let compare = List.compare String.compare
+  let to_ocaml_string = List.to_ocaml_string String.to_ocaml_string
+end
+
+module IntList = struct
+  let compare = List.compare Int.compare
+  let to_ocaml_string = List.to_ocaml_string Int.to_ocaml_string
+end
 
 let tests = [
   "Channel.read_lines and Channel.write_lines", (fun () ->
@@ -31,8 +40,8 @@ let tests = [
     let actual = Channel.read_lines in_ch in
     close_in in_ch ;
 
-    if Test.string_list_compare lines actual <> 0 then
-      Test.fail (Printf.sprintf "Expected %s, got %s" (pp_string_list lines) (pp_string_list actual))
+    if StringList.compare lines actual <> 0 then
+      Test.fail (Printf.sprintf "Expected %s, got %s" (StringList.to_ocaml_string lines) (StringList.to_ocaml_string actual))
   );
 
   "Channel.map_lines applies f", (fun () ->
@@ -47,8 +56,8 @@ let tests = [
     let actual = Channel.map_lines String.length in_ch in
     close_in in_ch ;
 
-    if Test.int_list_compare expected actual <> 0 then
-      Test.fail (Printf.sprintf "Expected %s, got %s" (pp_int_list expected) (pp_int_list actual))
+    if IntList.compare expected actual <> 0 then
+      Test.fail (Printf.sprintf "Expected %s, got %s" (IntList.to_ocaml_string expected) (IntList.to_ocaml_string actual))
   );
 ]
 

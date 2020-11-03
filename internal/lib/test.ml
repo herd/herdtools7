@@ -38,37 +38,3 @@ let run tests =
 
 let fail msg =
     raise (AssertionFailure msg)
-
-
-(* Pretty-printing for failure messages. *)
-
-let pp_list pp_x xs = Printf.sprintf "[%s]" (String.concat "; " (List.map pp_x xs))
-
-let pp_int_list xs = pp_list (Printf.sprintf "%i") xs
-
-let pp_string_list xs = pp_list (Printf.sprintf "%S") xs
-
-
-(* Comparisons. *)
-
-let int_compare (x:int) (y:int) = compare x y
-
-let rec find_comparison cs =
-  match cs with
-  | [] -> 0
-  | c :: cs' -> if c <> 0 then c else (find_comparison cs')
-
-let list_compare c xs ys =
-  let compared_length = int_compare (List.length xs) (List.length ys) in
-  if compared_length = 0 then begin
-    List.combine xs ys
-    |> List.map (fun (x, y) -> c x y)
-    |> find_comparison
-  end else
-    compared_length
-
-let string_list_compare xs ys =
-  list_compare String.compare xs ys
-
-let int_list_compare xs ys =
-  list_compare int_compare xs ys

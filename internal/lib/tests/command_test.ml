@@ -16,7 +16,12 @@
 
 (** Tests for the Command module. *)
 
-let pp_string_list = Test.pp_string_list
+open ExtendedBaseModules
+
+module StringList = struct
+  let compare = List.compare String.compare
+  let to_ocaml_string = List.to_ocaml_string String.to_ocaml_string
+end
 
 let tests = [
   "Command.command without args", (fun () ->
@@ -77,8 +82,8 @@ let tests = [
     List.iter
       (fun (cmd, args, expected) ->
         let actual = Command.run_with_stdout cmd args Channel.read_lines in
-        if Test.string_list_compare actual expected <> 0 then
-          Test.fail (Printf.sprintf "Expected %s, got %s" (pp_string_list expected) (pp_string_list actual)))
+        if StringList.compare actual expected <> 0 then
+          Test.fail (Printf.sprintf "Expected %s, got %s" (StringList.to_ocaml_string expected) (StringList.to_ocaml_string actual)))
       tests
   );
   "Command.run_with_stdout_lines raises on error", (fun () ->

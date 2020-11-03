@@ -16,7 +16,12 @@
 
 (** Filesystem and file utilities. *)
 
-let pp_string_list = Test.pp_string_list
+open ExtendedBaseModules
+
+module StringList = struct
+  let compare = List.compare String.compare
+  let to_ocaml_string = List.to_ocaml_string String.to_ocaml_string
+end
 
 let tests = [
   "Filesystem.read_file and Filesystem.write_file", (fun () ->
@@ -35,8 +40,8 @@ let tests = [
         (* Clean up. *)
         Sys.remove path ;
 
-        if Test.string_list_compare lines actual <> 0 then
-          Test.fail (Printf.sprintf "Expected %s, got %s" (pp_string_list lines) (pp_string_list actual))
+        if StringList.compare lines actual <> 0 then
+          Test.fail (Printf.sprintf "Expected %s, got %s" (StringList.to_ocaml_string lines) (StringList.to_ocaml_string actual))
       )
       tests
   );
