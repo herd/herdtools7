@@ -864,12 +864,12 @@ module Make
             | RV (_,r) when reg_compare r rn = 0 -> (* register variant*)
                 (* Keep sharing here, otherwise performance penalty on address
                    dependency by r^r in mixed size mode *)
-                read_reg_ord_sz sz rn ii >>= fun v ->
+                read_reg_ord_sz sz rn ii >>= fun v1 ->
                 (* if present, apply an optional inline barrel shift *)
                 begin match os with
-                | S_NOEXT    -> M.unitT (v,v)
-                | s -> check_and_shift op ty s v
-                       >>= fun v -> M.unitT (v,v)
+                | S_NOEXT    -> M.unitT (v1,v1)
+                | s -> check_and_shift op ty s v1
+                       >>= fun v2 -> M.unitT (v1,v2)
                 end
             | RV (_,r) -> (* register variant *)
                 (* no sharing, we optionally shift v2 and return the pair *)
