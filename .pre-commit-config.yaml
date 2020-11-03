@@ -11,11 +11,11 @@ repos:
 
 -   repo: local
     hooks:
-    -   id: make-all
-        name: Run make all
+    -   id: make-test
+        name: Run make test
         language: system
-        entry: make all
-        files: (dune|\.ml.*$)
+        entry: make test
+        files: (dune|\.ml.*$|\.litmus.*$)
         pass_filenames: false
 
     -   id: opam-lint
