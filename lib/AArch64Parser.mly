@@ -659,9 +659,11 @@ instr:
   { A.I_ADDR ($2,$4) }
 | SXTW xreg COMMA wreg
   { A.I_SXTW ($2,$4) }
-/* Special handling for ASR operation */
+/* Special handling for ASR/LSL operation */
 | ASR xreg COMMA xreg COMMA kr
   { A.I_OP3 (A.V64, AArch64Base.ASR, $2, $4, $6, A.S_NOEXT) }
+| LSL xreg COMMA xreg COMMA kr
+  { A.I_OP3 (A.V64, AArch64Base.LSL, $2, $4, $6, A.S_NOEXT) }
 | OP xreg COMMA xreg COMMA kr
   { A.I_OP3 (A.V64,$1,$2,$4,$6, A.S_NOEXT) }
 | OP xreg COMMA xreg COMMA kr COMMA shift
