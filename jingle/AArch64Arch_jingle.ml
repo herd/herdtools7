@@ -111,7 +111,8 @@ include Arch.MakeArch(struct
       | RV(a,r) ->
           conv_reg r >! fun r -> RV(a,r)
       | K k ->
-          find_cst k >! fun k -> K k in
+          find_cst k >! fun k -> K k 
+      | SIMDRV _ -> Warn.fatal "Neon instructions are not implemented yet" in
     function
     | (I_FENCE _|I_NOP|I_RET None) as i -> unitT i
     | I_B l ->
@@ -380,4 +381,18 @@ include Arch.MakeArch(struct
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >! fun r2 ->
         I_STCT(r1,r2)
+    (* Neon Extension *)
+    | I_LD1 _ | I_LD1M _ | I_LD1R _
+    | I_LD2 _ | I_LD2M _ | I_LD2R _
+    | I_LD3 _ | I_LD3M _ | I_LD3R _
+    | I_LD4 _ | I_LD4M _ | I_LD4R _
+    | I_ST1 _ | I_ST1M _ 
+    | I_ST2 _ | I_ST2M _ 
+    | I_ST3 _ | I_ST3M _ 
+    | I_ST4 _ | I_ST4M _
+    | I_LDP_SIMD _ | I_LDP_P_SIMD _
+    | I_STP_SIMD _ | I_STP_P_SIMD _
+    | I_LDR_SIMD _ | I_LDR_P_SIMD _
+    | I_STR_SIMD _ | I_STR_P_SIMD _
+        -> Warn.fatal "Neon instructions are not implemented yet"
 end)
