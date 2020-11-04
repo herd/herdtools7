@@ -635,6 +635,11 @@ type 'k kinstruction =
   | I_LDR_P_SIMD of simd_variant * reg * reg * 'k
   | I_STR_SIMD of simd_variant * reg * reg * 'k kr * 'k s
   | I_STR_P_SIMD of simd_variant * reg * reg * 'k
+  | I_MOV_VE of reg * int * reg * int
+  | I_MOV_V of reg * reg
+  | I_MOV_TG of variant * reg * reg * int
+  | I_MOV_FG of reg * int * variant * reg
+  | I_MOV_S of simd_variant * reg * reg * int
 (* Post-indexed load with immediate - like a writeback *)
 (* sufficiently different (and semantically interesting) to need a new inst *)
   | I_LDR_P of variant * reg * reg * 'k
@@ -732,12 +737,12 @@ let pp_vreg v r = match v with
 | V64 -> pp_xreg r
 | V128 -> pp_creg r
 
-let pp_vsimdreg v rs = match v with
-| VSIMD8 -> List.map (pp_simd_fp_reg bvrs) rs
-| VSIMD16 -> List.map (pp_simd_fp_reg hvrs) rs
-| VSIMD32 -> List.map (pp_simd_fp_reg svrs) rs
-| VSIMD64 -> List.map (pp_simd_fp_reg dvrs) rs
-| VSIMD128 -> List.map (pp_simd_fp_reg qvrs) rs
+let pp_vsimdreg v r = match v with
+| VSIMD8 -> pp_simd_fp_reg bvrs r
+| VSIMD16 -> pp_simd_fp_reg hvrs r
+| VSIMD32 -> pp_simd_fp_reg svrs r
+| VSIMD64 -> pp_simd_fp_reg dvrs r
+| VSIMD128 -> pp_simd_fp_reg qvrs r
 
 
 let pp_op = function
@@ -777,7 +782,21 @@ let do_pp_instruction m =
   and pp_ri memo v r k =
     pp_memo memo ^ " " ^ pp_vreg v r ^ "," ^  m.pp_k k
   and pp_rr memo v r1 r2 =
-    pp_memo memo ^ " " ^ pp_vreg v r1 ^ "," ^  pp_vreg v r2 in
+    pp_memo memo ^ " " ^ pp_vreg v r1 ^ "," ^  pp_vreg v r2
+  and pp_vrivri memo r1 i1 r2 i2 =
+    pp_memo memo ^ " " ^ pp_simd_reg r1 ^ "[" ^ string_of_int i1 ^"]," ^
+    pp_simd_reg r2 ^ "[" ^ string_of_int i2 ^ "]"
+  and pp_vrir memo r1 i v r2 = 
+    pp_memo memo ^ " " ^ pp_simd_reg r1 ^ "[" ^ string_of_int i ^ "]," ^
+    pp_vreg v r2
+  and pp_rvri memo v r1 r2 i = 
+    pp_memo memo ^ " " ^ pp_vreg v r1 ^ "," ^ 
+    pp_simd_reg r2 ^ "[" ^ string_of_int i ^ "]"
+  and pp_vrvr memo r1 r2 = 
+    pp_memo memo ^ " " ^ pp_simd_reg r1 ^ "," ^ pp_simd_reg r2
+  and pp_fprvri memo v r1 r2 i = 
+    pp_memo memo ^ " " ^ pp_vsimdreg v r1 ^ "," ^ 
+    pp_simd_reg r2 ^ "[" ^ string_of_int i ^ "]" in
 
   let pp_kr showsxtw showzero kr = match kr with
   | K k when m.zerop k && not showzero -> ""
@@ -806,26 +825,24 @@ let do_pp_instruction m =
     pp_xreg ra ^ pp_kr true false kr ^ "]" in
     
   let pp_fpmem memo v rt ra kr = 
-    pp_memo memo ^ " " ^ List.hd (pp_vsimdreg v [rt]) ^
+    pp_memo memo ^ " " ^ pp_vsimdreg v rt ^
     ",[" ^ pp_xreg ra ^ pp_kr false false kr ^ "]" in
 
   let pp_fpmem_shift memo v rt ra kr s = 
-    pp_memo memo ^ " " ^ List.hd (pp_vsimdreg v [rt]) ^
+    pp_memo memo ^ " " ^ pp_vsimdreg v rt ^
     ",[" ^ pp_xreg ra ^ pp_kr false false kr ^
     pp_barrel_shift "," s (m.pp_k) ^ "]" in
 
   let pp_fpmem_post memo v rt ra k =
-    pp_memo memo ^ " " ^ List.hd (pp_vsimdreg v [rt]) ^
+    pp_memo memo ^ " " ^ pp_vsimdreg v rt ^
     ",[" ^ pp_xreg ra ^ "]" ^ m.pp_k k in
 
   let pp_fpmemp_post memo v r1 r2 ra k = 
-    pp_memo memo ^ " " ^
-    String.concat ", " (pp_vsimdreg v [r1;r2]) ^
+    pp_memo memo ^ " " ^ pp_vsimdreg v r1 ^ "," ^ pp_vsimdreg v r2 ^
     ",[" ^ pp_xreg ra ^ "]" ^ m.pp_k k in
   
   let pp_fpmemp memo v r1 r2 ra kr = 
-    pp_memo memo ^ " " ^
-    String.concat ", " (pp_vsimdreg v [r1;r2]) ^
+    pp_memo memo ^ " " ^ pp_vsimdreg v r1 ^ "," ^ pp_vsimdreg v r2 ^ 
     ",[" ^ pp_xreg ra ^ pp_kr false false kr ^ "]" in
 
   let pp_vmem_s memo rs i r2 kr =
@@ -994,6 +1011,17 @@ let do_pp_instruction m =
       pp_fpmem_shift "STR" v r1 r2 k s
   | I_STR_P_SIMD (v,r1,r2,k) ->
       pp_fpmem_post "STR" v r1 r2 k
+  | I_MOV_VE (r1,i1,r2,i2) ->
+      pp_vrivri "MOV" r1 i1 r2 i2
+  | I_MOV_V (r1,r2) ->
+      pp_vrvr "MOV" r1 r2
+  | I_MOV_TG (v,r1,r2,i) ->
+      pp_rvri "MOV" v r1 r2 i
+  | I_MOV_FG (r1,i,v,r2) ->
+      pp_vrir "MOV" r1 i v r2
+  | I_MOV_S (v,r1,r2,i) ->
+      pp_fprvri "MOV" v r1 r2 i
+
 (* Morello *)
   | I_ALIGND (r1,r2,k) ->
       sprintf "ALIGND %s,%s,%s" (pp_creg r1) (pp_creg r2) (pp_kr false true k)
@@ -1161,7 +1189,9 @@ let fold_regs (f_regs,f_sregs) =
   | I_LDG (r1,r2,_) | I_STZG (r1,r2,_) | I_STG (r1,r2,_)
   | I_CHKEQ (r1,r2) | I_CLRTAG (r1,r2) | I_GC (_,r1,r2) | I_LDCT (r1,r2)
   | I_STCT (r1,r2)
-  | I_LDR_P_SIMD(_,r1,r2,_) | I_STR_P_SIMD(_,r1,r2,_)
+  | I_LDR_P_SIMD (_,r1,r2,_) | I_STR_P_SIMD (_,r1,r2,_)
+  | I_MOV_VE (r1,_,r2,_) | I_MOV_V (r1,r2) | I_MOV_TG (_,r1,r2,_) | I_MOV_FG (r1,_,_,r2)
+  | I_MOV_S (_,r1,r2,_)
     -> fold_reg r1 (fold_reg r2 c)
   | I_LDR (_,r1,r2,kr,_) | I_STR (_,r1,r2,kr)
   | I_OP3 (_,_,r1,r2,kr,_)
@@ -1328,6 +1358,16 @@ let map_regs f_reg f_symb =
       I_LDP_P_SIMD (t,v,map_reg r1,map_reg r2,map_reg r3,k)
   | I_STP_P_SIMD (t,v,r1,r2,r3,k) ->
       I_STP_P_SIMD (t,v,map_reg r1,map_reg r2,map_reg r3,k)
+  | I_MOV_VE (r1,i1,r2,i2) ->
+      I_MOV_VE (map_reg r1,i1,map_reg r2,i2)
+  | I_MOV_V (r1,r2) ->
+      I_MOV_V (map_reg r1,map_reg r2)
+  | I_MOV_TG (v,r1,r2,i) ->
+      I_MOV_TG (v,map_reg r1,map_reg r2,i)
+  | I_MOV_FG (r1,i,v,r2) ->
+      I_MOV_FG (map_reg r1,i,v,map_reg r2)
+  | I_MOV_S (v,r1,r2,i) ->
+      I_MOV_S (v,map_reg r1,map_reg r2,i)
 (* Morello *)
   | I_ALIGND (r1,r2,k) ->
       I_ALIGND(map_reg r1,map_reg r2,k)
@@ -1491,6 +1531,8 @@ let get_next = function
   | I_STP_P_SIMD _ | I_STP_SIMD _
   | I_LDR_SIMD _ | I_LDR_P_SIMD _
   | I_STR_SIMD _ | I_STR_P_SIMD _
+  | I_MOV_VE _ | I_MOV_V _ | I_MOV_TG _ | I_MOV_FG _
+  | I_MOV_S _
     -> [Label.Next;]
 
 include Pseudo.Make
@@ -1547,6 +1589,8 @@ include Pseudo.Make
         | I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _|I_CPYTYPE _
         | I_CPYVALUE _|I_CSEAL _|I_GC _|I_LDCT _|I_SC _|I_SEAL _|I_STCT _
         | I_UNSEAL _
+        | I_MOV_VE _ | I_MOV_V _ | I_MOV_TG _ | I_MOV_FG _
+        | I_MOV_S _
             as keep -> keep
         | I_LDR (v,r1,r2,kr,s) -> I_LDR (v,r1,r2,kr_tr kr,ap_shift k_tr s)
         | I_LDUR (v,r1,r2,None) -> I_LDUR (v,r1,r2,None)
@@ -1667,6 +1711,8 @@ include Pseudo.Make
         | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _
         | I_CLRTAG _|I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|I_SC _|I_SEAL _
         | I_UNSEAL _
+        | I_MOV_VE _ | I_MOV_V _ | I_MOV_TG _ | I_MOV_FG _
+        | I_MOV_S _
           -> 0
         | I_LD1M (rs, _, _)
         | I_LD2M (rs, _, _)
