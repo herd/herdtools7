@@ -16,6 +16,11 @@
 (****************************************************************************)
 
 module A = AArch64Base
+
+let check_op3 op kr = match op,kr with
+|(A.BIC|A.BICS),A.K _ -> raise Parsing.Parse_error
+| _ -> ()
+
 %}
 
 %token EOF
@@ -665,13 +670,13 @@ instr:
 | LSL xreg COMMA xreg COMMA kr
   { A.I_OP3 (A.V64, AArch64Base.LSL, $2, $4, $6, A.S_NOEXT) }
 | OP xreg COMMA xreg COMMA kr
-  { A.I_OP3 (A.V64,$1,$2,$4,$6, A.S_NOEXT) }
+  { check_op3 $1 $6 ; A.I_OP3 (A.V64,$1,$2,$4,$6, A.S_NOEXT) }
 | OP xreg COMMA xreg COMMA kr COMMA shift
-  { A.I_OP3 (A.V64,$1,$2,$4,$6, $8) }
+  { check_op3 $1 $6 ; A.I_OP3 (A.V64,$1,$2,$4,$6, $8) }
 | OP wreg COMMA wreg COMMA kwr
-  { A.I_OP3 (A.V32,$1,$2,$4,$6, A.S_NOEXT) }
+  { check_op3 $1 $6 ; A.I_OP3 (A.V32,$1,$2,$4,$6, A.S_NOEXT) }
 | OP wreg COMMA wreg COMMA kwr COMMA shift
-  { A.I_OP3 (A.V32,$1,$2,$4,$6, $8) }
+  { check_op3 $1 $6 ; A.I_OP3 (A.V32,$1,$2,$4,$6, $8) }
 | CMP wreg COMMA kwr
   { A.I_OP3 (A.V32,A.SUBS,A.ZR,$2,$4, A.S_NOEXT) }
 | CMP xreg COMMA kr

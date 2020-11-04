@@ -278,6 +278,8 @@ match name with
 | "ands"|"ANDS" -> OP A.ANDS
 | "sub"|"SUB" -> OP A.SUB
 | "subs"|"SUBS" -> OP A.SUBS
+| "bic"|"BIC" -> OP A.BIC
+| "bics"|"BICS" -> OP A.BICS
 (* Although ASR is an instruction, it is also a barrel shift *)
 (* It needs special handling as both an operation and operand *)
 | "asr" | "ASR" -> ASR
