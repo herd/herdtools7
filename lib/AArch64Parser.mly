@@ -168,6 +168,10 @@ wreg:
 | SYMB_WREG { A.Symbolic_reg $1 }
 | ARCH_WREG { $1 }
 
+xwr:
+| xreg { A.V64,$1 }
+| wreg { A.V32,$1 }
+
 vreg:
 | ARCH_VREG { $1 }
 
@@ -210,6 +214,12 @@ dreg:
 
 qreg:
 | ARCH_QREG { $1 }
+
+bhsdregs:
+| breg { A.VSIMD8,$1 }
+| hreg { A.VSIMD16,$1 }
+| sreg { A.VSIMD32,$1 }
+| dreg { A.VSIMD64,$1 }
 
 k:
 | NUM  { MetaConst.Int $1 }
@@ -492,6 +502,20 @@ instr:
       A.I_STR_P_SIMD (v,r,$5,post)
     | _ ->
       A.I_STR_SIMD (v,r,$5,kr,os) }
+| MOV vreg INDEX COMMA vreg INDEX
+  { A.I_MOV_VE ($2, $3, $5, $6) }
+| MOV vreg INDEX COMMA xwr
+  { let v,r = $5 in
+    A.I_MOV_FG ($2, $3, v, r) }
+| MOV xreg COMMA vreg INDEX
+  { A.I_MOV_TG (A.V64, $2, $4, $5) }
+| MOV wreg COMMA vreg INDEX
+  { A.I_MOV_TG (A.V32, $2, $4, $5) }
+| MOV vreg COMMA vreg
+  { A.I_MOV_V ($2, $4) }
+| MOV bhsdregs COMMA vreg INDEX
+  { let v,r = $2 in
+    A.I_MOV_S (v, r, $4 ,$5)}
     /* Compare and swap */
 | CAS wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_CAS (A.V32,A.RMW_P,$2,$4,$7) }
