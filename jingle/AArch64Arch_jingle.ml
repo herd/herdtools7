@@ -111,8 +111,7 @@ include Arch.MakeArch(struct
       | RV(a,r) ->
           conv_reg r >! fun r -> RV(a,r)
       | K k ->
-          find_cst k >! fun k -> K k 
-      | SIMDRV _ -> Warn.fatal "Neon instructions are not implemented yet" in
+          find_cst k >! fun k -> K k in
     function
     | (I_FENCE _|I_NOP|I_RET None) as i -> unitT i
     | I_B l ->

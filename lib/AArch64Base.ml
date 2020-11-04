@@ -300,7 +300,7 @@ let pp_simd_reg r = match r with
 | _ -> assert false
 
 let pp_simd_fp_reg rl r = match r with
-| SIMDreg r -> try List.assoc r rl with Not_found -> assert false
+| SIMDreg r -> (try List.assoc r rl with Not_found -> assert false)
 | _ -> assert false
 
 let reg_compare = compare
@@ -497,7 +497,7 @@ let tr_variant = function
   | V128 -> MachSize.S128
 
 
-type 'k kr = K of 'k | RV of variant * reg | SIMDRV of simd_variant * reg
+type 'k kr = K of 'k | RV of variant * reg
 let k0 = K 0
 
 type ld_type = AA | XX | AX | AQ
@@ -848,7 +848,8 @@ let do_pp_instruction m =
       pp_rr memo v r1 r2
   | V32,RV ((V64|V128),_)
   | V64,RV ((V32|V128),_)
-  | V128,RV ((V32|V64),_) -> assert false in
+  | V128,RV ((V32|V64),_) ->
+      assert false in
 
   let pp_rrkr memo v r1 r2 kr = match v,kr with
   | _,K k -> pp_rri memo v r1 r2 k
@@ -864,7 +865,8 @@ let do_pp_instruction m =
       pp_creg r1  ^ "," ^
       pp_creg r2 ^ pp_kr false true kr
   | V32,RV (V64,_)
-  | _,RV (V128,_) -> assert false in
+  | _,RV (V128,_) ->
+      assert false in
 
   let pp_stxr memo v r1 r2 r3 =
     pp_memo memo ^ " " ^
@@ -1141,8 +1143,7 @@ let fold_regs (f_regs,f_sregs) =
 
   let fold_kr kr y = match kr with
   | K _ -> y
-  | RV (_,r) -> fold_reg r y
-  | SIMDRV (_,r) -> fold_reg r y in
+  | RV (_,r) -> fold_reg r y in
 
   fun c ins -> match ins with
   | I_NOP | I_B _ | I_BC _ | I_BL _ | I_FENCE _ | I_RET None
@@ -1220,8 +1221,7 @@ let map_regs f_reg f_symb =
 
   let map_kr kr = match kr with
   | K _ -> kr
-  | RV (v,r) -> RV (v,map_reg r) 
-  | SIMDRV (v,r) -> SIMDRV (v,map_reg r) in
+  | RV (v,r) -> RV (v,map_reg r) in
 
   fun ins -> match ins with
   | I_NOP
@@ -1324,6 +1324,10 @@ let map_regs f_reg f_symb =
       I_STR_SIMD (v,map_reg r1,map_reg r2,map_kr kr,os)
   | I_STR_P_SIMD (v,r1,r2,k) ->
       I_STR_P_SIMD (v,map_reg r1,map_reg r2,k)
+  | I_LDP_P_SIMD (t,v,r1,r2,r3,k) ->
+      I_LDP_P_SIMD (t,v,map_reg r1,map_reg r2,map_reg r3,k)
+  | I_STP_P_SIMD (t,v,r1,r2,r3,k) ->
+      I_STP_P_SIMD (t,v,map_reg r1,map_reg r2,map_reg r3,k)
 (* Morello *)
   | I_ALIGND (r1,r2,k) ->
       I_ALIGND(map_reg r1,map_reg r2,k)
@@ -1499,7 +1503,6 @@ include Pseudo.Make
       let kr_tr = function
         | K i -> K (k_tr i)
         | RV _ as kr -> kr
-        | SIMDRV _ as kr -> kr
 
       let ap_shift f s = match s with
         | S_LSL(s) -> S_LSL(f s)
