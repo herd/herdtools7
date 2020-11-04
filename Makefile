@@ -84,7 +84,7 @@ test::
 		-herd-path $(HERD) \
 		-diycross-path $(DIYCROSS) \
 		-libdir-path ./herd/libdir \
-		-expected-dir ./herd/unittests/AArch64.diycross \
+		-expected-dir ./herd/tests/diycross/AArch64 \
 		-arch AArch64 \
 		-relaxlist 'Pod**,Fenced**' \
 		-relaxlist 'Rfe,Fre,Coe' \
