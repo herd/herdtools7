@@ -886,12 +886,14 @@ module Make
             | AND|ANDS -> fun (v1,v2) -> M.op Op.And v1 v2
             | ASR -> fun (v1, v2) -> M.op Op.ASR v1 v2
             | LSR -> fun (v1,v2) -> M.op Op.Lsr v1 v2
+            | LSL -> fun (v1,v2) -> M.op Op.ShiftLeft v1 v2
+            | BIC|BICS -> fun (v1,v2) -> M.op Op.AndNot2 v1 v2
             end >>=
             (let m =  (fun v ->
               (write_reg rd v ii) >>|
               (match op with
-              | ADDS|SUBS|ANDS -> is_zero v >>= fun v -> write_reg NZP v ii
-              | ADD|EOR|ORR|AND|SUB|ASR|LSR -> M.unitT ())) in
+              | ADDS|SUBS|ANDS|BICS -> is_zero v >>= fun v -> write_reg NZP v ii
+              | ADD|EOR|ORR|AND|SUB|ASR|LSR|LSL|BIC -> M.unitT ())) in
             mask32 ty m) >>!
             B.Next
               (* Barrier *)

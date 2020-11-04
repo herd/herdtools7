@@ -196,12 +196,26 @@ module Make(Cst:Constant.S) = struct
         v1 v2
 
   and andnot2 v1 v2 = match v1,v2 with
-  | Val (PteVal p),Val (Concrete v) when Scalar.compare v (Scalar.one) = 0 ->
+  | Val (PteVal p),Val (Concrete v) ->
         let msg =
           sprintf
             "Illegal operation %s on constants %s and %s"
             (Op.pp_op Op.AndNot2) (pp_v v1) (pp_v v2) in
-        let p = { p with PTEVal.valid=0; } in
+        let p =
+           if Scalar.compare v (Scalar.one) = 0 then
+             { p with PTEVal.valid=0; }
+           else if
+             let scalar_dbm = Scalar.shift_left Scalar.one 51 in
+             Scalar.compare v scalar_dbm = 0
+           then
+             { p with PTEVal.dbm=0; }
+           else if
+             let scalar_af = Scalar.shift_left Scalar.one 10 in
+             Scalar.compare v scalar_af = 0
+           then
+             { p with PTEVal.af=0; }
+           else
+             Warn.user_error "%s" msg in
         raise (Cst.Result (`AArch64,PteVal p,msg))
   | _,_ ->
       binop Op.AndNot2
