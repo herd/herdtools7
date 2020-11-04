@@ -3,6 +3,7 @@ BINDIR=$(PREFIX)/bin
 LIBDIR=$(PREFIX)/lib/herd7
 J=-j 8
 JERD_OPT=-use-ocamlfind
+BOOKS=aarch64 aarch64-mixed aarch64-MTE aarch64-MTE-mixed x86 linux
 BOOKS=aarch64 aarch64-mixed aarch64-MTE aarch64-MTE-mixed aarch64-deps x86 linux
 WWW_CATALOGUE=www/catalogue
 HERD_CATALOGUE=../catalogue

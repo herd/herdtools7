@@ -137,7 +137,6 @@ let run_herd bell cat litmus cfg =
   let conds = LR.read_from_files !conds (fun s -> Some s) in
 
   let module Config = struct
-    let auto = !auto
     let candidates = !candidates
     let nshow = !nshow
     let restrict = !restrict
