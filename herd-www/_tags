@@ -5,3 +5,4 @@ true: use_menhir
 <lib>: include
 <{webInput,jerd,catIncludes}.{ml,byte}>:package(str), \
             package(js_of_ocaml), package(js_of_ocaml-ppx)
+<herd/parseTest.ml>: pp(awk -f ../notwww.awk)

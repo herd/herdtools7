@@ -224,7 +224,9 @@ module Top (Conf:Config) = struct
           let module P = GenParser.Make (Conf) (ARM) (ARMLexParse) in
           let module X = Make (ARMS) (P) (NoCheck) (ARMM) in
           X.run start_time name chan env splitted
-
+(* Markers START/END below are for excluding source when compiling
+   the web interface *)
+(* START NOTWWW *)
       (* TODO: try to avoid complete duplication for morello variant *)
       | `AArch64 when Conf.variant Variant.Morello ->
           let module AArch64Conf = ArchConfig in
@@ -266,7 +268,7 @@ module Top (Conf:Config) = struct
           let module P = GenParser.Make (Conf) (AArch64) (AArch64LexParse) in
           let module X = Make (AArch64S) (P) (AArch64C) (AArch64M) in
           X.run start_time name chan env splitted
-
+(* END NOTWWW *)
       | `AArch64 ->
           let module AArch64Conf = ArchConfig in
           let module AArch64 = AArch64Arch_herd.Make(AArch64Conf)(Int64Value) in
