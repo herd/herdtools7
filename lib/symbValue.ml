@@ -172,7 +172,34 @@ module Make(Cst:Constant.S) = struct
   and orop v1 v2 =
     if protect_is is_zero v1 then v2
     else if protect_is is_zero v2 then v1
-    else binop Op.Or Scalar.logor v1 v2
+    else match v1,v2 with
+    | Val (PteVal p),Val (Concrete v) ->
+        let msg =
+          sprintf
+            "Illegal operation %s on constants %s and %s"
+            (Op.pp_op Op.Or) (pp_v v1) (pp_v v2) in
+        let p =
+           if Scalar.compare v (Scalar.one) = 0 then
+             { p with PTEVal.valid=1; }
+           else if
+             let scalar_db = Scalar.shift_left Scalar.one 7 in
+             Scalar.compare v scalar_db = 0
+           then
+             { p with PTEVal.db=0; }
+           else if
+             let scalar_af = Scalar.shift_left Scalar.one 10 in
+             Scalar.compare v scalar_af = 0
+           then
+             { p with PTEVal.af=1; }
+           else if
+             let scalar_dbm = Scalar.shift_left Scalar.one 51 in
+             Scalar.compare v scalar_dbm = 0
+           then
+             { p with PTEVal.dbm=1; }
+           else
+             Warn.user_error "%s" msg in
+        raise (Cst.Result (`AArch64,PteVal p,msg))
+  | _ -> binop Op.Or Scalar.logor v1 v2
 
   and xor v1 v2 =
     if compare v1 v2 = 0 then zero else
@@ -205,15 +232,20 @@ module Make(Cst:Constant.S) = struct
            if Scalar.compare v (Scalar.one) = 0 then
              { p with PTEVal.valid=0; }
            else if
-             let scalar_dbm = Scalar.shift_left Scalar.one 51 in
-             Scalar.compare v scalar_dbm = 0
+             let scalar_db = Scalar.shift_left Scalar.one 7 in
+             Scalar.compare v scalar_db = 0
            then
-             { p with PTEVal.dbm=0; }
+             { p with PTEVal.db=1; }
            else if
              let scalar_af = Scalar.shift_left Scalar.one 10 in
              Scalar.compare v scalar_af = 0
            then
              { p with PTEVal.af=0; }
+           else if
+             let scalar_dbm = Scalar.shift_left Scalar.one 51 in
+             Scalar.compare v scalar_dbm = 0
+           then
+             { p with PTEVal.dbm=0; }
            else
              Warn.user_error "%s" msg in
         raise (Cst.Result (`AArch64,PteVal p,msg))
