@@ -578,6 +578,7 @@ type 'k s
   = S_LSL of 'k
   | S_LSR of 'k
   | S_ASR of 'k
+  | S_MSL of 'k
   | S_SXTW
   | S_UXTW
   | S_NOEXT
@@ -586,6 +587,7 @@ let pp_barrel_shift sep s pp_k = match s with
   | S_LSL(k) -> sep ^ "LSL "  ^ (pp_k k)
   | S_LSR(k) -> sep ^ "LSR "  ^ (pp_k k)
   | S_ASR(k) -> sep ^ "ASR "  ^ (pp_k k)
+  | S_MSL(k) -> sep ^ "MSL "  ^ (pp_k k)
   | S_SXTW -> sep ^ "SXTW"
   | S_UXTW -> sep ^ "UXTW"
   | S_NOEXT  -> ""
@@ -640,7 +642,7 @@ type 'k kinstruction =
   | I_MOV_TG of variant * reg * reg * int
   | I_MOV_FG of reg * int * variant * reg
   | I_MOV_S of simd_variant * reg * reg * int
-  | I_MOVI_V of reg * 'k
+  | I_MOVI_V of reg * 'k * 'k s
   | I_MOVI_S of simd_variant * reg * 'k
 (* Post-indexed load with immediate - like a writeback *)
 (* sufficiently different (and semantically interesting) to need a new inst *)
@@ -851,6 +853,10 @@ let do_pp_instruction m =
     pp_memo memo ^ " " ^ pp_vsimdreg v r1 ^ "," ^ pp_vsimdreg v r2 ^ 
     ",[" ^ pp_xreg ra ^ pp_kr false false kr ^ "]" in
 
+  let pp_vmem_shift memo r k s =
+    pp_memo memo ^ " " ^ pp_simd_reg r ^ "," ^ m.pp_k k ^
+    pp_barrel_shift "," s (m.pp_k) in
+
   let pp_vmem_s memo rs i r2 kr =
     pp_memo memo ^ " " ^
     "{" ^ String.concat ", " (List.map pp_simd_reg rs) ^ "}" ^
@@ -1027,8 +1033,10 @@ let do_pp_instruction m =
       pp_vrir "MOV" r1 i v r2
   | I_MOV_S (v,r1,r2,i) ->
       pp_fprvri "MOV" v r1 r2 i
-  | I_MOVI_V (r,k) ->
+  | I_MOVI_V (r,k,S_NOEXT) ->
       pp_vri "MOVI" r k
+  | I_MOVI_V (r,k,s) ->
+      pp_vmem_shift "MOVI" r k s
   | I_MOVI_S (v,r,k) ->
       pp_fpri "MOVI" v r k
 
@@ -1191,7 +1199,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_ADDR (r,_) | I_IC (_,r) | I_DC (_,r) | I_MRS (r,_)
   | I_TBNZ (_,r,_,_) | I_TBZ (_,r,_,_)
   | I_CHKSLD r | I_CHKTGD r
-  | I_MOVI_V (r,_) | I_MOVI_S (_,r,_)
+  | I_MOVI_V (r,_,_) | I_MOVI_S (_,r,_)
     -> fold_reg r c
   | I_LDAR (_,_,r1,r2) | I_STLR (_,r1,r2) | I_STLRBH (_,r1,r2)
   | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2)
@@ -1379,8 +1387,8 @@ let map_regs f_reg f_symb =
       I_MOV_FG (map_reg r1,i,v,map_reg r2)
   | I_MOV_S (v,r1,r2,i) ->
       I_MOV_S (v,map_reg r1,map_reg r2,i)
-  | I_MOVI_V (r,k) ->
-      I_MOVI_V (map_reg r,k)
+  | I_MOVI_V (r,k,os) ->
+      I_MOVI_V (map_reg r,k,os)
   | I_MOVI_S (v,r,k) ->
       I_MOVI_S (v,map_reg r,k)
 (* Morello *)
@@ -1566,6 +1574,7 @@ include Pseudo.Make
         | S_LSL(s) -> S_LSL(f s)
         | S_LSR(s) -> S_LSR(f s)
         | S_ASR(s) -> S_ASR(f s)
+        | S_MSL(s) -> S_MSL(f s)
         | S_SXTW -> S_SXTW
         | S_UXTW -> S_UXTW
         | S_NOEXT  -> S_NOEXT
@@ -1656,7 +1665,7 @@ include Pseudo.Make
         | I_LDR_P_SIMD (v,r1,r2,k) -> I_LDR_P_SIMD (v,r1,r2,k_tr k)
         | I_STR_SIMD (v,r1,r2,kr,s) -> I_STR_SIMD (v,r1,r2,kr_tr kr,ap_shift k_tr s)
         | I_STR_P_SIMD (v,r1,r2,k) -> I_STR_P_SIMD (v,r1,r2,k_tr k)
-        | I_MOVI_V (r,k) -> I_MOVI_V (r,k_tr k)
+        | I_MOVI_V (r,k,s) -> I_MOVI_V (r,k_tr k,ap_shift k_tr s)
         | I_MOVI_S (v,r,k) -> I_MOVI_S (v,r,k_tr k)
 
       let get_simd_rpt_selem ins rs = match ins with
