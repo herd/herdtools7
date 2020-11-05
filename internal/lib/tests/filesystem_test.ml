@@ -19,9 +19,11 @@
 open ExtendedBaseModules
 
 module StringList = struct
-  let compare = List.compare String.compare
+  include List.Make(String)
   let to_ocaml_string = List.to_ocaml_string String.to_ocaml_string
 end
+
+module IntListSet = Set.Make(List.Make(Int))
 
 let tests = [
   "Filesystem.read_file and Filesystem.write_file", (fun () ->

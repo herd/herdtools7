@@ -20,7 +20,6 @@
 module Int : sig
   (* TODO: iff we raise our minimum OCaml version to 4.08,
    *       include module type of Int. *)
-
   type t = int
 
   (** [compare x y] is a non-polymorphic version of [Pervasives.compare] or
@@ -54,4 +53,6 @@ module List : sig
    *  [to_ocaml_string String.to_ocaml_string ["a"; "b"]] returns
    *  "[\"a\"; \"b\"]". *)
   val to_ocaml_string : ('a -> string) -> 'a list -> string
+
+  module Make : functor (Elt : Compare.S) -> Compare.S with type t = Elt.t list
 end
