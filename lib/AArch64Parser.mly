@@ -47,7 +47,7 @@ let check_noext = function
 %token SXTW
 
 /* Inline Barrel Shift Operands */
-%token LSL LSR ASR UXTW
+%token LSL LSR ASR MSL UXTW
 
 /* Instructions */
 %token NOP HINT HLT
@@ -272,6 +272,7 @@ shift:
 | LSL NUM  { A.S_LSL(MetaConst.Int $2)  }
 | LSR NUM  { A.S_LSR(MetaConst.Int $2)  }
 | ASR NUM  { A.S_ASR(MetaConst.Int $2)  }
+| MSL NUM  { A.S_MSL(MetaConst.Int $2)  }
 | SXTW { A.S_SXTW }
 | UXTW { A.S_UXTW }
 
@@ -515,9 +516,11 @@ instr:
   { A.I_MOV_V ($2, $4) }
 | MOV bhsdregs COMMA vreg INDEX
   { let v,r = $2 in
-    A.I_MOV_S (v, r, $4 ,$5)}
-| MOVI vreg COMMA k 
-  { A.I_MOVI_V ($2, $4) }
+    A.I_MOV_S (v, r, $4 ,$5) }
+| MOVI vreg COMMA k
+  { A.I_MOVI_V ($2, $4, A.S_NOEXT) }
+| MOVI vreg COMMA k COMMA shift
+  { A.I_MOVI_V ($2, $4, $6) }
 | MOVI dreg COMMA k
   { A.I_MOVI_S ( A.VSIMD64, $2, $4) }
     /* Compare and swap */

@@ -356,6 +356,7 @@ match name with
 (* inline barrel shift operands *)
 | "lsl" | "LSL" -> LSL
 | "lsr" | "LSR" -> LSR
+| "msl" | "MSL" -> MSL
 (* Cache maintenance *)
 | "ic"|"IC" -> IC
 | "dc"|"DC" -> DC
