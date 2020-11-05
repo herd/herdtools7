@@ -55,7 +55,7 @@ let check_noext = function
 %token BL BLR RET
 %token LDR LDP LDNP STP STNP LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
 %token LD1 LD1R LD2 LD2R LD3 LD3R LD4 LD4R ST1 ST2 ST3 ST4 /* Neon load/store */
-%token CMP MOV MOVZ MOVK ADR
+%token CMP MOV MOVZ MOVK MOVI ADR
 %token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH
 %token STXR STXRB STXRH STLXR STLXRB STLXRH
 %token <AArch64Base.op> OP
@@ -516,6 +516,10 @@ instr:
 | MOV bhsdregs COMMA vreg INDEX
   { let v,r = $2 in
     A.I_MOV_S (v, r, $4 ,$5)}
+| MOVI vreg COMMA k 
+  { A.I_MOVI_V ($2, $4) }
+| MOVI dreg COMMA k
+  { A.I_MOVI_S ( A.VSIMD64, $2, $4) }
     /* Compare and swap */
 | CAS wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_CAS (A.V32,A.RMW_P,$2,$4,$7) }
