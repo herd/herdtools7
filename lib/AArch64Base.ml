@@ -640,6 +640,8 @@ type 'k kinstruction =
   | I_MOV_TG of variant * reg * reg * int
   | I_MOV_FG of reg * int * variant * reg
   | I_MOV_S of simd_variant * reg * reg * int
+  | I_MOVI_V of reg * 'k
+  | I_MOVI_S of simd_variant * reg * 'k
 (* Post-indexed load with immediate - like a writeback *)
 (* sufficiently different (and semantically interesting) to need a new inst *)
   | I_LDR_P of variant * reg * reg * 'k
@@ -789,11 +791,15 @@ let do_pp_instruction m =
   and pp_vrir memo r1 i v r2 = 
     pp_memo memo ^ " " ^ pp_simd_reg r1 ^ "[" ^ string_of_int i ^ "]," ^
     pp_vreg v r2
+  and pp_vri memo r i = 
+    pp_memo memo ^ " " ^ pp_simd_reg r ^ "," ^ m.pp_k i
   and pp_rvri memo v r1 r2 i = 
     pp_memo memo ^ " " ^ pp_vreg v r1 ^ "," ^ 
     pp_simd_reg r2 ^ "[" ^ string_of_int i ^ "]"
   and pp_vrvr memo r1 r2 = 
     pp_memo memo ^ " " ^ pp_simd_reg r1 ^ "," ^ pp_simd_reg r2
+  and pp_fpri memo v r i =
+    pp_memo memo ^ " " ^ pp_vsimdreg v r ^ "," ^ m.pp_k i
   and pp_fprvri memo v r1 r2 i = 
     pp_memo memo ^ " " ^ pp_vsimdreg v r1 ^ "," ^ 
     pp_simd_reg r2 ^ "[" ^ string_of_int i ^ "]" in
@@ -1021,6 +1027,10 @@ let do_pp_instruction m =
       pp_vrir "MOV" r1 i v r2
   | I_MOV_S (v,r1,r2,i) ->
       pp_fprvri "MOV" v r1 r2 i
+  | I_MOVI_V (r,k) ->
+      pp_vri "MOVI" r k
+  | I_MOVI_S (v,r,k) ->
+      pp_fpri "MOVI" v r k
 
 (* Morello *)
   | I_ALIGND (r1,r2,k) ->
@@ -1181,6 +1191,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_ADDR (r,_) | I_IC (_,r) | I_DC (_,r) | I_MRS (r,_)
   | I_TBNZ (_,r,_,_) | I_TBZ (_,r,_,_)
   | I_CHKSLD r | I_CHKTGD r
+  | I_MOVI_V (r,_) | I_MOVI_S (_,r,_)
     -> fold_reg r c
   | I_LDAR (_,_,r1,r2) | I_STLR (_,r1,r2) | I_STLRBH (_,r1,r2)
   | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2)
@@ -1368,6 +1379,10 @@ let map_regs f_reg f_symb =
       I_MOV_FG (map_reg r1,i,v,map_reg r2)
   | I_MOV_S (v,r1,r2,i) ->
       I_MOV_S (v,map_reg r1,map_reg r2,i)
+  | I_MOVI_V (r,k) ->
+      I_MOVI_V (map_reg r,k)
+  | I_MOVI_S (v,r,k) ->
+      I_MOVI_S (v,map_reg r,k)
 (* Morello *)
   | I_ALIGND (r1,r2,k) ->
       I_ALIGND(map_reg r1,map_reg r2,k)
@@ -1533,6 +1548,7 @@ let get_next = function
   | I_STR_SIMD _ | I_STR_P_SIMD _
   | I_MOV_VE _ | I_MOV_V _ | I_MOV_TG _ | I_MOV_FG _
   | I_MOV_S _
+  | I_MOVI_V _ | I_MOVI_S _
     -> [Label.Next;]
 
 include Pseudo.Make
@@ -1640,6 +1656,8 @@ include Pseudo.Make
         | I_LDR_P_SIMD (v,r1,r2,k) -> I_LDR_P_SIMD (v,r1,r2,k_tr k)
         | I_STR_SIMD (v,r1,r2,kr,s) -> I_STR_SIMD (v,r1,r2,kr_tr kr,ap_shift k_tr s)
         | I_STR_P_SIMD (v,r1,r2,k) -> I_STR_P_SIMD (v,r1,r2,k_tr k)
+        | I_MOVI_V (r,k) -> I_MOVI_V (r,k_tr k)
+        | I_MOVI_S (v,r,k) -> I_MOVI_S (v,r,k_tr k)
 
       let get_simd_rpt_selem ins rs = match ins with
       | I_LD1M _
@@ -1713,6 +1731,7 @@ include Pseudo.Make
         | I_UNSEAL _
         | I_MOV_VE _ | I_MOV_V _ | I_MOV_TG _ | I_MOV_FG _
         | I_MOV_S _
+        | I_MOVI_V _ | I_MOVI_S _
           -> 0
         | I_LD1M (rs, _, _)
         | I_LD2M (rs, _, _)
