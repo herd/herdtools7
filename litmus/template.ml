@@ -214,7 +214,7 @@ module Make(O:Config)(A:I) =
     let tag_reg reg = clean_reg (A.reg_to_string reg)
 
     let tag_reg_ref w reg =
-      sprintf "%%%s[%s]" (if w then "w" else "") (tag_reg reg)
+      sprintf "%%%s[%s]" (match w with Some c -> String.make 1 c | None -> "") (tag_reg reg)
 
     let dump_out_reg proc reg =
       OutUtils.fmt_out_reg
@@ -285,13 +285,14 @@ module Make(O:Config)(A:I) =
                 add "^" ;
                 do_rec (j+2)
             | _ ->
-                let w,ty,n,nxt =
+                let c,ty,n,nxt =
                   match t.memo.[j+1] with
-                  | 'w' -> true,t.memo.[j+2],digit (j+3),4
-                  | _ -> false,t.memo.[j+1],digit (j+2),3 in
+                  | 'w' | 'b' | 'h' | 's' | 'd' | 'q'
+                    -> Some t.memo.[j+1],t.memo.[j+2],digit (j+3),4
+                  | _ -> None ,t.memo.[j+1],digit (j+2),3 in
                 begin match ty with
-                | 'i' -> add (tag_reg_ref w (get_reg n t.inputs))
-                | 'o' -> add (tag_reg_ref w (get_reg n t.outputs))
+                | 'i' -> add (tag_reg_ref c (get_reg n t.inputs))
+                | 'o' -> add (tag_reg_ref c (get_reg n t.outputs))
                 | c -> internal (sprintf "bad escape '%c'" c)
                 end ;
                 do_rec (j+nxt)

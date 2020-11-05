@@ -410,6 +410,14 @@ module Make(V:Constant.S)(C:Config) =
       (try List.assoc s arrange_specifier with Not_found -> assert false)
     | _ -> assert false
 
+    let print_vecreg v io i = "^" ^ (match v with
+    | VSIMD8 -> "b"
+    | VSIMD16 -> "h"
+    | VSIMD32 -> "s"
+    | VSIMD64 -> "d"
+    | VSIMD128 -> "q")
+    ^ io ^ string_of_int i
+
     let print_simd_list rs io offset =
        String.concat "," (List.mapi (print_simd_reg io offset) rs)
 
@@ -455,6 +463,66 @@ module Make(V:Constant.S)(C:Config) =
           reg_env = (add_32x4 rs) @ [(rA,voidstar);(rB,quad)]}
     | _ -> Warn.fatal "Illegal form of %s instruction" memo
 
+    let load_pair_simd memo v r1 r2 r3 kr = match v,kr with
+    | VSIMD32,K 0 ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i0]" memo (print_vecreg VSIMD32 "o" 0) (print_vecreg VSIMD32 "o" 1);
+          inputs=[r3];
+          outputs=[r1;r2;];
+          reg_env= (add_32x4 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD32,K k ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i0,#%i]" memo (print_vecreg VSIMD32 "o" 0) (print_vecreg VSIMD32 "o" 1) k;
+          inputs=[r3];
+          outputs=[r1;r2;];
+          reg_env= (add_32x4 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD64,K 0 ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i0]" memo (print_vecreg VSIMD64 "o" 0) (print_vecreg VSIMD64 "o" 1);
+          inputs=[r3];
+          outputs=[r1;r2;];
+          reg_env= (add_32x4 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD64,K k ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i0,#%i]" memo (print_vecreg VSIMD64 "o" 0) (print_vecreg VSIMD64 "o" 1) k;
+          inputs=[r3];
+          outputs=[r1;r2;];
+          reg_env= (add_32x4 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD128,K 0 ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i0]" memo (print_vecreg VSIMD128 "o" 0) (print_vecreg VSIMD128 "o" 1);
+          inputs=[r3];
+          outputs=[r1;r2;];
+          reg_env= (add_32x4 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD128,K k ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i0,#%i]" memo (print_vecreg VSIMD128 "o" 0) (print_vecreg VSIMD128 "o" 1) k;
+          inputs=[r3];
+          outputs=[r1;r2;];
+          reg_env= (add_32x4 [r1;r2;]) @ [(r3,voidstar)]}
+    | _, _ -> assert false
+
+    let load_pair_p_simd memo v r1 r2 r3 k = match v with
+    | VSIMD32 ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i0],#%i" memo (print_vecreg VSIMD32 "o" 0) (print_vecreg VSIMD32 "o" 1) k;
+          inputs=[r3];
+          outputs=[r1;r2;];
+          reg_env= (add_32x4 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD64 ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i0],#%i" memo (print_vecreg VSIMD64 "o" 0) (print_vecreg VSIMD64 "o" 1) k;
+          inputs=[r3];
+          outputs=[r1;r2;];
+          reg_env= (add_32x4 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD128 ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i0],#%i" memo (print_vecreg VSIMD128 "o" 0) (print_vecreg VSIMD128 "o" 1) k;
+          inputs=[r3];
+          outputs=[r1;r2;];
+          reg_env= (add_32x4 [r1;r2;]) @ [(r3,voidstar)]}
+    | _ -> assert false
+
     let store_simd_s memo rs i rA kr = match kr with
     | K 0 ->
         { empty_ins with
@@ -490,6 +558,66 @@ module Make(V:Constant.S)(C:Config) =
         inputs = [rA;rB;] @ List.rev rs;
         reg_env = [(rA,voidstar);(rB,quad)] @ (add_32x4 rs)}
     | _ -> Warn.fatal "Illegal form of %s instruction" memo
+
+    let store_pair_simd memo v r1 r2 r3 kr = match v,kr with
+    | VSIMD32,K 0 ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i2]" memo (print_vecreg VSIMD32 "i" 0) (print_vecreg VSIMD32 "i" 1);
+          inputs = [r1;r2;r3];
+          outputs = [];
+          reg_env = (add_32x4 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD32,K k ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i2,#%i]" memo (print_vecreg VSIMD32 "i" 0) (print_vecreg VSIMD32 "i" 1) k;
+          inputs = [r1;r2;r3];
+          outputs = [];
+          reg_env = (add_32x4 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD64,K 0 ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i2]" memo (print_vecreg VSIMD64 "i" 0) (print_vecreg VSIMD64 "i" 1);
+          inputs = [r1;r2;r3];
+          outputs = [];
+          reg_env = (add_32x4 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD64,K k ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i2,#%i]" memo (print_vecreg VSIMD64 "i" 0) (print_vecreg VSIMD64 "i" 1) k;
+          inputs = [r1;r2;r3];
+          outputs = [];
+          reg_env = (add_32x4 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD128,K 0 ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i2]" memo (print_vecreg VSIMD128 "i" 0) (print_vecreg VSIMD128 "i" 1);
+          inputs = [r1;r2;r3];
+          outputs = [];
+          reg_env = (add_32x4 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD128,K k ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i2,#%i]" memo (print_vecreg VSIMD128 "i" 0) (print_vecreg VSIMD128 "i" 1) k;
+          inputs = [r1;r2;r3];
+          outputs = [];
+          reg_env = (add_32x4 [r1;r2;]) @ [(r3,voidstar)]}
+    | _,_ -> assert false
+
+    let store_pair_p_simd memo v r1 r2 r3 k = match v with
+    | VSIMD32 ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i2],#%i" memo (print_vecreg VSIMD32 "i" 0) (print_vecreg VSIMD32 "i" 1) k;
+          inputs = [r1;r2;r3];
+          outputs = [];
+          reg_env = (add_32x4 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD64 ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i2],#%i" memo (print_vecreg VSIMD64 "i" 0) (print_vecreg VSIMD64 "i" 1) k;
+          inputs = [r1;r2;r3];
+          outputs = [];
+          reg_env = (add_32x4 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD128 ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i2],#%i" memo (print_vecreg VSIMD128 "i" 0) (print_vecreg VSIMD128 "i" 1) k;
+          inputs = [r1;r2;r3];
+          outputs = [];
+          reg_env = (add_32x4 [r1;r2;]) @ [(r3,voidstar)]}
+    | _ -> assert false
 
 (* Compare and swap *)
     let type_of_variant = function
@@ -797,6 +925,14 @@ module Make(V:Constant.S)(C:Config) =
     | I_ST3M (rs,r2,kr) -> store_simd_m "ST3" rs r2 kr::k
     | I_ST4 (rs,i,r2,kr) -> store_simd_s "ST4" rs i r2 kr::k
     | I_ST4M (rs,r2,kr) -> store_simd_m "ST4" rs r2 kr::k
+    | I_LDP_SIMD (t,v,r1,r2,r3,kr) ->
+        load_pair_simd (match t with TT -> "ldp" | NT -> "ldnp") v r1 r2 r3 kr::k
+    | I_STP_SIMD (t,v,r1,r2,r3,kr) ->
+        store_pair_simd (match t with TT -> "stp" | NT -> "stnp") v r1 r2 r3 kr::k
+    | I_LDP_P_SIMD (t,v,r1,r2,r3,k1) ->
+        load_pair_p_simd (match t with TT -> "ldp" | NT -> "ldnp") v r1 r2 r3 k1::k
+    | I_STP_P_SIMD (t,v,r1,r2,r3,k1) ->
+        store_pair_p_simd (match t with TT -> "stp" | NT -> "stnp") v r1 r2 r3 k1::k
 (* Arithmetic *)
     | I_MOV (v,r,K i) ->  movk v r i::k
     | I_MOV (v,r1,RV (_,r2)) ->  movr v r1 r2::k
