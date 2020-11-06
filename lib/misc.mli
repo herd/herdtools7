@@ -47,6 +47,7 @@ val polymorphic_compare : 'a -> 'a -> int
 external int_compare : int -> int -> int = "caml_int_compare"
 val int_eq : int -> int -> bool
 val string_eq : string -> string -> bool
+val bool_eq : bool -> bool -> bool
 
 external identity : 'a -> 'a = "%identity"
 (* ignore argument(s) *)
@@ -134,6 +135,9 @@ val rem_dups : ('a -> 'a -> bool) -> 'a list -> 'a list
 val group : ('a -> 'a -> bool) -> 'a list -> 'a list list
 val group_iter : ('a -> 'a -> bool) -> ('a -> 'a list -> unit) -> 'a list -> unit
 val group_iteri : ('a -> 'a -> bool) -> (int -> 'a -> 'a list -> unit) -> 'a list -> unit
+
+(* Check that f yields the same result on all list elements *)
+val check_same : ('a -> 'a -> bool) -> ('b -> 'a) -> 'b list -> 'a option
 
 (* Lift boolean connectors to predicates *)
 val (|||) : ('a -> bool) -> ('a -> bool) -> 'a -> bool

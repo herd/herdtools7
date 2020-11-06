@@ -149,6 +149,7 @@ module Top (Conf:Config) = struct
             Model.Generic (P.parse fname)
         | _ -> m in
         check_arch_model arch m in
+
       let module ModelConfig = struct
         let bell_model_info = Conf.bell_model_info
         let model = model
@@ -167,6 +168,7 @@ module Top (Conf:Config) = struct
         let optace = Conf.optace
         let libfind = Conf.libfind
         let variant = Conf.variant
+        let dirty = DirtyBit.get splitted.Splitter.info
 
         let statelessrc11 = Conf.statelessrc11
       end in
@@ -237,7 +239,7 @@ module Top (Conf:Config) = struct
             module C = Conf
 
             let precision = Conf.precision
-            let dirty = DirtyBit.get splitted.Splitter.info
+            let dirty = ModelConfig.dirty
 
           end in
           let module AArch64S = AArch64Sem.Make(AArch64SemConf)(Int64Value) in

@@ -345,6 +345,7 @@ end = struct
   ]
 
   let arch_rels = []
+  and arch_dirty = []
 
   let is_isync _ = raise Misc.NoIsync
   let pp_isync = "???"
