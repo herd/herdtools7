@@ -101,6 +101,8 @@ include Arch.MakeArch(struct
           find_cst n >! fun n -> S_LSL(n)
       | S_LSR(n) ->
           find_cst n >! fun n -> S_LSR(n)
+      | S_MSL(n) ->
+          find_cst n >! fun n -> S_MSL(n)
       | S_ASR(n) ->
           find_cst n >! fun n -> S_ASR(n)
       | S_SXTW -> fun n -> S_SXTW, n
@@ -393,5 +395,8 @@ include Arch.MakeArch(struct
     | I_STP_SIMD _ | I_STP_P_SIMD _
     | I_LDR_SIMD _ | I_LDR_P_SIMD _
     | I_STR_SIMD _ | I_STR_P_SIMD _
+    | I_MOV_V _ | I_MOV_VE _ | I_MOV_S _
+    | I_MOV_FG _ | I_MOV_TG _
+    | I_MOVI_V _ | I_MOVI_S _
         -> Warn.fatal "Neon instructions are not implemented yet"
 end)
