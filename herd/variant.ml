@@ -52,7 +52,8 @@ let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
    "fullscdepend";"splittedrmw";"switchdepscwrite";"switchdepscresult";"lrscdiffok";
    "mixed";"dontcheckmixed";"weakpredicated"; "memtag";
-   "tagcheckprecise"; "tagcheckunprecise"; "toofar"; "deps"; "instances"; ]
+   "tagcheckprecise"; "tagcheckunprecise"; "precise"; "imprecise";
+   "toofar"; "deps"; "instances"; ]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -72,7 +73,7 @@ let parse s = match Misc.lowercase s with
 | "notweakpredicated"|"notweakpred" -> Some NotWeakPredicated
 | "tagmem"|"memtag" -> Some MemTag
 | "tagcheckprecise"|"precise" -> Some TagCheckPrecise
-| "tagcheckunprecise"|"unprecise" -> Some TagCheckUnprecise
+| "tagcheckimprecise"|"imprecise" -> Some TagCheckUnprecise
 | "toofar" -> Some TooFar
 | "deps" -> Some Deps
 | "instances"|"instance" -> Some Instances
@@ -101,7 +102,7 @@ let pp = function
   | NotWeakPredicated -> "NotWeakPredicated"
   | MemTag -> "memtag"
   | TagCheckPrecise -> "TagCheckPrecise"
-  | TagCheckUnprecise -> "TagCheckUnprecise"
+  | TagCheckUnprecise -> "TagCheckImprecise"
   | TooFar -> "TooFar"
   | Deps -> "Deps"
   | Instances -> "Instances"
@@ -125,3 +126,13 @@ let get_default a = function
       | _ -> true
       end
   | v -> Warn.fatal "No default for variant %s" (pp v)
+
+let set_precision r tag = 
+    try
+      r :=
+        (match tag with
+        | TagCheckPrecise -> true
+        | TagCheckUnprecise -> false
+        | _ -> raise Exit) ;
+      true
+    with Exit -> false

@@ -17,7 +17,6 @@
 module Make
     (TopConf:sig
       module C : Sem.Config
-      val precision : bool
       val dirty : DirtyBit.t
     end)
     (V:Value.S)
@@ -466,7 +465,7 @@ module Make
             delayed_check_tags a_virt ma ii
               (mm  >>! B.Next)
               (let mfault = mk_fault a_virt ii None in
-              if TopConf.precision then  mfault >>! B.Exit
+              if C.precision then  mfault >>! B.Exit
               else (mfault >>| mm) >>! B.Next))
 
       let lift_memtag_virt mop ma ii =
@@ -476,13 +475,13 @@ module Make
             delayed_check_tags a_virt ma ii
               (mm  >>! B.Next)
               (let mfault = ma >>= fun a -> mk_fault a ii None in
-              if TopConf.precision then  mfault >>! B.Exit
+              if C.precision then  mfault >>! B.Exit
               else (mfault >>| mm) >>! B.Next))
 
       let lift_kvm dir mop ma an ii mphy =
         let mfault ma a =
           ma >>= fun _ -> mk_fault a ii None
-              >>! if TopConf.precision then B.Exit else B.ReExec
+              >>! if C.precision then B.Exit else B.ReExec
         in
         M.delay_kont "6" ma
           (fun a ma ->

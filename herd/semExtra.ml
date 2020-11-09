@@ -21,6 +21,7 @@ module type Config = sig
   val verbose : int
   val optace : bool
   val debug : Debug_herd.t
+  val precision : bool
   val variant : Variant.t -> bool
   val endian : Endian.t option
   module PC : PrettyConf.S
