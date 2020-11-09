@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2013-present Institut National de Recherche en Informatique et *)
+(* Copyright 2020-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,29 +14,21 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Run a test from source file *)
+(** Parse in-test variant info *)
 
-module type Config = sig
-  val model : Model.t option
-  val archcheck : bool
-  val through : Model.through
-  val strictskip : bool
-  val cycles : StringSet.t
-  val bell_model_info : (string * BellModel.info) option
-  val macros : string option
-  val check_name : string -> bool
-  val check_rename : string -> string option
-  val libfind : string -> string
-  include GenParser.Config
-  include Top_herd.CommonConfig
-  include Sem.Config
-
-  val statelessrc11 : bool
-  val byte : MachSize.Tag.t
-end
-
-module Top :
-  functor (C : Config) ->
-  sig
-    val from_file : string -> TestHash.env -> TestHash.env
-  end
+module Make : functor 
+  (Var:sig
+      module Opt:sig
+        include ParseTag.Opt
+        val compare : t -> t -> int
+      end
+      val info : MiscParser.info
+      val precision : bool
+      val variant : Opt.t -> bool
+      val set_precision : bool ref -> Opt.t -> bool
+    end) ->
+      sig
+        type t = Var.Opt.t
+        val precision : bool
+        val variant : t -> bool
+      end

@@ -223,7 +223,7 @@ let hash_key =  "Hash"
 and stable_key = "Stable"
 and align_key = "Align"
 and tthm_key = "TTHM"
-
+and variant_key = "Variant"
 let low_hash = "hash"
 
 let get_info_on_info key =

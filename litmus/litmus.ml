@@ -63,7 +63,12 @@ let opts =
    argfloato "-timelimit" Option.timelimit "bound on runtime (presi only)" ;
 
 (* Modes *)
-   begin let module P = ParseTag.MakeS(Variant_litmus) in
+   begin
+     let module Opt = struct
+       include Variant_litmus
+       let setnow tag = set_precision precision tag 
+     end in
+     let module P = ParseTag.MakeS(Opt) in
    P.parse "-variant" Option.variant "select a variation" end ;
    begin let module P = ParseTag.Make(Barrier) in
    P.parse "-barrier" Option.barrier "set type of barriers" end ;
@@ -304,6 +309,7 @@ let () =
           end
       | Some b -> b
       let ascall = !ascall
+      let precision = !precision
       let variant = !variant
       let crossrun = match !mode,!crossrun with
       | Mode.Kvm,Crossrun.Qemu s -> Crossrun.Kvm s

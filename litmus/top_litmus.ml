@@ -57,6 +57,7 @@ module type CommonConfig = sig
   val c11 : bool
   val c11_fence : bool
   val ascall : bool
+  val precision : bool
   val variant : Variant_litmus.t -> bool
   val stdio : bool
   val xy : bool
@@ -113,6 +114,7 @@ module type Config = sig
   val noccs : int
   val timelimit : float option
   val check_nstates : string -> int option
+  val precision : bool
   (* End of additions *)
   include Skel.Config
   include Run_litmus.Config
@@ -124,14 +126,6 @@ end
 module Top (OT:TopConfig) (Tar:Tar.S) : sig
   val from_files : string list -> unit
 end = struct
-
-  let check_variant v a =
-    if OT.variant v && not (Variant_litmus.ok v a) then
-      Warn.user_error
-        "variant %s does not apply to arch %s"
-        (Variant_litmus.pp v)
-        (Archs.pp a)
-
 
   (************************************************************)
   (* Some configuration dependent stuff, to be performed once *)
@@ -227,6 +221,14 @@ end = struct
           begin try Sys.remove outname with _ -> () end ;
           raise e
 
+      let check_variant v a =
+        if O.variant v && not (Variant_litmus.ok v a) then
+          Warn.user_error
+            "variant %s does not apply to arch %s"
+            (Variant_litmus.pp v)
+            (Archs.pp a)
+
+
       let limit_ok nprocs = match O.avail with
         | None|Some 0 -> true
         | Some navail -> not O.limit || nprocs <= navail
@@ -238,7 +240,6 @@ end = struct
              Warn.warn_always
                "%stest with more threads (%i) than available (%i) is compiled"
                (Pos.str_pos0 name.Name.file) nprocs navail
-
       let compile
             parse count_procs compile allocate
             cycles hash_env
@@ -392,6 +393,16 @@ end = struct
       SP.split name in_chan in
     let tname = splitted.Splitter.name.Name.name in
     if OT.check_name tname then begin
+        (* Read variant field in test *)
+        let module TestConf =
+          TestVariant.Make
+            (struct
+              module Opt = Variant_litmus
+              let set_precision = Variant_litmus.set_precision
+              let info = splitted.Splitter.info
+              let precision = OT.precision
+              let variant = OT.variant
+            end) in
         (* Then call appropriate compiler, depending upon arch *)
         let opt = OT.mkopt (Option.get_default arch) in
         let word = Option.get_word opt in
@@ -414,10 +425,12 @@ end = struct
           let hexa = OT.hexa
           let mode = OT.mode
         end in
-        let module OX = struct
-            include OT
-            include ODep
-            let debuglexer = debuglexer
+        let module Cfg = struct
+          include OT
+          let precision = TestConf.precision
+          let variant = TestConf.variant
+          include ODep
+          let debuglexer = debuglexer
           let sysarch =
             match Archs.get_sysarch arch  OT.carch with
             | Some a -> a
@@ -428,7 +441,6 @@ end = struct
                 Warn.fatal "no support for arch '%s'" (Archs.pp arch)
             end
           end in
-        let module Cfg = OX in
         let aux = function
           | `PPC ->
              begin match OT.usearch with
@@ -562,7 +574,7 @@ end = struct
                  let comment =  match OT.asmcomment with
                    | Some c -> c
                    | None ->
-                      begin match OX.sysarch with
+                      begin match Cfg.sysarch with
                       | `PPC -> PPCArch_litmus.comment
                       | `X86 -> X86Arch_litmus.comment
                       | `X86_64 -> X86_64Arch_litmus.comment

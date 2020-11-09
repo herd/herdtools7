@@ -34,7 +34,6 @@ module type Config = sig
 
   val statelessrc11 : bool
   val byte : MachSize.Tag.t
-  val precision : bool
 end
 
 (**********************)
@@ -128,6 +127,24 @@ module Top (Conf:Config) = struct
     let (splitted:Splitter.result) =  SP.split name chan in
     let tname = splitted.Splitter.name.Name.name in
     if Conf.check_name tname then begin
+      let module Conf = struct (* override the precision and variant fields *)
+
+       (* Modify variant with the 'Variant' field of test *)
+        module TestConf =
+          TestVariant.Make
+            (struct
+              module Opt = Variant
+              let set_precision = Variant.set_precision
+              let info = splitted.Splitter.info
+              let precision = Conf.precision
+              let variant = Conf.variant
+            end)
+        (* Override *)
+        include Conf
+        let precision = TestConf.precision
+        let variant = TestConf.variant
+      end in
+(* Get arch *)      
       let arch = splitted.Splitter.arch in
 (* Now, we have the architecture, call specific parsers
    generically. *)
@@ -149,6 +166,7 @@ module Top (Conf:Config) = struct
             Model.Generic (P.parse fname)
         | _ -> m in
         check_arch_model arch m in
+
 
       let module ModelConfig = struct
         let bell_model_info = Conf.bell_model_info
@@ -237,10 +255,7 @@ module Top (Conf:Config) = struct
           end in
           let module AArch64SemConf = struct
             module C = Conf
-
-            let precision = Conf.precision
             let dirty = ModelConfig.dirty
-
           end in
           let module AArch64S = AArch64Sem.Make(AArch64SemConf)(Int64Value) in
           let module AArch64Barrier = struct
