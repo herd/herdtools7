@@ -311,6 +311,18 @@ end = struct
 
   let valid_pte act = is_valid_val (written_of act) || is_valid_val (read_of act)
 
+  let get_pteval act = match written_of act,read_of act with
+  | None,None -> None
+  | (Some v,None)
+  | (None,Some v)
+      ->
+        let open Constant in
+        begin match v with
+        |  A.V.Val (PteVal v) -> Some v
+        | _ -> None
+        end
+  | Some _,Some _ -> Warn.fatal "No Amo action on pteval"
+
 (* relative to the registers of the given proc *)
   let is_reg_store a (p:int) = match a with
   | Access (W,A.Location_reg (q,_),_,_,_,_,_) -> p = q
@@ -497,6 +509,32 @@ end = struct
           | _,_ -> false) in
 
       [("inv-domain",inv_domain_act); ("alias",alias_act);]
+    else []
+
+  let arch_dirty =
+    if kvm then
+      let open DirtyBit in
+      let check_pred f d  =
+        fun act ->
+          is_PTE_access act &&
+          (match get_pteval act with
+          | None -> false
+          | Some pteval -> f d pteval) in
+      let read_only =
+        check_pred
+          (fun t p ->
+            let open PTEVal in
+            (p.af=1 || p.af=0 && t.my_ha ()) &&
+            (p.db=0 && (not (t.my_hd ()) || p.dbm=0)))
+
+      and read_write =
+        check_pred
+          (fun t p ->
+            let open PTEVal in
+            (p.af=1 || (p.af=0 && t.my_ha ())) &&
+            (p.db=1 || (p.db=0 && p.dbm=1 && t.my_hd ()))) in
+      ["ReadOnly",read_only;
+       "ReadWrite",read_write;]
     else []
 
   let is_isync act = match act with

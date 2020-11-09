@@ -23,5 +23,7 @@ type t =
      some_hd : bool;
    }
 
+type my_t = { my_ha : unit -> bool; my_hd : unit -> bool; }
+
 val get : MiscParser.info -> t
  

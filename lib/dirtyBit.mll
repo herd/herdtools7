@@ -24,6 +24,8 @@
      some_hd : bool;
    }
 
+type my_t = { my_ha : unit -> bool; my_hd : unit -> bool; }
+
 type nat = HA | HD | SW
 
 exception Error

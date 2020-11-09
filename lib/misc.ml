@@ -53,6 +53,10 @@ external int_compare : int -> int -> int = "caml_int_compare"
 let int_eq (x:int) (y:int) = x == y
 let string_eq (s1:string) (s2:string) = (=) s1 s2
 
+let bool_eq b1 b2 = match b1,b2 with
+| (true,true)|(false,false) -> true
+| (false,true)|(true,false) -> false
+
 external identity : 'a -> 'a = "%identity"
 
 let ing _ = ()
@@ -400,6 +404,19 @@ let group_iteri same do_it xs =
     | [] -> assert false
     | x::_ -> do_it k x xs)
     xss
+
+(* Check f yield eq results on a list, and returns the result  *)
+
+let check_same eq f xs =
+  try
+    List.fold_left
+      (fun prev x -> match prev with
+      | None -> Some (f x)
+      | Some y0 ->
+          if eq y0 (f x) then prev
+          else raise Exit)
+      None xs
+  with Exit -> None
 
 (* Bool's *)
 

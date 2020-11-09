@@ -295,6 +295,45 @@ module Make
              (fun (k,a) ->
                k,lazy (E.EventSet.filter (fun e -> a e.E.action) evts))
              E.Act.arch_sets) in
+      let m =
+        if kvm then
+          let my_t0 = lazy begin
+            let open DirtyBit in
+            let np = test.Test_herd.nice_prog in
+            let ha0 =
+              Misc.check_same
+                Misc.bool_eq
+                (fun ((proc,_),_) -> O.dirty.ha proc)
+                np
+            and hd0 =
+              Misc.check_same
+                Misc.bool_eq
+                (fun ((proc,_),_) -> O.dirty.hd proc)
+                np in
+            let tr_h h = function
+              | None -> fun () ->
+                  Warn.fatal "All procs must have the same value of the '%s' flag" h
+              | Some h -> fun () -> h in
+            {my_ha=tr_h "HA" ha0; my_hd=tr_h "HD" hd0;}
+          end in
+          I.add_sets m
+            (List.map
+               (fun (k,a) ->
+                 k,lazy begin
+                   let open DirtyBit in
+                   let tr_proc proc =
+                     let my_ha () = O.dirty.ha proc
+                     and my_hd () = O.dirty.hd proc in
+                     { my_ha; my_hd; } in
+                   E.EventSet.filter
+                     (fun e ->
+                       match E.proc_of e with
+                       | Some proc -> a (tr_proc proc) e.E.action
+                       | None -> a (Lazy.force my_t0) e.E.action)
+                     evts
+                 end)
+               E.Act.arch_dirty)
+        else m in
 (* Define empty fence relation
    (for the few models that apply to several archs) *)
       let m = I.add_rels m
