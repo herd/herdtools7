@@ -41,6 +41,7 @@ module type Config = sig
   val cacheflush : bool
   val exit_cond : bool
   include DumpParams.Config
+  val precision : bool
   val variant : Variant_litmus.t -> bool
 end
 
