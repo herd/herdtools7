@@ -401,8 +401,13 @@ module Make
         if do_affinity then begin
           O.o "#include \"affinity.h\""
         end ;
-        if Cfg.sysarch = `AArch64 then O.o "#include <arm_neon.h>";
         O.o "" ;
+        if Cfg.sysarch = `AArch64 then begin
+          O.o "/* 128 bit types */" ;
+          O.o "typedef __int128 int128_t;" ;
+          O.o "typedef unsigned __int128 uint128_t;" ;
+          O.o "" ;
+       end;
         O.o "/* params */" ;
         O.o "typedef struct {" ;
         O.oi "int verbose;" ;

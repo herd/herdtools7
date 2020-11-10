@@ -29,7 +29,7 @@ type t =
 let voidstar = Pointer (Base "void")
 let word = Base "int"
 let quad = Base "int64_t"
-let int32x4 = Base "int32x4_t"
+let int128 = Base "int128_t"
 
 let rec  dump = function
   | Base s -> s
@@ -130,8 +130,8 @@ let same_base t0 t1 = match t0,t1 with
     | ("int8_t","uint8_t")|("uint8_t","int8_t")
     | ("int16_t","uint16_t")|("uint16_t","int16_t")
     | ("int32_t","uint32_t")|("uint32_t","int32_t")
-    | ("int32x4_t", "uint32x4_t")|("uint32x4_t","int32x4_t")
     | ("int64_t","uint64_t")|("uint64_t","int64_t")
+    | ("int128_t", "uint128_t")|("uint128_t","int128_t")
       -> true
     | _,_ -> false
     end
