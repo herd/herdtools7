@@ -1,0 +1,10 @@
+Test A95 Required
+States 1
+0:X1=3;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X1=3)
+Observation A95 Always 1 0
+Hash=993a5ac27bc3548b67b13f7c2abec3b5
+
