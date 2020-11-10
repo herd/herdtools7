@@ -53,6 +53,8 @@ let atom_to_bank _ = Code.Ord
 
 include NoMixed
 
+let set_pteval _ p _ = p
+
 (**********)
 (* Fences *)
 (**********)

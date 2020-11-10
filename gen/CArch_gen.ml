@@ -59,7 +59,10 @@ let atom_to_bank _ = Code.Ord
 
 include NoMixed
 
+let set_pteval _ p _ = p
+
 (* Fences, to be completed *)
+
 type fence = MemOrder.t
 
 let is_isync _ = false

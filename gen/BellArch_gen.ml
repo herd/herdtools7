@@ -200,6 +200,8 @@ let varatom_rmw = match varatom with
 
 include NoMixed
 
+let set_pteval _ p _ = p
+
 (* End of atoms *)
 
 (**********)
