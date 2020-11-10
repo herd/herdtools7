@@ -61,6 +61,7 @@ module Make(V:Constant.S)(C:Config) =
     let pp_shifter = function
       | S_LSL(s) -> Printf.sprintf "LSL #%d" s
       | S_LSR(s) -> Printf.sprintf "LSR #%d" s
+      | S_MSL(s) -> Printf.sprintf "MSL #%d" s
       | S_ASR(s) -> Printf.sprintf "ASR #%d" s
       | S_SXTW -> "SXTW"
       | S_UXTW -> "UXTW"
@@ -711,6 +712,85 @@ module Make(V:Constant.S)(C:Config) =
           reg_env = (add_32x4 [r1;r2;]) @ [(r3,voidstar)]}
     | _ -> assert false
 
+    let mov_simd_ve r1 i1 r2 i2 =
+      { empty_ins with
+        memo = sprintf "mov %s[%i], %s[%i]" (print_simd_reg "o" 0 0 r1) i1 (print_simd_reg "o" 0 1 r2) i2;
+        inputs = [];
+        outputs = [r1;r2;];
+        reg_env = (add_32x4 [r1;r2;]);}
+
+    let mov_simd_v r1 r2 =
+      { empty_ins with
+        memo = sprintf "mov %s, %s" (print_simd_reg "o" 0 0 r1) (print_simd_reg "o" 0 1 r2);
+        inputs = [];
+        outputs = [r1;r2;];
+        reg_env = (add_32x4 [r1;r2]);}
+
+    let mov_simd_s v r1 r2 i =
+      { empty_ins with
+        memo = sprintf "mov %s, %s[%i]" (print_vecreg v "o" 0) (print_simd_reg "o" 0 1 r2) i;
+        inputs = [];
+        outputs = [r1;r2;];
+        reg_env = (add_32x4 [r1;r2])}
+
+    let mov_simd_tg v r1 r2 i =
+      { empty_ins with
+        memo = sprintf "mov %s, %s[%i]"
+          (match v with | V32 -> "^wo0" | V64 -> "^o0" | V128 -> assert false)
+          (print_simd_reg "o" 0 1 r2)
+          i;
+        inputs = [];
+        outputs = [r1;r2;];
+        reg_env = ((match v with
+          | V32 -> add_w
+          | V64 -> add_q
+          | V128 -> assert false)
+        [r1;]) @ (add_32x4 [r2;])}
+
+    let mov_simd_fg r1 i v r2 =
+      { empty_ins with
+        memo = sprintf "mov %s[%i],%s"
+          (print_simd_reg "o" 0 0 r1)
+          i
+          (match v with | V32 -> "^wo1" | V64 -> "^o1" | V128 -> assert false);
+        inputs = [];
+        outputs = [r1;r2;];
+        reg_env = (add_32x4 [r1;]) @ ((
+          match v with
+          | V32 -> add_w
+          | V64 -> add_q
+          | V128 -> assert false) [r2;])}
+
+    let movi_s v r k = match v with
+    | VSIMD64 ->
+      { empty_ins with
+        memo = sprintf "movi %s, #%i" (print_vecreg v "o" 0) k;
+        inputs = [];
+        outputs = [r;];
+        reg_env = (add_32x4 [r])}
+    | _ -> assert false
+
+    let movi_v r k s = match s with
+    | S_NOEXT ->
+      { empty_ins with
+        memo = sprintf "movi %s,#%i" (print_simd_reg "o" 0 0 r) k;
+        inputs = [];
+        outputs = [r;];
+        reg_env = (add_32x4 [r])}
+    | S_LSL(ks) ->
+      { empty_ins with
+        memo = sprintf "movi %s,#%i,%s" (print_simd_reg "o" 0 0 r) k (pp_shifter (S_LSL ks));
+        inputs = [];
+        outputs = [r;];
+        reg_env = (add_32x4 [r])}
+    | S_MSL(ks) ->
+      { empty_ins with
+        memo = sprintf "movi %s,#%i,%s" (print_simd_reg "o" 0 0 r) k (pp_shifter (S_MSL ks));
+        inputs = [];
+        outputs = [r;];
+        reg_env = (add_32x4 [r])}
+    | _ -> assert false
+
 (* Compare and swap *)
     let type_of_variant = function
       | V32 -> word | V64 -> quad | V128 -> assert false
@@ -1029,6 +1109,13 @@ module Make(V:Constant.S)(C:Config) =
     | I_LDR_P_SIMD (v,r1,r2,k1) -> load_simd_p v r1 r2 k1::k
     | I_STR_SIMD (v,r1,r2,k1,s) -> store_simd v r1 r2 k1 s::k
     | I_STR_P_SIMD (v,r1,r2,k1) -> store_simd_p v r1 r2 k1::k
+    | I_MOV_VE (r1,i1,r2,i2) -> mov_simd_ve r1 i1 r2 i2::k
+    | I_MOV_V (r1,r2) -> mov_simd_v r1 r2::k
+    | I_MOV_FG (r1,i,v,r2) -> mov_simd_fg r1 i v r2::k
+    | I_MOV_TG (v,r1,r2,i) -> mov_simd_tg v r1 r2 i::k
+    | I_MOVI_S (v,r,k1) -> movi_s v r k1::k
+    | I_MOVI_V (r,kr,s) -> movi_v r kr s::k
+    | I_MOV_S (v,r1,r2,i) -> mov_simd_s v r1 r2 i::k
 (* Arithmetic *)
     | I_MOV (v,r,K i) ->  movk v r i::k
     | I_MOV (v,r1,RV (_,r2)) ->  movr v r1 r2::k
