@@ -66,7 +66,7 @@ module Make
     end = struct
       let k_nkvm x = if Cfg.is_kvm then "" else x
       let do_ascall = Cfg.ascall || Cfg.is_kvm
-      let do_precise = Cfg.variant Variant_litmus.Precise
+      let do_precise = Cfg.precision
 
       open CType
       module G = Global_litmus
