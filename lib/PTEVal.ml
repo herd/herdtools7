@@ -28,6 +28,8 @@ type t = {
 let default s =
   { oa=Misc.add_physical s; valid=1; af=1; db=1; dbm=0; }
 
+let set_oa p s = { p with oa = Misc.add_physical s; }
+
 let is_default t = t.valid=1 && t.af=1 && t.db=1 && t.dbm=0
 
 let pp p =
@@ -74,3 +76,10 @@ let compare =
           (lex_compare
              (fun p1 p2 -> Misc.int_compare p1.dbm p2.dbm)
              (fun p1 p2 -> Misc.int_compare p1.valid p2.valid))))
+
+let eq p1 p2 =
+  Misc.string_eq p1.oa p2.oa &&
+  Misc.int_eq p1.af p2.af &&
+  Misc.int_eq p1.db p2.db &&
+  Misc.int_eq p1.dbm p2.dbm &&
+  Misc.int_eq p1.valid p2.valid
