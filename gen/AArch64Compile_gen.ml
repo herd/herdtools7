@@ -144,7 +144,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let do_str v r1 r2 = I_STR (v,r1,r2,K 0)
     let str = do_str vloc
     let stg r1 r2 = I_STG (r1,r2,K 0)
-    let stlr r1 r2 = I_STLR (vloc,r1,r2)
+    let do_stlr v r1 r2 = I_STLR (v,r1,r2)
+    let stlr = do_stlr vloc
     let do_str_idx v r1 r2 idx = I_STR (vloc,r1,r2,RV (v,idx))
     let str_idx = do_str_idx vloc
     let stxr r1 r2 r3 = I_STXR (vloc,YY,r1,r2,r3)
@@ -744,9 +745,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let rR,cs2,st = do_emit_sta_mixed sz o rw st p init rW rA in
       rR,init,csi@pseudo cs1@cs2,st
 
-    let emit_set_pteval st p init v loc =
+    let emit_set_pteval rel st p init v loc =
       let rA,init,st = U.next_init st p init loc in
       let rB,init,st = U.emit_pteval st p init v in
+      let do_str = if rel then do_stlr else do_str in
       init,pseudo [do_str A64.V64 rB rA],st
 
 (**********)
@@ -854,11 +856,23 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | W,Some (Tag,None) ->
             let init,cs,st = STG.emit_store st p init e in
             None,init,cs,st
-        | R,Some (Pte Read,None) ->
-            let r,init,cs,st = LDR.emit_load_var A64.V64 st p init (Misc.add_pte loc) in
+        | R,Some (Pte rk,None) ->
+            let emit = match rk with
+            | Read -> LDR.emit_load_var
+            | ReadAcq -> LDAR.emit_load_var
+            | ReadAcqPc -> LDAPR.emit_load_var
+            | _ ->
+                Warn.fatal
+                  "Annotation %s on a read" (A64.pp_atom_pte rk) in
+            let r,init,cs,st = emit A64.V64 st p init (Misc.add_pte loc) in
             Some r,init,cs,st
         | W,Some (Pte (Set _),None) ->
-            let init,cs,st = emit_set_pteval st p init e.C.pte (Misc.add_pte loc) in
+            let init,cs,st =
+              emit_set_pteval false st p init e.C.pte (Misc.add_pte loc) in
+            None,init,cs,st
+        | W,Some (Pte (SetRel _),None) ->
+            let init,cs,st =
+              emit_set_pteval true st p init e.C.pte (Misc.add_pte loc) in
             None,init,cs,st
         | _,Some (Pte _,_) -> assert false
         | _,Some (Plain,None) -> assert false
@@ -1179,7 +1193,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | (W,(Some (Pte (Set _),None)))
           | (R,(Some (Pte Read,None)))
             ->
-              Warn.fatal "Not Yet"
+              Warn.fatal "Not Yet Dep Addr on Pte"
           | (W|R),Some (Pte _,_) ->
               assert false
           | W,Some (Tag,Some _) -> assert false
@@ -1274,8 +1288,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | Some (Tag, None) ->
               let init,cs,st = STG.emit_store_reg st p init loc r2 in
               None,init,cs2@cs,st
-          | Some (Pte (Set _),None) -> Warn.fatal "Not Yet either"
-          | Some ((Pte _,Some _)|(Pte Read,_)) -> assert false
+          | Some (Pte (Set _|SetRel _),None) ->
+              Warn.fatal "Not Yet Dep Data on Pte"
+          | Some ((Pte _,Some _)|(Pte (Read|ReadAcq|ReadAcqPc),_))
+            -> assert false
           | Some (Plain,None) -> assert false
           | Some (Tag,Some _) -> assert false
           end

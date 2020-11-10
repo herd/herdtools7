@@ -17,7 +17,8 @@
 (* Edges, ie specifications of an event pair in a model relation  *)
 
 module Config = struct let variant _ = false end
-let dbg = false
+
+let dbg = 0
 
 module type S = sig
   open Code
@@ -476,7 +477,7 @@ let fold_tedges f r =
   let ta = Hashtbl.create  37
 
   let add_lxm lxm a =
-    if dbg then eprintf "ATOM: %s\n" lxm ;
+    if dbg > 1 then eprintf "ATOM: %s\n" lxm ;
     try
       let old = Hashtbl.find ta lxm in
       assert (F.compare_atom old a = 0) ;
@@ -510,7 +511,7 @@ let fold_tedges f r =
   let t = Hashtbl.create 101
 
   let add_lxm lxm e =
-    if dbg then eprintf "LXM: %s\n" lxm ;
+    if dbg > 1 then eprintf "LXM: %s\n" lxm ;
     try
       let old = Hashtbl.find t lxm in
       if compare old e <> 0 then begin
@@ -741,9 +742,16 @@ and do_set_src d e = match e with
   | Node _ -> { e with a1=a; a2=a;}
   | _ -> { e with a2=a;}
 
-(* Warning: resolve_pair cannot fail, instead it must leave things as they are... *)
+(*
+ resolve_pair e1 e2, merges the end annotatin of e1 with
+ the start annotation of e2.
+ Warning: resolve_pair cannot fail, instead it must leave
+ e1 and e2 as they are...
+*)
   let resolve_pair e1 e2 =
-(*    eprintf "Resolve pair <%s,%s> -> " (debug_edge e1)  (debug_edge e2) ; *)
+    if dbg > 0 then
+      eprintf
+        "Resolve pair <%s,%s> -> " (debug_edge e1)  (debug_edge e2) ;
     let e1,e2 =
       try
         let d1 = dir_tgt e1 and d2 = dir_src e2 in
@@ -764,21 +772,28 @@ and do_set_src d e = match e with
           | Some _ as a ->
               set_a2 e1 a,set_a1 e2 a
           end in
-(*    eprintf "<%s,%s>\n" (debug_edge e1) (debug_edge e2) ; *)
+    if dbg > 0 then
+      eprintf "<%s,%s>\n" (debug_edge e1) (debug_edge e2) ;
     r
 
+  (* Function merge_pair merges two versions of the same edge with
+     different annotations and direction resolution.
+    It cannot fail *)
   let merge_dir d1 d2 = match d1,d2 with
   | (Irr,Dir d)|(Dir d,Irr) -> d
   | Dir d1,Dir d2 -> assert (d1=d2) ; d1
   | (Irr,Irr)|(NoDir,_)|(_,NoDir) -> assert false
 
-  let merge_atom a1 a2 = match a1,a2 with
+  let merge_atomo a1 a2 = match a1,a2 with
   | None,Some _ -> a2
   | Some _,None -> a1
   | None,None -> None
   | Some a1,Some a2 ->
       begin match F.merge_atoms a1 a2 with
-      | None -> assert false
+      | None ->
+          Warn.fatal
+            "Atoms %s and %s *must* be mergeable"
+            (F.pp_atom a1) (F.pp_atom a2)
       | Some _ as a -> a
       end
 
@@ -789,7 +804,7 @@ and do_set_src d e = match e with
       let tgt = merge_dir (dir_tgt e1) (dir_tgt e2)
       and src = merge_dir (dir_src e1) (dir_src e2) in
       let e = set_tgt tgt (set_src src e1) in
-      { e with a1 = merge_atom e1.a1 e2.a1; a2 = merge_atom e1.a2 e2.a2; }
+      { e with a1 = merge_atomo e1.a1 e2.a1; a2 = merge_atomo e1.a2 e2.a2; }
 
   let remove_id = List.filter (fun e -> not (is_id e.edge))
 
@@ -810,7 +825,7 @@ and do_set_src d e = match e with
             let _,e1,_ = find_non_insert es0 in
             let e,e1 = resolve_pair e e1 in
             e1,e,es
-          with Not_found -> Warn.user_error "No non insert node in cycle"
+          with Not_found -> Warn.user_error "No non-insert node in cycle"
           end
       and do_recs = function
 (* This case is handled by Not_found handler above *)
