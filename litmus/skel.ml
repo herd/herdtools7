@@ -1138,6 +1138,10 @@ module Make
             | Indirect,_ ->
                 let load = U.do_load t (wrap addr) in
                 sprintf "%s != %s" load (A.Out.dump_v v)
+            | (Direct,Array _) ->
+                let load = U.do_load t (wrap addr) in
+                sprintf "%s != %s"
+                  load (sprintf "%s_values[_j]" a)
             | (Direct,_) ->
                 let load = U.do_load t (wrap addr) in
                 sprintf "%s != %s"
@@ -1145,11 +1149,12 @@ module Make
           List.iter
             (fun (s,t as x) -> match t with
             | Base "mtx_t" -> ()
-            | Array (t,sz) ->
+            | Array (_,sz) ->
+                O.fii "%s %s_values = %s;" (SkelUtil.type_name s) s (dump_a_v_casted (find_global_init s test));
                 O.fii "for (int _j = 0 ; _j < %i ; _j++) {" sz ;
                 O.fiii "if (%s%s) fatal(\"%s, check_globals failed\");"
                   (if do_randompl then "rand_bit(&(_a->seed)) && " else "")
-                  (dump_test dump_addr (sprintf "(%s)[_j]") (s,Base t))
+                  (dump_test dump_addr (sprintf "(%s)[_j]") (s,t))
                   doc.Name.name ;
                 O.fii "}"
             | _ ->
@@ -1589,9 +1594,10 @@ module Make
                 | CType.Array (_,sz) ->
                     let pp_a = tag a
                     and pp_v = dump_a_v_casted v in
+                    O.fii "%s %s_values = %s;" (SkelUtil.type_name a) a pp_v;
                     let ins =
                       U.do_store t
-                        (sprintf "(%s)[_j]" pp_a) pp_v in
+                        (sprintf "(%s)[_j]" pp_a) (sprintf "%s_values[_j]" a) in
                     sprintf "for (int _j = 0 ; _j < %i; _j++) %s" sz ins
                 | _ ->
                     if U.is_aligned a env then
