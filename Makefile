@@ -70,12 +70,15 @@ test:: $(D)-test
 	@ echo "OCaml unit tests: OK"
 
 dune-test:
+	@ echo
 	dune runtest
 
 ocb-test:
+	@ echo
 	./ocb-test.sh
 
 test::
+	@ echo
 	$(HERD_REGRESSION_TEST) \
 		-herd-path $(HERD) \
 		-libdir-path ./herd/libdir \
@@ -84,6 +87,7 @@ test::
 	@ echo "herd7 AArch64 instructions tests: OK"
 
 test::
+	@ echo
 	$(HERD_DIYCROSS_REGRESSION_TEST) \
 		-herd-path $(HERD) \
 		-diycross-path $(DIYCROSS) \
