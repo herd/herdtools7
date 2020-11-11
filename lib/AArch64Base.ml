@@ -277,7 +277,11 @@ let pp_wreg r = match r with
 | ResAddr -> "Res"
 | _ -> try List.assoc r wregs with Not_found -> assert false
 
-let reg_compare = compare
+let reg_compare r1 r2 =
+  let strip_reg r = match r with
+  | Vreg (v,_) -> SIMDreg v
+  | _ -> r in
+  compare (strip_reg r1) (strip_reg r2)
 
 let symb_reg_name = function
   | Symbolic_reg r -> Some r
