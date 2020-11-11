@@ -26,7 +26,7 @@
 static inline void litmus_init(void) {}
 
 static inline pteval_t *litmus_tr_pte(void *p) {
-  return tr_pte(p);
+  return mmu_get_pte(mmu_idmap, (uintptr_t)p);
 }
 
 static inline void litmus_flush_tlb(void *p) {
