@@ -16,6 +16,11 @@
 (****************************************************************************)
 
 module A = AArch64Base
+
+(* In such a case extension is mandatatory *)
+let check_noext = function
+  | A.RV (A.V32,_) -> raise Parsing.Parse_error
+  | _ -> ()
 %}
 
 %token EOF
@@ -733,7 +738,7 @@ instr:
 | ASR xreg COMMA xreg COMMA kr
   { A.I_OP3 (A.V64, AArch64Base.ASR, $2, $4, $6, A.S_NOEXT) }
 | OP xreg COMMA xreg COMMA kr
-  { A.I_OP3 (A.V64,$1,$2,$4,$6, A.S_NOEXT) }
+  { check_noext $6 ; A.I_OP3 (A.V64,$1,$2,$4,$6, A.S_NOEXT) }
 | OP xreg COMMA xreg COMMA kr COMMA shift
   { A.I_OP3 (A.V64,$1,$2,$4,$6, $8) }
 | OP wreg COMMA wreg COMMA kwr
@@ -741,7 +746,7 @@ instr:
 | OP wreg COMMA wreg COMMA kwr COMMA shift
   { A.I_OP3 (A.V32,$1,$2,$4,$6, $8) }
 | ADD xreg COMMA xreg COMMA kr
-  { A.I_OP3 (A.V64,A.ADD,$2,$4,$6, A.S_NOEXT) }
+  { check_noext $6; A.I_OP3 (A.V64,A.ADD,$2,$4,$6, A.S_NOEXT) }
 | ADD xreg COMMA xreg COMMA kr COMMA shift
   { A.I_OP3 (A.V64,A.ADD,$2,$4,$6, $8) }
 | ADD wreg COMMA wreg COMMA kwr
@@ -751,7 +756,7 @@ instr:
 | ADD creg COMMA creg COMMA kxr
   { A.I_OP3 (A.V128,A.ADD,$2,$4,$6, A.S_NOEXT) }
 | SUB xreg COMMA xreg COMMA kr
-  { A.I_OP3 (A.V64,A.SUB,$2,$4,$6, A.S_NOEXT) }
+  { check_noext $6; A.I_OP3 (A.V64,A.SUB,$2,$4,$6, A.S_NOEXT) }
 | SUB xreg COMMA xreg COMMA kr COMMA shift
   { A.I_OP3 (A.V64,A.SUB,$2,$4,$6, $8) }
 | SUB wreg COMMA wreg COMMA kwr
@@ -761,7 +766,7 @@ instr:
 | SUB creg COMMA creg COMMA k
   { A.I_OP3 (A.V128,A.SUB,$2,$4,A.K $6, A.S_NOEXT) }
 | SUBS xreg COMMA xreg COMMA kr
-  { A.I_OP3 (A.V64,A.SUBS,$2,$4,$6, A.S_NOEXT) }
+  { check_noext $6; A.I_OP3 (A.V64,A.SUBS,$2,$4,$6, A.S_NOEXT) }
 | SUBS xreg COMMA xreg COMMA kr COMMA shift
   { A.I_OP3 (A.V64,A.SUBS,$2,$4,$6, $8) }
 | SUBS wreg COMMA wreg COMMA kwr

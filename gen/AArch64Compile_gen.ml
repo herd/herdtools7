@@ -109,7 +109,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let addi_64 r1 r2 k = I_OP3 (V64,ADD,r1,r2,K k, S_NOEXT)
 (*    let add r1 r2 r3 = I_OP3 (vloc,ADD,r1,r2,r3) *)
     let add v r1 r2 r3 = I_OP3 (v,ADD,r1,r2,RV (v,r3), S_NOEXT)
-    let do_add64 v r1 r2 r3 = I_OP3 (V64,ADD,r1,r2,RV (v,r3), S_NOEXT)
+    let do_add64 v r1 r2 r3 =
+      let ext = match v with
+      | V128 -> assert false
+      | V64 -> S_NOEXT
+      | V32 -> S_SXTW in
+      I_OP3 (V64,ADD,r1,r2,RV (v,r3), ext)
     let do_addcapa r1 r2 r3 = I_OP3 (V128,ADD,r1,r2,RV (V64,r3), S_NOEXT)
     let gctype r1 r2 = I_GC (GCTYPE,r1,r2)
     let gcvalue r1 r2 = I_GC (GCVALUE,r1,r2)

@@ -587,7 +587,7 @@ module Make(V:Constant.S)(C:Config) =
 
     let op3 v op rD rA kr s =
       let memo = memo_of_op op in
-      let shift = pp_barrel_shift "," s pp_imm in
+      let shift = Misc.lowercase (pp_barrel_shift "," s pp_imm) in
       match v,kr with
       | V32,K k ->
           let rD,fD = arg1 "wzr" (fun s -> "^wo"^s) rD
@@ -693,6 +693,9 @@ module Make(V:Constant.S)(C:Config) =
     | I_OP3 (v,SUBS,ZR,r,K i, S_NOEXT) ->  cmpk v r i::k
     | I_OP3 (v,SUBS,ZR,r2,RV (v3,r3), S_NOEXT) when v=v3->  cmp v r2 r3::k
     | I_OP3 (v,ANDS,ZR,r,K i, S_NOEXT) -> tst v r i::k
+    | I_OP3 (V64,_,_,_,RV(V32,_),S_NOEXT) ->
+        Warn.fatal "Instruction %s is illegal (extension required)"
+          (dump_instruction ins)
     | I_OP3 (v,op,r1,r2,kr,s) ->  op3 v op r1 r2 kr s::k
 (* Fence *)
     | I_FENCE f -> fence f::k
