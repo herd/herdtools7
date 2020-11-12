@@ -611,6 +611,9 @@ module Make
         | I_LDR_P(var,rd,rs,k) ->
             let sz = tr_variant var in
             ldr_p sz rd rs k ii
+        | I_LDUR(var,rd,rs,k) ->
+            let sz = tr_variant var in
+            ldr sz rd rs (AArch64.K (Option.value k ~default:0)) AArch64.S_NOEXT ii
 
         | I_LDAR(var,t,rd,rs) ->
             let sz = tr_variant var in
