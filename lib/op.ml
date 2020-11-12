@@ -88,6 +88,7 @@ let pp_ptx_cmp_op = function
 
 type op1 =
   | Not
+  | LogicalNot
   | SetBit of int | UnSetBit of int
   | ReadBit of int
   | LeftShift of int
@@ -120,6 +121,7 @@ type op1 =
 
 let pp_op1 hexa o = match o with
 | Not -> "!"
+| LogicalNot -> "~"
 | SetBit i -> sprintf "setbit%i" i
 | UnSetBit i -> sprintf "unsetbit%i" i
 | ReadBit i -> sprintf "readbit%i" i

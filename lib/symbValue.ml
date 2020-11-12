@@ -748,6 +748,7 @@ module Make(Cst:Constant.S) = struct
     let open! Scalar in
     match op with
     | Not -> unop op (fun v -> bool_to_scalar (not (scalar_to_bool v)))
+    | LogicalNot -> unop op lognot
     | SetBit k ->
         unop op (fun s -> logor (mask_one k) s)
     | UnSetBit k ->

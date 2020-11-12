@@ -50,7 +50,7 @@ val pp_ptx_cmp_op : op -> string
 (*********)
 
 type op1 =
-  | Not
+  | Not | LogicalNot
 (* Low order bit index is zero *)
   | SetBit of int | UnSetBit of int
   | ReadBit of int
