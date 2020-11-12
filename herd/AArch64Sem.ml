@@ -33,6 +33,7 @@ module Make
     let mixed = AArch64.is_mixed
     let memtag = C.variant Variant.MemTag
     let morello = C.variant Variant.Morello
+    let neon = C.variant Variant.Neon
     let is_deps = C.variant Variant.Deps
     let kvm = C.variant Variant.Kvm
     let is_branching = kvm && not (C.variant Variant.NoPteBranch)
@@ -122,6 +123,31 @@ module Make
               (mk_read MachSize.S128 AArch64.N aexp)
               (A.Location_reg (ii.A.proc,r)) ii
 
+      let read_reg_neon is_data r ii =
+        if not neon then Warn.user_error "Advanced SIMD instructions require -variant neon" ;
+        let location = A.Location_reg (ii.A.proc,(AArch64Base.SIMDreg r)) in
+        M.read_loc is_data (mk_read MachSize.S128 AArch64.N) location ii
+
+      let neon_mask esize =
+        let mask = match esize with
+        | 8 -> "0xff"
+        | 16 -> "0xffff"
+        | 32 -> "0xffffffff"
+        | 64 -> "0xffffffffffffffff"
+        | _ -> assert false in
+        V.stringToV mask
+
+      let neon_getlane cur_val idx esize =
+        let mask = V.op1 (Op.LeftShift (idx*esize)) (neon_mask esize) in
+        M.op Op.And mask cur_val >>= fun masked_val ->
+        M.op1 (Op.LogicalRightShift (idx*esize)) masked_val
+
+      let read_reg_neon_elem is_data r idx ii = match r with
+      | AArch64Base.Vreg (vr,(_,esize)) ->
+          read_reg_neon is_data vr ii >>= fun cur_val ->
+          neon_getlane cur_val idx esize
+      | _ -> assert false
+
       let read_reg_sz sz is_data r ii = match sz with
       | MachSize.S128 -> read_reg_morello is_data r ii
       | MachSize.Quad when not morello || not is_data -> read_reg is_data r ii
@@ -150,6 +176,30 @@ module Make
         M.write_loc
           (mk_write MachSize.S128  AArch64.N aexp Act.A_REG v)
           (A.Location_reg (ii.A.proc,r)) ii
+
+      let neon_setlane old_val idx esize v =
+        let mask = V.op1 (Op.LeftShift (idx*esize)) (neon_mask esize) in
+        let invert = V.op1 Op.LogicalNot mask in
+        M.op1 (Op.LeftShift (idx*esize)) v >>= fun new_val ->
+        M.op Op.And invert old_val >>|
+        M.op Op.And mask new_val >>= fun (v1,v2) ->
+        M.op Op.Or v1 v2
+
+      let write_reg_neon_sz sz r v ii =
+        if not neon then Warn.user_error "Advanced SIMD instructions require -variant neon" ;
+        (* Clear unused register bits (zero extend) *)
+        M.op1 (Op.Mask sz) v >>= fun v ->
+        let location = A.Location_reg (ii.A.proc,(AArch64Base.SIMDreg r)) in
+        M.write_loc (mk_write MachSize.S128 AArch64.N v) location ii
+
+      let write_reg_neon = write_reg_neon_sz MachSize.S128
+
+      let write_reg_neon_elem sz r idx v ii = match r with
+      | AArch64Base.Vreg (vr,(_,esize)) ->
+          read_reg_neon false vr ii >>=
+          fun old_val -> neon_setlane old_val idx esize v >>= fun new_val ->
+          write_reg_neon_sz sz vr new_val ii
+      | _ -> assert false
 
       let write_reg_sz sz r v ii = match r with
       | AArch64.ZR -> M.unitT ()
