@@ -38,6 +38,7 @@ type t =
   | TagCheckUnprecise
   | TooFar         (* Do not discard candidates with TooFar events *)
   | Morello
+  | Neon
 (* Branch speculation+ cat computation of dependencies *)
   | Deps
   | Instances (* Compute dependencies on instruction instances *)
