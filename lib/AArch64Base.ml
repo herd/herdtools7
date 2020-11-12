@@ -637,6 +637,8 @@ type 'k kinstruction =
   | I_LDR_P_SIMD of simd_variant * reg * reg * 'k
   | I_STR_SIMD of simd_variant * reg * reg * 'k kr * 'k s
   | I_STR_P_SIMD of simd_variant * reg * reg * 'k
+  | I_LDUR_SIMD of simd_variant * reg * reg * 'k option
+  | I_STUR_SIMD of simd_variant * reg * reg * 'k option
   | I_MOV_VE of reg * int * reg * int
   | I_MOV_V of reg * reg
   | I_MOV_TG of variant * reg * reg * int
@@ -1023,6 +1025,14 @@ let do_pp_instruction m =
       pp_fpmem_shift "STR" v r1 r2 k s
   | I_STR_P_SIMD (v,r1,r2,k) ->
       pp_fpmem_post "STR" v r1 r2 k
+  | I_LDUR_SIMD (v,r1,r2,None) ->
+        sprintf "LDUR %s, [%s]" (pp_vsimdreg v r1) (pp_reg r2)
+  | I_LDUR_SIMD (v,r1,r2,Some(k)) ->
+        sprintf "LDUR %s, [%s, #%s]" (pp_vsimdreg v r1) (pp_reg r2) (m.pp_k k)
+  | I_STUR_SIMD (v,r1,r2,None) ->
+          sprintf "STUR %s, [%s]" (pp_vsimdreg v r1) (pp_reg r2)
+  | I_STUR_SIMD (v,r1,r2,Some(k)) ->
+          sprintf "STUR %s, [%s, #%s]" (pp_vsimdreg v r1) (pp_reg r2) (m.pp_k k)
   | I_MOV_VE (r1,i1,r2,i2) ->
       pp_vrivri "MOV" r1 i1 r2 i2
   | I_MOV_V (r1,r2) ->
@@ -1211,6 +1221,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_LDR_P_SIMD (_,r1,r2,_) | I_STR_P_SIMD (_,r1,r2,_)
   | I_MOV_VE (r1,_,r2,_) | I_MOV_V (r1,r2) | I_MOV_TG (_,r1,r2,_) | I_MOV_FG (r1,_,_,r2)
   | I_MOV_S (_,r1,r2,_)
+  | I_LDUR_SIMD (_,r1,r2,_) | I_STUR_SIMD (_,r1,r2,_)
     -> fold_reg r1 (fold_reg r2 c)
   | I_LDR (_,r1,r2,kr,_) | I_STR (_,r1,r2,kr)
   | I_OP3 (_,_,r1,r2,kr,_)
@@ -1377,6 +1388,10 @@ let map_regs f_reg f_symb =
       I_LDP_P_SIMD (t,v,map_reg r1,map_reg r2,map_reg r3,k)
   | I_STP_P_SIMD (t,v,r1,r2,r3,k) ->
       I_STP_P_SIMD (t,v,map_reg r1,map_reg r2,map_reg r3,k)
+  | I_LDUR_SIMD (v,r1,r2,k) ->
+      I_LDUR_SIMD (v,map_reg r1, map_reg r2,k)
+  | I_STUR_SIMD (v,r1,r2,k) ->
+      I_STUR_SIMD (v,map_reg r1, map_reg r2,k)
   | I_MOV_VE (r1,i1,r2,i2) ->
       I_MOV_VE (map_reg r1,i1,map_reg r2,i2)
   | I_MOV_V (r1,r2) ->
@@ -1554,6 +1569,7 @@ let get_next = function
   | I_STP_P_SIMD _ | I_STP_SIMD _
   | I_LDR_SIMD _ | I_LDR_P_SIMD _
   | I_STR_SIMD _ | I_STR_P_SIMD _
+  | I_LDUR_SIMD _ | I_STUR_SIMD _
   | I_MOV_VE _ | I_MOV_V _ | I_MOV_TG _ | I_MOV_FG _
   | I_MOV_S _
   | I_MOVI_V _ | I_MOVI_S _
@@ -1665,6 +1681,10 @@ include Pseudo.Make
         | I_LDR_P_SIMD (v,r1,r2,k) -> I_LDR_P_SIMD (v,r1,r2,k_tr k)
         | I_STR_SIMD (v,r1,r2,kr,s) -> I_STR_SIMD (v,r1,r2,kr_tr kr,ap_shift k_tr s)
         | I_STR_P_SIMD (v,r1,r2,k) -> I_STR_P_SIMD (v,r1,r2,k_tr k)
+        | I_LDUR_SIMD (v,r1,r2,None) -> I_LDUR_SIMD (v,r1,r2,None)
+        | I_LDUR_SIMD (v,r1,r2,Some(k)) -> I_LDUR_SIMD (v,r1,r2,Some(k_tr k))
+        | I_STUR_SIMD (v,r1,r2,None) -> I_STUR_SIMD (v,r1,r2,None)
+        | I_STUR_SIMD (v,r1,r2,Some(k)) -> I_STUR_SIMD (v,r1,r2,Some(k_tr k))
         | I_MOVI_V (r,k,s) -> I_MOVI_V (r,k_tr k,ap_shift k_tr s)
         | I_MOVI_S (v,r,k) -> I_MOVI_S (v,r,k_tr k)
 
@@ -1695,6 +1715,7 @@ include Pseudo.Make
         | I_LDR_SIMD _ | I_STR_SIMD _
         | I_LD1 _ | I_LD1R _
         | I_ST1 _
+        | I_LDUR_SIMD _ | I_STUR_SIMD _
           -> 1
         | I_LDP _|I_STP _
         | I_CAS _ | I_CASBH _
