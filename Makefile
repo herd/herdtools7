@@ -76,7 +76,7 @@ ocb-test:
 	./ocb-test.sh
 
 test::
-	$(HERD_REGRESSION_TEST) -herd-path $(HERD) -libdir-path ./herd/libdir -litmus-dir ./herd/unittests/AArch64 test
+	$(HERD_REGRESSION_TEST) -herd-path $(HERD) -libdir-path ./herd/libdir -litmus-dir ./herd/tests/instructions/AArch64 test
 	@ echo "herd7 AArch64 instructions tests: OK"
 
 test::
@@ -84,7 +84,7 @@ test::
 		-herd-path $(HERD) \
 		-diycross-path $(DIYCROSS) \
 		-libdir-path ./herd/libdir \
-		-expected-dir ./herd/unittests/AArch64.diycross \
+		-expected-dir ./herd/tests/diycross/AArch64 \
 		-arch AArch64 \
 		-relaxlist 'Pod**,Fenced**' \
 		-relaxlist 'Rfe,Fre,Coe' \
