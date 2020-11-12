@@ -24,6 +24,7 @@ module Make(Scalar:Scalar.S) = struct
 
   let intToV i = Concrete (Scalar.of_int i)
   and nameToV s = Constant.mk_sym s
+  and stringToV s = Concrete (Scalar.of_string s)
 
   let bit_at k v = Scalar.bit_at k v
 

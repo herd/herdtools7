@@ -71,6 +71,7 @@ module Make(Cst:Constant.S) = struct
 
 
   let intToV i  = Val (Cst.intToV i)
+  let stringToV i  = Val (Cst.stringToV i)
   and nameToV s = Val (Cst.nameToV s)
   and cstToV cst = Val cst
 

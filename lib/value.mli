@@ -50,6 +50,7 @@ module type S =
 
 (* Build constant values, either numerical or symbolic *)
       val intToV  : int -> v
+      val stringToV  : string -> v
       val nameToV  : string -> v
       val cstToV : Cst.v -> v
       val maybevToV : MiscParser.maybev -> v

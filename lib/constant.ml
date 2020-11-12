@@ -227,6 +227,7 @@ module type S =  sig
 
   type v = Scalar.t t
   val intToV  : int -> v
+  val stringToV  : string -> v
   val nameToV  : string -> v
   val zero : v
   val one : v
