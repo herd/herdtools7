@@ -54,7 +54,7 @@ let check_noext = function
 %token B BR BEQ BNE BGE BGT BLE BLT CBZ CBNZ EQ NE GE GT LE LT TBZ TBNZ
 %token BL BLR RET
 %token LDR LDP LDNP STP STNP LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
-%token LD1 LD1R LD2 LD2R LD3 LD3R LD4 LD4R ST1 ST2 ST3 ST4 /* Neon load/store */
+%token LD1 LD1R LD2 LD2R LD3 LD3R LD4 LD4R ST1 ST2 ST3 ST4 STUR /* Neon load/store */
 %token CMP MOV MOVZ MOVK MOVI ADR
 %token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH
 %token STXR STXRB STXRH STLXR STLXRB STLXRH
@@ -495,6 +495,9 @@ instr:
       A.I_LDR_P_SIMD (v,r,$5,post)
     | _ ->
       A.I_LDR_SIMD (v,r,$5,kr,os) }
+| LDUR fpregs COMMA LBRK xreg k0 RBRK
+  { let v,r = $2 in
+    A.I_LDUR_SIMD (v, r, $5, $6) }
 | STR fpregs COMMA LBRK xreg kr0 RBRK k0
   { let v,r    = $2 in
     let kr, os = $6 in
@@ -503,6 +506,9 @@ instr:
       A.I_STR_P_SIMD (v,r,$5,post)
     | _ ->
       A.I_STR_SIMD (v,r,$5,kr,os) }
+| STUR fpregs COMMA LBRK xreg k0 RBRK
+  { let v,r = $2 in
+    A.I_STUR_SIMD (v, r, $5, $6) }
 | MOV vreg INDEX COMMA vreg INDEX
   { A.I_MOV_VE ($2, $3, $5, $6) }
 | MOV vreg INDEX COMMA xwr
