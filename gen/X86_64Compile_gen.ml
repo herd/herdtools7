@@ -28,6 +28,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       | Int | Std (_,Word) -> Word
       | Std (_,Short) -> Short
       | Std (_,Byte) -> Byte
+      | Pteval -> assert false
 
     let size_to_inst_size =
       let open X86_64Base in

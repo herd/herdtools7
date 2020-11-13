@@ -54,7 +54,7 @@ module Mixed =
 (* AArch64 has more atoms that others *)
 let bellatom = false
 type atom_rw =  PP | PL | AP | AL
-type w_pte = AF | DB | OA
+type w_pte = AF | DB | OA | DBM | VALID
 type atom_pte = Read | Set of w_pte
 type atom_acc = Plain | Acq | AcqPc | Rel | Atomic of atom_rw | Tag | Pte of atom_pte
 type atom = atom_acc * MachMixed.t option
@@ -85,6 +85,8 @@ let applies_atom (a,_) d = match a,d with
      | Read -> ""
      | Set AF -> "AF"
      | Set DB -> "DB"
+     | Set DBM -> "DBM"
+     | Set VALID -> "VA"
      | Set OA -> "OA"
 
    let pp_atom_acc = function
@@ -119,7 +121,8 @@ let applies_atom (a,_) d = match a,d with
 
    let fold_pte f r =
      if do_kvm then
-       f Read (f (Set AF) (f (Set DB) (f (Set OA) r)))
+       let g field r = f (Set field) r in
+       f Read (g AF (g DB (g DBM (g VALID (g OA r)))))
      else r
 
    let fold_atom_rw f r = f PP (f PL (f AP (f AL r)))
@@ -195,13 +198,21 @@ let overwrite_value v ao w = match ao with
       ValsMixed.extract_value v sz o
   | Some (Pte _,Some _) -> assert false
 
-let set_pteval a p =
-  let open PTEVal in
-  match a with
-  | Pte (Set AF),_ -> fun _loc -> { p with af = 1-p.af; }
-  | Pte (Set DB),_ -> fun _loc -> { p with af = 1-p.db; }
-  | Pte (Set OA),_ -> fun loc -> PTEVal.set_oa p (loc ())
-  | _ -> Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
+  let do_setpteval a f p =
+    let open PTEVal in
+    match f with
+    | Set AF -> fun _loc -> { p with af = 1-p.af; }
+    | Set DB -> fun _loc -> { p with db = 1-p.db; }
+    | Set DBM -> fun _loc -> { p with dbm = 1-p.dbm; }
+    | Set VALID -> fun _loc -> { p with valid = 1-p.valid; }
+    | Set OA -> fun loc -> PTEVal.set_oa p (loc ())
+    | Read ->
+        Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
+
+   let set_pteval a p =
+     match a with
+     | Pte f,None -> do_setpteval a f p
+     | _ -> Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
 
 (* End of atoms *)
 
