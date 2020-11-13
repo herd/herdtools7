@@ -24,12 +24,20 @@ let digit = ['0'-'9']
 let num = ['1'-'9']digit*
 let hexa_digit = (digit|['a'-'f''A'-'F'])
 let hexa_num = ("0x"|"0X")hexa_digit+
-let space = [' ''\t']
+let alpha = [ 'a'-'z' 'A'-'Z']
+let blank = [' ' '\t' '\r']
+let not_blank = [^' ''\t''\r']
+let name  = alpha (alpha|digit|'_' | '/' | '.' | '-')*
 
-rule main = parse
-| space* (num|hexa_num) space* eof { true }
+rule num_rule = parse
+| blank* (num|hexa_num) blank* eof { true }
 | ""  { false }
 
+and info_rule = parse
+| (name as key) blank* '=' blank* (_* as value) blank* eof
+  { let p = key,value in Some p }
+| "" { None }
 {
-let is_num s = main (Lexing.from_string s)
+let is_num s = num_rule (Lexing.from_string s)
+let info s = info_rule (Lexing.from_string s)
 }

@@ -28,6 +28,7 @@ module type Config = sig
   val overload : int option
   val cpp : bool
   val scope : Scope.t
+  val info : MiscParser.info
 end
 
 module Make(Config:Config) (T:Builder.S) : sig

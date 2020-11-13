@@ -15,4 +15,6 @@
 (****************************************************************************)
 
 (** Miscellaneous lexers *)
+
 val is_num : string -> bool
+val info : string -> (string * string) option

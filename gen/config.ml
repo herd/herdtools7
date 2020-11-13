@@ -49,6 +49,14 @@ let bell = ref None
 let scope = ref Scope.No
 let variant = ref (fun (_:Variant_gen.t) -> false)
 
+let info = ref ([]:MiscParser.info)
+let add_info_line line = match LexScan.info line with
+| Some kv -> info := !info @ [kv]
+| None ->
+    let msg =
+      Printf.sprintf "argument '%s' is not in 'key = value' format" line in
+    raise (Arg.Bad msg)
+
 type do_observers =
   | Avoid   (* was false *)
   | Accept  (* was true  *)
@@ -182,6 +190,7 @@ let common_specs =
   ("-nooptcond", Arg.Clear optcond, "do not optimize conditions")::
   ("-optcoherence", Arg.Set optcoherence, " optimize coherence")::
   ("-nooptcoherence", Arg.Clear optcoherence, "do not optimize coherence (default)")::
+  ("-info",Arg.String add_info_line,"add metadata to generated test(s)")::
   ("-moreedges", Arg.Bool (fun b -> moreedges := b),
    Printf.sprintf
      "consider a very complete set of edges, default %b" !moreedges)::
