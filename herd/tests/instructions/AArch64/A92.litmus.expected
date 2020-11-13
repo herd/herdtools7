@@ -1,0 +1,10 @@
+Test A92 Allowed
+States 1
+0:X0=4295032832;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=4295032832)
+Observation A92 Always 1 0
+Hash=1123f87ea9f894ecd79712c48b35a397
+

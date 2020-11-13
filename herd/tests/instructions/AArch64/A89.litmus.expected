@@ -1,0 +1,10 @@
+Test A89 Allowed
+States 1
+0:X0=65537;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=65537)
+Observation A89 Always 1 0
+Hash=102431da97e38b17eaee34fcc2cf631c
+

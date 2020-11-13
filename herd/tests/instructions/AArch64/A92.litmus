@@ -1,0 +1,10 @@
+AArch64 A92
+(* Tests movk, 64-bit, LSL 16 *)
+
+{ 0:X0=4294967296; }
+
+P0;
+MOVK X0, #1, LSL #16;
+
+exists (0:X0=4295032832)
+

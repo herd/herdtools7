@@ -1,0 +1,10 @@
+AArch64 A87
+(* Tests movk, 32-bit, no shift *)
+
+{ 0:X0=65536; }
+
+P0;
+MOVK W0, #1;
+
+exists (0:X0=65537)
+

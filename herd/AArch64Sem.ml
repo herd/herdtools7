@@ -419,6 +419,34 @@ module Make
           >>= (fun v -> write_reg rd v ii)
           >>! B.Next
 
+      let movk sz rd k os ii =
+        let open AArch64Base in
+        assert (MachSize.is_imm16 k);
+        begin match sz, os with
+        | V32, S_NOEXT | V64, S_NOEXT ->
+          let sz = tr_variant sz in
+          (read_reg_data sz rd ii)
+          >>= fun v2 -> M.op Op.Or v2 (V.intToV k)
+        | V32, S_LSL(0|16 as s)
+        | V64, S_LSL((0|16|32|48 as s)) ->
+          let v1 = V.op1 (Op.LeftShift s) (V.intToV k) in
+          let sz = tr_variant sz in
+          (read_reg_data sz rd ii)
+          >>= fun v2 -> M.op Op.Or v2 v1
+        | _, S_LSL(n) ->
+          Warn.fatal
+            "illegal shift immediate %d in %s instruction movk"
+            n
+            (pp_variant sz)
+        | _, s ->
+          Warn.fatal
+            "illegal shift operand %s in %s instruction movk"
+            (pp_barrel_shift "," s pp_imm)
+            (pp_variant sz)
+        end
+          >>= (fun v -> write_reg rd v ii)
+          >>! B.Next
+
       and stxr sz t rr rs rd ii =
         let open AArch64Base in
         lift_memop
@@ -820,6 +848,8 @@ module Make
 
         | I_MOVZ(var,rd,k,os) ->
             movz var rd k os ii
+        | I_MOVK(var,rd,k,os) ->
+            movk var rd k os ii
 
         | I_ADDR (r,lbl) ->
             write_reg r (V.nameToV lbl) ii >>! B.Next
