@@ -422,40 +422,40 @@ module Make(V:Constant.S)(C:Config) =
     let print_simd_list rs io offset =
        String.concat "," (List.mapi (print_simd_reg io offset) rs)
 
-    let load_simd v r1 r2 k os = match k,os with
+    let load_simd memo v r1 r2 k os = match k,os with
     | K 0,S_NOEXT ->
       { empty_ins with
-        memo = sprintf "ldr %s,[^i0]" (print_vecreg v "o" 0);
+        memo = sprintf "%s %s,[^i0]" memo (print_vecreg v "o" 0);
         inputs = [r2];
         outputs = [r1];
         reg_env = [(r1,int128);(r2,voidstar)]}
     | K k,S_NOEXT ->
       { empty_ins with
-        memo = sprintf "ldr %s,[^i0,#%i]" (print_vecreg v "o" 0) k;
+        memo = sprintf "%s %s,[^i0,#%i]" memo (print_vecreg v "o" 0) k;
         inputs = [r2];
         outputs = [r1];
         reg_env = [(r1,int128);(r2,voidstar)]}
     | RV (V32,rk),S_NOEXT ->
       { empty_ins with
-        memo = sprintf "ldr %s,[^i0,^wi1]" (print_vecreg v "o" 0);
+        memo = sprintf "%s %s,[^i0,^wi1]" memo (print_vecreg v "o" 0);
         inputs = [r2;rk;];
         outputs = [r1];
         reg_env = [(r1,int128);(r2,voidstar);(rk,word)]}
     | RV (V32,rk),s ->
       { empty_ins with
-        memo = sprintf "ldr %s,[^i0,^wi1,%s]" (print_vecreg v "o" 0) (pp_shifter s);
+        memo = sprintf "%s %s,[^i0,^wi1,%s]" memo (print_vecreg v "o" 0) (pp_shifter s);
         inputs = [r2;rk;];
         outputs = [r1];
         reg_env = [(r1,int128);(r2,voidstar);(rk,word)]}
     | RV (V64,rk), S_NOEXT ->
       { empty_ins with
-        memo = sprintf "ldr %s,[^i0,^i1]" (print_vecreg v "o" 0);
+        memo = sprintf "%s %s,[^i0,^i1]" memo (print_vecreg v "o" 0);
         inputs = [r2;rk;];
         outputs = [r1];
         reg_env = [(r1,int128);(r2,voidstar);(rk,quad)]}
     | RV (V64,rk), s ->
       { empty_ins with
-        memo = sprintf "ldr %s,[^i0,^i1,%s]" (print_vecreg v "o" 0) (pp_shifter s);
+        memo = sprintf "%s %s,[^i0,^i1,%s]" memo (print_vecreg v "o" 0) (pp_shifter s);
         inputs = [r2;rk;];
         outputs = [r1];
         reg_env = [(r1,int128);(r2,voidstar);(rk,quad)]}
@@ -570,40 +570,40 @@ module Make(V:Constant.S)(C:Config) =
           reg_env= (add_128 [r1;r2;]) @ [(r3,voidstar)]}
     | _ -> assert false
 
-    let store_simd v r1 r2 k os = match k,os with
+    let store_simd memo v r1 r2 k os = match k,os with
     | K 0,S_NOEXT ->
       { empty_ins with
-        memo = sprintf "str %s,[^i1]" (print_vecreg v "i" 0);
+        memo = sprintf "%s %s,[^i1]" memo (print_vecreg v "i" 0);
         inputs = [r1;r2];
         outputs = [];
         reg_env = [(r1,int128);(r2,voidstar)]}
     | K k,S_NOEXT ->
       { empty_ins with
-        memo = sprintf "str %s,[^i1,#%i]" (print_vecreg v "i" 0) k;
+        memo = sprintf "%s %s,[^i1,#%i]" memo (print_vecreg v "i" 0) k;
         inputs = [r1;r2];
         outputs = [];
         reg_env = [(r1,int128);(r2,voidstar)]}
     | RV (V32,rk),S_NOEXT ->
       { empty_ins with
-        memo = sprintf "str %s,[^i1,^wi2]" (print_vecreg v "i" 0);
+        memo = sprintf "%s %s,[^i1,^wi2]" memo (print_vecreg v "i" 0);
         inputs = [r1;r2;rk];
         outputs = [];
         reg_env = [(r1,int128);(r2,voidstar);(rk,word)]}
     | RV (V32,rk),s ->
       { empty_ins with
-        memo = sprintf "str %s,[^i1,^wi2,%s]" (print_vecreg v "i" 0) (pp_shifter s);
+        memo = sprintf "%s %s,[^i1,^wi2,%s]" memo (print_vecreg v "i" 0) (pp_shifter s);
         inputs = [r1;r2;rk];
         outputs = [];
         reg_env = [(r1,int128);(r2,voidstar);(rk,word)]}
     | RV (V64,rk),S_NOEXT ->
       { empty_ins with
-        memo = sprintf "str %s,[^i1,^i2]" (print_vecreg v "i" 0);
+        memo = sprintf "%s %s,[^i1,^i2]" memo (print_vecreg v "i" 0);
         inputs = [r1;r2;rk];
         outputs = [];
         reg_env = [(r1,int128);(r2,voidstar);(rk,quad)]}
     | RV (V64,rk),s ->
       { empty_ins with
-        memo = sprintf "str %s,[^i1,^i2,%s]" (print_vecreg v "i" 0) (pp_shifter s);
+        memo = sprintf "%s %s,[^i1,^i2,%s]" memo (print_vecreg v "i" 0) (pp_shifter s);
         inputs = [r1;r2;rk];
         outputs = [];
         reg_env = [(r1,int128);(r2,voidstar);(rk,quad)]}
@@ -1105,10 +1105,14 @@ module Make(V:Constant.S)(C:Config) =
         load_pair_p_simd (match t with TT -> "ldp" | NT -> "ldnp") v r1 r2 r3 k1::k
     | I_STP_P_SIMD (t,v,r1,r2,r3,k1) ->
         store_pair_p_simd (match t with TT -> "stp" | NT -> "stnp") v r1 r2 r3 k1::k
-    | I_LDR_SIMD (v,r1,r2,k1,s) -> load_simd v r1 r2 k1 s::k
+    | I_LDR_SIMD (v,r1,r2,k1,s) -> load_simd "ldr" v r1 r2 k1 s::k
     | I_LDR_P_SIMD (v,r1,r2,k1) -> load_simd_p v r1 r2 k1::k
-    | I_STR_SIMD (v,r1,r2,k1,s) -> store_simd v r1 r2 k1 s::k
+    | I_STR_SIMD (v,r1,r2,k1,s) -> store_simd "str" v r1 r2 k1 s::k
     | I_STR_P_SIMD (v,r1,r2,k1) -> store_simd_p v r1 r2 k1::k
+    | I_LDUR_SIMD (v,r1,r2,Some(k1)) -> load_simd "ldur" v r1 r2 (K k1) S_NOEXT::k
+    | I_LDUR_SIMD (v,r1,r2,None) -> load_simd "ldur" v r1 r2 (K 0) S_NOEXT::k
+    | I_STUR_SIMD (v,r1,r2,Some(k1)) -> store_simd "stur" v r1 r2 (K k1) S_NOEXT::k
+    | I_STUR_SIMD (v,r1,r2,None) -> store_simd "stur" v r1 r2 (K 0) S_NOEXT::k
     | I_MOV_VE (r1,i1,r2,i2) -> mov_simd_ve r1 i1 r2 i2::k
     | I_MOV_V (r1,r2) -> mov_simd_v r1 r2::k
     | I_MOV_FG (r1,i,v,r2) -> mov_simd_fg r1 i v r2::k
