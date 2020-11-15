@@ -28,7 +28,7 @@ end =
 
     let perm_state p = List.map (perm_state_atom p)
 
-    let perm_locations p = perm_state p
+    let perm_locations p = LocationsItem.map_locs (perm_location p)
 
     let perm_atom p a = match a with
     | LV (loc,v) -> LV (perm_location p loc,v)

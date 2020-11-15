@@ -79,8 +79,14 @@ and type pseudo = A.pseudo
 
   let finish_state f_reg = List.map (finish_state_atom f_reg)
 
+  let finish_location_item f_reg =
+    let open LocationsItem in
+    function
+    | Loc (loc,t) -> Loc (f_reg loc,t)
+    | Fault v -> Fault (Fault.map_value A.maybevToV v)
+
   let finish_locations f_reg =
-    List.map (fun (loc,t) -> finish_location f_reg loc,t)
+    List.map (finish_location_item (finish_location f_reg))
 
   let finish_atom f_reg a =
     let open ConstrGen in
@@ -162,7 +168,7 @@ and type pseudo = A.pseudo
 
   let collect_constr = ConstrGen.fold_constr collect_atom
 
-  let collect_locs = List.fold_right (fun (loc,_) -> collect_location loc)
+  let collect_locs locs = LocationsItem.fold_locs collect_location locs 
 
 (*********************************************)
 (* Here we go: collect, allocate, substitute *)

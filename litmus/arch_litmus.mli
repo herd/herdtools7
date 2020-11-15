@@ -43,7 +43,7 @@ module type Base = sig
 
   val debug_state : state -> string
 
-  type fullstate = (location * (MiscParser.run_type * V.v)) list
+  type fullstate = (location * (TestType.t * V.v)) list
 
   module Out : Target.S
   with type arch_reg = reg (* Out abstracted *)
@@ -73,7 +73,7 @@ module type K = sig
   type loc_global = string
 
   type state = (location * V.v) list
-  type fullstate = (location * (MiscParser.run_type * V.v)) list
+  type fullstate = (location * (TestType.t * V.v)) list
 
   module Out : Target.S
   with type arch_reg = reg (* Out abstracted *)

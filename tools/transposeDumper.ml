@@ -21,6 +21,9 @@ module type I = sig
   module A : ArchBase.S
   type prog =  (MiscParser.proc * A.pseudo list) list
 
+  type v
+  val dump_v : v -> string
+
   type state
   val dump_global_state : prog -> state -> string
   val dump_proc_state : int -> A.pseudo list -> state -> string option
@@ -38,12 +41,11 @@ module Make(I:I) : sig
   type prog =  (MiscParser.proc * I.A.pseudo list) list
   val dump : out_channel ->
     Name.t ->
-      (I.state, prog, I.prop, I.location)  MiscParser.result
+      (I.state, prog, I.prop, I.location, I.v)  MiscParser.result
       -> unit
   val dump_info : out_channel ->
     Name.t ->
-    (I.state, prog, I.prop, I.location)
-        MiscParser.result
+      (I.state, prog, I.prop, I.location, I.v) MiscParser.result
       -> unit
 end = struct
   open Printf
@@ -111,17 +113,22 @@ end = struct
     | [] -> ()
     | locs ->
         fprintf chan "locations [" ;
+        let open LocationsItem in
         List.iter
-          (fun (loc,t) -> match t with
-          | MiscParser.TyDef  ->
-              fprintf chan "%s; " (I.dump_location loc)
-          | MiscParser.TyDefPointer ->
-              fprintf chan "%s*; "(I.dump_location loc)
-          | MiscParser.Ty t ->
-              fprintf chan "%s %s; " (I.dump_location loc) t
-          | MiscParser.Pointer t ->
-              fprintf chan "%s %s*; " (I.dump_location loc) t
-          |  MiscParser.TyArray _|MiscParser.Atomic _ -> assert false)
+          (function
+            | Loc (loc,t) ->
+                begin match t with
+                | TestType.TyDef  ->
+                    fprintf chan "%s; " (I.dump_location loc)
+                | TestType.TyDefPointer ->
+                    fprintf chan "%s*; "(I.dump_location loc)
+                | TestType.Ty t ->
+                    fprintf chan "%s %s; " (I.dump_location loc) t
+                | TestType.Pointer t ->
+                    fprintf chan "%s %s*; " (I.dump_location loc) t
+                |  TestType.TyArray _|TestType.Atomic _ -> assert false
+                end
+            | Fault f -> fprintf chan "%s; " (Fault.pp_fatom I.dump_v f))
           locs ;
         fprintf chan "]\n"
     end ;

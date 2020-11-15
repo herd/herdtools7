@@ -26,8 +26,8 @@ module type S = sig
   module P : PseudoAbstract.S
 
   type src =
-    ((A.location * (MiscParser.run_type * A.V.v)) list, P.code list,
-          C.prop, A.location)
+    ((A.location * (TestType.t * A.V.v)) list, P.code list,
+          C.prop, A.location, A.V.v)
          MiscParser.result
 
   type 'a type_env = ('a * CType.t) list
@@ -40,7 +40,7 @@ module type S = sig
       condition : C.cond ;
       filter : C.prop option ;
       globals : string type_env ;
-      flocs : A.location list ;
+      flocs : A.location list ; ffaults : A.V.v Fault.atom list;
       global_code : string list;
       src : src ;
       type_env : CType.t A.LocMap.t * CType.t StringMap.t ;
@@ -74,8 +74,8 @@ struct
 
   type 'a type_env = ('a * CType.t) list
   type src =
-    ((A.location * (MiscParser.run_type * A.V.v)) list, P.code list,
-          C.prop, A.location)
+    ((A.location * (TestType.t * A.V.v)) list, P.code list,
+          C.prop, A.location,A.V.v)
          MiscParser.result
 
   type env_volatile = string list
@@ -87,7 +87,7 @@ struct
       condition : C.cond ;
       filter : C.prop option ;
       globals : string type_env ; (* Virtual addresses only *)
-      flocs : A.location list ;
+      flocs : A.location list ; ffaults : A.V.v Fault.atom list;
       global_code : string list;
       src : src ;
       type_env : CType.t A.LocMap.t * CType.t StringMap.t ;

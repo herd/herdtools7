@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2019-present Institut National de Recherche en Informatique et *)
+(* Copyright 2020-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,37 +14,13 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** External view of faults, which are part of final state *)
+type ('loc,'v) t = Loc of 'loc * TestType.t | Fault of 'v Fault.atom
 
+val fold_loc : ('loc -> 'r -> 'r) -> ('loc,'v) t -> 'r -> 'r
+val fold_locs : ('loc -> 'r -> 'r) -> ('loc,'v) t list -> 'r -> 'r
 
-module type I = sig
-  type arch_global
-  val pp_global : arch_global -> string
-  val global_compare : arch_global -> arch_global -> int
-  val same_base : arch_global -> arch_global -> bool
-end
+val iter_loc : ('loc -> unit) -> ('loc,'v) t -> unit
+val iter_locs : ('loc -> unit) -> ('loc,'v) t list -> unit
 
-type 'loc atom =  (Proc.t * Label.t option) * 'loc
-
-val pp_fatom : ('loc -> string) -> 'loc atom -> string
-
-val atom_compare : ('loc -> 'loc -> int) -> 'loc atom -> 'loc atom -> int
-
-val map_value : ('v -> 'w) -> 'v atom -> 'w atom
-
-module type S = sig
-
-  type loc_global
-
-  type fault = (Proc.t * Label.Set.t) * loc_global * string option
-  val pp_fault : fault -> string
-
-  module FaultSet : MySet.S with type elt = fault
-
-  type fatom = loc_global atom
-  val check_one_fatom : fault -> fatom -> bool
-  val check_fatom : FaultSet.t -> fatom -> bool
-
-end
-
-module Make : functor (A:I) -> S with type loc_global := A.arch_global
+val map_loc : ('loc -> 'a) -> ('loc,'v) t -> ('a,'v) t
+val map_locs : ('loc -> 'a) -> ('loc,'v) t list -> ('a,'v) t list

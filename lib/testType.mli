@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2019-present Institut National de Recherche en Informatique et *)
+(* Copyright 2020-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,37 +14,12 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** External view of faults, which are part of final state *)
+(** Type as specified in tests *)
 
+type t =
+  | TyDef | TyDefPointer
+  | Ty of string | Pointer of string
+  | TyArray of string * int
+  | Atomic of string
 
-module type I = sig
-  type arch_global
-  val pp_global : arch_global -> string
-  val global_compare : arch_global -> arch_global -> int
-  val same_base : arch_global -> arch_global -> bool
-end
-
-type 'loc atom =  (Proc.t * Label.t option) * 'loc
-
-val pp_fatom : ('loc -> string) -> 'loc atom -> string
-
-val atom_compare : ('loc -> 'loc -> int) -> 'loc atom -> 'loc atom -> int
-
-val map_value : ('v -> 'w) -> 'v atom -> 'w atom
-
-module type S = sig
-
-  type loc_global
-
-  type fault = (Proc.t * Label.Set.t) * loc_global * string option
-  val pp_fault : fault -> string
-
-  module FaultSet : MySet.S with type elt = fault
-
-  type fatom = loc_global atom
-  val check_one_fatom : fault -> fatom -> bool
-  val check_fatom : FaultSet.t -> fatom -> bool
-
-end
-
-module Make : functor (A:I) -> S with type loc_global := A.arch_global
+val pp : t -> string

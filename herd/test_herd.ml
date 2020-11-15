@@ -109,7 +109,7 @@ module Make(A:Arch_herd.S) =
          } = t in
 
       let prog,starts = Load.load nice_prog in
-      let flocs = List.map fst locs in
+      let flocs = LocationsItem.fold_locs Misc.cons locs [] in
       let displayed =
         let flocs = A.LocSet.of_list flocs in
         ConstrGen.fold_constr collect_atom final flocs in

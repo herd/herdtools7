@@ -35,7 +35,7 @@ type constr = MiscParser.constr
 let dump_atom a =
   let open ConstrGen in
   match a with
-  | LV (loc,v) -> dump_state_atom (loc,(MiscParser.TyDef,v))
+  | LV (loc,v) -> dump_state_atom (loc,(TestType.TyDef,v))
   | LL (loc1,loc2) ->
      sprintf "%s=%s" (dump_loc loc1) (MiscParser.dump_rval loc2)
   | FF f -> Fault.pp_fatom ParsedConstant.pp_v f
@@ -171,8 +171,9 @@ let do_dump withinfo chan doc t =
     end ;
   fprintf chan "\n{%s}\n\n" (dump_state  t.MiscParser.init) ;
   prog chan (code t.MiscParser.init t.MiscParser.prog) ;
-  let locs = DumpUtils.dump_locations
-	       dump_location t.MiscParser.locations in
+  let locs =
+    DumpUtils.dump_locations
+      dump_location ParsedConstant.pp_v t.MiscParser.locations in
   if locs <> "" then fprintf chan "%s\n" locs ;
   begin match t.MiscParser.extra_data with
 	| MiscParser.NoExtra|MiscParser.CExtra _ -> ()

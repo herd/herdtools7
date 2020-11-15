@@ -108,21 +108,7 @@ let pp_outcome o =
   String.concat " "
     (List.map (fun a -> sprintf "%s;" (pp_atom a)) o)
 
-type run_type =
-  | TyDef | TyDefPointer
-  | Ty of string | Pointer of string
-  | TyArray of string * int
-  | Atomic of string
-
-let pp_run_type = function
-  | TyDef -> "TyDef"
-  | TyDefPointer -> "TyDefPointer"
-  | Ty s -> sprintf "Ty<%s>" s
-  | Atomic s -> sprintf "Atomic<%s>" s
-  | Pointer s -> sprintf "Pointer<%s>" s
-  | TyArray (s,sz) -> sprintf "TyArray<%s,%i>" s sz
-
-type state = (location * (run_type * maybev)) list
+type state = (location * (TestType.t * maybev)) list
 
 (* Check that initialisations are unique *)
 
@@ -160,19 +146,21 @@ let mk_pte_val pte l =
   let v = PTEVal.of_list s l in
   PteVal v
 
-let dump_state_atom dump_loc dump_val (loc,(t,v)) = match t with
-| TyDef ->
-    sprintf "%s=%s" (dump_loc loc) (dump_val v)
-| TyDefPointer ->
-    sprintf "*%s=%s" (dump_loc loc) (dump_val v)
-| Ty t ->
-    sprintf "%s %s=%s" t (dump_loc loc) (dump_val v)
-| Atomic t ->
-    sprintf "_Atomic %s %s=%s" t (dump_loc loc) (dump_val v)
-| Pointer t ->
-    sprintf "%s *%s=%s" t (dump_loc loc) (dump_val v)
-| TyArray (t,sz) ->
-    sprintf "%s %s[%i]" t (dump_loc loc) sz
+let dump_state_atom dump_loc dump_val (loc,(t,v)) =
+  let open TestType in
+  match t with
+  | TyDef ->
+      sprintf "%s=%s" (dump_loc loc) (dump_val v)
+  | TyDefPointer ->
+      sprintf "*%s=%s" (dump_loc loc) (dump_val v)
+  | Ty t ->
+      sprintf "%s %s=%s" t (dump_loc loc) (dump_val v)
+  | Atomic t ->
+      sprintf "_Atomic %s %s=%s" t (dump_loc loc) (dump_val v)
+  | Pointer t ->
+      sprintf "%s *%s=%s" t (dump_loc loc) (dump_val v)
+  | TyArray (t,sz) ->
+      sprintf "%s %s[%i]" t (dump_loc loc) sz
 
 (* Packed result *)
 type info = (string * string) list
@@ -186,31 +174,31 @@ type extra_data =
 
 let empty_extra = NoExtra
 
-type ('i, 'p, 'prop, 'loc) result =
+type ('i, 'p, 'prop, 'loc, 'v) result =
     { info : info ;
       init : 'i ;
       prog : 'p ;
       filter : 'prop option ;
       condition : 'prop ConstrGen.constr ;
-      locations : ('loc * run_type) list ;
+      locations : ('loc,'v) LocationsItem.t list ;
       extra_data : extra_data ;
 }
 
 (* Easier to handle *)
 type ('loc,'v,'ins) r3 =
-      (('loc * (run_type * 'v)) list,
+      (('loc * (TestType.t * 'v)) list,
        (proc * 'ins list) list,
        ('loc, 'v) ConstrGen.prop,
-       'loc) result
+       'loc, 'v) result
 
 type ('loc,'v,'code) r4 =
-      (('loc * (run_type * 'v)) list,
+      (('loc * (TestType.t * 'v)) list,
        'code list,
        ('loc, 'v) ConstrGen.prop,
-       'loc) result
+       'loc, 'v) result
 
 (* Result of generic parsing *)
-type 'pseudo t = (state, (proc * 'pseudo list) list, prop, location) result
+type 'pseudo t = (state, (proc * 'pseudo list) list, prop, location, maybev) result
 
 (* Add empty GPU/Bell info to machine parsers *)
 

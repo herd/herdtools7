@@ -120,7 +120,7 @@ module type S = sig
   type size_env
 
   val size_env_empty : size_env
-  val build_size_env : (location * (MiscParser.run_type * 'v)) list -> size_env
+  val build_size_env : (location * (TestType.t * 'v)) list -> size_env
   val look_size : size_env -> string -> MachSize.sz
   val look_size_location : size_env -> location -> MachSize.sz
 
@@ -305,10 +305,10 @@ module Make(C:Config) (I:I) : S with module I = I
         include LocArg
         open Constant
         let same_base v1 v2 =  match v1,v2 with
-         |I.V.Val (Symbolic (Virtual ((s1,_),_))),
+        |I.V.Val (Symbolic (Virtual ((s1,_),_))),
           I.V.Val (Symbolic (Virtual ((s2,_),_))) ->
             Misc.string_eq s1 s2
-         | _,_ -> false
+        | _,_ -> false
 
       end
       include Fault.Make(FaultArg)
@@ -319,7 +319,7 @@ module Make(C:Config) (I:I) : S with module I = I
         | (Location_global v1|Location_deref (v1,_)),
           (Location_global v2|Location_deref (v2,_))
           -> FaultArg.same_base v1 v2
-      |  _,_ -> false
+        |  _,_ -> false
 
 (************************)
 (* Mixed size utilities *)
@@ -425,14 +425,15 @@ module Make(C:Config) (I:I) : S with module I = I
             Warn.fatal "Cannot find the size of type %s" t
 
 
-      let misc_to_size ty  = match ty with
-      | MiscParser.TyDef -> size_of "int"
-      | MiscParser.Ty t|MiscParser.Atomic t -> (size_of t)
-      | MiscParser.Pointer _
-      | MiscParser.TyDefPointer
-      | MiscParser.TyArray _ ->
-          Warn.fatal "Type %s is not allowed in mixed size mode"
-            (MiscParser.pp_run_type ty)
+      let misc_to_size ty  =
+        let open TestType in
+        match ty with
+        | TyDef -> size_of "int"
+        | Ty t|Atomic t -> (size_of t)
+        | Pointer _
+        | TyDefPointer
+        | TyArray _ ->
+            Warn.fatal "Type %s is not allowed in mixed size mode" (TestType.pp ty)
 
       let build_size_env =
         if is_mixed then

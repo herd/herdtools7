@@ -39,6 +39,14 @@ let get_fmt hexa base = match CType.get_fmt hexa base with
 let base =  CType.Base "int"
 let pointer = CType.Pointer base
 
+let locs_and_faults locs =
+  let open LocationsItem in
+  List.fold_right
+    (fun i (ls,fs) -> match i with
+          | Loc (loc,_) -> loc::ls,fs
+          | Fault f -> ls,f::fs)
+    locs ([],[])
+
 module Generic (A : Arch_litmus.Base)
     (C:Constr.S
     with type location = A.location and module LocSet = A.LocSet) = struct
@@ -60,12 +68,12 @@ module Generic (A : Arch_litmus.Base)
         | Constant.PteVal _ -> pteval_t
 
       let misc_to_c  = function
-        | MiscParser.TyDef -> base
-        | MiscParser.TyDefPointer  -> pointer
-        | MiscParser.Ty t -> Base t
-        | MiscParser.Atomic t -> Atomic (Base t)
-        | MiscParser.Pointer t -> Pointer (Base t)
-        | MiscParser.TyArray (t,sz) -> Array (t,sz)
+        | TestType.TyDef -> base
+        | TestType.TyDefPointer  -> pointer
+        | TestType.Ty t -> Base t
+        | TestType.Atomic t -> Atomic (Base t)
+        | TestType.Pointer t -> Pointer (Base t)
+        | TestType.TyArray (t,sz) -> Array (t,sz)
 
       let type_in_init p reg =
         let rec find_rec = function
@@ -107,12 +115,12 @@ module Generic (A : Arch_litmus.Base)
                 (fun (loc,t) k -> match loc with
                 | A.Location_reg (q,r) when p=q && A.reg_compare reg r = 0 ->
                     begin match t with
-                    | MiscParser.TyDef -> None
-                    | MiscParser.TyDefPointer -> Some pointer
-                    | MiscParser.Ty s -> Some (Base s)
-                    | MiscParser.Atomic s -> Some (Atomic (Base s))
-                    | MiscParser.Pointer s -> Some (Pointer (Base s))
-                    | MiscParser.TyArray _ -> assert false (* No array register *)
+                    | TestType.TyDef -> None
+                    | TestType.TyDefPointer -> Some pointer
+                    | TestType.Ty s -> Some (Base s)
+                    | TestType.Atomic s -> Some (Atomic (Base s))
+                    | TestType.Pointer s -> Some (Pointer (Base s))
+                    | TestType.TyArray _ -> assert false (* No array register *)
                     end
                 | _ -> k)
                 flocs
@@ -158,13 +166,17 @@ module Generic (A : Arch_litmus.Base)
 
 (* locations, default and explicit types *)
       let type_locations flocs env =
+        let open LocationsItem in
         List.fold_left
-          (fun env (loc,t) ->
-            try
-              ignore (A.LocMap.find loc env) ; env
-            with
-            | Not_found ->
-                A.LocMap.add loc (misc_to_c t) env)
+          (fun env i -> match i with
+          | Loc (loc,t) ->
+              begin try
+                ignore (A.LocMap.find loc env) ; env
+              with
+              | Not_found ->
+                  A.LocMap.add loc (misc_to_c t) env
+              end
+          | Fault _ -> env)
           env flocs
 
 (* init, default and explicit types *)
@@ -173,7 +185,7 @@ module Generic (A : Arch_litmus.Base)
       let type_init init env =
         List.fold_left
           (fun env (loc,(t,v)) -> match t with
-          | MiscParser.TyDef ->
+          | TestType.TyDef ->
               begin try
                 ignore (A.LocMap.find loc env) ;
                 env
@@ -194,7 +206,7 @@ module Generic (A : Arch_litmus.Base)
                 ignore (A.LocMap.find a env) ;
                 env
               with Not_found ->
-                let open MiscParser in
+                let open TestType in
                 let tv = match t with
                 | TyDefPointer|TyDef -> TyDef
                 | Pointer s -> Ty s
@@ -249,7 +261,7 @@ module Generic (A : Arch_litmus.Base)
       let observed final locs =
         A.LocSet.union
           (C.locations final)
-          (A.LocSet.of_list (List.map fst locs))
+          (LocationsItem.fold_locs A.LocSet.add locs A.LocSet.empty)
 
       let all_observed final filter locs =
         let obs = observed final locs in
@@ -606,7 +618,7 @@ type P.code = MiscParser.proc * A.pseudo list)
         List.fold_right
           (fun (_,(t,v)) env ->
             match t,v with
-            | (MiscParser.TyDef|MiscParser.TyDefPointer),
+            | (TestType.TyDef|TestType.TyDefPointer),
               Constant.Symbolic s ->
                 let a = G.tr_symbol s in
                 begin try
@@ -682,13 +694,14 @@ type P.code = MiscParser.proc * A.pseudo list)
         | NoExtra|CExtra _ -> None
         | BellExtra i -> Some i in
       let code_typed = type_outs ty_env1 code in
+      let flocs,ffaults = locs_and_faults locs in
         { T.init = initenv ;
           info = info;
           code = code_typed;
           condition = final;
           filter = filter;
           globals = comp_globals ty_env1 init code;
-          flocs = List.map fst locs ;
+          flocs; ffaults;
           global_code = [];
           src = t;
           type_env = ty_env;

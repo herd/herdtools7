@@ -89,7 +89,7 @@ let parse_observed s =
     let locs,c = StateParser.main_loc_constr SL.token lxb in
     Some
       (LocSet.union
-         (LocSet.of_list (List.map fst locs))
+         (LocationsItem.fold_locs LocSet.add locs LocSet.empty)
          (get_locs c))
   with
   | Parsing.Parse_error
@@ -108,7 +108,10 @@ let parse_locs s =
   try
     let lxb = Lexing.from_string s in
     let locs,cstr = StateParser.main_loc_constr SL.token lxb in
-    Some (LocSet.union (LocSet.of_list (List.map fst locs)) (get_locs cstr))
+    Some
+      (LocSet.union
+         (LocationsItem.fold_locs LocSet.add locs LocSet.empty)
+         (get_locs cstr))
   with
   | Parsing.Parse_error
   | LexMisc.Error _ -> None

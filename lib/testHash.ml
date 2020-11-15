@@ -41,6 +41,7 @@ open Printf
 
 let digest_init debug init =
   let open MiscParser in
+  let open TestType in
   let init =
     List.sort
       (fun (loc1,(t1,v1)) (loc2,(t2,v2)) ->

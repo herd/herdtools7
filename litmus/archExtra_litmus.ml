@@ -61,7 +61,7 @@ module type S = sig
 
   val debug_state : state -> string
 
-  type fullstate = (location * (MiscParser.run_type * I.V.v)) list
+  type fullstate = (location * (TestType.t * I.V.v)) list
 
   val find_in_state : location -> state -> I.V.v
 
@@ -155,7 +155,7 @@ module Make(O:Config)(I:I) : S with module I = I
          (fun (loc,v) -> Printf.sprintf "<%s -> %s>" (pp_location loc) (I.V.pp_v v))
          st)
 
-  type fullstate = (location * (MiscParser.run_type * I.V.v)) list
+  type fullstate = (location * (TestType.t * I.V.v)) list
 
   let rec find_in_state loc = function
     | [] -> I.V.zero

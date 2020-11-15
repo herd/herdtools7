@@ -16,6 +16,8 @@
 (****************************************************************************)
 
 open Constant
+open TestType
+open LocationsItem
 open MiscParser
 open ConstrGen
 let mk_sym_tag s t = Symbolic (Virtual ((s,Some t),0))
@@ -49,13 +51,13 @@ let mk_lab p s = Label (p,s)
 %start init
 %type <MiscParser.location> main_location
 %start main_location
-%type <(MiscParser.location * MiscParser.run_type) list * MiscParser.prop option * MiscParser.constr * (string * MiscParser.quantifier) list> constraints
+%type < (MiscParser.location,MiscParser.maybev) LocationsItem.t list * MiscParser.prop option * MiscParser.constr * (string * MiscParser.quantifier) list> constraints
 %start constraints
 %type  <MiscParser.constr> main_constr
 %start main_constr
 %type  <MiscParser.constr> skip_loc_constr
 %start skip_loc_constr
-%type  <(MiscParser.location * MiscParser.run_type) list * MiscParser.constr> main_loc_constr
+%type  <(MiscParser.location,MiscParser.maybev) LocationsItem.t list * MiscParser.constr> main_loc_constr
 %start main_loc_constr
 %type <MiscParser.location list> main_locs
 %start main_locs
@@ -155,25 +157,31 @@ init_semi_list:
 
 /* For final state constraints */
 
+fault: FAULT LPAR lbl COMMA NAME RPAR { ($3,mk_sym $5) }
+
 loc_deref:
 NAME LBRK NUM RBRK
   { Location_deref (Constant.mk_sym $1, Misc.string_as_int $3) }
 
 loc_typ:
-| loc_deref { ($1,TyDef) }
-| location { ($1, TyDef) }
-| location STAR { ($1, TyDefPointer) }
-| location NAME { ($1, Ty $2) }
-| location NAME STAR { ($1, Pointer $2) }
+| loc_deref { Loc ($1,TyDef) }
+| location { Loc ($1, TyDef) }
+| location STAR { Loc ($1, TyDefPointer) }
+| location NAME { Loc ($1, Ty $2) }
+| location NAME STAR { Loc ($1, Pointer $2) }
 
 main_locs:
 | ls = list(location)  EOF { ls }
 
+loc_item:
+| loc_typ { $1 }
+| fault { Fault $1 }
+
 loc_semi_list:
 | {[]}
 | SEMI {[]}
-| loc_typ {$1::[]}
-| loc_typ SEMI loc_semi_list  {$1::$3}
+| loc_item {$1::[]}
+| loc_item SEMI loc_semi_list  {$1::$3}
 
 locations:
 |  LOCATIONS LBRK loc_semi_list RBRK { $3 }
@@ -261,7 +269,7 @@ atom_prop:
 | location NOTEQUAL maybev {Not (Atom (LV ($1,$3)))}
 | location EQUAL location_deref {Atom (LL ($1,$3))}
 | location EQUALEQUAL location_deref {Atom (LL ($1,$3))}
-| FAULT LPAR lbl COMMA NAME RPAR { Atom (FF ($3,mk_sym $5)) }
+| fault { Atom (FF $1) }
 | location EQUAL LPAR separated_nonempty_list(COMMA, maybev_prop) RPAR
   { Atom (LV ($1, mk_pte_val $1 $4)) }
 

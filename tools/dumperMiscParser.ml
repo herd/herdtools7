@@ -31,10 +31,13 @@ end = struct
 
         module A = A
 
+        type v = MiscParser.maybev
+        let dump_v = ParsedConstant.pp Opt.hexa
+
         let dump_loc = MiscParser.dump_location
 
         let dump_state_atom a =
-          MiscParser.dump_state_atom dump_loc (ParsedConstant.pp Opt.hexa) a
+          MiscParser.dump_state_atom dump_loc dump_v  a
 
         type state = MiscParser.state
 
@@ -50,7 +53,7 @@ end = struct
         let dump_atom a =
           let open ConstrGen in
           match a with
-          | LV (loc,v) -> dump_state_atom (loc,(MiscParser.TyDef,v))
+          | LV (loc,v) -> dump_state_atom (loc,(TestType.TyDef,v))
           | LL (loc1,loc2) ->
               sprintf "%s=%s" (dump_loc loc1) (MiscParser.dump_rval loc2)
           | FF f ->

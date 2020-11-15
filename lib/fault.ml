@@ -44,6 +44,8 @@ let atom_compare compare ((p1,lbl1),v1) ((p2,lbl2),v2) = match Proc.compare p1 p
     end
 | r -> r
 
+let map_value f (p,v) = (p,f v)
+
 module type S = sig
   type loc_global
   type fault = (Proc.t * Label.Set.t) * loc_global * string option

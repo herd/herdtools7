@@ -53,20 +53,12 @@ type outcome = atom list
 val pp_atom : atom -> string
 val pp_outcome : outcome -> string
 
-type run_type =
-  | TyDef | TyDefPointer
-  | Ty of string | Pointer of string
-  | TyArray of string * int
-  | Atomic of string
-
-val pp_run_type : run_type -> string
-
-type state = (location * (run_type * maybev)) list
+type state = (location * (TestType.t * maybev)) list
 
 val check_env_for_dups : state -> unit
 
 val dump_state_atom :
-  ('loc -> string) -> ('v -> string) -> ('loc * (run_type * 'v)) -> string
+  ('loc -> string) -> ('v -> string) -> ('loc * (TestType.t * 'v)) -> string
 
 (* Packed result *)
 type info = (string * string) list
@@ -80,31 +72,31 @@ type extra_data =
 
 val empty_extra : extra_data
 
-type ('i, 'p, 'prop, 'loc) result =
+type ('i, 'p, 'prop, 'loc, 'v) result =
     { info : info ;
       init : 'i ;
       prog : 'p ;
       filter : 'prop option ;
       condition : 'prop ConstrGen.constr ;
-      locations : ('loc * run_type) list ;
+      locations : ('loc,'v) LocationsItem.t list ;
       extra_data : extra_data ;
     }
 
 (* Easier to handle *)
 type ('loc,'v,'ins) r3 =
-       (('loc * (run_type * 'v)) list,
+       (('loc * (TestType.t * 'v)) list,
        (proc * 'ins list) list,
        ('loc, 'v) ConstrGen.prop,
-       'loc) result
+       'loc,'v) result
 
 type ('loc,'v,'code) r4 =
-      (('loc * (run_type * 'v)) list,
+      (('loc * (TestType.t * 'v)) list,
        'code list,
        ('loc, 'v) ConstrGen.prop,
-       'loc) result
+       'loc,'v) result
 
 (* Result of generic parsing *)
-type 'pseudo t = (state, (proc * 'pseudo list) list, prop, location) result
+type 'pseudo t = (state, (proc * 'pseudo list) list, prop, location,maybev) result
 
 (* Add empty extra info to machine parsers *)
 val mach2generic :
@@ -119,14 +111,14 @@ val tthm_key : string
 val variant_key : string
 
 (* Extract hash *)
-val get_hash : ('i, 'p, 'c, 'loc) result -> string option
+val get_hash : ('i, 'p, 'c, 'loc, 'v) result -> string option
 val set_hash :
-    ('i, 'p, 'c, 'loc) result -> string ->
-      ('i, 'p, 'c, 'loc) result
+    ('i, 'p, 'c, 'loc, 'v) result -> string ->
+      ('i, 'p, 'c, 'loc, 'v) result
 
 (* Extract meta information from key *)
 val get_info_on_info : string -> (string * string) list -> string option
 
-val get_info :  ('i, 'p, 'c, 'loc) result -> string -> string option
+val get_info :  ('i, 'p, 'c, 'loc, 'v) result -> string -> string option
 
 val mk_pte_val : location -> (string * string) list -> 'b Constant.t
