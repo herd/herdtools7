@@ -252,13 +252,18 @@ let compare_fence b1 b2 = match b1,b2 with
 let default = Barrier (DMB (SY,FULL))
 let strong = default
 
+let add_dot f x = match f x with
+| "" -> ""
+| s -> "." ^ s
+
 let pp_fence f = match f with
 | Barrier f -> do_pp_barrier "." f
 | CacheSync (s,isb) -> sprintf "CacheSync%s%s"
       (match s with Strong -> "Strong" | Weak -> "")
       (if isb then "Isb" else "")
-| Shootdown (d,op) -> sprintf "Shootdown%s%s"
-      (pp_domain d) (TLBI.pp_op op)
+| Shootdown (d,op) ->
+    sprintf "TLBI%s%s"
+      (add_dot TLBI.short_pp_op op) (add_dot pp_domain d)
 
 let fold_cumul_fences f k =
    do_fold_dmb_dsb C.moreedges (fun b k -> f (Barrier b) k) k

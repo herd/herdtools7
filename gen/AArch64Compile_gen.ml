@@ -392,12 +392,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let rC,c,st = do_sum_addr v st rB idx in
         rA,init,lift_code (mov_reg_addr rA rB::c@[ldg rA rC]),st
 
-(*
-      let rA,st = next_reg st in
-          let rB,init,st = U.next_init st p init x in
-          let ins,st = L.load_idx st rA rB idx in
-          rA,init,pseudo ins ,st
-*)
     end
 
     module OBS =
@@ -990,15 +984,22 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let emit_fence st p init n f = match f with
     | Barrier f -> init,[Instruction (I_FENCE f)],st
     | Shootdown(dom,op) ->
-          let loc = match n.C.evt.C.loc with
-              | Data loc -> loc
-              | Code _ -> Warn.user_error "TLBI/CacheSync"
-          in
-          let r,init,st = U.next_init st p init loc in
-          let r1,st = tempo1 st in
-          let cs = emit_shootdown dom op r1 in
-          let cs = Instruction (lsri64 r1 r 12)::cs in
-          init,cs,st
+        let loc = match n.C.evt.C.loc with
+        | Data loc -> loc
+        | Code _ -> Warn.user_error "TLBI/CacheSync" in
+        let open TLBI in
+        let r,init,csr,st =  match op.TLBI.typ with
+        | ALL|VMALL|VMALLS12
+            ->
+              ZR,init,[],st
+        | ASID|VA|VAL|VAA|VAAL|IPAS2|IPAS2L
+            ->
+              let r,init,st = U.next_init st p init loc in
+              let r1,st = tempo1 st in
+              let cs = [Instruction (lsri64 r1 r 12)] in
+              r1,init,cs,st in
+        let cs = emit_shootdown dom op r in
+        init,csr@cs,st
     | CacheSync (s,isb) ->
         try
           let lab = C.find_prev_code_write n in
@@ -1223,7 +1224,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 let cs2 =
                   [Instruction (calc0 vdep r2 r1) ;
                    Instruction (add (sz2v sz) r2 r2 rA); ] in
-              r2,csA@cs2,init,st
+                r2,csA@cs2,init,st
             | _ ->
                 let cs2 =
                   [Instruction (calc0 vdep r2 r1) ;
