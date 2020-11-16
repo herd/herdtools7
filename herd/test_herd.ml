@@ -16,7 +16,7 @@
 
 type proc_info = (string * int list) list
 
-type ('prog,'nice_prog,'start,'state,'size_env, 'prop,'loc,'locset) t =
+type ('prog,'nice_prog,'start,'state,'size_env, 'prop,'loc,'locset,'fset) t =
     {
      arch : Archs.t ;
      name : Name.t ;
@@ -28,7 +28,7 @@ type ('prog,'nice_prog,'start,'state,'size_env, 'prop,'loc,'locset) t =
      size_env : 'size_env ;
      filter : 'prop option ;
      cond : 'prop ConstrGen.constr ;
-     flocs : 'loc list ;
+     flocs : 'loc list ; ffaults: 'fset;
      observed : 'locset ;
      displayed : 'locset ;
      extra_data : MiscParser.extra_data ;
@@ -56,7 +56,7 @@ module Make(A:Arch_herd.S) =
 
     type result =
         (A.program, A.nice_prog, A.start_points,
-         A.state, A.size_env, A.prop, A.location, A.LocSet.t) t
+         A.state, A.size_env, A.prop, A.location, A.LocSet.t,A.FaultAtomSet.t) t
 
 (* Symb register allocation is external, since litmus needs it *)
     module ArchAlloc = struct
@@ -78,6 +78,13 @@ module Make(A:Arch_herd.S) =
     | ConstrGen.LV (loc,_v) -> A.LocSet.add loc r
     | ConstrGen.LL (l1,l2) -> A.LocSet.add l1 (A.LocSet.add l2 r)
     | ConstrGen.FF _ ->  r
+
+    let collect_atom_fault a r =
+      let open ConstrGen in
+      match a with
+      | (LV _|LL _) -> r
+      | FF f -> f::r
+
 
 (* Mem size access *)
     let mem_access_size_of_code sz code =
@@ -109,7 +116,7 @@ module Make(A:Arch_herd.S) =
          } = t in
 
       let prog,starts = Load.load nice_prog in
-      let flocs = LocationsItem.fold_locs Misc.cons locs [] in
+      let flocs,ffaults = LocationsItem.locs_and_faults locs in
       let displayed =
         let flocs = A.LocSet.of_list flocs in
         ConstrGen.fold_constr collect_atom final flocs in
@@ -117,6 +124,9 @@ module Make(A:Arch_herd.S) =
       | None -> displayed
       | Some filter ->
           ConstrGen.fold_prop collect_atom filter displayed in
+      let ffaults =
+        A.FaultAtomSet.of_list
+          (ConstrGen.fold_constr collect_atom_fault final ffaults) in
       let proc_info =
         let m =
           List.fold_left
@@ -140,7 +150,7 @@ module Make(A:Arch_herd.S) =
        init_state = A.build_state init ;
        filter = filter ;
        cond = final ;
-       flocs = flocs ;
+       flocs = flocs ; ffaults;
        observed = observed ;
        displayed = displayed ;
        extra_data = extra_data ;
@@ -171,7 +181,7 @@ module Make(A:Arch_herd.S) =
        init_state = A.state_empty; size_env = A.size_env_empty ;
        filter = None ;
        cond = fake_constr ;
-       flocs = [] ;
+       flocs = [] ; ffaults = A.FaultAtomSet.empty;
        observed = A.LocSet.empty; displayed = A.LocSet.empty;
        extra_data = MiscParser.empty_extra;
        access_size = [];

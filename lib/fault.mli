@@ -45,6 +45,8 @@ module type S = sig
   val check_one_fatom : fault -> fatom -> bool
   val check_fatom : FaultSet.t -> fatom -> bool
 
+  module FaultAtomSet : MySet.S with type elt = fatom
+
 end
 
 module Make : functor (A:I) -> S with type loc_global := A.arch_global

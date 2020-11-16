@@ -29,3 +29,10 @@ let map_loc f i = match i with
 | Loc (loc,t) -> Loc (f loc,t)
 | Fault _ as j -> j
 let map_locs f = List.map (map_loc f)
+
+let locs_and_faults locs =
+  List.fold_right
+    (fun i (ls,fs) -> match i with
+    | Loc (loc,_) -> loc::ls,fs
+    | Fault f -> ls,f::fs)
+    locs ([],[])

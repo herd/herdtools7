@@ -177,7 +177,7 @@ module Make
           (fun env (s,ty) -> A.LocMap.add (A.Location_global (G.Addr s)) ty env)
           env globals in
       let observed = Generic.all_observed final filter locs in
-      let flocs,ffaults = Compile.locs_and_faults locs in
+      let flocs,ffaults = LocationsItem.locs_and_faults locs in
       { T.init = initenv;
         info = info;
         code = comp_code observed env code;

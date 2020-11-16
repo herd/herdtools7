@@ -39,14 +39,6 @@ let get_fmt hexa base = match CType.get_fmt hexa base with
 let base =  CType.Base "int"
 let pointer = CType.Pointer base
 
-let locs_and_faults locs =
-  let open LocationsItem in
-  List.fold_right
-    (fun i (ls,fs) -> match i with
-          | Loc (loc,_) -> loc::ls,fs
-          | Fault f -> ls,f::fs)
-    locs ([],[])
-
 module Generic (A : Arch_litmus.Base)
     (C:Constr.S
     with type location = A.location and module LocSet = A.LocSet) = struct
@@ -694,7 +686,7 @@ type P.code = MiscParser.proc * A.pseudo list)
         | NoExtra|CExtra _ -> None
         | BellExtra i -> Some i in
       let code_typed = type_outs ty_env1 code in
-      let flocs,ffaults = locs_and_faults locs in
+      let flocs,ffaults = LocationsItem.locs_and_faults locs in
         { T.init = initenv ;
           info = info;
           code = code_typed;

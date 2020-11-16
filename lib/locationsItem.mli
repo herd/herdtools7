@@ -24,3 +24,5 @@ val iter_locs : ('loc -> unit) -> ('loc,'v) t list -> unit
 
 val map_loc : ('loc -> 'a) -> ('loc,'v) t -> ('a,'v) t
 val map_locs : ('loc -> 'a) -> ('loc,'v) t list -> ('a,'v) t list
+
+val locs_and_faults : ('loc, 'v) t list -> ('loc list * 'v Fault.atom list)

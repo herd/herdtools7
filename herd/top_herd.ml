@@ -224,12 +224,6 @@ module Make(O:Config)(M:XXXMem.S) =
       and loads = S.E.mem_loads_of es.S.E.events in
       S.E.EventSet.subset loads obs
 
-    let collect_atom_fault a r =
-      let open ConstrGen in
-      match a with
-      | (LV _|LL _) -> r
-      | FF f -> f::r
-
 (* Called by model simulator in case of success *)
     let model_kont loop ochan test do_restrict cstr =
 
@@ -359,12 +353,10 @@ module Make(O:Config)(M:XXXMem.S) =
 
       let restrict_faults =
         if memtag || kvm then
-          let faults_in_cond =
-            ConstrGen.fold_constr collect_atom_fault cstr [] in
           A.FaultSet.filter
             (fun flt ->
-              List.exists
-                (fun f -> A.check_one_fatom flt f) faults_in_cond)
+              A.FaultAtomSet.exists
+                (fun f -> A.check_one_fatom flt f) test.Test_herd.ffaults)
         else fun _ -> A.FaultSet.empty in
 
       let final_state_restrict_locs dlocs senv fsc =
