@@ -142,7 +142,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | I_LDR_SIMD (v,_,_,_,_) | I_LDR_P_SIMD (v,_,_,_)
       | I_LDP_SIMD (_,v,_,_,_,_) | I_LDP_P_SIMD (_,v,_,_,_,_)
       | I_STR_SIMD (v,_,_,_,_) | I_STR_P_SIMD (v,_,_,_)
-      | I_STP_SIMD (_,v,_,_,_,_) | I_STP_P_SIMD (_,v,_,_,_,_) ->
+      | I_STP_SIMD (_,v,_,_,_,_) | I_STP_P_SIMD (_,v,_,_,_,_)
+      | I_LDUR_SIMD (v,_,_,_) | I_STUR_SIMD (v,_,_,_) ->
           Some (tr_simd_variant v)
       | I_LD1 (r,_,_,_) | I_LD1R (r,_,_) | I_ST1 (r,_,_,_) ->
           Some (simd_mem_access_size [r])

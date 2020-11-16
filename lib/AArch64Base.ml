@@ -607,8 +607,7 @@ let tr_simd_variant = function
   | VSIMD8 -> MachSize.Byte
   | VSIMD16 -> MachSize.Short
   | VSIMD32 -> MachSize.Word
-  | VSIMD64 -> MachSize.Quad
-  | VSIMD128 -> MachSize.S128
+  | VSIMD64 | VSIMD128 -> MachSize.Quad
 
 type 'k kr = K of 'k | RV of variant * reg
 let k0 = K 0
