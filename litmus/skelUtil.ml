@@ -365,7 +365,10 @@ module Make
         let locs = get_displayed_locs test in
         A.LocSet.exists (fun loc ->is_ptr_pte loc env) locs
 
-      let get_faults test = T.C.get_faults test.T.condition
+      let get_faults test =        
+        let inc = T.C.get_faults test.T.condition
+        and inf = test.T.ffaults in
+        inc@inf
 
       let find_label_offset p lbl test =
         try
