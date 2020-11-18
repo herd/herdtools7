@@ -43,6 +43,7 @@ module type S = sig
   include Location.S
   with type loc_reg = I.arch_reg and type loc_global = Global_litmus.t
   val location_of_addr : string -> location
+  val is_pte_loc : location -> bool
   val tr_global : MiscParser.maybev -> Global_litmus.t
 
   module Out : Template.S with
@@ -105,6 +106,10 @@ module Make(O:Config)(I:I) : S with module I = I
       end)
 
   let location_of_addr a = Location_global (Global_litmus.Addr a)
+
+  let is_pte_loc = function
+    | Location_global (Global_litmus.Pte _) -> true
+    | _ -> false
 
   let tr_global (c:ParsedConstant.v) = 
     let open Constant in

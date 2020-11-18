@@ -49,6 +49,7 @@ module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) =
 
   include Location.Make(Internal)
 
+  let is_pte_loc _ = false
   let parse_reg x = Some x
   let reg_compare = Internal.reg_compare
 

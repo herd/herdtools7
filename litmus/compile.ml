@@ -59,7 +59,8 @@ module Generic (A : Arch_litmus.Base)
         | Constant.Tag _ -> tag
         | Constant.PteVal _ -> pteval_t
 
-      let misc_to_c  = function
+      let misc_to_c loc = function
+        | TestType.TyDef when A.is_pte_loc loc -> pteval_t
         | TestType.TyDef -> base
         | TestType.TyDefPointer  -> pointer
         | TestType.Ty t -> Base t
@@ -166,7 +167,7 @@ module Generic (A : Arch_litmus.Base)
                 ignore (A.LocMap.find loc env) ; env
               with
               | Not_found ->
-                  A.LocMap.add loc (misc_to_c t) env
+                  A.LocMap.add loc (misc_to_c loc t) env
               end
           | Fault _ -> env)
           env flocs
@@ -184,7 +185,7 @@ module Generic (A : Arch_litmus.Base)
               with Not_found ->
                 A.LocMap.add loc (typeof v) env
               end
-          | _ -> A.LocMap.add loc (misc_to_c t) env)
+          | _ -> A.LocMap.add loc (misc_to_c loc t) env)
           env init
 
       let type_init_values init env =
@@ -206,7 +207,7 @@ module Generic (A : Arch_litmus.Base)
                     Warn.user_error
                       "variable %s should be of pointer type"
                       (A.pp_location loc) in
-                A.LocMap.add a (misc_to_c tv) env
+                A.LocMap.add a (misc_to_c a tv) env
               end
           | _,_ -> env)
           env init
