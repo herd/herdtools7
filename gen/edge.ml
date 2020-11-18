@@ -31,6 +31,7 @@ module type S = sig
   val tr_value : atom option -> Code.v -> Code.v
   val overwrite_value : Code.v -> atom option -> Code.v -> Code.v
   val extract_value : Code.v -> atom option -> Code.v
+  val set_pteval : atom option -> PTEVal.t -> (unit -> string) -> PTEVal.t
   val merge_atoms : atom -> atom -> atom option
   val atom_to_bank : atom option -> Code.bank
   val strong : fence
@@ -156,6 +157,10 @@ and type rmw = F.rmw = struct
   let tr_value = F.tr_value
   let overwrite_value = F.overwrite_value
   let extract_value = F.extract_value
+  let set_pteval ao p = match ao with
+  | None -> fun _ -> p
+  | Some a -> F.set_pteval a p
+
   let applies_atom ao d = match ao,d with
   | (None,_)|(_,(Irr|NoDir)) -> true
   | Some a,Dir d -> F.applies_atom a d

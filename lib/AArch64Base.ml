@@ -363,11 +363,16 @@ let fold_domain f k =
       k
 
   let fold_op f k =
-    let k = f  {typ=VMALLS12; level=E1; domain=IS;} k in
+    let k = f  {typ=VMALL; level=E1; domain=IS;} k in
     f {typ=VAA; level=E1; domain=IS; } k
 
   let pp_op { typ; level; domain; } =
     sprintf "%s%s%s" (pp_typ typ) (pp_level level) (pp_domain domain)
+
+  let short_pp_op = function
+    | {typ=VMALL; level=E1; domain=IS} -> "VMALL"
+    | {typ=VAA; level=E1; domain=IS} -> ""
+    | op -> pp_op op
 
   let is_at_level lvl op =  op.level = lvl
 

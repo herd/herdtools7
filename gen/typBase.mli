@@ -17,7 +17,7 @@
 (* Base type for produced tests *)
 
 type sgn = Signed | Unsigned
-type t =   Int | Std of sgn * MachSize.sz
+type t = Int | Std of sgn * MachSize.sz | Pteval
 
 val tags : string list
 
@@ -27,4 +27,8 @@ val pp : t -> string
 
 val default : t
 val is_default : t -> bool
+
+val pteval_t : t
+val is_pteval_t : t -> bool
+
 val get_size : t -> MachSize.sz

@@ -54,7 +54,9 @@ module Mixed =
 (* AArch64 has more atoms that others *)
 let bellatom = false
 type atom_rw =  PP | PL | AP | AL
-type atom_acc = Plain | Acq | AcqPc | Rel | Atomic of atom_rw | Tag
+type w_pte = AF | DB | OA | DBM | VALID
+type atom_pte = Read | Set of w_pte
+type atom_acc = Plain | Acq | AcqPc | Rel | Atomic of atom_rw | Tag | Pte of atom_pte
 type atom = atom_acc * MachMixed.t option
 
 let default_atom = Atomic PP,None
@@ -63,6 +65,8 @@ let applies_atom (a,_) d = match a,d with
 | Acq,R
 | AcqPc,R
 | Rel,W
+| Pte Read,R
+| Pte (Set _),W
 | (Plain|Atomic _|Tag),(R|W)
   -> true
 | _ -> false
@@ -77,6 +81,14 @@ let applies_atom (a,_) d = match a,d with
      | AP -> "A"
      | AL -> "AL"
 
+   let pp_atom_pte = function
+     | Read -> ""
+     | Set AF -> "AF"
+     | Set DB -> "DB"
+     | Set DBM -> "DBM"
+     | Set VALID -> "VA"
+     | Set OA -> "OA"
+
    let pp_atom_acc = function
      | Atomic rw -> sprintf "X%s" (pp_atom_rw rw)
      | Rel -> "L"
@@ -84,6 +96,7 @@ let applies_atom (a,_) d = match a,d with
      | AcqPc -> "Q"
      | Plain -> "P"
      | Tag -> "T"
+     | Pte p -> sprintf "Pte%s" (pp_atom_pte p)
 
    let pp_atom (a,m) = match a with
    | Plain ->
@@ -106,28 +119,33 @@ let applies_atom (a,_) d = match a,d with
        (fun m r -> f (Plain,Some m) r)
        r
 
+   let fold_pte f r =
+     if do_kvm then
+       let g field r = f (Set field) r in
+       f Read (g AF (g DB (g DBM (g VALID (g OA r)))))
+     else r
+
    let fold_atom_rw f r = f PP (f PL (f AP (f AL r)))
 
    let fold_tag =
      if do_tag then fun f r -> f Tag r
      else fun _f r -> r
 
-   let fold_acc f r =
+   let fold_acc mixed f r =
+     let r = if mixed then r else fold_pte (fun p r -> f (Pte p) r) r in
      fold_tag f (f Acq (f AcqPc (f Rel (fold_atom_rw (fun rw -> f (Atomic rw)) r))))
 
-   let fold_non_mixed f r = fold_acc (fun acc r -> f (acc,None) r) r
+   let fold_non_mixed f r = fold_acc false (fun acc r -> f (acc,None) r) r
 
    let fold_atom f r =
-     fold_acc
-       (fun acc r ->
-         Mixed.fold_mixed
-           (fun m r -> f (acc,Some m) r)
-           (f (acc,None) r))
+     let r = fold_non_mixed f r in
+     fold_acc true
+       (fun acc r -> Mixed.fold_mixed (fun m r -> f (acc,Some m) r) r)
        (fold_mixed f r)
 
    let worth_final (a,_) = match a with
      | Atomic _ -> true
-     | Acq|AcqPc|Rel|Plain|Tag -> false
+     | Acq|AcqPc|Rel|Plain|Tag|Pte _ -> false
 
 
    let varatom_dir _d f r = f None r
@@ -135,6 +153,8 @@ let applies_atom (a,_) d = match a,d with
    let merge_atoms a1 a2 = match a1,a2 with
    | ((Plain,sz),(a,None))
    | ((a,None),(Plain,sz)) -> Some (a,sz)
+   | ((Pte _,_),(_,Some _))
+   | ((_,Some _),(Pte _,_)) -> None
    | ((a1,None),(a2,sz))
    | ((a1,sz),(a2,None)) when a1=a2 -> Some (a1,sz)
    | ((Plain,sz1),(a,sz2))
@@ -144,9 +164,11 @@ let applies_atom (a,_) d = match a,d with
 
    let atom_to_bank = function
    | Tag,None -> Code.Tag
-   | Tag,Some _ -> assert false
+   | Pte _,None -> Code.Pte
+   | (Tag|Pte _),Some _ -> assert false
    | (Plain|Acq|AcqPc|Rel|Atomic (PP|PL|AP|AL)),_
       -> Code.Ord
+
 
 (**************)
 (* Mixed size *)
@@ -163,15 +185,34 @@ let applies_atom (a,_) d = match a,d with
        end)
 
 let overwrite_value v ao w = match ao with
-| None| Some ((Atomic _|Acq|AcqPc|Rel|Plain|Tag),None)
+| None| Some ((Atomic _|Acq|AcqPc|Rel|Plain|Tag|Pte _),None)
   -> w (* total overwrite *)
-| Some ((Atomic _|Acq|AcqPc|Rel|Plain|Tag),Some (sz,o)) ->
+| Some ((Atomic _|Acq|AcqPc|Rel|Plain),Some (sz,o)) ->
     ValsMixed.overwrite_value v sz o w
+| Some ((Tag|Pte _),Some _) ->
+    assert false
 
  let extract_value v ao = match ao with
-  | None| Some ((Atomic _|Acq|AcqPc|Rel|Plain|Tag),None) -> v
+  | None| Some ((Atomic _|Acq|AcqPc|Rel|Plain|Tag|Pte _),None) -> v
   | Some ((Atomic _|Acq|AcqPc|Rel|Plain|Tag),Some (sz,o)) ->
       ValsMixed.extract_value v sz o
+  | Some (Pte _,Some _) -> assert false
+
+  let do_setpteval a f p =
+    let open PTEVal in
+    match f with
+    | Set AF -> fun _loc -> { p with af = 1-p.af; }
+    | Set DB -> fun _loc -> { p with db = 1-p.db; }
+    | Set DBM -> fun _loc -> { p with dbm = 1-p.dbm; }
+    | Set VALID -> fun _loc -> { p with valid = 1-p.valid; }
+    | Set OA -> fun loc -> PTEVal.set_oa p (loc ())
+    | Read ->
+        Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
+
+   let set_pteval a p =
+     match a with
+     | Pte f,None -> do_setpteval a f p
+     | _ -> Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
 
 (* End of atoms *)
 
@@ -211,13 +252,18 @@ let compare_fence b1 b2 = match b1,b2 with
 let default = Barrier (DMB (SY,FULL))
 let strong = default
 
+let add_dot f x = match f x with
+| "" -> ""
+| s -> "." ^ s
+
 let pp_fence f = match f with
 | Barrier f -> do_pp_barrier "." f
 | CacheSync (s,isb) -> sprintf "CacheSync%s%s"
       (match s with Strong -> "Strong" | Weak -> "")
       (if isb then "Isb" else "")
-| Shootdown (d,op) -> sprintf "Shootdown%s%s"
-      (pp_domain d) (TLBI.pp_op op)
+| Shootdown (d,op) ->
+    sprintf "TLBI%s%s"
+      (add_dot TLBI.short_pp_op op) (add_dot pp_domain d)
 
 let fold_cumul_fences f k =
    do_fold_dmb_dsb C.moreedges (fun b k -> f (Barrier b) k) k

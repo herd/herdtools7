@@ -27,6 +27,7 @@ end
 module type S = sig
 (* Atoms *)
   include Atom.S
+  val set_pteval : atom -> PTEVal.t -> (unit -> string) -> PTEVal.t
 
 (* Fences *)
   type fence

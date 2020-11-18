@@ -2,7 +2,7 @@
 (*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
-(* Luc Maranget, INRIA Paris, France.                                       *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
 (* Copyright 2020-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
@@ -14,24 +14,30 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Abstraction of page table entry (PTE) *)
+(** Miscellaneous lexers *)
 
-type t = {
-  oa : string;
-  valid : int;
-  af : int;
-  db : int;
-  dbm : int;
-  }
+{
 
-(* Default value for location argument *)
-val default : string -> t
-val set_oa : t -> string -> t
+}
 
-(* Flags have default values *)
-val is_default : t -> bool
-val of_list : string -> (string * string) list -> t
-val pp : t -> string
+let digit = ['0'-'9']
+let num = ['1'-'9']digit*
+let hexa_digit = (digit|['a'-'f''A'-'F'])
+let hexa_num = ("0x"|"0X")hexa_digit+
+let alpha = [ 'a'-'z' 'A'-'Z']
+let blank = [' ' '\t' '\r']
+let not_blank = [^' ''\t''\r']
+let name  = alpha (alpha|digit|'_' | '/' | '.' | '-')*
 
-val compare : t -> t -> int
-val eq : t -> t -> bool
+rule num_rule = parse
+| blank* (num|hexa_num) blank* eof { true }
+| ""  { false }
+
+and info_rule = parse
+| (name as key) blank* '=' blank* (_* as value) blank* eof
+  { let p = key,value in Some p }
+| "" { None }
+{
+let is_num s = num_rule (Lexing.from_string s)
+let info s = info_rule (Lexing.from_string s)
+}

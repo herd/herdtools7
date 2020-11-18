@@ -60,7 +60,7 @@ module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S
 
   let add_init_check chk p o init =
     match chk,o with
-    | true,Some r -> (A.Reg (p,r),Some "-1")::init
+    | true,Some r -> (A.Reg (p,r),Some (A.S "-1"))::init
     | _,_ -> init
 
   type test =
@@ -236,9 +236,13 @@ let get_fence n =
           mk_c (cf@is),
           (match n.C.evt.C.loc with
           | Data loc ->
-              if StringSet.mem loc loc_writes  && not (U.do_poll n) then
+              let call_add =
+                StringSet.mem loc loc_writes  && not (U.do_poll n) in
+              if call_add then
                 F.add_final p o n finals
-              else finals
+              else begin
+                finals
+              end
           | Code _ ->
               begin match o with
               | None   -> finals (* Code write *)
@@ -506,7 +510,8 @@ let max_set = IntSet.max_elt
           let v = lst.C.next.C.evt.C.v in
           let r,i,c,st = Comp.emit_obs Tag st p i x in
           i,code@c,F.add_final_loc p r (Code.add_tag x v) f,st
-      | Code _,_ -> i,code,f,st
+      | Data _,Pte -> assert false
+      | Code _,_ -> i,code,f,st            
     else i,code,f,st
 
 (******************************************)
@@ -531,6 +536,7 @@ let max_set = IntSet.max_elt
     in do_rec oks []
 
   let do_memtag = O.variant Variant_gen.MemTag
+  let do_kvm = O.variant Variant_gen.KVM
 
   let compile_cycle ok n =
     let open Config in
@@ -587,11 +593,11 @@ let max_set = IntSet.max_elt
               if
                 List.exists
                   (function
-                    | (_,Some loc) -> (loc:string) = Code.ok_str
-                    | (_,None) -> false)
+                    | (_,Some (A.S loc)) -> (loc:string) = Code.ok_str
+                    | (_,(Some (A.P _)|None)) -> false)
                   i
               then
-                (A.Loc Code.ok_str,Some "1")::i,obsc@cs,
+                (A.Loc Code.ok_str,Some (A.S "1"))::i,obsc@cs,
                 (m,F.cons_int_set
                    (A.Loc Code.ok_str,IntSet.singleton 1) f@fs),ios
               else
@@ -599,8 +605,12 @@ let max_set = IntSet.max_elt
             else Warn.fatal "Last minute check"
           else  Warn.fatal "Too many procs" in
         let env =
+          let ptes = A.LocSet.of_list (F.extract_ptes f) in
           List.fold_left
-            (fun m (loc,_) -> A.LocMap.add loc O.typ m)
+            (fun m (loc,_) ->
+              let t =
+                if A.LocSet.mem loc ptes then TypBase.pteval_t else O.typ in
+              A.LocMap.add loc t m)
             A.LocMap.empty f in
         let globals = C.get_globals n in
         let env =
@@ -630,8 +640,21 @@ let max_set = IntSet.max_elt
               StringSet.of_list xs in
             let flts = List.mapi (fun i ns -> i,get_locs ns) splitted in
             List.filter (fun (_,xs) -> not (StringSet.is_empty xs)) flts
+          else if do_kvm then
+            let get_locs ns =
+              let xs =
+                List.fold_left
+                  (fun k n ->
+                    let e = n.C.evt in
+                    match e.C.loc,e.C.bank with
+                    | Data x,Ord -> x::k
+                    | _ -> k)
+                  [] ns in
+              StringSet.of_list xs in
+            let flts = List.mapi (fun i ns -> i,get_locs ns) splitted in
+            List.filter (fun (_,xs) -> not (StringSet.is_empty xs)) flts
           else [] in
-        let f =
+        let fc =
           match O.cond with
           | Unicond ->
               let evts =
@@ -641,7 +664,9 @@ let max_set = IntSet.max_elt
               F.run evts m
           | Cycle -> F.check f
           | Observe -> F.observe f in
-        (i,c,f flts,env),
+        let i =
+         if do_kvm then A.complete_init i else i in
+        (i,c,fc flts,env),
         (U.compile_prefetch_ios (List.length obsc) ios,
          U.compile_coms splitted)
 
@@ -686,7 +711,7 @@ let dump_init chan inits env =
         if p <> q then fprintf chan "\n" else fprintf chan " " ;
         fprintf chan "%s%s;" (A.pp_location left)
           (match loc with
-          | Some loc -> sprintf "=%s" loc
+          | Some v -> sprintf "=%s" (A.pp_initval v)
           | None -> "") ;
         p_rec p rem in
   p_rec (-1) inits
@@ -721,9 +746,11 @@ let fmt_cols =
   let dump_test_channel chan t =
     fprintf chan "%s %s\n" (Archs.pp A.arch) t.name ;
     if t.com <>  "" then fprintf chan "\"%s\"\n" t.com ;
+    let info =
+      if do_kvm then ("Variant","precise")::t.info else t.info in
     List.iter
       (fun (k,v) -> fprintf chan "%s=%s\n" k v)
-      t.info ;
+      info ;
     Hint.dump O.hout t.name t.info ;
     dump_init chan t.init t.env ;
     dump_code chan t.prog ;
@@ -751,15 +778,15 @@ let fmt_cols =
 let tr_labs m env =
   List.map
     (fun bd -> match bd with
-      | (loc,Some v) ->
+      | (loc,Some (A.S v)) ->
           begin try
             let v =
               let p = StringMap.find v m in
               sprintf "%s:%s" (pp_proc p) v in
-            loc,Some v
+            loc,Some (A.S v)
           with Not_found -> bd
           end
-      | (_,None) as bd -> bd)
+      | (_,(Some (A.P _)|None)) as bd -> bd)
     env
 
 let do_self =  O.variant Variant_gen.Self

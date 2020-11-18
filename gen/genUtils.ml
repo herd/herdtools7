@@ -39,21 +39,23 @@ module Make(Cfg:Config)(A:Arch_gen.S)
 
        let next_init st p init loc =
          let rec find_rec = function
-           | (Reg (p0,r0),Some loc0)::_ when loc0 = loc && p = p0 ->
-               r0,init,st
+           | (Reg (p0,r0),Some (A.S loc0))::_
+             when Misc.string_eq loc0 loc && Misc.int_eq p p0
+             -> r0,init,st
            | _::rem -> find_rec rem
            | [] ->
                let r,st =
                  if Extra.use_symbolic then
                    A.symb_reg (Printf.sprintf "%s%i" loc p),st
                  else A.alloc_reg st in
-               r,(Reg (p,r),Some loc)::init,st in
+               r,(Reg (p,r),Some (A.S loc))::init,st in
          find_rec init
 
        let find_init p init loc =
          let rec find_rec = function
-           | (Reg (p0,r0),Some loc0)::_ when loc0 = loc && p = p0 ->
-               r0
+           | (Reg (p0,r0),Some (A.S loc0))::_
+             when Misc.string_eq loc0 loc && Misc.int_eq p p0
+             -> r0
            | _::rem -> find_rec rem
            | [] -> raise Not_found in
          find_rec init
@@ -61,7 +63,7 @@ module Make(Cfg:Config)(A:Arch_gen.S)
        let next_const st p init k =
 
          let rec find_rec = function
-           | (Reg (p0,r0),Some k0)::_ when k0 = k && p = p0 ->
+           | (Reg (p0,r0),Some k0)::_ when A.initval_eq k k0 && p = p0 ->
                r0,init,st
            | _::rem -> find_rec rem
            | [] ->
@@ -79,12 +81,15 @@ module Make(Cfg:Config)(A:Arch_gen.S)
          if min_k <= v && v < max_k && allow_consts_in_code then
            None,init,st
          else
-           let k = Printf.sprintf (if Cfg.hexa then "0x%x" else "%i") v in
+           let k =
+             S (Printf.sprintf (if Cfg.hexa then "0x%x" else "%i") v) in
            let rA,init,st = next_const st p init k in
            Some rA,init,st
 
+       let emit_pteval  st p init v = next_const st p init (A.P v)
+
        let emit_nop st p init nop =
-         let rA,init,st = next_const st p init nop in
+         let rA,init,st = next_const st p init (S nop) in
          rA,init,st
 
        let emit_mov st p init v = match emit_const st p init v with

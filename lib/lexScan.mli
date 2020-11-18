@@ -2,7 +2,7 @@
 (*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
-(* Luc Maranget, INRIA Paris, France.                                       *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
 (* Copyright 2020-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
@@ -14,24 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Abstraction of page table entry (PTE) *)
+(** Miscellaneous lexers *)
 
-type t = {
-  oa : string;
-  valid : int;
-  af : int;
-  db : int;
-  dbm : int;
-  }
-
-(* Default value for location argument *)
-val default : string -> t
-val set_oa : t -> string -> t
-
-(* Flags have default values *)
-val is_default : t -> bool
-val of_list : string -> (string * string) list -> t
-val pp : t -> string
-
-val compare : t -> t -> int
-val eq : t -> t -> bool
+val is_num : string -> bool
+val info : string -> (string * string) option
