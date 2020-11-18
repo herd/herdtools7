@@ -482,7 +482,7 @@ let max_set = IntSet.max_elt
     | Straight ->
         let i,c,f,st = do_add_load st p i f x v in
         i,code@c,f,st
-    | Config.Fenced ->
+    |  Config.Fenced ->
         let i,c,f,st = do_add_load st p i f x v in
         let i,c',st = Comp.emit_fence st p i C.nil Comp.stronger_fence in
         let c = c'@c in
@@ -491,7 +491,26 @@ let max_set = IntSet.max_elt
         let i,c,f,st = do_add_loop st p i f x prev_v v in
         i,code@c,f,st
 
-  let add_co_local_check lsts ns st p i code f =
+  let do_add_local_check_pte avoid st p i code f n x =
+    if StringSet.mem (Misc.add_pte x) avoid then i,code,f,st
+    else match U.find_next_pte_write n with
+    | None -> assert false (* As U.check_here n returned true *)
+    | Some nxt ->
+        let v = nxt.C.evt.C.pte in
+        let r,i,c,st = Comp.emit_obs Pte st p i x in
+        i,code@c,F.add_final_pte p r v f,st
+
+  let add_co_local_check_pte avoid ns st p i code f =
+    let lst = Misc.last ns in
+    if U.check_here lst then
+      match lst.C.evt.C.loc,lst.C.evt.C.bank with
+      | Data x,Pte ->
+          do_add_local_check_pte avoid st p i code f lst x
+      | _ -> i,code,f,st
+    else
+      i,code,f,st
+
+  let add_co_local_check avoid_ptes lsts ns st p i code f =
     let lst = Misc.last ns in
     if U.check_here lst then
       match lst.C.evt.C.loc,lst.C.evt.C.bank with
@@ -510,7 +529,8 @@ let max_set = IntSet.max_elt
           let v = lst.C.next.C.evt.C.v in
           let r,i,c,st = Comp.emit_obs Tag st p i x in
           i,code@c,F.add_final_loc p r (Code.add_tag x v) f,st
-      | Data _,Pte -> assert false
+      | Data x,Pte ->
+          do_add_local_check_pte avoid_ptes st p i code f lst x
       | Code _,_ -> i,code,f,st            
     else i,code,f,st
 
@@ -546,6 +566,8 @@ let max_set = IntSet.max_elt
     let cos0 = C.coherence n in
     let lsts = U.last_map cos0 in
     let cos = U.compute_cos cos0 in
+    let last_ptes = if do_kvm then C.last_ptes n else [] in
+    let no_local_ptes = StringSet.of_list (List.map fst last_ptes) in
     if O.verbose > 1 then U.pp_coherence cos0 ;
     let loc_writes = U.comp_loc_writes n in
 
@@ -564,8 +586,9 @@ let max_set = IntSet.max_elt
             | Unicond -> i,c,f,st
             | Cycle|Observe ->
                 match O.do_observers with
-                | Local -> add_co_local_check lsts n st p i c f
-                | Avoid|Accept|Enforce|Three|Four|Infinity -> i,c,f,st in
+                | Local -> add_co_local_check no_local_ptes lsts n st p i c f
+                | Avoid|Accept|Enforce|Three|Four|Infinity ->
+                    add_co_local_check_pte no_local_ptes n st p i c f in
           let i,c,st = Comp.postlude st p i c in
           let foks = gather_final_oks p (A.current_label st) in
           let i,cs,(ms,fs),ios = do_rec (p+1) i ns in
@@ -654,6 +677,8 @@ let max_set = IntSet.max_elt
             let flts = List.mapi (fun i ns -> i,get_locs ns) splitted in
             List.filter (fun (_,xs) -> not (StringSet.is_empty xs)) flts
           else [] in
+        let f =
+          List.fold_left (fun f (x,p) -> F.cons_pteval (A.Loc x) p f) f last_ptes in
         let fc =
           match O.cond with
           | Unicond ->
@@ -664,8 +689,7 @@ let max_set = IntSet.max_elt
               F.run evts m
           | Cycle -> F.check f
           | Observe -> F.observe f in
-        let i =
-         if do_kvm then A.complete_init i else i in
+        let i = if do_kvm then A.complete_init i else i in
         (i,c,fc flts,env),
         (U.compile_prefetch_ios (List.length obsc) ios,
          U.compile_coms splitted)

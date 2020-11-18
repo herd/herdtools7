@@ -414,8 +414,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
 
     let emit_obs t = match t with
-    | Code.Ord|Code.Pte -> emit_load_mixed naturalsize 0
+    | Code.Ord-> emit_load_mixed naturalsize 0
+    | Code.Pte->
+        fun st p init loc ->
+        let r,init,cs,st = LDR.emit_load_var A64.V64 st p init (Misc.add_pte loc) in
+        r,init,cs,st
     | Code.Tag -> LDG.emit_load
+
     let emit_obs_not_value = OBS.emit_load_not_value
     let emit_obs_not_eq = OBS.emit_load_not_eq
     let emit_obs_not_zero = OBS.emit_load_not_zero

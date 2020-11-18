@@ -31,9 +31,12 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 (* Add an observation to fenv *)
     val add_final_v :
         Code.proc -> C.A.arch_reg -> IntSet.t -> fenv -> fenv
+    val add_final_pte :
+        Code.proc -> C.A.arch_reg -> PTEVal.t -> fenv -> fenv
     val add_final_loc :
         Code.proc -> C.A.arch_reg -> string -> fenv -> fenv
     val cons_int :   C.A.location -> int -> fenv -> fenv
+    val cons_pteval :   C.A.location -> PTEVal.t -> fenv -> fenv
     val cons_int_set :  (C.A.location * IntSet.t) -> fenv -> fenv
     val add_int_sets : fenv -> (C.A.location * IntSet.t) list -> fenv
     val add_final :
@@ -103,10 +106,14 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 
     let add_final_v p r v finals = (C.A.of_reg p r,intset2vset v)::finals
 
+    let add_final_pte p r v finals = (C.A.of_reg p r,VSet.singleton (P v))::finals
+
     let add_final_loc p r v finals =
       (C.A.of_reg p r,VSet.singleton (S v))::finals
 
-    let cons_int loc i fs= (loc,VSet.singleton (I i))::fs
+    let cons_int loc i fs = (loc,VSet.singleton (I i))::fs
+
+    let cons_pteval loc p fs = (loc,VSet.singleton (P p))::fs
 
     let cons_int_set (l,is) fs = (l,intset2vset is)::fs
 
