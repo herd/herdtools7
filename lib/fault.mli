@@ -30,6 +30,7 @@ val pp_fatom : ('loc -> string) -> 'loc atom -> string
 
 val atom_compare : ('loc -> 'loc -> int) -> 'loc atom -> 'loc atom -> int
 
+val map_value : ('v -> 'w) -> 'v atom -> 'w atom
 
 module type S = sig
 
@@ -43,6 +44,8 @@ module type S = sig
   type fatom = loc_global atom
   val check_one_fatom : fault -> fatom -> bool
   val check_fatom : FaultSet.t -> fatom -> bool
+
+  module FaultAtomSet : MySet.S with type elt = fatom
 
 end
 

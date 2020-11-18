@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2013-present Institut National de Recherche en Informatique et *)
+(* Copyright 2020-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,22 +14,25 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module S = struct
-  type t = string
-  let equal s1 s2 = Misc.string_eq s1 s2
-  let hash = Hashtbl.hash
-end
+type ('loc,'v) t = Loc of 'loc * TestType.t | Fault of 'v Fault.atom
 
-module H = Hashcons.Make(S)
+let fold_loc f i r = match i with
+| Loc (loc,_) -> f loc r
+| Fault _-> r
 
-type t = string Hashcons.hash_consed
+let fold_locs f is r = List.fold_right (fold_loc f) is r
 
-let table = H.create 101
+let iter_loc f locs = fold_loc (fun i () -> f i) locs ()
+let iter_locs f = List.iter (iter_loc f)
 
-let as_hashed s = H.hashcons table s
+let map_loc f i = match i with
+| Loc (loc,t) -> Loc (f loc,t)
+| Fault _ as j -> j
+let map_locs f = List.map (map_loc f)
 
-let as_t h = h.Hashcons.node
-
-let as_hash h = h.Hashcons.hkey
-
-let compare s1 s2 = String.compare (as_t s1) (as_t s2)
+let locs_and_faults locs =
+  List.fold_right
+    (fun i (ls,fs) -> match i with
+    | Loc (loc,_) -> loc::ls,fs
+    | Fault f -> ls,f::fs)
+    locs ([],[])

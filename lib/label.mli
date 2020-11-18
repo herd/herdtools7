@@ -19,6 +19,7 @@
 type t = string
 
 val pp : t -> string
+val compare : t -> t -> int
 val reset : unit -> unit
 val next_label : string -> t
 

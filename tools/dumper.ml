@@ -22,11 +22,14 @@ module Make(A:Arch_tools.S) = struct
       (struct
         module A = A
 
-        type atom = (A.location * (MiscParser.run_type * A.v))
+        type v = A.v
+        let dump_v = A.pp_v
+
+        type atom = (A.location * (TestType.t * A.v))
         type state = atom list
 
         let dump_atom_state a =
-          MiscParser.dump_state_atom A.pp_location A.pp_v a
+          MiscParser.dump_state_atom A.pp_location dump_v a
 
 
         let dump_state st =

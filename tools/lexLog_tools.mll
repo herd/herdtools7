@@ -195,7 +195,7 @@ and pline bds fs = parse
      let v = to_xxx v in  (* Translate to decimal *)
      let p = poolize loc v in
      pline (p::bds) fs lexbuf }
-| blank* fault blank* '(' blank* ('P'? (num as proc)) ':' (label as lbl) blank* ','
+| blank* fault blank* '(' blank* ('P'? (num as proc)) (':' (label as lbl))? blank* ','
     (loc as loc) blank* ')' blank* ';'
     {
      let f = (to_proc proc,lbl),loc in

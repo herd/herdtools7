@@ -49,6 +49,7 @@ module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) =
 
   include Location.Make(Internal)
 
+  let is_pte_loc _ = false
   let parse_reg x = Some x
   let reg_compare = Internal.reg_compare
 
@@ -60,7 +61,7 @@ module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) =
          (fun (loc,v) -> Printf.sprintf "<%s -> %s>" (pp_location loc) (V.pp_v v))
          st)
 
-  type fullstate = (location * (MiscParser.run_type * V.v)) list
+  type fullstate = (location * (TestType.t * V.v)) list
 
   module Out = struct
     module V = V

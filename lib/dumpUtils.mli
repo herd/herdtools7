@@ -15,4 +15,4 @@
 (****************************************************************************)
 
 val dump_locations :
- ('loc -> string) -> ('loc * MiscParser.run_type) list -> string
+ ('loc -> string) -> ('v -> string) -> ('loc ,'v) LocationsItem.t list -> string

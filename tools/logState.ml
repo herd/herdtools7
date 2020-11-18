@@ -416,7 +416,8 @@ module LC =
         let (p0,lbl0),v0 = f in
         let eq_label = match lbl0 with
         | None -> fun _ -> true
-        | Some lbl0 -> Misc.string_eq lbl0 in
+        | Some lbl0 ->
+            Misc.app_opt_def true (Misc.string_eq lbl0) in
         let sym0 = V.pp_v v0 in
         let rec find fs = match fs.Hashcons.node with
           | Nil -> false

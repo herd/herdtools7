@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2013-present Institut National de Recherche en Informatique et *)
+(* Copyright 2020-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,22 +14,15 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module S = struct
-  type t = string
-  let equal s1 s2 = Misc.string_eq s1 s2
-  let hash = Hashtbl.hash
-end
+type ('loc,'v) t = Loc of 'loc * TestType.t | Fault of 'v Fault.atom
 
-module H = Hashcons.Make(S)
+val fold_loc : ('loc -> 'r -> 'r) -> ('loc,'v) t -> 'r -> 'r
+val fold_locs : ('loc -> 'r -> 'r) -> ('loc,'v) t list -> 'r -> 'r
 
-type t = string Hashcons.hash_consed
+val iter_loc : ('loc -> unit) -> ('loc,'v) t -> unit
+val iter_locs : ('loc -> unit) -> ('loc,'v) t list -> unit
 
-let table = H.create 101
+val map_loc : ('loc -> 'a) -> ('loc,'v) t -> ('a,'v) t
+val map_locs : ('loc -> 'a) -> ('loc,'v) t list -> ('a,'v) t list
 
-let as_hashed s = H.hashcons table s
-
-let as_t h = h.Hashcons.node
-
-let as_hash h = h.Hashcons.hkey
-
-let compare s1 s2 = String.compare (as_t s1) (as_t s2)
+val locs_and_faults : ('loc, 'v) t list -> ('loc list * 'v Fault.atom list)

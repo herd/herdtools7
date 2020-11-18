@@ -73,7 +73,12 @@ struct
 
   let collect_constr = ConstrGen.fold_constr collect_atom
 
-  let collect_locs = List.fold_right (fun (loc,_) -> collect_location loc)
+  let collect_locs =
+    let open LocationsItem in
+    List.fold_right
+      (fun i -> match i with
+      | Loc (l,_) -> collect_location l
+      | Fault (_,x) -> collect_location (A.Location_global x))
 
 
 (***************************)
@@ -111,7 +116,12 @@ struct
 
   let alpha_state f = List.map (alpha_state_atom f)
 
-  let alpha_locations f = alpha_state f (* Oups *)
+  let alpha_locations f =
+    let open LocationsItem in
+    List.map
+      (function
+        | Loc (x,t) -> Loc (alpha_location f x,t)
+        | Fault (_,x) as a -> ignore (Constant.check_sym x); a)
 
   let alpha_constr f = ConstrGen.map_constr (alpha_atom f)
 
@@ -255,11 +265,14 @@ struct
 
     let map_constr f = ConstrGen.map_constr (map_atom f)
 
-    let collect_locs f =
-      List.fold_right (fun (loc,_) -> collect_location f loc)
+    let collect_locs f = LocationsItem.fold_locs (collect_location f)
 
     let map_locs f =
-      List.map (fun (loc,t) -> map_location f loc,t)
+      let open LocationsItem in
+      List.map
+        (function
+          | Loc (x,t) -> Loc (map_location f x,t)
+          | Fault (p,x)-> Fault (p,map_global f x))
 
     module StringSet = MySet.Make(String)
 

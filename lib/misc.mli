@@ -269,6 +269,7 @@ val tr_atag : string -> string option
 
 val add_pte : string -> string
 val tr_pte : string ->  string option
+val is_pte : string -> bool
 val add_tlb : string -> string
 val add_af : string -> string
 val tr_af : string ->  string option

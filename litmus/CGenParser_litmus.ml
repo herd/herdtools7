@@ -68,7 +68,7 @@ end
 module type S = sig
   val parse : in_channel -> Splitter.result ->
     (MiscParser.state, string CAst.t list,
-     MiscParser.prop, MiscParser.location) MiscParser.result
+     MiscParser.prop, MiscParser.location,MiscParser.maybev) MiscParser.result
 end
 
 
@@ -125,7 +125,7 @@ let check_atom procs a =
 
 let check_regs procs init locs final =
   List.iter (fun (loc,_) -> check_loc procs  loc) init ;
-  List.iter (fun (loc,_) -> check_loc procs  loc) locs ;
+  LocationsItem.iter_locs (check_loc procs) locs ;
   ConstrGen.fold_constr (fun a () -> check_atom procs a) final ()
 
 
@@ -179,8 +179,9 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
           chan constr_loc SL.token StateParser.constraints in
       check_regs procs init locs final ;
       let all_locs =
-        MiscParser.LocSet.union
-          (MiscParser.LocSet.of_list (List.map fst locs))
+        let open MiscParser in
+        LocSet.union
+          (LocationsItem.fold_locs LocSet.add locs LocSet.empty)
           (get_locs final) in
       let parsed =
         {

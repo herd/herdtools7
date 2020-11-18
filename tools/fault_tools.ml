@@ -14,12 +14,13 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type t = ((Proc.t * string) * string)
+type t = ((Proc.t * string option) * string)
 
 let equal ((p1,lab1),x1) ((p2,lab2),x2) =
   Proc.equal p1 p2 &&
-  Misc.string_eq lab1 lab2 &&
+  Misc.opt_eq Misc.string_eq lab1 lab2 &&
   Misc.string_eq x1 x2
 
-let pp ((p,lab),v) = Printf.sprintf "fault(%s:%s,%s)" (Proc.pp p) lab v
-
+let pp ((p,lab),v) =
+  Printf.sprintf "fault(%s%s,%s)"
+    (Proc.pp p) (match lab with None -> "" | Some lab -> ":"^lab) v

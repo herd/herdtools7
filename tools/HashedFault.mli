@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-include (Hashcons.S with type key = Proc.t * HashedString.t * HashedString.t)
+include (Hashcons.S with type key = Proc.t * HashedStringOpt.t * HashedString.t)
 
 open Hashcons
 

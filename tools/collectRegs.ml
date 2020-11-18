@@ -57,7 +57,7 @@ module Make(A:Arch_tools.S) = struct
 
   let collect_constr = ConstrGen.fold_constr collect_atom
 
-  let collect_locs = List.fold_right (fun (loc,_) -> collect_location loc)
+  let collect_locs = LocationsItem.fold_locs collect_location
 
   open MiscParser
 

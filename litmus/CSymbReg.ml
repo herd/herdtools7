@@ -65,14 +65,18 @@ with type v = A.V.v and type location = A.location
   let finish_state f_reg = List.map (finish_state_atom f_reg)
 
   let finish_locations f_reg =
-    List.map (fun (loc,t) -> finish_location f_reg loc,t)
+    let open LocationsItem in
+    List.map
+      (function
+        | Loc (loc,t) -> Loc (finish_location f_reg loc,t)
+        | Fault f -> Fault (Fault.map_value maybevToV f))
 
   let finish_atom f_reg a =
     let open ConstrGen in
     match a with
     | LV (loc,v) -> LV (finish_location f_reg loc, maybevToV v)
     | LL (l1,l2) -> LL (finish_location f_reg l1,finish_location f_reg l2)
-    | FF (p,x) -> FF (p,maybevToV x)
+    | FF f -> FF (Fault.map_value maybevToV f)
 
    let finish_prop f_reg = ConstrGen.map_prop (finish_atom f_reg)
   let finish_constr f_reg = ConstrGen.map_constr (finish_atom f_reg)
@@ -119,9 +123,9 @@ with type v = A.V.v and type location = A.location
         fun c -> collect_location loc1 (collect_location loc2 c)
     | FF (_,x) -> collect_location (MiscParser.Location_global x)
 
- let collect_constr = ConstrGen.fold_constr collect_atom
+   let collect_constr = ConstrGen.fold_constr collect_atom
 
-  let collect_locs = List.fold_right (fun (loc,_) -> collect_location loc)
+   let collect_locs = LocationsItem.fold_locs collect_location
 
 (*********************************************)
 (* Here we go: collect, allocate, substitute *)

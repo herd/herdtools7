@@ -131,7 +131,7 @@ let check_atom procs a =
 
 let check_regs procs init locs final =
   List.iter (fun (loc,_) -> check_loc procs  loc) init ;
-  List.iter (fun (loc,_) -> check_loc procs  loc) locs ;
+  List.iter (LocationsItem.iter_loc (check_loc procs)) locs ;
   ConstrGen.fold_constr (fun a () -> check_atom procs a) final ()
 
 
@@ -197,7 +197,7 @@ module Do
 			 List.fold_left
 			   (fun env param ->
 			    let loc = param.param_name in
-			    let ty = MiscParser.TyDef in
+			    let ty = TestType.TyDef in
 			    (MiscParser.Location_reg (p,loc),
 			     (ty,ParsedConstant.nameToV loc))::env)
 			   env t.params)
@@ -240,8 +240,9 @@ module Do
 		      chan constr_loc SL.token StateParser.constraints in
     check_regs procs init locs final ;
     let all_locs =
-      MiscParser.LocSet.union
-        (MiscParser.LocSet.of_list (List.map fst locs))
+      let open MiscParser in
+      LocSet.union
+        (LocationsItem.fold_locs LocSet.add locs LocSet.empty)
         (get_locs final) in
     let parsed =
       {

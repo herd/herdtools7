@@ -243,7 +243,7 @@ module Make(C:Config) = struct
       acc@
       (List.map (fun (sa,tr) ->
         (Location_reg(i,Target.pp_reg tr),
-         (TyDef,ParsedConstant.nameToV sa)))
+         (TestType.TyDef,ParsedConstant.nameToV sa)))
          b.Env.addr)
                    ) []
 
@@ -304,7 +304,7 @@ module Make(C:Config) = struct
     let condition = ConstrGen.map_constr map_lv_ll src.condition
     and filter = Misc.app_opt (ConstrGen.map_prop map_lv_ll) src.filter in
     let locations =
-      List.map (fun (loc,ty) -> conv_loc map loc,ty) src.locations in
+      LocationsItem.map_locs (fun loc -> conv_loc map loc) src.locations in
     { info = (OutMapping.key,dump_map map)::src.info;
       init = init;
       prog = prog;

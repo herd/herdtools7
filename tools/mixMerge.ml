@@ -152,7 +152,12 @@ end =
 
     let shift_state k = List.map (shift_state_atom k)
 
-    let shift_locations = shift_state
+    let shift_locations k =
+      let open LocationsItem in
+      List.map
+        (function
+          | Loc (l,v) -> Loc (shift_location k l,v)
+          | Fault ((i,lbls),x) -> Fault ((i+k,lbls),x))
 
     let shift_atom k a = match a with
     | LV (l,v) ->  LV (shift_location k l,v)

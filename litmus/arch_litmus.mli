@@ -32,9 +32,13 @@ module type Base = sig
   module RegMap : MyMap.S with type key = reg
 
   include Location.S
+
   with type loc_reg = reg and
   type loc_global = Global_litmus.t
+
+  val is_pte_loc : location -> bool
   val location_of_addr : string -> location
+
 
   val parse_reg : string -> reg option
   val reg_compare : reg -> reg -> int
@@ -43,7 +47,7 @@ module type Base = sig
 
   val debug_state : state -> string
 
-  type fullstate = (location * (MiscParser.run_type * V.v)) list
+  type fullstate = (location * (TestType.t * V.v)) list
 
   module Out : Target.S
   with type arch_reg = reg (* Out abstracted *)
@@ -73,7 +77,7 @@ module type K = sig
   type loc_global = string
 
   type state = (location * V.v) list
-  type fullstate = (location * (MiscParser.run_type * V.v)) list
+  type fullstate = (location * (TestType.t * V.v)) list
 
   module Out : Target.S
   with type arch_reg = reg (* Out abstracted *)

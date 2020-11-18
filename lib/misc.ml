@@ -749,22 +749,29 @@ let tr_atag s =
     Some (Filename.chop_suffix s ".atag")
   else None
 
+let is_prefix prf =
+  let prf_len = String.length prf in
+  fun s ->
+    let len = String.length s in
+    len > prf_len && string_eq prf (String.sub s 0 prf_len )
+
 let do_tr prf =
   let prf_len = String.length prf in
     (*Printf.printf "prf: %s\n" prf;*)
   fun s ->
     let len = String.length s in
-        (*Printf.printf "s: %s\n" s;*)
-    if len > prf_len && String.sub s 0 prf_len = prf then
+    (*Printf.printf "s: %s\n" s;*)
+    if is_prefix prf s then
       let news = (String.sub s prf_len (len-prf_len)) in
-          (*Printf.printf "news: %s\n" news;*)
+      (*Printf.printf "news: %s\n" news;*)
       Some news 
     else 
-        (*Printf.printf "notnews: %s\n" s;*)
+      (*Printf.printf "notnews: %s\n" s;*)
       None
 
 let add_pte = sprintf "pte_%s"
 let tr_pte = do_tr "pte_"
+let is_pte = is_prefix "pte_"
 
 let add_tlb = sprintf "tlb_%s"
 

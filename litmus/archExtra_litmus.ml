@@ -43,6 +43,7 @@ module type S = sig
   include Location.S
   with type loc_reg = I.arch_reg and type loc_global = Global_litmus.t
   val location_of_addr : string -> location
+  val is_pte_loc : location -> bool
   val tr_global : MiscParser.maybev -> Global_litmus.t
 
   module Out : Template.S with
@@ -61,7 +62,7 @@ module type S = sig
 
   val debug_state : state -> string
 
-  type fullstate = (location * (MiscParser.run_type * I.V.v)) list
+  type fullstate = (location * (TestType.t * I.V.v)) list
 
   val find_in_state : location -> state -> I.V.v
 
@@ -105,6 +106,10 @@ module Make(O:Config)(I:I) : S with module I = I
       end)
 
   let location_of_addr a = Location_global (Global_litmus.Addr a)
+
+  let is_pte_loc = function
+    | Location_global (Global_litmus.Pte _) -> true
+    | _ -> false
 
   let tr_global (c:ParsedConstant.v) = 
     let open Constant in
@@ -155,7 +160,7 @@ module Make(O:Config)(I:I) : S with module I = I
          (fun (loc,v) -> Printf.sprintf "<%s -> %s>" (pp_location loc) (I.V.pp_v v))
          st)
 
-  type fullstate = (location * (MiscParser.run_type * I.V.v)) list
+  type fullstate = (location * (TestType.t * I.V.v)) list
 
   let rec find_in_state loc = function
     | [] -> I.V.zero

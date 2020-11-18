@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2013-present Institut National de Recherche en Informatique et *)
+(* Copyright 2020-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,22 +14,20 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module S = struct
-  type t = string
-  let equal s1 s2 = Misc.string_eq s1 s2
-  let hash = Hashtbl.hash
-end
+(** Type as specified in tests *)
 
-module H = Hashcons.Make(S)
+open Printf
 
-type t = string Hashcons.hash_consed
+type t =
+  | TyDef | TyDefPointer
+  | Ty of string | Pointer of string
+  | TyArray of string * int
+  | Atomic of string
 
-let table = H.create 101
-
-let as_hashed s = H.hashcons table s
-
-let as_t h = h.Hashcons.node
-
-let as_hash h = h.Hashcons.hkey
-
-let compare s1 s2 = String.compare (as_t s1) (as_t s2)
+let pp = function
+  | TyDef -> "TyDef"
+  | TyDefPointer -> "TyDefPointer"
+  | Ty s -> sprintf "Ty<%s>" s
+  | Atomic s -> sprintf "Atomic<%s>" s
+  | Pointer s -> sprintf "Pointer<%s>" s
+  | TyArray (s,sz) -> sprintf "TyArray<%s,%i>" s sz
