@@ -175,7 +175,6 @@ inline static pteval_t pack_pte(int oa,pteval_t v) {
     pack_flag(v,msk_valid,VALID_PACKED) ;
 }
 
-
 inline static pteval_t pack_pack_flag(int f,int shift) {
   return ((pteval_t)f) << shift ;
 }
@@ -188,6 +187,14 @@ inline static pteval_t pack_pack(int oa,int af,int db,int dbm,int valid) {
     pack_pack_flag(dbm,DBM_PACKED) |
     pack_pack_flag(valid,VALID_PACKED) ;
 }
+
+/*
+  This is the packed version of zero as pteval
+  - Pointer null -> index NVARS
+  - db set       -> corresponding bit unset
+*/
+
+#define NULL_PACKED (pack_pack(NVARS,0,1,0,0))
 
 inline static int unpack_oa(pteval_t v) {
   return v >> OA_PACKED;

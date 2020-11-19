@@ -98,6 +98,8 @@ module Make
 (* Some dump`ing stuff *)
       val cast_reg_type : A.location -> string
       val register_type : A.location ->  CType.t -> CType.t
+      val fmt_outcome_as_list :
+          T.t -> (CType.base -> string) -> A.LocSet.t -> env -> (string * string) list
       val fmt_outcome : T.t -> (CType.base -> string) -> A.LocSet.t -> env -> string
       val fmt_faults : A.V.v Fault.atom list -> string
 
@@ -271,7 +273,7 @@ module Make
       | A.Location_deref (s,i) -> sprintf "%s[%d]" (G.pp s) i
       let register_type _loc t = t (* Systematically follow given type *)
 
-      let fmt_outcome test pp_fmt_base locs env =
+      let fmt_outcome_as_list test pp_fmt_base locs env =
         let tr_out = tr_out test in
         let rec pp_fmt t = match t with
         | CType.Pointer _ -> "%s"
@@ -283,13 +285,17 @@ module Make
             let fmts = Misc.replicate sz fmt_elt in
             let fmt = String.concat "," fmts in
             sprintf "{%s}" fmt in
-
-        A.LocSet.pp_str " "
+        A.LocSet.map_list
           (fun loc ->
-            sprintf "%s=%s;"
-              (pp_loc tr_out loc)
-              (pp_fmt (register_type loc (find_type loc env))))
+            let pp1 = pp_loc tr_out loc
+            and pp2 = pp_fmt (register_type loc (find_type loc env)) in
+            (pp1,pp2))
           locs
+
+      let fmt_outcome test pp_fmt_base locs env =
+        let pps = fmt_outcome_as_list test pp_fmt_base locs env in
+        String.concat " "
+          (List.map (fun (p1,p2) -> sprintf "%s=%s;" p1 p2) pps)
 
       let fmt_faults fs = String.concat "" (List.map (fun _ -> "%s") fs)
 

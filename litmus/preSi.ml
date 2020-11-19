@@ -486,7 +486,7 @@ module Make
 (* Collected locations *)
 
       let fmt_outcome test env locs =
-        U.fmt_outcome test
+        U.fmt_outcome_as_list test
           (fun t -> match Compile.get_fmt Cfg.hexa t with
           | CType.Direct fmt|CType.Macro fmt ->
               if Cfg.hexa then "0x%" ^ fmt else "%" ^ fmt)
@@ -645,18 +645,17 @@ module Make
         O.o "/* Dump of outcome */" ;
         O.f "static void pp_log(%slog_t *p) {" (k_nkvm  "FILE *chan,") ;
         let fmt = fmt_outcome test env locs
-        and fmt2 = U.fmt_faults faults
         and args =
           A.LocSet.map_list
             (fun loc -> match U.find_type loc env with
             | Pointer _ ->
-                [sprintf "pretty_addr[p->%s]" (dump_loc_tag_coded loc)]
+                None,[sprintf "pretty_addr[p->%s]" (dump_loc_tag_coded loc)]
             | Array (_,sz) ->
                 let rec pp_rec k =
                   if k >= sz then []
                   else
                     sprintf "p->%s[%i]" (dump_loc_tag loc) k::pp_rec (k+1) in
-                pp_rec 0
+                None,pp_rec 0
             | Base "pteval_t" ->
                 let v = sprintf "p->%s" (dump_loc_tag loc) in
                 let fs =
@@ -664,20 +663,38 @@ module Make
                   List.map
                     (fun f -> sprintf "unpack_%s(%s)" f v)
                     ["af";"db";"dbm";"valid";] in
-                fs
+                Some v,fs
             | _ ->
-                [sprintf "p->%s" (dump_loc_tag loc)])
-            locs
-        and args2 =
-          List.map
-            (fun f -> sprintf "p->%s?\" %s;\":\"\""
-                (SkelUtil.dump_fatom_tag A.V.pp_v f)
-                (Fault.pp_fatom A.V.pp_v f))
-            faults in
-        let args = List.concat args@args2
-        and fmt = fmt ^ fmt2 in
-        EPF.fi ~out:"chan" fmt args ;
-(*        O.fi "fprintf(chan,%s);" (String.concat "," (fmt::args)) ; *)
+                None,[sprintf "p->%s" (dump_loc_tag loc)])
+            locs in
+        let fst = ref true in
+        List.iter2
+          (fun (p1,p2) (as_whole,arg) ->
+            let prf = if !fst then "" else " " in
+            fst := false ;
+            match as_whole with
+            | Some as_whole ->
+                O.fi "if (%s == NULL_PACKED) {" as_whole ;
+                EPF.fii ~out:"chan"
+                  "%s;" ["\""^prf^p1^"="^(if Cfg.hexa then "0x0" else "0")^"\""] ;
+                O.oi "} else {" ;
+                EPF.fii ~out:"chan" (sprintf "%s%s=%s;" prf p1 p2) arg ;
+                O.oi "}"
+            | None ->
+                EPF.fi ~out:"chan" (sprintf "%s%s=%s;" prf p1 p2) arg)
+          fmt args ;
+        begin match faults with
+        | [] -> () (* Would output 'printf("");', which gcc may reject. *)
+        | _::_ ->
+            let fmt2 = U.fmt_faults faults
+            and args2 =
+              List.map
+                (fun f -> sprintf "p->%s?\" %s;\":\"\""
+                    (SkelUtil.dump_fatom_tag A.V.pp_v f)
+                    (Fault.pp_fatom A.V.pp_v f))
+                faults in
+            EPF.fi ~out:"chan" fmt2 args2 ;
+        end ;
         O.o "}" ;
         O.o "" ;
         let locs = A.LocSet.elements locs in (* Now use lists *)
