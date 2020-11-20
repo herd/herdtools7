@@ -15,7 +15,7 @@
 (****************************************************************************)
 
 module CapabilityScalar = struct
-  open Stdint
+  open Uint
   type t = bool * Uint128.t
 
   let zero = false, Uint128.zero

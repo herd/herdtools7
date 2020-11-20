@@ -3,7 +3,7 @@ D=dune
 #For building with ocamlbuild set
 #D=ocb
 
-OPAM_DEPS = menhir stdint
+OPAM_DEPS = menhir
 
 ifeq ($(D), dune)
 	DIYCROSS                      = _build/install/default/bin/diycross7
