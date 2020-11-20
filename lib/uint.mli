@@ -69,3 +69,14 @@ module Uint32 : sig
 end
 
 module Uint64 : S
+
+module Uint128 : sig
+  type t
+
+  include S with type t := t
+
+  val of_uint64 : Uint64.t -> t
+  val of_uint32 : Uint32.t -> t
+  val of_uint16 : Uint16.t -> t
+  val of_uint8 : Uint8.t -> t
+end
