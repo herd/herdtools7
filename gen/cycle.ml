@@ -85,6 +85,8 @@ module type S = sig
 
 (* Return coherence orders *)
   val coherence : node -> (string * (node * IntSet.t) list list) list
+(* Return last pteval in pte accesses coherence *)
+  val last_ptes : node -> (string * PTEVal.t) list
 (* All locations *)
   val get_globals : node -> string list
 (* All (modified) code labels *)
@@ -943,7 +945,7 @@ let rec group_rec x ns = function
     do_rec n
 
 
-  let get_ord_writes n =
+  let do_get_writes bank n =
     let rec do_rec m =
       let k =
         if m.next == n then []
@@ -953,12 +955,14 @@ let rec group_rec x ns = function
       | Some W ->
           if
             E.is_node m.edge.E.edge ||
-            m.evt.bank <> Code.Ord
+            m.evt.bank <> bank
           then k else (e.loc,m)::k
       | None| Some R | Some J -> k in
       k in
-
     do_rec n
+
+  let get_ord_writes = do_get_writes Code.Ord
+  let get_pte_writes = do_get_writes Code.Pte
 
   let get_observers n =
     let e = n.evt in
@@ -977,7 +981,7 @@ let rec group_rec x ns = function
 (*
         List.iter
           (fun (loc,n) ->
-            eprintf "LOC=%s, node=%a\n" loc debug_node n)
+            eprintf "LOC=%s, node=%a\n" (Code.pp_loc loc) debug_node n)
           ws ;
 *)
         let r = by_loc ws in
@@ -1009,6 +1013,20 @@ let rec group_rec x ns = function
               ns)::k
         | Code _ ->  k)
       r []
+
+  let last_ptes n =
+    match find_change n with
+    | Some n ->
+        let ws = get_pte_writes n in
+        let r = by_loc ws in
+        List.fold_right
+          (fun (loc,ns) k -> match List.flatten ns with
+          | []|[_]|_::_::_::_ -> k
+          | [_;n;] ->
+              let p = n.evt.pte in
+              (Misc.add_pte (Code.as_data loc),p)::k)
+          r []
+    | None ->  []
 
 (* Get all shared locations/labels *)
 

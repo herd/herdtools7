@@ -55,8 +55,14 @@ module Mixed =
 let bellatom = false
 type atom_rw =  PP | PL | AP | AL
 type w_pte = AF | DB | OA | DBM | VALID
-type atom_pte = Read | Set of w_pte
-type atom_acc = Plain | Acq | AcqPc | Rel | Atomic of atom_rw | Tag | Pte of atom_pte
+type atom_pte =
+  | Read|ReadAcq|ReadAcqPc
+  | Set of w_pte
+  | SetRel of w_pte
+type atom_acc =
+  | Plain | Acq | AcqPc | Rel
+  | Atomic of atom_rw | Tag | Pte of atom_pte
+
 type atom = atom_acc * MachMixed.t option
 
 let default_atom = Atomic PP,None
@@ -65,8 +71,8 @@ let applies_atom (a,_) d = match a,d with
 | Acq,R
 | AcqPc,R
 | Rel,W
-| Pte Read,R
-| Pte (Set _),W
+| Pte (Read|ReadAcq|ReadAcqPc),R
+| Pte (Set _|SetRel _),W
 | (Plain|Atomic _|Tag),(R|W)
   -> true
 | _ -> false
@@ -81,13 +87,19 @@ let applies_atom (a,_) d = match a,d with
      | AP -> "A"
      | AL -> "AL"
 
+   let pp_w_pte = function
+     | AF -> "AF"
+     | DB -> "DB"
+     | DBM -> "DBM"
+     | VALID -> "VA"
+     | OA -> "OA"
+
    let pp_atom_pte = function
      | Read -> ""
-     | Set AF -> "AF"
-     | Set DB -> "DB"
-     | Set DBM -> "DBM"
-     | Set VALID -> "VA"
-     | Set OA -> "OA"
+     | ReadAcq -> "A"
+     | ReadAcqPc -> "Q"
+     | Set set -> pp_w_pte set
+     | SetRel set -> pp_w_pte set ^"L"
 
    let pp_atom_acc = function
      | Atomic rw -> sprintf "X%s" (pp_atom_rw rw)
@@ -121,8 +133,9 @@ let applies_atom (a,_) d = match a,d with
 
    let fold_pte f r =
      if do_kvm then
-       let g field r = f (Set field) r in
-       f Read (g AF (g DB (g DBM (g VALID (g OA r)))))
+       let g field r = f (Set field) (f (SetRel field) r) in
+       let r = g AF (g DB (g DBM (g VALID (g OA r)))) in
+       f Read (f ReadAcq (f ReadAcqPc r))
      else r
 
    let fold_atom_rw f r = f PP (f PL (f AP (f AL r)))
@@ -151,12 +164,39 @@ let applies_atom (a,_) d = match a,d with
    let varatom_dir _d f r = f None r
 
    let merge_atoms a1 a2 = match a1,a2 with
-   | ((Plain,sz),(a,None))
-   | ((a,None),(Plain,sz)) -> Some (a,sz)
-   | ((Pte _,_),(_,Some _))
-   | ((_,Some _),(Pte _,_)) -> None
-   | ((a1,None),(a2,sz))
-   | ((a1,sz),(a2,None)) when a1=a2 -> Some (a1,sz)
+(* Eat Plain *)
+   | ((Plain,None),a)
+   | (a,(Plain,None)) ->
+       Some a
+(* Add size to ordinary annotations *)
+   | ((Plain,(Some _ as sz)),((Acq|AcqPc|Rel|Atomic _ as a),None))
+   | (((Acq|AcqPc|Rel|Atomic _ as a),None),(Plain,(Some _ as sz)))
+     -> Some (a,sz)
+(* No sizes for Pte and tags *)
+   | (((Pte _|Tag),_),(_,Some _))
+   | ((_,Some _),((Pte _|Tag),_)) ->
+       None
+(* Merge Pte *)
+   | ((Pte (Read|ReadAcq),None),((Pte ReadAcq|Acq),None))
+   | (((Acq|Pte ReadAcq),None),(Pte (Read|ReadAcq),None))
+       -> Some (Pte ReadAcq,None)
+   | ((Pte (Read|ReadAcqPc),None),((Pte ReadAcqPc|AcqPc),None))
+   | (((Pte ReadAcqPc|AcqPc),None),(Pte (Read|ReadAcqPc),None))
+       -> Some (Pte ReadAcqPc,None)
+   | ((Pte (Set set|SetRel set),None),(Rel,None))
+   | ((Rel,None),(Pte (Set set|SetRel set),None))
+       -> Some (Pte (SetRel set),None)
+   | ((Pte (Set set1),None),(Pte (SetRel set2),None))
+   | ((Pte (SetRel set1),None),(Pte (Set set2),None))
+       when set1=set2 ->
+         Some (Pte (SetRel set1),None)
+(* Add size when (ordinary) annotation equal *)
+   | (((Acq|AcqPc|Rel|Atomic _ as a1),None),
+      ((Acq|AcqPc|Rel|Atomic _ as a2),(Some _ as sz)))
+   | (((Acq|AcqPc|Rel|Atomic _ as a1),(Some _ as sz)),
+      ((Acq|AcqPc|Rel|Atomic _ as a2),None)) when a1=a2 ->
+       Some (a1,sz)
+(* Remove plain when size equal *)
    | ((Plain,sz1),(a,sz2))
    | ((a,sz1),(Plain,sz2)) when sz1=sz2 -> Some (a,sz1)
    | _,_ ->
@@ -200,14 +240,16 @@ let overwrite_value v ao w = match ao with
 
   let do_setpteval a f p =
     let open PTEVal in
+    let f = match f with
+    | Set f|SetRel f -> f
+    | Read|ReadAcq|ReadAcqPc ->
+        Warn.user_error "Atom %s is not a pteval write" (pp_atom a) in
     match f with
-    | Set AF -> fun _loc -> { p with af = 1-p.af; }
-    | Set DB -> fun _loc -> { p with db = 1-p.db; }
-    | Set DBM -> fun _loc -> { p with dbm = 1-p.dbm; }
-    | Set VALID -> fun _loc -> { p with valid = 1-p.valid; }
-    | Set OA -> fun loc -> PTEVal.set_oa p (loc ())
-    | Read ->
-        Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
+    | AF -> fun _loc -> { p with af = 1-p.af; }
+    | DB -> fun _loc -> { p with db = 1-p.db; }
+    | DBM -> fun _loc -> { p with dbm = 1-p.dbm; }
+    | VALID -> fun _loc -> { p with valid = 1-p.valid; }
+    | OA -> fun loc -> PTEVal.set_oa p (loc ())
 
    let set_pteval a p =
      match a with
