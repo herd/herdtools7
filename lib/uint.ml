@@ -297,6 +297,7 @@ module Uint128 = struct
     else if compare a b < 0 then
       zero, a
     else
+      (* Binary long division by shift and subtract. *)
       let rec div_and_rem' (i : int) (q : t) (r : t) (b : t) =
         let q, r =
           if compare r b >= 0 then
@@ -311,7 +312,6 @@ module Uint128 = struct
       in
       let shift = (leading_zeros b) - (leading_zeros a) in
       div_and_rem' shift zero a (shift_left b shift)
-
 
   let div a b =
     let d, _ = div_and_rem a b in d
