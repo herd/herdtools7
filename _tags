@@ -5,6 +5,7 @@
 <internal/lib/tests>: include
 <jingle>: include
 <lib>: include
+<lib/tests>: include
 <litmus>: include
 <tools>: include
 
@@ -14,8 +15,7 @@ true: -traverse
 true: use_menhir
 <*/*.byte>: debug
 <*/*.cmo>: debug
-<*/*.ml>: package(stdint)
-<*/*.{d.byte,byte,native}>: use_unix,use_str,package(stdint)
+<*/*.{d.byte,byte,native}>: use_unix,use_str
 <*/*/*/*.{d.byte,byte,native}>: use_unix,use_str
 
 <internal/lib>: use_unix
