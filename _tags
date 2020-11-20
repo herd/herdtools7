@@ -5,6 +5,7 @@
 <internal/lib/tests>: include
 <jingle>: include
 <lib>: include
+<lib/tests>: include
 <litmus>: include
 <tools>: include
 
