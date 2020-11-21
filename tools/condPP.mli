@@ -16,7 +16,7 @@
 
 type bd = string * string
 type fault = string
-type bds = bd list * fault list
+type bds = bd list * fault list * fault list
 type cnf = bds list
 
 
