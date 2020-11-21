@@ -297,7 +297,11 @@ module Make
         String.concat " "
           (List.map (fun (p1,p2) -> sprintf "%s=%s;" p1 p2) pps)
 
-      let fmt_faults fs = String.concat "" (List.map (fun _ -> "%s") fs)
+      let fmt_faults fs =
+        String.concat ""
+          (List.map
+             (fun f -> sprintf " %s%s;" "%s" (Fault.pp_fatom A.V.pp_v f))
+             fs)
 
 (* Locations *)
       let get_displayed_locs t =
