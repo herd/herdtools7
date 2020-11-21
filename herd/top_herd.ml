@@ -453,7 +453,7 @@ module Make(O:Config)(M:XXXMem.S) =
         A.StateSet.pp stdout ""
           (fun chan st ->
             fprintf chan "%s\n"
-              (A.do_dump_final_state tr_out st))
+              (A.do_dump_final_state test.Test_herd.ffaults tr_out st))
           finals ;
 (* Condition result *)
         let ok = check_cond test c in
