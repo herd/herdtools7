@@ -125,8 +125,12 @@ module Make
 
       let read_reg_neon is_data r ii =
         if not neon then Warn.user_error "Advanced SIMD instructions require -variant neon" ;
-        let location = A.Location_reg (ii.A.proc,(AArch64Base.SIMDreg r)) in
-        M.read_loc is_data (mk_read MachSize.S128 AArch64.N) location ii
+        let vr = match r with 
+        | AArch64Base.SIMDreg _ -> r
+        | AArch64Base.Vreg(vr',_) -> (AArch64Base.SIMDreg vr') 
+        | _ -> assert false in
+          let location = A.Location_reg (ii.A.proc,vr) in
+          M.read_loc is_data (mk_read MachSize.S128 AArch64.N) location ii
 
       let neon_mask esize =
         let mask = match esize with
@@ -143,8 +147,8 @@ module Make
         M.op1 (Op.LogicalRightShift (idx*esize)) masked_val
 
       let read_reg_neon_elem is_data r idx ii = match r with
-      | AArch64Base.Vreg (vr,(_,esize)) ->
-          read_reg_neon is_data vr ii >>= fun cur_val ->
+      | AArch64Base.Vreg (_,(_,esize)) ->
+          read_reg_neon is_data r ii >>= fun cur_val ->
           neon_getlane cur_val idx esize
       | _ -> assert false
 
@@ -187,18 +191,22 @@ module Make
 
       let write_reg_neon_sz sz r v ii =
         if not neon then Warn.user_error "Advanced SIMD instructions require -variant neon" ;
-        (* Clear unused register bits (zero extend) *)
-        M.op1 (Op.Mask sz) v >>= fun v ->
-        let location = A.Location_reg (ii.A.proc,(AArch64Base.SIMDreg r)) in
-        M.write_loc (mk_write MachSize.S128 AArch64.N v) location ii
+        let vr = match r with 
+        | AArch64Base.SIMDreg _ -> r
+        | AArch64Base.Vreg(vr',_) -> (AArch64Base.SIMDreg vr') 
+        | _ -> assert false in
+          (* Clear unused register bits (zero extend) *)
+          M.op1 (Op.Mask sz) v >>= fun v ->
+          let location = A.Location_reg (ii.A.proc,vr) in
+          M.write_loc (mk_write MachSize.S128 AArch64.N v) location ii
 
       let write_reg_neon = write_reg_neon_sz MachSize.S128
 
       let write_reg_neon_elem sz r idx v ii = match r with
-      | AArch64Base.Vreg (vr,(_,esize)) ->
-          read_reg_neon false vr ii >>=
+      | AArch64Base.Vreg (_,(_,esize)) ->
+          read_reg_neon false r ii >>=
           fun old_val -> neon_setlane old_val idx esize v >>= fun new_val ->
-          write_reg_neon_sz sz vr new_val ii
+          write_reg_neon_sz sz r new_val ii
       | _ -> assert false
 
       let write_reg_sz sz r v ii = match r with
