@@ -1192,6 +1192,31 @@ module Make
         let os = List.mapi (fun i r -> V.intToV (i * neon_esize r / 8)) rs in
         List.fold_right (>>::) (List.map2 op rs os) (M.unitT [()])
 
+      let rec reduce_ord l =
+        match l with
+        | [] -> M.unitT ()
+        | h::t -> h >>= fun () -> reduce_ord t
+
+      let neon_memops memop addr idx rs ii =
+        let calc_offset i r =
+          (V.intToV ((idx*(List.length rs)+i) * neon_esize r / 8)) in
+        let op r o = M.add o addr >>= fun addr -> memop idx r addr ii in
+        List.map2 op rs (List.mapi calc_offset rs)
+
+      let load_m addr rlist ii =
+        let op i =
+          let ops = neon_memops (load_elem MachSize.S128) addr i rlist ii in
+          reduce_ord ops in
+        let ops = List.map op (Misc.interval 0 (neon_nelem (List.hd rlist))) in
+        reduce_ord ops
+
+      let store_m addr rlist ii =
+        let op i =
+          let ops = neon_memops store_elem addr i rlist ii in
+          List.fold_right (>>::) ops (M.unitT [()]) in
+        let ops = List.map op (Misc.interval 0 (neon_nelem (List.hd rlist))) in
+        List.fold_right (>>::) ops (M.unitT [[()]])
+
 (********************)
 (* Main entry point *)
 (********************)
@@ -1346,6 +1371,13 @@ module Make
             read_reg_ord rA ii >>= fun addr ->
             (mem_ss (load_elem_rep MachSize.S128) addr rs ii >>|
             post_kr rA addr kr ii) >>! B.Next
+        | I_LD1M([_] as rs,rA,kr)
+        | I_LD2M(rs,rA,kr)
+        | I_LD3M(rs,rA,kr)
+        | I_LD4M(rs,rA,kr) ->
+            read_reg_ord rA ii >>= fun addr ->
+            (load_m addr rs ii >>|
+            post_kr rA addr kr ii) >>! B.Next
         | I_ST1(r1,i,rA,kr) ->
             read_reg_ord rA ii >>= fun addr ->
             (store_elem i r1 addr ii >>|
@@ -1355,6 +1387,13 @@ module Make
         | I_ST4(rs,i,rA,kr) ->
             read_reg_ord rA ii >>= fun addr ->
             (mem_ss (store_elem i) addr rs ii >>|
+            post_kr rA addr kr ii) >>! B.Next
+        | I_ST1M([_] as rs,rA,kr)
+        | I_ST2M(rs,rA,kr)
+        | I_ST3M(rs,rA,kr)
+        | I_ST4M(rs,rA,kr) ->
+            read_reg_ord rA ii >>= fun addr ->
+            (store_m addr rs ii >>|
             post_kr rA addr kr ii) >>! B.Next
 
         | I_LDR_SIMD(var,r1,rA,kr,s) ->
