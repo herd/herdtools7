@@ -32,6 +32,8 @@ type t =
   | Morello
 (* Explicit virtual memory *)
   | KVM
+(* Neon AArch64 extension *)
+  | Neon
 
 let tags =
  ["AsAmo";"ConstsInInit";"Mixed";"FullMixed";"Self"; "MemTag";
@@ -47,6 +49,7 @@ let parse tag = match Misc.lowercase tag with
 | "novolatile" -> Some NoVolatile
 | "morello" -> Some Morello
 | "kvm" -> Some KVM
+| "neon" -> Some Neon
 | _ -> None
 
 let pp = function
@@ -59,3 +62,4 @@ let pp = function
   | NoVolatile -> "NoVolatile"
   | Morello -> "Morello"
   | KVM -> "kvm"
+  | Neon -> "Neon"

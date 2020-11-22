@@ -32,6 +32,8 @@ type t =
   | Morello
 (* Explicit virtual memory *)
   | KVM
+(* Neon AArch64 extension *)
+  | Neon
 
 val tags : string list
 
