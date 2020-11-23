@@ -38,7 +38,17 @@ module Make(V:Constant.S)(C:Config) =
 (* No addresses in code *)
     let extract_addrs _ins = StringSet.empty
 
-    let stable_regs _ins = A.RegSet.empty
+    let stable_regs _ins = match _ins with
+    | I_LD1M (rs,_,_)
+    | I_LD2 (rs,_,_,_) | I_LD2M (rs,_,_) | I_LD2R (rs,_,_)
+    | I_LD3 (rs,_,_,_) | I_LD3M (rs,_,_) | I_LD3R (rs,_,_)
+    | I_LD4 (rs,_,_,_) | I_LD4M (rs,_,_) | I_LD4R (rs,_,_)
+    | I_ST1M (rs,_,_)
+    | I_ST2 (rs,_,_,_) | I_ST2M (rs,_,_)
+    | I_ST3 (rs,_,_,_) | I_ST3M (rs,_,_)
+    | I_ST4 (rs,_,_,_) | I_ST4M (rs,_,_) ->
+        A.RegSet.of_list rs
+    | _ ->  A.RegSet.empty
 
 (* Handle zero reg *)
     let arg1 ppz fmt r = match r with
@@ -473,19 +483,19 @@ module Make(V:Constant.S)(C:Config) =
         { empty_ins with
           memo = sprintf "%s {%s}[%i],[^i0]" memo (print_simd_list rs "o" 0) i;
           inputs = [rA];
-          outputs = List.rev rs;
+          outputs = rs;
           reg_env = (add_128 rs) @ [(rA,voidstar)]}
     | K k ->
         { empty_ins with
           memo = sprintf "%s {%s}[%i],[^i0],#%i" memo (print_simd_list rs "o" 0) i k;
           inputs = [rA];
-          outputs = List.rev rs;
+          outputs = rs;
           reg_env = (add_128 rs) @ [(rA,voidstar)]}
     | RV (V64,rB) ->
         { empty_ins with
           memo = sprintf "%s {%s}[%i],[^i0],^i1" memo (print_simd_list rs "o" 0) i;
           inputs = [rA;rB;];
-          outputs = List.rev rs;
+          outputs = rs;
           reg_env = (add_128 rs) @ [(rA,voidstar);(rB,quad)]}
     | _ -> Warn.fatal "Illegal form of %s instruction" memo
 
@@ -494,19 +504,19 @@ module Make(V:Constant.S)(C:Config) =
         { empty_ins with
           memo = sprintf "%s {%s},[^i0]" memo (print_simd_list rs "o" 0);
           inputs = [rA];
-          outputs = List.rev rs;
+          outputs = rs;
           reg_env = (add_128 rs) @ [(rA,voidstar)]}
     | K k ->
         { empty_ins with
           memo = sprintf "%s {%s},[^i0],#%i" memo (print_simd_list rs "o" 0) k;
           inputs = [rA];
-          outputs = List.rev rs;
+          outputs = rs;
           reg_env = (add_128 rs) @ [(rA,voidstar)]}
     | RV (V64,rB) ->
         { empty_ins with
           memo = sprintf "%s {%s},[^i0],^i1" memo (print_simd_list rs "o" 0);
           inputs=[rA;rB;];
-          outputs = List.rev rs;
+          outputs = rs;
           reg_env = (add_128 rs) @ [(rA,voidstar);(rB,quad)]}
     | _ -> Warn.fatal "Illegal form of %s instruction" memo
 
@@ -620,17 +630,17 @@ module Make(V:Constant.S)(C:Config) =
     | K 0 ->
         { empty_ins with
           memo = sprintf "%s {%s}[%i],[^i0]" memo (print_simd_list rs "i" 1) i;
-          inputs = rA :: List.rev rs;
+          inputs = rA :: rs;
           reg_env = (add_128 rs) @ [(rA,voidstar)]}
     | K k ->
         { empty_ins with
           memo = sprintf "%s {%s}[%i],[^i0],#%i" memo (print_simd_list rs "i" 1) i k;
-          inputs = rA :: List.rev rs;
+          inputs = rA :: rs;
           reg_env = (add_128 rs) @ [(rA,voidstar)]}
     | RV (V64,rB) ->
         { empty_ins with
           memo = sprintf "%s {%s}[%i],[^i0],^i1" memo (print_simd_list rs "i" 2) i;
-          inputs = [rA;rB;] @ List.rev rs;
+          inputs = [rA;rB;] @ rs;
           reg_env = (add_128 rs) @ [(rA,voidstar);(rB,quad)]}
     | _ -> Warn.fatal "Illegal form of %s instruction" memo
 
@@ -638,17 +648,17 @@ module Make(V:Constant.S)(C:Config) =
     | K 0 ->
       { empty_ins with
         memo = sprintf "%s {%s},[^i0]" memo (print_simd_list rs "i" 1);
-        inputs = rA :: List.rev rs;
+        inputs = rA :: rs;
         reg_env = [(rA,voidstar)] @ (add_128 rs)}
     | K k ->
       { empty_ins with
         memo = sprintf "%s {%s},[^i0],#%i" memo (print_simd_list rs "i" 1) k;
-        inputs = rA :: List.rev rs;
+        inputs = rA :: rs;
         reg_env = [(rA,voidstar)] @ (add_128 rs)}
     | RV (V64,rB) ->
       { empty_ins with
         memo = sprintf "%s {%s},[^i0],^i1" memo (print_simd_list rs "i" 2);
-        inputs = [rA;rB;] @ List.rev rs;
+        inputs = [rA;rB;] @ rs;
         reg_env = [(rA,voidstar);(rB,quad)] @ (add_128 rs)}
     | _ -> Warn.fatal "Illegal form of %s instruction" memo
 
