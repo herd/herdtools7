@@ -263,30 +263,35 @@ module Uint128 = struct
     in
     Uint64.sub (fst a) (Uint64.add (fst b) carry), Uint64.sub (snd a) (snd b)
 
-  let mul a b =
-    let mul64x64 u v =
-      let u1 = Uint64.logand u 0xFFFFFFFFL in
-      let v1 = Uint64.logand v 0xFFFFFFFFL in
-      let t = Uint64.mul u1 v1 in
-      let w3 = Uint64.logand t 0xFFFFFFFFL in
-      let k = Uint64.shift_right_logical t 32 in
-
-      let u = Uint64.shift_right_logical u 32 in
-      let t = Uint64.add k (Uint64.mul u v1) in
-      let k = Uint64.logand t 0xFFFFFFFFL in
-      let w1 = Uint64.shift_right_logical t 32 in
-
-      let v = Uint64.shift_right v 32 in
-      let t = Uint64.add k (Uint64.mul u1 v) in
-      let k = Uint64.shift_right_logical t 32 in
-
-      let upper = Uint64.add (Uint64.add (Uint64.mul u v) w1) k in
-      let lower = Uint64.add (Uint64.shift_left t 32) w3 in
-
-      upper, lower
+  let mul (a1, a2) (b1, b2) =
+    (* Multiplication by parts.
+     * For example,
+     *   25 * 31 =
+     *     20*30 + 5*30 + 20*1 + 5*1 =
+     *       2*3*100 + 5*3*10 + * 2*1*10 + 5*1. *)
+    let upper_bits u =
+      Uint64.shift_right_logical u 32
     in
-    let upper, lower = mul64x64 (snd a) (snd b) in
-    let upper = Uint64.add upper (Uint64.add (Uint64.mul (fst a) (snd b)) (Uint64.mul (snd a) (fst b))) in
+    let lower_bits u =
+      let bottom_32_bits = Uint64.of_uint32 Uint32.max_int in
+      Uint64.logand u bottom_32_bits
+    in
+    let a2_1 = upper_bits a2 in
+    let a2_2 = lower_bits a2 in
+
+    let b2_1 = upper_bits b2 in
+    let b2_2 = lower_bits b2 in
+
+    let t1 = Uint64.mul a2_2 b2_2 in
+    let t2 = Uint64.add (upper_bits t1) (Uint64.mul a2_1 b2_2) in
+    let t3 = Uint64.add (lower_bits t2) (Uint64.mul a2_2 b2_1) in
+
+    let lower = Uint64.add (lower_bits t1) (Uint64.shift_left t3 32) in
+    let upper = Uint64.add (upper_bits t2) (upper_bits t3) in
+
+    let upper = Uint64.add upper (Uint64.mul a2_1 b2_1) in
+    let upper = Uint64.add upper (Uint64.mul a1 b2) in
+    let upper = Uint64.add upper (Uint64.mul a2 b1) in
     upper, lower
 
   let div_and_rem a b =
@@ -297,6 +302,7 @@ module Uint128 = struct
     else if compare a b < 0 then
       zero, a
     else
+      (* Binary long division by shift and subtract. *)
       let rec div_and_rem' (i : int) (q : t) (r : t) (b : t) =
         let q, r =
           if compare r b >= 0 then
@@ -311,7 +317,6 @@ module Uint128 = struct
       in
       let shift = (leading_zeros b) - (leading_zeros a) in
       div_and_rem' shift zero a (shift_left b shift)
-
 
   let div a b =
     let d, _ = div_and_rem a b in d
