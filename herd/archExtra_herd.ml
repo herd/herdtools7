@@ -127,7 +127,8 @@ module type S = sig
 
 (* Set of states *)
   type final_state = state * FaultSet.t
-  val do_dump_final_state : (string -> string) -> final_state -> string
+  val do_dump_final_state :
+    FaultAtomSet.t -> (string -> string) -> final_state -> string
   module StateSet : MySet.S with type elt = final_state
 
 (*****************************************)
@@ -453,11 +454,25 @@ module Make(C:Config) (I:I) : S with module I = I
 
       type final_state = state * FaultSet.t
 
-      let do_dump_final_state tr (st,flts) =
+      let do_dump_final_state fobs tr (st,flts) =
         let pp_st = do_dump_state tr st in
-        if FaultSet.is_empty flts then pp_st
+        if FaultSet.is_empty flts && FaultAtomSet.is_empty fobs then pp_st
         else
-          pp_st ^ " " ^ FaultSet.pp_str " " (fun f -> pp_fault f ^ ";") flts
+          let noflts =
+            FaultAtomSet.fold
+              (fun ((p,lab),loc as fa) k ->
+                if
+                  FaultSet.exists (fun f -> check_one_fatom f fa) flts
+                then k
+                else
+                  let tr_lab = match lab with
+                    | None -> Label.Set.empty
+                    | Some lab -> Label.Set.singleton lab in
+                  (" ~"^pp_fault (((p,tr_lab),loc,None))^";")::k)
+              fobs [] in
+          pp_st ^ " " ^
+          FaultSet.pp_str " " (fun f -> pp_fault f ^ ";") flts ^
+          String.concat "" noflts
 
       module StateSet =
         MySet.Make

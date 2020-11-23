@@ -141,14 +141,14 @@ and pstate = parse
 and plines nk k = parse
 | ((num as c) blank* (":>"|"*>"))?
     { if O.acceptBig || nk <= nstates_limit then
-        let bds,fs = pline [] [] lexbuf in
+        let bds,fs,abs = pline [] [] [] lexbuf in
         let st =
           { p_noccs =
             begin match c with
             | None -> Int64.one
             | Some s -> Int64.of_string s
             end ;
-            p_st = LS.as_st_concrete bds fs } in
+            p_st = LS.as_st_concrete bds fs abs} in
         plines (nk+1) (st::k) lexbuf
     else begin
       skip_pline lexbuf ;
@@ -158,7 +158,7 @@ and plines nk k = parse
   { incr_lineno lexbuf ;
     let st = {
       p_noccs = Int64.one;
-      p_st = LS.as_st_concrete [] []
+      p_st = LS.as_st_concrete [] [] []
     } in
     plines (nk+1) (st::k) lexbuf
   }
@@ -186,7 +186,7 @@ and skip_empty_lines = parse
 | blank*  nl  { incr_lineno lexbuf ; skip_empty_lines lexbuf }
 | "" { () }
 
-and pline bds fs = parse
+and pline bds fs abs = parse
 | blank*
  ((num ':' reg as loc)|(('['?) (loc as loc) ( ']'?))|(loc '[' num ']' as loc))
     blank* '=' blank* (('-' ? (num|hexanum))|(name(':'name)?)|set|pteval as v)
@@ -194,14 +194,20 @@ and pline bds fs = parse
     {
      let v = to_xxx v in  (* Translate to decimal *)
      let p = poolize loc v in
-     pline (p::bds) fs lexbuf }
+     pline (p::bds) fs abs lexbuf }
 | blank* fault blank* '(' blank* ('P'? (num as proc)) (':' (label as lbl))? blank* ','
     (loc as loc) blank* ')' blank* ';'
     {
      let f = (to_proc proc,lbl),loc in
      let f = HashedFault.as_hashed f in
-     pline bds (f::fs) lexbuf }
-| blank* ('#' [^'\n']*)?  nl  { incr_lineno lexbuf ; bds,fs }
+     pline bds (f::fs) abs lexbuf }
+| blank* '~' fault blank* '(' blank* ('P'? (num as proc)) (':' (label as lbl))? blank* ','
+    (loc as loc) blank* ')' blank* ';'
+    {
+     let f = (to_proc proc,lbl),loc in
+     let f = HashedFault.as_hashed f in
+     pline bds fs (f::abs) lexbuf }
+| blank* ('#' [^'\n']*)?  nl  { incr_lineno lexbuf ; bds,fs,abs }
 | "" { error "pline" lexbuf }
 
 and skip_pline = parse
@@ -307,8 +313,8 @@ and sstate = parse
 
 and slines k = parse
 | ((num) blank* (":>"|"*>"))?
-    { let bds,fs = pline [] [] lexbuf in
-      let st = LS.as_st_concrete bds fs in
+    { let bds,fs,abs = pline [] [] [] lexbuf in
+      let st = LS.as_st_concrete bds fs abs in
       slines (st::k) lexbuf }
 |  ("Loop" blank+ )?
    ((validation ([^'\r''\n']*))

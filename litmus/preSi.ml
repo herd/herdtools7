@@ -689,9 +689,8 @@ module Make
             let fmt2 = U.fmt_faults faults
             and args2 =
               List.map
-                (fun f -> sprintf "p->%s?\" %s;\":\"\""
-                    (SkelUtil.dump_fatom_tag A.V.pp_v f)
-                    (Fault.pp_fatom A.V.pp_v f))
+                (fun f -> sprintf "p->%s?\"\":\"~\""
+                    (SkelUtil.dump_fatom_tag A.V.pp_v f))
                 faults in
             EPF.fi ~out:"chan" fmt2 args2 ;
         end ;

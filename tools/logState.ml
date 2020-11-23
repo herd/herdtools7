@@ -24,18 +24,24 @@ module HashedEnv = HashedList.Make (struct type elt = HashedBinding.key end)
 (* Hashed list of faults *)
 module HashedFaults = HashedList.Make(struct type elt = HashedFault.key end)
 
-(* Hashed pair of lists *)
+(* Hashed pair of triples *)
 module HashedState = struct
 
   module S = struct
 
-    type t = HashedEnv.t * HashedFaults.t
+    type t = {e:HashedEnv.t; f:HashedFaults.t; a:HashedFaults.t; }
 
-    let equal (e1,f1) (e2,f2) = e1 == e2 && f1 == f2
+    let equal
+      {e=e1; f=f1; a=a1;}
+      {e=e2; f=f2; a=a2;} =
+      e1 == e2 && f1 == f2 && a1=a2
 
-    let hash (e,f) =
-      let eh = HashedEnv.as_hash e and fh = HashedFaults.as_hash f in
-      abs (Misc.mix (0x4F1BBCDC+eh) (0x4F1BBCDC+fh) 0)
+    let hash {e; f; a;} =
+      let eh = HashedEnv.as_hash e
+      and fh = HashedFaults.as_hash f
+      and ah = HashedFaults.as_hash a in
+      abs (Misc.mix  (0x4F1BBCDC+eh) (0x4F1BBCDC+fh) (0x4F1BBCDC+ah))
+
   end
 
   module M = Hashcons.Make(S)
@@ -43,7 +49,8 @@ module HashedState = struct
 
   let t = M.create 101
 
-  let as_hashed a b = M.hashcons t (a,b)
+  let as_hashed e f a =
+    M.hashcons t {S.e=e; S.f=f; S.a=a;}
   let as_t h = h.Hashcons.node
 
 end
@@ -143,21 +150,25 @@ let compare_binding p1 p2 =
 | 0 -> assert false
 | r -> r
 
-let as_st_concrete bds fs =
+let as_st_concrete bds fs abs =
   let bds = List.sort compare_binding bds
-  and fs = List.sort HashedFault.compare fs in
+  and fs = List.sort HashedFault.compare fs
+  and abs = List.sort HashedFault.compare abs in
   let bds = List.fold_right HashedEnv.cons bds HashedEnv.nil
-  and fs =  List.fold_right HashedFaults.cons fs HashedFaults.nil in
-  HashedState.as_hashed bds fs
+  and fs =  List.fold_right HashedFaults.cons fs HashedFaults.nil
+  and abs =  List.fold_right HashedFaults.cons abs HashedFaults.nil in
+  HashedState.as_hashed bds fs abs
 
+let faults_as_strings =
+  HashedFaults.map (fun f -> Fault_tools.pp (HashedFault.as_t f))
 
 let st_as_string st =
-  let e,f = HashedState.as_t st in
+  let open HashedState in
+  let {S.e=e; f; a;} = HashedState.as_t st in
   let pp_env = HashedEnv.map HashedBinding.as_t e
-  and pp_faults =
-    let fs = HashedFaults.map HashedFault.as_t f in
-    List.map Fault_tools.pp fs in
-  pp_env,pp_faults
+  and pp_faults = faults_as_strings f
+  and pp_absent = faults_as_strings a in
+  pp_env,pp_faults,pp_absent
 
 let is_empty_simple st = match st.s_states with
 | [] -> true
@@ -168,25 +179,15 @@ let get_bindings st = List.map (fun st -> st_as_string st.p_st) st.p_sts
 
 let empty_sts = { p_nouts = Int64.zero ; p_sts = []; }
 
-let pp_binding p =
-  let loc,v = HashedBinding.as_t p in
-  sprintf "%s=%s;" loc v
-
-let pp_fault f =
-  let f = HashedFault.as_t f in
-  Fault_tools.pp f ^ ";"
-
 let pretty_state pref mode with_noccs st =
   let buff = Buffer.create 10 in
   Buffer.add_string buff pref ;
   Buffer.add_char buff '[' ;
-  let e,f = HashedState.as_t st.p_st in
-  let pp_e = HashedEnv.pp pp_binding e
-  and pp_f = HashedFaults.pp pp_fault f in
-  let pp = match pp_e,pp_f with
-  | "","" -> ""
-  | (x,"")|("",x) -> x
-  | (x,y) -> x ^ " " ^ y in
+  let e,f,a = st_as_string st.p_st in
+  let pp_e = List.map (fun (loc,v) -> sprintf "%s=%s;" loc v) e
+  and pp_f = f
+  and pp_a = List.map (sprintf "~%s") a in
+  let pp = String.concat " " (pp_e @ pp_f @ pp_a ) in
   Buffer.add_string buff pp ;
   Buffer.add_char buff ']' ;
   if with_noccs then begin
@@ -202,17 +203,19 @@ let pretty_state pref mode with_noccs st =
 
 let dump_state chan is_litmus st =
   if is_litmus then fprintf chan  "%-8s:>" (Int64.to_string st.p_noccs) ;
-  let e,f = HashedState.as_t st.p_st in
+  let {HashedState.S.e=e; f; a;} = HashedState.as_t st.p_st in
   HashedEnv.iter
     (fun p ->
       let loc,v = HashedBinding.as_t p in
       fprintf chan " %s=%s;"loc v)
     e ;
-  HashedFaults.iter
-    (fun p ->
-      let f = HashedFault.as_t p in
-      fprintf chan " %s;" (Fault_tools.pp f))
-    f ;
+  let dump_faults prf =
+    HashedFaults.iter
+      (fun p ->
+        let f = HashedFault.as_t p in
+        fprintf chan " %s%s;" prf (Fault_tools.pp f)) in
+  dump_faults "" f ;
+  dump_faults "~" a ;
   output_char chan '\n'
 
 let dump_states_cond chan is_litmus t =
@@ -231,8 +234,8 @@ let no_states sts = match sts.p_sts with
 let no_states_or_no_obs sts = match sts.p_sts with
 | [] -> true
 | [st] ->
-    let e,f = HashedState.as_t st.p_st in
-    HashedEnv.nilp e && HashedFaults.nilp f
+    let { HashedState.S.e=e; f; a; } = HashedState.as_t st.p_st in
+    HashedEnv.nilp e && HashedFaults.nilp f && HashedFaults.nilp a
 | _::_::_ -> false
 
 let card sts = List.length  sts.p_sts
@@ -326,19 +329,36 @@ let rec compare_faults st1 st2 =
       | r -> r
 
 
- let compare_state st1 st2 =
-   let e1,f1 = HashedState.as_t st1.p_st
-   and e2,f2 = HashedState.as_t st2.p_st in
-   match compare_env e1 e2 with
-   | 0 -> compare_faults f1 f2
-   | r -> r
-
+(* First argument is true when states are from the same log *)
+let compare_state same st1 st2 =
+  let open HashedState in
+  let {S.e=e1; f=f1; a=a1;} = as_t st1.p_st
+  and {S.e=e2; f=f2; a=a2;} = as_t st2.p_st in
+  match compare_env e1 e2 with
+  | 0 ->
+      begin match compare_faults f1 f2 with
+      | 0 -> assert (not same || compare_faults a1 a2 = 0) ; 0
+      | r -> r
+      end
+  | r -> r
+(* Betweenn two equal states, select the one with explicit absent faults *) 
+let select_absent st1 st2 =
+  let open HashedState in
+  let open Hashcons in
+  let open HashedFaults in
+  match
+    (as_t st1.p_st).S.a.Hashcons.node,
+    (as_t st2.p_st).S.a.Hashcons.node
+  with
+  | (Cons _,_) -> st1
+  | (_,Cons _) -> st2
+  | (Nil,Nil)-> st1
 
 let rec do_diff_states sts1 sts2 =  match sts1,sts2 with
 | [],_ -> []
 | _,[] -> sts1
 | st1::sts1,st2::sts2 ->
-    let r = compare_state st1 st2 in
+    let r = compare_state false st1 st2 in
     if r < 0 then
       st1::do_diff_states sts1 (st2::sts2)
     else if r > 0 then
@@ -360,14 +380,15 @@ let diff_states sts1 sts2 =
 let rec do_union_states sts1 sts2 =  match sts1,sts2 with
 | ([],sts)|(sts,[]) -> sts
 | st1::sts1,st2::sts2 ->
-    let r = compare_state st1 st2 in
+    let r = compare_state false st1 st2 in
     if r < 0 then
       st1::do_union_states sts1 (st2::sts2)
     else if r > 0 then
       st2::do_union_states (st1::sts1) sts2
     else begin
+      let st = select_absent st1 st2 in
       let st =
-        { st1 with p_noccs = Int64.add st1.p_noccs  st2.p_noccs ; } in
+        { st with p_noccs = Int64.add st1.p_noccs  st2.p_noccs ; } in
       st::do_union_states sts1 sts2
     end
 
@@ -396,7 +417,8 @@ module LC =
 
 
       let state_mem st loc v =
-        let bds,_ = HashedState.as_t st in
+        let open HashedState in
+        let {S.e=bds; _;} = as_t st in
         let v_bound_pp = bds_assoc bds (MiscParser.dump_location  loc) in
         try (* Ints are treated differently to abstract away radix *)
           let i = Int64.of_string v_bound_pp in
@@ -405,14 +427,15 @@ module LC =
           Misc.string_eq v_bound_pp (Int64Constant.pp false v)
 
       let state_eqloc st loc1 loc2 =
-        let bds,_ = HashedState.as_t st in
+        let open HashedState in
+        let {S.e=bds; _;} = HashedState.as_t st in
         let v1 = bds_assoc bds (MiscParser.dump_location  loc1)
         and v2 = bds_assoc bds (MiscParser.dump_location  loc2) in
         Misc.string_eq v1 v2
 
       let state_fault st f =
         let open HashedFaults in
-        let _,fs = HashedState.as_t st in
+        let {HashedState.S.f=fs; _;} = HashedState.as_t st in
         let (p0,lbl0),v0 = f in
         let eq_label = match lbl0 with
         | None -> fun _ -> true
@@ -770,7 +793,7 @@ let diff_logs t1 t2 = diff_tests t1.name t2.name t1.tests t2.tests
 let rec do_inter_states sts1 sts2 =  match sts1,sts2 with
 | ([],_)|(_,[]) -> []
 | st1::sts1,st2::sts2 ->
-    let r = compare_state st1 st2 in
+    let r = compare_state false st1 st2 in
     if r < 0 then
       do_inter_states sts1 (st2::sts2)
     else if r > 0 then
@@ -943,7 +966,7 @@ let exclude e t =
 (* Normalize *)
 (*************)
 
-let normalize_sts sts =  List.sort compare_state sts
+let normalize_sts sts =  List.sort (compare_state true) sts
 
 let normalize_states sts =
   let p_sts = normalize_sts sts in
