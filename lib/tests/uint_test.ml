@@ -345,6 +345,27 @@ let tests = [
     ) tests
   );
 
+  "Uint.Uint128.mul", (fun () ->
+    let open Uint in
+    let tests = [
+      Uint128.one, Uint128.one, Uint128.one ;
+      Uint128.of_int 15, Uint128.of_int 10, Uint128.of_int 150 ;
+      Uint128.of_int 123456789, Uint128.zero, Uint128.zero ;
+      Uint128.of_int 123456789, Uint128.of_int 847, Uint128.of_int 0x1858bb887b ;
+      Uint128.of_string "0x7FFFFFFFFFF000000000000FFFFFFFFF", Uint128.of_string "0x123456789ABDCDEF123456789ABCEDF1", Uint128.of_string "0xb21edca9a977999a999a88976543120f" ;
+    ] in
+
+    List.iter (fun (a, b, expected) ->
+      let got = Uint128.mul a b in
+      if Uint128.compare got expected <> 0 then
+        Test.fail (Printf.sprintf "%s %s: expected %s, got %s"
+          (Uint128.to_string_hex a)
+          (Uint128.to_string_hex b)
+          (Uint128.to_string_hex expected)
+          (Uint128.to_string_hex got))
+    ) tests
+  );
+
   "Uint.Uint128.div", (fun () ->
     let open Uint in
     let tests = [
