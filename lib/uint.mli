@@ -37,8 +37,21 @@ module type S = sig
   val logxor : t -> t -> t
   val lognot : t -> t
 
+  (** [shift_left u by] does a logical shift of [u] by [by] bits.
+   *  Behavior is undefined, including potentially raising [Failure],
+   *  if [by < 0] or [by >= num_bits]. *)
   val shift_left : t -> int -> t
+
+  (** [shift_right u by] does an arithmetic shift of [u] by [by] bits,
+   *  extending the sign bit into the vacated bits.
+   *  Behavior is undefined, including potentially raising [Failure],
+   *  if [by < 0] or [by >= num_bits]. *)
   val shift_right : t -> int -> t
+
+  (** [shift_right u] does a logical shift of [u] by [by] bits, which does not
+   *  consider the sign bit special.
+   *  Behavior is undefined, including potentially raising [Failure],
+   *  if [by < 0] or [by >= num_bits]. *)
   val shift_right_logical : t -> int -> t
 
   val leading_zeros : t -> int
@@ -48,8 +61,16 @@ module type S = sig
   val to_int : t -> int
   val of_int : int -> t
 
+  (** [to_string u] converts [u] to a decimal representation. *)
   val to_string : t -> string
+
+  (** [to_string_hex u] converts [u] to a hexadecimal representation, prefixed
+   *  by 0x. For example, [to_string_hex 12345] returns ["0x3039"]. *)
   val to_string_hex : t -> string
+
+  (** [of_string s] converts [s] to an integer, and respects 0x, 0o, and 0b
+   *  prefixes for hexadecimal, octal, and binary numbers. It raises [Failure]
+   *  if the input is invalid. *)
   val of_string : string -> t
 end
 
