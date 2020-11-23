@@ -152,7 +152,8 @@ let compare_binding p1 p2 =
 
 let as_st_concrete bds fs abs =
   let bds = List.sort compare_binding bds
-  and fs = List.sort HashedFault.compare fs in
+  and fs = List.sort HashedFault.compare fs
+  and abs = List.sort HashedFault.compare abs in
   let bds = List.fold_right HashedEnv.cons bds HashedEnv.nil
   and fs =  List.fold_right HashedFaults.cons fs HashedFaults.nil
   and abs =  List.fold_right HashedFaults.cons abs HashedFaults.nil in
@@ -177,14 +178,6 @@ let get_nouts st = st.p_nouts
 let get_bindings st = List.map (fun st -> st_as_string st.p_st) st.p_sts
 
 let empty_sts = { p_nouts = Int64.zero ; p_sts = []; }
-
-let pp_binding p =
-  let loc,v = HashedBinding.as_t p in
-  sprintf "%s=%s;" loc v
-
-let pp_fault f =
-  let f = HashedFault.as_t f in
-  Fault_tools.pp f ^ ";"
 
 let pretty_state pref mode with_noccs st =
   let buff = Buffer.create 10 in
@@ -336,24 +329,36 @@ let rec compare_faults st1 st2 =
       | r -> r
 
 
-let compare_state st1 st2 =
+(* First argument is true when states are from the same log *)
+let compare_state same st1 st2 =
   let open HashedState in
   let {S.e=e1; f=f1; a=a1;} = as_t st1.p_st
   and {S.e=e2; f=f2; a=a2;} = as_t st2.p_st in
   match compare_env e1 e2 with
   | 0 ->
       begin match compare_faults f1 f2 with
-      | 0 -> compare_faults a1 a2
+      | 0 -> assert (not same || compare_faults a1 a2 = 0) ; 0
       | r -> r
       end
   | r -> r
-
+(* Betweenn two equal states, select the one with explicit absent faults *) 
+let select_absent st1 st2 =
+  let open HashedState in
+  let open Hashcons in
+  let open HashedFaults in
+  match
+    (as_t st1.p_st).S.a.Hashcons.node,
+    (as_t st2.p_st).S.a.Hashcons.node
+  with
+  | (Cons _,_) -> st1
+  | (_,Cons _) -> st2
+  | (Nil,Nil)-> st1
 
 let rec do_diff_states sts1 sts2 =  match sts1,sts2 with
 | [],_ -> []
 | _,[] -> sts1
 | st1::sts1,st2::sts2 ->
-    let r = compare_state st1 st2 in
+    let r = compare_state false st1 st2 in
     if r < 0 then
       st1::do_diff_states sts1 (st2::sts2)
     else if r > 0 then
@@ -375,14 +380,15 @@ let diff_states sts1 sts2 =
 let rec do_union_states sts1 sts2 =  match sts1,sts2 with
 | ([],sts)|(sts,[]) -> sts
 | st1::sts1,st2::sts2 ->
-    let r = compare_state st1 st2 in
+    let r = compare_state false st1 st2 in
     if r < 0 then
       st1::do_union_states sts1 (st2::sts2)
     else if r > 0 then
       st2::do_union_states (st1::sts1) sts2
     else begin
+      let st = select_absent st1 st2 in
       let st =
-        { st1 with p_noccs = Int64.add st1.p_noccs  st2.p_noccs ; } in
+        { st with p_noccs = Int64.add st1.p_noccs  st2.p_noccs ; } in
       st::do_union_states sts1 sts2
     end
 
@@ -787,7 +793,7 @@ let diff_logs t1 t2 = diff_tests t1.name t2.name t1.tests t2.tests
 let rec do_inter_states sts1 sts2 =  match sts1,sts2 with
 | ([],_)|(_,[]) -> []
 | st1::sts1,st2::sts2 ->
-    let r = compare_state st1 st2 in
+    let r = compare_state false st1 st2 in
     if r < 0 then
       do_inter_states sts1 (st2::sts2)
     else if r > 0 then
@@ -960,7 +966,7 @@ let exclude e t =
 (* Normalize *)
 (*************)
 
-let normalize_sts sts =  List.sort compare_state sts
+let normalize_sts sts =  List.sort (compare_state true) sts
 
 let normalize_states sts =
   let p_sts = normalize_sts sts in
