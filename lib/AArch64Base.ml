@@ -284,7 +284,20 @@ let pp_xreg r = match r with
 | ResAddr -> "Res"
 | _ -> try List.assoc r regs with Not_found -> assert false
 
-let pp_reg = pp_xreg
+let pp_simd_vector_reg r = match r with
+| Vreg (r',s) ->
+  (try List.assoc r' vvrs with Not_found -> assert false) ^
+  (try List.assoc s arrange_specifier with Not_found -> assert false)
+| _ -> assert false
+
+let pp_simd_scalar_reg rl r = match r with
+| SIMDreg r -> (try List.assoc r rl with Not_found -> assert false)
+| _ -> assert false
+
+let pp_reg r = match r with
+| Vreg _ -> pp_simd_vector_reg r
+| SIMDreg _ -> pp_simd_scalar_reg vvrs r
+| _ -> pp_xreg r
 
 let pp_wreg r = match r with
 | Symbolic_reg r -> "W%" ^ r
@@ -292,16 +305,6 @@ let pp_wreg r = match r with
 | NZP -> "NZP"
 | ResAddr -> "Res"
 | _ -> try List.assoc r wregs with Not_found -> assert false
-
-let pp_simd_reg r = match r with
-| Vreg (r',s) ->
-  (try List.assoc r' vvrs with Not_found -> assert false) ^
-  (try List.assoc s arrange_specifier with Not_found -> assert false)
-| _ -> assert false
-
-let pp_simd_fp_reg rl r = match r with
-| SIMDreg r -> (try List.assoc r rl with Not_found -> assert false)
-| _ -> assert false
 
 let reg_compare = compare
 
@@ -451,8 +454,7 @@ end
 type sysreg =
     CTR_EL0 | DCIZ_EL0 |
     MDCCSR_EL0 | DBGDTR_EL0 |
-    DBGDTRRX_EL0 | DBGDTRTX_EL0 |
-    FPCR | FPSR
+    DBGDTRRX_EL0 | DBGDTRTX_EL0
 
 let pp_sysreg = function
   | CTR_EL0 -> "CTR_EL0"
@@ -461,8 +463,6 @@ let pp_sysreg = function
   | DBGDTR_EL0 -> "DBGDTR_EL0"
   | DBGDTRRX_EL0 -> "DBGDTRRX_EL0"
   | DBGDTRTX_EL0 -> "DBGDTRTX_EL0"
-  | FPCR -> "FPCR"
-  | FPSR -> "FPSR"
 
 (****************)
 (* Instructions *)
@@ -744,11 +744,11 @@ let pp_vreg v r = match v with
 | V128 -> pp_creg r
 
 let pp_vsimdreg v r = match v with
-| VSIMD8 -> pp_simd_fp_reg bvrs r
-| VSIMD16 -> pp_simd_fp_reg hvrs r
-| VSIMD32 -> pp_simd_fp_reg svrs r
-| VSIMD64 -> pp_simd_fp_reg dvrs r
-| VSIMD128 -> pp_simd_fp_reg qvrs r
+| VSIMD8 -> pp_simd_scalar_reg bvrs r
+| VSIMD16 -> pp_simd_scalar_reg hvrs r
+| VSIMD32 -> pp_simd_scalar_reg svrs r
+| VSIMD64 -> pp_simd_scalar_reg dvrs r
+| VSIMD128 -> pp_simd_scalar_reg qvrs r
 
 
 let pp_op = function
@@ -790,23 +790,23 @@ let do_pp_instruction m =
   and pp_rr memo v r1 r2 =
     pp_memo memo ^ " " ^ pp_vreg v r1 ^ "," ^  pp_vreg v r2
   and pp_vrivri memo r1 i1 r2 i2 =
-    pp_memo memo ^ " " ^ pp_simd_reg r1 ^ "[" ^ string_of_int i1 ^"]," ^
-    pp_simd_reg r2 ^ "[" ^ string_of_int i2 ^ "]"
+    pp_memo memo ^ " " ^ pp_simd_vector_reg r1 ^ "[" ^ string_of_int i1 ^"]," ^
+    pp_simd_vector_reg r2 ^ "[" ^ string_of_int i2 ^ "]"
   and pp_vrir memo r1 i v r2 = 
-    pp_memo memo ^ " " ^ pp_simd_reg r1 ^ "[" ^ string_of_int i ^ "]," ^
+    pp_memo memo ^ " " ^ pp_simd_vector_reg r1 ^ "[" ^ string_of_int i ^ "]," ^
     pp_vreg v r2
   and pp_vri memo r i = 
-    pp_memo memo ^ " " ^ pp_simd_reg r ^ "," ^ m.pp_k i
+    pp_memo memo ^ " " ^ pp_simd_vector_reg r ^ "," ^ m.pp_k i
   and pp_rvri memo v r1 r2 i = 
     pp_memo memo ^ " " ^ pp_vreg v r1 ^ "," ^ 
-    pp_simd_reg r2 ^ "[" ^ string_of_int i ^ "]"
+    pp_simd_vector_reg r2 ^ "[" ^ string_of_int i ^ "]"
   and pp_vrvr memo r1 r2 = 
-    pp_memo memo ^ " " ^ pp_simd_reg r1 ^ "," ^ pp_simd_reg r2
+    pp_memo memo ^ " " ^ pp_simd_vector_reg r1 ^ "," ^ pp_simd_vector_reg r2
   and pp_fpri memo v r i =
     pp_memo memo ^ " " ^ pp_vsimdreg v r ^ "," ^ m.pp_k i
   and pp_fprvri memo v r1 r2 i = 
     pp_memo memo ^ " " ^ pp_vsimdreg v r1 ^ "," ^ 
-    pp_simd_reg r2 ^ "[" ^ string_of_int i ^ "]" in
+    pp_simd_vector_reg r2 ^ "[" ^ string_of_int i ^ "]" in
 
   let pp_kr showsxtw showzero kr = match kr with
   | K k when m.zerop k && not showzero -> ""
@@ -856,19 +856,19 @@ let do_pp_instruction m =
     ",[" ^ pp_xreg ra ^ pp_kr false false kr ^ "]" in
 
   let pp_vmem_shift memo r k s =
-    pp_memo memo ^ " " ^ pp_simd_reg r ^ "," ^ m.pp_k k ^
+    pp_memo memo ^ " " ^ pp_simd_vector_reg r ^ "," ^ m.pp_k k ^
     pp_barrel_shift "," s (m.pp_k) in
 
   let pp_vmem_s memo rs i r2 kr =
     pp_memo memo ^ " " ^
-    "{" ^ String.concat ", " (List.map pp_simd_reg rs) ^ "}" ^
+    "{" ^ String.concat ", " (List.map pp_simd_vector_reg rs) ^ "}" ^
     "[" ^ string_of_int i ^ "]" ^
     ",[" ^ pp_xreg r2 ^ "]" ^
     pp_kr false false kr in
 
   let pp_vmem_r_m memo rs r2 kr =
     pp_memo memo ^ " " ^
-    "{" ^ String.concat ", " (List.map pp_simd_reg rs) ^ "}" ^
+    "{" ^ String.concat ", " (List.map pp_simd_vector_reg rs) ^ "}" ^
     ",[" ^ pp_xreg r2 ^ "]" ^
     pp_kr false false kr in
 
@@ -880,8 +880,7 @@ let do_pp_instruction m =
       pp_rr memo v r1 r2
   | V32,RV ((V64|V128),_)
   | V64,RV ((V32|V128),_)
-  | V128,RV ((V32|V64),_) ->
-      assert false in
+  | V128,RV ((V32|V64),_) -> assert false in
 
   let pp_rrkr memo v r1 r2 kr = match v,kr with
   | _,K k -> pp_rri memo v r1 r2 k
@@ -897,8 +896,7 @@ let do_pp_instruction m =
       pp_creg r1  ^ "," ^
       pp_creg r2 ^ pp_kr false true kr
   | V32,RV (V64,_)
-  | _,RV (V128,_) ->
-      assert false in
+  | _,RV (V128,_) -> assert false in
 
   let pp_stxr memo v r1 r2 r3 =
     pp_memo memo ^ " " ^
