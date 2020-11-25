@@ -105,6 +105,7 @@ module Make
       val init_env_empty : init_env
       val add_rels : init_env -> S.event_rel Lazy.t Misc.Simple.bds -> init_env
       val add_sets : init_env -> S.event_set Lazy.t Misc.Simple.bds -> init_env
+      val get_set : init_env -> string -> S.event_set Lazy.t option
 
 (* Subset of interpreter state used by the caller *)
       type st_out = {
@@ -512,6 +513,14 @@ module Make
     let add_rels (sets,rels) bds = (sets,bds@rels)
 
     and add_sets (sets,rels) bds = (bds@sets,rels)
+
+    let get_set (sets,_) key =
+      let rec f_rec = function
+        | [] -> None
+        | (k,v)::sets ->
+            if Misc.string_eq key k then Some v
+            else f_rec sets in
+      f_rec sets
 
 (* Go on *)
     let add_vals mk =

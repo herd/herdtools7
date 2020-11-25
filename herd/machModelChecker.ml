@@ -297,25 +297,9 @@ module Make
              E.Act.arch_sets) in
       let m =
         if kvm then
-          let my_t0 = lazy begin
-            let open DirtyBit in
-            let np = test.Test_herd.nice_prog in
-            let ha0 =
-              Misc.check_same
-                Misc.bool_eq
-                (fun ((proc,_),_) -> O.dirty.ha proc)
-                np
-            and hd0 =
-              Misc.check_same
-                Misc.bool_eq
-                (fun ((proc,_),_) -> O.dirty.hd proc)
-                np in
-            let tr_h h = function
-              | None -> fun () ->
-                  Warn.fatal "All procs must have the same value of the '%s' flag" h
-              | Some h -> fun () -> h in
-            {my_ha=tr_h "HA" ha0; my_hd=tr_h "HD" hd0;}
-          end in
+          let nexps = match I.get_set m "NExp" with
+            | Some nexps -> nexps
+            | None -> (* Must exists *) assert false in
           I.add_sets m
             (List.map
                (fun (k,a) ->
@@ -327,10 +311,13 @@ module Make
                      { my_ha; my_hd; } in
                    E.EventSet.filter
                      (fun e ->
-                       match E.proc_of e with
+                       E.is_load e &&
+                       begin match E.proc_of e with
                        | Some proc -> a (tr_proc proc) e.E.action
-                       | None -> a (Lazy.force my_t0) e.E.action)
-                     evts
+                       (* Init writes have no proc, but there are no loads *)
+                       | None -> assert false
+                       end)
+                     (Lazy.force nexps)
                  end)
                E.Act.arch_dirty)
         else m in
