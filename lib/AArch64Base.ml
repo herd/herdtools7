@@ -802,9 +802,9 @@ let do_pp_instruction m =
     pp_simd_vector_reg r2 ^ "[" ^ string_of_int i ^ "]"
   and pp_vrvr memo r1 r2 = 
     pp_memo memo ^ " " ^ pp_simd_vector_reg r1 ^ "," ^ pp_simd_vector_reg r2
-  and pp_fpri memo v r i =
+  and pp_sri memo v r i =
     pp_memo memo ^ " " ^ pp_vsimdreg v r ^ "," ^ m.pp_k i
-  and pp_fprvri memo v r1 r2 i = 
+  and pp_srvri memo v r1 r2 i =
     pp_memo memo ^ " " ^ pp_vsimdreg v r1 ^ "," ^ 
     pp_simd_vector_reg r2 ^ "[" ^ string_of_int i ^ "]" in
 
@@ -834,24 +834,24 @@ let do_pp_instruction m =
     pp_vreg v r2 ^ ",[" ^
     pp_xreg ra ^ pp_kr true false kr ^ "]" in
     
-  let pp_fpmem memo v rt ra kr = 
+  let pp_smem memo v rt ra kr =
     pp_memo memo ^ " " ^ pp_vsimdreg v rt ^
     ",[" ^ pp_xreg ra ^ pp_kr false false kr ^ "]" in
 
-  let pp_fpmem_shift memo v rt ra kr s = 
+  let pp_smem_shift memo v rt ra kr s =
     pp_memo memo ^ " " ^ pp_vsimdreg v rt ^
     ",[" ^ pp_xreg ra ^ pp_kr false false kr ^
     pp_barrel_shift "," s (m.pp_k) ^ "]" in
 
-  let pp_fpmem_post memo v rt ra k =
+  let pp_smem_post memo v rt ra k =
     pp_memo memo ^ " " ^ pp_vsimdreg v rt ^
     ",[" ^ pp_xreg ra ^ "]" ^ m.pp_k k in
 
-  let pp_fpmemp_post memo v r1 r2 ra k = 
+  let pp_smemp_post memo v r1 r2 ra k =
     pp_memo memo ^ " " ^ pp_vsimdreg v r1 ^ "," ^ pp_vsimdreg v r2 ^
     ",[" ^ pp_xreg ra ^ "]" ^ m.pp_k k in
   
-  let pp_fpmemp memo v r1 r2 ra kr = 
+  let pp_smemp memo v r1 r2 ra kr =
     pp_memo memo ^ " " ^ pp_vsimdreg v r1 ^ "," ^ pp_vsimdreg v r2 ^ 
     ",[" ^ pp_xreg ra ^ pp_kr false false kr ^ "]" in
 
@@ -1005,25 +1005,25 @@ let do_pp_instruction m =
   | I_ST4M (rs,r2,kr) ->
       pp_vmem_r_m "ST4" rs r2 kr
   | I_LDP_P_SIMD (t,v,r1,r2,r3,k) ->
-      pp_fpmemp_post (match t with TT -> "LDP" | NT -> "LDNP") v r1 r2 r3 k
+      pp_smemp_post (match t with TT -> "LDP" | NT -> "LDNP") v r1 r2 r3 k
   | I_STP_P_SIMD (t,v,r1,r2,r3,k) ->
-      pp_fpmemp_post (match t with TT -> "STP" | NT -> "STNP") v r1 r2 r3 k
+      pp_smemp_post (match t with TT -> "STP" | NT -> "STNP") v r1 r2 r3 k
   | I_LDP_SIMD (t,v,r1,r2,r3,kr) ->
-      pp_fpmemp (match t with TT -> "LDP" | NT -> "LDNP") v r1 r2 r3 kr
+      pp_smemp (match t with TT -> "LDP" | NT -> "LDNP") v r1 r2 r3 kr
   | I_STP_SIMD (t,v,r1,r2,r3,kr) ->
-      pp_fpmemp (match t with TT -> "STP" | NT -> "STNP") v r1 r2 r3 kr
+      pp_smemp (match t with TT -> "STP" | NT -> "STNP") v r1 r2 r3 kr
   | I_LDR_SIMD (v,r1,r2,k,S_NOEXT) ->
-      pp_fpmem "LDR" v r1 r2 k
+      pp_smem "LDR" v r1 r2 k
   | I_LDR_SIMD (v,r1,r2,k,s) ->
-      pp_fpmem_shift "LDR" v r1 r2 k s
+      pp_smem_shift "LDR" v r1 r2 k s
   | I_LDR_P_SIMD (v,r1,r2,k) ->
-      pp_fpmem_post "LDR" v r1 r2 k
+      pp_smem_post "LDR" v r1 r2 k
   | I_STR_SIMD (v,r1,r2,k,S_NOEXT) ->
-      pp_fpmem "STR" v r1 r2 k
+      pp_smem "STR" v r1 r2 k
   | I_STR_SIMD (v,r1,r2,k,s) ->
-      pp_fpmem_shift "STR" v r1 r2 k s
+      pp_smem_shift "STR" v r1 r2 k s
   | I_STR_P_SIMD (v,r1,r2,k) ->
-      pp_fpmem_post "STR" v r1 r2 k
+      pp_smem_post "STR" v r1 r2 k
   | I_LDUR_SIMD (v,r1,r2,None) ->
         sprintf "LDUR %s, [%s]" (pp_vsimdreg v r1) (pp_reg r2)
   | I_LDUR_SIMD (v,r1,r2,Some(k)) ->
@@ -1041,13 +1041,13 @@ let do_pp_instruction m =
   | I_MOV_FG (r1,i,v,r2) ->
       pp_vrir "MOV" r1 i v r2
   | I_MOV_S (v,r1,r2,i) ->
-      pp_fprvri "MOV" v r1 r2 i
+      pp_srvri "MOV" v r1 r2 i
   | I_MOVI_V (r,k,S_NOEXT) ->
       pp_vri "MOVI" r k
   | I_MOVI_V (r,k,s) ->
       pp_vmem_shift "MOVI" r k s
   | I_MOVI_S (v,r,k) ->
-      pp_fpri "MOVI" v r k
+      pp_sri "MOVI" v r k
 
 (* Morello *)
   | I_ALIGND (r1,r2,k) ->
