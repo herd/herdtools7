@@ -1025,13 +1025,13 @@ let do_pp_instruction m =
   | I_STR_P_SIMD (v,r1,r2,k) ->
       pp_smem_post "STR" v r1 r2 k
   | I_LDUR_SIMD (v,r1,r2,None) ->
-        sprintf "LDUR %s, [%s]" (pp_vsimdreg v r1) (pp_reg r2)
+      sprintf "LDUR %s, [%s]" (pp_vsimdreg v r1) (pp_reg r2)
   | I_LDUR_SIMD (v,r1,r2,Some(k)) ->
-        sprintf "LDUR %s, [%s, #%s]" (pp_vsimdreg v r1) (pp_reg r2) (m.pp_k k)
+      sprintf "LDUR %s, [%s, #%s]" (pp_vsimdreg v r1) (pp_reg r2) (m.pp_k k)
   | I_STUR_SIMD (v,r1,r2,None) ->
-          sprintf "STUR %s, [%s]" (pp_vsimdreg v r1) (pp_reg r2)
+      sprintf "STUR %s, [%s]" (pp_vsimdreg v r1) (pp_reg r2)
   | I_STUR_SIMD (v,r1,r2,Some(k)) ->
-          sprintf "STUR %s, [%s, #%s]" (pp_vsimdreg v r1) (pp_reg r2) (m.pp_k k)
+      sprintf "STUR %s, [%s, #%s]" (pp_vsimdreg v r1) (pp_reg r2) (m.pp_k k)
   | I_MOV_VE (r1,i1,r2,i2) ->
       pp_vrivri "MOV" r1 i1 r2 i2
   | I_MOV_V (r1,r2) ->
@@ -1226,28 +1226,18 @@ let fold_regs (f_regs,f_sregs) =
   | I_OP3 (_,_,r1,r2,kr,_)
   | I_LDRBH (_,r1,r2,kr) | I_STRBH (_,r1,r2,kr)
   | I_ALIGND (r1,r2,kr) | I_ALIGNU (r1,r2,kr)
-  | I_LD1 (r1,_,r2,kr)
-  | I_LD1R (r1,r2,kr)
+  | I_LD1 (r1,_,r2,kr) | I_LD1R (r1,r2,kr)
   | I_ST1 (r1,_,r2,kr)
   | I_LDR_SIMD (_,r1,r2,kr,_) | I_STR_SIMD(_,r1,r2,kr,_)
     -> fold_reg r1 (fold_reg r2 (fold_kr kr c))
   | I_LD1M (rs,r2,kr)
-  | I_LD2 (rs,_,r2,kr)
-  | I_LD2M (rs,r2,kr)
-  | I_LD2R (rs,r2,kr)
-  | I_LD3 (rs,_,r2,kr)
-  | I_LD3M (rs,r2,kr)
-  | I_LD3R (rs,r2,kr)
-  | I_LD4 (rs,_,r2,kr)
-  | I_LD4M (rs,r2,kr)
-  | I_LD4R (rs,r2,kr)
+  | I_LD2 (rs,_,r2,kr) | I_LD2M (rs,r2,kr) | I_LD2R (rs,r2,kr)
+  | I_LD3 (rs,_,r2,kr) | I_LD3M (rs,r2,kr) | I_LD3R (rs,r2,kr)
+  | I_LD4 (rs,_,r2,kr) | I_LD4M (rs,r2,kr) | I_LD4R (rs,r2,kr)
   | I_ST1M (rs,r2,kr)
-  | I_ST2 (rs,_,r2,kr)
-  | I_ST2M (rs,r2,kr)
-  | I_ST3 (rs,_,r2,kr)
-  | I_ST3M (rs,r2,kr)
-  | I_ST4 (rs,_,r2,kr)
-  | I_ST4M (rs,r2,kr)
+  | I_ST2 (rs,_,r2,kr) | I_ST2M (rs,r2,kr)
+  | I_ST3 (rs,_,r2,kr) | I_ST3M (rs,r2,kr)
+  | I_ST4 (rs,_,r2,kr) | I_ST4M (rs,r2,kr)
     -> List.fold_right fold_reg rs (fold_reg r2 (fold_kr kr c))
   | I_CSEL (_,r1,r2,r3,_,_)
   | I_STXR (_,_,r1,r2,r3) | I_STXRBH (_,_,r1,r2,r3)
