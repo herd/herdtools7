@@ -180,17 +180,9 @@ let fold_barrier_option more f k =
     fold_type (fun t k -> f SY t k) k
 
 let do_fold_dmb_dsb more f k =
-  let k =
-    fold_barrier_option more
-      (fun d t k -> f (DMB (d,t)) k)
-      k in
-  if more then
-    let k =
-      fold_barrier_option more
-        (fun d t k -> f (DSB (d,t)) k)
-        k in
+  fold_barrier_option more
+    (fun d t k -> f (DMB (d,t)) (f (DSB (d,t)) k))
     k
-  else k
 
 let fold_barrier more f k =
   let k = do_fold_dmb_dsb more f k in

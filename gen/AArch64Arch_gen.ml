@@ -335,7 +335,7 @@ let fold_cachesync =
 let fold_all_fences f k =
   let k = fold_shootdown f k in
   let k = fold_cachesync f k in
-  fold_barrier  C.moreedges (fun b k -> f (Barrier b) k) k
+  fold_barrier C.moreedges (fun b k -> f (Barrier b) k) k
 
 
 let fold_some_fences f k =
