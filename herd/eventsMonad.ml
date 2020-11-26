@@ -799,18 +799,16 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
         { st with E.data_ports = st.E.events; }
       else st
 
-    let read_loc is_data mk_action loc ii =
-      fun eiid ->
-        V.fold_over_vals
-          (fun v (eiid1,(acc_inner,_)) ->
-            (bump_eid eiid1,
-             (Evt.add
-                (v, [],
-                 trivial_event_structure is_data
-                   {E.eiid = eiid1.id ; E.subid=eiid.sub ;
-                    E.iiid = Some ii;
-                    E.action = mk_action loc v })
-                acc_inner, None))) (eiid,(Evt.empty,None))
+    let read_loc is_data mk_action loc ii = fun eiid ->
+      let v = V.fresh_var () in
+      bump_eid eiid,
+      (Evt.singleton
+         (v, [],
+          trivial_event_structure is_data
+            {E.eiid = eiid.id ; E.subid=eiid.sub ;
+             E.iiid = Some ii;
+             E.action = mk_action loc v }),
+       None)
 
     let add_atomic_tag_read m a f ii = fun eiid ->
       let (eiid,(sact,sspec)) = m eiid in
@@ -1187,30 +1185,19 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
     let eqT : V.v -> V.v -> unit t = assign
 
 
-    let fetch op arg mk_action ii =
-      fun eiid ->
-        V.fold_over_vals
-          (fun v (eiid,(acc_inner,_)) ->
-            let vstored = V.fresh_var () in
-            (bump_eid eiid,
-             (Evt.add
-                (v, [VC.Assign (vstored,VC.Binop (op,v,arg))],
-                 trivial_event_structure false
-                   {E.eiid = eiid.id ; E.subid = eiid.sub ;
-                    E.iiid = Some ii;
-                    E.action = mk_action v vstored})
-                acc_inner,None))) (eiid,(Evt.empty,None))
+    let fetch op arg mk_action ii = fun eiid ->
+      let v = V.fresh_var ()
+      and vstored = V.fresh_var () in
+      bump_eid eiid,
+      (Evt.singleton
+         (v, [VC.Assign (vstored,VC.Binop (op,v,arg))],
+          trivial_event_structure false
+            {E.eiid = eiid.id ; E.subid = eiid.sub ;
+             E.iiid = Some ii;
+             E.action = mk_action v vstored}),
+       None)
 
     let tooFar _msg = zeroT
-(*      fun eiid ->
-        (eiid+1,
-        Evt.singleton
-        ((), [],
-        trivial_event_structure false
-        {E.eiid = eiid ;
-        E.iiid = None;
-        E.action = E.Act.toofar }))
- *)
     let tooFarcode _msg = zerocodeT
 
     type evt_struct = E.event_structure
