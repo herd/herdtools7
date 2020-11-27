@@ -95,16 +95,22 @@ module Make
       let read_reg_tag is_data =  read_reg is_data
 
 (* Basic write, to register  *)
-      let mk_write sz an loc v = Act.Access (Dir.W, loc, v, an, sz)
-      let write_loc sz an loc v ii = M.mk_singleton_es (mk_write sz an loc v) ii
+
+      let mk_write sz an v loc = Act.Access (Dir.W, loc, v, an, sz)
+
       let write_reg r v ii = match r with
       | AArch64.ZR -> M.unitT ()
       | _ ->
-          write_loc MachSize.Quad AArch64.N (A.Location_reg (ii.A.proc,r)) v ii
+          M.write_loc
+            (mk_write MachSize.Quad AArch64.N v)
+            (A.Location_reg (ii.A.proc,r)) ii
 
       let write_reg_morello r v ii =
-        if not morello then Warn.user_error "capabilities require -variant morello" ;
-        write_loc MachSize.S128 AArch64.N (A.Location_reg (ii.A.proc,r)) v ii
+        if not morello then
+          Warn.user_error "capabilities require -variant morello" ;
+        M.write_loc
+          (mk_write MachSize.S128 AArch64.N v)
+          (A.Location_reg (ii.A.proc,r)) ii
 
       let write_reg_sz sz r v ii = match r with
       | AArch64.ZR -> M.unitT ()
@@ -249,9 +255,12 @@ module Make
       let do_write_mem sz an a v ii =
         let write a =
           if mixed then begin
-            Mixed.write_mixed sz (fun sz -> mk_write sz an) a v ii
-          end else write_loc sz an (A.Location_global a) v ii in
-        if morello then M.op1 Op.CapaStrip a >>| M.op1 Op.CapaGetTag v >>= fun (a,tag) ->
+              Mixed.write_mixed sz
+                (fun sz a v -> mk_write sz an v a) a v ii
+          end else
+            M.write_loc (mk_write sz an v) (A.Location_global a) ii in
+        if morello then
+          M.op1 Op.CapaStrip a >>| M.op1 Op.CapaGetTag v >>= fun (a,tag) ->
           M.add_atomic_tag_write (write a) a tag (fun loc v -> Act.TagAccess (Dir.W,loc,v)) ii
         else write a
 
@@ -265,7 +274,8 @@ module Make
         let write a =
           if mixed then begin
             (M. assign a resa >>|
-            Mixed.write_mixed sz (fun sz -> mk_write sz an)  a v ii) >>! ()
+               Mixed.write_mixed sz
+                 (fun sz a v -> mk_write sz an v a)  a v ii) >>! ()
           end else
             let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
             M.mk_singleton_es_eq
