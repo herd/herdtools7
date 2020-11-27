@@ -857,11 +857,11 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
       m eiid
 
     (* Writing is as simple as emiting one event *)
-    let write_loc mk_action loc ii =  mk_singleton_es (mk_action loc) ii
+    let write_loc mk_action loc ii =
+      make_one_event_structure (mk_action loc) ii ++ make_one_monad () []
 
     (* Fence events have no 'maximal' or output events,
        which makes them transparent to iicoo_data composition *)
-
     let mk_fence a ii =
       make_one_event_structure a ii --
       (fun st -> { st with E.output = Some E.EventSet.empty;}) ++
