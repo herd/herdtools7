@@ -401,25 +401,17 @@ match name with
                 begin match A.parse_vreg name with
                 | Some r -> ARCH_VREG r
                 | None ->
-                    begin match A.parse_breg name with
-                    | Some r -> ARCH_BREG r
-                    | None ->
-                        begin match A.parse_hreg name with
-                        | Some r -> ARCH_HREG r
-                        | None ->
-                            begin match A.parse_sreg name with
-                            | Some r -> ARCH_SREG r
-                            | None ->
-                                begin match A.parse_dreg name with
-                                | Some r -> ARCH_DREG r
-                                | None ->
-                                    begin match A.parse_qreg name with
-                                    | Some r -> ARCH_QREG r
-                                    | None -> NAME name
-                                    end
-                                end
-                            end
+                    begin match A.parse_simd_reg name with
+                    | Some r ->
+                        begin match (Char.uppercase_ascii name.[0]) with
+                        | 'B' -> ARCH_BREG r
+                        | 'H' -> ARCH_HREG r
+                        | 'S' -> ARCH_SREG r
+                        | 'D' -> ARCH_DREG r
+                        | 'Q' -> ARCH_QREG r
+                        | _ -> assert false
                         end
+                    | None -> NAME name
                     end
                 end
             end
