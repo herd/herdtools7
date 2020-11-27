@@ -129,6 +129,12 @@ let as_virtual v = match v with
 | Symbolic (Virtual ((s,_),_)) -> Some s
 | _ -> None
 
+let same_oa v1 v2 =
+  let open PTEVal in
+  match v1,v2 with
+  | PteVal p1,PteVal p2 ->  Misc.string_eq p1.oa p2.oa
+  | _ -> false
+
 module type S =  sig
 
   module Scalar : Scalar.S

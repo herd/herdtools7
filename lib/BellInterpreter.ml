@@ -62,6 +62,7 @@ module Make (C: Config) = struct
         let event_compare () () = 0
         let pp_eiid () = "eiid"
         let pp_instance () = "instance"
+        let is_store () = false
 
         module Ordered = struct
           type t = unit
@@ -96,6 +97,7 @@ module Make (C: Config) = struct
           let pp _ _ _ _ = ()
           let fromto _ _ = assert false
           let same_value _ _ = assert false
+          let same_oa _ _ = assert false
         end) in
 
     let empty_test = () in

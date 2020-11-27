@@ -52,6 +52,7 @@ module type SimplifiedSem = sig
     val event_compare : event -> event -> int
     val pp_eiid : event -> string
     val pp_instance : event -> string
+    val is_store : event -> bool
 
     module EventSet : MySet.S
     with type elt = event
@@ -88,6 +89,7 @@ module Make
             S.event_set (* labelled fence(s) *) ->
               S.event_rel (* localised fence relation *)
       val same_value : S.event -> S.event -> bool
+      val same_oa : S.event -> S.event -> bool
     end)
     :
     sig
@@ -1136,10 +1138,30 @@ module Make
         V.Rel r
     | _ -> arg_mismatch ()
 
+    and oa_changes arg = match arg with
+      | V.Tuple [V.Set ws; V.Rel prec; ] ->
+          let m = E.EventRel.M.to_map prec in
+          let ws =
+            E.EventSet.filter
+              (fun w ->
+                E.is_store w &&
+                begin let p =
+                  match E.EventSet.as_singleton (E.EventRel.M.succs w m) with
+                  | Some p -> p
+                  | None ->
+                      Warn.user_error
+                        "Cat primitive oa-changes must be given set and a function on it" in
+                      not (U.same_oa w p)
+                end)
+              ws in
+          V.Set ws
+      | _ -> arg_mismatch ()
+
     let add_primitives ks m =
       add_prims m
         [
-         "different-values",different_values;
+          "oa-changes",oa_changes;
+          "different-values",different_values;
          "fromto",fromto ks;
          "classes-loc",partition;
          "classes",classes;

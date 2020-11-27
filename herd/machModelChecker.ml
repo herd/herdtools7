@@ -114,6 +114,10 @@ module Make
       | Some v1,Some v2 -> S.A.V.compare v1 v2 = 0
       | _ -> false
 
+      let same_oa e1 e2 = match S.E.value_of e1,S.E.value_of e2 with
+        | Some (S.A.V.Val c1),Some (S.A.V.Val c2) -> Constant.same_oa c1 c2
+        | _ -> false
+
     end
 
     module I = Interpreter.Make(IConfig)(S)(IUtils)
