@@ -150,6 +150,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let ldaxr r1 r2 = I_LDAR (vloc,AX,r1,r2)
     let sxtw r1 r2 = I_SXTW (r1,r2)
     let do_ldr_idx v1 v2 r1 r2 idx = I_LDR (v1,r1,r2,RV (v2,idx),S_NOEXT)
+    let ldn n r1 r2 = match n with
+    | N1 -> I_LD1M ([r1],r2,K 0)
+    | N2 -> I_LD2M ([r1],r2,K 0)
+    | N3 -> I_LD3M ([r1],r2,K 0)
+    | N4 -> I_LD4M ([r1],r2,K 0)
+
 
     let ldr_mixed_idx v r1 r2 idx sz  =
       let open MachSize in
@@ -428,6 +434,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let load vr = wrap_st (do_ldr vr)
           let load_idx v1 v2 st rA rB idx = [do_ldr_idx v1 v2 rA rB idx],st
         end)
+
+    module LDN = struct
+      let emit_load n st p init x =
+        let rA,st = next_reg st in
+        let rB,init,st = U.next_init st p init x in
+        rA,init,lift_code [ldn n rA rB],st
+    end
 
     module LDG = struct
       let emit_load st p init x =
@@ -978,6 +991,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let r,init,cs,st = emit_load_mixed MachSize.S128 0 st p init loc in
             Some r,init,cs@lift_code [gctype r r],st
         | R,Some (CapaSeal,Some _) -> assert false
+        | R,Some (Neon n, _) -> let r,init,cs,st = LDN.emit_load n st p init loc in Some r,init,cs,st
         | W,None ->
             let init,cs,st = STR.emit_store st p init loc e.v None evt_null in
             None,init,cs,st
@@ -1045,6 +1059,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let init,cs,st = emit_str_addon st p init rB rA (Some Capability) {e with cseal = e.v} in
             None,init,csi@cs@lift_code [str_mixed MachSize.S128 0 rB rA],st
         | W,Some (CapaSeal,Some _) -> assert false
+        | W,Some (Neon _, _) -> assert false
         end
 
     let emit_exch st p init er ew =
