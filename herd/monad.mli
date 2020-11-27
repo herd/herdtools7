@@ -131,14 +131,33 @@ module type S =
     val tooFar : string -> unit t
     val tooFarcode : string -> 'a code
 
-        (* read_loc is_data mk_action loc ii:DGG
-           for each value v that could be read,
-           make an event structure comprising a single event with
-           instruction id "ii", and action "mk_action v loc".
-           is_data charaterizes the data port of a store *)
+    (**********************************************************)
+    (* A few action instruction insance -> monad constructors *)
+    (**********************************************************)
+    val mk_singleton_es : E.action -> A.inst_instance_id -> unit t
+    val mk_singleton_es_success : E.action -> A.inst_instance_id -> unit t
+    val mk_singleton_es_eq :
+      E.action -> VC.cnstrnts -> A.inst_instance_id -> unit t
 
+    (****************)
+    (* Basic monads *)
+    (****************)
+
+    (* Read, the first, boolean, argument identifies a store data port *)
     val read_loc : bool -> (A.location -> A.V.v -> E.action) ->
       A.location -> A.inst_instance_id -> A.V.v t
+    val write_loc :
+      (A.location -> E.action) -> A.location -> A.inst_instance_id -> unit t
+    (* Fence, must be used when output is absent *)
+    val mk_fence : E.action -> A.inst_instance_id -> unit t
+    (* Fetch and op *)
+    val fetch :
+        Op.op -> A.V.v -> (A.V.v -> A.V.v -> E.action) ->
+          A.inst_instance_id -> A.V.v t
+
+    (**********************)
+    (* Morello extensions *)
+    (**********************)
 
     val add_atomic_tag_read : A.V.v t -> A.V.v -> (A.location -> A.V.v ->
       E.action) -> A.inst_instance_id -> A.V.v t
@@ -160,16 +179,7 @@ module type S =
 
     end
 
-   (* mk_singleton_es a ii:
-      make an event structure comprising a single event with
-           instruction id "ii", and action "a". *)
-    val mk_singleton_es : E.action -> A.inst_instance_id -> unit t
-    val mk_singleton_es_success : E.action -> A.inst_instance_id -> unit t
-    val mk_singleton_es_eq : E.action -> VC.cnstrnts -> A.inst_instance_id -> unit t
-        (* Similar, explicit empty output *)
-    val mk_fence : E.action -> A.inst_instance_id -> unit t
-
-
+(* Operations *)
     val op1 : Op.op1 -> A.V.v -> A.V.v t
     val op : Op.op -> A.V.v -> A.V.v -> A.V.v t
     val op3 : Op.op3 -> A.V.v -> A.V.v -> A.V.v -> A.V.v t
@@ -180,11 +190,6 @@ module type S =
     val eqT : A.V.v -> A.V.v -> unit t
 (* Acts as an inequality equation *)
     val neqT : A.V.v -> A.V.v -> unit t
-
-(* Buid evt structure for fetch_and_op *)
-    val fetch :
-        Op.op -> A.V.v -> (A.V.v -> A.V.v -> E.action) ->
-          A.inst_instance_id -> A.V.v t
 
 (* Read out monad *)
     type evt_struct
