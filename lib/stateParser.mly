@@ -38,6 +38,7 @@ let mk_lab p s = Label (p,s)
 %token LBRK RBRK LPAR RPAR SEMI COLON AMPER COMMA
 %token ATOMIC
 %token ATOMICINIT
+%token ATTRS
 
 %token PTX_REG_DEC
 %token <string> PTX_REG_TYPE
@@ -78,10 +79,11 @@ reg:
 
 name_or_num:
 | NAME { $1 }
-| NUM { $1 };
+| NUM { $1 }
 
 maybev_prop:
-| separated_pair(NAME, COLON, name_or_num) { $1 };
+| separated_pair(NAME, COLON, name_or_num) { PTEVal.KV $1 }
+| ATTRS COLON LPAR separated_nonempty_list(COMMA, NAME) RPAR { PTEVal.Attrs $4 }
 
 pteval:
 | LPAR separated_nonempty_list(COMMA, maybev_prop) RPAR
