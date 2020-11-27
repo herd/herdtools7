@@ -339,6 +339,10 @@ end = struct
         end
   | Some _,Some _ -> Warn.fatal "No Amo action on pteval"
 
+  let is_implicit_pte_read = function
+  | Access (R,_,_,_,_,_,A_PTE) -> true
+  | _ -> false
+
 (* relative to the registers of the given proc *)
   let is_reg_store a (p:int) = match a with
   | Access (W,A.Location_reg (q,_),_,_,_,_,_) -> p = q

@@ -307,6 +307,28 @@ module Make
                  "DATA", is_data_port;
                  "NDATA", (fun e -> not (is_data_port e));])) in
       let m =
+        let impl_pte_reads = E.EventSet.filter
+                               (fun e -> E.Act.is_implicit_pte_read e.E.action)
+                               (Lazy.force mem_evts) in
+        let evts_map =
+          E.EventSet.fold
+            (fun e evts_map ->
+              let pteval_v = E.read_of e in
+              let attrs =
+                let open Constant in
+                match pteval_v with
+                | Some (S.A.V.Val (PteVal v)) ->
+                   PTEVal.Attrs.as_list v.PTEVal.attrs
+                | _ -> assert false in
+              List.fold_right
+                (fun attr evts_map ->
+                  let evts_w_attr = StringMap.safe_find E.EventSet.empty attr evts_map in
+                  let evts_w_attr = E.EventSet.add e evts_w_attr in
+                  let evts_map = StringMap.add attr evts_w_attr evts_map in
+                  evts_map) attrs evts_map)
+            impl_pte_reads StringMap.empty in
+        I.add_sets m (StringMap.fold (fun k v l -> ("PTE" ^ k, lazy v) :: l) evts_map []) in
+      let m =
         I.add_sets m
           (List.map
              (fun (k,a) ->

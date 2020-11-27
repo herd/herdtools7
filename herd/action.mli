@@ -65,6 +65,7 @@ module type S = sig
   val get_mem_dir : action -> Dir.dirn
   val get_mem_size : action -> MachSize.sz
   val is_PA_val : A.V.v -> bool
+  val is_implicit_pte_read : action -> bool
 
 (* relative to the registers of the given proc *)
   val is_reg_store : action -> A.proc -> bool

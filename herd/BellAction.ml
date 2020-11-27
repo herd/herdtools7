@@ -122,6 +122,9 @@ end = struct
 
   let is_PA_val _ = false
 
+  (* Unimplemented *)
+  let is_implicit_pte_read _ = assert false
+
   let is_atomic a = match a with
   | Access (_,_,_,true,_,_) ->
       assert (is_mem a); true
