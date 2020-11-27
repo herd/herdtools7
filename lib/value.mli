@@ -79,9 +79,6 @@ module type S =
       val op : Op.op -> v -> v -> v
       val op3 : Op.op3 -> v -> v -> v -> v
 
-      (* ??? *)
-      val fold_over_vals : (v -> 'a -> 'a) -> 'a -> 'a
-
       module ValueSet : MySet.S with type elt = v
       module Solution : Map.S with type key = csym
 

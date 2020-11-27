@@ -95,16 +95,22 @@ module Make
       let read_reg_tag is_data =  read_reg is_data
 
 (* Basic write, to register  *)
-      let mk_write sz an loc v = Act.Access (Dir.W, loc, v, an, sz)
-      let write_loc sz an loc v ii = M.mk_singleton_es (mk_write sz an loc v) ii
+
+      let mk_write sz an v loc = Act.Access (Dir.W, loc, v, an, sz)
+
       let write_reg r v ii = match r with
       | AArch64.ZR -> M.unitT ()
       | _ ->
-          write_loc MachSize.Quad AArch64.N (A.Location_reg (ii.A.proc,r)) v ii
+          M.write_loc
+            (mk_write MachSize.Quad AArch64.N v)
+            (A.Location_reg (ii.A.proc,r)) ii
 
       let write_reg_morello r v ii =
-        if not morello then Warn.user_error "capabilities require -variant morello" ;
-        write_loc MachSize.S128 AArch64.N (A.Location_reg (ii.A.proc,r)) v ii
+        if not morello then
+          Warn.user_error "capabilities require -variant morello" ;
+        M.write_loc
+          (mk_write MachSize.S128 AArch64.N v)
+          (A.Location_reg (ii.A.proc,r)) ii
 
       let write_reg_sz sz r v ii = match r with
       | AArch64.ZR -> M.unitT ()
@@ -223,7 +229,7 @@ module Make
         | _ -> M.op1 Op.CapaStrip a >>= fun a -> m a >>= fun v -> M.op Op.CapaSetTag v V.zero
 
 (* Old read_mem that returns value read *)
-      let old_do_read_mem sz an a ii =
+      let do_read_mem sz an a ii =
         let m a = if mixed then begin
             Mixed.read_mixed false sz (fun sz -> mk_read sz an) a ii
           end else
@@ -232,26 +238,29 @@ module Make
           then process_read_capability sz a m ii
           else m a
 
-      let do_read_mem sz an rd a ii =
-        old_do_read_mem sz an a ii >>= fun v ->  write_reg_sz_non_mixed sz rd v ii
+      let read_mem_and_write_reg sz an rd a ii =
+        do_read_mem sz an a ii >>= fun v ->  write_reg_sz_non_mixed sz rd v ii
 
-      let read_mem sz = do_read_mem sz AArch64.N
-      let read_mem_acquire sz = do_read_mem sz AArch64.A
-      let read_mem_acquire_pc sz = do_read_mem sz AArch64.Q
-      let read_mem_noreturn sz = do_read_mem sz AArch64.NoRet
+      let read_mem sz = read_mem_and_write_reg sz AArch64.N
+      let read_mem_acquire sz = read_mem_and_write_reg sz AArch64.A
+      let read_mem_acquire_pc sz = read_mem_and_write_reg sz AArch64.Q
+      let read_mem_noreturn sz = read_mem_and_write_reg sz AArch64.NoRet
 
       let read_mem_reserve sz an rd a ii =
         (if morello then M.op1 Op.CapaStrip a else M.unitT a) >>= fun resa ->
-        (write_reg AArch64.ResAddr resa ii >>| do_read_mem sz an rd a ii) >>! ()
+        (write_reg AArch64.ResAddr resa ii >>| read_mem_and_write_reg sz an rd a ii) >>! ()
 
 
 (* Write *)
       let do_write_mem sz an a v ii =
         let write a =
           if mixed then begin
-            Mixed.write_mixed sz (fun sz -> mk_write sz an) a v ii
-          end else write_loc sz an (A.Location_global a) v ii in
-        if morello then M.op1 Op.CapaStrip a >>| M.op1 Op.CapaGetTag v >>= fun (a,tag) ->
+              Mixed.write_mixed sz
+                (fun sz a v -> mk_write sz an v a) a v ii
+          end else
+            M.write_loc (mk_write sz an v) (A.Location_global a) ii in
+        if morello then
+          M.op1 Op.CapaStrip a >>| M.op1 Op.CapaGetTag v >>= fun (a,tag) ->
           M.add_atomic_tag_write (write a) a tag (fun loc v -> Act.TagAccess (Dir.W,loc,v)) ii
         else write a
 
@@ -265,7 +274,8 @@ module Make
         let write a =
           if mixed then begin
             (M. assign a resa >>|
-            Mixed.write_mixed sz (fun sz -> mk_write sz an)  a v ii) >>! ()
+               Mixed.write_mixed sz
+                 (fun sz a v -> mk_write sz an v a)  a v ii) >>! ()
           end else
             let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
             M.mk_singleton_es_eq
@@ -359,17 +369,17 @@ module Make
           (to_perms "w" sz)
           ma ii
 
-      let ldr sz rd rs kr s ii =
+      let do_ldr sz rd rs kr s ii =
         lift_memop
           (M.unitT M.A.V.zero)
           (fun ma _ -> ma >>= fun a ->
-           old_do_read_mem sz AArch64.N a ii >>= fun v ->
+           do_read_mem sz AArch64.N a ii >>= fun v ->
            write_reg_sz_non_mixed sz rd v ii )
           (to_perms "r" sz)
           (get_ea rs kr s ii) ii
 
       (* Post-Indexed load immediate *)
-      and ldr_p sz rd rs k ii =
+      let ldr_p sz rd rs k ii =
         assert (k >= -256 && k <= 255);
           (read_reg_ord rs ii)
           >>= fun a1 ->
@@ -382,6 +392,8 @@ module Make
       and str sz rs rd kr ii = do_str sz AArch64.N rs (get_ea rd kr AArch64.S_NOEXT ii) ii
 
       and stlr sz rs rd ii = do_str sz AArch64.L rs (read_reg_ord rd ii) ii
+
+      and ldr = do_ldr
 
       and ldar sz t rd rs ii =
         let open AArch64 in
@@ -473,8 +485,8 @@ module Make
         | Inv -> Warn.fatal "size dependent inverse not implemented"
 
       let rmw_amo_read rmw sz = let open AArch64 in match rmw with
-      | RMW_A|RMW_AL -> old_do_read_mem sz XA
-      | RMW_L|RMW_P  -> old_do_read_mem sz X
+      | RMW_A|RMW_AL -> do_read_mem sz XA
+      | RMW_L|RMW_P  -> do_read_mem sz X
 
       and rmw_amo_write rmw sz = let open AArch64 in match rmw with
       | RMW_L|RMW_AL -> do_write_mem sz XL
@@ -520,8 +532,8 @@ module Make
               (ma >>= fun a ->
                (read_rs >>|
                begin let read_mem sz = match rmw with
-               | RMW_A|RMW_AL -> old_do_read_mem sz A
-               | RMW_L|RMW_P  -> old_do_read_mem sz N in
+               | RMW_A|RMW_AL -> do_read_mem sz A
+               | RMW_L|RMW_P  -> do_read_mem sz N in
                read_mem sz a ii >>=
                fun v -> write_reg_sz_non_mixed sz rs v ii >>! v end) >>=
                fun (cv,v) -> M.neqT cv v >>! ())
@@ -542,8 +554,8 @@ module Make
           (fun ma mv ->
             let open AArch64 in
             let read_mem sz = match rmw with
-            | RMW_A|RMW_AL -> old_do_read_mem sz XA
-            | RMW_L|RMW_P  -> old_do_read_mem sz X in
+            | RMW_A|RMW_AL -> do_read_mem sz XA
+            | RMW_L|RMW_P  -> do_read_mem sz X in
             let mrs = read_reg_data sz rs ii in
             let mrt = mv in
             M.delay ma >>| M.delay mrs >>| M.delay mrt >>= fun (((_,ma),(_,mrs)),(_,mrt)) ->
@@ -580,7 +592,8 @@ module Make
             | A_CLR -> Op.AndNot2
             | A_SMAX -> Op.Max
             | A_SMIN -> Op.Min in
-            let read_mem = if noret then fun sz -> old_do_read_mem sz NoRet else rmw_amo_read rmw
+            let read_mem =
+              if noret then fun sz -> do_read_mem sz NoRet else rmw_amo_read rmw
             and write_mem = rmw_amo_write rmw in
             M.amo_strict op
               ma
@@ -643,7 +656,6 @@ module Make
             let sz = tr_variant var in
             let k = AArch64.K (match k with Some k -> k | None -> 0) in
             ldr sz rd rs k AArch64.S_NOEXT ii
-
         | I_LDAR(var,t,rd,rs) ->
             let sz = tr_variant var in
             ldar sz t rd rs ii
