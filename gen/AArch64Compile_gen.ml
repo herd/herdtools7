@@ -90,6 +90,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let mov_reg_addr r1 r2 =  I_MOV (V64,r1,RV (V64,r2))
     let mov_reg r1 r2 = I_MOV (vloc,r1,RV (vloc,r2))
     let mov_reg_mixed sz r1 r2 = let v = sz2v sz in I_MOV (v,r1,RV (v,r2))
+    let movi_reg r1 = I_MOVI_V (r1,1,S_NOEXT)
 
     module Extra = struct
       let use_symbolic = false
@@ -186,6 +187,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let str_idx = do_str_idx vloc
     let stxr r1 r2 r3 = I_STXR (vloc,YY,r1,r2,r3)
     let stlxr r1 r2 r3 = I_STXR (vloc,LY,r1,r2,r3)
+    let stn n r1 r2 = match n with
+    | N1 -> I_ST1M ([r1],r2,K 0)
+    | N2 -> I_ST2M ([r1],r2,K 0)
+    | N3 -> I_ST3M ([r1],r2,K 0)
+    | N4 -> I_ST4M ([r1],r2,K 0)
 
     let stxr_sz t sz r1 r2 r3 =
       let open MachSize in
@@ -603,6 +609,17 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let store = wrap_st str
           let store_idx st rA rB idx = [str_idx rA rB idx],st
         end)
+
+    module STN = struct
+      let emit_store_reg n st p init x rA =
+        let rB,init,st = U.next_init st p init x in
+        init,pseudo [stn n rA rB],st
+
+      let emit_store n st p init x =
+        let rA,st = next_reg st in
+        let init,cs,st = emit_store_reg n st p init x rA in
+        init,pseudo [movi_reg rA]@cs,st
+    end
 
     module STG = struct
 
@@ -1059,7 +1076,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let init,cs,st = emit_str_addon st p init rB rA (Some Capability) {e with cseal = e.v} in
             None,init,csi@cs@lift_code [str_mixed MachSize.S128 0 rB rA],st
         | W,Some (CapaSeal,Some _) -> assert false
-        | W,Some (Neon _, _) -> assert false
+        | W,Some (Neon n, _) -> let init,cs,st = STN.emit_store n st p init loc in None,init,cs,st
         end
 
     let emit_exch st p init er ew =
