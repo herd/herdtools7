@@ -90,6 +90,8 @@ let vec_regs =
   V28; V29; V30; V31;
 ]
 
+let vregs = List.map (fun v -> Vreg (v,(8,8))) vec_regs
+
 let linkreg = Ireg R30
 
 let cgprs =

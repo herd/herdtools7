@@ -49,6 +49,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
 (* Utilities *)
     let next_reg x = A64.alloc_reg x
+    let next_vreg x = A64.alloc_special x
     let pseudo = List.map (fun i -> Instruction i)
 
     let tempo1 st = A.alloc_trashed_reg "T1" st (* May be used for address  *)
@@ -443,7 +444,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     module LDN = struct
       let emit_load n st p init x =
-        let rA,st = next_reg st in
+        let rA,st = next_vreg st in
         let rB,init,st = U.next_init st p init x in
         rA,init,lift_code [ldn n rA rB],st
     end
@@ -616,7 +617,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         init,pseudo [stn n rA rB],st
 
       let emit_store n st p init x =
-        let rA,st = next_reg st in
+        let rA,st = next_vreg st in
         let init,cs,st = emit_store_reg n st p init x rA in
         init,pseudo [movi_reg rA]@cs,st
     end
