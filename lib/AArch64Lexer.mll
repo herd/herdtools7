@@ -397,7 +397,7 @@ match name with
         | None ->
             begin match A.parse_creg name with
             | Some r -> ARCH_CREG r
-            | None -> 
+            | None ->
                 begin match A.parse_vreg name with
                 | Some r -> ARCH_VREG r
                 | None ->
