@@ -35,7 +35,7 @@ type gpr =
   | R24 | R25 | R26 | R27
   | R28 | R29 | R30
 
-type vec_reg = 
+type vec_reg =
   | V0  | V1  | V2  | V3
   | V4  | V5  | V6  | V7
   | V8  | V9  | V10 | V11
@@ -78,7 +78,7 @@ let gprs =
   R28; R29; R30 ;
 ]
 
-let vec_regs = 
+let vec_regs =
 [
   V0 ; V1 ; V2 ; V3 ;
   V4 ; V5 ; V6 ; V7 ;
@@ -767,20 +767,20 @@ let do_pp_instruction m =
   and pp_vrivri memo r1 i1 r2 i2 =
     pp_memo memo ^ " " ^ pp_simd_vector_reg r1 ^ "[" ^ string_of_int i1 ^"]," ^
     pp_simd_vector_reg r2 ^ "[" ^ string_of_int i2 ^ "]"
-  and pp_vrir memo r1 i v r2 = 
+  and pp_vrir memo r1 i v r2 =
     pp_memo memo ^ " " ^ pp_simd_vector_reg r1 ^ "[" ^ string_of_int i ^ "]," ^
     pp_vreg v r2
-  and pp_vri memo r i = 
+  and pp_vri memo r i =
     pp_memo memo ^ " " ^ pp_simd_vector_reg r ^ "," ^ m.pp_k i
-  and pp_rvri memo v r1 r2 i = 
-    pp_memo memo ^ " " ^ pp_vreg v r1 ^ "," ^ 
+  and pp_rvri memo v r1 r2 i =
+    pp_memo memo ^ " " ^ pp_vreg v r1 ^ "," ^
     pp_simd_vector_reg r2 ^ "[" ^ string_of_int i ^ "]"
-  and pp_vrvr memo r1 r2 = 
+  and pp_vrvr memo r1 r2 =
     pp_memo memo ^ " " ^ pp_simd_vector_reg r1 ^ "," ^ pp_simd_vector_reg r2
   and pp_sri memo v r i =
     pp_memo memo ^ " " ^ pp_vsimdreg v r ^ "," ^ m.pp_k i
   and pp_srvri memo v r1 r2 i =
-    pp_memo memo ^ " " ^ pp_vsimdreg v r1 ^ "," ^ 
+    pp_memo memo ^ " " ^ pp_vsimdreg v r1 ^ "," ^
     pp_simd_vector_reg r2 ^ "[" ^ string_of_int i ^ "]" in
 
   let pp_kr showsxtw showzero kr = match kr with
@@ -808,7 +808,7 @@ let do_pp_instruction m =
     pp_vreg v r1 ^ "," ^
     pp_vreg v r2 ^ ",[" ^
     pp_xreg ra ^ pp_kr true false kr ^ "]" in
-    
+
   let pp_smem memo v rt ra kr =
     pp_memo memo ^ " " ^ pp_vsimdreg v rt ^
     ",[" ^ pp_xreg ra ^ pp_kr false false kr ^ "]" in
@@ -825,9 +825,9 @@ let do_pp_instruction m =
   let pp_smemp_post memo v r1 r2 ra k =
     pp_memo memo ^ " " ^ pp_vsimdreg v r1 ^ "," ^ pp_vsimdreg v r2 ^
     ",[" ^ pp_xreg ra ^ "]" ^ m.pp_k k in
-  
+
   let pp_smemp memo v r1 r2 ra kr =
-    pp_memo memo ^ " " ^ pp_vsimdreg v r1 ^ "," ^ pp_vsimdreg v r2 ^ 
+    pp_memo memo ^ " " ^ pp_vsimdreg v r1 ^ "," ^ pp_vsimdreg v r2 ^
     ",[" ^ pp_xreg ra ^ pp_kr false false kr ^ "]" in
 
   let pp_vmem_shift memo r k s =

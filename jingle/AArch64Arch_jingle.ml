@@ -387,9 +387,9 @@ include Arch.MakeArch(struct
     | I_LD2 _ | I_LD2M _ | I_LD2R _
     | I_LD3 _ | I_LD3M _ | I_LD3R _
     | I_LD4 _ | I_LD4M _ | I_LD4R _
-    | I_ST1 _ | I_ST1M _ 
-    | I_ST2 _ | I_ST2M _ 
-    | I_ST3 _ | I_ST3M _ 
+    | I_ST1 _ | I_ST1M _
+    | I_ST2 _ | I_ST2M _
+    | I_ST3 _ | I_ST3M _
     | I_ST4 _ | I_ST4M _
     | I_LDP_SIMD _ | I_LDP_P_SIMD _
     | I_STP_SIMD _ | I_STP_P_SIMD _
