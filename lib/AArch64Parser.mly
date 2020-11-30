@@ -193,7 +193,7 @@ vregs3:
 vregs4:
 | LCRL vreg COMMA vreg COMMA vreg COMMA vreg RCRL { [$2;$4;$6;$8] }
 
-fpregs:
+scalar_regs:
 | breg { A.VSIMD8,$1 }
 | hreg { A.VSIMD16,$1 }
 | sreg { A.VSIMD32,$1 }
@@ -487,7 +487,7 @@ instr:
   { $1 A.VSIMD64 $2 $4 $7 $8 $10 }
 | stp_simd_instr qreg COMMA qreg COMMA LBRK xreg k0_no_shift RBRK k0
   { $1 A.VSIMD128 $2 $4 $7 $8 $10 }
-| LDR fpregs COMMA LBRK xreg kr0 RBRK k0
+| LDR scalar_regs COMMA LBRK xreg kr0 RBRK k0
   { let v,r    = $2 in
     let kr, os = $6 in
     match $8 with
@@ -495,10 +495,10 @@ instr:
       A.I_LDR_P_SIMD (v,r,$5,post)
     | _ ->
       A.I_LDR_SIMD (v,r,$5,kr,os) }
-| LDUR fpregs COMMA LBRK xreg k0 RBRK
+| LDUR scalar_regs COMMA LBRK xreg k0 RBRK
   { let v,r = $2 in
     A.I_LDUR_SIMD (v, r, $5, $6) }
-| STR fpregs COMMA LBRK xreg kr0 RBRK k0
+| STR scalar_regs COMMA LBRK xreg kr0 RBRK k0
   { let v,r    = $2 in
     let kr, os = $6 in
     match $8 with
@@ -506,7 +506,7 @@ instr:
       A.I_STR_P_SIMD (v,r,$5,post)
     | _ ->
       A.I_STR_SIMD (v,r,$5,kr,os) }
-| STUR fpregs COMMA LBRK xreg k0 RBRK
+| STUR scalar_regs COMMA LBRK xreg k0 RBRK
   { let v,r = $2 in
     A.I_STUR_SIMD (v, r, $5, $6) }
 | MOV vreg INDEX COMMA vreg INDEX
