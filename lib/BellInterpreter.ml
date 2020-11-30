@@ -98,6 +98,7 @@ module Make (C: Config) = struct
           let fromto _ _ = assert false
           let same_value _ _ = assert false
           let same_oa _ _ = assert false
+          let writable2 _ _ = assert false
         end) in
 
     let empty_test = () in

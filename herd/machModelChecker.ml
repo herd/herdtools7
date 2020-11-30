@@ -118,6 +118,19 @@ module Make
         | Some (S.A.V.Val c1),Some (S.A.V.Val c2) -> Constant.same_oa c1 c2
         | _ -> false
 
+      let writable2 =
+        let writable ha hd e = match S.E.value_of e with
+          | Some (S.A.V.Val c) -> Constant.writable ha hd c
+          | _ -> false in
+        fun e1 e2 ->
+        let p = S.E.proc_of e1 in
+        match p with
+        | None -> Warn.user_error "Init write as first argument of writable2"
+        | Some p ->
+            let open DirtyBit in
+            let ha = O.dirty.ha p and hd = O.dirty.hd p in
+            writable ha hd e1 || writable ha hd e2
+
     end
 
     module I = Interpreter.Make(IConfig)(S)(IUtils)

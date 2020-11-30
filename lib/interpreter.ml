@@ -90,6 +90,7 @@ module Make
               S.event_rel (* localised fence relation *)
       val same_value : S.event -> S.event -> bool
       val same_oa : S.event -> S.event -> bool
+      val writable2 : S.event -> S.event -> bool
     end)
     :
     sig
@@ -1138,7 +1139,7 @@ module Make
         V.Rel r
     | _ -> arg_mismatch ()
 
-    and oa_changes arg = match arg with
+    and check_two name pred arg = match arg with
       | V.Tuple [V.Set ws; V.Rel prec; ] ->
           let m = E.EventRel.M.to_map prec in
           let ws =
@@ -1150,17 +1151,24 @@ module Make
                   | Some p -> p
                   | None ->
                       Warn.user_error
-                        "Cat primitive oa-changes must be given set and a function on it" in
-                      not (U.same_oa w p)
+                        "Cat primitive %s must be given set and a function on it" name in
+                      pred w p
                 end)
               ws in
           V.Set ws
       | _ -> arg_mismatch ()
 
+    let oa_changes name =
+      check_two name (fun w p -> not (U.same_oa w p))
+    and writable2 name =
+      check_two name U.writable2
+
     let add_primitives ks m =
+      let add_name name f = (name,f name) in
       add_prims m
         [
-          "oa-changes",oa_changes;
+          add_name "writable2" writable2;
+          add_name "oa-changes" oa_changes;
           "different-values",different_values;
          "fromto",fromto ks;
          "classes-loc",partition;

@@ -135,6 +135,14 @@ let same_oa v1 v2 =
   | PteVal p1,PteVal p2 ->  Misc.string_eq p1.oa p2.oa
   | _ -> false
 
+let writable ha hd v =
+  let open PTEVal in
+  match v with
+  | PteVal p ->
+      (p.af=1 || ha) && (* access allowed *)
+      (p.db=1 || (p.dbm=1 && hd)) (* write allowed *)
+  | _ -> false
+
 module type S =  sig
 
   module Scalar : Scalar.S
