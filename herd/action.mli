@@ -29,6 +29,7 @@ module type S = sig
 (* Some architecture-specific sets and relations, with their definitions *)
   val arch_sets : (string * (action -> bool)) list
   val arch_rels : (string * (action -> action -> bool)) list
+(* To be deprecated *)
   val arch_dirty : (string * (DirtyBit.my_t -> action -> bool)) list
 
 (* control fence *)

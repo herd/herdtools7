@@ -511,7 +511,7 @@ end = struct
       [("inv-domain",inv_domain_act); ("alias",alias_act);]
     else []
 
-  let arch_dirty =
+  let arch_dirty = (* To be deprecated *)
     if kvm then
       let open DirtyBit in
       let check_pred f d  =

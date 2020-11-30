@@ -312,7 +312,7 @@ module Make
              (fun (k,a) ->
                k,lazy (E.EventSet.filter (fun e -> a e.E.action) evts))
              E.Act.arch_sets) in
-      let m =
+      let m = (* To be deprecated *)
         if kvm then
           let nexps = match I.get_set m "NExp" with
             | Some nexps -> nexps
