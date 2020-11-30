@@ -867,7 +867,7 @@ module Make
              (List.map (fun _ -> "-1,") all_tags)) ;
         O.o "" ;
         O.o "static int id(int x) { return x; }" ;
-        if have_timebase then
+        if have_timebase && T.get_nprocs test > 1 then
           O.o "static int addnsteps(int x) { return x+NSTEPS2; }" ;
         O.o "" ;
         O.o "static parse_param_t parse[] = {" ;
