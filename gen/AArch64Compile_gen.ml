@@ -1029,7 +1029,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let r,init,cs,st = emit_load_mixed MachSize.S128 0 st p init loc in
             Some r,init,cs@lift_code [gctype r r],st
         | R,Some (CapaSeal,Some _) -> assert false
-        | R,Some (Neon n, _) -> let r,init,cs,st = LDN.emit_load n st p init loc in Some r,init,cs,st
+        | R,Some (Neon n, None) -> let r,init,cs,st = LDN.emit_load n st p init loc in Some r,init,cs,st
+        | R,Some (Neon _,Some _) -> assert false
         | W,None ->
             let init,cs,st = STR.emit_store st p init loc e.v None evt_null in
             None,init,cs,st
@@ -1097,7 +1098,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let init,cs,st = emit_str_addon st p init rB rA (Some Capability) {e with cseal = e.v} in
             None,init,csi@cs@lift_code [str_mixed MachSize.S128 0 rB rA],st
         | W,Some (CapaSeal,Some _) -> assert false
-        | W,Some (Neon n, _) -> let init,cs,st = STN.emit_store n st p init loc in None,init,cs,st
+        | W,Some (Neon n, None) -> let init,cs,st = STN.emit_store n st p init loc in None,init,cs,st
+        | W,Some (Neon _,Some _) -> assert false
         end
 
     let emit_exch st p init er ew =
