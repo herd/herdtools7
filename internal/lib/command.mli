@@ -29,3 +29,8 @@ val run : string -> string list -> unit
 (** [run_with_stdout bin args f] runs the binary [bin] with arguments [args], and
  *  applies function [f] to the open in_channel, returning the result. *)
 val run_with_stdout : string -> string list -> (in_channel -> 'a) -> 'a
+
+(** [run_with_stdout_and_stdin_lines bin args in_lines] runs the binary [bin]
+  * with arguments [args], pipes [in_lines] into the process's stdin, and returns
+  * the process's stdout as a string list. *)
+val run_with_stdin_and_stdout : string -> string list -> (out_channel -> unit) -> (in_channel -> 'a) -> 'a

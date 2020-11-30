@@ -92,6 +92,32 @@ let tests = [
     if not raised_exception then
       Test.fail "Expected exception, did not raise";
   );
+
+  "Command.run_with_stdout captures stdout", (fun () ->
+    let tests = [
+      ("true", [], []);
+      ("echo", ["foo"], ["foo"]);
+      ("echo", ["foo\nbar"], ["foo"; "bar"]);
+    ] in
+
+    List.iter
+      (fun (cmd, args, expected) ->
+        let actual = Command.run_with_stdout cmd args Channel.read_lines in
+        if Test.string_list_compare actual expected <> 0 then
+          Test.fail (Printf.sprintf "Expected %s, got %s" (pp_string_list expected) (pp_string_list actual)))
+      tests
+  );
+  "Command.run_with_stdout_lines raises on error", (fun () ->
+    (* Deliberately fail. *)
+    let raised_exception = try
+      let _ = Command.run_with_stdout "false" [] (fun _ -> ()) in false
+    with
+      Command.Error _ -> true
+    in
+
+    if not raised_exception then
+      Test.fail "Expected exception, did not raise";
+  );
 ]
 
 let () = Test.run tests

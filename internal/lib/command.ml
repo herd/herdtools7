@@ -38,3 +38,14 @@ let run_with_stdout bin args f =
   | Unix.WEXITED n -> raise (Error (Printf.sprintf "Process returned error code %i" n))
   | Unix.WSIGNALED n -> raise (Error (Printf.sprintf "Process was killed by signal %i" n))
   | Unix.WSTOPPED n -> raise (Error (Printf.sprintf "Process was stopped by signal %i" n))
+
+let run_with_stdin_and_stdout bin args in_f out_f =
+  let cmd = command bin args in
+  let stdout, stdin = Unix.open_process cmd in
+  in_f stdin ;
+  let ret = out_f stdout in
+  match Unix.close_process (stdout, stdin) with
+  | Unix.WEXITED 0 -> ret
+  | Unix.WEXITED n -> raise (Error (Printf.sprintf "Process returned error code %i" n))
+  | Unix.WSIGNALED n -> raise (Error (Printf.sprintf "Process was killed by signal %i" n))
+  | Unix.WSTOPPED n -> raise (Error (Printf.sprintf "Process was stopped by signal %i" n))
