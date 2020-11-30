@@ -318,6 +318,7 @@ module Make
             >>= fun v -> M.op Op.Sub v m
           | S_UXTW->
             Warn.fatal "UXTW barrel shift not supported yet"
+          | S_MSL(_)  -> Warn.fatal "Neon instructions are not currently supported"
 
       let get_ea rs kr s ii =
       let open AArch64Base in
@@ -1012,6 +1013,13 @@ module Make
         | (I_RBIT _|I_MRS _|I_LDP _|I_STP _|I_IC _|I_DC _|I_BL _|I_BLR _|I_BR _|I_RET _) as i ->
             Warn.fatal "illegal instruction: %s"
               (AArch64.dump_instruction i)
+        | I_LD1 _ | I_LD1M _ | I_LD1R _ | I_LD2 _ | I_LD2M _ | I_LD2R _
+        | I_LD3 _ | I_LD3M _ | I_LD3R _ | I_LD4 _ | I_LD4M _ | I_LD4R _
+        | I_LDP_SIMD _ | I_LDP_P_SIMD _ | I_LDR_SIMD _ | I_LDR_P_SIMD _ | I_LDUR_SIMD _
+        | I_ST1 _ | I_ST1M _ | I_ST2 _ | I_ST2M _ | I_ST3 _ | I_ST3M _ | I_ST4 _ | I_ST4M _
+        | I_STP_SIMD _ | I_STP_P_SIMD _ | I_STR_SIMD _ | I_STR_P_SIMD _ | I_STUR_SIMD _
+        | I_MOV_S _ | I_MOV_V _ | I_MOV_VE _ | I_MOV_TG _ | I_MOV_FG _ | I_MOVI_S _ | I_MOVI_V _ ->
+          Warn.fatal "Neon instructions are not currently supported"
        )
     end
 end
