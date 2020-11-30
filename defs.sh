@@ -9,7 +9,7 @@ NATIVE="$HERD $LITMUS $TOOLS $GEN $JINGLE"
 
 # Internal-only, not installed.
 INTERNAL="herd_regression_test.native herd_diycross_regression_test.native"
-TESTS="base_test.native channel_test.native command_test.native compare_test.native filesystem_test.native test_test.native ocamlString_test.native uint_test.native"
+TESTS="base_test.native channel_test.native command_test.native compare_test.native filesystem_test.native test_test.native ocamlString_test.native shelf_test.native uint_test.native"
 
 mk_exe () {
   D=$1
