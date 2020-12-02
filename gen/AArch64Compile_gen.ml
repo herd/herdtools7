@@ -91,7 +91,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let mov_reg_addr r1 r2 =  I_MOV (V64,r1,RV (V64,r2))
     let mov_reg r1 r2 = I_MOV (vloc,r1,RV (vloc,r2))
     let mov_reg_mixed sz r1 r2 = let v = sz2v sz in I_MOV (v,r1,RV (v,r2))
-    let movi_reg r1 = I_MOVI_V (r1,1,S_NOEXT)
+    let movi_reg r1 i = I_MOVI_V (r1,i,S_NOEXT)
 
     module Extra = struct
       let use_symbolic = false
@@ -654,17 +654,17 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | N4 -> let r,st = next_vreg st in get_reg_list N3 (rs@[r]) st
         in get_reg_list n [] st
 
-      let emit_movis rs = List.map (fun r -> movi_reg r) rs
+      let emit_movis rs v = List.map (fun r -> movi_reg r v) rs
 
-      let emit_store n st p init x =
+      let emit_store n st p init x v =
         let rs,st = emit_vregs n st in
-        let mvs = emit_movis rs in
+        let mvs = emit_movis rs v in
         let init,cs,st = emit_store_reg n st p init x rs in
         init,pseudo mvs@cs,st
 
-        let emit_store_idx n st p init x ro =
+        let emit_store_idx n st p init x ro v =
           let rs,st = emit_vregs n st in
-          let mvs = emit_movis rs in
+          let mvs = emit_movis rs v in
           let init,cs,st = emit_store_reg_idx n st p init x rs ro in
           init,pseudo mvs@cs,st
     end
@@ -1125,7 +1125,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let init,cs,st = emit_str_addon st p init rB rA (Some Capability) {e with cseal = e.v} in
             None,init,csi@cs@lift_code [str_mixed MachSize.S128 0 rB rA],st
         | W,Some (CapaSeal,Some _) -> assert false
-        | W,Some (Neon n, None) -> let init,cs,st = STN.emit_store n st p init loc in None,init,cs,st
+        | W,Some (Neon n, None) -> let init,cs,st = STN.emit_store n st p init loc e.v in None,init,cs,st
         | W,Some (Neon _,Some _) -> assert false
         end
 
@@ -1500,7 +1500,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let c = sxtw r2 rd in
               let r3,st = next_reg st in
               let c1 = calc0 V64 r3 r2 in
-              let init,cs,st = STN.emit_store_idx n st p init loc r3 in
+              let init,cs,st = STN.emit_store_idx n st p init loc r3 e.v in
               None,init,Instruction c::Instruction c1::cs,st
           | W,Some (Neon _,Some _) -> assert false
           | J,_ -> emit_joker st init
@@ -1580,7 +1580,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 let r3,st = next_vreg st in
                 let cs2 =
                   [Instruction (eor_simd r2 r1) ;
-                   Instruction (movi_reg r3) ;
+                   Instruction (movi_reg r3 e.v) ;
                    Instruction (add_simd r2 r3); ] in
                 r2,cs2,init,st
             | _ ->
