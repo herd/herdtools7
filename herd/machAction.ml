@@ -228,6 +228,12 @@ end = struct
     -> true
   | _ -> false
 
+  let is_pt a = match a with
+  | Access (_,A.Location_global (A.V.Val c),_,_,_,_,_)
+  | Amo (A.Location_global (A.V.Val c),_,_,_,_,_,_)
+    -> Constant.is_pt c
+  | _ -> false
+
   let is_mem_physical a = let open Constant in match a with
   | Access (_,A.Location_global (V.Val (Symbolic (Physical _))),_,_,_,_,_)
   | Amo (A.Location_global (V.Val (Symbolic (Physical _))),_,_,_,_,_,_)
@@ -284,10 +290,6 @@ end = struct
   let get_mem_size a = match a with
   | Access (_,A.Location_global _,_,_,_,sz,_) -> sz
   | _ -> assert false
-
-  let is_PTE_access = function 
-    | Access (_,_,_,_,_,_,A_PTE) -> true
-    | _ -> false
 
   let is_PA_val = let open Constant in function
     | (A.V.Val (Symbolic (Physical _))) -> true
@@ -445,7 +447,7 @@ end = struct
     (if kvm then
       fun k ->
         ("PA",is_PA_access)::
-        ("PTE",is_PTE_access)::
+        ("PTE",is_pt)::
         ("PTEINV",invalid_pte)::
         ("PTEV",valid_pte)::k
     else
@@ -454,21 +456,23 @@ end = struct
 
   let arch_rels =
     if kvm then
-      let open Constant in
-
       let inv_domain_act =
 
-        let inv_domain_sym a1 a2 = match a1,a2 with
-        | ((Virtual ((s1,_),_)|Physical (s1,_)|System (PTE,s1)),System (TLB,s2))
-        | (System (TLB,s2),(Virtual ((s1,_),_)|Physical (s1,_)|System (PTE,s1)))
-          -> Misc.string_eq s1 s2
-        | _,_ -> false in
+        let inv_domain_sym a1 a2 =
+          let open Constant in
+          match a1,a2 with
+          | ((Virtual ((s1,_),_)|Physical (s1,_)|System (PTE,s1)),System (TLB,s2))
+          | (System (TLB,s2),(Virtual ((s1,_),_)|Physical (s1,_)|System (PTE,s1)))
+            -> Misc.string_eq s1 s2
+          | _,_ -> false in
 
-        let inv_domain_loc loc1 loc2 = match loc1,loc2 with
-        | A.Location_global (A.V.Val (Symbolic a1)),
-          A.Location_global (A.V.Val (Symbolic a2))
-          -> inv_domain_sym a1 a2
-        | _,_ -> false in
+        let inv_domain_loc loc1 loc2 =
+          let open Constant in
+          match loc1,loc2 with
+          | A.Location_global (A.V.Val (Symbolic a1)),
+            A.Location_global (A.V.Val (Symbolic a2))
+            -> inv_domain_sym a1 a2
+          | _,_ -> false in
 
         fun act1 act2 -> match act1,act2 with
         | (act,Inv (_,None))|(Inv (_, None),act)
@@ -488,7 +492,9 @@ end = struct
         | _ -> false
 
       and alias_act =
-        let get_oa = function
+        let get_oa =
+          let open Constant in
+          function
           | Some (A.V.Val (PteVal v)) -> Some v.PTEVal.oa
           | Some (A.V.Val (Concrete _|Symbolic _|Label (_, _)|Tag _))
           | None -> None
@@ -503,7 +509,7 @@ end = struct
           that relies on event values.
           Reason: RWM events have two values.. *)
           assert (not (is_amo act1 || is_amo act2)) ;
-          is_PTE_access act1 && is_PTE_access act2 &&
+          is_pt act1 && is_pt act2 &&
           (match get_oa (value_of act1), get_oa (value_of act2) with
           | Some s1,Some s2 -> Misc.string_eq s1 s2
           | _,_ -> false) in
@@ -516,7 +522,7 @@ end = struct
       let open DirtyBit in
       let check_pred f d  =
         fun act ->
-          is_PTE_access act &&
+          is_pt act &&
           (match get_pteval act with
           | None -> false
           | Some pteval -> f d pteval) in

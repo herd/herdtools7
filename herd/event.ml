@@ -75,6 +75,8 @@ val same_instance : event -> event -> bool
   val is_mem_load : event ->  bool
   val is_additional_mem_load : event ->  bool (* trylock... *)
   val is_mem : event -> bool
+(* Page table access *)
+  val is_pt : event -> bool
 (* Tag memory access *)
   val is_tag : event -> bool
   val is_mem_physical : event -> bool
@@ -510,6 +512,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let is_mem_load e = Act.is_mem_load e.action
     let is_additional_mem_load e = Act.is_additional_mem_load e.action
     let is_mem e = Act.is_mem e.action
+    let is_pt e = Act.is_pt e.action
     let is_tag e = Act.is_tag e.action
     let is_mem_physical e =  Act.is_mem_physical e.action
     let is_additional_mem e = Act.is_additional_mem e.action

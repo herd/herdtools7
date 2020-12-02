@@ -63,6 +63,7 @@ module Make (C: Config) = struct
         let pp_eiid () = "eiid"
         let pp_instance () = "instance"
         let is_store () = false
+        let is_pt () = false
 
         module Ordered = struct
           type t = unit

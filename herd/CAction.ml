@@ -169,7 +169,9 @@ end = struct
   | RMW (A.Location_global _,_,_,_,_) -> true
   | _ -> false
 
+  let is_pt _ = false
   let is_tag _ = false
+
   let is_mem_physical a = let open Constant in match a with
   | Access (_,A.Location_global (V.Val (Symbolic (Physical _))),_,_,_,_)
   | RMW (A.Location_global (V.Val (Symbolic (Physical _))),_,_,_,_) -> true
@@ -178,8 +180,6 @@ end = struct
   let is_additional_mem a = match a with
   | Lock _|Unlock _|TryLock _|ReadLock _ -> true
   | _ -> false
-
-  let is_PTE_access _ = false
 
   let is_PA_val _ = false
 

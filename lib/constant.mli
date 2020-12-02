@@ -57,6 +57,7 @@ val check_sym : 'a t -> 'b t
 
 val is_virtual : 'a t -> bool
 val as_virtual : 'a t -> string option
+val is_pt : 'a t -> bool
 
 (* Those two are properties of ptevals.
    At the moment pteval are arch-independant. *)

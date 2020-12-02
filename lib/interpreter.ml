@@ -53,6 +53,7 @@ module type SimplifiedSem = sig
     val pp_eiid : event -> string
     val pp_instance : event -> string
     val is_store : event -> bool
+    val is_pt : event -> bool
 
     module EventSet : MySet.S
     with type elt = event
@@ -1145,7 +1146,7 @@ module Make
           let ws =
             E.EventSet.filter
               (fun w ->
-                E.is_store w &&
+                E.is_store w && E.is_pt w &&
                 begin let p =
                   match E.EventSet.as_singleton (E.EventRel.M.succs w m) with
                   | Some p -> p

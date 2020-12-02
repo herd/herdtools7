@@ -129,6 +129,10 @@ let as_virtual v = match v with
 | Symbolic (Virtual ((s,_),_)) -> Some s
 | _ -> None
 
+let is_pt v = match v with
+| Symbolic (System (PTE,_)) -> true
+| _ -> false
+
 let same_oa v1 v2 =
   let open PTEVal in
   match v1,v2 with
