@@ -132,17 +132,8 @@ module Make
           let location = A.Location_reg (ii.A.proc,vr) in
           M.read_loc is_data (mk_read MachSize.S128 AArch64.N) location ii
 
-      let neon_mask esize =
-        let mask = match esize with
-        | 8 -> "0xff"
-        | 16 -> "0xffff"
-        | 32 -> "0xffffffff"
-        | 64 -> "0xffffffffffffffff"
-        | _ -> assert false in
-        V.stringToV mask
-
       let neon_getlane cur_val idx esize =
-        let mask = V.op1 (Op.LeftShift (idx*esize)) (neon_mask esize) in
+        let mask = V.op1 (Op.LeftShift (idx*esize)) (AArch64.neon_mask esize) in
         M.op Op.And mask cur_val >>= fun masked_val ->
         M.op1 (Op.LogicalRightShift (idx*esize)) masked_val
 
@@ -182,7 +173,7 @@ module Make
           (A.Location_reg (ii.A.proc,r)) ii
 
       let neon_setlane old_val idx esize v =
-        let mask = V.op1 (Op.LeftShift (idx*esize)) (neon_mask esize) in
+        let mask = V.op1 (Op.LeftShift (idx*esize)) (AArch64.neon_mask esize) in
         let invert = V.op1 Op.LogicalNot mask in
         M.op1 (Op.LeftShift (idx*esize)) v >>= fun new_val ->
         M.op Op.And invert old_val >>|

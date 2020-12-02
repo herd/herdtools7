@@ -124,6 +124,27 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | NExp DB-> "NExpDB"
     module V = V
 
+    let neon_mask esize =
+      let mask = match esize with
+      | 8 -> "0xff"
+      | 16 -> "0xffff"
+      | 32 -> "0xffffffff"
+      | 64 -> "0xffffffffffffffff"
+      | _ -> assert false in
+      V.stringToV mask
+
+    let neon_getlane cur_val esize idx =
+      let mask = V.op1 (Op.LeftShift (idx*esize)) (neon_mask esize) in
+      let masked_val = V.op Op.And mask cur_val in
+      V.op1 (Op.LogicalRightShift (idx*esize)) masked_val
+
+    let neon_getvec nelem esize v =
+      let get_concrete v = match v with
+      | V.Val c -> c
+      | _ -> assert false in
+      let vs = List.map get_concrete (List.init nelem (neon_getlane v esize)) in
+      V.Val (Constant.ConcreteVector(nelem, vs))
+
     let simd_mem_access_size rs = match List.hd rs with
     | Vreg (_,(_,8)) -> MachSize.Byte
     | Vreg (_,(_,16)) -> MachSize.Short
@@ -196,6 +217,10 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
           type arch_instruction = instruction
           let fromto_of_instr _ = None
+
+          let get_val reg v = match reg with
+          | AArch64Base.Vreg(_,(nelem,esize)) -> neon_getvec nelem esize v
+          | _ -> v
 
         end)
 
