@@ -1140,36 +1140,31 @@ module Make
         V.Rel r
     | _ -> arg_mismatch ()
 
-    and check_two name pred arg = match arg with
+    and check_two pred arg = match arg with
       | V.Tuple [V.Set ws; V.Rel prec; ] ->
           let m = E.EventRel.M.to_map prec in
           let ws =
             E.EventSet.filter
               (fun w ->
                 E.is_store w && E.is_pt w &&
-                begin let p =
+                begin
                   match E.EventSet.as_singleton (E.EventRel.M.succs w m) with
-                  | Some p -> p
-                  | None ->
-                      Warn.user_error
-                        "Cat primitive %s must be given set and a function on it" name in
-                      pred w p
+                  | Some p -> pred w p
+ (* w does not qualify when zero of two or more prec-related events *)
+                  | None -> false
                 end)
               ws in
           V.Set ws
       | _ -> arg_mismatch ()
 
-    let oa_changes name =
-      check_two name (fun w p -> not (U.same_oa w p))
-    and writable2 name =
-      check_two name U.writable2
+    let oa_changes = check_two (fun w p -> not (U.same_oa w p))
+    and at_least_one_writable = check_two U.writable2
 
     let add_primitives ks m =
-      let add_name name f = (name,f name) in
       add_prims m
         [
-          add_name "writable2" writable2;
-          add_name "oa-changes" oa_changes;
+          "at-least-one-writable",at_least_one_writable;
+          "oa-changes",oa_changes;
           "different-values",different_values;
          "fromto",fromto ks;
          "classes-loc",partition;
