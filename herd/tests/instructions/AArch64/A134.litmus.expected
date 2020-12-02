@@ -1,10 +1,1 @@
-Test A134 Allowed
-States 1
-v+16=42;
-Ok
-Witnesses
-Positive: 1 Negative: 0
-Condition exists (v+16=42)
-Observation A134 Always 1 0
-Hash=dec085cc9488929f8fd37aea8aaf396d
-
+Warning: File "A134.litmus": Unaligned vector offset v[3] in final state (User error)

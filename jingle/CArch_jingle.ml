@@ -37,7 +37,7 @@ include Arch.MakeArch(struct
 
   and match_expr subs pat instr =
     let r =  match pat,instr with
-    | Const(Constant.Symbolic ((s,_,_),_)),Const(Constant.Concrete c) ->
+    | Const(Constant.Symbolic ((s,_,_,_),_)),Const(Constant.Concrete c) ->
         let c = ParsedConstant.Scalar.to_int c in
         add_subs [Cst(s, c)] subs
     | Const(Constant.Concrete s),Const(Constant.Concrete c)
@@ -147,7 +147,7 @@ include Arch.MakeArch(struct
     in
 
     let rec expl_expr = let open Constant in function
-      | Const(Symbolic ((s,_,_),_)) -> find_cst s >! fun k -> Const k
+      | Const(Symbolic ((s,_,_,_),_)) -> find_cst s >! fun k -> Const k
       | Const(Concrete _|ConcreteVector _|Label _|Tag _) as e -> unitT e
       | LoadReg r -> conv_reg r >! fun r -> LoadReg r
       | LoadMem (loc,mo) -> expl_expr loc >! fun loc -> LoadMem (loc,mo)

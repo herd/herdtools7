@@ -23,7 +23,7 @@ module Make(Scalar:Scalar.S) = struct
   open Constant
 
   let intToV i = Concrete (Scalar.of_int i)
-  and nameToV s = Symbolic ((s,None,0),0)
+  and nameToV s = Symbolic ((s,None,0,None),0)
 
   let bit_at k v = Scalar.bit_at k v
 
@@ -32,13 +32,11 @@ module Make(Scalar:Scalar.S) = struct
 
   let tag_compare = Misc.opt_compare String.compare
 
-  let pp_location (s,t,c) = match t with
-  | None -> if c = 0
-    then s
-    else sprintf "%#x:%s:%i" ((c land 0x1ffffffff) lsl 3) s (c lsr 33)
-  | Some t -> if c = 0
-    then sprintf "%s:%s" s t
-    else sprintf "%#x:%s:%i:%s" ((c land 0x1ffffffff) lsl 3) s (c lsr 33) t
+  let pp_location (s,t,c,_) = match t,c with
+   | None, 0 -> s
+   | None, _ -> sprintf "%#x:%s:%i" ((c land 0x1ffffffff) lsl 3) s (c lsr 33)
+   | Some t, 0 -> sprintf "%s:%s" s t
+   | Some t, _ -> sprintf "%#x:%s:%i:%s" ((c land 0x1ffffffff) lsl 3) s (c lsr 33) t
 
   let rec pp hexa = function
     | Concrete i -> Scalar.pp hexa i
@@ -46,7 +44,12 @@ module Make(Scalar:Scalar.S) = struct
       let s = String.concat "," (List.map (pp hexa) vs)
       in sprintf "[%s]" s
     | Symbolic (s,0) -> pp_location s
-    | Symbolic (s,o) -> sprintf "%s+%i" (pp_location s) o
+    (* if we do not have vector offset metadata, print offset in bytes*)
+    | Symbolic ((_,_,_,None) as s,o) -> sprintf "%s[%i]" (pp_location s) o
+    (* otherwise print offset by size of type *)
+    | Symbolic ((_,_,_,Some ((ps,_) as vs)) as s,o) ->
+      assert (Constant.is_aligned_to_vec vs o);
+      sprintf "%s[%i]" (pp_location s) (o / ps)
     | Label (p,lbl)  -> sprintf "%i:%s" p lbl
     | Tag s -> sprintf ":%s" s
 
@@ -61,7 +64,10 @@ module Make(Scalar:Scalar.S) = struct
       vs
       0 in
     (Misc.int_compare sz1 sz2) + check_vec
-  | Symbolic ((s1,t1,m1),o1),Symbolic ((s2,t2,m2),o2) ->
+  | Symbolic ((s1,t1,m1,_),o1),Symbolic ((s2,t2,m2,_),o2) ->
+      (* We do not commpare vector metadata as mk_sym can be called *)
+      (* in arbitrary places where the metadata is not available e.g in Sem files *)
+      (* this would mean `compare v[8] (v[8] (with metadata))` would fail *)
       begin match String.compare s1 s2 with
       | 0 ->
           begin match tag_compare t1 t2 with
@@ -92,13 +98,16 @@ module Make(Scalar:Scalar.S) = struct
 
   let tag_eq = Misc.opt_eq Misc.string_eq
 
-  let location_eq (s1,t1,c1) (s2,t2,c2) =
+  let location_eq (s1,t1,c1,v1) (s2,t2,c2,v2) =
     Misc.string_eq s1 s2 && tag_eq t1 t2 && Misc.int_eq c1 c2
+    && Misc.opt_eq
+        (fun (x1,y1) (x2,y2) -> Misc.int_eq x1 x2 && Misc.int_eq y1 y2)
+        v1 v2
 
   let rec eq c1 c2 = match c1,c2 with
   | Concrete i1, Concrete i2 -> Scalar.compare i1 i2 = 0
   | Symbolic (s1,o1),Symbolic (s2,o2) ->
-      location_eq  s1 s2 && Misc.int_eq o1 o2
+      location_eq s1 s2 && Misc.int_eq o1 o2
   | Label (p1,s1),Label (p2,s2) ->
       Misc.string_eq  s1 s2 && Misc.int_eq p1 p2
   | ConcreteVector (sz1,v1), ConcreteVector (sz2,v2) ->
@@ -114,6 +123,7 @@ module Make(Scalar:Scalar.S) = struct
 
  (* For building code symbols, significant for symbols only ? *)
   let vToName = function
-    | Symbolic ((s,None,0),0) -> s
-    | Symbolic _|Concrete _|Label _|Tag _| ConcreteVector _ -> assert false
+    | Symbolic ((s,None,0,_),0) -> s
+    | Symbolic ((s,_,_,_),idx) -> Printf.sprintf "%s[%d]" s idx
+    | Concrete _|Label _|Tag _| ConcreteVector _ -> assert false
 end

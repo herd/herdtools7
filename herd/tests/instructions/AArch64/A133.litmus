@@ -7,6 +7,5 @@ AArch64 A133
 P0;
   STR W0, [X2, #8];
 
-(* THIS HAS THE SAME SYNTAX PROBLEM AS A130 *)
-forall (v[0] = 1 /\ v[8] = 42)
+forall (v[0] = 1 /\ v[1] = 42)
 

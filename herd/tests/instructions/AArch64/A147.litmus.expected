@@ -1,10 +1,10 @@
 Test A147 Required
 States 1
-v=1; v+8=42;
+v=1; v[1]=42;
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition forall (v=1 /\ v+8=42)
+Condition forall (v=1 /\ v[1]=42)
 Observation A147 Always 1 0
-Hash=6520681875030a31829c6535a0658d46
+Hash=f5e2fc44322fced644b4a06a8fa9c276
 

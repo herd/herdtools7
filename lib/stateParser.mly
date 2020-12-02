@@ -18,15 +18,15 @@
 open Constant
 open MiscParser
 open ConstrGen
-let mk_sym_tag s t = Symbolic ((s,Some t,0),0)
+let mk_sym_tag s t = Symbolic ((s,Some t,0,None),0)
 let mk_sym_morello p s t =
   let p_int = (Misc.string_as_int p) in
   if p_int land 0x7 <> 0 || p_int >= 1 lsl 36
     then Printf.eprintf "Warning: incorrect address encoding: %#x\n" p_int ;
   let truncated_perms = p_int lsr 3 in
   let tag = if Misc.string_as_int t <> 0 then 1 else 0 in
-  Symbolic ((s,None,truncated_perms lor (tag lsl 33) ),0)
-let mk_sym_with_index s i = Symbolic ((s,None,0),Misc.string_as_int i)
+  Symbolic ((s,None,truncated_perms lor (tag lsl 33),None ),0)
+let mk_sym_with_index s i = Symbolic ((s,None,0,None),Misc.string_as_int i)
 let mk_lab p s = Label (p,s)
 %}
 
@@ -143,7 +143,7 @@ atom_init:
 /* We either have arrays or scalars here: typ v[i] = ... or typ v = ...*/
    { match $2 with
      | Location_global (Symbolic (s,sz)) when sz > 0 ->
-       let xs = List.init sz (fun _ -> ParsedConstant.zero) in
+       let xs = Misc.replicate sz ParsedConstant.zero in
        let arr = TyArray ($1,sz),Constant.mk_vec sz xs in
        (Location_global (Symbolic (s,0)), arr)
      | _ -> ($2, (Ty $1,ParsedConstant.zero)) }

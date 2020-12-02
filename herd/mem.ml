@@ -206,7 +206,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
               | A.Location_global _|A.Location_deref _ -> loc::locs
               | A.Location_reg _ -> locs in
             let locs = match v with
-            | A.V.Val (Constant.Symbolic ((s,_,_),_)) ->
+            | A.V.Val (Constant.Symbolic ((s,_,_,_),_)) ->
                 A.Location_global (A.V.Val (Constant.mk_sym s))::locs
             | _ -> locs in
             locs)
@@ -771,8 +771,8 @@ let match_reg_events es =
 (* Various utilities on symbolic addresses as locatiosn *)
     let get_base a =
       let open Constant in match a with
-      | A.Location_global (V.Val (Symbolic ((s,t,c),_))) when Misc.check_ctag s ->
-          A.Location_global (V.Val (Symbolic ((Misc.tr_ctag s,t,c),0)))
+      | A.Location_global (V.Val (Symbolic ((s,t,c,v),_))) when Misc.check_ctag s ->
+          A.Location_global (V.Val (Symbolic ((Misc.tr_ctag s,t,c,v),0)))
       | A.Location_global (V.Val (Symbolic (s,_))) ->
           A.Location_global (V.Val (Symbolic (s,0)))
       | _ -> raise CannotSca
@@ -781,17 +781,17 @@ let match_reg_events es =
     let compare_index e1 e2 =
       let open Constant in
       match E.global_loc_of e1, E.global_loc_of e2 with
-      | Some (V.Val (Symbolic ((s1,_,_),i1))),
-        Some (V.Val (Symbolic ((s2,_,_),i2))) when  Misc.string_eq s1 s2 ->
+      | Some (V.Val (Symbolic ((s1,_,_,_),i1))),
+        Some (V.Val (Symbolic ((s2,_,_,_),i2))) when  Misc.string_eq s1 s2 ->
           Misc.int_compare i1 i2
-      | Some (V.Val (Symbolic ((s1,_,_),_))),
-        Some (V.Val (Symbolic ((s2,_,_),_))) when (morello && Misc.check_ctag s1
+      | Some (V.Val (Symbolic ((s1,_,_,_),_))),
+        Some (V.Val (Symbolic ((s2,_,_,_),_))) when (morello && Misc.check_ctag s1
           && Misc.string_eq (Misc.tr_ctag s1) s2) -> 1
-      | Some (V.Val (Symbolic ((s1,_,_),_))),
-        Some (V.Val (Symbolic ((s2,_,_),_))) when (morello && Misc.check_ctag s2
+      | Some (V.Val (Symbolic ((s1,_,_,_),_))),
+        Some (V.Val (Symbolic ((s2,_,_,_),_))) when (morello && Misc.check_ctag s2
           && Misc.string_eq s1 (Misc.tr_ctag s2)) -> -1
-      | Some (V.Val (Symbolic ((s1,_,_),_))),
-        Some (V.Val (Symbolic ((s2,_,_),_))) when (morello && Misc.check_ctag s1
+      | Some (V.Val (Symbolic ((s1,_,_,_),_))),
+        Some (V.Val (Symbolic ((s2,_,_,_),_))) when (morello && Misc.check_ctag s1
         && Misc.check_ctag s2 && Misc.string_eq s1 s2) -> 0
       | _,_ -> raise CannotSca
 
@@ -871,7 +871,7 @@ let match_reg_events es =
       | e::_ -> e
       | [] -> assert false in
       let s,idx= match  E.global_loc_of fst with
-      |  Some (V.Val (Symbolic ((s,_,_),i))) ->
+      |  Some (V.Val (Symbolic ((s,_,_,_),i))) ->
           (if morello && Misc.check_ctag s then Misc.tr_ctag s else s),i
       | _ -> raise CannotSca in
       let sz = List.length sca*byte_sz in
@@ -1193,9 +1193,9 @@ let match_reg_events es =
             else if morello then
               A.LocSet.map_union
                 (fun loc -> match loc with
-                | A.Location_global (A.V.Val (Constant.Symbolic ((s,t,c),0))) ->
+                | A.Location_global (A.V.Val (Constant.Symbolic ((s,t,c,v),0))) ->
                     A.LocSet.of_list (A.Location_global (A.V.Val
-                      (Constant.Symbolic ((Misc.add_ctag s,t,c),0)))::[loc])
+                      (Constant.Symbolic ((Misc.add_ctag s,t,c,v),0)))::[loc])
                 | _ -> A.LocSet.singleton loc)
                 locs
             else locs in
@@ -1248,7 +1248,7 @@ let match_reg_events es =
           let compare_index idx e =
             let open Constant in
             match E.global_loc_of e with
-            | Some (V.Val (Symbolic ((s,_,_),_))) when Misc.check_ctag s ->
+            | Some (V.Val (Symbolic ((s,_,_,_),_))) when Misc.check_ctag s ->
                 Misc.int_compare idx max_int
             | Some (V.Val (Symbolic (_,i))) -> Misc.int_compare idx i
             | _ -> assert false

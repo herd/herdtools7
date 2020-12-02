@@ -297,7 +297,7 @@ module Make
        | ConcreteVector (_,vs)->
           let pp_vs = List.map dump_a_v vs in
           sprintf "{%s}" (String.concat "," pp_vs) (* list initializer syntax *)
-      | Symbolic ((s,None,0),0) -> dump_a_addr s
+      | Symbolic ((s,None,0,_),0) -> dump_a_addr s
       | Label _ ->
           Warn.user_error "No label value for klitmus"
       | Symbolic _|Tag _ ->

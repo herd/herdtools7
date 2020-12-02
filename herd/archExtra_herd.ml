@@ -374,14 +374,17 @@ module Make(C:Config) (I:I) : S with module I = I
                 | Constant.ConcreteVector (sz,vs) when sz == List.length vs -> vs
                 | _ -> assert false in
               let locval = if is_global loc then
-                 Option.get (global loc)
+                 match global loc with
+                 | Some x -> x
+                 | _ -> assert false (* unreachable *)
               else assert false in
               let array_prim = MiscParser.get_array_primitive_ty t in
               let prim_sz = MachSize.nbytes (size_of array_prim) in
+              let vec_data = Some (prim_sz, List.length vs) in
               let vs = List.mapi
                 (fun i v ->
                   Location_global
-                    (I.V.Val (Constant.Symbolic((I.V.pp false locval, None, 0),
+                    (I.V.Val (Constant.Symbolic((I.V.pp false locval, None, 0, vec_data),
                                                  i*prim_sz))),
                   (MiscParser.Ty array_prim,I.V.cstToV v))
                 vs in
@@ -433,7 +436,7 @@ module Make(C:Config) (I:I) : S with module I = I
       let look_size env s = StringMap.safe_find MachSize.Word s env
 
       let look_size_location env loc = match loc with
-      | Location_global (I.V.Val (Constant.Symbolic ((s,_,_),0))) -> look_size env s
+      | Location_global (I.V.Val (Constant.Symbolic ((s,_,_,_),0))) -> look_size env s
       | _ -> assert false
             (* Typing *)
 
@@ -456,7 +459,6 @@ module Make(C:Config) (I:I) : S with module I = I
 
 
       let misc_to_size ty  = match ty with
-      | MiscParser.TyArray _
       | MiscParser.TyDef -> size_of "int"
       | MiscParser.Ty t|MiscParser.Atomic t
         -> size_of t
@@ -575,7 +577,7 @@ module Make(C:Config) (I:I) : S with module I = I
               raise LocUndetermined
           | None ->
               match loc with
-              | Location_global (I.V.Val (Constant.Symbolic ((s,_,_),0)) as a)   ->
+              | Location_global (I.V.Val (Constant.Symbolic ((s,_,_,_),0)) as a)   ->
                   let sz = look_size senv s in
                   let eas = byte_eas sz a in
                   let vs = List.map (get_of_val st) eas in

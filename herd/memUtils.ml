@@ -525,7 +525,7 @@ let lift_proc_info i evts =
     let a = Misc.as_some (E.global_loc_of e)
     and sz_e = E.get_mem_size e in
     match a with
-    | A.V.Val (Constant.Symbolic ((s,_,_),idx)) ->
+    | A.V.Val (Constant.Symbolic ((s,_,_,_),idx)) ->
         let sz_s =
           A.look_size sz s in
         List.exists (Misc.int_eq idx) (MachSize.get_off sz_s sz_e)

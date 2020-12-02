@@ -5,5 +5,5 @@ AArch64 A8
 P0;
   LDR X0, [X1], #44;
 
-exists (0:X0=0 /\ 0:X1!=x) (* This should be x+44, todo: encode arbitrary expressions *)
+exists (0:X0=0 /\ 0:X1!=x)
 (* See test A9 for a variant that uses a concrete address*)

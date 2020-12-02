@@ -123,8 +123,8 @@ module Make(Cst:Constant.S) = struct
      Symbolic -> Symbolic *)
   let unop op_op op v1 = match v1 with
     | Val (Concrete i1) -> Val (Concrete (op i1))
-    | Val (Symbolic ((a,t,c),o)) ->
-        Val (Symbolic ((a,t,capa_to_bin (op (bin_to_capa c))),o))
+    | Val (Symbolic ((a,t,c,v),o)) ->
+        Val (Symbolic ((a,t,capa_to_bin (op (bin_to_capa c)),v),o))
     | Val (Label _|Tag _|ConcreteVector _ as x) ->
       Warn.user_error "Illegal operation %s on %s"
         (Op.pp_op1 true op_op) (Cst.pp_v x)
@@ -135,7 +135,7 @@ module Make(Cst:Constant.S) = struct
   let unop_c op_op op v = match v with
     | Val (Concrete i) ->
         Val (Concrete (op i))
-    | Val (Symbolic ((_,_,c),_)) ->
+    | Val (Symbolic ((_,_,c,_),_)) ->
         Val (Concrete (op (bin_to_capa c)))
     | Val cst ->
         Warn.user_error "Illegal operation %s on %s"
@@ -158,8 +158,8 @@ module Make(Cst:Constant.S) = struct
      Symbolic,Concrete -> Symbolic *)
   let binop_cs_c op_op op v1 v2 = match v1,v2 with
   | (Val (Concrete i1),Val (Concrete i2)) -> Val (Concrete (op i1 i2))
-  | (Val (Symbolic ((a,t,c),o)),Val (Concrete i)) ->
-      Val (Symbolic ((a,t,capa_to_bin (op (bin_to_capa c) i)),o))
+  | (Val (Symbolic ((a,t,c,v),o)),Val (Concrete i)) ->
+      Val (Symbolic ((a,t,capa_to_bin (op (bin_to_capa c) i),v),o))
   | Val cst1,Val cst2 ->
         Warn.user_error "Illegal operation %s on %s and %s"
           (Op.pp_op op_op) (Cst.pp_v cst1) (Cst.pp_v cst2)
@@ -170,7 +170,7 @@ module Make(Cst:Constant.S) = struct
      Concrete,Symbolic -> Concrete *)
   let binop_c_cs op_op op v1 v2 = match v1,v2 with
   | (Val (Concrete i1),Val (Concrete i2)) -> Val (Concrete (op i1 i2))
-  | (Val (Concrete i),Val (Symbolic ((_,_,c),_))) ->
+  | (Val (Concrete i),Val (Symbolic ((_,_,c,_),_))) ->
       Val (Concrete (op i (bin_to_capa c)))
   | Val cst1,Val cst2 ->
         Warn.user_error "Illegal operation %s on %s and %s"
@@ -184,12 +184,12 @@ module Make(Cst:Constant.S) = struct
      Symbolic,Symbolic -> Symbolic *)
   let binop_cs_cs op_op op v1 v2 = match v1,v2 with
   | (Val (Concrete i1),Val (Concrete i2)) -> Val (Concrete (op i1 i2))
-  | (Val (Concrete i),Val (Symbolic ((_,_,c),_))) ->
+  | (Val (Concrete i),Val (Symbolic ((_,_,c,_),_))) ->
       Val (Concrete (op i (bin_to_capa c)))
-  | (Val (Symbolic ((a,t,c),o)),Val (Concrete i)) ->
-      Val (Symbolic ((a,t,capa_to_bin (op (bin_to_capa c) i)),o))
-  | (Val (Symbolic ((a,t,c1),o)),Val (Symbolic ((_,_,c2),_))) ->
-      Val (Symbolic ((a,t,capa_to_bin (op (bin_to_capa c1) (bin_to_capa c2))),o))
+  | (Val (Symbolic ((a,t,c,v),o)),Val (Concrete i)) ->
+      Val (Symbolic ((a,t,capa_to_bin (op (bin_to_capa c) i),v),o))
+  | (Val (Symbolic ((a,t,c1,v1),o)),Val (Symbolic ((_,_,c2,_),_))) ->
+      Val (Symbolic ((a,t,capa_to_bin (op (bin_to_capa c1) (bin_to_capa c2)),v1),o))
   | Val cst1,Val cst2 ->
         Warn.user_error "Illegal operation %s on %s and %s"
           (Op.pp_op op_op) (Cst.pp_v cst1) (Cst.pp_v cst2)
@@ -202,11 +202,11 @@ module Make(Cst:Constant.S) = struct
      Symbolic,Symbolic -> Concrete *)
   let binop_cs_cs_c op_op op v1 v2 = match v1,v2 with
   | (Val (Concrete i1),Val (Concrete i2)) -> Val (Concrete (op i1 i2))
-  | (Val (Concrete i),Val (Symbolic ((_,_,c),_))) ->
+  | (Val (Concrete i),Val (Symbolic ((_,_,c,_),_))) ->
       Val (Concrete (op i (bin_to_capa c)))
-  | (Val (Symbolic ((_,_,c),_)),Val (Concrete i)) ->
+  | (Val (Symbolic ((_,_,c,_),_)),Val (Concrete i)) ->
       Val (Concrete (op (bin_to_capa c) i))
-  | (Val (Symbolic ((_,_,c1),_)),Val (Symbolic ((_,_,c2),_))) ->
+  | (Val (Symbolic ((_,_,c1,_),_)),Val (Symbolic ((_,_,c2,_),_))) ->
       Val (Concrete (op (bin_to_capa c1) (bin_to_capa c2)))
   | Val cst1,Val cst2 ->
         Warn.user_error "Illegal operation %s on %s and %s"
@@ -313,7 +313,7 @@ module Make(Cst:Constant.S) = struct
 
 (* Ops on tagged locations *)
   let settag v1 v2 = match v1,v2 with
-  | Val (Symbolic ((a,_,c),o)),Val (Tag t) -> Val (Symbolic((a,Some t,c),o))
+  | Val (Symbolic ((a,_,c,v1),o)),Val (Tag t) -> Val (Symbolic((a,Some t,c,v1),o))
   | Val cst1,Val cst2 ->
       Warn.user_error "Illegal settag on %s and %s"
         (Cst.pp_v cst1)  (Cst.pp_v cst2)
@@ -327,12 +327,12 @@ module Make(Cst:Constant.S) = struct
   | Var _ -> raise Undetermined
 
   (*  Returns the location of the tag associated to a location *)
-  let op_tagloc f (a,_,_) _ =  Symbolic ((f a,None,0),0)
+  let op_tagloc f (a,_,_,_) _ =  Symbolic ((f a,None,0,None),0)
   let tagloc = op_tagged "tagloc" (op_tagloc Misc.add_atag)
   let capatagloc = op_tagged "capatagloc" (op_tagloc Misc.add_ctag)
 
   let get_sym = function
-    | Val (Symbolic ((s,_,_),_)) -> s
+    | Val (Symbolic ((s,_,_,_),_)) -> s
     | Var _|Val (Concrete _|Label _|Tag _|ConcreteVector _) ->
         Warn.fatal "Illegal get_sym" (* NB: not an user error *)
 
@@ -342,22 +342,22 @@ module Make(Cst:Constant.S) = struct
         Warn.fatal "Illegal get_vec" (* NB: not an user error *)
 
   let check_atag = function
-    | Val (Symbolic ((s,_,_),_)) -> Misc.check_atag s
+    | Val (Symbolic ((s,_,_,_),_)) -> Misc.check_atag s
     | Var _|Val (Concrete _|Label _|Tag _|ConcreteVector _) ->
         Warn.fatal "Illegal check_atag" (* NB: not an user error *)
 
   let check_ctag = function
-    | Val (Symbolic ((s,_,_),_)) -> Misc.check_ctag s
+    | Val (Symbolic ((s,_,_,_),_)) -> Misc.check_ctag s
     | Var _|Val (Concrete _|ConcreteVector _|Label _|Tag _) ->
         Warn.fatal "Illegal check_mtag" (* NB: not an user error *)
 
   (* Decompose tagged locations *)
-  let op_tagextract (_,t,_) _ = match t with
+  let op_tagextract (_,t,_,_) _ = match t with
   | Some t -> Tag t
   | None -> Constant.default_tag
 
   let tagextract v = op_tagged "tagextract" op_tagextract v
-  let op_locextract (a,_,c) o = Symbolic ((a,None,c),o)
+  let op_locextract (a,_,c,_) o = Symbolic ((a,None,c,None),o)
   let locextract v = op_tagged "locextract" op_locextract v
 
   let andnot x1 x2 =
@@ -455,12 +455,12 @@ module Make(Cst:Constant.S) = struct
     Scalar.set_tag (Scalar.get_tag c && not tagclear) result
 
   let capaadd v1 v2 = match v1,v2 with
-    | (Val (Symbolic ((a,t,c),o)),Val (Concrete i)) ->
+    | (Val (Symbolic ((a,t,c,v),o)),Val (Concrete i)) ->
         let i = Scalar.to_int i in
         let c = bin_to_capa c in
         let tagclear = cap_is_sealed c in
         let c = Scalar.set_tag (Scalar.get_tag c && not tagclear) c in
-        Val (Symbolic ((a,t,capa_to_bin c),o+i))
+        Val (Symbolic ((a,t,capa_to_bin c,v),o+i))
     | (Val (Concrete c)),(Val (Concrete increment)) -> (* General case *)
         let result = Scalar.logor (hi64 c) (lo64 (Scalar.add c increment)) in
         (* NB: bounds check skipped *)
@@ -546,7 +546,7 @@ module Make(Cst:Constant.S) = struct
     Scalar.set_tag (Scalar.get_tag v1 && not tagclear) result
 
   let setvalue v1 v2 = match v1,v2 with
-    | (Val (Symbolic ((_,_,c),_)),Val (Concrete i)) ->
+    | (Val (Symbolic ((_,_,c,_),_)),Val (Concrete i)) ->
         let c = bin_to_capa c in
         Val (Concrete (do_setvalue c i))
     | (Val (Concrete i1)),(Val (Concrete i2)) ->
@@ -580,7 +580,7 @@ module Make(Cst:Constant.S) = struct
     else v1
 
   let capastrip v = match v with
-  | Val (Symbolic ((s,t,_),o)) -> Val (Symbolic ((s,t,0),o))
+  | Val (Symbolic ((s,t,_,v),o)) -> Val (Symbolic ((s,t,0,v),o))
   | Val cst -> Warn.user_error "Illegal capastrip on %s" (Cst.pp_v cst)
   | Var _ -> raise Undetermined
 

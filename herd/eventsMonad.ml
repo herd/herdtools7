@@ -1091,7 +1091,7 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
         bump_eid eiid,
         { E.eiid = eiid.id; E.subid=eiid.sub; E.iiid = None;
           E.action = E.Act.mk_init_write (A.Location_global
-            (A.V.Val (Constant.Symbolic ((Misc.add_ctag s,None,0),0))))
+            (A.V.Val (Constant.Symbolic ((Misc.add_ctag s,None,0,None),0))))
             def_size v; }
 
       let initwrites_non_mixed env size_env =
@@ -1110,7 +1110,7 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
                   make_one_init_event
                     (E.Act.mk_init_write loc sz v) eiid in
                 match loc with
-                | A.Location_global (A.V.Val (Constant.Symbolic ((s,_,_),0))) ->
+                | A.Location_global (A.V.Val (Constant.Symbolic ((s,_,_,_),0))) ->
                     let eiid,ews =
                       if morello then
                         let eiid,em =
@@ -1144,7 +1144,7 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
                 (fun (eiid,es,sca) (loc,v) ->
                   match loc with
                   | A.Location_global
-                      (A.V.Val (Constant.Symbolic ((s,_,_),0)) as a)
+                      (A.V.Val (Constant.Symbolic ((s,_,_,_),0)) as a)
                       when not (Misc.check_atag s) ->
  (* Suffix encoding of tag addresses, sufficient for now *)
                         let sz = A.look_size size_env s in

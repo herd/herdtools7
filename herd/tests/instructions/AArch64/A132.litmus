@@ -1,7 +1,7 @@
 AArch64 A132
 (* Tests storing to an array location *)
 (* symbolic location *)
-{  0:X2=v; 0:X0 = 2; v[1] = 44; v[0] = 22;}
+{  0:X2=v; 0:X0 = 2; int64_t v[2] = {22,44}}
 
 P0;
   STR X0, [X2];

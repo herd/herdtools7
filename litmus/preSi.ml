@@ -739,7 +739,7 @@ module Make
                     let pp_vs = List.map f vs in
                     sprintf "{%s}" (String.concat "," pp_vs)
                     (* list initializer syntax *)
-                | Symbolic ((s,None,0),_) ->
+                | Symbolic ((s,None,0,_),_) ->
                     sprintf "(%s)_vars->%s" (CType.dump at) s
                 | Label _ ->
                     Warn.fatal "PreSi mode cannot handle code labels (yet)"

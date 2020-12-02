@@ -74,7 +74,7 @@ type location = A.location and module LocSet = A.LocSet =
       | LV (_,v) ->
           begin
             let rec f v k = match v with
-            | Symbolic ((s,None,0),_) -> Strings.add s k
+            | Symbolic ((s,None,0,_),_) -> Strings.add s k
             | Concrete _ -> k
             | ConcreteVector (_,vs) ->
                 List.fold_right (fun v k -> f v k) vs k
