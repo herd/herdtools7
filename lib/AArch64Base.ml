@@ -224,8 +224,6 @@ let parse_xreg s =
   try Some (List.assoc (Misc.uppercase s) (parse_list regs))
   with Not_found -> None
 
-let parse_reg s = parse_xreg s
-
 let parse_wreg s =
   try Some (List.assoc (Misc.uppercase s) (parse_list wregs))
   with Not_found -> None
@@ -240,6 +238,10 @@ let parse_vreg s =
 let parse_simd_reg s =
   try Some (List.assoc (Misc.uppercase s) simd_regs)
   with Not_found -> None
+
+let parse_reg s = match parse_vreg s with
+| Some v -> Some v
+| None -> parse_xreg s
 
 let pp_creg r = match r with
 | Symbolic_reg r -> "C%" ^ r

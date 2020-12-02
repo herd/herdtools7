@@ -285,6 +285,10 @@ locindex:
 
 atom_prop:
 | location EQUAL maybev {Atom (LV (Loc $1,$3))}
+| location EQUAL LCURLY maybev_list RCURLY
+    { let sz = List.length $4 in
+      let vec = Constant.mk_vec sz $4 in
+      Atom (LV (Loc $1,vec)) }
 | location EQUALEQUAL maybev {Atom (LV (Loc $1,$3))}
 | locindex EQUAL maybev {Atom (LV ($1,$3))}
 | locindex EQUALEQUAL maybev {Atom (LV ($1,$3))}
