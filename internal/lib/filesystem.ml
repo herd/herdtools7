@@ -48,6 +48,6 @@ let rec remove_recursive path =
   end
 
 let new_temp_dir () =
-  match Command.run_with_stdout "mktemp" ["-d"] Channel.read_lines with
-  | path :: [] -> path
-  | _ -> failwith "mktemp is behaving abnormally"
+  let path = ref "" in
+  Command.run ~stdout:(fun c -> path := input_line c) "mktemp" ["-d"] ;
+  !path

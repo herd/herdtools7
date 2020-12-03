@@ -75,9 +75,11 @@ let list_of_file path key =
     Printf.fprintf chan "  pass\n" ;
     close_out chan
   in
-  let lines = Command.run_with_stdin_and_stdout "python" [] script Channel.read_lines in
+  let lines = ref [] in
+  let read_lines c = lines := Channel.read_lines c in
+  Command.run ~stdin:script ~stdout:read_lines "python" [] ;
   (* Sorted for stability / comparability. *)
-  List.sort String.compare lines
+  List.sort String.compare !lines
 
 let string_of_file path key =
   match list_of_file path key with
