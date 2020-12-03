@@ -1,15 +1,27 @@
 set -o errexit
 
-HERD="herd.native"
-LITMUS="litmus.native klitmus.native"
-TOOLS="mfind.native moutcomes.native splitcond.native mshowhashes.native mlog2cond.native mflags.native mdiag.native recond.native mcycles.native mmixer.native knames.native mdiff.native mcmp.native madd.native mtopos.native mfilter.native mapply.native mcompare.native mhash.native mrcu.native mprog.native mnames.native ksort.native mobserved.native msort.native msum.native mselect.native mcond.native mproj.native rehash.native splitdot.native mlock.native mtrue.native mlisa2c.native cat2html.native mlog2name.native mcat2includes.native"
-GEN="readRelax.native atoms.native diycross.native mexpand.native atomize.native diyone.native nexts.native classify.native diy.native norm.native"
-JINGLE="jingle.native gen_theme.native"
+# Extract binary names from dune files.
+binaries_of_dune () {
+  local readonly kind="${1}"; shift
+  local readonly dune_file="${1}"; shift
+  for bin in $(internal/binaries_of_dune "${kind}" "${dune_file}")
+  do
+    echo "${bin}.native"
+  done
+}
+
+HERD="$(binaries_of_dune executables herd/dune)"
+LITMUS="$(binaries_of_dune executables litmus/dune)"
+TOOLS="$(binaries_of_dune executables tools/dune)"
+GEN="$(binaries_of_dune executables gen/dune)"
+JINGLE="$(binaries_of_dune executables jingle/dune)"
+
 NATIVE="$HERD $LITMUS $TOOLS $GEN $JINGLE"
 
 # Internal-only, not installed.
-INTERNAL="herd_regression_test.native herd_diycross_regression_test.native"
-TESTS="base_test.native channel_test.native command_test.native compare_test.native filesystem_test.native test_test.native ocamlString_test.native shelf_test.native uint_test.native"
+INTERNAL="$(binaries_of_dune executables internal/dune)"
+
+TESTS="$(find . -name 'dune' | while read f; do binaries_of_dune tests "${f}"; done)"
 
 mk_exe () {
   D=$1

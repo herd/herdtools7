@@ -1,0 +1,54 @@
+#!/usr/bin/env ocaml
+
+#use "lib/sexp.ml";;
+
+let string_of_atom sexp =
+  match sexp with
+  | Atom s -> s
+  | _ -> failwith "expected Atom"
+
+let field_values name sexp =
+  match sexp with
+  | List (Atom name' :: values) ->
+      if String.compare name name' = 0 then
+        values
+      else
+        []
+  | _ -> []
+
+let nested_field_values key subkey stanza = stanza |> field_values key |> List.map (field_values subkey) |> List.concat
+
+let binaries_of_dune key keys dune =
+  match dune with
+  | List stanzas ->
+      let key_name = List.map (nested_field_values key "name") stanzas in
+      let keys_names = List.map (nested_field_values keys "names") stanzas in
+
+      let all_names = key_name @ keys_names in
+      all_names |> List.concat |> List.map string_of_atom
+  | _ -> failwith "expected List of stanzas"
+
+let usage = String.concat "\n" [
+  Printf.sprintf "Usage: %s (executables|tests) <path/to/dune>" Sys.argv.(0) ;
+  "" ;
+  " executables  Prints executable names from a Dune file," ;
+  "              e.g. (executables (names ...)) or (executable (name ...))." ;
+  "" ;
+  " tests        Prints test names from a Dune file," ;
+  "              e.g. (tests (names ...)) or (test (name ...))." ;
+]
+
+let () =
+  if Array.length Sys.argv <> 3 then begin
+    Printf.printf "%s\n" usage ;
+    exit 1
+  end ;
+  let key, keys =
+    match Sys.argv.(1) with
+    | "tests" -> "test", "tests"
+    | "executables" -> "executable", "executables"
+    | s -> failwith (Printf.sprintf "unknown kind: %s" s)
+  in
+  let path = Sys.argv.(2) in
+  let dune = of_dune_file path in
+  dune |> binaries_of_dune key keys |> List.iter (Printf.printf "%s\n")
