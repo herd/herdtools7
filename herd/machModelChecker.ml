@@ -314,8 +314,8 @@ module Make
              E.Act.arch_sets) in
       let m = (* To be deprecated *)
         if kvm then
-          let nexps = match I.get_set m "NExp" with
-            | Some nexps -> nexps
+          let mevt = match I.get_set m "M" with
+            | Some mevt -> mevt
             | None -> (* Must exists *) assert false in
           I.add_sets m
             (List.map
@@ -334,7 +334,7 @@ module Make
                        (* Init writes have no proc, but there are no loads *)
                        | None -> assert false
                        end)
-                     (Lazy.force nexps)
+                     (Lazy.force mevt)
                  end)
                E.Act.arch_dirty)
         else m in
