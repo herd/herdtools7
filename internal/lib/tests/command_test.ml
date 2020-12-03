@@ -16,7 +16,12 @@
 
 (** Tests for the Command module. *)
 
-let pp_string_list = Test.pp_string_list
+module Option = Base.Option
+
+module StringList = struct
+  let compare = Base.List.compare String.compare
+  let to_ocaml_string = Base.List.to_ocaml_string Base.String.to_ocaml_string
+end
 
 let tests = [
   "Command.command without args", (fun () ->
@@ -55,16 +60,82 @@ let tests = [
       (* Cleanup. *)
       Sys.remove path
   );
-  "Command.run_with_stdout_lines raises on error", (fun () ->
-    (* Deliberately fail. *)
-    let raised_exception = try
-      let _ = Command.run "false" [] in false
-    with
-      Command.Error _ -> true
-    in
 
-    if not raised_exception then
-      Test.fail "Expected exception, did not raise";
+  "Command.run ~stdout", (fun () ->
+    let tests = [
+      ("true", [], []);
+      ("echo", ["foo"], ["foo"]);
+      ("echo", ["foo\nbar"], ["foo"; "bar"]);
+    ] in
+
+    List.iter
+      (fun (bin, args, expected) ->
+        let actual = ref None in
+        let read_lines i = actual := Some (Channel.read_lines i) in
+        Command.run ~stdout:read_lines bin args ;
+        let actual = Option.get !actual in
+
+        if StringList.compare actual expected <> 0 then
+          Test.fail (Printf.sprintf "Expected %s, got %s"
+            (StringList.to_ocaml_string expected)
+            (StringList.to_ocaml_string actual)
+          )
+      )
+      tests
+  );
+  "Command.run ~stdin ~stdout", (fun () ->
+    let echo o =
+      Printf.fprintf o "I am a line\n" ;
+      Printf.fprintf o "so am I\n" ;
+      close_out o
+    in
+    let expected = [
+      "I am a line" ;
+      "so am I" ;
+    ] in
+
+    let actual = ref None in
+    let read_lines i = actual := Some (Channel.read_lines i) in
+    Command.run ~stdin:echo ~stdout:read_lines "cat" [] ;
+    let actual = Option.get !actual in
+
+    if StringList.compare actual expected <> 0 then
+      Test.fail (Printf.sprintf "expected %s, got %s"
+        (StringList.to_ocaml_string expected)
+        (StringList.to_ocaml_string actual)
+      )
+  );
+  "Command.run ~stdout ~stderr", (fun () ->
+    let bin = "python" in
+    let args = [
+      "-c" ;
+      "import sys; sys.stdout.write('mew\\n'); sys.stderr.write('purr\\n')" ;
+    ] in
+
+    let expected_stdout = [ "mew" ] in
+    let expected_stderr = [ "purr" ] in
+
+    let actual_stdout = ref None in
+    let actual_stderr = ref None in
+    let read r i = r := Some (Channel.read_lines i) in
+    Command.run
+      ~stdout:(read actual_stdout)
+      ~stderr:(read actual_stderr)
+      bin args ;
+    let actual_stdout = Option.get !actual_stdout in
+    let actual_stderr = Option.get !actual_stderr in
+
+    if StringList.compare actual_stdout expected_stdout <> 0 then
+      Test.fail (Printf.sprintf "stdout: expected %s, got %s"
+        (StringList.to_ocaml_string expected_stdout)
+        (StringList.to_ocaml_string actual_stdout)
+      ) ;
+
+    if StringList.compare actual_stderr expected_stderr <> 0 then
+      Test.fail (Printf.sprintf "stderr: expected %s, got %s"
+        (StringList.to_ocaml_string expected_stderr)
+        (StringList.to_ocaml_string actual_stderr)
+      )
   );
 
   "Command.run_with_stdout captures stdout", (fun () ->
@@ -75,48 +146,15 @@ let tests = [
     ] in
 
     List.iter
-      (fun (cmd, args, expected) ->
-        let actual = Command.run_with_stdout cmd args Channel.read_lines in
-        if Test.string_list_compare actual expected <> 0 then
-          Test.fail (Printf.sprintf "Expected %s, got %s" (pp_string_list expected) (pp_string_list actual)))
+      (fun (bin, args, expected) ->
+        let actual = Command.run_with_stdout bin args Channel.read_lines in
+        if StringList.compare actual expected <> 0 then
+          Test.fail (Printf.sprintf "Expected %s, got %s"
+            (StringList.to_ocaml_string expected)
+            (StringList.to_ocaml_string actual)
+          )
+      )
       tests
-  );
-  "Command.run_with_stdout_lines raises on error", (fun () ->
-    (* Deliberately fail. *)
-    let raised_exception = try
-      let _ = Command.run_with_stdout "false" [] (fun _ -> ()) in false
-    with
-      Command.Error _ -> true
-    in
-
-    if not raised_exception then
-      Test.fail "Expected exception, did not raise";
-  );
-
-  "Command.run_with_stdout captures stdout", (fun () ->
-    let tests = [
-      ("true", [], []);
-      ("echo", ["foo"], ["foo"]);
-      ("echo", ["foo\nbar"], ["foo"; "bar"]);
-    ] in
-
-    List.iter
-      (fun (cmd, args, expected) ->
-        let actual = Command.run_with_stdout cmd args Channel.read_lines in
-        if Test.string_list_compare actual expected <> 0 then
-          Test.fail (Printf.sprintf "Expected %s, got %s" (pp_string_list expected) (pp_string_list actual)))
-      tests
-  );
-  "Command.run_with_stdout_lines raises on error", (fun () ->
-    (* Deliberately fail. *)
-    let raised_exception = try
-      let _ = Command.run_with_stdout "false" [] (fun _ -> ()) in false
-    with
-      Command.Error _ -> true
-    in
-
-    if not raised_exception then
-      Test.fail "Expected exception, did not raise";
   );
 ]
 
