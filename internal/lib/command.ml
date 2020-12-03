@@ -86,14 +86,3 @@ let run ?stdin:in_f ?stdout:out_f ?stderr:err_f bin args =
   | Unix.WEXITED n -> raise (Error (Printf.sprintf "Process returned error code %i" n))
   | Unix.WSIGNALED n -> raise (Error (Printf.sprintf "Process was killed by signal %i" n))
   | Unix.WSTOPPED n -> raise (Error (Printf.sprintf "Process was stopped by signal %i" n))
-
-
-let run_with_stdout ?(stdin = unset_in) bin args f =
-  let ret = ref None in
-  let f' a = ret := Some (f a) in
-  run ~stdin:stdin ~stdout:f' bin args ;
-  Option.get !ret
-
-
-let run_with_stdin_and_stdout bin args f g =
-  run_with_stdout ~stdin:f bin args g

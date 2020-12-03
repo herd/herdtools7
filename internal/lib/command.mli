@@ -31,18 +31,3 @@ val run :
   ?stdin:(out_channel -> unit) ->
   ?stdout:(in_channel -> unit) ->
   ?stderr:(in_channel -> unit) -> string -> string list -> unit
-
-(** [run_with_stdout ~stdin bin args f] runs the binary [bin] with arguments
- *  [args], optionally applies [~stdin] to the process's stdin, and applies
- *  function [f] the process's stdout, returning the result.
- *  It raises [Error] on error or non-zero exit code.
- *  This function is DEPRECATED: please use [run]. *)
-val run_with_stdout :
-  ?stdin:(out_channel -> unit) ->
-    string -> string list -> (in_channel -> 'a) -> 'a
-
-(** [run_with_stdin_and_stdout bin args f g] runs the binary [bin] with
- *  arguments [args], applies [f] to the process's stdin, returns the result of
- *  applying [g] to the process's stdout.
- *  This function is DEPRECATED: please use [run]. *)
-val run_with_stdin_and_stdout : string -> string list -> (out_channel -> unit) -> (in_channel -> 'a) -> 'a

@@ -137,25 +137,6 @@ let tests = [
         (StringList.to_ocaml_string actual_stderr)
       )
   );
-
-  "Command.run_with_stdout captures stdout", (fun () ->
-    let tests = [
-      ("true", [], []);
-      ("echo", ["foo"], ["foo"]);
-      ("echo", ["foo\nbar"], ["foo"; "bar"]);
-    ] in
-
-    List.iter
-      (fun (bin, args, expected) ->
-        let actual = Command.run_with_stdout bin args Channel.read_lines in
-        if StringList.compare actual expected <> 0 then
-          Test.fail (Printf.sprintf "Expected %s, got %s"
-            (StringList.to_ocaml_string expected)
-            (StringList.to_ocaml_string actual)
-          )
-      )
-      tests
-  );
 ]
 
 let () = Test.run tests
