@@ -257,7 +257,7 @@ module Make(O:Config)(A:I) =
       let digit i =
         let c = Char.code t.memo.[i] in
         let n = c - Char.code '0' in
-        if 0 <= n && n <= 2 then n
+        if 0 <= n && n <= 5 then n
         else internal (sprintf "bad digit '%i' (%c)" n t.memo.[i])
 
       and substring i j =
