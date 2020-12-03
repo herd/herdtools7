@@ -71,7 +71,7 @@ test:: $(D)-test
 
 dune-test:
 	@ echo
-	dune runtest
+	dune runtest --profile=release
 
 ocb-test:
 	@ echo
