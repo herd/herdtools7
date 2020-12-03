@@ -14,23 +14,26 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Utilities for running commands. *)
+(** Tests for the Compare module. *)
 
-exception Error of string
+let tests = [
+  "Compare.chain", (fun () ->
+    let tests = [
+      [], 0 ;
+      [0; 0], 0 ;
+      [1; 0], 1 ;
+      [-1; 1; 0], -1 ;
+      [0; -1; 1; 0], -1 ;
+    ] in
 
-(** [command bin args] returns a fully escaped command line for running the
- *  binary [bin] with arguments [args]. *)
-val command : string -> string list -> string
+    List.iter
+      (fun (cs, expected) ->
+        let actual = Compare.chain cs in
+        if actual <> expected then
+          Test.fail (Printf.sprintf "expected %i, got %i" expected actual)
+      )
+      tests
+  );
+]
 
-(** [run bin args] runs the binary [bin] with arguments [args].
- *  It raises Error on error or non-zero exit code. *)
-val run : string -> string list -> unit
-
-(** [run_with_stdout bin args f] runs the binary [bin] with arguments [args], and
- *  applies function [f] to the open in_channel, returning the result. *)
-val run_with_stdout : string -> string list -> (in_channel -> 'a) -> 'a
-
-(** [run_with_stdout_and_stdin_lines bin args in_lines] runs the binary [bin]
-  * with arguments [args], pipes [in_lines] into the process's stdin, and returns
-  * the process's stdout as a string list. *)
-val run_with_stdin_and_stdout : string -> string list -> (out_channel -> unit) -> (in_channel -> 'a) -> 'a
+let () = Test.run tests

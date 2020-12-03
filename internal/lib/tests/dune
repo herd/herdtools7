@@ -1,4 +1,5 @@
 (tests
- (names channel_test command_test filesystem_test test_test)
+ (names base_test channel_test command_test compare_test filesystem_test
+   ocamlString_test shelf_test test_test)
  (libraries internal_lib unix)
  (modes native))

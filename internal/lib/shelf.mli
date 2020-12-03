@@ -14,23 +14,25 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Utilities for running commands. *)
+(** An OCaml representation of a shelf.py file. *)
 
-exception Error of string
+type t = {
+  record : string ;
 
-(** [command bin args] returns a fully escaped command line for running the
- *  binary [bin] with arguments [args]. *)
-val command : string -> string list -> string
+  cats : string list ;
+  configs : string list ;
+  illustrative_tests : string list ;
 
-(** [run bin args] runs the binary [bin] with arguments [args].
- *  It raises Error on error or non-zero exit code. *)
-val run : string -> string list -> unit
+  bells : string list option ;
+  compatibilities : string list option ;
+}
 
-(** [run_with_stdout bin args f] runs the binary [bin] with arguments [args], and
- *  applies function [f] to the open in_channel, returning the result. *)
-val run_with_stdout : string -> string list -> (in_channel -> 'a) -> 'a
+val compare : t -> t -> int
 
-(** [run_with_stdout_and_stdin_lines bin args in_lines] runs the binary [bin]
-  * with arguments [args], pipes [in_lines] into the process's stdin, and returns
-  * the process's stdout as a string list. *)
-val run_with_stdin_and_stdout : string -> string list -> (out_channel -> unit) -> (in_channel -> 'a) -> 'a
+(** [to_ocaml_string s] returns a string of the OCaml literal representation of
+ *  a Shelf [s]. *)
+val to_ocaml_string : t -> string
+
+(** [of_file path] reads a Shelf from a shelf.py file.
+ *  It can raise [ParseError]. *)
+val of_file : string -> t

@@ -14,23 +14,44 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Utilities for running commands. *)
+(** Extending built-in / base modules, either to port future features into
+ *  earlier versions of OCaml, or to add extra functionality. *)
 
-exception Error of string
+module List = struct
+  include List
 
-(** [command bin args] returns a fully escaped command line for running the
- *  binary [bin] with arguments [args]. *)
-val command : string -> string list -> string
+  let rec compare cf xs ys =
+    match xs, ys with
+    | [], [] -> 0
+    | [], _ -> -1
+    | _, [] -> 1
+    | x :: xs, y :: ys ->
+        match cf x y with
+        | 0 -> compare cf xs ys
+        | n -> n
 
-(** [run bin args] runs the binary [bin] with arguments [args].
- *  It raises Error on error or non-zero exit code. *)
-val run : string -> string list -> unit
+  let to_ocaml_string f xs =
+    Printf.sprintf "[%s]" (String.concat "; " (List.map f xs))
+end
 
-(** [run_with_stdout bin args f] runs the binary [bin] with arguments [args], and
- *  applies function [f] to the open in_channel, returning the result. *)
-val run_with_stdout : string -> string list -> (in_channel -> 'a) -> 'a
+module Option = struct
+  type 'a t = 'a option
 
-(** [run_with_stdout_and_stdin_lines bin args in_lines] runs the binary [bin]
-  * with arguments [args], pipes [in_lines] into the process's stdin, and returns
-  * the process's stdout as a string list. *)
-val run_with_stdin_and_stdout : string -> string list -> (out_channel -> unit) -> (in_channel -> 'a) -> 'a
+  let compare cf a b =
+    match a, b with
+    | None, None -> 0
+    | Some _, None -> 1
+    | None, Some _ -> -1
+    | Some a, Some b -> cf a b
+
+  let to_ocaml_string f o =
+    match o with
+    | None -> "None"
+    | Some a -> Printf.sprintf "Some (%s)" (f a)
+end
+
+module String = struct
+  include String
+
+  let to_ocaml_string s = Printf.sprintf "%S" s
+end
