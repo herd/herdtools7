@@ -889,6 +889,43 @@ module Make
         do_str sz AArch64.L
           (read_reg_ord rd ii) (read_reg_data sz rs ii) ii
 
+      let movi_v r k shift ii =
+        let open AArch64Base in
+        let sz = neon_sz r in
+        let esize = neon_esize r in 
+        begin match esize, shift with
+        | 8, S_NOEXT | 16, S_NOEXT | 32, S_NOEXT | 64, S_NOEXT | 128, S_NOEXT ->
+          M.unitT (V.intToV k)
+        | 8, S_LSL(0 as amount)
+        | 16, S_LSL(0|8 as amount)
+        | 32, S_LSL(0|8|16|24 as amount) ->
+          M.op1 (Op.LeftShift amount) (V.intToV k)
+        | _, S_LSL(n) ->
+          Warn.fatal
+            "illegal shift immediate %d in %d-bit instruction movi"
+            n
+            esize
+        | _, s ->
+          Warn.fatal
+            "illegal shift operand %s in %d-bit instruction movi"
+            (pp_barrel_shift "," s pp_imm)
+            esize
+        end
+          >>= (fun v -> write_reg_neon_sz sz r v ii)
+          >>! B.Next
+
+      let movi_s var r k ii =
+        let open AArch64Base in
+        begin match var with
+        | VSIMD64 ->
+          M.unitT (V.intToV k)
+        | _ -> 
+          Warn.fatal
+          "illegal scalar register size in instruction movi"
+        end
+          >>= (fun v -> write_reg_neon_sz (tr_simd_variant var) r v ii)
+          >>! B.Next
+
       and stxr sz t rr rs rd ii =
         let open AArch64Base in
         let an = match t with
@@ -1206,6 +1243,10 @@ module Make
         | I_MOV_S(var,r1,r2,i) ->
             let sz = tr_simd_variant var in
             read_reg_neon_elem false r2 i ii >>= fun v -> write_reg_neon_sz sz r1 v ii >>! B.Next
+        | I_MOVI_V(r,k,shift) ->
+            movi_v r k shift ii
+        | I_MOVI_S(var,r,k) ->
+            movi_s var r k ii
 
         (* Morello instructions *)
         | I_ALIGND(rd,rn,kr) ->
