@@ -1193,19 +1193,19 @@ module Make
 
         (* Neon operations *)
         | I_MOV_VE(r1,i1,r2,i2) ->
-            let access_size = AArch64.simd_mem_access_size [r1] in
-            read_reg_neon_elem false r2 i2 ii >>= fun v -> write_reg_neon_elem access_size r1 i1 v ii >>! B.Next
+            let sz = neon_sz r1 in
+            read_reg_neon_elem false r2 i2 ii >>= fun v -> write_reg_neon_elem sz r1 i1 v ii >>! B.Next
         | I_MOV_FG(r1,i,var,r2) ->
-            let access_size = tr_variant var in 
-            let simd_access_size = AArch64.simd_mem_access_size [r1] in
-            read_reg_ord_sz access_size r2 ii >>= fun v -> write_reg_neon_elem simd_access_size r1 i v ii >>! B.Next
+            let sz = tr_variant var in 
+            let simd_sz = neon_sz r1 in
+            read_reg_ord_sz sz r2 ii >>= fun v -> write_reg_neon_elem simd_sz r1 i v ii >>! B.Next
         | I_MOV_TG(_,r1,r2,i) ->
             read_reg_neon_elem false r2 i ii >>= fun v -> write_reg r1 v ii >>! B.Next
         | I_MOV_V(r1,r2) ->
             read_reg_neon false r2 ii >>= fun v -> write_reg_neon r1 v ii >>! B.Next
         | I_MOV_S(var,r1,r2,i) ->
-            let access_size = tr_simd_variant var in
-            read_reg_neon_elem false r2 i ii >>= fun v -> write_reg_neon_sz access_size r1 v ii >>! B.Next
+            let sz = tr_simd_variant var in
+            read_reg_neon_elem false r2 i ii >>= fun v -> write_reg_neon_sz sz r1 v ii >>! B.Next
 
         (* Morello instructions *)
         | I_ALIGND(rd,rn,kr) ->
