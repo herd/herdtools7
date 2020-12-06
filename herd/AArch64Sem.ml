@@ -821,7 +821,9 @@ module Make
         let open AArch64Base in
         match s with
           | S_NOEXT   -> M.unitT
-          | S_LSL(n)  -> fun x -> M.op (Op.ShiftLeft) x (V.intToV n)
+          | S_LSL(n)  
+          | S_MSL(n)
+            -> fun x -> M.op (Op.ShiftLeft) x (V.intToV n)
           | S_LSR(n)  -> fun x -> M.op (Op.ShiftRight) x (V.intToV n)
           | S_ASR(n)  -> fun x -> M.op (Op.ASR) x (V.intToV n)
           | S_SXTW -> sxtw_op
@@ -898,7 +900,8 @@ module Make
           M.unitT (V.intToV k)
         | 8, S_LSL(0 as amount)
         | 16, S_LSL(0|8 as amount)
-        | 32, S_LSL(0|8|16|24 as amount) ->
+        | 32, S_LSL(0|8|16|24 as amount) 
+        | 32, S_MSL(8|16 as amount) ->
           M.op1 (Op.LeftShift amount) (V.intToV k)
         | _, S_LSL(n) ->
           Warn.fatal
