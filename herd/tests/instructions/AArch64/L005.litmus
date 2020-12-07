@@ -1,0 +1,9 @@
+AArch64 L005
+(* test checks if we can check for deliberate failure *)
+
+{}
+
+P0;
+fictional_instruction X0, X1;
+
+exists (1:X0=1)

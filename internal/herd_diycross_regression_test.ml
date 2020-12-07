@@ -79,7 +79,7 @@ let run_tests flags =
     (List.map TestHerd.expected_of_litmus in_both)
   in
   let results = List.map
-    (fun (l, e) -> TestHerd.herd_output_matches_expected flags.herd flags.libdir l e)
+    (fun (l, e) -> TestHerd.herd_output_matches_expected flags.herd flags.libdir l e "")
     (List.combine litmus_paths expected_paths)
   in
   let passed x = x in
@@ -113,9 +113,9 @@ let promote_tests flags =
   let expected_paths = concat_dir flags.expected_dir expecteds in
 
   let outputs = List.map (TestHerd.run_herd flags.herd flags.libdir) litmus_paths in
-  List.iter
-    (fun (path, lines) -> Filesystem.write_file path (fun o -> Channel.write_lines o lines))
-    (List.combine expected_paths outputs) ;
+  let write_file (path, (lines,_)) =
+    Filesystem.write_file path (fun o -> Channel.write_lines o lines) in
+  List.combine expected_paths outputs |> List.iter write_file ;
   Filesystem.remove_recursive tmp_dir
 
 

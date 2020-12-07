@@ -34,9 +34,10 @@ let show_tests herd libdir litmus_dir =
 let run_tests herd libdir litmus_dir =
   let litmuses = litmuses_of_dir litmus_dir in
   let expecteds = List.map TestHerd.expected_of_litmus litmuses in
+  let expected_failures = List.map TestHerd.expected_failure_of_litmus litmuses in
   let results = List.map
-   (fun (l, e) -> TestHerd.herd_output_matches_expected herd libdir l e)
-   (List.combine litmuses expecteds)
+   (fun ((l, e), f) -> TestHerd.herd_output_matches_expected herd libdir l e f)
+   (List.combine (List.combine litmuses expecteds) expected_failures)
   in
   let failed r = not r in
   if List.exists failed results then begin
@@ -48,17 +49,22 @@ let promote_tests herd libdir litmus_dir =
   let litmuses = litmuses_of_dir litmus_dir in
   let outputs = List.map (TestHerd.run_herd herd libdir) litmuses in
   let expecteds = List.map TestHerd.expected_of_litmus litmuses in
-  let write_file (path, lines) =
-    Filesystem.write_file path (fun o -> Channel.write_lines o lines)
+  let expected_failures = List.map TestHerd.expected_failure_of_litmus litmuses in
+  let write_file (path, (lines,_)) =
+    Filesystem.write_file path (fun o -> Channel.write_lines o lines) in
+  let write_err_file (path, (_,err_lines)) =
+    Filesystem.write_file path (fun o -> Channel.write_lines o err_lines) in
+  let not_empty xs = List.length xs > 0
   in
-  List.combine expecteds outputs |> List.iter write_file
+  List.combine expecteds outputs |> List.filter (fun (_,(stdout,_)) -> not_empty stdout) |> List.iter write_file ;
+  List.combine expected_failures outputs |> List.filter (fun (_,(_,stderr)) -> not_empty stderr) |> List.iter write_err_file
 
 let usage = String.concat "\n" [
   Printf.sprintf "Usage: %s [opts] (show|test|promote)" Sys.argv.(0) ;
   "" ;
   " show     Print the herd7 commands that would be run." ;
   " test     Compare the output of herd7 against .expected files." ;
-  " promote  Update .expected files to the output of herd7." ;
+  " promote  Update .expected and .expected-failure files to the output of herd7." ;
 ]
 
 let () =
