@@ -247,13 +247,15 @@ module Make
       | AArch64Base.Vreg (_,(nelem,_)) -> nelem
       | _ -> assert false
 
-      let neon_sz r = match r with
-      | AArch64Base.Vreg(_,(nelem,esize)) -> 
-          (match nelem * esize with
+      let neon_sz r =
+        let size = match r with 
+        | AArch64Base.Vreg(_,(0,esize)) -> esize
+        | AArch64Base.Vreg(_,(nelem,esize)) -> nelem * esize
+        | _ -> assert false in 
+        match size with
           | 64 -> MachSize.Quad
           | 128 -> MachSize.S128
-          | _ -> assert false)
-      | _ -> assert false
+          | _ -> assert false
 
 (******************)
 (* Memory Tagging *)
@@ -1236,8 +1238,7 @@ module Make
             let sz = neon_sz r1 in
             read_reg_neon_elem false r2 i2 ii >>= fun v -> write_reg_neon_elem sz r1 i1 v ii >>! B.Next
         | I_MOV_FG(r1,i,var,r2) ->
-            let sz = tr_variant var in 
-            let simd_sz = neon_sz r1 in
+            let sz = tr_variant var and simd_sz = neon_sz r1 in
             read_reg_ord_sz sz r2 ii >>= fun v -> write_reg_neon_elem simd_sz r1 i v ii >>! B.Next
         | I_MOV_TG(_,r1,r2,i) ->
             read_reg_neon_elem false r2 i ii >>= fun v -> write_reg r1 v ii >>! B.Next
