@@ -250,8 +250,10 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
       in
            Misc.lowercase inst_str
 
+    let user_mode = [] and kernel_mode = []
+
     let rec do_compile_ins tr_lab ins = match ins with
-   | I_NOP ->
+    | I_NOP ->
         { empty_ins with memo = "nop"; }
     | I_EFF_OP (inst, _, ea, op) as i ->
        begin

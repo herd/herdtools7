@@ -106,7 +106,7 @@ module RegMap = A.RegMap)
           | c::r -> c :: seq r in
         implode (seq (explode s))
 
-      let dump_inputs compile_val chan t trashed =
+      let dump_inputs args0 compile_val chan t trashed =
         let stable = RegSet.of_list t.Tmpl.stable in
         let all = Tmpl.all_regs t in
         let init_set =
@@ -169,7 +169,11 @@ module RegMap = A.RegMap)
               let v = A.V.zero in
               dump_pair reg v::k)
             rem [] in
-        let out =  (String.concat "," (ins@rem)) in
+        let args0 =
+          List.map
+            (fun (_,(tag,v)) -> sprintf "[%s] \"r\" (%s)" tag v)
+            args0.Template.inputs in
+        let out =  (String.concat "," (args0@ins@rem)) in
 (*        eprintf "IN: {%s}\n" out ; *)
         fprintf chan ":%s\n" out
 
@@ -177,7 +181,7 @@ module RegMap = A.RegMap)
 
       let pp_regs rs = String.concat "," (List.map A.reg_to_string (RegSet.elements rs))
 
-      let dump_outputs compile_addr compile_out_reg chan proc t trashed =
+      let dump_outputs args0 compile_addr compile_out_reg chan proc t trashed =
         let stable = RegSet.of_list t.Tmpl.stable in
         let final = RegSet.of_list t.Tmpl.final in
         if debug then
@@ -186,6 +190,9 @@ module RegMap = A.RegMap)
         let outs =
           String.concat ","
             (List.fold_right
+               (fun tr k -> sprintf "[%s] \"=&r\" (%s)" tr tr::k)
+               args0.Template.trashed
+             @@List.fold_right
                (match O.memory with
                | Memory.Direct ->
                    (fun a k -> sprintf "[%s] \"=m\" (%s)" a (compile_addr a)::k)
@@ -303,9 +310,13 @@ module RegMap = A.RegMap)
               (compile_out_reg proc reg) (dump_stable_reg reg))
           (RegSet.inter stable finals)
 
-      let before_dump compile_out_reg compile_val compile_cpy
+      let before_dump args0 compile_out_reg compile_val compile_cpy
           chan indent env proc t trashed =
-
+        begin match args0.Template.trashed with
+        | [] -> ()
+        | trs ->
+            fprintf chan "uint64_t %s;" (String.concat "," trs)
+        end ;
         let reg_env = Tmpl.get_reg_env A.error A.warn t in
         RegSet.iter
           (fun reg ->
@@ -333,7 +344,7 @@ module RegMap = A.RegMap)
             indent env proc t
         end
 
-      let do_dump compile_val compile_addr compile_cpy compile_out_reg
+      let do_dump args0 compile_val compile_addr compile_cpy compile_out_reg
           chan indent env proc t =
         let rec dump_ins k ts = match ts with
         | [] -> ()
@@ -354,7 +365,7 @@ module RegMap = A.RegMap)
  *)
             dump_ins (k+1) ts in
         let trashed = Tmpl.trashed_regs t in
-        before_dump
+        before_dump args0
          compile_out_reg compile_val compile_cpy chan indent env proc t trashed;
         fprintf chan "asm __volatile__ (\n" ;
         fprintf chan "\"\\n\"\n" ;
@@ -376,8 +387,8 @@ module RegMap = A.RegMap)
           fprintf chan "\"%s\\n\\t\"\n"
             (LangUtils.end_comment Tmpl.comment proc)
         end ;
-        dump_outputs compile_addr compile_out_reg chan proc t trashed ;
-        dump_inputs compile_val chan t trashed ;
+        dump_outputs args0 compile_addr compile_out_reg chan proc t trashed ;
+        dump_inputs args0 compile_val chan t trashed ;
         dump_clobbers chan t  ;
         fprintf chan ");\n" ;
         after_dump compile_out_reg chan indent proc t;
@@ -409,7 +420,7 @@ module RegMap = A.RegMap)
                 Tmpl.compile_presi_out_reg proc reg in
 
         do_dump
-          compile_val_inline compile_addr_inline
+          Template.no_extra_args compile_val_inline compile_addr_inline
           (fun x -> sprintf "_a->%s[_i]" (Tmpl.addr_cpy_name (Constant.as_address x) proc))
           compile_out_reg
           chan indent env proc t
@@ -450,7 +461,7 @@ module RegMap = A.RegMap)
           | _ -> k)
           [] t.Tmpl.init
 
-      let dump_fun chan env globEnv _volatileEnv proc t =
+      let dump_fun chan args0 env globEnv _volatileEnv proc t =
         if debug then debug_globEnv globEnv ;
         let ptevalEnv = extract_ptevals t in
         let labels = Tmpl.get_labels t in
@@ -473,6 +484,11 @@ module RegMap = A.RegMap)
               | Memory.Indirect ->
                   sprintf "%s **%s" ty x)
             addrs_proc in
+        let params0 =
+          List.map
+            (fun ((t,n),_) ->
+              sprintf "%s %s" (CType.dump t) n)
+          args0.Template.inputs in
         let ptes =
           List.map
             (fun x -> sprintf "pteval_t *%s" (Misc.add_pte x))
@@ -505,9 +521,10 @@ module RegMap = A.RegMap)
                 with Not_found -> assert false in
               let x = Tmpl.dump_out_reg proc x in
               sprintf "%s *%s" (CType.dump ty) x) t.Tmpl.final in
-        let params =  String.concat "," (labels@addrs@ptes@phys@ptevals@cpys@outs) in
+        let params =  String.concat "," (params0@labels@addrs@ptes@phys@ptevals@cpys@outs) in
         LangUtils.dump_code_def chan true proc params ;
         do_dump
+          args0
           (compile_init_val_fun ptevalEnv)
           compile_addr_fun
           (fun sym -> compile_cpy_fun proc (Constant.as_address sym))
@@ -564,7 +581,8 @@ module RegMap = A.RegMap)
         | Std -> compile_out_reg_call_std
         | Kvm|PreSi -> compile_out_reg_call_kvm env
 
-      let dump_call f_id _tr_idx chan indent env alignedEnv _volatileEnv proc t =
+      let dump_call f_id args0
+            _tr_idx chan indent env alignedEnv _volatileEnv proc t =
         let labels = List.map compile_label_call (Tmpl.get_labels t) in
         let addrs_proc,ptes = Tmpl.get_addrs t
         and phys = Tmpl.get_phys_only t in
@@ -589,7 +607,9 @@ module RegMap = A.RegMap)
             List.map (compile_cpy_addr_call proc) addrs_proc
           else []
         and outs = List.map (compile_out_reg_call env proc) t.Tmpl.final in
-        let args = String.concat "," (labels@addrs@ptevals@addrs_cpy@outs) in
+        let args =
+          String.concat ","
+            (args0@labels@addrs@ptevals@addrs_cpy@outs) in
         LangUtils.dump_code_call chan indent f_id args
 
     end

@@ -89,6 +89,8 @@ module Make(V:Constant.S) =
             let m,i = compile_roi roi in
             add_par (reg_to_string r ^ "+" ^ m),r::i,[r,type_vo vo]
 
+    let user_mode = []
+    and kernel_mode = []
 
     let compile_ins tr_lab ins k = match ins with
     | Pld (r,a,["once"]) ->

@@ -416,7 +416,7 @@ type P.code = MiscParser.proc * A.pseudo list)
             ins @ k in
       do_rec StringSet.empty code
 
-    let compile_code code =
+    let compile_code user code =
       let code = compile_pseudo_code code [] in
       let code =
         if O.timeloop > 0 then C.emit_loop code
@@ -424,8 +424,8 @@ type P.code = MiscParser.proc * A.pseudo list)
       let code = match O.barrier with
       | Barrier.TimeBase -> (* C.emit_tb_wait *) code
       | _ -> code  in
-
-      code
+      if user then C.user_mode@code@C.kernel_mode
+      else code
 
 
     module RegSet = A.RegSet
@@ -522,7 +522,7 @@ type P.code = MiscParser.proc * A.pseudo list)
 
     let compile_final _proc observed = RegSet.elements observed
 
-    let mk_templates ty_env name stable_info init code observed =
+    let mk_templates procs_user ty_env name stable_info init code observed =
       let outs =
         List.map
           (fun (proc,code) ->
@@ -530,7 +530,9 @@ type P.code = MiscParser.proc * A.pseudo list)
             let nnops = count_nop code in
             let addrs = extract_addrs code in
             let stable = stable_regs code in
-            let code = compile_code code in
+            let code =
+              compile_code
+                (List.exists (Proc.equal proc) procs_user) code in
             proc,addrs,stable,code,nrets,nnops)
           code in
       let pecs = outs in
@@ -680,7 +682,10 @@ type P.code = MiscParser.proc * A.pseudo list)
               | Some r -> r::k)
               [] rs in
           A.RegSet.of_list rs in
-      let code = mk_templates ty_env1 name stable_info initenv code observed in
+      let procs_user = ProcsUser.get info in
+      let code =
+        mk_templates
+          procs_user ty_env1 name stable_info initenv code observed in
       let bellinfo =
         let open MiscParser in
         match extra_data with

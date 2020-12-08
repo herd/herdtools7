@@ -286,6 +286,10 @@ let fold_bool f k =  f true (f false k)
 (******************)
 (* List utilities *)
 (******************)
+let nilp = function
+  | [] -> true
+  | _::_ -> false
+
 let consp = function
   | [] -> false
   | _::_ -> true

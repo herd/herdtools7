@@ -111,6 +111,8 @@ module Make(V:Constant.S)(C:Arch_litmus.Config) =
 
     let emit_loop _k = assert false
 
+    let user_mode = [] and kernel_mode = []
+
     let compile_ins tr_lab ins k = match ins with
     | NOP -> { empty_ins with memo = "nop"; }::k
     | LI (r,i) -> li r i::k
