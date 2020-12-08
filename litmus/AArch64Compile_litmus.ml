@@ -580,6 +580,18 @@ module Make(V:Constant.S)(C:Config) =
 (* Not that useful *)
     let emit_loop _k = assert false
 
+    let user_mode =
+      let ins =
+        ["msr sp_el0,%[sp_usr]";
+         "adr %[tr0],9f";
+         "msr elr_el1,%[tr0]";
+         "msr spsr_el1,xzr";
+         "eret";
+         "9:"] in
+      List.map (fun s -> { empty_ins with memo=s;}) ins
+
+    let kernel_mode = [{ empty_ins with memo="svc #471"}]
+
     let compile_ins tr_lab ins k = match ins with
     | I_NOP -> { empty_ins with memo = "nop"; }::k
 (* Branches *)

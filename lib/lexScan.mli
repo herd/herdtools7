@@ -15,6 +15,8 @@
 (****************************************************************************)
 
 (** Miscellaneous lexers *)
+exception Error
 
 val is_num : string -> bool
 val info : string -> (string * string) option
+val procs : string -> Proc.t list

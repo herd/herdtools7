@@ -207,6 +207,8 @@ module Make(V:Constant.S)(C:Config) =
       let memo = sprintf "%s %s" memo (emit_opt o) in
       { empty_ins with memo =memo; }
 
+    let user_mode = [] and kernel_mode = []
+
     let compile_ins tr_lab ins k = match ins with
     | I_NOP -> { empty_ins with memo = "nop"; }::k
 (* Arithmetic *)

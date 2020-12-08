@@ -352,6 +352,13 @@ module Make
         O.o "}" ;
         O.o ""
 
+(* User mode *)
+      let dump_user_stacks procs_user = match procs_user with
+        | [] -> ()
+        | _::_ ->
+            Insert.insert O.o "kvm_user_stacks.c" ;
+            O.o ""
+
 (* Cache *)
       let dump_cache_def () =
         if have_cache then begin
@@ -1073,10 +1080,17 @@ module Make
         Array.to_list tr
 
 (* Thread code, as functions *)
-      let dump_thread_code env (proc,(out,(_outregs,envVolatile)))  =
+      let dump_thread_code
+            procs_user env (proc,(out,(_outregs,envVolatile)))  =
         let myenv = U.select_proc proc env
         and global_env = U.select_global env in
-        Lang.dump_fun O.out myenv global_env envVolatile proc out
+        let args0 =
+          let open Template in
+          if List.exists (Proc.equal proc) procs_user then
+            { trashed=["tr0"];
+              inputs=[(CType.word,"cpu"),("sp_usr","user_stack[cpu]")];}
+          else no_extra_args in
+        Lang.dump_fun O.out args0 myenv global_env envVolatile proc out
 
 (* Untouched variables, per thread + responsability *)
       let part_vars test =
@@ -1092,9 +1106,10 @@ module Make
         let vss = List.map2 (@) rems vs in
         List.combine rems (responsible vss)
 
-      let dump_run_thread faults
+      let dump_run_thread procs_user faults
           pte_init env test _some_ptr stats global_env
           (_vars,inits) (proc,(out,(_outregs,envVolatile)))  =
+        let user_mode = List.exists (Proc.equal proc) procs_user in
         if dbg then eprintf "P%i: inits={%s}\n" proc (String.concat "," inits) ;
         let have_faults = have_fault_handler && Misc.consp faults in
         let my_regs = U.select_proc proc env in
@@ -1204,9 +1219,11 @@ module Make
         end ;
         (* Dump code *)
         if do_ascall then begin
-          Lang.dump_call
-            (LangUtils.code_fun proc) (fun _ s -> s)
-            O.out (Indent.as_string Indent.indent2)
+            Lang.dump_call
+              (LangUtils.code_fun proc)
+              (if user_mode then ["_c->id"] else [])
+              (fun _ s -> s)
+              O.out (Indent.as_string Indent.indent2)
             my_regs global_env envVolatile proc out
         end else begin
           Lang.dump
@@ -1315,7 +1332,7 @@ module Make
         O.oii "break; }" ;
         ()
 
-      let dump_run_def env test some_ptr stats  =
+      let dump_run_def env test some_ptr stats procs_user =
         let faults = U.get_faults test in
         O.o "/*************/" ;
         O.o "/* Test code */" ;
@@ -1323,7 +1340,7 @@ module Make
         O.o "" ;
         if do_ascall then begin
           List.iter
-            (dump_thread_code  env)
+            (dump_thread_code procs_user env)
             test.T.code
         end ;
         O.o "inline static int do_run(thread_ctx_t *_c, param_t *_p,global_t *_g) {" ;
@@ -1382,7 +1399,8 @@ module Make
         let global_env = U.select_global env
         and pte_init = get_pte_init test.T.init in
         List.iter2
-          (dump_run_thread faults pte_init env test some_ptr stats global_env)
+          (dump_run_thread
+             procs_user faults pte_init env test some_ptr stats global_env)
           (part_vars test)
           test.T.code ;
         O.oi "}" ;
@@ -1642,7 +1660,7 @@ module Make
         O.o "}" ;
         O.o ""
 
-      let dump_zyva_def tname env test db stats =
+      let dump_zyva_def tname env test db stats procs_user =
         O.o "/*******************/" ;
         O.o "/* Forked function */" ;
         O.o "/*******************/" ;
@@ -1666,9 +1684,15 @@ module Make
           | Some ha,Some hd ->
               O.fi "set_hahd_bits(0b%c%c);" hd ha
           | _,_ -> ()
+          end ;
+        if Misc.consp procs_user then begin
+            O.oi "set_user_stack(id);"
         end ;
         if Cfg.is_kvm && have_fault_handler then begin
-          O.oi "install_fault_handler();"
+            if Misc.consp procs_user then begin
+                O.o "/* Fault handlers installation depends on user stacks */"
+            end ;
+            O.oi "install_fault_handler(id);"
         end ;
         if not Cfg.is_kvm then begin
           O.oi
@@ -1719,9 +1743,9 @@ module Make
 (***************)
 (* Entry point *)
 (***************)
-
       let dump doc test =
-        let db = DirtyBit.get test.T.info in
+        let db = DirtyBit.get test.T.info
+        and procs_user = ProcsUser.get test.T.info in
         ObjUtil.insert_lib_file O.o "header.txt" ;
         dump_header test ;
         dump_delay_def () ;
@@ -1730,6 +1754,7 @@ module Make
         dump_cache_def () ;
         dump_barrier_def () ;
         dump_topology test ;
+        dump_user_stacks procs_user ;
         let env = U.build_env test in
         let stats = get_stats test in
         let some_ptr = dump_outcomes env test in
@@ -1739,8 +1764,8 @@ module Make
         dump_hash_def doc.Name.name env test ;
         dump_set_feature test db ;
         dump_instance_def env test ;
-        dump_run_def env test some_ptr stats ;
-        dump_zyva_def doc.Name.name env test db stats ;
+        dump_run_def env test some_ptr stats procs_user ;
+        dump_zyva_def doc.Name.name env test db stats procs_user ;
         dump_prelude_def doc test ;
         if Cfg.is_kvm then begin
           let open DirtyBit in

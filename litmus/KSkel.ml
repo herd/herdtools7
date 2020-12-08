@@ -510,7 +510,8 @@ let dump_threads _tname env test =
   List.iter
     (fun (proc,(out,(_outregs,envVolatile))) ->
       let myenv = U.select_proc proc env in
-      Lang.dump_fun O.out myenv global_env envVolatile proc out ;
+      Lang.dump_fun O.out Template.no_extra_args
+        myenv global_env envVolatile proc out ;
       O.f "static int thread%i(void *_p) {" proc ;
       O.oi "ctx_t *_a = (ctx_t *)_p;" ;
       O.o "" ;
@@ -529,7 +530,7 @@ let dump_threads _tname env test =
           sprintf "%s %% %s" idx spinsize
       | Some _|None -> idx in
       Lang.dump_call (LangUtils.code_fun proc)
-        tr_idx O.out (Indent.as_string indent3)
+        [] tr_idx O.out (Indent.as_string indent3)
         myenv global_env envVolatile proc out ;
       O.oii "}" ;
       O.oi "}" ;

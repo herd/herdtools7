@@ -234,6 +234,8 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
        emit_lbl lbl2;
        jcc no_tr C_GT lbl1;]
 
+    let user_mode = [] and kernel_mode = []
+
     let rec do_compile_ins tr_lab ins = match ins with
     | I_NOP ->
         { empty_ins with memo = "nop"; }

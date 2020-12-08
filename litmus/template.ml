@@ -47,6 +47,11 @@ module DefaultConfig = struct
   let mode = Mode.Std
 end
 
+type extra_args =
+  { trashed: string list;
+    inputs: ((CType.t * string) * (string * string)) list; }
+
+let no_extra_args = { trashed=[]; inputs=[];}
 
 module type S = sig
   module V : Constant.S

@@ -101,6 +101,7 @@ val fold_bool : (bool -> 'a -> 'a) -> 'a -> 'a
 
 
 (* Some useful function on lists *)
+val nilp : 'a list -> bool
 val consp : 'a list -> bool
 val cons : 'a -> 'a list -> 'a list
 val last : 'a list -> 'a

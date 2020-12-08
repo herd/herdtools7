@@ -82,7 +82,7 @@ module Make(C:Config)(E:Extra) = struct
     and ty = out_type env x in
     sprintf "%s*" (CType.dump ty),outname
 
-  let dump_fun chan env globEnv _envVolatile proc t =
+  let dump_fun chan _args0 env globEnv _envVolatile proc t =
 (*
   let pp_env =
   String.concat "; "
@@ -119,7 +119,7 @@ module Make(C:Config)(E:Extra) = struct
     out "}\n\n"
 
 
-  let dump_call f_id tr_idx chan indent _env globEnv _envVolatile proc t =
+  let dump_call f_id args0 tr_idx chan indent _env globEnv _envVolatile proc t =
     let is_array_of a =
       try  match List.assoc a globEnv with
       | CType.Array (t,_) -> Some t
@@ -145,7 +145,7 @@ module Make(C:Config)(E:Extra) = struct
             List.map
               (fun x -> sprintf "&%s" (E.out_ctx (CTarget.compile_out_reg proc x)))
               t.CTarget.finals in
-          let args = String.concat "," (global_args@out_args) in
+          let args = String.concat "," (args0@global_args@out_args) in
           LangUtils.dump_code_call chan indent f_id args
 
 

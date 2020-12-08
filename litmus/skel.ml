@@ -1729,7 +1729,8 @@ module Make
             let myenv = U.select_proc proc env
             and global_env = U.select_global env in
             if do_ascall then begin
-              Lang.dump_fun O.out myenv global_env envVolatile proc out
+                Lang.dump_fun O.out
+                  Template.no_extra_args myenv global_env envVolatile proc out
             end ;
             let  do_collect =  do_collect_local && (do_safer || proc=0) in
             O.f "static void *P%i(void *_vb) {" proc ;
@@ -1935,7 +1936,7 @@ module Make
               let f_id =
                 if do_self then LangUtils.code_fun_cpy proc else
                 LangUtils.code_fun proc in
-              Lang.dump_call f_id (fun _ s -> s) else Lang.dump)
+              Lang.dump_call f_id [] (fun _ s -> s) else Lang.dump)
               O.out (Indent.as_string iloop) myenv aligned_env envVolatile proc out ;
             if do_verbose_barrier && have_timebase  then begin
               if do_timebase then begin

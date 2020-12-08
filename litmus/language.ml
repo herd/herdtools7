@@ -22,6 +22,7 @@ module type S = sig
 (* Function dump *)
   val dump_fun :
     out_channel ->
+    Template.extra_args ->
     CType.t RegMap.t ->
     (string * CType.t) list ->
     string list ->
@@ -31,6 +32,7 @@ module type S = sig
 
   val dump_call :
     string ->
+    string list ->
     (CType.t -> string -> string) ->
     out_channel ->
     string ->
