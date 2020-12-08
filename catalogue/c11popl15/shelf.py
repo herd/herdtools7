@@ -8,7 +8,6 @@ cats = \
 cfgs = [
     "cfgs/c11web.cfg",
     "cfgs/cpp11.cfg",
-    "c11popl15/c11popl15.cfg",
     "c11.cfg",
 ]
 

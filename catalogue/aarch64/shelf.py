@@ -14,7 +14,7 @@ cfgs = [
     "cfgs/new-web.cfg",
 ]
 
-illustrative_tests = [    
+illustrative_tests = [
     "tests/MP.litmus",
     "tests/MP+dmb.sy+po.litmus",
     "tests/MP+dmb.sys.litmus",
@@ -39,11 +39,11 @@ illustrative_tests = [
     "tests/LB+rel+BEQ.litmus",
     "tests/LB+rel+BEQ2.litmus",
     "tests/LB+rel+BEQ3.litmus",
-    "tests/LB+rel+BEQ4.litmus",
+    "tests/LB+BEQ4.litmus",
     "tests/LB+rel+CSEL.litmus",
     "tests/LB+rel+CSEL2.litmus",
     "tests/LB+rel+CSEL3.litmus",
-    "tests/LB+rel+CSEL4.litmus",
+    "tests/LB+CSEL4.litmus",
     "tests/CAS+data1.litmus",
     "tests/CAS+data2.litmus",
 ]

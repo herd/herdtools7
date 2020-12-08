@@ -38,9 +38,9 @@ illustrative_tests = [
     "tests/ledzep.litmus",
     "tests/mp.litmus",
     "tests/mp+lw+dep.litmus",
-    "tests/mp-mit-scopes+fcta+fgpu.litmus"
-    "tests/mp-mit-scopes+fgpu+fsys.litmus"
-    "tests/mp-mit-scopes+fgpus.litmus"
+    "tests/mp-mit-scopes+fcta+fgpu.litmus",
+    "tests/mp-mit-scopes+fgpu+fsys.litmus",
+    "tests/mp-mit-scopes+fgpus.litmus",
     "tests/mp-mit-scopes.litmus",
     "tests/mp-plain.litmus",
     "tests/mp-special+branch.litmus",
