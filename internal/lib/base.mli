@@ -61,6 +61,9 @@ module Option : sig
    *  It raises [Invalid_argument] if [o] is [None]. *)
   val get : 'a t -> 'a
 
+  (** [value o ~default] is [v] if [o] is [Some v] and [default] otherwise. *)
+  val value : 'a option -> default:'a -> 'a
+
   (** [compare c x y] compares [x] and [y]. [None] is smaller than [Some _]. If
    *  they are both [Some _] their elements are compared with function [c]. *)
   val compare : ('a -> 'a -> int) -> 'a option -> 'a option -> int

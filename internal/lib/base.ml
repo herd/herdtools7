@@ -62,6 +62,11 @@ module Option = struct
     | None -> invalid_arg "option is None"
     | Some v -> v
 
+  let value o ~default =
+    match o with
+    | None -> default
+    | Some v -> v
+
   let compare cf a b =
     match a, b with
     | None, None -> 0
