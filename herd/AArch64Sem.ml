@@ -189,6 +189,12 @@ module Make
         M.op Op.And mask new_val >>= fun (v1,v2) ->
         M.op Op.Or v1 v2
 
+      let rec neon_set_all_elem old_val nelem esize v = match nelem with
+      | 0 -> neon_setlane old_val 0 esize v
+      | _ -> 
+        neon_setlane old_val nelem esize v >>= fun old_val -> 
+        neon_set_all_elem old_val (nelem-1) esize v 
+
       let write_reg_neon_sz sz r v ii =
         if not neon then Warn.user_error "Advanced SIMD instructions require -variant neon" ;
         let vr = match r with 
@@ -207,6 +213,11 @@ module Make
           read_reg_neon false r ii >>=
           fun old_val -> neon_setlane old_val idx esize v >>= fun new_val ->
           write_reg_neon_sz sz r new_val ii
+      | _ -> assert false
+
+      let write_reg_neon_all_elem sz r v ii = match r with
+      | AArch64Base.Vreg (_,(nelem,esize)) ->
+        neon_set_all_elem v nelem esize v >>= fun new_val -> write_reg_neon_sz sz r new_val ii
       | _ -> assert false
 
       let write_reg_sz sz r v ii = match r with
@@ -895,8 +906,8 @@ module Make
 
       let movi_v r k shift ii =
         let open AArch64Base in
-        let sz = neon_sz r in
-        let esize = neon_esize r in 
+        let sz = neon_sz r and
+        esize = neon_esize r in 
         begin match esize, shift with
         | 8, S_NOEXT | 16, S_NOEXT | 32, S_NOEXT | 64, S_NOEXT | 128, S_NOEXT ->
           M.unitT (V.intToV k)
@@ -916,7 +927,7 @@ module Make
             (pp_barrel_shift "," s pp_imm)
             esize
         end
-          >>= (fun v -> write_reg_neon_sz sz r v ii)
+          >>= (fun v ->  write_reg_neon_all_elem sz r v ii)
           >>! B.Next
 
       let movi_s var r k ii =
@@ -1235,11 +1246,10 @@ module Make
 
         (* Neon operations *)
         | I_MOV_VE(r1,i1,r2,i2) ->
-            let sz = neon_sz r1 in
-            read_reg_neon_elem false r2 i2 ii >>= fun v -> write_reg_neon_elem sz r1 i1 v ii >>! B.Next
+            read_reg_neon_elem false r2 i2 ii >>= fun v -> write_reg_neon_elem MachSize.S128 r1 i1 v ii >>! B.Next
         | I_MOV_FG(r1,i,var,r2) ->
-            let sz = tr_variant var and simd_sz = neon_sz r1 in
-            read_reg_ord_sz sz r2 ii >>= fun v -> write_reg_neon_elem simd_sz r1 i v ii >>! B.Next
+            let sz = tr_variant var  in
+            read_reg_ord_sz sz r2 ii >>= fun v -> write_reg_neon_elem MachSize.S128 r1 i v ii >>! B.Next
         | I_MOV_TG(_,r1,r2,i) ->
             read_reg_neon_elem false r2 i ii >>= fun v -> write_reg r1 v ii >>! B.Next
         | I_MOV_V(r1,r2) ->
