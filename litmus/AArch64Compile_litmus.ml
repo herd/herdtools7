@@ -723,33 +723,33 @@ module Make(V:Constant.S)(C:Config) =
 
     let mov_simd_ve r1 i1 r2 i2 =
       { empty_ins with
-        memo = sprintf "mov %s[%i], %s[%i]" (print_simd_reg "o" 0 0 r1) i1 (print_simd_reg "o" 0 1 r2) i2;
-        inputs = [];
-        outputs = [r1;r2;];
+        memo = sprintf "mov %s[%i], %s[%i]" (print_simd_reg "o" 0 0 r1) i1 (print_simd_reg "i" 0 0 r2) i2;
+        inputs = [r2];
+        outputs = [r1];
         reg_env = (add_128 [r1;r2;]);}
 
     let mov_simd_v r1 r2 =
       { empty_ins with
-        memo = sprintf "mov %s, %s" (print_simd_reg "o" 0 0 r1) (print_simd_reg "o" 0 1 r2);
-        inputs = [];
-        outputs = [r1;r2;];
+        memo = sprintf "mov %s, %s" (print_simd_reg "o" 0 0 r1) (print_simd_reg "i" 0 0 r2);
+        inputs = [r2];
+        outputs = [r1];
         reg_env = (add_128 [r1;r2]);}
 
     let mov_simd_s v r1 r2 i =
       { empty_ins with
-        memo = sprintf "mov %s, %s[%i]" (print_vecreg v "o" 0) (print_simd_reg "o" 0 1 r2) i;
-        inputs = [];
-        outputs = [r1;r2;];
+        memo = sprintf "mov %s, %s[%i]" (print_vecreg v "o" 0) (print_simd_reg "i" 0 0 r2) i;
+        inputs = [r2];
+        outputs = [r1];
         reg_env = (add_128 [r1;r2])}
 
     let mov_simd_tg v r1 r2 i =
       { empty_ins with
         memo = sprintf "mov %s, %s[%i]"
           (match v with | V32 -> "^wo0" | V64 -> "^o0" | V128 -> assert false)
-          (print_simd_reg "o" 0 1 r2)
+          (print_simd_reg "i" 0 0 r2)
           i;
-        inputs = [];
-        outputs = [r1;r2;];
+        inputs = [r2];
+        outputs = [r1];
         reg_env = ((match v with
           | V32 -> add_w
           | V64 -> add_q
@@ -761,9 +761,9 @@ module Make(V:Constant.S)(C:Config) =
         memo = sprintf "mov %s[%i],%s"
           (print_simd_reg "o" 0 0 r1)
           i
-          (match v with | V32 -> "^wo1" | V64 -> "^o1" | V128 -> assert false);
-        inputs = [];
-        outputs = [r1;r2;];
+          (match v with | V32 -> "^wi0" | V64 -> "^i0" | V128 -> assert false);
+        inputs = [r2];
+        outputs = [r1];
         reg_env = (add_128 [r1;]) @ ((
           match v with
           | V32 -> add_w
