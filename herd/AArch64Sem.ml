@@ -864,6 +864,14 @@ module Make
 
       let get_ea_noext rs kr ii = get_ea rs kr AArch64.S_NOEXT ii
 
+      let post_kr rA addr kr ii =
+        let open AArch64Base in
+        let get_k = match kr with
+        | K k -> M.unitT (V.intToV k)
+        | RV(_,rO) -> read_reg_ord rO ii in
+        get_k >>= fun k -> M.add addr k >>= fun new_addr ->
+        write_reg rA new_addr ii
+
       let ldr sz rd rs kr s ii = (* load *)
         do_ldr sz AArch64.N
           (fun ac a -> do_read_mem sz AArch64.N aexp ac rd a ii)
