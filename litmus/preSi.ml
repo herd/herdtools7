@@ -254,7 +254,6 @@ module Make
       let dump_loc_tag = function
         | A.Location_reg (proc,reg) -> A.Out.dump_out_reg proc reg
         | A.Location_global s -> s
-        | A.Location_deref (s,i) -> sprintf "%s_%i" s i
 
       let does_pad t =
         let open CType in
@@ -790,7 +789,7 @@ module Make
           let to_collect =
             A.LocSet.filter
               (fun loc -> match loc with
-              | A.Location_global s|A.Location_deref (s,_) ->
+              | A.Location_global s ->
                   StringSet.mem s to_collect
               | A.Location_reg _ -> false)
               (U.get_displayed_locs test) in

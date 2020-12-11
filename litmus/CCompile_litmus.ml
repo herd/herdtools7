@@ -92,7 +92,6 @@ module Make
         A.LocMap.fold
           (fun loc t env -> match loc with
           | A.Location_global a -> StringMap.add a t env
-          | A.Location_deref _ -> assert false
           | A.Location_reg _ -> env)
           env StringMap.empty in
       let env =

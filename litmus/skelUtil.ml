@@ -159,17 +159,9 @@ module Make
         e
 *)
 
-      let do_find_type loc env =
+      let find_type loc (env,_) =
         try A.LocMap.find loc env
         with Not_found -> Compile.base
-
-      let find_type loc (env,_) = match loc with
-      | A.Location_deref (s,_) ->
-          begin match do_find_type (A.Location_global s) env with
-          | CType.Array (t,_) -> CType.Base t
-          | _ -> Warn.user_error "Non array %s refered as array" s
-          end
-      | _ -> do_find_type loc env
 
       let is_aligned loc (_,env) =
         try ignore (StringMap.find loc env) ; true with Not_found -> false
@@ -195,8 +187,7 @@ module Make
         select_types_reg
           (function
             | A.Location_reg (q,reg) when p = q -> Some reg
-            | A.Location_global _ | A.Location_reg _ -> None
-            | A.Location_deref _ -> assert false)
+            | A.Location_global _ | A.Location_reg _ -> None)
           env
 
       let select_types f (env,_) =
@@ -210,7 +201,6 @@ module Make
         select_types
           (function
             | A.Location_reg _ -> None
-            | A.Location_deref _ -> assert false
             | A.Location_global loc -> Some loc)
           env
 
@@ -218,7 +208,6 @@ module Make
         select_types
           (function
             | A.Location_reg _ -> None
-            | A.Location_deref _ -> assert false
             | A.Location_global loc ->
                 if is_aligned loc env then Some loc else None)
           env
@@ -229,7 +218,6 @@ module Make
       let pp_loc tr_out loc =  match loc with
       | A.Location_reg (proc,reg) -> tr_out (sprintf "%i:%s" proc (A.pp_reg reg))
       | A.Location_global s -> sprintf "%s" s
-      | A.Location_deref (s,i) -> sprintf "%s[%i]" s i
 
       let register_type _loc t = t (* Systematically follow given type *)
 
@@ -261,7 +249,7 @@ module Make
       let filter_globals locs =
         A.LocSet.fold
           (fun a k -> match a with
-          | A.Location_global a|A.Location_deref (a,_) -> StringSet.add a k
+          | A.Location_global a -> StringSet.add a k
           | A.Location_reg _ -> k)
           locs StringSet.empty
 

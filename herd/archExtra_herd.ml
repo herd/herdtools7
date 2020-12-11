@@ -266,7 +266,6 @@ module Make(C:Config) (I:I) : S with module I = I
         | Location_reg (proc,r) ->
             tr (string_of_int proc ^ ":" ^ I.pp_reg r)
         | Location_global a -> do_brackets (pp_global a)
-        | Location_deref (a,idx) -> Printf.sprintf "%s[%i]" (pp_global a) idx
 
       let dump_location = do_dump_location Misc.identity
 
@@ -277,11 +276,10 @@ module Make(C:Config) (I:I) : S with module I = I
           if C.texmacros
           then "\\asm{Proc " ^ bodytext ^ "}" else bodytext
       | Location_global a -> do_brackets (pp_global a)
-      | Location_deref (a,idx) ->  Printf.sprintf "%s[%i]" (pp_global a) idx
 
       let undetermined_vars_in_loc l =  match l with
       | Location_reg _ -> None
-      | Location_global a|Location_deref (a,_) ->
+      | Location_global a ->
           if I.V.is_var_determined a then None
           else Some a
 
@@ -290,13 +288,10 @@ module Make(C:Config) (I:I) : S with module I = I
       | Location_reg _ -> l
       | Location_global a ->
           Location_global (I.V.simplify_var soln a)
-      | Location_deref (a,idx) ->
-          Location_deref (I.V.simplify_var soln a,idx)
 
       let map_loc fv loc = match loc with
       | Location_reg _ -> loc
       | Location_global a -> Location_global (fv a)
-      | Location_deref (a,idx) -> Location_deref (fv a,idx)
 
 (*********)
 (* Fault *)

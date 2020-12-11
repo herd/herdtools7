@@ -40,7 +40,7 @@ end = struct
         (function
           | Location_global _,_ -> true
           | Location_reg _,_ -> false
-          | (Location_sreg _|Location_deref _),_ ->
+          | Location_sreg _,_ ->
               Warn.fatal "wrong location in init")
         st in
     String.concat " "

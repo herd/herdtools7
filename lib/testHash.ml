@@ -69,8 +69,6 @@ let digest_init debug init =
     | Location_reg (i,r) -> Printf.sprintf "%i:%s" i r
     | Location_sreg s -> s
     | Location_global v -> ParsedConstant.pp_v v
-    | Location_deref (v,i) ->
-        Printf.sprintf "%s[%i]" (ParsedConstant.pp_v v) i
   in
 
   let pp =

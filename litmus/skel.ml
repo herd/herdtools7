@@ -303,8 +303,6 @@ module Make
       let dump_loc_name loc =  match loc with
       | A.Location_reg (proc,reg) -> A.Out.dump_out_reg proc reg
       | A.Location_global s -> s
-      | A.Location_deref (s,i) -> sprintf "%s_%i" s i
-
 
       let dump_loc_copy loc = "_" ^ dump_loc_name loc ^ "_i"
       let dump_loc_param loc = "_" ^ dump_loc_name loc
@@ -318,13 +316,6 @@ module Make
               sprintf "%s%s[_i]" pref s
           | Indirect ->
               sprintf "*(%s%s[_i])" pref s
-          end
-      | A.Location_deref (s,idx) ->
-          begin match memory with
-          | Direct ->
-              sprintf "%s%s[_i][%i]" pref s idx
-          | Indirect ->
-              sprintf "(*(%s%s[_i]))[%i]" pref s idx
           end
 
       let dump_loc = dump_ctx_loc ""
@@ -2176,7 +2167,6 @@ module Make
           let loc_arrays =
             A.LocSet.fold
               (fun loc k -> match loc with
-              | A.Location_deref (s,_) -> StringSet.add s  k
               | A.Location_global s ->
                   let t = U.find_type loc env in
                   let t = CType.strip_attributes t in
@@ -2221,12 +2211,7 @@ module Make
                   O.fiii "%s %s = %s;"
                     (CType.dump t)
                     (dump_loc_copy loc)
-                    (let loc = match loc with
-                    | A.Location_deref (s,idx) ->
-                        sprintf "%s[%i]"
-                          (dump_loc_copy (A.Location_global s))
-                          idx
-                    | _ -> dump_ctx_loc "ctx." loc in
+                    (let loc =  dump_ctx_loc "ctx." loc in
                     U.do_load t loc)
               end ;
               if Cfg.cautious then O.oiii "mcautious();")

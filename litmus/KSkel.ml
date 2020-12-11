@@ -79,7 +79,6 @@ module Make
     let dump_loc_name loc =  match loc with
     | A.Location_reg (proc,reg) -> A.Out.dump_out_reg proc reg
     | A.Location_global s -> s
-    | A.Location_deref (s,i) -> sprintf "%s_%i" s i
 
     module DC =
       CompCond.Make(O)

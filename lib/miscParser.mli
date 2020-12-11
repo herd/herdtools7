@@ -31,7 +31,6 @@ type location =
   | Location_reg of int * reg
   | Location_sreg of string (** symbolic register *)
   | Location_global of maybev
-  | Location_deref of maybev * int
 
 val location_compare : location -> location -> int
 val dump_location : location -> string
