@@ -72,18 +72,20 @@ and type pseudo = A.pseudo
   | Location_sreg reg  ->
       let p,r = f_reg reg in A.Location_reg (p,r)
 
+  let finish_rval f_reg = ConstrGen.map_rloc (finish_location f_reg)
+
   let finish_state_atom f_reg (loc,(t,v)) =
     finish_location f_reg loc, (t,A.maybevToV v)
 
   let finish_state f_reg = List.map (finish_state_atom f_reg)
 
-  let finish_locations f_reg =
-    List.map (fun (loc,t) -> finish_location f_reg loc,t)
+  let finish_rvals f_reg =
+    List.map (fun (loc,t) -> finish_rval f_reg loc,t)
 
   let finish_atom f_reg a =
     let open ConstrGen in
     match a with
-    | LV (loc,v) -> LV (finish_location f_reg loc, A.maybevToV v)
+    | LV (loc,v) -> LV (finish_rval f_reg loc, A.maybevToV v)
     | LL (l1,l2) -> LL (finish_location f_reg l1,finish_location f_reg l2)
     | FF (p,v) -> FF (p,A.maybevToV v)
 
@@ -144,10 +146,12 @@ and type pseudo = A.pseudo
 
   let collect_state = List.fold_right collect_state_atom
 
+  let collect_rloc = ConstrGen.fold_rloc collect_location
+
   let collect_atom a =
     let open ConstrGen in
     match a with
-    | LV (loc,_) -> collect_location loc
+    | LV (rloc,_) -> collect_rloc rloc
     | LL (loc1,loc2) ->
         fun c -> collect_location loc1 (collect_location loc2 c)
     | FF _ -> Misc.identity
@@ -160,7 +164,7 @@ and type pseudo = A.pseudo
 
   let collect_constr = ConstrGen.fold_constr collect_atom
 
-  let collect_locs = List.fold_right (fun (loc,_) -> collect_location loc)
+  let collect_rlocs = List.fold_right (fun (loc,_) -> collect_rloc loc)
 
 (*********************************************)
 (* Here we go: collect, allocate, substitute *)
@@ -183,7 +187,7 @@ and type pseudo = A.pseudo
     let regs,symbs =
       collect_filter test.filter
       (collect_constr final
-         (collect_locs locs
+         (collect_rlocs locs
 	    (collect_state initial
 	       (ProcRegSet.empty,StringSet.empty))))
     in
@@ -259,7 +263,7 @@ and type pseudo = A.pseudo
       prog = prog;
       filter = finish_filter replace filter;
       condition = finish_constr replace final;
-      locations = finish_locations replace locs;
+      locations = finish_rvals replace locs;
     }
 
 end

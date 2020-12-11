@@ -28,10 +28,12 @@ end =
 
     let perm_state p = List.map (perm_state_atom p)
 
-    let perm_locations p = perm_state p
+    let perm_rloc p = ConstrGen.map_rloc (perm_location p)
+
+    let perm_locations p = List.map (fun (rloc,v) -> perm_rloc p rloc,v)
 
     let perm_atom p a = match a with
-    | LV (loc,v) -> LV (perm_location p loc,v)
+    | LV (loc,v) -> LV (perm_rloc p loc,v)
     | LL (l1,l2) -> LL (perm_location p l1,perm_location p l2)
     | FF ((i,lbls),x) -> FF ((p.(i),lbls),x)
 

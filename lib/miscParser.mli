@@ -85,7 +85,7 @@ type ('i, 'p, 'prop, 'loc) result =
       prog : 'p ;
       filter : 'prop option ;
       condition : 'prop ConstrGen.constr ;
-      locations : ('loc * run_type) list ;
+      locations : ('loc ConstrGen.rloc * run_type) list ;
       extra_data : extra_data ;
     }
 

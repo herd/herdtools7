@@ -65,11 +65,13 @@ end = struct
 *)
   open MiscParser
 
-  let dump_loc_type (loc,t) = match t with
-  | TyDef -> I.dump_location loc ^";"
-  | TyDefPointer -> I.dump_location loc ^"*;"
-  | Ty t -> sprintf "%s %s;" (I.dump_location loc) t
-  | Pointer t -> sprintf "%s %s*;" (I.dump_location loc) t
+  let dump_rloc = ConstrGen.dump_rloc I.dump_location
+
+  let dump_loc_type (rloc,t) = match t with
+  | TyDef -> dump_rloc rloc ^";"
+  | TyDefPointer -> dump_rloc rloc ^"*;"
+  | Ty t -> sprintf "%s %s;" (dump_rloc rloc) t
+  | Pointer t -> sprintf "%s %s*;" (dump_rloc rloc) t
   | TyArray _|Atomic _ -> assert false (* No arrays nor atomics in locations *)
   let dump_locations env =
     let pp = List.map dump_loc_type env in

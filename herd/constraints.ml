@@ -88,7 +88,7 @@ module Make (C:Config) (A : Arch_herd.S) :
               A.location_compare l1 loc = 0 ||
               A.location_compare l2 loc = 0
           | LV (l,_) ->
-              A.location_compare l loc = 0
+              A.location_compare (loc_of_rloc l) loc = 0
           | FF (_,x) ->
               A.location_compare
                 (A.Location_global x)
@@ -112,7 +112,10 @@ module Make (C:Config) (A : Arch_herd.S) :
           module AM = A.Mixed(SZ)
 
           let rec check_prop p senv (state,flts as st) = match p with
-          | Atom (LV (l,v)) -> AM.state_mem senv state l v
+          | Atom (LV (Loc l,v)) -> AM.state_mem senv state l v
+          | Atom (LV (Deref _,_)) ->
+              prerr_endline "TODO" ;
+              assert false
           | Atom (LL (l1,l2)) ->
               begin try
                 let v1 = AM.look_in_state senv state l1
@@ -200,12 +203,12 @@ module Make (C:Config) (A : Arch_herd.S) :
           | (_,[])::_ ->
               Or
                 (A.VMap.fold
-                   (fun v _ k -> Atom (LV (loc,v))::k)
+                   (fun v _ k -> Atom (LV (Loc loc,v))::k)
                    m [])
           | _ ->
               Or
                 (A.VMap.fold
-                   (fun v m k -> And [Atom (LV (loc,v));compile_cond m]::k)
+                   (fun v m k -> And [Atom (LV (Loc loc,v));compile_cond m]::k)
                    m [])
 
         let cond_of_finals fs = compile_cond (matrix_of_states fs)
@@ -261,6 +264,10 @@ module Make (C:Config) (A : Arch_herd.S) :
         | Ascii|Dot -> A.do_dump_location tr loc
         | Latex|DotFig -> A.pp_location loc
 
+        let pp_rloc tr m rloc = match rloc with
+          | Loc loc -> pp_loc tr m loc
+          | Deref (loc,i) -> sprintf "%s[%i]" (pp_loc tr m loc) i
+
         let pp_rvalue tr m loc = match loc with
         | A.Location_global _ -> sprintf "*%s" (A.pp_location loc)
         | _ -> pp_loc tr m loc
@@ -273,8 +280,8 @@ module Make (C:Config) (A : Arch_herd.S) :
 
         let pp_atom tr m a =
           match a with
-          | LV (loc,v) ->
-              mbox m (pp_loc tr m loc) ^
+          | LV (rloc,v) ->
+              mbox m (pp_rloc tr m rloc) ^
               pp_equal m ^
               mbox m (do_add_asm m (V.pp C.hexa v))
           | LL (l1,l2) ->

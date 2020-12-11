@@ -43,7 +43,7 @@ module Make(A:Arch_tools.S) = struct
   let collect_atom a regs =
     let open ConstrGen in
     match a with
-    | LV (loc,_) -> collect_location loc regs
+    | LV (loc,_) -> ConstrGen.fold_rloc collect_location loc regs
     | LL (loc1,loc2) ->  collect_location loc1 (collect_location loc2 regs)
     | FF _ -> regs
 
@@ -57,7 +57,8 @@ module Make(A:Arch_tools.S) = struct
 
   let collect_constr = ConstrGen.fold_constr collect_atom
 
-  let collect_locs = List.fold_right (fun (loc,_) -> collect_location loc)
+  let collect_locs =
+    List.fold_right (fun (loc,_) -> ConstrGen.fold_rloc collect_location loc)
 
   open MiscParser
 

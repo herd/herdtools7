@@ -69,6 +69,8 @@ end = struct
 
   let dump_sep chan tag = fprintf chan "\n----- %s\n" tag
 
+  let dump_rloc = ConstrGen.dump_rloc I.dump_location
+
   let do_dump withinfo chan doc t =
     fprintf chan "%s %s\n" (Archs.pp A.arch) doc.Name.name ;
     begin match doc.Name.doc with
@@ -114,13 +116,13 @@ end = struct
         List.iter
           (fun (loc,t) -> match t with
           | MiscParser.TyDef  ->
-              fprintf chan "%s; " (I.dump_location loc)
+              fprintf chan "%s; " (dump_rloc loc)
           | MiscParser.TyDefPointer ->
-              fprintf chan "%s*; "(I.dump_location loc)
+              fprintf chan "%s*; "(dump_rloc loc)
           | MiscParser.Ty t ->
-              fprintf chan "%s %s; " (I.dump_location loc) t
+              fprintf chan "%s %s; " (dump_rloc loc) t
           | MiscParser.Pointer t ->
-              fprintf chan "%s %s*; " (I.dump_location loc) t
+              fprintf chan "%s %s*; " (dump_rloc loc) t
           |  MiscParser.TyArray _|MiscParser.Atomic _ -> assert false)
           locs ;
         fprintf chan "]\n"

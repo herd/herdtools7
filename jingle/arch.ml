@@ -395,7 +395,9 @@ module DefaultDumper(A:ArchBase.S) = struct
         let dump_atom a =
           let open ConstrGen in
           match a with
-          | LV (loc,v) -> dump_state_atom (loc,(MiscParser.TyDef,v))
+          | LV (loc,v) ->
+              sprintf "%s=%s"
+                (dump_rloc dump_loc loc) (ParsedConstant.pp_v v)
           | LL (loc1,loc2) ->
               sprintf "%s=%s" (dump_loc loc1) (MiscParser.dump_rval loc2)
           | FF f ->

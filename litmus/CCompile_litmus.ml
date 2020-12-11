@@ -177,12 +177,20 @@ module Make
           (fun env (s,ty) -> A.LocMap.add (A.Location_global s) ty env)
           env globals in
       let observed = Generic.all_observed final filter locs in
+      let flocs =
+        let open ConstrGen in
+        List.map
+          (fun (rloc,_) ->
+            match rloc with
+            | Loc loc -> loc
+            | Deref _ -> prerr_endline "TODO" ; assert false)
+          locs in
       { T.init = initenv;
         info = info;
         code = comp_code observed env code;
         condition = final; filter;
         globals = globals;
-        flocs = List.map fst locs;
+        flocs;
         global_code = get_global_code code;
         src = t;
         type_env = env,StringMap.empty;

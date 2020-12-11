@@ -148,14 +148,16 @@ end =
     | A.Location_reg (i,r) -> A.Location_reg (i+k,r)
     | A.Location_global _ -> loc
 
+    let shift_rloc k = ConstrGen.map_rloc (shift_location k)
+
     let shift_state_atom k (loc,v) = shift_location k loc,v
 
     let shift_state k = List.map (shift_state_atom k)
 
-    let shift_locations = shift_state
+    let shift_locations k =  List.map (fun (rloc,t) -> shift_rloc k rloc,t) 
 
     let shift_atom k a = match a with
-    | LV (l,v) ->  LV (shift_location k l,v)
+    | LV (l,v) ->  LV (shift_rloc k l,v)
     | LL (a,b) -> LL (shift_location k a,shift_location k b)
     | FF ((i,lbls),x) -> FF ((i+k,lbls),x)
 

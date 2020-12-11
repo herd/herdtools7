@@ -28,7 +28,7 @@ type ('prog,'nice_prog,'start,'state,'size_env, 'prop,'loc,'locset) t =
      size_env : 'size_env ;
      filter : 'prop option ;
      cond : 'prop ConstrGen.constr ;
-     flocs : 'loc list ;
+     flocs : 'loc ConstrGen.rloc list ;
      observed : 'locset ;
      displayed : 'locset ;
      extra_data : MiscParser.extra_data ;
@@ -74,10 +74,12 @@ module Make(A:Arch_herd.S) =
 (* Code loader is external, since litmus tests need it too *)
     module Load = Loader.Make(A)
 
-    let collect_atom a r = match a with
-    | ConstrGen.LV (loc,_v) -> A.LocSet.add loc r
-    | ConstrGen.LL (l1,l2) -> A.LocSet.add l1 (A.LocSet.add l2 r)
-    | ConstrGen.FF _ ->  r
+    let collect_atom a r =
+      let open ConstrGen in
+      match a with
+      | LV (rloc,_v) -> A.LocSet.add (loc_of_rloc rloc) r
+      | LL (l1,l2) -> A.LocSet.add l1 (A.LocSet.add l2 r)
+      | FF _ ->  r
 
 (* Mem size access *)
     let mem_access_size_of_code sz code =
@@ -111,12 +113,14 @@ module Make(A:Arch_herd.S) =
       let prog,starts = Load.load nice_prog in
       let flocs = List.map fst locs in
       let init_state = A.build_state init in
-      let state_list = A.state_to_list init_state in
+      let _state_list = A.state_to_list init_state in
       (* we might have accesses in the final state like v[2] *)
       (* this depends on the size of the vector types in the initial state *)
       (* e.g when uint64_t v, each elem is 8 bytes, so 2*8 is 16 bytes offset*)
       (* we need to pass this metadata to the final states locs *)
-      let final = ConstrGen.map_constr
+      let final = final in
+(* Luc: Useless now ???
+        ConstrGen.map_constr
         (function
          | ConstrGen.LV (l,v)-> begin match l with
            | (A.Location_global (A.I.V.Val (Constant.Symbolic ((s,t,c,_),os)) as sym)) ->
@@ -137,8 +141,9 @@ module Make(A:Arch_herd.S) =
           end
          | r -> r)
         final in
-      let displayed =
-        let flocs = A.LocSet.of_list flocs in
+ *)
+      let displayed = (* Luc: Doubt purpose of displayed ? *)
+        let flocs = A.LocSet.of_list (List.map ConstrGen.loc_of_rloc flocs) in
         ConstrGen.fold_constr collect_atom final flocs in
       let observed = match filter with
       | None -> displayed

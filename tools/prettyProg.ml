@@ -310,7 +310,7 @@ module Make(O:Config)(A:Arch_tools.S) =
           pp_atom = fun a ->
             match a with
           | LV (loc,v) ->
-              pp_mbox (pp_location loc) ^
+              pp_mbox (ConstrGen.dump_rloc pp_location loc) ^
               pp_equal ^
               pp_mbox (pp_asm_v v)
           | LL (l1,l2) ->

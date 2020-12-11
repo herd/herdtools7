@@ -295,7 +295,9 @@ module Make
       let pp_atom tr_out a =
         match a with
         | LV (loc,v) ->
-            sprintf "%s=%s" (tr_out (A.pp_location loc)) (A.V.pp Cfg.hexa v)
+            sprintf "%s=%s"
+              (tr_out (ConstrGen.dump_rloc A.pp_location loc))
+              (A.V.pp Cfg.hexa v)
         | LL (loc1,loc2) ->
             sprintf "%s=%s" (tr_out (A.pp_location loc1))
               (tr_out (A.pp_rval loc2))

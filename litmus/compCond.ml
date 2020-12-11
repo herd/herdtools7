@@ -49,7 +49,8 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
       let dump  =
         let rec dump_prop p = match p with
         | Atom (LV (loc,v)) ->
-            O.fprintf "%s == %s" (I.Loc.dump loc) (dump_v v)
+            O.fprintf "%s == %s"
+              (dump_rloc I.Loc.dump loc) (dump_v v)
         | Atom (LL (loc1,loc2)) ->
             O.fprintf"%s == %s" (I.Loc.dump loc1) (I.Loc.dump loc2)
         | Atom (FF _) ->

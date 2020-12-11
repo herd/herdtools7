@@ -50,7 +50,10 @@ end = struct
         let dump_atom a =
           let open ConstrGen in
           match a with
-          | LV (loc,v) -> dump_state_atom (loc,(MiscParser.TyDef,v))
+          | LV (rloc,v) ->
+              sprintf "%s=%s"
+                (ConstrGen.dump_rloc dump_loc rloc)
+                (ParsedConstant.pp_v v)
           | LL (loc1,loc2) ->
               sprintf "%s=%s" (dump_loc loc1) (MiscParser.dump_rval loc2)
           | FF f ->

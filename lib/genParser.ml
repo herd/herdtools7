@@ -120,14 +120,15 @@ let check_loc procs loc = match loc with
 let check_atom procs a =
   let open ConstrGen in
   match a with
-  | LV (loc,_) -> check_loc procs loc
+  | LV (rloc,_) -> check_loc procs (loc_of_rloc rloc)
   | LL (l1,l2) -> check_loc procs l1 ; check_loc procs l2
   | FF _       -> () (* Checks does no apply to global location *)
 
  let check_regs procs init locs final =
    let procs = List.map fst procs in
    List.iter (fun (loc,_) -> check_loc procs  loc) init ;
-   List.iter (fun (loc,_) -> check_loc procs  loc) locs ;
+   List.iter
+     (fun (loc,_) -> check_loc procs  (ConstrGen.loc_of_rloc loc)) locs ;
    ConstrGen.fold_constr (fun a () -> check_atom procs a) final ()
 
 (*******************)
@@ -162,7 +163,7 @@ let get_locs_atom a =
   let open ConstrGen in
   let open MiscParser in
   match a with
-  | LV (loc,_) -> LocSet.add loc
+  | LV (loc,_) -> LocSet.add (loc_of_rloc loc)
   | LL (loc1,loc2) ->
       (fun k -> LocSet.add loc1 (LocSet.add loc2 k))
   | FF (_,x) -> LocSet.add (MiscParser.Location_global x)
@@ -213,7 +214,8 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
       check_regs procs init locs final ;
       let all_locs =
         MiscParser.LocSet.union
-          (MiscParser.LocSet.of_list (List.map fst locs))
+          (MiscParser.LocSet.of_list
+             (List.map (fun (rloc,_) -> ConstrGen.loc_of_rloc rloc) locs))
           (get_locs final) in
       let parsed =
         {
@@ -244,9 +246,12 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
                     map ;
                 let map_loc loc = MiscParser.LocMap.safe_find loc loc map in
                 let open ConstrGen in
+                let map_rloc rloc = match rloc with
+                  | Loc loc -> Loc (map_loc loc)
+                  | Deref (loc,i) -> Deref (map_loc loc,i) in
                 let open MiscParser in
                 let map_atom = function
-                  | LV (loc,v) -> LV (map_loc loc,v)
+                  | LV (loc,v) -> LV (map_rloc loc,v)
                   | LL (loc1,loc2) ->  LL (map_loc loc1,map_loc loc2)
                   | FF (p,x) ->
                       begin match map_loc (Location_global x) with

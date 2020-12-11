@@ -16,14 +16,40 @@
 
 open Printf
 
+type 'loc rloc =
+  | Loc of 'loc
+  | Deref of 'loc * int
+
+let dump_rloc pp_loc = function
+  | Loc loc -> pp_loc loc
+  | Deref (loc,i) -> sprintf "%s[%d]" (pp_loc loc) i
+
+let compare_rloc loc_compare r1 r2 = match r1,r2 with
+  | Loc l1,Loc l2 -> loc_compare l1 l2
+  | Deref (l1,i1),Deref (l2,i2) ->
+      Misc.pair_compare loc_compare Misc.int_compare
+        (l1,i1) (l2,i2)
+  | Loc _,Deref _ -> -1
+  | Deref _,Loc _ -> +1
+
+let loc_of_rloc = function
+  | Loc loc|Deref (loc,_) -> loc
+
+let map_rloc f = function
+  | Loc loc -> Loc (f loc)
+  | Deref (loc,i) -> Deref (f loc,i)
+
+let fold_rloc f rl k = f (loc_of_rloc rl) k
+
 type ('loc,'v) atom =
-  | LV of 'loc * 'v
+  | LV of 'loc rloc * 'v
   | LL of 'loc * 'loc
   | FF of 'v Fault.atom
 
-let dump_atom pp_loc pp_rval pp_v = function
-  | LV (loc,v) ->  sprintf "%s=%s" (pp_loc loc)  (pp_v v)
-  | LL (loc1,loc2) -> sprintf "%s=%s" (pp_loc loc1) (pp_rval loc2)
+let dump_atom pp_loc pp_rloc pp_v = function
+  | LV (rloc,v) ->  sprintf "%s=%s" (dump_rloc pp_loc rloc)  (pp_v v)
+  | LL (loc1,loc2) ->
+      sprintf "%s=%s" (pp_loc loc1) (pp_rloc loc2)
   | FF f -> Fault.pp_fatom pp_v f
 
 type ('l,'v) prop =

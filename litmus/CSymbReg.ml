@@ -58,23 +58,25 @@ with type v = A.V.v and type location = A.location
   | Location_sreg reg  ->
       let p,r = f_reg reg in A.Location_reg (p,r)
 
+  let finish_rloc f_reg = ConstrGen.map_rloc (finish_location f_reg)
+
   let finish_state_atom f_reg (loc,(t,v)) =
     finish_location f_reg loc, (t,maybevToV v)
 
   let finish_state f_reg = List.map (finish_state_atom f_reg)
 
   let finish_locations f_reg =
-    List.map (fun (loc,t) -> finish_location f_reg loc,t)
+    List.map (fun (loc,t) -> finish_rloc f_reg loc,t)
 
   let finish_atom f_reg a =
     let open ConstrGen in
     match a with
-    | LV (loc,v) -> LV (finish_location f_reg loc, maybevToV v)
+    | LV (loc,v) -> LV (finish_rloc f_reg loc, maybevToV v)
     | LL (l1,l2) -> LL (finish_location f_reg l1,finish_location f_reg l2)
     | FF (p,x) -> FF (p,maybevToV x)
 
    let finish_prop f_reg = ConstrGen.map_prop (finish_atom f_reg)
-  let finish_constr f_reg = ConstrGen.map_constr (finish_atom f_reg)
+   let finish_constr f_reg = ConstrGen.map_constr (finish_atom f_reg)
 
 
 (**********************************)
@@ -110,17 +112,21 @@ with type v = A.V.v and type location = A.location
 
   let collect_state = List.fold_right collect_state_atom
 
+  let collect_rloc = ConstrGen.fold_rloc collect_location
+
   let collect_atom a =
     let open ConstrGen in
     match a with
-    | LV (loc,_) -> collect_location loc
+    | LV (rloc,_) -> collect_rloc rloc
     | LL (loc1,loc2) ->
         fun c -> collect_location loc1 (collect_location loc2 c)
     | FF (_,x) -> collect_location (MiscParser.Location_global x)
 
  let collect_constr = ConstrGen.fold_constr collect_atom
 
-  let collect_locs = List.fold_right (fun (loc,_) -> collect_location loc)
+ let collect_locs =
+   List.fold_right
+     (fun (rloc,_) -> collect_rloc rloc)
 
 (*********************************************)
 (* Here we go: collect, allocate, substitute *)

@@ -274,6 +274,8 @@ module Make(C:Config) = struct
         in Location_reg(i,r')
     | l -> l)
 
+  let conv_rloc map = ConstrGen.map_rloc (conv_loc map)
+
   let translate name chin sres =
     let src = Source.Parser.parse chin sres in
     let open MiscParser in
@@ -298,13 +300,13 @@ module Make(C:Config) = struct
 
     let map_lv_ll =
       ConstrGen.(function
-        | LV(l,v) -> LV(conv_loc map l,v)
+        | LV(l,v) -> LV(conv_rloc map l,v)
         | LL(l1,l2) -> LL(conv_loc map l1,conv_loc map l2)
         | FF (_,x) as a -> ignore (Constant.check_sym x) ; a) in
     let condition = ConstrGen.map_constr map_lv_ll src.condition
     and filter = Misc.app_opt (ConstrGen.map_prop map_lv_ll) src.filter in
     let locations =
-      List.map (fun (loc,ty) -> conv_loc map loc,ty) src.locations in
+      List.map (fun (loc,ty) -> conv_rloc map loc,ty) src.locations in
     { info = (OutMapping.key,dump_map map)::src.info;
       init = init;
       prog = prog;

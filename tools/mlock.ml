@@ -447,7 +447,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
                        (fun vs ->
                          And
                            (List.map
-                              (fun loc -> Atom (LV (loc,const_zero)))
+                              (fun loc -> Atom (LV (Loc loc,const_zero)))
                               vs))
                        locss) in
                 { parsed with prog; extra_data; filter=Some filter;}

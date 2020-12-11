@@ -140,7 +140,8 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
     | Symbolic _|Label _|Tag _|ConcreteVector _ -> raise Cannot
 
     let rec collect m = function
-      | Atom (LV (loc,v)) -> add loc v m
+      | Atom (LV (Loc loc,v)) -> add loc v m
+      | Atom (LV (Deref _,_)) -> raise Cannot (* Can do better? *)
       | Atom (LL _|FF _) -> raise Cannot
       | Not p -> collect m p
       | And ps|Or ps -> List.fold_left collect m ps
@@ -198,7 +199,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
 
     let eval atom  =
       let rec eval_rec p = match p with
-      | Atom (LV (loc0,Concrete v0)) ->
+      | Atom (LV (Loc loc0,Concrete v0)) ->
           begin match atom loc0 v0 with
           | None -> p
           | Some b -> if b then And [] else Or []

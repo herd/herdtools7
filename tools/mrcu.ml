@@ -228,10 +228,10 @@ module Top
                   let id3,r3 = s.(j) and id4,r4 = c.(i) in
                   Or
                     [
-                     Atom (LV (A.Location_reg (id1,r1),one));
-                     Atom (LV (A.Location_reg (id2,r2),one));
-                     Atom (LV (A.Location_reg (id3,r3),zero));
-                     Atom (LV (A.Location_reg (id4,r4),zero));
+                     Atom (LV (Loc (A.Location_reg (id1,r1)),one));
+                     Atom (LV (Loc (A.Location_reg (id2,r2)),one));
+                     Atom (LV (Loc (A.Location_reg (id3,r3)),zero));
+                     Atom (LV (Loc (A.Location_reg (id4,r4)),zero));
                    ]::loop_j (j+1) k in
               loop_j 0 (loop_i (i+1) k) in
           let filter = Some (ConstrGen.And (loop_i 0 []) ) in

@@ -42,6 +42,7 @@ module type S = sig
 
   module LocSet : MySet.S with type elt = location
   module LocMap : MyMap.S with type key = location
+  module RLocSet : MySet.S with type elt = location ConstrGen.rloc
 end
 
 module Make(A:I) : S
@@ -98,4 +99,10 @@ with type loc_reg = A.arch_reg and type loc_global = A.arch_global =
 
     module LocSet = MySet.Make(OL)
     module LocMap = MyMap.Make(OL)
+    module RLocSet =
+      MySet.Make
+        (struct
+          type t = location ConstrGen.rloc
+          let compare = ConstrGen.compare_rloc location_compare
+        end)
   end

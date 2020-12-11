@@ -28,7 +28,7 @@ type ('prog,'nice_prog,'start,'state, 'size_env, 'prop, 'loc, 'locset) t =
      init_state : 'state ; size_env : 'size_env ;
      filter : 'prop option ;
      cond : 'prop ConstrGen.constr ;
-     flocs : 'loc list ;
+     flocs : 'loc ConstrGen.rloc list ;
      observed : 'locset ;
      displayed : 'locset ;
      extra_data : MiscParser.extra_data ;

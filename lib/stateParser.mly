@@ -57,13 +57,13 @@ let mk_lab p s = Label (p,s)
 %start init
 %type <MiscParser.location> main_location
 %start main_location
-%type <(MiscParser.location * MiscParser.run_type) list * MiscParser.prop option * MiscParser.constr * (string * MiscParser.quantifier) list> constraints
+%type <(MiscParser.location ConstrGen.rloc * MiscParser.run_type) list * MiscParser.prop option * MiscParser.constr * (string * MiscParser.quantifier) list> constraints
 %start constraints
 %type  <MiscParser.constr> main_constr
 %start main_constr
 %type  <MiscParser.constr> skip_loc_constr
 %start skip_loc_constr
-%type  <(MiscParser.location * MiscParser.run_type) list * MiscParser.constr> main_loc_constr
+%type  <(MiscParser.location ConstrGen.rloc * MiscParser.run_type) list * MiscParser.constr> main_loc_constr
 %start main_loc_constr
 %type <MiscParser.location list> main_locs
 %start main_locs
@@ -80,13 +80,16 @@ reg:
 | NAME       {  $1 }
 | DOLLARNAME {  $1 }
 
-maybev_notag:
-| NUM  { Concrete $1 }
+location_global:
 | NAME { mk_sym $1  }
 | NAME COLON NAME { mk_sym_tag $1 $3 }
 (* TODO: have MTE and Morello tags be usable at the same time? *)
 | NUM COLON NAME COLON NUM {mk_sym_morello $1 $3 $5}
 | NAME COLON NUM { mk_sym_morello "0" $1 $3 }
+
+maybev_notag:
+| location_global { $1 }
+| NUM  { Concrete $1 }
 /* conflicts with location_reg:
 | NUM COLON NAME { mk_sym_morello $1 $3 "0" }
 */
@@ -131,7 +134,7 @@ main_location:
 
 location:
 | location_reg { $1 }
-| maybev_notag { Location_global $1 }
+| location_global { Location_global $1 }
 
 atom:
 | location {($1,ParsedConstant.zero)}
@@ -175,23 +178,23 @@ init_semi_list:
 
 /* For final state constraints */
 
-loc_typ:
-| location { ($1, TyDef) }
-| location STAR { ($1, TyDefPointer) }
-| location NAME { ($1, Ty $2) }
-| location NAME STAR { ($1, Pointer $2) }
+rloc_typ:
+| rloc { ($1, TyDef) }
+| rloc STAR { ($1, TyDefPointer) }
+| rloc NAME { ($1, Ty $2) }
+| rloc NAME STAR { ($1, Pointer $2) }
 
 main_locs:
 | ls = list(location)  EOF { ls }
 
-loc_semi_list:
+rloc_semi_list:
 | {[]}
 | SEMI {[]}
-| loc_typ {$1::[]}
-| loc_typ SEMI loc_semi_list  {$1::$3}
+| rloc_typ {$1::[]}
+| rloc_typ SEMI rloc_semi_list  {$1::$3}
 
 locations:
-|  LOCATIONS LBRK loc_semi_list RBRK { $3 }
+|  LOCATIONS LBRK rloc_semi_list RBRK { $3 }
 | { [] }
 
 filter:
@@ -267,10 +270,21 @@ lbl:
 | PROC { ($1,None) }
 | PROC COLON NAME { ($1,Some $3) }
 
+rloc:
+| location { Loc $1 }
+| locindex { $1 }
+
+locindex:
+| location LBRK NUM RBRK { Deref ($1,Misc.string_as_int $3) }
+
+
 atom_prop:
-| location EQUAL maybev {Atom (LV ($1,$3))}
-| location EQUALEQUAL maybev {Atom (LV ($1,$3))}
-| location NOTEQUAL maybev {Not (Atom (LV ($1,$3)))}
+| location EQUAL maybev {Atom (LV (Loc $1,$3))}
+| location EQUALEQUAL maybev {Atom (LV (Loc $1,$3))}
+| locindex EQUAL maybev {Atom (LV ($1,$3))}
+| locindex EQUALEQUAL maybev {Atom (LV ($1,$3))}
+| location NOTEQUAL maybev {Not (Atom (LV (Loc $1,$3)))}
+| locindex NOTEQUAL maybev {Not (Atom (LV ($1,$3)))}
 | location EQUAL location_deref {Atom (LL ($1,$3))}
 | location EQUALEQUAL location_deref {Atom (LL ($1,$3))}
 | FAULT LPAR lbl COMMA NAME RPAR { Atom (FF ($3,mk_sym $5)) }

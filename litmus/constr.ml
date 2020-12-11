@@ -51,9 +51,8 @@ type location = A.location and module LocSet = A.LocSet =
     type cond = prop ConstrGen.constr
 
     let locations_atom a r =
-      let open ConstrGen in
       match a with
-      | LV (loc,_) -> LocSet.add loc r
+      | LV (loc,_) -> LocSet.add (loc_of_rloc loc) r
       | LL (loc1,loc2) -> LocSet.add loc1 (LocSet.add loc2 r)
       | FF f ->
           Warn.warn_always "Ignoring fault %s"

@@ -61,8 +61,8 @@ module Dump(O:DumpConfig) = struct
     O.tr s
 
   let pp_atom a = match a with
-  | LV (l,v) ->
-      sprintf "%s=%s" (pp_loc l) (Int64Constant.pp O.hexa v)
+  | LV (rl,v) ->
+      sprintf "%s=%s" (dump_rloc pp_loc rl) (Int64Constant.pp O.hexa v)
   | LL (l1,l2) ->
       sprintf "%s=%s" (pp_loc l1) (pp_loc l2)
   | FF f ->
@@ -77,7 +77,7 @@ module LocSet = MiscParser.LocSet
 
 let get_locs_atom a =
   match a with
-  | LV (loc,_) -> LocSet.add loc
+  | LV (loc,_) -> LocSet.add (loc_of_rloc loc)
   | LL (loc1,loc2) ->
       (fun k -> LocSet.add loc1 (LocSet.add loc2 k))
   | FF (_,x) -> LocSet.add (MiscParser.Location_global x)
@@ -90,7 +90,8 @@ let parse_observed s =
     let locs,c = StateParser.main_loc_constr SL.token lxb in
     Some
       (LocSet.union
-         (LocSet.of_list (List.map fst locs))
+         (LocSet.of_list
+            (List.map (fun (rloc,_) -> ConstrGen.loc_of_rloc rloc) locs))
          (get_locs c))
   with
   | Parsing.Parse_error
@@ -109,7 +110,11 @@ let parse_locs s =
   try
     let lxb = Lexing.from_string s in
     let locs,cstr = StateParser.main_loc_constr SL.token lxb in
-    Some (LocSet.union (LocSet.of_list (List.map fst locs)) (get_locs cstr))
+    Some
+      (LocSet.union
+         (LocSet.of_list
+            (List.map (fun (rl,_) -> ConstrGen.loc_of_rloc rl) locs))
+         (get_locs cstr))
   with
   | Parsing.Parse_error
   | LexMisc.Error _ -> None
@@ -156,7 +161,10 @@ end  =
 
 
     let rec check_prop p state = match p with
-    | Atom (LV (l,v)) -> I.state_mem state l v
+    | Atom (LV (Loc l,v)) -> I.state_mem state l v
+    | Atom (LV (Deref _,_)) ->
+        prerr_endline "TODO" ;
+        assert false
     | Atom (LL (l1,l2)) -> I.state_eqloc state l1 l2
     | Atom (FF _) -> Warn.fatal "No fault in LogConstr proposition"
     | Not p -> not (check_prop p state)
