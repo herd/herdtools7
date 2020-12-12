@@ -559,6 +559,7 @@ let max_set = IntSet.max_elt
   let do_memtag = O.variant Variant_gen.MemTag
   let do_morello = O.variant Variant_gen.Morello
   let do_kvm = O.variant Variant_gen.KVM
+  let do_neon = O.variant Variant_gen.Neon
 
   let compile_cycle ok n =
     let open Config in
@@ -640,6 +641,7 @@ let max_set = IntSet.max_elt
         let globals = C.get_globals n in
         let typ = if do_morello
           then TypBase.Std (TypBase.Unsigned,MachSize.S128)
+          else if do_neon then TypBase.Std (TypBase.Unsigned,MachSize.S128)
           else O.typ in
         let env =
           List.fold_left
