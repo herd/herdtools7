@@ -37,7 +37,7 @@ type t =
 
 let tags =
  ["AsAmo";"ConstsInInit";"Mixed";"FullMixed";"Self"; "MemTag";
-  "NoVolatile"; "Morello"; "kvm"; ]
+  "NoVolatile"; "Morello"; "kvm"; "Neon"; ]
 
 let parse tag = match Misc.lowercase tag with
 | "asamo" -> Some AsAmo
