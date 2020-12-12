@@ -138,12 +138,14 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
             | Code.CapaSeal
             | Code.Ord ->
                 Some (I evt.C.C.v)
+            | Code.VecReg ->
+                Some (S (Code.add_vector evt.C.C.v))
             | Code.Tag ->
                 Some (S (Code.add_tag (Code.as_data evt.C.C.loc) evt.C.C.v))
             | Code.Pte ->
                 Some (P evt.C.C.pte)
             end
-        | Some Code.W -> assert (evt.C.C.bank = Code.Ord || evt.C.C.bank = Code.CapaSeal) ; Some (I (prev_value evt.C.C.v))
+        | Some Code.W -> assert (evt.C.C.bank = Code.Ord || evt.C.C.bank = Code.CapaSeal || evt.C.C.bank == Code.VecReg) ; Some (I (prev_value evt.C.C.v))
         | None|Some Code.J -> None in
         if show_in_cond n then match v with
         | Some v ->

@@ -529,6 +529,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let r,init,cs,st = emit_load_mixed MachSize.S128 0 st p init x in
       let cs2 = lift_code [gctype r r] in
       r,init,cs@cs2,st
+    | Code.VecReg -> LDN.emit_load N1
     let emit_obs_not_value = OBS.emit_load_not_value
     let emit_obs_not_eq = OBS.emit_load_not_eq
     let emit_obs_not_zero = OBS.emit_load_not_zero
