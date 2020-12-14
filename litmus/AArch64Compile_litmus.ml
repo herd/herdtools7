@@ -800,6 +800,27 @@ module Make(V:Constant.S)(C:Config) =
         reg_env = (add_128 [r])}
     | _ -> assert false
 
+    let eor_simd r1 r2 r3 =
+      { empty_ins with
+        memo = sprintf "eor %s,%s,%s" (print_simd_reg "o" 0 0 r1) (print_simd_reg "i" 0 0 r2) (print_simd_reg "i" 0 1 r3);
+        inputs = [r2;r3;];
+        outputs = [r1];
+        reg_env = (add_128 [r1;r2;r3;])}
+
+    let add_simd r1 r2 r3 =
+      { empty_ins with
+        memo = sprintf "add %s,%s,%s" (print_simd_reg "o" 0 0 r1) (print_simd_reg "i" 0 0 r2) (print_simd_reg "i" 0 1 r3);
+        inputs = [r2;r3];
+        outputs = [r1];
+        reg_env = (add_128 [r1;r2;r3;])}
+
+    let add_simd_s r1 r2 r3 =
+      { empty_ins with
+        memo = sprintf "add %s,%s,%s" (print_vecreg VSIMD64 "o" 0) (print_vecreg VSIMD64 "i" 0) (print_vecreg VSIMD64 "i" 1);
+        inputs = [r2;r3;];
+        outputs = [r1];
+        reg_env = (add_128 [r1;r2;r3;])}
+
 (* Compare and swap *)
     let type_of_variant = function
       | V32 -> word | V64 -> quad | V128 -> assert false
@@ -1129,6 +1150,9 @@ module Make(V:Constant.S)(C:Config) =
     | I_MOVI_S (v,r,k1) -> movi_s v r k1::k
     | I_MOVI_V (r,kr,s) -> movi_v r kr s::k
     | I_MOV_S (v,r1,r2,i) -> mov_simd_s v r1 r2 i::k
+    | I_EOR_SIMD (r1,r2,r3) -> eor_simd r1 r2 r3::k
+    | I_ADD_SIMD (r1,r2,r3) -> add_simd r1 r2 r3::k
+    | I_ADD_SIMD_S (r1,r2,r3) -> add_simd_s r1 r2 r3::k
 (* Arithmetic *)
     | I_MOV (v,r,K i) ->  movk v r i::k
     | I_MOV (v,r1,RV (_,r2)) ->  movr v r1 r2::k

@@ -529,6 +529,14 @@ instr:
   { A.I_MOVI_V ($2, $4, $6) }
 | MOVI dreg COMMA k
   { A.I_MOVI_S ( A.VSIMD64, $2, $4) }
+| OP vreg COMMA vreg COMMA vreg
+  { match $1 with
+    | A.EOR -> A.I_EOR_SIMD ($2,$4,$6)
+    | _ -> assert false}
+| ADD vreg COMMA vreg COMMA vreg
+  { A.I_ADD_SIMD ($2,$4,$6) }
+| ADD dreg COMMA dreg COMMA dreg
+  { A.I_ADD_SIMD_S ($2,$4,$6)}
     /* Compare and swap */
 | CAS wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_CAS (A.V32,A.RMW_P,$2,$4,$7) }

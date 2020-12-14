@@ -621,6 +621,9 @@ type 'k kinstruction =
   | I_MOV_S of simd_variant * reg * reg * int
   | I_MOVI_V of reg * 'k * 'k s
   | I_MOVI_S of simd_variant * reg * 'k
+  | I_EOR_SIMD of reg * reg * reg
+  | I_ADD_SIMD of reg * reg * reg
+  | I_ADD_SIMD_S of reg * reg * reg
 (* Post-indexed load with immediate - like a writeback *)
 (* sufficiently different (and semantically interesting) to need a new inst *)
   | I_LDR_P of variant * reg * reg * 'k
@@ -781,7 +784,13 @@ let do_pp_instruction m =
     pp_memo memo ^ " " ^ pp_vsimdreg v r ^ "," ^ m.pp_k i
   and pp_srvri memo v r1 r2 i =
     pp_memo memo ^ " " ^ pp_vsimdreg v r1 ^ "," ^
-    pp_simd_vector_reg r2 ^ "[" ^ string_of_int i ^ "]" in
+    pp_simd_vector_reg r2 ^ "[" ^ string_of_int i ^ "]"
+  and pp_simd_rrr memo r1 r2 r3 =
+    pp_memo memo ^ " " ^ pp_simd_vector_reg r1 ^ "," ^ pp_simd_vector_reg r2
+    ^ "," ^ pp_simd_vector_reg r3
+  and pp_simd_srrr memo r1 r2 r3 =
+    pp_memo memo ^ " " ^ pp_vsimdreg VSIMD64 r1 ^ "," ^ pp_vsimdreg VSIMD64 r2
+    ^ "," ^ pp_vsimdreg VSIMD64 r3 in
 
   let pp_kr showsxtw showzero kr = match kr with
   | K k when m.zerop k && not showzero -> ""
@@ -1023,6 +1032,12 @@ let do_pp_instruction m =
       pp_vmem_shift "MOVI" r k s
   | I_MOVI_S (v,r,k) ->
       pp_sri "MOVI" v r k
+  | I_EOR_SIMD (r1,r2,r3) ->
+      pp_simd_rrr "EOR" r1 r2 r3
+  | I_ADD_SIMD (r1,r2,r3) ->
+      pp_simd_rrr "ADD" r1 r2 r3
+  | I_ADD_SIMD_S (r1,r2,r3) ->
+      pp_simd_srrr "ADD" r1 r2 r3
 
 (* Morello *)
   | I_ALIGND (r1,r2,k) ->
@@ -1221,6 +1236,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_SC (_,r1,r2,r3)
   | I_LDP_P_SIMD (_,_,r1,r2,r3,_) | I_LDP_SIMD (_,_,r1,r2,r3,_)
   | I_STP_P_SIMD (_,_,r1,r2,r3,_) | I_STP_SIMD (_,_,r1,r2,r3,_)
+  | I_EOR_SIMD (r1,r2,r3) | I_ADD_SIMD (r1,r2,r3) | I_ADD_SIMD_S (r1,r2,r3)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_LDP (_,_,r1,r2,r3,kr)
   | I_STP (_,_,r1,r2,r3,kr)
@@ -1370,6 +1386,12 @@ let map_regs f_reg f_symb =
       I_MOVI_V (map_reg r,k,os)
   | I_MOVI_S (v,r,k) ->
       I_MOVI_S (v,map_reg r,k)
+  | I_EOR_SIMD (r1,r2,r3) ->
+      I_EOR_SIMD(map_reg r1,map_reg r2,map_reg r3)
+  | I_ADD_SIMD (r1,r2,r3) ->
+      I_ADD_SIMD (map_reg r1,map_reg r2,map_reg r3)
+  | I_ADD_SIMD_S (r1,r2,r3) ->
+      I_ADD_SIMD_S (map_reg r1,map_reg r2,map_reg r3)
 (* Morello *)
   | I_ALIGND (r1,r2,k) ->
       I_ALIGND(map_reg r1,map_reg r2,k)
@@ -1537,6 +1559,7 @@ let get_next = function
   | I_MOV_VE _ | I_MOV_V _ | I_MOV_TG _ | I_MOV_FG _
   | I_MOV_S _
   | I_MOVI_V _ | I_MOVI_S _
+  | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
     -> [Label.Next;]
 
 include Pseudo.Make
@@ -1651,6 +1674,9 @@ include Pseudo.Make
         | I_STUR_SIMD (v,r1,r2,Some(k)) -> I_STUR_SIMD (v,r1,r2,Some(k_tr k))
         | I_MOVI_V (r,k,s) -> I_MOVI_V (r,k_tr k,ap_shift k_tr s)
         | I_MOVI_S (v,r,k) -> I_MOVI_S (v,r,k_tr k)
+        | I_EOR_SIMD (r1,r2,r3) -> I_EOR_SIMD (r1,r2,r3)
+        | I_ADD_SIMD (r1,r2,r3) -> I_ADD_SIMD (r1,r2,r3)
+        | I_ADD_SIMD_S (r1,r2,r3) -> I_ADD_SIMD_S (r1,r2,r3)
 
       let get_simd_rpt_selem ins rs = match ins with
       | I_LD1M _
@@ -1726,6 +1752,7 @@ include Pseudo.Make
         | I_MOV_VE _ | I_MOV_V _ | I_MOV_TG _ | I_MOV_FG _
         | I_MOV_S _
         | I_MOVI_V _ | I_MOVI_S _
+        | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
           -> 0
         | I_LD1M (rs, _, _)
         | I_LD2M (rs, _, _)

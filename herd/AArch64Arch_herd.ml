@@ -125,7 +125,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | I_LDP_SIMD _ | I_LDP_P_SIMD _ | I_LDR_SIMD _ | I_LDR_P_SIMD _ | I_LDUR_SIMD _
       | I_ST1 _ | I_ST1M _ | I_ST2 _ | I_ST2M _ | I_ST3 _ | I_ST3M _ | I_ST4 _ | I_ST4M _
       | I_STP_SIMD _ | I_STP_P_SIMD _ | I_STR_SIMD _ | I_STR_P_SIMD _ | I_STUR_SIMD _
-      | I_MOV_S _ | I_MOV_V _ | I_MOV_VE _ | I_MOV_TG _ | I_MOV_FG _ | I_MOVI_S _ | I_MOVI_V _ ->
+      | I_MOV_S _ | I_MOV_V _ | I_MOV_VE _ | I_MOV_TG _ | I_MOV_FG _ | I_MOVI_S _ | I_MOVI_V _
+      | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _ ->
           Warn.fatal "Neon instructions are not currently supported"
 
     include ArchExtra_herd.Make(C)

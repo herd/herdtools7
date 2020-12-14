@@ -399,5 +399,6 @@ include Arch.MakeArch(struct
     | I_MOV_V _ | I_MOV_VE _ | I_MOV_S _
     | I_MOV_FG _ | I_MOV_TG _
     | I_MOVI_V _ | I_MOVI_S _
+    | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
         -> Warn.fatal "Neon instructions are not implemented yet"
 end)
