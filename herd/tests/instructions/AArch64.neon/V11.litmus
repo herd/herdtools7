@@ -1,0 +1,12 @@
+AArch64 V11
+(* Tests load / store immediate unscaled, no offset *)
+{ 
+x=1;
+0:X0=x; 0:X1=y
+}
+
+ P0              ;
+ LDUR B0, [X0]   ;
+ STUR B0, [X1]   ;
+ forall (y=1)
+ 

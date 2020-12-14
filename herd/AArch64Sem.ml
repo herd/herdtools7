@@ -1286,12 +1286,18 @@ module Make
             get_ea rA kr s ii >>= fun addr ->
             do_read_mem access_size AArch64.N addr ii >>= fun v ->
             write_reg_neon_sz access_size r1 v ii >>! B.Next
-         | I_LDR_P_SIMD(var,r1,rA,k) ->
+        | I_LDR_P_SIMD(var,r1,rA,k) ->
             let access_size = tr_simd_variant var in
             read_reg_ord rA ii >>= fun addr ->
             do_read_mem access_size AArch64.N addr ii >>= fun v ->
             write_reg_neon_sz access_size r1 v ii >>|
             (M.add addr (V.intToV k) >>= fun v -> write_reg rA v ii) >>! B.Next
+        | I_LDUR_SIMD(var,r1,rA,k) ->
+            let access_size = tr_simd_variant var in
+            let k = AArch64.K (match k with Some k -> k | None -> 0) in 
+            get_ea rA k AArch64.S_NOEXT ii >>= fun addr ->
+            do_read_mem access_size AArch64.N addr ii >>= fun v ->
+            write_reg_neon r1 v ii >>! B.Next
         | I_STR_SIMD(var,r1,rA,kr,s) ->
             let access_size = tr_simd_variant var in
             get_ea rA kr s ii >>|
@@ -1303,7 +1309,13 @@ module Make
             read_reg_neon true r1 ii >>= fun (addr,v) ->
             write_mem access_size addr v ii >>|
             (M.add addr (V.intToV k) >>= fun v -> write_reg rA v ii) >>! B.Next
-
+        | I_STUR_SIMD(var,r1,rA,k) ->
+            let access_size = tr_simd_variant var in
+            let k = AArch64.K (match k with Some k -> k | None -> 0) in 
+            get_ea rA k AArch64.S_NOEXT ii >>| 
+            read_reg_neon true r1 ii >>= fun (addr,v) -> 
+            write_mem access_size addr v ii >>! B.Next
+  
         (* Morello instructions *)
         | I_ALIGND(rd,rn,kr) ->
             check_morello ii ;
