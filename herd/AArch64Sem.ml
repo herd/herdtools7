@@ -942,6 +942,16 @@ module Make
           >>= (fun v -> write_reg_neon_sz (tr_simd_variant var) r v ii)
           >>! B.Next
 
+      let simd_op op sz r1 r2 r3 ii =
+        read_reg_neon false r3 ii >>|
+        read_reg_neon false r2 ii >>=
+        begin match op with
+        | AArch64.ADD -> fun (v1,v2) -> M.add v1 v2 
+        | AArch64.EOR -> fun (v1,v2) -> M.op Op.Xor v1 v2
+        | _ -> Warn.fatal "unsupported Neon operations"
+        end >>=
+        fun v -> write_reg_neon_sz sz r1 v ii >>! B.Next
+
       and stxr sz t rr rs rd ii =
         let open AArch64Base in
         let an = match t with
@@ -1261,7 +1271,14 @@ module Make
             movi_v r k shift ii
         | I_MOVI_S(var,r,k) ->
             movi_s var r k ii
-
+        | I_EOR_SIMD(r1,r2,r3) ->
+            let size = neon_sz r1 in
+            simd_op EOR size r1 r2 r3 ii
+        | I_ADD_SIMD(r1,r2,r3) ->
+            let size = neon_sz r1 in
+            simd_op ADD size r1 r2 r3 ii
+        | I_ADD_SIMD_S(r1,r2,r3) ->
+            simd_op ADD MachSize.Quad r1 r2 r3 ii
         (* Morello instructions *)
         | I_ALIGND(rd,rn,kr) ->
             check_morello ii ;

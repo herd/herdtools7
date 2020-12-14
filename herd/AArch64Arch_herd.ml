@@ -174,6 +174,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | I_TLBI (_,_)
       | I_MOV_V _ | I_MOV_VE _ | I_MOV_S _ | I_MOV_TG _ | I_MOV_FG _
       | I_MOVI_S _ | I_MOVI_V _
+      | I_EOR_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
           -> None
       | I_LD1 _ | I_LD1M _ | I_LD1R _ | I_LD2 _ | I_LD2M _ | I_LD2R _
       | I_LD3 _ | I_LD3M _ | I_LD3R _ | I_LD4 _ | I_LD4M _ | I_LD4R _
