@@ -1,0 +1,12 @@
+AArch64 V08
+(* Tests load / store immediate, with offset *)
+{ 
+0:X0=x; 0:X2=y;
+}
+
+ P0                 ;
+ MOV X1, #1         ;
+ STR X1, [X0, #8]   ;
+ LDR B0, [X0, #8]   ;
+ STR B0, [X2]       ;
+ forall (y=1)

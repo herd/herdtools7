@@ -1,0 +1,11 @@
+AArch64 V10
+(* Tests store immediate, post-indexed *)
+{ 
+a=1;
+0:X0=a; 0:X1=x;
+}
+
+ P0                 ;
+ LDR B0, [X0]       ;
+ STR B0, [X1], #8   ;
+ forall (x=1 /\ 0:X1!=x)

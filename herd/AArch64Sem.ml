@@ -1279,6 +1279,31 @@ module Make
             simd_op ADD size r1 r2 r3 ii
         | I_ADD_SIMD_S(r1,r2,r3) ->
             simd_op ADD MachSize.Quad r1 r2 r3 ii
+
+        (* Neon loads and stores *)
+        | I_LDR_SIMD(var,r1,rA,kr,s) ->
+            let access_size = tr_simd_variant var in
+            get_ea rA kr s ii >>= fun addr ->
+            do_read_mem access_size AArch64.N addr ii >>= fun v ->
+            write_reg_neon_sz access_size r1 v ii >>! B.Next
+         | I_LDR_P_SIMD(var,r1,rA,k) ->
+            let access_size = tr_simd_variant var in
+            read_reg_ord rA ii >>= fun addr ->
+            do_read_mem access_size AArch64.N addr ii >>= fun v ->
+            write_reg_neon_sz access_size r1 v ii >>|
+            (M.add addr (V.intToV k) >>= fun v -> write_reg rA v ii) >>! B.Next
+        | I_STR_SIMD(var,r1,rA,kr,s) ->
+            let access_size = tr_simd_variant var in
+            get_ea rA kr s ii >>|
+            read_reg_neon true r1 ii >>= fun (addr,v) ->
+            write_mem access_size addr v ii >>! B.Next
+        | I_STR_P_SIMD(var,r1,rA,k) ->
+            let access_size = tr_simd_variant var in
+            read_reg_ord rA ii >>|
+            read_reg_neon true r1 ii >>= fun (addr,v) ->
+            write_mem access_size addr v ii >>|
+            (M.add addr (V.intToV k) >>= fun v -> write_reg rA v ii) >>! B.Next
+
         (* Morello instructions *)
         | I_ALIGND(rd,rn,kr) ->
             check_morello ii ;

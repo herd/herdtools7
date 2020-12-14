@@ -1,0 +1,10 @@
+Test V09 Required
+States 1
+0:X0=x+8; y=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (y=1 /\ not (0:X0=x))
+Observation V09 Always 1 0
+Hash=268a09cb2040ef1ce449cc7adfa459a0
+
