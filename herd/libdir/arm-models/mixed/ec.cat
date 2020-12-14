@@ -40,10 +40,10 @@
 include "armv8-common.cat"
 include "sca.cat"
 
-let preorder = IM0 | lob | scaob
-let preorder-lift = lift(MC,preorder)
+let preorder-cb = IM0 | lob | scaob
+let preorder-cb-lift = lift(MC,preorder-cb)
 
-with cb from linearisations(MC,preorder-lift)
+with cb from linearisations(MC,preorder-cb-lift)
 ~empty cb
 
 let dcbl = delift(cb) & loc

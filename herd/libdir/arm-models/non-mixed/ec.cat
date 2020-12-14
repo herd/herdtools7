@@ -40,9 +40,9 @@
 
 include "armv8-common.cat"
 
-let preorder = IM0 | lob
+let preorder-cb = IM0 | lob
 
-with cb from linearisations(M,preorder)
+with cb from linearisations(M,preorder-cb)
 ~empty cb
 
 let cbl = cb & loc
