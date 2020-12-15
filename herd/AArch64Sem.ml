@@ -259,6 +259,14 @@ module Make
           | 128 -> MachSize.S128
           | _ -> assert false
 
+      let neon_sz_k var = let open AArch64Base in 
+      match var with
+      | VSIMD8   -> M.unitT (V.intToV 1)
+      | VSIMD16  -> M.unitT (V.intToV 2)
+      | VSIMD32  -> M.unitT (V.intToV 4)
+      | VSIMD64  -> M.unitT (V.intToV 8)
+      | VSIMD128 -> M.unitT (V.intToV 16)
+
 (******************)
 (* Memory Tagging *)
 (******************)
@@ -1051,7 +1059,26 @@ module Make
         read_reg_ord rs ii >>|
         read_reg_neon true rd ii >>= fun (addr,v) ->
         write_mem sz addr v ii >>|
-        post_kr rs addr (AArch64.K k) ii >>! B.Next
+        post_kr rs addr k ii >>! B.Next
+        
+      let simd_ldp var addr1 rd1 rd2 ii = 
+        let open AArch64Base in
+        let access_size = tr_simd_variant var in
+        simd_ldr access_size addr1 rd1 ii >>|
+        (neon_sz_k var >>= fun os ->
+        M.add addr1 os >>= fun addr2 -> 
+        simd_ldr access_size addr2 rd2 ii) >>! B.Next
+ 
+      let simd_stp var addr1 rd1 rd2 ii =
+        let open AArch64Base in
+        let access_size = tr_simd_variant var in
+        (read_reg_neon true rd1 ii >>= fun v1 ->
+        write_mem access_size addr1 v1 ii)
+        >>|
+        (neon_sz_k var >>= fun os ->
+        M.add addr1 os >>|
+        read_reg_neon true rd2 ii >>= fun (addr2,v2) ->
+        write_mem access_size addr2 v2 ii) >>! B.Next
 
       let movi_v r k shift ii =
         let open AArch64Base in
@@ -1390,7 +1417,7 @@ module Make
         | I_LDR_SIMD(var,r1,rA,kr,s) ->
             let access_size = tr_simd_variant var in 
             get_ea rA kr s ii >>= fun addr ->
-            simd_ldr access_size addr r1 ii >>! B.Next
+            simd_ldr access_size addr r1 ii
         | I_LDR_P_SIMD(var,r1,rA,k) ->
             let access_size = tr_simd_variant var in 
             read_reg_ord rA ii >>= fun addr ->
@@ -1400,18 +1427,32 @@ module Make
             let access_size = tr_simd_variant var and 
             k = K (match k with Some k -> k | None -> 0) in  
             get_ea rA k S_NOEXT ii >>= fun addr ->
-            simd_ldr access_size addr r1 ii >>! B.Next
+            simd_ldr access_size addr r1 ii
         | I_STR_SIMD(var,r1,rA,kr,s) ->
             let access_size = tr_simd_variant var in 
-            simd_str access_size rA r1 kr s ii >>! B.Next
+            simd_str access_size rA r1 kr s ii
         | I_STR_P_SIMD(var,r1,rA,k) ->
             let access_size = tr_simd_variant var in
-            simd_str_p access_size rA r1 k ii >>! B.Next
+            simd_str_p access_size rA r1 (K k) ii
         | I_STUR_SIMD(var,r1,rA,k) ->
             let access_size = tr_simd_variant var and 
             k = K (match k with Some k -> k | None -> 0) in 
-            simd_str access_size rA r1 k S_NOEXT ii >>! B.Next
-  
+            simd_str access_size rA r1 k S_NOEXT ii
+        | I_LDP_SIMD(_,var,r1,r2,r3,k) ->
+            get_ea r3 k S_NOEXT ii >>= fun addr ->
+            simd_ldp var addr r1 r2 ii
+        | I_LDP_P_SIMD(_,var,r1,r2,r3,k) ->
+            read_reg_ord r3 ii >>= fun addr ->
+            simd_ldp var addr r1 r2 ii >>|
+            post_kr r3 addr (K k) ii >>! B.Next
+        | I_STP_SIMD(_,var,r1,r2,r3,k) ->
+            get_ea r3 k S_NOEXT ii >>= fun addr ->
+            simd_stp var addr r1 r2 ii
+        | I_STP_P_SIMD(_,var,r1,r2,r3,k) ->
+            read_reg_ord r3 ii >>= fun addr ->
+            simd_stp var addr r1 r2 ii >>|
+            post_kr r3 addr (K k) ii >>! B.Next
+
         (* Morello instructions *)
         | I_ALIGND(rd,rn,kr) ->
             check_morello ii ;

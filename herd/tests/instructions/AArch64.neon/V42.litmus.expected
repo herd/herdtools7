@@ -1,0 +1,10 @@
+Test V42 Required
+States 1
+y=1; z=2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (y=1 /\ z=2)
+Observation V42 Always 1 0
+Hash=1350768d2c52e6d5325403d8037296d8
+

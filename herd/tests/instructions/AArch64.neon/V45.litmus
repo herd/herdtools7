@@ -1,0 +1,13 @@
+AArch64 V45
+(* Tests STP - store pair, post-indexed *)
+{ 
+0:X0=x; 0:X1=y;
+}
+
+ P0                      ;
+ MOVI D0, #255           ;
+ MOVI D1, #255           ;
+ STP D0, D1, [X0], #-8    ;
+ LDR D2, [X0, #8]        ;
+ STR D2, [X1]            ;
+ forall (x=255 /\ y=255 /\ 0:X0!=x)

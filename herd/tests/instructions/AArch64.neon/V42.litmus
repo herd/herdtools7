@@ -1,0 +1,15 @@
+AArch64 V42
+(* Tests LDP - load pair with offset *)
+{ 
+0:X0=x; 0:X1=y; 0:X2=z;
+}
+
+ P0                     ;
+ MOV X3, #1             ;
+ MOV X4, #2             ;
+ STR X3, [X0, #4]       ;
+ STR X4, [X0, #8]      ;
+ LDP S0, S1, [X0, #4]   ;
+ STR S0, [X1]           ;
+ STR S1, [X2]           ;
+ forall (y=1 /\ z=2)
