@@ -377,12 +377,14 @@ and get_written e = match E.written_of e with
 
 
 
-(* Add (local) final edges in rfm, ie for all (register) location, find the last (po) store to it *)
+(* Add (local) final edges in rfm, ie for all (register) location, find the last (po+iico) store to it *)
 
 let add_finals es =
     U.LocEnv.fold
       (fun loc stores k ->
-      let stores = List.filter (fun x -> not (E.EventSet.mem x (es.E.speculated))) stores in
+        let stores =
+          List.filter
+            (fun x -> not (E.EventSet.mem x (es.E.speculated))) stores in
       match stores with
       | [] -> k
       | ew::stores ->
@@ -391,6 +393,9 @@ let add_finals es =
               (fun ew0 _k ->
                 if U.is_before_strict es ew0 ew then ew
                 else begin
+                  (* If writes to a given register by a given thread
+                     are not totally ordered, it gets weird to define
+                     the last or 'final'register write *)
                   assert (U.is_before_strict es ew ew0) ;
                   ew0
                 end)

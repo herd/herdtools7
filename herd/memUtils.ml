@@ -46,13 +46,21 @@ module Make(S : SemExtra.S) = struct
 
   let po_iico es =  E.EventRel.union (iico es) (po_strict es)
 
-(* slight extension of prog order *)
+  let do_po_strict es e1 e2 =
+    if S.do_deps then E.EventRel.mem (e1,e2) (po_strict es)
+    else E.po_strict e1 e2
+
+  (* Slight extension of prog order *)
+
   let is_before_strict es e1 e2 =
-    let p = e1,e2 in
-    E.EventRel.mem p es.E.intra_causality_data  ||
-    E.EventRel.mem p es.E.intra_causality_control ||
-    (if S.do_deps then E.EventRel.mem p (po_strict es)
-    else E.po_strict e1 e2)
+    (do_po_strict es e1 e2) ||           (* e1 is po-before e2 *)
+    (if do_po_strict es e2 e1 then false (* e2 is po-before e1 *)
+     else (* e1 and e2 are from the same instruction *)
+     let iico =
+       E.EventRel.union
+          es.E.intra_causality_data es.E.intra_causality_control in
+     E.EventRel.mem_transitive (e1,e2) iico)
+
 (* Fence *)
   let po_fence_po po pred =
     let r1 =
