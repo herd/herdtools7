@@ -29,7 +29,7 @@ type t =
 let voidstar = Pointer (Base "void")
 let word = Base "int"
 let quad = Base "int64_t"
-let int128 = Base "int128_t"
+let int128 = Array ("int",4)
 
 let rec  dump = function
   | Base s -> s
