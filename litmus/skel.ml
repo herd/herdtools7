@@ -2380,6 +2380,14 @@ module Make
         O.o "" ;
         ()
 
+      let dump_array_typedefs test =
+        iter_all_outs
+          (fun _ (_,t) ->
+            match t with
+            | CType.Array (t',sz) ->
+              O.f "typedef %s %s[%i];" t' (CType.dump t) sz
+            | _ -> ())
+          test
 
       let dump_def_ctx env test =
         O.o "/**********************/" ;
@@ -2387,6 +2395,7 @@ module Make
         O.o "/**********************/" ;
         O.o "" ;
         dump_vars_types test ;
+        dump_array_typedefs test;
         O.o "typedef struct {" ;
         let cpys = dump_vars env test in
         dump_out_vars test ;

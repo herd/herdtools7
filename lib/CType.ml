@@ -38,7 +38,7 @@ let rec  dump = function
   | Volatile t -> sprintf "%s volatile" (dump t)
   | Atomic t -> sprintf "_Atomic (%s)" (dump t)
   | Pointer t -> dump t  ^ "*"
-  | Array (t,sz) -> sprintf "%s[%i]" t sz
+  | Array (t,sz) -> sprintf "%s_%i_t" t sz
 
 let rec  debug = function
   | Base s -> sprintf "<%s>" s
