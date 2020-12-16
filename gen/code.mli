@@ -91,4 +91,4 @@ val add_tag : string -> v -> string
 
 val add_capability : string -> v -> string
 
-val add_vector : v -> string
+val add_vector : int array -> string

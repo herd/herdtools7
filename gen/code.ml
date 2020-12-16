@@ -151,4 +151,4 @@ let add_tag s t = Printf.sprintf "%s:%s" s (tag_of_int t)
 
 let add_capability s t = Printf.sprintf "0xffffc0000:%s:%i" s (if t = 0 then 1 else 0)
 
-let add_vector v = Printf.sprintf "{%i,%i,%i,%i}" v v v v
+let add_vector v = Printf.sprintf "{%i,%i,%i,%i}" v.(0) v.(1) v.(2) v.(3)

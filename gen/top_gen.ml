@@ -540,7 +540,7 @@ let max_set = IntSet.max_elt
       | Data x,Pte ->
           do_add_local_check_pte avoid_ptes st p i code f lst x
       | Data x,VecReg ->
-          let v = lst.C.next.C.evt.C.v in
+          let v = lst.C.next.C.evt.C.vecreg in
           let r,i,c,st = Comp.emit_obs VecReg st p i x in
           i,code@c,F.add_final_loc p r (Code.add_vector v) f,st
       | Code _,_ -> i,code,f,st

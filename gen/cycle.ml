@@ -25,7 +25,7 @@ module type S = sig
   type event =
       { loc : loc ; ord : int; tag : int;
         ctag : int; cseal : int; dep : int;
-        vecreg: int;
+        vecreg: int array;
         v   : v ;
         dir : dir option ;
         proc : Code.proc ;
@@ -124,7 +124,7 @@ module Make (O:Config) (E:Edge.S) :
   type event =
       { loc : loc ; ord : int; tag : int;
         ctag : int; cseal : int; dep : int;
-        vecreg: int;
+        vecreg: int array;
         v   : v ;
         dir : dir option ;
         proc : Code.proc ;
@@ -140,7 +140,7 @@ module Make (O:Config) (E:Edge.S) :
   let evt_null =
     { loc=Code.loc_none ; ord=0; tag=0;
       ctag=0; cseal=0; dep=0;
-      vecreg=0;
+      vecreg= [|0;0;0;0|];
       v=(-1) ; dir=None; proc=(-1); atom=None; rmw=false;
       cell=(-1); bank=Code.Ord; idx=(-1);
       pte=pte_default; }
@@ -183,7 +183,7 @@ module Make (O:Config) (E:Edge.S) :
 
   let debug_neon =
     if do_neon then fun e ->
-      sprintf " (vecreg=%i)" e.vecreg
+      sprintf " (vecreg={%i,%i,%i,%i})" e.vecreg.(0) e.vecreg.(1) e.vecreg.(2) e.vecreg.(3)
     else fun _ -> ""
 
   let debug_evt e =
@@ -621,7 +621,8 @@ let set_same_loc st n0 =
             let cseal = get_co old CapaSeal in
             n.evt <- { n.evt with ord=ord; ctag=ctag; cseal=cseal; }
           else if do_neon then
-            let vecreg = get_co old VecReg in
+            let v = get_co old VecReg in
+            let vecreg = [|v;v;v;v;|] in
             n.evt <- { n.evt with vecreg=vecreg; }
           end
         end ;

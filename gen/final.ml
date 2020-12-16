@@ -139,7 +139,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
             | Code.Ord ->
                 Some (I evt.C.C.v)
             | Code.VecReg ->
-                Some (S (Code.add_vector evt.C.C.v))
+                Some (S (Code.add_vector evt.C.C.vecreg))
             | Code.Tag ->
                 Some (S (Code.add_tag (Code.as_data evt.C.C.loc) evt.C.C.v))
             | Code.Pte ->
