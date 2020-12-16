@@ -323,7 +323,11 @@ module RegMap = A.RegMap)
           (fun reg ->
             let ty = match A.internal_init reg with
             | Some (_,ty) -> ty
-            | None -> CType.dump (RegMap.safe_find CType.word reg reg_env) in
+            | None ->
+              let t = (RegMap.safe_find CType.word reg reg_env) in
+              match t with
+              | CType.Array _ when A.arch = `AArch64 -> "int128_t"
+              | _ -> CType.dump t in
             fprintf chan "%s%s %s;\n"
               indent ty (dump_trashed_reg reg))
           trashed ;
