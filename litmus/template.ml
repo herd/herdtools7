@@ -341,7 +341,13 @@ module Make(O:Config)(A:I) =
                   if error t0 t then begin
                     Warn.user_error
                       "Register %s has different types: <%s> and <%s>"
-                      (A.reg_to_string r) (CType.dump t0) (CType.dump t)
+                      (A.reg_to_string r)
+                      (match t0 with
+                      | CType.Array _ -> CType.debug t0
+                      | _ -> CType.dump t0)
+                      (match t with
+                      | CType.Array _ -> CType.debug t
+                      | _ -> CType.dump t)
                   end else
                     if not
                         ((CType.is_ptr t0 && CType.is_ptr t) ||
@@ -350,7 +356,13 @@ module Make(O:Config)(A:I) =
                         Warn.warn_always
                       "File \"%s\" Register %s has different types: <%s> and <%s>"
                       tst.name.Name.file
-                      (A.reg_to_string r) (CType.dump t0) (CType.dump t)
+                      (A.reg_to_string r)
+                      (match t0 with
+                      | CType.Array _ -> CType.debug t0
+                      | _ -> CType.dump t0)
+                      (match t with
+                      | CType.Array _ -> CType.debug t
+                      | _ -> CType.dump t)
                 end ;
                 RegMap.add r t m)
               m  t.reg_env)
