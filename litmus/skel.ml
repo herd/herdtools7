@@ -395,10 +395,8 @@ module Make
         O.o "#include <assert.h>" ;
         O.o "#include <time.h>" ;
         O.o "#include <limits.h>" ;
+        O.o "#include <string.h>";
         O.o "#include \"utils.h\"" ;
-        if Cfg.sysarch = `AArch64 then begin
-          O.o "#include <string.h>"
-        end ;
         if Cfg.c11 then O.o "#include <stdatomic.h>";
         O.o "#include \"outs.h\"" ;
         if do_affinity then begin
