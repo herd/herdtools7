@@ -77,7 +77,12 @@ module Make(A:Arch_herd.S) =
     let collect_atom a r =
       let open ConstrGen in
       match a with
-      | LV (rloc,_v) -> A.LocSet.add (loc_of_rloc rloc) r
+      | LV (Loc loc,_v) -> A.LocSet.add loc r
+      | LV (Deref (loc,os),_) ->
+          let loc = begin match A.scale_location_with_offset loc os with
+            | Some loc -> loc
+            | _ -> loc end in
+          A.LocSet.add loc r
       | LL (l1,l2) -> A.LocSet.add l1 (A.LocSet.add l2 r)
       | FF _ ->  r
 
@@ -113,35 +118,19 @@ module Make(A:Arch_herd.S) =
       let prog,starts = Load.load nice_prog in
       let flocs = List.map fst locs in
       let init_state = A.build_state init in
-      let _state_list = A.state_to_list init_state in
-      (* we might have accesses in the final state like v[2] *)
-      (* this depends on the size of the vector types in the initial state *)
-      (* e.g when uint64_t v, each elem is 8 bytes, so 2*8 is 16 bytes offset*)
-      (* we need to pass this metadata to the final states locs *)
-      let final = final in
-(* Luc: Useless now ???
+      (* init_state contains vector size metadata, add it to final constrs*)
+      (* Needed so we can align a scaled access according to size of the type *)
+      let final =
         ConstrGen.map_constr
-        (function
-         | ConstrGen.LV (l,v)-> begin match l with
-           | (A.Location_global (A.I.V.Val (Constant.Symbolic ((s,t,c,_),os)) as sym)) ->
-             let vals =
-               List.filter
-                 (function
-                  | ((A.Location_global (A.I.V.Val (Constant.Symbolic ((s2,_,_,_),_)))),_) -> Misc.string_eq s s2
-                  | _ -> false)
-                 state_list in
-             begin match vals with
-             | ((A.Location_global (A.I.V.Val (Constant.Symbolic ((_,_,_,Some (ps,ts)),_)))),_)::_
-               when Constant.is_aligned_to_vec (ps,ts) (os*ps) ->
-                ConstrGen.LV (A.Location_global (A.I.V.Val (Constant.Symbolic ((s,t,c,Some (ps,ts)),os*ps))),v)
-             | _::_ -> Warn.user_error "Unaligned vector offset %s in final state" (A.I.V.pp_v sym)
-             | _ -> ConstrGen.LV(l,v)
-             end
-           | _ -> ConstrGen.LV (l,v)
-          end
-         | r -> r)
-        final in
- *)
+          (function
+           | ConstrGen.LV (ConstrGen.Deref (l,os),v) ->
+              let l =
+              match A.add_metadata_to_location l os init_state with
+              | Some loc -> loc
+              | _ -> l in
+              ConstrGen.LV (ConstrGen.Deref (l,os),v)
+           | r -> r)
+          final in
       let displayed = (* Luc: Doubt purpose of displayed ? *)
         let flocs = A.LocSet.of_list (List.map ConstrGen.loc_of_rloc flocs) in
         ConstrGen.fold_constr collect_atom final flocs in

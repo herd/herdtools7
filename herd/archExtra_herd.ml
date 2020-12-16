@@ -72,7 +72,7 @@ module type S = sig
 
 (* Extra for locations *)
   val maybev_to_location : MiscParser.maybev -> location
-  val do_dump_location : (string -> string) -> location -> string
+  val do_dump_location : (string -> string) -> bool -> location -> string
   val dump_location : location -> string
 
   val undetermined_vars_in_loc : location -> v option
@@ -91,7 +91,7 @@ module type S = sig
 
   val state_empty : state
   val pp_state : state -> string
-  val do_dump_state : (string -> string) -> state -> string
+  val do_dump_state : (string -> string) -> state -> bool -> string
   val dump_state : state -> string
   val pp_nice_state :
       state -> string (* delim, as in String.concat  *)
@@ -99,6 +99,8 @@ module type S = sig
 
   val build_state : (location * (MiscParser.run_type * v)) list -> state
   val build_concrete_state : (location * int) list -> state
+  val scale_location_with_offset : location -> int -> location option
+  val add_metadata_to_location : location -> int -> state -> location option
 
   val state_is_empty : state -> bool
   val state_add : state -> location -> v -> state
@@ -239,6 +241,11 @@ module Make(C:Config) (I:I) : S with module I = I
 
       let pp_global = I.V.pp C.hexa
 
+      (* to print final states scaled according to vector sizes*)
+      let pp_global_scaled s (ps,ts) o =
+        assert (Constant.is_aligned_to_vec (ps,ts) o);
+        Printf.sprintf "%s[%i]" s (o / ps)
+
       module LocArg =
         struct
           type arch_reg = I.arch_reg
@@ -262,12 +269,15 @@ module Make(C:Config) (I:I) : S with module I = I
         if C.brackets then Printf.sprintf "[%s]"
         else fun s -> s
 
-      let do_dump_location tr = function
+      let do_dump_location tr scaled = function
         | Location_reg (proc,r) ->
             tr (string_of_int proc ^ ":" ^ I.pp_reg r)
+        | Location_global (I.V.Val (Constant.Symbolic ((s,_,_,Some (ps,ts)),os)))
+          when scaled && os > 0 -> (* should we make a pp_global_scaled in I.V? *)
+            do_brackets (pp_global_scaled s (ps,ts) os)
         | Location_global a -> do_brackets (pp_global a)
 
-      let dump_location = do_dump_location Misc.identity
+      let dump_location = do_dump_location Misc.identity false
 
 (* This redefines pp_location from Location.Make ... *)
       let pp_location l = match l with
@@ -337,11 +347,11 @@ module Make(C:Config) (I:I) : S with module I = I
         pp_nice_state st " "
           (fun l v -> pp_location l ^ pp_equal ^ I.V.pp C.hexa v ^";")
 
-      let do_dump_state tr st =
+      let do_dump_state tr st scaled =
         pp_nice_state st " "
-          (fun l v -> do_dump_location tr l ^ "=" ^ I.V.pp C.hexa v ^";")
+          (fun l v -> do_dump_location tr scaled l ^ "=" ^ I.V.pp C.hexa v ^";")
 
-      let dump_state st = do_dump_state Misc.identity st
+      let dump_state st = do_dump_state Misc.identity st false
 
       (* Simplified typing, size only, integer types only *)
 
@@ -411,6 +421,45 @@ module Make(C:Config) (I:I) : S with module I = I
             State.add loc (I.V.intToV v) st)
           State.empty bds
 
+      (* we might have accesses in the final state like v[2] *)
+      (* this depends on the size of the vector types in the initial state *)
+      (* e.g when uint64_t v, each elem is 8 bytes, so 2*8 is 16 bytes offset*)
+      (* This function scales the offset with optional metadata, raises User Error if no metadata exists*)
+      let scale_location_with_offset loc os =
+        begin match loc with
+        | Location_global (I.V.Val (Constant.Symbolic ((s,t,c,Some (ps,ts)),_)))
+            when Constant.is_aligned_to_vec (ps,ts) (os*ps) ->
+          Some (Location_global
+            (I.V.Val (Constant.Symbolic ((s,t,c,Some(ps,ts)),os*ps))))
+        | _ -> Warn.user_error
+                "Unaligned vector %s offset %d in final state"
+                (pp_location loc) os
+        end
+
+      (* lookup vector size metadata in st, update loc vec_data field with metadata *)
+      (* do alignment checks too *)
+      let add_metadata_to_location loc os st =
+        (* First lookup l[0] to get vector metadata*)
+        let base_loc =
+          List.find_opt
+            (fun (l2,_) -> location_compare loc l2 = 0)
+            (state_to_list st) in
+        begin match base_loc with
+        | Some (Location_global (I.V.Val
+          (Constant.Symbolic ((_,_,_,(Some (ps,ts) as vs)),os))),_)
+           when Constant.is_aligned_to_vec (ps,ts) (os*ps) ->
+           (* if l[0] has vec metadata and is aligned then return loc with metadata *)
+           begin match loc with
+           | Location_global (I.V.Val (Constant.Symbolic ((s,t,c,_),os))) ->
+             Some (Location_global
+               (I.V.Val (Constant.Symbolic ((s,t,c,vs),os))))
+           | _ -> None
+           end
+        | _ -> Warn.user_error
+                "Unaligned vector %s offset %d in final state"
+                (pp_location loc) os
+        end
+
 (* To get protection against wandering undetermined locations,
    all loads from state are by this function *)
       exception LocUndetermined
@@ -474,7 +523,7 @@ module Make(C:Config) (I:I) : S with module I = I
       type final_state = state * FaultSet.t
 
       let do_dump_final_state tr (st,flts) =
-        let pp_st = do_dump_state tr st in
+        let pp_st = do_dump_state tr st true in
         if FaultSet.is_empty flts then pp_st
         else
           pp_st ^ " " ^ FaultSet.pp_str " " (fun f -> pp_fault f ^ ";") flts

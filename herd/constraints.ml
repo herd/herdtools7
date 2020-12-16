@@ -113,9 +113,15 @@ module Make (C:Config) (A : Arch_herd.S) :
 
           let rec check_prop p senv (state,flts as st) = match p with
           | Atom (LV (Loc l,v)) -> AM.state_mem senv state l v
-          | Atom (LV (Deref _,_)) ->
-              prerr_endline "TODO" ;
-              assert false
+          | Atom (LV (Deref (l,os),v1)) ->
+              (* l has the base location, os is a multiple of the size of the type *)
+              let scaled_loc =
+                begin match A.scale_location_with_offset l os with
+                | Some loc -> loc
+                | _ -> l end in
+              (* lookup scaled location in state, e.g uint64_t v[1] is v+8 *)
+              let v2 = AM.look_in_state senv state scaled_loc in
+              A.V.compare v1 v2 = 0
           | Atom (LL (l1,l2)) ->
               begin try
                 let v1 = AM.look_in_state senv state l1
@@ -261,11 +267,11 @@ module Make (C:Config) (A : Arch_herd.S) :
 
 
         let pp_loc tr m loc = match m with
-        | Ascii|Dot -> A.do_dump_location tr loc
+        | Ascii|Dot -> A.do_dump_location tr false loc
         | Latex|DotFig -> A.pp_location loc
 
         let pp_rloc tr m rloc = match rloc with
-          | Loc loc -> pp_loc tr m loc
+          | Deref (loc,0) | Loc loc -> pp_loc tr m loc
           | Deref (loc,i) -> sprintf "%s[%i]" (pp_loc tr m loc) i
 
         let pp_rvalue tr m loc = match loc with

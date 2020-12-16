@@ -3,7 +3,7 @@ AArch64 A134
 (* This should fail as v[16] is unallocated *)
 
 
-{ 0:X0=42; 0:X2 = v; int64_t v[2] = {1, 2}; v[3] = 3 }
+{ 0:X0=42; 0:X2 = v; int64_t v[2] = {1, 2} }
 
 P0;
   STR X0, [X2, #16];

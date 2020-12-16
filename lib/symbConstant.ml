@@ -44,12 +44,7 @@ module Make(Scalar:Scalar.S) = struct
       let s = String.concat "," (List.map (pp hexa) vs)
       in sprintf "[%s]" s
     | Symbolic (s,0) -> pp_location s
-    (* if we do not have vector offset metadata, print offset in bytes*)
-    | Symbolic ((_,_,_,None) as s,o) -> sprintf "%s[%i]" (pp_location s) o
-    (* otherwise print offset by size of type *)
-    | Symbolic ((_,_,_,Some ((_ps,_) as vs)) as s,o) ->
-      assert (true || Constant.is_aligned_to_vec vs o);
-      sprintf "%s[%i]" (pp_location s) (o)
+    | Symbolic (s,o) -> sprintf "%s+%i" (pp_location s) o
     | Label (p,lbl)  -> sprintf "%i:%s" p lbl
     | Tag s -> sprintf ":%s" s
 

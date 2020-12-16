@@ -1,6 +1,6 @@
 Test A8 Allowed
 States 1
-0:X0=0; 0:X1=x[44];
+0:X0=0; 0:X1=x+44;
 Ok
 Witnesses
 Positive: 1 Negative: 0

@@ -143,7 +143,7 @@ atom:
 atom_init:
 | atom { let x,v = $1 in x,(TyDef,v) }
 | NAME location
-/* We either have arrays or scalars here: typ v[i] = ... or typ v = ...*/
+/* We either have uninitalized arrays or scalars here: "typ v[i]" or "typ v" */
    { match $2 with
      | Location_global (Symbolic (s,sz)) when sz > 0 ->
        let xs = Misc.replicate sz ParsedConstant.zero in
@@ -152,12 +152,15 @@ atom_init:
      | _ -> ($2, (Ty $1,ParsedConstant.zero)) }
 | ATOMIC NAME location { $3,(Atomic $2,ParsedConstant.zero)}
 | NAME location EQUAL maybev { ($2,(Ty $1,$4))}
-| NAME location EQUAL LCURLY maybev_list RCURLY
+| NAME locindex EQUAL LCURLY maybev_list RCURLY
    { match $2 with
-     | Location_global (Symbolic (s,sz)) when sz = List.length $5 ->
+     | Deref (Location_global (Symbolic ((_,_,_,_),0)) as s,sz) when sz = List.length $5 ->
        let arr = (TyArray ($1,sz),Constant.mk_vec sz $5) in
-       (Location_global (Symbolic (s,0)), arr)
+       (s, arr)
      | _ -> assert false }
+/* prohibit "v[i] = scalar" form in init allow only "v[i]={scalar_list}" */
+| locindex EQUAL maybev { raise Parsing.Parse_error }
+| NAME locindex EQUAL maybev { raise Parsing.Parse_error }
 | NAME location EQUAL ATOMICINIT LPAR maybev RPAR { ($2,(Ty $1,$6))}
 | NAME STAR location { ($3,(Pointer $1,ParsedConstant.zero))}
 | NAME STAR location EQUAL amperopt maybev { ($3,(Pointer $1,$6))}
