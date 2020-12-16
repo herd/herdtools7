@@ -135,6 +135,19 @@ let dump_state_atom dump_loc dump_val (loc,(t,v)) = match t with
 | TyArray (t,sz) ->
     sprintf "%s %s[%i]" t (dump_loc loc) sz
 
+(* Simplified typing, size only, integer types only *)
+let size_of maximal = function
+| "atomic_t"
+| "int"|"long"
+| "int32_t"
+| "uint32_t" ->  MachSize.Word
+| "char"|"int8_t" |"uint8_t" -> MachSize.Byte
+| "short" | "int16_t" | "uint16_t" -> MachSize.Short
+| "int64_t" | "uint64_t" -> MachSize.Quad
+| "int128_t" | "uint128_t" -> MachSize.S128
+| "intptr_t" | "uintptr_t" -> maximal (* Maximal size = ptr size *)
+| t -> Warn.fatal "Cannot find the size of type %s" t
+
 (* Packed result *)
 type info = (string * string) list
 

@@ -1102,7 +1102,7 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
                 let sz =
                   match loc with
                   | A.Location_global
-                    (A.V.Val (Constant.Symbolic ((s,_,_),0)))
+                    (A.V.Val (Constant.Symbolic ((s,_,_,_),0)))
                         when not (Misc.check_atag s) ->
                       A.look_size size_env s
                   | _ -> def_size in

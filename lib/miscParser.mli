@@ -67,6 +67,8 @@ type state = (location * (run_type * maybev)) list
 val dump_state_atom :
   ('loc -> string) -> ('v -> string) -> ('loc * (run_type * 'v)) -> string
 
+val size_of : MachSize.sz -> string -> MachSize.sz
+
 (* Packed result *)
 type info = (string * string) list
 
