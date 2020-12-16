@@ -1621,11 +1621,20 @@ module Make
               List.iter
                 (fun (reg,t) ->
                   if Cfg.cautious then O.oii "mcautious();" ;
-                  O.fii "_a->%s[_i] = %s;"
-                    (A.Out.dump_out_reg proc reg)
-                    (match CType.is_ptr t with
-                    | false -> sentinel_of t
-                    | true -> "NULL"))
+                  match t with
+                  | Array (_,sz) ->
+                    O.fii "for (int _j = 0; _j < %s; _j++) _a->%s[_i][_j] = %s;"
+                      (string_of_int sz)
+                      (A.Out.dump_out_reg proc reg)
+                      (match CType.is_ptr t with
+                      | false -> sentinel_of t
+                      | true -> "NULL")
+                  | _ ->
+                    O.fii "_a->%s[_i] = %s;"
+                      (A.Out.dump_out_reg proc reg)
+                      (match CType.is_ptr t with
+                      | false -> sentinel_of t
+                      | true -> "NULL"))
                 outs)
             test.T.code ;
         end ;
