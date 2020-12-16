@@ -158,7 +158,7 @@ module Make(O:Config)(A:I) =
              (List.fold_left
                 (fun k (_,v) ->
                   let rec f v k = match v with
-                  | Symbolic ((s,_,_,_),_) -> s::k
+                  | Symbolic {Constant.name=s;_} -> s::k
                   | ConcreteVector (_,vs) ->
                       List.fold_right (fun v k -> f v k) vs k
                   | Concrete _|Label _|Tag _ -> k in

@@ -33,7 +33,7 @@ module Make(O:sig val memory : Memory.t val hexa : bool end) = struct
     let open Constant in
     function
       | Concrete i -> "addr_" ^ V.Scalar.pp O.hexa i
-      | Symbolic ((s,None,0,_),_) -> s
+      | Symbolic {name=s;tag=None;cap=0;_} -> s
       | Label _|Symbolic _|Tag _|ConcreteVector _ -> assert false
 
   module Internal = struct

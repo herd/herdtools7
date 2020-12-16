@@ -25,18 +25,37 @@ type tag = string option
 type cap = int
 type offset = int
 
+(* Symbolic location metadata*)
+(* Memory cell, with optional tag, capability<128:95>,optional vector metadata, and offset *)
+type symbolic_data =
+  {
+   name : string ;
+   tag : tag ;
+   cap : cap ;
+   vdata : vdata ;
+   offset : offset ;
+  }
+
 type 'scalar t =
   | Concrete of 'scalar
-(* Memory cell, with optional tag, capability<128:95>,optional vector metadata, and offset *)
-  | Symbolic  of (string * tag * cap * vdata) * offset
+  | Symbolic  of symbolic_data
   | ConcreteVector of int * 'scalar t list
   | Label of Proc.t * string     (* In code *)
   | Tag of string
 
-let mk_sym s = Symbolic ((s,None,0,None),0)
+let default_symbolic_data =
+  {
+   name = "" ;
+   tag = None ;
+   cap = 0 ;
+   vdata = None ;
+   offset = 0 ;
+  }
+
+let mk_sym s = Symbolic {default_symbolic_data with name=s }
 
 and get_sym = function
-  | Symbolic ((s,_,_,_),_) -> s
+  | Symbolic s -> s.name
   | Concrete _|Label _| Tag _ | ConcreteVector _ -> assert false
 
 let mk_vec sz v =
@@ -54,8 +73,8 @@ let is_aligned_to_vec (ps,ts) idx =
   if idx > 0 then (ps mod idx = 0) && idx < (ts*ps) else idx=0
 
 let is_non_mixed_symbol = function
-  | Symbolic ((_,_,_,Some vs),idx) -> is_aligned_to_vec vs idx
-  | Symbolic (_,idx) -> idx=0
+  | Symbolic {vdata=Some vs; offset=idx;_} -> is_aligned_to_vec vs idx
+  | Symbolic {offset=idx;_} -> idx=0
   | Concrete _|Label _| Tag _| ConcreteVector _ -> true
 
 let default_tag = Tag "green"

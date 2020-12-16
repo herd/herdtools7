@@ -17,7 +17,9 @@
 
 module Bell = BellBase
 open Bell
-let mk_sym s = Constant.Symbolic ((s,None,0,None),0)
+let mk_sym s = Constant.Symbolic
+  {Constant.default_symbolic_data with Constant.name=s}
+
 %}
 
 %token EOF SEMI COMMA PIPE COLON LPAR RPAR RBRAC LBRAC LBRACE RBRACE SCOPES LEVELS REGIONS MOV AND ADD BRANCH EQ NEQ READ WRITE FENCE RMW XOR PLUS CALL

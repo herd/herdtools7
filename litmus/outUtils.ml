@@ -50,7 +50,7 @@ module Make(O:Config)(V:Constant.S) = struct
 
   let dump_v v = match v with
   | Concrete _ -> V.pp O.hexa v
-  | Symbolic ((a,None,0,_),0) -> dump_addr a
+  | Symbolic {name=a;tag=None;cap=0;offset=0;_} -> dump_addr a
   | ConcreteVector _ -> V.pp O.hexa v
   | Tag _
   | Symbolic _

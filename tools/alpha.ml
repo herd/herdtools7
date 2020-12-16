@@ -179,14 +179,14 @@ struct
     let notag_value () = Warn.user_error "No tag value for %s" Sys.argv.(0)
 
     let collect_value f v k = match v with
-    | Symbolic ((s,_,_,_),_) -> f s k
+    | Symbolic {name=s;_} -> f s k
     | Concrete _ -> k
     | ConcreteVector _ -> k
     | Label _ -> nolabel_value ()
     | Tag _ -> notag_value ()
 
     let map_value f v = match v with
-    | Symbolic ((s,t,c,v),o) -> Symbolic ((f s,t,c,v),o)
+    | Symbolic ({name=s;_} as sym) -> Symbolic {sym with name=f s}
     | Concrete _ -> v
     | ConcreteVector _ -> v
     | Label _ -> nolabel_value ()

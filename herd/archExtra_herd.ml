@@ -270,10 +270,12 @@ module Make(C:Config) (I:I) : S with module I = I
         if C.brackets then Printf.sprintf "[%s]"
         else fun s -> s
 
-      let do_dump_location tr scaled = function
+      let do_dump_location tr scaled =
+        let open Constant in function
         | Location_reg (proc,r) ->
             tr (string_of_int proc ^ ":" ^ I.pp_reg r)
-        | Location_global (I.V.Val (Constant.Symbolic ((s,_,_,Some (ps,ts)),os)))
+        | Location_global (I.V.Val
+          (Constant.Symbolic {name=s;vdata=Some (ps,ts);offset=os;_}))
           when scaled && os > 0 -> (* should we make a pp_global_scaled in I.V? *)
             do_brackets (pp_global_scaled s (ps,ts) os)
         | Location_global a -> do_brackets (pp_global a)
@@ -382,9 +384,18 @@ module Make(C:Config) (I:I) : S with module I = I
               let vec_data = Some (prim_sz, sz) in
               let vs = List.mapi
                 (fun i v ->
+                  let open Constant in
+                  let s = I.V.pp false locval in
+                  let tag = None in
+                  let cap = 0 in
+                  let sym_data =
+                    { name=s ;
+                      tag=tag ;
+                      cap=cap ;
+                      vdata=vec_data;
+                      offset=i*prim_sz} in
                   Location_global
-                    (I.V.Val (Constant.Symbolic((I.V.pp false locval, None, 0, vec_data),
-                                                 i*prim_sz))),
+                    (I.V.Val (Symbolic sym_data)),
                   (MiscParser.Ty array_prim,I.V.cstToV v))
                 vs in
               List.fold_left
@@ -407,11 +418,12 @@ module Make(C:Config) (I:I) : S with module I = I
       (* e.g when uint64_t v, each elem is 8 bytes, so 2*8 is 16 bytes offset*)
       (* This function scales the offset with optional metadata, raises User Error if no metadata exists*)
       let scale_location_with_offset loc os =
-        begin match loc with
-        | Location_global (I.V.Val (Constant.Symbolic ((s,t,c,Some (ps,ts)),_)))
-            when Constant.is_aligned_to_vec (ps,ts) (os*ps) ->
+        let open Constant in
+        begin match global loc with
+        | Some (I.V.Val (Symbolic ({vdata=Some (ps,ts);_} as s)))
+            when is_aligned_to_vec (ps,ts) (os*ps) ->
           Some (Location_global
-            (I.V.Val (Constant.Symbolic ((s,t,c,Some(ps,ts)),os*ps))))
+            (I.V.Val (Symbolic ({s with offset=os*ps}))))
         | _ -> Warn.user_error
                 "Unaligned vector %s offset %d in final state"
                 (pp_location loc) os
@@ -420,6 +432,7 @@ module Make(C:Config) (I:I) : S with module I = I
       (* lookup vector size metadata in st, update loc vec_data field with metadata *)
       (* do alignment checks too *)
       let add_metadata_to_location loc os st =
+        let open Constant in
         (* First lookup l[0] to get vector metadata*)
         let base_loc =
           List.find_opt
@@ -427,13 +440,14 @@ module Make(C:Config) (I:I) : S with module I = I
             (state_to_list st) in
         begin match base_loc with
         | Some (Location_global (I.V.Val
-          (Constant.Symbolic ((_,_,_,(Some (ps,ts) as vs)),os))),_)
-           when Constant.is_aligned_to_vec (ps,ts) (os*ps) ->
+          (Symbolic {vdata=Some (ps,ts);offset=os;_})),_)
+           when is_aligned_to_vec (ps,ts) (os*ps) ->
+           let vs = Some (ps,ts) in
            (* if l[0] has vec metadata and is aligned then return loc with metadata *)
-           begin match loc with
-           | Location_global (I.V.Val (Constant.Symbolic ((s,t,c,_),os))) ->
+           begin match global loc with
+           | Some (I.V.Val (Symbolic s)) ->
              Some (Location_global
-               (I.V.Val (Constant.Symbolic ((s,t,c,vs),os))))
+               (I.V.Val (Symbolic {s with vdata=vs})))
            | _ -> None
            end
         | _ -> Warn.user_error
@@ -460,9 +474,11 @@ module Make(C:Config) (I:I) : S with module I = I
 
       let look_size env s = StringMap.safe_find MachSize.Word s env
 
-      let look_size_location env loc = match loc with
-      | Location_global (I.V.Val (Constant.Symbolic ((s,_,_,_),0))) -> look_size env s
-      | _ -> assert false
+      let look_size_location env loc =
+        let open Constant in
+        match global loc with
+        | Some (I.V.Val (Symbolic {name=s;offset=0;_})) -> look_size env s
+        | _ -> assert false
             (* Typing *)
 
       let size_env_empty = StringMap.empty
@@ -601,8 +617,9 @@ module Make(C:Config) (I:I) : S with module I = I
                  content yet *)
               raise LocUndetermined
           | None ->
-              match loc with
-              | Location_global (I.V.Val (Constant.Symbolic ((s,_,_,_),0)) as a)   ->
+              let open Constant in
+              match global loc with
+              | Some (I.V.Val (Symbolic {name=s;offset=0;_}) as a)   ->
                   let sz = look_size senv s in
                   let eas = byte_eas sz a in
                   let vs = List.map (get_of_val st) eas in

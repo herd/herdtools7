@@ -15,7 +15,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-let mk_sym s = Constant.Symbolic ((s,None,0,None),0)
+let mk_sym s = Constant.Symbolic
+  {Constant.default_symbolic_data with Constant.name=s}
 
 open CBase
 open MemOrder

@@ -21,15 +21,26 @@ type tag = string option
 type cap = int
 type offset = int
 
+(* Symbolic location metadata*)
+(* Memory cell, with optional tag, capability<128:95>,optional vector metadata, and offset *)
+type symbolic_data =
+  {
+   name : string ;
+   tag : tag ;
+   cap : cap ;
+   vdata : vdata ;
+   offset : offset ;
+  }
+
 type 'scalar t =
   | Concrete of 'scalar
 (* Memory cell, with optional tag, capability<128:95>,optional vector metadata, and offset *)
-  | Symbolic  of (string * tag * cap * vdata) * offset
+  | Symbolic  of symbolic_data
   | ConcreteVector of int * 'scalar t list
   | Label of Proc.t * string     (* In code *)
   | Tag of string
 
-
+val default_symbolic_data : symbolic_data
 val mk_sym : string -> 'scalar t
 val get_sym : 'scalar t -> string
 val mk_vec : int -> 'scalar t list -> 'scalar t

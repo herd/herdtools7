@@ -18,15 +18,17 @@
 open Constant
 open MiscParser
 open ConstrGen
-let mk_sym_tag s t = Symbolic ((s,Some t,0,None),0)
+let mk_sym_tag s t =
+  Symbolic {default_symbolic_data with name=s;tag=Some t;}
 let mk_sym_morello p s t =
   let p_int = (Misc.string_as_int p) in
   if p_int land 0x7 <> 0 || p_int >= 1 lsl 36
     then Printf.eprintf "Warning: incorrect address encoding: %#x\n" p_int ;
   let truncated_perms = p_int lsr 3 in
   let tag = if Misc.string_as_int t <> 0 then 1 else 0 in
-  Symbolic ((s,None,truncated_perms lor (tag lsl 33),None ),0)
-let mk_sym_with_index s i = Symbolic ((s,None,0,None),Misc.string_as_int i)
+  Symbolic {default_symbolic_data with name=s;cap=truncated_perms lor (tag lsl 33)}
+let mk_sym_with_index s i = Symbolic
+  {default_symbolic_data with name=s; offset=Misc.string_as_int i}
 let mk_lab p s = Label (p,s)
 %}
 
@@ -145,16 +147,16 @@ atom_init:
 | NAME location
 /* We either have uninitalized arrays or scalars here: "typ v[i]" or "typ v" */
    { match $2 with
-     | Location_global (Symbolic (s,sz)) when sz > 0 ->
+     | Location_global (Symbolic ({offset=sz;_} as s)) when sz > 0 ->
        let xs = Misc.replicate sz ParsedConstant.zero in
        let arr = TyArray ($1,sz),Constant.mk_vec sz xs in
-       (Location_global (Symbolic (s,0)), arr)
+       (Location_global (Symbolic ({s with offset=0})), arr)
      | _ -> ($2, (Ty $1,ParsedConstant.zero)) }
 | ATOMIC NAME location { $3,(Atomic $2,ParsedConstant.zero)}
 | NAME location EQUAL maybev { ($2,(Ty $1,$4))}
 | NAME locindex EQUAL LCURLY maybev_list RCURLY
    { match $2 with
-     | Deref (Location_global (Symbolic ((_,_,_,_),0)) as s,sz) when sz = List.length $5 ->
+     | Deref (Location_global (Symbolic ({offset=0;_})) as s,sz) when sz = List.length $5 ->
        let arr = (TyArray ($1,sz),Constant.mk_vec sz $5) in
        (s, arr)
      | _ -> assert false }

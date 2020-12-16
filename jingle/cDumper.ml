@@ -116,7 +116,7 @@ let get_params init i =
     (fun a ->
      function
      | (MiscParser.Location_reg(p,_),
-	(_,Constant.Symbolic ((s,_,_,_),_))) when i = p ->
+   (_,Constant.Symbolic {Constant.name=s;_})) when i = p ->
 	{ CAst.param_ty = CType.(Volatile (Base "int"));
 	  CAst.param_name = s }::a
      | _ -> a
