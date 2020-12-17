@@ -621,9 +621,10 @@ let set_same_loc st n0 =
             let cseal = get_co old CapaSeal in
             n.evt <- { n.evt with ord=ord; ctag=ctag; cseal=cseal; }
           else if do_neon then
+            let ord = get_co old Ord in
             let v = get_co old VecReg in
             let vecreg = [|v;v;v;v;|] in
-            n.evt <- { n.evt with vecreg=vecreg; }
+            n.evt <- { n.evt with ord=ord; vecreg=vecreg; }
           end
         end ;
         begin match n.evt.dir with
@@ -651,7 +652,9 @@ let set_same_loc st n0 =
                 | VecReg ->
                     let v = get_co next bank in
                     n.evt <- { n.evt with v = v; } ;
-                    do_set_write_val (set_co old bank v)
+                    set_cell n (get_co old Ord) ;
+                    do_set_write_val
+                      (set_co old bank v)
                       (next_co next bank) pte_val ns
                 | Pte ->
                     let pte_val =
