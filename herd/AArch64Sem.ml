@@ -912,54 +912,6 @@ module Make
         do_str sz AArch64.L
           (read_reg_ord rd ii) (read_reg_data sz rs ii) ii
 
-      let movi_v r k shift ii =
-        let open AArch64Base in
-        let sz = neon_sz r and
-        esize = neon_esize r in 
-        begin match esize, shift with
-        | 8, S_NOEXT | 16, S_NOEXT | 32, S_NOEXT | 64, S_NOEXT | 128, S_NOEXT ->
-          M.unitT (V.intToV k)
-        | 8, S_LSL(0 as amount)
-        | 16, S_LSL(0|8 as amount)
-        | 32, S_LSL(0|8|16|24 as amount) 
-        | 32, S_MSL(8|16 as amount) ->
-          M.op1 (Op.LeftShift amount) (V.intToV k)
-        | _, S_LSL(n) ->
-          Warn.fatal
-            "illegal shift immediate %d in %d-bit instruction movi"
-            n
-            esize
-        | _, s ->
-          Warn.fatal
-            "illegal shift operand %s in %d-bit instruction movi"
-            (pp_barrel_shift "," s pp_imm)
-            esize
-        end
-          >>= (fun v ->  write_reg_neon_all_elem sz r v ii)
-          >>! B.Next
-
-      let movi_s var r k ii =
-        let open AArch64Base in
-        begin match var with
-        | VSIMD64 ->
-          M.unitT (V.intToV k)
-        | _ -> 
-          Warn.fatal
-          "illegal scalar register size in instruction movi"
-        end
-          >>= (fun v -> write_reg_neon_sz (tr_simd_variant var) r v ii)
-          >>! B.Next
-
-      let simd_op op sz r1 r2 r3 ii =
-        read_reg_neon false r3 ii >>|
-        read_reg_neon false r2 ii >>=
-        begin match op with
-        | AArch64.ADD -> fun (v1,v2) -> M.add v1 v2 
-        | AArch64.EOR -> fun (v1,v2) -> M.op Op.Xor v1 v2
-        | _ -> Warn.fatal "unsupported Neon operations"
-        end >>=
-        fun v -> write_reg_neon_sz sz r1 v ii >>! B.Next
-
       and stxr sz t rr rs rd ii =
         let open AArch64Base in
         let an = match t with
@@ -1093,6 +1045,70 @@ module Make
           (read_reg_ord rn ii)
           (read_reg_data sz rs ii)
           an ii
+
+      (* Neon extension *)
+      let simd_ldr sz addr rd ii =
+        do_read_mem sz AArch64.N addr ii >>= fun v ->
+        write_reg_neon_sz sz rd v ii >>! B.Next
+
+      let simd_str sz rs rd kr s ii =
+        get_ea rs kr s ii >>|
+        read_reg_neon true rd ii >>= fun (addr,v) ->
+        write_mem sz addr v ii >>! B.Next
+
+      let simd_str_p sz rs rd k ii = 
+        read_reg_ord rs ii >>|
+        read_reg_neon true rd ii >>= fun (addr,v) ->
+        write_mem sz addr v ii >>|
+        post_kr rs addr (AArch64.K k) ii >>! B.Next
+
+      let movi_v r k shift ii =
+        let open AArch64Base in
+        let sz = neon_sz r and
+        esize = neon_esize r in 
+        begin match esize, shift with
+        | 8, S_NOEXT | 16, S_NOEXT | 32, S_NOEXT | 64, S_NOEXT | 128, S_NOEXT ->
+          M.unitT (V.intToV k)
+        | 8, S_LSL(0 as amount)
+        | 16, S_LSL(0|8 as amount)
+        | 32, S_LSL(0|8|16|24 as amount) 
+        | 32, S_MSL(8|16 as amount) ->
+          M.op1 (Op.LeftShift amount) (V.intToV k)
+        | _, S_LSL(n) ->
+          Warn.fatal
+            "illegal shift immediate %d in %d-bit instruction movi"
+            n
+            esize
+        | _, s ->
+          Warn.fatal
+            "illegal shift operand %s in %d-bit instruction movi"
+            (pp_barrel_shift "," s pp_imm)
+            esize
+        end
+          >>= (fun v ->  write_reg_neon_all_elem sz r v ii)
+          >>! B.Next
+
+      let movi_s var r k ii =
+        let open AArch64Base in
+        begin match var with
+        | VSIMD64 ->
+          M.unitT (V.intToV k)
+        | _ -> 
+          Warn.fatal
+          "illegal scalar register size in instruction movi"
+        end
+          >>= (fun v -> write_reg_neon_sz (tr_simd_variant var) r v ii)
+          >>! B.Next
+
+      let simd_op op sz r1 r2 r3 ii =
+        read_reg_neon false r3 ii >>|
+        read_reg_neon false r2 ii >>=
+        begin match op with
+        | AArch64.ADD -> fun (v1,v2) -> M.add v1 v2 
+        | AArch64.EOR -> fun (v1,v2) -> M.op Op.Xor v1 v2
+        | _ -> Warn.fatal "unsupported Neon operations"
+        end >>=
+        fun v -> write_reg_neon_sz sz r1 v ii >>! B.Next
 
 (******************************)
 (* Move constant instructions *)
@@ -1290,39 +1306,29 @@ module Make
 
         (* Neon loads and stores *)
         | I_LDR_SIMD(var,r1,rA,kr,s) ->
-            let access_size = tr_simd_variant var in
+            let access_size = tr_simd_variant var in 
             get_ea rA kr s ii >>= fun addr ->
-            do_read_mem access_size AArch64.N addr ii >>= fun v ->
-            write_reg_neon_sz access_size r1 v ii >>! B.Next
+            simd_ldr access_size addr r1 ii >>! B.Next
         | I_LDR_P_SIMD(var,r1,rA,k) ->
-            let access_size = tr_simd_variant var in
+            let access_size = tr_simd_variant var in 
             read_reg_ord rA ii >>= fun addr ->
-            do_read_mem access_size AArch64.N addr ii >>= fun v ->
-            write_reg_neon_sz access_size r1 v ii >>|
-            (M.add addr (V.intToV k) >>= fun v -> write_reg rA v ii) >>! B.Next
+            simd_ldr access_size addr r1 ii >>|
+            post_kr rA addr (K k) ii >>! B.Next
         | I_LDUR_SIMD(var,r1,rA,k) ->
-            let access_size = tr_simd_variant var in
-            let k = AArch64.K (match k with Some k -> k | None -> 0) in 
-            get_ea rA k AArch64.S_NOEXT ii >>= fun addr ->
-            do_read_mem access_size AArch64.N addr ii >>= fun v ->
-            write_reg_neon r1 v ii >>! B.Next
+            let access_size = tr_simd_variant var and 
+            k = K (match k with Some k -> k | None -> 0) in  
+            get_ea rA k S_NOEXT ii >>= fun addr ->
+            simd_ldr access_size addr r1 ii >>! B.Next
         | I_STR_SIMD(var,r1,rA,kr,s) ->
-            let access_size = tr_simd_variant var in
-            get_ea rA kr s ii >>|
-            read_reg_neon true r1 ii >>= fun (addr,v) ->
-            write_mem access_size addr v ii >>! B.Next
+            let access_size = tr_simd_variant var in 
+            simd_str access_size rA r1 kr s ii >>! B.Next
         | I_STR_P_SIMD(var,r1,rA,k) ->
             let access_size = tr_simd_variant var in
-            read_reg_ord rA ii >>|
-            read_reg_neon true r1 ii >>= fun (addr,v) ->
-            write_mem access_size addr v ii >>|
-            (M.add addr (V.intToV k) >>= fun v -> write_reg rA v ii) >>! B.Next
+            simd_str_p access_size rA r1 k ii >>! B.Next
         | I_STUR_SIMD(var,r1,rA,k) ->
-            let access_size = tr_simd_variant var in
-            let k = AArch64.K (match k with Some k -> k | None -> 0) in 
-            get_ea rA k AArch64.S_NOEXT ii >>| 
-            read_reg_neon true r1 ii >>= fun (addr,v) -> 
-            write_mem access_size addr v ii >>! B.Next
+            let access_size = tr_simd_variant var and 
+            k = K (match k with Some k -> k | None -> 0) in 
+            simd_str access_size rA r1 k S_NOEXT ii >>! B.Next
   
         (* Morello instructions *)
         | I_ALIGND(rd,rn,kr) ->
