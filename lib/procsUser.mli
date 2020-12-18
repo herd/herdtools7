@@ -14,6 +14,6 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** LIst of threads in user mode *)
+(** List of threads in user mode *)
 
 val get : (string * string) list -> Proc.t list
