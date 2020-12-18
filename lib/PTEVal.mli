@@ -32,6 +32,7 @@ val set_oa : t -> string -> t
 val is_default : t -> bool
 val of_list : string -> (string * string) list -> t
 val pp : t -> string
+val pp_hash : t -> string
 
 val compare : t -> t -> int
 val eq : t -> t -> bool

@@ -25,20 +25,36 @@ type t = {
   }
 
 (* For ordinary tests not to fault, the dirty bit has to be set. *)
-let default s =
-  { oa=Misc.add_physical s; valid=1; af=1; db=1; dbm=0; }
+let prot_default =  { oa=""; valid=1; af=1; db=1; dbm=0; }
+let default s = { prot_default with  oa=Misc.add_physical s; }
+
+let pp_field ok pp eq ac p k =
+  let f = ac p in if not ok && eq f (ac prot_default) then k else pp f::k
+
+let pp_int_field ok name = pp_field ok (sprintf "%s:%i" name) Misc.int_eq
+let pp_valid ok = pp_int_field ok "valid" (fun p -> p.valid)
+and pp_af ok = pp_int_field ok "af" (fun p -> p.af)
+and pp_db ok = pp_int_field ok "db" (fun p -> p.db)
+and pp_dbm ok = pp_int_field ok "dbm" (fun p -> p.dbm)
 
 let set_oa p s = { p with oa = Misc.add_physical s; }
 
 let is_default t = t.valid=1 && t.af=1 && t.db=1 && t.dbm=0
 
-let pp p =
-  let oa = sprintf "oa:%s, " p.oa  in
-  let af = sprintf "af:%d, " p.af  in
-  let db = sprintf "db:%d, " p.db  in
-  let dbm = sprintf "dbm:%d, " p.dbm in
-  let valid = sprintf "valid:%d" p.valid in
-  sprintf "(%s%s%s%s%s)" oa af db dbm valid
+let do_pp showall p =
+  let k = pp_valid showall p [] in
+  let k = pp_dbm showall p k in
+  let k = pp_db showall p k in
+  let k = pp_af showall p k in
+  let k = sprintf "oa:%s" p.oa::k  in
+  let fs = String.concat ", " k in
+  sprintf "(%s)" fs
+
+(* By default pp does not list fields whose value is default *)
+let pp = do_pp false
+(* For initial values dumped for hashing, pp_hash is different,
+   for not altering hashes as much as possible *)
+let pp_hash = do_pp true
 
 let my_int_of_string s v =
   let v = try int_of_string v with
