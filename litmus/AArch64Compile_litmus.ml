@@ -48,6 +48,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_ST3 (rs,_,_,_) | I_ST3M (rs,_,_)
     | I_ST4 (rs,_,_,_) | I_ST4M (rs,_,_) ->
         A.RegSet.of_list rs
+    | I_LD1 (r,_,_,_) -> A.RegSet.of_list [r]
     | _ ->  A.RegSet.empty
 
 (* Handle zero reg *)
@@ -480,21 +481,21 @@ module Make(V:Constant.S)(C:Config) =
     let load_simd_s memo rs i rA kr = match kr with
     | K 0 ->
         { empty_ins with
-          memo = sprintf "%s {%s}[%i],[^i0]" memo (print_simd_list rs "o" 0) i;
-          inputs = [rA];
-          outputs = rs;
+          memo = sprintf "%s {%s}[%i],[^i0]" memo (print_simd_list rs "i" 1) i;
+          inputs = rA::rs;
+          outputs = [];
           reg_env = (add_128 rs) @ [(rA,voidstar)]}
     | K k ->
         { empty_ins with
-          memo = sprintf "%s {%s}[%i],[^i0],#%i" memo (print_simd_list rs "o" 0) i k;
-          inputs = [rA];
-          outputs = rs;
+          memo = sprintf "%s {%s}[%i],[^i0],#%i" memo (print_simd_list rs "i" 1) i k;
+          inputs = rA::rs;
+          outputs = [];
           reg_env = (add_128 rs) @ [(rA,voidstar)]}
     | RV (V64,rB) ->
         { empty_ins with
-          memo = sprintf "%s {%s}[%i],[^i0],^i1" memo (print_simd_list rs "o" 0) i;
-          inputs = [rA;rB;];
-          outputs = rs;
+          memo = sprintf "%s {%s}[%i],[^i0],^i1" memo (print_simd_list rs "i" 2) i;
+          inputs = [rA;rB;]@rs;
+          outputs = [];
           reg_env = (add_128 rs) @ [(rA,voidstar);(rB,quad)]}
     | _ -> Warn.fatal "Illegal form of %s instruction" memo
 
@@ -759,11 +760,11 @@ module Make(V:Constant.S)(C:Config) =
     let mov_simd_fg r1 i v r2 =
       { empty_ins with
         memo = sprintf "mov %s[%i],%s"
-          (print_simd_reg "o" 0 0 r1)
+          (print_simd_reg "i" 0 0 r1)
           i
-          (match v with | V32 -> "^wi0" | V64 -> "^i0" | V128 -> assert false);
-        inputs = [r2];
-        outputs = [r1];
+          (match v with | V32 -> "^wi1" | V64 -> "^i1" | V128 -> assert false);
+        inputs = [r1;r2];
+        outputs = [];
         reg_env = (add_128 [r1;]) @ ((
           match v with
           | V32 -> add_w
