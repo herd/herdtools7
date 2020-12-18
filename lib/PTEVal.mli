@@ -25,6 +25,7 @@ type t = {
   }
 
 (* Default value for location argument *)
+val prot_default : t
 val default : string -> t
 val set_oa : t -> string -> t
 
