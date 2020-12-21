@@ -1,0 +1,10 @@
+Test V46 Required
+States 1
+0:X0=x+8; 0:X3=32;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X3=32 /\ not (0:X0=x))
+Observation V46 Always 1 0
+Hash=b2e1a6ebd405791d7e4cfb1f11b5550a
+

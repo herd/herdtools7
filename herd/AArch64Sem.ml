@@ -1171,6 +1171,16 @@ module Make
         | Neg -> M.op Op.Sub V.zero v
         | Inv -> M.op1 Op.Inv v
 
+      let load_elem sz r i addr ii =
+        let access_size = AArch64.simd_mem_access_size [r] in
+        do_read_mem access_size AArch64.N addr ii >>= fun v ->
+        write_reg_neon_elem sz r i v ii
+
+      let store_elem r i addr ii =
+        let access_size = AArch64.simd_mem_access_size [r] in
+        read_reg_neon_elem true r i ii >>= fun v ->
+        write_mem access_size addr v ii
+
 (********************)
 (* Main entry point *)
 (********************)
@@ -1305,6 +1315,15 @@ module Make
             simd_op ADD MachSize.Quad r1 r2 r3 ii
 
         (* Neon loads and stores *)
+        | I_LD1(r1,i,rA,kr) ->
+            read_reg_ord rA ii >>= fun addr ->
+            (load_elem MachSize.S128 r1 i addr ii >>|
+            post_kr rA addr kr ii) >>! B.Next
+        | I_ST1(r1,i,rA,kr) ->
+            read_reg_ord rA ii >>= fun addr ->
+            (store_elem r1 i addr ii >>|
+            post_kr rA addr kr ii) >>! B.Next
+
         | I_LDR_SIMD(var,r1,rA,kr,s) ->
             let access_size = tr_simd_variant var in 
             get_ea rA kr s ii >>= fun addr ->
