@@ -61,7 +61,7 @@ let my_int_of_string s v =
     _ -> Warn.user_error "PTE field %s should be an integer" s
   in v
 
-let of_list pte l =
+let do_of_list p l =
 
   let add_field a (s,v) = match s with
   | "oa" -> { a with oa = v }
@@ -76,7 +76,10 @@ let of_list pte l =
     | [] -> a
     | h::t -> of_list (add_field a h) t in
 
-  of_list (default pte) l
+  of_list p l
+
+let of_list s = do_of_list (default s)
+and of_list0 = do_of_list prot_default
 
 let lex_compare c1 c2 x y  = match c1 x y with
 | 0 -> c2 x y

@@ -33,6 +33,7 @@ open LexMisc
 open Printf
 open LogState
 module LS = LogState.Make(O)
+module StateLex=StateLexer.Make(struct let debug=false end)
 
 let c_init = 100
 let count = ref 0
@@ -67,6 +68,32 @@ let to_hex =
   else fun num -> try sprintf "0x%Lx" (Int64.of_string num) with _ -> num
 
 let to_xxx = if O.hexa then to_hex else to_dec
+
+let norm_pteval s =
+  let lex = Lexing.from_string s in
+  try
+    let p0 = StateParser.pteval StateLex.token lex in
+    PTEVal.pp p0
+  with
+  | LexMisc.Error _
+  | Parsing.Parse_error
+    -> assert false
+
+(* Notice about normalisation of values
+ + A leading left parenthesis unambiguously specifies a pteval.
+   Normalisation originates from old logs being different from new ones.
+ + A leading decimal digit unambiguously specifies an integer value.
+   Normalisation originates from decimal and hexadecimal integers occuring
+   in logs.
+ + Other values need not being normalised
+ *)
+
+let norm_value s =
+  assert (String.length s > 0) ;
+  match s.[0] with
+  | '(' -> norm_pteval s
+  | '0'..'9' -> to_xxx s
+  | _ ->  s
 
 let to_proc s = try int_of_string s with _ -> assert false
 
@@ -192,7 +219,7 @@ and pline bds fs abs = parse
     blank* '=' blank* (('-' ? (num|hexanum))|(name(':'name)?)|set|pteval as v)
     blank* ';'
     {
-     let v = to_xxx v in  (* Translate to decimal *)
+     let v = norm_value v in  (* Translate to decimal *)
      let p = poolize loc v in
      pline (p::bds) fs abs lexbuf }
 | blank* fault blank* '(' blank* ('P'? (num as proc)) (':' (label as lbl))? blank* ','
