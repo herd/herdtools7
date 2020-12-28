@@ -189,11 +189,11 @@ module Make
         M.op Op.And mask new_val >>= fun (v1,v2) ->
         M.op Op.Or v1 v2
 
-      let rec neon_set_all_elem old_val nelem esize v = match nelem with
-      | 0 -> neon_setlane old_val 0 esize v
-      | _ -> 
-        neon_setlane old_val nelem esize v >>= fun old_val -> 
-        neon_set_all_elem old_val (nelem-1) esize v 
+      let rec neon_replicate old_val nelem esize v = match nelem with
+      | 0 -> M.unitT old_val
+      | _ ->
+        neon_setlane old_val (nelem-1) esize v >>= fun old_val ->
+        neon_replicate old_val (nelem-1) esize v
 
       let write_reg_neon_sz sz r v ii =
         if not neon then Warn.user_error "Advanced SIMD instructions require -variant neon" ;
@@ -215,9 +215,9 @@ module Make
           write_reg_neon_sz sz r new_val ii
       | _ -> assert false
 
-      let write_reg_neon_all_elem sz r v ii = match r with
+      let write_reg_neon_rep sz r v ii = match r with
       | AArch64Base.Vreg (_,(nelem,esize)) ->
-        neon_set_all_elem v nelem esize v >>= fun new_val -> write_reg_neon_sz sz r new_val ii
+        neon_replicate v nelem esize v >>= fun new_val -> write_reg_neon_sz sz r new_val ii
       | _ -> assert false
 
       let write_reg_sz sz r v ii = match r with
@@ -1085,7 +1085,7 @@ module Make
             (pp_barrel_shift "," s pp_imm)
             esize
         end
-          >>= (fun v ->  write_reg_neon_all_elem sz r v ii)
+          >>= (fun v ->  write_reg_neon_rep sz r v ii)
           >>! B.Next
 
       let movi_s var r k ii =
@@ -1175,6 +1175,11 @@ module Make
         let access_size = AArch64.simd_mem_access_size [r] in
         do_read_mem access_size AArch64.N addr ii >>= fun v ->
         write_reg_neon_elem sz r i v ii
+
+      let load_elem_rep sz r addr ii =
+        let access_size = AArch64.simd_mem_access_size [r] in
+        do_read_mem access_size AArch64.N addr ii >>= fun v ->
+        write_reg_neon_rep sz r v ii
 
       let store_elem i r addr ii =
         let access_size = AArch64.simd_mem_access_size [r] in
@@ -1330,6 +1335,16 @@ module Make
         | I_LD4(rs,i,rA,kr) ->
             read_reg_ord rA ii >>= fun addr ->
             (mem_ss (load_elem MachSize.S128 i) addr rs ii >>|
+            post_kr rA addr kr ii) >>! B.Next
+        | I_LD1R(r1,rA,kr) ->
+            read_reg_ord rA ii >>= fun addr ->
+            (load_elem_rep MachSize.S128 r1 addr ii >>|
+            post_kr rA addr kr ii) >>! B.Next
+        | I_LD2R(rs,rA,kr)
+        | I_LD3R(rs,rA,kr)
+        | I_LD4R(rs,rA,kr) ->
+            read_reg_ord rA ii >>= fun addr ->
+            (mem_ss (load_elem_rep MachSize.S128) addr rs ii >>|
             post_kr rA addr kr ii) >>! B.Next
         | I_ST1(r1,i,rA,kr) ->
             read_reg_ord rA ii >>= fun addr ->
