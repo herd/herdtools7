@@ -63,10 +63,11 @@ let dump_pteval_flags s p =
     let open PTEVal in
     let add b s k = if b<>0 then s::k else k in
     let msk =
-      add p.valid "msk_valid"
-        (add p.af "msk_af"
-           (add p.dbm "msk_dbm"
-              (add p.db "msk_db" []))) in
+      add p.el0 "msk_el0"
+        (add p.valid "msk_valid"
+           (add p.af "msk_af"
+              (add p.dbm "msk_dbm"
+                 (add p.db "msk_db" [])))) in
     let msk = String.concat "|" msk in
     sprintf "litmus_set_pte_flags(%s,%s)" s msk
 
@@ -280,7 +281,7 @@ module Make
         | CType.Pointer _ -> ["%s"]
         | CType.Base "pteval_t" ->
             ["("; "oa:%s";  ", af:%d"; ", db:%d";
-             ",  dbm:%d"; ", valid:%d"; ")"]
+             ", dbm:%d"; ", valid:%d"; ", el0:%d"; ")"]
         | CType.Base t -> [pp_fmt_base t]
         | CType.Atomic t|CType.Volatile t -> pp_fmt t
         | CType.Array (t,sz) ->

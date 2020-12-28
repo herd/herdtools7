@@ -669,7 +669,7 @@ module Make
                   sprintf "pretty_addr_physical[unpack_oa(%s)]" v::
                   List.map
                     (fun f -> sprintf "unpack_%s(%s)" f v)
-                    ["af";"db";"dbm";"valid";] in
+                    ["af";"db";"dbm";"valid";"el0";] in
                 Some v,fs
             | _ ->
                 None,[sprintf "p->%s" (dump_loc_tag loc)])
@@ -695,7 +695,7 @@ module Make
                 let ds =
                   let open PTEVal in
                   let p = prot_default in
-                  let ds = [p.af; p.db; p.dbm; p.valid;] in
+                  let ds = [p.af; p.db; p.dbm; p.valid;p.el0;] in
                   List.map (sprintf "%i") ds in
                 let rec do_rec ds fs fmts = match ds,fs,fmts with
                   | [],[],[c] ->
@@ -770,8 +770,8 @@ module Make
               | Constant.PteVal p ->
                   let open PTEVal in
                   sprintf
-                    "pack_pack(%s,%d,%d,%d,%d)"
-                    (dump_addr_idx p.oa) p.af p.db p.dbm p.valid
+                    "pack_pack(%s,%d,%d,%d,%d,%d)"
+                    (dump_addr_idx p.oa) p.af p.db p.dbm p.valid p.el0
               | _ -> T.C.V.pp O.hexa v
               module Loc = struct
                 type t = A.location
