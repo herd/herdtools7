@@ -1176,10 +1176,16 @@ module Make
         do_read_mem access_size AArch64.N addr ii >>= fun v ->
         write_reg_neon_elem sz r i v ii
 
-      let store_elem r i addr ii =
+      let store_elem i r addr ii =
         let access_size = AArch64.simd_mem_access_size [r] in
         read_reg_neon_elem true r i ii >>= fun v ->
         write_mem access_size addr v ii
+
+     (* Single structure memory access *)
+      let mem_ss memop addr rs ii =
+        let op r o = M.add o addr >>= fun addr -> memop r addr ii in
+        let os = List.mapi (fun i r -> V.intToV (i * neon_esize r / 8)) rs in
+        List.fold_right (>>::) (List.map2 op rs os) (M.unitT [()])
 
 (********************)
 (* Main entry point *)
@@ -1317,11 +1323,23 @@ module Make
         (* Neon loads and stores *)
         | I_LD1(r1,i,rA,kr) ->
             read_reg_ord rA ii >>= fun addr ->
-            (load_elem MachSize.S128 r1 i addr ii >>|
+            (load_elem MachSize.S128 i r1 addr ii >>|
+            post_kr rA addr kr ii) >>! B.Next
+        | I_LD2(rs,i,rA,kr)
+        | I_LD3(rs,i,rA,kr)
+        | I_LD4(rs,i,rA,kr) ->
+            read_reg_ord rA ii >>= fun addr ->
+            (mem_ss (load_elem MachSize.S128 i) addr rs ii >>|
             post_kr rA addr kr ii) >>! B.Next
         | I_ST1(r1,i,rA,kr) ->
             read_reg_ord rA ii >>= fun addr ->
-            (store_elem r1 i addr ii >>|
+            (store_elem i r1 addr ii >>|
+            post_kr rA addr kr ii) >>! B.Next
+        | I_ST2(rs,i,rA,kr)
+        | I_ST3(rs,i,rA,kr)
+        | I_ST4(rs,i,rA,kr) ->
+            read_reg_ord rA ii >>= fun addr ->
+            (mem_ss (store_elem i) addr rs ii >>|
             post_kr rA addr kr ii) >>! B.Next
 
         | I_LDR_SIMD(var,r1,rA,kr,s) ->
