@@ -18,6 +18,7 @@ module Make
     (TopConf:sig
       module C : Sem.Config
       val dirty : DirtyBit.t
+      val procs_user : Proc.t list
     end)
     (V:Value.S)
     =
@@ -196,12 +197,14 @@ module Make
 
       type ipte =
           { pte_v:V.v; oa_v:V.v; af_v:V.v;
-            db_v:V.v; dbm_v:V.v; valid_v:V.v;}
+            db_v:V.v; dbm_v:V.v; valid_v:V.v;
+            el0_v:V.v; }
 
       let extract_af v = M.op1 Op.AF v
       let extract_db v = M.op1 Op.DB v
       let extract_dbm v = M.op1 Op.DBM v
       let extract_valid v = M.op1 Op.Valid v
+      let extract_el0 v = M.op1 Op.EL0 v
       let extract_oa v = M.op1 Op.OA v
 
       let mextract_whole_pte_val an nexp a_pte ii =
@@ -245,12 +248,13 @@ module Make
 
       let mextract_pte_vals pte_v =
         (extract_oa pte_v >>|
+        extract_el0 pte_v >>|
         extract_valid pte_v >>|
         extract_af pte_v >>|
         extract_db pte_v >>|
         extract_dbm pte_v) >>=
-        (fun ((((oa_v,valid_v),af_v),db_v),dbm_v) ->
-          M.unitT {pte_v; oa_v; af_v; db_v; dbm_v; valid_v;})
+        (fun (((((oa_v,el0_v),valid_v),af_v),db_v),dbm_v) ->
+          M.unitT {pte_v; oa_v; af_v; db_v; dbm_v; valid_v; el0_v;})
 
       let get_oa mpte = mpte >>= fun p -> M.unitT p.oa_v
 
@@ -305,7 +309,11 @@ module Make
          *)
 
       let check_ptw proc dir a_virt ma an ii mdirect mok mfault =
-
+        let is_el0  = List.exists (Proc.equal proc) TopConf.procs_user in
+        let check_el0 m =
+          if is_el0 then
+               fun pte_v -> m_op Op.Or (is_zero pte_v.el0_v) (m pte_v)
+             else m in
         let open DirtyBit in
         let tthm = TopConf.dirty.tthm proc
         and ha = TopConf.dirty.ha proc
@@ -345,11 +353,14 @@ module Make
           (fun (pte_v,a_pte) ma -> (* now we have PTE content *)
             (* Monad will carry changing internal pte value *)
             let ma = ma >>= fun (pte_v,_) -> M.unitT pte_v in
-            (* wrapping of success/failure continuations, only pte value may have changed *)
+            (* wrapping of success/failure continuations,
+               only pte value may have changed *)
             let mok ma =  mok a_pte ma pte_v.oa_v
             and mno ma =  mfault ma a_virt in
+            let check_cond cond = do_check_cond ma (check_el0 cond) mno mok in
 
-            if (not tthm || (tthm && (not ha && not hd))) then (* No HW management *)
+            if (not tthm || (tthm && (not ha && not hd))) then
+            (* No HW management *)
               let cond_R pte_v =
                 m_op Op.Or (is_zero pte_v.valid_v) (is_zero pte_v.af_v) in
               let cond = match dir with (* No mercy, check all flags *)
@@ -357,14 +368,14 @@ module Make
               | Dir.W ->
                   fun pte_v ->
                     m_op Op.Or (cond_R pte_v) (is_zero pte_v.db_v) in
-              do_check_cond ma cond mno mok
+              check_cond cond
             else if (tthm && ha && not hd) then (* HW managment of AF *)
               let cond = match dir with (* Do not check AF *)
               | Dir.R -> fun pte_v -> is_zero pte_v.valid_v
               | Dir.W ->
                   fun pte_v ->
                     m_op Op.Or (is_zero pte_v.valid_v) (is_zero pte_v.db_v) in
-              do_check_cond ma cond mno mok
+              check_cond cond
             else (* HW management of AF and DB *)
               let cond = match dir with (* Do not check AF *)
               | Dir.R -> fun pte_v -> is_zero pte_v.valid_v
@@ -373,8 +384,9 @@ module Make
                   fun pte_v ->
                     m_op Op.Or
                       (is_zero pte_v.valid_v)
-                      (m_op Op.And (is_zero pte_v.db_v) (is_zero pte_v.dbm_v)) in
-              do_check_cond ma cond mno mok)
+                      (m_op Op.And
+                         (is_zero pte_v.db_v) (is_zero pte_v.dbm_v)) in
+              check_cond cond)
         end in
 
         M.op1 Op.IsVirtual a_virt >>= fun cond ->

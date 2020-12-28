@@ -89,6 +89,7 @@ type op1 =
   | SetDB (* set DB to 1 in PTE entry *)
   | DBM (* get DBM from PTE entry *)
   | Valid (* get Valid bit from PTE entry *)
+  | EL0 (* get EL0 bit from PTE entry *)
   | OA (* get OA from PTE entry *)
   | IsVirtual (* Detect virtual addresses *)
 
@@ -111,13 +112,14 @@ let pp_op1 hexa o = match o with
 | PTELoc -> "PTEloc"
 | PhyLoc -> "Phyloc"
 | IsVirtual -> "IsVirtual"
-| AF -> "AF" 
-| SetAF -> "SetAF" 
-| DB -> "DB" 
-| SetDB -> "SetDB" 
-| DBM -> "DBM" 
-| Valid -> "Valid" 
-| OA -> "OA" 
+| AF -> "AF"
+| SetAF -> "SetAF"
+| DB -> "DB"
+| SetDB -> "SetDB"
+| DBM -> "DBM"
+| Valid -> "Valid"
+| EL0 -> "EL0"
+| OA -> "OA"
 
 (***********)
 

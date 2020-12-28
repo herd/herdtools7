@@ -70,6 +70,7 @@ type op1 =
   | SetDB (* set DB to 1 in PTE entry *)
   | DBM (* get DBM from PTE entry *)
   | Valid (* get Valid from PTE entry *)
+  | EL0 (* get EL0 bit from PTE entry *)
   | OA (* get OA from PTE entry *)
   | IsVirtual (* Predicate for virtual adresses *)
 
