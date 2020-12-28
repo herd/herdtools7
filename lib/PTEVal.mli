@@ -22,6 +22,7 @@ type t = {
   af : int;
   db : int;
   dbm : int;
+  el0 : int;
   }
 
 (* Default value *)
