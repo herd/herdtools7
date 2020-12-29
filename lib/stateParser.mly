@@ -47,6 +47,8 @@ let mk_lab p s = Label (p,s)
 %right IMPLIES
 %nonassoc NOT
 
+%type <PTEVal.t> pteval
+%start pteval
 %type <MiscParser.state> init
 %start init
 %type <MiscParser.location> main_location
@@ -80,6 +82,10 @@ name_or_num:
 
 maybev_prop:
 | separated_pair(NAME, COLON, name_or_num) { $1 };
+
+pteval:
+| LPAR separated_nonempty_list(COMMA, maybev_prop) RPAR
+    { PTEVal.of_list0 $2 }
 
 maybev_notag:
 | NUM  { Concrete $1 }

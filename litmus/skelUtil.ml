@@ -63,10 +63,11 @@ let dump_pteval_flags s p =
     let open PTEVal in
     let add b s k = if b<>0 then s::k else k in
     let msk =
-      add p.valid "msk_valid"
-        (add p.af "msk_af"
-           (add p.dbm "msk_dbm"
-              (add p.db "msk_db" []))) in
+      add p.el0 "msk_el0"
+        (add p.valid "msk_valid"
+           (add p.af "msk_af"
+              (add p.dbm "msk_dbm"
+                 (add p.db "msk_db" [])))) in
     let msk = String.concat "|" msk in
     sprintf "litmus_set_pte_flags(%s,%s)" s msk
 
@@ -99,7 +100,8 @@ module Make
       val cast_reg_type : A.location -> string
       val register_type : A.location ->  CType.t -> CType.t
       val fmt_outcome_as_list :
-          T.t -> (CType.base -> string) -> A.LocSet.t -> env -> (string * string) list
+        T.t -> (CType.base -> string) -> A.LocSet.t -> env
+        -> (string * string list) list
       val fmt_outcome : T.t -> (CType.base -> string) -> A.LocSet.t -> env -> string
       val fmt_faults : A.V.v Fault.atom list -> string
 
@@ -276,15 +278,17 @@ module Make
       let fmt_outcome_as_list test pp_fmt_base locs env =
         let tr_out = tr_out test in
         let rec pp_fmt t = match t with
-        | CType.Pointer _ -> "%s"
-        | CType.Base "pteval_t" -> "(oa:%s, af:%d, db:%d, dbm:%d, valid:%d)"
-        | CType.Base t -> pp_fmt_base t
+        | CType.Pointer _ -> ["%s"]
+        | CType.Base "pteval_t" ->
+            ["("; "oa:%s";  ", af:%d"; ", db:%d";
+             ", dbm:%d"; ", valid:%d"; ", el0:%d"; ")"]
+        | CType.Base t -> [pp_fmt_base t]
         | CType.Atomic t|CType.Volatile t -> pp_fmt t
         | CType.Array (t,sz) ->
             let fmt_elt = pp_fmt_base t in
             let fmts = Misc.replicate sz fmt_elt in
             let fmt = String.concat "," fmts in
-            sprintf "{%s}" fmt in
+            [sprintf "{%s}" fmt] in
         A.LocSet.map_list
           (fun loc ->
             let pp1 = pp_loc tr_out loc
@@ -295,7 +299,9 @@ module Make
       let fmt_outcome test pp_fmt_base locs env =
         let pps = fmt_outcome_as_list test pp_fmt_base locs env in
         String.concat " "
-          (List.map (fun (p1,p2) -> sprintf "%s=%s;" p1 p2) pps)
+          (List.map
+             (fun (p1,p2) -> sprintf "%s=%s;" p1 (String.concat "" p2))
+             pps)
 
       let fmt_faults fs =
         String.concat ""

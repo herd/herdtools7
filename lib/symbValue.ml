@@ -376,6 +376,9 @@ module Make(Cst:Constant.S) = struct
   let op_validloc a = Cst.intToV a.valid
   let validloc = op_pte_val "validloc" op_validloc
 
+  let op_el0loc a = Cst.intToV a.el0
+  let el0loc = op_pte_val "el0loc" op_el0loc
+
   let op_oaloc a = Cst.nameToV a.oa
   let oaloc = op_pte_val "oaloc" op_oaloc
 
@@ -435,6 +438,7 @@ module Make(Cst:Constant.S) = struct
     | SetDB -> setdb 
     | DBM -> dbmloc
     | Valid -> validloc
+    | EL0 -> el0loc
     | OA -> oaloc  
 
   let op op = match op with

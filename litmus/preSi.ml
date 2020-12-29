@@ -669,7 +669,7 @@ module Make
                   sprintf "pretty_addr_physical[unpack_oa(%s)]" v::
                   List.map
                     (fun f -> sprintf "unpack_%s(%s)" f v)
-                    ["af";"db";"dbm";"valid";] in
+                    ["af";"db";"dbm";"valid";"el0";] in
                 Some v,fs
             | _ ->
                 None,[sprintf "p->%s" (dump_loc_tag loc)])
@@ -680,14 +680,37 @@ module Make
             let prf = if !fst then "" else " " in
             fst := false ;
             match as_whole with
-            | Some as_whole ->
+            | Some as_whole -> (* Assuming a pteval_t *)
                 O.fi "if (%s == NULL_PACKED) {" as_whole ;
                 EPF.fii ~out:"chan"
                   "%s;" ["\""^prf^p1^"="^(if Cfg.hexa then "0x0" else "0")^"\""] ;
                 O.oi "} else {" ;
-                EPF.fii ~out:"chan" (sprintf "%s%s=%s;" prf p1 p2) arg ;
+                let oa,rem = match arg with
+                  | oa::rem -> oa,rem
+                  | [] -> assert false
+                and oa_fmt,rem_fmt = match p2 with
+                  | o::oa::rem -> o^oa,rem
+                  | _ -> assert false in
+                EPF.fii ~out:"chan" (sprintf "%s%s=%s" prf p1 oa_fmt) [oa] ;
+                let ds =
+                  let open PTEVal in
+                  let p = prot_default in
+                  let ds = [p.af; p.db; p.dbm; p.valid;p.el0;] in
+                  List.map (sprintf "%i") ds in
+                let rec do_rec ds fs fmts = match ds,fs,fmts with
+                  | [],[],[c] ->
+                      let c = sprintf "\"%s\"" (String.escaped c) in
+                      EPF.fii ~out:"chan" "%s;" [c]
+                  | d::ds,f::fs,fmt::fmts ->
+                      O.fii "if (%s != %s)" f d ;
+                      EPF.fiii ~out:"chan" fmt [f] ;
+                      do_rec ds fs fmts
+                  |_ ->  (* All, defaults, arguments and formats agree *)
+                     assert false in
+                do_rec ds rem rem_fmt ;
                 O.oi "}"
             | None ->
+                let p2 = String.concat "" p2 in
                 EPF.fi ~out:"chan" (sprintf "%s%s=%s;" prf p1 p2) arg)
           fmt args ;
         begin match faults with
@@ -747,8 +770,8 @@ module Make
               | Constant.PteVal p ->
                   let open PTEVal in
                   sprintf
-                    "pack_pack(%s,%d,%d,%d,%d)"
-                    (dump_addr_idx p.oa) p.af p.db p.dbm p.valid
+                    "pack_pack(%s,%d,%d,%d,%d,%d)"
+                    (dump_addr_idx p.oa) p.af p.db p.dbm p.valid p.el0
               | _ -> T.C.V.pp O.hexa v
               module Loc = struct
                 type t = A.location

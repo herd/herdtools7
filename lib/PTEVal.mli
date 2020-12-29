@@ -22,16 +22,27 @@ type t = {
   af : int;
   db : int;
   dbm : int;
+  el0 : int;
   }
 
-(* Default value for location argument *)
-val default : string -> t
+(* Default value *)
+val prot_default : t (* Fields only *)
+val default : string -> t (* Physical address + default fields *)
+
 val set_oa : t -> string -> t
 
 (* Flags have default values *)
 val is_default : t -> bool
+
+(* Create fresh pteval *)
+(* With physical adress *)
 val of_list : string -> (string * string) list -> t
-val pp : t -> string
+(* Without physcal adress *)
+val of_list0 : (string * string) list -> t
+
+(* Pretty print *)
+val pp : t -> string  (* Default field not printed *)
+val pp_hash : t -> string (* Backward compatibility for test hashes *)
 
 val compare : t -> t -> int
 val eq : t -> t -> bool
