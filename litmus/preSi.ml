@@ -1039,7 +1039,7 @@ module Make
 (* Test instance *)
 (*****************)
 
-      let dump_instance_def _env test =
+      let dump_instance_def procs_user test =
         O.o "/***************/" ;
         O.o "/* Memory size */" ;
         O.o "/***************/" ;
@@ -1054,6 +1054,7 @@ module Make
         end ;
         O.o "" ;
         if Cfg.is_kvm then begin
+          let has_user = Misc.consp procs_user in
           O.o "static void vars_init(vars_t *_vars,intmax_t *_mem) {" ;
           O.oi "const size_t _sz = LINE/sizeof(intmax_t);";
           O.oi "pteval_t *_p;" ;
@@ -1063,8 +1064,13 @@ module Make
               O.fi "_vars->%s = _mem;" a ;
               O.fi "_vars->%s = _p = litmus_tr_pte((void *)_mem);" (OutUtils.fmt_pte_tag a) ;
               O.fi "_vars->%s = *_p;" (OutUtils.fmt_phy_tag a) ;
+              if has_user then begin
+                O.oi "_p = litmus_tr_pte((void *)_p);";
+                O.oi "unset_el0(_p);"
+              end ;
               O.oi "_mem += _sz ;")
             test.T.globals ;
+          if has_user then O.oi "flush_tlb_all();" ;
           O.o "}"
         end ;
         O.o "" ;
@@ -1786,7 +1792,7 @@ module Make
         dump_parameters env test ;
         dump_hash_def doc.Name.name env test ;
         dump_set_feature test db ;
-        dump_instance_def env test ;
+        dump_instance_def procs_user test ;
         dump_run_def env test some_ptr stats procs_user ;
         dump_zyva_def doc.Name.name env test db stats procs_user ;
         dump_prelude_def doc test ;

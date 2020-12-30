@@ -33,6 +33,10 @@ static inline void litmus_flush_tlb(void *p) {
   flush_tlb_page((unsigned long)p);
 }
 
+static inline void litmus_flush_tlb_all(void) {
+  flush_tlb_all();
+}
+
 /* Field access */
 
 static inline uint64_t litmus_get_field(pteval_t x,int low,int sz) {
@@ -73,6 +77,10 @@ static const uint64_t msk_dbm = 0x8000000000000UL;
 static const uint64_t msk_db = 0x80UL;
 static const uint64_t msk_el0 = 0x40UL;
 #define  msk_full (msk_valid|msk_af|msk_dbm|msk_db|msk_el0)
+
+static inline void unset_el0(pteval_t *p) {
+  *p &= ~msk_el0;
+}
 
 static inline pteval_t litmus_set_pte_flags(pteval_t old,pteval_t flags) {
   flags ^= msk_db; /* inverse dirty bit -> AF[2] */
