@@ -26,6 +26,7 @@ end
 module type I = sig
   val with_ok : bool
   module C : Constr.S
-  val dump_value : C.V.v -> string
+  (* When present the first, location, argument allows retrieving type *)
+  val dump_value : C.location option -> C.V.v -> string
   module Loc : X with type  t = C.location
 end

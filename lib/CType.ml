@@ -29,7 +29,8 @@ type t =
 let voidstar = Pointer (Base "void")
 let word = Base "int"
 let quad = Base "int64_t"
-let pte = Pointer (Base "pteval_t")
+let pteval = Base "pteval_t"
+let pte = Pointer pteval
 
 let rec  dump = function
   | Base s -> s

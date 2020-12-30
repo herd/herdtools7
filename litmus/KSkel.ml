@@ -84,7 +84,7 @@ module Make
         (struct
           let with_ok = false
           module C = T.C
-          let dump_value = C.V.pp O.hexa
+          let dump_value _loc (* ignored, see preSi.ml *) = C.V.pp O.hexa
           module Loc = struct
             type t = A.location
             let compare = A.location_compare

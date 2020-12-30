@@ -855,7 +855,9 @@ module Make
           (struct
             let with_ok = true
             module C = C
-            let dump_value = C.V.pp O.hexa
+ (* Location argument ignored, may be useful for null pointer.
+    See preSi.ml for location argument usage *)
+            let dump_value _loc = C.V.pp O.hexa
             module Loc = struct
               type t = A.location
               let compare = A.location_compare

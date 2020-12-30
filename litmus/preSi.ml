@@ -765,14 +765,24 @@ module Make
 
               let with_ok = true
               module C = T.C
-              let dump_value v = match v with
+              let dump_value loc v = match v with
               | Constant.Symbolic _ -> dump_addr_idx (T.C.V.pp O.hexa v)
               | Constant.PteVal p ->
                   let open PTEVal in
                   sprintf
                     "pack_pack(%s,%d,%d,%d,%d,%d)"
                     (dump_addr_idx p.oa) p.af p.db p.dbm p.valid p.el0
-              | _ -> T.C.V.pp O.hexa v
+              | _ ->
+                  begin match loc with
+                  | Some loc ->
+                      let t = U.find_type loc env in
+                      if CType.is_pte t && C.V.eq C.V.zero v then
+                        "NULL_PACKED"
+                      else
+                        T.C.V.pp O.hexa v
+                  | None ->  T.C.V.pp O.hexa v
+                  end
+
               module Loc = struct
                 type t = A.location
                 let compare = A.location_compare

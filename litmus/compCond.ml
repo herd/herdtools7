@@ -49,7 +49,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
       let dump  =
         let rec dump_prop p = match p with
         | Atom (LV (loc,v)) ->
-            O.fprintf "%s == %s" (I.Loc.dump loc) (dump_v v)
+            O.fprintf "%s == %s" (I.Loc.dump loc) (dump_v (Some loc) v)
         | Atom (LL (loc1,loc2)) ->
             O.fprintf"%s == %s" (I.Loc.dump loc1) (I.Loc.dump loc2)
         | Atom (FF f) ->
@@ -114,7 +114,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
         let pvals =
           List.map
             (fun loc -> sprintf
-                "void *%s" (dump_v (Constant.mk_sym loc)))
+                "void *%s" (dump_v None (Constant.mk_sym loc)))
             vals in
         let is_ptr = is_ptr || Misc.consp pvals in
         let formals =
