@@ -21,7 +21,8 @@ module type I = sig
   type arch_global
   val pp_global : arch_global -> string
   val global_compare : arch_global -> arch_global -> int
-  val same_base : arch_global -> arch_global -> bool
+(* Identifiers in faults are considered identical *)
+  val same_id_fault : arch_global -> arch_global -> bool
 end
 
 type 'loc atom =  (Proc.t * Label.t option) * 'loc

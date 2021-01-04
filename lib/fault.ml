@@ -21,7 +21,7 @@ module type I = sig
   type arch_global
   val pp_global : arch_global -> string
   val global_compare : arch_global -> arch_global -> int
-  val same_base : arch_global -> arch_global -> bool
+  val same_id_fault : arch_global -> arch_global -> bool
 end
 
 type 'loc atom =  (Proc.t * Label.t option) * 'loc
@@ -105,7 +105,7 @@ module Make(A:I) =
 
     let check_one_fatom ((p0,lbls0),x0,_)  ((p,lblo),x) =
       Proc.compare p p0 = 0 &&
-      A.same_base x x0 &&
+      A.same_id_fault x x0 &&
       begin match lblo with
       | None -> true
       | Some lbl -> Label.Set.mem lbl lbls0

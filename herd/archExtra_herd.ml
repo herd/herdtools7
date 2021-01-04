@@ -305,9 +305,13 @@ module Make(C:Config) (I:I) : S with module I = I
       module FaultArg = struct
         include LocArg
         open Constant
-        let same_base v1 v2 =  match v1,v2 with
-        |I.V.Val (Symbolic (Virtual ((s1,_),_))),
-          I.V.Val (Symbolic (Virtual ((s2,_),_))) ->
+
+        let same_id_fault v1 v2 =  match v1,v2 with
+        | (I.V.Val (Symbolic (Virtual ((s1,_),_))),
+           I.V.Val (Symbolic (Virtual ((s2,_),_))))
+        | (I.V.Val (Symbolic (System (PTE,s1))),
+           I.V.Val (Symbolic (System (PTE,s2))))
+           ->
             Misc.string_eq s1 s2
         | _,_ -> false
 
@@ -319,7 +323,7 @@ module Make(C:Config) (I:I) : S with module I = I
         match loc1,loc2 with
         | (Location_global v1|Location_deref (v1,_)),
           (Location_global v2|Location_deref (v2,_))
-          -> FaultArg.same_base v1 v2
+          -> FaultArg.same_id_fault v1 v2
         |  _,_ -> false
 
 (************************)
