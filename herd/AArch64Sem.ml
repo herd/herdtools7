@@ -35,6 +35,8 @@ module Make
     let is_deps = C.variant Variant.Deps
     let kvm = C.variant Variant.Kvm
     let is_branching = kvm && C.variant Variant.PteBranch
+    let pte2 = kvm && C.variant Variant.PTE2
+
 
 (* Barrier pretty print *)
     let barriers =
@@ -314,7 +316,7 @@ module Make
 
          *)
 
-      let check_ptw proc dir a_virt ma an ii _mdirect mok mfault =
+      let check_ptw proc dir a_virt ma an ii mdirect mok mfault =
 
         let is_el0  = List.exists (Proc.equal proc) TopConf.procs_user in
         let check_el0 m =
@@ -359,12 +361,14 @@ module Make
                 an AArch64.nexp_annot a_pte ii >>= fun pte_v ->
               (mextract_pte_vals pte_v) >>= fun pte_v -> M.unitT (pte_v,a_pte)
             end
-          (fun (_,a_pte) ma -> (* now we have PTE content *)
+          (fun (pte_v,a_pte) ma -> (* now we have PTE content *)
             (* Monad will carry changing internal pte value *)
             let ma = ma >>= fun (pte_v,_) -> M.unitT pte_v in
             (* wrapping of success/failure continuations,
                only pte value may have changed *)
-            let mok ma =  mok a_pte ma a_virt
+            let mok ma =
+              mok a_pte ma
+                (if pte2 then a_virt else pte_v.oa_v)
             and mno ma =  mfault ma a_virt in
             let check_cond cond =
               do_check_cond ma (check_el0 cond) mno mok in
@@ -397,12 +401,12 @@ module Make
                       (m_op Op.And
                          (is_zero pte_v.db_v) (is_zero pte_v.dbm_v)) in
               check_cond cond)
-        end in
-        mvirt
-(*
+          end in
+        if pte2 then  mvirt
+        else
           M.op1 Op.IsVirtual a_virt >>= fun cond ->
           M.choiceT cond mvirt mdirect
-*)
+
 (* Old read_mem that returns value read *)
       let do_read_mem_ret sz an anexp ac a ii =
         if mixed then begin
@@ -514,14 +518,21 @@ module Make
 
       let lift_kvm dir mop ma an ii mphy =
         let mfault ma a =
+
           insert_commit ii ma (fun _ -> mk_fault a ii None)
           >>! if C.precision then B.Exit else B.ReExec in
+        let maccess a ma =
+          check_ptw ii.AArch64.proc dir a ma an ii
+            (mop Act.A_PTE ma >>! B.Next)
+            mphy
+            mfault in
         M.delay_kont "6" ma
-          (fun a ma ->
-            check_ptw ii.AArch64.proc dir a ma an ii
-              (mop Act.A_PTE ma >>! B.Next)
-              mphy
-              mfault)
+          (if pte2 then maccess
+           else
+             fun a ma ->
+             match Act.access_of_location_std (A.Location_global a) with
+             | Act.A_VIR -> maccess a ma
+             | ac -> mop ac ma >>! B.Next)
 
       let lift_memop dir mop ma an ii =
         if memtag then
@@ -530,9 +541,14 @@ module Make
             lift_kvm dir mop ma an ii mphy
           else lift_memtag_virt mop ma ii
         else if kvm then
-          let mphy ma a_virt =
-            M.op1 Op.IsVirtual a_virt >>= fun c ->
-              M.choiceT c (mop Act.A_PHY ma) (mop Act.A_PHY_PTE ma) >>! B.Next in
+          let mphy =
+            if pte2 then
+              fun ma a_virt ->
+              M.op1 Op.IsVirtual a_virt >>= fun c ->
+              M.choiceT c
+                (mop Act.A_PHY ma) (mop Act.A_PHY_PTE ma) >>! B.Next
+            else
+              fun ma _a -> mop Act.A_PHY ma >>! B.Next in
           lift_kvm dir mop ma an ii mphy
         else
           mop Act.A_VIR ma >>! B.Next

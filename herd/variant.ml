@@ -44,7 +44,10 @@ type t =
   | Instances (* Compute dependencies on instruction instances *)
   | Kvm
   | ETS
-  | PteBranch (* Insert branching event between pte read and accesses *)
+(* Insert branching event between pte read and accesses *)
+  | PteBranch
+(* Pte-Squared: all accesses through page table, including PT accesses *)
+  | PTE2
 (* Perform experiment *)
   | Exp
   
@@ -53,7 +56,9 @@ let tags =
    "fullscdepend";"splittedrmw";"switchdepscwrite";"switchdepscresult";"lrscdiffok";
    "mixed";"dontcheckmixed";"weakpredicated"; "memtag";
    "tagcheckprecise"; "tagcheckunprecise"; "precise"; "imprecise";
-   "toofar"; "deps"; "instances"; "ptebranch"; "exp"; ]
+   "toofar"; "deps"; "instances"; "ptebranch"; "pte2"; "pte-squared";
+   "exp"; ]
+
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -80,6 +85,7 @@ let parse s = match Misc.lowercase s with
 | "kvm" -> Some Kvm
 | "ets" -> Some ETS
 | "ptebranch"|"branch" -> Some PteBranch
+| "pte2" | "pte-squared" -> Some PTE2
 | "exp" -> Some Exp
 | _ -> None
 
@@ -108,6 +114,7 @@ let pp = function
   | Kvm -> "kvm" 
   | ETS -> "ets"
   | PteBranch -> "PteBranch"
+  | PTE2 -> "pte-squared"
   | Exp -> "exp"
 
 let compare = compare

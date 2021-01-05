@@ -1189,13 +1189,15 @@ Monad type:
                 else (pte_loc s,default_pteval s)::env)
               virt env in
           let env =
-            List.fold_right
-              (fun (loc,_ as bd) env -> match loc with
-              | A.Location_global (V.Val (Symbolic (System (PTE,s))))
-                ->
+            if C.variant Variant.PTE2 then
+              List.fold_right
+                (fun (loc,_ as bd) env -> match loc with
+                | A.Location_global (V.Val (Symbolic (System (PTE,s))))
+                  ->
                   bd::(pte2_loc s,pteval_of_pte s)::env
-              | _ -> bd::env)
-              env [] in
+               | _ -> bd::env)
+                env []
+            else env in
           env
 
       let debug_add_initpte env =
