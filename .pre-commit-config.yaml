@@ -23,3 +23,9 @@ repos:
         language: system
         entry: opam lint
         files: (\.opam$)
+
+    -   id: lint-shelves
+        name: Lint Catalogue shelves
+        language: system
+        entry: internal/run_built_binary lint_shelves
+        files: shelf.py$
