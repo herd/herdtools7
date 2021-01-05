@@ -328,11 +328,10 @@ module Make
                      { my_ha; my_hd; } in
                    E.EventSet.filter
                      (fun e ->
-                       E.is_load e &&
                        begin match E.proc_of e with
                        | Some proc -> a (tr_proc proc) e.E.action
-                       (* Init writes have no proc, but there are no loads *)
-                       | None -> assert false
+                       (* Init writes excluded as no proc for them *)
+                       | None -> false
                        end)
                      (Lazy.force mevt)
                  end)

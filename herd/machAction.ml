@@ -526,6 +526,7 @@ end = struct
           (match get_pteval act with
           | None -> false
           | Some pteval -> f d pteval) in
+
       let read_only =
         check_pred
           (fun t p ->
@@ -533,14 +534,13 @@ end = struct
             (p.af=1 || p.af=0 && t.my_ha ()) &&
             (p.db=0 && (not (t.my_hd ()) || p.dbm=0)))
 
-      and read_write =
+      and _read_write =
         check_pred
           (fun t p ->
             let open PTEVal in
             (p.af=1 || (p.af=0 && t.my_ha ())) &&
             (p.db=1 || (p.db=0 && p.dbm=1 && t.my_hd ()))) in
-      ["ReadOnly",read_only;
-       "ReadWrite",read_write;]
+      ["ReadOnly",read_only;]
     else []
 
   let is_isync act = match act with
