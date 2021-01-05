@@ -1,0 +1,13 @@
+AArch64 CSNEG
+
+{
+uint64_t 0:X0=1;
+uint64_t 0:X2=2;
+uint64_t 0:X1;
+uint64_t 0:X3;
+}
+ P0                 ;
+ CMP X0,X0          ;
+ CSNEG X1,X0,X2,EQ  ;
+ CSNEG X3,X0,X2,NE  ;
+locations [0:X1; 0:X3;]

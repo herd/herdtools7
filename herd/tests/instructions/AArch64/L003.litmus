@@ -1,0 +1,11 @@
+AArch64 CSINV
+
+{
+0:X0=1;
+0:X2=0;
+}
+ P0                 ;
+ CMP W0,W0          ;
+ CSINV W1,W0,W2,EQ  ;
+ CSINV W3,W0,W2,NE  ;
+locations [0:X1; 0:X3;]

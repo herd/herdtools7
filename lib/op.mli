@@ -59,6 +59,7 @@ type op1 =
   | AddK of int
   | AndK of string
   | Mask of MachSize.sz
+  | Inv          (* Logical not or inverse *)
   | TagLoc       (* Get tag memory location from location *)
   | CapaTagLoc
   | TagExtract   (* Extract tag from tagged location *)

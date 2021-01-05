@@ -482,7 +482,7 @@ module Make
         | Cpy -> M.unitT v
         | Inc -> M.op Op.Add v V.one
         | Neg -> M.op Op.Sub V.zero v
-        | Inv -> Warn.fatal "size dependent inverse not implemented"
+        | Inv -> M.op1 Op.Inv v
 
       let rmw_amo_read rmw sz = let open AArch64 in match rmw with
       | RMW_A|RMW_AL -> do_read_mem sz XA
@@ -968,8 +968,8 @@ module Make
         | I_CSEL (var,r1,r2,r3,c,op) ->
             let sz = tr_variant var in
             let mask = match op with
-            | Cpy|Neg -> fun m -> m
-            | Inc|Inv -> mask32 var in
+            | Cpy -> fun m -> m
+            | Inc|Inv|Neg -> mask32 var in
             if not (C.variant Variant.NotWeakPredicated) then
               read_reg_ord NZP ii >>= tr_cond c >>*= fun v ->
                 (*commit_bcc ii >>= fun () ->*)

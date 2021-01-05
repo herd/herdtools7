@@ -600,6 +600,7 @@ module Make(Cst:Constant.S) = struct
   | AddK k -> add_konst k
   | AndK k -> unop op (fun s -> Scalar.logand s (Scalar.of_string k))
   | Mask sz -> maskop op sz
+  | Inv -> unop op Scalar.lognot
   | TagLoc -> tagloc
   | CapaTagLoc -> capatagloc
   | TagExtract -> tagextract

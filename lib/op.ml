@@ -94,6 +94,7 @@ type op1 =
   | AddK of int
   | AndK of string
   | Mask of MachSize.sz
+  | Inv
   | TagLoc       (* Get tag memory location from location *)
   | CapaTagLoc
   | TagExtract   (* Extract tag from tagged location *)
@@ -113,6 +114,7 @@ let pp_op1 hexa o = match o with
 | SignExtendWord i -> sprintf "sxtw %i" i
 | AddK i  -> (if hexa then sprintf "+[0x%x]" else sprintf "+[%i]") i
 | AndK i  -> sprintf "&[%s]" i
+| Inv -> "~"
 | Mask sz  -> sprintf "mask%02i" (MachSize.nbits sz)
 | TagLoc ->  "tagloc"
 | CapaTagLoc -> "capatagloc"

@@ -1,0 +1,10 @@
+Test CSNEG Required
+States 1
+0:X1=1; 0:X3=-2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (true)
+Observation CSNEG Always 1 0
+Hash=fc337307eaf34d1bdef16673a0ee4f80
+
