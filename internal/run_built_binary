@@ -1,0 +1,35 @@
+#!/bin/sh
+
+set -eu
+
+if [ $# -eq 0 ]
+then
+  echo "Usage: $(basename "${0}") <binary> [args]"
+  echo ""
+  echo "Synopsis: Run the most recently built <binary>.exe or <binary>.native under _build, with args."
+  exit 1
+fi
+
+readonly binary="${1}"
+shift
+
+readonly paths="$(find _build -name "${binary}.exe" -o -name "${binary}.native")"
+
+if [ ! "${paths}" ]
+then
+  echo "Could not find ${binary}"
+  exit 1
+fi
+
+function most_recent() {
+  # List (mtime, path) pairs.
+  # Sort them descending by mtime.
+  # Take the first of the list.
+  # Extract the path back out.
+  stat -f '%m %N' $@ \
+    | sort --reverse \
+    | head -n1 \
+    | cut -d' ' -f2
+}
+
+"$(most_recent ${paths})" $@

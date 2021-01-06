@@ -11,7 +11,6 @@ cfgs = [
 illustrative_tests = [
     "tests/MP+dmb.stPT+addr.litmus",
     "tests/MP+dmb.stTT+addr.litmus",
-    "tests/R+dmb.stTT+rel-acq.litmus",
     "tests/S+dmb.stTT+addr.litmus",
     "tests/S+dmb.stTT+ctrl.litmus",
     "tests/S+dmb.stTT+data.litmus",
