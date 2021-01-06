@@ -17,6 +17,26 @@
 (** Extending built-in / base modules, either to port future features into
  *  earlier versions of OCaml, or to add extra functionality. *)
 
+module Fun = struct
+  exception Finally_raised of exn
+
+  let protect ~finally f =
+    let finally' () =
+      try finally ()
+      with e -> raise (Finally_raised e)
+    in
+    let ret =
+      try
+        f ()
+      with e -> begin
+        finally' () ;
+        raise e
+      end
+    in
+    finally' () ;
+    ret
+end
+
 module List = struct
   include List
 
@@ -36,6 +56,11 @@ end
 
 module Option = struct
   type 'a t = 'a option
+
+  let get o =
+    match o with
+    | None -> invalid_arg "option is None"
+    | Some v -> v
 
   let compare cf a b =
     match a, b with

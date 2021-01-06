@@ -26,8 +26,10 @@ let herd_command herd libdir litmus =
   Command.command herd ["-set-libdir"; libdir; litmus]
 
 let run_herd herd libdir litmus =
-  let lines = Command.run_with_stdout herd ["-set-libdir"; libdir; litmus] Channel.read_lines in
-  without_unstable_lines lines
+  let lines = ref [] in
+  let read_lines c = lines := Channel.read_lines c in
+  Command.run ~stdout:read_lines herd ["-set-libdir"; libdir; litmus] ;
+  without_unstable_lines !lines
 
 let herd_output_matches_expected herd libdir litmus expected =
   let output = try

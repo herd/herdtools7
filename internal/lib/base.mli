@@ -17,6 +17,20 @@
 (** Extending built-in / base modules, either to port future features into
  *  earlier versions of OCaml, or to add extra functionality. *)
 
+module Fun : sig
+  (** [Finally_raised e] is raised by [protect ~finally f] if [~finally] raises
+   *  an exception [e], to disambiguate it from exceptions raised by [f].
+   *  If [Finally_raised] is raised, it is either an unexpected exception (e.g.
+   *  [Out_of_memory]), or programmer error. *)
+  exception Finally_raised of exn
+
+  (** [protect ~finally f] calls [f], then calls [~finally]. If [f] raises an
+   *  exception [e], it calls [~finally] before re-raising [e]. If [~finally]
+   *  raises an exception [e], [e] is re-raised as [Finally_raised e].
+   *  It is equivalent to [Fun.protect] from OCaml >= 4.08. *)
+  val protect : finally:(unit -> unit) -> (unit -> 'a) -> 'a
+end
+
 module List : sig
   include module type of List
 
@@ -42,6 +56,10 @@ end
 
 module Option : sig
   type 'a t = 'a option
+
+  (** [get o] is [v] if [o] is [Some v].
+   *  It raises [Invalid_argument] if [o] is [None]. *)
+  val get : 'a t -> 'a
 
   (** [compare c x y] compares [x] and [y]. [None] is smaller than [Some _]. If
    *  they are both [Some _] their elements are compared with function [c]. *)

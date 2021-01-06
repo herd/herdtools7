@@ -17,6 +17,52 @@
 (** Tests for the Base modules. *)
 
 let tests = [
+  "Base.Fun.protect calls both f and finally", (fun () ->
+    let called_f = ref false in
+    let called_finally = ref false in
+
+    Base.Fun.protect
+      ~finally:(fun () -> called_finally := true)
+      (fun () -> called_f := true) ;
+
+    if not !called_f then
+      Test.fail "did not call f" ;
+
+    if not !called_finally then
+      Test.fail "did not call finally"
+  );
+  "Base.Fun.protect calls finally before re-raising exception", (fun () ->
+    let called_finally = ref false in
+
+    let raised_exception =
+      try
+        Base.Fun.protect
+          ~finally:(fun () -> called_finally := true)
+          (fun () -> if true then raise Not_found ; ()) ;
+        false
+      with Not_found -> true
+    in
+
+    if not raised_exception then
+      Test.fail "did not re-raise exception" ;
+
+    if not !called_finally then
+      Test.fail "did not call finally"
+  );
+  "Base.Fun.protect wraps exceptions raised by finally", (fun () ->
+    let raised_exception =
+      try
+        Base.Fun.protect
+          ~finally:(fun () -> raise Not_found)
+          (fun () -> ()) ;
+        false
+      with Base.Fun.Finally_raised Not_found -> true
+    in
+
+    if not raised_exception then
+      Test.fail "did not wrap & re-raise exception" ;
+  );
+
   "Base.List.compare", (fun () ->
     let tests = [
       [], [], 0 ;
