@@ -129,6 +129,24 @@ let as_virtual v = match v with
 | Symbolic (Virtual ((s,_),_)) -> Some s
 | _ -> None
 
+let is_pt v = match v with
+| Symbolic (System (PTE,_)) -> true
+| _ -> false
+
+let same_oa v1 v2 =
+  let open PTEVal in
+  match v1,v2 with
+  | PteVal p1,PteVal p2 ->  Misc.string_eq p1.oa p2.oa
+  | _ -> false
+
+let writable ha hd v =
+  let open PTEVal in
+  match v with
+  | PteVal p ->
+      (p.af=1 || ha) && (* access allowed *)
+      (p.db=1 || (p.dbm=1 && hd)) (* write allowed *)
+  | _ -> false
+
 module type S =  sig
 
   module Scalar : Scalar.S

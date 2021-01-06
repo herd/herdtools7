@@ -107,6 +107,11 @@ end = struct
   | Access (_,A.Location_global _,_,_,_,_)   -> true
   | _ -> false
 
+  let is_pt a = match a with
+    | Access (_,A.Location_global (A.V.Val c),_,_,_,_)   ->
+        Constant.is_pt c
+    | _ -> false
+
 (* None of those below *)
   let is_tag _ = false
   let is_mem_physical a = let open Constant in match a with
@@ -114,8 +119,6 @@ end = struct
   | _ -> false
 
   let is_additional_mem _ = false
-
-  let is_PTE_access _ = false
 
   let is_PA_val _ = false
 

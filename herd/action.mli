@@ -29,6 +29,7 @@ module type S = sig
 (* Some architecture-specific sets and relations, with their definitions *)
   val arch_sets : (string * (action -> bool)) list
   val arch_rels : (string * (action -> action -> bool)) list
+(* To be deprecated *)
   val arch_dirty : (string * (DirtyBit.my_t -> action -> bool)) list
 
 (* control fence *)
@@ -54,6 +55,7 @@ module type S = sig
   val is_mem_load : action ->  bool
   val is_additional_mem_load :  action -> bool (* trylock *)
   val is_mem : action -> bool
+  val is_pt : action -> bool
   val is_tag : action -> bool
   val is_mem_physical : action -> bool
   val is_additional_mem : action -> bool (* abstract memory actions, eg locks *)
@@ -62,7 +64,6 @@ module type S = sig
   val to_fault : action -> A.fault option
   val get_mem_dir : action -> Dir.dirn
   val get_mem_size : action -> MachSize.sz
-  val is_PTE_access : action -> bool
   val is_PA_val : A.V.v -> bool
 
 (* relative to the registers of the given proc *)

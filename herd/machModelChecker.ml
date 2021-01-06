@@ -114,6 +114,23 @@ module Make
       | Some v1,Some v2 -> S.A.V.compare v1 v2 = 0
       | _ -> false
 
+      let same_oa e1 e2 = match S.E.value_of e1,S.E.value_of e2 with
+        | Some (S.A.V.Val c1),Some (S.A.V.Val c2) -> Constant.same_oa c1 c2
+        | _ -> false
+
+      let writable2 =
+        let writable ha hd e = match S.E.value_of e with
+          | Some (S.A.V.Val c) -> Constant.writable ha hd c
+          | _ -> false in
+        fun e1 e2 ->
+        let p = S.E.proc_of e1 in
+        match p with
+        | None -> Warn.user_error "Init write as first argument of writable2"
+        | Some p ->
+            let open DirtyBit in
+            let ha = O.dirty.ha p and hd = O.dirty.hd p in
+            writable ha hd e1 || writable ha hd e2
+
     end
 
     module I = Interpreter.Make(IConfig)(S)(IUtils)
@@ -295,10 +312,10 @@ module Make
              (fun (k,a) ->
                k,lazy (E.EventSet.filter (fun e -> a e.E.action) evts))
              E.Act.arch_sets) in
-      let m =
+      let m = (* To be deprecated *)
         if kvm then
-          let nexps = match I.get_set m "NExp" with
-            | Some nexps -> nexps
+          let mevt = match I.get_set m "M" with
+            | Some mevt -> mevt
             | None -> (* Must exists *) assert false in
           I.add_sets m
             (List.map
@@ -311,13 +328,12 @@ module Make
                      { my_ha; my_hd; } in
                    E.EventSet.filter
                      (fun e ->
-                       E.is_load e &&
                        begin match E.proc_of e with
                        | Some proc -> a (tr_proc proc) e.E.action
-                       (* Init writes have no proc, but there are no loads *)
-                       | None -> assert false
+                       (* Init writes excluded as no proc for them *)
+                       | None -> false
                        end)
-                     (Lazy.force nexps)
+                     (Lazy.force mevt)
                  end)
                E.Act.arch_dirty)
         else m in
