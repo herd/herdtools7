@@ -29,10 +29,12 @@ let opts =
   [
 (* General behavior *)
    "-v", Arg.Unit (fun () -> incr verbose), " be verbose";
-   "-version", Arg.Unit (fun () -> print_endline Version_litmus.version; exit 0),
+   "-version", Arg.Unit (fun () -> print_endline Version.version; exit 0),
    " show version number and exit";
-   "-libdir", Arg.Unit (fun () -> print_endline Version_litmus.libdir; exit 0),
+   "-libdir", Arg.Unit (fun () -> print_endline !Option.libdir; exit 0),
    " show installation directory and exit";
+   "-set-libdir", Arg.String (fun s -> Option.libdir := s),
+   "<path> set installation directory to <path>";
    "-switch", Arg.Set Misc.switch, "switch something" ;
    "-o", Arg.String set_tar,
      "<name> cross compilation to directory or tar file <name>" ;
