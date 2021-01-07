@@ -307,11 +307,25 @@ end = struct
 
   let invalid_pte act = is_invalid_val (written_of act) || is_invalid_val (read_of act)
 
-  let is_valid_val = let open Constant in function
+  let is_valid_val =
+    let open Constant in function
     | Some (A.V.Val (PteVal v)) -> V.is_one (V.intToV v.PTEVal.valid)
     | _ -> false
 
   let valid_pte act = is_valid_val (written_of act) || is_valid_val (read_of act)
+
+  let af0_val =
+    let open Constant in function
+    | Some (A.V.Val (PteVal v)) -> V.is_zero (V.intToV v.PTEVal.af)
+    | _ -> false
+
+  and db0_val =
+    let open Constant in function
+    | Some (A.V.Val (PteVal v)) -> V.is_zero (V.intToV v.PTEVal.db)
+    | _ -> false
+
+  let read_pteaf0 act = af0_val (read_of act)
+  and read_ptedb0 act = db0_val (read_of act)
 
   let get_pteval act = match written_of act,read_of act with
   | None,None -> None
@@ -449,7 +463,10 @@ end = struct
         ("PA",is_PA_access)::
         ("PTE",is_pt)::
         ("PTEINV",invalid_pte)::
-        ("PTEV",valid_pte)::k
+        ("PTEV",valid_pte)::
+        ("PTEAF0",read_pteaf0)::
+        ("PTEDB0",read_ptedb0)::
+        k
     else
       fun k -> k)
       (bsets @ asets @ esets @ lsets)
