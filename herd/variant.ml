@@ -44,9 +44,7 @@ type t =
   | Instances (* Compute dependencies on instruction instances *)
   | Kvm
   | ETS
-  | TTHM
-  | HA
-  | HD
+
   
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
@@ -79,9 +77,6 @@ let parse s = match Misc.lowercase s with
 | "instances"|"instance" -> Some Instances
 | "kvm" -> Some Kvm
 | "ets" -> Some ETS
-| "tthm" | "TTHM" -> Some TTHM
-| "ha" | "HA" -> Some HA
-| "hd" | "HD" -> Some HD
 | _ -> None
 
 let pp = function
@@ -108,9 +103,6 @@ let pp = function
   | Instances -> "Instances"
   | Kvm -> "kvm" 
   | ETS -> "ets" 
-  | TTHM -> "tthm"
-  | HA -> "ha"
-  | HD -> "hd"  
 
 let compare = compare
 

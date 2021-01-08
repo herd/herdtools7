@@ -42,9 +42,6 @@ type t =
   | Instances (* Compute dependencies on instruction instances *)
   | Kvm
   | ETS 
-  | TTHM
-  | HA
-  | HD
 
 val compare : t -> t -> int
 val tags : string list
