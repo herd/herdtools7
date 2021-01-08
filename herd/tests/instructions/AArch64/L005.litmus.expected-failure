@@ -1,0 +1,1 @@
+Warning: File "./herd/tests/instructions/AArch64/L005.litmus", line 7, characters 22-24: unexpected 'X0' (in prog) (User error)

@@ -18,15 +18,20 @@
   * would run. *)
 val herd_command: string -> string -> string -> string
 
-(** [run_herd herd libdir litmus] runs the binary [herd] with a custom [libdir]
-  * on a [litmus] file, and returns the output with unstable lines removed (e.g.
-  * Time). *)
-val run_herd : string -> string -> string -> string list
+type stdout_lines = string list
+type stderr_lines = string list
 
-(** [herd_output_matches_expected herd libdir litmus expected] runs the binary
+(** [run_herd herd libdir litmus] runs the binary [herd] with a custom [libdir]
+  * on a [litmus] file, and returns the stdout with unstable lines removed (e.g.
+  * Time) and stderr *)
+val run_herd : string -> string -> string -> stdout_lines * stderr_lines
+
+(** [herd_output_matches_expected herd libdir litmus expected expected_failure] runs the binary
   * [herd] with a custom [libdir] on a [litmus] file, and compares the output
-  * with an [expected] file. *)
-val herd_output_matches_expected : string -> string -> string -> string -> bool
+  * with an [expected] file. If the run writes to stderr then we check [expected_failure].
+  * If the contents of [expected_failure] match then it is an expected failure, otherwise
+  * it is an unexpected failure and will raise an Error. *)
+val herd_output_matches_expected : string -> string -> string -> string -> string -> bool
 
 (** [is_litmus filename] returns whether the [filename] is a .litmus file. *)
 val is_litmus : string -> bool
@@ -39,3 +44,9 @@ val expected_of_litmus : string -> string
 
 (** [litmus_of_expected filename] returns the .litmus name for a given .litmus.expected [filename]. *)
 val litmus_of_expected : string -> string
+
+(** [expected_failure_of_litmus filename] returns the .litmus.expected-failure name for a given .litmus [filename]. *)
+val expected_failure_of_litmus : string -> string
+
+(** [litmus_of_expected_failure filename] returns the .litmus name for a given .litmus.expected-failure [filename]. *)
+val litmus_of_expected_failure : string -> string
