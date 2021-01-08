@@ -1,0 +1,9 @@
+AArch64 L010
+
+{ x=1; 0:X2=x; int v[3]={1,2,3}; 1:X2=v;}
+
+ P0            |  P1           ;
+ LDR W0, [X2]  | ADD X2,X2,#8  ;
+               | LDR W0,[X2]   ;
+forall (0:X0 = 1 /\ 1:X0=3)
+

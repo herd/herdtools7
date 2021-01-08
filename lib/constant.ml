@@ -70,7 +70,10 @@ let is_symbol = function
 (* and idx is less than total array size ts*)
 (* this is not the same as herd mixed mode which may not align exactly to the size of the prim-type -> this is used for non-mixed mode too*)
 let is_aligned_to_vec (ps,ts) idx =
-  if idx > 0 then (ps mod idx = 0) && idx < (ts*ps) else idx=0
+  if idx > 0 then
+    (ps >= idx && (ps mod idx = 0) && idx < (ts*ps))
+    || ((idx mod ps = 0) && idx < (ts*ps))
+  else idx=0
 
 let is_non_mixed_symbol = function
   | Symbolic {vdata=Some vs; offset=idx;_} -> is_aligned_to_vec vs idx

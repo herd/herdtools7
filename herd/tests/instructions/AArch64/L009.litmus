@@ -1,0 +1,10 @@
+AArch64 L009
+
+{ 0:X2=v; int v[2]={1,2};
+  1:X2=w; int64_t w[2]={1,2};}
+
+ P0              | P1              ;
+ LDR W0, [X2]    | LDR X0, [X2]    ;
+ STR W0, [X2,#4] | STR X0, [X2,#8] ;
+forall (0:X0 = 1 /\ 1:X0=1)
+
