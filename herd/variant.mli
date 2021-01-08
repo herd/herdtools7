@@ -42,6 +42,8 @@ type t =
   | Instances (* Compute dependencies on instruction instances *)
   | Kvm
   | ETS 
+(* Perform experiment *)
+  | Exp
 
 val compare : t -> t -> int
 val tags : string list

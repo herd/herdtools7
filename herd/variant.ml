@@ -44,14 +44,15 @@ type t =
   | Instances (* Compute dependencies on instruction instances *)
   | Kvm
   | ETS
-
+(* Perform experiment *)
+  | Exp
   
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
    "fullscdepend";"splittedrmw";"switchdepscwrite";"switchdepscresult";"lrscdiffok";
    "mixed";"dontcheckmixed";"weakpredicated"; "memtag";
    "tagcheckprecise"; "tagcheckunprecise"; "precise"; "imprecise";
-   "toofar"; "deps"; "instances"; ]
+   "toofar"; "deps"; "instances"; "exp"; ]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -77,6 +78,7 @@ let parse s = match Misc.lowercase s with
 | "instances"|"instance" -> Some Instances
 | "kvm" -> Some Kvm
 | "ets" -> Some ETS
+| "exp" -> Some Exp
 | _ -> None
 
 let pp = function
@@ -102,7 +104,8 @@ let pp = function
   | Deps -> "Deps"
   | Instances -> "Instances"
   | Kvm -> "kvm" 
-  | ETS -> "ets" 
+  | ETS -> "ets"
+  | Exp -> "exp"
 
 let compare = compare
 
