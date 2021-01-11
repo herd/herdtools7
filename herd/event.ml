@@ -1597,6 +1597,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 (* AArch64 CAS, failure *)
     let aarch64_cas_no rn rs wrs rm =
       let output_rn = maximals rn
+      and output_rs = maximals rs
       and output_rm = maximals rm
       and input_wrs = minimals wrs
       and input_rm = minimals rm in
@@ -1621,9 +1622,10 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
              (EventRel.cartesian output_rn input_rm)
              (EventRel.cartesian output_rm input_wrs));
         intra_causality_control =
-        EventRel.union4
+        EventRel.union5
           rn.intra_causality_control rs.intra_causality_control
-          wrs.intra_causality_control rm.intra_causality_control;
+          wrs.intra_causality_control rm.intra_causality_control
+          (EventRel.cartesian output_rs input_wrs);
         control =
         EventRel.union4 rn.control rs.control rm.control wrs.control;
         data_ports =
@@ -1689,7 +1691,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
              wrs.intra_causality_control
              rm.intra_causality_control
              wm.intra_causality_control)
-          (EventRel.union
+          (EventRel.union3
+             (EventRel.cartesian output_rs input_wrs)
              (EventRel.cartesian output_rs input_wm)
              (EventRel.cartesian output_rm input_wm));
         control =
