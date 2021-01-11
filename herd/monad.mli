@@ -97,6 +97,11 @@ module type S =
               (A.V.v -> A.V.v -> A.V.v -> unit t) -> (* write mem *)
                 unit t
 
+    val aarch64_cas_no :
+        'loc t -> 'v t ->
+          ('v -> unit t) -> ('loc -> 'v t) ->
+            ('v -> 'v -> unit t) -> unit t
+
     val aarch64_cas_ok :
         'loc t -> 'v t -> 'v t ->
           ('v -> unit t) -> ('loc -> 'v t) -> ('loc -> 'v -> unit t) ->

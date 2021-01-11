@@ -393,6 +393,29 @@ Monad type:
       eiid,
       (Evt.singleton (r,cl_resa@cl_data@cl_addr@cl_wres@cl_wresult@cl_wmem,es), None)
 
+(* AArch64 failed cas *)
+    let aarch64_cas_no
+        (read_rn:'loc t) (read_rs:'v t)
+        (write_rs:'v-> unit t)
+        (read_mem: 'loc -> 'v t)
+        (rne: 'v -> 'v -> unit t)
+        eiid =
+      let eiid,read_rn = read_rn eiid in
+      let eiid,read_rs = read_rs eiid in
+      let a,cl_a,es_rn = Evt.as_singleton_nospecul read_rn
+      and cv,cl_cv,es_rs = Evt.as_singleton_nospecul read_rs in
+      let eiid,read_mem = read_mem a eiid in
+      let ov,cl_rm,es_rm = Evt.as_singleton_nospecul read_mem in
+      let eiid,write_rs = write_rs ov eiid in
+      let (),cl_wrs,es_wrs = Evt.as_singleton_nospecul write_rs in
+      let eiid,nem = rne ov cv eiid in
+      let (),cl_ne,eseq =  Evt.as_singleton_nospecul nem in
+      assert (E.is_empty_event_structure eseq) ;
+      let es =
+        E.aarch64_cas_no es_rn es_rs es_wrs es_rm in
+      let cls = cl_a@cl_cv@cl_rm@cl_wrs@cl_ne  in
+      eiid,(Evt.singleton ((),cls,es), None)
+
 (* AArch64 successful cas *)
     let aarch64_cas_ok
         (read_rn:'loc t) (read_rs:'v t) (read_rt: 'v t)

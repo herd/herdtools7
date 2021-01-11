@@ -1,0 +1,10 @@
+Test L008 Required
+States 1
+0:X3=0; 1:X3=0; x=0; y=2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (x=0 /\ y=2)
+Observation L008 Always 1 0
+Hash=dcd669f7a9ed4f2e408f12673d09b57f
+

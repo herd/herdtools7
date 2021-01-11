@@ -523,24 +523,21 @@ module Make
               ii
 
       let cas sz rmw rs rt rn ii =
+        let read_rs = read_reg_data sz rs ii
+        and write_rs v =
+          write_reg_sz_non_mixed sz rs v ii in  (* no sz, argument masked *)
         lift_memop
           (read_reg_data sz rt ii)
           (fun ma mv ->
             let open AArch64 in
-            let read_rs = read_reg_data sz rs ii in
-            M.altT
-              (ma >>= fun a ->
-               (read_rs >>|
-               begin let read_mem sz = match rmw with
-               | RMW_A|RMW_AL -> do_read_mem sz A
-               | RMW_L|RMW_P  -> do_read_mem sz N in
-               read_mem sz a ii >>=
-               fun v -> write_reg_sz_non_mixed sz rs v ii >>! v end) >>=
-               fun (cv,v) -> M.neqT cv v >>! ())
+             M.altT
+              (let read_mem a = match rmw with
+               | RMW_A|RMW_AL -> do_read_mem sz A a ii
+               | RMW_L|RMW_P  -> do_read_mem sz N a ii in
+               M.aarch64_cas_no ma read_rs write_rs read_mem M.neqT)
               (let read_rt = mv
               and read_mem a = rmw_amo_read rmw sz  a ii
-              and write_mem a v = rmw_amo_write rmw sz a v ii
-              and write_rs v =  write_reg rs v ii in (* no sz, argument masked *)
+              and write_mem a v = rmw_amo_write rmw sz a v ii in
               M.aarch64_cas_ok
                 ma read_rs read_rt write_rs read_mem write_mem M.eqT))
           (to_perms "rw" sz)

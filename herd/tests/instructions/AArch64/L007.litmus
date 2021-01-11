@@ -1,0 +1,13 @@
+AArch64 L008
+{
+int x=0;
+0:X4=x;
+int y=0;
+1:X4=y;
+}
+P0              | P1              ;
+MOV W3,#1       | MOV W3,#0       ;
+MOV W2,#2       | MOV W2,#2       ;
+CAS W3,W2,[X4]  | CAS W3,W2,[X4]  ;
+locations [0:X3;1:X3;]
+forall (x=0 /\ y=2)

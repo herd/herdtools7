@@ -349,6 +349,10 @@ val same_instance : event -> event -> bool
           event_structure ->  event_structure ->  event_structure ->
             event_structure
 
+  val aarch64_cas_no :
+            event_structure -> event_structure -> event_structure ->
+            event_structure ->  event_structure
+
   val aarch64_cas_ok :
         event_structure -> event_structure -> event_structure ->
           event_structure ->  event_structure ->  event_structure ->
@@ -1589,6 +1593,57 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
                                        (wres.aligned))
                                        (wresult.aligned))
                                        (wmem.aligned) ;}
+
+(* AArch64 CAS, failure *)
+    let aarch64_cas_no rn rs wrs rm =
+      let output_rn = maximals rn
+      and output_rm = maximals rm
+      and input_wrs = minimals wrs
+      and input_rm = minimals rm in
+      { procs = [] ;
+        events =
+        EventSet.union4
+          rn.events rs.events wrs.events rm.events;
+        speculated =
+        if do_deps then
+          EventSet.union4
+            rn.speculated rs.speculated wrs.speculated rm.speculated
+        else rn.speculated;
+        po = po_union4 rn rs wrs rm;
+        intra_causality_data =
+        EventRel.union
+          (EventRel.union4
+             rn.intra_causality_data
+             rs.intra_causality_data
+             wrs.intra_causality_data
+             rm.intra_causality_data)
+          (EventRel.union
+             (EventRel.cartesian output_rn input_rm)
+             (EventRel.cartesian output_rm input_wrs));
+        intra_causality_control =
+        EventRel.union4
+          rn.intra_causality_control rs.intra_causality_control
+          wrs.intra_causality_control rm.intra_causality_control;
+        control =
+        EventRel.union4 rn.control rs.control rm.control wrs.control;
+        data_ports =
+        EventSet.union4
+          rn.data_ports rs.data_ports
+          wrs.data_ports rm.data_ports;
+        success_ports =
+        EventSet.union4
+          rn.success_ports rs.success_ports
+          wrs.success_ports rm.success_ports;
+        sca =
+        EventSetSet.union4
+          rn.sca rs.sca wrs.sca rm.sca;
+        mem_accesses =
+        EventSet.union4
+          rn.mem_accesses rs.mem_accesses
+          wrs.mem_accesses rm.mem_accesses;
+        output = Some (maximals wrs);
+        aligned = rn.aligned @ rs.aligned @ wrs.aligned @ rm.aligned;
+      }
 
 (* AArch64 CAS, success *)
     let aarch64_cas_ok rn rs rt wrs rm wm =
