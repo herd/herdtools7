@@ -1071,14 +1071,21 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
             (A.V.Val (Constant.Symbolic ((Misc.add_ctag s,None,0),0))))
             def_size v; }
 
-      let initwrites_non_mixed env _ =
+      let initwrites_non_mixed env size_env =
         fun eiid ->
           let eiid,es =
             List.fold_left
               (fun (eiid,es) (loc,v) ->
+                let sz =
+                  match loc with
+                  | A.Location_global
+                    (A.V.Val (Constant.Symbolic ((s,_,_),0)))
+                        when not (Misc.check_atag s) ->
+                      A.look_size size_env s
+                  | _ -> def_size in
                 let eiid,ew =
                   make_one_init_event
-                    (E.Act.mk_init_write loc def_size v) eiid in
+                    (E.Act.mk_init_write loc sz v) eiid in
                 match loc with
                 | A.Location_global (A.V.Val (Constant.Symbolic ((s,_,_),0))) ->
                     let eiid,ews =

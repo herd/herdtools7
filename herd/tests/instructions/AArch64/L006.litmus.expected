@@ -1,0 +1,10 @@
+Test L007 Required
+States 1
+0:X0=2; 0:X1=3;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=2 /\ 0:X1=3)
+Observation L007 Always 1 0
+Hash=b77677b1c56acd8e1f4f4f944aa294c2
+
