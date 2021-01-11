@@ -1104,9 +1104,13 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
                 let sz =
                   match loc with
                   | A.Location_global
-                    (A.V.Val (Constant.Symbolic
-                      {Constant.name=s;Constant.offset=0;_}))
+                    (A.V.Val
+                       (Constant.Symbolic
+                          {Constant.name=s; _}))
                         when not (Misc.check_atag s) ->
+(* Notice that size does not depend upon offset.
+   That is, all addresses with the same base
+   share the same size *)
                       A.look_size size_env s
                   | _ -> def_size in
                 let eiid,ew =

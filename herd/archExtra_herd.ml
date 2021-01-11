@@ -374,14 +374,15 @@ module Make(C:Config) (I:I) : S with module I = I
               (* e.g uint64_t -> 8 bytes, so the above is v, v+8, v+16 *)
               let sz,vs = match v with
               | I.V.Val (Constant.ConcreteVector (sz,vs))
-                  when sz == total_size -> sz,vs
+                  when Misc.int_eq sz total_size -> sz,vs
               | _ -> Warn.user_error "Unexpected scalar value %s, vector expected" (I.V.pp_v v) in
               let locval = match global loc with
               | Some x -> x
               | _ -> Warn.user_error "Non-global vector assignment in init" in
-              let prim_sz = MachSize.nbytes
+              let prim_sz =
                 (MiscParser.size_of I.V.Cst.Scalar.machsize array_prim) in
-              let vec_data = Some (prim_sz, sz) in
+              let nbytes = MachSize.nbytes prim_sz in
+              let vec_data = Some (nbytes, sz) in
               let vs = List.mapi
                 (fun i v ->
                   let open Constant in
@@ -393,7 +394,7 @@ module Make(C:Config) (I:I) : S with module I = I
                       tag=tag ;
                       cap=cap ;
                       vdata=vec_data;
-                      offset=i*prim_sz} in
+                      offset=i*nbytes} in
                   Location_global
                     (I.V.Val (Symbolic sym_data)),
                   (MiscParser.Ty array_prim,I.V.cstToV v))
@@ -483,30 +484,17 @@ module Make(C:Config) (I:I) : S with module I = I
 
       let size_env_empty = StringMap.empty
 
-          (* Simplified typing, size only, integer types only *)
-
-      let size_of = function
-        | "atomic_t"
-        | "int"|"long"
-        | "int32_t"
-        | "uint32_t" ->  MachSize.Word
-        | "char"|"int8_t" |"uint8_t" -> MachSize.Byte
-        | "short" | "int16_t" | "uint16_t" -> MachSize.Short
-        | "int64_t" | "uint64_t" -> MachSize.Quad
-        | "int128_t" | "uint128_t" -> MachSize.S128
-        | "intptr_t" | "uintptr_t" -> I.V.Cst.Scalar.machsize (* Maximal size = ptr size *)
-        | t ->
-            Warn.fatal "Cannot find the size of type %s" t
-
-
-      let misc_to_size ty  = match ty with
-      | MiscParser.TyDef -> size_of "int"
-      | MiscParser.Ty t|MiscParser.Atomic t
-        -> size_of t
-      | MiscParser.Pointer _| MiscParser.TyDefPointer
-      | MiscParser.TyArray _
-      (* Assuming pointer size is machine 'natural' size *)
-        ->  I.V.Cst.Scalar.machsize
+      let misc_to_size ty =
+        let maximal = I.V.Cst.Scalar.machsize in
+        match ty with
+        | MiscParser.TyDef ->
+            MiscParser.size_of maximal "int"
+        | MiscParser.Ty t|MiscParser.Atomic t
+        | MiscParser.TyArray (t,_)
+          ->
+            MiscParser.size_of maximal t
+        | MiscParser.Pointer _| MiscParser.TyDefPointer ->
+            maximal
 
       let build_size_env bds =
         List.fold_left
