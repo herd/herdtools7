@@ -402,23 +402,23 @@ module Make(C:Config) (I:I) : S with module I = I
 
       let misc_to_size ty  = match ty with
       | MiscParser.TyDef -> size_of "int"
-      | MiscParser.Ty t|MiscParser.Atomic t -> (size_of t)
-      | MiscParser.Pointer _
-      | MiscParser.TyDefPointer
+      | MiscParser.Ty t|MiscParser.Atomic t
+        -> size_of t
+      | MiscParser.Pointer _| MiscParser.TyDefPointer
+      (* Assuming pointer size is machine 'natural' size *)
+        ->  I.V.Cst.Scalar.machsize
       | MiscParser.TyArray _ ->
           Warn.fatal "Type %s is not allowed in mixed size mode"
             (MiscParser.pp_run_type ty)
 
-      let build_size_env =
-        if is_mixed then
-          fun bds ->
-            List.fold_left
-              (fun m (loc,(t,_)) -> match loc with
-              | Location_global a -> StringMap.add (I.V.as_symbol a) (misc_to_size t) m
-              | _ -> m)
-              StringMap.empty bds
-        else
-          (fun _ -> StringMap.empty)
+      let build_size_env bds =
+        List.fold_left
+          (fun m (loc,(t,_)) ->
+            match loc with
+            | Location_global a ->
+                StringMap.add (I.V.as_symbol a) (misc_to_size t) m
+            | _ -> m)
+          size_env_empty bds
 
       type final_state = state * FaultSet.t
 
