@@ -57,7 +57,7 @@ module Make(A:Arch_herd.S) : sig
        A.type_env,
        A.prop,
        A.location,
-       A.LocSet.t
+       A.RLocSet.t
       ) t
 
   val build : Name.t -> A.pseudo MiscParser.t -> result

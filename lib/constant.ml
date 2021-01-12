@@ -19,7 +19,6 @@
 (*Metadata for when  a constant is a vector element *)
 (*vector metadata - prim size (arg1) and total array size (arg2) *)
 (*needed for is-non-mixed-symbol and global vectors *)
-type vdata = (int * int) option
 
 type tag = string option
 type cap = int
@@ -32,7 +31,6 @@ type symbolic_data =
    name : string ;
    tag : tag ;
    cap : cap ;
-   vdata : vdata ;
    offset : offset ;
   }
 
@@ -48,7 +46,6 @@ let default_symbolic_data =
    name = "" ;
    tag = None ;
    cap = 0 ;
-   vdata = None ;
    offset = 0 ;
   }
 
@@ -74,11 +71,6 @@ let is_aligned_to_vec (ps,ts) idx =
     (ps >= idx && (ps mod idx = 0) && idx < (ts*ps))
     || ((idx mod ps = 0) && idx < (ts*ps))
   else idx=0
-
-let is_non_mixed_symbol = function
-  | Symbolic {vdata=Some vs; offset=idx;_} -> is_aligned_to_vec vs idx
-  | Symbolic {offset=idx;_} -> idx=0
-  | Concrete _|Label _| Tag _| ConcreteVector _ -> true
 
 let default_tag = Tag "green"
 

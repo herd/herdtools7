@@ -41,6 +41,9 @@ val as_local_proc : int -> StringSet.t -> location -> reg option
 module LocSet : MySet.S with type elt = location
 module LocMap : MyMap.S with type key = location
 
+type rlocation = location ConstrGen.rloc
+module RLocSet : MySet.S with type elt = rlocation
+
 
 type prop = (location, maybev) ConstrGen.prop
 type constr = prop ConstrGen.constr

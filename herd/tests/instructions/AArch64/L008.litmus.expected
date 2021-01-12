@@ -1,10 +1,10 @@
 Test L008 Required
 States 1
-0:X0=1; 0:X1=2; v=1; v[1]=2;
+0:X0=1; 0:X1=2; v[0]=1; v[1]=2;
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition forall (v=1 /\ v[1]=2)
+Condition forall (v[0]=1 /\ v[1]=2)
 Observation L008 Always 1 0
-Hash=c88f5d201c48b7b9001fcd819cf0fb53
+Hash=39b0e9b5900b379f00de10f3fb89fab7
 

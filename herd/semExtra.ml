@@ -58,14 +58,18 @@ module type S = sig
   type test =
       (program, nice_prog, start_points,
        state, A.size_env, A.type_env,
-       prop, location, A.LocSet.t) Test_herd.t
+       prop, location, A.RLocSet.t) Test_herd.t
 
-(* Get list of locations observed in outcomes *)
-  type loc_set = A.LocSet.t
-  val observed_locations : test -> loc_set
-  val displayed_locations : test -> loc_set
   val size_env : test -> A.size_env
   val type_env : test -> A.type_env
+
+(* Get sets of locations observed in outcomes *)
+  type loc_set = A.LocSet.t
+  type rloc_set = A.RLocSet.t
+  val observed_rlocations : test -> rloc_set
+  val observed_locations : test -> loc_set
+  val displayed_rlocations : test -> rloc_set
+  val is_non_mixed_symbol : test -> Constant.symbolic_data -> bool
 
   type event = E.event
   type event_structure = E.event_structure
@@ -146,7 +150,7 @@ type concrete =
     {
      str   : event_structure ; (* event structure proper *)
      rfmap : rfmap ;           (* rfmap *)
-     fs    : final_state ;           (* final state *)
+     fs    : state * A.FaultSet.t ;           (* final state *)
      po  : event_rel ;         (* program order (in fact po + iico) *)
      pos : event_rel ;         (* Same location same processor accesses *)
 (* Write serialization precursor ie uniproc induced constraints over writes *)
@@ -215,18 +219,56 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
     type nice_prog = A.nice_prog
     type start_points = A.start_points
 
-  type proc_info = Test_herd.proc_info
+    type proc_info = Test_herd.proc_info
     type test =
       (program, nice_prog, start_points,
        state, A.size_env, A.type_env,
-       prop, location, A.LocSet.t) Test_herd.t
+       prop, location, A.RLocSet.t) Test_herd.t
 
-(* List of relevant location *)
-    type loc_set = A.LocSet.t
-    let observed_locations t = t.Test_herd.observed
-    and displayed_locations t = t.Test_herd.displayed
-    and size_env t =  t.Test_herd.size_env
+    let size_env t =  t.Test_herd.size_env
     and type_env t = t.Test_herd.type_env
+
+(* Sets of relevant location *)
+    type loc_set = A.LocSet.t
+    type rloc_set = A.RLocSet.t
+
+    let loc_of_rloc test =
+      let open ConstrGen in
+      function
+      | Loc loc -> loc
+      | Deref (loc,o) ->
+          let t = A.look_type (type_env test) loc in
+          A.scale_array_reference t loc o
+
+    let locs_of_rlocs test rlocs =
+      A.RLocSet.fold
+        (fun rloc k -> A.LocSet.add (loc_of_rloc test rloc) k)
+        rlocs A.LocSet.empty
+
+    let observed_rlocations t = t.Test_herd.observed
+
+    let observed_locations t = locs_of_rlocs t (observed_rlocations t)
+
+    let displayed_rlocations t = t.Test_herd.displayed
+
+    let is_non_mixed_symbol test sym =
+      let open Constant in
+      match sym.offset with
+      | 0 -> true
+      | o ->
+          o > 0 &&
+            begin
+              let sym0 = { sym with offset = 0; } in
+              let loc0 = A.Location_global (A.V.Val (Symbolic sym0)) in
+              let t = A.look_type (type_env test) loc0 in
+              let open MiscParser in
+              match t with
+              | TyArray (t,sz) ->
+                  let sz_elt = MachSize.nbytes (A.size_of_t t) in
+                  o mod sz_elt = 0 && o < sz*sz_elt
+              | _ -> false
+            end
+
 
     type event = E.event
 
@@ -342,7 +384,7 @@ type concrete =
     {
      str   : event_structure ; (* event structure proper *)
      rfmap : rfmap ;           (* rfmap *)
-     fs    : final_state ;           (* final state *)
+     fs    : state * A.FaultSet.t ;           (* final state *)
      po : event_rel ;
      pos : event_rel ;      (* Same location same processor accesses *)
      pco : event_rel ;

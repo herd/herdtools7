@@ -56,7 +56,7 @@ module Make(A:Arch_herd.S) =
 
     type result =
         (A.program, A.nice_prog, A.start_points,
-         A.state, A.size_env, A.type_env, A.prop, A.location, A.LocSet.t) t
+         A.state, A.size_env, A.type_env, A.prop, A.location, A.RLocSet.t) t
 
 (* Symb register allocation is external, since litmus needs it *)
     module ArchAlloc = struct
@@ -74,14 +74,11 @@ module Make(A:Arch_herd.S) =
 (* Code loader is external, since litmus tests need it too *)
     module Load = Loader.Make(A)
 
-    let collect_atom type_env a r =
+    let collect_atom a r =
       let open ConstrGen in
       match a with
-      | LV (Loc loc,_v) -> A.LocSet.add loc r
-      | LV (Deref (loc,os),_) ->
-          let t = A.look_type type_env loc in
-          A.LocSet.add (A.scale_array_reference t loc os) r
-      | LL (l1,l2) -> A.LocSet.add l1 (A.LocSet.add l2 r)
+      | LV (loc,_v) -> A.RLocSet.add loc r
+      | LL (l1,l2) -> A.RLocSet.add (Loc l1) (A.RLocSet.add (Loc l2) r)
       | FF _ ->  r
 
 (* Mem size access *)
@@ -119,24 +116,13 @@ module Make(A:Arch_herd.S) =
       (* init_state contains vector size metadata, add it to final constrs*)
       (* Needed so we can align a scaled access according to size of the type *)
       let type_env = A.build_type_env init in
-      let final =
-        ConstrGen.map_constr
-          (function
-           | ConstrGen.LV (ConstrGen.Deref (l,os),v) ->
-              let l =
-              match A.add_metadata_to_location l os init_state with
-              | Some loc -> loc
-              | _ -> l in
-              ConstrGen.LV (ConstrGen.Deref (l,os),v)
-           | r -> r)
-          final in
       let displayed = (* Luc: Doubt purpose of displayed ? *)
-        let flocs = A.LocSet.of_list (List.map ConstrGen.loc_of_rloc flocs) in
-        ConstrGen.fold_constr (collect_atom type_env) final flocs in
+        let flocs = A.RLocSet.of_list flocs in
+        ConstrGen.fold_constr collect_atom final flocs in
       let observed = match filter with
       | None -> displayed
       | Some filter ->
-          ConstrGen.fold_prop (collect_atom type_env) filter displayed in
+          ConstrGen.fold_prop collect_atom filter displayed in
       let proc_info =
         let m =
           List.fold_left
@@ -195,7 +181,7 @@ module Make(A:Arch_herd.S) =
        filter = None ;
        cond = fake_constr ;
        flocs = [] ;
-       observed = A.LocSet.empty; displayed = A.LocSet.empty;
+       observed = A.RLocSet.empty; displayed = A.RLocSet.empty;
        extra_data = MiscParser.empty_extra;
        access_size = [];
        proc_info = [];

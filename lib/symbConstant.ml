@@ -94,12 +94,9 @@ module Make(Scalar:Scalar.S) = struct
   let tag_eq = Misc.opt_eq Misc.string_eq
 
   let location_eq
-    {name=s1; tag=t1; cap=c1; vdata=v1; offset=o1}
-    {name=s2; tag=t2; cap=c2; vdata=v2; offset=o2} =
+    {name=s1; tag=t1; cap=c1; offset=o1}
+    {name=s2; tag=t2; cap=c2; offset=o2} =
     Misc.string_eq s1 s2 && tag_eq t1 t2 && Misc.int_eq c1 c2
-    && Misc.opt_eq
-        (fun (x1,y1) (x2,y2) -> Misc.int_eq x1 x2 && Misc.int_eq y1 y2)
-        v1 v2
     && Misc.int_eq o1 o2
 
   let rec eq c1 c2 = match c1,c2 with

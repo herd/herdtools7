@@ -377,6 +377,8 @@ let lift_proc_info i evts =
   and collect_mem_loads es = collect_by_loc es E.is_mem_load
   and collect_mem_stores es = collect_by_loc es E.is_mem_store
   and collect_mem es = collect_by_loc es E.is_mem
+  and collect_mem_non_init es =
+    collect_by_loc es (fun e -> E.is_mem e && Misc.is_some (E.proc_of e))
   and collect_loads es = collect_by_loc es E.is_load
   and collect_stores es = collect_by_loc es E.is_store
   and collect_loads_non_spec es = collect_by_loc es (fun e -> E.is_load e && not_speculated es e)

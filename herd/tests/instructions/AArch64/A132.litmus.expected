@@ -1,10 +1,10 @@
 Test A132 Required
 States 1
-v=2; v[1]=44;
+v[0]=2; v[1]=44;
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition forall (v=2 /\ v[1]=44)
+Condition forall (v[0]=2 /\ v[1]=44)
 Observation A132 Always 1 0
-Hash=8bb36ae293db3439b8da5af0ed60952e
+Hash=58d64afff6700a09968a954ec38fe4dc
 

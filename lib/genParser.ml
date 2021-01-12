@@ -159,16 +159,18 @@ let check_atom procs a =
 (***********)
 
 (* Extract locations from condition *)
-let get_locs_atom a =
-  let open ConstrGen in
-  let open MiscParser in
-  match a with
-  | LV (loc,_) -> LocSet.add (loc_of_rloc loc)
-  | LL (loc1,loc2) ->
-      (fun k -> LocSet.add loc1 (LocSet.add loc2 k))
-  | FF (_,x) -> LocSet.add (MiscParser.Location_global x)
 
-let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
+    let get_locs_atom a =
+      let open ConstrGen in
+      let open MiscParser in
+      match a with
+      | LV (loc,_) -> RLocSet.add loc
+      | LL (loc1,loc2) ->
+          (fun k -> RLocSet.add (Loc loc1) (RLocSet.add (Loc loc2) k))
+      | FF (_,x) -> RLocSet.add (Loc (MiscParser.Location_global x))
+
+    let get_locs c =
+      ConstrGen.fold_constr get_locs_atom c MiscParser.RLocSet.empty
 
 (* Lexers *)
     module LexConfig = struct let debug = O.debuglexer end
@@ -213,9 +215,9 @@ let get_locs c = ConstrGen.fold_constr get_locs_atom c MiscParser.LocSet.empty
           chan constr_loc SL.token StateParser.constraints in
       check_regs procs init locs final ;
       let all_locs =
-        MiscParser.LocSet.union
-          (MiscParser.LocSet.of_list
-             (List.map (fun (rloc,_) -> ConstrGen.loc_of_rloc rloc) locs))
+        MiscParser.RLocSet.union
+          (MiscParser.RLocSet.of_list
+             (List.map (fun (rloc,_) -> rloc) locs))
           (get_locs final) in
       let parsed =
         {

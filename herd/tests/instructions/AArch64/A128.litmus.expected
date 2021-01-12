@@ -1,10 +1,10 @@
 Test A128 Required
 States 1
-0:X0=22; v=22; v[1]=44;
+0:X0=22; v[0]=22; v[1]=44;
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition forall (0:X0=22 /\ v=22 /\ v[1]=44)
+Condition forall (0:X0=22 /\ v[0]=22 /\ v[1]=44)
 Observation A128 Always 1 0
-Hash=a94b5de7b93d3433c5b4d55dbdd0c8db
+Hash=e36e1daca2acac64403890af9e3edf16
 

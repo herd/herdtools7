@@ -811,7 +811,7 @@ module Make (M:Cfg)
           (fun es0 rfm0 cs0 res0 ->
             match cs0 with
             | [] ->
-               if S.A.reject_mixed then M.check_sizes es0;
+               if S.A.reject_mixed then M.check_sizes test es0;
                if not (S.O.optace) || M.check_rfmap es0 rfm0
                then
                  let ne = replace_events e es0.M.S.E.events in

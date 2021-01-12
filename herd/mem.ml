@@ -93,7 +93,7 @@ module type S = sig
           S.read_from S.RFMap.t -> S.M.VC.cnstrnt list -> 'a -> 'a) ->
             'a -> 'a
 
-  val check_sizes : S.event_structure -> unit
+  val check_sizes : S.test -> S.event_structure -> unit
 
   val check_rfmap :
     S.E.event_structure -> S.read_from S.RFMap.t -> bool
@@ -105,7 +105,7 @@ module type S = sig
   val compute_final_state :
     S.test -> S.read_from S.RFMap.t -> S.E.EventSet.t -> S.A.state * S.A.FaultSet.t
 
-  val check_filter : S.test -> S.A.final_state -> bool
+  val check_filter : S.test -> S.A.state * S.A.FaultSet.t -> bool
 
   val get_loc :
     S.E.event -> S.E.A.location
@@ -219,7 +219,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           (function
             | A.Location_global _ -> true
             | A.Location_reg _ -> false)
-          test.Test_herd.observed
+          (S.observed_locations test)
       and locs_init = get_all_locs_init test.Test_herd.init_state in
       let locs = A.LocSet.union locs_final locs_init in
       let locs =
@@ -608,7 +608,7 @@ let match_reg_events es =
    - Not after in program order
     (suppressed when uniproc is not optmised early) *)
 
-    let map_load_possible_stores es loads stores compat_locs =
+    let map_load_possible_stores test es loads stores compat_locs =
       let m =
         E.EventSet.fold
           (fun store map_load ->
@@ -645,12 +645,18 @@ let match_reg_events es =
         (fun (load,stores) -> match stores with
         | [] ->
             begin match E.location_of load with
-            | Some (A.Location_global (V.Val sym) as loc) ->
-                if Constant.is_non_mixed_symbol sym then
+            | Some
+              (A.Location_global
+                 (V.Val (Constant.Symbolic sym)) as loc) ->
+                if
+                  not (S.is_non_mixed_symbol test sym)
+                then
                   Warn.fatal "read on location %s does not match any write"
                     (A.pp_location loc)
                 else if check_mixed then
-                  Warn.user_error "Illegal mixed-size test"
+                  Warn.user_error
+                    "Illegal mixed-size test on symbol %s"
+                    (A.pp_location loc)
             | _ -> assert false
             end
         | _::_ -> ())
@@ -675,7 +681,8 @@ let match_reg_events es =
         (List.fold_right2 (fun r w ->  S.RFMap.add (S.Load r) (S.Store w)))
 
     let solve_mem_or_res test es rfm cns kont res loads stores compat_locs add_eqs =
-      let possible = map_load_possible_stores es loads stores compat_locs in
+      let possible =
+        map_load_possible_stores test es loads stores compat_locs in
       let possible =
         List.map
           (fun (er,ws) ->
@@ -941,17 +948,17 @@ let match_reg_events es =
       ms
 
 (* Non-mixed pairing for tags, if any *)
-    let pair_tags es =
+    let pair_tags test es =
       let tags = E.EventSet.filter E.is_tag es.E.events in
       let loads = E.EventSet.filter E.is_load tags
       and stores = E.EventSet.filter E.is_store tags in
       let m =
-        map_load_possible_stores es loads stores compatible_locs_mem in
+        map_load_possible_stores test es loads stores compatible_locs_mem in
       m
 
     let solve_mem_mixed test es rfm cns kont res =
       let match_tags = if morello then []
-        else pair_tags es in
+        else pair_tags test es in
       let tag_loads,tag_possible_stores = List.split match_tags in
       let ms = expose_scas es in
       let rss,wsss = List.split ms in
@@ -1453,15 +1460,17 @@ let match_reg_events es =
         | _ -> true)
         rfm
 
-    let check_sizes es =
+    let check_sizes test es =
       if check_mixed then begin
-        let loc_mems = U.collect_mem es in
+        (* No need to check initial writes, correct by construction. *)  
+        let loc_mems = U.collect_mem_non_init es in
         U.LocEnv.iter
           (fun loc evts ->
             begin match loc with
-            | A.Location_global (V.Val sym)
-              when not (Constant.is_non_mixed_symbol sym)
-              -> Warn.user_error "Illegal mixed-size test"
+            | A.Location_global (V.Val (Constant.Symbolic sym)) ->
+                if not (S.is_non_mixed_symbol test sym) then
+                  Warn.user_error "Illegal mixed-size test on symbol %s"
+                    (A.pp_location loc)
             | _ -> ()
             end ;
             (* hum TODO, init write size should be depend upon declaration and be checked *)
@@ -1531,7 +1540,8 @@ let match_reg_events es =
               | _ ->
                   check_symbolic_locations test es ;
                   if (mixed && not unaligned) then check_aligned test es ;
-                  if A.reject_mixed && not (mixed || memtag || morello) then check_sizes es ;
+                  if A.reject_mixed && not (mixed || memtag || morello) then
+                    check_sizes test es ;
                   if C.debug.Debug_herd.solver && C.verbose > 0 then begin
                     let module PP = Pretty.Make(S) in
                     prerr_endline "Mem solved" ;
