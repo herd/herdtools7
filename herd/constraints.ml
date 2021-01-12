@@ -42,8 +42,8 @@ module type S = sig
 
   module Mixed : functor (SZ: ByteSize.S) -> sig
 (* Check state *)
-    val check_prop : prop -> A.size_env -> final_state -> bool
-    val check_constr : constr -> A.size_env -> final_state list -> bool
+    val check_prop : prop -> A.type_env -> A.size_env -> final_state -> bool
+    val check_constr : constr -> A.type_env -> A.size_env -> final_state list -> bool
   end
 
 (* Build a new constraint thar checks State membership *)
@@ -111,15 +111,12 @@ module Make (C:Config) (A : Arch_herd.S) :
         module Mixed (SZ : ByteSize.S) = struct
           module AM = A.Mixed(SZ)
 
-          let rec check_prop p senv (state,flts as st) = match p with
+          let rec check_prop p tenv senv (state,flts as st) = match p with
           | Atom (LV (Loc l,v)) -> AM.state_mem senv state l v
           | Atom (LV (Deref (l,os),v1)) ->
               (* l has the base location, os is a multiple of the size of the type *)
               let scaled_loc =
-                begin match A.scale_location_with_offset l os with
-                | Some loc -> loc
-                | _ -> l end in
-              (* lookup scaled location in state, e.g uint64_t v[1] is v+8 *)
+                A.scale_array_reference (A.look_type tenv l) l os in
               let v2 = AM.look_in_state senv state scaled_loc in
               A.V.compare v1 v2 = 0
           | Atom (LL (l1,l2)) ->
@@ -129,18 +126,21 @@ module Make (C:Config) (A : Arch_herd.S) :
                 A.V.compare v1 v2 = 0
               with A.LocUndetermined -> assert false end
           | Atom (FF f) -> A.check_fatom flts f
-          | Not p -> not (check_prop p senv st)
-          | And ps -> List.for_all (fun p -> check_prop p senv st) ps
-          | Or ps -> List.exists (fun p -> check_prop p senv st) ps
+          | Not p -> not (check_prop p tenv senv st)
+          | And ps -> List.for_all (fun p -> check_prop p tenv senv st) ps
+          | Or ps -> List.exists (fun p -> check_prop p tenv senv st) ps
           | Implies (p1, p2) ->
-              if check_prop p1 senv st then check_prop p2 senv st
+              if check_prop p1 tenv senv st then
+                check_prop p2 tenv senv st
               else true
 
-          let check_constr c senv states = match c with
-          | ForallStates p -> List.for_all (fun s -> check_prop p senv s) states
-          | ExistsState p -> List.exists (fun s -> check_prop p senv s) states
+          let check_constr c tenv senv states = match c with
+          | ForallStates p ->
+                List.for_all (fun s -> check_prop p tenv senv s) states
+          | ExistsState p ->
+              List.exists (fun s -> check_prop p tenv senv s) states
           | NotExistsState p ->
-              not (List.exists (fun s -> check_prop p senv s) states)
+              not (List.exists (fun s -> check_prop p tenv senv s) states)
         end
 
         let matrix_of_states fs =

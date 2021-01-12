@@ -1016,7 +1016,9 @@ let match_reg_events es =
 (* Internal filter *)
     let check_filter test fsc = match test.Test_herd.filter with
     | None -> true
-    | Some p -> not C.check_filter || CM.check_prop p (S.size_env test) fsc
+    | Some p ->
+        not C.check_filter ||
+          CM.check_prop p (S.type_env test) (S.size_env test) fsc
 
 (*************************************)
 (* Final condition invalidation mode *)
@@ -1035,14 +1037,16 @@ let match_reg_events es =
     let final_is_relevant test fsc =
       let open ConstrGen in
       let cnstr = T.find_our_constraint test in
-      let senv = S.size_env test in
+      let senv = S.size_env test
+      and tenv = S.type_env test in
+      let check_prop p = CM.check_prop p tenv senv fsc in
       match cnstr with
         (* Looking for 'Allow' witness *)
-      | ExistsState p ->  CM.check_prop p senv fsc
+      | NotExistsState p | ExistsState p -> check_prop p
             (* Looking for witness that invalidates 'Require' *)
-      | ForallStates p -> not (CM.check_prop p senv fsc)
+      | ForallStates p -> not (check_prop p)
             (* Looking for witness that invalidates 'Forbid' *)
-      | NotExistsState p -> CM.check_prop p senv fsc
+
 
     let worth_going test fsc = match C.speedcheck with
     | Speed.True|Speed.Fast -> final_is_relevant test fsc

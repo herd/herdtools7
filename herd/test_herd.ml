@@ -16,7 +16,7 @@
 
 type proc_info = (string * int list) list
 
-type ('prog,'nice_prog,'start,'state,'size_env, 'prop,'loc,'locset) t =
+type ('prog,'nice_prog,'start,'state,'size_env, 'type_env, 'prop,'loc,'locset) t =
     {
      arch : Archs.t ;
      name : Name.t ;
@@ -25,7 +25,7 @@ type ('prog,'nice_prog,'start,'state,'size_env, 'prop,'loc,'locset) t =
      nice_prog : 'nice_prog ;
      start_points : 'start ;
      init_state : 'state ;
-     size_env : 'size_env ;
+     size_env : 'size_env ; type_env : 'type_env ;
      filter : 'prop option ;
      cond : 'prop ConstrGen.constr ;
      flocs : 'loc ConstrGen.rloc list ;
@@ -56,7 +56,7 @@ module Make(A:Arch_herd.S) =
 
     type result =
         (A.program, A.nice_prog, A.start_points,
-         A.state, A.size_env, A.prop, A.location, A.LocSet.t) t
+         A.state, A.size_env, A.type_env, A.prop, A.location, A.LocSet.t) t
 
 (* Symb register allocation is external, since litmus needs it *)
     module ArchAlloc = struct
@@ -74,15 +74,13 @@ module Make(A:Arch_herd.S) =
 (* Code loader is external, since litmus tests need it too *)
     module Load = Loader.Make(A)
 
-    let collect_atom a r =
+    let collect_atom type_env a r =
       let open ConstrGen in
       match a with
       | LV (Loc loc,_v) -> A.LocSet.add loc r
       | LV (Deref (loc,os),_) ->
-          let loc = begin match A.scale_location_with_offset loc os with
-            | Some loc -> loc
-            | _ -> loc end in
-          A.LocSet.add loc r
+          let t = A.look_type type_env loc in
+          A.LocSet.add (A.scale_array_reference t loc os) r
       | LL (l1,l2) -> A.LocSet.add l1 (A.LocSet.add l2 r)
       | FF _ ->  r
 
@@ -120,6 +118,7 @@ module Make(A:Arch_herd.S) =
       let init_state = A.build_state init in
       (* init_state contains vector size metadata, add it to final constrs*)
       (* Needed so we can align a scaled access according to size of the type *)
+      let type_env = A.build_type_env init in
       let final =
         ConstrGen.map_constr
           (function
@@ -133,11 +132,11 @@ module Make(A:Arch_herd.S) =
           final in
       let displayed = (* Luc: Doubt purpose of displayed ? *)
         let flocs = A.LocSet.of_list (List.map ConstrGen.loc_of_rloc flocs) in
-        ConstrGen.fold_constr collect_atom final flocs in
+        ConstrGen.fold_constr (collect_atom type_env) final flocs in
       let observed = match filter with
       | None -> displayed
       | Some filter ->
-          ConstrGen.fold_prop collect_atom filter displayed in
+          ConstrGen.fold_prop (collect_atom type_env) filter displayed in
       let proc_info =
         let m =
           List.fold_left
@@ -166,6 +165,7 @@ module Make(A:Arch_herd.S) =
        displayed = displayed ;
        extra_data = extra_data ;
        size_env = A.build_size_env init ;
+       type_env;
        access_size = mem_access_size_prog nice_prog ;
        proc_info;
      }
@@ -189,7 +189,9 @@ module Make(A:Arch_herd.S) =
        program = A.LabelMap.empty ;
        nice_prog = [] ;
        start_points = [] ;
-       init_state = A.state_empty; size_env = A.size_env_empty ;
+       init_state = A.state_empty;
+       size_env = A.size_env_empty ;
+       type_env = A.type_env_empty ;
        filter = None ;
        cond = fake_constr ;
        flocs = [] ;

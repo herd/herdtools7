@@ -57,13 +57,15 @@ module type S = sig
   type proc_info = Test_herd.proc_info
   type test =
       (program, nice_prog, start_points,
-       state, A.size_env, prop, location, A.LocSet.t) Test_herd.t
+       state, A.size_env, A.type_env,
+       prop, location, A.LocSet.t) Test_herd.t
 
 (* Get list of locations observed in outcomes *)
   type loc_set = A.LocSet.t
   val observed_locations : test -> loc_set
   val displayed_locations : test -> loc_set
   val size_env : test -> A.size_env
+  val type_env : test -> A.type_env
 
   type event = E.event
   type event_structure = E.event_structure
@@ -216,13 +218,15 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
   type proc_info = Test_herd.proc_info
     type test =
       (program, nice_prog, start_points,
-       state, A.size_env, prop, location, A.LocSet.t) Test_herd.t
+       state, A.size_env, A.type_env,
+       prop, location, A.LocSet.t) Test_herd.t
 
 (* List of relevant location *)
     type loc_set = A.LocSet.t
     let observed_locations t = t.Test_herd.observed
     and displayed_locations t = t.Test_herd.displayed
     and size_env t =  t.Test_herd.size_env
+    and type_env t = t.Test_herd.type_env
 
     type event = E.event
 

@@ -99,7 +99,11 @@ module type S = sig
 
   val build_state : (location * (MiscParser.run_type * v)) list -> state
   val build_concrete_state : (location * int) list -> state
-  val scale_location_with_offset : location -> int -> location option
+
+(* Fails with user error when t is not an array type or in case of
+   out-of-bound access *)
+  val scale_array_reference : MiscParser.run_type -> location -> int -> location
+
   val add_metadata_to_location : location -> int -> state -> location option
 
   val state_is_empty : state -> bool
@@ -114,19 +118,22 @@ module type S = sig
   exception LocUndetermined
   val look_address_in_state : state -> location -> v
 
-(**********************)
-(* Typing environment *)
-(**********************)
+(****************)
+(* Environments *)
+(****************)
 
   type size_env
-
   val size_env_empty : size_env
   val build_size_env : (location * (MiscParser.run_type * 'v)) list -> size_env
   val look_size : size_env -> string -> MachSize.sz
   val look_size_location : size_env -> location -> MachSize.sz
 
+  type type_env
+  val type_env_empty : type_env
+  val build_type_env : (location * (MiscParser.run_type * 'v)) list -> type_env
+  val look_type : type_env -> location -> MiscParser.run_type
 
-(* Set of states *)
+  (* Set of states *)
   type final_state = state * FaultSet.t
   val do_dump_final_state : (string -> string) -> final_state -> string
   module StateSet : MySet.S with type elt = final_state
@@ -364,6 +371,8 @@ module Make(C:Config) (I:I) : S with module I = I
 
       let dump_state st = do_dump_state Misc.identity st false
 
+      let size_of_t = MiscParser.size_of I.V.Cst.Scalar.machsize
+
       let build_state bds =
         List.fold_left
           (fun st (loc,(t,v)) ->
@@ -379,8 +388,7 @@ module Make(C:Config) (I:I) : S with module I = I
               let locval = match global loc with
               | Some x -> x
               | _ -> Warn.user_error "Non-global vector assignment in init" in
-              let prim_sz =
-                (MiscParser.size_of I.V.Cst.Scalar.machsize array_prim) in
+              let prim_sz = size_of_t  array_prim in
               let nbytes = MachSize.nbytes prim_sz in
               let vec_data = Some (nbytes, sz) in
               let vs = List.mapi
@@ -414,21 +422,35 @@ module Make(C:Config) (I:I) : S with module I = I
             State.add loc (I.V.intToV v) st)
           State.empty bds
 
-      (* we might have accesses in the final state like v[2] *)
+      (* We might have accesses in the final state like v[2] *)
       (* this depends on the size of the vector types in the initial state *)
       (* e.g when uint64_t v, each elem is 8 bytes, so 2*8 is 16 bytes offset*)
-      (* This function scales the offset with optional metadata, raises User Error if no metadata exists*)
-      let scale_location_with_offset loc os =
-        let open Constant in
-        begin match global loc with
-        | Some (I.V.Val (Symbolic ({vdata=Some (ps,ts);_} as s)))
-            when is_aligned_to_vec (ps,ts) (os*ps) ->
-          Some (Location_global
-            (I.V.Val (Symbolic ({s with offset=os*ps}))))
-        | _ -> Warn.user_error
-                "Unaligned vector %s offset %d in final state"
-                (pp_location loc) os
-        end
+      (* This function scales the offset from type information, *)
+      (* Raises User_error, if not an array or pointer type or  *)
+      (* in case of out of bounds access.                       *)
+      let scale_array_reference t loc os =
+        let sz_elt,n_elts =
+          let open MiscParser in
+          match t with
+          | TyArray (t,sz) -> size_of_t t,sz
+          | TyDefPointer -> MachSize.Word,1
+          | Pointer t -> size_of_t t,1
+          | _ ->
+              Warn.user_error
+                "Location %s of type %s is used as an array"
+                (pp_location loc) (MiscParser.pp_run_type t) in
+        if os < 0 || os >= n_elts then
+          Warn.user_error
+            "Out of bounds access on array %s" (pp_location loc) ;
+        if os = 0 then loc
+        else
+          match loc with
+          | Location_global (I.V.Val (Constant.Symbolic s)) ->
+              let s =
+                { s with Constant.offset = MachSize.nbytes sz_elt * os} in
+              Location_global (I.V.Val (Constant.Symbolic s))
+          | _ -> (* Excluded by parsing *)
+              Warn.fatal "Location %s is ot global" (pp_location loc)
 
       (* lookup vector size metadata in st, update loc vec_data field with metadata *)
       (* do alignment checks too *)
@@ -471,6 +493,8 @@ module Make(C:Config) (I:I) : S with module I = I
             raise LocUndetermined
         | None -> get_in_state loc st
 
+      (* Sizes *)
+
       type size_env = MachSize.sz StringMap.t
 
       let look_size env s = StringMap.safe_find MachSize.Word s env
@@ -480,7 +504,6 @@ module Make(C:Config) (I:I) : S with module I = I
         match global loc with
         | Some (I.V.Val (Symbolic {name=s;offset=0;_})) -> look_size env s
         | _ -> assert false
-            (* Typing *)
 
       let size_env_empty = StringMap.empty
 
@@ -505,6 +528,21 @@ module Make(C:Config) (I:I) : S with module I = I
             | _ -> m)
           size_env_empty bds
 
+      (* Types *)
+
+      type type_env = MiscParser.run_type LocMap.t
+
+      let type_env_empty = LocMap.empty
+
+      let build_type_env bds =
+        List.fold_left
+          (fun m (loc,(t,_)) -> LocMap.add loc t m)
+          type_env_empty bds
+
+      let look_type m loc =
+        LocMap.safe_find MiscParser.TyDef loc m
+
+      (* Final (include faults) *)
       type final_state = state * FaultSet.t
 
       let do_dump_final_state tr (st,flts) =

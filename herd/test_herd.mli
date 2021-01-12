@@ -17,7 +17,7 @@
 (** Litmus tests *)
 type proc_info = (string * int list) list
 
-type ('prog,'nice_prog,'start,'state, 'size_env, 'prop, 'loc, 'locset) t =
+type ('prog,'nice_prog,'start,'state, 'size_env, 'type_env, 'prop, 'loc, 'locset) t =
     {
      arch : Archs.t ;
      name : Name.t ;
@@ -25,7 +25,7 @@ type ('prog,'nice_prog,'start,'state, 'size_env, 'prop, 'loc, 'locset) t =
      program : 'prog ;
      nice_prog : 'nice_prog ;
      start_points : 'start ;
-     init_state : 'state ; size_env : 'size_env ;
+     init_state : 'state ; size_env : 'size_env ; type_env : 'type_env ;
      filter : 'prop option ;
      cond : 'prop ConstrGen.constr ;
      flocs : 'loc ConstrGen.rloc list ;
@@ -37,13 +37,13 @@ type ('prog,'nice_prog,'start,'state, 'size_env, 'prop, 'loc, 'locset) t =
    }
 
 val simple_name :
-    ('prog,'nice_prog,'start,'state,'size_env,'prop,'loc,'locset) t -> string
+    ('prog,'nice_prog,'start,'state,'size_env,'type_env,'prop,'loc,'locset) t -> string
 val readable_name :
-    ('prog,'nice_prog,'start,'state,'size_env,'prop,'loc,'locset) t -> string
+    ('prog,'nice_prog,'start,'state,'size_env,'type_env,'prop,'loc,'locset) t -> string
 val very_readable_name :
-    ('prog,'nice_prog,'start,'state,'size_env,'prop,'loc,'locset) t -> string
+    ('prog,'nice_prog,'start,'state,'size_env,'type_env,'prop,'loc,'locset) t -> string
 val basename :
-    ('prog,'nice_prog,'start,'state,'size_env,'prop,'loc,'locset) t -> string
+    ('prog,'nice_prog,'start,'state,'size_env,'type_env,'prop,'loc,'locset) t -> string
 
 
 module Make(A:Arch_herd.S) : sig
@@ -54,6 +54,7 @@ module Make(A:Arch_herd.S) : sig
        A.start_points,
        A.state,
        A.size_env,
+       A.type_env,
        A.prop,
        A.location,
        A.LocSet.t

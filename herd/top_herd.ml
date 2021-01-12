@@ -73,18 +73,20 @@ module Make(O:Config)(M:XXXMem.S) =
     let check_prop test =
       let c = T.find_our_constraint test in
       let p = ConstrGen.prop_of c in
-      let senv = S.size_env test in
-      fun st -> CM.check_prop p senv st
+      let senv = S.size_env test
+      and tenv = S.type_env test in
+      fun st -> CM.check_prop p tenv senv st
 
-    let count_prop test sts =
+    let count_prop test =
       let c = T.find_our_constraint test in
       let p = ConstrGen.prop_of c in
-      let senv = S.size_env test in
-      A.StateSet.fold
-        (fun st n ->
-          if  CM.check_prop p senv st then n+1 else n)
-        sts
-        0
+      let senv = S.size_env test
+      and tenv = S.type_env test in
+      fun sts ->
+        A.StateSet.fold
+          (fun st n ->
+            if CM.check_prop p tenv senv st then n+1 else n)
+          sts 0
 
 (* Test result *)
     type count =
