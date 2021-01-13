@@ -24,6 +24,9 @@ module Fun : sig
    *  [Out_of_memory]), or programmer error. *)
   exception Finally_raised of exn
 
+  (** [negate f] negates the predicate function [f]. *)
+  val negate : ('a -> bool) -> ('a -> bool)
+
   (** [protect ~finally f] calls [f], then calls [~finally]. If [f] raises an
    *  exception [e], it calls [~finally] before re-raising [e]. If [~finally]
    *  raises an exception [e], [e] is re-raised as [Finally_raised e].
@@ -63,6 +66,9 @@ module Option : sig
 
   (** [value o ~default] is [v] if [o] is [Some v] and [default] otherwise. *)
   val value : 'a option -> default:'a -> 'a
+
+  (** [is_none o] is [true] iff [o] is [None]. *)
+  val is_none : 'a option -> bool
 
   (** [compare c x y] compares [x] and [y]. [None] is smaller than [Some _]. If
    *  they are both [Some _] their elements are compared with function [c]. *)
