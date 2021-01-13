@@ -13,13 +13,13 @@ fi
 readonly binary="${1}"
 shift
 
-readonly paths="$(find _build -name "${binary}.exe" -o -name "${binary}.native")"
-
-if [ ! "${paths}" ]
-then
-  echo "Could not find ${binary}"
-  exit 1
-fi
+# A portable version of `realpath` or `readlink -f`.
+function absolute_path() {
+  readonly prev_pwd="${PWD}"
+  cd "${1}"
+  pwd
+  cd "${prev_pwd}"
+}
 
 function most_recent() {
   # List (mtime, path) pairs.
@@ -31,5 +31,15 @@ function most_recent() {
     | head -n1 \
     | cut -d' ' -f2
 }
+
+
+readonly build_dir="$(absolute_path "$(dirname "${0}")/../_build")"
+readonly paths="$(find "${build_dir}" -name "${binary}.exe" -o -name "${binary}.native")"
+
+if [ ! "${paths}" ]
+then
+  echo "Could not find binary ${binary} under ${build_dir}"
+  exit 1
+fi
 
 "$(most_recent ${paths})" $@
