@@ -92,7 +92,6 @@ module Make
         A.LocMap.fold
           (fun loc t env -> match loc with
           | A.Location_global a -> StringMap.add a t env
-          | A.Location_deref _ -> assert false
           | A.Location_reg _ -> env)
           env StringMap.empty in
       let env =
@@ -178,12 +177,20 @@ module Make
           (fun env (s,ty) -> A.LocMap.add (A.Location_global s) ty env)
           env globals in
       let observed = Generic.all_observed final filter locs in
+      let flocs =
+        let open ConstrGen in
+        List.map
+          (fun (rloc,_) ->
+            match rloc with
+            | Loc loc -> loc
+            | Deref _ -> prerr_endline "TODO" ; assert false)
+          locs in
       { T.init = initenv;
         info = info;
         code = comp_code observed env code;
         condition = final; filter;
         globals = globals;
-        flocs = List.map fst locs;
+        flocs;
         global_code = get_global_code code;
         src = t;
         type_env = env,StringMap.empty;

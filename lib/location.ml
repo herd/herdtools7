@@ -31,7 +31,6 @@ module type S = sig
 
  type location =
     | Location_global of loc_global
-    | Location_deref of loc_global * int
     | Location_reg of int*loc_reg
 
   val pp_location : location -> string
@@ -43,6 +42,13 @@ module type S = sig
 
   module LocSet : MySet.S with type elt = location
   module LocMap : MyMap.S with type key = location
+
+  type rlocation = location ConstrGen.rloc
+  val pp_rlocation : rlocation -> string
+  val rlocation_compare : rlocation -> rlocation -> int
+
+  module RLocSet : MySet.S with type elt = rlocation
+  module RLocMap : MyMap.S with type key = rlocation
 end
 
 module Make(A:I) : S
@@ -54,30 +60,27 @@ with type loc_reg = A.arch_reg and type loc_global = A.arch_global =
 
     type location =
       | Location_global of loc_global
-      | Location_deref of loc_global * int
       | Location_reg of int*loc_reg
 
     let of_proc p = function
       | Location_reg (q,r) -> if p=q then Some r else None
-      | Location_global _|Location_deref _ -> None
+      | Location_global _ -> None
 
     let is_global = function
       | Location_global _ -> true
-      | Location_reg _ |Location_deref _ -> false
+      | Location_reg _  -> false
 
     let global = function
       | Location_global s  -> Some s
-      | Location_reg _|Location_deref _ -> None
+      | Location_reg _ -> None
 
     let pp_location l = match l with
     | Location_reg (proc,r) -> string_of_int proc ^ ":" ^ A.pp_reg r
     | Location_global a -> A.pp_global a
-    | Location_deref (a,i) -> Printf.sprintf "%s[%i]" (A.pp_global a) i
 
     let pp_rval l = match l with
     | Location_reg (proc,r) -> string_of_int proc ^ ":" ^ A.pp_reg r
     | Location_global a -> Printf.sprintf "*%s" (A.pp_global a)
-    | Location_deref (a,i) -> Printf.sprintf "%s[%i]" (A.pp_global a) i
 
 (*
   The following compare  comes from ancient code
@@ -91,15 +94,9 @@ with type loc_reg = A.arch_reg and type loc_global = A.arch_global =
         | r -> r
         end
     | Location_global a1, Location_global a2 -> A.global_compare a1 a2
-    | Location_deref (a1,i1), Location_deref (a2,i2) ->
-        begin match A.global_compare a1 a2  with
-        | 0 -> Misc.int_compare i1 i2
-        | r -> r
-        end
-    | Location_reg _, (Location_global _|Location_deref _) -> -1
-    | (Location_global _|Location_deref _), Location_reg _ -> 1
-    | Location_global _,Location_deref _ -> -1
-    | Location_deref _,Location_global _ -> 1
+    | Location_reg _, (Location_global _) -> -1
+    | (Location_global _), Location_reg _ -> 1
+
 
     module OL = struct
       type t = location
@@ -108,4 +105,14 @@ with type loc_reg = A.arch_reg and type loc_global = A.arch_global =
 
     module LocSet = MySet.Make(OL)
     module LocMap = MyMap.Make(OL)
+
+    type rlocation = location ConstrGen.rloc
+    let pp_rlocation = ConstrGen.dump_rloc pp_location
+    let rlocation_compare = ConstrGen.compare_rloc location_compare
+    module RL = struct
+      type t = rlocation
+      let compare = rlocation_compare
+    end
+    module RLocSet = MySet.Make(RL)
+    module RLocMap = MyMap.Make(RL)
   end

@@ -48,6 +48,8 @@ rule token = parse
 | ']' { RBRK }
 | '('  { LPAR }
 | ')' { RPAR }
+| '{' { LCURLY }
+| '}' { RCURLY }
 | '=' { EQUAL }
 | "==" { EQUALEQUAL }
 | "!="|"<>" { NOTEQUAL }

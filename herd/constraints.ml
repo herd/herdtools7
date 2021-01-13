@@ -27,7 +27,7 @@ module type S = sig
 
   module A : Arch_herd.S
 
-  type final_state = A.state * A.FaultSet.t
+  type final_state = A.rstate * A.FaultSet.t
 
   type prop = (A.location,A.V.v) ConstrGen.prop
 
@@ -42,8 +42,10 @@ module type S = sig
 
   module Mixed : functor (SZ: ByteSize.S) -> sig
 (* Check state *)
-    val check_prop : prop -> A.size_env -> final_state -> bool
-    val check_constr : constr -> A.size_env -> final_state list -> bool
+    val check_prop :
+      prop -> A.type_env -> A.size_env
+      -> A.state * A.FaultSet.t -> bool
+    val check_prop_rlocs : prop -> final_state -> bool
   end
 
 (* Build a new constraint thar checks State membership *)
@@ -69,7 +71,7 @@ module Make (C:Config) (A : Arch_herd.S) :
         =
       struct
         module A = A
-        type final_state = A.state * A.FaultSet.t
+        type final_state = A.rstate * A.FaultSet.t
 
 (************ Constraints ********************)
 
@@ -88,7 +90,7 @@ module Make (C:Config) (A : Arch_herd.S) :
               A.location_compare l1 loc = 0 ||
               A.location_compare l2 loc = 0
           | LV (l,_) ->
-              A.location_compare l loc = 0
+              A.location_compare (loc_of_rloc l) loc = 0
           | FF (_,x) ->
               A.location_compare
                 (A.Location_global x)
@@ -111,32 +113,40 @@ module Make (C:Config) (A : Arch_herd.S) :
         module Mixed (SZ : ByteSize.S) = struct
           module AM = A.Mixed(SZ)
 
-          let rec check_prop p senv (state,flts as st) = match p with
-          | Atom (LV (l,v)) -> AM.state_mem senv state l v
-          | Atom (LL (l1,l2)) ->
-              begin try
-                let v1 = AM.look_in_state senv state l1
-                and v2 = AM.look_in_state senv state l2 in
-                A.V.compare v1 v2 = 0
-              with A.LocUndetermined -> assert false end
-          | Atom (FF f) -> A.check_fatom flts f
-          | Not p -> not (check_prop p senv st)
-          | And ps -> List.for_all (fun p -> check_prop p senv st) ps
-          | Or ps -> List.exists (fun p -> check_prop p senv st) ps
-          | Implies (p1, p2) ->
-              if check_prop p1 senv st then check_prop p2 senv st
-              else true
+          let do_check_prop look_rloc flts =
+            let rec do_rec = function
+              | Atom (LV (rloc,v)) ->
+                  let w = look_rloc rloc in
+                  A.V.compare v w = 0
+              | Atom (LL (l1,l2)) ->
+                  let v1 = look_rloc (Loc l1)
+                  and v2 = look_rloc (Loc l2) in
+                  A.V.compare v1 v2 = 0
+              | Atom (FF f) -> A.check_fatom flts f
+              | Not p -> not (do_rec p)
+              | And ps -> List.for_all do_rec ps
+              | Or ps -> List.exists do_rec ps
+              | Implies (p1, p2) ->
+                  not (do_rec p1) || do_rec p2 in
+            fun p ->
+              try do_rec p with A.LocUndetermined -> assert false
 
-          let check_constr c senv states = match c with
-          | ForallStates p -> List.for_all (fun s -> check_prop p senv s) states
-          | ExistsState p -> List.exists (fun s -> check_prop p senv s) states
-          | NotExistsState p ->
-              not (List.exists (fun s -> check_prop p senv s) states)
+          let check_prop p tenv senv (state,flts) =
+            let look_rloc rloc =
+              let loc = A.loc_of_rloc tenv rloc in
+              AM.look_in_state senv state loc in
+            do_check_prop look_rloc flts p
+
+          let check_prop_rlocs p (state,flts) =
+            let look_rloc rloc =
+              AM.look_in_state_rlocs state rloc in
+            do_check_prop look_rloc flts p
+
         end
 
         let matrix_of_states fs =
           A.StateSet.fold
-            (fun (f,_) k -> A.state_to_list f::k)
+            (fun (f,_) k -> A.rstate_to_list f::k)
             fs []
 
         let best_col m =
@@ -177,7 +187,8 @@ module Make (C:Config) (A : Arch_herd.S) :
             List.map
               (fun row -> match row with
               | (loc,v)::ps ->
-                  assert (A.location_compare loc0 loc = 0) ;
+                  assert
+                    (A.rlocation_compare loc0 loc = 0) ;
                   v,ps
               | [] -> assert false)
               xss
@@ -261,6 +272,8 @@ module Make (C:Config) (A : Arch_herd.S) :
         | Ascii|Dot -> A.do_dump_location tr loc
         | Latex|DotFig -> A.pp_location loc
 
+        let pp_rloc tr m rloc = ConstrGen.dump_rloc (pp_loc tr m) rloc
+
         let pp_rvalue tr m loc = match loc with
         | A.Location_global _ -> sprintf "*%s" (A.pp_location loc)
         | _ -> pp_loc tr m loc
@@ -273,8 +286,8 @@ module Make (C:Config) (A : Arch_herd.S) :
 
         let pp_atom tr m a =
           match a with
-          | LV (loc,v) ->
-              mbox m (pp_loc tr m loc) ^
+          | LV (rloc,v) ->
+              mbox m (pp_rloc tr m rloc) ^
               pp_equal m ^
               mbox m (do_add_asm m (V.pp C.hexa v))
           | LL (l1,l2) ->

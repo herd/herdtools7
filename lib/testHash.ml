@@ -69,8 +69,6 @@ let digest_init debug init =
     | Location_reg (i,r) -> Printf.sprintf "%i:%s" i r
     | Location_sreg s -> s
     | Location_global v -> ParsedConstant.pp_v v
-    | Location_deref (v,i) ->
-        Printf.sprintf "%s[%i]" (ParsedConstant.pp_v v) i
   in
 
   let pp =
@@ -107,7 +105,7 @@ module Make(A:ArchBase.S)
 
       type init = MiscParser.state
       type prog = (MiscParser.proc * A.pseudo list) list
-      type locations =  MiscParser.LocSet.t
+      type rlocations =  MiscParser.RLocSet.t
 
 
       open MiscParser
@@ -188,8 +186,10 @@ module Make(A:ArchBase.S)
 
 (* Observed locations digest *)
       let digest_observed locs =
-        let locs = MiscParser.LocSet.elements locs in
-        let pp = String.concat "; " (List.map dump_location locs) in
+        let locs = MiscParser.RLocSet.elements locs in
+        let pp =
+          String.concat "; "
+            (List.map (ConstrGen.dump_rloc dump_location) locs) in
         debug "LOCS" pp ;
         Digest.string pp
 

@@ -79,7 +79,6 @@ module Make
     let dump_loc_name loc =  match loc with
     | A.Location_reg (proc,reg) -> A.Out.dump_out_reg proc reg
     | A.Location_global s -> s
-    | A.Location_deref (s,i) -> sprintf "%s_%i" s i
 
     module DC =
       CompCond.Make(O)
@@ -290,11 +289,14 @@ module Make
 (* Right value *)
     let dump_a_addr s = sprintf "&(_a->%s[_i])" s
 
-    let dump_a_v v =
+    let rec dump_a_v v =
       let open Constant in
       match v with
       | Concrete i -> A.V.Scalar.pp Cfg.hexa i
-      | Symbolic ((s,None,0),0) -> dump_a_addr s
+       | ConcreteVector (_,vs)->
+          let pp_vs = List.map dump_a_v vs in
+          sprintf "{%s}" (String.concat "," pp_vs) (* list initializer syntax *)
+      | Symbolic {name=s;tag=None;cap=0;offset=0;_}-> dump_a_addr s
       | Label _ ->
           Warn.user_error "No label value for klitmus"
       | Symbolic _|Tag _ ->

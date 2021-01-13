@@ -1,0 +1,12 @@
+AArch64 A134
+(* tests storing  a location outside of the array bounds, but next to the array *)
+(* This should fail as v[16] is unallocated *)
+
+
+{ 0:X0=42; 0:X2 = v; int64_t v[2] = {1, 2} }
+
+P0;
+  STR X0, [X2, #16];
+
+exists (v[3] = 42)
+

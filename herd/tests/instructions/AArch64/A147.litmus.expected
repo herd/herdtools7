@@ -1,0 +1,10 @@
+Test A147 Required
+States 1
+v[0]=1; v[1]=42;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (v[0]=1 /\ v[1]=42)
+Observation A147 Always 1 0
+Hash=7c92e6750d697d75583ea88fb9759b6b
+

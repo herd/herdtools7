@@ -97,35 +97,54 @@ module type S = sig
       state -> string (* delim, as in String.concat  *)
         -> (location -> v -> string) -> string
 
-  val build_state : (location * ('t * v)) list -> state
+  val build_state : (location * (MiscParser.run_type * v)) list -> state
   val build_concrete_state : (location * int) list -> state
+
+(* Fails with user error when t is not an array type or in case of
+   out-of-bound access *)
+  val scale_array_reference : MiscParser.run_type -> location -> int -> location
+(* This symbol is legal in non-mixed-size mode.
+   That is, internal offset is null
+    or symbol is an  aligned array cell access. *)
 
   val state_is_empty : state -> bool
   val state_add : state -> location -> v -> state
+  val state_add_if_undefined  : state -> location -> v -> state
   val state_to_list : state -> (location * v) list
   val state_size : state -> int
-  val state_fold :
-      (location -> v -> 'a -> 'a) -> state -> 'a -> 'a
+  val state_fold : (location -> v -> 'a -> 'a) -> state -> 'a -> 'a
+  val state_filter : (location -> bool) -> state -> state
 
- (* Exception raised when location is yet unkown *)
+  (* Exception raised when location is yet unkown *)
   exception LocUndetermined
   val look_address_in_state : state -> location -> v
 
-(**********************)
-(* Typing environment *)
-(**********************)
+(****************)
+(* Environments *)
+(****************)
+
+  val size_of_t : string -> MachSize.sz
 
   type size_env
-
   val size_env_empty : size_env
   val build_size_env : (location * (MiscParser.run_type * 'v)) list -> size_env
   val look_size : size_env -> string -> MachSize.sz
   val look_size_location : size_env -> location -> MachSize.sz
 
+  type type_env
+  val type_env_empty : type_env
+  val build_type_env : (location * (MiscParser.run_type * 'v)) list -> type_env
+  val look_type : type_env -> location -> MiscParser.run_type
+  val loc_of_rloc : type_env -> rlocation -> location
 
-(* Set of states *)
-  type final_state = state * FaultSet.t
+  (* Final states and sets of  *)
+  type rstate
+  val rstate_to_list : rstate -> (rlocation * v) list
+  val rstate_filter : (rlocation -> bool) -> rstate -> rstate
+
+  type final_state = rstate * FaultSet.t
   val do_dump_final_state : (string -> string) -> final_state -> string
+
   module StateSet : MySet.S with type elt = final_state
 
 (*****************************************)
@@ -146,13 +165,12 @@ module type S = sig
 
 (* Look what memory cell is bound to *)
     val look_in_state : size_env -> state -> location -> v
-
-(* Does loc binds v in state ? *)
-    val state_mem : size_env -> state -> location -> v -> bool
+    val look_in_state_rlocs : rstate -> rlocation -> v
 
 (* State restriction to some locations *)
-    val state_restrict : state -> (location -> bool) -> state
-    val state_restrict_locs : LocSet.t -> size_env -> state -> state
+    val state_restrict_locs :
+      bool (* keep all register bindings *) ->
+      RLocSet.t -> type_env -> size_env -> state -> rstate
   end
 
 (*********************************)
@@ -262,11 +280,11 @@ module Make(C:Config) (I:I) : S with module I = I
         if C.brackets then Printf.sprintf "[%s]"
         else fun s -> s
 
-      let do_dump_location tr = function
+      let do_dump_location tr =
+        let open Constant in function
         | Location_reg (proc,r) ->
             tr (string_of_int proc ^ ":" ^ I.pp_reg r)
         | Location_global a -> do_brackets (pp_global a)
-        | Location_deref (a,idx) -> Printf.sprintf "%s[%i]" (pp_global a) idx
 
       let dump_location = do_dump_location Misc.identity
 
@@ -277,11 +295,10 @@ module Make(C:Config) (I:I) : S with module I = I
           if C.texmacros
           then "\\asm{Proc " ^ bodytext ^ "}" else bodytext
       | Location_global a -> do_brackets (pp_global a)
-      | Location_deref (a,idx) ->  Printf.sprintf "%s[%i]" (pp_global a) idx
 
       let undetermined_vars_in_loc l =  match l with
       | Location_reg _ -> None
-      | Location_global a|Location_deref (a,_) ->
+      | Location_global a ->
           if I.V.is_var_determined a then None
           else Some a
 
@@ -290,13 +307,10 @@ module Make(C:Config) (I:I) : S with module I = I
       | Location_reg _ -> l
       | Location_global a ->
           Location_global (I.V.simplify_var soln a)
-      | Location_deref (a,idx) ->
-          Location_deref (I.V.simplify_var soln a,idx)
 
       let map_loc fv loc = match loc with
       | Location_reg _ -> loc
       | Location_global a -> Location_global (fv a)
-      | Location_deref (a,idx) -> Location_deref (fv a,idx)
 
 (*********)
 (* Fault *)
@@ -307,18 +321,21 @@ module Make(C:Config) (I:I) : S with module I = I
 (* Mixed size utilities *)
 (************************)
 
-      module State =
-        MyMap.Make
-          (struct
-            type t = location
-            let compare = location_compare
-          end)
+      module State = LocMap
 
       type state = v State.t
 
       let state_empty = State.empty
 
       let state_add st l v = State.add l v st
+
+      let state_add_if_undefined st l v =
+        try
+          ignore (State.find l st);
+          Warn.fatal
+            "Address %s non-unique in init state"
+            (dump_location l)
+        with Not_found -> State.add l v st
 
       let state_is_empty = State.is_empty
 
@@ -327,7 +344,8 @@ module Make(C:Config) (I:I) : S with module I = I
 
       let state_size st = State.fold (fun _ _ k -> 1+k) st 0
 
-      let state_fold  f st x = State.fold f st x
+      let state_fold = State.fold
+      let state_filter = State.filter
 
       let pp_nice_state st delim pp_bd =
         let bds =
@@ -348,8 +366,47 @@ module Make(C:Config) (I:I) : S with module I = I
 
       let dump_state st = do_dump_state Misc.identity st
 
+      let size_of_t = MiscParser.size_of I.V.Cst.Scalar.machsize
+
       let build_state bds =
-        List.fold_left (fun st (loc,(_,v)) -> State.add loc v st)
+        List.fold_left
+          (fun st (loc,(t,v)) ->
+            match t with
+            | MiscParser.TyArray (array_prim,total_size) -> begin
+              (* we expand v[3] = {a,b,c} into v+0 = a; v+1 = b; v+2 = c*)
+              (* where 1 is the sizeof the underlying primitive type *)
+              (* e.g uint64_t -> 8 bytes, so the above is v, v+8, v+16 *)
+              let vs = match v with
+              | I.V.Val (Constant.ConcreteVector (sz,vs))
+                  when Misc.int_eq sz total_size -> vs
+              | _ -> Warn.user_error "Unexpected scalar value %s, vector expected" (I.V.pp_v v) in
+              let locval = match global loc with
+              | Some x -> x
+              | _ -> Warn.user_error "Non-global vector assignment in init" in
+              let prim_sz = size_of_t array_prim in
+              let nbytes = MachSize.nbytes prim_sz in
+              let vs = List.mapi
+                (fun i v ->
+                  let open Constant in
+                  let s = I.V.pp false locval in
+                  let tag = None in
+                  let cap = 0 in
+                  let sym_data =
+                    { name=s ;
+                      tag=tag ;
+                      cap=cap ;
+                      offset=i*nbytes} in
+                  Location_global
+                    (I.V.Val (Symbolic sym_data)),
+                  (MiscParser.Ty array_prim,I.V.cstToV v))
+                vs in
+              List.fold_left
+                (fun st (loc,(_,v))-> state_add_if_undefined st loc v)
+                st
+                vs
+            end
+            (* if we have a value, store it *)
+            | _ -> state_add_if_undefined st loc v)
           State.empty bds
 
       let build_concrete_state bds =
@@ -357,6 +414,36 @@ module Make(C:Config) (I:I) : S with module I = I
           (fun st (loc,v) ->
             State.add loc (I.V.intToV v) st)
           State.empty bds
+
+      (* We might have accesses in the final state like v[2] *)
+      (* this depends on the size of the vector types in the initial state *)
+      (* e.g when uint64_t v, each elem is 8 bytes, so 2*8 is 16 bytes offset*)
+      (* This function scales the offset from type information, *)
+      (* Raises User_error, if not an array or pointer type or  *)
+      (* in case of out of bounds access.                       *)
+      let scale_array_reference t loc os =
+        let sz_elt,n_elts =
+          let open MiscParser in
+          match t with
+          | TyArray (t,sz) -> size_of_t t,sz
+          | TyDefPointer -> MachSize.Word,1
+          | Pointer t -> size_of_t t,1
+          | _ ->
+              Warn.user_error
+                "Location %s of type %s is used as an array"
+                (pp_location loc) (MiscParser.pp_run_type t) in
+        if os < 0 || os >= n_elts then
+          Warn.user_error
+            "Out of bounds access on array %s" (pp_location loc) ;
+        if os = 0 then loc
+        else
+          match loc with
+          | Location_global (I.V.Val (Constant.Symbolic s)) ->
+              let s =
+                { s with Constant.offset = MachSize.nbytes sz_elt * os} in
+              Location_global (I.V.Val (Constant.Symbolic s))
+          | _ -> (* Excluded by parsing *)
+              Warn.fatal "Location %s is ot global" (pp_location loc)
 
 (* To get protection against wandering undetermined locations,
    all loads from state are by this function *)
@@ -373,43 +460,31 @@ module Make(C:Config) (I:I) : S with module I = I
             raise LocUndetermined
         | None -> get_in_state loc st
 
+      (* Sizes *)
+
       type size_env = MachSize.sz StringMap.t
 
       let look_size env s = StringMap.safe_find MachSize.Word s env
 
-      let look_size_location env loc = match loc with
-      | Location_global (I.V.Val (Constant.Symbolic ((s,_,_),0))) -> look_size env s
-      | _ -> assert false
-            (* Typing *)
+      let look_size_location env loc =
+        let open Constant in
+        match global loc with
+        | Some (I.V.Val (Symbolic {name=s;offset=0;_})) -> look_size env s
+        | _ -> assert false
 
       let size_env_empty = StringMap.empty
 
-          (* Simplified typing, size only, integer types only *)
-
-      let size_of = function
-        | "atomic_t"
-        | "int"|"long"
-        | "int32_t"
-        | "uint32_t" ->  MachSize.Word
-        | "char"|"int8_t" |"uint8_t" -> MachSize.Byte
-        | "short" | "int16_t" | "uint16_t" -> MachSize.Short
-        | "int64_t" | "uint64_t" -> MachSize.Quad
-        | "int128_t" | "uint128_t" -> MachSize.S128
-        | "intptr_t" | "uintptr_t" -> I.V.Cst.Scalar.machsize (* Maximal size = ptr size *)
-        | t ->
-            Warn.fatal "Cannot find the size of type %s" t
-
-
-      let misc_to_size ty  = match ty with
-      | MiscParser.TyDef -> size_of "int"
-      | MiscParser.Ty t|MiscParser.Atomic t
-        -> size_of t
-      | MiscParser.Pointer _| MiscParser.TyDefPointer
-      (* Assuming pointer size is machine 'natural' size *)
-        ->  I.V.Cst.Scalar.machsize
-      | MiscParser.TyArray _ ->
-          Warn.fatal "Type %s is not allowed in mixed size mode"
-            (MiscParser.pp_run_type ty)
+      let misc_to_size ty =
+        let maximal = I.V.Cst.Scalar.machsize in
+        match ty with
+        | MiscParser.TyDef ->
+            MiscParser.size_of maximal "int"
+        | MiscParser.Ty t|MiscParser.Atomic t
+        | MiscParser.TyArray (t,_)
+          ->
+            MiscParser.size_of maximal t
+        | MiscParser.Pointer _| MiscParser.TyDefPointer ->
+            maximal
 
       let build_size_env bds =
         List.fold_left
@@ -420,10 +495,55 @@ module Make(C:Config) (I:I) : S with module I = I
             | _ -> m)
           size_env_empty bds
 
-      type final_state = state * FaultSet.t
+      (* Types *)
+
+      type type_env = MiscParser.run_type LocMap.t
+
+      let type_env_empty = LocMap.empty
+
+      let build_type_env bds =
+        List.fold_left
+          (fun m (loc,(t,_)) -> LocMap.add loc t m)
+          type_env_empty bds
+
+      let look_type m loc =
+        LocMap.safe_find MiscParser.TyDef loc m
+
+      let loc_of_rloc tenv =
+        let open ConstrGen in
+        function
+        | Loc loc -> loc
+        | Deref (loc,o) ->
+            let t = look_type tenv loc in
+            scale_array_reference t loc o
+
+      (* Final (include faults) *)
+      module RState = RLocMap
+
+      type rstate = v RState.t
+
+      let rstate_to_list st =
+        List.rev (RState.fold (fun l v k -> (l,v)::k) st [])
+
+      let rstate_filter = RState.filter
+
+      type final_state = rstate * FaultSet.t
+
+      let pp_nice_rstate st delim pp_bd =
+        let bds =
+          RState.fold
+            (fun l v k -> (pp_bd l v)::k)
+            st [] in
+        String.concat delim  (List.rev bds)
+
+      let do_dump_rstate tr st =
+        pp_nice_rstate st " "
+          (fun l v ->
+            ConstrGen.dump_rloc (do_dump_location tr) l ^
+              "=" ^ I.V.pp C.hexa v ^";")
 
       let do_dump_final_state tr (st,flts) =
-        let pp_st = do_dump_state tr st in
+        let pp_st = do_dump_rstate tr st in
         if FaultSet.is_empty flts then pp_st
         else
           pp_st ^ " " ^ FaultSet.pp_str " " (fun f -> pp_fault f ^ ";") flts
@@ -434,7 +554,7 @@ module Make(C:Config) (I:I) : S with module I = I
             type t = final_state
 
             let compare (st1,flt1) (st2,flt2) =
-              match State.compare I.V.compare st1 st2 with
+              match RState.compare I.V.compare st1 st2 with
               | 0 -> FaultSet.compare flt1 flt2
               | r -> r
           end)
@@ -520,8 +640,9 @@ module Make(C:Config) (I:I) : S with module I = I
                  content yet *)
               raise LocUndetermined
           | None ->
-              match loc with
-              | Location_global (I.V.Val (Constant.Symbolic ((s,_,_),0)) as a)   ->
+              let open Constant in
+              match global loc with
+              | Some (I.V.Val (Symbolic {name=s;offset=0;_}) as a)   ->
                   let sz = look_size senv s in
                   let eas = byte_eas sz a in
                   let vs = List.map (get_of_val st) eas in
@@ -539,32 +660,47 @@ module Make(C:Config) (I:I) : S with module I = I
           if is_mixed || morello then look_in_state_mixed
           else fun _senv -> look_address_in_state (* No need for size-env when sizes are ignored *)
 
-        let state_mem senv st loc v =
-          try
-            let w = look_in_state senv st loc in
-            I.V.compare v w = 0
-          with LocUndetermined -> assert false
+        let look_in_state_rlocs st rloc =
+          if is_mixed || morello then
+            Warn.fatal "Mixed-size look_in_state_rloc not implemented"
+          else
+            try RState.find rloc st
+            with Not_found -> assert false
 
+(* Can be seen as performing two actions:
+   1. Change rloc into actual locations
+   2. Eliminate binding whose location is not listed in locs
+ *)
 
-        let state_restrict st loc_ok =
+        let reg_rlocs st =
           State.fold
-            (fun loc v k ->
-              if loc_ok loc then State.add loc v k
-              else k)
-            st State.empty
+            (fun loc _ k ->
+              match loc with
+              | Location_reg _ -> RLocSet.add (ConstrGen.Loc loc) k
+              | Location_global _ -> k)
+            st RLocSet.empty
 
-        let state_restrict_locs_non_mixed locs _ st =
-          LocSet.fold
-            (fun loc r -> state_add r loc (look_address_in_state st loc))
-            locs state_empty
+        let add_reg_locs keep_regs st locs =
+          if keep_regs then
+            RLocSet.union (reg_rlocs st) locs
+          else locs
 
-        let state_restrict_locs_mixed locs senv st =
-          LocSet.fold
-            (fun loc r -> state_add r loc (look_in_state_mixed senv st loc))
-            locs state_empty
+        let state_restrict_locs_non_mixed keep_regs locs tenv _ st =
+          let loc_of_rloc = loc_of_rloc tenv in
+          RLocSet.fold
+            (fun loc r ->
+              RState.add loc (look_address_in_state st (loc_of_rloc loc)) r)
+            (add_reg_locs keep_regs st locs) RState.empty
 
+        let state_restrict_locs_mixed keep_regs locs tenv senv st =
+          let loc_of_rloc = loc_of_rloc tenv in
+          RLocSet.fold
+            (fun loc r ->
+              RState.add
+                loc (look_in_state_mixed senv st (loc_of_rloc loc)) r)
+            (add_reg_locs keep_regs st locs) RState.empty
 
-        let state_restrict_locs =
+        let state_restrict_locs  =
           if is_mixed || morello then state_restrict_locs_mixed
           else  state_restrict_locs_non_mixed
 

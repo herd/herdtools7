@@ -377,6 +377,8 @@ let lift_proc_info i evts =
   and collect_mem_loads es = collect_by_loc es E.is_mem_load
   and collect_mem_stores es = collect_by_loc es E.is_mem_store
   and collect_mem es = collect_by_loc es E.is_mem
+  and collect_mem_non_init es =
+    collect_by_loc es (fun e -> E.is_mem e && Misc.is_some (E.proc_of e))
   and collect_loads es = collect_by_loc es E.is_load
   and collect_stores es = collect_by_loc es E.is_store
   and collect_loads_non_spec es = collect_by_loc es (fun e -> E.is_load e && not_speculated es e)
@@ -525,7 +527,7 @@ let lift_proc_info i evts =
     let a = Misc.as_some (E.global_loc_of e)
     and sz_e = E.get_mem_size e in
     match a with
-    | A.V.Val (Constant.Symbolic ((s,_,_),idx)) ->
+    | A.V.Val (Constant.Symbolic {Constant.name=s;Constant.offset=idx;_}) ->
         let sz_s =
           A.look_size sz s in
         List.exists (Misc.int_eq idx) (MachSize.get_off sz_s sz_e)

@@ -1,0 +1,10 @@
+Test L009 Required
+States 1
+0:X0=1; 1:X0=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=1 /\ 1:X0=1)
+Observation L009 Always 1 0
+Hash=a4d8718f6ccd4d63c94c6b4e91cad8d0
+

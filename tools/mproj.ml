@@ -51,8 +51,10 @@ struct
   let rec proj_p locs p = match p with
     | Not _
     | Implies _ -> Warn.fatal "Bad condition in mproj"
-    | Atom (LL (loc,_)|LV (loc,_)) as p ->
+    | Atom (LL (loc,_)|LV (Loc loc,_)) as p ->
         if MiscParser.LocSet.mem loc locs then p else And []
+    | Atom (LV (Deref _,_)) ->
+        prerr_endline "TODO" ; assert false
     | Atom (FF (_,x)) ->
         let loc = MiscParser.Location_global (Constant.check_sym x) in
         if MiscParser.LocSet.mem loc locs then p else And []

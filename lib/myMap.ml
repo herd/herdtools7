@@ -32,6 +32,9 @@ module type S = sig
   val union : ('a -> 'a -> 'a) -> 'a t -> 'a t -> 'a t
   val unions : ('a -> 'a -> 'a) -> 'a t list -> 'a t
 
+(* filter bindings according to ket predicate *)
+  val filter : (key -> bool) -> 'a t -> 'a t
+
 (* List bindings *)
   val bindings : 'a t -> (key * 'a) list
   val add_bindings : (key * 'a) list -> 'a t -> 'a t
@@ -69,6 +72,11 @@ module Make(O:Set.OrderedType) : S with type key = O.t =
     let unions u ms = match ms with
     | [] -> empty
     | m::ms -> List.fold_left (union u) m ms
+
+    let filter p m =
+      fold
+        (fun k v r -> if p k then add k v r else r)
+        m empty
 
     let bindings m = fold (fun k v xs -> (k,v)::xs) m []
     let add_bindings bds m =

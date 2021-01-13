@@ -40,7 +40,7 @@ end = struct
         (function
           | Location_global _,_ -> true
           | Location_reg _,_ -> false
-          | (Location_sreg _|Location_deref _),_ ->
+          | Location_sreg _,_ ->
               Warn.fatal "wrong location in init")
         st in
     String.concat " "
@@ -87,7 +87,8 @@ end = struct
           t.prog pss
     | _ -> ()
     end ;
-    let locs = DumpUtils.dump_locations dump_loc t.locations in
+    let locs =
+      DumpUtils.dump_locations (ConstrGen.dump_rloc dump_loc) t.locations in
     if locs <> "" then Out.fprintf chan "%s\n" locs ;
     begin match t.filter with
     | None -> ()

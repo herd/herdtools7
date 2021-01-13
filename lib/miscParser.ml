@@ -33,7 +33,6 @@ type location =
   | Location_reg of int * reg
   | Location_sreg of string
   | Location_global of maybev
-  | Location_deref of maybev * int
 
 let location_compare loc1 loc2 = match loc1,loc2 with
 | Location_reg (i1,r1), Location_reg (i2,r2) ->
@@ -45,40 +44,29 @@ let location_compare loc1 loc2 = match loc1,loc2 with
     String.compare r1 r2
 | Location_global v1,Location_global v2 ->
     ParsedConstant.compare v1 v2
-| Location_deref (v1,i1),Location_deref (v2,i2) ->
-    begin match ParsedConstant.compare v1 v2 with
-    | 0 -> Misc.int_compare i1 i2
-    | r -> r
-    end
-| Location_reg _,(Location_sreg _|Location_global _|Location_deref _) -> -1
-| (Location_sreg _|Location_global _|Location_deref _),Location_reg _ -> 1
-| Location_sreg _, (Location_global _|Location_deref _) -> -1
-| (Location_global _|Location_deref _), Location_sreg _ -> 1
-| Location_global  _,Location_deref _ -> -1
-| Location_deref  _,Location_global _ -> 1
+| Location_reg _,(Location_sreg _|Location_global _) -> -1
+| (Location_sreg _|Location_global _),Location_reg _ -> 1
+| Location_sreg _, Location_global  _ -> -1
+| Location_global _, Location_sreg _ -> 1
 
 let dump_location = function
   | Location_reg (i,r) -> Printf.sprintf "%i:%s" i r
   | Location_sreg s -> Misc.dump_symbolic s
   | Location_global v -> ParsedConstant.pp_v v
-  | Location_deref (v,i) ->
-      Printf.sprintf "%s[%i]" (ParsedConstant.pp_v v) i
 
 let dump_rval loc = match loc with
   | Location_reg (i,r) -> Printf.sprintf "%i:%s" i r
   | Location_sreg s -> Misc.dump_symbolic s
   | Location_global v -> Printf.sprintf "*%s" (ParsedConstant.pp_v v)
-  | Location_deref _ -> assert false
 
 let is_global = function
-  | Location_global _
-  | Location_deref _ -> true
+  | Location_global _ -> true
   | Location_reg _
   | Location_sreg _ -> false
 
 let as_local_proc i syms = function
   | Location_reg (j,reg) -> if i=j then Some reg else None
-  | Location_global _|Location_deref _ -> None
+  | Location_global _ -> None
   | Location_sreg reg ->
       if StringSet.mem reg syms then
         Some (Misc.dump_symbolic reg)
@@ -91,6 +79,14 @@ module LocSet =
 module LocMap =
   MyMap.Make
     (struct type t = location let compare = location_compare end)
+
+type rlocation = location ConstrGen.rloc
+module RLocSet =
+  MySet.Make
+    (struct
+      type t = rlocation
+      let compare = ConstrGen.compare_rloc location_compare
+    end)
 
 type prop = (location, maybev) ConstrGen.prop
 type constr = prop ConstrGen.constr
@@ -122,6 +118,14 @@ let pp_run_type = function
   | Pointer s -> sprintf "Pointer<%s>" s
   | TyArray (s,sz) -> sprintf "TyArray<%s,%i>" s sz
 
+let is_array = function
+  | TyArray _ -> true
+  | _       -> false
+
+let get_array_primitive_ty = function
+  | TyArray (ty,_) -> ty
+  | _ -> assert false
+
 type state = (location * (run_type * maybev)) list
 
 
@@ -138,6 +142,19 @@ let dump_state_atom dump_loc dump_val (loc,(t,v)) = match t with
     sprintf "%s *%s=%s" t (dump_loc loc) (dump_val v)
 | TyArray (t,sz) ->
     sprintf "%s %s[%i]" t (dump_loc loc) sz
+
+(* Simplified typing, size only, integer types only *)
+let size_of maximal = function
+| "atomic_t"
+| "int"|"long"
+| "int32_t"
+| "uint32_t" ->  MachSize.Word
+| "char"|"int8_t" |"uint8_t" -> MachSize.Byte
+| "short" | "int16_t" | "uint16_t" -> MachSize.Short
+| "int64_t" | "uint64_t" -> MachSize.Quad
+| "int128_t" | "uint128_t" -> MachSize.S128
+| "intptr_t" | "uintptr_t" -> maximal (* Maximal size = ptr size *)
+| t -> Warn.fatal "Cannot find the size of type %s" t
 
 (* Packed result *)
 type info = (string * string) list
@@ -157,7 +174,7 @@ type ('i, 'p, 'prop, 'loc) result =
       prog : 'p ;
       filter : 'prop option ;
       condition : 'prop ConstrGen.constr ;
-      locations : ('loc * run_type) list ;
+      locations : ('loc ConstrGen.rloc * run_type) list ;
       extra_data : extra_data ;
 }
 

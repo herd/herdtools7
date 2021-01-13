@@ -157,18 +157,24 @@ module Make(O:Config)(A:I) =
           (StringSet.of_list
              (List.fold_left
                 (fun k (_,v) ->
-                  match v with
-                  | Symbolic ((s,_,_),_) -> s::k
-                  | Concrete _|Label _|Tag _ -> k)
+                  let rec f v k = match v with
+                  | Symbolic {Constant.name=s;_} -> s::k
+                  | ConcreteVector (_,vs) ->
+                      List.fold_right (fun v k -> f v k) vs k
+                  | Concrete _|Label _|Tag _ -> k in
+                  f v k)
                 [] init)) in
       StringSet.elements set
 
     let get_labels { init; _} =
       List.fold_left
         (fun k (_,v) ->
-          match v with
+          let rec f v k = match v with
           | Label (p,s) -> (p,s)::k
-          | Concrete _|Symbolic _|Tag _ -> k)
+          | ConcreteVector (_,vs) ->
+              List.fold_right (fun v k -> f v k) vs k
+          | Concrete _|Symbolic _|Tag _ -> k
+          in f v k)
         [] init
 
     let get_stable { stable; _} = stable

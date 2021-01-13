@@ -31,7 +31,6 @@ type location =
   | Location_reg of int * reg
   | Location_sreg of string (** symbolic register *)
   | Location_global of maybev
-  | Location_deref of maybev * int
 
 val location_compare : location -> location -> int
 val dump_location : location -> string
@@ -41,6 +40,9 @@ val as_local_proc : int -> StringSet.t -> location -> reg option
 
 module LocSet : MySet.S with type elt = location
 module LocMap : MyMap.S with type key = location
+
+type rlocation = location ConstrGen.rloc
+module RLocSet : MySet.S with type elt = rlocation
 
 
 type prop = (location, maybev) ConstrGen.prop
@@ -60,11 +62,15 @@ type run_type =
   | Atomic of string
 
 val pp_run_type : run_type -> string
+val is_array : run_type -> bool
+val get_array_primitive_ty : run_type -> string
 
 type state = (location * (run_type * maybev)) list
 
 val dump_state_atom :
   ('loc -> string) -> ('v -> string) -> ('loc * (run_type * 'v)) -> string
+
+val size_of : MachSize.sz -> string -> MachSize.sz
 
 (* Packed result *)
 type info = (string * string) list
@@ -84,7 +90,7 @@ type ('i, 'p, 'prop, 'loc) result =
       prog : 'p ;
       filter : 'prop option ;
       condition : 'prop ConstrGen.constr ;
-      locations : ('loc * run_type) list ;
+      locations : ('loc ConstrGen.rloc * run_type) list ;
       extra_data : extra_data ;
     }
 

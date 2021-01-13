@@ -23,7 +23,7 @@ module Make(Scalar:Scalar.S) = struct
   open Constant
 
   let intToV i = Concrete (Scalar.of_int i)
-  and nameToV s = Symbolic ((s,None,0),0)
+  and nameToV s = Symbolic {default_symbolic_data with name=s}
 
   let bit_at k v = Scalar.bit_at k v
 
@@ -32,15 +32,43 @@ module Make(Scalar:Scalar.S) = struct
 
   let tag_compare = Misc.opt_compare String.compare
 
-  let compare c1 c2 = match c1,c2 with
+  let pp_location {name=s;tag=t;cap=c; _} = match t,c with
+   | None, 0 -> s
+   | None, _ -> sprintf "%#x:%s:%i" ((c land 0x1ffffffff) lsl 3) s (c lsr 33)
+   | Some t, 0 -> sprintf "%s:%s" s t
+   | Some t, _ -> sprintf "%#x:%s:%i:%s" ((c land 0x1ffffffff) lsl 3) s (c lsr 33) t
+
+  let rec pp hexa = function
+    | Concrete i -> Scalar.pp hexa i
+    | ConcreteVector (_,vs) ->
+      let s = String.concat "," (List.map (pp hexa) vs)
+      in sprintf "[%s]" s
+    | Symbolic ({offset=0; _} as s) -> pp_location s
+    | Symbolic ({offset=o; _} as s) -> sprintf "%s+%i" (pp_location s) o
+    | Label (p,lbl)  -> sprintf "%i:%s" p lbl
+    | Tag s -> sprintf ":%s" s
+
+  let pp_v = pp false
+
+  let rec compare c1 c2 = match c1,c2 with
   | Concrete i1, Concrete i2 -> Scalar.compare i1 i2
-  | Symbolic ((s1,t1,m1),o1),Symbolic ((s2,t2,m2),o2) ->
-      begin match String.compare s1 s2 with
+  | ConcreteVector (sz1, v1), ConcreteVector (sz2, v2) ->
+    let vs = List.map2 (fun i1 i2 -> (i1,i2)) v1 v2 in
+    let check_vec = List.fold_right
+      (fun (i1,i2) s -> (compare i1 i2) + s)
+      vs
+      0 in
+    (Misc.int_compare sz1 sz2) + check_vec
+  | Symbolic s1,Symbolic s2 ->
+      (* We do not commpare vector metadata as mk_sym can be called *)
+      (* in arbitrary places where the metadata is not available e.g in Sem files *)
+      (* this would mean `compare v[8] (v[8] (with metadata))` would fail *)
+      begin match String.compare s1.name s2.name with
       | 0 ->
-          begin match tag_compare t1 t2 with
+          begin match tag_compare s1.tag s2.tag with
           | 0 ->
-              begin match Misc.int_compare m1 m2 with
-              | 0 -> Misc.int_compare o1 o2
+              begin match Misc.int_compare s1.cap s2.cap with
+              | 0 -> Misc.int_compare s1.offset s2.offset
               | r -> r
               end
           | r -> r
@@ -53,52 +81,43 @@ module Make(Scalar:Scalar.S) = struct
       | r -> r
       end
   | Tag t1,Tag t2 -> String.compare t1 t2
-  | (Concrete _,(Symbolic _|Label _|Tag _))
-  | (Symbolic _,(Label _|Tag _))
+  | (Concrete _,(Symbolic _|Label _|Tag _|ConcreteVector _))
+  | (Symbolic _,(Label _|Tag _|ConcreteVector _))
   | (Label _,Tag _)
       -> -1
-  | (Symbolic _|Label _|Tag _),Concrete _
-  | ((Label _|Tag _),Symbolic _)
+  | (Symbolic _|Label _|Tag _|ConcreteVector _),Concrete _
+  | ((Label _|Tag _|ConcreteVector _),(Symbolic _| ConcreteVector _))
   | (Tag _,Label _)
+  | (ConcreteVector _, (Label _ | Tag _))
       -> 1
-
-  let pp_location (s,t,c) = match t with
-  | None -> if c = 0
-    then s
-    else sprintf "%#x:%s:%i" ((c land 0x1ffffffff) lsl 3) s (c lsr 33)
-  | Some t -> if c = 0
-    then sprintf "%s:%s" s t
-    else sprintf "%#x:%s:%i:%s" ((c land 0x1ffffffff) lsl 3) s (c lsr 33) t
-
-  let pp hexa = function
-    | Concrete i -> Scalar.pp hexa i
-    | Symbolic (s,0) -> pp_location s
-    | Symbolic (s,o) -> sprintf "%s+%i" (pp_location s) o
-    | Label (p,lbl)  -> sprintf "%i:%s" p lbl
-    | Tag s -> sprintf ":%s" s
-
-  let pp_v = pp false
 
   let tag_eq = Misc.opt_eq Misc.string_eq
 
-  let location_eq (s1,t1,c1) (s2,t2,c2) =
+  let location_eq
+    {name=s1; tag=t1; cap=c1; offset=o1}
+    {name=s2; tag=t2; cap=c2; offset=o2} =
     Misc.string_eq s1 s2 && tag_eq t1 t2 && Misc.int_eq c1 c2
+    && Misc.int_eq o1 o2
 
-  let eq c1 c2 = match c1,c2 with
+  let rec eq c1 c2 = match c1,c2 with
   | Concrete i1, Concrete i2 -> Scalar.compare i1 i2 = 0
-  | Symbolic (s1,o1),Symbolic (s2,o2) ->
-      location_eq  s1 s2 && Misc.int_eq o1 o2
+  | Symbolic s1, Symbolic s2 -> location_eq s1 s2
   | Label (p1,s1),Label (p2,s2) ->
       Misc.string_eq  s1 s2 && Misc.int_eq p1 p2
+  | ConcreteVector (sz1,v1), ConcreteVector (sz2,v2) ->
+      let vs = List.map2 (fun i1 i2 -> eq i1 i2) v1 v2 in
+      Misc.int_eq sz1 sz2 && List.for_all (fun x -> x) vs
   | Tag t1,Tag t2 -> Misc.string_eq t1 t2
-  | (Concrete _,(Symbolic _|Label _|Tag _))
-  | (Symbolic _,(Concrete _|Label _|Tag _))
-  | (Label _,(Concrete _|Symbolic _|Tag _))
-  | (Tag _,(Concrete _|Symbolic _|Label _))
+  | (ConcreteVector _,(Symbolic _|Label _|Tag _|Concrete _))
+  | (Concrete _,(Symbolic _|Label _|Tag _|ConcreteVector _))
+  | (Symbolic _,(Concrete _|Label _|Tag _|ConcreteVector _))
+  | (Label _,(Concrete _|Symbolic _|Tag _|ConcreteVector _))
+  | (Tag _,(Concrete _|Symbolic _|Label _|ConcreteVector _))
     -> false
 
  (* For building code symbols, significant for symbols only ? *)
   let vToName = function
-    | Symbolic ((s,None,0),0) -> s
-    | Symbolic _|Concrete _|Label _|Tag _ -> assert false
+    | Symbolic {name=s;offset=0;_} -> s
+    | Symbolic {name=s;offset=idx;_} -> Printf.sprintf "%s[%d]" s idx
+    | Concrete _|Label _|Tag _| ConcreteVector _ -> assert false
 end

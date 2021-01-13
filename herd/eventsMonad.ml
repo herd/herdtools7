@@ -1074,7 +1074,7 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
             | A.Location_global a ->
                 if is_tagloc a then glob,a::tag
                 else a::glob,tag
-            | A.Location_deref _|A.Location_reg _ -> p)
+            | A.Location_reg _ -> p)
             ([],[]) env in
         let tag_set = A.VSet.of_list tag in
         let env =
@@ -1088,10 +1088,12 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
 
       let morello_init_tag s v eiid =
         assert morello ;
+        let open Constant in
         bump_eid eiid,
         { E.eiid = eiid.id; E.subid=eiid.sub; E.iiid = None;
           E.action = E.Act.mk_init_write (A.Location_global
-            (A.V.Val (Constant.Symbolic ((Misc.add_ctag s,None,0),0))))
+            (A.V.Val (Symbolic
+            {default_symbolic_data with name=Misc.add_ctag s})))
             def_size v; }
 
       let initwrites_non_mixed env size_env =
@@ -1102,15 +1104,21 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
                 let sz =
                   match loc with
                   | A.Location_global
-                    (A.V.Val (Constant.Symbolic ((s,_,_),0)))
+                    (A.V.Val
+                       (Constant.Symbolic
+                          {Constant.name=s; _}))
                         when not (Misc.check_atag s) ->
+(* Notice that size does not depend upon offset.
+   That is, all addresses with the same base
+   share the same size *)
                       A.look_size size_env s
                   | _ -> def_size in
                 let eiid,ew =
                   make_one_init_event
                     (E.Act.mk_init_write loc sz v) eiid in
-                match loc with
-                | A.Location_global (A.V.Val (Constant.Symbolic ((s,_,_),0))) ->
+                match A.global loc with
+                | Some (A.V.Val (Constant.Symbolic
+                  {Constant.name=s;Constant.offset=0;_})) ->
                     let eiid,ews =
                       if morello then
                         let eiid,em =
@@ -1142,9 +1150,10 @@ let (>>>) = if do_deps then comb_instr_code_deps else comb_instr_code
             let eiid,es,sca =
               List.fold_left
                 (fun (eiid,es,sca) (loc,v) ->
-                  match loc with
-                  | A.Location_global
-                      (A.V.Val (Constant.Symbolic ((s,_,_),0)) as a)
+                  let open Constant in
+                  match A.global loc with
+                  | Some
+                      (A.V.Val (Symbolic {name=s;offset=0;_}) as a)
                       when not (Misc.check_atag s) ->
  (* Suffix encoding of tag addresses, sufficient for now *)
                         let sz = A.look_size size_env s in

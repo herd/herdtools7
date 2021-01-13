@@ -98,7 +98,10 @@ end = struct
     Out.fprintf chan "\n{%s}\n\n" (dump_state  t.init) ;
     prog chan t.prog ;
     Out.fprintf chan "\n" ;
-    let locs = DumpUtils.dump_locations I.dump_location t.locations in
+    let locs =
+      DumpUtils.dump_locations
+        (ConstrGen.dump_rloc I.dump_location)
+        t.locations in
     if locs <> "" then Out.fprintf chan "%s\n" locs ;
     begin match t.filter with
     | None -> ()
@@ -137,7 +140,8 @@ end = struct
       match t.locations with
       | [] -> k
       | locs ->
-          DumpUtils.dump_locations I.dump_location locs::k
+          DumpUtils.dump_locations
+            (ConstrGen.dump_rloc I.dump_location) locs::k
     end @@
     [I.dump_constr t.condition]
 end

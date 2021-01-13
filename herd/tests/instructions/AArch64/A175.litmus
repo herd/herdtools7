@@ -1,0 +1,13 @@
+AArch64 A175
+(* tests illegal input to initial state of the form "v[i] = scalar" *)
+(* only vector initializations can use v[i] in init of the form "v[i] = lbrack scalar_list rbrack" *)
+(* This should fail as v[3] = 3 is not allowed in init *)
+
+
+{ 0:X0=42; 0:X2 = v; int64_t v[2] = {1, 2}; v[3] = 3 }
+
+P0;
+  STR X0, [X2, #16];
+
+exists (v[3] = 42)
+

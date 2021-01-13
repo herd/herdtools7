@@ -1,0 +1,10 @@
+AArch64 L008
+
+{ 0:X2=v; int v[2]={1,2}; }
+
+ P0             ;
+ LDR W0,[X2]    ;
+ LDR W1,[X2,#4] ;
+locations [0:X0;0:X1;]
+forall (v[0]=1 /\ v[1]=2)
+

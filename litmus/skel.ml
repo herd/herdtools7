@@ -303,8 +303,6 @@ module Make
       let dump_loc_name loc =  match loc with
       | A.Location_reg (proc,reg) -> A.Out.dump_out_reg proc reg
       | A.Location_global s -> s
-      | A.Location_deref (s,i) -> sprintf "%s_%i" s i
-
 
       let dump_loc_copy loc = "_" ^ dump_loc_name loc ^ "_i"
       let dump_loc_param loc = "_" ^ dump_loc_name loc
@@ -318,13 +316,6 @@ module Make
               sprintf "%s%s[_i]" pref s
           | Indirect ->
               sprintf "*(%s%s[_i])" pref s
-          end
-      | A.Location_deref (s,idx) ->
-          begin match memory with
-          | Direct ->
-              sprintf "%s%s[_i][%i]" pref s idx
-          | Indirect ->
-              sprintf "(*(%s%s[_i]))[%i]" pref s idx
           end
 
       let dump_loc = dump_ctx_loc ""
@@ -348,9 +339,12 @@ module Make
       | Indirect -> sprintf "_a->%s[_i]"
 
 (* Right value, casted if pointer *)
-      let dump_a_v_casted = function
+      let rec dump_a_v_casted = function
         | Concrete i ->  A.V.Scalar.pp  Cfg.hexa i
-        | Symbolic ((s,None,0),_) -> sprintf "((int *)%s)" (dump_a_addr s)
+        | ConcreteVector (_,vs)->
+            let pp_vs = List.map dump_a_v_casted vs in
+            sprintf "{%s}" (String.concat "," pp_vs) (* list initializer syntax *)
+        | Symbolic {name=s;tag=None;cap=0;_} -> sprintf "((int *)%s)" (dump_a_addr s)
         | Symbolic _|Label _|Tag _ -> assert false
 
 (* Dump left & right values when context is available *)
@@ -745,7 +739,7 @@ module Make
                     if Cfg.cautious then
                       List.fold_right
                         (fun (loc,v) k -> match loc,v with
-                        | A.Location_reg(p,_),Symbolic ((s,_,_),_) when s = a ->
+                        | A.Location_reg(p,_),Symbolic {name=s;_} when s = a ->
                             let cpy = A.Out.addr_cpy_name a p in
                             O.fi "%s* *%s ;" (CType.dump t) cpy ;
                             (cpy,a)::k
@@ -778,7 +772,7 @@ module Make
                 if Cfg.cautious then
                   List.iter
                     (fun (loc,v) -> match loc,v with
-                    | A.Location_reg(p,_),Symbolic ((s,_,_),_)
+                    | A.Location_reg(p,_),Symbolic {name=s;_}
                       when Misc.string_eq s a ->
                         let cpy = A.Out.addr_cpy_name a p in
                         O.f "static %s* %s[SIZE_OF_ALLOC];"
@@ -2173,7 +2167,6 @@ module Make
           let loc_arrays =
             A.LocSet.fold
               (fun loc k -> match loc with
-              | A.Location_deref (s,_) -> StringSet.add s  k
               | A.Location_global s ->
                   let t = U.find_type loc env in
                   let t = CType.strip_attributes t in
@@ -2218,12 +2211,7 @@ module Make
                   O.fiii "%s %s = %s;"
                     (CType.dump t)
                     (dump_loc_copy loc)
-                    (let loc = match loc with
-                    | A.Location_deref (s,idx) ->
-                        sprintf "%s[%i]"
-                          (dump_loc_copy (A.Location_global s))
-                          idx
-                    | _ -> dump_ctx_loc "ctx." loc in
+                    (let loc =  dump_ctx_loc "ctx." loc in
                     U.do_load t loc)
               end ;
               if Cfg.cautious then O.oiii "mcautious();")

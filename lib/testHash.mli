@@ -41,8 +41,8 @@ module Make :
   functor (A:ArchBase.S) -> sig
     type init = MiscParser.state
     type prog = (MiscParser.proc * A.pseudo list) list
-    type locations = MiscParser.LocSet.t
+    type rlocations = MiscParser.RLocSet.t
 
     val refresh_labels : string -> prog -> prog
-    val digest : init -> prog -> locations -> string
+    val digest : init -> prog -> rlocations -> string
   end

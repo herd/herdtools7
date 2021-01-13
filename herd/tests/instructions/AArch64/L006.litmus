@@ -1,4 +1,4 @@
-AArch64 L007
+AArch64 L006
 {
 int x=2;
 int *p=&x;

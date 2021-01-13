@@ -51,9 +51,8 @@ type location = A.location and module LocSet = A.LocSet =
     type cond = prop ConstrGen.constr
 
     let locations_atom a r =
-      let open ConstrGen in
       match a with
-      | LV (loc,_) -> LocSet.add loc r
+      | LV (loc,_) -> LocSet.add (loc_of_rloc loc) r
       | LL (loc1,loc2) -> LocSet.add loc1 (LocSet.add loc2 r)
       | FF f ->
           Warn.warn_always "Ignoring fault %s"
@@ -73,10 +72,13 @@ type location = A.location and module LocSet = A.LocSet =
       match a with
       | LV (_,v) ->
           begin
-            match v with
-            | Symbolic ((s,None,0),_) -> Strings.add s k
+            let rec f v k = match v with
+            | Symbolic {name=s;offset=0;tag=None;_} -> Strings.add s k
             | Concrete _ -> k
-            | Label _|Symbolic _|Tag _ -> assert false
+            | ConcreteVector (_,vs) ->
+                List.fold_right (fun v k -> f v k) vs k
+            | Label _|Symbolic _|Tag _ -> assert false in
+            f v k
           end
       | LL _|FF _ -> k
 

@@ -74,6 +74,7 @@ module type S =
       val check_atag : v -> bool
       val check_ctag : v -> bool
       val get_sym : v -> string
+      val get_vec : v -> Cst.Scalar.t Constant.t
 
       val op1 : Op.op1 -> v -> v
       val op : Op.op -> v -> v -> v

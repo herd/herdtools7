@@ -1,0 +1,12 @@
+AArch64 A139
+(* Tests whether we can load from a pointer - symbolic location+offset *)
+
+{ *pointer_to_x = x; int64_t x[2]={4,42} }
+
+P0;
+  ADR X1, pointer_to_x; (* loads pointer_to_x into X1 *)
+  LDR X1, [X1];         (* loads x into X1 *)
+  LDR X1, [X1, #8];     (* loads x[1] into X1 *)
+
+exists (0:X1 = 42)
+

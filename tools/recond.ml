@@ -84,7 +84,7 @@ module Make(Config:Config)(Out:OutTests.S) =
     | [] -> ()
     | _::_ ->
         Out.fprintf out "%s\n"
-          (DumpUtils.dump_locations dump_loc locs)
+          (DumpUtils.dump_locations (ConstrGen.dump_rloc dump_loc) locs)
 
     let reparse map =
       if

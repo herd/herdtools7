@@ -73,18 +73,18 @@ module Make(O:Config)(M:XXXMem.S) =
     let check_prop test =
       let c = T.find_our_constraint test in
       let p = ConstrGen.prop_of c in
-      let senv = S.size_env test in
-      fun st -> CM.check_prop p senv st
+      let senv = S.size_env test
+      and tenv = S.type_env test in
+      fun st -> CM.check_prop p tenv senv st
 
-    let count_prop test sts =
+    let count_prop test =
       let c = T.find_our_constraint test in
       let p = ConstrGen.prop_of c in
-      let senv = S.size_env test in
-      A.StateSet.fold
-        (fun st n ->
-          if  CM.check_prop p senv st then n+1 else n)
-        sts
-        0
+      fun sts ->
+        A.StateSet.fold
+          (fun st n ->
+            if CM.check_prop_rlocs p st then n+1 else n)
+          sts 0
 
 (* Test result *)
     type count =
@@ -309,13 +309,7 @@ module Make(O:Config)(M:XXXMem.S) =
                 ~sets:(Lazy.force set_pp) (Lazy.force vbpp)
           | _ -> ()
           end ;
-          let fsc =
-            if O.outcomereads then fsc
-            else begin
-              let dlocs = S.displayed_locations test
-              and senv = S.size_env test in
-              do_restrict dlocs senv fsc
-            end in
+          let fsc = do_restrict test fsc in
           let r =
             { cands = c.cands+1;
               cfail = c.cfail;
@@ -366,9 +360,12 @@ module Make(O:Config)(M:XXXMem.S) =
                 (fun f -> A.check_one_fatom flt f) faults_in_cond)
         else fun _ -> A.FaultSet.empty in
 
-      let final_state_restrict_locs dlocs senv fsc =
+      let final_state_restrict_locs test fsc =
+        let dlocs = S.displayed_rlocations test
+        and senv = S.size_env test
+        and tenv = S.type_env test in
         let fsc,flts = fsc in
-        AM.state_restrict_locs dlocs senv fsc,
+        AM.state_restrict_locs O.outcomereads dlocs tenv senv fsc,
         restrict_faults flts in
 
       let { MC.event_structures=rfms; loop_present=loop; } =
@@ -431,14 +428,17 @@ module Make(O:Config)(M:XXXMem.S) =
 (* Reduce final states, so as to show relevant locations only *)
       let finals =
         if O.outcomereads then
-          let locs =
-            A.LocSet.union
-              (S.displayed_locations test)
-              c.reads in
-          let senv  = S.size_env test in
-          A.StateSet.map
-            (fun st -> final_state_restrict_locs locs senv st)
-            c.states
+          let do_restrict (st,flts) =
+            let st =
+              A.rstate_filter
+                (fun rloc ->
+                  let loc = ConstrGen.loc_of_rloc rloc in
+                  match loc with
+                  | A.Location_global _ -> true
+                  | A.Location_reg _ -> A.LocSet.mem loc c.reads)
+                st in
+                st,flts in
+          A.StateSet.map do_restrict c.states
         else c.states in
       let nfinals = A.StateSet.cardinal finals in
       match O.restrict with

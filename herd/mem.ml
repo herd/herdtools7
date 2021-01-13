@@ -93,7 +93,7 @@ module type S = sig
           S.read_from S.RFMap.t -> S.M.VC.cnstrnt list -> 'a -> 'a) ->
             'a -> 'a
 
-  val check_sizes : S.event_structure -> unit
+  val check_sizes : S.test -> S.event_structure -> unit
 
   val check_rfmap :
     S.E.event_structure -> S.read_from S.RFMap.t -> bool
@@ -105,7 +105,7 @@ module type S = sig
   val compute_final_state :
     S.test -> S.read_from S.RFMap.t -> S.E.EventSet.t -> S.A.state * S.A.FaultSet.t
 
-  val check_filter : S.test -> S.A.final_state -> bool
+  val check_filter : S.test -> S.A.state * S.A.FaultSet.t -> bool
 
   val get_loc :
     S.E.event -> S.E.A.location
@@ -203,10 +203,10 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           (fun locs (loc,v) ->
             let locs =
               match loc with
-              | A.Location_global _|A.Location_deref _ -> loc::locs
+              | A.Location_global _ -> loc::locs
               | A.Location_reg _ -> locs in
             let locs = match v with
-            | A.V.Val (Constant.Symbolic ((s,_,_),_)) ->
+            | A.V.Val (Constant.Symbolic {Constant.name=s;_}) ->
                 A.Location_global (A.V.Val (Constant.mk_sym s))::locs
             | _ -> locs in
             locs)
@@ -217,9 +217,9 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       let locs_final =
         A.LocSet.filter
           (function
-            | A.Location_global _|A.Location_deref _ -> true
+            | A.Location_global _ -> true
             | A.Location_reg _ -> false)
-          test.Test_herd.observed
+          (S.observed_locations test)
       and locs_init = get_all_locs_init test.Test_herd.init_state in
       let locs = A.LocSet.union locs_final locs_init in
       let locs =
@@ -608,7 +608,7 @@ let match_reg_events es =
    - Not after in program order
     (suppressed when uniproc is not optmised early) *)
 
-    let map_load_possible_stores es loads stores compat_locs =
+    let map_load_possible_stores test es loads stores compat_locs =
       let m =
         E.EventSet.fold
           (fun store map_load ->
@@ -645,12 +645,18 @@ let match_reg_events es =
         (fun (load,stores) -> match stores with
         | [] ->
             begin match E.location_of load with
-            | Some (A.Location_global (V.Val sym) as loc) ->
-                if Constant.is_non_mixed_symbol sym then
+            | Some
+              (A.Location_global
+                 (V.Val (Constant.Symbolic sym)) as loc) ->
+                if
+                  not (S.is_non_mixed_symbol test sym)
+                then
                   Warn.fatal "read on location %s does not match any write"
                     (A.pp_location loc)
                 else if check_mixed then
-                  Warn.user_error "Illegal mixed-size test"
+                  Warn.user_error
+                    "Illegal mixed-size test on symbol %s"
+                    (A.pp_location loc)
             | _ -> assert false
             end
         | _::_ -> ())
@@ -675,7 +681,8 @@ let match_reg_events es =
         (List.fold_right2 (fun r w ->  S.RFMap.add (S.Load r) (S.Store w)))
 
     let solve_mem_or_res test es rfm cns kont res loads stores compat_locs add_eqs =
-      let possible = map_load_possible_stores es loads stores compat_locs in
+      let possible =
+        map_load_possible_stores test es loads stores compat_locs in
       let possible =
         List.map
           (fun (er,ws) ->
@@ -770,28 +777,28 @@ let match_reg_events es =
 
 (* Various utilities on symbolic addresses as locatiosn *)
     let get_base a =
-      let open Constant in match a with
-      | A.Location_global (V.Val (Symbolic ((s,t,c),_))) when Misc.check_ctag s ->
-          A.Location_global (V.Val (Symbolic ((Misc.tr_ctag s,t,c),0)))
-      | A.Location_global (V.Val (Symbolic (s,_))) ->
-          A.Location_global (V.Val (Symbolic (s,0)))
+      let open Constant in match A.global a with
+      | Some (V.Val (Symbolic ({name=s;_}as sym))) when Misc.check_ctag s ->
+          A.Location_global (V.Val (Symbolic ({sym with name=Misc.tr_ctag s;offset=0})))
+      | Some (V.Val (Symbolic s)) ->
+          A.Location_global (V.Val (Symbolic {s with offset=0}))
       | _ -> raise CannotSca
 
 (* Sort same_base *)
     let compare_index e1 e2 =
       let open Constant in
       match E.global_loc_of e1, E.global_loc_of e2 with
-      | Some (V.Val (Symbolic ((s1,_,_),i1))),
-        Some (V.Val (Symbolic ((s2,_,_),i2))) when  Misc.string_eq s1 s2 ->
+      | Some (V.Val (Symbolic {name=s1;offset=i1;_})),
+        Some (V.Val (Symbolic {name=s2;offset=i2;_})) when  Misc.string_eq s1 s2 ->
           Misc.int_compare i1 i2
-      | Some (V.Val (Symbolic ((s1,_,_),_))),
-        Some (V.Val (Symbolic ((s2,_,_),_))) when (morello && Misc.check_ctag s1
+      | Some (V.Val (Symbolic {name=s1;_})),
+        Some (V.Val (Symbolic {name=s2;_})) when (morello && Misc.check_ctag s1
           && Misc.string_eq (Misc.tr_ctag s1) s2) -> 1
-      | Some (V.Val (Symbolic ((s1,_,_),_))),
-        Some (V.Val (Symbolic ((s2,_,_),_))) when (morello && Misc.check_ctag s2
+      | Some (V.Val (Symbolic {name=s1;_})),
+        Some (V.Val (Symbolic {name=s2;_})) when (morello && Misc.check_ctag s2
           && Misc.string_eq s1 (Misc.tr_ctag s2)) -> -1
-      | Some (V.Val (Symbolic ((s1,_,_),_))),
-        Some (V.Val (Symbolic ((s2,_,_),_))) when (morello && Misc.check_ctag s1
+      | Some (V.Val (Symbolic {name=s1;_})),
+        Some (V.Val (Symbolic {name=s2;_})) when (morello && Misc.check_ctag s1
         && Misc.check_ctag s2 && Misc.string_eq s1 s2) -> 0
       | _,_ -> raise CannotSca
 
@@ -871,7 +878,7 @@ let match_reg_events es =
       | e::_ -> e
       | [] -> assert false in
       let s,idx= match  E.global_loc_of fst with
-      |  Some (V.Val (Symbolic ((s,_,_),i))) ->
+      |  Some (V.Val (Symbolic {name=s;offset=i;_})) ->
           (if morello && Misc.check_ctag s then Misc.tr_ctag s else s),i
       | _ -> raise CannotSca in
       let sz = List.length sca*byte_sz in
@@ -941,17 +948,17 @@ let match_reg_events es =
       ms
 
 (* Non-mixed pairing for tags, if any *)
-    let pair_tags es =
+    let pair_tags test es =
       let tags = E.EventSet.filter E.is_tag es.E.events in
       let loads = E.EventSet.filter E.is_load tags
       and stores = E.EventSet.filter E.is_store tags in
       let m =
-        map_load_possible_stores es loads stores compatible_locs_mem in
+        map_load_possible_stores test es loads stores compatible_locs_mem in
       m
 
     let solve_mem_mixed test es rfm cns kont res =
       let match_tags = if morello then []
-        else pair_tags es in
+        else pair_tags test es in
       let tag_loads,tag_possible_stores = List.split match_tags in
       let ms = expose_scas es in
       let rss,wsss = List.split ms in
@@ -1016,7 +1023,9 @@ let match_reg_events es =
 (* Internal filter *)
     let check_filter test fsc = match test.Test_herd.filter with
     | None -> true
-    | Some p -> not C.check_filter || CM.check_prop p (S.size_env test) fsc
+    | Some p ->
+        not C.check_filter ||
+          CM.check_prop p (S.type_env test) (S.size_env test) fsc
 
 (*************************************)
 (* Final condition invalidation mode *)
@@ -1035,14 +1044,16 @@ let match_reg_events es =
     let final_is_relevant test fsc =
       let open ConstrGen in
       let cnstr = T.find_our_constraint test in
-      let senv = S.size_env test in
+      let senv = S.size_env test
+      and tenv = S.type_env test in
+      let check_prop p = CM.check_prop p tenv senv fsc in
       match cnstr with
         (* Looking for 'Allow' witness *)
-      | ExistsState p ->  CM.check_prop p senv fsc
+      | NotExistsState p | ExistsState p -> check_prop p
             (* Looking for witness that invalidates 'Require' *)
-      | ForallStates p -> not (CM.check_prop p senv fsc)
+      | ForallStates p -> not (check_prop p)
             (* Looking for witness that invalidates 'Forbid' *)
-      | NotExistsState p -> CM.check_prop p senv fsc
+
 
     let worth_going test fsc = match C.speedcheck with
     | Speed.True|Speed.Fast -> final_is_relevant test fsc
@@ -1193,9 +1204,9 @@ let match_reg_events es =
             else if morello then
               A.LocSet.map_union
                 (fun loc -> match loc with
-                | A.Location_global (A.V.Val (Constant.Symbolic ((s,t,c),0))) ->
+                | A.Location_global (A.V.Val (Constant.Symbolic ({Constant.offset=0;Constant.name=s;_} as sym))) ->
                     A.LocSet.of_list (A.Location_global (A.V.Val
-                      (Constant.Symbolic ((Misc.add_ctag s,t,c),0)))::[loc])
+                      (Constant.Symbolic {sym with Constant.name=Misc.add_ctag s}))::[loc])
                 | _ -> A.LocSet.singleton loc)
                 locs
             else locs in
@@ -1248,9 +1259,9 @@ let match_reg_events es =
           let compare_index idx e =
             let open Constant in
             match E.global_loc_of e with
-            | Some (V.Val (Symbolic ((s,_,_),_))) when Misc.check_ctag s ->
+            | Some (V.Val (Symbolic {name=s;_})) when Misc.check_ctag s ->
                 Misc.int_compare idx max_int
-            | Some (V.Val (Symbolic (_,i))) -> Misc.int_compare idx i
+            | Some (V.Val (Symbolic {offset=i;_})) -> Misc.int_compare idx i
             | _ -> assert false
 
           let debug_read out = fprintf out "%i"
@@ -1449,15 +1460,17 @@ let match_reg_events es =
         | _ -> true)
         rfm
 
-    let check_sizes es =
+    let check_sizes test es =
       if check_mixed then begin
-        let loc_mems = U.collect_mem es in
+        (* No need to check initial writes, correct by construction. *)  
+        let loc_mems = U.collect_mem_non_init es in
         U.LocEnv.iter
           (fun loc evts ->
             begin match loc with
-            | A.Location_global (V.Val sym)
-              when not (Constant.is_non_mixed_symbol sym)
-              -> Warn.user_error "Illegal mixed-size test"
+            | A.Location_global (V.Val (Constant.Symbolic sym)) ->
+                if not (S.is_non_mixed_symbol test sym) then
+                  Warn.user_error "Illegal mixed-size test on symbol %s"
+                    (A.pp_location loc)
             | _ -> ()
             end ;
             (* hum TODO, init write size should be depend upon declaration and be checked *)
@@ -1527,7 +1540,8 @@ let match_reg_events es =
               | _ ->
                   check_symbolic_locations test es ;
                   if (mixed && not unaligned) then check_aligned test es ;
-                  if A.reject_mixed && not (mixed || memtag || morello) then check_sizes es ;
+                  if A.reject_mixed && not (mixed || memtag || morello) then
+                    check_sizes test es ;
                   if C.debug.Debug_herd.solver && C.verbose > 0 then begin
                     let module PP = Pretty.Make(S) in
                     prerr_endline "Mem solved" ;

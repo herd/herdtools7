@@ -254,7 +254,6 @@ module Make
       let dump_loc_tag = function
         | A.Location_reg (proc,reg) -> A.Out.dump_out_reg proc reg
         | A.Location_global s -> s
-        | A.Location_deref (s,i) -> sprintf "%s_%i" s i
 
       let does_pad t =
         let open CType in
@@ -733,14 +732,19 @@ module Make
             let ins =
               let pp_const v =
                 let open Constant in
-                match v with
+                let rec f v = match v with
                 | Concrete i -> A.V.Scalar.pp Cfg.hexa i
-                | Symbolic ((s,None,0),_) ->
+                | ConcreteVector (_,vs) ->
+                    let pp_vs = List.map f vs in
+                    sprintf "{%s}" (String.concat "," pp_vs)
+                    (* list initializer syntax *)
+                | Symbolic {name=s;tag=None;cap=0;_} ->
                     sprintf "(%s)_vars->%s" (CType.dump at) s
                 | Label _ ->
                     Warn.fatal "PreSi mode cannot handle code labels (yet)"
                 | Symbolic _|Tag _ ->
                     Warn.user_error "Litmus cannot handle tags" in
+                f v in
               match at with
               | Array (t,sz) ->
                   sprintf "for (int _j = 0 ; _j < %i ; _j++) %s"
@@ -785,7 +789,7 @@ module Make
           let to_collect =
             A.LocSet.filter
               (fun loc -> match loc with
-              | A.Location_global s|A.Location_deref (s,_) ->
+              | A.Location_global s ->
                   StringSet.mem s to_collect
               | A.Location_reg _ -> false)
               (U.get_displayed_locs test) in

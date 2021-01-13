@@ -206,11 +206,9 @@ end = struct
   let compatible_categories loc1 loc2 = match loc1,loc2 with
   | (A.Location_global _,A.Location_global _)
   | (A.Location_reg _,A.Location_reg _)
-  | (A.Location_deref _,A.Location_deref _)
     -> true
-  | (A.Location_global _,(A.Location_deref _|A.Location_reg _))
-  | (A.Location_deref _,(A.Location_global _|A.Location_reg _))
-  | (A.Location_reg _,(A.Location_global _|A.Location_deref _))
+  | (A.Location_global _,A.Location_reg _)
+  | (A.Location_reg _,A.Location_global _)
     -> false
 
   let compatible_accesses a1 a2 = match a1,a2 with

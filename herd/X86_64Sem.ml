@@ -106,7 +106,6 @@ module Make (C:Sem.Config)(V : Value.S)
         match loc with
         | A.Location_global l -> read_mem sz data locked l ii
         | A.Location_reg (_, reg) -> read_reg data reg ii
-        | _ -> M.read_loc data (mk_read sz false) loc ii
         end >>= mask_from_reg_part (if data
                                     then (inst_size_to_reg_size (get_inst_size ii.X86_64.inst))
                                     else X86_64.R64b)
@@ -152,7 +151,6 @@ module Make (C:Sem.Config)(V : Value.S)
       let write_loc_gen sz locked loc v ii = match loc with
         | A.Location_global l -> write_mem sz locked l v ii
         | A.Location_reg (_, reg) -> write_reg reg v ii
-        | _ -> write_loc sz locked loc v ii
 
       let write_mem_atomic sz a v ii = write_mem sz true a v ii
 

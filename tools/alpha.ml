@@ -58,14 +58,16 @@ struct
 
   let collect_location loc regs = match loc with
   | A.Location_reg (p,r) -> ProcRegSet.add (p,r) regs
-  | A.Location_global _|A.Location_deref _ -> regs
+  | A.Location_global _ -> regs
+
+  let collect_rloc = ConstrGen.fold_rloc collect_location
 
   let collect_state_atom (loc,_) = collect_location loc
 
   let collect_atom a regs =
     let open ConstrGen in
     match a with
-    | LV (loc,_) -> collect_location loc regs
+    | LV (rloc,_) -> collect_rloc rloc regs
     | LL (loc1,loc2) ->  collect_location loc1 (collect_location loc2 regs)
     | FF (_,x) -> collect_location (A.Location_global x) regs
 
@@ -73,7 +75,8 @@ struct
 
   let collect_constr = ConstrGen.fold_constr collect_atom
 
-  let collect_locs = List.fold_right (fun (loc,_) -> collect_location loc)
+  let collect_locs =
+    List.fold_right (fun (loc,_) -> collect_rloc loc)
 
 
 (***************************)
@@ -98,12 +101,14 @@ struct
 
   let alpha_location f = function
     | A.Location_reg (p,r) -> f (p,r)
-    | A.Location_global _|A.Location_deref _ as loc -> loc
+    | A.Location_global _ as loc -> loc
+
+  let alpha_rloc f = ConstrGen.map_rloc (alpha_location f)
 
   let alpha_atom f a =
     let open ConstrGen in
     match a with
-    | LV (loc,v) -> LV (alpha_location f loc,v)
+    | LV (rloc,v) -> LV (alpha_rloc f rloc,v)
     | LL (loc1,loc2) -> LL (alpha_location f loc1,alpha_location f loc2)
     | FF (_,x) -> ignore (Constant.check_sym x) ; a
 
@@ -111,7 +116,8 @@ struct
 
   let alpha_state f = List.map (alpha_state_atom f)
 
-  let alpha_locations f = alpha_state f (* Oups *)
+  let alpha_locations f =
+    List.map (fun (rloc,t) -> alpha_rloc f rloc,t)
 
   let alpha_constr f = ConstrGen.map_constr (alpha_atom f)
 
@@ -173,14 +179,16 @@ struct
     let notag_value () = Warn.user_error "No tag value for %s" Sys.argv.(0)
 
     let collect_value f v k = match v with
-    | Symbolic ((s,_,_),_) -> f s k
+    | Symbolic {name=s;_} -> f s k
     | Concrete _ -> k
+    | ConcreteVector _ -> k
     | Label _ -> nolabel_value ()
     | Tag _ -> notag_value ()
 
     let map_value f v = match v with
-    | Symbolic ((s,t,c),o) -> Symbolic ((f s,t,c),o)
+    | Symbolic ({name=s;_} as sym) -> Symbolic {sym with name=f s}
     | Concrete _ -> v
+    | ConcreteVector _ -> v
     | Label _ -> nolabel_value ()
     | Tag _ -> notag_value ()
 
@@ -202,12 +210,15 @@ struct
 
     let collect_location f loc k = match loc with
     | A.Location_reg _ -> k
-    | A.Location_global v|A.Location_deref (v,_) -> collect_value f v k
+    | A.Location_global v -> collect_value f v k
+
+    let collect_rloc f  = ConstrGen.fold_rloc (collect_location f)
 
     let map_location f loc = match loc with
     | A.Location_reg _ -> loc
     | A.Location_global v -> A.Location_global (map_value f v)
-    | A.Location_deref (v,idx) -> A.Location_deref (map_value f v,idx)
+
+    let my_map_rloc f = ConstrGen.map_rloc (map_location f)
 
     let collect_state_atom f (loc,(_,v)) k =
       collect_location f loc (collect_value f v k)
@@ -215,8 +226,8 @@ struct
     let collect_atom f a k =
       let open ConstrGen in
       match a with
-      | LV (loc,v) ->
-          collect_location f loc (collect_value f v k)
+      | LV (rloc,v) ->
+          collect_rloc f rloc (collect_value f v k)
       | LL (loc1,loc2) ->
           collect_location f loc1 (collect_location f loc2 k)
       | FF (_,x) ->
@@ -231,8 +242,8 @@ struct
     let map_atom f a =
       let open ConstrGen in
       match a with
-      | LV (loc,v) ->
-          LV (map_location f loc,map_value f v)
+      | LV (rloc,v) ->
+          LV (my_map_rloc f rloc,map_value f v)
       | LL (loc1,loc2) ->
           LL (map_location f loc1,map_location f loc2)
       | FF(p,x) -> FF (p,map_global f x)
@@ -246,10 +257,10 @@ struct
     let map_constr f = ConstrGen.map_constr (map_atom f)
 
     let collect_locs f =
-      List.fold_right (fun (loc,_) -> collect_location f loc)
+      List.fold_right (fun (loc,_) -> collect_rloc f loc)
 
     let map_locs f =
-      List.map (fun (loc,t) -> map_location f loc,t)
+      List.map (fun (loc,t) -> my_map_rloc f loc,t)
 
     module StringSet = MySet.Make(String)
 

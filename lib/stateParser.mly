@@ -18,14 +18,17 @@
 open Constant
 open MiscParser
 open ConstrGen
-let mk_sym_tag s t = Symbolic ((s,Some t,0),0)
+let mk_sym_tag s t =
+  Symbolic {default_symbolic_data with name=s;tag=Some t;}
 let mk_sym_morello p s t =
   let p_int = (Misc.string_as_int p) in
   if p_int land 0x7 <> 0 || p_int >= 1 lsl 36
     then Printf.eprintf "Warning: incorrect address encoding: %#x\n" p_int ;
   let truncated_perms = p_int lsr 3 in
   let tag = if Misc.string_as_int t <> 0 then 1 else 0 in
-  Symbolic ((s,None,truncated_perms lor (tag lsl 33) ),0)
+  Symbolic {default_symbolic_data with name=s;cap=truncated_perms lor (tag lsl 33)}
+let mk_sym_with_index s i = Symbolic
+  {default_symbolic_data with name=s; offset=Misc.string_as_int i}
 let mk_lab p s = Label (p,s)
 %}
 
@@ -40,7 +43,7 @@ let mk_lab p s = Label (p,s)
 %token EQUAL NOTEQUAL EQUALEQUAL
 %token FINAL FORALL EXISTS OBSERVED TOKAND NOT AND OR IMPLIES WITH FILTER
 %token LOCATIONS FAULT STAR
-%token LBRK RBRK LPAR RPAR SEMI COLON AMPER COMMA
+%token LBRK RBRK LPAR RPAR LCURLY RCURLY SEMI COLON AMPER COMMA
 %token ATOMIC
 %token ATOMICINIT
 
@@ -56,13 +59,13 @@ let mk_lab p s = Label (p,s)
 %start init
 %type <MiscParser.location> main_location
 %start main_location
-%type <(MiscParser.location * MiscParser.run_type) list * MiscParser.prop option * MiscParser.constr * (string * MiscParser.quantifier) list> constraints
+%type <(MiscParser.location ConstrGen.rloc * MiscParser.run_type) list * MiscParser.prop option * MiscParser.constr * (string * MiscParser.quantifier) list> constraints
 %start constraints
 %type  <MiscParser.constr> main_constr
 %start main_constr
 %type  <MiscParser.constr> skip_loc_constr
 %start skip_loc_constr
-%type  <(MiscParser.location * MiscParser.run_type) list * MiscParser.constr> main_loc_constr
+%type  <(MiscParser.location ConstrGen.rloc * MiscParser.run_type) list * MiscParser.constr> main_loc_constr
 %start main_loc_constr
 %type <MiscParser.location list> main_locs
 %start main_locs
@@ -79,22 +82,30 @@ reg:
 | NAME       {  $1 }
 | DOLLARNAME {  $1 }
 
-maybev_notag:
-| NUM  { Concrete $1 }
+location_global:
 | NAME { mk_sym $1  }
 | NAME COLON NAME { mk_sym_tag $1 $3 }
 (* TODO: have MTE and Morello tags be usable at the same time? *)
 | NUM COLON NAME COLON NUM {mk_sym_morello $1 $3 $5}
 | NAME COLON NUM { mk_sym_morello "0" $1 $3 }
+
+maybev_notag:
+| location_global { $1 }
+| NUM  { Concrete $1 }
 /* conflicts with location_reg:
 | NUM COLON NAME { mk_sym_morello $1 $3 "0" }
 */
 (* TODO: restrict to something like "NUM COLON BOOL"? *)
 | NUM COLON NUM { Concrete ($1 ^ ":" ^ $3) }
+| NAME LBRK NUM RBRK { mk_sym_with_index $1 $3 }
 
 maybev:
 | maybev_notag { $1 }
 | COLON NAME  { Tag $2 }
+
+maybev_list:
+| maybev_notag COMMA maybev_list { $1::$3 }
+| maybev_notag { [$1] }
 
 maybev_label:
 | maybev { $1 }
@@ -125,9 +136,7 @@ main_location:
 
 location:
 | location_reg { $1 }
-| LBRK maybev_notag RBRK {Location_global $2}
-/* Hum, for backward compatibility, and compatibility with printer */
-| maybev_notag { Location_global $1 }
+| location_global { Location_global $1 }
 
 atom:
 | location {($1,ParsedConstant.zero)}
@@ -135,17 +144,30 @@ atom:
 
 atom_init:
 | atom { let x,v = $1 in x,(TyDef,v) }
-| NAME location { $2,(Ty $1,ParsedConstant.zero)}
+| NAME location
+/* We either have uninitalized arrays or scalars here: "typ v[i]" or "typ v" */
+   { match $2 with
+     | Location_global (Symbolic ({offset=sz;_} as s)) when sz > 0 ->
+       let xs = Misc.replicate sz ParsedConstant.zero in
+       let arr = TyArray ($1,sz),Constant.mk_vec sz xs in
+       (Location_global (Symbolic ({s with offset=0})), arr)
+     | _ -> ($2, (Ty $1,ParsedConstant.zero)) }
 | ATOMIC NAME location { $3,(Atomic $2,ParsedConstant.zero)}
 | NAME location EQUAL maybev { ($2,(Ty $1,$4))}
+| NAME locindex EQUAL LCURLY maybev_list RCURLY
+   { match $2 with
+     | Deref (Location_global (Symbolic ({offset=0;_})) as s,sz) when sz = List.length $5 ->
+       let arr = (TyArray ($1,sz),Constant.mk_vec sz $5) in
+       (s, arr)
+     | _ -> assert false }
+/* prohibit "v[i] = scalar" form in init allow only "v[i]={scalar_list}" */
+| locindex EQUAL maybev { raise Parsing.Parse_error }
+| NAME locindex EQUAL maybev { raise Parsing.Parse_error }
 | NAME location EQUAL ATOMICINIT LPAR maybev RPAR { ($2,(Ty $1,$6))}
 | NAME STAR location { ($3,(Pointer $1,ParsedConstant.zero))}
 | NAME STAR location EQUAL amperopt maybev { ($3,(Pointer $1,$6))}
 | STAR location { ($2,(TyDefPointer,ParsedConstant.zero))}
 | STAR location EQUAL amperopt maybev { ($2,(TyDefPointer,$5))}
-| NAME NAME LBRK NUM RBRK
-    { (Location_global (Constant.mk_sym $2),
-       (TyArray ($1,Misc.string_as_int $4),ParsedConstant.zero)) }
 
 amperopt:
 | AMPER { () }
@@ -161,28 +183,23 @@ init_semi_list:
 
 /* For final state constraints */
 
-loc_deref:
-NAME LBRK NUM RBRK
-  { Location_deref (Constant.mk_sym $1, Misc.string_as_int $3) }
-
-loc_typ:
-| loc_deref { ($1,TyDef) }
-| location { ($1, TyDef) }
-| location STAR { ($1, TyDefPointer) }
-| location NAME { ($1, Ty $2) }
-| location NAME STAR { ($1, Pointer $2) }
+rloc_typ:
+| rloc { ($1, TyDef) }
+| rloc STAR { ($1, TyDefPointer) }
+| rloc NAME { ($1, Ty $2) }
+| rloc NAME STAR { ($1, Pointer $2) }
 
 main_locs:
 | ls = list(location)  EOF { ls }
 
-loc_semi_list:
+rloc_semi_list:
 | {[]}
 | SEMI {[]}
-| loc_typ {$1::[]}
-| loc_typ SEMI loc_semi_list  {$1::$3}
+| rloc_typ {$1::[]}
+| rloc_typ SEMI rloc_semi_list  {$1::$3}
 
 locations:
-|  LOCATIONS LBRK loc_semi_list RBRK { $3 }
+|  LOCATIONS LBRK rloc_semi_list RBRK { $3 }
 | { [] }
 
 filter:
@@ -258,13 +275,21 @@ lbl:
 | PROC { ($1,None) }
 | PROC COLON NAME { ($1,Some $3) }
 
+rloc:
+| location { Loc $1 }
+| locindex { $1 }
+
+locindex:
+| location LBRK NUM RBRK { Deref ($1,Misc.string_as_int $3) }
+
+
 atom_prop:
-| loc_deref  EQUAL maybev {Atom (LV ($1,$3))}
-| location EQUAL maybev {Atom (LV ($1,$3))}
-| loc_deref  EQUALEQUAL maybev {Atom (LV ($1,$3))}
-| location EQUALEQUAL maybev {Atom (LV ($1,$3))}
-| loc_deref  NOTEQUAL maybev {Not (Atom (LV ($1,$3)))}
-| location NOTEQUAL maybev {Not (Atom (LV ($1,$3)))}
+| location EQUAL maybev {Atom (LV (Loc $1,$3))}
+| location EQUALEQUAL maybev {Atom (LV (Loc $1,$3))}
+| locindex EQUAL maybev {Atom (LV ($1,$3))}
+| locindex EQUALEQUAL maybev {Atom (LV ($1,$3))}
+| location NOTEQUAL maybev {Not (Atom (LV (Loc $1,$3)))}
+| locindex NOTEQUAL maybev {Not (Atom (LV ($1,$3)))}
 | location EQUAL location_deref {Atom (LL ($1,$3))}
 | location EQUALEQUAL location_deref {Atom (LL ($1,$3))}
 | FAULT LPAR lbl COMMA NAME RPAR { Atom (FF ($3,mk_sym $5)) }

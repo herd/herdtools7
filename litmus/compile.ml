@@ -45,9 +45,12 @@ module Generic (A : Arch_litmus.Base)
       let pointer = CType.Pointer base
       let code_pointer = Pointer (Base "ins_t")
       let tag = Base "tag_t"
+      let array_ty sz = CType.Array ("int", sz)
+        (* is it right to assume int as the base type?*)
 
       let typeof = function
         | Constant.Concrete _ -> base
+        | Constant.ConcreteVector (sz,_) -> array_ty sz
         | Constant.Symbolic _ -> pointer
         | Constant.Label _ -> code_pointer
         | Constant.Tag _ -> tag
@@ -79,7 +82,8 @@ module Generic (A : Arch_litmus.Base)
              (fun a t ->
                let open ConstrGen in
                match a with
-               | LV (A.Location_reg (q,r),v) when p=q && A.reg_compare reg r = 0 ->
+               | LV (Loc (A.Location_reg (q,r)),v)
+                     when p=q && A.reg_compare reg r = 0 ->
                    begin match typeof v,t with
                    | (Base _, Some (Base _)) ->
                    t (* location takes precedence *)
@@ -137,11 +141,14 @@ module Generic (A : Arch_litmus.Base)
       let type_atom_final a env =
         let open ConstrGen in
         match a with
-        | LV (loc,v) ->
+        | LV (Loc loc,v) ->
             begin try
               ignore (A.LocMap.find loc env) ;
               env
             with Not_found ->  A.LocMap.add loc (typeof v) env end
+        | LV (Deref _,_) ->
+            prerr_endline "TODO" ;
+            assert false
         | LL _|FF _ -> env
 
       let type_final final env =
@@ -152,12 +159,18 @@ module Generic (A : Arch_litmus.Base)
 (* locations, default and explicit types *)
       let type_locations flocs env =
         List.fold_left
-          (fun env (loc,t) ->
-            try
-              ignore (A.LocMap.find loc env) ; env
-            with
-            | Not_found ->
-                A.LocMap.add loc (misc_to_c t) env)
+          (fun env (rloc,t) ->
+            let open ConstrGen in
+            match rloc with
+            | Loc loc ->
+                begin try
+                    ignore (A.LocMap.find loc env) ; env
+                  with
+                  | Not_found ->
+                      A.LocMap.add loc (misc_to_c t) env
+                end
+            | Deref _ ->
+                prerr_endline "TODO" ; assert false)
           env flocs
 
 (* init, default and explicit types *)
@@ -180,7 +193,7 @@ module Generic (A : Arch_litmus.Base)
         List.fold_left
           (fun env (loc,(t,v)) -> match loc,v with
           | _,Constant.Concrete _ -> env
-          | A.Location_global _,Constant.Symbolic ((s,_,_),_) ->
+          | A.Location_global _,Constant.Symbolic {Constant.name=s;_} ->
               let a = A.Location_global s in
               begin try
                 ignore (A.LocMap.find a env) ;
@@ -238,10 +251,17 @@ module Generic (A : Arch_litmus.Base)
         with Not_found -> Warn.fatal "no type for %s" (A.pp_location loc)
 
 (* All observed locations *)
+      let observed_in_rloc =
+        let open ConstrGen in
+        function
+        | Loc loc,_ -> loc
+        | Deref _,_ -> prerr_endline "TODO" ; assert false
+
       let observed final locs =
         A.LocSet.union
           (C.locations final)
-          (A.LocSet.of_list (List.map fst locs))
+          (A.LocSet.of_list
+             (List.map observed_in_rloc locs))
 
       let all_observed final filter locs =
         let obs = observed final locs in
@@ -362,7 +382,7 @@ type P.code = MiscParser.proc * A.pseudo list)
 
     let as_int = function
       | Concrete i -> i
-      | Symbolic _|Label _|Tag _ -> raise CannotIntern
+      | Symbolic _|Label _|Tag _|ConcreteVector _ -> raise CannotIntern
 
 
     let compile_pseudo_code code k =
@@ -579,7 +599,7 @@ type P.code = MiscParser.proc * A.pseudo list)
           (fun (_,(t,v)) env ->
             match t,v with
             | (MiscParser.TyDef|MiscParser.TyDefPointer),
-              Constant.Symbolic ((a,_,_),_) ->
+              Constant.Symbolic {Constant.name=a;_} ->
                 begin try
                   let _ = StringMap.find a env in
                   env
@@ -641,13 +661,21 @@ type P.code = MiscParser.proc * A.pseudo list)
           A.RegSet.of_list rs in
       let code = mk_templates ty_env1 name stable_info initenv code observed in
       let code_typed = type_outs ty_env1 code in
-        { T.init = initenv ;
+      let flocs =
+        let open ConstrGen in
+        List.map
+          (fun (rloc,_) ->
+            match rloc with
+            | Loc loc -> loc
+            | Deref _ -> prerr_endline "TODO" ; assert false)
+          locs in
+      { T.init = initenv ;
           info = info;
           code = code_typed;
           condition = final;
           filter = filter;
           globals = comp_globals ty_env1 init code;
-          flocs = List.map fst locs ;
+          flocs;
           global_code = [];
           src = t;
           type_env = ty_env;

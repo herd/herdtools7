@@ -17,10 +17,25 @@
 (** Generic part of constraint (ie the one to be checked
    at the end of test run) *)
 
+(* Type of locations on the right of LV atoms *)
+
+type 'loc rloc =
+  | Loc of 'loc
+  | Deref of 'loc * int
+
+val dump_rloc : ('loc -> string) -> 'loc rloc -> string
+
+val compare_rloc : ('loc -> 'loc -> int) -> 'loc rloc -> 'loc rloc -> int
+
+val loc_of_rloc : 'loc rloc -> 'loc
+
+val map_rloc : ('a -> 'b) -> 'a rloc -> 'b rloc
+
+val fold_rloc : ('loc -> 'b -> 'c) -> 'loc rloc -> 'b -> 'c
 
 (* Type of propositions and constraint *)
 type ('loc,'v) atom =
-  | LV of 'loc * 'v
+  | LV of 'loc rloc * 'v
   | LL of 'loc * 'loc
   | FF of 'v Fault.atom
 
