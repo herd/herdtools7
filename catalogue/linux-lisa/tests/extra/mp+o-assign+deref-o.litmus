@@ -1,9 +1,0 @@
-LISA MP+o-assign+deref-o
-{
-a = 1;
-x = 2;
-}
- P0              | P1            ;
- w[once] a 3     | r[deref] r1 x ;
- w[assign] x 4   | r[once] r2 a  ;
-exists (1:r1 = 4 /\ 1:r2 = 1)

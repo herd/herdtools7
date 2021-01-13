@@ -1,9 +1,0 @@
-LISA SB+rel-o+rel-o
-{
-x = 0;
-y = 0;
-}
- P0              | P1              ;
- w[release] x 1  | w[release] y 1  ;
- r[once] r2 y    | r[once] r4 x    ;
-exists (0:r2=0 /\ 1:r4=0)

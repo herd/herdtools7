@@ -1,5 +1,0 @@
-"Queue"
-
-include "mike.cat"
-
-irreflexive pr;val;pr;val^-1 as queue

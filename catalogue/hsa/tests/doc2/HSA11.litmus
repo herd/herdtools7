@@ -1,8 +1,0 @@
-LISA HSA11
-{ }
- P0                         | P1                         ;
- r[atomic,rlx,system] r0 x  | r[atomic,rlx,system] r0 y  ;
- w[atomic,rlx,system] y r0  | w[atomic,rlx,system] x r0  ;
-
-scopes: (wg 0 1)
-~exists (not (0:r0 = 0) \/ not (1:r0 = 0))

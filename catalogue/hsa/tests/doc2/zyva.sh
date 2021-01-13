@@ -1,5 +1,0 @@
-#diyone7 -bell ../../bells/H.bell RfeAScrelWgAScacqWg PodRR FreAScacqWgP RfeAScrelWgAScacqWg PodRR FreAScacqWgP "$@"
-#diyone7 -bell ../../bells/H.bell PodWW RfeAScrelWgAScacqWg PodRR Fre -check true -name HSA02 -scopes "(wg 0 1)"
-#diyone7 -bell ../../bells/H.bell PodWW RfeAScrelSystemAScacqSystem PodRW RfeAScrelSystemAScacqSystem PodRR Fre -check true -name HSA03 -scopes "(wg 0 1 2)"
-#diyone7 -bell ../../bells/luc.bell FenceScrelWgdWW RfeARlxWgARlxWg FenceScacqWgdRR Fre -check true -name HSA09 -scopes "(wg 0 1)"
-# diyone7 -name HSA10 -check true -bell ../../bells/luc.bell PodRW Rfe PodRW Rfe -scopes "(wg 0 1)"

@@ -1,4 +1,0 @@
-"Coherence"
-
-let com = rf | co | fr
-acyclic po-loc | com as coherence

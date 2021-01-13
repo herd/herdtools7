@@ -1,1 +1,0 @@
-jingle7 -theme BelltoAArch64.theme -o . ../SIMPLE/@all 

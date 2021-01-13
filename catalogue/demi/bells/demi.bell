@@ -1,5 +1,0 @@
-"Bell"
-
-let fence = po & (_ * F) ; po
-show po
-include "cos.cat"

@@ -1,1 +1,0 @@
-jingle7 -theme BelltoARM.theme -o . ../SIMPLE/@all 

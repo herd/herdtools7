@@ -1,5 +1,0 @@
-"SC with coh"
-
-include "sc.cat"
-let coh = (fr|co|rf)+
-empty rmw & (fre;coe)

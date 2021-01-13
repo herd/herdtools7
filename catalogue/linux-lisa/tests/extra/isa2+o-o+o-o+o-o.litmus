@@ -1,9 +1,0 @@
-LISA ISA2+o-o+o-o+o-o
-{
-a = 1;
-x = 2;
-}
- P0           | P1            | P2;
- w[once] a 3  | r[once] r1 x  | r[once] r3 c  ;
- w[once] x 4  | w[once] c 1   | r[once] r2 a  ;
-exists (1:r1 = 4 /\ 2:r3 = 1 /\ 2:r2 = 1)

@@ -1,8 +1,0 @@
-LISA sb+wi
-{
-}
- P0                     | P1                     ;
- w[atomic,scar,wg] x 1  | w[atomic,scar,wg] y 1  ;
- r[atomic,scar,wg] r0 y | r[atomic,scar,wg] r0 x ;
-scopes: (wg 0 1)
-~exists (0:r0=0 /\ 1:r0=0)

@@ -1,7 +1,0 @@
-"sc per location"
-
-let com = rf | co | fr
-
-procedure sc-per-location() =
-  acyclic po-loc | com
-end

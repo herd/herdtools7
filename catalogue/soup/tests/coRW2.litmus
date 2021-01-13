@@ -1,8 +1,0 @@
-Bell coRW2
-{
-x = 0;
-}
- P0       | P1      ;
- r[] r1 x | w[] x 2 ;
- w[] x 1  |         ;
-exists (0:r1=2 /\ x=2)

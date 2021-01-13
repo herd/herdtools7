@@ -1,9 +1,0 @@
-LISA WRC+rel+acq-rel+acq-rel (*Paul says forbid tentatively*)
-{
-x = 0;
-y = 0;
-}
- P0              | P1              | P2              ;
- w[release] y 1  | r[acquire] r3 y | r[acquire] r1 x ;
-                 | w[release] x 1  | r[acquire] r2 y ;
-exists (1:r3=1 /\ 2:r1=1 /\ 2:r2=0)

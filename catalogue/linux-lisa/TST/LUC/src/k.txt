@@ -1,2 +1,0 @@
-LB+ctrls Forbid
-3.LB+ctrls Forbid
