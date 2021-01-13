@@ -244,8 +244,12 @@ module Make
           AArch64.AF
 
       and test_and_set_db =
-        test_and_set_bit (fun v -> M.op1 Op.DB v >>= is_zero) AArch64.DB
-
+        test_and_set_bit
+          (fun v ->
+            m_op Op.And
+              (bit_is_zero Op.DB v) (bit_is_not_zero Op.Valid v))
+          AArch64.DB
+        
       let mextract_pte_vals pte_v =
         (extract_oa pte_v >>|
         extract_el0 pte_v >>|
