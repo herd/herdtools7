@@ -15,6 +15,7 @@
 open Printf
 
 let verbose = ref false
+let libdir = ref (Filename.concat Version.libdir "jingle")
 let includes = ref []
 let map = ref None
 let call = ref None
@@ -32,12 +33,14 @@ let () =
     ["-version",
      Arg.Unit
        (fun () ->
-         printf "%s, Rev: %s\n" Version_jingle.version Version_jingle.rev ;
+         printf "%s, Rev: %s\n" Version.version Version.rev ;
          exit 0),
      " - show version number and exit" ;
      "-libdir",
-     Arg.Unit (fun () -> print_endline Version_jingle.libdir; exit 0),
+     Arg.Unit (fun () -> print_endline !libdir; exit 0),
      " - show installation directory and exit";
+     "-set-libdir", Arg.String (fun s -> libdir := s),
+     "<path> set installation directory to <path>";
      "-v",Arg.Unit (fun () -> verbose := true),
      "- be verbose";
      "-I", Arg.String (fun s -> includes := !includes @ [s]),
@@ -67,7 +70,7 @@ let libfind =
       (struct
         let includes = includes
         let env = None
-        let libdir = Version_jingle.libdir
+        let libdir = !libdir
         let debug = verbose
       end) in
   ML.find

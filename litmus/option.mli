@@ -35,6 +35,9 @@ val argfloato : string -> float option ref -> string -> arg_triple
 (* Verbose *)
 val verbose : int ref
 
+(* Libdir *)
+val libdir : string ref
+
 (* Somehow special *)
 val cross : bool ref
 val set_tar : string -> unit

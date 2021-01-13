@@ -46,7 +46,7 @@ let open_lib name =
   with Exit -> try match envlib with
   | Some lib -> try_open lib name
   | None -> raise Exit
-  with Exit -> try try_open Version_litmus.libdir name
+  with Exit -> try try_open !Option.libdir name
   with Exit -> Warn.fatal "Cannot find file %s" name
 
 
