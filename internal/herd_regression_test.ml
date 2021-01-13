@@ -28,7 +28,7 @@ let litmuses_of_dir dir =
 
 let show_tests herd libdir litmus_dir =
   let litmuses = litmuses_of_dir litmus_dir in
-  let commands = List.map (TestHerd.herd_command herd libdir) litmuses in
+  let commands = List.map (fun l -> TestHerd.herd_command herd libdir [l]) litmuses in
   Channel.write_lines stdout commands
 
 let run_tests herd libdir litmus_dir =
@@ -47,7 +47,7 @@ let run_tests herd libdir litmus_dir =
 
 let promote_tests herd libdir litmus_dir =
   let litmuses = litmuses_of_dir litmus_dir in
-  let outputs = List.map (TestHerd.run_herd herd libdir) litmuses in
+  let outputs = List.map (fun l -> TestHerd.run_herd herd libdir [l]) litmuses in
   let expecteds = List.map TestHerd.expected_of_litmus litmuses in
   let expected_failures = List.map TestHerd.expected_failure_of_litmus litmuses in
   let write_file (path, (lines,_)) =

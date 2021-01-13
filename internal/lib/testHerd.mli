@@ -14,17 +14,28 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** [herd_command herd libdir litmus] returns the command line that [run_herd]
+(* Utilities for running Herd binaries in tests. *)
+
+(** [herd_command ?bell ?cat ?variants herd libdir litmuses] returns the command line that [run_herd]
   * would run. *)
-val herd_command: string -> string -> string -> string
+val herd_command :
+  ?bell:string ->
+  ?cat:string ->
+  ?variants:string list ->
+    string -> string -> string list -> string
 
 type stdout_lines = string list
 type stderr_lines = string list
 
-(** [run_herd herd libdir litmus] runs the binary [herd] with a custom [libdir]
-  * on a [litmus] file, and returns the stdout with unstable lines removed (e.g.
-  * Time) and stderr *)
-val run_herd : string -> string -> string -> stdout_lines * stderr_lines
+(** [run_herd ?bell ?cat ?variants herd libdir litmuses] runs the binary [herd]
+  * with a custom [libdir] on a [litmuses] files, and returns the stdout with
+  * unstable lines removed (e.g. Time) and stderr. Paths to cat & bell files,
+  * as well as variants, can also be passed in. *)
+val run_herd :
+  ?bell:string ->
+  ?cat:string ->
+  ?variants:string list ->
+    string -> string -> string list -> stdout_lines * stdout_lines
 
 (** [herd_output_matches_expected herd libdir litmus expected expected_failure] runs the binary
   * [herd] with a custom [libdir] on a [litmus] file, and compares the output

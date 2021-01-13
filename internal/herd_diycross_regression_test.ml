@@ -48,7 +48,7 @@ let show_tests flags =
   let litmuses = List.filter TestHerd.is_litmus (list_dir tmp_dir) in
 
   let litmus_paths = concat_dir tmp_dir litmuses in
-  let commands = List.map (TestHerd.herd_command flags.herd flags.libdir) litmus_paths in
+  let commands = List.map (fun l -> TestHerd.herd_command flags.herd flags.libdir [l]) litmus_paths in
   Channel.write_lines stdout commands
 
 
@@ -112,7 +112,7 @@ let promote_tests flags =
   let litmus_paths = concat_dir tmp_dir litmuses in
   let expected_paths = concat_dir flags.expected_dir expecteds in
 
-  let outputs = List.map (TestHerd.run_herd flags.herd flags.libdir) litmus_paths in
+  let outputs = List.map (fun l -> TestHerd.run_herd flags.herd flags.libdir [l]) litmus_paths in
   let write_file (path, (lines,_)) =
     Filesystem.write_file path (fun o -> Channel.write_lines o lines) in
   List.combine expected_paths outputs |> List.iter write_file ;
