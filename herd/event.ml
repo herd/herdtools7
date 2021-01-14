@@ -1619,13 +1619,14 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
              wrs.intra_causality_data
              rm.intra_causality_data)
           (EventRel.union
-             (EventRel.cartesian output_rn input_rm)
-             (EventRel.cartesian output_rm input_wrs));
+             (EventRel.cartesian output_rn input_rm)    (* D1 *)
+             (EventRel.cartesian output_rm input_wrs)); (* Df1 *)
         intra_causality_control =
-        EventRel.union5
+        EventRel.union6
           rn.intra_causality_control rs.intra_causality_control
           wrs.intra_causality_control rm.intra_causality_control
-          (EventRel.cartesian output_rs input_wrs);
+          (EventRel.cartesian output_rs input_wrs)      (* C1 *)
+          (EventRel.cartesian output_rm input_wrs);     (* C2 *)
         control =
         EventRel.union4 rn.control rs.control rm.control wrs.control;
         data_ports =
@@ -1678,10 +1679,10 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
              rm.intra_causality_data
              wm.intra_causality_data)
           (EventRel.union4
-             (EventRel.cartesian output_rn input_rm)
-             (EventRel.cartesian output_rn input_wm)
-             (EventRel.cartesian (maximals rt) input_wm)
-             (EventRel.cartesian output_rm input_wrs));
+             (EventRel.cartesian output_rn input_rm)       (* D1 *)
+             (EventRel.cartesian output_rs input_wrs)      (* Ds1 *)
+             (EventRel.cartesian output_rn input_wm)       (* Ds2 *)      
+             (EventRel.cartesian (maximals rt) input_wm)); (* Ds3 *)
         intra_causality_control =
         EventRel.union
           (EventRel.union6
@@ -1691,10 +1692,11 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
              wrs.intra_causality_control
              rm.intra_causality_control
              wm.intra_causality_control)
-          (EventRel.union3
-             (EventRel.cartesian output_rs input_wrs)
-             (EventRel.cartesian output_rs input_wm)
-             (EventRel.cartesian output_rm input_wm));
+          (EventRel.union4
+             (EventRel.cartesian output_rs input_wrs)  (* C1 *)
+             (EventRel.cartesian output_rm input_wrs)  (* C2 *)
+             (EventRel.cartesian output_rs input_wm)   (* Cs1 *) 
+             (EventRel.cartesian output_rm input_wm)); (* Cs2 *)
         control =
         (EventRel.union6
            rn.control rs.control rt.control
