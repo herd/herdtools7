@@ -985,7 +985,7 @@ module Make
         let hashsz = match Cfg.check_nstates tname with
         | Some sz -> 3*sz
         | None -> hash_size (A.LocSet.cardinal locs) in
-        let hashsz = List.fold_left (fun k _ -> 2*k) hashsz faults in
+        let hashsz = 1+List.fold_left (fun k _ -> 2*k) hashsz faults in
         O.f "#define HASHSZ %i" hashsz ;
         O.o "" ;
         ObjUtil.insert_lib_file O.o "_hash.c" ;
