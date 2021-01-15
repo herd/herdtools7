@@ -20,6 +20,9 @@
 module Fun = struct
   exception Finally_raised of exn
 
+  let negate f =
+    fun a -> not (f a)
+
   let protect ~finally f =
     let finally' () =
       try finally ()
@@ -66,6 +69,11 @@ module Option = struct
     match o with
     | None -> default
     | Some v -> v
+
+  let is_none o =
+    match o with
+    | None -> true
+    | Some _ -> false
 
   let compare cf a b =
     match a, b with

@@ -151,6 +151,19 @@ let parse_kind = function
   | ""|"Unknown"|"???"|"---" -> Some Unconstrained
   | _ -> None
 
+let compare_kind a b =
+  match a, b with
+  | Allow, Allow -> 0
+  | Allow, _ -> -1
+  | _, Allow -> 1
+  | Forbid, Forbid -> 0
+  | Forbid, _ -> -1
+  | _, Forbid -> 1
+  | Require, Require -> 0
+  | Require, _ -> -1
+  | _, Require -> 1
+  | Unconstrained, Unconstrained -> 0
+
 let rec fold_prop f_atom p = match p with
 | Atom a -> f_atom a
 | Not p -> fold_prop f_atom p

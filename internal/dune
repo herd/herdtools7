@@ -1,4 +1,5 @@
 (executables
- (names herd_regression_test herd_diycross_regression_test lint_shelves)
+ (names herd_catalogue_regression_test herd_diycross_regression_test
+   herd_regression_test lint_shelves)
  (libraries internal_lib)
  (modes native))

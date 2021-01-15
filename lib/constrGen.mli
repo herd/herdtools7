@@ -75,6 +75,7 @@ val kind_of : 'a constr -> kind
 val set_kind : kind -> 'a constr -> 'a constr
 val pp_kind : kind -> string
 val parse_kind : string -> kind option
+val compare_kind : kind -> kind -> int
 
 (* Polymorphic constraint combinators *)
 

@@ -3,6 +3,10 @@ D=dune
 #For building with ocamlbuild set
 #D=ocb
 
+REGRESSION_TEST_MODE = test
+# REGRESSION_TEST_MODE = promote
+# REGRESSION_TEST_MODE = show
+
 OPAM_DEPS = menhir
 
 ifeq ($(D), dune)
@@ -83,7 +87,7 @@ test::
 		-herd-path $(HERD) \
 		-libdir-path ./herd/libdir \
 		-litmus-dir ./herd/tests/instructions/AArch64 \
-		test
+		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 instructions tests: OK"
 
 test::
@@ -98,5 +102,49 @@ test::
 		-relaxlist 'Rfe,Fre,Coe' \
 		-relaxlist 'Pod**,Fenced**,DpAddrdR,DpAddrdW,DpDatadW,CtrldR,CtrldW' \
 		-relaxlist 'Rfe,Fre,Coe' \
-		test
+		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 diycross7 tests: OK"
+
+test::
+	@echo
+	internal/run_built_binary herd_catalogue_regression_test \
+		-herd-path $(HERD) \
+		-libdir-path herd/libdir \
+		-kinds-dir catalogue/aarch64/kinds \
+		-shelf-path catalogue/aarch64/shelf.py \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64 catalogue tests: OK"
+
+test::
+	@echo
+	internal/run_built_binary herd_catalogue_regression_test \
+		-herd-path $(HERD) \
+		-libdir-path herd/libdir \
+		-kinds-dir catalogue/aarch64-mixed/kinds \
+		-shelf-path catalogue/aarch64-mixed/shelf.py \
+		-variant mixed \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64-mixed catalogue tests: OK"
+
+test::
+	@echo
+	internal/run_built_binary herd_catalogue_regression_test \
+		-herd-path $(HERD) \
+		-libdir-path herd/libdir \
+		-kinds-dir catalogue/aarch64-MTE/kinds \
+		-shelf-path catalogue/aarch64-MTE/shelf.py \
+		-variant memtag \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64-MTE catalogue tests: OK"
+
+test::
+	@echo
+	internal/run_built_binary herd_catalogue_regression_test \
+		-herd-path $(HERD) \
+		-libdir-path herd/libdir \
+		-kinds-dir catalogue/aarch64-MTE-mixed/kinds \
+		-shelf-path catalogue/aarch64-MTE-mixed/shelf.py \
+		-variant memtag \
+		-variant mixed \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64-MTE-mixed catalogue tests: OK"
