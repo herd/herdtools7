@@ -6,6 +6,6 @@
     )
    (public_names litmus7 klitmus7)
    (libraries herdtools)
-   (modules_without_implementation answer arch_litmus compCondUtils emitPrintf fmt LISATarget pseudoAbstract target XXXCompile_litmus)
+   (modules_without_implementation answer arch_litmus compCondUtils emitPrintf fmt pseudoAbstract target XXXCompile_litmus)
 
 )
