@@ -280,8 +280,7 @@ module Make(C:Config) (I:I) : S with module I = I
         if C.brackets then Printf.sprintf "[%s]"
         else fun s -> s
 
-      let do_dump_location tr =
-        let open Constant in function
+      let do_dump_location tr = function
         | Location_reg (proc,r) ->
             tr (string_of_int proc ^ ":" ^ I.pp_reg r)
         | Location_global a -> do_brackets (pp_global a)
