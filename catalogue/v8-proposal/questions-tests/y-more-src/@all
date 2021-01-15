@@ -1,7 +1,0 @@
-ARMARM03.litmus
-R+popl+polp-rfipa.litmus
-WRC+dmb.ld+dmb.sy.litmus
-3.LB+fri+dmb.ld+dmb.sy.litmus
-ISA2+dmb.st+addr+addr.litmus
-ISA2+dmb.st+addr+dmb.sy.litmus
-MP+dmb.sy+[fr-rf]-addr.litmus

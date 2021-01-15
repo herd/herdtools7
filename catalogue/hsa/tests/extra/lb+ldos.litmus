@@ -1,9 +1,0 @@
-LISA lb+ldos
-{ }
- P0                           | P1                           ;
- r[atomic,rlx,wg,single] r0 x | r[atomic,rlx,wg,single] r0 y ;
- b[ne] r0, 1, Exit0             | b[ne] r0, 1, Exit1             ;
- w[atomic,rlx,wg,single] y 1  | w[atomic,rlx,wg,single] x 1  ;
- Exit0:                       | Exit1:                       ;
-
-exists (0:r0=1 /\ 1:r0=1)

@@ -1,6 +1,0 @@
-"SC"
-
-include "prop.cat"
-
-let sc = heavy-prop(po)
-acyclic sc

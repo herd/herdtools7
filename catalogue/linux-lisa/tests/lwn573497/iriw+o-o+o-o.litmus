@@ -1,9 +1,0 @@
-LISA IRIW+o-o+o-o
-{
-x = 0;
-y = 0;
-}
- P0           | P1           | P2          | P3          ;
- r[once] r1 x | r[once] r3 y | w[once] x 1 | w[once] y 1 ;
- r[once] r2 y | r[once] r4 x |             |             ;
-exists (0:r1 = 1 /\ 0:r2 = 0 /\ 1:r3 = 1 /\ 1:r4 = 0)

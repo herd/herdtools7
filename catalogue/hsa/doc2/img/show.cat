@@ -1,4 +1,0 @@
-Show
-include "uniproc.cat"
-let coh = (fr|rf|co)+
-let ldo = addr|data|ctrl

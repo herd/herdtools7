@@ -1,9 +1,0 @@
-LISA LB+acq-rel+acq-rel (*Paul says forbid*)
-{
-x = 0;
-y = 0;
-}
-P0              | P1              ;
-r[acquire] r1 x | r[acquire] r3 y ;
-w[release] y 1  | w[release] x 1  ;
-exists(0:r1=1 /\ 1:r3=1)

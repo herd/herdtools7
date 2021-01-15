@@ -1,9 +1,0 @@
-LISA LB
-{
-x = 0;
-y = 0;
-}
- P0       | P1       ;
- r[normal] r1 x | r[normal] r2 y ;
- w[normal] y 1  | w[normal] x 1  ;
-exists (0:r1 = 1 /\ 1:r2 = 1)

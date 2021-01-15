@@ -1,8 +1,0 @@
-LISA coWW+o+o
-{
-x = 0;
-}
- P0           ;
- w[once] x 1  ;
- w[once] x 2  ;
-exists (x=1)
