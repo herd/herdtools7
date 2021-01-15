@@ -104,55 +104,24 @@ module Make (C:Sem.Config)(V:Value.S)
       let flip_flag v = M.op Op.Xor v V.one
       let is_zero v = M.op Op.Eq v V.zero
       let is_not_zero v = M.op Op.Ne v V.zero
+
       let check_flag = function
         |ARM.AL -> assert false
         |ARM.NE -> flip_flag
         |ARM.EQ -> M.unitT
 
+      let check_flag_op mf op ii =
+        mf ii >>*= fun b ->  M.choiceT b (op ii) (M.unitT ())
+        >>! B.Next
+
       let checkZ op c ii = match c with
       | ARM.AL -> op ii >>! B.Next
       | ARM.NE ->
-          ((read_reg_ord  ARM.Z ii)
-             >>=
-           (fun veq ->
-             flip_flag veq >>=
-             fun veqneg ->
-               M.choiceT veqneg
-                 (op ii)
-                 (M.unitT ())))
-            >>! B.Next
+          check_flag_op 
+            (fun ii -> read_reg_ord ARM.Z ii >>= flip_flag) op ii
       | ARM.EQ ->
-          ((read_reg_ord  ARM.Z ii)
-             >>=
-           (fun veq ->
-             M.choiceT veq
-               (op ii)
-               (M.unitT ())))
-            >>! B.Next
+          check_flag_op (read_reg_ord ARM.Z) op ii
 
-      let checkCZ op c ii = match c with
-      | ARM.AL -> op ii >>! B.Next
-      | ARM.NE ->
-          ((read_reg_ord  ARM.Z ii)
-             >>=
-           (fun veq ->
-             flip_flag veq >>=
-             fun veqneg ->
-               commit false ii >>*=
-               fun () ->
-                 M.choiceT veqneg
-                   (op ii)
-                   (M.unitT ())))
-            >>! B.Next
-      | ARM.EQ ->
-          ((read_reg_ord  ARM.Z ii)
-             >>=
-           (fun veq ->
-             commit false ii >>*=
-             fun () -> M.choiceT veq
-                 (op ii)
-                 (M.unitT ())))
-            >>! B.Next
 
       let write_flags set v1 v2 ii = match set with
       | ARM.SetFlags -> write_flag ARM.Z Op.Eq v1 v2 ii
@@ -248,7 +217,7 @@ module Make (C:Sem.Config)(V:Value.S)
                 (fun vn ->
                   (read_mem nat_sz vn ii) >>=
                   (fun v -> write_reg  rt v ii)) in
-              checkCZ ldr c ii
+              checkZ ldr c ii
           |  ARM.I_LDREX (rt,rn) ->
               let ldr ii =
                 (read_reg_ord  rn ii)
@@ -275,7 +244,7 @@ module Make (C:Sem.Config)(V:Value.S)
                 (fun (vn,vt) ->
                   let a = vn in
                   (write_mem nat_sz a vt ii)) in
-              checkCZ str c ii
+              checkZ str c ii
           |  ARM.I_STR3 (rt,rn,rm,c) ->
               let str3 ii =
                 (((read_reg_ord  rm ii) >>|
@@ -301,10 +270,10 @@ module Make (C:Sem.Config)(V:Value.S)
               let mov ii =
                 read_reg_ord  rs ii >>=
                 fun v -> write_reg  rd v ii in
-              checkCZ mov c ii
+              checkZ mov c ii
           | ARM.I_MOVI (rt, i, c) ->
               let movi ii =  write_reg  rt (V.intToV i) ii in
-              checkCZ movi c ii
+              checkZ movi c ii
           | ARM.I_XOR (set,r3,r1,r2) ->
               (((read_reg_ord  r1 ii) >>| (read_reg_ord r2 ii))
                  >>=
