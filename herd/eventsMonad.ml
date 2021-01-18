@@ -149,9 +149,10 @@ Monad type:
           let eiid,acts =
             Evt.fold
               (fun (v,cls,es) (eiid,acts) ->
-                if dbg_monad then
-                  eprintf "Delay %s output is %a\n" tag E.debug_output es ;
-                let delayed : 'a t =
+                if dbg_monad then begin
+                    eprintf "Delay %s output is %a\n" tag E.debug_output es
+                  end ;
+               let delayed : 'a t =
                   fun eiid -> eiid,(Evt.singleton (v,[],es),None) in
                 let eiid,(acts2,specs) = kont v delayed eiid in
                 assert (specs=None) ;

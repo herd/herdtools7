@@ -362,7 +362,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           W.warn "%i abstract event structures\n%!" i ;
           []
       | (vcl,es)::xs ->
-          let es = relabel es in
+          let es = if C.debug.Debug_herd.monad then es else relabel es in
           let es =
             { es with E.procs = procs; E.po = if do_deps then transitive_po es else es.E.po } in
           (i,vcl,es)::index xs (i+1) in

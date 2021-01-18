@@ -859,9 +859,12 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       | __,(Some _ as out) -> out
       | None,None -> None
       | Some out,None ->
-          (* Tricky case, None would mean loosing the explicit output
+          (* Tricky case, when get_output is empty,
+             None would mean loosing the explicit output
              and re-including maximal elts *)
-          Some (EventSet.union out (get_output es2)) in
+          let out2 = get_output es2 in
+          if EventSet.is_empty out2 then Some out
+          else Some out2 in
       if dbg then eprintf " %a\n" (debug_opt debug_events) r ;
       r
 
