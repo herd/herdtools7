@@ -437,22 +437,28 @@ Monad type:
       let eiid,read_rn = read_rn eiid in
       let eiid,read_rs = read_rs eiid in
       let eiid,read_rt = read_rt eiid in
-      let a,cl_a,es_rn = Evt.as_singleton_nospecul read_rn
-      and cv,cl_cv,es_rs = Evt.as_singleton_nospecul read_rs
+      let cv,cl_cv,es_rs = Evt.as_singleton_nospecul read_rs
       and nv,cl_nv,es_rt = Evt.as_singleton_nospecul read_rt in
-      let eiid,read_mem = read_mem a eiid in
-      let eiid,write_mem = write_mem a nv eiid in
-      let ov,cl_rm,es_rm = Evt.as_singleton_nospecul read_mem
-      and (),cl_wm,es_wm= Evt.as_singleton_nospecul write_mem in
-      let eiid,write_rs = write_rs ov eiid in
-      let (),cl_wrs,es_wrs = Evt.as_singleton_nospecul write_rs in
-      let eiid,eqm = req ov cv eiid in
-      let (),cl_eq,eseq =  Evt.as_singleton_nospecul eqm in
-      assert (E.is_empty_event_structure eseq) ;
-      let es =
-        E.aarch64_cas_ok es_rn es_rs es_rt es_wrs es_rm es_wm in
-      let cls = cl_a@cl_cv@cl_nv@cl_rm@cl_wm@cl_wrs@cl_eq  in
-      eiid,(Evt.singleton ((),cls,es), None)
+      let acts_rn,spec = read_rn in
+      assert (spec=None) ;
+      let eiid,acts =
+        Evt.fold
+          (fun (a,cl_a,es_rn) (eiid,acts) ->
+            let eiid,read_mem = read_mem a eiid in
+            let eiid,write_mem = write_mem a nv eiid in
+            let ov,cl_rm,es_rm = Evt.as_singleton_nospecul read_mem
+            and (),cl_wm,es_wm= Evt.as_singleton_nospecul write_mem in
+            let eiid,write_rs = write_rs ov eiid in
+            let (),cl_wrs,es_wrs = Evt.as_singleton_nospecul write_rs in
+            let eiid,eqm = req ov cv eiid in
+            let (),cl_eq,eseq =  Evt.as_singleton_nospecul eqm in
+            assert (E.is_empty_event_structure eseq) ;
+            let es =
+              E.aarch64_cas_ok es_rn es_rs es_rt es_wrs es_rm es_wm in
+            let cls = cl_a@cl_cv@cl_nv@cl_rm@cl_wm@cl_wrs@cl_eq  in
+            eiid,Evt.add ((),cls,es) acts)
+          acts_rn (eiid,Evt.empty) in
+      eiid,(acts, None)
 
     let has_no_spec (x,y) = assert(y=None); x
 
