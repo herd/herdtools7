@@ -21,12 +21,26 @@ function absolute_path() {
   cd "${prev_pwd}"
 }
 
+function mtimes_and_paths() {
+  case "$(uname -s)" in
+    # Assume that Linux guarantees GNU Coreutils.
+    Linux)
+      stat --format='%Y %n' $@
+      ;;
+
+    # Assume that non-Linux is macOS or some BSD.
+    *)
+      stat -f '%m %N' $@
+      ;;
+  esac
+}
+
 function most_recent() {
   # List (mtime, path) pairs.
   # Sort them descending by mtime.
   # Take the first of the list.
   # Extract the path back out.
-  stat -f '%m %N' $@ \
+  mtimes_and_paths $@ \
     | sort --reverse \
     | head -n1 \
     | cut -d' ' -f2
