@@ -300,7 +300,11 @@ val same_instance : event -> event -> bool
   val (=**=) :
       event_structure -> event_structure -> event_structure option
 
-(* similar, additionally avoid some evts in target links *)
+(* Identical, keep first event structure output as output... *)
+  val (=*$$=) :
+      event_structure -> event_structure -> event_structure option
+
+  (* similar, additionally avoid some evts in target links *)
   val bind_ctrl_avoid : event_set ->  event_structure -> event_structure -> event_structure option
 
 (* check memory tags *)
@@ -1026,8 +1030,10 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         Some out in
       check_disjoint (data_comp minimals_data out)
 
+
 (* Composition with intra_causality_control from first to second *)
-    let control_comp mini_loc es1 es2 =
+
+    let control_comp mini_loc mkOut es1 es2 =
       { procs = [] ;
         events =  EventSet.union es1.events es2.events;
         speculated = speculated_union es1 es2;
@@ -1037,16 +1043,31 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         intra_causality_control = EventRel.union
           (EventRel.union es1.intra_causality_control
              es2.intra_causality_control)
-          (EventRel.cartesian (maximals es1) (mini_loc es2));
+          (EventRel.cartesian (get_output es1) (mini_loc es2));
         control = EventRel.union es1.control es2.control;
         data_ports = EventSet.union es1.data_ports es2.data_ports;
         success_ports = EventSet.union es1.success_ports es2.success_ports;
-        output = sequence_control_output es1 es2;
+        output = mkOut es1 es2;
         sca = EventSetSet.union es1.sca es2.sca;
         mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses;
         aligned = List.append es1.aligned es2.aligned;}
 
-    let (=**=) = check_disjoint (control_comp minimals)
+(* Standard *)
+    let (=**=) = check_disjoint (control_comp minimals sequence_control_output)
+
+(* Variant that set output on first argumet *)
+    let (=*$$=) =
+      let out es1 es2 =
+        let out = get_output es1 in
+        if dbg then
+          eprintf "CtrlFirst %a %a -> %a\n"  debug_output es1 debug_output es2 debug_events out ;
+        Some out in
+      check_disjoint (control_comp minimals_data out)
+
+(* Variant that removes some es2 input from iico_ctrl targets *)
+    let bind_ctrl_avoid aset es1 es2 =
+      Some (control_comp (minimals_avoid aset) sequence_control_output es1 es2)
+
 
     let po_union4 =
       if do_deps then
@@ -1055,9 +1076,6 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           and r3,e3 = es3.po and r4,e4 = es4.po in
           (EventSet.union4 r1 r2 r3 r4, EventRel.union4 e1 e2 e3 e4)
       else fun es _ _ _ -> es.po
-
-    let bind_ctrl_avoid aset es1 es2 =
-      Some (control_comp (minimals_avoid aset) es1 es2)
 
     let po_union3 =
       if do_deps then
