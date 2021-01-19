@@ -61,9 +61,13 @@ let list_of_file path key =
    * shelf.py file, then prints the given global variables. *)
   let script chan =
     Printf.fprintf chan "import os\n" ;
+    Printf.fprintf chan "import sys\n" ;
     Printf.fprintf chan "os.chdir(%s)\n" (Filename.quote (Filename.dirname path)) ;
     Printf.fprintf chan "m = {}\n" ;
-    Printf.fprintf chan "execfile(%s, m)\n" (Filename.quote (Filename.basename path)) ;
+    Printf.fprintf chan "if sys.version_info >= (3, 0):\n" ;
+    Printf.fprintf chan "  exec(open(%s).read(), m)\n" (Filename.quote (Filename.basename path)) ;
+    Printf.fprintf chan "else:\n" ;
+    Printf.fprintf chan "  execfile(%s, m)\n" (Filename.quote (Filename.basename path)) ;
     Printf.fprintf chan "try:\n" ;
     Printf.fprintf chan "  v = m[%s]\n" (Filename.quote key) ;
     Printf.fprintf chan "  if isinstance(v, str):\n" ;
