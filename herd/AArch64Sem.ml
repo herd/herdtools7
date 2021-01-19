@@ -57,6 +57,7 @@ module Make
       let (>>=) = M.(>>=)
       let (>>==) = M.(>>==)
       let (>>*=) = M.(>>*=)
+      let (>>*==) = M.(>>*==)
       let (>>|) = M.(>>|)
       let (>>!) = M.(>>!)
       let (>>::) = M.(>>::)
@@ -325,7 +326,7 @@ module Make
         let ha = ha || hd in (* As far as we know hd => ha *)
 (* Perform PTE update, when told to do so *)
         let setbits_get_oa a_pte m =
-          m >>== fun pte_v ->
+          m >>*== fun pte_v ->
            (* >>== is important, as the test and set below
               is performed 'on the side ' *)
             begin if hd && dir = Dir.W then

@@ -170,6 +170,7 @@ Monad type:
     let (=**=) = E.(=**=)
     let (=*$=) = E.(=*$=)
     let (=$$=) = E.(=$$=)
+    let (=*$$=) = E.(=*$$=)
     let (+|+) = E.(+|+)
     let (=|=) = E.para_comp true
 
@@ -208,9 +209,11 @@ Monad type:
     let (>>==) : 'a t -> ('a -> 'b t) -> ('b) t
         = fun s f -> data_comp (=$$=) s f
 
-(* Bind the result *)
     let (>>*=) : 'a t -> ('a -> 'b t) -> ('b) t
-        = fun s f -> data_comp (=**=) s f
+      = fun s f -> data_comp (=**=) s f
+
+    let (>>*==) : 'a t -> ('a -> 'b t) -> ('b) t
+        = fun s f -> data_comp (=*$$=) s f
 
     let bind_ctrl_avoid ma s f = fun eiid ->
       let eiid,(mact,spec) = ma eiid in
