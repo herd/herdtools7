@@ -14,14 +14,14 @@ readonly binary="${1}"
 shift
 
 # A portable version of `realpath` or `readlink -f`.
-function absolute_path() {
+absolute_path() {
   readonly prev_pwd="${PWD}"
   cd "${1}"
   pwd
   cd "${prev_pwd}"
 }
 
-function mtimes_and_paths() {
+mtimes_and_paths() {
   case "$(uname -s)" in
     # Assume that Linux guarantees GNU Coreutils.
     Linux)
@@ -35,7 +35,7 @@ function mtimes_and_paths() {
   esac
 }
 
-function most_recent() {
+most_recent() {
   # List (mtime, path) pairs.
   # Sort them descending by mtime.
   # Take the first of the list.
