@@ -1,59 +1,72 @@
-#!/bin/sh
+#!/usr/bin/env python
+"""Run the most recently built <binary>.exe or <binary>.native under _build, with args."""
 
-set -eu
-
-if [ $# -eq 0 ]
-then
-  echo "Usage: $(basename "${0}") <binary> [args]"
-  echo ""
-  echo "Synopsis: Run the most recently built <binary>.exe or <binary>.native under _build, with args."
-  exit 1
-fi
-
-readonly binary="${1}"
-shift
-
-# A portable version of `realpath` or `readlink -f`.
-absolute_path() {
-  readonly prev_pwd="${PWD}"
-  cd "${1}"
-  pwd
-  cd "${prev_pwd}"
-}
-
-mtimes_and_paths() {
-  case "$(uname -s)" in
-    # Assume that Linux guarantees GNU Coreutils.
-    Linux)
-      stat --format='%Y %n' $@
-      ;;
-
-    # Assume that non-Linux is macOS or some BSD.
-    *)
-      stat -f '%m %N' $@
-      ;;
-  esac
-}
-
-most_recent() {
-  # List (mtime, path) pairs.
-  # Sort them descending by mtime.
-  # Take the first of the list.
-  # Extract the path back out.
-  mtimes_and_paths $@ \
-    | sort --reverse \
-    | head -n1 \
-    | cut -d' ' -f2
-}
+from __future__ import print_function
+from os import path
+import os
+import sys
 
 
-readonly build_dir="$(absolute_path "$(dirname "${0}")/../_build")"
-readonly paths="$(find "${build_dir}" -name "${binary}.exe" -o -name "${binary}.native")"
+class NotFound(Exception):
+    """Could not find a binary under the build directory."""
 
-if [ ! "${paths}" ]
-then
-  echo "Could not find binary ${binary} under ${build_dir}"
-  exit 1
-fi
+    def __init__(self, binary, build_dir):
+        msg = 'Could not find binary "{binary}" under {build_dir}'.format(
+            binary=binary, build_dir=build_dir)
+        Exception.__init__(self, msg)
 
-"$(most_recent ${paths})" $@
+
+def get_build_dir():
+    """DUNE_BUILD_DIR if set, otherwise <project-root>/_build."""
+    if os.getenv('DUNE_BUILD_DIR'):
+        return os.getenv('DUNE_BUILD_DIR')
+
+    internal = path.dirname(path.realpath(__file__))
+    project_root = path.dirname(internal)
+    return path.join(project_root, '_build')
+
+
+def find_candidates(build_dir, binary):
+    """Lists paths under build_dir called either <binary>.exe or <binary>.native."""
+    results = []
+    for root, _, files in os.walk(build_dir):
+        for name in files:
+            basename, ext = path.splitext(name)
+            if basename == binary and ext in ['.exe', '.native']:
+                results.append(path.join(root, name))
+    return results
+
+
+def find_and_run_most_recent_binary(build_dir, binary, args):
+    """Find & run the most recently built binary under build_dir with args."""
+
+    candidates = find_candidates(build_dir, binary)
+    if not candidates:
+        raise NotFound(binary, build_dir)
+
+    most_recent = max(candidates, key=path.getmtime)
+
+    os.execv(most_recent, [most_recent] + args)
+
+
+def main(argv):
+    this = path.basename(argv[0])
+    if len(argv) < 2:
+        print('Usage: {this} <binary> [args]'.format(this=this))
+        print('')
+        print('Summary: {doc}'.format(doc=__doc__))
+        sys.exit(1)
+
+    binary = argv[1]
+    args = argv[2:]
+    build_dir = get_build_dir()
+
+    try:
+        find_and_run_most_recent_binary(build_dir, binary, args)
+    except NotFound as error:
+        print('{this}: {error}'.format(this=this, error=error))
+        sys.exit(1)
+
+
+if __name__ == '__main__':
+    main(sys.argv)
