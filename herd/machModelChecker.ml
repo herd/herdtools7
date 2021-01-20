@@ -273,6 +273,8 @@ module Make
                (k,lazy (E.EventSet.filter p (Lazy.force mem_evts)))::ps)
              ["R", E.is_mem_load;
               "W", E.is_mem_store;
+              "Rreg", E.is_reg_load_any;
+              "Wreg", E.is_reg_store_any;
               "SPEC", is_spec;
               "EXEC", (fun e -> not (is_spec e));
               "AMO",E.is_amo;
