@@ -66,6 +66,7 @@ rule token = parse
 | "locations" { LOCATIONS }
 | "filter" { FILTER }
 | "fault"|"Fault" { FAULT }
+| "attrs"|"Attrs" { ATTRS }
 (* Typing *)
 | "_Atomic" { ATOMIC }
 | "ATOMIC_INIT" { ATOMICINIT }

@@ -94,14 +94,14 @@ static inline pteval_t litmus_set_pte_flags(pteval_t old,pteval_t flags) {
 /* set 'global' PTE attributes */
 
 typedef enum
-  {attr_normal, attr_write_2D_through,
-   attr_write_2D_back, attr_non_2D_cacheable,
-   attr_device,
-   attr_nGnRnE,attr_nGnRE,
-   attr_nGRE,attr_GRE,
-   attr_rNsh,attr_rIsh,attr_rOsh,
-   /* attr_rSy, ?? */
-   /*   attr_peripherical, LM:?? */
+  { attr_Normal, attr_Inner_2D_write_2D_through,
+    attr_Inner_2D_write_2D_back, attr_Inner_2D_non_2D_cacheable,
+    attr_Outer_2D_write_2D_through,
+    attr_Outer_2D_write_2D_back, attr_Outer_2D_non_2D_cacheable,
+    attr_Device,
+    attr_NGnRnE,attr_NGnRE,
+    attr_NGRE,attr_GRE,
+    attr_Non_2D_shareable,attr_Inner_2D_shareable,attr_Outer_2D_shareable,
   } pte_attr_key;
 
 /* Act on SH[1:0] ie bits [9:8] */
@@ -116,22 +116,24 @@ static inline pteval_t litmus_set_memattr(pteval_t old,pteval_t memattr) {
 
 static inline void litmus_set_pte_attribute(pteval_t *p,pte_attr_key k) {
   switch (k) {
-  case attr_rNsh:
+  case attr_Non_2D_shareable:
     *p = litmus_set_sh(*p,0) ;
     break;
-  case attr_rIsh:
+  case attr_Inner_2D_shareable:
     *p = litmus_set_sh(*p,3) ;
     break;
-  case attr_rOsh:
+  case attr_Outer_2D_shareable:
     *p = litmus_set_sh(*p,2) ;
     break;
   /* For cacheability, set inner-cacheability only,
      is always non-cacheabke */
-  case attr_normal:
-  case attr_write_2D_back:
+  case attr_Normal:
+  case attr_Inner_2D_write_2D_back:
+  case attr_Outer_2D_write_2D_back:
     *p = litmus_set_memattr(*p, MT_NORMAL);
     break;
-  case attr_write_2D_through:
+  case attr_Inner_2D_write_2D_through:
+  case attr_Outer_2D_write_2D_through:
 #ifdef MT_NORMAL_WT
     *p = litmus_set_memattr(*p, MT_NORMAL_WT);
 #else
@@ -139,17 +141,18 @@ static inline void litmus_set_pte_attribute(pteval_t *p,pte_attr_key k) {
     *p = litmus_set_memattr(*p, MT_NORMAL_NC);
 #endif
     break;
-  case attr_non_2D_cacheable:
+  case attr_Inner_2D_non_2D_cacheable:
+  case attr_Outer_2D_non_2D_cacheable:
     *p = litmus_set_memattr(*p, MT_NORMAL_NC);
     break;
-  case attr_device:
-  case attr_nGnRE:
+  case attr_Device:
+  case attr_NGnRE:
     *p = litmus_set_memattr(*p, MT_DEVICE_nGnRE);
     break;
-  case attr_nGnRnE:
+  case attr_NGnRnE:
     *p = litmus_set_memattr(*p, MT_DEVICE_nGnRnE);
     break;
-  case attr_nGRE:
+  case attr_NGRE:
 #ifdef MT_DEVICE_nGRE
     *p = litmus_set_memattr(*p, MT_DEVICE_nGRE);
 #else

@@ -1231,7 +1231,12 @@ module Make
                         | None -> sprintf "_vars->saved_pte_%s" x
                         | Some s -> sprintf "_vars->saved_pte_%s" s in
                         O.fii "*_vars->pte_%s = %s;"
-                          x (SkelUtil.dump_pteval_flags arg pteval)
+                          x (SkelUtil.dump_pteval_flags arg pteval);
+                        List.iter
+                          (fun attr ->
+                            let attr = sprintf "attr_%s" (MyName.name_as_symbol attr) in
+                            O.fii "litmus_set_pte_attribute(_vars->pte_%s, %s);"
+                              x attr) (PTEVal.Attrs.as_list pteval.PTEVal.attrs)
                       end
                   end ;
                   true

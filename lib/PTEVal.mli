@@ -16,6 +16,16 @@
 
 (** Abstraction of page table entry (PTE) *)
 
+module Attrs : sig
+  type t
+  val default : t
+  val compare : t -> t -> int
+  val eq : t -> t -> bool
+  val pp : t -> string
+  val as_list : t -> string list
+  val of_list : string list -> t
+end
+
 type t = {
   oa : string;
   valid : int;
@@ -23,6 +33,7 @@ type t = {
   db : int;
   dbm : int;
   el0 : int;
+  attrs : Attrs.t;
   }
 
 (* Default value *)
@@ -34,11 +45,15 @@ val set_oa : t -> string -> t
 (* Flags have default values *)
 val is_default : t -> bool
 
+type pte_prop =
+| KV of (string * string)
+| Attrs of string list
+
 (* Create fresh pteval *)
 (* With physical adress *)
-val of_list : string -> (string * string) list -> t
+val of_list : string -> pte_prop list -> t
 (* Without physcal adress *)
-val of_list0 : (string * string) list -> t
+val of_list0 : pte_prop list -> t
 
 (* Pretty print *)
 val pp : t -> string  (* Default field not printed *)

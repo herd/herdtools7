@@ -183,6 +183,9 @@ end = struct
 
   let is_PA_val _ = false
 
+  (* Unimplemented *)
+  let is_implicit_pte_read _ = assert false
+
         (* The following definition of is_atomic
            is quite arbitrary. *)
 
