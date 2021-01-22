@@ -47,7 +47,12 @@ module type S =
     val (>>==) : 'a t -> ('a -> 'b t) -> ('b) t (* Output event stay in first arg *)
     val (>>*=) : 'a t -> ('a -> 'b t) -> ('b) t
     val (>>*==) : 'a t -> ('a -> 'b t) -> ('b) t (* Output event stay in first argument *)
+    (* Control composition, avoid events from first argument) *)
     val bind_ctrl_avoid : 'c t -> 'a t -> ('a -> 'b t) -> 'b t
+
+    (* Hybrid composition m1 m2 m3, m1 -ctrl-> m3 and m2 -data-> m3 *)
+    val bind_ctrl_data : 'a t -> 'b t -> ('a -> 'b -> 'c t) -> 'c t
+
     val check_tags : 'v t -> ('v -> 'v t) -> ('v -> 'v t) -> 'x t -> 'v t
     val exch : 'a t -> 'a t -> ('a -> 'b t) ->  ('a -> 'c t) ->  ('b * 'c) t
 
