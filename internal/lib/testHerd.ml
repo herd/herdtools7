@@ -14,7 +14,10 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(*Test runs output two kinds of information, we should check both *)
+(* Utilities for running Herd binaries in tests. *)
+
+type path = string
+
 type stdout_lines = string list
 type stderr_lines = string list
 
@@ -25,7 +28,7 @@ let without_unstable_lines lines =
 
 let log_compare a b = String.compare (String.concat "\n" a) (String.concat "\n" b)
 
-let herd_args ~bell ~cat ~variants libdir =
+let herd_args ~bell ~cat ~conf ~variants ~libdir =
   let bells =
     match bell with
     | None -> []
@@ -36,18 +39,23 @@ let herd_args ~bell ~cat ~variants libdir =
     | None -> []
     | Some cat -> ["-cat"; cat; "-I"; Filename.dirname cat]
   in
+  let confs =
+    match conf with
+    | None -> []
+    | Some conf -> ["-conf"; conf]
+  in
   let variants =
     List.concat (List.map (fun v -> ["-variant"; v]) variants)
   in
   let libdirs = ["-set-libdir"; libdir] in
-  List.concat [bells; cats; variants; libdirs]
+  List.concat [bells; cats; confs; variants; libdirs]
 
-let herd_command ?bell ?cat ?(variants = []) herd libdir litmuses =
-  let args = herd_args ~bell:bell ~cat:cat ~variants:variants libdir in
+let herd_command ~bell ~cat ~conf ~variants ~libdir herd litmuses =
+  let args = herd_args ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir in
   Command.command herd (args @ litmuses)
 
-let run_herd ?bell ?cat ?(variants = []) herd libdir litmuses =
-  let args = herd_args ~bell:bell ~cat:cat ~variants:variants libdir in
+let run_herd ~bell ~cat ~conf ~variants ~libdir herd litmuses =
+  let args = herd_args ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir in
   let litmuses o = Channel.write_lines o litmuses ; close_out o in
 
   (* Record stdout and stderr to two sources if we need to reason about them separately *)
@@ -58,9 +66,9 @@ let run_herd ?bell ?cat ?(variants = []) herd libdir litmuses =
   Command.run ~stdin:litmuses ~stdout:read_lines ~stderr:read_err_lines herd args ;
   (without_unstable_lines !lines, !err_lines)
 
-let herd_output_matches_expected herd libdir litmus expected expected_failure =
+let herd_output_matches_expected ~bell ~cat ~conf ~variants ~libdir herd litmus expected expected_failure =
   try
-    match run_herd herd libdir [litmus] with
+    match run_herd ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir herd [litmus] with
     | [],[] ->
       Printf.printf "Failed %s : Herd finished but returned no output or errors\n" litmus ; false
     | stdout, [] -> (* Herd finished without errors - normal *)

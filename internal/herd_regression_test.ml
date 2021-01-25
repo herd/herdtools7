@@ -16,7 +16,21 @@
 
 (** A tool that runs regression tests of herd7, against .expected files. *)
 
-(* Contributed by Ethel Morgan <Ethel.Morgan@arm.com> *)
+
+(* Flags. *)
+
+type path = string
+
+type flags = {
+  herd       : path ;
+  libdir     : path ;
+  litmus_dir : path ;
+  variants   : string list ;
+  conf       : path option ;
+}
+
+
+(* Utilities. *)
 
 let litmuses_of_dir dir =
   let all_files = Array.to_list (Sys.readdir dir) in
@@ -24,19 +38,32 @@ let litmuses_of_dir dir =
   let full_paths = List.map (Filename.concat dir) only_litmus in
   List.sort String.compare full_paths
 
-(* Commands *)
 
-let show_tests herd libdir litmus_dir =
-  let litmuses = litmuses_of_dir litmus_dir in
-  let commands = List.map (fun l -> TestHerd.herd_command herd libdir [l]) litmuses in
+(* Commands. *)
+
+let show_tests flags =
+  let litmuses = litmuses_of_dir flags.litmus_dir in
+  let command_of_litmus l =
+    TestHerd.herd_command ~bell:None ~cat:None
+      ~conf:flags.conf
+      ~variants:flags.variants
+      ~libdir:flags.libdir
+      flags.herd [l]
+  in
+  let commands = List.map command_of_litmus litmuses in
   Channel.write_lines stdout commands
 
-let run_tests herd libdir litmus_dir =
-  let litmuses = litmuses_of_dir litmus_dir in
+let run_tests flags =
+  let litmuses = litmuses_of_dir flags.litmus_dir in
   let expecteds = List.map TestHerd.expected_of_litmus litmuses in
   let expected_failures = List.map TestHerd.expected_failure_of_litmus litmuses in
   let results = List.map
-   (fun ((l, e), f) -> TestHerd.herd_output_matches_expected herd libdir l e f)
+   (fun ((l, e), f) ->
+     TestHerd.herd_output_matches_expected ~bell:None ~cat:None
+      ~conf:flags.conf
+      ~variants:flags.variants
+      ~libdir:flags.libdir
+      flags.herd l e f)
    (List.combine (List.combine litmuses expecteds) expected_failures)
   in
   let failed r = not r in
@@ -45,9 +72,16 @@ let run_tests herd libdir litmus_dir =
     exit 1
   end
 
-let promote_tests herd libdir litmus_dir =
-  let litmuses = litmuses_of_dir litmus_dir in
-  let outputs = List.map (fun l -> TestHerd.run_herd herd libdir [l]) litmuses in
+let promote_tests flags =
+  let litmuses = litmuses_of_dir flags.litmus_dir in
+  let output_of_litmus l =
+    TestHerd.run_herd ~bell:None ~cat:None
+      ~conf:flags.conf
+      ~variants:flags.variants
+      ~libdir:flags.libdir
+      flags.herd [l]
+  in
+  let outputs = List.map output_of_litmus litmuses in
   let expecteds = List.map TestHerd.expected_of_litmus litmuses in
   let expected_failures = List.map TestHerd.expected_failure_of_litmus litmuses in
   let write_file (path, (lines,_)) =
@@ -60,29 +94,59 @@ let promote_tests herd libdir litmus_dir =
   List.combine expected_failures outputs |> List.filter (fun (_,(_,stderr)) -> not_empty stderr) |> List.iter write_err_file
 
 let usage = String.concat "\n" [
-  Printf.sprintf "Usage: %s [opts] (show|test|promote)" Sys.argv.(0) ;
+  Printf.sprintf "Usage: %s [options] (show|test|promote)" (Filename.basename Sys.argv.(0)) ;
   "" ;
-  " show     Print the herd7 commands that would be run." ;
-  " test     Compare the output of herd7 against .expected files." ;
-  " promote  Update .expected and .expected-failure files to the output of herd7." ;
+  "Commands:" ;
+  "  show     Print the herd7 commands that would be run." ;
+  "  test     Compare the output of herd7 against .expected files." ;
+  "  promote  Update .expected and .expected-failure files to the output of herd7." ;
+  "" ;
+  "Options:" ;
 ]
 
 let () =
+  (* Required arguments. *)
   let herd = ref "" in
   let libdir = ref "" in
   let litmus_dir = ref "" in
+
+  (* Optional arguments. *)
+  let conf = ref None in
+  let variants = ref [] in
+
   let anon_args = ref [] in
-  Arg.parse [
-    ("-herd-path", Arg.String (fun p -> herd := p), "path to herd binary") ;
-    ("-libdir-path", Arg.String (fun p -> libdir := p), "path to herd libdir") ;
-    ("-litmus-dir", Arg.String (fun p -> litmus_dir := p), "path to directory of .litmus files to test against") ;
-  ] (fun a -> anon_args := a :: !anon_args) usage ;
-  if (List.exists (fun a -> a = "") [!herd; !libdir; !litmus_dir]) then begin
-    Printf.printf "A flag is missing!\n" ;
-    exit 1
-  end ;
+
+  let options = [
+    Args.is_file ("-herd-path",   Arg.Set_string herd,           "path to herd binary") ;
+    Args.is_dir  ("-libdir-path", Arg.Set_string libdir,         "path to herd libdir") ;
+    Args.is_dir  ("-litmus-dir",  Arg.Set_string litmus_dir,     "path to directory of .litmus files to test against") ;
+    Args.is_file ("-conf",        Args.set_string_option conf,   "path to config file to pass to herd7") ;
+                  "-variant",     Args.append_string variants,   "variant to pass to herd7" ;
+  ] in
+  Arg.parse options (fun a -> anon_args := a :: !anon_args) usage ;
+
+  let exit_with_error msg =
+    Printf.printf "%s: %s.\n" Sys.argv.(0) msg ;
+    Arg.usage options usage ;
+    exit 2
+  in
+
+  if !herd = "" then
+    exit_with_error "Must set -herd-path" ;
+  if !libdir = "" then
+    exit_with_error "Must set -libdir-path" ;
+  if !litmus_dir = "" then
+    exit_with_error "Must set -litmus-dir" ;
+
+  let flags = {
+    herd = !herd ;
+    libdir = !libdir ;
+    litmus_dir = !litmus_dir ;
+    conf = !conf ;
+    variants = !variants ;
+  } in
   match !anon_args with
-  | "show" :: [] -> show_tests !herd !libdir !litmus_dir
-  | "test" :: [] -> run_tests !herd !libdir !litmus_dir
-  | "promote" :: [] -> promote_tests !herd !libdir !litmus_dir
-  | _ -> Printf.printf "%s\n" usage ; exit 1
+  | "show" :: [] -> show_tests flags
+  | "test" :: [] -> run_tests flags
+  | "promote" :: [] -> promote_tests flags
+  | _ -> exit_with_error "Must provide one command of: show, test, promote"

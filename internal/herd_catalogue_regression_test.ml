@@ -20,12 +20,14 @@ module Option = Base.Option
 
 (* Flags. *)
 
+type path = string
+
 type flags = {
-  herd_path : string ;
-  libdir_path : string ;
-  shelf_path : string ;
-  kinds_dir : string ;
-  variants : string list ;
+  herd       : path ;
+  libdir     : path ;
+  shelf_path : path ;
+  kinds_dir  : path ;
+  variants   : string list ;
 }
 
 
@@ -67,11 +69,15 @@ let kinds_path_of_permutation kinds_dir p =
 let herd_kinds_of_permutation flags shelf_dir litmuses p =
   let prepend path = Filename.concat shelf_dir path in
   let cmd =
-    match p.bell with
-    | None -> TestHerd.run_herd ~cat:(prepend p.cat) ~variants:flags.variants flags.herd_path
-    | Some bell -> TestHerd.run_herd ~bell:(prepend bell) ~cat:(prepend p.cat) ~variants:flags.variants flags.herd_path
+    TestHerd.run_herd
+      ~bell:(Option.map prepend p.bell)
+      ~cat:(Some (prepend p.cat))
+      ~conf:None
+      ~variants:flags.variants
+      ~libdir:flags.libdir
+      flags.herd
   in
-  match cmd flags.libdir_path litmuses with
+  match cmd litmuses with
   | stdout, [] ->
       let kind_of_log l = Log.(l.name, Option.get l.kind) in
       List.map kind_of_log (Log.of_string_list stdout)
@@ -106,10 +112,15 @@ let show_tests flags =
   let prepend path = Filename.concat shelf_dir path in
   let command_of_permutation p =
     let cmd =
-      match p.bell with
-      | None -> TestHerd.herd_command ~cat:(prepend p.cat) ~variants:flags.variants flags.herd_path
-      | Some bell -> TestHerd.herd_command ~bell:(prepend bell) ~cat:(prepend p.cat) ~variants:flags.variants flags.herd_path
-    in cmd flags.libdir_path illustrative_tests
+      TestHerd.herd_command
+        ~bell:(Option.map prepend p.bell)
+        ~cat:(Some (prepend p.cat))
+        ~conf:None
+        ~variants:flags.variants
+        ~libdir:flags.libdir
+        flags.herd
+    in
+    cmd illustrative_tests
   in
   permutations
     |> List.map command_of_permutation
@@ -160,55 +171,61 @@ let promote_tests flags =
 
 
 let usage = String.concat "\n" [
-  Printf.sprintf "Usage: %s [opts] (show|test|promote)" Sys.argv.(0) ;
+  Printf.sprintf "Usage: %s [options] (show|test|promote)" (Filename.basename Sys.argv.(0)) ;
   "" ;
-  " show     Print the herd7 commands that would be run." ;
-  " test     Compare the output of running herd7 on Catalogue tests against kinds files." ;
-  " promote  Update kinds files to the output of herd7." ;
+  "Commands:" ;
+  "  show     Print the herd7 commands that would be run." ;
+  "  test     Compare the output of running herd7 on Catalogue tests against kinds files." ;
+  "  promote  Update kinds files to the output of herd7." ;
+  "" ;
+  "Options:" ;
 ]
 
-let check_flags flags =
-  let check_set value =
-    if value = "" then invalid_arg "must be set"
-  in
-  let dir value =
-    if not (Sys.is_directory value) then invalid_arg "must be a directory"
-  in
-  let file value =
-    if not (Sys.file_exists value && not (Sys.is_directory value)) then
-      invalid_arg "must be a file"
-  in
-  List.iter (fun (name, validator, value) ->
-    try
-      check_set value ;
-      validator value
-    with Invalid_argument msg -> invalid_arg (Printf.sprintf "Flag %s %s" name msg)
-  ) [
-    "-herd-path", file, flags.herd_path ;
-    "-libdir-path", dir, flags.libdir_path ;
-    "-shelf-path", file, flags.shelf_path ;
-    "-kinds-dir", dir, flags.kinds_dir ;
-  ]
-
 let () =
-  let flags = ref {
-    herd_path = "" ;
-    libdir_path = "" ;
-    shelf_path = "" ;
-    kinds_dir = "" ;
-    variants = [] ;
-  } in
+  (* Required arguments. *)
+  let herd = ref "" in
+  let libdir = ref "" in
+  let shelf_path = ref "" in
+  let kinds_dir = ref "" in
+
+  (* Optional arguments. *)
+  let variants = ref [] in
+
   let anon_args = ref [] in
-  Arg.parse [
-    ("-herd-path", Arg.String (fun p -> flags := {!flags with herd_path = p}), "path to herd binary") ;
-    ("-libdir-path", Arg.String (fun p -> flags := {!flags with libdir_path = p}), "path to herd libdir") ;
-    ("-kinds-dir", Arg.String (fun p -> flags := {!flags with kinds_dir = p}), "path to directory of kinds files to test against") ;
-    ("-shelf-path", Arg.String (fun p -> flags := {!flags with shelf_path = p}), "path to shelf.py to test") ;
-    ("-variant", Arg.String (fun v -> flags := {!flags with variants = !flags.variants @ [v]}), "variants") ;
-  ] (fun a -> anon_args := a :: !anon_args) usage ;
-  check_flags !flags ;
+
+  let options = [
+    Args.is_file ("-herd-path",   Arg.Set_string herd,         "path to herd binary") ;
+    Args.is_dir  ("-libdir-path", Arg.Set_string libdir,       "path to herd libdir") ;
+    Args.is_dir  ("-kinds-dir",   Arg.Set_string kinds_dir,    "path to directory of kinds files to test against") ;
+    Args.is_file ("-shelf-path",  Arg.Set_string shelf_path,   "path to shelf.py to test") ;
+                  "-variant",     Args.append_string variants, "variant to pass to herd7" ;
+  ] in
+  Arg.parse options (fun a -> anon_args := a :: !anon_args) usage ;
+
+  let exit_with_error msg =
+    Printf.printf "%s: %s.\n" Sys.argv.(0) msg ;
+    Arg.usage options usage ;
+    exit 2
+  in
+
+  if !herd = "" then
+    exit_with_error "Must set -herd-path" ;
+  if !libdir = "" then
+    exit_with_error "Must set -libdir-path" ;
+  if !shelf_path = "" then
+    exit_with_error "Must set -shelf-path" ;
+  if !kinds_dir = "" then
+    exit_with_error "Must set -kinds-dir" ;
+
+  let flags = {
+    herd = !herd ;
+    libdir = !libdir ;
+    shelf_path = !shelf_path ;
+    kinds_dir = !kinds_dir ;
+    variants = !variants ;
+  } in
   match !anon_args with
-  | "show" :: [] -> show_tests !flags
-  | "test" :: [] -> run_tests !flags
-  | "promote" :: [] -> promote_tests !flags
-  | _ -> Printf.printf "%s\n" usage ; exit 1
+  | "show" :: [] -> show_tests flags
+  | "test" :: [] -> run_tests flags
+  | "promote" :: [] -> promote_tests flags
+  | _ -> exit_with_error "Must provide one command of: show, test, promote"
