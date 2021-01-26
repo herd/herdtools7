@@ -76,6 +76,11 @@ and type evt_struct = E.event_structure) =
       let fold f xs y0 =
         List.fold_left (fun x y -> f y x) y0 xs
 
+      let foldfold f xs ys z0 =
+        List.fold_left
+          (fun z x -> List.fold_left (fun z y -> f x y z) z ys)
+          z0 xs
+
       let union = (@)
 
       let elements (x:'a t) = x
@@ -221,6 +226,29 @@ Monad type:
       let _,cl,es = Evt.as_singleton mact in
       assert (cl=[]) ;
       data_comp (E.bind_ctrl_avoid es.E.events) s f eiid
+
+(* Triple composition *)
+    let comp_comp comp_str m1 m2 m3 eiid =
+      let eiid,(acts1,spec1) = m1 eiid in
+      let eiid,(acts2,spec2) = m2 eiid in
+      assert (spec1=None); assert (spec2=None);
+      let eiid,acts =
+        Evt.foldfold
+          (fun (v1,cl1,es1) (v2,cl2,es2) (eiid,acts) ->
+            let eiid,(acts3,spec3) = m3 v1 v2 eiid in
+            assert (spec3=None) ;
+            let acts =
+              Evt.fold
+                (fun (v3,cl3,es3) acts ->
+                  let es = comp_str es1 es2 es3 in
+                  Evt.add (v3,cl1@cl2@cl3,es) acts)
+                acts3 acts in
+            eiid,acts)
+          acts1 acts2 (eiid,Evt.empty) in
+      eiid,(acts,None)
+
+    let bind_ctrl_data m1 m2 m3 eiid =
+      comp_comp E.bind_ctrl_data m1 m2 m3 eiid
 
 (* Tag check combinator *)
     let check_tags : 'v t -> ('v -> 'v t) -> ('v -> 'v t) -> 'x t -> 'v t

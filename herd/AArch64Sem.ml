@@ -34,6 +34,7 @@ module Make
     let memtag = C.variant Variant.MemTag
     let is_deps = C.variant Variant.Deps
     let kvm = C.variant Variant.Kvm
+    let is_branching = kvm && C.variant Variant.PteBranch
 
 (* Barrier pretty print *)
     let barriers =
@@ -352,7 +353,8 @@ module Make
                   test_and_set_af a_pte ii >>! a_pte
                 else M.unitT a_pte in
               (get_a_pte >>== test_and_set_af) >>= fun a_pte ->
-              mextract_whole_pte_val an AArch64.nexp_annot a_pte ii >>= fun pte_v ->
+              mextract_whole_pte_val
+                an AArch64.nexp_annot a_pte ii >>= fun pte_v ->
               (mextract_pte_vals pte_v) >>= fun pte_v -> M.unitT (pte_v,a_pte)
             end
           (fun (pte_v,a_pte) ma -> (* now we have PTE content *)
@@ -362,7 +364,8 @@ module Make
                only pte value may have changed *)
             let mok ma =  mok a_pte ma pte_v.oa_v
             and mno ma =  mfault ma a_virt in
-            let check_cond cond = do_check_cond ma (check_el0 cond) mno mok in
+            let check_cond cond =
+              do_check_cond ma (check_el0 cond) mno mok in
 
             if (not tthm || (tthm && (not ha && not hd))) then
             (* No HW management *)
@@ -495,10 +498,21 @@ module Make
               if C.precision then  mfault >>! B.Exit
               else (mfault >>| mm) >>! B.Next))
 
+      let append_commit ma ii =
+        if is_branching then
+          ma >>== fun a -> commit_pred ii >>= fun () -> M.unitT a
+        else ma
+
+      let insert_commit ii m1 m2 =
+        if is_branching then
+          m1 >>= fun a -> commit_pred ii >>*== fun _ -> m2 a
+        else
+          m1 >>= m2
+
       let lift_kvm dir mop ma an ii mphy =
         let mfault ma a =
-          ma >>= fun _ -> mk_fault a ii None
-              >>! if C.precision then B.Exit else B.ReExec
+          insert_commit ii ma (fun _ -> mk_fault a ii None)
+          >>! if C.precision then B.Exit else B.ReExec
         in
         M.delay_kont "6" ma
           (fun a ma ->
@@ -519,7 +533,7 @@ module Make
             lift_kvm dir mop ma an ii mphy
           else lift_memtag_virt mop ma ii
         else if kvm then
-          let mphy = (fun ma _a -> mop Act.A_PHY ma >>! B.Next) in
+          let mphy ma _a = mop Act.A_PHY ma >>! B.Next in
           lift_kvm dir mop ma an ii mphy
         else
           mop Act.A_VIR ma >>! B.Next
@@ -527,13 +541,20 @@ module Make
       let do_str sz an anexp ma mv ii =
         lift_memop Dir.W
           (fun ac ma ->
-            (ma >>| mv) >>= fun (a,v) ->
+            if is_branching then
+              M.bind_ctrl_data (append_commit ma ii) mv
+                (fun a v ->
+                  do_write_mem sz an anexp ac a v ii)
+            else
+              (ma >>| mv) >>= fun (a,v) ->
               do_write_mem sz an anexp ac a v ii)
           ma an ii
 
       let do_ldr sz an anexp rd ma ii =
         lift_memop Dir.R
-          (fun ac ma -> ma >>= fun a -> do_read_mem sz an anexp ac rd a ii)
+          (fun ac ma ->
+            insert_commit ii ma
+              (fun a -> do_read_mem sz an anexp ac rd a ii))
           ma an ii
 (*
    let do_ldr sz an anexp rd ma ii =
@@ -566,8 +587,8 @@ module Make
         in
         lift_memop Dir.R
           (fun ac ma ->
-            ma >>= fun a ->
-              match t with
+            insert_commit ii ma
+              (fun a -> match t with
               | XX ->
                   read_mem_reserve sz AArch64.X AArch64.Exp ac rd a ii
               | AA ->
@@ -575,8 +596,8 @@ module Make
               | AX ->
                   read_mem_reserve sz AArch64.XA AArch64.Exp ac rd a ii
               | AQ ->
-                  read_mem_acquire_pc sz AArch64.Exp ac rd a ii)
-          (read_reg_ord rs ii) an ii
+                  read_mem_acquire_pc sz AArch64.Exp ac rd a ii))
+              (read_reg_ord rs ii) an ii
 
       and stxr sz t rr rs rd ii =
         let open AArch64Base in
@@ -589,7 +610,7 @@ module Make
             M.riscv_store_conditional
               (read_reg_ord ResAddr ii)
               (read_reg_data sz rs ii)
-              ma
+              (append_commit ma ii)
               (write_reg ResAddr V.zero ii)
               (fun v -> write_reg rr v ii)
               (fun ea resa v -> match t with
@@ -655,7 +676,7 @@ module Make
                 and w2 v = write_reg r2 v ii (* no sz since alread masked *)
                 and r1 a = read_mem sz AArch64.Exp ac a ii
                 and w1 a v = write_mem sz AArch64.Exp ac a v ii in
-                M.swp ma r1 r2 w1 w2)
+                M.swp (append_commit ma ii) r1 r2 w1 w2)
               (read_reg_ord r3 ii) an ii
 
       let cas sz rmw rs rt rn ii =
@@ -684,7 +705,8 @@ module Make
               and write_mem a v = rmw_amo_write rmw sz AArch64.Exp ac a v ii
               and write_rs v =  write_reg rs v ii in
               M.aarch64_cas_ok
-                ma read_rs read_rt write_rs read_mem write_mem M.eqT))
+                (append_commit ma ii)
+                read_rs read_rt write_rs read_mem write_mem M.eqT))
           (read_reg_ord rn ii) an ii
 
       let ldop op sz rmw rs rt rn ii =
@@ -709,7 +731,8 @@ module Make
             else fun sz -> rmw_amo_read rmw sz AArch64.Exp
             and write_mem = fun sz -> rmw_amo_write rmw sz AArch64.Exp in
             M.amo_strict op
-              ma (fun a -> read_mem sz ac a ii) (read_reg_data sz rs ii)
+              (append_commit ma ii)
+              (fun a -> read_mem sz ac a ii) (read_reg_data sz rs ii)
               (fun a v -> write_mem sz ac a v ii)
               (fun w -> if noret then M.unitT () else write_reg_sz_non_mixed sz rt w ii))
           (read_reg_ord rn ii) an ii
