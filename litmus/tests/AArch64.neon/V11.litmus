@@ -2,10 +2,12 @@ AArch64 V11
 (* Tests store immediate, post-indexed *)
 { 
 a=1;
-0:X0=a; 0:X1=x;
+0:X0=a;
+0:X1=x;
 }
 
  P0                 ;
  LDR B0, [X0]       ;
- STR B0, [X1], #8   ;
- forall (x=1 /\ 0:X1!=x)
+ STR B0, [X1], #1   ;
+ STR B0, [X1]       ;
+ forall x=257

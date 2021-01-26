@@ -1,0 +1,11 @@
+Test V09 Required
+Histogram (1 states)
+1000000:>x=257;
+Ok
+
+Witnesses
+Positive: 1000000, Negative: 0
+Condition forall (x=257) is validated
+Hash=cc609c22200aa9fbaefa3ec33bc6c54d
+Observation V09 Always 1000000 0
+Time V09 0.04

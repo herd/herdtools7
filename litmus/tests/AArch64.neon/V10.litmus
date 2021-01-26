@@ -1,7 +1,8 @@
 AArch64 V10
 (* Tests load / store immediate, with offset *)
 {
-int64_t x; int8_t y;
+int64_t x[2]={0,0};
+int8_t y;
 0:X0=x; 0:X2=y;
 }
 

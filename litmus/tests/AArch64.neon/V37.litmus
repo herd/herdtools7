@@ -2,7 +2,7 @@ AArch64 V37
 (* Test Neon final state checking
    LD1 multiple structure *)
 {
-x = 22;
+int x[4] = {22,0,0,0};
 0:X0=x;
 }
  P0                         ;

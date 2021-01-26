@@ -1,10 +1,11 @@
 Test V10 Required
 Histogram (1 states)
-1000000:>y=1;
+4000000:>y=1;
 Ok
 
 Witnesses
-Positive: 1000000, Negative: 0
+Positive: 4000000, Negative: 0
 Condition forall (y=1) is validated
-Hash=ce2071645ccb10acb32fc1be0f489d5d
-Observation V10 Always 1000000 0
+Hash=5bed4fd2add6a2b2ae6f8df42de744a6
+Observation V10 Always 4000000 0
+Time V10 0.14
