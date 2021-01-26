@@ -29,6 +29,7 @@ type t =
 val voidstar : t
 val word : t
 val quad : t
+val int128 : t
 
 val dump : t -> string
 val debug : t -> string

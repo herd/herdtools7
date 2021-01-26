@@ -1,0 +1,11 @@
+AArch64 V22
+(* Tests LD2 multiple structure *)
+{
+x=65535;
+0:X0=x; 0:X1=y; 0:X2=z;
+}
+ P0                     ;
+ LD2 {V0.8B,V1.8B},[X0] ;
+ ST1 {V0.B}[0],[X1] ;
+ ST1 {V1.B}[0],[X2] ;
+forall(y=255 /\ z=255)

@@ -1,0 +1,10 @@
+Test V20 Required
+Histogram (1 states)
+1000000:>0:X0=1; 0:X1=1;
+Ok
+
+Witnesses
+Positive: 1000000, Negative: 0
+Condition forall (0:X0=1 /\ 0:X1=1) is validated
+Hash=9757abe712a4d6d4faf4becce89c26a6
+Observation V20 Always 1000000 0

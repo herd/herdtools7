@@ -30,24 +30,32 @@ let check_noext = function
 %token <string> SYMB_XREG
 %token <AArch64Base.reg> ARCH_WREG
 %token <string> SYMB_WREG
+%token <AArch64Base.reg> ARCH_VREG
+%token <AArch64Base.reg> ARCH_BREG
+%token <AArch64Base.reg> ARCH_HREG
+%token <AArch64Base.reg> ARCH_SREG
+%token <AArch64Base.reg> ARCH_DREG
+%token <AArch64Base.reg> ARCH_QREG
+%token <int> INDEX
 %token <int> NUM
 %token <string> NAME
 %token <string> META
 %token <string> CODEVAR
 %token <int> PROC
 
-%token SEMI COMMA PIPE COLON LBRK RBRK LPAR RPAR SCOPES LEVELS REGIONS
+%token SEMI COMMA PIPE COLON LCRL RCRL LBRK RBRK LPAR RPAR SCOPES LEVELS REGIONS
 %token SXTW
 
 /* Inline Barrel Shift Operands */
-%token LSL LSR ASR UXTW
+%token LSL LSR ASR MSL UXTW
 
 /* Instructions */
 %token NOP HINT HLT
 %token B BR BEQ BNE BGE BGT BLE BLT CBZ CBNZ EQ NE GE GT LE LT TBZ TBNZ
 %token BL BLR RET
 %token LDR LDP LDNP STP STNP LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
-%token CMP MOV MOVZ MOVK ADR
+%token LD1 LD1R LD2 LD2R LD3 LD3R LD4 LD4R ST1 ST2 ST3 ST4 STUR /* Neon load/store */
+%token CMP MOV MOVZ MOVK MOVI ADR
 %token  LDAR LDARB LDARH LDAPR LDAPRB LDAPRH  LDXR LDXRB LDXRH LDAXR LDAXRB LDAXRH
 %token STXR STXRB STXRH STLXR STLXRB STLXRH
 %token <AArch64Base.op> OP
@@ -160,6 +168,59 @@ wreg:
 | SYMB_WREG { A.Symbolic_reg $1 }
 | ARCH_WREG { $1 }
 
+xwr:
+| xreg { A.V64,$1 }
+| wreg { A.V32,$1 }
+
+vreg:
+| ARCH_VREG { $1 }
+
+vregs:
+| vregs1 { [$1] }
+| vregs2 { $1 }
+| vregs3 { $1 }
+| vregs4 { $1 }
+
+vregs1:
+| LCRL vreg RCRL { $2 }
+
+vregs2:
+| LCRL vreg COMMA vreg RCRL { [$2;$4] }
+
+vregs3:
+| LCRL vreg COMMA vreg COMMA vreg RCRL { [$2;$4;$6] }
+
+vregs4:
+| LCRL vreg COMMA vreg COMMA vreg COMMA vreg RCRL { [$2;$4;$6;$8] }
+
+scalar_regs:
+| breg { A.VSIMD8,$1 }
+| hreg { A.VSIMD16,$1 }
+| sreg { A.VSIMD32,$1 }
+| dreg { A.VSIMD64,$1 }
+| qreg { A.VSIMD128,$1 }
+
+breg:
+| ARCH_BREG { $1 }
+
+hreg:
+| ARCH_HREG { $1 }
+
+sreg:
+| ARCH_SREG { $1 }
+
+dreg:
+| ARCH_DREG { $1 }
+
+qreg:
+| ARCH_QREG { $1 }
+
+bhsdregs:
+| breg { A.VSIMD8,$1 }
+| hreg { A.VSIMD16,$1 }
+| sreg { A.VSIMD32,$1 }
+| dreg { A.VSIMD64,$1 }
+
 k:
 | NUM  { MetaConst.Int $1 }
 | META { MetaConst.Meta $1 }
@@ -191,6 +252,15 @@ kr0_no_shift:
 | COMMA wreg { A.RV (A.V32,$2) }
 | COMMA wreg COMMA SXTW { A.RV (A.V32,$2) }
 
+kx0_no_shift:
+| { A.K (MetaConst.zero) }
+| COMMA k { A.K $2 }
+| COMMA xreg { A.RV (A.V64,$2) }
+
+k0_no_shift:
+| { A.K (MetaConst.zero) }
+| COMMA k { A.K $2 }
+
 /* Beware: for w-indexed accesses SXTW is considered always present.
    Far from ideal, one simple to get correct assembly output for
    the litmus tool. */
@@ -202,6 +272,7 @@ shift:
 | LSL NUM  { A.S_LSL(MetaConst.Int $2)  }
 | LSR NUM  { A.S_LSR(MetaConst.Int $2)  }
 | ASR NUM  { A.S_ASR(MetaConst.Int $2)  }
+| MSL NUM  { A.S_MSL(MetaConst.Int $2)  }
 | SXTW { A.S_SXTW }
 | UXTW { A.S_UXTW }
 
@@ -219,11 +290,43 @@ ldp_instr:
 | LDNP
   { (fun v r1 r2 r3 kr -> A.I_LDP (A.NT,v,r1,r2,r3,kr)) }
 
+ldp_simd_instr:
+| LDP
+  { ( fun v r1 r2 r3 k0 k0' ->
+      match k0' with
+      | Some post ->
+        if k0 = A.K MetaConst.zero then A.I_LDP_P_SIMD (A.TT,v,r1,r2,r3,post)
+        else assert false
+      | None -> A.I_LDP_SIMD (A.TT,v,r1,r2,r3,k0)
+    )}
+| LDNP
+  { ( fun v r1 r2 r3 k0 k0' ->
+      match k0' with
+      | None -> A.I_LDP_SIMD (A.NT,v,r1,r2,r3,k0)
+      | Some _ -> assert false
+    )}
+
 stp_instr:
 | STP
   { (fun v r1 r2 r3 kr -> A.I_STP (A.TT,v,r1,r2,r3,kr)) }
 | STNP
   { (fun v r1 r2 r3 kr -> A.I_STP (A.NT,v,r1,r2,r3,kr)) }
+
+stp_simd_instr:
+| STP
+  { ( fun v r1 r2 r3 k0 k0' ->
+      match k0' with
+      | Some post ->
+        if k0 = A.K MetaConst.zero then A.I_STP_P_SIMD (A.TT,v,r1,r2,r3,post)
+        else assert false
+      | None -> A.I_STP_SIMD (A.TT,v,r1,r2,r3,k0)
+    )}
+| STNP
+  { ( fun v r1 r2 r3 k0 k0' ->
+      match k0' with
+      | None -> A.I_STP_SIMD (A.NT,v,r1,r2,r3,k0)
+      | Some _ -> assert false
+    )}
 
 cond:
 | EQ { A.EQ }
@@ -331,6 +434,109 @@ instr:
   { A.I_STXRBH (A.B,A.LY,$2,$4,$7) }
 | STLXRH wreg COMMA wreg COMMA LBRK xreg RBRK
   { A.I_STXRBH (A.H,A.LY,$2,$4,$7) }
+   /* Neon extension Memory */
+| LD1 vregs1 INDEX COMMA LBRK xreg RBRK kx0_no_shift
+  { A.I_LD1 ($2, $3, $6, $8) }
+| LD1 vregs COMMA LBRK xreg RBRK kx0_no_shift
+  { A.I_LD1M ($2, $5, $7) }
+| LD1R vregs1 COMMA LBRK xreg RBRK kx0_no_shift
+  { A.I_LD1R ($2, $5, $7) }
+| LD2 vregs2 INDEX COMMA LBRK xreg RBRK kx0_no_shift
+  { A.I_LD2 ($2, $3, $6, $8) }
+| LD2 vregs2 COMMA LBRK xreg RBRK kx0_no_shift
+  { A.I_LD2M ($2, $5, $7) }
+| LD2R vregs2 COMMA LBRK xreg RBRK kx0_no_shift
+  { A.I_LD2R ($2, $5, $7) }
+| LD3 vregs3 INDEX COMMA LBRK xreg RBRK kx0_no_shift
+   { A.I_LD3 ($2, $3, $6, $8) }
+| LD3 vregs3 COMMA LBRK xreg RBRK kx0_no_shift
+   { A.I_LD3M ($2, $5, $7)}
+| LD3R vregs3 COMMA LBRK xreg RBRK kx0_no_shift
+   { A.I_LD3R ($2, $5, $7) }
+| LD4 vregs4 INDEX COMMA LBRK xreg RBRK kx0_no_shift
+   { A.I_LD4 ($2, $3, $6, $8) }
+| LD4 vregs4 COMMA LBRK xreg RBRK kx0_no_shift
+   { A.I_LD4M ($2, $5, $7) }
+| LD4R vregs4 COMMA LBRK xreg RBRK kx0_no_shift
+   { A.I_LD4R ($2, $5, $7) }
+| ST1 vregs1 INDEX COMMA LBRK xreg RBRK kx0_no_shift
+   { A.I_ST1 ($2, $3, $6, $8) }
+| ST1 vregs COMMA LBRK xreg RBRK kx0_no_shift
+   { A.I_ST1M ($2, $5, $7) }
+| ST2 vregs2 INDEX COMMA LBRK xreg RBRK kx0_no_shift
+   { A.I_ST2 ($2, $3, $6, $8) }
+| ST2 vregs2 COMMA LBRK xreg RBRK kx0_no_shift
+   { A.I_ST2M ($2, $5, $7) }
+| ST3 vregs3 INDEX COMMA LBRK xreg RBRK kx0_no_shift
+   { A.I_ST3 ($2, $3, $6, $8) }
+| ST3 vregs3 COMMA LBRK xreg RBRK kx0_no_shift
+   { A.I_ST3M ($2, $5, $7) }
+| ST4 vregs4 INDEX COMMA LBRK xreg RBRK kx0_no_shift
+   { A.I_ST4 ($2, $3, $6, $8) }
+| ST4 vregs4 COMMA LBRK xreg RBRK kx0_no_shift
+   { A.I_ST4M ($2, $5, $7) }
+| ldp_simd_instr sreg COMMA sreg COMMA LBRK xreg k0_no_shift RBRK k0
+  { $1 A.VSIMD32 $2 $4 $7 $8 $10 }
+| ldp_simd_instr dreg COMMA dreg COMMA LBRK xreg k0_no_shift RBRK k0
+  { $1 A.VSIMD64 $2 $4 $7 $8 $10 }
+| ldp_simd_instr qreg COMMA qreg COMMA LBRK xreg k0_no_shift RBRK k0
+  { $1 A.VSIMD128 $2 $4 $7 $8 $10 }
+| stp_simd_instr sreg COMMA sreg COMMA LBRK xreg k0_no_shift RBRK k0
+  { $1 A.VSIMD32 $2 $4 $7 $8 $10 }
+| stp_simd_instr dreg COMMA dreg COMMA LBRK xreg k0_no_shift RBRK k0
+  { $1 A.VSIMD64 $2 $4 $7 $8 $10 }
+| stp_simd_instr qreg COMMA qreg COMMA LBRK xreg k0_no_shift RBRK k0
+  { $1 A.VSIMD128 $2 $4 $7 $8 $10 }
+| LDR scalar_regs COMMA LBRK xreg kr0 RBRK k0
+  { let v,r    = $2 in
+    let kr, os = $6 in
+    match $8 with
+    | Some post when kr = A.K MetaConst.zero ->
+      A.I_LDR_P_SIMD (v,r,$5,post)
+    | _ ->
+      A.I_LDR_SIMD (v,r,$5,kr,os) }
+| LDUR scalar_regs COMMA LBRK xreg k0 RBRK
+  { let v,r = $2 in
+    A.I_LDUR_SIMD (v, r, $5, $6) }
+| STR scalar_regs COMMA LBRK xreg kr0 RBRK k0
+  { let v,r    = $2 in
+    let kr, os = $6 in
+    match $8 with
+    | Some post when kr = A.K MetaConst.zero ->
+      A.I_STR_P_SIMD (v,r,$5,post)
+    | _ ->
+      A.I_STR_SIMD (v,r,$5,kr,os) }
+| STUR scalar_regs COMMA LBRK xreg k0 RBRK
+  { let v,r = $2 in
+    A.I_STUR_SIMD (v, r, $5, $6) }
+| MOV vreg INDEX COMMA vreg INDEX
+  { A.I_MOV_VE ($2, $3, $5, $6) }
+| MOV vreg INDEX COMMA xwr
+  { let v,r = $5 in
+    A.I_MOV_FG ($2, $3, v, r) }
+| MOV xreg COMMA vreg INDEX
+  { A.I_MOV_TG (A.V64, $2, $4, $5) }
+| MOV wreg COMMA vreg INDEX
+  { A.I_MOV_TG (A.V32, $2, $4, $5) }
+| MOV vreg COMMA vreg
+  { A.I_MOV_V ($2, $4) }
+| MOV bhsdregs COMMA vreg INDEX
+  { let v,r = $2 in
+    A.I_MOV_S (v, r, $4 ,$5) }
+| MOVI vreg COMMA k
+  { A.I_MOVI_V ($2, $4, A.S_NOEXT) }
+| MOVI vreg COMMA k COMMA shift
+  { A.I_MOVI_V ($2, $4, $6) }
+| MOVI dreg COMMA k
+  { A.I_MOVI_S ( A.VSIMD64, $2, $4) }
+| OP vreg COMMA vreg COMMA vreg
+  { match $1 with
+    | A.EOR -> A.I_EOR_SIMD ($2,$4,$6)
+    | _ -> assert false}
+| ADD vreg COMMA vreg COMMA vreg
+  { A.I_ADD_SIMD ($2,$4,$6) }
+| ADD dreg COMMA dreg COMMA dreg
+  { A.I_ADD_SIMD_S ($2,$4,$6)}
     /* Compare and swap */
 | CAS wreg COMMA wreg COMMA  LBRK xreg zeroopt RBRK
   { A.I_CAS (A.V32,A.RMW_P,$2,$4,$7) }

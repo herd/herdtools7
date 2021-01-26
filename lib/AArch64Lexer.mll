@@ -85,6 +85,21 @@ match name with
 | "stlxrb"|"STLXRB" -> STLXRB
 | "stxrh"|"STXRH" -> STXRH
 | "stlxrh"|"STLXRH" -> STLXRH
+(* Neon Extension Memory *)
+| "ld1" | "LD1" -> LD1
+| "ld1r" | "LD1R" -> LD1R
+| "ld2" | "LD2" -> LD2
+| "ld2r" | "LD2R" -> LD2R
+| "ld3" | "LD3" -> LD3
+| "ld3r" | "LD3R" -> LD3R
+| "ld4" | "LD4" -> LD4
+| "ld4r" | "LD4R" -> LD4R
+| "stur" | "STUR" -> STUR
+| "st1" | "ST1" -> ST1
+| "st2" | "ST2" -> ST2
+| "st3" | "ST3" -> ST3
+| "st4" | "ST4" -> ST4
+| "movi" | "MOVI" -> MOVI
 (* Compare and swap *)
 | "cas"|"CAS" -> CAS
 | "casa"|"CASA" -> CASA
@@ -342,6 +357,7 @@ match name with
 (* inline barrel shift operands *)
 | "lsl" | "LSL" -> LSL
 | "lsr" | "LSR" -> LSR
+| "msl" | "MSL" -> MSL
 (* Cache maintenance *)
 | "ic"|"IC" -> IC
 | "dc"|"DC" -> DC
@@ -381,7 +397,23 @@ match name with
         | None ->
             begin match A.parse_creg name with
             | Some r -> ARCH_CREG r
-            | None -> NAME name
+            | None ->
+                begin match A.parse_vreg name with
+                | Some r -> ARCH_VREG r
+                | None ->
+                    begin match A.parse_simd_reg name with
+                    | Some r ->
+                        begin match (Char.uppercase_ascii name.[0]) with
+                        | 'B' -> ARCH_BREG r
+                        | 'H' -> ARCH_HREG r
+                        | 'S' -> ARCH_SREG r
+                        | 'D' -> ARCH_DREG r
+                        | 'Q' -> ARCH_QREG r
+                        | _ -> assert false
+                        end
+                    | None -> NAME name
+                    end
+                end
             end
         end
     end
@@ -401,9 +433,12 @@ rule token = parse
 | ['w''W']'%' (name as name) { SYMB_WREG name }
 | ['x''X']?'%' (name as name) { SYMB_XREG name }
 | ['c''C']?'%' (name as name) { SYMB_CREG name }
+| '[' (num as i) ']' { INDEX (int_of_string i) }
 | ';' { SEMI }
 | ',' { COMMA }
 | '|' { PIPE }
+| '{' { LCRL }
+| '}' { RCRL }
 | '[' { LBRK }
 | ']' { RBRK }
 | '(' { LPAR }

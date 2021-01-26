@@ -285,11 +285,19 @@ locindex:
 
 atom_prop:
 | location EQUAL maybev {Atom (LV (Loc $1,$3))}
+| location EQUAL LCURLY maybev_list RCURLY
+    { let sz = List.length $4 in
+      let vec = Constant.mk_vec sz $4 in
+      Atom (LV (Loc $1,vec)) }
 | location EQUALEQUAL maybev {Atom (LV (Loc $1,$3))}
 | locindex EQUAL maybev {Atom (LV ($1,$3))}
 | locindex EQUALEQUAL maybev {Atom (LV ($1,$3))}
 | location NOTEQUAL maybev {Not (Atom (LV (Loc $1,$3)))}
 | locindex NOTEQUAL maybev {Not (Atom (LV ($1,$3)))}
+| location NOTEQUAL LCURLY maybev_list RCURLY
+    { let sz = List.length $4 in
+      let vec = Constant.mk_vec sz $4 in
+      Not (Atom (LV (Loc $1,vec))) }
 | location EQUAL location_deref {Atom (LL ($1,$3))}
 | location EQUALEQUAL location_deref {Atom (LL ($1,$3))}
 | FAULT LPAR lbl COMMA NAME RPAR { Atom (FF ($3,mk_sym $5)) }

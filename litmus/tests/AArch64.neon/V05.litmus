@@ -1,0 +1,11 @@
+AArch64 V05
+(* Tests LD1 multiple structure *)
+{
+x=255;
+0:X0=x; 0:X1=y; 0:X2=z;
+}
+ P0                     ;
+ LD1 {V0.8B},[X0]       ;
+ ST1 {V0.B}[0],[X1]     ;
+ ST1 {V0.B}[8],[X2]     ;
+forall(y=255 /\ z=0)

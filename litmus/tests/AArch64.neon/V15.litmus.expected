@@ -1,0 +1,10 @@
+Test V15 Required
+Histogram (1 states)
+1000000:>x=255; y=0;
+Ok
+
+Witnesses
+Positive: 1000000, Negative: 0
+Condition forall (x=255 /\ y=0) is validated
+Hash=7428d443bbf832d5f78973f326e0759a
+Observation V15 Always 1000000 0

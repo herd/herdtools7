@@ -38,7 +38,18 @@ module Make(V:Constant.S)(C:Config) =
 (* No addresses in code *)
     let extract_addrs _ins = StringSet.empty
 
-    let stable_regs _ins = A.RegSet.empty
+    let stable_regs _ins = match _ins with
+    | I_LD1M (rs,_,_)
+    | I_LD2 (rs,_,_,_) | I_LD2M (rs,_,_) | I_LD2R (rs,_,_)
+    | I_LD3 (rs,_,_,_) | I_LD3M (rs,_,_) | I_LD3R (rs,_,_)
+    | I_LD4 (rs,_,_,_) | I_LD4M (rs,_,_) | I_LD4R (rs,_,_)
+    | I_ST1M (rs,_,_)
+    | I_ST2 (rs,_,_,_) | I_ST2M (rs,_,_)
+    | I_ST3 (rs,_,_,_) | I_ST3M (rs,_,_)
+    | I_ST4 (rs,_,_,_) | I_ST4M (rs,_,_) ->
+        A.RegSet.of_list rs
+    | I_LD1 (r,_,_,_) -> A.RegSet.of_list [r]
+    | _ ->  A.RegSet.empty
 
 (* Handle zero reg *)
     let arg1 ppz fmt r = match r with
@@ -55,11 +66,13 @@ module Make(V:Constant.S)(C:Config) =
     let add_w = add_type word
     let add_q = add_type quad
     let add_v = add_type voidstar
+    let add_128 = add_type int128
 
 (* pretty prints barrel shifters *)
     let pp_shifter = function
       | S_LSL(s) -> Printf.sprintf "LSL #%d" s
       | S_LSR(s) -> Printf.sprintf "LSR #%d" s
+      | S_MSL(s) -> Printf.sprintf "MSL #%d" s
       | S_ASR(s) -> Printf.sprintf "ASR #%d" s
       | S_SXTW -> "SXTW"
       | S_UXTW -> "UXTW"
@@ -401,6 +414,414 @@ module Make(V:Constant.S)(C:Config) =
           outputs = [r1;]; reg_env=[r3,voidstar; r2,quad; r1,word; ]}
     | V128 -> assert false
 
+(* Neon Extension Load and Store *)
+
+    let print_simd_reg io offset i r = match r with
+    | Vreg (_,s) -> "^" ^ io ^ string_of_int (i+offset) ^
+      (try Misc.lowercase (List.assoc s arrange_specifier) with Not_found -> assert false)
+    | _ -> assert false
+
+    let print_vecreg v io i = "^" ^ (match v with
+    | VSIMD8 -> "b"
+    | VSIMD16 -> "h"
+    | VSIMD32 -> "s"
+    | VSIMD64 -> "d"
+    | VSIMD128 -> "q")
+    ^ io ^ string_of_int i
+
+    let print_simd_list rs io offset =
+       String.concat "," (List.mapi (print_simd_reg io offset) rs)
+
+    let load_simd memo v r1 r2 k os = match k,os with
+    | K 0,S_NOEXT ->
+      { empty_ins with
+        memo = sprintf "%s %s,[^i0]" memo (print_vecreg v "o" 0);
+        inputs = [r2];
+        outputs = [r1];
+        reg_env = [(r1,int128);(r2,voidstar)]}
+    | K k,S_NOEXT ->
+      { empty_ins with
+        memo = sprintf "%s %s,[^i0,#%i]" memo (print_vecreg v "o" 0) k;
+        inputs = [r2];
+        outputs = [r1];
+        reg_env = [(r1,int128);(r2,voidstar)]}
+    | RV (V32,rk),S_NOEXT ->
+      { empty_ins with
+        memo = sprintf "%s %s,[^i0,^wi1]" memo (print_vecreg v "o" 0);
+        inputs = [r2;rk;];
+        outputs = [r1];
+        reg_env = [(r1,int128);(r2,voidstar);(rk,word)]}
+    | RV (V32,rk),s ->
+      { empty_ins with
+        memo = sprintf "%s %s,[^i0,^wi1,%s]" memo (print_vecreg v "o" 0) (pp_shifter s);
+        inputs = [r2;rk;];
+        outputs = [r1];
+        reg_env = [(r1,int128);(r2,voidstar);(rk,word)]}
+    | RV (V64,rk), S_NOEXT ->
+      { empty_ins with
+        memo = sprintf "%s %s,[^i0,^i1]" memo (print_vecreg v "o" 0);
+        inputs = [r2;rk;];
+        outputs = [r1];
+        reg_env = [(r1,int128);(r2,voidstar);(rk,quad)]}
+    | RV (V64,rk), s ->
+      { empty_ins with
+        memo = sprintf "%s %s,[^i0,^i1,%s]" memo (print_vecreg v "o" 0) (pp_shifter s);
+        inputs = [r2;rk;];
+        outputs = [r1];
+        reg_env = [(r1,int128);(r2,voidstar);(rk,quad)]}
+    | _ -> assert false
+
+    let load_simd_p v r1 r2 k =
+      { empty_ins with
+        memo = sprintf "ldr %s, [^i0],#%i" (print_vecreg v "o" 0) k;
+        inputs = [r2];
+        outputs = [r1];
+        reg_env = [(r1,int128);(r2,voidstar)]}
+
+    let load_simd_s memo rs i rA kr = match kr with
+    | K 0 ->
+        { empty_ins with
+          memo = sprintf "%s {%s}[%i],[^i0]" memo (print_simd_list rs "i" 1) i;
+          inputs = rA::rs;
+          outputs = [];
+          reg_env = (add_128 rs) @ [(rA,voidstar)]}
+    | K k ->
+        { empty_ins with
+          memo = sprintf "%s {%s}[%i],[^i0],#%i" memo (print_simd_list rs "i" 1) i k;
+          inputs = rA::rs;
+          outputs = [];
+          reg_env = (add_128 rs) @ [(rA,voidstar)]}
+    | RV (V64,rB) ->
+        { empty_ins with
+          memo = sprintf "%s {%s}[%i],[^i0],^i1" memo (print_simd_list rs "i" 2) i;
+          inputs = [rA;rB;]@rs;
+          outputs = [];
+          reg_env = (add_128 rs) @ [(rA,voidstar);(rB,quad)]}
+    | _ -> Warn.fatal "Illegal form of %s instruction" memo
+
+    let load_simd_m memo rs rA kr = match kr with
+    | K 0 ->
+        { empty_ins with
+          memo = sprintf "%s {%s},[^i0]" memo (print_simd_list rs "o" 0);
+          inputs = [rA];
+          outputs = rs;
+          reg_env = (add_128 rs) @ [(rA,voidstar)]}
+    | K k ->
+        { empty_ins with
+          memo = sprintf "%s {%s},[^i0],#%i" memo (print_simd_list rs "o" 0) k;
+          inputs = [rA];
+          outputs = rs;
+          reg_env = (add_128 rs) @ [(rA,voidstar)]}
+    | RV (V64,rB) ->
+        { empty_ins with
+          memo = sprintf "%s {%s},[^i0],^i1" memo (print_simd_list rs "o" 0);
+          inputs=[rA;rB;];
+          outputs = rs;
+          reg_env = (add_128 rs) @ [(rA,voidstar);(rB,quad)]}
+    | _ -> Warn.fatal "Illegal form of %s instruction" memo
+
+    let load_pair_simd memo v r1 r2 r3 kr = match v,kr with
+    | VSIMD32,K 0 ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i0]" memo (print_vecreg VSIMD32 "o" 0) (print_vecreg VSIMD32 "o" 1);
+          inputs=[r3];
+          outputs=[r1;r2;];
+          reg_env= (add_128 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD32,K k ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i0,#%i]" memo (print_vecreg VSIMD32 "o" 0) (print_vecreg VSIMD32 "o" 1) k;
+          inputs=[r3];
+          outputs=[r1;r2;];
+          reg_env= (add_128 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD64,K 0 ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i0]" memo (print_vecreg VSIMD64 "o" 0) (print_vecreg VSIMD64 "o" 1);
+          inputs=[r3];
+          outputs=[r1;r2;];
+          reg_env= (add_128 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD64,K k ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i0,#%i]" memo (print_vecreg VSIMD64 "o" 0) (print_vecreg VSIMD64 "o" 1) k;
+          inputs=[r3];
+          outputs=[r1;r2;];
+          reg_env= (add_128 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD128,K 0 ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i0]" memo (print_vecreg VSIMD128 "o" 0) (print_vecreg VSIMD128 "o" 1);
+          inputs=[r3];
+          outputs=[r1;r2;];
+          reg_env= (add_128 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD128,K k ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i0,#%i]" memo (print_vecreg VSIMD128 "o" 0) (print_vecreg VSIMD128 "o" 1) k;
+          inputs=[r3];
+          outputs=[r1;r2;];
+          reg_env= (add_128 [r1;r2;]) @ [(r3,voidstar)]}
+    | _, _ -> assert false
+
+    let load_pair_p_simd memo v r1 r2 r3 k = match v with
+    | VSIMD32 ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i0],#%i" memo (print_vecreg VSIMD32 "o" 0) (print_vecreg VSIMD32 "o" 1) k;
+          inputs=[r3];
+          outputs=[r1;r2;];
+          reg_env= (add_128 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD64 ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i0],#%i" memo (print_vecreg VSIMD64 "o" 0) (print_vecreg VSIMD64 "o" 1) k;
+          inputs=[r3];
+          outputs=[r1;r2;];
+          reg_env= (add_128 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD128 ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i0],#%i" memo (print_vecreg VSIMD128 "o" 0) (print_vecreg VSIMD128 "o" 1) k;
+          inputs=[r3];
+          outputs=[r1;r2;];
+          reg_env= (add_128 [r1;r2;]) @ [(r3,voidstar)]}
+    | _ -> assert false
+
+    let store_simd memo v r1 r2 k os = match k,os with
+    | K 0,S_NOEXT ->
+      { empty_ins with
+        memo = sprintf "%s %s,[^i1]" memo (print_vecreg v "i" 0);
+        inputs = [r1;r2];
+        outputs = [];
+        reg_env = [(r1,int128);(r2,voidstar)]}
+    | K k,S_NOEXT ->
+      { empty_ins with
+        memo = sprintf "%s %s,[^i1,#%i]" memo (print_vecreg v "i" 0) k;
+        inputs = [r1;r2];
+        outputs = [];
+        reg_env = [(r1,int128);(r2,voidstar)]}
+    | RV (V32,rk),S_NOEXT ->
+      { empty_ins with
+        memo = sprintf "%s %s,[^i1,^wi2]" memo (print_vecreg v "i" 0);
+        inputs = [r1;r2;rk];
+        outputs = [];
+        reg_env = [(r1,int128);(r2,voidstar);(rk,word)]}
+    | RV (V32,rk),s ->
+      { empty_ins with
+        memo = sprintf "%s %s,[^i1,^wi2,%s]" memo (print_vecreg v "i" 0) (pp_shifter s);
+        inputs = [r1;r2;rk];
+        outputs = [];
+        reg_env = [(r1,int128);(r2,voidstar);(rk,word)]}
+    | RV (V64,rk),S_NOEXT ->
+      { empty_ins with
+        memo = sprintf "%s %s,[^i1,^i2]" memo (print_vecreg v "i" 0);
+        inputs = [r1;r2;rk];
+        outputs = [];
+        reg_env = [(r1,int128);(r2,voidstar);(rk,quad)]}
+    | RV (V64,rk),s ->
+      { empty_ins with
+        memo = sprintf "%s %s,[^i1,^i2,%s]" memo (print_vecreg v "i" 0) (pp_shifter s);
+        inputs = [r1;r2;rk];
+        outputs = [];
+        reg_env = [(r1,int128);(r2,voidstar);(rk,quad)]}
+    | _ -> assert false
+
+    let store_simd_p v r1 r2 k1 =
+      { empty_ins with
+        memo = sprintf "str %s, [^i1],%i" (print_vecreg v "i" 0) k1;
+        inputs = [r1;r2];
+        outputs = [];
+        reg_env = [(r1,int128);(r2,voidstar)]}
+
+    let store_simd_s memo rs i rA kr = match kr with
+    | K 0 ->
+        { empty_ins with
+          memo = sprintf "%s {%s}[%i],[^i0]" memo (print_simd_list rs "i" 1) i;
+          inputs = rA :: rs;
+          reg_env = (add_128 rs) @ [(rA,voidstar)]}
+    | K k ->
+        { empty_ins with
+          memo = sprintf "%s {%s}[%i],[^i0],#%i" memo (print_simd_list rs "i" 1) i k;
+          inputs = rA :: rs;
+          reg_env = (add_128 rs) @ [(rA,voidstar)]}
+    | RV (V64,rB) ->
+        { empty_ins with
+          memo = sprintf "%s {%s}[%i],[^i0],^i1" memo (print_simd_list rs "i" 2) i;
+          inputs = [rA;rB;] @ rs;
+          reg_env = (add_128 rs) @ [(rA,voidstar);(rB,quad)]}
+    | _ -> Warn.fatal "Illegal form of %s instruction" memo
+
+    let store_simd_m memo rs rA kr = match kr with
+    | K 0 ->
+      { empty_ins with
+        memo = sprintf "%s {%s},[^i0]" memo (print_simd_list rs "i" 1);
+        inputs = rA :: rs;
+        reg_env = [(rA,voidstar)] @ (add_128 rs)}
+    | K k ->
+      { empty_ins with
+        memo = sprintf "%s {%s},[^i0],#%i" memo (print_simd_list rs "i" 1) k;
+        inputs = rA :: rs;
+        reg_env = [(rA,voidstar)] @ (add_128 rs)}
+    | RV (V64,rB) ->
+      { empty_ins with
+        memo = sprintf "%s {%s},[^i0],^i1" memo (print_simd_list rs "i" 2);
+        inputs = [rA;rB;] @ rs;
+        reg_env = [(rA,voidstar);(rB,quad)] @ (add_128 rs)}
+    | _ -> Warn.fatal "Illegal form of %s instruction" memo
+
+    let store_pair_simd memo v r1 r2 r3 kr = match v,kr with
+    | VSIMD32,K 0 ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i2]" memo (print_vecreg VSIMD32 "i" 0) (print_vecreg VSIMD32 "i" 1);
+          inputs = [r1;r2;r3];
+          outputs = [];
+          reg_env = (add_128 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD32,K k ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i2,#%i]" memo (print_vecreg VSIMD32 "i" 0) (print_vecreg VSIMD32 "i" 1) k;
+          inputs = [r1;r2;r3];
+          outputs = [];
+          reg_env = (add_128 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD64,K 0 ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i2]" memo (print_vecreg VSIMD64 "i" 0) (print_vecreg VSIMD64 "i" 1);
+          inputs = [r1;r2;r3];
+          outputs = [];
+          reg_env = (add_128 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD64,K k ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i2,#%i]" memo (print_vecreg VSIMD64 "i" 0) (print_vecreg VSIMD64 "i" 1) k;
+          inputs = [r1;r2;r3];
+          outputs = [];
+          reg_env = (add_128 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD128,K 0 ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i2]" memo (print_vecreg VSIMD128 "i" 0) (print_vecreg VSIMD128 "i" 1);
+          inputs = [r1;r2;r3];
+          outputs = [];
+          reg_env = (add_128 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD128,K k ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i2,#%i]" memo (print_vecreg VSIMD128 "i" 0) (print_vecreg VSIMD128 "i" 1) k;
+          inputs = [r1;r2;r3];
+          outputs = [];
+          reg_env = (add_128 [r1;r2;]) @ [(r3,voidstar)]}
+    | _,_ -> assert false
+
+    let store_pair_p_simd memo v r1 r2 r3 k = match v with
+    | VSIMD32 ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i2],#%i" memo (print_vecreg VSIMD32 "i" 0) (print_vecreg VSIMD32 "i" 1) k;
+          inputs = [r1;r2;r3];
+          outputs = [];
+          reg_env = (add_128 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD64 ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i2],#%i" memo (print_vecreg VSIMD64 "i" 0) (print_vecreg VSIMD64 "i" 1) k;
+          inputs = [r1;r2;r3];
+          outputs = [];
+          reg_env = (add_128 [r1;r2;]) @ [(r3,voidstar)]}
+    | VSIMD128 ->
+        { empty_ins with
+          memo = sprintf "%s %s,%s,[^i2],#%i" memo (print_vecreg VSIMD128 "i" 0) (print_vecreg VSIMD128 "i" 1) k;
+          inputs = [r1;r2;r3];
+          outputs = [];
+          reg_env = (add_128 [r1;r2;]) @ [(r3,voidstar)]}
+    | _ -> assert false
+
+    let mov_simd_ve r1 i1 r2 i2 =
+      { empty_ins with
+        memo = sprintf "mov %s[%i], %s[%i]" (print_simd_reg "o" 0 0 r1) i1 (print_simd_reg "i" 0 0 r2) i2;
+        inputs = [r2];
+        outputs = [r1];
+        reg_env = (add_128 [r1;r2;]);}
+
+    let mov_simd_v r1 r2 =
+      { empty_ins with
+        memo = sprintf "mov %s, %s" (print_simd_reg "o" 0 0 r1) (print_simd_reg "i" 0 0 r2);
+        inputs = [r2];
+        outputs = [r1];
+        reg_env = (add_128 [r1;r2]);}
+
+    let mov_simd_s v r1 r2 i =
+      { empty_ins with
+        memo = sprintf "mov %s, %s[%i]" (print_vecreg v "o" 0) (print_simd_reg "i" 0 0 r2) i;
+        inputs = [r2];
+        outputs = [r1];
+        reg_env = (add_128 [r1;r2])}
+
+    let mov_simd_tg v r1 r2 i =
+      { empty_ins with
+        memo = sprintf "mov %s, %s[%i]"
+          (match v with | V32 -> "^wo0" | V64 -> "^o0" | V128 -> assert false)
+          (print_simd_reg "i" 0 0 r2)
+          i;
+        inputs = [r2];
+        outputs = [r1];
+        reg_env = ((match v with
+          | V32 -> add_w
+          | V64 -> add_q
+          | V128 -> assert false)
+        [r1;]) @ (add_128 [r2;])}
+
+    let mov_simd_fg r1 i v r2 =
+      { empty_ins with
+        memo = sprintf "mov %s[%i],%s"
+          (print_simd_reg "i" 0 0 r1)
+          i
+          (match v with | V32 -> "^wi1" | V64 -> "^i1" | V128 -> assert false);
+        inputs = [r1;r2];
+        outputs = [];
+        reg_env = (add_128 [r1;]) @ ((
+          match v with
+          | V32 -> add_w
+          | V64 -> add_q
+          | V128 -> assert false) [r2;])}
+
+    let movi_s v r k = match v with
+    | VSIMD64 ->
+      { empty_ins with
+        memo = sprintf "movi %s, #%i" (print_vecreg v "o" 0) k;
+        inputs = [];
+        outputs = [r;];
+        reg_env = (add_128 [r])}
+    | _ -> assert false
+
+    let movi_v r k s = match s with
+    | S_NOEXT ->
+      { empty_ins with
+        memo = sprintf "movi %s,#%i" (print_simd_reg "o" 0 0 r) k;
+        inputs = [];
+        outputs = [r;];
+        reg_env = (add_128 [r])}
+    | S_LSL(ks) ->
+      { empty_ins with
+        memo = sprintf "movi %s,#%i,%s" (print_simd_reg "o" 0 0 r) k (pp_shifter (S_LSL ks));
+        inputs = [];
+        outputs = [r;];
+        reg_env = (add_128 [r])}
+    | S_MSL(ks) ->
+      { empty_ins with
+        memo = sprintf "movi %s,#%i,%s" (print_simd_reg "o" 0 0 r) k (pp_shifter (S_MSL ks));
+        inputs = [];
+        outputs = [r;];
+        reg_env = (add_128 [r])}
+    | _ -> assert false
+
+    let eor_simd r1 r2 r3 =
+      { empty_ins with
+        memo = sprintf "eor %s,%s,%s" (print_simd_reg "o" 0 0 r1) (print_simd_reg "i" 0 0 r2) (print_simd_reg "i" 0 1 r3);
+        inputs = [r2;r3;];
+        outputs = [r1];
+        reg_env = (add_128 [r1;r2;r3;])}
+
+    let add_simd r1 r2 r3 =
+      { empty_ins with
+        memo = sprintf "add %s,%s,%s" (print_simd_reg "o" 0 0 r1) (print_simd_reg "i" 0 0 r2) (print_simd_reg "i" 0 1 r3);
+        inputs = [r2;r3];
+        outputs = [r1];
+        reg_env = (add_128 [r1;r2;r3;])}
+
+    let add_simd_s r1 r2 r3 =
+      { empty_ins with
+        memo = sprintf "add %s,%s,%s" (print_vecreg VSIMD64 "o" 0) (print_vecreg VSIMD64 "i" 0) (print_vecreg VSIMD64 "i" 1);
+        inputs = [r2;r3;];
+        outputs = [r1];
+        reg_env = (add_128 [r1;r2;r3;])}
+
 (* Compare and swap *)
     let type_of_variant = function
       | V32 -> word | V64 -> quad | V128 -> assert false
@@ -686,6 +1107,53 @@ module Make(V:Constant.S)(C:Config) =
     | I_CASBH (bh,rmw,r1,r2,r3) -> cas (casbh_memo bh rmw) V32 r1 r2 r3::k
     | I_SWP (v,rmw,r1,r2,r3) -> swp (swp_memo rmw) v r1 r2 r3::k
     | I_SWPBH (bh,rmw,r1,r2,r3) -> swp (swpbh_memo bh rmw) V32 r1 r2 r3::k
+(* Neon Extension Load and Store *)
+    | I_LD1 (r1,i,r2,kr) -> load_simd_s "ld1" [r1] i r2 kr::k
+    | I_LD1M (rs,r2,kr) -> load_simd_m "ld1" rs r2 kr::k
+    | I_LD1R (r1,r2,kr) -> load_simd_m "ld1r" [r1] r2 kr::k
+    | I_LD2 (rs,i,r2,kr) -> load_simd_s "ld2" rs i r2 kr::k
+    | I_LD2M (rs,r2,kr) -> load_simd_m "ld2" rs r2 kr::k
+    | I_LD2R (rs,r2,kr) -> load_simd_m "ld2r" rs r2 kr::k
+    | I_LD3 (rs,i,r2,kr) -> load_simd_s "ld3" rs i r2 kr::k
+    | I_LD3M (rs,r2,kr) -> load_simd_m "ld3" rs r2 kr::k
+    | I_LD3R (rs,r2,kr) -> load_simd_m "ld3r" rs r2 kr::k
+    | I_LD4 (rs,i,r2,kr) -> load_simd_s "ld4" rs i r2 kr::k
+    | I_LD4M (rs,r2,kr) -> load_simd_m "ld4" rs r2 kr::k
+    | I_LD4R (rs,r2,kr) -> load_simd_m "ld4r" rs r2 kr::k
+    | I_ST1 (r1,i,r2,kr) -> store_simd_s "st1" [r1] i r2 kr::k
+    | I_ST1M (rs,r2,kr) -> store_simd_m "st1" rs r2 kr::k
+    | I_ST2 (rs,i,r2,kr) -> store_simd_s "st2" rs i r2 kr::k
+    | I_ST2M (rs,r2,kr) -> store_simd_m "st2" rs r2 kr::k
+    | I_ST3 (rs,i,r2,kr) -> store_simd_s "st3" rs i r2 kr::k
+    | I_ST3M (rs,r2,kr) -> store_simd_m "st3" rs r2 kr::k
+    | I_ST4 (rs,i,r2,kr) -> store_simd_s "st4" rs i r2 kr::k
+    | I_ST4M (rs,r2,kr) -> store_simd_m "st4" rs r2 kr::k
+    | I_LDP_SIMD (t,v,r1,r2,r3,kr) ->
+        load_pair_simd (match t with TT -> "ldp" | NT -> "ldnp") v r1 r2 r3 kr::k
+    | I_STP_SIMD (t,v,r1,r2,r3,kr) ->
+        store_pair_simd (match t with TT -> "stp" | NT -> "stnp") v r1 r2 r3 kr::k
+    | I_LDP_P_SIMD (t,v,r1,r2,r3,k1) ->
+        load_pair_p_simd (match t with TT -> "ldp" | NT -> "ldnp") v r1 r2 r3 k1::k
+    | I_STP_P_SIMD (t,v,r1,r2,r3,k1) ->
+        store_pair_p_simd (match t with TT -> "stp" | NT -> "stnp") v r1 r2 r3 k1::k
+    | I_LDR_SIMD (v,r1,r2,k1,s) -> load_simd "ldr" v r1 r2 k1 s::k
+    | I_LDR_P_SIMD (v,r1,r2,k1) -> load_simd_p v r1 r2 k1::k
+    | I_STR_SIMD (v,r1,r2,k1,s) -> store_simd "str" v r1 r2 k1 s::k
+    | I_STR_P_SIMD (v,r1,r2,k1) -> store_simd_p v r1 r2 k1::k
+    | I_LDUR_SIMD (v,r1,r2,Some(k1)) -> load_simd "ldur" v r1 r2 (K k1) S_NOEXT::k
+    | I_LDUR_SIMD (v,r1,r2,None) -> load_simd "ldur" v r1 r2 (K 0) S_NOEXT::k
+    | I_STUR_SIMD (v,r1,r2,Some(k1)) -> store_simd "stur" v r1 r2 (K k1) S_NOEXT::k
+    | I_STUR_SIMD (v,r1,r2,None) -> store_simd "stur" v r1 r2 (K 0) S_NOEXT::k
+    | I_MOV_VE (r1,i1,r2,i2) -> mov_simd_ve r1 i1 r2 i2::k
+    | I_MOV_V (r1,r2) -> mov_simd_v r1 r2::k
+    | I_MOV_FG (r1,i,v,r2) -> mov_simd_fg r1 i v r2::k
+    | I_MOV_TG (v,r1,r2,i) -> mov_simd_tg v r1 r2 i::k
+    | I_MOVI_S (v,r,k1) -> movi_s v r k1::k
+    | I_MOVI_V (r,kr,s) -> movi_v r kr s::k
+    | I_MOV_S (v,r1,r2,i) -> mov_simd_s v r1 r2 i::k
+    | I_EOR_SIMD (r1,r2,r3) -> eor_simd r1 r2 r3::k
+    | I_ADD_SIMD (r1,r2,r3) -> add_simd r1 r2 r3::k
+    | I_ADD_SIMD_S (r1,r2,r3) -> add_simd_s r1 r2 r3::k
 (* Arithmetic *)
     | I_MOV (v,r,K i) ->  movk v r i::k
     | I_MOV (v,r1,RV (_,r2)) ->  movr v r1 r2::k

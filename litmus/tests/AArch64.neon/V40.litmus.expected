@@ -1,0 +1,10 @@
+Test V40 Required
+Histogram (1 states)
+1000000:>x=9; y=0;
+Ok
+
+Witnesses
+Positive: 1000000, Negative: 0
+Condition forall (x=9 /\ y=0) is validated
+Hash=57511f10d8ea509cffeec27d3852cfef
+Observation V40 Always 1000000 0

@@ -1,0 +1,10 @@
+Test V39 Required
+Histogram (1 states)
+1000000:>z=3;
+Ok
+
+Witnesses
+Positive: 1000000, Negative: 0
+Condition forall (z=3) is validated
+Hash=34b382984f80d17d1950438f9b681e27
+Observation V39 Always 1000000 0

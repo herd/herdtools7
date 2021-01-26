@@ -29,6 +29,8 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
   let reg_to_string r =  match r with
   | Symbolic_reg _ -> assert false
   | Internal i -> sprintf "i%i" i
+  | Vreg (vr, _) | SIMDreg vr ->
+      (try Misc.lowercase (List.assoc vr vvrs) with Not_found -> assert false)
   | _ ->
       try Misc.lowercase (Hashtbl.find tab r) with Not_found -> assert false
 
@@ -49,8 +51,12 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
           else if reg_compare r max_idx = 0 then some "max_idx"
           else if reg_compare r loop_idx = 0 then some "max_loop"
           else None
-        let reg_class _ = "=&r"
-        let reg_class_stable _ = "=r"
+        let reg_class reg = match reg with
+          | Vreg _ | SIMDreg _ -> "=&w"
+          | _ -> "=&r"
+        let reg_class_stable reg = match reg with
+          | Vreg _ | SIMDreg _ -> "+w"
+          | _ -> "=r"
         let comment = comment
         let error t1 t2 =
           let open CType in

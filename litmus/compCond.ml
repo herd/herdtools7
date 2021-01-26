@@ -46,11 +46,18 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
 
       let dump_v v = V.pp O.hexa v
 
+      let dump_vec loc vs =
+        let mk_elem_check i v =
+          "(" ^ (dump_rloc I.Loc.dump loc) ^ " ["^ string_of_int i ^ "] == "^ (dump_v v) ^")"
+        in
+        String.concat " && " (List.mapi (mk_elem_check) vs)
+
       let dump  =
         let rec dump_prop p = match p with
         | Atom (LV (loc,v)) ->
-            O.fprintf "%s == %s"
-              (dump_rloc I.Loc.dump loc) (dump_v v)
+          (match v with
+          | Constant.ConcreteVector (_,vs) -> O.fprintf "%s" (dump_vec loc vs)
+          | _ -> O.fprintf "%s == %s" (dump_rloc I.Loc.dump loc) (dump_v v))
         | Atom (LL (loc1,loc2)) ->
             O.fprintf"%s == %s" (I.Loc.dump loc1) (I.Loc.dump loc2)
         | Atom (FF _) ->

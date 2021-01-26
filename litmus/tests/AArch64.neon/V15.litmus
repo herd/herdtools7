@@ -1,0 +1,11 @@
+AArch64 V15
+(* Tests MOVI scalar variant *)
+{
+0:X0=x;0:X1=y;
+}
+
+ P0                     ;
+ MOVI D0,#255    ;
+ ST1 {V0.B}[0], [X0]    ;
+ ST1 {V0.B}[1], [X1]    ;
+ forall (x=255 /\ y=0)

@@ -1,0 +1,10 @@
+Test V19 Required
+Histogram (1 states)
+1000000:>x=1; y=1; z=0;
+Ok
+
+Witnesses
+Positive: 1000000, Negative: 0
+Condition forall (x=1 /\ y=1 /\ z=0) is validated
+Hash=5e23c64de2f65cfa8defa6d9351a31e3
+Observation V19 Always 1000000 0

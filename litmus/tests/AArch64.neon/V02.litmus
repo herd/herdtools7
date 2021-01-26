@@ -1,0 +1,10 @@
+AArch64 V02
+(* Tests LD1/ST1 single structure with 32 bit lanes *)
+{
+x=1;
+0:X0=x; 0:X1=y;
+}
+ P0                 ;
+ LD1 {V0.S}[2],[X0] ;
+ ST1 {V0.S}[2],[X1] ;
+forall(y=1)

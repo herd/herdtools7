@@ -214,7 +214,7 @@ module Make(O:Config)(A:I) =
     let tag_reg reg = clean_reg (A.reg_to_string reg)
 
     let tag_reg_ref w reg =
-      sprintf "%%%s[%s]" (if w then "w" else "") (tag_reg reg)
+      sprintf "%%%s[%s]" (match w with Some c -> String.make 1 c | None -> "") (tag_reg reg)
 
     let dump_out_reg proc reg =
       OutUtils.fmt_out_reg
@@ -257,7 +257,7 @@ module Make(O:Config)(A:I) =
       let digit i =
         let c = Char.code t.memo.[i] in
         let n = c - Char.code '0' in
-        if 0 <= n && n <= 2 then n
+        if 0 <= n && n <= 5 then n
         else internal (sprintf "bad digit '%i' (%c)" n t.memo.[i])
 
       and substring i j =
@@ -285,13 +285,14 @@ module Make(O:Config)(A:I) =
                 add "^" ;
                 do_rec (j+2)
             | _ ->
-                let w,ty,n,nxt =
+                let c,ty,n,nxt =
                   match t.memo.[j+1] with
-                  | 'w' -> true,t.memo.[j+2],digit (j+3),4
-                  | _ -> false,t.memo.[j+1],digit (j+2),3 in
+                  | 'w' | 'b' | 'h' | 's' | 'd' | 'q'
+                    -> Some t.memo.[j+1],t.memo.[j+2],digit (j+3),4
+                  | _ -> None ,t.memo.[j+1],digit (j+2),3 in
                 begin match ty with
-                | 'i' -> add (tag_reg_ref w (get_reg n t.inputs))
-                | 'o' -> add (tag_reg_ref w (get_reg n t.outputs))
+                | 'i' -> add (tag_reg_ref c (get_reg n t.inputs))
+                | 'o' -> add (tag_reg_ref c (get_reg n t.outputs))
                 | c -> internal (sprintf "bad escape '%c'" c)
                 end ;
                 do_rec (j+nxt)
@@ -340,7 +341,13 @@ module Make(O:Config)(A:I) =
                   if error t0 t then begin
                     Warn.user_error
                       "Register %s has different types: <%s> and <%s>"
-                      (A.reg_to_string r) (CType.dump t0) (CType.dump t)
+                      (A.reg_to_string r)
+                      (match t0 with
+                      | CType.Array _ -> CType.debug t0
+                      | _ -> CType.dump t0)
+                      (match t with
+                      | CType.Array _ -> CType.debug t
+                      | _ -> CType.dump t)
                   end else
                     if not
                         ((CType.is_ptr t0 && CType.is_ptr t) ||
@@ -349,7 +356,13 @@ module Make(O:Config)(A:I) =
                         Warn.warn_always
                       "File \"%s\" Register %s has different types: <%s> and <%s>"
                       tst.name.Name.file
-                      (A.reg_to_string r) (CType.dump t0) (CType.dump t)
+                      (A.reg_to_string r)
+                      (match t0 with
+                      | CType.Array _ -> CType.debug t0
+                      | _ -> CType.dump t0)
+                      (match t with
+                      | CType.Array _ -> CType.debug t
+                      | _ -> CType.dump t)
                 end ;
                 RegMap.add r t m)
               m  t.reg_env)

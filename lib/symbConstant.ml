@@ -42,7 +42,7 @@ module Make(Scalar:Scalar.S) = struct
     | Concrete i -> Scalar.pp hexa i
     | ConcreteVector (_,vs) ->
       let s = String.concat "," (List.map (pp hexa) vs)
-      in sprintf "[%s]" s
+      in sprintf "{%s}" s
     | Symbolic ({offset=0; _} as s) -> pp_location s
     | Symbolic ({offset=o; _} as s) -> sprintf "%s+%i" (pp_location s) o
     | Label (p,lbl)  -> sprintf "%i:%s" p lbl

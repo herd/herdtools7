@@ -29,6 +29,7 @@ type t =
 let voidstar = Pointer (Base "void")
 let word = Base "int"
 let quad = Base "int64_t"
+let int128 = Array ("int",4)
 
 let rec  dump = function
   | Base s -> s
@@ -37,7 +38,7 @@ let rec  dump = function
   | Volatile t -> sprintf "%s volatile" (dump t)
   | Atomic t -> sprintf "_Atomic (%s)" (dump t)
   | Pointer t -> dump t  ^ "*"
-  | Array (t,sz) -> sprintf "%s[%i]" t sz
+  | Array (t,sz) -> sprintf "%s_%i_t" t sz
 
 let rec  debug = function
   | Base s -> sprintf "<%s>" s
@@ -130,6 +131,7 @@ let same_base t0 t1 = match t0,t1 with
     | ("int16_t","uint16_t")|("uint16_t","int16_t")
     | ("int32_t","uint32_t")|("uint32_t","int32_t")
     | ("int64_t","uint64_t")|("uint64_t","int64_t")
+    | ("int128_t", "uint128_t")|("uint128_t","int128_t")
       -> true
     | _,_ -> false
     end

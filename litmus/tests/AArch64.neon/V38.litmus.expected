@@ -1,0 +1,10 @@
+Test V38 Required
+Histogram (1 states)
+1000000:>x=3; y=0;
+Ok
+
+Witnesses
+Positive: 1000000, Negative: 0
+Condition forall (x=3 /\ y=0) is validated
+Hash=c4eb299546fb85c0a9c558a1637a28c0
+Observation V38 Always 1000000 0

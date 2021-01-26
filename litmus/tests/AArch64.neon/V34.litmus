@@ -1,0 +1,10 @@
+AArch64 V34
+(* Test Neon final state checking
+   LD1 single structure *)
+{
+x = 22;
+0:X0=x;
+}
+ P0                     ;
+ LD1 {V0.S}[0],[X0]     ;
+forall(0:V0.S = {22,0,0,0})

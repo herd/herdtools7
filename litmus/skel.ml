@@ -395,6 +395,7 @@ module Make
         O.o "#include <assert.h>" ;
         O.o "#include <time.h>" ;
         O.o "#include <limits.h>" ;
+        O.o "#include <string.h>";
         O.o "#include \"utils.h\"" ;
         if Cfg.c11 then O.o "#include <stdatomic.h>";
         O.o "#include \"outs.h\"" ;
@@ -402,6 +403,12 @@ module Make
           O.o "#include \"affinity.h\""
         end ;
         O.o "" ;
+        if Cfg.sysarch = `AArch64 then begin
+          O.o "/* 128 bit types */" ;
+          O.o "typedef __int128 int128_t;" ;
+          O.o "typedef unsigned __int128 uint128_t;" ;
+          O.o "" ;
+       end;
         O.o "/* params */" ;
         O.o "typedef struct {" ;
         O.oi "int verbose;" ;
@@ -1132,6 +1139,10 @@ module Make
             | Indirect,_ ->
                 let load = U.do_load t (wrap addr) in
                 sprintf "%s != %s" load (A.Out.dump_v v)
+            | (Direct,Array _) ->
+                let load = U.do_load t (wrap addr) in
+                sprintf "%s != %s"
+                  load (sprintf "%s_values[_j]" a)
             | (Direct,_) ->
                 let load = U.do_load t (wrap addr) in
                 sprintf "%s != %s"
@@ -1139,11 +1150,12 @@ module Make
           List.iter
             (fun (s,t as x) -> match t with
             | Base "mtx_t" -> ()
-            | Array (t,sz) ->
+            | Array (_,sz) ->
+                O.fii "%s %s_values = %s;" (SkelUtil.type_name s) s (dump_a_v_casted (find_global_init s test));
                 O.fii "for (int _j = 0 ; _j < %i ; _j++) {" sz ;
                 O.fiii "if (%s%s) fatal(\"%s, check_globals failed\");"
                   (if do_randompl then "rand_bit(&(_a->seed)) && " else "")
-                  (dump_test dump_addr (sprintf "(%s)[_j]") (s,Base t))
+                  (dump_test dump_addr (sprintf "(%s)[_j]") (s,t))
                   doc.Name.name ;
                 O.fii "}"
             | _ ->
@@ -1583,9 +1595,10 @@ module Make
                 | CType.Array (_,sz) ->
                     let pp_a = tag a
                     and pp_v = dump_a_v_casted v in
+                    O.fii "%s %s_values = %s;" (SkelUtil.type_name a) a pp_v;
                     let ins =
                       U.do_store t
-                        (sprintf "(%s)[_j]" pp_a) pp_v in
+                        (sprintf "(%s)[_j]" pp_a) (sprintf "%s_values[_j]" a) in
                     sprintf "for (int _j = 0 ; _j < %i; _j++) %s" sz ins
                 | _ ->
                     if U.is_aligned a env then
@@ -1606,11 +1619,20 @@ module Make
               List.iter
                 (fun (reg,t) ->
                   if Cfg.cautious then O.oii "mcautious();" ;
-                  O.fii "_a->%s[_i] = %s;"
-                    (A.Out.dump_out_reg proc reg)
-                    (match CType.is_ptr t with
-                    | false -> sentinel_of t
-                    | true -> "NULL"))
+                  match t with
+                  | Array (_,sz) ->
+                    O.fii "for (int _j = 0; _j < %s; _j++) _a->%s[_i][_j] = %s;"
+                      (string_of_int sz)
+                      (A.Out.dump_out_reg proc reg)
+                      (match CType.is_ptr t with
+                      | false -> sentinel_of t
+                      | true -> "NULL")
+                  | _ ->
+                    O.fii "_a->%s[_i] = %s;"
+                      (A.Out.dump_out_reg proc reg)
+                      (match CType.is_ptr t with
+                      | false -> sentinel_of t
+                      | true -> "NULL"))
                 outs)
             test.T.code ;
         end ;
@@ -2200,7 +2222,9 @@ module Make
               let t = U.find_type loc env in
               let t = CType.strip_attributes t in
               begin match t,loc with
-              | CType.Array _,_ -> ()
+              | CType.Array _,_ ->
+                O.fiii "%s %s;" (CType.dump t) (dump_loc_copy loc) ;
+                O.fiii "memcpy(%s,%s, sizeof(%s));" (dump_loc_copy loc) (dump_ctx_loc "ctx." loc) (CType.dump t)
               | _,A.Location_global a when U.is_aligned a env ->
                   let _ptr = sprintf "_%s_ptr" a in
                   let pp_t = CType.dump t in
@@ -2368,6 +2392,14 @@ module Make
         O.o "" ;
         ()
 
+      let dump_array_typedefs test =
+        iter_all_outs
+          (fun _ (_,t) ->
+            match t with
+            | CType.Array (t',sz) ->
+              O.f "typedef %s %s[%i];" t' (CType.dump t) sz
+            | _ -> ())
+          test
 
       let dump_def_ctx env test =
         O.o "/**********************/" ;
@@ -2375,6 +2407,7 @@ module Make
         O.o "/**********************/" ;
         O.o "" ;
         dump_vars_types test ;
+        dump_array_typedefs test;
         O.o "typedef struct {" ;
         let cpys = dump_vars env test in
         dump_out_vars test ;
