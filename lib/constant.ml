@@ -59,6 +59,9 @@ let mk_vec sz v =
   assert (sz == (List.length v));
   ConcreteVector (sz, v)
 
+let mk_replicate sz v =
+  ConcreteVector (sz, Misc.replicate sz v)
+
 let is_symbol = function
   | Symbolic _ -> true
   | Concrete _|ConcreteVector _| Label _| Tag _ -> false

@@ -42,6 +42,7 @@ val default_symbolic_data : symbolic_data
 val mk_sym : string -> 'scalar t
 val get_sym : 'scalar t -> string
 val mk_vec : int -> 'scalar t list -> 'scalar t
+val mk_replicate : int -> 'scalar t -> 'scalar t
 val is_symbol : 'scalar t -> bool
 val is_aligned_to_vec : int * int -> int -> bool
 val default_tag : 'scalar t

@@ -144,25 +144,24 @@ atom:
 
 atom_init:
 | atom { let x,v = $1 in x,(TyDef,v) }
-| NAME location
-/* We either have uninitalized arrays or scalars here: "typ v[i]" or "typ v" */
-   { match $2 with
-     | Location_global (Symbolic ({offset=sz;_} as s)) when sz > 0 ->
-       let xs = Misc.replicate sz ParsedConstant.zero in
-       let arr = TyArray ($1,sz),Constant.mk_vec sz xs in
-       (Location_global (Symbolic ({s with offset=0})), arr)
-     | _ -> ($2, (Ty $1,ParsedConstant.zero)) }
+| NAME location  { ($2, (Ty $1,ParsedConstant.zero)) }
 | ATOMIC NAME location { $3,(Atomic $2,ParsedConstant.zero)}
 | NAME location EQUAL maybev { ($2,(Ty $1,$4))}
-| NAME locindex EQUAL LCURLY maybev_list RCURLY
-   { match $2 with
-     | Deref (Location_global (Symbolic ({offset=0;_})) as s,sz) when sz = List.length $5 ->
-       let arr = (TyArray ($1,sz),Constant.mk_vec sz $5) in
-       (s, arr)
-     | _ -> assert false }
+| NAME arrayspec
+   { let (t,sz) = $2 in
+     let v0 = Constant.mk_replicate sz ParsedConstant.zero in
+     (t,(TyArray ($1,sz),v0)) }
+| NAME arrayspec EQUAL LCURLY maybev_list RCURLY
+   { let (t,sz) = $2 and vs = $5 in
+     if sz = List.length vs then
+       let arr = (TyArray ($1,sz),Constant.mk_vec sz vs) in
+       (t, arr)
+     else
+       Warn.user_error
+         "Declared size of array %s does not match initial vakue size"
+	 (dump_location t) }
 /* prohibit "v[i] = scalar" form in init allow only "v[i]={scalar_list}" */
 | locindex EQUAL maybev { raise Parsing.Parse_error }
-| NAME locindex EQUAL maybev { raise Parsing.Parse_error }
 | NAME location EQUAL ATOMICINIT LPAR maybev RPAR { ($2,(Ty $1,$6))}
 | NAME STAR location { ($3,(Pointer $1,ParsedConstant.zero))}
 | NAME STAR location EQUAL amperopt maybev { ($3,(Pointer $1,$6))}
@@ -280,7 +279,12 @@ rloc:
 | locindex { $1 }
 
 locindex:
-| location LBRK NUM RBRK { Deref ($1,Misc.string_as_int $3) }
+| arrayspec
+    { let (loc,sz) = $1 in Deref (loc,sz) }
+
+arrayspec:
+| NAME LBRK NUM RBRK
+    { (Location_global (Constant.mk_sym $1),Misc.string_as_int $3) }
 
 
 atom_prop:
