@@ -1,0 +1,10 @@
+Test V35 Required
+Histogram (1 states)
+1000000:>0:V0.S={0,0,0,22};
+Ok
+
+Witnesses
+Positive: 1000000, Negative: 0
+Condition forall (0:V0.S={0,0,0,22}) is validated
+Hash=441fc810b164031af66e1c561765d4d1
+Observation V35 Always 1000000 0

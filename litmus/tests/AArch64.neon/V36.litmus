@@ -1,0 +1,14 @@
+AArch64 V36
+(* Test Neon final state checking
+   LD2 single structure *)
+{
+x = 22;
+0:X0=x;
+}
+ P0                         ;
+ MOVI V0.4S,#0              ; (* Note issues involving register default values *)
+ MOVI V1.4S,#0              ;
+ MOV W1,#1                  ;
+ STR W1,[X0,#4]             ;
+ LD2 {V0.S,V1.S}[0],[X0]    ;
+forall(0:V0.S = {22,0,0,0} /\ 0:V1.S = {1,0,0,0})

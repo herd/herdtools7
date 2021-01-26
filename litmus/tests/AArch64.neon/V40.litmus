@@ -1,0 +1,13 @@
+AArch64 V40
+(* Test ADD (vector, vector variant) *)
+{ 0:X0=x; 0:X1=y; }
+
+P0;
+  MOVI V0.8B,#1         ;
+  MOVI V1.8B,#8         ;
+  MOVI V2.8B,#0         ;
+  ADD V2.8B,V0.8B,V1.8B ;
+  ST1 {V2.B}[0],[X0]    ;
+  ST1 {V2.B}[9],[X1]    ; 
+
+forall (x=9 /\ y=0)

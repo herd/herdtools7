@@ -1,0 +1,14 @@
+AArch64 V13
+(* Tests LD2R, no offset *)
+{
+x=511;
+0:X0=x;0:X1=y; 0:X2=z; 0:X3=a; 0:X4=b;
+}
+
+ P0                         ;
+ LD2R {V0.8B,V1.8B}, [X0]   ;
+ ST1 {V0.B}[0], [X1]        ;
+ ST1 {V0.B}[7], [X2]        ;
+ ST1 {V1.B}[0], [X3]        ;
+ ST1 {V1.B}[7], [X4]        ;
+ forall (y=255 /\ z=255 /\ a=1 /\ b=1)

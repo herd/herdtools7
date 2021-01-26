@@ -1,0 +1,15 @@
+AArch64 V07
+(* Tests LD3 single structure *)
+{
+x=65534;
+0:X0=x; 0:X1=a; 0:X2=b; 0:X3=c; 0:X4=d; 0:X5=e;
+}
+ P0                             ;
+ LD3 {V0.B,V1.B,V2.B}[1],[X0]   ;
+ LD2 {V3.B,V4.B}[0],[X0]        ;
+ ST1 {V0.B}[1],[X1]             ;
+ ST1 {V1.B}[1],[X2]             ;
+ ST1 {V2.B}[1],[X3]             ;
+ ST1 {V3.B}[0],[X4]             ;
+ ST1 {V4.B}[0],[X5]             ;
+forall(a=254 /\ b=255 /\ c=0 /\ d=254 /\ e=255)
