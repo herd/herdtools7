@@ -1,9 +1,7 @@
 AArch64 V10
-(* Tests load / store immediate, with offset
-Note: currently generates a warning as the initial conditions set it it to int
-but the usage is int64_t
-*)
+(* Tests load / store immediate, with offset *)
 {
+int64_t x; int8_t y;
 0:X0=x; 0:X2=y;
 }
 
