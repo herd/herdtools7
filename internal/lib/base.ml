@@ -70,6 +70,11 @@ module Option = struct
     | None -> default
     | Some v -> v
 
+  let map f o =
+    match o with
+    | None -> None
+    | Some v -> Some (f v)
+
   let is_none o =
     match o with
     | None -> true
