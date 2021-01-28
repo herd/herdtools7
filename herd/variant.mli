@@ -42,7 +42,10 @@ type t =
   | Instances (* Compute dependencies on instruction instances *)
   | Kvm
   | ETS 
-  | PteBranch (* Insert branching event between pte read and accesses *)
+(* Insert branching event between pte read and accesses *)
+  | PteBranch
+(* Pte-Squared: all accesses through page table, including PT accesses *)
+  | PTE2
 (* Perform experiment *)
   | Exp
 

@@ -40,7 +40,7 @@ module Make (C:Config) (A : A) : sig
   (* All sorts of accesses, redundunt with symbol hidden in location,
      when symbol is known, which may not be the case *)
 
-  type access_t = A_REG | A_VIR | A_PHY | A_PTE | A_TLB | A_TAG
+  type access_t = A_REG | A_VIR | A_PHY | A_PTE | A_TLB | A_TAG | A_PHY_PTE
 
   type action =
     | Access of Dir.dirn * A.location * A.V.v * A.lannot * A.explicit * MachSize.sz * access_t
@@ -70,14 +70,14 @@ end = struct
 
   let kvm = C.variant Variant.Kvm
 
-  type access_t = A_REG | A_VIR | A_PHY | A_PTE | A_TLB | A_TAG
+  type access_t = A_REG | A_VIR | A_PHY | A_PTE | A_TLB | A_TAG | A_PHY_PTE
 
   let access_of_constant cst =
     let open Constant in
     match cst with
     | Symbolic (Virtual _) -> A_VIR
     | Symbolic (Physical _) -> A_PHY
-    | Symbolic (System (PTE,_)) -> A_PTE
+    | Symbolic (System ((PTE|PTE2),_)) -> A_PTE
     | Symbolic (System (TLB,_)) -> A_TLB
     | Symbolic (System (TAG,_)) -> A_TAG
     | Label _|Tag _|Concrete _|PteVal _ as v ->
@@ -89,7 +89,7 @@ end = struct
   | V.Var _ -> assert false
   | V.Val cst -> access_of_constant cst
 
-  let access_of_location = function
+  let access_of_location_init = function
     | A.Location_reg _ -> A_REG
     | A.Location_global v
     | A.Location_deref (v,_)
@@ -106,24 +106,10 @@ end = struct
           if kvm then A_PTE
           else Warn.fatal "PTE %s while -variant kvm is not active"
               (A.pp_location loc)
-(*    | A.Location_global (V.Val (Symbolic ((System (AF,_))))) as loc
-      ->
-      if kvm then A_AF
-      else Warn.fatal "AF %s while -variant kvm is not active"
-      (A.pp_location loc)
-      | A.Location_global (V.Val (Symbolic ((System (DB,_))))) as loc
-      ->
-      if kvm then A_DB
-      else Warn.fatal "DB %s while -variant kvm is not active"
-      (A.pp_location loc)
-      | A.Location_global (V.Val (Symbolic ((System (DBM,_))))) as loc
-      ->
-      if kvm then A_DBM
-      else Warn.fatal "DBM %s while -variant kvm is not active"
-      (A.pp_location loc)
- *)    | A.Location_global v
-| A.Location_deref (v,_)
-  -> Warn.fatal "access_of_location_std on non-standard symbol '%s'\n" (V.pp_v v)
+      | A.Location_global v
+      | A.Location_deref (v,_)
+        -> Warn.fatal "access_of_location_std on non-standard symbol '%s'\n" (V.pp_v v)
+
 
 
   type action =
@@ -140,7 +126,7 @@ end = struct
   | A.V.Val (Constant.Tag _) ->
       Access(W,l,v,A.empty_annot,A.exp_annot,sz,A_TAG)
   | _ ->
-      Access(W,l,v,A.empty_annot,A.exp_annot,sz,access_of_location l)
+      Access(W,l,v,A.empty_annot,A.exp_annot,sz,access_of_location_init l)
 
   let pp_action a = match a with
   | Access (d,l,v,an,exp_an,sz,_) ->
@@ -296,8 +282,8 @@ end = struct
     | _ -> false
 
   let is_PA_access = function
-    | Access (_,_,_,_,_,_,A_PHY)
-    | Amo  (_,_,_,_,_,_,A_PHY)
+    | Access (_,_,_,_,_,_,(A_PHY|A_PHY_PTE))
+    | Amo  (_,_,_,_,_,_,(A_PHY|A_PHY_PTE))
         -> true
     | _ -> false
 
@@ -365,6 +351,10 @@ end = struct
   | Access (R,_,_,_,_,_,_)|Amo _ -> true
   | Access (W,_,_,_,_,_,_)|Barrier _|Commit _|Fault _|TooFar|Inv _ | DC _ -> false
 
+  let compatible_kinds k1 k2 = match k1,k2 with
+  | (A_PTE|A_PHY_PTE),(A_PTE|A_PHY_PTE) -> true
+  | _,_ -> k1 = k2
+
   let compatible_categories loc1 loc2 = match loc1,loc2 with
   | (A.Location_global _,A.Location_global _)
   | (A.Location_reg _,A.Location_reg _)
@@ -379,7 +369,7 @@ end = struct
   | (Access (_,loc1,_,_,_,_,k1)|Amo (loc1,_,_,_,_,_,k1)),
     (Access (_,loc2,_,_,_,_,k2)|Amo (loc2,_,_,_,_,_,k2))
     ->
-      k1 = k2 &&  compatible_categories loc1 loc2
+      compatible_kinds k1 k2 &&  compatible_categories loc1 loc2
   | _,_ -> assert false
 
   let is_reg_any a = match a with

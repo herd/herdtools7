@@ -1128,8 +1128,10 @@ Monad type:
              (fun (loc,v) -> sprintf "%s -> %s" (A.pp_location loc) (A.V.pp_v v))
              env)
 
-      let default_pteval s =
-        V.Val (Constant.PteVal (PTEVal.default s))
+      let val_of_pteval p = V.Val (Constant.PteVal p)
+
+      let default_pteval s = val_of_pteval (PTEVal.default s)
+      and pteval_of_pte s = val_of_pteval (PTEVal.of_pte s)
 
       let expand_pteval loc v =
         let open Constant in
@@ -1161,6 +1163,10 @@ Monad type:
         let open Constant in
         A.Location_global (V.Val (Symbolic (System (PTE,s))))
 
+      let pte2_loc s =
+        let open Constant in
+        A.Location_global (V.Val (Symbolic (System (PTE2,s))))
+
       let phy_loc s =
         let open Constant in
         A.Location_global (V.Val (Symbolic (Physical (s,0))))
@@ -1182,6 +1188,16 @@ Monad type:
                 if StringSet.mem s pte then env
                 else (pte_loc s,default_pteval s)::env)
               virt env in
+          let env =
+            if C.variant Variant.PTE2 then
+              List.fold_right
+                (fun (loc,_ as bd) env -> match loc with
+                | A.Location_global (V.Val (Symbolic (System (PTE,s))))
+                  ->
+                  bd::(pte2_loc s,pteval_of_pte s)::env
+               | _ -> bd::env)
+                env []
+            else env in
           env
 
       let debug_add_initpte env =
