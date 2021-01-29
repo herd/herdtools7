@@ -494,34 +494,19 @@ module Make
       | RMW_P|RMW_A  -> do_write_mem sz X
 
       let swp sz rmw r1 r2 r3 ii =
-        let open AArch64Base in
-        match r2 with
-        | ZR ->
-            let write_mem = match rmw with
-            | RMW_L|RMW_AL -> write_mem_release
-            | RMW_P|RMW_A  -> write_mem in
-            lift_memop
-              (read_reg_data sz r1 ii)
-              (fun ma mv ->
-                (mv >>| ma) >>= fun (v,a) ->
-                 write_mem sz a v ii)
-              (to_perms "rw" sz)
-              (read_reg_ord r3 ii)
-              ii
-        |  _ ->
-            let read_mem = rmw_amo_read rmw
-            and write_mem =  rmw_amo_write rmw in
-            lift_memop
-              (read_reg_data sz r1 ii)
-              (fun ma mv ->
-                let r2 = mv
-                and w2 v = write_reg r2 v ii (* no sz since alread masked *)
-                and r1 a = read_mem sz a ii
-                and w1 a v = write_mem sz a v ii in
-                M.swp ma r1 r2 w1 w2)
-              (to_perms "rw" sz)
-              (read_reg_ord r3 ii)
-              ii
+        let read_mem = rmw_amo_read rmw
+        and write_mem =  rmw_amo_write rmw in
+        lift_memop
+          (read_reg_data sz r1 ii)
+          (fun ma mv ->
+            let r2 = mv
+            and w2 v = write_reg r2 v ii (* no sz since alread masked *)
+            and r1 a = read_mem sz a ii
+            and w1 a v = write_mem sz a v ii in
+            M.swp ma r1 r2 w1 w2)
+          (to_perms "rw" sz)
+          (read_reg_ord r3 ii)
+          ii
 
       let cas sz rmw rs rt rn ii =
         let read_rs = read_reg_data sz rs ii
