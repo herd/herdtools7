@@ -1,0 +1,11 @@
+AArch64 V06
+(* Tests LD2 single structure *)
+{
+uint8_t x[2]={254,255};
+0:X0=x; 0:X1=y; 0:X2=z;
+}
+ P0                         ;
+ LD2 {V0.B,V1.B}[0],[X0]    ;
+ ST1 {V0.B}[0],[X1]         ;
+ ST1 {V1.B}[0],[X2]         ;
+forall(y=254 /\ z=255)

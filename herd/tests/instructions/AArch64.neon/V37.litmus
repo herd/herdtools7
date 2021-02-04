@@ -1,0 +1,16 @@
+AArch64 V37
+(* Test Neon final state checking
+   LD1 multiple structure *)
+{
+uint32_t x[4] = {22,0,0,0};
+0:X0=x;
+}
+ P0                         ;
+ MOV W1,#1                  ;
+ STR W1,[X0,#4]             ;
+ MOV W1,#5                  ;
+ STR W1,[X0,#8]             ;
+ MOV W1,#44                 ;
+ STR W1,[X0,#12]            ;
+ LD1 {V0.4S},[X0]           ;
+forall(0:V0.4S = {22,1,5,44})

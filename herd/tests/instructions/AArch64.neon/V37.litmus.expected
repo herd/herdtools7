@@ -1,0 +1,10 @@
+Test V37 Required
+States 1
+0:V0.4S={22,1,5,44};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:V0.4S={22,1,5,44})
+Observation V37 Always 1 0
+Hash=889f7f18abd9c86bcc4d7b4bda2e86c7
+

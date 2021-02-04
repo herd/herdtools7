@@ -1,13 +1,12 @@
 AArch64 V44
 (* Tests STP - store pair without offset *)
-{ 
-0:X0=x; 0:X1=y;
+{
+uint64_t x[2];
+0:X0=x;
 }
 
  P0                      ;
- MOVI D0, #255           ;
+ MOVI D0, #254           ;
  MOVI D1, #255           ;
  STP D0, D1, [X0]        ;
- LDR D2, [X0, #8]        ;
- STR D2, [X1]            ;
- exists (x=255 /\ y=255)
+ exists (x[0]=254 /\ x[1]=255)

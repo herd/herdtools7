@@ -1,0 +1,10 @@
+Test V05 Required
+States 1
+y=255; z=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (y=255 /\ z=0)
+Observation V05 Always 1 0
+Hash=0eef97914231a4a8a2c3019929588fbc
+

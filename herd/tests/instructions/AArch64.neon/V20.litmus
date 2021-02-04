@@ -1,0 +1,10 @@
+AArch64 V20
+(* Tests MOV to general *)
+{
+}
+
+ P0                     ;
+ MOVI V0.2S,#1  ;
+ MOV W0,V0.S[0] ;
+ MOV W1,V0.S[1] ;
+ forall (0:X0=1 /\ 0:X1=1)

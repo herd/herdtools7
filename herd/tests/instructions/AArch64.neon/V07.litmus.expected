@@ -1,10 +1,10 @@
 Test V07 Required
 States 1
-y=1;
+a=254; b=255; c=0; d=254; e=255;
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition forall (y=1)
+Condition forall (a=254 /\ b=255 /\ c=0 /\ d=254 /\ e=255)
 Observation V07 Always 1 0
-Hash=0c36999f05e4f33e3ef0f5ab1ccaa72a
+Hash=b624f7352a3fb9f499e5c2d7f2a87a00
 

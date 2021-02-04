@@ -1,0 +1,10 @@
+Test V18 Required
+States 1
+y=1; z=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (y=1 /\ z=0)
+Observation V18 Always 1 0
+Hash=678beb476ce9c84d94ae250f177635de
+

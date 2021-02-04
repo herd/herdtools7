@@ -1,12 +1,12 @@
 AArch64 V09
 (* Tests load immediate, post-indexed *)
-{ 
-x=1;
+{
+uint8_t x[2]={1,1};
 0:X0=x; 0:X1=y;
 }
 
  P0                 ;
- LDR B0, [X0], #8   ;
- STR B0, [X1]       ;
- forall (y=1 /\ 0:X0!=x)
+ LDR B0, [X0], #1   ;
+ STR B0, [X0]       ;
+forall (x[0]=1 /\ x[1]=1)
 

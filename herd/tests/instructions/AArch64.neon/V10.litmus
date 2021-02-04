@@ -1,11 +1,14 @@
 AArch64 V10
-(* Tests store immediate, post-indexed *)
-{ 
-a=1;
-0:X0=a; 0:X1=x;
+(* Tests load / store immediate, with offset *)
+{
+uint64_t x[2]={0,0};
+uint8_t y;
+0:X0=x; 0:X2=y;
 }
 
  P0                 ;
- LDR B0, [X0]       ;
- STR B0, [X1], #8   ;
- forall (x=1 /\ 0:X1!=x)
+ MOV X1,#1          ;
+ STR X1, [X0, #8]   ;
+ LDR D0, [X0, #8]   ;
+ STR D0, [X2]       ;
+ forall (y=1)

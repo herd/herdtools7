@@ -1,15 +1,11 @@
 AArch64 V47
 (* Tests LD1/ST1 single structure, post-indexed register offset *)
 {
-uint128_t x;
-0:X0=x; 0:X1=16; 0:X2=32; 0:X4=4;
+uint32_t x[3]={0,0,32};
+0:X0=x; 0:X1=4;
 }
  P0                    ;
- MOV W1,#16            ;
- STR W1,[X0]           ;
- MOV W2,#32            ;
- STR W2,[X0,#8]        ;
- LD1 {V0.S}[0],[X0],X4 ;
- ST1 {V0.S}[0],[X0],X4 ;
- LDR W3,[X0]           ;
-forall(0:X3=32 /\ 0:X0!=x)
+ LD1 {V0.S}[0],[X0],X1 ;
+ ST1 {V0.S}[0],[X0],X1 ;
+ LDR W2,[X0]           ;
+forall(0:X2=32 /\ 0:X0!=x)

@@ -1,13 +1,13 @@
 AArch64 V12
-(* Tests load / store immediate unscaled, no offset *)
-{ 
-0:X0=x; 0:X2=y;
+(* Tests LD1R, no offset *)
+{
+uint64_t x=1;
+0:X0=x;0:X1=y; 0:X2=z; 0:X3=a;
 }
 
- P0                  ;
- MOV X1, #1          ;
- STR X1, [X0, #8]    ;
- LDUR B0, [X0, #8]   ;
- STUR B0, [X2]       ;
- forall (y=1)
- 
+ P0                     ;
+ LD1R {V0.2S}, [X0]     ;
+ ST1 {V0.S}[0], [X1]    ;
+ ST1 {V0.S}[1], [X2]    ;
+ ST1 {V0.S}[2], [X3]    ;
+ forall (y=1 /\ z=1 /\ a=0)

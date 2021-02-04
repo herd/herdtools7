@@ -1,0 +1,10 @@
+Test V22 Required
+States 1
+y=255; z=255;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (y=255 /\ z=255)
+Observation V22 Always 1 0
+Hash=486b4c600472a2d1443e460e52bbe16a
+

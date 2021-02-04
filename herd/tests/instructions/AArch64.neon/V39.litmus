@@ -1,0 +1,14 @@
+AArch64 V39
+(* Test ADD (vector, scalar variant) *)
+{
+uint64_t x=1; uint64_t y=2; uint64_t z;
+0:X0=x; 0:X1=y; 0:X2=z;
+}
+
+P0;
+  LD1 {V0.D}[0],[X0]    ;
+  LD1 {V1.D}[0],[X1]    ;
+  ADD D2,D0,D1          ;
+  STR D2,[X2]           ;
+
+forall (z=3)

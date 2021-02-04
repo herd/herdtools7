@@ -1,0 +1,12 @@
+AArch64 V36
+(* Test Neon final state checking
+   LD2 single structure *)
+{
+uint32_t x[2]={22,0};
+0:X0=x;
+}
+ P0                         ;
+ MOV W1,#1                  ;
+ STR W1,[X0,#4]             ;
+ LD2 {V0.S,V1.S}[0],[X0]    ;
+forall(0:V0.4S = {22,0,0,0} /\ 0:V1.4S = {1,0,0,0})

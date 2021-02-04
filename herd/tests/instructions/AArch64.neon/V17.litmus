@@ -1,0 +1,15 @@
+AArch64 V17
+(* Tests MOV element *)
+{
+uint8_t x; uint8_t y; uint8_t z;
+0:X0=x;0:X1=y;0:X2=z;
+}
+
+ P0                     ;
+ MOVI V0.8B,#1          ;
+ MOV V1.B[0], V0.B[0]   ;
+ MOV V1.B[1], V0.B[7]   ;
+ ST1 {V1.B}[0], [X0]    ;
+ ST1 {V1.B}[1], [X1]    ;
+ ST1 {V1.B}[2], [X2]    ;
+ forall (x=1 /\ y=1 /\ z=0)

@@ -1,0 +1,16 @@
+AArch64 V23
+(* Tests ST2 multiple structure *)
+{
+uint32_t b[4];
+0:X1=x;0:X2=y;0:X3=z;0:X4=a;0:X0=b;
+}
+ P0                     ;
+ MOVI V0.2S,#1          ;
+ MOVI V1.2S,#1          ;
+ ST2 {V0.2S,V1.2S},[X0] ;
+ LD1 {V2.4S},[X0]       ;
+ ST1 {V2.S}[0],[X1]     ;
+ ST1 {V2.S}[1],[X2]     ;
+ ST1 {V2.S}[2],[X3]     ;
+ ST1 {V2.S}[3],[X4]     ;
+forall(x=1 /\ y=1 /\ z=1 /\ a=1)

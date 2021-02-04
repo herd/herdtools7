@@ -1,0 +1,13 @@
+AArch64 V14
+(* Tests MOVI 8 bit no shift *)
+{
+uint8_t x; uint8_t y; uint8_t z;
+0:X0=x;0:X1=y; 0:X2=z;
+}
+
+ P0                         ;
+ MOVI V0.8B,#1  ;
+ ST1 {V0.B}[0], [X0]        ;
+ ST1 {V0.B}[7], [X1]        ;
+ ST1 {V1.B}[8], [X2]        ;
+ forall (x=1 /\ y=1 /\ z=0)

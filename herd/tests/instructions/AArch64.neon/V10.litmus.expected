@@ -1,10 +1,10 @@
 Test V10 Required
 States 1
-0:X1=x+8; x=1;
+y=1;
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition forall (x=1 /\ not (0:X1=x))
+Condition forall (y=1)
 Observation V10 Always 1 0
-Hash=a7ad6109f99bcf27348677b291a79189
+Hash=8ccf2f7178841ac1a3382577416f826e
 

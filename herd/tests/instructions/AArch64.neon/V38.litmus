@@ -1,0 +1,15 @@
+AArch64 V38
+(* Test EOR (vector) *)
+{
+uint8_t x; uint8_t y;
+0:X0=x; 0:X1=y;
+}
+
+P0;
+  MOVI V0.8B,#1             ;
+  MOVI V1.8B,#2             ;
+  EOR V2.8B, V0.8B, V1.8B   ;
+  ST1 {V2.B}[0],[X0]        ;
+  ST1 {V2.B}[9],[X1]        ;
+
+forall (x=3 /\ y=0)
