@@ -92,6 +92,16 @@ test::
 
 test::
 	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/AArch64.neon \
+		-variant neon \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64 NEON instructions tests: OK"
+
+test::
+	@ echo
 	$(HERD_DIYCROSS_REGRESSION_TEST) \
 		-herd-path $(HERD) \
 		-diycross-path $(DIYCROSS) \
