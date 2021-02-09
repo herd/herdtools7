@@ -1,7 +1,9 @@
 *.swp
 *~
 .DS_Store
+.exe
 .merlin
+.native
 /Version.ml
 /herd-www/www/catalogue
 /herd-www/www/weblib
