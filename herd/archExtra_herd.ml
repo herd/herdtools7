@@ -339,9 +339,12 @@ module Make(C:Config) (I:I) : S with module I = I
         let same_sym_fault sym1 sym2 = match sym1,sym2 with
           |(Virtual {name=s1;_},Virtual {name=s2;_})
           | (System (PTE,s1),System (PTE,s2))
+          | (System (TAG,s1),System (TAG,s2))
            -> Misc.string_eq s1 s2
-          | (Virtual _,System (PTE,_))
-          | (System (PTE,_),Virtual _)
+          | (Virtual _,System ((PTE|TAG),_))
+          | (System ((PTE|TAG),_),Virtual _)
+          | (System (PTE,_),System (TAG,_))
+          | (System (TAG,_),System (PTE,_))
             -> false
           | _,_ ->
               Warn.fatal
